@@ -610,4 +610,43 @@ let printAll () =
     verbose := oldverbose
 ;;
 
-let _ = Pfedit.set_xml_cook_proof (show_pftreestate None);;
+
+(*CSC: from here on a temporary solution for debugging *)
+
+let rec join_dirs cwd =
+ function
+    []  -> assert false
+  | [he] -> cwd ^ "/" ^ he
+  | he::tail ->
+     let newcwd = cwd ^ "/" ^ he in
+      (try
+        Unix.mkdir newcwd 0o775
+       with _ -> () (* Let's ignore the errors on mkdir *)
+      ) ;
+      join_dirs newcwd tail
+;;
+
+let filename_of_path xml_library_root sp tag =
+ let module N = Names in
+ let module No = Nameops in
+  let ext_of_sp sp = ext_of_tag tag in
+  let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
+  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
+   (join_dirs xml_library_root dir) ^ "." ^ (ext_of_sp sp)
+;;
+
+(* Let's register the callbacks *)
+let _ =
+ let xml_library_root =
+  try
+   Sys.getenv "XML_LIBRARY_ROOT"
+  with Not_found -> "/home/projects/helm/EXPORT/examples7.3/objects"
+ in
+  Pfedit.set_xml_cook_proof
+   (function pftreestate ->
+     let id = Pfedit.get_current_proof_name () in
+     let sp = Lib.make_path id in
+     let filename = filename_of_path xml_library_root sp Constant in
+      show_pftreestate (Some filename) pftreestate
+   )
+;;
