@@ -54,8 +54,7 @@ A3) ESTAMPILLAGE DE L'ARCHIVE
 
      make tag
 
-  pour (on suppose que le numéro de version donné dans
-configure.distrib est V6.2.5) poser le tag V6-2-5 à l'archive V6-2.
+  pour poser le tag V6-2-5 à l'archive V6-2 (on suppose que le numéro de version donné dans configure.distrib est V6.2.5).
 
   La commande "make tag" peut être refaite plusieurs fois auquel cas
 l'ancienne marque est supprimée avant d'être remise à la nouvelle
