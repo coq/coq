@@ -46,18 +46,20 @@ let rec and_status = function
   | _ -> Incomplete_proof
 
 (* Normalizing evars in a goal. Called by tactic Local_constraints
-   (i.e. when the sigma of the proof tree changes) *)
-
+   (i.e. when the sigma of the proof tree changes). Detect if the
+   goal is unchanged *)
 let norm_goal sigma gl =
   let red_fun = Evarutil.nf_evar sigma in
   let ncl = red_fun gl.evar_concl in
-  { evar_concl = ncl;
-    evar_hyps =
-    Sign.fold_named_context 
-      (fun (d,b,ty) sign ->
-        add_named_decl (d, option_app red_fun b, red_fun ty) sign)
-      gl.evar_hyps ~init:empty_named_context;
-    evar_body = gl.evar_body}
+  let ngl =
+    { evar_concl = ncl;
+      evar_hyps =
+      Sign.fold_named_context 
+        (fun (d,b,ty) sign ->
+          add_named_decl (d, option_app red_fun b, red_fun ty) sign)
+        gl.evar_hyps ~init:empty_named_context;
+      evar_body = gl.evar_body} in
+  if ngl = gl then None else Some ngl
 
 
 (* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
@@ -188,14 +190,21 @@ let refiner = function
   | Change_evars as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it in
-	 let sgl = [norm_goal goal_sigma.sigma gl] in
-	 ({it=sgl;sigma=goal_sigma.sigma},
-          (fun spfl -> 
-	    assert (check_subproof_connection sgl spfl);
-             { status = (List.hd spfl).status;
-               goal = gl;
-               subproof = None;
-               ref = Some(r,spfl) })))
+         (match norm_goal goal_sigma.sigma gl with
+             Some ngl ->
+	       ({it=[ngl];sigma=goal_sigma.sigma},
+                (fun spfl -> 
+	          assert (check_subproof_connection [ngl] spfl);
+                  { status = (List.hd spfl).status;
+                    goal = gl;
+                    subproof = None;
+                    ref = Some(r,spfl) }))
+           (* if the evar change does not affect the goal, leave the
+              proof tree unchanged *)
+           | None -> ({it=[gl];sigma=goal_sigma.sigma},
+                      (fun spfl ->
+                        assert (List.length spfl = 1);
+                        List.hd spfl))))
 
 let vernac_tactic texp = refiner (Tactic texp)
 let norm_evar_tac gl = refiner Change_evars gl
@@ -782,11 +791,15 @@ let pr_rule = function
   | Prim r -> pr_prim_rule r
   | Tactic texp -> hOV 0 (pr_tactic texp)
   | Change_evars ->
-      (* This is internal tactic and cannot be replayed at user-level *)
-      (* [< 'sTR"Local constraint change" >] *)
-      (* Use Idtac instead *)
-      (* To put nothing does not work, because it still writes a single dot *)
-      [< 'sTR"Idtac" >]
+      (* This is internal tactic and cannot be replayed at user-level.
+         Function pr_rule_dot below is used when we want to hide
+         Change_evars *)
+       [< 'sTR"Evar change" >]
+
+(* Does not print change of evars *)
+let pr_rule_dot = function 
+  | Change_evars -> [<>]
+  | r -> [< pr_rule r; 'sTR"." ; 'fNL >] 
 
 exception Different
 
@@ -829,7 +842,7 @@ let rec print_script nochange sigma osign pf =
 	  pr_change pf.goal
     | Some(r,spfl) ->
         [< (if nochange then [< >] else (pr_change pf.goal));
-           pr_rule r ; 'sTR"." ; 'fNL ;
+           pr_rule_dot r;
            prlist_with_sep pr_fnl
              (print_script nochange sigma sign) spfl >]
 
@@ -838,7 +851,7 @@ let rec print_treescript sigma osign pf =
   match pf.ref with
     | None -> [< >]
     | Some(r,spfl) ->
-        [< pr_rule r ; 'sTR"." ; 'fNL ;
+        [< pr_rule_dot r ;
            let prsub =
              prlist_with_sep pr_fnl (print_treescript sigma sign) spfl
            in
@@ -852,6 +865,8 @@ let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None -> [< >]
+    | Some(Change_evars,[spf]) ->
+        print_info_script sigma osign spf
     | Some(r,spfl) ->
         [< pr_rule r ; 
            match spfl with
