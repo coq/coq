@@ -61,7 +61,7 @@ let clash_v = ref ([]: (string list * string list) list)
 
 
 let warning_module_notfound f s =
-  eprintf "*** Warning : in file %s, mdule " f;
+  eprintf "*** Warning : in file %s, module " f;
   eprintf "%s.v is required and has not been found in loadpath !\n"
     (String.concat "." s);
   flush stderr
