@@ -84,9 +84,14 @@ EXTEND
 	end
     | "("; c = term; "::"; t = term; ")" ->
 	DOP2 (Cast, c, t)
-    | "<"; p = term; ">"; IDENT "Case"; c = term; "of"; 
-      bl = LIST0 term; "end" ->
-	DOPN (MutCase None, Array.of_list (p :: c :: bl))
+    | "<"; p = term; ">"; 
+	IDENT "Case"; c = term; ":"; "Ind"; id = IDENT; i = INT;
+	"of"; bl = LIST0 term; "end" ->
+	  let ind = (path_of_string id,int_of_string i) in
+	  let nc = List.length bl in
+	  let dummy_pats = Array.create nc RegularPat in
+	  let dummy_ci = [||],(ind,[||],nc,None,dummy_pats) in
+	  DOPN (MutCase dummy_ci, Array.of_list (p :: c :: bl))
   ] ];
   command: 
   [ [ "Definition"; id = IDENT; ":="; c = term; "." ->

@@ -23,7 +23,7 @@ let lookup_var id =
   in
   look 1
 
-let args sign = Array.of_list (List.map (fun id -> VAR id) (fst sign))
+let args sign = Array.of_list (List.map (fun id -> VAR id) (ids_of_sign sign))
 
 let rec globalize bv = function
   | VAR id -> lookup_var id bv
@@ -51,7 +51,7 @@ let check c =
 let definition id ty c =
   let c = globalize [] c in
   let ty = option_app (globalize []) ty in
-  let ce = { const_entry_body = c; const_entry_type = ty } in
+  let ce = { const_entry_body = Cooked c; const_entry_type = ty } in
   let sp = make_path [] id CCI in
   env := add_constant sp ce !env;
   mSGNL (hOV 0 [< print_id id; 'sPC; 'sTR"is defined"; 'fNL >])

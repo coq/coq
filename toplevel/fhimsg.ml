@@ -53,7 +53,7 @@ module Make = functor (P : Printer) -> struct
     [< sign_env; db_env >]
     
   let pr_ne_ctx header k = function
-    | ENVIRON (([],[]),[]) -> [< >]
+    | ENVIRON (s1,s2) when s1=nil_sign & s2=nil_dbsign -> [< >]
     | env -> [< header; pr_env k env >]
 
 
