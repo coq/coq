@@ -140,5 +140,8 @@ cleanconfig::
 
 depend:
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
+	for f in */*.g4; do \
+	  $(CAMLP4EXTEND) $(DEPFLAGS) pr_depend.cmo -impl $$f >> .depend; \
+	done
 
 include .depend

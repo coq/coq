@@ -64,6 +64,10 @@ let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let decimal_literal = ['0'-'9']+
+let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
+let oct_literal = '0' ['o' 'O'] ['0'-'7']+
+let bin_literal = '0' ['b' 'B'] ['0'-'1']+
 
 rule token = parse
   | blank+ 
@@ -71,6 +75,11 @@ rule token = parse
   | firstchar identchar* 
       { let s = Lexing.lexeme lexbuf in
 	if is_keyword s then ("",s) else ("IDENT",s) }
+  | decimal_literal | hex_literal | oct_literal | bin_literal
+      { ("INT", Lexing.lexeme lexbuf) }
+  | ":=" { ("COLONEQUAL","") }
+  | ":"  { ("COLON","") }
+  | "."  { ("DOT","") }
   | symbolchar+
       { ("SPECIAL", Lexing.lexeme lexbuf) }
   | '`' [^'`']* '`'
@@ -86,6 +95,8 @@ rule token = parse
         comment_start_pos := Lexing.lexeme_start lexbuf;
         comment lexbuf;
         token lexbuf }
+  | eof 
+      { ("EOI","") }
 
 and comment = parse
     "(*"

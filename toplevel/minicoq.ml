@@ -23,4 +23,19 @@ let rec globalize bv = function
   | Rel _ | DOP0 _ as c -> c
 
 let main () =
-  failwith "todo"
+  let cs = Stream.of_channel stdin in
+  while true do
+    try
+      let c = Grammar.Entry.parse G_minicoq.command cs in
+      Printf.printf "ok\n"; flush stdout
+    with 
+      | End_of_file | Stdpp.Exc_located (_, End_of_file) -> 
+	  exit 0
+      | Stdpp.Exc_located (_,e) ->
+	  Printf.printf "error: %s\n" (Printexc.to_string e); flush stdout
+      | exn -> 
+	  Printf.printf "error: %s\n" (Printexc.to_string exn); flush stdout
+  done
+
+let _ = Printexc.catch main ()
+
