@@ -142,8 +142,6 @@ val is_info_cast_type : env -> 'a evar_map -> constr -> bool
 val contents_of_cast_type : env -> 'a evar_map -> constr -> contents
 i*)
 
-val poly_args : env -> 'a evar_map -> constr -> int list
-
 val whd_programs : 'a reduction_function
 
 (* [reduce_fix] contracts a fix redex if it is actually reducible *)

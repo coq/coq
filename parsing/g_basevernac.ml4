@@ -95,7 +95,7 @@ GEXTEND Gram
           <:ast< (PrintOpaqueId $id) >>
 (* Pris en compte dans PrintOption ci-dessous (CADUC) *)
       | IDENT "Print"; id = identarg; "." -> <:ast< (PrintId $id) >>
-      | IDENT "Search"; id = identarg; "." -> <:ast< (SEARCH $id) >>
+      | IDENT "Search"; id = Tactic.qualidarg; "." -> <:ast< (SEARCH $id) >>
       | IDENT "Inspect"; n = numarg; "." -> <:ast< (INSPECT $n) >>
       (* TODO: rapprocher Eval et Check *)
       | IDENT "Eval"; r = Tactic.red_tactic; "in"; c = constrarg; "." ->

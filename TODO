@@ -1,19 +1,14 @@
 Distribution:
 
-- Faire fonctionner coqc/coqtop en non local FAIT
-- "System Error (Failure): "input_value: code mismatch" quand on
-  charge en bytecode certains .vo compilés en natif (exemple typique:
-  Ring_abstract.v) COMPRIS, FAIT
-- où va RELATIONS/WELLFOUNDED ? 
+- faire une passe sur les options de coqtop et coqc
+- option -byte à coqtop
+- coqc utilise coqtop.opt par défaut, sauf si -byte indiqué
 
 Environnement:
 
 - Faire fonctionner Search
 - Porter SearchIsos
-- Faire fonctionner Abstract FAIT
-- Faire fonctionner Reset FAIT
-- Décider s'il faut garder Transparent/Opaque et si oui, l'implanter FAIT
-- Ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo) FAIT
+- Require synchronisé
 
 Tactiques:
 
@@ -23,6 +18,12 @@ Tactiques:
 Noyau:
 
 - Intégrer Let dans whd_* et les fonctions de tacred
+- Gérer les alias avec un let in dans les cases
+
+Vernac:
+
+- Imprimer les paths avec "."
+- Pb noms cachés (utilisation de noms absolus ?)
 
 Grammaires:
 

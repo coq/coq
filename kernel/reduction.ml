@@ -1104,40 +1104,6 @@ let is_info_type env sigma t =
   (s <> Prop Null && 
    try info_arity env sigma t.utj_val with IsType -> true)
 
-(* calcul des arguments implicites *)
-
-(* la seconde liste est ordonne'e *)
-
-let ord_add x l =
-  let rec aux l = match l with 
-    | []    -> [x]
-    | y::l' -> if y > x then x::l else if x = y then l else y::(aux l')
-  in 
-  aux l
-    
-let add_free_rels_until bound m acc =
-  let rec frec depth acc c = match kind_of_term c with
-    | IsRel n when (n < bound+depth) & (n >= depth) ->
-	Intset.add (bound+depth-n) acc
-    | _ -> fold_constr_with_binders succ frec depth acc c
-  in 
-  frec 1 acc m 
-
-(* calcule la liste des arguments implicites *)
-
-let poly_args env sigma t =
-  let rec aux env n t =
-    match kind_of_term (whd_betadeltaiota env sigma t) with
-      | IsProd (x,a,b) ->
-	  add_free_rels_until n a
-	    (aux (push_rel_assum (x,a) env) (n+1) b)
-      | _ -> Intset.empty
-  in 
-  match kind_of_term (whd_betadeltaiota env sigma t) with 
-    | IsProd (x,a,b) ->
-	Intset.elements (aux (push_rel_assum (x,a) env) 1 b)
-    | _ -> []
-
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
 

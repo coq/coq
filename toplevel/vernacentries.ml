@@ -891,7 +891,8 @@ let _ =
 		try Nametab.locate q
 		with Not_found ->
 		  Pretype_errors.error_global_not_found_loc loc q
-	      in search_by_head ref)
+	      in 
+	      search_by_head ref)
        | _ -> bad_vernac_args "SEARCH")
 
 let _ =

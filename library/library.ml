@@ -204,6 +204,31 @@ let save_module_to process s f =
   System.marshal_out ch di;
   close_out ch
 
+(*s Iterators. *)
+
+let fold_all_segments insec f x =
+  let rec apply acc = function
+    | sp, Leaf o -> f acc sp o
+    | _, ClosedSection (_,_,seg,_) -> 
+	if insec then List.fold_left apply acc seg else acc
+    | _ -> acc
+  in
+  let acc' = 
+    Stringmap.fold 
+      (fun _ m acc -> List.fold_left apply acc (fst m.module_declarations)) 
+      !modules_table x
+  in
+  List.fold_left apply acc' (Lib.contents_after None)
+
+let iter_all_segments insec f =
+  let rec apply = function
+    | sp, Leaf o -> f sp o
+    | _, ClosedSection (_,_,seg,_) -> if insec then List.iter apply seg
+    | _ -> ()
+  in
+  Stringmap.iter 
+    (fun _ m -> List.iter apply (fst m.module_declarations)) !modules_table;
+  List.iter apply (Lib.contents_after None)
 
 (*s Pretty-printing of modules state. *)
 

@@ -48,7 +48,6 @@ val print_path_between : identifier -> identifier -> std_ppcmds
 
 
 val search_by_head : global_reference -> unit
-val crible : (string -> env -> constr -> unit) -> global_reference ->
-  unit
+val crible : (string -> env -> constr -> unit) -> global_reference -> unit
 val inspect : int -> std_ppcmds
 

@@ -1,6 +1,11 @@
 
 (* $Id$ *)
 
+(*i*)
+open Names
+open Libobject
+(*i*)
+
 (*s This module is the heart of the library. It provides low level functions to
    load, open and save modules. Modules are saved onto the disk with checksums
    (obtained with the [Digest] module), which are checked at loading time to
@@ -40,6 +45,15 @@ val save_module_to : (Lib.library_segment -> Nametab.module_contents) ->
 
 val module_segment : string option -> Lib.library_segment
 val module_filename : string -> System.load_path_entry * string
+
+(*s [fold_all_segments] and [iter_all_segments] iterate over all
+    segments, the modules' segments first and then the current
+    segment. Modules are presented in an arbitrary order. The given
+    function is applied to all leaves (together with their section
+    path). The boolean indicates if we must enter closed sections. *)
+
+val fold_all_segments : bool -> ('a -> section_path -> obj -> 'a) -> 'a -> 'a
+val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
 
 (*s Global load path *)
 val get_load_path : unit -> System.load_path
