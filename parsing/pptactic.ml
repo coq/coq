@@ -229,7 +229,7 @@ let pr_autoarg_usingTDB = function
   | true -> spc () ++ str "Using TDB"
   | false -> mt ()
 
-let rec pr_raw_generic prc prlc prtac x =
+let rec pr_raw_generic prc prlc prtac prref x =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen rawwit_bool x then "true" else "false")
   | IntArgType -> pr_arg int (out_gen rawwit_int x)
@@ -237,32 +237,32 @@ let rec pr_raw_generic prc prlc prtac x =
   | StringArgType -> spc () ++ str "\"" ++ str (out_gen rawwit_string x) ++ str "\""
   | PreIdentArgType -> pr_arg str (out_gen rawwit_pre_ident x)
   | IdentArgType -> pr_arg pr_id (out_gen rawwit_ident x)
-  | RefArgType -> pr_arg pr_reference (out_gen rawwit_ref x)
+  | RefArgType -> pr_arg prref (out_gen rawwit_ref x)
   | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
-      pr_arg (pr_may_eval prc pr_reference)
+      pr_arg (pr_may_eval prc prref)
         (out_gen rawwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr 
-        (prc,pr_reference)) (out_gen rawwit_red_expr x)
+        (prc,prref)) (out_gen rawwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen rawwit_tactic x)
   | CastedOpenConstrArgType ->
       pr_arg prc (out_gen rawwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
   | List0ArgType _ -> 
-      hov 0 (fold_list0 (fun x a -> pr_raw_generic prc prlc prtac x ++ a) x (mt()))
+      hov 0 (fold_list0 (fun x a -> pr_raw_generic prc prlc prtac prref x ++ a) x (mt()))
   | List1ArgType _ ->
-      hov 0 (fold_list1 (fun x a -> pr_raw_generic prc prlc prtac x ++ a) x (mt()))
-  | OptArgType _ -> hov 0 (fold_opt (pr_raw_generic prc prlc prtac) (mt()) x)
+      hov 0 (fold_list1 (fun x a -> pr_raw_generic prc prlc prtac prref x ++ a) x (mt()))
+  | OptArgType _ -> hov 0 (fold_opt (pr_raw_generic prc prlc prtac prref) (mt()) x)
   | PairArgType _ ->
       hov 0
         (fold_pair
-	  (fun a b -> pr_raw_generic prc prlc prtac a ++ spc () ++ 
-            pr_raw_generic prc prlc prtac b)
+	  (fun a b -> pr_raw_generic prc prlc prtac prref a ++ spc () ++ 
+            pr_raw_generic prc prlc prtac prref b)
 	  x)
   | ExtraArgType s -> 
       let tab =
@@ -666,7 +666,7 @@ and prtac x = pr6 x
 in (prtac,pr0,pr_match_rule false pr_pat pr_tac)
 
 let pr_raw_extend prc prlc prtac = 
-  pr_extend_gen pi1 (pr_raw_generic prc prlc prtac)
+  pr_extend_gen pi1 (pr_raw_generic prc prlc prtac pr_reference)
 let pr_glob_extend prc prlc prtac =
   pr_extend_gen pi2 (pr_glob_generic prc prlc prtac)
 let pr_extend prc prlc prtac =
