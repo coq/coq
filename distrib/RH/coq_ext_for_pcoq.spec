@@ -1,14 +1,14 @@
 Name: coq_ext_for_pcoq
-Version: 8.0pl1
+Version: 8.0pl2
 Release: 1
 Summary: The Coq Extension for Pcoq
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl1/coq-8.0pl1.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0pl2/coq-8.0pl2.tar.gz
 Icon: petit-coq.gif
-Requires: coq = 8.0pl1
+Requires: coq = 8.0pl2
 BuildRoot: /var/tmp/pcoq
 
 %description
@@ -18,7 +18,7 @@ Pcoq
 %define debug_package %{nil}
 
 %prep
-%setup -n coq-8.0pl1
+%setup -n coq-8.0pl2
 
 %build
 ./configure -bindir %{_bindir} -libdir %{_libdir}/coq -mandir %{_mandir} \

@@ -23,9 +23,11 @@ A1) VÉRIFICATIONS
 
   - Changement des variables en tête du fichier "configure" et
     vérification du numéro de versions de OCaml et Camlp4 demandées
-  - Mise à jour des champs Version, Source et Require dans RH/coq.spec
+  - Mise à jour des champs Version, Source et éventuellement Require 
+    et setup dans RH/coq*.spec
   - Mise à jour des dépendances dans debian/control. Ajouter une référence
     à la version et un "* New upstream version" dans debian/changelog.
+    [Note: archive debian maintenant engendrée par Debian eux-mêmes]
   - Relecture des fichiers "README", "README.win", en particulier,
     vérification du numéro de version, des adresses internet et des
     coordonnées de Coq
@@ -64,6 +66,11 @@ A3) ESTAMPILLAGE DE L'ARCHIVE
 
   pour poser le tag V'X'-Y-Z à l'archive V'X' (on suppose que le numéro
   de version donné dans configure.distrib est V'X'.Y.Z).
+
+  Si le tag est à poser sur une branche, il ne faut pas utiliser "make tag"
+mais faire à la main
+
+  cvs rtag -r branch-tag VX-Y-Z 
 
   La commande "make tag" peut être refaite plusieurs fois auquel cas
 l'ancienne marque est supprimée avant d'être remise à la nouvelle
@@ -110,7 +117,7 @@ simplement copier le coq-X.Y.Z.tar.gz déjà fait) puis "make arch-tar-gz".
   Remarque : ce binaire est prévu pour être dé-tar-ré dans / avec une
 installation dans /usr/local/bin.
 
-A5b) Création du source rpm et du premier package rpm
+A5b) Création des sources rpm et des premiers packages rpm
 
      make rpm
 
@@ -126,15 +133,15 @@ prévus pour une installation dans /usr/bin (!).
 
 A5c) Création d'un second package rpm à partir des sources rpm
 
-  Refaire 
+  Faire 
 
-     make rpm
+     make arch-rpm
 
   sous une autre architecture pour créer un deuxième package rpm binaire.
 
   Pour l'installation sous ftp voir A7.
 
-A5d) Création d'un package coq-ide
+A5d) Création d'un package coq-ide (normalement fait par "make rpm")
 
   Faire un
 
