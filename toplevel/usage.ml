@@ -34,6 +34,8 @@ let print_usage_channel co command =
   -load-ml-source f      load ML file f 
   -load-vernac-source f  load Coq file f.v (Load f.)
   -l f                   (idem) 
+  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose f.)
+  -lv f			(idem)
   -load-vernac-object f  load Coq object file f.vo
   -require f             load Coq object file f.vo and import it (Require f.)
   -compile f             compile Coq file f.v (implies -batch)
@@ -52,7 +54,9 @@ let print_usage_channel co command =
   -boot                  boot mode (implies -q and -batch)
   -emacs                 tells Coq it is executed under Emacs
   -dump-glob f           dump globalizations in file f (to be used by coqdoc)
-  -xml                   exports XML files either to the hierarchy rooted in
+  -impredicative-set     set sort Set impredicative
+  -dont-load-proofs      don't load opaque proofs in memory
+  -xml                   export XML files either to the hierarchy rooted in
                          the directory $COQ_XML_LIBRARY_ROOT (if set) or to
                          stdout (if unset)
 "
