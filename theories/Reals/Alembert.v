@@ -15,11 +15,11 @@ Require SeqProp.
 Require PartSum.
 Require Max.
 
-(*************************************************)
-(* Différentes versions du critère de D'Alembert *)
-(*************************************************)
+(***************************************************)
+(* Various versions of the criterion of D'Alembert *)
+(***************************************************)
 
-Lemma Alembert_positive :  (An:nat->R) ((n:nat)``0<(An n)``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) R0) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
+Lemma Alembert_C1 : (An:nat->R) ((n:nat)``0<(An n)``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) R0) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intros An H H0.
 Cut (sigTT R [l:R](is_lub (EUn [N:nat](sum_f_R0 An N)) l)) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intro; Apply X.
@@ -85,7 +85,7 @@ Intro; Elim X; Intros.
 Apply Specif.existT with x; Apply tech10; [Unfold Un_growing; Intro; Rewrite tech5; Pattern 1 (sum_f_R0 An n); Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Apply H | Apply p].
 Qed.
 
-Lemma Alembert_general:(An:nat->R) ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) R0) -> (SigT R  [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
+Lemma Alembert_C2 : (An:nat->R) ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) R0) -> (SigT R  [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intros.
 Pose Vn := [i:nat]``(2*(Rabsolu (An i))+(An i))/2``.
 Pose Wn := [i:nat]``(2*(Rabsolu (An i))-(An i))/2``.
@@ -93,8 +93,8 @@ Cut (n:nat)``0<(Vn n)``.
 Intro; Cut (n:nat)``0<(Wn n)``.
 Intro; Cut (Un_cv [n:nat](Rabsolu ``(Vn (S n))/(Vn n)``) ``0``).
 Intro; Cut (Un_cv [n:nat](Rabsolu ``(Wn (S n))/(Wn n)``) ``0``).
-Intro; Assert H5 := (Alembert_positive Vn H1 H3).
-Assert H6 := (Alembert_positive Wn H2 H4).
+Intro; Assert H5 := (Alembert_C1 Vn H1 H3).
+Assert H6 := (Alembert_C1 Wn H2 H4).
 Elim H5; Intros.
 Elim H6; Intros.
 Apply Specif.existT with ``x-x0``; Unfold Un_cv; Unfold Un_cv in p; Unfold Un_cv in p0; Intros; Cut ``0<eps/2``.
@@ -227,11 +227,11 @@ Rewrite <- Rabsolu_Ropp; Apply Rle_Rabsolu.
 Rewrite double; Pattern 1 (Rabsolu (An n)); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rabsolu_pos_lt; Apply H.
 Qed.
 
-Lemma Alembert_step1 : (An:nat->R;x:R) ``x<>0`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) ``0``) -> (SigT R [l:R](Pser An x l)).
+Lemma AlembertC3_step1 : (An:nat->R;x:R) ``x<>0`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) ``0``) -> (SigT R [l:R](Pser An x l)).
 Intros; Pose Bn := [i:nat]``(An i)*(pow x i)``.
 Cut (n:nat)``(Bn n)<>0``.
 Intro; Cut (Un_cv [n:nat](Rabsolu ``(Bn (S n))/(Bn n)``) ``0``).
-Intro; Assert H4 := (Alembert_general Bn H2 H3).
+Intro; Assert H4 := (Alembert_C2 Bn H2 H3).
 Elim H4; Intros.
 Apply Specif.existT with x0; Unfold Bn in p; Apply tech12; Assumption.
 Unfold Un_cv; Intros; Unfold Un_cv in H1; Cut ``0<eps/(Rabsolu x)``.
@@ -254,7 +254,7 @@ Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rabsolu_pos
 Intro; Unfold Bn; Apply prod_neq_R0; [Apply H0 | Apply pow_nonzero; Assumption].
 Qed.
 
-Lemma Alembert_step2 : (An:nat->R;x:R) ``x==0`` -> (SigT R [l:R](Pser An x l)).
+Lemma AlembertC3_step2 : (An:nat->R;x:R) ``x==0`` -> (SigT R [l:R](Pser An x l)).
 Intros; Apply Specif.existT with (An O).
 Unfold Pser; Unfold infinit_sum; Intros; Exists O; Intros; Replace (sum_f_R0 [n0:nat]``(An n0)*(pow x n0)`` n) with (An O).
 Unfold R_dist; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
@@ -263,21 +263,20 @@ Simpl; Ring.
 Rewrite tech5; Rewrite Hrecn; [Rewrite H; Simpl; Ring | Unfold ge; Apply le_O_n].
 Qed.
 
-(* Un critère utile de convergence des séries entières *)
-Theorem Alembert : (An:nat->R;x:R) ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) ``0``) -> (SigT R [l:R](Pser An x l)).
+(* An useful criterion of convergence for power series *)
+Theorem Alembert_C3 : (An:nat->R;x:R) ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) ``0``) -> (SigT R [l:R](Pser An x l)).
 Intros; Case (total_order_T x R0); Intro.
 Elim s; Intro.
 Cut ``x<>0``.
-Intro; Apply Alembert_step1; Assumption.
+Intro; Apply AlembertC3_step1; Assumption.
 Red; Intro; Rewrite H1 in a; Elim (Rlt_antirefl ? a).
-Apply Alembert_step2; Assumption.
+Apply AlembertC3_step2; Assumption.
 Cut ``x<>0``.
-Intro; Apply Alembert_step1; Assumption.
+Intro; Apply AlembertC3_step1; Assumption.
 Red; Intro; Rewrite H1 in r; Elim (Rlt_antirefl ? r).
 Qed.
 
-(* Le "vrai" critère de D'Alembert pour les séries à TG positif *)
-Lemma Alembert_strong_positive : (An:nat->R;k:R) ``0<=k<1`` -> ((n:nat)``0<(An n)``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
+Lemma Alembert_C4 : (An:nat->R;k:R) ``0<=k<1`` -> ((n:nat)``0<(An n)``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intros An k Hyp H H0.
 Cut (sigTT R [l:R](is_lub (EUn [N:nat](sum_f_R0 An N)) l)) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intro; Apply X.
@@ -371,7 +370,7 @@ Intro; Elim X; Intros.
 Apply Specif.existT with x; Apply tech10; [Unfold Un_growing; Intro; Rewrite tech5; Pattern 1 (sum_f_R0 An n); Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Apply H | Apply p].
 Qed.
 
-Lemma Alembert_strong_general : (An:nat->R;k:R) ``0<=k<1`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
+Lemma Alembert_C5 : (An:nat->R;k:R) ``0<=k<1`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intros.
 Cut (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
 Intro Hyp0; Apply Hyp0.
@@ -380,7 +379,7 @@ Apply cauchy_abs.
 Apply cv_cauchy_1.
 Cut (SigT R [l:R](Un_cv [N:nat](sum_f_R0 [i:nat](Rabsolu (An i)) N) l)) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 [i:nat](Rabsolu (An i)) N) l)).
 Intro Hyp; Apply Hyp.
-Apply (Alembert_strong_positive [i:nat](Rabsolu (An i)) k).
+Apply (Alembert_C4 [i:nat](Rabsolu (An i)) k).
 Assumption.
 Intro; Apply Rabsolu_pos_lt; Apply H0.
 Unfold Un_cv.
@@ -404,9 +403,9 @@ Apply Specif.existT with x.
 Assumption.
 Qed.
 
-(* Convergence de la SE dans le disque D(O,1/k) *)
-(* le cas k=0 est decrit par le theoreme "Alembert" *)
-Lemma Alembert_strong : (An:nat->R;x,k:R) ``0<k`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> ``(Rabsolu x)</k`` -> (SigT R [l:R](Pser An x l)).
+(* Convergence of power series in D(O,1/k) *)
+(*     k=0 is described in Alembert_C3     *)
+Lemma Alembert_C6 : (An:nat->R;x,k:R) ``0<k`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> ``(Rabsolu x)</k`` -> (SigT R [l:R](Pser An x l)).
 Intros.
 Cut (SigT R [l:R](Un_cv [N:nat](sum_f_R0 [i:nat]``(An i)*(pow x i)`` N) l)).
 Intro.
@@ -415,7 +414,7 @@ Apply Specif.existT with x0.
 Apply tech12; Assumption.
 Case (total_order_T x R0); Intro.
 Elim s; Intro.
-EApply Alembert_strong_general with ``k*(Rabsolu x)``.
+EApply Alembert_C5 with ``k*(Rabsolu x)``.
 Split.
 Unfold Rdiv; Apply Rmult_le_pos.
 Left; Assumption.
@@ -487,7 +486,7 @@ Rewrite tech5.
 Rewrite <- Hrecn.
 Rewrite b; Simpl; Ring.
 Unfold ge; Apply le_O_n.
-EApply Alembert_strong_general with ``k*(Rabsolu x)``.
+EApply Alembert_C5 with ``k*(Rabsolu x)``.
 Split.
 Unfold Rdiv; Apply Rmult_le_pos.
 Left; Assumption.

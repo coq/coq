@@ -26,7 +26,7 @@ Apply INR_fact_neq_0.
 Qed.
 
 Lemma exist_exp : (x:R)(SigT R [l:R](exp_in x l)).
-Intro; Generalize (Alembert [n:nat](Rinv (INR (fact n))) x exp_cof_no_R0 Alembert_exp).
+Intro; Generalize (Alembert_C3 [n:nat](Rinv (INR (fact n))) x exp_cof_no_R0 Alembert_exp).
 Unfold Pser exp_in.
 Trivial.
 Defined.
@@ -203,7 +203,7 @@ Definition cos_in:R->R->Prop := [x,l:R](infinit_sum [i:nat]``(cos_n i)*(pow x i)
 
 (**********)
 Lemma exist_cos : (x:R)(SigT R [l:R](cos_in x l)).
-Intro; Generalize (Alembert cos_n x cosn_no_R0 Alembert_cos).
+Intro; Generalize (Alembert_C3 cos_n x cosn_no_R0 Alembert_cos).
 Unfold Pser cos_in; Trivial.
 Qed.
 
@@ -301,7 +301,7 @@ Definition sin_in:R->R->Prop := [x,l:R](infinit_sum [i:nat]``(sin_n i)*(pow x i)
 
 (**********)
 Lemma exist_sin : (x:R)(SigT R [l:R](sin_in x l)).
-Intro; Generalize (Alembert sin_n x sin_no_R0 Alembert_sin).
+Intro; Generalize (Alembert_C3 sin_n x sin_no_R0 Alembert_sin).
 Unfold Pser sin_n; Trivial.
 Qed.
 

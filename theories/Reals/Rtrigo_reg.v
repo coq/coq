@@ -36,7 +36,7 @@ Rewrite Rabsolu_Rabsolu.
 Unfold Boule in H0; Rewrite minus_R0 in H0.
 Left; Apply H0.
 Apply Rlt_Rinv; Apply INR_fact_lt_0.
-Apply Alembert_general.
+Apply Alembert_C2.
 Intro; Apply Rabsolu_no_R0.
 Apply prod_neq_R0.
 Apply Rinv_neq_R0.
@@ -169,7 +169,7 @@ Rewrite <- Pow_Rabsolu; Apply pow_maj_Rabs.
 Rewrite Rabsolu_Rabsolu; Unfold Boule in H0; Rewrite minus_R0 in H0; Left; Apply H0.
 Apply Rlt_Rinv; Apply INR_fact_lt_0.
 Cut ``r<>0``.
-Intro; Apply Alembert_general.
+Intro; Apply Alembert_C2.
 Intro; Apply Rabsolu_no_R0.
 Apply prod_neq_R0.
 Apply Rinv_neq_R0; Apply INR_fact_neq_0.
