@@ -251,7 +251,9 @@ case $CAMLC in
 		*/ocamlc|*/ocamlc.opt) true;;
 		*/) CAMLC=${CAMLC}ocamlc;;
 		*) CAMLC=${CAMLC}/ocamlc;;
-	esac;;
+	esac
+	bytecamlc=$CAMLC
+	nativecamlc=`dirname $CAMLC`/$nativecamlc;;
 esac
 
 if test ! -f $CAMLC ; then
