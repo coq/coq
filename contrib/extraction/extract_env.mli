@@ -18,7 +18,3 @@ val extraction_rec : reference list -> unit
 val extraction_file : string -> reference list -> unit
 val extraction_module : reference -> unit
 val extraction_library : bool -> identifier -> unit
-
-
-
-

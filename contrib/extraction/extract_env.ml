@@ -229,7 +229,8 @@ let mono_environment refs =
     (List.rev l)
 
 let extraction qid = 
-  if is_something_opened () then error_section (); 
+  check_inside_section (); 
+  check_inside_module ();
   let r = Nametab.global qid in 
   if is_custom r then
     msgnl (str "User defined extraction:" ++ spc () ++ 
@@ -248,9 +249,10 @@ let extraction qid =
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
     to get the saturated environment to extract. *)
 
-let mono_extraction (f,m) vl = 
-  if is_something_opened () then error_section (); 
-  let refs = List.map Nametab.global vl in
+let mono_extraction (f,m) qualids = 
+  check_inside_section (); 
+  check_inside_module ();
+  let refs = List.map Nametab.global qualids in
   let prm = {modular=false; mod_name = m; to_appear= refs} in
   let struc = optimize_struct prm None (mono_environment refs) in 
   print_structure_to_file f prm struc; 
@@ -282,7 +284,8 @@ let extraction_file f vl =
 (*s Extraction of a module at the toplevel. *)
 
 let extraction_module m = 
-  if is_something_opened () then error_section (); 
+  check_inside_section (); 
+  check_inside_module ();
   match lang () with 
     | Toplevel -> error_toplevel ()
     | Scheme -> error_scheme ()
@@ -323,7 +326,8 @@ let dir_module_of_id m =
   try Nametab.full_name_module q with Not_found -> error_unknown_module q
 
 let extraction_library is_rec m =
-  if is_something_opened () then error_section (); 
+  check_inside_section (); 
+  check_inside_module ();  
   match lang () with 
     | Toplevel -> error_toplevel ()
     | Scheme -> error_scheme ()
@@ -354,7 +358,6 @@ let extraction_library is_rec m =
 	  | _ -> assert false
 	in print struc; 
 	reset_tables ()
-
 
 
 

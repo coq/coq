@@ -30,10 +30,6 @@ let kn_of_r r = match r with
 
 let current_toplevel () = fst (Lib.current_prefix ())
 
-let is_something_opened () = 
-  try ignore (Lib.what_is_opened ()); true
-  with Not_found -> false
-
 let rec base_mp = function 
   | MPdot (mp,l) -> base_mp mp 
   | mp -> mp 
@@ -147,10 +143,20 @@ let warning_axiom r =
      pr_global r ++ str "." ++ spc() ++ 
      str "Having false logical axiom in the environment when extracting" ++ 
      spc () ++ str "may lead to incorrect or non-terminating ML terms.")
-    
-let error_section () = 
-  err (str "You can't do that within a module or a section." ++ fnl () ++
-       str "Close it and try again.")
+
+let check_inside_module () = 
+  try 
+    ignore (Lib.what_is_opened ()); 
+    Options.if_verbose warning
+      ("Extraction inside an opened module is experimental.\n"^
+       "In case of problem, close it first.\n"); 
+    Pp.flush_all ()
+  with Not_found -> ()
+
+let check_inside_section () = 
+  if Lib.sections_are_opened () then 
+    err (str "You can't do that within a section." ++ fnl () ++
+	 str "Close it and try again.")
 
 let error_constant r = 
   err (Printer.pr_global r ++ str " is not a constant.") 
@@ -236,7 +242,7 @@ let _ = declare_summary "Extraction Lang"
 	    init_function = (fun () -> lang_ref := Ocaml);
 	    survive_module = false;
 	    survive_section = true }  
-
+	  
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
 
@@ -254,8 +260,8 @@ let add_inline_entries b l =
   let f b = if b then Refset.add else Refset.remove in 
   let i,k = !inline_table in 
   inline_table := 
-     (List.fold_right (f b) l i), 
-     (List.fold_right (f (not b)) l k)
+  (List.fold_right (f b) l i), 
+  (List.fold_right (f (not b)) l k)
 
 (* Registration of operations for rollback. *)
 
@@ -264,7 +270,9 @@ let (inline_extraction,_) =
     {(default_object "Extraction Inline") with 
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
-       export_function = (fun x -> Some x)}
+       export_function = (fun x -> Some x); 
+       classify_function = (fun (_,o) -> Substitute o); 
+       subst_function = (fun (_,s,(b,l)) -> (b,(List.map (subst_global s) l))) }
 
 let _ = declare_summary "Extraction Inline"
 	  { freeze_function = (fun () -> !inline_table);
@@ -276,7 +284,8 @@ let _ = declare_summary "Extraction Inline"
 (* Grammar entries. *)
 
 let extraction_inline b l =
-  if is_something_opened () then error_section (); 
+  check_inside_section (); 
+  check_inside_module ();
   let refs = List.map Nametab.global l in 
   List.iter 
     (fun r -> match r with 
@@ -348,7 +357,8 @@ let _ = declare_summary "ML extractions"
 (* Grammar entries. *)
 
 let extract_constant_inline inline r ids s =
-  if is_something_opened () then error_section (); 
+  check_inside_section ();
+  check_inside_module ();
   let g = Nametab.global r in 
   match g with 
     | ConstRef kn -> 
@@ -366,7 +376,8 @@ let extract_constant_inline inline r ids s =
 
 
 let extract_inductive r (s,l) =
-  if is_something_opened () then error_section (); 
+  check_inside_section ();
+  check_inside_module ();
   let g = Nametab.global r in 
   match g with
     | IndRef ((kn,i) as ip) ->

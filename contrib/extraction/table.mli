@@ -19,7 +19,6 @@ val id_of_global : global_reference -> identifier
 val error_axiom_scheme : global_reference -> int -> 'a
 val error_axiom : global_reference -> 'a
 val warning_axiom : global_reference -> unit
-val error_section : unit -> 'a
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
@@ -30,12 +29,14 @@ val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
 val error_unqualified_name : string -> string -> 'a 
 
+val check_inside_module : unit -> unit
+val check_inside_section : unit -> unit
+
 (*s utilities concerning [module_path]. *)
 
 val kn_of_r : global_reference -> kernel_name
 
 val current_toplevel : unit -> module_path
-val is_something_opened : unit -> bool
 val base_mp : module_path -> module_path
 val is_modfile : module_path -> bool 
 val is_toplevel : module_path -> bool
