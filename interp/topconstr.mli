@@ -107,9 +107,16 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_expr = identifier * int * int option * constr_expr * constr_expr
+and fixpoint_expr =
+    identifier * int * local_binder list * constr_expr * constr_expr
 
-and cofixpoint_expr = identifier * constr_expr * constr_expr
+and cofixpoint_expr =
+    identifier * local_binder list * constr_expr * constr_expr
+
+and local_binder =
+  | LocalRawDef of name located * constr_expr
+  | LocalRawAssum of name located list * constr_expr
+
 
 val constr_loc : constr_expr -> loc
 
@@ -131,20 +138,20 @@ val mkLambdaC : name located list * constr_expr * constr_expr -> constr_expr
 val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
 val mkProdC : name located list * constr_expr * constr_expr -> constr_expr
 
+(* For binders parsing *)
+
+(* Includes let binders *)
+val local_binders_length : local_binder list -> int
+
+(* Does not take let binders into account *)
+val names_of_local_assums : local_binder list -> name located list
+
 (* Used in correctness and interface; absence of var capture not guaranteed *)
 (* in pattern-matching clauses and in binders of the form [x,y:T(x)] *)
 
 val map_constr_expr_with_binders :
   ('a -> constr_expr -> constr_expr) ->
       (identifier -> 'a -> 'a) -> 'a -> constr_expr -> constr_expr
-
-(* For binders parsing *)
-
-type local_binder =
-  | LocalRawDef of name located * constr_expr
-  | LocalRawAssum of name located list * constr_expr
-
-val local_binders_length : local_binder list -> int
 
 (* Concrete syntax for modules and modules types *)
 

@@ -242,12 +242,13 @@ let coerce_to_inductive = function
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
 let add_primitive_tactic s tac =
-  let id = id_of_string s in
-  atomic_mactab := Idmap.add id tac !atomic_mactab
+  (if not !Options.v7 then
+    let id = id_of_string s in
+    atomic_mactab := Idmap.add id tac !atomic_mactab)
 
 let _ =
   if not !Options.v7 then
-    let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
+    (let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
     List.iter
       (fun (s,t) -> add_primitive_tactic s (TacAtom((0,0),t)))
       [ "red", TacReduce(Red false,nocl);
@@ -266,8 +267,14 @@ let _ =
         "constructor", TacAnyConstructor None;
         "reflexivity", TacReflexivity;
         "symmetry", TacSymmetry nocl
-      ]
-
+      ];
+    List.iter
+      (fun (s,t) -> add_primitive_tactic s t)
+      [ "idtac",TacId "";
+        "fail", TacFail(ArgArg 0,"");
+        "fresh", TacArg(TacFreshId None)
+      ])
+ 
 let lookup_atomic id = Idmap.find id !atomic_mactab
 let is_atomic id = Idmap.mem id !atomic_mactab
 let is_atomic_kn kn =

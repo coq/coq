@@ -358,45 +358,14 @@ and detype_fix tenv avoid env (vn,_ as nvn) (names,tys,bodies) =
 	 let id = next_name_away na avoid in 
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
- (* Be sure that bodies and types share the same names *)
-  let rec share_names n l avoid env c t =
-    if n = 0 then
-      let c = detype tenv avoid env c in
-      let t = detype tenv avoid env t in
-      List.fold_left (fun (c,typ) (na,body,t) -> match body with
-	| None -> (RLambda (dummy_loc,na,t,c),RProd (dummy_loc,na,t,typ))
-	| Some b -> (RLetIn (dummy_loc,na,b,c),RLetIn (dummy_loc,na,b,typ)))
-	(c,t) l
-    else match kind_of_term c, kind_of_term t with
-      | Lambda (na,t,c), Prod (_,t',c') ->
-          let t = detype tenv avoid env t in
-	  let id = next_name_away na avoid in 
-          let avoid = id::avoid and env = add_name (Name id) env in
-          share_names (n-1) ((Name id,None,t)::l) avoid env c c'
-      (* May occur for fix built interactively *)
-      | LetIn (na,b,t',c), _ ->
-          let t' = detype tenv avoid env t' in
-          let b = detype tenv avoid env b in
-	  let id = next_name_away na avoid in 
-          let avoid = id::avoid and env = add_name (Name id) env in
-          share_names n ((Name id,Some b,t')::l) avoid env c t
-      (* Only if built with the f/n notation or w/o let-expansion in types *)
-      | _, LetIn (_,b,_,t) ->
-	  share_names n l avoid env c (subst1 b t)
-      (* If it is an open proof: we cheat and eta-expand *)
-      | _, Prod (na',t',c') ->
-          let t' = detype tenv avoid env t' in
-          let avoid = name_cons na' avoid and env = add_name na' env in
-          let appc = mkApp (lift 1 c,[|mkRel 1|]) in
-          share_names (n-1) ((na',None,t')::l) avoid env appc c'
-      (* If built with the f/n notation: we renounce to share names *)
-      | _ -> share_names 0 l avoid env c t in
   let n = Array.length tys in
   let v = array_map3
-    (fun c t i -> share_names (i+1) [] def_avoid def_env c (lift n t))
+    (fun c t i -> share_names tenv (i+1) [] def_avoid def_env c (lift n t))
     bodies tys vn in
   RRec(dummy_loc,RFix nvn,Array.of_list (List.rev lfi),
-       Array.map snd v, Array.map fst v)
+       Array.map (fun (bl,_,_) -> bl) v,
+       Array.map (fun (_,_,ty) -> ty) v,
+       Array.map (fun (_,bd,_) -> bd) v)
 
 and detype_cofix tenv avoid env n (names,tys,bodies) =
   let def_avoid, def_env, lfi =
@@ -405,9 +374,53 @@ and detype_cofix tenv avoid env n (names,tys,bodies) =
 	 let id = next_name_away na avoid in 
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
+  let n = Array.length tys in
+  let v = array_map2
+    (fun c t -> share_names tenv 0 [] def_avoid def_env c (lift n t))
+    bodies tys in
   RRec(dummy_loc,RCoFix n,Array.of_list (List.rev lfi),
-       Array.map (detype tenv avoid env) tys,
-       Array.map (detype tenv def_avoid def_env) bodies)
+       Array.map (fun (bl,_,_) -> bl) v,
+       Array.map (fun (_,_,ty) -> ty) v,
+       Array.map (fun (_,bd,_) -> bd) v)
+
+and share_names tenv n l avoid env c t =
+  if !Options.v7 && n=0 then
+    let c = detype tenv avoid env c in
+    let t = detype tenv avoid env t in
+    (l,c,t)
+  else
+  match kind_of_term c, kind_of_term t with
+    | Lambda (na,t,c), Prod (na',t',c') ->
+        let na = match (na,na') with
+            Name _, _ -> na
+          | _, Name _ -> na'
+          | _ -> na in 
+        let t = detype tenv avoid env t in
+	let id = next_name_away na avoid in 
+        let avoid = id::avoid and env = add_name (Name id) env in
+        share_names tenv (n-1) ((Name id,None,t)::l) avoid env c c'
+    (* May occur for fix built interactively *)
+    | LetIn (na,b,t',c), _ ->
+        let t' = detype tenv avoid env t' in
+        let b = detype tenv avoid env b in
+	let id = next_name_away na avoid in 
+        let avoid = id::avoid and env = add_name (Name id) env in
+        share_names tenv n ((Name id,Some b,t')::l) avoid env c t
+    (* Only if built with the f/n notation or w/o let-expansion in types *)
+    | _, LetIn (_,b,_,t) ->
+	share_names tenv n l avoid env c (subst1 b t)
+    (* If it is an open proof: we cheat and eta-expand *)
+    | _, Prod (na',t',c') ->
+        let t' = detype tenv avoid env t' in
+        let avoid = name_cons na' avoid and env = add_name na' env in
+        let appc = mkApp (lift 1 c,[|mkRel 1|]) in
+        share_names tenv (n-1) ((na',None,t')::l) avoid env appc c'
+    (* If built with the f/n notation: we renounce to share names *)
+    | _ ->
+        if n>0 then warning "Detyping.detype: cannot factorize fix enough";
+        let c = detype tenv avoid env c in
+        let t = detype tenv avoid env t in
+        (l,c,t)
 
 and detype_eqn tenv avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =

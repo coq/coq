@@ -70,18 +70,19 @@ type rawconstr =
   | RCases of loc * (rawconstr option * rawconstr option ref) *
       (rawconstr * (name * (loc * inductive * name list) option) ref) list * 
       (loc * identifier list * cases_pattern list * rawconstr) list
-      (* Rem: "ref" used for the v7->v8 translation only *)
   | ROrderedCase of loc * case_style * rawconstr option * rawconstr * 
       rawconstr array * rawconstr option ref
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
-  | RRec of loc * fix_kind * identifier array * 
+  | RRec of loc * fix_kind * identifier array * rawdecl list array *
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * hole_kind)
   | RCast of loc * rawconstr * rawconstr
   | RDynamic of loc * Dyn.t
+
+and rawdecl = name * rawconstr option * rawconstr
 
 let cases_predicate_names tml =
   List.flatten (List.map (function
@@ -97,6 +98,7 @@ let cases_predicate_names tml =
 
    - boolean in POldCase means it is recursive
 i*)
+let map_rawdecl f (na,obd,ty) = (na,option_app f obd,f ty)
 
 let map_rawconstr f = function
   | RVar (loc,id) -> RVar (loc,id)
@@ -114,9 +116,12 @@ let map_rawconstr f = function
       RLetTuple (loc,nal,(na,option_app f po),f b,f c)
   | RIf (loc,c,(na,po),b1,b2) ->
       RIf (loc,f c,(na,option_app f po),f b1,f b2)
-  | RRec (loc,fk,idl,tyl,bv) -> RRec (loc,fk,idl,Array.map f tyl,Array.map f bv)
+  | RRec (loc,fk,idl,bl,tyl,bv) ->
+      RRec (loc,fk,idl,Array.map (List.map (map_rawdecl f)) bl,
+            Array.map f tyl,Array.map f bv)
   | RCast (loc,c,t) -> RCast (loc,f c,f t)
   | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
+  
 
 (*
 let name_app f e = function
@@ -176,9 +181,18 @@ let occur_rawconstr id =
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
     | RIf (loc,c,rtntyp,b1,b2) -> 
 	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
-    | RRec (loc,fk,idl,tyl,bv) ->
-	(array_exists occur tyl) or
-	(not (array_exists (fun id2 -> id=id2) idl) & array_exists occur bv)
+    | RRec (loc,fk,idl,bl,tyl,bv) ->
+        not (array_for_all4 (fun fid bl ty bd ->
+          let rec occur_fix = function
+              [] -> not (occur ty) && (fid=id or not(occur bd))
+            | (na,bbd,bty)::bl ->
+                not (occur bty) &&
+                (match bbd with
+                    Some bd -> not (occur bd)
+                  | _ -> true) &&
+                (na=Name id or not(occur_fix bl)) in
+          occur_fix bl)
+          idl bl tyl bv)
     | RCast (loc,c,t) -> (occur c) or (occur t)
     | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> false
 
@@ -275,11 +289,17 @@ let rec subst_raw subst raw =
 	if c' == c & po' == po && b1' == b1 && b2' == b2 then raw else
           RIf (loc,c',(na,po'),b1',b2')
 
-  | RRec (loc,fix,ida,ra1,ra2) -> 
+  | RRec (loc,fix,ida,bl,ra1,ra2) -> 
       let ra1' = array_smartmap (subst_raw subst) ra1
       and ra2' = array_smartmap (subst_raw subst) ra2 in
-	if ra1' == ra1 && ra2' == ra2 then raw else
-	  RRec (loc,fix,ida,ra1',ra2')
+      let bl' = array_smartmap
+        (list_smartmap (fun (na,obd,ty as dcl) ->
+          let ty' = subst_raw subst ty in
+          let obd' = option_smartmap (subst_raw subst) obd in
+          if ty'==ty & obd'==obd then dcl else (na,obd',ty')))
+        bl in
+	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
+	  RRec (loc,fix,ida,bl',ra1',ra2')
 
   | RSort _ -> raw
 
@@ -310,7 +330,7 @@ let loc_of_rawconstr = function
   | ROrderedCase (loc,_,_,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc
   | RIf (loc,_,_,_,_) -> loc
-  | RRec (loc,_,_,_,_) -> loc
+  | RRec (loc,_,_,_,_,_) -> loc
   | RSort (loc,_) -> loc
   | RHole (loc,_) -> loc
   | RCast (loc,_,_) -> loc

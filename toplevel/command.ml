@@ -456,7 +456,8 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
   (* Declare the notations for the recursive types pushed in local context*)
   let (rec_sign,arityl) = 
     List.fold_left 
-      (fun (env,arl) ((recname,_,_,arityc,_),_) -> 
+      (fun (env,arl) ((recname,_,bl,arityc,_),_) -> 
+        let arityc = prod_rawconstr arityc bl in
         let arity = interp_type sigma env0 arityc in
         (Environ.push_named (recname,None,arity) env, (arity::arl)))
       (env0,[]) lnameargsardef in
@@ -479,7 +480,8 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
 	      (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
 	    ()) lrecnames arityl;
 	List.map2
-	  (fun ((_,_,_,_,def),_) arity ->
+	  (fun ((_,_,bl,_,def),_) arity ->
+            let def = abstract_rawconstr def bl in
             interp_casted_constr sigma rec_sign def arity)
           lnameargsardef arityl
       with e ->
@@ -521,14 +523,15 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
     Metasyntax.add_notation_interpretation df [] c scope) notations
 
 let build_corecursive lnameardef = 
-  let lrecnames = List.map (fun (f,_,_) -> f) lnameardef
+  let lrecnames = List.map (fun (f,_,_,_) -> f) lnameardef
   and sigma = Evd.empty
   and env0 = Global.env() in
   let fs = States.freeze() in
   let (rec_sign,arityl) = 
     try 
       List.fold_left 
-        (fun (env,arl) (recname,arityc,_) -> 
+        (fun (env,arl) (recname,bl,arityc,_) -> 
+           let arityc = prod_rawconstr arityc bl in
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
            let _ = declare_variable recname
@@ -540,8 +543,10 @@ let build_corecursive lnameardef =
   let arityl = List.rev arityl in
   let recdef =
     try 
-      List.map (fun (_,arityc,def) ->
-		  let arity = interp_constr sigma rec_sign arityc in
+      List.map (fun (_,bl,arityc,def) ->
+        let arityc = prod_rawconstr arityc bl in
+        let def = abstract_rawconstr def bl in
+	let arity = interp_constr sigma rec_sign arityc in
                   interp_casted_constr sigma rec_sign def arity)
         lnameardef
     with e -> 

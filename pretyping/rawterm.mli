@@ -73,12 +73,14 @@ type rawconstr =
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
-  | RRec of loc * fix_kind * identifier array * 
+  | RRec of loc * fix_kind * identifier array * rawdecl list array *
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
   | RHole of (loc * hole_kind)
   | RCast of loc * rawconstr * rawconstr
   | RDynamic of loc * Dyn.t
+
+and rawdecl = name * rawconstr option * rawconstr
 
 val cases_predicate_names : 
   (rawconstr * (name * (loc * inductive * name list) option) ref) list ->

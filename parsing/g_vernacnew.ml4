@@ -204,8 +204,7 @@ GEXTEND Gram
     [ [ id = base_ident; bl = LIST1 binder_let;
         annot = OPT rec_annotation; type_ = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
-          let names = List.map snd (G_constrnew.decls_of_binders bl) in
-	  let nargs = List.length names in
+          let names = List.map snd (names_of_local_assums bl) in
           let ni =
             match annot with
                 Some id ->
@@ -219,17 +218,12 @@ GEXTEND Gram
                       (loc,"Fixpoint",
                        Pp.str "the recursive argument needs to be specified");
                   0 in
-          let loc0 = G_constrnew.loc_of_binder_let bl in
-          let loc1 = join_loc loc0 (constr_loc type_) in
-          let loc2 = join_loc loc0 (constr_loc def) in
-	  ((id, ni, Some nargs, G_constrnew.mkCProdN loc1 bl type_,
-	    G_constrnew.mkCLambdaN loc2 bl def),ntn) ] ]
+	  ((id, ni, bl, type_, def),ntn) ] ]
   ;
   corec_definition:
     [ [ id = base_ident; bl = LIST0 binder_let; c = type_cstr; ":=";
         def = lconstr ->
-          (id,G_constrnew.mkCProdN loc bl c ,
-	   G_constrnew.mkCLambdaN loc bl def) ] ]
+          (id,bl,c ,def) ] ]
   ;
   rec_annotation:
     [ [ "{"; IDENT "struct"; id=IDENT; "}" -> id_of_string id ] ]

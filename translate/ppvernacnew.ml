@@ -259,7 +259,8 @@ let pr_module_vardecls pr_c (idl,mty) =
       [make_mbid lib_dir (string_of_id id),
        Modintern.interp_modtype (Global.env()) mty]) idl;
   (* Builds the stream *)
-  spc() ++ str"(" ++ prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")"
+  spc() ++
+  hov 1 (str"(" ++ prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")
 
 let pr_module_binders l pr_c = 
   (* Effet de bord complexe pour garantir la declaration des noms des
@@ -275,7 +276,8 @@ let rec pr_module_expr = function
   | CMEapply (me1,(CMEident _ as me2)) ->
       pr_module_expr me1 ++ spc() ++ pr_module_expr me2
   | CMEapply (me1,me2) ->
-      pr_module_expr me1 ++ spc() ++ str"(" ++ pr_module_expr me2 ++ str")"
+      pr_module_expr me1 ++ spc() ++
+      hov 1 (str"(" ++ pr_module_expr me2 ++ str")")
 
 (*
 let pr_opt_casted_constr pr_c = function
@@ -285,7 +287,7 @@ let pr_opt_casted_constr pr_c = function
 
 let pr_type_option pr_c = function
   | CHole loc -> mt()
-  | _ as c -> str":" ++ pr_c c
+  | _ as c -> brk(0,2) ++ str":" ++ pr_c c
 
 let without_translation f x =
   let old = Options.do_translate () in
@@ -299,20 +301,6 @@ let pr_decl_notation prc =
     str "where " ++ qsnew ntn ++ str " := " ++ without_translation prc c ++
     pr_opt (fun sc -> str ": " ++ str sc) scopt)
 
-let rec abstract_rawconstr c = function
-  | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_rawconstr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
-      (abstract_rawconstr c bl)
-      
-let rec prod_rawconstr c = function
-  | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_rawconstr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
-      (prod_rawconstr c bl)
-
 let pr_vbinders l =
   hv 0 (pr_binders l)
 
@@ -320,9 +308,7 @@ let pr_binders_arg =
   pr_ne_sep spc pr_binders
 
 let pr_and_type_binders_arg bl =
-  let n = local_binders_length bl in
-  let c = abstract_rawconstr (CHole dummy_loc) bl in
-  let bl, _ = pr_lconstr_env_n (Global.env()) n false c in
+  let bl, _ = pr_lconstr_env_n (Global.env()) false bl (CHole dummy_loc) in
   pr_binders_arg bl
 
 let pr_onescheme (id,dep,ind,s) =
@@ -369,7 +355,8 @@ let pr_ne_params_list pr_c l =
   match factorize l with
     | [p] -> pr_params pr_c p
     | l ->
-	prlist_with_sep spc (fun p -> str "(" ++ pr_params pr_c p ++ str ")") l
+	prlist_with_sep spc
+          (fun p -> hov 1 (str "(" ++ pr_params pr_c p ++ str ")")) l
 (*
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
@@ -403,7 +390,7 @@ let pr_syntax_modifier = function
 let pr_syntax_modifiers = function
   | [] -> mt()
   | l -> spc() ++ 
-      hov 0 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
+      hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
 let pr_grammar_tactic_rule (name,(s,pil),t) =
 (*
@@ -619,14 +606,10 @@ let rec pr_vernac = function
                   (bl2,CCast (dummy_loc,body,ty'),
                    spc() ++ str":" ++
                    pr_sep_com spc
-                     (pr_type_env_n (Global.env())
-                       (local_binders_length bl + local_binders_length bl2))
-                     (prod_rawconstr ty bl)) in
-	    let n = local_binders_length bl + local_binders_length bl2 in
+                     (pr_type_env_n (Global.env()) (bl@bl2)) ty') in
 	    let iscast = d <> None in
             let bindings,ppred =
-	      pr_lconstr_env_n (Global.env()) n iscast
-		(abstract_rawconstr (abstract_rawconstr body bl2) bl) in
+	      pr_lconstr_env_n (Global.env()) iscast (bl@bl2) body in
             (pr_binders_arg bindings,ty,Some (pr_reduce red ++ ppred))
         | ProveBody (bl,t) ->
             (pr_and_type_binders_arg bl, str" :" ++ pr_spc_type t, None)
@@ -720,7 +703,7 @@ let rec pr_vernac = function
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_lident id ++ str" " ++
                (if coe then str":>" else str":") ++
-                pr_sep_com spc (pr_type_env_n ind_env_params 0) c) in
+                pr_sep_com spc (pr_type_env_n ind_env_params []) c) in
       let pr_constructor_list l = match l with
         | [] -> mt()
         | _ ->
@@ -754,8 +737,10 @@ let rec pr_vernac = function
       let notations = 
 	List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) recs [] in
       let impl = List.map
-        (fun ((recname,_, _, arityc,_),_) -> 
-          let arity = Constrintern.interp_type sigma env0 arityc in
+        (fun ((recname,_, bl, arityc,_),_) -> 
+          let arity =
+            Constrintern.interp_type sigma env0
+              (prod_constr_expr arityc bl) in
 	  let impl_in =
 	    if Impargs.is_implicit_args()
 	    then Impargs.compute_implicits false env0 arity
@@ -776,8 +761,10 @@ let rec pr_vernac = function
 
       let rec_sign = 
         List.fold_left 
-          (fun env ((recname,_,_,arityc,_),_) -> 
-            let arity = Constrintern.interp_type sigma env0 arityc in
+          (fun env ((recname,_,bl,arityc,_),_) -> 
+            let arity =
+              Constrintern.interp_type sigma env0
+                (prod_constr_expr arityc bl) in
             Environ.push_named (recname,None,arity) env)
           (Global.env()) recs in
       
@@ -785,21 +772,19 @@ let rec pr_vernac = function
         | LocalRawAssum (nal,_) -> nal
         | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
-        | (id,n,_,type_0,def0),ntn ->
-            let (bl,def,type_) = extract_def_binders def0 type_0 in
+        | (id,n,bl,type_,def),ntn ->
             let ids = List.flatten (List.map name_of_binder bl) in
-            let (bl,def,type_) =
-              if List.length ids <= n then split_fix (n+1) def0 type_0
-              else (bl,def,type_) in
-            let ids = List.flatten (List.map name_of_binder bl) in
+            let name =
+              try snd (List.nth ids n)
+              with Failure _ ->
+                warn (str "non-printable fixpoint \""++pr_id id++str"\"");
+                Anonymous in
             let annot =
               if List.length ids > 1 then 
-                spc() ++ str "{struct " ++
-                pr_name (snd (List.nth ids n)) ++ str"}"
+                spc() ++ str "{struct " ++ pr_name name ++ str"}"
               else mt() in
-	    let bl, ppc = 
-              pr_lconstr_env_n rec_sign (local_binders_length bl)
-		true (abstract_rawconstr (CCast (dummy_loc,def,type_)) bl) in
+	    let bl,ppc =
+              pr_lconstr_env_n rec_sign true bl (CCast(dummy_loc,def,type_)) in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
             ++ str" :=" ++ brk(1,1) ++ ppc ++ 
@@ -809,8 +794,7 @@ let rec pr_vernac = function
         prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint corecs ->
-      let pr_onecorec (id,c,def) =
-        let (bl,def,c) = extract_def_binders def c in
+      let pr_onecorec (id,bl,c,def) =
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_type c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def in

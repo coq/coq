@@ -293,22 +293,12 @@ let rec decompose_last = function
   | [a] -> [], a
   | a::tl -> let rl, b = decompose_last tl in (a::rl), b;;
 
-(* The boolean argument should be false if a name is not really necessary, 
-   for instance if there is only one argument.  On the other hand, all
-   recursive calls in this function should have the boolean argument to true,
-   because recursive calls mean that there is more than one argument. *)
-
-let rec make_fix_struct b = function
-    0, CProdN(_, [(na::tl,_)], CProdN(_, _,_)) -> xlate_id_opt na
-  | 0, CProdN(_, [([na],_)], _) ->
-      if b then xlate_id_opt na else ctv_ID_OPT_NONE
-  | n, CProdN(_, [(l,_)],body) -> 
-      let len = List.length l in
-	if len <= n then
-	  make_fix_struct true (n-len, body)
-	else
-	  xlate_id_opt(List.nth l n)
-  | _, _ -> xlate_error "unexpected result of parsing for Fixpoint";;
+let make_fix_struct (n,bl) =
+  let names = names_of_local_assums bl in
+  let nn = List.length names in
+  if nn = 1 then ctv_ID_OPT_NONE
+  else if n < nn then xlate_id_opt(List.nth names n)
+  else xlate_error "unexpected result of parsing for Fixpoint";;
 
 
 let rec xlate_binder = function
@@ -344,8 +334,6 @@ and
 and 
   xlate_binder_list = function
   l -> CT_binder_list( List.map xlate_binder_l l)
-and  cvt_fixpoint_binders bl =
-  CT_binder_list(List.map xlate_binder bl)
 and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 
      CRef r -> varc (xlate_reference r)
@@ -432,20 +420,22 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
        xlate_error "Second order variable not supported"
    | CEvar (_, _) -> xlate_error "CEvar not supported"
    | CCoFix (_, (_, id), lm::lmi) -> 
-     let strip_mutcorec (fid, arf, ardef) =
-	CT_cofix_rec (xlate_ident fid, xlate_formula arf, xlate_formula ardef) in
+     let strip_mutcorec (fid, bl,arf, ardef) =
+	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
+                      xlate_formula arf, xlate_formula ardef) in
         CT_cofixc(xlate_ident id,
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
-     let strip_mutrec (fid, n, optional_nargs, arf, ardef) =
-       let struct_arg = make_fix_struct false (n, arf) in
-       let split_rank = match optional_nargs with
-	   Some v -> v
-	 | None -> n+1 in
-        let (bl,arf,ardef) = Ppconstr.split_fix split_rank arf ardef in
+     let strip_mutrec (fid, n, bl, arf, ardef) =
+        let (struct_arg,bl,arf,ardef) =
+         if bl = [] then
+           let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
+           let bl = List.map (fun(nal,ty)->LocalRawAssum(nal,ty)) bl in
+           (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
+         else (make_fix_struct (n, bl),bl,arf,ardef) in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
-	match cvt_fixpoint_binders bl with
+	match xlate_binder_list bl with
 	  | CT_binder_list (b :: bl) ->
 	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
 			  struct_arg, arf, ardef)
@@ -1868,15 +1858,16 @@ let rec xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
-      let strip_mutrec ((fid, n, optional_nargs, arf, ardef), ntn) =
-	let struct_arg = make_fix_struct false (n, arf) in
-	let split_rank = match optional_nargs with
-	    Some v -> v
-	  | None -> n+1 in
-        let (bl,arf,ardef) = Ppconstr.split_fix split_rank arf ardef in
+      let strip_mutrec ((fid, n, bl, arf, ardef), ntn) =
+        let (struct_arg,bl,arf,ardef) =
+         if bl = [] then
+           let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
+           let bl = List.map (fun(nal,ty)->LocalRawAssum(nal,ty)) bl in
+           (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
+         else (make_fix_struct (n, bl),bl,arf,ardef) in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
-	match cvt_fixpoint_binders bl with
+	match xlate_binder_list bl with
 	  | CT_binder_list (b :: bl) ->
 	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl), 
 			  struct_arg, arf, ardef)
@@ -1885,8 +1876,9 @@ let rec xlate_vernac =
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
    | VernacCoFixpoint [] -> xlate_error "mutual corecursive"
    | VernacCoFixpoint (lm :: lmi) ->
-      let strip_mutcorec (fid, arf, ardef) =
-	CT_cofix_rec (xlate_ident fid, xlate_formula arf, xlate_formula ardef) in
+      let strip_mutcorec (fid, bl, arf, ardef) =
+	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
+                      xlate_formula arf, xlate_formula ardef) in
         CT_cofix_decl
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi))
    | VernacScheme [] -> xlate_error "induction scheme"

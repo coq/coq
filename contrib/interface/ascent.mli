@@ -34,7 +34,7 @@ and ct_COERCION_OPT =
 and ct_COFIXTAC =
     CT_cofixtac of ct_ID * ct_FORMULA
 and ct_COFIX_REC =
-    CT_cofix_rec of ct_ID * ct_FORMULA * ct_FORMULA
+    CT_cofix_rec of ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_FORMULA
 and ct_COFIX_REC_LIST =
     CT_cofix_rec_list of ct_COFIX_REC * ct_COFIX_REC list
 and ct_COFIX_TAC_LIST =
@@ -276,7 +276,8 @@ and ct_FIX_BINDER =
 and ct_FIX_BINDER_LIST =
     CT_fix_binder_list of ct_FIX_BINDER * ct_FIX_BINDER list
 and ct_FIX_REC =
-    CT_fix_rec of ct_ID * ct_BINDER_NE_LIST * ct_ID_OPT * ct_FORMULA * ct_FORMULA
+    CT_fix_rec of ct_ID * ct_BINDER_NE_LIST * ct_ID_OPT *
+      ct_FORMULA * ct_FORMULA
 and ct_FIX_REC_LIST =
     CT_fix_rec_list of ct_FIX_REC * ct_FIX_REC list
 and ct_FIX_TAC_LIST =

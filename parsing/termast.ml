@@ -95,6 +95,29 @@ let idopt_of_name = function
   | Name id -> Some id
   | Anonymous -> None
 
+let ast_of_binders bl =
+  List.map (fun (nal,isdef,ty) ->
+    if isdef then ope("LETBINDER",ty::List.map ast_of_name nal)
+    else ope("BINDER",ty::List.map ast_of_name nal)) bl
+
+let ast_type_of_binder bl t =
+  List.fold_right (fun (nal,isdef,ty) ast ->
+    if isdef then
+      ope("LETIN",[ty;slam(idopt_of_name (List.hd nal),ast)])
+    else
+      ope("PROD",[ty;List.fold_right
+        (fun na ast -> slam(idopt_of_name na,ast)) nal ast]))
+    bl t
+
+let ast_body_of_binder bl t =
+  List.fold_right (fun (nal,isdef,ty) ast ->
+    if isdef then
+      ope("LETIN",[ty;slam(idopt_of_name (List.hd nal),ast)])
+    else
+      ope("LAMBDA",[ty;List.fold_right
+        (fun na ast -> slam(idopt_of_name na,ast)) nal ast]))
+    bl t
+
 let ast_of_constant_ref sp =
   ope("CONST", [path_section dummy_loc sp])
 
@@ -259,12 +282,12 @@ let rec ast_of_raw = function
   | RLetTuple _ | RIf _ ->
       error "Let tuple not supported in v7"
 
-  | RRec (_,fk,idv,tyv,bv) ->
+  | RRec (_,fk,idv,blv,tyv,bv) ->
       let alfi = Array.map ast_of_ident idv in
       (match fk with
 	 | RFix (nv,n) ->
              let rec split_lambda binds = function
-	       | (0, t) -> (binds,ast_of_raw t)
+	       | (0, t) -> (List.rev binds,ast_of_raw t)
 	       | (n, RLetIn (_,na,b,c)) ->
 		   let bind = ope("LETBINDER",[ast_of_raw b;ast_of_name na]) in
 		   split_lambda (bind::binds) (n,c)
@@ -280,11 +303,26 @@ let rec ast_of_raw = function
 	     let listdecl = 
 	       Array.mapi
 		 (fun i fi ->
-		    let (lparams,astdef) = split_lambda [] (nv.(i)+1,bv.(i)) in
-		    let asttyp = split_product (nv.(i)+1,tyv.(i)) in
-		    ope("FDECL",
-		       	[fi; ope ("BINDERS",List.rev lparams); 
-			 asttyp; astdef]))
+                   if List.length blv.(i) >= nv.(i)+1 then
+                     let (oldfixp,factb) = list_chop (nv.(i)+1) blv.(i) in
+                     let bl = factorize_local_binder oldfixp in
+                     let factb = factorize_local_binder factb in
+                     let asttyp = ast_type_of_binder factb
+                       (ast_of_raw tyv.(i)) in
+                     let astdef = ast_body_of_binder factb
+                       (ast_of_raw bv.(i)) in
+                     ope("FDECL",[fi;ope("BINDERS",ast_of_binders bl);
+                                  asttyp; astdef])
+                   else
+                     let n = nv.(i)+1 - List.length blv.(i) in
+		     let (lparams,astdef) =
+                       split_lambda [] (n,bv.(i)) in
+                     let bl = factorize_local_binder blv.(i) in
+                     let lparams = ast_of_binders bl @ lparams in
+		     let asttyp = split_product (n,tyv.(i)) in
+		     ope("FDECL",
+		         [fi; ope ("BINDERS",lparams); 
+		          asttyp; astdef]))
 		 alfi
 	     in 
 	     ope("FIX", alfi.(n)::(Array.to_list listdecl))
@@ -292,7 +330,10 @@ let rec ast_of_raw = function
 	     let listdecl =
                Array.mapi 
 		 (fun i fi ->
-		    ope("CFDECL",[fi; ast_of_raw tyv.(i); ast_of_raw bv.(i)]))
+                   let bl = factorize_local_binder blv.(i) in
+                   let asttyp = ast_type_of_binder bl (ast_of_raw tyv.(i)) in
+                   let astdef = ast_body_of_binder bl (ast_of_raw bv.(i)) in
+		   ope("CFDECL",[fi; asttyp; astdef]))
 		 alfi
 	     in 
 	     ope("COFIX", alfi.(n)::(Array.to_list listdecl)))
@@ -324,6 +365,18 @@ and factorize_binder n oper na aty c =
     | _ -> (n,ast_of_raw c)
   in
   (p,slam(idopt_of_name na, body))
+
+and factorize_local_binder = function
+    [] -> []
+  | (na,Some bd,ty)::l ->
+      ([na],true,ast_of_raw bd) :: factorize_local_binder l
+  | (na,None,ty)::l ->
+      let ty = ast_of_raw ty in
+      (match factorize_local_binder l with
+          (lna,false,ty') :: l when ty=ty' ->
+            (na::lna,false,ty') :: l
+        | l -> ([na],false,ty) :: l)
+
 
 let ast_of_rawconstr = ast_of_raw
 

@@ -76,7 +76,7 @@ let pr_notation pr s env =
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
-let surround p = str"(" ++ p ++ str")"
+let surround p = hov 1 (str"(" ++ p ++ str")")
 
 let pr_located pr ((b,e),x) =
   if Options.do_translate() && (b,e)<>dummy_loc then
@@ -350,24 +350,15 @@ let pr_recursive_decl pr id bl annot t c =
   pr_opt_type_spc pr t ++ str " :=" ++
   pr_sep_com (fun () -> brk(1,2)) (pr ltop) c
 
-let name_of_binder = function
-  | LocalRawAssum (nal,_) -> nal
-  | LocalRawDef (_,_) -> []
-
-let pr_fixdecl pr (id,n,_,t0,c0) =
-  let (bl,c,t) = extract_def_binders c0 t0 in
-  let (bl,t,c) =
-    let ids = List.flatten (List.map name_of_binder bl) in
-    if List.length ids <= n then split_fix (n+1) t0 c0 else (bl,t,c) in
+let pr_fixdecl pr (id,n,bl,t,c) =
   let annot =
-    let ids = List.flatten (List.map name_of_binder bl) in
+    let ids = names_of_local_assums bl in
     if List.length ids > 1 then 
       spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
     else mt() in
   pr_recursive_decl pr id bl annot t c
 
-let pr_cofixdecl pr (id,t,c) =
-  let (bl,c,t) = extract_def_binders c t in
+let pr_cofixdecl pr (id,bl,t,c) =
   pr_recursive_decl pr id bl (mt()) t c
 
 let pr_recursive pr_decl id = function
@@ -588,6 +579,20 @@ let rec pr sep inherited a =
 
 let pr = pr mt
 
+let rec abstract_constr_expr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
+      (abstract_constr_expr c bl)
+      
+let rec prod_constr_expr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_constr_expr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
+      (prod_constr_expr c bl)
+
 let rec strip_context n iscast t =
   if n = 0 then
     [], if iscast then match t with CCast (_,c,_) -> c | _ -> t else t
@@ -619,12 +624,15 @@ let rec strip_context n iscast t =
 	LocalRawDef (na,b) :: bl', c
     | _ -> anomaly "ppconstrnew: strip_context"
 
-let transf istype env n iscast c =
+let transf istype env iscast bl c =
+  let c' =
+    if istype then abstract_constr_expr c bl 
+    else prod_constr_expr c bl in
   if Options.do_translate() then
     let r = 
       Constrintern.for_grammar
         (Constrintern.interp_rawconstr_gen istype Evd.empty env false ([],[]))
-	c in
+	c' in
     begin try
       (* Try to infer old case and type annotations *)
       let _ = Pretyping.understand_gen_tcc Evd.empty env [] None r in 
@@ -634,11 +642,12 @@ let transf istype env n iscast c =
       (if istype then Constrextern.extern_rawtype
       else Constrextern.extern_rawconstr)
       (Termops.vars_of_env env) r in
+    let n = local_binders_length bl in
     strip_context n iscast c
-  else [], c
+  else bl, c
 
-let pr_constr_env env c = pr lsimple (snd (transf false env 0 false c))
-let pr_lconstr_env env c = pr ltop (snd (transf false env 0 false c))
+let pr_constr_env env c = pr lsimple (snd (transf false env false [] c))
+let pr_lconstr_env env c = pr ltop (snd (transf false env false [] c))
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
@@ -658,10 +667,11 @@ let is_Eval_key c =
 let pr_protect_eval c =
   if is_Eval_key c then h 0 (str "(" ++ pr ltop c ++ str ")") else pr ltop c
 
-let pr_lconstr_env_n env n b c =
-  let bl, c = transf false env n b c in bl, pr_protect_eval c
-let pr_type_env_n env n c = pr ltop (snd (transf true env n false c))
-let pr_type c = pr ltop (snd (transf true (Global.env()) 0 false c))
+let pr_lconstr_env_n env iscast bl c =
+  let bl, c = transf false env iscast bl c in
+  bl, pr_protect_eval c
+let pr_type_env_n env bl c = pr ltop (snd (transf true env false bl c))
+let pr_type c = pr ltop (snd (transf true (Global.env()) false [] c))
 
 let transf_pattern env c =
   if Options.do_translate() then

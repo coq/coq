@@ -244,31 +244,54 @@ let rec pretype tycon env isevars lvar = function
 	     { uj_val = new_isevar isevars env (loc,k) ty; uj_type = ty }
 	 | None -> error_unsolvable_implicit loc env (evars_of isevars) k)
 
-  | RRec (loc,fixkind,names,lar,vdef) ->
+  | RRec (loc,fixkind,names,bl,lar,vdef) ->
+      let rec type_bl env ctxt = function
+          [] -> ctxt
+        | (na,None,ty)::bl ->
+            let ty' = pretype_type empty_valcon env isevars lvar ty in
+            let dcl = (na,None,ty'.utj_val) in
+            type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl
+        | (na,Some bd,ty)::bl ->
+            let ty' = pretype_type empty_valcon env isevars lvar ty in
+            let bd' = pretype (mk_tycon ty'.utj_val) env isevars lvar ty in
+            let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
+            type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl in
+      let ctxtv = Array.map (type_bl env empty_rel_context) bl in
       let larj =
-        Array.map (pretype_type empty_valcon env isevars lvar) lar in
+        array_map2
+          (fun e ar ->
+            pretype_type empty_valcon (push_rel_context e env) isevars lvar ar)
+          ctxtv lar in
       let lara = Array.map (fun a -> a.utj_val) larj in
+      let ftys = array_map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
       let nbfix = Array.length lar in
       let names = Array.map (fun id -> Name id) names in
-      let newenv = push_rec_types (names,lara,[||]) env in
+      (* Note: bodies are not used by push_rec_types, so [||] is safe *)
+      let newenv = push_rec_types (names,ftys,[||]) env in
       let vdefj =
-	Array.mapi 
-	  (fun i def -> (* we lift nbfix times the type in tycon, because of
-			 * the nbfix variables pushed to newenv *)
-             pretype (mk_tycon (lift nbfix (larj.(i).utj_val)))
-               newenv isevars lvar def)
-          vdef in
-      evar_type_fixpoint loc env isevars names lara vdefj;
+	array_map2_i 
+	  (fun i ctxt def ->
+            (* we lift nbfix times the type in tycon, because of
+	     * the nbfix variables pushed to newenv *)
+            let (ctxt,ty) =
+              decompose_prod_n_assum (rel_context_length ctxt)
+                (lift nbfix ftys.(i)) in
+            let nenv = push_rel_context ctxt newenv in
+            let j = pretype (mk_tycon ty) nenv isevars lvar def in
+            { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
+              uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
+          ctxtv vdef in
+      evar_type_fixpoint loc env isevars names ftys vdefj;
       let fixj =
 	match fixkind with
 	  | RFix (vn,i as vni) ->
-	      let fix = (vni,(names,lara,Array.map j_val vdefj)) in
+	      let fix = (vni,(names,ftys,Array.map j_val vdefj)) in
 	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
-	      make_judge (mkFix fix) lara.(i)
+	      make_judge (mkFix fix) ftys.(i)
 	  | RCoFix i -> 
-	      let cofix = (i,(names,lara,Array.map j_val vdefj)) in
+	      let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
 	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
-	      make_judge (mkCoFix cofix) lara.(i) in
+	      make_judge (mkCoFix cofix) ftys.(i) in
       inh_conv_coerce_to_tycon loc env isevars fixj tycon
 
   | RSort (loc,s) ->

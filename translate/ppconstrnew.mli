@@ -65,14 +65,17 @@ val pr_constr : constr_expr -> std_ppcmds
 val pr_lconstr : constr_expr -> std_ppcmds
 val pr_constr_env : env -> constr_expr -> std_ppcmds
 val pr_lconstr_env : env -> constr_expr -> std_ppcmds
-val pr_lconstr_env_n : env -> int -> bool -> constr_expr -> 
+val pr_lconstr_env_n : env -> bool -> local_binder list -> constr_expr -> 
   local_binder list * std_ppcmds
-val pr_type_env_n : env -> int -> constr_expr -> std_ppcmds
+val pr_type_env_n : env -> local_binder list -> constr_expr -> std_ppcmds
 val pr_type : constr_expr -> std_ppcmds
 val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
 val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> ('a,'b) may_eval
     -> std_ppcmds
+val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
+val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
+
 
 val pr_rawconstr_env : env -> rawconstr -> std_ppcmds
 val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds

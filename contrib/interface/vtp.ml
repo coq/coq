@@ -84,11 +84,12 @@ and fCOFIXTAC = function
    fFORMULA x2;
    fNODE "cofixtac" 2
 and fCOFIX_REC = function
-| CT_cofix_rec(x1, x2, x3) ->
+| CT_cofix_rec(x1, x2, x3, x4) ->
    fID x1;
-   fFORMULA x2;
+   fBINDER_LIST x2;
    fFORMULA x3;
-   fNODE "cofix_rec" 3
+   fFORMULA x4;
+   fNODE "cofix_rec" 4
 and fCOFIX_REC_LIST = function
 | CT_cofix_rec_list(x,l) ->
    fCOFIX_REC x;

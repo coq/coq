@@ -361,21 +361,26 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_expr = identifier * int * int option * constr_expr * constr_expr
+and fixpoint_expr =
+    identifier * int * local_binder list * constr_expr * constr_expr
 
-and cofixpoint_expr = identifier * constr_expr * constr_expr
+and local_binder =
+  | LocalRawDef of name located * constr_expr
+  | LocalRawAssum of name located list * constr_expr
+
+and cofixpoint_expr =
+    identifier * local_binder list * constr_expr * constr_expr
 
 (***********************)
 (* For binders parsing *)
-
-type local_binder =
-  | LocalRawDef of name located * constr_expr
-  | LocalRawAssum of name located list * constr_expr
 
 let rec local_binders_length = function
   | [] -> 0
   | LocalRawDef _::bl -> 1 + local_binders_length bl
   | LocalRawAssum (idl,_)::bl -> List.length idl + local_binders_length bl
+
+let names_of_local_assums bl =
+  List.flatten (List.map (function LocalRawAssum(l,_)->l|_->[]) bl)
 
 (**********************************************************************)
 (* Functions on constr_expr *)
@@ -475,8 +480,19 @@ let map_binder g e nal = List.fold_right (fun (_,na) -> name_fold g na) nal e
 
 let map_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
-  let h (nal,t) (e,bl) = (map_binder g e nal,(nal,f e t)::bl) in
-  List.fold_right h bl (e,[])
+  let h (e,bl) (nal,t) = (map_binder g e nal,(nal,f e t)::bl) in
+  let (e,rbl) = List.fold_left h (e,[]) bl in
+  (e, List.rev rbl)
+
+let map_local_binders f g e bl =
+  (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
+  let h (e,bl) = function
+      LocalRawAssum(nal,ty) ->
+        (map_binder g e nal, LocalRawAssum(nal,f e ty)::bl)
+    | LocalRawDef((loc,na),ty) ->
+        (name_fold g na e, LocalRawDef((loc,na),f e ty)::bl) in
+  let (e,rbl) = List.fold_left h (e,[]) bl in
+  (e, List.rev rbl)
 
 let map_constr_expr_with_binders f g e = function
   | CArrow (loc,a,b) -> CArrow (loc,f e a,f e b)
@@ -518,9 +534,20 @@ let map_constr_expr_with_binders f g e = function
       let e' = option_fold_right (name_fold g) ona e in
       CIf (loc,f e c,(ona,option_app (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
-      CFix (loc,id,List.map (fun (id,n,on,t,d) -> (id,n,on,f e t,f e d)) dl)
+      CFix (loc,id,List.map (fun (id,n,bl,t,d) -> 
+        let (e',bl') = map_local_binders f g e bl in
+        let t' = f e' t in
+        (* Note: fix names should be inserted before the arguments... *)
+        let e'' = List.fold_left (fun e (id,_,_,_,_) -> g id e) e' dl in
+        let d' = f e'' d in
+        (id,n,bl',t',d')) dl)
   | CCoFix (loc,id,dl) ->
-      CCoFix (loc,id,List.map (fun (id,t,d) -> (id,f e t,f e d)) dl)
+      CCoFix (loc,id,List.map (fun (id,bl,t,d) ->
+        let (e',bl') = map_local_binders f g e bl in
+        let t' = f e' t in
+        let e'' = List.fold_left (fun e (id,_,_,_) -> g id e) e' dl in
+        let d' = f e'' d in
+        (id,bl',t',d')) dl)
 
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function

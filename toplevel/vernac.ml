@@ -154,7 +154,7 @@ let pr_new_syntax loc ocom =
   if !translate_file then
     msg (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
   else
-    msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ com));
+    msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;
   Constrintern.set_temporary_implicits_in [];
   Constrextern.set_temporary_implicits_out [];

@@ -530,18 +530,6 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
 (**********************************************************************)
 (* Fix and CoFix                                                      *)
 
-let rec intern_fix = function
-  | [] -> ([],[],[],[])
-  | (fi, n, on, c, t)::rest->
-      let (lf,ln,lc,lt) = intern_fix rest in
-      (fi::lf, n::ln, c::lc, t::lt)
-
-let rec intern_cofix = function
-  | [] -> ([],[],[])
-  | (fi, c, t)::rest -> 
-      let (lf,lc,lt) = intern_cofix rest in
-      (fi::lf, c::lc, t::lt)
-
 (**********************************************************************)
 (* Utilities for binders                                              *)
 
@@ -688,8 +676,9 @@ let internalise sigma env allow_soapp lvar c =
 	(match intern_impargs c env imp subscopes l with
           | [] -> c
           | l -> RApp (constr_loc x, c, l))
-    | CFix (loc, (locid,iddef), ldecl) ->
-	let (lf,ln,lc,lt) = intern_fix ldecl in
+    | CFix (loc, (locid,iddef), dl) ->
+        let lf = List.map (fun (id,_,_,_,_) -> id) dl in
+        let dl = Array.of_list dl in
 	let n =
 	  try
 	    (list_index iddef lf) -1
@@ -697,12 +686,22 @@ let internalise sigma env allow_soapp lvar c =
 	    raise (InternalisationError (locid,UnboundFixName (false,iddef)))
 	in
 	let ids' = List.fold_right Idset.add lf ids in
-	let defl =
-	  Array.of_list (List.map (intern (ids',None,scopes)) lt) in
-	let arityl = Array.of_list (List.map (intern_type env) lc) in
-	RRec (loc,RFix (Array.of_list ln,n), Array.of_list lf, arityl, defl)
-    | CCoFix (loc, (locid,iddef), ldecl) ->
-	let (lf,lc,lt) = intern_cofix ldecl in
+        let idl = Array.map
+          (fun (id,n,bl,ty,bd) ->
+            let ((ids'',_,_),rbl) =
+              List.fold_left intern_local_binder (env,[]) bl in
+	    let ids''' = List.fold_right Idset.add lf ids'' in
+            (List.rev rbl,
+             intern_type (ids'',tmp_scope,scopes) ty,
+             intern (ids''',None,scopes) bd)) dl in
+	RRec (loc,RFix (Array.map (fun (_,n,_,_,_) -> n) dl,n),
+              Array.of_list lf,
+              Array.map (fun (bl,_,_) -> bl) idl,
+              Array.map (fun (_,ty,_) -> ty) idl,
+              Array.map (fun (_,_,bd) -> bd) idl)
+    | CCoFix (loc, (locid,iddef), dl) ->
+        let lf = List.map (fun (id,_,_,_) -> id) dl in
+        let dl = Array.of_list dl in
 	let n =
           try 
 	    (list_index iddef lf) -1
@@ -710,10 +709,19 @@ let internalise sigma env allow_soapp lvar c =
 	    raise (InternalisationError (locid,UnboundFixName (true,iddef)))
 	in
 	let ids' = List.fold_right Idset.add lf ids in
-	let defl =
-	  Array.of_list (List.map (intern (ids',None,scopes)) lt) in
-	let arityl = Array.of_list (List.map (intern_type env) lc) in
-	RRec (loc,RCoFix n, Array.of_list lf, arityl, defl)
+        let idl = Array.map
+          (fun (id,bl,ty,bd) ->
+            let ((ids'',_,_),rbl) =
+              List.fold_left intern_local_binder (env,[]) bl in
+	    let ids''' = List.fold_right Idset.add lf ids'' in
+            (List.rev rbl,
+             intern_type (ids'',tmp_scope,scopes) ty,
+             intern (ids''',None,scopes) bd)) dl in
+	RRec (loc,RCoFix n,
+              Array.of_list lf,
+              Array.map (fun (bl,_,_) -> bl) idl,
+              Array.map (fun (_,ty,_) -> ty) idl,
+              Array.map (fun (_,_,bd) -> bd) idl)
     | CArrow (loc,c1,c2) ->
         RProd (loc, Anonymous, intern_type env c1, intern_type env c2)
     | CProdN (loc,[],c2) ->
@@ -812,6 +820,17 @@ let internalise sigma env allow_soapp lvar c =
 
   and intern_type (ids,_,scopes) =
     intern (ids,Some Symbols.type_scope,scopes)
+
+  and intern_local_binder ((ids,ts,sc as env),bl) = function
+      LocalRawAssum(nal,ty) ->
+        let ids' = List.fold_left
+          (fun ids (_,na) -> name_fold Idset.add na ids) ids nal in
+        ((ids',ts,sc),
+         List.map (fun (_,na) ->
+           (na,None,intern_type env ty)) nal @bl)
+    | LocalRawDef((loc,na),def) ->
+        ((name_fold Idset.add na ids,ts,sc),
+         (na,Some(intern env def),RHole(loc,BinderType na))::bl)
 
   and intern_eqn n (ids,tmp_scope,scopes as env) (loc,lhs,rhs) =
 	let (idsl_substl_list,pl) =

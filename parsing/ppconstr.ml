@@ -110,6 +110,13 @@ let pr_binder pr (nal,t) =
 let pr_binders pr bl =
   hv 0 (prlist_with_sep pr_semicolon (pr_binder pr) bl)
 
+let pr_local_binder pr = function
+    LocalRawAssum(nal,t) -> pr_binder pr (nal,t)
+  | LocalRawDef((_,na),t) -> pr_let_binder pr na t
+
+let pr_local_binders pr bl =
+  hv 0 (prlist_with_sep pr_semicolon (pr_local_binder pr) bl)
+
 let pr_global vars ref = pr_global_env vars ref
 
 let rec pr_lambda_tail pr bll = function
@@ -155,13 +162,15 @@ let rec split_fix n typ def =
     let (bl,typ,def) = split_fix (n-1) typ def in
     (concat_binder na t bl,typ,def)
 
-let pr_fixdecl pr (id,n,_,t,c) =
-  let (bl,t,c) = split_fix (n+1) t c in
+let pr_fixdecl pr (id,n,bl,t,c) =
   pr_recursive_decl pr id 
-    (brk (1,2) ++ str "[" ++ pr_binders pr bl ++ str "]") t c
+    (brk (1,2) ++ str "[" ++ pr_local_binders pr bl ++ str "]") t c
 
-let pr_cofixdecl pr (id,t,c) =
-  pr_recursive_decl pr id (mt ()) t c
+let pr_cofixdecl pr (id,bl,t,c) =
+  let  b =
+    if bl=[] then mt() else
+      brk(1,2) ++ str"[" ++ pr_local_binders pr bl ++ str "]" in
+  pr_recursive_decl pr id b t c
 
 let pr_recursive fix pr_decl id = function
   | [] -> anomaly "(co)fixpoint with no definition"

@@ -252,17 +252,15 @@ GEXTEND Gram
     [ [ id = base_ident; bl = ne_fix_binders; ":"; type_ = constr;
         ":="; def = constr; ntn = OPT decl_notation ->
           let ni = List.length (List.flatten (List.map fst bl)) - 1 in
-          let loc0 = fst (List.hd (fst (List.hd bl))) in
-          let loc1 = join_loc loc0 (constr_loc type_) in
-          let loc2 = join_loc loc0 (constr_loc def) in
-	  ((id, ni, None, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)), ntn) ] ]
+          let bl = List.map (fun(nal,ty)->LocalRawAssum(nal,ty)) bl in
+	  ((id, ni, bl, type_, def), ntn) ] ]
   ;
   specifrec:
     [ [ l = LIST1 onerec SEP "with" -> l ] ]
   ;
   onecorec:
     [ [ id = base_ident; ":"; c = constr; ":="; def = constr ->
-          (id,c,def) ] ]
+          (id,[],c,def) ] ]
   ;
   specifcorec:
     [ [ l = LIST1 onecorec SEP "with" -> l ] ]

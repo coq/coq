@@ -1009,14 +1009,16 @@ let rec check_same_type ty1 ty2 =
   match ty1, ty2 with
   | CRef r1, CRef r2 -> check_same_ref r1 r2
   | CFix(_,(_,id1),fl1), CFix(_,(_,id2),fl2) when id1=id2 ->
-      List.iter2 (fun (id1,i1,_,a1,b1) (id2,i2,_,a2,b2) ->
+      List.iter2 (fun (id1,i1,bl1,a1,b1) (id2,i2,bl2,a2,b2) ->
         if id1<>id2 || i1<>i2 then failwith "not same fix";
+        check_same_fix_binder bl1 bl2;
         check_same_type a1 a2;
         check_same_type b1 b2)
         fl1 fl2
   | CCoFix(_,(_,id1),fl1), CCoFix(_,(_,id2),fl2) when id1=id2 ->
-      List.iter2 (fun (id1,a1,b1) (id2,a2,b2) ->
+      List.iter2 (fun (id1,bl1,a1,b1) (id2,bl2,a2,b2) ->
         if id1<>id2 then failwith "not same fix";
+        check_same_fix_binder bl1 bl2;
         check_same_type a1 a2;
         check_same_type b1 b2)
         fl1 fl2
@@ -1065,6 +1067,15 @@ and check_same_binder (nal1,e1) (nal2,e2) =
   List.iter2 (fun (_,na1) (_,na2) ->
     if na1<>na2 then failwith "not same name") nal1 nal2;
   check_same_type e1 e2
+
+and check_same_fix_binder bl1 bl2 =
+  List.iter2 (fun b1 b2 ->
+    match b1,b2 with
+        LocalRawAssum(nal1,ty1), LocalRawAssum(nal2,ty2) ->
+          check_same_binder (nal1,ty1) (nal2,ty2)
+      | LocalRawDef(na1,def1), LocalRawDef(na2,def2) ->
+          check_same_binder ([na1],def1) ([na2],def2)          
+      | _ -> failwith "not same binder") bl1 bl2
 
 let same c d = try check_same_type c d; true with _ -> false
 
@@ -1502,21 +1513,27 @@ let rec extern inctx scopes vars r =
         (Some na,option_app (extern_type scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars b1, sub_extern false scopes vars b2)
 
-  | RRec (loc,fk,idv,tyv,bv) ->
+  | RRec (loc,fk,idv,blv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
       (match fk with
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-		 (fi,nv.(i), None, extern_type scopes vars tyv.(i),
-                  extern false scopes vars' bv.(i))) idv
+                 let (ids,bl) = extern_local_binder scopes vars blv.(i) in
+                 let vars0 = List.fold_right (name_fold Idset.add) ids vars in
+                 let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
+		 (fi,nv.(i), bl, extern_type scopes vars1 tyv.(i),
+                  extern false scopes vars0 bv.(i))) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 
 	     let listdecl =
                Array.mapi (fun i fi ->
-		 (fi,extern_type scopes vars tyv.(i),
-                  sub_extern false scopes vars' bv.(i))) idv
+                 let (ids,bl) = extern_local_binder scopes vars blv.(i) in
+                 let vars0 = List.fold_right (name_fold Idset.add) ids vars in
+                 let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
+		 (fi,bl,extern_type scopes vars1 tyv.(i),
+                  sub_extern false scopes vars0 bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
@@ -1556,6 +1573,29 @@ and factorize_lambda inctx scopes vars aty = function
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
            ((loc,na)::nal,c)
   | c -> ([],sub_extern inctx scopes vars c)
+
+and extern_local_binder scopes vars = function
+    [] -> ([],[])
+  | (na,Some bd,ty)::l ->
+      let na = name_app translate_ident na in
+      let (ids,l) =
+        extern_local_binder scopes (name_fold Idset.add na vars) l in
+      (na::ids,
+       LocalRawDef((dummy_loc,na), extern false scopes vars bd) :: l)
+      
+  | (na,None,ty)::l ->
+      let na = name_app translate_ident na in
+      let ty = extern_type scopes vars (anonymize_if_reserved na ty) in
+      (match extern_local_binder scopes (name_fold Idset.add na vars) l with
+          (ids,LocalRawAssum(nal,ty')::l)
+            when same ty ty' &
+              match na with Name id -> not (occur_var_constr_expr id ty')
+                | _ -> true ->
+              (na::ids,
+               LocalRawAssum((dummy_loc,na)::nal,ty')::l)
+        | (ids,l) ->
+            (na::ids,
+             LocalRawAssum([(dummy_loc,na)],ty) :: l))
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,

@@ -68,37 +68,33 @@ let rec mkCLambdaN loc bll c =
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
 
-let rec decls_of_binders = function
-  | [] -> []
-  | LocalRawDef _::bl -> decls_of_binders bl
-  | LocalRawAssum (idl,_)::bl -> idl @ decls_of_binders bl
-
-let rec index_of_annot bl ann =
-  match decls_of_binders bl,ann with
+let rec index_of_annot loc bl ann =
+  match names_of_local_assums bl,ann with
     | [_], None -> 0
     | lids, Some x ->
         let ids = List.map snd lids in
         (try list_index (snd x) ids - 1
-        with Not_found -> error "no such fix variable")
-    | _ -> error "cannot guess decreasing argument of fix"
+        with Not_found ->
+          user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
+    | _ -> user_err_loc(loc,"index_of_annot",
+      Pp.str "cannot guess decreasing argument of fix")
 
-let mk_fixb (loc,id,bl,ann,body,(tloc,tyc)) =
-  let n = index_of_annot bl ann in
-  let nargs = List.length (decls_of_binders bl) in
+let mk_fixb (id,bl,ann,body,(loc,tyc)) =
+  let n = index_of_annot (fst id) bl ann in
   let ty = match tyc with
-      None -> CHole tloc
-    | Some t -> mkCProdN loc bl t in
-  (snd id,n,Some nargs,ty,mkCLambdaN loc bl body)
+      Some ty -> ty
+    | None -> CHole loc in
+  (snd id,n,bl,ty,body)
 
-let mk_cofixb (loc,id,bl,ann,body,(tloc,tyc)) =
+let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = option_app (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofixb",
        Pp.str"Annotation forbidden in cofix expression")) ann in
   let ty = match tyc with
-      None -> CHole tloc
-    | Some t -> mkCProdN loc bl t in
-  (snd id,ty,mkCLambdaN loc bl body)
+      Some ty -> ty
+    | None -> CHole loc in
+  (snd id,bl,ty,body)
 
 let mk_fix(loc,kw,id,dcls) =
   if kw then 
@@ -109,7 +105,7 @@ let mk_fix(loc,kw,id,dcls) =
     CCoFix(loc,id,fb)
 
 let mk_single_fix (loc,kw,dcl) =
-  let (_,id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
+  let (id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
 
 let binder_constr =
   create_constr_entry (get_univ "constr") "binder_constr"
@@ -255,7 +251,7 @@ GEXTEND Gram
   ;
   fix_decl:
     [ [ id=identref; bl=LIST0 binder_let; ann=fixannot; ty=type_cstr; ":=";
-        c=operconstr LEVEL "200" -> (loc,id,bl,ann,c,ty) ] ]
+        c=operconstr LEVEL "200" -> (id,bl,ann,c,ty) ] ]
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> Some id

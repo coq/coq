@@ -401,6 +401,25 @@ let array_for_all2 f v1 v2 =
   let lv1 = Array.length v1 in
   lv1 = Array.length v2 && allrec (pred lv1) 
 
+let array_for_all3 f v1 v2 v3 =
+  let rec allrec = function
+    | -1 -> true
+    | n -> (f v1.(n) v2.(n) v3.(n)) && (allrec (n-1))
+  in 
+  let lv1 = Array.length v1 in
+  lv1 = Array.length v2 && lv1 = Array.length v3 && allrec (pred lv1) 
+
+let array_for_all4 f v1 v2 v3 v4 =
+  let rec allrec = function
+    | -1 -> true
+    | n -> (f v1.(n) v2.(n) v3.(n) v4.(n)) && (allrec (n-1))
+  in 
+  let lv1 = Array.length v1 in
+  lv1 = Array.length v2 &&
+  lv1 = Array.length v3 &&
+  lv1 = Array.length v4 &&
+    allrec (pred lv1) 
+
 let array_hd v = 
   match Array.length v with
     | 0 -> failwith "array_hd"
