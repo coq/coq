@@ -219,8 +219,8 @@ let ppnl      x = ppnl_with !std_ft x
 let pperr     = pp_with err_ft
 let pperrnl   = ppnl_with err_ft
 let message s = ppnl (str s)
-let warning   x = warning_with !std_ft x
-let warn      x = warn_with !std_ft x
+let warning   x = warning_with err_ft x
+let warn      x = warn_with err_ft x
 let pp_flush  x = Format.pp_print_flush !std_ft x
 let flush_all() = flush stderr; flush stdout; pp_flush()
 
@@ -229,4 +229,4 @@ let msg x = msg_with !std_ft x
 let msgnl x = msgnl_with !std_ft x
 let msgerr = msg_with err_ft
 let msgerrnl = msgnl_with err_ft
-let msg_warning x = msg_warning_with !std_ft x
+let msg_warning x = msg_warning_with err_ft x
