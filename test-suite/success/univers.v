@@ -14,4 +14,4 @@ Qed.
 Lemma titi : (P:Prop)P.
 Intro P ; Pattern P.
 Apply gg.
-Qed.
+
