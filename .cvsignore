@@ -5,3 +5,6 @@ coqtop.opt
 glob.dump
 tmp
 .depend.devel
+newtheories
+newcontrib
+*.v8

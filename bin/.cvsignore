@@ -14,3 +14,5 @@ coq_vo2xml
 coq-interface.opt
 coqide.byte
 coqide.opt
+coqtopnew.opt
+coqtopnew.byte

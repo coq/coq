@@ -311,7 +311,6 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
-COQTOPNEW=bin/coqtopnew$(EXE)
 COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
@@ -1271,3 +1270,7 @@ newtheories/%.vo: newtheories/%.v states/initialnew.coq
 	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" .depend.coq > .depend.newcoq
 
 include .depend.newcoq
+
+clean::
+	rm -f bin/coqtopnew.byte$(EXE) bin/coqtopnew.opt$(EXE)
+	rm -fr *.v8 newtheories newcontrib
