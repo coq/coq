@@ -11,7 +11,7 @@
 (* IFDEF not available in 3.06; use ifdef instead *)
 
 (* type loc is different in 3.08 *)
-ifdef OCAML308 then
+ifdef OCAML_308 then
 module M = struct
 type loc = Token.flocation
 let dummy_loc = Token.dummy_loc
