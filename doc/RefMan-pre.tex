@@ -329,15 +329,15 @@ of modules and also to get closer to a certified kernel.
 Hugo Herbelin introduced a new structure of terms with local
 definitions. He introduced ``qualified'' names, wrote a new
 pattern-matching compilation algorithm and designed a more compact
-logical consistency check algorithm. He contributed to the
-simplification of Coq internal structures and the optimisation of the
-system. He added basic tactics for forward reasoning and coercions
-in patterns.
+algorithm for checking the logical consistency of universes. He
+contributed to the simplification of {\Coq} internal structures and the
+optimisation of the system. He added basic tactics for forward
+reasoning and coercions in patterns.
 
 David Delahaye introduced a new language for tactics. General tactics
 using pattern-matching on goals and context can directly be written
-from the Coq toplevel. He also provided primitives for the design
-of user-defined tactics in Caml.
+from the {\Coq} toplevel. He also provided primitives for the design
+of user-defined tactics in {\sf Caml}.
 
 Micaela Mayero contributed the library on real numbers.
 Olivier Desmettre extended this library with axiomatic
@@ -345,45 +345,50 @@ trigonometric functions, square, square roots, finite sums, Chasles
 property and basic plane geometry.
 
 Jean-Christophe Filliâtre and Pierre Letouzey redesigned a new
-extraction procedure from Coq terms to Caml or Haskell programs. This new
+extraction procedure from {\Coq} terms to {\sf Caml} or {\sf Haskell} programs. This new
 extraction procedure, unlike the one implemented in previous version
 of \Coq{} is able to handle all terms in the Calculus of Inductive
 Constructions, even involving universes and strong elimination. P.
 Letouzey adapted user contributions to extract ML programs when it was
 sensible.
 Jean-Christophe Filliâtre wrote \verb=coqdoc=, a documentation
-tool for Coq libraries usable from version 7.2.
+tool for {\Coq} libraries usable from version 7.2.
 
 Bruno Barras improved the reduction algorithms efficiency and
-the confidence level in the correctness of Coq critical type-checking
+the confidence level in the correctness of {\Coq} critical type-checking
 algorithm.
 
 Yves Bertot designed  the \texttt{SearchPattern} and
-\texttt{SearchRewrite} tools and the support for the pcoq interface 
+\texttt{SearchRewrite} tools and the support for the {\sf pcoq} interface 
 (\url{http://www-sop.inria.fr/lemme/pcoq/}).
 
-Micaela Mayero and David Delahaye introduced a decision tactic for commutative fields.
+Micaela Mayero and David Delahaye introduced {\tt Field}, a decision tactic for commutative fields.
 
 Christine Paulin changed the elimination rules for empty and singleton
 propositional inductive types.
 
-Loïc Pottier developed a tactic solving linear inequalities on real numbers.
+Loïc Pottier developed {\tt Fourier}, a tactic solving linear inequalities on real numbers.
 
-Pierre Crégut developed a new version based on reflexion of the Omega
+Pierre Crégut developed a new version based on reflexion of the {\tt Omega}
 decision tactic.
 
-Claudio Sacerdoti Coen designed an XML output for the Coq
+Claudio Sacerdoti Coen designed an XML output for the {\Coq}
 modules to be used in the Hypertextual Electronic Library of
 Mathematics (HELM cf \url{http://www.cs.unibo.it/helm}).
 
-A library for efficient representation of finite sets by binary trees
-contributed by Jean Goubault was integrated in the basic theories.\\
+A library for efficient representation of finite maps using binary trees
+contributed by Jean Goubault was integrated in the basic theories.
+
+Jacek Chrz\k{a}szcz designed and implemented the module system of
+{\Coq} whose foundations are in Judicaël Courant's PhD thesis.
+\\
 
 The development was coordinated by C. Paulin.
 
 Many discussions within the Démons team and the LogiCal project
-influenced significantly the design of Coq especially with J.
-Chrz\k{a}szcz, J. Courant, P. Courtieu, J. Duprat, J. Goubault, A. Miquel,
+influenced significantly the design of {\Coq} especially with 
+%J. Chrz\k{a}szcz, 
+J. Courant, P. Courtieu, J. Duprat, J. Goubault, A. Miquel,
 C. Marché, B. Monate and B. Werner.
 
 Intensive users suggested improvements of the system : 
@@ -393,7 +398,117 @@ C. Alvarado, P. Crégut, J.-F. Monin from France Telecom R \& D.
 Orsay, May. 2002\\
 Hugo Herbelin \& Christine Paulin
 \end{flushright}
+
+\section*{Credits: version 8.0}
+
+{\Coq} version 8 is a major revision of the {\Coq} proof assistant.
+First, the underlying logic is slightly different. The so-called {\em
+impredicativity} of the sort {\tt Set} has been dropped. The main
+reason is that it is inconsistent with the principle of description
+which is quite a useful principle for formalizing classical
+mathematics within classical logic. Moreover, even in an constructive
+setting, the impredicativity of {\tt Set} does not add so much in
+practice and is even subject of criticism from a large part of the
+intuitionistic mathematician community. Nevertheless, the
+impredicativy of {\tt Set} remains optional for users interested in
+investigating mathematical developments which rely on it.
+
+Secondly, the concrete syntax of terms has been completely
+revised. The main motivations were
+
+\begin{itemize}
+\item a more uniform style: all constructions are now lowercase, with a
+  functional programming perfume (e.g. abstraction is now written {\tt
+  fun}), and more directly accessible to the novice (e.g. dependent
+  product is now written {\tt forall}).
+\item extensibility: some standard notations (e.g. ``<'' and ``>'') were
+  incompatible with the previous syntax. Now all standard arithmetic
+  notations (=, +, *, /, <, <=, ... and more) are directly part of the
+  syntax.
+\item lighter expressions: the ``(id:t)u'' notation for products
+  was forbidding the omission of the types. This is now
+  possible. Also, parentheses are no longer mandatory for function
+  application. The choice here was to follow the tested style of
+  syntax found in typed functional programming (which is compatible
+  with polymorphism) rather than the mathematical style (which 
+  harmonizes badly with polymorphism).
+\end{itemize}
+
+Together with the revision of the concrete syntax, a new mechanism of
+{\em interpretation scopes} permits to reuse the same symbols
+(typically +, -, *, /, <, <=) in various mathematical theories without
+any ambiguities for {\Coq}, leading to a largely improved readability of
+{\Coq} scripts. New commands to easily add new symbols are also
+provided.
+
+Coming with the new syntax of terms, a slight reform of the tactic
+language and of the language of commands has been carried out. The
+purpose here is a better uniformity making the tactics and commands
+easier to use and to remember.
+
+Thirdly, a restructuration and uniformisation of the standard library
+of {\Coq} has been performed. There is now just one Leibniz' equality
+usable for all the different kinds of {\Coq} objects. Also, the set of
+real numbers now lies at the same level as the sets of natural and
+integer numbers. Finally, the names of the standard properties of
+numbers now follow a standard scheme pattern and the symbolic
+notations for the standard definitions as well.
+
+The fourth point is the release of {\sf CoqIde} a new graphical
+gtk2-based interface fully integrated to {\Coq}. Close in style from
+the Proof General Emacs interface, it is faster and its integration
+with {\Coq} makes interactive developments more friendly. All
+mathematical Unicode symbols are usable within {\sf CoqIde}.
+
+Finally, the module system of {\Coq} completes the picture of {\Coq}
+version 8.0. Tough released with an experimental status in the previous
+version 7.4, it should be considered as a salient feature of the new
+version.
+
+Besides, {\Coq} comes with its load of novelties and improvements: new
+or improved tactics (including a new tactic for solving first-order
+statements), new management commands, extended libraries.
+
+\bigskip
+
+Bruno Barras and Hugo Herbelin have been the main contributors of the 
+reflexion and the implementation of the new syntax. The smart
+automatic translator from old to new syntax released with {\Coq} is also
+their work.
+
+Hugo Herbelin is the main designer and implementor of the notion of
+interpretation scopes and of the commands for easily adding new notations.
+
+Hugo Herbelin is the main implementor of the restructuration of the
+standard library.
+
+Pierre Corbineau is the main designer and implementor of the new
+tactic for solving first-order statements in presence of inductive
+types. He is also the maintainer of the non-domain specific automation
+tactics.
+
+Benjamin Monate is the developer of the {\sf CoqIde} graphical
+interface.
+
+Pierre Letouzey and Jacek Chrz\k{a}szcz respectively maintained the
+extraction tool and module system of {\Coq}.
+
+Jean-Christophe Filliâtre, Pierre Letouzey, Hugo Herbelin and 
+contributors from Sophia-Antipolis and Nijmegen contributed to the
+extension of the library.
+
+Hugo Herbelin and Christine Paulin coordinated the developement which
+was under the responsability of Christine Paulin.
+
+\begin{flushright}
+Palaiseau \& Orsay, Dec. 2003\\
+Hugo Herbelin \& Christine Paulin
+\end{flushright}
+
+
 \newpage
+
+Integration of ZArith lemmas from Sophia and Nijmegen.
 
 
 % $Id$ 
@@ -402,4 +517,3 @@ Hugo Herbelin \& Christine Paulin
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
 %%% End: 
-
