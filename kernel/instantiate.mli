@@ -22,7 +22,7 @@ val constant_type : unsafe_env -> constr -> typed_type
 val existential_value : 'a evar_map -> constr -> constr
 val existential_type : 'a evar_map -> constr -> constr
 
-val const_abst_opt_value : unsafe_env -> constr -> constr option
+val const_abst_opt_value : unsafe_env -> 'a evar_map -> constr -> constr option
 
 val mis_arity : mind_specif -> constr
 

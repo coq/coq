@@ -8,9 +8,11 @@ open Term
 open Sign
 open Constant
 open Inductive
+open Reduction
 open Libobject
 open Lib
 open Impargs
+open Indrec
 
 type strength = 
   | DischargeAt of section_path 
@@ -132,7 +134,6 @@ let declare_mind mie =
   Global.add_mind sp mie;
   push_inductive_names sp mie;
   declare_inductive_implicits sp
-  (***TODO: declare_eliminations ***)
 
 (* Global references. *)
 
@@ -169,7 +170,7 @@ let global_reference kind id =
   let sp = Nametab.sp_of_id kind id in
   let oper = global_operator sp id in
   let hyps = get_globals (Global.context ()) in
-  let ids =  ids_of_sign hyps in
+  let ids = ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
 
 let is_global id =
@@ -192,3 +193,30 @@ let mind_path = function
       let (pa,_,k) = repr_path sp in 
       Names.make_path pa (mip.mind_consnames.(ind-1)) k 
   | _ -> invalid_arg "mind_path"
+
+(* Eliminations. *)
+
+let declare_eliminations sp =
+  let env = Global.unsafe_env () in
+  let sigma = Evd.empty in
+  let mindid = basename sp in
+  let mind = global_reference (kind_of_path sp) mindid in
+  let redmind = minductype_spec env sigma mind in
+  let mindstr = string_of_id mindid in
+  let declare na c =
+    declare_constant (id_of_string na) 
+      { const_entry_body = c; const_entry_type = None } in
+  let mispec = Global.lookup_mind_specif redmind in 
+  let elim_scheme = 
+    strip_all_casts (mis_make_indrec env sigma [] mispec).(0) in
+  let npars = mis_nparams mispec in
+  let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
+  let kelim = mis_kelim mispec in
+  if List.mem prop kelim then
+    declare (mindstr^"_ind") (make_elim prop);
+  if List.mem spec kelim then
+    declare (mindstr^"_rec") (make_elim spec);
+  if List.mem types kelim then
+    declare (mindstr^"_rect") (make_elim (Type (Univ.new_univ sp)))
+
+      

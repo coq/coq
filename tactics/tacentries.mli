@@ -6,6 +6,8 @@ open Proof_trees
 open Tacmach
 (*i*)
 
+(* Registered tactics. *)
+
 val v_absurd        : tactic_arg list -> tactic
 val v_contradiction : tactic_arg list -> tactic
 val v_reflexivity   : tactic_arg list -> tactic

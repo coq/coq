@@ -143,7 +143,7 @@ let const_value_cache info c =
   try  
     Some (Hashtbl.find info.i_tab c)
   with Not_found ->
-    match const_abst_opt_value info.i_env c with
+    match const_abst_opt_value info.i_env info.i_evc c with
       | Some body ->
           let v = info.i_repr info body in
           Hashtbl.add info.i_tab c v;
@@ -349,7 +349,7 @@ let rec norm_head info env t stack =
                     reduce_const_body
                       (cbv_norm_more info) (shift_value n v) stack
                 | Inr n -> (VAL(0, Rel n), stack))
-  | DOPN ((Const _ | Abst _) as op, vars)
+  | DOPN ((Const _ | Evar _ | Abst _) as op, vars)
                   when red_allowed info.i_flags stack (DELTA op) ->
       let normt = DOPN(op, Array.map (cbv_norm_term info env) vars) in
       (match const_value_cache info normt with
@@ -751,7 +751,7 @@ and whnf_frterm info ft =
           { norm = uf.norm; term = FLIFT(k, uf) }
       | FOP2 (Cast,f,_) -> whnf_frterm info f  (* remove outer casts *)
       | FOPN (AppL,appl) -> whnf_apply info appl.(0) (array_tl appl)
-      | FOPN ((Const _ | Abst _) as op,vars) ->
+      | FOPN ((Const _ | Evar _ | Abst _) as op,vars) ->
 	  if red_under info.i_flags (DELTA op) then
             let cst = DOPN(op, Array.map term_of_freeze vars) in
             (match const_value_cache info cst with
@@ -818,7 +818,7 @@ and whnf_term info env t =
     | DOP2 (Cast,ct,c) -> whnf_term info env ct    (* remove outer casts *)
     | DOP2 (op,a,b) -> (* Lambda Prod *)
       	{ norm = false; term = FOP2 (op, freeze env a, freeze env b) }
-    | DOPN ((AppL | Const _ | Abst _ | MutCase _) as op, ve) ->
+    | DOPN ((AppL | Const _ | Evar _ | Abst _ | MutCase _) as op, ve) ->
       	whnf_frterm info { norm = false; term = FOPN (op, freeze_vect env ve) }
     | DOPN ((MutInd _ | MutConstruct _) as op,v) ->
       	{ norm = (v=[||]); term = FOPN (op, freeze_vect env v) }

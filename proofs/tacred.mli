@@ -9,7 +9,7 @@ open Evd
 open Reduction
 (*i*)
 
-(* Reduction functions associated to tactics. *)
+(* Reduction functions associated to tactics. \label{tacred} *)
 
 val hnf_constr : 'a reduction_function
 

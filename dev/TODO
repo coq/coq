@@ -1,14 +1,9 @@
 
- o Declare
-     - declare_eliminations
-
  o Discharge
      - conserver les constantes dans leur section de définition
        et redéfinir des constantes déchargées à la sortie
 
  o Variables existentielles
-     - traiter le constructeur Evar dans les fonctions de réductions
-       (parallèlement à Const)
      - unifier Meta et Evar
 
  o Lib
@@ -29,7 +24,8 @@
      - utiliser DOPL plutôt que DOPN (sauf pour Case)
      - batch mode => pas de undo, ni de reset
      - conversion : déplier la constante la plus récente
-     - un cache pour type_of_const, type_of_inductive, type_of_constructor
+     - un cache pour type_of_const, type_of_inductive, type_of_constructor,
+       lookup_mind_specif
 
  o Lexer
      à compléter

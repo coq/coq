@@ -28,6 +28,9 @@ val parse_section_path : string -> string list * string * string
 
 module Stringmap : Map.S with type key = string
 
+val stringmap_to_list : 'a Stringmap.t -> (string * 'a) list 
+val stringmap_dom : 'a Stringmap.t -> string list
+
 (*s Lists. *)
 
 val list_intersect : 'a list -> 'a list -> 'a list
@@ -54,6 +57,10 @@ val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_firstn : int -> 'a list -> 'a list
 val list_lastn : int -> 'a list -> 'a list
 val list_prefix_of : 'a list -> 'a list -> bool
+(* [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
+val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
+(* raises [Invalid_argument] if the two lists don't have the same length *)
+val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 
 (*s Arrays. *)
 
@@ -72,7 +79,7 @@ val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 val array_app_tl : 'a array -> 'a list -> 'a list
 val array_list_of_tl : 'a array -> 'a list
-val array_map_to_list : ('a -> 'b) -> 'a array ->'b list
+val array_map_to_list : ('a -> 'b) -> 'a array -> 'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 

@@ -474,6 +474,7 @@ val sort_hdchar : sorts -> string
 (*s Occur check functions. *)                         
 
 val occur_meta : constr -> bool
+val occur_existential : constr -> bool
 val rel_vect : int -> int -> constr array
 
 (* [(occur_const (s:section_path) c)] returns [true] if constant [s] occurs 
@@ -492,6 +493,7 @@ val subst_term : constr -> constr -> constr
 val subst_term_eta_eq : constr -> constr -> constr
 val replace_consts :
   (section_path * (identifier list * constr) option) list -> constr -> constr
+val subst_term_occ : int list -> constr -> constr -> constr
 
 (* [subst_meta bl c] substitutes the metavar $i$ by $c_i$ in [c] 
    for each binding $(i,c_i)$ in [bl],

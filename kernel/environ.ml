@@ -199,9 +199,6 @@ let defined_constant env = function
       Constant.is_defined (lookup_constant sp env)
   | _ -> invalid_arg "defined_constant"
 
-(* A const is opaque if it is a non-defined existential or
-   a non-existential opaque constant *)
-
 let opaque_constant env = function
   | DOPN (Const sp, _) -> 
       Constant.is_opaque (lookup_constant sp env)

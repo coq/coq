@@ -58,6 +58,7 @@ val mis_recarg : mind_specif -> (recarg list) array
 val mis_typename : mind_specif -> identifier
 val is_recursive : int list -> recarg list array -> bool
 val mis_is_recursive : mind_specif -> bool
+val mis_consnames : mind_specif -> identifier array
 
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet

@@ -9,6 +9,9 @@ open Tacmach
 open Tacentries
 (*i*)
 
+(* Tactics for the interpreter. They left a trace in the proof tree
+   when they are called. *)
+
 val h_clear           : identifier list -> tactic
 val h_move            : bool -> identifier -> identifier -> tactic
 val h_contradiction   : tactic

@@ -52,14 +52,6 @@ let constant_value env k =
   else 
     failwith "opaque"
 
-let const_abst_opt_value env c =
-  match c with
-    | DOPN(Const sp,_) ->
-	if evaluable_constant env c then Some (constant_value env c) else None
-    | DOPN(Abst sp,_) ->
-	if evaluable_abst env c then Some (abst_value env c) else None
-    | _ -> invalid_arg "const_abst_opt_value"
-
 let mis_lc mis =
   instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
     (Array.to_list mis.mis_args)
@@ -101,6 +93,19 @@ let existential_value sigma c =
 	instantiate_constr (ids_of_sign hyps) c (Array.to_list args)
     | Evar_empty ->
 	anomaly "a defined existential with no body"
+
+let const_abst_opt_value env sigma c =
+  match c with
+    | DOPN(Const sp,_) ->
+	if evaluable_constant env c then Some (constant_value env c) else None
+    | DOPN(Evar ev,_) ->
+	if Evd.is_defined sigma ev then 
+	  Some (existential_value sigma c) 
+	else 
+	  None
+    | DOPN(Abst sp,_) ->
+	if evaluable_abst env c then Some (abst_value env c) else None
+    | _ -> invalid_arg "const_abst_opt_value"
 
 let mis_arity' mis =
   let idhyps = ids_of_sign mis.mis_mib.mind_hyps 

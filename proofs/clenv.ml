@@ -426,9 +426,8 @@ let clenv_val_of clenv mv =
       (match Intmap.find mv clenv.env with
 	 | Cltyp _ -> DOP0(Meta mv)
 	 | Clval(b,_) ->
-	     instance (List.map (fun mv' -> (mv',valrec mv')) 
-			 (Intset.elements b.freemetas)) 
-	       (w_env clenv.hook) (w_Underlying clenv.hook) b.rebus)
+	     plain_instance (List.map (fun mv' -> (mv',valrec mv')) 
+			       (Intset.elements b.freemetas)) b.rebus)
     with Not_found -> 
       DOP0(Meta mv)
   in 
@@ -439,7 +438,7 @@ let clenv_instance clenv b =
     List.map 
       (fun mv -> (mv,clenv_val_of clenv mv)) (Intset.elements b.freemetas)
   in 
-  instance c_sigma (w_env clenv.hook) (w_Underlying clenv.hook) b.rebus
+  plain_instance c_sigma b.rebus
     
 let clenv_instance_term clenv c =
   clenv_instance clenv (mk_freelisted c)

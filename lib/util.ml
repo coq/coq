@@ -51,6 +51,10 @@ let parse_section_path s =
 
 module Stringmap = Map.Make(struct type t = string let compare = compare end)
 
+let stringmap_to_list m = Stringmap.fold (fun s y l -> (s,y)::l) m []
+
+let stringmap_dom m = Stringmap.fold (fun s _ l -> s::l) m []
+
 (* Lists *)
 
 let list_intersect l1 l2 = 
@@ -189,7 +193,12 @@ let list_prefix_of prefl l =
     | (_, _) -> false
   in 
   prefrec (prefl,l)
-    
+
+let list_map_append f l = List.flatten (List.map f l)
+
+let list_map_append2 f l1 l2 = List.flatten (List.map2 f l1 l2)
+
+
 (* Arrays *)
 
 let array_exists f v = 

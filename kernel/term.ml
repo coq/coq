@@ -1139,6 +1139,71 @@ let rec subst_meta bl c =
     | DOP2(op,c'1, c'2) -> DOP2(op, subst_meta bl c'1, subst_meta bl c'2)
     | DOPN(op, c') -> DOPN(op, Array.map (subst_meta bl) c')
     | _ -> c
+
+(* Substitute only a list of locations locs, the empty list is
+   interpreted as substitute all, if 0 is in the list then no
+   substitution is done the list may contain only negative occurrences
+   that will not be substituted. *)
+
+let subst_term_occ locs c t = 
+  let rec substcheck except k occ c t =
+    if except or List.exists (function u -> u>=occ) locs then
+      substrec except k occ c t
+    else 
+      (occ,t)
+  and substrec except k occ c t =
+    if eq_constr t c then
+      if except then 
+	if List.mem (-occ) locs then (occ+1,t) else (occ+1,Rel(k))
+      else 
+	if List.mem occ locs then (occ+1,Rel(k)) else  (occ+1,t)
+    else 
+      match t with
+	| DOPN(Const sp,tl) -> occ,t
+	|  DOPN(MutConstruct _,tl) -> occ,t
+	|  DOPN(MutInd _,tl) -> occ,t
+	|  DOPN(i,cl) -> 
+	     let (occ',cl') =   
+               Array.fold_left 
+		 (fun (nocc',lfd) f ->
+		    let (nocc'',f') = substcheck except k nocc' c f in
+                    (nocc'',f'::lfd)) 
+		 (occ,[]) cl
+             in 
+	     (occ',DOPN(i,Array.of_list (List.rev cl')))
+	|  DOP2(i,t1,t2) -> 
+	     let (nocc1,t1')=substrec except k occ c t1 in
+             let (nocc2,t2')=substcheck except k nocc1 c t2 in
+             nocc2,DOP2(i,t1',t2')
+	|  DOP1(i,t) -> 
+	     let (nocc,t')= substrec except k occ c t in
+	     nocc,DOP1(i,t')
+	|  DLAM(n,t) -> 
+	     let (occ',t') = substcheck except (k+1) occ (lift 1 c) t in
+             (occ',DLAM(n,t'))
+	|  DLAMV(n,cl) -> 
+	     let (occ',cl') =   
+               Array.fold_left 
+		 (fun (nocc',lfd) f ->
+		    let (nocc'',f') = 
+		      substcheck except (k+1) nocc' (lift 1 c) f
+                    in (nocc'',f'::lfd)) 
+		 (occ,[]) cl
+             in 
+	     (occ',DLAMV(n,Array.of_list (List.rev cl') ))
+	|  _ -> occ,t
+  in 
+  if locs = [] then 
+    subst_term c t
+  else if List.mem 0 locs then 
+    t
+  else 
+    let except = List.for_all (fun n -> n<0) locs in
+    let (nbocc,t') = substcheck except 1 1 c t in
+    if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
+      failwith "subst_term_occ: too few occurences";
+    t'
+
   
 (***************************)
 (* occurs check functions  *)                         
@@ -1154,6 +1219,18 @@ let rec occur_meta = function
 
 let rel_vect = (Generic.rel_vect : int -> int -> constr array)
 		 
+let occur_existential = 
+  let rec occrec = function
+    | DOPN(Evar _,_) -> true
+    | DOPN(_,cl) -> array_exists occrec cl
+    | DOPL(_,cl) -> List.exists occrec cl
+    | DOP2(_,c1,c2) -> occrec c1 or occrec c2
+    | DOP1(_,c) -> occrec c
+    | DLAM(_,c) -> occrec c
+    | DLAMV(_,cl) -> array_exists occrec cl
+    | _ -> false
+  in 
+  occrec
 
 (***************************)
 (* hash-consing functions  *)                         

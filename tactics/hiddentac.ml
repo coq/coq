@@ -6,9 +6,6 @@ open Proof_trees
 open Tacmach
 open Tacentries
 
-(* These tactics go through the interpreter. They left a trace in the proof
-   tree when they are called. *)
-
 let h_clear ids         = v_clear  [(Clause ids)]
 let h_move dep id1 id2  = 
  (if dep then v_move else v_move_dep) [Identifier id1;Identifier id2]

@@ -46,6 +46,7 @@ val make_module_marker : string list -> module_mark
 val put_pat            : module_mark -> string -> marked_term
 val get_pat            : marked_term -> constr
 val pattern_stock      : constr Stock.stock
+
 (*i**
 val raw_sopattern_of_compattern : typed_type signature -> CoqAst.t -> constr
 **i*)

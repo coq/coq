@@ -100,78 +100,17 @@ let red_product env sigma c =
     match x with
       | DOPN(AppL,cl) -> 
 	  DOPN(AppL,Array.append [|redrec (array_hd cl)|] (array_tl cl))
-      | DOPN(Const _,_) when evaluable_constant env x -> constant_value env x
-      | DOPN(Abst _,_) when evaluable_abst env x -> abst_value env x 
+      | DOPN(Const _,_) when evaluable_constant env x -> 
+	  constant_value env x
+      | DOPN(Evar ev,_) when Evd.is_defined sigma ev -> 
+	  existential_value sigma x
+      | DOPN(Abst _,_) when evaluable_abst env x -> 
+	  abst_value env x 
       | DOP2(Cast,c,_) -> redrec c
       | DOP2(Prod,a,DLAM(x,b)) -> DOP2(Prod, a, DLAM(x, redrec b))  
       | _ -> error "Term not reducible"
   in 
   nf_betaiota env sigma (redrec c)
-
-
-(* Substitute only a list of locations locs, the empty list is interpreted
-   as substitute all, if 0 is in the list then no substitution is done 
-   the list may contain only negative occurrences that will not be substituted *)
-(* Aurait sa place dans term.ml mais term.ml ne connait pas printer.ml *)
-let subst_term_occ locs c t = 
-  let rec substcheck except k occ c t =
-    if except or List.exists (function u -> u>=occ) locs then
-      substrec except k occ c t
-    else 
-      (occ,t)
-  and substrec except k occ c t =
-    if eq_constr t c then
-      if except then 
-	if List.mem (-occ) locs then (occ+1,t) else (occ+1,Rel(k))
-      else 
-	if List.mem occ locs then (occ+1,Rel(k)) else  (occ+1,t)
-    else 
-      match t with
-	| DOPN(Const sp,tl) -> occ,t
-	|  DOPN(MutConstruct _,tl) -> occ,t
-	|  DOPN(MutInd _,tl) -> occ,t
-	|  DOPN(i,cl) -> 
-	     let (occ',cl') =   
-               Array.fold_left 
-		 (fun (nocc',lfd) f ->
-		    let (nocc'',f') = substcheck except k nocc' c f in
-                    (nocc'',f'::lfd)) 
-		 (occ,[]) cl
-             in 
-	     (occ',DOPN(i,Array.of_list (List.rev cl')))
-	|  DOP2(i,t1,t2) -> 
-	     let (nocc1,t1')=substrec except k occ c t1 in
-             let (nocc2,t2')=substcheck except k nocc1 c t2 in
-             nocc2,DOP2(i,t1',t2')
-	|  DOP1(i,t) -> 
-	     let (nocc,t')= substrec except k occ c t in
-	     nocc,DOP1(i,t')
-	|  DLAM(n,t) -> 
-	     let (occ',t') = substcheck except (k+1) occ (lift 1 c) t in
-             (occ',DLAM(n,t'))
-	|  DLAMV(n,cl) -> 
-	     let (occ',cl') =   
-               Array.fold_left 
-		 (fun (nocc',lfd) f ->
-		    let (nocc'',f') = 
-		      substcheck except (k+1) nocc' (lift 1 c) f
-                    in (nocc'',f'::lfd)) 
-		 (occ,[]) cl
-             in 
-	     (occ',DLAMV(n,Array.of_list (List.rev cl') ))
-	|  _ -> occ,t
-  in 
-  if locs = [] then 
-    subst_term c t
-  else if List.mem 0 locs then 
-    t
-  else 
-    let except = List.for_all (fun n -> n<0) locs in
-    let (nbocc,t') = substcheck except 1 1 c t in
-    if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
-      failwith "subst_term_occ: too few occurences" 
-    else 
-      t'
 
 (* linear substitution (following pretty-printer) of the value of name in c.
  * n is the number of the next occurence of name.
@@ -179,14 +118,13 @@ let subst_term_occ locs c t =
 let rec substlin env name n ol c =
   match c with
     | DOPN(Const sp,_) ->
-        if path_of_const c = name then
+        if sp = name then
           if List.hd ol = n then
             if evaluable_constant env c then 
-	      ((n+1),(List.tl ol), constant_value env c)
+	      (n+1, List.tl ol, constant_value env c)
             else
               errorlabstrm "substlin"
-                [< 'sTR(string_of_path sp);
-                   'sTR " is not a defined constant" >]
+                [< print_sp sp; 'sTR " is not a defined constant" >]
           else 
 	    ((n+1),ol,c)
         else 
@@ -195,13 +133,13 @@ let rec substlin env name n ol c =
     | DOPN(Abst _,_) ->
         if path_of_abst c = name then
           if List.hd ol = n then 
-	    ((n+1),(List.tl ol), abst_value env c)
+	    (n+1, List.tl ol, abst_value env c)
           else 
-	    ((n+1),ol,c)
+	    (n+1,ol,c)
         else 
 	  (n,ol,c)
 
-(* INEFFICIENT: OPTIMIZE *)
+    (* INEFFICIENT: OPTIMIZE *)
     | DOPN(AppL,tl) ->
         let c1 = array_hd tl and cl = array_tl tl in
         Array.fold_left 
@@ -394,6 +332,11 @@ let whd_delta_stack env sigma =
             whrec (constant_value env c) l
 	  else 
 	    x,l
+      | DOPN(Evar ev,_) as c ->
+	  if Evd.is_defined sigma ev then
+            whrec (existential_value sigma c) l
+	  else 
+	    x,l
       | (DOPN(Abst _,_)) as c ->
 	  if evaluable_abst env c then
             whrec (abst_value env c) l
@@ -414,6 +357,11 @@ let whd_betadelta_stack env sigma =
       | DOPN(Const _,_) ->
           if evaluable_constant env x then 
 	    whrec (constant_value env x) l
+          else 
+	    (x,l)
+      | DOPN(Evar ev,_) ->
+          if Evd.is_defined sigma ev then 
+	    whrec (existential_value sigma x) l
           else 
 	    (x,l)
       | DOPN(Abst _,_) ->
@@ -442,6 +390,11 @@ let whd_betadeltat_stack env sigma =
 	    whrec (constant_value env x) l
           else 
 	    (x,l)
+      | DOPN(Evar ev,_) ->
+          if Evd.is_defined sigma ev then 
+	    whrec (existential_value sigma x) l
+          else 
+	    (x,l)
       | DOPN(Abst _,_) ->
           if translucent_abst env x then 
 	    whrec (abst_value env x) l
@@ -465,6 +418,11 @@ let whd_betadeltaeta_stack env sigma =
       | DOPN(Const _,_) ->
           if evaluable_constant env x then
 	    whrec (constant_value env x) stack
+          else 
+	    (x,stack)
+      | DOPN(Evar ev,_) ->
+          if Evd.is_defined sigma ev then 
+	    whrec (existential_value sigma x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -611,6 +569,11 @@ let whd_betadeltatiota_stack env sigma =
             whrec (constant_value env x) stack
           else 
 	    (x,stack)
+      | DOPN(Evar ev,_) ->
+          if Evd.is_defined sigma ev then 
+	    whrec (existential_value sigma x) stack
+          else 
+	    (x,stack)
       | DOPN(Abst _,_) ->
           if translucent_abst env x then
 	    whrec (abst_value env x) stack
@@ -646,6 +609,11 @@ let whd_betadeltaiota_stack env sigma =
       | DOPN(Const _,_) ->
           if evaluable_constant env x then
 	    bdi_rec (constant_value env x) stack
+          else 
+	    (x,stack)
+      | DOPN(Evar ev,_) ->
+          if Evd.is_defined sigma ev then 
+	    bdi_rec (existential_value sigma x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -684,6 +652,11 @@ let whd_betadeltaiotaeta_stack env sigma =
       | DOPN(Const _,_) ->
           if evaluable_constant env x then 
 	    whrec (constant_value env x) stack
+          else 
+	    (x,stack)
+      | DOPN(Evar ev,_) ->
+          if Evd.is_defined sigma ev then 
+	    whrec (existential_value sigma x) stack
           else 
 	    (x,stack)
       | DOPN(Abst _,_) ->
@@ -815,23 +788,41 @@ and eqappr cv_pb infos appr1 appr2 =
 	  (reloc_rel n el1 = reloc_rel m el2)
           (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
-    | (FOP0(Meta(n)), FOP0(Meta(m))) ->
+    | (FOP0(Meta n), FOP0(Meta m)) ->
         bool_and_convert (n=m) 
 	  (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
-    (* 2 constants or 2 abstractions *)
+    (* 2 constants, 2 existentials or 2 abstractions *)
     | (FOPN(Const sp1,al1), FOPN(Const sp2,al2)) ->
 	convert_or
 	  (* try first intensional equality *)
 	  (bool_and_convert (sp1 == sp2 or sp1 = sp2)
 	     (convert_and
 		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)))
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		   v1 v2)))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (match search_frozen_cst infos (Const sp2) al2 with
              | Some def2 -> 
 		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
              | None -> (match search_frozen_cst infos (Const sp1) al1 with
+                          | Some def1 -> eqappr cv_pb infos
+				(lft1, fhnf_apply infos n1 def1 v1) appr2
+			  | None -> fun _ -> raise NotConvertible))
+
+    | (FOPN(Evar ev1,al1), FOPN(Evar ev2,al2)) ->
+	convert_or
+	  (* try first intensional equality *)
+	  (bool_and_convert (ev1 == ev2)
+	     (convert_and
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		   v1 v2)))
+          (* else expand the second occurrence (arbitrary heuristic) *)
+          (match search_frozen_cst infos (Evar ev2) al2 with
+             | Some def2 -> 
+		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
+             | None -> (match search_frozen_cst infos (Evar ev1) al1 with
                           | Some def1 -> eqappr cv_pb infos
 				(lft1, fhnf_apply infos n1 def1 v1) appr2
 			  | None -> fun _ -> raise NotConvertible))
@@ -842,7 +833,8 @@ and eqappr cv_pb infos appr1 appr2 =
           (bool_and_convert  (sp1 = sp2)
 	     (convert_and
 		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)))
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		   v1 v2)))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (match search_frozen_cst infos (Abst sp2) al2 with
              | Some def2 -> 
@@ -852,14 +844,14 @@ and eqappr cv_pb infos appr1 appr2 =
 				(lft1, fhnf_apply infos n1 def1 v1) appr2
 			  | None -> fun _ -> raise NotConvertible))
 
-    (* only one constant or abstraction *)
-    | (FOPN((Const _ | Abst _) as op,al1), _)      ->
+    (* only one constant, existential or abstraction *)
+    | (FOPN((Const _ | Evar _ | Abst _) as op,al1), _)      ->
         (match search_frozen_cst infos op al1 with
            | Some def1 -> 
 	       eqappr cv_pb infos (lft1, fhnf_apply infos n1 def1 v1) appr2
            | None -> fun _ -> raise NotConvertible)
 
-    | (_, FOPN((Const _ | Abst _) as op,al2))      ->
+    | (_, FOPN((Const _ | Evar _ | Abst _) as op,al2))      ->
         (match search_frozen_cst infos op al2 with
            | Some def2 -> 
 	       eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)

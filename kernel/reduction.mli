@@ -122,7 +122,6 @@ val unfoldn :
   (int list * section_path) list -> 'a reduction_function
 val fold_one_com : constr -> 'a reduction_function
 val fold_commands : constr list -> 'a reduction_function
-val subst_term_occ : int list -> constr -> constr -> constr
 val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 val compute : 'a reduction_function
 

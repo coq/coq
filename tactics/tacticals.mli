@@ -13,6 +13,8 @@ open Pattern
 open Wcclausenv
 (*i*)
 
+(* Tacticals i.e. functions from tactics to tactics. *)
+
 val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
@@ -38,7 +40,7 @@ val tclTRY_HYPS      : (constr -> tactic) -> tactic
 val dyn_tclIDTAC     : tactic_arg list -> tactic
 val dyn_tclFAIL      : tactic_arg list -> tactic
 
-(* Clause tacticals *)
+(*s Clause tacticals. *)
 
 type clause = identifier option
 
@@ -67,20 +69,19 @@ val onNthLastHyp   : int -> (clause -> tactic) -> tactic
 val onNLastHyps    : int -> (clause -> tactic) -> tactic
 val clauseTacThen  : (clause -> tactic) -> tactic -> clause -> tactic
 val if_tac         : (goal sigma -> bool) -> tactic -> (tactic) -> tactic
-val ifOnClause     : (clause * constr -> bool) -> 
-                      (clause -> tactic) -> 
-                      (clause -> tactic) -> 
-                       clause -> tactic
+val ifOnClause     : 
+  (clause * constr -> bool) -> (clause -> tactic) -> (clause -> tactic) -> 
+    clause -> tactic
 
-(* Usage : [ConclPattern concl pat tacast]
+(*i Usage : [ConclPattern concl pat tacast]
    if the term concl matches the pattern pat, (in sense of 
    Pattern.somatches, then replace ?1 ?2 metavars in tacast by the
    right values to build a tactic *)
 (***
 val conclPattern : constr -> constr -> CoqAst.t -> tactic
-***)
+**i*)
 
-(* Elimination tacticals *)
+(*s Elimination tacticals. *)
 
 type branch_args = { 
   ity        : constr;      (* the type we were eliminating on *)
