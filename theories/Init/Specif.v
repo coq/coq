@@ -96,13 +96,17 @@ End Projections.
 
 (** Extended_booleans *)
 
-Inductive sumbool [A,B:Prop] : Set as "{ A } + { B }"
+Inductive sumbool [A,B:Prop] : Set
     := left  : A -> {A}+{B}
-     | right : B -> {A}+{B}.
+     | right : B -> {A}+{B}
 
-Inductive sumor [A:Set;B:Prop] : Set as "A + { B }"
+where "{ A } + { B }" := (sumbool A B).
+
+Inductive sumor [A:Set;B:Prop] : Set
     := inleft  : A -> A+{B}
-     | inright : B -> A+{B}.
+     | inright : B -> A+{B}
+
+where "A + { B }" := (sumor A B).
 
 (* Factorizing "sumor" at level 4 to parse B+{x:A|P} without parentheses *)
 
@@ -168,6 +172,8 @@ Implicits except [1].
 V7only [
 Notation Except := (!except ?) (only parsing).
 Notation Error := (!error ?) (only parsing).
+V7only [Implicits error [].].
+V7only [Implicits except [].].
 ].
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
 Proof.
