@@ -473,8 +473,20 @@ let print_setoids () =
 
 (************************** Adding a relation to the database *********************)
 
-let check_eq env a aeq =
- let typ = mkApp (Lazy.force coq_relation, [| a |]) in
+let check_a env a =
+ let typ = Typing.type_of env Evd.empty a in
+ let a_quantifiers_rev,_ = Reduction.dest_arity env typ in
+  a_quantifiers_rev
+
+(* apply_to_rels c [l1 ; ... ; ln] returns (c Rel1 ... reln) *)
+let apply_to_rels c l =
+ applistc c (Util.list_map_i (fun i _ -> mkRel i) 1 l)
+
+let check_eq env a_quantifiers_rev a aeq =
+ let typ =
+  Sign.it_mkProd_or_LetIn
+   (mkApp ((Lazy.force coq_relation),[| apply_to_rels a a_quantifiers_rev |]))
+   a_quantifiers_rev in
  if
   not
    (is_conv env Evd.empty (Typing.type_of env Evd.empty aeq) typ)
@@ -482,29 +494,36 @@ let check_eq env a aeq =
   errorlabstrm "Add Relation Class"
    (prterm aeq ++ str " should have type (" ++ prterm typ ++ str ")")
 
-let check_refl env a aeq refl =
+let check_refl env a_quantifiers_rev a aeq refl =
  if
   not
    (is_conv env Evd.empty (Typing.type_of env Evd.empty refl)
-     (mkApp ((Lazy.force coq_reflexive), [| a; aeq |])))
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_reflexive),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
  then
   errorlabstrm "Add Relation Class"
    (str "Not a valid proof of reflexivity")
 
-let check_sym env a aeq sym =
+let check_sym env a_quantifiers_rev a aeq sym =
  if
   not
    (is_conv env Evd.empty (Typing.type_of env Evd.empty sym)
-     (mkApp ((Lazy.force coq_symmetric), [| a; aeq |])))
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_symmetric),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
  then
   errorlabstrm "Add Relation Class"
    (str "Not a valid proof of symmetry")
 
 let int_add_relation a aeq refl sym =
  let env = Global.env () in
-  check_eq env a aeq ;
-  option_iter (check_refl env a aeq) refl ;
-  option_iter (check_sym env a aeq) sym ;
+ let a_quantifiers_rev = check_a env a in
+  check_eq env a_quantifiers_rev a aeq  ;
+  option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
+  option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
   Lib.add_anonymous_leaf 
    (relation_to_obj 
     (aeq, { rel_a = a;
@@ -536,12 +555,13 @@ let no_more_edited id =
 let what_edited id =
   Gmap.find id !edited
 
+(*CSC: reimplementare con qualcosa che faccia senso *)
 let check_is_dependent t n =
-  let rec aux t i n =
+  let rec aux t i =
     if (i<n)
-    then (dependent (mkRel i) t) || (aux t (i+1) n)
+    then (dependent (mkRel i) t) || (aux t (i+1))
     else false
-  in aux t 0 n
+  in aux t 0
 
 let cic_relation_class_of_X_relation_class typ value =
  function
@@ -605,7 +625,7 @@ let cic_argument_class_of_argument_class (variance,arg) =
  in
   cic_relation_class_of_X_relation_class coq_variance coq_variant_value arg
 
-let gen_compat_lemma_statement output args m =
+let gen_compat_lemma_statement quantifiers_rev output args m =
  let rec mk_signature =
   function
      [] -> assert false
@@ -618,31 +638,17 @@ let gen_compat_lemma_statement output args m =
   let output = cic_relation_class_of_relation_class output in
   let args= mk_signature (List.map cic_argument_class_of_argument_class args) in
    args, output,
-    mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |])
-
-let check_if_signature_is_well_typed c typ args output =
- let carrier_of_relation =
-  function
-     Leibniz t -> t
-   | Relation {rel_a = a} -> a in
- let rev_args' =
-  List.rev_map (fun (_,t) -> Anonymous,carrier_of_relation t) args  in
- let output' = carrier_of_relation output in
- let typ' = compose_prod rev_args' output' in
- let env = Global.env () in
-  if not (is_conv env Evd.empty typ typ') then
-   errorlabstrm "New Morphism"
-    (str "The signature provided is for a function of type " ++ prterm typ' ++
-     str ". The function " ++ prterm c ++ str " has type " ++ prterm typ)
+    compose_prod quantifiers_rev
+     (mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |]))
 
 let morphism_theory_id_of_morphism_proof_id id =
  id_of_string (string_of_id id ^ "_morphism_theory")
 
-let add_morphism lemma_infos mor_name (m,args,output) =
+let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
  let env = Global.env() in
  begin
   match lemma_infos with
-     None -> () (* the Morphism_Theory object has alrady been created *)
+     None -> () (* the Morphism_Theory object has already been created *)
    | Some (lem_name,argsconstr,outputconstr) ->
       (* only the compatibility has been proved; we need to declare the
          Morphism_Theory object *)
@@ -651,8 +657,10 @@ let add_morphism lemma_infos mor_name (m,args,output) =
       Declare.declare_internal_constant mor_name
        (DefinitionEntry
          {const_entry_body =
-           mkApp ((Lazy.force coq_Build_Morphism_Theory),
-            [| argsconstr; outputconstr; m ; mext |]);
+           compose_lam quantifiers_rev
+            (mkApp ((Lazy.force coq_Build_Morphism_Theory),
+              [| argsconstr; outputconstr; apply_to_rels m quantifiers_rev ;
+                  apply_to_rels mext quantifiers_rev |]));
           const_entry_type = None;
           const_entry_opaque = false},
            IsDefinition))
@@ -670,43 +678,141 @@ let add_morphism lemma_infos mor_name (m,args,output) =
         lem = mmor }));
    Options.if_verbose ppnl (prterm m ++ str " is registered as a morphism")   
 
+let apply_to_relation subst rel =
+  { rel_a = mkApp (rel.rel_a, subst) ;
+    rel_aeq = mkApp (rel.rel_aeq, subst) ;
+    rel_refl = option_app (fun c -> mkApp (c,subst)) rel.rel_refl ; 
+    rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym }
+
+(* first order matching with a bit of conversion *)
+let unify_relation_carrier_with_type env rel t =
+ let raise_error () =
+  errorlabstrm "New Morphism"
+   (str "One morphism argument has type " ++ prterm t ++
+    str " but the signature requires an argument of type (" ++
+    prterm rel.rel_a ++ str " ? ... ?)") in
+ let args =
+  match kind_of_term rel.rel_a, kind_of_term t with
+     App (he,args), App (he',args') ->
+      let argsno = Array.length args in
+(*CSC: knowing the number of quantifiers I could be more precise *)
+      let args1 = Array.sub args' 0 argsno in
+      let args2 = Array.sub args' argsno (Array.length args' - argsno) in
+       if is_conv env Evd.empty rel.rel_a (mkApp (he',args1)) then
+        args2
+       else
+        raise_error ()
+(*CSC: knowing the number of quantifiers I could be more precise *)
+   | _, App (t'',args) when is_conv env Evd.empty rel.rel_a t'' -> args
+   | _, _ when is_conv env Evd.empty rel.rel_a t -> [||]
+   | _, _ -> raise_error ()
+ in
+  apply_to_relation args rel
+
+let unify_relation_class_carrier_with_type env rel t =
+ match rel with
+    Leibniz _ -> rel
+  | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
+
+(* first order matching with a bit of conversion *)
+(* Note: the type checking operations performed by the function could  *)
+(* be done once and for all abstracting the morphism structure using   *)
+(* the quantifiers. Would the new structure be more suited than the    *)
+(* existent one for other tasks to? (e.g. pretty printing would expose *)
+(* much more information: is it ok or is it too much information?)     *)
+let unify_morphism_with_arguments gl (c,av) {args=args;output=output;lem=lem} =
+ let al = Array.to_list av in
+ let argsno = List.length args in
+ let quantifiers,al' = Util.list_chop (List.length al - argsno) al in
+ let quantifiersv = Array.of_list quantifiers in
+ let c' = mkApp (c,quantifiersv) in
+ (* these are pf_type_of we could avoid *)
+ let al'_type = List.map (Tacmach.pf_type_of gl) al' in
+ let args' =
+  List.map2
+   (fun (var,rel) ty ->
+     var,unify_relation_class_carrier_with_type (pf_env gl) rel ty)
+   args al'_type in
+ (* this is another pf_type_of we could avoid *)
+ let ty = Tacmach.pf_type_of gl (mkApp (c,av)) in
+ let output' = unify_relation_class_carrier_with_type (pf_env gl) output ty in
+ let lem' = mkApp (lem,quantifiersv) in
+  {args=args'; output=output'; lem=lem'},c',Array.of_list al'
+
 let new_morphism m signature id hook =
  if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
   errorlabstrm "New Morphism" (pr_id id ++ str " already exists")
  else
   let env = Global.env() in
-  let typeofm = (Typing.type_of env Evd.empty m) in
-  let typ = (nf_betaiota typeofm) in
-  let (argsrev, output) = (decompose_prod typ) in
-  let args_ty = (List.map snd (List.rev argsrev)) in
+  let typeofm = Typing.type_of env Evd.empty m in
+  let typ = nf_betaiota typeofm in
+  let argsrev, output = decompose_prod typ in
+  let args_ty = List.rev argsrev in
+  let args_ty_len = List.length (args_ty) in
+  let number_of_arguments =
+   match signature with
+      None ->
+       (* just a guess; if it is wrong the user has to explicitly
+          give the signature (and she is encouraged to do so) *)
+       args_ty_len
+    | Some (args,_) -> List.length args in
+  let number_of_quantifiers = args_ty_len - number_of_arguments in
+  let args_ty_quantifiers_rev, real_args_ty =
+   if args_ty_len < number_of_arguments then
+    errorlabstrm "New Morphism"
+     (str "The morphism " ++ prterm m ++ str " has type " ++ prterm typeofm ++
+      str " that attends at most " ++ int args_ty_len ++ str " arguments. " ++
+      str "The signature that you specified requires " ++
+      int number_of_arguments ++ str " arguments.")
+   else
+    let quant, args = Util.list_chop number_of_quantifiers args_ty in
+     List.rev quant, List.map snd args
+  in
     if (args_ty=[])
     then errorlabstrm "New Morphism"
      (str "The term " ++ prterm m ++ str " is not a product")
+(*CSC: check_is_dependent e' completamente bacata
     else if (check_is_dependent typ (List.length args_ty))
     then  errorlabstrm "New Morphism"
      (str "The term " ++ prterm m ++ str" should not be a dependent product")
+*)
     else
      begin
-      let args,output =
+      let args,args_instance,output,output_instance =
        match signature with
           None ->
-           List.map (fun ty -> None,default_relation_for_carrier ty) args_ty,
-           default_relation_for_carrier output
-        | Some (args,output) ->
-           let find_relation_class t =
-            try find_relation_class t
+           (*CSC: ???? qui assumiamo che non siano mai quantificati; ma e'
+             vero??? *)
+           let args =
+            List.map
+             (fun (_,ty) -> None,default_relation_for_carrier ty) args_ty in
+           let output = default_relation_for_carrier output in
+            args,args,output,output
+        | Some (args,output') ->
+           let find_relation_class t real_t =
+            try
+             match find_relation_class t with
+(*CSC: mi sa che anche l'inference del tipo per Leibniz e' bacata...
+       cosa succede se ho un morfismo (incl A) --> (@eq A) --> impl
+       Leibniz dovrebbe essere sempre quantificata, ma nel modo giusto!  ?*)
+                (Leibniz _) as rel -> rel,rel
+              | Relation rel ->
+                 Relation rel,
+                 Relation
+                  (unify_relation_carrier_with_type (Global.env ()) rel real_t)
             with Not_found ->
              errorlabstrm "Add Morphism"
               (str "Not a valid signature: " ++ prterm t ++
                str " is neither a registered relation nor the Leibniz " ++
                str " equality partially applied to a type.")
            in
-           let find_relation_class_v (variance,t) =
-            let relation = find_relation_class t in
-             match find_relation_class t, variance with
+           let find_relation_class_v (variance,t) real_t =
+            let relation,relation_instance = find_relation_class t real_t in
+             match relation, variance with
                 Leibniz _, None
               | Relation {rel_sym = Some _}, None
-              | Relation {rel_sym = None}, Some _ -> variance,relation
+              | Relation {rel_sym = None}, Some _ ->
+                 (variance, relation), (variance, relation_instance)
               | Relation {rel_sym = None},None ->
                  errorlabstrm "Add Morphism"
                   (str "You must specify the variance in each argument " ++
@@ -717,13 +823,21 @@ let new_morphism m signature id hook =
                   (str "You cannot specify the variance of an argument " ++
                    str "whose relation is symmetric.")
            in
-            let args = List.map find_relation_class_v args in
-            let output = find_relation_class output in
-             check_if_signature_is_well_typed m typ args output ;
-             args, output
+            let args, args_instance =
+             List.split
+              (Util.list_map2_i
+                (fun i arg real_arg ->
+                  find_relation_class_v arg (lift (-i) real_arg))
+                0 args real_args_ty) in
+            (*CSC: bug here; output deve essere de-liftato; ma a sto
+              punto meglio farsi tornare dalla check_non_dependent
+              gli argomenti gia' deliftati *)
+            let output,output_instance = find_relation_class output' output in
+             args, args_instance, output, output_instance
       in
       let argsconstr,outputconstr,lem =
-       gen_compat_lemma_statement output args m
+       gen_compat_lemma_statement args_ty_quantifiers_rev output_instance
+        args_instance (apply_to_rels m args_ty_quantifiers_rev)
       in
        if Lib.is_modtype () then
         begin
@@ -732,11 +846,13 @@ let new_morphism m signature id hook =
            (ParameterEntry lem, IsAssumption Logical)) ;
          let mor_name = morphism_theory_id_of_morphism_proof_id id in
          let lemma_infos = Some (id,argsconstr,outputconstr) in
-          add_morphism lemma_infos mor_name (m,args,output)
+          add_morphism lemma_infos mor_name
+           (m,args_ty_quantifiers_rev,args,output)
         end
        else
         begin
-         new_edited id (m,args,argsconstr,output,outputconstr);
+         new_edited id
+          (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
          Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
           (Declare.clear_proofs (Global.named_context ()))
           lem hook;
@@ -757,12 +873,13 @@ let new_morphism m signature id hook =
 let morphism_hook _ ref =
   let pf_id = id_of_global ref in
   let mor_id = morphism_theory_id_of_morphism_proof_id pf_id in
-  let (m,args,argsconstr,output,outputconstr) = what_edited pf_id in
+  let (m,quantifiers_rev,args,argsconstr,output,outputconstr) =
+   what_edited pf_id in
   if (is_edited pf_id)
   then 
    begin
     add_morphism (Some (pf_id,argsconstr,outputconstr)) mor_id
-     (m,args,output) ;
+     (m,quantifiers_rev,args,output) ;
     no_more_edited pf_id
    end
 
@@ -811,8 +928,9 @@ let add_setoid id a aeq th =
       Relation
        {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
     in
+     (*CSC: [] means no quantified setoids (yet???) *)
      add_morphism None mor_name
-      (aeq,[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
+      (aeq,[],[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
    end
   else
    errorlabstrm "Add Setoid" (str "Not a valid setoid theory")
@@ -888,16 +1006,30 @@ let relation_of_hypothesis_and_term_to_rewrite new_goals gl (_,h) t =
    | [_] -> assert false
    | [_;_] -> []
    | he::tl -> he::(get_all_but_last_two tl) in
- let aeq = mkApp (heq,(Array.of_list (get_all_but_last_two hargs))) in
+ let all_aeq_args = get_all_but_last_two hargs in
+ let rec find_relation l subst =
+  let aeq = mkApp (heq,(Array.of_list l)) in
   try
    let rel = find_relation_class aeq in
    match rel,new_goals with
-      Leibniz _,[] -> raise Use_rewrite (* let's optimize the proof term size *)
-    | _,_ -> rel
+      Leibniz _,[] ->
+       assert (subst = []);
+       raise Use_rewrite (* let's optimize the proof term size *)
+    | Leibniz _, _ ->
+       assert (subst = []);
+       rel
+    | Relation rel,_ -> Relation (apply_to_relation (Array.of_list subst) rel)
   with Not_found ->
-   (*CSC: still "setoid" in the error message *)
-   errorlabstrm "Setoid_rewrite"
-    (prterm aeq ++ str " is not a setoid equality.")
+   if l = [] then
+    (*CSC: still "setoid" in the error message *)
+    errorlabstrm "Setoid_rewrite"
+     (prterm (mkApp (aeq, Array.of_list all_aeq_args)) ++
+      str " is not a setoid equality.")
+   else
+    let last,others = Util.list_sep_last l in
+    find_relation others (last::subst)
+ in
+  find_relation all_aeq_args []
 
 (* rel1 is a subrelation of rel2 whenever 
     forall x1 x2, rel1 x1 x2 -> rel2 x1 x2
@@ -989,20 +1121,25 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
   else
     match kind_of_term in_c with
       | App (c,al) -> 
-         let mors =
+         let mors_and_cs_and_als =
           try
+           (*CSC: we should also look the table for (c al') where
+             al' is a prefix of al *)
            let morphisms =
             List.map relation_morphism_of_constr_morphism
-             (morphism_table_find c)
+             (morphism_table_find c) in
+           let mors_and_cs_and_als =
+            List.map (unify_morphism_with_arguments gl (c,al)) morphisms
            in
             List.filter
-             (fun mor -> subrelation gl mor.output output_relation) morphisms
+             (fun (mor,_,_) -> subrelation gl mor.output output_relation)
+             mors_and_cs_and_als
           with Not_found -> []
          in
           (* First we look for well typed morphisms *)
           let res_mors =
            List.fold_left
-            (fun res mor ->
+            (fun res (mor,c,al) ->
               let a =
                let arguments = Array.of_list mor.args in
                let apply_variance_to_direction default_dir =
@@ -1026,7 +1163,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                      ToKeep (in_c,output_relation,output_direction)
                     else
                      MApp (c,ACMorphism mor,a,output_direction)) a') @ res
-            ) [] mors in
+            ) [] mors_and_cs_and_als in
           (* Then we look for well typed functions *)
           let res_functions =
            (* the tactic works only if the function type is
@@ -1136,7 +1273,8 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                str " that is not convertible to Prop.")
             else
              aux output_relation output_direction
-              (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
+              (mkApp ((Lazy.force coq_impl),
+                [| c1 ; subst1 (mkRel 1 (*dummy*)) c2 |]))
       | _ -> [ToKeep (in_c,output_relation,output_direction)]
  in
   let aux2 output_relation output_direction =
