@@ -114,9 +114,9 @@ theories/ZArith/Zsyntax.vo: theories/ZArith/Zsyntax.v theories/ZArith/fast_integ
 theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/ZArith_base.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zsqrt.vo theories/ZArith/Zpower.vo theories/ZArith/Zdiv.vo theories/ZArith/Zlogarithm.vo theories/ZArith/Zbool.vo
 theories/ZArith/auxiliary.vo: theories/ZArith/auxiliary.v theories/Arith/Arith.vo theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/Logic/Decidable.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
 theories/ZArith/ZArith_dec.vo: theories/ZArith/ZArith_dec.v theories/Bool/Sumbool.vo theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo
-theories/ZArith/fast_integer.vo: theories/ZArith/fast_integer.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
+theories/ZArith/fast_integer.vo: theories/ZArith/fast_integer.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Gt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
 theories/ZArith/Zmisc.vo: theories/ZArith/Zmisc.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/Bool/Bool.vo
-theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/Arith/Arith.vo theories/ZArith/fast_integer.vo
+theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/ZArith/fast_integer.vo theories/Arith/Arith.vo
 theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
 theories/ZArith/Zlogarithm.vo: theories/ZArith/Zlogarithm.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zpower.vo
 theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
@@ -252,6 +252,7 @@ contrib/ring/ArithRing.vo: contrib/ring/ArithRing.v contrib/ring/Ring.vo theorie
 contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/Ring_theory.vo contrib/ring/Quote.vo
 contrib/ring/Ring_theory.vo: contrib/ring/Ring_theory.v theories/Bool/Bool.vo
 contrib/ring/Ring.vo: contrib/ring/Ring.v theories/Bool/Bool.vo contrib/ring/Ring_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo contrib/ring/Ring_abstract.vo
+contrib/ring/NArithRing.vo: contrib/ring/NArithRing.v contrib/ring/ArithRing.vo theories/ZArith/ZArith_base.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/ZArith/ZArith_base.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Ring_abstract.vo: contrib/ring/Ring_abstract.v contrib/ring/Ring_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo
 contrib/ring/Quote.vo: contrib/ring/Quote.v
