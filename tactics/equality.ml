@@ -189,11 +189,8 @@ let necessary_elimination sort_arity sort =
             (str "no primitive equality on proofs")
 
 let find_eq_pattern aritysort sort = 
-  match necessary_elimination aritysort sort with
-    | Set_Type       -> (build_coq_eq_data ()).eq
-    | Type_Type      -> (build_coq_idT_data ()).eq
-    | Set_SetorProp  -> (build_coq_eq_data ()).eq
-    | Type_SetorProp -> (build_coq_eq_data ()).eq
+  (* "eq" now accept arguments in Type and elimination to Type *)
+  Coqlib.build_coq_eq ()
 
 (* [find_positions t1 t2]
 
@@ -1157,9 +1154,7 @@ let unfold_body x gl =
           (pr_id x ++ str" is not a defined hypothesis") in
   let aft = afterHyp x gl in
   let hl = List.fold_right
-    (fun (y,yval,_) cl ->
-      if yval=None then InHypType y :: cl
-      else InHyp y :: InHypType y :: cl) aft [] in
+    (fun (y,yval,_) cl -> (y,(InHyp,ref None)) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST
