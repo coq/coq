@@ -54,7 +54,7 @@ split; apply add_aux.
 assumption.
 
 rewrite H.
-setoid_reflexivity.
+reflexivity.
 Qed.
 
 Fixpoint remove (a : A) (s : set) {struct s} : set :=

@@ -61,6 +61,8 @@ Require Export Setoid.
 
 ### non capisce piu' le riscritture con uguaglianze quantificate (almeno
     nell'esempio di Marco)
+### Bas Spitters: poter dichiarare che ogni variabile nel contesto di tipo
+    un setoid_function e' un morfismo
 
 ### unificare le varie check_...
 ### sostituire a Use_* una sola eccezione Optimize
@@ -136,13 +138,13 @@ Add Morphism f : f_compat2. Admitted.
 Theorem test1: forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
  intros.
  rewrite H.
- setoid_reflexivity.
+ reflexivity.
 Qed.
 
 Theorem test1': forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
  intros.
  setoid_replace x with y.
- setoid_reflexivity.
+ reflexivity.
  assumption.
 Qed.
 

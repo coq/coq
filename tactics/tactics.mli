@@ -220,13 +220,17 @@ val simplest_split             : tactic
 
 (*s Logical connective tactics. *)
 
+val register_setoid_reflexivity : tactic -> unit
 val reflexivity                 : tactic
 val intros_reflexivity          : tactic
 
+val register_setoid_symmetry : tactic -> unit
 val symmetry                    : tactic
+val register_setoid_symmetry_in : (identifier -> tactic) -> unit
 val symmetry_in                 : identifier -> tactic
 val intros_symmetry             : clause -> tactic
 
+val register_setoid_transitivity : (constr -> tactic) -> unit
 val transitivity                : constr -> tactic
 val intros_transitivity         : constr -> tactic
 

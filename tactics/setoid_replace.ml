@@ -1148,7 +1148,8 @@ let relation_class_that_matches_a_constr caller_name raise_opt new_goals hypt =
  let rec get_all_but_last_two =
   function
      []
-   | [_] -> assert false
+   | [_] ->
+      errorlabstrm caller_name (prterm hypt ++ str " is not a setoid equality.")
    | [_;_] -> []
    | he::tl -> he::(get_all_but_last_two tl) in
  let all_aeq_args = get_all_but_last_two hargs in
@@ -1829,3 +1830,9 @@ let setoid_transitivity c gl =
              (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
  with
   Use_transitivity -> transitivity c gl
+;;
+
+Tactics.register_setoid_reflexivity setoid_reflexivity;;
+Tactics.register_setoid_symmetry setoid_symmetry;;
+Tactics.register_setoid_symmetry_in setoid_symmetry_in;;
+Tactics.register_setoid_transitivity setoid_transitivity;;

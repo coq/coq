@@ -1747,9 +1747,12 @@ let dImp cls =
 
 (* Reflexivity tactics *)
 
+let setoid_reflexivity = ref (fun _ -> assert false)
+let register_setoid_reflexivity f = setoid_reflexivity := f
+
 let reflexivity gl =
   match match_with_equation (pf_concl gl) with
-    | None -> error "The conclusion is not a substitutive equation" 
+    | None -> !setoid_reflexivity gl
     | Some (hdcncl,args) ->  one_constructor 1 NoBindings gl
 
 let intros_reflexivity  = (tclTHEN intros reflexivity)
@@ -1761,9 +1764,12 @@ let intros_reflexivity  = (tclTHEN intros reflexivity)
    defined and the conclusion is a=b, it solves the goal doing (Cut
    b=a;Intro H;Case H;Constructor 1) *)
 
+let setoid_symmetry = ref (fun _ -> assert false)
+let register_setoid_symmetry f = setoid_symmetry := f
+
 let symmetry gl =
   match match_with_equation (pf_concl gl) with
-    | None -> error "The conclusion is not a substitutive equation" 
+    | None -> !setoid_symmetry gl
     | Some (hdcncl,args) ->
         let hdcncls = string_of_inductive hdcncl in
         begin 
@@ -1784,12 +1790,14 @@ let symmetry gl =
 	      gl
 	end
 
+let setoid_symmetry_in = ref (fun _ _ -> assert false)
+let register_setoid_symmetry_in f = setoid_symmetry_in := f
+
 let symmetry_in id gl = 
   let ctype = pf_type_of gl (mkVar id) in 
   let sign,t = decompose_prod_assum ctype in
   match match_with_equation t with
-    | None -> (* Do not deal with setoids yet *) 
-        error "The term provided does not end with an equation" 
+    | None -> !setoid_symmetry_in id gl
     | Some (hdcncl,args) -> 
         let symccl = match args with 
 	  | [t1; c1; t2; c2] -> mkApp (hdcncl, [| t2; c2; t1; c1 |])
@@ -1819,9 +1827,12 @@ let intros_symmetry =
    --Eduardo (19/8/97)
 *)
 
+let setoid_transitivity = ref (fun _ _ -> assert false)
+let register_setoid_transitivity f = setoid_transitivity := f
+
 let transitivity t gl =
   match match_with_equation (pf_concl gl) with
-    | None -> error "The conclusion is not a substitutive equation" 
+    | None -> !setoid_transitivity t gl
     | Some (hdcncl,args) -> 
         let hdcncls = string_of_inductive hdcncl in
         begin
