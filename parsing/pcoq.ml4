@@ -22,20 +22,21 @@ open Util
    lexer. B.B. *)
 
 let lexer = {
-  Token.func = Lexer.func;
-  Token.using = Lexer.add_token;
-  Token.removing = (fun _ -> ());
-  Token.tparse = Lexer.tparse;
-  Token.text = Lexer.token_text }
+  Token.tok_func = Lexer.func;
+  Token.tok_using = Lexer.add_token;
+  Token.tok_removing = (fun _ -> ());
+  Token.tok_match = Token.default_match;
+  Token.tok_text = Lexer.token_text }
 
 module L =
   struct
+    type te = Token.t
     let lexer = lexer
   end
 
 (* The parser of Coq *)
 
-module G = Grammar.Make(L)
+module G = Grammar.GMake(L)
 
 let grammar_delete e rls =
   List.iter
@@ -51,7 +52,7 @@ type ext_kind =
   | ByGrammar of
       typed_entry * Gramext.position option *
       (string option * Gramext.g_assoc option *
-       (Gramext.g_symbol list * Gramext.g_action) list) list
+       (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []
@@ -60,6 +61,7 @@ let camlp4_state = ref []
    extensions. *)
 module Gram =
   struct
+    type te = Token.t
     type parsable = G.parsable
     let parsable = G.parsable
     let tokens = G.tokens
