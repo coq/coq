@@ -31,9 +31,6 @@ let _ =
 (* For Correctness syntax; doesn't work if in psyntax (freeze pb?)  *)
 let _ = Lexer.add_token ("","!")
 
-let pair loc =
-  Qualid (loc, Libnames.qualid_of_string "Coq.Init.Datatypes.pair")
-
 let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, ty)
