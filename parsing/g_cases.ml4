@@ -34,7 +34,7 @@ GEXTEND Gram
       | c1 = pattern -> [c1] ] ]
   ;
   equation:
-    [ [ lhs = ne_pattern_list; "=>"; rhs = lconstr ->
+    [ [ lhs = ne_pattern_list; "=>"; rhs = constr9 ->
 	      <:ast< (EQN $rhs ($LIST $lhs)) >> ] ]
   ;
   ne_eqn_list:
