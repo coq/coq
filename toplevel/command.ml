@@ -167,9 +167,10 @@ let build_mutual lparams lnamearconstrs finite =
   in
   let sp = declare_mind mie in
   if is_verbose() then pPNL(minductive_message lrecnames);
-  for i = 0 to List.length mispecvec - 1 do
-    declare_eliminations sp i
-  done
+  if finite then
+    for i = 0 to List.length mispecvec - 1 do
+      declare_eliminations sp i
+    done
 
 (* try to find non recursive definitions *)
 
