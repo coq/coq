@@ -153,9 +153,7 @@ let default_intuition_tac = <:tactic< Auto with * >>
 let q_elim tac=
   <:tactic<
   Match Context With 
-    [x:?1|-(? ?1 ?)]->
-      Exists x;$tac
-  |[x:?1;H:?1->?|-?]->
+  [x:?1;H:?1->?|-?]->
       Generalize (H x);Clear H;$tac>>
 
 let rec lfo n gl=
@@ -188,3 +186,8 @@ TACTIC EXTEND LinearIntuition
 | [ "LinearIntuition" integer(n)] -> [ lfo_wrap n]
 END
 
+TACTIC EXTEND Test
+| [ "Test" ] -> [ reduction_not_iff ]
+END
+
+let default =interp <:tactic<Test>>
