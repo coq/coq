@@ -1053,9 +1053,7 @@ let rec recargs indpath env sigma t =
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
 
-let oldstyle = ref false
-
-let induct_discharge indpath statuslists cname destopt avoid ra gl =
+let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
@@ -1064,11 +1062,11 @@ let induct_discharge indpath statuslists cname destopt avoid ra gl =
       cname, avoid
     else (* To force renumbering if there is only one *)
       make_ident (string_of_id cname) (Some 1),
-      if !oldstyle then avoid
+      if old_style then avoid
       else (* Forbid to use cname0 *)
 	(make_ident (string_of_id cname) (Some 0)) :: avoid
   in
-  let indhyp = if !oldstyle then "Hrec" else "IH" in
+  let indhyp = if old_style then "Hrec" else "IH" in
   let hyprecname = id_of_string (indhyp^(string_of_id recvarname)) in
   let rec peel_tac = function
     | true :: ra' ->
@@ -1316,7 +1314,7 @@ let compute_elim_signature_and_roughly_check elimt mind =
   let _,elimt2 = decompose_prod_n (mis_nparams mis + 1) elimt in
   check_elim elimt2 0
 
-let induction_from_context hyp0 gl =
+let induction_from_context style hyp0 gl =
    (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" [< 'sTR "Cannot generalize a global variable" >];
@@ -1339,13 +1337,14 @@ let induction_from_context hyp0 gl =
        	(tclTHEN
 	   (induction_tac hyp0 typ0 (elimc,elimt))
 	   (thin (hyp0::(List.rev indhyps))))
-       	(List.map (induct_discharge mindpath statlists hyp0 lhyp0 dephyps) lr)]
+       	(List.map
+	   (induct_discharge style mindpath statlists hyp0 lhyp0 dephyps) lr)]
     gl
 
 let induction_with_atomization_of_ind_arg hyp0 =
   tclTHEN
     (atomize_param_of_ind hyp0)
-    (induction_from_context hyp0)
+    (induction_from_context false hyp0)
 
 let new_induct c gl =
   match kind_of_term c with
@@ -1387,7 +1386,7 @@ let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
 let raw_induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
-let old_induct s = tclORELSE (raw_induct s) (induction_from_context s)
+let old_induct s = tclORELSE (raw_induct s) (induction_from_context true s)
 let old_induct_nodep = raw_induct_nodep
 
 (* This is Induction since V7 ("natural" induction both in quantified
@@ -1396,6 +1395,8 @@ let dyn_new_induct = function
   | [(Command c)] -> tactic_com new_induct c
   | [(Constr x)]  -> new_induct x
   | [(Integer n)] -> error "Not implemented"
+  (* Identifier apart because id can be quantified in goal and not typable *)
+  | [(Identifier id)] -> new_induct (mkVar id)
   | l             -> bad_tactic_args "induct" l
 
 (* This was Induction before 6.3 (induction only in quantified premisses)
