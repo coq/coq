@@ -664,12 +664,11 @@ let extract_pftreestate pts =
   if subgoals <> [] then
    errorlabstrm "extract_proof"
    [< 'sTR "Attempt to save an incomplete proof" >];
-  (***  
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
   strong whd_betaiotaevar env (ts_it pts.tpfsigma) pfterm
-  ***)
+  (***  
   local_strong (whd_ise (ts_it pts.tpfsigma)) pfterm
-
+  ***)
 (* Focus on the first leaf proof in a proof-tree state *)
 
 let rec first_unproven pts =

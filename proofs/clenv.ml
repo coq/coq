@@ -153,7 +153,7 @@ let unify_0 mc wc m n =
 	raise ex
 
     in
-    if (not((occur_meta m))) & is_conv env sigma m n then 
+    if (not(occur_meta m)) & is_conv env sigma m n then 
       (mc,[])
     else 
       unirec_rec (mc,[]) m n
@@ -557,9 +557,9 @@ let clenv_merge with_types =
 		let (metas',evars') = unify_0 [] clenv.hook rhs lhs in
 		clenv_resrec (metas'@metas) (evars'@t) clenv
     	      else
-		(try 
+		(try let rhs' = if occur_meta rhs then subst_meta metas rhs else rhs in
 		   clenv_resrec metas t
-		     (clenv_wtactic (w_Define evn rhs) clenv)
+		     (clenv_wtactic (w_Define evn rhs') clenv)
 		 with ex when catchable_exception ex ->
 		   (match krhs with
 		      | IsApp (f,cl) when isConst f or isMutConstruct f ->
@@ -580,9 +580,11 @@ let clenv_merge with_types =
 	    let mc,ec =
 	      let mvty = clenv_instance_type clenv mv in
 	      if with_types (* or occur_meta mvty *) then
+		(try 
 		let nty = clenv_type_of clenv 
 			    (clenv_instance clenv (mk_freelisted n)) in
 		unify_0 [] clenv.hook mvty nty
+		with e when Logic.catchable_exception e -> ([],[]))
 	      else ([],[]) in
 	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
 
@@ -602,7 +604,8 @@ let clenv_unify_core with_types m n clenv =
   let (mc,ec) = unify_0 [] clenv.hook m n in 
   clenv_merge with_types mc ec clenv
     
-let clenv_unify = clenv_unify_core false
+(* let clenv_unify = clenv_unify_core false *)
+let clenv_unify = clenv_unify_core true
 let clenv_typed_unify = clenv_unify_core true
 
 (* [clenv_bchain mv clenv' clenv]
