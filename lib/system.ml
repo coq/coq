@@ -29,11 +29,15 @@ let all_subdirs root alias =
 	let f = readdir dirh in
 	if f <> "." && f <> ".." && (not Coq_config.local or (f <> "CVS")) then
 	  let file = Filename.concat dir f in
-	  if (stat file).st_kind = S_DIR then begin
-	    let newrel = rel@[f] in
-	    add file newrel;
-	    traverse file newrel
-	  end
+	  try 
+	    if (stat file).st_kind = S_DIR then begin
+	      let newrel = rel@[f] in
+	      add file newrel;
+	      traverse file newrel
+	    end
+	  with Unix_error (e,s1,s2) ->
+	    Printf.printf "Error while scanning load path:\n %s: %s\n"
+	      s2 (error_message e)
       done
     with End_of_file ->
       closedir dirh
