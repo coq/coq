@@ -331,6 +331,8 @@ coqbinaries:: ${COQBINARIES}
 
 world: coqbinaries coqlib8 tools coqide # coqlib7-clean coqlib7
 
+world7: coqbinaries coqlib7 tools coqide
+
 coqlib7-clean:
 	rm -f theories/*/*.vo contrib/*/*.vo
 
