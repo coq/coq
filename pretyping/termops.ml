@@ -125,6 +125,18 @@ let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_Let
 
 (* *)
 
+(* strips head casts and flattens head applications *)
+let rec strip_head_cast c = match kind_of_term c with
+  | App (f,cl) -> 
+      let rec collapse_rec f cl2 = match kind_of_term f with
+	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+	| Cast (c,_) -> collapse_rec c cl2
+	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
+      in 
+      collapse_rec f cl
+  | Cast (c,t) -> strip_head_cast c
+  | _ -> c
+
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
    subterms of [c]; it carries an extra data [l] (typically a name
    list) which is processed by [g na] (which typically cons [na] to
@@ -180,26 +192,41 @@ let array_map_left_pair f a g b =
     r, s
   end
 
+let fold_rec_types g (lna,typarray,_) e =
+  let ctxt =
+    array_map2_i
+      (fun i na t -> (na, None, type_app (lift i) t)) lna typarray in
+  Array.fold_left
+    (fun e assum -> g assum e) e ctxt
+
+
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
   | Cast (c,t) -> let c' = f l c in mkCast (c', f l t)
-  | Prod (na,t,c) -> let t' = f l t in mkProd (na, t', f (g l) c)
-  | Lambda (na,t,c) -> let t' = f l t in mkLambda (na, t', f (g l) c)
+  | Prod (na,t,c) ->
+      let t' = f l t in
+      mkProd (na, t', f (g (na,None,t) l) c)
+  | Lambda (na,t,c) ->
+      let t' = f l t in
+      mkLambda (na, t', f (g (na,None,t) l) c)
   | LetIn (na,b,t,c) ->
-      let b' = f l b in let t' = f l t in mkLetIn (na, b', t', f (g l) c)
+      let b' = f l b in
+      let t' = f l t in
+      let c' = f (g (na,Some b,t) l) c in
+      mkLetIn (na, b', t', c')
   | App (c,al) -> 
       let c' = f l c in mkApp (c', array_map_left (f l) al)
   | Evar (e,al) -> mkEvar (e, array_map_left (f l) al)
   | Case (ci,p,c,bl) ->
       let p' = f l p in let c' = f l c in
       mkCase (ci, p', c', array_map_left (f l) bl)
-  | Fix (ln,(lna,tl,bl)) ->
-      let l' = iterate g (Array.length tl) l in
+  | Fix (ln,(lna,tl,bl as fx)) ->
+      let l' = fold_rec_types g fx l in
       let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
       mkFix (ln,(lna,tl',bl'))
-  | CoFix(ln,(lna,tl,bl)) ->
-      let l' = iterate g (Array.length tl) l in
+  | CoFix(ln,(lna,tl,bl as fx)) ->
+      let l' = fold_rec_types g fx l in
       let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
       mkCoFix (ln,(lna,tl',bl'))
 
@@ -223,24 +250,15 @@ let map_constr_with_full_binders g f l c = match kind_of_term c with
         array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
       mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
 
-  
-(* [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
-   not recursive and the order with which subterms are processed is
-   not specified *)
 
-let iter_constr f c = match kind_of_term c with
-  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _) -> ()
-  | Cast (c,t) -> f c; f t
-  | Prod (_,t,c) -> f t; f c
-  | Lambda (_,t,c) -> f t; f c
-  | LetIn (_,b,t,c) -> f b; f t; f c
-  | App (c,l) -> f c; Array.iter f l
-  | Evar (_,l) -> Array.iter f l
-  | Case (_,p,c,bl) -> f p; f c; Array.iter f bl
-  | Fix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
-  | CoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
+(* Equality modulo let reduction *)
+let rec zeta_eq_constr m n = 
+  (m==n) or
+  match kind_of_term m, kind_of_term n with
+    | LetIn(_,v1,_,b1),_ -> zeta_eq_constr (subst1 v1 b1) n
+    | _,LetIn(_,v2,_,b2) -> zeta_eq_constr m (subst1 v2 b2)
+    | _ -> compare_constr zeta_eq_constr m n
 
- 
 (***************************)
 (* occurs check functions  *)                         
 (***************************)
@@ -291,18 +309,6 @@ let occur_var_in_decl env hyp (_,c,typ) =
         occur_var env hyp (body_of_type typ) ||
         occur_var env hyp body
 
-(* (dependent M N) is true iff M is eq_term with a subterm of N 
-   M is appropriately lifted through abstractions of N *)
-
-let dependent m t =
-  let rec deprec m t =
-    if (eq_constr m t) then
-      raise Occur
-    else
-      iter_constr_with_binders (lift 1) deprec m t
-  in 
-  try deprec m t; false with Occur -> true
-
 (* returns the list of free debruijn indices in a term *)
 
 let free_rels m = 
@@ -313,33 +319,65 @@ let free_rels m =
   frec 1 Intset.empty m
 
 
+(* (dependent M N) is true iff M is eq_term with a subterm of N 
+   M is appropriately lifted through abstractions of N *)
+
+let dependent m t =
+  let rec deprec m t =
+    if zeta_eq_constr m t then
+      raise Occur
+    else
+      iter_constr_with_binders (lift 1) deprec m t
+  in 
+  try deprec m t; false with Occur -> true
+
 (***************************)
 (*  substitution functions *)                         
 (***************************)
 
+(* Equality modulo let reduction *)
+let rec whd_rel hyps c =
+  match kind_of_term c with
+      Rel i ->
+        (try
+          (match Sign.lookup_rel i hyps with
+              (_,Some v,_) -> whd_rel hyps (lift i v)
+            | _ -> c)
+         with Not_found -> c)
+    | _ -> c
+
+(* Expand de Bruijn indices bound to a value *)
+let rec nf_rel hyps c =
+  map_constr_with_full_binders Sign.add_rel_decl nf_rel hyps (whd_rel hyps c)
+
+(* [m] is not evaluated because it is called only with terms for [m] which
+   have been lifted of the length of [hyps], hence [nf_rel] would have no
+   effect. *)
+let compare_zeta hyps m n = zeta_eq_constr m (nf_rel hyps n)
+
 (* First utilities for avoiding telescope computation for subst_term *)
 
-let prefix_application (k,c) (t : constr) = 
+let prefix_application eq_fun (e,k,c) (t : constr) = 
   let c' = collapse_appl c and t' = collapse_appl t in
   match kind_of_term c', kind_of_term t' with
     | App (f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_constr c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	   && eq_fun e c' (mkApp (f2, Array.sub cl2 0 l1)) then
 	  Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
 	else 
 	  None
     | _ -> None
 
-let my_prefix_application (k,c) (by_c : constr) (t : constr) = 
+let my_prefix_application eq_fun (e,k,c) (by_c : constr) (t : constr) = 
   let c' = collapse_appl c and t' = collapse_appl t in
   match kind_of_term c', kind_of_term t' with
     | App (f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_constr c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	   && eq_fun e c' (mkApp (f2, Array.sub cl2 0 l1)) then
 	  Some (mkApp ((lift k by_c), Array.sub cl2 l1 (l2 - l1)))
 	else 
 	  None
@@ -351,18 +389,17 @@ let my_prefix_application (k,c) (by_c : constr) (t : constr) =
 (*i Bizarre : si on cherche un sous terme clos, pourquoi le lifter ? i*)
 
 let subst_term_gen eq_fun c t = 
-  let rec substrec (k,c as kc) t =
-    match prefix_application kc t with
+  let rec substrec (e,k,c as kc) t =
+    match prefix_application eq_fun kc t with
       | Some x -> x
       | None ->
-    (if eq_fun t c then mkRel k else match kind_of_term t with
-       | Const _ | Ind _ | Construct _ -> t
-       | _ ->
-	   map_constr_with_binders
-	     (fun (k,c) -> (k+1,lift 1 c))
-	     substrec kc t)
+    (if eq_fun e c t then mkRel k
+     else
+       map_constr_with_full_binders
+         (fun d (e,k,c) -> (Sign.add_rel_decl d e,k+1,lift 1 c))
+         substrec kc t)
   in 
-  substrec (1,c) t
+  substrec (empty_rel_context,1,c) t
 
 (* Recognizing occurrences of a given (closed) subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of (closed)
@@ -370,72 +407,25 @@ let subst_term_gen eq_fun c t =
 (*i Meme remarque : a priori [c] n'est pas forcement clos i*)
 
 let replace_term_gen eq_fun c by_c in_t = 
-  let rec substrec (k,c as kc) t =
-    match my_prefix_application kc by_c t with
+  let rec substrec (e,k,c as kc) t =
+    match my_prefix_application eq_fun kc by_c t with
       | Some x -> x
       | None ->
-    (if eq_fun t c then (lift k by_c) else match kind_of_term t with
-       | Const _ | Ind _ | Construct _ -> t
-       | _ ->
-	   map_constr_with_binders
-	     (fun (k,c) -> (k+1,lift 1 c))
-	     substrec kc t)
+    (if eq_fun e c t then (lift k by_c) else
+      map_constr_with_full_binders
+	(fun d (e,k,c) -> (Sign.add_rel_decl d e,k+1,lift 1 c))
+	substrec kc t)
   in 
-  substrec (0,c) in_t
+  substrec (empty_rel_context,0,c) in_t
 
-let subst_term = subst_term_gen eq_constr
+let subst_term = subst_term_gen (fun _ -> eq_constr)
 
-let replace_term = replace_term_gen eq_constr
+let replace_term = replace_term_gen (fun _ -> eq_constr)
 
 let rec subst_meta bl c = 
   match kind_of_term c with
     | Meta i -> (try List.assoc i bl with Not_found -> c)
     | _ -> map_constr (subst_meta bl) c
-
-(* strips head casts and flattens head applications *)
-let rec strip_head_cast c = match kind_of_term c with
-  | App (f,cl) -> 
-      let rec collapse_rec f cl2 = match kind_of_term f with
-	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| Cast (c,_) -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
-      in 
-      collapse_rec f cl
-  | Cast (c,t) -> strip_head_cast c
-  | _ -> c
-
-(* On reduit une serie d'eta-redex de tete ou rien du tout  *)
-(* [x1:c1;...;xn:cn]@(f;a1...an;x1;...;xn) --> @(f;a1...an) *)
-(* Remplace 2 versions précédentes buggées                  *)
-
-let rec eta_reduce_head c =
-  match kind_of_term c with
-    | Lambda (_,c1,c') ->
-	(match kind_of_term (eta_reduce_head c') with
-           | App (f,cl) ->
-               let lastn = (Array.length cl) - 1 in 
-               if lastn < 1 then anomaly "application without arguments"
-               else
-                 (match kind_of_term cl.(lastn) with
-                    | Rel 1 ->
-			let c' =
-                          if lastn = 1 then f
-			  else mkApp (f, Array.sub cl 0 lastn)
-			in
-			if not (dependent (mkRel 1) c')
-                        then lift (-1) c'
-                        else c
-                    | _   -> c)
-           | _ -> c)
-    | _ -> c
-
-(* alpha-eta conversion : ignore print names and casts *)
-let eta_eq_constr =
-  let rec aux t1 t2 =
-    let t1 = eta_reduce_head (strip_head_cast t1)
-    and t2 = eta_reduce_head (strip_head_cast t2) in
-    t1=t2 or compare_constr aux t1 t2
-  in aux
 
 (* Substitute only a list of locations locs, the empty list is
    interpreted as substitute all, if 0 is in the list then no
@@ -450,10 +440,10 @@ let subst_term_occ_gen locs occ c t =
   if except & (List.exists (fun n -> n>=0) locs) 
   then error "mixing of positive and negative occurences"
   else
-   let rec substrec (k,c as kc) t =
+   let rec substrec (e,k,c as kc) t =
     if (not except) & (!pos > maxocc) then t
     else
-    if eq_constr t c then
+    if compare_zeta e c t then
       let r = 
 	if except then 
 	  if List.mem (- !pos) locs then t else (mkRel k)
@@ -461,18 +451,16 @@ let subst_term_occ_gen locs occ c t =
 	  if List.mem !pos locs then (mkRel k) else t
       in incr pos; r
     else
-      match kind_of_term t with
-	| Const _ | Construct _ | Ind _ -> t
-	| _ ->
-	    map_constr_with_binders_left_to_right
-	      (fun (k,c) -> (k+1,lift 1 c)) substrec kc t
+      map_constr_with_binders_left_to_right
+	(fun d (e,k,c) -> (Sign.add_rel_decl d e,k+1,lift 1 c))
+        substrec kc t
   in
-  let t' = substrec (1,c) t in
+  let t' = substrec (empty_rel_context,1,c) t in
   (!pos, t')
 
 let subst_term_occ locs c t = 
   if locs = [] then
-    subst_term c t
+    subst_term_gen compare_zeta c t
   else if List.mem 0 locs then 
     t
   else 
@@ -495,7 +483,6 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
 	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
 	    errorlabstrm "subst_term_occ_decl" (str "Too few occurences");
 	  (id,Some body',t')
-
 
 
 (* First character of a constr *)
@@ -653,6 +640,7 @@ let occur_id env nenv id0 c =
   in 
   try occur 1 c; false
   with Occur -> true
+    | Not_found -> false (* Case when a global is not in the env *)
 
 let next_name_not_occuring env name l env_names t =
   let rec next id =
@@ -663,13 +651,47 @@ let next_name_not_occuring env name l env_names t =
     | Name id   -> next id
     | Anonymous -> id_of_string "_"
 
+(* On reduit une serie d'eta-redex de tete ou rien du tout  *)
+(* [x1:c1;...;xn:cn]@(f;a1...an;x1;...;xn) --> @(f;a1...an) *)
+(* Remplace 2 versions précédentes buggées                  *)
+
+let rec eta_reduce_head c =
+  match kind_of_term c with
+    | Lambda (_,c1,c') ->
+	(match kind_of_term (eta_reduce_head c') with
+           | App (f,cl) ->
+               let lastn = (Array.length cl) - 1 in 
+               if lastn < 1 then anomaly "application without arguments"
+               else
+                 (match kind_of_term cl.(lastn) with
+                    | Rel 1 ->
+			let c' =
+                          if lastn = 1 then f
+			  else mkApp (f, Array.sub cl 0 lastn)
+			in
+			if noccurn 1 c'
+                        then lift (-1) c'
+                        else c
+                    | _   -> c)
+           | _ -> c)
+    | _ -> c
+
+(* alpha-eta conversion : ignore print names and casts *)
+let eta_eq_constr =
+  let rec aux t1 t2 =
+    let t1 = eta_reduce_head (strip_head_cast t1)
+    and t2 = eta_reduce_head (strip_head_cast t2) in
+    t1=t2 or compare_constr aux t1 t2
+  in aux
+
+
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let concrete_name env l env_names n c =
-  if n = Anonymous & not (dependent (mkRel 1) c) then
+  if n = Anonymous & noccurn 1 c then
     (None,l)
   else
     let fresh_id = next_name_not_occuring env n l env_names c in
-    let idopt = if dependent (mkRel 1) c then (Some fresh_id) else None in
+    let idopt = if noccurn 1 c then None else (Some fresh_id) in
     (idopt, fresh_id::l)
 
 let concrete_let_name env l env_names n c =
@@ -681,13 +703,13 @@ let global_vars env ids = Idset.elements (global_vars_set env ids)
 let rec rename_bound_var env l c =
   match kind_of_term c with
   | Prod (Name s,c1,c2)  ->
-      if dependent (mkRel 1) c2 then
+      if noccurn 1 c2 then
+        let env' = push_rel (Name s,None,c1) env in
+	mkProd (Name s, c1, rename_bound_var env' l c2)
+      else 
         let s' = next_ident_away s (global_vars env c2@l) in
         let env' = push_rel (Name s',None,c1) env in
         mkProd (Name s', c1, rename_bound_var env' (s'::l) c2)
-      else 
-        let env' = push_rel (Name s,None,c1) env in
-	mkProd (Name s, c1, rename_bound_var env' l c2)
   | Prod (Anonymous,c1,c2) ->
         let env' = push_rel (Anonymous,None,c1) env in
         mkProd (Anonymous, c1, rename_bound_var env' l c2)

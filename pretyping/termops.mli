@@ -45,13 +45,16 @@ val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
 
 val map_constr_with_named_binders :
   (name -> 'a -> 'a) ->
-  ('a -> types -> types) -> 'a -> constr -> constr
+  ('a -> constr -> constr) -> 'a -> constr -> constr
 val map_constr_with_binders_left_to_right :
-  ('a -> 'a) -> ('a -> types -> types) -> 'a -> constr -> constr
+  (rel_declaration -> 'a -> 'a) -> 
+  ('a -> constr -> constr) ->
+    'a -> constr -> constr
 val map_constr_with_full_binders :
-  (name * types option * types -> 'a -> 'a) ->
-  ('a -> types -> types) -> 'a -> constr -> constr
-val iter_constr : (types -> unit) -> constr -> unit
+  (rel_declaration -> 'a -> 'a) ->
+  ('a -> constr -> constr) -> 'a -> constr -> constr
+
+val strip_head_cast : constr -> constr
 
 (* occur checks *)
 exception Occur
@@ -64,31 +67,28 @@ val occur_var : env -> identifier -> types -> bool
 val occur_var_in_decl :
   env ->
   identifier -> 'a * types option * types -> bool
-val dependent : constr -> constr -> bool
 val free_rels : constr -> Intset.t
 
-(* substitution *)
-val prefix_application :
-  int * constr -> constr -> constr option
-val my_prefix_application :
-  int * constr -> constr -> constr -> constr option
+(* substitution of an arbitrary large term. Uses equality modulo
+   reduction of let *)
+val dependent : constr -> constr -> bool
 val subst_term_gen :
-  (constr -> constr -> bool) ->
-  constr -> constr -> constr
+  (rel_context -> constr -> constr -> bool) -> constr -> constr -> constr
 val replace_term_gen :
-  (constr -> constr -> bool) ->
-  constr -> constr -> constr -> constr
+  (rel_context -> constr -> constr -> bool) -> constr -> constr -> constr -> constr
 val subst_term : constr -> constr -> constr
 val replace_term : constr -> constr -> constr -> constr
 val subst_meta : (int * constr) list -> constr -> constr
-val strip_head_cast : constr -> constr
-val eta_reduce_head : constr -> constr
-val eta_eq_constr : constr -> constr -> bool
 val subst_term_occ_gen :
   int list -> int -> constr -> types -> int * types
 val subst_term_occ : int list -> constr -> types -> types
 val subst_term_occ_decl :
   int list -> constr -> named_declaration -> named_declaration
+
+(* Alternative term equalities *)
+val zeta_eq_constr : constr -> constr -> bool
+val eta_reduce_head : constr -> constr
+val eta_eq_constr : constr -> constr -> bool
 
 (* finding "intuitive" names to hypotheses *)
 val first_char : identifier -> string

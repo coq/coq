@@ -474,6 +474,12 @@ val map_constr : (constr -> constr) -> constr -> constr
 val map_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 
+(* [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
+   not recursive and the order with which subterms are processed is
+   not specified *)
+
+val iter_constr : (constr -> unit) -> constr -> unit
+
 (* [iter_constr_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
    index) which is processed by [g] (which typically add 1 to [n]) at

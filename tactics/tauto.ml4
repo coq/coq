@@ -133,7 +133,7 @@ open Environ
 let rec reduce env sigma c =
   let c = Tacred.hnf_constr env sigma c in
   match Term.kind_of_term c with
-    | Prod (na,t,u) when not (dependent (mkRel 1) u) ->
+    | Prod (na,t,u) when noccurn 1 u ->
       mkProd (na,reduce env sigma t, reduce (push_rel (na,None,t) env) sigma u)
     | _ -> c
 

@@ -71,6 +71,7 @@ let whd_castappevar_stack sigma c =
 	  whrec (existential_value sigma (ev,args), l)
       | Cast (c,_) -> whrec (c, l)
       | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | LetIn (_,v,_,b) -> whrec (subst1 v b, l)
       | _ -> s
   in 
   whrec (c, [])

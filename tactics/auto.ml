@@ -190,7 +190,7 @@ let (inAutoHint,outAutoHint) =
 (**************************************************************************)
 
 let rec nb_hyp c = match kind_of_term c with
-  | Prod(_,_,c2) -> if dependent (mkRel 1) c2 then nb_hyp c2 else 1+(nb_hyp c2)
+  | Prod(_,_,c2) -> if noccurn 1 c2 then 1+(nb_hyp c2) else nb_hyp c2
   | _ -> 0 
 
 (* adding and removing tactics in the search table *)

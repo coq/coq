@@ -200,4 +200,3 @@ val instance : (int * constr) list -> constr -> constr
 val hnf : env -> 'a evar_map -> constr -> constr * constr list
 i*)
 val apprec :  state_reduction_function
-

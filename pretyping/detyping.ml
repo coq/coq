@@ -273,11 +273,11 @@ and detype_fix tenv avoid env fixkind (names,tys,bodies) =
 
 and detype_eqn tenv avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
-    if not (force_wildcard ()) or (dependent (mkRel 1) b) then
+    if force_wildcard () & noccurn 1 b then
+      PatVar (dummy_loc,Anonymous),avoid,(add_name Anonymous env),ids
+    else 
       let id = next_name_away_with_default "x" x avoid in
       PatVar (dummy_loc,Name id),id::avoid,(add_name (Name id) env),id::ids
-    else 
-      PatVar (dummy_loc,Anonymous),avoid,(add_name Anonymous env),ids
   in
   let rec buildrec ids patlist avoid env n b =
     if n=0 then

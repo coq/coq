@@ -91,14 +91,14 @@ let gentermpr_core at_top env t =
 
 let prterm_env_at_top env = gentermpr_core true env
 let prterm_env env = gentermpr_core false env
-let prterm = prterm_env empty_env
+let prterm = prterm_env (Global.env())
 
 let prtype_env env typ = prterm_env env typ
-let prtype = prtype_env empty_env
+let prtype = prtype_env (Global.env())
 
 let prjudge_env env j =
   (prterm_env env j.uj_val, prterm_env env j.uj_type)
-let prjudge = prjudge_env empty_env
+let prjudge = prjudge_env (Global.env())
 
 let fprterm_env a =
   warning "Fw printing not implemented, use CCI printing 1"; prterm_env a
