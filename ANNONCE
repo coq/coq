@@ -1,7 +1,5 @@
   The Coq development team is pleased to announce the release of Coq
-version 7.3. This release fixes most of version 7.2 known bugs (see
-http://coq.inria.fr/bin/coq-bugs for the current status of reported
-bugs) and offers the following novelties or improvements.
+version 7.3. This release offers the following novelties or improvements:
 
 - New option -dump-glob to coqtop to dump globalizations (to be used by the 
   new documentation tool coqdoc; see http://www.lri.fr/~filliatr/coqdoc).
@@ -19,6 +17,9 @@ bugs) and offers the following novelties or improvements.
 
   Inversion has been improved and Intuition simplified but not in a fully
 compatible way.
+
+  Most known bugs of version 7.2 are fixed (for the current status of
+reported bugs, see http://coq.inria.fr/bin/coq-bugs).
 
   Pcoq user interface (http://www-sop.inria.fr/lemme/pcoq) is not
 ported to V7.3 yet.
