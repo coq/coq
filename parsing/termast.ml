@@ -228,7 +228,7 @@ let rec ast_of_raw = function
 	
   | ROldCase (_,isrec,typopt,tm,bv) ->
       warning "Old Case syntax";
-      ope("MUTCASE",(ast_of_rawopt typopt)
+      ope("CASE",(ast_of_rawopt typopt)
 	    ::(ast_of_raw tm)
 	    ::(Array.to_list (Array.map ast_of_raw bv)))
   | RRec (_,fk,idv,tyv,bv) ->
