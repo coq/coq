@@ -574,6 +574,10 @@ again the missing coercion.
 \question{I have a problem of dependent elimination on
 proofs, how to solve it?}
 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
 \begin{coq_example*}
 Inductive Def1 : Set
    := c1 : Def1.
@@ -625,6 +629,9 @@ Lemma eq_pack
 
 \answer
 
+\begin{coq_eval}
+Reset eq_pack.
+\end{coq_eval}
 \begin{coq_example*}
 Scheme natProp_elim := Induction for natProp Sort Prop.
 
@@ -635,19 +642,20 @@ Apply pS; Assumption.
 Defined.
 
 Lemma eq_pack
-   : (n:nat)
-     (np:(natProp n))(n':nat)( np':(natProp n'))
-     n=n' -> 
+   : (n,n':nat)
+     n=n' ->
+     (np:(natProp n); np':(natProp n'))
      (pack n np)=(pack n' np').
-Intros n np.
-Elim np using natProp_elim.
-Intros n' np'; Elim np' using natProp_elim; Intros; Auto. 
-Discriminate H0.
-Intros n0 np0 Hrec n' np'; Elim np' using natProp_elim; Intros; Auto. 
-Discriminate H.
-Change (pack_S (pack n0 np0))=(pack_S (pack n1 n2)).
+Intros n n' Heq np np'.
+Generalize Dependent n'.
+NewInduction np using natProp_elim.
+NewInduction np' using natProp_elim; Intros; Auto. 
+Discriminate Heq.
+NewInduction np' using natProp_elim; Intros; Auto. 
+Discriminate Heq.
+Change (pack_S (pack n  np))=(pack_S (pack n0 np')).
 Apply (f_equal package).
-Apply Hrec.
+Apply IHnp.
 Auto.
 Qed.
 \end{coq_example*}
