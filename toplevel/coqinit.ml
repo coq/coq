@@ -81,7 +81,7 @@ let init_load_path () =
   (* first user-contrib *)
   let user_contrib = coqlib/"user-contrib" in
   if Sys.file_exists user_contrib then 
-    Mltop.add_path user_contrib Nameops.default_root_prefix;
+    Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
   (* then standard library *)
   let vdirs = 
     if !Options.v7 then [ "theories7"; "contrib7" ]
