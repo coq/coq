@@ -162,6 +162,7 @@ let explicitize_entry univ nt =
   | "constr8" | "constr" -> ETConstr ((8,E),Some 8)
   | "constr9" -> ETConstr ((9,E),Some 9)
   | "constr10" | "lconstr" -> ETConstr ((10,E),Some 10)
+  | "pattern" -> ETPattern
   | "ident" -> ETIdent
   | "global" -> ETReference
   | _ -> ETOther (univ,nt)

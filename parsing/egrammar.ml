@@ -47,22 +47,25 @@ let symbolic_level = function
   | 11 -> "pattern", None
   | n -> "constr", Some n
 
-let numeric_levels = ref [8;1;0]
+let numeric_levels =
+  ref [8,Some Gramext.RightA; 1,None; 0,None ]
 
-exception Found
+exception Found of Gramext.g_assoc option
 
-let find_position n =
-  let after = ref 8 in
-  let rec add_level q = function
-    | p::l when p > n -> p :: add_level p l
-    | p::l when p = n -> raise Found
-    | l -> after := q; n::l
-  in
-  try
-    numeric_levels := add_level 8 !numeric_levels;
-    Gramext.After (constr_level !after)
-  with
-      Found -> Gramext.Level (constr_level n)
+let find_position assoc = function
+  | None -> None, assoc
+  | Some n ->
+      let after = ref 8 in
+      let rec add_level q = function
+        | (p,_ as pa)::l when p > n -> pa :: add_level p l
+        | (p,a)::l when p = n -> raise (Found a)
+        | l -> after := q; (n,assoc)::l
+      in
+      try
+        numeric_levels := add_level 8 !numeric_levels;
+        Some (Gramext.After (constr_level !after)), assoc
+      with
+          Found a -> Some (Gramext.Level (constr_level n)), a
 
 (* Interpretation of the right hand side of grammar rules *)
 
@@ -179,7 +182,7 @@ let extend_entry univ (te, etyp, pos, name, ass, rls) =
 let define_entry univ {ge_name=n; gl_assoc=ass; gl_rules=rls} =
   let typ = explicitize_entry (fst univ) n in
   let e,lev = entry_of_type true typ in
-  let pos = option_app find_position lev in
+  let pos,ass = find_position ass lev in
   let name = option_app constr_level lev in
   (e,typ,pos,name,ass,rls)
 
@@ -216,19 +219,16 @@ let extend_constr entry pos (level,assoc) make_act pt =
   let act = make_act ntl in
   grammar_extend entry pos [(level, assoc, [symbs, act])]
 
-let constr_entry name =
-  object_of_typed_entry (get_entry (get_univ "constr") name)
-
 let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,env) in
   let (e,level) = entry_of_type false (ETConstr ((n,Ppextend.E),Some n)) in
-  let pos = option_app find_position level in
+  let pos,assoc = find_position assoc level in
   extend_constr e pos (option_app constr_level level,assoc) 
     (make_act mkact) rule
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
   let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr (constr_entry "constr") (Some (Gramext.Level "top"))
+  extend_constr Constr.constr (Some (Gramext.Level "0"))
     (None,None)
     (make_act mkact) rule;
   let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in

@@ -34,7 +34,7 @@ val add_infix :
 val add_distfix :
   grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
-val add_delimiters : scope_name -> delimiters -> unit
+val add_delimiters : scope_name -> string -> unit
 
 val add_notation : string -> constr_expr
     -> syntax_modifier list -> scope_name option -> unit

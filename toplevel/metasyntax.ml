@@ -662,13 +662,14 @@ let (inDelim,outDelim) =
       load_function = load_delimiters;
       export_function = (fun x -> Some x) }
 
-let make_delimiter_rule (l,r) typ =
+let make_delimiter_rule key typ =
   let e = Nameops.make_ident "e" None in
-  let symbols = [Terminal l; NonTerminal e; Terminal r] in
+  let m = key^":" in
+  let symbols = [Terminal "`"; Terminal m; NonTerminal e; Terminal "`"] in
   make_production [e,typ] symbols
 
-let add_delimiters scope (l,r as dlms) =
-  if l = "" or r = "" then error "Delimiters cannot be empty";
-  let gram_rule = make_delimiter_rule dlms (ETConstr ((0,E),Some 0)) in
-  let pat_gram_rule = make_delimiter_rule dlms ETPattern in
+let add_delimiters scope key =
+  let gram_rule = make_delimiter_rule key (ETConstr ((0,E),Some 0)) in
+  let pat_gram_rule = make_delimiter_rule key ETPattern in
+  let dlms = ("`"^key^":", "`") in
   Lib.add_anonymous_leaf (inDelim(gram_rule,pat_gram_rule,scope,dlms))
