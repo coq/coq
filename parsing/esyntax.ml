@@ -169,12 +169,14 @@ let token_printer stdpr = function
   | (Id _ | Num _ | Str _ | Path _ as ast) -> print_ast ast
   | a -> stdpr a
 
+(* Unused ??
 (* A primitive printer to do "print as" (to specify a length for a string) *)
 let print_as_printer = function
   | Node (_, "AS", [Num(_,n); Str(_,s)]) -> Some (stras (n,s))
   | ast                                  -> None
 
 let _ = declare_primitive_printer "print_as" default_scope print_as_printer
+*)
 
 (* Handle infix symbols *)
 
@@ -240,7 +242,8 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 	  | None -> otherwise ()
 	  | Some (scopt,key) ->
 	      print_delimiters inherited se
-		(print_syntax_entry rec_pr (option_cons scopt scopes) env 
+		(print_syntax_entry rec_pr
+		  (option_fold_right Symbols.push_scope scopt scopes) env 
 		  {se with syn_hunks = [sub]}) key)
     | _ ->
 	pr_parenthesis inherited se (print_syntax_entry rec_pr scopes env se)

@@ -79,6 +79,7 @@ type syntax_modifier =
   | SetAssoc of Gramext.g_assoc
   | SetEntryType of string * simple_constr_production_entry
   | SetOnlyParsing
+  | SetFormat of string
 
 type nonterm =
   | NtShort of string
@@ -108,7 +109,7 @@ type 'pat unparsing_hunk =
   | UNP_TBRK of int * int
   | UNP_TAB
   | UNP_FNL
-  | UNP_SYMBOLIC of string * string * 'pat unparsing_hunk
+  | UNP_SYMBOLIC of string option * string * 'pat unparsing_hunk
 
 (*val subst_unparsing_hunk : 
   Names.substitution -> (Names.substitution -> 'pat -> 'pat) -> 
