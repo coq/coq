@@ -481,7 +481,9 @@ and signature_rec env c args =
 	signature_rec env d (Array.to_list args' @ args)
     | Rel n -> 
 	(match lookup_rel n env with
-	   | (_,Some t,_) -> signature_rec env (lift n t) args  
+	   | (_,Some t,_) -> 
+	       let c' = whd_betaiotalet env none (lift n t) in 
+	       signature_rec env c' args
 	   | _ -> [])
     | Const sp when args = [] && is_ml_extraction (ConstRef sp) -> []
     | Const sp when is_axiom sp -> []
@@ -497,7 +499,8 @@ and signature_rec env c args =
 	     | Emlterm _ -> assert false) 
 	else 
 	  let cvalue = constant_value env sp in
-	  signature env (applist (cvalue, args))
+	  let c' = whd_betaiotalet env none (applist (cvalue, args)) in
+	  signature_rec env c' [] 
     | Ind spi ->
 	(match extract_inductive spi with 
 	   |Iml (si,_) -> 
