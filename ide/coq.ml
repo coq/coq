@@ -12,6 +12,9 @@ open Evd
 open Hipattern
 open Tacmach
 open Reductionops
+open Ideutils
+
+let prerr_endline s = if !debug then prerr_endline s else ()
 
 let output = ref (Format.formatter_of_out_channel stdout)
 
@@ -122,7 +125,7 @@ let prepare_goal sigma g =
   (prepare_hyps sigma env,
    (env, sigma, g.evar_concl, msg (prterm_env_at_top env g.evar_concl)))
 
-let get_curent_goals () = 
+let get_current_goals () = 
     let pfts = get_pftreestate () in
     let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in 
     let sigma = Tacmach.evc_of_pftreestate pfts in

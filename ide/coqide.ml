@@ -10,8 +10,8 @@ let no_icon = "gtk-no"
 let save_icon = "gtk-save"
 let saveas_icon = "gtk-save-as"
 
-let window_width = 1280
-let window_height = 1024
+let window_width = 800
+let window_height = 600
 
 let initial_cwd = Sys.getcwd ()
 
@@ -22,7 +22,8 @@ let manual_monospace_font = ref None
 let manual_general_font = ref None
 
 let has_config_file = (Sys.file_exists ".coqiderc") || 
-		      (try Sys.file_exists (Filename.concat (Sys.getenv "HOME") ".coqiderc")
+		      (try Sys.file_exists 
+			 (Filename.concat (Sys.getenv "HOME") ".coqiderc")
 		       with Not_found -> false)
 
 let _ = if not has_config_file then 
@@ -87,14 +88,59 @@ module Vector = struct
     test 0
 end
 
-type viewable_script =
+type 'a viewable_script =
     {view : GText.view;
-     mutable deactivate : unit -> unit;
-     mutable activate : unit -> unit;
+     mutable analyzed_view : 'a option;
      mutable filename : string option
     }
 
-let (input_views:viewable_script Vector.t) = Vector.create ()
+class type analyzed_views = 
+object('self)
+    val mutable act_id : GtkSignal.id option
+    val current_all : 'self viewable_script
+    val mutable deact_id : GtkSignal.id option
+    val input_buffer : GText.buffer
+    val input_view : GText.view
+    val last_array : string array
+    val mutable last_index : bool
+    val message_buffer : GText.buffer
+    val message_view : GText.view
+    val proof_buffer : GText.buffer
+    val proof_view : GText.view
+    val mutable is_active : bool
+    method is_active : bool
+    method activate : unit -> unit
+    method active_keypress_handler : GdkEvent.Key.t -> bool
+    method backtrack_to : GText.iter -> unit
+    method backtrack_to_insert : unit
+    method clear_message : unit
+    method deactivate : unit -> unit
+    method disconnected_keypress_handler : GdkEvent.Key.t -> bool
+    method electric_handler : GtkSignal.id
+    method find_phrase_starting_at :
+      GText.iter -> (GText.iter * GText.iter) option
+    method get_insert : GText.iter
+    method get_start_of_input : GText.iter
+    method insert_command : string -> string -> unit
+    method insert_commands : (string * string) list -> unit
+    method insert_message : string -> unit
+    method insert_this_phrase_on_success :
+      bool -> bool -> bool -> string -> string -> bool
+    method process_next_phrase : bool -> bool
+    method process_until_insert_or_error : unit
+    method process_until_iter_or_error : GText.iter -> unit
+    method process_until_end_or_error : unit
+    method recenter_insert : unit
+    method reset_initial : unit
+    method send_to_coq :
+      string ->
+      bool -> bool -> bool -> (Util.loc * Vernacexpr.vernac_expr) option
+    method set_message : string -> unit
+    method show_goals : unit
+    method undo_last_step : unit
+  end
+
+let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
 let crash_save i =
   Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
@@ -257,59 +303,57 @@ let find_tag_limits (tag :GText.tag) (it:GText.iter) =
      then it#forward_to_tag_toggle (Some tag)
      else it#copy)
 
-let rec analyze_all index =
-  let {view = input_view } as current_all = get_input_view index in
-  let (proof_view:GText.view) = out_some !proof_view in
-  let (message_view:GText.view) = out_some !message_view in
-  let input_buffer = input_view#buffer in
-  let proof_buffer = proof_view#buffer in
-  let message_buffer = message_view#buffer in
-  let insert_message s =
+let activate_input i = 
+  (match !active_view with
+     | None -> () 
+     | Some n ->
+	 let a_v = out_some (Vector.get input_views n).analyzed_view in
+	 prerr_endline ("DEACT"^(string_of_int n));
+	 a_v#deactivate ();
+	 a_v#reset_initial
+  );
+  let activate_function = (out_some (Vector.get input_views i).analyzed_view)#activate in
+  prerr_endline ("ACT"^(string_of_int i));
+  activate_function ();
+  prerr_endline ("ACTIVATED"^(string_of_int i));
+  set_active_view i
+
+class analyzed_view index =
+  let {view = input_view_} as current_all_ =  get_input_view index in
+  let proof_view_ = out_some !proof_view in
+  let message_view_ = out_some !message_view in
+object(self)
+  val current_all =  current_all_
+  val input_view = current_all_.view
+  val proof_view = out_some !proof_view
+  val message_view = out_some !message_view
+  val input_buffer = input_view_#buffer
+  val proof_buffer = proof_view_#buffer
+  val message_buffer = message_view_#buffer 
+  val mutable is_active = false
+  method is_active = is_active
+  method insert_message s =
     message_buffer#insert s;
     message_view#misc#draw None
-  in
-  let set_message s =
+
+  method set_message s =
     message_buffer#set_text s;
     message_view#misc#draw None
-  in
-  let clear_message () = message_buffer#set_text ""
-  in
-  ignore (message_buffer#connect#after#insert_text
-	    ~callback:(fun it s -> ignore 
-			 (message_view#scroll_to_mark
-			    ~within_margin:0.49
-			    `INSERT)));
-  let last_index = ref true in
-  let last_array = [|"";""|] in
-  let get_start_of_input () = 
-    input_buffer#get_iter_at_mark 
-      (`NAME "start_of_input") 
-  in
-  ignore (input_buffer#connect#modified_changed
-	 ~callback:(fun () ->
-		      if input_buffer#modified then 
-			set_tab_image index 
-			  (match current_all.filename with 
-			     | None -> saveas_icon
-			     | Some _ -> save_icon
-			  )
-		      else set_tab_image index yes_icon;
-		   ));
-  ignore (input_buffer#connect#changed
-	    ~callback:(fun () -> 
-			 input_buffer#remove_tag_by_name 
-			 ~start:(get_start_of_input())
-			 ~stop:input_buffer#end_iter
-			 "error";
-			 Highlight.highlight_current_line input_buffer));
-  let get_insert () = get_insert input_buffer in
-  let recenter_insert () = ignore (input_view#scroll_to_iter 
-				     ~within_margin:0.10 
-				     (get_insert ())) 
-  in
-  let rec show_goals () = 
+
+  method clear_message = message_buffer#set_text ""
+  val mutable last_index = true
+  val last_array = [|"";""|]
+
+  method get_start_of_input =  input_buffer#get_iter_at_mark (`NAME "start_of_input") 
+
+  method get_insert = get_insert input_buffer
+
+  method recenter_insert = 
+    ignore (input_view#scroll_to_iter ~within_margin:0.10 self#get_insert) 
+
+  method show_goals = 
     proof_view#buffer#set_text "";
-    let s = Coq.get_curent_goals () in
+    let s = Coq.get_current_goals () in
     let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light blue"]
     in
     match s with 
@@ -336,7 +380,7 @@ let rec analyze_all index =
 			      ignore (factory#add_item cp 
 					~callback:
 					(fun () -> ignore
-					   (insert_this_phrase_on_success 
+					   (self#insert_this_phrase_on_success 
 					      true
 					      true 
 					      false 
@@ -398,7 +442,8 @@ let rec analyze_all index =
 	    )
 	    r;
 	  ignore (proof_view#scroll_to_mark my_mark) 
-  and send_to_coq phrase show_output show_error localize =
+
+  method send_to_coq phrase show_output show_error localize =
     try
       !push_info "Coq is computing";
       (out_some !status)#misc#draw None;
@@ -410,7 +455,7 @@ let rec analyze_all index =
       !pop_info ();
       (out_some !status)#misc#draw None;
       let msg = read_stdout () in 
-      insert_message (if show_output then msg else "");
+      self#insert_message (if show_output then msg else "");
       r
     with e ->
       input_view#set_editable true;
@@ -418,7 +463,7 @@ let rec analyze_all index =
       (if show_error then
 	 let (s,loc) = Coq.process_exn e in
 	 assert (Glib.Utf8.validate s);
-	 set_message s;
+	 self#set_message s;
 	 message_view#misc#draw None;
 	 if localize then 
 	   (match loc with 
@@ -427,7 +472,7 @@ let rec analyze_all index =
 		  let convert_pos = byte_offset_to_char_offset phrase in
 		  let start = convert_pos start in
 		  let stop = convert_pos stop in
-		  let i = get_start_of_input() in 
+		  let i = self#get_start_of_input in 
 		  let starti = i#forward_chars start in
 		  let stopi = i#forward_chars stop in
 		  input_buffer#apply_tag_by_name "error"
@@ -435,7 +480,7 @@ let rec analyze_all index =
 		    ~stop:stopi
 	   ));
       None
-  and find_phrase_starting_at (start:GText.iter) = 
+  method find_phrase_starting_at (start:GText.iter) = 
     let trash_bytes = ref "" in
     let end_iter = start#copy in
     let lexbuf_function s count =
@@ -472,72 +517,95 @@ let rec analyze_all index =
       end_iter#nocopy#set_offset (start#offset + !Find_phrase.length);
       Some (start,end_iter)
     with _ -> None
-  and process_next_phrase display_goals = 
-    clear_message ();
-    match (find_phrase_starting_at (get_start_of_input ()))
+
+  method process_next_phrase display_goals = 
+    self#clear_message;
+    match (self#find_phrase_starting_at self#get_start_of_input)
     with None -> false
       | Some(start,stop) ->
 	  let b = input_buffer in
 	  let phrase = start#get_slice ~stop in
-	  match send_to_coq phrase true true true with
+	  match self#send_to_coq phrase true true true with
 	    | Some ast ->
 		begin
 		  b#move_mark ~where:stop (`NAME "start_of_input");
 		  b#apply_tag_by_name "processed" ~start ~stop;
-		  if ((get_insert())#compare) stop <= 0 then 
+		  if (self#get_insert#compare) stop <= 0 then 
 		    begin
 		      b#place_cursor stop;
-		      recenter_insert () 
+		      self#recenter_insert
 		    end;
 		  let start_of_phrase_mark = `MARK (b#create_mark start) in
 		  let end_of_phrase_mark = `MARK (b#create_mark stop) in
 		  push_phrase start_of_phrase_mark end_of_phrase_mark ast;
 		  if display_goals then
-		    (try show_goals () with e -> 
+		    (try self#show_goals with e -> 
 		       prerr_endline (Printexc.to_string e);());
 		  true;
 		end
 	    | None -> false
-  and insert_this_phrase_on_success 
-    show_output show_msg localize coqphrase insertphrase = 
-    match send_to_coq coqphrase show_output show_msg localize with
+
+  method insert_this_phrase_on_success show_output show_msg localize coqphrase insertphrase = 
+    match self#send_to_coq coqphrase show_output show_msg localize with
       | Some ast ->
 	  begin
-	    let stop = get_start_of_input () in
+	    let stop = self#get_start_of_input in
 	    if stop#starts_line then
 	      input_buffer#insert ~iter:stop insertphrase
 	    else input_buffer#insert ~iter:stop ("\n"^insertphrase); 
-	    let start = get_start_of_input () in
+	    let start = self#get_start_of_input in
 	    input_buffer#move_mark ~where:stop (`NAME "start_of_input");
 	    input_buffer#apply_tag_by_name "processed" ~start ~stop;
-	    if ((get_insert())#compare) stop <= 0 then 
+	    if (self#get_insert#compare) stop <= 0 then 
 	      input_buffer#place_cursor stop;
 	    let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
 	    let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
 	    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
-	    (try show_goals () with e -> ());
+	    (try self#show_goals with e -> ());
+	    (try (match Coq.get_current_goals () with 
+		    | [] ->  
+			(match self#send_to_coq "Save.\n" true true true with
+			   | Some ast -> 
+			       begin
+				 let stop = self#get_start_of_input in
+				 if stop#starts_line then
+				   input_buffer#insert ~iter:stop "Save.\n"
+				 else input_buffer#insert ~iter:stop "\nSave.\n"; 
+				 let start = self#get_start_of_input in
+				 input_buffer#move_mark ~where:stop (`NAME "start_of_input");
+				 input_buffer#apply_tag_by_name "processed" ~start ~stop;
+				 if (self#get_insert#compare) stop <= 0 then 
+				   input_buffer#place_cursor stop;
+				 let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
+				 let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
+				 push_phrase start_of_phrase_mark end_of_phrase_mark ast
+		      	       end
+			   | None -> ())
+		    | _ -> ())
+	     with _ -> ());
 	    true
 	  end
-      | None -> insert_message ("Unsuccesfully tried: "^coqphrase);
+      | None -> self#insert_message ("Unsuccesfully tried: "^coqphrase);
 	  false
-  in
-  let process_until_iter_or_error stop =
-    let start = (get_start_of_input ())#copy in
+
+  method process_until_iter_or_error stop =
+    let start = self#get_start_of_input#copy in
     input_buffer#apply_tag_by_name 
       ~start
       ~stop
       "to_process";
-    while ((stop#compare (get_start_of_input ())>=0) && process_next_phrase false)
+    while ((stop#compare self#get_start_of_input>=0) && self#process_next_phrase false)
     do () done;
-    (try show_goals () with _ -> ());
+    (try self#show_goals with _ -> ());
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
 
-  in  
-  let process_until_insert_or_error () = 
-    let stop = get_insert () in
-    process_until_iter_or_error stop
-  in  
-  let reset_initial () = 
+  method process_until_end_or_error = self#process_until_iter_or_error input_buffer#end_iter
+
+  method process_until_insert_or_error = 
+    let stop = self#get_insert in
+    self#process_until_iter_or_error stop
+
+  method reset_initial = 
     Stack.iter 
       (function inf -> 
 	 let start = input_buffer#get_iter_at_mark inf.start in
@@ -549,11 +617,12 @@ let rec analyze_all index =
       ) 
       processed_stack;
     Stack.clear processed_stack;
-    clear_message ();
+    self#clear_message;
     Coq.reset_initial ()
-  in
+
+
   (* backtrack Coq to the phrase preceding iterator [i] *)
-  let backtrack_to i = 
+  method backtrack_to i = 
     (* re-synchronize Coq to the current state of the stack *)
     let rec synchro () =
       if is_empty () then
@@ -568,9 +637,10 @@ let rec analyze_all index =
 	repush_phrase t
       end
     in
+    let add_undo t = match t with | Some n -> Some (succ n) | None -> None
+    in
     (* pop Coq commands until we reach iterator [i] *)
-    let add_undo = function Some n -> Some (succ n) | None -> None in
-    let rec pop_commands done_smthg undos =
+    let  rec pop_commands done_smthg undos =
       if is_empty () then 
 	done_smthg, undos
       else
@@ -593,17 +663,18 @@ let rec analyze_all index =
 	in
 	input_buffer#remove_tag_by_name 
 	  ~start 
-	  ~stop:(get_start_of_input ()) 
+	  ~stop:self#get_start_of_input
 	  "processed";
 	input_buffer#move_mark ~where:start (`NAME "start_of_input");
 	input_buffer#place_cursor start;
-	(try show_goals () with e -> ());
+	(try self#show_goals with e -> ());
 	clear_stdout ();
-	clear_message ()
+	self#clear_message
       end
-  in
-  let backtrack_to_insert () = backtrack_to (get_insert ()) in
-  let undo_last_step () = 
+      
+  method backtrack_to_insert = self#backtrack_to self#get_insert
+
+  method undo_last_step = 
     try
       let last_command = top () in
       let start = input_buffer#get_iter_at_mark last_command.start in
@@ -616,15 +687,15 @@ let rec analyze_all index =
 	  ~where:start
 	  (`NAME "start_of_input");
 	input_buffer#place_cursor start;
-	recenter_insert ();
-	(try show_goals () with e -> ());
-	clear_message ()
+	self#recenter_insert;
+	(try self#show_goals with e -> ());
+	self#clear_message
       in
       begin match last_command with 
 	| {ast=_,VernacSolve _} -> 
 	    begin 
 	      try Pfedit.undo 1; ignore (pop ()); update_input () 
-	      with _ -> backtrack_to start
+	      with _ -> self#backtrack_to start
 	    end
 	| {reset_info=Reset (id, {contents=true})} ->
 	    ignore (pop ());
@@ -636,70 +707,32 @@ let rec analyze_all index =
 	    Pfedit.delete_current_proof ();
 	    update_input ()
 	| _ -> 
-	    backtrack_to start
+	    self#backtrack_to start
       end
     with
       | Size 0 -> !flash_info "Nothing to Undo"
-  in
-  let insert_command cp ip = 
-    clear_message ();
-    ignore (insert_this_phrase_on_success true false false cp ip) in
-  let insert_commands l = 
-    clear_message ();
+
+  method insert_command cp ip = 
+    self#clear_message;
+    ignore (self#insert_this_phrase_on_success true false false cp ip)
+  method insert_commands l = 
+    self#clear_message;
     ignore (List.exists 
 	      (fun (cp,ip) -> 
-		 insert_this_phrase_on_success true false false cp ip) l)
-  in
-  let active_keypress_handler k = 
+		 self#insert_this_phrase_on_success true false false cp ip) l)
+
+  method active_keypress_handler k = 
     match GdkEvent.Key.state k with
       | l when List.mem `MOD1 l ->
 	  let k = GdkEvent.Key.keyval k in
-	  if GdkKeysyms._Down=k 
-	  then ignore (process_next_phrase true) 
-	  else if GdkKeysyms._Right=k 
-	  then process_until_insert_or_error () 
-	  else if GdkKeysyms._Left=k 
-	  then backtrack_to_insert ()
-	  else if GdkKeysyms._r=k 
-	  then ignore (reset_initial ())
-	  else if GdkKeysyms._Up=k 
-	  then ignore (undo_last_step ())
-	  else if GdkKeysyms._Return=k
+	  if GdkKeysyms._Return=k
 	  then ignore(
 	    if (input_buffer#insert_interactive "\n") then
 	      begin
-		let i= (get_insert())#backward_word_start in
+		let i= self#get_insert#backward_word_start in
 		input_buffer#place_cursor i;
-		process_until_insert_or_error ()
-	      end)
-	  else if GdkKeysyms._a=k 
-	  then insert_command "Progress Auto.\n" "Auto.\n"
-	  else if GdkKeysyms._i=k 
-	  then insert_command "Progress Intuition.\n" "Intuition.\n"
-	  else if GdkKeysyms._t=k 
-	  then insert_command "Progress Trivial.\n"  "Trivial.\n"
-	  else if GdkKeysyms._o=k 
-	  then insert_command "Omega.\n" "Omega.\n"
-	  else if GdkKeysyms._s=k 
-	  then insert_command "Progress Simpl.\n" "Simpl.\n"
-	  else if GdkKeysyms._e=k 
-	  then insert_command 
-	    "Progress EAuto with *.\n" 
-	    "EAuto with *.\n"
-	  else if GdkKeysyms._asterisk=k 
-	  then insert_command 
-	    "Progress Auto with *.\n"
-	    "Auto with *.\n"
-	  else if GdkKeysyms._dollar=k 
-	  then insert_commands 
-	    ["Progress Trivial.\n","Trivial.\n";
-	     "Progress Auto.\n","Auto.\n";
-	     "Tauto.\n","Tauto.\n";
-	     "Omega.\n","Omega.\n";
-	     "Progress Auto with *.\n","Auto with *.\n";
-	     "Progress EAuto with *.\n","EAuto with *.\n";
-	     "Progress Intuition.\n","Intuition.\n";
-	    ];
+		self#process_until_insert_or_error
+	      end);
 	  true
       | l when List.mem `CONTROL l -> 
 	  let k = GdkEvent.Key.keyval k in
@@ -707,62 +740,55 @@ let rec analyze_all index =
 	  then break ();
 	  false
       | l -> false
-  in 
-  let disconnected_keypress_handler k = 
+
+  method disconnected_keypress_handler k = 
     match GdkEvent.Key.state k with
-      | l when List.mem `MOD1 l ->
-	  let k = GdkEvent.Key.keyval k in
-	  if (GdkKeysyms._Down=k || GdkKeysyms._Right=k
-	      || GdkKeysyms._Left=k || GdkKeysyms._r=k
-              ||  GdkKeysyms._Up=k)
-	  then activate_input index;
-	  true
       | l when List.mem `CONTROL l -> 
 	  let k = GdkEvent.Key.keyval k in
 	  if GdkKeysyms._c=k
 	  then break ();
 	  false
       | l -> false
-  in 
-  let deact_id = ref None in
-  let act_id = ref None in
-  let deactivate_function,activate_function = 
-    (fun () -> 
-       (match !act_id with None -> () 
-	  | Some id ->
-	      reset_initial ();
-	      input_view#misc#disconnect id;
-	      prerr_endline "DISCONNECTED old active : ";
-	      print_id id;
-       );
-       deact_id := Some 
-	 (input_view#event#connect#key_press disconnected_keypress_handler);
-       prerr_endline "CONNECTED  inactive : ";
-       print_id (out_some !deact_id)
-    ),
-    (fun () -> 
-       (match !deact_id with None -> () 
-	  | Some id -> input_view#misc#disconnect id;
-	      prerr_endline "DISCONNECTED old inactive : ";
-	      print_id id
-       );
-       act_id := Some 
-	 (input_view#event#connect#key_press active_keypress_handler);
-       prerr_endline "CONNECTED active : ";
-       print_id (out_some !act_id);
-       Sys.chdir (match (Vector.get input_views index).filename with
-		       | None -> initial_cwd
-		       | Some f -> Filename.dirname f
-		 )
-    )
-  in
-  let r = Vector.get input_views index in
-  r.deactivate <- deactivate_function; r.activate <- activate_function;
-  let electric_handler () = 
+	  
+
+  val mutable deact_id = None
+  val mutable act_id = None
+
+  method deactivate () = 
+    is_active <- false;
+    (match act_id with None -> () 
+       | Some id ->
+	   reset_initial ();
+	   input_view#misc#disconnect id;
+	   prerr_endline "DISCONNECTED old active : ";
+	   print_id id;
+    );
+    deact_id <- Some 
+      (input_view#event#connect#key_press self#disconnected_keypress_handler);
+    prerr_endline "CONNECTED  inactive : ";
+    print_id (out_some deact_id)
+
+  method activate () =
+    is_active <- true;
+    (match deact_id with None -> () 
+       | Some id -> input_view#misc#disconnect id;
+	   prerr_endline "DISCONNECTED old inactive : ";
+	   print_id id
+    );
+    act_id <- Some 
+      (input_view#event#connect#key_press self#active_keypress_handler);
+    prerr_endline "CONNECTED active : ";
+    print_id (out_some act_id);
+    Sys.chdir (match (Vector.get input_views index).filename with
+		 | None -> initial_cwd
+		 | Some f -> Filename.dirname f
+	      )
+      
+  method electric_handler = 
     input_buffer#connect#insert_text ~callback:
       (fun it x -> 
 	 begin try
-	   if !last_index then begin
+	   if last_index then begin
 	     last_array.(0)<-x;
 	     if (last_array.(1) ^ last_array.(0) = ".\n") then raise Found
 	   end else begin
@@ -771,25 +797,34 @@ let rec analyze_all index =
 	   end
 	 with Found -> 
 	   begin
-	     ignore (process_next_phrase true)
+	     ignore (self#process_next_phrase true)
 	   end;
 	 end;
-	 last_index := not !last_index;)
-  in
-  ()
-and activate_input i = 
-  (match !active_view with
-     | None -> () 
-     | Some n -> 
-	 prerr_endline ("DEACT"^(string_of_int n));
-	 let f = (Vector.get input_views n).deactivate in 
-	 f()
-  );
-  let activate_function = (Vector.get input_views i).activate in
-  prerr_endline ("ACT"^(string_of_int i));
-  activate_function ();
-  prerr_endline ("ACTIVATED"^(string_of_int i));
-  set_active_view i
+	 last_index <- not last_index;)
+  initializer 
+    ignore (message_buffer#connect#after#insert_text
+	      ~callback:(fun it s -> ignore 
+			   (message_view#scroll_to_mark
+			      ~within_margin:0.49
+			      `INSERT)));
+    ignore (input_buffer#connect#modified_changed
+	      ~callback:(fun () ->
+			   if input_buffer#modified then 
+			     set_tab_image index 
+			       (match current_all.filename with 
+				  | None -> saveas_icon
+				  | Some _ -> save_icon
+			       )
+			   else set_tab_image index yes_icon;
+			));
+    ignore (input_buffer#connect#changed
+	      ~callback:(fun () -> 
+			   input_buffer#remove_tag_by_name 
+			   ~start:self#get_start_of_input
+			   ~stop:input_buffer#end_iter
+			   "error";
+			   Highlight.highlight_current_line input_buffer));
+end
 
 let create_input_tab filename =
   let b = GText.buffer () in 
@@ -870,12 +905,11 @@ let main () =
 	       | None -> ()
 	       | Some n -> view#misc#modify_font n);
 	    let index = add_input_view {view = view;
-					activate = (fun () -> ());
-					deactivate = (fun () -> ());
+					analyzed_view = None;
 					filename = Some f
 				       }
 	    in
-	    analyze_all index;
+	    (get_input_view index).analyzed_view <- Some (new analyzed_view index);
 	    activate_input index;
 	    let input_buffer = view#buffer in
 	    input_buffer#set_text s;
@@ -1021,26 +1055,99 @@ let main () =
 
   (* Navigation Menu *)
   let navigation_menu =  factory#add_submenu "Navigation" in
-  let navigation_factory = new GMenu.factory navigation_menu ~accel_group in
-  ignore (navigation_factory#add_item "Forward");
-  ignore (navigation_factory#add_item "Backward");
-  ignore (navigation_factory#add_item "Forward to");
-  ignore (navigation_factory#add_item "Backward to");
-  ignore (navigation_factory#add_item "Start");
-  ignore (navigation_factory#add_item "End");
+  let navigation_factory = new GMenu.factory navigation_menu ~accel_group ~accel_modi:[`CONTROL ; `MOD1] in
+  let do_or_activate f () = 
+    let current = get_current_view () in
+    let analyzed_view = out_some current.analyzed_view in
+    if analyzed_view#is_active then 
+      ignore (f analyzed_view)
+    else
+      activate_input (notebook ())#current_page
+  in
+  ignore (navigation_factory#add_item "Forward" 
+	    ~key:GdkKeysyms._Down 
+	    ~callback:(do_or_activate (fun a -> a#process_next_phrase true)));
+  ignore (navigation_factory#add_item "Backward"
+	    ~key:GdkKeysyms._Up
+	    ~callback:(do_or_activate (fun a -> a#undo_last_step)));
+  ignore (navigation_factory#add_item "Forward to"
+	    ~key:GdkKeysyms._Right
+	    ~callback:(do_or_activate (fun a -> a#process_until_insert_or_error))
+	 );
+  ignore (navigation_factory#add_item "Backward to"
+	    ~key:GdkKeysyms._Left
+	    ~callback:(do_or_activate (fun a-> a#backtrack_to_insert))
+	 );
+  ignore (navigation_factory#add_item "Start"
+	    ~key:GdkKeysyms._Home
+	    ~callback:(do_or_activate (fun a -> a#reset_initial))
+	 );
+  ignore (navigation_factory#add_item "End"
+	    ~key:GdkKeysyms._End
+	    ~callback:(do_or_activate (fun a -> a#process_until_end_or_error))
+	 );
 
   (* Tactics Menu *)
   let tactics_menu =  factory#add_submenu "Tactics" in
-  let tactics_factory = new GMenu.factory tactics_menu ~accel_group in
-  ignore (tactics_factory#add_item "Auto");
-  ignore (tactics_factory#add_item "Auto with *");
-  ignore (tactics_factory#add_item "EAuto");
-  ignore (tactics_factory#add_item "EAuto with *");
-  ignore (tactics_factory#add_item "Intuition");
-  ignore (tactics_factory#add_item "Omega");
-  ignore (tactics_factory#add_item "Simpl");
-  ignore (tactics_factory#add_item "Tauto");
-  ignore (tactics_factory#add_item "Trivial");
+  let tactics_factory = new GMenu.factory tactics_menu ~accel_group ~accel_modi:[`MOD1] in
+  let do_if_active f () = 
+    let current = get_current_view () in
+    let analyzed_view = out_some current.analyzed_view in
+    if analyzed_view#is_active then ignore (f analyzed_view)
+  in
+  ignore (tactics_factory#add_item "Auto" 
+	    ~key:GdkKeysyms._a
+	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Auto.\n" "Auto.\n"))
+	 );
+  ignore (tactics_factory#add_item "Auto with *"
+	    ~key:GdkKeysyms._asterisk
+	    ~callback:(do_if_active (fun a -> a#insert_command 
+				       "Progress Auto with *.\n"
+				       "Auto with *.\n")));
+  ignore (tactics_factory#add_item "EAuto"
+	    ~key:GdkKeysyms._e
+	    ~callback:(do_if_active (fun a -> a#insert_command 
+				       "Progress EAuto.\n"
+				       "EAuto.\n"))
+	 );
+  ignore (tactics_factory#add_item "EAuto with *"
+	    ~key:GdkKeysyms._ampersand
+	    ~callback:(do_if_active (fun a -> a#insert_command 
+				       "Progress EAuto with *.\n" 
+				       "EAuto with *.\n"))
+	 );
+  ignore (tactics_factory#add_item "Intuition"
+	    ~key:GdkKeysyms._i
+	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Intuition.\n" "Intuition.\n"))
+	 );
+  ignore (tactics_factory#add_item "Omega"
+	    ~key:GdkKeysyms._o
+	    ~callback:(do_if_active (fun a -> a#insert_command "Omega.\n" "Omega.\n"))
+	 );
+  ignore (tactics_factory#add_item "Simpl"
+	    ~key:GdkKeysyms._s
+	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Simpl.\n" "Simpl.\n" ))
+	 );
+  ignore (tactics_factory#add_item "Tauto"
+	    ~key:GdkKeysyms._t
+	    ~callback:(do_if_active (fun a -> a#insert_command "Tauto.\n" "Tauto.\n" ))
+	 );
+  ignore (tactics_factory#add_item "Trivial"
+	    ~key:GdkKeysyms._v
+	    ~callback:(do_if_active( fun a -> a#insert_command "Progress Trivial.\n"  "Trivial.\n" ))
+	 );
+  ignore (tactics_factory#add_item "<Proof Wizzard>"
+	    ~key:GdkKeysyms._dollar
+	    ~callback:(do_if_active (fun a -> a#insert_commands 
+				       ["Progress Trivial.\n","Trivial.\n";
+					"Progress Auto.\n","Auto.\n";
+					"Tauto.\n","Tauto.\n";
+					"Omega.\n","Omega.\n";
+					"Progress Auto with *.\n","Auto with *.\n";
+					"Progress EAuto with *.\n","EAuto with *.\n";
+					"Progress Intuition.\n","Intuition.\n";
+				       ]))
+	 );
   
   (* Templates Menu *)
   let templates_menu =  factory#add_submenu "Templates" in
@@ -1085,6 +1192,7 @@ let main () =
   ignore (commands_factory#add_item "Make Makefile");
 
   (* Configuration Menu *)
+
   let configuration_menu = factory#add_submenu "Configuration" in
   let configuration_factory = new GMenu.factory configuration_menu ~accel_group
   in
@@ -1105,7 +1213,7 @@ let main () =
       ~callback:(fun () -> font_selector#present ())
   in
   let hb = GPack.paned `HORIZONTAL  ~border_width:3 ~packing:vbox#add () in
-  let _ = hb#set_position (window_width*6/10 ) in
+  let _ = hb#set_position (window_width/2 ) in
   _notebook := Some (GPack.notebook ~packing:hb#add1 ());
   let nb = notebook () in
   let fr2 = GBin.frame ~shadow_type:`ETCHED_OUT ~packing:hb#add2 () in 
@@ -1204,11 +1312,10 @@ let main () =
   proof_view := Some tv2;
   let view = create_input_tab "New File" in
   let index = add_input_view {view = view;
-			      activate = (fun () -> ());
-			      deactivate = (fun () -> ());
+			      analyzed_view = None;
 			      filename = None}
   in
-  analyze_all index;
+  (get_input_view index).analyzed_view <- Some (new analyzed_view index);
   activate_input index;
   set_tab_image index yes_icon;
 

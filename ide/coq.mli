@@ -18,7 +18,7 @@ type hyp = env * evar_map *
 type concl = env * evar_map * constr * string
 type goal = hyp list * concl
 
-val get_curent_goals : unit -> goal list
+val get_current_goals : unit -> goal list
 
 val print_no_goal : unit -> string
 
