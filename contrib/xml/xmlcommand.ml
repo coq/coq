@@ -644,14 +644,14 @@ let _ =
       "%xhtml-special.ent;\n" ^
       "%xhtml-symbol.ent;\n" ^
       "]>\n\n");
-     theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n";
-     theory_output_string "<head>\n<style> A { text-decoration: none } </style>\n</head>\n")
+     theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\" xmlns:helm=\"http://www.cs.unibo.it/helm\">\n";
+     theory_output_string "<head></head>\n<body>\n")
 ;;
 
 let _ =
   Vernac.set_xml_end_library
    (function () ->
-      theory_output_string "</html>\n";
+      theory_output_string "</body>\n</html>\n";
       let ofn = theory_filename xml_library_root in
        begin
         match ofn with
@@ -701,6 +701,6 @@ let _ =
 let _ =
   Library.set_xml_require
     (fun d -> theory_output_string 
-      (Printf.sprintf "<b>Require</b> <a href=\"theory:%s.theory\">%s</a>.<br/>"
+      (Printf.sprintf "<b>Require</b> <a helm:helm_link=\"href\" href=\"theory:%s.theory\">%s</a>.<br/>"
        (uri_of_dirpath d) (Names.string_of_dirpath d)))
 ;;
