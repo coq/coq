@@ -324,9 +324,9 @@ let general_elim_then_using
   elim isrec allnames tac predicate (indbindings,elimbindings) c gl =
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   (* applying elimination_scheme just a little modified *)
-  let indclause  = mk_clenv_from (rc_of_glsigma gl) (c,t) in
+  let indclause  = mk_clenv_from gl (c,t) in
   let indclause' = clenv_constrain_with_bindings indbindings indclause in
-  let elimclause = mk_clenv_from () (elim,pf_type_of gl elim) in
+  let elimclause = mk_clenv_from gl (elim,pf_type_of gl elim) in
   let indmv = 
     match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv

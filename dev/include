@@ -21,8 +21,8 @@
 #install_printer  (* goal *)  prgoal;;
 #install_printer  (* sigma goal *)  prsigmagoal;;
 #install_printer  (* proof *)  pproof;;
-#install_printer  (* global_constraints *)  prevd;;
-#install_printer  (* readable_constraints *)  prevc;;
+#install_printer  (* evar_map *)  prevm;;
+#install_printer  (* evar_defs *)  prevd;;
 #install_printer  (* walking_constraints *)  prwc;;
 #install_printer  (* clenv *) prclenv;;
 #install_printer  (* env *) ppenv;;

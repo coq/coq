@@ -22,14 +22,10 @@ type wc = named_context sigma (* for a better reading of the following *)
 
 (* Refinement of existential variables. *)
 
-val rc_of_glsigma : goal sigma -> wc
-
 (* A [w_tactic] is a tactic which modifies the a set of evars of which
    a goal depend, either by instantiating one, or by declaring a new
    dependent goal *)
 type w_tactic = wc -> wc
-
-val w_Declare    : evar -> types -> w_tactic
 
 val w_refine :  evar -> Rawterm.rawconstr  -> w_tactic
 

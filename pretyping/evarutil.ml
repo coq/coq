@@ -279,7 +279,9 @@ let real_clean env isevars ev args rhs =
       | Evar (ev,args) ->
 	  let args' = Array.map (subs k) args in
 	  if need_restriction !evd args' then
-            begin
+            if Evd.is_defined !evd.evars ev then 
+	      subs k (existential_value !evd.evars (ev,args'))
+	    else begin
 	      let (sigma,rc) = do_restrict_hyps !evd.evars ev args' in
               evd :=
 	      {!evd with

@@ -31,13 +31,6 @@ open Tacexpr
 open Clenv
 
     
-let clenv_wtactic wt clenv =
-  { templval = clenv.templval;
-    templtyp = clenv.templtyp;
-    namenv = clenv.namenv;
-    env = clenv.env;
-    hook = wt clenv.hook }
-
 (* This function put casts around metavariables whose type could not be
  * infered by the refiner, that is head of applications, predicates and
  * subject of Cases.
@@ -94,27 +87,10 @@ let elim_res_pf_THEN_i clenv tac gls =
   let clenv' = (clenv_unique_resolver true clenv gls) in
   tclTHENLASTn (clenv_refine clenv') (tac clenv') gls
 
-(* [clenv_pose_dependent_evars clenv]
- * For each dependent evar in the clause-env which does not have a value,
- * pose a value for it by constructing a fresh evar.  We do this in
- * left-to-right order, so that every evar's type is always closed w.r.t.
- * metas. *)
-
-let clenv_pose_dependent_evars clenv =
-  let dep_mvs = clenv_dependent false clenv in
-  List.fold_left
-    (fun clenv mv ->
-       let evar = Evarutil.new_evar_in_sign (get_env clenv.hook) in
-       let (evar_n,_) = destEvar evar in
-       let tY = clenv_instance_type clenv mv in
-       let clenv' = clenv_wtactic (w_Declare evar_n tY) clenv in
-       clenv_assign mv evar clenv')
-    clenv
-    dep_mvs
 
 let e_res_pf clenv gls =
-  clenv_refine
-    (clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)) gls
+  clenv_refine (evar_clenv_unique_resolver clenv gls) gls
+
 
 
 

@@ -24,10 +24,10 @@ open Vernacexpr
 (*i*)
   
 type auto_tactic = 
-  | Res_pf     of constr * unit clausenv    (* Hint Apply *)
-  | ERes_pf    of constr * unit clausenv    (* Hint EApply *)
+  | Res_pf     of constr * wc clausenv    (* Hint Apply *)
+  | ERes_pf    of constr * wc clausenv    (* Hint EApply *)
   | Give_exact of constr                  
-  | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
+  | Res_pf_THEN_trivial_fail of constr * wc clausenv (* Hint Immediate *)
   | Unfold_nth of global_reference          (* Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr   (* Hint Extern *)
 
@@ -139,7 +139,7 @@ val priority : (int * 'a) list -> 'a list
 val default_search_depth : int ref
 
 (* Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve : (constr * unit clausenv) -> tactic
+val unify_resolve : (constr * wc clausenv) -> tactic
 
 (* [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of 

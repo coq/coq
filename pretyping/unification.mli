@@ -20,6 +20,7 @@ open Evarutil
 
 type maps = evar_defs * meta_map
 
+val w_Declare : env -> evar -> types -> maps -> maps
 val w_Define : evar -> constr -> maps -> maps
 
 (* The "unique" unification fonction *)

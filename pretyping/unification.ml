@@ -51,6 +51,13 @@ let abstract_list_all env sigma typ c l =
 
 type maps = evar_defs * meta_map
 
+let w_Declare env sp ty (evd,mmap) =
+  let sigma = evars_of evd in
+  let _ = Typing.type_of env sigma ty in (* Utile ?? *)
+  let newdecl =
+    { evar_hyps=named_context env; evar_concl=ty; evar_body=Evar_empty } in 
+  (evars_reset_evd (Evd.add sigma sp newdecl) evd, mmap)
+
 (* [w_Define evd sp c]
  *
  * Defines evar [sp] with term [c] in evar context [evd].
@@ -66,7 +73,8 @@ let w_Define sp c (evd,mmap) =
   let spdecl = Evd.map sigma sp in
   let env = evar_env spdecl in
   let _ =
-    try Typing.mcheck env (Evd.rmv sigma sp,Metamap.empty) c spdecl.evar_concl
+    (* Do not consider the metamap because evars may not depend on metas *)
+    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
     with
 	Not_found -> error "Instantiation contains unlegal variables"
       | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 

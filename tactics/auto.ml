@@ -44,10 +44,10 @@ open Tacexpr
 (****************************************************************************)
 
 type auto_tactic = 
-  | Res_pf     of constr * unit clausenv (* Hint Apply *)
-  | ERes_pf    of constr * unit clausenv (* Hint EApply *)
+  | Res_pf     of constr * wc clausenv (* Hint Apply *)
+  | ERes_pf    of constr * wc clausenv (* Hint EApply *)
   | Give_exact of constr                  
-  | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
+  | Res_pf_THEN_trivial_fail of constr * wc clausenv (* Hint Immediate *)
   | Unfold_nth of global_reference       (* Hint Unfold *)
   | Extern     of glob_tactic_expr       (* Hint Extern *) 
 
@@ -186,11 +186,15 @@ let make_exact_entry name (c,cty) =
 	(head_of_constr_reference (List.hd (head_constr cty)),
 	   { hname=name; pri=0; pat=None; code=Give_exact c })
 
+let dummy_goal =
+  {it={evar_hyps=empty_named_context;evar_concl=mkProp;evar_body=Evar_empty};
+   sigma=Evd.empty}
+
 let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
   let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
     | Prod _ ->
-        let ce = mk_clenv_from () (c,cty) in
+        let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = (clenv_template_type ce).rebus in
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
@@ -256,7 +260,7 @@ let make_extern name pri pat tacast =
 let make_trivial env sigma (name,c) =
   let t = hnf_constr env sigma (type_of env sigma c) in
   let hd = head_of_constr_reference (List.hd (head_constr t)) in
-  let ce = mk_clenv_from () (c,t) in
+  let ce = mk_clenv_from dummy_goal (c,t) in
   (hd, { hname = name;
 	       pri=1;
                pat = Some (Pattern.pattern_of_constr (clenv_template_type ce).rebus);

@@ -31,7 +31,7 @@ open Rawterm
 
 (*s General functions. *)
 
-val type_clenv_binding : named_context sigma ->
+val type_clenv_binding : goal sigma ->
   constr * constr -> constr bindings  -> constr
 
 val string_of_inductive : constr -> string

@@ -445,13 +445,12 @@ let apply_with_bindings (c,lbind) gl =
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
-  let wc = rc_of_glsigma gl in
   let thm_ty0 = nf_betaiota (pf_type_of gl c) in
   let rec try_apply thm_ty =
     try
       let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
       if n<0 then error "Apply: theorem has not enough premisses.";
-      let clause = make_clenv_binding_apply wc n (c,thm_ty) lbind in
+      let clause = make_clenv_binding_apply gl n (c,thm_ty) lbind in
       apply clause gl
     with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
       let red_thm =
@@ -462,7 +461,7 @@ let apply_with_bindings (c,lbind) gl =
   with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) ->
     (* Last chance: if the head is a variable, apply may try
        second order unification *)
-    let clause = make_clenv_binding_apply wc (-1) (c,thm_ty0) lbind in 
+    let clause = make_clenv_binding_apply gl (-1) (c,thm_ty0) lbind in 
     apply clause gl
 
 let apply c = apply_with_bindings (c,NoBindings)
@@ -474,7 +473,7 @@ let apply_list = function
 (* Resolution with no reduction on the type *)
 
 let apply_without_reduce c gl = 
-  let clause = mk_clenv_type_of (rc_of_glsigma gl) c in 
+  let clause = mk_clenv_type_of gl c in 
   res_pf clause gl
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
@@ -830,8 +829,7 @@ let rec intros_clearing = function
 (* Adding new hypotheses  *)
 
 let new_hyp mopt (c,lbind) g =
-  let clause  =
-    make_clenv_binding (rc_of_glsigma g) (c,pf_type_of g c) lbind in
+  let clause  = make_clenv_binding g (c,pf_type_of g c) lbind in
   let (thd,tstack) = whd_stack (clenv_instance_template clause) in
   let nargs = List.length tstack in
   let cut_pf = 
@@ -926,10 +924,9 @@ let type_clenv_binding wc (c,t) lbind =
 let general_elim (c,lbindc) (elimc,lbindelimc) ?(allow_K=true) gl = 
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let indclause  = make_clenv_binding (rc_of_glsigma gl) (c,t) lbindc  in
+  let indclause  = make_clenv_binding gl (c,t) lbindc  in
   let elimt      = pf_type_of gl elimc in
-  let elimclause =
-    make_clenv_binding (rc_of_glsigma gl) (elimc,elimt) lbindelimc in 
+  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
   elimination_clause_scheme elimclause indclause allow_K gl
 
 (* Elimination tactic with bindings but using the default elimination 
@@ -971,7 +968,7 @@ let simplest_elim c = default_elim (c,NoBindings)
 
 (* Elimination in hypothesis *)
 
-let elimination_in_clause_scheme id elimclause indclause =
+let elimination_in_clause_scheme id elimclause indclause gl =
   let (hypmv,indmv) = 
     match clenv_independent elimclause with
         [k1;k2] -> (k1,k2)
@@ -981,7 +978,7 @@ let elimination_in_clause_scheme id elimclause indclause =
   let hyp = mkVar id in
   let hyp_typ = clenv_type_of elimclause' hyp in
   let hypclause =
-    mk_clenv_from_n elimclause'.hook (Some 0) (hyp, hyp_typ) in
+    mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
   let new_hyp_prf  = clenv_instance_template elimclause'' in
   let new_hyp_typ  = clenv_instance_template_type elimclause'' in
@@ -995,16 +992,14 @@ let elimination_in_clause_scheme id elimclause indclause =
       [ (* Try to insert the new hyp at the same place *)
         tclORELSE (intro_replacing id)
           (tclTHEN (clear [id]) (introduction id));
-        refine_no_check new_hyp_prf])
+        refine_no_check new_hyp_prf]) gl
 
 let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl = 
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let indclause  =
-    make_clenv_binding (rc_of_glsigma gl) (c,t) lbindc  in
+  let indclause  = make_clenv_binding gl (c,t) lbindc  in
   let elimt      = pf_type_of gl elimc in
-  let elimclause =
-    make_clenv_binding (rc_of_glsigma gl) (elimc,elimt) lbindelimc in 
+  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
   elimination_in_clause_scheme id elimclause indclause gl
 
 (* Case analysis tactics *)
@@ -1376,10 +1371,9 @@ let cook_sign hyp0 indvars env =
 
 let induction_tac varname typ ((elimc,lbindelimc),elimt) gl =
   let c = mkVar varname in
-  let wc = rc_of_glsigma gl in
-  let indclause  = make_clenv_binding wc (c,typ) NoBindings  in
+  let indclause  = make_clenv_binding gl (c,typ) NoBindings  in
   let elimclause =
-    make_clenv_binding wc (mkCast (elimc,elimt),elimt) lbindelimc in
+    make_clenv_binding gl (mkCast (elimc,elimt),elimt) lbindelimc in
   elimination_clause_scheme elimclause indclause true gl
 
 let make_up_names7 n ind (old_style,cname) = 
@@ -1667,7 +1661,7 @@ let simple_destruct = function
  *)
 
 let elim_scheme_type elim t gl =
-  let clause = mk_clenv_type_of (rc_of_glsigma gl) elim in
+  let clause = mk_clenv_type_of gl elim in
   match kind_of_term (last_arg (clenv_template clause).rebus) with
     | Meta mv ->
         let clause' =

@@ -24,13 +24,20 @@ open Tacexpr
 open Tacred
 open Pretype_errors
 open Evarutil
+open Unification
 
 (* *)
-let get_env   evc = Global.env_of_context evc.it
+let pf_env gls = Global.env_of_context gls.it.evar_hyps
+let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
+let pf_hnf_constr gls c = hnf_constr (pf_env gls) gls.sigma c
+
+let get_env wc = Global.env_of_context wc.it
 let w_type_of wc c  =
   Typing.type_of (get_env wc) wc.sigma c
 let w_hnf_constr wc c        = hnf_constr (get_env wc) wc.sigma c
 let get_concl gl = gl.it.evar_concl
+
+let mk_wc gls = {it=gls.it.evar_hyps; sigma=gls.sigma}
 
 (* Generator of metavariables *)
 let new_meta =
@@ -74,6 +81,10 @@ type 'a clausenv = {
 
 type wc = named_context sigma
 
+let clenv_nf_meta clenv c = nf_meta clenv.env c
+let clenv_meta_type clenv mv = meta_type clenv.env mv
+let clenv_value clenv = meta_instance clenv.env clenv.templval
+let clenv_type clenv = meta_instance clenv.env clenv.templtyp
 
 (* [mentions clenv mv0 mv1] is true if mv1 is defined and mentions
  * mv0, or if one of the free vars on mv1's freelist mentions
@@ -136,15 +147,15 @@ let clenv_environments bound c =
   in 
   clrec (Metamap.empty,Metamap.empty,[]) bound c
 
-let mk_clenv_from_n wc n (c,cty) =
+let mk_clenv_from_n gls n (c,cty) =
   let (namenv,env,args,concl) = clenv_environments n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
     namenv = namenv;
     env = env;
-    hook = wc }
+    hook = mk_wc gls }
 
-let mk_clenv_from wc = mk_clenv_from_n wc None
+let mk_clenv_from gls = mk_clenv_from_n gls None
 
 let subst_clenv f sub clenv = 
   { templval = map_fl (subst_mps sub) clenv.templval;
@@ -162,23 +173,23 @@ let clenv_wtactic f clenv =
     f (create_evar_defs clenv.hook.sigma, clenv.env) in
   {clenv with env = mmap' ; hook = {it=clenv.hook.it; sigma=evars_of evd'}}
 
-let mk_clenv_hnf_constr_type_of wc t =
-  mk_clenv_from wc (t,w_hnf_constr wc (w_type_of wc t))
+let mk_clenv_hnf_constr_type_of gls t =
+  mk_clenv_from gls (t,pf_hnf_constr gls (pf_type_of gls t))
 
-let mk_clenv_rename_from wc (c,t) = 
-  mk_clenv_from wc (c,rename_bound_var (get_env wc) [] t)
+let mk_clenv_rename_from gls (c,t) = 
+  mk_clenv_from gls (c,rename_bound_var (pf_env gls) [] t)
 
-let mk_clenv_rename_from_n wc n (c,t) = 
-  mk_clenv_from_n wc n (c,rename_bound_var (get_env wc) [] t)
+let mk_clenv_rename_from_n gls n (c,t) = 
+  mk_clenv_from_n gls n (c,rename_bound_var (pf_env gls) [] t)
+
+let mk_clenv_rename_type_of gls t =
+  mk_clenv_from gls (t,rename_bound_var (pf_env gls) [] (pf_type_of gls t))
     
-let mk_clenv_rename_type_of wc t =
-  mk_clenv_from wc (t,rename_bound_var (get_env wc) [] (w_type_of wc t))
-    
-let mk_clenv_rename_hnf_constr_type_of wc t =
-  mk_clenv_from wc
-    (t,rename_bound_var (get_env wc) [] (w_hnf_constr wc (w_type_of wc t)))
+let mk_clenv_rename_hnf_constr_type_of gls t =
+  mk_clenv_from gls
+    (t,rename_bound_var (pf_env gls) [] (pf_hnf_constr gls (pf_type_of gls t)))
 
-let mk_clenv_type_of wc t = mk_clenv_from wc (t,w_type_of wc t)
+let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 			      
 let clenv_assign mv rhs clenv =
   let rhs_fls = mk_freelisted rhs in 
@@ -250,12 +261,12 @@ let clenv_defined clenv mv =
     | Clval _ -> true
     | Cltyp _ -> false
 
-let clenv_value clenv mv =
+let clenv_value0 clenv mv =
   match Metamap.find mv clenv.env with
     | Clval(b,_) -> b
-    | Cltyp _ -> failwith "clenv_value"
+    | Cltyp _ -> failwith "clenv_value0"
 	  
-let clenv_type clenv mv =
+let clenv_type0 clenv mv =
   match Metamap.find mv clenv.env with
     | Cltyp b -> b
     | Clval(_,b) -> b
@@ -265,10 +276,10 @@ let clenv_template clenv = clenv.templval
 let clenv_template_type clenv = clenv.templtyp
 
 let clenv_instance_value clenv mv =
-  clenv_instance clenv (clenv_value clenv mv)
+  clenv_instance clenv (clenv_value0 clenv mv)
     
 let clenv_instance_type clenv mv =
-  clenv_instance clenv (clenv_type clenv mv)
+  clenv_instance clenv (clenv_type0 clenv mv)
     
 let clenv_instance_template clenv =
   clenv_instance clenv (clenv_template clenv)
@@ -291,11 +302,12 @@ let clenv_instance_type_of ce c =
 
 let clenv_unify allow_K cv_pb t1 t2 clenv =
   let env = get_env clenv.hook in
-  clenv_wtactic (Unification.w_unify allow_K env cv_pb t1 t2) clenv
+  clenv_wtactic (w_unify allow_K env cv_pb t1 t2) clenv
 
 let clenv_unique_resolver allow_K clause gl =
   clenv_unify allow_K CUMUL
     (clenv_instance_template_type clause) (get_concl gl) clause 
+
 
 (* [clenv_bchain mv clenv' clenv]
  *
@@ -438,6 +450,27 @@ let clenv_constrain_dep_args hyps_only clause = function
 	error ("Not the right number of missing arguments (expected "
 	       ^(string_of_int (List.length occlist))^")")
 
+(* [clenv_pose_dependent_evars clenv]
+ * For each dependent evar in the clause-env which does not have a value,
+ * pose a value for it by constructing a fresh evar.  We do this in
+ * left-to-right order, so that every evar's type is always closed w.r.t.
+ * metas. *)
+let clenv_pose_dependent_evars clenv =
+  let dep_mvs = clenv_dependent false clenv in
+  List.fold_left
+    (fun clenv mv ->
+       let evar = Evarutil.new_evar_in_sign (get_env clenv.hook) in
+       let (evar_n,_) = destEvar evar in
+       let tY = clenv_instance_type clenv mv in
+       let clenv' =
+         clenv_wtactic (w_Declare (get_env clenv.hook) evar_n tY) clenv in
+       clenv_assign mv evar clenv')
+    clenv
+    dep_mvs
+
+let evar_clenv_unique_resolver clenv gls =
+  clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)
+
 let clenv_constrain_missing_args mlist clause =
   clenv_constrain_dep_args true clause mlist
 
@@ -531,18 +564,24 @@ let clenv_constrain_with_bindings bl clause =
 
 (* Clausal environment for an application *)
 
-let make_clenv_binding_gen n wc (c,t) = function
+let make_clenv_binding_gen n gls (c,t) = function
   | ImplicitBindings largs ->
-      let clause = mk_clenv_from_n wc n (c,t) in
+      let clause = mk_clenv_from_n gls n (c,t) in
       clenv_constrain_dep_args (n <> None) clause largs
   | ExplicitBindings lbind ->
-      let clause = mk_clenv_rename_from_n wc n (c,t) in
+      let clause = mk_clenv_rename_from_n gls n (c,t) in
       clenv_match_args lbind clause
   | NoBindings ->
-      mk_clenv_from_n wc n (c,t)
+      mk_clenv_from_n gls n (c,t)
 
 let make_clenv_binding_apply wc n = make_clenv_binding_gen (Some n) wc
 let make_clenv_binding = make_clenv_binding_gen None
+
+
+
+
+
+
 
 let pr_clenv clenv =
   let pr_name mv =

@@ -43,12 +43,6 @@ let extract_decl sp evc =
 let restore_decl sp evd evc =
   (rc_add evc (sp,evd))
 
-let w_Declare sp ty (wc : named_context sigma) =
-  let _ = Typing.type_of (get_env wc) wc.sigma ty in (* Utile ?? *)
-  let sign = get_hyps wc in
-  let newdecl = mk_goal sign ty in 
-  ((rc_add wc (sp,newdecl)): named_context sigma)
-
 (******************************************)
 (* Instantiation of existential variables *)
 (******************************************)
