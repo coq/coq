@@ -158,7 +158,7 @@ toplevel: $(TOPLEVEL)
 
 states: states/barestate.coq
 
-SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPMultipleCase.v
+SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) coqtop.byte
 	./coqtop.byte -q -batch -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
@@ -256,12 +256,13 @@ parsing/grammar.cma: $(GRAMMARCMO)
 	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
 CAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma
+OPTCAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma $(OSDEPP4OPTFLAGS)
 
 parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
 
 parsing/g_%.cmx: parsing/g_%.ml4 parsing/grammar.cma
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(OPTCAMLP4GRAMMAR) -impl" -impl $<
 
 parsing/extend.cmo: parsing/extend.ml4 parsing/grammar.cma
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<

@@ -209,6 +209,7 @@ esac
 
 # OS dependent camlp4 options for native compilation
 
+# Special rules for g_*.cmx files to circumvent a PowerPC limitation
 case $ARCH in
   ppc) OSDEPP4OPTFLAGS="-split_gext";;
   *) OSDEPP4OPTFLAGS=""
