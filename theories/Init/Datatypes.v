@@ -78,7 +78,7 @@ Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
 Add Printing Let prod.
 
 Notation "x * y" := (prod x y) : type_scope.
-Notation "( x , y )" := (pair ? ? x y) V8only "x , y".
+Notation "( x , y )" := (pair ? ? x y) : core_scope V8only "x , y".
 
 Section projections.
    Variables A,B:Set.
