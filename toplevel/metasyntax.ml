@@ -141,14 +141,15 @@ let infix_syntax_entry assoc n inf pref =
     | Some(Gramext.LeftA) -> (Extend.E,Extend.L)
     | Some(Gramext.NonA) -> (Extend.L,Extend.L)
     | None -> (Extend.E,Extend.L)  (* LEFTA by default *)
-  in 
+  in
+  let astref = Astterm.globalize_constr (Nvar ((0,0), pref)) in
   [{Extend.syn_id = pref^"_infix";
     Extend.syn_prec = n,0,0;
     Extend.syn_astpat = 
       Pnode
     	("APPLIST",
 	 Pcons
-	   (Pquote (Nvar ((0, 0), pref)),
+	   (Pquote astref,
 	    Pcons (Pmeta ("$e1", Tany), Pcons (Pmeta ("$e2", Tany), Pnil))));
     Extend.syn_hunks =
       [Extend.UNP_BOX
