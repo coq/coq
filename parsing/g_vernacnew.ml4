@@ -596,7 +596,8 @@ GEXTEND Gram
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
-      | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s ] ]
+      | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s
+      | IDENT "Implicit"; qid = global -> PrintImplicit qid ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
