@@ -75,8 +75,8 @@ echo -n " is that OK? "
 read a
 if [ "$a" != 'y' -a "$a" != 'Y' ]; then echo Aborting; exit 1; fi
 
-versionspec1=`grep "^Version: " ./coq.spec | sed -e 's!^Version: \(.*\)!\1!'`
-versionspec2=`grep "^Source: " ./coq.spec | sed -e 's!.*coq-\(.*\)\.tar\.gz.*!\1!'`
+versionspec1=`grep "^Version: " ./RH/coq.spec.tpl | sed -e 's!^Version: \(.*\)!\1!'`
+versionspec2=`grep "^Source: " ./RH/coq.spec.tpl | sed -e 's!.*coq-\(.*\)\.tar\.gz.*!\1!'`
 if [ "$versionspec1" = "$version" -a "$versionspec2" = "$version" ];
 then echo "Version number in coq.spec seems OK ($versionspec1)";
 else
