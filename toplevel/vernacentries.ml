@@ -914,44 +914,18 @@ let _ =
        | _  -> bad_vernac_args "PrintExtract")
     ***)
 
-let _ =
-  add "SEARCH"
-    (function 
-       | [VARG_QUALID qid] ->
-	   (fun () ->
-	      let ref =
-		try 
-		  Nametab.locate qid
-		with Not_found ->
-		  Pretype_errors.error_global_not_found_loc loc qid
-	      in 
-	      Search.search_by_head ref)
-       | _ -> bad_vernac_args "SEARCH")
-
-let _ =
-  add "INSPECT"
-    (function 
-       | [VARG_NUMBER n] -> (fun () -> mSG(inspect n))
-       | _ -> bad_vernac_args "INSPECT")
-
-let string_of_id_list =
-  List.map (function 
-	      | VARG_IDENTIFIER s -> string_of_id s
-	      | _ -> bad_vernac_args "string_of_id_list")
+let extract_qualid = function 
+  | VARG_QUALID qid ->
+      (try wd_of_sp (fst (Nametab.locate_module qid))
+       with Not_found -> 
+	 error ("Module/section "^(string_of_qualid qid)^" not found"))
+  | _ -> bad_vernac_args "extract_qualid"
 
 let inside_outside = function
-  | (VARG_STRING s) :: l -> string_of_id_list l, s
-  | [] -> [], ""
+  | (VARG_STRING "outside") :: l -> List.map extract_qualid l, true
+  | (VARG_STRING "inside") :: l -> List.map extract_qualid l, false
+  | [] -> [], true
   | _ -> bad_vernac_args "inside/outside"
-
-let _ =
-  add "SearchModules"
-    (function
-       | (VARG_IDENTIFIER id) :: l ->
-           (fun () -> 
-	      let ref = Nametab.sp_of_id CCI id in
-              Search.search_modules ref (inside_outside l))
-       | _ -> bad_vernac_args "SearchModules")
 
 let _ = 
   add "SearchRewrite"
@@ -970,6 +944,26 @@ let _ =
 	      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
 	      Search.search_pattern  pat (inside_outside l))
        | _ -> bad_vernac_args "SearchPattern")
+
+let _ =
+  add "SEARCH"
+    (function 
+       | (VARG_QUALID qid) :: l ->
+	   (fun () ->
+	      let ref =
+		try 
+		  Nametab.locate qid
+		with Not_found ->
+		  Pretype_errors.error_global_not_found_loc loc qid
+	      in 
+	      Search.search_by_head ref (inside_outside l))
+       | _ -> bad_vernac_args "SEARCH")
+
+let _ =
+  add "INSPECT"
+    (function 
+       | [VARG_NUMBER n] -> (fun () -> mSG(inspect n))
+       | _ -> bad_vernac_args "INSPECT")
 
 let _ =
   add "SETUNDO"

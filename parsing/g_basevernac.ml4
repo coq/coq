@@ -11,7 +11,7 @@ open Vernac
 GEXTEND Gram
   GLOBAL: identarg ne_identarg_list numarg ne_numarg_list numarg_list
           stringarg ne_stringarg_list constrarg sortarg tacarg 
-          qualidarg qualidconstarg;
+          ne_qualidarg_list qualidarg qualidconstarg;
 
   identarg:
     [ [ id = Constr.ident -> id ] ]
@@ -21,6 +21,10 @@ GEXTEND Gram
   ;
   qualidarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >> ] ]
+  ;
+  ne_qualidarg_list:
+    [ [ q = qualidarg; l = ne_qualidarg_list -> q::l
+      | q = qualidarg -> [q] ] ]
   ;
   qualidconstarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST l)) >> ] ]
@@ -119,7 +123,8 @@ GEXTEND Gram
           <:ast< (PrintOpaqueId $id) >>
 (* Pris en compte dans PrintOption ci-dessous (CADUC) *)
       | IDENT "Print"; id = qualidarg; "." -> <:ast< (PrintId $id) >>
-      | IDENT "Search"; id = qualidarg; "." -> <:ast< (SEARCH $id) >>
+      | IDENT "Search"; id = qualidarg; l = in_or_out_modules; "." ->
+	  <:ast< (SEARCH $id ($LIST $l)) >>
       | IDENT "Inspect"; n = numarg; "." -> <:ast< (INSPECT $n) >>
       | IDENT "SearchPattern"; c = constrarg; l = in_or_out_modules; "." ->
 	  <:ast< (SearchPattern $c ($LIST $l)) >>
@@ -223,8 +228,8 @@ GEXTEND Gram
       | "Type" -> <:ast< "PRINTTYPE" >> ] ] (* pas dans le RefMan *)
   ;
   in_or_out_modules:
-    [ [ IDENT "inside"; l = ne_identarg_list -> <:ast< "inside" >> :: l
-      | IDENT "outside"; l = ne_identarg_list -> <:ast< "outside" >> :: l
+    [ [ IDENT "inside"; l = ne_qualidarg_list -> <:ast< "inside" >> :: l
+      | IDENT "outside"; l = ne_qualidarg_list -> <:ast< "outside" >> :: l
       | -> [] ] ]
   ;
 END;

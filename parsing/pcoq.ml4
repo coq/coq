@@ -349,6 +349,7 @@ module Vernac =
     let ne_identarg_list = gec_list "ne_identarg_list"
     let qualidarg = gec "qualidarg"
     let qualidconstarg = gec "qualidconstarg"
+    let ne_qualidarg_list = gec_list "ne_qualidarg_list"
     let numarg = gec "numarg"
     let numarg_list = gec_list "numarg_list"
     let ne_numarg_list = gec_list "ne_numarg_list"
