@@ -20,11 +20,10 @@
 
 
 (* We need some dependent elimination schemes *)
-Scheme eq_indd := Induction for eq Sort Prop.
-Scheme eqT_indd := Induction for eqT Sort Prop.
-Scheme or_indd := Induction for or Sort Prop.
 
-Implicit Arguments On.
+Set Implicit Arguments.
+
+Require Elimdep.
 
   (* Bijection between [eq] and [eqT] *)
   Definition eq2eqT: (A:Set)(x,y:A)x=y->x==y :=
