@@ -840,6 +840,13 @@ let fconv cv_pb env sigma t1 t2 =
 let conv env = fconv CONV env
 let conv_leq env = fconv CONV_LEQ env 
 
+let convleqkey = Profile.declare_profile "conv_leq";;
+let conv_leq env sigma t1 t2 = Profile.profile4 convleqkey conv_leq env sigma t1 t2;;
+
+
+let convkey = Profile.declare_profile "conv";;
+let conv env sigma t1 t2 = Profile.profile4 convleqkey conv env sigma t1 t2;;
+
 let conv_forall2 f env sigma v1 v2 =
   array_fold_left2 
     (fun c x y -> let c' = f env sigma x y in Constraint.union c c')

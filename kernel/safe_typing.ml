@@ -75,7 +75,7 @@ let rec execute mf env cstr =
         let (larjv,vdefv,cst) = execute_fix mf env lar lfi vdef in
 	let larv = Array.map body_of_type larjv in
         let fix = (vni,(larv,lfi,vdefv)) in
-        check_fix env Evd.empty fix;
+        if not mf.fix then check_fix env Evd.empty fix;
 	(make_judge (mkFix fix) larjv.(i), cst)
 	  
     | IsCoFix (i,(lar,lfi,vdef)) ->

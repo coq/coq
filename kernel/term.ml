@@ -940,6 +940,11 @@ let substn_many lamv n =
   in 
   substrec n
 
+(*
+let substkey = Profile.declare_profile "substn_many";;
+let substn_many lamv n c = Profile.profile3 substkey substn_many lamv n c;;
+*)
+
 let substnl laml k =
   substn_many (Array.map make_substituend (Array.of_list laml)) k
 let substl laml =
@@ -972,6 +977,11 @@ let replace_vars var_alist =
     | _ -> map_constr_with_binders succ substrec n c
   in 
   if var_alist = [] then (function x -> x) else substrec 0
+
+(*
+let repvarkey = Profile.declare_profile "replace_vars";;
+let replace_vars vl c = Profile.profile2 repvarkey replace_vars vl c ;;
+*)
 
 (* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
 let subst_var str = replace_vars [(str, mkRel 1)]
@@ -1561,7 +1571,7 @@ let subst_term_eta = subst_term_gen eta_eq_constr
 (* Et puis meta doit fusionner avec Evar *)
 let rec subst_meta bl c = 
   match kind_of_term c with
-    | IsMeta i -> List.assoc i bl
+    | IsMeta i -> (try List.assoc i bl with Not_found -> c)
     | _ -> map_constr (subst_meta bl) c
 
 (* Substitute only a list of locations locs, the empty list is

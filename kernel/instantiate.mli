@@ -13,6 +13,7 @@ open Environ
 
 val instantiate_constr : 
   section_context -> constr -> constr list -> constr
+
 val instantiate_type : 
   section_context -> types -> constr list -> types
 

@@ -45,7 +45,7 @@ let mis_finite mis = mis.mis_mip.mind_finite
 
 let mis_typed_nf_lc mis =
   let sign = mis.mis_mib.mind_hyps in
-  let args = Array.to_list mis.mis_args in
+(*  let args = Array.to_list mis.mis_args in *)
   Array.map (fun t -> (* Instantiate.instantiate_type sign*) t (*args*))
     mis.mis_mip.mind_nf_lc
 
@@ -53,13 +53,30 @@ let mis_nf_lc mis = Array.map body_of_type (mis_typed_nf_lc mis)
 
 let mis_user_lc mis = 
   let sign = mis.mis_mib.mind_hyps in
+(*i
+  let at = mind_user_lc mis.mis_mip in 
+  if Array.length mis.mis_args = 0 then at
+  else 
   let args = Array.to_list mis.mis_args in
+  Array.map (fun t -> Instantiate.instantiate_constr sign t args) at
+i*)
   Array.map (fun t -> (*Instantiate.instantiate_type sign*) t (*args*))
     (mind_user_lc mis.mis_mip)
 
 (* gives the vector of constructors and of 
    types of constructors of an inductive definition 
    correctly instanciated *)
+
+let mis_type_mconstructs mispec =
+  let specif = Array.map body_of_type (mis_user_lc mispec)
+  and ntypes = mis_ntypes mispec
+  and nconstr = mis_nconstr mispec in
+  let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) 
+  and make_Ck k = mkMutConstruct
+		    (((mispec.mis_sp,mispec.mis_tyi),k+1),
+		       mispec.mis_args) in
+  (Array.init nconstr make_Ck, 
+   Array.map (substl (list_tabulate make_Ik ntypes)) specif)
 
 let mis_nf_constructor_type i mispec =
   let specif = mis_nf_lc mispec
@@ -79,12 +96,15 @@ let mis_constructor_type i mispec =
 
 let mis_arity mis =
   let hyps = mis.mis_mib.mind_hyps 
-  and largs = Array.to_list mis.mis_args in
-  Instantiate.instantiate_type hyps (mind_user_arity mis.mis_mip) largs
+  in let ar = mind_user_arity mis.mis_mip
+  in if Array.length mis.mis_args = 0 then ar
+    else let largs = Array.to_list mis.mis_args in
+      Instantiate.instantiate_type hyps ar largs
 
 let mis_nf_arity mis =
   let hyps = mis.mis_mib.mind_hyps 
-  and largs = Array.to_list mis.mis_args in
+  in if Array.length mis.mis_args = 0 then mis.mis_mip.mind_nf_arity
+    else let largs = Array.to_list mis.mis_args in
   Instantiate.instantiate_type hyps mis.mis_mip.mind_nf_arity largs
 
 let mis_params_ctxt mis = mis.mis_mip.mind_params_ctxt

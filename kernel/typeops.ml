@@ -26,6 +26,10 @@ let assumption_of_judgment env sigma j =
     | IsSort s -> j.uj_val
     | _ -> error_assumption CCI env j.uj_val
 
+let aojkey = Profile.declare_profile "assumption_of_judgment";;
+let assumption_of_judgment env sigma j
+  = Profile.profile3 aojkey assumption_of_judgment env sigma j;;
+
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env sigma j =
   match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
@@ -41,6 +45,9 @@ let relative env sigma n =
       uj_type = type_app (lift n) typ }
   with Not_found -> 
     error_unbound_rel CCI env sigma n
+
+let relativekey = Profile.declare_profile "relative";;
+let relative env sigma n = Profile.profile3 relativekey relative env sigma n;;
 
 (* Management of context of variables. *)
 
@@ -76,11 +83,19 @@ let check_hyps id env sigma hyps =
 
 let type_of_constant = Instantiate.constant_type
 
+let tockey = Profile.declare_profile "type_of_constant";;
+let type_of_constant env sigma c 
+  = Profile.profile3 tockey type_of_constant env sigma c;;
+
 (* Inductive types. *)
 
 let type_of_inductive env sigma i =
   (* TODO: check args *)
   mis_arity (lookup_mind_specif i env)
+
+let toikey = Profile.declare_profile "type_of_inductive";;
+let type_of_inductive env sigma i
+  = Profile.profile3 toikey type_of_inductive env sigma i;;
 
 (* Constructors. *)
 
@@ -88,6 +103,11 @@ let type_of_constructor env sigma cstr =
   mis_constructor_type
     (index_of_constructor cstr) 
     (lookup_mind_specif (inductive_of_constructor cstr) env)
+
+let tockey = Profile.declare_profile "type_of_constructor";;
+let type_of_constructor env sigma cstr
+  = Profile.profile3 tockey type_of_constructor env sigma cstr;;
+
 
 let type_of_existential env sigma ev =
   Instantiate.existential_type sigma ev
@@ -197,6 +217,10 @@ let type_of_case env sigma ci pj cj lfj =
   check_branches_message env sigma (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
   { uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
+
+let tocasekey = Profile.declare_profile "type_of_case";;
+let type_of_case env sigma ci pj cj lfj
+  = Profile.profile6 tocasekey type_of_case env sigma ci pj cj lfj;;
 
 (* Prop and Set *)
 
@@ -313,6 +337,9 @@ let apply_rel_list env sigma nocheck argjl funj =
   in 
   apply_rec 1 (body_of_type funj.uj_type) Constraint.empty argjl
 
+let applykey = Profile.declare_profile "apply_rel_list";;
+let apply_rel_list env sigma nocheck argjl funj
+  = Profile.profile5 applykey apply_rel_list env sigma nocheck argjl funj;;
 
 (* Fixpoints. *)
 
@@ -507,7 +534,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
      (* n gives the index of the recursive variable *)
      (noccur_with_meta (n+k+1) nfi t) or 
      (* no recursive call in the term *)
-     (let f,l = whd_betadeltaiota_stack env sigma t in
+     (let f,l = whd_betaiota_stack t in
       match kind_of_term f with
 	| IsRel p -> 
 	    if n+k+1 <= p & p < n+k+nfi+1 then
@@ -590,12 +617,16 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	       (n+1) (map_lift_fst lst) b) &&
             (List.for_all (check_rec_call env n lst) l)
 
-	| IsLetIn (x,a,b,c) -> 
+	| IsLetIn (x,a,b,c) as cst -> 
+	    (try 
 	    (check_rec_call env n lst a) &&
 	    (check_rec_call env n lst b) &&
             (check_rec_call (push_rel_def (x,a, b) env)
 	       (n+1) (map_lift_fst lst) c) &&
             (List.for_all (check_rec_call env n lst) l)
+	    with (FixGuardError NotEnoughArgumentsForFixCall) as e
+		-> check_rec_call env n lst (whd_betadeltaiota env sigma t)
+            )
 
 	| IsMutInd (_,la) -> 
 	     (array_for_all (check_rec_call env n lst) la) &&
@@ -605,9 +636,14 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	     (array_for_all (check_rec_call env n lst) la) &&
              (List.for_all (check_rec_call env n lst) l)
 
-	| IsConst (_,la) -> 
+	| IsConst (sp,la) as c -> 
+            (try 
 	    (array_for_all (check_rec_call env n lst) la) &&
             (List.for_all (check_rec_call env n lst) l)
+	     with (FixGuardError _ ) as e
+		 -> if evaluable_constant env sp then 
+		   check_rec_call env n lst (whd_betadeltaiota env sigma t)
+		    else raise e)
 
 	| IsApp (f,la) -> 
 	    (check_rec_call env n lst f) &&
@@ -672,6 +708,9 @@ let check_fix env sigma ((nvect,bodynum),(types,names,bodies as recdef)) =
     with FixGuardError err ->
       error_ill_formed_rec_body	CCI env err (List.rev names) i bodies
   done 
+
+let cfkey = Profile.declare_profile "check_fix";;
+let check_fix env sigma fix = Profile.profile3 cfkey check_fix env sigma fix;;
 
 (* Co-fixpoints. *)
 
