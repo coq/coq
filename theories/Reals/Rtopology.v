@@ -769,7 +769,7 @@ Reflexivity.
 Intros; Apply (cond_fam f1); Unfold g in H3; Unfold image_rec in H3; Elim H3; Intros; Exists (f0 x0); Apply H4.
 Qed.
 
-Lemma Rlt_minus : (a,b:R) ``a<b`` -> ``0<b-a``.
+Lemma Rlt_Rminus : (a,b:R) ``a<b`` -> ``0<b-a``.
 Intros; Apply Rlt_anti_compatibility with a; Rewrite Rplus_Or; Replace ``a+(b-a)`` with b; [Assumption | Ring].
 Qed.
 
@@ -781,11 +781,11 @@ Pose h := [x:R](Cases (total_order_Rle x a) of
        (leftT _) => (f0 x)
      | (rightT _) => (f0 b) end) end).
 Assert H2 : ``0<b-a``.
-Apply Rlt_minus; Assumption.
+Apply Rlt_Rminus; Assumption.
 Exists h; Split.
 Unfold continuity; Intro; Case (total_order x a); Intro.
 Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Exists ``a-x``; Split.
-Change ``0<a-x``; Apply Rlt_minus; Assumption.
+Change ``0<a-x``; Apply Rlt_Rminus; Assumption.
 Intros; Elim H5; Clear H5; Intros _ H5; Unfold h.
 Case (total_order_Rle x a); Intro.
 Case (total_order_Rle x0 a); Intro.
@@ -800,7 +800,7 @@ Split; [Right; Reflexivity | Left; Assumption].
 Assert H6 := (H0 ? H5); Unfold continuity_pt in H6; Unfold continue_in in H6; Unfold limit1_in in H6; Unfold limit_in in H6; Simpl in H6; Unfold R_dist in H6; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H6 ? H7); Intros; Exists (Rmin x0 ``b-a``); Split.
 Unfold Rmin; Case (total_order_Rle x0 ``b-a``); Intro.
 Elim H8; Intros; Assumption.
-Change ``0<b-a``; Apply Rlt_minus; Assumption.
+Change ``0<b-a``; Apply Rlt_Rminus; Assumption.
 Intros; Elim H9; Clear H9; Intros _ H9; Cut ``x1<b``.
 Intro; Unfold h; Case (total_order_Rle x a); Intro.
 Case (total_order_Rle x1 a); Intro.
@@ -825,9 +825,9 @@ Assert H6 : ``a<=x<=b``.
 Split; Left; Assumption.
 Assert H7 := (H0 ? H6); Unfold continuity_pt in H7; Unfold continue_in in H7; Unfold limit1_in in H7; Unfold limit_in in H7; Simpl in H7; Unfold R_dist in H7; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H7 ? H8); Intros; Elim H9; Clear H9; Intros.
 Assert H11 : ``0<x-a``.
-Apply Rlt_minus; Assumption.
+Apply Rlt_Rminus; Assumption.
 Assert H12 : ``0<b-x``.
-Apply Rlt_minus; Assumption.
+Apply Rlt_Rminus; Assumption.
 Exists (Rmin x0 (Rmin ``x-a`` ``b-x``)); Split.
 Unfold Rmin; Case (total_order_Rle ``x-a`` ``b-x``); Intro.
 Case (total_order_Rle x0 ``x-a``); Intro.
@@ -869,7 +869,7 @@ Split; [Left; Assumption | Right; Reflexivity].
 Assert H8 := (H0 ? H7); Unfold continuity_pt in H8; Unfold continue_in in H8; Unfold limit1_in in H8; Unfold limit_in in H8; Simpl in H8; Unfold R_dist in H8; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H8 ? H9); Intros; Exists (Rmin x0 ``b-a``); Split.
 Unfold Rmin; Case (total_order_Rle x0 ``b-a``); Intro.
 Elim H10; Intros; Assumption.
-Change ``0<b-a``; Apply Rlt_minus; Assumption.
+Change ``0<b-a``; Apply Rlt_Rminus; Assumption.
 Intros; Elim H11; Clear H11; Intros _ H11; Cut ``a<x1``.
 Intro; Unfold h; Case (total_order_Rle x a); Intro.
 Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H4)).
@@ -894,7 +894,7 @@ Apply Rlt_le_trans with ``(Rmin x0 (b-a))``.
 Assumption.
 Apply Rmin_r.
 Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Exists ``x-b``; Split.
-Change ``0<x-b``; Apply Rlt_minus; Assumption.
+Change ``0<x-b``; Apply Rlt_Rminus; Assumption.
 Intros; Elim H8; Clear H8; Intros.
 Assert H10 : ``b<x0``.
 Apply Ropp_Rlt; Apply Rlt_anti_compatibility with x; Apply Rle_lt_trans with ``(Rabsolu (x0-x))``.
