@@ -383,7 +383,7 @@ let intern_tactic_reference ist r =
     error_global_not_found_loc loc qid
 
 let intern_constr_reference strict ist = function
-  | Ident (_,id) when find_hyp id ist or (not strict & find_ctxvar id ist) ->
+  | Ident (_,id) when (not strict & find_hyp id ist) or find_ctxvar id ist ->
       RVar (loc,id), None
   | r ->
       let _,qid = qualid_of_reference r in
@@ -452,7 +452,7 @@ let intern_evaluable_or_metanum ist = function
             ArgArg (EvalVarRef id, Some id)
         | Ident (loc,id) as r when find_var id ist -> ArgVar (loc,id)
         | r -> 
-            let e = match fst (intern_constr_reference true ist r) with
+            let e = match fst(intern_constr_reference !strict_check ist r) with
             | RRef (_,ConstRef c) -> EvalConstRef c
             | RRef (_,VarRef c) | RVar (_,c) -> EvalVarRef c
             | _ -> error_not_evaluable (pr_reference r) in
