@@ -371,6 +371,7 @@ End Theory_of_rings.
 
 Implicit Arguments Off.
 
+(***TODO
 Definition Semi_Ring_Theory_of :
   (A:Type)(Aplus : A -> A -> A)(Amult : A -> A -> A)(Aone : A)
   (Azero : A)(Aopp : A -> A)(Aeq : A -> A -> bool)
@@ -390,6 +391,7 @@ Defined.
 (* Every ring can be viewed as a semi-ring : this property will be used
   in Abstract_polynom. *)
 Coercion Semi_Ring_Theory_of : Ring_Theory >-> Semi_Ring_Theory.
+***)
 
 Section product_ring.
 

@@ -8,7 +8,7 @@ Implicit Arguments On.
 
 Lemma index_eq_prop: (n,m:index)(Is_true (index_eq n m)) -> n=m.
 Proof.
-  Induction n; Induction m; Simpl; Try (Reflexivity Orelse Contradiction).
+  Induction n; Induction m; Simpl; Try '(Reflexivity Orelse Contradiction).
   Intros; Rewrite (H i0); Trivial.
   Intros; Rewrite (H i0); Trivial.
 Save.

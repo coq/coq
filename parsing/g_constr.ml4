@@ -141,7 +141,7 @@ GEXTEND Gram
   ;
   vardecls:
     [ [ id = ident; idl = ident_comma_list_tail; c = type_option ->
-          <:ast< ($BINDER $c $id ($LIST $idl)) >>
+          <:ast< (BINDER $c $id ($LIST $idl)) >>
       | id = ident; "="; c = constr ->
 	  <:ast< (ABST #Core#let.cci $c $id) >> ] ]
   ;
