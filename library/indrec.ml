@@ -228,13 +228,13 @@ let mis_make_indrec env sigma listdepkind mispec =
 		       | Some (_,Rel j) -> j 
 		       | _ -> assert false) in
 	    let indf = make_ind_family
-			 (mispec,rel_list (nrec+nbconstruct) nparams) in
+			 (mispeci,rel_list (nrec+nbconstruct) nparams) in
 	    let deftyi = 
 	      it_lambda_name env
 		(lambda_create env
 		   (build_dependent_inductive
 		      (lift_inductive_family nrec indf),
-		    mkMutCaseA (make_default_case_info mispec)
+		    mkMutCaseA (make_default_case_info mispeci)
                       (Rel (dect+j+1)) (Rel 1) branches))
 		(lift_context nrec lnames)
 	    in
