@@ -118,6 +118,12 @@ let ast_dependent na aty =
     | Name id -> occur_var_ast (string_of_id id) aty
     | Anonymous -> false
 
+let decompose_binder = function
+  | RProd(_,na,ty,c) -> Some (BProd,na,ty,c)
+  | RLambda(_,na,ty,c) -> Some (BLambda,na,ty,c)
+  | RLetIn(_,na,b,c) -> Some (BLetIn,na,b,c)
+  | _ -> None
+
 (* Implicit args indexes are in ascending order *)
 let explicitize =
   let rec exprec n lastimplargs impl = function
@@ -155,22 +161,6 @@ let ast_of_app impl f args =
     ope("APPLISTEXPL", f::args)
   else
     ope("APPLIST", f::(explicitize impl args))
-(*
-    let largs = List.length args in
-    let impl = List.rev (List.filter (fun i -> i <= largs) impl) in
-    let impl1,impl2 = div_implicits largs impl in
-    let al1 = Array.of_list args in
-    List.iter
-      (fun i -> al1.(i) <-
-         ope("EXPL", [str "EX"; num i; al1.(i)]))
-      impl2;
-    List.iter
-      (fun i -> al1.(i) <-
-         ope("EXPL",[num i; al1.(i)]))
-      impl1;
-    (* On laisse les implicites, à charge du PP de ne pas les imprimer *)
-    ope("APPLISTEXPL",f::(Array.to_list al1))
-*)
 
 let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
@@ -194,24 +184,27 @@ let rec ast_of_raw = function
 	       with Not_found -> [] in
 	     ast_of_app imp astf astargs
 	 | _       -> ast_of_app [] astf astargs)
-  | RBinder (_,BProd,Anonymous,t,c) ->
+
+  | RProd (_,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
       ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
-  | RBinder (_,BLetIn,na,t,c) ->
+
+  | RLetIn (_,na,t,c) ->
       ope("LETIN",[ast_of_raw t; slam(stringopt_of_name na,ast_of_raw c)])
-  | RBinder (_,bk,na,t,c) ->
-      let (n,a) = factorize_binder 1 bk na (ast_of_raw t) c in
-      let tag = match bk with
-	  (* LAMBDA et LAMBDALIST se comportent pareil ... Non ! *)
-	  (* Pour compatibilité des theories, il faut LAMBDALIST partout *)
-	| BLambda -> (* if n=1 then "LAMBDA" else *) "LAMBDALIST"
-	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
-	  (* non dépendant, pour isoler l'implication; peut-être un *)
-	  (* constructeur ARROW serait-il plus justifié ? *) 
-	| BProd -> if n=1 then "PROD" else "PRODLIST" 
-	| BLetIn -> if n=1 then "LETIN" else "LETINLIST" 
-      in
+
+  | RProd (_,na,t,c) ->
+      let (n,a) = factorize_binder 1 BProd na (ast_of_raw t) c in
+      (* PROD et PRODLIST doivent être distingués à cause du cas *)
+      (* non dépendant, pour isoler l'implication; peut-être un *)
+      (* constructeur ARROW serait-il plus justifié ? *) 
+      let tag = if n=1 then "PROD" else "PRODLIST" in
       ope(tag,[ast_of_raw t;a])
+
+  | RLambda (_,na,t,c) ->
+      let (n,a) = factorize_binder 1 BLambda na (ast_of_raw t) c in
+      (* LAMBDA et LAMBDALIST se comportent pareil ... Non ! *)
+      (* Pour compatibilité des theories, il faut LAMBDALIST partout *)
+      ope("LAMBDALIST",[ast_of_raw t;a])
 
   | RCases (_,printinfo,typopt,tml,eqns) ->
       let pred = ast_of_rawopt typopt in
@@ -235,13 +228,13 @@ let rec ast_of_raw = function
 	 | RFix (nv,n) ->
              let rec split_lambda binds = function
 	       | (0, t) -> (binds,ast_of_raw t)
-	       | (n, RBinder(_,BLambda,na,t,b)) ->
+	       | (n, RLambda (_,na,t,b)) ->
 		   let bind = ope("BINDER",[ast_of_raw t;ast_of_name na]) in
 		   split_lambda (bind::binds) (n-1,b)
 	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint body" in
 	     let rec split_product = function
 	       | (0, t) -> ast_of_raw t
-	       | (n, RBinder(_,BProd,na,t,b)) -> split_product (n-1,b)
+	       | (n, RProd (_,na,t,b)) -> split_product (n-1,b)
 	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint type" in
 	     let listdecl = 
 	       Array.mapi
@@ -279,8 +272,8 @@ and ast_of_rawopt = function
   | Some p -> ast_of_raw p
 
 and factorize_binder n oper na aty c =
-  let (p,body) = match c with
-    | RBinder(_,oper',na',ty',c')
+  let (p,body) = match decompose_binder c with
+    | Some (oper',na',ty',c')
 	when (oper = oper') & (aty = ast_of_raw ty')
 	  & not (ast_dependent na aty) (* To avoid na in ty' escapes scope *)
 	  & not (na' = Anonymous & oper = BProd)
@@ -326,6 +319,12 @@ let ast_of_inductive env (ind_sp,ids) =
     ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
   else a
 
+let decompose_binder_pattern = function
+  | PProd(na,ty,c) -> Some (BProd,na,ty,c)
+  | PLambda(na,ty,c) -> Some (BLambda,na,ty,c)
+  | PLetIn(na,b,c) -> Some (BLetIn,na,b,c)
+  | _ -> None
+
 let rec ast_of_pattern env = function
   | PRef ref -> ast_of_ref ref
 
@@ -356,25 +355,27 @@ let rec ast_of_pattern env = function
       ope("SOAPP",(ope ("META",[num n])):: 
 		  (List.map (ast_of_pattern env) args))
 
-  | PBinder (BLetIn,na,b,c) ->
+  | PLetIn (na,b,c) ->
       let c' = ast_of_pattern (add_name na env) c in
       ope("LETIN",[ast_of_pattern env b;slam(stringopt_of_name na,c')])
 		
-  | PBinder (BProd,Anonymous,t,c) ->
+  | PProd (Anonymous,t,c) ->
       ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])
-  | PBinder (bk,na,t,c) ->
+  | PProd (na,t,c) ->
       let env' = add_name na env in
-      let (n,a) = factorize_binder_pattern
-		    env' 1 bk na (ast_of_pattern env t) c in
-      let tag = match bk with
-	  (* LAMBDA et LAMBDALIST se comportent pareil *)
-	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
-	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
-	  (* non dépendant, pour isoler l'implication; peut-être un *)
-	  (* constructeur ARROW serait-il plus justifié ? *) 
-	| BProd -> if n=1 then "PROD" else "PRODLIST" 
-	| BLetIn -> anomaly "Should be captured before"
-      in
+      let (n,a) =
+	factorize_binder_pattern env' 1 BProd na (ast_of_pattern env t) c in
+      (* PROD et PRODLIST doivent être distingués à cause du cas *)
+      (* non dépendant, pour isoler l'implication; peut-être un *)
+      (* constructeur ARROW serait-il plus justifié ? *) 
+      let tag = if n=1 then "PROD" else "PRODLIST" in
+      ope(tag,[ast_of_pattern env t;a])
+  | PLambda (na,t,c) ->
+      let env' = add_name na env in
+      let (n,a) =
+	factorize_binder_pattern env' 1 BLambda na (ast_of_pattern env t) c in
+      (* LAMBDA et LAMBDALIST se comportent pareil *)
+      let tag = if n=1 then "LAMBDA" else "LAMBDALIST" in
       ope(tag,[ast_of_pattern env t;a])
 
   | PCase (typopt,tm,bv) ->
@@ -399,8 +400,8 @@ and ast_of_patopt env = function
   | Some p -> ast_of_pattern env p
 
 and factorize_binder_pattern env n oper na aty c =
-  let (p,body) = match c with
-    | PBinder(oper',na',ty',c')
+  let (p,body) = match decompose_binder_pattern c with
+    | Some (oper',na',ty',c')
 	when (oper = oper') & (aty = ast_of_pattern env ty')
 	  & not (na' = Anonymous & oper = BProd)
 	  ->

@@ -30,7 +30,7 @@ val interp_casted_openconstr    :
    declared in the rel_context of [env] *)
 val interp_type_with_implicits : 
   'a evar_map -> env -> 
-    impl_map:(identifier * int list) list -> Coqast.t -> types
+   (identifier * Impargs.implicits_list) list -> Coqast.t -> types
 
 val judgment_of_rawconstr : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
 val type_judgment_of_rawconstr :

@@ -27,8 +27,7 @@ val print_val : env -> unsafe_judgment -> std_ppcmds
 val print_type : env -> unsafe_judgment -> std_ppcmds
 val print_eval :
   'a reduction_function -> env -> unsafe_judgment -> std_ppcmds
-val print_mutual :
-  section_path -> Declarations.mutual_inductive_body -> std_ppcmds
+val print_mutual : section_path -> std_ppcmds
 val print_name : qualid -> std_ppcmds
 val print_opaque_name : qualid -> std_ppcmds
 val print_local_context : unit -> std_ppcmds

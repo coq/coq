@@ -81,8 +81,85 @@ let implicit_args_msg sp mipv =
           >])
        mipv >]
 
-let print_mutual sp mib = 
-  let pk = kind_of_path sp in
+let print_params env params =
+  if List.length params = 0 then 
+    [<>] 
+  else
+    [< 'sTR "["; pr_rel_context env params; 'sTR "]"; 'bRK(1,2) >]
+
+let print_constructors envpar names types =
+  let pc =
+    [< prvect_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
+         (fun (id,c) -> [< pr_id id; 'sTR " : "; prterm_env envpar c >])
+	 (array_map2 (fun n t -> (n,t)) names types) >]
+  in hV 0 [< 'sTR "  "; pc >] 
+
+let build_inductive sp tyi =
+  let ctxt = context_of_global_reference (IndRef (sp,tyi)) in
+  let ctxt = Array.of_list (instance_from_section_context ctxt) in
+  let mis = Global.lookup_mind_specif ((sp,tyi),ctxt) in
+  let params = mis_params_ctxt mis in
+  let args = extended_rel_list 0 params in
+  let indf = make_ind_family (mis,args) in
+  let arity = get_arity_type indf in
+  let cstrtypes = get_constructors_types indf in
+  let cstrnames = mis_consnames mis in
+  (IndRef (sp,tyi), params, arity, cstrnames, cstrtypes)
+
+let print_one_inductive sp tyi =
+  let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
+  let env = Global.env () in
+  let envpar = push_rels params env in
+  (hOV 0
+     [< (hOV 0
+	   [< pr_global (IndRef (sp,tyi)) ; 'bRK(1,2); print_params env params;
+	      'sTR ": "; prterm_env envpar arity; 'sTR " :=" >]);
+	'bRK(1,2); print_constructors envpar cstrnames cstrtypes >]) 
+
+let print_mutual sp =
+  let mipv = (Global.lookup_mind sp).mind_packets in
+  if Array.length mipv = 1 then
+    let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp 0 in
+    let sfinite =
+      if mipv.(0).mind_finite then "Inductive " else "CoInductive " in
+    let env = Global.env () in
+    let envpar = push_rels params env in
+    (hOV 0 [< 
+       'sTR sfinite ; 
+      pr_global (IndRef (sp,0)); 'bRK(1,2);
+       print_params env params; 'bRK(1,5);
+       'sTR": "; prterm_env envpar arity; 'sTR" :=";
+       'bRK(0,4); print_constructors envpar cstrnames cstrtypes; 'fNL;
+       implicit_args_msg sp mipv  >] )
+  (* Mutual [co]inductive definitions *)
+  else
+    let _,(mipli,miplc) =
+      Array.fold_right
+        (fun mi (n,(li,lc)) ->
+           if mi.mind_finite then (n+1,(n::li,lc)) else (n+1,(li,n::lc)))
+        mipv (0,([],[])) 
+    in 
+    let strind =
+      if mipli = [] then [<>] 
+      else [< 'sTR "Inductive"; 'bRK(1,4);
+              (prlist_with_sep
+                 (fun () -> [< 'fNL; 'sTR"  with"; 'bRK(1,4) >])
+                 (print_one_inductive sp) mipli); 'fNL >]
+    and strcoind =
+      if miplc = [] then [<>] 
+      else [< 'sTR "CoInductive"; 'bRK(1,4);
+              (prlist_with_sep
+                 (fun () -> [<'fNL; 'sTR "  with"; 'bRK(1,4) >]) 
+                 (print_one_inductive sp) miplc); 'fNL >] 
+    in
+    (hV 0 [< 'sTR"Mutual " ; 
+             if mipv.(0).mind_finite then 
+	       [< strind; strcoind >] 
+             else 
+	       [<strcoind; strind>];
+             implicit_args_msg sp mipv >])
+
+(*
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv} = mib in 
@@ -113,7 +190,10 @@ let print_mutual sp mib =
       [< 'sTR "["; pr_rel_context env lpars; 'sTR "]"; 'bRK(1,2) >] in
   let print_oneind tyi =
     let mis =
-      build_mis ((sp,tyi),Array.of_list (instance_from_named_context mib.mind_hyps)) mib in
+      build_mis
+	((sp,tyi),
+	 Array.of_list (instance_from_section_context mib.mind_hyps))
+	mib in
     let (_,arity) = decomp_n_prod env evd nparams
 		      (body_of_type (mis_user_arity mis)) in
       (hOV 0
@@ -123,7 +203,9 @@ let print_mutual sp mib =
             'bRK(1,2); print_constructors mis >]) 
   in 
   let mis0 =
-    build_mis ((sp,0),Array.of_list (instance_from_named_context mib.mind_hyps)) mib in
+    build_mis
+      ((sp,0),Array.of_list (instance_from_section_context mib.mind_hyps))
+      mib in
   (* Case one [co]inductive *)
   if Array.length mipv = 1 then
     let (_,arity) = decomp_n_prod env evd nparams
@@ -165,7 +247,7 @@ let print_mutual sp mib =
              else 
 	       [<strcoind; strind>];
              implicit_args_msg sp mipv >])
-
+*)
 let print_section_variable sp =
   let (d,_,_) = get_variable sp in
   let l = implicits_of_var sp in
@@ -202,9 +284,8 @@ let print_constant with_values sep sp =
 	     print_basename sp ; 'fNL>]
 
 let print_inductive sp =
-  let mib = Global.lookup_mind sp in
   if kind_of_path sp = CCI then
-    [< print_mutual sp mib; 'fNL >]
+    [< print_mutual sp; 'fNL >]
   else
     hOV 0 [< 'sTR"Fw inductive definition "; 
 	     print_basename sp; 'fNL >]
@@ -359,7 +440,7 @@ let print_opaque_name qid =
           else 
 	    anomaly "print_opaque_name"
       | IsMutInd ((sp,_),_) ->
-          print_mutual sp (Global.lookup_mind sp)
+          print_mutual sp
       | IsMutConstruct cstr -> 
 	  let ty = Typeops.type_of_constructor env sigma cstr in
 	  print_typed_value (x, ty)
@@ -393,8 +474,7 @@ let print_local_context () =
                   print_basename sp ;'sTR" = ";
                   print_typed_body (val_0,typ) >]
            | "INDUCTIVE" -> 
-               let mib = Global.lookup_mind sp in 
-               [< print_last_const rest;print_mutual sp mib; 'fNL >]
+               [< print_last_const rest;print_mutual sp; 'fNL >]
            | "VARIABLE" ->  [< >]
            | _          ->  print_last_const rest)
     | _ -> [< >]

@@ -165,11 +165,11 @@ let pr_rel_decl env (na,c,typ) =
     | Some c ->
 	(* Force evaluation *) 
 	let pb = prterm_env env c in
-	[< 'sTR" :="; 'sPC; pb >] in
+	[< 'sTR" :="; 'sPC; pb; 'sPC >] in
   let ptyp = prtype_env env typ in
   match na with
-    | Anonymous -> [< 'sTR"<>" ; 'sPC; pbody; 'sTR" :"; 'sPC; ptyp >]
-    | Name id -> [< pr_id id ; 'sPC; pbody; 'sTR" :"; 'sPC; ptyp >]
+    | Anonymous -> [< 'sTR"<>" ; 'sPC; pbody; 'sTR":"; 'sPC; ptyp >]
+    | Name id -> [< pr_id id ; 'sPC; pbody; 'sTR":"; 'sPC; ptyp >]
 
 
 (* Prints out an "env" in a nice format.  We print out the

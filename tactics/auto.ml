@@ -361,6 +361,7 @@ let _ =
 	   fun () -> add_trivials [hintname, c1] dbnames
        | _ -> bad_vernac_args "HintImmediate")
 
+
 let _ = 
   vinterp_add
     "HintConstructors"
@@ -369,12 +370,18 @@ let _ =
 	   begin 
 	     try
 	       let env = Global.env() and sigma = Evd.empty in
-	       let rectype = destMutInd (Declare.global_qualified_reference qid) in
-	       let consnames = 
-		 mis_consnames (Global.lookup_mind_specif rectype) in
+	       let (isp, _ as rectype) =
+		 destMutInd (Declare.global_qualified_reference qid) in
+	       let conspaths =
+		 mis_conspaths (Global.lookup_mind_specif rectype) in
+	       let hyps = Declare.implicit_section_args (IndRef isp) in
+	       let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
 	       let lcons = 
 		 array_map_to_list
-		   (fun id -> (id, Declare.global_reference CCI id)) consnames in
+		   (fun sp ->
+		      let c = Declare.global_absolute_reference sp in
+		      (basename sp, applist (c, section_args)))
+		   conspaths in
 	       let dbnames = if l = [] then ["core"] else 
 	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
 			     | _ -> bad_vernac_args "HintConstructors") l in
@@ -408,14 +415,13 @@ let _ =
 	     List.map
 	       (function
 		  | VARG_QUALID qid -> 
-		      let c =
-			try Declare.global_qualified_reference qid
-		        with Not_found -> 
-			  errorlabstrm "global_reference"
-			    [<'sTR ("Cannot find reference "
-				    ^(string_of_qualid qid))>] in
+		      let ref = global qid in
+		      let env = Global.env() in
+		      let c = Declare.constr_of_reference Evd.empty env ref in
+		      let hyps = Declare.implicit_section_args ref in
+		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
 		      let _,i = repr_qualid qid in
-		      (id_of_string i, c)
+		      (id_of_string i, applist (c,section_args))
 		  | _-> bad_vernac_args "HintsResolve") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -447,12 +453,17 @@ let _ =
     (function
        | (VARG_VARGLIST l)::lh ->
 	   let lhints = 
-	     List.map (function
-			 | VARG_QUALID qid -> 
-			     let _,n = repr_qualid qid in
-			     (id_of_string n,
-			      Declare.global_qualified_reference qid)
-		      	 | _ -> bad_vernac_args "HintsImmediate") lh in
+	     List.map
+	       (function
+		  | VARG_QUALID qid -> 
+		      let _,n = repr_qualid qid in
+		      let ref = Nametab.locate qid in
+		      let env = Global.env () in
+		      let c = Declare.constr_of_reference Evd.empty env ref in
+		      let hyps = Declare.implicit_section_args ref in
+		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
+		      (id_of_string n, applist (c, section_args))
+		  | _ -> bad_vernac_args "HintsImmediate") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
 			 | VARG_IDENTIFIER i -> string_of_id i

@@ -657,7 +657,7 @@ let print_mutual_inductive packs fv hyps env inner_types =
 
 let string_list_of_named_context_list =
  List.map
-  (function (n,_,_) -> Names.string_of_id n)
+  (function (n,_,_) -> Names.string_of_id (Names.basename n))
 ;;
 
 let types_filename_of_filename =
