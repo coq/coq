@@ -37,14 +37,14 @@ Hints Immediate Is_true_eq_right Is_true_eq_left : bool.
 (*******************)
 
 Lemma diff_true_false : ~true=false.
-Goal.
+Proof.
 Unfold not; Intro contr; Change (Is_true false).
 Elim contr; Simpl; Trivial with bool.
 Qed.
 Hints Resolve diff_true_false : bool v62.
 
 Lemma diff_false_true : ~false=true.
-Goal.
+Proof.
 Red; Intros H; Apply diff_true_false.
 Symmetry.
 Assumption.
@@ -178,12 +178,12 @@ Definition negb := [b:bool]Cases b of
 (**************************)
 
 Lemma negb_intro : (b:bool)b=(negb (negb b)).
-Goal.
+Proof.
 Induction b; Reflexivity.
 Qed.
 
 Lemma negb_elim : (b:bool)(negb (negb b))=b.
-Goal.
+Proof.
 Induction b; Reflexivity.
 Qed.
        
@@ -200,12 +200,12 @@ Proof.
 Qed.
 
 Lemma negb_sym : (b,b':bool)(b'=(negb b))->(b=(negb b')).
-Goal.
+Proof.
 Induction b; Induction b'; Intros; Simpl; Trivial with bool.
 Qed.
 
 Lemma no_fixpoint_negb : (b:bool)~(negb b)=b.
-Goal.
+Proof.
 Induction b; Simpl; Unfold not; Intro; Apply diff_true_false; Auto with bool.
 Qed.
 
