@@ -3322,10 +3322,12 @@ contrib/xml/acic2Xml.cmo: contrib/xml/xml.cmi lib/util.cmi kernel/term.cmi \
     kernel/names.cmi contrib/xml/cic2acic.cmo contrib/xml/acic.cmo 
 contrib/xml/acic2Xml.cmx: contrib/xml/xml.cmx lib/util.cmx kernel/term.cmx \
     kernel/names.cmx contrib/xml/cic2acic.cmx contrib/xml/acic.cmx 
-contrib/xml/cic2Xml.cmo: contrib/xml/xml.cmi tactics/tacinterp.cmi \
-    contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo contrib/xml/acic.cmo 
-contrib/xml/cic2Xml.cmx: contrib/xml/xml.cmx tactics/tacinterp.cmx \
-    contrib/xml/cic2acic.cmx contrib/xml/acic2Xml.cmx contrib/xml/acic.cmx 
+contrib/xml/cic2Xml.cmo: contrib/xml/xml.cmi contrib/xml/unshare.cmi \
+    tactics/tacinterp.cmi contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
+    contrib/xml/acic.cmo 
+contrib/xml/cic2Xml.cmx: contrib/xml/xml.cmx contrib/xml/unshare.cmx \
+    tactics/tacinterp.cmx contrib/xml/cic2acic.cmx contrib/xml/acic2Xml.cmx \
+    contrib/xml/acic.cmx 
 contrib/xml/cic2acic.cmo: lib/util.cmi contrib/xml/unshare.cmi \
     kernel/univ.cmi pretyping/termops.cmi kernel/term.cmi \
     pretyping/reductionops.cmi parsing/printer.cmi lib/pp.cmi \
