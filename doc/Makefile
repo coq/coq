@@ -49,7 +49,7 @@ REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
 
 REFMAN=Reference-Manual
 
-#VERSION=V7.2
+#VERSION=V7.3
 VERSION=POSITIONNEZ-CETTE-VARIABLE
 FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
@@ -57,7 +57,7 @@ WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
 FTPDOCS=Reference-Manual-base.ps.gz Reference-Manual-base.dvi.gz \
         Reference-Manual-addendum.ps.gz Reference-Manual-addendum.dvi.gz\
         Reference-Manual-all.ps.gz Reference-Manual-all.dvi.gz\
-        Library.dvi.gz Library.ps.gz\
+#	Library.dvi.gz Library.ps.gz\
         Tutorial.dvi.gz Tutorial.ps.gz\
         README all-ps-docs.tar.gz\
 #	Changes.dvi.gz Changes.ps.gz
@@ -78,13 +78,13 @@ coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
 latex-part: all-dvi
 
-all-dvi: Tutorial.v.dvi Reference-Manual.dvi Library.dvi # Changes.v.dvi
+all-dvi: Tutorial.v.dvi Reference-Manual.dvi # Library.dvi # Changes.v.dvi
 
-all-pdf: Tutorial.v.pdf Reference-Manual.pdf Library.pdf # Changes.v.pdf
+all-pdf: Tutorial.v.pdf Reference-Manual.pdf # Library.pdf # Changes.v.pdf
 
-all-ps: Tutorial.v.ps Reference-Manual.ps Library.ps # Changes.v.ps
+all-ps: Tutorial.v.ps Reference-Manual.ps # Library.ps # Changes.v.ps
 
-all-html: Tutorial.v.html Reference-Manual.html Library.html # Changes.v.html
+all-html: Tutorial.v.html Reference-Manual.html # Library.html # Changes.v.html
 
 
 # dvips et dviselect existent sur loupiac
@@ -105,7 +105,7 @@ compress-latex:
 	- mv -f Tutorial.v.pdf Tutorial.pdf
 #	- mv -f Changes.v.pdf Changes.pdf
 	tar cf all-ps-docs.tar Reference-Manual-base.ps \
-	  Reference-Manual-addendum.ps Tutorial.ps Library.ps # Changes.ps
+	  Reference-Manual-addendum.ps Tutorial.ps # Library.ps # Changes.ps
 	gzip -f *.ps
 	gzip -f *.dvi
 	gzip -f *.pdf
@@ -129,7 +129,7 @@ doc-html.tar.gz: all-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
 #	cp Changes.v.html coq-docs-html/changes.html
-	cp Library.html coq-docs-html/library.html
+#	cp Library.html coq-docs-html/library.html
 	cp Reference-Manual.html coq-docs-html 
 	(cd coq-docs-html;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
@@ -144,7 +144,7 @@ html-www: all-html
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
 #	cp Changes.v.html www/changes.html
-	cp Library.html www/library.html
+#	cp Library.html www/library.html
 	cp Reference-Manual.html www
 	(cd www;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
