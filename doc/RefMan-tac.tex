@@ -1337,6 +1337,10 @@ conditions that should hold for the instance $(I~\vec{t})$ to be
 proved by $c_i$.
 
 \begin{Variants}
+\item \texttt{Inversion} \num\\
+  This does the same thing as \texttt{Intros until \num} then
+\texttt{Inversion \ident} where \ident is the identifier for the last
+introduced hypothesis.
 \item \texttt{Inversion\_clear} \ident\\
   \tacindex{Inversion\_clear}
   That does \texttt{Inversion} and then erases \ident~ from the
