@@ -201,10 +201,11 @@ The main \Coq mailing list is \url{coq-club@pauillac.inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
 \url{http://pauillac.inria.fr/mailman/listinfo/coq-club} for
-subsription. Bugs reports should be sent at the \url{coq-bugs@pauillac.inria.fr} mailing-list.
+subsription. Bugs reports should be sent at
+\url{coq-bugs@pauillac.inria.fr}.
 
 \Question[coqmailinglistarchive]{Where can I find an archive of the list?}
-The archives of the \Coq mailing list are abvailable at
+The archives of the \Coq mailing list are available at
 \url{http://pauillac.inria.fr/pipermail/coq-club}.
 
 \Question[coqbook]{Is there any book about \Coq ?}
@@ -311,7 +312,7 @@ automatic naming decreases readability and robustness.
 
 \Question[exist]{My goal is an existential, how can I prove it ?}
 
-Use some theorem or assumption or exhibits the witness using \exists tactic.
+Use some theorem or assumption or exhibit the witness using the \exists tactic.
 \begin{coq_example}
 Goal exists x:nat, forall y, x+y=y.
 exists 0.
@@ -346,7 +347,7 @@ Qed.
 \end{coq_example}
 
 
-\Question[congnot]{My goal is disequality solvable by a sequence of rewrites, how can I prove it ?}
+\Question[congnot]{My goal is an inequality solvable by a sequence of rewrites, how can I prove it ?}
 
 Just use the \congruence tactic.
 %\begin{coq_example}
@@ -403,11 +404,15 @@ Qed.
 
 \Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
 
-Just use the \gb tactic.
+You need the \gb tactic.
 
 \Question[apply]{My goal is solvable by  some lemma, how can I prove it ?}
 
 Just use the \apply tactic.
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 
 \begin{coq_example}
 Lemma mylemma : forall x, x+0 = x.
@@ -512,7 +517,7 @@ You can use the \simpl tactic.
 
 You can use the \set or \pose tactics.
 
-\Question[case]{How can I perform can analysis ?}
+\Question[case]{How can I perform case analysis ?}
 
 You can use the \case or \destruct tactics.
 
@@ -647,7 +652,13 @@ end.
 \end{center}
 Underscore matches all terms.
 
-\Question[matchsem]{What is the semantic for match goal ?}
+\Question[matchsem]{What is the semantics for match goal ?}
+
+{\tt match goal} matches the current goal against a series of
+patterns: {$hyp_1 \ldots hyp_n$ \textbar- $ccl$}. It uses a
+first-order unification algorithm, and tries all the possible
+combinations of $hyp_i$ before dropping the branch and moving to the
+next one. Underscore matches all terms.
 
 \Question[fresh]{How can I generate a new name ?}
 
