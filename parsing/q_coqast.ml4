@@ -152,6 +152,10 @@ let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
 
 let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
+let mlexpr_of_or_var f = function
+  | Genarg.ArgArg x -> <:expr< Genarg.ArgArg $f x$ >>
+  | Genarg.ArgVar id -> <:expr< Genarg.ArgVar $mlexpr_of_located mlexpr_of_ident id$ >>
+
 let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
 
 let mlexpr_of_occs = mlexpr_of_list mlexpr_of_int
@@ -252,6 +256,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.PreIdentArgType -> <:expr< Genarg.PreIdentArgType >>
   | Genarg.IntroPatternArgType -> <:expr< Genarg.IntroPatternArgType >>
   | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
+  | Genarg.HypArgType -> <:expr< Genarg.HypArgType >>
   | Genarg.StringArgType -> <:expr< Genarg.StringArgType >>
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>
   | Genarg.CastedOpenConstrArgType -> <:expr< Genarg.CastedOpenConstrArgType >>
@@ -478,13 +483,13 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
   | Tacexpr.TacOrelse (t1,t2) ->
       <:expr< Tacexpr.TacOrelse $mlexpr_of_tactic t1$ $mlexpr_of_tactic t2$ >>
   | Tacexpr.TacDo (n,t) ->
-      <:expr< Tacexpr.TacDo $int:string_of_int n$ $mlexpr_of_tactic t$ >>
+      <:expr< Tacexpr.TacDo $mlexpr_of_or_var mlexpr_of_int n$ $mlexpr_of_tactic t$ >>
   | Tacexpr.TacRepeat t ->
       <:expr< Tacexpr.TacRepeat $mlexpr_of_tactic t$ >>
   | Tacexpr.TacProgress t ->
       <:expr< Tacexpr.TacProgress $mlexpr_of_tactic t$ >>
   | Tacexpr.TacId s -> <:expr< Tacexpr.TacId $str:s$ >>
-  | Tacexpr.TacFail (n,s) -> <:expr< Tacexpr.TacFail $int:string_of_int n$ $str:s$ >>
+  | Tacexpr.TacFail (n,s) -> <:expr< Tacexpr.TacFail $mlexpr_of_or_var mlexpr_of_int n$ $str:s$ >>
 (*
   | Tacexpr.TacInfo t -> TacInfo (loc,f t)
 

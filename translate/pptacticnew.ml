@@ -704,7 +704,7 @@ let rec pr_tac env inherited tac =
       hov 1 (str "try" ++ spc () ++ pr_tac env (ltactical,E) t),
       ltactical
   | TacDo (n,t) ->
-      hov 1 (str "do " ++ int n ++ spc () ++ pr_tac env (ltactical,E) t),
+      hov 1 (str "do " ++ pr_or_var int n ++ spc () ++ pr_tac env (ltactical,E) t),
       ltactical
   | TacRepeat t ->
       hov 1 (str "repeat" ++ spc () ++ pr_tac env (ltactical,E) t),
@@ -719,9 +719,9 @@ let rec pr_tac env inherited tac =
       hov 1 (pr_tac env (lorelse,L) t1 ++ str " ||" ++ brk (1,1) ++
              pr_tac env (lorelse,E) t2),
       lorelse
-  | TacFail (0,"") -> str "fail", latom
+  | TacFail (ArgArg 0,"") -> str "fail", latom
   | TacFail (n,s) -> 
-      str "fail" ++ (if n=0 then mt () else pr_arg int n) ++
+      str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
       (if s="" then mt() else qsnew s), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet

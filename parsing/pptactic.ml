@@ -257,7 +257,9 @@ let rec pr_raw_generic prc prlc prtac prref x =
   | PreIdentArgType -> pr_arg str (out_gen rawwit_pre_ident x)
   | IntroPatternArgType -> pr_arg pr_intro_pattern 
       (out_gen rawwit_intro_pattern x)
-  | IdentArgType -> pr_arg pr_id (Constrextern.v7_to_v8_id (out_gen rawwit_ident x))
+  | IdentArgType -> pr_arg pr_id ((*Constrextern.v7_to_v8_id*) (out_gen rawwit_ident x))
+  | HypArgType -> pr_arg
+      (pr_located (fun id -> pr_id (Constrextern.v7_to_v8_id id))) (out_gen rawwit_var x)
   | RefArgType -> pr_arg prref (out_gen rawwit_ref x)
   | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
@@ -304,7 +306,8 @@ let rec pr_glob_generic prc prlc prtac x =
   | PreIdentArgType -> pr_arg str (out_gen globwit_pre_ident x)
   | IntroPatternArgType ->
       pr_arg pr_intro_pattern (out_gen globwit_intro_pattern x)
-  | IdentArgType -> pr_arg pr_id (Constrextern.v7_to_v8_id (out_gen globwit_ident x))
+  | IdentArgType -> pr_arg pr_id ((*Constrextern.v7_to_v8_id*) (out_gen globwit_ident x))
+  | HypArgType -> pr_arg (pr_located (fun id -> pr_id (Constrextern.v7_to_v8_id id))) (out_gen globwit_var x)
   | RefArgType -> pr_arg (pr_or_var (pr_located pr_global)) (out_gen globwit_ref x)
   | SortArgType -> pr_arg pr_sort (out_gen globwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen globwit_constr x)
@@ -353,6 +356,7 @@ let rec pr_generic prc prlc prtac x =
   | IntroPatternArgType -> 
       pr_arg pr_intro_pattern (out_gen wit_intro_pattern x)
   | IdentArgType -> pr_arg pr_id (Constrextern.v7_to_v8_id (out_gen wit_ident x))
+  | HypArgType -> pr_arg prc (out_gen wit_var x)
   | RefArgType -> pr_arg pr_global (out_gen wit_ref x)
   | SortArgType -> pr_arg prc (Term.mkSort (out_gen wit_sort x))
   | ConstrArgType -> pr_arg prc (out_gen wit_constr x)
@@ -596,7 +600,7 @@ and pr0 = function
   | TacFirst tl -> str "First" ++ spc () ++ pr_tactic_seq_body tl
   | TacSolve tl -> str "Solve" ++ spc () ++ pr_tactic_seq_body tl
   | TacId "" -> str "Idtac" 
-  | TacFail (0,"") -> str "Fail"
+  | TacFail (ArgArg 0,"") -> str "Fail"
   | TacAtom (_,t) -> pr_atom0 t
   | TacArg c -> pr_tacarg c
   | t -> str "(" ++ prtac t ++ str ")"
@@ -605,9 +609,9 @@ and pr0 = function
 and pr1 = function
   | TacAtom (_,t) -> pr_atom1 t
   | TacId s -> str "Idtac \"" ++ str s ++ str "\""	
-  | TacFail (0,s) -> str "Fail \"" ++ str s ++ str "\""
-  | TacFail (n,"") -> str "Fail " ++ int n
-  | TacFail (n,s) -> str "Fail " ++ int n ++ str " \"" ++ str s ++ str "\""
+  | TacFail (ArgArg 0,s) -> str "Fail \"" ++ str s ++ str "\""
+  | TacFail (n,"") -> str "Fail " ++ pr_or_var int n
+  | TacFail (n,s) -> str "Fail " ++ pr_or_var int n ++ str " \"" ++ str s ++ str "\""
   | t -> pr0 t
 
   (* Orelse tactic expressions (printed as if parsed associating on the right
@@ -620,7 +624,7 @@ and pr2 = function
   (* Non closed prefix tactic expressions *)
 and pr3 = function
   | TacTry t -> hov 1 (str "Try" ++ spc () ++ pr3 t)
-  | TacDo (n,t) -> hov 1 (str "Do " ++ int n ++ spc () ++ pr3 t)
+  | TacDo (n,t) -> hov 1 (str "Do " ++ pr_or_var int n ++ spc () ++ pr3 t)
   | TacRepeat t -> hov 1 (str "Repeat" ++ spc () ++ pr3 t)
   | TacProgress t -> hov 1 (str "Progress" ++ spc () ++ pr3 t)
   | TacInfo t -> hov 1 (str "Info" ++ spc () ++ pr3 t)

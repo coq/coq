@@ -49,7 +49,7 @@ let make_letin_clause _ = function
 end
 else
 module Prelude = struct
-let fail_default_value = 0
+let fail_default_value = Genarg.ArgArg 0
 
 let out_letin_clause loc = function
   | LETTOPCLAUSE _ -> user_err_loc (loc, "", (str "Syntax Error"))
@@ -81,7 +81,7 @@ GEXTEND Gram
       [ ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
-      | IDENT "do"; n = natural; ta = tactic_expr -> TacDo (n,ta)
+      | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
       | IDENT "repeat"; ta = tactic_expr -> TacRepeat ta
       | IDENT "progress"; ta = tactic_expr -> TacProgress ta
       | IDENT "info"; tc = tactic_expr -> TacInfo tc
@@ -111,7 +111,7 @@ GEXTEND Gram
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacSolve l
       | IDENT "idtac"; s = [ s = STRING -> s | -> ""] -> TacId s		
-      | IDENT "fail"; n = [ n = natural -> n | -> fail_default_value ];
+      | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
       | st = simple_tactic -> TacAtom (loc,st)
       | a = may_eval_arg -> TacArg(a)
