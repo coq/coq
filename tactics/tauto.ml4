@@ -23,55 +23,56 @@ open Tactics
 open Util
 
 let assoc_last ist =
-  match List.assoc (Pattern.patvar_of_int_v7 1) ist.lfun with
+  match List.assoc (Names.id_of_string "X1") ist.lfun with
     | VConstr c -> c
     | _ -> failwith "Tauto: anomaly"
 
 let is_empty ist =
   if is_empty_type (assoc_last ist) then
-    <:tactic<Idtac>>
+    <:tactic<idtac>>
   else
-    <:tactic<Fail>>
+    <:tactic<fail>>
 
 let is_unit ist =
   if is_unit_type (assoc_last ist) then
-    <:tactic<Idtac>>
+    <:tactic<idtac>>
   else
-    <:tactic<Fail>>
+    <:tactic<fail>>
     
 let is_conj ist =
   let ind = assoc_last ist in
     if (is_conjunction ind) && (is_nodep_ind ind) then
-      <:tactic<Idtac>>
+      <:tactic<idtac>>
     else
-      <:tactic<Fail>>
+      <:tactic<fail>>
 
 let is_disj ist =
   if is_disjunction (assoc_last ist) then
-    <:tactic<Idtac>>
+    <:tactic<idtac>>
   else
-    <:tactic<Fail>>
+    <:tactic<fail>>
 
 let not_dep_intros ist =
   <:tactic<
-  Repeat
-    Match Context With
-| [|- ?1 -> ?2 ] -> Intro
-| [|- (Coq.Init.Logic.iff ? ?)] -> Unfold Coq.Init.Logic.iff
-| [|- (Coq.Init.Logic.not ?)] -> Unfold Coq.Init.Logic.not
-| [ H:(Coq.Init.Logic.iff ? ?)|- ?] -> Unfold Coq.Init.Logic.iff in H
-| [ H:(Coq.Init.Logic.not ?)|-?] -> Unfold Coq.Init.Logic.not in H
-| [ H:(Coq.Init.Logic.iff ? ?)->?|- ?] -> Unfold Coq.Init.Logic.iff in H
-| [ H:(Coq.Init.Logic.not ?)->?|-?] -> Unfold Coq.Init.Logic.not in H >>
+  repeat match context with
+  | [|- (?X1 -> ?X2) ] => intro
+  | [|- (Coq.Init.Logic.iff _ _)] => unfold Coq.Init.Logic.iff
+  | [|- (Coq.Init.Logic.not _)]   => unfold Coq.Init.Logic.not
+  | [ H:(Coq.Init.Logic.iff _ _)|- _] => unfold Coq.Init.Logic.iff in H
+  | [ H:(Coq.Init.Logic.not _)|-_]    => unfold Coq.Init.Logic.not in H
+  | [ H:(Coq.Init.Logic.iff _ _)->_|- _] => unfold Coq.Init.Logic.iff in H
+  | [ H:(Coq.Init.Logic.not _)->_|-_]    => unfold Coq.Init.Logic.not in H
+  end >>
 				      
 let axioms ist =
   let t_is_unit = tacticIn is_unit
   and t_is_empty = tacticIn is_empty in
     <:tactic<
-    Match Reverse Context With
-      |[|- ?1] -> $t_is_unit;Constructor 1
-      |[_:?1 |- ?] -> $t_is_empty;ElimType ?1;Assumption
-      |[_:?1 |- ?1] -> Assumption>>
+    match reverse context with
+      |[|- ?X1] => $t_is_unit; constructor 1
+      |[_:?X1 |- _] => $t_is_empty; elimtype X1; assumption
+      |[_:?X1 |- ?X1] => assumption
+    end >>
 
 
 let simplif ist =
@@ -81,41 +82,42 @@ let simplif ist =
   and t_not_dep_intros = tacticIn not_dep_intros in
   <:tactic<
     $t_not_dep_intros;
-    Repeat
-      ((Match Reverse Context With
-        | [id: (?1 ? ?) |- ?] ->
-            $t_is_conj;Elim id;Do 2 Intro;Clear id
-        | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id
-        | [id0: ?1-> ?2; id1: ?1|- ?] ->
-	    (* Generalize (id0 id1);Intro;Clear id0 does not work
+    repeat
+       (match reverse context with
+        | [id: (?X1 _ _) |- _] =>
+            $t_is_conj; elim id; do 2 intro; clear id
+        | [id: (?X1 _ _) |- _] => $t_is_disj; elim id; intro; clear id
+        | [id0: ?X1-> ?X2, id1: ?X1|- _] =>
+	    (* generalize (id0 id1); intro; clear id0 does not work
 	       (see Marco Maggiesi's bug PR#301)
-	    so we instead use Assert and Exact. *)
-	    Assert ?2; [Exact (id0 id1) | Clear id0]
-        | [id: ?1 -> ?2|- ?] ->
-          $t_is_unit;Cut ?2;
-	    [Intro;Clear id
-	    | (* id : ?1 -> ?2 |- ?2 *)
-	      Cut ?1;[Exact id|Constructor 1;Fail]
+	    so we instead use Assert and exact. *)
+	    assert X2; [exact (id0 id1) | clear id0]
+        | [id: ?X1 -> ?X2|- _] =>
+          $t_is_unit; cut X2;
+	    [ intro; clear id
+	    | (* id : ?X1 -> ?X2 |- ?X2 *)
+	      cut X1; [exact id| constructor 1; fail]
 	    ]
-        | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_conj;Cut ?2-> ?3-> ?4;
-	    [Intro;Clear id
-	    | (* id: (?1 ?2 ?3) -> ?4 |- ?2 -> ?3 -> ?4 *)
-	      Intro;Intro; Cut (?1 ?2 ?3);[Exact id|Split;Assumption]
+        | [id: (?X1 ?X2 ?X3) -> ?X4|- _] =>
+          $t_is_conj; cut (X2-> X3-> X4);
+	    [ intro; clear id
+	    | (* id: (?X1 ?X2 ?X3) -> ?X4 |- ?X2 -> ?X3 -> ?X4 *)
+	      intro; intro; cut (X1 X2 X3); [exact id| split; assumption]
 	    ]
-        | [id: (?1 ?2 ?3) -> ?4|- ?] ->
+        | [id: (?X1 ?X2 ?X3) -> ?X4|- _] =>
           $t_is_disj;
-	    Cut ?3-> ?4;
-	      [Cut ?2-> ?4;
-	        [Intro;Intro;Clear id
-		| (* id: (?1 ?2 ?3) -> ?4 |- ?2 -> ?4 *)
-		  Intro; Cut (?1 ?2 ?3);[Exact id|Left;Assumption]
+	    cut (X3-> X4);
+	      [cut (X2-> X4);
+	        [intro; intro; clear id
+		| (* id: (?X1 ?X2 ?X3) -> ?X4 |- ?X2 -> ?X4 *)
+		  intro; cut (X1 X2 X3); [exact id| left; assumption]
 		]
-	      | (* id: (?1 ?2 ?3) -> ?4 |- ?3 -> ?4 *)
-		Intro; Cut (?1 ?2 ?3);[Exact id|Right;Assumption]
+	      | (* id: (?X1 ?X2 ?X3) -> ?X4 |- ?X3 -> ?X4 *)
+		intro; cut (X1 X2 X3); [exact id| right; assumption]
 	      ]
-        | [|- (?1 ? ?)] -> $t_is_conj;Split);
-       $t_not_dep_intros)>>
+        | [|- (?X1 _ _)] => $t_is_conj; split
+        end;
+        $t_not_dep_intros) >>
 
 let rec tauto_intuit t_reduce solver ist =
   let t_axioms = tacticIn axioms
@@ -125,33 +127,32 @@ let rec tauto_intuit t_reduce solver ist =
   let t_solver = Tacexpr.TacArg (valueIn (VTactic (dummy_loc,solver))) in
   <:tactic<
    ($t_simplif;$t_axioms
-    Orelse
-      (Match Reverse Context With
-      | [id:(?1-> ?2)-> ?3|- ?] ->
-	  Cut ?3;
-	    [ Intro;Clear id;$t_tauto_intuit 
-	    | Cut ?1 -> ?2;
-		[ Exact id
-		| Generalize [y:?2](id [x:?1]y);Intro;Clear id;
-		  Solve [ $t_tauto_intuit ]]]
-      | [|- (?1 ? ?)] ->
-          $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
-      )
-    Orelse
-    (* NB: [|- ? -> ?] matches any product *)
-    (Match Context With |[ |- ? -> ? ] -> Intro;$t_tauto_intuit
-    |[|-?]->$t_reduce;$t_solver)
-    Orelse
+   || match reverse context with
+      | [id:(?X1-> ?X2)-> ?X3|- _] =>
+	  cut X3;
+	    [ intro; clear id; $t_tauto_intuit 
+	    | cut (X1 -> X2);
+		[ exact id
+		| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
+		  solve [ $t_tauto_intuit ]]]
+      | [|- (?X1 _ _)] =>
+          $t_is_disj; solve [left;$t_tauto_intuit | right;$t_tauto_intuit]
+      end
+    ||
+    (* NB: [|- _ -> _] matches any product *)
+    match context with |[ |- _ -> _ ] => intro; $t_tauto_intuit
+    |[ |- _ ] => $t_reduce;$t_solver
+    end
+    ||
     $t_solver
    ) >>
     
 let reduction_not_iff=interp
- <:tactic<Repeat 
-	(Match Context With 
-	|[|- ?]->
-	   Progress Unfold Coq.Init.Logic.not Coq.Init.Logic.iff 
-	|[H:?|- ?]->
-	   Progress Unfold Coq.Init.Logic.not Coq.Init.Logic.iff in H)>>
+ <:tactic<repeat 
+  match context with 
+  | [ |- _ ] => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff 
+  | [ H:_ |- _ ] => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in H
+  end >>
 
 
 let t_reduction_not_iff =
@@ -163,18 +164,18 @@ let intuition_gen tac =
 let simplif_gen = interp (tacticIn simplif)
 
 let tauto g =
-  try intuition_gen (interp <:tactic<Fail>>) g
+  try intuition_gen (interp <:tactic<fail>>) g
   with
     Refiner.FailError _ | UserError _ ->
       errorlabstrm "tauto" [< str "Tauto failed" >]
 
-let default_intuition_tac = interp <:tactic< Auto with * >>
+let default_intuition_tac = interp <:tactic< auto with * >>
 
 let q_elim tac=
   <:tactic<
-  Match Context With 
-  [x:?1;H:?1->?|-?]->
-      Generalize (H x);Clear H;$tac>>
+  match context with 
+  [ x : ?X1, H : ?X1 -> _ |- _ ] => generalize (H x); clear H; $tac
+  end >>
 
 let rec lfo n gl=
   if n=0 then (tclFAIL 0 "LinearIntuition failed" gl) else

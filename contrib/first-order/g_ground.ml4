@@ -39,7 +39,7 @@ let _=
   in
     declare_int_option gdopt
       
-let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
+let default_solver=(Tacinterp.interp <:tactic<auto with *>>)
     
 let fail_solver=tclFAIL 0 "GTauto failed"
 		      

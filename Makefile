@@ -331,7 +331,7 @@ coqbinaries:: ${COQBINARIES}
 
 # Aliases for various worlds
 newworld: world8
-world: world7
+world: world8
 translation: coqbinaries coqlib8-source
 oldworld: world7
 
@@ -410,6 +410,7 @@ FULLIDELIB=$(FULLCOQLIB)/ide
 COQIDEVO=ide/utf8.vo
 
 $(COQIDEVO): states/initial.coq
+	$(BOOTCOQTOP) -v7 -compile $*
 
 IDEFILES=$(COQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
@@ -518,7 +519,7 @@ states:: states/barestate.coq states/initial.coq
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
+	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
 
 #       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
 #       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
@@ -533,15 +534,21 @@ INITVO=theories/Init/Notations.vo \
 
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
+	$(BOOTCOQTOP) -v7 -is states/barestate.coq -compile $*
 
 init: $(INITVO)
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
+	$(BOOTCOQTOP) -v7 -is states/barestate.coq -compile $*
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
-	$(BOOTCOQTOP) -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+
+contrib/%.vo: contrib/%.v states/initial.coq
+	$(BOOTCOQTOP) -v7 -compile contrib/$*
+
+theories/%.vo: theories/%.v states/initial.coq
+	$(BOOTCOQTOP) -v7 -compile theories/$*
 
 clean::
 	rm -f states/*.coq
@@ -877,7 +884,7 @@ FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)
 FULLMANDIR=$(COQINSTALLPREFIX)$(MANDIR)
 FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
-install: install7
+install: install8
 
 install8: install-$(BEST) install-binaries install-library8 install-manpages
 
@@ -1044,7 +1051,9 @@ CAMLP4EXTENSIONSCMO=\
 
 GRAMMARSCMO=\
   parsing/g_prim.cmo parsing/g_tactic.cmo \
-  parsing/g_ltac.cmo parsing/g_constr.cmo
+  parsing/g_ltac.cmo parsing/g_constr.cmo \
+  parsing/g_primnew.cmo parsing/g_tacticnew.cmo \
+  parsing/g_ltacnew.cmo parsing/g_constrnew.cmo 
 
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 

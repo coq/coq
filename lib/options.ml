@@ -27,9 +27,12 @@ let xml_export = ref false
 let dont_load_proofs = ref false
 
 let v7 =
-  let f = Filename.basename Sys.argv.(0) in
-  ref (not (f = "coqtopnew.byte" or f = "coqtopnew.opt" or f = "coqtopnew"
-  or array_exists ((=) "-v8") Sys.argv))
+  let transl = array_exists ((=) "-translate") Sys.argv in
+  let v7 = array_exists ((=) "-v7") Sys.argv in
+  let v8 = array_exists ((=) "-v8") Sys.argv in
+  if v8 & transl then error "Options -translate and -v8 are incompatible";
+  if v8 & v7 then error "Options -v7 and -v8 are incompatible";
+  ref (v7 or transl)
 
 let v7_only = ref false
 
