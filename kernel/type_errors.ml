@@ -11,8 +11,7 @@ open Environ
 
 type type_error =
   | UnboundRel of int
-  | CantExecute of constr
-  | NotAType of constr
+  | NotAType of unsafe_judgment
   | BadAssumption of constr
   | ReferenceVariables of identifier
   | ElimArity of inductive * constr list * constr * constr * constr
@@ -20,7 +19,7 @@ type type_error =
   | CaseNotInductive of constr * constr
   | NumberBranches of constr * constr * int
   | IllFormedBranch of constr * int * constr * constr
-  | Generalization of (name * typed_type) * constr
+  | Generalization of (name * typed_type) * unsafe_judgment
   | ActualType of constr * constr * constr
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
@@ -34,6 +33,7 @@ type type_error =
   | OccurCheck of int * constr
   | NotClean of int * constr
   | VarNotFound of identifier
+  | NotProduct of constr
   (* Pattern-matching errors *)
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor_path * int
@@ -42,11 +42,13 @@ type type_error =
 
 exception TypeError of path_kind * context * type_error
 
-let error_unbound_rel k env n =
-  raise (TypeError (k, context env, UnboundRel n))
+let context_ise sigma env =
+  map_var_env (typed_app (Reduction.nf_ise1 sigma))
+    (map_rel_env (typed_app (Reduction.nf_ise1 sigma))
+       (context env))
 
-let error_cant_execute k env c =
-  raise (TypeError (k, context env, CantExecute c))
+let error_unbound_rel k env sigma n =
+  raise (TypeError (k, context_ise sigma env, UnboundRel n))
 
 let error_not_type k env c =
   raise (TypeError (k, context env, NotAType c))
@@ -69,8 +71,8 @@ let error_number_branches k env c ct expn =
 let error_ill_formed_branch k env c i actty expty =
   raise (TypeError (k, context env, IllFormedBranch (c,i,actty,expty)))
 
-let error_generalization k env nvar c =
-  raise (TypeError (k, context env, Generalization (nvar,c)))
+let error_generalization k env sigma nvar c =
+  raise (TypeError (k, context_ise sigma env, Generalization (nvar,c)))
 
 let error_actual_type k env c actty expty =
   raise (TypeError (k, context env, ActualType (c,actty,expty)))
@@ -78,8 +80,8 @@ let error_actual_type k env c actty expty =
 let error_cant_apply_not_functional k env rator randl =
   raise (TypeError (k, context env, CantApplyNonFunctional (rator,randl)))
 
-let error_cant_apply_bad_type k env t rator randl =
-  raise (TypeError (k, context env, CantApplyBadType (t,rator,randl)))
+let error_cant_apply_bad_type k env sigma t rator randl =
+  raise(TypeError (k, context_ise sigma env, CantApplyBadType (t,rator,randl)))
 
 let error_ill_formed_rec_body k env str lna i vdefs =
   raise (TypeError (k, context env, IllFormedRecBody (str,lna,i,vdefs)))
@@ -92,3 +94,7 @@ let error_not_inductive k env c =
 
 let error_ml_case k env mes c ct br brt =
   raise (TypeError (k, context env, MLCase (mes,c,ct,br,brt)))
+
+let error_not_product env c =
+  raise (TypeError (CCI, context env, NotProduct c))
+

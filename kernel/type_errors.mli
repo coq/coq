@@ -13,8 +13,7 @@ open Environ
 
 type type_error =
   | UnboundRel of int
-  | CantExecute of constr
-  | NotAType of constr
+  | NotAType of unsafe_judgment
   | BadAssumption of constr
   | ReferenceVariables of identifier
   | ElimArity of inductive * constr list * constr * constr * constr
@@ -22,7 +21,7 @@ type type_error =
   | CaseNotInductive of constr * constr
   | NumberBranches of constr * constr * int
   | IllFormedBranch of constr * int * constr * constr
-  | Generalization of (name * typed_type) * constr
+  | Generalization of (name * typed_type) * unsafe_judgment
   | ActualType of constr * constr * constr
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
@@ -36,6 +35,7 @@ type type_error =
   | OccurCheck of int * constr
   | NotClean of int * constr
   | VarNotFound of identifier
+  | NotProduct of constr
   (* Pattern-matching errors *)
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor_path * int
@@ -44,11 +44,9 @@ type type_error =
 
 exception TypeError of path_kind * context * type_error
 
-val error_unbound_rel : path_kind -> env -> int -> 'b
+val error_unbound_rel : path_kind -> env -> 'a Evd.evar_map -> int -> 'b
 
-val error_cant_execute : path_kind -> env -> constr -> 'b
-
-val error_not_type : path_kind -> env -> constr -> 'b
+val error_not_type : path_kind -> env -> unsafe_judgment -> 'b
 
 val error_assumption : path_kind -> env -> constr -> 'b
  
@@ -68,7 +66,7 @@ val error_ill_formed_branch :
   path_kind -> env -> constr -> int -> constr -> constr -> 'b
 
 val error_generalization :
-  path_kind -> env -> name * typed_type -> constr -> 'b
+  path_kind -> env -> 'a Evd.evar_map -> name * typed_type -> unsafe_judgment -> 'b
 
 val error_actual_type :
   path_kind -> env -> constr -> constr -> constr -> 'b
@@ -77,7 +75,7 @@ val error_cant_apply_not_functional :
   path_kind -> env -> unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_cant_apply_bad_type : 
-  path_kind -> env -> int * constr * constr -> 
+  path_kind -> env -> 'a Evd.evar_map -> int * constr * constr -> 
       unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_ill_formed_rec_body :
@@ -93,3 +91,4 @@ val error_not_inductive : path_kind -> env -> constr -> 'a
 val error_ml_case : path_kind -> env -> 
   string -> constr -> constr -> constr -> constr -> 'a
 
+val error_not_product : env -> constr -> 'a
