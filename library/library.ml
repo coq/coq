@@ -25,15 +25,29 @@ let load_path = ref ([],[] : System.physical_path list * logical_path list)
 
 let get_load_path () = fst !load_path
 
-let find_logical_path dir = 
-  match list_filter2 (fun p d -> p = dir) !load_path with
+(* Hints to partially detects if two paths refer to the same repertory *)
+let strip_path p = 
+  if String.length p > 2 && String.sub p 0 2 = "./" then
+    String.sub p 2 (String.length p - 2)
+  else
+    let cwd = (Sys.getcwd ())^"/" in
+    let n = String.length cwd in
+    if String.length p > n && String.sub p 0 n = cwd then
+      String.sub p n (String.length p - n)
+    else p
+
+let find_logical_path phys_dir = 
+  let phys_dir = strip_path phys_dir in
+  match list_filter2 (fun p d -> p = phys_dir) !load_path with
   | _,[dir] -> dir
-  | _ -> anomaly ("Two logical paths are associated to "^dir)
+  | _,[] -> Nametab.default_root_prefix
+  | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
 let remove_path dir =
   load_path := list_filter2 (fun p d -> p <> dir) !load_path
 
 let add_load_path_entry (phys_path,coq_path) =
+  let phys_path = strip_path phys_path in
   match list_filter2 (fun p d -> p = phys_path) !load_path with
   | _,[dir] ->
       if dir <> coq_path && coq_path <> Nametab.default_root_prefix then
@@ -269,7 +283,7 @@ and load_absolute_module_from dir =
   | LibNotFound ->
       errorlabstrm "load_module"
       [< 'sTR"Cannot find module "; pr_dirpath dir; 'sTR" in loadpath">]
-  | _ -> assert false
+  | e -> raise e
 
 let locate_qualified_library qid =
   (* Look if loaded *)
