@@ -285,10 +285,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
         | IBasedOn (id,idl) -> fresh_id idl id gl
         | IMustBe id        -> 
 	    let id' = fresh_id [] id gl in
-  	    if id' <> id then warning
-  	      ((string_of_id id)^ 
-	       " is already used; changed to "^(string_of_id id'));
-	    id'
+  	    if id' <> id then error ((string_of_id id)^" is already used")
     in
     begin match move_flag with
       | None      -> introduction id gl
