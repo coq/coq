@@ -1,8 +1,4 @@
-#!/bin/sh
-rm -f /tmp/extr$$.v
-cat > /tmp/extr$$.v << EOF
-Cd "theories/Reals".
-Require Reals.
+Require Reals. 
 Extract Inlined Constant R => float.
 Extract Inlined Constant R0 => "0.0".
 Extract Inlined Constant R1 => "1.0".
@@ -13,15 +9,4 @@ Extract Inlined Constant Rinv => "(fun x -> 1.0 /. x)".
 Extract Inlined Constant Rlt => "(<)".
 Extract Inlined Constant up => "AddReals.my_ceil".
 Extract Inlined Constant total_order_T => "AddReals.total_order_T".
-EOF
-for f in $*; do
-    ff=`basename $f .vo`
-    echo "Require $ff." >> /tmp/extr$$.v
-    echo "Extraction Module $ff." >> /tmp/extr$$.v
-done
-../../../bin/coqtop.opt -silent -batch -load-vernac-source /tmp/extr$$.v
-out=$?
-#rm -f /tmp/extr$$.v
-exit $out
-
 

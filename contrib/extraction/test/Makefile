@@ -9,7 +9,7 @@ TOPDIR=../../..
 AXIOMSVO:= \
 theories/Arith/Arith.vo \
 theories/Lists/List.vo \
-theories/Reals/% \
+theories/Reals/Rsyntax.vo \
 theories/Num/% \
 theories/Relations/Rstar.vo \
 theories/Sets/Integers.vo \
@@ -31,7 +31,10 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 #	General rules 
 #
 
-all: ml $(CMO) v2ml
+all: ml theories/Reals/addReals.cmo $(CMO) v2ml
+
+theories/Reals/addReals.ml: 
+	cp -f addReals theories/Reals/addReals.ml
 
 ml: $(ML)
 
@@ -45,30 +48,10 @@ tree:
 	ocamlc $(INCL) -c -i $<
 
 $(ML): ml2v
-	./extract `./ml2v $@`
+	./extract $@
 
 clean: 
 	rm -f theories/*/*.ml theories/*/*.cm* theories/*/*.ml.orig
-
-
-#
-#	Extraction of Reals
-#
-
-REALSALLVO:=$(shell cd ../../..; ls -tr theories/Reals/*.vo)
-REALSVO:=$(filter-out theories/Reals/Rsyntax.vo,$(REALSALLVO))
-REALSML:=$(shell test -x v2ml && ./v2ml $(REALSVO))
-REALSCMO:= $(patsubst %.ml,%.cmo,$(REALSML))
-
-reals: all $(REALSML) theories/Reals/addReals.cmo $(REALSCMO)
-
-realsml: 
-	./extract_reals $(REALSVO)
-
-theories/Reals/addReals.ml: 
-	cp -f addReals theories/Reals/addReals.ml
-
-$(REALSML): realsml
 
 
 #
