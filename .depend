@@ -1961,16 +1961,16 @@ tactics/tacticals.cmo: pretyping/clenv.cmi proofs/clenvtac.cmi \
     pretyping/evd.cmi interp/genarg.cmi library/global.cmi \
     pretyping/indrec.cmi kernel/inductive.cmi library/libnames.cmi \
     pretyping/matching.cmi kernel/names.cmi pretyping/pattern.cmi lib/pp.cmi \
-    kernel/reduction.cmi proofs/refiner.cmi kernel/sign.cmi \
-    proofs/tacexpr.cmo proofs/tacmach.cmi kernel/term.cmi \
+    kernel/reduction.cmi pretyping/reductionops.cmi proofs/refiner.cmi \
+    kernel/sign.cmi proofs/tacexpr.cmo proofs/tacmach.cmi kernel/term.cmi \
     pretyping/termops.cmi lib/util.cmi tactics/tacticals.cmi 
 tactics/tacticals.cmx: pretyping/clenv.cmx proofs/clenvtac.cmx \
     kernel/declarations.cmx kernel/environ.cmx proofs/evar_refiner.cmx \
     pretyping/evd.cmx interp/genarg.cmx library/global.cmx \
     pretyping/indrec.cmx kernel/inductive.cmx library/libnames.cmx \
     pretyping/matching.cmx kernel/names.cmx pretyping/pattern.cmx lib/pp.cmx \
-    kernel/reduction.cmx proofs/refiner.cmx kernel/sign.cmx \
-    proofs/tacexpr.cmx proofs/tacmach.cmx kernel/term.cmx \
+    kernel/reduction.cmx pretyping/reductionops.cmx proofs/refiner.cmx \
+    kernel/sign.cmx proofs/tacexpr.cmx proofs/tacmach.cmx kernel/term.cmx \
     pretyping/termops.cmx lib/util.cmx tactics/tacticals.cmi 
 tactics/tactics.cmo: pretyping/clenv.cmi proofs/clenvtac.cmi \
     interp/constrintern.cmi interp/coqlib.cmi library/decl_kinds.cmo \
