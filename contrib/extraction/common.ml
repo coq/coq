@@ -259,7 +259,7 @@ module StdParams = struct
 	  else short
     in 
     add_module_contents mp s; (* update the visible environment *)
-    str s
+    str final
 
   let pp_long_module mpl mp = 
     try (* has [mp] something in common with one of those in [mpl] ? *)
