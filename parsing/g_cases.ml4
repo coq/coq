@@ -19,7 +19,8 @@ GEXTEND Gram
       | p = pattern; "as"; id = ident ->
 	  <:ast< (PATTAS $id $p)>>
       | p1 = pattern; ","; p2 = pattern ->
-          <:ast< (PATTCONSTRUCT pair $p1 $p2) >> ] ]
+          <:ast< (PATTCONSTRUCT pair $p1 $p2) >>
+      | p = pattern -> p ] ]
   ;
   ne_pattern_list:
     [ [ c1 = pattern; cl = ne_pattern_list -> c1 :: cl
