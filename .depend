@@ -1770,12 +1770,14 @@ tactics/evar_tactics.cmo: proofs/evar_refiner.cmi pretyping/evarutil.cmi \
     pretyping/evd.cmi proofs/proof_type.cmi proofs/refiner.cmi \
     kernel/sign.cmi proofs/tacexpr.cmo proofs/tacmach.cmi \
     tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
-    pretyping/unification.cmi lib/util.cmi tactics/evar_tactics.cmi 
+    pretyping/termops.cmi pretyping/unification.cmi lib/util.cmi \
+    tactics/evar_tactics.cmi 
 tactics/evar_tactics.cmx: proofs/evar_refiner.cmx pretyping/evarutil.cmx \
     pretyping/evd.cmx proofs/proof_type.cmx proofs/refiner.cmx \
     kernel/sign.cmx proofs/tacexpr.cmx proofs/tacmach.cmx \
     tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
-    pretyping/unification.cmx lib/util.cmx tactics/evar_tactics.cmi 
+    pretyping/termops.cmx pretyping/unification.cmx lib/util.cmx \
+    tactics/evar_tactics.cmi 
 tactics/extraargs.cmo: parsing/extend.cmi interp/genarg.cmi \
     toplevel/metasyntax.cmi library/nameops.cmi kernel/names.cmi \
     parsing/pcoq.cmi lib/pp.cmi parsing/ppconstr.cmi parsing/pptactic.cmi \
