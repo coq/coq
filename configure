@@ -110,14 +110,13 @@ case $arch_spec in
 	    ARCH=`/usr/bin/arch`
 	elif test -f /usr/ucb/arch ; then
 	    ARCH=`/usr/ucb/arch`
-	elif test -f /bin/uname ; then
-	    ARCH=`/bin/uname -m`
+	elif /bin/uname -s | grep -q -i CYGWIN ; then
+	    ARCH=win32
 	else
 	    echo "I can not automatically find the name of your architecture"
 	    echo -n\
               "Give me a name, please [win32 for Win95, Win98 or WinNT]: "
 	    read ARCH
-	    
 	fi;;
     yes) ARCH=$arch
 esac
@@ -444,7 +443,8 @@ let camlp4lib = "$CAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
 let osdeplibs = "$OSDEPLIBS"
-(* let defined = [ "$OSTYPE" ] *)
+(* this does seem to be used any longer
+let defined = [ "$OSTYPE" ] *)
 let version = "$VERSION"
 let versionsi = "$VERSIONSI"
 let date = "$DATE"

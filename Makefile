@@ -743,6 +743,7 @@ clean:: archclean
 	rm -f tools/*.cm[io]
 	rm -f scripts/*.cm[io]
 	rm -f dev/*.cm[io]
+	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml

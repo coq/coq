@@ -262,6 +262,9 @@ patch-ftp-install: prep-ftp-install
 	chmod g+w ${FTPDIR}/V${VERSION}/patch-${VERSION}-$(PREVIOUSVERSION).gz
 
 deb:
-	rm -rf ../debian
+	rm -rf ../debian ../../coq-7.0.0.orig ../../coq_7.0.0_* ../../coq_7.0.0.*
+	cd ../.. ; cp -a coq-7.0.0 coq-7.0.0.orig
 	cp -a debian ..
 	cd .. ; dpkg-buildpackage -rfakeroot -uc -us
+#	rm -rf ../debian
+
