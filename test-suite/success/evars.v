@@ -21,3 +21,16 @@ Definition f1 [frm0,a1]: B := (f frm0 a1).
 (* Checks that solvable ? in the type part of the definition are harmless *)
 Definition f2 : (frm0:?;a1:?)B := [frm0,a1](f frm0 a1).
 
+(* Checks that sorts that are evars are handled correctly (bug 705) *)
+Require PolyList.
+
+Fixpoint build [nl : (list nat)] :
+ (Cases nl of nil => True | _ => False end) -> unit :=
+ <[nl](Cases nl of nil => True | _ => False end) -> unit>Cases nl of
+ | nil => [_]tt
+ | (cons n rest) =>
+   Cases n of
+   | O => [_]tt
+   | (S m) => [a](build rest (False_ind ? a))
+   end
+  end.
