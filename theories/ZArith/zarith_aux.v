@@ -28,6 +28,14 @@ Definition Zgt := [x,y:Z](Zcompare x y) = SUPERIEUR.
 Definition Zle := [x,y:Z]~(Zcompare x y) = SUPERIEUR.
 Definition Zge := [x,y:Z]~(Zcompare x y) = INFERIEUR.
 
+(* Sign function *)
+Definition Zsgn [z:Z] : Z :=
+  Cases z of 
+     ZERO   => ZERO
+  | (POS p) => (POS xH)
+  | (NEG p) => (NEG xH)
+  end.
+
 (*s Absolu function *)
 Definition absolu [x:Z] : nat :=
   Cases x of
@@ -49,6 +57,31 @@ Lemma Zabs_eq : (x:Z) (Zle ZERO x) -> (Zabs x)=x.
 NewDestruct x; Auto with arith.
 Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
 Save.
+
+Lemma Zabs_non_eq : (x:Z) (Zle x ZERO) -> (Zabs x)=(Zopp x).
+Proof.
+NewDestruct x; Auto with arith.
+Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
+Save.
+
+Lemma Zabs_dec : (x:Z){x=(Zabs x)}+{x=(Zopp (Zabs x))}.
+Proof.
+NewDestruct x;Auto with arith.
+Save.
+
+Lemma Zabs_pos : (x:Z)(Zle ZERO (Zabs x)).
+NewDestruct x;Auto with arith; Compute; Intros H;Inversion H.
+Save.
+
+Lemma Zsgn_Zabs: (x:Z)(Zmult x (Zsgn x))=(Zabs x).
+Proof.
+Destruct x;Intros;Rewrite Zmult_sym;Auto with arith.
+Save.
+
+Lemma Zabs_Zsgn: (x:Z)(Zabs x)=(Zmult (Zsgn x) x).
+Proof.
+Destruct x;Intros;Auto with arith.
+Qed.
 
 (*s From nat to Z *)
 Definition inject_nat := 

@@ -303,4 +303,57 @@ NewDestruct a;
 ].
 Save.
 
+Theorem Zdiv_eucl_extended : (b:Z)`b <> 0` -> (a:Z)
+  { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < |b|` }.
+Proof.
+Intros b Hb a.
+Elim (Z_le_gt_dec `0` b);Intro Hb'.
+Cut `b>0`;[Intro Hb''|Omega].
+Rewrite Zabs_eq;[Apply Zdiv_eucl;Assumption|Assumption].
+Cut `-b>0`;[Intro Hb''|Omega].
+Elim (Zdiv_eucl Hb'' a);Intros qr.
+Elim qr;Intros q r Hqr.
+Exists (pair ? ? `-q` r).
+Elim Hqr;Intros.
+Split.
+Rewrite <- Zmult_Zopp_left;Assumption.
+Rewrite Zabs_non_eq;[Assumption|Omega].
+Save.
+
 End diveucl.
+
+(* Two more induction principles upon Z. *)
+
+Theorem Z_lt_abs_rec : (P: Z -> Set)
+  ((n: Z) ((m: Z) `|m|<|n|` -> (P m)) -> (P n)) -> (p: Z) (P p).
+Intros P HP p.
+LetTac Q:=[z]`0<=z`->(P z)*(P `-z`).
+Cut (Q `|p|`);[Intros|Apply (Z_lt_rec Q);Auto with zarith].
+Elim (Zabs_dec p);Intro eq;Rewrite eq;Elim H;Auto with zarith.
+Unfold Q;Clear Q;Intros.
+Apply pair;Apply HP.
+Rewrite Zabs_eq;Auto;Intros.
+Elim (H `|m|`);Intros;Auto with zarith.
+Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
+Rewrite Zabs_non_eq;Auto with zarith.
+Rewrite Zopp_Zopp;Intros.
+Elim (H `|m|`);Intros;Auto with zarith.
+Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
+Qed.
+
+Theorem Z_lt_abs_induction : (P: Z -> Prop)
+  ((n: Z) ((m: Z) `|m|<|n|` -> (P m)) -> (P n)) -> (p: Z) (P p).
+Intros P HP p.
+LetTac Q:=[z]`0<=z`->(P z) /\ (P `-z`).
+Cut (Q `|p|`);[Intros|Apply (Z_lt_induction Q);Auto with zarith].
+Elim (Zabs_dec p);Intro eq;Rewrite eq;Elim H;Auto with zarith.
+Unfold Q;Clear Q;Intros.
+Split;Apply HP.
+Rewrite Zabs_eq;Auto;Intros.
+Elim (H `|m|`);Intros;Auto with zarith.
+Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
+Rewrite Zabs_non_eq;Auto with zarith.
+Rewrite Zopp_Zopp;Intros.
+Elim (H `|m|`);Intros;Auto with zarith.
+Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
+Qed.

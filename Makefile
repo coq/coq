@@ -396,7 +396,8 @@ ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/ZArith.vo      theories/ZArith/auxiliary.vo \
 	 theories/ZArith/ZArith_dec.vo  theories/ZArith/fast_integer.vo \
 	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo \
-	 theories/ZArith/Zhints.vo
+	 theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
+	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
@@ -493,9 +494,7 @@ CORRECTNESSVO=contrib/correctness/Arrays.vo				\
 	contrib/correctness/Tuples.vo
 #	contrib/correctness/ProgramsExtraction.vo			
 
-OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
-          contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
-          contrib/omega/Zcomplements.vo
+OMEGAVO = contrib/omega/Omega.vo  	contrib/omega/OmegaSyntax.vo
 
 ROMEGAVO = contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
 

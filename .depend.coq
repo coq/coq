@@ -28,10 +28,7 @@ contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/Ring_
 contrib/ring/ArithRing.vo: contrib/ring/ArithRing.v contrib/ring/Ring.vo theories/Arith/Arith.vo theories/Logic/Eqdep_dec.vo
 contrib/romega/ROmega.vo: contrib/romega/ROmega.v contrib/omega/Omega.vo contrib/romega/ReflOmegaCore.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/PolyList.vo theories/Bool/Bool.vo theories/ZArith/ZArith.vo
-contrib/omega/Zcomplements.vo: contrib/omega/Zcomplements.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
-contrib/omega/Zpower.vo: contrib/omega/Zpower.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo
 contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
-contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo contrib/omega/Zpower.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith.vo theories/Arith/Minus.vo contrib/omega/OmegaSyntax.vo
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
 theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/PolyList.vo theories/Sets/Multiset.vo
@@ -46,7 +43,7 @@ theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rseries
 theories/Reals/Rseries.vo: theories/Reals/Rseries.v theories/Reals/Rderiv.vo theories/Logic/Classical.vo theories/Arith/Compare.vo
 theories/Reals/Rderiv.vo: theories/Reals/Rderiv.v theories/Reals/Rfunctions.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Logic/Classical_Pred_Type.vo contrib/omega/Omega.vo
 theories/Reals/Rlimit.vo: theories/Reals/Rlimit.v theories/Reals/Rbasic_fun.vo theories/Reals/R_sqr.vo theories/Logic/Classical_Prop.vo theories/Reals/DiscrR.vo contrib/fourier/Fourier.vo theories/Reals/SplitAbsolu.vo
-theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v theories/Reals/Rlimit.vo contrib/omega/Omega.vo contrib/omega/Zpower.vo
+theories/Reals/Rfunctions.vo: theories/Reals/Rfunctions.v theories/Reals/Rlimit.vo contrib/omega/Omega.vo theories/ZArith/Zpower.vo
 theories/Reals/SplitRmult.vo: theories/Reals/SplitRmult.v theories/Reals/Rbase.vo
 theories/Reals/SplitAbsolu.vo: theories/Reals/SplitAbsolu.v theories/Reals/Rbasic_fun.vo
 theories/Reals/R_sqr.vo: theories/Reals/R_sqr.v theories/Reals/Rbase.vo theories/Reals/DiscrR.vo theories/Reals/Rbasic_fun.vo
@@ -117,6 +114,9 @@ theories/Lists/Streams.vo: theories/Lists/Streams.v
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/PolyList.vo
 theories/Lists/PolyListSyntax.vo: theories/Lists/PolyListSyntax.v theories/Lists/PolyList.vo
 theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo
+theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
+theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
+theories/ZArith/Zlogarithm.vo: theories/ZArith/Zlogarithm.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zpower.vo
 theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
 theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/Arith/Arith.vo theories/ZArith/fast_integer.vo
 theories/ZArith/Zmisc.vo: theories/ZArith/Zmisc.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/Bool/Bool.vo

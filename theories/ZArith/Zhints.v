@@ -69,6 +69,7 @@ Hints Resolve
   Zle_min_r (* :(n,m:Z)`(Zmin n m) <= m` *)
   Zle_reg_l (* :(n,m,p:Z)`n <= m`->`p+n <= p+m` *)
   Zle_reg_r (* :(a,b,c:Z)`a <= b`->`a+c <= b+c` *)
+  Zabs_pos (* :(x:Z)`0 <= |x|` *)
   
   (* B) Irreversible simplification lemmas : Probably to be declared as *)
   (* hints, when no other simplification is possible *)

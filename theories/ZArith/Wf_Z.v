@@ -84,6 +84,15 @@ Intros Hn; Elim Hn; Intros.
 Rewrite -> H1; Apply H.
 Save.
 
+Lemma inject_nat_set :
+  (P:Z->Set)((n:nat)(P (inject_nat n))) -> 
+    (x:Z) `0 <= x` -> (P x).
+Intros.
+Specialize (inject_nat_complete_inf x H0).
+Intros Hn; Elim Hn; Intros.
+Rewrite -> p; Apply H.
+Save.
+
 Lemma ZERO_le_inj :
   (n:nat) `0 <= (inject_nat n)`.
 Induction n; Simpl; Intros;
@@ -95,6 +104,17 @@ Lemma natlike_ind : (P:Z->Prop) (P `0`) ->
   ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
   (x:Z) `0 <= x` -> (P x).
 Intros; Apply inject_nat_prop;
+[ Induction n;
+  [ Simpl; Assumption
+  | Intros; Rewrite -> (inj_S n0);
+    Exact (H0 (inject_nat n0) (ZERO_le_inj n0) H2) ]
+| Assumption].
+Save.
+
+Lemma natlike_rec : (P:Z->Set) (P `0`) ->
+  ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
+  (x:Z) `0 <= x` -> (P x).
+Intros; Apply inject_nat_set;
 [ Induction n;
   [ Simpl; Assumption
   | Intros; Rewrite -> (inj_S n0);
@@ -116,6 +136,36 @@ Auto with zarith.
 Split; [ Assumption | Exact (Zlt_n_Sn x) ].
 
 Intros x0 Hx0; Generalize Hx0; Pattern x0; Apply natlike_ind.
+Intros.
+Absurd `0 <= 0`; Try Assumption.
+Apply Zgt_not_le.
+Apply Zgt_le_trans with m:=y.
+Apply Zlt_gt.
+Intuition. Intuition.
+
+Intros. Apply H. Intros.
+Apply (H1 H0).
+Split; [ Intuition | Idtac ].
+Apply Zlt_le_trans with y. Intuition.
+Apply Zgt_S_le. Apply Zlt_gt. Intuition.
+
+Assumption.
+Save.
+
+Lemma Z_lt_rec : 
+  (P:Z->Set)
+     ((x:Z)((y:Z)`0 <= y < x`->(P y))->(P x))
+  -> (x:Z)`0 <= x`->(P x).
+Proof.
+Intros P H x Hx.
+Cut (x:Z)`0 <= x`->(y:Z)`0 <= y < x`->(P y).
+Intro.
+Apply (H0 (Zs x)).
+Auto with zarith.
+
+Split; [ Assumption | Exact (Zlt_n_Sn x) ].
+
+Intros x0 Hx0; Generalize Hx0; Pattern x0; Apply natlike_rec.
 Intros.
 Absurd `0 <= 0`; Try Assumption.
 Apply Zgt_not_le.
