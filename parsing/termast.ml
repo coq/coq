@@ -156,7 +156,7 @@ let explicitize impl args =
         let tail = exprec (q+1) (args,impl) in
         let visible =
           (!print_implicits & !print_implicits_explicit_args)
-          or not (is_inferable_implicit n imp) in
+          or not (is_inferable_implicit false n imp) in
         if visible then ope("EXPL", [num q; a]) :: tail else tail
     | a::args, _::impl -> a :: exprec (q+1) (args,impl)
     | args, [] -> args  (* In case of polymorphism *)

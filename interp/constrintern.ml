@@ -180,6 +180,10 @@ let intern_reference env lvar = function
       (* For old ast syntax compatibility *)
       if (string_of_id id).[0] = '$' then RVar (loc,id),[],[] else
       (* End old ast syntax compatibility *)
+      (* Pour traduction des implicites d'inductifs et points-fixes *)
+      try RVar (loc,id), List.assoc id !temporary_implicits_in, []
+      with Not_found ->
+      (* Fin pour traduction *)
       try intern_var env lvar loc id
       with Not_found -> 
       try intern_qualid loc (make_short_qualid id)
@@ -187,9 +191,7 @@ let intern_reference env lvar = function
 	(* Extra allowance for grammars *)
 	if !interning_grammar then begin
 	  set_var_scope loc id env lvar;
-	  RVar (loc,id), 
-	  (try List.assoc id !temporary_implicits_in with Not_found -> []),
-	  []
+	  RVar (loc,id), [], []
 	end
 	else raise e
 

@@ -154,14 +154,15 @@ let occur_name na aty =
     | Anonymous -> false
 
 (* Implicit args indexes are in ascending order *)
-let explicitize loc impl f args =
+(* inctx is useful only if there is a last argument to be deduced from ctxt *)
+let explicitize loc inctx impl f args =
   let n = List.length args in
   let rec exprec q = function
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
           (!print_implicits & !print_implicits_explicit_args)
-          or not (is_inferable_implicit n imp) in
+          or not (is_inferable_implicit inctx n imp) in
         if visible then (a,Some q) :: tail else tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
@@ -185,14 +186,14 @@ let rec skip_coercion dest_ref (f,args as app) =
 	| None -> app
     with Not_found -> app
 
-let extern_app loc impl f args =
+let extern_app loc inctx impl f args =
   if !print_implicits &
     not !print_implicits_explicit_args &
     List.exists is_status_implicit impl
   then 
     CAppExpl (loc, f, args)
   else
-    explicitize loc impl (CRef f) args
+    explicitize loc inctx impl (CRef f) args
 
 let rec extern_args extern scopes env args subscopes =
   match args with
@@ -232,16 +233,16 @@ let rec extern inctx scopes vars r =
 	 | RRef (loc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
 	     let args = extern_args (extern true) scopes vars args subscopes in
-	     extern_app loc (implicits_of_global_out ref)
+	     extern_app loc inctx (implicits_of_global_out ref)
                (extern_reference loc vars ref)
 	       args
 	 | RVar (loc,id) -> (* useful for translation of inductive *)
 	     let args = List.map (extern true scopes vars) args in
-	     extern_app loc (get_temporary_implicits_out id)
+	     extern_app loc inctx (get_temporary_implicits_out id)
 	       (Ident (loc,id))
 	       args
 	 | _       -> 
-	     explicitize loc [] (extern inctx scopes vars f)
+	     explicitize loc inctx [] (extern false scopes vars f)
                (List.map (extern true scopes vars) args))
 
   | RProd (loc,Anonymous,t,c) ->
@@ -365,7 +366,8 @@ and extern_symbol scopes vars t = function
           | SynDefRule kn ->
               CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
  	if args = [] then e 
-	else explicitize loc [] e (List.map (extern true scopes vars) args)
+	else explicitize loc false [] e 
+	  (List.map (extern true scopes vars) args)
       with
 	  No_match -> extern_symbol scopes vars t rules
 
@@ -416,16 +418,17 @@ let rec extern_pattern tenv vars env = function
       let args = List.map (extern_pattern tenv vars env) args in
       (match f with
 	 | PRef ref ->
-	     extern_app loc (implicits_of_global ref)
+	     extern_app loc false (implicits_of_global ref)
                (extern_reference loc vars ref)
 	       args
-	 | _       -> explicitize loc [] (extern_pattern tenv vars env f) args)
+	 | _       ->
+	     explicitize loc false [] (extern_pattern tenv vars env f) args)
 
   | PSoApp (n,args) ->
       let args = List.map (extern_pattern tenv vars env) args in
       (* [-n] is the trick to embed a so patten into a regular application *)
       (* see constrintern.ml and g_constr.ml4 *)
-      explicitize loc [] (CMeta (loc,-n)) args
+      explicitize loc false [] (CMeta (loc,-n)) args
 
   | PProd (Anonymous,t,c) ->
       (* Anonymous product are never factorized *)

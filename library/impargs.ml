@@ -234,12 +234,13 @@ let is_status_implicit = function
   | None -> false
   | _ -> true
 
-let is_inferable_implicit n = function
+(* [in_ctx] means we now the expected type, [n] is the index of the argument *)
+let is_inferable_implicit in_ctx n = function
   | None -> false
   | Some (DepRigid (Hyp p)) -> n >= p
   | Some (DepFlex (Hyp p)) -> false
   | Some (DepFlexAndRigid (_,Hyp q)) -> n >= q
-  | Some (DepRigid Conclusion) -> true
+  | Some (DepRigid Conclusion) -> in_ctx
   | Some (DepFlex Conclusion) -> false
   | Some (DepFlexAndRigid (_,Conclusion)) -> false
   | Some Manual -> true
