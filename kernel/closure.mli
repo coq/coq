@@ -50,6 +50,7 @@ val no_red : reds
 val beta_red : reds
 val betaiota_red : reds
 val betadeltaiota_red : reds
+val betaiotazeta_red : reds
 val unfold_red : evaluable_global_reference -> reds
 
 (* Tests if a reduction kind is set *)

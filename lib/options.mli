@@ -19,6 +19,8 @@ val debug : bool ref
 val print_emacs : bool ref
 val emacs_str : string -> string
 
+val term_quality : bool ref
+
 val make_silent : bool -> unit
 val is_silent : unit -> bool
 val is_verbose : unit -> bool

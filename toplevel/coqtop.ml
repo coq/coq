@@ -121,6 +121,7 @@ let parse_args () =
 
     | "-batch" :: rem -> set_batch_mode (); parse rem
     | "-boot" :: rem -> boot := true; no_load_rc (); parse rem	     
+    | "-quality" :: rem -> term_quality := true; no_load_rc (); parse rem
     | "-outputstate" :: s :: rem -> set_outputstate s; parse rem
     | "-outputstate" :: []       -> usage ()
 
