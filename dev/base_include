@@ -15,6 +15,7 @@
 #directory "translate";;
 
 #use "top_printers.ml";;
+#use "vm_printers.ml";;
 
 #install_printer  (* identifier *) prid;;
 #install_printer  (* label *) prlab;;
