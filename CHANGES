@@ -19,12 +19,16 @@ Language
 - Idem for assumptions declarations and constants when the type is mentionned.
 - The "Coercion" and "Canonical Structure" keywords now accept the
   same syntax as "Definition", i.e. "hyps :=c (:t)?" or "hyps :t".
-- Remark and Fact now definitively behaves as Theorem and Lemma; when
-  sections are closed, the full names of Remark and Fact has no longer a
-  section part; Local built by tactics are now Opaque if the proof is
-  ended by Qed.
-- Opaque local statements (such as defined by Local ... Qed, see above) have
-  their body hidden in the local context of proofs
+- Theorem-like declaration now accepts the syntax "Theorem thm [x:t;...] : u".
+- Remark's and Fact's now definitively behave as Theorem and Lemma: when
+  sections are closed, the full name of a Remark or a Fact has no longer a
+  section part (source of incompatibilities)
+- Opaque Local's (i.e. built by tactics and ended by Qed), do not
+  survive section closing any longer; as a side-effect, Opaque Local's
+  now appear in the local context of proofs; their body is hidden
+  though (source of incompatibilities); use one of Remark/Fact/Lemma/Theorem
+  instead to simulate the old behaviour of Local (the section part of
+  the name is not kept though)
 
 ML tactic and vernacular commands
 
@@ -69,6 +73,12 @@ Incompatibilities
 - Transparency of le_lt_dec and co (leads to some simplification in
   proofs; in some cases, incompatibilites is solved by declaring locally 
   opaque the relevant constant)
+- Opaque Local do not now survive section closing (rename them into
+  Remark/Lemma/... to get them still surviving the sections; this
+  renaming allows also to solve incompatibilites related to now
+  forbidden calls to the tactic Clear)
+- Remark and Fact have no longer (very) long names (use Local instead in case
+  of name conflict)
 
 Bugs
 

@@ -173,8 +173,8 @@ ident_comma_list_tail:
   ;
   gallina:
     (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = ident; ":"; c = constr -> 
-         VernacStartTheoremProof (thm, id, c, false, (fun _ _ -> ()))
+    [ [ thm = thm_token; id = ident; bl = binders_list; ":"; c = constr ->
+         VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
       | (f,d) = def_token; id = ident; b = def_body -> 
           VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = ne_params_list -> 

@@ -47,7 +47,10 @@ val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
 
 val build_scheme : (identifier * bool * qualid located * Coqast.t) list -> unit
 
-val start_proof_com : identifier option -> bool * strength -> Coqast.t -> Proof_type.declaration_hook -> unit
+val generalize_rawconstr : Coqast.t -> local_binder list -> Coqast.t
+
+val start_proof_com : identifier option -> bool * strength -> 
+  (local_binder list * Coqast.t) -> Proof_type.declaration_hook -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

@@ -1782,9 +1782,11 @@ let xlate_vernac =
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment id -> CT_section_end (xlate_ident id)
-  | VernacStartTheoremProof (k, s, c, _, _) ->
+  | VernacStartTheoremProof (k, s, ([],c), _, _) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,xlate_constr c))
+  | VernacStartTheoremProof (k, s, (bl,c), _, _) -> 
+      xlate_error "TODO: VernacStartTheoremProof"
   | VernacSuspend -> CT_suspend
   | VernacResume idopt -> CT_resume (xlate_ident_opt idopt)
   | VernacDefinition (k,s,ProveBody (bl,typ),_) ->

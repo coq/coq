@@ -334,13 +334,6 @@ let start_proof_and_print idopt k t hook =
   print_subgoals ();
   if !pcoq <> None then (out_some !pcoq).start_proof ()
 
-let rec generalize_rawconstr c = function
-  | [] -> c
-  | LocalRawDef (id,b)::bl -> Ast.mkLetInC(id,b,generalize_rawconstr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> Ast.mkProdC(x,t,b)) idl
-        (generalize_rawconstr c bl)
-
 let vernac_definition kind id def hook =
   let (local,stre as k) = interp_definition kind in
   match def with
@@ -350,8 +343,7 @@ let vernac_definition kind id def hook =
 	hook stre ref
       else
 	let hook _ _ = () in
-	let t = generalize_rawconstr t bl in
-	start_proof_and_print (Some id) k t hook
+	start_proof_and_print (Some id) k (bl,t) hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -361,7 +353,7 @@ let vernac_definition kind id def hook =
       let ref = declare_definition id k bl red_option c typ_opt in
       hook stre ref
 
-let vernac_start_proof kind sopt t lettop hook =
+let vernac_start_proof kind sopt (bl,t) lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
@@ -369,12 +361,13 @@ let vernac_start_proof kind sopt t lettop hook =
   let stre = interp_theorem kind in
   match Lib.is_specification (), sopt with
     | true, Some id ->
+        let t = generalize_rawconstr t bl in
 	let ref = declare_assumption id stre [] t in
 	hook stre ref
     | _ -> 
 	(* an explicit Goal command starts the refining mode 
 	   even in a specification *)
-	start_proof_and_print sopt (false, stre) t hook
+	start_proof_and_print sopt (false, stre) (bl,t) hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
@@ -1113,7 +1106,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem None t false (fun _ _ -> ())
+  | VernacGoal t -> vernac_start_proof Theorem None ([],t) false (fun _ _ ->())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

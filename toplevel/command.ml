@@ -468,7 +468,19 @@ let build_scheme lnamedepindsort =
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
 
-let start_proof_com sopt (local,stre) com hook =
+let rec generalize_rawconstr c = function
+  | [] -> c
+  | LocalRawDef (id,b)::bl -> Ast.mkLetInC(id,b,generalize_rawconstr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> Ast.mkProdC(x,t,b)) idl
+        (generalize_rawconstr c bl)
+
+let rec binders_length = function
+  | [] -> 0
+  | LocalRawDef _::bl -> 1 + binders_length bl
+  | LocalRawAssum (idl,_)::bl -> List.length idl + binders_length bl
+
+let start_proof_com sopt (local,stre) (bl,t) hook =
   let env = Global.env () in
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
@@ -482,7 +494,7 @@ let start_proof_com sopt (local,stre) com hook =
 	next_ident_away (id_of_string "Unnamed_thm")
 	  (Pfedit.get_all_proof_names ())
   in
-  let c = interp_type Evd.empty env com in
+  let c = interp_type Evd.empty env (generalize_rawconstr t bl) in
   let _ = Typeops.infer_type env c in
   Pfedit.start_proof id (local,stre) sign c hook
 

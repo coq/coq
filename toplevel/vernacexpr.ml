@@ -201,8 +201,8 @@ type vernac_expr =
   (* Gallina *)
   | VernacDefinition of definition_kind * identifier * definition_expr *
       Proof_type.declaration_hook
-  | VernacStartTheoremProof of theorem_kind * identifier * Coqast.t * bool *
-      Proof_type.declaration_hook
+  | VernacStartTheoremProof of theorem_kind * identifier *
+      (local_binder list * Coqast.t) * bool * Proof_type.declaration_hook
   | VernacEndProof of opacity_flag * (identifier * theorem_kind option) option
   | VernacExactProof of constr_ast
   | VernacAssumption of assumption_kind * simple_binder with_coercion list
