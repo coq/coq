@@ -1600,3 +1600,7 @@ end.
 Theorem INR_eq_INR2 : (n:nat) (INR n)==(INR2 n).
 Induction n; [Unfold INR INR2; Reflexivity | Intros; Unfold INR INR2; Fold INR INR2; Rewrite H; Case n0; [Reflexivity | Intros; Ring]].
 Save.
+
+Lemma add_auto : (p,q:nat) ``(INR2 (S p))+(INR2 q)==(INR2 p)+(INR2 (S q))``.
+Intros; Repeat Rewrite <- INR_eq_INR2; Repeat Rewrite S_INR; Ring.
+Save.

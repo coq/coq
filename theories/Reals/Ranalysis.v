@@ -239,6 +239,14 @@ Lemma sum_derivable : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivabl
 Unfold derivable; Intros f1 f2 H1 H2 x; Apply sum_derivable_pt; [Exact (H1 x) | Exact (H2 x)].
 Save.
 
+Lemma sum_derivable_pt_var : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> (derivable_pt ([y:R]``(f1 y)+(f2 y)``) x).
+Intros; Generalize (sum_derivable_pt f1 f2 x H H0); Unfold plus_fct; Intro; Assumption.
+Save.
+
+Lemma derive_sum : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> (derive_pt ([y:R]``(f1 y)+(f2 y)``) x)==``(derive_pt f1 x)+(derive_pt f2 x)``.
+Intros; Generalize (deriv_sum f1 f2 x H H0); Unfold plus_fct; Intro; Assumption.
+Save.
+
 (* Opposite *)
 Lemma deriv_opposite : (f:R->R;x:R) (derivable_pt f x) -> ``(derive_pt (opp_fct f) x)==-(derive_pt f x)``.
 Intros; Generalize (derivable_derive f x H); Intro H0; Elim H0; Intros l H1; Rewrite H1; Unfold opp_fct; Apply derive_pt_def_0; Intros; Generalize (derive_pt_def_1 f x l H1); Intro H3; Elim (H3 eps H2); Intros delta H4; Exists delta; Intros; Replace ``( -(f (x+h))- -(f x))/h- -l`` with ``- (((f (x+h))-(f x))/h-l)``; [Rewrite Rabsolu_Ropp; Apply (H4 h H5 H6) | Field; Assumption].
@@ -268,6 +276,11 @@ Save.
 Lemma diff_derivable : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (minus_fct f1 f2)).
 Unfold derivable; Intros f1 f2 H1 H2 x; Apply diff_derivable_pt; [ Exact (H1 x) | Exact (H2 x)].
 Save. 
+
+Lemma derive_diff : (f1,f2:R->R;x:R) (derivable_pt f1 x)
+-> (derivable_pt f2 x) -> (derive_pt ([y:R]``(f1 y)-(f2 y)``) x)==``(derive_pt f1 x)-(derive_pt f2 x)``.
+Intros; Generalize (deriv_diff f1 f2 x H H0); Unfold minus_fct; Intro; Assumption.
+Save.
 
 (**********)
 Lemma deriv_scal : (f:R->R;a,x:R) (derivable_pt f x) -> ``(derive_pt (mult_real_fct a f) x)==a*(derive_pt f x)``.
@@ -299,9 +312,17 @@ Field; Assumption.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply (Rabsolu_pos_lt a H1)].
 Save.
 
+Lemma scal_derivable_pt_var : (f:R->R;a:R; x:R) (derivable_pt f x) -> (derivable_pt ([y:R]``a*(f y)``) x).
+Intros; Generalize (scal_derivable_pt f a x H); Unfold mult_real_fct; Intro; Assumption.
+Save.
+
 Lemma scal_derivable : (f:R->R;a:R) (derivable f) -> (derivable (mult_real_fct a f)).
 Unfold derivable; Intros f a H1 x; Apply scal_derivable_pt; Exact
 (H1 x).
+Save.
+
+Lemma derive_scal : (f:R->R;a,x:R) (derivable_pt f x) -> (derive_pt ([x:R]``a*(f x)``) x)==``a*(derive_pt f x)``.
+Intros; Generalize (deriv_scal f a x H); Unfold mult_real_fct; Intro; Assumption.
 Save.
 
 (* Multiplication *)
@@ -321,6 +342,11 @@ Save.
 
 Lemma prod_derivable : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (mult_fct f1 f2)).
 Unfold derivable; Intros f1 f2 H1 H2 x; Apply prod_derivable_pt; [ Exact (H1 x) | Exact (H2 x)].
+Save.
+
+Lemma derive_prod : (f1,f2:R->R;x:R) (derivable_pt f1 x)
+-> (derivable_pt f2 x) -> (derive_pt ([x:R]``(f1 x)*(f2 x)``) x)==``(derive_pt f1 x)*(f2 x)+(derive_pt f2 x)*(f1 x)``.
+Intros; Generalize (deriv_prod f1 f2 x H H0); Unfold mult_fct; Intro; Assumption.
 Save.
 
 (**********)
@@ -801,6 +827,19 @@ Apply increasing_decreasing; Assumption.
 Intro.
 Right; Symmetry; Apply (H0 x).
 Intro; Right; Apply (H0 x).
+Save.
+
+(**********)
+Axiom derive_increasing_interv_ax : (a,b:R;f:R->R) ``a<b``-> (((t:R) ``a<t<b`` -> ``0<(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``)) /\ (((t:R) ``a<t<b`` -> ``0<=(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``)).
+
+(**********)
+Lemma derive_increasing_interv : (a,b:R;f:R->R) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``).
+Intros; Generalize (derive_increasing_interv_ax a b f H); Intro; Elim H4; Intros H5 _; Apply (H5 H0 x y H1 H2 H3).
+Save.
+
+(**********)
+Lemma derive_increasing_interv_var : (a,b:R;f:R->R) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<=(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``).
+Intros; Generalize (derive_increasing_interv_ax a b f H); Intro; Elim H4; Intros _ H5; Apply (H5 H0 x y H1 H2 H3).
 Save.
 
 (**********)
