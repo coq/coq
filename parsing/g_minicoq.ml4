@@ -17,13 +17,12 @@ open Univ
 open Term
 open Environ
 
-let lexer = {
-  Token.func = Lexer.func;
-  Token.using = (function ("",s) -> Lexer.add_keyword s | _ -> ());
-  Token.removing = (fun _ -> ());
-  Token.tparse = Lexer.tparse;
-  Token.text = Lexer.token_text }
-  
+let lexer =
+  {Token.func = Lexer.func; Token.using = Lexer.add_token;
+   Token.removing = (fun _ -> ()); Token.tparse = Lexer.tparse;
+   Token.text = Lexer.token_text}
+;;
+
 type command =
   | Definition of identifier * constr option * constr
   | Parameter of identifier * constr

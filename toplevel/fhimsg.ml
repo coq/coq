@@ -100,12 +100,12 @@ let msg_bad_elimination ctx k = function
   | None -> 
       [<>]
 
-let explain_elim_arity k ctx ind aritylst c p pt okinds = 
+let explain_elim_arity k ctx ind aritylst c pj okinds = 
   let pi = P.pr_term k ctx ind in
   let ppar = prlist_with_sep pr_coma (P.pr_term k ctx) aritylst in
   let pc = P.pr_term k ctx c in
-  let pp = P.pr_term k ctx p in
-  let ppt = P.pr_term k ctx pt in
+  let pp = P.pr_term k ctx pj.uj_val in
+  let ppt = P.pr_term k ctx pj.uj_type in
   [< 'sTR "Incorrect elimination of"; 'bRK(1,1); pc; 'sPC;
      'sTR "in the inductive type"; 'bRK(1,1); pi; 'fNL;
      'sTR "The elimination predicate"; 'bRK(1,1); pp; 'sPC;
@@ -113,16 +113,16 @@ let explain_elim_arity k ctx ind aritylst c p pt okinds =
      'sTR "It should be one of :"; 'bRK(1,1) ; hOV 0 ppar; 'fNL;
      msg_bad_elimination ctx k okinds >]
 
-let explain_case_not_inductive k ctx c ct =
-  let pc = P.pr_term k ctx c in
-  let pct = P.pr_term k ctx ct in
+let explain_case_not_inductive k ctx cj =
+  let pc = P.pr_term k ctx cj.uj_val in
+  let pct = P.pr_term k ctx cj.uj_type in
   [< 'sTR "In Cases expression"; 'bRK(1,1); pc; 'sPC; 
      'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
      'sTR "which is not an inductive definition" >]
   
-let explain_number_branches k ctx c ct expn =
-  let pc = P.pr_term k ctx c in
-  let pct = P.pr_term k ctx ct in
+let explain_number_branches k ctx cj expn =
+  let pc = P.pr_term k ctx cj.uj_val in
+  let pct = P.pr_term k ctx cj.uj_val in
   [< 'sTR "Cases on term"; 'bRK(1,1); pc; 'sPC ;
      'sTR "of type"; 'bRK(1,1); pct; 'sPC;
      'sTR "expects ";  'iNT expn; 'sTR " branches" >]
@@ -196,7 +196,7 @@ let explain_cant_apply_not_functional k ctx rator randl =
      'sTR" "; v 0 appl; 'fNL >]
 
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body k ctx err lna i vdefs =
+let explain_ill_formed_rec_body k ctx err names i vdefs =
   let str = match err with
 
   (* Fixpoint guard errors *)
@@ -235,7 +235,7 @@ let explain_ill_formed_rec_body k ctx err lna i vdefs =
 in
   let pvd = P.pr_term k ctx vdefs.(i) in
   let s =
-    match List.nth lna i with Name id -> string_of_id id | Anonymous -> "_" in
+    match names.(i) with Name id -> string_of_id id | Anonymous -> "_" in
   [< str; 'fNL; 'sTR"The ";
      if Array.length vdefs = 1 then [<>] else [<'iNT (i+1); 'sTR "-th ">];
      'sTR"recursive definition"; 'sPC; 'sTR s;
@@ -294,12 +294,12 @@ let explain_type_error k ctx = function
       explain_bad_assumption k ctx c
   | ReferenceVariables id -> 
       explain_reference_variables id
-  | ElimArity (ind, aritylst, c, p, pt, okinds) ->
-      explain_elim_arity k ctx (mkMutInd ind) aritylst c p pt okinds 
-  | CaseNotInductive (c, ct) -> 
-      explain_case_not_inductive k ctx c ct
-  | NumberBranches (c, ct, n) -> 
-      explain_number_branches k ctx c ct n
+  | ElimArity (ind, aritylst, c, pj, okinds) ->
+      explain_elim_arity k ctx (mkMutInd ind) aritylst c pj okinds 
+  | CaseNotInductive cj -> 
+      explain_case_not_inductive k ctx cj
+  | NumberBranches (cj, n) -> 
+      explain_number_branches k ctx cj n
   | IllFormedBranch (c, i, actty, expty) -> 
       explain_ill_formed_branch k ctx c i actty expty 
   | Generalization (nvar, c) ->

@@ -558,7 +558,7 @@ MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
-	$(OCAMLC) $(INCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(OCAMLC) $(CAMLDEBUG) $(INCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)

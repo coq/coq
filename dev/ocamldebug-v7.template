@@ -16,7 +16,7 @@ for op in $*
 	coq-debug-programs.out) 
 	    coqdebug="yes"
 	    args="-is programs.coq";;
-	coq*) coqdebug="yes";;
+	*coq*) coqdebug="yes";;
        esac
 done
 

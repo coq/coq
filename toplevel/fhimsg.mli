@@ -46,13 +46,13 @@ val explain_reference_variables : identifier -> std_ppcmds
 
 val explain_elim_arity : 
   path_kind -> env -> constr -> constr list -> constr 
-    -> constr -> constr -> (constr * constr * string) option -> std_ppcmds
+    -> unsafe_judgment -> (constr * constr * string) option -> std_ppcmds
 
 val explain_case_not_inductive : 
-  path_kind -> env -> constr -> constr -> std_ppcmds
+  path_kind -> env -> unsafe_judgment -> std_ppcmds
 
 val explain_number_branches : 
-  path_kind -> env -> constr -> constr -> int -> std_ppcmds
+  path_kind -> env -> unsafe_judgment -> int -> std_ppcmds
 
 val explain_ill_formed_branch :
   path_kind -> env -> constr -> int -> constr -> constr -> std_ppcmds
@@ -65,7 +65,7 @@ val explain_actual_type :
 
 val explain_ill_formed_rec_body :
   path_kind -> env -> guard_error -> 
-    name list -> int -> constr array -> std_ppcmds
+    name array -> int -> constr array -> std_ppcmds
 
 val explain_ill_typed_rec_body  :
   path_kind -> env -> int -> name list -> unsafe_judgment array 
