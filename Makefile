@@ -420,7 +420,7 @@ beforedepend:: scripts/tolink.ml
 
 COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
-COQIDECMO=ide/find_phrase.cmo ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
+COQIDECMO=ide/ideutils.cmo ide/find_phrase.cmo ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-I +lablgtk2
 beforedepend:: ide/find_phrase.ml ide/highlight.ml

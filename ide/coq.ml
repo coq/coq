@@ -82,7 +82,9 @@ let print_toplevel_error exc =
     | Vernacexpr.Drop ->  str "Drop is not allowed by coqide!",None
     | Vernacexpr.Quit -> str "Quit is not allowed by coqide! Use menus.",None
     | _ -> 
-	(Cerrors.explain_exn exc),
+	(try Cerrors.explain_exn exc with e -> 
+	   str "Failed to explain error. This is an internal Coq error. Please report.\n"
+	   ++ str (Printexc.to_string  e)),
 	(if is_pervasive_exn exc then None else loc)
 
 let process_exn e = let s,loc=print_toplevel_error e in (msgnl s,loc)
@@ -188,8 +190,7 @@ let compute_reset_info = function
   | VernacDefinition (_, id, ProveBody _, _, _)
   | VernacStartTheoremProof (_, id, _, _, _) ->
       Reset (id, ref false)
-  | _ -> 
-      NoReset
+  | _ -> NoReset
 
 let reset_initial () = 
   prerr_endline "Reset initial called"; flush stderr;

@@ -1,0 +1,19 @@
+Q1) How to enable Emacs keybindings?
+R1: Insert 
+	gtk-key-theme-name = "Emacs"
+    in your ".coqiderc" file. It may be in the current dir
+    or in $HOME dir.
+
+Q2) How to change the default font ?
+R2) Insert 
+	style "default" {
+	font_name = "Monospace 14"
+	}
+	class "GtkTextView" style "default"
+    in your .coqiderc file. See Q1.
+    You may replace Monospace 14 by anything reasonable describing 
+    a font. For example "Sans bold 22". See Pango Font Descriptions for more
+    informations (http://www.pango.org/).
+
+Q3) How to enable antialiased fonts?
+R3) Set the GDK_USE_XFT variable to 1.

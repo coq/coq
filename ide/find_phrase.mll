@@ -9,8 +9,10 @@ rule next_phrase = parse
 	   next_phrase lexbuf}
   | '.'[' ''\n''\t''\r'] {incr length; incr length; Lexing.lexeme lexbuf}
   | _ 
-      { incr length; 
-	let c = Lexing.lexeme lexbuf in c^(next_phrase lexbuf) 
+      { 
+	let c = Lexing.lexeme lexbuf in 
+	if Ideutils.is_char_start c.[0] then incr length; 
+	c^(next_phrase lexbuf) 
       }
   | eof  { raise (Lex_error "no phrase") }
 and skip_comment = parse
@@ -18,5 +20,5 @@ and skip_comment = parse
   | "(*" {incr length; incr length; 
 	  skip_comment lexbuf;
 	  skip_comment lexbuf}
-  | _  { incr length; skip_comment lexbuf}
+  | _  { if Ideutils.is_char_start (Lexing.lexeme lexbuf).[0] then incr length; skip_comment lexbuf}
   | eof  { raise (Lex_error "No closing *)") }
