@@ -159,28 +159,28 @@ let split str =
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
-let load_infix _ (_,(gr,se,ntn,scope,pat)) =
+let load_infix _ (_,(gr,se,prec,ntn,scope,pat)) =
   Symbols.declare_scope scope
 
-let open_infix i (_,(gr,se,ntn,scope,pat)) =
+let open_infix i (_,(gr,se,prec,ntn,scope,pat)) =
   if i=1 then begin
-    let b = Symbols.exists_notation_in_scope scope ntn pat in
+    let b = Symbols.exists_notation_in_scope scope prec ntn pat in
     (* Declare the printer rule and its interpretation *)
     if not b then Esyntax.add_ppobject {sc_univ="constr";sc_entries=se};
     (* Declare the grammar rule ... *)
-    if not (Symbols.exists_notation ntn) then Egrammar.extend_grammar gr;
+    if not (Symbols.exists_notation prec ntn) then Egrammar.extend_grammar gr;
     (* ... and its interpretation *)
-    if not b then Symbols.declare_notation ntn pat scope
+    if not b then Symbols.declare_notation prec ntn pat scope
   end
 
 let cache_infix o =
   load_infix 1 o;
   open_infix 1 o
 
-let subst_infix (_,subst,(gr,se,ntn,scope,pat)) =
+let subst_infix (_,subst,(gr,se,prec,ntn,scope,pat)) =
   (Egrammar.subst_all_grammar_command subst gr,
    list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst) se,
-   ntn,
+   prec,ntn,
    scope,
    Rawterm.subst_raw subst pat)
 
@@ -209,9 +209,10 @@ let constr_tab =
   [| "constr0"; "constr1"; "constr2"; "constr3"; "lassoc_constr4";
      "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "lconstr";
      "pattern" |]
-  
-let constr_rule (n,p) =
-  if p = E then constr_tab.(n) else constr_tab.(max (n-1) 0)
+
+let level_rule (n,p) = if p = E then n else max (n-1) 0
+
+let constr_rule np = constr_tab.(level_rule np)
 
 let nonterm_meta nt var =
   NonTerm(ProdPrimitive ("constr",nt), Some (var,ETast))
@@ -241,8 +242,12 @@ let string_of_prec (n,p) =
   (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")
 
 let string_of_symbol = function
-  | NonTerminal (lp,_) -> "_:"^(string_of_prec lp)
+  | NonTerminal (lp,_) -> "_"
   | Terminal s -> s
+
+let assoc_of_symbol s l = match s with
+  | NonTerminal (lp,_) -> (level_rule lp,0,0) :: l
+  | Terminal _ -> l
 
 let string_of_assoc = function
   | Some(Gramext.RightA) -> "RIGHTA"
@@ -250,7 +255,7 @@ let string_of_assoc = function
   | Some(Gramext.NonA) -> "NONA"
 
 let make_symbolic assoc n symbols =
-  (string_of_assoc assoc) ^ "-" ^ (string_of_int n) ^ ":" ^
+  ((n,0,0), List.fold_right assoc_of_symbol symbols []),
   (String.concat " " (List.map string_of_symbol symbols))
 
 let make_production =
@@ -279,6 +284,8 @@ let strip s =
   let n = String.length s in
   if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
 
+let is_symbol s = not (is_letter s.[0])
+
 let rec find_symbols c_first c_next c_last vars new_var varprecl = function
   | []    -> (vars, [])
   | x::sl when is_letter x.[0] ->
@@ -287,18 +294,21 @@ let rec find_symbols c_first c_next c_last vars new_var varprecl = function
         error ("Variable "^x^" occurs more than once");
       let prec =
         try (List.assoc x varprecl,E)
-        with Not_found -> if sl = [] then c_last else c_first in
+        with Not_found ->
+          if List.exists is_symbol sl then c_first else c_last in
       let (vars,l) =
         find_symbols c_next c_next c_last vars (new_var+1) varprecl sl in
       let meta = create_meta new_var in
       ((id,ope ("META",[num new_var]))::vars, NonTerminal (prec, meta) :: l)
+(*
   | "_"::sl ->
       warning "Found '_'";
-      let prec = if sl = [] then c_last else c_first in
+      let prec = if List.exists is_symbols sl then c_first else c_last in
       let (vars,l) =
         find_symbols c_next c_next c_last vars (new_var+1) varprecl sl in
       let meta = create_meta new_var in
       (vars, NonTerminal (prec, meta) :: l)
+*)
   | s :: sl ->
       let (vars,l) =
         find_symbols c_next c_next c_last vars new_var varprecl sl in
@@ -370,7 +380,7 @@ let add_notation assoc n df ast varprecl sc =
   let (lp,rp) = prec_assoc assoc in
   let (subst,symbols) =
     find_symbols (n,lp) (10,E) (n,rp) [] 1 varprecl (split df) in
-  let notation = make_symbolic assoc n symbols in
+  let (prec,notation) = make_symbolic assoc n symbols in
   let rule_name = notation^"_"^scope^"_notation" in
   (* To globalize... *)
   let vars = List.map fst subst in
@@ -380,7 +390,8 @@ let add_notation assoc n df ast varprecl sc =
   let ast = reify_meta_ast ast in
   let gram_rule = make_grammar_rule n symbols notation in
   let syntax_rule = make_syntax_rule n rule_name symbols ast notation scope in
-  Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule,notation,scope,r))
+  Lib.add_anonymous_leaf
+    (inInfix(gram_rule,syntax_rule,prec,notation,scope,r))
 
 (* TODO add boxes information in the expression *)
 
