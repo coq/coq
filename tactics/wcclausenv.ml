@@ -144,8 +144,6 @@ and build_term ce p_0 p_1 =
   let env = Global.env() in
   match p_0,p_1 with 
     | ((na,Some t), (DOP0(Meta mv))) -> 
-        build_term ce (na,Some t) mkExistential
-    | ((na,Some t), (DOP0(XTRA("ISEVAR")))) ->
     	let mv = new_meta() in 
 	(DOP0(Meta mv),
          clenv_pose (na,mv,t) ce)
