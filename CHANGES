@@ -5,6 +5,7 @@ Language
 
 - Slightly improved compilation of pattern-matching (slight source of
   incompatibilities)
+- Record's now accept anonymous fields "_" which does not build projections
 
 Tactics
 
