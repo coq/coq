@@ -71,7 +71,7 @@ let (in_variable, out_variable) =
     cache_function = cache_variable;
     load_function = (fun _ -> ());
     open_function = (fun _ -> ());
-    export_function = (fun x -> None) }
+    export_function = (fun x -> Some x) }
   in
   declare_object ("VARIABLE", od)
 
