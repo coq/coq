@@ -24,7 +24,7 @@ val share : bool ref
 type red_kind =
   | BETA
   | DELTA
-  | LETIN
+  | ZETA
   | EVAR
   | IOTA
   | CONST of section_path list

@@ -16,17 +16,17 @@ let share = ref true
 (* Profiling *)
 let beta = ref 0
 let delta = ref 0
-let letin = ref 0
+let zeta = ref 0
 let evar = ref 0
 let iota = ref 0
 let prune = ref 0
 
 let reset () =
-  beta := 0; delta := 0; letin := 0; evar := 0; iota := 0; prune := 0
+  beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; prune := 0
 
 let stop() =
   mSGNL [< 'sTR"[Reds: beta=";'iNT !beta; 'sTR" delta="; 'iNT !delta;
-	   'sTR" letin="; 'iNT !letin; 'sTR" evar="; 'iNT !evar;
+	   'sTR" zeta="; 'iNT !zeta; 'sTR" evar="; 'iNT !evar;
            'sTR" iota="; 'iNT !iota; 'sTR" prune="; 'iNT !prune; 'sTR"]" >]
 
 
@@ -35,67 +35,67 @@ let stop() =
 type reds = {
   r_beta : bool;
   r_const : bool * section_path list;
-  r_letin : bool;
+  r_zeta : bool;
   r_evar : bool;
   r_iota : bool }
 
 let betadeltaiota_red = {
   r_beta = true;
   r_const = true,[];
-  r_letin = true;
+  r_zeta = true;
   r_evar = true;
   r_iota = true } 
 
 let betaiota_red = {
   r_beta = true;
   r_const = false,[];
-  r_letin = false;
+  r_zeta = false;
   r_evar = false;
   r_iota = true }
 		     
 let beta_red = {
   r_beta = true;
   r_const = false,[];
-  r_letin = false;
+  r_zeta = false;
   r_evar = false;
   r_iota = false }
 
 let no_red = {
   r_beta = false;
   r_const = false,[];
-  r_letin = false;
+  r_zeta = false;
   r_evar = false;
   r_iota = false }
 
-let betaiotaletin_red = {
+let betaiotazeta_red = {
   r_beta = true;
   r_const = false,[];
-  r_letin = true;
+  r_zeta = true;
   r_evar = false;
   r_iota = true }
 
 let unfold_red sp = {
   r_beta = true;
   r_const = false,[sp];
-  r_letin = false;
+  r_zeta = false;
   r_evar = false;
   r_iota = true }
 
 (* Sets of reduction kinds.
    Main rule: delta implies all consts (both global (= by
-   section_path) and local (= by Rel or Var)), all evars, and letin's.
+   section_path) and local (= by Rel or Var)), all evars, and zeta (= letin's).
    Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
    a LetIn expression is Letin reduction *)
 
 type red_kind =
-    BETA | DELTA | LETIN | EVAR | IOTA
+    BETA | DELTA | ZETA | EVAR | IOTA
   | CONST of section_path list | CONSTBUT of section_path list
 
 let rec red_add red = function
   | BETA -> { red with r_beta = true }
   | DELTA ->
       if snd red.r_const <> [] then error "Conflict in the reduction flags";
-      { red with r_const = true,[]; r_letin = true; r_evar = true }
+      { red with r_const = true,[]; r_zeta = true; r_evar = true }
   | CONST cl ->
       if fst red.r_const then error "Conflict in the reduction flags";
       { red with r_const = false, list_union cl (snd red.r_const) }
@@ -103,10 +103,10 @@ let rec red_add red = function
       if not (fst red.r_const) & snd red.r_const <> [] then
 	error "Conflict in the reduction flags";
       { red with r_const = true, list_union cl (snd red.r_const);
-	  r_letin = true; r_evar = true }
+	  r_zeta = true; r_evar = true }
   | IOTA -> { red with r_iota = true }
   | EVAR -> { red with r_evar = true }
-  | LETIN -> { red with r_letin = true }
+  | ZETA -> { red with r_zeta = true }
 
 let incr_cnt red cnt =
   if red then begin
@@ -124,8 +124,8 @@ let red_set red = function
       let (b,l) = red.r_const in
       let c = List.mem sp l in
       incr_cnt ((b & not c) or (c & not b)) delta
-  | LETIN -> incr_cnt red.r_letin letin
-  | EVAR -> incr_cnt red.r_letin evar
+  | ZETA -> incr_cnt red.r_zeta zeta
+  | EVAR -> incr_cnt red.r_zeta evar
   | IOTA -> incr_cnt red.r_iota iota
   | DELTA -> fst red.r_const  (* Used for Rel/Var defined in context *)
   (* Not for internal use *)
@@ -149,7 +149,7 @@ let beta = (UNIFORM,beta_red)
 let betaiota = (UNIFORM,betaiota_red)
 let betadeltaiota = (UNIFORM,betadeltaiota_red)
 
-let hnf_flags = (SIMPL,betaiotaletin_red)
+let hnf_flags = (SIMPL,betaiotazeta_red)
 let unfold_flags sp = (UNIFORM, unfold_red sp)
 
 let flags_under = function
@@ -533,14 +533,21 @@ let rec norm_head info env t stack =
       norm_head_ref 0 info env stack (EvarBinding normt)
 
   | IsLetIn (x, b, t, c) ->
-      if red_allowed info.i_flags stack LETIN then
-	let b = cbv_stack_term info TOP env b in 
-        norm_head info (subs_cons (b,env)) c stack
+      (* zeta means letin are contracted; delta without zeta means we *)
+      (* allow substitution but leave let's in place *)
+      let zeta = red_allowed info.i_flags stack ZETA in
+      let env' =
+	if zeta or red_allowed info.i_flags stack DELTA then 
+	  subs_cons (cbv_stack_term info TOP env b,env)
+	else
+	  subs_lift env in
+      if zeta then
+        norm_head info env' c stack
       else
 	let normt =
 	  mkLetIn (x, cbv_norm_term info env b,
 		   cbv_norm_term info env t,
-		   cbv_norm_term info (subs_lift env) c) in
+		   cbv_norm_term info env' c) in
 	(VAL(0,normt), stack) (* Considérer une coupure commutative ? *)
 
   (* non-neutral cases *)
@@ -1115,7 +1122,7 @@ and whnf_frterm info ft =
 
       | FLetIn (na,b,fd,fc,d,subs) ->
           let c = unfreeze info b in
-	  if red_under info.i_flags LETIN then
+	  if red_under info.i_flags ZETA then
 	    whnf_frterm info (contract_subst 0 d subs c)
 	  else
 	    { norm = false;
