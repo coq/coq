@@ -252,9 +252,9 @@ let default_relation_for_carrier a =
     [] -> Leibniz a
   | relation::tl ->
      if tl <> [] then
-      msg_warning
+      ppnl
        (*CSC: still "setoid" in the error message *)
-       (str "There are several setoids whose carrier is " ++ prterm a ++
+       (str "Warning: There are several setoids whose carrier is "++ prterm a ++
          str ". The setoid " ++ prrelation relation ++
          str " is randomly chosen.") ;
      Relation relation
@@ -325,9 +325,9 @@ let (relation_to_obj, obj_to_relation)=
              None -> old_relation.rel_sym
            | Some t -> Some t} in
         (*CSC: still "setoid" in the error message *)
-        msg_warning
-         (str "The setoid " ++ prrelation th' ++ str " is redeclared. " ++
-          str "The new declaration" ++
+        ppnl
+         (str "Warning: The setoid " ++ prrelation th' ++
+          str " is redeclared. The new declaration" ++
            (match th'.rel_refl with
               None -> str ""
             | Some t -> str " (reflevity proved by " ++ prterm t) ++
@@ -390,8 +390,9 @@ let morphism_table_add (m,c) =
     List.find
      (function mor -> mor.args = c.args && mor.output = c.output) old
    in
-    msg_warning
-     (str "The morphism " ++ prmorphism m old_morph ++ str " is redeclared. " ++
+    ppnl
+     (str "Warning: The morphism " ++ prmorphism m old_morph ++
+      str " is redeclared. " ++
       str "The new declaration whose compatibility is granted by " ++
        prterm c.lem ++ str " replaces the old declaration whose" ++
        str " compatibility was granted by " ++
@@ -917,7 +918,7 @@ let marked_constr_equiv_or_more_complex to_marked_constr c1 c2 =
 let pr_new_goals i c =
  let glc = collect_new_goals c in
   str " " ++ int i ++ str ") side conditions:" ++ pr_fnl () ++ str "   " ++
-   prlist_with_sep (fun () -> str "\n    ")
+   prlist_with_sep (fun () -> str "\n   ")
     (fun c -> str " ... |- " ++ prterm c) glc
 
 (* given a list of constr_with_marks, it returns the list where
@@ -1143,14 +1144,15 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
           (fun i (_,_,mc) -> pr_new_goals i mc) res)
    | [he] -> he
    | he::_ ->
-      msg_warning
-       (str "The application of the tactic is subject to one of the \n" ++
-        str "following set of side conditions that the user needs to prove:" ++
+      ppnl
+       (str "Warning: The application of the tactic is subject to one of " ++
+        str "the \nfollowing set of side conditions that the user needs " ++
+        str "to prove:" ++
          pr_fnl () ++
          prlist_with_sepi pr_fnl
-          (fun i (_,_,mc) -> pr_new_goals i mc) res ++ pr_fnl () ++
+          (fun i (_,_,mc) -> pr_new_goals i mc) res' ++ pr_fnl () ++
          str "The first set is randomly chosen. Use the syntax " ++
-         str "\"setoid_rewrite ... generate side conditions ...\" to choose" ++
+         str "\"setoid_rewrite ... generate side conditions ...\" to choose " ++
          str "a different set.") ;
       he
 
