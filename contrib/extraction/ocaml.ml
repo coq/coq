@@ -105,6 +105,12 @@ let rec pp_expr par env args =
           [< open_par par; st; close_par par >]
         else
           apply [< 'sTR "("; st; 'sTR ")" >]
+    | MLletin (id,a1,a2) ->
+	let id' = rename_bvars env [id] in
+	v 0 [< hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
+			pp_expr false env [] a1; 'sPC; 'sTR "in" >];
+	       'fNL;
+	       pp_expr false (id'@env) [] a2 >]
     | MLglob r -> 
 	apply (P.pp_global r)
     | MLcons (_,id,[]) ->

@@ -30,6 +30,7 @@ type ml_ast =
   | MLrel   of int
   | MLapp   of ml_ast * ml_ast list
   | MLlam   of identifier * ml_ast
+  | MLletin of identifier * ml_ast * ml_ast
   | MLglob  of global_reference
   | MLcons  of int * identifier * ml_ast list
   | MLcase  of ml_ast * (identifier * identifier list * ml_ast) array
