@@ -105,10 +105,10 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 (* Unification state *)
 type evar_defs
 
-(* Substitution is not applied to the evar_map *)
+(* Substitution is not applied to the [evar_map] *)
 val subst_evar_defs : substitution -> evar_defs -> evar_defs
 
-(* create an evar_defs with empty meta map: *)
+(* create an [evar_defs] with empty meta map: *)
 val create_evar_defs : evar_map -> evar_defs
 val evars_of         : evar_defs -> evar_map
 val evars_reset_evd  : evar_map ->  evar_defs -> evar_defs
@@ -139,7 +139,7 @@ val get_conv_pbs : evar_defs -> (evar_constraint -> bool) ->
 (* Metas *)
 val meta_list : evar_defs -> (metavariable * clbinding) list
 val meta_defined : evar_defs -> metavariable -> bool
-(* [meta_fvalue] raises Not_found if meta not in map or Anomaly if
+(* [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)  
 val meta_fvalue    : evar_defs -> metavariable -> constr freelisted
 val meta_ftype     : evar_defs -> metavariable -> constr freelisted

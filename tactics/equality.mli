@@ -30,8 +30,8 @@ val general_rewrite_bindings : bool -> constr with_bindings -> tactic
 val general_rewrite          : bool -> constr -> tactic
 
 (* Obsolete, use [general_rewrite_bindings l2r]
-val rewriteLR_bindings       : constr with_bindings -> tactic
-val rewriteRL_bindings       : constr with_bindings -> tactic
+[val rewriteLR_bindings       : constr with_bindings -> tactic]
+[val rewriteRL_bindings       : constr with_bindings -> tactic]
 *)
 
 (* Equivalent to [general_rewrite l2r] *)
@@ -94,8 +94,8 @@ val substHyp : bool -> types -> identifier -> tactic
    (which, if they fail, raise only UserError, not PatternMatchingFailure)
    or [substClause lr (mkVar id) None]
    or [substClause lr (mkVar id) (Some hyp)]
-val hypSubst_LR : identifier -> clause -> tactic
-val hypSubst_RL : identifier -> clause -> tactic
+[val hypSubst_LR : identifier -> clause -> tactic]
+[val hypSubst_RL : identifier -> clause -> tactic]
 *)
 
 val discriminable : env -> evar_map -> constr -> constr -> bool

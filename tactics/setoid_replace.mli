@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 open Term
 open Proof_type
@@ -25,8 +25,8 @@ type relation =
    }
 
 type 'a relation_class =
-   Relation of 'a    (* the rel_aeq of the relation or the relation*)
- | Leibniz of constr option  (* the carrier (if eq is partially instantiated)*)
+   Relation of 'a    (* the [rel_aeq] of the relation or the relation*)
+ | Leibniz of constr option  (* the [carrier] (if [eq] is partially instantiated)*)
 
 type 'a morphism =
     { args : (bool option * 'a relation_class) list;
@@ -47,7 +47,7 @@ val print_setoids : unit -> unit
 val equiv_list : unit -> constr list
 val default_relation_for_carrier :
   ?filter:(relation -> bool) -> types -> relation relation_class 
-(* [default_morphism] raises Not_found *)
+(* [default_morphism] raises [Not_found] *)
 val default_morphism :
   ?filter:(constr morphism -> bool) -> constr -> relation morphism
 

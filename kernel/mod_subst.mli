@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(*s Mod_subst *)
+(*s [Mod_subst] *)
 
 open Names
 open Term

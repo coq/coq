@@ -15,8 +15,8 @@ open Tacexpr
 val instantiate : int -> Rawterm.rawconstr -> 
   (identifier * hyp_location_flag, unit) location -> tactic
 
-(*
+(*i
 val instantiate_tac : tactic_arg list -> tactic
-*)
+i*)
 
 val let_evar : name -> Term.types -> tactic
