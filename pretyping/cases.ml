@@ -409,13 +409,12 @@ let inh_coerce_to_ind isevars env tmloc ty tyi =
   let hole_source = match tmloc with 
     | Some loc -> fun i -> (loc, Evd.TomatchTypeParameter (tyi,i))
     | None -> fun _ -> (dummy_loc, Evd.InternalHole) in
-   let (_,evarl,_) =
+   let (evarl,_) =
     List.fold_right
-      (fun (na,ty) (env,evl,n) ->
-	 (push_rel (na,None,ty) env,
-	    (e_new_evar isevars env ~src:(hole_source n) ty)::evl,n+1))
-      ntys (env,[],1) in
-  let expected_typ = applist (mkInd tyi,evarl) in
+      (fun (na,ty) (evl,n) ->
+	(e_new_evar isevars env ~src:(hole_source n) (substl evl ty))::evl,n+1)
+      ntys ([],1) in
+  let expected_typ = applist (mkInd tyi,List.rev evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
         un inductif cela doit être égal *)
   if e_cumul env isevars expected_typ ty then ty
