@@ -1266,6 +1266,10 @@ translation::
 	@$(MAKE) COQ_XML=-ftranslate world
 	@$(MAKE) movenew
 
+translation2::
+	@$(MAKE) COQ_XML=-ftranslate2 world
+	@$(MAKE) movenew
+
 movenew::
 	-mv *.v8 theories/Init/
 	for i in theories/*/*.v8 contrib/*/*.v8; do \
