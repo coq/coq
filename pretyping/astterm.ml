@@ -300,6 +300,7 @@ let ref_from_constr = function
    else RConst (sp,ids_of_ctxt ctxt)
   | DOPN (MutConstruct (spi,j),ctxt) -> Construct ((spi,j),ids_of_ctxt ctxt)
   | DOPN (MutInd (sp,i),ctxt) -> Ind (sp,i,ids_of_ctxt ctxt)
+  | VAR id -> Var id  (* utilisé dans trad pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
 let dbize_ref k sigma env loc s =
