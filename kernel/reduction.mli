@@ -115,6 +115,8 @@ val splay_arity : env -> 'a evar_map -> constr -> (name * constr) list * sorts
 val sort_of_arity : env -> constr -> sorts
 val decomp_n_prod : 
   env -> 'a evar_map -> int -> constr -> Sign.rel_context * constr
+val splay_prod_assum :
+  env -> 'a evar_map -> constr -> Sign.rel_context * constr
 
 type 'a miota_args = {
   mP      : constr;     (* the result type *)

@@ -272,9 +272,10 @@ let listrec_mconstr env ntypes nparams i indlc =
         | IsLetIn (na,b,t,d) -> 
 	    assert (largs = []);
             if not (noccur_between n ntypes b & noccur_between n ntypes t) then
-	      raise (IllFormedInd (LocalNonPos n));
-            let recarg = check_pos n b in 
-	    check_constr_rec lrec (n+1) d 
+	      check_constr_rec lrec n (subst1 b d)
+	    else
+              let recarg = check_pos n b in 
+	      check_constr_rec lrec (n+1) d 
 
 	| hd ->
 	    if check_head then
@@ -320,8 +321,9 @@ let cci_inductive env env_ar kind nparams finite inds cst =
 	Some (body_of_type ar) in
     let kelim = allowed_sorts issmall isunit ar_sort in
     let lc_bodies = Array.map body_of_type lc in
-    let splayed_lc = Array.map (splay_prod env Evd.empty) lc_bodies in
-    let nf_lc = Array.map (fun (d,b) -> prod_it b d) splayed_lc in
+    let splayed_lc = Array.map (splay_prod_assum env Evd.empty) lc_bodies in
+    let nf_lc = Array.map
+		  (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
     let nf_typed_lc,user_lc =
       if nf_lc = lc_bodies then lc,None
       else

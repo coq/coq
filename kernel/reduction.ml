@@ -169,12 +169,15 @@ let betaiotaevar = [BETA;IOTA;EVAR]
 (* Compact Implementation *)
 type flags = int
 let fbeta = 1 and fdelta = 2 and fevar = 4 and feta = 8 and fiota = 16
+							and fletin = 32
 
 let red_beta f = f land fbeta <> 0
 let red_delta f = f land fdelta <> 0
 let red_evar f = f land fevar <> 0
 let red_eta f = f land feta <> 0
 let red_iota f = f land fiota <> 0
+let red_letin f = f land fletin <> 0
+
 
 (* Local *)
 let beta = fbeta
@@ -183,10 +186,11 @@ let betaiota = fbeta lor fiota
 
 (* Contextual *)
 let delta = fdelta lor fevar
-let betadelta = fbeta lor fdelta lor fevar
-let betadeltaeta = fbeta lor fdelta lor fevar lor feta
-let betadeltaiota = fbeta lor fdelta lor fevar lor fiota
-let betadeltaiotaeta = fbeta lor fdelta lor fevar lor fiota lor feta
+let betadelta = fbeta lor fdelta lor fletin lor fevar
+let betadeltaeta = fbeta lor fdelta lor fletin lor fevar lor feta
+let betadeltaiota = fbeta lor fdelta lor fletin lor fevar lor fiota
+let betadeltaiota_nolet = fbeta lor fdelta lor fevar lor fiota
+let betadeltaiotaeta = fbeta lor fdelta lor fletin lor fevar lor fiota lor feta
 let betaiotaevar = fbeta lor fiota lor fevar
 
 (* Beta Reduction tools *)
@@ -271,7 +275,7 @@ let whd_state_gen flags env sigma =
 	  (match constant_opt_value env const with
 	     | Some  body -> whrec (body, stack)
 	     | None -> s)
-      | IsLetIn (_,b,_,c) when red_delta flags -> stacklam whrec [b] c stack
+      | IsLetIn (_,b,_,c) when red_letin flags -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
       | IsAppL (f,cl)  -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
@@ -660,11 +664,17 @@ let whd_betadeltaiotaeta_state env sigma =
   whrec
 *)
 
-let whd_betadeltaiotaeta_state e = whd_state_gen betadeltaiota e
+let whd_betadeltaiotaeta_state e = whd_state_gen betadeltaiotaeta e
 let whd_betadeltaiotaeta_stack env sigma x =
   appterm_of_stack (whd_betadeltaiotaeta_state env sigma (x, empty_stack))
 let whd_betadeltaiotaeta env sigma x = 
   app_stack (whd_betadeltaiotaeta_state env sigma (x, empty_stack))
+
+let whd_betadeltaiota_nolet_state e = whd_state_gen betadeltaiota_nolet e
+let whd_betadeltaiota_nolet_stack env sigma x =
+  appterm_of_stack (whd_betadeltaiota_nolet_state env sigma (x, empty_stack))
+let whd_betadeltaiota_nolet env sigma x = 
+  app_stack (whd_betadeltaiota_nolet_state env sigma (x, empty_stack))
 
 (********************************************************************)
 (*                         Conversion                               *)
@@ -948,6 +958,17 @@ let splay_prod env sigma =
       | _ -> m,t
   in 
   decrec []
+
+let splay_prod_assum env sigma = 
+  let rec prodec_rec l c =
+    let t = whd_betadeltaiota_nolet env sigma c in
+    match kind_of_term c with
+    | IsProd (x,t,c)  -> prodec_rec (Sign.add_rel_decl (x,outcast_type t) l) c
+    | IsLetIn (x,b,t,c) -> prodec_rec (Sign.add_rel_def (x,b,outcast_type t) l) c
+    | IsCast (c,_)    -> prodec_rec l c
+    | _               -> l,c
+  in 
+  prodec_rec Sign.empty_rel_context
 
 let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in

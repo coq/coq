@@ -78,7 +78,7 @@ let mis_make_case_com depopt env sigma mispec kind =
 
 (*
  * t is the type of the constructor co and recargs is the information on 
- * the recursive calls.                                                  
+ * the recursive calls. (It is assumed to be in form given by the user).
  * build the type of the corresponding branch of the recurrence principle
  * assuming f has this type, branch_rec gives also the term 
  *   [x1]..[xk](f xi (F xi) ...) to be put in the corresponding branch of 
@@ -108,7 +108,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
     prec 0 
   in
   let rec process_constr i c recargs co = 
-    let c', largs = whd_betadeltaiota_stack env sigma c in
+    let c', largs = whd_stack c in
     match kind_of_term c' with 
       | IsProd (n,t,c_0) ->
 	  assert (largs = []);
@@ -131,6 +131,10 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 		 make_prod_dep (dep or dep') env
                    (n,t,mkArrow t_0 (process_constr (i+2) (lift 1 c_0) rest
 				       (mkAppL (lift 2 co, [|mkRel 2|])))))
+      | IsLetIn (n,b,t,c_0) ->
+	  assert (largs = []);
+	  mkLetIn (n,b,t,process_constr (i+1) c_0 recargs (lift 1 co))
+
       | IsMutInd ((_,tyi),_) -> 
       	  let nP = match depPvect.(tyi) with 
 	    | Some(_,p) -> lift (i+decP) p
@@ -179,7 +183,10 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 		 (n,incast_type t,process_constr (i+1)
 		    (whd_beta (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))
-    | (n,Some c,t)::cprest, rest -> failwith "TODO"
+    | (n,Some c,t)::cprest, rest ->
+	       mkLetIn
+		 (n,c,incast_type t,
+		  process_constr (i+1) (lift 1 f) (cprest,rest))
     | [],[] -> f
     | _,[] | [],_ -> anomaly "process_constr"
 
