@@ -225,8 +225,13 @@ let rec extern inctx scopes vars r =
 	 | RRef (loc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
 	     let args = extern_args (extern true) scopes vars args subscopes in
-	     extern_app loc (implicits_of_global ref)
+	     extern_app loc (implicits_of_global_out ref)
                (extern_reference loc vars ref)
+	       args
+	 | RVar (loc,id) -> (* useful for translation of inductive *)
+	     let args = List.map (extern true scopes vars) args in
+	     extern_app loc (implicits_of_global_out (VarRef id))
+	       (Ident (loc,id))
 	       args
 	 | _       -> 
 	     explicitize loc [] (extern inctx scopes vars f)

@@ -182,11 +182,11 @@ let inductive_message inds =
 type opacity = bool
 
 type discharge_operation = 
-  | Variable of identifier * section_variable_entry * local_kind * bool *
-      Dischargedhypsmap.discharged_hyps
-  | Constant of identifier * recipe * global_kind * constant * bool * 
-      Dischargedhypsmap.discharged_hyps
-  | Inductive of mutual_inductive_entry * bool *
+  | Variable of identifier * section_variable_entry * local_kind * 
+      implicits_flags * Dischargedhypsmap.discharged_hyps
+  | Constant of identifier * recipe * global_kind * constant * 
+      implicits_flags * Dischargedhypsmap.discharged_hyps
+  | Inductive of mutual_inductive_entry * implicits_flags *
       Dischargedhypsmap.discharged_hyps
   | Class of cl_typ * cl_info_typ
   | Struc of inductive * (unit -> struc_typ)
@@ -234,7 +234,8 @@ let process_object oldenv olddir full_olddir newdir
 	let kn = Nametab.locate_mind (qualid_of_sp sp) in
 	let mib = Environ.lookup_mind kn oldenv in
 	let newkn = recalc_kn newdir kn in
-	let imp = is_implicit_args() (* CHANGE *) in
+	let imp = is_implicit_inductive_definition kn in
+(*	let imp = is_implicit_args (* CHANGE *) in*)
 	let (mie,indmods,cstrmods,discharged_hyps0) = 
 	  process_inductive full_olddir kn newkn oldenv (ids_to_discard,work_alist) mib in
         (* let's add the new discharged hypothesis to those already discharged*)

@@ -140,13 +140,16 @@ let rec vernac_com interpfun (loc,com) =
              Options.v7_only := true;
              if !translate_file then msgnl (pr_comments !comments)
          | _ ->
+	     let f = match com with (* Pour gérer les implicites *)
+	       | VernacInductive _ -> States.with_heavy_rollback
+	       | _ -> fun f -> f in
              if !translate_file then
-	       msgnl
-                 (pr_comments !comments ++ hov 0 (pr_vernac com) ++ sep_end) 
+               msgnl
+		 (pr_comments !comments ++ hov 0 (f pr_vernac com) ++ sep_end)
              else
 	       msgnl
                  (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++
-                         pr_vernac com ++ sep_end)));
+                         f pr_vernac com ++ sep_end)));
        comments := None;
        Format.set_formatter_out_channel stdout);
     interp com;

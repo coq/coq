@@ -208,7 +208,7 @@ let interp_mutual lparams lnamearconstrs finite =
 	 let env' = Termops.push_rel_assum (Name recname,fullarity) env in
 	 let impls = 
 	   if Impargs.is_implicit_args()
-	   then Impargs.compute_implicits env_params fullarity
+	   then Impargs.compute_implicits false env_params fullarity
 	   else [] in
 	 (env', (recname,impls)::ind_impls, (arity::arl)))
       (env0, [], []) lnamearconstrs

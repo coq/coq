@@ -102,7 +102,7 @@ let (in_variable, out_variable) =
 
 let declare_variable_common id obj =
   let oname = add_leaf id (in_variable (id,obj)) in
-  if is_implicit_args() then declare_var_implicits id;
+  declare_var_implicits id;
   oname
 
 (* for initial declaration *)
@@ -186,7 +186,7 @@ let hcons_constant_declaration = function
 let declare_constant id (cd,kind) =
   let cd = hcons_constant_declaration cd in
   let (sp,kn as oname) = add_leaf id (in_constant (ConstantEntry cd,kind)) in
-  if is_implicit_args() then declare_constant_implicits kn;
+  declare_constant_implicits kn;
   Dischargedhypsmap.set_discharged_hyps sp [] ;
   !xml_declare_constant oname;
   oname
@@ -194,7 +194,7 @@ let declare_constant id (cd,kind) =
 (* when coming from discharge *)
 let redeclare_constant id discharged_hyps (cd,kind) =
   let _,kn as oname = add_leaf id (in_constant (GlobalRecipe cd,kind)) in
-  if is_implicit_args() then declare_constant_implicits kn;
+  declare_constant_implicits kn;
   Dischargedhypsmap.set_discharged_hyps (fst oname) discharged_hyps
 
 (* Inductives. *)
@@ -280,7 +280,7 @@ let declare_inductive_common mie =
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
   let oname = add_leaf id (in_inductive mie) in
-  if is_implicit_args() then declare_mib_implicits (snd oname);
+  declare_mib_implicits (snd oname);
   oname
 
 (* for initial declaration *)

@@ -83,11 +83,11 @@ let implicit_args_id id l =
 let implicit_args_msg sp mipv = 
   (prvecti
        (fun i mip -> 
-	  let imps = inductive_implicits_list (sp,i) in
+	  let imps = implicits_of_global (IndRef (sp,i)) in
           ((implicit_args_id mip.mind_typename imps) ++
              prvecti 
 	       (fun j idc ->
-		  let imps = constructor_implicits_list ((sp,i),succ j) in
+		  let imps = implicits_of_global (ConstructRef ((sp,i),j+1)) in
                   (implicit_args_id idc imps))
                mip.mind_consnames 
 ))
@@ -153,7 +153,7 @@ let print_mutual sp =
 
 let print_section_variable sp =
   let d = get_variable sp in
-  let l = implicits_of_var sp in
+  let l = implicits_of_global (VarRef sp) in
   (print_named_decl d ++ print_impl_args l)
 
 let print_body = function
@@ -167,7 +167,7 @@ let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
   let typ = cb.const_type in
-  let impls = constant_implicits_list sp in
+  let impls = implicits_of_global (ConstRef sp) in
   hov 0 ((match val_0 with 
 		| None -> 
 		    (str"*** [ " ++ 

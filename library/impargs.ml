@@ -26,22 +26,62 @@ let implicit_args = ref false
 let strict_implicit_args = ref false
 let contextual_implicit_args = ref false
 
-let make_implicit_args flag = implicit_args := flag
-let is_implicit_args () = !implicit_args
+let implicit_args_out = ref false
+let strict_implicit_args_out = ref true
+let contextual_implicit_args_out = ref false
 
-let with_implicits b f x =
-  let oimplicit = !implicit_args in
+let make_implicit_args flag =
+  implicit_args := flag;
+  if not !Options.v7_only then implicit_args_out := flag
+
+let make_strict_implicit_args flag =
+  strict_implicit_args := flag;
+  if not !Options.v7_only then strict_implicit_args_out := flag
+
+let make_contextual_implicit_args flag =
+  contextual_implicit_args := flag;
+  if not !Options.v7_only then contextual_implicit_args_out := flag
+
+let is_implicit_args () = !implicit_args
+let is_implicit_args_out () = !implicit_args_out
+let is_strict_implicit_args () = !strict_implicit_args
+let is_contextual_implicit_args () = !contextual_implicit_args
+
+type implicits_flags = (bool * bool * bool) * (bool * bool * bool)
+
+let with_implicits ((a,b,c),(d,e,g)) f x =
+  let oa = !implicit_args in
+  let ob = !strict_implicit_args in
+  let oc = !contextual_implicit_args in
+  let od = !implicit_args_out in
+  let oe = !strict_implicit_args_out in
+  let og = !contextual_implicit_args_out in
   try 
-    implicit_args := b;
+    implicit_args := a;
+    strict_implicit_args := b;
+    contextual_implicit_args := c;
+    implicit_args_out := d;
+    strict_implicit_args := e;
+    contextual_implicit_args_out := g;
     let rslt = f x in 
-    implicit_args := oimplicit;
+    implicit_args := oa;
+    strict_implicit_args := ob;
+    contextual_implicit_args := oc;
+    implicit_args_out := od;
+    strict_implicit_args_out := oe;
+    contextual_implicit_args_out := og;
     rslt
   with e -> begin
-    implicit_args := oimplicit;
+    implicit_args := oa;
+    strict_implicit_args := ob;
+    contextual_implicit_args := oc;
+    implicit_args_out := od;
+    strict_implicit_args_out := oe;
+    contextual_implicit_args_out := og;
     raise e
   end
 
-let implicitly f = with_implicits true f
+let implicitly f = with_implicits ((false,false,false),(false,false,false)) f
 
 (*s Computation of implicit arguments *)
 
@@ -166,7 +206,7 @@ let add_free_rels_until strict bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let compute_implicits env t =
+let compute_implicits output env t =
   let rec aux env n t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
@@ -175,8 +215,13 @@ let compute_implicits env t =
             (aux (push_rel (x,None,a) env) (n+1) b)
       | _ -> 
 	  let v = Array.create n None in
-	  if !contextual_implicit_args then
-	    add_free_rels_until !strict_implicit_args n env t Conclusion v
+	  if (not output & !contextual_implicit_args) or
+	     (output & !contextual_implicit_args_out)
+	  then
+	    add_free_rels_until 
+	      (if output then !strict_implicit_args_out 
+	       else !strict_implicit_args)
+	      n env t Conclusion v
 	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
@@ -209,19 +254,32 @@ let positions_of_implicits =
     | None::l -> aux (n+1) l
   in aux 1
 
+type strict_flag = bool     (* true = strict *)
+type contextual_flag = bool (* true = contextual *)
+
 type implicits =
-  | Impl_auto of implicits_list
+  | Impl_auto of strict_flag * contextual_flag * implicits_list
   | Impl_manual of implicits_list
   | No_impl
 
-let using_implicits = function
-  | No_impl -> with_implicits false
-  | _ -> with_implicits true
-
-let auto_implicits env ty = Impl_auto (compute_implicits env ty)
+let auto_implicits env ty =
+  let impl = 
+    if !implicit_args then
+      let l = compute_implicits false env ty in
+      Impl_auto (!strict_implicit_args,!contextual_implicit_args,l)
+    else
+      No_impl in
+  if Options.do_translate () then
+    impl, 
+    if !implicit_args_out then 
+      (let l = compute_implicits false env ty in
+      Impl_auto (!strict_implicit_args_out,!contextual_implicit_args_out,l))
+    else No_impl
+  else 
+    impl, impl
 
 let list_of_implicits = function 
-  | Impl_auto l -> l
+  | Impl_auto (_,_,l) -> l
   | Impl_manual l -> l
   | No_impl -> []
 
@@ -234,31 +292,8 @@ let compute_constant_implicits kn =
   let cb = lookup_constant kn env in
   auto_implicits env (body_of_type cb.const_type)
 
-let cache_constant_implicits (_,(kn,imps)) = 
-  constants_table := KNmap.add kn imps !constants_table
-
-let subst_constant_implicits (_,subst,(kn,imps as obj)) = 
-  let kn' = subst_kn subst kn in
-    if kn' == kn then obj else
-      kn',imps
-
-let (in_constant_implicits, _) =
-  declare_object {(default_object "CONSTANT-IMPLICITS") with
-    cache_function = cache_constant_implicits;
-    load_function = (fun _ -> cache_constant_implicits);
-    subst_function = subst_constant_implicits;
-    classify_function = (fun (_,x) -> Substitute x);
-    export_function = (fun x -> Some x) }
-
-let declare_constant_implicits kn =
-  let imps = compute_constant_implicits kn in
-  add_anonymous_leaf (in_constant_implicits (kn,imps))
-
 let constant_implicits sp =
-  try KNmap.find sp !constants_table with Not_found -> No_impl
-
-let constant_implicits_list sp =
-  list_of_implicits (constant_implicits sp)
+  try KNmap.find sp !constants_table with Not_found -> No_impl,No_impl
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
@@ -287,40 +322,6 @@ let inductives_table = ref Indmap.empty
 
 let constructors_table = ref Constrmap.empty
 
-let cache_inductive_implicits (_,(indp,imps)) =
-  inductives_table := Indmap.add indp imps !inductives_table
-
-let subst_inductive_implicits (_,subst,((kn,i),imps as obj)) = 
-  let kn' = subst_kn subst kn in
-    if kn' == kn then obj else
-      (kn',i),imps
-
-let (in_inductive_implicits, _) =
-  declare_object {(default_object "INDUCTIVE-IMPLICITS") with 
-    cache_function = cache_inductive_implicits;
-    load_function = (fun _ -> cache_inductive_implicits);
-    subst_function = subst_inductive_implicits;
-    classify_function = (fun (_,x) -> Substitute x);
-    export_function = (fun x -> Some x)  }
-
-let cache_constructor_implicits (_,(consp,imps)) =
-  constructors_table := Constrmap.add consp imps !constructors_table
-
-let subst_constructor_implicits (_,subst,(((kn,i),j),imps as obj)) = 
-  let kn' = subst_kn subst kn in
-    if kn' == kn then obj else
-      ((kn',i),j),imps
-
-
-let (in_constructor_implicits, _) =
-  declare_object {(default_object "CONSTRUCTOR-IMPLICITS") with 
-    cache_function = cache_constructor_implicits;
-    load_function = (fun _ -> cache_constructor_implicits);
-    subst_function = subst_constructor_implicits;
-    classify_function = (fun (_,x) -> Substitute x);
-    export_function = (fun x -> Some x)  }
-
-
 let compute_mib_implicits kn =
   let env = Global.env () in
   let mib = lookup_mind kn env in
@@ -330,53 +331,19 @@ let compute_mib_implicits kn =
         (fun mip -> (Name mip.mind_typename, None, mip.mind_user_arity))
         mib.mind_packets) in
   let env_ar = push_rel_context ar env in
-  let imps_one_inductive mip =
-    (auto_implicits env (body_of_type mip.mind_user_arity),
-     Array.map (fun c -> auto_implicits env_ar (body_of_type c))
+  let imps_one_inductive i mip =
+    let ind = (kn,i) in
+    ((IndRef ind,auto_implicits env (body_of_type mip.mind_user_arity)),
+     Array.mapi (fun j c -> (ConstructRef (ind,j+1),auto_implicits env_ar c))
        mip.mind_user_lc)
   in
-  Array.map imps_one_inductive mib.mind_packets
-
-let cache_mib_implicits (_,(kn,mibimps)) =
-  Array.iteri
-    (fun i (imps,v) ->
-       let indp = (kn,i) in
-       inductives_table := Indmap.add indp imps !inductives_table;
-       Array.iteri 
-	 (fun j imps ->
-	    constructors_table := 
-	      Constrmap.add (indp,succ j) imps !constructors_table) v)
-    mibimps
-
-let subst_mib_implicits (_,subst,(kn,mibimps as obj)) = 
-  let kn' = subst_kn subst kn in
-    if kn' == kn then obj else
-      kn',mibimps
-
-let (in_mib_implicits, _) =
-  declare_object {(default_object "MIB-IMPLICITS") with 
-    cache_function = cache_mib_implicits;
-    load_function = (fun _ -> cache_mib_implicits);
-    subst_function = subst_mib_implicits;
-    classify_function = (fun (_,x) -> Substitute x);
-    export_function = (fun x -> Some x)  }
- 
-let declare_mib_implicits kn =
-  let imps = compute_mib_implicits kn in
-  add_anonymous_leaf (in_mib_implicits (kn,imps))
+  Array.mapi imps_one_inductive mib.mind_packets
 
 let inductive_implicits indp =
-  try Indmap.find indp !inductives_table with Not_found -> No_impl
+  try Indmap.find indp !inductives_table with Not_found -> No_impl,No_impl
 
 let constructor_implicits consp =
-  try Constrmap.find consp !constructors_table with Not_found -> No_impl
-
-let constructor_implicits_list constr_sp = 
-  list_of_implicits (constructor_implicits constr_sp)
-
-let inductive_implicits_list ind_sp =
-  list_of_implicits (inductive_implicits ind_sp)
-
+  try Constrmap.find consp !constructors_table with Not_found -> No_impl,No_impl
 (*s Variables. *)
 
 let var_table = ref Idmap.empty
@@ -386,45 +353,97 @@ let compute_var_implicits id =
   let (_,_,ty) = lookup_named id env in
   auto_implicits env ty
 
-let cache_var_implicits (_,(id,imps)) =
-  var_table := Idmap.add id imps !var_table
+let var_implicits id = 
+  try Idmap.find id !var_table with Not_found -> No_impl,No_impl
 
-let (in_var_implicits, _) =
-  declare_object {(default_object "VARIABLE-IMPLICITS") with 
-    cache_function = cache_var_implicits;
-    load_function = (fun _ -> cache_var_implicits);
-    export_function = (fun x -> Some x)  }
+(* Caching implicits *)
 
+let cache_implicits_decl (r,imps) =
+  match r with
+  | VarRef id -> 
+      var_table := Idmap.add id imps !var_table
+  | ConstRef kn ->
+      constants_table := KNmap.add kn imps !constants_table
+  | IndRef indp ->
+      inductives_table := Indmap.add indp imps !inductives_table;
+  | ConstructRef consp -> 
+      constructors_table := Constrmap.add consp imps !constructors_table
 
+let cache_implicits (_,l) = List.iter cache_implicits_decl l
+
+let subst_implicits_decl subst (r,imps as o) =
+  let r' = subst_global subst r in if r==r' then o else (r',imps)
+
+let subst_implicits (_,subst,l) =
+  list_smartmap (subst_implicits_decl subst) l
+
+let (in_implicits, _) =
+  declare_object {(default_object "IMPLICITS") with 
+    cache_function = cache_implicits;
+    load_function = (fun _ -> cache_implicits);
+    subst_function = subst_implicits;
+    classify_function = (fun (_,x) -> Substitute x);
+    export_function = (fun x -> Some x) }
+
+(* Implicits of a global reference. *)
+
+let compute_global_implicits = function
+  | VarRef id -> compute_var_implicits id
+  | ConstRef kn -> compute_constant_implicits kn
+  | IndRef (kn,i) -> 
+      let ((_,imps),_) = (compute_mib_implicits kn).(i) in imps
+  | ConstructRef ((kn,i),j) -> 
+      let (_,cimps) = (compute_mib_implicits kn).(i) in snd cimps.(j-1)
+
+let declare_implicits_gen r = 
+  add_anonymous_leaf (in_implicits [r,compute_global_implicits r])
+
+let declare_implicits r =
+  with_implicits
+    ((true,!strict_implicit_args,!contextual_implicit_args),
+     (true,!strict_implicit_args_out,!contextual_implicit_args_out))
+    declare_implicits_gen r
 
 let declare_var_implicits id =
-  let imps = compute_var_implicits id in
-  add_anonymous_leaf (in_var_implicits (id,imps))
+  if !implicit_args or !implicit_args_out then
+    declare_implicits_gen (VarRef id)
 
-let implicits_of_var id =
-  list_of_implicits (try Idmap.find id !var_table with Not_found -> No_impl)
+(* For translator *)
+let set_var_implicits id impls = 
+  add_anonymous_leaf
+    (in_implicits 
+      [VarRef id,
+       (Impl_auto 
+	(!strict_implicit_args,!contextual_implicit_args,impls),
+       Impl_auto 
+	(!strict_implicit_args_out,!contextual_implicit_args_out,impls))])
 
-(*s Implicits of a global reference. *)
+let declare_constant_implicits kn =
+  if !implicit_args or !implicit_args_out then
+    declare_implicits_gen (ConstRef kn)
 
-let declare_implicits = function
-  | VarRef id -> 
-      declare_var_implicits id
-  | ConstRef kn -> 
-      declare_constant_implicits kn
-  | IndRef ((kn,i) as indp) -> 
-      let mib_imps = compute_mib_implicits kn in
-      let imps = fst mib_imps.(i) in
-      add_anonymous_leaf (in_inductive_implicits (indp, imps))
-  | ConstructRef (((kn,i),j) as consp) -> 
-      let mib_imps = compute_mib_implicits kn in
-      let imps = (snd mib_imps.(i)).(j-1) in
-      add_anonymous_leaf (in_constructor_implicits (consp, imps))
+let declare_mib_implicits kn =
+  if !implicit_args or !implicit_args_out then
+  let imps = compute_mib_implicits kn in
+  let imps = array_map_to_list
+    (fun (ind,cstrs) -> ind::(Array.to_list cstrs)) imps in
+  add_anonymous_leaf (in_implicits (List.flatten imps))
 
-let context_of_global_reference = function
-  | VarRef sp -> []
-  | ConstRef sp -> (Global.lookup_constant sp).const_hyps
-  | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
-  | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
+let implicits_of_global_gen = function
+  | VarRef id -> var_implicits id
+  | ConstRef sp -> constant_implicits sp
+  | IndRef isp -> inductive_implicits isp
+  | ConstructRef csp ->	constructor_implicits csp
+
+let implicits_of_global r =
+  let (imp_in,imp_out) = implicits_of_global_gen r in
+  list_of_implicits imp_in
+
+let implicits_of_global_out r =
+  let (imp_in,imp_out) = implicits_of_global_gen r in
+  list_of_implicits imp_out
+
+(* Declare manual implicits *)
 
 let check_range n i =
   if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
@@ -438,37 +457,31 @@ let declare_manual_implicits r l =
   let rec aux k = function
     | [] -> if k>n then [] else None :: aux (k+1) []
     | p::l as l' ->
-        if k=p then Some Manual :: aux (k+1) l else None :: aux (k+1) l'
-  in let l = Impl_manual (aux 1 l) in
-  match r with
-  | VarRef id -> 
-      add_anonymous_leaf (in_var_implicits (id,l))
-  | ConstRef sp ->
-      add_anonymous_leaf (in_constant_implicits (sp,l))
-  | IndRef indp ->
-      add_anonymous_leaf (in_inductive_implicits (indp,l))
-  | ConstructRef consp -> 
-      add_anonymous_leaf (in_constructor_implicits (consp,l))
+        if k=p then Some Manual :: aux (k+1) l else None :: aux (k+1) l' in
+  let l = Impl_manual (aux 1 l) in
+  let l = l,l in
+  add_anonymous_leaf (in_implicits [r,l])
 
-(*s Tests if declared implicit *)
+(* Tests if declared implicit *)
 
+let test = function
+  | No_impl | Impl_manual _ -> false,false,false
+  | Impl_auto (s,c,_) -> true,s,c
+
+let test_if_implicit find a =
+  try let b,c = find a in test b, test c
+  with Not_found -> (false,false,false),(false,false,false)
+    
 let is_implicit_constant sp =
-  try let _ = KNmap.find sp !constants_table in true with Not_found -> false
+  test_if_implicit (KNmap.find sp) !constants_table
 
 let is_implicit_inductive_definition indp =
-  try let _ = Indmap.find indp !inductives_table in true 
-  with Not_found -> false
+  test_if_implicit (Indmap.find (indp,0)) !inductives_table
 
 let is_implicit_var id =
-  try let _ = Idmap.find id !var_table in true with Not_found -> false
+  test_if_implicit (Idmap.find id) !var_table
 
-let implicits_of_global = function
-  | VarRef id -> implicits_of_var id
-  | ConstRef sp -> list_of_implicits (constant_implicits sp)
-  | IndRef isp -> list_of_implicits (inductive_implicits isp)
-  | ConstructRef csp ->	list_of_implicits (constructor_implicits csp)
-
-(*s Registration as global tables and rollback. *)
+(*s Registration as global tables *)
 
 type frozen_t = implicits KNmap.t 
               * implicits Indmap.t 
@@ -497,7 +510,3 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
       Summary.survive_section = false }
-
-let rollback f x =
-  let fs = freeze () in
-  try f x with e -> begin unfreeze fs; raise e end

@@ -744,16 +744,16 @@ let _ =
     { optsync  = true;
       optname  = "strict implicits";
       optkey   = (SecondaryTable ("Strict","Implicits"));
-      optread  = (fun () -> !Impargs.strict_implicit_args);
-      optwrite = (fun b ->  Impargs.strict_implicit_args := b) }
+      optread  = Impargs.is_strict_implicit_args;
+      optwrite = Impargs.make_strict_implicit_args }
 
 let _ =
   declare_bool_option 
     { optsync  = true;
       optname  = "contextual implicits";
       optkey   = (SecondaryTable ("Contextual","Implicits"));
-      optread  = (fun () -> !Impargs.contextual_implicit_args);
-      optwrite = (fun b ->  Impargs.contextual_implicit_args := b) }
+      optread  = Impargs.is_contextual_implicit_args;
+      optwrite = Impargs.make_contextual_implicit_args }
 
 let _ =
   declare_bool_option 

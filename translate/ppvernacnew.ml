@@ -502,6 +502,30 @@ let rec pr_vernac = function
       hov 2
         (pr_assumption_token stre ++ spc() ++ pr_ne_params_list pr_lconstr l)
   | VernacInductive (f,l) ->
+
+      (* Copie simplifiée de command.ml pour recalculer les implicites *)
+      let lparams = match l with [] -> assert false | (_,la,_,_)::_ -> la in
+      let nparams = List.length lparams
+      and sigma = Evd.empty 
+      and env0 = Global.env() in
+      let (env_params,params) =
+	List.fold_left
+	  (fun (env,params) (id,t) ->
+	    let p = Constrintern.interp_binder sigma env (Name id) t in
+	    (Termops.push_rel_assum (Name id,p) env,
+	    (Name id,None,p)::params))
+	  (env0,[]) lparams in
+      List.iter
+	(fun (recname, _,arityc,_) ->
+	  let arity = Constrintern.interp_type sigma env_params arityc in
+	  let fullarity =
+            Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params) in
+	  if Impargs.is_implicit_args_out()
+	  then
+	    Impargs.set_var_implicits recname
+	      (Impargs.compute_implicits false env_params fullarity)) l;
+      (* Fin calcul implicites *)
+
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_id id ++ str" " ++
                (if coe then str":>" else str":") ++
@@ -514,10 +538,26 @@ let rec pr_vernac = function
       let pr_oneind (id,indpar,s,lc) =
         pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
         pr_lconstr s ++ str" :=" ++ pr_constructor_list lc in
+      let p = prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l in
       hov 1
-        ((if f then str"Inductive" else str"CoInductive") ++ spc() ++
-        prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l)
+        ((if f then str"Inductive" else str"CoInductive") ++ spc() ++ p)
+
   | VernacFixpoint recs ->
+
+      (* Copie simplifiée de command.ml pour recalculer les implicites *)
+      let sigma = Evd.empty
+      and env0 = Global.env() in
+      let fs = States.freeze() in
+      (try 
+	List.iter
+          (fun (recname,_,arityc,_) -> 
+            let arity = Constrintern.interp_type sigma env0 arityc in
+            let _ = Declare.declare_variable recname
+	      (Lib.cwd(),Declare.SectionLocalAssum arity, Decl_kinds.IsAssumption Decl_kinds.Definitional) in ())
+          recs
+      with e ->
+	States.unfreeze fs; raise e);
+
       let pr_onerec = function
         | (id,n,type_0,def0) ->
             let (bl,def,type_) = extract_def_binders def0 type_0 in
@@ -534,8 +574,10 @@ let rec pr_vernac = function
             pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
             ++ str" :=" ++ brk(1,1) ++ pr_lconstr def in
-      hov 1 (str"Fixpoint" ++ spc() ++
-      prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)  
+      let p = prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs in
+      States.unfreeze fs;
+      hov 1 (str"Fixpoint" ++ spc() ++ p)
+
   | VernacCoFixpoint corecs ->
       let pr_onecorec (id,c,def) =
         let (bl,def,c) = extract_def_binders def c in
