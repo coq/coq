@@ -13,11 +13,11 @@ open Tactic
 
 GEXTEND Gram
   identarg:
-    [ [ id = LIDENT -> <:ast< ($VAR $id) >> ] ]
+    [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
   ;
   numarg:
     [ [ n = Prim.number -> n
-      | "-"; n = Prim.number -> CoqAst.Num (Ast.loc n, ( - Ast.num_of_ast n))
+      | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
       ] ]
   ;
   comarg:
@@ -40,9 +40,9 @@ GEXTEND Gram
     [ [ l = LIST1 pattern_occ -> l ] ]
   ;
   pattern_occ_hyp:
-    [ [ nl = ne_num_list; LIDENT "Goal" -> <:ast<(CCLPATTERN ($LIST $nl))>>
+    [ [ nl = ne_num_list; IDENT "Goal" -> <:ast<(CCLPATTERN ($LIST $nl))>>
       | nl = ne_num_list; id = identarg -> <:ast<(HYPPATTERN $id ($LIST $nl))>>
-      | LIDENT "Goal" -> <:ast< (CCLPATTERN) >>
+      | IDENT "Goal" -> <:ast< (CCLPATTERN) >>
       | id = identarg -> <:ast< (HYPPATTERN $id) >> ] ]
   ;
   ne_pattern_hyp_list:
@@ -82,7 +82,7 @@ GEXTEND Gram
   binding_list:
     [ [ c1 = comarg; ":="; c2 = comarg; bl = simple_binding_list ->
           let id = match c1 with 
-            | CoqAst.Node(_,"COMMAND",[c]) -> coerce_to_var "c1" c
+            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var "c1" c
             | _ -> assert false
           in <:ast<(BINDINGS (BINDING ($VAR $id) $c2) ($LIST $bl))>>
       | n = numarg; ":="; c = comarg; bl = simple_binding_list ->
@@ -112,25 +112,25 @@ GEXTEND Gram
       | p = unfold_occ -> [p] ] ]
   ;
   red_flag:
-    [ [ LIDENT "Beta" -> <:ast< (Beta) >>
-      | LIDENT "Delta" -> <:ast< (Delta) >>
-      | LIDENT "Iota" -> <:ast< (Iota) >>
+    [ [ IDENT "Beta" -> <:ast< (Beta) >>
+      | IDENT "Delta" -> <:ast< (Delta) >>
+      | IDENT "Iota" -> <:ast< (Iota) >>
       | "["; idl = ne_identarg_list; "]" -> <:ast< (Unf ($LIST idl)) >>
       | "-"; "["; idl = ne_identarg_list; "]" ->
           <:ast< (UnfBut ($LIST idl)) >> ] ]
   ;
   red_tactic:
-    [ [ LIDENT "Red" -> <:ast< (Red) >>
-      | LIDENT "Hnf" -> <:ast< (Hnf) >>
-      | LIDENT "Simpl" -> <:ast< (Simpl) >>
-      | LIDENT "Cbv"; s = LIST1 red_flag -> <:ast< (Cbv ($LIST s)) >>
-      | LIDENT "Lazy"; s = LIST1 red_flag -> <:ast< (Lazy ($LIST s)) >>
-      | LIDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Iota)) >>
-      | LIDENT "Unfold"; ul = ne_unfold_occ_list ->
+    [ [ IDENT "Red" -> <:ast< (Red) >>
+      | IDENT "Hnf" -> <:ast< (Hnf) >>
+      | IDENT "Simpl" -> <:ast< (Simpl) >>
+      | IDENT "Cbv"; s = LIST1 red_flag -> <:ast< (Cbv ($LIST s)) >>
+      | IDENT "Lazy"; s = LIST1 red_flag -> <:ast< (Lazy ($LIST s)) >>
+      | IDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Iota)) >>
+      | IDENT "Unfold"; ul = ne_unfold_occ_list ->
           <:ast< (Unfold ($LIST ul)) >>
-      | LIDENT "Fold"; cl = comarg_list -> <:ast< (Fold ($LIST cl)) >>
-      | LIDENT "Change"; c = comarg -> <:ast< (Change $c) >>
-      | LIDENT "Pattern"; pl = ne_pattern_list ->
+      | IDENT "Fold"; cl = comarg_list -> <:ast< (Fold ($LIST cl)) >>
+      | IDENT "Change"; c = comarg -> <:ast< (Change $c) >>
+      | IDENT "Pattern"; pl = ne_pattern_list ->
           <:ast< (Pattern ($LIST $pl)) >> ] ]
   ;
   clausearg:
@@ -139,20 +139,20 @@ GEXTEND Gram
   ;
   autoarg_depth:
   [ [ n = numarg -> <:ast< $n>>
-     | -> CoqAst.Str(loc,"NoAutoArg") ] ]
+     | -> Coqast.Str(loc,"NoAutoArg") ] ]
   ;
   autoarg_adding:
-  [ [ LIDENT "Adding" ; "["; l = ne_identarg_list; "]" -> 
+  [ [ IDENT "Adding" ; "["; l = ne_identarg_list; "]" -> 
         <:ast< (CLAUSE ($LIST $l))>>
       | -> <:ast< (CLAUSE) >> ] ]
   ;
   autoarg_destructing:
-  [ [ LIDENT "Destructing" -> CoqAst.Str(loc,"Destructing")
-      | -> CoqAst.Str(loc,"NoAutoArg") ] ]
+  [ [ IDENT "Destructing" -> Coqast.Str(loc,"Destructing")
+      | -> Coqast.Str(loc,"NoAutoArg") ] ]
   ;
   autoarg_usingTDB:
-  [ [ "Using"; "TDB"  ->  CoqAst.Str(loc,"UsingTDB")
-      | -> CoqAst.Str(loc,"NoAutoArg")  ] ]
+  [ [ "Using"; "TDB"  ->  Coqast.Str(loc,"UsingTDB")
+      | -> Coqast.Str(loc,"NoAutoArg")  ] ]
   ;
   fixdecl:
     [ [ id = identarg; n = numarg; ":"; c = comarg; fd = fixdecl ->
@@ -185,126 +185,126 @@ GEXTEND Gram
       | st = simple_tactic -> st ] ]
   ;
   simple_tactic:
-    [ [ LIDENT "Fix"; n = numarg -> <:ast< (Fix $n) >>
-      | LIDENT "Fix"; id = identarg; n = numarg -> <:ast< (Fix $id $n) >>
-      | LIDENT "Fix"; id = identarg; n = numarg; "with"; fd = fixdecl ->
+    [ [ IDENT "Fix"; n = numarg -> <:ast< (Fix $n) >>
+      | IDENT "Fix"; id = identarg; n = numarg -> <:ast< (Fix $id $n) >>
+      | IDENT "Fix"; id = identarg; n = numarg; "with"; fd = fixdecl ->
           <:ast< (Fix $id $n ($LIST $fd)) >>
-      | LIDENT "Cofix" -> <:ast< (Cofix) >>
-      | LIDENT "Cofix"; id = identarg -> <:ast< (Cofix $id) >>
-      | LIDENT "Cofix"; id = identarg; "with"; fd = cofixdecl ->
+      | IDENT "Cofix" -> <:ast< (Cofix) >>
+      | IDENT "Cofix"; id = identarg -> <:ast< (Cofix $id) >>
+      | IDENT "Cofix"; id = identarg; "with"; fd = cofixdecl ->
           <:ast< (Cofix $id ($LIST $fd)) >>
-      | LIDENT "Induction"; s = identarg -> <:ast< (Induction $s) >>
-      | LIDENT "Induction"; n = numarg -> <:ast< (Induction $n) >>
-      | LIDENT "Double"; LIDENT "Induction"; i = numarg; j = numarg ->
+      | IDENT "Induction"; s = identarg -> <:ast< (Induction $s) >>
+      | IDENT "Induction"; n = numarg -> <:ast< (Induction $n) >>
+      | IDENT "Double"; IDENT "Induction"; i = numarg; j = numarg ->
           <:ast< (DoubleInd $i $j) >>
-      | LIDENT "Trivial" -> <:ast<(Trivial)>>
-      | LIDENT "Trivial"; "with"; lid = ne_identarg_list -> 
+      | IDENT "Trivial" -> <:ast<(Trivial)>>
+      | IDENT "Trivial"; "with"; lid = ne_identarg_list -> 
 	  <:ast<(Trivial ($LIST $lid))>>
-      | LIDENT "Trivial"; "with"; "*" ->  <:ast<(Trivial "*")>>
-      | LIDENT "Auto"; n = numarg -> <:ast< (Auto $n) >>
-      | LIDENT "Auto" -> <:ast< (Auto) >>
-      | LIDENT "Auto"; n = numarg; "with";
+      | IDENT "Trivial"; "with"; "*" ->  <:ast<(Trivial "*")>>
+      | IDENT "Auto"; n = numarg -> <:ast< (Auto $n) >>
+      | IDENT "Auto" -> <:ast< (Auto) >>
+      | IDENT "Auto"; n = numarg; "with";
 	  lid = ne_identarg_list -> <:ast< (Auto $n ($LIST $lid)) >>
-      | LIDENT "Auto"; "with";
+      | IDENT "Auto"; "with";
 	  lid = ne_identarg_list -> <:ast< (Auto ($LIST $lid)) >>
-      | LIDENT "Auto"; n = numarg; "with"; "*" ->
+      | IDENT "Auto"; n = numarg; "with"; "*" ->
 	  <:ast< (Auto $n "*") >>
-      | LIDENT "Auto"; "with"; "*" -> <:ast< (Auto "*") >>
+      | IDENT "Auto"; "with"; "*" -> <:ast< (Auto "*") >>
      
-      | LIDENT "AutoTDB"; n = numarg -> <:ast< (AutoTDB $n) >>
-      | LIDENT "AutoTDB" -> <:ast< (AutoTDB) >>
-      | LIDENT "DHyp";  id=identarg  -> <:ast< (DHyp  $id)>>
-      | LIDENT "CDHyp"; id=identarg -> <:ast<  (CDHyp $id)>>
-      | LIDENT "DConcl"  -> <:ast< (DConcl)>>
-      | LIDENT "SuperAuto"; 
+      | IDENT "AutoTDB"; n = numarg -> <:ast< (AutoTDB $n) >>
+      | IDENT "AutoTDB" -> <:ast< (AutoTDB) >>
+      | IDENT "DHyp";  id=identarg  -> <:ast< (DHyp  $id)>>
+      | IDENT "CDHyp"; id=identarg -> <:ast<  (CDHyp $id)>>
+      | IDENT "DConcl"  -> <:ast< (DConcl)>>
+      | IDENT "SuperAuto"; 
                        a0 = autoarg_depth;
                        a1 = autoarg_adding; 
                        a2 = autoarg_destructing; 
                        a3 = autoarg_usingTDB -> 
                    <:ast< (SuperAuto $a0 $a1 $a2 $a3) >>
-      | LIDENT "Auto"; n = numarg; LIDENT "Decomp" -> <:ast< (DAuto $n) >>
-      | LIDENT "Auto"; LIDENT "Decomp" -> <:ast< (DAuto) >>
-      | LIDENT "Auto"; n = numarg; LIDENT "Decomp"; p = numarg-> <:ast< (DAuto $n $p) >>
+      | IDENT "Auto"; n = numarg; IDENT "Decomp" -> <:ast< (DAuto $n) >>
+      | IDENT "Auto"; IDENT "Decomp" -> <:ast< (DAuto) >>
+      | IDENT "Auto"; n = numarg; IDENT "Decomp"; p = numarg-> <:ast< (DAuto $n $p) >>
       ]];
     END
 
 GEXTEND Gram
  simple_tactic:
-  [ [  LIDENT "Intros" -> <:ast< (Intros) >>
-      | LIDENT "Intros"; LIDENT "until"; id = identarg 
+  [ [  IDENT "Intros" -> <:ast< (Intros) >>
+      | IDENT "Intros"; IDENT "until"; id = identarg 
                                               -> <:ast< (IntrosUntil $id) >>
-      | LIDENT "Intros"; LIDENT "until"; n = numarg -> <:ast<(IntrosUntil $n)>>
-      | LIDENT "Intros"; pl = one_intropattern -> <:ast< (Intros $pl) >>
-      | LIDENT "Intro"; id = identarg; 
-	  LIDENT "after"; id2 = identarg -> <:ast< (IntroMove $id $id2) >>
-      | LIDENT "Intro";
-	  LIDENT "after"; id2 = identarg -> <:ast< (IntroMove $id2) >>
-      | LIDENT "Intro"; id = identarg -> <:ast< (Intro $id) >>
-      | LIDENT "Intro" -> <:ast< (Intro) >>
-      | LIDENT "Apply"; cl = comarg_binding_list ->
+      | IDENT "Intros"; IDENT "until"; n = numarg -> <:ast<(IntrosUntil $n)>>
+      | IDENT "Intros"; pl = one_intropattern -> <:ast< (Intros $pl) >>
+      | IDENT "Intro"; id = identarg; 
+	  IDENT "after"; id2 = identarg -> <:ast< (IntroMove $id $id2) >>
+      | IDENT "Intro";
+	  IDENT "after"; id2 = identarg -> <:ast< (IntroMove $id2) >>
+      | IDENT "Intro"; id = identarg -> <:ast< (Intro $id) >>
+      | IDENT "Intro" -> <:ast< (Intro) >>
+      | IDENT "Apply"; cl = comarg_binding_list ->
           <:ast< (Apply ($LIST $cl)) >>
-      | LIDENT "Elim"; cl = comarg_binding_list; "using";
+      | IDENT "Elim"; cl = comarg_binding_list; "using";
         el = comarg_binding_list ->
           <:ast< (Elim ($LIST $cl) ($LIST $el)) >>
-      | LIDENT "Elim"; cl = comarg_binding_list ->
+      | IDENT "Elim"; cl = comarg_binding_list ->
           <:ast< (Elim ($LIST $cl)) >>
-      | LIDENT "Assumption" -> <:ast< (Assumption) >>
-      | LIDENT "Contradiction" -> <:ast< (Contradiction) >>
-      | LIDENT "Exact"; c = comarg -> <:ast< (Exact $c) >>
-      | LIDENT "OldElim"; c = comarg -> <:ast< (OldElim $c) >>
-      | LIDENT "ElimType"; c = comarg -> <:ast< (ElimType $c) >>
-      | LIDENT "Case"; cl = comarg_binding_list ->
+      | IDENT "Assumption" -> <:ast< (Assumption) >>
+      | IDENT "Contradiction" -> <:ast< (Contradiction) >>
+      | IDENT "Exact"; c = comarg -> <:ast< (Exact $c) >>
+      | IDENT "OldElim"; c = comarg -> <:ast< (OldElim $c) >>
+      | IDENT "ElimType"; c = comarg -> <:ast< (ElimType $c) >>
+      | IDENT "Case"; cl = comarg_binding_list ->
           <:ast< (Case ($LIST $cl)) >>
-      | LIDENT "CaseType"; c = comarg -> <:ast< (CaseType $c) >>
-      | LIDENT "Destruct"; s = identarg -> <:ast< (Destruct $s) >>
-      | LIDENT "Destruct"; n = numarg -> <:ast< (Destruct $n) >>
-      | LIDENT "Decompose"; LIDENT "Record" ; c = comarg -> 
+      | IDENT "CaseType"; c = comarg -> <:ast< (CaseType $c) >>
+      | IDENT "Destruct"; s = identarg -> <:ast< (Destruct $s) >>
+      | IDENT "Destruct"; n = numarg -> <:ast< (Destruct $n) >>
+      | IDENT "Decompose"; IDENT "Record" ; c = comarg -> 
              <:ast< (DecomposeAnd $c) >>
-      | LIDENT "Decompose"; LIDENT "Sum"; c = comarg -> 
+      | IDENT "Decompose"; IDENT "Sum"; c = comarg -> 
              <:ast< (DecomposeOr $c) >>
-      | LIDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = comarg ->
+      | IDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = comarg ->
           <:ast< (DecomposeThese (CLAUSE ($LIST $l)) $c) >>
-      |	LIDENT "First" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
+      |	IDENT "First" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
           <:ast<(FIRST ($LIST $l))>>
-      |	LIDENT "Solve" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
+      |	IDENT "Solve" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
           <:ast<(TCLSOLVE ($LIST $l))>>
-      | LIDENT "Cut"; c = comarg -> <:ast< (Cut $c) >>
-      | LIDENT "Specialize"; n = numarg; lcb = comarg_binding_list ->
+      | IDENT "Cut"; c = comarg -> <:ast< (Cut $c) >>
+      | IDENT "Specialize"; n = numarg; lcb = comarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
-      | LIDENT "Specialize"; lcb = comarg_binding_list ->
+      | IDENT "Specialize"; lcb = comarg_binding_list ->
           <:ast< (Specialize ($LIST $lcb)) >>
-      | LIDENT "Generalize"; lc = comarg_list ->
+      | IDENT "Generalize"; lc = comarg_list ->
           <:ast< (Generalize ($LIST $lc)) >>
-      | LIDENT "Generalize"; LIDENT "Dependent"; c = comarg ->
+      | IDENT "Generalize"; IDENT "Dependent"; c = comarg ->
           <:ast< (GeneralizeDep $c) >>
-      | LIDENT "Let"; s = identarg; ":="; c = comarg; "in";
+      | IDENT "Let"; s = identarg; ":="; c = comarg; "in";
 	  l = ne_pattern_hyp_list -> 
 	    <:ast< (LetTac $s $c (LETPATTERNS ($LIST $l))) >>
-      | LIDENT "LApply"; c = comarg -> <:ast< (CutAndApply $c) >>
-      | LIDENT "Clear"; l = ne_identarg_list -> 
+      | IDENT "LApply"; c = comarg -> <:ast< (CutAndApply $c) >>
+      | IDENT "Clear"; l = ne_identarg_list -> 
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
-      | LIDENT "Move"; id1 = identarg; LIDENT "after"; id2 = identarg -> 
+      | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
                 <:ast< (MoveDep $id1 $id2) >>
-      | LIDENT "Do"; n = numarg; tc = tactic_com -> <:ast< (DO $n $tc) >>
-      | LIDENT "Try"; tc = tactic_com -> <:ast< (TRY $tc) >>
-      | LIDENT "Info"; tc = tactic_com -> <:ast< (INFO $tc) >>
-      | LIDENT "Repeat"; tc = tactic_com -> <:ast< (REPEAT $tc) >>
-      | LIDENT "Abstract"; tc = tactic_com -> <:ast< (ABSTRACT (TACTIC $tc)) >>
-      | LIDENT "Abstract"; tc = tactic_com; "using";  s=identarg 
+      | IDENT "Do"; n = numarg; tc = tactic_com -> <:ast< (DO $n $tc) >>
+      | IDENT "Try"; tc = tactic_com -> <:ast< (TRY $tc) >>
+      | IDENT "Info"; tc = tactic_com -> <:ast< (INFO $tc) >>
+      | IDENT "Repeat"; tc = tactic_com -> <:ast< (REPEAT $tc) >>
+      | IDENT "Abstract"; tc = tactic_com -> <:ast< (ABSTRACT (TACTIC $tc)) >>
+      | IDENT "Abstract"; tc = tactic_com; "using";  s=identarg 
                                    -> <:ast< (ABSTRACT $s (TACTIC $tc)) >>
-      | LIDENT "Left"; bl = with_binding_list -> <:ast< (Left $bl) >>
-      | LIDENT "Right"; bl = with_binding_list -> <:ast< (Right $bl) >>
-      | LIDENT "Split"; bl = with_binding_list -> <:ast< (Split $bl) >>
-      | LIDENT "Exists"; bl = binding_list -> <:ast< (Split $bl) >>
-      | LIDENT "Constructor"; nbl = numarg_binding_list ->
+      | IDENT "Left"; bl = with_binding_list -> <:ast< (Left $bl) >>
+      | IDENT "Right"; bl = with_binding_list -> <:ast< (Right $bl) >>
+      | IDENT "Split"; bl = with_binding_list -> <:ast< (Split $bl) >>
+      | IDENT "Exists"; bl = binding_list -> <:ast< (Split $bl) >>
+      | IDENT "Constructor"; nbl = numarg_binding_list ->
           <:ast<(Constructor ($LIST $nbl)) >>
-      | LIDENT "Constructor" -> <:ast<(Constructor) >>
-      | LIDENT "Reflexivity" -> <:ast< (Reflexivity) >>
-      | LIDENT "Symmetry" -> <:ast< (Symmetry) >>
-      | LIDENT "Transitivity"; c = comarg -> <:ast< (Transitivity $c) >>
-      | LIDENT "Absurd"; c = comarg -> <:ast< (Absurd $c) >>
-      | LIDENT "Idtac" -> <:ast< (Idtac) >>
-      | LIDENT "Fail" -> <:ast< (Fail) >>
+      | IDENT "Constructor" -> <:ast<(Constructor) >>
+      | IDENT "Reflexivity" -> <:ast< (Reflexivity) >>
+      | IDENT "Symmetry" -> <:ast< (Symmetry) >>
+      | IDENT "Transitivity"; c = comarg -> <:ast< (Transitivity $c) >>
+      | IDENT "Absurd"; c = comarg -> <:ast< (Absurd $c) >>
+      | IDENT "Idtac" -> <:ast< (Idtac) >>
+      | IDENT "Fail" -> <:ast< (Fail) >>
       | "("; tcl = tactic_com_list; ")" -> tcl
       | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >> ]
 

@@ -42,7 +42,9 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 
 LIBRARY=library/libobject.cmo library/summary.cmo
 
-PARSING=parsing/lexer.cmo parsing/pcoq.cmo parsing/ast.cmo
+PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
+	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
+	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
 OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING)
 
@@ -94,19 +96,27 @@ tags:
 parsing/lexer.cmo: parsing/lexer.ml
 	$(OCAMLC_P4O) -c $<
 
+beforedepend:: parsing/lexer.ml
+
 # grammar modules with camlp4
 
 parsing/q_coqast.cmo: parsing/q_coqast.ml4
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o q_MLast.cmo -impl" -impl $<
 
-GRAMMAROBJS=parsing/coqast.cmo parsing/lexer.cmo parsing/pcoq.cmo \
-	    parsing/q_coqast.cmo parsing/g_prim.cmo
+parsing/g_prim.cmo: parsing/g_prim.ml4
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o pa_extend.cmo -impl" -impl $<
+
+GRAMMAROBJS=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
+	    ./lib/hashcons.cmo ./parsing/coqast.cmo ./parsing/lexer.cmo \
+	    ./parsing/pcoq.cmo ./parsing/q_coqast.cmo ./parsing/g_prim.cmo
 
 parsing/grammar.cma: $(GRAMMAROBJS)
-	$(OCAMLC) $(BYTEFLAGS) -linkall -a -o $@
+	$(OCAMLC) $(BYTEFLAGS) $(GRAMMAROBJS) -linkall -a -o $@
 
-parsing/g_command.cmo: parsing/g_command.ml4
+parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o -I parsing pa_extend.cmo grammar.cma -impl" -impl $<
+
+beforedepend:: $(GRAMMAROBJS)
 
 # Default rules
 
@@ -152,11 +162,11 @@ cleanconfig::
 
 # Dependencies
 
-depend:
+depend: beforedepend
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
 	for f in */*.ml4; do \
 	  file=`dirname $$f`/`basename $$f .ml4`; \
-	  camlp4o $(INCLUDES) pa_extend.cmo pr_o.cmo -impl $$f > $$file.ml; \
+	  camlp4o $(INCLUDES) pa_extend.cmo q_MLast.cmo $(GRAMMAROBJS) pr_o.cmo -impl $$f > $$file.ml; \
 	  ocamldep $(DEPFLAGS) $$file.ml >> .depend; \
 	  rm -f $$file.ml; \
 	done

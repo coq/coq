@@ -175,6 +175,14 @@ toplevel/minicoq.cmx: kernel/constant.cmx parsing/g_minicoq.cmi \
     kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
     /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/typing.cmx \
     lib/util.cmx 
+parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
+parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
+parsing/g_command.cmo: parsing/ast.cmi parsing/coqast.cmi \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
+parsing/g_command.cmx: parsing/ast.cmx parsing/coqast.cmx \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
 parsing/g_minicoq.cmo: kernel/generic.cmi /usr/local/lib/camlp4/gramext.cmi \
     /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
@@ -183,9 +191,21 @@ parsing/g_minicoq.cmx: kernel/generic.cmx /usr/local/lib/camlp4/gramext.cmi \
     /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmx kernel/names.cmx \
     lib/pp.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
     parsing/g_minicoq.cmi 
+parsing/g_multiple_case.cmo: parsing/ast.cmi parsing/coqast.cmi \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
+parsing/g_multiple_case.cmx: parsing/ast.cmx parsing/coqast.cmx \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
 parsing/g_prim.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
     parsing/pcoq.cmi 
 parsing/g_prim.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
+    parsing/pcoq.cmi 
+parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi lib/pp.cmi 
+parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx \
+    /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi lib/pp.cmx 
+parsing/g_vernac.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
+    parsing/pcoq.cmi 
+parsing/g_vernac.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
     parsing/pcoq.cmi 
 parsing/pcoq.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
     /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmi lib/pp.cmi \
@@ -193,3 +213,7 @@ parsing/pcoq.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
 parsing/pcoq.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
     /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmx lib/pp.cmx \
     lib/util.cmx parsing/pcoq.cmi 
+parsing/q_coqast.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/mLast.cmi \
+    parsing/pcoq.cmi /usr/local/lib/camlp4/quotation.cmi 
+parsing/q_coqast.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/mLast.cmi \
+    parsing/pcoq.cmi /usr/local/lib/camlp4/quotation.cmi 

@@ -8,7 +8,7 @@ open Command
 GEXTEND Gram
   pattern_list:
     [ [  -> ([],[])
-      | (id1,p) = pattern; (id2,pl) = pattern_list -> (id1@id2,[p :: pl]) ] ]
+      | (id1,p) = pattern; (id2,pl) = pattern_list -> (id1@id2, p::pl) ] ]
   ;
   lsimple_pattern:
     [ [ c = simple_pattern2 -> c ] ]
@@ -20,7 +20,7 @@ GEXTEND Gram
   simple_pattern_list:
     [ [  -> ([],[])
       | (id1,p) = simple_pattern; (id2,pl) = simple_pattern_list ->
-	   (id1@id2,[p :: pl]) ] ]
+	   (id1@id2, p::pl) ] ]
   ;
   (* The XTRA"!" means we want to override the implicit arg mecanism of bdize,
      since params are not given in patterns *)
@@ -28,7 +28,7 @@ GEXTEND Gram
     [ [ (id1,p) = simple_pattern; (id2,lp) = pattern_list ->
           (id1@id2, <:ast< (APPLIST (XTRA "!" $p) ($LIST $lp)) >>)
       | (id1,p) = simple_pattern; "as"; id = ident ->
-          ([Ast.nvar_of_ast id::id1], <:ast< (XTRA"AS" $id $p) >>)
+          ((Ast.nvar_of_ast id)::id1, <:ast< (XTRA"AS" $id $p) >>)
       | (id1,c1) = simple_pattern; ","; (id2,c2) = simple_pattern ->
           (id1@id2, <:ast< (APPLIST (XTRA "!" pair) $c1 $c2) >>) ] ]
   ;
@@ -37,20 +37,20 @@ GEXTEND Gram
   ;
   ne_pattern_list:
     [ [ (id1,c1) = pattern; (id2,cl) = ne_pattern_list ->
-	(id1@id2, [c1 :: cl])
+	(id1@id2, c1::cl)
       | (id1,c1) = pattern -> (id1,[c1]) ] ]
   ;
   equation:
     [ [ (ids,lhs) = ne_pattern_list; "=>"; rhs = command ->
           let br =
-	    List.fold_right (fun s ast -> CoqAst.Slam loc (Some s) ast)
+	    List.fold_right (fun s ast -> Coqast.Slam loc (Some s) ast)
 	      ids
 	      <:ast< (XTRA"EQN" $rhs ($LIST $lhs)) >> in
-	  let lid = List.map (fun s -> CoqAst.Id loc s) ids in
+	  let lid = List.map (fun s -> Coqast.Id loc s) ids in
 	  <:ast< (XTRA"LAMEQN"($LIST $lid) $br) >> ] ]
   ;
   ne_eqn_list:
-    [ [ e = equation; "|"; leqn = ne_eqn_list -> [e :: leqn]
+    [ [ e = equation; "|"; leqn = ne_eqn_list -> e :: leqn
       | e = equation -> [e] ] ]
   ;
 

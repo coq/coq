@@ -26,8 +26,8 @@ module L =
     let lexer = lexer
   end
 
-
 (* The parser of Coq *)
+
 module G = Grammar.Make(L)
 
 let grammar_delete e rls =
@@ -40,14 +40,12 @@ type typed_entry =
   | Ast of Coqast.t G.Entry.e
   | ListAst of Coqast.t list G.Entry.e
 
-
 type ext_kind =
   | ByGrammar of
       typed_entry * Gramext.position option *
       (string option * Gramext.g_assoc option *
        (Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
-
 
 let camlp4_state = ref []
 
@@ -74,10 +72,11 @@ module Gram =
 
 
 (* This extension command is used by the Grammar command *)
+
 let grammar_extend te pos rls =
   camlp4_state := ByGrammar (te,pos,rls) :: !camlp4_state;
   match te with
-      Ast e ->  G.extend e pos rls
+    | Ast e ->  G.extend e pos rls
     | ListAst e -> G.extend e pos rls
 
 (* n is the number of extended entries (not the number of Grammar commands!)
@@ -85,7 +84,7 @@ let grammar_extend te pos rls =
 let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
-         [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
+       | [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
        | ByGrammar(Ast e,_,rls)::t ->
            grammar_delete e rls;
            camlp4_state := t;
@@ -100,8 +99,6 @@ let rec remove_grammars n =
            remove_grammars n;
            redo();
            camlp4_state := ByGEXTEND (undo,redo) :: !camlp4_state)
-
-
 
 (* An entry that checks we reached the end of the input. *)
 let eoi_entry en =
@@ -120,105 +117,91 @@ let map_entry f en =
   END;
   e
 
-
 (* Parse a string, does NOT check if the entire string was read
    (use eoi_entry) *)
+
 let parse_string f x =
   let strm = Stream.of_string x in Gram.Entry.parse f (Gram.parsable strm)
 
-
-
 let slam_ast loc id ast =
   match id with
-    Coqast.Nvar (_, s) -> Coqast.Slam (loc, Some s, ast)
-  | _ -> invalid_arg "Ast.slam_ast"
-
+    | Coqast.Nvar (_, s) -> Coqast.Slam (loc, Some s, ast)
+    | _ -> invalid_arg "Ast.slam_ast"
 
 type entry_type = ETast | ETastl
-
+    
 let entry_type ast =
   match ast with
-    Coqast.Id (_, "LIST") -> ETastl
-  | Coqast.Id (_, "AST") -> ETast
-  | _ -> invalid_arg "Ast.entry_type"
-
+    | Coqast.Id (_, "LIST") -> ETastl
+    | Coqast.Id (_, "AST") -> ETast
+    | _ -> invalid_arg "Ast.entry_type"
 
 let type_of_entry e =
   match e with
-    Ast _ -> ETast
-  | ListAst _ -> ETastl
-
+    | Ast _ -> ETast
+    | ListAst _ -> ETastl
 
 type gram_universe = (string, typed_entry) Hashtbl.t
 
-
 let trace = ref false
-
-(*
-trace.val := True;
-*)
 
 (* The univ_tab is not part of the state. It contains all the grammar that
    exist or have existed before in the session. *)
+
 let univ_tab = Hashtbl.create 7
+
 let get_univ s =
-  try Hashtbl.find univ_tab s with
-    Not_found ->
-      if !trace then
-        begin Printf.eprintf "[Creating univ %s]\n" s; flush stderr; () end;
-      let u = s, Hashtbl.create 29 in Hashtbl.add univ_tab s u; u
-
-
+  try 
+    Hashtbl.find univ_tab s 
+  with Not_found ->
+    if !trace then begin 
+      Printf.eprintf "[Creating univ %s]\n" s; flush stderr; () 
+    end;
+    let u = s, Hashtbl.create 29 in Hashtbl.add univ_tab s u; u
+	
 let get_entry (u, utab) s =
-  try Hashtbl.find utab s with
-    Not_found -> errorlabstrm "Pcoq.get_entry"
-        [< 'sTR"unknown grammar entry "; 'sTR u; 'sTR":"; 'sTR s >]
-
-
+  try 
+    Hashtbl.find utab s 
+  with Not_found -> 
+    errorlabstrm "Pcoq.get_entry"
+      [< 'sTR"unknown grammar entry "; 'sTR u; 'sTR":"; 'sTR s >]
+      
 let new_entry etyp (u, utab) s =
   let ename = u ^ ":" ^ s in
   let e =
     match etyp with
-      ETast -> Ast (Gram.Entry.create ename)
-    | ETastl -> ListAst (Gram.Entry.create ename)
+      | ETast -> Ast (Gram.Entry.create ename)
+      | ETastl -> ListAst (Gram.Entry.create ename)
   in
   Hashtbl.add utab s e; e
-
-
+    
 let create_entry (u, utab) s etyp =
   try
     let e = Hashtbl.find utab s in
     if type_of_entry e <> etyp then
-      failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type")
-    else e
-  with
-    Not_found ->
-      if !trace then
-        begin
-          Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr; ()
-        end;
-      new_entry etyp (u, utab) s
-
-
+      failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
+    e
+  with Not_found ->
+    if !trace then begin
+      Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr; ()
+    end;
+    new_entry etyp (u, utab) s
+      
 let force_entry_type (u, utab) s etyp =
   try
     let entry = Hashtbl.find utab s in
     let extyp = type_of_entry entry in
-    if etyp = extyp then entry
-    else
-      begin
-        prerr_endline
-          ("Grammar entry " ^ u ^ ":" ^ s ^
-             " redefined with another type;\n older entry hidden.");
-        Hashtbl.remove utab s;
-        new_entry etyp (u, utab) s
-      end
-  with
-    Not_found -> new_entry etyp (u, utab) s
-
-
-
-
+    if etyp = extyp then 
+      entry
+    else begin
+      prerr_endline
+        ("Grammar entry " ^ u ^ ":" ^ s ^
+         " redefined with another type;\n older entry hidden.");
+      Hashtbl.remove utab s;
+      new_entry etyp (u, utab) s
+    end
+  with Not_found -> 
+    new_entry etyp (u, utab) s
 
 (* Grammar entries *)
 
@@ -228,7 +211,7 @@ module Command =
     let gec s =
       let e = Gram.Entry.create ("Command." ^ s) in
       Hashtbl.add ucommand s (Ast e); e
-    
+	
     let gec_list s =
       let e = Gram.Entry.create ("Command." ^ s) in
       Hashtbl.add ucommand s (ListAst e); e
@@ -445,6 +428,7 @@ END
 (* Quotations *)
 
 open Prim
+
 let define_quotation default s e =
   (if default then
     GEXTEND Gram
@@ -452,5 +436,5 @@ let define_quotation default s e =
    END);
   (GEXTEND Gram
      ast:
-       [ [ "<"; ":"; LIDENT $s$; ":"; "<"; c = e; ">>" -> c ] ];
+       [ [ "<"; ":"; IDENT $s$; ":"; "<"; c = e; ">>" -> c ] ];
    END)

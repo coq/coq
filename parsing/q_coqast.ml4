@@ -1,4 +1,6 @@
 
+(* $Id$ *)
+
 let dummy_loc = (0,0)
 
 let is_meta s = String.length s > 0 && s.[0] == '$'

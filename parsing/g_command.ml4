@@ -7,7 +7,7 @@ open Command
 
 GEXTEND Gram
   ident:
-    [ [ id = LIDENT -> <:ast< ($VAR $id) >> ] ]
+    [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
   ;
   raw_command:
     [ [ c = Prim.ast -> c ] ]
@@ -25,19 +25,19 @@ GEXTEND Gram
   command0:
     [ [ "?" -> <:ast< (XTRA "ISEVAR") >>
       | "?"; n = Prim.number -> <:ast< (META $n) >>
-      | "["; id1 = LIDENT; ":"; c = command; c2 = abstraction_tail ->
+      | "["; id1 = IDENT; ":"; c = command; c2 = abstraction_tail ->
           <:ast< (LAMBDA $c [$id1]$c2) >>
-      | "["; id1 = LIDENT; ","; idl = ne_ident_comma_list;
+      | "["; id1 = IDENT; ","; idl = ne_ident_comma_list;
         ":"; c = command; c2 = abstraction_tail ->
           <:ast< (LAMBDALIST $c [$id1]($SLAM $idl $c2)) >>
-      | "["; id1 = LIDENT; ","; idl = ne_ident_comma_list;
+      | "["; id1 = IDENT; ","; idl = ne_ident_comma_list;
              c = abstraction_tail ->
           <:ast< (LAMBDALIST (XTRA "ISEVAR") [$id1]($SLAM $idl $c)) >>
-      | "["; id1 = LIDENT; c = abstraction_tail ->
+      | "["; id1 = IDENT; c = abstraction_tail ->
           <:ast< (LAMBDA (XTRA "ISEVAR") [$id1]$c) >>
-      | "["; id1 = LIDENT; "="; c = command; "]"; c2 = command ->
+      | "["; id1 = IDENT; "="; c = command; "]"; c2 = command ->
           <:ast< (ABST #Core#let.cci $c [$id1]$c2) >> 
-      | "<<"; id1 = LIDENT; ">>"; c = command -> <:ast< [$id1]$c >>
+      | "<<"; id1 = IDENT; ">>"; c = command -> <:ast< [$id1]$c >>
       | "("; lc1 = lcommand; ":"; c = command; body = product_tail ->
           let id = Ast.coerce_to_var "lc1" lc1 in
             <:ast< (PROD $c [$id]$body) >>
@@ -57,48 +57,48 @@ GEXTEND Gram
       | "Prop" -> <:ast< (PROP {Null}) >>
       | "Set" -> <:ast< (PROP {Pos}) >>
       | "Type" -> <:ast< (TYPE) >>
-      | LIDENT "Fix"; id = ident; "{"; fbinders = fixbinders; "}" ->
+      | IDENT "Fix"; id = ident; "{"; fbinders = fixbinders; "}" ->
           <:ast< (FIX $id ($LIST $fbinders)) >>
-      | LIDENT "CoFix"; id = ident; "{"; fbinders = cofixbinders; "}" ->
+      | IDENT "CoFix"; id = ident; "{"; fbinders = cofixbinders; "}" ->
           <:ast< (COFIX $id ($LIST $fbinders)) >>
       | v = ident -> v ] ]
   ;
   command1:
-    [ [ "<"; ":"; LIDENT "ast"; ":"; "<"; c = raw_command; ">>" -> c
-      | "<"; l1 = lcommand; ">"; LIDENT "Match"; c = command; "with";
+    [ [ "<"; ":"; IDENT "ast"; ":"; "<"; c = raw_command; ">>" -> c
+      | "<"; l1 = lcommand; ">"; IDENT "Match"; c = command; "with";
         cl = ne_command_list; "end" ->
           <:ast< (XTRA "REC" $l1 $c ($LIST $cl)) >>
-      | "<"; l1 = lcommand; ">"; LIDENT "Match"; c = command; "with"; "end"
+      | "<"; l1 = lcommand; ">"; IDENT "Match"; c = command; "with"; "end"
         ->
           <:ast< (XTRA "REC" $l1 $c) >>
-      | "<"; l1 = lcommand; ">"; LIDENT "Case"; c = command; "of";
+      | "<"; l1 = lcommand; ">"; IDENT "Case"; c = command; "of";
         cl = ne_command_list; "end" ->
           <:ast< (MUTCASE $l1 $c ($LIST $cl)) >>
-      | "<"; l1 = lcommand; ">"; LIDENT "Case"; c = command; "of"; "end" ->
+      | "<"; l1 = lcommand; ">"; IDENT "Case"; c = command; "of"; "end" ->
           <:ast< (MUTCASE $l1 $c) >>
-      | LIDENT "Case"; c = command; "of"; cl = ne_command_list; "end" ->
+      | IDENT "Case"; c = command; "of"; cl = ne_command_list; "end" ->
           <:ast< (XTRA "MLCASE" "NOREC" $c ($LIST $cl)) >>
-      | LIDENT "Case"; c = command; "of"; "end" ->
+      | IDENT "Case"; c = command; "of"; "end" ->
           <:ast< (XTRA "MLCASE" "NOREC" $c) >>
-      | LIDENT "Match"; c = command; "with"; cl = ne_command_list; "end" ->
+      | IDENT "Match"; c = command; "with"; cl = ne_command_list; "end" ->
           <:ast< (XTRA "MLCASE" "REC" $c ($LIST $cl)) >>
-      | LIDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
+      | IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = command; "in"; c1 = command ->
           <:ast< (XTRA "MLCASE" "NOREC" $c (LAMBDALIST (XTRA "ISEVAR")
                    ($SLAM $b $c1))) >>
-      | LIDENT "let"; id1 = LIDENT ; "="; c = command; "in";
+      | IDENT "let"; id1 = IDENT ; "="; c = command; "in";
         c1 = command -> <:ast< (ABST #Core#let.cci $c [$id1]$c1) >>
-      | LIDENT "if"; c1 = command; LIDENT "then"; c2 = command;
-        LIDENT "else"; c3 = command ->
+      | IDENT "if"; c1 = command; IDENT "then"; c2 = command;
+        IDENT "else"; c3 = command ->
         <:ast< ( XTRA "MLCASE" "NOREC" $c1 $c2 $c3) >>
 (* EN ATTENTE DE REMPLACER CE QUI EST DANS Program.v ... *)
       | "<"; l1 = lcommand; ">";
-        LIDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
+        IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = command; "in"; c1 = command ->
          <:ast< (MUTCASE $l1 $c (LAMBDALIST (XTRA "ISEVAR") ($SLAM $b $c1))) >>
       | "<"; l1 = lcommand; ">";
-        LIDENT "if"; c1 = command; LIDENT "then";
-        c2 = command; LIDENT "else"; c3 = command ->
+        IDENT "if"; c1 = command; IDENT "then";
+        c2 = command; IDENT "else"; c3 = command ->
           <:ast< (MUTCASE $l1 $c1 $c2 $c3) >>
       | c = command0 -> c ] ]
   ;
@@ -131,7 +131,7 @@ GEXTEND Gram
     [ [ c1 = command8 -> c1 ] ]
   ;
   command10:
-    [ [ "!"; f = LIDENT; args = ne_command9_list ->
+    [ [ "!"; f = IDENT; args = ne_command9_list ->
           <:ast< (APPLIST (XTRA "!" ($VAR $f)) ($LIST $args)) >>
       | f = command9; args = ne_command91_list ->
           <:ast< (APPLIST $f ($LIST $args)) >>

@@ -7,7 +7,7 @@ open Tactic
 
 GEXTEND Gram
   simple_tactic:
-    [ [ LIDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ] ]
+    [ [ IDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ] ]
   ;
 END
 
@@ -38,8 +38,8 @@ GEXTEND Gram
           <:ast< (VERNACARGLIST ($LIST $l)) >> ] ]
   ;
   destruct_location :
-  [ [ LIDENT "Conclusion"  -> <:ast< (CONCL)>>
-    | LIDENT "Discardable"; "Hypothesis"  -> <:ast< (DiscardableHYP)>>
+  [ [ IDENT "Conclusion"  -> <:ast< (CONCL)>>
+    | IDENT "Discardable"; "Hypothesis"  -> <:ast< (DiscardableHYP)>>
     | "Hypothesis"   -> <:ast< (PreciousHYP)>> ]]
   ;
   ne_comarg_list:
@@ -93,8 +93,8 @@ GEXTEND Gram
       |  -> <:ast< (VERNACARGLIST) >> ] ]
   ;
   record_tok:
-    [ [ LIDENT "Record" -> <:ast< "Record" >>
-      | LIDENT "Structure" -> <:ast< "Structure" >> ] ]
+    [ [ IDENT "Record" -> <:ast< "Record" >>
+      | IDENT "Structure" -> <:ast< "Structure" >> ] ]
   ;
   field:
     [ [ id = identarg; ":"; c = Command.command ->
@@ -111,7 +111,7 @@ GEXTEND Gram
       |  -> <:ast< (VERNACARGLIST) >> ] ]
   ;
   onescheme:
-    [ [ id = identarg; ":="; dep = dep; c = comarg; LIDENT "Sort";
+    [ [ id = identarg; ":="; dep = dep; c = comarg; IDENT "Sort";
         s = sortdef ->
           <:ast< (VERNACARGLIST $id $dep $c (COMMAND $s)) >> ] ]
   ;
@@ -120,8 +120,8 @@ GEXTEND Gram
       | rec_ = onescheme -> [rec_] ] ]
   ;
   dep:
-    [ [ LIDENT "Induction"; LIDENT "for" -> <:ast< "DEP" >>
-      | LIDENT "Minimality"; LIDENT "for" -> <:ast< "NODEP" >> ] ]
+    [ [ IDENT "Induction"; IDENT "for" -> <:ast< "DEP" >>
+      | IDENT "Minimality"; IDENT "for" -> <:ast< "NODEP" >> ] ]
   ;
   ne_binder_semi_list:
     [ [ id = binder; ";"; idl = ne_binder_semi_list -> id :: idl
@@ -139,29 +139,29 @@ GEXTEND Gram
   ;
   thm_tok:
     [ [ "Theorem" -> <:ast< "THEOREM" >>
-      | LIDENT "Lemma" -> <:ast< "LEMMA" >>
-      | LIDENT "Fact" -> <:ast< "FACT" >>
-      | LIDENT "Remark" -> <:ast< "REMARK" >> ] ]
+      | IDENT "Lemma" -> <:ast< "LEMMA" >>
+      | IDENT "Fact" -> <:ast< "FACT" >>
+      | IDENT "Remark" -> <:ast< "REMARK" >> ] ]
   ;
 
   def_tok:
     [ [ "Definition" -> <:ast< "DEFINITION" >>
-      | LIDENT "Local" -> <:ast< "LOCAL" >> 
+      | IDENT "Local" -> <:ast< "LOCAL" >> 
       | "@"; "Definition"  -> <:ast< "OBJECT" >>
-      | "@"; LIDENT "Local"  -> <:ast< "LOBJECT" >>
-      | "@"; LIDENT "Coercion"  -> <:ast< "OBJCOERCION" >>
-      | "@"; LIDENT "Local"; LIDENT "Coercion"  -> <:ast< "LOBJCOERCION" >>
-      | LIDENT "SubClass"  -> <:ast< "SUBCLASS" >>
-      | LIDENT "Local"; LIDENT "SubClass"  -> <:ast< "LSUBCLASS" >> ] ]  
+      | "@"; IDENT "Local"  -> <:ast< "LOBJECT" >>
+      | "@"; IDENT "Coercion"  -> <:ast< "OBJCOERCION" >>
+      | "@"; IDENT "Local"; IDENT "Coercion"  -> <:ast< "LOBJCOERCION" >>
+      | IDENT "SubClass"  -> <:ast< "SUBCLASS" >>
+      | IDENT "Local"; IDENT "SubClass"  -> <:ast< "LSUBCLASS" >> ] ]  
   ;
   import_tok:
-    [ [ LIDENT "Import" -> <:ast< "IMPORT" >>
-      | LIDENT "Export" -> <:ast< "EXPORT" >>
+    [ [ IDENT "Import" -> <:ast< "IMPORT" >>
+      | IDENT "Export" -> <:ast< "EXPORT" >>
       |  -> <:ast< "IMPORT" >> ] ]
   ;
   specif_tok:
-    [ [ LIDENT "Implementation" -> <:ast< "IMPLEMENTATION" >>
-      | LIDENT "Specification" -> <:ast< "SPECIFICATION" >>
+    [ [ IDENT "Implementation" -> <:ast< "IMPLEMENTATION" >>
+      | IDENT "Specification" -> <:ast< "SPECIFICATION" >>
       |  -> <:ast< "UNSPECIFIED" >> ] ]
   ;
   hyp_tok:
@@ -169,22 +169,22 @@ GEXTEND Gram
       | "Variable" -> <:ast< "VARIABLE" >> ] ]
   ;
   hyps_tok:
-    [ [ LIDENT "Hypotheses" -> <:ast< "HYPOTHESES" >>
-      | LIDENT "Variables" -> <:ast< "VARIABLES" >> ] ]
+    [ [ IDENT "Hypotheses" -> <:ast< "HYPOTHESES" >>
+      | IDENT "Variables" -> <:ast< "VARIABLES" >> ] ]
   ;
   param_tok:
     [ [ "Axiom" -> <:ast< "AXIOM" >>
       | "Parameter" -> <:ast< "PARAMETER" >> ] ]
   ;
   params_tok:
-    [ [ LIDENT "Parameters" -> <:ast< "PARAMETERS" >> ] ]
+    [ [ IDENT "Parameters" -> <:ast< "PARAMETERS" >> ] ]
   ;
   binder:
     [ [ idl = ne_identarg_comma_list; ":"; c = Command.command ->
           <:ast< (BINDER $c ($LIST $idl)) >> ] ]
   ;
   idcom:
-    [ [ id = LIDENT; ":"; c = Command.command ->
+    [ [ id = IDENT; ":"; c = Command.command ->
           <:ast< (BINDER $c ($VAR $id)) >> ] ]
   ;
   ne_lidcom:
@@ -225,15 +225,15 @@ GEXTEND Gram
 *)
 
       | def = def_tok; s = identarg; ":="; 
-      LIDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Command.command; "." ->
+      IDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Command.command; "." ->
           <:ast< (DEFINITION $def $s (COMMAND $c1) (TACTIC_ARG (REDEXP $r))) >>
       | def = def_tok; s = identarg; ":="; 
-      LIDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Command.command; ":";
+      IDENT "Eval"; r = Tactic.red_tactic; "in"; c1 = Command.command; ":";
         c2 = Command.command; "." ->
           <:ast< (DEFINITION $def $s 
                  (COMMAND (CAST $c1 $c2)) (TACTIC_ARG (REDEXP $r))) >>
       | def = def_tok; s = identarg; ":"; c1 = Command.command; ":=";
-        LIDENT "Eval"; r = Tactic.red_tactic; "in"; 
+        IDENT "Eval"; r = Tactic.red_tactic; "in"; 
 	c2 = Command.command; "." ->
           <:ast< (DEFINITION $def $s (COMMAND (CAST $c2 $c1)) 
 		    (TACTIC_ARG (REDEXP $r))) >>
@@ -242,11 +242,11 @@ GEXTEND Gram
    Ajout du racourci "Definition x [c:nat] := t" pour 
                      "Definition x := [c:nat]t" *)
 
-      | def = def_tok; s = identarg; "["; id1 = LIDENT; ":"; 
+      | def = def_tok; s = identarg; "["; id1 = IDENT; ":"; 
 	c = Command.command; t = definition_tail;  "." -> 
 	  <:ast< (DEFINITION $def $s (COMMAND (LAMBDA $c [$id1]$t))) >>
 
-      | def = def_tok; s = identarg; "["; id1 = LIDENT; ",";
+      | def = def_tok; s = identarg; "["; id1 = IDENT; ",";
 	idl = Command.ne_ident_comma_list; ":"; c = Command.command; 
 	t = definition_tail; "." -> 
 	  <:ast< (DEFINITION $def $s (COMMAND 
@@ -261,7 +261,7 @@ GEXTEND Gram
           <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
       | hyp = params_tok; bl = ne_binder_semi_list; "." ->
           <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
-      | LIDENT "Abstraction"; id = identarg; "["; l = ne_numarg_list; "]";
+      | IDENT "Abstraction"; id = identarg; "["; l = ne_numarg_list; "]";
         ":="; c = comarg; "." ->
           <:ast< (ABSTRACTION $id $c ($LIST $l)) >>
       | f = finite_tok; "Set"; id = identarg; indpar = indpar; ":=";
@@ -285,17 +285,17 @@ GEXTEND Gram
         c = rec_constr; "{"; fs = fields; "}"; "." ->
           <:ast< (RECORD "COERCION" $name $ps (COMMAND $s) $c $fs) >>
 
-      | LIDENT "Mutual"; "["; bl = ne_binder_semi_list; "]" ; f = finite_tok;
+      | IDENT "Mutual"; "["; bl = ne_binder_semi_list; "]" ; f = finite_tok;
         indl = block_old_style; "." ->
           <:ast< (OLDMUTUALINDUCTIVE (BINDERLIST ($LIST $bl)) $f
                                      (VERNACARGLIST ($LIST $indl))) >>
-      | LIDENT "Mutual"; f = finite_tok; indl = block; "." ->
+      | IDENT "Mutual"; f = finite_tok; indl = block; "." ->
           <:ast< (MUTUALINDUCTIVE $f (VERNACARGLIST ($LIST $indl))) >>
       | "Fixpoint"; recs = specifrec; "." ->
           <:ast< (MUTUALRECURSIVE (VERNACARGLIST ($LIST $recs))) >>
       | "CoFixpoint"; corecs = specifcorec; "." ->
           <:ast< (MUTUALCORECURSIVE (VERNACARGLIST ($LIST $corecs))) >>
-      | LIDENT "Scheme"; schemes = specifscheme; "." ->
+      | IDENT "Scheme"; schemes = specifscheme; "." ->
           <:ast< (INDUCTIONSCHEME (VERNACARGLIST ($LIST $schemes))) >>
       ] ];
 
@@ -315,96 +315,96 @@ GEXTEND Gram
 GEXTEND Gram
   vernac:
     [ [ 
-        LIDENT "Save"; LIDENT "State"; id = identarg; "." ->
+        IDENT "Save"; IDENT "State"; id = identarg; "." ->
           <:ast< (SaveState $id "") >>
-      | LIDENT "Save"; LIDENT "State"; id = identarg; s = stringarg; "." ->
+      | IDENT "Save"; IDENT "State"; id = identarg; s = stringarg; "." ->
           <:ast< (SaveState $id $s) >>
-      | LIDENT "Write"; LIDENT "States"; id = identarg; "." ->
+      | IDENT "Write"; IDENT "States"; id = identarg; "." ->
           <:ast< (WriteStates $id) >>
-      | LIDENT "Write"; LIDENT "States"; id = stringarg; "." ->
+      | IDENT "Write"; IDENT "States"; id = stringarg; "." ->
           <:ast< (WriteStates $id) >>
-      | LIDENT "Restore";  LIDENT "State"; id = identarg; "." ->
+      | IDENT "Restore";  IDENT "State"; id = identarg; "." ->
           <:ast< (RestoreState $id) >>
-      | LIDENT "Remove";  LIDENT "State"; id = identarg; "." ->
+      | IDENT "Remove";  IDENT "State"; id = identarg; "." ->
           <:ast< (RemoveState $id) >>
-      | LIDENT "Reset"; LIDENT "after"; id = identarg; "." ->
+      | IDENT "Reset"; IDENT "after"; id = identarg; "." ->
           <:ast< (ResetAfter $id) >>
-      | LIDENT "Reset"; LIDENT "Initial"; "." -> <:ast< (ResetInitial) >>
-      | LIDENT "Reset"; LIDENT "Section"; id = identarg; "." ->
+      | IDENT "Reset"; IDENT "Initial"; "." -> <:ast< (ResetInitial) >>
+      | IDENT "Reset"; IDENT "Section"; id = identarg; "." ->
           <:ast< (ResetSection $id) >>
-      | LIDENT "Reset"; id = identarg; "." -> <:ast< (ResetName $id) >>
+      | IDENT "Reset"; id = identarg; "." -> <:ast< (ResetName $id) >>
 
 (* Modules and Sections *)   
 
-      | LIDENT "Read"; LIDENT "Module"; id = identarg; "." ->
+      | IDENT "Read"; IDENT "Module"; id = identarg; "." ->
           <:ast< (ReadModule $id) >>
-      | LIDENT "Require"; import = import_tok; specif = specif_tok;
+      | IDENT "Require"; import = import_tok; specif = specif_tok;
         id = identarg; "." -> <:ast< (Require $import $specif $id) >>
-      | LIDENT "Require"; import = import_tok; specif = specif_tok;
+      | IDENT "Require"; import = import_tok; specif = specif_tok;
         id = identarg; filename = stringarg; "." ->
           <:ast< (RequireFrom $import $specif $id $filename) >>
-      | LIDENT "Section"; id = identarg; "." -> <:ast< (BeginSection $id) >>
-      | LIDENT "Chapter"; id = identarg; "." -> <:ast< (BeginSection $id) >>
-      | LIDENT "Module"; id = identarg; "." -> <:ast< (BeginModule $id) >>
-      | LIDENT "Begin"; LIDENT "Silent"; "." -> <:ast< (BeginSilent) >>
-      | LIDENT "End"; LIDENT "Silent"; "." -> <:ast< (EndSilent) >>
-      | LIDENT "End"; id = identarg; "." -> <:ast< (EndSection $id) >>
-      | LIDENT "Declare"; LIDENT "ML"; LIDENT "Module";
+      | IDENT "Section"; id = identarg; "." -> <:ast< (BeginSection $id) >>
+      | IDENT "Chapter"; id = identarg; "." -> <:ast< (BeginSection $id) >>
+      | IDENT "Module"; id = identarg; "." -> <:ast< (BeginModule $id) >>
+      | IDENT "Begin"; IDENT "Silent"; "." -> <:ast< (BeginSilent) >>
+      | IDENT "End"; IDENT "Silent"; "." -> <:ast< (EndSilent) >>
+      | IDENT "End"; id = identarg; "." -> <:ast< (EndSection $id) >>
+      | IDENT "Declare"; IDENT "ML"; IDENT "Module";
         l = ne_stringarg_list; "." -> <:ast< (DeclareMLModule ($LIST $l)) >>
-      | LIDENT "Import"; id = identarg; "." -> <:ast< (ImportModule $id) >>
+      | IDENT "Import"; id = identarg; "." -> <:ast< (ImportModule $id) >>
 	  (* Transparent and Opaque *)
-      | LIDENT "Transparent"; l = ne_identarg_list; "." ->
+      | IDENT "Transparent"; l = ne_identarg_list; "." ->
           <:ast< (TRANSPARENT ($LIST $l)) >>
-      | LIDENT "Opaque"; l = ne_identarg_list; "." -> 
+      | IDENT "Opaque"; l = ne_identarg_list; "." -> 
 	  <:ast< (OPAQUE ($LIST $l)) >>
       
 	  (* Extraction *)
-      | LIDENT "Extraction"; id = identarg; "." ->
+      | IDENT "Extraction"; id = identarg; "." ->
           <:ast< (PrintExtractId $id) >>
-      | LIDENT "Extraction"; "." -> <:ast< (PrintExtract) >>
+      | IDENT "Extraction"; "." -> <:ast< (PrintExtract) >>
 
 (* Grammar extensions, Coercions, Implicits *)
 	  
-     | LIDENT "Coercion"; s = identarg; ":="; c1 = Command.command; "." ->
+     | IDENT "Coercion"; s = identarg; ":="; c1 = Command.command; "." ->
          <:ast< (DEFINITION "COERCION" $s (COMMAND $c1)) >>
-     | LIDENT "Coercion"; s = identarg; ":="; c1 = Command.command; ":";
+     | IDENT "Coercion"; s = identarg; ":="; c1 = Command.command; ":";
         c2 = Command.command; "." ->
           <:ast< (DEFINITION "COERCION" $s (COMMAND (CAST $c1 $c2))) >>
-     | LIDENT "Coercion"; LIDENT "Local"; s = identarg; ":="; 
+     | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
 	c1 = Command.command; "." ->
           <:ast< (DEFINITION "LCOERCION" $s (COMMAND $c1)) >>
-     | LIDENT "Coercion"; LIDENT "Local"; s = identarg; ":="; 
+     | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
 	c1 = Command.command; ":"; c2 = Command.command; "." ->
           <:ast< (DEFINITION "LCOERCION" $s (COMMAND (CAST $c1 $c2))) >>
 	  
 	  
-     | LIDENT "Syntactic"; "Definition"; id = identarg; ":="; com = comarg;
+     | IDENT "Syntactic"; "Definition"; id = identarg; ":="; com = comarg;
         "." -> <:ast< (SyntaxMacro $id $com) >>
-     | LIDENT "Syntactic"; "Definition"; id = identarg; ":="; com = comarg;
+     | IDENT "Syntactic"; "Definition"; id = identarg; ":="; com = comarg;
         "|"; n = numarg; "." -> <:ast< (SyntaxMacro $id $com $n) >>
-     | LIDENT "Print"; "Grammar"; uni = identarg; ent = identarg; "." ->
+     | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg; "." ->
          <:ast< (PrintGrammar $uni $ent) >>
-     | LIDENT "Identity"; LIDENT "Coercion"; LIDENT "Local"; f = identarg;
+     | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identarg;
         ":"; c = identarg; ">->"; d = identarg; "." ->
           <:ast< (COERCION "LOCAL" "IDENTITY" $f $c $d) >>
-     | LIDENT "Identity"; LIDENT "Coercion"; f = identarg; ":";
+     | IDENT "Identity"; IDENT "Coercion"; f = identarg; ":";
         c = identarg; ">->"; d = identarg; "." ->
           <:ast< (COERCION "" "IDENTITY" $f $c $d) >>
-     | LIDENT "Coercion"; LIDENT "Local"; f = identarg; ":"; c = identarg;
+     | IDENT "Coercion"; IDENT "Local"; f = identarg; ":"; c = identarg;
         ">->"; d = identarg; "." ->
           <:ast< (COERCION "LOCAL" "" $f $c $d) >>
-     | LIDENT "Coercion"; f = identarg; ":"; c = identarg; ">->";
+     | IDENT "Coercion"; f = identarg; ":"; c = identarg; ">->";
         d = identarg; "." -> <:ast< (COERCION "" "" $f $c $d) >>
-     | LIDENT "Class"; LIDENT "Local"; c = identarg; "." ->
+     | IDENT "Class"; IDENT "Local"; c = identarg; "." ->
          <:ast< (CLASS "LOCAL" $c) >>
-     | LIDENT "Class"; c = identarg; "." -> <:ast< (CLASS "" $c) >>
-     | LIDENT "Implicit"; LIDENT "Arguments"; LIDENT "On"; "." ->
+     | IDENT "Class"; c = identarg; "." -> <:ast< (CLASS "" $c) >>
+     | IDENT "Implicit"; IDENT "Arguments"; IDENT "On"; "." ->
          <:ast< (IMPLICIT_ARGS_ON) >>
-     | LIDENT "Implicit"; LIDENT "Arguments"; LIDENT "Off"; "." ->
+     | IDENT "Implicit"; IDENT "Arguments"; IDENT "Off"; "." ->
          <:ast< (IMPLICIT_ARGS_OFF) >>
-     | LIDENT "Implicits"; id = identarg; "["; l = numarg_list; "]"; "." ->
+     | IDENT "Implicits"; id = identarg; "["; l = numarg_list; "]"; "." ->
          <:ast< (IMPLICITS "" $id ($LIST $l)) >>
-     | LIDENT "Implicits"; id = identarg; "." ->
+     | IDENT "Implicits"; id = identarg; "." ->
          <:ast< (IMPLICITS "Auto" $id) >> 
  ] ];
     END
@@ -412,103 +412,103 @@ GEXTEND Gram
 (* Proof commands *)
 GEXTEND Gram
   vernac:
-    [ [ LIDENT "Goal"; c = comarg; "." -> <:ast< (GOAL $c) >>
-      | LIDENT "Goal"; "." -> <:ast< (GOAL) >>
+    [ [ IDENT "Goal"; c = comarg; "." -> <:ast< (GOAL $c) >>
+      | IDENT "Goal"; "." -> <:ast< (GOAL) >>
       | "Proof"; "." -> <:ast< (GOAL) >>
-      | LIDENT "Abort"; "." -> <:ast< (ABORT) >>
+      | IDENT "Abort"; "." -> <:ast< (ABORT) >>
       | "Qed"; "." -> <:ast< (SaveNamed) >>
-      | LIDENT "Save"; "." -> <:ast< (SaveNamed) >>
-      | LIDENT "Defined"; "." -> <:ast< (DefinedNamed) >>
-      | LIDENT "Save"; LIDENT "Remark"; id = identarg; "." ->
+      | IDENT "Save"; "." -> <:ast< (SaveNamed) >>
+      | IDENT "Defined"; "." -> <:ast< (DefinedNamed) >>
+      | IDENT "Save"; IDENT "Remark"; id = identarg; "." ->
           <:ast< (SaveAnonymousRmk $id) >>
-      | LIDENT "Save"; LIDENT "Theorem"; id = identarg; "." ->
+      | IDENT "Save"; IDENT "Theorem"; id = identarg; "." ->
           <:ast< (SaveAnonymousThm $id) >>
-      | LIDENT "Save"; id = identarg; "." -> <:ast< (SaveAnonymousThm $id) >>
-      | LIDENT "Suspend"; "." -> <:ast< (SUSPEND) >>
-      | LIDENT "Resume"; "." -> <:ast< (RESUME) >>
-      | LIDENT "Resume"; id = identarg; "." -> <:ast< (RESUME $id) >>
-      | LIDENT "Abort"; LIDENT "All"; "." -> <:ast< (ABORTALL) >>
-      | LIDENT "Abort"; id = identarg; "." -> <:ast< (ABORT $id) >>
-      | LIDENT "Restart"; "." -> <:ast< (RESTART) >>
+      | IDENT "Save"; id = identarg; "." -> <:ast< (SaveAnonymousThm $id) >>
+      | IDENT "Suspend"; "." -> <:ast< (SUSPEND) >>
+      | IDENT "Resume"; "." -> <:ast< (RESUME) >>
+      | IDENT "Resume"; id = identarg; "." -> <:ast< (RESUME $id) >>
+      | IDENT "Abort"; IDENT "All"; "." -> <:ast< (ABORTALL) >>
+      | IDENT "Abort"; id = identarg; "." -> <:ast< (ABORT $id) >>
+      | IDENT "Restart"; "." -> <:ast< (RESTART) >>
       | "Proof"; c = comarg; "." -> <:ast< (PROOF $c) >>
-      | LIDENT "Undo"; "." -> <:ast< (UNDO 1) >>
-      | LIDENT "Undo"; n = numarg; "." -> <:ast< (UNDO $n) >>
-      | LIDENT "Show"; n = numarg; "." -> <:ast< (SHOW $n) >>
-      | LIDENT "Show"; LIDENT "Implicits"; n = numarg; "." ->
+      | IDENT "Undo"; "." -> <:ast< (UNDO 1) >>
+      | IDENT "Undo"; n = numarg; "." -> <:ast< (UNDO $n) >>
+      | IDENT "Show"; n = numarg; "." -> <:ast< (SHOW $n) >>
+      | IDENT "Show"; IDENT "Implicits"; n = numarg; "." ->
           <:ast< (SHOWIMPL $n) >>
-      | LIDENT "Focus"; "." -> <:ast< (FOCUS) >>
-      | LIDENT "Focus"; n = numarg; "." -> <:ast< (FOCUS $n) >>
-      | LIDENT "Unfocus"; "." -> <:ast< (UNFOCUS) >>
-      | LIDENT "Show"; "." -> <:ast< (SHOW) >>
-      | LIDENT "Show"; LIDENT "Implicits"; "." -> <:ast< (SHOWIMPL) >>
-      | LIDENT "Show"; LIDENT "Node"; "." -> <:ast< (ShowNode) >>
-      | LIDENT "Show"; LIDENT "Script"; "." -> <:ast< (ShowScript) >>
-      | LIDENT "Show"; LIDENT "Existentials"; "." -> <:ast< (ShowEx) >>
-      | LIDENT "Existential"; n = numarg; ":="; c = Command.command; "." ->
+      | IDENT "Focus"; "." -> <:ast< (FOCUS) >>
+      | IDENT "Focus"; n = numarg; "." -> <:ast< (FOCUS $n) >>
+      | IDENT "Unfocus"; "." -> <:ast< (UNFOCUS) >>
+      | IDENT "Show"; "." -> <:ast< (SHOW) >>
+      | IDENT "Show"; IDENT "Implicits"; "." -> <:ast< (SHOWIMPL) >>
+      | IDENT "Show"; IDENT "Node"; "." -> <:ast< (ShowNode) >>
+      | IDENT "Show"; IDENT "Script"; "." -> <:ast< (ShowScript) >>
+      | IDENT "Show"; IDENT "Existentials"; "." -> <:ast< (ShowEx) >>
+      | IDENT "Existential"; n = numarg; ":="; c = Command.command; "." ->
           <:ast< (EXISTENTIAL $n (COMMAND $c)) >>
-      | LIDENT "Existential"; n = numarg; ":="; c1 = Command.command; ":";
+      | IDENT "Existential"; n = numarg; ":="; c1 = Command.command; ":";
         c2 = Command.command; "." ->
           <:ast< (EXISTENTIAL $n (COMMAND (CAST $c1 $c2))) >>
-      | LIDENT "Existential"; n = numarg; ":"; c2 = Command.command; ":=";
+      | IDENT "Existential"; n = numarg; ":"; c2 = Command.command; ":=";
         c1 = Command.command; "." ->
           <:ast< (EXISTENTIAL $n (COMMAND (CAST $c1 $c2))) >>
-      | LIDENT "Explain"; "Proof"; l = numarg_list; "." ->
+      | IDENT "Explain"; "Proof"; l = numarg_list; "." ->
           <:ast< (ExplainProof ($LIST $l)) >>
-      | LIDENT "Explain"; "Proof"; LIDENT "Tree"; l = numarg_list; "." ->
+      | IDENT "Explain"; "Proof"; IDENT "Tree"; l = numarg_list; "." ->
           <:ast< (ExplainProofTree ($LIST $l)) >>
-      | LIDENT "Go"; n = numarg; "." -> <:ast< (Go $n) >>
-      | LIDENT "Go"; LIDENT "top"; "." -> <:ast< (Go "top") >>
-      | LIDENT "Go"; LIDENT "prev"; "." -> <:ast< (Go "prev") >>
-      | LIDENT "Go"; LIDENT "next"; "." -> <:ast< (Go "next") >>
-      | LIDENT "Show"; "Proof"; "." -> <:ast< (ShowProof) >>
-      | LIDENT "Guarded"; "." -> <:ast< (CheckGuard) >>
-      | LIDENT "Show"; LIDENT "Tree"; "." -> <:ast< (ShowTree) >>
-      | LIDENT "Show"; LIDENT "Conjectures"; "." -> <:ast< (ShowProofs) >>
+      | IDENT "Go"; n = numarg; "." -> <:ast< (Go $n) >>
+      | IDENT "Go"; IDENT "top"; "." -> <:ast< (Go "top") >>
+      | IDENT "Go"; IDENT "prev"; "." -> <:ast< (Go "prev") >>
+      | IDENT "Go"; IDENT "next"; "." -> <:ast< (Go "next") >>
+      | IDENT "Show"; "Proof"; "." -> <:ast< (ShowProof) >>
+      | IDENT "Guarded"; "." -> <:ast< (CheckGuard) >>
+      | IDENT "Show"; IDENT "Tree"; "." -> <:ast< (ShowTree) >>
+      | IDENT "Show"; IDENT "Conjectures"; "." -> <:ast< (ShowProofs) >>
 
 (* Tactic Definition *)
 
-      | LIDENT "Tactic"; "Definition"; id = identarg; "[";
+      | IDENT "Tactic"; "Definition"; id = identarg; "[";
         ids = ne_identarg_list; "]"; ":="; tac = Prim.astact; "." ->
           <:ast< (TacticDefinition $id (AST $tac) ($LIST $ids)) >>
-      | LIDENT "Tactic"; "Definition"; id = identarg; ":="; tac = Prim.astact;
+      | IDENT "Tactic"; "Definition"; id = identarg; ":="; tac = Prim.astact;
         "." -> <:ast< (TacticDefinition $id (AST $tac)) >>
 
 (* Hints for Auto and EAuto *)
 
-      | LIDENT "Hint"; hintname = identarg; dbname = opt_identarg_list; ":=";
-	LIDENT "Resolve"; c = comarg; "." ->
+      | IDENT "Hint"; hintname = identarg; dbname = opt_identarg_list; ":=";
+	IDENT "Resolve"; c = comarg; "." ->
 	  <:ast<(HintResolve $hintname (VERNACARGLIST ($LIST $dbname)) $c)>>
 	  
-      | LIDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	LIDENT "Immediate"; c = comarg; "." ->
+      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
+	IDENT "Immediate"; c = comarg; "." ->
 	  <:ast<(HintImmediate $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
-      | LIDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	LIDENT "Unfold"; c = identarg; "." ->
+      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
+	IDENT "Unfold"; c = identarg; "." ->
 	  <:ast<(HintUnfold $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
-      | LIDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	LIDENT "Constructors"; c = identarg;  "." ->
+      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
+	IDENT "Constructors"; c = identarg;  "." ->
 	  <:ast<(HintConstructors $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
-      | LIDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	LIDENT "Extern"; n = numarg; c = comarg ; tac = tacarg; "." ->
+      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
+	IDENT "Extern"; n = numarg; c = comarg ; tac = tacarg; "." ->
 	  <:ast<(HintExtern $hintname (VERNACARGLIST ($LIST $dbnames)) 
 		   $n $c (TACTIC $tac))>>
 	  
-      | LIDENT "Hints"; LIDENT "Resolve"; l = ne_identarg_list; 
+      | IDENT "Hints"; IDENT "Resolve"; l = ne_identarg_list; 
 	dbnames = opt_identarg_list; "." ->
           <:ast< (HintsResolve (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
 	  
-      | LIDENT "Hints"; LIDENT "Immediate"; l = ne_identarg_list; 
+      | IDENT "Hints"; IDENT "Immediate"; l = ne_identarg_list; 
 	dbnames = opt_identarg_list; "." ->
           <:ast< (HintsImmediate (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
 	  
-      | LIDENT "Hints"; LIDENT "Unfold"; l = ne_identarg_list;
+      | IDENT "Hints"; IDENT "Unfold"; l = ne_identarg_list;
 	dbnames = opt_identarg_list; "." ->
           <:ast< (HintsUnfold (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
 	  
-      | LIDENT "HintDestruct"; 
+      | IDENT "HintDestruct"; 
                 dloc = destruct_location;
                 na  = identarg;
                 hyptyp = comarg;
@@ -520,7 +520,7 @@ GEXTEND Gram
           <:ast< (SOLVE $n (TACTIC $tac)) >> 
 
 (*This entry is not commented, only for debug*)
-      | LIDENT "PrintConstr"; com = comarg; "." ->
+      | IDENT "PrintConstr"; com = comarg; "." ->
           <:ast< (PrintConstr $com)>>
       ] ];
   END
