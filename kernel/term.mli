@@ -270,8 +270,12 @@ val destLambda : constr -> name * types * constr
 val destLetIn : constr -> name * constr * types * constr
 
 (* Destructs an application *)
+val destApp : constr -> constr * constr array
+
+(* Obsolete synonym of destApp *)
 val destApplication : constr -> constr * constr array
-(* ... removing casts *)
+
+(* Decompose any term as an applicative term; the list of args can be empty *)
 val decompose_app : constr -> constr * constr list
 
 (* Destructs a constant *)
@@ -409,6 +413,9 @@ val strip_outer_cast : constr -> constr
 
 (* Apply a function letting Casted types in place *)
 val under_casts : (constr -> constr) -> constr -> constr
+
+(* Apply a function under components of Cast if any *)
+val under_outer_cast : (constr -> constr) -> constr -> constr
 
 (*s Occur checks *)
 

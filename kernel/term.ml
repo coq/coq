@@ -375,9 +375,11 @@ let destLetIn c = match kind_of_term c with
   | _ -> invalid_arg "destProd"
 
 (* Destructs an application *)
-let destApplication c = match kind_of_term c with
+let destApp c = match kind_of_term c with
   | App (f,a) -> (f, a)
   | _ -> invalid_arg "destApplication"
+
+let destApplication = destApp
 
 let isApp c = match kind_of_term c with App _ -> true | _ -> false
 
@@ -438,10 +440,9 @@ let rec collapse_appl c = match kind_of_term c with
       collapse_rec f cl
   | _ -> c
 
-let rec decompose_app c =
-  match kind_of_term (collapse_appl c) with
+let decompose_app c =
+  match kind_of_term c with
     | App (f,cl) -> (f, Array.to_list cl)
-    | Cast (c,t) -> decompose_app c
     | _ -> (c,[])
 
 (* strips head casts and flattens head applications *)
