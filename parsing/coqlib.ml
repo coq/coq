@@ -26,6 +26,12 @@ let glob_S = ConstructRef ((nat_path,0),2)
 
 let glob_My_special_variable_nat = ConstRef myvar_path
 
+let eq_path = make_path ["Coq";"Init";"Logic"] (id_of_string "eq") CCI
+let eqT_path = make_path ["Coq";"Init";"Logic_Type"] (id_of_string "eqT") CCI
+
+let glob_eq = IndRef (eq_path,0)
+let glob_eqT = IndRef (eqT_path,0)
+
 let reference dir s =
   let dir = "Coq"::"Init"::[dir] in
   let id = id_of_string s in

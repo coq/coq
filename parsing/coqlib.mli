@@ -13,8 +13,10 @@ open Term
 open Pattern
 (*i*)
 
-(*s This module collects the global references of the standard library
-    used in ocaml files *)
+(*s This module collects the global references, constructions and
+    patterns of the standard library used in ocaml files *)
+
+(*s Global references *)
 
 (* Natural numbers *)
 val glob_nat : global_reference
@@ -23,6 +25,18 @@ val glob_S : global_reference
 
 (* Special variable for pretty-printing of constant naturals *)
 val glob_My_special_variable_nat : global_reference
+
+(* Equality *)
+val glob_eq : global_reference
+val glob_eqT : global_reference
+
+(*s Constructions and patterns related to Coq initial state are unknown
+   at compile time. Therefore, we can only provide methods to build
+   them at runtime. This is the purpose of the [constr delayed] and
+   [constr_pattern delayed] types. Objects of this time needs to be
+   applied to [()] to get the actual constr or pattern at runtime *)
+
+type 'a delayed = unit -> 'a
 
 (*s For Equality tactics *)
 type coq_sigma_data = {
@@ -34,8 +48,6 @@ type coq_sigma_data = {
 
 val build_sigma_set : unit -> coq_sigma_data
 val build_sigma_type : unit -> coq_sigma_data
-
-type 'a delayed = unit -> 'a
 
 type coq_leibniz_eq_data = {
   eq   : constr delayed;
