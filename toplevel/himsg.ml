@@ -28,11 +28,11 @@ open Printer
 open Ast
 open Rawterm
 
-let quote s = str "\"" ++ s ++ str "\""
+let quote s = if !Options.v7 then s else h 0 (str "\"" ++ s ++ str "\"")
 
 let prterm c = quote (prterm c)
 let prterm_env e c = quote (prterm_env e c)
-let prjudge_env e c = let v,t = prjudge_env e c in (quote v, quote t)
+let prjudge_env e c = let v,t = prjudge_env e c in (quote v,quote t)
 
 let nth i =
   let many = match i mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
@@ -117,7 +117,7 @@ let explain_case_not_inductive ctx cj =
       | Evar _ -> 
 	  str "Cannot infer a type for this expression"
       | _ ->
-	  str "This term" ++ brk(1,1) ++ pc ++ spc () ++ 
+	  str "The term" ++ brk(1,1) ++ pc ++ spc () ++ 
 	  str "has type" ++ brk(1,1) ++ pct ++ spc () ++ 
 	  str "which is not a (co-)inductive type"
 
