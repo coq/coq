@@ -273,12 +273,10 @@ let full_do_if_not_computing f x =
 				f x;
 				Glib.Timeout.remove idle;
 			    prerr_endline "Releasing lock";
-			    Mutex.unlock w#lock;
 			    Mutex.unlock coq_computing;
 			      with e -> 
 				Glib.Timeout.remove idle;
 				prerr_endline "Releasing lock (on error)";
-				Mutex.unlock w#lock;
 				Mutex.unlock coq_computing;
 				raise e
 			    end
@@ -475,7 +473,7 @@ let update_on_end_of_proof id =
 	prerr_endline "Toggling Changing Reset id"; 
 	r := false
       end
-  | { ast = _, (VernacAbort _ | VernacAbortAll | VernacGoal _) } -> raise Exit
+  | { ast = _, (VernacAbort _ | VernacAbortAll | VernacGoal_) } -> raise Exit
   | _ -> ()
   in
   try Stack.iter lookup_lemma processed_stack with Exit -> ()

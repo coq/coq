@@ -69,12 +69,15 @@ object(self)
     let combo = GEdit.combo ~popdown_strings:Coq_commands.state_preserving
 		  ~use_arrows:`DEFAULT
 		  ~ok_if_empty:false
-		  ~value_in_list:true
+		  ~value_in_list:false (* true is not ok with disable_activate...*)
 		  ~packing:hbox#pack
 		  ()
     in
     combo#disable_activate ();
-    let on_activate c () = if List.mem combo#entry#text Coq_commands.state_preserving then c () in
+    let on_activate c () = 
+      if List.mem combo#entry#text Coq_commands.state_preserving then c () 
+      else prerr_endline "Not a state preserving command" 
+    in
     let entry = GEdit.entry ~packing:(hbox#pack ~expand:true) () in
     entry#misc#set_can_default true;
     let r_bin =
@@ -111,7 +114,7 @@ object(self)
       | None , Some t -> 
 	  entry#set_text t
     end;
-    callback ();
+    on_activate callback ();
     entry#misc#grab_focus ();
     entry#misc#grab_default ();
     ignore (entry#connect#activate ~callback);
