@@ -907,3 +907,21 @@ let reduce_to_ind_gen allow_product env sigma t =
 
 let reduce_to_quantified_ind x = reduce_to_ind_gen true x
 let reduce_to_atomic_ind x = reduce_to_ind_gen false x
+
+let reduce_to_quantified_ref env sigma ref t = 
+  let rec elimrec env t l = 
+    let c, _ = Reductionops.whd_stack t in
+    match kind_of_term c with
+      | Prod (n,ty,t') -> elimrec (push_rel (n,None,t) env) t' ((n,None,ty)::l)
+      | _ ->
+	  try 
+	    if reference_of_constr c = ref 
+	    then it_mkProd_or_LetIn t l
+	    else raise Not_found
+	  with Not_found ->
+          try 
+	    let t' = nf_betaiota (one_step_reduce env sigma t) in 
+	    elimrec env t' l
+          with NotStepReducible -> raise Not_found
+  in
+  elimrec env t []
