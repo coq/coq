@@ -25,8 +25,8 @@ val add_inductive : mutual_inductive_body KNmap.t -> env -> env
 (* add rules *)
 val add_rules : rules_body -> env -> env
 
-(* say if the addition of rules preserves confluence *)
-val is_confluent : env -> (constr * constr) list -> bool
+(* say if the addition of rules preserves local confluence *)
+val is_locally_confluent : env -> (constr * constr) list -> bool
 
 (* return None if [t] is already in normal form
    return [Some t'] where [t'] is the normal form of [t] otherwise *)

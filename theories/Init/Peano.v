@@ -82,7 +82,7 @@ Hints Resolve n_Sn : core v62.
       O   => m 
   | (S p) => (S (plus p m)) end. *)
 
-Symbol 2 Lex plus : nat -> nat -> nat.
+Symbol plus 2 Lex : nat -> nat -> nat.
 
 Rules [x,y:nat] {
   (plus O x) => x;

@@ -388,6 +388,11 @@ val nb_prod : constr -> int
 (* flattens application lists *)
 val collapse_appl : constr -> constr
 
+(* flatten head applications leaving casts *)
+val collapse : constr -> constr
+
+(* get head of the application form of a constr *)
+val get_head : constr -> constr
 
 (* Removes recursively the casts around a term i.e.
    [strip_outer_cast] (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)

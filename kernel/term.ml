@@ -454,6 +454,24 @@ let rec strip_head_cast c = match kind_of_term c with
   | Cast (c,t) -> strip_head_cast c
   | _ -> c
 
+(* flatten head applications leaving casts *)
+let collapse =
+  let rec collapse_rec f va =
+    match kind_of_term f with
+      | App (g,vb) -> collapse_rec g (Array.append vb va)
+      | _ -> if va = [||] then f else mkApp (f,va)
+  in
+    fun c ->
+      match kind_of_term c with
+	| App (f,va) -> collapse_rec f va
+	| _ -> c
+
+(* get head of an application *)
+let get_head c =
+  match kind_of_term (collapse c) with
+    | App (f,_) -> f
+    | _ -> c
+
 (****************************************************************************)
 (*              Functions to recur through subterms                         *)
 (****************************************************************************)

@@ -188,11 +188,11 @@ GEXTEND Gram
 	  VernacAssumption (stre, bl)
 
       (* Symbols and rules *)
-      | IDENT "Symbol"; (a,e) = symb_arity; s = symb_status; m = symb_mons;
-	  am = symb_antimons; id = base_ident; ":"; t = constr ->
+      | IDENT "Symbol"; id = base_ident; (a,e) = symb_arity; s = symb_status;
+	  m = symb_mons; am = symb_antimons; ":"; t = constr ->
 	    VernacSymbol (id,t,a,e,s,m,am)
       | IDENT "Rules"; ctx = rew_rules_ctx; subs = rew_rules_subs;
-        "{"; rules = ne_rew_rules_list; "}" -> VernacRules (ctx,subs,rules)
+       "{"; rules = ne_rew_rules_list; "}" -> VernacRules (ctx,subs,rules)
       ] ]
   ;
   symb_arity:

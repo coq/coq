@@ -172,7 +172,7 @@ let declare_rules ctx subs rules =
   in
   let rhs_env,ctx' = List.fold_left add_decl (Global.env(),[]) ctx in
   let add_decl (env,l) (id,t) =
-    let t' = interp_constr Evd.empty rhs_env t in
+    let t' = interp_constr Evd.empty env t in
     let env' = push_rel (Name id,Some t',mkMeta 0) env in
       (env',(id,t')::l)
   in

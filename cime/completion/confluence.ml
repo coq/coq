@@ -50,13 +50,13 @@ struct
     match rl with
       | [] -> accu
       | r1::l1 ->
-	  Format.printf "Computing critical pairs@.";	  
+	  (* Format.printf "Computing critical pairs@."; *)	  
 	  let e = R.critical_pairs sigma r r1 in
 	  let n = List.length e in
 	  if n > 0 
 	  then
 	    begin
-	      Format.printf "Checking %d critical pairs@." n;
+	      (* Format.printf "Checking %d critical pairs@." n; *)
 	      List.iter (check_joignable sigma vars rc r (Some r1)) e;
 	    end;
 	  check_all_non_self_pairs sigma vars r l1 rc (n+accu)
@@ -66,13 +66,13 @@ struct
     match rl with
       | [] -> accu
       | r::l ->
-	  Format.printf "Computing self critical pairs@.";	  
+	  (* Format.printf "Computing self critical pairs@."; *)	  
 	  let e1 = R.self_critical_pairs sigma r in
 	  let n = List.length e1 in
 	  if n > 0 
 	  then
 	    begin	      
-	      Format.printf "Checking %d critical pairs@." n;
+	      (* Format.printf "Checking %d critical pairs@." n; *)
 	      List.iter (check_joignable sigma vars rc r None) e1;
 	    end;
 	  let e2 = check_all_non_self_pairs sigma vars r l rc 

@@ -60,11 +60,50 @@ let check_eqth = function
   | AC -> check_AC
   | _ -> fun _ -> true
 
-(* get head of an application *)
-let rec get_head t =
-  match kind_of_term t with
-    | App (f,_) -> get_head t
-    | _ -> t
+(* say if a constr is headed by a symbol *)
+let is_symbol_headed env c =
+  match kind_of_term (collapse c) with
+    | App (f,_) ->
+        (match kind_of_term f with
+	   | Const kn -> is_symbol (lookup_constant kn env)
+	   | _ -> false)
+    | Const kn -> is_symbol (lookup_constant kn env)
+    | _ -> false
+
+(* get head symbol of a symbol headed term *)
+let head_symbol c =
+  match kind_of_term (collapse c) with
+    | App (f,_) ->
+	(match kind_of_term f with
+	   | Const kn -> kn
+	   | _ -> invalid_arg "head_symbol")
+    | Const kn -> kn
+    | _ -> invalid_arg "head_symbol"
+
+(* get head symbol and its arguments *)
+let head_symbol_and_args c =
+  match kind_of_term (collapse c) with
+    | App (f,va) ->
+	(match kind_of_term f with
+	   | Const kn -> (kn,va)
+	   | _ -> invalid_arg "head_symbol")
+    | Const kn -> (kn,[||])
+    | _ -> invalid_arg "head_symbol"
+
+(* say if a constr is algebraic *)
+let is_algebraic env =
+  let rec is_alg c =
+    match kind_of_term (collapse c) with
+      | App (f,va) ->
+	  (match kind_of_term f with
+	     | Const kn -> is_symbol (lookup_constant kn env)
+		 & array_for_all is_alg va
+             | Construct _ -> array_for_all is_alg va
+	     | _ -> false)
+      | Construct _ | Rel _ -> true
+      | Const kn -> is_symbol (lookup_constant kn env)
+      | _ -> false
+  in is_alg
 
 (* compute accessibility of arguments *)
 let check_access env ar t =
@@ -97,62 +136,15 @@ let check_symbol env t se =
 	symb_termin = General_Schema;
 	symb_acc = accs }
 
-(* flatten head applications leaving casts *)
-let collapse =
-  let rec collapse_rec f va =
-    match kind_of_term f with
-      | App (g,vb) -> collapse_rec g (Array.append vb va)
-      | _ -> if va = [||] then f else mkApp (f,va)
-  in
-    fun c ->
-      match kind_of_term c with
-	| App (f,va) -> collapse_rec f va
-	| _ -> c
-
-(* say if a constr is headed by a symbol *)
-let is_symbol_headed env c =
-  match kind_of_term (collapse c) with
-    | App (f,_) ->
-        (match kind_of_term f with
-	   | Const kn -> is_symbol (lookup_constant kn env)
-	   | _ -> false)
-    | Const kn -> is_symbol (lookup_constant kn env)
-    | _ -> false
-
-(* get head symbol of a symbol headed LHS *)
-let head_symbol c =
-  match kind_of_term (collapse c) with
-    | App (f,_) ->
-	(match kind_of_term f with
-	   | Const kn -> kn
-	   | _ -> error "Ill-formed rule.")
-    | Const kn -> kn
-    | _ -> error "Ill-formed rule."
-
-(* get head symbol and its arguments *)
-let head_symbol_and_args c =
-  match kind_of_term (collapse c) with
-    | App (f,va) ->
-	(match kind_of_term f with
-	   | Const kn -> (kn,va)
-	   | _ -> error "Ill-formed rule.")
-    | Const kn -> (kn,[||])
-    | _ -> error "Ill-formed rule."
-
-(* say if a constr is algebraic *)
-let is_algebraic env =
-  let rec is_alg c =
-    match kind_of_term (collapse c) with
-      | App (f,va) ->
-	  (match kind_of_term f with
-	     | Const kn -> is_symbol (lookup_constant kn env)
-		 & array_for_all is_alg va
-             | Construct _ -> array_for_all is_alg va
-	     | _ -> false)
-      | Construct _ | Rel _ -> true
-      | Const kn -> is_symbol (lookup_constant kn env)
+(* say if a constr is an admissible RHS *)
+let is_wf_rhs env =
+  let rec is_wf c =
+    match kind_of_term c with
+      | App (f,va) -> is_wf f & array_for_all is_wf va
+      | Construct _ | Ind _ | Const _ | Rel _ -> true
+      | Prod (_,t,b) | Lambda (_,t,b) -> is_wf t & is_wf b
       | _ -> false
-  in is_alg
+  in is_wf
 
 (* say if an algebraic constr is linear *)
 let is_linear =
@@ -244,7 +236,7 @@ let are_rec_calls_smaller env prec kn status vl =
 	      | _ -> are_rc_smaller f & array_for_all are_rc_smaller va
 	  end
       | Const kn' -> compare prec kn' kn = Smaller
-      | Construct _ -> true
+      | Construct _ | Ind _ -> true
       | Rel i -> IntSet.mem i accs
       | Lambda (_,t,b) | Prod (_,t,b) -> are_rc_smaller t & are_rc_smaller b
       | _ -> false
@@ -266,23 +258,26 @@ let check_rules env re =
   let envl,subs',_ = infer_local_decls envr subs in
   let rules = re.rules_entry_list in
 
-  (* check LHS *)
-  let is_LHS_ok (l,r) = is_algebraic env l & is_symbol_headed env l in
-    if not (List.for_all is_LHS_ok rules)
-    then error "Ill-formed rule.";
+  (* check rule syntax *)
+  let is_rule_ok (l,r) = is_algebraic env l
+			& is_symbol_headed env l
+			& is_wf_rhs env r
+  in
+    if not (List.for_all is_rule_ok rules)
+    then error "There is an ill-formed rule.";
 
   (* check subject reduction *)
   if not (List.for_all (is_welltyped env envl envr) rules)
-  then error "There is a rule not type-preserving.";
+  then error "There is a not type-preserving rule.";
 
   (* check local confluence *)
-  if not (is_confluent (cime env) rules)
-  then error "Non-confluent rules";
+  if not (is_locally_confluent (cime env) rules)
+  then error "Non-confluent rules.";
 
   (* check left-linearity *)
-  let is_linear_rule (l,_) = is_linear l in
-    if not (List.for_all is_linear_rule rules)
-    then error "There is a rule not left-linear.";
+  let is_left_linear (l,_) = is_linear l in
+    if not (List.for_all is_left_linear rules)
+    then error "There is a not left-linear rule.";
 
   (* check termination *)
   if not (List.for_all (satisfies_GS env) rules)

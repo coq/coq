@@ -230,7 +230,7 @@ let cime_of_rhs_constr sign =
 	  let j = i - k in if j >= 0 then shift k (var j) else constr c []
       | Lambda (n,t,b) -> lambda n (coc k t) (coc (k+1) b)
       | Prod (n,t,b) -> prod n (coc k t) (coc (k+1) b)
-      | Const _ | Construct _ -> constr c []
+      | Const _ | Construct _ | Ind _ -> constr c []
       | _ -> anomaly "cime_of_rhs_constr"
   and coc_cons k c l = (coc k c)::l
   and coc_array k a = Array.fold_right (coc_cons k) a []
@@ -344,7 +344,8 @@ type env = {
   cmap : constant_body KNmap.t;
   imap : mutual_inductive_body KNmap.t;
   rules : rule list;
-  dnet : compiled_rules }
+  dnet : compiled_rules;
+  rmap : rule list KNmap.t }
 
 (* empty environment *)
 let empty_env = {
@@ -352,7 +353,8 @@ let empty_env = {
   cmap = KNmap.empty;
   imap = KNmap.empty;
   rules = [];
-  dnet = compile empty_sign [] }
+  dnet = compile empty_sign [];
+  rmap = KNmap.empty }
 
 (* get the signature corresponding to an environment *)
 let sign =
@@ -368,6 +370,35 @@ let sign =
 let add_symbol newcmap env = { env with cmap = newcmap }
 let add_inductive newimap env = { env with imap = newimap }
 
+(* definable symbols occuring in an algebraic constr *)
+let rec symbols c =
+  match kind_of_term c with
+    | App (f,va) -> Array.fold_right add_symbols va (symbols f)
+    | Const kn -> KNset.singleton kn
+    | _ -> KNset.empty
+and add_symbols c = KNset.union (symbols c)
+
+let add_lhs_symbols (l,_) = KNset.union (symbols l)
+let lhs_symbols_list l = List.fold_right add_lhs_symbols l KNset.empty
+
+(* definable symbols occuring in a cime term *)
+let rec symbols_cime = function
+  | Term (Sconstr c,l) ->
+      List.fold_right add_symbols_cime l
+      (match kind_of_term c with
+	 | Const kn -> KNset.singleton kn
+	 | _ -> KNset.empty)
+  | _ -> KNset.empty
+and add_symbols_cime t = KNset.union (symbols_cime t)
+
+(* head symbol of a cime term *)
+let head_symbol = function
+  | Term (Sconstr c,_) ->
+      (match kind_of_term c with
+	 | Const kn -> kn
+	 | _ -> invalid_arg "head")
+  | _ -> invalid_arg "head"
+
 (* add rules *)
 let add_rules rb env =
   let n = List.length rb.rules_ctx in
@@ -376,16 +407,28 @@ let add_rules rb env =
     let new_rules = List.map (cime_rule_of_coq_rule s) rb.rules_list in
     let rules = new_rules @ env.rules in
     let dnet = compile s rules in
-      { env with rules = rules; dnet = dnet }
+    let add_rule r m = KNmap.add (head_symbol r.lhs) r m in
+    let rmap = List.fold_right add_rule new_rules env.rmap in
+      { env with rules = rules; dnet = dnet; rmap = rmap }
 
 (* module for confluence checking *)
 module Confluence = Confluence.Make(Cime)
 
-(* say if the addition of l preserves confluence *)
-let is_confluent env l =
+(* say if the addition of l preserves local confluence *)
+let is_locally_confluent env l =
   let s = sign env in
   let l' = List.map (cime_rule_of_coq_rule s) l in
-    Confluence.is_confluent s default (l' @ env.rules)
+  let add_rules r lst = 
+  let l' = List.fold_right add_rules l' l' in
+  let symbs = lhs_symbols_list l in
+    if KNset.inter symbs env.lhs_symbs = KNset.empty then
+      Confluence.is_confluent s default l'
+    else (
+      print_endline "Require to check critical pairs with previous rules.";
+      let p r = KNset.inter symbs (symbols_cime r.lhs) <> KNset.empty in
+      let l'' = List.filter p env.rules in
+	Confluence.is_confluent s default (l' @ l'')
+    )
 
 (* hash table for normal forms *)
 (* let hcime_nf = Hashtbl.create 1997
