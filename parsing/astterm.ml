@@ -555,7 +555,7 @@ let judgment_of_com sigma env com =
 
 (*To retype a list of key*constr with undefined key*)
 let retype_list sigma env lst=
-  List.map (fun (x,csr) -> (x,Retyping.mk_unsafe_judgment env sigma csr)) lst;;
+  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst;;
 
 (*Interprets a constr according to two lists of instantiations (variables and
   metas)*)
