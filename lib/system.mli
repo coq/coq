@@ -14,15 +14,9 @@ val glob : string -> string
 
 val home : string
 
-(*s Global load path. *)
+val exists_dir : string -> bool
 
-val add_path : string -> unit
-val del_path : string -> unit
-val radd_path : string -> unit
-
-val search_paths : unit -> string list
-
-val find_file_in_path : string -> string
+val find_file_in_path : string list -> string -> string
 
 (*s Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
@@ -34,9 +28,12 @@ val marshal_in : in_channel -> 'a
 exception Bad_magic_number of string
 
 val raw_extern_intern : int -> string -> 
-  (string -> string * out_channel) * (string -> string * in_channel)
+  (string -> string * out_channel) *
+  (path:string list -> string -> string * in_channel)
 
-val extern_intern : int -> string -> (string -> 'a -> unit) * (string -> 'a)
+val extern_intern : 
+  int -> string -> (string -> 'a -> unit) *
+    (path:string list -> string -> 'a)
 
 (*s Time stamps. *)
 

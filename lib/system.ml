@@ -6,18 +6,11 @@ open Util
 open Unix
 
 (* Files and load path. *)
-
-let load_path = ref ([] : string list)
-
-let add_path dir = load_path := dir :: !load_path
-
-let del_path dir =
-  if List.mem dir !load_path then
-    load_path := List.filter (fun s -> s <> dir) !load_path
-
-let search_paths () = !load_path
-
 (* All subdirectories, recursively *)
+
+let exists_dir dir =
+  try let _ = opendir dir in true
+  with Unix_error _ -> false
 
 let all_subdirs dir =
   let l = ref [] in
@@ -41,8 +34,6 @@ let all_subdirs dir =
       closedir dirh
   in
   traverse dir; List.rev !l
-
-let radd_path dir = List.iter add_path (all_subdirs dir)
 
 let safe_getenv_def var def =
   try 
@@ -68,13 +59,13 @@ let search_in_path path filename =
 
 let where_in_path = search_in_path
 
-let find_file_in_path name =
+let find_file_in_path paths name =
   let globname = glob name in
   if not (Filename.is_relative globname) then
     globname
   else 
     try 
-      search_in_path !load_path name
+      search_in_path paths name
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
 	(hOV 0 [< 'sTR"Can't find file" ; 'sPC ; 'sTR name ; 'sPC ; 
@@ -108,15 +99,16 @@ exception Bad_magic_number of string
 
 let (raw_extern_intern :
      int -> string -> 
-       (string -> string * out_channel) * (string -> string * in_channel))
+       (string -> string * out_channel)
+       * (string list -> string -> string * in_channel))
   = fun magic suffix ->
     let extern_state name = 
       let (_,channel) as filec =
 	open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
       output_binary_int channel magic;
       filec
-    and intern_state name = 
-      let fname = find_file_in_path (make_suffix name suffix) in
+    and intern_state paths name = 
+      let fname = find_file_in_path paths (make_suffix name suffix) in
       let channel = open_in_bin fname in
       if input_binary_int channel <> magic then
         raise (Bad_magic_number fname);
@@ -125,7 +117,7 @@ let (raw_extern_intern :
     (extern_state,intern_state)
 
 let (extern_intern :
-     int -> string -> (string -> 'a -> unit) * (string -> 'a))
+     int -> string -> (string -> 'a -> unit) * (string list -> string -> 'a))
   = fun magic suffix ->
     let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
     let extern_state name val_0 = 
@@ -138,9 +130,9 @@ let (extern_intern :
 	  begin try_remove fname; raise e end
       with Sys_error s -> error ("System error: " ^ s)
 
-  and intern_state name = 
+  and intern_state paths name = 
     try
-      let (fname,channel) = raw_intern name in
+      let (fname,channel) = raw_intern paths name in
       let v = marshal_in channel in
       close_in channel; 
       v

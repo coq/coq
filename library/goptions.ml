@@ -22,23 +22,35 @@ let nickname = function
 let error_undeclared_key key =
   error ((nickname key)^": no such table or option")
 
+type value =
+  | BoolValue   of bool
+  | IntValue    of int
+  | StringValue of string
+  | IdentValue  of identifier
+
 (****************************************************************************)
 (* 1- Tables                                                                *)
 
-let param_table = ref []
-
-let get_option_table k = List.assoc (nickname k) !param_table
+class type ['a] table_of_A =
+object
+  method add : 'a -> unit
+  method remove : 'a -> unit
+  method mem : 'a -> unit
+  method print : unit
+end
 
 module MakeTable =
   functor
    (A : sig
 	  type t
-          val encode : identifier -> t
+	  type key
+	  val table : (string * key table_of_A) list ref
+	  val encode : key -> t
           val check : t -> unit
-          val decode : t -> section_path
+          val printer : t -> std_ppcmds
           val key : option_name
           val title : string
-          val member_message : identifier -> bool -> string
+          val member_message : key -> bool -> string
           val synchronous : bool
         end) ->
   struct
@@ -49,7 +61,7 @@ module MakeTable =
     let kn = nickname A.key
 
     let _ =
-      if List.mem_assoc kn !param_table then
+      if List.mem_assoc kn !A.table then
 	error "Sorry, this table name is already used"
 
     module MyType = struct type t = A.t let compare = Pervasives.compare end
@@ -90,27 +102,89 @@ module MakeTable =
     let print_table table_name printer table =
       mSG ([< 'sTR table_name ; (hOV 0 
            (if MySet.is_empty table then [< 'sTR "None" ; 'fNL >]
-            else MySet.fold (fun a b -> [< printer a; b >]) table [<>])) >])
+            else MySet.fold
+	      (fun a b -> [< printer a; 'sPC; b >]) table [<>])) >])
 
     class table_of_A () =
     object
-      method add id =
-        let c = A.encode id in
+      method add x =
+	let c = A.encode x in
         A.check c;
         add_option c
-      method remove id = remove_option (A.encode id)
-      method mem id = 
-        let answer = MySet.mem (A.encode id) !t in
-        mSG [< 'sTR (A.member_message id answer) >]
-      method print =
-        let pr x = [< 'sTR(string_of_path (A.decode x)); 'fNL >] in
-        print_table A.title pr !t 
+      method remove x = remove_option (A.encode x)
+      method mem x = 
+        let answer = MySet.mem (A.encode x) !t in
+        mSG [< 'sTR (A.member_message x answer) >]
+      method print = print_table A.title A.printer !t 
     end
 
-    let _ = param_table := (kn,new table_of_A ())::!param_table
+    let _ = A.table := (kn,new table_of_A ())::!A.table
     let active c = MySet.mem c !t
-
+    let elements () = MySet.elements !t
   end
+
+let string_table = ref []
+
+let get_string_table k = List.assoc (nickname k) !string_table
+
+module type StringConvertArg =
+sig
+  val check : string -> unit
+  val key : option_name
+  val title : string
+  val member_message : string -> bool -> string
+  val synchronous : bool
+end
+
+module StringConvert = functor (A : StringConvertArg) ->
+struct
+  type t = string
+  type key = string
+  let table = string_table
+  let encode x = x
+  let check = A.check
+  let printer s = [< 'sTR s >]
+  let key = A.key
+  let title = A.title
+  let member_message = A.member_message
+  let synchronous = A.synchronous
+end
+
+module MakeStringTable =
+  functor (A : StringConvertArg) -> MakeTable (StringConvert(A))
+
+let ident_table = ref []
+
+let get_ident_table k = List.assoc (nickname k) !ident_table
+
+module type IdentConvertArg =
+sig
+  type t
+  val encode : identifier -> t
+  val check : t -> unit
+  val printer : t -> std_ppcmds
+  val key : option_name
+  val title : string
+  val member_message : identifier -> bool -> string
+  val synchronous : bool
+end
+
+module IdentConvert = functor (A : IdentConvertArg) -> 
+struct
+  type t = A.t
+  type key = identifier
+  let table = ident_table
+  let encode = A.encode
+  let check = A.check
+  let printer = A.printer
+  let key = A.key
+  let title = A.title
+  let member_message = A.member_message
+  let synchronous = A.synchronous
+end
+
+module MakeIdentTable =
+  functor (A : IdentConvertArg) -> MakeTable (IdentConvert(A))
 
 (****************************************************************************)
 (* 2- Options                                                               *)
@@ -119,11 +193,6 @@ type option_value_ref =
   | OptionBoolRef   of bool   ref
   | OptionIntRef    of int    ref
   | OptionStringRef of string ref
-
-type option_value =
-  | OptionBool   of bool
-  | OptionInt    of int
-  | OptionString of string
 
 module Key = struct type t = option_name let compare = Pervasives.compare end
 module OptionMap = Map.Make(Key)
@@ -157,8 +226,8 @@ let _ =
 (* Tools for handling options *)
 
 type option_type =
-  | Sync of  option_value
-  | Async of (unit -> option_value) * (option_value -> unit)
+  | Sync of  value
+  | Async of (unit -> value) * (value -> unit)
 
 (* This raises Not_found if option of key [key] is unknown *)
 let get_option key =
@@ -182,7 +251,8 @@ let declare_sync_option (cast,uncast)
     let _ = get_option key in
     error "Sorry, this option name is already used"
   with Not_found ->
-    if List.mem_assoc (nickname key) !param_table
+    if List.mem_assoc (nickname key) !string_table
+      or List.mem_assoc (nickname key) !ident_table
     then error "Sorry, this option name is already used";
     sync_value_tab := OptionMap.add key (name,(cast default)) !sync_value_tab;
     fun () -> uncast (snd (OptionMap.find key !sync_value_tab))
@@ -190,14 +260,14 @@ let declare_sync_option (cast,uncast)
 type 'a value_function = unit -> 'a
 
 let declare_sync_int_option = declare_sync_option
-  ((function vr -> OptionInt vr),
-   function OptionInt x -> x | _ -> anomaly "MakeOption")
+  ((function vr -> IntValue vr),
+   function IntValue x -> x | _ -> anomaly "MakeOption")
 let declare_sync_bool_option = declare_sync_option
-  ((function vr -> OptionBool vr),
-   function OptionBool x -> x | _ -> anomaly "MakeOption")
+  ((function vr -> BoolValue vr),
+   function BoolValue x -> x | _ -> anomaly "MakeOption")
 let declare_sync_string_option = declare_sync_option
-  ((function vr -> OptionString vr),
-   function OptionString x -> x | _ -> anomaly "MakeOption")
+  ((function vr -> StringValue vr),
+   function StringValue x -> x | _ -> anomaly "MakeOption")
 
 (* 2-b. Declaring synchronous options *)
 
@@ -213,7 +283,8 @@ let declare_async_option cast uncast
     let _ = get_option key in
     error "Sorry, this option name is already used"
   with Not_found ->
-    if List.mem_assoc (nickname key) !param_table then 
+    if List.mem_assoc (nickname key) !string_table
+      or List.mem_assoc (nickname key) !ident_table then 
       error "Sorry, this option name is already used";
     let cread () = cast (read ()) in
     let cwrite v = write (uncast v) in
@@ -221,16 +292,16 @@ let declare_async_option cast uncast
 
 let declare_async_int_option =
   declare_async_option 
-    (fun v -> OptionInt v)
-    (function OptionInt v -> v | _ -> anomaly "async_option")
+    (fun v -> IntValue v)
+    (function IntValue v -> v | _ -> anomaly "async_option")
 let declare_async_bool_option =
   declare_async_option
-    (fun v -> OptionBool v)
-    (function OptionBool v -> v | _ -> anomaly "async_option")
+    (fun v -> BoolValue v)
+    (function BoolValue v -> v | _ -> anomaly "async_option")
 let declare_async_string_option =
   declare_async_option
-    (fun v -> OptionString v)
-    (function OptionString v -> v | _ -> anomaly "async_option")
+    (fun v -> StringValue v)
+    (function StringValue v -> v | _ -> anomaly "async_option")
 
 
 (* 3- User accessible commands *)
@@ -252,25 +323,26 @@ let bad_type_error () = error "Bad type of value for this option"
 
 let set_int_option_value = set_option_value
   (fun v -> function 
-     | (OptionInt _) -> OptionInt v
+     | (IntValue _) -> IntValue v
      | _ -> bad_type_error ())
 let set_bool_option_value = set_option_value
   (fun v -> function 
-     | (OptionBool _) -> OptionBool v
+     | (BoolValue _) -> BoolValue v
      | _ -> bad_type_error ())
 let set_string_option_value = set_option_value
  (fun v -> function 
-    | (OptionString _) -> OptionString v
+    | (StringValue _) -> StringValue v
     | _ -> bad_type_error ())
 
 (* Printing options/tables *)
 
 let msg_sync_option_value (name,v) =
   match v with
-    | OptionBool true  -> [< 'sTR "true" >]
-    | OptionBool false -> [< 'sTR "false" >]
-    | OptionInt n      -> [< 'iNT n >]
-    | OptionString s   -> [< 'sTR s >]
+    | BoolValue true  -> [< 'sTR "true" >]
+    | BoolValue false -> [< 'sTR "false" >]
+    | IntValue n      -> [< 'iNT n >]
+    | StringValue s   -> [< 'sTR s >]
+    | IdentValue id    -> [< print_id id >]
 
 let msg_async_option_value (name,vref) =
   match vref with
@@ -301,7 +373,10 @@ let print_tables () =
      'sTR "Tables:"; 'fNL;
      List.fold_right
        (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
-       !param_table [<>];
-     'fNL
+       !string_table [<>];
+     List.fold_right
+       (fun (nickkey,_) p -> [< p; 'sTR ("  "^nickkey); 'fNL >])
+       !ident_table [<>];
+     'fNL;
  >]
 

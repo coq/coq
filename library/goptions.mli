@@ -46,6 +46,7 @@
    (synchronous = consistent with the resetting commands)                   *)
 
 (*i*)
+open Pp
 open Names
 (*i*)
 
@@ -61,13 +62,36 @@ val error_undeclared_key : option_name -> 'a
 
 (*s Tables. *)
 
-(* The functor [MakeTable] is for declaring a new table of key [key] 
-   containing objects of type [A.t]; in spite the objects are internally
-   of type [A.t], they are supposed to be added at the vernacular level 
-   as objects of type [identifier] and to be printed as [section_path];
-   thus two functions [encode : identifier -> A.t] and [decode : A.t
-   -> section_path] have to be provided; this limitation can be make
-   softer in a future version (!); the function [check] is for testing
+(* The functor [MakeStringTable] declares a table containing objects
+   of type [string]; the function [check] is for testing if a given
+   object is allowed to be added to the table; the function
+   [member_message] say what to print when invoking the "Test Toto
+   Titi foo." command; at the end [title] is the table name printed
+   when invoking the "Print Toto Titi." command; [active] is roughly
+   the internal version of the vernacular "Test ...": it tells if a
+   given object is in the table; [elements] returns the list of
+   elements of the table *)
+
+module MakeStringTable :
+  functor
+    (A : sig
+       val check : string -> unit
+       val key : option_name
+       val title : string
+       val member_message : string -> bool -> string
+       val synchronous : bool
+     end) ->
+sig
+  val active : string -> bool
+  val elements : unit -> string list
+end
+
+(* The functor [MakeIdentTable] declares a new table of [identifier];
+   for generality, identifiers may be internally encode in other type
+   which is [A.t] through an encoding function [encode : identifier ->
+   A.t] (typically, [A.t] is the persistent [section_path] associated
+   to the currentdenotation of the [identifier] and the encoding function
+   is the globalization function); the function [check] is for testing
    if a given object is allowed to be added to the table; the function
    [member_message] say what to print when invoking the "Test Toto
    Titi foo." command; at the end [title] is the table name printed
@@ -75,13 +99,13 @@ val error_undeclared_key : option_name -> 'a
    the internal version of the vernacular "Test ...": it tells if a
    given object is in the table.                                            *)
 
-module MakeTable :
+module MakeIdentTable :
   functor
     (A : sig
            type t
            val encode : identifier -> t
            val check : t -> unit
-           val decode : t -> section_path
+           val printer : t -> std_ppcmds
            val key : option_name
            val title : string
            val member_message : identifier -> bool -> string
@@ -89,6 +113,7 @@ module MakeTable :
          end) ->
     sig
       val active : A.t -> bool
+      val elements : unit -> A.t list
     end
 
 
@@ -128,7 +153,14 @@ val declare_async_string_option : string async_option_sig -> unit
 
 (*s Special functions supposed to be used only in vernacentries.ml *)
 
-val get_option_table :
+val get_string_table :
+  option_name ->
+    < add : string -> unit;
+      remove : string -> unit;
+      mem : string -> unit;
+      print : unit >
+
+val get_ident_table :
   option_name ->
     < add : identifier -> unit;
       remove : identifier -> unit;
