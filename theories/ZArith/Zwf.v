@@ -10,16 +10,16 @@
 
 Require ZArith_base.
 Require Export Wf_nat.
+Require Omega.
 
 (** Well-founded relations on Z. *)
 
 (** We define the following family of relations on [Z x Z]: 
 
-    [x (Zwf c) y]   iff   [c <= x < y]
+    [x (Zwf c) y]   iff   [x < y & c <= y]
  *)
 
-Definition Zwf := [c:Z][x,y:Z] `c <= x` /\ `c <= y` /\ `x < y`.
-
+Definition Zwf := [c:Z][x,y:Z] `c <= y` /\ `x < y`.
 
 (** and we prove that [(Zwf c)] is well founded *)
 
@@ -33,15 +33,26 @@ Variable c : Z.
 Local f := [z:Z](absolu (Zminus z c)).
 
 Lemma Zwf_well_founded : (well_founded Z (Zwf c)).
-Proof.
-Apply well_founded_lt_compat with f:=f.
-Unfold Zwf f.
-Intros.
-Apply absolu_lt.
-Unfold Zminus. Split.
-Apply Zle_left; Intuition.
-Rewrite (Zplus_sym x `-c`). Rewrite (Zplus_sym y `-c`).
-Apply Zlt_reg_l; Intuition.
+Red; Intros.
+Assert (n:nat)(a:Z)(lt (f a) n)\/(`a<c`) -> (Acc Z (Zwf c) a).
+Clear a; Induction n; Intros.
+(** n= 0 *)
+Case H; Intros.
+Case (lt_n_O (f a)); Auto.
+Apply Acc_intro; Unfold Zwf; Intros.
+Assert False;Omega Orelse Contradiction.
+(** inductive case *)
+Case H0; Clear H0; Intro; Auto.
+Apply Acc_intro; Intros.
+Apply H.
+Unfold Zwf in H1.
+Case (Zle_or_lt c y); Intro; Auto with zarith.
+Left.
+Red in H0.
+Apply lt_le_trans with (f a); Auto with arith.
+Unfold f.
+Apply absolu_lt; Omega.
+Apply (H (S (f a))); Auto.
 Save.
 
 End wf_proof.
