@@ -28,7 +28,7 @@ Theorem Rsym_imp_notRsym: (U: Type) (R: (Relation U)) (Symmetric U R) ->
             (Symmetric U (Complement U R)).
 Proof.
 Unfold Symmetric Complement.
-(Intros U R H' x y H'0; Red; Intro H'1; Apply H'0); Auto with sets.
+Intros U R H' x y H'0; Red; Intro H'1; Apply H'0; Auto with sets.
 Qed.
 
 Theorem Equiv_from_preorder :
