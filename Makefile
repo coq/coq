@@ -197,13 +197,13 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
 	library/dischargedhypsmap.cmo library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
-        pretyping/termops.cmo \
-        pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
+        pretyping/termops.cmo pretyping/reductionops.cmo \
+        pretyping/inductiveops.cmo pretyping/retyping.cmo library/declare.cmo \
         pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
         pretyping/rawterm.cmo \
         pretyping/pattern.cmo pretyping/pretype_errors.cmo \
 	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-	pretyping/coercion.cmo pretyping/inductiveops.cmo pretyping/cases.cmo \
+	pretyping/coercion.cmo pretyping/cases.cmo \
         pretyping/indrec.cmo \
 	pretyping/pretyping.cmo pretyping/syntax_def.cmo \
 	parsing/lexer.cmo parsing/coqast.cmo parsing/genarg.cmo \
