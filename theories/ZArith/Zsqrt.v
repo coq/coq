@@ -12,28 +12,18 @@ Require Export ZArith_base.
 Require Export ZArithRing.
 Require Export Omega.
 
-(* The following tactic replaces all instances of (POS (xI ...)) by
-   `2*(POS ...)+1` , but only when ... is not made only with xO, XI, or xH.
-   
-   It is very important to put (Fail 1) and not (Fail 2) in this
-   tactic.  This is not very well documented anywhere, but it seems, that
-   Fail 2 makes the "Match Context" tactic fail, while (Fail 1) only
-   makes the clause fail. *)
+(** The following tactic replaces all instances of (POS (xI ...)) by
+    `2*(POS ...)+1` , but only when ... is not made only with xO, XI, or xH. *)
 Tactic Definition compute_POS :=
- (Match Context With
- | [|- ?] -> Fail
- | [|- [(POS (xI ?1))]] -> Let v = ?1 In 
-                          (Match v With
-                            | [ [xH] ] ->
-                              Fail
-                            |_->
-                              Rewrite (POS_xI v))
- | [ |- [(POS (xO ?1))]] -> Let v = ?1 In
-                           Match v With
-                            |[ [xH] ]->
-                              Fail
-                            |[?]->
-                              Rewrite (POS_xO v)).
+  Match Context With
+  | [|- [(POS (xI ?1))]] ->
+    (Match ?1 With
+     | [[xH]] -> Fail
+     | _ -> Rewrite (POS_xI ?1))
+  | [|- [(POS (xO ?1))]] ->
+    (Match ?1 With
+     | [[xH]] -> Fail
+     | _ -> Rewrite (POS_xO ?1)).
 
 Inductive sqrt_data [n : Z] : Set :=
   c_sqrt: (s, r :Z)`n=s*s+r`->`0<=r<=2*s`->(sqrt_data n) .
@@ -121,8 +111,6 @@ Defined.
 
 (** Define a function of type Z->Z that computes the integer square root,
     but only for positive numbers, and 0 for others. *)
-
-
 Definition Zsqrt_plain : Z->Z :=
   [x]Cases x of
     (POS p)=>Cases (Zsqrt (POS p) (ZERO_le_POS p)) of (existS s _) => s end
