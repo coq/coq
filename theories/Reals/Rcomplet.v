@@ -157,16 +157,6 @@ Definition suite_majorant [Un:nat->R;pr:(majoree Un)] : nat -> R := [i:nat](majo
 
 Definition suite_minorant [Un:nat->R;pr:(minoree Un)] : nat -> R := [i:nat](minorant [k:nat](Un (plus i k)) (min_ss Un i pr)).
 
-(**********)
-Lemma Rle_Rle_eq : (a,b:R) ``a<=b`` -> ``b<=a`` -> ``a==b``.
-Intros.
-Case (total_order_T a b); Intro.
-Elim s; Intros.
-Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? a0 H0)).
-Assumption.
-Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? r H)).
-Qed.
-
 (* La suite des majorants est decroissante *)
 Lemma Wn_decreasing : (Un:nat->R;pr:(majoree Un)) (Un_decreasing (suite_majorant Un pr)). 
 Intros.
@@ -199,7 +189,7 @@ Unfold is_lub in p0; Unfold is_lub in H1.
 Elim p0; Intros; Elim H1; Intros.
 Assert H6 := (H5 x0 H2).
 Assert H7 := (H3 (majorant ([k:nat](Un (plus n k))) (maj_ss Un n pr)) H4).
-Apply Rle_Rle_eq; Assumption.
+Apply Rle_antisym; Assumption.
 Unfold majorant.
 Case (maj_sup [k:nat](Un (plus n k)) (maj_ss Un n pr)).
 Trivial.
@@ -209,7 +199,7 @@ Unfold is_lub in p; Unfold is_lub in H1.
 Elim p; Intros; Elim H1; Intros.
 Assert H6 := (H5 x H2).
 Assert H7 := (H3 (majorant ([k:nat](Un (plus (S n) k))) (maj_ss Un (S n) pr)) H4).
-Apply Rle_Rle_eq; Assumption.
+Apply Rle_antisym; Assumption.
 Unfold majorant.
 Case (maj_sup [k:nat](Un (plus (S n) k)) (maj_ss Un (S n) pr)).
 Trivial.
@@ -251,7 +241,7 @@ Elim p0; Intros; Elim H1; Intros.
 Assert H6 := (H5 x0 H2).
 Assert H7 := (H3 (Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr))) H4).
 Rewrite <- (Ropp_Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr))).
-Apply eq_Ropp; Apply Rle_Rle_eq; Assumption.
+Apply eq_Ropp; Apply Rle_antisym; Assumption.
 Unfold minorant.
 Case (min_inf [k:nat](Un (plus n k)) (min_ss Un n pr)).
 Intro; Rewrite Ropp_Ropp.
@@ -263,7 +253,7 @@ Elim p; Intros; Elim H1; Intros.
 Assert H6 := (H5 x H2).
 Assert H7 := (H3 (Ropp (minorant ([k:nat](Un (plus (S n) k))) (min_ss Un (S n) pr))) H4).
 Rewrite <- (Ropp_Ropp (minorant ([k:nat](Un (plus (S n) k))) (min_ss Un (S n) pr))).
-Apply eq_Ropp; Apply Rle_Rle_eq; Assumption.
+Apply eq_Ropp; Apply Rle_antisym; Assumption.
 Unfold minorant.
 Case (min_inf [k:nat](Un (plus (S n) k)) (min_ss Un (S n) pr)).
 Intro; Rewrite Ropp_Ropp.
@@ -295,7 +285,7 @@ Elim p; Intros; Elim H; Intros.
 Assert H4 := (H3 x H0).
 Assert H5 := (H1 (Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr2))) H2).
 Rewrite <- (Ropp_Ropp (minorant ([k:nat](Un (plus n k))) (min_ss Un n pr2))).
-Apply eq_Ropp; Apply Rle_Rle_eq; Assumption.
+Apply eq_Ropp; Apply Rle_antisym; Assumption.
 Unfold minorant.
 Case (min_inf [k:nat](Un (plus n k)) (min_ss Un n pr2)).
 Intro; Rewrite Ropp_Ropp.
@@ -319,7 +309,7 @@ Unfold is_lub in p; Unfold is_lub in H.
 Elim p; Intros; Elim H; Intros.
 Assert H4 := (H3 x H0).
 Assert H5 := (H1 (majorant ([k:nat](Un (plus n k))) (maj_ss Un n pr1)) H2).
-Apply Rle_Rle_eq; Assumption.
+Apply Rle_antisym; Assumption.
 Unfold majorant.
 Case (maj_sup [k:nat](Un (plus n k)) (maj_ss Un n pr1)).
 Intro; Trivial.
