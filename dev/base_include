@@ -47,6 +47,12 @@ let e s = Astterm.interp_rawconstr Evd.empty (Global.env()) (parse_ast s);;
 (* For compatibility *)
 let raw_constr_of_string = e;;
 
+(* build a term of type constr with type-checking and resolution of 
+   implicit syntax *)
+
+let constr_of_string s 
+	= Astterm.interp_constr Evd.empty (Global.env()) (parse_ast s);;
+
 (* Get the current goal *)
 
 let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;
