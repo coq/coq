@@ -12,6 +12,8 @@ coq-docs-html
 Reference-Manual.atoc
 Reference-Manual.tacidx Reference-Manual.tacind Reference-Manual.comind
 Reference-Manual.comidx Reference-Manual.errind Reference-Manual.erridx
+Reference-Manual.hidx Reference-Manual.haux Reference-Manual.hind 
+Reference-Manual.hcomind Reference-Manual.htacind Reference-Manual.herrind
 Reference-Manual.sh
 Anomalies.dvi.gz Anomalies.ps.gz Changes.dvi.gz Changes.ps.gz Library.dvi.gz Library.ps.gz Reference-Manual-addendum.ps.gz Reference-Manual-all.dvi.gz Reference-Manual-all.ps.gz Reference-Manual-base.ps.gz Tutorial.dvi.gz Tutorial.ps.gz
 Reference-Manual-base.dvi.gz
@@ -28,4 +30,6 @@ config.cache
 config.status
 Reference-Manual.rel
 library.files
+library.files.ls
+library.files.ls.tmp
 library.coqweb.tex
