@@ -135,9 +135,6 @@ end
 
 module Pp = Ocaml.Make(ToplevelParams)
 
-let pp_ast a = Pp.pp_ast (betared_ast (uncurrify_ast a))
-let pp_decl d = Pp.pp_decl (betared_decl (uncurrify_decl d))
-
 open Vernacinterp
 
 let _ = 
@@ -149,16 +146,16 @@ let _ =
 	      match kind_of_term c with
 		(* If it is a global reference, then output the declaration *)
 		| IsConst (sp,_) -> 
-		    mSGNL (pp_decl (extract_declaration (ConstRef sp)))
+		    mSGNL (Pp.pp_decl (extract_declaration (ConstRef sp)))
 		| IsMutInd (ind,_) ->
-		    mSGNL (pp_decl (extract_declaration (IndRef ind)))
+		    mSGNL (Pp.pp_decl (extract_declaration (IndRef ind)))
 		| IsMutConstruct (cs,_) ->
-		    mSGNL (pp_decl (extract_declaration (ConstructRef cs)))
+		    mSGNL (Pp.pp_decl (extract_declaration (ConstructRef cs)))
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
 		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (pp_ast a)
+		      | Emlterm a -> mSGNL (Pp.pp_ast a)
 		      | Eprop -> message "prop")
        | _ -> assert false)
 
@@ -174,13 +171,13 @@ let _ =
   vinterp_add "ExtractionRec"
     (fun vl () ->
        let rl' = decl_of_vargl vl in
-       List.iter (fun d -> mSGNL (pp_decl d)) rl')
+       List.iter (fun d -> mSGNL (Pp.pp_decl d)) rl')
 
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
        | VARG_STRING f :: vl ->
-	   (fun () -> Ocaml.extract_to_file f (decl_of_vargl vl))
+	   (fun () -> Ocaml.extract_to_file f false (decl_of_vargl vl))
        | _ -> assert false)
 
 (*s Extraction of a module. *)
@@ -204,6 +201,7 @@ let _ =
        | [VARG_IDENTIFIER m] ->
 	   (fun () -> 
 	      let m = Names.string_of_id m in
+	      Ocaml.current_module := m;
 	      let f = (String.uncapitalize m) ^ ".ml" in
-	      Ocaml.extract_to_file f (extract_module m))
+	      Ocaml.extract_to_file f true (extract_module m))
        | _ -> assert false)

@@ -202,9 +202,9 @@ let rec pp_expr par env args =
 	[< open_par par; 'sTR "failwith"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
     | MLprop ->
-	string "Prop"
+	string "prop"
     | MLarity ->
-	string "Arity"
+	string "arity"
     | MLcast (a,t) ->
 	[< open_par true; pp_expr false env args a; 'sPC; 'sTR ":"; 'sPC; 
 	   pp_type t; close_par true >]
@@ -329,11 +329,14 @@ let pp_decl = function
       hOV 0 [< 'sTR "let "; 
 	       pp_function (empty_env ()) (P.pp_global r) a; 'fNL >]
 
+let pp_ast a = pp_ast (betared_ast (uncurrify_ast a))
+let pp_decl d = pp_decl (betared_decl (uncurrify_decl d))
+
 end
 
-(*s Renaming issues. *)
+(*s Renaming issues for a monolithic extraction. *)
 
-module OcamlParams = struct
+module MonoParams = struct
 
 let renamings = Hashtbl.create 97
 
@@ -361,18 +364,67 @@ let pp_global r = pr_id (rename_global r)
 
 end
 
-(*s The ocaml pretty-printing module. *)
+module MonoPp = Make(MonoParams)
 
-module Pp = Make(OcamlParams)
+(*s Renaming issues in a modular extraction. *)
 
-let pp_ast a = Pp.pp_ast (betared_ast (uncurrify_ast a))
-let pp_decl d = Pp.pp_decl (betared_decl (uncurrify_decl d))
+let current_module = ref ""
+
+module ModularParams = struct
+
+  let avoid = 
+    Idset.add (id_of_string "prop")
+      (Idset.add (id_of_string "arity") ocaml_keywords)
+
+  let rename_lower id = 
+    if Idset.mem id avoid || id <> lowercase_id id then 
+      "coq_" ^ string_of_id id 
+    else 
+      string_of_id id
+
+  let rename_upper id = 
+    if Idset.mem id avoid || id <> uppercase_id id then 
+      "Coq_" ^ string_of_id id 
+    else 
+      string_of_id id
+
+  let id_of_global r s =
+    let sp = match r with
+      | ConstRef sp -> sp
+      | IndRef (sp,_) -> sp
+      | ConstructRef ((sp,_),_) -> sp
+      | _ -> assert false
+    in
+    let m = list_last (dirpath sp) in
+    id_of_string 
+      (if m = !current_module then s else (String.capitalize m) ^ "." ^ s)
+
+  let rename_type_global r = 
+    let id = Environ.id_of_global (Global.env()) r in 
+    id_of_global r (rename_lower id)
+
+  let rename_global r = 
+    let id = Environ.id_of_global (Global.env()) r in 
+    match r with
+      | ConstructRef _ -> id_of_global r (rename_upper id)
+      | _ -> id_of_global r (rename_lower id)
+
+  let pp_type_global r = pr_id (rename_type_global r)
+  let pp_global r = pr_id (rename_global r)
+end
+
+module ModularPp = Make(ModularParams)
+
+(*s Extraction to a file. *)
 
 let ocaml_preamble () =
-  [< 'sTR "type prop = Prop"; 'fNL; 'fNL;
-     'sTR "type arity = Arity"; 'fNL; 'fNL >]
+  [< 'sTR "type prop = unit"; 'fNL;
+     'sTR "let prop = ()"; 'fNL; 'fNL;
+     'sTR "type arity = unit"; 'fNL;
+     'sTR "let arity = ()"; 'fNL; 'fNL >]
 
-let extract_to_file f decls =
+let extract_to_file f modular decls =
+  let pp_decl = if modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
   pP_with ft (hV 0 (ocaml_preamble ()));

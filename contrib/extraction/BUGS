@@ -1,0 +1,22 @@
+
+======================================================================
+
+Coq < Extraction Module Specif.
+Anomaly: Failure "nth". Please report.
+
+======================================================================
+
+Coq < Extraction Module Datatypes.
+
+donne le code suivant :
+
+type coq_Empty_set =
+
+let coq_Empty_set_ind =
+  prop
+
+let coq_Empty_set_rec = function
+
+let coq_Empty_set_rect = function
+  
+======================================================================

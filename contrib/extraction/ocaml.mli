@@ -9,13 +9,16 @@
 (*i $Id$ i*)
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
-    extraction in the Coq toplevel and a module [Pp] to be used for
-    production of Ocaml files. *)
+    extraction in the Coq toplevel and a function to extract some 
+    declarations to a file. *)
 
 open Miniml
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 
-val extract_to_file : string -> ml_decl list -> unit
+(* The boolean indicates if the extraction is modular. *)
+
+val current_module : string ref
+val extract_to_file : string -> bool -> ml_decl list -> unit
 
 
