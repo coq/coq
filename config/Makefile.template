@@ -37,6 +37,9 @@ VERSION=COQVERSION
 # Directory containing Camlp4 binaries. Can be empty if camlp4 is in the PATH
 CAMLP4BIN=CAMLP4BINDIRECTORY
 
+# Ocaml version number
+CAMLVERSION=CAMLTAG
+
 # Camlp4 library directory (avoid CAMLP4LIB used on Windows)
 CAMLP4O=CAMLP4TOOL
 MYCAMLP4LIB=CAMLP4LIBDIRECTORY
