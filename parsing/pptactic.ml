@@ -373,7 +373,7 @@ let pr_extend_gen proj prgen s l =
     let (s,pl) = proj (Hashtbl.find tab s) l in
     str s ++ pr_tacarg_using_rule prgen (pl,l)
   with Not_found ->
-    str s ++ prlist prgen l ++ str " (Generic printer)"
+    str s ++ prlist prgen l ++ str " (* Generic printer *)"
 
 let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
 
