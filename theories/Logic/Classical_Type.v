@@ -8,6 +8,8 @@
 
 (*i $Id$ i*)
 
+(** This file is obsolete, use Classical.v instead *)
+
 (** Classical Logic for Type *)
 
 Require Export Classical_Prop.
