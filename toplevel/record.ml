@@ -28,45 +28,50 @@ open Type_errors
 
 (********** definition d'un record (structure) **************)
 
-let make_constructor idstruc idps fields  =
-  let app_constructor = 
-    Ast.ope("APPLISTEXPL",
-        (Ast.nvar idstruc):: List.map (fun id -> Ast.nvar id) idps) in
-  let rec aux fields =
-    match fields with
-      | [] -> app_constructor
-      | (id,true,ty)::l -> Ast.ope("PROD",[ty; Ast.slam(Some id, aux l)])
-      | (id,false,c)::l -> Ast.ope("LETIN",[c; Ast.slam(Some id, aux l)])
-  in 
-  aux fields
-
 let occur_fields id fs =
   List.exists (fun (_,_,a) -> Ast.occur_var_ast id a) fs
 
-let interp_decl sigma env (id,assum,t) =
+let name_of id = if id = wildcard then Anonymous else Name id
+
+let interp_decl env (id,assum,t) =
   if assum then
-    (id,None,interp_type Evd.empty env t)
+    (name_of id,None,interp_type Evd.empty env t)
   else
     let j = judgment_of_rawconstr Evd.empty env t in
-    (id,Some j.uj_val, j.uj_type)
+    (Name id,Some j.uj_val, j.uj_type)
 
-let typecheck_params_and_field ps fs =
+let build_decl_entry sigma env (id,t) =
+  (id,Typeops.LocalAssum (interp_type Evd.empty env t))
+
+let typecheck_params_and_fields ps fs =
   let env0 = Global.env () in
   let env1,newps =
     List.fold_left
       (fun (env,newps) (id,t) -> 
-         let decl = interp_decl Evd.empty env (id,true,t) in
-         (push_named decl env,decl::newps))
+	let decl = interp_decl env (id,true,t) in
+        (push_rel decl env,decl::newps))
       (env0,[]) ps
   in
+(*
   let env2,newfs =
     List.fold_left
       (fun (env,newfs) d ->
-         let decl = interp_decl Evd.empty env d in
+         let decl = interp_decl env d in
          (push_named decl env, decl::newfs))
+      (env1,[]) fs
+*)
+  let env2,newfs =
+    List.fold_left
+      (fun (env,newfs) d ->
+         let decl = interp_decl env d in
+         (push_rel decl env, decl::newfs))
       (env1,[]) fs
   in
   newps, newfs
+
+let degenerate_decl id = function
+    (_,None,t) -> (id,Typeops.LocalAssum t)
+  | (_,Some c,t) -> (id,Typeops.LocalDef c)
 
 type record_error =
   | MissingProj of identifier * identifier list
@@ -97,54 +102,97 @@ let warning_or_error coe indsp err =
   if coe then errorlabstrm "structure" st;
   Options.if_verbose ppnl (hov 0 (str"Warning: " ++ st))
 
+type field_status =
+  | NoProjection of name
+  | Projection of constr
+
+type projection_status =
+  | NotDefinable of identifier list
+  | Definable of constr
+
+(* This replaces previous projection bodies in current projection *)
+(* Undefined projs are collected and, at least one undefined proj occurs *)
+(* in the body of current projection then the latter can not be defined *)
+(* [c] is defined in ctxt [[params;fields]] and [l] is an instance of *)
+(* [[fields]] defined in ctxt [[params;x:ind]] *)
+let subst_projection l c =
+  let lv = List.length l in
+  let bad_projs = ref [] in
+  let rec substrec depth c = match kind_of_term c with
+    | Rel k ->
+	(* We are in context [[params;fields;x:ind;...depth...]] *)
+        if k <= depth+1 then 
+	  c
+        else if k-depth-1 <= lv then
+	  match List.nth l (k-depth-2) with
+	    | Projection t -> lift depth t
+	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
+	    | NoProjection Anonymous -> assert false
+        else 
+	  mkRel (k-lv)
+    | _ -> map_constr_with_binders succ substrec depth c
+  in
+  let c' = lift 1 c in (* to get [c] defined in ctxt [[params;fields;x:ind]] *)
+  let c'' = substrec 0 c' in
+  if !bad_projs <> [] then
+    NotDefinable (List.rev !bad_projs)
+  else 
+    Definable c''
+
 (* We build projections *)
 let declare_projections indsp coers fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let paramdecls = mip.mind_params_ctxt in
-  let paramdecls = 
-    List.map (fun (na,b,t) -> match na with Name id -> (id,b,t) | _ -> assert false)
-      paramdecls in
   let r = mkInd indsp in
-  let paramargs = List.rev (List.map (fun (id,_,_) -> mkVar id) paramdecls) in
-  let rp = applist (r, paramargs) in
+  let rp = applist (r, extended_rel_list 0 paramdecls) in
+  let paramargs = extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
   let x = Termops.named_hd (Global.env()) r Anonymous in
-  let proj_args = (* Rel 1 refers to "x" *) paramargs@[mkRel 1] in
-  let (sp_projs,_,_) =
+  let lifted_fields = lift_rel_context 1 fields in
+  let (_,sp_projs,_) =
     List.fold_left2
-      (fun (sp_projs,ids_not_ok,subst) coe (fi,optci,ti) ->
-	 let fv_ti = match optci with
-	   | Some ci -> global_vars env ci (* Type is then meaningless *)
-	   | None -> global_vars env ti in
-	 let bad_projs = (list_intersect ids_not_ok fv_ti) in
-	 if bad_projs <> [] then begin
-	   warning_or_error coe indsp (MissingProj (fi,bad_projs));
-           (None::sp_projs,fi::ids_not_ok,subst)
-         end else
-	   let body = match optci with
-	     | Some ci -> replace_vars subst ci
-	     | None ->
-		 let p = mkLambda (x, rp, replace_vars subst ti) in
-		 let branch = it_mkNamedLambda_or_LetIn (mkVar fi) fields in
-		 let ci = Inductiveops.make_case_info env indsp
-			    (Some PrintLet) [| RegularPat |] in
-		 mkCase (ci, p, mkRel 1, [|branch|]) in
-	   let proj =
-	     it_mkNamedLambda_or_LetIn (mkLambda (x, rp, body)) paramdecls in
-	   let name = 
-	     try
-	       let cie = { const_entry_body = proj;
-                           const_entry_type = None;
-                           const_entry_opaque = false } in
-	       let sp =
-		 declare_constant fi (ConstantEntry cie,NeverDischarge)
-	       in Some sp
-             with Type_errors.TypeError (ctx,te) -> begin
-               warning_or_error coe indsp (BadTypedProj (fi,ctx,te));
-	       None
+      (fun (nfi,sp_projs,subst) coe (fi,optci,ti) ->
+	match fi with
+	| Anonymous ->
+	    (nfi-1, None::sp_projs,NoProjection fi::subst)
+	| Name fid ->
+	  let abstract, c = match optci with
+	  | Some ci -> false, ci
+	  | None -> true, ti in
+	  match subst_projection subst c with
+	  | NotDefinable bad_projs ->
+	      warning_or_error coe indsp (MissingProj (fid,bad_projs));
+	      (nfi-1, None::sp_projs,NoProjection fi::subst)
+	  | Definable c' ->
+	    (* [c'] is defined in context [params;x:rp] *)
+	    let body =
+	      if abstract then
+		(* [c''] is defined in context [params;x:rp;x:rp] *)
+		let c'' = liftn 1 2 c' in
+		let p = mkLambda (x, lift 1 rp, c'') in
+		let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
+		let ci = Inductiveops.make_case_info env indsp
+		  (Some PrintLet) [| RegularPat |] in
+		mkCase (ci, p, mkRel 1, [|branch|])
+	      else c' in
+	    let proj =
+	      it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
+	    let name = 
+	      try
+		let cie = {
+		  const_entry_body = proj;
+                  const_entry_type = None;
+                  const_entry_opaque = false } in
+		let sp =
+		  declare_constant fid (ConstantEntry cie,NeverDischarge)
+		in Some sp
+              with Type_errors.TypeError (ctx,te) -> begin
+		warning_or_error coe indsp (BadTypedProj (fid,ctx,te));
+		None
 	     end in
 	   match name with
-	     | None -> (None::sp_projs, fi::ids_not_ok, subst)
+	     | None ->
+		 (nfi-1, None::sp_projs, NoProjection fi::subst)
 	     | Some sp ->
 		 let refi = ConstRef sp in
 		 let constr_fi = mkConst sp in
@@ -153,20 +201,11 @@ let declare_projections indsp coers fields =
 		   Class.try_add_new_coercion_with_source 
 		     refi NeverDischarge cl
 		 end;
+		 let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 		 let constr_fip = applist (constr_fi,proj_args) in
-		 (name::sp_projs, ids_not_ok, (fi,constr_fip)::subst))
-      ([],[],[]) coers (List.rev fields)
+		 (nfi-1, name::sp_projs, Projection constr_fip::subst))
+      (List.length fields,[],[]) coers (List.rev fields)
   in sp_projs
-
-let degenerate_decl env =
-  snd 
-    (List.fold_right
-       (fun (id,c,t) (ids,env) ->
-	  let d = match c with
-	    | None -> Typeops.LocalAssum (subst_vars ids t)
-	    | Some c -> Typeops.LocalDef (subst_vars ids c) in
-	  (id::ids, (id,d)::env))
-       env ([],[]))
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
@@ -178,14 +217,17 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
   if not (list_distinct allnames) then error "Two objects have the same name";
   if occur_fields idstruc fs then error "A record cannot be recursive";
   (* Now, younger decl in params and fields is on top *)
-  let params,fields = typecheck_params_and_field ps fs in
-  let args =  List.map mkVar idps in
-  let ind = applist (mkVar idstruc, args) in
+  let params,fields = typecheck_params_and_fields ps fs in
+(*  let args =  List.map mkVar idps in*)
+  let args = extended_rel_list (List.length fields) params in
+(*  let ind = applist (mkVar idstruc, args) in*)
+  let ind = applist (mkRel (1+List.length params+List.length fields), args) in
   let subst = List.rev (idstruc::idps) in
-  let named_type_constructor = it_mkNamedProd_or_LetIn ind fields in
-  let type_constructor = subst_vars subst named_type_constructor in
+(*  let named_type_constructor = it_mkNamedProd_or_LetIn ind fields in*)
+  let named_type_constructor = it_mkProd_or_LetIn ind fields in
+  let type_constructor = (* subst_vars subst *) named_type_constructor in
   let mie_ind =
-    { mind_entry_params = degenerate_decl params;
+    { mind_entry_params = List.map2 degenerate_decl (List.rev idps) params;
       mind_entry_typename = idstruc;
       mind_entry_arity = mkSort s;
       mind_entry_consnames = [idbuild];
