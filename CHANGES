@@ -89,7 +89,7 @@ Syntax for arithmetic
 
 Vernacular commands
 
-- "Declare ML Module" now allows us to import .cma files. This avoids to use a
+- "Declare ML Module" now allows to import .cma files. This avoids to use a
    bunch of "Declare ML Module" statements when using several ML files.
 - "Set Printing Width n" added, allows to change the size of width printing
    (TODO : doc).
@@ -103,6 +103,7 @@ Vernacular commands
 - New keyword "Conjecture" to declare an axiom intended to be provable
 - SearchAbout can now search for lemmas referring to more than one constant
   and on substrings of the name of the lemma
+- "Print Implicit" displays the implicit arguments of a constant
 - Locate now searches for all names having a given suffix
 
 Commands
@@ -142,15 +143,16 @@ Library
   - Several lemmas moved from auxiliary.v and zarith_aux.v to
   fast_integer.v (theoretical source of incompatibilities)
   - Variables names of iff_trans changed (source of incompatibilities)
-  - ZArith lemmas named OMEGA something are now out of ZArith (except OMEGA2)
+  - ZArith lemmas named OMEGA something or fast_ something, and lemma new_var 
+    are now out of ZArith (except OMEGA2)
   - Redundant ZArith lemmas have been renamed: for the following pairs,
   use the second name (Zle_Zmult_right2, Zle_mult_simpl), (OMEGA2,
   Zle_0_plus), (Zplus_assoc_l, Zplus_assoc), (Zmult_one, Zmult_1_n),
   (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr, Zmult_Zminus_distr_l)
   (add_un_double_moins_un_xO, is_double_moins_un) (source of incompatibilities)
 - Few minor changes (order of arguments of Zsimpl_le_plus_r and
-  Zsimpl_le_plus_l changed; no more implicit arguments in
-  Zmult_Zminus_distr_l and Zmult_Zminus_distr_r)
+  Zsimpl_le_plus_l changed, simpl_plus_l, simpl_le_plus_l; no more
+  implicit arguments in Zmult_Zminus_distr_l and Zmult_Zminus_distr_r)
 - New lemmas provided by users added
 
 Tactic language
@@ -305,6 +307,7 @@ Tactics
 - Equality tactics (Rewrite, Reflexivity, Symmetry, Transitivity) now
   understand JM equality
 - Simpl and Change now apply to subterms also
+- "Simpl f" reduces subterms whose head constant is f
 - Double Induction now referring to hypotheses like "Intros until"
 - "Inversion" now applies also on quantified hypotheses (naming as
   for Intros until)
