@@ -12,7 +12,7 @@ Require Export Logic.
 
 (** Symbolic notations for things in [Logic.v] *)
 
-Notation "< P , Q > { p , q }" := (conj P Q p q) (at level 1).
+Notation "< P , Q > { p , q }" := (conj P Q p q) (P annot, at level 1).
 
 Notation "~ x" := (not x) (at level 5, right associativity).
 Notation "x = y" := (eq ? x y) (at level 5, no associativity).
@@ -42,5 +42,5 @@ Notation "'EX' x : t | p & q"   := (ex2 t [x:t]p [x:t]q)
 
 (** Parsing only of things in [Logic.v] *)
 
-Notation "< A > 'All' ( P )" := (all A P) (at level 1, only parsing).
-Notation "< A > x = y" := (eq A x y) (at level 1, x at level 0, only parsing).
+Notation "< A > 'All' ( P )" := (all A P) (A annot, at level 1, only parsing).
+Notation "< A > x = y" := (eq A x y) (A annot, at level 1, x at level 0, only parsing).

@@ -34,7 +34,7 @@ Notation "'EXT' x | p & q"     := (exT2 ? [x]p [x]q)
 (** Parsing only of things in [Logic_type.v] *)
 
 Notation "< A > x == y"  := (eqT A x y)
-   (at level 1, x at level 0, only parsing).
+   (A annot, at level 1, x at level 0, only parsing).
 
 Notation "< A > x === y" := (identityT A x y)
-   (at level 1, x at level 0, only parsing).
+   (A annot, at level 1, x at level 0, only parsing).

@@ -12,15 +12,21 @@ Require Export Datatypes.
 
 (** Symbolic notations for things in [Datatypes.v] *)
 
-Infix LEFTA 4 "+" sum : type_scope.
-Infix RIGHTA 3 "*" prod : type_scope.
+Arguments Scope sum [type_scope type_scope].
+Arguments Scope prod [type_scope type_scope].
+
+Infix "+" sum (at level 4, left associativity) : type_scope.
+Infix "*" prod (at level 3, right associativity) : type_scope.
+
 Notation "( x , y )" := (pair ? ? x y) (at level 0).
 Notation Fst := (fst ? ?).
 Notation Snd := (snd ? ?).
 
+Arguments Scope option [ type_scope ].
+
 (** Parsing only of things in [Datatypes.v] *)
 
-Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing).
-Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing).
-Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing).
+Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing, A annot).
+Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing, A annot).
+Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing, A annot).
 
