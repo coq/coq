@@ -97,26 +97,22 @@ let inh_ass_of_j env isevars j =
         let j1 = inh_tosort_force env isevars j in 
 	assumption_of_judgment env !isevars j1 
 
-let inh_coerce_to1 env isevars c1 v t k =
+let inh_coerce_to env isevars c1 hj =
   let t1,i1 = class_of1 env !isevars c1 in
-  let t2,i2 = class_of1 env !isevars t in
+  let t2,i2 = class_of1 env !isevars hj.uj_type in
   let p = lookup_path_between (i2,i1) in
-  let hj = {uj_val=v;uj_type=t;uj_kind=k} in
   let hj' = apply_pcoercion env p hj t2 in
   if the_conv_x_leq env isevars hj'.uj_type c1 then 
     hj'
   else 
     failwith "inh_coerce_to"
 
-let inh_coerce_to env isevars c1 hj =
-  inh_coerce_to1 env isevars c1 hj.uj_val hj.uj_type hj.uj_kind
-    
-let rec inh_conv_coerce1 env isevars c1 v t k =
-  if the_conv_x_leq env isevars t c1 then 
-    {uj_val=v; uj_type=t; uj_kind=k}
+let rec inh_conv_coerce_to env isevars c1 hj =
+  let {uj_val = v; uj_type = t; uj_kind = k} = hj in
+  if the_conv_x_leq env isevars t c1 then hj
   else 
     try 
-      inh_coerce_to1 env isevars c1 v t k
+      inh_coerce_to env isevars c1 hj
     with _ ->  (* try ... with _ -> ... is BAD *)
       (*   (match (hnf_constr !isevars t,hnf_constr !isevars c1) with*)
       (match (whd_betadeltaiota env !isevars t,
@@ -134,8 +130,9 @@ let rec inh_conv_coerce1 env isevars c1 v t k =
 	          let assv1 = assumption_of_judgement env !isevars jv1 in *)
 	       let assv1 = outcast_type v1 in
                let env1 = push_rel (x,assv1) env in
-               let h2 = inh_conv_coerce1 env1 isevars u2 v2 t2 
-			  (mkSort (get_sort_of env !isevars t2)) in
+               let h2 = inh_conv_coerce_to env isevars u2
+			  {uj_val = v2; uj_type = t2;
+			   uj_kind = mkSort (get_sort_of env !isevars t2) } in
                fst (abs_rel env !isevars x assv1 h2)
              else 
                (* let ju1 = exemeta_rec def_vty_con env isevars u1 in 
@@ -146,23 +143,21 @@ let rec inh_conv_coerce1 env isevars c1 v t k =
                              | _ -> name) in
                let env1 = push_rel (name,assu1) env in
                let h1 = 
-		 inh_conv_coerce1 env isevars t1 (Rel 1) u1 
-		   (mkSort (level_of_type assu1)) in
-               let h2 = inh_conv_coerce1 env isevars u2  
-			  (DOPN(AppL,[|(lift 1 v);h1.uj_val|])) 
-                          (subst1 h1.uj_val t2) 
-			  (mkSort (get_sort_of env !isevars t2)) 
+		 inh_conv_coerce_to env isevars t1
+		   {uj_val = Rel 1; uj_type = u1;
+		    uj_kind = mkSort (level_of_type assu1) } in
+               let h2 = inh_conv_coerce_to env isevars u2  
+			 { uj_val = DOPN(AppL,[|(lift 1 v);h1.uj_val|]);
+                           uj_type = subst1 h1.uj_val t2;
+			   uj_kind = mkSort (get_sort_of env !isevars t2) }
 	       in
 	       fst (abs_rel env !isevars name assu1 h2)
 	 | _ -> failwith "inh_coerce_to")
             
-let inh_conv_coerce env isevars c1 hj =
-  inh_conv_coerce1 env isevars c1 hj.uj_val hj.uj_type hj.uj_kind
-
 let inh_cast_rel env isevars cj tj =
   let cj' = 
     try 
-      inh_conv_coerce env isevars tj.uj_val cj 
+      inh_conv_coerce_to env isevars tj.uj_val cj 
     with Not_found | Failure _ -> 
       let rcj = j_nf_ise env !isevars cj in
       let atj = j_nf_ise env !isevars tj in
@@ -182,7 +177,7 @@ let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
       	in
       	(match vtcon with 
 	   | (_,(_,Some typ')) ->
-               (try inh_conv_coerce env isevars typ' resj
+               (try inh_conv_coerce_to env isevars typ' resj
           	with _ -> resj) (* try ... with _ -> ... is BAD *)
 	   | (_,(_,None)) -> resj)
 
@@ -194,7 +189,7 @@ let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
 		  hj 
 		else 
 		  (try 
-		     inh_conv_coerce env isevars c1 hj 
+		     inh_conv_coerce_to env isevars c1 hj 
 		   with Failure _ | Not_found ->
                      error_cant_apply CCI env "Type Error" 
 		       (j_nf_ise env !isevars funj) 
