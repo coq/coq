@@ -28,3 +28,4 @@
 
 #install_printer  (* tactic *) pptac;;
 #install_printer  (* object *) pr_obj;;
+#install_printer  (* global_reference *) prglobal;;

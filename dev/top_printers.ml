@@ -40,6 +40,8 @@ let pprawterm = (fun x -> pp(pr_rawterm x))
 let pppattern = (fun x -> pp(pr_pattern x))
 let pptype = (fun x -> pp(prtype x))
 
+let prglobal = (fun x -> pp(pr_global x))
+
 let prid id = pp (pr_id id)
 let prlab l = pp (pr_lab l)
 
