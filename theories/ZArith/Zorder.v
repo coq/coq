@@ -905,23 +905,23 @@ Qed.
 (** Simplification of square wrt order *)
 
 Lemma Zgt_square_simpl :
- forall n m:Z, n >= 0 -> m >= 0 -> n * n > m * m -> n > m.
+ forall n m:Z, n >= 0 -> n * n > m * m -> n > m.
 Proof.
-intros x y H0 H1 H2.
-case (dec_Zlt y x).
+intros n m H0 H1.
+case (dec_Zlt m n).
 intro; apply Zlt_gt; trivial.
-intros H3; cut (y >= x).
+intros H2; cut (m >= n).
 intros H.
-elim Zgt_not_le with (1 := H2).
+elim Zgt_not_le with (1 := H1).
 apply Zge_le.
 apply Zmult_ge_compat; auto.
 apply Znot_lt_ge; trivial.
 Qed.
 
 Lemma Zlt_square_simpl :
- forall n m:Z, 0 <= n -> 0 <= m -> m * m < n * n -> m < n.
+ forall n m:Z, 0 <= n -> m * m < n * n -> m < n.
 Proof.
-intros x y H0 H1 H2.
+intros x y H0 H1.
 apply Zgt_lt.
 apply Zgt_square_simpl; try apply Zle_ge; try apply Zlt_gt; assumption.
 Qed.
@@ -961,8 +961,11 @@ intros n m H; apply Zplus_lt_reg_l with (p := m); rewrite Zplus_minus;
  assumption.
 Qed.
 
-Lemma Zlt_O_minus_lt : forall n m:Z, 0 < n - m -> m < n.
+Lemma Zlt_0_minus_lt : forall n m:Z, 0 < n - m -> m < n.
 Proof.
 intros n m H; apply Zplus_lt_reg_l with (p := - m); rewrite Zplus_opp_l;
  rewrite Zplus_comm; exact H.
 Qed.
+
+(* For compatibility *)
+Notation Zlt_O_minus_lt := Zlt_0_minus_lt (only parsing).
