@@ -128,7 +128,7 @@ module Make = functor(P : Mlpp_param) -> struct
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let pp_type t =
+let rec pp_type par t =
   let rec pp_rec par = function
     | Tvar id -> 
 	string ("'" ^ string_of_id id)
@@ -149,7 +149,7 @@ let pp_type t =
     | Tarity ->
 	string "arity"
   in 
-  hOV 0 (pp_rec false t)
+  hOV 0 (pp_rec par t)
 
 (*s Pretty-printing of expressions. [par] indicates whether
     parentheses are needed or not. [env] is the list of names for the
@@ -211,7 +211,7 @@ let rec pp_expr par env args =
 	string "arity"
     | MLcast (a,t) ->
 	[< open_par true; pp_expr false env args a; 'sPC; 'sTR ":"; 'sPC; 
-	   pp_type t; close_par true >]
+	   pp_type false t; close_par true >]
     | MLmagic a ->
 	[< open_par true; 'sTR "Obj.magic"; 'sPC; 
 	   pp_expr false env args a; close_par true >]
@@ -297,7 +297,8 @@ let pp_one_inductive (pl,name,cl) =
          | [] -> [< >] 
 	 | _  -> [< 'sTR " of " ;
       	       	    prlist_with_sep 
-		      (fun () -> [< 'sPC ; 'sTR "* " >]) pp_type l >] >] 
+		      (fun () -> [< 'sPC ; 'sTR "* " >]) (pp_type true) l >]
+    >]
   in
     [< pp_parameters pl; P.pp_global name; 'sTR " ="; 
        if cl = [] then
@@ -325,7 +326,8 @@ let pp_decl = function
       hOV 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
-	       P.pp_type_global r; 'sPC; 'sTR "="; 'sPC; pp_type t; 'fNL >]
+	       P.pp_type_global r; 'sPC; 'sTR "="; 'sPC; 
+	       pp_type false  t; 'fNL >]
   | Dglob (r, MLfix (_,[_],[def])) ->
       let id = P.rename_global r in
       let env' = ([id], !current_ids) in
@@ -334,6 +336,7 @@ let pp_decl = function
       hOV 0 [< 'sTR "let "; 
 	       pp_function (empty_env ()) (P.pp_global r) a; 'fNL >]
 
+let pp_type = pp_type false
 let pp_ast a = pp_ast (betared_ast (uncurrify_ast a))
 let pp_decl d = pp_decl (betared_decl (uncurrify_decl d))
 
