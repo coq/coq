@@ -603,24 +603,20 @@ inconsistency} appears. Example: {\tt fun (x:Type) (y:$\forall$ X:Type, X
 
 \Question{I have two proofs of the same proposition. Can I prove they are equal?}
 
-In the base {\Coq} system, the answer is no. However, if
+In the base {\Coq} system, the answer is generally no. However, if
 classical logic is set, the answer is yes for propositions in {\Prop}.
-See question \ref{proof-irrelevance}.
+The answer is also yes if proof irrelevance holds (see question
+\ref{proof-irrelevance}).
+
+There are also ``simple enough'' propositions for which you can prove
+the equality without requiring any extra axioms.  This is typically
+the case for propositions defined deterministically as a first-order
+inductive predicate on decidable sets. See for instance in question
+\ref{le-uniqueness} an axiom-free proof of the unicity of the proofs of
+the proposition {\tt le m n} (less or equal on {\tt nat}).
 
 %  It is an ongoing work of research to natively include proof
 %  irrelevance in {\Coq}.
-
-\Question{Can I prove that the second components of equal dependent
-pairs are equal?}
-
- The answer is the same as for proofs of equality
-statements. It is provable if equality on the domain of the first
-component is decidable (look at \verb=inj_right_pair= from file
-\vfile{\LogicEqdepDec}{Eqdep\_dec}), but not provable in the general
-case. However, it is consistent (with the Calculus of Constructions)
-to assume it is true. The file \vfile{\LogicEqdep}{Eqdep} actually
-provides an axiom (equivalent to Streicher's axiom $K$) which entails
-the result (look at \verb=inj_pair2= in \vfile{\LogicEqdep}{Eqdep}).
 
 \Question{I have two proofs of an equality statement. Can I prove they are 
 equal?}
@@ -633,6 +629,18 @@ assumption such as proof-irrelevance (see \ref{proof-irrelevance}) or
 classical logic.
 
 All of these statements can be found in file \vfile{\LogicEqdep}{Eqdep}.
+
+\Question{Can I prove that the second components of equal dependent
+pairs are equal?}
+
+ The answer is the same as for proofs of equality
+statements. It is provable if equality on the domain of the first
+component is decidable (look at \verb=inj_right_pair= from file
+\vfile{\LogicEqdepDec}{Eqdep\_dec}), but not provable in the general
+case. However, it is consistent (with the Calculus of Constructions)
+to assume it is true. The file \vfile{\LogicEqdep}{Eqdep} actually
+provides an axiom (equivalent to Streicher's axiom $K$) which entails
+the result (look at \verb=inj_pair2= in \vfile{\LogicEqdep}{Eqdep}).
 
 \subsection{Impredicativity}
 
@@ -1725,20 +1733,98 @@ Proof.
 Qed.
 \end{coq_example*}
 
+\Question{Is there an axiom-free proof of Streicher's axiom $K$ for
+the equality on {\tt nat}?}
+\label{K-nat}
+
+Yes because equality is decidable on {\tt nat}. Here is the proof.
+
+\begin{coq_example*}
+Require Import Eqdep_dec.
+Require Import Peano_dec.
+Theorem K_nat :
+  forall (x:nat) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+Proof.
+intros; apply K_dec_set with (p := p).
+apply eq_nat_dec.
+assumption.
+Qed.
+\end{coq_example*}
+
+Similarly, we have
+
+\begin{coq_example*}
+Theorem eq_rect_eq_nat :
+  forall (p:nat) (Q:nat->Type) (x:Q p) (h:p=p), x = eq_rect p Q x p h.
+Proof.
+intros; apply K_nat with (p := h); reflexivity.
+Qed.
+\end{coq_example*}
+
+\Question{How to prove that two proofs of {\tt n<=m} on {\tt nat} are equal?}
+\label{le-uniqueness}
+
+This is provable without requiring any axiom because axiom $K$
+directly holds on {\tt nat}. Here is a proof using question \ref{K-nat}.
+
+\begin{coq_example*}
+Scheme le_ind' := Induction for le Sort Prop.
+Theorem le_uniqueness_proof : forall (n m : nat) (p q : n <= m), p = q.
+Proof.
+induction p using le_ind'; intro q.
+ replace (le_n n) with
+  (eq_rect _ (fun n0 => n <= n0) (le_n n) _ (refl_equal n)).
+ 2:reflexivity.
+  generalize (refl_equal n).
+    pattern n at 2 4 6 10, q; case q; [intro | intros m l e].
+     rewrite <- eq_rect_eq_nat; trivial.
+     contradiction (le_Sn_n m); rewrite <- e; assumption.
+ replace (le_S n m p) with
+  (eq_rect _ (fun n0 => n <= n0) (le_S n m p) _ (refl_equal (S m))).
+ 2:reflexivity.
+  generalize (refl_equal (S m)).
+    pattern (S m) at 1 3 4 6, q; case q; [intro Heq | intros m0 l HeqS].
+     contradiction (le_Sn_n m); rewrite Heq; assumption.
+     injection HeqS; intro Heq; generalize l HeqS.
+      rewrite <- Heq; intros; rewrite <- eq_rect_eq_nat.
+      rewrite (IHp l0); reflexivity.
+Qed.
+\end{coq_example*}
+
 \Question{How to exploit equalities on sets}
 
- To extract information from an equality on sets, you need to
+To extract information from an equality on sets, you need to
 find a predicate of sets satisfied by the elements of the sets. As an
 example, let's consider the following theorem.
 
 \begin{coq_example*}
-Theorem le_le :
+Theorem interval_discr :
   forall m n:nat,
     {x : nat | x <= m} = {x : nat | x <= n} -> m = n.
 \end{coq_example*}
 
-A typical property is to have cardinality $n$.
+We have a proof requiring the axiom of proof-irrelevance. We
+conjecture that proof-irrelevance can be circumvented by introducing a
+primitive definition of discrimination of the proofs of
+\verb!{x : nat | x <= m}!.
 
+\begin{latexonly}%
+The proof can be found in file {\tt interval$\_$discr.v} in this directory.
+%Here is the proof
+%\begin{small}
+%\begin{flushleft}
+%\begin{texttt}
+%\def_{\ifmmode\sb\else\subscr\fi}
+%\include{interval_discr.v}
+%%% WARNING semantics of \_ has changed !
+%\end{texttt}
+%$a\_b\_c$
+%\end{flushleft}
+%\end{small}
+\end{latexonly}%
+\begin{htmlonly}%
+\ahref{./interval_discr.v}{Here} is the proof.
+\end{htmlonly}
 
 \Question{I have a problem of dependent elimination on
 proofs, how to solve it?}
