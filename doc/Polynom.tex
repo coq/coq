@@ -126,14 +126,17 @@ and $term_2$ will have the same associated variable number.
 \begin{ErrMsgs}
 \item \errindex{All terms must have the same type}
 \item \errindex{Don't know what to do with this goal}
-\item \errindex{No Declared Ring Theory for \term.}\\
-  \texttt{Use Add [Semi] Ring to declare it}\\
+\item \errindex{No Declared Ring Theory for \term.}
+
+  \texttt{Use Add [Semi] Ring to declare it}
+
   That happens when all terms have the same type \term, but there is
   no declared ring theory for this set. See below.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item \texttt{Ring}\\
+\item \texttt{Ring}
+
   That works if the current goal is an equality between two
   polynomials. It will normalize both sides of the
   equality, solve it if the normal forms are equal and in other cases
@@ -266,15 +269,17 @@ and \texttt{O}, and the closed terms are \texttt{O}, \texttt{(S O)},
 \begin{Variants}
 \item \texttt{Add Semi Ring} \textit{A Aplus Amult Aone Azero Aeq T} 
   \texttt{[} \textit{c1 \dots\ cn} \texttt{].}\comindex{Add Semi
-    Ring}\\
-  There are two differences with the \texttt{Add Ring} command: 
-  there is no inverse function and the term $T$ must be of type 
+    Ring}
+  
+  There are two differences with the \texttt{Add Ring} command: there
+  is no inverse function and the term $T$ must be of type
   \texttt{(Semi\_Ring\_Theory }\textit{A Aplus Amult Aone Azero
-  Aeq}\texttt{)}.  
+    Aeq}\texttt{)}.
 
 \item \texttt{Add Abstract Ring} \textit{A Aplus Amult Aone Azero Ainv 
-    Aeq T}\texttt{.}\comindex{Add Abstract Ring}\\
-  This command should be used for when the operations of rings are not 
+    Aeq T}\texttt{.}\comindex{Add Abstract Ring}
+  
+  This command should be used for when the operations of rings are not
   computable; for example the real numbers of
   \texttt{theories/REALS/}. Here $0+1$ is not beta-reduced to $1$ but
   you still may want to \textit{rewrite} it to $1$ using the ring
@@ -282,12 +287,13 @@ and \texttt{O}, and the closed terms are \texttt{O}, \texttt{(S O)},
   that function is \verb+[x:A]false+.
 
 \item \texttt{Add Abstract Semi Ring} \textit{A Aplus Amult Aone Azero
-    Aeq T}\texttt{.}\comindex{Add Abstract Semi Ring}\\
+    Aeq T}\texttt{.}\comindex{Add Abstract Semi Ring}
 
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{Not a valid (semi)ring theory}.\\ 
+\item \errindex{Not a valid (semi)ring theory}.
+ 
   That happens when the typing condition does not hold.
 \end{ErrMsgs}
 

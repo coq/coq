@@ -35,7 +35,8 @@ Notice also that the annotation is mandatory when the sequence of equation is
 empty.
 
 \begin{figure}[t]
-\fbox{\parbox{\linewidth}{
+\begin{center}
+\fbox{\begin{minipage}{0.95\textwidth}
 \begin{tabular}{rcl}
 {\nestedpattern}  & := & {\ident} \\
  & $|$ & \_ \\
@@ -55,7 +56,8 @@ empty.
  \zeroone{\annotation} \texttt{Cases} \nelist{\term}{} \texttt{of} 
  \sequence{\exteqn}{$|$} \texttt{end} \\
 \end{tabular}
-}}
+\end{minipage}}
+\end{center}
 \caption{Extended Cases syntax}
 \label{cases-grammar}
 \end{figure}
@@ -584,35 +586,33 @@ generated expression and the original.
 
 Here is a summary of the error messages corresponding to each situation:
 
-\begin{itemize}
-\item patterns are incorrect (because constructors are not applied to
-  the correct number of the arguments, because they are not linear or
-  they are wrongly typed)
-\begin{itemize}
+\begin{ErrMsgs}
 \item \sverb{The constructor } {\sl
     ident} \sverb{expects } {\sl num} \sverb{arguments}
   
-\item \sverb{The variable } {\sl ident} \sverb{is bound several times
+ \sverb{The variable } {\sl ident} \sverb{is bound several times
     in pattern } {\sl term}
   
-\item \sverb{Found a constructor of inductive type} {\term}
+ \sverb{Found a constructor of inductive type} {\term}
  \sverb{while a constructor of} {\term} \sverb{is expected}
-\end{itemize}
 
-\item the pattern matching is not exhaustive
-\begin{itemize}
-\item \sverb{Non exhaustive pattern-matching}
-\end{itemize}
-\item the elimination predicate provided to \texttt{Cases} has not the
-  expected arity
+ Patterns are incorrect (because constructors are not applied to
+  the correct number of the arguments, because they are not linear or
+  they are wrongly typed)
 
-\begin{itemize}
+\item \errindex{Non exhaustive pattern-matching}
+
+the pattern matching is not exhaustive
+
 \item \sverb{The elimination predicate } {\sl term} \sverb{should be
     of arity } {\sl num} \sverb{(for non dependent case) or } {\sl
     num} \sverb{(for dependent case)}
-\end{itemize}
 
-\item the whole expression is wrongly typed
+The elimination predicate provided to \texttt{Cases} has not the
+  expected arity
+
+
+%\item the whole expression is wrongly typed
 
 % CADUC ?
 % , or the synthesis of
@@ -627,13 +627,11 @@ Here is a summary of the error messages corresponding to each situation:
 %   recommend the user to rewrite the nested dependent patterns into
 %   several \texttt{Cases} with {\em simple patterns}.
   
-\item there is a type mismatch between the different branches
-
-  \begin{itemize}
-  \item {\tt Unable to infer a Cases predicate\\
+\item {\tt Unable to infer a Cases predicate\\
     Either there is a type incompatiblity or the problem involves\\
     dependencies}
-  \end{itemize}
+ 
+  There is a type mismatch between the different branches
 
   Then the user should provide an elimination predicate.
 
@@ -713,7 +711,7 @@ Here is a summary of the error messages corresponding to each situation:
 %   end.
 % \end{coq_example}
 
-\end{itemize}
+\end{ErrMsgs}
 
 
 %%% Local Variables: 

@@ -580,39 +580,42 @@ quite efficient for Caml code.
 As a test, we propose an automatic extraction of the 
 Standard Library of \Coq. In particular, we will find back the
 two previous examples, {\tt Euclid} and {\tt Heapsort}. 
-Go to directory\\
-{\tt contrib/extraction/test} of the sources of \Coq, and run commands:\\
-
-\mbox{\tt make tree; make}\\
-
+Go to directory {\tt contrib/extraction/test} of the sources of \Coq,
+and run commands: 
+\begin{verbatim}
+make tree; make
+\end{verbatim}
 This will extract all Standard Library files and compile them. 
 It is done via many {\tt Extraction Module}, with some customization
 (see subdirectory {\tt custom}).
 
 The result of this extraction of the Standard Library can be browsed
-at the address:\\
-
-\verb!http://www.lri.fr/~letouzey/extraction!\\
-
+at URL 
+\begin{flushleft}
+\url{http://www.lri.fr/~letouzey/extraction}.
+\end{flushleft}
+                                
 %Reals theory is normally not extracted, since it is an axiomatic 
 %development. We propose nonetheless a dummy realization of those
 %axioms, to test, run: \\
 %
 %\mbox{\tt make reals}\\
 
-This test works also with Haskell. In the same directory, run: \\
-
-\mbox{\tt make tree; make -f Makefile.haskell}\\
-
-The haskell compiler currently used is {\tt hbc}. 
-Any other should also work, just
-adapt the {\tt Makefile.haskell}. In particular {\tt ghc} is known
-to work.
+This test works also with Haskell. In the same directory, run:
+\begin{verbatim}
+make tree; make -f Makefile.haskell
+\end{verbatim}
+The haskell compiler currently used is {\tt hbc}.  Any other should
+also work, just adapt the {\tt Makefile.haskell}. In particular {\tt
+ ghc} is known to work.
 
 \asubsection{Extraction's horror museum}
 
- Some pathological examples of extraction are grouped in the file\\
- {\tt contrib/extraction/test\_extraction.v} of the sources of \Coq.
+Some pathological examples of extraction are grouped in the file
+\begin{verbatim}
+contrib/extraction/test_extraction.v
+\end{verbatim}
+of the sources of \Coq.
 
 \asubsection{Users' Contributions}
 
@@ -643,6 +646,11 @@ to work.
  the only examples of developments where {\tt Obj.magic} are needed.
  This is probably due to an heavy use of impredicativity.
  After compilation those two examples run nonetheless,
- thanks to the correction of the extraction (see \cite{Let02}). 
+ thanks to the correction of the extraction~\cite{Let02}. 
 
 % $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

@@ -6,44 +6,44 @@
 development of computer programs consistent with their formal
 specification.  It is the result of about ten years of research of the
 Coq project.  We shall briefly survey here three main aspects: the
-{\sl logical language} in which we write our axiomatizations and
-specifications, the {\sl proof assistant} which allows the development
-of verified mathematical proofs, and the {\sl program extractor} which
+\emph{logical language} in which we write our axiomatizations and
+specifications, the \emph{proof assistant} which allows the development
+of verified mathematical proofs, and the \emph{program extractor} which
 synthesizes computer programs obeying their formal specifications,
 written as logical assertions in the language.
 
 The logical language used by {\Coq} is a variety of type theory,
-called the {\sl Calculus of Inductive Constructions}. Without going
+called the \emph{Calculus of Inductive Constructions}. Without going
 back to Leibniz and Boole, we can date the creation of what is now
 called mathematical logic to the work of Frege and Peano at the turn
 of the century. The discovery of antinomies in the free use of
 predicates or comprehension principles prompted Russell to restrict
-predicate calculus with a stratification of {\sl types}. This effort
-culminated with {\sl Principia Mathematica}, the first systematic
+predicate calculus with a stratification of \emph{types}. This effort
+culminated with \emph{Principia Mathematica}, the first systematic
 attempt at a formal foundation of mathematics.  A simplification of
 this system along the lines of simply typed $\lambda$-calculus
-occurred with Church's {\sl Simple Theory of Types}.  The
+occurred with Church's \emph{Simple Theory of Types}.  The
 $\lambda$-calculus notation, originally used for expressing
 functionality, could also be used as an encoding of natural deduction
 proofs. This Curry-Howard isomorphism was used by N. de Bruijn in the
-{\sl Automath} project, the first full-scale attempt to develop and
+\emph{Automath} project, the first full-scale attempt to develop and
 mechanically verify mathematical proofs. This effort culminated with
-Jutting's verification of Landau's {\sl Grundlagen} in the 1970's.
+Jutting's verification of Landau's \emph{Grundlagen} in the 1970's.
 Exploiting this Curry-Howard isomorphism, notable achievements in
 proof theory saw the emergence of two type-theoretic frameworks; the
-first one, Martin-L\"of's {\sl Intuitionistic Theory of Types},
+first one, Martin-L\"of's \emph{Intuitionistic Theory of Types},
 attempts a new foundation of mathematics on constructive principles.
 The second one, Girard's polymorphic $\lambda$-calculus $F_\omega$, is
 a very strong functional system in which we may represent higher-order
 logic proof structures.  Combining both systems in a higher-order
 extension of the Automath languages, T. Coquand presented in 1985 the
-first version of the {\sl Calculus of Constructions}, CoC. This strong
+first version of the \emph{Calculus of Constructions}, CoC. This strong
 logical system allowed powerful axiomatizations, but direct inductive
 definitions were not possible, and inductive notions had to be defined
 indirectly through functional encodings, which introduced
 inefficiencies and awkwardness. The formalism was extended in 1989 by
 T. Coquand and C. Paulin with primitive inductive definitions, leading
-to the current {\sl Calculus of Inductive Constructions}.  This
+to the current \emph{Calculus of Inductive Constructions}.  This
 extended formalism is not rigorously defined here. Rather, numerous
 concrete examples are discussed. We refer the interested reader to
 relevant research papers for more information about the formalism, its
@@ -58,8 +58,8 @@ Automated theorem-proving was pioneered in the 1960's by Davis and
 Putnam in propositional calculus.  A complete mechanization (in the
 sense of a semi-decision procedure) of classical first-order logic was
 proposed in 1965 by J.A. Robinson, with a single uniform inference
-rule called {\sl resolution}. Resolution relies on solving equations
-in free algebras (i.e. term structures), using the {\sl unification
+rule called \emph{resolution}. Resolution relies on solving equations
+in free algebras (i.e. term structures), using the \emph{unification
   algorithm}. Many refinements of resolution were studied in the
 1970's, but few convincing implementations were realized, except of
 course that PROLOG is in some sense issued from this effort.  A less
@@ -71,7 +71,7 @@ semantics recursion equations, and the Boyer and Moore theorem-prover,
 an automation of primitive recursion over inductive data types. While
 the Boyer-Moore theorem-prover attempted to synthesize proofs by a
 combination of automated methods, LCF constructed its proofs through
-the programming of {\sl tactics}, written in a high-level functional
+the programming of \emph{tactics}, written in a high-level functional
 meta-language, ML.
 
 The salient feature which clearly distinguishes our proof assistant
@@ -93,7 +93,7 @@ research in artificial intelligence, pioneered by R. Waldinger. The
 Tablog system of Z. Manna and R. Waldinger allows the deductive
 synthesis of functional programs from proofs in tableau form of their
 specifications, written in a variety of first-order logic. Development
-of a systematic {\sl programming logic}, based on extensions of
+of a systematic \emph{programming logic}, based on extensions of
 Martin-L\"of's type theory, was undertaken at Cornell U. by the Nuprl
 team, headed by R. Constable.  The first actual program extractor, PX,
 was designed and implemented around 1985 by S. Hayashi from Kyoto
@@ -113,18 +113,18 @@ A first implementation of CoC was started in 1984 by G. Huet and T.
 Coquand.  Its implementation language was CAML, a functional
 programming language from the ML family designed at INRIA in
 Rocquencourt. The core of this system was a proof-checker for CoC seen
-as a typed $\lambda$-calculus, called the {\sl Constructive Engine}.
+as a typed $\lambda$-calculus, called the \emph{Constructive Engine}.
 This engine was operated through a high-level notation permitting the
 declaration of axioms and parameters, the definition of mathematical
 types and objects, and the explicit construction of proof objects
 encoded as $\lambda$-terms. A section mechanism, designed and
 implemented by G. Dowek, allowed hierarchical developments of
-mathematical theories. This high-level language was called the {\sl
-  Mathematical Vernacular}.  Furthermore, an interactive {\sl Theorem
-  Prover} permitted the incremental construction of proof trees in a
-top-down manner, subgoaling recursively and backtracking from
-dead-alleys. The theorem prover executed tactics written in CAML, in
-the LCF fashion.  A basic set of tactics was predefined, which the
+mathematical theories. This high-level language was called the
+\emph{Mathematical Vernacular}.  Furthermore, an interactive
+\emph{Theorem Prover} permitted the incremental construction of proof
+trees in a top-down manner, subgoaling recursively and backtracking
+from dead-alleys. The theorem prover executed tactics written in CAML,
+in the LCF fashion.  A basic set of tactics was predefined, which the
 user could extend by his own specific tactics. This system (Version
 4.10) was released in 1989.  Then, the system was extended to deal
 with the new calculus with inductive types by C. Paulin, with
@@ -138,21 +138,21 @@ implemented by A. Felty. It allowed operation of the theorem-prover
 through the manipulation of windows, menus, mouse-sensitive buttons,
 and other widgets. This system (Version 5.6) was released in 1991.
 
-Coq was ported to the new implementation Caml-light of X. Leroy and D.
-Doligez by D. de Rauglaudre (Version 5.7) in 1992.  A new version of
-Coq was then coordinated by C. Murthy, with new tools designed by C.
-Parent to prove properties of ML programs (this methodology is dual to
-program extraction) and a new user-interaction loop.  This system
-(Version 5.8) was released in May 1993.  A Centaur interface CTCoq was
-then developed by Y. Bertot from the Croap project from
-INRIA-Sophia-Antipolis.
+\Coq{} was ported to the new implementation Caml-light of X. Leroy and
+D.  Doligez by D. de Rauglaudre (Version 5.7) in 1992.  A new version
+of \Coq{} was then coordinated by C. Murthy, with new tools designed
+by C.  Parent to prove properties of ML programs (this methodology is
+dual to program extraction) and a new user-interaction loop.  This
+system (Version 5.8) was released in May 1993.  A Centaur interface
+\textsc{CTCoq} was then developed by Y. Bertot from the Croap project
+from INRIA-Sophia-Antipolis.
 
 In parallel, G. Dowek and H. Herbelin developed a new proof engine,
 allowing the general manipulation of existential variables
-consistently with dependent types in an experimental version of Coq
+consistently with dependent types in an experimental version of \Coq{}
 (V5.9).
 
-The version V5.10 of Coq is based on a generic system for
+The version V5.10 of \Coq{} is based on a generic system for
 manipulating terms with binding operators due to Chet Murthy. A new
 proof engine allows the parallel development of partial proofs for
 independent subgoals.  The structure of these proof trees is a mixed
@@ -198,14 +198,14 @@ Gérard Huet
 \section*{Credits: addendum for version 6.1}
 %\addcontentsline{toc}{section}{Credits: addendum for version V6.1}
 
-The present version 6.1 of Coq is based on the V5.10 architecture. It
+The present version 6.1 of \Coq{} is based on the V5.10 architecture. It
 was ported to the new language Objective Caml by Bruno Barras. The
 underlying framework has slightly changed and allows more conversions
 between sorts. 
 
 The new version provides powerful tools for easier developments. 
 
-Cristina Cornes designed an extension of the Coq syntax to allow
+Cristina Cornes designed an extension of the \Coq{} syntax to allow
 definition of terms using a powerful pattern-matching analysis in the
 style of ML programs.
 
@@ -218,14 +218,14 @@ do not need to be explicitly written.
 Yann Coscoy designed a command which explains a proof term using
 natural language. Pierre Cr{\'e}gut built a new tactic which solves
 problems in quantifier-free Presburger Arithmetic. Both
-functionalities have been integrated to the Coq system by Hugo
+functionalities have been integrated to the \Coq{} system by Hugo
 Herbelin.
 
 Samuel Boutin designed a tactic for simplification of commutative
 rings using a canonical set of rewriting rules and equality modulo
 associativity and commutativity. 
 
-Finally the organisation of the \Coq\ distribution has been supervised
+Finally the organisation of the \Coq{} distribution has been supervised
 by Jean-Christophe Filliâtre with the help of Judicaël Courant
 and Bruno Barras.
 
@@ -237,11 +237,11 @@ Christine Paulin
 \section*{Credits: addendum for version 6.2}
 %\addcontentsline{toc}{section}{Credits: addendum for version V6.2}
 
-In version 6.2 of Coq, the parsing is done using camlp4, a
+In version 6.2 of \Coq{}, the parsing is done using camlp4, a
 preprocessor and pretty-printer for CAML designed by Daniel de
 Rauglaudre at INRIA.  Daniel de Rauglaudre made the first adaptation
-of Coq for camlp4, this work was continued by Bruno Barras who also
-changed the structure of Coq abstract syntax trees and the primitives
+of \Coq{} for camlp4, this work was continued by Bruno Barras who also
+changed the structure of \Coq{} abstract syntax trees and the primitives
 to manipulate them. The result of
 these changes is a faster parsing procedure with greatly improved
 syntax-error messages. The user-interface to introduce grammar or
@@ -249,32 +249,30 @@ pretty-printing rules has also changed.
 
 Eduardo Giménez redesigned the internal 
 tactic libraries, giving uniform names 
-to Caml functions corresponding to Coq tactic names. 
+to Caml functions corresponding to \Coq{} tactic names. 
 
 Bruno Barras wrote new more efficient reductions functions.
 
-Hugo Herbelin introduced more uniform notations in the Coq
-specification language : the
-definitions by fixpoints and pattern-matching have a more readable
-syntax. 
-Patrick Loiseleur introduced user-friendly notations for arithmetic
-expressions. 
+Hugo Herbelin introduced more uniform notations in the \Coq{}
+specification language: the definitions by fixpoints and
+pattern-matching have a more readable syntax.  Patrick Loiseleur
+introduced user-friendly notations for arithmetic expressions.
 
 New tactics were introduced: Eduardo Giménez improved a mechanism to
 introduce macros for tactics, and designed special tactics for
 (co)inductive definitions; Patrick Loiseleur designed a tactic to
 simplify polynomial expressions in an arbitrary commutative ring which
 generalizes the previous tactic implemented by Samuel Boutin.
-Jean-Christophe Filli\^atre  introduced a tactic for refining a goal,
+Jean-Christophe Filli\^atre introduced a tactic for refining a goal,
 using a proof term with holes as a proof scheme.
 
 David Delahaye designed the \textsf{SearchIsos} tool to search an
 object in the library given its type (up to isomorphism).
 
-Henri Laulhère produced the Coq distribution for the Windows environment. 
+Henri Laulhère produced the \Coq{} distribution for the Windows environment. 
 
-Finally, Hugo Herbelin was the main coordinator of the Coq documentation with
-principal contributions by Bruno Barras, David Delahaye, 
+Finally, Hugo Herbelin was the main coordinator of the \Coq{}
+documentation with principal contributions by Bruno Barras, David Delahaye, 
 Jean-Christophe Filli\^atre, Eduardo
 Giménez, Hugo Herbelin and Patrick Loiseleur. 
 
