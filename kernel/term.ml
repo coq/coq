@@ -396,6 +396,10 @@ let destAppL = function
   | (DOPN (AppL,a)) -> a
   | _ -> invalid_arg "destAppL"
 
+let destApplication =  function
+  | (DOPN (AppL,a)) when Array.length a <> 0 -> (a.(0), array_tl a)
+  | _ -> invalid_arg "destApplication"
+
 let isAppL = function DOPN(AppL,_) -> true | _ -> false
 
 let args_app  = function

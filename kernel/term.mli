@@ -280,6 +280,7 @@ val destAppL : constr -> constr array
 val isAppL : constr -> bool
 val hd_app : constr -> constr 
 val args_app : constr -> constr array
+val destApplication : constr -> constr * constr array
 
 (* Destructs a constant *)
 val destConst : constr -> section_path * constr array
