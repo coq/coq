@@ -204,7 +204,7 @@ let crash_save i =
        (let filename = match av#filename with 
 	 | None -> 
 	     incr count; 
-	     "Unamed_coqscript_"^(string_of_int !count)^".crashcoqide"
+	     "Unnamed_coqscript_"^(string_of_int !count)^".crashcoqide"
 	 | Some f -> f^".crashcoqide"
        in
        try 
@@ -398,11 +398,7 @@ let complete input_buffer w (offset:int) =
 	      last_completion := Some (w,offset,start#offset,true);
 	      result
       end
-	
-	
-  
-  
-  
+	  
 let get_current_word () =
   let av = out_some ((get_current_view ()).analyzed_view) in 
   match GtkBase.Clipboard.wait_for_text (cb ()) with
@@ -2280,7 +2276,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						  ~width:(!current.window_width/2)
 						  ~height:(!current.window_height)
 						  ~title:(match av#filename with
-							  | None -> "*Unamed*"
+							  | None -> "*Unnamed*"
 							  | Some f -> f) 
 						  () 
 					in
@@ -2576,7 +2572,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   w#show ();
   message_view := Some tv3;
   proof_view := Some tv2;
-  let view = create_input_tab "*Unamed Buffer*" in
+  let view = create_input_tab "*Unnamed Buffer*" in
   let index = add_input_view {view = view;
 			      analyzed_view = None;
 			     }

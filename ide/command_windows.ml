@@ -63,7 +63,7 @@ object(self)
 		  ~packing:notebook#append_page
 		  ()
     in
-    notebook#next_page ();
+    notebook#goto_page (notebook#page_num frame#coerce);
     let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
     let hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
     let combo = GEdit.combo ~popdown_strings:Coq_commands.state_preserving
@@ -97,6 +97,7 @@ object(self)
 	result#buffer#set_text s
     in
     ignore (combo#entry#connect#activate ~callback:(on_activate callback));
+    ignore (ok_b#connect#clicked ~callback:(on_activate callback));
 
     begin match command,term with 
       | None,None -> ()
