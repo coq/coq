@@ -77,7 +77,7 @@ theories/Logic/ClassicalFacts.vo: theories/Logic/ClassicalFacts.v
 theories/Logic/Berardi.vo: theories/Logic/Berardi.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
-theories/Logic/JMeq.vo: theories/Logic/JMeq.v
+theories/Logic/JMeq.vo: theories/Logic/JMeq.v theories/Logic/Eqdep.vo
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo
@@ -240,7 +240,7 @@ theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v
 theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
 theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/PolyList.vo theories/Sets/Multiset.vo
 theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
-contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo theories/ZArith/Zhints.vo theories/Arith/Minus.vo
+contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo theories/ZArith/Zhints.vo
 contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/PolyList.vo theories/Bool/Bool.vo theories/ZArith/ZArith_base.vo
 contrib/romega/ROmega.vo: contrib/romega/ROmega.v contrib/omega/Omega.vo contrib/romega/ReflOmegaCore.vo
 contrib/ring/ArithRing.vo: contrib/ring/ArithRing.v contrib/ring/Ring.vo theories/Arith/Arith.vo theories/Logic/Eqdep_dec.vo
