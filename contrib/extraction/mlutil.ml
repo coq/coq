@@ -316,12 +316,17 @@ let normalize a =
     | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
 	(* expansion of a letin in special cases *)
 	simplify (ml_subst c e)
+    | MLfix(i,ids,c) as t when o -> 
+	let n = Array.length ids in 
+	if occurs_itvl 1 n c.(i) then 
+	  MLfix (i, ids, Array.map simplify c)
+	else simplify (ml_lift (-n) c.(i)) (* dummy fixpoint *)
     | a -> 
 	ast_map simplify a 
   in simplify (merge_app a)
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
-    the list [id1;...;idn] and the term [t]. *)
+    the list [idn;...;id1] and the term [t]. *)
 
 let collect_lambda = 
   let rec collect acc = function
@@ -329,6 +334,10 @@ let collect_lambda =
     | x           -> acc,x
   in 
   collect []
+
+let rec pass_n_lambda n = function 
+  | MLlam(_,t)-> pass_n_lambda (n-1) t
+  | _ -> raise Impossible
 
 let rec test_eta n = function 
   | [] -> n=0
@@ -340,7 +349,7 @@ let rec make_args n =
 (* this abstract is written without lift on purpose *)
 let rec abstract ids a = match ids with
   | [] -> a 
-  | id :: l -> MLlam(id, abstract l a)
+  | id :: l -> abstract l (MLlam(id,a))
 
 let optimize_fix a = 
   if not (optim()) then a 
@@ -350,15 +359,33 @@ let optimize_fix a =
     if n = 0 then a 
     else  
       (match b with 
-	 | MLfix(_,[|f|],[|c|]) -> 
+	 | MLfix(_,[|f|],[|c|]) ->
 	     let new_f = MLapp (MLrel (n+1),make_args n) in 
 	     let new_c = abstract lams (ml_subst new_f c)
-	     in MLfix(1,[|f|],[|new_c|])
-	 | MLapp(b,ids) -> 
+	     in MLfix(0,[|f|],[|new_c|])
+	 | MLapp(b,ids) ->
 	     (match b with 
 		| MLfix(_,[|_|],[|_|]) when (test_eta n ids)-> b
-		| MLfix(_,[|_|],[|_|]) -> a (* TODO *)
-		| _ -> a)
+		| MLfix(_,[|f|],[|c|]) -> a
+(* TODO: tenir compte des occurrences des ids 
+		    (try 
+		      let v = Array.make n 0 in 
+		      let m = List.length ids in 
+		      list_iter_i (fun i t -> 
+				     (match t with 
+					  MLrel j when v.(j-1)=0 -> v.(j-1)<-(succ i)
+					| _ -> raise Impossible)) ids;
+		      let args = array_fold_left_i
+				   (fun i accum j -> 
+				      let r = if j=0 then (succ i)+m else j 
+				      in (MLrel r) :: accum) [] v in
+		      let new_f = 
+			abstract (List.map (fun _ ->anonymous) ids)
+			  (MLapp (MLrel (m+n+1),args)) in  
+		      let new_c = abstract lams (normalize (ml_subst new_f c))
+		      in MLfix(0,[|f|],[|new_c|])
+		    with Impossible -> a) 
+*)		| _ -> a)
 	 | _ -> a)
 
 let normalize_decl = function
@@ -543,7 +570,7 @@ let rec optimize prm = function
 	d :: (optimize prm l) 
       else optimize prm l
   | Dglob (r,t) :: l ->
-      let t = optimize_fix (normalize t) in
+      let t = normalize t in
       let b = expand (strict_language prm.lang) r t in
       let l = if b then 
 	begin
@@ -552,6 +579,7 @@ let rec optimize prm = function
 	end
       else l in 
       if (prm.mod_name <> None) || List.mem r prm.to_appear || not b then 
+	let t = optimize_fix t in 
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l
