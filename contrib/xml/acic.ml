@@ -15,8 +15,11 @@ type id = string  (* the type of the (annotated) node identifiers *)
 type uri = string
 
 type 'constr context_entry =
-   Decl of 'constr   (* Declaration *)
- | Def  of 'constr   (* Definition  *)
+   Decl of 'constr             (* Declaration *)
+ | Def  of 'constr * 'constr   (* Definition; the second argument (the type) *)
+                               (* is not present in the DTD, but is needed   *)
+                               (* to use Coq functions during exportation.   *)
+
 type 'constr hypothesis = identifier * 'constr context_entry
 type context = constr hypothesis list
 

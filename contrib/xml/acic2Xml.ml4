@@ -212,7 +212,7 @@ let print_object ids_to_inner_sorts =
                                  X.xml_nempty "Decl"
                                   ["id",hid;"name",Names.string_of_id n]
                                   (print_term ids_to_inner_sorts t)
-                              | n,A.Def t ->
+                              | n,A.Def (t,_) ->
                                  X.xml_nempty "Def"
                                   ["id",hid;"name",Names.string_of_id n]
                                   (print_term ids_to_inner_sorts t)

@@ -441,17 +441,19 @@ let acic_object_of_cic_object pvars sigma obj =
                           acic_term_of_cic_term_context' env sigma t None
                          in
                           final_env,(hid,(n,A.Decl at))::atl
-                     | A.Def t ->
+                     | A.Def (t,ty) ->
                         let final_env,atl =
                          aux
-                          (Environ.push_rel (Names.Name n,Some t,Term.mkProp)
+                          (Environ.push_rel (Names.Name n,Some t,ty)
                             env) tl
                         in
                          let at =
-                          acic_term_of_cic_term_context' env sigma t None
+                          acic_term_of_cic_term_context' env sigma t None in
+                         let dummy_never_used =
+                          let s = "dummy_never_used" in
+                           A.ARel (s,99,Names.id_of_string s)
                          in
-(*CSC: wrong: mkProp *)
-                          final_env,(hid,(n,A.Def at))::atl
+                          final_env,(hid,(n,A.Def (at,dummy_never_used)))::atl
              in
               aux env canonical_context
             in

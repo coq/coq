@@ -271,7 +271,8 @@ let mk_current_proof_obj id bo ty evar_map env =
           | (n,Some b,t)::tl ->
               let final_var_ids,tl' = aux (n::var_ids) tl in
               let b' = Term.subst_vars var_ids b in
-               final_var_ids,(n, Acic.Def  (Term.unshare b'))::tl'
+               (* t will not be exported to XML. Thus no unsharing performed *)
+               final_var_ids,(n, Acic.Def  (Term.unshare b',t))::tl'
         in
          aux [] evar_hyps
        in
