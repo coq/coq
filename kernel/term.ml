@@ -748,21 +748,11 @@ let compare_constr f c1 c2 =
 (*     Type of assumptions                                                 *)
 (***************************************************************************)
 
-(*
-type 'a judge = { body : constr; typ : 'a }
-type types = sorts judge
-
-let type_app f tt = { body = f tt.body; typ = tt.typ }
-
-let body_of_type ty = ty.body
-*)
-
 type types = constr
 
 let type_app f tt = f tt
 
 let body_of_type ty = ty
-(**)
 
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
