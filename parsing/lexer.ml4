@@ -214,6 +214,10 @@ let rec string_v7 bp len = parser
 let string bp len s =
   if !Options.v7 then string_v7 bp len s else string_v8 bp len s
 
+(* Hook for exporting comment into xml theory files *)
+let xml_output_comment = ref (fun _ -> ())
+let set_xml_output_comment f = xml_output_comment := f
+
 (* Utilities for comment translation *)
 let comment_begin = ref None
 let comm_loc bp = if !comment_begin=None then comment_begin := Some bp
@@ -251,6 +255,9 @@ let null_comment s =
   null (String.length s - 1)
 
 let comment_stop ep =
+  if !Options.xml_export && !current <> "" &&
+    (!between_com || not(null_comment !current)) then
+      !xml_output_comment !current;
   (if Options.do_translate() && !current <> "" &&
     (!between_com || not(null_comment !current)) then
     let bp = match !comment_begin with
@@ -283,7 +290,7 @@ let rec comment bp = parser bp2
        s >] -> comment bp s
   | [< ''*';
        _ = parser
-         | [< '')' >] ep -> push_string "*)"
+         | [< '')' >] ep -> push_string "*)";
          | [< s >] -> real_push_char '*'; comment bp s >] -> ()
   | [< ''"'; s >] ->
       if Options.do_translate() then (push_string"\"";comm_string bp2 s)
@@ -448,7 +455,7 @@ let rec next_token = parser bp
         | [< ''*'; s >] ->
             comm_loc bp;
             push_string "(*";
-	    comment bp s; 
+	    comment bp s;
 	    next_token s
         | [< t = process_chars bp c >] -> comment_stop bp; t >] ->
       t

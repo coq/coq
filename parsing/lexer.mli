@@ -45,3 +45,5 @@ val init : unit -> unit
 type com_state
 val com_state: unit -> com_state
 val restore_com_state: com_state -> unit
+
+val set_xml_output_comment : (string -> unit) -> unit
