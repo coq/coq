@@ -778,9 +778,12 @@ clean::
 # Emacs tags
 ###########################################################################
 
+# NB: the -maxdepth 3 is for excluding files from contrib/extraction/test
+
 tags:
-	find . -name "*.ml*" | sort -r | xargs \
-	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	find . -maxdepth 3 -name "*.ml*" | sort -r | xargs \
+	etags --language=none\
+	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
