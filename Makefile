@@ -1274,11 +1274,7 @@ devel:
 
 # 1. Translate the old syntax files and build new syntax theories hierarchy
 translation::
-	@$(MAKE) COQ_XML=-ftranslate world
-	@$(MAKE) movenew
-
-translation2::
-	@$(MAKE) COQ_XML=-ftranslate2 world
+	@$(MAKE) COQ_XML="-ftranslate -no-strict" world
 	@$(MAKE) movenew
 
 movenew::
@@ -1291,36 +1287,36 @@ movenew::
 	done
 
 # 2. Build new syntax images and compile theories
-newworld:: $(COQTOPNEW) newinit newtheories newcontrib
+newworld:: $(BESTCOQTOPNEW) newinit newtheories newcontrib
 
 newinit:: $(INITVO:%.vo=new%.vo)
 newtheories:: $(THEORIESVO:%.vo=new%.vo)
 newcontrib:: $(CONTRIBVO:%.vo=new%.vo) $(CONTRIBCMO)
 
 
-COQTOPNEW=bin/coqtopnew.$(BEST)$(EXE)
+BESTCOQTOPNEW=bin/coqtopnew.$(BEST)$(EXE)
 
 NEWCMX=$(HIGHPARSINGNEW:.cmo=.cmx)
-NEWOPTS=-boot $(GLOB) -v8 -R newtheories Coq -R newcontrib Coq
-NEWCOQBARE=$(COQTOPNEW) $(NEWOPTS) -nois
-NEWCOQ=$(COQTOPNEW) $(NEWOPTS) -is states/initialnew.coq
+NEWOPTS=-boot $(GLOB) -v8
+NEWCOQBARE=$(BESTCOQTOP) $(NEWOPTS) -nois
+NEWCOQ=$(BESTCOQTOP) $(NEWOPTS)
 
 bin/coqtopnew.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(NEWCMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) $(NEWCMX) -o $@
 
 bin/coqtopnew.byte$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(HIGHPARSINGNEW)
-	$(COQMKTOP) -top $(OPTFLAGS) $(HIGHPARSINGNEW) -o $@
+	$(COQMKTOP) -g -top $(OPTFLAGS) $(HIGHPARSINGNEW) -o $@
 
-newtheories/Init/%.vo: $(COQTOPNEW) newtheories/Init/%.v
+newtheories/Init/%.vo: $(BESTCOQTOPNEW) newtheories/Init/%.v
 	$(NEWCOQBARE) -compile $*
 
 states/initialnew.coq: states/MakeInitialNew.v $(INITVO:%.vo=new%.vo)
 	$(NEWCOQBARE) -batch -silent -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
 
 newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(NEWCOQ) -compile $*
+	$(NEWCOQ) -compile newcontrib/$*
 newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(NEWCOQ) -compile $*
+	$(NEWCOQ) -compile newtheories/$*
 
 # Dependencies
 .depend.newcoq: .depend.coq Makefile
