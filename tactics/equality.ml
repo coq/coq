@@ -292,10 +292,9 @@ let find_positions env sigma t1 t2 =
 	    []
           else
 	    let ty1_0 = get_type_of env sigma t1_0 in
-	    (match get_sort_of env sigma ty1_0 with
-	       | Prop Pos -> [(List.rev posn,t1_0,t2_0)] (* Set *)
-	       | Type _ -> [(List.rev posn,t1_0,t2_0)] (* Type *)
-	       | _ -> [])
+	    match get_sort_family_of env sigma ty1_0 with
+	      | InSet | InType -> [(List.rev posn,t1_0,t2_0)]
+	      | InProp -> []
 	  in 
 	  (try 
 	     Inr(findrec [] t1 t2)
@@ -469,10 +468,6 @@ let find_eq_data_decompose eqn =
     errorlabstrm  "find_eq_data_decompose" [< >]
 
 let gen_absurdity id gl =
-(*
-  if   (pf_is_matching gl (pat_False ()) (clause_type (Some id) gl)) 
-    or (pf_is_matching gl (pat_EmptyT ()) (clause_type  (Some id) gl))
-*)
   if is_empty_type (clause_type (Some id) gl)
   then
     simplest_elim (mkVar id) gl
@@ -520,22 +515,22 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
 exception NotDiscriminable
 
 let discr id gls =
-  let eqn = (pf_whd_betadeltaiota gls (clause_type (Some id) gls)) in
+  let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
   let sort = pf_type_of gls (pf_concl gls) in 
   let (lbeq,(t,t1,t2)) =
     try find_eq_data_decompose eqn
-    with e when catchable_exception e -> raise NotDiscriminable
+    with e when catchable_exception e ->
+      errorlabstrm "discr"  [<'sTR(string_of_id id); 
+			    'sTR" Not a primitive equality here " >]
   in
-  let tj = pf_execute gls t in
   let sigma = project gls in
   let env = pf_env gls in
   (match find_positions env sigma t1 t2 with
-     | Inr _ -> raise NotDiscriminable
+     | Inr _ ->
+	 errorlabstrm "discr" [< 'sTR" Not a discriminable equality" >]
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
-	 let e_env =
-	   push_named_assum (e,assumption_of_judgment env sigma tj) env
-	 in
+	 let e_env = push_named_assum (e,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (indt,_) = find_mrectype env sigma t in 
@@ -548,36 +543,21 @@ let discr id gls =
 
 
 let not_found_message id =
-  [<'sTR "the variable"; 'sPC ; 'sTR (string_of_id id) ; 'sPC;
+  [<'sTR "The variable"; 'sPC ; 'sTR (string_of_id id) ; 'sPC;
     'sTR" was not found in the current environment" >]
 
-let insatisfied_prec_message cls =
-  match cls with
-    | None -> [< 'sTR"goal does not satify the expected preconditions">] 
-    |  Some id -> [< 'sTR(string_of_id id); 'sPC;
-		     'sTR"does not satify the expected preconditions" >]
+let onNegatedEquality tac gls =
+  if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
+    (tclTHEN (tclTHEN hnf_in_concl intro) (onLastHyp tac)) gls
+  else if is_matching (build_coq_imp_False_pattern ()) (pf_concl gls)then
+    (tclTHEN intro (onLastHyp tac)) gls
+  else 
+    errorlabstrm "extract_negated_equality_then"
+      [< 'sTR"The goal should negate an equality">]
 
-let discrOnLastHyp gls =
-  try onLastHyp discr gls
-  with NotDiscriminable ->
-    errorlabstrm "DiscrConcl" [< 'sTR" Not a discriminable equality" >]
-
-let discrClause cls gls =
-  match cls with
-    | None ->
-    	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
-          (tclTHEN (tclTHEN hnf_in_concl intro) discrOnLastHyp) gls
-    	else if is_matching (build_coq_imp_False_pattern ()) (pf_concl gls)then
-	  (tclTHEN intro discrOnLastHyp) gls
-	else 
-	  errorlabstrm "DiscrClause" (insatisfied_prec_message cls)
-    | Some id ->
-	try (discr id gls)
-      	with
-	  | Not_found -> errorlabstrm "DiscrClause" (not_found_message id)
-	  | NotDiscriminable ->
-	      errorlabstrm "DiscrHyp"
-		[< 'sTR(string_of_id id);'sTR" Not a discriminable equality" >]
+let discrClause = function
+  | None -> onNegatedEquality discr
+  | Some id -> discr id
 
 let discrEverywhere = 
   tclORELSE
@@ -591,7 +571,7 @@ let discrHyp id gls = discrClause (Some id) gls
 (**)
 let h_discr      = hide_atomic_tactic "Discr"      discrEverywhere
 let h_discrConcl = hide_atomic_tactic "DiscrConcl" discrConcl
-let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
+let h_discrHyp   = hide_ident_or_numarg_tactic "DiscrHyp" discrHyp
 (**)
 
 (* returns the sigma type (sigS, sigT) with the respective
@@ -778,26 +758,27 @@ let try_delta_expand env sigma t =
    in hd position, otherwise delta expansion is not done *)
 
 let inj id gls =
-  let eqn = (pf_whd_betadeltaiota gls (clause_type (Some id) gls)) in
+  let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
   let (eq,(t,t1,t2))= 
     try 
       find_eq_data_decompose eqn
     with e when catchable_exception e -> 
       errorlabstrm "Inj"  [<'sTR(string_of_id id); 
-			    'sTR" Not a primitive  equality here " >] 
+			    'sTR" Not a primitive equality here " >] 
   in
-  let tj = pf_execute gls t in
   let sigma = project gls in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inl _ ->
-	errorlabstrm "Inj" [<'sTR (string_of_id id);
-			     'sTR" is not a projectable equality" >]
+	errorlabstrm "Inj"
+	  [<'sTR (string_of_id id);
+	    'sTR" is not a projectable equality but a discriminable one" >]
+    | Inr [] ->
+	errorlabstrm "Equality.inj" 
+	   [<'sTR"Nothing to do, it is an equality between convertible terms">]
     | Inr posns ->
 	let e = pf_get_new_id (id_of_string "e") gls in
-	let e_env =
-	  push_named_assum (e,assumption_of_judgment env sigma tj) env
-	in
+	let e_env = push_named_assum (e,t) env in
 	let injectors =
 	  map_succeed
 	    (fun (cpath,t1_0,t2_0) ->
@@ -820,47 +801,38 @@ let inj id gls =
 			       try_delta_expand env sigma t2;
 			       mkVar id]) 
 	     in
-	     let ty = pf_type_of gls pf in
-	     ((tclTHENS  (cut  ty) ([tclIDTAC;refine pf]))))
+	     let ty =
+	       try pf_type_of gls pf
+               with
+		 | UserError("refiner__fail",_) -> 
+		     errorlabstrm "InjClause" 
+		[< 'sTR (string_of_id id); 'sTR" Not a projectable equality" >]
+	     in ((tclTHENS  (cut  ty) ([tclIDTAC;refine pf]))))
 	  injectors
 	  gls
 	    
-let injClause cls gls =
-  match cls with
-    | None ->
-    	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
-          (tclTHEN (tclTHEN hnf_in_concl intro)
-             (onLastHyp inj)) gls
-    	else
-	  errorlabstrm "InjClause" (insatisfied_prec_message  cls)
-    | Some id ->
-	try 
-	  inj id gls
-        with
-          | UserError("refiner__fail",_) -> 
-              errorlabstrm "InjClause" 
-		[< 'sTR (string_of_id id); 'sTR" Not a projectable equality" >]
+let injClause = function
+  | None -> onNegatedEquality inj
+  | Some id -> inj id
 
 let injConcl gls  = injClause None gls
 let injHyp id gls = injClause (Some id) gls
 
 (**)
 let h_injConcl = hide_atomic_tactic "Inj" injConcl
-let h_injHyp   = hide_ident_tactic "InjHyp" injHyp
+let h_injHyp   = hide_ident_or_numarg_tactic "InjHyp" injHyp
 (**)
 
 let decompEqThen ntac id gls =
-  let eqn = (pf_whd_betadeltaiota gls (clause_type (Some id) gls)) in
+  let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
   let (lbeq,(t,t1,t2))= find_eq_data_decompose  eqn in
   let sort = pf_type_of gls (pf_concl gls) in 
-  let tj = pf_execute gls t in
   let sigma = project gls in
   let env = pf_env gls in 
   (match find_positions env sigma t1 t2 with
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "e") gls in
-	 let e_env =
-	   push_named_assum (e,assumption_of_judgment env sigma tj) env in
+	 let e_env = push_named_assum (e,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (pf, absurd_term) =
@@ -869,10 +841,12 @@ let decompEqThen ntac id gls =
 	   ((tclTHENS (cut_intro absurd_term)
 	       ([onLastHyp gen_absurdity;
 		 refine (mkApp (pf, [| mkVar id |]))]))) gls
+     | Inr [] ->
+	 errorlabstrm "Equality.inj" 
+	   [<'sTR"Nothing to do, it is an equality between convertible terms">]
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
-	  let e_env =
-	    push_named_assum (e,assumption_of_judgment env sigma tj) env in
+	  let e_env = push_named_assum (e,t) env in
 	  let injectors =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->
@@ -901,23 +875,9 @@ let decompEqThen ntac id gls =
 
 let decompEq = decompEqThen (fun x -> tclIDTAC)
 
-let dEqThen ntac cls gls =
-  match cls with
-    | None ->
-    	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
-	  (tclTHEN hnf_in_concl
-	     (tclTHEN intro
-         	(onLastHyp (decompEqThen ntac)))) gls
-    	else
-	  errorlabstrm "DEqThen" (insatisfied_prec_message  cls)
-    | Some id ->
-	try 
-	  decompEqThen ntac id gls
-      	with 
-	  | Not_found -> 
-	      errorlabstrm "DEqThen" (not_found_message id)
-          | e when catchable_exception e ->
-	       errorlabstrm "DEqThen" (insatisfied_prec_message cls)
+let dEqThen ntac = function
+  | None -> onNegatedEquality (decompEqThen ntac)
+  | Some id -> decompEqThen ntac id
 
 let dEq = dEqThen (fun x -> tclIDTAC)
 
@@ -926,7 +886,7 @@ let dEqHyp id gls = dEq (Some id) gls
 
 (**)
 let dEqConcl_tac = hide_atomic_tactic "DEqConcl" dEqConcl
-let dEqHyp_tac = hide_ident_tactic "DEqHyp" dEqHyp
+let dEqHyp_tac = hide_ident_or_numarg_tactic "DEqHyp" dEqHyp
 (**)
 
 let rewrite_msg = function 
