@@ -411,6 +411,7 @@ Let us see why:
 
 \begin{coq_eval}
 Require Import ZArith.
+Open Scope Z_scope.
 \end{coq_eval}
 \begin{coq_example}
 Goal forall x y z:Z, x + 3 + y + y * z = x + 3 + y + z * y.

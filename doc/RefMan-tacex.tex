@@ -122,15 +122,15 @@ Consider the goal {\tt (R n p)} provable using the transitivity of
 Goal R n p.
 \end{coq_example*}
 
-The direct application of {\tt Rtrans} with {\tt Apply} fails because
-no value for {\tt y} in {\tt Rtrans} is found by {\tt Apply}:
+The direct application of {\tt Rtrans} with {\tt apply} fails because
+no value for {\tt y} in {\tt Rtrans} is found by {\tt apply}:
 
 \begin{coq_eval}
 Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+(* Just to adjust the prompt: *) apply Rtrans.
 \end{coq_eval}
-% (********** The following is not correct and should produce **********)
-% (**** Error: generated subgoal (R n ?17) has metavariables in it *****)
-% (* Just to adjust the prompt: *) apply Rtrans.
 \begin{coq_example}
 apply Rtrans.
 \end{coq_example}

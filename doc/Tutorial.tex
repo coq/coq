@@ -138,7 +138,7 @@ we have to add another declaration, which will declare explicitly the
 hypothesis \verb:Pos_n:, with specification the proper logical
 proposition:
 \begin{coq_example}
-Hypothesis Pos_n : (n > 0)%N.
+Hypothesis Pos_n : n > 0.
 \end{coq_example}
 
 Indeed we may check that the relation \verb:gt: is known with the right type
@@ -170,7 +170,7 @@ the expression \verb:(gt n): is well-formed of type \verb:nat->Prop:,
 and thus that the expression \verb:(gt n O):, which abbreviates
 \verb:((gt n) O):, is a well-formed proposition.
 \begin{coq_example}
-Check (n > 0)%N.
+Check n > 0.
 \end{coq_example}
 
 \subsection{Definitions}
@@ -200,7 +200,7 @@ argument \verb:m: of type \verb:nat: in order to build its result as
 \verb:(plus m m)::
 
 \begin{coq_example}
-Definition double (m:nat) := (m + m)%N.
+Definition double (m:nat) := m + m.
 \end{coq_example}
 The abstraction brackets are explained as follows. The expression
 \verb+[x:A]e+ is well formed of type \verb+A->B+ in a context
@@ -214,7 +214,7 @@ Bound (local) variables and free (global) variables may be mixed.
 For instance, we may define the function which adds the constant \verb:n:
 to its argument as
 \begin{coq_example}
-Definition add_n (m:nat) := (m + n)%N.
+Definition add_n (m:nat) := m + n.
 \end{coq_example}
 However, note that here we may not rename the formal argument $m$ into $n$
 without capturing the free occurrence of $n$, and thus changing the meaning
@@ -229,7 +229,7 @@ operator is available in \Coq, with the following syntax:
 binding, we are obliged to declare explicitly the type of the quantified
 variable. We check:
 \begin{coq_example}
-Check (forall m:nat, (m > 0)%N).
+Check (forall m:nat, m > 0).
 \end{coq_example}
 We may clean-up the development by removing the contents of the
 current section:
@@ -292,7 +292,7 @@ intros H' HA.
 
 We notice that $C$, the current goal, may be obtained from hypothesis
 \verb:H:, provided the truth of $A$ and $B$ are established.
-The tactic \verb:Apply: implements this piece of reasoning:
+The tactic \verb:apply: implements this piece of reasoning:
 \begin{coq_example}
 apply H.
 \end{coq_example}
@@ -300,7 +300,7 @@ apply H.
 We are now in the situation where we have two judgments as conjectures
 that remain to be proved. Only the first is listed in full, for the
 others the system displays only the corresponding subgoal, without its
-local hypotheses list. Remark that \verb:Apply: has kept the local
+local hypotheses list. Remark that \verb:apply: has kept the local
 hypotheses of its father judgment, which are still available for
 the judgments it generated.
 
@@ -378,9 +378,9 @@ in advance;
 it is however possible to override the given name by giving a different 
 argument to command \verb:Save:.
 
-Actually, such an easy combination of tactics \verb:Intro:, \verb:Apply:
-and \verb:Assumption: may be found completely automatically by an automatic
-tactic, called \verb:Auto:, without user guidance:
+Actually, such an easy combination of tactics \verb:Intro:, \verb:apply:
+and \verb:assumption: may be found completely automatically by an automatic
+tactic, called \verb:auto:, without user guidance:
 \begin{coq_example}
 Lemma distr_imp : (A -> B -> C) -> (A -> B) -> A -> C.
 auto.
@@ -414,7 +414,7 @@ their value (or proof-term) is omitted.
 
 \subsection{Conjunction}
 
-We have seen how \verb:Intro: and \verb:Apply: tactics could be combined
+We have seen how \verb:Intro: and \verb:apply: tactics could be combined
 in order to prove implicational statements. More generally, \Coq~ favors a style
 of reasoning, called {\sl Natural Deduction}, which decomposes reasoning into 
 so called {\sl introduction rules}, which tell how to prove a goal whose main 
@@ -428,7 +428,7 @@ Lemma and_commutative : A /\ B -> B /\ A.
 intro.
 \end{coq_example}
 
-We make use of the conjunctive hypothesis \verb:H: with the \verb:Elim: tactic,
+We make use of the conjunctive hypothesis \verb:H: with the \verb:elim: tactic,
 which breaks it into its components:
 \begin{coq_example}
 elim H.
@@ -447,19 +447,19 @@ intro H; elim H; auto.
 Qed.
 \end{coq_example}
 
-The tactic \verb:Auto: succeeded here because it knows as a hint the 
+The tactic \verb:auto: succeeded here because it knows as a hint the 
 conjunction introduction operator \verb+conj+
 \begin{coq_example}
 Check conj.
 \end{coq_example}
 
-Actually, the tactic \verb+Split+ is just an abbreviation for \verb+Apply conj.+
+Actually, the tactic \verb+Split+ is just an abbreviation for \verb+apply conj.+
 
-What we have just seen is that the \verb:Auto: tactic is more powerful than
+What we have just seen is that the \verb:auto: tactic is more powerful than
 just a simple application of local hypotheses; it tries to apply as well 
 lemmas which have been specified as hints. A 
 \verb:Hints Resolve: command registers a
-lemma as a hint to be used from now on by the \verb:Auto: tactic, whose power 
+lemma as a hint to be used from now on by the \verb:auto: tactic, whose power 
 may thus be incrementally augmented.
 
 \subsection{Disjunction}
@@ -479,7 +479,7 @@ intro HA.
 \end{coq_example}
 
 Here the hypothesis \verb:H: is not needed anymore. We could choose to
-actually erase it with the tactic \verb:Clear:; in this simple proof it
+actually erase it with the tactic \verb:clear:; in this simple proof it
 does not really matter, but in bigger proof developments it is useful to
 clear away unnecessary hypotheses which may clutter your screen.
 \begin{coq_example}
@@ -495,7 +495,7 @@ proof constructors are called respectively \verb:or_introl: and
 right.
 trivial.
 \end{coq_example}
-The tactic \verb:Trivial: works like \verb:Auto: with the hints
+The tactic \verb:Trivial: works like \verb:auto: with the hints
 database, but it only tries those tactics that can solve the goal in one
 step. 
 
@@ -506,11 +506,11 @@ as shown for the second symmetric case:
 auto.
 \end{coq_example}
 
-However, \verb:Auto: alone does not succeed in proving the full lemma, because
+However, \verb:auto: alone does not succeed in proving the full lemma, because
 it does not try any elimination step.
-It is a bit disappointing that \verb:Auto: is not able to prove automatically 
+It is a bit disappointing that \verb:auto: is not able to prove automatically 
 such a simple tautology. The reason is that we want to keep
-\verb:Auto: efficient, so that it is always effective to use. 
+\verb:auto: efficient, so that it is always effective to use. 
 
 \subsection{Tauto}
 
@@ -535,10 +535,10 @@ It is not easy to understand the notation for proof terms without a few
 explanations. The square brackets, such as \verb+[H:A\/B]+, correspond
 to \verb:Intro H:, whereas a subterm such as 
 \verb:(or_intror: \verb:B A H0):
-corresponds to the sequence \verb:Apply or_intror; exact H0:. The extra
+corresponds to the sequence \verb:apply or_intror; exact H0:. The extra
 arguments \verb:B: and \verb:A: correspond to instantiations to the generic
 combinator \verb:or_intror:, which are effected automatically by the tactic
-\verb:Apply: when pattern-matching a goal. The specialist will of course
+\verb:apply: when pattern-matching a goal. The specialist will of course
 recognize our proof term as a $\lambda$-term, used as notation for the
 natural deduction proof term through the Curry-Howard isomorphism. The
 naive user of \Coq~ may safely ignore these formal details.
@@ -683,7 +683,7 @@ $\forall x : D$.
 
 We now state our lemma, and enter proof mode.
 \begin{coq_example}
-Lemma refl_if : forall x:D, ( EX y : _ | R x y) -> R x x.
+Lemma refl_if : forall x:D, (exists y, R x y) -> R x x.
 \end{coq_example}
 
 Remark that the hypotheses which are local to the currently opened sections
@@ -697,8 +697,8 @@ predicate as argument:
 \begin{coq_example}
 Check ex.
 \end{coq_example}
-and the notation \verb+(EX x | (P x))+ is just concrete syntax for 
-\verb+(ex D [x:D](P x))+. 
+and the notation \verb+(exists x:D, P x)+ is just concrete syntax for 
+\verb+(ex D (fun x:D => P x))+. 
 Existential quantification is handled in \Coq~ in a similar
 fashion to the connectives \verb:/\: and \verb:\/: : it is introduced by
 the proof combinator \verb:ex_intro:, which is invoked by the specific 
@@ -726,18 +726,18 @@ intros x x_Rlinked.
 
 Let us now use the existential hypothesis \verb:x_Rlinked: to 
 exhibit an R-successor y of x. This is done in two steps, first with
-\verb:Elim:, then with \verb:Intros:
+\verb:elim:, then with \verb:Intros:
 
 \begin{coq_example}
 elim x_Rlinked.
 intros y Rxy.
 \end{coq_example}
 
-Now we want to use \verb:R_transitive:. The \verb:Apply: tactic will know
+Now we want to use \verb:R_transitive:. The \verb:apply: tactic will know
 how to match \verb:x: with \verb:x:, and \verb:z: with \verb:x:, but needs
 help on how to instantiate \verb:y:, which appear in the hypotheses of
 \verb:R_transitive:, but not in its conclusion. We give the proper hint
-to \verb:Apply: in a \verb:with: clause, as follows:
+to \verb:apply: in a \verb:with: clause, as follows:
 \begin{coq_example}
 apply R_transitive with y.
 \end{coq_example}
@@ -783,7 +783,7 @@ We shall now prove a well-known fact from first-order logic: a universal
 predicate is non-empty, or in other terms existential quantification 
 follows from universal quantification.
 \begin{coq_example}
-Lemma weird : (forall x:D, P x) ->  EX a : _ | P a.
+Lemma weird : (forall x:D, P x) ->  exists a, P a.
  intro UnivP.
 \end{coq_example}
 
@@ -822,14 +822,14 @@ module as we did above, we just state the law of excluded middle as a
 local hypothesis schema at this point:
 \begin{coq_example}
 Hypothesis EM : forall A:Prop, A \/ ~ A.
-Lemma drinker :  EX x : _ | P x -> forall x:D, P x.
+Lemma drinker :  exists x:D, P x -> forall x:D, P x.
 \end{coq_example}
 The proof goes by cases on whether or not
 there is someone who does not drink. Such reasoning by cases proceeds
-by invoking the excluded middle principle, via \verb:Elim: of the
+by invoking the excluded middle principle, via \verb:elim: of the
 proper instance of \verb:EM::
 \begin{coq_example}
-elim (EM ( EX x : _ | ~ P x)).
+elim (EM (exists x, ~ P x)).
 \end{coq_example}
 
 We first look at the first case. Let Tom be the non-drinker:
@@ -844,7 +844,7 @@ exists Tom; intro Tom_drinks.
 \end{coq_example}
 
 There are several ways in which we may eliminate a contradictory case;
-a simple one is to use the \verb:Absurd: tactic as follows:
+a simple one is to use the \verb:absurd: tactic as follows:
 \begin{coq_example}
 absurd (P Tom); trivial.
 \end{coq_example}
@@ -863,7 +863,7 @@ intro Dick; elim (EM (P Dick)); trivial.
 
 The only non-trivial case is again treated by contradiction:
 \begin{coq_example}
-intro Dick_does_not_drink; absurd ( EX x : _ | ~ P x); trivial.
+intro Dick_does_not_drink; absurd (exists x, ~ P x); trivial.
 exists Dick; trivial.
 Qed.
 \end{coq_example}
@@ -916,7 +916,7 @@ generalize H0.
 \end{coq_example}
 
 Sometimes it may be convenient to use a lemma, although we do not have
-a direct way to appeal to such an already proven fact. The tactic \verb:Cut:
+a direct way to appeal to such an already proven fact. The tactic \verb:cut:
 permits to use the lemma at this point, keeping the corresponding proof
 obligation as a new subgoal:
 \begin{coq_example}
@@ -935,12 +935,12 @@ Let us give a few examples of equality replacement. Let us assume that
 some arithmetic function \verb:f: is null in zero:
 \begin{coq_example}
 Variable f : nat -> nat.
-Hypothesis foo : f 0 = 0%N.
+Hypothesis foo : f 0 = 0.
 \end{coq_example}
 
 We want to prove the following conditional equality:
 \begin{coq_example*}
-Lemma L1 : forall k:nat, k = 0%N -> f k = k.
+Lemma L1 : forall k:nat, k = 0 -> f k = k.
 \end{coq_example*}
 
 As usual, we first get rid of local assumptions with \verb:Intro::
@@ -954,7 +954,7 @@ rewrite E.
 \end{coq_example}
 This replaced both occurrences of \verb:k: by \verb:O:. 
 
-Now \verb:Apply foo: will finish the proof:
+Now \verb:apply foo: will finish the proof:
 
 \begin{coq_example}
 apply foo.
@@ -967,8 +967,8 @@ use \verb:Rewrite <- E: rather than \verb:Rewrite E: or the equivalent
 Let us now illustrate the tactic \verb:Replace:.
 \begin{coq_example}
 Hypothesis f10 : f 1 = f 0.
-Lemma L2 : f (f 1) = 0%N.
-replace (f 1) with 0%N.
+Lemma L2 : f (f 1) = 0.
+replace (f 1) with 0.
 \end{coq_example}
 What happened here is that the replacement left the first subgoal to be
 proved, but another proof obligation was generated by the \verb:Replace:
@@ -986,7 +986,7 @@ $t$ is an assumption
 corresponding goal will not appear. For instance:
 \begin{coq_example}
 Restart.
-replace (f 0) with 0%N.
+replace (f 0) with 0.
 rewrite f10; rewrite foo; trivial.
 Qed.
 \end{coq_example}
@@ -994,6 +994,8 @@ Qed.
 
 
 \subsection{Predicate calculus over Type}
+
+OBSOLETE ?
 
 We just explained the basis of first-order reasoning in the universe
 of mathematical Sets. Similar reasoning is available at the level of
@@ -1006,7 +1008,7 @@ Require Import Logic_Type.
 
 New proof combinators are now available, such as the existential
 quantification \verb:exT: over a Type, available with syntax
-\verb:(EXT x | (P x)):. The corresponding introduction
+\verb:(exists x, P x):. The corresponding introduction
 combinator may be invoked by the tactic \verb:Exists: as above.
 \begin{coq_example}
 Check ex_intro.
@@ -1053,7 +1055,7 @@ Lemma subset_transitive : transitive set subset.
 \end{coq_example}
 
 In order to make any progress, one needs to use the definition of 
-\verb:transitive:. The \verb:Unfold: tactic, which replaces all occurrences of a
+\verb:transitive:. The \verb:unfold: tactic, which replaces all occurrences of a
 defined notion by its definition in the current goal, may be used here.
 \begin{coq_example}
 unfold transitive.
@@ -1064,16 +1066,16 @@ Now, we must unfold \verb:subset::
 unfold subset.
 \end{coq_example}
 Now, unfolding \verb:element: would be a mistake, because indeed a simple proof
-can be found by \verb:Auto:, keeping \verb:element: an abstract predicate:
+can be found by \verb:auto:, keeping \verb:element: an abstract predicate:
 \begin{coq_example}
 auto.
 \end{coq_example}
 
-Many variations on \verb:Unfold: are provided in \Coq. For instance,
+Many variations on \verb:unfold: are provided in \Coq. For instance,
 we may selectively unfold one designated occurrence:
 \begin{coq_example}
 Undo 2.
-unfold subset 2.
+unfold subset at 2.
 \end{coq_example}
 
 One may also unfold a definition in a given local hypothesis, using the
@@ -1150,7 +1152,7 @@ intro b.
 \end{coq_example}
 
 We use the knowledge that \verb:b: is a \verb:bool: by calling tactic
-\verb:Elim:, which is this case will appeal to combinator \verb:bool_ind:
+\verb:elim:, which is this case will appeal to combinator \verb:bool_ind:
 in order to split the proof according to the two cases:
 \begin{coq_example}
 elim b.
@@ -1163,11 +1165,11 @@ right; trivial.
 \end{coq_example}
 
 Indeed, the whole proof can be done with the combination of the
-\verb:Induction: tactic, which combines \verb:Intro: and \verb:Elim:,
-with good old \verb:Auto::
+\verb:simple induction: tactic, which combines \verb:intro: and \verb:elim:,
+with good old \verb:auto::
 \begin{coq_example}
 Restart.
-oldinduction b; auto.
+simple induction b; auto.
 Qed.
 \end{coq_example}
 
@@ -1260,11 +1262,11 @@ Let us now show how to do proofs by structural induction. We start with easy
 properties of the \verb:plus: function we just defined. Let us first
 show that $n=n+0$.
 \begin{coq_example}
-Lemma plus_n_O : forall n:nat, n = (n + 0)%N.
+Lemma plus_n_O : forall n:nat, n = n + 0.
 intro n; elim n.
 \end{coq_example}
 
-What happened was that \verb:Elim n:, in order to construct a \verb:Prop:
+What happened was that \verb:elim n:, in order to construct a \verb:Prop:
 (the initial goal) from a \verb:nat: (i.e. \verb:n:), appealed to the
 corresponding induction principle \verb:nat_ind: which we saw was indeed
 exactly Peano's induction scheme. Pattern-matching instantiated the 
@@ -1286,49 +1288,49 @@ simpl; auto.
 Qed.
 \end{coq_example}
 
-Here \verb:Auto: succeeded, because it used as a hint lemma \verb:eq_S:,
+Here \verb:auto: succeeded, because it used as a hint lemma \verb:eq_S:,
 which say that successor preserves equality:
 \begin{coq_example}
 Check eq_S.
 \end{coq_example}
 
 Actually, let us see how to declare our lemma \verb:plus_n_O: as a hint
-to be used by \verb:Auto::
+to be used by \verb:auto::
 \begin{coq_example}
-Hints Resolve plus_n_O .
+Hint Resolve plus_n_O .
 \end{coq_example}
 
 We now proceed to the similar property concerning the other constructor
 \verb:S::
 \begin{coq_example}
-Lemma plus_n_S : forall n m:nat, S (n + m) = (n + S m)%N.
+Lemma plus_n_S : forall n m:nat, S (n + m) = n + S m.
 \end{coq_example}
 
-We now go faster, remembering that tactic \verb:Induction: does the
-necessary \verb:Intros: before applying \verb:Elim:. Factoring simplification
+We now go faster, remembering that tactic \verb:simple induction: does the
+necessary \verb:intros: before applying \verb:elim:. Factoring simplification
 and automation in both cases thanks to tactic composition, we prove this
 lemma in one line:
 \begin{coq_example}
-oldinduction n; simpl; auto.
+simple induction n; simpl; auto.
 Qed.
-Hints Resolve plus_n_S .
+Hint Resolve plus_n_S .
 \end{coq_example}
 
 Let us end this exercise with the commutativity of \verb:plus::
 
 \begin{coq_example}
-Lemma plus_com : forall n m:nat, (n + m)%N = (m + n)%N.
+Lemma plus_com : forall n m:nat, n + m = m + n.
 \end{coq_example}
 
 Here we have a choice on doing an induction on \verb:n: or on \verb:m:, the
 situation being symmetric. For instance:
 \begin{coq_example}
-oldinduction m; simpl; auto.
+simple induction m; simpl; auto.
 \end{coq_example}
 
-Here \verb:Auto: succeeded on the base case, thanks to our hint
+Here \verb:auto: succeeded on the base case, thanks to our hint
 \verb:plus_n_O:, but the induction step requires rewriting, which
-\verb:Auto: does not handle:
+\verb:auto: does not handle:
 
 \begin{coq_example}
 intros m' E; rewrite <- E; auto.
@@ -1362,7 +1364,7 @@ But we may also use it to transform a \verb:False: goal into
 we want to prove that \verb:O: and \verb:S: construct different values, one
 of Peano's axioms:
 \begin{coq_example}
-Lemma no_confusion : forall n:nat, 0%N <> S n.
+Lemma no_confusion : forall n:nat, 0 <> S n.
 \end{coq_example}
 
 First of all, we replace negation by its definition, by reducing the
@@ -1430,7 +1432,7 @@ intros n m n_le_m.
 elim n_le_m.
 \end{coq_example}
 
-What happens here is similar to the behaviour of \verb:Elim: on natural
+What happens here is similar to the behaviour of \verb:elim: on natural
 numbers: it appeals to the relevant induction principle, here \verb:le_ind:,
 which generates the two subgoals, which may then be solved easily
 %as if ``backchaining'' the current goal
@@ -1442,10 +1444,10 @@ intros; apply le_S; trivial.
 
 Now we know that it is a good idea to give the defining clauses as hints,
 so that the proof may proceed with a simple combination of 
-\verb:Induction: and \verb:Auto:.
+\verb:Induction: and \verb:auto:.
 \begin{coq_example}
 Restart.
-Hints Resolve le_n le_S .
+Hint Resolve le_n le_S .
 \end{coq_example}
 
 We have a slight problem however. We want to say ``Do an induction on
@@ -1453,7 +1455,7 @@ hypothesis \verb:(le n m):'', but we have no explicit name for it. What we
 do in this case is to say ``Do an induction on the first unnamed hypothesis'',
 as follows.
 \begin{coq_example}
-oldinduction 1; auto.
+simple induction 1; auto.
 Qed.
 \end{coq_example}
 
@@ -1461,7 +1463,7 @@ Here is a more tricky problem. Assume we want to show that
 $n\le 0 \Rightarrow n=0$. This reasoning ought to follow simply from the
 fact that only the first defining clause of \verb:le: applies.
 \begin{coq_example} 
-Lemma tricky : forall n:nat, le n 0 -> n = 0%N.
+Lemma tricky : forall n:nat, le n 0 -> n = 0.
 \end{coq_example}
 
 However, here trying something like \verb:Induction 1: would lead
@@ -1527,11 +1529,12 @@ development is not type-checked again.
 You may create your own modules, by writing \Coq~ commands in a file,
 say \verb:my_module.v:. Such a module may be simply loaded in the current
 context, with command \verb:Load my_module:. It may also be compiled,
-using the command \verb:Compile Module my_module: directly at the
-\Coq~ toplevel, or else in ``batch'' mode, using the UNIX command
+%using the command \verb:Compile Module my_module: directly at the
+%\Coq~ toplevel, or else 
+in ``batch'' mode, using the UNIX command
 \verb:coqc:. Compiling the module \verb:my_module.v: creates a 
 file \verb:my_module.vo:{} that can be reloaded with command
-\verb:Require my_module:. 
+\verb:Require Import my_module:. 
 
 If a required module depends on other modules then the latters are
 automatically required beforehand. However their contents is not
@@ -1557,7 +1560,7 @@ conclusion matching a given pattern, where \verb:?: can be used in
 place of an arbitrary term.
 
 \begin{coq_example}
-SearchPattern ((_ + _)%N = _).
+SearchPattern (_ + _ = _).
 \end{coq_example}
 
 % The argument to give is a type and it searches in the current context all

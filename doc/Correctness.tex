@@ -330,12 +330,12 @@ use all the \Coq\ syntax to write annotations. For instance, if $x$
 and $y$ are references over integers (in type \texttt{Z}), you can write the
 following annotation
 $$
-\mbox{\texttt{\{ `0 < x <= x+y` \}}}
+\mbox{\texttt{\{ 0 < x <= x+y \}}}
 $$
 In a post-condition, if necessary, you can refer to the value of the variable
-$x$ \emph{before} the evaluation with the notation $x@$.
+$x$ \emph{before} the evaluation with the notation $x'at'$.
 Actually, it is possible to refer to the value of a variable at any 
-moment of the evaluation with the notation $x@l$,
+moment of the evaluation with the notation $x'at'l$,
 provided that $l$ is a \emph{label} previously inserted in your program
 (see below the paragraph about labels).
 
@@ -362,7 +362,7 @@ The pre-condition is an annotation about the values of variables
 about the values of variables \emph{before} and \emph{after} the
 evaluation. Example:
 $$
-\mbox{\texttt{\{ `0 < x` \} x := (Zplus !x !x) \{ `x@ < x` \}}}
+\mbox{\texttt{\{ 0 < x \} x := (Zplus !x !x) \{ x'at' < x \}}}
 $$
 Moreover, you can assert some properties of the result of the evaluation
 in the post-condition, by referring to it through the name \emph{result}.
@@ -439,10 +439,10 @@ $$
   ~ block\_statements \dots ~ \kw{end}
 $$
 Then it is possible to refer to the value of the variable $x$ at step
-$L$ with the notation $x@L$.
+$L$ with the notation $x'at'L$.
 
 There is a special label $0$ which is automatically inserted at the
-beginning of the program. Therefore, $x@0$ will always refer to the
+beginning of the program. Therefore, $x'at'0$ will always refer to the
 initial value of the variable $x$.
 
 \medskip
@@ -541,7 +541,7 @@ where $x$ may be a reference, an array or a function.
 \begin{verbatim}
 Parameter N : Z.
 Global Variable x : Z ref.
-Correctness foo { `x < N` } begin x := (Zmult 2 !x) end { `x < 2*N` }.
+Correctness foo { x < N } begin x := (Zmult 2 !x) end { x < 2*N }.
 \end{verbatim}
 
 \comindex{Show Programs}
@@ -790,6 +790,7 @@ Then we come to the correctness proof. We first import the \Coq\
 module \texttt{Correctness}:
 \begin{coq_example*}
 Require Import Correctness.
+Open Scope Z_scope.
 \end{coq_example*}
 \begin{coq_eval}
 Definition Zsquare (n:Z) := n * n.
@@ -810,13 +811,13 @@ Correctness i_exp
  m := x;
  y := 1;
  while (!n>0) do
-   { invariant (Zpower x n@0 = y * Zpower m n /\ n >= 0) variant n }
+   { invariant (Zpower x n'at'0 = y * Zpower m n /\ n >= 0) variant n }
  (if (not (Zeven_odd_bool !n)) then y := (Zmult !y !m) else tt)
- {Zpower x n@0 = y * Zpower m (Zdouble (Zdiv2 n))}; m := (Zsquare !m);
+ {Zpower x n'at'0 = y * Zpower m (Zdouble (Zdiv2 n))}; m := (Zsquare !m);
  n := (Zdiv2 !n)
  done
  end
- {y = Zpower x n@0}.
+ {y = Zpower x n'at'0}.
 \end{coq_example}
 
 The proof obligations require some lemmas involving \texttt{Zpower} and
@@ -825,7 +826,7 @@ library (see below).
 Let us make some quick remarks about this program and the way it was
 written: 
 \begin{itemize}
-  \item The name \verb!n@0! is used to refer to the initial value of
+  \item The name \verb!n'at'0! is used to refer to the initial value of
     the variable \verb!n!, as well inside the loop invariant as in
     the post-condition;
 

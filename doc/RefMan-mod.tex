@@ -226,6 +226,11 @@ Now we can create a new module from \texttt{M}, giving it a less
 precise specification: the \texttt{y} component is dropped as well
 as the body of \texttt{x}.
 
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(***************** Error: N.y not a defined object *******************)
+\end{coq_eval}
 \begin{coq_example}
 Module N  :  SIG with Definition T := nat  :=  M.
 Print N.T.
@@ -260,7 +265,7 @@ Now let us create a functor, i.e. a parametric module
 Module Two (X Y: SIG).
 \end{coq_example}
 \begin{coq_example*}
-  Definition T := X.T * Y.T.
+  Definition T := (X.T * Y.T)%type.
   Definition x := (X.x, Y.x).
 \end{coq_example*}
 \begin{coq_example}

@@ -50,9 +50,9 @@ REFMANCOQTEXFILES=\
   RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
   RefMan-syn.v.tex RefMan-ltac.v.tex RefMan-oth.v.tex
 
-COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
-  Omega.v.tex Natural.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
-  Correctness.v.tex Setoid.v.tex
+COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex \
+  Omega.v.tex Changes.v.tex Tutorial.v.tex Polynom.v.tex \
+  Correctness.v.tex Setoid.v.tex # Program.v.tex Natural.v.tex 
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
   RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-ide.tex \
@@ -95,13 +95,13 @@ coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
 latex-part: all-dvi
 
-all-dvi: Tutorial.v.dvi Reference-Manual.dvi # Library.dvi Changes.v.dvi
+all-dvi: Tutorial.v.dvi Reference-Manual.dvi faq.v.dvi # Library.dvi Changes.v.dvi
 
-all-pdf: Tutorial.v.pdf Reference-Manual.pdf # Library.pdf Changes.v.pdf
+all-pdf: Tutorial.v.pdf Reference-Manual.pdf faq.v.pdf # Library.pdf Changes.v.pdf
 
-all-ps: Tutorial.v.ps Reference-Manual.ps # Library.ps Changes.v.ps
+all-ps: Tutorial.v.ps Reference-Manual.ps faq.v.ps # Library.ps Changes.v.ps
 
-all-html: Tutorial.v.html Reference-Manual.html # Library.html Changes.v.html
+all-html: Tutorial.v.html Reference-Manual.html faq.v.html # Library.html Changes.v.html
 
 #version
 version.tex: Makefile
@@ -133,7 +133,7 @@ compress-latex:
 	gzip -f all-ps-docs.tar
 
 Tutorial.v.html: Tutorial.v.tex
-	hevea ./book-html.sty ./coq-html.sty ./Tutorial.v.tex
+	hevea ./book-html.sty ./coq-html.sty ./Tutorial.v
 
 Changes.v.html: Changes.v.tex
 	hevea ./Changes.v.tex
@@ -144,7 +144,7 @@ Reference-Manual.html: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	hevea -fix -nosymb -exec xxdate.exe ./Reference-Manual.tex
 
 faq.v.html: faq.v.tex
-	hevea ./faq.v.tex
+	hevea ./faq.v
 
 coq.info: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	hevea -info ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
