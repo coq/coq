@@ -14,12 +14,13 @@ Require Export Datatypes.
 
 Infix LEFTA 4 "+" sum.
 Infix LEFTA 3 "*" prod.
-Notation "( x , y )" := (pair ? ? x y) (at level 0, x, y at level 10).
+Notation "( x , y )" := (pair ? ? x y) (at level 0).
 Notation Fst := (fst ? ?).
 Notation Snd := (snd ? ?).
 
 (** Parsing only of things in [Datatypes.v] *)
 
+Notation "< A , B > ( x , y )" := (pair A B x y) (at level 0, only parsing).
 Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing).
 Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing).
 
