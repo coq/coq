@@ -347,9 +347,9 @@ type constr_expr =
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
-  | CLetTuple of loc * name list * (name * constr_expr option) *
+  | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
-  | CIf of loc * constr_expr * (name * constr_expr option)
+  | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)
@@ -510,13 +510,13 @@ let map_constr_expr_with_binders f g e = function
          List.map (fun (tm,x) -> (f e tm,x)) a,bl)
   | COrderedCase (loc,s,po,a,bl) ->
       COrderedCase (loc,s,option_app (f e) po,f e a,List.map (f e) bl)
-  | CLetTuple (loc,nal,(na,po),b,c) ->
+  | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (name_fold g) nal e in
-      let e'' = name_fold g na e in
-      CLetTuple (loc,nal,(na,option_app (f e'') po),f e b,f e' c)
-  | CIf (loc,c,(na,po),b1,b2) ->
-      let e' = name_fold g na e in
-      CIf (loc,f e c,(na,option_app (f e') po),f e b1,f e b2)
+      let e'' = option_fold_right (name_fold g) ona e in
+      CLetTuple (loc,nal,(ona,option_app (f e'') po),f e b,f e' c)
+  | CIf (loc,c,(ona,po),b1,b2) ->
+      let e' = option_fold_right (name_fold g) ona e in
+      CIf (loc,f e c,(ona,option_app (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
       CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,f e t,f e d)) dl)
   | CCoFix (loc,id,dl) ->

@@ -12,9 +12,11 @@ open Printf
 open Coqdep_lexer
 open Unix
 
+let (/) = Filename.concat
+
 let file_concat l =
   if l=[] then "<empty>" else
-    List.fold_left Filename.concat (List.hd l) (List.tl l)
+    List.fold_left (/) (List.hd l) (List.tl l)
 
 let stderr = Pervasives.stderr
 let stdout = Pervasives.stdout
@@ -94,7 +96,7 @@ let safe_assoc verbose file k =
 let file_name = function
   | (s,None)     -> file_concat s 
   | (s,Some ".") -> file_concat s
-  | (s,Some d)   -> Filename.concat d (file_concat s)
+  | (s,Some d)   -> d / file_concat s
 
 let traite_fichier_ML md ext =
   try 
@@ -375,7 +377,7 @@ let all_subdirs root_dir log_dir =
 	let f = readdir dirh in
 	if f <> "." && f <> ".." then
 	  let file = dir@[f] in
-          let filename = Filename.concat phys_dir f in
+          let filename = phys_dir/f in
 	  if (stat filename).st_kind = S_DIR then begin
 	    add (filename,file);
 	    traverse filename file
@@ -393,7 +395,7 @@ let usage () =
   exit 1
 
 let add_coqlib_known dir_name f =
-  let complete_name = Filename.concat dir_name f in
+  let complete_name = dir_name/f in
   let lib_name = Filename.basename dir_name in
   match try (stat complete_name).st_kind with _ -> S_BLK with 
     | S_REG -> 
@@ -422,7 +424,7 @@ let coqdep () =
       match (old_dirname,new_dirname) with 
 	| (d, ".") -> d
 	| (None,d) -> Some d
-	| (Some d1,d2) -> Some (Filename.concat d1 d2) 
+	| (Some d1,d2) -> Some (d1/d2) 
     in
     let complete_name = file_name ([name],dirname) in
     match try (stat complete_name).st_kind with _ -> S_BLK with 
@@ -432,7 +434,7 @@ let coqdep () =
              let newdirname = 
                match dirname with 
                  | None -> name
-                 | Some d -> Filename.concat d name 
+                 | Some d -> d/name 
 	     in
 	     try 
 	       while true do treat (Some newdirname) (readdir dir) done
@@ -453,7 +455,7 @@ let coqdep () =
       | _ -> ()
   in 
   let add_known phys_dir log_dir f =
-    let complete_name = Filename.concat phys_dir f in
+    let complete_name = phys_dir/f in
     match try (stat complete_name).st_kind with _ -> S_BLK with 
 	| S_REG ->
 	    if Filename.check_suffix f ".ml" then
@@ -468,7 +470,7 @@ let coqdep () =
 	    else if Filename.check_suffix f ".v" then
 	      let basename = Filename.chop_suffix f ".v" in
               let name = log_dir@[basename] in
-              let file = Filename.concat phys_dir basename in
+              let file = phys_dir/basename in
               let paths = [name;[basename]] in
 	      List.iter
                 (fun n -> safe_addQueue clash_v vKnown (n,file)) paths
@@ -507,11 +509,10 @@ let coqdep () =
   parse (List.tl (Array.to_list Sys.argv));
   List.iter
     (fun (s,_) -> add_coqlib_directory s)
-    (all_subdirs (Filename.concat !coqlib "theories") "Coq");
-  add_coqlib_directory (Filename.concat !coqlib "tactics");
+    (all_subdirs (!coqlib/"theories") "Coq");
   List.iter 
     (fun (s,_) -> add_coqlib_directory s)
-    (all_subdirs (Filename.concat !coqlib "contrib") "Coq");
+    (all_subdirs (!coqlib/"contrib") "Coq");
   mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
   mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
   warning_mult ".mli" !mliKnown;

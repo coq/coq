@@ -242,15 +242,44 @@ let coerce_to_inductive = function
 
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
-let initmactab = ref Gmap.empty
+let atomic_mactab = ref Idmap.empty
+let add_primitive_tactic s tac =
+  let id = id_of_string s in
+  atomic_mactab := Idmap.add id tac !atomic_mactab
 
+let _ =
+  if not !Options.v7 then
+    let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
+    List.iter
+      (fun (s,t) -> add_primitive_tactic s (TacAtom((0,0),t)))
+      [ "red", TacReduce(Red false,nocl);
+        "hnf", TacReduce(Hnf,nocl);
+        "simpl", TacReduce(Simpl None,nocl);
+        "compute", TacReduce(Cbv all_flags,nocl);
+        "intro", TacIntroMove(None,None);
+        "intros", TacIntroPattern [];
+        "assumption", TacAssumption;
+        "cofix", TacCofix None;
+        "trivial", TacTrivial None;
+        "auto", TacAuto(None,None);
+        "left", TacLeft NoBindings;
+        "right", TacRight NoBindings;
+        "split", TacSplit(false,NoBindings);
+        "constructor", TacAnyConstructor None;
+        "reflexivity", TacReflexivity;
+        "symmetry", TacSymmetry nocl
+      ]
+
+let lookup_atomic id = Idmap.find id !atomic_mactab
+let is_atomic id = Idmap.mem id !atomic_mactab
+let is_atomic_kn kn =
+  let (_,_,l) = repr_kn kn in
+  is_atomic (id_of_label l)
 
 (* Summary and Object declaration *)
 let mactab = ref Gmap.empty
 
-let lookup r =
-  try Gmap.find r !mactab
-  with Not_found -> Gmap.find r !initmactab
+let lookup r = Gmap.find r !mactab
 
 let _ =
   let init () = mactab := Gmap.empty in
@@ -404,16 +433,19 @@ let intern_constr_reference strict ist = function
       let loc,qid = qualid_of_reference r in
       RRef (loc,locate_reference qid), if strict then None else Some (CRef r)
 
-let intern_reference strict ist r =
-  try Reference (intern_tac_ref ist r)
-  with Not_found -> 
-  try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
-  with Not_found ->
-  match r with
-    | Ident (loc,id) when not strict -> Identifier id
-    | _ -> 
-        let (loc,qid) = qualid_of_reference r in
-        error_global_not_found_loc loc qid
+let intern_reference strict ist = function
+  | Ident (loc,id) when is_atomic id -> Tacexp (lookup_atomic id)
+  | r ->
+      (try Reference (intern_tac_ref ist r)
+      with Not_found ->
+        (try
+          ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
+        with Not_found ->
+          (match r with
+            | Ident (loc,id) when not strict -> Identifier id
+            | _ ->
+                let (loc,qid) = qualid_of_reference r in
+                error_global_not_found_loc loc qid)))
 
 let rec intern_intro_pattern lf ist = function
   | IntroOrAndPattern l ->
@@ -2090,7 +2122,7 @@ let (inMD,outMD) =
 (* Adds a definition for tactics in the table *)
 let make_absolute_name (loc,id) =
   let kn = Lib.make_kn id in
-  if Gmap.mem kn !mactab or Gmap.mem kn !initmactab then
+  if Gmap.mem kn !mactab or is_atomic_kn kn then
     user_err_loc (loc,"Tacinterp.add_tacdef",
       str "There is already an Ltac named " ++ pr_id id);
   kn
@@ -2113,12 +2145,6 @@ let add_tacdef isrec tacl =
   List.iter
     (fun (id,_) -> Options.if_verbose msgnl (pr_id id ++ str " is defined"))
     rfun
-
-let add_primitive_tactic s tac =
-  let kn = Lib.make_kn (id_of_string s) in
-(*  Nametab.push_tactic (Until 0) sp kn) defs;*)
-  initmactab := Gmap.add kn tac !initmactab
-
 
 (***************************************************************************)
 (* Other entry points *)

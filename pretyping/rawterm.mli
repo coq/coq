@@ -117,6 +117,8 @@ type 'a raw_red_flag = {
   rConst : 'a list
 }
 
+val all_flags : 'a raw_red_flag
+
 type 'a occurrences = int list * 'a
 
 type ('a,'b) red_expr_gen =

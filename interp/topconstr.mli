@@ -93,9 +93,9 @@ type constr_expr =
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
-  | CLetTuple of loc * name list * (name * constr_expr option) *
+  | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
-  | CIf of loc * constr_expr * (name * constr_expr option)
+  | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)

@@ -230,11 +230,11 @@ let subst_constr_expr a loc subs =
   | COrderedCase (_,s,po,a,bl) ->
       COrderedCase (loc,s,option_app subst po,subst a,List.map subst bl)
   | CLetTuple (_,nal,(na,po),a,b) ->
-      let na = name_app (subst_id subs) na in
+      let na = option_app (name_app (subst_id subs)) na in
       let nal = List.map (name_app (subst_id subs)) nal in
       CLetTuple (loc,nal,(na,option_app subst po),subst a,subst b)
   | CIf (_,c,(na,po),b1,b2) ->
-      let na = name_app (subst_id subs) na in
+      let na = option_app (name_app (subst_id subs)) na in
       CIf (loc,subst c,(na,option_app subst po),subst b1,subst b2)
   | CFix (_,id,dl) ->
       CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,subst t,subst d)) dl)

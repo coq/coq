@@ -426,7 +426,8 @@ let pr_return_type pr po = pr_case_type pr po
 
 let pr_simple_return_type pr na po =
   (match na with
-    | Name id -> spc () ++ str "as " ++  pr_id id
+    | Some (Name id) ->
+        spc () ++ str "as " ++  pr_id id
     | _ -> mt ()) ++
   pr_case_type pr po
 

@@ -43,7 +43,7 @@ A1) VÉRIFICATIONS
 
   Dans le cas simple d'une recompilation sur une autre architecture,
 sauter A3. Sauter aussi A4 s'il est possible de mettre le fichier
-coq-6.2.5.tar.gz à la main dans distrib.
+coq-X.Y.Z.tar.gz à la main dans distrib.
 
 A2) CONFIGURATION DES PARAMETRES DE LA DISTRIBUTION
 
@@ -62,7 +62,8 @@ A3) ESTAMPILLAGE DE L'ARCHIVE
 
      make tag
 
-  pour poser le tag V6-2-5 à l'archive V6-2 (on suppose que le numéro de version donné dans configure.distrib est V6.2.5).
+  pour poser le tag V'X'-Y-Z à l'archive V'X' (on suppose que le numéro
+  de version donné dans configure.distrib est V'X'.Y.Z).
 
   La commande "make tag" peut être refaite plusieurs fois auquel cas
 l'ancienne marque est supprimée avant d'être remise à la nouvelle
@@ -74,7 +75,7 @@ l'archive faire "cvs tag -F V6-2-5 nom_du_fichier".
 
 A4) CREATION DU PACKAGE SOURCE
 
-  Créer le coq-6.2.5.tar.gz des sources à partir d'un extrait tout
+  Créer le coq-X.Y.Z.tar.gz des sources à partir d'un extrait tout
 frais (obtenu par cvs export) de l'archive avec
 
      make tar-gz
@@ -96,13 +97,13 @@ A5a) Création d'un package binaire tar.gz
       make arch-tar-gz
 
   dans le répertoire distrib sous l'architecture ARCH avec le système SYS
-crée un fichier coq-6.2.5-SYS-ARCH.tar.gz (ex : coq-6.2.5-alpha-OSF1.tar.gz).
+crée un fichier coq-X.Y.Z-SYS-ARCH.tar.gz (ex : coq-6.2.5-alpha-OSF1.tar.gz).
 
   Pour compiler sur plusieurs machines en parallèle, il faut des
 répertoires "distrib" distincts pour que les compilations ne se
 téléscopent pas. Sur une 2ème machine dans un autre répertoire
 "distrib", refaire "make tar-gz" en interrompant la check-list (ou
-simplement copier le coq-6.2.5.tar.gz déjà fait) puis "make arch-tar-gz".
+simplement copier le coq-X.Y.Z.tar.gz déjà fait) puis "make arch-tar-gz".
 
   Pour l'installation sous ftp voir A7.
 
@@ -114,7 +115,7 @@ A5b) Création du source rpm et du premier package rpm
      make rpm
 
   dans le répertoire distrib sous l'architecture ARCH crée un package
-source coq-6.2.5-1.src.rpm et un package binaire coq-6.2.5-1.ARCH.rpm
+source coq-X.Y.Z-1.src.rpm et un package binaire coq-X.Y.Z-1.ARCH.rpm
 (ex : coq-6.2.5-1.i386.rpm).
 
   Remarques : 1) Les packages Intel s'appellent i386 même si
@@ -133,7 +134,16 @@ A5c) Création d'un second package rpm à partir des sources rpm
 
   Pour l'installation sous ftp voir A7.
 
-A5d) Création du package debian
+A5d) Création d'un package coq-ide
+
+  Faire un
+
+     make rpm-ide
+
+  pour produire un package source coqide-X-Y-Z-1.src.rpm et un package
+  bianire coqide-X-Y-Z-1.ARCH.rpm.
+
+A5e) Création du package debian
 
   Faire un
 
@@ -144,7 +154,7 @@ A5d) Création du package debian
   binaire sur toutes les architectures : ce sera fait par les machines
   de Debian dès que le paquet source leur sera fourni.
 
-A5e) Création du package windows
+A5f) Création du package windows
 
   Habituellement fait sur jurancon.inria.fr, sous Windows NT, avec la
   version Win32 de ocaml (pas la version cygwin car elle produit un
@@ -160,7 +170,7 @@ A5e) Création du package windows
 
   Envoyer ensuite l'archive par ftp dans
 
-    pauillac:/net/pauillac/infosystems/ftp/coq/coq/V6.2.5
+    pauillac:/net/pauillac/infosystems/ftp/coq/coq/V'X'.Y.Z
 
 A6) CREATION DU FICHIER DE PATCH (attention ne marche pas sur DEC je crois)
 
@@ -183,7 +193,7 @@ A7) INSTALLATION SOUS FTP
 
    make ftp-install # Avec les droits du groupe coq
 
-   - crée le dossier /net/pauillac/infosystems/ftp/coq/coq/V6.2.5, le
+   - crée le dossier /net/pauillac/infosystems/ftp/coq/coq/V'X'.Y.Z, le
    lie symboliquement à /net/pauillac/infosystems/ftp/coq/coq/current.
 
    - installe sous ftp tous les fichiers tar.gz ou .rpm du répertoire

@@ -244,4 +244,3 @@ and check_modtypes cst env mtb1 mtb2 equiv =
 	  
 let check_subtypes env sup super = 
   check_modtypes Constraint.empty env sup super false
-

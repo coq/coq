@@ -137,7 +137,7 @@ let re_exec () =
       if dir <> "." then Filename.concat dir com else com 
     in
     Sys.argv.(0) <- newprog;
-    Unix.handle_unix_error Unix.execvp newprog Sys.argv
+    Unix.handle_unix_error (Unix.execvp newprog) Sys.argv
   end
 
 (*s Parsing of the command line.

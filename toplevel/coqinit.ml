@@ -12,16 +12,18 @@ open Pp
 open System
 open Toplevel
 
+let (/) = Filename.concat
+
 let set_debug () = Options.debug := true
 
 (* Loading of the ressource file.
    rcfile is either $HOME/.coqrc.VERSION, or $HOME/.coqrc if the first one
   does not exist. *)
 
-let rcfile = ref (Filename.concat home ".coqrc")
+let rcfile = ref (home/".coqrc")
 let rcfile_specified = ref false
 let set_rcfile s = rcfile := s; rcfile_specified := true
-let set_rcuser s = rcfile := Filename.concat ("~"^s) ".coqrc"
+let set_rcuser s = rcfile := ("~"^s)/".coqrc"
 
 let load_rc = ref true
 let no_load_rc () = load_rc := false
@@ -77,7 +79,7 @@ let init_load_path () =
       (* variable COQLIB overrides the default library *)
     else getenv_else "COQLIB" Coq_config.coqlib in
   (* first user-contrib *)
-  let user_contrib = Filename.concat coqlib "user-contrib" in
+  let user_contrib = coqlib/"user-contrib" in
   if Sys.file_exists user_contrib then 
     Mltop.add_path user_contrib Nameops.default_root_prefix;
   (* then standard library *)
@@ -85,8 +87,8 @@ let init_load_path () =
     if !Options.v7 then [ "theories7"; "contrib7" ]
     else [ "theories"; "contrib" ] in
   let dirs = 
-    (if !Options.v7 then "states7" else "states") :: dev @ vdirs @ [ "ide" ] in
-  List.iter (fun s -> coq_add_rec_path (Filename.concat coqlib s)) dirs;
+    (if !Options.v7 then "states7" else "states") :: dev @ vdirs in
+  List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;
   (* then current directory *)
@@ -101,13 +103,13 @@ let init_library_roots () =
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
-let init_ocaml_path () =
 (* We only assume that the variable COQTOP is set *)
+let init_ocaml_path () =
   let coqtop = getenv_else "COQTOP" Coq_config.coqtop in
   let add_subdir dl = 
-    Mltop.add_ml_dir (List.fold_left Filename.concat coqtop dl) 
+    Mltop.add_ml_dir (List.fold_left (/) coqtop dl) 
   in
   List.iter add_subdir
     [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
       [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
-      [ "tactics" ]; [ "toplevel" ] ]
+      [ "tactics" ]; [ "toplevel" ]; [ "translate" ]; [ "ide" ] ]

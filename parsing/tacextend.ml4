@@ -159,11 +159,20 @@ let declare_tactic_v7 loc s cl =
       List.iter (Pptactic.declare_extra_tactic_pprule False $se$) $pp$;
     end
   >>
-(*
-let declare_atomic_extend s = 
-  Tacinterp.add_tacdef false
-    [(Names.id_of_string s,dummy_loc),Tacexpr.TacExtend(dummy_loc,s,[])]
-*)
+
+let rec contains_epsilon = function
+  | List0ArgType _ -> true
+  | List1ArgType t -> contains_epsilon t
+  | OptArgType _ -> true
+  | PairArgType(t1,t2) -> contains_epsilon t1 && contains_epsilon t2
+  | ExtraArgType("hintbases") -> true
+  | _ -> false
+let is_atomic =
+  List.for_all
+    (function
+        TacTerm _ -> false
+      | TacNonTerm(_,t,_,_) -> contains_epsilon t)
+
 let declare_tactic loc s cl =
   let (s',cl') = new_tac_ext (s,cl) in
   let pp' = make_printing_rule cl' in
@@ -184,12 +193,19 @@ let declare_tactic loc s cl =
   in
   let hidden = if List.length cl = 1 then List.map hide_tac cl' else [] in
   let se = mlexpr_of_string s in
+  let atomic_tactics =
+    mlexpr_of_list (fun (s,_,_) -> mlexpr_of_string s)
+      (List.filter (fun (_,al,_) -> is_atomic al) cl') in
   <:str_item<
     declare
       open Pcoq;
       declare $list:hidden$ end;
       try
-       Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ])
+        let _=Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ]) in
+        List.iter
+          (fun s -> Tacinterp.add_primitive_tactic s
+              (Tacexpr.TacAtom((0,0),Tacexpr.TacExtend((0,0),s,[]))))
+          $atomic_tactics$
       with e -> Pp.pp (Cerrors.explain_exn e);
       if Options.v7.val then Egrammar.extend_tactic_grammar $se'$ $gl$
       else Egrammar.extend_tactic_grammar $se'$ $gl'$;

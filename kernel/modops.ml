@@ -125,12 +125,12 @@ let rec check_modpath_equiv env mp1 mp2 =
 let rec subst_modtype sub = function
   | MTBident ln -> MTBident (subst_kn sub ln)
   | MTBfunsig (arg_id, arg_b, body_b) ->
-      assert (not (occur_mbid arg_id sub));
+      if occur_mbid arg_id sub then failwith "capture";
       MTBfunsig (arg_id, 
 		 subst_modtype sub arg_b, 
 		 subst_modtype sub body_b)
   | MTBsig (sid1, msb) -> 
-      assert (not (occur_msid sid1 sub));
+      if occur_msid sid1 sub then failwith "capture";
       MTBsig (sid1, subst_signature sub msb)
 
 and subst_signature sub sign = 

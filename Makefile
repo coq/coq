@@ -620,10 +620,12 @@ install-coqide:: install-ide-$(HASCOQIDE) install-ide-files install-ide-info
 install-ide-no:
 
 install-ide-byte: 
+	$(MKDIR) $(FULLBINDIR)
 	cp $(COQIDEBYTE) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
 
 install-ide-opt:
+	$(MKDIR) $(FULLBINDIR)
 	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
@@ -1183,7 +1185,7 @@ install-library7:
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
-	for f in $(LIBFILESLIGHT) ($NEWLIBFILESLIGHT); do \
+	for f in $(LIBFILESLIGHT) $(NEWLIBFILESLIGHT); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
@@ -1574,4 +1576,8 @@ include .depend.coq7
 clean::
 	rm -fr *.v8 states/*.v8 syntax/*.v8 ide/*.v8 \
 	  theories/*/*.v8 theories7/*/*.v8 test-suite/*/*.v8 \
-	  contrib/*/*.v8 contrib7/*/*.v8 \
+	  contrib/*/*.v8 contrib7/*/*.v8
+	find . -name "\.#*" -exec rm -f {} \;
+	find . -name "*~" -exec rm -f {} \;
+
+###########################################################################

@@ -16,6 +16,8 @@ open Tacexpr
 open Rawterm
 open Genarg
 
+let compute = Cbv all_flags
+
 let tactic_kw =
   [ "->"; "<-" ]
 let _ = 
@@ -231,7 +233,7 @@ GEXTEND Gram
       | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
-      | IDENT "compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
+      | IDENT "compute" -> compute
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP","-> Pattern pl ] ]
@@ -243,7 +245,7 @@ GEXTEND Gram
       | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
-      | IDENT "compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
+      | IDENT "compute" -> compute
       | IDENT "unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ -> Pattern pl

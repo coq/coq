@@ -275,10 +275,10 @@ GEXTEND Gram
     [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
   ;
   return_type:
-    [ [ a = OPT [ na = ["as"; id=name -> snd id | -> Names.Anonymous];
-              ty = case_type -> (na,ty) ] -> 
+    [ [ a = OPT [ na = OPT["as"; id=name -> snd id];
+                  ty = case_type -> (na,ty) ] -> 
         match a with 
-          | None -> Names.Anonymous, None
+          | None -> None, None
           | Some (na,t) -> (na, Some t)
     ] ]
   ;

@@ -802,7 +802,7 @@ and fFORMULA = function
    fNODE "fixc" 2
 | CT_if(x1, x2, x3, x4, x5) ->
    fFORMULA x1;
-   fID_OPT x2;
+   fID_OPT_OPT x2;
    fFORMULA_OPT x3;
    fFORMULA x4;
    fFORMULA x5;
@@ -823,7 +823,7 @@ and fFORMULA = function
    fNODE "lambdac" 2
 | CT_let_tuple(x1, x2, x3, x4, x5) ->
    fID_OPT_NE_LIST x1;
-   fID_OPT x2;
+   fID_OPT_OPT x2;
    fFORMULA_OPT x3;
    fFORMULA x4;
    fFORMULA x5;
@@ -925,6 +925,12 @@ and fID_OPT_NE_LIST = function
    fID_OPT x;
    (List.iter fID_OPT l);
    fNODE "id_opt_ne_list" (1 + (List.length l))
+and fID_OPT_OPT = function
+| CT_coerce_ID_to_ID_OPT_OPT x -> fID x
+| CT_coerce_ANONYMOUS_to_ID_OPT_OPT x ->
+    fNONE x;
+    fNODE "anonymous" 1
+| CT_coerce_NONE_to_ID_OPT_OPT x -> fNONE x
 and fID_OPT_OR_ALL = function
 | CT_coerce_ID_OPT_to_ID_OPT_OR_ALL x -> fID_OPT x
 | CT_all -> fNODE "all" 0

@@ -324,6 +324,9 @@ type 'a raw_red_flag = {
   rConst : 'a list
 }
 
+let all_flags =
+  {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}
+
 type 'a occurrences = int list * 'a
 
 type ('a,'b) red_expr_gen =

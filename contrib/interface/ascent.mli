@@ -290,11 +290,11 @@ and ct_FORMULA =
   | CT_elimc of ct_CASE * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA_LIST
   | CT_existvarc
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
-  | CT_if of ct_FORMULA * ct_ID_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA
+  | CT_if of ct_FORMULA * ct_ID_OPT_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA
   | CT_inductive_let of ct_FORMULA_OPT * ct_ID_OPT_NE_LIST * ct_FORMULA * ct_FORMULA
   | CT_labelled_arg of ct_ID * ct_FORMULA
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
-  | CT_let_tuple of ct_ID_OPT_NE_LIST * ct_ID_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA
+  | CT_let_tuple of ct_ID_OPT_NE_LIST * ct_ID_OPT_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA
   | CT_letin of ct_DEF * ct_FORMULA
   | CT_notation of ct_STRING * ct_FORMULA_LIST
   | CT_num_encapsulator of ct_NUM_TYPE * ct_FORMULA
@@ -351,6 +351,10 @@ and ct_ID_OPT_NE_LIST =
 and ct_ID_OPT_OR_ALL =
     CT_coerce_ID_OPT_to_ID_OPT_OR_ALL of ct_ID_OPT
   | CT_all
+and ct_ID_OPT_OPT =
+    CT_coerce_ID_to_ID_OPT_OPT of ct_ID
+  | CT_coerce_ANONYMOUS_to_ID_OPT_OPT of ct_NONE
+  | CT_coerce_NONE_to_ID_OPT_OPT of ct_NONE
 and ct_ID_OR_INT =
     CT_coerce_ID_to_ID_OR_INT of ct_ID
   | CT_coerce_INT_to_ID_OR_INT of ct_INT

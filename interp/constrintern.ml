@@ -757,13 +757,12 @@ let internalise sigma env allow_soapp lvar c =
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
     | CCases (loc, (po,rtnpo), tms, eqns) ->
-        let tms,rtnids = List.fold_right (fun (tm,indnalo) (inds,ids) ->
-          let tm' = intern env tm in
-	  let typ,ids = intern_return_type env indnalo tm' ids in
-	  (tm',ref typ)::inds,ids)
-	  tms ([],ids) in
-        let rtnpo =
-          option_app (intern_type (rtnids,tmp_scope,scopes)) rtnpo in
+        let tms,env' = List.fold_right
+          (fun citm (inds,env) ->
+	    let (tm,ind),nal = intern_case_item env citm in
+	    (tm,ref ind)::inds,List.fold_left (push_name_env lvar) env nal)
+	  tms ([],env) in
+        let rtnpo = option_app (intern_type env') rtnpo in
 	RCases (loc, (option_app (intern_type env) po, ref rtnpo), tms,
 		List.map (intern_eqn (List.length tms) env) eqns)
     | COrderedCase (loc, tag, po, c, cl) ->
@@ -773,15 +772,17 @@ let internalise sigma env allow_soapp lvar c =
 		  Array.of_list (List.map (intern env) cl),ref None)
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
-        RLetTuple (loc, nal,
-           (na, option_app (intern_type (push_name_env lvar env' na)) po),
-           intern env' b,
-	   intern (List.fold_left (push_name_env lvar) env nal) c)
+        let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
+        let env'' = List.fold_left (push_name_env lvar) env ids in
+        let p' = option_app (intern_type env'') po in
+        RLetTuple (loc, nal, (na', p'), b',
+                   intern (List.fold_left (push_name_env lvar) env nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
-	let env = reset_tmp_scope env in
-        RIf (loc, intern env c,
-           (na, option_app (intern_type (push_name_env lvar env na)) po),
-           intern env b1, intern env b2)
+	let env' = reset_tmp_scope env in
+        let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
+        let env'' = List.fold_left (push_name_env lvar) env ids in
+        let p' = option_app (intern_type env'') po in
+        RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
 	RHole (loc, QuestionMark)
     | CPatVar (loc, n) when allow_soapp ->
@@ -823,31 +824,31 @@ let internalise sigma env allow_soapp lvar c =
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
 	(loc, eqn_ids,pl,intern (env_ids,tmp_scope,scopes) rhs)
 
-  and intern_return_type (vars,_,scopes as env) (na,t) tm ids =
+  and intern_case_item (vars,_,scopes as env) (tm,(na,t)) =
+    let tm' = intern env tm in
     let ids,typ = match t with
     | Some t -> 
 	let tids = names_of_cases_indtype t in
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,None,scopes) t in
 	begin match t with
-	  | RRef (loc,IndRef ind) -> ids,Some (loc,ind,[])
+	  | RRef (loc,IndRef ind) -> [],Some (loc,ind,[])
 	  | RApp (loc,RRef (_,IndRef ind),l) ->
 	      let nal = List.map (function
 		| RHole _ -> Anonymous
 		| RVar (_,id) -> Name id
 		| c ->
 		    user_err_loc (loc_of_rawconstr c,"",str "Not a name")) l in
-	      List.fold_right (name_fold Idset.add) nal ids,
-	      Some (loc,ind,nal)
+	      nal, Some (loc,ind,nal)
 	  | _ -> error_bad_inductive_type (loc_of_rawconstr t)
 	end
     | None -> 
-	ids, None in
-    let na = match tm, na with
+	[], None in
+    let na = match tm', na with
       | RVar (_,id), None when Idset.mem id vars & not !Options.v7 -> Name id
       | _, None -> Anonymous
       | _, Some na -> na in
-    (na,typ), name_fold Idset.add na ids
+    (tm',(na,typ)), na::ids
 
   and iterate_prod loc2 env ty body = function
     | (loc1,na)::nal ->

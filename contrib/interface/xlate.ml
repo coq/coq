@@ -272,10 +272,14 @@ let rec xlate_match_pattern =
 ;;
 
 
+let xlate_id_opt_opt = function
+    Some (Name id) -> CT_coerce_ID_to_ID_OPT_OPT(CT_ident (string_of_id id))
+  | Some Anonymous -> CT_coerce_ANONYMOUS_to_ID_OPT_OPT CT_none
+  | None -> CT_coerce_NONE_to_ID_OPT_OPT CT_none
+
 let xlate_id_opt_aux = function
     Name id -> ctf_ID_OPT_SOME(CT_ident (string_of_id id))
   | Anonymous -> ctv_ID_OPT_NONE;;
-
 
 let xlate_id_opt (_, v) = xlate_id_opt_aux v;;
 
@@ -380,14 +384,14 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CLetTuple (_,a::l, (na,po), c, b) -> 
       CT_let_tuple(CT_id_opt_ne_list(xlate_id_opt_aux a,
 				     List.map xlate_id_opt_aux l),
-		   xlate_id_opt_aux na,
+		   xlate_id_opt_opt na,
 		   xlate_formula_opt po,
 		   xlate_formula c,
 		   xlate_formula b)
    | CLetTuple (_, [], _, _, _) -> xlate_error "NOT parsed: Let with ()"
    | CIf (_,c, (na, p), b1, b2) -> 
        CT_if
-	 (xlate_formula c, xlate_id_opt_aux na, xlate_formula_opt p,
+	 (xlate_formula c, xlate_id_opt_opt na, xlate_formula_opt p,
 	  xlate_formula b1, xlate_formula b2)
 
    | COrderedCase (_,Term.LetStyle, po, c, [CLambdaN(_,[l,_],b)]) ->

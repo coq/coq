@@ -317,7 +317,7 @@ let rec coq_switch b =
     | End_of_input -> msgerrnl (mt ()); pp_flush(); exit 0
     | Vernacexpr.Quit -> exit 0
     | e ->
-	msgerrnl (str"Anomaly: toplevel loop. Please report.");
+	msgerrnl (str"Anomaly. Please report.");
 	coq_switch b
 
 let loop () = coq_switch true

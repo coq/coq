@@ -46,7 +46,6 @@ let pr_db ctx i =
   with Not_found -> str"UNBOUND_REL_"++int i
 
 let explain_unbound_rel ctx n =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   str"Unbound reference: " ++ pe ++
   str"The reference " ++ int n ++ str " is free"
@@ -56,7 +55,6 @@ let explain_unbound_var ctx v =
   str"No such section variable or assumption : " ++ var
 
 let explain_not_type ctx j =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
   pe ++ str "the term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -64,7 +62,6 @@ let explain_not_type ctx j =
   str"which should be Set, Prop or Type."
 
 let explain_bad_assumption ctx j =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
   pe ++ str "cannot declare a variable or hypothesis over the term" ++
@@ -140,7 +137,6 @@ let explain_ill_formed_branch ctx c i actty expty =
   str "which should be" ++ brk(1,1) ++ pe
 
 let explain_generalization ctx (name,var) j =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   let pv = prtype_env ctx var in
   let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
@@ -151,7 +147,6 @@ let explain_generalization ctx (name,var) j =
   spc () ++ str"which should be Set, Prop or Type."
 
 let explain_actual_type ctx j pt =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   let (pc,pct) = prjudge_env ctx j in
   let pt = prterm_env ctx pt in
@@ -161,7 +156,6 @@ let explain_actual_type ctx j pt =
   str "while it is expected to have type" ++ brk(1,1) ++ pt
 
 let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
-  let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr,prt = prjudge_env ctx rator in
@@ -184,7 +178,6 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   str"which should be coercible to" ++ brk(1,1) ++ prterm_env ctx exptyp
 
 let explain_cant_apply_not_functional ctx rator randl =
-  let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr = prterm_env ctx rator.uj_val in
@@ -204,7 +197,6 @@ let explain_cant_apply_not_functional ctx rator randl =
   str" " ++ v 0 appl
 
 let explain_unexpected_type ctx actual_type expected_type =
-  let ctx = make_all_name_different ctx in
   let pract = prterm_env ctx actual_type in
   let prexp = prterm_env ctx expected_type in
   str"This type is" ++ spc () ++ pract ++ spc () ++ 
@@ -212,7 +204,6 @@ let explain_unexpected_type ctx actual_type expected_type =
   spc () ++ prexp
 
 let explain_not_product ctx c =
-  let ctx = make_all_name_different ctx in
   let pr = prterm_env ctx c in
   str"The type of this term is a product," ++ spc () ++
   str"but it is casted with type" ++
@@ -304,13 +295,13 @@ let explain_ill_typed_rec_body ctx i names vdefj vargs =
   str"recursive definition"  ++ spc () ++ pvd ++ spc () ++
   str "has type" ++ spc () ++ pvdt ++spc () ++ 
   str "it should be" ++ spc () ++ pv 
-
+(*
 let explain_not_inductive ctx c =
   let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx c in
   str"The term" ++ brk(1,1) ++ pc ++ spc () ++
   str "is not an inductive definition"
-
+*)
 let explain_cant_find_case_type ctx c =
   let ctx = make_all_name_different ctx in
   let pe = prterm_env ctx c in
@@ -375,7 +366,9 @@ let explain_wrong_case_info ctx ind ci =
     spc () ++ pc
        
 
-let explain_type_error ctx = function
+let explain_type_error ctx err =
+  let ctx = make_all_name_different ctx in
+  match err with
   | UnboundRel n -> 
       explain_unbound_rel ctx n
   | UnboundVar v -> 
@@ -412,7 +405,9 @@ let explain_type_error ctx = function
   | NotInductive c ->
       explain_not_inductive ctx c
 *)
-let explain_pretype_error ctx = function
+let explain_pretype_error ctx err =
+  let ctx = make_all_name_different ctx in
+  match err with
   | CantFindCaseType c ->
       explain_cant_find_case_type ctx c
   | OccurCheck (n,c) ->
