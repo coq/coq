@@ -1,0 +1,39 @@
+
+(* $Id$ *)
+
+(*i*)
+open Pp
+open Pcoq
+(*i*)
+
+(* The Coq toplevel loop. *)
+
+(* A buffer for the character read from a channel. We store the command
+ * entered to be able to report errors without pretty-printing. *)
+
+type input_buffer = { 
+  mutable prompt : unit -> string;
+  mutable str : string; (* buffer of already read characters *)
+  mutable len : int;    (* number of chars in the buffer *)
+  mutable bols : int list; (* offsets in str of begining of lines *)
+  mutable tokens : Gram.parsable; (* stream of tokens *)
+  mutable start : int } (* stream count of the first char of the buffer *)
+
+(* The input buffer of stdin *)
+
+val top_buffer : input_buffer
+val set_prompt : (unit -> string) -> unit
+
+(* Toplevel error explanation, dealing with locations, Drop, Ctrl-D
+  May raise only the following exceptions: Drop and End_of_input,
+  meaning we get out of the Coq loop *)
+
+val print_toplevel_error : exn -> std_ppcmds
+
+(* Parse and execute a vernac command *)
+
+val do_vernac : unit -> unit
+
+(* Main entry point of Coq: read and execute vernac commands *)
+
+val loop : unit -> unit
