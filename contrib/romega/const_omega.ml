@@ -7,7 +7,7 @@
  *************************************************************************)
 
 let module_refl_name = "ReflOmegaCore"
-let module_refl_path = ["Coq"; "romega"; module_refl_name]
+let module_refl_path = ["romega"; module_refl_name]
 
 type result = 
    Kvar of string
@@ -62,60 +62,53 @@ let recognize_number t =
        "POS",[t] -> loop t | "NEG",[t] -> - (loop t) | "ZERO",[] -> 0
      | _ -> failwith "not a number";;
 
-let constant dir s =
-  try
-    Declare.global_absolute_reference
-      (Libnames.make_path
-        (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))
-        (Names.id_of_string s))
-  with e -> print_endline (String.concat "." dir); print_endline s; 
-            raise e
+let constant = Coqlib.gen_constant "Omega"
 
-let coq_xH = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "xH")
-let coq_xO = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "xO")
-let coq_xI = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "xI")
-let coq_ZERO = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "ZERO")
-let coq_POS = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "POS")
-let coq_NEG = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "NEG")
-let coq_Z = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "Z")
-let coq_relation = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "relation")
-let coq_SUPERIEUR = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "SUPERIEUR")
-let coq_INFEEIEUR = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "INFERIEUR")
-let coq_EGAL = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "EGAL")
-let coq_Zplus = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "Zplus")
-let coq_Zmult = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "Zmult")
-let coq_Zopp = lazy (constant ["Coq"; "ZArith"; "fast_integer"] "Zopp")
+let coq_xH = lazy (constant ["ZArith"; "fast_integer"] "xH")
+let coq_xO = lazy (constant ["ZArith"; "fast_integer"] "xO")
+let coq_xI = lazy (constant ["ZArith"; "fast_integer"] "xI")
+let coq_ZERO = lazy (constant ["ZArith"; "fast_integer"] "ZERO")
+let coq_POS = lazy (constant ["ZArith"; "fast_integer"] "POS")
+let coq_NEG = lazy (constant ["ZArith"; "fast_integer"] "NEG")
+let coq_Z = lazy (constant ["ZArith"; "fast_integer"] "Z")
+let coq_relation = lazy (constant ["ZArith"; "fast_integer"] "relation")
+let coq_SUPERIEUR = lazy (constant ["ZArith"; "fast_integer"] "SUPERIEUR")
+let coq_INFEEIEUR = lazy (constant ["ZArith"; "fast_integer"] "INFERIEUR")
+let coq_EGAL = lazy (constant ["ZArith"; "fast_integer"] "EGAL")
+let coq_Zplus = lazy (constant ["ZArith"; "fast_integer"] "Zplus")
+let coq_Zmult = lazy (constant ["ZArith"; "fast_integer"] "Zmult")
+let coq_Zopp = lazy (constant ["ZArith"; "fast_integer"] "Zopp")
 
 (* auxiliaires zarith *)
-let coq_Zminus = lazy (constant ["Coq"; "ZArith"; "zarith_aux"] "Zminus")
-let coq_Zs = lazy (constant ["Coq"; "ZArith"; "zarith_aux"] "Zs")
-let coq_Zgt = lazy (constant ["Coq"; "ZArith"; "zarith_aux"] "Zgt")
-let coq_Zle = lazy (constant ["Coq"; "ZArith"; "zarith_aux"] "Zle")
-let coq_inject_nat = lazy (constant ["Coq"; "ZArith"; "zarith_aux"] "inject_nat")
+let coq_Zminus = lazy (constant ["ZArith"; "zarith_aux"] "Zminus")
+let coq_Zs = lazy (constant ["ZArith"; "zarith_aux"] "Zs")
+let coq_Zgt = lazy (constant ["ZArith"; "zarith_aux"] "Zgt")
+let coq_Zle = lazy (constant ["ZArith"; "zarith_aux"] "Zle")
+let coq_inject_nat = lazy (constant ["ZArith"; "zarith_aux"] "inject_nat")
 
 (* Peano *)
 let coq_le = lazy(constant ["Init"; "Peano"] "le")
 let coq_gt = lazy(constant ["Init"; "Peano"] "gt")
 
 (* Datatypes *)
-let coq_nat = lazy(constant ["Coq"; "Init"; "Datatypes"] "nat")
-let coq_S = lazy(constant ["Coq"; "Init"; "Datatypes"] "S")
-let coq_O = lazy(constant ["Coq"; "Init"; "Datatypes"] "O")
+let coq_nat = lazy(constant ["Init"; "Datatypes"] "nat")
+let coq_S = lazy(constant ["Init"; "Datatypes"] "S")
+let coq_O = lazy(constant ["Init"; "Datatypes"] "O")
 
 (* Minus *)
 let coq_minus = lazy(constant ["Arith"; "Minus"] "minus")
 
 (* Logic *)
 let coq_eq = lazy(constant ["Init"; "Logic"] "eq")
-let coq_refl_equal = lazy(constant ["Coq"; "Init"; "Logic"] "refl_equal")
-let coq_and = lazy(constant ["Coq"; "Init"; "Logic"] "and")
-let coq_not = lazy(constant ["Coq"; "Init"; "Logic"] "not")
-let coq_or = lazy(constant ["Coq"; "Init"; "Logic"] "or")
-let coq_ex = lazy(constant ["Coq"; "Init"; "Logic"] "ex")
+let coq_refl_equal = lazy(constant ["Init"; "Logic"] "refl_equal")
+let coq_and = lazy(constant ["Init"; "Logic"] "and")
+let coq_not = lazy(constant ["Init"; "Logic"] "not")
+let coq_or = lazy(constant ["Init"; "Logic"] "or")
+let coq_ex = lazy(constant ["Init"; "Logic"] "ex")
 
 (* Lists *)
-let coq_cons =  lazy (constant ["Coq"; "Lists"; "PolyList"] "cons")
-let coq_nil =  lazy (constant ["Coq"; "Lists"; "PolyList"] "nil")
+let coq_cons =  lazy (constant ["Lists"; "PolyList"] "cons")
+let coq_nil =  lazy (constant ["Lists"; "PolyList"] "nil")
 
 let coq_t_nat = lazy (constant module_refl_path "Tint")
 let coq_t_plus = lazy (constant module_refl_path "Tplus")
