@@ -184,12 +184,17 @@ and add_module mp mb env =
       | MTBfunsig _ -> env
 
 
-let strengthen_const env mp l cb = match cb.const_body with
-  | Some _ -> cb
-  | None -> {cb with const_body = 
-	       let const = mkConst (make_kn mp empty_dirpath l) in 
-		 Some (Declarations.from_val const)
-	    }
+let strengthen_const env mp l cb = 
+  match cb.const_opaque, cb.const_body with
+  | false, Some _ -> cb
+  | true, Some _ 
+  | _, None -> 
+      let const = mkConst (make_kn mp empty_dirpath l) in 
+      let const_subs = Some (Declarations.from_val const) in
+	{cb with 
+      	   const_body = const_subs;
+	   const_opaque = false
+	}
 
 let strengthen_mind env mp l mib = match mib.mind_equiv with
   | Some _ -> mib
