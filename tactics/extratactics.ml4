@@ -174,8 +174,22 @@ TACTIC EXTEND SetoidRewrite
 END
 
 VERNAC COMMAND EXTEND AddSetoid
-| [ "Add" "Setoid" constr(a) constr(aeq) constr(t) ] -> [ add_setoid a aeq t ]
+  [ "Add" "Setoid" constr(a) constr(aeq) constr(t) ] -> [ add_setoid a aeq t ]
 | [ "Add" "Morphism" constr(m) ":" ident(s) ] -> [ new_named_morphism s m ]
+END
+
+VERNAC COMMAND EXTEND AddRelation1
+  [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t')] ->
+   [ add_relation a aeq (Some t) (Some t') ]
+| [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) ] ->
+   [ add_relation a aeq (Some t) None ]
+| [ "Add" "Relation" constr(a) constr(aeq) ] ->
+   [ add_relation a aeq None None ]
+END
+
+VERNAC COMMAND EXTEND AddRelation2
+  [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t')] ->
+   [ add_relation a aeq None (Some t') ]
 END
 
 (* Inversion lemmas (Leminv) *)

@@ -22,6 +22,7 @@ let commands = [
    "Add Rec ML Path";
    "Add Ring A Aplus Amult Aone Azero Ainv Aeq T [ c1 ... cn ]. ";
    "Add Semi Ring A Aplus Amult Aone Azero Aeq T [ c1 ... cn ].";
+   "Add Relation";
    "Add Setoid";
    "Axiom";];
   [(* "Back"; *) ];
