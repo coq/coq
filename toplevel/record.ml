@@ -73,7 +73,7 @@ let typecheck_params_and_field ps fs =
       (fun (env,newps) (id,t) -> 
          let tj = type_judgment_of_rawconstr Evd.empty env t in
 	 let ass = Typeops.assumption_of_type_judgment tj in
-         (Environ.push_var_decl (id,ass) env,(id,tj.Environ.utj_val)::newps))
+         (Environ.push_named_assum (id,ass) env,(id,tj.Environ.utj_val)::newps))
       (env0,[]) ps
   in
   let env2,newfs =
@@ -81,7 +81,7 @@ let typecheck_params_and_field ps fs =
       (fun (env,newfs) (id,t) -> 
          let tj = type_judgment_of_rawconstr Evd.empty env t in
 	 let ass = Typeops.assumption_of_type_judgment tj in
-         (Environ.push_var_decl (id,ass) env,(id,tj.Environ.utj_val)::newfs)) (env1,[]) fs
+         (Environ.push_named_assum (id,ass) env,(id,tj.Environ.utj_val)::newfs)) (env1,[]) fs
   in
   List.rev(newps),List.rev(newfs)
 

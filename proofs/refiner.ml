@@ -245,7 +245,7 @@ let extract_open_proof sigma pf =
             (fun id ->
                try let n = list_index id vl in (n,id)
 	       with Not_found -> failwith "caught")
-            (ids_of_var_context (evar_hyps goal)) in
+            (ids_of_named_context (evar_hyps goal)) in
 	let sorted_rels =
 	  Sort.list (fun (n1,_) (n2,_) -> n1 > n2 ) visible_rels in
 	let abs_concl =
@@ -797,12 +797,12 @@ exception Different
 
 (* We remove from the var context of env what is already in osign *)
 let thin_sign osign env =
-  process_var_context
+  process_named_context
     (fun env (id,c,ty as d) ->
        try 
 	 if lookup_id id osign = (c,ty) then env
 	 else raise Different
-       with Not_found | Different -> push_var d env)
+       with Not_found | Different -> push_named_decl d env)
     env
 
 let rec print_proof sigma osign pf =
@@ -814,7 +814,7 @@ let rec print_proof sigma osign pf =
 	hOV 0 [< pr_seq {evar_env=env'; evar_concl=cl;
 			 evar_info=info; evar_body=body} >]
     | Some(r,spfl) ->
-  	let sign = var_context env in
+  	let sign = named_context env in
     	hOV 0 [< hOV 0 (pr_seq {evar_env=env'; evar_concl=cl;
 				evar_info=info; evar_body=body});
 		 'sPC ; 'sTR" BY ";
@@ -827,7 +827,7 @@ let pr_change gl = [< 'sTR"Change " ; prterm gl.evar_concl ; 'sTR"." ; 'fNL>]
 		     
 let rec print_script nochange sigma osign pf =
   let {evar_env=env; evar_concl=cl} = pf.goal in
-  let sign = var_context env in
+  let sign = named_context env in
   match pf.ref with
     | None ->
         if nochange then 
@@ -842,7 +842,7 @@ let rec print_script nochange sigma osign pf =
 
 let rec print_treescript sigma osign pf =
   let {evar_env=env; evar_concl=cl} = pf.goal in
-  let sign = var_context env in
+  let sign = named_context env in
   match pf.ref with
     | None -> [< >]
     | Some(r,spfl) ->
@@ -858,7 +858,7 @@ let rec print_treescript sigma osign pf =
 
 let rec print_info_script sigma osign pf =
   let {evar_env=env; evar_concl=cl} = pf.goal in
-  let sign = var_context env in
+  let sign = named_context env in
   match pf.ref with
     | None -> [< >]
     | Some(r,spfl) ->
@@ -887,7 +887,7 @@ let tclINFO (tac : tactic) gls =
   let (sgl,v) as res = tac gls in 
   begin try 
     let pf = v (List.map leaf (sig_it sgl)) in
-    let sign = var_context (sig_it gls).evar_env in
+    let sign = named_context (sig_it gls).evar_env in
     mSGNL(hOV 0 [< 'sTR" == "; 
                    print_subscript 
                      ((compose ts_it sig_sig) gls) sign pf >])

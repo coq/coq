@@ -186,8 +186,8 @@ let pr_rel_decl env (na,c,typ) =
  * It's printed out from outermost to innermost, so it's readable. *)
 
 (* Prints a signature, all declarations on the same line if possible *)
-let pr_var_context_of env =
-  hV 0 [< (fold_var_context
+let pr_named_context_of env =
+  hV 0 [< (fold_named_context
 	     (fun env d pps -> [< pps; 'wS 2; pr_var_decl env d >])
              env) [< >] >]
 
@@ -205,7 +205,7 @@ let pr_rel_context env rel_context =
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env =
   let sign_env =
-    fold_var_context
+    fold_named_context
       (fun env d pps ->
          let pidt =  pr_var_decl env d in [< pps; 'fNL; pidt >])
       env [< >] 
@@ -223,14 +223,14 @@ let pr_ne_context_of header k env =
   else let penv = pr_context_unlimited env in [< header; penv >]
 
 let pr_context_limit n env =
-  let var_context = Environ.var_context env in
-  let lgsign = List.length var_context in
+  let named_context = Environ.named_context env in
+  let lgsign = List.length named_context in
   if n >= lgsign then 
     pr_context_unlimited env
   else
     let k = lgsign-n in
     let _,sign_env =
-      fold_var_context
+      fold_named_context
         (fun env d (i,pps) ->
            if i < k then 
 	     (i+1, [< pps ;'sTR "." >])

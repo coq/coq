@@ -46,11 +46,11 @@ type ctxtty = {
   pgm    : constr option;
   lc     : local_constraints } 
 
-type evar_declarations = ctxtty evar_map
+type enamed_declarations = ctxtty evar_map
 
 (* A global constraint is a mappings of existential variables
    with some extra information for the program tactic *)
-type global_constraints  = evar_declarations timestamped
+type global_constraints  = enamed_declarations timestamped
 
 (* Signature useful to define the tactic type *)
 type 'a sigma = { 

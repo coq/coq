@@ -159,7 +159,7 @@ let pretype_id loc env lvar id =
     { uj_val  = mkRel n; uj_type = typed_app (lift n) typ }
   with Not_found ->
   try
-    let typ = lookup_id_type id (var_context env) in
+    let typ = lookup_id_type id (named_context env) in
     { uj_val  = mkVar id; uj_type = typ }
   with Not_found ->
     error_var_not_found_loc loc CCI id
@@ -240,7 +240,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let nbfix = Array.length lfi in
   let lfi = List.map (fun id -> Name id) (Array.to_list lfi) in
   let newenv =
-    array_fold_left2 (fun env id ar -> (push_rel_decl (id,ar) env))
+    array_fold_left2 (fun env id ar -> (push_rel_assum (id,ar) env))
       env (Array.of_list (List.rev lfi)) (vect_lift_type lara) in
   let vdefj =
     Array.mapi 
@@ -280,7 +280,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let j = pretype_type dom_valcon env isevars lvar lmeta c1 in
     let assum = assumption_of_type_judgment (inh_ass_of_j env isevars j) in
     let var = (name,assum) in
-    let j' = pretype rng (push_rel_decl var env) isevars lvar lmeta c2 
+    let j' = pretype rng (push_rel_assum var env) isevars lvar lmeta c2 
     in 
     fst (abs_rel env !isevars name assum j')
 
@@ -288,7 +288,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let j = pretype empty_tycon env isevars lvar lmeta c1 in
     let assum = inh_ass_of_j env isevars j in
     let var = (name,assumption_of_type_judgment assum) in
-    let j' = pretype empty_tycon (push_rel_decl var env) isevars lvar lmeta c2 in
+    let j' = pretype empty_tycon (push_rel_assum var env) isevars lvar lmeta c2 in
     (try fst (gen_rel env !isevars name assum j')
      with TypeError _ as e -> Stdpp.raise_with_loc loc e)
 

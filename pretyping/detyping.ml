@@ -253,7 +253,7 @@ let lookup_name_as_renamed ctxt t s =
 	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
     | IsCast (c,_) -> lookup avoid env_names n c
     | _ -> None
-  in lookup (ids_of_var_context ctxt) empty_names_context 1 t
+  in lookup (ids_of_named_context ctxt) empty_names_context 1 t
 
 let lookup_index_as_renamed t n =
   let rec lookup n d c = match kind_of_term c with

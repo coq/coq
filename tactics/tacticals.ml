@@ -65,7 +65,7 @@ let tclTRY_sign (tac : constr->tactic) sign gl =
     | [s]     -> tac (mkVar s) (*added in order to get useful error messages *)
     | (s::sl) -> tclORELSE (tac (mkVar s)) (arec sl) 
   in 
-  arec (ids_of_var_context sign) gl
+  arec (ids_of_named_context sign) gl
 
 let tclTRY_HYPS (tac : constr->tactic) gl = 
   tclTRY_sign tac (pf_hyps gl) gl

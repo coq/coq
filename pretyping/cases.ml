@@ -136,7 +136,7 @@ let inductive_of_rawconstructor c =
 
 (* Environment management *)
 let push_rel_type sigma (na,t) env =
-  push_rel_decl (na,get_assumption_of env sigma t) env
+  push_rel_assum (na,get_assumption_of env sigma t) env
 
 let push_rels vars env =
   List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
@@ -750,7 +750,7 @@ let shift_problem pb =
 
 (* Building the sub-pattern-matching problem for a given branch *)
 let build_branch pb defaults eqns const_info =
-  let cs_args = decls_of_rel_context const_info.cs_args in
+  let cs_args = assums_of_rel_context const_info.cs_args in
   let names = get_names pb.env cs_args eqns in
   let newpats =
     if !substitute_alias then
@@ -764,7 +764,7 @@ let build_branch pb defaults eqns const_info =
   let _,typs' =
     List.fold_right
       (fun (na,t) (env,typs) ->
- 	 (push_rel_decl (na,outcast_type t) env,
+ 	 (push_rel_assum (na,outcast_type t) env,
 	  ((na,to_mutind env !(pb.isevars) t),t)::typs))
       typs (pb.env,[]) in
   let tomatchs =
@@ -882,7 +882,7 @@ let matx_of_eqns env tomatchl eqns =
     let initial_lpat,initial_rhs = prepare_initial_alias lpat tomatchl rhs in
     let rhs =
       { rhs_env = env;
-	other_ids = ids@(ids_of_var_context (var_context env));
+	other_ids = ids@(ids_of_named_context (named_context env));
 	private_ids = [];
 	user_ids = ids;
 	subst = [];
@@ -924,7 +924,7 @@ let inh_coerce_to_ind isevars env ty tyi =
     List.fold_right
       (fun (na,ty) (env,evl) ->
 	 let aty = get_assumption_of env Evd.empty ty in
-	   (push_rel_decl (na,aty) env,
+	   (push_rel_assum (na,aty) env,
 	    (new_isevar isevars env (incast_type aty) CCI)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkMutInd tyi,evarl) in

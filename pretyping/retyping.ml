@@ -45,7 +45,7 @@ let rec type_of env cstr=
            with Not_found -> anomaly "type_of: this is not a well-typed term")
     | IsRel n -> lift n (body_of_type (snd (lookup_rel_type n env)))
     | IsVar id ->
-      (try body_of_type (snd (lookup_var id env))
+      (try body_of_type (snd (lookup_named id env))
        with Not_found ->
          anomaly ("type_of: variable "^(string_of_id id)^" unbound"))
     | IsConst c -> body_of_type (type_of_constant env sigma c)
@@ -64,7 +64,7 @@ let rec type_of env cstr=
         whd_betadeltaiota env sigma (applist (p,al))
     | IsLambda (name,c1,c2) ->
         let var = make_typed c1 (sort_of env c1) in
-          mkProd (name, c1, type_of (push_rel_decl (name,var) env) c2)
+          mkProd (name, c1, type_of (push_rel_assum (name,var) env) c2)
     | IsLetIn (name,b,c1,c2) ->
         let var = make_typed c1 (sort_of env c1) in
          subst1 b (type_of (push_rel_def (name,b,var) env) c2)
@@ -84,7 +84,7 @@ and sort_of env t =
     | IsSort (Type u) -> Type Univ.dummy_univ
     | IsProd (name,t,c2) ->
         let var = make_typed t (sort_of env t) in
-        (match (sort_of (push_rel_decl (name,var) env) c2) with
+        (match (sort_of (push_rel_assum (name,var) env) c2) with
 	  | Prop _ as s -> s
 	  | Type u2 -> Type Univ.dummy_univ)
     | IsApp(f,args) -> sort_of_atomic_type env sigma (type_of env f) args

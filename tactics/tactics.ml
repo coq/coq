@@ -134,7 +134,7 @@ let dyn_mutual_cofix argsl gl =
 (*          Reduction and conversion tactics                  *)
 (**************************************************************)
 
-type 'a tactic_reduction = env -> evar_declarations -> constr -> constr
+type 'a tactic_reduction = env -> enamed_declarations -> constr -> constr
 
 (* The following two tactics apply an arbitrary
    reduction function either to the conclusion or to a 
@@ -585,7 +585,7 @@ let generalize_goal gl c cl =
 
 let generalize_dep c gl =
   let sign = pf_hyps gl in
-  let init_ids = ids_of_var_context (Global.var_context()) in
+  let init_ids = ids_of_named_context (Global.named_context()) in
   let rec seek toquant d =
     if List.exists (fun (id,_,_) -> occur_var_in_decl id d) toquant
       or dependent_in_decl c d then 
@@ -598,7 +598,7 @@ let generalize_dep c gl =
   let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
   let tothin' =
     match kind_of_term c with
-      | IsVar id when mem_var_context id sign & not (List.mem id init_ids)
+      | IsVar id when mem_named_context id sign & not (List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -669,10 +669,10 @@ let letin_abstract id c occ_ccl occ_hyps gl =
       (accu,Some hyp) 
   in
   let (depdecls,marks,rest),_ =
-    fold_var_context_reverse abstract (([],[],occ_hyps),None) env in
+    fold_named_context_reverse abstract (([],[],occ_hyps),None) env in
   if rest <> [] then begin
     let id = fst (List.hd rest) in
-    if mem_var_context id (var_context env)
+    if mem_named_context id (named_context env)
     then error ("Hypothesis "^(string_of_id id)^" occurs twice")
     else error ("No such hypothesis : " ^ (string_of_id id))
   end;
@@ -687,7 +687,7 @@ let letin_tac with_eq name c occ_ccl occ_hyps gl =
   let env = pf_env gl in
   let used_ids = ids_of_context env in
   let id = next_global_ident_away x used_ids in
-  if mem_var_context id (var_context env) then
+  if mem_named_context id (named_context env) then
     error "New variable is already declared";
   let (depdecls,marks,ccl)= letin_abstract id c occ_ccl occ_hyps gl in 
   let t = pf_type_of gl c in
@@ -1218,7 +1218,7 @@ let cook_sign hyp0 indvars env =
       else
 	Some hyp
   in
-  let _ = fold_var_context seek_deps env None in
+  let _ = fold_named_context seek_deps env None in
   (* 2nd pass from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_ as d) =
     if hyp = hyp0 then raise (Shunt lhyp);
@@ -1229,7 +1229,7 @@ let cook_sign hyp0 indvars env =
       (Some hyp) 
   in
   try 
-    let _ = fold_var_context_reverse compute_lstatus None env in
+    let _ = fold_named_context_reverse compute_lstatus None env in
     anomaly "hyp0 not found"
   with Shunt lhyp0 ->
     let statuslists = (!lstatus,List.rev !rstatus) in
@@ -1290,7 +1290,7 @@ let get_constructors varname (elimc,elimt) mind mindpath =
 
 let induction_from_context hyp0 gl =
    (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
-  if List.mem hyp0 (ids_of_var_context (Global.var_context())) then
+  if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" [< 'sTR "Cannot generalize a global variable" >];
   let env = pf_env gl in
   let tmptyp0 = pf_get_hyp_typ gl hyp0 in
@@ -1321,7 +1321,7 @@ let induction_with_atomization_of_ind_arg hyp0 =
 
 let new_induct c gl =
   match kind_of_term c with
-    | IsVar id when not (mem_var_context id (Global.var_context())) ->
+    | IsVar id when not (mem_named_context id (Global.named_context())) ->
 	tclORELSE
 	  (tclTHEN (intros_until id) (tclLAST_HYP simplest_elim))
 	  (induction_with_atomization_of_ind_arg id) gl
@@ -1645,15 +1645,15 @@ let dyn_transitivity = function
 
 let abstract_subproof name tac gls = 
   let env = Global.env() in
-  let current_sign = Global.var_context()
+  let current_sign = Global.named_context()
   and global_sign = pf_hyps gls in
   let sign = List.fold_right
                (fun (id,_,_ as d) s -> 
-		  if mem_var_context id current_sign then s else add_var d s) 
-               global_sign empty_var_context
+		  if mem_named_context id current_sign then s else add_named_decl d s) 
+               global_sign empty_named_context
   in
   let na = next_global_ident_away name
-             (ids_of_var_context global_sign) in
+             (ids_of_named_context global_sign) in
   let concl = List.fold_left (fun t d -> mkNamedProd_or_LetIn d t)
                 (pf_concl gls) sign in
   let env' = change_hyps (fun _ -> current_sign) env in
@@ -1672,7 +1672,7 @@ let abstract_subproof name tac gls =
     Declare.construct_reference newenv CCI na
   in
   exact_no_check (applist (lemme,
-		  List.map mkVar (List.rev (ids_of_var_context sign))))
+		  List.map mkVar (List.rev (ids_of_named_context sign))))
     gls
 
 let tclABSTRACT name_op tac gls = 

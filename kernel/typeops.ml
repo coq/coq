@@ -52,11 +52,11 @@ let relative env sigma n =
 (* Checks if a context of variable is included in another one. *)
 (*
 let rec hyps_inclusion env sigma sign1 sign2 =
-  if sign1 = empty_var_context then true
+  if sign1 = empty_named_context then true
   else
     let (id1,ty1) = hd_sign sign1 in
     let rec search sign2 =
-      if sign2 = empty_var_context then false
+      if sign2 = empty_named_context then false
       else
 	let (id2,ty2) = hd_sign sign2 in
         if id1 = id2 then
@@ -73,7 +73,7 @@ let rec hyps_inclusion env sigma sign1 sign2 =
    current context of [env]. *)
 (*
 let check_hyps id env sigma hyps =
-  let hyps' = var_context env in
+  let hyps' = named_context env in
   if not (hyps_inclusion env sigma hyps hyps') then
     error_reference_variables CCI env id
 *)
@@ -368,13 +368,13 @@ let check_term env mind_recvec f =
     match lrec, kind_of_term (strip_outer_cast c) with
       | (Param(_)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (push_rel_decl (x,outcast_type a) env) (n+1) l' (lr,b)
+          crec (push_rel_assum (x,outcast_type a) env) (n+1) l' (lr,b)
       | (Norec::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (push_rel_decl (x,outcast_type a) env) (n+1) l' (lr,b)
+          crec (push_rel_assum (x,outcast_type a) env) (n+1) l' (lr,b)
       | (Mrec(i)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (push_rel_decl (x,outcast_type a) env) (n+1)
+          crec (push_rel_assum (x,outcast_type a) env) (n+1)
 	    ((1,mind_recvec.(i))::l') (lr,b)
       | (Imbr((sp,i) as ind_sp,lrc)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
@@ -383,7 +383,7 @@ let check_term env mind_recvec f =
           let lc = 
 	    Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
 	  in
-          crec (push_rel_decl (x,outcast_type a) env) (n+1) ((1,lc)::l') (lr,b)
+          crec (push_rel_assum (x,outcast_type a) env) (n+1) ((1,lc)::l') (lr,b)
       | _,_ -> f env n l (strip_outer_cast c)
   in 
   crec env
@@ -444,7 +444,7 @@ let is_subterm_specif env sigma lcx mind_recvec =
 	    
       | IsLambda (x,a,b) when l=[] -> 
           let lst' = map_lift_fst lst in
-          crec (push_rel_decl (x,outcast_type a) env) (n+1) lst' b
+          crec (push_rel_assum (x,outcast_type a) env) (n+1) lst' b
 
       (*** Experimental change *************************)
       | IsMeta _ -> [||]
@@ -473,7 +473,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
      match kind_of_term (strip_outer_cast def) with
        | IsLambda (x,a,b) -> 
 	   if noccur_with_meta n nfi a then
-	     let env' = push_rel_decl (x,outcast_type a) env in
+	     let env' = push_rel_assum (x,outcast_type a) env in
              if n = k+1 then (env',a,b)
 	     else check_occur env' (n+1) b
            else 
@@ -581,13 +581,13 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
 	| IsLambda (x,a,b) -> 
 	    (check_rec_call env n lst a) &&
-            (check_rec_call (push_rel_decl (x,outcast_type a) env)
+            (check_rec_call (push_rel_assum (x,outcast_type a) env)
 	       (n+1) (map_lift_fst lst) b) &&
             (List.for_all (check_rec_call env n lst) l)
 
 	| IsProd (x,a,b) -> 
 	    (check_rec_call env n lst a) &&
-            (check_rec_call (push_rel_decl (x,outcast_type a) env)
+            (check_rec_call (push_rel_assum (x,outcast_type a) env)
 	       (n+1) (map_lift_fst lst) b) &&
             (List.for_all (check_rec_call env n lst) l)
 
@@ -643,7 +643,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	    | IsLambda (x,a,b) ->
 		(check_rec_call env n lst a) &
 		(check_rec_call_fix_body
-		   (push_rel_decl (x,outcast_type a) env) (n+1)
+		   (push_rel_assum (x,outcast_type a) env) (n+1)
 		   (map_lift_fst lst) (decr-1) recArgsDecrArg b)
 	    | _ -> anomaly "Not enough abstractions in fix body"
     
@@ -683,7 +683,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
     let b = whd_betadeltaiota env sigma (strip_outer_cast c) in
     match kind_of_term b with
       | IsProd (x,a,b) ->
-	  codomain_is_coind (push_rel_decl (x,outcast_type a) env) b 
+	  codomain_is_coind (push_rel_assum (x,outcast_type a) env) b 
       | _ -> 
 	  try
 	    find_coinductive env sigma b
@@ -756,7 +756,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 	| IsLambda (x,a,b) ->
 	     assert (args = []);
             if (noccur_with_meta n nbfix a) then
-              check_rec_call (push_rel_decl (x,outcast_type a) env)
+              check_rec_call (push_rel_assum (x,outcast_type a) env)
 		alreadygrd (n+1)  vlra b
             else 
 	      raise (CoFixGuardError (RecCallInTypeOfAbstraction t))

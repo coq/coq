@@ -19,7 +19,7 @@ let is_id_inst inst =
   List.for_all is_id inst
 
 let instantiate_constr sign c args =
-  let inst = instantiate_vars sign args in
+  let inst = instantiate_named_context  sign args in
   if is_id_inst inst then
     c
   else

@@ -115,8 +115,8 @@ let implicit_args_msg sp mipv =
           >])
        mipv >]
 
-let instance_of_var_context sign =
-  Array.of_list (List.map mkVar (ids_of_var_context sign))
+let instance_of_named_context sign =
+  Array.of_list (List.map mkVar (ids_of_named_context sign))
 
 let print_mutual sp mib = 
   let pk = kind_of_path sp in
@@ -147,7 +147,7 @@ let print_mutual sp mib =
     else
       [< 'sTR "["; pr_rel_context env lpars; 'sTR "]"; 'bRK(1,2) >] in
   let print_oneind tyi =
-    let mis = build_mis ((sp,tyi),instance_of_var_context mib.mind_hyps) mib in
+    let mis = build_mis ((sp,tyi),instance_of_named_context mib.mind_hyps) mib in
     let (_,arity) = decomp_n_prod env evd nparams
 		      (body_of_type (mis_user_arity mis)) in
       (hOV 0
@@ -156,7 +156,7 @@ let print_mutual sp mib =
 	          'sTR ": "; prterm_env env_ar arity; 'sTR " :=" >]);
             'bRK(1,2); print_constructors mis >]) 
   in 
-  let mis0 = build_mis ((sp,0),instance_of_var_context mib.mind_hyps) mib in
+  let mis0 = build_mis ((sp,0),instance_of_named_context mib.mind_hyps) mib in
   (* Case one [co]inductive *)
   if Array.length mipv = 1 then
     let (_,arity) = decomp_n_prod env evd nparams
@@ -431,7 +431,7 @@ let print_name name =
       | ConstructRef ((sp,_),_) -> print_inductive sp
   with Not_found -> 
   try
-    let (c,typ) = Global.lookup_var name in 
+    let (c,typ) = Global.lookup_named name in 
     [< print_var (name,c,typ);
        try print_impl_args (implicits_of_var name)
        with _ -> [<>] >]
@@ -440,7 +440,7 @@ let print_name name =
 let print_opaque_name name = 
   let sigma = Evd.empty in
   let env = Global.env () in
-  let sign = Global.var_context () in
+  let sign = Global.named_context () in
   try 
     let x = global_reference CCI name in
     match kind_of_term x with
@@ -457,7 +457,7 @@ let print_opaque_name name =
 	  let ty = Typeops.type_of_constructor env sigma cstr in
 	  print_typed_value (x, ty)
       | IsVar id ->
-          let (c,ty) = lookup_var id env in 
+          let (c,ty) = lookup_named id env in 
 	  print_var (id,c,ty)
       | _ -> failwith "print_name"
   with Not_found -> 

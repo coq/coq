@@ -14,12 +14,12 @@ let map f = List.map (fun (na,c,t) -> (na,option_app f c,typed_app f t))
 let add_decl (n,t) sign = (n,None,t)::sign
 let add_def (n,c,t) sign = (n,Some c,t)::sign
 
-type var_declaration = identifier * constr option * typed_type
-type var_context = var_declaration list
+type named_declaration = identifier * constr option * typed_type
+type named_context = named_declaration list
 
-let add_var = add
-let add_var_decl = add_decl
-let add_var_def = add_def
+let add_named_decl = add
+let add_named_assum = add_decl
+let add_named_def = add_def
 let rec lookup_id_type id = function
   | (id',c,t) :: _ when id=id' -> t
   | _ :: sign -> lookup_id_type id sign
@@ -32,26 +32,26 @@ let rec lookup_id id = function
   | (id',c,t) :: _ when id=id' -> (c,t)
   | _ :: sign -> lookup_id id sign
   | [] -> raise Not_found
-let empty_var_context = []
-let pop_var id = function
+let empty_named_context = []
+let pop_named_decl id = function
   | (id',_,_) :: sign -> assert (id = id'); sign
   | [] -> assert false
-let ids_of_var_context = List.map (fun (id,_,_) -> id)
-let map_var_context = map
-let rec mem_var_context id = function
+let ids_of_named_context = List.map (fun (id,_,_) -> id)
+let map_named_context = map
+let rec mem_named_context id = function
   | (id',_,_) :: _ when id=id' -> true
-  | _ :: sign -> mem_var_context id sign
+  | _ :: sign -> mem_named_context id sign
   | [] -> false
-let fold_var_context = List.fold_right
-let fold_var_context_reverse = List.fold_left
-let fold_var_context_both_sides = list_fold_right_and_left
-let it_var_context_quantifier f = List.fold_left (fun c d -> f d c)
+let fold_named_context = List.fold_right
+let fold_named_context_reverse = List.fold_left
+let fold_named_context_both_sides = list_fold_right_and_left
+let it_named_context_quantifier f = List.fold_left (fun c d -> f d c)
 
 type rel_declaration = name * constr option * typed_type
 type rel_context = rel_declaration list
 
-let add_rel = add
-let add_rel_decl = add_decl
+let add_rel_decl = add
+let add_rel_assum = add_decl
 let add_rel_def = add_def
 let lookup_rel_type n sign =
   let rec lookrec = function
@@ -90,7 +90,7 @@ let ids_of_rel_context sign =
     (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
     sign []
 let names_of_rel_context = List.map (fun (na,_,_) -> na)
-let decls_of_rel_context sign =
+let assums_of_rel_context sign =
   List.fold_right
     (fun (na,c,t) l -> match c with Some _ -> l | None -> (na,body_of_type t)::l)
     sign []
@@ -149,7 +149,7 @@ let empty_names_context = []
 let decompose_prod_assum = 
   let rec prodec_rec l c =
     match kind_of_term c with
-    | IsProd (x,t,c)  -> prodec_rec (add_rel_decl (x,outcast_type t) l) c
+    | IsProd (x,t,c)  -> prodec_rec (add_rel_assum (x,outcast_type t) l) c
     | IsLetIn (x,b,t,c) -> prodec_rec (add_rel_def (x,b,outcast_type t) l) c
     | IsCast (c,_)    -> prodec_rec l c
     | _               -> l,c
@@ -161,7 +161,7 @@ let decompose_prod_assum =
 let decompose_lam_assum = 
   let rec lamdec_rec l c =
     match kind_of_term c with
-    | IsLambda (x,t,c) -> lamdec_rec (add_rel_decl (x,outcast_type t) l) c
+    | IsLambda (x,t,c) -> lamdec_rec (add_rel_assum (x,outcast_type t) l) c
     | IsLetIn (x,b,t,c) -> lamdec_rec (add_rel_def (x,b,outcast_type t) l) c
     | IsCast (c,_)     -> lamdec_rec l c
     | _                -> l,c
@@ -175,7 +175,7 @@ let decompose_prod_n_assum n =
   let rec prodec_rec l n c = 
     if n=0 then l,c 
     else match kind_of_term c with 
-    | IsProd (x,t,c) -> prodec_rec (add_rel_decl(x,outcast_type t) l) (n-1) c
+    | IsProd (x,t,c) -> prodec_rec (add_rel_assum(x,outcast_type t) l) (n-1) c
     | IsLetIn (x,b,t,c) ->
 	prodec_rec (add_rel_def (x,b,outcast_type t) l) (n-1) c
     | IsCast (c,_)   -> prodec_rec l n c
@@ -190,7 +190,7 @@ let decompose_lam_n_assum n =
   let rec lamdec_rec l n c = 
     if n=0 then l,c 
     else match kind_of_term c with 
-    | IsLambda (x,t,c) -> lamdec_rec (add_rel_decl (x,outcast_type t) l) (n-1) c
+    | IsLambda (x,t,c) -> lamdec_rec (add_rel_assum (x,outcast_type t) l) (n-1) c
     | IsLetIn (x,b,t,c) ->
 	lamdec_rec (add_rel_def (x,b,outcast_type t) l) (n-1) c
     | IsCast (c,_)     -> lamdec_rec l n c

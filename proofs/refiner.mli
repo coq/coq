@@ -104,7 +104,7 @@ type pftreestate
 val proof_of_pftreestate : pftreestate -> proof_tree
 val cursor_of_pftreestate : pftreestate -> int list
 val is_top_pftreestate : pftreestate -> bool
-val evc_of_pftreestate : pftreestate -> evar_declarations
+val evc_of_pftreestate : pftreestate -> enamed_declarations
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 
@@ -137,10 +137,10 @@ val change_constraints_pftreestate
 open Pp
 (*i*)
 
-val print_proof : evar_declarations -> var_context -> proof_tree -> std_ppcmds
+val print_proof : enamed_declarations -> named_context -> proof_tree -> std_ppcmds
 val pr_rule      : rule -> std_ppcmds
 val pr_tactic    : tactic_expression -> std_ppcmds
 val print_script :
-  bool -> evar_declarations -> var_context -> proof_tree -> std_ppcmds
+  bool -> enamed_declarations -> named_context -> proof_tree -> std_ppcmds
 val print_treescript :
-  evar_declarations -> var_context -> proof_tree -> std_ppcmds
+  enamed_declarations -> named_context -> proof_tree -> std_ppcmds

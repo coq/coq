@@ -48,7 +48,7 @@ let rec execute mf env cstr =
 	(relative env Evd.empty n, cst0)
 
     | IsVar id -> 
-	(make_judge cstr (lookup_var_type id env), cst0)
+	(make_judge cstr (lookup_named_type id env), cst0)
 
     (* ATTENTION : faudra faire le typage du contexte des Const,
     MutInd et MutConstructsi un jour cela devient des constructions
@@ -104,7 +104,7 @@ let rec execute mf env cstr =
     | IsLambda (name,c1,c2) -> 
         let (j,cst1) = execute mf env c1 in
         let var = assumption_of_judgment env Evd.empty j in
-	let env1 = push_rel_decl (name,var) env in
+	let env1 = push_rel_assum (name,var) env in
         let (j',cst2) = execute mf env1 c2 in 
         let (j,cst3) = abs_rel env1 Evd.empty name var j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
@@ -113,7 +113,7 @@ let rec execute mf env cstr =
      | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
         let varj = type_judgment env Evd.empty j in
-	let env1 = push_rel_decl (name,assumption_of_type_judgment varj) env in
+	let env1 = push_rel_assum (name,assumption_of_type_judgment varj) env in
         let (j',cst2) = execute mf env1 c2 in
 	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
@@ -143,7 +143,7 @@ and execute_fix mf env lar lfi vdef =
   let nlara = 
     List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
   let env1 = 
-    List.fold_left (fun env nvar -> push_rel_decl nvar env) env nlara in
+    List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
   let (vdefj,cst2) = execute_array mf env1 vdef in
   let vdefv = Array.map j_val_only vdefj in
   let cst3 = type_fixpoint env1 Evd.empty lfi lara vdefj in
@@ -233,11 +233,11 @@ let empty_environment = empty_env
 
 let universes = universes
 let context = context
-let var_context = var_context
+let named_context = named_context
 
-let lookup_var_type = lookup_var_type
+let lookup_named_type = lookup_named_type
 let lookup_rel_type = lookup_rel_type
-let lookup_var = lookup_var
+let lookup_named = lookup_named
 let lookup_constant = lookup_constant
 let lookup_mind = lookup_mind
 let lookup_mind_specif = lookup_mind_specif
@@ -245,27 +245,25 @@ let lookup_mind_specif = lookup_mind_specif
 (* Insertion of variables (named and de Bruijn'ed). They are now typed before
    being added to the environment. *)
 
-let push_rel_or_var_def push (id,c) env =
-  let (j,cst) = safe_infer env c in
+let push_rel_or_named_def push (id,b) env =
+  let (j,cst) = safe_infer env b in
   let env' = add_constraints cst env in
   push (id,j.uj_val,j.uj_type) env'
 
-let push_var_def nvar env = push_rel_or_var_def push_var_def nvar env
+let push_named_def = push_rel_or_named_def push_named_def
+let push_rel_def = push_rel_or_named_def push_rel_def
 
-let push_rel_def nrel env = push_rel_or_var_def push_rel_def nrel env
-
-let push_rel_or_var_decl push (id,c) env =
-  let (j,cst) = safe_infer_type env c in
+let push_rel_or_named_assum push (id,t) env =
+  let (j,cst) = safe_infer env t in
   let env' = add_constraints cst env in
-  let var = assumption_of_type_judgment j in
-  push (id,var) env'
+  let t = assumption_of_judgment env Evd.empty j in
+  push (id,t) env'
 
-let push_var_decl nvar env = push_rel_or_var_decl push_var_decl nvar env
-
-let push_rel_decl nrel env = push_rel_or_var_decl push_rel_decl nrel env
+let push_named_assum = push_rel_or_named_assum push_named_assum
+let push_rel_assum = push_rel_or_named_assum push_rel_assum
 
 let push_rels_with_univ vars env =
-  List.fold_left (fun env nvar -> push_rel_decl nvar env) env vars
+  List.fold_left (fun env nvar -> push_rel_assum nvar env) env vars
 
 (* Insertion of constants and parameters in environment. *)
 
@@ -294,7 +292,7 @@ let add_constant_with_value sp body typ env =
     const_kind = kind_of_path sp;
     const_body = Some (ref (Cooked body));
     const_type = ty;
-    const_hyps = keep_hyps ids (var_context env);
+    const_hyps = keep_hyps ids (named_context env);
     const_constraints = Constraint.union cst cst';
     const_opaque = false } 
   in
@@ -308,7 +306,7 @@ let add_lazy_constant sp f t env =
     const_kind = kind_of_path sp;
     const_body = Some (ref (Recipe f));
     const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = keep_hyps ids (var_context env);
+    const_hyps = keep_hyps ids (named_context env);
     const_constraints = cst;
     const_opaque = false } 
   in
@@ -330,7 +328,7 @@ let add_parameter sp t env =
     const_kind = kind_of_path sp;
     const_body = None;
     const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = keep_hyps ids (var_context env);
+    const_hyps = keep_hyps ids (named_context env);
     const_constraints = cst;
     const_opaque = false } 
   in
@@ -355,7 +353,7 @@ let rec infos_and_sort env t =
     | IsProd (name,c1,c2) ->
         let (varj,_) = safe_infer_type env c1 in
 	let var = assumption_of_type_judgment varj in
-	let env1 = Environ.push_rel_decl (name,var) env in
+	let env1 = Environ.push_rel_assum (name,var) env in
 	let s1 = varj.utj_type in
 	let logic = not (is_info_type env Evd.empty varj) in
 	let small = is_small s1 in
@@ -453,10 +451,10 @@ let add_mind sp mie env =
     
 let add_constraints = add_constraints
 
-let rec pop_vars idl env =
+let rec pop_named_decls idl env =
   match idl with 
     | [] -> env
-    | id::l -> pop_vars l (Environ.pop_var id env)
+    | id::l -> pop_named_decls l (Environ.pop_named_decl id env)
 
 let export = export
 let import = import

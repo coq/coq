@@ -48,13 +48,13 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSGNL(Refiner.print_script true evc (Global.var_context()) pf)
+  mSGNL(Refiner.print_script true evc (Global.named_context()) pf)
 
 let show_prooftree () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSG(Refiner.print_proof evc (Global.var_context()) pf)
+  mSG(Refiner.print_proof evc (Global.named_context()) pf)
 
 let show_open_subgoals () =
   let pfts = get_pftreestate () in
@@ -591,7 +591,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_script true evc (Global.var_context()) pf))
+	 mSG (Refiner.print_script true evc (Global.named_context()) pf))
 
 let _ =
   add "ExplainProofTree"
@@ -608,7 +608,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_proof evc (Global.var_context()) pf))
+	 mSG (Refiner.print_proof evc (Global.named_context()) pf))
 
 let _ =
   add "ShowProofs"

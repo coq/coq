@@ -23,50 +23,48 @@ val empty_env : env
 val universes : env -> universes
 val context : env -> context
 val rel_context : env -> rel_context
-val var_context : env -> var_context
+val named_context : env -> named_context
 
-(* This forgets var and rel contexts *)
+(* This forgets named and rel contexts *)
 val reset_context : env -> env
 
-(*s This concerns only the context of local vars referred by names
-    [var_context] *)
-val push_var : var_declaration -> env -> env
-val push_var_decl : identifier * typed_type -> env -> env
-val push_var_def : identifier * constr * typed_type -> env -> env
-val change_hyps : (var_context -> var_context) -> env -> env
-val instantiate_vars : var_context -> constr list -> (identifier * constr) list
-val pop_var : identifier -> env -> env
+(*s This concerns only local vars referred by names [named_context] *)
+val push_named_decl : named_declaration -> env -> env
+val push_named_assum : identifier * typed_type -> env -> env
+val push_named_def : identifier * constr * typed_type -> env -> env
+val change_hyps : (named_context -> named_context) -> env -> env
+val instantiate_named_context  : named_context -> constr list -> (identifier * constr) list
+val pop_named_decl : identifier -> env -> env
 
-(*s This concerns only the context of local vars referred by indice
-    [rel_context] *)
+(*s This concerns only local vars referred by indice [rel_context] *)
 val push_rel : rel_declaration -> env -> env
-val push_rel_decl : name * typed_type -> env -> env
+val push_rel_assum : name * typed_type -> env -> env
 val push_rel_def : name * constr * typed_type -> env -> env
 val push_rels : rel_context -> env -> env
 val names_of_rel_context : env -> names_context
 
 (*s Returns also the substitution to be applied to rel's *)
-val push_rels_to_vars : env -> constr list * env
+val push_rel_context_to_named_context : env -> constr list * env
 
 (*s Push the types of a (co-)fixpoint *)
 val push_rec_types : rec_declaration -> env -> env
 
-(* Gives identifiers in [var_context] and [rel_context] *)
+(* Gives identifiers in [named_context] and [rel_context] *)
 val ids_of_context : env -> identifier list
 val map_context : (constr -> constr) -> env -> env
 
-(*s Recurrence on [var_context] *)
-val fold_var_context : (env -> var_declaration -> 'a -> 'a) -> env -> 'a -> 'a
-val process_var_context : (env -> var_declaration -> env) -> env -> env
+(*s Recurrence on [named_context] *)
+val fold_named_context : (env -> named_declaration -> 'a -> 'a) -> env -> 'a -> 'a
+val process_named_context : (env -> named_declaration -> env) -> env -> env
 
-(* Recurrence on [var_context] starting from younger decl *)
-val fold_var_context_reverse : ('a -> var_declaration -> 'a) -> 'a -> env -> 'a
+(* Recurrence on [named_context] starting from younger decl *)
+val fold_named_context_reverse : ('a -> named_declaration -> 'a) -> 'a -> env -> 'a
 
-(* [process_var_context_both_sides f env] iters [f] on the var
+(* [process_named_context_both_sides f env] iters [f] on the named
    declarations of [env] taking as argument both the initial segment, the
    middle value and the tail segment *)
-val process_var_context_both_sides :
-  (env -> var_declaration -> var_context -> env) -> env -> env 
+val process_named_context_both_sides :
+  (env -> named_declaration -> named_context -> env) -> env -> env 
 
 (*s Recurrence on [rel_context] *)
 val fold_rel_context : (env -> rel_declaration -> 'a -> 'a) -> env -> 'a -> 'a
@@ -83,11 +81,11 @@ val new_meta : unit -> int
 
 (*s Looks up in environment *)
 
-(* Looks up in the context of local vars referred by names ([var_context]) *)
+(* Looks up in the context of local vars referred by names ([named_context]) *)
 (* raises [Not_found] if the identifier is not found *)
-val lookup_var_type : identifier -> env -> typed_type
-val lookup_var_value : identifier -> env -> constr option
-val lookup_var : identifier -> env -> constr option * typed_type
+val lookup_named_type : identifier -> env -> typed_type
+val lookup_named_value : identifier -> env -> constr option
+val lookup_named : identifier -> env -> constr option * typed_type
 
 (* Looks up in the context of local vars referred by indice ([rel_context]) *)
 (* raises [Not_found] if the index points out of the context *)
@@ -136,8 +134,8 @@ val it_mkProd_wo_LetIn : constr -> rel_context -> constr
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
 val it_mkProd_or_LetIn : constr -> rel_context -> constr
 
-val it_mkNamedLambda_or_LetIn : constr -> var_context -> constr
-val it_mkNamedProd_or_LetIn : constr -> var_context -> constr
+val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
+val it_mkNamedProd_or_LetIn : constr -> named_context -> constr
 
 (* [lambda_create env (t,c)] builds [[x:t]c] where [x] is a name built
    from [t]; [prod_create env (t,c)] builds [(x:t)c] where [x] is a

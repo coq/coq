@@ -88,7 +88,7 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp : 
-  env -> 'a evar_map -> var_declaration ->
+  env -> 'a evar_map -> named_declaration ->
       (constr_label * pri_auto_tactic) list
 
 (* [make_extern name pri pattern tactic_ast] *)

@@ -30,19 +30,19 @@ module Make = functor (P : Printer) -> struct
 
 (****
   let sign_it_with f sign e =
-    snd (fold_var_context
-	   (fun (id,v,t) (sign,e) -> (add_var (id,v,t) sign, f id t sign e))
-           sign (empty_var_context,e))
+    snd (fold_named_context
+	   (fun (id,v,t) (sign,e) -> (add_named_decl (id,v,t) sign, f id t sign e))
+           sign (empty_named_context,e))
 
   let dbenv_it_with f env e =
     snd (dbenv_it 
-	   (fun na t (env,e) -> (add_rel (na,t) env, f na t env e))
+	   (fun na t (env,e) -> (add_rel_decl (na,t) env, f na t env e))
            env (gLOB(get_globals env),e))
 ****)
       
   let pr_env k env =
     let sign_env =
-      fold_var_context
+      fold_named_context
 	(fun env (id,_,t) pps ->
            let pidt =  print_decl k env (id,t) in [<  pps ; 'fNL ; pidt >])
 	env [< >] 
@@ -56,7 +56,7 @@ module Make = functor (P : Printer) -> struct
     [< sign_env; db_env >]
     
   let pr_ne_ctx header k env =
-    if rel_context env = [] && var_context env = [] then
+    if rel_context env = [] && named_context env = [] then
       [< >]
     else
       [< header; pr_env k env >]

@@ -52,10 +52,10 @@ let constr_of_Constr_context = function
     anomalylabstrm "constr_of_Constr_context" [<'sTR
       "Not a Constr_context tactic_arg">]
 
-(* Transforms a var_context into a (string * constr) list *)
+(* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
 
-(*  let lid = List.map string_of_id (ids_of_var_context hyps)
+(*  let lid = List.map string_of_id (ids_of_named_context hyps)
   and lhyp = List.map body_of_type (vals_of_sign hyps) in
     List.rev (List.combine lid lhyp)*)
 
@@ -70,7 +70,7 @@ let rec constr_list goalopt = function
        (match goalopt with
        | None -> constr_list goalopt tl
        | Some goal ->
-         if mem_var_context id (pf_hyps goal) then
+         if mem_named_context id (pf_hyps goal) then
            (id_of_string str,mkVar id)::(constr_list goalopt tl)
          else
            constr_list goalopt tl))
@@ -79,7 +79,7 @@ let rec constr_list goalopt = function
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
-  evar_declarations * Environ.env * (string * value) list *
+  enamed_declarations * Environ.env * (string * value) list *
     (int * constr) list * goal sigma option
 
 (* Table of interpretation functions *)

@@ -294,7 +294,7 @@ let make_constr_ref n = function
 
 let defined_vars flags env =
   if red_local_const (snd flags) then
-    fold_var_context 
+    fold_named_context 
       (fun env (id,b,t) e ->
 	 match b with
 	   | None -> e

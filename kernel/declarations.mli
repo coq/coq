@@ -8,6 +8,9 @@ open Term
 open Sign
 (*i*)
 
+(* This module defines the types of global declarations. This includes
+   global constants/axioms and mutual inductive definitions *)
+
 (*s Constants (internal representation) (Definition/Axiom) *)
 
 type lazy_constant_value =
@@ -20,7 +23,7 @@ type constant_body = {
   const_kind : path_kind;
   const_body : constant_value option;
   const_type : typed_type;
-  const_hyps : var_context; (* New: younger hyp at top *)
+  const_hyps : named_context; (* New: younger hyp at top *)
   const_constraints : constraints;
   mutable const_opaque : bool }
 
@@ -66,7 +69,7 @@ type one_inductive_body = {
 type mutual_inductive_body = {
   mind_kind : path_kind;
   mind_ntypes : int;
-  mind_hyps : var_context;
+  mind_hyps : named_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option;

@@ -94,7 +94,7 @@ let thin_ids (hyps,vars) =
 (*
 let get_local_sign sign =
   let lid = ids_of_sign sign in
-  let globsign = Global.var_context() in
+  let globsign = Global.named_context() in
   let add_local id res_sign = 
     if not (mem_sign globsign id) then 
       add_sign (lookup_sign id sign) res_sign
@@ -129,12 +129,12 @@ let rec add_prods_sign env sigma t =
 	let id = Environ.id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
 	let j = Retyping.get_assumption_of env sigma c1 in
-        add_prods_sign (Environ.push_var_decl (id,j) env) sigma b'
+        add_prods_sign (Environ.push_named_assum (id,j) env) sigma b'
     | IsLetIn (na,c1,t1,b) ->
 	let id = Environ.id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
 	let j = Retyping.get_assumption_of env sigma t1 in
-        add_prods_sign (Environ.push_var_def (id,c1,j) env) sigma b'
+        add_prods_sign (Environ.push_named_def (id,c1,j) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates wether the inversion lemma is dependent or not.
@@ -166,9 +166,9 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let i = mkAppliedInd ind in
       let ivars = global_vars i in
       let revargs,ownsign =
-	fold_var_context
+	fold_named_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
-             if List.mem id ivars then ((mkVar id)::revargs,add_var d hyps)
+             if List.mem id ivars then ((mkVar id)::revargs,add_named_decl d hyps)
 	     else (revargs,hyps))
           env ([],[]) in
       let pty = it_mkNamedProd_or_LetIn (mkSort sort) ownsign in
@@ -177,7 +177,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   in
   let npty = nf_betadeltaiota env sigma pty in
   let nptyj = make_typed npty (Retyping.get_sort_of env sigma npty) in
-  let extenv = push_var_decl (p,nptyj) env in
+  let extenv = push_named_assum (p,nptyj) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -195,7 +195,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       errorlabstrm "inversion_scheme" (no_inductive_inconstr env i) in
   let (invEnv,invGoal) =
     compute_first_inversion_scheme env sigma ind sort dep_option in
-  assert (list_subset (global_vars invGoal) (ids_of_var_context (var_context invEnv)));
+  assert (list_subset (global_vars invGoal) (ids_of_named_context (named_context invEnv)));
 (*
     errorlabstrm "lemma_inversion"
       [< 'sTR"Computed inversion goal was not closed in initial signature" >];
@@ -205,18 +205,18 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     solve_pftreestate (tclTHEN intro 
 			 (onLastHyp (compose inv_op out_some))) pfs in
   let (pfterm,meta_types) = extract_open_pftreestate pfs in
-  let global_var_context = Global.var_context () in
+  let global_named_context = Global.named_context () in
   let ownSign =
-    fold_var_context
+    fold_named_context
       (fun env (id,_,_ as d) sign ->
-         if mem_var_context id global_var_context then sign
-	 else add_var d sign)
-      invEnv empty_var_context in
+         if mem_named_context id global_named_context then sign
+	 else add_named_decl d sign)
+      invEnv empty_named_context in
   let (_,ownSign,mvb) =
     List.fold_left
       (fun (avoid,sign,mvb) (mv,mvty) ->
          let h = next_ident_away (id_of_string "H") avoid in
-	 (h::avoid, add_var_decl (h,mvty) sign, (mv,mkVar h)::mvb))
+	 (h::avoid, add_named_assum (h,mvty) sign, (mv,mkVar h)::mvb))
       (ids_of_context invEnv, ownSign, [])
       meta_types in
   let invProof = 

@@ -756,7 +756,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
     List.map 
       (fun ntac -> 
 	 tclTHEN ntac
-	   (search_gen decomp (n-1) db_list local_db empty_var_context))
+	   (search_gen decomp (n-1) db_list local_db empty_named_context))
       (possible_resolve db_list local_db (pf_concl goal))
   in 
   tclFIRST (assumption::(decomp_tacs@(intro_tac::rec_tacs))) goal
@@ -905,10 +905,10 @@ let rec super_search n db_list local_db argl goal =
 let search_superauto n ids argl g = 
   let sigma =
     List.fold_right
-      (fun id -> add_var_decl
+      (fun id -> add_named_assum
 	   (id,Retyping.get_assumption_of (pf_env g) (project g) 
 	      (pf_type_of g (pf_global g id))))
-      ids empty_var_context in
+      ids empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
   let db = Hint_db.add_list db0 (make_local_hint_db g) in
   super_search n [Stringmap.find "core" !searchtable] db argl g

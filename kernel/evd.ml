@@ -65,7 +65,7 @@ let is_defined sigma ev =
   let info = map sigma ev in 
   not (info.evar_body = Evar_empty)
 
-let evar_hyps ev = var_context ev.evar_env
+let evar_hyps ev = named_context ev.evar_env
 let evar_body ev = ev.evar_body
 
 let id_of_existential ev =

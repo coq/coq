@@ -45,8 +45,8 @@ let filter_sign p sign x =
 
 (* All ids of sign must be distincts! *)
 let new_isevar_sign env sigma typ instance =
-  let sign = var_context env in
-  if not (list_distinct (ids_of_var_context sign)) then 
+  let sign = named_context env in
+  if not (list_distinct (ids_of_named_context sign)) then 
     error "new_isevar_sign: two vars have the same name";
   let newev = Evd.new_evar() in
   let info = { evar_concl = typ; evar_env = env; 
@@ -58,7 +58,7 @@ let new_isevar_sign env sigma typ instance =
 let dummy_sort = mkType dummy_univ
 
 let make_instance env =
-  fold_var_context
+  fold_named_context
     (fun env (id, b, _) l -> if b=None then mkVar id :: l else l)
     env []
 
@@ -74,9 +74,9 @@ let split_evar_to_arrow sigma c =
   let evd = Evd.map sigma ev in
   let evenv = evd.evar_env in
   let (sigma1,dom) = new_type_var evenv sigma in
-  let hyps = var_context evenv in
-  let nvar = next_ident_away (id_of_string "x") (ids_of_var_context hyps) in
-  let newenv = push_var_decl (nvar,make_typed dom (Type dummy_univ)) evenv in
+  let hyps = named_context evenv in
+  let nvar = next_ident_away (id_of_string "x") (ids_of_named_context hyps) in
+  let newenv = push_named_assum (nvar,make_typed dom (Type dummy_univ)) evenv in
   let (sigma2,rng) = new_type_var newenv sigma1 in
   let prod = mkProd (named_hd newenv dom Anonymous, dom, subst_var nvar rng) in
   let sigma3 = Evd.define sigma2 ev prod in
@@ -100,7 +100,7 @@ let do_restrict_hyps sigma c =
   let args = Array.to_list args in
   let evd = Evd.map sigma ev in
   let env = evd.evar_env in
-  let hyps = var_context env in
+  let hyps = named_context env in
   let (_,(rsign,ncargs)) =
     List.fold_left 
       (fun (sign,(rs,na)) a ->
@@ -108,7 +108,7 @@ let do_restrict_hyps sigma c =
 	  if not(closed0 a) then 
 	    (rs,na)
 	  else 
-	    (add_var (List.hd sign) rs, a::na)))
+	    (add_named_decl (List.hd sign) rs, a::na)))
       (hyps,([],[])) args 
   in
   let sign' = List.rev rsign in
@@ -146,7 +146,7 @@ let ise_try isevars l =
 (* say if the section path sp corresponds to an existential *)
 let ise_in_dom isevars sp = Evd.in_dom !isevars sp
 
-(* map the given section path to the evar_declaration *)
+(* map the given section path to the enamed_declaration *)
 let ise_map isevars sp = Evd.map !isevars sp
 
 (* define the existential of section path sp as the constr body *)
@@ -198,7 +198,7 @@ let real_clean isevars sp args rhs =
 let make_instance_with_rel env =
   let n = rel_context_length (rel_context env) in
   let vars = 
-    fold_var_context
+    fold_named_context
       (fun env (id,b,_) l -> if b=None then mkVar id :: l else l)
       env [] in
   snd (fold_rel_context
@@ -206,7 +206,7 @@ let make_instance_with_rel env =
     env (n+1,vars))
 
 let make_subst env args =
-  snd (fold_var_context
+  snd (fold_named_context
     (fun env (id,b,c) (args,l as g) ->
        match b, args with
 	 | None, a::rest -> (rest, (id,a)::l)
@@ -218,7 +218,7 @@ let make_subst env args =
 (* Converting the env into the sign of the evar to define *)
 
 let new_isevar isevars env typ k =
-  let subst,env' = push_rels_to_vars env in
+  let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
   let instance = make_instance_with_rel env in
   let (sigma',evar) = new_isevar_sign env' !isevars typ' instance in
@@ -270,19 +270,19 @@ let solve_refl conv_algo isevars c1 c2 =
   and (_,argsv2) = destEvar c2 in
   let evd = Evd.map !isevars ev in
   let env = evd.evar_env in
-  let hyps = var_context env in
+  let hyps = named_context env in
   let (_,rsign) = 
     array_fold_left2
       (fun (sgn,rsgn) a1 a2 ->
 	 if conv_algo a1 a2 then 
-	   (List.tl sgn, add_var (List.hd sgn) rsgn)
+	   (List.tl sgn, add_named_decl (List.hd sgn) rsgn)
 	 else 
 	   (List.tl  sgn, rsgn))
       (hyps,[]) argsv1 argsv2 
   in
   let nsign = List.rev rsign in
   let nenv = change_hyps (fun _ -> nsign) env in
-  let nargs = (Array.of_list (List.map mkVar (ids_of_var_context nsign))) in
+  let nargs = (Array.of_list (List.map mkVar (ids_of_named_context nsign))) in
   let newev = Evd.new_evar () in
   let info = { evar_concl = evd.evar_concl; evar_env = nenv;
 	       evar_body = Evar_empty; evar_info = None } in

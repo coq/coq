@@ -606,7 +606,7 @@ let discr id gls =
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
 	 let e_env =
-	   push_var_decl (e,assumption_of_judgment env sigma tj) env
+	   push_named_assum (e,assumption_of_judgment env sigma tj) env
 	 in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
@@ -885,7 +885,7 @@ let inj id gls =
     | Inr posns ->
 	let e = pf_get_new_id (id_of_string "e") gls in
 	let e_env =
-	  push_var_decl (e,assumption_of_judgment env sigma tj) env
+	  push_named_assum (e,assumption_of_judgment env sigma tj) env
 	in
 	let injectors =
 	  map_succeed
@@ -951,7 +951,7 @@ let decompEqThen ntac id gls =
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "e") gls in
 	 let e_env =
-	   push_var_decl (e,assumption_of_judgment env sigma tj) env in
+	   push_named_assum (e,assumption_of_judgment env sigma tj) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (pf, absurd_term) =
@@ -963,7 +963,7 @@ let decompEqThen ntac id gls =
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
 	  let e_env =
-	    push_var_decl (e,assumption_of_judgment env sigma tj) env in
+	    push_named_assum (e,assumption_of_judgment env sigma tj) env in
 	  let injectors =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->
@@ -1356,7 +1356,7 @@ let sub_term_with_unif cref ceq =
 let general_rewrite_in lft2rgt id (c,lb) gls =
   let typ_id =
     (try
-       let (_,ty) = lookup_var id (pf_env gls) in (body_of_type ty)
+       let (_,ty) = lookup_named id (pf_env gls) in (body_of_type ty)
      with Not_found -> 
        errorlabstrm "general_rewrite_in" 
 	 [< 'sTR"No such hypothesis : "; print_id id >])
@@ -1422,7 +1422,7 @@ let v_conditional_rewriteRL_in =
 
 let rewrite_in lR com id gls =
   (try 
-     let _ = lookup_var id (pf_env gls) in () 
+     let _ = lookup_named id (pf_env gls) in () 
    with Not_found -> 
      errorlabstrm "rewrite_in" [< 'sTR"No such hypothesis : " ;print_id id >]);
   let c = pf_interp_constr gls com in

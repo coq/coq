@@ -7,39 +7,42 @@ open Names
 open Term
 (*i*)
 
-(*s Signatures of ordered named variables, intended to be accessed by name *)
+(*s Signatures of ordered named declarations *)
 
-type var_context = var_declaration list
+type named_context = named_declaration list
 
-val add_var : 
-  identifier * constr option * typed_type -> var_context -> var_context
-val add_var_decl : identifier * typed_type -> var_context -> var_context
-val add_var_def : 
-  identifier * constr * typed_type -> var_context -> var_context
-val lookup_id : identifier -> var_context -> constr option * typed_type
-val lookup_id_type : identifier -> var_context -> typed_type
-val lookup_id_value : identifier -> var_context -> constr option 
-val pop_var : identifier -> var_context -> var_context
-val empty_var_context : var_context
-val ids_of_var_context : var_context -> identifier list
-val map_var_context : (constr -> constr) -> var_context -> var_context
-val mem_var_context : identifier -> var_context -> bool
-val fold_var_context : (var_declaration -> 'a -> 'a) -> var_context -> 'a -> 'a
-val fold_var_context_reverse : ('a -> var_declaration -> 'a) -> 'a -> var_context -> 'a
-val fold_var_context_both_sides :
-  ('a -> var_declaration -> var_context -> 'a) -> var_context -> 'a -> 'a
-val it_var_context_quantifier :
-  (var_declaration -> constr -> constr) -> constr -> var_context -> constr
-val instantiate_sign : var_context -> constr list -> (identifier * constr) list
-val keep_hyps : Idset.t -> var_context -> var_context
+val add_named_decl : 
+  identifier * constr option * typed_type -> named_context -> named_context
+val add_named_assum : identifier * typed_type -> named_context -> named_context
+val add_named_def : 
+  identifier * constr * typed_type -> named_context -> named_context
+val lookup_id : identifier -> named_context -> constr option * typed_type
+val lookup_id_type : identifier -> named_context -> typed_type
+val lookup_id_value : identifier -> named_context -> constr option 
+val pop_named_decl : identifier -> named_context -> named_context
+val empty_named_context : named_context
+val ids_of_named_context : named_context -> identifier list
+val map_named_context : (constr -> constr) -> named_context -> named_context
+val mem_named_context : identifier -> named_context -> bool
+val fold_named_context :
+  (named_declaration -> 'a -> 'a) -> named_context -> 'a -> 'a
+val fold_named_context_reverse :
+  ('a -> named_declaration -> 'a) -> 'a -> named_context -> 'a
+val fold_named_context_both_sides :
+  ('a -> named_declaration -> named_context -> 'a) -> named_context -> 'a -> 'a
+val it_named_context_quantifier :
+  (named_declaration -> constr -> constr) -> constr -> named_context -> constr
+val instantiate_sign :
+  named_context -> constr list -> (identifier * constr) list
+val keep_hyps : Idset.t -> named_context -> named_context
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
 
 type rel_context = rel_declaration list
 
-val add_rel : (name * constr option * typed_type) -> rel_context -> rel_context
-val add_rel_decl : (name * typed_type) -> rel_context -> rel_context
+val add_rel_decl : (name * constr option * typed_type) -> rel_context -> rel_context
+val add_rel_assum : (name * typed_type) -> rel_context -> rel_context
 val add_rel_def : (name * constr * typed_type) -> rel_context -> rel_context
 val lookup_rel_type : int -> rel_context -> name * typed_type
 val lookup_rel_value : int -> rel_context -> constr option
@@ -49,7 +52,7 @@ val rel_context_length : rel_context -> int
 val lift_rel_context : int -> rel_context -> rel_context
 val concat_rel_context : newer:rel_context -> older:rel_context -> rel_context
 val ids_of_rel_context : rel_context -> identifier list
-val decls_of_rel_context : rel_context -> (name * constr) list
+val assums_of_rel_context : rel_context -> (name * constr) list
 val map_rel_context : (constr -> constr) -> rel_context -> rel_context
 
 (*s This is used to translate names into de Bruijn indices and

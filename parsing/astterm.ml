@@ -253,7 +253,7 @@ let error_fixname_unbound str is_cofix loc name =
 	  'sTR ((if is_cofix then "co" else "")^"fixpoint definition") >])
 (*
 let rec collapse_env n env = if n=0 then env else
-  add_rel (Anonymous,()) (collapse_env (n-1) (snd (uncons_rel_env env)))
+  add_rel_decl (Anonymous,()) (collapse_env (n-1) (snd (uncons_rel_env env)))
 *)
 
 let check_capture s ty = function
@@ -459,8 +459,8 @@ let ast_adjust_consts sigma =
   dbrec
 
 let globalize_constr ast =
-  let sign = Global.var_context () in
-  ast_adjust_consts Evd.empty (from_list (ids_of_var_context sign)) ast
+  let sign = Global.named_context () in
+  ast_adjust_consts Evd.empty (from_list (ids_of_named_context sign)) ast
 
 (* Globalizes ast expressing constructions in tactics or vernac *)
 (* Actually, it is incomplete, see vernacinterp.ml and tacinterp.ml *)
@@ -479,8 +479,8 @@ let rec glob_ast sigma env =
   | x -> x
 
 let globalize_ast ast =
-  let sign = Global.var_context () in
-  glob_ast Evd.empty (from_list (ids_of_var_context sign)) ast
+  let sign = Global.named_context () in
+  glob_ast Evd.empty (from_list (ids_of_named_context sign)) ast
 
 (**************************************************************************)
 (* Functions to translate ast into rawconstr                              *)
@@ -489,7 +489,7 @@ let globalize_ast ast =
 let interp_rawconstr_gen sigma env allow_soapp lvar com =
   ast_to_rawconstr sigma
     (from_list (ids_of_rel_context (rel_context env)))
-    allow_soapp (lvar,var_context env) com
+    allow_soapp (lvar,named_context env) com
 
 let interp_rawconstr sigma env com =
   interp_rawconstr_gen sigma env false [] com
@@ -500,7 +500,7 @@ let interp_rawconstr sigma env com =
 let interp_rawconstr_wo_glob sigma env lvar com =
   ast_to_rawconstr sigma
     (from_list (ids_of_rel_context (rel_context env)))
-    false (lvar,var_context env) com
+    false (lvar,named_context env) com
 
 (*let raw_fconstr_of_com sigma env com =
   ast_to_fw sigma (unitize_env (context env)) [] com
@@ -619,7 +619,7 @@ let interp_constrpattern_gen sigma env lvar com =
     ast_to_rawconstr sigma (from_list (ids_of_rel_context (rel_context env)))
       true (List.map
 	      (fun x ->
-		 string_of_id (fst x)) lvar,var_context env) com
+		 string_of_id (fst x)) lvar,named_context env) com
   and nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
   try 
     pattern_of_rawconstr nlvar c

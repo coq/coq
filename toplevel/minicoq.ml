@@ -15,7 +15,7 @@ open G_minicoq
 
 let (env : safe_environment ref) = ref empty_environment
 
-let lookup_var id =
+let lookup_named id =
   let rec look n = function
     | [] -> mkVar id
     | (Name id')::_ when id = id' -> Rel n
@@ -23,10 +23,10 @@ let lookup_var id =
   in
   look 1
 
-let args sign = Array.of_list (List.map mkVar (ids_of_var_context sign))
+let args sign = Array.of_list (List.map mkVar (ids_of_named_context sign))
 
 let rec globalize bv c = match kind_of_term c with
-  | IsVar id -> lookup_var id bv
+  | IsVar id -> lookup_named id bv
   | IsConst (sp, _) ->
       let cb = lookup_constant sp !env in mkConst (sp, args cb.const_hyps)
   | IsMutInd (sp,_ as spi, _) ->
@@ -59,7 +59,7 @@ let parameter id t =
 
 let variable id t =
   let t = globalize [] t in
-  env := push_var_decl (id,t) !env;
+  env := push_named_assum (id,t) !env;
   mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; print_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 

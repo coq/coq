@@ -36,10 +36,10 @@ val pr_pattern_env  : names_context -> constr_pattern -> std_ppcmds
 
 val pr_ne_context_of : std_ppcmds -> path_kind -> env -> std_ppcmds
 
-val pr_var_decl     : env -> var_declaration -> std_ppcmds
+val pr_var_decl     : env -> named_declaration -> std_ppcmds
 val pr_rel_decl     : env -> rel_declaration -> std_ppcmds
 
-val pr_var_context_of : env -> std_ppcmds
+val pr_named_context_of : env -> std_ppcmds
 val pr_rel_context  : env -> rel_context -> std_ppcmds
 val pr_context_of   : env -> std_ppcmds
 

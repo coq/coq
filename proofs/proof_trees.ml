@@ -76,7 +76,7 @@ let is_tactic_proof pf = (pf.subproof <> None)
    with some extra information for the program and mimick
    tactics. *)
 
-type global_constraints  = evar_declarations timestamped
+type global_constraints  = enamed_declarations timestamped
 
 (* A readable constraint is a global constraint plus a focus set
    of existential variables and a signature. *)
@@ -84,7 +84,7 @@ type global_constraints  = evar_declarations timestamped
 type evar_recordty = {
   focus : local_constraints;
   env   : env;
-  decls : evar_declarations }
+  decls : enamed_declarations }
 
 and readable_constraints = evar_recordty timestamped
 
@@ -233,7 +233,7 @@ let pr_seq evd =
     | None -> anomaly "pr_seq : info = None"
   in
   let pc = pr_ctxt info in
-  let pdcl = pr_var_context_of env in
+  let pdcl = pr_named_context_of env in
   let pcl = prterm_env_at_top env cl in
   hOV 0 [< pc; pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
 
@@ -244,13 +244,13 @@ let prgl gl =
 
 let pr_evgl gl =
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
-  let phyps = pr_idl (ids_of_var_context (var_context gl.evar_env)) in
+  let phyps = pr_idl (ids_of_named_context (named_context gl.evar_env)) in
   let pc = prterm gl.evar_concl in
   hOV 0 [< 'sTR"[[" ; plc; 'sTR"] " ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 
 let pr_evgl_sign gl = 
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
-  let ps = pr_var_context_of gl.evar_env in
+  let ps = pr_named_context_of gl.evar_env in
   let pc = prterm gl.evar_concl in
   hOV 0 [< 'sTR"[[" ; plc ; 'sTR"] " ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 

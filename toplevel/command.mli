@@ -56,4 +56,4 @@ theorem under the name [name] and gives it the strength of a remark *)
 
 val save_anonymous_remark : bool -> string -> unit
 
-val get_current_context : unit -> Proof_type.evar_declarations * Environ.env
+val get_current_context : unit -> Proof_type.enamed_declarations * Environ.env

@@ -95,7 +95,7 @@ let explain_generalization k ctx (name,var) j =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in
   let pv = prtype_env ctx var in
-  let (pc,pt) = prjudge_env (push_rel_decl (name,var) ctx) j in
+  let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
      'sTR"over"; 'bRK(1,1); pc; 'sTR","; 'sPC; 'sTR"it has type"; 'sPC; pt; 

@@ -37,16 +37,16 @@ let sig_it     = Refiner.sig_it
 let sig_sig    = Refiner.sig_sig
 let project    = compose ts_it sig_sig
 let pf_env gls = (sig_it gls).evar_env
-let pf_hyps gls = var_context (sig_it gls).evar_env
+let pf_hyps gls = named_context (sig_it gls).evar_env
 
 let pf_concl gls = (sig_it gls).evar_concl
 (*
 let pf_untyped_hyps gls  =
-  let sign = Environ.var_context (pf_env gls) in
+  let sign = Environ.named_context (pf_env gls) in
   map_sign_typ (fun x -> body_of_type x) sign
 *)
 let pf_hyps_types gls  =
-  let sign = Environ.var_context (pf_env gls) in
+  let sign = Environ.named_context (pf_env gls) in
   List.map (fun (id,_,x) -> (id,body_of_type x)) sign
 
 let pf_nth_hyp_id gls n = let (id,c,t) = List.nth (pf_hyps gls) (n-1) in id
@@ -59,7 +59,7 @@ let pf_get_hyp_typ gls id =
   with Not_found -> 
     error ("No such hypothesis : " ^ (string_of_id id))
 
-let pf_ids_of_hyps gls = ids_of_var_context (var_context (pf_env gls))
+let pf_ids_of_hyps gls = ids_of_named_context (named_context (pf_env gls))
 
 let pf_ctxt gls      = get_ctxt (sig_it gls)
 
@@ -278,7 +278,7 @@ let mutual_cofix lf lar pf =
     
 let rename_bound_var_goal gls =
   let { evar_env = env; evar_concl = cl } as gl = sig_it gls in 
-  let ids = ids_of_var_context (Environ.var_context env) in
+  let ids = ids_of_named_context (Environ.named_context env) in
   convert_concl (rename_bound_var ids cl) gls
     
 
@@ -510,7 +510,7 @@ open Printer
 
 let pr_com sigma goal com =
   prterm (rename_bound_var 
-            (ids_of_var_context (var_context goal.evar_env)) 
+            (ids_of_named_context (named_context goal.evar_env)) 
             (Astterm.interp_constr sigma goal.evar_env com))
 
 let pr_one_binding sigma goal = function

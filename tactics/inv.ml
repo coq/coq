@@ -181,7 +181,7 @@ let rec dependent_hyps id idlist sign =
   let rec dep_rec =function
     | [] -> []
     | (id1::l) -> 
-	let id1ty = snd (lookup_var id1 sign) in  
+	let id1ty = snd (lookup_named id1 sign) in  
 	if occur_var id (body_of_type id1ty) then id1::dep_rec l else dep_rec l
   in 
   dep_rec idlist 

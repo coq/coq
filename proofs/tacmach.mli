@@ -22,7 +22,7 @@ type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
 val sig_sig : goal sigma -> global_constraints
-val project : goal sigma -> evar_declarations
+val project : goal sigma -> enamed_declarations
 
 val re_sig : 'a -> global_constraints -> 'a sigma
 
@@ -33,11 +33,11 @@ val apply_sig_tac :
 
 val pf_concl              : goal sigma -> constr
 val pf_env                : goal sigma -> env
-val pf_hyps               : goal sigma -> var_context
+val pf_hyps               : goal sigma -> named_context
 (*i val pf_untyped_hyps       : goal sigma -> (identifier * constr) list i*)
 val pf_hyps_types         : goal sigma -> (identifier * constr) list
 val pf_nth_hyp_id         : goal sigma -> int -> identifier
-val pf_last_hyp           : goal sigma -> var_declaration
+val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> identifier list
 val pf_ctxt               : goal sigma -> ctxtty
 val pf_global             : goal sigma -> identifier -> constr
@@ -57,7 +57,7 @@ val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
 
 val pf_reduce : 
-  (env -> evar_declarations -> constr -> constr) ->
+  (env -> enamed_declarations -> constr -> constr) ->
     goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
@@ -90,7 +90,7 @@ type pftreestate
 val proof_of_pftreestate    : pftreestate -> proof_tree
 val cursor_of_pftreestate   : pftreestate -> int list
 val is_top_pftreestate      : pftreestate -> bool
-val evc_of_pftreestate      : pftreestate -> evar_declarations
+val evc_of_pftreestate      : pftreestate -> enamed_declarations
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 val traverse                : int -> pftreestate -> pftreestate
@@ -193,9 +193,9 @@ val w_Focusing_THEN     : int -> 'a result_w_tactic
 val w_Declare           : int -> constr * constr -> w_tactic
 val w_Declare_At        : int -> int -> constr * constr -> w_tactic
 val w_Define            : int -> constr -> w_tactic
-val w_Underlying        : walking_constraints -> evar_declarations
+val w_Underlying        : walking_constraints -> enamed_declarations
 val w_env               : walking_constraints -> env
-val w_hyps              : walking_constraints -> var_context
+val w_hyps              : walking_constraints -> named_context
 val w_type_of           : walking_constraints -> constr -> constr
 val w_add_sign          : (identifier * typed_type) 
                           -> walking_constraints -> walking_constraints

@@ -36,7 +36,7 @@ let rec execute mf env sigma cstr =
 
     | IsVar id -> 
       (try
-         make_judge cstr (snd (lookup_var id env))
+         make_judge cstr (snd (lookup_named id env))
        with Not_found ->
          error ("execute: variable " ^ (string_of_id id) ^ " not defined"))
 	  
@@ -86,7 +86,7 @@ let rec execute mf env sigma cstr =
     | IsLambda (name,c1,c2) -> 
         let j = execute mf env sigma c1 in
 	let var = assumption_of_judgment env sigma j in
-	let env1 = push_rel_decl (name,var) env in
+	let env1 = push_rel_assum (name,var) env in
         let j' = execute mf env1 sigma c2 in 
         let (j,_) = abs_rel env1 sigma name var j' in
 	j
@@ -95,7 +95,7 @@ let rec execute mf env sigma cstr =
         let j = execute mf env sigma c1 in
         let varj = type_judgment env sigma j in
 	let var = assumption_of_type_judgment varj in
-	let env1 = push_rel_decl (name,var) env in
+	let env1 = push_rel_assum (name,var) env in
         let j' = execute mf env1 sigma c2 in
 	let (j,_) = gen_rel env1 sigma name varj j' in
 	j
@@ -121,7 +121,7 @@ and execute_fix mf env sigma lar lfi vdef =
   let nlara = 
     List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
   let env1 = 
-    List.fold_left (fun env nvar -> push_rel_decl nvar env) env nlara in
+    List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
   let vdefj = execute_array mf env1 sigma vdef in
   let vdefv = Array.map j_val_only vdefj in
   let cst3 = type_fixpoint env1 sigma lfi lara vdefj in

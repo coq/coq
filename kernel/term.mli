@@ -35,29 +35,6 @@ type case_printing =
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int array * case_printing
 
-(*
-type 'a oper = 
-  | Meta of int
-  | Sort of 'a
-  | Cast | Prod | Lambda
-  | AppL | Const of section_path
-  | Evar of existential_key
-  | MutInd of inductive_path
-  | MutConstruct of constructor_path
-  | MutCase of case_info
-  | Fix of int array * int
-  | CoFix of int
-  | XTRA of string
-*)
-
-(*s The type [constr] of the terms of CCI
-  is obtained by instanciating a generic notion of terms
-  on the above operators, themselves instanciated
-  on the above sorts. *)
-
-(* [VAR] is used for named variables and [Rel] for variables as
-   de Bruijn indices. *)
-
 type constr
 
 type typed_type
@@ -78,12 +55,20 @@ val incast_type : typed_type -> constr
 
 val outcast_type : constr -> typed_type
 
-type var_declaration = identifier * constr option * typed_type
+(*s A {\em declaration} has the form (name,body,type). It is either an
+    {\em assumption} if [body=None] or a {\em definition} if
+    [body=Some actualbody]. It is referred by {\em name} if [na] is an
+    identifier or by {\em relative index} if [na] is not an identifier
+    (in the latter case, [na] is of type [name] but just for printing
+    purpose *)
+
+type named_declaration = identifier * constr option * typed_type
 type rel_declaration = name * constr option * typed_type
 
 type arity = rel_declaration list * sorts
 
-(**********************************************************************)
+(*i********************************************************************i*)
+(*s type of global reference *)
 type global_reference =
   | ConstRef of section_path
   | IndRef of inductive_path
@@ -96,7 +81,7 @@ type global_reference =
 
 (* Concrete type for making pattern-matching. *)
 
-(* [constr array] is an instance matching definitional [var_context] in
+(* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type existential = int * constr array
 type constant = section_path * constr array
@@ -106,6 +91,8 @@ type rec_declaration = constr array * name list * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
+(* [IsVar] is used for named variables and [IsRel] for variables as
+   de Bruijn indices. *)
 
 type kind_of_term =
   | IsRel          of int
@@ -178,15 +165,15 @@ val mkNamedLetIn : identifier -> constr -> constr -> constr -> constr
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> constr -> constr
-val mkNamedProd_or_LetIn : var_declaration -> constr -> constr
+val mkNamedProd_or_LetIn : named_declaration -> constr -> constr
 
 (* Constructs either [[x:t]c] or [[x=b:t]c] *)
 val mkLambda_or_LetIn : rel_declaration -> constr -> constr
-val mkNamedLambda_or_LetIn : var_declaration -> constr -> constr
+val mkNamedLambda_or_LetIn : named_declaration -> constr -> constr
 
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
 val mkProd_wo_LetIn : rel_declaration -> constr -> constr
-val mkNamedProd_wo_LetIn : var_declaration -> constr -> constr
+val mkNamedProd_wo_LetIn : named_declaration -> constr -> constr
 
 (* non-dependant product $t_1 \rightarrow t_2$ *)
 val mkArrow : constr -> constr -> constr
@@ -474,8 +461,8 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
-val substl_decl : constr list -> var_declaration -> var_declaration
-val subst1_decl : constr -> var_declaration -> var_declaration
+val substl_decl : constr list -> named_declaration -> named_declaration
+val subst1_decl : constr -> named_declaration -> named_declaration
 
 (* [global_vars c] returns the list of [id]'s occurring as [VAR id] in [c] *)
 val global_vars : constr -> identifier list
@@ -525,7 +512,7 @@ val occur_evar : existential_key -> constr -> bool
    in c, [false] otherwise *)
 val occur_var : identifier -> constr -> bool
 
-val occur_var_in_decl : identifier -> var_declaration -> bool
+val occur_var_in_decl : identifier -> named_declaration -> bool
 
 (* [dependent M N] is true iff M is eq\_constr with a subterm of N 
    M is appropriately lifted through abstractions of N *)
@@ -542,7 +529,7 @@ val eta_eq_constr : constr -> constr -> bool
 val subst_term : what:constr -> where:constr -> constr
 val subst_term_occ : occs:int list -> what:constr -> where:constr -> constr
 val subst_term_occ_decl : occs:int list -> what:constr ->
-      where:var_declaration -> var_declaration
+      where:named_declaration -> named_declaration
 
 (* [subst_meta bl c] substitutes the metavar $i$ by $c_i$ in [c] 
    for each binding $(i,c_i)$ in [bl],

@@ -180,7 +180,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 	  assert (largs = []);
           if not (noccur_between n ntypes b) then
 	    raise (IllFormedInd (LocalNonPos n));
-	  check_pos (push_rel_decl (na, outcast_type b) env) (n+1) d
+	  check_pos (push_rel_assum (na, outcast_type b) env) (n+1) d
       | IsRel k ->
           if k >= n && k<n+ntypes then begin
 	    check_correct_par env nparams ntypes n (k-n+1) largs;
@@ -246,7 +246,7 @@ let listrec_mconstr env ntypes nparams i indlc =
       (* The extra case *)
       | IsLambda (na,b,d) -> 
           if noccur_between n ntypes b
-          then check_weak_pos (push_rel_decl (na,outcast_type b) env) (n+1) d
+          then check_weak_pos (push_rel_assum (na,outcast_type b) env) (n+1) d
           else raise (IllFormedInd (LocalNonPos n))
       (******************)
       | _ -> check_pos env n x
@@ -263,7 +263,7 @@ let listrec_mconstr env ntypes nparams i indlc =
         | IsProd (na,b,d) -> 
 	    assert (largs = []);
             let recarg = check_pos env n b in 
-	    check_constr_rec (push_rel_decl (na,outcast_type b) env)
+	    check_constr_rec (push_rel_assum (na,outcast_type b) env)
 	      (recarg::lrec) (n+1) d
 
         (* LetIn's must be free of occurrence of the inductive types and
@@ -358,7 +358,7 @@ let cci_inductive env env_ar kind nparams finite inds cst =
   let packets = Array.of_list (list_map_i one_packet 1 inds) in
   { mind_kind = kind;
     mind_ntypes = ntypes;
-    mind_hyps = keep_hyps ids (var_context env);
+    mind_hyps = keep_hyps ids (named_context env);
     mind_packets = packets;
     mind_constraints = cst;
     mind_singl = None;

@@ -48,7 +48,7 @@ val is_evar : 'a evar_map -> evar -> bool
 
 val is_defined : 'a evar_map -> evar -> bool
 
-val evar_hyps : 'a evar_info -> var_context
+val evar_hyps : 'a evar_info -> named_context
 val evar_body : 'a evar_info -> evar_body
 
 val id_of_existential : evar -> identifier

@@ -1762,7 +1762,7 @@ let search env id =
   try
     mkRel (fst (lookup_rel_id id (Environ.rel_context env)))
   with Not_found ->
-  if mem_var_context id (Environ.var_context env) then
+  if mem_named_context id (Environ.named_context env) then
     mkVar id
   else
     global_reference CCI id
@@ -1851,7 +1851,7 @@ let t_exacto = ref (TVar "#")
 
 let tautoOR ti gls =
   let thyp = pf_hyps gls in
-  hipvar := ids_of_var_context thyp; 
+  hipvar := ids_of_named_context thyp; 
   let but = pf_concl gls in
   let seq = (constr_lseq gls thyp, constr_rseq gls but) in 
   let vp = lisvarprop (ante seq) in

@@ -141,7 +141,7 @@ let build_mutual lparams lnamearconstrs finite =
            let raw_arity = mkProdCit lparams arityc in
            let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
 	   let arity = Typeops.assumption_of_type_judgment arj in
-	   let env' = Environ.push_rel_decl (Name recname,arity) env in
+	   let env' = Environ.push_rel_assum (Name recname,arity) env in
 	   (env', (arity::arl)))
 	(env0,[]) lnamearconstrs 
     in
@@ -218,7 +218,7 @@ let build_recursive lnameargsardef =
 	   let arity = Typeops.assumption_of_type_judgment arj in
            declare_variable recname
 	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
-           (Environ.push_var_decl (recname,arity) env, (arity::arl)))
+           (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
       States.unfreeze fs; raise e
@@ -286,7 +286,7 @@ let build_corecursive lnameardef =
 	   let arity = Typeops.assumption_of_type_judgment arj in
            declare_variable recname
 	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
-           (Environ.push_var_decl (recname,arity) env, (arity::arl)))
+           (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
       States.unfreeze fs; raise e

@@ -24,7 +24,7 @@ val constr_of_Constr : tactic_arg -> constr
 
 (* Signature for interpretation: [val_interp] and interpretation functions *)
 type interp_sign =
-  evar_declarations * Environ.env * (string * value) list * 
+  enamed_declarations * Environ.env * (string * value) list * 
     (int * constr) list * goal sigma option
 
 (* Adds a Tactic Definition in the table *)

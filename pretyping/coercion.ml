@@ -131,7 +131,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
                (* let jv1 = exemeta_rec def_vty_con env isevars v1 in 
 	          let assv1 = assumption_of_judgement env !isevars jv1 in *)
 	       let assv1 = outcast_type v1 in
-               let env1 = push_rel_decl (x,assv1) env in
+               let env1 = push_rel_assum (x,assv1) env in
                let h2 = inh_conv_coerce_to_fail env isevars u2
 			  {uj_val = v2;
 			   uj_type = get_assumption_of env1 !isevars t2 } in
@@ -141,7 +141,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
                let name = (match name with 
 			     | Anonymous -> Name (id_of_string "x")
                              | _ -> name) in
-               let env1 = push_rel_decl (name,assu1) env in
+               let env1 = push_rel_assum (name,assu1) env in
                let h1 = 
 		 inh_conv_coerce_to_fail env isevars t1
 		   {uj_val = mkRel 1; 

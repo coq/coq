@@ -100,7 +100,7 @@ let w_add_sign (id,t) (wc : walking_constraints) =
   ids_mk (ts_mod
             (fun evr ->
                { focus = evr.focus;
-		 env = push_var_decl (id,t) evr.env;
+		 env = push_named_assum (id,t) evr.env;
 		 decls = evr.decls })
             (ids_it wc))
 
@@ -116,7 +116,7 @@ let w_Focus sp wc = ids_mod (extract_decl sp) wc
 let w_Underlying wc = (ts_it (ids_it wc)).decls
 let w_type_of wc c  = ctxt_type_of (ids_it wc) c
 let w_env     wc    = get_env (ids_it wc)
-let w_hyps    wc    = var_context (get_env (ids_it wc))
+let w_hyps    wc    = named_context (get_env (ids_it wc))
 let w_ORELSE wt1 wt2 wc = 
   try wt1 wc with e when catchable_exception e -> wt2 wc
 

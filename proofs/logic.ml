@@ -223,9 +223,9 @@ let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 let apply_to_hyp env id f =
   let found = ref false in
   let env' =
-    process_var_context_both_sides
+    process_named_context_both_sides
       (fun env (idc,c,ct as d) tail ->
-	 if idc = id then (found:=true; f env d tail) else push_var d env)
+	 if idc = id then (found:=true; f env d tail) else push_named_decl d env)
       env in
   if (not !check) || !found then env'
   else error "No such assumption"
@@ -237,7 +237,7 @@ let global_vars_set_of_var = function
 
 let check_backward_dependencies env d =
   if not (Idset.for_all
-	    (fun id -> mem_var_context id (var_context env))
+	    (fun id -> mem_named_context id (named_context env))
 	    (global_vars_set_of_var d))
   then
     error "Can't introduce at that location: free variable conflict"
@@ -255,7 +255,7 @@ let convert_hyp env sigma id ty =
     (fun env (idc,c,ct) _ ->
        if !check && not (is_conv env sigma ty (body_of_type ct)) then
 	 error "convert-hyp rule passed non-converting term";
-       push_var (idc,c,get_assumption_of env sigma ty) env)
+       push_named_decl (idc,c,get_assumption_of env sigma ty) env)
 
 let replace_hyp env id d =
   apply_to_hyp env id
@@ -263,13 +263,13 @@ let replace_hyp env id d =
        if !check then
 	 (check_backward_dependencies env d;
 	  check_forward_dependencies id tail);
-       push_var d env)
+       push_named_decl d env)
 
 let insert_after_hyp env id d =
   apply_to_hyp env id
     (fun env d' _ ->
        if !check then check_backward_dependencies env d;
-       push_var d (push_var d' env))
+       push_named_decl d (push_named_decl d' env))
 
 let remove_hyp env id =
   apply_to_hyp env id
@@ -281,33 +281,33 @@ let remove_hyp env id =
 
 let prim_refiner r sigma goal =
   let env = goal.evar_env in
-  let sign = var_context env in
+  let sign = named_context env in
   let cl = goal.evar_concl in
   let info = out_some goal.evar_info in
   match r with
     | { name = Intro; newids = [id] } ->
-    	if !check && mem_var_context id sign then
+    	if !check && mem_named_context id sign then
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
 	       and v = mkVar id in
-	       let sg = mk_goal info (push_var_decl (id,a) env) (subst1 v b) in
+	       let sg = mk_goal info (push_named_assum (id,a) env) (subst1 v b) in
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma t1
 	       and v = mkVar id in
 	       let sg =
-		 mk_goal info (push_var_def (id,c1,a) env) (subst1 v b) in
+		 mk_goal info (push_named_def (id,c1,a) env) (subst1 v b) in
 	       [sg]
 	   | _ ->
 	       if !check then raise (RefinerError IntroNeedsProduct)
 	       else anomaly "Intro: expects a product")
 	
     | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
-    	if !check && mem_var_context id sign then
+    	if !check && mem_named_context id sign then
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
 	   | IsProd (_,c1,b) ->
@@ -363,10 +363,10 @@ let prim_refiner r sigma goal =
             | _ -> error "not enough products"
 	in
      	check_ind n cl;
-	if !check && mem_var_context f sign then
+	if !check && mem_named_context f sign then
 	  error ("The name "^(string_of_id f)^" is already used");
         let a = get_assumption_of env sigma cl in
-        let sg = mk_goal info (push_var_decl (f,a) env) cl in
+        let sg = mk_goal info (push_named_assum (f,a) env) cl in
         [sg]
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
@@ -390,10 +390,10 @@ let prim_refiner r sigma goal =
 	      if not (sp=sp') then 
 		error ("fixpoints should be on the same " ^ 
 		       "mutual inductive declaration");
-	      if mem_var_context f sign then 
+	      if mem_named_context f sign then 
 		error "name already used in the environment";
 	      let a = get_assumption_of env sigma ar in
-	      mk_sign (add_var_decl (f,a) sign) (lar',lf',ln')
+	      mk_sign (add_named_assum (f,a) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
 	      List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
@@ -416,12 +416,12 @@ let prim_refiner r sigma goal =
         let rec mk_env env = function 
           | (ar::lar'),(f::lf') ->
 	      (try
-                (let _ = lookup_var f env in
+                (let _ = lookup_named f env in
                 error "name already used in the environment")
               with
               |	Not_found ->
   	        let a = get_assumption_of env sigma ar in
-	        mk_env (push_var_decl (f,a) env) (lar',lf'))
+	        mk_env (push_named_assum (f,a) env) (lar',lf'))
 	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 

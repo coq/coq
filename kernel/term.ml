@@ -784,7 +784,7 @@ let outcast_type x = x
 let typed_combine f g t u = f t u
 (**)
 
-type var_declaration = identifier * constr option * typed_type
+type named_declaration = identifier * constr option * typed_type
 type rel_declaration = name * constr option * typed_type
 
 

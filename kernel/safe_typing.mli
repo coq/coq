@@ -24,14 +24,12 @@ val empty_environment : safe_environment
 
 val universes : safe_environment -> universes
 val context : safe_environment -> context
-val var_context : safe_environment -> var_context
+val named_context : safe_environment -> named_context
 
-val push_var_decl : identifier * constr -> safe_environment -> safe_environment
-val push_var_def : identifier * constr -> safe_environment -> safe_environment
-(*i
-val push_rel_decl : name * constr -> safe_environment -> safe_environment
-val push_rel_def : name * constr -> safe_environment -> safe_environment
-i*)
+val push_named_assum :
+  identifier * constr -> safe_environment -> safe_environment
+val push_named_def :
+  identifier * constr -> safe_environment -> safe_environment
 
 val add_constant : 
   section_path -> constant_entry -> safe_environment -> safe_environment
@@ -45,9 +43,9 @@ val add_mind :
     -> safe_environment
 val add_constraints : constraints -> safe_environment -> safe_environment
 
-val pop_vars : identifier list -> safe_environment -> safe_environment
+val pop_named_decls : identifier list -> safe_environment -> safe_environment
 
-val lookup_var : identifier -> safe_environment -> constr option * typed_type
+val lookup_named : identifier -> safe_environment -> constr option * typed_type
 (*i
 val lookup_rel : int -> safe_environment -> name * typed_type
 i*)

@@ -37,7 +37,7 @@ val is_tactic_proof   : proof_tree -> bool
 (*s A global constraint is a mappings of existential variables with
     some extra information for the program and mimick tactics. *)
 
-type global_constraints = evar_declarations timestamped
+type global_constraints = enamed_declarations timestamped
 
 (*s A readable constraint is a global constraint plus a focus set
     of existential variables and a signature. *)
@@ -45,7 +45,7 @@ type global_constraints = evar_declarations timestamped
 type evar_recordty = {
   focus : local_constraints;
   env   : env;
-  decls : evar_declarations }
+  decls : enamed_declarations }
 
 and readable_constraints = evar_recordty timestamped
 
@@ -53,13 +53,13 @@ val rc_of_gc  : global_constraints -> goal -> readable_constraints
 val rc_add    : readable_constraints -> int * goal -> readable_constraints
 val get_env   : readable_constraints -> env
 val get_focus : readable_constraints -> local_constraints
-val get_decls : readable_constraints -> evar_declarations
+val get_decls : readable_constraints -> enamed_declarations
 val get_gc    : readable_constraints -> global_constraints
 val remap     : readable_constraints -> int * goal -> readable_constraints
 val ctxt_access : readable_constraints -> int -> bool
 
 val pf_lookup_name_as_renamed : 
-  var_context -> constr -> identifier -> int option
+  named_context -> constr -> identifier -> int option
 val pf_lookup_index_as_renamed : constr -> int -> int option
 
 
@@ -83,6 +83,6 @@ val pr_focus     : local_constraints -> std_ppcmds
 val pr_ctxt      : ctxtty -> std_ppcmds
 val pr_evars     : (int * goal) list -> std_ppcmds
 val pr_evars_int : int -> (int * goal) list -> std_ppcmds
-val pr_subgoals_existential : evar_declarations -> goal list -> std_ppcmds
+val pr_subgoals_existential : enamed_declarations -> goal list -> std_ppcmds
 
 val ast_of_cvt_arg : tactic_arg ->  Coqast.t 

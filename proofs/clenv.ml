@@ -33,7 +33,7 @@ type 'a clausenv = {
 type wc = walking_constraints
 
 let new_evar_in_sign env =
-  let ids = ids_of_var_context (Environ.var_context env) in
+  let ids = ids_of_named_context (Environ.named_context env) in
   let ev = new_evar () in
   mkEvar (ev, Array.of_list (List.map mkVar ids))
 

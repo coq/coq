@@ -236,7 +236,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	    (Array.map (expmod_type oldenv modlist) (mind_user_lc mip))))
       mib.mind_packets
   in
-  let hyps' = map_var_context (expmod_constr oldenv modlist) mib.mind_hyps in
+  let hyps' = map_named_context (expmod_constr oldenv modlist) mib.mind_hyps in
   let (inds',modl) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
@@ -261,7 +261,7 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
   let body = 
     expmod_constant_value cb.const_opaque oldenv modlist cb.const_body in
   let typ = expmod_type oldenv modlist cb.const_type in
-  let hyps = map_var_context (expmod_constr oldenv modlist) cb.const_hyps in
+  let hyps = map_named_context (expmod_constr oldenv modlist) cb.const_hyps in
   let (body',typ',modl) = abstract_constant ids_to_discard hyps (body,typ) in
   let mods = [ (ConstRef osecsp, DO_ABSTRACT(ConstRef nsecsp,modl)) ] in
   (body', body_of_type typ', mods)
@@ -403,7 +403,7 @@ let close_section _ s =
   let (sec_sp,decls) = close_section s in
   let (ops,ids,_) = 
     List.fold_left (process_item oldenv sec_sp) ([],[],[]) decls in 
-  Global.pop_vars ids;
+  Global.pop_named_decls ids;
   List.iter process_operation (List.rev ops)
 
 

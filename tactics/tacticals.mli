@@ -34,7 +34,7 @@ val tclWEAK_PROGRESS : tactic -> tactic
 val tclNTH_HYP       : int -> (constr -> tactic) -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 val tclLAST_HYP      : (constr -> tactic) -> tactic
-val tclTRY_sign      : (constr -> tactic) -> var_context -> tactic
+val tclTRY_sign      : (constr -> tactic) -> named_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
 
 (*i
