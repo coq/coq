@@ -13,6 +13,9 @@ let yes_icon = "gtk-yes"
 let no_icon = "gtk-no"
 let save_icon = "gtk-save"
 let saveas_icon = "gtk-save-as"
+let warning_icon = "gtk-dialog-warning"
+let dialog_size = 6
+let small_size = 1
 
 let window_width = 800
 let window_height = 600
@@ -66,7 +69,7 @@ let set_tab_image i s =
   let nb = notebook () in
   let _,img,_ = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget
   in
-  img#set_stock s ~size:1
+  img#set_stock s ~size:small_size
 
 let set_current_tab_image s = set_tab_image (notebook())#current_page s
   
@@ -205,7 +208,7 @@ let crash_save i =
 let _ = 
   let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
 			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
-			  (*Sys.sigsegv;*) Sys.sigterm; Sys.sigusr2] 
+			  (* Sys.sigsegv;*)  Sys.sigterm; Sys.sigusr2] 
   in List.iter 
        (fun i -> Sys.set_signal i (Sys.Signal_handle crash_save)) 
        signals_to_crash
@@ -447,7 +450,7 @@ object(self)
 			       "Disable Auto Revert"] 
 		     ~default:0
 		     ~icon:(let img = GMisc.image () 
-			    in img#set_stock "gtk-dialog-warning" ~size:6;
+			    in img#set_stock warning_icon ~size:dialog_size;
 			    img#coerce)
 		     "Some unsaved buffers changed on disk"
 		  )
@@ -477,10 +480,10 @@ object(self)
       match (GToolbox.question_box ~title:"File exists on disk"
 	       ~buttons:["Overwrite";
 			 "Cancel";] 
-	       ~default:1
+	       ~default:small_size
 	       ~icon:
 	       (let img = GMisc.image () in
-		img#set_stock "gtk-dialog-warning" ~size:6;
+		img#set_stock warning_icon ~size:dialog_size;
 		img#coerce)
 	       ("File "^f^"already exists")
 	    )
@@ -1499,7 +1502,7 @@ let main files =
 	       ~default:0
 	       ~icon:
 	       (let img = GMisc.image () in
-		img#set_stock "gtk-dialog-warning" ~size:6;
+		img#set_stock warning_icon ~size:dialog_size;
 		img#coerce)
 	       "There are unsaved buffers"
 	    )
@@ -1672,7 +1675,7 @@ let main files =
 	 );
   
   (* Templates Menu *)
-  let templates_menu =  factory#add_submenu "_Templates" in
+  let templates_menu =  factory#add_submenu "Te_mplates" in
   let templates_factory = new GMenu.factory templates_menu 
 			    ~accel_group 
 			    ~accel_modi:!current.modifier_for_templates

@@ -57,14 +57,14 @@ object(self)
     let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
     let hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
     let combo = GEdit.combo ~popdown_strings:Coq_commands.state_preserving
-		  ~use_arrows:`ALWAYS
+		  ~use_arrows:`DEFAULT
 		  ~ok_if_empty:false
 		  ~value_in_list:true
 		  ~packing:hbox#pack
 		  ()
     in
-    combo#entry#set_editable false;
-
+    combo#disable_activate ();
+    let on_activate c () = if List.mem combo#entry#text Coq_commands.state_preserving then c () in
     let entry = GEdit.entry ~packing:(hbox#pack ~expand:true) () in
     entry#misc#set_can_default true;
     let r_bin =
@@ -72,6 +72,7 @@ object(self)
 	~vpolicy:`AUTOMATIC 
 	~hpolicy:`AUTOMATIC
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
+    let ok_b = GButton.button ~label:"Ok" ~packing:(hbox#pack ~expand:false) () in
     let result = GText.view ~packing:r_bin#add () in
     result#misc#set_can_focus false;
     result#set_editable false;
@@ -85,6 +86,7 @@ object(self)
 	assert (Glib.Utf8.validate s);
 	result#buffer#set_text s
     in
+    ignore (combo#entry#connect#activate ~callback:(on_activate callback));
 
     begin match command,term with 
       | None,None -> ()
