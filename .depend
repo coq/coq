@@ -2081,8 +2081,8 @@ toplevel/metasyntax.cmo: parsing/ast.cmi pretyping/classops.cmi \
     library/library.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
     parsing/pcoq.cmi lib/pp.cmi interp/ppextend.cmi parsing/pptactic.cmi \
     pretyping/rawterm.cmi library/summary.cmi interp/symbols.cmi \
-    interp/syntax_def.cmi parsing/termast.cmi interp/topconstr.cmi \
-    lib/util.cmi toplevel/vernacexpr.cmo toplevel/metasyntax.cmi 
+    parsing/termast.cmi interp/topconstr.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo toplevel/metasyntax.cmi 
 toplevel/metasyntax.cmx: parsing/ast.cmx pretyping/classops.cmx \
     interp/constrextern.cmx interp/constrintern.cmx parsing/coqast.cmx \
     parsing/egrammar.cmx parsing/esyntax.cmx pretyping/evd.cmx \
@@ -2091,8 +2091,8 @@ toplevel/metasyntax.cmx: parsing/ast.cmx pretyping/classops.cmx \
     library/library.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
     parsing/pcoq.cmx lib/pp.cmx interp/ppextend.cmx parsing/pptactic.cmx \
     pretyping/rawterm.cmx library/summary.cmx interp/symbols.cmx \
-    interp/syntax_def.cmx parsing/termast.cmx interp/topconstr.cmx \
-    lib/util.cmx toplevel/vernacexpr.cmx toplevel/metasyntax.cmi 
+    parsing/termast.cmx interp/topconstr.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx toplevel/metasyntax.cmi 
 toplevel/minicoq.cmo: kernel/declarations.cmi toplevel/fhimsg.cmi \
     parsing/g_minicoq.cmi kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
     kernel/safe_typing.cmi kernel/sign.cmi kernel/term.cmi \
