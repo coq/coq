@@ -38,15 +38,20 @@ let empty_environment = empty_env
 (* Insertion of variables (named and de Bruijn'ed). They are now typed before
    being added to the environment. *)
 
+let constrain_type env j cst1 = function
+  | None -> j.uj_type, cst1
+  | Some t -> 
+      let (tj,cst2) = safe_infer_type env t in
+      let cst3 =
+	try conv_leq env j.uj_type tj.utj_val
+	with NotConvertible -> error_actual_type env j tj.utj_val in
+      tj.utj_val, Constraint.union (Constraint.union cst1 cst2) cst3
+
 let push_rel_or_named_def push (id,b,topt) env =
   let (j,cst) = safe_infer env b in
-  let (t,cst) = match topt with
-    | None -> j.uj_type, cst
-    | Some t -> 
-	let (jt,cstt) = safe_infer_type env t in
-	jt.utj_val, Constraint.union cst cstt in
+  let (typ,cst) = constrain_type env j cst topt in
   let env' = add_constraints cst env in
-  let env'' = push (id,Some j.uj_val,t) env' in
+  let env'' = push (id,Some j.uj_val,typ) env' in
   (cst,env'')
 
 let push_named_def = push_rel_or_named_def push_named_decl
@@ -81,14 +86,7 @@ let safe_infer_declaration env dcl =
   match dcl with
   | ConstantEntry c ->
       let (j,cst) = safe_infer env c.const_entry_body in
-      let typ,cst = match c.const_entry_type with
-	| None -> j.uj_type,cst
-	| Some t -> 
-	    let (tj,cst2) = safe_infer_type env t in
-	    let cst3 =
-	      try conv_leq env j.uj_type tj.utj_val
-	      with NotConvertible -> error_actual_type env j tj.utj_val in
-	    tj.utj_val, Constraint.union (Constraint.union cst cst2) cst3 in
+      let (typ,cst) = constrain_type env j cst c.const_entry_type in
       Some j.uj_val, typ, cst, c.const_entry_opaque
   | ParameterEntry t ->
       let (j,cst) = safe_infer env t in
