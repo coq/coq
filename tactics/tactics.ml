@@ -1680,9 +1680,9 @@ let tclABSTRACT name_op tac gls =
 
 let dyn_tclABSTRACT = 
   hide_tactic "ABSTRACT"
-    (function 
-       | [Tacexp tac] -> 
-	   tclABSTRACT None (Tacinterp.interp tac)
-       | [Identifier s; Tacexp tac] -> 
-	   tclABSTRACT (Some s) (Tacinterp.interp tac)
-       | _ -> invalid_arg "tclABSTRACT")
+   (function 
+       | [Tac tac] ->
+	   tclABSTRACT None tac
+       | [Identifier s; Tac tac] ->
+	   tclABSTRACT (Some s) tac
+       | _ -> invalid_arg "tclABSTRACT") 
