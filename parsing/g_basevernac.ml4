@@ -192,19 +192,19 @@ END;
 GEXTEND Gram
   GLOBAL: syntax Prim.syntax_entry Prim.grammar_entry;
 
-  grammar_univ:
+  univ:
   [ [ univ = IDENT ->
 	let _ = set_default_action_parser_by_name univ in univ ] ]
   ;
   syntax:
    [ [ "Token"; s = STRING; "." -> <:ast< (TOKEN ($STR $s)) >>
 
-     | "Grammar"; univ = grammar_univ;
+     | "Grammar"; univ = univ;
        tl = LIST1 Prim.grammar_entry SEP "with"; "." ->
          <:ast< (GRAMMAR ($VAR univ) (ASTLIST ($LIST tl))) >>
 
-     | "Syntax"; whatfor=IDENT; el=LIST1 Prim.syntax_entry SEP ";"; "." ->
-         <:ast< (SYNTAX ($VAR whatfor) (ASTLIST ($LIST el))) >>
+     | "Syntax"; univ = univ; el=LIST1 Prim.syntax_entry SEP ";"; "." ->
+         <:ast< (SYNTAX ($VAR univ) (ASTLIST ($LIST el))) >>
      | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
        p = identarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
      | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;

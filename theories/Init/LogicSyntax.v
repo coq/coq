@@ -51,42 +51,42 @@ with constr10 :=
 
 Syntax constr
   level 1:
-    equal [<<(eq $_  $t1  $t2)>>] -> [ [<hov 0> $t1:E [0 1]  "=" $t2:E ] ]
-  | conj [<<(conj $t1 $t2 $t3 $t4)>>]
+    equal [ (eq $_  $t1  $t2) ] -> [ [<hov 0> $t1:E [0 1]  "=" $t2:E ] ]
+  | conj [ (conj $t1 $t2 $t3 $t4) ]
       -> [ [<hov 1> [<hov 1> "<" $t1:L "," [0 0] $t2:L ">" ] [0 0]
                     [<hov 1> "{" $t3:L "," [0 0] $t4:L "}"] ] ]
-  | IF [<< either $c and_then $t or_else $e >>]
+  | IF [ either $c and_then $t or_else $e ]
       -> [ [<hov 0> "either" [1 1] $c:E
                 [<hov 0> [1 1] "and_then" [1 1] $t:E ]
                 [<hov 0> [1 1] "or_else" [1 1] $e:E ]] ]
   ;
 
   level 2:
-    not [<< ~ $t1 >>] -> [ [<hov 0> "~" $t1:E ] ]
+    not [ ~ $t1 ] -> [ [<hov 0> "~" $t1:E ] ]
   ;
 
   level 6:
-    and [<< $t1 /\ $t2 >>] -> [ [<hov 0> $t1:L [0 0] "/\\" $t2:E ] ]
+    and [ $t1 /\ $t2 ] -> [ [<hov 0> $t1:L [0 0] "/\\" $t2:E ] ]
   ;
 
   level 7:
-    or [<< $t1 \/ $t2 >>] -> [ [<hov 0> $t1:L [0 0]  "\\/" $t2:E ] ]
+    or [ $t1 \/ $t2 ] -> [ [<hov 0> $t1:L [0 0]  "\\/" $t2:E ] ]
   ;
 
   level 8:
-    iff [<< $t1 <-> $t2 >>] -> [ [<hov 0> $t1:L [0 0] "<->" $t2:E ] ]
+    iff [ $t1 <-> $t2 ] -> [ [<hov 0> $t1:L [0 0] "<->" $t2:E ] ]
   ;
 
   level 10:
-    all_pred [<<(all $_ $p)>>] -> [ [<hov 4> "All " $p:L ] ]
-  | all_imp [<<(all $_ [$x : $T]$t)>>]
+    all_pred [ (all $_ $p) ] -> [ [<hov 4> "All " $p:L ] ]
+  | all_imp [ (all $_ [$x : $T]$t) ]
        -> [ [<hov 3> "ALL " $x ":" $T:L " |" [1 0] $t:L ] ]
 
-  | ex_pred [<<(ex $_ $p)>>] -> [ [<hov 0> "Ex " $p:L ] ]
-  | ex [<<(ex $_ [$x : $T]$P)>>] 
+  | ex_pred [ (ex $_ $p) ] -> [ [<hov 0> "Ex " $p:L ] ]
+  | ex [ (ex $_ [$x : $T]$P) ] 
        -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 0] $P:L ] ]
 
-  | ex2_pred [<<(ex2 $_ $p1 $p2)>>]
+  | ex2_pred [ (ex2 $_ $p1 $p2) ]
        -> [ [<hov 3> "Ex2 " $p1:L [1 0] $p2:L ] ]
-  | ex2 [<<(ex2 $_ [$x : T]$P1 [$x : $T]$P2)>>] 
+  | ex2 [ (ex2 $_ [$x : T]$P1 [$x : $T]$P2) ] 
        -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 2] $P1:L [1 0] "& " $P2:L] ].

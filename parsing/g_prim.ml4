@@ -46,7 +46,8 @@ GEXTEND Gram
 
   (* meta-syntax entries *)
   astpat:
-    [ [ a = ast -> Node loc "ASTPAT" [a] ] ]
+    [ [ "<<" ; a = ast; ">>" -> Node loc "ASTPAT" [a]
+      | a = default_action_parser -> Node loc "ASTPAT" [a] ] ]
   ; 
   astact:
     [ [ a = action -> Node loc "ASTACT" [a] ] ]

@@ -42,85 +42,86 @@ Syntax constr
   (* Default pretty-printing rules *)
   level 10:
     sig_var
-      [(ABSTR_B_NB $c1 $c2)] -> [ [<hov 0> "sig " $c1:L [1 1] $c2:L ] ]
+      [<<(ABSTR_B_NB $c1 $c2)>>] -> [ [<hov 0> "sig " $c1:L [1 1] $c2:L ] ]
   | sig2_var
-      [(Sig2_ABSTR_B_NB $c1 $c2)] -> [ [<hov 0> "sig2 " $c1:L [1 1] $c2:L ] ]
+      [<<(Sig2_ABSTR_B_NB $c1 $c2)>>] -> [ [<hov 0> "sig2 " $c1:L [1 1] $c2:L ] ]
   | sigS_var
-      [(SigS_ABSTR_B_NB $c1 $c2)] -> [ [<hov 0> "sigS " $c1:L [1 1] $c2:L ] ]
-  | sigS2_var [(SigS2_ABSTR_B_NB $c1 $c2 $c3)]
+      [<<(SigS_ABSTR_B_NB $c1 $c2)>>] -> [ [<hov 0> "sigS " $c1:L [1 1] $c2:L ] ]
+  | sigS2_var [<<(SigS2_ABSTR_B_NB $c1 $c2 $c3)>>]
       -> [ [<hov 0> "sigS2 " $c1:L [1 1] $c2:L [1 1] $c3:L] ]
   ;
 
   level 1:
 (* Pretty-printing of [sig] *)
-    sig  [<<(sig $c1 $c2)>>] -> [ (ABSTR_B_NB  $c1 $c2):E ]
-  | sig_nb [(ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2))]
+    sig  [ (sig $c1 $c2) ] -> [ (ABSTR_B_NB  $c1 $c2):E ]
+  | sig_nb [ << (ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)) >> ]
       -> [ [<hov 0> "{_:" $c1:E " |" [1 3] $c2:E "}" ] ]
-  | sigma_b [(ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2))]
+  | sigma_b [ << (ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)) >> ]
       -> [ [<hov 0> "{" $id ":" $c1:E " |" [1 3] $c2:E "}" ] ]
 
 (* Pretty-printing of [sig2] *)
-  | sig2 [<<(sig2 $c1 $c2 $c3)>>] -> [ (Sig2_ABSTR_B_NB  $c1 $c2 $c3):E ]
+  | sig2 [ (sig2 $c1 $c2 $c3) ] -> [ (Sig2_ABSTR_B_NB  $c1 $c2 $c3):E ]
   | sig2_b_b
-      [(Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
-                            (LAMBDALIST $c1 [$id]$c3))]
+      [ << (Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
+                            (LAMBDALIST $c1 [$id]$c3)) >> ]
        -> [ [<hov 0> "{"$id":"$c1:E"|" [1 3]$c2:E [1 3]"& "$c3:E "}" ] ]
   | sig2_nb_b
-      [(Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
-                            (LAMBDALIST  $c1 [$id]$c3))]
+      [ << (Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
+                            (LAMBDALIST  $c1 [$id]$c3)) >> ]
        -> [ [<hov 0> "{"$id":"$c1:E"|" [1 3]$c2:E [1 3]"& "$c3:E "}" ] ]
   | sig2_b_nb
-      [(Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
-                            (LAMBDALIST $c1 [<>]$c3))]
+      [ << (Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
+                            (LAMBDALIST $c1 [<>]$c3)) >> ]
        -> [ [<hov 0> "{"$id":"$c1:E"|" [1 3]$c2:E [1 3]"& "$c3:E "}" ] ]
   | sig2_nb_nb
-      [(Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
-                            (LAMBDALIST $c1 [<>]$c3))]
+      [ << (Sig2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
+                            (LAMBDALIST $c1 [<>]$c3)) >> ]
        -> [ [<hov 0> "{_:"$c1:E "|" [1 3] $c2:E [1 3]"& " $c3:E "}" ] ]
 
 (* Pretty-printing of [sigS] *)
-  | sigS [<<(sigS $c1 $c2)>>] -> [(SigS_ABSTR_B_NB  $c1 $c2):E]
-  | sigS_nb [(SigS_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2))]
+  | sigS [ (sigS $c1 $c2) ] -> [(SigS_ABSTR_B_NB  $c1 $c2):E]
+  | sigS_nb [ << (SigS_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)) >> ]
        -> [ [<hov 0> "{_:" $c1:E [1 3]"& " $c2:E  "}" ] ]
-  | sigS_b [(SigS_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2))]
+  | sigS_b [ << (SigS_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)) >> ]
        -> [ [<hov 0> "{" $id  ":" $c1:E [1 3] "& " $c2:E "}" ] ]
 
 (* Pretty-printing of [sigS2] *)
-  | sigS2 [<<(sigS2 $c1 $c2 $c3)>>] -> [(SigS2_ABSTR_B_NB  $c1 $c2 $c3):E]
+  | sigS2 [ (sigS2 $c1 $c2 $c3) ] -> [(SigS2_ABSTR_B_NB  $c1 $c2 $c3):E]
   | sigS2_b_b
-      [(SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
-                             (LAMBDALIST $c1 [$id]$c3))]
+      [ << (SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
+                             (LAMBDALIST $c1 [$id]$c3)) >> ]
        -> [ [<hov 0> "{"$id ":" $c1:E [1 3]"& "$c2:E [1 3]"& "$c3:E "}" ] ]
   | sigS2_nb_b
-      [(SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
-                             (LAMBDALIST  $c1 [$id]$c3))]
+      [ << (SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
+                             (LAMBDALIST  $c1 [$id]$c3)) >> ]
        -> [ [<hov 0> "{"$id ":" $c1:E [1 3]"& "$c2:E [1 3]"& "$c3:E "}" ] ]
   | sigS2_b_nb
-      [ (SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
-                              (LAMBDALIST $c1 [<>]$c3))]
+      [ << (SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [$id]$c2)
+                              (LAMBDALIST $c1 [<>]$c3)) >> ]
        -> [ [<hov 0> "{"$id ":" $c1:E [1 3]"& "$c2:E [1 3]"& "$c3:E "}" ] ]
   | sigS2_nb_nb
-      [(SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
-                             (LAMBDALIST $c1 [<>]$c3))]
+      [ << (SigS2_ABSTR_B_NB $c1 (LAMBDALIST $c1 [<>]$c2)
+                             (LAMBDALIST $c1 [<>]$c3)) >> ]
        -> [ [<hov 0> "{_:"$c1:E [1 3]"& "$c2:E [1 3]"& "$c3:E "}" ] ]
 
 (* Pretty-printing of [projS1] and [projS2] *)
-  | projS1_imp [<<(projS1 ? ? $a)>>] -> ["(ProjS1 " $a:E ")"]  
-  | projS2_imp [<<(projS2 ? ? $a)>>] -> ["(ProjS2 " $a:E ")"]
+  | projS1_imp [ (projS1 ? ? $a) ] -> ["(ProjS1 " $a:E ")"]  
+  | projS2_imp [ (projS2 ? ? $a) ] -> ["(ProjS2 " $a:E ")"]
   ;
 
 (* Pretty-printing of [sumbool] and [sumor] *)
   level 4:
-    sumbool [<<(sumbool $t1 $t2)>>]
+    sumbool [ (sumbool $t1 $t2) ]
        -> [ [<hov 0> "{" $t1:E "}" [0 1] "+" "{" $t2:L "}"] ]
-  | sumor [<<(sumor $t1 $t2)>>]
+  | sumor [ (sumor $t1 $t2) ]
        -> [ [<hov 0> $t1:E [0 1]  "+" "{" $t2:L "}"] ]
   ;
 
 (* Pretty-printing of [except] *)
   level 1:
-    Except_imp [<<(except $1 $t2)>>] -> [ [<hov 0> "Except " $t2 ] ]
+    Except_imp [ (except $1 $t2) ] -> [ [<hov 0> "Except " $t2 ] ]
 
 (* Pretty-printing of [error] and [value] *)
-  | Error_imp [<<(error $t1)>>]     -> [ [<hov 0> "Error" ] ]
-  | Value_imp [<<(value $t1 $t2)>>] -> [ [<hov 0> "(Value " $t2 ")" ] ].
+  | Error_imp [ (error $t1) ]     -> [ [<hov 0> "Error" ] ]
+  | Value_imp [ (value $t1 $t2) ] -> [ [<hov 0> "(Value " $t2 ")" ] ].
+

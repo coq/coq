@@ -85,125 +85,125 @@ Grammar command atomic_pattern :=
 
 Syntax constr
   level 0:
-    My_special_variable0 [<< My_special_variable0 >>] -> [ "POS" ]
-  | My_special_variable1 [<< My_special_variable1 >>] -> [ "NEG" ] 
-  | Zle [<<(Zle $n1 $n2)>>] -> 
+    My_special_variable0 [ My_special_variable0 ] -> [ "POS" ]
+  | My_special_variable1 [ My_special_variable1 ] -> [ "NEG" ] 
+  | Zle [ (Zle $n1 $n2) ] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= " (ZEXPR $n2) "`"]]
-  | Zlt [<<(Zlt $n1 $n2)>>] -> 
+  | Zlt [ (Zlt $n1 $n2) ] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< "(ZEXPR $n2) "`" ]]
-  | Zge [<<(Zge $n1 $n2)>>] -> 
+  | Zge [ (Zge $n1 $n2) ] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] ">= "(ZEXPR $n2) "`" ]]
-  | Zgt [<<(Zgt $n1 $n2)>>] -> 
+  | Zgt [ (Zgt $n1 $n2) ] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "> "(ZEXPR $n2) "`" ]]
   | Zcompare [<<(Zcompare $n1 $n2)>>] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "?= " (ZEXPR $n2) "`" ]]
-  | Zeq [<<(eq Z $n1 $n2)>>] -> 
+  | Zeq [ (eq Z $n1 $n2) ] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "= "(ZEXPR $n2)"`"]]
-  | Zneq [<< ~(eq Z $n1 $n2)>>] ->
+  | Zneq [ ~(eq Z $n1 $n2) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<> "(ZEXPR $n2) "`"]]
-  | Zle_Zle [<<(Zle $n1 $n2)/\(Zle $n2 $n3)>>] ->
+  | Zle_Zle [ (Zle $n1 $n2)/\(Zle $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= " (ZEXPR $n2)
                                 [1 0] "<= " (ZEXPR $n3) "`"]]
-  | Zle_Zlt [<<(Zle $n1 $n2)/\(Zlt $n2 $n3)>>] ->
+  | Zle_Zlt [ (Zle $n1 $n2)/\(Zlt $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= "(ZEXPR $n2)
                                 [1 0] "< " (ZEXPR $n3) "`"]]
-  | Zlt_Zle [<<(Zlt $n1 $n2)/\(Zle $n2 $n3)>>] ->
+  | Zlt_Zle [ (Zlt $n1 $n2)/\(Zle $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2)
                                 [1 0] "<= " (ZEXPR $n3) "`"]]
-  | Zlt_Zlt [<<(Zlt $n1 $n2)/\(Zlt $n2 $n3)>>] ->
+  | Zlt_Zlt [ (Zlt $n1 $n2)/\(Zlt $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2)
                                 [1 0] "< " (ZEXPR $n3) "`"]]
-  | ZZero [<<ZERO>>] -> ["`0`"]
-  | ZPos [<<(POS $r)>>] -> [$r:"positive_printer"]
-  | ZNeg [<<(NEG $r)>>] -> [$r:"negative_printer"]
+  | ZZero [ ZERO ] -> ["`0`"]
+  | ZPos [ (POS $r) ] -> [$r:"positive_printer"]
+  | ZNeg [ (NEG $r) ] -> [$r:"negative_printer"]
   ;
 
   level 7:
-    Zplus [<<(Zplus $n1 $n2)>>]
+    Zplus [ (Zplus $n1 $n2) ]
       -> [ [<hov 0> "`"(ZEXPR $n1):E "+"  [0 0] (ZEXPR $n2):L "`"] ]
-  | Zminus [<<(Zminus $n1 $n2)>>]
+  | Zminus [ (Zminus $n1 $n2) ]
       -> [ [<hov 0> "`"(ZEXPR $n1):E "-" [0 0] (ZEXPR $n2):L "`"] ]
   ;
 
   level 6:
-    Zmult [<<(Zmult $n1 $n2)>>]
+    Zmult [ (Zmult $n1 $n2) ]
       -> [ [<hov 0> "`"(ZEXPR $n1):E "*" [0 0] (ZEXPR $n2):L "`"] ]
   ;
 
   level 8:
-    Zopp [<<(Zopp $n1)>>] -> [ [<hov 0> "`" "-"(ZEXPR $n1):E "`"] ]
-  | Zopp_POS [<<(Zopp (POS $r))>>] -> 
+    Zopp [ (Zopp $n1) ] -> [ [<hov 0> "`" "-"(ZEXPR $n1):E "`"] ]
+  | Zopp_POS [ (Zopp (POS $r)) ] -> 
          [ [<hov 0> "`(" "Zopp" [1 0] $r:"positive_printer_inside"  ")`"] ]
-  | Zopp_ZERO [<<(Zopp ZERO)>>] -> [ [<hov 0> "`(" "Zopp" [1 0] "0" ")`"] ]
-  | Zopp_NEG [<<(Zopp (NEG $r))>>] ->  
+  | Zopp_ZERO [ (Zopp ZERO) ] -> [ [<hov 0> "`(" "Zopp" [1 0] "0" ")`"] ]
+  | Zopp_NEG [ (Zopp (NEG $r)) ] ->  
          [ [<hov 0> "`(" "Zopp" [1 0] "(" $r:"negative_printer_inside" "))`"] ]
   ;
 
   level 4:
-    Zabs [<<(Zabs $n1)>>] -> [  [<hov 0> "`|"(ZEXPR $n1):E "|`"] ]
+    Zabs [ (Zabs $n1) ] -> [  [<hov 0> "`|"(ZEXPR $n1):E "|`"] ]
   ;
 
   level 0:
-    escape_inside [(ZEXPR $r)] -> [ "[" $r:E "]" ]
+    escape_inside [ << (ZEXPR $r) >> ] -> [ "[" $r:E "]" ]
   ;
 
   level 4:
-    Zappl_inside [(ZEXPR (APPLIST $h ($LIST $t)))]
+    Zappl_inside [ << (ZEXPR (APPLIST $h ($LIST $t))) >> ]
       -> [ [<hov 0> "("(ZEXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E ")"] ]
-  | Zappl_inside_tail [(APPLINSIDETAIL $h ($LIST $t))]
+  | Zappl_inside_tail [ << (APPLINSIDETAIL $h ($LIST $t)) >> ]
       -> [(ZEXPR $h):E [1 0] (APPLINSIDETAIL ($LIST $t)):E] 
-  | Zappl_inside_one [(APPLINSIDETAIL $e)] ->[(ZEXPR $e):E]
-  | pair_inside [(ZEXPR <<(pair $s1 $s2 $z1 $z2)>>)] 
+  | Zappl_inside_one [ << (APPLINSIDETAIL $e) >> ] ->[(ZEXPR $e):E]
+  | pair_inside [ << (ZEXPR <<(pair $s1 $s2 $z1 $z2)>>) >> ] 
       -> [ [<hov 0> "("(ZEXPR $z1):E "," [1 0] (ZEXPR $z2):E ")"] ]
   ;
 
  level 3:
-    var_inside [(ZEXPR ($VAR $i))] -> [$i]
-  | const_inside [(ZEXPR (CONST $c))] -> [(CONST $c)]
-  | mutind_inside [(ZEXPR (MUTIND $i $n))] 
+    var_inside [ << (ZEXPR ($VAR $i)) >> ] -> [$i]
+  | const_inside [ << (ZEXPR (CONST $c)) >> ] -> [(CONST $c)]
+  | mutind_inside [ << (ZEXPR (MUTIND $i $n)) >> ] 
       -> [(MUTIND $i $n)]
-  | mutconstruct_inside [(ZEXPR (MUTCONSTRUCT $c1 $c2 $c3))]
+  | mutconstruct_inside [ << (ZEXPR (MUTCONSTRUCT $c1 $c2 $c3)) >> ]
       -> [ (MUTCONSTRUCT $c1 $c2 $c3) ]
   (* Added by JCF, 9/3/98 *)
-  | implicit_head_inside [(ZEXPR (XTRA "!" $c))] -> [ $c ]
-  | implicit_arg_inside  [(ZEXPR (XTRA "!" $n $c))] -> [ ]
+  | implicit_head_inside [ << (ZEXPR (XTRA "!" $c)) >> ] -> [ $c ]
+  | implicit_arg_inside  [ << (ZEXPR (XTRA "!" $n $c)) >> ] -> [ ]
 
   ;
 
   level 7:
     Zplus_inside
-      [(ZEXPR <<(Zplus $n1 $n2)>>)]
+      [ << (ZEXPR <<(Zplus $n1 $n2)>>) >> ]
       	 -> [ (ZEXPR $n1):E "+" [0 0] (ZEXPR $n2):L ]
   | Zminus_inside
-      [(ZEXPR <<(Zminus $n1 $n2)>>)]
+      [ << (ZEXPR <<(Zminus $n1 $n2)>>) >> ]
       	 -> [ (ZEXPR $n1):E "-" [0 0] (ZEXPR $n2):L ]
   ;
 
   level 6:
     Zmult_inside
-      [(ZEXPR <<(Zmult $n1 $n2)>>)]
+      [ << (ZEXPR <<(Zmult $n1 $n2)>>) >> ]
       	 -> [ (ZEXPR $n1):E "*" [0 0] (ZEXPR $n2):L ]
   ;
 
   level 5:
-    Zopp_inside [(ZEXPR <<(Zopp $n1)>>)] -> [ "(-" (ZEXPR $n1):E ")" ]
+    Zopp_inside [ << (ZEXPR <<(Zopp $n1)>>) >> ] -> [ "(-" (ZEXPR $n1):E ")" ]
   ;  
 
   level 10:
-    Zopp_POS_inside [(ZEXPR <<(Zopp (POS $r))>>)] -> 
+    Zopp_POS_inside [ << (ZEXPR <<(Zopp (POS $r))>>) >> ] -> 
       	 [ [<hov 0> "Zopp" [1 0] $r:"positive_printer_inside" ] ]
-  | Zopp_ZERO_inside [(ZEXPR <<(Zopp ZERO)>>)] -> 
+  | Zopp_ZERO_inside [ << (ZEXPR <<(Zopp ZERO)>>) >> ] -> 
       	 [ [<hov 0> "Zopp" [1 0] "0"] ]
-  | Zopp_NEG_inside [(ZEXPR <<(Zopp (NEG $r))>>)] ->  
+  | Zopp_NEG_inside [ << (ZEXPR <<(Zopp (NEG $r))>>) >> ] ->  
       	 [ [<hov 0> "Zopp" [1 0] $r:"negative_printer_inside" ] ]
   ;
 
   level 4:
-    Zabs_inside [(ZEXPR <<(Zabs $n1)>>)] -> [ "|" (ZEXPR $n1) "|"]
+    Zabs_inside [ << (ZEXPR <<(Zabs $n1)>>) >> ] -> [ "|" (ZEXPR $n1) "|"]
   ;
 
   level 0:
-    ZZero_inside [(ZEXPR <<ZERO>>)] -> ["0"]
-  | ZPos_inside [(ZEXPR <<(POS $p)>>)] -> [$p:"positive_printer_inside"]
-  | ZNeg_inside [(ZEXPR <<(NEG $p)>>)] -> 
+    ZZero_inside [ << (ZEXPR <<ZERO>>) >> ] -> ["0"]
+  | ZPos_inside [ << (ZEXPR <<(POS $p)>>) >>] -> [$p:"positive_printer_inside"]
+  | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >> ] -> 
       	       	       	  [$p:"negative_printer_inside"].

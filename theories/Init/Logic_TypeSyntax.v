@@ -31,22 +31,22 @@ with command10 :=
 
 Syntax constr
   level 10:
-    allT_pred [<<(allT $_ $p)>>] -> [ [<hov 0> "AllT " $p:L ] ]
-  | allT [<<(allT $T [$x : $T]$p)>>]
+    allT_pred [ (allT $_ $p) ] -> [ [<hov 0> "AllT " $p:L ] ]
+  | allT [ (allT $T [$x : $T]$p) ]
        -> [ [<hov 3> "ALLT " $x ":" $T:L " |" [1 0] $p:L ] ]
 
-  | exT_pred [<<(exT $_ $p)>>] -> [ [<hov 4> "ExT " $p:L ] ]
-  | exT [<<(exT $t1 [$x : $T]$p)>>] 
+  | exT_pred [ (exT $_ $p) ] -> [ [<hov 4> "ExT " $p:L ] ]
+  | exT [ (exT $t1 [$x : $T]$p) ] 
        -> [ [<hov 4> "EXT " $x ":" $T:L " |" [1 0] $p:L ] ]
 
-  | exT2_pred [<<(exT2 $_ $p1 $p2)>>]
+  | exT2_pred [ (exT2 $_ $p1 $p2) ]
        -> [ [<hov 4> "ExT2 " $p1:L [1 0] $p2:L ] ]
-  | exT2 [<<(exT2 $T [$x : $T]$P1 [$x : $T]$P2)>>] 
+  | exT2 [ (exT2 $T [$x : $T]$P1 [$x : $T]$P2) ] 
        -> [ [<hov 2> "EXT " $x ":" $T:L " |" [1 2] $P1:L [1 0] "& " $P2:L] ]
   ;
 
   level 1:
-    eqT [<<(eqT $_ $c1 $c2)>>] -> [ [<hov 1> $c1:E [0 0] "==" $c2:E ] ]
+    eqT [ (eqT $_ $c1 $c2) ] -> [ [<hov 1> $c1:E [0 0] "==" $c2:E ] ]
 
-  | identityT [<<(identityT $_ $c1 $c2)>>]
+  | identityT [ (identityT $_ $c1 $c2) ]
        -> [ [<hov 1> $c1:E [0 0] "===" $c2:E ] ].
