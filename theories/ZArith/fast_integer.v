@@ -1023,27 +1023,29 @@ Fixpoint times [x:positive] : positive -> positive:=
 Infix "*" times (at level 3, left associativity) : positive_scope.
 
 (** Correctness of multiplication on positive *)
-(*
 Theorem times_convert :
   (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
 Proof.
-NewInduction x as [ x' H | x' H | ]; [
-  Intro y; Simpl (mult (convert (xI x')) (convert y));
-  Rewrite ZL6; Rewrite convert_add; 
-  Rewrite H; Unfold 3 convert; Simpl; Rewrite ZL6;
-  Rewrite (mult_sym (convert x')); Do 2 Rewrite mult_plus_distr;
-  Rewrite (mult_sym (convert x')); Trivial with arith
-| Intro y; Simpl; Rewrite H; Unfold 2 3 convert; Simpl;
-  Do 2 Rewrite ZL6; Rewrite (mult_sym (convert x')); 
-  Do 2 Rewrite mult_plus_distr; Rewrite (mult_sym (convert x')); Auto with arith
-| Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
+Intros x y; NewInduction x as [ x' H | x' H | ]; [
+  Change (xI x')*y with (add y (xO x'*y)); Rewrite convert_add;
+  Unfold 2 3 convert; Simpl; Do 2 Rewrite ZL6; Rewrite H;
+  Rewrite -> mult_plus_distr; Reflexivity
+| Unfold 1 2 convert; Simpl; Do 2 Rewrite ZL6;
+  Rewrite H; Rewrite mult_plus_distr; Reflexivity
+| Simpl; Rewrite <- plus_n_O; Reflexivity ].
 Qed.
-*)
-Axiom times_convert :
-  (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
 
-Syntactic Definition times1 := times.
-Syntactic Definition times1_convert := times_convert.
+Theorem times_assoc :
+  ((x,y,z:positive) (times x (times y z))= (times (times x y) z)).
+Proof.
+Intros x y z;Apply convert_intro; Do 4 Rewrite times_convert;
+Apply mult_assoc_l.
+Qed.
+
+Theorem times_sym : (x,y:positive) (times x y) = (times y x).
+Proof.
+Intros x y; Apply convert_intro; Do 2 Rewrite times_convert; Apply mult_sym.
+Qed.
 
 (** Multiplication on integers *)
 Definition Zmult := [x,y:Z]
@@ -1063,17 +1065,9 @@ Definition Zmult := [x,y:Z]
              end
     end.
 
-Theorem times_assoc :
-  ((x,y,z:positive) (times x (times y z))= (times (times x y) z)).
-Proof.
-Intros x y z;Apply convert_intro; Do 4 Rewrite times_convert;
-Apply mult_assoc_l.
-Qed.
+Infix "*" Zmult (at level 3, left associativity) : Z_scope.
 
-Theorem times_sym : (x,y:positive) (times x y) = (times y x).
-Proof.
-Intros x y; Apply convert_intro; Do 2 Rewrite times_convert; Apply mult_sym.
-Qed.
+Open Scope Z_scope.
 
 Theorem Zmult_sym : (x,y:Z) (Zmult x y) = (Zmult y x).
 Proof.
@@ -1486,3 +1480,6 @@ Intros x y;Case x;Case y; [
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Qed.
 End fast_integers.
+
+Syntactic Definition times1 := times.
+Syntactic Definition times1_convert := times_convert.
