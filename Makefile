@@ -422,7 +422,7 @@ FULLIDELIB=$(FULLCOQLIB)/ide
 COQIDEVO=ide/utf8.vo
 
 $(COQIDEVO): states/initial.coq
-	$(BOOTCOQTOP) $(TTRANSLATE) -compile $*
+	$(BOOTCOQTOP) $(TRANSLATE) -compile $*
 
 IDEFILES=$(COQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
@@ -794,21 +794,21 @@ newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
 	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
 
 theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
-	$(BOOTCOQTOP) $(TTRANSLATE) -nois -compile theories/Init/$*
+	$(BOOTCOQTOP) $(TRANSLATE) -nois -compile theories/Init/$*
 
 newtheories/%.v: theories/%.vo
 	@$(MKDIR) newtheories/`dirname $*`
 	@cp -f theories/$*.v8  newtheories/$*.v
 
 theories/%.vo: theories/%.v states/initial.coq
-	$(BOOTCOQTOP) $(TTRANSLATE) -compile theories/$*
+	$(BOOTCOQTOP) $(TRANSLATE) -compile theories/$*
 
 newcontrib/%.v: contrib/%.vo
 	@$(MKDIR) newcontrib/`dirname $*`
 	@cp -f contrib/$*.v8  newcontrib/$*.v
 
 contrib/%.vo: contrib/%.v states/initial.coq
-	$(BOOTCOQTOP) $(TTRANSLATE) -compile contrib/$*
+	$(BOOTCOQTOP) $(TRANSLATE) -compile contrib/$*
 
 newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
 	$(BOOTCOQTOP) -nois -compile $*
@@ -820,14 +820,14 @@ newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
 	$(BOOTCOQTOP) -compile newcontrib/$*
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) $(TTRANSLATE) -is states/barestate.coq -compile $*
+	$(BOOTCOQTOP) $(TRANSLATE) -is states/barestate.coq -compile $*
 # Obsolete ?
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) $(TTRANSLATE) -boot -byte $(COQOPTS) -compile $*
+	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
 
 # Obsolete ?
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(BESTCOQTOP) $(TTRANSLATE) -boot -byte  $(COQOPTS) -compile $*
+	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
 
 clean::
 	rm -f states/*.coq
