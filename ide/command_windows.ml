@@ -30,11 +30,34 @@ class command_window () =
   in
   let accel_group = GtkData.AccelGroup.create () in
   let vbox = GPack.vbox ~homogeneous:false ~packing:window#add () in
+(*
   let menubar = GMenu.menu_bar ~packing:vbox#pack () in
+*)
+(*
+  let handle = GBin.handle_box 
+		 ~show:true
+		 ~handle_position:`LEFT
+		 ~snap_edge:`LEFT
+		 ~packing:vbox#pack
+		 ()
+  in
+*)
+  let toolbar = GButton.toolbar 
+		  ~orientation:`HORIZONTAL 
+		  ~style:`ICONS
+		  ~tooltips:true 
+		  ~packing:(vbox#pack 
+			       ~expand:false
+			       ~fill:false)
+		  ()
+  in
+(*
   let factory = new GMenu.factory menubar
   in
+*)
+(*
   let accel_group = factory#accel_group in
-
+*)
   let notebook = GPack.notebook ~scrollable:true 
 		   ~packing:(vbox#pack 
 			       ~expand:true
@@ -42,18 +65,52 @@ class command_window () =
 			    ) 
 		   ()
   in
+(*
   let hide_menu = factory#add_item "_Hide Window" 
 		    ~callback:window#misc#hide
+*)
+  let _ = 
+    toolbar#insert_button
+      ~tooltip:"Hide Window"
+      ~text:"Hide Window"
+      ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `CLOSE)
+      ~callback:window#misc#hide
+      ()
   in
+(*
   let new_page_menu = factory#add_item "_New Page" in
+*)
+  let new_page_menu = 
+    toolbar#insert_button
+      ~tooltip:"New Page"
+      ~text:"New Page"
+      ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `NEW)
+(*
+      ~callback:window#misc#hide
+*)
+      ()
+  in
+
+(*
   let kill_page_menu = 
     factory#add_item "_Kill Page" 
       ~callback:
       (fun () -> notebook#remove_page notebook#current_page)
   in
+*)
+  let kill_page_menu = 
+    toolbar#insert_button
+      ~tooltip:"Kill Page"
+      ~text:"Kill Page"
+      ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `DELETE)
+      ~callback:(fun () -> notebook#remove_page notebook#current_page)
+      ()
+  in
 object(self)
   val window = window
+(*
   val menubar = menubar
+*)
   val new_page_menu = new_page_menu
   val notebook = notebook
   method window = window
@@ -122,7 +179,7 @@ object(self)
     self#window#present ()
 
   initializer 
-    ignore (new_page_menu#connect#activate self#new_command);
+    ignore (new_page_menu#connect#clicked self#new_command);
     ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));
 end
 

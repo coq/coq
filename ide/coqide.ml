@@ -1369,7 +1369,7 @@ Please restart and report NOW.";
 		   let set_goal i (s,t) = 
 		     let gnb = string_of_int i in
 		     let s = gnb ^":"^s in
-		     let t' = gnb ^": Progress "^t in
+		     let t' = gnb ^": progress "^t in
 		     let t'' = gnb ^": "^t in
 		     c#set
 		       ("Goal "^gnb)
@@ -1381,7 +1381,7 @@ Please restart and report NOW.";
 		     c#set
 		       "Goal 1"
 		       s 
-		       (fun () -> try_interptac ("Progress "^t))
+		       (fun () -> try_interptac ("progress "^t))
 		       (fun () -> self#insert_command t t)
 		   in
 		   begin match current_gls with 
@@ -1723,6 +1723,7 @@ let main files =
   let menubar = GMenu.menu_bar ~packing:vbox#pack () in
 
   (* Tearable Toolbar *)
+(*
   let handle = GBin.handle_box 
 		 ~show:!current.show_toolbar
 		 ~handle_position:`LEFT
@@ -1730,15 +1731,21 @@ let main files =
 		 ~packing:vbox#pack
 		 ()
   in
+*)
   let toolbar = GButton.toolbar 
 		  ~orientation:`HORIZONTAL 
-		  ~style:`BOTH
+		  ~style:`ICONS
 		  ~tooltips:true 
-		  ~packing:handle#add
+		  ~packing:(* handle#add *)
+		     (vbox#pack ~expand:false ~fill:false)
 		  ()
   in
+(*
   show_toolbar := 
   (fun b -> if b then handle#misc#show () else handle#misc#hide ());
+*)
+  show_toolbar := 
+  (fun b -> if b then toolbar#misc#show () else toolbar#misc#hide ());
 
   let factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/" menubar in
   let accel_group = factory#accel_group in
@@ -2003,6 +2010,7 @@ let main files =
   *)
   (* File/Quit Menu *)
   let quit_f () =
+    save_pref();
     if has_something_to_save () then 
       match (GToolbox.question_box ~title:"Quit"
 	       ~buttons:["Save Named Buffers and Quit";
@@ -2057,13 +2065,6 @@ let main files =
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
 
-  ignore(edit_f#add_item "Complete" ~key:GdkKeysyms._slash ~callback:
-	 (do_if_not_computing 
-	    (fun () -> 
-	       ignore (
-		 let av = out_some ((get_current_view()).analyzed_view) in 
-		 av#complete_at_offset (av#get_insert)#offset
-	    ))));
 
 (*
    let toggle_auto_complete_i = 
@@ -2089,6 +2090,7 @@ let main files =
   let search_ib = edit_f#add_item "Search _backward"
 		    ~key:GdkKeysyms._less
   in
+(*
   let complete_i = edit_f#add_item "_Complete"
 		     ~key:GdkKeysyms._comma
 		     ~callback:
@@ -2101,7 +2103,16 @@ let main files =
 			))
   in
   complete_i#misc#set_state `INSENSITIVE;
+*)
   
+  ignore(edit_f#add_item "Complete" ~key:GdkKeysyms._slash ~callback:
+	 (do_if_not_computing 
+	    (fun () -> 
+	       ignore (
+		 let av = out_some ((get_current_view()).analyzed_view) in 
+		 av#complete_at_offset (av#get_insert)#offset
+	    ))));
+
   to_do_on_page_switch := 
   (fun i -> 
      prerr_endline ("Switching to tab "^(string_of_int i));
@@ -2109,6 +2120,54 @@ let main files =
      read_only_i#set_active v#read_only
   )::!to_do_on_page_switch;
   
+
+  ignore(edit_f#add_separator ());
+  (* Preferences *)
+  let reset_revert_timer () =
+    disconnect_revert_timer ();
+    if !current.global_auto_revert then 
+      revert_timer := Some
+	(GMain.Timeout.add ~ms:!current.global_auto_revert_delay 
+	   ~callback:
+	   (fun () -> 
+	      do_if_not_computing (fun () -> revert_f ()) ();
+	      true))
+  in reset_revert_timer (); (* to enable statup preferences timer *)
+
+  let auto_save_f () = 
+    Vector.iter 
+      (function 
+	   {view = view ; analyzed_view = Some av} as full -> 
+	     (try 
+		av#auto_save
+	      with _ -> ())
+	 | _ -> ()
+      )  
+      input_views
+  in
+
+  let reset_auto_save_timer () =
+    disconnect_auto_save_timer ();
+    if !current.auto_save then 
+      auto_save_timer := Some
+	(GMain.Timeout.add ~ms:!current.auto_save_delay 
+	   ~callback:
+	   (fun () -> 
+	      do_if_not_computing (fun () -> auto_save_f ()) ();
+	      true))
+  in reset_auto_save_timer (); (* to enable statup preferences timer *)
+
+
+  let edit_prefs_m =
+    edit_f#add_item "_Preferences"
+      ~callback:(fun () -> configure ();reset_revert_timer ())
+  in
+(*
+  let save_prefs_m =
+    configuration_factory#add_item "_Save preferences"
+      ~callback:(fun () -> save_pref ())
+  in
+*)
   (* Navigation Menu *)
   let navigation_menu =  factory#add_submenu "_Navigation" in
   let navigation_factory = 
@@ -2144,19 +2203,19 @@ let main files =
 	      ())
   in
   add_to_menu_toolbar "_Interrupt"
-    ~tooltip:"Interrupt"    
+    ~tooltip:"Interrupt computations"    
     ~key:GdkKeysyms._Break 
     ~callback:break
     `STOP
   ;
   add_to_menu_toolbar 
     "_Forward" 
-    ~tooltip:"Forward" 
+    ~tooltip:"Forward one command" 
     ~key:GdkKeysyms._Down 
     ~callback:(do_or_activate (fun a -> a#process_next_phrase true true))
     `GO_DOWN;
   add_to_menu_toolbar "_Backward"
-    ~tooltip:"Backward" 
+    ~tooltip:"Backward one command" 
     ~key:GdkKeysyms._Up
     ~callback:(do_or_activate (fun a -> a#undo_last_step))
     `GO_UP;
@@ -2176,19 +2235,19 @@ let main files =
 *)
   add_to_menu_toolbar 
     "_Go to" 
-    ~tooltip:"Go to" 
+    ~tooltip:"Go to cursor" 
     ~key:GdkKeysyms._Right
     ~callback:(do_or_activate (fun a-> a#go_to_insert))
-    `GOTO_LAST;
+    `JUMP_TO;
   add_to_menu_toolbar 
     "_Start" 
-    ~tooltip:"Start" 
+    ~tooltip:"Go to start" 
     ~key:GdkKeysyms._Home
     ~callback:(do_or_activate (fun a -> a#reset_initial))
     `GOTO_TOP;
   add_to_menu_toolbar 
     "_End" 
-    ~tooltip:"End" 
+    ~tooltip:"Go to end" 
     ~key:GdkKeysyms._End
     ~callback:(do_or_activate (fun a -> a#process_until_end_or_error))
     `GOTO_BOTTOM;
@@ -2208,53 +2267,57 @@ let main files =
   in
   let do_if_active f = do_if_not_computing (do_if_active_raw f) in
 
-  ignore (tactics_factory#add_item "_Blaster"
+  let blaster_i = 
+    tactics_factory#add_item "_Blaster"
 	    ~key:GdkKeysyms._b
 	    ~callback: (do_if_active_raw (fun a -> a#blaster ()))
 	    (* Custom locking mechanism! *)
-	 )
-	 ;
-
-  ignore (tactics_factory#add_item "_Auto" 
+  in
+  blaster_i#misc#set_state `INSENSITIVE;
+ 
+  ignore (tactics_factory#add_item "_auto" 
 	    ~key:GdkKeysyms._a
-	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Auto.\n" "Auto.\n"))
+	    ~callback:(do_if_active (fun a -> a#insert_command "progress auto.\n" "auto.\n"))
 	 );
-  ignore (tactics_factory#add_item "_Auto with *"
+  ignore (tactics_factory#add_item "_auto with *"
 	    ~key:GdkKeysyms._asterisk
 	    ~callback:(do_if_active (fun a -> a#insert_command 
-				       "Progress Auto with *.\n"
-				       "Auto with *.\n")));
-  ignore (tactics_factory#add_item "_EAuto"
+				       "progress auto with *.\n"
+				       "auto with *.\n")));
+  ignore (tactics_factory#add_item "_eauto"
 	    ~key:GdkKeysyms._e
 	    ~callback:(do_if_active (fun a -> a#insert_command 
-				       "Progress EAuto.\n"
-				       "EAuto.\n"))
+				       "progress eauto.\n"
+				       "eauto.\n"))
 	 );
-  ignore (tactics_factory#add_item "_EAuto with *"
+  ignore (tactics_factory#add_item "_eauto with *"
 	    ~key:GdkKeysyms._ampersand
 	    ~callback:(do_if_active (fun a -> a#insert_command 
-				       "Progress EAuto with *.\n" 
-				       "EAuto with *.\n"))
+				       "progress eauto with *.\n" 
+				       "eauto with *.\n"))
 	 );
-  ignore (tactics_factory#add_item "_Intuition"
+  ignore (tactics_factory#add_item "_intuition"
 	    ~key:GdkKeysyms._i
-	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Intuition.\n" "Intuition.\n"))
+	    ~callback:(do_if_active (fun a -> a#insert_command 
+					 "progress intuition.\n" 
+					 "intuition.\n"))
 	 );
-  ignore (tactics_factory#add_item "_Omega"
+  ignore (tactics_factory#add_item "_omega"
 	    ~key:GdkKeysyms._o
-	    ~callback:(do_if_active (fun a -> a#insert_command "Omega.\n" "Omega.\n"))
+	    ~callback:(do_if_active (fun a -> a#insert_command 
+					 "omega.\n" "omega.\n"))
 	 );
-  ignore (tactics_factory#add_item "_Simpl"
+  ignore (tactics_factory#add_item "_simpl"
 	    ~key:GdkKeysyms._s
-	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Simpl.\n" "Simpl.\n" ))
+	    ~callback:(do_if_active (fun a -> a#insert_command "progress simpl.\n" "simpl.\n" ))
 	 );
-  ignore (tactics_factory#add_item "_Tauto"
+  ignore (tactics_factory#add_item "_tauto"
 	    ~key:GdkKeysyms._p
-	    ~callback:(do_if_active (fun a -> a#insert_command "Tauto.\n" "Tauto.\n" ))
+	    ~callback:(do_if_active (fun a -> a#insert_command "tauto.\n" "tauto.\n" ))
 	 );
-  ignore (tactics_factory#add_item "_Trivial"
+  ignore (tactics_factory#add_item "_trivial"
 	    ~key:GdkKeysyms._v
-	    ~callback:(do_if_active( fun a -> a#insert_command "Progress Trivial.\n"  "Trivial.\n" ))
+	    ~callback:(do_if_active( fun a -> a#insert_command "progress trivial.\n"  "trivial.\n" ))
 	 );
 
 
@@ -2358,6 +2421,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		  ignore (view#buffer#insert_interactive text))))
   in
   ignore (templates_factory#add_separator ());
+(*
   List.iter (add_simple_template templates_factory)
     [ "_Auto", "Auto ";
       "_Auto with *", "Auto with * ";
@@ -2370,6 +2434,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
       "Tri_vial", "Trivial ";
     ];
   ignore (templates_factory#add_separator ());
+*)
   List.iter 
     (fun l -> 
        match l with 
@@ -2400,12 +2465,6 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   in
   
   (* Command/Show commands *)
-  let queries_show_m = queries_factory#add_item 
-			  "_Show Query Window"
-			  ~key:GdkKeysyms._F12
-			  ~callback:(Command_windows.command_window ())
-			  #window#present
-  in  
   let _ = 
     queries_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
       ~callback:(fun () -> let term = get_current_word () in
@@ -2432,9 +2491,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   in
 
   (* Externals *)
-  let externals_menu =  factory#add_submenu "_Externals" in
+  let externals_menu =  factory#add_submenu "_Compile" in
   let externals_factory = new GMenu.factory externals_menu 
-			    ~accel_path:"<CoqIde MenuBar>/Externals/"
+			    ~accel_path:"<CoqIde MenuBar>/Compile/"
 			    ~accel_group in
   
   (* Command/Compile Menu *)
@@ -2460,7 +2519,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	  av#insert_message res
 	end
   in
-  let compile_m = externals_factory#add_item "_Compile" ~callback:compile_f in
+  let compile_m = externals_factory#add_item "_Compile Buffer" ~callback:compile_f in
 
   (* Command/Make Menu *)
   let make_f () =
@@ -2481,56 +2540,29 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
     !flash_info 
       (!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
-  let _ = externals_factory#add_item "_Make Makefile" ~callback:coq_makefile_f 
+  let _ = externals_factory#add_item "_Make makefile" ~callback:coq_makefile_f 
   in
-  (* Configuration Menu *)
-  let reset_revert_timer () =
-    disconnect_revert_timer ();
-    if !current.global_auto_revert then 
-      revert_timer := Some
-	(GMain.Timeout.add ~ms:!current.global_auto_revert_delay 
-	   ~callback:
-	   (fun () -> 
-	      do_if_not_computing (fun () -> revert_f ()) ();
-	      true))
-  in reset_revert_timer (); (* to enable statup preferences timer *)
-
-  let auto_save_f () = 
-    Vector.iter 
-      (function 
-	   {view = view ; analyzed_view = Some av} as full -> 
-	     (try 
-		av#auto_save
-	      with _ -> ())
-	 | _ -> ()
-      )  
-      input_views
+  (* Windows Menu *)
+  let configuration_menu = factory#add_submenu "_Windows" in
+  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Windows" ~accel_group
   in
-
-  let reset_auto_save_timer () =
-    disconnect_auto_save_timer ();
-    if !current.auto_save then 
-      auto_save_timer := Some
-	(GMain.Timeout.add ~ms:!current.auto_save_delay 
-	   ~callback:
-	   (fun () -> 
-	      do_if_not_computing (fun () -> auto_save_f ()) ();
-	      true))
-  in reset_auto_save_timer (); (* to enable statup preferences timer *)
-
-  let configuration_menu = factory#add_submenu "Confi_guration" in
-  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Configuration" ~accel_group
-  in
-  let edit_prefs_m =
-    configuration_factory#add_item "Edit _preferences"
-      ~callback:(fun () -> configure ();reset_revert_timer ())
-  in
-  let save_prefs_m =
-    configuration_factory#add_item "_Save preferences"
-      ~callback:(fun () -> save_pref ())
+  let queries_show_m = 
+    configuration_factory#add_item 
+      "Show _Query Window"
+      (*
+	~key:GdkKeysyms._F12
+      *)
+      ~callback:(Command_windows.command_window ())#window#present
+  in  
+  let toolbar_show_m = 
+    configuration_factory#add_item 
+      "Show/Hide _Toolbar"	       
+      ~callback:(fun () ->  
+		   !current.show_toolbar <- not !current.show_toolbar; 
+		   !show_toolbar !current.show_toolbar) 
   in
   let detach_menu = configuration_factory#add_item 
-		      "_Detach Scripting Window"
+		      "Detach _Script Window"
 		      ~callback:
 		      (do_if_not_computing
 			 (fun () -> 
@@ -2548,7 +2580,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 			 ))
   in
   let detach_current_view = configuration_factory#add_item 
-			      "De_tach View"
+			      "Detach _View"
 			      ~callback:
 			      (do_if_not_computing
 				 (fun () -> 
@@ -2874,14 +2906,14 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        b#insert ~iter:b#start_iter "\t\t";
      with _ -> ());
     b#insert 
-      "\n\tCoqIDE: a Gtk2 interface for Coq\n\
-      \nMain author  : Benjamin Monate\
-      \nContributors : Jean-Christophe Filliâtre\
-      \n               Pierre Letouzey, Claude Marché\n\
-      \nFeature wish or bug report: use Web interface\n\
-      \n\thttp://coq.inria.fr/bin/coq-bugs\n\
-      \nVersion information\
-      \n-------------------\n";
+      "\nCoqIDE: an Integrated Development Environment for Coq\n\
+       \nMain author  : Benjamin Monate\
+       \nContributors : Jean-Christophe Filliâtre\
+       \n               Pierre Letouzey, Claude Marché\n\
+       \nFeature wish or bug report: use Web interface\n\
+       \n\thttp://coq.inria.fr/bin/coq-bugs\n\
+       \nVersion information\
+       \n-------------------\n";
     b#insert ((Coq.version ()))
       
   in
@@ -2915,7 +2947,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   tv2#misc#modify_font !current.text_font; 
   tv3#misc#modify_font !current.text_font;
   ignore (about_m#connect#activate 
-	    ~callback:(fun () -> about tv3#buffer));
+	    ~callback:(fun () -> tv2#buffer#set_text ""; about tv2#buffer));
   ignore (faq_m#connect#activate 
 	    ~callback:(fun () -> 
 			 load (Filename.concat lib_ide "FAQ")));

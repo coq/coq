@@ -90,6 +90,8 @@ type pref =
       mutable contextual_menus_on_goal : bool;
       mutable window_width : int;
       mutable window_height :int;
+      mutable query_window_width : int;
+      mutable query_window_height : int;
 (*
       mutable use_utf8_notation : bool;
 *)
@@ -100,7 +102,7 @@ let (current:pref ref) =
   ref {
     cmd_coqc = "coqc";
     cmd_make = "make";
-    cmd_coqmakefile = "coq_makefile -o Makefile *.v";
+    cmd_coqmakefile = "coq_makefile -o makefile *.v";
     cmd_coqdoc = "coqdoc -q -g";
     cmd_print = "lpr";
 
@@ -115,12 +117,12 @@ let (current:pref ref) =
     encoding_use_utf8 = false;
     encoding_manual = "ISO_8859-1";
 
-    automatic_tactics = ["Progress Trivial.","Trivial.";
-			 "Tauto.","Tauto.";
-			 "Progress Auto.","Auto.";
-			 "Omega.","Omega.";
-			 "Progress Auto with *.","Auto with *.";
-			 "Progress Intuition.","Intuition.";
+    automatic_tactics = ["progress trivial.","trivial.";
+			 "tauto.","tauto.";
+			 "progress auto.","auto.";
+			 "omega.","omega.";
+			 "progress auto with *.","auto with *.";
+			 "progress intuition.","intuition.";
 			];
     
     modifier_for_navigation = [`CONTROL; `MOD1];
@@ -140,6 +142,8 @@ let (current:pref ref) =
     contextual_menus_on_goal = true;
     window_width = 800;
     window_height = 600; 
+    query_window_width = 600;
+    query_window_height = 400;
 (*
     use_utf8_notation = false;
 *)
@@ -202,6 +206,8 @@ let save_pref () =
       [string_of_bool p.contextual_menus_on_goal] ++
     add "window_height" [string_of_int p.window_height] ++
     add "window_width" [string_of_int p.window_width] ++
+    add "query_window_height" [string_of_int p.query_window_height] ++
+    add "query_window_width" [string_of_int p.query_window_width] ++
     add "auto_complete" [string_of_bool p.auto_complete] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
@@ -257,6 +263,8 @@ let load_pref () =
       (fun v -> np.contextual_menus_on_goal <- v);
     set_int "window_width" (fun v -> np.window_width <- v);
     set_int "window_height" (fun v -> np.window_height <- v);
+    set_int "query_window_width" (fun v -> np.query_window_width <- v);
+    set_int "query_window_height" (fun v -> np.query_window_height <- v);
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
     current := np
   with e -> 
@@ -295,6 +303,7 @@ let configure () =
 	 !change_font !current.text_font)
       true
   in
+(*
   let show_toolbar = 
     bool 
       ~f:(fun s -> 
@@ -317,6 +326,7 @@ let configure () =
       "Window width" 
       (string_of_int !current.window_width)
   in  
+*)
   let auto_complete = 
     bool 
       ~f:(fun s -> 
@@ -333,8 +343,9 @@ let configure () =
       "Use Unicode Notation: " !current.use_utf8_notation
   in
 *)  
+(*
   let config_appearance = [show_toolbar; window_width; window_height] in
-
+*)
   let global_auto_revert = 
     bool 
       ~f:(fun s -> !current.global_auto_revert <- s) 
@@ -463,19 +474,20 @@ let configure () =
   let misc = [contextual_menus_on_goal;auto_complete] in
    
   let cmds =
-    [Section("Fonts",
-	     [config_font]);
-     Section("Appearance",
-	     config_appearance);
-     Section("Commands",
-	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print]);
-     Section("Files",
+    [Section("Files",
 	     [global_auto_revert;global_auto_revert_delay;
 	     auto_save; auto_save_delay; (* auto_save_name*)
 	     encodings;
 	     ]);
-     Section("Browser",
-	     [cmd_browse;doc_url;library_url]);
+     Section("Fonts",
+	     [config_font]);
+(*
+     Section("Appearance",
+	     config_appearance);
+*)
+     Section("Externals",
+	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print;
+	      cmd_browse;doc_url;library_url]);
      Section("Tactics Wizard",
 	     [automatic_tactics]);
      Section("Shortcuts",

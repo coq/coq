@@ -48,13 +48,18 @@ let init () =
 let i = ref 0
 
 let version () =
-  Printf.sprintf "The Coq Proof Assistant, version %s (%s)\nConfigured on %s\nThis is the %s version (%s is the best one) for architecture %s on system %s
-Gtk version is %s"
+  Printf.sprintf 
+    "The Coq Proof Assistant, version %s (%s)\
+   \nConfigured on %s\
+   \nArchitecture %s running %s operating system\
+   \nGtk version is %s\
+   \nThis is the %s version (%s is the best one for this architecture and OS)\
+   \n"
     Coq_config.version Coq_config.date Coq_config.compile_date
-    (if Mltop.get () = Mltop.Native then "native" else "byte") 
-    (if Coq_config.best="opt" then "native" else "byte") 
     Coq_config.arch Sys.os_type
     (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
+    (if Mltop.get () = Mltop.Native then "native" else "bytecode") 
+    (if Coq_config.best="opt" then "native" else "bytecode") 
 
 let is_in_coq_lib dir = 
   prerr_endline ("Is it a coq theory ? : "^dir);
