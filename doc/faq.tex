@@ -1,5 +1,5 @@
 \documentclass{article}
-\def\jobname{faq.v}
+\usepackage{fullpage}
 \usepackage{hevea}
 \usepackage{url}
 
@@ -11,12 +11,26 @@
 
 \newcommand{\question}[1]{
   \subsection*{\aname{no:number}{Question:~\sf{#1}}}
-  \addcontentsline{toc}{subsection}{\ahrefloc{no:number}{#1}}}
+  \addcontentsline{toc}{subsection}{\ahrefloc{no:number}{#1}}
+  \addcontentsline{htoc}{subsection}{\ahrefloc{no:number}{#1}}}
 %{\subsubsection{Question:~\sf{#1}}}}
 \newcommand{\answer}{{\bf Answer:~}}
 
+
+\newcommand\vfile[2]{\ahref{#1}{\tt {#2}.v}}
+
 \begin{document}
 \urldef{\refman}{\url}{http://coq.inria.fr/doc/main.html}
+\urldef{\InitWf}{\url}
+  {http://coq.inria.fr/library/Coq.Init.Wf.html}
+\urldef{\LogicBerardi}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Berardi.html}
+\urldef{\LogicClassical}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Classical.html}
+\urldef{\LogicClassicalFacts}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.ClassicalFacts.html}
+\urldef{\LogicProofIrrelevance}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.ProofIrrelevance.html}
 
 \begin{center}
 \begin{Large}
@@ -52,7 +66,7 @@ and Coquand--Paulin-Mohring \cite{CoPa89}). It includes higher-order
 functions and predicates, inductive and co-inductive datatypes and
 predicates and a stratified hierarchy of sets.
 
-\question{Is {\Coq} logic constructive?}
+\question{Is {\Coq}'s logic constructive?}
 
 \answer {\Coq} theory is constructive, but classical
 reasoning on proposition can be loaded as an external module.
@@ -94,7 +108,7 @@ specialized tactics (e.g. simplifications on fields).
 
 \question{How can I prove that 2 terms in an inductive sets are equal? Or different?}
 
-\answer Cf "Decide Equality" and "Discriminate" in the Reference Manual.
+\answer Cf "Decide Equality" and "Discriminate" in the \ahref{\refman}{Reference Manual}.
 
 \question{Why is the proof of \coqtt{0+n=n} on natural numbers
 trivial but the proof of \coqtt{n+0=n} is not?}
@@ -123,11 +137,11 @@ More precisely, the equality of all proofs of a given proposition is called
   without leading to contradiction in {\Coq}.
 
   That classical logic (what can be assumed in {\Coq} by requiring the file
-  \verb=Classical.v=) implies proof-irrelevance is shown in files
-  \verb=ProofIrrelevance.v= and \verb=Berardi.v=.
+  \vfile{\LogicClassical}{Classical}) implies proof-irrelevance is shown in files
+  \vfile{\LogicProofIrrelevance}{ProofIrrelevance} and \vfile{\LogicBerardi}{Berardi}.
 
   Alternatively, propositional extensionality (i.e.  \coqtt{(A
-  \coqequiv B) \coqimp A=B}, defined in \verb=ClassicalFacts.v= ),
+  \coqequiv B) \coqimp A=B}, defined in \vfile{\LogicClassicalFacts}{ClassicalFacts}),
   also implies proof-irrelevance.
 
   It is an ongoing work of research to natively include proof
@@ -245,14 +259,15 @@ and quicksort.
 %  Axiom extensionality : (A,B:Set)(f,g:(A->B))(x:A)(f x)=(g x)->f=g.
 %\end{coq_example*}
 
-To deal with extensionality, the recommended approach is to define his
-own extensional equality on $A \rightarrow B$:
+Let {\tt A}, {\tt B} be types. To deal with extensionality on 
+\verb=A->B=, the recommended approach is to define his
+own extensional equality on \verb=A->B=.
 
 \begin{coq_example*}
   Definition ext_eq [f,g:A->B] := (x:A)(f x)=(g x).
 \end{coq_example*}
 
-and to reason on $A \rightarrow B$ as a setoid (see the Chapter on
+and to reason on \verb=A->B= as a setoid (see the Chapter on
 Setoids in the Reference Manual).
 
 
@@ -275,7 +290,7 @@ $\alpha$ and $\beta$ and the actual statement is {\tt
 $\alpha<\beta$.
 
   When a statement violates a constraint, the message {\tt Universe
-inconsistency} appears. Example: {\tt [x:=Type][y:(X;Type)X \coqimp X](z x x)}.
+inconsistency} appears. Example: {\tt [x:=Type][y:(X:Type)X \coqimp X](z x x)}.
 
 \section{Inductive types}
 
@@ -311,6 +326,97 @@ allowed to derive an inconsistency (e.g. following the lines of
 Burali-Forti paradox). The question remains open whether injectivity
 is consistent on some large inductive types not expressive enough to
 encode known paradoxes (such as type I above).
+
+\section{Recursion}
+
+\question{Why can't I define a non terminating program?}
+
+\answer Because otherwise the decidability of the type-checking
+algorithm (which involves evaluation of programs) is not ensured.  On
+another side, if non terminating proofs were allowed, we could get a
+proof of {\tt False}:
+
+\begin{coq_example*}
+(* This is fortunately not allowed! *)
+Fixpoint InfiniteProof [n:nat] : False := (InfiniteProof n).
+Theorem Paradox : False.
+Proof (InfiniteProof O).
+\end{coq_example*}
+
+\question{Why only structurally well-founded loops are allowed?}
+
+\answer The structural order on inductive types is a simple and
+powerful notion of termination. The consistency of the Calculus of
+Inductive Constructions relies on it and another consistency proof
+would have to be made for stronger termination arguments (such
+as the termination of the evaluation of CIC programs themselves!).
+
+In spite of this, all non-pathological termination orders can be mapped
+to a structural order. Tools to do this are provided in the file 
+\vfile{\InitWf}{Wf} of the standard library of {\Coq}.
+
+\question{How to define loops based on non structurally smaller
+recursive calls?}
+
+\answer The procedure is as follows (we consider the definition of {\tt
+mergesort} as an example).
+
+\begin{itemize}
+
+\item Define the termination order, say {\tt R} on the type {\tt A} of
+the arguments of the loop.
+
+\begin{coq_example*}
+Definition R [a,b:(list nat)] := (length a) < (length b).
+\end{coq_example*}
+
+\item Prove that this order is well-founded (in fact that all elements in {\tt A} are accessible along {\tt R}).
+
+\begin{coq_example*}
+Lemma Rwf : (well_founded R).
+\end{coq_example*}
+
+\item Define the step function (which needs proofs that recursive
+calls are on smaller arguments).
+
+\begin{coq_example*}
+Definition split :
+   (l:(list nat)){l1:(list nat) | (R l1 l)} * {l2:(list nat) | (R l2 l)}
+   := (* ... *) .
+Definition concat : (l1,l2:(list nat))(list nat) := (* ... *) .
+Definition merge_step [l:(list nat)][f:(l':(list nat))(R l' l)->(list nat)] :=
+  let (lH1,lH2) = (split l) in
+  let (l1,H1) = lH1 in
+  let (l2,H2) = lH2 in
+  (concat (f l1 H1) (f l2 H2)).
+\end{coq_example*}
+
+\item Define the recursive function by fixpoint on the step function.
+
+\begin{coq_example*}
+Definition merge := (fix (list nat) R Rwf [_](list nat) merge_step).
+\end{coq_example*}
+
+\end{itemize}
+
+\question{What is behind these accessibility and well-foundedness proofs?}
+
+\answer Well-foundedness of some relation {\tt R} on some type {\tt A}
+is defined as the accessibility of all elements of {\tt A} along {\tt R}.
+
+\begin{coq_example}
+Print well_founded.
+Print Acc.
+\end{coq_example}
+
+The structure of the accessibility predicate is a well-founded tree
+branching at each node {\tt x} in {\tt A} along all the nodes {\tt x'}
+less than {\tt x} along {\tt R}. Any sequence of elements of {\tt A}
+decreasing along the order {\tt R} are branches in the accessibility
+tree. Hence any decreasing along {\tt R} is mapped into a structural
+decreasing in the accessibility tree of {\tt R}. This is emphasized in the definition of {\tt fix} which recurs not on its argument {\tt x:A} but on the accessibility of this argument along {\tt R}.
+
+See file \vfile{\InitWf}{Wf}.
 
 \section{Elimination, Case Analysis and Induction}
 
@@ -445,7 +551,7 @@ Here is what it gives on e.g. the type of streams on naturals
 \section{Miscellaneous}
 
 \question{I copy-paste a term and {\Coq} says it is not convertible
-to the original term. Sometimes it even says the copied term is not
+  to the original term. Sometimes it even says the copied term is not
 well-typed.}
 
 \answer This is probably due to invisible implicit information (implicit
