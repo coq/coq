@@ -200,9 +200,9 @@ GEXTEND Gram
     [ [ tac = tactic_expr -> tac ] ]
   ;
   Vernac_.command: 
-    [ [ deftok; IDENT "Definition"; b = tacdef_body ->
+    [ [ deftok; "Definition"; b = tacdef_body ->
           VernacDeclareTacticDefinition (false, [b])
-      | IDENT "Recursive"; deftok; IDENT "Definition"; 
+      | IDENT "Recursive"; deftok; "Definition"; 
         l = LIST1 tacdef_body SEP "with" ->
           VernacDeclareTacticDefinition (true, l) ] ]
   ;
