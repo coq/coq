@@ -30,6 +30,7 @@ open Printer
 open Tacinterp
 open Tactic_debug
 open Command
+open Goptions
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders binders = 
@@ -658,6 +659,12 @@ let _ =
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> mSG(print_sec_context_typ (string_of_id id)))
        | _ -> bad_vernac_args "PrintSec")
+
+let _ = declare_async_bool_option 
+	  {optasyncname  = "Silent";
+	   optasynckey   = (PrimaryTable "Silent");
+	   optasyncread  = is_silent;
+	   optasyncwrite = make_silent }
 
 let _ =
   add "BeginSilent"

@@ -302,7 +302,6 @@ GEXTEND Gram
 
   gallina_ext:
     [ [ 
-
 (* Sections *)
 	IDENT "Section"; id = identarg; "." -> <:ast< (BeginSection $id) >>
       | IDENT "Chapter"; id = identarg; "." -> <:ast< (BeginSection $id) >>
@@ -401,12 +400,12 @@ GEXTEND Gram
 	  <:ast< (WriteModule $id) >>
       | IDENT "Write"; IDENT "Module"; id = identarg; s = stringarg; "." -> 
 	  <:ast< (WriteModule $id $s) >>
-      | IDENT "Begin"; IDENT "Silent"; "." -> <:ast< (BeginSilent) >>
-      | IDENT "End"; IDENT "Silent"; "." -> <:ast< (EndSilent) >>
       | IDENT "Declare"; IDENT "ML"; IDENT "Module";
         l = ne_stringarg_list; "." -> <:ast< (DeclareMLModule ($LIST $l)) >>
       | IDENT "Import"; id = identarg; "." -> <:ast< (ImportModule $id) >>
-  ] ]
+
+  ] 
+]
   ;
 END
 

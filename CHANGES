@@ -10,6 +10,7 @@ Parsing
   pretty-printing rules
 
 
+
 Syntaxe des constructions
 
 - Consecutive as in patterns are forbidden
@@ -51,6 +52,10 @@ que les 3 primitives), on peut typer avec "constr", "tactic", ou
 - Légère restriction de la syntaxe de Cbv Delta
 
 - L'option [-myconst] de Cbv doit immédiatement suivre Delta
+
+- End Silent etait interprete comme une fin de section 
+  Begin Silent -> Set Silent
+  End Silent -> Unset Silent.
 
 Tactiques
 
