@@ -354,6 +354,7 @@ scripts/tolink.ml: Makefile
 	echo "let highparsingnew = \""$(HIGHPARSINGNEW)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
+	echo "let ide = \""$(COQIDECMO)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
 
@@ -384,11 +385,11 @@ IDEFILES=ide/coq.png ide/.coqiderc
 ide: $(COQIDEBYTE) $(COQIDE) states
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
-	$(COQMKTOP) -ide -opt $(COQIDEFLAGS) lablgtk.cmxa $(OPTFLAGS) -o $@ $(COQIDECMX)
+	$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(COQIDECMO)
-	$(COQMKTOP) -g -ide -top $(COQIDEFLAGS) lablgtk.cma $(LOCALINCLUDES) $(CAMLDEBUG) -o $@ $(COQIDECMO)
+	$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
 ide/%.cmo: ide/%.ml
 	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<

@@ -37,6 +37,7 @@ let tactics = split_cmo Tolink.tactics
 let toplevel = split_cmo Tolink.toplevel
 let highparsing = split_cmo Tolink.highparsing
 let highparsingnew = split_cmo Tolink.highparsingnew
+let ide = split_cmo Tolink.ide
 
 let core_objs = 
   libobjs @ lib @ kernel @ library @ pretyping @ interp @ parsing @ 
@@ -66,13 +67,16 @@ let coqide     = ref false
 let echo       = ref false
 let newsyntax  = ref false
 
-let src_dirs = [ []; [ "config" ]; [ "toplevel" ] ]
+let src_dirs () = 
+  [ []; [ "config" ]; [ "toplevel" ] ] @
+  if !coqide then [[ "ide" ]] else []
 
 let includes () = 
   List.fold_right
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
-    src_dirs
-    ["-I"; Coq_config.camlp4lib]
+    (src_dirs ())
+    (["-I"; Coq_config.camlp4lib] @ 
+     (if !coqide then ["-I"; "+lablgtk2"] else []))
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
@@ -96,9 +100,12 @@ let files_to_link userfiles =
   let command_objs = if !searchisos then coqsearch else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
+  let ide_objs = if !coqide then "lablgtk.cma" :: ide else [] in
   let parsobjs = if !newsyntax then highparsingnew else highparsing in
-  let objs = core_objs @ dyn_objs @ toplevel @ parsobjs @ 
-    command_objs @ hightactics @ toplevel_objs in
+  let objs = 
+    core_objs @ dyn_objs @ toplevel @ parsobjs @ 
+    command_objs @ hightactics @ toplevel_objs @ ide_objs
+  in
   let tolink =
     if !opt then 
       (List.map native_suffix objs) @ userfiles
