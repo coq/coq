@@ -739,15 +739,17 @@ let rec substlin env name n ol c =
     | (Rel _|Meta _|Var _|Sort _
       |Evar _|Const _|Ind _|Construct _) -> (n,ol,c)
 
-let string_of_evaluable_ref = function
+let string_of_evaluable_ref env = function
   | EvalVarRef id -> string_of_id id
-  | EvalConstRef kn -> string_of_kn kn
+  | EvalConstRef kn ->
+      string_of_qualid 
+        (Nametab.shortest_qualid_of_global (vars_of_env env) (ConstRef kn))
 
 let unfold env sigma name =
   if is_evaluable env name then
     clos_norm_flags (unfold_red name) env sigma
   else
-    error (string_of_evaluable_ref name^" is opaque")
+    error (string_of_evaluable_ref env name^" is opaque")
 
 (* [unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -759,9 +761,10 @@ let unfoldoccs env sigma (occl,name) c =
     | l -> 
         match substlin env name 1 (Sort.list (<) l) c with
           | (_,[],uc) -> nf_betaiota uc
-          | (1,_,_) -> error ((string_of_evaluable_ref name)^" does not occur")
+          | (1,_,_) ->
+              error ((string_of_evaluable_ref env name)^" does not occur")
           | _ -> error ("bad occurrence numbers of "
-			^(string_of_evaluable_ref name))
+			^(string_of_evaluable_ref env name))
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c = 
