@@ -7,7 +7,7 @@
  *************************************************************************)
 
 let module_refl_name = "ReflOmegaCore"
-let module_refl_path = ["Scratch"; module_refl_name]
+let module_refl_path = ["Coq"; "romega"; module_refl_name]
 
 type result = 
    Kvar of string

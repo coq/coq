@@ -9,11 +9,9 @@
 Require Omega.
 Require ReflOmegaCore.
 
-Declare ML Module "const_omega".
-Declare ML Module "refl_omega".
-
 Grammar tactic simple_tactic : ast :=
   romega [ "ROmega" ] -> [(ReflOmega)].
 
 Syntax tactic level 0:
-  romega [ << (ReflOmega) >> ] -> ["ROmega"].        
+  romega [ << (ReflOmega) >> ] -> ["ROmega"].   
+     

@@ -367,6 +367,9 @@ let rec ocompile env t =
       let t1',env1 = ocompile env t1 in
       let t2',env2 = ocompile env1 t2 in
       (Otimes (t1',t2'), env2)
+  | Kapp("Zs",[t]) ->  
+      let t',env = ocompile env  t in
+       (Oplus (t',Oz(1)), env)
   | Kapp(("POS"|"NEG"|"ZERO"),_) -> 
       begin try (Oz(recognize_number t),env) 
       with _ -> 
@@ -853,3 +856,4 @@ let omega_solver gl =
   (loop concl) gl
 
 let omega = hide_atomic_tactic "ReflOmega" omega_solver
+
