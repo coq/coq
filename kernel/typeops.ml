@@ -20,10 +20,6 @@ let make_judge v tj =
     uj_type = tj }
 
 let j_val_only j = j.uj_val
-(* Faut-il caster ? *)
-let j_val = j_val_only
-
-let j_val_cast j = mkCast j.uj_val (body_of_type j.uj_type)
 
 let typed_type_of_judgment env sigma j = j.uj_type
 
@@ -218,7 +214,7 @@ let type_of_case env sigma ci pj cj lfj =
     type_case_branches env sigma indspec (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
   check_branches_message env sigma (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
-  { uj_val  = mkMutCaseA ci (j_val pj) (j_val cj) (Array.map j_val lfj);
+  { uj_val  = mkMutCaseA ci pj.uj_val cj.uj_val (Array.map j_val_only lfj);
     uj_type = make_typed rslty kind }
 
 (* Prop and Set *)
@@ -283,7 +279,7 @@ let typed_product env name var c =
 let abs_rel env sigma name var j =
   let cvar = incast_type var in
   let typ,cst = typed_product env name var j.uj_type in
-  { uj_val = mkLambda name cvar (j_val j);
+  { uj_val = mkLambda name cvar j.uj_val;
     uj_type = typ },
   cst
 
@@ -293,11 +289,11 @@ let gen_rel env sigma name varj j =
   let var = assumption_of_type_judgment varj in
   match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
     | DOP0(Sort s) as ts ->
-	let t = mkCast j.uj_val ts in
+	let ts = (* mkCast *) j.uj_val (* ts *) in
 	let (s',g) = sort_of_product varj.utj_type s (universes env) in
 	let res_type = mkSort s' in
 	let (res_kind,g') = type_of_sort res_type in
-        { uj_val = mkProd name (incast_type var) t;
+        { uj_val = mkProd name (incast_type var) ts;
           uj_type = make_typed res_type res_kind },
 	g'
     | _ -> 
