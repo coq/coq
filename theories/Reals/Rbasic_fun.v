@@ -139,7 +139,7 @@ Qed.
 
 (*********)
 Lemma case_Rabsolu:(r:R)(sumboolT (Rlt r R0) (Rge r R0)). 
-Intro;Generalize (total_order_Rle R0 r);Intro;Elim X;Intro;Clear X.
+Intro;Generalize (total_order_Rle R0 r);Intro X;Elim X;Intro;Clear X.
 Right;Apply (Rle_sym1 R0 r a).
 Left;Fold (Rgt R0 r);Apply (not_Rle R0 r b).
 Qed.
