@@ -42,6 +42,8 @@ Bind Scope Z_scope with Z.
 Arguments Scope POS [ Z_scope ].
 Arguments Scope NEG [ Z_scope ].
 
+Section fast_integers.
+
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
 
@@ -1482,6 +1484,8 @@ Intros x y;Case x;Case y; [
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Qed.
 
+End fast_integers.
+
 V7only [
   Comments "Compatibility with the old version of times and times_convert".
   Syntactic Definition times1 :=
@@ -1489,3 +1493,9 @@ V7only [
   Syntactic Definition times1_convert :=
     [x,y:positive;_:positive->positive](times_convert x y).
 ].
+
+V8Infix "+" Zplus : Z_scope.
+V8Infix "*" times : positive_scope.
+V8Infix "+" Zplus : Z_scope.
+V8Infix "*" Zmult : Z_scope.
+V8Infix "?=" Zcompare (at level 50, no associativity) : Z_scope.
