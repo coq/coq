@@ -506,6 +506,9 @@ and fDEFN = function
 and fDEF_BODY = function
 | CT_coerce_CONTEXT_PATTERN_to_DEF_BODY x -> fCONTEXT_PATTERN x
 | CT_coerce_EVAL_CMD_to_DEF_BODY x -> fEVAL_CMD x
+and fDEF_BODY_OPT = function
+| CT_coerce_DEF_BODY_to_DEF_BODY_OPT x -> fDEF_BODY x
+| CT_coerce_FORMULA_OPT_to_DEF_BODY_OPT x -> fFORMULA_OPT x
 and fDEP = function
 | CT_dep x -> fATOM "dep";
    (f_atom_string x);
@@ -700,6 +703,15 @@ and fID_OPT_OR_ALL = function
 and fID_OR_INT = function
 | CT_coerce_ID_to_ID_OR_INT x -> fID x
 | CT_coerce_INT_to_ID_OR_INT x -> fINT x
+and fID_OR_INTYPE = function
+| CT_coerce_ID_to_ID_OR_INTYPE x -> fID x
+| CT_intype(x1) ->
+   fID x1;
+   fNODE "intype" 1
+and fID_OR_INTYPE_LIST = function
+| CT_id_or_intype_list l ->
+   (List.iter fID_OR_INTYPE l);
+   fNODE "id_or_intype_list" (List.length l)
 and fID_OR_INT_OPT = function
 | CT_coerce_ID_OPT_to_ID_OR_INT_OPT x -> fID_OPT x
 | CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT x -> fID_OR_INT x
@@ -772,10 +784,11 @@ and fIN_OR_OUT_MODULES = function
    fID_NE_LIST x1;
    fNODE "out_modules" 1
 and fLET_CLAUSE = function
-| CT_let_clause(x1, x2) ->
+| CT_let_clause(x1, x2, x3) ->
    fID x1;
-   fLET_VALUE x2;
-   fNODE "let_clause" 2
+   fDEF_BODY_OPT x2;
+   fLET_VALUE x3;
+   fNODE "let_clause" 3
 and fLET_CLAUSES = function
 | CT_let_clauses(x,l) ->
    fLET_CLAUSE x;
@@ -846,6 +859,9 @@ and fPATTERN_NE_LIST = function
    fPATTERN x;
    (List.iter fPATTERN l);
    fNODE "pattern_ne_list" (1 + (List.length l))
+and fPATTERN_OPT = function
+| CT_coerce_NONE_to_PATTERN_OPT x -> fNONE x
+| CT_coerce_PATTERN_to_PATTERN_OPT x -> fPATTERN x
 and fPREMISE = function
 | CT_coerce_TYPED_FORMULA_to_PREMISE x -> fTYPED_FORMULA x
 | CT_eval_result(x1, x2, x3) ->
@@ -908,7 +924,9 @@ and fRED_COM = function
    fPATTERN_NE_LIST x1;
    fNODE "pattern" 1
 | CT_red -> fNODE "red" 0
-| CT_simpl -> fNODE "simpl" 0
+| CT_simpl(x1) ->
+   fPATTERN_OPT x1;
+   fNODE "simpl" 1
 | CT_unfold(x1) ->
    fUNFOLD_NE_LIST x1;
    fNODE "unfold" 1
@@ -978,9 +996,11 @@ and fSTRING_OPT = function
 | CT_coerce_NONE_to_STRING_OPT x -> fNONE x
 | CT_coerce_STRING_to_STRING_OPT x -> fSTRING x
 and fTACTIC_ARG = function
+| CT_coerce_EVAL_CMD_to_TACTIC_ARG x -> fEVAL_CMD x
 | CT_coerce_FORMULA_to_TACTIC_ARG x -> fFORMULA x
 | CT_coerce_ID_OR_INT_to_TACTIC_ARG x -> fID_OR_INT x
 | CT_coerce_TACTIC_COM_to_TACTIC_ARG x -> fTACTIC_COM x
+| CT_coerce_TERM_CHANGE_to_TACTIC_ARG x -> fTERM_CHANGE x
 | CT_void -> fNODE "void" 0
 and fTACTIC_ARG_LIST = function
 | CT_tactic_arg_list(x,l) ->
@@ -1030,8 +1050,13 @@ and fTACTIC_COM = function
    fNODE "cdhyp" 1
 | CT_change(x1, x2) ->
    fFORMULA x1;
-   fID_LIST x2;
+   fID_OR_INTYPE_LIST x2;
    fNODE "change" 2
+| CT_change_local(x1, x2, x3) ->
+   fPATTERN x1;
+   fFORMULA x2;
+   fID_OR_INTYPE_LIST x3;
+   fNODE "change_local" 3
 | CT_clear(x1) ->
    fID_NE_LIST x1;
    fNODE "clear" 1
@@ -1072,6 +1097,12 @@ and fTACTIC_COM = function
    fID_NE_LIST x1;
    fFORMULA x2;
    fNODE "decompose_list" 2
+| CT_decompose_record(x1) ->
+   fFORMULA x1;
+   fNODE "decompose_record" 1
+| CT_decompose_sum(x1) ->
+   fFORMULA x1;
+   fNODE "decompose_sum" 1
 | CT_depinversion(x1, x2, x3) ->
    fINV_TYPE x1;
    fID_OR_INT x2;
@@ -1162,7 +1193,7 @@ and fTACTIC_COM = function
    fINTRO_PATT_LIST x1;
    fNODE "intros" 1
 | CT_intros_until(x1) ->
-   fID x1;
+   fID_OR_INT x1;
    fNODE "intros_until" 1
 | CT_inversion(x1, x2, x3) ->
    fINV_TYPE x1;
@@ -1180,6 +1211,10 @@ and fTACTIC_COM = function
    fCONTEXT_RULE x;
    (List.iter fCONTEXT_RULE l);
    fNODE "match_context" (1 + (List.length l))
+| CT_match_context_reverse(x,l) ->
+   fCONTEXT_RULE x;
+   (List.iter fCONTEXT_RULE l);
+   fNODE "match_context_reverse" (1 + (List.length l))
 | CT_match_tac(x1, x2) ->
    fLET_VALUE x1;
    fMATCH_TAC_RULES x2;
@@ -1214,9 +1249,13 @@ and fTACTIC_COM = function
    fNODE "rec_tactic_in" 2
 | CT_reduce(x1, x2) ->
    fRED_COM x1;
-   fID_LIST x2;
+   fID_OR_INTYPE_LIST x2;
    fNODE "reduce" 2
 | CT_reflexivity -> fNODE "reflexivity" 0
+| CT_rename(x1, x2) ->
+   fID x1;
+   fID x2;
+   fNODE "rename" 2
 | CT_repeat(x1) ->
    fTACTIC_COM x1;
    fNODE "repeat" 1
@@ -1323,6 +1362,14 @@ and fTARG_LIST = function
 | CT_targ_list l ->
    (List.iter fTARG l);
    fNODE "targ_list" (List.length l)
+and fTERM_CHANGE = function
+| CT_check_term(x1) ->
+   fFORMULA x1;
+   fNODE "check_term" 1
+| CT_inst_term(x1, x2) ->
+   fID x1;
+   fFORMULA x2;
+   fNODE "inst_term" 2
 and fTEXT = function
 | CT_coerce_ID_to_TEXT x -> fID x
 | CT_text_formula(x1) ->
