@@ -68,7 +68,7 @@ let set_outputstate s = outputstate:=s
 let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
 let check_coq_overwriting p = 
-  if string_of_id (List.hd (repr_dirpath p)) = "Coq" then
+  if string_of_id (list_last (repr_dirpath p)) = "Coq" then
     error "The \"Coq\" logical root directory is reserved for the Coq library"
 
 let set_include d p = push_include (d,p)
