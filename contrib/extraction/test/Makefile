@@ -19,7 +19,7 @@ CMONAMES=
 include .names.ml
 include .names.cmo
 
-all: allml .depend allcmo
+all: ml2v v2ml allml .depend allcmo
 
 allml: .names.ml $(MLNAMES)
 
@@ -38,23 +38,25 @@ allcmo: .names.cmo $(CMONAMES)
 	rm -f .names.cmo; \
 	sed -e "1s/ML/CMO/" -e "s/\.ml/.cmo/" < .names.ml > .names.cmo
 
-tree: 
-	cp -fur $(TOPDIR)/theories .; rm -f theories/*/*.vo theories/*/*/*.vo
-
-
-%.cmo:%.ml
-	ocamlc $(INCL) -c -i $<
-
-%.ml: ml2v
-	./extract `./ml2v $@`
-
-clean: 
-	rm -f theories/*/*.ml theories/*/*.cm*
+tree:
+	for f in `cd $(TOPDIR); find theories -name \*.v`; do \
+		mkdir -p `dirname $$f`; \
+		cp $(TOPDIR)/$$f $$f; \
+	done
 
 ml2v: ml2v.ml
 	ocamlc -o $@ $<
 
 v2ml: v2ml.ml
 	ocamlc -o $@ $< 
+
+%.cmo:%.ml
+	ocamlc $(INCL) -c -i $<
+
+%.ml: 
+	./extract `./ml2v $@`
+
+clean: 
+	rm -f theories/*/*.ml theories/*/*.cm*
 
 include .depend
