@@ -106,3 +106,23 @@ val profile7 :
   ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h) 
     -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h
 
+
+(* Some utilities to compute the logical and physical sizes and depth
+   of ML objects *)
+
+(* Print logical size (in words) and depth of its argument *)
+(* This function does not disturb the heap *)
+val print_logical_stats : 'a -> unit
+
+(* Print physical size, logical size (in words) and depth of its argument *)
+(* This function allocates itself a lot (the same order of magnitude
+   as the physical size of its argument) *)
+val print_stats : 'a -> unit
+
+(* Return physical size, logical size (in words) and depth of its argument *)
+(* This function allocates itself a lot *)
+val obj_stats : 'a -> int * int * int
+
+(* Return physical size of its argument *)
+(* This function allocates itself a lot *)
+val obj_shared_size : 'a -> int
