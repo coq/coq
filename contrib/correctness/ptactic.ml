@@ -269,10 +269,13 @@ let _ =
 let _ =
   let current_saveanonymous = Vernacinterp.vinterp_map "SaveAnonymous" in
   add "SaveAnonymous"
-    (function [VARG_IDENTIFIER id] -> 
-       (fun () -> 
-	  let pf_id = Pfedit.get_current_proof_name () in
-	  current_saveanonymous [VARG_IDENTIFIER id] ();
-	  register pf_id (Some id))
-       |   _  -> assert false)
+    (function l -> 
+      (fun () -> 
+        let id = match l with
+            [VARG_IDENTIFIER id] -> id
+          | [_;VARG_IDENTIFIER id] -> id
+          | _ -> assert false in
+	let pf_id = Pfedit.get_current_proof_name () in
+	current_saveanonymous l ();
+	register pf_id (Some id)))
 
