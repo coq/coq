@@ -6,7 +6,7 @@ proof assistant. A companion volume, the \Coq\ Tutorial, is provided
 for the beginners. It is advised to read the Tutorial first.
 A new book~\cite{CoqArt} on practical uses of the \Coq{} system will
 be published in 2004 and is a good support for both the beginner and
-the advance user.
+the advanced user.
 
 The system \Coq\ is designed to write formal specifications,
 programs and to verify that programs are correct with respect to their
@@ -63,24 +63,28 @@ below.
   theorems and proofs in the Calculus of Inductive
   Constructions. Chapter~\ref{Theories} describes the standard library
   of \Coq. Chapter~\ref{Cic} is a mathematical description of the
-  formalism. Chapter~\ref{Modules} describes the module system.
+  formalism. Chapter~\ref{Mod} describes the module system.
 
 \item The second part describes the proof engine. It is divided in
-  four chapters. Chapter~\ref{Vernacular-commands} presents
-  all commands (we call them \emph{vernacular commands}) that are not
-  directly related to interactive proving: requests to the environment,
-  complete or partial evaluation, loading and compiling files. How to
-  start and stop proofs, do multiple proofs in parallel is explained
-  in Chapter~\ref{Proof-handling}. In Chapter~\ref{Tactics}, 
-  all commands that realize one or more steps of the proof are
-  presented: we call them  \emph{tactics}. Examples of tactics are
+  four chapters. Chapter~\ref{Vernacular-commands} presents all
+  commands (we call them \emph{vernacular commands}) that are not
+  directly related to interactive proving: requests to the
+  environment, complete or partial evaluation, loading and compiling
+  files. How to start and stop proofs, do multiple proofs in parallel
+  is explained in Chapter~\ref{Proof-handling}. In
+  Chapter~\ref{Tactics}, all commands that realize one or more steps
+  of the proof are presented: we call them \emph{tactics}. The
+  language to combine these tactics into complex proof strategies is
+  given in Chapter~\ref{TacticLanguage}. Examples of tactics are
   described in Chapter~\ref{Tactics-examples}.
 
-\item The third part describes how to extend the system in two ways:
-  adding parsing and pretty-printing rules
-  (Chapter~\ref{Addoc-syntax}) and writing new tactics
-  (Chapter~\ref{TacticLanguage}). 
+%\item The third part describes how to extend the system in two ways:
+%  adding parsing and pretty-printing rules
+%  (Chapter~\ref{Addoc-syntax}) and writing new tactics
+%  (Chapter~\ref{TacticLanguage}). 
 
+\item The third part describes how to extend the syntax of \Coq. It
+corresponds to the Chapter~\ref{Addoc-syntax}.
 
 \item In the fourth part more practical tools are documented. First in
   Chapter~\ref{Addoc-coqc}, the usage of \texttt{coqc} (batch mode)
@@ -119,8 +123,7 @@ documents:
   to the Addendum. 
 
 \item[Installation] A text file INSTALL that comes with the sources
-  explains how to install \Coq{}. A file UNINSTALL explains how
-  uninstall or move it.
+  explains how to install \Coq{}.
 
 \item[The \Coq{} standard library]
 A commented version of sources of the \Coq{} standard library
