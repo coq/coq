@@ -856,7 +856,7 @@ Grammar tactic ne_identarg_list : ast list :=
 Note that the grammar type must be recalled in every extension
 command, or else the system could not discriminate between a single
 AST and an AST list with only one item. If omitted, the default type
-depends on the universe name. The following command fails because {\tt
+depends on the universe name. The following command fails because the non-terminal {\tt
 ne\_identarg\_list} is already defined with type {\tt ast list} but the
 {\tt Grammar} command header assumes its type is {\tt ast}.
 

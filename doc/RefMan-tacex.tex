@@ -463,7 +463,8 @@ Variable g:nat->nat->nat.
 Axiom g0:(m:nat)(g (0) m)=m.
 Axiom g1:
   (n,m:nat)(gt n (0))->(gt m (100))->(g n m)=(g (pred n) (minus m (10))).
-Axiom g2:(n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))).
+Axiom g2:
+  (n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))).
 \end{coq_example*}
 
 \begin{coq_example}
@@ -496,7 +497,7 @@ language \texttt{L} of
 'abstract terms' and a type \texttt{A} of 'concrete terms' 
 and a function \texttt{f : L -> A}. If \texttt{L} is a simple
 inductive datatype and \texttt{f} a simple fixpoint, \texttt{Quote f}
-will replace the head of current goal a convertible term with the form 
+will replace the head of current goal by a convertible term of the form 
 \texttt{(f t)}. \texttt{L} must have a constructor of type: \texttt{A
   -> L}. 
 
@@ -642,7 +643,7 @@ Quote interp_f [A B].
 Undo. Quote interp_f [B C iff]. 
 \end{coq_example}
 
-\Warning  This tactic is new and experimental. Since function inversion
+\Warning Since function inversion
 is undecidable in general case, don't expect miracles from it!
 
 % \SeeAlso file \texttt{theories/DEMOS/DemoQuote.v}

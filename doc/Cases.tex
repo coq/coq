@@ -377,11 +377,12 @@ been:
 
 \begin{coq_example}
 Reset concat.
-Fixpoint concat [n:nat; l:(listn n)] : (m:nat) (listn m) -> (listn (plus n m)) 
-:= [m:nat][l':(listn m)] 
+Fixpoint concat [n:nat; l:(listn n)]
+     : (m:nat) (listn m) -> (listn (plus n m)) :=
+  [m:nat][l':(listn m)] 
     <[n,_:nat](listn (plus n m))>Cases l l' of 
-                     niln          x => x
-                  | (consn n' a y) x => (consn (plus n' m) a (concat n' y m x))
+          niln          x => x
+       | (consn n' a y) x => (consn (plus n' m) a (concat n' y m x))
                   end.
 \end{coq_example}
 
@@ -551,7 +552,8 @@ Here is a summary of the error messages corresponding to each situation:
 
   \begin{itemize}
   \item {\tt Unable to infer a Cases predicate\\
-Either there is a type incompatiblity or the problem involves dependencies}
+    Either there is a type incompatiblity or the problem involves\\
+    dependencies}
   \end{itemize}
 
   Then the user should provide an elimination predicate.
