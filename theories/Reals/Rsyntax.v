@@ -50,6 +50,7 @@ with rexpr2 : constr :=
 
 with rexpr0 : constr :=
   expr_id [ constr:global($c) ] -> [ $c ]
+| expr_hole [ "?" ] -> [ ? ]
 | expr_com [ "[" constr:constr($c) "]" ] -> [ $c ]
 | expr_appl [ "(" rapplication($a) ")" ] -> [ $a ]
 | expr_num [ rnumber($s) ] -> [ $s ]
@@ -57,11 +58,6 @@ with rexpr0 : constr :=
 | expr_div [ rexpr0($p) "/" rexpr0($c) ] -> [ (Rdiv $p $c) ]
 | expr_opp [ "-" rexpr0($c) ] -> [ (Ropp $c) ] 
 | expr_inv [ "/" rexpr0($c) ] -> [ (Rinv $c) ]
-| expr_meta [ meta($m) ] -> [ $m ]
-
-with meta : ast :=
-| rimpl [ "?" ] -> [ (ISEVAR) ]
-| rmeta [ "?" prim:number($n) ] -> [ (META $n) ]
 
 with rapplication : constr :=
   apply [ rapplication($p) rexpr($c1) ] -> [ ($p $c1) ]

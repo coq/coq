@@ -42,30 +42,6 @@ Add Field R Rplus Rmult R1 R0 Ropp [x,y:R]false Rinv RTheory Rinv_l
           with minus:=Rminus div:=Rdiv.
 
 (**************************************************************************)
-(*   New types                                                            *)
-(**************************************************************************)
-
-Record nonnegreal : Type := mknonnegreal {
-nonneg :> R;
-cond_nonneg : ``0<=nonneg`` }.
-
-Record posreal : Type := mkposreal {
-pos :> R;
-cond_pos : ``0<pos`` }.
-
-Record nonposreal : Type := mknonposreal {
-nonpos :> R;
-cond_nonpos : ``nonpos<=0`` }.
-
-Record negreal : Type := mknegreal {
-neg :> R;
-cond_neg : ``neg<0`` }.
-
-Record nonzeroreal : Type := mknonzeroreal {
-nonzero :> R;
-cond_nonzero : ~``nonzero==0`` }.
-
-(**************************************************************************)
 (*s  Relation between orders and equality                                 *)
 (**************************************************************************)
 
@@ -440,11 +416,6 @@ Red; Intros r1 r2 (H1,H2) H.
 Case (without_div_Od r1 r2); Auto with real.
 Save.
 Hints Resolve mult_non_zero : real.
-
-(**********)
-Lemma prod_neq_R0 : (x,y:R) ~``x==0``->~``y==0``->~``x*y==0``.
-Intros; Red; Intro; Generalize (without_div_Od x y H1); Intro; Elim H2; Intro; [Rewrite H3 in H; Elim H | Rewrite H3 in H0; Elim H0]; Reflexivity.
-Save.
 
 (**********) 
 Lemma Rmult_Rplus_distrl:
@@ -829,10 +800,6 @@ Rewrite (Ropp_mul1 ``-r``); Rewrite (Ropp_mul1 ``-r``).
 Apply Rlt_Ropp; Auto with real.
 Save.
 
-Lemma regle_signe : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x*y``.
-Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rlt_monotony x R0 y H H0).
-Save.
-
 (**********)
 Lemma Rle_monotony: 
   (r,r1,r2:R)``0 <= r`` -> ``r1 <= r2`` -> ``r*r1 <= r*r2``.
@@ -867,10 +834,6 @@ Rewrite (Ropp_mul1 ``-r``); Rewrite (Ropp_mul1 ``-r``).
 Apply Rle_Ropp; Auto with real.
 Save.
 Hints Resolve Rle_anti_monotony : real.
-
-Lemma regle_signe_le : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x*y``.
-Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rle_monotony x R0 y H H0).
-Save.
 
 Lemma Rle_Rmult_comp:
   (x, y, z, t:R) ``0 <= x`` -> ``0 <= z`` -> ``x <= y`` -> ``z <= t`` ->
@@ -1201,46 +1164,6 @@ Apply Rplus_Rsr_eq_R0_l with a; Auto with real.
 Rewrite Rplus_sym; Auto with real.
 Save.
 
-Lemma gt0_plus_gt0_is_gt0 : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x+y``.
-Intros; Apply Rlt_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rlt_compatibility; Assumption].
-Save.
-
-Lemma ge0_plus_gt0_is_gt0 : (x,y:R) ``0<=x`` -> ``0<y`` -> ``0<x+y``.
-Intros; Apply Rle_lt_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rlt_compatibility; Assumption].
-Save.
-
-Lemma  gt0_plus_ge0_is_gt0 : (x,y:R) ``0<x`` -> ``0<=y`` -> ``0<x+y``.
-Intros; Rewrite <- Rplus_sym; Apply ge0_plus_gt0_is_gt0; Assumption.
-Save.
-
-Lemma ge0_plus_ge0_is_ge0 : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x+y``.
-Intros; Apply Rle_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption].
-Save.
-
-Lemma ge0_plus_ge0_eq_0 : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``x+y==0`` -> ``x==0``/\``y==0``.
-Intros; Split; [Elim H; Intro; [Generalize (gt0_plus_ge0_is_gt0 x y H2 H0); Intro; Rewrite H1 in H3; Elim (Rlt_antirefl ``0`` H3) | Symmetry; Assumption] | Elim H0; Intro; [Generalize (ge0_plus_gt0_is_gt0 x y H H2); Intro; Rewrite H1 in H3; Elim (Rlt_antirefl R0 H3) | Symmetry; Assumption]].
-Save.
-
-Lemma Rmult_le : (r1,r2,r3,r4:R) ``0<=r1`` -> ``0<=r3`` -> ``r1<=r2`` -> ``r3<=r4`` -> ``r1*r3<=r2*r4``.
-Intros; Apply Rle_trans with ``r2*r3``; [Apply Rle_monotony_r; Assumption | Apply Rle_monotony; [ Apply Rle_trans with r1; Assumption | Assumption]].
-Save.
-
-Lemma plus_le_is_le : (x,y,z:R) ``0<=y`` -> ``x+y<=z`` -> ``x<=z``.
-Intros; Apply Rle_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
-Save.
-
-Lemma le_plus_lt_is_lt : (x,y,z,t:R) ``x<=y`` -> ``z<t`` -> ``x+z<y+t``. 
-Intros; Apply Rle_lt_trans with ``y+z``; [Apply Rle_compatibility_r; Assumption | Apply Rlt_compatibility; Assumption].
-Save.
-
-Lemma plus_lt_is_lt : (x,y,z:R) ``0<=y`` -> ``x+y<z`` -> ``x<z``.
-Intros; Apply Rle_lt_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
-Save.
-
-Lemma Rmult_lt2 : (r1,r2,r3,r4:R) ``0<=r1`` -> ``0<=r3`` -> ``r1<r2`` -> ``r3<r4`` -> ``r1*r3<r2*r4``.
-Intros; Apply Rle_lt_trans with ``r2*r3``; [Apply Rle_monotony_r; [Assumption | Left; Assumption] | Apply Rlt_monotony; [Apply Rle_lt_trans with r1; Assumption | Assumption]].
-Save.
-
 
 (**********************************************************) 
 (*s       Injection from N to R                           *)
@@ -1393,19 +1316,6 @@ Lemma not_1_INR:(n:nat)~n=(S O)->``(INR n)<>1``.
 Replace ``1``  with (INR (S O)); Auto with real.
 Save.
 Hints Resolve not_1_INR : real.
-
-Fixpoint INR2 [n:nat] : R := Cases n of
-O => ``0``
-| (S n0) => Cases n0 of
-O => ``1``
-| (S _) => ``1+(INR2 n0)``
-end
-end.
-
-
-Theorem INR_eq_INR2 : (n:nat) (INR n)==(INR2 n).
-Induction n; [Unfold INR INR2; Reflexivity | Intros; Unfold INR INR2; Fold INR INR2; Rewrite H; Case n0; [Reflexivity | Intros; Ring]].
-Save.
 
 (**********************************************************) 
 (*s      Injection from Z to R                            *)
