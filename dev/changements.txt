@@ -2,13 +2,10 @@
 Changements d'organisation / modules :
 --------------------------------------
 
-  AVANT					APRÈS
-  ================================	===============================
-  Std, More_util			lib/util.ml
+  Std, More_util		-> lib/util.ml
 
-  Names					kernel/names.ml et kernel/sign.ml
+  Names				-> kernel/names.ml et kernel/sign.ml
     (les parties noms et signatures ont été séparées)
-
 
 
 Changements dans les types de données :
@@ -19,6 +16,7 @@ Changements dans les types de données :
   type_judgement ->  typed_type
   environment    ->  context
   context        ->  typed_type signature
+
 
 Changements dans les fonctions :
 --------------------------------
@@ -55,3 +53,13 @@ Changements dans les fonctions :
 	  type_of_type     ->  type_of_sort
 	  fcn_proposition  ->  type_of_type
 
+
+Changements dans les grammaires
+-------------------------------
+
+ . le lexer (parsing/lexer.mll) est maintenant un lexer ocamllex
+
+ . attention : LIDENT -> IDENT  (les identificateurs n'ont pas de
+                                 casse particulière dans Coq)
+		
+	
