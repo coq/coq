@@ -13,8 +13,7 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | OpenedSection of string
-  | ClosedSection of string * library_segment
+  | OpenedSection of string * Summary.frozen
   | FrozenState of Summary.frozen
 
 and library_segment = (section_path * node) list
@@ -34,7 +33,7 @@ val contents_after : section_path option -> library_segment
 (*s Opening and closing a section. *)
 
 val open_section : string -> section_path
-val close_section : string -> section_path * library_segment
+val close_section : string -> section_path * library_segment * Summary.frozen
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> string list

@@ -98,7 +98,7 @@ let (in_parameter, out_parameter) =
 
 let declare_parameter id c =
   let _ = add_leaf id CCI (in_parameter c) in ()
- 
+
 (* Constants. *)
 
 type constant_declaration = constant_entry * strength
@@ -294,7 +294,8 @@ let declare_eliminations sp i =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     declare_constant (id_of_string na)
-      ({ const_entry_body = c; const_entry_type = None }, NeverDischarge);
+      ({ const_entry_body = Cooked c; const_entry_type = None }, 
+       NeverDischarge);
     pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in

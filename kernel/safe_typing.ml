@@ -262,11 +262,11 @@ let push_rels vars env =
 
 (* Insertion of constants and parameters in environment. *)
 
-let add_constant sp ce env =
-  let (jb,cst) = safe_machine env ce.const_entry_body in
+let add_constant_with_value sp body typ env =
+  let (jb,cst) = safe_machine env body in
   let env' = add_constraints cst env in
   let (env'',ty,cst') = 
-    match ce.const_entry_type with
+    match typ with
       | None -> 
 	  env', typed_type_of_judgment env' Evd.empty jb, Constraint.empty
       | Some ty -> 
@@ -281,17 +281,39 @@ let add_constant sp ce env =
 	    error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
   in
   let ids = 
-    Idset.union (global_vars_set ce.const_entry_body) (global_vars_set ty.body)
+    Idset.union (global_vars_set body) (global_vars_set ty.body)
   in
   let cb = { 
     const_kind = kind_of_path sp;
-    const_body = Some ce.const_entry_body;
+    const_body = Some (ref (Cooked body));
     const_type = ty;
     const_hyps = keep_hyps (var_context env) ids;
     const_constraints = Constraint.union cst cst';
     const_opaque = false } 
   in
   add_constant sp cb env''
+
+let add_lazy_constant sp f t env =
+  let (jt,cst) = safe_machine env t in
+  let env' = add_constraints cst env in
+  let ids = global_vars_set jt.uj_val in
+  let cb = {
+    const_kind = kind_of_path sp;
+    const_body = Some (ref (Recipe f));
+    const_type = assumption_of_judgment env' Evd.empty jt;
+    const_hyps = keep_hyps (var_context env) ids;
+    const_constraints = cst;
+    const_opaque = false } 
+  in
+  add_constant sp cb env'
+
+let add_constant sp ce env =
+  match ce.const_entry_body with
+    | Cooked c -> add_constant_with_value sp c ce.const_entry_type env
+    | Recipe f -> 
+	(match ce.const_entry_type with
+	   | Some typ -> add_lazy_constant sp f typ env
+	   | None -> error "you cannot declare a lazy constant without type")
 
 let add_parameter sp t env =
   let (jt,cst) = safe_machine env t in

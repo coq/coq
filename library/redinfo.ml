@@ -68,7 +68,7 @@ let constant_eval sp =
       let cb = Global.lookup_constant sp in
       match cb.const_body with
 	| None -> NotAnElimination
-	| Some c -> compute_consteval c
+	| Some v -> let c = cook_constant v in compute_consteval c
     in
     eval_table := Spmap.add sp v !eval_table;
     v

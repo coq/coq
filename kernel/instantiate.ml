@@ -43,7 +43,8 @@ let constant_value env k =
   let cb = lookup_constant sp env in
   if not cb.const_opaque & defined_constant env k then
     match cb.const_body with
-      | Some body -> 
+      | Some v -> 
+	  let body = cook_constant v in
           instantiate_constr 
 	    (ids_of_sign cb.const_hyps) body (Array.to_list args)
       | None -> 

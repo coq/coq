@@ -62,7 +62,6 @@ let (raw_extern_module, raw_intern_module) =
 let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
-    | _,ClosedSection (_,mseg) -> iter mseg
     | _,OpenedSection _ -> assert false
     | _,FrozenState _ -> ()
   and iter seg =

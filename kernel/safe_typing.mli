@@ -30,10 +30,14 @@ val push_var : identifier * constr -> safe_environment -> safe_environment
 val push_rel : name * constr -> safe_environment -> safe_environment
 val add_constant : 
   section_path -> constant_entry -> safe_environment -> safe_environment
+val add_lazy_constant : 
+  section_path -> (unit -> constr) -> constr -> safe_environment 
+    -> safe_environment
 val add_parameter :
   section_path -> constr -> safe_environment -> safe_environment
 val add_mind : 
-  section_path -> mutual_inductive_entry -> safe_environment -> safe_environment
+  section_path -> mutual_inductive_entry -> safe_environment 
+    -> safe_environment
 val add_constraints : constraints -> safe_environment -> safe_environment
 
 val lookup_var : identifier -> safe_environment -> name * typed_type

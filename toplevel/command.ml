@@ -32,10 +32,10 @@ let constant_entry_of_com com =
   let env = Global.env() in
   match com with
     | Node(_,"CAST",[_;t]) ->
-        { const_entry_body = constr_of_com sigma env com;
+        { const_entry_body = Cooked (constr_of_com sigma env com);
 	  const_entry_type = Some (constr_of_com1 true sigma env t) }
     | _ -> 
-	{ const_entry_body = constr_of_com sigma env com;
+	{ const_entry_body = Cooked (constr_of_com sigma env com);
 	  const_entry_type = None }
 
 let definition_body ident n com = 
@@ -44,9 +44,13 @@ let definition_body ident n com =
 
 let red_constant_entry ce = function
   | None -> ce
-  | Some red -> 
+  | Some red ->
+      let body = match ce.const_entry_body with
+	| Cooked c -> c
+	| Recipe _ -> assert false
+      in
       { const_entry_body = 
-	  reduction_of_redexp red (Global.env()) Evd.empty ce.const_entry_body;
+	  Cooked (reduction_of_redexp red (Global.env()) Evd.empty body); 
 	const_entry_type = 
 	  ce.const_entry_type }
 
@@ -233,9 +237,11 @@ let build_recursive lnameargsardef =
     let varrec = Array.of_list larrec in
     let rec declare i = function 
       | fi::lf ->
-	  let ce = { const_entry_body = 
-		       mkFixDlam (Array.of_list nvrec) i varrec recvec;
-		     const_entry_type = None } in
+	  let ce = 
+	    { const_entry_body =
+		Cooked (mkFixDlam (Array.of_list nvrec) i varrec recvec);
+	      const_entry_type = None } 
+	  in
 	  declare_constant fi (ce, n);
           declare (i+1) lf
       | _ -> () 
@@ -249,7 +255,7 @@ let build_recursive lnameargsardef =
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = Generic.replace_vars subst def;
+	 let ce = { const_entry_body = Cooked (Generic.replace_vars subst def);
 		    const_entry_type = None } in
 	 declare_constant f (ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -297,9 +303,11 @@ let build_corecursive lnameardef =
     in
     let rec declare i = function 
       | fi::lf ->
-	  let ce = { const_entry_body = 
-		       mkCoFixDlam i (Array.of_list larrec) recvec;
-		     const_entry_type = None } in
+	  let ce = 
+	    { const_entry_body = 
+		Cooked (mkCoFixDlam i (Array.of_list larrec) recvec);
+	      const_entry_type = None } 
+	  in
           declare_constant fi (ce,n);
           declare (i+1) lf
       | _        -> () 
@@ -312,7 +320,7 @@ let build_corecursive lnameardef =
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = Generic.replace_vars subst def;
+	 let ce = { const_entry_body = Cooked (Generic.replace_vars subst def);
 		    const_entry_type = None } in
 	 declare_constant f (ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -337,7 +345,8 @@ let build_scheme lnamedepindsort =
   let rec declare i = function 
     | fi::lf -> 
 	let ce = 
-	  { const_entry_body = listdecl.(i); const_entry_type = None } in
+	  { const_entry_body = Cooked listdecl.(i); const_entry_type = None } 
+	in
 	declare_constant fi (ce,n);
         declare (i+1) lf
     | _        -> ()

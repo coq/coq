@@ -49,7 +49,8 @@ let print_typed_value_in_env env (trm,typ) =
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 			  		  
 let print_recipe = function
-  | Some c -> prterm c
+  | Some { contents = Cooked c } -> prterm c
+  | Some { contents = Recipe _ } -> [< 'sTR"<recipe>" >]
   | None -> [< 'sTR"<uncookable>" >]
 
 let fprint_recipe = function
@@ -280,13 +281,7 @@ let rec print_library_entry with_values ent =
   match ent with
     | (sp,Lib.Leaf lobj) -> 
 	[< print_leaf_entry with_values sep (sp,lobj) >]
-    | (s,Lib.ClosedSection(_,ctxt)) ->
-	[< 'sTR"Closed Section " ; 'sTR (string_of_path s) ; 'fNL ;
-	   if !print_closed_sections then
-             [< 'sTR " " ; hOV 0 [< print_context with_values ctxt >] >]
-	   else 
-	     [< >] >]
-    | (_,Lib.OpenedSection str) -> 
+    | (_,Lib.OpenedSection (str,_)) -> 
         [< 'sTR(" >>>>>>> Section " ^ str) ; 'fNL >]
     | (_,Lib.FrozenState _) ->
 	[< >]
@@ -379,8 +374,7 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
                crible_rec rest
 	   | _ -> crible_rec rest)
 
-    | (_, (Lib.OpenedSection _ | Lib.ClosedSection _ 
-	  | Lib.FrozenState _))::rest -> 
+    | (_, (Lib.OpenedSection _ | Lib.FrozenState _))::rest -> 
 	crible_rec rest
     | []      -> ()
   in 
@@ -396,7 +390,7 @@ let print_crible name =
 
 let read_sec_context sec =
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection str) as hd)::rest ->
+    | ((sp,Lib.OpenedSection (str,_)) as hd)::rest ->
         if str = sec then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
@@ -495,7 +489,6 @@ let print_local_context () =
                [< print_last_const rest;print_mutual sp mib; 'fNL >]
            | "VARIABLE" ->  [< >]
            | _          ->  print_last_const rest)
-    | (sp,Lib.ClosedSection _)::rest -> print_last_const rest
     | _ -> [< >]
   in 
   [< print_var_rec env;  print_last_const env >]
