@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 open Pp
+open Util
 
 type error =
   | Illegal_character
@@ -22,8 +23,8 @@ exception Error of error
 val add_token : string * string -> unit
 val is_keyword : string -> bool
 
-val func : char Stream.t -> (string * string) Stream.t * (int -> int * int)
-val location_function : int -> int  * int
+val func : char Stream.t -> (string * string) Stream.t * (int -> loc)
+val location_function : int -> loc
 
 (* for coqdoc *)
 type location_table

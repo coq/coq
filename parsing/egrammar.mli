@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Topconstr
 open Ast
 open Coqast

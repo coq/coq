@@ -10,7 +10,7 @@
 
 (* This file defines standard combinators to build ml expressions *)
 
-let dummy_loc = (0,0)
+open Util
 
 let not_impl name x =
   let desc =
