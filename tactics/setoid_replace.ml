@@ -1358,7 +1358,7 @@ let general_s_rewrite lft2rgt c ~new_goals gl =
    | Right2Left -> relation_rewrite c2 c1 (direction,eqclause) ~new_goals gl
 
 let general_s_rewrite_in id lft2rgt c ~new_goals gl =
- let eqclause,c1,c2 = analyse_hypothesis gl c in
+ let _,c1,c2 = analyse_hypothesis gl c in
  let hyp = pf_type_of gl (mkVar id) in
  let new_hyp =
   if lft2rgt then
@@ -1410,3 +1410,15 @@ let setoid_replace relation c1 c2 ~new_goals gl =
      (replace true eq_left_to_right) (replace false eq_right_to_left) gl
  with
   Use_replace -> (!replace c1 c2) gl
+
+let setoid_replace_in id relation c1 c2 ~new_goals gl =
+ let hyp = pf_type_of gl (mkVar id) in
+ let new_hyp = Termops.replace_term c1 c2 hyp in
+  tclTHENS
+   (cut new_hyp)
+   [ (* Try to insert the new hyp at the same place *)
+     tclORELSE (intro_replacing id)
+       (tclTHEN (clear [id]) (introduction id));
+     tclTHENLASTn
+      (setoid_replace relation c2 c1 ~new_goals)
+      [| exact_check (mkVar id); tclIDTAC |] ] gl

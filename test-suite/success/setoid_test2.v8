@@ -50,10 +50,9 @@ Require Export Setoid.
     nessuna marcatura viene trovata
 
   Implementare:
-   -1. user-defined subrelations && user-proved subrelations
-    0. trucco di Bruno
-    2. setoid_replace ... with ... in ...
-    4. [setoid_]symmetry, [setoid_]reflexivity, [setoid_]transitivity (?!?)
+   -2. user-defined subrelations && user-proved subrelations
+   -1. trucco di Bruno
+    0. [setoid_]symmetry, [setoid_]reflexivity, [setoid_]transitivity (?!?)
 
   Sorgenti di inefficacia:
     1. scelta del setoide di default per un sostegno: per farlo velocemente
@@ -88,7 +87,7 @@ Require Export Setoid.
        l'uguaglianza di Leibniz. (Se entrambi sono uguaglianze di Leibniz
        allora il setoide e' una semplice funzione).
   ?10. [setoid_]rewrite ... in ...
-       setoid_replace ... in
+       setoid_replace ... in ...
        [setoid_]reflexivity???
        [setoid_]transitivity???
        [setoid_]symmetry???
