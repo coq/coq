@@ -139,8 +139,7 @@ let rec visit_reference m eenv r =
     
 and visit_type m eenv t =
   let rec visit = function
-    | Tglob r -> visit_reference m eenv r
-    | Tapp l -> List.iter visit l
+    | Tglob (r,l) -> visit_reference m eenv r; List.iter visit l  
     | Tarr (t1,t2) -> visit t1; visit t2
     | Tvar _ | Tdummy | Tunknown -> ()
   in

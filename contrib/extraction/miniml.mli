@@ -18,10 +18,9 @@ open Nametab
 (*s ML type expressions. *)
 
 type ml_type = 
-  | Tvar  of int
-  | Tapp  of ml_type list
   | Tarr  of ml_type * ml_type
-  | Tglob of global_reference
+  | Tvar  of int
+  | Tglob of global_reference * ml_type list 
   | Tdummy
   | Tunknown
       

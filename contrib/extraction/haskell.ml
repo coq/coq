@@ -70,22 +70,16 @@ let empty_env () = [], P.globals()
 let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
-    | Tapp l ->
-	(match collapse_type_app l with
-	   | [] -> assert false
-	   | [t] -> pp_rec par t
-	   | t::l -> 
-	       (open_par par ++
-		  pp_rec false t ++ spc () ++
-		  prlist_with_sep (fun () -> (spc ())) (pp_type true vl) l ++ 
-		  close_par par))
+    | Tglob (r,[]) -> pp_type_global r	
+    | Tglob (r,l) -> 
+	open_par par ++ pp_type_global r ++ spc () ++
+	prlist_with_sep spc (pp_type true vl) l ++ close_par par
     | Tarr (t1,t2) ->
-	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
-	   pp_rec false t2 ++ close_par par)
-    | Tglob r -> pp_type_global r
+	open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
+	pp_rec false t2 ++ close_par par
     | Tdummy -> str "()"
     | Tunknown -> str "()"
-  in 
+ in 
   hov 0 (pp_rec par t)
 
 (*s Pretty-printing of expressions. [par] indicates whether

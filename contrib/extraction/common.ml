@@ -71,8 +71,7 @@ let ast_get_modules m a =
 
 let mltype_get_modules m t = 
   let rec get_rec = function 
-    | Tglob r -> m := Idset.add (short_module r) !m
-    | Tapp l -> List.iter get_rec l
+    | Tglob (r,l) -> m := Idset.add (short_module r) !m; List.iter get_rec l
     | Tarr (a,b) -> get_rec a; get_rec b 
     | _ -> () 
   in get_rec t

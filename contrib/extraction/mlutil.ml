@@ -47,8 +47,7 @@ let sp_of_r r = match r with
     | _ -> assert false
 
 let rec type_mem_sp sp = function 
-  | Tglob r when (sp_of_r r)=sp -> true
-  | Tapp l -> List.exists (type_mem_sp sp) l
+  | Tglob (r,l) -> (sp_of_r r) = sp || List.exists (type_mem_sp sp) l
   | Tarr (a,b) -> (type_mem_sp sp a) || (type_mem_sp sp b)
   | _ -> false
 

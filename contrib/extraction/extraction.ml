@@ -200,9 +200,9 @@ let signature_of_sp sp =
 
 (*S Management of type variable contexts. *)
 
-(*s From a signature toward a type variable context (ctx). *)
+(*s From a signature toward a type variable context (db). *)
 
-let ctx_from_sign s = 
+let db_from_sign s = 
   let rec f i = function 
     | [] -> [] 
     | true :: l -> i :: (f (i+1) l)
@@ -212,11 +212,11 @@ let ctx_from_sign s =
 (*s Create a type variable context from indications taken from 
   an inductive type (see just below). *) 
 
-let ctx_from_ind rels n d = 
+let db_from_ind dbmap params_nb length_sign = 
   let rec f i = 
-    if i > n then [] 
+    if i > params_nb then [] 
     else try 
-      Intmap.find (i+d) rels :: (f (i+1))
+      Intmap.find (i+length_sign) dbmap :: (f (i+1))
     with Not_found -> 0 :: (f (i+1))
   in f 1
 
@@ -235,42 +235,42 @@ let parse_ind_args si args =
 
 (*S Extraction of a type. *)
 
-(*s [extract_type env c args ctx] is used to produce an ML type from the 
+(*s [extract_type env db c args] is used to produce an ML type from the 
    coq term [(c args)], which is supposed to be a Coq type. *)
 
-(* [ctx] is a context for translating Coq [Rel] into ML type [Tvar]. *)
+(* [db] is a context for translating Coq [Rel] into ML type [Tvar]. *)
 
-let rec extract_type env c args ctx = 
+let rec extract_type env db c args = 
   match kind_of_term (whd_betaiotazeta c) with
     | Lambda (_,_,d) -> 
 	(match args with 
 	   | [] -> assert false (* otherwise the lambda would be reductible. *)
-	   | a :: args -> extract_type env (subst1 a d) args ctx)
+	   | a :: args -> extract_type env db (subst1 a d) args)
     | Prod (n,t,d) ->
-	let mld = extract_type (push_rel_assum (n,t) env) d [] (0::ctx) in 
+	let mld = extract_type (push_rel_assum (n,t) env) (0::db) d [] in 
 	if mld = Tdummy then Tdummy 
 	else if not (is_default env t) then Tarr (Tdummy, mld)
-	else Tarr (extract_type env t [] ctx, mld)
+	else Tarr (extract_type env db t [], mld)
     | App (d, args') ->
 	(* We just accumulate the arguments. *)
-	extract_type env d (Array.to_list args' @ args) ctx
+	extract_type env db d (Array.to_list args' @ args)
     | Rel n -> 
 	(match lookup_rel n env with
 	   | (_,Some t,_) -> 
-	       extract_type env (lift n t) args ctx
+	       extract_type env db (lift n t) args
 	   | _ -> 
-	       let n' = List.nth ctx (n-1) in 
+	       let n' = List.nth db (n-1) in 
 	       if n' = 0 then Tunknown else Tvar n')
     | Const sp ->
 	let t = constant_type env sp in 
 	(match flag_of_type env t with 
 	   | (Info,Arity) -> 
-	       extract_type_app env (ConstRef sp, type_sign env t) args ctx
+	       extract_type_app env db (ConstRef sp, type_sign env t) args
 	   | (Info,_) -> Tunknown
 	   | (Logic,_) -> Tdummy)
     | Ind spi ->
 	(match extract_inductive spi with 
-	   | Iml (si,_) -> extract_type_app env (IndRef spi,si) args ctx
+	   | Iml (si,_) -> extract_type_app env db (IndRef spi,si) args
 	   | Iprop -> Tdummy)
     | Sort _ -> Tdummy 
     | Case _ | Fix _ | CoFix _ -> Tunknown
@@ -281,52 +281,52 @@ let rec extract_type env c args ctx =
   Precondition: [r] is of type an arity represented by the signature [s], 
   and is completely applied: [List.length args = List.length s]. *)
 		  
-and extract_type_app env (r,s) args ctx =
+and extract_type_app env db (r,s) args =
   let ml_args = 
     List.fold_right 
       (fun (b,c) a -> if b then 
 	 let p = List.length (fst (splay_prod env none (type_of env c))) in
-	 let ctx = iterate (fun l -> 0 :: l) p ctx in
-	 (extract_type_arity env c ctx p) :: a
+	 let db = iterate (fun l -> 0 :: l) p db in
+	 (extract_type_arity env db c p) :: a
        else a)
       (List.combine s args) []
-  in Tapp ((Tglob r) :: ml_args)
+  in Tglob (r,  ml_args)
 
-(*s [extract_type_arity env c ctx p] works on a Coq term [c] whose 
+(*s [extract_type_arity env db c p] works on a Coq term [c] whose 
   type is an arity. It means that [c] is not a Coq type, but will 
   be when applied to sufficiently many arguments ([p] in fact).  
   This function decomposes p lambdas, with eta-expansion if needed. *)
 
-(* [ctx] is a context for translating Coq [Rel] into ML type [Tvar]. *)
+(* [db] is a context for translating Coq [Rel] into ML type [Tvar]. *)
 
-and extract_type_arity env c ctx p = 
-  if p=0 then extract_type env c [] ctx 
+and extract_type_arity env db c p = 
+  if p=0 then extract_type env db c [] 
   else 
     let c = whd_betaiotazeta c in 
     match kind_of_term c with 
       | Lambda (n,t,d) -> 
-	  extract_type_arity (push_rel_assum (n,t) env) d ctx (p-1)
+	  extract_type_arity (push_rel_assum (n,t) env) db d (p-1)
       | _ ->  
 	  let rels = fst (splay_prod env none (type_of env c)) in
 	  let env = push_rels_assum rels env in  
 	  let eta_args = List.rev_map mkRel (interval 1 p) in 
-	  extract_type env (lift p c) eta_args ctx
+	  extract_type env db (lift p c) eta_args
 
 (*s [extract_type_ind] extracts the type of an inductive 
   constructor toward the corresponding list of ML types. *)
 
-(* [p] is the number of product in [c] and [ctx] is a context for 
-  translating Coq [Rel] into ML type [Tvar] and [db] is a translation 
+(* [p] is the number of product in [c] and [db] is a context for 
+  translating Coq [Rel] into ML type [Tvar] and [dbmap] is a translation 
   map (produced by a call to [parse_in_args]). *)
 
-and extract_type_ind env c ctx db p = 
+and extract_type_ind env db dbmap c p = 
   match kind_of_term (whd_betadeltaiota env none c) with 
     | Prod (n,t,d) -> 
 	let env' = push_rel_assum (n,t) env in
-	let ctx' = (try Intmap.find p db with Not_found -> 0) :: ctx in
-	let l = extract_type_ind env' d ctx' db (p-1) in 
+	let db' = (try Intmap.find p dbmap with Not_found -> 0) :: db in
+	let l = extract_type_ind env' db' dbmap d (p-1) in 
 	if is_default env t then
-	  let mlt = extract_type env t [] ctx in 
+	  let mlt = extract_type env db t [] in 
 	  if mlt = Tdummy then l else mlt :: l 
 	else l 
     | _ -> [] 
@@ -378,16 +378,13 @@ and extract_mib sp =
 	      let t = snd (decompose_prod_n params_nb t) in
 	      let s = term_sign params_env t in
 	      let n = List.length s in 
-	      let db,ctx = 
-		if si=[] then Intmap.empty,[]
-		else match find_conclusion params_env none t with 
-		  | App (f, args) -> 
-		      (*i assert (kind_of_term f = Ind ip); i*)
-		      let db = parse_ind_args si args in 
-		      db, ctx_from_ind db params_nb n 
-		  | _ -> assert false 
+	      let args = match find_conclusion params_env none t with
+		| App (f,args) -> args (* [kind_of_term f = Ind ip] *)
+		| _ -> [||]
 	      in 
-	      let l = extract_type_ind params_env t ctx db n in	      
+	      let dbmap = parse_ind_args si args in 
+	      let db = db_from_ind dbmap params_nb n in 
+	      let l = extract_type_ind params_env db dbmap t n in	      
 	      add_constructor cp (Cml (l,s,params_nb))
 	    done
     done
@@ -528,7 +525,8 @@ and apply_constructor env cp args =
 	  let mla2 = extract_eta_args n2 s2 in 
 	  anonym_or_dummy_lams (head (mla1 @ mla2)) s2
 	else (* [la < params_nb] *)
-	  dummy_lams (head (extract_eta_args ls s)) (ls + params_nb - la)
+	  let head' = head (extract_eta_args ls s) in 
+	  dummy_lams (anonym_or_dummy_lams head' s) (params_nb - la)
 	    
 (*S Extraction of a term. *)
 
@@ -671,8 +669,8 @@ let extract_constant sp r =
 	   | (Logic, Arity) -> DdummyType r
 	   | (Info, Arity) -> 
 	       let s,vl = type_sign_vl env typ in 
-	       let ctx = ctx_from_sign s in 
-	       let t = extract_type_arity env body ctx (List.length s)
+	       let db = db_from_sign s in 
+	       let t = extract_type_arity env db body (List.length s)
 	       in Dtype (r, vl, t)
 	   | (Logic, _) -> Dterm (r, MLdummy')
 	   | (Info, _) -> 
