@@ -21,33 +21,69 @@ open Recordops
 open Evarutil
 open Libnames
 
-type flexible_term = FConst of constant | FRel of int | FVar of identifier 
 type flex_kind_of_term =
   | Rigid of constr 
-  | MaybeFlexible of flexible_term
+  | MaybeFlexible of constr
   | Flexible of existential
 
-let flex_kind_of_term c =
+let flex_kind_of_term c l =
   match kind_of_term c with
-    | Const c -> MaybeFlexible (FConst c)
-    | Rel n -> MaybeFlexible (FRel n)
-    | Var id -> MaybeFlexible (FVar id)
+    | Const _ -> MaybeFlexible c
+    | Rel n -> MaybeFlexible c
+    | Var id -> MaybeFlexible c
+    | Lambda _ when l<>[] -> MaybeFlexible c
     | Evar ev -> Flexible ev
     | _ -> Rigid c
 
-let eval_flexible_term env = function
-  | FConst c -> constant_opt_value env c
-  | FRel n -> let (_,v,_) = lookup_rel n env in option_app (lift n) v
-  | FVar id -> let (_,v,_) = lookup_named id env in v
+let eval_flexible_term env c =
+  match kind_of_term c with
+  | Const c -> constant_opt_value env c
+  | Rel n -> let (_,v,_) = lookup_rel n env in option_app (lift n) v
+  | Var id -> let (_,v,_) = lookup_named id env in v
+  | Lambda _ -> Some c
+  | _ -> assert false
+(*
+let rec apprec_nobeta env sigma s =
+  let (t,stack as s) = whd_state s in
+  match kind_of_term (fst s) with
+    | Case (ci,p,d,lf) ->
+        let (cr,crargs) = whd_betadeltaiota_stack env sigma d in
+        let rslt = mkCase (ci, p, applist (cr,crargs), lf) in
+        if reducible_mind_case cr then 
+	  apprec_nobeta env sigma (rslt, stack)
+        else 
+	  s
+    | Fix fix ->
+	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix stack with
+             | Reduced s -> apprec_nobeta env sigma s
+	     | NotReducible -> s)
+    | _ -> s
 
-let evar_apprec env isevars stack c =
+let evar_apprec_nobeta env isevars stack c =
   let rec aux s =
-    let (t,stack as s') = Reductionops.apprec env (evars_of isevars) s in
+    let (t,stack as s') = apprec_nobeta env (evars_of isevars) s in
     match kind_of_term t with
       | Evar (n,_ as ev) when Evd.is_defined (evars_of isevars) n ->
 	  aux (existential_value (evars_of isevars) ev, stack)
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack (Array.of_list stack) empty_stack)
+*)
+
+let evar_apprec env isevars stack c =
+  let sigma = evars_of isevars in
+  let rec aux s =
+    let (t,stack as s') = Reductionops.apprec env sigma s in
+    match kind_of_term t with
+      | Evar (n,_ as ev) when Evd.is_defined sigma n ->
+	  aux (existential_value sigma ev, stack)
+      | _ -> (t, list_of_stack stack)
+  in aux (c, append_stack (Array.of_list stack) empty_stack)
+
+let apprec_nohdbeta env isevars c =
+  let (t,stack as s) = Reductionops.whd_stack c in
+  match kind_of_term t with
+    | (Case _ | Fix _) -> evar_apprec env isevars [] c
+    | _ -> s
 
 (* [check_conv_record (t1,l1) (t2,l2)] tries to decompose the problem
    (t1 l1) = (t2 l2) into a problem
@@ -108,8 +144,8 @@ let rec evar_conv_x env isevars pbty term1 term2 =
   else if ise_undefined isevars term2 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term2,term1)
   else 
-    let (t1,l1) = evar_apprec env isevars [] term1 in
-    let (t2,l2) = evar_apprec env isevars [] term2 in
+    let (t1,l1) = apprec_nohdbeta env isevars term1 in
+    let (t2,l2) = apprec_nohdbeta env isevars term2 in
     if (head_is_embedded_evar isevars t1 & not(is_eliminator t2))
       or (head_is_embedded_evar isevars t2 & not(is_eliminator t1))
     then 
@@ -119,7 +155,7 @@ let rec evar_conv_x env isevars pbty term1 term2 =
 
 and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have whd_ised *)
-  match (flex_kind_of_term term1, flex_kind_of_term term2) with
+  match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 () =
 	  if List.length l1 > List.length l2 then 
