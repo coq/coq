@@ -627,25 +627,36 @@ let check_constant_case br =
 (*s If all branches are functions, try to permut the case and the functions. *)
 
 let rec merge_ids ids ids' = match ids,ids' with 
-  | [],[] -> [] 
+  | [],l -> l 
+  | l,[] -> l
   | i::ids, i'::ids' -> 
       (if i = dummy_name then i' else i) :: (merge_ids ids ids')
-  | _ -> assert false 
+
+let is_exn = function MLexn _ -> true | _ -> false
 
 let rec permut_case_fun br acc = 
-  let br = Array.copy br in 
-  let (_,_,t0) = br.(0) in 
-  let nb = ref (nb_lams t0) in 
-  Array.iter (fun (_,_,t) -> let n = nb_lams t in if n < !nb then nb:=n) br;
-  let ids = ref (fst (collect_n_lams !nb t0)) in  
-  Array.iter 
-    (fun (_,_,t) -> ids := merge_ids !ids (fst (collect_n_lams !nb t))) br; 
-  for i = 0 to Array.length br - 1 do 
-    let (r,l,t) = br.(i) in 
-    let t = permut_rels !nb (List.length l) (remove_n_lams !nb t) 
-    in br.(i) <- (r,l,t)
-  done; 
-  (!ids,br)
+  let nb = ref max_int in 
+  Array.iter (fun (_,_,t) -> 
+		let ids, c = collect_lams t in 
+		let n = List.length ids in 
+		if (n < !nb) && (not (is_exn c)) then nb := n) br; 
+  if !nb = max_int || !nb = 0 then ([],br) 
+  else begin
+    let br = Array.copy br in 
+    let ids = ref [] in  
+    for i = 0 to Array.length br - 1 do 
+      let (r,l,t) = br.(i) in 
+      let local_nb = nb_lams t in 
+      if local_nb < !nb then (* t = MLexn ... *)
+	br.(i) <- (r,l,remove_n_lams local_nb t)
+      else begin
+	let local_ids,t = collect_n_lams !nb t in 
+	ids := merge_ids !ids local_ids; 
+	br.(i) <- (r,l,permut_rels !nb (List.length l) t)
+      end
+    done; 
+    (!ids,br)
+  end
   
 (*S Generalized iota-reduction. *)
 
