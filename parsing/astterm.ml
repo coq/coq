@@ -140,14 +140,6 @@ let ast_to_sp = function
   | ast -> anomaly_loc(Ast.loc ast,"Astterm.ast_to_sp",
                      (str"not a section-path"))
 
-(* TODO: correct this vulgar hack! *)
-let sp_of_kn kn = 
-  let dir,id = Libnames.decode_kn kn in
-    make_path dir id
-
-let kn_of_sp sp = 
-  Libnames.encode_kn (dirpath sp) (basename sp)
-
 let is_underscore id = (id = wildcard)
 
 let name_of_nvar s =
