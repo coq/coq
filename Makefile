@@ -11,7 +11,7 @@ noargument:
 	@echo or make archclean
 
 LOCALINCLUDES=-I config -I lib -I kernel -I library \
-              -I proofs -I parsing -I toplevel
+              -I proofs -I tactics -I parsing -I toplevel
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
@@ -51,7 +51,9 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
        proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo \
-       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo
+       proofs/macros.cmo proofs/tacinterp.cmo # proofs/clenv.cmo
+
+TACTICS=tactics/dn.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
@@ -63,7 +65,8 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PROOFS) $(PARSING) $(TOPLEVEL)
+CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PROOFS) $(TACTICS) \
+    $(PARSING) $(TOPLEVEL)
 CMX=$(CMO:.cmo=.cmx)
 
 # Targets
@@ -102,9 +105,10 @@ LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
+LPTACTICS = tactics/doc.tex $(TCATICS:.cmo=.mli)
 LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
-	  $(LPPROOFS) $(LPTOPLEVEL)
+	  $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
 
 doc/coq.tex: doc/preamble.tex $(LPFILES)
 	cat doc/preamble.tex > doc/coq.tex
@@ -195,6 +199,7 @@ archclean::
 	rm -f kernel/*.cmx kernel/*.[so]
 	rm -f library/*.cmx library/*.[so]
 	rm -f proofs/*.cmx proofs/*.[so]
+	rm -f tactics/*.cmx tactics/*.[so]
 	rm -f parsing/*.cmx parsing/*.[so]
 
 cleanall:: archclean
@@ -205,6 +210,7 @@ cleanall:: archclean
 	rm -f kernel/*.cm[io] kernel/*~
 	rm -f library/*.cm[io] library/*~
 	rm -f proofs/*.cm[io] proofs/*~
+	rm -f tactics/*.cm[io] tactics/*~
 	rm -f parsing/*.cm[io] parsing/*.ppo parsing/*~
 
 cleanconfig::
