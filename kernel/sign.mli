@@ -54,7 +54,7 @@ val dbindv : 'a signature -> 'b term array -> 'a * 'b term
 
 (*s Signatures with named and de Bruijn variables. *)
 
-type 'a db_signature = (name * 'a) list
+type 'a db_signature (* = [ (name * 'a) list ] *)
 type ('a,'b) sign = ENVIRON of 'a signature * 'b db_signature
 
 val gLOB : 'b signature -> ('b,'a) sign
