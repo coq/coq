@@ -207,6 +207,14 @@ ML-style notation as follows
 
   Inductive and (A B:Prop) : Prop as "A /\ B" := conj (a:A) (b:B).
   
+IV) Pitfalls
+
+  Type "entier" from fast_integer.v is renamed into "N" by the
+translator. As a consequence, user-defined objects of same name "N"
+can be hidden by the new "N" if the "Require ZArith" is not done soon
+enough. The solution is to move the "Require ZArith" before users
+modules. The same apply for names "GREATER", "EQUAL", "LESS",
+etc... [COMPLETE LIST TO GIVE].
 
 
 
