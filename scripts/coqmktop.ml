@@ -32,7 +32,7 @@ let ide       = split_list Tolink.ide
 
 (* 3. Toplevel objects *)
 let camlp4topobjs =
-  ["camlp4_top.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"; "q_util.cmo"; "q_coqast.cmo" ]
+  ["camlp4_top.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"]
 let topobjs = camlp4topobjs
 
 let gramobjs = []
