@@ -83,6 +83,7 @@ let check_conv_record (t1,l1) (t2,l2) =
   with _ -> 
     raise Not_found
 
+
 (* Precondition: one of the terms of the pb is an uninstanciated evar,
  * possibly applied to arguments. *)
 
@@ -143,8 +144,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
           (* First compare extra args for better failure message *)
           list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2 &
-	  solve_simple_eqn evar_conv_x env isevars
-	    (pbty,ev1,applist(term2,deb2))
+	  evar_conv_x env isevars pbty term1 (applist(term2,deb2))
 	and f4 () =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
@@ -160,8 +160,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
        	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
           (* First compare extra args for better failure message *)
           list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2 &
-	  solve_simple_eqn evar_conv_x env isevars
-            (pbty,ev2,applist(term1,deb1))
+	  evar_conv_x env isevars pbty (applist(term1,deb1)) term2
 	and f4 () =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
