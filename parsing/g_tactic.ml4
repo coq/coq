@@ -133,12 +133,16 @@ GEXTEND Gram
   pattern_occ:
     [ [ nl = LIST0 integer; c = constr -> (nl,c) ] ]
   ;
+  pattern_occ_hyp_tail_list:
+    [ [ pl = pattern_occ_hyp_list -> pl | -> (None,[]) ] ]
+  ;
   pattern_occ_hyp_list:
     [ [ nl = LIST1 natural; IDENT "Goal" -> (Some nl,[])
-      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_list ->
-	  (g,(id,nl)::l)
+      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list
+        -> (g,(id,nl)::l)
       | IDENT "Goal" -> (Some [],[])
-      | id = id_or_meta; (g,l) = pattern_occ_hyp_list -> (g,(id,[])::l) ] ]
+      | id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list -> (g,(id,[])::l)
+    ] ]
   ;
   clause_pattern:
     [ [ "in"; p = pattern_occ_hyp_list -> p | -> None, [] ] ]

@@ -142,12 +142,16 @@ GEXTEND Gram
   pattern_occ:
     [ [ nl = LIST0 integer; c = [c=constr->c | g=global->Topconstr.CRef g]-> (nl,c) ] ]
   ;
+  pattern_occ_hyp_tail_list:
+    [ [ pl = pattern_occ_hyp_list -> pl | -> (None,[]) ] ]
+  ;
   pattern_occ_hyp_list:
     [ [ nl = LIST1 natural; IDENT "Goal" -> (Some nl,[])
-      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_list ->
-	  (g,(id,nl)::l)
+      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list
+	  -> (g,(id,nl)::l)
       | IDENT "Goal" -> (Some [],[])
-      | id = id_or_meta; (g,l) = pattern_occ_hyp_list -> (g,(id,[])::l) ] ]
+      | id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list -> (g,(id,[])::l)
+    ] ]
   ;
   clause_pattern:
     [ [ "in"; p = pattern_occ_hyp_list -> p | -> None, [] ] ]
@@ -298,13 +302,13 @@ GEXTEND Gram
       | IDENT "lapply"; c = lconstr -> TacLApply c
 
       (* Derived basic tactics *)
-      | IDENT "induction"; h = quantified_hypothesis -> TacOldInduction h
-      | IDENT "newinduction"; c = induction_arg; el = OPT eliminator;
+      | IDENT "oldinduction"; h = quantified_hypothesis -> TacOldInduction h
+      | IDENT "induction"; c = induction_arg; el = OPT eliminator;
           ids = with_names -> TacNewInduction (c,el,ids)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
-      | IDENT "destruct"; h = quantified_hypothesis -> TacOldDestruct h
-      | IDENT "newdestruct"; c = induction_arg; el = OPT eliminator; 
+      | IDENT "olddestruct"; h = quantified_hypothesis -> TacOldDestruct h
+      | IDENT "destruct"; c = induction_arg; el = OPT eliminator; 
           ids = with_names -> TacNewDestruct (c,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = lconstr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = lconstr -> TacDecomposeOr c
