@@ -367,7 +367,10 @@ let clenv_environments bound c =
 
 let mk_clenv_from wc (c,cty) =
   let (namenv,env,args,concl) = clenv_environments (-1) cty in
-  { templval = mk_freelisted (DOPN(AppL,Array.of_list (c::args)));
+  { templval = 
+      mk_freelisted (match args with 
+		       | [] -> c 
+		       | _ -> DOPN(AppL,Array.of_list (c::args)));
     templtyp = mk_freelisted concl;
     namenv = namenv;
     env = env;
