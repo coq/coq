@@ -121,9 +121,6 @@ let is_logic_arity infos =
 let is_unit constrsinfos =
   match constrsinfos with  (* One info = One constructor *)
    | [constrinfos] -> is_logic_constr constrinfos 
-  (* CP : relax this constraint which was related 
-          to extraction 
-          && is_logic_arity arinfos *)
    | [] -> (* type without constructors *) true
    | _ -> false
 
@@ -467,16 +464,21 @@ let all_sorts = [InProp;InSet;InType]
 let impredicative_sorts = [InProp;InSet]
 let logical_sorts = [InProp]
 
-let allowed_sorts issmall isunit = function
+let allowed_sorts env issmall isunit = function
   | Type _ -> all_sorts
   | Prop Pos -> 
       if issmall then all_sorts
       else impredicative_sorts
   | Prop Null -> 
 (* Added InType which is derivable :when the type is unit and small *)
-      if isunit then 
+(* unit+small types have all elimination 
+   In predicative system, the 
+   other inductive definitions have only Prop elimination.
+   In impredicative system, large unit type have also Set elimination
+*)   if isunit then 
 	if issmall then all_sorts
-	else impredicative_sorts
+	else if Environ.engagement env = None 
+        then logical_sorts else impredicative_sorts
       else logical_sorts
 
 let build_inductive env env_ar finite inds recargs cst =
@@ -508,7 +510,7 @@ let build_inductive env env_ar finite inds recargs cst =
     let nf_lc = if nf_lc = lc then lc else nf_lc in
     (* Elimination sorts *)
     let isunit = isunit && ntypes = 1 && (not (is_recursive recargs.(0))) in
-    let kelim = allowed_sorts issmall isunit ar_sort in
+    let kelim = allowed_sorts env issmall isunit ar_sort in
     (* Build the inductive packet *)
     { mind_typename = id;
       mind_nparams = nparamargs;
