@@ -48,6 +48,7 @@ val list_unionq : 'a list -> 'a list -> 'a list
 val list_subtract : 'a list -> 'a list -> 'a list
 val list_subtractq : 'a list -> 'a list -> 'a list
 val list_chop : int -> 'a list -> 'a list * 'a list
+(* [list_tabulate f n] builds [[f 0; ...; f (n-1)]] *)
 val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
