@@ -162,12 +162,14 @@ let split_evar_to_arrow sigma (ev,args) =
   let nvar = next_ident_away (id_of_string "x") (ids_of_named_context hyps) in
   let newenv = push_named_decl (nvar, None, dom) evenv in
   let (sigma2,rng) = new_type_var newenv sigma1 in
-  let prod = mkProd (named_hd newenv dom Anonymous, dom, subst_var nvar rng) in
+  let x = named_hd newenv dom Anonymous in
+  let prod = mkProd (x, dom, subst_var nvar rng) in
   let sigma3 = Evd.define sigma2 ev prod in
-  let dsp = fst (destEvar dom) in
-  let rsp = fst (destEvar rng) in
-  (sigma3, prod,
-   (dsp,args), (rsp, array_cons (mkRel 1) (Array.map (lift 1) args)))
+  let evdom = fst (destEvar dom), args in
+  let evrng =
+    fst (destEvar rng), array_cons (mkRel 1) (Array.map (lift 1) args) in
+  let prod' = mkProd (x, mkEvar evdom, mkEvar evrng) in
+  (sigma3, prod', evdom, evrng)
 
 let define_evar_as_arrow sigma ev =
   let (sigma, prod, _, _) = split_evar_to_arrow sigma ev in
