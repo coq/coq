@@ -25,6 +25,7 @@ let rec make_rawwit loc = function
   | PreIdentArgType -> <:expr< Genarg.rawwit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.rawwit_intro_pattern >>
   | IdentArgType -> <:expr< Genarg.rawwit_ident >>
+  | HypArgType -> <:expr< Genarg.rawwit_var >>
   | RefArgType -> <:expr< Genarg.rawwit_ref >>
   | SortArgType -> <:expr< Genarg.rawwit_sort >>
   | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
@@ -50,6 +51,7 @@ let rec make_globwit loc = function
   | PreIdentArgType -> <:expr< Genarg.globwit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.globwit_intro_pattern >>
   | IdentArgType -> <:expr< Genarg.globwit_ident >>
+  | HypArgType -> <:expr< Genarg.globwit_var >>
   | RefArgType -> <:expr< Genarg.globwit_ref >>
   | QuantHypArgType -> <:expr< Genarg.globwit_quant_hyp >>
   | SortArgType -> <:expr< Genarg.globwit_sort >>
@@ -75,6 +77,7 @@ let rec make_wit loc = function
   | PreIdentArgType -> <:expr< Genarg.wit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.wit_intro_pattern >>
   | IdentArgType -> <:expr< Genarg.wit_ident >>
+  | HypArgType -> <:expr< Genarg.wit_var >>
   | RefArgType -> <:expr< Genarg.wit_ref >>
   | QuantHypArgType -> <:expr< Genarg.wit_quant_hyp >>
   | SortArgType -> <:expr< Genarg.wit_sort >>

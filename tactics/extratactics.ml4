@@ -23,7 +23,7 @@ TACTIC EXTEND Rewrite
 END
 
 TACTIC EXTEND RewriteIn
- [ "Rewrite" orient(b) constr_with_bindings(c) "in" ident(h) ] ->
+ [ "Rewrite" orient(b) constr_with_bindings(c) "in" hyp(h) ] ->
  [general_rewrite_in b h c]
 END
 
@@ -34,7 +34,7 @@ TACTIC EXTEND Replace
 END
 
 TACTIC EXTEND ReplaceIn
-  [ "Replace" constr(c1) "with" constr(c2) "in" ident(h) ] ->
+  [ "Replace" constr(c1) "with" constr(c2) "in" hyp(h) ] ->
     [ replace_in h c1 c2 ]
 END
 
@@ -51,17 +51,17 @@ TACTIC EXTEND Replaceterm
 END
 
 TACTIC EXTEND ReplacetermInleft
-  [ "Replace"  "->" constr(c) "in" ident(h) ]
+  [ "Replace"  "->" constr(c) "in" hyp(h) ]
   -> [ replace_term_in_left c h ]
 END
 
 TACTIC EXTEND ReplacetermInright
-  [ "Replace"  "<-" constr(c) "in" ident(h) ]
+  [ "Replace"  "<-" constr(c) "in" hyp(h) ]
   -> [ replace_term_in_right c h ]
 END
 
 TACTIC EXTEND ReplacetermIn
-  [ "Replace" constr(c) "in" ident(h) ]
+  [ "Replace" constr(c) "in" hyp(h) ]
   -> [ replace_term_in c h ]
 END
 
@@ -88,14 +88,14 @@ END
 
 TACTIC EXTEND ConditionalRewriteIn
   [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c)
-    "in" ident(h) ]
+    "in" hyp(h) ]
     -> [ conditional_rewrite_in b h (snd tac) c ]
 END
 
 TACTIC EXTEND DependentRewrite
-| [ "Dependent" "Rewrite" orient(b) ident(id) ] -> [ substHypInConcl b id ]
+| [ "Dependent" "Rewrite" orient(b) hyp(id) ] -> [ substHypInConcl b id ]
 | [ "CutRewrite" orient(b) constr(eqn) ] -> [ substConcl b eqn ]
-| [ "CutRewrite" orient(b) constr(eqn) "in" ident(id) ]
+| [ "CutRewrite" orient(b) constr(eqn) "in" hyp(id) ]
       -> [ substHyp b eqn id ]
 END
 
@@ -184,16 +184,16 @@ open Inv
 open Leminv
 
 VERNAC COMMAND EXTEND DeriveInversionClear
-  [ "Derive" "Inversion_clear" ident(na) ident(id) ]
+  [ "Derive" "Inversion_clear" ident(na) hyp(id) ]
   -> [ inversion_lemma_from_goal 1 na id Term.mk_Prop false inv_clear_tac ]
 
-| [ "Derive" "Inversion_clear" natural(n) ident(na) ident(id) ]
+| [ "Derive" "Inversion_clear" natural(n) ident(na) hyp(id) ]
   -> [ inversion_lemma_from_goal n na id Term.mk_Prop false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
-| [ "Derive" "Inversion_clear"  ident(na) "with" constr(c) ]
+| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ]
   -> [ add_inversion_lemma_exn na c (Rawterm.RProp Term.Null) false inv_clear_tac ]
 END
 
@@ -207,10 +207,10 @@ VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ]
   -> [ add_inversion_lemma_exn na c (RProp Null) false half_inv_tac ]
 
-| [ "Derive" "Inversion" ident(na) ident(id) ]
+| [ "Derive" "Inversion" ident(na) hyp(id) ]
   -> [ inversion_lemma_from_goal 1 na id Term.mk_Prop false half_inv_tac ]
 
-| [ "Derive" "Inversion" natural(n) ident(na) ident(id) ]
+| [ "Derive" "Inversion" natural(n) ident(na) hyp(id) ]
   -> [ inversion_lemma_from_goal n na id Term.mk_Prop false half_inv_tac ]
 END
 
@@ -227,7 +227,7 @@ END
 (* Subst *)
 
 TACTIC EXTEND Subst
-| [ "Subst" ne_ident_list(l) ] -> [ subst l ]
+| [ "Subst" ne_var_list(l) ] -> [ subst l ]
 | [ "Subst" ] -> [ subst_all ]
 END
 

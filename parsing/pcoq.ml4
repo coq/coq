@@ -310,7 +310,10 @@ module Prim =
     let string = gec_gen rawwit_string "string"
     let reference = make_gen_entry uprim rawwit_ref "reference"
 
-    (* A synonym of ident, for compatibility *)
+    (* parsed like ident but interpreted as a term *)
+    let hyp = gec_gen rawwit_ident "hyp"
+
+    (* synonym of hyp/ident (before semantics split) for v7 compatibility *)
     let var = gec_gen rawwit_ident "var"
 
     let name = Gram.Entry.create "Prim.name"

@@ -26,6 +26,7 @@ type argument_type =
   | PreIdentArgType
   | IntroPatternArgType
   | IdentArgType
+  | HypArgType
   | RefArgType
   (* Specific types *)
   | SortArgType
@@ -114,6 +115,10 @@ let wit_intro_pattern = IntroPatternArgType
 let rawwit_ident = IdentArgType
 let globwit_ident = IdentArgType
 let wit_ident = IdentArgType
+
+let rawwit_var = HypArgType
+let globwit_var = HypArgType
+let wit_var = HypArgType
 
 let rawwit_ref = RefArgType
 let globwit_ref = RefArgType

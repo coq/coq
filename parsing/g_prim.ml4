@@ -72,10 +72,13 @@ open Q
 
 GEXTEND Gram
   GLOBAL: ident natural integer bigint string preident ast
-    astlist qualid reference dirpath identref name base_ident var;
+    astlist qualid reference dirpath identref name base_ident var hyp;
 
  (* Compatibility: Prim.var is a synonym of Prim.ident *)
   var:
+    [ [ id = ident -> id ] ]
+  ;
+  hyp:
     [ [ id = ident -> id ] ]
   ;
   metaident:

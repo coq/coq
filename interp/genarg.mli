@@ -61,9 +61,10 @@ BoolArgType                    bool                     bool
 IntArgType                     int                      int
 IntOrVarArgType                int or_var               int
 StringArgType                  string (parsed w/ "")    string
-PreIdentArgType                string (parsed w/o "")   string
-IdentArgType                   identifier               identifier         
+PreIdentArgType                string (parsed w/o "")   (vernac only)
+IdentArgType                   identifier               identifier
 IntroPatternArgType            intro_pattern_expr       intro_pattern_expr
+VarArgType                     identifier               constr
 RefArgType                     reference                global_reference
 ConstrArgType                  constr_expr              constr
 ConstrMayEvalArgType           constr_expr may_eval     constr
@@ -106,6 +107,10 @@ val wit_intro_pattern : (intro_pattern_expr,'co,'ta) abstract_argument_type
 val rawwit_ident : (identifier,'co,'ta) abstract_argument_type
 val globwit_ident : (identifier,'co,'ta) abstract_argument_type
 val wit_ident : (identifier,'co,'ta) abstract_argument_type
+
+val rawwit_var : (identifier located,'co,'ta) abstract_argument_type
+val globwit_var : (identifier located,'co,'ta) abstract_argument_type
+val wit_var : ('co,'co,'ta) abstract_argument_type
 
 val rawwit_ref : (reference,constr_expr,'ta) abstract_argument_type
 val globwit_ref : (global_reference located or_var,rawconstr_and_expr,'ta) abstract_argument_type
@@ -214,6 +219,7 @@ type argument_type =
   | PreIdentArgType
   | IntroPatternArgType
   | IdentArgType
+  | HypArgType
   | RefArgType
   (* Specific types *)
   | SortArgType
