@@ -24,7 +24,8 @@ val search_pattern : constr_pattern -> dir_path list * bool -> unit
    It can be passed as argument to the raw search functions.
    It is used in pcoq. *)
 
-val filter_by_module : dir_path list -> bool -> global_reference -> env -> 'a -> bool
+val filter_by_module_from_list :
+  dir_path list * bool -> global_reference -> env -> 'a -> bool
 
 (* raw search functions can be used for various extensions.
    They are also used for pcoq. *)
