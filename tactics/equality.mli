@@ -88,43 +88,6 @@ val hypSubst_LR : identifier -> clause -> tactic
 val hypSubst_RL : identifier -> clause -> tactic
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
-(*
-(***************)
-(* AutoRewrite *)
-(***************)
-
-(****Dealing with the rewriting rules****)
-
-(*A rewriting is typically an equational constr with an orientation (true=LR
-  and false=RL)*)
-type rewriting_rule = constr * bool
-
-(*Adds a list of rules to the rule table*)
-val add_list_rules : identifier -> rewriting_rule list -> unit
-
-(****The tactic****)
-
-(*For the Step options*)
-type option_step =
-  | Solve
-  | Use
-  | All
-
-(* the user can give a base either by a name of by its full definition
-  The definition is an Ast that will find its meaning only in the context
-  of a given goal *)
-type hint_base = 
-  | By_name of identifier
-  | Explicit of (Coqast.t * bool) list
-
-val explicit_hint_base : goal sigma -> hint_base -> rewriting_rule list
-
-(*AutoRewrite cannot be expressed with a combination of tacticals (due to the
-  options). So, we make it in a primitive way*)
-val autorewrite :
-  hint_base list -> tactic list option -> option_step 
-    -> tactic list option -> bool -> int -> tactic
-*)
 
 (* Subst *)
 
