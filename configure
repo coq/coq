@@ -457,7 +457,7 @@ PRINTF=`which printf`
 
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find . -type d ! -name CVS ! -name . -exec $PRINTF "\"%s\";\n" {} \; >> $mlconfig_file)
+    (cd $1; find . -type d ! -name CVS ! -regex ".*extraction/test.*" ! -name .  -exec $PRINTF "\"%s\";\n" {} \; >> $mlconfig_file)
 }
 
 echo "let theories_dirs = [" >> $mlconfig_file
