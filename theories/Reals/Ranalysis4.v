@@ -275,7 +275,7 @@ Match Context With
  (* INVERSE *)
 |[|-(continuity (inv_fct ?1))] -> Apply (continuity_inv ?1); Try IsCont_glob Orelse Assumption
  (* MULTIPLICATION PAR UN SCALAIRE *)
-|[|-(continuity (mult_real_fct ?1 ?2))] -> Apply (contintuity_scal ?2 ?1); Try IsCont_glob Orelse Assumption
+|[|-(continuity (mult_real_fct ?1 ?2))] -> Apply (continuity_scal ?2 ?1); Try IsCont_glob Orelse Assumption
  (* MULTIPLICATION *)
 |[|-(continuity (mult_fct ?1 ?2))] -> Apply (continuity_mult ?1 ?2); Try IsCont_glob Orelse Assumption
   (* DIVISION *)
