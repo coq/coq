@@ -186,7 +186,7 @@ Meriterait d'etre reecrite.
 
 Lemma binary_value_Sn :
  forall (n:nat) (b:bool) (bv:Bvector n),
-   binary_value (S n) (Vcons b bv) =
+   binary_value (S n) (Vcons bool b n bv) =
    (bit_value b + 2 * binary_value n bv)%Z.
 Proof.
 	intros; auto.

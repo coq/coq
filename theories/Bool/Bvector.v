@@ -196,8 +196,10 @@ Defined.
 
 End VECTORS.
 
+(* suppressed: incompatible with Coq-Art book 
 Implicit Arguments Vnil [A].
 Implicit Arguments Vcons [A n].
+*)
 
 Section BOOLEAN_VECTORS.
 
