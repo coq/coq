@@ -49,6 +49,10 @@ let universes env = env.env_universes
 let named_context env = env.env_named_context
 let rel_context env = env.env_rel_context
 
+let empty_context env = 
+  env.env_rel_context = empty_rel_context 
+  && env.env_named_context = empty_named_context
+
 (* Rel context *)
 let lookup_rel n env =
   Sign.lookup_rel n env.env_rel_context

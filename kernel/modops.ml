@@ -66,6 +66,14 @@ let error_not_a_constant l =
 let error_with_incorrect l =
   error ("Incorrect constraint for label \""^(string_of_label l)^"\"")
 
+let error_local_context lo = 
+  match lo with
+      None -> 
+	error ("The local context is not empty.")
+    | (Some l) ->
+	error ("The local context of the component "^
+	       (string_of_label l)^" is not empty")
+
 let rec scrape_modtype env = function
   | MTBident kn -> scrape_modtype env (lookup_modtype kn env)
   | mtb -> mtb

@@ -35,6 +35,9 @@ val universes     : env -> Univ.universes
 val rel_context   : env -> rel_context
 val named_context : env -> named_context
 
+(* is the local context empty *)
+val empty_context : env -> bool
+
 (***********************************************************************)
 (*s Context of de Bruijn variables (rel_context) *)
 val push_rel         : rel_declaration -> env -> env

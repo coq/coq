@@ -272,6 +272,7 @@ let end_module l senv =
       | STRUCT(params,restype) -> (params,restype)
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
+  if not (empty_context senv.env) then error_local_context None;
   let functorize_type = 
     List.fold_right 
       (fun (arg_id,arg_b) mtb -> MTBfunsig (arg_id,arg_b,mtb))
@@ -366,6 +367,7 @@ let end_modtype l senv =
       | SIG params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
+  if not (empty_context senv.env) then error_local_context None;
   let res_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
   let mtb = 
     List.fold_right 

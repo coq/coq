@@ -90,3 +90,5 @@ val error_not_a_module : string -> 'a
 val error_not_a_constant : label -> 'a
 
 val error_with_incorrect : label -> 'a
+
+val error_local_context : label option -> 'a

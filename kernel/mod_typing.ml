@@ -136,10 +136,18 @@ and translate_entry_list env msid is_definition sig_e =
     match e with
       | SPEconst ce ->
 	  let cb = translate_constant env ce in
-	    add_constant kn cb env, (l, SEBconst cb), (l, SPBconst cb)
+	    begin match cb.const_hyps with
+	      |	(_::_) -> error_local_context (Some l)
+	      | [] ->
+		  add_constant kn cb env, (l, SEBconst cb), (l, SPBconst cb)
+	    end
       | SPEmind mie -> 
 	  let mib = translate_mind env mie in
-	    add_mind kn mib env, (l, SEBmind mib), (l, SPBmind mib)
+	    begin match mib.mind_hyps with
+	      |	(_::_) -> error_local_context (Some l)
+	      | [] ->
+		  add_mind kn mib env, (l, SEBmind mib), (l, SPBmind mib)
+	    end
       | SPEmodule me ->
 	  let mb = translate_module env is_definition me in
 	  let mspec = 
