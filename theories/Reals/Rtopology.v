@@ -93,7 +93,7 @@ Qed.
 
 Definition eq_Dom [D1,D2:R->Prop] : Prop := (inclus D1 D2)/\(inclus D2 D1).
 
-Infix 5 "=_D" eq_Dom.
+Infix "=_D" eq_Dom (at level 5, no associativity).
 
 Lemma ouvert_P1 : (D:R->Prop) (ouvert D) <-> D =_D (interieur D).
 Intro; Split.
