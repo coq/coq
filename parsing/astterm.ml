@@ -62,7 +62,9 @@ let mal_formed_mssg () =
 (* determines if some pattern variable starts with uppercase *)
 let warning_uppercase loc uplid = (* Comment afficher loc ?? *)
   let vars =
-    prlist_with_sep pr_spc (fun v -> [< 'sTR (string_of_id v) >]) uplid in
+    prlist_with_sep 
+      (fun () -> [< 'sTR ", " >]) (* We avoid 'sPC, else it breaks the line *)
+      (fun v -> [< 'sTR (string_of_id v) >]) uplid in
   let (s1,s2) = if List.length uplid = 1 then (" ","s ") else ("s "," ") in
   wARN [<'sTR ("the variable"^s1); vars;
 	 'sTR (" start"^s2^"with an upper case letter in pattern") >]
