@@ -57,7 +57,8 @@ type relation =
      rel_sym: constr option;
      rel_trans : constr option;
      rel_quantifiers_no: int  (* it helps unification *);
-     rel_X_relation_class: constr
+     rel_X_relation_class: constr;
+     rel_Xreflexive_relation_class: constr
    }
 
 type 'a relation_class =
@@ -167,8 +168,6 @@ let coq_equality_morphism_of_asymmetric_reflexive_transitive_relation =
 let coq_equality_morphism_of_symmetric_reflexive_transitive_relation =
  lazy(constant ["Setoid"]
   "equality_morphism_of_symmetric_reflexive_transitive_relation")
-let coq_equality_morphism_of_setoid_theory =
- lazy(constant ["Setoid"] "equality_morphism_of_setoid_theory")
 let coq_make_compatibility_goal =
  lazy(constant ["Setoid"] "make_compatibility_goal")
 let coq_make_compatibility_goal_eval_ref =
@@ -300,12 +299,16 @@ let subst_relation subst relation =
   let rel_sym' = option_app (subst_mps subst) relation.rel_sym in
   let rel_trans' = option_app (subst_mps subst) relation.rel_trans in
   let rel_X_relation_class' = subst_mps subst relation.rel_X_relation_class in
+  let rel_Xreflexive_relation_class' =
+   subst_mps subst relation.rel_Xreflexive_relation_class
+  in
     if rel_a' == relation.rel_a
       && rel_aeq' == relation.rel_aeq
       && rel_refl' == relation.rel_refl
       && rel_sym' == relation.rel_sym
       && rel_trans' == relation.rel_trans
       && rel_X_relation_class' == relation.rel_X_relation_class
+      && rel_Xreflexive_relation_class'==relation.rel_Xreflexive_relation_class
     then
       relation
     else
@@ -315,7 +318,8 @@ let subst_relation subst relation =
         rel_sym = rel_sym';
         rel_trans = rel_trans';
         rel_quantifiers_no = relation.rel_quantifiers_no;
-        rel_X_relation_class = rel_X_relation_class'
+        rel_X_relation_class = rel_X_relation_class';
+        rel_Xreflexive_relation_class = rel_Xreflexive_relation_class'
       }
       
 let equiv_list () = List.map (fun x -> x.rel_aeq) (Gmap.rng !relation_table)
@@ -565,28 +569,23 @@ let cic_relation_class_of_X_relation_class typ value =
   | Leibniz None -> assert false
 
 
+let cic_precise_relation_class_of_relation =
+ function
+    {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None} ->
+      mkApp ((Lazy.force coq_RAsymmetric), [| rel_a ; rel_aeq; refl |])
+  | {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym} ->
+      mkApp ((Lazy.force coq_RSymmetric), [| rel_a ; rel_aeq; sym ; refl |])
+  | {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None} ->
+      mkApp ((Lazy.force coq_AAsymmetric), [| rel_a ; rel_aeq |])
+  | {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym} ->
+      mkApp ((Lazy.force coq_ASymmetric), [| rel_a ; rel_aeq; sym |])
+
 let cic_precise_relation_class_of_relation_class =
  function
     Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None}
-    ->
-     rel_aeq,
-      mkApp ((Lazy.force coq_RAsymmetric), [| rel_a ; rel_aeq; refl |]), true
-  | Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym}
-    ->
-     rel_aeq,
-      mkApp ((Lazy.force coq_RSymmetric), [| rel_a ; rel_aeq; sym ; refl |]),
-      true
-  | Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None}
-    ->
-     rel_aeq, mkApp ((Lazy.force coq_AAsymmetric), [| rel_a ; rel_aeq |]), false
-  | Relation
-     {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym}
-    ->
-     rel_aeq, mkApp ((Lazy.force coq_ASymmetric), [| rel_a ; rel_aeq; sym |]),
-      false
+     {rel_aeq=rel_aeq; rel_Xreflexive_relation_class=lem; rel_refl=rel_refl }
+     ->
+      rel_aeq,lem,not(rel_refl=None)
   | Leibniz (Some t) ->
      mkApp ((Lazy.force coq_eq), [| t |]),
       mkApp ((Lazy.force coq_RLeibniz), [| t |]), true
@@ -646,7 +645,9 @@ let apply_to_relation subst rel =
      rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym;
      rel_trans = option_app (fun c -> mkApp (c,subst)) rel.rel_trans;
      rel_quantifiers_no = new_quantifiers_no;
-     rel_X_relation_class = mkApp (rel.rel_X_relation_class, subst) }
+     rel_X_relation_class = mkApp (rel.rel_X_relation_class, subst);
+     rel_Xreflexive_relation_class =
+      mkApp (rel.rel_Xreflexive_relation_class, subst) }
 
 let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
  let env = Global.env() in
@@ -973,7 +974,9 @@ let int_add_relation id a aeq refl sym trans =
      rel_sym = sym;
      rel_trans = trans;
      rel_quantifiers_no = quantifiers_no;
-     rel_X_relation_class = mkProp (* dummy value, overwritten below *) } in
+     rel_X_relation_class = mkProp; (* dummy value, overwritten below *)
+     rel_Xreflexive_relation_class = mkProp (* dummy value, overwritten below *)
+   } in
   let x_relation_class =
    let subst =
     Array.of_list
@@ -991,7 +994,25 @@ let int_add_relation id a aeq refl sym trans =
        const_entry_type = None;
        const_entry_opaque = false},
       IsDefinition) in
-  let aeq_rel = { aeq_rel with rel_X_relation_class = current_constant id } in
+  let id_precise = id_of_string (string_of_id id ^ "_precise_relation_class") in
+  let xreflexive_relation_class =
+   let subst =
+    Array.of_list
+     (Util.list_map_i (fun i _ -> mkRel i) 1 a_quantifiers_rev)
+   in
+    cic_precise_relation_class_of_relation (apply_to_relation subst aeq_rel) in
+  let _ =
+   Declare.declare_internal_constant id_precise
+    (DefinitionEntry
+      {const_entry_body =
+        Sign.it_mkLambda_or_LetIn xreflexive_relation_class a_quantifiers_rev;
+       const_entry_type = None;
+       const_entry_opaque = false},
+      IsDefinition) in
+  let aeq_rel =
+   { aeq_rel with
+      rel_X_relation_class = current_constant id;
+      rel_Xreflexive_relation_class = current_constant id_precise } in
   Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
   Options.if_verbose ppnl (prterm aeq ++ str " is registered as a relation");
   match trans with

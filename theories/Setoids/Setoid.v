@@ -32,6 +32,17 @@ Inductive variance : Set :=
 Definition Argument_Class := X_Relation_Class variance.
 Definition Relation_Class := X_Relation_Class unit.
 
+Inductive Reflexive_Relation_Class : Type :=
+   RSymmetric :
+     forall A Aeq, symmetric A Aeq -> reflexive _ Aeq -> Reflexive_Relation_Class
+ | RAsymmetric :
+     forall A Aeq, reflexive A Aeq -> Reflexive_Relation_Class
+ | RLeibniz : Type -> Reflexive_Relation_Class.
+
+Inductive Areflexive_Relation_Class  : Type :=
+ | ASymmetric : forall A Aeq, symmetric A Aeq -> Areflexive_Relation_Class
+ | AAsymmetric : forall A (Aeq : relation A), Areflexive_Relation_Class.
+
 Implicit Type Hole Out: Relation_Class.
 
 Definition relation_class_of_argument_class : Argument_Class -> Relation_Class.
@@ -268,17 +279,6 @@ Inductive check_if_variance_is_respected :
  | MSContravariant :
      forall dir,
       check_if_variance_is_respected (Some Contravariant) dir (opposite_direction dir).
-
-Inductive Reflexive_Relation_Class : Type :=
-   RSymmetric :
-     forall A Aeq, symmetric A Aeq -> reflexive _ Aeq -> Reflexive_Relation_Class
- | RAsymmetric :
-     forall A Aeq, reflexive A Aeq -> Reflexive_Relation_Class
- | RLeibniz : Type -> Reflexive_Relation_Class.
-
-Inductive Areflexive_Relation_Class  : Type :=
- | ASymmetric : forall A Aeq, symmetric A Aeq -> Areflexive_Relation_Class
- | AAsymmetric : forall A (Aeq : relation A), Areflexive_Relation_Class.
 
 Definition relation_class_of_reflexive_relation_class:
  Reflexive_Relation_Class -> Relation_Class.
