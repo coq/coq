@@ -29,9 +29,11 @@ V7 provides the following novelties:
 \item A more high-level tactic language called $\ltac$ (see
 section~\ref{Tactics})
 \item A primitive let-in construction (see section \ref{Letin})
+which can also be used in \texttt{Record} definitions
+    (as suggested by Randy Pollack)
 \item Structuration of the developments in libraries and use of the
 dot notation to access names (see section \ref{Names})
-\item Various improvements, including a search facilities by pattern
+\item A search facilities by pattern
 provided by Yves Bertot (see section \ref{Search})
 \item A ``natural'' syntax for real numbers (see section
 \ref{SyntaxExtensions}) 
@@ -51,28 +53,24 @@ be used with Helm's publishing and rendering tools (see section
 Incompatibilities are described in section
 \ref{Incompatibilities}. Please notice that 
 {\tt Program/Realizer} is no more available in {\Coq} V7.
+
 Developers of tactics in ML are invited to read section
 \ref{Developers}.
 
-The main changes between \Coq{} V7beta and \Coq{} V7 are~:
+\paragraph{Changes between \Coq{} V7beta and \Coq{} V7}
+Some functionalities of \Coq{} V6.3 that were not available in \Coq{}
+V7beta has been restored~:
 \begin{itemize}
-\item \texttt{Correctness} is now supported.
 \item A new mechanism for extraction of ML programs has been introduced.
-\item Some functionalities of \Coq{} V6 has been restored~:
-  \begin{itemize}
-  \item Syntax for user-defined tactics calls does not require extra
+\item \texttt{Correctness} is now supported.
+\item Syntax for user-defined tactics calls does not require extra
     parenthesis.
-  \item \texttt{Elim} can be called even for non-inductive objects
+\item \texttt{Elim} can be called even for non-inductive objects
     when the apropriate elimination lemma exists.
-  \item User defined tokens with arbitrary combination of letters and
+\item User defined tokens with arbitrary combination of letters and
     symbols have been reintroduced.
-  \item Local definitions can be unfolded in goals using \texttt{Unfold}.
-  \item Local definition can be used in \texttt{Record} definitions
-    (as suggested by Randy Pollack).
-  \end{itemize}
 \end{itemize}
 \section{Language}
-
 \label{Language}
 \subsection{Primitive {\tt let ... in ...} construction}
 \label{Letin}
@@ -102,9 +100,11 @@ is not concerned by $\delta$ reduction. Commands to finely reduce this
 kind of expression remain to be provided.
 \medskip
 
-Remark: A less symbolic but equivalent syntax is available as {\tt let
+\paragraph{Alternative syntax}
+ A less symbolic but equivalent syntax is available as~:\\ {\tt let
 two = `1 + 1` in `two + two`}.
 
+\paragraph{Local definitions in records}
 {\tt Local} definitions can be used inside record definitions as
 suggested by Randy Pollack~:
 \begin{coq_example}
@@ -189,15 +189,18 @@ to denote it. This means the base name is mapped to the absolute name
 in {\Coq} name table.
 
 All the base names of sublibraries, modules, sections, definitions and
-theorems are automatically put in {\Coq} name table. But sometimes,
+theorems are automatically put in the {\Coq} name table. But sometimes,
 names used in a module can hide names defined in another module.
 Instead of just distinguishing the clashing names by using the
 absolute names, it is enough to prefix the base name just by the name
-of its containing section (or module or library). E.g. if {\tt eq}
-above is hidden by another definition of same base name, it is enough
-to write {\tt Equality.eq} to access it... unless section {\tt
-Equality} itself has been hidden in which case, it is necessary to
-write {\tt Logic.Equality.eq} and so on. Such a name built from
+of its containing section (or module or library). 
+% CP : L'exemple avec Equality.eq ne semble pas fonctionner
+% E.g. if {\tt eq}
+% above is hidden by another definition of same base name, it is enough
+% to write {\tt Equality.eq} to access it... unless section {\tt
+% Equality} itself has been hidden in which case, it is necessary to
+% write {\tt Logic.Equality.eq} and so on. 
+Such a name built from
 single identifiers separated by dots is called a {\it qualified}
 name. Especially, both absolute names and short names are qualified
 names. Root names cannot be hidden in such a way fully qualified
@@ -224,7 +227,7 @@ known by \Coq. However, no consistency check is currently done to
 ensure the required module has actually been compiled with the same
 absolute name (e.g. a module can be compiled with absolute name
 {\tt Mycontrib.Arith.Plus} but required with absolute name
-{\tt HisContrib.Zarith.Plus}).
+{\tt HisContrib.ZArith.Plus}).
 
 The command {\tt Add Rec LoadPath} is also available from {\tt coqtop}
 and {\tt coqc} by using option \verb=-R= (see section \ref{Tools}).
@@ -233,7 +236,6 @@ and {\tt coqc} by using option \verb=-R= (see section \ref{Tools}).
 \label{SyntaxExtensions}
 
 \paragraph{``Natural'' syntax for real numbers}
-
 A ``natural'' syntax for real numbers and operations on reals is now
 available by putting expressions inside pairs of backquotes.
 
@@ -241,7 +243,6 @@ available by putting expressions inside pairs of backquotes.
 Require Reals.
 Check ``2*3/(4+2)``.
 \end{coq_example}
-
 Remark: A constant, say \verb:``4``:, is equivalent to
 \verb:``(1+(1+(1+1)))``:.
 
@@ -334,11 +335,11 @@ can be visited at the following URL:\\
 
 {\sf http://logical.inria.fr/\~{}delahaye/}
 
-\subsection{Tactic debuger}
+\paragraph{Tactic debuger}
 
   \paragraph{{\tt Debug $($ On $|$ Off $)$}} turns on/off the tactic
   debuger for $\ltac$.
-  This is still very experimental and no documentation are provided yet.
+  This is still very experimental and no documentation is provided yet.
 
 
 \subsection{New tactics}
@@ -352,11 +353,11 @@ table of field theories (as for the tactic {\tt Ring}) is dealt by means of an
 \ml{} part. This tactic is currently used in the real number theory. For more
 details, see the Reference Manual.
 
-   \paragraph{{\tt Fourier}} written by LoÏc Pottier solves linear inequations.
+   \paragraph{{\tt Fourier}} written by Loïc Pottier solves linear inequations.
 
    \paragraph{Other tactics and developments} has been included in the real
-numbers library: {\tt DiscrR} proves that a real integer constant c1 is non 
-equal to another real integer constant c2; {\tt SplitAbsolu} allows us to 
+numbers library: {\tt DiscrR} proves that a real integer constant $c_1$ is non 
+equal to another real integer constant $c_2$; {\tt SplitAbsolu} allows us to 
 unfold {\tt Rabsolu} contants and split corresponding conjonctions; 
 {\tt SplitRmult} allows us to split a condition that a product is non equal to 
 zero into subgoals corresponding to the condition on each subterm of the 
@@ -485,16 +486,19 @@ identifiers and the {\tt inside} and {\tt outside} restrictions as
 
 A printer of {\Coq} theories into XML syntax has been contributed by
 Claudio Sacerdoti Coen. Various printing commands (such as {\tt Print
-XML Module Disk "{\it dir}" {\ident}}) allow to produce XML files from
-``.vo'' files. These XML files can be published on the Web, retrieved
+XML Module {\ident}}) allow to produce XML files from
+``.vo'' files. In order to experiment these possibilities, you need to
+require the \Coq{} \texttt{Xml} module first.
+
+These XML files can be published on the Web, retrieved
 and rendered by tools developed in the HELM project (see
 http://www.cs.unibo.it/helm).
 
 \subsection{Other new commands}
 
 
-  \paragraph{{\tt Implicits {\ident}}} turns the implicit arguments
-  mode on for {\ident} even if the mode is not globally turned on.
+  \paragraph{{\tt Implicits {\ident}}} associate to \ident{}  
+  implicit arguments as if the implicit arguments mode was on.
 
   \paragraph{{\tt Implicits {\ident} [{\num} \ldots {\num}]}}
         allows to explicitly give what arguments
@@ -580,13 +584,15 @@ added.
 However, the resulting ML term is not guaranteed to be typable in ML
 (the next version should incorporate automatically appropriate conversions).
 
-Only extraction towards Ocaml programs is currently available. More
-information can be found in \verb=$COQTOP/contrib/extraction/README=. 
-The syntax of commands is described in the Reference Manual.
-
+Only extraction towards Ocaml programs is currently available. 
 The \verb=ML import= command is not available anymore, the command
 \verb=Extract Constant=  can be used to realize a \Coq{} axiom by 
 an ML program.
+
+More
+information can be found in \verb=$COQTOP/contrib/extraction/README=. 
+The syntax of commands is described in the Reference Manual.
+
 
 \section{Developers}
 \label{Developers}
@@ -618,8 +624,6 @@ documentation tool (see the ``doc'' directory in {\Coq} source).
   
   \item Definition of {\tt D\_in} (Rderiv.v) is now with Rdiv and not 
         with Rmult and Rinv as before.
-
-  \item {\tt Extraction} is currently not available in {\Coq} V7.
 
   \item Pattern aliases of dependent type in \verb=Cases=
         expressions are currently not supported.
