@@ -101,7 +101,10 @@ let idopt_of_name = function
   | Name id -> Some id
   | Anonymous -> None
 
-let extern_evar loc n = warning "No notation for Meta"; CMeta (loc,n)
+let extern_evar loc n =
+  warning
+    "Existential variable turned into meta-variable during externalization";
+  CMeta (loc,n)
 
 let raw_string_of_ref = function
   | ConstRef kn -> 
