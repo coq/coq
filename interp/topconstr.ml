@@ -89,8 +89,11 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | AOrderedCase (b,tyopt,tm,bv) ->
       ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv,ref None)
   | ALetTuple (nal,(na,po),b,c) ->
+      let e,nal = list_fold_map (fun e na -> let (na,e) = name_app g e na in e,na) e nal in 
+      let na,e = name_app g e na in
       RLetTuple (loc,nal,(na,option_app (f e) po),f e b,f e c)
   | AIf (c,(na,po),b1,b2) ->
+      let na,e = name_app g e na in
       RIf (loc,f e c,(na,option_app (f e) po),f e b1,f e b2)
   | ACast (c,t) -> RCast (loc,f e c,f e t)
   | ASort x -> RSort (loc,x)
@@ -271,8 +274,11 @@ let aconstr_and_vars_of_rawconstr a =
   | ROrderedCase (_,b,tyopt,tm,bv,_) ->
       AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RLetTuple (loc,nal,(na,po),b,c) ->
+      add_name bound_binders na;
+      List.iter (add_name bound_binders) nal;
       ALetTuple (nal,(na,option_app aux po),aux b,aux c)
   | RIf (loc,c,(na,po),b1,b2) ->
+      add_name bound_binders na;
       AIf (aux c,(na,option_app aux po),aux b1,aux b2)
   | RCast (_,c,t) -> ACast (aux c,aux t)
   | RSort (_,s) -> ASort s
@@ -349,17 +355,19 @@ let rec alpha_var id1 id2 = function
 
 let alpha_eq_val (x,y) = x = y
 
-let bind_env sigma var v =
+let bind_env alp sigma var v =
   try
     let vvar = List.assoc var sigma in
     if alpha_eq_val (v,vvar) then sigma
     else raise No_match
   with Not_found ->
+    (* Check that no capture of binding variables occur *)
+    if List.exists (fun (id,_) ->occur_rawconstr id v) alp then raise No_match;
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::sigma
 
 let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
-  | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
+  | r1, AVar id2 when List.mem id2 metas -> bind_env alp sigma id2 r1
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
   | RRef (_,r1), ARef r2 when r1 = r2 -> sigma
   | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
@@ -417,7 +425,7 @@ and match_alist alp metas sigma l1 l2 x iter termin lassoc =
 
 and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
   | (Name id1,Name id2) when List.mem id2 metas ->
-      let sigma = bind_env sigma id2 (RVar (dummy_loc,id1)) in 
+      let sigma = bind_env alp sigma id2 (RVar (dummy_loc,id1)) in 
       match_ alp metas sigma b1 b2
   | (Name id1,Name id2) -> match_ ((id1,id2)::alp) metas sigma b1 b2
   | (Anonymous,Anonymous) -> match_  alp metas sigma b1 b2
