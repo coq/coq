@@ -10,7 +10,8 @@ noargument:
 	@echo "   make cleanall"
 	@echo or make archclean
 
-LOCALINCLUDES=-I config -I lib -I kernel -I library -I parsing -I toplevel
+LOCALINCLUDES=-I config -I lib -I kernel -I library \
+              -I proofs -I parsing -I toplevel
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
@@ -31,7 +32,7 @@ CAMLP4OBJS=gramlib.cma
 CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
-    lib/hashcons.cmo lib/dyn.cmo lib/system.cmo
+    lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/evd.cmo kernel/constant.cmo \
@@ -49,7 +50,10 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
-TOPLEVEL=toplevel/himsg.cmo
+PROOFS=proofs/proof_trees.cmo
+
+TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
+	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
