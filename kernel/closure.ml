@@ -480,7 +480,7 @@ let lift_fconstr_vect k v =
 let clos_rel e i =
   match expand_rel i e with
     | Inl(n,mt) -> lift_fconstr n mt
-    | Inr(k,None) -> {norm=Norm; term= FRel k}
+    | Inr(k,None) -> {norm=Red; term= FRel k}
     | Inr(k,Some p) ->
         lift_fconstr (k-p) {norm=Norm;term=FFlex(FFarRel p)}
 
@@ -489,7 +489,7 @@ let clos_rel e i =
 let mk_clos e t =
   match kind_of_term t with
     | IsRel i -> clos_rel e i
-    | IsVar x -> { norm = Norm; term = FFlex (FVar x) }
+    | IsVar x -> { norm = Red; term = FFlex (FVar x) }
     | IsMeta _ | IsSort _ ->  { norm = Norm; term = FAtom t }
     | (IsMutInd _|IsMutConstruct _|IsFix _|IsCoFix _
       |IsLambda _|IsProd _) ->
@@ -774,7 +774,6 @@ let contract_fix_vect fix =
    constructor, cofix, letin, constant), or a neutral term (product,
    inductive) *)
 let rec knh m stk =
-  if is_val m then (m,stk) else
   match m.term with
     | FLIFT(k,a) -> knh a (zshift k stk)
     | FCLOS(t,e) -> knht e t (Zupdate(m)::stk)
@@ -850,15 +849,15 @@ let rec knr info m stk =
         | (_,args,s) -> (m,args@s))
   | FCoFix _ when can_red info stk IOTA ->
       (match strip_update_shift_app m stk with
-          (_, args, (Zcase((cn,_),_,br)::s as stk')) ->
+          (_, args, ((Zcase((cn,_),_,br)::_) as stk')) ->
             let efx = contract_fix_vect m.term in
-            kni info efx (args@s)
+            kni info efx (args@stk')
         | (_,args,s) -> (m,args@s))
   | FLetIn (_,v,_,_,bd,e) when can_red info stk ZETA ->
       knit info (subs_cons(v,e)) bd stk
   | _ -> (m,stk)
 
-(* Computes the normal form of a term *)
+(* Computes the weak head normal form of a term *)
 and kni info m stk =
   let (hm,s) = knh m stk in
   knr info hm s
@@ -875,12 +874,14 @@ let kh info v stk = fapp_stack(kni info v stk)
    2- tries to rebuild the term. If a closure still has to be computed,
       calls itself recursively. *)
 let rec kl info m =
-  let (nm,s) = kni info m [] in
-  down_or_up info nm s
+  if is_val m then (incr prune; m)
+  else
+    let (nm,s) = kni info m [] in
+    down_then_up info nm s
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *) 
-and down_or_up info m stk =
+and down_then_up info m stk =
   let nm =
     if is_val m then (incr prune; m) else 
       let nt =
