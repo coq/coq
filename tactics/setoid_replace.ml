@@ -90,16 +90,24 @@ let current_constant id =
 let coq_is_reflexive = lazy(constant ["Setoid"] "is_reflexive")
 
 let coq_Relation_Class = lazy(constant ["Setoid"] "Relation_Class")
+let coq_Argument_Class = lazy(constant ["Setoid"] "Argument_Class")
 let coq_Setoid_Theory = lazy(constant ["Setoid"] "Setoid_Theory")
 let coq_Morphism_Theory = lazy(constant ["Setoid"] "Morphism_Theory")
 let coq_Build_Morphism_Theory= lazy(constant ["Setoid"] "Build_Morphism_Theory")
 
-let coq_Reflexive = lazy(constant ["Setoid"] "Reflexive")
+let coq_AsymmetricReflexive = lazy(constant ["Setoid"] "AsymmetricReflexive")
+let coq_SymmetricReflexive = lazy(constant ["Setoid"] "SymmetricReflexive")
 let coq_Leibniz = lazy(constant ["Setoid"] "Leibniz")
 
 let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
 let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
 let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
+
+let coq_variance = lazy(constant ["Setoid"] "variance")
+let coq_Covariant = lazy(constant ["Setoid"] "Covariant")
+let coq_Left2Right = lazy(constant ["Setoid"] "Left2Right")
+let coq_MSNone = lazy(constant ["Setoid"] "MSNone")
+let coq_MSCovariant = lazy(constant ["Setoid"] "MSCovariant")
 
 let coq_singl = lazy(constant ["Setoid"] "singl")
 let coq_cons = lazy(constant ["Setoid"] "cons")
@@ -116,12 +124,13 @@ let coq_make_compatibility_goal_aux_ref =
 let coq_App = lazy(constant ["Setoid"] "App")
 let coq_Toreplace = lazy(constant ["Setoid"] "Toreplace")
 let coq_Tokeep = lazy(constant ["Setoid"] "Tokeep")
-let coq_Imp = lazy(constant ["Setoid"] "Imp")
 let coq_fcl_singl = lazy(constant ["Setoid"] "fcl_singl")
 let coq_fcl_cons = lazy(constant ["Setoid"] "fcl_cons")
 
 let coq_setoid_rewrite = lazy(constant ["Setoid"] "setoid_rewrite")
 let coq_proj2 = lazy(init_constant ["Logic"] "proj2")
+let coq_unit = lazy(init_constant ["Datatypes"] "unit")
+let coq_tt = lazy(init_constant ["Datatypes"] "tt")
 
 let coq_morphism_theory_of_function =
  lazy(constant ["Setoid"] "morphism_theory_of_function")
@@ -129,11 +138,14 @@ let coq_morphism_theory_of_predicate =
  lazy(constant ["Setoid"] "morphism_theory_of_predicate")
 let coq_relation_of_relation_class =
  lazy(eval_reference ["Setoid"] "relation_of_relation_class")
+let coq_directed_relation_of_relation_class =
+ lazy(eval_reference ["Setoid"] "directed_relation_of_relation_class")
 let coq_interp = lazy(eval_reference ["Setoid"] "interp")
 let coq_Morphism_Context_rect2 =
  lazy(eval_reference ["Setoid"] "Morphism_Context_rect2")
 let coq_iff = lazy(eval_init_reference ["Logic"] "iff")
 
+let coq_impl = lazy(constant ["Setoid"] "impl")
 let coq_prop_relation =
  lazy (
   ACReflexive {
@@ -422,26 +434,38 @@ let check_is_dependent t n =
     else false
   in aux t 0 n
 
-(*CSC: I do not like this very much. I would prefer relation classes
-  to be CIC objects. Keeping backward compatibility, however, is annoying. *)
-let cic_relation_class_of_relation_class =
+let cic_relation_class_of_X_relation_class typ value =
  function
-    ACReflexive {refl_a = refl_a; refl_aeq = refl_aeq; refl_refl = refl_refl} ->
-     mkApp ((Lazy.force coq_Reflexive), [| refl_a ; refl_aeq; refl_refl |])
-  | ACLeibniz t -> mkApp ((Lazy.force coq_Leibniz), [| t |])
+    ACReflexive
+     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=None}
+    ->
+     mkApp ((Lazy.force coq_AsymmetricReflexive),
+      [| Lazy.force typ ; Lazy.force value ; refl_a ; refl_aeq; refl_refl |])
+  | ACReflexive
+     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=Some sym}
+    ->
+     mkApp ((Lazy.force coq_SymmetricReflexive),
+      [| Lazy.force typ ; refl_a ; refl_aeq; sym ; refl_refl |])
+  | ACLeibniz t -> mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
+
+let cic_relation_class_of_relation_class =
+ cic_relation_class_of_X_relation_class coq_unit coq_tt
+
+let cic_argument_class_of_argument_class =
+ cic_relation_class_of_X_relation_class coq_variance coq_Covariant
 
 let gen_compat_lemma_statement output args m =
  let rec mk_signature =
   function
      [] -> assert false
    | [last] ->
-      mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Relation_Class; last |])
+      mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Argument_Class; last |])
    | he::tl ->
       mkApp ((Lazy.force coq_cons),
-       [| Lazy.force coq_Relation_Class; he ; mk_signature tl |])
+       [| Lazy.force coq_Argument_Class; he ; mk_signature tl |])
  in
   let output = cic_relation_class_of_relation_class output in
-  let args= mk_signature (List.map cic_relation_class_of_relation_class args) in
+  let args= mk_signature (List.map cic_argument_class_of_argument_class args) in
    args, output,
     mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |])
 
@@ -572,13 +596,11 @@ type constr_with_marks =
   | MApp of constr * morphism_class * constr_with_marks array 
   | Toreplace
   | Tokeep of constr
-  | Mimp of constr_with_marks * constr_with_marks
 
 let is_to_replace = function
  | Tokeep _ -> false
  | Toreplace -> true
  | MApp _ -> true
- | Mimp _ -> true
 
 let get_mark a = 
   Array.fold_left (||) false (Array.map is_to_replace a)
@@ -620,13 +642,13 @@ let relation_of_hypothesis_and_term_to_rewrite gl (_,h) t =
     (prterm aeq ++ str " is not a setoid equality.")
 
 let mark_occur t in_c =
- let rec aux t in_c =
+ let rec aux in_c =
   if eq_constr t in_c then
     Toreplace
   else
     match kind_of_term in_c with
       | App (c,al) -> 
-          let a = Array.map (aux t) al in
+          let a = Array.map aux al in
            if not (get_mark a) then Tokeep in_c
            else
             let mor =
@@ -703,27 +725,44 @@ let mark_occur t in_c =
           if (dependent (mkRel 1) c2)
           then Tokeep in_c
           else 
-            let c1m = aux t c1 in
-            let c2m = aux t c2 in
+            let c1m = aux c1 in
+            let c2m = aux c2 in
               if ((is_to_replace c1m)||(is_to_replace c2m))
-              then (Mimp (c1m, c2m))
+              then
+               (* this can be optimized since c1 and c2 will be *)
+               (* processed again                               *)
+               aux (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
               else Tokeep in_c
       | _ -> Tokeep in_c
- in aux t in_c
+ in aux in_c
 
 let cic_morphism_context_list_of_list hole_relation =
+ let check out =
+  let (he,_) = destApplication out in
+   if eq_constr he (Lazy.force coq_Leibniz) ||
+       eq_constr he (Lazy.force coq_SymmetricReflexive)
+   then
+    mkApp ((Lazy.force coq_MSNone),
+     [| Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right |])
+   else
+    mkApp ((Lazy.force coq_MSCovariant), [| Lazy.force coq_Left2Right |]) in
  let rec aux =
   function
      [] -> assert false
    | [out,value] ->
-      mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Relation_Class ; out |]),
-      mkApp ((Lazy.force coq_fcl_singl), [| hole_relation; out ; value |])
+      mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Argument_Class ; out |]),
+      mkApp ((Lazy.force coq_fcl_singl),
+       [| hole_relation; Lazy.force coq_Left2Right ; out ;
+          Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right ;
+          check out ; value |])
    | (out,value)::tl ->
       let outtl, valuetl = aux tl in
        mkApp ((Lazy.force coq_cons),
-        [| Lazy.force coq_Relation_Class ; out ; outtl |]),
+        [| Lazy.force coq_Argument_Class ; out ; outtl |]),
        mkApp ((Lazy.force coq_fcl_cons),
-        [| hole_relation ; out ; outtl ; value ; valuetl |])
+        [| hole_relation ; Lazy.force coq_Left2Right ; out ; outtl ;
+           Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right ;
+           check out ; value ; valuetl |])
  in aux
 
 let rec cic_type_nelist_of_list =
@@ -756,21 +795,25 @@ let syntactic_but_representation_of_marked_but hole_relation =
             mt,List.map (fun x -> ACLeibniz x) f_args in
       let cic_relations =
        List.map cic_relation_class_of_relation_class relations in
+      let cic_arguments =
+       List.map cic_argument_class_of_argument_class relations in
       let cic_args_relations,argst =
        cic_morphism_context_list_of_list hole_relation
-        (List.combine cic_relations
+        (List.combine cic_arguments
           (List.map2 (fun t v -> aux t v) cic_relations
            (Array.to_list args)))
       in
        mkApp ((Lazy.force coq_App),
-        [|hole_relation ; cic_args_relations ; out ; morphism_theory ; argst|])
+        [|hole_relation ; Lazy.force coq_Left2Right ;
+          cic_args_relations ; out ; Lazy.force coq_Left2Right ;
+          morphism_theory ; argst|])
    | Toreplace ->
-      mkApp ((Lazy.force coq_Toreplace), [| hole_relation |])
+      mkApp ((Lazy.force coq_Toreplace),
+       [| hole_relation ; Lazy.force coq_Left2Right |])
    | Tokeep c ->
-       mkApp ((Lazy.force coq_Tokeep), [| hole_relation ; out ; c |])
-   | Mimp (source, target) ->
-      mkApp ((Lazy.force coq_Imp),
-       [| hole_relation ; aux out source ; aux out target |])
+       mkApp ((Lazy.force coq_Tokeep),
+        [| hole_relation ; Lazy.force coq_Left2Right ; out ;
+           Lazy.force coq_Left2Right ; c |])
  in aux
 
 let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
@@ -793,7 +836,8 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
          str "left to right only.")
  in
   mkApp ((Lazy.force coq_setoid_rewrite),
-   [| hole_relation ; prop_relation ; c1 ; c2 ;
+   [| hole_relation ; Lazy.force coq_Left2Right ; prop_relation ;
+      Lazy.force coq_Left2Right ; c1 ; c2 ;
       syntactic_but_representation_of_marked_but hole_relation
        prop_relation m ; hyp |])
 
@@ -816,7 +860,9 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
    let thty = pf_type_of gl th in
    let simplified_thty =
     pf_unfoldn [[], Lazy.force coq_iff] gl
-     (pf_unfoldn [[], Lazy.force coq_relation_of_relation_class] gl thty)
+     (pf_unfoldn [[], Lazy.force coq_relation_of_relation_class] gl
+      (pf_unfoldn [[], Lazy.force coq_directed_relation_of_relation_class] gl
+        thty))
    in
     let ty1,ty2 =
      match destApplication simplified_thty with

@@ -19,26 +19,62 @@ Definition is_reflexive (A: Type) (Aeq: A -> A -> Prop) : Prop :=
 Definition is_symmetric (A: Type) (Aeq: A -> A -> Prop) : Prop :=
  forall (x y:A), Aeq x y -> Aeq y x.
 
-Inductive Relation_Class : Type :=
-   Reflexive : forall A Aeq, (@is_reflexive A Aeq) -> Relation_Class
- | Leibniz : Type -> Relation_Class.
+(* X will be used to distinguish covariant arguments whose type is an          *)
+(* AsymmetricReflexive relation from covariant arguments of the same type*)
+Inductive X_Relation_Class (X: Type) : Type :=
+   SymmetricReflexive :
+     forall A Aeq, @is_symmetric A Aeq -> is_reflexive Aeq -> X_Relation_Class X
+ | AsymmetricReflexive : X -> forall A Aeq, @is_reflexive A Aeq -> X_Relation_Class X
+ | Leibniz : Type -> X_Relation_Class X.
+
+Inductive variance : Set :=
+   Covariant
+ | Contravariant.
+
+Definition Argument_Class := X_Relation_Class variance.
+Definition Relation_Class := X_Relation_Class unit.
 
 Implicit Type Hole Out: Relation_Class.
 
-Definition carrier_of_relation_class : Relation_Class -> Type.
- intro; case X; intros.
+Definition relation_class_of_argument_class : Argument_Class -> Relation_Class.
+ destruct 1.
+ exact (SymmetricReflexive _ i i0).
+ exact (AsymmetricReflexive tt i).
+ exact (Leibniz _ T).
+Defined.
+
+Definition carrier_of_relation_class : forall X, X_Relation_Class X -> Type.
+ destruct 1.
+ exact A.
  exact A.
  exact T.
 Defined.
 
-Inductive nelistT (A : Type) : Type :=
-   singl : A -> (nelistT A)
- | cons : A -> (nelistT A) -> (nelistT A).
+Definition relation_of_relation_class :
+ forall X R, @carrier_of_relation_class X R -> carrier_of_relation_class R -> Prop.
+ destruct R.
+ exact Aeq.
+ exact Aeq.
+ exact (@eq T).
+Defined.
 
-Implicit Type In: (nelistT Relation_Class).
+Lemma about_carrier_of_relation_class_and_relation_class_of_argument_class :
+ forall R,
+  carrier_of_relation_class (relation_class_of_argument_class R) =
+   carrier_of_relation_class R.
+ destruct R; reflexivity.
+ Defined.
+
+Inductive nelistT (A : Type) : Type :=
+   singl : A -> nelistT A
+ | cons : A -> nelistT A -> nelistT A.
+
+Definition Arguments := nelistT Argument_Class.
+
+Implicit Type In: Arguments.
 
 Definition function_type_of_morphism_signature :
- (nelistT Relation_Class) -> Relation_Class -> Type.
+ Arguments -> Relation_Class -> Type.
   intros In Out.
   induction In.
     exact (carrier_of_relation_class a -> carrier_of_relation_class Out).
@@ -49,14 +85,18 @@ Definition make_compatibility_goal_aux:
  forall In Out
   (f g: function_type_of_morphism_signature In Out), Prop.
  intros; induction In; simpl in f, g.
-   induction a; destruct Out; simpl in f, g.
-     exact (forall (x1 x2: A), (Aeq x1 x2) -> (Aeq0 (f x1) (g x2))).
-     exact (forall (x1 x2: A), (Aeq x1 x2) -> f x1 = g x2).
-     exact (forall (x: T), (Aeq (f x) (g x))).
-     exact (forall (x: T), f x = g x).
+   induction a; simpl in f, g.
+     exact (forall x1 x2, Aeq x1 x2 -> relation_of_relation_class Out (f x1) (g x2)).
+     destruct x.
+        exact (forall x1 x2, Aeq x1 x2 -> relation_of_relation_class Out (f x1) (g x2)).
+        exact (forall x1 x2, Aeq x2 x1 -> relation_of_relation_class Out (f x1) (g x2)).
+      exact (forall x, relation_of_relation_class Out (f x) (g x)).
   induction a; simpl in f, g.
-    exact (forall (x1 x2: A), (Aeq x1 x2) -> IHIn (f x1) (g x2)).
-    exact (forall (x: T), IHIn (f x) (g x)).
+    exact (forall x1 x2, Aeq x1 x2 -> IHIn (f x1) (g x2)).
+    destruct x.
+       exact (forall x1 x2, Aeq x1 x2 -> IHIn (f x1) (g x2)).
+       exact (forall x1 x2, Aeq x2 x1 -> IHIn (f x1) (g x2)).
+    exact (forall x, IHIn (f x) (g x)).
 Defined. 
 
 Definition make_compatibility_goal :=
@@ -66,18 +106,17 @@ Record Morphism_Theory In Out : Type :=
    {Function : function_type_of_morphism_signature In Out;
     Compat : make_compatibility_goal In Out Function}.
 
-Definition list_of_Leibniz_of_list_of_types:
- nelistT Type -> nelistT Relation_Class.
+Definition list_of_Leibniz_of_list_of_types: nelistT Type -> Arguments.
  induction 1.
-   exact (singl (Leibniz a)).
-   exact (cons (Leibniz a) IHX).
+   exact (singl (Leibniz _ a)).
+   exact (cons (Leibniz _ a) IHX).
 Defined.
 
 (* every function is a morphism from Leibniz+ to Leibniz *)
 Definition morphism_theory_of_function :
  forall (In: nelistT Type) (Out: Type),
   let In' := list_of_Leibniz_of_list_of_types In in
-  let Out' := Leibniz Out in
+  let Out' := Leibniz _ Out in
    function_type_of_morphism_signature In' Out' ->
     Morphism_Theory In' Out'.
   intros.
@@ -92,7 +131,8 @@ Defined.
 Add Relation Prop iff reflexivity proved by iff_refl symmetry proved by iff_sym.
 
 Definition Prop_Relation_Class : Relation_Class.
- eapply (@Reflexive _ iff).
+ eapply (@SymmetricReflexive unit _ iff).
+ exact iff_sym.
  exact iff_refl.
 Defined.
 
@@ -111,26 +151,63 @@ Defined.
 
 (* THE CIC PART OF THE REFLEXIVE TACTIC (SETOID REWRITE) *)
 
-Inductive Morphism_Context Hole : Relation_Class -> Type :=
-    App : forall In Out,
-                Morphism_Theory In Out ->  Morphism_Context_List Hole In ->
-                  Morphism_Context Hole Out
-  | Toreplace : Morphism_Context Hole Hole
+Inductive rewrite_direction : Type :=
+   Left2Right
+ | Right2Left.
+
+Implicit Type dir: rewrite_direction.
+
+Definition variance_of_argument_class : Argument_Class -> option variance.
+ destruct 1.
+ exact None.
+ exact (Some v).
+ exact None.
+Defined.
+
+Definition opposite_direction :=
+ fun dir =>
+   match dir with
+       Left2Right => Right2Left
+     | Right2Left => Left2Right
+   end.
+
+Lemma opposite_direction_idempotent:
+ forall dir, (opposite_direction (opposite_direction dir)) = dir.
+  destruct dir; reflexivity.
+Qed.
+
+Inductive check_if_variance_is_respected :
+ option variance -> rewrite_direction -> rewrite_direction ->  Prop
+:=
+   MSNone : forall dir dir', check_if_variance_is_respected None dir dir'
+ | MSCovariant : forall dir, check_if_variance_is_respected (Some Covariant) dir dir
+ | MSContravariant :
+     forall dir,
+      check_if_variance_is_respected (Some Contravariant) dir (opposite_direction dir).
+
+Inductive Morphism_Context Hole dir : Relation_Class -> rewrite_direction ->  Type :=
+    App :
+      forall In Out dir',
+        Morphism_Theory In Out -> Morphism_Context_List Hole dir dir' In ->
+           Morphism_Context Hole dir Out dir'
+  | Toreplace : Morphism_Context Hole dir Hole dir
   | Tokeep :
-     forall (S: Relation_Class),
-      carrier_of_relation_class S -> Morphism_Context Hole S
-  | Imp :
-      Morphism_Context Hole Prop_Relation_Class ->
-       Morphism_Context Hole Prop_Relation_Class ->
-        Morphism_Context Hole Prop_Relation_Class
-with Morphism_Context_List Hole: nelistT Relation_Class -> Type :=
+     forall S dir',
+      carrier_of_relation_class S -> Morphism_Context Hole dir S dir'
+with Morphism_Context_List Hole dir :
+   rewrite_direction -> Arguments -> Type
+:=
     fcl_singl :
-      forall (S: Relation_Class), Morphism_Context Hole S ->
-       Morphism_Context_List Hole (singl S)
+      forall S dir' dir'',
+       check_if_variance_is_respected (variance_of_argument_class S) dir' dir'' ->
+        Morphism_Context Hole dir (relation_class_of_argument_class S) dir' ->
+         Morphism_Context_List Hole dir dir'' (singl S)
  | fcl_cons :
-      forall (S: Relation_Class) (L: nelistT Relation_Class),
-       Morphism_Context Hole S -> Morphism_Context_List Hole L ->
-        Morphism_Context_List Hole (cons S L).
+      forall S L dir' dir'',
+       check_if_variance_is_respected (variance_of_argument_class S) dir' dir'' ->
+        Morphism_Context Hole dir (relation_class_of_argument_class S) dir' ->
+         Morphism_Context_List Hole dir dir'' L ->
+          Morphism_Context_List Hole dir dir'' (cons S L).
 
 Scheme Morphism_Context_rect2 := Induction for Morphism_Context  Sort Type
 with Morphism_Context_List_rect2 := Induction for Morphism_Context_List Sort Type.
@@ -138,34 +215,57 @@ with Morphism_Context_List_rect2 := Induction for Morphism_Context_List Sort Typ
 Inductive prodT (A B: Type) : Type :=
  pairT : A -> B -> prodT A B.
 
-Definition product_of_relation_class_list : nelistT Relation_Class -> Type.
+Definition product_of_arguments : Arguments -> Type.
  induction 1.
    exact (carrier_of_relation_class a).
    exact (prodT (carrier_of_relation_class a) IHX).
 Defined.
 
-Definition relation_of_relation_class:
- forall Out,
-  carrier_of_relation_class Out -> carrier_of_relation_class Out -> Prop.
- destruct Out.
-   exact Aeq.
-   exact (@eq T).
+Definition get_rewrite_direction: rewrite_direction -> Argument_Class -> rewrite_direction.
+ intros dir R.
+destruct (variance_of_argument_class R).
+   destruct v.
+     exact dir.                                      (* covariant *)
+     exact (opposite_direction dir). (* contravariant *)
+   exact dir.                                       (* symmetric relation *)
 Defined.
 
-Definition relation_of_product_of_relation_class_list:
- forall In,
-  product_of_relation_class_list In -> product_of_relation_class_list In -> Prop.
+Definition directed_relation_of_relation_class:
+ forall dir (R: Relation_Class),
+   carrier_of_relation_class R -> carrier_of_relation_class R -> Prop.
+ destruct 1.
+   exact (@relation_of_relation_class unit).
+   intros; exact (relation_of_relation_class _ X0 X).
+Defined.
+
+Definition directed_relation_of_argument_class:
+ forall dir (R: Argument_Class),
+   carrier_of_relation_class R -> carrier_of_relation_class R -> Prop.
+  intros dir R.
+  rewrite <-
+   (about_carrier_of_relation_class_and_relation_class_of_argument_class R).
+  exact (directed_relation_of_relation_class dir (relation_class_of_argument_class R)).
+Defined.
+
+
+Definition relation_of_product_of_arguments:
+ forall dir In,
+  product_of_arguments In -> product_of_arguments In -> Prop.
  induction In.
-   exact (relation_of_relation_class a).
+   simpl.
+   exact (directed_relation_of_argument_class (get_rewrite_direction dir a) a).
 
    simpl; intros.
    destruct X; destruct X0.
-   exact (relation_of_relation_class a c c0 /\ IHIn p p0).
+   apply and.
+     exact
+      (directed_relation_of_argument_class (get_rewrite_direction dir a) a c c0).
+     exact (IHIn p p0).
 Defined. 
 
 Definition apply_morphism:
  forall In Out (m: function_type_of_morphism_signature In Out)
-  (args: product_of_relation_class_list In), carrier_of_relation_class Out.
+  (args: product_of_arguments In), carrier_of_relation_class Out.
  intros.
  induction In.
    exact (m args).
@@ -174,23 +274,22 @@ Definition apply_morphism:
    exact (IHIn (m c) p).
 Defined.
 
-Theorem apply_morphism_compatibility:
+Theorem apply_morphism_compatibility_Right2Left:
  forall In Out (m1 m2: function_type_of_morphism_signature In Out)
-   (args1 args2: product_of_relation_class_list In),
+   (args1 args2: product_of_arguments In),
      make_compatibility_goal_aux _ _ m1 m2 ->
-      relation_of_product_of_relation_class_list _ args1 args2 ->
-        relation_of_relation_class _
-         (apply_morphism _ _ m1 args1)
-         (apply_morphism _ _ m2 args2).
-  intros.
-  induction In.
-    simpl; simpl in m1, m2, args1, args2, H0.
-    destruct a; destruct Out.
-      apply H; exact H0.
-      simpl; apply H; exact H0.
-      simpl; rewrite H0; apply H.
-      simpl; rewrite H0; apply H.
-   simpl in args1, args2, H0.
+      relation_of_product_of_arguments Right2Left _ args1 args2 ->
+        directed_relation_of_relation_class Right2Left _
+         (apply_morphism _ _ m2 args1)
+         (apply_morphism _ _ m1 args2).
+  induction In; intros.
+    simpl in m1, m2, args1, args2, H0 |- *.
+    destruct a; simpl in H; hnf in H0.
+          apply H; exact H0.
+          destruct v; simpl in H0; apply H; exact H0.
+          rewrite H0; apply H; exact H0.
+
+    simpl in m1, m2, args1, args2, H0 |- *.
    destruct args1; destruct args2; simpl.
    destruct H0.
    simpl in H.
@@ -198,89 +297,163 @@ Theorem apply_morphism_compatibility:
      apply IHIn.
        apply H; exact H0.
        exact H1.
+     destruct v.
+       apply IHIn.
+         apply H; exact H0.
+         exact H1.
+       apply IHIn.
+         apply H; exact H0.       
+          exact H1.
+    rewrite H0; apply IHIn.
+      apply H.
+      exact H1.
+Qed.
+
+Theorem apply_morphism_compatibility_Left2Right:
+ forall In Out (m1 m2: function_type_of_morphism_signature In Out)
+   (args1 args2: product_of_arguments In),
+     make_compatibility_goal_aux _ _ m1 m2 ->
+      relation_of_product_of_arguments Left2Right _ args1 args2 ->
+        directed_relation_of_relation_class Left2Right _
+         (apply_morphism _ _ m1 args1)
+         (apply_morphism _ _ m2 args2).
+  induction In; intros.
+    simpl in m1, m2, args1, args2, H0 |- *.
+    destruct a; simpl in H; hnf in H0.
+          apply H; exact H0.
+          destruct v; simpl in H0; apply H; exact H0.
+          rewrite H0; apply H; exact H0.
+
+    simpl in m1, m2, args1, args2, H0 |- *.
+   destruct args1; destruct args2; simpl.
+   destruct H0.
+   simpl in H.
+   destruct a; simpl in H.
+     apply IHIn.
+       apply H; exact H0.
+       exact H1.
+     destruct v.
+       apply IHIn.
+         apply H; exact H0.
+         exact H1.
+       apply IHIn.
+         apply H; exact H0.       
+          exact H1.
     rewrite H0; apply IHIn.
       apply H.
       exact H1.
 Qed.
 
 Definition interp :
- forall Hole Out, carrier_of_relation_class Hole ->
-  Morphism_Context Hole Out -> carrier_of_relation_class Out.
- intros Hole Out H t.
+ forall Hole dir Out dir', carrier_of_relation_class Hole ->
+  Morphism_Context Hole dir Out dir' -> carrier_of_relation_class Out.
+ intros Hole dir Out dir' H t.
  elim t using
-  (@Morphism_Context_rect2 Hole (fun S _ => carrier_of_relation_class S)
-    (fun L fcl => product_of_relation_class_list L));
+  (@Morphism_Context_rect2 Hole dir (fun S _ _ => carrier_of_relation_class S)
+    (fun _ L fcl => product_of_arguments L));
   intros.
    exact (apply_morphism _ _ (Function m) X).
    exact H.
    exact c.
-   exact (X -> X0).
-   exact X.
-   split; [ exact X | exact X0 ].
+   simpl;
+     rewrite <-
+       (about_carrier_of_relation_class_and_relation_class_of_argument_class S);
+     exact X.
+   split.
+     rewrite <-
+       (about_carrier_of_relation_class_and_relation_class_of_argument_class S);
+       exact X.
+       exact X0.
 Defined.
 
 (*CSC: interp and interp_relation_class_list should be mutually defined, since
    the proof term of each one contains the proof term of the other one. However
    I cannot do that interactively (I should write the Fix by hand) *)
 Definition interp_relation_class_list :
- forall Hole (L: nelistT Relation_Class), carrier_of_relation_class Hole ->
-  Morphism_Context_List Hole L -> product_of_relation_class_list L.
- intros Hole L H t.
+ forall Hole dir dir' (L: Arguments), carrier_of_relation_class Hole ->
+  Morphism_Context_List Hole dir dir' L -> product_of_arguments L.
+ intros Hole dir dir' L H t.
  elim t using
-  (@Morphism_Context_List_rect2 Hole (fun S _ => carrier_of_relation_class S)
-    (fun L fcl => product_of_relation_class_list L));
+  (@Morphism_Context_List_rect2 Hole dir (fun S _ _ => carrier_of_relation_class S)
+    (fun _ L fcl => product_of_arguments L));
  intros.
    exact (apply_morphism _ _ (Function m) X).
    exact H.
    exact c.
-   exact (X -> X0).
-   exact X.
-   split; [ exact X | exact X0 ].
+   simpl;
+     rewrite <-
+       (about_carrier_of_relation_class_and_relation_class_of_argument_class S);
+     exact X.
+   split.
+     rewrite <-
+       (about_carrier_of_relation_class_and_relation_class_of_argument_class S);
+       exact X.
+       exact X0.
 Defined.
 
 Theorem setoid_rewrite:
- forall Hole Out (E1 E2: carrier_of_relation_class Hole)
-  (E: Morphism_Context Hole Out),
-   (relation_of_relation_class Hole E1 E2) ->
-    (relation_of_relation_class Out (interp E1 E) (interp E2 E)).
+ forall Hole dir Out dir' (E1 E2: carrier_of_relation_class Hole)
+  (E: Morphism_Context Hole dir Out dir'),
+   (directed_relation_of_relation_class dir Hole E1 E2) ->
+    (directed_relation_of_relation_class dir' Out (interp E1 E) (interp E2 E)).
  intros.
  elim E using
-   (@Morphism_Context_rect2 Hole
-     (fun S E => relation_of_relation_class S (interp E1 E) (interp E2 E))
-     (fun L fcl =>
-       relation_of_product_of_relation_class_list _
-        (interp_relation_class_list E1 fcl)
-        (interp_relation_class_list E2 fcl)));
- intros.
-   change (relation_of_relation_class Out0
+   (@Morphism_Context_rect2 Hole dir
+     (fun S dir'' E => directed_relation_of_relation_class dir'' S (interp E1 E) (interp E2 E))
+     (fun dir'' L fcl =>
+        relation_of_product_of_arguments dir'' _
+         (interp_relation_class_list E1 fcl)
+         (interp_relation_class_list E2 fcl))); intros.
+   change (directed_relation_of_relation_class dir'0 Out0
     (apply_morphism _ _ (Function m) (interp_relation_class_list E1 m0))
     (apply_morphism _ _ (Function m) (interp_relation_class_list E2 m0))).
-   apply apply_morphism_compatibility.
-     exact (Compat m).
-     exact H0.
+   destruct dir'0.
+     apply apply_morphism_compatibility_Left2Right.
+       exact (Compat m).
+       exact H0.
+     apply apply_morphism_compatibility_Right2Left.
+       exact (Compat m).
+       exact H0.
 
    exact H.
 
    unfold interp, Morphism_Context_rect2.
    (*CSC: reflexivity used here*)
-   destruct S.
+   destruct S; destruct dir'0; simpl.
+     apply i0.
+     apply i0.
      apply i.
-     simpl; reflexivity.
+     apply i.
+     reflexivity.
+     reflexivity.
 
-   change
-     (relation_of_relation_class Prop_Relation_Class
-       (interp E1 m -> interp E1 m0) (interp E2 m -> interp E2 m0)).
-   simpl; simpl in H0, H1.
-   tauto.
-
-  exact H0.
+  destruct S; unfold directed_relation_of_argument_class; simpl in H0 |- *;
+   unfold get_rewrite_direction; simpl.
+     destruct dir'0; destruct dir'';
+       (exact H0 ||
+        unfold directed_relation_of_argument_class; simpl; apply i; exact H0).
+   (* the following mess with generalize/clear/intros is to help Coq resolving *)
+   (* second order unification problems.                                                                *)
+   generalize m c H0; clear H0 m c; inversion c;
+     generalize m c; clear m c; rewrite <- H1; rewrite <- H2; intros;
+       (exact H3 || rewrite (opposite_direction_idempotent dir'0); apply H3).
+   destruct dir'0; destruct dir''; (exact H0 || hnf; symmetry; exact H0).
 
   change
-    (relation_of_relation_class _ (interp E1 m) (interp E2 m) /\
-     relation_of_product_of_relation_class_list _
+    (directed_relation_of_argument_class (get_rewrite_direction dir'' S) S
+       (eq_rect _ (fun T : Type => T) (interp E1 m) _
+         (about_carrier_of_relation_class_and_relation_class_of_argument_class S))
+       (eq_rect _ (fun T : Type => T) (interp E2 m) _
+         (about_carrier_of_relation_class_and_relation_class_of_argument_class S)) /\
+     relation_of_product_of_arguments dir'' _
        (interp_relation_class_list E1 m0) (interp_relation_class_list E2 m0)).
    split.
-     exact H0.
+     clear m0 H1; destruct S; simpl in H0 |- *; unfold get_rewrite_direction; simpl.
+        destruct dir''; destruct dir'0; (exact H0 || hnf; apply i; exact H0).
+        inversion c.
+          rewrite <- H3; exact H0.
+          rewrite (opposite_direction_idempotent dir'0); exact H0.
+          destruct dir''; destruct dir'0; (exact H0 || hnf; symmetry; exact H0).
      exact H1.
 Qed.
 
@@ -291,24 +464,29 @@ Record Setoid_Theory  (A: Type) (Aeq: A -> A -> Prop) : Prop :=
    Seq_sym : forall x y:A, Aeq x y -> Aeq y x;
    Seq_trans : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z}.
 
-Definition relation_class_of_setoid_theory:
+Definition argument_class_of_setoid_theory:
  forall (A: Type) (Aeq: A -> A -> Prop),
-  Setoid_Theory Aeq -> Relation_Class.
+  Setoid_Theory Aeq -> Argument_Class.
  intros.
- apply (@Reflexive _ Aeq).
+ apply (@SymmetricReflexive variance _ Aeq).
+ exact (Seq_sym H).
  exact (Seq_refl H).
 Defined.
 
+Definition relation_class_of_setoid_theory :=
+ fun A Aeq Setoid =>
+  relation_class_of_argument_class
+   (@argument_class_of_setoid_theory A Aeq Setoid).
+
 Definition equality_morphism_of_setoid_theory:
  forall (A: Type) (Aeq: A -> A -> Prop) (ST: Setoid_Theory Aeq),
-   let ASetoidClass := relation_class_of_setoid_theory ST in 
+   let ASetoidClass := argument_class_of_setoid_theory ST in 
     (Morphism_Theory (cons ASetoidClass (singl ASetoidClass))
       Prop_Relation_Class).
  intros.
  exists Aeq.
  pose (sym   := Seq_sym ST);  clearbody sym.
  pose (trans := Seq_trans ST); clearbody trans.
- (*CSC: symmetry and transitivity used here *)
  unfold make_compatibility_goal; simpl; split; eauto.
 Defined.
 
