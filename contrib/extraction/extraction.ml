@@ -248,7 +248,7 @@ let rec extract_type env ctx c =
 			 extract_type_app 
 			   env ctx fl (ConstRef sp,sc,flc) args
 		     | Eprop -> 
-			 Tprop
+			 Tprop (* USELESS: cf tests above *)
 		     | Emlterm _ -> 
 			 assert false 
 			 (* The head symbol must be of type an arity. *))
@@ -330,7 +330,7 @@ and extract_term c =
 	  (* TODO : magic or not *) 
 	  (match List.nth ctx (pred n) with
 	     | Tarity,_ -> assert false (* Cf. precondition *)
-	     | Tprop,_ -> Eprop
+	     | Tprop,_ -> Eprop (* USELESS: cf test debut *)
 	     | Tmltype _, _ -> Emlterm (MLrel (renum_db ctx n))) 
       | IsApp (f,a) ->
 	  let tyf = Typing.type_of env Evd.empty f in
@@ -366,7 +366,7 @@ and extract_term c =
 		 let c2' = extract_rec env' ((t1',id)::ctx) c2 in
 		 (match (c1',c2') with
 		    | (Emlterm a1,Emlterm a2) -> Emlterm (MLletin (id,a1,a2))
-		    | (_,Eprop) -> Eprop
+		    | (_,Eprop) -> Eprop (* USELESS: cf tests above *)
 		    | _ -> assert false (* Cf. rem. above *)))
       | IsCast (c, _) ->
 	  extract_rec env ctx c
@@ -377,12 +377,14 @@ and extract_term c =
   and extract_app env ctx (f,sf) args =
     let nargs = List.length args in
     assert (List.length sf >= nargs);
+      (* We have reduced type of f if needed to be sure of this *)
     let mlargs = 
       List.fold_right 
 	(fun (v,a) args -> match v with
 	   | (Varity | Vprop), _ -> args
-	   | Vdefault,_ -> match extract_rec env ctx a with
-	       | Emltype _ -> assert false (* FIXME: et si !! *)
+	   | Vdefault,_ -> match extract_rec env ctx a with 
+		 (* FIXME precond may be false *) 
+	       | Emltype _ -> assert false (* Cf. rem. above *)
 	       | Eprop -> MLprop :: args
 	       | Emlterm mla -> mla :: args)
 	(List.combine (list_firstn nargs sf) args)
@@ -390,7 +392,8 @@ and extract_term c =
     in
     match extract_rec env ctx f with
       | Emlterm f' -> Emlterm (MLapp (f', mlargs))
-      | Emltype _ | Eprop -> assert false (* FIXME: to check *)
+      | Emltype _ -> assert false (* Cf. rem. above *)
+      | Eprop -> assert false (* FIXME: to check *)
 
   in
   extract_rec (Global.env()) [] c

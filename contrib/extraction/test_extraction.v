@@ -21,9 +21,14 @@ Extraction (f O (le_n O)).
 
 Extraction ([X:Set][x:X]x nat).
 
-Definition d := [X:Type]X->X.
+Definition d := [X:Type]X.
 
 Extraction d.
 Extraction (d Set).
 Extraction [x:(d Set)]O.
 Extraction (d nat).
+
+Extraction ([x:(d Type)]O Type). (* ancien assert false 12368 *)
+
+Extraction ([x:(d Type)]x). (* assert false  7605 *)
+
