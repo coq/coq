@@ -329,7 +329,7 @@ let rec subst_glob_ast s t = match t with
   | MLglob (ConstRef kn) -> (try KNmap.find kn s with Not_found -> t)
   | _ -> ast_map (subst_glob_ast s) t
 
-let dfix_to_mlfix rv av = 
+let dfix_to_mlfix rv av i = 
   let rec make_subst n s = 
     if n < 0 then s 
     else make_subst (n-1) (KNmap.add (kn_of_r rv.(n)) (n+1) s)
@@ -343,8 +343,7 @@ let dfix_to_mlfix rv av =
   in 
   let ids = Array.map (fun r -> id_of_label (label (kn_of_r r))) rv in 
   let c = Array.map (subst 0) av 
-  in 
-  fun i -> MLfix(i, ids, c)
+  in MLfix(i, ids, c)
 
 let rec optim prm s = function
   | [] -> []
@@ -382,10 +381,11 @@ let rec optim_se top prm s = function
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse -> 
       let av = Array.map (fun a -> normalize (subst_glob_ast !s a)) av in 
       let all = ref true in 
-      let mlfix = dfix_to_mlfix rv av in 
+      (* This fake body ensures that no fixpoint will be auto-inlined. *)
+      let fake_body = MLfix (0,[||],[||]) in 
       for i = 0 to Array.length rv - 1 do 
-	if inline rv.(i) (mlfix i)
-	then s := KNmap.add (kn_of_r rv.(i)) (mlfix i) !s
+	if inline rv.(i) fake_body
+	then s := KNmap.add (kn_of_r rv.(i)) (dfix_to_mlfix rv av i) !s
 	else all := false
       done; 
       if !all && top && not prm.modular 
