@@ -219,7 +219,8 @@ let print_grammar univ entry =
 	| _ -> error "Unknown or unprintable grammar entry" in
     Gram.Entry.print te
 
-(* Parse a format *)
+(* Parse a format (every terminal starting with a letter or a single
+   quote (except a single quote alone) must be quoted) *)
 
 let parse_format (loc,str) =
   let str = " "^str in
@@ -300,10 +301,6 @@ let parse_format (loc,str) =
       (* Parse a ' *)
       |	'\'' when i+1 >= String.length str or str.[i+1] = ' ' ->
 	  push_white (n-1) (push_token (UnpTerminal "'") (parse_token (i+1)))
-      (* Parse a ' followed by one character *)
-      |	'\'' when i+2 >= String.length str or str.[i+2] = ' ' ->
-	  push_white (n-1)
-            (push_token (UnpTerminal (String.sub str i 2)) (parse_token (i+2)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
           parse_quoted (n-1) (i+1)
@@ -321,15 +318,72 @@ let parse_format (loc,str) =
   with e ->
     Stdpp.raise_with_loc loc e
 
+(***********************)
+(* Analysing notations *)
+
+open Symbols
+
+type symbol_token = WhiteSpace of int | String of string
+
+let split_notation_string str =
+  let push_token beg i l =
+    if beg = i then l else
+      let s = String.sub str beg (i - beg) in
+      String s :: l 
+  in
+  let push_whitespace beg i l =
+    if beg = i then l else WhiteSpace (i-beg) :: l 
+  in
+  let rec loop beg i =
+    if i < String.length str then
+      if str.[i] = ' ' then
+	push_token beg i (loop_on_whitespace (i+1) (i+1))
+      else
+	loop beg (i+1)
+    else
+      push_token beg i []
+  and loop_on_whitespace beg i =
+    if i < String.length str then
+      if str.[i] <> ' ' then
+	push_whitespace beg i (loop i (i+1))
+      else
+	loop_on_whitespace beg (i+1)
+    else
+      push_whitespace beg i []
+  in
+  loop 0 0
+
+let unquote_notation_token s =
+  let n = String.length s in
+  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
+
+(* To protect alphabetic tokens and quotes from being seen as variables *)
+let quote_notation_token x =
+  let n = String.length x in
+  if (n > 0 & Lexer.is_normal_token x) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
+  else x
+
+let rec analyse_notation_tokens = function
+  | []    -> [], []
+  | String x :: sl when Lexer.is_normal_token x ->
+      Lexer.check_ident x;
+      let id = Names.id_of_string x in
+      let (vars,l) = analyse_notation_tokens sl in
+      if List.mem id vars then
+	error ("Variable "^x^" occurs more than once");
+      (id::vars, NonTerminal id :: l)
+  | String s :: sl ->
+      Lexer.check_special_token s;
+      let (vars,l) = analyse_notation_tokens sl in
+      (vars, Terminal (unquote_notation_token s) :: l)
+  | WhiteSpace n :: sl ->
+      let (vars,l) = analyse_notation_tokens sl in
+      (vars, Break n :: l)
+
 (* Build the syntax and grammar rules *)
 
 type printing_precedence = int * parenRelation
 type parsing_precedence = int option
-
-type symbol =
-  | Terminal of string
-  | NonTerminal of identifier
-  | Break of int
 
 let prec_assoc = function
   | Gramext.RightA -> (L,E)
@@ -338,8 +392,6 @@ let prec_assoc = function
 
 (* For old ast printer *)
 let meta_pattern m = Pmeta(m,Tany)
-
-open Symbols
 
 type white_status = Juxtapose | Separate of int | NextIsTerminal
 
@@ -481,22 +533,13 @@ let make_hunks etyps symbols from =
 
   in make NoBreak symbols
 
-let strip s =
-  let n = String.length s in
-  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
-
-(* To protect alphabetic tokens and quotes from being seen as variables *)
-let quote x =
-  let n = String.length x in
-  if (n > 0 & Lexer.is_normal_token x) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
-  else x
-
 let hunks_of_format (from,(vars,typs) as vt) symfmt = 
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when s' = String.make (String.length s') ' ' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
-  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt when s = strip s' ->
+  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt
+      when s = unquote_notation_token s' ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
       let i = list_index s vars in
@@ -518,11 +561,6 @@ let hunks_of_format (from,(vars,typs) as vt) symfmt =
 let string_of_prec (n,p) =
   (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")
 
-let string_of_symbol = function
-  | NonTerminal _ -> ["_"]
-  | Terminal s -> [s]
-  | Break _ -> []
-
 let assoc_of_type n (_,typ) = precedence_of_entry_type n typ
 
 let string_of_assoc = function
@@ -530,11 +568,8 @@ let string_of_assoc = function
   | Some(Gramext.LeftA) | None -> "LEFTA"
   | Some(Gramext.NonA) -> "NONA"
 
-let make_anon_notation symbols =
-  String.concat " " (List.flatten (List.map string_of_symbol symbols))
-
 let make_symbolic n symbols etyps =
-  ((n,List.map (assoc_of_type n) etyps), make_anon_notation symbols)
+  ((n,List.map (assoc_of_type n) etyps), make_notation_key symbols)
 
 let is_not_small_constr = function
     ETConstr _ -> true
@@ -570,21 +605,6 @@ let make_production etyps symbols =
 	    l)
       symbols [] in
   define_keywords prod
-
-let rec analyse_tokens = function
-  | []    -> [], []
-  | String x :: sl when Lexer.is_normal_token x ->
-      Lexer.check_ident x;
-      let id = Names.id_of_string x in
-      let (vars,l) = analyse_tokens sl in
-      if List.mem id vars then
-	error ("Variable "^x^" occurs more than once");
-      (id::vars, NonTerminal id :: l)
-  | String s :: sl ->
-      Lexer.check_special_token s;
-      let (vars,l) = analyse_tokens sl in (vars, Terminal (strip s) :: l)
-  | WhiteSpace n :: sl ->
-      let (vars,l) = analyse_tokens sl in (vars, Break n :: l)
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
@@ -833,9 +853,9 @@ let compute_syntax_data forv7 (df,modifiers) =
   let (assoc,n,etyps,onlyparse,fmt) = interp_modifiers modifiers in
   (* Notation defaults to NONA *)
   let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
-  let toks = split df in
+  let toks = split_notation_string df in
   let innerlevel = NumLevel (if forv7 then 10 else 200) in
-  let (vars,symbols) = analyse_tokens toks in
+  let (vars,symbols) = analyse_notation_tokens toks in
   check_rule_reversibility symbols;
   let n =
     if !Options.v7 then find_precedence_v7 n etyps symbols
@@ -1003,7 +1023,7 @@ let build_old_pp_rule notation scope symbs (r,vars) =
 
 let add_notation_interpretation_core local symbs for_old df a scope onlyparse 
   onlypp =
-  let notation = make_anon_notation symbs in
+  let notation = make_notation_key symbs in
   let old_pp_rule = 
     if !Options.v7 then 
       option_app (build_old_pp_rule notation scope symbs) for_old
@@ -1012,8 +1032,8 @@ let add_notation_interpretation_core local symbs for_old df a scope onlyparse
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,df))
 
 let add_notation_interpretation df names c sc =
-  let (vars,symbs) = analyse_tokens (split df) in
-  check_notation_existence (make_anon_notation symbs);
+  let (vars,symbs) = analyse_notation_tokens (split_notation_string df) in
+  check_notation_existence (make_notation_key symbs);
   let a = interp_aconstr names vars c in
   let a_for_old = interp_rawconstr_with_implicits (Global.env()) vars names c 
   in
@@ -1032,7 +1052,7 @@ let add_notation_in_scope_v8only local df c mv8 scope toks =
     (inNotation(local,None,notation,scope,a,onlyparse,true,df))
 
 let add_notation_v8only local c (df,modifiers) sc =
-  let toks = split df in
+  let toks = split_notation_string df in
   match toks with 
     | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
 	(* This is a ident to be declared as a rule *)
@@ -1045,7 +1065,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 		error "Parsing rule for this notation includes no level"
 	      else
 	        (* Declare only interpretation *)
-		let (vars,symbs) = analyse_tokens toks in
+		let (vars,symbs) = analyse_notation_tokens toks in
 		let onlyparse = modifiers = [SetOnlyParsing] in
 		let a = interp_aconstr [] vars c in
 		let a_for_old = interp_global_rawconstr_with_vars vars c in
@@ -1060,19 +1080,20 @@ let add_notation_v8only local c (df,modifiers) sc =
 	      add_notation_in_scope_v8only local df c mods sc toks
 
 let is_quoted_ident x =
-  let x' = strip x in x <> x' & try Lexer.check_ident x'; true with _ -> false
+  let x' = unquote_notation_token x in
+  x <> x' & try Lexer.check_ident x'; true with _ -> false
 
 let add_notation local c dfmod mv8 sc =
   match dfmod with
   | None -> add_notation_v8only local c (out_some mv8) sc
   | Some (df,modifiers) ->
-  let toks = split df in
+  let toks = split_notation_string df in
   match toks with 
     | [String x] when is_quoted_ident x 
 	(* This is an ident that can be qualified: a syntactic definition *)
 	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
         (* Means a Syntactic Definition *)
-        let ident = id_of_string (strip x) in
+        let ident = id_of_string (unquote_notation_token x) in
 	let c = snd (interp_aconstr [] [] c) in
 	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
         Syntax_def.declare_syntactic_definition local ident onlyparse c
@@ -1087,8 +1108,8 @@ let add_notation local c dfmod mv8 sc =
 		error "Parsing rule for this notation includes no level"
 	      else
 	        (* Declare only interpretation *)
-		let (vars,symbs) = analyse_tokens toks in
-		check_notation_existence (make_anon_notation symbs);
+		let (vars,symbs) = analyse_notation_tokens toks in
+		check_notation_existence (make_notation_key symbs);
 		let onlyparse = modifiers = [SetOnlyParsing] in
 		let a = interp_aconstr [] vars c in
 		let a_for_old = interp_global_rawconstr_with_vars vars c in
@@ -1112,12 +1133,12 @@ let rec rename x vars n = function
       let xn = x^(string_of_int n) in
       ((inject_var xn)::vars,xn::l)
   | String y::l ->
-      let (vars,l) = rename x vars n l in (vars,(quote y)::l)
+      let (vars,l) = rename x vars n l in (vars,(quote_notation_token y)::l)
   | WhiteSpace _::l ->
       rename x vars n l
 
 let translate_distfix assoc df r = 
-  let (vars,l) = rename "x" [] 1 (split df) in
+  let (vars,l) = rename "x" [] 1 (split_notation_string df) in
   let df = String.concat " " l in
   let a = mkAppC (mkRefC r, vars) in
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
@@ -1125,11 +1146,12 @@ let translate_distfix assoc df r =
 
 let add_distfix local assoc n df r sc =
   (* "x" cannot clash since r is globalized (included section vars) *)
-  let (vars,l) = rename "x" [] 1 (split df) in
+  let (vars,l) = rename "x" [] 1 (split_notation_string df) in
   let df = String.concat " " l in
   let a = mkAppC (mkRefC r, vars) in
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
-  add_notation_in_scope local df a [SetAssoc assoc;SetLevel n] None sc (split df)
+  add_notation_in_scope local df a [SetAssoc assoc;SetLevel n] None sc
+    (split_notation_string df)
 
 let add_infix local (inf,modl) pr mv8 sc =
   if inf="" (* Code for V8Infix only *) then
@@ -1137,11 +1159,11 @@ let add_infix local (inf,modl) pr mv8 sc =
     let (a8,n8,onlyparse,fmt) = interp_infix_modifiers mv8 in
     let metas = [inject_var "x"; inject_var "y"] in
     let a = mkAppC (mkRefC pr,metas) in
-    let df = "x "^(quote p8)^" y" in
-    let toks = split df in
+    let df = "x "^(quote_notation_token p8)^" y" in
+    let toks = split_notation_string df in
     if a8=None & n8=None & fmt=None then
       (* Declare only interpretation *)
-      let (vars,symbs) = analyse_tokens toks in
+      let (vars,symbs) = analyse_notation_tokens toks in
       let a' = interp_aconstr [] vars a in
       let a_for_old = interp_global_rawconstr_with_vars vars a in
       add_notation_interpretation_core local symbs None df a' sc 
@@ -1163,14 +1185,14 @@ let add_infix local (inf,modl) pr mv8 sc =
   *)
   let metas = [inject_var "x"; inject_var "y"] in
   let a = mkAppC (mkRefC pr,metas) in
-  let df = "x "^(quote inf)^" y" in
-  let toks = split df in
+  let df = "x "^(quote_notation_token inf)^" y" in
+  let toks = split_notation_string df in
   if not !Options.v7 & n=None & assoc=None then
     (* En v8, une notation sans information de parsing signifie *)
     (* de ne déclarer que l'interprétation *)
     (* Declare only interpretation *)
-    let (vars,symbs) = analyse_tokens toks in
-    check_notation_existence (make_anon_notation symbs);
+    let (vars,symbs) = analyse_notation_tokens toks in
+    check_notation_existence (make_notation_key symbs);
     let a' = interp_aconstr [] vars a in
     let a_for_old = interp_global_rawconstr_with_vars vars a in
     let for_old = Some (a_for_old,vars) in
@@ -1185,9 +1207,19 @@ let add_infix local (inf,modl) pr mv8 sc =
     | Some(s8,mv8) ->
 	if List.for_all (function SetLevel _ -> false | _ -> true) mv8 then
 	  error "Needs a level"
-	else Some (("x "^quote s8^" y"),mv8) in
+	else Some (("x "^quote_notation_token s8^" y"),mv8) in
   add_notation_in_scope local df a mv mv8 sc toks
   end
+
+let standardise_locatable_notation ntn =
+  let unquote = function
+    | String s -> [unquote_notation_token s]
+    | _ -> [] in
+  if String.contains ntn ' ' then
+    String.concat " " 
+      (List.flatten (List.map unquote (split_notation_string ntn)))
+  else
+    unquote_notation_token ntn
 
 (* Delimiters and classes bound to scopes *)
 type scope_command = ScopeDelim of string | ScopeClasses of Classops.cl_typ

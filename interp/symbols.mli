@@ -126,9 +126,15 @@ val find_arguments_scope : global_reference -> scope_name option list
 val declare_class_scope : scope_name -> Classops.cl_typ -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
-(* Analysing notation *)
-type symbol_token = WhiteSpace of int | String of string
-val split : notation -> symbol_token list
+(* Building notation key *)
+
+type symbol =
+  | Terminal of string
+  | NonTerminal of identifier
+  | Break of int
+
+val make_notation_key : symbol list -> notation
+val decompose_notation_key : notation -> symbol list
 
 (* Prints scopes (expect a pure aconstr printer *)
 val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds

@@ -382,36 +382,6 @@ let find_arguments_scope r =
   try Refmap.find r !arguments_scope
   with Not_found -> []
 
-(* Analysing *)
-
-type symbol_token = WhiteSpace of int | String of string
-
-let split str =
-  let push_token beg i l =
-    if beg = i then l else String (String.sub str beg (i - beg)) :: l 
-  in
-  let push_whitespace beg i l =
-    if beg = i then l else WhiteSpace (i-beg) :: l 
-  in
-  let rec loop beg i =
-    if i < String.length str then
-      if str.[i] = ' ' then
-	push_token beg i (loop_on_whitespace (i+1) (i+1))
-      else
-	loop beg (i+1)
-    else
-      push_token beg i []
-  and loop_on_whitespace beg i =
-    if i < String.length str then
-      if str.[i] <> ' ' then
-	push_whitespace beg i (loop i (i+1))
-      else
-	loop_on_whitespace beg (i+1)
-    else
-      push_whitespace beg i []
-  in
-  loop 0 0
-
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
@@ -450,6 +420,39 @@ let rec compute_ref_arguments_scope t =
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in
   declare_arguments_scope ref (compute_ref_arguments_scope t)
+
+(********************************)
+(* Encoding notations as string *)
+
+type symbol =
+  | Terminal of string
+  | NonTerminal of identifier
+  | Break of int
+
+let string_of_symbol = function
+  | NonTerminal _ -> ["_"]
+  | Terminal s -> [s]
+  | Break _ -> []
+
+let make_notation_key symbols =
+  String.concat " " (List.flatten (List.map string_of_symbol symbols))
+
+let decompose_notation_key s =
+  let len = String.length s in
+  let rec decomp_ntn dirs n =
+    if n>=len then dirs else
+    let pos =
+      try
+	String.index_from s n ' ' 
+      with Not_found -> len
+    in
+    let tok =
+      match String.sub s n (pos-n) with
+      | "_" -> NonTerminal (id_of_string "_")
+      | s -> Terminal s in
+    decomp_ntn (tok::dirs) (pos+1)	  
+  in
+    decomp_ntn [] 0
 
 (************)
 (* Printing *)
@@ -514,16 +517,12 @@ let factorize_entries = function
       (ntn,l_of_ntn)::rest
 
 let is_ident s = (* Poor analysis *)
-  String.length s <> 0 & is_letter s.[0] 
+  String.length s <> 0 & is_letter s.[0]
 
 let browse_notation ntn map =
   let find =
-    if is_ident ntn then
-      fun ntn' -> List.mem (String ntn) (split ntn')
-    else if
-      String.contains ntn '_' then (=) ntn
-    else
-      fun ntn' -> string_string_contains ~where:ntn' ~what:ntn in
+    if String.contains ntn ' ' then (=) ntn
+    else fun ntn' -> List.mem (Terminal ntn) (decompose_notation_key ntn') in
   let l =
     Stringmap.fold 
       (fun scope_name sc ->
@@ -538,7 +537,7 @@ let locate_notation prraw ntn =
   if ntns = [] then
     str "Unknown notation"
   else
-    t (str "Notation                               " ++
+    t (str "Notation            " ++
     tab () ++ str "Scope     " ++ tab () ++ fnl () ++ 
     prlist (fun (ntn,l) ->
       let scope = find_default ntn !scope_stack in

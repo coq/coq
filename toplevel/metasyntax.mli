@@ -59,3 +59,5 @@ val merge_modifiers : Gramext.g_assoc option -> int option ->
 
 val interp_infix_modifiers : syntax_modifier list ->
   Gramext.g_assoc option * precedence option * bool * string located option
+
+val standardise_locatable_notation : string -> string
