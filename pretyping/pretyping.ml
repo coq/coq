@@ -651,13 +651,16 @@ let rec pretype tycon env isevars lvar = function
 	    | None -> new_isevar isevars env (loc,InternalHole) (new_Type ())
 	    in
 	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
-      let bj1 = pretype (Some p) env isevars lvar b1 in
-      let bj2 = pretype (Some p) env isevars lvar b2 in
-      let cargs1 = cstrs.(0).cs_args and cargs2 = cstrs.(1).cs_args in
-      let lb1 = lift (rel_context_length cargs1) bj1.uj_val in
-      let b1 = it_mkLambda_or_LetIn lb1 cargs1 in
-      let lb2 = lift (rel_context_length cargs2) bj2.uj_val in
-      let b2 = it_mkLambda_or_LetIn lb2 cargs2 in
+      let f cs b =
+	let n = rel_context_length cs.cs_args in
+	let pi = liftn n 2 pred in
+	let pi = beta_applist (pi, [build_dependent_constructor cs]) in
+	let csgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) cs.cs_args in
+	let env_c = push_rels csgn env in 
+	let bj = pretype (Some pi) env_c isevars lvar b in
+	it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
+      let b1 = f cstrs.(0) b1 in
+      let b2 = f cstrs.(1) b2 in
       let pred = nf_evar (evars_of isevars) pred in
       let p = nf_evar (evars_of isevars) p in
       let v =
