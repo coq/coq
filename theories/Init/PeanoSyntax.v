@@ -82,6 +82,15 @@ Grammar constr constr0 :=
 | natural_nat27 [ "(" "27" ")" ] -> [ 'N: 27 ' ]
 | natural_nat28 [ "(" "28" ")" ] -> [ 'N: 28 ' ]
 | natural_nat29 [ "(" "29" ")" ] -> [ 'N: 29 ' ]
+| natural_nat30 [ "(" "30" ")" ] -> [ 'N: 30 ' ]
+(* ... *)
+| natural_nat48 [ "(" "48" ")" ] -> [ 'N: 48 ' ]
+| natural_nat80 [ "(" "80" ")" ] -> [ 'N: 80 ' ]
+| natural_nat81 [ "(" "81" ")" ] -> [ 'N: 81 ' ]
+| natural_nat91 [ "(" "91" ")" ] -> [ 'N: 91 ' ]
+| natural_nat95 [ "(" "95" ")" ] -> [ 'N: 95 ' ]
+| natural_nat100 [ "(" "100" ")" ] -> [ 'N: 100 ' ]
+| natural_nat110 [ "(" "110" ")" ] -> [ 'N: 110 ' ]
 .
 
 Grammar constr pattern :=
