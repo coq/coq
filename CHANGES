@@ -17,9 +17,8 @@ Différences oubliées dans la V7.0beta :
 disparaissent à la fermeture de la section si le Require est dans la
 section. Les Require ultérieurs ne les réintroduisent pas.
 
-135.960u 9.850s 3:10.96 76.3%   0+0k 0+0io 126315pf+0w
-
 Différences V7.0beta / V7.0
+
 - Portage de Correctness
 - Réécriture de Extraction
 - Ajout de déclarations locales aux Record (record à la Randy).
