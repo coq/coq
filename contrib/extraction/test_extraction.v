@@ -32,3 +32,11 @@ Extraction ([x:(d Type)]O Type). (* ancien assert false 12368 *)
 
 Extraction ([x:(d Type)]x). (* assert false  7605 *)
 
+Extraction ([X:Type][x:X]x Set nat).
+
+Definition id' := [X:Type][x:X]x.      
+Extraction id'.
+Extraction (id' Set nat).
+
+Extraction let t = nat in (id' Set t). (* 5904-5916: Assertion failed *)
+

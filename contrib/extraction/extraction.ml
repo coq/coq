@@ -50,7 +50,7 @@ type type_extraction_result =
 (* When dealing with CIC contexts, we maintain corresponding contexts 
    made of [type_extraction_result] *)
 
-type extraction_context = (type_extraction_result * identifier) list
+type extraction_context = type_var list
 
 (* The [extraction_result] is the result of the [extract_constr]
    function that extracts an CIC object. It is either a ML type, a ML
@@ -111,6 +111,11 @@ let rec get_arity env c =
     | IsSort s -> Some s
     | _ -> None
 
+let v_of_arity env c = match get_arity env c with
+  | Some (Prop Null) -> Vprop
+  | Some _ -> Varity 
+  | _ -> Vdefault
+
 (* The next function transforms an arity into a signature. It is used 
    for example with the types of inductive definitions, which are known
    to be already in arity form. *)
@@ -120,12 +125,7 @@ let signature_of_arity =
     | IsProd (n, t, c') ->
 	let env' = push_rel (n,None,t) env in
 	let id = id_of_name n in
-	sign_of 
-	  (((match get_arity env t with
-	       | Some (Prop Null) -> Vprop
-	       | Some _ -> Varity 
-	       | _ -> Vdefault), id) :: acc)
-	  env' c'
+	sign_of ((v_of_arity env t, id) :: acc) env' c'
     | IsSort _ -> 
 	acc
     | _ ->
@@ -147,9 +147,9 @@ let rec list_of_ml_arrows = function
 	
 let renum_db ctx n = 
   let rec renum = function
-    | (1, (Tmltype _,_)::_) -> 1
-    | (n, (Tmltype _,_)::s) -> succ (renum (pred n, s))
-    | (n,             _::s) -> renum (pred n, s)
+    | (1, Vdefault :: _) -> 1
+    | (n, Vdefault :: s) -> succ (renum (pred n, s))
+    | (n,        _ :: s) -> renum (pred n, s)
     | _ -> assert false
   in
   renum (n, ctx)
@@ -183,19 +183,18 @@ let lookup_constructor_extraction i = Gmap.find i !constructor_extraction_table
    have $Prop$ as head symbol, or be of type an arity of sort $Prop$.
    The context [ctx] is the extracted version of [env]. *)
 
-let rec extract_type env ctx c =
-  let rec extract_rec env ctx fl c args = 
+let rec extract_type env c =
+  let rec extract_rec env fl c args = 
     (* We accumulate the two contexts, the generated flexible 
        variables, and the arguments of [c]. *) 
-    let ty = Typing.type_of env Evd.empty c in
+    let ty = Typing.type_of env Evd.empty (mkApp (c, Array.of_list args)) in
     match get_arity env ty with 
       | None -> 
 	  assert false (* Cf. precondition. *)
       | Some (Prop Null) ->
 	  Tprop (* [c] is of type an arity of sort $Prop$. *)
       | Some _ -> 
-	  (match kind_of_term (whd_betaiota (whd_betaetalet c))
-	   with
+	  (match kind_of_term (whd_betaiota (whd_betaetalet c)) with
 	    | IsSort (Prop Null) ->
 		assert (args = []); (* A sort can't be applied. *)
 		Tprop (* [c] is $Prop$. *)
@@ -205,62 +204,55 @@ let rec extract_type env ctx c =
 	    | IsProd (n, t, d) ->
 		assert (args = []); (* A product can't be applied. *)
 		let id = id_of_name n in (* FIXME: capture problem *)
-		let t' = extract_rec env ctx fl t [] in
+		let t' = extract_rec env fl t [] in
 		let env' = push_rel (n,None,t) env in
-		let ctx' = (t',id) :: ctx in
 		let fl' = accum_flex t' fl in
-		let d' = extract_rec env' ctx' fl' d [] in
-		  (match d' with
- 		     (* If [t] and [c] give ML types, make an arrow type *) 
-		     | Tmltype (_, sign, fl'') -> 
-			 Tmltype (ml_arrow (t',d'), (v_of_t t',id)::sign, fl'')
-		     | et -> et)
+		let d' = extract_rec env' fl' d [] in
+		(match d' with
+ 		   (* If [t] and [c] give ML types, make an arrow type *) 
+		   | Tmltype (_, sign, fl'') -> 
+		       Tmltype (ml_arrow (t',d'), 
+				(v_of_arity env t,id) :: sign, fl'')
+		   | et -> et)
 	    | IsLambda (n, t, d) ->
 		assert (args = []); (* [c] is now in head normal form. *)
 		let id = id_of_name n in (* FIXME: capture problem *)
-		let t' = extract_rec env ctx fl t [] in
 		let env' = push_rel (n,None,t) env in
-		let ctx' = (t',id) :: ctx in
-		let fl' = accum_flex t' fl in
-		let d' = extract_rec env' ctx' fl' d [] in
-		  (match d' with
-		     | Tmltype (ed, sign, fl'') ->
-			 Tmltype (ed, (v_of_t t',id)::sign, fl'')
-		     | et -> et)
+		let d' = extract_rec env' fl d [] in
+		(match d' with
+		   | Tmltype (ed, sign, fl') ->
+		       Tmltype (ed, (v_of_arity env t,id) :: sign, fl')
+		   | et -> et)
 	    | IsApp (d, args') ->
 		(* We just accumulate the arguments. *)
-		extract_rec env ctx fl d (Array.to_list args' @ args)
+		extract_rec env fl d (Array.to_list args' @ args)
 	    | IsRel n -> 
 		(match lookup_rel_value n env with
-		   | Some t -> extract_rec env ctx fl t args  
+		   | Some t -> 
+		       extract_rec env fl t args  
 		   | None ->
-		       (match List.nth ctx (pred n) with
-			  | (Tprop | Tmltype _), _ -> assert false 
- 			     (* If head symbol is a variable, it must be of 
-				type an arity, and we already dealt with the
-				case of an arity of sort $Prop$. *)
-			  | Tarity, id -> Tmltype (Tvar id, [], fl)))
+ 		       (* If head symbol is a variable, it must be of 
+			  type an arity, and we already dealt with the
+			  case of an arity of sort $Prop$. *)
+		       let id = id_of_name (fst (lookup_rel_type n env)) in 
+		       Tmltype (Tvar id, [], fl))
 	    | IsConst (sp,a) ->
 		let cty = constant_type env Evd.empty (sp,a) in 
 		if is_arity env Evd.empty cty then
 		  (match extract_constant sp with
 		     | Emltype (_, sc, flc) -> 
-			 extract_type_app 
-			   env ctx fl (ConstRef sp,sc,flc) args
-		     | Eprop -> 
-			 Tprop (* USELESS: cf tests above *)
-		     | Emlterm _ -> 
+			 extract_type_app env fl (ConstRef sp,sc,flc) args
+		     | Eprop | Emlterm _ -> 
 			 assert false 
 			 (* The head symbol must be of type an arity. *))
 		else 
 		  (* We can't keep as ML type abbreviation a CIC constant 
 		     which type is not an arity: we reduce this constant. *)
 		  let cvalue = constant_value env (sp,a) in
-		  extract_rec 
-		    env ctx fl (mkApp (cvalue, Array.of_list args)) []
+		  extract_rec env fl (mkApp (cvalue, Array.of_list args)) []
 	    | IsMutInd (spi,_) ->
 		let (si,fli) = extract_inductive spi in
-		extract_type_app env ctx fl (IndRef spi,si,fli) args
+		extract_type_app env fl (IndRef spi,si,fli) args
 	    | IsMutCase _ 
 	    | IsFix _ ->
 		let id = next_ident_away flexible_name fl in
@@ -268,13 +260,13 @@ let rec extract_type env ctx c =
 		(* CIC type without counterpart in ML: we generate a 
 		   new flexible type variable. *) 
 	    | IsCast (c, _) ->
-		extract_rec env ctx fl c args
+		extract_rec env fl c args
 	    | _ -> 
 		assert false)
 
  (* Auxiliary function dealing with type application. *)
 		  
-  and extract_type_app env ctx fl (r,sc,flc) args =
+  and extract_type_app env fl (r,sc,flc) args =
     let nargs = List.length args in
     assert (List.length sc >= nargs); 
     (* [r] is of type an arity, so it can't be applied to more than n args, 
@@ -284,7 +276,7 @@ let rec extract_type env ctx c =
       List.fold_right 
 	(fun (v,a) ((args,fl) as acc) -> match v with
 	   | (Vdefault | Vprop), _ -> acc
-	   | Varity,_ -> match extract_rec env ctx fl a [] with
+	   | Varity,_ -> match extract_rec env fl a [] with
 	       | Tarity -> (Miniml.Tarity :: args, fl) 
   	         (* we pass a dummy type [arity] as argument *)
 	       | Tprop -> (Miniml.Tprop :: args, fl)
@@ -296,7 +288,7 @@ let rec extract_type env ctx c =
     Tmltype (Tapp ((Tglob r) :: mlargs @ flc), sign_rest, fl')
 
   in
-  extract_rec env ctx [] c []
+  extract_rec env [] c []
 
 
 (*s Extraction of a term. 
@@ -316,22 +308,21 @@ and extract_term c =
     else match kind_of_term c with
       | IsLambda (n, t, d) ->
 	  let id = id_of_name n in
-	  let t' = extract_type env ctx t in 
+	  let v = v_of_arity env t in 
 	  let env' = push_rel (n,None,t) env in
-	  let ctx' = (t',id) :: ctx in
+	  let ctx' = v :: ctx in
 	  let d' = extract_rec env' ctx' d in 
-	  (match t' with
-	     | Tarity | Tprop -> d'
-	     | Tmltype _ -> match d' with
+	  (match v with
+	     | Varity | Vprop -> d'
+	     | Vdefault -> match d' with
 		 | Emlterm a -> Emlterm (MLlam (id, a))
-		 | Eprop -> Eprop
-		 | Emltype _ -> assert false (* Cf. rem. above *))
+		 | Eprop | Emltype _ -> assert false (* Cf. rem. above *))
       | IsRel n ->
 	  (* TODO : magic or not *) 
 	  (match List.nth ctx (pred n) with
-	     | Tarity,_ -> assert false (* Cf. precondition *)
-	     | Tprop,_ -> Eprop (* USELESS: cf test debut *)
-	     | Tmltype _, _ -> Emlterm (MLrel (renum_db ctx n))) 
+	     | Varity -> assert false (* Cf. precondition *)
+	     | Vprop -> assert false
+	     | Vdefault -> Emlterm (MLrel (renum_db ctx n))) 
       | IsApp (f,a) ->
 	  let tyf = Typing.type_of env Evd.empty f in
 	  let tyf = 
@@ -340,10 +331,10 @@ and extract_term c =
 	    else 
 	      whd_betadeltaiota env Evd.empty tyf 
 	  in
-	  (match extract_type env ctx tyf with
+	  (match extract_type env tyf with
 	     | Tmltype (_,s,_) -> extract_app env ctx (f,s) (Array.to_list a) 
 	     | Tarity -> assert false (* Cf. precondition *)
-	     | Tprop -> Eprop)
+	     | Tprop -> assert false)
       | IsConst (sp,_) ->
 	  Emlterm (MLglob (ConstRef sp))
       | IsMutConstruct (cp,_) ->
@@ -357,16 +348,14 @@ and extract_term c =
 	  let env' = push_rel (n,Some c1,t1) env in
 	  (match get_arity env t1 with
 	     | Some (Prop Null) -> 
-		 extract_rec env' ((Tprop,id)::ctx) c2
+		 extract_rec env' (Vprop::ctx) c2
 	     | Some _ ->
-		 extract_rec env' ((Tarity,id)::ctx) c2
-	     | _ -> 
-		 let t1' = extract_type env ctx t1 in
+		 extract_rec env' (Varity::ctx) c2
+	     | None -> 
 		 let c1' = extract_rec env ctx c1 in
-		 let c2' = extract_rec env' ((t1',id)::ctx) c2 in
+		 let c2' = extract_rec env' (Vdefault::ctx) c2 in
 		 (match (c1',c2') with
 		    | (Emlterm a1,Emlterm a2) -> Emlterm (MLletin (id,a1,a2))
-		    | (_,Eprop) -> Eprop (* USELESS: cf tests above *)
 		    | _ -> assert false (* Cf. rem. above *)))
       | IsCast (c, _) ->
 	  extract_rec env ctx c
@@ -377,13 +366,12 @@ and extract_term c =
   and extract_app env ctx (f,sf) args =
     let nargs = List.length args in
     assert (List.length sf >= nargs);
-      (* We have reduced type of f if needed to be sure of this *)
+    (* We have reduced type of [f] if needed to ensure this property *)
     let mlargs = 
       List.fold_right 
 	(fun (v,a) args -> match v with
 	   | (Varity | Vprop), _ -> args
 	   | Vdefault,_ -> match extract_rec env ctx a with 
-		 (* FIXME precond may be false *) 
 	       | Emltype _ -> assert false (* Cf. rem. above *)
 	       | Eprop -> MLprop :: args
 	       | Emlterm mla -> mla :: args)
@@ -392,8 +380,7 @@ and extract_term c =
     in
     match extract_rec env ctx f with
       | Emlterm f' -> Emlterm (MLapp (f', mlargs))
-      | Emltype _ -> assert false (* Cf. rem. above *)
-      | Eprop -> assert false (* FIXME: to check *)
+      | Emltype _ | Eprop -> assert false
 
   in
   extract_rec (Global.env()) [] c
@@ -409,7 +396,7 @@ and extract_constr_with_type c t =
     | Some (Prop Null) -> 
 	Eprop
     | Some _ -> 
-	(match extract_type genv [] c with
+	(match extract_type genv c with
 	   | Tprop -> Eprop
 	   | Tarity -> Emltype (Miniml.Tarity, [], []) (* any other arity *)
 	   | Tmltype (t, sign, fl) -> Emltype (t, sign, fl))
@@ -456,7 +443,7 @@ and extract_mib sp =
 	   array_foldi
 	     (fun j _ fl -> 
 		let t = mis_constructor_type (succ j) mis in
-		match extract_type genv [] t with
+		match extract_type genv t with
 		  | Tarity | Tprop -> assert false
 		  | Tmltype (mlt, s, f) -> 
 		      let l = list_of_ml_arrows mlt in
