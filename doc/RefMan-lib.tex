@@ -28,16 +28,54 @@ This chapter briefly reviews these libraries.
 
 This section lists the basic notions and results which are directly
 available in the standard \Coq\ system
-\footnote{These constructions are defined in the
+\footnote{Most of these constructions are defined in the
 {\tt Prelude} module in directory {\tt theories/Init} at the {\Coq}
 root directory; this includes the modules
-% {\tt Core} l'inexplicable let
+{\tt Notations},
 {\tt Logic},
 {\tt Datatypes},
 {\tt Specif},
 {\tt Peano},
-and {\tt Wf}
-plus the module {\tt Logic\_Type}}.
+and {\tt Wf}.
+Module {\tt Logic\_Type} also makes it in the initial state}.
+
+\subsection{Notations} \label{Notations}
+
+This module defines the parsing and pretty-printing of many symbols
+(infixes, prefixes, etc.). However, it does not assign a meaning to these
+notations. The purpose of this is to define precedence and
+associativity of very common notations, and avoid users to use them
+with other precedence, which may be confusing.
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|cll|}
+\hline
+Notation & Precedence & Associativity \\
+\hline
+\verb!<->! & 95 & no \\
+\verb!\/!  & 85 & right \\
+\verb!/\!  & 80 & right \\
+\verb!~!   & 75 & right \\
+\verb!=!   & 70 & no \\
+\verb!<>!  & 70 & no \\
+\verb!<!   & 70 & no \\
+\verb!>!   & 70 & no \\
+\verb!<=!  & 70 & no \\
+\verb!>=!  & 70 & no \\
+\verb!+!   & 50 & left \\
+\verb!-!   & 50 & left \\
+\verb!*!   & 40 & left \\
+\verb!/!   & 40 & left \\
+\verb!u-!  & 35 & right \\
+\verb!u/!  & 35 & right \\
+\verb!^!   & 30 & left \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Notations in the initial state}
+\label{init-notations}
+\end{figure}
 
 \subsection{Logic} \label{Logic}
 
@@ -105,16 +143,12 @@ First, we find propositional calculus connectives:
 Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example*}
-Inductive True :
-
 (********** Next parsing errors for /\ and \/ are harmless ***********)
 (******************* since output is not displayed *******************)
-(* Just to adjust the prompt: *) Prop :=
-    I : True.
-Inductive False :  Prop :=.
+Inductive True : Prop := I.
+Inductive False :  Prop := .
 Definition not (A: Prop) := A -> False.
-Inductive and (A B:Prop) : Prop :=
-    conj : A -> B -> A /\ B.
+Inductive and (A B:Prop) : Prop := conj (_:A) (_:B).
 Section Projections.
 Variables A B : Prop.
 Theorem proj1 : A /\ B -> A.
@@ -131,8 +165,8 @@ Abort All.
 \begin{coq_example*}
 End Projections.
 Inductive or (A B:Prop) : Prop :=
-  | or_introl : A -> A \/ B
-  | or_intror : B -> A \/ B.
+  | or_introl (_:A)
+  | or_intror (_:B).
 Definition iff (P Q:Prop) := (P -> Q) /\ (Q -> P).
 Definition IF (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 \end{coq_example*}
@@ -142,33 +176,29 @@ Definition IF (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
 Then we find first-order quantifiers:
 \ttindex{all}
-\ttindex{All}
 \ttindex{ex}
-\ttindex{Ex}
-\ttindex{EX}
+\ttindex{exists}
 \ttindex{ex\_intro}
 \ttindex{ex2}
-\ttindex{Ex2}
+\ttindex{exists2}
 \ttindex{ex\_intro2}
 
 \begin{coq_example*}
 Definition all (A:Set) (P:A -> Prop) := forall x:A, P x.
 Inductive ex (A: Set) (P:A -> Prop) : Prop :=
-    ex_intro : forall x:A, P x -> ex A P.
+    ex_intro (x:A) (_:P x).
 Inductive ex2 (A:Set) (P Q:A -> Prop) : Prop :=
-    ex_intro2 : forall x:A, P x -> Q x -> ex2 A P Q.
+    ex_intro2 : (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 The following abbreviations are allowed:
 \begin{center}
   \begin{tabular}[h]{|l|r|}
     \hline
-    \verb+(ALL x:A | P)+    & \verb+(all A [x:A]P)+ \\
-    \verb+(ALL x | P)+      & \verb+(all A [x:A]P)+ \\
-    \verb+(EX x:A | P)+     & \verb+(ex A [x:A]P)+ \\
-    \verb+(EX x | P)+       & \verb+(ex A [x:A]P)+ \\
-    \verb+(EX x:A | P & Q)+ & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
-    \verb+(EX x | P & Q)+   & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
+    \verb+(exists x:A | P)+     & \verb+(ex A [x:A]P)+ \\
+    \verb+(exists x | P)+       & \verb+(ex A [x:A]P)+ \\
+    \verb+(exists2 x:A | P & Q)+ & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
+    \verb+(exists2 x | P & Q)+   & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
     \hline
   \end{tabular}
 \end{center}
@@ -180,7 +210,7 @@ synthesized by the system.
 \index{Equality}
 
 Then, we find equality, defined as an inductive relation. That is,
-given a \verb:Set: \verb:A: and an \verb:x: of type \verb:A:, the
+given a \verb:Type: \verb:A: and an \verb:x: of type \verb:A:, the
 predicate \verb:(eq A x): is the smallest one which contains \verb:x:.
 This definition, due to Christine Paulin-Mohring, is equivalent to
 define \verb:eq: as the smallest reflexive relation, and it is also
@@ -190,7 +220,7 @@ equivalent to Leibniz' equality.
 \ttindex{refl\_equal}
 
 \begin{coq_example*}
-Inductive eq (A:Set) (x:A) : A -> Prop :=
+Inductive eq (A:Type) (x:A) : A -> Prop :=
     refl_equal : eq A x x.
 \end{coq_example*}
 
@@ -211,20 +241,13 @@ Abort.
 \ttindex{sym\_not\_eq}
 \begin{coq_example*}
 Section equality.
-Variables A B : 
-             Set.
-Variable f : 
-            A -> B.
-Variables x y z : 
-             A.
-Theorem sym_eq : 
-  x = y -> y = x.
-Theorem trans_eq : 
-  x = y -> y = z -> x = z.
-Theorem f_equal : 
-  x = y -> f x = f y.
-Theorem sym_not_eq : 
-  x <> y -> y <> x.
+Variables A B : Type.
+Variable f : A -> B.
+Variables x y z : A.
+Theorem sym_eq : x = y -> y = x.
+Theorem trans_eq : x = y -> y = z -> x = z.
+Theorem f_equal : x = y -> f x = f y.
+Theorem sym_not_eq : x <> y -> y <> x.
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -240,11 +263,11 @@ Abort.
 \begin{coq_example*}
 End equality.
 Definition eq_ind_r :
-  forall (A:Set) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
+  forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
 Definition eq_rec_r :
-  forall (A:Set) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
+  forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
 Definition eq_rect_r :
-  forall (A:Set) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
+  forall (A:Type) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -253,7 +276,7 @@ Abort.
 \end{coq_eval}
 %Abort (for now predefined eq_rect)
 \begin{coq_example*}
-Hints Immediate sym_eq sym_not_eq : core.
+Hint Immediate sym_eq sym_not_eq : core.
 \end{coq_example*}
 \ttindex{f\_equal$i$}
 
@@ -263,7 +286,7 @@ arguments. The theorem are names {\tt f\_equal2}, {\tt f\_equal3},
 For instance {\tt f\_equal3} is defined the following way.
 \begin{coq_example*}
 Theorem f_equal3 :
- forall (A1 A2 A3 B:Set) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1) (x2 y2:A2)
+ forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1) (x2 y2:A2)
    (x3 y3:A3), x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
 \end{coq_example*}
 \begin{coq_eval}
@@ -296,17 +319,10 @@ again defined as inductive constructions over the sort
 \ttindex{None}
 
 \begin{coq_example*}
-Inductive unit : Set :=
-    tt : unit.
-Inductive bool : Set :=
-  | true : bool
-  | false : bool.
-Inductive option (A:Set) : Set :=
-  | Some : A -> option A
-  | None : option A.
-Inductive nat : Set :=
-  | O : nat
-  | S : nat -> nat.
+Inductive unit : Set := tt.
+Inductive bool : Set := true | false.
+Inductive nat : Set := O | S (n:nat).
+Inductive option (A:Set) : Set := Some (_:A) | None.
 \end{coq_example*}
 
 Note that zero is the letter \verb:O:, and {\sl not} the numeral
@@ -325,29 +341,19 @@ We then define the disjoint sum of \verb:A+B: of two sets \verb:A: and
 \ttindex{pair}
 \ttindex{fst}
 \ttindex{snd}
-\ttindex{Fst}
-\ttindex{Snd}
 
 \begin{coq_example*}
-Inductive sum (A B:Set) : Set :=
-  | inl : A -> sum A B
-  | inr : B -> sum A B.
-Inductive prod (A B:Set) : Set :=
-    pair : A -> B -> prod A B.
+Inductive sum (A B:Set) : Set := inl (_:A) | inr (_:B).
+Inductive prod (A B:Set) : Set := pair (_:A) (_:B).
 Section projections.
-Variables A B : 
-               Set.
-Definition fst (H:
-                   prod A B) := match H with
+Variables A B : Set.
+Definition fst (H: prod A B) := match H with
                                 | pair x y => x
                                 end.
-Definition snd (H:
-                   prod A B) := match H with
+Definition snd (H: prod A B) := match H with
                                 | pair x y => y
                                 end.
 End projections.
-Notation Fst := (fst _ _).
-Notation Snd := (snd _ _).
 \end{coq_example*}
 
 \subsection{Specification}
@@ -359,13 +365,13 @@ figure \ref{specif-syntax}\footnote{This syntax can be found in the module
 {\tt SpecifSyntax.v}}.
 
 For instance, given \verb|A:Set| and \verb|P:A->Prop|, the construct
-\verb+{x:A | (P x)}+ (in abstract syntax \verb+(sig A P)+) is a
+\verb+{x:A | P x}+ (in abstract syntax \verb+(sig A P)+) is a
 \verb:Set:. We may build elements of this set as \verb:(exist x p):
 whenever we have a witness \verb|x:A| with its justification
-\verb|p:(P x)|.
+\verb|p:P x|.
 
 From such a \verb:(exist x p): we may in turn extract its witness
-\verb|x:A| (using an elimination construct such as \verb:Cases:) but
+\verb|x:A| (using an elimination construct such as \verb:match:) but
 {\sl not} its justification, which stays hidden, like in an abstract
 data type. In technical terms, one says that \verb:sig: is a ``weak
 (dependent) sum''.  A variant \verb:sig2: with two predicates is also
@@ -379,10 +385,8 @@ provided.
 \ttindex{exist2}
 
 \begin{coq_example*}
-Inductive sig (A:Set) (P:A -> Prop) : Set :=
-    exist : forall x:A, P x -> sig A P.
-Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
-    exist2 : forall x:A, P x -> Q x -> sig2 A P Q.
+Inductive sig (A:Set) (P:A -> Prop) : Set := exist (x:A) (_:P x).
+Inductive sig2 (A:Set) (P Q:A -> Prop) : Set := exist2 : (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A ``strong (dependent) sum'' \verb+{x:A & (P x)}+ may be also defined,
@@ -399,21 +403,16 @@ constructor.
 \ttindex{existS2}
 
 \begin{coq_example*}
-Inductive sigS (A:Set) (P:A -> Set) : Set :=
-    existS : forall x:A, P x -> sigS A P.
+Inductive sigS (A:Set) (P:A -> Set) : Set := existS (x:A) (_:P x).
 Section sigSprojections.
-Variable A : 
-              Set.
-Variable P : 
-              A -> Set.
-Definition projS1 (H:
-                      sigS A P) := let (x, h) := H in x.
-Definition projS2 (H:
-                      sigS A P) :=
-  let (x, h) as H return P (projS1 H) := H in h.
+Variable A : Set.
+Variable P : A -> Set.
+Definition projS1 (H:sigS A P) := let (x, h) := H in x.
+Definition projS2 (H:sigS A P) :=
+  let (x, h) return P (projS1 H) := H in h.
 End sigSprojections.
 Inductive sigS2 (A: Set) (P Q:A -> Set) : Set :=
-    existS2 : forall x:A, P x -> Q x -> sigS2 A P Q.
+    existS2 : (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A related non-dependent construct is the constructive sum
@@ -425,9 +424,7 @@ A related non-dependent construct is the constructive sum
 \ttindex{\{A\}+\{B\}}
 
 \begin{coq_example*}
-Inductive sumbool (A B:Prop) : Set :=
-  | left : A -> sumbool A B
-  | right : B -> sumbool A B.
+Inductive sumbool (A B:Prop) : Set := left (_:A) | right (_:B).
 \end{coq_example*}
 
 This \verb"sumbool" construct may be used as a kind of indexed boolean
@@ -440,9 +437,7 @@ in the \verb"Set" \verb"A+{B}".
 \ttindex{A+\{B\}}
 
 \begin{coq_example*}
-Inductive sumor (A:Set) (B:Prop) : Set :=
-  | inleft : A -> sumor A B
-  | inright : B -> sumor A B.
+Inductive sumor (A:Set) (B:Prop) : Set := inleft (_:A) | inright (_:B).
 \end{coq_example*}
 
 \begin{figure}
@@ -529,7 +524,7 @@ Definition except := False_rec.
 Notation Except := (except _).
 Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
 Theorem and_rec :
- forall (A B:Prop) (C:Set), (A -> B -> C) -> A /\ B -> C.
+ forall (A B:Prop) (P:Set), (A -> B -> P) -> A /\ B -> P.
 \end{coq_example*}
 %\begin{coq_eval}
 %Abort.
@@ -538,9 +533,33 @@ Theorem and_rec :
 
 \subsection{Basic Arithmetics}
 
-The basic library includes a few elementary properties of natural numbers,
-together with the definitions of predecessor, addition and
-multiplication\footnote{This is in module {\tt Peano.v}}.
+The basic library includes a few elementary properties of natural
+numbers, together with the definitions of predecessor, addition and
+multiplication\footnote{This is in module {\tt Peano.v}}. It also
+provides a scope {\tt nat\_scope} gathering standard notations for
+common operations (+,*) and a decimal notation for numbers. That is he
+can write \texttt{3} for \texttt{(S (S (S O)))}. This also works on
+the left hand side of a \texttt{match} expression (see for example
+section \ref{Refine-example}). This scope is opened by default.
+
+%Remove the redefinition of nat
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+The following example is not part of the standard library, but it
+shows the usage of the notations:
+
+\begin{coq_example*}
+Fixpoint even (n:nat) : bool :=
+  match n with
+  | 0 => true
+  | 1 => false
+  | S (S n) => even n
+  end.
+\end{coq_example*}
+
+
 \ttindex{eq\_S}
 \ttindex{pred}
 \ttindex{pred\_Sn}
@@ -557,20 +576,20 @@ multiplication\footnote{This is in module {\tt Peano.v}}.
 \ttindex{mult\_n\_Sm}
 
 \begin{coq_example*}
-Theorem eq_S : forall n m:nat, n = m -> S n = S m.
+Theorem eq_S : forall x y:nat, x = y -> S x = S y.
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
 \begin{coq_example*}
 Definition pred (n:nat) : nat :=
-  match n return nat with
-  | O => O
+  match n with
+  | 0 => 0
   | S u => u
   end.
 Theorem pred_Sn : forall m:nat, m = pred (S m).
 Theorem eq_add_S : forall n m:nat, S n = S m -> n = m.
-Hints Immediate eq_add_S : core.
+Hint Immediate eq_add_S : core.
 Theorem not_eq_S : forall n m:nat, n <> m -> S n <> S m.
 \end{coq_example*}
 \begin{coq_eval}
@@ -579,10 +598,10 @@ Abort All.
 \begin{coq_example*}
 Definition IsSucc (n:nat) : Prop :=
   match n with
-  | O => False
+  | 0 => False
   | S p => True
   end.
-Theorem O_S : forall n:nat, O <> S n.
+Theorem O_S : forall n:nat, 0 <> S n.
 Theorem n_Sn : forall n:nat, n <> S n.
 \end{coq_example*}
 \begin{coq_eval}
@@ -591,10 +610,10 @@ Abort All.
 \begin{coq_example*}
 Fixpoint plus (n m:nat) {struct n} : nat :=
   match n with
-  | O => m
+  | 0 => m
   | S p => S (plus p m)
   end.
-Lemma plus_n_O : forall n:nat, n = plus n O.
+Lemma plus_n_O : forall n:nat, n = plus n 0.
 Lemma plus_n_Sm : forall n m:nat, S (plus n m) = plus n (S m).
 \end{coq_example*}
 \begin{coq_eval}
@@ -603,10 +622,10 @@ Abort All.
 \begin{coq_example*}
 Fixpoint mult (n m:nat) {struct n} : nat :=
   match n with
-  | O => O
-  | S p => plus m (mult p m)
+  | 0 => 0
+  | S p => m + mult p m
   end.
-Lemma mult_n_O : forall n:nat, O = mult n O.
+Lemma mult_n_O : forall n:nat, 0 = mult n 0.
 Lemma mult_n_Sm : forall n m:nat, plus (mult n m) n = mult n (S m).
 \end{coq_example*}
 \begin{coq_eval}
@@ -626,9 +645,10 @@ Finally, it gives the definition of the usual orderings \verb:le:,
 Inductive le (n:nat) : nat -> Prop :=
   | le_n : le n n
   | le_S : forall m:nat, le n m -> le n (S m).
-Definition lt (n m:nat) := le (S n) m.
-Definition ge (n m:nat) := le m n.
-Definition gt (n m:nat) := lt m n.
+Infix "+" := plus : nat_scope.
+Definition lt (n m:nat) := S n <= m.
+Definition ge (n m:nat) := m <= n.
+Definition gt (n m:nat) := m < n.
 \end{coq_example*}
 
 Properties of these relations are not initially known, but may be
@@ -641,7 +661,7 @@ induction principle.
 
 \begin{coq_example*}
 Theorem nat_case :
- forall (n:nat) (P:nat -> Prop), P O -> (forall m:nat, P (S m)) -> P n.
+ forall (n:nat) (P:nat -> Prop), P 0 -> (forall m:nat, P (S m)) -> P n.
 \end{coq_example*}
 \begin{coq_eval}
 Abort All.
@@ -649,8 +669,8 @@ Abort All.
 \begin{coq_example*}
 Theorem nat_double_ind :
  forall R:nat -> nat -> Prop,
-   (forall n:nat, R O n) ->
-   (forall n:nat, R (S n) O) ->
+   (forall n:nat, R 0 n) ->
+   (forall n:nat, R (S n) 0) ->
    (forall n m:nat, R n m -> R (S n) (S m)) -> forall n m:nat, R n m.
 \end{coq_example*}
 \begin{coq_eval}
@@ -678,14 +698,13 @@ Inductive Acc : A -> Prop :=
 Lemma Acc_inv : forall x:A, Acc x -> forall y:A, R y x -> Acc y.
 \end{coq_example*}
 \begin{coq_eval}
-olddestruct 1; trivial.
+simple destruct 1; trivial.
 Defined.
 \end{coq_eval}
 \begin{coq_example*}
 Section AccRec.
 Variable P : A -> Set.
-Variable
-  F :
+Variable F :
     forall x:A,
       (forall y:A, R y x -> Acc y) -> (forall y:A, R y x -> P y) -> P x.
 Fixpoint Acc_rec (x:A) (a:Acc x) {struct a} : P x :=
@@ -719,8 +738,7 @@ Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
 Fixpoint Fix_F (x:A) (r:Acc x) {struct r} : P x :=
   F x (fun (y:A) (p:R y x) => Fix_F y (Acc_inv x r y p)).
 Definition Fix (x:A) := Fix_F x (Rwf x).
-Hypothesis
-  F_ext :
+Hypothesis F_ext :
     forall (x:A) (f g:forall y:A, R y x -> P y),
       (forall (y:A) (p:R y x), f y p = g y p) -> F x f = F x g.
 Lemma Fix_F_eq :
@@ -743,106 +761,39 @@ The basic library includes the definitions\footnote{This is in module
 {\tt Logic\_Type.v}} of logical quantifiers axiomatized at the
 \verb:Type: level. 
 
-\ttindex{allT}
-\ttindex{AllT}
+\ttindex{all}
 \ttindex{inst}
 \ttindex{gen}
-\ttindex{exT}
-\ttindex{ExT}
-\ttindex{EXT}
-\ttindex{exT\_intro}
-\ttindex{ExT2}
-\ttindex{exT2}
 \ttindex{EmptyT}
 \ttindex{UnitT}
 \ttindex{notT}
 
 \begin{coq_example*}
-Definition allT (A: Type) (P:A -> Prop) := forall x:A, P x.
+Definition all (A:Type) (P:A->Prop) : Prop := forall x:A, P x.
+\end{coq_example*}
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example*}
 Section universal_quantification.
 Variable A :  Type.
 Variable P : A -> Prop.
-Theorem inst : forall x:A, ( ALL x : _ | P x) -> P x.
-Theorem gen : forall (B:Prop) (f:forall y:A, B -> P y), B -> allT _ P.
+Theorem inst : forall x:A, (all (fun (x:A) => P x)) -> P x.
+Theorem gen : forall B:Prop, (forall y:A, B -> P y) -> B -> all P.
 \end{coq_example*}
 \begin{coq_eval}
 Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 End universal_quantification.
-Inductive exT (A:Type) (P:A -> Prop) : Prop :=
-    exT_intro : forall x:A, P x -> exT A P.
-Inductive exT2 (A:Type) (P Q:A -> Prop) : Prop :=
-    exT_intro2 : forall x:A, P x -> Q x -> exT2 A P Q.
 \end{coq_example*}
-
-It defines also Leibniz equality \verb:x==y: when \verb:x: and
-\verb:y: belong to \verb+A:Type+.
-\ttindex{eqT}
-\ttindex{refl\_eqT}
-\ttindex{sum\_eqT}
-\ttindex{sym\_not\_eqT}
-\ttindex{trans\_eqT}
-\ttindex{congr\_eqT}
-\ttindex{eqT\_ind\_r}
-\ttindex{eqT\_rec\_r}
-
-\begin{coq_example*}
-Inductive eqT (A:Type) (x:A) : A -> Prop :=
-    refl_eqT : eqT A x x.
-Section Equality_is_a_congruence.
-Variables A B : Type.
-Variable f : A -> B.
-Variables x y z : A.
-Lemma sym_eqT : x = y -> y = x.
-Lemma trans_eqT : x = y -> y = z -> x = z.
-Lemma congr_eqT : x = y -> f x = f y.
-\end{coq_example*}
-\begin{coq_eval}
-Abort All.
-\end{coq_eval}
-\begin{coq_example*}
-End Equality_is_a_congruence.
-Hints Immediate sym_eq sym_not_eqT : core.
-Definition eqT_ind_r :
-  forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
-\end{coq_example*}
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
-
-The figure \ref{formulas-syntax-type} presents the syntactic notations 
-corresponding to the main definitions
-\footnote{This syntax is defined in module {\tt Logic\_TypeSyntax}}
-
-\begin{figure}
-\label{formulas-syntax-type}
-\begin{center}
-\begin{tabular}{|lclr|}
-\hline
-{\form} & ::= & {\tt ( ALLT} {\ident} \zeroone{{\tt :} {\specif}} {\tt |}
-  {\form} {\tt )} & ({\tt allT})\\
-  & $|$ & {\tt ( EXT} {\ident} \zeroone{{\tt :} {\specif}} {\tt
-  |} {\form} {\tt )}  & ({\tt exT})\\
-  & $|$ & {\tt ( EXT} {\ident} \zeroone{{\tt :} {\specif}} {\tt
-  |} {\form}  {\tt \&} {\form} {\tt )} & ({\tt exT2})\\
-  & $|$ & {\term} {\tt ==} {\term} & ({\tt eqT})\\
-\hline
-\end{tabular}
-\end{center}
-\caption{Syntax of first-order formulas in the type universe}
-\end{figure}
 
 At the end, it defines datatypes at the {\Type} level.
 
 \begin{coq_example*}
-Inductive EmptyT : Type :=.
-Inductive UnitT : Type :=
-    IT : UnitT.
-Definition notT (A:Type) := A -> EmptyT.
-Inductive identityT (A:
-                     Type) (a:A) : A -> Type :=
-    refl_identityT : identityT A a a.
+Definition notT (A:Type) := A -> False.
+Inductive identity (A:Type) (a:A) : A -> Type :=
+    refl_identity : identity A a a.
 \end{coq_example*}
 
 \section{The standard library}
@@ -901,6 +852,7 @@ operators which bind less than the others constructions.
 All the binary operators are left associative. The {\tt [}~...~{\tt ]}
 allows to escape the {\zarith} grammar.
 
+%% Should describe Z_scope instead
 \begin{figure}
 \begin{center}
 \begin{tabular}{|lcl|}
@@ -939,47 +891,32 @@ allows to escape the {\zarith} grammar.
 \caption{Syntax of expressions in integer arithmetics}
 \end{figure}
 
-\subsection{Notations for Peano's arithmetic (\texttt{nat})}
-\index{Peano's arithmetic notations}
+\subsection{Peano's arithmetic (\texttt{nat})}
+\index{Peano's arithmetic}
 
-After having required the module \texttt{Arith}, the user can type the
-naturals using decimal notation. That is he can write \texttt{(3)}
-for \texttt{(S (S (S O)))}. The number must be between parentheses.
-This works also in the left hand side of a \texttt{Cases} expression
-(see for example section \ref{Refine-example}).
+While in the initial state, many operations and predicates of Peano's
+arithmetic are defined, further operations and results belong to other
+modules. For instance, the decidability of the basic predicates are
+defined here. This is provided by requiring the module {\tt Arith}.
 
-%Remove the redefinition of nat
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
-
-\begin{coq_example*}
-Require Import Arith.
-Fixpoint even (n:nat) : bool :=
-  match n with
-  | O => true
-  | S O => false
-  | S (S n) => even n
-  end.
-\end{coq_example*}
-
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
 
 \subsection{Real numbers library}
 
 \subsubsection{Notations for real numbers}
 \index{Notations for real numbers}
 
-This is provided by requiring the module {\tt Reals}. This notation is very
-similar to the notation for integer arithmetics (see figure 
-\ref{zarith-syntax}) where Inverse (/x) and division (x/y) have been added. 
-This syntax is used parenthesizing by a double back-quote (\verb:``:).
+This is provided by requiring the module {\tt Reals}. This notation is
+very similar to the notation for integer arithmetics where Inverse
+(/x) and division (x/y) have been added.
 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 \begin{coq_example}
 Require Import Reals.
 Check  (2 + 3)%R.
+Open Scope R_scope.
+Check 2 + 3.
 \end{coq_example}
 
 \subsubsection{Some tactics}
@@ -993,7 +930,7 @@ another real integer constante c2.
 
 \begin{coq_example*}
 Require Import DiscrR.
-Goal 5%R <> 0%R.
+Goal 5 <> 0.
 \end{coq_example*}
 
 \begin{coq_example}
@@ -1010,7 +947,7 @@ corresponding conjonctions.
 
 \begin{coq_example*}
 Require Import SplitAbsolu.
-Goal forall x:R, (x <= Rabs x)%R.
+Goal forall x:R, x <= Rabs x.
 \end{coq_example*}
 
 \begin{coq_example}
@@ -1028,29 +965,37 @@ product.
 
 \begin{coq_example*}
 Require Import SplitRmult.
-Goal forall x y z:R, (x * y * z)%R <> 0%R.
+Goal forall x y z:R, x * y * z <> 0.
 \end{coq_example*}
 
 \begin{coq_example}
 intros; split_Rmult.
 \end{coq_example}
 
-All this tactics has been written with the new tactic language.
+All this tactics has been written with the tactic language Ltac
+described in chapter~\ref{TacticLanguage}.\\
 
-\bigskip
-
-More details are available in this document: {\tt http://coq.inria.fr/$\sim$desmettr/Reals.ps}.\\
+More details are available in this document: {\tt
+http://coq.inria.fr/$\sim$desmettr/Reals.ps}.\\
 
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
+
+\subsection{List library}
+\index{Notations for lists}
+
+Some elementary operations on polymorphic lists are defined here. They
+can be accessed by requiring module {\tt List}.
+
+
 
 \section{Users' contributions}
 \index{Contributions}
 \label{Contributions}
 
 Numerous users' contributions have been collected and are available on
-the WWW at the following address: \verb!pauillac.inria.fr/coq/contribs!.
+the WWW at the following address: \verb!coq.inria.fr/contribs/!.
 On this web page, you have a list of all contributions with
 informations (author, institution, quick description, etc.) and the
 possibility to download them one by one.

@@ -49,8 +49,9 @@ Blanks are ignored but they separate tokens.
 \paragraph{Comments}
 
 Comments in {\Coq} are enclosed between {\tt (*} and {\tt
-  *)}\index{Comments}, and can be nested. Comments are treated as
-blanks.
+  *)}\index{Comments}, and can be nested. They can contain any
+character. However, string literals must be correctly closed. Comments
+are treated as blanks.
 
 \paragraph{Identifiers and access identifiers}
 
@@ -62,17 +63,16 @@ they are recognized by the following lexical class:
 \index{ident@\ident}
 \begin{center}
 \begin{tabular}{rcl} 
-{\firstletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{\_}%\op\ml{\$}
+{\firstletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{\_}%\op\ml{unicode-letter}
  \\
 {\subsequentletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{0..9}\op\ml{\_}%\op\ml{\$}
 \op\ml{'} \\
 {\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}\\
 \end{tabular}
 \end{center}
-Identifiers can contain at most 80 characters, and all characters are
-meaningful. In particular, identifiers are case-sensitive.
+All characters are meaningful. In particular, identifiers are case-sensitive.
 Access identifiers, written {\accessident}, are identifiers prefixed
-by \verb!.! (dot). They are used in the syntax of qualified
+by \verb!.! (dot) without blank. They are used in the syntax of qualified
 identifiers.
 
 \paragraph{Natural numbers and integers}
@@ -89,181 +89,184 @@ Numerals are sequences of digits. Integers are numerals optionally preceded by a
 
 \paragraph{Strings}
 Strings are delimited by \verb!"! (double quote), and enclose a
-sequence of any characters different from \verb!"! and \verb!\!, or
-one of the following sequences
-\begin{center}
-\begin{tabular}{|l|l|}
-\hline
-Sequence        & Character denoted \\
-\hline
-\verb"\\"       & backslash (\verb"\") \\
-\verb'\"'       & double quote (\verb'"') \\
-\verb"\n"       & newline (LF) \\
-\verb"\r"       & return (CR) \\
-\verb"\t"       & horizontal tabulation (TAB) \\
-\verb"\b"       & backspace (BS) \\
-\verb"\"$ddd$  & the character with ASCII code $ddd$ in decimal \\
-\hline
-\end{tabular}
-\end{center}
-Strings can be split on several lines using a backslash (\verb!\!)  at
-the end of each line, just before the newline. For instance,
+sequence of any characters different from \verb!"! or the sequence
+\verb!""! to denote the double quote character.
+%% \begin{center}
+%% \begin{tabular}{|l|l|}
+%% \hline
+%% Sequence        & Character denoted \\
+%% \hline
+%% \verb"\\"       & backslash (\verb"\") \\
+%% \verb'\"'       & double quote (\verb'"') \\
+%% \verb"\n"       & newline (LF) \\
+%% \verb"\r"       & return (CR) \\
+%% \verb"\t"       & horizontal tabulation (TAB) \\
+%% \verb"\b"       & backspace (BS) \\
+%% \verb"\"$ddd$  & the character with ASCII code $ddd$ in decimal \\
+%% \hline
+%% \end{tabular}
+%% \end{center}
 
-\begin{flushleft}
-\begin{small}
-\begin{verbatim}
-Add LoadPath "/usr/local/coq/\
-contrib/Rocq/LAMBDA".
-\end{verbatim}
-\end{small}
-\end{flushleft}
+%% Strings can be split on several lines using a backslash (\verb!\!)  at
+%% the end of each line, just before the newline. For instance,
+
+%% \begin{flushleft}
+%% \begin{small}
+%% \begin{verbatim}
+%% Add LoadPath "/usr/local/coq/\
+%% contrib/Rocq/LAMBDA".
+%% \end{verbatim}
+%% \end{small}
+%% \end{flushleft}
       
-is correctly parsed, and equivalent to
+%% is correctly parsed, and equivalent to
 
-\begin{flushleft}
-\begin{small}
-\begin{verbatim}
-Add LoadPath "/usr/local/coq/contrib/Rocq/LAMBDA".
-\end{verbatim}
-\end{small}
-\end{flushleft}
+%% \begin{flushleft}
+%% \begin{small}
+%% \begin{verbatim}
+%% Add LoadPath "/usr/local/coq/contrib/Rocq/LAMBDA".
+%% \end{verbatim}
+%% \end{small}
+%% \end{flushleft}
 
 \paragraph{Keywords}
 The following identifiers are reserved keywords, and cannot be
 employed otherwise:
 \begin{center}
-\begin{tabular}{lllll}
+\begin{tabular}{llllll}
+\verb!_!          &
 \verb!as!         &
-\verb!end!        &
+\verb!cofix!      &
+\verb!else!       &
+\verb!end!        \\
+\verb!exists!     &
+\verb!exists2!    &
+\verb!fix!        &
+\verb!for!        \\
+\verb!forall!     &
+\verb!fun!        &
+\verb!if!         \\
 \verb!in!         &
-\verb!of!         &
-\verb!using!      \\
+\verb!let!        &
+\verb!match!      &
+\verb!mod!        &
+\verb!return!     &
+\verb!then!       \\
+\verb!using!      &
 \verb!with!       &
-\verb!Axiom!      &
-\verb!Cases!      &
-\verb!CoFixpoint! &
-\verb!CoInductive!\\
-\verb!Compile!    &
-\verb!Definition! &
-\verb!Fixpoint!   &
-\verb!Grammar!    &
-\verb!Hypothesis! \\
-\verb!Inductive!  &
-\verb!Load!       &
-%%\verb!Orelse!     &
-\verb!Parameter!  &
-\verb!Proof!      &
-\verb!Prop!       \\
-\verb!Qed!        &
-\verb!Quit!       &
+\verb!IF!         &
+\verb!Prop!       &
 \verb!Set!        &
-\verb!Syntax!     &
-\verb!Theorem!    \\
-\verb!Type!       &
-\verb!Variable!   & & &
+\verb!Type!       \\
 \end{tabular}
 \end{center}
 
-Although they are not considered as keywords, it is not advised to use
-words of the following list as identifiers:
-\begin{center}
-\begin{tabular}{lllll}
-\verb!Add!        &
-\verb!AddPath!    &
-\verb!Abort!      &
-\verb!Abstraction!&
-\verb!All!        \\
-\verb!Begin!      &
-\verb!Cd!         &
-\verb!Chapter!    &
-\verb!Check!      &
-\verb!Compute!    \\
-% \verb!Conjectures! \\ que dans Show Conjectures sans conflit avec ident
-\verb!Defined!    &
-\verb!DelPath!    &
-\verb!Drop!       &
-\verb!End!        &
-\verb!Eval!       \\
-% \verb!Explain!  n'est pas documente 
-\verb!Extraction! &
-\verb!Fact!       &
-\verb!Focus!      &
-% \verb!for! n'intervient que pour Scheme ... Induction ... sans conflit
-% \verb!Go! n'est pas documente et semble peu robuste aux erreurs
-\verb!Goal!       &
-\verb!Guarded!    \\
-\verb!Hint!       &
-\verb!Immediate!  &
-\verb!Induction!  &
-\verb!Infix!      &
-\verb!Inspect!    \\
-\verb!Lemma!      &
-\verb!Let!        &
-\verb!LoadPath!   &
-\verb!Local!      &
-\verb!Minimality! \\
-\verb!ML!         &
-\verb!Module!     &
-\verb!Modules!    &
-\verb!Mutual!     &
-% \verb!Node!   que dans Show Node sans conflit avec ident
-\verb!Opaque!     \\
-\verb!Parameters! &
-\verb!Print!      &
-\verb!Pwd!        &
-\verb!Remark!     &
-\verb!Remove!     \\
-\verb!Require!    &
-\verb!Reset!      &
-\verb!Restart!    &
-\verb!Restore!    &
-\verb!Resume!     \\
-\verb!Save!       &
-\verb!Scheme!     &
-% \verb!Script!  que dans Show Script sans conflit avec ident
-\verb!Search!     &
-\verb!Section!    &
-\verb!Show!       \\
-\verb!Silent!     &
-\verb!State!      &
-\verb!States!     &
-\verb!Suspend!    &
-\verb!Syntactic!  \\
-\verb!Test!       &
-\verb!Transparent!&
-% \verb!Tree! que dans Show Tree et Explain Proof Tree sans conflit avec id
-\verb!Undo!       &
-\verb!Unset!      &
-\verb!Unfocus!    \\
-\verb!Variables!  &
-\verb!Write!      & & &
-\end{tabular}
-\end{center}
+%% Hard to maintain...
+
+%% Although they are not considered as keywords, it is not advised to use
+%% words of the following list as identifiers:
+%% \begin{center}
+%% \begin{tabular}{lllll}
+%% \verb!Add!        &
+%% \verb!AddPath!    &
+%% \verb!Abort!      &
+%% \verb!Abstraction!&
+%% \verb!All!        \\
+%% \verb!Begin!      &
+%% \verb!Cd!         &
+%% \verb!Chapter!    &
+%% \verb!Check!      &
+%% \verb!Compute!    \\
+%% % \verb!Conjectures! \\ que dans Show Conjectures sans conflit avec ident
+%% \verb!Defined!    &
+%% \verb!DelPath!    &
+%% \verb!Drop!       &
+%% \verb!End!        &
+%% \verb!Eval!       \\
+%% % \verb!Explain!  n'est pas documente 
+%% \verb!Extraction! &
+%% \verb!Fact!       &
+%% \verb!Focus!      &
+%% % \verb!for! n'intervient que pour Scheme ... Induction ... sans conflit
+%% % \verb!Go! n'est pas documente et semble peu robuste aux erreurs
+%% \verb!Goal!       &
+%% \verb!Guarded!    \\
+%% \verb!Hint!       &
+%% \verb!Immediate!  &
+%% \verb!Induction!  &
+%% \verb!Infix!      &
+%% \verb!Inspect!    \\
+%% \verb!Lemma!      &
+%% \verb!Let!        &
+%% \verb!LoadPath!   &
+%% \verb!Local!      &
+%% \verb!Minimality! \\
+%% \verb!ML!         &
+%% \verb!Module!     &
+%% \verb!Modules!    &
+%% \verb!Mutual!     &
+%% % \verb!Node!   que dans Show Node sans conflit avec ident
+%% \verb!Opaque!     \\
+%% \verb!Parameters! &
+%% \verb!Print!      &
+%% \verb!Pwd!        &
+%% \verb!Remark!     &
+%% \verb!Remove!     \\
+%% \verb!Require!    &
+%% \verb!Reset!      &
+%% \verb!Restart!    &
+%% \verb!Restore!    &
+%% \verb!Resume!     \\
+%% \verb!Save!       &
+%% \verb!Scheme!     &
+%% % \verb!Script!  que dans Show Script sans conflit avec ident
+%% \verb!Search!     &
+%% \verb!Section!    &
+%% \verb!Show!       \\
+%% \verb!Silent!     &
+%% \verb!State!      &
+%% \verb!States!     &
+%% \verb!Suspend!    &
+%% \verb!Syntactic!  \\
+%% \verb!Test!       &
+%% \verb!Transparent!&
+%% % \verb!Tree! que dans Show Tree et Explain Proof Tree sans conflit avec id
+%% \verb!Undo!       &
+%% \verb!Unset!      &
+%% \verb!Unfocus!    \\
+%% \verb!Variables!  &
+%% \verb!Write!      & & &
+%% \end{tabular}
+%% \end{center}
 
 \paragraph{Special tokens}
 The following sequences of characters are special tokens:
 \begin{center}
 \begin{tabular}{lllllll}
-\verb!|!  &
+\verb!(!  &
+\verb!)!  &
+\verb!{!  &
+\verb!}!  &
 \verb!:!  &
-\verb!:=! &
-\verb!=!  &
-\verb!>!  &
-\verb!>>! &
-\verb!<>! \\
-\verb!<<! &
-\verb!<!  &
-\verb!->! &
-\verb!;!  &
-\verb!#!  &
-\verb!*!  &
-\verb!,!  \\
-\verb!?!  &
-\verb!@!  &
-\verb!::! &
-\verb!/!  &
-\verb!<-! &
+\verb!,!  &
+\verb!|!  \\
 \verb!=>! &
+\verb!->! &
+\verb!:=! &
+\verb!@!  &
+\verb!\%! &
+\verb!.(! &
+\verb!+!  \\
+\verb!-!  &
+\verb!*!  &
+\verb!/!  &
+\verb!=!  &
+\verb!<>! &
+\verb!>!  &
+\verb!<!  \\
+\verb!.!  &
+\verb!;!  &
+\verb!<-! &
 \end{tabular}
 \end{center}
 
@@ -1029,18 +1032,18 @@ Fixpoint add (n m:nat) {struct n} : nat :=
   end.
 \end{coq_example}
 
-The {\tt Cases} operator matches a value (here \verb:n:) with the
+The {\tt match} operator matches a value (here \verb:n:) with the
 various constructors of its (inductive) type. The remaining arguments
 give the respective values to be returned, as functions of the
 parameters of the corresponding constructor. Thus here when \verb:n:
 equals \verb:O: we return \verb:m:, and when \verb:n: equals 
 \verb:(S p): we return \verb:(S (add p m)):.
 
-The {\tt Cases} operator is formally described
+The {\tt match} operator is formally described
 in detail in section \ref{Caseexpr}.  The system recognizes that in
 the inductive call {\tt (add p m)} the first argument actually
-decreases because it is a {\em pattern variable} coming from {\tt Cases
-  n of}.
+decreases because it is a {\em pattern variable} coming from {\tt match
+  n with}.
 
 \begin{Variants}
 \item {\tt Fixpoint {\ident} [ {\params} ] : \type$_0$ :=
@@ -1064,12 +1067,9 @@ error message:
 Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Fixpoint wrongplus
- (n
-  
-  (********** The following is not correct and should produce **********)
-  (********* Error: Recursive call applied to an illegal term **********)
-  (* Just to adjust the prompt: *) m:nat) {struct n} : nat :=
+(********** The following is not correct and should produce **********)
+(*********      Error: Recursive call to wrongplus ...      **********)
+Fixpoint wrongplus (n m:nat) {struct n} : nat :=
   match m with
   | O => n
   | S p => S (wrongplus n p)
@@ -1091,11 +1091,11 @@ Fixpoint plus (n m:nat) {struct m} : nat :=
 The ordinary match operation on natural numbers can be mimicked in the
 following way.
 \begin{coq_example*}
-Fixpoint nat_match (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n}
- : C := match n with
-        | O => f0
-        | S p => fS p (nat_match C f0 fS p)
-        end.
+Fixpoint nat_match (C:Set) (f0:C) (fS:nat -> C -> C) (n:nat) {struct n} : C :=
+  match n with
+  | O => f0
+  | S p => fS p (nat_match C f0 fS p)
+  end.
 \end{coq_example*}
 The recursive call may not only be on direct subterms of the recursive
 variable {\tt n} but also on a deeper subterm and we can directly
@@ -1138,8 +1138,8 @@ Fixpoint tree_size (t:tree) : nat :=
   end
  with forest_size (f:forest) : nat :=
   match f with
-  | leaf b => 1%N
-  | cons t f' => (tree_size t + forest_size f')%N
+  | leaf b => 1
+  | cons t f' => (tree_size t + forest_size f')
   end.
 \end{coq_example*}
 A generic command {\tt Scheme} is useful to build automatically various
@@ -1182,12 +1182,9 @@ function does not satisfy the guard condition:
 Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example*}
-CoFixpoint filter
- (
-  (********** The following is not correct and should produce **********)
-  (***************** Error: Unguarded recursive call *******************)
-  (* Just to adjust the prompt: *) p:nat -> bool) (s:Stream) :
- Stream :=
+(********** The following is not correct and should produce **********)
+(***************** Error: Unguarded recursive call *******************)
+CoFixpoint filter (p:nat -> bool) (s:Stream) : Stream :=
   if p (hd s) then Seq (hd s) (filter p (tl s)) else filter p (tl s).
 \end{coq_example*}
 
