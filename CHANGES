@@ -34,7 +34,9 @@ Library
   notations. They now must be applied (incompatibilities only in
   unrealistic cases).
 - More efficient versions of Zmult and times (30% faster)
-- Reals (Olivier)
+- Reals: the library is now divided in 6 parts (Rbase, Rfunctions,
+  SeqSeries, Rtrigo, Ranalysis, Integration). New tactics: Sup and
+  RCompute. See Reals.v for details.
 
 Modules
 
