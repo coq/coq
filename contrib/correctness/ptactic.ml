@@ -228,6 +228,7 @@ let register id n =
   let id' = match n with None -> id | Some id' -> id' in
   Penv.register id id'
 
+  (* On dit à la commande "Save" d'enregistrer les nouveaux programmes *)
 let correctness_hook _ ref = 
   let pf_id = Nametab.id_of_global ref in
   register pf_id None
@@ -255,40 +256,3 @@ let correctness s p opttac =
   in
   solve_nth 1 tac;
   if_verbose show_open_subgoals ()
-
-
-(* On redéfinit la commande "Save" pour enregistrer les nouveaux programmes *)
-(*
-open Vernacinterp
-
-let add = Vernacinterp.overwriting_vinterp_add
-
-let _ = 
-  let current_save = Vernacinterp.vinterp_map "SaveNamed" in
-  add "SaveNamed"
-    (function [] -> (fun () -> let pf_id =  Pfedit.get_current_proof_name () in
-		     current_save [] ();
-		     register pf_id None)
-       |   _  -> assert false)
-
-let _ = 
-  let current_defined = Vernacinterp.vinterp_map "DefinedNamed" in
-  add "DefinedNamed"
-    (function [] -> (fun () -> let pf_id = Pfedit.get_current_proof_name () in
-		     current_defined [] ();
-		     register pf_id None)
-       | _ -> assert false)
-
-let _ =
-  let current_saveanonymous = Vernacinterp.vinterp_map "SaveAnonymous" in
-  add "SaveAnonymous"
-    (function l -> 
-      (fun () -> 
-        let id = match l with
-            [VARG_IDENTIFIER id] -> id
-          | [_;VARG_IDENTIFIER id] -> id
-          | _ -> assert false in
-	let pf_id = Pfedit.get_current_proof_name () in
-	current_saveanonymous l ();
-	register pf_id (Some id)))
-*)
