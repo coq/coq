@@ -52,28 +52,18 @@ val occur_meta_pattern : constr_pattern -> bool
 
 val subst_pattern : substitution -> constr_pattern -> constr_pattern
 
-type constr_label =
-  | ConstNode of constant
-  | IndNode of inductive
-  | CstrNode of constructor
-  | VarNode of identifier
-
-val label_of_ref : global_reference -> constr_label
-
-val subst_label : substitution -> constr_label -> constr_label
-
 exception BoundPattern
 
 (* [head_pattern_bound t] extracts the head variable/constant of the
    type [t] or raises [BoundPattern] (even if a sort); it raises an anomaly
    if [t] is an abstraction *)
 
-val head_pattern_bound : constr_pattern -> constr_label
+val head_pattern_bound : constr_pattern -> global_reference
 
 (* [head_of_constr_reference c] assumes [r] denotes a reference and
    returns its label; raises an anomaly otherwise *)
 
-val head_of_constr_reference : Term.constr -> constr_label
+val head_of_constr_reference : Term.constr -> global_reference
 
 (* [pattern_of_constr c] translates a term [c] with metavariables into
    a pattern; currently, no destructor (Cases, Fix, Cofix) and no

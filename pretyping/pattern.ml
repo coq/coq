@@ -114,41 +114,16 @@ let rec subst_pattern subst pat = match pat with
 	if cofixpoint' == cofixpoint then pat else
 	  PCoFix cofixpoint'
 
-type constr_label =
-  | ConstNode of constant
-  | IndNode of inductive
-  | CstrNode of constructor
-  | VarNode of identifier
-
 exception BoundPattern;;
 
-let label_of_ref = function
-  | ConstRef sp     -> ConstNode sp
-  | IndRef sp       -> IndNode sp
-  | ConstructRef sp -> CstrNode sp
-  | VarRef id       -> VarNode id
-
-let ref_of_label = function
-  | ConstNode sp     -> ConstRef sp
-  | IndNode sp       -> IndRef sp
-  | CstrNode sp      -> ConstructRef sp
-  | VarNode id       -> VarRef id
-
-let subst_label subst cstl = 
-  let ref = ref_of_label cstl in
-  let ref' = subst_global subst ref in
-    if ref' == ref then cstl else
-      label_of_ref ref'
-      
-  
 let rec head_pattern_bound t =
   match t with
     | PProd (_,_,b)  -> head_pattern_bound b 
     | PLetIn (_,_,b) -> head_pattern_bound b 
     | PApp (c,args)  -> head_pattern_bound c
     | PCase (_,p,c,br) -> head_pattern_bound c
-    | PRef r         -> label_of_ref r
-    | PVar id        -> VarNode id
+    | PRef r         -> r
+    | PVar id        -> VarRef id
     | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
@@ -156,10 +131,10 @@ let rec head_pattern_bound t =
     | PCoFix _ -> anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
-  | Const sp -> ConstNode sp
-  | Construct sp -> CstrNode sp
-  | Ind sp -> IndNode sp
-  | Var id -> VarNode id
+  | Const sp -> ConstRef sp
+  | Construct sp -> ConstructRef sp
+  | Ind sp -> IndRef sp
+  | Var id -> VarRef id
   | _ -> anomaly "Not a rigid reference"
 
 let rec pattern_of_constr t =

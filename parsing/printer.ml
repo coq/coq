@@ -142,11 +142,6 @@ let pr_rawterm t =
   else Ppconstrnew.pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
 
 open Pattern
-let pr_ref_label = function (* On triche sur le contexte *)
-  | ConstNode sp -> pr_constant (Global.env()) sp
-  | IndNode sp -> pr_inductive (Global.env()) sp
-  | CstrNode sp -> pr_constructor (Global.env()) sp
-  | VarNode id -> pr_id id
 
 let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t
 

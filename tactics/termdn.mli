@@ -11,6 +11,7 @@
 (*i*)
 open Term
 open Pattern
+open Libnames
 (*i*)
   
 (* Discrimination nets of terms. *)
@@ -44,8 +45,8 @@ val app : ((constr_pattern * 'a) -> unit) -> 'a t -> unit
 (* These are for Nbtermdn *)
 
 val constr_pat_discr : 
-  constr_pattern -> (constr_label * constr_pattern list) option
+  constr_pattern -> (global_reference * constr_pattern list) option
 val constr_val_discr :
-  constr -> (constr_label * constr list) option
+  constr -> (global_reference * constr list) option
 
 (*i*)

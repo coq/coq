@@ -11,6 +11,7 @@
 open Term
 open Termdn
 open Pattern
+open Libnames
 
 (* Discrimination nets with bounded depth.
    See the module dn.ml for further explanations.
@@ -34,7 +35,7 @@ let bounded_constr_val_discr (t,depth) =
       | None -> None
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
-type 'a t = (constr_label,constr_pattern * int,'a) Dn.t
+type 'a t = (global_reference,constr_pattern * int,'a) Dn.t
 
 let create = Dn.create
 

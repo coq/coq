@@ -49,12 +49,12 @@ module Hint_db :
   sig
     type t
     val empty : t
-    val find : constr_label -> t -> search_entry
-    val map_all : constr_label -> t -> pri_auto_tactic list
-    val map_auto : constr_label * constr -> t -> pri_auto_tactic list
-    val add_one : constr_label * pri_auto_tactic -> t -> t
-    val add_list : (constr_label * pri_auto_tactic) list -> t -> t
-    val iter : (constr_label -> stored_data list -> unit) -> t -> unit
+    val find : global_reference -> t -> search_entry
+    val map_all : global_reference -> t -> pri_auto_tactic list
+    val map_auto : global_reference * constr -> t -> pri_auto_tactic list
+    val add_one : global_reference * pri_auto_tactic -> t -> t
+    val add_list : (global_reference * pri_auto_tactic) list -> t -> t
+    val iter : (global_reference -> stored_data list -> unit) -> t -> unit
   end
 
 type frozen_hint_db_table = Hint_db.t Stringmap.t
@@ -81,7 +81,7 @@ val searchtable : hint_db_table
    [ctyp] is the type of [hc]. *)
 
 val make_exact_entry :
-  identifier -> constr * constr -> constr_label * pri_auto_tactic
+  identifier -> constr * constr -> global_reference * pri_auto_tactic
 
 (* [make_apply_entry (eapply,verbose) name (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
@@ -91,7 +91,7 @@ val make_exact_entry :
 
 val make_apply_entry :
   env -> evar_map -> bool * bool -> identifier -> constr * constr
-      -> constr_label * pri_auto_tactic
+      -> global_reference * pri_auto_tactic
 
 (* A constr which is Hint'ed will be:
    (1) used as an Exact, if it does not start with a product
@@ -102,7 +102,7 @@ val make_apply_entry :
 
 val make_resolves :
   env -> evar_map -> identifier -> bool * bool -> constr * constr -> 
-    (constr_label * pri_auto_tactic) list
+    (global_reference * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;
@@ -111,13 +111,13 @@ val make_resolves :
 
 val make_resolve_hyp : 
   env -> evar_map -> named_declaration ->
-      (constr_label * pri_auto_tactic) list
+      (global_reference * pri_auto_tactic) list
 
 (* [make_extern name pri pattern tactic_expr] *)
 
 val make_extern :
   identifier -> int -> constr_pattern -> Tacexpr.glob_tactic_expr
-      -> constr_label * pri_auto_tactic
+      -> global_reference * pri_auto_tactic
 
 val set_extern_interp :
   (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) -> unit

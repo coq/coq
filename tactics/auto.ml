@@ -105,7 +105,7 @@ let lookup_tacs (hdc,c) (l,l',dn) =
 
 
 module Constr_map = Map.Make(struct 
-			       type t = constr_label
+			       type t = global_reference
 			       let compare = Pervasives.compare 
 			     end)
 
@@ -249,7 +249,7 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
 
 (* REM : in most cases hintname = id *)
 let make_unfold (hintname, ref) =
-  (Pattern.label_of_ref ref,
+  (ref,
    { hname = hintname;
      pri = 4;
      pat = None;
@@ -305,7 +305,7 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
     }
   in
   let subst_hint (lab,data as hint) =
-    let lab' = subst_label subst lab in
+    let lab' = subst_global subst lab in
     let data' = match data.code with
       | Res_pf (c, clenv) ->
 	  let c' = subst_mps subst c in
@@ -511,13 +511,13 @@ let fmt_hint_list_for_head c =
       dbs 
   in
   if valid_dbs = [] then 
-    (str "No hint declared for :" ++ pr_ref_label c)
+    (str "No hint declared for :" ++ pr_global c)
   else 
     hov 0 
-      (str"For " ++ pr_ref_label c ++ str" -> " ++ fnl () ++
+      (str"For " ++ pr_global c ++ str" -> " ++ fnl () ++
 	 hov 0 (prlist fmt_hints_db valid_dbs))
 
-let fmt_hint_ref ref = fmt_hint_list_for_head (label_of_ref ref)
+let fmt_hint_ref ref = fmt_hint_list_for_head ref
 
 (* Print all hints associated to head id in any database *)
 let print_hint_ref ref =  ppnl(fmt_hint_ref ref)
@@ -562,7 +562,7 @@ let print_hint_db db =
   Hint_db.iter 
     (fun head hintlist ->
        msg (hov 0 
-	      (str "For " ++ pr_ref_label head ++ str " -> " ++
+	      (str "For " ++ pr_global head ++ str " -> " ++
 		 fmt_hint_list hintlist)))
     db
 
