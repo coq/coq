@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 open Util
 open Pp
@@ -16,7 +16,6 @@ open Sign
 open Environ
 
 (* Universes *)
-(*val set_module : Names.dir_path -> unit*)
 val new_univ : unit -> Univ.universe
 val new_sort_in_family : sorts_family -> sorts
 val new_Type : unit -> types
@@ -139,7 +138,7 @@ val named_hd_type : env -> types -> name -> name
 val mkProd_name : env -> name * types * types -> types
 val mkLambda_name : env -> name * types * constr -> constr
 
-(* Deprecated synonyms of mkProd_name and mkLambda_name *)
+(* Deprecated synonyms of [mkProd_name] and [mkLambda_name] *)
 val prod_name : env -> name * types * types -> types
 val lambda_name : env -> name * types * constr -> constr
 

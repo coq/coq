@@ -33,7 +33,7 @@ type constant_body = {
     const_body : constr_substituted option;
     const_type : types;  
     const_body_code : to_patch_substituted;
-   (* const_type_code : to_patch;*)
+   (*i const_type_code : to_patch;i*)
     const_constraints : constraints;
     const_opaque : bool }
 
@@ -119,8 +119,8 @@ and module_specification_body =
     { msb_modtype : module_type_body;
       msb_equiv : module_path option; 
       msb_constraints : constraints }
-    (*    type_of(equiv) <: modtype  (if given)  
-       +  substyping of past With_Module mergers *)
+    (*    [type_of](equiv) <: modtype  (if given)  
+       +  substyping of past [With_Module] mergers *)
 
 
 type structure_elem_body = 
@@ -136,7 +136,7 @@ and module_expr_body =
   | MEBfunctor of mod_bound_id * module_type_body * module_expr_body 
   | MEBstruct of mod_self_id * module_structure_body
   | MEBapply of module_expr_body * module_expr_body  (* (F A) *)
-      * constraints  (* type_of(A) <: input_type_of(F) *)
+      * constraints  (* [type_of](A) <: [input_type_of](F) *)
 
 and module_body = 
     { mod_expr : module_expr_body option;
@@ -144,7 +144,7 @@ and module_body =
       mod_type : module_type_body;
       mod_equiv : module_path option;
       mod_constraints : constraints }
-    (*    type_of(mod_expr)  <: mod_user_type (if given)  *)
+    (*    [type_of(mod_expr)]  <: [mod_user_type] (if given)  *)
     (*  if equiv given then constraints are empty *)
 
 

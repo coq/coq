@@ -48,16 +48,5 @@ module Ppprim :
 val declare_primitive_printer : 
   string -> scope_name -> primitive_printer -> unit
 
-(*
-val declare_infix_symbol : Libnames.section_path -> string -> unit
-*)
-
 (* Generic printing functions *) 
-(*
-val token_printer: std_printer -> std_printer
-*)
-(*
-val print_syntax_entry : 
-  string -> unparsing_subfunction -> Ast.env -> Ast.astpat syntax_entry -> std_ppcmds
-*)
 val genprint : std_printer -> unparsing_subfunction

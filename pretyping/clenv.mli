@@ -36,7 +36,7 @@ type clausenv = {
   templval : constr freelisted;
   templtyp : constr freelisted }
 
-(* Substitution is not applied on templenv (because subst_clenv is
+(* Substitution is not applied on templenv (because [subst_clenv] is
    applied only on hints which typing env is overwritten by the
    goal env) *)
 val subst_clenv : substitution -> clausenv -> clausenv
@@ -47,7 +47,7 @@ val clenv_value     : clausenv -> constr
 val clenv_type      : clausenv -> types
 (* substitute resolved metas *)
 val clenv_nf_meta   : clausenv -> constr -> constr
-(* type of a meta in clenvś context *)
+(* type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
 val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
@@ -67,7 +67,7 @@ val clenv_fchain : metavariable -> clausenv -> clausenv -> clausenv
 (***************************************************************)
 (* Unification with clenvs *)
 
-(* Unifies two terms in a clenv. The boolean is allow_K (see Unification) *)
+(* Unifies two terms in a clenv. The boolean is [allow_K] (see [Unification]) *)
 val clenv_unify : 
   bool -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
@@ -75,7 +75,7 @@ val clenv_unify :
 val clenv_unique_resolver :
   bool -> clausenv -> evar_info sigma -> clausenv
 
-(* same as above (allow_K=false) but replaces remaining metas
+(* same as above ([allow_K=false]) but replaces remaining metas
    with fresh evars *)
 val evar_clenv_unique_resolver :
   clausenv -> evar_info sigma -> clausenv

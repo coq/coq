@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ *)
+(*i $Id$ i*)
 
 (*i*)
 open Names
@@ -64,7 +64,7 @@ val interp_casted_openconstr    :
 (* [interp_type_with_implicits] extends [interp_type] by allowing
    implicits arguments in the ``rel'' part of [env]; the extra
    argument associates a list of implicit positions to identifiers
-   declared in the rel_context of [env] *)
+   declared in the [rel_context] of [env] *)
 val interp_type_with_implicits : 
   evar_map -> env -> full_implicits_env -> constr_expr -> types
 

@@ -40,7 +40,7 @@ val is_matching : constr_pattern -> constr -> bool
 val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
 (* [match_subterm n pat c] returns the substitution and the context
-   corresponding to the [n+1]th _closed_ subterm of [c] matching [pat];
+   corresponding to the [n+1]th **closed** subterm of [c] matching [pat];
    It raises PatternMatchingFailure if no such matching exists *)
 val match_subterm : int -> constr_pattern -> constr -> patvar_map * constr
 
