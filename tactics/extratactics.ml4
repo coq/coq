@@ -208,7 +208,9 @@ END
 VERNAC COMMAND EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s true half_dinv_tac ]
+    END
 
+VERNAC COMMAND EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END

@@ -785,7 +785,8 @@ tags:
 ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
-CAMLP4EXTENSIONS= parsing/tacextend.cmo parsing/vernacextend.cmo 
+CAMLP4EXTENSIONS= parsing/argextend.cmo parsing/tacextend.cmo \
+	   parsing/vernacextend.cmo 
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/dyn.cmo lib/options.cmo \
@@ -808,7 +809,7 @@ clean::
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
 	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
-	   parsing/tacextend.ml4 parsing/vernacextend.ml4
+	   parsing/argextend.ml4 parsing/tacextend.ml4 parsing/vernacextend.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 

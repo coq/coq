@@ -380,6 +380,9 @@ let _ =
 TACTIC EXTEND EAuto
 | [ "EAuto" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
     [ gen_eauto false (make_dimension n p) db ]
+END
+
+TACTIC EXTEND EAutoDebug
 | [ "EAutod" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
     [ gen_eauto true (make_dimension n p) db ]
 END

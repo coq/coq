@@ -484,10 +484,14 @@ let kill_node_verbose n =
 
 let set_text_mode s = text_proof_flag := s
 
+VERNAC ARGUMENT EXTEND text_mode
+| [ "fr" ] -> [ "fr" ]
+| [ "en" ] -> [ "en" ]
+| [ "Off" ] -> [ "off" ]
+END
+
 VERNAC COMMAND EXTEND TextMode
-| [ "Text" "Mode" "fr" ] -> [ set_text_mode "fr" ]
-| [ "Text" "Mode" "en" ] -> [ set_text_mode "en" ]
-| [ "Text" "Mode" "Off" ] -> [ set_text_mode "off" ]
+| [ "Text" "Mode" text_mode(s) ] -> [ set_text_mode s ]
 END
 
 VERNAC COMMAND EXTEND OutputGoal
@@ -498,8 +502,11 @@ VERNAC COMMAND EXTEND OutputGoal
   [ "Goal" "Cmd" natural(n) "with" tactic(tac) ] -> [ simulate_solve n tac ]
 END
 
-VERNAC COMMAND EXTEND KillProof
+VERNAC COMMAND EXTEND KillProofAfter
 | [ "Kill" "Proof" "after"  natural(n) ] -> [ kill_node_verbose n ]
+END
+
+VERNAC COMMAND EXTEND KillProofAt
 | [ "Kill" "Proof" "at"  natural(n) ] -> [ kill_node_verbose n ]
 END
 
