@@ -21,12 +21,10 @@ val error_axiom : global_reference -> 'a
 val warning_axiom : global_reference -> unit
 val error_section : unit -> 'a
 val error_constant : global_reference -> 'a
-val error_fixpoint : global_reference -> 'a
-val error_type_scheme : global_reference -> 'a
 val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
 val error_module_clash : string -> 'a 
-val error_unknown_module : identifier -> 'a
+val error_unknown_module : qualid -> 'a
 val error_toplevel : unit -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
@@ -34,19 +32,15 @@ val error_unqualified_name : string -> string -> 'a
 
 (*s utilities concerning [module_path]. *)
 
+val kn_of_r : global_reference -> kernel_name
+
 val current_toplevel : unit -> module_path
-
-val is_toplevel : module_path -> bool 
-val at_toplevel : module_path -> bool
-val base_mp : module_path -> module_path
-val prefixes_mp : module_path -> MPset.t
-val is_modfile : module_path -> bool 
-val modfile_of_mp : module_path -> module_path
-val fst_level_module_of_mp : module_path -> module_path * label
-val labels_of_mp : module_path -> module_path * label list 
-val labels_of_kn : kernel_name -> module_path * label list
-
 val is_something_opened : unit -> bool
+val base_mp : module_path -> module_path
+val is_modfile : module_path -> bool 
+val is_toplevel : module_path -> bool
+val at_toplevel : module_path -> bool 
+val visible_kn : kernel_name -> bool
 
 (*s Some table-related operations *)
 
@@ -66,11 +60,6 @@ val add_record : kernel_name -> int -> global_reference list -> unit
 val find_projections : kernel_name -> global_reference list
 val is_projection : global_reference -> bool 
 val projection_arity : global_reference -> int
-
-val add_aliases : module_path -> module_path -> unit
-val long_mp : module_path -> module_path 
-val long_kn : kernel_name -> kernel_name
-val long_r : global_reference -> global_reference
 
 val reset_tables : unit -> unit
 
@@ -94,7 +83,8 @@ val to_keep : global_reference -> bool
 
 (*s Table for user-given custom ML extractions. *)
 
-val ugly_hack_arity_nb_args : (Environ.env -> Term.constr -> int) ref
+(* UGLY HACK: registration of a function defined in [extraction.ml] *)
+val register_type_scheme_nb_args : (Environ.env -> Term.constr -> int) -> unit
 
 val is_custom : global_reference -> bool
 val is_inline_custom : global_reference -> bool

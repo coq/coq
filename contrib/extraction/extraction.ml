@@ -95,7 +95,7 @@ let rec type_scheme_nb_args env c =
 	if is_info_scheme env t then n+1 else n
     | _ -> 0
 
-let _ = ugly_hack_arity_nb_args := type_scheme_nb_args
+let _ = register_type_scheme_nb_args type_scheme_nb_args
 
 (*s [type_sign_vl] does the same, plus a type var list. *)
 
@@ -201,7 +201,6 @@ let rec extract_type env db j c args =
 	       else let n' = List.nth db (n-1) in 
 	       if n' = 0 then Tunknown else Tvar n')
     | Const kn -> 
-	let kn = long_kn kn in 
 	let r = ConstRef kn in 
 	let cb = lookup_constant kn env in 
 	let typ = cb.const_type in 
@@ -228,7 +227,6 @@ let rec extract_type env db j c args =
 		      let newc = applist (Declarations.force lbody, args) in 
 		      extract_type env db j newc []))
     | Ind ((kn,i) as ip) ->
-	let kn = long_kn kn in
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in  
 	extract_type_app env db (IndRef (kn,i),s) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
@@ -284,9 +282,9 @@ and extract_type_scheme env db c p =
 
 and extract_ind env kn = (* kn is supposed to be in long form *)
   try 
-    if (!internal_call = Some kn) || (is_modfile (base_mp (modpath kn))) 
-    then lookup_ind kn
-    else raise Not_found 
+    if (!internal_call = Some kn) then lookup_ind kn (* Already started. *)
+    else if visible_kn kn then lookup_ind kn (* Standard situation. *)
+    else raise Not_found (* Never trust the table for a internal kn. *)
   with Not_found -> 
     internal_call := Some kn;
     let mib = Environ.lookup_mind kn env in 
@@ -384,13 +382,11 @@ and extract_type_cons env db dbmap c i =
 
 and mlt_env env r = match r with 
   | ConstRef kn -> 
-      let kn = long_kn kn in
       (try 
-	 if is_modfile (base_mp (modpath kn)) then
-	   match lookup_term kn with 
-	     | Dtype (_,vl,mlt) -> Some mlt
-	     | _ -> None
-	 else raise Not_found
+	 if not (visible_kn kn) then raise Not_found; 
+	 match lookup_term kn with 
+	   | Dtype (_,vl,mlt) -> Some mlt
+	   | _ -> None
        with Not_found -> 
 	 let cb = Environ.lookup_constant kn env in
 	 let typ = cb.const_type in
@@ -415,10 +411,9 @@ let type_expunge env = type_expunge (mlt_env env)
 (*s Extraction of the type of a constant. *)
 
 let record_constant_type env kn opt_typ = 
-  let kn = long_kn kn in 
   try 
-    if is_modfile (base_mp (modpath kn)) then lookup_type kn
-    else raise Not_found 
+    if not (visible_kn kn) then raise Not_found; 
+    lookup_type kn 
   with Not_found ->
     let typ = match opt_typ with 
       | None -> constant_type env kn 
@@ -470,16 +465,15 @@ let rec extract_term env mle mlt c args =
 	  let mle' = Mlenv.push_std_type mle Tdummy in 
 	  ast_pop (extract_term env' mle' mlt c2 args')
     | Const kn ->
-	extract_cst_app env mle mlt (long_kn kn) args
-    | Construct ((kn,i),j) ->
-	extract_cons_app env mle mlt (((long_kn kn),i),j) args
+	extract_cst_app env mle mlt kn args
+    | Construct cp ->
+	extract_cons_app env mle mlt cp args
     | Rel n ->
 	(* As soon as the expected [mlt] for the head is known, *)
 	(* we unify it with an fresh copy of the stored type of [Rel n]. *)
 	let extract_rel mlt = put_magic (mlt, Mlenv.get mle n) (MLrel n)
 	in extract_app env mle mlt extract_rel args 
-    | Case ({ci_ind=(kn,i)},_,c0,br) ->
-	let ip = long_kn kn, i in 
+    | Case ({ci_ind=ip},_,c0,br) ->
  	extract_app env mle mlt (extract_case env mle (ip,c0,br)) args
     | Fix ((_,i),recd) ->
  	extract_app env mle mlt (extract_fix env mle i recd) args 
@@ -743,17 +737,16 @@ let extract_fixpoint env vkn (fi,ti,ci) =
   Dfix (Array.map (fun kn -> ConstRef kn) vkn, terms, types) 
 		 
 let extract_constant env kn cb = 
-  let kn = long_kn kn in 
   let r = ConstRef kn in 
   let typ = cb.const_type in
   match cb.const_body with
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if is_custom (long_r r) then Dtype (r, [], Tunknown) 
+	       if is_custom r then Dtype (r, [], Tunknown) 
 	       else error_axiom r
            | (Info,Default) -> 
-	       if is_custom (long_r r) then 
+	       if is_custom r then 
 		 let t = snd (record_constant_type env kn (Some typ)) in 
 		 Dterm (r, MLexn "axiom!", type_expunge env t) 
 	       else error_axiom r
@@ -773,7 +766,6 @@ let extract_constant env kn cb =
 	       in Dtype (r, vl, t))
 
 let extract_constant_spec env kn cb = 
-  let kn = long_kn kn in 
   let r = ConstRef kn in 
   let typ = cb.const_type in
   match flag_of_type env typ with 
@@ -792,7 +784,6 @@ let extract_constant_spec env kn cb =
 	Sval (r, type_expunge env t)
 
 let extract_inductive env kn = 
-  let kn = long_kn kn in 
   let ind = extract_ind env kn in 
   add_recursors env kn; 
   let f l = List.filter (type_neq env Tdummy) l in 
@@ -805,9 +796,8 @@ let extract_inductive env kn =
 
 let extract_declaration env r = match r with
   | ConstRef kn -> extract_constant env kn (Environ.lookup_constant kn env)
-  | IndRef (kn,_) -> let kn = long_kn kn in Dind (kn, extract_inductive env kn)
-  | ConstructRef ((kn,_),_) -> 
-      let kn = long_kn kn in Dind (kn, extract_inductive env kn)
+  | IndRef (kn,_) -> Dind (kn, extract_inductive env kn)
+  | ConstructRef ((kn,_),_) -> Dind (kn, extract_inductive env kn)
   | VarRef kn -> assert false
 
 (*s Without doing complete extraction, just guess what a constant would be. *) 
@@ -820,6 +810,23 @@ let constant_kind env cb =
     | (Info,TypeScheme) -> Type
     | (Info,Default) -> Term
 
+(*s Is a [ml_decl] logical ? *) 
+
+let logical_decl = function 
+  | Dterm (_,MLdummy,Tdummy) -> true
+  | Dtype (_,[],Tdummy) -> true 
+  | Dfix (_,av,tv) -> 
+      (array_for_all ((=) MLdummy) av) && (array_for_all ((=) Tdummy) tv)
+  | Dind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
+  | _ -> false
+
+(*s Is a [ml_spec] logical ? *)
+
+let logical_spec = function 
+  | Stype (_, [], Some Tdummy) -> true
+  | Sval (_,Tdummy) -> true
+  | Sind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
+  | _ -> false
 
   
 

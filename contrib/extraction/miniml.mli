@@ -104,12 +104,17 @@ type ml_specif =
   | Smodule of ml_module_type
   | Smodtype of ml_module_type
 
-and ml_module_sig = (label * ml_specif) list
-
 and ml_module_type = 
   | MTident of kernel_name
   | MTfunsig of mod_bound_id * ml_module_type * ml_module_type
   | MTsig of mod_self_id * ml_module_sig
+
+and ml_module_sig = (label * ml_specif) list
+
+type ml_structure_elem = 
+  | SEdecl of ml_decl
+  | SEmodule of ml_module
+  | SEmodtype of ml_module_type
 
 and ml_module_expr =
   | MEident of module_path
@@ -117,17 +122,14 @@ and ml_module_expr =
   | MEstruct of mod_self_id * ml_module_structure
   | MEapply of ml_module_expr * ml_module_expr
 
-and ml_structure_elem = 
-  | SEdecl of ml_decl
-  | SEmodule of ml_module (* pourquoi pas plutot ml_module_expr *)
-  | SEmodtype of ml_module_type
-
 and ml_module_structure = (label * ml_structure_elem) list
 
 and ml_module = 
-    { ml_mod_expr : ml_module_expr option; 
-      ml_mod_type : ml_module_type;
-      ml_mod_equiv : module_path option } 
+    { ml_mod_expr : ml_module_expr; 
+      ml_mod_type : ml_module_type }
+
+(* NB: we do not translate the [mod_equiv] field, since [mod_equiv = mp] 
+   implies that [mod_expr = MEBident mp]. Same with [msb_equiv]. *)
 
 type ml_structure = (module_path * ml_module_structure) list
 
@@ -140,13 +142,13 @@ type ml_signature = (module_path * ml_module_sig) list
 
 module type Mlpp_param = sig
   val globals : unit -> Idset.t
-  val pp_global : module_path -> global_reference -> std_ppcmds
-  val pp_long_module : module_path -> module_path -> std_ppcmds
+  val pp_global : module_path list -> global_reference -> std_ppcmds
+  val pp_long_module : module_path list -> module_path -> std_ppcmds
   val pp_short_module : identifier -> std_ppcmds
 end
 
 module type Mlpp = sig
-  val pp_decl : module_path -> ml_decl -> std_ppcmds
+  val pp_decl : module_path list -> ml_decl -> std_ppcmds
   val pp_struct : ml_structure -> std_ppcmds
   val pp_signature : ml_signature -> std_ppcmds
 end

@@ -59,9 +59,9 @@ let pr_lower_id id = pr_id (lowercase_id id)
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let local_mp = ref initial_path 
+let local_mpl = ref ([] : module_path list)
 
-let pp_global r = P.pp_global !local_mp r
+let pp_global r = P.pp_global !local_mpl r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
@@ -237,8 +237,8 @@ let rec pp_ind first kn i ind =
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_decl mp = 
-  local_mp := mp;
+let pp_decl mpl = 
+  local_mpl := mpl;
   function
   | Dind (kn,i) when i.ind_info = Singleton -> 
       pp_singleton kn i.ind_packets.(0) ++ fnl ()
@@ -262,15 +262,15 @@ let pp_decl mp =
       else 
 	hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl () ++ fnl ())
 
-let pp_structure_elem mp = function 
-  | (l,SEdecl d) -> pp_decl mp d
+let pp_structure_elem mpl = function 
+  | (l,SEdecl d) -> pp_decl mpl d
   | (l,SEmodule m) -> 
       failwith "TODO: Haskell extraction of modules not implemented yet"
   | (l,SEmodtype m) -> 
       failwith "TODO: Haskell extraction of modules not implemented yet"
 
 let pp_struct = 
-  prlist (fun (mp,sel) -> prlist (pp_structure_elem mp) sel)
+  prlist (fun (mp,sel) -> prlist (pp_structure_elem [mp]) sel)
 
 let pp_signature s = failwith "TODO"
 

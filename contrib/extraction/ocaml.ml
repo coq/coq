@@ -18,6 +18,7 @@ open Libnames
 open Table
 open Miniml
 open Mlutil
+open Modutil
 
 let cons_cofix = ref Refset.empty
 
@@ -156,12 +157,11 @@ let preamble_sig _ used_modules (_,tdummy,tunknown) =
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let local_mp = ref initial_path
+let local_mpl = ref ([] : module_path list)
 
 let pp_global r = 
-  let r = long_r r in 
   if is_inline_custom r then str (find_custom r) 
-  else P.pp_global !local_mp  r
+  else P.pp_global !local_mpl  r
 
 let empty_env () = [], P.globals ()
 
@@ -224,13 +224,13 @@ let rec pp_expr par env args =
 	      spc () ++ hov 0 pp_a2))
     | MLglob r -> 
 	(try 
-	   let _,args = list_chop (projection_arity r) args in 
+	   let args = list_skipn (projection_arity r) args in 
 	   let record = List.hd args in 
 	   pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
 	 with _ -> apply (pp_global r))
     | MLcons (r,[]) ->
 	assert (args=[]);
-	if Refset.mem (long_r r) !cons_cofix then 
+	if Refset.mem r !cons_cofix then 
 	  pp_par par (str "lazy " ++ pp_global r)
 	else pp_global r
     | MLcons (r,args') -> 
@@ -240,12 +240,12 @@ let rec pp_expr par env args =
 	 with Not_found ->
 	   assert (args=[]);
 	   let tuple = pp_tuple (pp_expr true env []) args' in 
-	   if Refset.mem (long_r r) !cons_cofix then 
+	   if Refset.mem r !cons_cofix then 
 	     pp_par par (str "lazy (" ++ pp_global r ++ spc() ++ tuple ++str ")")
 	   else pp_par par (pp_global r ++ spc () ++ tuple))
     | MLcase (t, pv) ->
 	let r,_,_ = pv.(0) in 
-	let expr = if Refset.mem (long_r r) !cons_cofix then 
+	let expr = if Refset.mem r !cons_cofix then 
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
 	else 
 	  (pp_expr false env [] t) 
@@ -335,7 +335,7 @@ and pp_function env f t =
     not (List.exists (fun (k,t0) -> ast_occurs (k+1) t0) ktl)
   in
   let is_not_cofix pv = 
-    let (r,_,_) = pv.(0) in not (Refset.mem (long_r r) !cons_cofix) 
+    let (r,_,_) = pv.(0) in not (Refset.mem r !cons_cofix) 
   in					  
   match t' with 
     | MLcase(MLrel 1,pv) when is_not_cofix pv ->
@@ -375,14 +375,13 @@ let pp_val e typ =
 let rec pp_Dfix init i ((rv,c,t) as fix) = 
   if i >= Array.length rv then mt () 
   else 
-    let r = long_r rv.(i) in 
-    if is_inline_custom r then pp_Dfix init (i+1) fix
+    if is_inline_custom rv.(i) then pp_Dfix init (i+1) fix
     else 
-      let e = pp_global r in
+      let e = pp_global rv.(i) in
       (if init then mt () else fnl2 ()) ++
       pp_val e t.(i) ++
       str (if init then "let rec " else "and ") ++
-      (if is_custom r then e ++ str " = " ++ str (find_custom r)
+      (if is_custom rv.(i) then e ++ str " = " ++ str (find_custom rv.(i))
        else pp_function (empty_env ()) e c.(i)) ++
       pp_Dfix false (i+1) fix 
 	
@@ -419,13 +418,12 @@ let pp_logical_ind packet =
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
   hov 2 (str "type " ++ pp_parameters l ++
-	 P.pp_global !local_mp (IndRef (kn,0)) ++ str " =" ++ spc () ++
+	 pp_global (IndRef (kn,0)) ++ str " =" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++ 
 		     pr_id packet.ip_consnames.(0)))
 
 let pp_record kn packet = 
-  let kn = long_kn kn in 
   let l = List.combine (find_projections kn) packet.ip_types.(0) in 
   let projs = find_projections kn in
   let pl = rename_tvars keywords packet.ip_vars in 
@@ -469,19 +467,18 @@ let pp_ind co kn ind =
 (*s Pretty-printing of a declaration. *)
 
 let pp_mind kn i = 
-  let kn = long_kn kn in 
-  (match i.ind_info with 
-     | Singleton -> pp_singleton kn i.ind_packets.(0)
-     | Coinductive -> 
-	 let nop _ = () 
-	 and add r = cons_cofix := Refset.add (long_r r) !cons_cofix in 
-	 decl_iter_references nop add nop (Dind (kn,i)); 
-	 pp_ind true kn i
-     | Record -> pp_record kn i.ind_packets.(0)
-     | _ -> pp_ind false kn i)
+  match i.ind_info with 
+    | Singleton -> pp_singleton kn i.ind_packets.(0)
+    | Coinductive -> 
+	let nop _ = () 
+	and add r = cons_cofix := Refset.add r !cons_cofix in 
+	decl_iter_references nop add nop (Dind (kn,i)); 
+	pp_ind true kn i
+    | Record -> pp_record kn i.ind_packets.(0)
+    | _ -> pp_ind false kn i
 
-let pp_decl mp = 
-  local_mp := mp; 
+let pp_decl mpl = 
+  local_mpl := mpl; 
   function
     | Dind (kn,i) as d -> pp_mind kn i
     | Dtype (r, l, t) ->
@@ -512,8 +509,8 @@ let pp_decl mp =
     | Dfix (rv,defs,typs) ->
 	pp_Dfix true 0 (rv,defs,typs)
 
-let pp_spec mp = 
-  local_mp := mp; 
+let pp_spec mpl = 
+  local_mpl := mpl; 
   function 
     | Sind (kn,i) -> pp_mind kn i
     | Sval (r,t) -> 
@@ -537,82 +534,87 @@ let pp_spec mp =
 	  in 
 	  hov 2 (str "type" ++ spc () ++ ids ++ pp_global r ++ spc () ++ def)
 
-let rec pp_structure_elem mp = function 
-  | (_,SEdecl d) -> pp_decl mp d
-  | (l,SEmodule m) ->
-      hov 1 
-	(str "module " ++ P.pp_short_module (id_of_label l) ++ 
-	 (match m.ml_mod_equiv with 
-	    | None -> 
-		str " :" ++ fnl () ++ 
-		pp_module_type mp m.ml_mod_type ++ fnl () ++
-		str "= " ++ fnl () ++ 
-		(match m.ml_mod_expr with 
-		   | None -> assert false (* see Jacek *)
-		   | Some me -> pp_module_expr mp me)
-	    | Some mp' -> 
-		str " = " ++ P.pp_long_module mp mp'))
-  | (l,SEmodtype m) -> 
-      hov 1 
-	(str "module type " ++ P.pp_short_module (id_of_label l) ++
-	 str " = " ++ fnl () ++ pp_module_type mp m)
-
-and pp_module_expr mp = function 
-  | MEident mp' -> P.pp_long_module mp mp'
-  | MEfunctor (mbid, mt, me) -> 
-      str "functor (" ++ 
-      P.pp_short_module (id_of_mbid mbid) ++
-      str ":" ++
-      pp_module_type mp mt ++
-      str ") ->" ++ fnl () ++
-      pp_module_expr mp me
-  | MEapply (me, me') -> 
-      pp_module_expr mp me ++ str "(" ++ pp_module_expr mp me' ++ str ")"
-  | MEstruct (msid, sel) -> 
-      let l = map_succeed (pp_structure_elem (MPself msid)) sel in 
-      str "struct " ++ fnl () ++
-      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++ 
-      fnl () ++ str "end" 
-
-and pp_module_type mp = function 
-  | MTident kn -> 
-      let mp',_,l = repr_kn kn in P.pp_long_module mp (MPdot (mp,l)) 
-  | MTfunsig (mbid, mt, mt') -> 
-      str "functor (" ++ 
-      P.pp_short_module (id_of_mbid mbid) ++
-      str ":" ++
-      pp_module_type mp mt ++
-      str ") ->" ++ fnl () ++
-      pp_module_type mp mt'
-  | MTsig (msid, sign) -> 
-      let l = map_succeed (pp_specif (MPself msid)) sign in 
-      str "sig " ++ fnl () ++ 
-      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
-      fnl () ++ str "end"
-
-and pp_specif mp = function 
-  | (_,Spec s) -> pp_spec mp s 
+let rec pp_specif mpl = function 
+  | (_,Spec s) -> pp_spec mpl s 
   | (l,Smodule mt) -> 
       hov 1 
 	(str "module " ++ 
 	 P.pp_short_module (id_of_label l) ++
-	 str " : " ++ fnl () ++ pp_module_type mp mt)
+	 str " : " ++ fnl () ++ pp_module_type mpl None (* (Some l) *) mt)
   | (l,Smodtype mt) -> 
       hov 1
 	(str "module type " ++
 	 P.pp_short_module (id_of_label l) ++
-	 str " = " ++ fnl () ++ pp_module_type mp mt)
+	 str " = " ++ fnl () ++ pp_module_type mpl None mt)
+
+and pp_module_type mpl ol = function 
+  | MTident kn -> 
+      let mp,_,l = repr_kn kn in P.pp_long_module mpl (MPdot (mp,l)) 
+  | MTfunsig (mbid, mt, mt') -> 
+      str "functor (" ++ 
+      P.pp_short_module (id_of_mbid mbid) ++
+      str ":" ++
+      pp_module_type mpl None mt ++
+      str ") ->" ++ fnl () ++
+      pp_module_type mpl None mt'
+  | MTsig (msid, sign) ->
+      let mpl = match ol, mpl with 
+	| None, _ -> (MPself msid) :: mpl
+	| Some l, mp :: mpl -> (MPdot (mp,l)) :: mpl
+	| _ -> assert false 
+      in
+      let l = map_succeed (pp_specif mpl) sign in 
+      str "sig " ++ fnl () ++ 
+      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
+      fnl () ++ str "end"
+
+let rec pp_structure_elem mpl = function 
+  | (_,SEdecl d) -> pp_decl mpl d
+  | (l,SEmodule m) ->
+      hov 1 
+	(str "module " ++ P.pp_short_module (id_of_label l) ++ 
+	 str " :" ++ fnl () ++ 
+	 pp_module_type mpl None m.ml_mod_type ++ fnl () ++ 
+	 str "= " ++ fnl () ++ 
+	 pp_module_expr mpl (Some l) m.ml_mod_expr)
+  | (l,SEmodtype m) -> 
+      hov 1 
+	(str "module type " ++ P.pp_short_module (id_of_label l) ++
+	 str " = " ++ fnl () ++ pp_module_type mpl None m)
+
+and pp_module_expr mpl ol = function 
+  | MEident mp' -> P.pp_long_module mpl mp'
+  | MEfunctor (mbid, mt, me) -> 
+      str "functor (" ++ 
+      P.pp_short_module (id_of_mbid mbid) ++
+      str ":" ++
+      pp_module_type mpl None mt ++
+      str ") ->" ++ fnl () ++
+      pp_module_expr mpl None me
+  | MEapply (me, me') -> 
+      pp_module_expr mpl None me ++ str "(" ++ 
+      pp_module_expr mpl None me' ++ str ")"
+  | MEstruct (msid, sel) -> 
+      let mpl = match ol, mpl with 
+	| None, _ -> (MPself msid) :: mpl
+	| Some l, mp :: mpl -> (MPdot (mp,l)) :: mpl
+	| _ -> assert false
+      in
+      let l = map_succeed (pp_structure_elem mpl) sel in 
+      str "struct " ++ fnl () ++
+      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++ 
+      fnl () ++ str "end" 
 
 let pp_struct s =
-  let pp mp s = pp_structure_elem mp s ++ fnl2 () in 
+  let pp mp s = pp_structure_elem [mp] s ++ fnl2 () in 
   prlist (fun (mp,sel) -> prlist identity (map_succeed (pp mp) sel)) s
 
 let pp_signature s = 
-  let pp mp s = pp_specif mp s ++ fnl2 () in 
+  let pp mp s = pp_specif [mp] s ++ fnl2 () in 
   prlist (fun (mp,sign) -> prlist identity (map_succeed (pp mp) sign)) s
 
-let pp_decl mp d = 
-  try pp_decl mp d with Failure "empty phrase" -> mt () 
+let pp_decl mpl d = 
+  try pp_decl mpl d with Failure "empty phrase" -> mt () 
 
 end
 

@@ -245,6 +245,7 @@ FOURIERCMO=\
 EXTRACTIONCMO=\
   contrib/extraction/table.cmo\
   contrib/extraction/mlutil.cmo\
+  contrib/extraction/modutil.cmo \
   contrib/extraction/ocaml.cmo \
   contrib/extraction/haskell.cmo \
   contrib/extraction/scheme.cmo \

@@ -35,3 +35,8 @@ val extract_declaration : env -> global_reference -> ml_decl
 type kind = Logical | Term | Type 
 
 val constant_kind : env -> constant_body -> kind
+
+(*s Is a [ml_decl] or a [ml_spec] logical ? *) 
+
+val logical_decl : ml_decl -> bool
+val logical_spec : ml_spec -> bool

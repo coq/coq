@@ -17,7 +17,7 @@ open Util
 open Miniml
 open Table
 open Extraction
-open Mlutil
+open Modutil
 open Common
 
 (*s Obtaining Coq environment. *)
@@ -52,59 +52,14 @@ let environment_until dir_opt =
 	  | _ -> assert false
   in parse (Library.loaded_libraries ())
 
-(*s First, we parse everything in order to produce 
-   a table of aliases between short and long [module_path]. *)
-
-let rec init_aliases_seb loc abs = function 
-  | l, SEBmodule mb -> 
-      init_aliases_module loc (option_app (fun mp -> MPdot (mp,l)) abs) mb 
-  | l, SEBmodtype mtb -> init_aliases_modtype loc mtb 
-  | _ -> () 
-
-and init_aliases_module loc abs mb = 
-  option_iter (init_aliases_meb loc abs) mb.mod_expr
-
-and init_aliases_meb loc abs = function 
-  | MEBident mp -> ()
-  | MEBapply (meb, meb',_) -> 
-      init_aliases_meb loc None meb; init_aliases_meb loc None meb'
-  | MEBfunctor (mbid, mtb, meb) -> 
-      init_aliases_modtype loc mtb; 
-      init_aliases_meb loc None meb 
-  | MEBstruct (msid, msb) -> 
-      let loc = MPself msid in 
-      option_iter (add_aliases loc) abs; 
-      List.iter (init_aliases_seb loc abs) msb
-
-and init_aliases_modtype loc = function 
-  | MTBident mp -> ()
-  | MTBfunsig (mbid, mtb, mtb') -> 
-      init_aliases_modtype loc mtb; 
-      init_aliases_modtype loc mtb'
-  | MTBsig (msid, sign) -> 
-      let loc = MPself msid in
-      List.iter (init_aliases_spec loc) sign
-	
-and init_aliases_spec loc = function 
-  | l, SPBmodule {msb_modtype=mtb} -> init_aliases_modtype loc mtb 
-  | l, SPBmodtype mtb -> init_aliases_modtype loc mtb
-  | _ -> ()
-
-let init_aliases l =
-  List.iter 
-    (fun (mp,meb) -> init_aliases_meb (current_toplevel ()) (Some mp) meb) l
-
-(*s The extraction pass. *)
-
 type visit = { mutable kn : KNset.t; mutable mp : MPset.t }
 
-let in_kn v kn = KNset.mem (long_kn kn) v.kn
-let in_mp v mp = MPset.mem (long_mp mp) v.mp
+let in_kn v kn = KNset.mem kn v.kn
+let in_mp v mp = MPset.mem mp v.mp
 
-let visit_ref v r = 
-  let kn = long_kn (kn_of_r r) in 
-  v.kn <- KNset.add kn v.kn; 
-  v.mp <- MPset.union (prefixes_mp (modpath kn)) v.mp
+let visit_mp v mp = v.mp <- MPset.union (prefixes_mp mp) v.mp
+let visit_kn v kn = v.kn <- KNset.add kn v.kn; visit_mp v (modpath kn)
+let visit_ref v r = visit_kn v (kn_of_r r) 
 
 exception Impossible
 
@@ -138,43 +93,67 @@ let factor_fix env l cb msb =
     labels, recd, msb''
   end
 
-let logical_decl = function 
-  | Dterm (_,MLdummy,Tdummy) -> true
-  | Dtype (_,[],Tdummy) -> true 
-  | Dfix (_,av,tv) -> 
-      (array_for_all ((=) MLdummy) av) && (array_for_all ((=) Tdummy) tv)
-  | Dind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
-  | _ -> false
-
-let logical_spec = function 
-  | Stype (_, [], Some Tdummy) -> true
-  | Sval (_,Tdummy) -> true
-  | Sind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
-  | _ -> false
-
 let get_decl_references v d = 
   let f = visit_ref v in decl_iter_references f f f d
 
 let get_spec_references v s = 
   let f = visit_ref v in spec_iter_references f f f s
 
-let rec extract_msb env v all loc = function 
+let rec extract_msig env v mp = function 
+  | [] -> [] 
+  | (l,SPBconst cb) :: msig -> 
+      let kn = make_kn mp empty_dirpath l in 
+      let s = extract_constant_spec env kn cb in 
+      if logical_spec s then extract_msig env v mp msig
+      else begin
+	get_spec_references v s; 
+	(l,Spec s) :: (extract_msig env v mp msig)
+      end
+  | (l,SPBmind cb) :: msig -> 
+      let kn = make_kn mp empty_dirpath l in 
+      let s = Sind (kn, extract_inductive env kn) in 
+      if logical_spec s then extract_msig env v mp msig
+      else begin 
+	get_spec_references v s; 
+	(l,Spec s) :: (extract_msig env v mp msig)
+      end
+  | (l,SPBmodule {msb_modtype=mtb}) :: msig -> 
+(*      let mpo = Some (MPdot (mp,l)) in  *)
+      (l,Smodule (extract_mtb env v None (* mpo *) mtb)) :: (extract_msig env v mp msig)
+  | (l,SPBmodtype mtb) :: msig -> 
+      (l,Smodtype (extract_mtb env v None mtb)) :: (extract_msig env v mp msig)
+
+and extract_mtb env v mpo = function 
+  | MTBident kn -> visit_kn v kn; MTident kn 
+  | MTBfunsig (mbid, mtb, mtb') -> 
+      let mp = MPbound mbid in 
+      let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
+      MTfunsig (mbid, extract_mtb env v None mtb, 
+		extract_mtb env' v None mtb') 
+  | MTBsig (msid, msig) -> 
+      let mp, msig = match mpo with 
+	| None -> MPself msid, msig
+	| Some mp -> mp, Modops.subst_signature_msid msid mp msig
+      in
+      let env' = Modops.add_signature mp msig env in 
+      MTsig (msid, extract_msig env' v mp msig) 
+
+let rec extract_msb env v mp all = function 
   | [] -> [] 
   | (l,SEBconst cb) :: msb -> 
       (try 
 	 let vl,recd,msb = factor_fix env l cb msb in 
-	 let vkn = Array.map (make_kn loc empty_dirpath) vl in
-	 let vkn = Array.map long_kn vkn in
-	 let ms = extract_msb env v all loc msb in 
+	 let vkn = Array.map (fun id -> make_kn mp empty_dirpath id) vl in
+	 let ms = extract_msb env v mp all msb in 
 	 let b = array_exists (in_kn v) vkn in 
 	 if all || b then 
 	   let d = extract_fixpoint env vkn recd in 
 	   if (not b) && (logical_decl d) then ms 
-	   else begin get_decl_references v d;  (l,SEdecl d) :: ms end
+	   else begin get_decl_references v d; (l,SEdecl d) :: ms end
 	 else ms
        with Impossible ->
-	 let ms = extract_msb env v all loc msb in 
-	 let kn = make_kn loc empty_dirpath l in 
+	 let ms = extract_msb env v mp all msb in 
+	 let kn = make_kn mp empty_dirpath l in 
 	 let b = in_kn v kn in 
 	 if all || b then 
 	   let d = extract_constant env kn cb in
@@ -182,8 +161,8 @@ let rec extract_msb env v all loc = function
 	   else begin get_decl_references v d; (l,SEdecl d) :: ms end
 	 else ms)
   | (l,SEBmind mib) :: msb ->
-      let ms = extract_msb env v all loc msb in
-      let kn = make_kn loc empty_dirpath l in 
+      let ms = extract_msb env v mp all msb in
+      let kn = make_kn mp empty_dirpath l in 
       let b = in_kn v kn in 
       if all || b then 
 	let d = Dind (kn, extract_inductive env kn) in 
@@ -191,90 +170,46 @@ let rec extract_msb env v all loc = function
 	else begin get_decl_references v d; (l,SEdecl d) :: ms end
       else ms
   | (l,SEBmodule mb) :: msb -> 
-      let ms = extract_msb env v all loc msb in
-      let loc = MPdot (loc,l) in 
-      if all || in_mp v loc then 
-	(l,SEmodule (extract_module env v true mb)) :: ms
+      let ms = extract_msb env v mp all msb in
+      let mp = MPdot (mp,l) in 
+      if all || in_mp v mp then 
+	(l,SEmodule (extract_module env v mp true mb)) :: ms
       else ms
   | (l,SEBmodtype mtb) :: msb ->
-      let ms = extract_msb env v all loc msb in
-      let kn = make_kn loc empty_dirpath l in
+      let ms = extract_msb env v mp all msb in
+      let kn = make_kn mp empty_dirpath l in
       if all || in_kn v kn then 
-	(l,SEmodtype (extract_mtb env v mtb)) :: ms
+	(l,SEmodtype (extract_mtb env v None mtb)) :: ms
       else ms
 
-and extract_meb env v all = function 
-  | MEBident mp -> MEident mp 
+and extract_meb env v mpo all = function 
+  | MEBident mp -> visit_mp v mp; MEident mp 
   | MEBapply (meb, meb',_) -> 
-      MEapply (extract_meb env v true meb, extract_meb env v true meb')
+      MEapply (extract_meb env v None true meb, 
+	       extract_meb env v None true meb')
   | MEBfunctor (mbid, mtb, meb) -> 
-      let env' = add_functor mbid mtb env in 
-      MEfunctor (mbid, extract_mtb env v mtb, extract_meb env' v true meb)
+      let mp = MPbound mbid in 
+      let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
+      MEfunctor (mbid, extract_mtb env v None mtb, 
+		 extract_meb env' v None true meb)
   | MEBstruct (msid, msb) -> 
-      let loc = MPself msid in 
-      let env' = add_structure loc msb env in 
-      MEstruct (msid, extract_msb env' v all loc msb) 
+      let mp,msb = match mpo with 
+	| None -> MPself msid, msb 
+	| Some mp -> mp, subst_msb (map_msid msid mp) msb
+      in 
+      let env' = add_structure mp msb env in 
+      MEstruct (msid, extract_msb env' v mp all msb) 
 
-and extract_module env v all mb = 
-  { ml_mod_expr = option_app (extract_meb env v all) mb.mod_expr;  
-    ml_mod_type = (match mb.mod_user_type with 
-		     | None -> extract_mtb env v mb.mod_type
-		     | Some mtb -> extract_mtb env v mtb);
-    ml_mod_equiv = mb.mod_equiv }
-	
-and extract_mtb env v = function 
-  | MTBident kn -> MTident kn 
-  | MTBfunsig (mbid, mtb, mtb') -> 
-      let env' = add_functor mbid mtb env in
-      MTfunsig (mbid, extract_mtb env v mtb, extract_mtb env' v mtb') 
-  | MTBsig (msid, msig) -> 
-      let loc = MPself msid in 
-      let env' = Modops.add_signature loc msig env in  
-      MTsig (msid, extract_msig env' v loc msig) 
-
-and extract_msig env v loc = function 
-  | [] -> [] 
-  | (l,SPBconst cb) :: msig -> 
-      let kn = make_kn loc empty_dirpath l in 
-      let s = extract_constant_spec env kn cb in 
-      if logical_spec s then extract_msig env v loc msig
-      else begin
-	get_spec_references v s; 
-	(l,Spec s) :: (extract_msig env v loc msig)
-      end
-  | (l,SPBmind cb) :: msig -> 
-      let kn = make_kn loc empty_dirpath l in 
-      let s = Sind (kn, extract_inductive env kn) in 
-      if logical_spec s then extract_msig env v loc msig
-      else begin 
-	get_spec_references v s; 
-	(l,Spec s) :: (extract_msig env v loc msig)
-      end
-  | (l,SPBmodule {msb_modtype=mtb}) :: msig -> 
-      (l,Smodule (extract_mtb env v mtb)) :: (extract_msig env v loc msig)
-  | (l,SPBmodtype mtb) :: msig -> 
-      (l,Smodtype (extract_mtb env v mtb)) :: (extract_msig env v loc msig)
-
-(* Searching one [ml_decl] in a [ml_structure] by its [kernel_name] *)
-
-let get_decl_in_structure r struc = 
-  try 
-    let kn = kn_of_r r in 
-    let base_mp,ll = labels_of_kn (long_kn kn) in 
-    if not (at_toplevel base_mp) then error_not_visible r;
-    let sel = List.assoc base_mp struc in
-    let rec go ll sel = match ll with 
-      | [] -> assert false
-      | l :: ll -> 
-	  match List.assoc l sel with 
-	    | SEdecl d -> d 
-	    | SEmodtype m -> assert false
-	    | SEmodule m -> 
-		match m.ml_mod_expr with 
-		  | Some (MEstruct (_,sel)) -> go ll sel 
-		  | _ -> error_not_visible r 
-    in go ll sel
-  with Not_found -> assert false
+and extract_module env v mp all mb = 
+  (* [mb.mod_expr <> None ], since we look at modules from outside. *)
+  (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
+  let meb = out_some mb.mod_expr in
+  let mtb = match mb.mod_user_type with None -> mb.mod_type | Some mt -> mt in
+  (* Because of the "with" construct, the module type can be [MTBsig] with *)
+  (* a msid different from the one of the module. Here is the patch. *)
+  let mtb = replicate_msid meb mtb in
+  { ml_mod_expr = extract_meb env v (Some mp) all meb;
+    ml_mod_type = extract_mtb env v None mtb }
 
 (*s Extraction in the Coq toplevel. We display the extracted term in
     Ocaml syntax and we use the Coq printers for globals. The
@@ -284,14 +219,13 @@ let unpack = function MEstruct (_,sel) -> sel | _ -> assert false
 
 let mono_environment refs = 
   let l = environment_until None in 
-  init_aliases l; 
   let v = 
     let kns = List.fold_right (fun r -> KNset.add (kn_of_r r)) refs KNset.empty 
     in let add_mp kn = MPset.union (prefixes_mp (modpath kn)) 
     in { kn = kns; mp = KNset.fold add_mp kns MPset.empty } 
   in 
   let env = Global.env () in 
-  List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env v false m)) 
+  List.rev_map (fun (mp,m) -> mp, unpack (extract_meb env v (Some mp) false m)) 
     (List.rev l)
 
 let extraction qid = 
@@ -306,7 +240,7 @@ let extraction qid =
     let kn = kn_of_r r in 
     let struc = optimize_struct prm None (mono_environment [r]) in 
     let d = get_decl_in_structure r struc in 
-    print_one_decl struc (long_mp (modpath kn)) d;
+    print_one_decl struc (modpath kn) d;
     reset_tables ()
   end
 
@@ -345,8 +279,39 @@ let extraction_file f vl =
   if lang () = Toplevel then error_toplevel () 
   else mono_extraction (filename f) vl
 
-(*s Extraction of a module. The vernacular command is 
-  \verb!Extraction Module! [M]. *) 
+(*s Extraction of a module at the toplevel. *)
+
+let extraction_module m = 
+  if is_something_opened () then error_section (); 
+  match lang () with 
+    | Toplevel -> error_toplevel ()
+    | Scheme -> error_scheme ()
+    | _ -> 
+	let q = snd (qualid_of_reference m) in 
+	let mp = 
+	  try Nametab.locate_module q
+	  with Not_found -> error_unknown_module q
+	in 
+	let b = is_modfile mp in 
+	let prm = {modular=b; mod_name = id_of_string ""; to_appear= []} in
+	let l = environment_until None in 
+	let v = { kn = KNset.empty ; mp = prefixes_mp mp } in
+	let env = Global.env () in 
+	let struc = 
+	  List.rev_map
+	    (fun (mp,m) -> mp, unpack (extract_meb env v (Some mp) b m)) 
+	    (List.rev l)
+	in 
+	let struc = optimize_struct prm None struc in 
+	let struc = 
+	  let bmp = base_mp mp in 
+	  try [bmp, List.assoc bmp struc] with Not_found -> assert false
+	in
+	print_structure_to_file None prm struc; 
+	reset_tables ()
+
+(*s Extraction of a library. The vernacular command is 
+  \verb!Extraction Library! [M]. *) 
 
 let module_file_name m = match lang () with 
   | Ocaml -> let f = String.uncapitalize (string_of_id m) in  f^".ml", f^".mli"
@@ -354,26 +319,27 @@ let module_file_name m = match lang () with
   | _ -> assert false
 
 let dir_module_of_id m = 
-  try Nametab.full_name_module (make_short_qualid m) 
-  with Not_found -> error_unknown_module m
+  let q = make_short_qualid m in 
+  try Nametab.full_name_module q with Not_found -> error_unknown_module q
 
-let extraction_module m =
+let extraction_library m =
   if is_something_opened () then error_section (); 
-   match lang () with 
+  match lang () with 
     | Toplevel -> error_toplevel ()
     | Scheme -> error_scheme ()
     | _ -> 
 	let dir_m = dir_module_of_id m in 
 	let v = { kn = KNset.empty; mp = MPset.singleton (MPfile dir_m) } in 
 	let l = environment_until (Some dir_m) in 
-	init_aliases l;
-(* TEMPORARY: make Extraction Module look like Recursive Extraction Module *)
+(* TEMPORARY: make Extraction Library look like Recursive Extraction Library *)
 	let struc = 
 	  let env = Global.env () in
 	  let select l (mp,meb) = 
-	    if in_mp v mp then (mp, unpack (extract_meb env v true meb)) :: l 
+	    if in_mp v mp (* mp est long -> in_mp peut etre sans long_mp *)
+	    then (mp, unpack (extract_meb env v (Some mp) true meb)) :: l 
 	    else l
-	  in List.fold_left select [] (List.rev l)
+	  in 
+	  List.fold_left select [] (List.rev l)
 	in 
 	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
 	let struc = optimize_struct dummy_prm None struc in 
@@ -390,10 +356,10 @@ let extraction_module m =
 	in print struc; 
 	reset_tables ()
 	  
-(*s Recursive Extraction of all the modules [M] depends on. 
-  The vernacular command is \verb!Recursive Extraction Module! [M]. *) 
+(*s Recursive Extraction of all the libraries [M] depends on. 
+  The vernacular command is \verb!Recursive Extraction Library! [M]. *) 
 
-let recursive_extraction_module m =
+let recursive_extraction_library m =
   if is_something_opened () then error_section (); 
   match lang () with 
     | Toplevel -> error_toplevel ()
@@ -402,12 +368,14 @@ let recursive_extraction_module m =
 	let dir_m = dir_module_of_id m in 
 	let v = { kn = KNset.empty; mp = MPset.singleton (MPfile dir_m) } in 
 	let l = environment_until (Some dir_m) in 
-	init_aliases l; 
 	let struc = 
 	  let env = Global.env () in
 	  let select l (mp,meb) = 
-	    if in_mp v mp then (mp, unpack (extract_meb env v true meb)) :: l else l
-	  in List.fold_left select [] (List.rev l)
+	    if in_mp v mp (* mp est long -> in_mp peut etre sans long_mp *)
+	    then (mp, unpack (extract_meb env v (Some mp) true meb)) :: l 
+	    else l
+	  in 
+	  List.fold_left select [] (List.rev l)
 	in 
 	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
 	let struc = optimize_struct dummy_prm None struc in 

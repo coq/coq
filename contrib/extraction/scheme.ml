@@ -47,7 +47,7 @@ let pp_abst st = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r = P.pp_global initial_path r
+let pp_global r = P.pp_global [initial_path] r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of expressions.  *)

@@ -20,12 +20,15 @@ open Util
 open Pp
 open Miniml
 
-(*S Utilities concerning [module_path] *)
+(*S Utilities concerning [module_path] and [kernel_names] *)
+
+let kn_of_r r = match r with 
+    | ConstRef kn -> kn
+    | IndRef (kn,_) -> kn
+    | ConstructRef ((kn,_),_) -> kn
+    | VarRef _ -> assert false
 
 let current_toplevel () = fst (Lib.current_prefix ())
-
-let is_toplevel mp = 
-  mp = initial_path || mp = current_toplevel ()
 
 let is_something_opened () = 
   try ignore (Lib.what_is_opened ()); true
@@ -35,98 +38,39 @@ let rec base_mp = function
   | MPdot (mp,l) -> base_mp mp 
   | mp -> mp 
 
-let rec prefixes_mp mp = match mp with 
-  | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
-  | _ -> MPset.singleton mp 
-
 let is_modfile = function 
   | MPfile _ -> true 
   | _ -> false
 
-let rec modfile_of_mp mp = match mp with 
-  | MPfile _ -> mp
-  | MPdot (mp,_) -> modfile_of_mp mp 
-  | _ -> raise Not_found
+let is_toplevel mp = 
+  mp = initial_path || mp = current_toplevel ()
 
 let at_toplevel mp = 
   is_modfile mp || is_toplevel mp
 
-let rec fst_level_module_of_mp mp = match mp with 
-  | MPdot (mp, l) when is_toplevel mp -> mp,l 
-  | MPdot (mp, l) -> fst_level_module_of_mp mp
-  | _ -> raise Not_found
+let visible_kn kn = at_toplevel (base_mp (modpath kn))
 
-let rec parse_labels ll = function 
-  | MPdot (mp,l) -> parse_labels (l::ll) mp 
-  | mp -> mp,ll
-
-let labels_of_mp mp = parse_labels [] mp 
-
-let labels_of_kn kn = 
-  let mp,_,l = repr_kn kn in parse_labels [l] mp
 
 (*S The main tables: constants, inductives, records, ... *)
-
-(*s Module path aliases. *) 
-
-(* A [MPbound] has no aliases except itself: it's its own long and short form.*)
-(* A [MPself] is a short form, and the table contains its long form. *)
-(* A [MPfile] is a long form, and the table contains its short form. *)
-(* Since the table does not contain all intermediate forms, a [MPdot] 
-   is dealt by first expanding its head, and then looking in the table. *)
-
-let aliases = ref (MPmap.empty : module_path MPmap.t)
-let init_aliases () = aliases := MPmap.empty
-let add_aliases mp mp' = aliases := MPmap.add mp mp' (MPmap.add mp' mp !aliases)
-
-let rec long_mp mp = match mp with 
-  | MPbound _ | MPfile _ -> mp 
-  | MPself _ -> (try MPmap.find mp !aliases with Not_found -> mp)
-  | MPdot (mp1,l) -> 
-      let mp2 = long_mp mp1 in 
-      if mp1 == mp2 then mp else MPdot (mp2,l)
-
-(*i let short_mp mp = match mp with
-  | MPself _ | MPbound _ -> mp 
-  | MPfile _ -> (try MPmap.find mp !aliases with Not_found -> mp)
-  | MPdot _ -> (try MPmap.find (long_mp mp) !aliases with Not_found -> mp)
-i*)
-
-let long_kn kn = 
-  let (mp,s,l) = repr_kn kn in 
-  let mp' = long_mp mp in 
-  if mp' == mp then kn else make_kn mp' s l 
-
-(*i let short_kn kn = 
-  let (mp,s,l) = repr_kn kn in 
-  let mp' = short_mp mp in 
-  if mp' == mp then kn else make_kn mp' s l 
-i*)
-
-let long_r = function 
-  | ConstRef kn -> ConstRef (long_kn kn)
-  | IndRef (kn,i) -> IndRef (long_kn kn, i)
-  | ConstructRef ((kn,i),j) -> ConstructRef ((long_kn kn,i),j)
-  | _ -> assert false
 
 (*s Constants tables. *) 
 
 let terms = ref (KNmap.empty : ml_decl KNmap.t)
 let init_terms () = terms := KNmap.empty
-let add_term kn d = terms := KNmap.add (long_kn kn) d !terms
-let lookup_term kn = KNmap.find (long_kn kn) !terms
+let add_term kn d = terms := KNmap.add kn d !terms
+let lookup_term kn = KNmap.find kn !terms
 
 let types = ref (KNmap.empty : ml_schema KNmap.t)
 let init_types () = types := KNmap.empty
-let add_type kn s = types := KNmap.add (long_kn kn) s !types
-let lookup_type kn = KNmap.find (long_kn kn) !types 
+let add_type kn s = types := KNmap.add kn s !types
+let lookup_type kn = KNmap.find kn !types 
 
 (*s Inductives table. *)
 
 let inductives = ref (KNmap.empty : ml_ind KNmap.t)
 let init_inductives () = inductives := KNmap.empty
-let add_ind kn m = inductives := KNmap.add (long_kn kn) m !inductives
-let lookup_ind kn = KNmap.find (long_kn kn) !inductives
+let add_ind kn m = inductives := KNmap.add kn m !inductives
+let lookup_ind kn = KNmap.find kn !inductives
 
 (*s Recursors table. *)
 
@@ -134,7 +78,6 @@ let recursors = ref KNset.empty
 let init_recursors () = recursors := KNset.empty
 
 let add_recursors env kn = 
-  let kn = long_kn kn in 
   let make_kn id = make_kn (modpath kn) empty_dirpath (label_of_id id) in 
   let mib = Environ.lookup_mind kn env in 
   Array.iter 
@@ -146,7 +89,7 @@ let add_recursors env kn =
     mib.mind_packets
 
 let is_recursor = function 
-  | ConstRef kn -> KNset.mem (long_kn kn) !recursors
+  | ConstRef kn -> KNset.mem kn !recursors
   | _ -> false
 
 (*s Record tables. *)
@@ -158,18 +101,18 @@ let projs = ref (Refmap.empty : int Refmap.t)
 let init_projs () = projs := Refmap.empty
 
 let add_record kn n l = 
-  records := KNmap.add (long_kn kn) l !records; 
-  projs := List.fold_right (fun r -> Refmap.add (long_r r) n) l !projs
+  records := KNmap.add kn l !records; 
+  projs := List.fold_right (fun r -> Refmap.add r n) l !projs
 
-let find_projections kn = KNmap.find (long_kn kn) !records
-let is_projection r = Refmap.mem (long_r r) !projs
-let projection_arity r = Refmap.find (long_r r) !projs
+let find_projections kn = KNmap.find kn !records
+let is_projection r = Refmap.mem r !projs
+let projection_arity r = Refmap.find r !projs
 
 (*s Tables synchronization. *)
 
 let reset_tables () = 
   init_terms (); init_types (); init_inductives (); init_recursors (); 
-  init_records (); init_projs (); init_aliases ()
+  init_records (); init_projs ()
 
 (*s Printing. *)
 
@@ -212,12 +155,6 @@ let error_section () =
 let error_constant r = 
   err (Printer.pr_global r ++ str " is not a constant.") 
 
-let error_fixpoint r = 
-  err (str "Fixpoint " ++ Printer.pr_global r ++ str " cannot be inlined.") 
-
-let error_type_scheme r = 
-  err (Printer.pr_global r ++ spc () ++ str "is a type scheme, not a type.")
-
 let error_inductive r = 
   err (Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
 
@@ -229,7 +166,7 @@ let error_module_clash s =
        str "This is not allowed in ML. Please do some renaming first.")
 
 let error_unknown_module m = 
-  err (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 
+  err (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.") 
 
 let error_toplevel () = 
   err (str "Toplevel pseudo-ML language can be used only at Coq toplevel.\n" ++
@@ -308,9 +245,9 @@ let empty_inline_table = (Refset.empty,Refset.empty)
 
 let inline_table = ref empty_inline_table
 
-let to_inline r = Refset.mem (long_r r) (fst !inline_table)
+let to_inline r = Refset.mem r (fst !inline_table)
 
-let to_keep r = Refset.mem (long_r r) (snd !inline_table)
+let to_keep r = Refset.mem r (snd !inline_table)
 
 let add_inline_entries b l = 
   let f b = if b then Refset.add else Refset.remove in 
@@ -318,13 +255,6 @@ let add_inline_entries b l =
   inline_table := 
      (List.fold_right (f b) l i), 
      (List.fold_right (f (not b)) l k)
-
-let is_fixpoint kn = 
-  match (Global.lookup_constant kn).const_body with 
-    | None -> false
-    | Some body -> match kind_of_term (force body) with 
-	| Fix _ | CoFix _ -> true
-	| _ -> false
 
 (* Registration of operations for rollback. *)
 
@@ -348,7 +278,6 @@ let extraction_inline b l =
   let refs = List.map Nametab.global l in 
   List.iter 
     (fun r -> match r with 
-       | ConstRef kn when b && is_fixpoint kn -> error_fixpoint r
        | ConstRef _ -> ()
        | _ -> error_constant r) refs; 
   Lib.add_anonymous_leaf (inline_extraction (b,refs))
@@ -382,31 +311,21 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 (*s Extract Constant/Inductive. *)
 
-let ugly_hack_arity_nb_args = ref (fun _ _ -> 0) 
+(* UGLY HACK: to be defined in [extraction.ml] *)
+let use_type_scheme_nb_args, register_type_scheme_nb_args = 
+  let r = ref (fun _ _ -> 0) in (fun x y -> !r x y), (:=) r 
 
-let check_term_or_type r ids = match r with 
-  | ConstRef sp -> 
-      let env = Global.env () in 
-      let typ = Environ.constant_type env sp in 
-      let typ = Reduction.whd_betadeltaiota env typ in
-      if Reduction.is_arity env typ 
-      then 
-	let nargs = !ugly_hack_arity_nb_args env typ in 
-	if List.length ids <> nargs then error_axiom_scheme r nargs
-  | _ -> error_constant r
-	
 let customs = ref Refmap.empty
 
 let add_custom r ids s = customs := Refmap.add r (ids,s) !customs
 
-let is_custom r = Refmap.mem (long_r r) !customs
+let is_custom r = Refmap.mem r !customs
 
-let is_inline_custom r = 
-  let r = long_r r in (is_custom r) && (to_inline r) 
+let is_inline_custom r = (is_custom r) && (to_inline r) 
 
-let find_custom r = snd (Refmap.find (long_r r) !customs)
+let find_custom r = snd (Refmap.find r !customs)
 
-let find_type_custom r = Refmap.find (long_r r) !customs
+let find_type_custom r = Refmap.find r !customs
 
 (* Registration of operations for rollback. *)
 
@@ -428,9 +347,20 @@ let _ = declare_summary "ML extractions"
 let extract_constant_inline inline r ids s =
   if is_something_opened () then error_section (); 
   let g = Nametab.global r in 
-  check_term_or_type g ids;
-  Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
-  Lib.add_anonymous_leaf (in_customs (g,ids,s))
+  match g with 
+    | ConstRef kn -> 
+	let env = Global.env () in 
+	let typ = Environ.constant_type env kn in 
+	let typ = Reduction.whd_betadeltaiota env typ in
+	if Reduction.is_arity env typ 
+	  then begin 
+	    let nargs = use_type_scheme_nb_args env typ in 
+	    if List.length ids <> nargs then error_axiom_scheme g nargs
+	  end; 
+	Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
+	Lib.add_anonymous_leaf (in_customs (g,ids,s))
+    | _ -> error_constant g
+
 
 let extract_inductive r (s,l) =
   if is_something_opened () then error_section (); 

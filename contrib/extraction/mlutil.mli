@@ -50,8 +50,6 @@ end
 
 (*s Utility functions over ML types without meta *)
 
-val kn_of_r : global_reference -> kernel_name
-
 val type_mem_kn : kernel_name -> ml_type -> bool
 
 val type_maxvar : ml_type -> int
@@ -94,30 +92,17 @@ val eta_args_sign : int -> bool list -> ml_ast list
 
 (*s Utility functions over ML terms. *)
 
+val ast_map : (ml_ast -> ml_ast) -> ml_ast -> ml_ast
+val ast_map_lift : (int -> ml_ast -> ml_ast) -> int -> ml_ast -> ml_ast
 val ast_iter : (ml_ast -> unit) -> ml_ast -> unit
 val ast_occurs : int -> ml_ast -> bool
 val ast_occurs_itvl : int -> int -> ml_ast -> bool
 val ast_lift : int -> ml_ast -> ml_ast
 val ast_pop : ml_ast -> ml_ast
+val ast_subst : ml_ast -> ml_ast -> ml_ast
 
-(*s Some transformations of ML terms. [optimize_struct] simplify
-    all beta redexes (when the argument does not occur, it is just
-    thrown away; when it occurs exactly once it is substituted; otherwise
-    a let-in redex is created for clarity) and iota redexes, plus some other
-    optimizations. *)
+val normalize : ml_ast -> ml_ast 
+val optimize_fix : ml_ast -> ml_ast
+val inline : global_reference -> ml_ast -> bool
 
-val optimize_struct : 
-  extraction_params -> ml_decl list option -> ml_structure -> ml_structure
 
-(* Misc. *)
-
-val struct_ast_search : ml_ast -> ml_structure -> bool
-val struct_type_search : ml_type -> ml_structure -> bool
-
-type do_ref = global_reference -> unit 
-
-val decl_iter_references : do_ref -> do_ref -> do_ref -> ml_decl -> unit
-val spec_iter_references : do_ref -> do_ref -> do_ref -> ml_spec -> unit
-val struct_iter_references : do_ref -> do_ref -> do_ref -> ml_structure -> unit
-
-val signature_of_structure : ml_structure -> ml_signature
