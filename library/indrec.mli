@@ -4,6 +4,7 @@
 (*i*)
 open Names
 open Term
+open Constant
 open Inductive
 open Environ
 open Evd
@@ -30,18 +31,15 @@ val build_indrec :
 
 (* These are for old Case/Match typing *)
 
-val type_rec_branches : bool -> env -> 'c evar_map -> constr 
+val type_rec_branches : bool -> env -> 'c evar_map -> inductive_type
   -> constr -> constr -> constr -> constr array * constr
 val make_rec_branch_arg : 
   env -> 'a evar_map ->
-    constr array * ('b * constr) option array * int ->
-    constr -> constr -> recarg list -> constr
+    int * ('b * constr) option array * int ->
+    constr -> constructor_summary -> recarg list -> constr
 
-(* In [inductive * constr list * constr list], the second argument is
-   the list of global parameters and the third the list of real args *)
-val pred_case_ml_onebranch : env ->'c evar_map -> bool ->
-  constr * (inductive * constr list * constr list)
-  -> int * constr * constr -> constr 
+val pred_case_ml_onebranch : env -> 'c evar_map -> bool ->
+  inductive_type -> int * constr * constr -> constr 
 
 (*i Info pour JCF : déplacé dans pretyping, sert à Program
 val transform_rec : env -> 'c evar_map -> (constr array) 
