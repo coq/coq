@@ -40,16 +40,20 @@ let list_try_find f =
 let gen_constant_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let id = Constrextern.id_of_v7_string s in
-  try
-    list_try_find
-      (fun dir ->
-	constr_of_reference
-	  (Nametab.absolute_reference (Libnames.make_path dir id)))
-      dirs
-  with Not_found ->
-    anomalylabstrm "" (str (locstr^": cannot find "^s^
-    " in module"^(if List.length dirs > 1 then "s " else " ")) ++
-    prlist_with_sep pr_coma pr_dirpath dirs)
+  let all = Nametab.locate_all (make_short_qualid id) in
+  let these =
+    List.filter (fun r -> List.mem (dirpath (sp_of_global r)) dirs) all in
+  match these with
+    | [x] -> constr_of_reference x
+    | [] ->
+	anomalylabstrm "" (str (locstr^": cannot find "^s^
+	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
+	prlist_with_sep pr_coma pr_dirpath dirs)
+    | l ->
+	anomalylabstrm "" 
+	(str (locstr^": found more than once object of name "^s^
+	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
+	prlist_with_sep pr_coma pr_dirpath dirs)
 
 let init_reference dir s=gen_reference "Coqlib" ("Init"::dir) s
 
