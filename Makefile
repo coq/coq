@@ -33,7 +33,7 @@ CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
-    lib/bstack.cmo lib/edit.cmo lib/stamps.cmo
+    lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/constant.cmo \
@@ -55,6 +55,8 @@ PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
 
 TACTICS=tactics/dn.cmo
 
+PRETYPING=pretyping/astterm.cmo
+
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
@@ -66,7 +68,7 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PROOFS) $(TACTICS) \
-    $(PARSING) $(TOPLEVEL)
+    $(PRETYPING) $(PARSING) $(TOPLEVEL)
 CMX=$(CMO:.cmo=.cmx)
 
 # Targets

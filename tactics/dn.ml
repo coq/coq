@@ -29,7 +29,7 @@ type ('lbl,'pat,'inf) under_t = (('lbl * int) option,'pat * 'inf) Tlm.t
 
 type ('lbl,'pat,'inf) t = {
   tm   : ('lbl,'pat,'inf) under_t; 
-  args :('lbl,'pat) dn_args }
+  args : ('lbl,'pat) dn_args }
 
 let create dna = {tm = Tlm.create(); args = dna}
 
@@ -61,7 +61,7 @@ let lookup dnm dna' t =
 	   List.fold_left 
 	     (fun l c -> List.flatten(List.map (lookrec c) l))
              (tm_of tm (Some(lbl,List.length v))) v)
-    in 
+  in 
   List.flatten(List.map Tlm.xtract (lookrec t dnm.tm))
 
 let upd dnm f = { args = dnm.args; tm = f dnm.args dnm.tm }
