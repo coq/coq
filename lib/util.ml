@@ -3,6 +3,16 @@
 
 open Pp
 
+(* Errors *)
+
+exception Anomaly of string * std_ppcmds  (* System errors *)
+let anomaly string = raise (Anomaly(string,[< 'sTR string >]))
+let anomalylabstrm string pps = raise (Anomaly(string,pps))
+
+exception UserError of string * std_ppcmds (* User errors *)
+let error string = raise (UserError(string,[< 'sTR string >]))
+let errorlabstrm l pps = raise (UserError(l,pps))
+
 (* Strings *)
 
 let explode s = 
@@ -50,6 +60,14 @@ let parse_section_path s =
     let dirs,n = decoupe_dirs 1 in
     let id,k = decoupe_kind n in
     dirs,id,k
+
+(* Lists *)
+
+let intersect l1 l2 = 
+  List.filter (fun x -> List.mem x l2) l1
+
+let subtract l1 l2 =
+  if l2 = [] then l1 else List.filter (fun x -> not (List.mem x l2)) l1
 
 (* Pretty-printing *)
   

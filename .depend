@@ -5,6 +5,8 @@ config/coq_config.cmo: config/coq_config.cmi
 config/coq_config.cmx: config/coq_config.cmi 
 kernel/names.cmo: lib/hashcons.cmi lib/pp.cmi lib/util.cmi kernel/names.cmi 
 kernel/names.cmx: lib/hashcons.cmx lib/pp.cmx lib/util.cmx kernel/names.cmi 
+kernel/sign.cmo: kernel/sign.cmi 
+kernel/sign.cmx: kernel/sign.cmi 
 lib/hashcons.cmo: lib/hashcons.cmi 
 lib/hashcons.cmx: lib/hashcons.cmi 
 lib/pp.cmo: lib/pp_control.cmi lib/pp.cmi 

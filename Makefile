@@ -11,11 +11,12 @@ noargument:
 	@echo "   make cleanall"
 	@echo or make archclean
 
-INCLUDES=-I config -I lib
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(INCLUDES)
+
+INCLUDES=-I config -I lib -I kernel
 
 # Objects files 
 
@@ -23,7 +24,7 @@ CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo
 
-KERNEL=kernel/names.cmo
+KERNEL=kernel/names.cmo kernel/sign.cmo
 
 OBJS=$(CONFIG) $(LIB) $(KERNEL)
 

@@ -3,12 +3,27 @@
 
 open Pp
 
+(* Errors *)
+
+exception Anomaly of string * std_ppcmds  (* System errors *)
+val anomaly : string -> 'a
+val anomalylabstrm : string -> std_ppcmds -> 'a
+
+exception UserError of string * std_ppcmds (* User errors *)
+val error : string -> 'a
+val errorlabstrm : string -> std_ppcmds -> 'a
+
 (* Strings *)
 
 val explode : string -> string list
 val implode : string list -> string
 
 val parse_section_path : string -> string list * string * string
+
+(* Lists *)
+
+val intersect : 'a list -> 'a list -> 'a list
+val subtract : 'a list -> 'a list -> 'a list
 
 (* Pretty-printing *)
 
