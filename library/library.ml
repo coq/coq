@@ -51,7 +51,7 @@ let (raw_extern_module, raw_intern_module) =
 let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
-    | _,ClosedSection (_,_,mseg) -> iter mseg
+    | _,ClosedSection (_,mseg) -> iter mseg
     | _,OpenedSection _ -> assert false
     | _,FrozenState _ -> ()
   and iter seg =
@@ -135,7 +135,7 @@ let current_imports () =
   !l
 
 let save_module_to s f =
-  let seg = contents_after None in
+  let seg = export_module () in
   let md = { 
     md_name = s;
     md_compiled_env = Global.export s;

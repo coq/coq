@@ -26,3 +26,4 @@ val require_module : bool option -> string -> string option -> bool -> unit
   in the file [f]. *)
 
 val save_module_to : string -> string -> unit
+

@@ -77,7 +77,7 @@ let unfreeze ct =
   constants_table := ct
 
 let _ = 
-  Summary.declare_summary "names"
+  Summary.declare_summary "implicits"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init }

@@ -12,6 +12,3 @@ val push : identifier -> section_path -> unit
 
 val sp_of_id : path_kind -> identifier -> section_path
 val fw_sp_of_id : identifier -> section_path
-
-val rollback : ('a -> 'b) -> 'a -> 'b
-

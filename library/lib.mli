@@ -13,13 +13,11 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | OpenedSection of string * module_p
-  | ClosedSection of string * module_p * library_segment
+  | OpenedSection of string
+  | ClosedSection of string * library_segment
   | FrozenState of Summary.frozen
 
 and library_segment = (section_path * node) list
-
-and module_p = bool
 
 type library_entry = section_path * node
 
@@ -33,19 +31,28 @@ val add_anonymous_leaf : obj -> unit
 val contents_after : section_path option -> library_segment
 
 
-(*s Opening and closing a section. The boolean in [open_section] indicates
-  a module. *)
+(*s Opening and closing a section. *)
 
-val open_section : string -> bool -> section_path
+val open_section : string -> section_path
 val close_section : string -> unit
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> string list
 
+val open_module : string -> unit
+val export_module : unit -> library_segment
+
 
 (*s Backtracking (undo). *)
 
 val reset_to : section_path -> unit
+
+
+(*s Rollback. [with_heavy_rollback f x] applies [f] to [x] and restores the
+  state of the whole system as it was before the evaluation if an exception 
+  is raised. *)
+
+val with_heavy_rollback : ('a -> 'b) -> 'a -> 'b
 
 
 (*s We can get and set the state of the operations (used in [States]). *)

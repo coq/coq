@@ -8,26 +8,25 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | OpenedSection of string * module_p
-  | ClosedSection of string * module_p * library_segment
+  | OpenedSection of string
+  | ClosedSection of string * library_segment
   | FrozenState of Summary.frozen
 
 and library_segment = (section_path * node) list
 
-and module_p = bool
-
 type library_entry = section_path * node
 
 
-(* We keep trace of operations in a stack [lib_stk]. 
-   [path_prefix] is the current path of sections. Sections are stored in 
+(* We keep trace of operations in the stack [lib_stk]. 
+   [path_prefix] is the current path of sections, where sections are stored in 
    ``correct'' order, the oldest coming first in the list. It may seems 
    costly, but in practice there is not so many openings and closings of
    sections, but on the contrary there are many constructions of section
-   paths. *) 
+   paths based on the library path. *) 
 
 let lib_stk = ref ([] : (section_path * node) list)
 
+let module_name = ref None
 let path_prefix = ref ([] : string list)
 
 let recalc_path_prefix () =
@@ -35,7 +34,7 @@ let recalc_path_prefix () =
     | (sp, OpenedSection _) :: _ ->
 	let (pl,id,_) = repr_path sp in pl@[string_of_id id]
     | _::l -> recalc l
-    | [] -> []
+    | [] -> (match !module_name with Some m -> [m] | None -> [])
   in
   path_prefix := recalc !lib_stk
 
@@ -98,37 +97,54 @@ let contents_after = function
 
 (* Sections. *)
 
-let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
-
-let check_single_module () =
-  try
-    let _ = find_entry_p is_opened_section in
-    error "a module or a section is already opened"
-  with Not_found -> ()
-
-let open_section s modp =
-  if modp then check_single_module ();
+let open_section s =
   let sp = make_path (id_of_string s) OBJ in
-  add_entry sp (OpenedSection (s,modp));
+  add_entry sp (OpenedSection s);
   path_prefix := !path_prefix @ [s];
   sp
 
+let check_for_module () =
+  let is_decl = function (_,FrozenState _) -> false | _ -> true in
+  try
+    let _ = find_entry_p is_decl in
+    error "a module can not be opened after some declarations"
+  with Not_found -> ()
+
+let open_module s =
+  if !module_name <> None then error "a module is already opened";
+  check_for_module ();
+  module_name := Some s
+
+let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
+
 let close_section s =
-  let (sp,modp) = 
-    try
-      match find_entry_p is_opened_section with
-	| sp,OpenedSection (s',modp) -> 
-	    if s <> s' then error "this is not the last opened section"; 
-	    (sp,modp)
-	| _ -> assert false
+  let sp = 
+    try match find_entry_p is_opened_section with
+      | sp,OpenedSection s' -> 
+	  if s <> s' then error "this is not the last opened section"; sp
+      | _ -> assert false
     with Not_found ->
       error "no opened section"
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
-  add_entry sp (ClosedSection (s,modp,after));
+  add_entry sp (ClosedSection (s,after));
   add_frozen_state ();
   pop_path_prefix ()
+
+(* The following function exports the whole library segment, that will be 
+   saved as a module. Objects are presented in chronological order, and
+   closed sections and frozen states are removed. *)
+
+let export_module () =
+  if !module_name = None then error "no module declared";
+  let rec export acc = function
+    | [] -> acc
+    | (_,Leaf _) as node :: stk -> export (node::acc) stk
+    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
+    | (_,(FrozenState _ | ClosedSection _)) :: stk -> export acc stk
+  in
+  export [] !lib_stk
 
 
 (* Backtracking. *)
@@ -169,3 +185,17 @@ let init () =
   lib_stk := [];
   add_frozen_state ();
   path_prefix := []
+
+
+(* Rollback. *)
+
+let with_heavy_rollback f x =
+  let sum = freeze_summaries ()
+  and flib = freeze() in
+  try 
+    f x
+  with reraise -> begin
+    unfreeze_summaries sum;
+    unfreeze flib;
+    raise reraise
+  end
