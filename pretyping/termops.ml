@@ -641,22 +641,28 @@ let occur_rel p env id =
   try lookup_name_of_rel p env = Name id
   with Not_found -> false (* Unbound indice : may happen in debug *)
 
+let protected_compare f sp id =
+  try
+    basename (f sp) = id
+  with
+      (* It happens when a global is not in the env (e.g. in debugger) *)
+      Not_found -> false 
+
 let occur_id env nenv id0 c =
   let rec occur n c = match kind_of_term c with
-    | Var id when  id=id0 -> raise Occur
+    | Var id when id=id0 -> raise Occur
     | Const sp when basename sp = id0 -> raise Occur
     | Ind ind_sp
-	when basename (path_of_inductive env ind_sp) = id0 ->
+	when protected_compare (path_of_inductive env) ind_sp id0 ->
         raise Occur
     | Construct cstr_sp
-	when basename (path_of_constructor env cstr_sp) = id0 ->
+	when protected_compare (path_of_constructor env) cstr_sp id0 ->
         raise Occur
     | Rel p when p>n & occur_rel (p-n) nenv id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c
   in 
   try occur 1 c; false
   with Occur -> true
-    | Not_found -> false (* Case when a global is not in the env *)
 
 let next_name_not_occuring env name l env_names t =
   let rec next id =
