@@ -260,6 +260,11 @@ let move_hyp with_dep id1 id2 gl =
                   hypspecs = [id1;id2]; terms = [];
 		  newids = []; params = []}) gl
 
+let rename_hyp id1 id2 gl = 
+  refiner (Prim { name = Rename;
+                  hypspecs = [id1]; terms = [];
+		  newids = [id2]; params = []}) gl
+
 let mutual_fix lf ln lar pf = 
   refiner (Prim { name = FixRule; newids = lf;
                   hypspecs = []; terms = lar;

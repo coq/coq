@@ -189,10 +189,9 @@ let introsReplacing = intros_replacing (* déplacé *)
 let rec dependent_hyps id idlist sign = 
   let rec dep_rec =function
     | [] -> []
-    | (id1::l) -> 
-	let (_,_,id1ty) = lookup_named id1 sign in  
+    | (id1,_,id1ty as d1)::l -> 
 	if occur_var (Global.env()) id (body_of_type id1ty)
-        then id1::dep_rec l
+        then d1 :: dep_rec l
         else dep_rec l
   in 
   dep_rec idlist 
@@ -201,7 +200,7 @@ let generalizeRewriteIntros tac depids id gls =
   let dids = dependent_hyps id depids (pf_env gls) in
   (tclTHEN (bring_hyps dids)
      (tclTHEN tac
-	(introsReplacing dids)))
+	(introsReplacing (ids_of_named_context dids))))
   gls
 
 let var_occurs_in_pf gl id =
@@ -209,11 +208,28 @@ let var_occurs_in_pf gl id =
   occur_var env id (pf_concl gl) or
   List.exists (occur_var_in_decl env id) (pf_hyps gl)
 
-let split_dep_and_nodep idl gl =
+let split_dep_and_nodep hyps gl =
   List.fold_right 
-    (fun id (l1,l2) ->
-       if var_occurs_in_pf gl id then (id::l1,l2) else (l1,id::l2))
-    idl ([],[])
+    (fun (id,_,_ as d) (l1,l2) ->
+       if var_occurs_in_pf gl id then (d::l1,l2) else (l1,d::l2))
+    hyps ([],[])
+
+(*
+let split_dep_and_nodep hyps gl =
+  let env = pf_env gl in
+  let cl = pf_concl gl in
+  let l1,l2 =
+    List.fold_left
+      (fun (l1,l2) (id,_,_ as d) ->
+         if
+           occur_var env id cl
+           or List.exists (occur_var_in_decl env id) hyps
+           or List.exists (fun (id,_,_) -> occur_var_in_decl env id d) l1
+         then (d::l1,l2)
+         else (l1,d::l2))
+      ([],[]) hyps
+  in (List.rev l1,List.rev l2)
+*)
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -280,18 +296,20 @@ let case_trailer_gene othin neqns ba gl =
                               tclTRY (projectAndApply thin id depids)))))
 		  (tclTHEN
                      (onHyps (compose List.rev (afterHyp last)) bring_hyps)
-                     (onHyps (afterHyp last) clear))))
+                     (onHyps (afterHyp last)
+                        (compose clear ids_of_named_context)))))
       | None -> tclIDTAC
   in
   (tclTHEN (tclDO neqns intro)
      (tclTHEN (bring_hyps nodepids)
-	(tclTHEN (clear_clauses nodepids)
+	(tclTHEN (clear_clauses (ids_of_named_context nodepids))
 	   (tclTHEN (onHyps (compose List.rev (nLastHyps neqns)) bring_hyps)
-	      (tclTHEN (onHyps (nLastHyps neqns) clear_clauses)
+	      (tclTHEN (onHyps (nLastHyps neqns)
+                          (compose clear_clauses ids_of_named_context))
 		 (tclTHEN rewrite_eqns
-		    (tclMAP (fun id ->
+		    (tclMAP (fun (id,_,_ as d) ->
 			       (tclORELSE (clear_clause id)
-				  (tclTHEN (bring_hyps [id])
+				  (tclTHEN (bring_hyps [d])
 				     (clear_one id))))
 		       depids)))))))
   gl
@@ -307,7 +325,8 @@ let case_trailer othin neqns ba gl =
     match othin with
       | Some thin ->
           (tclTHEN (onHyps (compose List.rev (nLastHyps neqns)) bring_hyps)
-             (tclTHEN (onHyps (nLastHyps neqns) clear_clauses)
+             (tclTHEN (onHyps (nLastHyps neqns) 
+                         (compose clear_clauses ids_of_named_context))
 		(tclTHEN
 		   (tclDO neqns
                       (tclTHEN intro
@@ -315,13 +334,13 @@ let case_trailer othin neqns ba gl =
 			    (fun id -> 
 			       tclTRY (projectAndApply thin id depids)))))
 		   (tclTHEN (tclDO (List.length nodepids) intro)
-		      (tclMAP (fun id -> 
+		      (tclMAP (fun (id,_,_) -> 
 				 tclTRY (clear_clause id)) depids)))))
       | None -> tclIDTAC
   in
   (tclTHEN (tclDO neqns intro)
      (tclTHEN (bring_hyps nodepids)
-	(tclTHEN (clear_clauses nodepids)
+	(tclTHEN (clear_clauses (ids_of_named_context nodepids))
 	   rewrite_eqns)))
   gl
 
@@ -379,7 +398,7 @@ let res_case_then gene thin indbinding id status gl =
                  (applist(mkVar id,
                           list_tabulate
                             (fun _ -> mkMeta(Clenv.new_meta())) neqns)))
-              Auto.default_auto))])
+              reflexivity))])
   gl
 
 (* Error messages of the inversion tactics *)
@@ -494,18 +513,19 @@ let (half_dinv_with, dinv_with, dinv_clear_with) =
  * back to their places in the hyp-list. *)
 
 let invIn com id ids gls =
+  let hyps = List.map (pf_get_hyp gls) ids in
   let nb_prod_init = nb_prod (pf_concl gls) in
   let intros_replace_ids gls =
     let nb_of_new_hyp =
-      nb_prod (pf_concl gls) - (List.length ids + nb_prod_init)
+      nb_prod (pf_concl gls) - (List.length hyps + nb_prod_init)
     in 
     if nb_of_new_hyp < 1 then 
       introsReplacing ids gls
     else 
-      (tclTHEN (tclDO nb_of_new_hyp intro) (introsReplacing ids)) gls
+      tclTHEN (tclDO nb_of_new_hyp intro) (introsReplacing ids) gls
   in
   try 
-    (tclTHEN (bring_hyps ids)
+    (tclTHEN (bring_hyps hyps)
        (tclTHEN (inv false com NoDep id)
           (intros_replace_ids)))
     gls

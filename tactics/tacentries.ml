@@ -33,6 +33,7 @@ let v_clear         = hide_tactic "Clear"         dyn_clear
 let v_clear_body    = hide_tactic "ClearBody"     dyn_clear_body
 let v_move          = hide_tactic "Move"          dyn_move
 let v_move_dep      = hide_tactic "MoveDep"       dyn_move_dep
+let v_rename        = hide_tactic "Rename"        dyn_rename
 let v_apply         = hide_tactic "Apply"         dyn_apply
 let v_cutAndResolve = hide_tactic "CutAndApply"   dyn_cut_and_apply
 let v_cut           = hide_tactic "Cut"           dyn_cut

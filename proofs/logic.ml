@@ -235,19 +235,22 @@ let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   else 
     List.rev_append left (moverec [] [declfrom] right)
 
+(* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
+   returns [tail::(f head (id,_,_) tail)] *)
 let apply_to_hyp sign id f =
   let found = ref false in
   let sign' =
     fold_named_context_both_sides
-      (fun sign (idc,c,ct as d) tail ->
+      (fun head (idc,c,ct as d) tail ->
 	 if idc = id then begin
-	   found := true; f sign d tail
+	   found := true; f head d tail
 	 end else 
-	   add_named_decl d sign)
+	   add_named_decl d head)
       sign ~init:empty_named_context
   in
   if (not !check) || !found then sign' else error "No such assumption"
 
+(* Same but with whole environment *)
 let apply_to_hyp2 env id f =
   let found = ref false in
   let env' =
@@ -260,6 +263,20 @@ let apply_to_hyp2 env id f =
       (named_context env) ~init:(reset_context env)
   in
   if (not !check) || !found then env' else error "No such assumption"
+
+exception Found of int
+
+let apply_to_hyp_and_dependent_on sign id f g =
+  let found = ref false in
+  let sign =
+    Sign.fold_named_context
+      (fun (idc,_,_ as d) oldest ->
+         if idc = id then (found := true; add_named_decl (f d) oldest)
+         else if !found then add_named_decl (g d) oldest
+         else add_named_decl d oldest)
+      sign ~init:empty_named_context
+  in
+  if (not !check) || !found then sign else error "No such assumption"
 
 let global_vars_set_of_var = function
   | (_,None,t) -> global_vars_set (Global.env()) (body_of_type t)
@@ -280,7 +297,7 @@ let check_forward_dependencies id tail =
   List.iter
     (function (id',_,_ as decl) ->
        if occur_var_in_decl env id decl then
-	 error ((string_of_id id) ^ " is used in the hypothesis " 
+	 error ((string_of_id id) ^ " is used in hypothesis " 
 		^ (string_of_id id')))
     tail
 
@@ -315,6 +332,12 @@ let convert_def inbody sign sigma id c =
 		    error "convert-deftype rule passed non-converting type";
 		  (b,c)) in
 	     add_named_decl (idc,Some b,t) sign)
+
+
+let rename_hyp id1 id2 sign =
+  apply_to_hyp_and_dependent_on sign id1
+    (fun (_,b,t) -> (id2,b,t))
+    (map_named_declaration (replace_vars [id1,mkVar id2]))
 
 let replace_hyp sign id d =
   apply_to_hyp sign id
@@ -559,8 +582,20 @@ let prim_refiner r sigma goal =
   	let hyps' = 
 	  move_after withdep toleft (left,declfrom,right) hto in
   	[mk_goal hyps' cl]
-	
+
+    | { name = Rename; hypspecs = [id1]; newids = [id2] } ->
+        if id1 <> id2 & List.mem id2 (ids_of_named_context sign) then
+          error ((string_of_id id2)^" is already used");
+        let sign' = rename_hyp id1 id2 sign in
+        let cl' = replace_vars [id1,mkVar id2] cl in
+        [mk_goal sign' cl']
+
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
+
+(* Util *)
+let rec rebind id1 id2 = function
+  | [] -> []
+  | id::l -> if id = id1 then id2::l else id::(rebind id1 id2 l)
 
 let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in
@@ -653,7 +688,10 @@ let prim_extractor subfun vl pft =
 	
     | {ref=Some(Prim{name=Move _;hypspecs=ids},[pf])} ->
 	subfun vl pf
-	  
+
+    | {ref=Some(Prim{name=Rename;hypspecs=[id1];newids=[id2];},[pf])} ->
+	subfun (rebind id1 id2 vl) pf
+
     | {ref=Some(Prim _,_)} ->
 	error "prim_extractor handed unrecognizable primitive proof"
 	  
@@ -729,5 +767,8 @@ let pr_prim_rule = function
   | {name=Move withdep;hypspecs=[id1;id2]} ->
       (str (if withdep then "Dependent " else "") ++
 	 str"Move "  ++ pr_id id1 ++ str " after " ++ pr_id id2)
+
+  | {name=Rename;hypspecs=[id1];newids=[id2]} ->
+      (str "Rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
       
   | _ -> anomaly "pr_prim_rule: Unrecognized primitive rule"

@@ -153,7 +153,7 @@ let allHyps gl = pf_ids_of_hyps gl
    after id *)
 
 let afterHyp id gl =
-  fst (list_splitby (fun hyp -> hyp = id) (pf_ids_of_hyps gl))
+  fst (list_splitby (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
     
 
 (* Create a singleton clause list with the last hypothesis from then context *)
@@ -164,7 +164,7 @@ let lastHyp gl = List.hd (pf_ids_of_hyps gl)
 (* Create a clause list with the n last hypothesis from then context *)
 
 let nLastHyps n gl =
-  try list_firstn n (pf_ids_of_hyps gl)
+  try list_firstn n (pf_hyps gl)
   with Failure "firstn" -> error "Not enough hypotheses in the goal"
 
 
@@ -249,7 +249,7 @@ type branch_args = {
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
-  assums    : identifier list; (* the list of assumptions introduced *)
+  assums    : named_context; (* the list of assumptions introduced *)
   cargs     : identifier list; (* the constructor arguments *)
   constargs : identifier list; (* the CONSTANT constructor arguments *)
   recargs   : identifier list; (* the RECURSIVE constructor arguments *)
@@ -386,22 +386,22 @@ let make_elim_branch_assumptions ba gl =
             constargs = constargs;
             recargs   = recargs;
             indargs   = indargs}
-      | ((true::tl), (recarg::indarg::idtl)) ->
+      | ((true::tl), ((idrec,_,_ as recarg)::(idind,_,_ as indarg)::idtl)) ->
 	  makerec (recarg::indarg::assums,
-		   recarg::cargs,
-		   recarg::recargs,
+		   idrec::cargs,
+		   idrec::recargs,
 		   constargs,
-		   indarg::indargs) tl idtl
-      | ((false::tl), (constarg::idtl))      ->
+		   idind::indargs) tl idtl
+      | ((false::tl), ((id,_,_ as constarg)::idtl))      ->
 	  makerec (constarg::assums,
-		   constarg::cargs,
-		   constarg::constargs,
+		   id::cargs,
+		   id::constargs,
 		   recargs,
 		   indargs) tl idtl
       | (_, _) -> error "make_elim_branch_assumptions"
   in 
   makerec ([],[],[],[],[]) ba.branchsign
-    (try list_firstn ba.nassums (pf_ids_of_hyps gl)
+    (try list_firstn ba.nassums (pf_hyps gl)
      with Failure _ -> anomaly "make_elim_branch_assumptions")
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
@@ -416,20 +416,20 @@ let make_case_branch_assumptions ba gl =
             constargs = constargs;
             recargs   = recargs;
             indargs   = []}
-      | ((true::tl), (recarg::idtl)) ->
+      | ((true::tl), ((idrec,_,_ as recarg)::idtl)) ->
 	  makerec (recarg::assums,
-		   recarg::cargs,
-		   recarg::recargs,
+		   idrec::cargs,
+		   idrec::recargs,
 		   constargs) tl idtl
-      | ((false::tl), (constarg::idtl)) ->
+      | ((false::tl), ((id,_,_ as constarg)::idtl)) ->
 	  makerec (constarg::assums,
-		   constarg::cargs,
+		   id::cargs,
 		   recargs,
-		   constarg::constargs) tl idtl
+		   id::constargs) tl idtl
       | (_, _) -> error "make_case_branch_assumptions"
   in 
   makerec ([],[],[],[]) ba.branchsign
-    (try list_firstn ba.nassums (pf_ids_of_hyps gl)
+    (try list_firstn ba.nassums (pf_hyps gl)
      with Failure _ -> anomaly "make_case_branch_assumptions")
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl

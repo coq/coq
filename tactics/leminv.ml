@@ -372,6 +372,7 @@ let useInversionLemma =
   fun id c -> gentac [Identifier id;Constr c]
 
 let lemInvIn id c ids gls =
+  let hyps = List.map (pf_get_hyp gls) ids in
   let intros_replace_ids gls =
     let nb_of_new_hyp  = nb_prod (pf_concl gls) - List.length ids in 
     if nb_of_new_hyp < 1  then 
@@ -380,7 +381,7 @@ let lemInvIn id c ids gls =
       (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)) gls
   in 
 (*  try *)
-    ((tclTHEN (tclTHEN (bring_hyps ids) (lemInv id c))
+    ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
         (intros_replace_ids)) gls)
 (*  with Not_found -> errorlabstrm "LemInvIn" (not_found_message ids)
     |  UserError(a,b) -> errorlabstrm "LemInvIn" b  

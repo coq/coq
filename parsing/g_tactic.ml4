@@ -317,11 +317,18 @@ GEXTEND Gram
             | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
             | _ -> assert false in
 	  <:ast< (TrueCut $t $id) >>
-      | IDENT "Assert"; c = constrarg; ":="; t = constrarg ->
+      | IDENT "Assert"; c = constrarg; ":="; b = constrarg ->
           let id = match c with 
             | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
             | _ -> assert false in
-	  <:ast< (Forward $t $id) >>
+	  <:ast< (Forward "HideBody" $b $id) >>
+      | IDENT "Pose"; c = constrarg; ":="; b = constrarg ->
+          let id = match c with 
+            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
+            | _ -> assert false in 
+	  <:ast< (Forward "KeepBody" $b $id) >>
+      | IDENT "Pose"; b = constrarg ->
+	  <:ast< (Forward "KeepBody" $b) >>
       | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
       | IDENT "Specialize"; lcb = constrarg_binding_list ->
@@ -339,6 +346,8 @@ GEXTEND Gram
                 <:ast< (ClearBody (CLAUSE ($LIST $l))) >>
       | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
                 <:ast< (MoveDep $id1 $id2) >>
+      | IDENT "Rename"; id1 = identarg; IDENT "into"; id2 = identarg -> 
+                <:ast< (Rename $id1 $id2) >>
 (*To do: put Abstract in Refiner*)
       | IDENT "Abstract"; tc = tactic_expr -> <:ast< (ABSTRACT (TACTIC $tc)) >>
       | IDENT "Abstract"; tc = tactic_expr; "using";  s=identarg ->

@@ -101,7 +101,8 @@ let convert_concl   = Tacmach.convert_concl
 let convert_hyp     = Tacmach.convert_hyp
 let thin            = Tacmach.thin 
 let thin_body       = Tacmach.thin_body 
-let move_hyp        = Tacmach.move_hyp 
+let move_hyp        = Tacmach.move_hyp
+let rename_hyp      = Tacmach.rename_hyp
 
 let mutual_fix   = Tacmach.mutual_fix
 let fix f n      = mutual_fix [f] [n] []
@@ -497,13 +498,10 @@ let apply_type hdcty argl gl =
 let apply_term hdc argl gl =
   refine (applist (hdc,argl)) gl
 
-let bring_hyps ids gl = 
-  let newcl = 
-    List.fold_right 
-      (fun id cl' -> mkNamedProd id (pf_type_of gl (mkVar id)) cl')
-      ids (pf_concl gl)
-  in 
-  apply_type newcl (List.map mkVar ids) gl
+let bring_hyps hyps gl = 
+  let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
+  let f = mkCast (mkMeta (new_meta()),newcl) in
+  refine (mkApp (f, instance_from_named_context hyps)) gl
 
 (* Resolution with missing arguments *)
 
@@ -776,14 +774,8 @@ let letin_tac with_eq name c occs gl =
       depdecls in
   let t = pf_type_of gl c in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = List.map (fun (id,_,_) -> mkVar id) depdecls in
+  let args = Array.to_list (instance_from_named_context depdecls) in
   let newcl = mkNamedLetIn id c t tmpcl in
-(*
-    if with_eq then
-    else (* To fix : add c to args, or use LetIn and clear the body *)
-      mkNamed id t tmpcl
-  in
-*)
   let lastlhyp = if marks=[] then None else snd (List.hd marks) in
   tclTHENLIST
     [ apply_type newcl args;
@@ -812,11 +804,17 @@ let dyn_lettac args gl = match args with
       letin_tac true (Name id) c (o,l) gl
   | l -> bad_tactic_args "letin" l
 
+let nowhere = (Some [],[])
+
 let dyn_forward args gl = match args with
-  | [Command com; Identifier id] ->
-      letin_tac false (Name id) (pf_interp_constr gl com) (None,[]) gl
-  | [Constr c; Identifier id]    ->
-      letin_tac false (Name id) c (None,[]) gl
+  | [Quoted_string s; Command com; Identifier id] ->
+      letin_tac (s="KeepBody") (Name id) (pf_interp_constr gl com) nowhere gl
+  | [Quoted_string s; Constr c; Identifier id]    ->
+      letin_tac (s="KeepBody") (Name id) c nowhere gl
+  | [Quoted_string s; Constr c] ->
+      letin_tac (s="KeepBody") Anonymous c nowhere gl
+  | [Quoted_string s; Command c] ->
+      letin_tac (s="KeepBody") Anonymous (pf_interp_constr gl c) nowhere gl
   | l -> bad_tactic_args "forward" l
 
 (********************************************************************)
@@ -955,11 +953,17 @@ let dyn_new_hyp argsl gl =
 
 let dyn_move = function
   | [Identifier idfrom; Identifier idto] -> move_hyp false idfrom idto
-  | _ -> assert false
+  | l -> bad_tactic_args "move" l 
 
 let dyn_move_dep = function
   | [Identifier idfrom; Identifier idto] -> move_hyp true idfrom idto
-  | _ -> assert false
+  | l -> bad_tactic_args "move_dep" l 
+
+(* Renaming hypotheses *)
+
+let dyn_rename = function
+  | [Identifier idfrom; Identifier idto] -> rename_hyp idfrom idto
+  | l -> bad_tactic_args "rename" l 
 
 (************************)
 (* Introduction tactics *)

@@ -49,6 +49,7 @@ type prim_rule_name =
   | Thin
   | ThinBody
   | Move of bool
+  | Rename
 
 type prim_rule = {
   name : prim_rule_name;

@@ -259,7 +259,9 @@ Syntax tactic
   | cut [<<(Cut $C)>>] -> ["Cut " $C]
   | truecutid [<<(TrueCut $C $id)>>] -> ["Assert " $id " : " $C]
   | truecut [<<(TrueCut $C)>>] -> ["Assert " $C]
-  | forward [<<(Forward $C $id)>>] -> ["Assert " $id " := " $C]
+  | forward [<<(Forward _ $C $id)>>] -> ["Assert " $id " := " $C]
+  | pose_named [<<(Forward "KeepBody" $C $id)>>] -> ["Pose " $id " := " $C]
+  | pose_anon  [<<(Forward "KeepBody" $C)>>] -> ["Pose " $C]
 
   | lettac_cons [<<(LetTac $id $c (LETPATTERNS $p ($LIST $pl)))>>] -> 
 	["LetTac" [1 1] $id ":=" $c [1 1] "in" [1 1] (LETPATTERNS $p ($LIST $pl))]

@@ -65,9 +65,9 @@ val pf_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 val allHyps    : goal sigma -> identifier list
-val afterHyp   : identifier -> goal sigma -> identifier list
+val afterHyp   : identifier -> goal sigma -> named_context
 val lastHyp    : goal sigma -> identifier
-val nLastHyps  : int -> goal sigma -> identifier list
+val nLastHyps  : int -> goal sigma -> named_context
 
 val allClauses : goal sigma -> clause list
 
@@ -87,10 +87,10 @@ val ifOnHyp        :
   (identifier * types -> bool) ->
     (identifier -> tactic) -> (identifier -> tactic) -> identifier -> tactic
 
-val onHyps         : (goal sigma -> identifier list) -> 
-                     (identifier list -> tactic) -> tactic
+val onHyps         : (goal sigma -> named_context) -> 
+                     (named_context -> tactic) -> tactic
 val tryAllHyps     : (identifier -> tactic) -> tactic
-val onNLastHyps    : int -> (identifier -> tactic) -> tactic
+val onNLastHyps    : int -> (named_declaration -> tactic) -> tactic
 val onLastHyp      : (identifier -> tactic) -> tactic
 
 (* [ConclPattern concl pat tacast]:
@@ -113,7 +113,7 @@ type branch_args = {
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
-  assums    : identifier list; (* the list of assumptions introduced *)
+  assums    : named_context;   (* the list of assumptions introduced *)
   cargs     : identifier list; (* the constructor arguments *)
   constargs : identifier list; (* the CONSTANT constructor arguments *)
   recargs   : identifier list; (* the RECURSIVE constructor arguments *)

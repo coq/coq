@@ -72,7 +72,8 @@ and general_decompose recognizer id =
     (introElimAssumsThen
        (fun bas ->
 	  tclTHEN (clear_one id)
-	    (tclMAP (general_decompose_on_hyp recognizer) bas.assums)))
+	    (tclMAP (general_decompose_on_hyp recognizer)
+               (ids_of_named_context bas.assums))))
     id
 
 (* Faudrait ajouter un COMPLETE pour que l'hypothèse créée ne reste
@@ -163,18 +164,19 @@ let induction_trailer abs_i abs_j bargs =
        (fun id gls ->
 	  let idty = pf_type_of gls (mkVar id) in
 	  let fvty = global_vars (pf_env gls) idty in
-	  let possible_bring_ids =
-	    (List.tl (nLastHyps (abs_j - abs_i) gls))
-            @bargs.assums in
-	  let (ids,_) = List.fold_left 
-			  (fun (bring_ids,leave_ids) cid ->
-                             let cidty = pf_type_of gls (mkVar cid) in
-                             if not (List.mem cid leave_ids)
-                             then (cid::bring_ids,leave_ids)
-                             else (bring_ids,cid::leave_ids))
-			  ([],fvty) possible_bring_ids 
-	  in 
-	  (tclTHEN (tclTHEN (bring_hyps ids) (clear_clauses (List.rev ids)))
+	  let possible_bring_hyps =
+	    (List.tl (nLastHyps (abs_j - abs_i) gls)) @ bargs.assums
+          in
+	  let (hyps,_) =
+            List.fold_left 
+	      (fun (bring_ids,leave_ids) (cid,_,cidty as d) ->
+                 if not (List.mem cid leave_ids)
+                 then (d::bring_ids,leave_ids)
+                 else (bring_ids,cid::leave_ids))
+	      ([],fvty) possible_bring_hyps
+	  in
+          let ids = List.rev (ids_of_named_context hyps) in
+	  (tclTHEN (tclTHEN (bring_hyps hyps) (clear_clauses ids))
              (simple_elimination (mkVar id))) gls))
 
 let double_ind abs_i abs_j gls =

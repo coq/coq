@@ -167,11 +167,13 @@ val dyn_new_hyp   : tactic_arg list -> tactic
 val dyn_move      : tactic_arg list -> tactic
 val dyn_move_dep  : tactic_arg list -> tactic
 
+val dyn_rename    : tactic_arg list -> tactic
+
 (*s Resolution tactics. *)
 
 val apply_type : constr -> constr list -> tactic
 val apply_term : constr -> constr list -> tactic
-val bring_hyps : identifier list -> tactic
+val bring_hyps : named_context -> tactic
 
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
