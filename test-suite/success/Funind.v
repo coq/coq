@@ -1,5 +1,6 @@
 Require Export Arith.
- 
+
+
 Fixpoint trivfun [n : nat] : nat :=
  Cases n of O => O | (S m) => (trivfun m) end.
 
@@ -8,7 +9,7 @@ Fixpoint trivfun [n : nat] : nat :=
 
 Parameter varessai:nat.
 
-Lemma first_try (trivfun varessai) = O.
+Lemma first_try: (trivfun varessai) = O.
 Functional Induction trivfun varessai.
 Trivial.
 Simpl.
