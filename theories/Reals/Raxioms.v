@@ -17,6 +17,21 @@ Require Export Rsyntax.
 Require Export TypeSyntax.
 V7only [Import R_scope.]. Open Local Scope R_scope.
 
+V7only [
+(*********************************************************)
+(*   Compatibility                                       *)
+(*********************************************************)
+Notation sumboolT := Specif.sumbool.
+Notation leftT := Specif.left.
+Notation rightT := Specif.right.
+Notation sumorT := Specif.sumor.
+Notation inleftT := Specif.inleft.
+Notation inrightT := Specif.inright.
+Notation sigTT := Specif.sigT.
+Notation existTT := Specif.existT.
+Notation SigT := Specif.sigT.
+].
+
 (*********************************************************)
 (*               Field axioms                            *)
 (*********************************************************)
