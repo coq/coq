@@ -17,6 +17,7 @@ contrib/funind/tacinv.ml: parsing/grammar.cma
 contrib/first-order/g_ground.ml: parsing/grammar.cma
 contrib/interface/debug_tac.ml: parsing/grammar.cma
 contrib/interface/centaur.ml: parsing/grammar.cma
+contrib/interface/explication.ml: 
 parsing/lexer.ml: 
 parsing/q_util.ml: 
 parsing/q_coqast.ml: 

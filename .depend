@@ -3316,6 +3316,8 @@ contrib/interface/debug_tac.cmo: parsing/grammar.cma
 contrib/interface/debug_tac.cmx: parsing/grammar.cma
 contrib/interface/centaur.cmo: parsing/grammar.cma
 contrib/interface/centaur.cmx: parsing/grammar.cma
+contrib/interface/explication.cmo: 
+contrib/interface/explication.cmx: 
 parsing/lexer.cmo: 
 parsing/lexer.cmx: 
 parsing/q_util.cmo: 
