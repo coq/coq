@@ -153,26 +153,51 @@ Extraction PropSet.
 Definition natbool := [b:bool]if b then nat else bool.
 Extraction natbool.
 
-Definition zerotrue := 
- [b:bool]<natbool> Cases b of true => O | false => true end.
+Definition zerotrue := [b:bool]<natbool>if b then 0 else true.
 Extraction zerotrue.
 
-Definition natProp := [b:bool]<[b:bool]Type>if b then nat else Prop.
+Definition natProp := [b:bool]<[_:bool]Type>if b then nat else Prop.
 
-Definition zeroTrue := 
- [b:bool]<natProp> Cases b of true => O | false => True end.
+Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
+
+Definition zeroTrue := [b:bool]<natProp>if b then O else True.
 Extraction zeroTrue.
 
-Definition natTrue := [b:bool]<[b:bool]Type>if b then nat else True.
+Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
 
-Definition zeroprop := 
- [b:bool]<natTrue> Cases b of true => O | false => I end.
+Definition zeroprop := [b:bool]<natTrue>if b then O else I.
 Extraction zeroprop.
 
 (* instanciations Type -> Prop *)
 
-(* Prop applied to Prop *)
-
 (* polymorphic f applied several times *)
 
+Extraction (pair ? ? (id' nat O) (id' bool true)).
+
+(* ok *)
+
+Extraction 
+([id':(X:Type)X->X](pair ? ? (id' nat O) (id' bool true)) [X:Type][x:X]x).
+
+(* still ok via optim beta -> let *)
+
+Extraction [id':(X:Type)X->X](pair ? ? (id' nat O) (id' bool true)
+
+(* problem: fun f -> (f 0, f true) not legal in ocaml *)
+(* solution: fun f -> (f 0, Obj.magic f true) *)
+
+(* Prop applied to Prop : impossible ?*)
+
+Definition funPropSet:= 
+ [b:bool]<[_:bool]Type>if b then (X:Prop)X->X else (X:Set)X->X.
+
+Definition funPropSet2:=
+ [b:bool](X:if b then Prop else Set)X->X.
+
+Definition idpropset := 
+ [b:bool]<funPropSet>if b then [X:Prop][x:X]x else [X:Set][x:X]x.
+
+Definition proprop := [b:bool]((idpropset b) (natTrue b) (zeroprop b)).
+
+Definition funProp := [b:bool][x:True]<natTrue>if b then O else x.
 
