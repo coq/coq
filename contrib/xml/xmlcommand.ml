@@ -309,7 +309,7 @@ let print_term inner_types l env csr =
        X.xml_nempty "LETIN" (add_sort_attribute true ["id", next_id])
 (force
         [< X.xml_nempty "term" [] (term_display idradix false l env s) ;
-           X.xml_nempty "target" ["binder",(N.string_of_id nid')]
+           X.xml_nempty "letintarget" ["binder",(N.string_of_id nid')]
             (term_display idradix false
              ((N.Name nid')::l)
              (E.push_rel_def (N.Name nid', s, t) env)
