@@ -45,6 +45,7 @@ val join_loc : loc -> loc -> loc
 
 val is_letter : char -> bool
 val is_digit : char -> bool
+val is_ident_tail : char -> bool
 
 (*s Strings. *)
 

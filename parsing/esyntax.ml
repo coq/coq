@@ -192,7 +192,7 @@ let print_delimiters inh se strm = function
 	if is_letter (left.[String.length left -1]) then str " " else mt () in
       let rspace =
         let c = right.[0] in
-	if is_letter c or is_digit c or c = '\'' then str " " else mt () in
+	if is_ident_tail c then str " " else mt () in
       hov 0 (str left ++ lspace ++ strm ++ rspace ++ str right)
 
 (* Print the syntax entry. In the unparsing hunks, the tokens are

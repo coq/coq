@@ -42,6 +42,8 @@ let is_letter c =
 
 let is_digit c = (c >= '0' && c <= '9')
 
+let is_ident_tail c = is_letter c or is_digit c or c = '\''
+
 (* Strings *)
 
 let explode s = 
