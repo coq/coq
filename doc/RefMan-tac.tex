@@ -1198,7 +1198,10 @@ When several hypotheses have the form {\tt \ident=t}, the first one is used.
 
 \begin{Variants}
   \item {\tt Subst \ident$_1$ \dots \ident$_n$} \\
-    Is equivalent to {\tt Subst \ident$_1$; \dots; Subst \ident$_n$}
+    Is equivalent to {\tt Subst \ident$_1$; \dots; Subst \ident$_n$}.
+  \item {\tt Subst} \\
+    Applies {\tt Subst} repeatedly to all identifiers from the context
+    for which an equality exists.
 \end{Variants}
 
 
