@@ -116,6 +116,7 @@ module Tactic :
     val fixdecl : Coqast.t list Gram.Entry.e
     val ident_or_constrarg : Coqast.t Gram.Entry.e
     val identarg : Coqast.t Gram.Entry.e
+    val idmeta_arg : Coqast.t Gram.Entry.e
     val qualidarg : Coqast.t Gram.Entry.e
     val qualidconstarg : Coqast.t Gram.Entry.e
     val input_fun : Coqast.t Gram.Entry.e
@@ -131,6 +132,7 @@ module Tactic :
     val match_rule : Coqast.t Gram.Entry.e
     val match_list : Coqast.t list Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
+    val ne_idmeta_arg_list : Coqast.t list Gram.Entry.e
     val ne_qualidarg_list : Coqast.t list Gram.Entry.e
     val ne_qualidconstarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e

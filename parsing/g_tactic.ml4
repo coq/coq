@@ -50,6 +50,10 @@ GEXTEND Gram
   identarg:
     [ [ id = Constr.ident -> id ] ]
   ;
+  idmeta_arg:
+    [ [ id = Constr.ident -> id
+      | "?"; n = Prim.number -> <:ast< (METAID $n) >> ] ]
+  ;
   qualidarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >>
       | "?"; n = Prim.number -> <:ast< (QUALIDMETA $n) >> ] ]
@@ -89,6 +93,9 @@ GEXTEND Gram
   ;
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]
+  ;
+  ne_idmeta_arg_list:
+    [ [ l = LIST1 idmeta_arg -> l ] ]
   ;
   ne_qualidarg_list:
     [ [ l = LIST1 qualidarg -> l ] ]
@@ -249,7 +256,8 @@ GEXTEND Gram
   match_pattern:
     [ [ id = constrarg; "["; pc = constrarg; "]" ->
         (match id with
-        | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) ->
+        | Coqast.Node(_,"COMMAND",
+            [Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s)])]) ->
           <:ast< (SUBTERM ($VAR $s) $pc) >>
         | _ ->
           errorlabstrm "Gram.match_pattern" [<'sTR "Not a correct SUBTERM">])
@@ -343,6 +351,7 @@ GEXTEND Gram
       |	IDENT "Fail"; n = pure_numarg -> <:ast<(FAIL $n)>>
       |	ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
           <:ast< (ORELSE $ta0 $ta1) >>
+      | IDENT "Progress"; ta = tactic_atom -> <:ast< (PROGRESS $ta) >>
       |	st = simple_tactic -> st
       |	tca = tactic_arg -> tca ] ]
   ;
@@ -354,6 +363,8 @@ GEXTEND Gram
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
       |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
+      | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
+        <:ast< (CONTEXT $id $c) >>
       |	"'"; c = constrarg -> c ] ]
   ;
   simple_tactic:
@@ -447,7 +458,7 @@ GEXTEND Gram
       | IDENT "LetTac"; s = identarg; ":="; c = constrarg; p = clause_pattern->
 	  <:ast< (LetTac $s $c $p) >>
       | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
-      | IDENT "Clear"; l = ne_identarg_list -> 
+      | IDENT "Clear"; l = ne_idmeta_arg_list -> 
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
       | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
                 <:ast< (MoveDep $id1 $id2) >>

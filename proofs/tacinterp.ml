@@ -443,7 +443,7 @@ let rec make_subs_list = function
   | [] -> []
 
 (* Debug reference *)
-let debug =ref DebugOff
+let debug = ref DebugOff
 
 (* Sets the debugger mode *)
 let set_debug pos = debug := pos
@@ -479,6 +479,8 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
     | Node(_,"IDTAC",[]) -> VTactic tclIDTAC
     | Node(_,"FAIL",[]) -> VTactic (tclFAIL 0)
     | Node(_,"FAIL",[n]) -> VTactic (tclFAIL (num_of_ast n))
+    | Node(_,"PROGRESS",[tac]) ->
+      VTactic (tclPROGRESS (tac_interp lfun lmatch debug tac))
     | Node(_,"TACTICLIST",l) ->
       VTactic (interp_semi_list tclIDTAC lfun lmatch debug l)
     | Node(_,"DO",[n;tac]) ->
@@ -512,6 +514,11 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
        with | Not_found ->
          (try (vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
+    | Node(loc,"METAID",[Num(_,n)]) ->
+      (try VArg (Identifier (destVar (List.assoc n lmatch))) with
+       | Invalid_argument "destVar" ->
+         user_err_loc (loc, "Tacinterp.val_interp",[<'sTR
+          "Metavariable "; 'iNT n; 'sTR " must be an identifier" >]))
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) ->

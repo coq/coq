@@ -716,8 +716,12 @@ let type_judgment_of_rawconstr sigma env c =
   understand_type_judgment sigma env (interp_rawconstr sigma env c)
 
 (*To retype a list of key*constr with undefined key*)
-let retype_list sigma env lst=
-  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst
+let retype_list sigma env lst =
+  List.fold_right (fun (x,csr) a ->
+    try (x,Retyping.get_judgment_of env sigma csr)::a with
+    | Anomaly _ -> a) lst []
+
+(*  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst*)
 
 (* Interprets a constr according to two lists *)
 (* of instantiations (variables and metas)    *)
