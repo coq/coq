@@ -60,7 +60,7 @@
 \def\transitivity{{\tt transitivity }}
 \def\symmetry{{\tt symmetry }}
 \def\Focus{{\tt Focus }}
-
+\def\discriminate{{\tt discriminate }}
 
 \begin{document}
 \bibliographystyle{plain}
@@ -708,6 +708,26 @@ stated one intermediated lemmas, this speeds up the typing process.
 
 You can use the {\tt Admitted} command to state your current proof as an axiom.
 
+\Question[conjecture]{How can I state a conjecture ?}
+
+You can use the {\tt Admitted} command to state your current proof as an axiom.
+
+\Question[twodiffconstr]{How to prove that two constructor are different ?}
+
+You can use the \discriminate tactic.
+
+
+
+\Question[coqccoqtop]{What is the difference between coqc et coqtop ?}
+
+\Question[coqerror]{Do you know a coq-error-to-english translator ?}
+
+\subsection{Notations}
+
+\subsection{Modules}
+
+\subsection{Tactics in ml}
+
 %%%%%%%
 \subsection{\Ltac}
 
@@ -771,7 +791,65 @@ For example :
 Ltac introIdGen := let id:=fresh in intro id.
 \end{coq_example}
 
+\Question[typeof]{How can I acces the type of a term ?}
+
+
 \Question[statdyn]{How can I define static and dynamic code ?}
+
+\Question[apttmatchdep]{Is there anyway to do pattern matching with dependant types ?}
+
+\Question[secondorderunif]{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
+
+\Question[tacticcontent]{How can I know what does a tactic ?}
+
+\Question[autodepth]{Why auto does not work ? How can I fix it ?}
+
+You can increase the depth of the proof search or add some lemmas in the base of hints.
+
+\Question[pattern]{What is the use of the pattern tactic ?}
+
+\Question[assertcut]{What is the difference between assert, cut and generalize ?}
+
+PS: Notice for people that are interested in proof rendering that Assert
+and Pose (and Cut) are not rendered the same as Generalize (see the
+HELM experimental rendering tool at http://mowgli.cs.unibo.it, link
+HELM, link COQ Online). Indeed Generalize builds a beta-expanded term
+while Assert, Pose and Cut uses a let-in.
+
+\begin{verbatim}
+  (* Goal is T *)
+  Generalize (H1 H2).
+  (* Goal is A->T *)
+  ... a proof of A->T ...
+\end{verbatim}
+
+is rendered into something like
+\begin{verbatim}
+  (h) ... the proof of A->T ...
+      we proved A->T
+  (h0) by (H1 H2) we proved A
+  by (h h0) we proved T
+\end{verbatim}
+while 
+\begin{verbatim}
+  (* Goal is T *)
+  Assert q := (H1 H2).
+  (* Goal is A *)
+  ... a proof of A ...
+  (* Goal is A |- T *)
+  ... a proof of T ...
+\end{verbatim}
+is rendered into something like
+\begin{verbatim}
+  (q) ... the proof of A ...
+      we proved A
+  ... the proof of T ...
+  we proved T
+\end{verbatim}
+Otherwise said, Generalize is not rendered in a forward-reasoning way,
+while Assert is.
+
+\Question[vector]{How can I define vectors of size n ?}
 
 
 
@@ -794,7 +872,6 @@ that is still unknown.
 \Question[command]{What is a command ?}
 
 \Question[lemmasvstheorem]{What is difference between a lemma, a fact  and a theorem ?}
-
 
 \Question[organize]{How can I organize my proofs ?}
 
