@@ -137,7 +137,13 @@ let make_rule univ etyp rule =
 let make_rule univ etyp rule =
   let pil = List.map (symbol_of_prod_item univ) rule.gr_production in
   let (symbs,ntl) = List.split pil in
-  let f loc env = CGrammar (loc, rule.gr_action, env) in
+  let f loc env = match rule.gr_action, env with
+    | AVar p, [p',a] when p=p' -> a
+    | AApp (AVar f,[AVar a]), [f',v;a',w] when f=f' & a=a' ->
+        CApp (loc,v,[w,None])
+    | AApp (AVar f,[AVar a]), [a',w;f',v] when f=f' & a=a' ->
+        CApp (loc,v,[w,None])
+    | pat,_ -> CGrammar (loc, pat, env) in
   let act = make_act f ntl in
   (symbs, act)
 
