@@ -381,6 +381,8 @@ let rename_global r =
 
 let pp_global r = pr_id (rename_global r)
 
+let cofix_warning = true
+
 end
 
 module MonoPp = Make(MonoParams)
@@ -430,6 +432,8 @@ module ModularParams = struct
 
   let pp_type_global r = pr_id (rename_type_global r)
   let pp_global r = pr_id (rename_global r)
+
+  let cofix_warning = true
 end
 
 module ModularPp = Make(ModularParams)

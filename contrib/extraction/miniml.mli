@@ -59,6 +59,7 @@ type ml_decl =
     functions to print types, terms and declarations. *)
 
 module type Mlpp_param = sig
+  val cofix_warning : bool
   val rename_global : global_reference -> identifier
   val pp_type_global : global_reference -> std_ppcmds
   val pp_global : global_reference -> std_ppcmds

@@ -104,6 +104,7 @@ module ToplevelParams = struct
   let rename_global r = Names.id_of_string (Global.string_of_global r)
   let pp_type_global = Printer.pr_global
   let pp_global = Printer.pr_global
+  let cofix_warning = false
 end
 
 module Pp = Ocaml.Make(ToplevelParams)
