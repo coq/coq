@@ -779,7 +779,7 @@ let _ =
        | _ -> bad_vernac_args "PrintSec")
 
 let _ = declare_bool_option 
-	  {optsync  = true;
+	  {optsync  = false;
 	   optname  = "silent";
 	   optkey   = (PrimaryTable "Silent");
 	   optread  = is_silent;
