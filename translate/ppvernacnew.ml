@@ -474,9 +474,12 @@ let rec pr_vernac = function
       (match opt with
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
-  | VernacSyntaxExtension (local,a,b) ->
-      str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs a ++
-      (match b with | [] -> mt() | _ as l -> 
+  | VernacSyntaxExtension (local,s,l,mv8) ->
+      let (s,l) = match mv8 with
+          None -> (s,l)
+        | Some ml -> ml in
+      str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs s ++
+      (match l with | [] -> mt() | _ as l -> 
 	str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
   (* Gallina *)

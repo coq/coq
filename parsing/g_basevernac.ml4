@@ -242,8 +242,18 @@ GEXTEND Gram
          VernacSyntax (u,el)
 
      | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
-	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (local,s,l)
+	 modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
+         (s8,mv8) =
+             [IDENT "V8only";
+              s8=OPT STRING;
+              mv8=OPT["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8] ->
+                (s8,mv8)
+             | -> (None,None)] ->
+               let s8 = match s8 with Some s -> s | _ -> s in
+               let mv8 = match mv8 with
+                   Some mv8 -> mv8
+                 | _ -> List.map map_modl modl in
+	       VernacSyntaxExtension (local,s,modl,Some(s8,mv8))
 
      | IDENT "Open"; local = locality; IDENT "Scope"; 
 	 sc = IDENT -> VernacOpenScope (local,sc)

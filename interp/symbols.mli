@@ -83,7 +83,7 @@ type interp_rule =
   | NotationRule of scope_name * notation
   | SynDefRule of kernel_name
 val declare_notation_interpretation : notation -> scope_name ->
-      interpretation -> level -> string -> unit
+      interpretation -> string -> unit
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
@@ -101,12 +101,16 @@ val uninterp_notations : rawconstr ->
 val availability_of_notation : scope_name * notation -> scopes -> 
   (scope_name option * delimiters option) option
 
+(*s Declare and test the level of a (possibly uninterpreted) notation *)
+
+val declare_notation_level : notation -> level -> unit
+val level_of_notation : notation -> level (* [Not_found] if no level *)
+
 (*s** Miscellaneous *)
 
 (* Checks for already existing notations *)
-val exists_notation_in_scope : scope_name -> level -> notation ->
+val exists_notation_in_scope : scope_name -> notation ->
       interpretation-> bool
-val exists_notation : level -> notation -> bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope: global_reference -> scope_name option list -> unit
@@ -116,9 +120,6 @@ val find_arguments_scope : global_reference -> scope_name option list
 val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
 val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
 val locate_notation : (rawconstr -> std_ppcmds) -> notation -> std_ppcmds
-
-(* [raise Not_found] if non existing notation *)
-val find_notation_level : notation -> level
 
 (**********************************************************************)
 (*s Printing rules for notations *)

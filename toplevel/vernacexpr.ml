@@ -152,7 +152,8 @@ type vernac_expr =
   | VernacTacticGrammar of
       (string * (string * grammar_production list) * raw_tactic_expr) list
   | VernacSyntax of string * raw_syntax_entry list
-  | VernacSyntaxExtension of locality_flag * string * syntax_modifier list
+  | VernacSyntaxExtension of locality_flag * string *
+      syntax_modifier list * (string * syntax_modifier list) option
   | VernacDistfix of locality_flag *
       grammar_associativity * precedence * string * reference *
       scope_name option

@@ -1139,7 +1139,7 @@ let interp c = match c with
   | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
   | VernacTacticGrammar al -> Metasyntax.add_tactic_grammar al
   | VernacGrammar (univ,al) -> vernac_grammar univ al
-  | VernacSyntaxExtension (local,s,l) -> vernac_syntax_extension local s l
+  | VernacSyntaxExtension (lcl,s,l,l8) -> vernac_syntax_extension lcl s l l8
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacOpenScope sc -> vernac_open_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl

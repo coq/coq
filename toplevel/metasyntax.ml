@@ -499,11 +499,25 @@ let make_pp_rule symbols typs n =
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
 
 let cache_syntax_extension (_,(_,prec,ntn,gr,se)) =
-  if not (Symbols.exists_notation prec ntn) then begin
+  try 
+    let oldprec = Symbols.level_of_notation ntn in
+    if oldprec <> prec then
+      if !Options.v7 then begin
+	Options.if_verbose
+	  warning ("Notation "^ntn^" was already assigned a different level");
+	raise Not_found
+      end else
+	error ("Notation "^ntn^" is already assigned a different level")
+    else
+    (* The notation is already declared; no need to redeclare it *)
+      ()
+  with Not_found ->
+    (* Reserve the notation level *)
+    Symbols.declare_notation_level ntn prec;
+    (* Declare the parsing rule *)
     Egrammar.extend_grammar (Egrammar.Notation gr);
-    if se<>None then
-      Symbols.declare_notation_printing_rule ntn (out_some se,fst prec)
-  end
+    (* Declare the printing rule *)
+    Symbols.declare_notation_printing_rule ntn (se,fst prec)
 
 let subst_notation_grammar subst x = x
 
@@ -512,7 +526,7 @@ let subst_printing_rule subst x = x
 let subst_syntax_extension (_,subst,(local,prec,ntn,gr,se)) =
   (local,prec,ntn,
    subst_notation_grammar subst gr,
-   option_app (subst_printing_rule subst) se)
+   subst_printing_rule subst se)
 
 let classify_syntax_definition (_,(local,_,_,_,_ as o)) =
   if local then Dispose else Substitute o
@@ -602,11 +616,11 @@ let recompute_assoc typs =
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
 
-let add_syntax_extension local df modifiers =
+let add_syntax_extension local df modifiers mv8 =
   let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
   let inner = if !Options.v7 then (NumLevel 10,InternalProd) else
     (NumLevel 200,InternalProd) in
-  let (vars,symbs) = analyse_tokens (split df) in
+  let (_,symbs) = analyse_tokens (split df) in
   let typs =
     find_symbols
       (NumLevel n,BorderProd(true,assoc)) inner
@@ -614,29 +628,45 @@ let add_syntax_extension local df modifiers =
   let typs = List.map (set_entry_type etyps) typs in
   let assoc = recompute_assoc typs in
   let (prec,notation) = make_symbolic n symbs typs in
+  let (ppprec,ppn,pptyps,ppsymbols) =
+    let omodv8 = option_app (fun (s8,ml8) ->
+      let toks8 = split s8 in 
+      let im8 = interp_notation_modifiers ml8 in
+      (toks8,im8)) mv8 in
+    match omodv8 with
+        Some(toks8,(a8,n8,typs8,_)) when Options.do_translate() ->
+          let (_,symbols) = analyse_tokens toks8 in
+          let typs =
+            find_symbols
+              (NumLevel n8,BorderProd(true,a8)) (NumLevel 200,InternalProd)
+              (NumLevel n8,BorderProd(false,a8))
+              symbols in
+          let typs = List.map (set_entry_type typs8) typs in
+          let (prec,notation) = make_symbolic n8 symbols typs in
+          (prec, n8, typs, symbols)
+    | _ -> (prec, n, typs, symbs) in
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
-  let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbs n) in
+  let pp_rule = make_pp_rule pptyps ppsymbols ppn in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,prec,notation,gram_rule,pp_rule))
+    (inSyntaxExtension(local,ppprec,notation,gram_rule,pp_rule))
 
 (**********************************************************************)
 (* Distfix, Infix, Notations *)
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
-let load_notation _ (_,(_,_,prec,ntn,scope,pat,onlyparse,_)) =
+let load_notation _ (_,(_,_,ntn,scope,pat,onlyparse,_)) =
   Symbols.declare_scope scope
 
-let open_notation i (_,(_,oldse,prec,ntn,scope,pat,onlyparse,df)) =
-(*print_string ("Open notation "^ntn^" at "^string_of_int (fst prec)^"\n");*)
+let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,df)) =
   if i=1 then begin
-    let b = Symbols.exists_notation_in_scope scope prec ntn pat in
+    let b = Symbols.exists_notation_in_scope scope ntn pat in
     (* Declare the old printer rule and its interpretation *)
     if not b & oldse <> None then
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
     if not b then
-      Symbols.declare_notation_interpretation ntn scope pat prec df;
+      Symbols.declare_notation_interpretation ntn scope pat df;
     if not b & not onlyparse then
       Symbols.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
@@ -645,17 +675,16 @@ let cache_notation o =
   load_notation 1 o;
   open_notation 1 o
 
-let subst_notation (_,subst,(lc,oldse,prec,ntn,scope,(metas,pat),b,df)) =
+let subst_notation (_,subst,(lc,oldse,ntn,scope,(metas,pat),b,df)) =
   (lc,option_app
     (list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst)) oldse,
-   prec,ntn,
-   scope,
+   ntn,scope,
    (metas,subst_aconstr subst pat), b, df)
 
-let classify_notation (_,(local,_,_,_,_,_,_,_ as o)) =
+let classify_notation (_,(local,_,_,_,_,_,_ as o)) =
   if local then Dispose else Substitute o
 
-let export_notation (local,_,_,_,_,_,_,_ as o) =
+let export_notation (local,_,_,_,_,_,_ as o) =
   if local then None else Some o
 
 let (inNotation, outNotation) =
@@ -718,9 +747,7 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
           (prec, n8, typs, symbols)
     | _ -> (prec, n, typs, symbols) in
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
-  let pp_rule =
-    if onlyparse then None
-    else Some (make_pp_rule pptyps ppsymbols n) in
+  let pp_rule = make_pp_rule pptyps ppsymbols ppn in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,ppprec,notation,gram_rule,pp_rule));
   let old_pp_rule =
@@ -732,7 +759,7 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,ppprec,notation,scope,a,onlyparse,df))
+    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,df))
 
 let add_notation local df a modifiers mv8 sc =
   let toks = split df in
@@ -760,16 +787,28 @@ let add_notation_interpretation df (c,l) sc =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let (vars,symbs) = analyse_tokens (split df) in
   let notation = make_anon_notation symbs in
-  let old_pp_rule = None in
-  let prec = Symbols.find_notation_level notation in
+  let prec = 
+    try Symbols.level_of_notation notation
+    with Not_found ->
+      error "Parsing rule for this notation has to be previously declared" in
   List.iter (check_occur l) vars;
+  let old_pp_rule =
+    let c = match c with AVar id -> RVar (dummy_loc,id)
+      | ARef c -> RRef (dummy_loc,c)
+      | _ -> anomaly "add_notation_interpretation" in
+    let typs = List.map2 
+      (fun id n -> id,ETConstr (NumLevel n,InternalProd)) vars (snd prec) in
+    let r = RApp (dummy_loc, c,
+    List.map (function Name id when List.mem id vars -> RVar (dummy_loc,id)
+      | _ -> RHole (dummy_loc,QuestionMark)) l) in
+    Some (make_old_pp_rule (fst prec) symbs typs r notation scope vars) in
   let a = AApp (c,List.map (function Name id when List.mem id vars -> AVar id | 
 _ -> AHole QuestionMark) l) in
   let la = List.map (fun id -> id,[]) vars in
   let onlyparse = false in
   let local = false in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,prec,notation,scope,(la,a),onlyparse,df))
+    (inNotation(local,old_pp_rule,notation,scope,(la,a),onlyparse,df))
 
 (* TODO add boxes information in the expression *)
 

@@ -42,10 +42,14 @@ open Ppextend
 type scopes = scope_name list
 type level = precedence * precedence list
 type delimiters = string
+
 type scope = {
-  notations: (interpretation * (level * string)) Stringmap.t;
+  notations: (interpretation * string) Stringmap.t;
   delimiters: delimiters option
 }
+
+(* Uninterpreted notation map: notation -> level *)
+let notation_level_map = ref Stringmap.empty
 
 (* Scopes table: scope_name -> symbol_interpretation *)
 let scope_map = ref Stringmap.empty
@@ -204,14 +208,23 @@ let rec find_without_delimiters find ntn_scope = function
       (* Can we switch to [scope]? Yes if it has defined delimiters *)
       find_with_delimiters ntn_scope
 
+(* Uninterpreted notation levels *)
+
+let declare_notation_level ntn level =
+  if not !Options.v7 & Stringmap.mem ntn !notation_level_map then
+    error ("Notation "^ntn^" is already assigned a level");
+  notation_level_map := Stringmap.add ntn level !notation_level_map
+
+let level_of_notation ntn =
+  Stringmap.find ntn !notation_level_map
+
 (* The mapping between notations and their interpretation *)
 
-let declare_notation_interpretation ntn scope pat prec df =
+let declare_notation_interpretation ntn scope pat df =
   let sc = find_scope scope in
   if Stringmap.mem ntn sc.notations && Options.is_verbose () then
     warning ("Notation "^ntn^" is already used in scope "^scope);
-  let sc =
-    { sc with notations = Stringmap.add ntn (pat,(prec,df)) sc.notations } in
+  let sc = { sc with notations = Stringmap.add ntn (pat,df) sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map
 
 let declare_uninterpretation rule (metas,c as pat) =
@@ -227,7 +240,7 @@ let rec find_interpretation f = function
 let rec interp_notation ntn scopes =
   let f scope = fst (Stringmap.find ntn scope.notations) in
   try find_interpretation f (scopes @ !scope_stack)
-  with Not_found -> anomaly ("Unknown interpretation for notation "^ntn)
+  with Not_found -> error ("Unknown interpretation for notation "^ntn)
 
 let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table
@@ -278,19 +291,12 @@ let availability_of_numeral printer_scope scopes =
 
 (* Miscellaneous *)
 
-let exists_notation_in_scope scope prec ntn r =
+let exists_notation_in_scope scope ntn r =
   try
     let sc = Stringmap.find scope !scope_map in
-    let (r',(prec',_)) = Stringmap.find ntn sc.notations in
-    r' = r & prec = prec'
+    let (r',_) = Stringmap.find ntn sc.notations in
+    r' = r
   with Not_found -> false
-
-let exists_notation_prec prec nt sc =
-  try fst (snd (Stringmap.find nt sc.notations)) = prec with Not_found -> false
-
-let exists_notation prec nt =
-  Stringmap.fold (fun scn sc b -> b or exists_notation_prec prec nt sc)
-    !scope_map false 
 
 (* Exportation of scopes *)
 let cache_scope (_,(local,sc)) =
@@ -357,7 +363,7 @@ let pr_named_scope prraw scope sc =
   str "Scope " ++ str scope ++ fnl ()
   ++ pr_delimiters_info sc.delimiters ++ fnl ()
   ++ Stringmap.fold
-       (fun ntn ((_,r),(_,df)) strm ->
+       (fun ntn ((_,r),df) strm ->
 	 pr_notation_info prraw df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
@@ -379,7 +385,7 @@ let locate_notation prraw ntn =
     Stringmap.fold 
       (fun scope_name sc l ->
 	try
-	  let ((_,r),(_,df)) = Stringmap.find ntn sc.notations in
+	  let ((_,r),df) = Stringmap.find ntn sc.notations in
 	  (scope_name,r,df)::l
 	with Not_found -> l) !scope_map []
   in
@@ -395,17 +401,6 @@ let locate_notation prraw ntn =
 	  (if sc = scope then str " (default interpretation)" else mt ()) ++
 	  fnl ()))
       l
-
-let find_notation_level ntn =
-  let l = 
-    Stringmap.fold 
-      (fun _ sc l ->
-	try fst (snd (Stringmap.find ntn sc.notations)) :: l
-	with Not_found -> l) !scope_map [] in
-  match l with
-  | [] -> raise Not_found
-  | [prec] -> prec
-  | prec::_ -> warning ("Several parsing rules for notation \""^ntn^"\""); prec
 
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)
@@ -427,11 +422,12 @@ let find_notation_printing_rule ntn =
 (* Synchronisation with reset *)
 
 let freeze () =
- (!scope_map, !scope_stack, !arguments_scope, !delimiters_map,
-  !notations_key_table, !printing_rules)
+ (!scope_map, !notation_level_map, !scope_stack, !arguments_scope,
+  !delimiters_map, !notations_key_table, !printing_rules)
 
-let unfreeze (scm,scs,asc,dlm,fkm,pprules) =
+let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules) =
   scope_map := scm;
+  notation_level_map := nlm;
   scope_stack := scs;
   delimiters_map := dlm;
   arguments_scope := asc;
@@ -444,6 +440,7 @@ let init () =
   scope_stack := Stringmap.empty
   arguments_scope := Refmap.empty
 *)
+  notation_level_map := Stringmap.empty;
   delimiters_map := Stringmap.empty;
   notations_key_table := Gmapl.empty;
   printing_rules := Stringmap.empty

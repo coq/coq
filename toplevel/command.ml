@@ -214,14 +214,20 @@ let interp_mutual lparams lnamearconstrs finite =
       (env0, [], []) lnamearconstrs
   in
   let lparnames = List.map (fun (na,_,_) -> na) params in
+  let notations = 
+    List.map2 (fun (recname,ntnopt,_,_) ar ->
+      option_app (fun df ->
+        let larnames =
+	  List.rev_append lparnames 
+	    (List.map fst (fst (decompose_prod ar))) in
+	(recname,larnames,df)) ntnopt)
+      lnamearconstrs arityl in
   let fs = States.freeze() in
-  List.iter2 (fun (recname,ntnopt,_,_) ar ->
-      option_iter
-        (fun (df,scope) ->
-          let larnames = lparnames @ List.map fst (fst (decompose_prod ar)) in
-          Metasyntax.add_notation_interpretation df
-            (AVar recname,larnames) scope) ntnopt)
-    lnamearconstrs arityl;
+  (* Declare the notations for the inductive types pushed in local context*)
+  try
+  List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
+    Metasyntax.add_notation_interpretation df
+      (AVar recname,larnames) scope)) notations;
   let ind_env_params = push_rel_context params ind_env in
   let mispecvec = 
     List.map2
@@ -238,7 +244,9 @@ let interp_mutual lparams lnamearconstrs finite =
 	   mind_entry_lc = constrs })
       (List.rev arityl) lnamearconstrs
   in
-  { mind_entry_finite = finite; mind_entry_inds = mispecvec }
+  States.unfreeze fs;
+  notations, { mind_entry_finite = finite; mind_entry_inds = mispecvec }
+  with e -> States.unfreeze fs; raise e
 
 let declare_mutual_with_eliminations mie =
   let lrecnames =
@@ -277,8 +285,13 @@ let extract_coe_la_lc = function
 
 let build_mutual lind finite =
   let (coes,lparams,lnamearconstructs) = extract_coe_la_lc lind in
-  let mie = interp_mutual lparams lnamearconstructs finite in
-  let _ = declare_mutual_with_eliminations mie in
+  let notations,mie = interp_mutual lparams lnamearconstructs finite in
+  let kn = declare_mutual_with_eliminations mie in
+  (* Declare the notations now bound to the inductive types *)
+  list_iter_i (fun i ->
+    option_iter (fun (_,names,(df,scope)) ->
+      Metasyntax.add_notation_interpretation df
+        (ARef (IndRef (kn,i)),names) scope)) notations;
   List.iter
     (fun id -> 
       Class.try_add_new_coercion (locate (make_short_qualid id)) Global) coes
