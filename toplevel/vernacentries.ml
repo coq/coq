@@ -653,20 +653,19 @@ let _ =
 let _ =
   add "PrintId"
     (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> mSG(print_name id))
+       | [VARG_QUALID qid] -> (fun () -> mSG(print_name qid))
        | _ -> bad_vernac_args "PrintId")
 
 let _ =
   add "PrintOpaqueId"
     (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> mSG(print_opaque_name id))
+       | [VARG_QUALID qid] -> (fun () -> mSG(print_opaque_name qid))
        | _ -> bad_vernac_args "PrintOpaqueId")
 
 let _ =
   add "PrintSec"
     (function 
-       | [VARG_IDENTIFIER id] -> 
-	   (fun () -> mSG(print_sec_context_typ (string_of_id id)))
+       | [VARG_QUALID qid] -> (fun () -> mSG(print_sec_context_typ qid))
        | _ -> bad_vernac_args "PrintSec")
 
 let _ = declare_async_bool_option 
@@ -1520,7 +1519,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      mSG(print_name t))
+	      mSG(print_name (make_qualid [] (string_of_id t))))
      | _ -> bad_vernac_args "TableField")
 
 

@@ -284,10 +284,11 @@ let list_filter_vec f vec =
   in 
   frec (Array.length vec -1) []
 
-let read_sec_context sec =
+let read_sec_context qid =
+  let sp, _ = Nametab.locate_module qid in
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection (str,_)) as hd)::rest ->
-        if str = sec then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
+    | ((sp',Lib.OpenedSection (str,_)) as hd)::rest ->
+        if sp' = sp then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
   in
@@ -308,13 +309,12 @@ let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
   [< 'sTR "     = "; print_type env {uj_val = ntrm; uj_type = typ} >]
 
-let print_name name = 
-  let str = string_of_id name in 
+let print_name qid = 
   try 
+    let sp,_ = Nametab.locate_obj qid in
     let (sp,lobj) = 
       let (sp,entry) =
-      	List.find (fun en -> basename (fst en) = name) 
-	  (Lib.contents_after None)
+	List.find (fun en -> (fst en) = sp) (Lib.contents_after None)
       in
       match entry with
 	| Lib.Leaf obj -> (sp,obj)
@@ -323,7 +323,7 @@ let print_name name =
     print_leaf_entry true " = " (sp,lobj)
   with Not_found -> 
   try 
-    match fst (Declare.global_operator CCI name) with
+    match Nametab.locate qid with
       | ConstRef sp -> print_constant true " = " sp
       | IndRef (sp,_) -> print_inductive sp
       | ConstructRef ((sp,_),_) -> print_inductive sp
@@ -331,21 +331,25 @@ let print_name name =
       | EvarRef n -> [< 'sTR "?"; 'iNT n; 'fNL >]
   with Not_found -> 
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
+    let dir,str = repr_qualid qid in 
+    if dir <> [] then raise Not_found;
+    let name = id_of_string str in
     let (c,typ) = Global.lookup_named name in 
     [< print_named_decl (name,c,typ) >]
   with Not_found ->
   try
-    let sp = Syntax_def.locate_syntactic_definition (make_qualid [] str) in
+    let sp = Syntax_def.locate_syntactic_definition qid in
     print_syntactic_def true " = " sp
   with Not_found ->
-    error (str ^ " not a defined object")
+    errorlabstrm "print_name"
+      [< pr_qualid qid; 'sPC; 'sTR "not a defined object" >]
 
-let print_opaque_name name = 
+let print_opaque_name qid = 
   let sigma = Evd.empty in
   let env = Global.env () in
   let sign = Global.named_context () in
   try 
-    let x = global_reference CCI name in
+    let x = global_qualified_reference qid in
     match kind_of_term x with
       | IsConst (sp,_ as cst) ->
 	  let cb = Global.lookup_constant sp in
@@ -364,7 +368,7 @@ let print_opaque_name name =
 	  print_named_decl (id,c,ty)
       | _ -> failwith "print_name"
   with Not_found -> 
-    error ((string_of_id name) ^ " not declared")
+    errorlabstrm "print_opaque" [< pr_qualid qid; 'sPC; 'sTR "not declared" >]
 
 let print_local_context () =
   let env = Lib.contents_after None in

@@ -21,16 +21,16 @@ val print_context : bool -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (section_path * Lib.node) -> std_ppcmds
 val print_full_context : unit -> std_ppcmds
 val print_full_context_typ : unit -> std_ppcmds
-val print_sec_context : string -> std_ppcmds
-val print_sec_context_typ : string -> std_ppcmds
+val print_sec_context : qualid -> std_ppcmds
+val print_sec_context_typ : qualid -> std_ppcmds
 val print_val : env -> unsafe_judgment -> std_ppcmds
 val print_type : env -> unsafe_judgment -> std_ppcmds
 val print_eval :
   'a reduction_function -> env -> unsafe_judgment -> std_ppcmds
 val print_mutual :
   section_path -> Declarations.mutual_inductive_body -> std_ppcmds
-val print_name : identifier -> std_ppcmds
-val print_opaque_name : identifier -> std_ppcmds
+val print_name : qualid -> std_ppcmds
+val print_opaque_name : qualid -> std_ppcmds
 val print_local_context : unit -> std_ppcmds
 
 (*i
