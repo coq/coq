@@ -15,7 +15,7 @@
 
 Require Export ZArith_base.
 
-Parameter R:Type.
+Parameter R:Set.
 
 (* Declare Scope positive_scope with Key R *)
 Delimits Scope R_scope with R.
