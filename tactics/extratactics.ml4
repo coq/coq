@@ -112,6 +112,10 @@ END
 
 (* AutoRewrite *)
 
+let protect forv7 f x =
+  if !Options.v7 = forv7 then f x
+  else Util.error (if forv7 then "Use old V7 syntax" else "Use new V8 syntax")
+
 open Autorewrite
 TACTIC EXTEND AutorewriteV7
   [ "AutoRewrite" "[" ne_preident_list(l) "]" ] ->
@@ -134,10 +138,10 @@ let add_rewrite_hint name ort t lcsr =
 (* V7 *)
 VERNAC COMMAND EXTEND HintRewriteV7
   [ "Hint" "Rewrite" orient(o) "[" ne_constr_list(l) "]" "in" preident(b) ] ->
-  [ add_rewrite_hint b o (Tacexpr.TacId "") l ]
+  [ protect true (add_rewrite_hint b o (Tacexpr.TacId "")) l ]
 | [ "Hint" "Rewrite" orient(o) "[" ne_constr_list(l) "]" "in" preident(b)
     "using" tactic(t) ] ->
-  [ add_rewrite_hint b o t l ]
+  [ protect true (add_rewrite_hint b o t) l ]
 END
 
 (* V8 *)
