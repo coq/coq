@@ -1,12 +1,12 @@
-HintDestruct Hypothesis a (le O ?) 3 (Inversion H).
+HintDestruct Hypothesis h1 (le ? O) 3 [Fun I -> Inversion I ].
 
-Goal ~(le O (S O)).
+Lemma lem1 : ~(le (S O) O).
 Intro H.
 DHyp H.
 Qed.
 
-HintDestruct Conclusion a (le O ?) 3 Constructor.
+HintDestruct Conclusion h2 (le O ?) 3 [Constructor].
 
-Goal (le O O).
+Lemma lem2 : (le O O).
 DConcl.
 Qed.
