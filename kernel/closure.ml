@@ -649,7 +649,7 @@ let inject constr = freeze ESID constr
  * just writing a "*" if it is in normal form
  *)
 let prfconstr v =
-  let pv = Printer.prterm (term_of_freeze v) in
+  let pv = Printer.pr_term (term_of_freeze v) in
   if v.norm then [< 'sTR"*"; pv >] else pv
 
 

@@ -58,6 +58,10 @@ type typed_term = typed_type judge
 
 val typed_app : (constr -> constr) -> typed_type -> typed_type
 
+val body_of_type : typed_type -> constr
+
+val incast_type : typed_type -> constr
+
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 
   manipulation of terms. Some of these functions may be overlapped with

@@ -33,6 +33,7 @@ val list_distinct : 'a list -> bool
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_index : 'a -> 'a list -> int
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
+val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 
 (* Arrays *)
 
@@ -45,12 +46,15 @@ val array_last : 'a array -> 'a
 val array_cons : 'a -> 'a array -> 'a array
 val array_fold_left2 : 
   ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
+val array_fold_left2_i : 
+  (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
 val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 val array_app_tl : 'a array -> 'a list -> 'a list
 val array_list_of_tl : 'a array -> 'a list
 val array_map_to_list : ('a -> 'b) -> 'a array ->'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
+val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 
 (* Functions *)
 

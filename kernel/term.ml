@@ -61,6 +61,10 @@ type typed_term = typed_type judge
 
 let typed_app f tt = { body = f tt.body; typ = tt.typ }
 
+let body_of_type ty = ty.body
+
+let incast_type tty = DOP2 (Cast, tty.body, (DOP0 (Sort tty.typ)))
+
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)

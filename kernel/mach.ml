@@ -9,10 +9,12 @@ open Generic
 open Term
 open Himsg
 open Reduction
+open Sign
 open Environ
 open Machops
 
 (* Fonctions temporaires pour relier la forme castée de la forme jugement *)
+
 let tjudge_of_cast env = function
   | DOP2 (Cast, b, t) ->
       (match whd_betadeltaiota env t with
@@ -32,28 +34,18 @@ let tjudge_of_judge env j =
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> typed_app (lift i) t)
 
-(* Ce type est introduit pour rendre un peu plus lisibles les appels a la
-   machine de typage.
-
-   nofix indique si on autorise les points fixes generaux (recarg < 0)
-     comme Acc_rec.fw
-   nocheck devrait indiquer que l'on cherche juste a calculer le type, sans
-     faire toutes les verifications (par exemple, pour l'application, on
-     n'a pas a calculer le type des arguments, et les Cast devraient etre
-     utilises). Pour l'instant, on fait trop de verifications
-   noverify indique qu'il ne faut pas verifier si les contextes sont bien
-     castes
-   Rem: is_ass a disparu; les fonctions attendant un type retourne
-        maintenant un "type_judgement" et non un "judgement" complet
- *)
+(*s The machine flags. 
+   [fix] indicates if we authorize general fixpoints ($\mathit{recarg} < 0$)
+   like [Acc_rec.fw].
+   [nocheck] indicates if we can skip some verifications to accelerate
+   the type inference. *)
 
 type 'a mach_flags = {
-  nofix : bool;
-  nocheck : bool;
-  noverify : bool }
+  fix : bool;
+  nocheck : bool }
 
-(* WARNING: some destCast are not guarded.
-   Invariant: assumptions in env are casted (checked when noverify=false) *)
+(* The typing machine without information. *)
+
 let rec execute mf env cstr =
   let u0 = universes env in
   match kind_of_term cstr with
@@ -83,13 +75,14 @@ let rec execute mf env cstr =
 	  error "Cannot typecheck an unevaluable abstraction"
 	      
     | IsConst _ ->
-        (make_judge cstr (type_of_const env cstr), u0)
+        (make_judge cstr (type_of_constant_or_existential env cstr), u0)
 	  
     | IsMutInd _ ->
-	(make_judge cstr (type_of_mind env cstr), u0)
+	(make_judge cstr (type_of_inductive env cstr), u0)
 	  
     | IsMutConstruct _ -> 
-        (make_judge cstr (type_of_mconstr env cstr), u0)
+	let (typ,kind) = destCast (type_of_constructor env cstr) in
+        ({ uj_val = cstr; uj_type = typ; uj_kind = kind } , u0)
 	  
     | IsMutCase (_,p,c,lf) ->
         let (cj,u1) = execute mf env c in
@@ -101,7 +94,7 @@ let rec execute mf env cstr =
         (type_of_case env3 pj cj lfj, u3)
   
     | IsFix (vn,i,lar,lfi,vdef) ->
-        if mf.nofix & array_exists (fun n -> n < 0) vn then
+        if (not mf.fix) && array_exists (fun n -> n < 0) vn then
           error "General Fixpoints not allowed";
         let (larv,vdefv,u1) = execute_fix mf env lar lfi vdef in
         let fix = mkFix vn i larv lfi vdefv in
@@ -115,7 +108,7 @@ let rec execute mf env cstr =
 	(make_judge cofix larv.(i), u1)
 	  
     | IsSort (Prop c) -> 
-	(type_of_proposition c, u0)
+	(type_of_prop_or_set c, u0)
 
     | IsSort (Type u) ->
 	type_of_type u u0
@@ -137,7 +130,7 @@ let rec execute mf env cstr =
 	let env1 = push_rel (name,var) (set_universes u1 env) in
         let (j',u2) = execute mf env1 c2 in 
 	let env2 = set_universes u2 env1 in
-        (abs_rel env2 name var j', u2)
+        abs_rel env2 name var j'
 	  
     | IsProd (name,c1,c2) ->
         let (j,u1) = execute mf env c1 in
@@ -145,7 +138,7 @@ let rec execute mf env cstr =
 	let env1 = push_rel (name,var) (set_universes u1 env) in
         let (j',u2) = execute mf env1 c2 in
 	let env2 = set_universes u2 env1 in
-        (gen_rel env2 name var j', u2)
+        gen_rel env2 name var j'
 	  
     | IsCast (c,t) ->
         let (cj,u1) = execute mf env c in
@@ -182,186 +175,64 @@ and execute_list mf env = function
       (j::jr, u'')
 
 
-(** ICI **)
+(* The typed type of a judgment. *)
 
-let flag_fmachine mf env constr = 
-  if not mf.noverify then verify_wf_env env; 
-  exemeta_rec mf env constr
-
-let flag_fmachine_type mf env constr = 
-  if not mf.noverify then verify_wf_env env; 
-  let j = exemeta_rec mf env constr in
-  type_judgement mf.sigma env j
+let execute_type mf env constr = 
+  let (j,_) = execute mf env constr in
+  typed_type_of_judgment env j
 
 
-(* This function castifies the term (nocheck=true).
- * It must be applied to well-formed terms.
- * Casts are all removed before re-computing them. This avoids casting
- * Casts, which leads to terrible inefficiencies. *)
-let cast_fmachine (sigma,metamap) env t =
-  flag_fmachine
-    { nofix = true;
-      nocheck = true;
-      noverify = true;
-      sigma = sigma;
-      metamap = metamap}
-    env (strip_all_casts t)
-    
-(* core_fmachine* :
-   No general fixpoint allowed; checks that environments are casted *)
-let core_fmachine nocheck (sigma,metamap) env constr = 
-  flag_fmachine
-    { nofix = true;
-      nocheck = nocheck;
-      noverify = false;
-      sigma = sigma;
-      metamap = metamap}
-    env
-    constr
+(* Exported machines.  First safe machines, with no general fixpoint
+   allowed (the flag [fix] is not set) and all verifications done (the
+   flag [nocheck] is not set). *)
 
-let core_fmachine_type nocheck (sigma,metamap) env constr = 
-  flag_fmachine_type
-    { nofix = true;
-     nocheck = nocheck;
-     noverify = false;
-     sigma = sigma;
-     metamap = metamap}
-    env
-    constr
+let safe_machine env constr = 
+  let mf = { fix = false; nocheck = false } in
+  execute mf env constr
 
-(* WITHOUT INFORMATION *)
-let fmachine nocheck sig_meta sign constr =
-  let j = core_fmachine nocheck sig_meta sign constr in
-  { uj_val = strip_all_casts j.uj_val;
-    uj_type = strip_all_casts j.uj_type;
-    uj_kind = j.uj_kind }
+let safe_machine_type env constr = 
+  let mf = { fix = false; nocheck = false } in
+  execute_type mf env constr
 
-let fmachine_type nocheck sig_meta sign constr =
-  let j = core_fmachine_type nocheck sig_meta sign constr in
-  type_app strip_all_casts j
-    
-    
-let fexemeta_type sigma metamap env c = 
-  fmachine_type true (sigma,metamap) env c
+(* Machines with general fixpoint. *)
 
-let execute_rec_type sigma env c = 
-  fmachine_type false (sigma,[]) env c
+let fix_machine env constr = 
+  let mf = { fix = true; nocheck = false } in
+  execute mf env constr
 
-let fexecute_type sigma sign c = 
-  fmachine_type false (sigma,[]) (gLOB sign) c
+let fix_machine_type env constr = 
+  let mf = { fix = true; nocheck = false } in
+  execute_type mf env constr
 
-let fexemeta sigma metamap env c = 
-  fmachine true (sigma,metamap) env c
+(* Fast machines without any verification. *)
 
-let execute_rec sigma env c = 
-  fmachine false (sigma,[]) env c
+let unsafe_machine env constr = 
+  let mf = { fix = true; nocheck = true } in
+  execute mf env constr
 
-let fexecute sigma sign c = 
-  fmachine false (sigma,[]) (gLOB sign) c
-
-let type_of_rel_type sigma env c = 
-  try 
-    let j = core_fmachine_type false (sigma,[]) env c in
-    DOP0 (Sort j.typ)
-  with Invalid_argument s -> 
-    error ("Invalid arg " ^ s)
-
-let type_of_rel sigma env c = 
-  try 
-    let j = core_fmachine false (sigma,[]) env c in
-    nf_betaiota j.uj_type
-  with Invalid_argument s -> 
-    error ("Invalid arg " ^ s)
-
-let type_of sigma sign c = type_of_rel sigma (gLOB sign) c
-
-let type_of_type sigma sign c = type_of_rel_type sigma (gLOB sign) c
+let unsafe_machine_type env constr = 
+  let mf = { fix = true; nocheck = true } in
+  execute_type mf env constr
 
 
-(* Allows general fixpoints to appear in the term *)
-let fixfexemeta sigma metamap env constr =
-  let j =
-    flag_fmachine
-      { nofix = false;
-       nocheck = true;
-       noverify = false;
-       sigma = sigma;
-       metamap = metamap }
-      env
-      constr
-  in 
-  { uj_val = strip_all_casts j.uj_val;
-    uj_type = strip_all_casts j.uj_type;
-    uj_kind = j.uj_kind }
+(* ``Type of'' machines. *)
 
-let unsafe_type_of sigma env c = 
-  try 
-    nf_betaiota
-      (flag_fmachine
-	 { nofix = false;
-           nocheck = true;
-           noverify = true;
-	   sigma = sigma;
-           metamap = [] }
-	 env
-	 c).uj_type
-  with Invalid_argument s -> 
-    error ("Invalid arg " ^ s)
-      
-let compute_type sigma env c = 
-  match c with
-    | DOP2(Cast,_,t) -> nf_betaiota t 
-    | _ -> unsafe_type_of sigma env c
+let type_of env c = 
+  let (j,_) = safe_machine env c in nf_betaiota env j.uj_type
 
-(* Les fonctions suivantes sont pour l'inversion (inv.ml, gelim.ml, leminv.ml):
-   sign_of_sign*
-   env_of_env*
-   castify_env*
-   castify_sign*
+let type_of_type env c = 
+  let tt = safe_machine_type env c in DOP0 (Sort tt.typ)
 
-   A uniformiser...
- *)
+let unsafe_type_of env c = 
+  let (j,_) = unsafe_machine env c in nf_betaiota env j.uj_type
 
-let sign_of_sign sigma sign =
-  sign_it
-    (fun id a sign ->
-       match a with
-           DOP2(Cast,t,DOP0 (Sort s)) -> add_sign (id,make_type t s) sign
-         | _ -> let j = fexecute sigma sign a in
-             (add_sign (id,assumption_of_judgement sigma (gLOB sign) j) sign))
-    sign nil_sign
+let unsafe_type_of_type env c = 
+  let tt = unsafe_machine_type env c in DOP0 (Sort tt.typ)
 
 
-(*
-let env_of_env1 is_ass sigma env =
-  dbenv_it
-    (fun na a env ->
-       match a with
-           DOP2(Cast,_,_) -> add_rel (na,a) env
-         | _ -> let j = execute_rec1 is_ass sigma env a in
-             add_rel (na,assumption_of_judgement sigma env j) env)
-    env (gLOB(get_globals env))
+(*s Machines with information. *)
 
-*)
-let env_of_env sigma env =
-  dbenv_it
-    (fun na a env ->
-       let j = execute_rec sigma env a in
-         add_rel (na,assumption_of_judgement sigma env j) env)
-    env (gLOB(get_globals env))
-
-
-let castify_sign sigma sign = sign_of_sign sigma sign
-
-let castify_env sigma env =
-  let sign = (* castify_sign sigma *) (get_globals env)
-  in env_of_env sigma (ENVIRON(sign,get_rels env))
-
-
-(* Fin fonctions pour l'inversion *)
-
-(**)
-
+(*i
 let implicit_judgment = {body=mkImplicit;typ=implicit_sort}
 
 let add_inf_rel (na,inf) env =
@@ -724,3 +595,4 @@ let infexecute_type_with_univ sigma psign sp c =
 
 let infexecute_with_univ sigma psign sp c =
   with_universes (infexecute sigma psign) (sp,initial_universes,c) 
+i*)

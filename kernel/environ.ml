@@ -46,3 +46,12 @@ let id_of_name_using_hdchar a = function
 let named_hd a = function
   | Anonymous -> Name (id_of_string (hdchar a)) 
   | x         -> x
+
+(* Judgments. *)
+
+type unsafe_judgment = { 
+  uj_val : constr;
+  uj_type : constr;
+  uj_kind : constr }
+
+

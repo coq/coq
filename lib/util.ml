@@ -116,6 +116,13 @@ let list_fold_left_i f =
  in 
  it_list_f 
 
+let list_for_all_i p = 
+  let rec for_all_p i = function
+    | [] -> true 
+    | a::l -> p i a && for_all_p (i+1) l
+  in 
+  for_all_p
+
 (* Arrays *)
 
 let array_exists f v = 
@@ -167,6 +174,16 @@ let array_fold_left2 f a v1 v2 =
   else
     fold a 0
 
+let array_fold_left2_i f a v1 v2 =
+  let lv1 = Array.length v1 in
+  let rec fold a n = 
+    if n >= lv1 then a else fold (f n a v1.(n) v2.(n)) (succ n)
+  in
+  if Array.length v2 <> lv1 then
+    invalid_arg "array_fold_left2"
+  else
+    fold a 0
+
 let array_fold_left_from n f a v = 
   let rec fold a n =
     if n >= Array.length v then a else fold (f a v.(n)) (succ n)
@@ -200,6 +217,19 @@ let array_chop n v =
     failwith "chop_vect"
   else 
     (Array.sub v 0 n, Array.sub v n (vlen-n))
+
+let array_map2 f v1 v2 =
+  if Array.length v1 <> Array.length v2 then
+    invalid_arg "map2_vect"
+  else if Array.length v1 == 0 then 
+    [| |] 
+  else begin
+    let res = Array.create (Array.length v1) (f v1.(0) v2.(0)) in
+    for i = 1 to pred (Array.length v1) do
+      res.(i) <- f v1.(i) v2.(i)
+    done;
+    res
+  end
 
 (* Functions *)
 

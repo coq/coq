@@ -10,42 +10,40 @@ open Environ
 
 (* Typing judgments. *)
 
-type unsafe_judgment = { 
-  uj_val : constr;
-  uj_type : constr;
-  uj_kind : constr }
-
 type information = Logic | Inf of unsafe_judgment
 
 val make_judge : constr -> typed_type -> unsafe_judgment
 
 val j_val_only : unsafe_judgment -> constr
 
+val typed_type_of_judgment : 'a unsafe_env -> unsafe_judgment -> typed_type
 
 (* Base operations of the typing machine. *)
 
 val relative : 'a unsafe_env -> int -> unsafe_judgment
 
-val type_of_const : 'a unsafe_env -> constr -> typed_type
+val type_of_constant_or_existential : 'a unsafe_env -> constr -> typed_type
 
-val type_of_mind : 'a unsafe_env -> constr -> typed_type
+val type_of_inductive : 'a unsafe_env -> constr -> typed_type
 
-val type_of_mconstr : 'a unsafe_env -> constr -> typed_type
+val type_of_constructor : 'a unsafe_env -> constr -> constr
 
 val type_of_case : 'a unsafe_env -> unsafe_judgment -> unsafe_judgment 
   -> unsafe_judgment array -> unsafe_judgment
 
-val type_of_proposition : contents -> unsafe_judgment
+val type_of_prop_or_set : contents -> unsafe_judgment
 
 val type_of_type : universe -> universes -> unsafe_judgment * universes
 
 val assumption_of_judgement : 'a unsafe_env -> unsafe_judgment -> typed_type
 
 val abs_rel : 
-  'a unsafe_env -> name -> typed_type -> unsafe_judgment -> unsafe_judgment
+  'a unsafe_env -> name -> typed_type -> unsafe_judgment 
+    -> unsafe_judgment * universes
 
 val gen_rel :
-  'a unsafe_env -> name -> typed_type -> unsafe_judgment -> unsafe_judgment
+  'a unsafe_env -> name -> typed_type -> unsafe_judgment 
+    -> unsafe_judgment * universes
 
 val cast_rel : 
   'a unsafe_env -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment

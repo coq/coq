@@ -156,6 +156,7 @@ type conversion_result =
 type conversion_test = universes -> conversion_result
 
 val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
+val base_sort_cmp : conv_pb -> sorts -> sorts -> bool
 
 val bool_and_convert : bool -> conversion_test -> conversion_test
 val convert_and : conversion_test -> conversion_test -> conversion_test
@@ -178,6 +179,16 @@ val fconv : conv_pb -> 'a conversion_function
 val conv : 'a conversion_function
 val conv_leq : 'a conversion_function
 
+val conv_forall2 : 
+  'a conversion_function -> 'a unsafe_env 
+    -> constr array -> constr array -> conversion_result
+
+val conv_forall2_i : 
+  (int -> 'a conversion_function) -> 'a unsafe_env 
+    -> constr array -> constr array -> conversion_result
+
+val is_conv : 'a unsafe_env -> constr -> constr -> bool
+val is_conv_leq : 'a unsafe_env -> constr -> constr -> bool
 
 (*s Obsolete Reduction Functions *)
 

@@ -17,6 +17,8 @@ val initial_universes : universes
 
 val super : universe -> universes -> universe * universes
 
+val sup : universe -> universe -> universes -> universe * universes
+
 type constraint_result = 
   | Consistent of universes
   | Inconsistent

@@ -33,9 +33,20 @@ Changements dans les fonctions :
 	  app_tl_vect	   ->  array_app_tl
 	  cons_vect	   ->  array_cons
 	  map_i_vect	   ->  Array.mapi
+	  map2_vect	   ->  array_map2
 
 	Std 
 	  comp           ->  Util.compose
 	  rev_append	 ->  List.rev_append
 
-	
+	Termenv
+	  mis_arity      ->  instantiate_arity
+	  mis_lc	 ->  instantiate_lc	
+
+	Printer
+	  gentermpr	->   gen_pr_term
+
+	Typing, Machops
+	  type_of_type     ->  type_of_sort
+	  fcn_proposition  ->  type_of_type
+

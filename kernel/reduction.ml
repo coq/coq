@@ -171,8 +171,8 @@ let subst_term_occ locs c t =
     if List.exists (fun o -> o>=nbocc or o<= -nbocc) locs then
       errorlabstrm "subst_occ" 
 	[< 'sTR "Only "; 'iNT (nbocc-1); 'sTR " occurrences of";
-	   'bRK(1,1); Printer.prterm c; 'sPC;
-	   'sTR "in"; 'bRK(1,1); Printer.prterm t>]
+	   'bRK(1,1); Printer.pr_term c; 'sPC;
+	   'sTR "in"; 'bRK(1,1); Printer.pr_term t>]
     else 
       t'
 
@@ -792,6 +792,13 @@ let sort_cmp pb s0 s1 =
 	   | CONV_LEQ -> convert_of_constraint (enforce_geq u2 u1))
     | (_, _) -> fun _ -> NotConvertible
 
+let base_sort_cmp pb s0 s1 =
+  match (s0,s1) with
+    | (Prop c1, Prop c2) -> c1 = c2
+    | (Prop c1, Type u)  -> not (pb_is_equal pb)
+    | (Type u1, Type u2) -> true
+    | (_, _) -> false
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 = 
@@ -930,8 +937,38 @@ let fconv cv_pb env t1 t2 =
     let infos = create_clos_infos hnf_flags env in
     ccnv cv_pb infos ELID ELID (inject t1) (inject t2) univ
 
-let conv       env term1 term2 = fconv CONV env term1 term2
-let conv_leq   env term1 term2 = fconv CONV_LEQ env term1 term2
+let conv env term1 term2 = fconv CONV env term1 term2
+let conv_leq env term1 term2 = fconv CONV_LEQ env term1 term2
+
+let conv_forall2 f env v1 v2 =
+  let (_,c) =
+    array_fold_left2 
+      (fun a x y -> match a with
+	 | (_,NotConvertible) -> a
+	 | (e,Convertible u) -> let e' = set_universes u env in (e',f e x y))
+      (env, Convertible (universes env)) 
+      v1 v2
+  in
+  c
+
+let conv_forall2_i f env v1 v2 =
+  let (_,c) =
+    array_fold_left2_i 
+      (fun i a x y -> match a with
+	 | (_,NotConvertible) -> a
+	 | (e,Convertible u) -> let e' = set_universes u env in (e',f i e x y))
+      (env, Convertible (universes env)) 
+      v1 v2
+  in
+  c
+
+let test_conversion f env x y =
+  match f env x y with
+    | Convertible _ -> true
+    | NotConvertible -> false
+
+let is_conv env = test_conversion conv env
+let is_conv_leq env = test_conversion conv_leq env
 
 
 (********************************************************************)
