@@ -724,7 +724,7 @@ object(self)
     with _ -> None
 
   method complete_at_offset (offset:int) = ()
-      
+					     
 
   method process_next_phrase display_goals do_highlight = 
     self#clear_message;
@@ -898,22 +898,25 @@ object(self)
     let done_smthg, undos = pop_commands false (Some 0) in
     if done_smthg then
       begin 
-	try (match undos with 
-	       | None -> synchro () 
-	       | Some n -> try Pfedit.undo n with _ -> synchro ())
+	try 
+	  (match undos with 
+	     | None -> synchro () 
+	     | Some n -> try Pfedit.undo n with _ -> synchro ());
+	  let start = if is_empty () then input_buffer#start_iter 
+	  else input_buffer#get_iter_at_mark (top ()).stop 
+	  in
+	  prerr_endline "Removing (long) processed tag...";
+	  input_buffer#remove_tag_by_name 
+	    ~start 
+	    ~stop:self#get_start_of_input
+	    "processed";
+	  prerr_endline "Moving (long) start_of_input...";
+	  input_buffer#move_mark ~where:start (`NAME "start_of_input");
+	  self#show_goals;
+	  clear_stdout ();
+	  self#clear_message
 	with _ -> !push_info "WARNING: interrupted undo -> Coq might be in an inconsistent state.
 Restart and report if you never tried to interrupt an Undo.";
-	let start = if is_empty () then input_buffer#start_iter 
-	else input_buffer#get_iter_at_mark (top ()).stop 
-	in
-	input_buffer#remove_tag_by_name 
-	  ~start 
-	  ~stop:self#get_start_of_input
-	  "processed";
-	input_buffer#move_mark ~where:start (`NAME "start_of_input");
-	self#show_goals;
-	clear_stdout ();
-	self#clear_message
       end
       
   method backtrack_to_insert = 
@@ -924,10 +927,12 @@ Restart and report if you never tried to interrupt an Undo.";
       let last_command = top () in
       let start = input_buffer#get_iter_at_mark last_command.start in
       let update_input () =
+	prerr_endline "Removing processed tag...";
 	input_buffer#remove_tag_by_name 
 	  ~start
 	  ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
 	  "processed";
+	prerr_endline "Moving start_of_input";
 	input_buffer#move_mark
 	  ~where:start
 	  (`NAME "start_of_input");
