@@ -55,8 +55,6 @@ type pbp_atom =
   (* Or *)
   | PbpLeft
   | PbpRight
-  (* Not *)
-  | PbpReduce
   (* Head *)
   | PbpApply of identifier
   | PbpElim of identifier * identifier list;;
@@ -135,7 +133,7 @@ let (imply_intro2: pbp_rule) = function
   | _ -> None;;
 
       
-
+(*
 let (imply_intro1: pbp_rule) = function
   avoid, clear_names,
   clear_flag, None, Prod(Anonymous, prem, body), 1::path, f ->
@@ -145,6 +143,7 @@ let (imply_intro1: pbp_rule) = function
             (f (h'::avoid) clear_names clear_flag (Some str_h') 
 		(kind_of_term prem) path))
   | _ -> None;;
+*)
 
 let make_var id = CRef (Ident(zz, id))
 
@@ -170,7 +169,6 @@ let make_pbp_atomic_tactic = function
       TacAtom (zz, TacGeneralize [make_app (make_var h) l])
   | PbpLeft -> TacAtom (zz, TacLeft NoBindings)
   | PbpRight -> TacAtom (zz, TacRight NoBindings)
-  | PbpReduce -> TacAtom (zz, TacReduce (Red false, onConcl))
   | PbpIntros l -> TacAtom (zz, TacIntroPattern l)
   | PbpLApply h -> TacAtom (zz, TacLApply (make_var h))
   | PbpApply h -> TacAtom (zz, TacApply (make_var h,NoBindings))
@@ -290,7 +288,7 @@ fun avoid c path -> match kind_of_term c, path with
 	(IntroOrAndPattern patt_list, 
 	 avoid_names, id, c, path, new_rank, total_branches+1)
   | (_, path) -> let id = next_global_ident hyp_radix avoid in
-      (IntroIdentifier id, avoid, id, c, path, 1, 1);;
+      (IntroIdentifier id, (id::avoid), id, c, path, 1, 1);;
 
 let auxiliary_goals clear_names clear_flag this_name n_aux others =
   let clear_cmd = 
@@ -389,7 +387,7 @@ let (not_intro: pbp_rule) = function
       if(is_matching_local (notconstr ()) not_oper) or 
 	(is_matching_local (notTconstr ()) not_oper) then
 	let h' = next_global_ident hyp_radix avoid in
-	Some(chain_tactics [PbpReduce;make_named_intro h']
+	Some(chain_tactics [make_named_intro h']
 	       (f (h'::avoid) clear_names false (Some h') 
 		  (kind_of_term c1) path))
       else
@@ -593,7 +591,7 @@ let (head_tactic_patt: pbp_rule) = function
       
 
 let pbp_rules = ref [rem_cast;head_tactic_patt;forall_intro;imply_intro2;
-                      forall_elim; imply_intro3; imply_intro1; imply_elim1; imply_elim2;
+                      forall_elim; imply_intro3; imply_elim1; imply_elim2;
 		      and_intro; or_intro; not_intro; ex_intro; exT_intro];;
 
 
@@ -683,32 +681,6 @@ let rec optim3 str_list = function
     PbpThens (tl1, tl2) ->
       PbpThens (optim3_aux str_list tl1, List.map (optim3 str_list) tl2)
   | PbpThen tl -> PbpThen (optim3_aux str_list tl)
-
-let rec locate_id id = function
-    IntroIdentifier id' when id = id' ->
-      Some(fun patt -> patt)
-  | IntroIdentifier _ -> None
-  | IntroOrAndPattern ll -> 
-      (match locate_id_aux1 id ll with
-	   Some f -> Some (fun patt -> IntroOrAndPattern (f patt))
-	 | None -> None)
-  | IntroWildcard -> assert false
-and locate_id_aux1 id = function
-      [] -> None
-    | l1::lls -> 
-	(match locate_id_aux2 id l1 with
-	     Some f -> Some (fun patt -> (f patt)::lls)
-	   | None -> 
-	       (match locate_id_aux1 id lls with
-		    Some f -> Some (fun patt -> l1::(f patt))
-		  | None -> None))
-and locate_id_aux2 id = function
-    [] -> None
-  | a::l -> (match locate_id id a with
-		 Some f -> Some(fun patt -> (f patt)::l)
-	       | None -> (match locate_id_aux2 id l with
-			      Some f -> Some (fun patt -> a::(f patt))
-			    | None -> None));;
 
 let optim x = make_pbp_tactic (optim3 [] (optim2 x));;
 
