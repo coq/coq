@@ -71,7 +71,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
           else
 	    pf_global gl (id_of_string (hdcncls^suffix))
         in 
-	tclNOTSAMEGOAL (general_elim (c,l) (elim,NoBindings) ~allow_K:true) gl
+	tclNOTSAMEGOAL (general_elim (c,l) (elim,NoBindings) ~allow_K:false) gl
    (* was tclWEAK_PROGRESS which only fails for tactics generating one subgoal 
       and did not fail for useless conditional rewritings generating an
       extra condition *)
