@@ -967,11 +967,11 @@ induction n.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item{\tt induction {\term} as {\pattern}}
+\item{\tt induction {\term} as {\intropatterns}}
 
   This behaves as {\tt induction {\term}} but uses the names in
-  {\pattern} to names the variables introduced in the context. The
-  list {\pattern} must have the form {\tt [} $p_{11}$ \ldots
+  {\intropatterns} to names the variables introduced in the context. The
+  list {\intropatterns} must have the form {\tt [} $p_{11}$ \ldots
   $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
   ]} with $m$ being the number of constructors of the type of
   {\term}. Each variable introduced by {\tt induction} in the context of
@@ -991,10 +991,10 @@ induction n.
 scheme of name {\qualid}. It does not expect that the type of
 {\term} is inductive.
 
-\item {\tt induction {\term} using {\qualid} as {\pattern}}
+\item {\tt induction {\term} using {\qualid} as {\intropatterns}}
 
   This combines {\tt induction {\term} using {\qualid}}
-and {\tt induction {\term} as {\pattern}}.
+and {\tt induction {\term} as {\intropatterns}}.
 
 \item {\tt elim \term}\label{elim}
   
@@ -1106,11 +1106,11 @@ last introduced hypothesis.
 \end{itemize}
 
 \begin{Variants}
-\item{\tt destruct {\term} as {\pattern}}
+\item{\tt destruct {\term} as {\intropatterns}}
 
   This behaves as {\tt destruct {\term}} but uses the names in
-  {\pattern} to names the variables introduced in the context. The
-  list {\pattern} must have the form {\tt [} $p_{11}$ \ldots
+  {\intropatterns} to names the variables introduced in the context. The
+  list {\intropatterns} must have the form {\tt [} $p_{11}$ \ldots
   $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
   ]} with $m$ being the number of constructors of the type of
   {\term}. Each variable introduced by {\tt destruct} in the context of
@@ -1128,9 +1128,10 @@ last introduced hypothesis.
 
   This is a synonym of {\tt induction {\term} using {\qualid}}.
 
-\item{\tt destruct {\term} using {\qualid} as {\pattern}}
+\item{\tt destruct {\term} using {\qualid} as {\intropatterns}}
 
-  This is a synonym of {\tt induction {\term} using {\qualid} as {\pattern}}.
+  This is a synonym of {\tt induction {\term} using {\qualid} as
+  {\intropatterns}}.
 
 \item{\tt case \term}\label{case}\tacindex{case}
   
@@ -1158,8 +1159,8 @@ last introduced hypothesis.
 
 \end{Variants}
 
-\subsection{\tt intros \pattern}\label{intros-pattern}
-\tacindex{intros \pattern}
+\subsection{\tt intros \intropatterns}\label{intros-pattern}
+\tacindex{intros \intropatterns}
 
 The tactic {\tt intros} applied to a pattern performs both
 introduction of variables and case analysis in order to give names to
@@ -1656,93 +1657,170 @@ latter is first introduced in the local context using
 introduced hypothesis.
 \item \texttt{inversion\_clear} \ident\\
   \tacindex{inversion\_clear}
-  That does \texttt{inversion} and then erases \ident~ from the
+  This behaves as \texttt{inversion} and then erases \ident~ from the
   context.
-\item \texttt{inversion } \ident~ \texttt{in} \ident$_1$ \dots\ \ident$_n$\\
+\item \texttt{inversion} {\ident} \texttt{as} {\intropatterns} \\
+  \tacindex{inversion \dots\ as} 
+  This behaves as \texttt{inversion} but using names in
+  {\intropatterns} for naming hypotheses. The list {\intropatterns}
+  must have the form {\tt [} $p_{11}$ \ldots $p_{1n_1}$ {\tt |}
+  {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt ]} with $m$ being
+  the number of constructors of the type of {\ident}. Be careful that
+  the list must be of length $m$ even if {\tt inversion} discards some
+  cases (which is precisely one of its roles): for the discarded cases, just use an empty list
+  (i.e. $n_i=0$). 
+
+  The arguments of the $i^{th}$ constructor and the
+  equalities that {\tt inversion} introduces in the context of the
+  goal corresponding to the $i^{th}$ constructor, if it exists, get
+  their names from the list $p_{i1}$ \ldots $p_{in_i}$ in order. If
+  there are not enough names, {\tt induction} invents names for the
+  remaining variables to introduce. In case an equation splits into
+  several equations (because {\tt inversion} applies {\tt injection}
+  on the equalities it generates), the corresponding name $p_{ij}$ in
+  the list must be replaced by a sublist of the form {\tt [$p_{ij1}$
+  \ldots $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
+  \ldots, $p_{ijq}$)}) where $q$ is the number of subequations
+  obtained from splitting the original equation. Here is an example.
+
+\begin{coq_eval}
+Require Import List.
+\end{coq_eval}
+
+\begin{coq_example}
+Inductive contains0 : list nat -> Prop :=
+  | in_hd : forall l, contains0 (0 :: l)
+  | in_tl : forall l b, contains0 l -> contains0 (b :: l).
+Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
+intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\item \texttt{inversion} {\num} {\tt as} {\intropatterns} \\
+  This allows to name the hypotheses introduced by
+  \texttt{inversion} {\num} in the context.
+\item \texttt{inversion\_clear} {\ident} {\tt as} {\intropatterns} \\
+  \tacindex{inversion\_cleardots\ as}
+  This allows to name the hypotheses introduced by
+  \texttt{inversion\_clear} in the context.
+\item \texttt{inversion } {\ident} \texttt{in} \ident$_1$ \dots\ \ident$_n$\\
   \tacindex{inversion \dots\ in}
   Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
   tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
   then performing \texttt{inversion}.
-\item \texttt{inversion\_clear} \ident~ \texttt{in} \ident$_1$ \ldots
+\item \texttt{inversion } {\ident}  {\tt as} {\intropatterns}
+\texttt{in} \ident$_1$ \dots\ \ident$_n$\\
+  \tacindex{inversion \dots\ as \dots\ in}
+  This allows to name the hypotheses introduced in the context by
+  \texttt{inversion} {\ident} \texttt{in} \ident$_1$ \dots\ \ident$_n$.
+\item \texttt{inversion\_clear} {\ident} \texttt{in} \ident$_1$ \ldots
   \ident$_n$\\ 
   \tacindex{inversion\_clear \dots\ in}
   Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
   tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
   then performing {\tt inversion\_clear}.
-\item \texttt{dependent inversion} \ident~\\
+\item \texttt{inversion\_clear} {\ident} \texttt{as} {\intropatterns}
+  \texttt{in} \ident$_1$ \ldots \ident$_n$\\ 
+  \tacindex{inversion\_clear \dots\ as \dots\ in}
+  This allows to name the hypotheses introduced in the context by
+  \texttt{inversion\_clear} {\ident} \texttt{in} \ident$_1$ \ldots \ident$_n$.
+\item \texttt{dependent inversion} {\ident}\\
   \tacindex{dependent inversion}
   That must be used when \ident\ appears in the current goal. 
   It acts like \texttt{inversion} and then substitutes \ident\ for the
   corresponding term in the goal.
-\item \texttt{dependent inversion\_clear} \ident~\\
+\item \texttt{dependent inversion} {\ident} \texttt{as} {\intropatterns} \\
+  \tacindex{dependent inversion \dots\ as }
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion} {\ident}.
+\item \texttt{dependent inversion\_clear} {\ident}\\
   \tacindex{dependent inversion\_clear}
-  Like \texttt{dependent inversion}, except that \ident~ is cleared
+  Like \texttt{dependent inversion}, except that {\ident} is cleared
   from the local context.
-\item \texttt{dependent inversion } \ident~ \texttt{ with } \term \\
+\item \texttt{dependent inversion\_clear} {\ident}\texttt{as} {\intropatterns}\\
+  \tacindex{dependent inversion\_clear \dots\ as}
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion\_clear} {\ident}
+\item \texttt{dependent inversion } {\ident} \texttt{ with } \term \\
   \tacindex{dependent inversion \dots\ with}
   This variant allow to give the good generalization of the goal. It
   is useful when the system fails to generalize the goal automatically. If
-  \ident~ has type $(I~\vec{t})$ and $I$ has type
+  {\ident} has type $(I~\vec{t})$ and $I$ has type
   $(\vec{x}:\vec{T})s$,   then \term~  must be of type
   $I:(\vec{x}:\vec{T})(I~\vec{x})\to s'$ where $s'$ is the
   type of the goal.
-\item \texttt{dependent inversion\_clear } \ident~ \texttt{ with } \term\\
+\item \texttt{dependent inversion } {\ident} \texttt{as} {\intropatterns} \texttt{ with } \term \\
+  \tacindex{dependent inversion \dots\ as \dots\ with}
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion } {\ident} \texttt{ with } \term.
+\item \texttt{dependent inversion\_clear } {\ident} \texttt{ with } \term\\
   \tacindex{dependent inversion\_clear \dots\ with}
   Like \texttt{dependent inversion \dots\ with} but clears \ident from
   the local context.
-\item \texttt{inversion} \ident \texttt{ using} \ident$'$ \\
-  \tacindex{inversion \dots\ using}
-  Let \ident~ have type $(I~\vec{t})$ ($I$ an inductive
-  predicate) in the local context, and \ident$'$ be a (dependent) inversion
-  lemma. Then, this tactic refines the current goal with the specified
-  lemma.
-\item \texttt{inversion} \ident~ \texttt{using} \ident$'$ 
-  \texttt{in} \ident$_1$\dots\ \ident$_n$\\
-  \tacindex{inversion \dots\ using \dots\ in}
-  This tactic behaves as generalizing \ident$_1$\dots\ \ident$_n$,
-  then doing \texttt{inversion}\ident~\texttt{using} \ident$'$.
-\item \texttt{simple inversion} \ident~\\
+\item \texttt{dependent inversion\_clear } {\ident} \texttt{as} {\intropatterns} \texttt{ with } \term\\
+  \tacindex{dependent inversion\_clear \dots\ as \dots\ with}
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion\_clear } {\ident} \texttt{ with } \term.
+\item \texttt{simple inversion} {\ident}\\
   \tacindex{simple inversion}
   It is a very primitive inversion tactic that derives all the necessary
   equalities  but it does not simplify the  constraints as
   \texttt{inversion} do.
+\item \texttt{simple inversion} {\ident} \texttt{as} {\intropatterns}\\
+  \tacindex{simple inversion \dots\ as}
+  This allows to name the hypotheses introduced in the context by
+  \texttt{simple inversion}.
+\item \texttt{inversion} \ident \texttt{ using} \ident$'$ \\
+  \tacindex{inversion \dots\ using}
+  Let {\ident} have type $(I~\vec{t})$ ($I$ an inductive
+  predicate) in the local context, and \ident$'$ be a (dependent) inversion
+  lemma. Then, this tactic refines the current goal with the specified
+  lemma.
+\item \texttt{inversion} {\ident} \texttt{using} \ident$'$ 
+  \texttt{in} \ident$_1$\dots\ \ident$_n$\\
+  \tacindex{inversion \dots\ using \dots\ in}
+  This tactic behaves as generalizing \ident$_1$\dots\ \ident$_n$,
+  then doing \texttt{inversion}{\ident}\texttt{using} \ident$'$.
 \end{Variants}
 
 \SeeAlso~\ref{inversion-examples} for detailed examples
 
-\subsection{\tt Derive Inversion \ident~ with
+\subsection{\tt Derive Inversion {\ident} with
   $(\vec{x}:\vec{T})(I~\vec{t})$ Sort \sort}
 \label{Derive-Inversion}
 \comindex{Derive Inversion}
 \index[tactic]{Derive Inversion@{\tt Derive Inversion}}
 
 This command generates an inversion principle for the
-\texttt{Inversion \dots\ using} tactic.
+\texttt{inversion \dots\ using} tactic.
 Let $I$ be an inductive predicate and $\vec{x}$ the variables
 occurring in $\vec{t}$. This command generates and stocks the
 inversion lemma for the sort \sort~ corresponding to the instance
-$(\vec{x}:\vec{T})(I~\vec{t})$ with the name \ident~ in the {\bf
+$(\vec{x}:\vec{T})(I~\vec{t})$ with the name {\ident} in the {\bf
 global} environment. When applied it is equivalent to have inverted
-the instance with the tactic {\tt Inversion}.
+the instance with the tactic {\tt inversion}.
 
 \begin{Variants}
-\item \texttt{Derive Inversion\_clear} \ident~ \texttt{with}
+\item \texttt{Derive Inversion\_clear} {\ident} \texttt{with}
   \comindex{Derive Inversion\_clear}
   $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~ \\ 
   \index{Derive Inversion\_clear \dots\ with}
   When applied it is equivalent to having
-  inverted the instance with the tactic \texttt{Inversion}
-  replaced by the tactic \texttt{Inversion\_clear}.
-\item \texttt{Derive Dependent Inversion} \ident~ \texttt{with}
+  inverted the instance with the tactic \texttt{inversion}
+  replaced by the tactic \texttt{inversion\_clear}.
+\item \texttt{Derive Dependent Inversion} {\ident} \texttt{with}
   $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~\\
   \comindex{Derive Dependent Inversion}
   When applied it is equivalent to having
-  inverted the instance with the tactic \texttt{Dependent Inversion}.
-\item \texttt{Derive Dependent Inversion\_clear} \ident~ \texttt{with}
+  inverted the instance with the tactic \texttt{dependent inversion}.
+\item \texttt{Derive Dependent Inversion\_clear} {\ident} \texttt{with}
   $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~\\
   \comindex{Derive Dependent Inversion\_clear}
   When applied it is equivalent to having
-  inverted the instance with the tactic \texttt{Dependent Inversion\_clear}.
+  inverted the instance with the tactic \texttt{dependent inversion\_clear}.
 \end{Variants}
 
 \SeeAlso \ref{inversion-examples} for examples
