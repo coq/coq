@@ -158,9 +158,8 @@ Note that \TERM{struct} is not a reserved identifier.
 
 \subsection{Core syntax}
 
-The main entry point of the term grammar is $\NTL{constr}{200}$. In
-order to avoid conflicts in grammars of tactics and vernac,
-$\NTL{constr}{9}$ is also used as entry point.
+The main entry point of the term grammar is $\NTL{constr}{9}$. When no
+conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
 
 \begin{rules}
 \DEFNT{constr}
@@ -314,21 +313,23 @@ $$
 \text{Symbol} & \text{precedence} \\
 \hline
 \infx{,}             & 250L \\
-\KWD{IF}~\notv~\KWD{then}~\notv~\KWD{else}~\notv & 200 \\
+\KWD{IF}~\notv~\KWD{then}~\notv~\KWD{else}~\notv
+                     & 200R \\
 \infx{:}             & 100R \\
-\infx{\rightarrow}\quad \infx{\leftrightarrow}  & 80R \\
-\infx{\vee}          & 70R \\
-\infx{\wedge}        & 60R \\
-\tilde{}\notv        & 55R \\
+\infx{\rightarrow}\quad \infx{\leftrightarrow}
+                     & 90R \\
+\infx{\vee}          & 85R \\
+\infx{\wedge}        & 80R \\
+\tilde{}\notv        & 75R \\
 \begin{array}[c]{@{}l@{}}
  \infx{=}\quad \infx{=}\KWD{$:>$}\notv \quad \infx{=}=\notv
  \quad \infx{\neq} \quad  \infx{\neq}\KWD{$:>$}\notv \\
  \infx{<}\quad\infx{>} \quad \infx{\leq}\quad\infx{\geq}
  \quad \infx{<}<\notv \quad \infx{<}\leq\notv
  \quad \infx{\leq}<\notv \quad \infx{\leq}\leq\notv
-\end{array}          & 50N \\
-\infx{+}\quad\infx{-}\quad -\notv   & 40L \\
-\infx{*}\quad\infx{/}\quad /\notv   & 30L \\
+\end{array}          & 70N \\
+\infx{+}\quad\infx{-}\quad -\notv   & 50L \\
+\infx{*}\quad\infx{/}\quad /\notv   & 40L \\
 \end{array}
 $$
 
@@ -348,12 +349,12 @@ $$
 \begin{array}{l|c|l}
 \text{Symbol} & \text{precedence} \\
 \hline
-\notv+\{\notv\}                            & 40 & \RNAME{sumor} \\
-\{\notv:\notv~|~\notv\}                    & 10 & \RNAME{sig} \\
-\{\notv:\notv~|~\notv \& \notv \}          & 10 & \RNAME{sig2} \\
-\{\notv:\notv~\&~\notv \}                  & 10 & \RNAME{sigS} \\
-\{\notv:\notv~\&~\notv \& \notv \}         & 10 & \RNAME{sigS2} \\
-\{\notv\}+\{\notv\}                        & 10 & \RNAME{sumbool} \\
+\notv+\{\notv\}                            & 50 & \RNAME{sumor} \\
+\{\notv:\notv~|~\notv\}                    & 0 & \RNAME{sig} \\
+\{\notv:\notv~|~\notv \& \notv \}          & 0 & \RNAME{sig2} \\
+\{\notv:\notv~\&~\notv \}                  & 0 & \RNAME{sigS} \\
+\{\notv:\notv~\&~\notv \& \notv \}         & 0 & \RNAME{sigS2} \\
+\{\notv\}+\{\notv\}                        & 0 & \RNAME{sumbool} \\
 \end{array}
 $$
 
@@ -693,10 +694,10 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{symplify_eq} ~\OPT{\NT{quantified-hyp}}
 \nlsep \TERM{discriminate} ~\OPT{\NT{quantified-hyp}}
 \nlsep \TERM{injection} ~\OPT{\NT{quantified-hyp}}
-\nlsep \TERM{conditional}~\NT{tactic}~\TERM{rewrite}~NT{orient}
-         ~\NT{constr-with-bindings}~\OPTGR{\KWD{in}~\NT{ident}
+\nlsep \TERM{conditional}~\NT{tactic}~\TERM{rewrite}~\NT{orient}
+         ~\NT{constr-with-bindings}~\OPTGR{\KWD{in}~\NT{ident}}
 \nlsep \TERM{dependent}~\TERM{rewrite}~\NT{orient}~\NT{ident}
-\nlsep \TERM{cutrewrite}~\NT{orient}~\tacconstr}
+\nlsep \TERM{cutrewrite}~\NT{orient}~\tacconstr
          ~\OPTGR{\KWD{in}~\NT{ident}}
 \nlsep \TERM{absurd} ~\tacconstr
 \nlsep \TERM{contradiction}
@@ -759,6 +760,10 @@ $$ \TERM{.}
 ~~ \TERM{\tt >->}
 ~~ \TERM{:$>$}
 ~~ \TERM{$<$:}
+$$
+
+New keyword:
+$$ \KWD{where}
 $$
 
 \subsection{Classification of commands}
@@ -827,6 +832,7 @@ $$
 \DEFNT{reduce}
        \TERM{Eval}~\NT{red-expr}~\KWD{in}
 \SEPDEF
+%% TODO: with not.
 \DEFNT{inductive-definition}
        \OPT{\NT{string}}~\NT{ident}~\STAR{\NT{binder-let}}~\KWD{:}
        ~\NT{constr}~\KWD{:=}
@@ -964,6 +970,19 @@ $$
 \nlsep \TERM{SearchPattern}~\NT{constr-pattern}~\OPT{\NT{in-out-modules}}
 \nlsep \TERM{SearchRewrite}~\NT{constr-pattern}~\OPT{\NT{in-out-modules}}
 \nlsep \TERM{SearchAbout}~\NT{reference}~\OPT{\NT{in-out-modules}}
+\nlsep \KWD{Set}~\NT{ident}~\OPT{\NT{opt-value}}
+\nlsep \TERM{Unset}~\NT{ident}
+\nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\OPT{\NT{opt-value}}
+\nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\PLUS{\NT{opt-ref-value}}
+\nlsep \TERM{Unset}~\NT{ident}~\NT{ident}~\STAR{\NT{opt-ref-value}}
+%%
+\nlsep \TERM{Print}~\TERM{Table}~\NT{ident}~\NT{ident}
+\nlsep \TERM{Print}~\TERM{Table}~\NT{ident}
+\nlsep \TERM{Add}~\NT{ident}~\OPT{\NT{ident}}~\PLUS{\NT{opt-ref-value}}
+%%
+\nlsep \TERM{Test}~\NT{ident}~\OPT{\NT{ident}}~\STAR{\NT{opt-ref-value}}
+%%
+\nlsep \TERM{Remove}~\NT{ident}~\OPT{\NT{ident}}~\PLUS{\NT{opt-ref-value}}
 \SEPDEF
 \DEFNT{check-command}
        \TERM{Eval}~\NT{red-expr}~\KWD{in}~\NT{constr}
@@ -1019,24 +1038,6 @@ $$
        \NT{constr}
 \nlsep \NT{string}
 \nlsep \NT{int}
-\end{rules}
-
-\subsection{Switches}
-\begin{rules}
-\EXTNT{command}
-       \KWD{Set}~\NT{ident}~\OPT{\NT{opt-value}}
-\nlsep \TERM{Unset}~\NT{ident}
-\nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\OPT{\NT{opt-value}}
-\nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\PLUS{\NT{opt-ref-value}}
-\nlsep \TERM{Unset}~\NT{ident}~\NT{ident}~\STAR{\NT{opt-ref-value}}
-%%
-\nlsep \TERM{Print}~\TERM{Table}~\NT{ident}~\NT{ident}
-\nlsep \TERM{Print}~\TERM{Table}~\NT{ident}
-\nlsep \TERM{Add}~\NT{ident}~\OPT{\NT{ident}}~\PLUS{\NT{opt-ref-value}}
-%%
-\nlsep \TERM{Test}~\NT{ident}~\OPT{\NT{ident}}~\STAR{\NT{opt-ref-value}}
-%%
-\nlsep \TERM{Remove}~\NT{ident}~\OPT{\NT{ident}}~\PLUS{\NT{opt-ref-value}}
 \end{rules}
 
 \subsection{Other commands}
@@ -1152,11 +1153,7 @@ $$
 %%\nlsep \TERM{Show}~\TERM{Programs}
 \nlsep \TERM{Explain}~\TERM{Proof}~\OPT{\TERM{Tree}}~\STAR{\NT{int}}
 %% Go not documented
-\nlsep \TERM{Hint}~\TERM{Destruct}~\NT{destruct-loc}~\NT{int}
-       ~\NT{ident}~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
-\nlsep \TERM{Hint}~\NT{hint}~\OPT{\NT{hintbases}}
-%% TODO
-\nlsep \TERM{Hint}~\TERM{rewrite} ...
+\nlsep \TERM{Hint}~\NT{hint}~\OPT{\NT{inbases}}
 %% PrintConstr not documented
 \end{rules}
 
@@ -1166,15 +1163,17 @@ $$
        \NT{type-cstr}~\KWD{:=}~\NT{constr}
 \SEPDEF
 \DEFNT{hint}
-       \TERM{Resolve}~\NT{constr}~\STARGR{\KWD{,}~\NT{constr}}
-\nlsep \TERM{Immediate}~\NT{constr}~\STARGR{\KWD{,}~\NT{constr}}
+       \TERM{Resolve}~\PLUS{\NTL{constr}{9}}
+\nlsep \TERM{Immediate}~\PLUS{\NTL{constr}{9}}
 \nlsep \TERM{Unfold}~\PLUS{\NT{reference}}
 \nlsep \TERM{Constructors}~\PLUS{\NT{reference}}
 \nlsep \TERM{Extern}~\NT{int}~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
-\nlsep \TERM{Rewrite}~\NT{orient}~\NT{constr}~\STARGR{\TERM{,}~\NT{constr}}
+\nlsep \TERM{Destruct}~\NT{ident}~\KWD{:=}~\NT{int}~\NT{destruct-loc}
+       ~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
+\nlsep \TERM{Rewrite}~\NT{orient}~\PLUS{\NTL{constr}{9}}
        ~\OPTGR{\KWD{using}~\NT{tactic}}
 \SEPDEF
-\DEFNT{hintbases}
+\DEFNT{inbases}
        \KWD{:}~\PLUS{\NT{ident}}
 \SEPDEF
 \DEFNT{destruct-loc}
