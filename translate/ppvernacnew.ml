@@ -240,9 +240,9 @@ let pr_with_declaration pr_c = function
       pr_located pr_qualid qid
 
 let rec pr_module_type pr_c = function
-  | CMTEident qid -> pr_located pr_qualid qid
+  | CMTEident qid -> spc () ++ pr_located pr_qualid qid
   | CMTEwith (mty,decl) ->
-      pr_module_type pr_c mty ++ spc() ++ str" with" ++ spc() ++
+      pr_module_type pr_c mty ++ spc() ++ str"with" ++ spc() ++
       pr_with_declaration pr_c decl
 
 let pr_of_module_type prc (mty,b) =
@@ -865,17 +865,17 @@ pr_vbinders bl ++ spc())
 
   (* Modules and Module Types *)
   | VernacDefineModule (m,bl,ty,bd) ->
-      hov 2 (str"Module " ++ pr_id m ++ spc() ++
+      hov 2 (str"Module " ++ pr_id m ++
              pr_module_binders_list bl pr_lconstr ++
              pr_opt (pr_of_module_type pr_lconstr) ty ++
              pr_opt (fun me -> str ":= " ++ pr_module_expr me) bd)
   | VernacDeclareModule (id,l,m1,m2) ->
-      hov 2 (str"Declare Module " ++ pr_id id ++ spc() ++
+      hov 2 (str"Declare Module " ++ pr_id id ++
              pr_module_binders_list l pr_lconstr ++
              pr_opt (pr_of_module_type pr_lconstr) m1 ++
              pr_opt (fun me -> str ":= " ++ pr_module_expr me) m2)
   | VernacDeclareModuleType (id,l,m) ->
-      hov 2 (str"Module Type " ++ pr_id id ++ spc() ++
+      hov 2 (str"Module Type " ++ pr_id id ++
              pr_module_binders_list l pr_lconstr ++
              pr_opt (fun mt -> str ":= " ++ pr_module_type pr_lconstr mt) m)
 
