@@ -62,7 +62,7 @@ let new_type_var env sigma =
   let sign = var_context env in
   let args = (Array.of_list (List.map mkVar (ids_of_sign sign))) in
   let (sigma',c) = new_isevar_sign env sigma dummy_sort args in
-  (sigma', make_typed c (Type dummy_univ))
+  (sigma', c)
 
 let split_evar_to_arrow sigma c =
   let (ev,args) = destEvar c in
@@ -71,18 +71,15 @@ let split_evar_to_arrow sigma c =
   let (sigma1,dom) = new_type_var evenv sigma in
   let hyps = var_context evenv in
   let nvar = next_ident_away (id_of_string "x") (ids_of_sign hyps) in
-  let nevenv = push_var (nvar,dom) evenv in
+  let nevenv = push_var (nvar,make_typed dom (Type dummy_univ)) evenv in
   let (sigma2,rng) = new_type_var nevenv sigma1 in
-  let prod =
-    let a = incast_type dom in
-    mkProd (named_hd nevenv a Anonymous) a (subst_var nvar (body_of_type rng))
-  in
+  let prod = mkProd (named_hd nevenv dom Anonymous) dom (subst_var nvar rng) in
   let sigma3 = Evd.define sigma2 ev prod in
-  let dsp = num_of_evar (body_of_type dom) in
-  let rsp = num_of_evar (body_of_type rng) in
+  let dsp = num_of_evar dom in
+  let rsp = num_of_evar rng in
   (sigma3,
-   { utj_val = mkEvar dsp args; utj_type = Type dummy_univ },
-   mkCast (mkEvar rsp (array_cons (mkRel 1) args)) dummy_sort)
+   mkEvar dsp args,
+   mkEvar rsp (array_cons (mkRel 1) (Array.map (lift 1) args)))
 
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -377,9 +374,11 @@ let status_changed lev (pbty,t1,t2) =
 
 (* Operations on value/type constraints used in trad and progmach *)
 
-type trad_constraint = bool * (unsafe_type_judgment option * constr option)
+type type_constraint = constr option
+type val_constraint = constr option
 
-(* Basically, we have the following kind of constraints (in increasing
+(* Old comment...
+ * Basically, we have the following kind of constraints (in increasing
  * strength order):
  *   (false,(None,None)) -> no constraint at all
  *   (true,(None,None))  -> we must build a judgement which _TYPE is a kind
@@ -392,84 +391,36 @@ type trad_constraint = bool * (unsafe_type_judgment option * constr option)
  * of Set.
  *)
 
-(* The empty constraint *)
-let empty_tycon = (false,(None,None))
+(* The empty type constraint *)
+let empty_tycon = None
 
-(* The default constraints for types. *)
-let def_vty_con = (true,(None,None))
+(* Builds a type constraint *)
+let mk_tycon ty = Some ty
 
-(* Constrain only the type *)
-let mk_tycon ty = (false,(None,Some ty))
-let mk_tycon2 (is_ass,_) ty = (is_ass,(None,Some ty))
+(* Constrains the value of a type *)
+let empty_valcon = None
 
+(* Builds a value constraint *)
+let mk_valcon c = Some c
 
-(* Propagation of constraints through application and abstraction *)
+(* Propagation of constraints through application and abstraction:
+   Given a type constraint on a functional term, returns the type
+   constraint on its domain and codomain. If the input constraint is
+   an evar instantiate it with the product of 2 new evars. *)
 
-(* Given a type constraint on a term, returns the type constraint on its first
- * argument. If the input constraint is an evar instantiate it with the product
- * of 2 new evars. *)
-
-let prod_dom_tycon_unif env isevars = function
-  | None -> None
+let split_tycon loc env isevars = function
+  | None -> None,None
   | Some c ->
       (match whd_betadeltaiota env !isevars c with
-         | DOP2(Prod,c1,_) ->
-	     let t =
-	       match c1 with 
-		 | DOP2 (Cast,cc1,DOP0 (Sort s)) ->
-		     { utj_val = cc1;
-		       utj_type = s }
-		 | _  ->
-		     { utj_val = c1;
-		       utj_type = Retyping.get_sort_of env !isevars c1 }
-	     in Some t
-	 | t ->
-	     if (ise_undefined isevars t) then begin
-	       let (sigma,dom,_) = split_evar_to_arrow !isevars t in
-	       isevars := sigma;
-	       Some dom
-	     end else 
-	       None)
+         | DOP2(Prod,dom,DLAM(na,rng)) ->
+	    Some dom, Some rng
+	| t when ise_undefined isevars t ->
+	    let (sigma,dom,rng) = split_evar_to_arrow !isevars t in
+	    isevars := sigma;
+	    Some dom, Some rng
+	| _ ->
+	    Stdpp.raise_with_loc loc (Type_errors.TypeError (CCI,context env,Type_errors.NotProduct c)))
 
-(* Given a constraint on a term, returns the constraint corresponding to its
- * first argument. *) 
+let valcon_of_tycon x = x
 
-let app_dom_tycon env isevars (_,(_,tyc)) =
-  (false,
-   (None, 
-    option_app
-      (fun x -> incast_type (Typeops.assumption_of_type_judgment x))
-	   (prod_dom_tycon_unif env isevars tyc)))
-
-
-(* Given a constraint on a term, returns the constraint corresponding to this
- * term applied to arg. *)
-
-let app_rng_tycon env isevars arg = function
-  | (_,(_,None)) as vtcon -> vtcon
-  | (_,(_,Some c)) ->
-      (match whd_betadeltaiota env !isevars c with
-         | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon (subst1 arg b)
-	 | _ -> empty_tycon)
-
-(* Given a constraint on an abstraction, returns the constraint on the value
- * of the domain type. If we had no constraint, we still know it should be
- * a type. *)
-      
-let abs_dom_valcon env isevars (_,(_,tyc)) =
-  (true,(prod_dom_tycon_unif env isevars tyc, None))
-
-(* Given a constraint on an abstraction, returns the constraint on the body *)
-let abs_rng_tycon env isevars = function
-  | (_,(_,None)) -> empty_tycon
-  | (_,(_,Some c)) ->
-      (match whd_betadeltaiota env !isevars c with
-	 | DOP2(Prod,t,DLAM(na,b)) ->
-	     mk_tycon (
-	       match b with 
-		 | DOP2(Cast,_,_) -> b
-		 | _ ->
-		     let s = Retyping.get_sort_of env !isevars t in
-		     let env' = push_rel (na,make_typed t s) env in
-		     mkCast b (Retyping.get_type_of env' !isevars b))
-	 | _ -> empty_tycon)
+  

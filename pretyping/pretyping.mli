@@ -68,7 +68,12 @@ i*)
  * Unused outside Trad, but useful for debugging
  *)
 val pretype : 
-  trad_constraint -> env -> 'a evar_defs ->
+  type_constraint -> env -> 'a evar_defs ->
+    (identifier * unsafe_judgment) list -> (int * unsafe_judgment) list ->
+    rawconstr -> unsafe_judgment
+
+val pretype_type : 
+  val_constraint -> env -> 'a evar_defs ->
     (identifier * unsafe_judgment) list -> (int * unsafe_judgment) list ->
     rawconstr -> unsafe_judgment
 (*i*)

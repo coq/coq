@@ -50,24 +50,19 @@ val status_changed : int list -> conv_pb * constr * constr -> bool
 
 (* Value/Type constraints *)
 
-type trad_constraint = bool * (unsafe_type_judgment option * constr option)
+type type_constraint = constr option
+type val_constraint = constr option
 
-val empty_tycon : trad_constraint
-val def_vty_con : trad_constraint
-val mk_tycon : constr -> trad_constraint
-val mk_tycon2 : trad_constraint -> constr -> trad_constraint
+val empty_tycon : type_constraint
+val mk_tycon : constr -> type_constraint
 
-(* application *)
-val app_dom_tycon : 
-  env -> 'a evar_defs -> trad_constraint -> trad_constraint
-val app_rng_tycon :
-  env -> 'a evar_defs -> constr -> trad_constraint -> trad_constraint
+val empty_valcon : val_constraint
+val mk_valcon : constr -> val_constraint
 
-(* abstraction *)
-val abs_dom_valcon : 
-  env -> 'a evar_defs -> trad_constraint -> trad_constraint
-val abs_rng_tycon : 
-  env -> 'a evar_defs -> trad_constraint -> trad_constraint
+val split_tycon :
+  Rawterm.loc -> env -> 'a evar_defs -> type_constraint -> 
+    type_constraint * type_constraint
 
+val valcon_of_tycon : type_constraint -> val_constraint
 
 (* $Id$ *)

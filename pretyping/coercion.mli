@@ -24,5 +24,5 @@ val inh_conv_coerce_to : Rawterm.loc ->
   env -> 'a evar_defs -> unsafe_judgment -> typed_type -> unsafe_judgment
 
 val inh_apply_rel_list : bool -> Rawterm.loc -> env -> 'a evar_defs ->
-  unsafe_judgment list -> unsafe_judgment -> trad_constraint
+  unsafe_judgment list -> unsafe_judgment -> constr option
     -> unsafe_judgment
