@@ -222,6 +222,7 @@ let ignore_break () =
 (* Locking machinery for Coq kernel *)
 
 let coq_computing = Mutex.create ()
+let coq_may_stop = Mutex.create ()
 
 let full_do_if_not_computing f x = 
 if Mutex.try_lock coq_computing then 
@@ -252,7 +253,10 @@ let break () =
   if not (Mutex.try_lock coq_computing) then 
     begin
       prerr_endline "Break received";
-      Util.interrupt := true;
+      if Mutex.try_lock coq_may_stop then begin
+	Util.interrupt := true;
+	Mutex.unlock coq_may_stop
+      end else prerr_endline "Break discarded (coq may not stop now)";
     end
   else begin
     Mutex.unlock coq_computing;
@@ -669,105 +673,105 @@ object(self)
 	
 
   method show_goals_full = 
-      begin
-	try
-	  proof_view#buffer#set_text "";
-	  let s = Coq.get_current_goals () in
-	  let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light green"]
-	  in
-	  match s with 
-	    | [] -> proof_buffer#insert (Coq.print_no_goal ())
-	    | (hyps,concl)::r -> 
-		let goal_nb = List.length s in
-		proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
-				       goal_nb
-				       (if goal_nb<=1 then "" else "s"));
-		let coq_menu commands = 
-		  let tag = proof_buffer#create_tag []
-		  in 
-		  ignore
-		    (tag#connect#event ~callback:
-		       (fun ~origin ev it ->
-			  match GdkEvent.get_type ev with 
-			    | `BUTTON_PRESS -> 
-				let ev = (GdkEvent.Button.cast ev) in
-				if (GdkEvent.Button.button ev) = 3
-				then begin 
-				  let loc_menu = GMenu.menu () in
-				  let factory = new GMenu.factory loc_menu in
-				  let add_coq_command (cp,ip) = 
-				    ignore (factory#add_item cp 
-					      ~callback:
-					      (fun () -> ignore
-						 (self#insert_this_phrase_on_success 
-						    true
-						    true 
-						    false 
-						    (ip^"\n") 
-						    (ip^"\n"))
-					      )
-					   )
-				  in
-				  List.iter add_coq_command commands;
-				  loc_menu#popup 
-				    ~button:3
-				    ~time:(GdkEvent.Button.time ev);
-				end
-			    | `MOTION_NOTIFY -> 
-				proof_buffer#remove_tag
-				~start:proof_buffer#start_iter
-				~stop:proof_buffer#end_iter
-				last_shown_area;
-				prerr_endline "Before find_tag_limits";
-				
-				let s,e = find_tag_limits tag 
-					    (new GText.iter it) 
+    begin
+      try
+	proof_view#buffer#set_text "";
+	let s = Coq.get_current_goals () in
+	let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light green"]
+	in
+	match s with 
+	  | [] -> proof_buffer#insert (Coq.print_no_goal ())
+	  | (hyps,concl)::r -> 
+	      let goal_nb = List.length s in
+	      proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
+				     goal_nb
+				     (if goal_nb<=1 then "" else "s"));
+	      let coq_menu commands = 
+		let tag = proof_buffer#create_tag []
+		in 
+		ignore
+		  (tag#connect#event ~callback:
+		     (fun ~origin ev it ->
+			match GdkEvent.get_type ev with 
+			  | `BUTTON_PRESS -> 
+			      let ev = (GdkEvent.Button.cast ev) in
+			      if (GdkEvent.Button.button ev) = 3
+			      then begin 
+				let loc_menu = GMenu.menu () in
+				let factory = new GMenu.factory loc_menu in
+				let add_coq_command (cp,ip) = 
+				  ignore (factory#add_item cp 
+					    ~callback:
+					    (fun () -> ignore
+					       (self#insert_this_phrase_on_success 
+						  true
+						  true 
+						  false 
+						  (ip^"\n") 
+						  (ip^"\n"))
+					    )
+					 )
 				in
-				prerr_endline "After find_tag_limits";
-				proof_buffer#apply_tag 
-				  ~start:s 
-				  ~stop:e 
-				  last_shown_area;
-				
-				prerr_endline "Applied tag";
-				()
-			    | _ -> ())
-		    );
-		  tag
-		in
-		List.iter
-		  (fun ((_,_,_,(s,_)) as hyp) -> 
-		     let tag = coq_menu (hyp_menu hyp) in
-		     proof_buffer#insert ~tags:[tag] (s^"\n"))
-		  hyps;
-		proof_buffer#insert ("---------------------------------------(1/"^
-				     (string_of_int goal_nb)^
-				     ")\n") 
-		;
-		let tag = coq_menu (concl_menu concl) in
-		let _,_,_,sconcl = concl in
-		proof_buffer#insert ~tags:[tag] sconcl;
-		proof_buffer#insert "\n";
-		let my_mark = `NAME "end_of_conclusion" in
-		proof_buffer#move_mark
-		  ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
-		proof_buffer#insert "\n\n";
-		let i = ref 1 in
-		List.iter 
-		  (function (_,(_,_,_,concl)) -> 
-		     incr i;
-		     proof_buffer#insert ("--------------------------------------("^
-					  (string_of_int !i)^
-					  "/"^
-					  (string_of_int goal_nb)^
-					  ")\n");
-		     proof_buffer#insert concl;
-		     proof_buffer#insert "\n\n";
-		  )
-		  r;
-		ignore (proof_view#scroll_to_mark my_mark) ;
-	  with e -> prerr_endline (Printexc.to_string e)
-      end
+				List.iter add_coq_command commands;
+				loc_menu#popup 
+				  ~button:3
+				  ~time:(GdkEvent.Button.time ev);
+			      end
+			  | `MOTION_NOTIFY -> 
+			      proof_buffer#remove_tag
+			      ~start:proof_buffer#start_iter
+			      ~stop:proof_buffer#end_iter
+			      last_shown_area;
+			      prerr_endline "Before find_tag_limits";
+			      
+			      let s,e = find_tag_limits tag 
+					  (new GText.iter it) 
+			      in
+			      prerr_endline "After find_tag_limits";
+			      proof_buffer#apply_tag 
+				~start:s 
+				~stop:e 
+				last_shown_area;
+			      
+			      prerr_endline "Applied tag";
+			      ()
+			  | _ -> ())
+		  );
+		tag
+	      in
+	      List.iter
+		(fun ((_,_,_,(s,_)) as hyp) -> 
+		   let tag = coq_menu (hyp_menu hyp) in
+		   proof_buffer#insert ~tags:[tag] (s^"\n"))
+		hyps;
+	      proof_buffer#insert ("---------------------------------------(1/"^
+				   (string_of_int goal_nb)^
+				   ")\n") 
+	      ;
+	      let tag = coq_menu (concl_menu concl) in
+	      let _,_,_,sconcl = concl in
+	      proof_buffer#insert ~tags:[tag] sconcl;
+	      proof_buffer#insert "\n";
+	      let my_mark = `NAME "end_of_conclusion" in
+	      proof_buffer#move_mark
+		~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
+	      proof_buffer#insert "\n\n";
+	      let i = ref 1 in
+	      List.iter 
+		(function (_,(_,_,_,concl)) -> 
+		   incr i;
+		   proof_buffer#insert ("--------------------------------------("^
+					(string_of_int !i)^
+					"/"^
+					(string_of_int goal_nb)^
+					")\n");
+		   proof_buffer#insert concl;
+		   proof_buffer#insert "\n\n";
+		)
+		r;
+	      ignore (proof_view#scroll_to_mark my_mark) ;
+	with e -> prerr_endline (Printexc.to_string e)
+    end
 
   method send_to_coq phrase show_output show_error localize =
     try 
@@ -916,7 +920,7 @@ object(self)
 	end
       with e -> raise e
     end
-      
+    
   method insert_this_phrase_on_success 
     show_output show_msg localize coqphrase insertphrase = 
     match self#send_to_coq coqphrase show_output show_msg localize with
@@ -973,11 +977,11 @@ object(self)
     !flash_info "Coq is computing";
     process_pending ();
     (try 
-      while ((stop#compare self#get_start_of_input>=0) 
-	     && (self#process_next_phrase false false))
-      do Util.check_for_interrupt () done
-    with Sys.Break -> 
-      prerr_endline "Interrupted during process_until_iter_or_error");
+       while ((stop#compare self#get_start_of_input>=0) 
+	      && (self#process_next_phrase false false))
+       do Util.check_for_interrupt () done
+     with Sys.Break -> 
+       prerr_endline "Interrupted during process_until_iter_or_error");
     self#show_goals;
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
     input_view#set_editable true;
@@ -1008,6 +1012,7 @@ object(self)
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to i =
+    Mutex.lock coq_may_stop;
     (* re-synchronize Coq to the current state of the stack *)
     let rec synchro () =
       if is_empty () then
@@ -1062,65 +1067,70 @@ object(self)
 	  input_buffer#move_mark ~where:start (`NAME "start_of_input");
 	  self#show_goals;
 	  clear_stdout ();
-	  self#clear_message
-	with _ -> !push_info "WARNING: interrupted undo -> Coq might be in an inconsistent state.
-Restart and report if you never tried to interrupt an Undo.";
+	  self#clear_message;
+	  Mutex.unlock coq_may_stop;
+	with _ -> Mutex.unlock coq_may_stop;
+	  !push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
+Please restart and report NOW.";
       end
       
   method backtrack_to_insert = 
     self#backtrack_to self#get_insert
 
   method undo_last_step = 
-    try
-      let last_command = top () in
-      let start = input_buffer#get_iter_at_mark last_command.start in
-      let update_input () =
-	prerr_endline "Removing processed tag...";
-	input_buffer#remove_tag_by_name 
-	  ~start
-	  ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
-	  "processed";
-	prerr_endline "Moving start_of_input";
-	input_buffer#move_mark
-	  ~where:start
-	  (`NAME "start_of_input");
-	input_buffer#place_cursor start;
-	self#recenter_insert;
-	self#show_goals;
-	self#clear_message
-      in
-      begin match last_command with 
-	| {ast=_,VernacSolve _} -> 
-	    begin 
-	      try Pfedit.undo 1; ignore (pop ()); update_input () 
-	      with _ -> self#backtrack_to start
-	    end
-	| {ast=_,t;reset_info=Reset (id, {contents=true})} ->
-	    ignore (pop ());
-	    (match t with 
-	       | VernacBeginSection _ | VernacDefineModule _ 
-	       | VernacDeclareModule _ | VernacDeclareModuleType _
-	       | VernacEndSegment _ 
-		 -> reset_to_mod id
-	       | _ ->  reset_to id);
-	    update_input ()
-	| { ast = _, ( VernacStartTheoremProof _ 
-		     | VernacDefinition (_,_,ProveBody _,_,_));
-	    reset_info=Reset(id,{contents=false})} ->
-	    ignore (pop ());
-	    (try 
-	       Pfedit.delete_current_proof () 
-	     with e ->
-	       begin 
-		 prerr_endline "WARNING : found a closed environment";
-		 raise e
-	       end);
-	    update_input ()
-	| _ -> 
-	    self#backtrack_to start
-      end
-    with
-      | Size 0 -> !flash_info "Nothing to Undo"
+    if Mutex.try_lock coq_may_stop then 
+      try
+	let last_command = top () in
+	let start = input_buffer#get_iter_at_mark last_command.start in
+	let update_input () =
+	  prerr_endline "Removing processed tag...";
+	  input_buffer#remove_tag_by_name 
+	    ~start
+	    ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
+	    "processed";
+	  prerr_endline "Moving start_of_input";
+	  input_buffer#move_mark
+	    ~where:start
+	    (`NAME "start_of_input");
+	  input_buffer#place_cursor start;
+	  self#recenter_insert;
+	  self#show_goals;
+	  self#clear_message
+	in
+	begin match last_command with 
+	  | {ast=_,VernacSolve _} -> 
+	      begin 
+		try Pfedit.undo 1; ignore (pop ()); update_input () 
+		with _ -> self#backtrack_to start
+	      end
+	  | {ast=_,t;reset_info=Reset (id, {contents=true})} ->
+	      ignore (pop ());
+	      (match t with 
+		 | VernacBeginSection _ | VernacDefineModule _ 
+		 | VernacDeclareModule _ | VernacDeclareModuleType _
+		 | VernacEndSegment _ 
+		   -> reset_to_mod id
+		 | _ ->  reset_to id);
+	      update_input ()
+	  | { ast = _, ( VernacStartTheoremProof _ 
+		       | VernacDefinition (_,_,ProveBody _,_,_));
+	      reset_info=Reset(id,{contents=false})} ->
+	      ignore (pop ());
+	      (try 
+		 Pfedit.delete_current_proof () 
+	       with e ->
+		 begin 
+		   prerr_endline "WARNING : found a closed environment";
+		   raise e
+		 end);
+	      update_input ()
+	  | _ -> 
+	      self#backtrack_to start
+	end;
+	Mutex.unlock coq_may_stop;
+      with
+	| Size 0 -> Mutex.unlock coq_may_stop; !flash_info "Nothing to Undo"
+    else prerr_endline "Undo was ongoing..."
 
   method insert_command cp ip = 
     self#clear_message;
