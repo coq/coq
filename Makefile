@@ -1,4 +1,3 @@
-
 # Main Makefile for Coq
 
 include config/Makefile
@@ -18,7 +17,7 @@ DEPFLAGS=$(INCLUDES)
 
 INCLUDES=-I config -I lib -I kernel -I library -I parsing -I $(CAMLP4LIB)
 
-CAMLP4EXTEND=camlp4o pa_extend.cmo
+CAMLP4EXTEND=camlp4o $(INCLUDES) pa_extend.cmo
 OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 
@@ -30,8 +29,8 @@ CAMLP4OBJS=gramlib.cma
 
 CONFIG=config/coq_config.cmo
 
-LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo \
-    lib/dyn.cmo
+LIB=lib/pp_control.cmo lib/pp.cmo lib/system.cmo lib/util.cmo \
+    lib/hashcons.cmo lib/dyn.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/evd.cmo kernel/constant.cmo \
@@ -62,9 +61,9 @@ coqtop: $(OBJS)
 MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) \
 	    parsing/lexer.cmo parsing/g_minicoq.cmo toplevel/minicoq.cmo
 
-minicoq: $(OBJS) $(MINICOQOBJS)
+minicoq: $(MINICOQOBJS)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CLIBS) $(CAMLP4OBJS) \
-	  $(OBJS) $(MINICOQOBJS) $(OSDEPLIBS)
+	  $(MINICOQOBJS) $(OSDEPLIBS)
 
 # Literate programming (with ocamlweb)
 
@@ -94,6 +93,20 @@ tags:
 
 parsing/lexer.cmo: parsing/lexer.ml
 	$(OCAMLC_P4O) -c $<
+
+# grammar modules with camlp4
+
+parsing/q_coqast.cmo: parsing/q_coqast.ml4
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o q_MLast.cmo -impl" -impl $<
+
+GRAMMAROBJS=parsing/coqast.cmo parsing/lexer.cmo parsing/pcoq.cmo \
+	    parsing/q_coqast.cmo parsing/g_prim.cmo
+
+parsing/grammar.cma: $(GRAMMAROBJS)
+	$(OCAMLC) $(BYTEFLAGS) -linkall -a -o $@
+
+parsing/g_command.cmo: parsing/g_command.ml4
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o -I parsing pa_extend.cmo grammar.cma -impl" -impl $<
 
 # Default rules
 
@@ -141,8 +154,11 @@ cleanconfig::
 
 depend:
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
-#	for f in */*.ml4; do \
-#	  camlp4o pa_extend.cmo pr_o.cmo -impl $$f > >> .depend; \
-#	done
+	for f in */*.ml4; do \
+	  file=`dirname $$f`/`basename $$f .ml4`; \
+	  camlp4o $(INCLUDES) pa_extend.cmo pr_o.cmo -impl $$f > $$file.ml; \
+	  ocamldep $(DEPFLAGS) $$file.ml >> .depend; \
+	  rm -f $$file.ml; \
+	done
 
 include .depend

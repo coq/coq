@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open System
 open Util
 open Names
 open Sign

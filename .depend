@@ -30,7 +30,7 @@ lib/pp.cmi: lib/pp_control.cmi
 lib/util.cmi: lib/pp.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/summary.cmi: kernel/names.cmi 
-parsing/ast.cmi: lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
+parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
 parsing/coqast.cmi: lib/dyn.cmi 
 parsing/g_minicoq.cmi: /usr/local/lib/camlp4/grammar.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi 
@@ -57,10 +57,12 @@ kernel/constant.cmx: kernel/generic.cmx kernel/names.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/constant.cmi 
 kernel/environ.cmo: kernel/abstraction.cmi kernel/constant.cmi kernel/evd.cmi \
     kernel/generic.cmi kernel/inductive.cmi kernel/names.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/univ.cmi lib/util.cmi kernel/environ.cmi 
+    lib/system.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
+    kernel/environ.cmi 
 kernel/environ.cmx: kernel/abstraction.cmx kernel/constant.cmx kernel/evd.cmx \
     kernel/generic.cmx kernel/inductive.cmx kernel/names.cmx kernel/sign.cmx \
-    kernel/term.cmx kernel/univ.cmx lib/util.cmx kernel/environ.cmi 
+    lib/system.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
+    kernel/environ.cmi 
 kernel/evd.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi lib/util.cmi \
     kernel/evd.cmi 
 kernel/evd.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx lib/util.cmx \
@@ -141,6 +143,8 @@ lib/pp.cmo: lib/pp_control.cmi lib/pp.cmi
 lib/pp.cmx: lib/pp_control.cmx lib/pp.cmi 
 lib/pp_control.cmo: lib/pp_control.cmi 
 lib/pp_control.cmx: lib/pp_control.cmi 
+lib/system.cmo: lib/system.cmi 
+lib/system.cmx: lib/system.cmi 
 lib/util.cmo: lib/pp.cmi lib/util.cmi 
 lib/util.cmx: lib/pp.cmx lib/util.cmi 
 library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
@@ -151,10 +155,12 @@ library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
     library/summary.cmi 
 library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
     library/summary.cmi 
-parsing/ast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/pcoq.cmi lib/pp.cmi \
-    /usr/local/lib/camlp4/stdpp.cmi parsing/ast.cmi 
-parsing/ast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/pcoq.cmi lib/pp.cmx \
-    /usr/local/lib/camlp4/stdpp.cmi parsing/ast.cmi 
+parsing/ast.cmo: parsing/coqast.cmi lib/dyn.cmi lib/hashcons.cmi \
+    parsing/pcoq.cmi lib/pp.cmi /usr/local/lib/camlp4/stdpp.cmi lib/util.cmi \
+    parsing/ast.cmi 
+parsing/ast.cmx: parsing/coqast.cmx lib/dyn.cmx lib/hashcons.cmx \
+    parsing/pcoq.cmi lib/pp.cmx /usr/local/lib/camlp4/stdpp.cmi lib/util.cmx \
+    parsing/ast.cmi 
 parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi 
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/coqast.cmi 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
@@ -169,3 +175,21 @@ toplevel/minicoq.cmx: kernel/constant.cmx parsing/g_minicoq.cmi \
     kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
     /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/typing.cmx \
     lib/util.cmx 
+parsing/g_minicoq.cmo: kernel/generic.cmi /usr/local/lib/camlp4/gramext.cmi \
+    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmi kernel/names.cmi \
+    lib/pp.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
+    parsing/g_minicoq.cmi 
+parsing/g_minicoq.cmx: kernel/generic.cmx /usr/local/lib/camlp4/gramext.cmi \
+    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmx kernel/names.cmx \
+    lib/pp.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
+    parsing/g_minicoq.cmi 
+parsing/g_prim.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
+    parsing/pcoq.cmi 
+parsing/g_prim.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
+    parsing/pcoq.cmi 
+parsing/pcoq.cmo: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
+    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmi lib/pp.cmi \
+    lib/util.cmi parsing/pcoq.cmi 
+parsing/pcoq.cmx: parsing/coqast.cmx /usr/local/lib/camlp4/gramext.cmi \
+    /usr/local/lib/camlp4/grammar.cmi parsing/lexer.cmx lib/pp.cmx \
+    lib/util.cmx parsing/pcoq.cmi 
