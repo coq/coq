@@ -22,7 +22,9 @@ Require LogicSyntax.
 Definition allT := [A:Type][P:A->Prop](x:A)(P x). 
 *)
 
+V7only [
 Syntactic Definition allT := all.
+].
 
 Section universal_quantification.
 
@@ -54,18 +56,22 @@ Inductive  exT [A:Type;P:A->Prop] : Prop
     := exT_intro : (x:A)(P x)->(exT A P).
 *)
 
+V7only [
 Syntactic Definition exT := ex.
 Syntactic Definition exT_intro := ex_intro.
 Syntactic Definition exT_ind  := ex_ind.
+].
 
 (*
 Inductive exT2 [A:Type;P,Q:A->Prop] : Prop
     := exT_intro2 : (x:A)(P x)->(Q x)->(exT2 A P Q).
 *)
 
+V7only [
 Syntactic Definition exT2 := ex2.
 Syntactic Definition exT_intro2 := ex_intro2.
 Syntactic Definition exT2_ind  := ex2_ind.
+].
 
 (** Leibniz equality : [A:Type][x,y:A] (P:A->Prop)(P x)->(P y)
 
@@ -80,11 +86,13 @@ Inductive eqT [A:Type;x:A] : A -> Prop
 
 Hints Resolve refl_eqT (* exT_intro2 exT_intro *) : core v62.
 *)
+V7only [
 Syntactic Definition eqT      := eq.
 Syntactic Definition refl_eqT := refl_equal.
 Syntactic Definition eqT_ind  := eq_ind.
 Syntactic Definition eqT_rect := eq_rect.
 Syntactic Definition eqT_rec  := eq_rec.
+].
 
 (*
 Section Equality_is_a_congruence.
@@ -116,10 +124,12 @@ Section Equality_is_a_congruence.
 
 End Equality_is_a_congruence.
 *)
+V7only [
 Syntactic Definition sym_eqT  := sym_eq.
 Syntactic Definition trans_eqT  := trans_eq.
 Syntactic Definition congr_eqT  := f_equal.
 Syntactic Definition sym_not_eqT  := sym_not_eq.
+].
 
 (*
 Hints Immediate sym_eqT sym_not_eqT : core v62.
@@ -141,9 +151,11 @@ Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
 *)
 
+V7only [
 Syntactic Definition eqT_ind_r  := eq_ind_r.
 Syntactic Definition eqT_rec_r  := eq_rec_r.
 Syntactic Definition eqT_rect_r  := eq_rect_r.
+].
 
 (** Some datatypes at the [Type] level *)
 

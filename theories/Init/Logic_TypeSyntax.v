@@ -12,6 +12,7 @@ Require Logic_Type.
 
 (** Symbolic notations for things in [Logic_type.v] *)
 
+V7only [
 Notation "x == y"  := (eq ? x y) (at level 5, no associativity, only parsing).
 Notation "x === y" := (identityT ? x y) (at level 5, no associativity).
 
@@ -36,6 +37,7 @@ Notation "'EXT' x | p & q"     := (ex2 ? [x]p [x]q)
 Notation "'EXT' x : t | p & q" := (ex2 t [x:t]p [x:t]q)
   (at level 10, p, q at level 8)
   V8only "'EXT2' x : t | p & q" (at level 200, x at level 80).
+].
 
 (** Parsing only of things in [Logic_type.v] *)
 
