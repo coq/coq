@@ -54,8 +54,7 @@ val fconstr_of_com_sort : 'c evar_map -> env -> Coqast.t -> constr
 (* Typing with Trad, and re-checking with Mach *)
 
 val fconstruct :'c evar_map -> context -> Coqast.t -> unsafe_judgment
-val fconstruct_type :
-  'c evar_map -> context -> Coqast.t -> typed_type
+val fconstruct_type : 'c evar_map -> context -> Coqast.t -> typed_type
 
 (* Typing, re-checking with universes constraints *)
 val fconstruct_with_univ :

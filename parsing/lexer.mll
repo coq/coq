@@ -11,18 +11,33 @@ type error =
 
 exception Error of error * int * int
 
-let add_keyword,is_keyword =
-  let table = Hashtbl.create 149 in
-  List.iter (fun kw -> Hashtbl.add table kw ())
+type frozen_t = string list
+
+let kw_table = Hashtbl.create 149
+
+let init () =
+  Hashtbl.clear kw_table;
+  List.iter (fun kw -> Hashtbl.add kw_table kw ())
     [ "Grammar"; "Syntax"; "Quit"; "Load"; "Compile";
       "of"; "with"; "end"; "as"; "in"; "using";
       "Cases"; "Fixpoint"; "CoFixpoint";
       "Definition"; "Inductive"; "CoInductive"; 
       "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
       "Orelse"; "Proof"; "Qed";
-      "Prop"; "Set"; "Type" ];
-  (fun s -> Hashtbl.add table s ()),
-  (fun s -> try Hashtbl.find table s; true with Not_found -> false)
+      "Prop"; "Set"; "Type" ]  
+
+let add_keyword s = Hashtbl.add kw_table s ()
+
+let is_keyword s = try Hashtbl.find kw_table s; true with Not_found -> false
+
+let freeze () = 
+  let l = ref [] in
+  Hashtbl.iter (fun k _ -> l := k :: !l) kw_table;
+  !l
+
+let unfreeze ft =
+  init ();
+  List.iter add_keyword ft
 
 let find_keyword s = if is_keyword s then s else raise Not_found
       

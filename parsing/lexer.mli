@@ -13,3 +13,7 @@ val tparse : string * string -> (string * string) Stream.t -> string
 
 val token_text : string * string -> string
 
+type frozen_t
+val freeze : unit -> frozen_t
+val unfreeze : frozen_t -> unit
+val init : unit -> unit
