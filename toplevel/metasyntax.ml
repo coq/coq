@@ -391,15 +391,13 @@ let quote x =
   else
     x
 
-let is_symbol = function String s -> not (is_letter s.[0]) | _ -> false
-
 let rec find_symbols c_current c_next c_last vars = function
   | []    -> (vars, [])
-  | String x :: sl when is_letter x.[0] ->
+  | String x :: sl when Lexer.is_normal_token x ->
+      Lexer.check_ident x;
       let id = Names.id_of_string x in
       if List.mem_assoc id vars then
 	error ("Variable "^x^" occurs more than once");
-(*      let prec = if List.exists is_symbol sl then c_current else c_last in*)
       let prec = if sl <> [] then c_current else c_last in
       let (vars,l) = find_symbols c_next c_next c_last vars sl in
       ((id,prec)::vars, NonTerminal id :: l)
@@ -413,6 +411,7 @@ let rec find_symbols c_current c_next c_last vars = function
       (vars, NonTerminal (prec, meta) :: l)
 *)
   | String s :: sl ->
+      Lexer.check_special_token s;
       let (vars,l) = find_symbols c_next c_next c_last vars sl in
       (vars, Terminal (strip s) :: l)
   | WhiteSpace n :: sl ->

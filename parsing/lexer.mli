@@ -24,6 +24,11 @@ val is_keyword : string -> bool
 
 val func : char Stream.t -> (string * string) Stream.t * (int -> int * int)
 
+val check_ident : string -> unit
+val check_special_token : string -> unit
+
+val is_normal_token : string -> bool
+
 val add_token : Token.pattern -> unit
 
 val tparse : string * string -> ((string * string) Stream.t -> string) option

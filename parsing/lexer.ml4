@@ -77,8 +77,11 @@ let check_special_token str =
 
 let check_ident str =
   let rec loop = parser
-    | [< ''$' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' | '\216'..'\246'
-              | '\248'..'\255' | '0'..'9' | ''' | '_'; s >] -> loop s
+    | [< ' ('$' | 'a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_'); s >] -> loop s
+    (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+    | [< ' ('\206' | '\207'); ' ('\128'..'\191'); s >] -> loop s
+    (* iso 8859-1 accentuated letters *)
+    | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255'); s >] -> loop s
     | [< _ = Stream.empty >] -> ()
     | [< >] -> bad_token str
   in
@@ -103,20 +106,34 @@ let add_keyword str =
 let is_keyword s = 
   try let _ = ttree_find !keywords s in true with Not_found -> false
 
+let is_normal_token str =
+  if String.length str > 0 then
+    match str.[0] with
+      | ' ' | '\n' | '\r' | '\t' | '0'..'9' | '"' -> bad_token str
+      | '_' | '$' | 'a'..'z' | 'A'..'Z' -> true
+	  (* utf-8 symbols of the form "E2 xx xx" [E2=226] *)
+      | '\226' when String.length str > 2 ->
+	  (match str.[1], str.[2] with
+	    | ('\132', '\128'..'\191') | ('\133', '\128'..'\143') ->
+		(* utf8 letter-like unicode 2100-214F *) true
+	    | (('\136'..'\143' | '\152'..'\155'),_) ->
+		(* utf8 mathematical operators unicode 2200-22FF *)
+		(* utf8 miscellaneous technical unicode 2300-23FF *)
+		(* utf8 miscellaneous symbols unicode 2600-26FF *)
+		false
+	    | _ ->
+		(* default to iso 8859-1 "â" *)
+		true)
+	  (* iso 8859-1 accentuated letters *)
+      | '\192'..'\214' | '\216'..'\246' | '\248'..'\255' -> true
+      | _ -> false
+  else 
+    bad_token str
 
 (* Adding a new token (keyword or special token). *)
 let add_token (con, str) = match con with
   | "" ->
-      let normal_token =
-        if String.length str > 0 then
-          match str.[0] with
-	    | ' ' | '\n' | '\r' | '\t' | '0'..'9' | '"' -> bad_token str
-            | '_' | '$' | 'a'..'z' | 'A'..'Z' -> true
-            | _ -> false
-        else 
-	  true
-      in
-      if normal_token then add_keyword str else add_special_token str
+      if is_normal_token str then add_keyword str else add_special_token str
   | "METAIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
       -> ()
   | _ ->
@@ -178,8 +195,13 @@ let get_buff len = String.sub !buff 0 len
 (* The classical lexer: idents, numbers, quoted strings, comments *)
 
 let rec ident len = parser
-  | [< ' ('a'..'z' | 'A'..'Z' | '\192'..'\214' | '\216'..'\246' 
-         |'\248'..'\255' | '0'..'9' | ''' | '_' | '@' as c); s >] ->
+  | [< ' ('a'..'z' | 'A'..'Z' | '0'..'9' | ''' | '_' | '@' as c); s >] ->
+      ident (store len c) s
+  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2) ; s >] ->
+      ident (store (store len c1) c2) s
+  (* iso 8859-1 accentuated letters *)
+  | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c); s >] -> 
       ident (store len c) s
   | [< >] -> len
 
@@ -247,25 +269,54 @@ let rec comment bp = parser
 
 (* Parse a special token, using the [token_tree] *)
 
+let progress_special c = function
+  | None -> None
+  | Some tt -> try Some (CharMap.find c tt.branch) with Not_found -> None
+
+let rec special tt cs = match tt with
+  | None -> None
+  | Some tt ->
+      match
+	match Stream.peek cs with
+	  | Some c -> 
+	      (try Some (CharMap.find c tt.branch) with Not_found -> None)
+	  | None -> None
+      with
+	| Some _ as tt' -> Stream.junk cs; special tt' cs
+	| None -> tt.node
+
 let process_chars bp c cs =
-  let rec proc_rec tt =
-    match
-      match Stream.peek cs with
-	| Some c -> 
-	    (try Some (CharMap.find c tt.branch) with Not_found -> None)
-	| None -> None
-    with
-      | Some tt' -> Stream.junk cs; proc_rec tt'
-      | None -> tt.node
-  in
   let t =
-    try proc_rec (CharMap.find c !token_tree.branch) 
+    try special (Some (CharMap.find c !token_tree.branch)) cs
     with Not_found -> !token_tree.node
   in
   let ep = Stream.count cs in
   match t with
     | Some t -> (("", t), (bp, ep))
     | None -> err (bp, ep) Undefined_token
+
+type token_226_tail =
+  | TokSymbol of string option
+  | TokIdent of string
+
+let parse_226_tail tk = parser
+  | [< ''\132' as c2; ' ('\128'..'\191' as c3);
+      (* utf8 letter-like unicode 2100-214F *)
+      len = ident (store (store (store 0 '\226') c2) c3) >] ->
+      TokIdent (get_buff len) 
+  | [< ''\133' as c2; ' ('\128'..'\143' as c3);
+      (* utf8 letter-like unicode 2100-214F *)
+      len = ident (store (store (store 0 '\226') c2) c3) >] ->
+      TokIdent (get_buff len) 
+  | [< ' ('\136'..'\143' | '\152'..'\155' as c2); 'c3;
+      (* utf8 mathematical operators unicode 2200-22FF *)
+      (* utf8 miscellaneous technical unicode 2300-23FF *)
+      (* utf8 miscellaneous symbols unicode 2600-26FF *)
+      t = special (progress_special c3 (progress_special c2 
+	(progress_special '\226' tk))) >] ->
+      TokSymbol t
+  | [< len = ident (store 0 '\226') >] ->
+      TokIdent (get_buff len)
 
 (* Parse a token in a char stream *)
 
@@ -281,16 +332,48 @@ let rec next_token = parser bp
   | [< ''$'; len = ident (store 0 '$') >] ep -> 
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ''.' as c; t = parser
-	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' 
-		| '\216'..'\246' | '\248'..'\255' as c);
-	      len = ident (store 0 c) >] -> current:=BeVernac ""; ("FIELD", get_buff len)
+	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ->
+	     ("FIELD", get_buff len)
+	 (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+	 | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
+	   len = ident (store (store 0 c1) c2) >] ->
+	     ("FIELD", get_buff len)
+         (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
+	 | [< ''\226' as c1; t = parse_226_tail 
+	     (progress_special '.' (Some !token_tree)) >] ep ->
+	     (match t with
+	       | TokSymbol (Some t) -> ("", t)
+	       | TokSymbol None -> err (bp, ep) Undefined_token
+	       | TokIdent t -> ("FIELD", t))
+	 (* iso 8859-1 accentuated letters *)
+	 | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c);
+	   len = ident (store 0 c) >] ->
+	     ("FIELD", get_buff len)
 (*
 	 | [< >] -> ("", ".") >] ep -> (t, (bp,ep))
 *)
-	 | [< (t,_) = process_chars bp c >] -> t >] ep -> current:=BeVernac ""; (t, (bp,ep))
-  | [< ' ('_' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' 
-         | '\216'..'\246' | '\248'..'\255' as c);
-       len = ident (store 0 c) >] ep ->
+	 | [< (t,_) = process_chars bp c >] -> t >] ep ->
+      current:=BeVernac ""; (t, (bp,ep))
+  | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ep ->
+      let id = get_buff len in current:=InVernac; 
+      (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
+  (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
+  | [< ' ('\206' | '\207' as c1); ' ('\128'..'\191' as c2); 
+	   len = ident (store (store 0 c1) c2) >] ep ->
+      let id = get_buff len in current:=InVernac; 
+      (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
+  (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
+  | [< ''\226' as c1; t = parse_226_tail (Some !token_tree) >] ep ->
+      (match t with
+	| TokSymbol (Some t) -> ("", t), (bp, ep)
+	| TokSymbol None -> err (bp, ep) Undefined_token
+	| TokIdent id ->
+	    current:=InVernac; 
+	    (try ("", find_keyword id) with Not_found -> ("IDENT", id)),
+	    (bp, ep))
+  (* iso 8859-1 accentuated letters *)
+  | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c);
+      len = ident (store 0 c) >] ep ->
       let id = get_buff len in current:=InVernac; 
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
