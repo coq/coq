@@ -58,7 +58,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
   match match_with_equation t with
     | None -> 
 	if l = NoBindings
-	then general_s_rewrite lft2rgt c gl
+	then general_s_rewrite lft2rgt c [] gl
 	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_of_inductive hdcncl in 

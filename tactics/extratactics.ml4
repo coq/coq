@@ -165,12 +165,17 @@ let refine_tac = h_refine
 open Setoid_replace
 
 TACTIC EXTEND SetoidReplace
-  [ "Setoid_replace" constr(c1) "with" constr(c2) ]
-  -> [ setoid_replace c1 c2 ]
+   [ "Setoid_replace" constr(c1) "with" constr(c2) ] ->
+     [ setoid_replace c1 c2 ~new_goals:[] ]
+ | [ "Setoid_replace" constr(c1) "with" constr(c2) "generate" "side" "conditions" constr_list(l) ] ->
+     [ setoid_replace c1 c2 ~new_goals:l ]
 END
 
 TACTIC EXTEND SetoidRewrite
-  [ "Setoid_rewrite" orient(b) constr(c) ] -> [ general_s_rewrite b c ]
+   [ "Setoid_rewrite" orient(b) constr(c) ]
+   -> [ general_s_rewrite b c ~new_goals:[] ]
+ | [ "Setoid_rewrite" orient(b) constr(c) "generate" "side" "conditions" constr_list(l) ]
+   -> [ general_s_rewrite b c ~new_goals:l ]
 END
 
 VERNAC COMMAND EXTEND AddSetoid1

@@ -885,7 +885,7 @@ let marked_constr_equiv_or_more_complex to_marked_constr c1 c2 =
 let pr_new_goals i c =
  let glc = collect_new_goals c in
   str " " ++ int i ++ str ") side conditions:" ++ pr_fnl () ++ str "   " ++
-   prlist_with_sep (fun () -> str "\n   ")
+   prlist_with_sep (fun () -> str "\n    ")
     (fun c -> str " ... |- " ++ prterm c) glc
 
 (* given a list of constr_with_marks, it returns the list where
@@ -902,6 +902,12 @@ let elim_duplicates to_marked_constr =
  in
   aux
 
+let filter_superset_of_new_goals new_goals l =
+ List.filter
+  (fun (_,_,c) ->
+    List.for_all
+     (fun g -> List.exists (eq_constr g) (collect_new_goals c)) new_goals) l
+
 (* given the array of lists [| l1 ; ... ; ln |] it returns the list of arrays
    [ c1 ; ... ; cn ] that is the cartesian product of the sets l1, ..., ln *)
 let cartesian_product a =
@@ -917,7 +923,7 @@ let cartesian_product a =
   List.map Array.of_list
    (aux (List.map (elim_duplicates identity) (Array.to_list a)))
 
-let mark_occur gl t in_c input_relation input_direction =
+let mark_occur gl ~new_goals t in_c input_relation input_direction =
  let rec aux output_relation output_direction in_c =
   if eq_constr t in_c then
    if input_direction = output_direction
@@ -1061,13 +1067,15 @@ let mark_occur gl t in_c input_relation input_direction =
            let typeofc1 = Tacmach.pf_type_of gl c1 in
             if not (Tacmach.pf_conv_x gl typeofc1 mkProp) then
              (* to avoid this error we should introduce an impl relation
-                whose first argument is Type instead of Prop *)
+                whose first argument is Type instead of Prop. However,
+                the type of the new impl would be Type -> Prop -> Prop
+                that is no longer a Relation_Definitions.relation. Thus
+                the Coq part of the tactic should be heavily modified. *)
              errorlabstrm "Setoid_replace"
               (str "Rewriting in a product A -> B is possible only when A " ++
                str "is a proposition (i.e. A is of type Prop). The type " ++
                prterm c1 ++ str " has type " ++ prterm typeofc1 ++
-               str " that is not convertible to Prop. If you need this " ++
-               str "feature, please ask the author.")
+               str " that is not convertible to Prop.")
             else
              aux output_relation output_direction
               (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
@@ -1083,8 +1091,9 @@ let mark_occur gl t in_c input_relation input_direction =
    (aux2 (Lazy.force coq_prop_relation) Left2Right) @
    (aux2 (Lazy.force coq_prop_relation2) Right2Left) in
   let res = elim_duplicates (function (_,_,t) -> t) res in
-  match res with
-     [] ->
+  let res' = filter_superset_of_new_goals new_goals res in
+  match res' with
+     [] when res = [] ->
       errorlabstrm "Setoid_rewrite"
        (str "Either the term " ++ prterm in_c ++ str " that must be " ++
         str "rewritten occurs in a covariant position or the goal is not " ++
@@ -1092,6 +1101,14 @@ let mark_occur gl t in_c input_relation input_direction =
         str "occurrences that are in a contravariant position and such that " ++
         str "the context obtained by abstracting them is made of morphism " ++
         str "applications only.")
+   | [] ->
+      errorlabstrm "Setoid_rewrite"
+       (str "No generated set of side conditions is a superset of those " ++
+        str "requested by the user. The generated sets of side conditions " ++
+        str "are: " ++
+         pr_fnl () ++
+         prlist_with_sepi pr_fnl
+          (fun i (_,_,mc) -> pr_new_goals i mc) res)
    | [he] -> he
    | he::_ ->
       msg_warning
@@ -1100,7 +1117,9 @@ let mark_occur gl t in_c input_relation input_direction =
          pr_fnl () ++
          prlist_with_sepi pr_fnl
           (fun i (_,_,mc) -> pr_new_goals i mc) res ++ pr_fnl () ++
-         str "The first set is randomly chosen.") ;
+         str "The first set is randomly chosen. Use the syntax " ++
+         str "\"setoid_rewrite ... generate side conditions ...\" to choose" ++
+         str "a different set.") ;
       he
 
 let cic_morphism_context_list_of_list hole_relation hole_direction out_direction
@@ -1219,7 +1238,7 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
       syntactic_but_representation_of_marked_but hole_relation hole_direction
        cic_prop_relation precise_prop_relation m ; hyp |])
 
-let relation_rewrite c1 c2 (input_direction,cl) gl =
+let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
  let but = pf_concl gl in
  let (hyp,c1,c2) =
    let (env',c1) =
@@ -1240,7 +1259,7 @@ let relation_rewrite c1 c2 (input_direction,cl) gl =
  in
   let input_relation = relation_of_hypothesis_and_term_to_rewrite gl hyp c1 in
   let output_relation,output_direction,marked_but =
-   mark_occur gl c1 but input_relation input_direction in
+   mark_occur gl ~new_goals c1 but input_relation input_direction in
   let cic_output_direction = cic_direction_of_direction output_direction in
   let if_output_relation_is_iff gl =
    let th =
@@ -1272,7 +1291,7 @@ let relation_rewrite c1 c2 (input_direction,cl) gl =
    else
     if_output_relation_is_if gl
 
-let general_s_rewrite lft2rgt c gl =
+let general_s_rewrite lft2rgt c ~new_goals gl =
  let direction = if lft2rgt then Left2Right else Right2Left in
  let ctype = pf_type_of gl c in
  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
@@ -1283,13 +1302,13 @@ let general_s_rewrite lft2rgt c gl =
    | _ -> error "The term provided is not an equivalence" in
  let (c1,c2) = get_last_two args in
   match direction with
-     Left2Right -> relation_rewrite c1 c2 (direction,eqclause) gl
-   | Right2Left -> relation_rewrite c2 c1 (direction,eqclause) gl
+     Left2Right -> relation_rewrite c1 c2 (direction,eqclause) ~new_goals gl
+   | Right2Left -> relation_rewrite c2 c1 (direction,eqclause) ~new_goals gl
 
 exception Use_replace
 
 (*CSC: still setoid in the name *)
-let setoid_replace c1 c2 gl =
+let setoid_replace c1 c2 ~new_goals gl =
  try
   let relation =
    match default_relation_for_carrier (pf_type_of gl c1) with
@@ -1300,12 +1319,8 @@ let setoid_replace c1 c2 gl =
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id ->
         tclTHEN
-          (general_s_rewrite true (mkVar id))
+          (general_s_rewrite true (mkVar id) ~new_goals)
           (clear [id]));
        Tacticals.tclIDTAC] gl
  with
   Use_replace -> (!replace c1 c2) gl
-
-let setoid_rewriteLR = general_s_rewrite true
-
-let setoid_rewriteRL = general_s_rewrite false

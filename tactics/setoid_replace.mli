@@ -23,13 +23,9 @@ val print_setoids : unit -> unit
 
 val equiv_list : unit -> constr list
 
-val setoid_replace : constr -> constr -> tactic
+val setoid_replace : constr -> constr -> new_goals:constr list -> tactic
 
-val setoid_rewriteLR : constr -> tactic
-
-val setoid_rewriteRL : constr -> tactic
-
-val general_s_rewrite : bool -> constr -> tactic
+val general_s_rewrite : bool -> constr -> new_goals:constr list -> tactic
 
 val add_relation :
  constr_expr -> constr_expr -> constr_expr option -> constr_expr option -> unit
