@@ -20,9 +20,11 @@ Notation "{ A } + { B }" := (sumbool A B)
 Notation "A + { B }" := (sumor A B)
   (at level 4, B at level 10, left associativity).
 
-Notation ProjS1 := (projS1 ?).
-Notation ProjS2 := (projS2 ?).
+Notation ProjS1 := (projS1 ? ?).
+Notation ProjS2 := (projS2 ? ?).
 Notation Except := (except ?).
+Notation Error := (error ?).
+Notation Value := (value ?).
 
 Notation "{ x : A  |  P }"       := (sig A [x:A]P)
   (at level 1, x at level 10).
