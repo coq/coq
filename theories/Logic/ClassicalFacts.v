@@ -211,9 +211,12 @@ End Proof_irrelevance_CIC.
   (i.e. propositional extensionality + excluded middle) without
   dependent case analysis ?
 
-  Conjecture: it seems possible to build a model of CC interpreting
-  all non-empty types by the set of all lambda-terms. Such a model would
-  satisfy propositional degeneracy without satisfying proof-irrelevance
-  (nor dependent case analysis). This would imply that the previous
-  results cannot be refined.
+  Berardi [Berardi] built a model of CC interpreting inhabited
+  types by the set of all untyped lambda-terms. This model satisfies
+  propositional degeneracy without satisfying proof-irrelevance (nor
+  dependent case analysis). This implies that the previous results
+  cannot be refined.
+
+  [Berardi] Stefano Berardi, "Type dependence and constructive mathematics",
+  Ph. D. thesis, Dipartimento Matematica, Università di Torino, 1990.
 *)
