@@ -31,6 +31,12 @@ let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 
+(* Projections from triplets *)
+
+let pi1 (a,_,_) = a
+let pi2 (_,a,_) = a
+let pi3 (_,_,a) = a
+
 (* Characters *)
 
 let is_letter c =

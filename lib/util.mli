@@ -41,6 +41,12 @@ val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
 val join_loc : loc -> loc -> loc
 
+(*s Projections from triplets *)
+
+val pi1 : 'a * 'b * 'c -> 'a
+val pi2 : 'a * 'b * 'c -> 'b
+val pi3 : 'a * 'b * 'c -> 'c
+
 (*s Chars. *)
 
 val is_letter : char -> bool
