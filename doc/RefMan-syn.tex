@@ -849,10 +849,10 @@ syntax
 {\tt ident} $|$
 {\tt simple\_intropattern} $|$
 {\tt hyp} \\ & $|$ &
-{\tt quantified\_hypothesis} $|$
+% {\tt quantified\_hypothesis} $|$
 {\tt reference} $|$
 {\tt constr} \\ & $|$ &
-{\tt castedopenonstr} $|$
+%{\tt castedopenconstr} $|$
 {\tt integer} \\ & $|$ &
 {\tt int\_or\_var} $|$
 {\tt tactic} $|$
@@ -879,11 +879,12 @@ Tactic argument type & parsed as & interpreted as & as in tactic \\
 {\tt\small ident} & identifier & a user-given name & {\tt intro} \\
 {\tt\small simple\_intropattern} & intro\_pattern & an intro\_pattern & {\tt intros}\\
 {\tt\small hyp} & identifier & an hypothesis defined in context & {\tt clear}\\
-{\tt\small quantified\_hypothesis} & identifier or integer & a named or non dep. hyp. of the goal & {\tt intros until}\\
+%% quantified_hypothesis actually not supported
+%%{\tt\small quantified\_hypothesis} & identifier or integer & a named or non dep. hyp. of the goal & {\tt intros until}\\
 {\tt\small reference} & qualified identifier & a global reference of term & {\tt unfold}\\
 {\tt\small constr} & term & a term & {\tt exact} \\
-{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
-{\tt\small constr\_with\_bindings} & term with bindings & a term with bindings & {\tt apply}\\
+%% castedopenconstr actually not supported
+%%{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
 {\tt\small integer} & integer & an integer &  \\
 {\tt\small int\_or\_var} & identifier or integer & an integer & {\tt do} \\
 {\tt\small tactic} & tactic & a tactic & \\
