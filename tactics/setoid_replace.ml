@@ -35,6 +35,18 @@ open Constrintern
 let replace = ref (fun _ _ -> assert false)
 let register_replace f = replace := f
 
+(* util function; it should be in util.mli *)
+let prlist_with_sepi sep elem =
+ let rec aux n =
+  function
+   | []   -> mt ()
+   | [h]  -> elem n h
+   | h::t ->
+      let e = elem n h and s = sep() and r = aux (n+1) t in
+      e ++ s ++ r
+ in
+  aux 1
+
 type relation =
    { rel_a: constr ;
      rel_aeq: constr;
@@ -775,17 +787,6 @@ type constr_with_marks =
   | ToReplace
   | ToKeep of constr * relation relation_class * direction
 
-let rec prconstr_with_marks =
- function
-    MApp (c,m,a,d) ->
-     str "(" ++ prterm c ++ str " " ++
-      prvect_with_sep (fun () -> str " ") prconstr_with_marks a ++ str ")"
-  | ToReplace -> str "*"
-  | ToKeep (c,Leibniz _,_)
-  | ToKeep (c,Relation {rel_refl=Some _},_) -> prterm c
-  | ToKeep (c,Relation {rel_aeq=aeq; rel_refl=None},_) ->
-     str "(?:" ++ prterm (mkApp (aeq, [| c ; c|])) ++ str ")"
-
 let is_to_replace = function
  | ToKeep _ -> false
  | ToReplace -> true
@@ -866,25 +867,26 @@ let subrelation rel1 rel2 =
 *)
   | _,_ -> false
 
+(* this function returns the list of new goals opened by a constr_with_marks *)
+let rec collect_new_goals =
+ function
+   MApp (_,_,a,_) -> List.concat (List.map collect_new_goals (Array.to_list a))
+ | ToReplace
+ | ToKeep (_,Leibniz _,_)
+ | ToKeep (_,Relation {rel_refl=Some _},_) -> []
+ | ToKeep (c,Relation {rel_aeq=aeq; rel_refl=None},_) -> [mkApp(aeq,[|c ; c|])]
+
 (* two marked_constr are equivalent if they produce the same set of new goals *)
-(*CSC: Note: it would be better if the tactic got rid of the smaller multiset
-       of goals when the two multisets are equal sets. I.e.: the tactic that
-       open one new goal G should be preferred to the tactic that opens two
-       copies of the new goal G. Moreover, a smaller proof term should be
-       preferred to a bigger one when the size of the two multisets is equal. *)
 let marked_constr_equiv_or_more_complex to_marked_constr c1 c2 =
- let rec collect_new_goals =
-  function
-    MApp (_,_,a,_) -> List.concat (List.map collect_new_goals (Array.to_list a))
-  | ToReplace
-  | ToKeep (_,Leibniz _,_)
-  | ToKeep (_,Relation {rel_refl=Some _},_) -> []
-  | ToKeep (c,Relation {rel_refl=None},_) -> [c]
- in
   let glc1 = collect_new_goals (to_marked_constr c1) in
   let glc2 = collect_new_goals (to_marked_constr c2) in
    List.for_all (fun c -> List.exists (fun c' -> eq_constr c c') glc1) glc2
-;;
+
+let pr_new_goals i c =
+ let glc = collect_new_goals c in
+  str " " ++ int i ++ str ") side conditions:" ++ pr_fnl () ++ str "   " ++
+   prlist_with_sep (fun () -> str "\n   ")
+    (fun c -> str " ... |- " ++ prterm c) glc
 
 (* given a list of constr_with_marks, it returns the list where
    constr_with_marks than open more goals than simpler ones in the list
@@ -1095,11 +1097,12 @@ let mark_occur gl t in_c input_relation input_direction =
    | [he] -> he
    | he::_ ->
       msg_warning
-       (str "There are several possible ways to perform this rewriting:" ++
+       (str "The application of the tactic is subject to one of the \n" ++
+        str "following set of side conditions that the user needs to prove:" ++
          pr_fnl () ++
-         prlist_with_sep pr_fnl
-          (function (_,_,mc) -> prconstr_with_marks mc) res ++ pr_fnl () ++
-         str " The first one is randomly chosen.") ;
+         prlist_with_sepi pr_fnl
+          (fun i (_,_,mc) -> pr_new_goals i mc) res ++ pr_fnl () ++
+         str "The first set is randomly chosen.") ;
       he
 
 let cic_morphism_context_list_of_list hole_relation hole_direction out_direction
