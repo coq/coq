@@ -86,6 +86,7 @@ Admitted.
 
 (* Used to failed at some time *)
 
+Unset Implicit Arguments.
 Parameter bar : (p,q:nat) p=q -> Prop.
 Inductive foo : nat -> nat -> Prop := 
   C : (a,b:nat)(Heq:a = b) (bar a b Heq) -> (foo a b).
