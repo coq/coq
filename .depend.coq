@@ -50,9 +50,9 @@ theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theorie
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo parsing/g_natsyntax.cmo
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
-contrib/omega/Zpower.vo: contrib/omega/Zpower.v contrib/omega/Omega.vo contrib/omega/Zcomplements.vo
+contrib/omega/Zpower.vo: contrib/omega/Zpower.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo
 contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v contrib/omega/Omega.vo contrib/omega/Zcomplements.vo contrib/omega/Zpower.vo
-contrib/omega/Zcomplements.vo: contrib/omega/Zcomplements.v contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
+contrib/omega/Zcomplements.vo: contrib/omega/Zcomplements.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
 contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/Zarith/ZArith.vo theories/Arith/Minus.vo contrib/omega/omega.cmo contrib/omega/coq_omega.cmo contrib/omega/OmegaSyntax.vo
 tactics/Tauto.vo: tactics/Tauto.v
@@ -62,4 +62,4 @@ syntax/PPTactic.vo: syntax/PPTactic.v
 syntax/PPConstr.vo: syntax/PPConstr.v
 syntax/PPCases.vo: syntax/PPCases.v
 syntax/MakeBare.vo: syntax/MakeBare.v
-states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo tactics/Tauto.vo
+states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo
