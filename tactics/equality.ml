@@ -861,7 +861,7 @@ let decompEqThen ntac id gls =
 	       ([onLastHyp gen_absurdity;
 		 refine (mkApp (pf, [| mkVar id |]))]))) gls
      | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-         tclIDTAC gls
+         ntac 0 gls
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
 	  let e_env = push_named (e,None,t) env in
