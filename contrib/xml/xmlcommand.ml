@@ -14,7 +14,8 @@
 
 (* CONFIGURATION PARAMETERS *)
 
-let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
+let dtdname = "http://localhost:8081/getdtd?uri=cic.dtd";;
+let typesdtdname = "http://localhost:8081/getdtd?uri=cictypes.dtd";;
 let verbose = ref true;; (* always set to true during a "Print XML All" *)
 
 (* UTILITY FUNCTIONS *)
@@ -212,7 +213,7 @@ let get_next_id =
 ;;
 
 type innersort =
-   InnerProp of Xml.token Stream.t
+   InnerProp of Term.constr (* the constr is the type of the term *)
  | InnerSet
  | InnerType
 ;;
@@ -234,21 +235,25 @@ let print_term inner_types l env csr =
     | _ -> names_to_ids l
   in
 
-  let rec inner_type_display l env term =
+  let inner_type_display env term =
    let type_of_term = R.get_type_of env (Evd.empty) term in
    match R.get_sort_of env (Evd.empty) type_of_term with
-      T.Prop T.Null -> InnerProp (term_display `T false l env type_of_term)
+      T.Prop T.Null -> InnerProp type_of_term
     | T.Prop _      -> InnerSet
     | _             -> InnerType
+  in
 
-  and term_display idradix in_lambda l env cstr =
+  let rec term_display idradix in_lambda l env cstr =
    let next_id = get_next_id idradix in
    let add_sort_attribute do_output_type l' =
-    let xmlinnertype = inner_type_display l env cstr in
+    let xmlinnertype = inner_type_display env cstr in
      match xmlinnertype with
-        InnerProp pp_cmds ->
-         if do_output_type then
-          inner_types := (next_id, pp_cmds)::!inner_types ;
+        InnerProp type_of_term ->
+         if do_output_type & idradix = `I then
+          begin
+           let pp_cmds = term_display `T false l env type_of_term in
+            inner_types := (next_id, pp_cmds)::!inner_types ;
+          end ;
          ("sort","Prop")::l'
       | InnerSet    -> ("sort","Set")::l'
       | InnerType   -> ("sort","Type")::l'
@@ -607,12 +612,16 @@ let pp_cmds_of_inner_types inner_types =
       [] -> [<>]
     | he::tl -> [< he ; stream_of_list tl >]
   in
-  X.xml_nempty "InnerTypes" []
-   (stream_of_list
-    (List.map
-      (function (id,type_pp_cmds) -> X.xml_nempty "TYPE" ["of",id] type_pp_cmds)
-      inner_types
-   ))
+   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+      X.xml_cdata ("<!DOCTYPE InnerTypes SYSTEM \"" ^ typesdtdname ^ "\">\n\n");
+      X.xml_nempty "InnerTypes" []
+       (stream_of_list
+        (List.map
+          (function
+            (id,type_pp_cmds) -> X.xml_nempty "TYPE" ["of",id] type_pp_cmds)
+          (List.rev inner_types)
+       ))
+   >]
 ;;
 
 (* print id dest                                                          *)
