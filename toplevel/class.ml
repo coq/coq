@@ -251,12 +251,12 @@ let build_id_coercion idf_opt source =
   in
   (* juste pour verification *)
   let _ = 
-    try 
-      Reductionops.conv_leq env Evd.empty
-	(Typing.type_of env Evd.empty val_f) typ_f
-    with _ -> 
+    if not
+      (Reductionops.is_conv_leq env Evd.empty
+	(Typing.type_of env Evd.empty val_f) typ_f)
+    then
       error ("cannot be defined as coercion - "^
-	     "maybe a bad number of arguments") 
+             "maybe a bad number of arguments") 
   in
   let idf =
     match idf_opt with

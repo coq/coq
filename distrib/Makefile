@@ -425,7 +425,7 @@ ftp-install: prep-ftp-install
 
 # prep-ftp-install: $(FTPDIR)/V$(VERSION)
 prep-ftp-install: 
-	- $(SERVEREXEC) mkdir -m g+w $(FTPDIR)/V$(VERSION)
+	- $(SERVEREXEC) mkdir -p -m g+w $(FTPDIR)/V$(VERSION)
 
 final-ftp-install:
 	$(SERVEREXEC) "'(cd $(FTPDIR); rm -f current;ln -sf V$(VERSION) current)'"

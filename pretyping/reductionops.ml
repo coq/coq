@@ -453,9 +453,6 @@ let fakey = Profile.declare_profile "fhnf_apply";;
 let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
 *)
 
-type  conversion_function = 
-    env ->  evar_map -> constr -> constr -> constraints
-
 (* Conversion utility functions *)
 
 type conversion_test = constraints -> constraints
@@ -490,34 +487,6 @@ let base_sort_cmp pb s0 s1 =
     | (Type u1, Type u2) -> true
     | (_, _) -> false
 
-
-let conv env sigma t1 t2 =
-  Reduction.conv env (nf_evar sigma t1) (nf_evar sigma t2)
-let conv_leq env sigma t1 t2 =
-  Reduction.conv env (nf_evar sigma t1) (nf_evar sigma t2)
-let fconv = function CONV -> conv | CUMUL -> conv_leq
-
-(*
-let convleqkey = Profile.declare_profile "conv_leq";;
-let conv_leq env sigma t1 t2 =
-  Profile.profile4 convleqkey conv_leq env sigma t1 t2;;
-
-let convkey = Profile.declare_profile "conv";;
-let conv env sigma t1 t2 =
-  Profile.profile4 convleqkey conv env sigma t1 t2;;
-*)
-
-let conv_forall2 f env sigma v1 v2 =
-  array_fold_left2 
-    (fun c x y -> let c' = f env sigma x y in Constraint.union c c')
-    Constraint.empty
-    v1 v2
-
-let conv_forall2_i f env sigma v1 v2 =
-  array_fold_left2_i 
-    (fun i c x y -> let c' = f i env sigma x y in Constraint.union c c')
-    Constraint.empty
-    v1 v2
 
 let test_conversion f env sigma x y =
   try let _ = f env (nf_evar sigma x) (nf_evar sigma y) in true

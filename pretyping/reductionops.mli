@@ -169,23 +169,6 @@ val pb_equal : conv_pb -> conv_pb
 val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
 val base_sort_cmp : conv_pb -> sorts -> sorts -> bool
 
-type  conversion_function = 
-    env ->  evar_map -> constr -> constr -> constraints
-
-(* [fconv] has 2 instances: [conv = fconv CONV] i.e. conversion test, and
-   [conv_leq = fconv CONV_LEQ] i.e. cumulativity test. *)
-
-val conv :  conversion_function
-val conv_leq :  conversion_function
-
-val conv_forall2 : 
-   conversion_function -> env ->  evar_map -> constr array 
-    -> constr array -> constraints
-
-val conv_forall2_i : 
-  (int ->  conversion_function) -> env ->  evar_map
-    -> constr array -> constr array -> constraints
-
 val is_conv : env ->  evar_map -> constr -> constr -> bool
 val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
 val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
