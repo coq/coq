@@ -255,11 +255,11 @@ Lemma SubEqui_P1 : (a,b:R;del:posreal;h:``a<b``) (pos_Rl (SubEqui del h) O)==a.
 Intros; Unfold SubEqui; Case (maxN del h); Intros; Reflexivity.
 Qed.
 
-Lemma SubEqui_P2 : (a,b:R;del:posreal;h:``a<b``) (pos_Rl (SubEqui del h) (pred (longueur (SubEqui del h))))==b.
-Intros; Unfold SubEqui; Case (maxN del h); Intros; Clear a0; Cut (x:nat)(a:R)(del:posreal)(pos_Rl (SubEquiN (S x) a b del) (pred (longueur (SubEquiN (S x) a b del)))) == b; [Intro; Apply H | Induction x0; [Intros; Reflexivity | Intros; Change (pos_Rl (SubEquiN (S n) ``a0+del0`` b del0) (pred (longueur (SubEquiN (S n) ``a0+del0`` b del0))))==b; Apply H]].
+Lemma SubEqui_P2 : (a,b:R;del:posreal;h:``a<b``) (pos_Rl (SubEqui del h) (pred (Rlength (SubEqui del h))))==b.
+Intros; Unfold SubEqui; Case (maxN del h); Intros; Clear a0; Cut (x:nat)(a:R)(del:posreal)(pos_Rl (SubEquiN (S x) a b del) (pred (Rlength (SubEquiN (S x) a b del)))) == b; [Intro; Apply H | Induction x0; [Intros; Reflexivity | Intros; Change (pos_Rl (SubEquiN (S n) ``a0+del0`` b del0) (pred (Rlength (SubEquiN (S n) ``a0+del0`` b del0))))==b; Apply H]].
 Qed.
 
-Lemma SubEqui_P3 : (N:nat;a,b:R;del:posreal) (longueur (SubEquiN N a b del))=(S N).
+Lemma SubEqui_P3 : (N:nat;a,b:R;del:posreal) (Rlength (SubEquiN N a b del))=(S N).
 Induction N; Intros; [Reflexivity | Simpl; Rewrite H; Reflexivity].
 Qed.
 
@@ -267,7 +267,7 @@ Lemma SubEqui_P4 : (N:nat;a,b:R;del:posreal;i:nat) (lt i (S N)) -> (pos_Rl (SubE
 Induction N; [Intros; Inversion H; [Simpl; Ring | Elim (le_Sn_O ? H1)] | Intros; Induction i; [Simpl; Ring | Change (pos_Rl (SubEquiN (S n) ``a+del`` b del) i)==``a+(INR (S i))*del``; Rewrite H; [Rewrite S_INR; Ring | Apply lt_S_n; Apply H0]]].
 Qed.
 
-Lemma SubEqui_P5 : (a,b:R;del:posreal;h:``a<b``) (longueur (SubEqui del h))=(S (S (max_N del h))).
+Lemma SubEqui_P5 : (a,b:R;del:posreal;h:``a<b``) (Rlength (SubEqui del h))=(S (S (max_N del h))).
 Intros; Unfold SubEqui; Apply SubEqui_P3.
 Qed.
 
@@ -278,7 +278,7 @@ Qed.
 Lemma SubEqui_P7 : (a,b:R;del:posreal;h:``a<b``) (ordered_Rlist (SubEqui del h)).
 Intros; Unfold ordered_Rlist; Intros; Rewrite SubEqui_P5 in H; Simpl in H; Inversion H.
 Rewrite (SubEqui_P6 3!del 4!h 5!(max_N del h)).
-Replace (S (max_N del h)) with (pred (longueur (SubEqui del h))).
+Replace (S (max_N del h)) with (pred (Rlength (SubEqui del h))).
 Rewrite SubEqui_P2; Unfold max_N; Case (maxN del h); Intros; Left; Elim a0; Intros; Assumption.
 Rewrite SubEqui_P5; Reflexivity.
 Apply lt_n_Sn.
@@ -288,7 +288,7 @@ Repeat Rewrite SubEqui_P6.
 Apply Rle_compatibility; Rewrite S_INR; Rewrite Rmult_Rplus_distrl; Pattern 1 ``(INR i)*del``; Rewrite <- Rplus_Or; Apply Rle_compatibility; Rewrite Rmult_1l; Left; Apply (cond_pos del).
 Qed.
 
-Lemma SubEqui_P8 : (a,b:R;del:posreal;h:``a<b``;i:nat) (lt i (longueur (SubEqui del h))) -> ``a<=(pos_Rl (SubEqui del h) i)<=b``.
+Lemma SubEqui_P8 : (a,b:R;del:posreal;h:``a<b``;i:nat) (lt i (Rlength (SubEqui del h))) -> ``a<=(pos_Rl (SubEqui del h) i)<=b``.
 Intros; Split.
 Pattern 1 a; Rewrite <- (SubEqui_P1 del h); Apply RList_P5.
 Apply SubEqui_P7.
@@ -296,7 +296,7 @@ Elim (RList_P3 (SubEqui del h) (pos_Rl (SubEqui del h) i)); Intros; Apply H1; Ex
 Pattern 2 b; Rewrite <- (SubEqui_P2 del h); Apply RList_P7; [Apply SubEqui_P7 | Elim (RList_P3 (SubEqui del h) (pos_Rl (SubEqui del h) i)); Intros; Apply H1; Exists i; Split; [Reflexivity | Assumption]].
 Qed.
 
-Lemma SubEqui_P9 : (a,b:R;del:posreal;f:R->R;h:``a<b``) (sigTT ? [g:(StepFun a b)](g b)==(f b)/\(i:nat)(lt i (pred (longueur (SubEqui del h))))->(constant_D_eq g (co_interval (pos_Rl (SubEqui del h) i) (pos_Rl (SubEqui del h) (S i))) (f (pos_Rl (SubEqui del h) i)))).
+Lemma SubEqui_P9 : (a,b:R;del:posreal;f:R->R;h:``a<b``) (sigTT ? [g:(StepFun a b)](g b)==(f b)/\(i:nat)(lt i (pred (Rlength (SubEqui del h))))->(constant_D_eq g (co_interval (pos_Rl (SubEqui del h) i) (pos_Rl (SubEqui del h) (S i))) (f (pos_Rl (SubEqui del h) i)))).
 Intros; Apply StepFun_P38; [Apply SubEqui_P7 | Apply SubEqui_P1 | Apply SubEqui_P2].
 Qed.
 
@@ -322,19 +322,19 @@ Elim (Heine_cor2 H0 (mkposreal ? H1)); Intros del H4; Elim (SubEqui_P9 del f H);
 2:Apply Rminus_eq_contra; Red; Intro; Clear H6; Rewrite H7 in H; Elim (Rlt_antirefl ? H).
 2:DiscrR.
 2:Apply Rminus_eq_contra; Red; Intro; Clear H6; Rewrite H7 in H; Elim (Rlt_antirefl ? H).
-Intros; Rewrite H2 in H7; Rewrite H3 in H7; Simpl; Unfold fct_cte; Cut (t:R)``a<=t<=b``->t==b\/(EX i:nat | (lt i (pred (longueur (SubEqui del H))))/\(co_interval (pos_Rl (SubEqui del H) i) (pos_Rl (SubEqui del H) (S i)) t)).
+Intros; Rewrite H2 in H7; Rewrite H3 in H7; Simpl; Unfold fct_cte; Cut (t:R)``a<=t<=b``->t==b\/(EX i:nat | (lt i (pred (Rlength (SubEqui del H))))/\(co_interval (pos_Rl (SubEqui del H) i) (pos_Rl (SubEqui del H) (S i)) t)).
 Intro; Elim (H8 ? H7); Intro.
 Rewrite H9; Rewrite H5; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Left; Assumption.
 Elim H9; Clear H9; Intros I [H9 H10]; Assert H11 := (H6 I H9 t H10); Rewrite H11; Left; Apply H4.
 Assumption.
-Apply SubEqui_P8; Apply lt_trans with (pred (longueur (SubEqui del H))).
+Apply SubEqui_P8; Apply lt_trans with (pred (Rlength (SubEqui del H))).
 Assumption.
 Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H12 in H9; Elim (lt_n_O ? H9).
 Unfold co_interval in H10; Elim H10; Clear H10; Intros; Rewrite Rabsolu_right.
 Rewrite SubEqui_P5 in H9; Simpl in H9; Inversion H9.
 Apply Rlt_anti_compatibility with (pos_Rl (SubEqui del H) (max_N del H)).
 Replace ``(pos_Rl (SubEqui del H) (max_N del H))+(t-(pos_Rl (SubEqui del H) (max_N del H)))`` with t; [Idtac | Ring]; Apply Rlt_le_trans with b.
-Rewrite H14 in H12; Assert H13 : (S (max_N del H))=(pred (longueur (SubEqui del H))).
+Rewrite H14 in H12; Assert H13 : (S (max_N del H))=(pred (Rlength (SubEqui del H))).
 Rewrite SubEqui_P5; Reflexivity.
 Rewrite H13 in H12; Rewrite SubEqui_P2 in H12; Apply H12.
 Rewrite SubEqui_P6.
@@ -369,7 +369,7 @@ Rewrite SubEqui_P6.
 Apply H5.
 Assumption.
 Inversion H7.
-Replace (S (max_N del H)) with (pred (longueur (SubEqui del H))).
+Replace (S (max_N del H)) with (pred (Rlength (SubEqui del H))).
 Rewrite (SubEqui_P2 del H); Elim H8; Intros.
 Elim H11; Intro.
 Assumption.
@@ -784,7 +784,7 @@ Replace a with (Rmin a b).
 Rewrite <- H5; Elim (RList_P6 l); Intros; Apply H10.
 Assumption.
 Apply le_O_n.
-Apply lt_trans with (pred (longueur l)); [Assumption | Apply lt_pred_n_n].
+Apply lt_trans with (pred (Rlength l)); [Assumption | Apply lt_pred_n_n].
 Apply neq_O_lt; Intro; Rewrite <- H12 in H6; Discriminate.
 Unfold Rmin; Case (total_order_Rle a b); Intro; [Reflexivity | Elim n; Assumption].
 Assert H11 : ``(pos_Rl l (S i))<=b``.
@@ -901,7 +901,7 @@ Apply Rle_lt_trans with (pos_Rl l1 i).
 Replace b with (Rmin b c).
 Rewrite <- H5; Elim (RList_P6 l1); Intros; Apply H10; Try Assumption.
 Apply le_O_n.
-Apply lt_trans with (pred (longueur l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H12 in H6; Discriminate. 
+Apply lt_trans with (pred (Rlength l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H12 in H6; Discriminate. 
 Unfold Rmin; Case (total_order_Rle b c); Intro; [Reflexivity | Elim n; Assumption].
 Elim H7; Intros; Assumption.
 Case (total_order_Rle a x); Case (total_order_Rle x b); Intros; [Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H10)) | Reflexivity | Elim n; Apply Rle_trans with b; [Assumption | Left; Assumption] | Elim n0; Apply Rle_trans with b; [Assumption | Left; Assumption]].
@@ -918,7 +918,7 @@ Apply Rle_trans with (pos_Rl l1 i).
 Replace a with (Rmin a b).
 Rewrite <- H5; Elim (RList_P6 l1); Intros; Apply H11; Try Assumption.
 Apply le_O_n.
-Apply lt_trans with (pred (longueur l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H13 in H6; Discriminate. 
+Apply lt_trans with (pred (Rlength l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H13 in H6; Discriminate. 
 Unfold Rmin; Case (total_order_Rle a b); Intro; [Reflexivity | Elim n; Assumption].
 Left; Elim H7; Intros; Assumption.
 Case (total_order_Rle a x); Case (total_order_Rle x b); Intros; Reflexivity Orelse Elim n; Assumption.
@@ -936,7 +936,7 @@ Apply Rle_trans with (pos_Rl l1 i).
 Replace a with (Rmin a b).
 Rewrite <- H5; Elim (RList_P6 l1); Intros; Apply H11; Try Assumption.
 Apply le_O_n.
-Apply lt_trans with (pred (longueur l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H13 in H6; Discriminate. 
+Apply lt_trans with (pred (Rlength l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H13 in H6; Discriminate. 
 Unfold Rmin; Case (total_order_Rle a b); Intro; [Reflexivity | Elim n; Assumption].
 Left; Elim H7; Intros; Assumption.
 Unfold phi3; Case (total_order_Rle a x); Case (total_order_Rle x b); Intros; Reflexivity Orelse Elim n; Assumption.
@@ -946,7 +946,7 @@ Apply Rle_lt_trans with (pos_Rl l1 i).
 Replace b with (Rmin b c).
 Rewrite <- H5; Elim (RList_P6 l1); Intros; Apply H10; Try Assumption.
 Apply le_O_n.
-Apply lt_trans with (pred (longueur l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H12 in H6; Discriminate. 
+Apply lt_trans with (pred (Rlength l1)); Try Assumption; Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H12 in H6; Discriminate. 
 Unfold Rmin; Case (total_order_Rle b c); Intro; [Reflexivity | Elim n; Assumption].
 Elim H7; Intros; Assumption.
 Unfold phi3; Case (total_order_Rle a x); Case (total_order_Rle x b); Intros; [Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H10)) | Reflexivity | Elim n; Apply Rle_trans with b; [Assumption | Left; Assumption] | Elim n0; Apply Rle_trans with b; [Assumption | Left; Assumption]].
