@@ -472,9 +472,9 @@ $$
 \nlsep \TERM{symmetry}~\OPTGR{\KWD{in}~\NT{ident}}
 \nlsep \TERM{transitivity}~\tacconstr
 %%
-\nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\NT{with-names}~\OPT{\NT{clause}}
+\nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\OPT{\NT{with-names}}~\OPT{\NT{clause}}
 \nlsep \TERM{dependent}~\NT{inversion-kwd}~\NT{quantified-hyp}
-  ~\NT{with-names}~\OPTGR{\KWD{with}~\tacconstr}
+  ~\OPT{\NT{with-names}}~\OPTGR{\KWD{with}~\tacconstr}
 \nlsep \TERM{inversion}~\NT{quantified-hyp}~\TERM{using}~\tacconstr~\OPT{\NT{clause}}
 %%
 \nlsep \NT{red-expr}~\OPT{\NT{clause}}
@@ -522,8 +522,9 @@ Conflicts exists between integers and constrs.
        ~\KWD{)}
 \SEPDEF
 \DEFNT{with-names}
-       \KWD{as}~\TERM{[}~\STAR{\NT{ident}}~\STARGR{\TERMbar~\STAR{\NT{ident}}}
-       ~\TERM{]}
+%       \KWD{as}~\TERM{[}~\STAR{\NT{ident}}~\STARGR{\TERMbar~\STAR{\NT{ident}}}
+%       ~\TERM{]}
+       \KWD{as}~\NT{intro-pattern}
 \SEPDEF
 \DEFNT{eliminator}
        \TERM{using}~\NT{constr-with-bindings}
@@ -620,6 +621,7 @@ Conflicts exists between integers and constrs.
 \nlsep \TERM{idtac}
 \nlsep \TERM{fail} ~\OPT{\NT{num}} ~\OPT{\NT{string}}
 \nlsep \TERM{constr}~\KWD{:}~\tacconstr
+\nlsep \TERM{ipattern}~\KWD{:}~\NT{intro-pattern}
 \nlsep \NT{term-ltac}
 \nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
 \nlsep \NT{simple-tactic}
@@ -629,6 +631,7 @@ Conflicts exists between integers and constrs.
 \SEPDEF
 \DEFNT{tactic-arg}
        \TERM{ltac}~\KWD{:}~\NTL{tactic}{0}
+\nlsep \TERM{ipattern}~\KWD{:}~\NT{intro-pattern}
 \nlsep \NT{term-ltac}
 \nlsep \NT{tactic-atom}
 \nlsep \tacconstr
@@ -1226,6 +1229,8 @@ $$
        ~\OPT{\KWD{(}\TERM{only~\TERM{parsing}\KWD{)}}}
 \nlsep \TERM{Reserved}~\TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}
        ~\OPT{\NT{modifiers}}
+\nlsep \TERM{Tactic}~\TERM{Notation}~\NT{string}~\STAR{\NT{tac-production}}
+       ~\KWD{:=}~\NT{tactic}
 \SEPDEF
 \DEFNT{modifiers}
        \KWD{(}~\NT{mod-list}~\KWD{)}
@@ -1251,6 +1256,10 @@ $$
 \SEPDEF
 \DEFNT{syntax-entry}
        \TERM{ident}~\mid~\TERM{global}~\mid~\TERM{bigint}
+\SEPDEF
+\DEFNT{tac-production}
+       \NT{string}
+\nlsep \NT{ident}~\TERM{(}~\NT{ident}~\TERM{)}
 %%% \SEPDEF
 %%% \DEFNT{prec}
 %%%       \TERM{LeftA}~\mid~\TERM{RightA}~\mid~\TERM{NonA}
