@@ -58,6 +58,7 @@ Known problems of the automatic translation
 
 - Renaming in ZArith: incompatibilities in Coq user contribs due to
   merging names INZ, from Reals, and inject_nat.
+- Renaming and new lemmas in ZArith: may clash with names used by users
 - Restructuration of ZArith: replace requirement of specific modules
   in ZArith by "Require Import ZArith_base" or "Require Import ZArith"
 - Some implicit arguments must be made explicit before translation: typically
@@ -66,6 +67,7 @@ Known problems of the automatic translation
   new scheme for syntactic extensions (see translator documentation)
 - Unsafe for annotation Cases when constructors coercions are used or when
   annotations are eta-reduced predicates
+ 
 
 Changes from V7.4 to V8.0 old syntax
 ====================================
@@ -144,8 +146,8 @@ Library
   - Redundant ZArith lemmas have been renamed: for the following pairs,
   use the second name (Zle_Zmult_right2, Zle_mult_simpl), (OMEGA2,
   Zle_0_plus), (Zplus_assoc_l, Zplus_assoc), (Zmult_one, Zmult_1_n),
-  (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr,
-  Zmult_Zminus_distr_l) (source of incompatibilities)
+  (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr, Zmult_Zminus_distr_l)
+  (add_un_double_moins_un_xO, is_double_moins_un) (source of incompatibilities)
 - Few minor changes (order of arguments of Zsimpl_le_plus_r and
   Zsimpl_le_plus_l changed; no more implicit arguments in
   Zmult_Zminus_distr_l and Zmult_Zminus_distr_r)
