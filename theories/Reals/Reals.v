@@ -32,6 +32,7 @@ Require Export Rtrigo_fun.
 Require Export Ranalysis.
 Require Export Rtopology.
 Require Export TAF.
+Require Export NewtonInt.
 Require Export DiscrR.
 Require Export SplitRmult.
 Require Export SplitAbsolu.
