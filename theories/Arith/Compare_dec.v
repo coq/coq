@@ -24,10 +24,9 @@ Defined.
 
 Definition lt_eq_lt_dec : (n,m:nat){(lt n m)}+{n=m}+{(lt m n)}.
 Proof.
-NewInduction n; NewInduction m; Auto with arith.
-Elim (IHn m).
+NewInduction n; Destruct m; Auto with arith.
+Intros m0; Elim (IHn m0); Auto with arith.
 NewInduction 1; Auto with arith.
-Auto with arith.
 Defined.
 
 Lemma gt_eq_gt_dec : (n,m:nat)({(gt m n)}+{n=m})+{(gt n m)}.
