@@ -1680,7 +1680,7 @@ let main files =
 			 font_selector#misc#hide ()));
 
   (try 
-     let image = Filename.concat lib_ide "coq.gif" in
+     let image = Filename.concat lib_ide "coq.png" in
      let startup_image = GdkPixbuf.from_file image in
      tv2#buffer#insert_pixbuf ~iter:tv2#buffer#start_iter 
        ~pixbuf:startup_image;
