@@ -23,22 +23,21 @@ let lift_context n l =
 
 let prod_create env (a,b) = 
   mkProd (named_hd env a Anonymous) a b
-let lambda_name env (n,a,b) = 
-  mkLambda (named_hd env a n) a b
 let lambda_create env (a,b) = 
   mkLambda (named_hd env a Anonymous) a b
-let it_prod_name env = 
-  List.fold_left (fun c (n,t) -> prod_name env (n,t,c)) 
-let it_lambda_name env = 
-  List.fold_left (fun c (n,t) -> lambda_name env (n,t,c))
+
+let simple_prod (n,t,c) = DOP2(Prod,t,DLAM(n,c))
+let make_prod_dep dep env = if dep then prod_name env else simple_prod
 
 (*******************************************)
 (* Building curryfied elimination          *)
 (*******************************************)
 
-(* (lc is the list of the constructors of ind) *)
+(**********************************************************************)
+(* Building case analysis schemes *)
 
 let mis_make_case_com depopt env sigma mispec kind =
+ 
   let nparams = mis_nparams mispec in
   let mind = mkMutInd ((mispec.mis_sp,mispec.mis_tyi),mispec.mis_args) in
   let t = mis_arity mispec in
@@ -78,7 +77,7 @@ let mis_make_case_com depopt env sigma mispec kind =
               (Rel 1)
               (rel_vect (lgar+1) nconstr)))
        	(lift_context (nconstr+1) lnamesar)
-    else 
+    else
       make_lambda_string "f" 
        	(if dep then 
 	   type_one_branch_dep env sigma
@@ -90,33 +89,21 @@ let mis_make_case_com depopt env sigma mispec kind =
   in 
   it_lambda_name env (make_lambda_string "P" typP (add_branch 0)) lnamespar
     
-let make_case_com depopt env sigma ity kind =
-  let mispec = lookup_mind_specif ity env in 
-  mis_make_case_com depopt env sigma mispec kind
-
-let make_case_dep sigma   = make_case_com (Some true) sigma
-let make_case_nodep sigma = make_case_com (Some false) sigma 
-let make_case_gen sigma   = make_case_com None sigma
-
-
 (* check if the type depends recursively on one of the inductive scheme *)
 
+(**********************************************************************)
 (* Building the recursive elimination *)
 
-
-(***********************************************************************
-* t is the type of the constructor co and recargs is the information on 
-* the recursive calls.                                                  
-* build the type of the corresponding branch of the recurrence principle
-* assuming f has this type, branch_rec gives also the term 
-*   [x1]..[xk](f xi (F xi) ...) to be put in the corresponding branch of 
-* the case operation
-* FPvect gives for each inductive definition if we want an elimination 
-* on it with which predicate and which recursive function. 
-************************************************************************)
-
-let simple_prod (n,t,c) = DOP2(Prod,t,DLAM(n,c))
-let make_prod_dep dep env = if dep then prod_name env else simple_prod
+(*
+ * t is the type of the constructor co and recargs is the information on 
+ * the recursive calls.                                                  
+ * build the type of the corresponding branch of the recurrence principle
+ * assuming f has this type, branch_rec gives also the term 
+ *   [x1]..[xk](f xi (F xi) ...) to be put in the corresponding branch of 
+ * the case operation
+ * FPvect gives for each inductive definition if we want an elimination 
+ * on it with which predicate and which recursive function. 
+ *)
 
 let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs = 
   let make_prod = make_prod_dep dep in
@@ -215,6 +202,7 @@ let make_rec_branch_arg env sigma (vargs,fvect,decF) f t recargs =
   in 
   process_constr 0 st f recargs 
 
+(* Main function *)
 let mis_make_indrec env sigma listdepkind mispec =
   let nparams = mis_nparams mispec in
   let recargsvec = mis_recargs mispec in
@@ -347,6 +335,22 @@ let mis_make_indrec env sigma listdepkind mispec =
   in 
   Array.init nrec make_one_rec
 
+(**********************************************************************)
+(* This builds elimination predicate for Case tactic *)
+
+let make_case_com depopt env sigma ity kind =
+  let mispec = lookup_mind_specif ity env in 
+  mis_make_case_com depopt env sigma mispec kind
+
+let make_case_dep sigma   = make_case_com (Some true) sigma
+let make_case_nodep sigma = make_case_com (Some false) sigma 
+let make_case_gen sigma   = make_case_com None sigma
+
+
+(**********************************************************************)
+(* [instanciate_indrec_scheme s rec] replace the sort of the scheme
+   [rec] by [s] *)
+
 let change_sort_arity sort = 
   let rec drec = function 
     | (DOP2(Cast,c,t)) -> drec c 
@@ -366,6 +370,9 @@ let instanciate_indrec_scheme sort =
   in 
   drec 
 
+(**********************************************************************)
+(* Interface to build complex Scheme *)
+
 let check_arities listdepkind = 
   List.iter 
     (function (mispeci,dep,kinds) -> 
@@ -380,7 +387,6 @@ let check_arities listdepkind =
 	     'sTR "is not allowed">])
     listdepkind
 
-(* Utilisé pour construire les Scheme *)
 let build_indrec env sigma = function 
   | (mind,dep,s)::lrecspec ->
       let ((sp,tyi),_) = mind in
@@ -400,45 +406,47 @@ let build_indrec env sigma = function
       let _ = check_arities listdepkind in 
       mis_make_indrec env sigma listdepkind mispec
   | _ -> assert false
-	
 
-(* In order to interpret the Match operator *)
 
-let type_mutind_rec env sigma ct pt p c = 
-  let (mI,largs as mind) = find_minductype env sigma ct in
-  let mispec = lookup_mind_specif mI env in 
+(**********************************************************************)
+(* To handle old Case/Match syntax in Pretyping                       *)
+
+(***********************************)
+(* To interpret the Match operator *)
+
+let type_mutind_rec env sigma indspec pt p c = 
+  let mind = indspec.mind in
+  let mispec = lookup_mind_specif indspec.mind env in 
   let recargs = mis_recarg mispec in
   if is_recursive [mispec.mis_tyi] recargs then
-    let (dep,_) = find_case_dep_nparams env sigma (c,p) mind pt in 
+    let dep = find_case_dep_nparams env sigma (c,p) (mind, indspec.params) pt in 
     let ntypes = mis_nconstr mispec 
     and tyi = mispec.mis_tyi 
     and nparams = mis_nparams mispec in
-    let depPvec = Array.create ntypes (None : (bool * constr) option) in 
-    let _ = Array.set depPvec mispec.mis_tyi (Some(dep,p)) in 
-    let (pargs,realargs) = list_chop nparams largs in
-    let vargs = Array.of_list pargs in
+    let init_depPvec i = if i=mispec.mis_tyi then Some(dep,p) else None in
+    let depPvec = Array.init ntypes init_depPvec in
+    let realargs = indspec.realargs in
+    let vargs = Array.of_list indspec.params in
     let (constrvec,typeconstrvec) = mis_type_mconstructs mispec in
     let lft = array_map3 (type_rec_branch dep env sigma (vargs,depPvec,0)) 
                 constrvec typeconstrvec recargs in
-    (mkMutInd mI, lft,
+    (lft,
      if dep then applist(p,realargs@[c]) 
      else applist(p,realargs) )
   else 
-    type_case_branches env sigma ct pt p c
+    type_case_branches env sigma indspec pt p c
 
-let is_mutind env sigma ct =  
-  try let _ = find_minductype env sigma ct in true with Induc -> false
+let type_rec_branches recursive env sigma ct pt p c =
+  try
+    let indspec = try_mutind_of env sigma ct in
+    if recursive then 
+      type_mutind_rec env sigma indspec  pt p c
+    else 
+      type_case_branches env sigma indspec pt p c
+  with Induc -> error"Elimination on a non-inductive type 1"
 
-let type_rec_branches recursive env sigma ct pt p c = 
-  match whd_betadeltaiota_stack env sigma ct [] with 
-    | (DOPN(MutInd _,_),_) -> 
-	if recursive then 
-	  type_mutind_rec env sigma ct pt p c
-        else 
-	  type_case_branches env sigma ct pt p c
-    | _ -> error"Elimination on a non-inductive type 1"
-
-(*** Building ML like case expressions without types ***)
+(***************************************************)
+(* Building ML like case expressions without types *)
 
 let concl_n env sigma = 
   let rec decrec m c = if m = 0 then c else 
@@ -478,7 +486,7 @@ let pred_case_ml_fail env sigma isrec (mI,globargs,la) (i,ft) =
   let (_,j),_ = mI in
   let mispec = lookup_mind_specif mI env in
   let nparams = mis_nparams mispec in
-  let pred = 
+  let pred =
     let recargs = (mis_recarg mispec) in
     assert (Array.length recargs <> 0);
     let recargi = recargs.(i-1) in
@@ -501,7 +509,8 @@ let pred_case_ml env sigma isrec (c,ct) lf (i,ft) =
 (* similar to pred_case_ml but does not expect the list lf of braches *)
 let pred_case_ml_onebranch env sigma isrec (c,ct) (i,f,ft) = 
     pred_case_ml_fail env sigma isrec ct (i,ft)
-      
+
+(* Used in Program only *)      
 let make_case_ml isrec pred c ci lf = 
   if isrec then 
     DOPN(XTRA("REC"),Array.append [|pred;c|] lf)
