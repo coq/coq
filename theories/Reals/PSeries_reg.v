@@ -17,16 +17,17 @@ Require Even.
 
 Definition Boule [x:R;r:posreal] : R -> Prop := [y:R]``(Rabsolu (y-x))<r``.
 
+(* Uniform convergence *)
 Definition CVU [fn:nat->R->R;f:R->R;x:R;r:posreal] : Prop := (eps:R)``0<eps``->(EX N:nat | (n:nat;y:R) (le N n)->(Boule x r y)->``(Rabsolu ((f y)-(fn n y)))<eps``). 
 
+(* Normal convergence *)
 Definition CVN_r [fn:nat->R->R;r:posreal] : Type := (SigT ? [An:nat->R](sigTT R [l:R]((Un_cv [n:nat](sum_f_R0 [k:nat](Rabsolu (An k)) n) l)/\((n:nat)(y:R)(Boule R0 r y)->(Rle (Rabsolu (fn n y)) (An n)))))).
 
 Definition CVN_R [fn:nat->R->R] : Type := (r:posreal) (CVN_r fn r).
 
 Definition SFL [fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l))] : R-> R := [y:R](Cases (cv y) of (existTT a b) => a end).
 
-(* Dans un espace complet, la convergence normale implique la 
-   convergence uniforme *)
+(* In a complete space, normal convergence implies uniform convergence *)
 Lemma CVN_CVU : (fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l));r:posreal) (CVN_r fn r) -> (CVU [n:nat](SP fn n) (SFL fn cv) ``0`` r).
 Intros; Unfold CVU; Intros.
 Unfold CVN_r in X.
@@ -63,8 +64,7 @@ Unfold R_dist; Unfold R_dist in H4.
 Rewrite minus_R0; Apply H4; Assumption.
 Qed.
 
-(* La limite d'une suite de fonctions continues convergeant uniformement
-   est continue *)
+(* Each limit of a sequence of functions which converges uniformly is continue *)
 Lemma CVU_continuity : (fn:nat->R->R;f:R->R;x:R;r:posreal) (CVU fn f x r) -> ((n:nat)(y:R) (Boule x r y)->(continuity_pt (fn n) y)) -> ((y:R) (Boule x r y) -> (continuity_pt f y)).
 Intros; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros.
 Unfold CVU in H.
@@ -139,7 +139,7 @@ Apply le_trans with N; [Assumption | Apply le_n_Sn].
 Apply (H (S N)); Apply le_n.
 Qed.
 
-(* Continuite d'une série de fonctions normalement convergeante *)
+(* Continuity and normal convergence *)
 Lemma SFL_continuity_pt : (fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l));r:posreal) (CVN_r fn r) -> ((n:nat)(y:R) (Boule ``0`` r y) -> (continuity_pt (fn n) y)) -> ((y:R) (Boule ``0`` r y) -> (continuity_pt (SFL fn cv) y)).
 Intros; EApply CVU_continuity.
 Apply CVN_CVU.
@@ -161,7 +161,7 @@ Apply H1.
 Unfold Boule; Simpl; Rewrite minus_R0; Pattern 1 (Rabsolu x); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rlt_R0_R1.
 Qed.
 
-(* Grace a la completude de R, on a le lemme suivant *)
+(* As R is complete, normal convergence implies that (fn) is simply-uniformly convergent *) 
 Lemma CVN_R_CVS : (fn:nat->R->R) (CVN_R fn) -> ((x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l))).
 Intros; Apply R_complet.
 Unfold SP; Pose An := [N:nat](fn N x).
