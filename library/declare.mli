@@ -49,11 +49,11 @@ val declare_parameter : identifier -> constr -> constant_path
 (* [declare_constant id cd] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block *)
-val declare_mind : mutual_inductive_entry -> section_path
+val declare_mind : mutual_inductive_entry -> mutual_inductive_path
 
 (* [declare_eliminations sp] declares elimination schemes associated
    to the mutual inductive block refered by [sp] *)
-val declare_eliminations : section_path -> unit
+val declare_eliminations : mutual_inductive_path -> unit
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
@@ -71,7 +71,7 @@ val constant_or_parameter_strength : constant_path -> strength
 val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : variable_path -> named_declaration * strength * sticky
 val variable_strength : variable_path -> strength
-val find_section_variable : identifier -> section_path
+val find_section_variable : identifier -> variable_path
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 
@@ -98,8 +98,8 @@ val construct_reference : Environ.env -> path_kind -> identifier -> constr
 
 val is_global : identifier -> bool
 
-val path_of_inductive_path : inductive_path -> section_path
-val path_of_constructor_path : constructor_path -> section_path
+val path_of_inductive_path : inductive_path -> mutual_inductive_path
+val path_of_constructor_path : constructor_path -> mutual_inductive_path
 
 (* Look up function for the default elimination constant *)
 val elimination_suffix : sorts -> string

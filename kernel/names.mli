@@ -113,6 +113,7 @@ type variable_path = section_path
 type constant_path = section_path
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int
+type mutual_inductive_path = section_path
 
 (* Hash-consing *)
 val hcons_names : unit ->
