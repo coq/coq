@@ -197,8 +197,6 @@ Extensions de syntaxe avec Grammar et Syntax
 - Le non affichage des Infix est corrigé.
 
 - Ajout d'une syntaxe pour les réels: ``Rexpr``.
-  Point noir dû aux constantes: (Rplus (Rplus (Rplus R1 R1) (Rplus R1 R1)) R1)
-  est toujours (2+2+1) au lieu de 2+2+1 
 
 
 Syntaxe des constructions
@@ -314,6 +312,12 @@ Tactiques
 - Nouveau: tactique Field pour décider des égalités sur les corps commutatifs.
   La tactique a été instantiée pour les nombres réels et peut donc être
   utilisée pour résoudre des égalités sur les réels.
+
+- Nouveau: tactique Fourier qui résoud les inégalités linéaires sur les
+  nombres réels.
+
+- Nouveau: diverses tactiques pour les nombres réels: DiscrR, SplitRmult, 
+  SplitAbsolu.
 
 Outils
 
