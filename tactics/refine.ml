@@ -141,7 +141,7 @@ let rec compute_metamap env c = match kind_of_term c with
       *)
       TH (c,[],[None])
   | Cast (m,ty) when isMeta m -> 
-      TH (c,[destMeta m,ty],[None])
+      TH (m,[destMeta m,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (Var x)
@@ -335,7 +335,8 @@ let rec tcc_aux subst (TH (c,mm,sgp) as th) gl =
             (function None -> tclIDTAC | Some th -> tcc_aux subst th) sgp)
 	  gl
 
-(* Et finalement la tactique refine elle-même : *)
+
+(* La coercion face au but était faite auparavant dans Tacinterp *)
 
 let coerce_to_goal (sigma,c) gl =
   let env = pf_env gl in
@@ -345,6 +346,8 @@ let coerce_to_goal (sigma,c) gl =
   let (evars,j) = Coercion.inh_conv_coerce_to dummy_loc env evars j ccl in
   let sigma = Evd.evars_of evars in
   (sigma,Reductionops.nf_evar sigma j.Environ.uj_val)
+
+(* Et finalement la tactique refine elle-même : *)
 
 let refine oc gl =
   let sigma = project gl in
