@@ -1,6 +1,11 @@
 Changes from V7.4
 =================
 
+Vernacular commands
+
+- "Declare ML Module" now allows us to import .cma files. This avoids to use a
+   bunch of "Declare ML Module" statements when using several ML files.
+
 Bugs
 
 - Rename bug fixed (#244)

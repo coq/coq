@@ -87,47 +87,29 @@ let ocaml_toploop () =
   match !load with
     | WithTop t -> Printexc.catch t.ml_loop ()
     | _ -> ()
-(*
-        errorlabstrm "Mltop.ocaml_toploop"
-          [< str"Cannot access the ML toplevel" >]
-*)
 
-(* Dynamic loading of .cmo *)
+(* Dynamic loading of .cmo/.cma *)
 let dir_ml_load s = 
   match !load with
-    | WithTop t -> 
-	if is_in_path !coq_mlpath_copy s then
-          try 
-            t.load_obj s
-          with
-            | (UserError _ | Failure _ | Anomaly _ | Not_found as u) ->
-              raise u
-            | _ -> errorlabstrm "Mltop.load_object"
-                  [< str"Cannot link ml-object "; str s;
-		     str" to Coq code." >]
-
-
-	else 
-	  errorlabstrm "Mltop.load_object"
-            [< str"File not found on loadpath : "; str s >]
+    | WithTop t ->
+      (try t.load_obj s
+       with
+       | (UserError _ | Failure _ | Anomaly _ | Not_found as u) -> raise u
+       | _ -> errorlabstrm "Mltop.load_object" [< str"Cannot link ml-object ";
+                str s; str" to Coq code." >])
+(* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
       ifdef Byte then
-	(if is_in_path !coq_mlpath_copy s then
-          let _,gname = where_in_path !coq_mlpath_copy s in
-          try
-            Dynlink.loadfile gname;
-	    Dynlink.add_interfaces 
-	      [(String.capitalize (Filename.chop_suffix
-				     (Filename.basename gname) ".cmo"))] 
-	      [Filename.dirname gname]
-	  with
-	    | Dynlink.Error(a) ->
-		errorlabstrm "Mltop.load_object"
-                  [< str (Dynlink.error_message a) >]
-	else errorlabstrm "Mltop.load_object"
-          [< str"File not found on loadpath : "; str s >])
-      else
-	()
+        let _,gname = where_in_path !coq_mlpath_copy s in
+        try
+          Dynlink.loadfile gname;
+	  Dynlink.add_interfaces 
+	    [(String.capitalize (Filename.chop_suffix
+				(Filename.basename gname) ".cmo"))] 
+	    [Filename.dirname gname]
+	with | Dynlink.Error a ->
+          errorlabstrm "Mltop.load_object" [< str (Dynlink.error_message a) >]
+      else ()
     | Native ->
 	errorlabstrm "Mltop.no_load_object"
           [< str"Loading of ML object file forbidden in a native Coq" >]
@@ -193,7 +175,15 @@ let mod_of_name name =
   in 
   String.capitalize base
 
-let file_of_name name = make_suffix (String.uncapitalize name) ".cmo"
+let file_of_name name =
+  let bname = String.uncapitalize name in
+  let fname = make_suffix bname ".cmo" in
+  if (is_in_path !coq_mlpath_copy fname) then fname
+  else let fname=make_suffix bname ".cma" in
+  if (is_in_path !coq_mlpath_copy fname) then fname
+  else
+    errorlabstrm "Mltop.load_object"
+      [< str"File not found on loadpath : "; str (bname^".cm[oa]") >]
 
 (* TODO: supprimer ce hack, si possible *)
 (* Initialisation of ML modules that need the state (ex: tactics like

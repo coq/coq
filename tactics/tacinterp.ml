@@ -772,12 +772,6 @@ let apply_one_mhyp_context ist env gl lmatch mhyp lhyps noccopt =
   and get_info_pattern = function
     | Hyp((_,idpat),pat) -> (Some idpat,pat)
     | NoHypId pat -> (None,pat) in
-
-(*=======
-    | Hyp((_,idpat),_) -> [idpat,VConstr (mkVar id)]
-    | NoHypId _ -> [] in
->>>>>>> 1.28*)
-
   let rec apply_one_mhyp_context_rec ist env mhyp lhyps_acc nocc = function
     | (id,hyp)::tl ->
       (match (get_pattern mhyp) with
