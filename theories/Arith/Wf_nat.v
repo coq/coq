@@ -66,20 +66,25 @@ Apply F.
 Unfold ltof; Intros b ltfafb.
 Apply IHn.
 Apply lt_le_trans with (f a); Auto with arith.
-Qed. 
+Defined. 
 
 Theorem induction_gtof1 
   : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
-Proof induction_ltof1.
+Proof.
+Exact induction_ltof1.
+Defined.
 
 Theorem induction_ltof2 
   : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
-Proof (well_founded_induction A ltof well_founded_ltof).
+Proof.
+Exact (well_founded_induction A ltof well_founded_ltof).
+Defined.
 
 Theorem induction_gtof2 
   : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
-Proof induction_ltof2.
-
+Proof.
+Exact induction_ltof2.
+Defined.
 
 (** If a relation [R] is compatible with [lt] i.e. if [x R y => f(x) < f(y)]
     then [R] is well-founded. *)
@@ -109,13 +114,17 @@ Proof (well_founded_ltof nat [m:nat]m).
 
 Lemma lt_wf_rec1 : (p:nat)(P:nat->Set)
               ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
-Proof [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
+Proof.
+Exact [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
      (induction_ltof1 nat [m:nat]m P F p).
+Defined.
 
 Lemma lt_wf_rec : (p:nat)(P:nat->Set)
               ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
-Proof [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
+Proof.
+Exact [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
      (induction_ltof2 nat [m:nat]m P F p).
+Defined.
 
 Lemma lt_wf_ind : (p:nat)(P:nat->Prop)
               ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
@@ -124,7 +133,9 @@ Qed.
 
 Lemma gt_wf_rec : (p:nat)(P:nat->Set)
               ((n:nat)((m:nat)(gt n m)->(P m))->(P n)) -> (P p).
-Proof lt_wf_rec.
+Proof.
+Exact lt_wf_rec.
+Defined.
 
 Lemma gt_wf_ind : (p:nat)(P:nat->Prop)
               ((n:nat)((m:nat)(gt n m)->(P m))->(P n)) -> (P p).
@@ -136,7 +147,7 @@ Lemma lt_wf_double_rec :
    -> (p,q:nat)(P p q).
 Intros P Hrec p; Pattern p; Apply lt_wf_rec.
 Intros; Pattern q; Apply lt_wf_rec; Auto with arith.
-Qed.
+Defined.
 
 Lemma lt_wf_double_ind : 
   (P:nat->nat->Prop)
