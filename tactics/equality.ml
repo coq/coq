@@ -366,12 +366,11 @@ let find_positions env sigma t1 t2 =
           and t2_0 = applist t2_0 in
           if is_conv env sigma t1_0 t2_0 then 
 	    []
-          else 
-	    (match whd_castapp ((unsafe_machine env sigma t1_0).uj_kind) with
-	       | DOP0(Sort(Prop Pos)) ->
-		   [(List.rev posn,t1_0,t2_0)] (* Set *)
-	       | DOP0(Sort(Type(_))) ->
-		   [(List.rev posn,t1_0,t2_0)] (* Type *)
+          else
+	    let ty1_0 = get_type_of env sigma t1_0 in
+	    (match get_sort_of env sigma ty1_0 with
+	       | Prop Pos -> [(List.rev posn,t1_0,t2_0)] (* Set *)
+	       | Type _ -> [(List.rev posn,t1_0,t2_0)] (* Type *)
 	       | _ -> [])
 	  in 
 	  (try 
@@ -448,9 +447,8 @@ let discriminable env sigma t1 t2 =
  *)
 
 let descend_then sigma env head dirn =
-  let headj = unsafe_machine env sigma head in
   let IndType (indf,_) as indt =
-    try find_inductive env sigma headj.uj_type
+    try find_inductive env sigma (get_type_of env sigma head)
     with Not_found -> assert false in
   let mispec,params = dest_ind_family indf in
   let construct =
