@@ -155,7 +155,7 @@ meaning:
   follows:
   \begin{itemize}
   \item $\Def{}{c}{U}{t}/p ~=~ \Def{}{c}{U}{t}$
-  \item $\Assum{}{c}{U}/p ~=~ \Def{}{c}{U}{p.c}$
+  \item $\Assum{}{c}{U}/p ~=~ \Def{}{c}{p.c}{U}$
   \item $\ModS{X}{T}/p ~=~ \ModSEq{X}{T/p.X}{p.X}$
   \item $\ModSEq{X}{T}{p'}/p ~=~ \ModSEq{X}{T/p}{p'}$
   \item $\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$
@@ -228,7 +228,7 @@ Specification subtyping rules:
   \frac{
     \WTELECONV{}{U_1}{U_2}
   }{
-    \WSE{\Def{}{c}{U_1}{t}}{\Assum{}{c}{U_2}}
+    \WSE{\Def{}{c}{t}{U_1}}{\Assum{}{c}{U_2}}
   }
 }
 \item[ASSUM-DEF]
@@ -236,7 +236,7 @@ Specification subtyping rules:
   \frac{
     \WTELECONV{}{U_1}{U_2}~~~~~~~~\WTECONV{}{c}{t_2}
   }{
-    \WSE{\Assum{}{c}{U_1}}{\Def{}{c}{U_2}{t_2}}
+    \WSE{\Assum{}{c}{U_1}}{\Def{}{c}{t_2}{U_2}}
   }
 }
 \item[DEF-DEF]
@@ -244,7 +244,7 @@ Specification subtyping rules:
   \frac{
     \WTELECONV{}{U_1}{U_2}~~~~~~~~\WTECONV{}{t_1}{t_2}
   }{
-    \WSE{\Def{}{c}{U_1}{t_1}}{\Def{}{c}{U_2}{t_2}}
+    \WSE{\Def{}{c}{t_1}{U_1}}{\Def{}{c}{t_2}{U_2}}
   }
 }
 \item[IND-IND]
@@ -406,7 +406,7 @@ Component access rules
 \\
 \inference{%
   \frac{
-    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{U}{t};\dots}}
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{t}{U};\dots}}
   }{
     \WTEG{p.c}{\subst{U}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
   }
@@ -416,7 +416,7 @@ Notice that the following rule extends the delta rule defined in
 section~\ref{delta}
 \inference{%
   \frac{
-    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{U}{t};\dots}}
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{t}{U};\dots}}
   }{
     \WTEGRED{p.c}{\triangleright_\delta}{\subst{t}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
   }
@@ -496,7 +496,7 @@ $\lab{\Spec_1;\dots;\Spec_n}=\lab{\Spec_1}\cup\dots;\cup\lab{\Spec_n}$
 where $\lab{\Spec}$ is defined as follows:
 \begin{itemize}
 \item $\lab{\Assum{\Gamma}{c}{U}}=\{c\}$,
-\item $\lab{\Def{\Gamma}{c}{U}{t}}=\{c\}$,
+\item $\lab{\Def{\Gamma}{c}{t}{U}}=\{c\}$,
 \item
   $\lab{\Ind{\Gamma}{\Gamma_P}{\Gamma_C}{\Gamma_I}}=\dom{\Gamma_C}\cup\dom{\Gamma_I}$,
 \item $\lab{\ModS{m}{T}}=\{m\}$,
