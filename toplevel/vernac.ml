@@ -138,7 +138,7 @@ let rec vernac_com interpfun (loc,com) =
        (match com with
          | VernacV7only _ ->
              Options.v7_only := true;
-             if !translate_file then msgnl (pr_comments !comments)
+             if !translate_file then msg (pr_comments !comments)
          | _ ->
              if !translate_file then
                msgnl

@@ -258,8 +258,9 @@ let pr_vbinders pr_c l =
   hv 0 (prlist_with_sep spc (pr_valdecls pr_c) l)
 
 let pr_sbinders sbl =
-  let bl = List.map (fun (id,c) -> ([(dummy_loc,Name id)],c)) sbl in
-  pr_binders bl
+  if sbl = [] then mt () else
+    let bl = List.map (fun (id,c) -> ([(dummy_loc,Name id)],c)) sbl in
+    pr_binders bl ++ spc ()
 
 let pr_onescheme (id,dep,ind,s) =
   pr_id id ++ str" :=" ++ spc() ++
@@ -547,8 +548,8 @@ let rec pr_vernac = function
             fnl() ++ str" | " ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l in
       let pr_oneind (id,indpar,s,lc) =
-        pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
-        pr_lconstr s ++ str" :=" ++ pr_constructor_list lc in
+        hov 0 (pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
+        pr_lconstr s ++ str" :=") ++ pr_constructor_list lc in
       hov 1
         ((if f then str"Inductive" else str"CoInductive") ++ spc() ++
  	 prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_oneind l)
