@@ -282,5 +282,5 @@ deb: ${COQPACKAGE}.tar.gz
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
 	cd deb_build ; mv ${COQPACKAGE} ${COQPACKAGE}.orig
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
-	cd deb_build/${COQPACKAGE} ; cp -a distrib/debian .
+	cp -a debian deb_build/${COQPACKAGE}
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us
