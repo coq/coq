@@ -184,10 +184,10 @@ let rec compute_metamap env gmm c = match kind_of_term c with
 	  TH (c,[],[])
       end
 
-  | Case (ci,p,c,v) ->
+  | Case (ci,p,cc,v) ->
       (* bof... *)
       let nbr = Array.length v in
-      let v = Array.append [|p;c|] v in
+      let v = Array.append [|p;cc|] v in
       let a = Array.map (compute_metamap env gmm) v in
       begin
 	try
