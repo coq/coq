@@ -1,3 +1,25 @@
+Changes from V7.1 to V7.2
+========================
+
+Standard library
+----------------
+
+- In [Relations], the files Rstar.v and Newman.v are now axiom-free. 
+
+- In [Sets], the file Integers.v uses directly the type nat and 
+   not any more an encapsulation Nat. Consequent simplifications. 
+
+- In [Arith], the file Min.v contains now more lemmas, and a dual file 
+   Max.v has been introduced. 
+
+- In [Arith], a tail-recursive plus and mult are now defined. Cf. files 
+   Plus.v and Mult.v	
+
+- A new directory named [Sorting] contains a proof of a heapsort. 
+   (theory forgotten during the port of V6.3 to V7.0) 
+
+
+----------------------------------------------------------------------------
 Changes from ??? to V7.1
 ========================
 
