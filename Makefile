@@ -512,7 +512,8 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
 	theories/Reals/Rderiv.vo       theories/Reals/Rseries.vo \
 	theories/Reals/Rtrigo_fun.vo   theories/Reals/Rsigma.vo \
-	theories/Reals/Alembert.vo \
+	theories/Reals/Alembert.vo     theories/Reals/Rcomplet.vo \
+	theories/Reals/Alembert_compl.vo \
 	theories/Reals/Rtrigo_def.vo   theories/Reals/Rtrigo.vo  \
 	theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
 	theories/Reals/Ranalysis3.vo   theories/Reals/Ranalysis4.vo \
