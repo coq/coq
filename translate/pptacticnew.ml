@@ -214,10 +214,11 @@ let rec pr_intro_pattern = function
   | IntroIdentifier id -> pr_id id
 and pr_case_intro_pattern = function
   | [_::_ as pl] ->
-      str "(" ++ hv 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
+      str "(" ++ hov 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
   | pll ->
       str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
+      hv 0 (prlist_with_sep pr_bar 
+        (fun l -> hov 0 (prlist_with_sep spc pr_intro_pattern l)) pll)
       ++ str "]"
 
 let pr_with_names = function
@@ -329,14 +330,31 @@ let pr_seq_body pr tl =
         prlist_with_sep (fun () -> spc () ++ str "| ") pr tl ++
         str " ]")
 
-let duplicate force pr = function
-  | [] -> pr (ref false,[])
-  | x::l when List.for_all (fun y -> snd x=snd y) l -> pr x
+let pr_as_names_force force ids (pp,ids') =
+  pr_with_names 
+    (if (!pp or force) & List.exists ((<>) (ref [])) ids'
+    then Some (IntroOrAndPattern (List.map (fun x -> !x) ids'))
+    else ids)
+
+let duplicate force nodup ids pr = function
+  | [] -> pr (pr_as_names_force force ids (ref false,[]))
+  | x::l when List.for_all (fun y -> snd x=snd y) l ->
+      pr (pr_as_names_force force ids x)
   | l ->
      if List.exists (fun (b,ids) -> !b) l & (force or
 	 List.exists (fun (_,ids) -> ids <> (snd (List.hd l))) (List.tl l))
-      then pr_seq_body pr (List.rev l)
-      else pr (ref false,[])
+      then 
+        if nodup then begin
+          msgerrnl
+            (h 0 (str "Translator warning: Unable to enforce v7 names while translating Induction/NewDestruct/NewInduction. Names in the different branches are") ++ brk (0,0) ++
+            hov 0 (prlist_with_sep spc
+              (fun id -> hov 0 (pr_as_names_force true ids id))
+              (List.rev l)));
+          pr (pr_as_names_force force ids (ref false,[]))
+        end
+        else
+          pr_seq_body (fun x -> pr (pr_as_names_force force ids x)) (List.rev l)
+      else pr (pr_as_names_force force ids (ref false,[]))
 
 let pr_hintbases = function
   | None -> spc () ++ str "with *"
@@ -529,28 +547,26 @@ and pr_atom1 env = function
   (* Derived basic tactics *)
   | TacSimpleInduction (h,l) ->
       if List.exists (fun (pp,_) -> !pp) !l then
-      duplicate true (fun (_,ids) ->
-      hov 1 (str "induction" ++ spc () ++ pr_arg pr_quantified_hypothesis h ++ 
-      pr_with_names (Some (IntroOrAndPattern (List.map(fun x -> !x) ids))))) !l
+        duplicate true true None (fun pnames -> 
+          hov 1 (str "induction" ++ pr_arg pr_quantified_hypothesis h ++
+          pnames)) !l
       else
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (h,e,(ids,l)) ->
-      duplicate false (fun (pp,ids') ->
+      duplicate false true ids (fun pnames ->
       hov 1 (str "induction" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ 
-      pr_with_names (if !pp then Some (IntroOrAndPattern (List.map (fun x -> !x) ids')) else ids) ++
+             pr_induction_arg (pr_constr env) h ++ pnames ++
              pr_opt (pr_eliminator env) e)) !l
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,(ids,l)) ->
-      duplicate false (fun (pp,ids') ->
+      duplicate false true ids (fun pnames ->
       hov 1 (str "destruct" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++ 
-      pr_with_names (if !pp then Some (IntroOrAndPattern (List.map (fun x -> !x) ids')) else ids)
-      ++ pr_opt (pr_eliminator env) e)) !l
+             pr_induction_arg (pr_constr env) h ++ pnames ++
+             pr_opt (pr_eliminator env) e)) !l
   | TacDoubleInduction (h1,h2) ->
       hov 1
-        (str "double induction" ++ 
+        (str "double induction" ++  
          pr_arg pr_quantified_hypothesis h1 ++
  	 pr_arg pr_quantified_hypothesis h2)
   | TacDecomposeAnd c ->
@@ -710,8 +726,31 @@ let rec pr_tac env inherited tac =
              pr_seq_body (pr_tac env ltop) tl),
       lseq
   | TacThen (t1,t2) ->
-      hov 1 (pr_tac env (lseq,E) t1 ++ pr_then () ++ spc () ++
-             pr_tac env (lseq,L) t2),
+      let pp2 =
+        (* Hook for translation names in induction/destruct *)
+        match t2 with
+          | TacAtom (_,TacSimpleInduction (h,l)) ->
+              if List.exists (fun (pp,ids) -> !pp) !l then
+                duplicate true false None (fun pnames ->
+                  hov 1 
+                  (str "induction" ++ pr_arg pr_quantified_hypothesis h ++
+                  pnames)) !l
+              else
+                hov 1
+                  (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
+          | TacAtom (_,TacNewInduction (h,e,(ids,l))) ->
+              duplicate false false ids (fun pnames -> 
+                hov 1 (str "induction" ++ spc () ++
+                pr_induction_arg (pr_constr env) h ++ pnames ++
+                pr_opt (pr_eliminator env) e)) !l
+          | TacAtom (_,TacNewDestruct (h,e,(ids,l))) ->
+              duplicate false false ids (fun pnames ->
+                hov 1 (str "destruct" ++ spc () ++
+                pr_induction_arg (pr_constr env) h ++ pnames ++
+                pr_opt (pr_eliminator env) e)) !l
+              (* end hook *)
+          | _ -> pr_tac env (lseq,L) t2 in
+      hov 1 (pr_tac env (lseq,E) t1 ++ pr_then () ++ spc () ++ pp2),
       lseq
   | TacTry t ->
       hov 1 (str "try" ++ spc () ++ pr_tac env (ltactical,E) t),
