@@ -87,11 +87,10 @@ type cc_binder = variable * cc_bind_type
 
 type cc_term =
   | CC_var of variable
-  | CC_letin of 
-      bool * cc_type * cc_binder list * (cc_term * Term.case_info) * cc_term
+  | CC_letin of bool * cc_type * cc_binder list * cc_term * cc_term
   | CC_lam of cc_binder list * cc_term
   | CC_app of cc_term * cc_term list
   | CC_tuple of bool * cc_type list * cc_term list
-  | CC_case of cc_type * (cc_term * Term.case_info) * cc_term list
+  | CC_case of cc_type * cc_term * cc_term list
   | CC_expr of Term.constr
   | CC_hole of cc_type

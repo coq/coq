@@ -35,17 +35,17 @@ open Peffect
  *)
 
 let product_name = function
-    2 -> "prod"
+  | 2 -> "prod"
   | n -> Printf.sprintf "tuple_%d" n
 
 let dep_product_name = function
-    1 -> "sig"
+  | 1 -> "sig"
   | n -> Printf.sprintf "sig_%d" n
 
 let product ren env before lo = function
-    None -> (* non dependent case *)
+  | None -> (* non dependent case *)
       begin match lo with
-	  [_,v] -> v
+	| [_,v] -> v
 	| _ ->
 	    let s = product_name (List.length lo) in
       	    Term.applist (constant s, List.map snd lo)
@@ -88,8 +88,7 @@ let rec abstract_post ren env (e,q) =
 
 and prod ren env g = 
   List.map
-    (fun id -> 
-       (current_var ren id,trad_type_in_env ren env id)) 
+    (fun id -> (current_var ren id, trad_type_in_env ren env id)) 
     g
 
 and input ren env e  =
@@ -124,7 +123,7 @@ and trad_ml_type_v ren env = function
       let bl',ren',env' =
 	List.fold_left
 	  (fun (bl,ren,env) b -> match b with
-	       (id,BindType ((Ref _ | Array _) as v)) ->
+	     | (id,BindType ((Ref _ | Array _) as v)) ->
 		 let env' = add (id,v) env in
 		 let ren' = initial_renaming env' in
 		 (bl,ren',env')
@@ -145,7 +144,7 @@ and trad_ml_type_v ren env = function
       (apply_pre ren env (anonymous_pre false c)).p_value
 
 and trad_imp_type ren env = function
-    Ref v        -> trad_ml_type_v ren env v
+  | Ref v        -> trad_ml_type_v ren env v
   | Array (c,v)  -> Term.applist (constant "array", 
 				  [c; trad_ml_type_v ren env v])
   | _            -> invalid_arg "Monad.trad_imp_type"
@@ -166,10 +165,9 @@ let binding_of_alist ren env al =
 (* [make_abs bl t p] abstracts t w.r.t binding list bl., that is
  * [x1:t1]...[xn:tn]t. Returns t if the binding is empty. *)
 
-let make_abs bl t =
-  match bl with
-      [] -> t
-    | _  -> CC_lam (bl, t)
+let make_abs bl t = match bl with
+  | [] -> t
+  | _  -> CC_lam (bl, t)
 
 
 (* [result_tuple ren before env (res,v) (ef,q)] constructs the tuple 
@@ -180,21 +178,21 @@ let make_abs bl t =
  * if there is no yi and no post-condition, it is simplified in res itself.
  *)
 
-let make_tuple l q ren env before =
-  match l with
-      [e,_] when q = None -> e
-    | _ ->
-	let tl = List.map snd l in
-	let dep,h,th = match q with
-	    None -> false,[],[]
-	  | Some c ->
-	      let args = List.map (fun (e,_) -> constr_of_prog e) l in
-	      let c = apply_post ren env before c in
-		true,
-		[ CC_hole (Term.applist (c.a_value, args)) ], (* hole *)
-		[ c.a_value ]                     (* type of the hole *)
-	in 
-	  CC_tuple (dep, tl @ th, (List.map fst l) @ h)
+let make_tuple l q ren env before = match l with
+  | [e,_] when q = None -> 
+      e
+  | _ ->
+      let tl = List.map snd l in
+      let dep,h,th = match q with
+	| None -> false,[],[]
+	| Some c ->
+	    let args = List.map (fun (e,_) -> constr_of_prog e) l in
+	    let c = apply_post ren env before c in
+	    true,
+	    [ CC_hole (Term.applist (c.a_value, args)) ], (* hole *)
+	    [ c.a_value ]                     (* type of the hole *)
+      in 
+      CC_tuple (dep, tl @ th, (List.map fst l) @ h)
 
 let result_tuple ren before env (res,v) (ef,q) =
   let ids = get_writes ef in
@@ -202,7 +200,7 @@ let result_tuple ren before env (res,v) (ef,q) =
     (List.map (fun id -> 
 		 let id' = current_var ren id in
 		 CC_var id', trad_type_in_env ren env id) ids)
-    @[res,v]
+    @ [res,v]
   in
   let q = abstract_post ren env (ef,q) in
   make_tuple lo q ren env before,
@@ -266,25 +264,25 @@ let abs_pre ren env (t,ty) pl =
 
 let make_block ren env finish bl =
   let rec rec_block ren result = function
-      [] ->
+    | [] ->
 	finish ren result
-   | (Assert c) :: block ->
-       let t,ty = rec_block ren result block in
-       let c = apply_assert ren env c in
-       let p = { p_assert = true; p_name = c.a_name; p_value = c.a_value } in
-       let_in_pre ty p t, ty
-   | (Label s) :: block ->
-       let ren' = push_date ren s in
-       rec_block ren' result block
-   | (Statement (te,info)) :: block ->
-       let (_,tye),efe,pe,qe = info in
-       let w = get_writes efe in
-       let ren' = next ren w in
-       let id = result_id in
-       let tye = trad_ml_type_v ren env tye in
-       let t = rec_block ren' (Some (id,tye)) block in
-       make_let_in ren env te pe (current_vars ren' w,qe) (id,tye) t,
-       snd t
+    | (Assert c) :: block ->
+	let t,ty = rec_block ren result block in
+	let c = apply_assert ren env c in
+	let p = { p_assert = true; p_name = c.a_name; p_value = c.a_value } in
+	let_in_pre ty p t, ty
+    | (Label s) :: block ->
+	let ren' = push_date ren s in
+	rec_block ren' result block
+    | (Statement (te,info)) :: block ->
+	let (_,tye),efe,pe,qe = info in
+	let w = get_writes efe in
+	let ren' = next ren w in
+	let id = result_id in
+	let tye = trad_ml_type_v ren env tye in
+	let t = rec_block ren' (Some (id,tye)) block in
+	make_let_in ren env te pe (current_vars ren' w,qe) (id,tye) t,
+	snd t
   in
   let t,_ = rec_block ren None bl in
   t
@@ -333,11 +331,7 @@ let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
   let ((_,tvf),ef,pf,qf) = cf in
   let (_,eapp,papp,qapp) = capp in
   let ((_,v),e,p,q) = c in
-
-  let bl = Util.map_succeed 
-	     (function b -> if is_ref_binder b then failwith "caught" else b) 
-	     bl
-  in
+  let bl = List.filter (fun b -> not (is_ref_binder b)) bl in
   let recur = is_recursive env tf in
   let before = current_date ren in
   let ren'' = next ren' (get_writes ef) in

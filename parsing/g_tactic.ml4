@@ -298,7 +298,7 @@ GEXTEND Gram
           <:ast< (StartProof "LETTOP" $id $c) >>
         | _ -> <:ast< (LETCUT (LETDECL ($LIST $llc))) >>)
       |	IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And";
-        tb = Vernac.theorem_body; "Qed" ->
+        tb = Vernac_.theorem_body; "Qed" ->
         (match llc with
 	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->
           <:ast< (TheoremProof "LETTOP" $id $c $tb) >>

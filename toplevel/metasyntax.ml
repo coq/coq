@@ -26,7 +26,7 @@ open Summary
 (* Done here to get parsing/g_*.ml4 non dependent from kernel *)
 let constr_parser_with_glob = map_entry Astterm.globalize_constr Constr.constr
 let tactic_parser_with_glob = map_entry Astterm.globalize_ast Tactic.tactic
-let vernac_parser_with_glob = map_entry Astterm.globalize_ast Vernac.vernac
+let vernac_parser_with_glob = map_entry Astterm.globalize_ast Vernac_.vernac
 
 (* This updates default parsers for Grammar actions and Syntax *)
 (* patterns by inserting globalization *)

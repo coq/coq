@@ -142,9 +142,8 @@ EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
 	      contrib/extraction/extraction.cmo \
 	      contrib/extraction/extract_env.cmo
 
-CORRECTNESS=contrib/correctness/pmisc.cmo				\
+CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
 	contrib/correctness/peffect.cmo contrib/correctness/prename.cmo	\
-	contrib/correctness/ptype.cmo contrib/correctness/past.cmo	\
 	contrib/correctness/perror.cmo contrib/correctness/penv.cmo	\
 	contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	\
 	contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo	\
@@ -202,7 +201,7 @@ CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
-#	$(CORRECTNESS)
+#	$(CORRECTNESSCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -277,6 +276,9 @@ tactics: $(TACTICS)
 parsing: $(PARSING)
 pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
+
+extraction: $(EXTRACTIONCMO)
+correctness: $(CORRECTNESSCMO)
 
 # special binaries for debugging
 

@@ -13,7 +13,7 @@
 open Coqast
 open Pcoq
 
-open Vernac
+open Vernac_
 
 GEXTEND Gram
   GLOBAL: identarg ne_identarg_list numarg ne_numarg_list numarg_list

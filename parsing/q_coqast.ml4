@@ -124,7 +124,7 @@ let f e =
 let _ = 
   Quotation.add "constr" (f Pcoq.Constr.constr_eoi);
   Quotation.add "tactic" (f Pcoq.Tactic.tactic_eoi);
-  Quotation.add "vernac" (f Pcoq.Vernac.vernac_eoi);
+  Quotation.add "vernac" (f Pcoq.Vernac_.vernac_eoi);
   Quotation.add "ast" (f Pcoq.Prim.ast_eoi);
   Quotation.default := "constr"
 

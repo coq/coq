@@ -93,7 +93,7 @@ GEXTEND Gram
      | ":"; IDENT "tactic" ->
 	 let _ = set_default_action_parser Tactic.tactic in Id(loc,"AST")
      | ":"; IDENT "vernac" ->
-	 let _ = set_default_action_parser Vernac.vernac in Id(loc,"AST")
+	 let _ = set_default_action_parser Vernac_.vernac in Id(loc,"AST")
      | -> Id(loc,"AST") ]]
   ;
 END

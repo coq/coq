@@ -159,7 +159,7 @@ module Tactic :
     val with_binding_list : Coqast.t Gram.Entry.e
   end
 
-module Vernac :
+module Vernac_ :
   sig
     val identarg : Coqast.t Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e

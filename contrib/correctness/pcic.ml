@@ -13,6 +13,8 @@
 open Names
 open Term
 open Declarations
+open Sign
+open Rawterm
 
 open Pmisc
 open Past
@@ -87,86 +89,112 @@ let sig_n n =
 	    mind_entry_consnames = [ cname ];
 	    mind_entry_lc = [ lc ] } ] }
 	
-let tuple_name dep n =
+let pair = ConstructRef ((coq_constant ["Init"; "Datatypes"] "pair",0),1)
+let exist = ConstructRef ((coq_constant ["Init"; "Specif"] "exist",0),1)
+
+let tuple_ref dep n =
   if n = 2 & not dep then
-    "pair"
+    pair
   else
     let n = n - (if dep then 1 else 0) in
     if dep then
       if n = 1 then 
-	"exist" 
+	exist
       else begin
 	let name = Printf.sprintf "exist_%d" n in
-	if not (tuple_exists (id_of_string name)) then ignore (sig_n n);
-	name
+	let id = id_of_string name in
+	if not (tuple_exists id) then ignore (sig_n n);
+	Nametab.sp_of_id CCI id
       end
     else begin
       let name = Printf.sprintf "Build_tuple_%d" n in
-      if not (tuple_exists (id_of_string name)) then tuple_n n;
-      name
+      let id = id_of_string name in
+      if not (tuple_exists id) then tuple_n n;
+      Nametab.sp_of_id CCI id
     end
 
 (* Binders. *)
 
-let trad_binding bl =
-  List.map (function
-		(id,CC_untyped_binder) -> (id,isevar)
-	      | (id,CC_typed_binder ty) -> (id,ty)) bl
+let trad_binder avoid nenv = function
+  | CC_untyped_binder -> RHole None
+  | CC_typed_binder ty -> Detyping.detype avoid nenv ty
 
-let lambda_of_bl bl c =
-  let b = trad_binding bl in n_lambda c (List.rev b)
+let rec push_vars avoid nenv = function
+  | [] -> ([],avoid,nenv)
+  | (id,b) :: bl -> 
+      let b' = trad_binder avoid nenv b in
+      let bl',avoid',nenv' = 
+	push_vars (id :: avoid) (add_name (Name id) nenv) bl 
+      in
+      ((id,b') :: bl', avoid', nenv')
+
+let rec raw_lambda bl v = match bl with
+  | [] -> 
+      v
+  | (id,ty) :: bl' -> 
+      RLambda (dummy_loc, Name id, ty, raw_lambda bl' v)
 
 (* The translation itself is quite easy.
-   letin are translated into Cases construtions *)
+   letin are translated into Cases constructions *)
 
-let constr_of_prog p =
-  let rec trad = function
-    | CC_var id -> mkVar id
+let rawconstr_of_prog p =
+  let rec trad avoid nenv = function
+    | CC_var id -> 
+	RVar (dummy_loc, id)
 
-    (* optimisation : let x = <constr> in e2  =>  e2[x<-constr] *)
-    | CC_letin (_,_,[id,_],(CC_expr c,_),e2) ->
+    (*i optimisation : let x = <constr> in e2  =>  e2[x<-constr] 
+    | CC_letin (_,_,[id,_],CC_expr c,e2) ->
 	real_subst_in_constr [id,c] (trad e2)
+    i*)
 
-    | CC_letin (_,_,([_] as b),(e1,_),e2) ->
-      	let c = trad e1 and c2 = trad e2 in
-	Term.applist (lambda_of_bl b c2, [c])
+    | CC_letin (_,_,([_] as b),e1,e2) ->
+	let (b',avoid',nenv') = push_vars avoid nenv b in
+      	let c1 = trad avoid nenv e1 
+	and c2 = trad avoid' nenv' e2 in
+	RApp (dummy_loc, raw_lambda b' c2, [c1])
 
-    | CC_letin (dep,ty,bl,(e,info),e1) ->
-	let c1 = trad e1
-	and c = trad e in
-	let l = [| lambda_of_bl bl c1 |] in
-	Term.mkMutCase (info, ty, c, l)
+    | CC_letin (dep,ty,bl,e1,e2) ->
+	let (bl',avoid',nenv') = push_vars avoid nenv bl in
+	let c1 = trad avoid nenv e1
+	and c2 = trad avoid' nenv' e2 in
+	ROldCase (dummy_loc, false, None, c1, [| raw_lambda bl' c2 |])
 
     | CC_lam (bl,e) ->
-	let c = trad e in lambda_of_bl bl c
+	let bl',avoid',nenv' = push_vars avoid nenv bl in
+	let c = trad avoid' nenv' e in 
+	raw_lambda bl' c
 
     | CC_app (f,args) ->
-	let c = trad f
-	and cargs = List.map trad args in
-	Term.applist (c,cargs)
+	let c = trad avoid nenv f
+	and cargs = List.map (trad avoid nenv) args in
+	RApp (dummy_loc, c, cargs)
 
-    | CC_tuple (_,_,[e]) -> trad e
+    | CC_tuple (_,_,[e]) -> 
+	trad avoid nenv e
 	
     | CC_tuple (false,_,[e1;e2]) ->
-	let c1 = trad e1 
-	and c2 = trad e2 in
-	Term.applist (constant "pair", [isevar;isevar;c1;c2])
+	let c1 = trad avoid nenv e1 
+	and c2 = trad avoid nenv e2 in
+	RApp (dummy_loc, RRef (dummy_loc,pair), [RHole None;RHole None;c1;c2])
 
     | CC_tuple (dep,tyl,l) ->
       	let n = List.length l in
-      	let cl = List.map trad l in
-      	let name = tuple_name dep n in
+      	let cl = List.map (trad avoid nenv) l in
+      	let tuple = tuple_ref dep n in
+	let tyl = List.map (Detyping.detype avoid nenv) tyl in
       	let args = tyl @ cl in
-	Term.applist (constant name,args)
+	RApp (dummy_loc, RRef (dummy_loc, tuple), args)
 
-    | CC_case (ty,(b,info),el) ->
-	let c = trad b in
-	let cl = List.map trad el in
-	mkMutCase (info, ty, c, Array.of_list cl)
+    | CC_case (_,b,el) ->
+	let c = trad avoid nenv b in
+	let cl = List.map (trad avoid nenv) el in
+	ROldCase (dummy_loc, false, None, c, Array.of_list cl)
 
-    | CC_expr c -> c
+    | CC_expr c -> 
+	Detyping.detype avoid nenv c
 
-    | CC_hole c -> make_hole c
+    | CC_hole c -> 
+	RCast (dummy_loc, RHole None, Detyping.detype avoid nenv c)
 
   in
-  trad p
+  trad [] empty_names_context p

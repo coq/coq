@@ -8,13 +8,13 @@
 
 (* Certification of Imperative Programs / Jean-Christophe Filliâtre *)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 open Past
-open Term
+open Rawterm
 
 
-(* transforms intermediate functional programs into CIC terms *)
+(* transforms intermediate functional programs into (raw) CIC terms *)
 
-val constr_of_prog : cc_term -> constr
+val rawconstr_of_prog : cc_term -> rawconstr
 

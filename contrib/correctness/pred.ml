@@ -29,23 +29,23 @@ let is_eta_redex bl al =
       Invalid_argument("List.for_all2") -> false
 
 let rec red = function
-    CC_letin (dep, ty, bl, (e1,info), e2) ->
+    CC_letin (dep, ty, bl, e1, e2) ->
       begin match red e2 with
 	  CC_tuple (false,tl,al) ->
 	    if is_eta_redex bl al then
 	      red e1
 	    else
-	      CC_letin (dep, ty, bl, (red e1,info),
+	      CC_letin (dep, ty, bl, red e1,
 			CC_tuple (false,tl,List.map red al))
-	| e -> CC_letin (dep, ty, bl, (red e1,info), e)
+	| e -> CC_letin (dep, ty, bl, red e1, e)
       end
 
   | CC_lam (bl, e) ->
       CC_lam (bl, red e)
   | CC_app (e, al) ->
       CC_app (red e, List.map red al)
-  | CC_case (ty, (e1,info), el) ->
-      CC_case (ty, (red e1,info), List.map red el)
+  | CC_case (ty, e1, el) ->
+      CC_case (ty, red e1, List.map red el)
   | CC_tuple (dep, tl, al) ->
       CC_tuple (dep, tl, List.map red al)
   | e -> e

@@ -264,7 +264,7 @@ and pp_binder = function
 
 let rec pp_cc_term = function
     CC_var id -> pr_id id
-  | CC_letin (_,_,bl,(c,_),c1) ->
+  | CC_letin (_,_,bl,c,c1) ->
       hOV 0 [< hOV 2 [< 'sTR"let ";
 		  	prlist_with_sep (fun () -> [< 'sTR"," >])
 			  (fun (id,_) -> pr_id id) bl;
@@ -287,7 +287,7 @@ let rec pp_cc_term = function
 	       prlist_with_sep (fun () -> [< 'sTR","; 'cUT >])
 		 pp_cc_term cl;
 	       'sTR")" >]
-  | CC_case (_,(b,_),[e1;e2]) ->
+  | CC_case (_,b,[e1;e2]) ->
       hOV 0 [< 'sTR"if "; pp_cc_term b; 'sTR" then"; 'fNL;
 	       'sTR"  "; hOV 0 (pp_cc_term e1); 'fNL;
 	       'sTR"else"; 'fNL;

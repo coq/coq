@@ -338,7 +338,7 @@ module Tactic =
   end
 
 
-module Vernac =
+module Vernac_ =
   struct
     let uvernac = snd (get_univ "vernac")
     let gec s =
@@ -405,7 +405,7 @@ let main_entry = Gram.Entry.create "vernac"
 
 GEXTEND Gram
   main_entry:
-    [ [ a = Vernac.vernac -> Some a | EOI -> None ] ]
+    [ [ a = Vernac_.vernac -> Some a | EOI -> None ] ]
   ;
 END
 
@@ -414,7 +414,7 @@ END
 open Prim
 open Constr
 open Tactic
-open Vernac
+open Vernac_
 
 (* current file and toplevel/vernac.ml *)
 
@@ -446,7 +446,7 @@ let _ = define_quotation false "ast" ast in ()
 
 let constr_parser = ref Constr.constr
 let tactic_parser = ref Tactic.tactic
-let vernac_parser = ref Vernac.vernac
+let vernac_parser = ref Vernac_.vernac
 
 let update_constr_parser p = constr_parser := p
 let update_tactic_parser p = tactic_parser := p

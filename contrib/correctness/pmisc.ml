@@ -17,6 +17,8 @@ open Term
 
 module SpSet = Set.Make(struct type t = section_path let compare = sp_ord end)
 
+let coq_constant d s = make_path ("Coq" :: d) (id_of_string s) CCI
+
 (* debug *)
 
 let debug = ref false
@@ -159,22 +161,20 @@ let is_connective id =
 
 (* [conj i s] constructs the conjunction of two constr *)
 
-let conj i s =
-  Term.applist (constant "and", [i; s])
+let conj i s = Term.applist (constant "and", [i; s])
 
-
-(* [n_mkNamedProd v [xn,tn;...;x1,t1]] constructs the type (x1:t1)...(xn:tn)v
- *)
+(* [n_mkNamedProd v [xn,tn;...;x1,t1]] constructs the type 
+   [(x1:t1)...(xn:tn)v] *)
 
 let rec n_mkNamedProd v = function
-    [] -> v
-  | (id,ty)::rem -> n_mkNamedProd (Term.mkNamedProd id ty v) rem
+  | [] -> v
+  | (id,ty) :: rem -> n_mkNamedProd (Term.mkNamedProd id ty v) rem
 
 (* [n_lambda v [xn,tn;...;x1,t1]] constructs the type [x1:t1]...[xn:tn]v *)
 
 let rec n_lambda v = function
-    [] -> v
-  | (id,ty)::rem -> n_lambda (Term.mkNamedLambda id ty v) rem
+  | [] -> v
+  | (id,ty) :: rem -> n_lambda (Term.mkNamedLambda id ty v) rem
 
 (* [abstract env idl c] constructs [x1]...[xn]c where idl = [x1;...;xn] *)
 

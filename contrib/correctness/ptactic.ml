@@ -13,6 +13,7 @@
 open Pp
 open Names
 open Term
+open Pretyping
 open Pfedit
 open Vernacentries
 
@@ -61,18 +62,15 @@ let coqast_of_prog p =
   deb_mess 
     [< 'fNL; 'sTR"Pcic.constr_of_prog: Traduction cc_term -> constr..."; 
        'fNL >];
-  let c = Pcic.constr_of_prog cc in
-  deb_mess (Printer.prterm c);
+  let r = Pcic.rawconstr_of_prog cc in
+  deb_mess (Printer.pr_rawterm r);
 
   (* 6. résolution implicites *)
   deb_mess [< 'fNL; 'sTR"Résolution implicites (? => Meta(n))..."; 'fNL >];
-  let c = c in
-  (*i WAS
-    (ise_resolve false (Evd.mt_evd()) [] (gLOB(initial_sign())) c)._VAL in
-  i*)
-  deb_mess (Printer.prterm c);
+  let oc = understand_gen_tcc Evd.empty (Global.env()) [] [] None r in
+  deb_mess (Printer.prterm (snd oc));
 
-  p,c,ty,v
+  p,oc,ty,v
 
 (* [automatic : tactic]
  * 
@@ -96,8 +94,6 @@ open Tacmach
 open Tactics
 open Tacticals
 open Equality
-
-let coq_constant d s = make_path ("Coq" :: d) (id_of_string s) CCI
 
 let nat = IndRef (coq_constant ["Init";"Datatypes"] "nat", 0)
 let lt = ConstRef (coq_constant ["Init";"Peano"] "lt")
@@ -201,7 +197,7 @@ let (automatic : tactic) =
 
 let correctness s p opttac =
   Pmisc.reset_names();
-  let p,c,cty,v = coqast_of_prog p in
+  let p,oc,cty,v = coqast_of_prog p in
   let env = Global.env () in
   let sign = Global.named_context () in
   let sigma = Evd.empty in
@@ -211,10 +207,9 @@ let correctness s p opttac =
   Penv.new_edited id (v,p);
   if !debug then show_open_subgoals();
   deb_mess [< 'sTR"Pred.red_cci: Réduction..."; 'fNL >];
-  let c = Pred.red_cci c in
+  let oc = let (mm,c) = oc in (mm, Pred.red_cci c) in
   deb_mess [< 'sTR"APRES REDUCTION :"; 'fNL >];
-  deb_mess (Printer.prterm c);
-  let oc = [],c in (* TODO: quid des existentielles ici *)
+  deb_mess (Printer.prterm (snd oc));
   let tac = (tclTHEN (Refine.refine_tac oc) automatic) in
   let tac = match opttac with 
     | None -> tac

@@ -15,6 +15,8 @@ open Term
 
 module SpSet : Set.S with type elt = section_path
 
+val coq_constant : string list -> string -> section_path
+
 (* Some misc. functions *)
 
 val reraise_with_loc : Coqast.loc -> ('a -> 'b) -> 'a -> 'b

@@ -14,7 +14,7 @@ open Pcoq
 open Pp
 open Tactic
 open Util
-open Vernac
+open Vernac_
 
 (* Proof commands *)
 GEXTEND Gram

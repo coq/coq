@@ -14,7 +14,7 @@ open Pcoq
 open Pp
 open Tactic
 open Util
-open Vernac
+open Vernac_
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
@@ -280,7 +280,7 @@ GEXTEND Gram
       | bl = simple_binders -> bl ] ]
   ;
   rec_constr:
-    [ [ c = Vernac.identarg -> <:ast< (VERNACARGLIST $c) >>
+    [ [ c = Vernac_.identarg -> <:ast< (VERNACARGLIST $c) >>
       |  -> <:ast< (VERNACARGLIST) >> ] ]
   ;
   gallina_ext:
