@@ -122,7 +122,7 @@ let update_closed nt =
 let long_type_hyp lh t=
    let t=ref t in
    List.iter (fun (n,th) ->
-         let Name ni = n in
+         let ni = match n with Name ni -> ni | _ -> assert false in
          t:= mkProd(n,th,subst_term (mkVar ni) !t))
        (List.rev lh);
    !t
@@ -152,7 +152,7 @@ let seq_to_lnhyp sign sign' cl =
 
 let rule_is_complex r =
    match r with
-      Tactic ("Interp",_) -> true
+      Tactic ("Interp",_) -> true  
    |  Tactic ("Auto", _) -> true
    |  Tactic ("Symmetry", _) -> true 
     |_ -> false
@@ -171,7 +171,9 @@ let rule_to_ntactic r =
      | _ -> Ast.ope ("Intros",[])) in
    if rule_is_complex r
    then (match rast with
-           Node(_,_,[Node(_,_,[Node(_,_,x)])]) ->x)
+           Node(_,_,[Node(_,_,[Node(_,_,x)])]) ->x
+          | _ -> assert false)
+
    else [rast ]
 ;;
 
@@ -235,11 +237,12 @@ let  to_nproof sigma osign pf =
       	if rule_is_complex r
       	then (
 	  let p1=(match pf.subproof with
-            Some x -> to_nproof_rec sigma sign x) in
+            Some x -> to_nproof_rec sigma sign x
+	    |_-> assert false) in
           let ntree= fill_unproved p1 
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in
-	  match r with
+	  (match r with
 	    Tactic ("Auto",_) ->
 	      if spfl=[]
 	      then
@@ -250,8 +253,7 @@ let  to_nproof sigma osign pf =
 			    t_full_env=ntree.t_goal.t_full_env};
 		  t_proof= Proof ([Node ((0,0), "InfoAuto",[])], [ntree])}
 	      else ntree
-	  | _ -> ntree
-	      )
+	  | _ -> ntree))
       	else
 	  {t_info="to_prove";
 	    t_goal=(seq_to_lnhyp oldsign nsign cl);
@@ -388,7 +390,8 @@ let enumerate f ln =
   let rec enum_rec f ln = 
      (match ln with 
        [x;y] -> [f x; spb; sph [_et ();spb;f y]]
-      |x::l -> [sph [(f x);sps ","];spb]@(enum_rec f l))
+      |x::l -> [sph [(f x);sps ","];spb]@(enum_rec f l)
+      | _ -> assert false)
   in enum_rec f ln
 ;;
 
@@ -751,11 +754,14 @@ let rec group_lhyp lh =
     match lh with
      [] -> []
     |[h] -> [[h]]
-    |h::lh -> let (h1::lh1)::lh2 = group_lhyp lh in
+    |h::lh ->
+      match group_lhyp lh with
+       (h1::lh1)::lh2 -> 
         if h.hyp_type=h1.hyp_type
           || ((sort_of_hyp h)=(sort_of_hyp h1) && (sort_of_hyp h1)=Nformula)
         then (h::(h1::lh1))::lh2
         else [h]::((h1::lh1)::lh2)
+     |_-> assert false
 ;;
 	
 (* ln noms des hypotheses, lt leurs types *)
@@ -940,6 +946,7 @@ let name_tactic tac =
 		(Node(_,_,
 		      (Node(_,t,_))::_))::_))::_  -> t
        |(Node(_,t,_))::_ -> t
+       | _ -> assert false
 ;;
 
 let arg1_tactic tac =
@@ -949,6 +956,7 @@ let arg1_tactic tac =
 		      (Node(_,_,x::_))::_))::_))::_ ->x
   | (Node(_,_,x::_))::_ -> x
   | x::_ -> x
+  | _ -> assert false
 ;;
 
 let arg2_tactic tac =
@@ -957,6 +965,7 @@ let arg2_tactic tac =
 		(Node(_,_,
 		      (Node(_,_,_::x::_))::_))::_))::_ -> x
     | (Node(_,_,_::x::_))::_ -> x
+    | _ -> assert false
 ;;
 
 type nat_tactic =
@@ -979,6 +988,7 @@ let analyse_tac tac =
              Node (_, "CLAUSE", lhyp)])] 
      -> Reduce(mode,lhyp)
   | [Node (_, x,la)] -> Other (x,la)
+  | _ -> assert false
 ;;
 
       
@@ -986,7 +996,10 @@ let analyse_tac tac =
 
 
 
-let id_of_command x = let Node(_,_,Node(_,_,y::_)::_) = x in y
+let id_of_command x =
+  match x with
+      Node(_,_,Node(_,_,y::_)::_) ->  y
+     |_ -> assert false
 ;;
 type type_info_subgoals =
     {ihsg: type_info_subgoals_hyp;
@@ -1036,17 +1049,20 @@ let intro_not_proved_goal gs =
 ;;
 
 let first_name_hyp_of_ntree {t_goal={newhyp=lh}}=
-  let {hyp_name=n}::_=lh in n
+  match lh with
+   {hyp_name=n}::_ -> n
+  | _ -> assert false
 ;;
 
 let rec find_type x t=
-    match (kind_of_term (strip_outer_cast t)) with
+    match (kind_of_term (strip_outer_cast t)) with 
       IsProd(y,ty,t) ->
 	(match y with
 	  Name y -> 
             if x=(string_of_id y) then ty
             else find_type x t
 	| _ -> find_type x t)
+     |_-> assert false 
 ;;
 
 (***********************************************************************
@@ -1080,6 +1096,7 @@ let terms_of_equality e =
   let e= (strip_outer_cast e) in
   match  (kind_of_term e) with
      IsApp (f,args) -> (args.(1) , args.(2))
+    | _ -> assert false
 ;;
 
 let eq_term = eq_constr;;
@@ -1133,6 +1150,7 @@ let  list_to_eq l o=
 		 spv ((sph [sps "="; spb; spt b; spb; 
 			     tag_uselemma (switch h h') spe])
 		      ::(list_to_eq (switch h' h) l))]
+  | _ -> assert false
 ;;
 
 let stde = Global.env;;
@@ -1556,7 +1574,9 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
 and natural_induction ig lh g gs ge arg1 ltree with_intros=
  let env = (gLOB (g_env (List.hd ltree))) in
  let arg1=dbize env arg1 in
- let IsVar(arg2)= (kind_of_term arg1) in
+ let arg2 = match (kind_of_term arg1) with
+       IsVar(arg2) -> arg2
+      | _ -> assert false in
  let targ1 = prod_head (type_of env Evd.empty arg1) in
  let IndType (indf,targ) = find_rectype env Evd.empty targ1 in
  let ncti= Array.length(get_constructors indf) in
@@ -1608,11 +1628,12 @@ and natural_induction ig lh g gs ge arg1 ltree with_intros=
 (* Points fixes *)
 
 and natural_fix ig lh g gs arg ltree =
-  let Num(_,narg)=arg in
+  let narg = match arg with Num(_,narg) -> narg |_ -> assert false  in
   let {t_info=info;
 	t_goal={newhyp=lh1;t_concl=g1;t_full_concl=gf1;
                    t_full_env=ge1};t_proof=p1}=(List.hd ltree) in
-  let {hyp_name=nfun;hyp_type=tfun}::lh2 = lh1 in
+  match lh1 with
+     {hyp_name=nfun;hyp_type=tfun}::lh2 ->
   let ltree=[{t_info=info;
 	       t_goal={newhyp=lh2;t_concl=g1;t_full_concl=gf1;
                           t_full_env=ge1};
@@ -1624,8 +1645,11 @@ and natural_fix ig lh g gs arg ltree =
                    {ihsg=All_subgoals_hyp;isgintro=""})
                             ltree)
         ]
+   | _ -> assert false
 and natural_reduce ig lh g gs ge tac ltree =
-  let Reduce (mode,la) = analyse_tac tac in
+  let (mode,la) = match analyse_tac tac with
+       Reduce (mode,la) -> (mode,la)
+      |_ -> assert false in
   match la with
     [] -> 
       spv
@@ -1643,8 +1667,11 @@ and natural_reduce ig lh g gs ge tac ltree =
 		  {ihsg=Reduce_hyp;isgintro=""})
              ltree)
         ]
+  | _ -> assert false
 and natural_split ig lh g gs ge tac ltree =
-  let Split la = analyse_tac tac in
+  let la = match analyse_tac tac with
+       Split la -> la
+      |_ -> assert false in
   match la with
     [arg] -> 
       let env= (gLOB ge) in
@@ -1664,9 +1691,11 @@ and natural_split ig lh g gs ge tac ltree =
                   {ihsg=All_subgoals_hyp;isgintro="standard"})
              ltree)
         ]
+  | _ -> assert false
 and natural_generalize ig lh g gs ge tac ltree =
-  let Generalize la = analyse_tac tac in
-  match la with
+  match analyse_tac tac with
+   Generalize la ->
+  (match la with
     [arg] ->
       let env= (gLOB ge) in
       let arg1= dbize env arg in
@@ -1679,6 +1708,8 @@ and natural_generalize ig lh g gs ge tac ltree =
 		  {ihsg=All_subgoals_hyp;isgintro=""})
              ltree)
         ]
+   | _ -> assert false)
+  | _ -> assert false	  
 and natural_right ig lh g gs ltree =
   spv
          [ (natural_lhyp lh ig.ihsg);
