@@ -105,8 +105,9 @@ let ctr = ref 0
 let gen_ident id = make_ident (atompart_of_id id) (incr ctr;Some !ctr)
 
 let gen_name a na =
-    let (Name id) = (named_hd Environ.empty_env a na)
-    in gen_ident id
+    match (named_hd Environ.empty_env a na) with 
+	(Name id)->gen_ident id
+      | Anonymous->assert false
 
 let dpc_of_cci_term lid = 
  let rec tradrec cciterm =
@@ -140,6 +141,7 @@ let cci_of_dpc_term tradsign sign =
     | APP (t::dpcargs) ->
 	let t' = tradrec t in
 	  Term.applist(t', List.map tradrec dpcargs)
+    | _-> assert false
   in tradrec
     
 
@@ -160,13 +162,13 @@ let dpc_of_cci_fmla gls cciterm =
     (match match_with_forall_term cciterm with
 	 Some ((na,a,b) as trp)->
 	   let id = gen_name a na in
-	   let f=mkApp(mkLambda trp,[|mkVar id|]) in
+	   let f=whd_beta (mkApp ((mkLambda trp),[|mkVar id|])) in
 	     ForAll(id,tradrec (id::lid) f)
        |_-> 
 	   (match match_with_exist_term cciterm with
 		Some ((na,a,b)as trp)->
 		  let id = gen_name a na in
-		  let f=mkApp(mkLambda trp,[|mkVar id|]) in
+		  let f=whd_beta (mkApp ((mkLambda trp),[|mkVar id|])) in
 		    Exists(id,tradrec (id::lid) f)
 	      |_->   
     let (hd,args) = whd_betaiota_stack cciterm in
@@ -209,7 +211,8 @@ let forAllI gls=if is_forall_term (pf_concl gls) then
 let forAllE id t gls =
   let rgl=pf_whd_betadeltaiota gls (pf_type_of gls (mkVar id)) in
     if is_forall_term rgl then
-      generalize [mkApp (mkVar id,[|t|])] gls else  tclFAIL 0 gls
+      tclTHEN (generalize [mkApp (mkVar id,[|t|])]) intro gls
+    else  tclFAIL 0 gls
 
 let existE id gls =
   let (_,_,t)=lookup_named id (pf_hyps gls) in
@@ -227,6 +230,11 @@ let negE id gls =
 (*t exist_intro_head = put_pat mmk "ex_intro"*)
 
 let existI t gls =
+(*  if is_exist_term (pf_concl gls) then
+    split (Rawterm.ImplicitBindings [t]) gls
+  else tclFAIL 0 gls *)
+    
+ 
     let (wc,kONT) = Evar_refiner.startWalk gls in
     let clause = mk_clenv_hnf_constr_type_of wc (pf_concl gls) in
     let clause' = clenv_constrain_missing_args [t] clause
@@ -340,8 +348,9 @@ let rec tradpf kspine jspine dpcpf gls =
   | Proof2(_,_,LExists2(kid,f,pf)) ->
     let id = find_fmla_left (kspine,Exists(kid,f)) (jspine,gls)
     in ((tclTHEN (existE id)
-        ((onNthClause (fun (Some jid) ->
-                          trad (kid::kspine) (jid::jspine) pf)
+        ((onNthClause (function (Some jid) ->
+                          trad (kid::kspine) (jid::jspine) pf
+			 | None-> assert false)
          (-2))))) gls
 
   | Proof2(_,_,RExists2(kid,kterm,f,pf)) ->
@@ -368,4 +377,4 @@ and trad kspine jspine dpcpf gls =
     tradpf kspine jspine dpcpf gls
 
 
-(* $Id$ *)
+

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-open Names
+open Names 
 
 open General
 open Dpctypes
@@ -106,6 +106,7 @@ let sep_at at llt (lmu,_) =
       	       	    then ((Po a)::l1,l2)
 		    else (l1,(Po a)::l2)
     | [] -> ([],[])
+    | _->assert false 
   in sep_at_rec at
      
 let sep_nat nat llt (lmu,_) = 
@@ -117,6 +118,7 @@ let sep_nat nat llt (lmu,_) =
       	       	    then ((No a)::l1,l2)
 		    else (l1,(No a)::l2)
     | [] -> ([],[])
+    | _->assert false 
   in sep_nat_rec nat
 
 let sep_neg neg llt (lmu,_) = 
@@ -193,6 +195,7 @@ let sep_path (at,nat,conj,rneg,lneg) p =
       [x] -> x
     | ((Po(Conj _),_,_) as c::_) -> c     (** on recherche d'abord A/\B **)
     | _::ll -> find_X0 ll
+    | _->assert false 
   in let (x0,l1,l2) = if all_X0=[] then 
                        failwith "Can't find X0 in sep_path ! (impossible case)"
                       else find_X0 all_X0
@@ -206,7 +209,9 @@ let sep_path (at,nat,conj,rneg,lneg) p =
   in let litS1 = glue (List.map (fun x -> all_lit_sfla x) s1)
   in let (at1,at2) = sep_at at litS1 p
      and (nat1,nat2) = sep_nat nat litS1 p
-  in let neg = lneg @ (List.map (fun (Po (Neg f)) -> (No f)) rneg)
+  in let neg = lneg @ (List.map (function 
+				     (Po (Neg f)) -> (No f) 
+				   | _->assert false) rneg)
   in let (neg1,neg2) = sep_neg neg litS1 p
   in let lit_at1 = List.map proj at1
      and lit_nat1 = List.map proj nat1
@@ -241,11 +246,15 @@ let rec rneg_case pr = function
 	     and sq2' = (Neg f)::sq2
 	  in (Proof2(sq1',sq2',RNeg2(f,pr1)))
    | [] -> pr
+   | _->assert false 
 
-let lneg_case ((Proof2(sq1,sq2,_)) as pr) (No(Neg f)) = 
-   let sq1' = (Neg f)::sq1
-   and sq2' = substract sq2 [f]
-   in (Proof2(sq1',sq2',LNeg2(f,pr)))
+
+let lneg_case ((Proof2(sq1,sq2,_)) as pr) =function 
+    (No(Neg f))-> 
+      let sq1' = (Neg f)::sq1
+      and sq2' = substract sq2 [f]
+      in (Proof2(sq1',sq2',LNeg2(f,pr)))
+  | _->assert false 
 
 let find_lneg lneg = 
   let rec is_negneg = function
@@ -296,14 +305,18 @@ and cases (at,nat,conj,rneg,lneg) p =
       in rneg_case pr rneg
    else
       if rneg<>[] then
-      	 let s = at@nat@lneg@(List.map (fun (Po (Neg f)) -> (No f)) rneg)
+      	 let s = at@nat@lneg@(List.map (function 
+					    (Po (Neg f)) -> (No f)
+				          | _->assert false) rneg)
 	 in let pr = proof_of_path s p
 	 in rneg_case pr rneg
       else 
-      	 let (No (Neg f)) as g = find_lneg lneg
-	 in let s = at@nat@(substract lneg [g])@[Po f]
-	 in let pr = proof_of_path s p
-	 in lneg_case pr g
+	match find_lneg lneg with 
+	    (No (Neg f)) as g ->
+      	      let s = at@nat@(substract lneg [g])@[Po f] in
+	      let pr = proof_of_path s p in
+		lneg_case pr g
+	  |_->assert false
 
 
 (* pi_formula : separated formula -> formula 
@@ -718,13 +731,15 @@ let int_quant f u pr =
      let qt = quant_var f
   in let un_qt = such_that qt (function (Universal _) -> true | _ -> false)
      and fr_var = free_var_formula f
-  in let un_var = List.map (fun (Universal(id,_,_)) -> id) un_qt
-  in let sk_var  = un_var @ fr_var
-  in let u0 = unher_unif sk_var u
-  in let pr0 = pi_proof pr
-  in let pr1 = unher_proof sk_var pr0
-  in let cst = make_constraints qt u0
-  in let pog = make_pog qt cst
-  in let qpr = quant_proof cst pog pr1
-  in witness_proof u0 qpr
+     in let un_var = List.map (function 
+				   (Universal(id,_,_)) -> id
+				 | _ ->assert false) un_qt
+     in let sk_var  = un_var @ fr_var
+     in let u0 = unher_unif sk_var u
+     in let pr0 = pi_proof pr
+     in let pr1 = unher_proof sk_var pr0
+     in let cst = make_constraints qt u0
+     in let pog = make_pog qt cst
+     in let qpr = quant_proof cst pog pr1
+     in witness_proof u0 qpr
 
