@@ -52,7 +52,8 @@ val class_info_from_index : int -> cl_typ * cl_info_typ
 val coercion_exists : coe_typ -> bool
 val coercion_info : coe_typ -> (int * coe_info_typ)
 val coercion_info_from_index : int -> coe_typ * coe_info_typ
-val coercion_params : reference -> int (* raise Not_found if not a coercion *)
+val coercion_params : 
+  reference -> int (* raise [Not_found] if not a coercion *)
 val constructor_at_head : constr -> cl_typ * int
 val class_of : env -> 'c evar_map -> constr -> constr * int
 val class_args_of : constr -> constr list

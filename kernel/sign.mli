@@ -78,7 +78,7 @@ val ids_of_env : ('a, 'b) sign -> identifier list
 val number_of_rels : ('b,'a) sign -> int
 
 (*i This is for Cases i*)
-(* raise Not_found if the integer is out of range *)
+(* raise [Not_found] if the integer is out of range *)
 val change_name_env: ('a, 'b) sign -> int -> identifier -> ('a, 'b) sign
 
 type ('b,'a) search_result =

@@ -63,20 +63,22 @@ val mis_consnames : mind_specif -> identifier array
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet
 
-(* A light version of mind_specif_of_mind with pre-splitted args
+(* A light version of [mind_specif_of_mind] with pre-splitted args
    Invariant: We have
-   -- Hnf (fullmind) = DOPN(AppL,[|MutInd mind;..params..;..realargs..|])
-   -- with mind  = ((sp,i),localvars) for some sp, i, localvars
+
+   -- [Hnf (fullmind)] = [DOPN(AppL,[|MutInd mind;..params..;..realargs..|])]
+
+   with [mind]  = [((sp,i),localvars)] for some [sp, i, localvars]
  *)
-type inductive_summary =
-    {fullmind : constr;
-     mind : inductive;
-     nparams : int;
-     nrealargs : int;
-     nconstr : int;
-     params : constr list;
-     realargs : constr list;
-     arity : constr}
+type inductive_summary = {
+  fullmind : constr;
+  mind : inductive;
+  nparams : int;
+  nrealargs : int;
+  nconstr : int;
+  params : constr list;
+  realargs : constr list;
+  arity : constr }
 
 (*s Declaration of inductive types. *)
 
