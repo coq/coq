@@ -34,19 +34,21 @@ II) Notations
   Grammar (on constr) and Syntax are no longer supported. Replace them by
 Notation before translation.
 
-  Precedence levels are now from 0 to 250. Typical level are:
+  Precedence levels are now from 0 to 250. In V8, the precedence and
+associativity of an operator cannot be redefined. Typical level are:
 
-  /\ : 60
-  \/ : 70
-  <-> : 80
-  ~ : 50
-  =, <=, >=, <> : 50
-  +, - : 40
-  *, / : 30
+  <-> : 80              (left associativity)
+  \/ : 70               (right associativity)
+  /\ : 60               (right associativity)
+  ~ : 55                (right associativity)
+  =, <=, >=, <> : 50    (no associativity)
+  +, - : 40             (left associativity)
+  *, / : 30             (left associativity)
 
   The new scale can induce incompatibilities. To set the level an
 operator should have after translation, use the V8only modifier of
-Infix or Notation in the v7 file, as e.g.:
+Infix or Notation in the v7 file (V8only not supported for Distfix,
+use Notation instead), as e.g.:
 
    Infix 6 "<=" le  V8only 50.
    Notation "( x , y )" := (pair ? ? x y)  V8only "x , y" (at level 0).
@@ -207,7 +209,39 @@ ML-style notation as follows
 
   Inductive and (A B:Prop) : Prop as "A /\ B" := conj (a:A) (b:B).
   
-IV) Pitfalls
+IV) Various pitfalls
+    ----------------
+
+1) New keywords
+
+  The following identifiers are new keywords
+
+  "forall"; "fun"; "match"; "fix"; "cofix"; "for"; "if"; "then";
+  "else"; "return"; "mod"
+
+  The translator automatically add a "_" to names clashing with a
+keyword, except for files. Hence users may need to rename the files
+whose name clashes with a keyword.
+
+  Remark: "in"; "with"; "end"; "as"; "let"; "Prop"; "Set"; "Type"
+  where already keywords
+
+2) Old "Case" and "Match"
+
+  "Case" and "Match" are normally automatically translated into
+  "match" or "match" and "fix", but sometimes it fails to do so. It
+  typically fails when the Case or Match is argument of a tactic whose
+  typing context is unknown because of a preceding Intro/Intros, as e.g. in 
+
+     Intros; Exists [m:nat](<quasiterm>Case m of t [p:nat](f m) end)
+
+  The solution is then to replace the invocation of the sequence of
+  tactics into several invocation of the elementary tactics as follows
+
+     Intros. Exists [m:nat](<quasiterm>Case m of t [p:nat](f m) end)
+          ^^^
+
+3) Renamed constructions
 
   Type "entier" from fast_integer.v is renamed into "N" by the
 translator. As a consequence, user-defined objects of same name "N"
@@ -215,7 +249,4 @@ can be hidden by the new "N" if the "Require ZArith" is not done soon
 enough. The solution is to move the "Require ZArith" before users
 modules. The same apply for names "GREATER", "EQUAL", "LESS",
 etc... [COMPLETE LIST TO GIVE].
-
-
-
 
