@@ -519,6 +519,7 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Cauchy_prod.vo  theories/Reals/Cv_prop.vo \
 	theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
 	theories/Reals/Rtrigo.vo       theories/Reals/Ranalysis1.vo \
+	theories/Reals/TAF.vo \
 	theories/Reals/PSeries_reg.vo  theories/Reals/Exp_prop.vo \
 	theories/Reals/Rtrigo_reg.vo   theories/Reals/Rsqrt_def.vo \
 	theories/Reals/R_sqrt.vo       theories/Reals/Rtrigo_calc.vo \
