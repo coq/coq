@@ -83,8 +83,9 @@ let or_tac backtrack continue seq=
 
 let arrow_tac backtrack continue seq=
   tclIFTHENELSE intro (wrap 1 true continue seq)
-    (tclTHEN introf 
-       (tclORELSE (tclCOMPLETE (wrap 1 true continue seq)) backtrack))
+    (tclORELSE
+       (tclTHEN introf (tclCOMPLETE (wrap 1 true continue seq)))
+       backtrack)
 (* left connectives rules *)
 
 let left_and_tac ind backtrack id continue seq=
@@ -162,8 +163,9 @@ let ll_arrow_tac a b c backtrack id continue seq=
 let forall_tac backtrack continue seq=
   tclORELSE
     (tclIFTHENELSE intro (wrap 0 true continue seq)
-       (tclTHEN introf 
-	  (tclORELSE (tclCOMPLETE (wrap 1 true continue seq)) backtrack)))
+       (tclORELSE
+	  (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
+	  backtrack))
     (if !qflag then 
        tclFAIL 0 "reversible in 1st order mode"
      else
