@@ -112,8 +112,8 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
          toplevel/record.cmo toplevel/recordobj.cmo \
-         toplevel/discharge.cmo toplevel/vernacinterp.cmo \
-         toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
+         toplevel/discharge.cmo toplevel/vernacinterp.cmo toplevel/mltop.cmo \
+         toplevel/vernacentries.cmo toplevel/vernac.cmo \
 	 toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
          toplevel/toplevel.cmo toplevel/usage.cmo \
 	 toplevel/coqinit.cmo toplevel/coqtop.cmo
