@@ -22,9 +22,11 @@ open Term
 (* This is the subtype of rawconstr allowed in syntactic extensions *)
 
 type aconstr =
+  (* Part common to rawconstr and cases_pattern *)
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
+  (* Part only in rawconstr *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
@@ -43,7 +45,7 @@ let name_app f e = function
   | Name id -> let (id, e) = f id e in (Name id, e)
   | Anonymous -> Anonymous, e
 
-let map_aconstr_with_binders_loc loc g f e = function
+let rawconstr_of_aconstr_with_binders loc g f e = function
   | AVar id -> RVar (loc,id)
   | AApp (a,args) -> RApp (loc,f e a, List.map (f e) args)
   | ALambda (na,ty,c) ->
@@ -242,72 +244,6 @@ let rec alpha_var id1 id2 = function
 
 let alpha_eq_val (x,y) = x = y
 
-(*
-let bind_env sc sigma var v =
-  try
-    let vvar,_ = List.assoc var sigma in
-    if alpha_eq_val (v,vvar) then sigma
-    else raise No_match
-  with Not_found ->
-    (* TODO: handle the case of multiple occs in different scopes *)
-    (var,(v,sc))::sigma
-
-let rec match_ sc alp metas sigma a1 a2 = match (a1,a2) with
-  | r1, AVar id2 when List.mem id2 metas -> bind_env sc sigma id2 r1
-  | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
-  | RRef (_,r1), ARef r2 when r1 = r2 -> sigma
-  | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
-  | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
-      let sigma = match_ sc alp metas sigma f1 f2 in
-      let l1 = match f1 with
-	| RRef (_,ref) -> adjust_scopes (Symbols.find_arguments_scope ref,l1)
-	| _ -> List.map (fun a -> (None,a)) l1 in
-      List.fold_left2 (fun sigma (sc,a) b -> match_ sc alp metas sigma a b) sigma l1 l2
-  | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
-     match_binders sc alp metas (match_type alp metas sigma t1 t2) b1 b2 na1 na2
-  | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
-     match_binders (Some Symbols.type_scope) alp metas (match_type alp metas sigma t1 t2) b1 b2 na1 na2
-  | RLetIn (_,na1,t1,b1), AProd (na2,t2,b2) ->
-     match_binders sc alp metas (match_ sc alp metas sigma t1 t2) b1 b2 na1 na2
-  | RCases (_,po1,tml1,eqnl1), ACases (po2,tml2,eqnl2) ->
-     let sigma = option_fold_left2 (match_type alp metas) sigma po1 po2 in
-     let sigma = List.fold_left2 (match_ sc alp metas) sigma tml1 tml2 in
-     List.fold_left2 (match_equations sc alp metas) sigma eqnl1 eqnl2
-  | ROrderedCase (_,st,po1,c1,bl1), AOrderedCase (st2,po2,c2,bl2) ->
-     let sigma = option_fold_left2 (match_type alp metas) sigma po1 po2 in
-     array_fold_left2 (match_ sc alp metas)
-       (match_ sc alp metas sigma c1 c2) bl1 bl2
-  | RCast(_,c1,t1), ACast(c2,t2) ->
-      match_type alp metas (match_ sc alp metas sigma c1 c2) t1 t2
-  | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
-  | RPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
-  | a, AHole _ when not(Options.do_translate()) -> sigma
-  | RHole _, AHole _ -> sigma
-  | (RDynamic _ | RRec _ | REvar _), _ 
-  | _,_ -> raise No_match
-
-and match_type x = match_ (Some Symbols.type_scope) x
-
-and match_binders sc alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
-  | (na1,Name id2) when List.mem id2 metas ->
-      let sigma =
-	name_fold
-	  (fun id sigma -> bind_env None sigma id2 (RVar (dummy_loc,id))) na1 sigma
-      in 
-      match_ sc alp metas sigma b1 b2
-  | (na1,na2) -> 
-      let alp =
-        name_fold
-	  (fun id1 -> name_fold (fun id2 alp -> (id1,id2)::alp) na2) na1 alp in
-      match_ sc alp metas sigma b1 b2
-
-and match_equations sc alp metas sigma (_,idl1,pat1,rhs1) (idl2,pat2,rhs2) =
-  if idl1 = idl2 & pat1 = pat2 (* Useful to reason up to alpha ?? *) then
-    match_ sc alp metas sigma rhs1 rhs2
-  else raise No_match
-
-*)
-
 let bind_env sigma var v =
   try
     let vvar = List.assoc var sigma in
@@ -395,6 +331,7 @@ type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
+  | CPatNotation of loc * notation * cases_pattern_expr list
   | CPatNumeral of loc * Bignat.bigint
   | CPatDelimiters of loc * string * cases_pattern_expr
 
@@ -476,6 +413,7 @@ let cases_pattern_loc = function
   | CPatAlias (loc,_,_) -> loc
   | CPatCstr (loc,_,_) -> loc
   | CPatAtom (loc,_) -> loc
+  | CPatNotation (loc,_,_) -> loc
   | CPatNumeral (loc,_) -> loc
   | CPatDelimiters (loc,_,_) -> loc
 

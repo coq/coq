@@ -19,13 +19,15 @@ open Term
 
 (*s This is the subtype of rawconstr allowed in syntactic extensions *)
 (* No location since intended to be substituted at any place of a text *)
-(* Complex expressions such as fixpoints, cofixpoints and pattern-matching *)
-(* are excluded; non global expressions such as existential variables also *)
+(* Complex expressions such as fixpoints and cofixpoints are excluded, *)
+(* non global expressions such as existential variables also *)
 
 type aconstr =
+  (* Part common to rawconstr and cases_pattern *)
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
+  (* Part only in rawconstr *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
@@ -40,7 +42,7 @@ type aconstr =
   | APatVar of patvar
   | ACast of aconstr * aconstr
 
-val map_aconstr_with_binders_loc : loc -> 
+val rawconstr_of_aconstr_with_binders : loc -> 
   (identifier -> 'a -> identifier * 'a) ->
   ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
 
@@ -71,6 +73,7 @@ type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
+  | CPatNotation of loc * notation * cases_pattern_expr list
   | CPatNumeral of loc * Bignat.bigint
   | CPatDelimiters of loc * string * cases_pattern_expr
 
