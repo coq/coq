@@ -164,8 +164,10 @@ let pmatches = matches_core None true
 (* To skip to the next occurrence *)
 exception NextOccurrence of int
 
-(* Tells if it is an authorized occurrence *)
+(* Tells if it is an authorized occurrence and if the instance is closed *)
 let authorized_occ nocc mres =
+  if not (List.for_all (fun (_,c) -> closed0 c) (fst mres)) then
+    raise PatternMatchingFailure;
   if nocc = 0 then mres
   else raise (NextOccurrence nocc)
 
