@@ -25,7 +25,7 @@ open Ast
 open Libnames
 open Ppextend
 open Topconstr
-
+open Decl_kinds
 open Tacinterp
 
 (* Copie de Nameops *)
@@ -146,8 +146,8 @@ let pr_in_out_modules = function
   | SearchOutside l -> spc() ++ str"outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
 let pr_search_about = function
-  | Search.SearchRef r -> pr_reference r
-  | Search.SearchString s -> qsnew s
+  | SearchRef r -> pr_reference r
+  | SearchString s -> qsnew s
 
 let pr_search a b pr_p = match a with
   | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
@@ -327,14 +327,17 @@ let pr_class_rawexpr = function
   | RefClass qid -> pr_reference qid
 
 let pr_assumption_token many = function
-  | (Decl_kinds.Local,Decl_kinds.Logical) ->
+  | (Local,Logical) ->
       str (if many then "Hypotheses" else "Hypothesis")
-  | (Decl_kinds.Local,Decl_kinds.Definitional) ->
+  | (Local,Definitional) ->
       str (if many then "Variables" else "Variable")
-  | (Decl_kinds.Global,Decl_kinds.Logical) ->
+  | (Global,Logical) ->
       str (if many then "Axioms" else "Axiom")
-  | (Decl_kinds.Global,Decl_kinds.Definitional) -> 
+  | (Global,Definitional) -> 
       str (if many then "Parameters" else "Parameter")
+  | (Global,Conjectural) -> str"Conjecture"
+  | (Local,Conjectural) -> 
+      anomaly "Don't know how to translate a local conjecture"
 
 let pr_params pr_c (xl,(c,t)) =
   hov 2 (prlist_with_sep sep pr_id xl ++ spc() ++
@@ -358,11 +361,10 @@ let pr_ne_params_list pr_c l =
 *)
 
 let pr_thm_token = function
-  | Decl_kinds.Theorem -> str"Theorem"
-  | Decl_kinds.Lemma -> str"Lemma"
-  | Decl_kinds.Fact -> str"Fact"
-  | Decl_kinds.Remark -> str"Remark"
-  | Decl_kinds.Conjecture -> str"Conjecture"
+  | Theorem -> str"Theorem"
+  | Lemma -> str"Lemma"
+  | Fact -> str"Fact"
+  | Remark -> str"Remark"
 
 let pr_require_token = function
   | Some true -> str "Export"
@@ -572,15 +574,17 @@ let rec pr_vernac = function
       pr_syntax_modifiers l
 
   (* Gallina *)
-  | VernacDefinition (d,id,b,f,e) -> (* A verifier... *)
+  | VernacDefinition (d,id,b,f) -> (* A verifier... *)
       let pr_def_token = function
-        | Decl_kinds.LCoercion -> str"Coercion Local"
-        | Decl_kinds.GCoercion -> str"Coercion"
-        | Decl_kinds.LDefinition -> str"Local"
-        | Decl_kinds.GDefinition -> str"Definition"
-        | Decl_kinds.LSubClass -> str"Local SubClass"
-        | Decl_kinds.GSubClass -> str"SubClass"
-        | Decl_kinds.SCanonical -> str"Canonical Structure" in
+        | Local, Coercion -> str"Coercion Local"
+        | Global, Coercion -> str"Coercion"
+        | Local, Definition -> str"Local"
+        | Global, Definition -> str"Definition"
+        | Local, SubClass -> str"Local SubClass"
+        | Global, SubClass -> str"SubClass"
+        | Global, CanonicalStructure -> str"Canonical Structure"
+        | Local, CanonicalStructure ->
+	   anomaly "Don't know how to translate a local canonical structure" in
       let pr_reduce = function
         | None -> mt()
         | Some r ->
@@ -612,7 +616,7 @@ let rec pr_vernac = function
             (pr_and_type_binders_arg bl, str" :" ++ spc () ++ pr_type t, None)
       in
       let (binds,typ,c) = pr_def_body b in
-      hov 2 (pr_def_token e ++ spc() ++ pr_id id ++ binds ++ typ ++
+      hov 2 (pr_def_token d ++ spc() ++ pr_id id ++ binds ++ typ ++
       (match c with
         | None -> mt()
         | Some cc -> str" :=" ++ spc() ++ cc))
@@ -839,14 +843,14 @@ let rec pr_vernac = function
   | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_reference q
   | VernacCoercion (s,id,c1,c2) ->
       hov 1 (
-	str"Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++
-	  str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++
+	str"Coercion" ++ (match s with | Local -> spc() ++
+	  str"Local" ++ spc() | Global -> spc()) ++
 	pr_reference id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
 	spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
   | VernacIdentityCoercion (s,id,c1,c2) ->
       hov 1 (
-	str"Identity Coercion" ++ (match s with | Decl_kinds.Local -> spc() ++
-	  str"Local" ++ spc() | Decl_kinds.Global -> spc()) ++ pr_id id ++ 
+	str"Identity Coercion" ++ (match s with | Local -> spc() ++
+	  str"Local" ++ spc() | Global -> spc()) ++ pr_id id ++ 
 	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
 	spc() ++ pr_class_rawexpr c2)
 

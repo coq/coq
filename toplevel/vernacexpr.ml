@@ -55,11 +55,15 @@ type printable =
   | PrintScope of string
   | PrintAbout of reference
 
+type search_about_item =
+  | SearchRef of reference
+  | SearchString of string
+
 type searchable =
   | SearchPattern of pattern_expr
   | SearchRewrite of pattern_expr
   | SearchHead of reference
-  | SearchAbout of reference Search.search_about_item list
+  | SearchAbout of search_about_item list
   | SearchNamed of string list
 
 type locatable =
@@ -92,14 +96,12 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
-type raw_constr_expr = constr_expr
-
 type hints =
   | HintsResolve of (identifier option * constr_expr) list
   | HintsImmediate of (identifier option * constr_expr) list
   | HintsUnfold of (identifier option * reference) list
   | HintsConstructors of identifier option * reference list
-  | HintsExtern of identifier option * int * raw_constr_expr * raw_tactic_expr
+  | HintsExtern of identifier option * int * constr_expr * raw_tactic_expr
   | HintsDestruct of identifier *
       int * (bool,unit) location * constr_expr * raw_tactic_expr
 
@@ -178,8 +180,8 @@ type vernac_expr =
       (string * syntax_modifier list) option * scope_name option
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * identifier * definition_expr *
-      declaration_hook * definitionkind
+  | VernacDefinition of definition_kind * identifier * definition_expr * 
+      declaration_hook
   | VernacStartTheoremProof of theorem_kind * identifier *
       (local_binder list * constr_expr) * bool * declaration_hook
   | VernacEndProof of proof_end

@@ -252,7 +252,7 @@ let start_proof_and_print idopt k t hook =
   print_subgoals ();
   if !pcoq <> None then (out_some !pcoq).start_proof ()
 
-let vernac_definition local id def hook =
+let vernac_definition (local,_ as k) id def hook =
   match def with
   | ProveBody (bl,t) ->   (* local binders, typ *)
       if Lib.is_modtype () then
@@ -268,7 +268,7 @@ let vernac_definition local id def hook =
         | Some r -> 
 	    let (evc,env)= Command.get_current_context () in
 	    Some (interp_redexp env evc r) in
-      declare_definition id local bl red_option c typ_opt hook
+      declare_definition id k bl red_option c typ_opt hook
 
 let vernac_start_proof kind sopt (bl,t) lettop hook =
   if not(refining ()) then
@@ -883,8 +883,8 @@ let interp_search_restriction = function
 open Search
 
 let interp_search_about_item = function
-  | SearchRef qid -> SearchRef (Nametab.global qid)
-  | SearchString s as x -> x
+  | SearchRef qid -> GlobSearchRef (Nametab.global qid)
+  | SearchString s -> GlobSearchString s
 
 let vernac_search s r =
   let r = interp_search_restriction r in
@@ -1119,7 +1119,7 @@ let interp c = match c with
       vernac_notation local c infpl mv8 sc
 
   (* Gallina *)
-  | VernacDefinition (k,id,d,f,_) -> vernac_definition k id d f
+  | VernacDefinition (k,id,d,f) -> vernac_definition k id d f
   | VernacStartTheoremProof (k,id,t,top,f) ->
       vernac_start_proof k (Some id) t top f
   | VernacEndProof e -> vernac_end_proof e
