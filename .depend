@@ -2589,17 +2589,19 @@ contrib/extraction/common.cmo: kernel/declarations.cmi \
     contrib/extraction/haskell.cmi library/libnames.cmi \
     contrib/extraction/miniml.cmi kernel/modops.cmi \
     contrib/extraction/modutil.cmi library/nameops.cmi kernel/names.cmi \
-    contrib/extraction/ocaml.cmi lib/pp.cmi lib/pp_control.cmi \
-    contrib/extraction/scheme.cmi contrib/extraction/table.cmi \
-    kernel/term.cmi lib/util.cmi contrib/extraction/common.cmi 
+    contrib/extraction/ocaml.cmi lib/options.cmi lib/pp.cmi \
+    lib/pp_control.cmi contrib/extraction/scheme.cmi \
+    contrib/extraction/table.cmi kernel/term.cmi lib/util.cmi \
+    contrib/extraction/common.cmi 
 contrib/extraction/common.cmx: kernel/declarations.cmx \
     contrib/extraction/extraction.cmx library/global.cmx lib/gset.cmx \
     contrib/extraction/haskell.cmx library/libnames.cmx \
     contrib/extraction/miniml.cmi kernel/modops.cmx \
     contrib/extraction/modutil.cmx library/nameops.cmx kernel/names.cmx \
-    contrib/extraction/ocaml.cmx lib/pp.cmx lib/pp_control.cmx \
-    contrib/extraction/scheme.cmx contrib/extraction/table.cmx \
-    kernel/term.cmx lib/util.cmx contrib/extraction/common.cmi 
+    contrib/extraction/ocaml.cmx lib/options.cmx lib/pp.cmx \
+    lib/pp_control.cmx contrib/extraction/scheme.cmx \
+    contrib/extraction/table.cmx kernel/term.cmx lib/util.cmx \
+    contrib/extraction/common.cmi 
 contrib/extraction/extract_env.cmo: contrib/extraction/common.cmi \
     kernel/declarations.cmi contrib/extraction/extraction.cmi \
     library/global.cmi library/lib.cmi library/libnames.cmi \
