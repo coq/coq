@@ -106,8 +106,6 @@ let token_list_of_kernel_name ~keep_sections kn tag =
        token_list_of_modpath path @ [N.string_of_label label]
     | N.MPfile dirpath -> token_list_of_dirpath dirpath
     | N.MPself self ->
-(*CSC: ask Hugo if there is a better way *)
-(*CSC: also check if multiple ways have been used *)
        if self = Names.initial_msid then
         [ "Top" ]
        else
