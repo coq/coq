@@ -67,7 +67,7 @@ val dyn_intro_move       : tactic_arg list -> tactic
 
 val intro_replacing      : identifier -> tactic
 val intro_using          : identifier -> tactic
-val intro_mustbe         : identifier -> tactic
+val intro_mustbe_force   : identifier -> tactic
 val intros_using         : identifier list -> tactic
 val intro_erasing        : identifier -> tactic
 val intros_replacing     : identifier list -> tactic

@@ -327,7 +327,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
     else
       raise e
 
-let intro_mustbe id = intro_gen (IntroMustBe id) None false
+let intro_mustbe_force id = intro_gen (IntroMustBe id) None true
 let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
 let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
 let intro = intro_force false

@@ -202,7 +202,7 @@ let rec intro_pattern p =
   and case_last  = (tclLAST_HYP h_simplest_case) in  
   match p with
     | WildPat    -> (tclTHEN intro clear_last)
-    | IdPat  id  -> intro_mustbe id
+    | IdPat  id  -> intro_mustbe_force id
     | DisjPat l  -> (tclTHEN introf
                        (tclTHENS 
 			  (tclTHEN case_last clear_last)
