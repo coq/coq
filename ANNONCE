@@ -38,6 +38,13 @@ statements and various improvements of existing tactics.
   Last but not the least, Coq version 8.0 comes with CoqIde, a new
 integrated gtk-based user interface in the style of ProofGeneral.
 
+User contributions
+------------------
+
+  We encourage users to submit their contributions. Contributing a
+development ensures it remains alive along the new versions of Coq and
+enhances its visibility from the other users.
+
 New book on Coq
 ---------------
 
