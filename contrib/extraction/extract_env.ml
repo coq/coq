@@ -424,6 +424,30 @@ let extraction_module m =
 	let v = { kn = KNset.empty; mp = MPset.singleton (MPfile dir_m) } in 
 	let l = environment_until (Some dir_m) in 
 	init_env l;
+(* TEMPORARY: make Extraction Module look like Recursive Extraction Module *)
+	let struc = 
+	  let select l (mp,meb) = 
+	        if in_mp v mp then (mp, unpack (extract_meb v true meb)) :: l else l
+	  in List.fold_left select [] (List.rev l)
+	in 
+	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
+	let struc = optimize_struct dummy_prm None struc in 
+	let rec print = function 
+	  | [] -> () 
+	  | (MPfile dir, _) :: l when dir <> dir_m -> print l 
+	  | (MPfile dir, sel) as e :: l -> 
+	      let short_m = snd (split_dirpath dir) in
+	      let f = module_file_name short_m in 
+	      let prm = {modular=true;mod_name=short_m;to_appear=[]} in
+	            print_structure_to_file (Some f) prm [e]; 
+	            print l 
+	  | _ -> assert false
+	in print struc; 
+	reset_tables ()
+
+
+
+(*i
 	let mp,meb = list_last l in 
 	let struc = [mp, unpack (extract_meb v true meb)] in 
 	let extern_decls = 
@@ -435,6 +459,7 @@ let extraction_module m =
 	let struc = optimize_struct prm (Some extern_decls) struc in 
 	print_structure_to_file (Some (module_file_name m)) prm struc; 
 	reset_tables ()
+i*)
 	  
 (*s Recursive Extraction of all the modules [M] depends on. 
   The vernacular command is \verb!Recursive Extraction Module! [M]. *) 

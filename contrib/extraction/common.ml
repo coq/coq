@@ -261,16 +261,20 @@ module StdParams = struct
     then 
       if (Refset.mem r !must_qualify) || (lang () = Haskell)
       then str (string_of_ren l s)
-      else 
-	if clash_in_contents mp s (decreasing_contents cur_mp) 
-	then str (string_of_ren l s)
-	else str s
+      else
+	try 
+	  if clash_in_contents mp s (decreasing_contents cur_mp) 
+	  then str (string_of_ren l s)
+	  else str s
+	with Not_found -> str (string_of_ren l s)
     else 
       let nl = List.length l in 
       if n = nl && nl < List.length cur_l then (* strict prefix *)
-	if clash_in_contents mp s (decreasing_contents cur_mp) 
-	then error_unqualified_name (string_of_ren l s) (string_of_modlist cur_l)
-	else str s
+	try 
+	  if clash_in_contents mp s (decreasing_contents cur_mp) 
+	  then error_unqualified_name (string_of_ren l s) (string_of_modlist cur_l)
+	  else str s
+	with Not_found -> str (string_of_ren l s)
       else (* [cur_mp] and [mp] are orthogonal *)
 	let l = remove_common cur_l l 
 	in str (string_of_ren l s)
