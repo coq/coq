@@ -1747,14 +1747,8 @@ let general_s_rewrite_in id lft2rgt c ~new_goals gl =
   else
    Termops.replace_term c2 c1 hyp
  in
-  tclTHENS
-   (cut new_hyp)
-   [ (* Try to insert the new hyp at the same place *)
-     tclORELSE (intro_replacing id)
-       (tclTHEN (clear [id]) (introduction id));
-     tclTHENLAST
-      (general_s_rewrite (not lft2rgt) c ~new_goals)
-      (exact_check (mkVar id))] gl
+ cut_replacing id new_hyp
+   (tclTHENLAST (general_s_rewrite (not lft2rgt) c ~new_goals)) gl
 
 let setoid_replace relation c1 c2 ~new_goals gl =
  try
@@ -1792,14 +1786,10 @@ let setoid_replace relation c1 c2 ~new_goals gl =
 let setoid_replace_in id relation c1 c2 ~new_goals gl =
  let hyp = pf_type_of gl (mkVar id) in
  let new_hyp = Termops.replace_term c1 c2 hyp in
-  tclTHENS
-   (cut new_hyp)
-   [ (* Try to insert the new hyp at the same place *)
-     tclORELSE (intro_replacing id)
-       (tclTHEN (clear [id]) (introduction id));
-     tclTHENLASTn
-      (setoid_replace relation c2 c1 ~new_goals)
-      [| exact_check (mkVar id); tclIDTAC |] ] gl
+ cut_replacing id new_hyp
+   (fun exact -> tclTHENLASTn
+     (setoid_replace relation c2 c1 ~new_goals)
+     [| exact; tclIDTAC |]) gl
 
 (* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
@@ -1840,12 +1830,7 @@ let setoid_symmetry_in id gl =
   let _,he,c1,c2 = analyse_hypothesis gl (mkVar id) in
    mkApp (he, [| c2 ; c1 |])
  in
-  tclTHENS
-   (cut new_hyp)
-   [ (* Try to insert the new hyp at the same place *)
-     tclORELSE (intro_replacing id)
-       (tclTHEN (clear [id]) (introduction id));
-     tclTHENS setoid_symmetry [ exact_check (mkVar id) ] ] gl
+ cut_replacing id new_hyp (tclTHEN setoid_symmetry) gl
 
 let setoid_transitivity c gl =
  try
