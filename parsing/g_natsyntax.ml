@@ -21,8 +21,6 @@ open Coqlib
 open Termast
 open Extend
 
-exception Non_closed_number
-
 let ast_O = ast_of_ref glob_O
 let ast_S = ast_of_ref glob_S
   
@@ -55,6 +53,8 @@ let nat_of_string s dloc =
 let pat_nat_of_string s dloc = 
   pat_nat_of_int (int_of_string s) dloc
     
+exception Non_closed_number
+
 let rec int_of_nat_rec astS astO p =
   match p with
     | Node (_,"APPLIST", [b; a]) when alpha_eq(b,astS) ->
@@ -84,6 +84,8 @@ let nat_printer std_pr p =
     | Some i -> str (string_of_int i)
     | None -> pr_S (pr_external_S std_pr p)
 
+let nat_printer_0 _ _ = str "0"
+
 let _ = Esyntax.Ppprim.add ("nat_printer", nat_printer)
 
 (* Declare the primitive parser *)
@@ -104,3 +106,79 @@ let _ =
     [None, None,
      [[Gramext.Stoken ("INT", "")],
       Gramext.action pat_nat_of_string]]
+
+
+(**********************************************************************)
+(* Parsing *)
+(* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
+
+open Rawterm
+open Libnames
+open Bignat
+open Symbols
+
+let nat_of_int dloc = function
+  | POS n ->
+      if less_than (of_string "5000") n & Options.is_verbose () then begin
+	warning ("You may experiment stack overflow and segmentation fault\
+                  \nwhile parsing numbers in nat greater than 5000");
+	flush_all ()
+      end;
+      let ref_O = RRef (dloc, glob_O) in
+      let ref_S = RRef (dloc, glob_S) in
+      let rec mk_nat n =
+	if is_nonzero n then 
+	  RApp (dloc,ref_S, [mk_nat (sub_1 n)])
+	else 
+	  ref_O
+      in 
+      mk_nat n
+  | NEG n ->
+      user_err_loc (dloc, "nat_of_int",
+        str "Cannot interpret a negative number as a natural number")
+
+
+let pat_nat_of_int dloc n name = match n with
+  | POS n -> 
+      let rec mk_nat n name =
+	if is_nonzero n then 
+	  PatCstr (dloc,path_of_S,[mk_nat (sub_1 n) Anonymous],name)
+	else 
+	  PatCstr (dloc,path_of_O,[],name)
+      in 
+      mk_nat n name
+  | NEG n ->
+      user_err_loc (dloc, "pat_nat_of_int",
+        str "Cannot interpret a negative number as a natural number")
+
+let _ = 
+  Symbols.declare_numeral_interpreter "nat_scope"
+    (nat_of_int,Some pat_nat_of_int)
+
+(***********************************************************************)
+(* Printing *)
+
+exception Non_closed_number
+
+let rec int_of_nat = function
+  | Node (_,"APPLIST", [b; a]) when alpha_eq(b,ast_S) -> (int_of_nat a) + 1
+  | a when alpha_eq(a,ast_O) -> 0
+  | _ -> raise Non_closed_number
+	  
+(* Prints not p, but the SUCCESSOR of p !!!!! *)
+let nat_printer_S p =
+  try 
+    Some (int (int_of_nat p + 1))
+  with
+    Non_closed_number -> None
+
+let nat_printer_O _ =
+  Some (int 0)
+
+(* Declare the primitive printers *)
+let _ =
+  Esyntax.declare_primitive_printer "nat_printer_S" "nat_scope" nat_printer_S
+
+let _ = 
+  Esyntax.declare_primitive_printer "nat_printer_O" "nat_scope" nat_printer_O
+

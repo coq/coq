@@ -11,6 +11,7 @@
 (*i*)
 open Extend
 open Vernacexpr
+open Symbols
 (*i*)
 
 (* Adding grammar and pretty-printing objects in the environment *)
@@ -22,8 +23,16 @@ val add_token_obj : string -> unit
 val add_tactic_grammar :  (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list -> unit
 
 val add_infix :
-  Gramext.g_assoc option -> int -> string -> Libnames.qualid Util.located -> unit
+  Gramext.g_assoc option -> int -> string -> Libnames.qualid Util.located
+    -> scope_name option -> unit
 val add_distfix :
-  Gramext.g_assoc option -> int -> string -> Coqast.t -> unit
+  Gramext.g_assoc option -> int -> string -> Coqast.t 
+    -> scope_name option -> unit
+val add_delimiters : scope_name -> delimiters -> unit
+
+val add_notation : 
+  Gramext.g_assoc option -> int -> string -> Coqast.t
+    -> scope_name option -> unit
 
 val print_grammar : string -> string -> unit
+

@@ -14,6 +14,7 @@ open Coqast
 open Tacexpr
 open Extend
 open Genarg
+open Symbols
 
 (* Toplevel control exceptions *)
 exception ProtectedLoop
@@ -183,8 +184,14 @@ type vernac_expr =
   | VernacTacticGrammar of
       (string * (string * grammar_production list) * raw_tactic_expr) list
   | VernacSyntax of string * syntax_entry_ast list
-  | VernacInfix of grammar_associativity * int * string * qualid located
-  | VernacDistfix of grammar_associativity * int * string * qualid located
+  | VernacOpenScope of scope_name
+  | VernacDelimiters of scope_name * (string * string)
+  | VernacInfix of
+      grammar_associativity * int * string * qualid located * scope_name option
+  | VernacDistfix of
+      grammar_associativity * int * string * qualid located * scope_name option
+  | VernacNotation of
+      grammar_associativity * int * string * constr_ast * scope_name option
 
   (* Gallina *)
   | VernacDefinition of definition_kind * identifier * definition_expr *

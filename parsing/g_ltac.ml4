@@ -13,15 +13,17 @@
 open Pp
 open Util
 open Ast
-open Pcoq
 open Coqast
 open Rawterm
 open Tacexpr
 open Ast
-open Tactic
 
 ifdef Quotify then
 open Qast
+else
+open Pcoq
+
+open Tactic
 
 ifdef Quotify then
 open Q
@@ -31,26 +33,32 @@ type let_clause_kind =
   | LETCLAUSE of
       (Names.identifier Util.located * Genarg.constr_ast may_eval option * raw_tactic_arg)
 
+ifdef Quotify then
+module Prelude = struct
+let fail_default_value = Qast.Int "0"
+
+let out_letin_clause loc = function
+  | Qast.Node ("LETTOPCLAUSE", _) -> user_err_loc (loc, "", (str "Syntax Error"))
+  | Qast.Node ("LETCLAUSE", [id;c;d]) ->
+      Qast.Tuple [id;c;d]
+  | _ -> anomaly "out_letin_clause"
+
+let make_letin_clause _ = function
+  | Qast.List l -> Qast.List (List.map (out_letin_clause dummy_loc) l)
+  | _ -> anomaly "make_letin_clause"
+end
+else
+module Prelude = struct
 let fail_default_value = 0
 
 let out_letin_clause loc = function
   | LETTOPCLAUSE _ -> user_err_loc (loc, "", (str "Syntax Error"))
   | LETCLAUSE (id,c,d) -> (id,c,d)
 
-let make_letin_clause _ = List.map (out_letin_clause dummy_loc)
+let make_letin_clause loc = List.map (out_letin_clause loc)
+end
 
-ifdef Quotify then
-let fail_default_value = Qast.Int "0"
-
-ifdef Quotify then
-let out_letin_clause loc = function
-  | Qast.Node ("LETTOPCLAUSE", _) -> user_err_loc (loc, "", (str "Syntax Error"))
-  | Qast.Node ("LETCLAUSE", [id;c;d]) ->
-      Qast.Tuple [id;c;d]
-
-ifdef Quotify then
-let make_letin_clause loc = function
-  | Qast.List l -> Qast.List (List.map (out_letin_clause loc) l)
+open Prelude
 
 (* Tactics grammar rules *)
 

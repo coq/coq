@@ -94,10 +94,10 @@ GEXTEND Gram
 	  VernacSearch (SearchRewrite c, l)
 
       (* TODO: rapprocher Eval et Check *)
-      | IDENT "Eval"; g = OPT natural; r = Tactic.red_expr; "in";
-	  c = constr -> VernacCheckMayEval (Some r, g, c)
-      | IDENT "Check"; g = OPT natural; c = constr ->
-	  VernacCheckMayEval (None, g, c)
+      | IDENT "Eval"; r = Tactic.red_expr; "in";
+	  c = constr -> VernacCheckMayEval (Some r, None, c)
+      | IDENT "Check"; c = constr ->
+	  VernacCheckMayEval (None, None, c)
       | "Type"; c = constr -> VernacGlobalCheck c      (* pas dans le RefMan *)
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = STRING ->
@@ -218,10 +218,18 @@ GEXTEND Gram
      | "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
          VernacSyntax (u,el)
 
+     | IDENT "Open"; IDENT "Scope"; sc = IDENT -> VernacOpenScope sc
+
+     | IDENT "Delimiters"; left = STRING; sc = IDENT; right = STRING ->
+	 VernacDelimiters (sc,(left,right))
+
      (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
-     | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = qualid
-        -> VernacInfix (a,n,op,p)
-     | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = qualid        -> VernacDistfix (a,n,s,p)
+     | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = qualid;
+	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacInfix (a,n,op,p,sc)
+     | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = qualid;
+	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
+     | IDENT "Notation"; a = entry_prec; n = natural; s = STRING; c = constr;
+	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacNotation (a,n,s,c,sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)

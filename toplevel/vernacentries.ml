@@ -285,7 +285,11 @@ let vernac_syntax = Metasyntax.add_syntax_obj
 
 let vernac_grammar = Metasyntax.add_grammar_obj
 
-let vernac_infix assoc n inf qid =
+let vernac_delimiters = Metasyntax.add_delimiters
+
+let vernac_open_scope = Symbols.open_scope
+
+let vernac_infix assoc n inf qid sc =
   let sp = sp_of_global None (global qid) in
   let dir = repr_dirpath (dirpath sp) in
 (*
@@ -295,11 +299,12 @@ let vernac_infix assoc n inf qid =
     Metasyntax.add_infix assoc n long_inf qid
   end;
 *)
-  Metasyntax.add_infix assoc n inf qid
+  Metasyntax.add_infix assoc n inf qid sc
 
-let vernac_distfix assoc n inf qid =
-  Metasyntax.add_distfix assoc n inf (Astterm.globalize_qualid qid)
+let vernac_distfix assoc n inf qid sc =
+  Metasyntax.add_distfix assoc n inf (Astterm.globalize_qualid qid) sc
 
+let vernac_notation = Metasyntax.add_notation
 
 (***********)
 (* Gallina *)
@@ -1025,8 +1030,11 @@ let interp c = match c with
   | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
   | VernacTacticGrammar al -> Metasyntax.add_tactic_grammar al
   | VernacGrammar (univ,al) -> vernac_grammar univ al
-  | VernacInfix (assoc,n,inf,qid) -> vernac_infix assoc n inf qid
-  | VernacDistfix (assoc,n,inf,qid) -> vernac_distfix assoc n inf qid
+  | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
+  | VernacOpenScope sc -> vernac_open_scope sc
+  | VernacInfix (assoc,n,inf,qid,sc) -> vernac_infix assoc n inf qid sc
+  | VernacDistfix (assoc,n,inf,qid,sc) -> vernac_distfix assoc n inf qid sc
+  | VernacNotation (assoc,n,inf,c,sc) -> vernac_notation assoc n inf c sc
 
   (* Gallina *)
   | VernacDefinition (k,id,d,f) -> vernac_definition k id d f

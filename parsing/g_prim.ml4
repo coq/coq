@@ -73,7 +73,7 @@ open Q
 
 GEXTEND Gram
   GLOBAL: var ident natural metaident integer string preident ast astpat
-  astact astlist qualid reference dirpath rawident numarg;
+  astact astlist qualid reference dirpath rawident;
 
   metaident:
     [ [ s = METAIDENT -> Nmeta (loc,s) ] ]
@@ -97,9 +97,6 @@ GEXTEND Gram
     [ [ i = INT      -> local_make_posint i
       | "-"; i = INT -> local_make_negint i ] ]
   ;
-  numarg:
-    [ [ i = INT -> Num(loc, int_of_string i) ] ]
-  ;
   field:
     [ [ s = FIELD -> local_id_of_string s ] ]
   ;
@@ -121,8 +118,8 @@ GEXTEND Gram
   ;
   reference:
     [ [ id = ident; (l,id') = fields ->
-        Tacexpr.RQualid (loc, local_make_qualid (local_append l id) id')
-      | id = ident -> Tacexpr.RIdent (loc,id)
+        Coqast.RQualid (loc, local_make_qualid (local_append l id) id')
+      | id = ident -> Coqast.RIdent (loc,id)
       ] ]
   ;
   string:

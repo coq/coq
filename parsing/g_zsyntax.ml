@@ -25,89 +25,42 @@ let get_z_sign loc =
     ast_of_id (id_of_string "POS"),
     ast_of_id (id_of_string "NEG")))
 
-let int_array_of_string s =
-  let a = Array.create (String.length s) 0 in
-  for i = 0 to String.length s - 1 do
-    a.(i) <- int_of_string (String.sub s i 1)
-  done;
-  a
-    
-let string_of_int_array s =
-  String.concat "" (Array.to_list (Array.map string_of_int s))
-    
-let is_nonzero a =
-  let b = ref false in Array.iter (fun x -> b := x <> 0 || !b) a; !b
-      
-let div2_with_rest n =
-  let len = Array.length n in
-  let q = Array.create len 0 in
-  for i = 0 to len - 2 do
-    q.(i) <- q.(i) + n.(i) / 2; q.(i + 1) <- 5 * (n.(i) mod 2)
-  done;
-  q.(len - 1) <- q.(len - 1) + n.(len - 1) / 2;
-  q, n.(len - 1) mod 2
+open Bignat
 
-let add_1 n =
-  let m = Array.copy n
-  and i = ref (Array.length n - 1) in
-  m.(!i) <- m.(!i) + 1;
-  while m.(!i) = 10 && !i > 0 do
-    m.(!i) <- 0; decr i; m.(!i) <- m.(!i) + 1
-  done;
-  if !i = 0 && m.(0) = 10 then begin 
-    m.(0) <- 0; Array.concat [[| 1 |]; m] 
-  end else 
-    m
-
-let rec mult_2 n =
-  let m = Array.copy n in
-  m.(Array.length n - 1) <- 2 * m.(Array.length n - 1);
-  for i = Array.length n - 2 downto 0 do
-    m.(i) <- 2 * m.(i);
-    if m.(i + 1) >= 10 then begin
-      m.(i + 1) <- m.(i + 1) - 10; m.(i) <- m.(i) + 1 
-    end
-  done;
-  if m.(0) >= 10 then begin 
-    m.(0) <- m.(0) - 10; Array.concat [[| 1 |]; m] 
-  end else 
-    m
-
-let pos_of_int_array astxI astxO astxH x =
+let pos_of_bignat astxI astxO astxH x =
   let rec pos_of x =
     match div2_with_rest x with
-      | (q, 1) ->
-          if is_nonzero q then ope("APPLIST", [astxI; pos_of q]) else astxH
-      | (q, 0) -> ope("APPLIST", [astxO; pos_of q])
-      | _ -> anomaly "n mod 2 is neither 1 nor 0. Do you bielive that ?"
+      | (q, true) when is_nonzero q -> ope("APPLIST", [astxI; pos_of q])
+      | (q, false) -> ope("APPLIST", [astxO; pos_of q])
+      | (_, true) -> astxH
   in 
   pos_of x
     
 let z_of_string pos_or_neg s dloc = 
   let ((astxI,astxO,astxH),(astZERO,astPOS,astNEG)) = get_z_sign dloc in
-  let v = int_array_of_string s in
+  let v = Bignat.of_string s in
   if is_nonzero v then
     if pos_or_neg then
-      ope("APPLIST",[astPOS; pos_of_int_array astxI astxO astxH v])
+      ope("APPLIST",[astPOS; pos_of_bignat astxI astxO astxH v])
     else 
-      ope("APPLIST",[astNEG; pos_of_int_array astxI astxO astxH v])
+      ope("APPLIST",[astNEG; pos_of_bignat astxI astxO astxH v])
   else 
     astZERO
       
 exception Non_closed_number
 
-let rec int_array_of_pos c1 c2 c3 p =
+let rec bignat_of_pos c1 c2 c3 p =
   match p with
     | Node (_,"APPLIST", [b; a]) when alpha_eq(b,c1) ->
-        mult_2 (int_array_of_pos c1 c2 c3 a)
+        mult_2 (bignat_of_pos c1 c2 c3 a)
     | Node (_,"APPLIST", [b; a]) when alpha_eq(b,c2) ->
-        add_1 (mult_2 (int_array_of_pos c1 c2 c3 a))
-    | a when alpha_eq(a,c3) -> [| 1 |]
+        add_1 (mult_2 (bignat_of_pos c1 c2 c3 a))
+    | a when alpha_eq(a,c3) -> Bignat.one
     | _ -> raise Non_closed_number
 	  
-let int_array_option_of_pos astxI astxO astxH p =
+let bignat_option_of_pos astxI astxO astxH p =
   try 
-    Some (int_array_of_pos astxO astxI astxH p)
+    Some (bignat_of_pos astxO astxI astxH p)
   with Non_closed_number -> 
     None
 
@@ -116,35 +69,37 @@ let pr_neg a = hov 0 (str "NEG" ++ brk (1,1) ++ a)
 
 let inside_printer posneg std_pr p =
   let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
-  match (int_array_option_of_pos astxI astxO astxH p) with
+  match (bignat_option_of_pos astxI astxO astxH p) with
     | Some n -> 
 	if posneg then 
-	  (str (string_of_int_array n))
+	  (str (Bignat.to_string n))
 	else 
-	  (str "(-" ++ str (string_of_int_array n) ++ str ")")
+	  (str "(-" ++ str (Bignat.to_string n) ++ str ")")
     | None -> 
 	let pr = if posneg then pr_pos else pr_neg in
 	str "(" ++ pr (std_pr (ope("ZEXPR",[p]))) ++ str ")"
 
+let outside_zero_printer std_pr p = str "`0`"
+
 let outside_printer posneg std_pr p =
   let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
-  match (int_array_option_of_pos astxI astxO astxH p) with
+  match (bignat_option_of_pos astxI astxO astxH p) with
     | Some n -> 
 	if posneg then 
-	  (str "`" ++ str (string_of_int_array n) ++ str "`")
+	  (str "`" ++ str (Bignat.to_string n) ++ str "`")
 	else 
-	  (str "`-" ++ str (string_of_int_array n) ++ str "`")
+	  (str "`-" ++ str (Bignat.to_string n) ++ str "`")
       | None -> 
 	  let pr = if posneg then pr_pos else pr_neg in
 	  str "(" ++ pr (std_pr p) ++ str ")"
 
-(* Declare pretty-printers for integers *)
+(* For printing with Syntax and without the scope mechanism *)
 let _ = Esyntax.Ppprim.add ("positive_printer", (outside_printer true))
 let _ = Esyntax.Ppprim.add ("negative_printer", (outside_printer false))
 let _ = Esyntax.Ppprim.add ("positive_printer_inside", (inside_printer true))
 let _ = Esyntax.Ppprim.add ("negative_printer_inside", (inside_printer false))
 
-(* Declare the primitive parser *)
+(* Declare the primitive parser with Grammar and without the scope mechanism *)
 open Pcoq
 
 let number = create_constr_entry (get_univ "znatural") "number" 
@@ -163,3 +118,104 @@ let _ =
      [[Gramext.Stoken ("INT", "")],
       Gramext.action (z_of_string false)]]
 
+(**********************************************************************)
+(* Parsing via scopes                                                 *)
+(**********************************************************************)
+
+open Libnames
+open Rawterm
+let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
+let fast_integer_module = make_dir ["Coq";"ZArith";"fast_integer"]
+
+(* TODO: temporary hack *)
+let make_path dir id = Libnames.encode_kn dir id
+
+let z_path = make_path fast_integer_module (id_of_string "Z")
+let glob_z = IndRef (z_path,0)
+let glob_ZERO = ConstructRef ((z_path,0),1)
+let glob_POS = ConstructRef ((z_path,0),2)
+let glob_NEG = ConstructRef ((z_path,0),3)
+
+let positive_path = make_path fast_integer_module (id_of_string "positive")
+let glob_xI = ConstructRef ((positive_path,0),1)
+let glob_xO = ConstructRef ((positive_path,0),2)
+let glob_xH = ConstructRef ((positive_path,0),3)
+
+let pos_of_bignat dloc x =
+  let ref_xI = RRef (dloc, glob_xI) in
+  let ref_xH = RRef (dloc, glob_xH) in
+  let ref_xO = RRef (dloc, glob_xO) in
+  let rec pos_of x =
+    match div2_with_rest x with
+      | (q,false) -> RApp (dloc, ref_xO,[pos_of q])
+      | (q,true) when is_nonzero q -> RApp (dloc,ref_xI,[pos_of q])
+      | (q,true) -> ref_xH
+  in 
+  pos_of x
+
+let z_of_string2 dloc pos_or_neg n = 
+  if is_nonzero n then
+    let sgn = if pos_or_neg then glob_POS else glob_NEG in
+    RApp(dloc, RRef (dloc,sgn), [pos_of_bignat dloc n])
+  else 
+    RRef (dloc, glob_ZERO)
+
+let check_required_module loc d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+  if not (Library.library_is_loaded dir) then
+    user_err_loc (loc,"z_of_int",
+    str ("Cannot interpret numbers in Z without requiring first module "
+    ^(list_last d)))
+
+let z_of_int dloc z =
+  check_required_module dloc ["Coq";"ZArith";"Zsyntax"];
+  match z with
+  | POS n -> z_of_string2 dloc true n 
+  | NEG n -> z_of_string2 dloc false n 
+
+let _ = Symbols.declare_numeral_interpreter "Z_scope" (z_of_int,None)
+
+(***********************************************************************)
+(* Printers *)
+
+exception Non_closed_number
+
+let bignat_of_pos p =
+  let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
+  let c1 = astxO in
+  let c2 = astxI in
+  let c3 = astxH in
+  let rec transl = function
+    | Node (_,"APPLIST",[b; a]) when alpha_eq(b,c1) -> mult_2(transl a)
+    | Node (_,"APPLIST",[b; a]) when alpha_eq(b,c2) -> add_1(mult_2(transl a))
+    | a when alpha_eq(a,c3) -> Bignat.one
+    | _ -> raise Non_closed_number
+  in transl p
+	  
+let bignat_option_of_pos p =
+  try 
+    Some (bignat_of_pos p)
+  with Non_closed_number -> 
+    None
+
+let z_printer posneg p =
+  match bignat_option_of_pos p with
+    | Some n -> 
+	if posneg then 
+	  Some (str (Bignat.to_string n))
+	else 
+	  Some (str "-" ++ str (Bignat.to_string n))
+    | None -> None
+
+let z_printer_ZERO _ =
+  Some (int 0)
+
+(* Declare pretty-printers for integers *)
+open Esyntax
+let _ =
+  declare_primitive_printer "z_printer_POS" "Z_scope" (z_printer true)
+let _ =
+  declare_primitive_printer "z_printer_NEG" "Z_scope" (z_printer false)
+let _ =
+  declare_primitive_printer "z_printer_ZERO" "Z_scope" z_printer_ZERO

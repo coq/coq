@@ -17,7 +17,7 @@ GEXTEND Gram
   GLOBAL: constr0 constr1 constr2 constr3 lassoc_constr4 constr5
           constr6 constr7 constr8 constr9 constr10 lconstr constr
           ne_ident_comma_list ne_constr_list sort ne_binders_list qualid
-          global constr_pattern ident;
+          global constr_pattern ident numarg;
   ident:
     [ [ id = Prim.var -> id
 
@@ -94,6 +94,10 @@ GEXTEND Gram
           <:ast< (COFIX $id ($LIST $fbinders)) >>
       | s = sort -> s
       | v = global -> v
+      | n = INT ->
+	  let n = Coqast.Str (loc,n) in <:ast< (NUMERAL $n) >>
+      | "-"; n = INT ->
+	  let n = Coqast.Str (loc,n) in <:ast< (NEGNUMERAL $n) >>
   ] ]
   ;
   constr1:
@@ -169,9 +173,12 @@ GEXTEND Gram
     [ [ c1 = constr8 -> c1
       | c1 = constr8; "::"; c2 = constr8 -> <:ast< (CAST $c1 $c2) >> ] ]
   ;
+  numarg:
+    [ [ n = Prim.natural -> Coqast.Num (loc, n) ] ]
+  ;
   simple_binding:
     [ [ id = ident; ":="; c = constr -> <:ast< (BINDING $id $c) >>
-      | n = Prim.numarg; ":="; c = constr -> <:ast< (BINDING $n $c) >> ] ]
+      | n = numarg; ":="; c = constr -> <:ast< (BINDING $n $c) >> ] ]
   ;
   simple_binding_list:
     [ [ b = simple_binding; l = simple_binding_list -> b :: l | -> [] ] ]
@@ -181,7 +188,7 @@ GEXTEND Gram
           Coqast.Node
             (loc, "EXPLICITBINDINGS",
              (Coqast.Node (loc, "BINDING", [Ast.coerce_to_var c1; c2]) :: bl))
-      | n = Prim.numarg; ":="; c = constr; bl = simple_binding_list ->
+      | n = numarg; ":="; c = constr; bl = simple_binding_list ->
           <:ast<(EXPLICITBINDINGS (BINDING $n $c) ($LIST $bl))>>
       | c1 = constr; bl = LIST0 constr ->
           <:ast<(IMPLICITBINDINGS $c1 ($LIST $bl))>> ] ]
@@ -234,9 +241,10 @@ GEXTEND Gram
       | -> <:ast< (ISEVAR) >> ] ]
   ;
   constr91:
-    [ [ n = Prim.natural; "!"; c1 = constr9 ->
-      let n = Coqast.Num (loc,n) in
-          <:ast< (EXPL $n $c1) >>
+    [ [ n = INT; "!"; c1 = constr9 ->
+          let n = Coqast.Num (loc,int_of_string n) in <:ast< (EXPL $n $c1) >>
+      | n = INT ->
+	  let n = Coqast.Str (loc,n) in <:ast< (NUMERAL $n) >>
       | c1 = constr9 -> c1 ] ]
   ;
   ne_constr91_list:

@@ -187,8 +187,7 @@ type 'pat unparsing_hunk =
   | UNP_TBRK of int * int
   | UNP_TAB
   | UNP_FNL
-  | UNP_INFIX of Libnames.extended_global_reference * string * string *
-      (parenRelation * parenRelation)
+  | UNP_SYMBOLIC of string * string * 'pat unparsing_hunk
 
 let rec subst_hunk subst_pat subst hunk = match hunk with
   | PH (pat,so,pr) ->
@@ -204,10 +203,10 @@ let rec subst_hunk subst_pat subst hunk = match hunk with
   | UNP_TBRK _
   | UNP_TAB
   | UNP_FNL -> hunk
-  | UNP_INFIX (ref,s1,s2,prs) ->
-      let ref' = Libnames.subst_ext subst ref in
-	if ref' == ref then hunk else
-	  UNP_INFIX (ref',s1,s2,prs)
+  | UNP_SYMBOLIC (s1, s2, pat) ->
+      let pat' = subst_hunk subst_pat subst pat in
+	if pat' == pat then hunk else
+	  UNP_SYMBOLIC (s1, s2, pat')
 
 (* Checks if the precedence of the parent printer (None means the
    highest precedence), and the child's one, follow the given
@@ -271,8 +270,8 @@ type syntax_entry_ast = precedence * syntax_rule list
 let rec interp_unparsing env = function
   | PH (ast,ext,pr) -> PH (Ast.val_of_ast env ast,ext,pr)
   | UNP_BOX (b,ul) -> UNP_BOX (b,List.map (interp_unparsing env) ul)
-  | UNP_BRK _ | RO _ | UNP_TBRK _ | UNP_TAB | UNP_FNL
-  | UNP_INFIX _ as x -> x
+  | UNP_BRK _ | RO _ | UNP_TBRK _ | UNP_TAB | UNP_FNL as x -> x
+  | UNP_SYMBOLIC (x,y,u) -> UNP_SYMBOLIC (x,y,interp_unparsing env u)
 
 let rule_of_ast univ prec (s,spat,unp) =
   let (astpat,meta_env) = Ast.to_pat [] spat in

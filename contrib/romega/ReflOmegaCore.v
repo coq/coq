@@ -1622,7 +1622,7 @@ Theorem exact_divide_valid :
 
 Unfold valid1 exact_divide; Intros k1 k2 t e p1; (Simplify ());Simpl; Auto;
 (Elim_eq_term  '(scalar_norm t (Tmult k2 (Tint k1))) 't1); Simpl; Auto;
-(Elim_eq_Z 'k1 'ZERO); Simpl; Auto;  Intros H1 H2; Elim H2; 
+(Elim_eq_Z 'k1 '(ZERO)); Simpl; Auto;  Intros H1 H2; Elim H2; 
 Elim scalar_norm_stable; Simpl; Generalize H1; Case (interp_term e k2);
 Try Trivial; (Case k1; Simpl; [
   Intros; Absurd `0 = 0`; Assumption

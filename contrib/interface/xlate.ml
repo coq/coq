@@ -311,8 +311,8 @@ let ident_or_meta_to_ct_ID = function
 let xlate_qualid_list l = CT_id_list (List.map loc_qualid_to_ct_ID l)
 
 let reference_to_ct_ID = function
-  | RIdent (_,id) -> CT_ident (Names.string_of_id id)
-  | RQualid (_,qid) -> CT_ident (Libnames.string_of_qualid qid)
+  | Coqast.RIdent (_,id) -> CT_ident (Names.string_of_id id)
+  | Coqast.RQualid (_,qid) -> CT_ident (Libnames.string_of_qualid qid)
 
 let xlate_class = function
   | FunClass -> CT_ident "FUNCLASS"
@@ -986,7 +986,7 @@ and (xlate_call_or_tacarg:raw_tactic_arg -> ct_TACTIC_COM) =
 	  (reference_to_ct_ID r,
 	    CT_tactic_arg_list(xlate_tacarg a,List.map xlate_tacarg l))
     | TacCall (_,_,_) -> xlate_error ""
-    | Reference (RIdent (_,s)) -> ident_tac s
+    | Reference (Coqast.RIdent (_,s)) -> ident_tac s
     | t -> xlate_error "TODO: result other than tactic or constr"
 
 and xlate_red_tactic =
@@ -1906,7 +1906,14 @@ let xlate_vernac =
          	| ("SYNTAX", [Varg_ident phy; Varg_ident s; spatarg; unparg]) ->
          	        (syntaxop phy s spatarg unparg 
          coerce_ID_OPT_to_FORMULA_OPT(CT_coerce_NONE_to_ID_OPT(CT_none)))*)
-   | VernacInfix (str_assoc, n, str, id) ->
+   | VernacOpenScope sc -> xlate_error "TODO: open scope"
+
+   | VernacDelimiters _ -> xlate_error "TODO: Delimiters"
+
+   | VernacNotation _ -> xlate_error "TODO: Notation"
+
+   | VernacInfix (str_assoc, n, str, id, sc) ->
+      (* TODO: handle scopes *)
       CT_infix (
        (match str_assoc with
         | Some Gramext.LeftA -> CT_lefta
@@ -1949,7 +1956,7 @@ let xlate_vernac =
      VernacSetOption (_, _)|VernacUnsetOption _|VernacDeclareImplicits (_, _)|
      VernacHintDestruct (_, _, _, _, _)|VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
-     VernacImport (_, _)|VernacExactProof _|VernacDistfix (_, _, _, _)|
+     VernacImport (_, _)|VernacExactProof _|VernacDistfix (_, _, _, _, _)|
      VernacTacticGrammar _|VernacVar _|VernacTime _|VernacNop|VernacComments _)
     -> xlate_error "TODO: vernac"
 

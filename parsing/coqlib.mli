@@ -27,6 +27,8 @@ val logic_type_module : dir_path
 
 (* Natural numbers *)
 val glob_nat : global_reference
+val path_of_O : constructor
+val path_of_S : constructor
 val glob_O : global_reference
 val glob_S : global_reference
 

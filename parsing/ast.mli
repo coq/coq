@@ -103,7 +103,7 @@ val coerce_to_id : Coqast.t -> identifier
 
 val coerce_qualid_to_id : qualid Util.located -> identifier
 
-val coerce_reference_to_id : Tacexpr.reference_expr -> identifier
+val coerce_reference_to_id : reference_expr -> identifier
 
 val abstract_binders_ast :
   Coqast.loc -> string -> Coqast.t -> Coqast.t -> Coqast.t
@@ -144,7 +144,7 @@ val replace_vars_ast : (identifier * identifier) list -> Coqast.t -> Coqast.t
 val bind_env : env -> string -> typed_ast -> env
 val ast_match : env -> astpat -> Coqast.t -> env
 val astl_match : env -> patlist -> Coqast.t list -> env
-val first_match : ('a -> astpat) -> env -> t -> 'a list -> ('a * env) option
+val find_all_matches : ('a -> astpat) -> env -> t -> 'a list -> ('a * env) list
 val first_matchl : ('a -> patlist) -> env -> Coqast.t list -> 'a list ->
   ('a * env) option
 

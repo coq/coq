@@ -82,8 +82,11 @@ type 'pat unparsing_hunk =
   | UNP_TBRK of int * int
   | UNP_TAB
   | UNP_FNL
+  | UNP_SYMBOLIC of string * string * 'pat unparsing_hunk
+(*
   | UNP_INFIX of Libnames.extended_global_reference * string * string *
       (parenRelation * parenRelation)
+*)
 
 (*val subst_unparsing_hunk : 
   Names.substitution -> (Names.substitution -> 'pat -> 'pat) -> 

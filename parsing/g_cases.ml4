@@ -18,7 +18,12 @@ GEXTEND Gram
 
   pattern:
     [ [ qid = global -> qid
-      | "("; p = compound_pattern; ")" -> p ] ]
+      | "("; p = compound_pattern; ")" -> p
+      | n = INT ->
+	  let n = Coqast.Str (loc,n) in <:ast< (PATTNUMERAL $n) >>
+      | "-"; n = INT ->
+	  let n = Coqast.Str (loc,n) in <:ast< (PATTNEGNUMERAL $n) >>
+    ] ]
   ;
   compound_pattern:
     [ [ p = pattern ; lp = ne_pattern_list ->

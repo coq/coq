@@ -34,8 +34,10 @@ let nat_path = make_path datatypes_module (id_of_string "nat")
 
 let glob_nat = IndRef (nat_path,0)
 
-let glob_O = ConstructRef ((nat_path,0),1)
-let glob_S = ConstructRef ((nat_path,0),2)
+let path_of_O = ((nat_path,0),1)
+let path_of_S = ((nat_path,0),2)
+let glob_O = ConstructRef path_of_O
+let glob_S = ConstructRef path_of_S
 
 let eq_path = make_path logic_module (id_of_string "eq")
 let eqT_path = make_path logic_type_module (id_of_string "eqT")

@@ -18,6 +18,7 @@ open Extend
 open Vernacexpr
 open Names
 open Nametab
+open Symbols
 
 (*** Syntax keys ***)
 
@@ -114,7 +115,7 @@ let find_syntax_entry whatfor gt =
     List.flatten
       (List.map (fun k -> Gmapl.find (whatfor,k) !from_key_table) gt_keys)
   in 
-  first_match (fun se -> se.syn_astpat) [] gt entries
+  find_all_matches (fun se -> se.syn_astpat) [] gt entries
 
 let remove_with_warning name =
   if Gmap.mem name !from_name_table then begin
@@ -139,10 +140,9 @@ let add_ppobject {sc_univ=wf;sc_entries=sel} = List.iter (add_rule wf) sel
 
 (* Pretty-printing machinery *)
 
-type std_printer = Coqast.t -> std_ppcmds
+type std_printer = Genarg.constr_ast -> std_ppcmds
 type unparsing_subfunction = string -> tolerability option -> std_printer
-
-type std_constr_printer = Genarg.constr_ast -> std_ppcmds
+type primitive_printer = Genarg.constr_ast -> std_ppcmds option
 
 (* Module of primitive printers *)
 module Ppprim =
@@ -153,94 +153,111 @@ module Ppprim =
     let add (a,ppr) = tab := (a,ppr)::!tab
   end
 
+(**********************************************************************)
+(* Primitive printers (e.g. for numerals)                             *)
+
+(* This is the map associating to a printer the scope it belongs to   *)
+(* and its ML code                                                    *)
+
+let primitive_printer_tab = 
+  ref (Stringmap.empty : (scope_name * primitive_printer) Stringmap.t)
+let declare_primitive_printer s sc pp =
+  primitive_printer_tab := Stringmap.add s (sc,pp) !primitive_printer_tab
+let lookup_primitive_printer s =
+  Stringmap.find s !primitive_printer_tab
+
+(* Register the primitive printer for "token". It is not used in syntax/PP*.v,
+ * but any ast matching no PP rule is printed with it. *)
+(*
+let _ = declare_primitive_printer "token" token_printer
+*)
+
 (* A printer for the tokens. *)
 let token_printer stdpr = function
   | (Id _ | Num _ | Str _ | Path _ as ast) -> print_ast ast
   | a -> stdpr a
 
-(* Register the primitive printer for "token". It is not used in syntax/PP*.v,
- * but any ast matching no PP rule is printed with it. *)
-
-let _ = Ppprim.add ("token",token_printer)
-
 (* A primitive printer to do "print as" (to specify a length for a string) *)
-let print_as_printer stdpr = function
-  | Node (_, "AS", [Num(_,n); Str(_,s)]) -> stras (n,s)
-  | ast                                  -> stdpr ast
+let print_as_printer = function
+  | Node (_, "AS", [Num(_,n); Str(_,s)]) -> Some (stras (n,s))
+  | ast                                  -> None
 
-let _ = Ppprim.add ("print_as",print_as_printer)
+let _ = declare_primitive_printer "print_as" default_scope print_as_printer
 
 (* Handle infix symbols *)
 
-let find_infix_symbols sp =
-  try Spmap.find sp !infix_names_map with Not_found -> []
-
-let find_infix_name a =
-  try Stringmap.find a !infix_symbols_map
-  with Not_found -> anomaly ("Undeclared symbol: "^a)
-
-let declare_infix_symbol sp s =
-  let l = find_infix_symbols sp in
-  infix_names_map := Spmap.add sp (s::l) !infix_names_map;
-  infix_symbols_map := Stringmap.add s sp !infix_symbols_map
-
-let meta_pattern m = Pmeta(m,Tany)
-
-let make_hunks (lp,rp) s e1 e2 =
-  let n,s =
-    if is_letter (s.[String.length s -1]) or is_letter (s.[0])
-    then 1,s^" " else 0,s
-  in
-  [PH (meta_pattern e1, None, lp);
-   UNP_BRK (n, 1); RO s;
-   PH (meta_pattern e2, None, rp)]
-
-let build_syntax (ref,e1,e2,assoc) =
-  let sp = match ref with
-  | TrueGlobal r -> Nametab.sp_of_global None r
-  | SyntacticDef kn -> Nametab.sp_of_syntactic_definition kn in
-  let rec find_symbol = function
-    | [] ->
-	let s = match ref with
-	  | TrueGlobal r ->
-	      string_of_qualid (shortest_qualid_of_global None r)
-	  | SyntacticDef _ -> string_of_path sp in
-	UNP_BOX (PpHOVB 0,
-	  [RO "("; RO s; UNP_BRK (1, 1); PH (meta_pattern e1, None, E);
-	   UNP_BRK (1, 1); PH (meta_pattern e2, None, E); RO ")"])
-    | a::l ->
-	if find_infix_name a = sp then
-	  UNP_BOX (PpHOVB 1, make_hunks assoc a e1 e2)
-	else
-	  find_symbol l
-  in find_symbol (find_infix_symbols sp)
-
+let pr_parenthesis inherited se strm =
+  let rule_prec = (se.syn_id, se.syn_prec) in
+  let no_paren = tolerable_prec inherited rule_prec in
+  if no_paren then 
+    strm
+  else 
+    (str"(" ++ strm ++ str")")
+    
+let print_delimiters inh se strm = function
+  | None -> pr_parenthesis inh se strm
+  | Some (left,right) ->
+      assert (left <> "" && right <> "");
+      let lspace =
+	if is_letter (left.[String.length left -1]) then str " " else mt () in
+      let rspace =
+        let c = right.[0] in
+	if is_letter c or is_digit c or c = '\'' then str " " else mt () in
+      str left ++ lspace ++ strm ++ rspace ++ str right
 
 (* Print the syntax entry. In the unparsing hunks, the tokens are
  * printed using the token_printer, unless another primitive printer
  * is specified. *)
 
-let print_syntax_entry whatfor sub_pr env se = 
-  let rule_prec = (se.syn_id, se.syn_prec) in
-  let rec print_hunk = function
+let print_syntax_entry sub_pr scopes env se = 
+  let rec print_hunk rule_prec scopes = function
     | PH(e,externpr,reln) ->
 	let node = Ast.pat_sub Ast.dummy_loc env e in
 	let printer =
 	  match externpr with (* May branch to an other printer *)
 	    | Some c ->
                 (try (* Test for a primitive printer *) Ppprim.map c
-                with Not_found -> token_printer )
+                with Not_found -> token_printer)
 	    | _ -> token_printer in
-	printer (sub_pr whatfor (Some(rule_prec,reln))) node
+	printer (sub_pr scopes (Some(rule_prec,reln))) node
     | RO s -> str s
     | UNP_TAB -> tab ()
     | UNP_FNL -> fnl ()
     | UNP_BRK(n1,n2) -> brk(n1,n2)
     | UNP_TBRK(n1,n2) -> tbrk(n1,n2)
-    | UNP_BOX (b,sub) -> ppcmd_of_box b (prlist print_hunk sub)
-    | UNP_INFIX (sp,e1,e2,assoc) -> print_hunk (build_syntax (sp,e1,e2,assoc))
+    | UNP_BOX (b,sub) -> ppcmd_of_box b (prlist (print_hunk rule_prec scopes) sub)
+    | UNP_SYMBOLIC _ -> anomaly "handled by call_primitive_parser"
   in 
-  prlist print_hunk se.syn_hunks
+  let rule_prec = (se.syn_id, se.syn_prec) in
+  prlist (print_hunk rule_prec scopes) se.syn_hunks
+
+let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
+  try (
+  match se.syn_hunks with
+    | [PH(e,Some c,reln)] ->
+	  (* Test for a primitive printer; may raise Not_found *)
+	  let sc,pr = lookup_primitive_printer c in
+	  (* Look if scope [sc] associated to this printer is OK *)
+	  (match Symbols.find_numeral_printer sc scopes with
+	    | None -> otherwise ()
+	    | Some (dlm,scopes) ->
+	        (* We can use this printer *)
+	        let node = Ast.pat_sub Ast.dummy_loc env e in
+	        match pr node with
+		  | Some strm -> print_delimiters inherited se strm dlm
+		  | None -> otherwise ())
+    | [UNP_SYMBOLIC (sc,pat,sub)] ->
+	(match Symbols.find_notation sc pat scopes with
+	  | None -> otherwise ()
+	  | Some (dlm,scopes) ->
+	      print_delimiters inherited se
+		(print_syntax_entry rec_pr scopes env 
+		  {se with syn_hunks = [sub]}) dlm)
+    | _ ->
+	pr_parenthesis inherited se (print_syntax_entry rec_pr scopes env se)
+  )
+  with Not_found -> (* To handle old style printer *)
+	pr_parenthesis inherited se (print_syntax_entry rec_pr scopes env se)
 
 (* [genprint whatfor dflt inhprec ast] prints out the ast of
  * 'universe' whatfor. If the term is not matched by any
@@ -250,20 +267,19 @@ let print_syntax_entry whatfor sub_pr env se =
  * global constants basenames. *)
 
 let genprint dflt whatfor inhprec ast =
-  let rec rec_pr whatfor inherited gt =
-    match find_syntax_entry whatfor gt with
-      | Some(se, env) ->     
-	  let rule_prec = (se.syn_id, se.syn_prec) in
-	  let no_paren = tolerable_prec inherited rule_prec in
-	  let printed_gt = print_syntax_entry whatfor rec_pr env se in
-	  if no_paren then 
-	    printed_gt
-	  else 
-	    (str"(" ++ printed_gt ++ str")")
-      | None -> dflt gt (* No rule found *)
+  let rec rec_pr scopes inherited gt =
+    let entries = find_syntax_entry whatfor gt in
+    let rec test_rule = function
+      | se_env::rules ->
+	  call_primitive_parser
+	    rec_pr 
+	    (fun () -> test_rule rules) 
+	    inherited scopes se_env
+      | [] -> dflt gt (* No rule found *)
+    in test_rule entries
   in
   try 
-    rec_pr whatfor inhprec ast
+    rec_pr (Symbols.current_scopes ()) inhprec ast
   with
     | Failure _ -> (str"<PP failure: " ++ dflt ast ++ str">")
     | Not_found -> (str"<PP search failure: " ++ dflt ast ++ str">")

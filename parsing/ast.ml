@@ -13,7 +13,6 @@ open Util
 open Names
 open Libnames
 open Coqast
-open Tacexpr
 open Genarg
 
 let isMeta s = String.length s <> 0 & s.[0]='$'
@@ -239,7 +238,9 @@ let coerce_reference_to_id = function
 
 let slam_ast (_,fin) id ast =
   match id with
-    | Coqast.Nvar ((deb,_), s) -> Coqast.Slam ((deb,fin), Some s, ast)
+    | Coqast.Nvar ((deb,_), s) -> 
+	let name = if s = id_of_string "_" then None else Some s in
+	Coqast.Slam ((deb,fin), name, ast)
     | Coqast.Nmeta ((deb,_), s) -> Coqast.Smetalam ((deb,fin), s, ast)
     | _ -> invalid_arg "Ast.slam_ast"
 
@@ -269,7 +270,7 @@ let env_assoc_value loc v env =
   with Not_found -> 
     anomaly_loc
       (loc,"Ast.env_assoc_value",
-       (str"metavariable " ++ str v ++ str" is unbound."))
+       (str"metavariable " ++ str v ++ str" is unbound"))
 
 let env_assoc_list sigma (loc,v) =
   match env_assoc_value loc v sigma with
@@ -404,7 +405,7 @@ let typed_ast_match env p a = match (p,a) with
 
 let astl_match = amatchl []
 
-let ast_first_match pat_of_fun env ast sl =
+let first_match pat_of_fun env ast sl =
   let rec aux = function
     | [] -> None
     | h::t ->
@@ -413,12 +414,13 @@ let ast_first_match pat_of_fun env ast sl =
   in 
   aux sl
 
-let first_match pat_of_fun env ast sl =
+let find_all_matches pat_of_fun env ast sl =
   let rec aux = function
-    | [] -> None
+    | [] -> []
     | (h::t) ->
-        (try Some (h, ast_match env (pat_of_fun h) ast)
-         with (No_match _| Stdpp.Exc_located (_,No_match _)) -> aux t)
+        let l = aux t in
+        (try (h, ast_match env (pat_of_fun h) ast)::l
+         with (No_match _| Stdpp.Exc_located (_,No_match _)) -> l)
   in 
   aux sl
 
@@ -695,7 +697,7 @@ let rec eval_act dloc sigma = function
   | ActCase(e,ml) ->
       (match eval_act dloc sigma e with
         | (PureAstNode esub) ->
-            (match ast_first_match myfst sigma esub ml with
+            (match first_match myfst sigma esub ml with
               | Some((_,a),sigma_pat) -> eval_act dloc sigma_pat a
               | _ -> case_failed dloc sigma esub (List.map myfst ml))
         | _ -> grammar_type_error (dloc,"Ast.eval_act"))

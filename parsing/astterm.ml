@@ -196,7 +196,7 @@ let maybe_constructor allow_var env = function
       let qid = interp_qualid l in
       (try match extended_locate qid with
        | SyntacticDef sp ->
-	   (match Syntax_def.search_syntactic_definition sp with
+	   (match Syntax_def.search_syntactic_definition loc sp with
 	    | RRef (_,(ConstructRef c as x)) ->
 		if !dump then add_glob loc x; 
  		ConstrPat (loc,c)
@@ -267,7 +267,7 @@ let ast_to_global loc c =
     | ("EVAR", [(Num (_,ev))]) ->
 	REvar (loc, ev), []
     | ("SYNCONST", [sp]) ->
-	Syntax_def.search_syntactic_definition (ast_to_sp sp), []
+	Syntax_def.search_syntactic_definition loc (ast_to_sp sp), []
     | _ -> anomaly_loc (loc,"ast_to_global",
 			(str "Bad ast for this global a reference"))
 
@@ -285,7 +285,7 @@ let ref_from_constr c = match kind_of_term c with
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let ast_to_var (env,impls) (vars1,vars2) loc id =
+let ast_to_var (env,impls,_) (vars1,vars2) loc id =
   let imps =
     if Idset.mem id env or List.mem id vars1
     then
@@ -322,7 +322,7 @@ let rawconstr_of_qualid env vars loc qid =
     let imps = implicits_of_global ref in
     RRef (loc, ref), imps
   | SyntacticDef sp ->
-    set_loc_of_rawconstr loc (Syntax_def.search_syntactic_definition sp), []
+    Syntax_def.search_syntactic_definition loc sp, []
   with Not_found ->
     error_global_not_found_loc loc qid
 
@@ -352,7 +352,7 @@ let message_redundant_alias (s1,s2) =
   warning ("Alias variable "^(string_of_id s1)
 	   ^" is merged with "^(string_of_id s2))
 
-let rec ast_to_pattern env aliases = function
+let rec ast_to_pattern (_,_,scopes as env) aliases = function
   | Node(_,"PATTAS",[Nvar (loc,s); p]) ->
       let aliases' = merge_aliases aliases (name_of_nvar s) in
       ast_to_pattern env aliases' p
@@ -369,6 +369,16 @@ let rec ast_to_pattern env aliases = function
 	     user_err_loc (loc,"ast_to_pattern",mssg_hd_is_not_constructor s)
 *)
               assert false)
+  | Node(_,"PATTNUMERAL", [Str(loc,n)]) ->
+      ([aliases],
+      Symbols.interp_numeral_as_pattern loc (Bignat.POS (Bignat.of_string n))
+	(alias_of aliases) scopes)
+
+  | Node(_,"PATTNEGNUMERAL", [Str(loc,n)]) ->
+      ([aliases],
+      Symbols.interp_numeral_as_pattern loc (Bignat.NEG (Bignat.of_string n))
+	(alias_of aliases) scopes)
+
   | ast ->
       (match maybe_constructor true env ast with
 	 | ConstrPat (loc,c) -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
@@ -420,8 +430,17 @@ let set_hole_implicit i = function
   | RVar (loc,id) -> (loc,ImplicitArg (VarRef id,i))
   | _ -> anomaly "Only refs have implicits"
 
+let build_expression loc1 loc2 (ref,impls) args =
+  let rec add_args n = function
+    | true::impls,args -> (RHole (set_hole_implicit n (RRef (loc2,ref))))::add_args (n+1) (impls,args)
+    | false::impls,a::args -> a::add_args (n+1) (impls,args)
+    | [], args -> args
+    | _ -> anomalylabstrm "astterm"
+      (str "Incorrect signature " ++ pr_global_env None ref ++ str " as an infix") in
+  RApp (loc1,RRef (loc2,ref),add_args 1 (impls,args))
+
 let ast_to_rawconstr sigma env allow_soapp lvar =
-  let rec dbrec (ids,impls as env) = function
+  let rec dbrec (ids,impls,scopes as env) = function
     | Nvar(loc,s) ->
 	fst (rawconstr_of_var env lvar loc s)
 
@@ -436,7 +455,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
           with Not_found ->
 	    error_fixname_unbound "ast_to_rawconstr (FIX)" false locid iddef in
 	let ext_ids = List.fold_right Idset.add lf ids in
-	let defl = Array.of_list (List.map (dbrec (ext_ids,impls)) lt) in
+	let defl = Array.of_list (List.map (dbrec (ext_ids,impls,scopes)) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RFix (Array.of_list ln,n), Array.of_list lf, arityl, defl)
 	  
@@ -449,7 +468,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	    error_fixname_unbound "ast_to_rawconstr (COFIX)" true locid iddef
 	in
 	let ext_ids = List.fold_right Idset.add lf ids in
-	let defl = Array.of_list (List.map (dbrec (ext_ids,impls)) lt) in
+	let defl = Array.of_list (List.map (dbrec (ext_ids,impls,scopes)) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RCoFix n, Array.of_list lf, arityl, defl)
 	  
@@ -457,7 +476,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let na,ids' = match ona with
 	  | Some id -> Name id, Idset.add id ids
 	  | _ -> Anonymous, ids in
-	let c1' = dbrec env c1 and c2' = dbrec (ids',impls) c2 in
+	let c1' = dbrec env c1 and c2' = dbrec (ids',impls,scopes) c2 in
 	(match k with
 	   | "PROD" -> RProd (loc, na, c1', c2')
 	   | "LAMBDA" -> RLambda (loc, na, locate_if_isevar locna na c1', c2')
@@ -466,6 +485,20 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | Node(_,("PRODLIST"|"LAMBDALIST" as s), [c1;(Slam _ as c2)]) -> 
 	iterated_binder s 0 c1 env c2
+
+    | Node(loc1,"NOTATION", Str(loc2,ntn)::args) ->
+	Symbols.interp_notation ntn scopes (List.map (dbrec env) args)
+
+    | Node(_,"NUMERAL", [Str(loc,n)]) ->
+	Symbols.interp_numeral loc (Bignat.POS (Bignat.of_string n))
+	  scopes
+
+    | Node(_,"NEGNUMERAL", [Str(loc,n)]) ->
+	Symbols.interp_numeral loc (Bignat.NEG (Bignat.of_string n))
+	  scopes
+
+    | Node(_,"DELIMITERS", [Str(_,sc);e]) ->
+	dbrec (ids,impls,sc::scopes) e
 
     | Node(loc,"APPLISTEXPL", f::args) ->
 	RApp (loc,dbrec env f,ast_to_args env args)
@@ -536,7 +569,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | _ -> anomaly "ast_to_rawconstr: unexpected ast"
 
-  and ast_to_eqn n (ids,impls as env) = function
+  and ast_to_eqn n (ids,impls,scopes as env) = function
     | Node(loc,"EQN",rhs::lhs) ->
 	let (idsl_substl_list,pl) =
 	  List.split (List.map (ast_to_pattern env ([],[])) lhs) in
@@ -550,10 +583,10 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let rhs = replace_vars_ast subst rhs in
 	List.iter message_redundant_alias subst;
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
-	(loc, eqn_ids,pl,dbrec (env_ids,impls) rhs)
+	(loc, eqn_ids,pl,dbrec (env_ids,impls,scopes) rhs)
     | _ -> anomaly "ast_to_rawconstr: ill-formed ast for Cases equation"
 
-  and iterated_binder oper n ty (ids,impls as env) = function
+  and iterated_binder oper n ty (ids,impls,scopes as env) = function
     | Slam(loc,ona,body) ->
 	let na,ids' = match ona with 
 	  | Some id ->
@@ -561,7 +594,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	      Name id, Idset.add id ids
 	  | _ -> Anonymous, ids
 	in
-	let r = iterated_binder oper (n+1) ty (ids',impls) body in
+	let r = iterated_binder oper (n+1) ty (ids',impls,scopes) body in
 	(match oper with
 	   | "PRODLIST" -> RProd(loc, na, dbrec env ty, r)
 	   | "LAMBDALIST" ->
@@ -715,7 +748,7 @@ let globalize_ast ast =
 
 let interp_rawconstr_gen sigma env impls allow_soapp lvar com =
   ast_to_rawconstr sigma
-    (from_list (ids_of_rel_context (rel_context env)), impls)
+    (from_list (ids_of_rel_context (rel_context env)), impls, Symbols.current_scopes ())
     allow_soapp (lvar,env) com
 
 let interp_rawconstr sigma env com =
@@ -748,7 +781,7 @@ let constrOut = function
       (str "Not a Dynamic ast: " ++ print_ast ast)
 
 let interp_global_constr env (loc,qid) = 
-  let c,_ = rawconstr_of_qualid (Idset.empty,[]) ([],env) loc qid in
+  let c,_ = rawconstr_of_qualid (Idset.empty,[],Symbols.current_scopes()) ([],env) loc qid in
   understand Evd.empty env c
 
 let interp_constr sigma env c =
@@ -869,7 +902,7 @@ let pattern_of_rawconstr lvar c =
 let interp_constrpattern_gen sigma env lvar com = 
   let c =
     ast_to_rawconstr sigma
-      (from_list (ids_of_rel_context (rel_context env)), [])
+      (from_list (ids_of_rel_context (rel_context env)), [], Symbols.current_scopes ())
       true (List.map fst lvar,env) com
   and nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
   try 
