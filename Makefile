@@ -222,7 +222,7 @@ states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTIC
 	./$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
-	rm -f states/barestate.coq states/initial.coq
+	rm -f states/*~ states/*.coq
 
 LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
@@ -275,7 +275,7 @@ CONTRIBVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
 contrib: $(CONTRIBVO)
 
 clean::
-	rm -f contrib/*/*~ contrib/*/*.cm[io]
+	rm -f contrib/*/*~ contrib/*/*.cm[io] contrib/*/*.vo
 
 archclean::
 	rm -f contrib/*/*.cmx contrib/*/*.[so]
@@ -503,7 +503,8 @@ archclean::
 	rm -f toplevel/*.cmx toplevel/*.[so]
 	rm -f tools/*.cmx tools/*.[so]
 	rm -f coqtop.opt coqtop.byte minicoq
-	rm -f scripts/*.cmx
+	rm -f scripts/*.cmx scripts/*.[so]
+	rm -f dev/*.cmx dev/*.[so]
 
 clean:: archclean
 	rm -f *~
@@ -519,6 +520,7 @@ clean:: archclean
 	rm -f toplevel/*.cm[io] toplevel/*~
 	rm -f tools/*.cm[io] tools/*~
 	rm -f scripts/*.cm[io] scripts/*~
+	rm -f dev/*.cm[io] dev/*~
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml
