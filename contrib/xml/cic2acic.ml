@@ -470,7 +470,7 @@ let acic_object_of_cic_object pvars sigma obj =
         List.fold_right
          (fun (name,_,arity,_) env ->
            Environ.push_rel (Names.Name name, None, arity) env
-         ) tys env
+         ) (List.rev tys) env
        in
        let atys =
         List.map
