@@ -33,7 +33,6 @@ open Safe_typing
 
 type proof_topstate = {
   mutable top_end_tac : tactic option;
-  top_hyps : named_context * named_context;
   top_goal : goal;
   top_strength : Decl_kinds.goal_kind;
   top_hook : declaration_hook }
@@ -232,7 +231,6 @@ let start_proof na str sign concl hook =
   let top_goal = mk_goal sign concl in
   let ts = { 
     top_end_tac = None;
-    top_hyps = (sign,empty_named_context);
     top_goal = top_goal;
     top_strength = str;
     top_hook = hook}
