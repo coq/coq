@@ -466,8 +466,10 @@ let translate_v7_string dir = function
   | "Zlt_minus" -> "Zlt_minus_simpl_swap"
   | "le_trans_S" -> "le_Sn_le"
   (* Arith *)
+(* Peano.v
   | "plus_n_O" -> "plus_0_r_reverse"
   | "plus_O_n" -> "plus_0_l"
+*)
   | "plus_assoc_l" -> "plus_assoc"
   | "plus_assoc_r" -> "plus_assoc_reverse"
   | "plus_sym" -> "plus_comm"
@@ -489,8 +491,10 @@ let translate_v7_string dir = function
   | "mult_minus_distr" -> "mult_minus_distr_r"
   | "mult_1_n" -> "mult_1_l"
   | "mult_n_1" -> "mult_1_r"
+(* Peano.v
   | "mult_n_O" -> "mult_O_r_reverse"
   | "mult_n_Sm" -> "mult_S_r_reverse"
+*)
   | "lt_mult_left" -> "mult_S_lt_compat_l"
   | "mult_le" -> "mult_le_compat_l"
   | "le_mult_right" -> "mult_le_compat_r"
@@ -500,7 +504,9 @@ let translate_v7_string dir = function
   | "mult_le_conv_1" -> "mult_S_le_reg_l"
   | "exists" -> "exists_between"
   | "IHexists" -> "IHexists_between"
+(* Peano.v
   | "pred_Sn" -> "pred_S"
+*)
   | "inj_minus_aux" -> "not_le_minus_0"
   | "minus_x_x" -> "minus_diag"
   | "minus_plus_simpl" -> "minus_plus_simpl_l_reverse"
