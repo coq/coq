@@ -255,7 +255,7 @@ GEXTEND Gram
       | -> None ] ]
   ;
   match_constr:
-    [ [ "match"; ci=LIST1 case_item SEP ","; ty=case_type; "with";
+    [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
         br=branches; "end" -> mk_match (loc,ci,ty,br) ] ]
   ;
   case_item:
@@ -270,11 +270,15 @@ GEXTEND Gram
         ty = OPT ["in"; t=lconstr -> t] -> (ona,ty) ] ]
   ;
   case_type:
-    [ [ ty = OPT [ "return"; c = operconstr LEVEL "100" -> c ] -> ty ] ]
+    [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
   ;
   return_type:
-    [ [ na = ["as"; id=name -> snd id | -> Names.Anonymous];
-        ty = case_type -> (na,ty) ] ]
+    [ [ a = OPT [ na = ["as"; id=name -> snd id | -> Names.Anonymous];
+              ty = case_type -> (na,ty) ] -> 
+        match a with 
+          | None -> Names.Anonymous, None
+          | Some (na,t) -> (na, Some t)
+    ] ]
   ;
   branches:
     [ [ OPT"|"; br=LIST0 eqn SEP "|" -> br ] ]
