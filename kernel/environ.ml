@@ -200,11 +200,11 @@ let set_engagement c env = (* Unsafe *)
 (* Lookup of section variables *)
 let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
-  Sign.instance_from_named_context cmap.const_hyps
+  Sign.vars_of_named_context cmap.const_hyps
 
 let lookup_inductive_variables (kn,i) env =
   let mis = lookup_mind kn env in
-  Sign.instance_from_named_context mis.mind_hyps
+  Sign.vars_of_named_context mis.mind_hyps
 
 let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
@@ -214,15 +214,9 @@ let lookup_constructor_variables (ind,_) env =
 let vars_of_global env constr =
   match kind_of_term constr with
       Var id -> [id]
-    | Const kn ->
-        List.map destVar 
-          (Array.to_list (lookup_constant_variables kn env))
-    | Ind ind ->
-        List.map destVar 
-          (Array.to_list (lookup_inductive_variables ind env))
-    | Construct cstr ->
-        List.map destVar 
-          (Array.to_list (lookup_constructor_variables cstr env))
+    | Const kn -> lookup_constant_variables kn env
+    | Ind ind -> lookup_inductive_variables ind env
+    | Construct cstr -> lookup_constructor_variables cstr env
     | _ -> []
 
 let global_vars_set env constr = 

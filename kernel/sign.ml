@@ -28,6 +28,8 @@ let rec lookup_named id = function
 
 let named_context_length = List.length
 
+let vars_of_named_context = List.map (fun (id,_,_) -> id)
+
 let instance_from_named_context sign =
   let rec inst_rec = function
     | (id,None,_) :: sign -> mkVar id :: inst_rec sign

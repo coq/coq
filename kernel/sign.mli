@@ -20,8 +20,11 @@ type section_context = named_context
 
 val empty_named_context : named_context
 val add_named_decl : named_declaration -> named_context -> named_context
+val vars_of_named_context : named_context -> identifier list
 
 val lookup_named : identifier -> named_context -> named_declaration
+
+(* number of declarations *)
 val named_context_length : named_context -> int
 
 (*s Recurrence on [named_context]: older declarations processed first *)
