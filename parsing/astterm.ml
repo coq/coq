@@ -250,7 +250,7 @@ let check_capture s ty = function
 	[< 'sTR ("The variable "^s^" occurs in its type") >]
   | _ -> ()
 
-let dbize k sigma =
+let dbize k allow_soapp sigma =
   let rec dbrec env = function
     | Nvar(loc,s) -> fst (dbize_ref k sigma env loc s)
 	  
@@ -343,6 +343,11 @@ let dbize k sigma =
     | Node(loc,"CAST", [c1;c2]) ->	   
 	RCast (loc,dbrec env c1,dbrec env c2)
 
+    | Node(loc,"SOAPP", Num(locn,n)::args) when allow_soapp ->
+	(* Hack special pour l'interprétation des constr_pattern *)
+	if n<0 then error "Metavariable numbers must be positive" else
+	RApp (loc,RRef (locn,RMeta (-n)),List.map (dbrec env) args)
+
     | Node(loc,opn,tl) -> 
 	anomaly ("dbize found operator "^opn^" with "^
 		 (string_of_int (List.length tl))^" arguments")
@@ -372,7 +377,7 @@ let dbize k sigma =
 	RBinder(loc, oper, na, dbrec env ty,
 		(iterated_binder oper n ty (add_rel (na,()) env) body))
     | body -> dbrec env body
-	  
+
   and dbize_args env l args =
     let rec aux n l args = match (l,args) with 
       | (i::l',Node(loc, "EXPL", [Num(_,j);a])::args') ->
@@ -399,7 +404,8 @@ let dbize k sigma =
 (* constr_of_com takes an environment of typing assumptions,
  * and translates a command to a constr. *)
 
-let interp_rawconstr sigma env com = dbize CCI sigma (unitize_env (context env)) com
+let interp_rawconstr sigma env com =
+  dbize CCI false sigma (unitize_env (context env)) com
 
 (* Globalization of AST quotations (mainly used in command quotations
    to get statically bound idents in grammar or pretty-printing rules) *)
@@ -583,6 +589,9 @@ and pat_of_raw metas vars = function
   | RApp (_,c,cl) -> 
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
+  (* Petit hack pour ne pas réécrire une interprétation complète des patterns*)
+  | RApp (_,RRef (_,RMeta n),cl) when n<0 ->
+      PSoApp (-n, List.map (pat_of_raw metas vars) cl)
   | RBinder (_,bk,na,c1,c2) ->
       PBinder (bk, na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
@@ -593,6 +602,9 @@ and pat_of_raw metas vars = function
   | RCast (_,c,t) ->
       warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
+  | ROldCase (_,false,po,c,br) ->
+      PCase (option_app (pat_of_raw metas vars) po, pat_of_raw metas vars c,
+	     Array.map (pat_of_raw metas vars) br)
   | _ ->
       error "pattern_of_rawconstr: not implemented"
 
@@ -602,7 +614,7 @@ let pattern_of_rawconstr c =
   (!metas,p)
 
 let interp_constrpattern sigma env com = 
-  let c = interp_rawconstr sigma env com in
+  let c = dbize CCI true sigma (unitize_env (context env)) com in
   try 
     pattern_of_rawconstr c
   with e -> 

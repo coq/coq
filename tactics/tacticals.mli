@@ -52,8 +52,8 @@ val clause_type : clause -> goal sigma -> constr
 val matches      : goal sigma -> constr -> marked_term -> bool
 val dest_match   : goal sigma -> constr -> marked_term -> constr list
 *)
-val gl_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
-val gl_is_matching : goal sigma -> constr_pattern -> constr -> bool
+val pf_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
+val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 val allHyps    : goal sigma -> clause list
 val afterHyp   : identifier -> goal sigma -> clause list

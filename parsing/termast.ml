@@ -766,7 +766,7 @@ let rec ast_of_pattern env = function
 
   | PSoApp (n,args) ->
       ope("SOAPP",(ope ("META",[num n])):: 
-		  (List.map (ast_of_constr false env) args))
+		  (List.map (ast_of_pattern env) args))
 
   | PBinder (BProd,Anonymous,t,c) ->
       ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])

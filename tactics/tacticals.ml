@@ -118,13 +118,12 @@ let clause_type cls gl =
 
 (* Functions concerning matching of clausal environments *)
 
-let gl_is_matching gls pat n =
+let pf_is_matching gls pat n =
   let (wc,_) = startWalk gls in 
   is_matching_conv (w_env wc) (w_Underlying wc) pat n
 
-let gl_matches gls pat n =
-  let (wc,_)  = startWalk gls in
-  matches_conv (w_env wc) (w_Underlying wc) pat n
+let pf_matches gls pat n =
+  matches_conv (sig_it gls).Evd.evar_env (Stamps.ts_it (sig_sig gls)) pat n
 
 (* [OnCL clausefinder clausetac]
  * executes the clausefinder to find the clauses, and then executes the

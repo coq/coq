@@ -12,7 +12,7 @@ type constr_pattern =
   | PRef of constr array reference
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
-  | PSoApp of int * constr list
+  | PSoApp of int * constr_pattern list
   | PBinder of binder_kind * name * constr_pattern * constr_pattern
   | PLet of identifier * constr_pattern * constr_pattern * constr_pattern
   | PSort of Rawterm.rawsort
@@ -49,12 +49,29 @@ val pattern_of_constr : constr -> constr_pattern
 
 exception PatternMatchingFailure
 
+(* [matches pat c] matches [c] against [pat] and returns the resulting
+   assignment of metavariables; it raises [PatternMatchingFailure] if
+   not matchable; bindings are given in increasing order based on the
+   numbers given in the pattern *)
 val matches      :
   constr_pattern -> constr -> (int * constr) list
-val matches_conv :
-  env -> 'a Evd.evar_map -> constr_pattern -> constr -> (int * constr) list
+
+(* [is_matching pat c] just tells if [c] matches against [pat] *)
+
 val is_matching      :
   constr_pattern -> constr -> bool
+
+(* [matches_conv env sigma] matches up to conversion in environment
+   [(env,sigma)] when constants in pattern are concerned; it raises
+   [PatternMatchingFailure] if not matchable; bindings are given in
+   increasing order based on the numbers given in the pattern *)
+
+val matches_conv :
+  env -> 'a Evd.evar_map -> constr_pattern -> constr -> (int * constr) list
+
+(* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
+   up to conversion for constants in patterns *)
+
 val is_matching_conv :
   env -> 'a Evd.evar_map -> constr_pattern -> constr -> bool
 

@@ -12,7 +12,7 @@ type constr_pattern =
   | PRef of Term.constr array reference
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
-  | PSoApp of int * constr list
+  | PSoApp of int * constr_pattern list
   | PBinder of binder_kind * name * constr_pattern * constr_pattern
   | PLet of identifier * constr_pattern * constr_pattern * constr_pattern
   | PSort of rawsort
@@ -126,7 +126,7 @@ let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
 
 exception PatternMatchingFailure
 
-let matches_core convert = 
+let matches_core convert pat c = 
   let rec sorec stk sigma p t =
     let cT = whd_castapp t in
     match p,kind_of_term cT with
@@ -134,7 +134,7 @@ let matches_core convert =
 	  let relargs =
 	    List.map
 	      (function
-		 | Rel n -> n
+		 | PRel n -> n
 		 | _ -> error "Only bound indices are currently allowed in second order pattern matching")
 	      args in
 	  let frels = Intset.elements (free_rels cT) in
@@ -195,8 +195,8 @@ let matches_core convert =
 
       | _ -> raise PatternMatchingFailure
 
-    in 
-    sorec [] []
+  in 
+  Sort.list (fun (a,_) (b,_) -> a<b) (sorec [] [] pat c)
 
 let matches = matches_core None
 

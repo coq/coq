@@ -38,7 +38,7 @@ let (pattern_stock : (int list * constr_pattern) Stock.stock) =
   Stock.make_stock { name = "PATTERN"; proc = parse_pattern }
 
 let put_pat = Stock.stock pattern_stock
-let get_pat = Stock.retrieve pattern_stock
+let get_pat tm = snd (Stock.retrieve pattern_stock tm)
 
 let make_module_marker = Stock.make_module_marker
 
@@ -55,7 +55,7 @@ let (squeleton_stock : (int list * constr) Stock.stock) =
 let put_squel = Stock.stock squeleton_stock
 let get_squel_core = Stock.retrieve squeleton_stock
 
-
+(*
 let dest_somatch n pat =
   let _,m = get_pat pat in
   matches m n
@@ -71,7 +71,7 @@ let dest_somatch_conv env sigma n pat =
 let somatches_conv env sigma n pat =
   let _,m = get_pat pat in
   is_matching_conv env sigma m n
-
+*)
 let soinstance squel arglist =
   let mvs,c = get_squel_core squel in
   let mvb = List.combine mvs arglist in 
@@ -199,8 +199,8 @@ let match_with_equation  t =
         let constr_types = Global.mind_lc_without_abstractions ind in 
         let nconstr = Global.mind_nconstr ind in
 	if nconstr = 1 &&
-           (somatches constr_types.(0) refl_rel_pat1 ||
-            somatches constr_types.(0) refl_rel_pat2) 
+           (is_matching (get_pat refl_rel_pat1) constr_types.(0) ||
+            is_matching (get_pat refl_rel_pat2) constr_types.(0)) 
         then 
 	  Some (hdapp,args)
         else 
@@ -213,10 +213,10 @@ let arrow_pat = put_pat mmk "(?1 -> ?2)"
 
 let match_with_nottype t =
   try
-    let sigma = dest_somatch t arrow_pat in
-    let arg = List.assoc 1 sigma in
-    let mind = List.assoc 2 sigma in
-    if is_empty_type mind then Some (mind,arg) else None
+    match matches (get_pat arrow_pat) t with
+      |	[(1,arg);(2,mind)] ->
+	  if is_empty_type mind then Some (mind,arg) else None
+      | _ -> anomaly "Incorrect pattern matching" 
   with PatternMatchingFailure -> None  
 
 let is_nottype t = op2bool (match_with_nottype t)

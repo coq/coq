@@ -7,6 +7,7 @@ open Names
 open Term
 open Sign
 open Evd
+open Pattern
 open Proof_trees
 (*i*)
 
@@ -55,8 +56,7 @@ val make_module_marker : string list -> module_mark
 
 type marked_pattern
 val put_pat            : module_mark -> string -> marked_pattern
-(*val get_pat            : marked_pattern -> constr*)
-
+val get_pat            : marked_pattern -> constr_pattern
 
 (* [put_squel mmk s] declares an open term [s] to be parsed using the
    definitions in the modules associated to the key [mmk] *)
@@ -99,7 +99,6 @@ val dest_somatch : constr -> marked_pattern -> constr list
 (* [somatches c pat] just tells if [c] matches against [pat] *)
 
 val somatches    : constr -> marked_pattern -> bool
-*)
 
 (* [dest_somatch_conv env sigma] matches up to conversion in
    environment [(env,sgima)] when constants in pattern are concerned;
@@ -113,6 +112,7 @@ val dest_somatch_conv :
 
 val somatches_conv :
   Environ.env -> 'a evar_map -> constr -> marked_pattern -> bool
+*)
 
 val soinstance   : marked_term -> constr list -> constr 
 

@@ -27,12 +27,14 @@ let local_Constraints lc gs = refiner (Local_constraints lc) gs
 
 let on_wc f wc = ids_mod f wc
 
+let debug = ref true;;
+
 let startWalk gls =
   let evc = project_with_focus gls in
   let wc = (ids_mk evc) in 
   (wc,
    (fun wc' gls' ->
-      if ids_eq wc wc' & gls.it = gls'.it then
+      if !debug & ids_eq wc wc' & gls.it = gls'.it then
         if Intset.equal (get_lc gls.it) (get_focus (ids_it wc')) then
           tclIDTAC {it=gls'.it; sigma = get_gc (ids_it wc')}
         else

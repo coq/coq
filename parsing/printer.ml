@@ -92,11 +92,15 @@ let fprtype_env env typ = fprterm_env env (incast_type typ)
 let fprtype = fprtype_env (gLOB nil_sign)
 *)
 
-let fprterm_env a = failwith "Fw printing not implemented"
-let fprterm = failwith "Fw printing not implemented"
+let fprterm_env a =
+  warning "Fw printing not implemented, use CCI printing 1"; prterm_env a
+let fprterm a =
+  warning "Fw printing not implemented, use CCI printing 2"; prterm a
 
-let fprtype_env env typ = failwith "Fw printing not implemented"
-let fprtype = failwith "Fw printing not implemented"
+let fprtype_env env typ =
+  warning "Fw printing not implemented, use CCI printing 3"; prtype_env env typ
+let fprtype a =
+  warning "Fw printing not implemented, use CCI printing 4"; prtype a
 
 (* For compatibility *)
 let fterm0 = fprterm_env
