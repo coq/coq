@@ -176,6 +176,5 @@ val tclIDTAC_list      : tactic_list
 open Pp
 (*i*)
 
-val pr_com    : evar_map -> goal -> Topconstr.constr_expr -> std_ppcmds
 val pr_gls    : goal sigma -> std_ppcmds
 val pr_glls   : goal list sigma -> std_ppcmds

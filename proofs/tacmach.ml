@@ -237,24 +237,6 @@ open Printer
 open Tacexpr
 open Rawterm
 
-let pr_com sigma goal com =
-  prterm (rename_bound_var (Global.env())
-            (ids_of_named_context goal.evar_hyps) 
-            (Constrintern.interp_constr sigma (Evarutil.evar_env goal) com))
-
-let pr_one_binding sigma goal = function
-  | (NamedHyp id,com) -> pr_id id ++ str ":=" ++ pr_com sigma goal com
-  | (AnonHyp n,com) -> int n  ++ str ":=" ++ pr_com sigma goal com
-
-let pr_bindings sigma goal lb =
-  let prf = pr_one_binding sigma goal in
-  match lb with 
-    | ImplicitBindings l ->
-	str "with" ++ spc () ++ prlist_with_sep pr_spc (pr_com sigma goal) l
-    | ExplicitBindings l ->
-	str "with" ++ spc () ++ prlist_with_sep pr_spc prf l
-    | NoBindings -> mt ()
-	  
 let rec pr_list f = function
   | []   -> mt ()
   | a::l1 -> (f a) ++ pr_list f l1
