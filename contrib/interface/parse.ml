@@ -217,7 +217,7 @@ let parse_command_list reqid stream string_list =
                         (get_substring_list string_list this_pos
                             (Stream.count stream))))
 *)
-		ParseError ("PARSE_ERROR",
+		ParseError ("PARSING_ERROR",
                   get_substring_list string_list this_pos
 		    (Stream.count stream))
              with End_of_file -> ParseOK None
@@ -231,7 +231,7 @@ let parse_command_list reqid stream string_list =
 		   (get_substring_list string_list this_pos
                      (Stream.count stream))))
 *)
-	    ParseError ("PARSE_ERROR2",
+	    ParseError ("PARSING_ERROR2",
 	      get_substring_list string_list this_pos (Stream.count stream))
           end in
     match first_ast with
