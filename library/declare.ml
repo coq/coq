@@ -176,7 +176,12 @@ let load_constant (sp,(ce,stre,op)) =
 let open_constant (sp,_) =
   Nametab.push_short_name (basename sp) (ConstRef sp)
 
-let export_constant x = Some x
+(* Hack to reduce the size of .vo: we keep only what load/open needs *)
+let dummy_constant_entry = ConstantEntry { 
+  const_entry_body = mkProp;
+  const_entry_type = None }
+
+let export_constant (ce,stre,op) = Some (dummy_constant_entry,stre,op)
 
 let (in_constant, out_constant) =
   let od = {
@@ -241,7 +246,21 @@ let open_inductive (sp,mie) =
   let names = inductive_names sp mie in
   List.iter (fun (sp, ref) -> Nametab.push_short_name (basename sp) ref) names
 
-let export_inductive x = Some x
+let dummy_one_inductive_entry mie = {
+  mind_entry_nparams = 0;
+  mind_entry_params = [];
+  mind_entry_typename = mie.mind_entry_typename;
+  mind_entry_arity = mkProp;
+  mind_entry_consnames = mie.mind_entry_consnames;
+  mind_entry_lc = []
+}
+
+(* Hack to reduce the size of .vo: we keep only what load/open needs *)
+let dummy_inductive_entry m = {
+  mind_entry_finite = true;
+  mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds }
+
+let export_inductive x = Some (dummy_inductive_entry x)
 
 let (in_inductive, out_inductive) =
   let od = {
