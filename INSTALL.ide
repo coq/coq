@@ -43,7 +43,7 @@ INSTALLATION
     
     cd /tmp && \
     wget http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk2-20030707.tar.gz && \
-    tar zxvf lablgtk2-20030707.tgz && \
+    tar zxvf lablgtk2-20030707.tar.gz && \
     cd lablgtk2 && \
     ./configure && \
     make world && \
