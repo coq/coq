@@ -1605,13 +1605,15 @@ let rec extern inctx scopes vars r =
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
-        (Some na,option_app (extern_type scopes (add_vname vars na)) typopt),
+        (option_app (fun _ -> na) typopt,
+`        option_app (extern_type scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
-        (Some na,option_app (extern_type scopes (add_vname vars na)) typopt),
+        (option_app (fun _ -> na) typopt,
+         option_app (extern_type scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars b1, sub_extern false scopes vars b2)
 
   | RRec (loc,fk,idv,blv,tyv,bv) ->
