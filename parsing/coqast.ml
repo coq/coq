@@ -140,6 +140,7 @@ type cases_pattern =
   | CPatCstr of loc * reference_expr * cases_pattern list
   | CPatAtom of loc * reference_expr option
   | CPatNumeral of loc * Bignat.bigint
+  | CPatDelimiters of loc * scope_name * cases_pattern
 
 type ordered_case_style = CIf | CLet | CMatch | CCase
 
@@ -198,6 +199,7 @@ let cases_pattern_loc = function
   | CPatCstr (loc,_,_) -> loc
   | CPatAtom (loc,_) -> loc
   | CPatNumeral (loc,_) -> loc
+  | CPatDelimiters (loc,_,_) -> loc
 
 let replace_vars_constr_ast l t =
   if l = [] then t else failwith "replace_constr_ast: TODO"

@@ -69,6 +69,7 @@ type cases_pattern =
   | CPatCstr of loc * reference_expr * cases_pattern list
   | CPatAtom of loc * reference_expr option
   | CPatNumeral of loc * Bignat.bigint
+  | CPatDelimiters of loc * scope_name * cases_pattern
 
 type ordered_case_style = CIf | CLet | CMatch | CCase
 
