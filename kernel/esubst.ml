@@ -60,6 +60,14 @@ type 'a subs =
                            (*                        with n vars *)
   | LIFT of int * 'a subs  (* LIFT(n,S) = (%n S) stands for ((^n o S).n...1) *)
 
+let prs pr_fun =
+  let rec prs_rec = function
+    | ESID i -> print_char 'I'; print_int i
+    | CONS (x,s) -> pr_fun x; print_char ':'; prs_rec s
+    | SHIFT (i,s) -> print_char 'S'; print_int i; print_char '@'; prs_rec s
+    | LIFT (i,s) -> print_char 'L'; print_int i; print_char '@'; prs_rec s
+  in prs_rec
+
 (* operations of subs: collapses constructors when possible.
  * Needn't be recursive if we always use these functions
  *)

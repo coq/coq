@@ -27,3 +27,14 @@ cime/libcime.cmxa: $(CIMECMX)
 
 clean::
 	rm -f cime/libcime.* cime/*/*.cmo
+
+cime-tags:
+	find cime -maxdepth 3 -regex ".*\.ml[i4]?" | sort -r | xargs \
+	etags --language=none\
+	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+              "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"

@@ -143,7 +143,7 @@ Intros.
 Case (H x0 y); Intros.
 Elim e; Left ; Reflexivity.
 
-Right ; Red; Intro neq; Apply n; Elim neq; Reflexivity.
+Right; Red; Intro neq; Apply n; Elim neq; Reflexivity.
 
 Trivial.
 Qed.

@@ -77,17 +77,17 @@ Hints Resolve n_Sn : core v62.
 
 (** Addition *)
 
-(* Fixpoint plus [n:nat] : nat -> nat := 
+Fixpoint plus [n:nat] : nat -> nat := 
    [m:nat]Cases n of 
       O   => m 
-  | (S p) => (S (plus p m)) end. *)
+  | (S p) => (S (plus p m)) end.
 
-Symbol 2 Lex plus : nat -> nat -> nat.
+(* Symbol 2 Lex plus : nat -> nat -> nat.
 
 Rules [x,y:nat] {
   (plus O x) => x;
   (plus (S x) y) => (S (plus x y))
-}.
+}. *)
 
 Hint eq_plus : v62 := Resolve (f_equal2 nat nat nat plus).
 Hint eq_nat_binary : core := Resolve (f_equal2 nat nat).

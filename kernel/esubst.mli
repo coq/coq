@@ -32,6 +32,8 @@ type 'a subs =
   | SHIFT of int * 'a subs
   | LIFT of int * 'a subs
 
+val prs : ('a -> unit) -> 'a subs -> unit
+
 val subs_cons: 'a * 'a subs -> 'a subs
 val subs_shft: int * 'a subs -> 'a subs
 val subs_lift: 'a subs -> 'a subs

@@ -113,7 +113,7 @@ let string_of_symb imap f =
     | Sconstr c ->
 	begin
 	  match kind_of_term c with
-	    | Const kn -> string_of_kn kn (* string_of_label (label kn) *)
+	    | Const kn -> string_of_label (label kn)
 	    | Construct ((kn,i),n) -> string_of_id
 		(KNmap.find kn imap).mind_packets.(i).mind_consnames.(n-1)
 	    | Rel i -> "x" ^ (string_of_int i)

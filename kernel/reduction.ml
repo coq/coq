@@ -151,8 +151,7 @@ let conv_sort env s0 s1 = sort_cmp CONV s0 s1 Constraint.empty
 
 let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 Constraint.empty
 
-let enter2 s info m1 s1 m2 s2 =
-  enter_pr s (pr_list (prfcst (imap (env info))) " = ") [(m1,s1);(m2,s2)]
+let enter2 s pr_fun x1 x2 = enter_pr s (pr_list pr_fun " = ") [x1;x2]
 
 (* try to betaiota-normalize and then to rewrite, return:
    None,None         : if [hd v] is in rewrite head normal form
@@ -162,18 +161,18 @@ let enter2 s info m1 s1 m2 s2 =
                        and [hd' v'] is its rewrite normal form
    [fl] is such that [fterm_of hd = FFlex fl] *)
 let betaiota_rewrite_nf infos lams lft hd v fl =
-  enter_fcst "betaiota" infos hd v; leave (if is_rule_defined infos fl v then (
+  enter_pr "betaiota" (prfcst infos) (hd,v); leave "betaiota" (if is_rule_defined infos fl v then (
       let fc = fapp_stack infos (hd,v) in
       let c = norm_val infos lams fc in
 	match Cime.normalize (cime_env infos) c with
 	  | Some c' ->
-	      branch"cime norm";None, Some (whd_stack infos lams (mk_clos (ESID lams) c') [])
-	  | _ -> branch"beta norm";Some (whd_stack infos lams (mk_clos (ESID lams) c) []), None
+	      branch"betaiota" "******************** cime norm";None, Some (whd_stack infos lams (mk_clos (ESID lams) c') [])
+	  | _ -> branch"betaiota" "beta norm";Some (whd_stack infos lams (mk_clos (ESID lams) c) []), None
   ) else None, None)
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lams lft1 lft2 term1 term2 cuniv =
-  enter_pr "ccnv" (pr_list (prfc (imap (env infos))) " = ") [term1;term2]; leave (eqappr cv_pb infos lams
+  enter2 "ccnv" (prfc infos) term1 term2; leave "ccnv" (eqappr cv_pb infos lams
     (lft1, whd_stack infos lams term1 [])
     (lft2, whd_stack infos lams term2 [])
     cuniv)
@@ -183,9 +182,9 @@ when hd1 = FFlex fl1
 and no rewriting is possible *)
 and eqappr_flex1 cv_pb infos lams appr1 appr2 fl1 cuniv =
   let (lft1,(hd1,v1)) = appr1 and (lft2,(hd2,v2)) = appr2 in
-    enter2 "eqappr_flex1" infos hd1 v1 hd2 v2; leave (match unfold_reference infos fl1 with
+    enter2 "eqappr_flex1" (prfcst infos) (hd1,v1) (hd2,v2); leave "eqappr_flex1" (match unfold_reference infos fl1 with
     | Some def1 ->
-	branch "unfold";let (lft1,(_,v1)) = appr1 in
+	branch "eqappr_flex1" "unfold";let (lft1,(_,v1)) = appr1 in
 	  eqappr cv_pb infos lams (lft1, whd_stack infos lams def1 v1) appr2
 	    cuniv
     | None -> raise NotConvertible)
@@ -215,21 +214,19 @@ and eqappr_flex2 cv_pb infos lams appr1 appr2 fl1 fl2 cuniv =
 		    | None -> raise NotConvertible)) in
           eqappr cv_pb infos lams app1 app2 cuniv
   in
-    enter2 "eqappr_flex2" infos hd1 v1 hd2 v2; leave (
+    enter2 "eqappr_flex2" (prfcst infos) (hd1,v1) (hd2,v2); leave "eqappr_flex2" (
     (* try first intensional equality *)
-    try (
-      if fl1 = fl2 then (
-	if is_free infos fl1 then
-	  convert_stacks infos lams lft1 lft2 v1 v2 cuniv
-	else (
-	  (* TO DO: check equivalence modulo C/AC symbols *)
-	  let v1' = v1 (* TO DO: sort stack *)
-	  and v2' = v2 in
-	    convert_stacks infos lams lft1 lft2 v1' v2' cuniv
-	)
-	  (* else the oracle tells which constant is to be expanded *)
-      ) else call_oracle()
-    ) with NotConvertible -> call_oracle())
+    if fl1 = fl2 then (
+      if is_free infos fl1 then
+	try convert_stacks infos lams lft1 lft2 v1 v2 cuniv
+	with NotConvertible -> call_oracle()
+      else (
+	(* TO DO: check equivalence modulo C/AC symbols *)
+	try convert_stacks infos lams lft1 lft2 v1 v2 cuniv
+	with NotConvertible -> call_oracle()
+      )
+    (* else the oracle tells which constant is to be expanded *)
+    ) else call_oracle())
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb infos lams appr1 appr2 cuniv =
@@ -237,11 +234,11 @@ and eqappr cv_pb infos lams appr1 appr2 cuniv =
   let (lft2,(hd2,v2)) = appr2 in
   let el1 = el_stack lft1 v1 in
   let el2 = el_stack lft2 v2 in
-    enter2 "eqappr" infos hd1 v1 hd2 v2; leave (
+    enter2 "eqappr" (prfcst infos) (hd1,v1) (hd2,v2); leave "eqappr" (
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
-	(match kind_of_term a1, kind_of_term a2 with
+	branch"eqappr" "atom";(match kind_of_term a1, kind_of_term a2 with
 	   | (Sort s1, Sort s2) -> 
 	       assert (is_empty_stack v1 && is_empty_stack v2);
 	       sort_cmp cv_pb s1 s2 cuniv
@@ -251,20 +248,20 @@ and eqappr cv_pb infos lams appr1 appr2 cuniv =
                else raise NotConvertible
 	   | _ -> raise NotConvertible)
     | (FEvar (ev1,args1), FEvar (ev2,args2)) ->
-        if ev1=ev2 then
+        branch"eqappr" "evar";if ev1=ev2 then
           let u1 = convert_stacks infos lams lft1 lft2 v1 v2 cuniv in
           convert_vect infos lams el1 el2 args1 args2 u1
         else raise NotConvertible
 
     (* 2 index known to be bound to no constant *)
     | (FRel n, FRel m) ->
-        branch"rel-rel";if reloc_rel n el1 = reloc_rel m el2
+        branch"eqappr" "rel";if reloc_rel n el1 = reloc_rel m el2
         then convert_stacks infos lams lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
-	branch"flex-flex";begin
+	branch"eqappr" "flex-flex";begin
 	  match betaiota_rewrite_nf infos lams lft1 hd1 v1 fl1 with
 	    | _,Some hdv1' -> (* 1: rewrite nf of the beta-iota nf *)
 		begin match betaiota_rewrite_nf infos lams lft2 hd2 v2 fl2 with
@@ -300,34 +297,34 @@ and eqappr cv_pb infos lams appr1 appr2 cuniv =
 
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, _)      ->
-	begin
+	branch"eqappr" "flex-?";begin
 	  match betaiota_rewrite_nf infos lams lft1 hd1 v1 fl1 with
 	    | _,Some hdv1' -> (* 1: rewrite nf of the beta-iota nf *)
-		eqappr cv_pb infos lams (lft1,hdv1') appr2 cuniv
+		branch"eqappr" "1";eqappr cv_pb infos lams (lft1,hdv1') appr2 cuniv
 	    | Some hdv1',_ -> (* 1: beta-iota nf *)
-		eqappr_flex1 cv_pb infos lams (lft1,hdv1') appr2 fl1 cuniv
+		branch"eqappr" "2";eqappr_flex1 cv_pb infos lams (lft1,hdv1') appr2 fl1 cuniv
 	    | _ -> (* 1: not head rewritable *)
-		eqappr_flex1 cv_pb infos lams appr1 appr2 fl1 cuniv
+		branch"eqappr" "3";eqappr_flex1 cv_pb infos lams appr1 appr2 fl1 cuniv
 	end
     | (_, FFlex fl2)      ->
-	branch"?-flex";begin
+	branch"eqappr" "?-flex";begin
 	  match betaiota_rewrite_nf infos lams lft2 hd2 v2 fl2 with
 	    | _,Some hdv2' -> (* 2: rewrite nf of the beta-iota nf *)
-		eqappr cv_pb infos lams appr1 (lft2,hdv2') cuniv
+		branch"eqappr" "1";eqappr cv_pb infos lams appr1 (lft2,hdv2') cuniv
 	    | Some hdv2',_ -> (* 2: beta-iota nf *)
-		eqappr_flex1 cv_pb infos lams (lft2,hdv2') appr1 fl2 cuniv
+		branch"eqappr" "2";eqappr_flex1 cv_pb infos lams (lft2,hdv2') appr1 fl2 cuniv
 	    | _ -> (* 2: not head rewritable *)
-		eqappr_flex1 cv_pb infos lams appr2 appr1 fl2 cuniv
+		branch"eqappr" "3";eqappr_flex1 cv_pb infos lams appr2 appr1 fl2 cuniv
 	end
 	
     (* other constructors *)
     | (FLambda (_,c1,c2,_,_), FLambda (_,c'1,c'2,_,_)) ->
-        assert (is_empty_stack v1 && is_empty_stack v2);
+        branch"eqappr" "lambda";assert (is_empty_stack v1 && is_empty_stack v2);
         let u1 = ccnv CONV infos lams el1 el2 c1 c'1 cuniv in
         ccnv CONV infos (lams+1) (el_lift el1) (el_lift el2) c2 c'2 u1
 
     | (FProd (_,c1,c2,_,_), FProd (_,c'1,c'2,_,_)) ->
-        assert (is_empty_stack v1 && is_empty_stack v2);
+        branch"eqappr" "prod";assert (is_empty_stack v1 && is_empty_stack v2);
 	(* Luo's system *)
         let u1 = ccnv CONV infos lams el1 el2 c1 c'1 cuniv in
         ccnv cv_pb infos (lams+1) (el_lift el1) (el_lift el2) c2 c'2 u1
@@ -343,19 +340,19 @@ and eqappr cv_pb infos lams appr1 appr2 cuniv =
 	convert_stacks infos lft1 lft2 v1 v2 u3
 *)
      | (FInd (kn1,i1), FInd (kn2,i2)) ->
-         if i1 = i2 && mind_equiv infos kn1 kn2
+         branch"eqappr" "ind";if i1 = i2 && mind_equiv infos kn1 kn2
 	 then
            convert_stacks infos lams lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
      | (FConstruct ((kn1,i1),j1), FConstruct ((kn2,i2),j2)) ->
-	 if i1 = i2 && j1 = j2 && mind_equiv infos kn1 kn2
+	 branch"eqappr" "construct";if i1 = i2 && j1 = j2 && mind_equiv infos kn1 kn2
 	 then
            convert_stacks infos lams lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
      | (FFix (op1,(_,tys1,cl1),_,_), FFix(op2,(_,tys2,cl2),_,_)) ->
-	 if op1 = op2
+	 branch"eqappr" "fix";if op1 = op2
 	 then
 	   let u1 = convert_vect infos lams el1 el2 tys1 tys2 cuniv in
            let n = Array.length cl1 in
@@ -366,7 +363,7 @@ and eqappr cv_pb infos lams appr1 appr2 cuniv =
          else raise NotConvertible
 
      | (FCoFix (op1,(_,tys1,cl1),_,_), FCoFix(op2,(_,tys2,cl2),_,_)) ->
-         if op1 = op2
+         branch"eqappr" "cofix";if op1 = op2
          then
            let u1 = convert_vect infos lams el1 el2 tys1 tys2 cuniv in
 	   let n = Array.length cl1 in
@@ -381,7 +378,7 @@ and eqappr cv_pb infos lams appr1 appr2 cuniv =
       | (FLIFT _, _) | (_,FLIFT _) | (FLOCKED,_) | (_,FLOCKED)) ->
         anomaly "Unexpected term returned by fhnf"
 
-     | _ -> raise NotConvertible)
+     | _ -> branch"eqappr" "not convertible";raise NotConvertible)
 
 and convert_stacks infos lams lft1 lft2 stk1 stk2 cuniv =
   compare_stacks

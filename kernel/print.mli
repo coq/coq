@@ -29,14 +29,15 @@ val prv : imap -> constr array -> unit
 
 val init : unit -> unit
 
-val trace : unit -> unit
-val untrace : unit -> unit
+val trace : string list -> unit
+val untrace : string list -> unit
+val untrace_all : unit -> unit
 
 val enter : string -> unit
 val enter_pr : string -> ('a -> unit) -> 'a -> unit
 
-val leave : 'a -> 'a
-val leave_pr : ('a -> unit) -> 'a -> 'a
+val leave : string -> 'a -> 'a
+val leave_pr : string -> ('a -> unit) -> 'a -> 'a
 
-val branch : string -> unit
-val branch_pr : string -> ('a -> unit) -> 'a -> unit
+val branch : string -> string -> unit
+val branch_pr : string -> string -> ('a -> unit) -> 'a -> unit

@@ -17,14 +17,14 @@ Import nat_scope.
 
 Lemma plus_sym : (n,m:nat)(n+m)=(m+n).
 Proof.
-Intros n m ; Elim n ; Simpl ; Auto with arith.
-Intros y H ; Elim (plus_n_Sm m y) ; Auto with arith.
+Intros n m ; Elim n ; Simpl_rew ; Auto with arith.
+Intros y H ; Elim (plus_n_Sm m y) ; Simpl_rew ; Auto with arith.
 Qed.
 Hints Immediate plus_sym : arith v62.
 
 Lemma plus_Snm_nSm : (n,m:nat)((S n)+m)=(n+(S m)).
 Intros.
-Simpl.
+Simpl_rew.
 Rewrite -> (plus_sym n m).
 Rewrite -> (plus_sym n (S m)).
 Trivial with arith.
@@ -37,7 +37,7 @@ Qed.
 
 Lemma plus_assoc_l : (n,m,p:nat)((n+(m+p))=((n+m)+p)).
 Proof.
-Intros n m p; Elim n; Simpl; Auto with arith.
+Intros n m p; Elim n; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve plus_assoc_l : arith v62.
 
@@ -59,31 +59,31 @@ Qed.
 
 Lemma le_reg_l : (n,m,p:nat) n<=m -> (p+n)<=(p+m).
 Proof.
-NewInduction p; Simpl; Auto with arith.
+NewInduction p; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve le_reg_l : arith v62.
 
 Lemma le_reg_r : (a,b,c:nat) a<=b -> (a+c)<=(b+c).
 Proof.
-NewInduction 1 ; Simpl; Auto with arith.
+NewInduction 1 ; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve le_reg_r : arith v62.
 
 Lemma le_plus_plus : (n,m,p,q:nat)  n<=m -> p<=q -> (n+p)<=(m+q).
 Proof.
 Intros n m p q H H0.
-Elim H; Simpl; Auto with arith.
+Elim H; Simpl_rew; Auto with arith.
 Qed.
 
 Lemma le_plus_l : (n,m:nat) n<=(n+m).
 Proof.
-NewInduction n; Simpl; Auto with arith.
+NewInduction n; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve le_plus_l : arith v62.
 
 Lemma le_plus_r : (n,m:nat) m<=(n+m).
 Proof.
-Intros n m; Elim n; Simpl; Auto with arith.
+Intros n m; Elim n; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve le_plus_r : arith v62.
 
@@ -100,7 +100,7 @@ Qed.
 
 Lemma lt_reg_l : (n,m,p:nat) n<m -> (p+n)<(p+m).
 Proof.
-NewInduction p; Simpl; Auto with arith.
+NewInduction p; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve lt_reg_l : arith v62.
 
@@ -138,7 +138,7 @@ Qed.
 Lemma plus_is_O : (m,n:nat) (m+n)=O -> m=O /\ n=O.
 Proof.
   NewDestruct m; Auto.
-  Intros. Discriminate H.
+  Simpl_rew. Intros. Discriminate H.
 Qed.
 
 Definition plus_is_one : 
@@ -147,7 +147,7 @@ Proof.
   NewDestruct m; Auto.
   NewDestruct n; Auto.
   Intros. 
-  Simpl in H. Discriminate H.
+  Simpl_rew in H. Discriminate H.
 Defined.
 
 Lemma plus_permute_2_in_4 : (a,b,c,d:nat) ((a+b)+(c+d))=((a+c)+(b+d)).

@@ -1023,9 +1023,9 @@ clean::
 
 # NB: the -maxdepth 3 is for excluding files from contrib/extraction/test
 
-tags:
+tags: cime-tags
 	find . -maxdepth 3 -regex ".*\.ml[i4]?" | sort -r | xargs \
-	etags --language=none\
+	etags --append --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \

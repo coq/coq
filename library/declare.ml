@@ -308,6 +308,7 @@ let subst_rules s =
 let (in_rewrite_rule, out_rewrite_rule) =
   declare_object {(default_object "REWRITE_RULE") with 
     cache_function = (fun (_,re) -> Global.add_rules re);
+    load_function = (fun _ (_,re) -> Global.add_rules re);
     classify_function = (fun (_,re) -> Substitute re);
     subst_function = (fun (_,s,re) -> subst_rules s re) }
 

@@ -23,7 +23,7 @@ Fixpoint minus [n:nat] : nat -> nat :=
 Lemma minus_plus_simpl : 
 	(n,m,p:nat)((minus n m)=(minus (plus p n) (plus p m))).
 Proof.
-  NewInduction p; Simpl; Auto with arith.
+  NewInduction p; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve minus_plus_simpl : arith v62.
 
@@ -55,7 +55,7 @@ Hints Resolve minus_plus : arith v62.
 
 Lemma le_plus_minus : (n,m:nat)(le n m)->(m=(plus n (minus m n))).
 Proof.
-Intros n m Le; Pattern n m; Apply le_elim_rel; Simpl; Auto with arith.
+Intros n m Le; Pattern n m; Apply le_elim_rel; Simpl_rew; Auto with arith.
 Qed.
 Hints Resolve le_plus_minus : arith v62.
 

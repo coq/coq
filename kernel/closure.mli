@@ -131,8 +131,6 @@ val stack_nth : 'a stack -> int -> 'a
 
 type fconstr
 
-val set_red : fconstr -> unit
-
 (* [fconstr] can be accessed by using the function [fterm_of] and by
    matching on type [fterm] *)
 
@@ -162,18 +160,13 @@ type clos_infos
 val create_clos_infos : reds -> env -> clos_infos
 val is_rule_defined : clos_infos -> table_key -> fconstr stack -> bool
 val is_free : clos_infos -> table_key -> bool
-val env : clos_infos -> env
 val cime_env : clos_infos -> Cime.env
 
 (* Printing for debug *)
-val prft : imap -> fterm -> unit
-val prfc : imap -> fconstr -> unit
-val prst : imap -> fconstr stack -> unit
-val prfcst : imap -> fconstr * fconstr stack -> unit
-val enter_fcst : string -> clos_infos -> fconstr -> fconstr stack -> unit
-val leave_fc : clos_infos -> fconstr -> fconstr
-val leave_fcst : clos_infos -> fconstr * fconstr stack
-  -> fconstr * fconstr stack
+val prft : clos_infos -> fterm -> unit
+val prfc : clos_infos -> fconstr -> unit
+val prst : clos_infos -> fconstr stack -> unit
+val prfcst : clos_infos -> fconstr * fconstr stack -> unit
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -182,7 +175,6 @@ val leave_fcst : clos_infos -> fconstr * fconstr stack
 val fapp_stack : clos_infos -> fconstr * fconstr stack -> fconstr
 val inject : constr -> fconstr
 val fterm_of : fconstr -> fterm
-val term_of_fconstr_lift : lift -> fconstr -> constr
 val term_of_fconstr : fconstr -> constr
 
 (* Reduction function *)

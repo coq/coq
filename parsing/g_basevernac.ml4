@@ -39,8 +39,9 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
-      | IDENT "Trace" -> trace(); VernacComments []
-      | IDENT "Untrace" -> untrace(); VernacComments []
+      | IDENT "Trace"; l = LIST1 IDENT -> trace l; VernacComments []
+      | IDENT "Untrace"; l = LIST1 IDENT -> untrace l; VernacComments []
+      | IDENT "Untrace_All" -> untrace_all(); VernacComments []
 
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None
