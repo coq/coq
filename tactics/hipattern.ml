@@ -22,7 +22,7 @@ open Pattern
 
 type module_mark = Stock.module_mark
 
-let parse_constr s =
+let parse_astconstr s =
   try 
     Pcoq.parse_string Pcoq.Constr.constr_eoi s 
   with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
@@ -30,8 +30,8 @@ let parse_constr s =
 
 (* Patterns *)
 let parse_pattern s =
-  Astterm.interp_constrpattern Evd.empty (Global.env()) (parse_constr s)
-    
+  Astterm.interp_constrpattern Evd.empty (Global.env()) (parse_astconstr s)
+
 type marked_pattern = (int list * constr_pattern) Stock.stocked
 
 let (pattern_stock : (int list * constr_pattern) Stock.stock) =
@@ -44,7 +44,7 @@ let make_module_marker = Stock.make_module_marker
 
 (* Squeletons *)
 let parse_squeleton s =
-  let c = Astterm.interp_constr Evd.empty (Global.env()) (parse_constr s) in
+  let c = Astterm.interp_constr Evd.empty (Global.env()) (parse_astconstr s) in
   (collect_metas c, c)
 
 type marked_term = (int list * constr) Stock.stocked
