@@ -35,16 +35,13 @@ let sig_sig x = x.sigma
 
 let project_with_focus gls = rc_of_gc (gls.sigma) (gls.it)
 
-let pf_status pf = pf.status
+let pf_status pf = pf.open_subgoals
 
-let is_complete pf = (Complete_proof = (pf_status pf))
+let is_complete pf = (0 = (pf_status pf))
 
 let on_open_proofs f pf = if is_complete pf then pf else f pf
 
-let rec and_status = function
-  | [] -> Complete_proof
-  | Complete_proof :: l -> and_status l
-  | _ -> Incomplete_proof
+let and_status = List.fold_left (+) 0
 
 (* Normalizing evars in a goal. Called by tactic Local_constraints
    (i.e. when the sigma of the proof tree changes). Detect if the
@@ -98,28 +95,69 @@ let rec frontier p =
     	(List.flatten gll,
          (fun retpfl ->
             let pfl' = mapshape (List.map List.length gll) vl retpfl in
-            { status = and_status (List.map pf_status pfl');
+            { open_subgoals = and_status (List.map pf_status pfl');
               goal = p.goal;
               ref = Some(r,pfl')}))
+
+
+let rec frontier_map_rec f n p =
+  if n < 1 || n > p.open_subgoals then p else
+  match p.ref with
+    | None -> 
+        let p' = f p in
+        if p'.goal == p.goal || p'.goal = p.goal then p'
+        else 
+	  errorlabstrm "Refiner.frontier_map"
+            (str"frontier_map was handed back a ill-formed proof.")
+    | Some(r,pfl) ->
+        let (_,rpfl') =
+          List.fold_left
+            (fun (n,acc) p -> (n-p.open_subgoals,frontier_map_rec f n p::acc))
+            (n,[]) pfl in
+        let pfl' = List.rev rpfl' in
+        { open_subgoals = and_status (List.map pf_status pfl');
+          goal = p.goal;
+          ref = Some(r,pfl')}
+
+let frontier_map f n p =
+  let nmax = p.open_subgoals in
+  let n = if n < 0 then nmax + n + 1 else n in
+  if n < 1 || n > nmax then
+    errorlabstrm "Refiner.frontier_map" (str "No such subgoal"); 
+  frontier_map_rec f n p
+
+let rec frontier_mapi_rec f i p =
+  if p.open_subgoals = 0 then p else
+  match p.ref with
+    | None -> 
+        let p' = f i p in
+        if p'.goal == p.goal || p'.goal = p.goal then p'
+        else 
+	  errorlabstrm "Refiner.frontier_mapi"
+            (str"frontier_mapi was handed back a ill-formed proof.")
+    | Some(r,pfl) ->
+        let (_,rpfl') =
+          List.fold_left
+            (fun (n,acc) p -> (n+p.open_subgoals,frontier_mapi_rec f n p::acc))
+            (i,[]) pfl in
+        let pfl' = List.rev rpfl' in
+        { open_subgoals = and_status (List.map pf_status pfl');
+          goal = p.goal;
+          ref = Some(r,pfl')}
+
+let frontier_mapi f p = frontier_mapi_rec f 1 p
 
 (* [list_pf p] is the lists of goals to be solved in order to complete the
    proof [p] *)
 
 let list_pf p = fst (frontier p)
 
-let rec nb_unsolved_goals pf = 
-  if is_complete pf then 
-    0 
-  else if is_leaf_proof pf then 
-    1 
-  else 
-    let lpf = children_of_proof pf in 
-    List.fold_left (fun n pf1 -> n + nb_unsolved_goals pf1) 0 lpf
+let rec nb_unsolved_goals pf = pf.open_subgoals
 
 (* leaf g is the canonical incomplete proof of a goal g *)
 
 let leaf g = {
-  status = Incomplete_proof;
+  open_subgoals = 1;
   goal = g;
   ref = None }
 
@@ -163,7 +201,7 @@ let abstract_tactic_expr te tacfun gls =
   (sgl_sigma,
    fun spfl ->
      assert (check_subproof_connection sgl_sigma.it spfl);
-     { status = and_status (List.map pf_status spfl);
+     { open_subgoals = and_status (List.map pf_status spfl);
        goal = gls.it;
        ref = Some(Tactic(te,hidden_proof),spfl) })
 
@@ -175,7 +213,7 @@ let refiner = function
 	 ({it=sgl; sigma = goal_sigma.sigma},
           (fun spfl ->
 	     assert (check_subproof_connection sgl spfl);
-             { status = and_status (List.map pf_status spfl);
+             { open_subgoals = and_status (List.map pf_status spfl);
                goal = goal_sigma.it;
                ref = Some(r,spfl) })))
 
@@ -192,7 +230,7 @@ let refiner = function
 	       ({it=[ngl];sigma=goal_sigma.sigma},
                 (fun spfl -> 
 	          assert (check_subproof_connection [ngl] spfl);
-                  { status = (List.hd spfl).status;
+                  { open_subgoals = (List.hd spfl).open_subgoals;
                     goal = gl;
                     ref = Some(r,spfl) }))
            (* if the evar change does not affect the goal, leave the
@@ -570,21 +608,6 @@ let tactic_list_tactic tac gls =
 
 
 
-(* solve_subgoal :
-     (evar_map ref * goal list * validation -> 
-         evar_map ref * goal list * validation) -> 
-      (proof_tree sigma -> proof_tree sigma)
-   solve_subgoal tac pf_sigma applies the tactic tac at the nth subgoal of
-   pf_sigma *)
-let solve_subgoal tacl pf_sigma =
-  let (sigr,pf) = unpackage pf_sigma in
-  let gl,p = frontier pf in
-  let r = tacl (sigr,gl,p) in
-  let (sigr,gll,pl) =
-    if !sigr == pf_sigma.sigma then r
-    else then_tac norm_evar_tac r in
-  repackage sigr (pl (List.map leaf gll))
-
 (* The type of proof-trees state and a few utilities 
    A proof-tree state is built from a proof-tree, a set of global
    constraints, and a stack which allows to navigate inside the
@@ -631,9 +654,9 @@ let descend n p =
                        let pf'       = List.hd pfl' in
                        let spfl      = left@(pf'::right) in
                        let newstatus = and_status (List.map pf_status spfl) in
-                       { status   = newstatus;
-			 goal     = p.goal;
-			 ref      = Some(r,spfl) }
+                       { open_subgoals = newstatus;
+			 goal          = p.goal;
+			 ref           = Some(r,spfl) }
                      else 
 		       error "descend: validation"))
 	     | _ -> assert false)
@@ -662,17 +685,23 @@ let traverse n pts = match n with
         tpfsigma = pts.tpfsigma;
         tstack = (n,v):: pts.tstack }
 
-let change_constraints_pftreestate newgc pts = 
-  { tpf = pts.tpf; tpfsigma = newgc; tstack = pts.tstack }
+let change_constraints_pftreestate newgc pts = { pts with tpfsigma = newgc }
+
+let app_tac sigr tac p =
+  let (gll,v) = tac {it=p.goal;sigma= !sigr} in
+  sigr := gll.sigma;
+  v (List.map leaf gll.it)
 
 (* solve the nth subgoal with tactic tac *)
 let solve_nth_pftreestate n tac pts =
- let rslts =
-   solve_subgoal (theni_tac n tac) {it = pts.tpf;sigma = pts.tpfsigma}
- in
- { tpf      = rslts.it;
-   tpfsigma = rslts.sigma;
-   tstack   = pts.tstack }
+  let sigr = ref pts.tpfsigma in
+  let tpf' = frontier_map (app_tac sigr tac) n pts.tpf in
+  let tpf'' =
+    if !sigr == pts.tpfsigma then tpf'
+    else frontier_mapi (fun _ g -> app_tac sigr norm_evar_tac g) tpf' in
+  { tpf      = tpf'';
+    tpfsigma = !sigr;
+    tstack   = pts.tstack }
 
 let solve_pftreestate = solve_nth_pftreestate 1
 

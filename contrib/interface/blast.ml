@@ -565,7 +565,7 @@ let vire_extvar s =
 
 let blast gls =
    let leaf g = {
-      status = Incomplete_proof;
+      open_subgoals = 1;
       goal = g;
       ref = None } in
      try (let (sgl,v) as res = !blast_tactic gls in

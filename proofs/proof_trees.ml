@@ -55,9 +55,9 @@ let subproof_of_proof pf = match pf.ref with
   | Some (Tactic (_,pf), _) -> pf
   | _ -> failwith "subproof_of_proof"
 
-let status_of_proof pf = pf.status
+let status_of_proof pf = pf.open_subgoals
 
-let is_complete_proof pf = pf.status = Complete_proof
+let is_complete_proof pf = pf.open_subgoals = 0
 
 let is_leaf_proof pf = (pf.ref = None)
 

@@ -23,10 +23,6 @@ open Genarg
 (* This module defines the structure of proof tree and the tactic type. So, it
    is used by Proof_tree and Refiner *)
 
-type pf_status =
-  | Complete_proof
-  | Incomplete_proof
-
 type prim_rule =
   | Intro of identifier
   | Intro_replacing of identifier
@@ -54,7 +50,7 @@ type 'a sigma = {
   if [ref = (Some(Tactic (t,p),l))] then [p] is the proof 
   that the goal can be proven if the goals in [l] are solved. *)
 type proof_tree = {
-  status : pf_status;
+  open_subgoals : int;
   goal : goal;
   ref : (rule * proof_tree list) option }
 

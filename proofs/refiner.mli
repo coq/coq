@@ -52,6 +52,16 @@ val unTAC : tactic -> goal sigma -> proof_tree sigma
 
 val local_Constraints : tactic
 
+(* [frontier_map f n p] applies f on the n-th open subgoal of p and
+   rebuilds proof-tree.
+   n=1 for first goal, n negative counts from the right *)
+val frontier_map :
+  (proof_tree -> proof_tree) -> int -> proof_tree -> proof_tree
+
+(* [frontier_mapi f p] applies (f i) on the i-th open subgoal of p. *)
+val frontier_mapi :
+  (int -> proof_tree -> proof_tree) -> proof_tree -> proof_tree
+
 (*s Tacticals. *)
 
 (* [tclIDTAC] is the identity tactic *)

@@ -28,7 +28,7 @@ val ref_of_proof      : proof_tree -> (rule * proof_tree list)
 val children_of_proof : proof_tree -> proof_tree list
 val goal_of_proof     : proof_tree -> goal
 val subproof_of_proof : proof_tree -> proof_tree
-val status_of_proof   : proof_tree -> pf_status
+val status_of_proof   : proof_tree -> int
 val is_complete_proof : proof_tree -> bool
 val is_leaf_proof     : proof_tree -> bool
 val is_tactic_proof   : proof_tree -> bool
