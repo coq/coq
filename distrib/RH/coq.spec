@@ -1,7 +1,5 @@
-# This file has been generated from RH/coq.spec.tpl
-# Do not edit
 Name: coq
-Version: 8.0
+Version: 8.0cdrom
 Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
@@ -54,6 +52,7 @@ if [ -L /usr/local/lib/ocaml ]; then
   rm /usr/local/lib/ocaml
 fi
 
+# the spec file is moved to distrib/RH/src/coqX.Y but coq.list is in distrib/RH
 %files -f ../../coq.list
 %defattr(-,root,root)
 
