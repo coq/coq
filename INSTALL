@@ -9,7 +9,7 @@ WHAT DO YOU NEED ?
    Coq is designed to work on computers equipped with the Unix operating 
    system. In order to compile Coq V7 you need:
 
-     - Objective Caml version 3.00 or later
+     - Objective Caml version 3.01 or later
        (available at http://caml.inria.fr/)
   
      - the Camlp4 preprocessor with same version number as ocaml
