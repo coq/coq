@@ -192,4 +192,6 @@ Pp.ppnl (Pp.(++) (Pp.str
 
 
 (* Hook registration *)
+(* CSC: debranched since it is bugged
 Xmlcommand.set_print_proof_tree print_proof_tree;;
+*)
