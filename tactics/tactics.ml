@@ -563,7 +563,12 @@ let cut_in_parallel l =
 let generalize_goal gl c cl =
   let t = pf_type_of gl c in
   match kind_of_term c with
-    | Var id -> mkNamedProd id t cl
+    | Var id ->
+	(* The choice of remembering or not a non dependent name has an impact
+	   on the future Intro naming strategy! *)
+	(* if dependent c cl then mkNamedProd id t cl
+	   else mkProd (Anonymous,t,cl) *)
+	mkNamedProd id t cl
     | _        -> 
         let cl' = subst_term c cl in 
         if noccurn 1 cl' then 
@@ -1328,16 +1333,12 @@ let induction_from_context isrec style elim hyp0 names gl =
      eux qui ouvrent de nouveaux buts arrivent en premier dans la
      liste des sous-buts du fait qu'ils sont le plus à gauche dans le
      combinateur engendré par make_case_gen (un "Cases (hyp0 ?) of
-     ...")  et on ne peut plus appliquer tclTHENSI après; en revanche,
+     ...")  et il faut alors appliquer tclTHENLASTn; en revanche,
      comme lookup_eliminator renvoie un combinateur de la forme
      "ind_rec ... (hyp0 ?)", les buts correspondant à des arguments de
-     hyp0 sont maintenant à la fin et tclTHENSI marche !!! *)
-(*
-  if not isrec && nb_prod typ0 <> 0 && lr <> [] (* passe-droit *) then
-    error "Cases analysis on a functional term not implemented";
-*)
+     hyp0 sont maintenant à la fin et c'est tclTHENFIRSTn qui marche !!! *)
   tclTHENLIST
-    [ apply_type tmpcl args;
+    [ if deps = [] then tclIDTAC else apply_type tmpcl args;
       thin dephyps;
       (if isrec then tclTHENFIRSTn else tclTHENLASTn)
        	(tclTHEN
