@@ -30,12 +30,7 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 #	General rules 
 #
 
-#all: v2ml ml theories/Reals/addReals.cmo $(CMO)
-
 all: v2ml ml $(CMO)
-
-theories/Reals/addReals.ml: 
-	cp -f addReals theories/Reals/addReals.ml
 
 ml: $(ML)
 
@@ -71,6 +66,28 @@ ml2v: ml2v.ml
 v2ml: v2ml.ml
 	ocamlc -o $@ $< 
 	$(MAKE)
+
+#
+#	Extraction of Reals
+#
+
+
+REALSAXIOMSVO:=theories/Reals/Rsyntax.vo
+
+REALSALLVO:=$(shell cd $(TOPDIR); ls -tr theories/Reals/*.vo)
+REALSVO:=$(filter-out $(REALSAXIOMSVO),$(REALSALLVO))
+REALSML:=$(shell test -x v2ml && ./v2ml $(REALSVO))
+REALSCMO:= $(patsubst %.ml,%.cmo,$(REALSML))
+
+reals: all realsml theories/Reals/addReals.cmo $(REALSCMO)
+
+realsml: $(REALSML)
+
+theories/Reals/addReals.ml: 
+	cp -f addReals theories/Reals/addReals.ml
+
+$(REALSML): 
+	./extract $@
 
 
 #
