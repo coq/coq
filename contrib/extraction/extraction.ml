@@ -675,15 +675,13 @@ let extract_constant kn r =
 	       (* The real type [t']: without head lambdas, expanded, *)
 	       (* and with [Tvar] translated to [Tvar'] (not instantiable). *)
 	       let l,t' = type_decomp (type_expand (var2var' t)) in 
+	       let s = List.map ((<>) Tdummy) l in 
 	       (* The initial ML environment. *)
 	       let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in 
 	       (* The real extraction: *)
 	       let e = extract_term env mle t' c [] in
-	       if e = MLdummy then Dterm (r, MLdummy, Tdummy)
-	       else 
-		 (* Expunging term and type from dummy lambdas. *) 
-		 let s = List.map ((<>) Tdummy) l in 
-		 Dterm (r, term_expunge s (ids,e), type_expunge t)
+	       (* Expunging term and type from dummy lambdas. *) 
+	       Dterm (r, term_expunge s (ids,e), type_expunge t)
 	   | (Info, TypeScheme) -> 
 	       let body = Declarations.force l_body in
 	       let s,vl = type_sign_vl env typ in 
