@@ -3,7 +3,7 @@
 open Names
 open Libnames
 
-type loc = int * int
+type loc = Util.loc
 
 type t =
   | Node of loc * string * t list
