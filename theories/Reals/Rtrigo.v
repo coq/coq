@@ -80,11 +80,12 @@ Save.
 (*******************************************************)
 
 Lemma cos2 : (x:R) ``(Rsqr (cos x))==1-(Rsqr (sin x))``.
-Intro x; Generalize (sin2_cos2 x); Intro H1; Rewrite <- H1; Ring.
+Intro x; Generalize (sin2_cos2 x); Intro H1; Rewrite <- H1; Unfold Rminus; Rewrite <- (Rplus_sym (Rsqr (cos x))); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Symmetry; Apply Rplus_Or.
 Save.
 
 Lemma sin2 : (x:R) ``(Rsqr (sin x))==1-(Rsqr (cos x))``.
-Intro x; Generalize (cos2 x); Intro H1; Rewrite -> H1; Ring.
+Intro x; Generalize (cos2 x); Intro H1; Rewrite -> H1.
+Unfold Rminus; Rewrite Ropp_distr1; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Ol; Symmetry; Apply Ropp_Ropp.
 Save.
 
 Axiom arc_sin_cos : (x,y,z:R) ``0<=x`` -> ``0<=y`` -> ``0<=z`` -> ``(Rsqr x)+(Rsqr y)==(Rsqr z)`` -> (EXT t : R | (x==(Rmult z (cos t))) /\ (y==(Rmult z (sin t)))).
@@ -93,28 +94,34 @@ Lemma pythagorean : (x,y,z:R) ``(Rsqr x)+(Rsqr y)==(Rsqr z)`` -> ``0<=x`` -> ``0
 Intros x y z H1 H2 H3 H4; Generalize (arc_sin_cos x y z H2 H3 H4); Intro H5; Elim H5; [ Intros x0 H6; Elim H6; Intros H7 H8; Exists x0; Rewrite H7; Rewrite H8; Replace ``z*(cos x0)*(cos x0)+z*(sin x0)*(sin x0)`` with ``z*((Rsqr (sin x0))+(Rsqr (cos x0)))``; [ Rewrite sin2_cos2; Ring | Unfold Rsqr; Ring] | Assumption].
 Save.
 
+Lemma double : (x:R) ``2*x==x+x``.
+Intro; Ring.
+Save.
+
 Lemma sin_2a : (x:R) ``(sin (2*x))==2*(sin x)*(cos x)``.
-Intro x; Replace ``2*x`` with ``x+x``; [Rewrite sin_plus; Ring | Ring].
+Intro x; Rewrite double; Rewrite sin_plus.
+Rewrite <- (Rmult_sym (sin x)); Symmetry; Rewrite Rmult_assoc; Apply double.
 Save.
 
 Lemma cos_2a : (x:R) ``(cos (2*x))==(cos x)*(cos x)-(sin x)*(sin x)``.
-Intro x; Replace ``2*x`` with ``x+x``; [Apply cos_plus | Ring].
+Intro x; Rewrite double; Apply cos_plus.
 Save.
 
 Lemma cos_2a_cos : (x:R) ``(cos (2*x))==2*(cos x)*(cos x)-1``.
-Intro x; Replace ``2*x`` with ``x+x``; [Unfold Rminus; Rewrite Rmult_assoc; Rewrite cos_plus; Generalize (sin2_cos2 x); Replace ``2*((cos x)*(cos x))`` with ``((cos x)*(cos x))+((cos x)*(cos x))``; [Intro H1; Rewrite <- H1; Unfold Rsqr; Ring | Ring] | Ring].
+Intro x; Rewrite double; Unfold Rminus; Rewrite Rmult_assoc; Rewrite cos_plus; Generalize (sin2_cos2 x); Rewrite double; Intro H1; Rewrite <- H1; SqRing.
 Save.
 
 Lemma cos_2a_sin : (x:R) ``(cos (2*x))==1-2*(sin x)*(sin x)``.
-Intro x; Rewrite Rmult_assoc; Unfold Rminus; Replace ``2*x`` with ``x+x``; [Replace ``(2*((sin x)*(sin x)))`` with ``(sin x)*(sin x)+(sin x)*(sin x)``; [Generalize (sin2_cos2 x); Intro H1; Rewrite <- H1; Unfold Rsqr; Rewrite cos_plus; Ring | Ring] | Ring].
+Intro x; Rewrite Rmult_assoc; Unfold Rminus; Repeat Rewrite double.
+Generalize (sin2_cos2 x); Intro H1; Rewrite <- H1; Rewrite cos_plus; SqRing.
 Save.
 
 Lemma tan_2a : (x:R) ~``(cos x)==0`` -> ~``(cos (2*x))==0`` -> ~``1-(tan x)*(tan x)==0`` ->``(tan (2*x))==(2*(tan x))/(1-(tan x)*(tan x))``.
-Intros; Cut ``2*x==x+x``; [Intro; Rewrite H2; Rewrite H2 in H0; Replace ``2*(tan x)`` with ``(tan x)+(tan x)``; [Apply tan_plus; Assumption | Ring] | Ring].
+Repeat Rewrite double; Intros; Repeat Rewrite double; Rewrite double in H0; Apply tan_plus; Assumption.
 Save.
 
 Lemma sin_0 : ``(sin 0)==0``.
-Apply Rsqr_eq_0; Rewrite sin2; Rewrite cos_0; Unfold Rsqr; Ring.
+Apply Rsqr_eq_0; Rewrite sin2; Rewrite cos_0; SqRing.
 Save.
 
 Lemma sin_neg : (x:R) ``(sin (-x))==-(sin x)``.
@@ -130,26 +137,29 @@ Unfold tan; Rewrite -> sin_0; Rewrite -> cos_0; Field; DiscrR.
 Save.
 
 Lemma tan_neg : (x:R) ~``(cos x)==0``->``(tan (-x))==-(tan x)``.
-Intros x H1; Replace  ``(-x)`` with ``(0-x)``.
+Intros x H1.
+Replace ``-x`` with ``0-x``. 
 Ring ; Replace ``-(tan x)`` with ``((tan 0)-(tan x))/(1+(tan 0)*(tan x))``.
 Apply tan_minus.
 Rewrite cos_0; DiscrR.
 Assumption.
-Replace  ``(0-x)`` with ``(-x)``; [Rewrite -> cos_neg; Assumption | Ring ].
+Unfold Rminus; Rewrite Rplus_Ol; Rewrite -> cos_neg; Assumption.
 Rewrite tan_0; Rewrite without_div_Oi1.
 Rewrite Rplus_Or; DiscrR.
 Reflexivity.
 Rewrite tan_0; Rewrite without_div_Oi1.
 Unfold Rminus; Rewrite Rplus_Or; Rewrite Rplus_Ol.
-Field.
-Assumption.
-DiscrR.
+Unfold Rdiv; Rewrite Rinv_R1; Apply Rmult_1r.
 Reflexivity.
 Unfold Rminus; Apply Rplus_Ol.
 Save.
 
 Lemma cos_PI2 : ``(cos (PI/2))==0``.
-Apply Rsqr_eq_0; Replace ``(Rsqr (cos (PI/2)))`` with ``1-(Rsqr (sin (PI/2)))``; [Unfold Rsqr; Rewrite sin_PI2; Ring | Symmetry; Apply cos2].
+Apply Rsqr_eq_0.
+Rewrite cos2. 
+Rewrite sin_PI2.
+Rewrite Rsqr_1.
+Unfold Rminus; Apply Rplus_Ropp_r.
 Save.
 
 Lemma sin_PI : ``(sin PI)==0``.
@@ -181,18 +191,16 @@ Rewrite -> cos_2a; Rewrite -> sin_PI; Rewrite -> cos_PI; Ring.
 Save.
 
 Lemma tan_2PI : ``(tan (2*PI))==0``.
-Cut ``2*PI==PI+PI``.
-Intro.
-Rewrite H; Rewrite -> tan_plus.
+Rewrite double.
+Rewrite -> tan_plus.
 Rewrite tan_PI; Field; Rewrite without_div_Oi2.
 Rewrite Ropp_O; Rewrite Rplus_Or; DiscrR.
 Reflexivity. 
 Rewrite -> cos_PI; DiscrR.
 Rewrite -> cos_PI; DiscrR.
-Rewrite <- H; Rewrite -> cos_2PI; DiscrR.
+Rewrite <- double; Rewrite -> cos_2PI; DiscrR.
 Rewrite -> tan_PI.
 Unfold Rminus; Rewrite Rmult_Or; Rewrite Ropp_O; Rewrite Rplus_Or; DiscrR. 
-Ring.
 Save.
 
 Lemma neg_cos : (x:R) ``(cos (x+PI))==-(cos x)``.
@@ -697,16 +705,14 @@ Save.
 
 Lemma cos_decreasing_0 : (x,y:R) ``0<=x``->``x<=PI``->``0<=y``->``y<=PI``->``(cos x)<(cos y)``->``y<x``.
 Intros; Generalize (Rlt_Ropp (cos x) (cos y) H3); Repeat Rewrite <- neg_cos; Intro H4; Change ``(cos (y+PI))<(cos (x+PI))`` in H4; Rewrite (Rplus_sym x) in H4; Rewrite (Rplus_sym y) in H4; Generalize (Rle_compatibility PI ``0`` x H); Generalize (Rle_compatibility PI x PI H0); Generalize (Rle_compatibility PI ``0`` y H1); Generalize (Rle_compatibility PI y PI H2); Rewrite Rplus_Or.
-Replace ``PI+PI`` with ``2*PI``.
+Rewrite <- double.
 Clear H H0 H1 H2 H3; Intros; Apply Rlt_anti_compatibility with ``PI``; Apply (cos_increasing_0 ``PI+y`` ``PI+x`` H0 H H2 H1 H4).
-Ring.
 Save.
 
 Lemma cos_decreasing_1 : (x,y:R) ``0<=x``->``x<=PI``->``0<=y``->``y<=PI``->``x<y``->``(cos y)<(cos x)``.
 Intros; Apply Ropp_Rlt; Repeat Rewrite <- neg_cos; Rewrite (Rplus_sym x); Rewrite (Rplus_sym y); Generalize (Rle_compatibility PI ``0`` x H); Generalize (Rle_compatibility PI x PI H0); Generalize (Rle_compatibility PI ``0`` y H1); Generalize (Rle_compatibility PI y PI H2); Rewrite Rplus_Or.
-Replace ``PI+PI`` with ``2*PI``.
+Rewrite <- double.
 Generalize (Rlt_compatibility PI x y H3); Clear H H0 H1 H2 H3; Intros; Apply (cos_increasing_1 ``PI+x`` ``PI+y`` H3 H2 H1 H0 H).
-Ring.
 Save.
 
 Lemma tan_diff : (x,y:R) ~``(cos x)==0``->~``(cos y)==0``->``(tan x)-(tan y)==(sin (x-y))/((cos x)*(cos y))``.
@@ -836,15 +842,13 @@ Unfold tan; Rewrite sin_PI3; Rewrite cos_PI3; Field; [DiscrR | Replace ``2*(1*/2
 Save.
 
 Lemma sin_2PI3 : ``(sin (2*(PI/3)))==(sqrt 3)/2``.
-Replace ``2*(PI/3)`` with ``(PI/3)+(PI/3)``.
+Rewrite double.
 Rewrite sin_plus; Rewrite sin_PI3; Rewrite cos_PI3; Field; DiscrR.
-Ring.
 Save.
 
 Lemma cos_2PI3 : ``(cos (2*(PI/3)))==-1/2``.
-Replace ``2*(PI/3)`` with ``(PI/3)+(PI/3)``.
+Rewrite double.
 Rewrite cos_plus; Rewrite sin_PI3; Rewrite cos_PI3; Field; [Rewrite sqrt_def; [Ring | Replace ``3`` with ``(INR (S (S (S O))))`` ; [ Apply pos_INR | Unfold INR; Ring]] | DiscrR].
-Ring.
 Save.
 
 Lemma tan_2PI3 : ``(tan (2*(PI/3)))==-(sqrt 3)``.
@@ -871,7 +875,13 @@ Definition toRad [x:R] : R := ``x*PI*/180``.
 Definition toDeg [x:R] : R := ``x*180*/PI``.
 
 Lemma rad_deg : (x:R) (toRad (toDeg x))==x.
-Intro x; Unfold toRad toDeg; Replace ``x*180*/PI*PI*/180`` with ``x*(180*(/PI*PI)*/180)``; [Rewrite <- (Rinv_l_sym PI); [Rewrite  Rmult_1r; Rewrite <- (Rinv_r_sym ``180``); [Ring | Replace ``180`` with ``2*2*3*3*5``; [Repeat Apply prod_neq_R0; DiscrR | Ring]] | Apply PI_neq0] | Repeat Rewrite Rmult_assoc; Reflexivity].
+Intro x; Unfold toRad toDeg; Rewrite <- (Rmult_sym ``180``); Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``180``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym. 
+Rewrite Rmult_1r; Rewrite <- Rinv_l_sym. 
+Apply Rmult_1r.
+Apply PI_neq0.
+Replace ``180`` with (INR (180)).
+Apply not_O_INR; Discriminate.
+Rewrite INR_eq_INR2; Unfold INR2; Reflexivity.
 Save.
 
 Lemma toRad_inj : (x,y:R) (toRad x)==(toRad y) -> x==y.
