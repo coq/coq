@@ -45,6 +45,7 @@ parsing/g_minicoq.cmi: kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi 
 parsing/pcoq.cmi: parsing/coqast.cmi 
 proofs/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
+proofs/logic.cmi: proofs/evd.cmi lib/pp.cmi proofs/proof_trees.cmi 
 proofs/pfedit.cmi: lib/pp.cmi 
 proofs/proof_trees.cmi: parsing/coqast.cmi proofs/evd.cmi kernel/names.cmi \
     kernel/term.cmi 
@@ -224,9 +225,9 @@ proofs/evd.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi lib/util.cmi \
 proofs/evd.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx lib/util.cmx \
     proofs/evd.cmi 
 proofs/proof_trees.cmo: parsing/coqast.cmi proofs/evd.cmi kernel/names.cmi \
-    kernel/term.cmi proofs/proof_trees.cmi 
+    kernel/sign.cmi lib/stamps.cmi kernel/term.cmi proofs/proof_trees.cmi 
 proofs/proof_trees.cmx: parsing/coqast.cmx proofs/evd.cmx kernel/names.cmx \
-    kernel/term.cmx proofs/proof_trees.cmi 
+    kernel/sign.cmx lib/stamps.cmx kernel/term.cmx proofs/proof_trees.cmi 
 toplevel/errors.cmo: parsing/ast.cmi lib/options.cmi lib/pp.cmi lib/util.cmi \
     toplevel/errors.cmi 
 toplevel/errors.cmx: parsing/ast.cmx lib/options.cmx lib/pp.cmx lib/util.cmx \
