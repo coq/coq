@@ -95,10 +95,14 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
 let explain_case_not_inductive ctx cj =
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
-  str "In Cases expression, the matched term" ++ brk(1,1) ++ pc ++ spc () ++ 
-  str "has type" ++ brk(1,1) ++ pct ++ spc () ++ 
-  str "which is not a (co-)inductive type"
-  
+    match kind_of_term cj.uj_type with
+      | Evar _ -> 
+	  str "Cannot infer a type for this expression"
+      | _ ->
+	  str "This term" ++ brk(1,1) ++ pc ++ spc () ++ 
+	  str "has type" ++ brk(1,1) ++ pct ++ spc () ++ 
+	  str "which is not a (co-)inductive type"
+
 let explain_number_branches ctx cj expn =
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in

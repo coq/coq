@@ -31,6 +31,12 @@ type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type binder_kind = BProd | BLambda | BLetIn
 
+type hole_kind =
+  | ImplicitArg of global_reference * int
+  | AbstractionType of name
+  | QuestionMark
+  | CasesType
+
 type 'ctxt reference =
   | RConst of constant * 'ctxt
   | RInd of inductive * 'ctxt
@@ -54,7 +60,7 @@ type rawconstr =
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
-  | RHole of loc option
+  | RHole of (loc * hole_kind)
   | RCast of loc * rawconstr * rawconstr
   | RDynamic of loc * Dyn.t
 

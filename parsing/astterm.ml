@@ -387,6 +387,15 @@ let check_capture loc s ty = function
   | Slam _ when occur_var_ast s ty -> error_capture_loc loc s
   | _ -> ()
 
+let locate_if_isevar loc id = function
+  | RHole _ -> RHole (loc, AbstractionType id)
+  | x -> x
+
+let set_hole_implicit i = function
+  | RRef (loc,r) -> (loc,ImplicitArg (r,i))
+  | RVar (loc,id) -> (loc,ImplicitArg (VarRef id,i))
+  | _ -> anomaly "Only refs have implicits"
+
 let ast_to_rawconstr sigma env allow_soapp lvar =
   let rec dbrec (ids,impls as env) = function
     | Nvar(loc,s) ->
@@ -420,14 +429,14 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RCoFix n, Array.of_list lf, arityl, defl)
 	  
-    | Node(loc,("PROD"|"LAMBDA"|"LETIN" as k), [c1;Slam(_,ona,c2)]) ->
+    | Node(loc,("PROD"|"LAMBDA"|"LETIN" as k), [c1;Slam(locna,ona,c2)]) ->
 	let na,ids' = match ona with
 	  | Some id -> Name id, Idset.add id ids
 	  | _ -> Anonymous, ids in
 	let c1' = dbrec env c1 and c2' = dbrec (ids',impls) c2 in
 	(match k with
 	   | "PROD" -> RProd (loc, na, c1', c2')
-	   | "LAMBDA" -> RLambda (loc, na, c1', c2')
+	   | "LAMBDA" -> RLambda (loc, na, locate_if_isevar locna na c1', c2')
 	   | "LETIN" -> RLetIn (loc, na, c1', c2')
 	   | _ -> assert false)
 
@@ -448,7 +457,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 		ast_to_global loc (key,l)
 	    | _ -> (dbrec env f, [])
         in
-	  RApp (loc, c, ast_to_impargs env impargs args)
+	  RApp (loc, c, ast_to_impargs c env impargs args)
 
     | Node(loc,"CASES", p:: Node(_,"TOMATCH",tms):: eqns) ->
 	let po = match p with 
@@ -468,7 +477,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	ROldCase (loc,isrec,po,dbrec env c,
 		  Array.of_list (List.map (dbrec env) cl))
 
-    | Node(loc,"ISEVAR",[]) -> RHole (Some loc)
+    | Node(loc,"ISEVAR",[]) -> RHole (loc, QuestionMark)
     | Node(loc,"META",[Num(_,n)]) ->
 	if n<0 then error_metavar_loc loc else RMeta (loc, n)
 
@@ -530,18 +539,19 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let r = iterated_binder oper (n+1) ty (ids',impls) body in
 	(match oper with
 	   | "PRODLIST" -> RProd(loc, na, dbrec env ty, r)
-	   | "LAMBDALIST" -> RLambda(loc, na, dbrec env ty, r)
+	   | "LAMBDALIST" ->
+	       RLambda(loc, na, locate_if_isevar loc na (dbrec env ty), r)
 	   | _ -> assert false)
     | body -> dbrec env body
 
-  and ast_to_impargs env l args =
+  and ast_to_impargs c env l args =
     let rec aux n l args = match (l,args) with 
       | (i::l',Node(loc, "EXPL", [Num(_,j);a])::args') ->
 	  if i=n & j>=i then
 	    if j=i then 
 	      (dbrec env a)::(aux (n+1) l' args')
 	    else 
-	      (RHole None)::(aux (n+1) l' args)
+	      (RHole (set_hole_implicit i c))::(aux (n+1) l' args)
 	  else 
 	    if i<>n then
 	      error ("Bad explicitation number: found "^
@@ -551,7 +561,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 		   (string_of_int j)^" but was expecting "^(string_of_int i))
       | (i::l',a::args') -> 
 	  if i=n then 
-	    (RHole None)::(aux (n+1) l' args)
+	    (RHole (set_hole_implicit i c))::(aux (n+1) l' args)
 	  else 
 	    (dbrec env a)::(aux (n+1) l args')
       | ([],args) -> ast_to_args env args

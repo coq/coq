@@ -221,12 +221,14 @@ let do_restrict_hyps sigma ev args =
 type evar_constraint = conv_pb * constr * constr
 type evar_defs =
     { mutable evars : Evd.evar_map;
-      mutable conv_pbs : evar_constraint list }
+      mutable conv_pbs : evar_constraint list;
+      mutable history : (int * (loc * Rawterm.hole_kind)) list }
 
-let create_evar_defs evd = { evars=evd; conv_pbs=[] }
+let create_evar_defs evd = { evars=evd; conv_pbs=[]; history=[] }
 let evars_of d = d.evars
 let evars_reset_evd evd d = d.evars <- evd
 let add_conv_pb d pb = d.conv_pbs <- pb::d.conv_pbs
+let evar_source ev d = List.assoc ev d.history
 
 (* ise_try [f1;...;fn] tries fi() for i=1..n, restoring the evar constraints
  * when fi returns false or an exception. Returns true if one of the fi
@@ -339,12 +341,13 @@ let push_rel_context_to_named_context env =
     (rel_context env) ~init:([],ids_of_named_context sign0,sign0)
   in (subst, reset_with_named_context sign env)
 
-let new_isevar isevars env typ =
+let new_isevar isevars env loc typ =
   let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
   let instance = make_evar_instance_with_rel env in
   let (sigma',evar) = new_isevar_sign env' isevars.evars typ' instance in
   isevars.evars <- sigma';
+  isevars.history <- (fst (destEvar evar),loc)::isevars.history;
   evar
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated

@@ -63,12 +63,12 @@ let error_needs_inversion env x t =
 (* A) Typing old cases                                               *)
 (* This was previously in Indrec but creates existential holes       *)
 
-let mkExistential isevars env = new_isevar isevars env (new_Type ())
+let mkExistential isevars env loc = new_isevar isevars env loc (new_Type ())
 
 let norec_branch_scheme env isevars cstr =
   let rec crec env = function
     | d::rea -> mkProd_or_LetIn d (crec (push_rel d env) rea)
-    | [] -> mkExistential isevars env in 
+    | [] -> mkExistential isevars env (dummy_loc, QuestionMark) in 
   crec env (List.rev cstr.cs_args)
 
 let rec_branch_scheme env isevars (sp,j) recargs cstr =
@@ -78,7 +78,8 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
 	  let d =
  	    match dest_recarg ra with 
 	      | Mrec k when k=j ->
-		  let t = mkExistential isevars env in
+		  let t = mkExistential isevars env (dummy_loc, QuestionMark)
+		  in
 		  mkArrow t
 		    (crec (push_rel (Anonymous,None,t) env)
 		       (List.rev (lift_rel_context 1 (List.rev rea)),reca))
@@ -87,7 +88,7 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
 
       | (name,Some b,c as d)::rea, reca -> 
 	  mkLetIn (name,b,body_of_type c,crec (push_rel d env) (rea,reca))
-      | [],[] -> mkExistential isevars env
+      | [],[] -> mkExistential isevars env (dummy_loc, QuestionMark)
       | _ -> anomaly "rec_branch_scheme"
   in 
   crec env (List.rev cstr.cs_args,recargs) 
@@ -427,7 +428,7 @@ let inh_coerce_to_ind isevars env ty tyi =
     List.fold_right
       (fun (na,ty) (env,evl) ->
 	 (push_rel (na,None,ty) env,
-	    (new_isevar isevars env ty)::evl))
+	    (new_isevar isevars env (dummy_loc, QuestionMark) ty)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
@@ -962,7 +963,7 @@ let infer_predicate loc env isevars typs cstrs indf =
 	(* Heuristic to avoid comparison between non-variables algebric univs*)
 	new_Type ()
       else
-	mkExistential isevars env
+	mkExistential isevars env (loc, CasesType)
     in
     if array_for_all (fun (_,_,typ) -> the_conv_x_leq env isevars typ mtyp) eqns
     then
@@ -1499,7 +1500,7 @@ let extract_predicate_conclusion nargs pred =
       | _ -> (* eta-expansion *) applist (lift 1 p, [mkRel 1]) in
   iterate decomp_lam_force nargs pred
 
-let prepare_predicate_from_tycon dep env isevars tomatchs c =
+let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
   let cook (n, l, env) = function
     | c,IsInd (_,IndType(indf,realargs)) ->
 	let indf' = lift_inductive_family n indf in
@@ -1519,7 +1520,7 @@ let prepare_predicate_from_tycon dep env isevars tomatchs c =
  (* let c = whd_betadeltaiota env (evars_of isevars) c in *)
     (* We turn all subterms possibly dependent into an evar with maximum ctxt*)
     if isEvar c or List.exists (eq_constr c) allargs then
-      mkExistential isevars env
+      mkExistential isevars env (loc, CasesType)
     else
       map_constr_with_full_binders push_rel build_skeleton env c in
   build_skeleton env (lift n c)
@@ -1559,12 +1560,12 @@ let build_initial_predicate env sigma isdep pred tomatchl =
  *        else error! (can not treat mixed dependent and non dependent case
  *)
 
-let prepare_predicate typing_fun isevars env tomatchs tycon = function
+let prepare_predicate loc typing_fun isevars env tomatchs tycon = function
   | None ->
       (match tycon with
        | None -> None
        | Some t ->
-	 let pred = prepare_predicate_from_tycon false env isevars tomatchs t in
+	 let pred = prepare_predicate_from_tycon loc false env isevars tomatchs t in
 	 Some
 	  (build_initial_predicate env (evars_of isevars) false pred tomatchs))
   | Some pred ->
@@ -1613,7 +1614,7 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
 
   (* We build the elimination predicate if any and check its consistency *)
   (* with the type of arguments to match *)
-  let pred = prepare_predicate typing_fun isevars env tomatchs tycon predopt in
+  let pred = prepare_predicate loc typing_fun isevars env tomatchs tycon predopt in
 
   (* We deal with initial aliases *)
   let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 

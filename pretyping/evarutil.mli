@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Rawterm
 open Term
 open Sign
 open Evd
@@ -46,6 +47,7 @@ type evar_defs
 val evars_of :  evar_defs ->  evar_map
 val create_evar_defs :  evar_map ->  evar_defs
 val evars_reset_evd :  evar_map ->  evar_defs -> unit
+val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
 type evar_constraint = conv_pb * constr * constr
 val add_conv_pb :  evar_defs -> evar_constraint -> unit
@@ -55,7 +57,7 @@ val ise_try :  evar_defs -> (unit -> bool) list -> bool
 val ise_undefined :  evar_defs -> constr -> bool
 val has_undefined_isevars :  evar_defs -> constr -> bool
 
-val new_isevar :  evar_defs -> env -> constr -> constr
+val new_isevar :  evar_defs -> env -> loc * hole_kind -> constr -> constr
 
 val is_eliminator : constr -> bool
 val head_is_embedded_evar :  evar_defs -> constr -> bool
