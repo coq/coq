@@ -478,7 +478,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
   (** [bal l x r] acts as [create], but performs one step of
       rebalancing if necessary. *)
 
-(**
+(*
   Axiom bal :
     (l:tree)(x:elt)(r:tree)
     (bst l) -> (avl l) -> (bst r) -> (avl r) ->
@@ -495,7 +495,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
        (* elements are those of (l,x,r) *)
        (y:elt)(In_tree y s) <-> 
               ((X.eq y x) \/ (In_tree y l) \/ (In_tree y r)) }.
-**)
+*)
 
   Definition bal :
     (l:tree)(x:elt)(r:tree)
@@ -882,7 +882,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Exists x0; Intuition.
   Defined.
 
-  (** * Merge *)
+  (** * Extraction of minimum and maximum element *)
 
   Definition remove_min :
     (s:tree)(bst s) -> (avl s) -> ~s=Leaf ->
@@ -988,13 +988,13 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Ground.
   Defined.
 
-  (** Merging two trees (from S. Adams)
+  (** * Merging two trees
 <<
     let merge t1 t2 =
       match (t1, t2) with
         (Empty, t) -> t
       | (t, Empty) -> t
-      | (_, _) -> bal t1 (min_elt t2) (remove_min_elt t2)
+      | (_, _) -> let (m,t'2) = remove_min t2 in bal t1 m t'2
 >> 
   *)
 
@@ -1267,9 +1267,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
 
   (** * Concatenation
 
-        Same as [merge] but does not assume anything about heights *)
-
-  (** Merging two trees (from S. Adams)
+        Same as [merge] but does not assume anything about heights 
 <<
     let concat t1 t2 =
       match (t1, t2) with
@@ -1326,7 +1324,8 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
             let (ll, pres, rl) = split x l in (ll, pres, join rl v r)
           else
             let (lr, pres, rr) = split x r in (join l v lr, pres, rr)
->> *)
+>> 
+  *)
 
   Definition split :
     (x:elt)(s:tree)(bst s) -> (avl s) ->
