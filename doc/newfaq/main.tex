@@ -9,6 +9,8 @@
 \usepackage{multicol}
 \usepackage{fullpage}
 %\usepackage{hevea}
+%\usepackage[latin1]{inputenc}
+%\usepackage[english]{babel}
 
 %\input{../macros.tex}
 
@@ -20,6 +22,7 @@
 % les macros d'amour
 \def\Coq{\textsc{Coq }}
 \def\Why{\textsc{Why }}
+\def\Caduceus{\textsc{Caduceus }}
 \def\Krakatoa{\textsc{Krakatoa }}
 \def\Ltac{\textsc{Ltac }}
 \def\CoqIde{\textsc{CoqIde }}
@@ -71,7 +74,13 @@
 \def\repeat{{\tt repeat }}
 \def\eauto{{\tt eauto }}
 \def\subst{{\tt subst }}
+\def\instantiate{{\tt instantiate }}
+\def\Defined{{\tt Defined }}
+\def\Qed{{\tt Qed }}
 \def\pattern{{\tt pattern }}
+
+
+
 
 \begin{document}
 \bibliographystyle{plain}
@@ -121,28 +130,29 @@ answers, feel free to write to us\ldots
 \section{Presentation}
 
 \Question{What is \Coq ?}\label{whatiscoq} 
-The Coq tool is a proof assistant which:
+The Coq tool is a formal proof management system: a proof done with Coq is mechanically checked by the machine. 
+In particular, Coq allows:
 \begin{itemize}
-\item allows to handle calculus assertions,
-\item to check mechanically proofs of these assertions,
-\item helps to find formal proofs,
-\item extracts a certified program from the constructive proof of its formal specification, 
+    \item the definition of functions or predicates,
+    \item to state mathematical theorems and software specifications,
+    \item to develop interactively formal proofs of these theorems,
+    \item to check these proofs by a small certification "kernel".
 \end{itemize}
-Coq is written in the Objective Caml language and uses 
-the Camlp4 Pre-processor-pretty-printer for Objective Caml.
+Coq is based on a logical framework called "Calculus of Inductive Constructions" extended by a modular development system for theories.
 
 \Question{Did you really need to name it like that ?}
 Some French computer scientists have a tradition of naming their
-software as animal species: Caml, Elan, Foc or Krakatoa are examples
+software as animal species: Caml, Elan, Foc or Phox are examples
 of this tacit convention. In French, ``coq'' means rooster, and it
 sounds like the initials of the Calculus of Constructions CoC on which
 it is based.
 
 \Question{What are the other theorem provers ?} 
-Many other theorem provers are available for use nowadays. Isabelle /
-HOL, Lego, Nuprl, PVS are examples of provers that are fairly similar
-to \Coq by the way they interact with the user. More distant relatives of
-\Coq are ACL2, ALF, Alfa, Mizar, $\Omega$mega\ldots
+Many other theorem provers are available for use nowadays. 
+Isabelle, HOL, HOL Light, Lego, Nuprl, PVS are examples of provers that are fairly similar
+to \Coq by the way they interact with the user. Other relatives of
+\Coq are ACL2, Alfa, Elf, Kiv, Mizar, NqThm, $\Omega$mega\ldots
+
 
 \Question{Where can I find information about the theory behind \Coq ?}
 \begin{description}
@@ -158,23 +168,26 @@ Eduardo Giménez' thesis~\cite{EGThese}
 \Question{How can I use \Coq to prove programs ?}
 
 You can either extract a program from a proof use the extraction
-mechanism or use dedicated tools, such as \Why and \Krakatoa, to prove
+mechanism or use dedicated tools, such as \Why, \Krakatoa, \Caduceus, to prove
 annotated programs written in other languages.
 
 \Question{How many \Coq users are there ?}
 
-That's a good question.
+Estimation is about 100 regular users.
+
 
 \Question{How old is \Coq ?}
-The first official release of \Coq (v. 4.1.0) was distributed in 1989.
+The first official release of \Coq (v. 4.10) was distributed in 1989.
 
 \Question{What are the \Coq-related tools ?}
 
 \begin{description}
 \item[Coqide] A GTK based gui for \Coq.
 \item[Pcoq] A gui for \Coq with proof by pointing and pretty printing.
+\item[Helm/Mowgli] A rendering, searching and publishing tool.
 \item[Why] A back-end generator of verification conditions.
 \item[Krakatoa] A Java code certification tool that uses both \Coq and \Why to verify the soundness of implementations with regards to the specifications.
+\item[Caduceus] A C code certification tool that uses both \Coq and \Why.
 \item[coqwc] A tool similar to {\tt wc} to count lines in \Coq files.
 \item[coq-tex] A tool to insert \Coq examples within .tex files. 
 \item[coqdoc] A documentation tool for \Coq.
@@ -182,9 +195,16 @@ The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 \item[Foc] The Foc project aims at building an environment to develop certified computer algebra libraries. 
 \end{description}
 
+\Question{What are the academic applications for \Coq ?}
+
+Coq is used by mathematicians for formalizing large parts of mathematics, by teachers, and computer scientists to prove programs and APIs.
+
 \Question{What are the industrial applications for \Coq ?}
 
 Coq is used by Trusted Logic to prove properties of the JavaCard system.
+
+todo christine compilo lustre ?
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -193,7 +213,7 @@ Coq is used by Trusted Logic to prove properties of the JavaCard system.
 \Question{Where can I find documentation about \Coq ?} 
 All the documentation about \Coq, from the reference manual~\cite{Coq:manual} to
 friendly tutorials~\cite{Coq:Tutorial} and documentation of the standard library, is available online at 
-\url{http://pauillac.inria.fr/coq/doc-eng.html}.
+\url{http://coq.inria.fr/coq/doc-eng.html}.
 All these documents are viewable either in browsable HTML, or as
 downloadable postscripts.
 
@@ -207,25 +227,24 @@ This FAQ is unfinished (in the sense that there are some obvious
 sections that are missing). Please send contributions to the authors.
 
 \Question{Is there any mailing list about \Coq ?} 
-The main \Coq mailing list is \url{coq-club@pauillac.inria.fr}, which
+The main \Coq mailing list is \url{coq-club@coq.inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
-\url{http://pauillac.inria.fr/mailman/listinfo/coq-club} for
+\url{http://coq.inria.fr/mailman/listinfo/coq-club} for
 subsription. For bugs reports see question \ref{coqbug}.
 
 \Question{Where can I find an archive of the list?}
 The archives of the \Coq mailing list are available at
-\url{http://pauillac.inria.fr/pipermail/coq-club}.
+\url{http://coq.inria.fr/pipermail/coq-club}.
 
 
 \Question{How can I be kept informed of new releases of \Coq ?}
 
-New versions of \Coq are annonced on the coq-club mailing list. If you only want to receive information about new releases, you can subscribe to \Coq on \url{http://freshmeat.net/projects/coq/}.
+New versions of \Coq are announced on the coq-club mailing list. If you only want to receive information about new releases, you can subscribe to \Coq on \url{http://freshmeat.net/projects/coq/}.
 
 
 \Question{Is there any book about \Coq ?}
-The first book on \Coq, Yves Bertot and Pierre Castéran's Coq'Art will
-be published by Springer-Verlag in 2004:
+The first book on \Coq, Yves Bertot and Pierre Castéran's Coq'Art has been published by Springer-Verlag in 2004:
 \begin{quote}
 ``This book provides a pragmatic introduction to the development of
 proofs and certified programs using Coq. With its large collection of
@@ -258,13 +277,16 @@ It is distributed under the GNU Lesser General License (LGPL).
 \Question{Where can I find the sources of \Coq ?}
 The sources of \Coq can be found online in the tar.gz'ed packages
 (\url{http://coq.inria.fr/distrib-eng.html}). Development sources can
-be accessed via anonymous CVS: \url{http://coqcvs.inria.fr/cvsserver-eng.html}
+be accessed via anonymous CVS : \url{http://coqcvs.inria.fr/}
 
 \Question{On which platform \Coq is available ?}
-Compiled binaries are available for Linux, MacOs X, Solaris, and
+Compiled binaries are available for Linux, MacOS X, Solaris, and
 Windows. The sources can be easily adapted to all platforms supporting Objective Caml.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 
 \section{Talkin' with the Rooster}
 
@@ -302,7 +324,7 @@ Qed.
 
 You can prove the left part or the right part of the disjunction using
 \left or \right tactics. If you want to do a classical
-reasoning step, use the{\tt classic} axiom to prove the right part with the assumption
+reasoning step, use the {\tt classic} axiom to prove the right part with the assumption
 that the left part of the disjunction is false.
 
 \begin{coq_example}
@@ -314,13 +336,16 @@ Qed.
 \end{coq_example}
 
 
+todo exemple classique et rajouter dans classical prop.
+
+
 \Question{My goal is an universally quantified statement, how can I prove it ?}
 
 Use some theorem or assumption or introduce the quantified variable in
 the context using the \intro tactic. If there are several
 variables you can use the \intros tactic. A good habit is to
 provide names for these variables: \Coq will do it anyway, but such
-automatic naming decreases readability and robustness.
+automatic naming decreases legibility and robustness.
 
 
 \Question{My goal is an existential, how can I prove it ?}
@@ -371,17 +396,21 @@ reflexivity.
 Qed.
 \end{coq_example}
 
+\Question{My goal is a {\tt let x := a in ...}, how can I prove it ?}
 
-\Question{My goal is a {\tt let}, how can I prove it ?}
-
-Just use the \destruct or \case tactics.
+Just use the \intro tactic.
 
 
-\Question{My goal contains some existancial hypotheses, how can I use it ?}
+\Question{My goal is a {\tt let (a, ..., b) := c in}, how can I prove it ?}
+
+Just use the \destruct c as (a,...,b) tactic.
+
+
+\Question{My goal contains some existential hypotheses, how can I use it ?}
 
 You can use the tactic \elim with you hypotheses as an argument.
 
-\Question{My goal contains some existancial hypotheses, how can I use it and decompose my knowledge about this new thing into different hypotheses ?}
+\Question{My goal contains some existential hypotheses, how can I use it and decompose my knowledge about this new thing into different hypotheses ?}
 
 \begin{verbatim}
 Ltac DecompEx H P := elim H;intro P;intro TO;decompose [and] TO;clear TO;clear H.
@@ -399,6 +428,10 @@ Just use the \symmetry tactic.
 %Qed.
 %\end{coq_example}
 
+\Question{My hypothesis is an equality, how can I swap the left and right hand terms ?}
+
+Just use the \symmetry in tactic.
+
 
 \Question{My goal is an equality, how can I prove it by transitivity ?}
 
@@ -413,9 +446,9 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal would be solvable using {\tt apply;assumption} if It would not create meta-variables, how can I prove it ?}
+\Question{My goal would be solvable using {\tt apply;assumption} if it would not create meta-variables, how can I prove it ?}
 
-You can use {\tt eapply yourtheorem;eauto} but it won't work in all cases ! (for example if more than one hypotheses match one of the sub goals generated by \eapply) so you should rather use  {\tt try solve [eapply yourtheorem;eauto]}, otherwise some metavariables may be incorrectly instanciated.
+You can use {\tt eapply yourtheorem;eauto} but it won't work in all cases ! (for example if more than one hypothesis match one of the subgoals generated by \eapply) so you should rather use  {\tt try solve [eapply yourtheorem;eauto]}, otherwise some metavariables may be incorrectly instantiated.
 
 \begin{coq_example}
 Lemma trans : forall x y z : nat, x=y -> y=z -> x=z.
@@ -451,21 +484,18 @@ Qed.
 
 \Question{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
 
-You can use a what is called a ``base of Hints''.
+You can use a what is called a hints' base.
 
 \begin{coq_example}
 Require Import ZArith.
 Require Ring.
 Open Local Scope Z_scope.
-
 Lemma toto1 : 1+1 = 2.
 ring.
 Qed.
-
 Lemma toto2 : 2+2 = 4.
 ring.
 Qed.
-
 Lemma toto3 : 2+1 = 3.
 ring.
 Qed.
@@ -478,7 +508,7 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal is one of the hypothesis, how can I prove it ?}
+\Question{My goal is one of the hypotheses, how can I prove it ?}
 
 Use the \assumption tactic.
 
@@ -490,7 +520,7 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal is more than one of the hypothesis and I want to chose which one is used, how can I do it ?}
+\Question{My goal appears twice in the hypotheses and I want to choose which one is used, how can I do it ?}
 
 Use the \exact tactic.
 \begin{coq_example}
@@ -500,10 +530,10 @@ exact H0.
 Qed.
 \end{coq_example}
 
-\Question{What can be the difference between applying one hypotheses or another in the context of the last question ?}
+\Question{What can be the difference between applying one hypothesis or another in the context of the last question ?}
 
 From a proof point of view it is equivalent but if you want to extract
-a program from your proof, the two hyphoteses can lead to different
+a program from your proof, the two hypotheses can lead to different
 programs.
 
 
@@ -519,7 +549,8 @@ Qed.
 
 \Question{My goal is a first order formula, how can I prove it ?}
 
-Just use the \firstorder tactic.
+Just use the semi-decision tactic : \firstorder.
+
 
 \Question{My goal is solvable by a sequence of rewrites, how can I prove it ?}
 
@@ -532,7 +563,7 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal is an inequality solvable by a sequence of rewrites, how can I prove it ?}
+\Question{My goal is a disequality solvable by a sequence of rewrites, how can I prove it ?}
 
 Just use the \congruence tactic.
 %\begin{coq_example}
@@ -557,7 +588,7 @@ ring.
 Qed.
 \end{coq_example}
 
-\Question{My goal is an equality on some field (e.g. reals), how can I prove it ?}
+\Question{My goal is an equality on some field (e.g. real numbers), how can I prove it ?}
 
 Just use the \field tactic.
 
@@ -573,24 +604,23 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal is an inequality on R, how can I prove it ?}
+\Question{My goal is an inequality on integers in Presburger arithmetic (an expression build from +,-,constants and variables), how can I prove it ?}
 
 
-%\begin{coq_example}
-%Require Import ZArith.
-%Require Omega.
-%Open Local Scope Z_scope.
-%Goal forall a : Z, a*a>0. 
-%intros.
-%omega.
-%Qed.
-%\end{coq_example}
+\begin{coq_example}
+Require Import ZArith.
+Require Omega.
+Open Local Scope Z_scope.
+Goal forall a : Z, a>0 -> a+a > a. 
+intros.
+omega.
+Qed.
+\end{coq_example}
 
 
 \Question{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
 
-You need the \gb tactic.
-
+You need the \gb tactic see \url{todo}.
 
 
 \Question{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
@@ -607,20 +637,20 @@ You can use \cut followed by \intro or you can use the following \Ltac command :
 Ltac assert_later t := cut t;[intro|idtac]. 
 \end{verbatim}
 
-\Question{What is the difference between saved qed and defined ?}
+\Question{What is the difference between \Qed and \Defined ?}
 
-These three commands perform type checking, but when defined is used the new definition is set as transparent, otherwise it is defined as opaque.
+These two commands perform type checking, but when \Defined is used the new definition is set as transparent, otherwise it is defined as opaque.
 
 
 \Question{What is the difference between opaque and transparent ?}
 
-Opaque definition can not be unfolded but transparent one can.
+Opaque definitions can not be unfolded but transparent ones can.
 
-\Question{How can I know what does a tactic ?}
+\Question{How can I know what a tactic does ?}
 
-You can use the {\tt Info} command.
+You can use the {\tt info} command.
 
-\Question{Why auto does not work ? How can I fix it ?}
+\Question{Why \auto does not work ? How can I fix it ?}
 
 You can increase the depth of the proof search or add some lemmas in the base of hints.
 Perhaps you may need to use \eauto.
@@ -629,11 +659,13 @@ Perhaps you may need to use \eauto.
 
 This is the same tactic as \auto, but it does some \eapply instead of \apply.
 
+todo les espaces
+
 \Question{I want to replace some term with another in the goal, how can I do it ?}
 
-If one of your hypothesis (say {\tt H}) states that the terms are equals you can use the \rewrite tactic. Otherwise you can use the \replace {\tt with} tactic. 
+If one of your hypothesis (say {\tt H}) states that the terms are equal you can use the \rewrite tactic. Otherwise you can use the \replace {\tt with} tactic. 
 
-\Question{I want to replace some term with another in the hypothesis, how can I do it ?}
+\Question{I want to replace some term with another in an hypothesis, how can I do it ?}
 
 You can use the \rewrite {\tt in} tactic.
 
@@ -645,7 +677,7 @@ You can use the \unfold tactic.
 
 You can use the \simpl tactic.
 
-\Question{How can I pose some term ?}
+\Question{How can I declare a shortcut for some term ?}
 
 You can use the \set or \pose tactics.
 
@@ -657,8 +689,8 @@ You can use the \case or \destruct tactics.
 \Question{Why should I name my intros ?}
 
 When you use the \intro tactic you don't have to give a name to your
-hypothesis. If you do so the names will be generated by \Coq but your
-scripts won't be robust. If you add some hypothesis to your theorem
+hypothesis. If you do so the name will be generated by \Coq but your
+scripts may be less robust. If you add some hypothesis to your theorem
 (or change their order), you will have to change your proof to adapt
 to the new names.
 
@@ -679,7 +711,7 @@ repeat split;assumption.
 Qed.
 \end{coq_example}
 
-\Question{I want to automatize the use of some tactic how can I do it ?}
+\Question{I want to automatize the use of some tactic, how can I do it ?}
 
 You need to use the {\tt proof with T} command and add \ldots at the
 end of your sentences.
@@ -693,11 +725,9 @@ split...
 Qed.
 \end{coq_example}
 
-\Question{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
+\Question{I want to execute the {\texttt proof with} tactic only if it solves the goal, how can I do it ?}
 
-You need to use the \try and \solve tactics.
-
-For instance :
+You need to use the \try and \solve tactics. For instance :
 \begin{coq_example}
 Require Import ZArith.
 Require Ring.
@@ -721,22 +751,18 @@ auto.
 Qed.
 \end{coq_example}
 
-\Question{One of the hypothesis is an equality between a varible and some term, I want to get  rid of this variable. how can I do it ?}
+\Question{One of the hypothesis is an equality between a variable and some term, I want to get rid of this variable, how can I do it ?}
 
 You can use the \subst tactic. This will rewrite the equality everywhere and clear the assumption.
 
-\Question{What can I do if I get {\tt generated subgoal term' has metavariables in it } ?}
+\Question{What can I do if I get ``{\tt generated subgoal term has metavariables in it }'' ?}
 
 You should use the \eapply tactic, this will generate some goals containing metavariables. 
 
-\Question{How can I instanciate some metavariable ?}
+\Question{How can I instantiate some metavariable ?}
 
+Just use the \instantiate tactic.
 
-\Question{What is the syntax for if ?}
-
-\Question{What is the syntax for let ?}
-
-\Question{What is the syntax for pattern matching ?}
 
 
 \Question{What can I do when {\tt Qed.} is slow ?}
@@ -774,14 +800,12 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 You can use the {\tt Admitted} command to state your current proof as an axiom.
 
 
-
-\section{Inductives}
+\section{Inductive types}
 
 
 \Question{How can I define a fixpoint when no argument is structurally smaller ?}
 
-
-
+todo
 
 \Question{How can I prove that two constructors are different ?}
 
@@ -820,10 +844,10 @@ You can use for instance :
 Notation "x ^2" := (Rmult x x) (at level 20).
 \end{verbatim}
 Note that you can not use :
-\begin{verbatim}
-Notation "x ²" := (Rmult x x) (at level 20).
-\end{verbatim}
-because ``²'' is an iso-latin character. If you really want this kind of notation you should use UTF-8.
+\begin{texttt}
+Notation "x $^²$" := (Rmult x x) (at level 20).
+\end{texttt}
+because ``$^2$'' is an iso-latin character. If you really want this kind of notation you should use UTF-8.
 
 
 
@@ -832,7 +856,7 @@ because ``²'' is an iso-latin character. If you really want this kind of notatio
 
 \section{Tactics in ml}
 
-\Question{Can you show an example of a tactic writen in OCaml ?}
+\Question{Can you show me an example of a tactic writen in OCaml ?}
 
 You have some examples of tactics written in Ocaml in the ``contrib'' directory of \Coq sources. 
 
@@ -893,22 +917,29 @@ next one. Underscore matches all terms.
 \Question{How can I generate a new name ?}
 
 You can use the following syntax :
-{\tt Let id:=fresh in \ldots}\\
+{\tt let id:=fresh in \ldots}\\
 For example :
 \begin{coq_example}
 Ltac introIdGen := let id:=fresh in intro id.
 \end{coq_example}
 
 
-\Question{How can I acces the type of a term ?}
+\Question{How can I access the type of a term ?}
+
+You can use typeof.
+todo
 
 \Question{How can I define static and dynamic code ?}
 
-\Question{Is there anyway to do pattern matching with dependant types ?}
+
+
+\Question{Is there anyway to do pattern matching with dependent types ?}
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
 
-\Question{What is the use of the \pattern tactic ?}  
+You can help coq using the \pattern tactic.
+
+\Question{What is the use of the \pattern tactic ?}
 
 The \pattern tactic transforms the current goal, performing
 beta-expansion on all the applications featuring this tactic's
@@ -922,12 +953,12 @@ to abstract the appropriate terms.
 PS: Notice for people that are interested in proof rendering that Assert
 and Pose (and Cut) are not rendered the same as Generalize (see the
 HELM experimental rendering tool at \url{http://mowgli.cs.unibo.it}, link
-HELM, link COQ Online). Indeed Generalize builds a beta-expanded term
-while Assert, Pose and Cut uses a let-in.
+HELM, link COQ Online). Indeed \generalize builds a beta-expanded term
+while \assert, \pose and \cut uses a let-in.
 
 \begin{verbatim}
   (* Goal is T *)
-  Generalize (H1 H2).
+  generalize (H1 H2).
   (* Goal is A->T *)
   ... a proof of A->T ...
 \end{verbatim}
@@ -942,7 +973,7 @@ is rendered into something like
 while 
 \begin{verbatim}
   (* Goal is T *)
-  Assert q := (H1 H2).
+  assert q := (H1 H2).
   (* Goal is A *)
   ... a proof of A ...
   (* Goal is A |- T *)
@@ -955,8 +986,8 @@ is rendered into something like
   ... the proof of T ...
   we proved T
 \end{verbatim}
-Otherwise said, Generalize is not rendered in a forward-reasoning way,
-while Assert is.
+Otherwise said, \generalize is not rendered in a forward-reasoning way,
+while \assert is.
 
 
 \Question{How can I define vectors or lists of size n ?}
@@ -969,9 +1000,9 @@ You can split your hint bases into smaller ones.
 
 \Question{Can you explain me what an evaluable constant is ?}
 
-\Question{What is the equivalent of Tauto for classical logic ?}
+\Question{What is the equivalent of \tauto for classical logic ?}
 
-Currently there are no equivalent tactic for classical logic.
+Currently there are no equivalent tactic for classical logic. You can todo godel
 
 
 %%%%%%%
@@ -995,7 +1026,7 @@ of this language can be found in the Reference Manual.
 
 \Question{What is a command ?}
 
-\Question{What is difference between a lemma, a fact and a theorem ?}
+\Question{What is the difference between a lemma, a fact and a theorem ?}
 
 From \Coq point of view there are no difference. But some tools can
 have a different behaviour when you use a lemma rather than a
@@ -1071,12 +1102,12 @@ You can use {\tt coq\_tex}.
 \Question{How to use those Forall and Exists pretty symbols ?}\label{forallcoqide}
  Thanks to the notation features in \Coq, you just need to insert these
 lines in your \Coq buffer :
-\begin{verbatim}
+\begin{texttt}
+======================================================================\\
+Notation "$\forall$ x : t, P" := (forall x:t, P) (at level 200, x ident).
+Notation "$\exists$ x : t, P" := (exists x:t, P) (at level 200, x ident).
 ======================================================================
-Notation "âˆ€ x : t, P" := (forall x:t, P) (at level 200, x ident).
-Notation "âˆƒ x : t, P" := (exists x:t, P) (at level 200, x ident).
-======================================================================
-\end{verbatim}
+\end{texttt}
 Copy/Paste of these lines from this file will not work outside of \CoqIde.
 You need to load a file containing these lines or to enter the "âˆ€" 
 using an input method (see \ref{inputmeth}). To try it just use \verb#Require utf8# from inside
