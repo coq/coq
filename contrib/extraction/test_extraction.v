@@ -6,26 +6,21 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Extraction nat.
-(* 
-type nat = 
-  |  O 
-  | S of nat 
-*)
+Require Arith.
+Require PolyList.
 
-Definition test1 := [x:nat]x.
-Extraction test1.
-(* let test1 x = x *)
+(*** STANDARD EXAMPLES *)
 
-Inductive c [x:nat] : nat -> Set :=
-    refl : (c x x)                  
-  | trans : (y,z:nat)(c x y)->(le y z)->(c x z).
-Extraction c.
-(* 
-type c =
-  | Refl
-  | Trans of nat * nat * c
-*)
+(** Functions. *)
+
+Definition idnat := [x:nat]x.
+Extraction idnat.
+(* let idnat x = x *)
+
+Definition id := [X:Type][x:X]x.      
+Extraction id. (* let id x = x *)
+Definition id' := (id Set nat).
+Extraction id'. (* type id' = nat *)
 
 Definition test2 := [f:nat->nat][x:nat](f x).
 Extraction test2.
@@ -33,13 +28,13 @@ Extraction test2.
 
 Definition test3 := [f:nat->Set->nat][x:nat](f x nat).
 Extraction test3.
-(* let test3 f x = f x () *)
+(* let test3 f x = f x __ *)
 
 Definition test4 := [f:(nat->nat)->nat][x:nat][g:nat->nat](f g).
 Extraction test4.
 (* let test4 f x g = f g *)
 
-Definition test5 := (pair ? ? (S O) O).
+Definition test5 := ((1),(0)).
 Extraction test5.
 (* let test5 = Pair ((S O), O) *)
 
@@ -56,7 +51,7 @@ Extraction test7.
 Definition d := [X:Type]X.
 Extraction d. (* type 'x d = 'x *)
 Definition d2 := (d Set).
-Extraction d2. (* type d2 = unit d *)
+Extraction d2. (* type d2 = __ d *)
 Definition d3 := [x:(d Set)]O.
 Extraction d3. (* let d3 _ = O *)
 Definition d4 := (d nat). 
@@ -69,13 +64,70 @@ Extraction d6.  (* type 'x d6 = 'x *)
 Definition test8 := ([X:Type][x:X]x Set nat).
 Extraction test8. (* type test8 = nat *)
 
-Definition id' := [X:Type][x:X]x.      
-Extraction id'. (* let id' x = x *)
-Definition id'' := (id' Set nat).
-Extraction id''. (* type id'' = Obj.t *)
+Definition test9 := let t = nat in (id Set t).
+Extraction test9.  (* type test9 = nat *)
 
-Definition test9 := let t = nat in (id' Set t).
-Extraction test9.  (* type test9 = Obj.t *)
+Definition test10 := ([X:Type][x:X]O Type Type).
+Extraction test10. (* let test10 = O *)
+
+Definition test11 := let n=O in let p=(S n) in (S p).
+Extraction test11. (* let test11 = S (S O) *)
+
+Definition test12 := (x:(X:Type)X->X)(x Type Type).
+Extraction test12. 
+(* type test12 = (__ -> __ -> __) -> __ *)
+
+
+Definition test13 := Cases (left True True I) of (left x)=>(S O) | (right x)=>O end.
+Extraction test13. (* let test13 = S O *)
+
+
+(** example with more arguments that given by the type *)
+
+Definition test19 := (nat_rec [n:nat]nat->nat [n:nat]O [n:nat][f:nat->nat]f O O).
+Extraction test19.
+(* let test19 =
+  let rec f = function
+    | O -> (fun n0 -> O)
+    | S n0 -> f n0
+  in f O O
+*)
+
+
+(** casts *)
+
+Definition test20 := (True :: Type).
+Extraction test20.
+(* type test20 = __ *)
+
+
+(** Simple inductive type and recursor. *)
+
+Extraction nat.
+(* 
+type nat = 
+  | O 
+  | S of nat 
+*)
+
+Extraction sumbool_rect.
+(* 
+let sumbool_rect f f0 = function
+  |  Left -> f __
+  | Right -> f0 __
+*)
+
+(** Less simple inductive type. *)
+
+Inductive c [x:nat] : nat -> Set :=
+    refl : (c x x)                  
+  | trans : (y,z:nat)(c x y)->(le y z)->(c x z).
+Extraction c.
+(* 
+type c =
+  | Refl
+  | Trans of nat * nat * c
+*)
 
 Definition Ensemble := [U:Type]U->Prop.
 Definition Empty_set := [U:Type][x:U]False.
@@ -93,15 +145,6 @@ type 'u finite =
   | Union_is_finite of 'u finite * 'u
 *)
 
-Definition test10 := ([X:Type][x:X]O Type Type).
-Extraction test10. (* let test10 = O *)
-
-Definition test11 := let n=O in let p=(S n) in (S p).
-Extraction test11. (* let test11 = S (S O) *)
-
-Definition test12 := (x:(X:Type)X->X)(x Type Type).
-Extraction test12. 
-(* type test12 = (unit -> Obj.t -> Obj.t) -> Obj.t *)
 
 (** Mutual Inductive *)
 
@@ -137,25 +180,6 @@ and forest_size = function
   | Cons (t, f') -> plus (tree_size t) (forest_size f')
 *)
 
-Definition test13 := Cases (left True True I) of (left x)=>(S O) | (right x)=>O end.
-Extraction test13. (* let test13 = S O *)
-
-Extraction sumbool_rect.
-(* 
-let sumbool_rect f0 f = function
-  |  Left -> f0 ()
-  | Right -> f ()
-*)
-
-Inductive predicate : Type := 
-  | Atom : Prop -> predicate
-  | EAnd  : predicate -> predicate -> predicate.
-Extraction predicate.
-(* 
-type predicate =
-  | Atom
-  | EAnd of predicate * predicate
-*)
 
 (** Eta-expansions of inductive constructor *)
 
@@ -198,12 +222,12 @@ Extraction fbidon.
 *)
 
 Definition fbidon2 := (fbidon True nat (tb True nat)).
-Extraction fbidon2. (* let fbidon2 x = x *)
+Extraction fbidon2. (* let fbidon2 y = y *)
 Extraction NoInline fbidon.
 Extraction fbidon2.
-(* let test19 x = fbidon (fun x0 x1 -> x1) () x *)
+(* let fbidon2 y = fbidon (fun _ x -> x) __ y *)
 
-(** NB: first argument of fbidon2 has type [True], so it disappears. *)
+(* NB: first argument of fbidon2 has type [True], so it disappears. *)
 
 (** mutual inductive on many sorts *)
 
@@ -228,18 +252,6 @@ Extraction eq_rect.
   f
 *)
 
-(** example with more arguments that given by the type *)
-
-Definition test19 := (nat_rec [n:nat]nat->nat [n:nat]O [n:nat][f:nat->nat]f O O).
-Extraction test19.
-(* let test19 =
-  let rec f = function
-    | O -> (fun n0 -> O)
-    | S n0 -> f n0
-  in f O O
-*)
-
-
 (** No more propagation of type parameters. Obj.t instead. *)
 
 Inductive tp1 : Set := 
@@ -247,7 +259,7 @@ Inductive tp1 : Set :=
 Extraction tp1.
 (* 
 type tp1 =
-  | T of Obj.t * tp2
+  | T of __ * tp2
 and tp2 =
   | T' of tp1
 *) 
@@ -260,130 +272,11 @@ Extraction tp1bis.
 type tp1bis =
   | Tbis of tp2bis
 and tp2bis =
-  | T'bis of Obj.t * tp1bis
+  | T'bis of __ * tp1bis
 *)
 
-(** casts *)
 
-Definition test20 := (True :: Type).
-Extraction test20.
-(* type t = unit *)
-
-(* examples needing Obj.magic *)
-(* hybrids *)
-
-Definition horibilis := [b:bool]<[b:bool]if b then Type else nat>if b then Set else O.
-Extraction horibilis.
-(* 
-let horibilis = function
-  | True -> ()
-  | False -> O
-*)
-
-Definition PropSet := [b:bool]if b then Prop else Set.
-Extraction PropSet. (* type propSet = Obj.t *)
-
-Definition natbool := [b:bool]if b then nat else bool.
-Extraction natbool. (* type natbool = Obj.t *)
-
-Definition zerotrue := [b:bool]<natbool>if b then O else true.
-Extraction zerotrue. 
-(* 
-let zerotrue = function
-  | True -> O
-  | False -> True
-*)
-
-Definition natProp := [b:bool]<[_:bool]Type>if b then nat else Prop.
-
-Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
-
-Definition zeroTrue := [b:bool]<natProp>if b then O else True.
-Extraction zeroTrue.
-(* 
-let zeroTrue = function
-  | True -> O
-  | False -> ()
-*)
-
-Definition natTrue2 := [b:bool]<[_:bool]Type>if b then nat else True.
-
-Definition zeroprop := [b:bool]<natTrue>if b then O else I.
-Extraction zeroprop.
-(* 
-let zeroprop = function
-  | True -> O
-  | False -> ()
-*)
-
-(** instanciations Type -> Prop *)
-
-(** polymorphic f applied several times *)
-
-Definition test21 := (pair ? ? (id' nat O) (id' bool true)).
-Extraction test21.
-(* let test21 = Pair ((id' O), (id' True)) *)
-
-(** ok *)
-
-Definition test22 := ([i:(X:Type)X->X](pair ? ? (i nat O) (i bool true)) [X:Type][x:X]x).
-Extraction test22. 
-(* let test22 = 
-  let i = fun x -> x in Pair ((i O), (i True)) *)
-
-
-(* still ok via optim beta -> let *)
-
-Definition test23 := [i:(X:Type)X->X](pair ? ? (i nat O) (i bool true)).
-Extraction test23.
-(* let test23 i = Pair ((i () O), (i () True)) *)
-
-(* problem: fun f -> (f 0, f true) not legal in ocaml *)
-(* solution: fun f -> (f 0, Obj.magic f true) *)
-
-
-Definition funPropSet:= 
- [b:bool]<[_:bool]Type>if b then (X:Prop)X->X else (X:Set)X->X.
-
-(* Definition funPropSet2:=
- [b:bool](X:if b then Prop else Set)X->X. *)
-
-Definition idpropset := 
- [b:bool]<funPropSet>if b then [X:Prop][x:X]x else [X:Set][x:X]x.
-
-(* Definition proprop := [b:bool]((idpropset b) (natTrue b) (zeroprop b)). *)
-
-Definition funProp := [b:bool][x:True]<natTrue>if b then O else x.
-
-(*s prop and arity can be applied.... -> fixed ? *)
-
-Definition f : (X:Type)(nat->X)->(X->bool)->bool := 
- [X:Type;x:nat->X;y:X->bool](y (x O)).
-Extraction f.
-(* let f x y =
-  y (x O)
-*)
-
-Definition f_prop := (f (O=O) [_](refl_equal ? O) [_]true).
-Extraction NoInline f.
-Extraction f_prop.
-(* let f_prop =
-  f (fun _ -> ()) (fun _ -> True)
-*)
-
-Definition f_arity := (f Set [_:nat]nat [_:Set]true).
-Extraction f_arity.
-(* let f_arity =
-  f (fun _ -> ()) (fun _ -> True)
-*)
-
-Definition f_normal := (f nat [x]x [x](Cases x of O => true | _ => false end)).
-Extraction f_normal.
-(* let f_normal =
-  f (fun x -> x) (fun x -> match x with
-                             | O -> True
-                             | S n -> False)
-*)
+(** Strange inductive type. *)
 
 Inductive Truc : Set->Set :=
        chose  : (A:Set)(Truc A)
@@ -395,34 +288,15 @@ type 'x truc =
   | Machin of 'x * bool truc
 *)
 
-(** False conversion of type: *)
 
-Require PolyList.
-
-Lemma oups : (H:(nat==(list nat)))nat -> nat.
-Intros.
-Generalize H0;Intros.
-Rewrite H in H1.
-Case H1.
-Exact H0.
-Intros.
-Exact n.
-Qed.
-Extraction oups.
-(* 
-let oups h0 = match h0 with
-  | Nil -> h0
-  | Cons0 (n, l) -> n
-*)
-
-(* Dependant type over Type *)
+(** Dependant type over Type *)
 
 Definition test24:= (sigT Set [a:Set](option a)).
 Extraction test24.
 (* type test24 = (unit, Obj.t option) sigT *)
 
 
-(* Coq term non strongly-normalizable after extraction *)
+(** Coq term non strongly-normalizable after extraction *)
 
 Require Gt.
 Definition loop := 
@@ -437,11 +311,223 @@ Extraction loop.
   in f O
 *)
 
-Extraction "test" 
-  nat test1 c test2 test3 test4 test5 test6 test7 
-  d d2 d3 d4 d5 d6 test8 id' id'' test9 Finite test10 test11 
-  test12 tree tree_size test13 sumbool_rect predicate test14 
-  test15 eta_c test16 test17 test18 bidon tb fbidon fbidon2 
-  fbidon2 test_0 test_1 eq eq_rect test19 tp1 tp1bis test20 
+(*** EXAMPLES NEEDING OBJ.MAGIC *)
+
+(** False conversion of type: *)
+
+Lemma oups : (H:(nat==(list nat)))nat -> nat.
+Intros.
+Generalize H0;Intros.
+Rewrite H in H1.
+Case H1.
+Exact H0.
+Intros.
+Exact n.
+Qed.
+Extraction oups.
+(* 
+let oups h0 = 
+  match Obj.magic h0 with
+    | Nil -> h0
+    | Cons0 (n, l) -> n
+*)
+
+
+(** hybrids *)
+
+Definition horibilis := [b:bool]<[b:bool]if b then Type else nat>if b then Set else O.
+Extraction horibilis.
+(* 
+let horibilis = function
+  | True -> Obj.magic __
+  | False -> Obj.magic O
+*)
+
+Definition PropSet := [b:bool]if b then Prop else Set.
+Extraction PropSet. (* type propSet = __ *)
+
+Definition natbool := [b:bool]if b then nat else bool.
+Extraction natbool. (* type natbool = __ *)
+
+Definition zerotrue := [b:bool]<natbool>if b then O else true.
+Extraction zerotrue. 
+(* 
+let zerotrue = function
+  | True -> Obj.magic O
+  | False -> Obj.magic True
+*)
+
+Definition natProp := [b:bool]<[_:bool]Type>if b then nat else Prop.
+
+Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
+
+Definition zeroTrue := [b:bool]<natProp>if b then O else True.
+Extraction zeroTrue.
+(* 
+let zeroTrue = function
+  | True -> Obj.magic O
+  | False -> Obj.magic __
+*)
+
+Definition natTrue2 := [b:bool]<[_:bool]Type>if b then nat else True.
+
+Definition zeroprop := [b:bool]<natTrue>if b then O else I.
+Extraction zeroprop.
+(* 
+let zeroprop = function
+  | True -> Obj.magic O
+  | False -> Obj.magic __
+*)
+
+(** polymorphic f applied several times *)
+
+Definition test21 := (id nat O, id bool true).
+Extraction test21.
+(* let test21 = Pair ((id O), (id True)) *)
+
+(** ok *)
+
+Definition test22 := ([f:(X:Type)X->X](f nat O, f bool true) [X:Type][x:X]x).
+Extraction test22. 
+(* let test22 = 
+  let f = fun x -> x in Pair ((f O), (f True)) *)
+
+(* still ok via optim beta -> let *)
+
+Definition test23 := [f:(X:Type)X->X](f nat O, f bool true).
+Extraction test23.
+(* let test23 f = Pair ((Obj.magic f __ O), (Obj.magic f __ True)) *)
+
+(* problem: fun f -> (f 0, f true) not legal in ocaml *)
+(* solution: magic ... *)
+
+
+(** Dummy constant __ can be applied.... *)
+
+Definition f : (X:Type)(nat->X)->(X->bool)->bool := 
+ [X:Type;x:nat->X;y:X->bool](y (x O)).
+Extraction f.
+(* let f x y =
+  y (x O)
+*)
+
+Definition f_prop := (f (O=O) [_](refl_equal ? O) [_]true).
+Extraction NoInline f.
+Extraction f_prop.
+(* let f_prop =
+  f (Obj.magic __) (fun _ -> True)
+*)
+
+Definition f_arity := (f Set [_:nat]nat [_:Set]true).
+Extraction f_arity.
+(* let f_arity =
+  f (Obj.magic __) (fun _ -> True)
+*)
+
+Definition f_normal := (f nat [x]x [x](Cases x of O => true | _ => false end)).
+Extraction f_normal.
+(* let f_normal =
+  f (fun x -> x) (fun x -> match x with
+                             | O -> True
+                             | S n -> False)
+*)
+
+
+(* inductive with magic needed *)
+
+Inductive Boite : Set := 
+  boite : (b:bool)(if b then nat else nat*nat)->Boite. 
+Extraction Boite. 
+(*
+type boite =
+  | Boite of bool * __
+*)
+
+
+Definition boite1 := (boite true O).
+Extraction boite1.
+(* let boite1 = Boite (True, (Obj.magic O)) *)
+
+Definition boite2 := (boite false (O,O)).
+Extraction boite2.
+(* let boite2 = Boite (False, (Obj.magic (Pair (O, O)))) *)
+
+Definition test_boite := [B:Boite]<nat>Cases B of 
+  (boite true n) => n 
+| (boite false n) => (plus (fst ? ? n) (snd ? ? n))
+end.
+Extraction test_boite. 
+(* 
+let test_boite = function
+  | Boite (b0, n) ->
+      (match b0 with
+         | True -> Obj.magic n
+         | False -> plus (fst (Obj.magic n)) (snd (Obj.magic n)))
+*)
+
+(* singleton inductive with magic needed *)
+
+Inductive Box : Set := 
+  box : (A:Set)A -> Box. 
+Extraction Box.
+(* type box = __ *)
+
+Definition box1 := (box nat O). 
+Extraction box1. (* let box1 = Obj.magic O *)
+
+(* applied constant, magic needed *)
+
+Definition idzarb := [b:bool][x:(if b then nat else bool)]x.
+Definition zarb := (idzarb true O).
+Extraction NoInline idzarb. 
+Extraction zarb. 
+(* let zarb = Obj.magic idzarb True (Obj.magic O) *)
+
+(** function of variable arity. *)
+(** Fun n = nat -> nat -> ... -> nat *)  
+
+Fixpoint Fun [n:nat] : Set := 
+   Cases n of 
+     O => nat
+   | (S n) => nat -> (Fun n)
+  end.
+
+Fixpoint Const [k,n:nat] : (Fun n) := 
+  <Fun>Cases n of 
+     O => k 
+   | (S n) => [p:nat](Const k n)
+  end.
+
+Fixpoint proj [k,n:nat] : (Fun n) := 
+  <Fun>Cases n of 
+    O => O (* ou assert false ....*)
+  | (S n) => Cases k of 
+             O => [x](Const x n)
+           | (S k) => [x](proj k n)
+          end 
+  end. 
+
+Definition test_proj := (proj (2) (4) (0) (1) (2) (3)).
+
+Eval Compute in test_proj. 
+
+Recursive Extraction test_proj. 
+
+
+
+(*** TO SUM UP: ***) 
+
+
+Extraction "test_extraction.ml" 
+  idnat id id' test2 test3 test4 test5 test6 test7 
+  d d2 d3 d4 d5 d6 test8 id id' test9 test10 test11 
+  test12 test13 test19 test20 
+  nat sumbool_rect c Finite tree tree_size
+  test14 test15 eta_c test16 test17 test18 bidon tb fbidon fbidon2 
+  fbidon2 test_0 test_1 eq eq_rect tp1 tp1bis Truc oups test24 loop
   horibilis PropSet natbool zerotrue zeroTrue zeroprop test21 test22 
-  test23 f f_prop f_arity f_normal Truc oups test24 loop.
+  test23 f f_prop f_arity f_normal
+  Boite boite1 boite2 test_boite
+  Box box1 zarb test_proj.
+
+
