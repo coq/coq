@@ -42,7 +42,9 @@ let pp_boxed_tuple f = function
       	    hOV 0 [< prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
 		     'sTR ")" >] >]
 
-let space_if = function true -> [< 'sPC >] | false -> [< >]
+let space_if = function true -> [< 'sTR " " >] | false -> [< >]
+
+let sec_space_if = function true -> [< 'sPC >] | false -> [< >]
 
 (* collect_lambda MLlam(id1,...MLlam(idn,t)...) = [id1;...;idn],t *)
 
@@ -85,7 +87,8 @@ let pp_type t =
 	   | [] -> assert false
 	   | [t] -> pp_rec par t
 	   | t::l -> [< open_par par; pp_tuple (pp_rec false) l; 
-			space_if (l <>[]); pp_rec false t; close_par par >])
+			sec_space_if (l <>[]); 
+			pp_rec false t; close_par par >])
     | Tarr (t1,t2) ->
 	[< open_par par; pp_rec true t1; 'sPC; 'sTR "->"; 'sPC; 
 	   pp_rec false t2; close_par par >]
@@ -170,7 +173,7 @@ and pp_pat env pv =
       | MLcase _ -> true
       | _        -> false 
     in
-    hOV 2 [< pr_id name;
+    hOV 2 [< P.pp_global name;
 	     begin match ids with 
 	       | [] -> [< >]
 	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id ids >]
@@ -185,7 +188,7 @@ and pp_fix par env in_p (j,fid,bl) args =
      v 0 [< 'sTR "let rec " ;
 	    prlist_with_sep
       	      (fun () -> [< 'fNL; 'sTR "and " >])
-	      (fun (fi,ti) -> pp_function env' fi ti)
+	      (fun (fi,ti) -> pp_function env' (pr_id fi) ti)
 	      (List.combine fid bl) ;
 	    'fNL ;
 	    if in_p then 
@@ -209,16 +212,16 @@ and pp_function env f t =
   match t' with 
     | MLcase(MLrel 1,pv) ->
 	if is_function pv then
-	  [< pr_id f; pr_binding (List.rev (List.tl bl)) ;
+	  [< f; pr_binding (List.rev (List.tl bl)) ;
        	     'sTR " = function"; 'fNL;
 	     v 0 [< 'sTR "  "; pp_pat (bl @ env) pv >] >]
 	else
-          [< pr_id f; pr_binding (List.rev bl); 
+          [< f; pr_binding (List.rev bl); 
              'sTR " = match ";
 	     pr_id (List.hd bl); 'sTR " with"; 'fNL;
 	     v 0 [< 'sTR "  "; pp_pat (bl @ env) pv >] >]
 	  
-    | _ -> [< pr_id f; pr_binding (List.rev bl);
+    | _ -> [< f; pr_binding (List.rev bl);
 	      'sTR " ="; 'fNL; 'sTR "  ";
 	      hOV 2 (pp_expr false (bl @ env) [] t') >]
 	
@@ -231,14 +234,14 @@ let pp_parameters l =
 
 let pp_one_inductive (pl,name,cl) =
   let pp_constructor (id,l) =
-    [< pr_id id;
+    [< P.pp_global id;
        match l with
          | [] -> [< >] 
 	 | _  -> [< 'sTR " of " ;
       	       	    prlist_with_sep 
 		      (fun () -> [< 'sPC ; 'sTR "* " >]) pp_type l >] >] 
   in
-  [< pp_parameters pl; pr_id name; 'sTR " ="; 'fNL; 
+  [< pp_parameters pl; P.pp_global name; 'sTR " ="; 'fNL;
      v 0 [< 'sTR "    ";
 	    prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
                             (fun c -> hOV 2 (pp_constructor c)) cl >] >]
@@ -252,21 +255,23 @@ let pp_inductive il =
      'fNL >]
 
 let pp_decl = function
+  | Dtype [] -> 
+      [< >]
   | Dtype i -> 
       hOV 0 (pp_inductive i)
-  | Dabbrev (id, l, t) ->
+  | Dabbrev (r, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
-	       pr_id id; 'sPC; 'sTR "="; 'sPC; pp_type t >]
-  | Dglob (id, MLfix (n,idl,l)) ->
+	       P.pp_type_global r; 'sPC; 'sTR "="; 'sPC; pp_type t; 'fNL >]
+  | Dglob (r, MLfix (n,idl,l)) ->
       let id' = List.nth idl n in
-      if id = id' then
+      if true then (* TODO id = id' *)
 	[<  hOV 2 (pp_fix false [] false (n,idl,l) []) >]
       else
-	[< 'sTR "let "; pr_id id; 'sTR " ="; 'fNL;
+	[< 'sTR "let "; P.pp_global r; 'sTR " ="; 'fNL;
 	   v 0 [< 'sTR "  "; 
 		  hOV 2 (pp_fix false [] true (n,idl,l) []); 'fNL >] >]
-  | Dglob (id, a) ->
-      hOV 0 [< 'sTR "let "; pp_function [] id a >]
+  | Dglob (r, a) ->
+      hOV 0 [< 'sTR "let "; pp_function [] (P.pp_global r) a; 'fNL >]
 
 end
 

@@ -2,8 +2,8 @@
 open Util
 open Miniml
 
-(* [occurs : int -> ml_ast -> bool]
-   [occurs k M] returns true if (Rel k) occurs in M. *)
+(*s [occurs : int -> ml_ast -> bool]
+    [occurs k M] returns true if (Rel k) occurs in M. *)
 
 let rec occurs k = function
   | MLrel i          -> i=k
@@ -21,14 +21,14 @@ let rec occurs k = function
 and occurs_list k l =
   List.exists (fun t -> occurs k t) l
 
-(* map over ML asts *)
+(*s map over ML asts *)
 
 let rec ast_map f = function
   | MLapp (a,al) -> MLapp (f a, List.map f al)
   | MLlam (id,a) -> MLlam (id, f a)
   | MLletin (id,a,b) -> MLletin (id, f a, f b)
   | MLcons (c,n,al)  -> MLcons (c, n, List.map f al)
-  | MLcase (a,eqv) -> (MLcase (f a, Array.map (ast_map_eqn f) eqv))
+  | MLcase (a,eqv) -> MLcase (f a, Array.map (ast_map_eqn f) eqv)
   | MLfix (fi,ids,al) -> MLfix (fi, ids, List.map f al)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)

@@ -259,7 +259,7 @@ let lookup_inductive_extraction i = Gmap.find i !inductive_extraction_table
 type constructor_extraction_result = 
   | Cml of ml_type list * signature
   | Cprop
-   
+
 let constructor_extraction_table = 
   ref (Gmap.empty : (constructor_path, constructor_extraction_result) Gmap.t)
 
@@ -473,7 +473,8 @@ and extract_term_with_type env ctx c t =
 	  in (binders,e')
 	in
 	let extract_branch j b =
-	  let s = signature_of_constructor (ip,succ j) in
+	  let cp = (ip,succ j) in
+	  let s = signature_of_constructor cp in
 	  assert (List.length s = ni.(j));
 	  (* number of arguments, without parameters *)
 	  let (binders, e') = extract_branch_aux j b in
@@ -483,7 +484,7 @@ and extract_term_with_type env ctx c t =
 		 if v = Vdefault then (id_of_name n :: acc) else acc)
 	      (List.combine s binders) []
 	  in
-	  (cnames.(j), ids, e')
+	  (ConstructRef cp, ids, e')
 	in
 	(* [c] has an  inductive type, not an arity type *)
 	(match extract_term env ctx c with
@@ -647,21 +648,23 @@ and extract_mib sp =
 and extract_inductive_declaration sp =
   extract_mib sp;
   let mib = Global.lookup_mind sp in
-  let one_constructor ind j id = 
-    match lookup_constructor_extraction (ind,succ j) with 
+  let one_constructor ind j _ = 
+    let cp = (ind,succ j) in
+    match lookup_constructor_extraction cp with 
       | Cprop -> assert false
-      | Cml (t,_) -> (id, t)
+      | Cml (t,_) -> (ConstructRef cp, t)
   in
   let l = 
     array_foldi
-      (fun i ip acc -> 
-	 match lookup_inductive_extraction (sp,i) with
+      (fun i packet acc -> 
+	 let ip = (sp,i) in
+	 match lookup_inductive_extraction ip with
 	   | Iprop -> acc
 	   | Iml (s,fl) -> 
 	       (params_of_sign s @ fl, 
-		ip.mind_typename, 
+		IndRef ip, 
 		Array.to_list 
-		  (Array.mapi (one_constructor (sp,i)) ip.mind_consnames))
+		  (Array.mapi (one_constructor ip) packet.mind_consnames))
 	       :: acc )
 	 mib.mind_packets [] 
   in
@@ -669,50 +672,12 @@ and extract_inductive_declaration sp =
 
 (*s ML declaration from a reference. *)
 
-let extract_declaration = function
+let extract_declaration r = match r with
   | ConstRef sp -> 
-      let id = basename sp in (* FIXME *)
       (match extract_constant sp with
-	 | Emltype (mlt, s, fl) -> Dabbrev (id, params_of_sign s @ fl, mlt)
-	 | Emlterm t -> Dglob (id, t)
-	 | Eprop -> Dglob (id, MLprop))
+	 | Emltype (mlt, s, fl) -> Dabbrev (r, params_of_sign s @ fl, mlt)
+	 | Emlterm t -> Dglob (r, t)
+	 | Eprop -> Dglob (r, MLprop))
   | IndRef (sp,_) -> extract_inductive_declaration sp
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false
-
-(*s Registration of vernac commands for extraction. *)
-
-module ToplevelParams = struct
-  let pp_type_global = Printer.pr_global
-  let pp_global = Printer.pr_global
-end
-
-module Pp = Ocaml.Make(ToplevelParams)
-
-let pp_ast a = Pp.pp_ast (uncurrify_ast a)
-let pp_decl d = Pp.pp_decl (uncurrify_decl d)
-
-open Vernacinterp
-
-let _ = 
-  vinterp_add "Extraction"
-    (function 
-       | [VARG_CONSTR ast] ->
-	   (fun () -> 
-	      let c = Astterm.interp_constr Evd.empty (Global.env()) ast in
-	      match kind_of_term c with
-		(* If it is a global reference, then output the declaration *)
-		| IsConst (sp,_) -> 
-		    mSGNL (pp_decl (extract_declaration (ConstRef sp)))
-		| IsMutInd (ind,_) ->
-		    mSGNL (pp_decl (extract_declaration (IndRef ind)))
-		| IsMutConstruct (cs,_) ->
-		    mSGNL (pp_decl (extract_declaration (ConstructRef cs)))
-		(* Otherwise, output the ML type or expression *)
-		| _ ->
-		    match extract_constr (Global.env()) [] c with
-		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (pp_ast a)
-		      | Eprop -> message "prop")
-       | _ -> assert false)
-

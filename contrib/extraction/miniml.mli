@@ -26,7 +26,8 @@ type ml_type =
       
 (*s ML inductive types. *)
 
-type ml_ind = identifier list * identifier * (identifier * ml_type list) list
+type ml_ind = 
+  identifier list * global_reference * (global_reference * ml_type list) list
 
 (*s ML terms. *)
 
@@ -37,7 +38,7 @@ type ml_ast =
   | MLletin of identifier * ml_ast * ml_ast
   | MLglob  of global_reference
   | MLcons  of global_reference * int * ml_ast list
-  | MLcase  of ml_ast * (identifier * identifier list * ml_ast) array
+  | MLcase  of ml_ast * (global_reference * identifier list * ml_ast) array
   | MLfix   of int * (identifier list) * (ml_ast list)
   | MLexn   of identifier
   | MLprop
@@ -49,8 +50,8 @@ type ml_ast =
 
 type ml_decl = 
   | Dtype   of ml_ind list
-  | Dabbrev of identifier * (identifier list) * ml_type
-  | Dglob   of identifier * ml_ast
+  | Dabbrev of global_reference * (identifier list) * ml_type
+  | Dglob   of global_reference * ml_ast
 
 (*s Pretty-printing of MiniML in a given concrete syntax is parameterized
     by a function [pp_global] that pretty-prints global references. 
