@@ -753,7 +753,7 @@ let new_morphism m signature id hook =
  else
   let env = Global.env() in
   let typeofm = Typing.type_of env Evd.empty m in
-  let typ = nf_betaiota typeofm in
+  let typ = clos_norm_flags Closure.betaiotazeta empty_env Evd.empty typeofm in
   let argsrev, output = decompose_prod typ in
   let args_ty = List.rev argsrev in
   let args_ty_len = List.length (args_ty) in
