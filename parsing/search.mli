@@ -41,3 +41,5 @@ val raw_search_rewrite : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
 val raw_search_about : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> global_reference -> unit
+val raw_search_named : (global_reference -> env -> constr -> bool) ->
+  (global_reference -> env -> constr -> unit) -> string list -> unit
