@@ -158,8 +158,7 @@ let rec pp bv = function
   | DOPN (AppL, [|c|]) ->
       pp bv c
   | DOPN (AppL, v) ->
-      [< 'sTR"("; prvect_with_sep (fun () -> [< 'sPC >]) (pp bv) v;
-	 'sTR")" >]
+      [< 'sTR"("; prvect_with_sep (fun () -> [< 'sPC >]) (pp bv) v; 'sTR")" >]
   | DOPN (Const sp, _) ->
       [< 'sTR"Const "; print_id (basename sp) >]
   | DOPN (MutInd (sp,i), _) ->

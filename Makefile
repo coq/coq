@@ -43,23 +43,24 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 
 LIBRARY=library/libobject.cmo library/summary.cmo
 
-PARSING=parsing/lexer.cmo
+PARSING=parsing/lexer.cmo parsing/pcoq.cmo parsing/ast.cmo
 
 OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING)
 
 # Targets
 
-world: minicoq
+world: minicoq coqtop
 
 # coqtop
 
 coqtop: $(OBJS)
-	ocamlmktop -o coqtop -custom $(CLIBS) $(OBJS) $(OSDEPLIBS)
+	ocamlmktop $(INCLUDES) -o coqtop -custom $(CLIBS) $(CAMLP4OBJS) \
+	  $(OBJS) $(OSDEPLIBS)
 
 # minicoq
 
-MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) $(PARSING) \
-	    parsing/g_minicoq.cmo toplevel/minicoq.cmo
+MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) \
+	    parsing/lexer.cmo parsing/g_minicoq.cmo toplevel/minicoq.cmo
 
 minicoq: $(OBJS) $(MINICOQOBJS)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CLIBS) $(CAMLP4OBJS) \
@@ -140,8 +141,8 @@ cleanconfig::
 
 depend:
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
-	for f in */*.g4; do \
-	  $(CAMLP4EXTEND) $(DEPFLAGS) pr_depend.cmo -impl $$f >> .depend; \
-	done
+#	for f in */*.ml4; do \
+#	  camlp4o pa_extend.cmo pr_o.cmo -impl $$f > >> .depend; \
+#	done
 
 include .depend

@@ -176,6 +176,10 @@ let func cs =
   in
   let ts = Stream.from next_token in
   (ts, find_loc loct)
+
+let add_token = function
+  | ("",kw) -> add_keyword kw
+  | _ -> ()
 	 
 let token_text = function
   | ("", t) -> "'" ^ t ^ "'"

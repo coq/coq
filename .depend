@@ -26,13 +26,17 @@ kernel/typing.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
-lib/coqast.cmi: lib/dyn.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/summary.cmi: kernel/names.cmi 
+parsing/ast.cmi: lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
+parsing/coqast.cmi: lib/dyn.cmi 
 parsing/g_minicoq.cmi: /usr/local/lib/camlp4/grammar.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi 
+parsing/lexer.cmi: /usr/local/lib/camlp4/token.cmi 
+parsing/pcoq.cmi: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
+    /usr/local/lib/camlp4/grammar.cmi /usr/local/lib/camlp4/token.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
@@ -129,8 +133,6 @@ kernel/typing.cmx: kernel/constant.cmx kernel/environ.cmx kernel/generic.cmx \
     kernel/typing.cmi 
 kernel/univ.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi kernel/univ.cmi 
 kernel/univ.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx kernel/univ.cmi 
-lib/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi lib/coqast.cmi 
-lib/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx lib/coqast.cmi 
 lib/dyn.cmo: lib/util.cmi lib/dyn.cmi 
 lib/dyn.cmx: lib/util.cmx lib/dyn.cmi 
 lib/hashcons.cmo: lib/hashcons.cmi 
@@ -149,6 +151,12 @@ library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
     library/summary.cmi 
 library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
     library/summary.cmi 
+parsing/ast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/pcoq.cmi lib/pp.cmi \
+    /usr/local/lib/camlp4/stdpp.cmi parsing/ast.cmi 
+parsing/ast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/pcoq.cmi lib/pp.cmx \
+    /usr/local/lib/camlp4/stdpp.cmi parsing/ast.cmi 
+parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi 
+parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/coqast.cmi 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
 parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
 toplevel/minicoq.cmo: kernel/constant.cmi parsing/g_minicoq.cmi \
@@ -161,5 +169,3 @@ toplevel/minicoq.cmx: kernel/constant.cmx parsing/g_minicoq.cmi \
     kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
     /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/typing.cmx \
     lib/util.cmx 
-parsing/g_minicoq.cmo: parsing/g_minicoq.cmi 
-parsing/g_minicoq.cmx: parsing/g_minicoq.cmi 
