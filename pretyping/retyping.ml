@@ -90,9 +90,13 @@ let typeur sigma metamap =
     | Sort (Prop c) -> type_0
     | Sort (Type u) -> Type (Univ.super u)
     | Prod (name,t,c2) ->
-        (match (sort_of (push_rel (name,None,t) env) c2) with
-	  | Prop _ as s -> s
-	  | Type u2 as s -> s (*Type Univ.dummy_univ*))
+        (match (sort_of env t, sort_of (push_rel (name,None,t) env) c2) with
+	  | _, (Prop Null as s) -> s
+          | Prop _, (Prop Pos as s) -> s
+          | Type _, (Prop Pos as s) when
+              Environ.engagement env = Some ImpredicativeSet -> s
+          | Type _ as s, Prop Pos -> s
+	  | _, (Type u2 as s) -> s (*Type Univ.dummy_univ*))
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ ->
         anomaly "sort_of: Not a type (1)"
