@@ -606,7 +606,7 @@ let is_head c t =
     | App (f,_) -> f = c
     | _ -> false
 
-let contextually byheadalso (locs,c) f env sigma t =
+let contextually byhead (locs,c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
   let check = ref true in
@@ -617,16 +617,17 @@ let contextually byheadalso (locs,c) f env sigma t =
    let rec traverse (env,c as envc) t =
     if locs <> [] & (not except) & (!pos > maxocc) then t
     else
-    if eq_constr c t or (byheadalso & is_head c t) then
+    if (not byhead & eq_constr c t) or (byhead & is_head c t) then
       let ok = 
 	if except then not (List.mem (- !pos) locs)
 	else (locs = [] or List.mem !pos locs) in
       incr pos;
       if ok then
 	f env sigma t
-      else if byheadalso then
+      else if byhead then
 	(* find other occurrences of c in t; TODO: ensure left-to-right *)
-	map_constr (traverse envc) t
+        let (f,l) = destApplication t in
+	mkApp (f, array_map_left (traverse envc) l)
       else
 	t
     else
