@@ -33,7 +33,7 @@ Chapter Well_founded.
  Defined.
 
   (* the informative elimination :
-     let Acc_rec F = let rec wf x = F x wf in wf *)
+     [let Acc_rec F = let rec wf x = F x wf in wf] *)
 
  Section AccRec.
   Variable P : A -> Set.
@@ -76,7 +76,7 @@ Fixpoint Fix_F [x:A;r:(Acc x)] : (P x) :=
 
 Definition fix := [x:A](Fix_F x (Rwf x)).
 
-(* Proof that well_founded_induction satisfies the fixpoint equation. 
+(* Proof that [well_founded_induction] satisfies the fixpoint equation. 
    It requires an extra property of the functional *)
 
 Hypothesis F_ext : 

@@ -209,7 +209,8 @@ Section AdAlloc.
     Unfold in_dom. Intro. Rewrite (ad_alloc_opt_allocates_1 m). Reflexivity.
   Qed.
 
-  (* Moreover, this is optimal: all addresses below (ad_alloc_opt m) are in dom m: *)
+  (* Moreover, this is optimal: all addresses below [(ad_alloc_opt m)]
+     are in [dom m]: *)
 
   Lemma convert_xH : (convert xH)=(1).
   Proof.

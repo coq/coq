@@ -38,17 +38,21 @@ Theorem  well_founded_gtof : (well_founded A gtof).
 Proof well_founded_ltof.
 
 (* It is possible to directly prove the induction principle going
-   back to primitive recursion on natural numbers (induction_ltof1)
+   back to primitive recursion on natural numbers ([induction_ltof1])
    or to use the previous lemmas to extract a program with a fixpoint
-   (induction_ltof2) 
-the ML-like program for induction_ltof1 is :
+   ([induction_ltof2]) 
+the ML-like program for [induction_ltof1] is :
+\begin{verbatim}
    let induction_ltof1 F a = indrec ((f a)+1) a 
    where rec indrec = 
         function 0    -> (function a -> error)
                |(S m) -> (function a -> (F a (function y -> indrec y m)));;
-the ML-like program for induction_ltof2 is :
+\end{verbatim}
+the ML-like program for [induction_ltof2] is :
+\begin{verbatim}
    let induction_ltof2 F a = indrec a
    where rec indrec a = F a indrec;;
+\end{verbatim}
 *)
 
 Theorem induction_ltof1 : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).

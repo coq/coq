@@ -10,9 +10,9 @@
 
 (* $Id$ *)
 
-(*******************************************)
-(* Functional arrays, for use in Programs. *)
-(*******************************************)
+(**********************************************)
+(* Functional arrays, for use in Correctness. *)
+(**********************************************)
 
 (* This is an axiomatization of arrays.
  *
@@ -77,4 +77,4 @@ Grammar constr constr0 :=
 
 Syntax constr level 0 :
   array_access
-    [ << (APPLIST access ($VAR $t) $c) >> ] -> [ $t "#[" $c:L "]" ].
+    [ << (access ($VAR $t) $c) >> ] -> [ "#" $t "[" $c:L "]" ].

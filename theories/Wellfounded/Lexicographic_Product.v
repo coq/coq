@@ -91,7 +91,7 @@ Section Wf_Symmetric_Product.
 
   Syntactic Definition Symprod := (symprod A B leA leB).
 
-(*
+(*i
   Local sig_prod:=
          [x:A*B]<{_:A&B}>Case x of [a:A][b:B](existS A [_:A]B a b) end.
 
@@ -108,7 +108,7 @@ Proof.
 
  (Apply right_lex;Auto with sets).
 Save.
-*)
+i*)
 
   Lemma Acc_symprod: (x:A)(Acc A leA x)->(y:B)(Acc B leB y)
                         ->(Acc (A*B) Symprod (x,y)).

@@ -181,7 +181,7 @@ Section MapDefs.
     Intros. Case b; Trivial.
   Qed.
 
-  (*
+  (*i
   Lemma MapGet_M2_bit_0_1' : (m,m',m'',m''':Map)
       (a:ad) (MapGet (if (ad_bit_0 a) then (M2 m m') else (M2 m'' m''')) a)=
              (MapGet (if (ad_bit_0 a) then m' else m'') (ad_div_2 a)).
@@ -192,7 +192,7 @@ Section MapDefs.
     Intros. Rewrite H0. Apply MapGet_M2_bit_0_1. Assumption.
     Case (ad_bit_0 a); Auto.
   Qed.
-  *)
+  i*)
 
   Lemma MapGet_if_same : (m:Map) (b:bool) (a:ad) (MapGet (if b then m else m) a)=(MapGet m a).
   Proof.

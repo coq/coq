@@ -94,12 +94,12 @@ Syntactic Definition ProjS2 := (projS2 ? ?).
 
 Section Extended_booleans.
 
-  (* Syntax sumbool "{_}+{_}". *)
+  (* Syntax sumbool ["{_}+{_}"]. *)
   Inductive sumbool [A,B:Prop] : Set
       := left  : A -> (sumbool A B) 
        | right : B -> (sumbool A B).
 
-  (* Syntax sumor "_+{_}". *)
+  (* Syntax sumor ["_+{_}"]. *)
   Inductive sumor [A:Set;B:Prop] : Set
       := inleft  : A -> (sumor A B) 
        | inright : B -> (sumor A B).
@@ -210,9 +210,9 @@ Proof.
   Intros A B C F AB; Apply F; Elim AB; Auto.
 Qed.
 
-(** is now a theorem
+(*i is now a theorem
 Axiom eq_rec : (A:Set)(a:A)(P:A->Set)(P a)->(b:A) a=b -> (P b).
-**)
+i*)
 
 Hints Resolve left right inleft inright : core v62.
 

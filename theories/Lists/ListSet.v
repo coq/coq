@@ -81,12 +81,12 @@ Section first_definitions.
 		      else (set_add a1 (set_diff x1 y))
     end.
    
-  (** 
+  (*i
   Inductive set_In : A -> set -> Prop :=
     set_In_singl : (a:A)(x:set)(set_In a (cons a (nil A))) 
   | set_In_add : (a,b:A)(x:set)(set_In a x)->(set_In a (set_add b x))
   .
-  **)
+  i*)
 
   Definition set_In : A -> set -> Prop := (In 1!A).
 
@@ -324,7 +324,7 @@ Section other_definitions.
 
   Definition set_prod : (set A) -> (set B) -> (set A*B) := (list_prod 1!A 2!B).
 
-  (* B^A, set of applications from A to B *)
+  (* [B^A], set of applications from [A] to [B] *)
   Definition set_power : (set A) -> (set B) -> (set (set A*B)) := 
     (list_power 1!A 2!B).
 

@@ -137,7 +137,7 @@ Qed.
 Hints Resolve seq_right.
 
 
-(* All the proofs that follow duplicate Multiset_of_A *)
+(* All the proofs that follow duplicate [Multiset_of_A] *)
 
 (* Here we should make uniset an abstract datatype, by hiding Charac,
    union, charac; all further properties are proved abstractly *)

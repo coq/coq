@@ -8,14 +8,14 @@
 
 (* $Id$ *)
 
-(* We prove that there is only one proof of x=x, i.e (refl_equal ? x).
-   This holds if the equality upon the set of x is decidable.
+(* We prove that there is only one proof of [x=x], i.e [(refl_equal ? x)].
+   This holds if the equality upon the set of [x] is decidable.
    A corollary of this theorem is the equality of the right projections
    of two equal dependent pairs.
 
-   Author:   Thomas Kleymann <tms@dcs.ed.ac.uk> in Lego
+   Author:   Thomas Kleymann \verb!<tms@dcs.ed.ac.uk>! in Lego
              adapted to Coq by B. Barras
-   Credit:   Proofs up to K_dec follows an outline by Michael Hedberg
+   Credit:   Proofs up to [K_dec] follows an outline by Michael Hedberg
 *)
 
 
@@ -26,7 +26,7 @@ Scheme or_indd := Induction for or Sort Prop.
 
 Implicit Arguments On.
 
-  (* Bijection between eq and eqT *)
+  (* Bijection between [eq] and [eqT] *)
   Definition eq2eqT: (A:Set)(x,y:A)x=y->x==y :=
     [A,x,_,eqxy]<[y:A]x==y>Cases eqxy of refl_equal => (refl_eqT ? x) end.
 

@@ -12,6 +12,7 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
+open Options
 open Names
 open Vernacentries
 open Reduction
@@ -483,12 +484,12 @@ open Declare
 
 let is_assumed global ids =
   if List.length ids = 1 then
-    mSGNL [< 'sTR(if global then "A global variable " else ""); 
-	     pr_id (List.hd ids); 'sTR" is assumed" >]
+    mSGNL [< 'sTR (if global then "A global variable " else ""); 
+	     pr_id (List.hd ids); 'sTR " is assumed" >]
   else
-    mSGNL [< 'sTR(if global then "Some global variables " else "");
-	     (prlist_with_sep (fun () -> [< 'sTR", " >]) pr_id ids);
-	     'sTR" are assumed" >]
+    mSGNL [< 'sTR (if global then "Some global variables " else "");
+	     prlist_with_sep (fun () -> [< 'sTR ", " >]) pr_id ids;
+	     'sTR " are assumed" >]
 
 let add = vinterp_add
 
@@ -507,44 +508,47 @@ let _ = add "CORRECTNESS"
 	   fun () -> Ptactic.correctness s (out_prog d) (Some tac)
        | _ -> assert false)
 
-let _ = add "SHOWPROGRAMS"
-     (function
-	 [] -> fun () ->
-	   fold_all 
-	     (fun (id,v) _ -> 
-		mSGNL [< 'sTR(string_of_id id); 'sTR" : "; 
-			 hOV 2 (match v with TypeV v -> pp_type_v v
-				           | Set -> [< 'sTR"Set" >]);
-			 'fNL >])
-	     Penv.empty ()
+let _ = 
+  add "SHOWPROGRAMS"
+    (function
+       | [] -> 
+	   (fun () ->
+	      fold_all 
+		(fun (id,v) _ -> 
+		   mSGNL [< pr_id id; 'sTR " : "; 
+			    hOV 2 (match v with TypeV v -> pp_type_v v
+				     | Set -> [< 'sTR "Set" >]);
+			    'fNL >])
+		Penv.empty ())
        | _ -> assert false)
 
-let _ = add "PROGVARIABLE"
-     (function
-	 [ VARG_VARGLIST l; VARG_DYN d ] ->
-	   fun () ->
-	     let ids = List.map (function VARG_IDENTIFIER id -> id 
-				   | _ -> assert false) l in
-	     List.iter
-	       (fun id -> if Penv.is_global id then
-		  Util.errorlabstrm "PROGVARIABLE"
-		    [< 'sTR"Clash with previous constant "; pr_id id >])
-	       ids;
-	     let v = Pdb.db_type_v [] (out_typev d) in
-	     let env = empty in
-	     let ren = update empty_ren "" [] in
-	     let v = Ptyping.cic_type_v env ren v in
-	     if not (is_mutable v) then begin
-	       let c = trad_ml_type_v ren env v in
-	       List.iter 
-		 (fun id -> ignore (Declare.declare_parameter id c)) ids;
-	       is_assumed false ids
-	     end;
-	     if not (is_pure v) then begin
-	       List.iter (fun id -> ignore (Penv.add_global id v None)) ids;
-	       is_assumed true ids
-	     end
-  
+let id_of_varg = function VARG_IDENTIFIER id -> id | _ -> assert false
+    
+let _ = 
+  add "PROGVARIABLE"
+    (function
+       | [ VARG_VARGLIST l; VARG_DYN d ] ->
+	   (fun () ->
+	      let ids = List.map id_of_varg l in
+	      List.iter
+		(fun id -> if Penv.is_global id then
+		   Util.errorlabstrm "PROGVARIABLE"
+		     [< 'sTR"Clash with previous constant "; pr_id id >])
+		ids;
+	      let v = Pdb.db_type_v [] (out_typev d) in
+	      let env = empty in
+	      let ren = update empty_ren "" [] in
+	      let v = Ptyping.cic_type_v env ren v in
+	      if not (is_mutable v) then begin
+		let c = trad_ml_type_v ren env v in
+		List.iter 
+		  (fun id -> ignore (Declare.declare_parameter id c)) ids;
+		if_verbose (is_assumed false) ids
+	      end;
+	      if not (is_pure v) then begin
+		List.iter (fun id -> ignore (Penv.add_global id v None)) ids;
+		if_verbose (is_assumed true) ids
+	      end)
        | _ -> assert false)
 
 open Vernac

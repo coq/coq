@@ -26,9 +26,11 @@ Fixpoint fact [n:nat]:nat:=
   end.
 
 (*********)
-(*Lemma mult_neq_O:(n,m:nat)~n=O->~m=O->~(mult n m)=O.
+(*i
+Lemma mult_neq_O:(n,m:nat)~n=O->~m=O->~(mult n m)=O.
 Double Induction 1 2;Simpl;Auto.
-Save.*)
+Save.
+i*)
  
 (*********)
 Lemma fact_neq_0:(n:nat)~(fact n)=O.

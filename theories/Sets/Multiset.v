@@ -78,7 +78,7 @@ Unfold meq; Unfold munion; Simpl; Auto.
 Qed.
 
 
-Require Plus. (* comm & ass of plus *)
+Require Plus. (* comm. and ass. of plus *)
 
 Lemma munion_comm : (x,y:multiset)(meq (munion x y) (munion y x)).
 Proof.

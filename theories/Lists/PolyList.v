@@ -407,7 +407,7 @@ Lemma nth_S_cons :
 Simpl; Auto.
 Save.
 
-(***** 
+(*i
 Lemma nth_In :
   (n:nat)(l:list)(d:A)(lt n (length l))->(In (nth n l d) l).
 
@@ -421,7 +421,7 @@ Unfold lt; Induction l;
 [ Simpl; Intros; Inversion H
 | Simpl; Intros;
 ].
-******)
+i*)
 
 
 (*********************************************)
@@ -575,8 +575,8 @@ Induction l;
 ].
 Save.
 
-(* (list_power x y) is y^x, or the set of sequences of elts of y
-  indexed by elts of x, sorted in lexicographic order. *)
+(* [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
+  indexed by elts of [x], sorted in lexicographic order. *)
 
 Fixpoint list_power [A,B:Set; l:(list A)] : (list B)->(list (list A*B)) :=
   [l']Cases l of
@@ -606,7 +606,7 @@ Fixpoint fold_right [l:(list B)] : A :=
   end.
 End Fold_Right_Recursor.
 
-(*
+(*i
 Theorem fold_symmetric :
   (A:Set)(f:A->A->A)
    ((x,y,z:A)(f x (f y z))=(f (f x y) z))
@@ -625,7 +625,7 @@ Do 2 Rewrite H.
 Rewrite (H0 a1 a3).
 Reflexivity.
 Save.
-*)
+i*)
 
 End Functions_on_lists.
 

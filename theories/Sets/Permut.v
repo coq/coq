@@ -29,7 +29,7 @@ Hypothesis cong_right : (x,y,z:U)(cong x y)->(cong (op z x) (op z y)).
 Hypothesis cong_trans : (x,y,z:U)(cong x y)->(cong y z)->(cong x z).
 Hypothesis cong_sym : (x,y:U)(cong x y)->(cong y x).
 
-(* Remark. we do not need: Hypothesis cong_refl : (x:U)(cong x x). *)
+(* Remark. we do not need: [Hypothesis cong_refl : (x:U)(cong x x)]. *)
 
 Lemma cong_congr :
  (x,y,z,t:U)(cong x y)->(cong z t)->(cong (op x z) (op y t)).

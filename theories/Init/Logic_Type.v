@@ -99,11 +99,13 @@ Definition eqT_ind_r : (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)(eqT ? y x)->(P y).
 Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
 
-(*** not allowed because of dependencies 
+(* not allowed because of dependencies:
+\begin{verbatim}
 Definition eqT_rec_r : (A:Type)(x:A)(P:A->Set)(P x)->(y:A)y==x -> (P y).
 Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
-****)
+\end{verbatim}
+*)
 
 (* Some datatypes at the [Type] level *)
 

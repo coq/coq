@@ -131,7 +131,7 @@ Inductive le [n:nat] : nat -> Prop
      | le_S : (m:nat)(le n m)->(le n (S m)).
 
 Hint constr_le : core v62 := Constructors le.
-(* equivalent to : "Hints Resolve le_n le_S : core v62." *)
+(*i equivalent to : "Hints Resolve le_n le_S : core v62." i*)
 
 Definition lt := [n,m:nat](le (S n) m).
 Hints Unfold lt : core v62.
