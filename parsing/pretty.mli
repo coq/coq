@@ -32,8 +32,8 @@ val print_type : env -> unsafe_judgment -> std_ppcmds
 val print_eval :
   'a reduction_function -> env -> unsafe_judgment -> std_ppcmds
 val implicit_args_msg : 
-  section_path -> mutual_inductive_packet array -> std_ppcmds
-val print_mutual : section_path -> mutual_inductive_body -> std_ppcmds
+  section_path -> Constant.mutual_inductive_packet array -> std_ppcmds
+val print_mutual : section_path -> Constant.mutual_inductive_body -> std_ppcmds
 val print_name : identifier -> std_ppcmds
 val print_opaque_name : identifier -> std_ppcmds
 val print_local_context : unit -> std_ppcmds

@@ -102,24 +102,23 @@ let ids_of_env = Sign.ids_of_env
 (* Tools for printing of Cases                                              *)
 
 let encode_inductive id =
-  let (refsp,tyi as indsp) =
+  let (indsp,_ as ind) =
     try 
-      let sp = Nametab.sp_of_id CCI id in
-      match global_operator sp id with
-	| MutInd ind_sp,_ -> ind_sp
+      match kind_of_term (global_reference CCI id) with
+	| IsMutInd (indsp,args) -> (indsp,args)
 	| _ -> errorlabstrm "indsp_of_id" 
 	    [< 'sTR ((string_of_id id)^" is not an inductive type") >]
     with Not_found -> 
       error ("Cannot find reference "^(string_of_id id))
   in
-  let mip = mind_nth_type_packet (Global.lookup_mind refsp) tyi in
-  let constr_lengths = Array.map List.length mip.mind_listrec in
+  let mis = Global.lookup_mind_specif ind in
+  let constr_lengths = Array.map List.length (mis_recarg mis) in
   (indsp,constr_lengths)
 
 let sp_of_spi (refsp,tyi) =
-  let mip = mind_nth_type_packet (Global.lookup_mind refsp) tyi in
+  let mip = Constant.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
   let (pa,_,k) = repr_path refsp in 
-  make_path pa mip.mind_typename k
+  make_path pa mip.Constant.mind_typename k
 
 (*
   let (_,mip) = mind_specif_of_mind_light spi in

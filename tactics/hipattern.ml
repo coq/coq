@@ -7,6 +7,7 @@ open Names
 open Generic
 open Term
 open Reduction
+open Inductive
 open Evd
 open Environ
 open Proof_trees
@@ -133,10 +134,9 @@ let match_with_conjunction t =
   let (hdapp,args) = decomp_app t in 
   match kind_of_term hdapp with
     | IsMutInd ind -> 
-        let nconstr = Global.mind_nconstr ind in  
-	if (nconstr = 1) && 
-          (not (Global.mind_is_recursive ind)) &&
-          (nb_prod (Global.mind_arity ind)) = (Global.mind_nparams ind)
+	let mispec = Global.lookup_mind_specif ind in
+	if (mis_nconstr mispec = 1)
+	  && (not (mis_is_recursive mispec)) && (mis_nrealargs mispec = 0)
         then 
 	  Some (hdapp,args)
         else 
@@ -152,12 +152,12 @@ let match_with_disjunction t =
   let (hdapp,args) = decomp_app t in 
   match kind_of_term hdapp with
     | IsMutInd ind  ->
-        let constr_types = 
-	  Global.mind_lc_without_abstractions ind in
-        let only_one_arg c = 
-	  ((nb_prod c) - (Global.mind_nparams ind)) = 1 in 
+	let mispec = Global.lookup_mind_specif ind in
+        let constr_types = mis_lc_without_abstractions mispec in
+        let only_one_arg c =
+	  ((nb_prod c) - (mis_nparams mispec)) = 1 in 
 	if (array_for_all only_one_arg constr_types) &&
-          (not (Global.mind_is_recursive ind))
+          (not (mis_is_recursive mispec))
         then 
 	  Some (hdapp,args)
         else 

@@ -55,17 +55,6 @@ let pf_get_hyp gls id =
 
 let pf_ctxt gls      = get_ctxt (sig_it gls)
 
-let pf_type_of gls c =
-  type_of (sig_it gls).evar_env (ts_it (sig_sig gls)) c
-
-let hnf_type_of gls = 
-  compose 
-    (whd_betadeltaiota (sig_it gls).evar_env (project gls)) 
-    (pf_type_of gls)
-
-let pf_check_type gls c1 c2 =
-  let casted = mkCast c1 c2 in pf_type_of gls casted
-
 let pf_interp_constr gls c =
   let evc = project gls in 
   Astterm.interp_constr evc (sig_it gls).evar_env c
@@ -95,6 +84,7 @@ let pf_nf                        = pf_reduce nf
 let pf_nf_betaiota               = pf_reduce nf_betaiota
 let pf_compute                   = pf_reduce compute
 let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
+let pf_type_of                   = pf_reduce type_of
 
 let pf_conv_x                   = pf_reduce is_conv
 let pf_conv_x_leq               = pf_reduce is_conv_leq
@@ -102,6 +92,11 @@ let pf_const_value              = pf_reduce (fun env _ -> constant_value env)
 let pf_one_step_reduce          = pf_reduce one_step_reduce
 let pf_reduce_to_mind           = pf_reduce reduce_to_mind
 let pf_reduce_to_ind            = pf_reduce reduce_to_ind
+
+let hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_type_of gls)
+
+let pf_check_type gls c1 c2 =
+  let casted = mkCast c1 c2 in pf_type_of gls casted
 
 (************************************)
 (* Tactics handling a list of goals *)

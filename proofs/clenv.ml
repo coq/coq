@@ -943,41 +943,34 @@ let clenv_fo_resolver clenv gls =
 let clenv_typed_fo_resolver clenv gls =
   clenv_typed_unify (clenv_instance_template_type clenv) (pf_concl gls) clenv
 
-let args_typ gls = 
-  let rec decrec l c = match pf_whd_betadeltaiota gls c with
-    | DOP2(Prod,a,DLAM(n,b)) -> 
-	decrec ((Environ.named_hd Environ.empty_env a n,a)::l) b
-    | x -> l
-  in 
-  decrec []
-
-(* if lname_type typ is [xn,An;..;x1,A1] and l is a list of terms,
+(* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
 
-let abstract_scheme c l lname_typ =
+let abstract_scheme env c l lname_typ =
   List.fold_left2 
     (fun t (locc,a) (na,ta) ->
        if occur_meta ta then error "cannot find a type for the generalisation"
-       else if occur_meta a then DOP2(Lambda,ta,DLAM(na,t))
-       else DOP2(Lambda,ta,DLAM(na,subst_term_occ locc a t)))
-    c 
+       else if occur_meta a then lambda_name env (na,ta,t)
+       else lambda_name env (na,ta,subst_term_occ locc a t))
+    c
     (List.rev l)
     lname_typ
-    
-let abstract_list_all gls typ c l =
-  let p = 
-    abstract_scheme c (List.map (function a -> [],a) l) (args_typ gls typ) in 
+
+let abstract_list_all env sigma typ c l =
+  let lname_typ,_ = splay_prod env sigma typ in
+  let p = abstract_scheme env c (List.map (function a -> [],a) l) lname_typ in 
   try 
-    if pf_conv_x gls (pf_type_of gls p) typ then p else 
-      error "abstract_list_all"
+    if is_conv env sigma (Typing.type_of env sigma p) typ then p
+    else error "abstract_list_all"
   with UserError _ ->
-    raise (RefinerError (CannotGeneralize (pf_hyps gls,typ)))
+    raise (RefinerError (CannotGeneralize typ))
 
 let secondOrderAbstraction allow_K gl p oplist clause =
   let (clause',cllist) = 
     constrain_clenv_using_subterm_list allow_K clause oplist (pf_concl gl) in
   let typp = clenv_instance_type clause' p in 
-  clenv_unify (DOP0(Meta p)) (abstract_list_all gl typp (pf_concl gl) cllist) 
+  clenv_unify (DOP0(Meta p))
+    (abstract_list_all (pf_env gl) (project gl) typp (pf_concl gl) cllist) 
     clause'
 
 let clenv_so_resolver allow_K clause gl =

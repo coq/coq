@@ -94,15 +94,11 @@ let contract_cofix_use_function f cofix =
   	sAPPViList bodynum (array_last bodyvect) lbodies
     | _ -> assert false
 
-let mind_nparams env i =
-  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
-
 let reduce_mind_case_use_function env f mia =
   match mia.mconstr with 
     | DOPN(MutConstruct(ind_sp,i as cstr_sp),args) ->
-	let ind = inductive_of_constructor (cstr_sp,args) in
-	let nparams = mind_nparams env ind in
-	let real_cargs = snd(list_chop nparams mia.mcargs) in
+	let ncargs = (fst mia.mci).(i-1) in
+	let real_cargs = list_lastn ncargs mia.mcargs in
 	applist (mia.mlf.(i-1),real_cargs)
     | DOPN(CoFix _,_) as cofix ->
 	let cofix_def = contract_cofix_use_function f cofix in

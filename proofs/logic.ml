@@ -10,6 +10,7 @@ open Term
 open Sign
 open Environ
 open Reduction
+open Inductive
 open Typing
 open Proof_trees
 open Proof_type
@@ -23,7 +24,7 @@ type refiner_error =
   | OccurMeta of constr
   | CannotApply of constr * constr
   | CannotUnify of constr * constr
-  | CannotGeneralize of typed_type signature * constr
+  | CannotGeneralize of constr
   | NotWellTyped of constr
   | BadTacticArgs of string * tactic_arg list
 

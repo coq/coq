@@ -78,10 +78,6 @@ val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
 val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
-(* [abstract_list_all sig c t l]                           *)
-(* abstracts the terms in l over c to get a term of type t *)
-val abstract_list_all : goal sigma -> constr -> constr -> constr list -> constr
-
 (* Exported for program.ml only *)
 val clenv_add_sign : 
   (identifier * typed_type) -> wc clausenv -> wc clausenv
@@ -94,4 +90,11 @@ val constrain_clenv_using_subterm_list :
 val clenv_typed_unify : constr -> constr -> wc clausenv -> wc clausenv
 
 val pr_clenv : 'a clausenv -> Pp.std_ppcmds
+
+(*i This should be in another module i*)
+
+(* [abstract_list_all env sigma t c l]                     *)
+(* abstracts the terms in l over c to get a term of type t *)
+val abstract_list_all :
+  Environ.env -> 'a Evd.evar_map -> constr -> constr -> constr list -> constr
 

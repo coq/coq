@@ -59,58 +59,40 @@ and whd_betaxtra x = applist(whrec x [])
 let lift_context n l = 
   let k = List.length l in 
   list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
-let prod_create env (a,b) = 
-  mkProd (named_hd env a Anonymous) a b
-let lambda_name env (n,a,b) = 
-  mkLambda (named_hd env a n) a b
-let lambda_create env (a,b) = 
-  mkLambda (named_hd env a Anonymous) a b
-let it_prod_name env = 
-  List.fold_left (fun c (n,t) -> prod_name env (n,t,c)) 
-let it_lambda_name env = 
-  List.fold_left (fun c (n,t) -> lambda_name env (n,t,c))
 
-let transform_rec loc env sigma cl (ct,pt) = 
-  let (mind,largs as appmind) = find_minductype env sigma ct in
-  let p = cl.(0)
-  and c = cl.(1)
-  and lf = Array.sub cl 2 ((Array.length cl) - 2) in
-  let mispec = lookup_mind_specif mind env in
-  let mI = mkMutInd mind in
+let transform_rec loc env sigma (p,c,lf) (indt,pt) = 
+  let (indf,realargs) = dest_ind_type indt in
+  let (mispec,params) = dest_ind_family indf in
+  let mI = mkMutInd (mis_inductive mispec) in
   let recargs = mis_recarg mispec in
-  let expn = Array.length recargs in
-  if Array.length lf <> expn then 
-    error_number_branches_loc loc CCI env c ct expn;
-  if is_recursive [mispec.mis_tyi] recargs then
-    let dep = find_case_dep_nparams env sigma (c,p) appmind pt in 
-    let ntypes = mis_ntypes mispec (* was mis_nconstr !?! *)
-    and tyi = mispec.mis_tyi 
-    and nparams = mis_nparams mispec in
-    let depFvec = Array.create ntypes (None : (bool * constr) option) in 
-    let _ = Array.set depFvec mispec.mis_tyi (Some(dep,Rel 1)) in 
-    let (pargs,realargs) = list_chop nparams largs in
-    let vargs = Array.of_list pargs in
-    let (_,typeconstrvec) = mis_type_mconstructs mispec in
+  let tyi = mis_index mispec in
+  if Array.length lf <> mis_nconstr mispec then 
+    error_number_branches_loc loc CCI env c
+      (mkAppliedInd indt) (mis_nconstr mispec);
+  if mis_is_recursive_subset [tyi] mispec then
+    let dep = find_case_dep_nparams env sigma (c,p) indf pt in 
+    let init_depFvec i = if i = tyi then Some(dep,Rel 1) else None in
+    let depFvec = Array.init (mis_ntypes mispec) init_depFvec in
+    let constrs = get_constructors indf in
     (* build now the fixpoint *)
-    let realar =
-      hnf_prod_appvect env sigma "make_branch" (mis_arity mispec) vargs in
-    let lnames,_ = splay_prod env sigma realar in 
+    let lnames,_ = get_arity env sigma indf in
     let nar = List.length lnames in
+    let nparams = mis_nparams mispec in
     let ci = make_default_case_info mispec in
     let branches = 
       array_map3
 	(fun f t reca -> 
 	   whd_betaxtra
              (Indrec.make_rec_branch_arg env sigma
-                ((Array.map (lift (nar+2)) vargs),depFvec,nar+1)
+                (nparams,depFvec,nar+1)
                 f t reca))
-        (Array.map (lift (nar+2)) lf) typeconstrvec recargs 
+        (Array.map (lift (nar+2)) lf) constrs recargs 
     in 
     let deffix = 
       it_lambda_name env
 	(lambda_create env
-	   (appvect (mI,Array.append (Array.map (lift (nar+1)) vargs)
-                       (rel_vect 0 nar)),
+	   (applist (mI,List.append (List.map (lift (nar+1)) params)
+                       (rel_list 0 nar)),
             mkMutCaseA ci (lift (nar+2) p) (Rel 1) branches))
         (lift_context 1 lnames) 
     in
@@ -120,9 +102,9 @@ let transform_rec loc env sigma cl (ct,pt) =
       let typPfix = 
 	it_prod_name env
 	  (prod_create env
-	     (appvect (mI,(Array.append 
-			     (Array.map (lift nar) vargs)
-			     (rel_vect 0 nar))),
+	     (applist (mI,(List.append 
+			     (List.map (lift nar) params)
+			     (rel_list 0 nar))),
 	      (if dep then 
 		 applist (whd_beta_stack env sigma 
 			    (lift (nar+1) p) (rel_list 0 (nar+1)))
@@ -195,13 +177,10 @@ let wrong_number_of_cases_message loc env isevars (c,ct) expn =
   let c = nf_ise1 !isevars c and ct = nf_ise1 !isevars ct in
   error_number_branches_loc loc CCI env c ct expn
 
-let check_branches_message loc env isevars (c,ct) (explft,lft) = 
-  let n = Array.length explft and expn = Array.length lft in
-  if n<>expn then wrong_number_of_cases_message loc env isevars (c,ct) expn;
-  for i = 0 to n-1 do
+let check_branches_message loc env isevars c (explft,lft) = 
+  for i = 0 to Array.length explft - 1 do
     if not (the_conv_x_leq env isevars lft.(i) explft.(i)) then 
       let c = nf_ise1 !isevars c
-      and ct = nf_ise1 !isevars ct 
       and lfi = nf_betaiota env !isevars (nf_ise1 !isevars lft.(i)) in
       error_ill_formed_branch_loc loc CCI env c i lfi 
 	(nf_betaiota env !isevars explft.(i))
@@ -397,7 +376,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | ROldCase (loc,isrec,po,c,lf) ->
   let cj = pretype empty_tycon env isevars lvar lmeta c in
-  let {mind=mind;params=params;realargs=realargs} =
+  let (IndType (indf,realargs) as indt) = 
     try find_inductive env !isevars cj.uj_type
     with Induc -> error_case_not_inductive CCI env
 	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars cj.uj_type) in
@@ -416,14 +395,13 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	    then error_cant_find_case_type_loc loc env cj.uj_val
 	    else
 	      try
-		let expti =
-		  Cases.branch_scheme env isevars isrec i (mind,params) in
+		let expti = Cases.branch_scheme env isevars isrec i indf in
 		let fj =
                   pretype (mk_tycon expti) env isevars lvar lmeta lf.(i-1) in
 		let efjt = nf_ise1 !isevars fj.uj_type in 
 		let pred = 
-		  Indrec.pred_case_ml_onebranch env !isevars isrec 
-		    (cj.uj_val,(mind,params,realargs)) (i,fj.uj_val,efjt) in
+		  Indrec.pred_case_ml_onebranch env !isevars isrec indt
+		    (i,fj.uj_val,efjt) in
 		if has_ise !isevars pred then findtype (i+1)
 		else 
 		  let pty = Retyping.get_type_of env !isevars pred in
@@ -432,13 +410,14 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	      with UserError _ -> findtype (i+1) in
 	    findtype 1 in
 
-  let evalct = nf_ise1 !isevars cj.uj_type
+  let evalct = find_inductive env !isevars cj.uj_type (*Pour normaliser evars*)
   and evalPt = nf_ise1 !isevars pj.uj_type in
 
   let (bty,rsty) =
     Indrec.type_rec_branches isrec env !isevars evalct evalPt pj.uj_val cj.uj_val in
   if Array.length bty <> Array.length lf then
-    wrong_number_of_cases_message loc env isevars (cj.uj_val,evalct)
+    wrong_number_of_cases_message loc env isevars 
+      (cj.uj_val,nf_ise1 !isevars cj.uj_type)
       (Array.length bty)
   else
     let lfj =
@@ -447,14 +426,14 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
           lf in
     let lfv = (Array.map (fun j -> j.uj_val) lfj) in
     let lft = (Array.map (fun j -> j.uj_type) lfj) in
-    check_branches_message loc env isevars (cj.uj_val,evalct) (bty,lft);
+    check_branches_message loc env isevars cj.uj_val (bty,lft);
     let v =
       if isrec
       then 
-	let rEC = Array.append [|pj.uj_val; cj.uj_val|] lfv in
-	transform_rec loc env !isevars rEC (evalct,evalPt)
+	transform_rec loc env !isevars(pj.uj_val,cj.uj_val,lfv) (evalct,evalPt)
       else
-	let ci = make_default_case_info (lookup_mind_specif mind env) in
+	let mis,_ = dest_ind_family indf in
+	let ci = make_default_case_info mis in
 	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj) in
 
        {uj_val = v;

@@ -7,6 +7,7 @@ open Names
 open Generic
 open Term
 open Sign
+open Constant
 open Inductive
 open Reduction
 open Environ

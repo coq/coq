@@ -52,17 +52,17 @@ let import cenv = global_env := import cenv !global_env
 
 let id_of_global id = Environ.id_of_global (env_of_safe_env !global_env) id
 
-(* Re-exported functions of [Inductive], composed with [lookup_mind_specif]. *)
+(* Functions of [Inductive], composed with [lookup_mind_specif]. *)
+(* Rem:Cannot open Inductive to avoid clash with Inductive.lookup_mind_specif*)
 
-open Inductive
+let mind_is_recursive =
+  Util.compose Inductive.mis_is_recursive lookup_mind_specif 
 
-let mind_is_recursive = Util.compose mis_is_recursive lookup_mind_specif 
-let mind_nconstr = Util.compose mis_nconstr lookup_mind_specif
-let mind_nparams = Util.compose mis_nparams lookup_mind_specif
-
-let mind_arity = Util.compose mis_arity lookup_mind_specif
+let mind_nconstr = Util.compose Inductive.mis_nconstr lookup_mind_specif
+let mind_nparams = Util.compose Inductive.mis_nparams lookup_mind_specif
+let mind_arity = Util.compose Inductive.mis_arity lookup_mind_specif
 
 let mind_lc_without_abstractions = 
-  Util.compose mis_lc_without_abstractions lookup_mind_specif
+  Util.compose Inductive.mis_lc_without_abstractions lookup_mind_specif
 
 

@@ -6,7 +6,6 @@ open Pp
 open Term
 open Generic
 open Names
-open Inductive
 open Environ
 open Instantiate
 open Univ
@@ -310,7 +309,7 @@ let fixp_reducible redfun flgs op stk =
     false
 
 let mindsp_nparams env sp =
-  let mib = lookup_mind sp env in mib.mind_nparams
+  let mib = lookup_mind sp env in mib.Constant.mind_nparams
 
 (* The main recursive functions
  *

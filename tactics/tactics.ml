@@ -54,9 +54,9 @@ let rec string_head_bound = function
   | DOPN(MutInd ind_sp,args) as x -> 
       let mispec = Global.lookup_mind_specif (ind_sp,args) in 
       string_of_id (mis_typename mispec)
-  |  DOPN(MutConstruct ((sp,tyi),i),_) ->
-       let mib = Global.lookup_mind sp in
-       string_of_id (mib.mind_packets.(tyi).mind_consnames.(i-1))
+  |  DOPN(MutConstruct (ind_sp,i),args) ->
+       let mispec = Global.lookup_mind_specif (ind_sp,args) in 
+       string_of_id (mis_consnames mispec).(i-1)
   |  VAR id -> string_of_id id
   |  _ -> raise Bound
 
