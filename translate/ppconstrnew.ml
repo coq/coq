@@ -86,24 +86,24 @@ let prec_less child (parent,assoc) =
   match assoc with
   | E -> (<=) child parent
   | L -> (<) child parent
-  | Any | Prec _ -> false
+  | Prec n -> child<=n
+  | Any -> true
 
 let env_assoc_value v env =
-  try List.assoc v env
-  with Not_found ->
-    anomaly ("Printing metavariable "^(string_of_id v)^" is unbound")
+  try List.nth env (v-1)
+  with Not_found -> anomaly ("Inconsistent environment for pretty-print rule")
 
 open Symbols
 
-let rec print_hunk pr env = function
-  | UnpMetaVar (e,prec) -> str "TODO" (* pr prec (env_assoc_value e env) *)
+let rec print_hunk n pr env = function
+  | UnpMetaVar (e,prec) -> pr (n,prec) (env_assoc_value e env)
   | UnpTerminal s -> str s
-  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk pr env) sub)
+  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk n pr env) sub)
   | UnpCut cut -> ppcmd_of_cut cut
 
 let pr_notation pr s env =
   let unpl, level = find_notation_printing_rule s in
-  prlist (print_hunk pr env) unpl, level
+  prlist (print_hunk level pr env) unpl, level
 
 let pr_delimiters key strm =
   let left = "`"^key^":" and right = "`" in
@@ -287,7 +287,7 @@ let rec pr inherited a =
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"
   
-let pr_constr = pr ltop
+let pr_constr c = pr ltop (Constrextern.extern_rawconstr (Constrintern.for_grammar (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
 
 let pr_pattern = pr_constr
 let pr_occurrences prc (nl,c) = prlist (fun n -> int n ++ spc ()) nl ++ prc c  
