@@ -364,28 +364,29 @@ let rec instantiate_recarg sp lrc ra =
 
 (* propagate checking for F,incorporating recursive arguments *)
 let check_term env mind_recvec f = 
-  let rec crec n l (lrec,c) = 
+  let rec crec env n l (lrec,c) = 
     match lrec, kind_of_term (strip_outer_cast c) with
-      | (Param(_)::lr, IsLambda (_,_,b)) -> 
+      | (Param(_)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (n+1) l' (lr,b)
-      | (Norec::lr, IsLambda (_,_,b)) -> 
+          crec (push_rel_decl (x,outcast_type a) env) (n+1) l' (lr,b)
+      | (Norec::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (n+1) l' (lr,b)
-      | (Mrec(i)::lr, IsLambda (_,_,b)) -> 
+          crec (push_rel_decl (x,outcast_type a) env) (n+1) l' (lr,b)
+      | (Mrec(i)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (n+1) ((1,mind_recvec.(i))::l') (lr,b)
-      | (Imbr((sp,i) as ind_sp,lrc)::lr, IsLambda (_,_,b)) -> 
+          crec (push_rel_decl (x,outcast_type a) env) (n+1)
+	    ((1,mind_recvec.(i))::l') (lr,b)
+      | (Imbr((sp,i) as ind_sp,lrc)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
           let sprecargs = 
 	    mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
           let lc = 
 	    Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
 	  in
-          crec (n+1) ((1,lc)::l') (lr,b)
-      | _,_ -> f n l (strip_outer_cast c)
+          crec (push_rel_decl (x,outcast_type a) env) (n+1) ((1,lc)::l') (lr,b)
+      | _,_ -> f env n l (strip_outer_cast c)
   in 
-  crec
+  crec env
 
 let is_inst_var env sigma k c = 
   match kind_of_term (fst (whd_betadeltaiota_stack env sigma c)) with 
@@ -393,7 +394,7 @@ let is_inst_var env sigma k c =
     | _ -> false
 
 let is_subterm_specif env sigma lcx mind_recvec = 
-  let rec crec n lst c = 
+  let rec crec env n lst c = 
     let f,l = whd_betadeltaiota_stack env sigma c in
     match kind_of_term f with 
       | IsRel k -> find_sorted_assoc k lst
@@ -404,7 +405,7 @@ let is_subterm_specif env sigma lcx mind_recvec =
           else
             let lcv = 
 	      (try 
-		 if is_inst_var env sigma n c then lcx else (crec n lst c) 
+		 if is_inst_var env sigma n c then lcx else crec env n lst c 
                with Not_found -> (Array.create (Array.length br) []))
             in 
 	    assert (Array.length br = Array.length lcv);
@@ -415,11 +416,11 @@ let is_subterm_specif env sigma lcx mind_recvec =
             in 
 	    stl.(0)
 	       
-      | IsFix ((recindxs,i),(typarray,funnames,bodies)) ->
+      | IsFix ((recindxs,i),(typarray,funnames,bodies as recdef)) ->
           let nbfix   = List.length funnames in
           let decrArg = recindxs.(i) in 
           let theBody = bodies.(i)   in
-          let (_,strippedBody) = decompose_lam_n (decrArg+1) theBody in
+          let sign,strippedBody = decompose_lam_n_assum (decrArg+1) theBody in
           let nbOfAbst = nbfix+decrArg+1 in
           let newlst = 
             if List.length l < (decrArg+1) then
@@ -427,7 +428,7 @@ let is_subterm_specif env sigma lcx mind_recvec =
             else 
               let theDecrArg  = List.nth l decrArg in
               let recArgsDecrArg = 
-                try (crec n lst theDecrArg)
+                try (crec env n lst theDecrArg)
 	        with Not_found -> Array.create 0 [] 
               in 
 	      if (Array.length recArgsDecrArg)=0 then
@@ -437,17 +438,19 @@ let is_subterm_specif env sigma lcx mind_recvec =
                 (nbOfAbst,lcx) ::
                 (map_lift_fst_n nbOfAbst lst)
           in 
-	  crec (n+nbOfAbst) newlst strippedBody
+	  let env' = push_rec_types recdef env in
+	  let env'' = push_rels sign env' in
+	  crec env'' (n+nbOfAbst) newlst strippedBody
 	    
-      | IsLambda (_,_,b) when l=[] -> 
+      | IsLambda (x,a,b) when l=[] -> 
           let lst' = map_lift_fst lst in
-          crec (n+1) lst' b
+          crec (push_rel_decl (x,outcast_type a) env) (n+1) lst' b
 
       (*** Experimental change *************************)
       | IsMeta _ -> [||]
       | _ -> raise Not_found
   in 
-  crec
+  crec env
 
 let is_subterm env sigma lcx mind_recvec n lst c = 
   try 
@@ -466,25 +469,27 @@ let rec check_subterm_rec_meta env sigma vectn k def =
   (let nfi = Array.length vectn in 
    (* check fi does not appear in the k+1 first abstractions, 
       gives the type of the k+1-eme abstraction  *)
-   let rec check_occur n def = 
+   let rec check_occur env n def = 
      match kind_of_term (strip_outer_cast def) with
-       | IsLambda (_,a,b) -> 
+       | IsLambda (x,a,b) -> 
 	   if noccur_with_meta n nfi a then
-             if n = k+1 then (a,b) else check_occur (n+1) b
+	     let env' = push_rel_decl (x,outcast_type a) env in
+             if n = k+1 then (env',a,b)
+	     else check_occur env' (n+1) b
            else 
 	     anomaly "check_subterm_rec_meta: Bad occurrence of recursive call"
        | _ -> raise (FixGuardError NotEnoughAbstractionInFixBody) in
-   let (c,d) = check_occur 1 def in 
+   let (env',c,d) = check_occur env 1 def in
    let ((sp,tyi),_ as mind, largs) = 
-     try find_minductype env sigma c 
+     try find_inductive env' sigma c 
      with Induc -> raise (FixGuardError RecursionNotOnInductiveType) in
-   let mind_recvec = mis_recargs (lookup_mind_specif mind env) in 
+   let mind_recvec = mis_recargs (lookup_mind_specif mind env') in 
    let lcx = mind_recvec.(tyi)  in
    (* n   = decreasing argument in the definition;
       lst = a mapping var |-> recargs
       t   = the term to be checked
    *)
-   let rec check_rec_call n lst t = 
+   let rec check_rec_call env n lst t = 
      (* n gives the index of the recursive variable *)
      (noccur_with_meta (n+k+1) nfi t) or 
      (* no recursive call in the term *)
@@ -499,11 +504,11 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 		(match list_chop np l with
 		     (la,(z::lrest)) -> 
 	               if (is_subterm env sigma lcx mind_recvec n lst z) 
-                       then List.for_all (check_rec_call n lst) (la@lrest)
+                       then List.for_all (check_rec_call env n lst) (la@lrest)
                        else raise (FixGuardError RecursionOnIllegalTerm)
 		   | _ -> assert false)
 	      else raise (FixGuardError NotEnoughArgumentsForFixCall)
-	    else List.for_all (check_rec_call n lst) l        
+	    else List.for_all (check_rec_call env n lst) l        
 
 	| IsMutCase (ci,p,c_0,lrest) ->
             let lc = 
@@ -516,10 +521,10 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 		 Array.create (Array.length lrest) []) 
 	    in
             (array_for_all2
-	       (fun c_0 a -> 
-		  check_term env mind_recvec (check_rec_call) n lst (c_0,a))
+	       (fun c0 a -> 
+		  check_term env mind_recvec check_rec_call n lst (c0,a))
 	       lc lrest) 
-	    && (List.for_all (check_rec_call n lst) (c_0::p::l)) 
+	    && (List.for_all (check_rec_call env n lst) (c_0::p::l)) 
 
   (* Enables to traverse Fixpoint definitions in a more intelligent
      way, ie, the rule :
@@ -536,15 +541,15 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
      Eduardo 7/9/98 *)
 
-	| IsFix ((recindxs,i),(typarray,funnames,bodies)) ->
-            (List.for_all (check_rec_call n lst) l) &&
+	| IsFix ((recindxs,i),(typarray,funnames,bodies as recdef)) ->
+            (List.for_all (check_rec_call env n lst) l) &&
             let nbfix = List.length funnames in
             let decrArg = recindxs.(i) in
             if (List.length l < (decrArg+1)) then
-              (array_for_all (check_rec_call n lst) typarray)
+              (array_for_all (check_rec_call env n lst) typarray)
 	      &&
 	      (array_for_all
-		 (check_rec_call (n+nbfix) (map_lift_fst_n nbfix lst))
+		 (check_rec_call env (n+nbfix) (map_lift_fst_n nbfix lst))
 		 bodies)
             else 
               let theDecrArg  = List.nth l decrArg in
@@ -555,85 +560,95 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 		  Array.create 0 [] 
               in 
 	      if (Array.length recArgsDecrArg)=0 then
-		(array_for_all (check_rec_call n lst) typarray)
+		(array_for_all (check_rec_call env n lst) typarray)
 		&&
 		(array_for_all
-		   (check_rec_call (n+nbfix) (map_lift_fst_n nbfix lst))
+		   (check_rec_call env (n+nbfix) (map_lift_fst_n nbfix lst))
 		   bodies)
               else 
                 let theBody = bodies.(i)   in
-                let (gamma,strippedBody) = 
-		  decompose_lam_n (decrArg+1) theBody in
-                let absTypes = List.map snd gamma in 
-                let nbOfAbst = nbfix+decrArg+1 in
-                let newlst = 
-		  ((1,recArgsDecrArg)::(map_lift_fst_n nbOfAbst lst))
-                in 
-		((array_for_all
-		    (fun t -> check_rec_call n lst t)
-		    typarray) &&
-                 (list_for_all_i (fun n -> check_rec_call n lst) n absTypes) &
-                 (check_rec_call (n+nbOfAbst) newlst strippedBody))
+		let env' = push_rec_types recdef env in
+		(array_for_all
+		   (fun t -> check_rec_call env n lst t) typarray) &&
+		(check_rec_call_fix_body env' (n+nbfix)
+		   (map_lift_fst_n nbfix lst) (decrArg+1) recArgsDecrArg
+		   theBody)
 
 	| IsCast (a,b) -> 
-	    (check_rec_call n lst a) &&
-            (check_rec_call n lst b) &&
-            (List.for_all (check_rec_call n lst) l)
+	    (check_rec_call env n lst a) &&
+            (check_rec_call env n lst b) &&
+            (List.for_all (check_rec_call env n lst) l)
 
-	| IsLambda (_,a,b) -> 
-	    (check_rec_call n lst a) &&
-            (check_rec_call (n+1) (map_lift_fst lst) b) &&
-            (List.for_all (check_rec_call n lst) l)
+	| IsLambda (x,a,b) -> 
+	    (check_rec_call env n lst a) &&
+            (check_rec_call (push_rel_decl (x,outcast_type a) env)
+	       (n+1) (map_lift_fst lst) b) &&
+            (List.for_all (check_rec_call env n lst) l)
 
-	| IsProd (_,a,b) -> 
-	    (check_rec_call n lst a) &&
-            (check_rec_call (n+1) (map_lift_fst lst) b) &&
-            (List.for_all (check_rec_call n lst) l)
+	| IsProd (x,a,b) -> 
+	    (check_rec_call env n lst a) &&
+            (check_rec_call (push_rel_decl (x,outcast_type a) env)
+	       (n+1) (map_lift_fst lst) b) &&
+            (List.for_all (check_rec_call env n lst) l)
 
-	| IsLetIn (_,a,b,c) -> 
-	    (check_rec_call n lst a) &&
-	    (check_rec_call n lst b) &&
-            (check_rec_call (n+1) (map_lift_fst lst) c) &&
-            (List.for_all (check_rec_call n lst) l)
+	| IsLetIn (x,a,b,c) -> 
+	    (check_rec_call env n lst a) &&
+	    (check_rec_call env n lst b) &&
+            (check_rec_call (push_rel_def (x,a,outcast_type b) env)
+	       (n+1) (map_lift_fst lst) c) &&
+            (List.for_all (check_rec_call env n lst) l)
 
 	| IsMutInd (_,la) -> 
-	     (array_for_all (check_rec_call n lst) la) &&
-             (List.for_all (check_rec_call n lst) l)
+	     (array_for_all (check_rec_call env n lst) la) &&
+             (List.for_all (check_rec_call env n lst) l)
 
 	| IsMutConstruct (_,la) -> 
-	     (array_for_all (check_rec_call n lst) la) &&
-             (List.for_all (check_rec_call n lst) l)
+	     (array_for_all (check_rec_call env n lst) la) &&
+             (List.for_all (check_rec_call env n lst) l)
 
 	| IsConst (_,la) -> 
-	    (array_for_all (check_rec_call n lst) la) &&
-            (List.for_all (check_rec_call n lst) l)
+	    (array_for_all (check_rec_call env n lst) la) &&
+            (List.for_all (check_rec_call env n lst) l)
 
 	| IsApp (f,la) -> 
-	    (check_rec_call n lst f) &&
-	    (array_for_all (check_rec_call n lst) la) &&
-            (List.for_all (check_rec_call n lst) l)
+	    (check_rec_call env n lst f) &&
+	    (array_for_all (check_rec_call env n lst) la) &&
+            (List.for_all (check_rec_call env n lst) l)
 
-	| IsCoFix (i,(typarray,funnames,bodies)) ->
+	| IsCoFix (i,(typarray,funnames,bodies as recdef)) ->
 	    let nbfix = Array.length bodies in
-	    (array_for_all (check_rec_call n lst) typarray) &&
-            (List.for_all (check_rec_call n lst) l) &&
+	    let env' = push_rec_types recdef env in
+	    (array_for_all (check_rec_call env n lst) typarray) &&
+            (List.for_all (check_rec_call env n lst) l) &&
 	    (array_for_all
-	       (check_rec_call (n+nbfix) (map_lift_fst_n nbfix lst))
+	       (check_rec_call env' (n+nbfix) (map_lift_fst_n nbfix lst))
 	       bodies)
 
 	| IsEvar (_,la) -> 
-	    (array_for_all (check_rec_call n lst) la) &&
-            (List.for_all (check_rec_call n lst) l)
+	    (array_for_all (check_rec_call env n lst) la) &&
+            (List.for_all (check_rec_call env n lst) l)
 
 	| IsMeta _ -> true
 
-	| IsVar _ | IsSort _ ->  List.for_all (check_rec_call n lst) l
+	| IsVar _ | IsSort _ ->  List.for_all (check_rec_call env n lst) l
 
-	| IsXtra _ ->  List.for_all (check_rec_call n lst) l
+	| IsXtra _ ->  List.for_all (check_rec_call env n lst) l
      )
-     
+
+     and check_rec_call_fix_body env n lst decr recArgsDecrArg body =
+	if decr = 0 then
+	  check_rec_call env n ((1,recArgsDecrArg)::lst) body
+	else
+	  match kind_of_term body with
+	    | IsLambda (x,a,b) ->
+		(check_rec_call env n lst a) &
+		(check_rec_call_fix_body
+		   (push_rel_decl (x,outcast_type a) env) (n+1)
+		   (map_lift_fst lst) (decr-1) recArgsDecrArg b)
+	    | _ -> anomaly "Not enough abstractions in fix body"
+    
    in 
-   check_rec_call 1 [] d)
+   check_rec_call env' 1 [] d)
 
 (* vargs is supposed to be built from A1;..Ak;[f1]..[fk][|d1;..;dk|]
 and vdeft is [|t1;..;tk|] such that f1:A1,..,fk:Ak |- di:ti
@@ -641,7 +656,7 @@ nvect is [|n1;..;nk|] which gives for each recursive definition
 the inductive-decreasing index 
 the function checks the convertibility of ti with Ai *)
 
-let check_fix env sigma ((nvect,bodynum),(types,names,bodies)) =
+let check_fix env sigma ((nvect,bodynum),(types,names,bodies as recdef)) =
   let nbfix = Array.length bodies in 
   if nbfix = 0
     or Array.length nvect <> nbfix 
@@ -652,7 +667,9 @@ let check_fix env sigma ((nvect,bodynum),(types,names,bodies)) =
   then anomaly "Ill-formed fix term";
   for i = 0 to nbfix - 1 do
     try
-      let _ = check_subterm_rec_meta env sigma nvect nvect.(i) bodies.(i) in ()
+      let fixenv = push_rec_types recdef env in
+      let _ = check_subterm_rec_meta fixenv sigma nvect nvect.(i) bodies.(i)
+      in ()
     with FixGuardError err ->
       error_ill_formed_rec_body	CCI env err (List.rev names) i bodies
   done 
@@ -662,21 +679,22 @@ let check_fix env sigma ((nvect,bodynum),(types,names,bodies)) =
 exception CoFixGuardError of guard_error
 
 let check_guard_rec_meta env sigma nbfix def deftype = 
-  let rec codomain_is_coind c  =
+  let rec codomain_is_coind env c =
     let b = whd_betadeltaiota env sigma (strip_outer_cast c) in
     match kind_of_term b with
-      | IsProd (_,a,b) -> codomain_is_coind b 
+      | IsProd (x,a,b) ->
+	  codomain_is_coind (push_rel_decl (x,outcast_type a) env) b 
       | _ -> 
 	  try
-	    find_mcoinductype env sigma b
+	    find_coinductive env sigma b
           with Induc ->
 	    raise (CoFixGuardError (CodomainNotInductiveType b))
   in
-  let (mind, _) = codomain_is_coind deftype in
+  let (mind, _) = codomain_is_coind env deftype in
   let ((sp,tyi),_) = mind in
-  let lvlra = (mis_recargs (lookup_mind_specif mind env)) in
+  let lvlra = mis_recargs (lookup_mind_specif mind env) in
   let vlra = lvlra.(tyi) in  
-  let rec check_rec_call alreadygrd n vlra  t = 
+  let rec check_rec_call env alreadygrd n vlra  t =
     if noccur_with_meta n nbfix t then
       true 
     else
@@ -713,7 +731,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 				'sTR "of recargs is being applied" >]
                        |  (Mrec i)::lrar -> 
                             let newvlra = lvlra.(i) in
-                            (check_rec_call true n newvlra t) &&
+                            (check_rec_call env true n newvlra t) &&
                             (process_args_of_constr lr lrar)
 			    
                        |  (Imbr((sp,i) as ind_sp,lrc)::lrar)  ->
@@ -724,7 +742,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
                                         (List.map 
                                            (instantiate_recarg sp lrc))
                                         sprecargs.(i))
-                            in (check_rec_call true n lc t) &
+                            in (check_rec_call env true n lc t) &
                                (process_args_of_constr lr lrar)
 				 
                        |  _::lrar  -> 
@@ -735,21 +753,24 @@ let check_guard_rec_meta env sigma nbfix def deftype =
             in (process_args_of_constr realargs lra)
 		 
 		 
-	| IsLambda (_,a,b) ->
+	| IsLambda (x,a,b) ->
 	     assert (args = []);
             if (noccur_with_meta n nbfix a) then
-              check_rec_call alreadygrd (n+1)  vlra b
+              check_rec_call (push_rel_decl (x,outcast_type a) env)
+		alreadygrd (n+1)  vlra b
             else 
 	      raise (CoFixGuardError (RecCallInTypeOfAbstraction t))
 	      
-	| IsCoFix (j,(varit,lna,vdefs)) ->
+	| IsCoFix (j,(varit,lna,vdefs as recdef)) ->
             if (List.for_all (noccur_with_meta n nbfix) args)
             then 
               let nbfix = Array.length vdefs in
 	      if (array_for_all (noccur_with_meta n nbfix) varit) then
-		(array_for_all (check_rec_call alreadygrd (n+1) vlra) vdefs)
+		let env' = push_rec_types recdef env in
+		(array_for_all
+		   (check_rec_call env' alreadygrd (n+1) vlra) vdefs)
 		&&
-		(List.for_all (check_rec_call alreadygrd (n+1) vlra) args) 
+		(List.for_all (check_rec_call env alreadygrd (n+1) vlra) args) 
               else 
 		raise (CoFixGuardError (RecCallInTypeOfDef c))
 	    else
@@ -759,7 +780,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
             if (noccur_with_meta n nbfix p) then
               if (noccur_with_meta n nbfix tm) then
 		if (List.for_all (noccur_with_meta n nbfix) args) then
-		  (array_for_all (check_rec_call alreadygrd n vlra) vrest)
+		  (array_for_all (check_rec_call env alreadygrd n vlra) vrest)
 		else 
 		  raise (CoFixGuardError (RecCallInCaseFun c))
               else 
@@ -770,16 +791,18 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 	| _    -> raise (CoFixGuardError NotGuardedForm)
 	      
   in 
-  check_rec_call false 1 vlra def
+  check_rec_call env false 1 vlra def
 
 (* The  function which checks that the whole block of definitions 
    satisfies the guarded condition *)
 
-let check_cofix env sigma (bodynum,(types,names,bodies)) = 
+let check_cofix env sigma (bodynum,(types,names,bodies as recdef)) = 
   let nbfix = Array.length bodies in 
   for i = 0 to nbfix-1 do
     try 
-      let _ = check_guard_rec_meta env sigma nbfix bodies.(i) types.(i) in ()
+      let fixenv = push_rec_types recdef env in
+      let _ = check_guard_rec_meta fixenv sigma nbfix bodies.(i) types.(i)
+      in ()
     with CoFixGuardError err -> 
       error_ill_formed_rec_body CCI env err (List.rev names) i bodies
   done
