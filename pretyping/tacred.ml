@@ -35,7 +35,7 @@ let rev_firstn_liftn fn ln =
 
 let make_elim_fun f lv n largs =
   let (sp,args) = destConst f in
-  let labs,_ = list_chop n largs in
+  let labs,_ = list_chop n (list_of_stack largs) in
   let p = List.length lv in
   let ylv = List.map fst lv in
   let la' = list_map_i 
@@ -45,7 +45,7 @@ let make_elim_fun f lv n largs =
               (List.map (lift p) labs) 
   in 
   fun id -> 
-    let fi = DOPN(Const(make_path (dirpath sp) id (kind_of_path sp)),args) in
+    let fi = mkConst (make_path (dirpath sp) id (kind_of_path sp),args) in
     list_fold_left_i 
       (fun i c (k,a) -> 
 	 mkLambda (Name(id_of_string"x"),
@@ -53,7 +53,7 @@ let make_elim_fun f lv n largs =
 		   c))
       0 (applistc fi la') lv
 
-(* [f] is convertible to [DOPN(Fix(recindices,bodynum),bodyvect)] make 
+(* [f] is convertible to [Fix(recindices,bodynum),bodyvect)] make 
    the reduction using this extra information *)
 
 let contract_fix_use_function f
@@ -65,16 +65,15 @@ let contract_fix_use_function f
   substl (List.rev lbodies) bodies.(bodynum)
 
 let reduce_fix_use_function f whfun fix stack =
-  let dfix = destFix fix in
-  match fix_recarg dfix stack with
-    | None -> (false,(fix,stack))
+  match fix_recarg fix stack with
+    | None -> NotReducible
     | Some (recargnum,recarg) ->
-        let (recarg'hd,_ as recarg')= whfun recarg [] in
-        let stack' = list_assign stack recargnum (applist recarg') in
-	(match recarg'hd with
-           | DOPN(MutConstruct _,_) ->
-	       (true,(contract_fix_use_function f dfix,stack'))
-	   | _ -> (false,(fix,stack')))
+        let (recarg'hd,_ as recarg')= whfun (recarg, empty_stack) in
+        let stack' = stack_assign stack recargnum (app_stack recarg') in
+	(match kind_of_term recarg'hd with
+           | IsMutConstruct _ ->
+	       Reduced (contract_fix_use_function f fix,stack')
+	   | _ -> NotReducible)
 
 let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
@@ -84,69 +83,72 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
   substl subbodies bodies.(bodynum)
 
 let reduce_mind_case_use_function env f mia =
-  match mia.mconstr with 
-    | DOPN(MutConstruct(ind_sp,i as cstr_sp),args) ->
+  match kind_of_term mia.mconstr with 
+    | IsMutConstruct(ind_sp,i as cstr_sp, args) ->
 	let ncargs = (fst mia.mci).(i-1) in
 	let real_cargs = list_lastn ncargs mia.mcargs in
-	applist (mia.mlf.(i-1),real_cargs)
-    | DOPN(CoFix _,_) as cofix ->
-	let cofix_def = contract_cofix_use_function f (destCoFix cofix) in
+	applist (mia.mlf.(i-1), real_cargs)
+    | IsCoFix cofix ->
+	let cofix_def = contract_cofix_use_function f cofix in
 	mkMutCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 	  
 let special_red_case env whfun p c ci lf  =
-  let rec redrec c l = 
-    let (constr,cargs) = whfun c l in 
-    match constr with 
-      | DOPN(Const sp,args) as g -> 
-          if evaluable_constant env g then
-            let gvalue = constant_value env g in
+  let rec redrec s = 
+    let (constr, cargs) = whfun s in 
+    match kind_of_term constr with 
+      | IsConst (sp,args) -> 
+          if evaluable_constant env constr then
+            let gvalue = constant_value env constr in
             if reducible_mind_case gvalue then
 	      let build_fix_name id =
-		DOPN(Const(make_path (dirpath sp) id (kind_of_path sp)),args)
+		mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
 	      in reduce_mind_case_use_function env build_fix_name
-                   {mP=p; mconstr=gvalue; mcargs=cargs; mci=ci; mlf=lf}
+                   {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
+		    mci=ci; mlf=lf}
             else 
-	      redrec gvalue cargs
+	      redrec (gvalue, cargs)
           else 
 	    raise Redelimination
       | _ ->
           if reducible_mind_case constr then
             reduce_mind_case
-	      {mP=p; mconstr=constr; mcargs=cargs; mci=ci; mlf=lf}
+	      {mP=p; mconstr=constr; mcargs=list_of_stack cargs;
+	       mci=ci; mlf=lf}
           else 
 	    raise Redelimination
   in 
-  redrec c []
+  redrec (c, empty_stack)
 
 let rec red_elim_const env sigma k largs =
   if not (evaluable_constant env k) then raise Redelimination;
   let (sp, args) = destConst k in
   let elim_style = constant_eval sp in
   match elim_style with
-    | EliminationCases n when List.length largs >= n -> begin
+    | EliminationCases n when stack_args_size largs >= n -> begin
 	let c = constant_value env k in
-	match whd_betadeltaeta_stack env sigma c largs with
-	  | (DOPN(MutCase _,_) as mc,lrest) ->
-              let (ci,p,c,lf) = destCase mc in
+	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
+	match kind_of_term c' with
+	  | IsMutCase (ci,p,c,lf) ->
               (special_red_case env (construct_const env sigma) p c ci lf,
 	       lrest)
 	  | _ -> assert false
       end
-    | EliminationFix (lv,n) when List.length largs >= n -> begin
+    | EliminationFix (lv,n) when stack_args_size largs >= n -> begin
 	let c = constant_value env k in
-	match whd_betadeltaeta_stack env sigma c largs with
-	  | (DOPN(Fix _,_) as fix,lrest) -> 
+	let d, lrest = whd_betadeltaeta_state env sigma (c, largs) in
+	match kind_of_term d with
+	  | IsFix fix -> 
 	      let f id = make_elim_fun k lv n largs id in
-              let (b,(c,rest)) = 
-		reduce_fix_use_function f (construct_const env sigma) fix lrest
-              in 
-	      if b then (nf_beta env sigma c, rest) else raise Redelimination
+	      let co = construct_const env sigma in
+	      (match reduce_fix_use_function f co fix lrest with
+		| NotReducible -> raise Redelimination
+		| Reduced (c,rest) -> (nf_beta env sigma c, rest))
 	  | _ -> assert false
       end
     | _ -> raise Redelimination
 
-and construct_const env sigma c stack = 
+and construct_const env sigma = 
   let rec hnfstack (x, stack as s) =
     match kind_of_term x with
       | IsConst _  ->
@@ -155,17 +157,17 @@ and construct_const env sigma c stack =
            with Redelimination ->
              if evaluable_constant env x then 
 	       let cval = constant_value env x in
-	       (match cval with
-                  | DOPN (CoFix _,_) -> s
+	       (match kind_of_term cval with
+                  | IsCoFix _ -> s
                   | _ -> hnfstack (cval, stack))
              else 
 	       raise Redelimination)
       | IsCast (c,_) -> hnfstack (c, stack)
-      | IsAppL (f,cl) -> hnfstack (f, cl@stack)
+      | IsAppL (f,cl) -> hnfstack (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
-          (match stack with 
-             | [] -> assert false
-             | c'::rest -> stacklam hnfstack [c'] c rest)
+          (match decomp_stack stack with 
+             | None -> assert false
+             | Some (c',rest) -> stacklam hnfstack [c'] c rest)
       | IsMutCase (ci,p,c,lf) ->
           hnfstack 
 	    (special_red_case env (construct_const env sigma) p c ci lf, stack)
@@ -177,7 +179,7 @@ and construct_const env sigma c stack =
 	     | NotReducible -> raise Redelimination)
       | _ -> raise Redelimination
   in 
-  hnfstack (c, stack)
+  hnfstack
 
 (* Hnf reduction tactic: *)
 
@@ -185,10 +187,10 @@ let hnf_constr env sigma c =
   let rec redrec (x, largs as s) =
     match kind_of_term x with
       | IsLambda (n,t,c) ->
-          (match largs with
-             | []      -> applist s
-             | a::rest -> stacklam redrec [a] c rest)
-      | IsAppL (f,cl)   -> redrec (f, cl@largs)
+          (match decomp_stack largs with
+             | None      -> app_stack s
+             | Some (a,rest) -> stacklam redrec [a] c rest)
+      | IsAppL (f,cl)   -> redrec (f, append_stack cl largs)
       | IsConst _ ->
           (try
              let (c',lrest) = red_elim_const env sigma x largs in 
@@ -196,29 +198,26 @@ let hnf_constr env sigma c =
            with Redelimination ->
              if evaluable_constant env x then
                let c = constant_value env x in
-	       (match c with 
-                  | DOPN(CoFix _,_) -> applist(x,largs)
+	       (match kind_of_term c with 
+                  | IsCoFix _ -> app_stack (x,largs)
 		  | _ ->  redrec (c, largs))
              else 
-	       applist s)
+	       app_stack s)
       | IsCast (c,_) -> redrec (c, largs)
       | IsMutCase (ci,p,c,lf) ->
           (try
              redrec 
-	       (special_red_case env (whd_betadeltaiota_stack env sigma) 
+	       (special_red_case env (whd_betadeltaiota_state env sigma) 
 		  p c ci lf, largs)
            with Redelimination -> 
-	     applist s)
+	     app_stack s)
       | IsFix fix ->
-	  (match reduce_fix
-	     (fun (c,l) -> whd_betadeltaiota_stack env sigma c l)
-	     fix largs
-	   with
+	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
              | Reduced s' -> redrec s'
-	     | NotReducible -> applist s)
-      | _ -> applist s
+	     | NotReducible -> app_stack s)
+      | _ -> app_stack s
   in 
-  redrec (c, [])
+  redrec (c, empty_stack)
 
 (* Simpl reduction tactic: same as simplify, but also reduces
    elimination constants *)
@@ -227,10 +226,10 @@ let whd_nf env sigma c =
   let rec nf_app (c, stack as s) =
     match kind_of_term c with
       | IsLambda (name,c1,c2)    ->
-          (match stack with
-             | [] -> (c,[])
-             | a1::rest -> stacklam nf_app [a1] c2 rest)
-      | IsAppL (f,cl) -> nf_app (f, cl@stack)
+          (match decomp_stack stack with
+             | None -> (c,empty_stack)
+             | Some (a1,rest) -> stacklam nf_app [a1] c2 rest)
+      | IsAppL (f,cl) -> nf_app (f, append_stack cl stack)
       | IsCast (c,_) -> nf_app (c, stack)
       | IsConst _ ->
           (try
@@ -239,9 +238,7 @@ let whd_nf env sigma c =
 	     s)
       | IsMutCase (ci,p,d,lf) ->
           (try
-             nf_app
-	       (special_red_case env (fun c l -> nf_app (c,l)) p d ci lf,
-		stack)
+             nf_app (special_red_case env nf_app p d ci lf, stack)
            with Redelimination -> 
 	     s)
       | IsFix fix ->
@@ -250,7 +247,7 @@ let whd_nf env sigma c =
 	     | NotReducible -> s)
       | _ -> s
   in 
-  applist (nf_app (c, []))
+  app_stack (nf_app (c, empty_stack))
 
 let nf env sigma c = strong whd_nf env sigma c
 
@@ -282,35 +279,31 @@ let one_step_reduce env sigma c =
   let rec redrec (x, largs as s) =
     match kind_of_term x with
       | IsLambda (n,t,c)  ->
-          (match largs with
-             | []      -> error "Not reducible 1"
-             | a::rest -> applistc (subst1 a c) rest)
-      | IsAppL (f,cl) -> redrec (f, cl@largs)
+          (match decomp_stack largs with
+             | None      -> error "Not reducible 1"
+             | Some (a,rest) -> (subst1 a c, rest))
+      | IsAppL (f,cl) -> redrec (f, append_stack cl largs)
       | IsConst _ ->
           (try
-             let (c',l) = red_elim_const env sigma x largs in applistc c' l
+             red_elim_const env sigma x largs
            with Redelimination ->
              if evaluable_constant env x then
-               applistc (constant_value env x) largs
+               constant_value env x, largs
              else error "Not reductible 1")
 
       | IsMutCase (ci,p,c,lf) ->
           (try
-	     applistc 
-	       (special_red_case env (whd_betadeltaiota_stack env sigma) 
-		  p c ci lf) largs 
+	     (special_red_case env (whd_betadeltaiota_state env sigma)
+	       p c ci lf, largs)
            with Redelimination -> error "Not reducible 2")
       | IsFix fix ->
-	  (match reduce_fix
-	     (fun (x,l) -> whd_betadeltaiota_stack env sigma x l)
-	     fix largs
-	   with
-             | Reduced s' -> applist s'
+	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
+             | Reduced s' -> s'
 	     | NotReducible -> error "Not reducible 3")
       | IsCast (c,_) -> redrec (c,largs)
       | _ -> error "Not reducible 3"
   in 
-  redrec (c, [])
+  app_stack (redrec (c, empty_stack))
 
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)

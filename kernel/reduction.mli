@@ -16,30 +16,47 @@ open Closure
 exception Redelimination
 exception Elimconst
 
+(*s A [stack] is a context of arguments, arguments are pushed by
+   [append_stack] one array at a time but popped with [decomp_stack]
+   one by one *)
+
+type stack
+val empty_stack : stack
+val append_stack : constr array -> stack -> stack
+val decomp_stack : stack -> (constr * stack) option
+val list_of_stack : stack -> constr list
+val stack_assign : stack -> int -> constr -> stack
+val stack_args_size : stack -> int
+val app_stack : constr * stack -> constr
+
+type state = constr * stack
+
 type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
 type 'a reduction_function = 'a contextual_reduction_function
 type local_reduction_function = constr -> constr
 
 type 'a contextual_stack_reduction_function = 
-    env -> 'a evar_map -> constr -> constr list -> constr * constr list
+    env -> 'a evar_map -> constr -> constr * constr list
 type 'a stack_reduction_function = 'a contextual_stack_reduction_function
-type local_stack_reduction_function = 
-    constr -> constr list -> constr * constr list
+type local_stack_reduction_function = constr -> constr * constr list
+
+type 'a contextual_state_reduction_function = 
+    env -> 'a evar_map -> state -> state
+type 'a state_reduction_function = 'a contextual_state_reduction_function
+type local_state_reduction_function = state -> state
 
 val whd_stack : local_stack_reduction_function
 
 (*s Reduction Function Operators *)
 
-val local_under_casts : local_reduction_function -> local_reduction_function
-val under_casts :
-  'a contextual_reduction_function -> 'a contextual_reduction_function
 val strong : 'a reduction_function -> 'a reduction_function
 val local_strong : local_reduction_function -> local_reduction_function
 val strong_prodspine : local_reduction_function -> local_reduction_function
+(*i
 val stack_reduction_of_reduction : 
-  'a reduction_function -> 'a stack_reduction_function
-val stacklam : (constr * constr list -> 'a) -> constr list -> constr 
-  -> constr list -> 'a 
+  'a reduction_function -> 'a state_reduction_function
+i*)
+val stacklam : (state -> 'a) -> constr list -> constr -> stack -> 'a 
 
 (*s Generic Optimized Reduction Functions using Closures *)
 
@@ -65,26 +82,34 @@ val whd_beta_stack : local_stack_reduction_function
 val whd_betaiota_stack : local_stack_reduction_function
 val whd_betadeltaiota_stack : 'a contextual_stack_reduction_function
 
+val whd_beta_state : local_state_reduction_function
+val whd_betaiota_state : local_state_reduction_function
+val whd_betadeltaiota_state : 'a contextual_state_reduction_function
+
 
 (*s Head normal forms *)
 
-val whd_const_stack : section_path list -> 'a stack_reduction_function
-val whd_const : section_path list -> 'a reduction_function
 val whd_delta_stack : 'a stack_reduction_function
+val whd_delta_state : 'a state_reduction_function
 val whd_delta : 'a reduction_function
 val whd_betadelta_stack : 'a stack_reduction_function
+val whd_betadelta_state : 'a state_reduction_function
 val whd_betadelta : 'a reduction_function
 val whd_betaevar_stack : 'a stack_reduction_function
+val whd_betaevar_state : 'a state_reduction_function
 val whd_betaevar : 'a reduction_function
 val whd_betaiotaevar_stack : 'a stack_reduction_function
+val whd_betaiotaevar_state : 'a state_reduction_function
 val whd_betaiotaevar : 'a reduction_function
 val whd_betadeltaeta_stack : 'a stack_reduction_function
+val whd_betadeltaeta_state : 'a state_reduction_function
 val whd_betadeltaeta : 'a reduction_function
 val whd_betadeltaiotaeta_stack : 'a stack_reduction_function
+val whd_betadeltaiotaeta_state : 'a state_reduction_function
 val whd_betadeltaiotaeta : 'a reduction_function
 val whd_evar : 'a reduction_function
 
-val beta_applist : (constr * constr list) -> constr
+val beta_applist : constr * constr list -> constr
 
 val hnf_prod_app     : env -> 'a evar_map -> constr -> constr -> constr
 val hnf_prod_appvect : env -> 'a evar_map -> constr -> constr array -> constr
@@ -130,11 +155,12 @@ val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 val compute : 'a reduction_function
 
 (* [reduce_fix] contracts a fix redex if it is actually reducible *)
-type fix_reduction_result = NotReducible | Reduced of (constr * constr list)
 
-val fix_recarg : fixpoint -> 'a list -> (int * 'a) option
-val reduce_fix : (constr * constr list -> constr * constr list) -> fixpoint ->
-  constr list -> fix_reduction_result
+type fix_reduction_result = NotReducible | Reduced of state
+
+val fix_recarg : fixpoint -> stack -> (int * constr) option
+val reduce_fix : local_state_reduction_function -> fixpoint
+   -> stack -> fix_reduction_result
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
 
@@ -201,6 +227,8 @@ val whd_ise1_metas : 'a evar_map -> constr -> constr
 
 (*s Obsolete Reduction Functions *)
 
+(*i
 val hnf : env -> 'a evar_map -> constr -> constr * constr list
-val apprec : 'a stack_reduction_function
+i*)
+val apprec : 'a state_reduction_function
 val red_product : 'a reduction_function
