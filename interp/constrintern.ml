@@ -395,6 +395,13 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
 	List.split (List.map2 (intern_cases_pattern scopes ([],[])) argscs pl)
       in
       (aliases::(List.flatten idsl), PatCstr (loc,c,pl',alias_of aliases))
+  | CPatNotation (loc,"- _",[CPatNumeral(_,Bignat.POS p)]) ->
+      let scopes = option_cons tmp_scope scopes in
+      ([aliases],
+      Symbols.interp_numeral_as_pattern loc (Bignat.NEG p)
+        (alias_of aliases) scopes)
+  | CPatNotation (_,"( _ )",[a]) ->
+      intern_cases_pattern scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let scopes = option_cons tmp_scope scopes in
       let (ids,c) = Symbols.interp_notation ntn scopes in
@@ -616,8 +623,8 @@ let internalise sigma env allow_soapp lvar c =
     | CNotation (loc,"- _",[CNumeral(_,Bignat.POS p)]) ->
         let scopes = option_cons tmp_scope scopes in
         Symbols.interp_numeral loc (Bignat.NEG p) scopes
+    | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
-        let ntn = if ntn = "- ( _ )" then "- _" else ntn in
 	let scopes = option_cons tmp_scope scopes in
 	let (ids,c) = Symbols.interp_notation ntn scopes in
 	let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in

@@ -195,6 +195,8 @@ let rec pr_cases_pattern _inh = function
 	prlist_with_sep spc (pr_cases_pattern _inh) pl ++ str ")")
   | CPatAtom (_,Some c) -> pr_reference c
   | CPatAtom (_,None) -> str "_"
+  | CPatNotation (_,"( _ )",[p]) ->
+      str"("++ pr_cases_pattern _inh p ++ str")"
   | CPatNotation (_,s,env) -> fst (pr_notation pr_cases_pattern s env)
   | CPatNumeral (_,n) -> Bignat.pr_bigint n
   | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_cases_pattern _inh p)
@@ -291,6 +293,8 @@ let rec pr inherited a =
   | CSort (_,s) -> pr_sort s, latom
   | CCast (_,a,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str "::" ++ pr (lcast,E) b), lcast
+  | CNotation (_,"( _ )",[t]) ->
+      str"("++ pr (max_int,E) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation pr s env
   | CNumeral (_,p) -> Bignat.pr_bigint p, latom
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr ltop a), latom

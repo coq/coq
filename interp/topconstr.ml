@@ -463,15 +463,18 @@ let mkProdC (idl,a,b)   = CProdN (dummy_loc,[idl,a],b)
 (* Used in correctness and interface *)
 
 
-let names_of_cases_indtype t =
-  let push_ref ids = function CRef (Ident (_,id)) -> id::ids | _ -> ids in
-  match t with
-  (* We deal only with the regular cases *)
-  | CApp (_,_,l) -> List.fold_left (fun ids (a,_) -> push_ref ids a) [] l
-  | CNotation (_,_,l)
-    (* assume the ntn is applicative and does not instantiate the head !! *)
-  | CAppExpl (_,_,l) -> List.fold_left push_ref [] l
-  | _ -> []
+let names_of_cases_indtype =
+  let rec vars_of ids t =
+    match t with
+      (* We deal only with the regular cases *)
+      | CApp (_,_,l) -> List.fold_left (fun ids (a,_) -> vars_of ids a) [] l
+      | CRef (Ident (_,id)) -> id::ids
+      | CNotation (_,_,l)
+      (* assume the ntn is applicative and does not instantiate the head !! *)
+      | CAppExpl (_,_,l) -> List.fold_left vars_of [] l
+      | CDelimiters(_,_,c) -> vars_of ids c
+      | _ -> ids in
+  vars_of []
 
 let map_binder g e nal = List.fold_right (fun (_,na) -> name_fold g na) nal e
 

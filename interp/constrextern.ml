@@ -779,14 +779,15 @@ let make_current_scopes (scopt,scopes) =
 let make_notation loc ntn l =
   match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CNumeral(_,Bignat.POS p)] -> CNotation (loc,"- ( _ )",l)
+    | "- _", [CNumeral(_,Bignat.POS p)] ->
+        CNotation (loc,ntn,[CNotation(loc,"( _ )",l)])
     | _ -> CNotation (loc,ntn,l)
 
 let make_pat_notation loc ntn l =
   match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
     | "- _", [CPatNumeral(_,Bignat.POS p)] ->
-        CPatNotation (loc,"- ( _ )",l)
+        CPatNotation (loc,ntn,[CPatNotation(loc,"( _ )",l)])
     | _ -> CPatNotation (loc,ntn,l)
 
 

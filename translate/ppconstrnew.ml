@@ -131,6 +131,8 @@ let rec pr_patt inh p =
       prlist_with_sep sep (pr_patt (lapp,L)) args, lapp
   | CPatAtom (_,None) -> str "_", latom
   | CPatAtom (_,Some r) -> pr_reference r, latom
+  | CPatNotation (_,"( _ )",[p]) ->
+      str"("++ pr_patt (max_int,E) p ++ str")", latom
   | CPatNotation (_,s,env) -> pr_notation pr_patt s env
   | CPatNumeral (_,i) -> Bignat.pr_bigint i, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt lsimple p), 1
@@ -512,6 +514,8 @@ let rec pr inherited a =
   | CSort (_,s) -> pr_sort s, latom
   | CCast (_,a,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str ":" ++ pr (-lcast,E) b), lcast
+  | CNotation (_,"( _ )",[t]) ->
+      str"("++ pr (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation pr s env
   | CNumeral (_,(Bignat.POS _ as p)) -> Bignat.pr_bigint p, lposint
   | CNumeral (_,(Bignat.NEG _ as p)) -> Bignat.pr_bigint p, lnegint
