@@ -650,8 +650,9 @@ let internalise sigma env allow_soapp lvar c =
 	  | _ -> RApp (loc, c, args))
     | CCases (loc, (po,rtnpo), tms, eqns) ->
         let tms,rtnids = List.fold_right (fun (tm,indnalo) (inds,ids) ->
-	  let typ,ids = intern_return_type env indnalo ids in
-	  (intern env tm,ref typ)::inds,ids)
+          let tm' = intern env tm in
+	  let typ,ids = intern_return_type env indnalo tm' ids in
+	  (tm',ref typ)::inds,ids)
 	  tms ([],ids) in
         let rtnpo =
           option_app (intern_type (rtnids,tmp_scope,scopes)) rtnpo in
@@ -714,7 +715,7 @@ let internalise sigma env allow_soapp lvar c =
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
 	(loc, eqn_ids,pl,intern (env_ids,tmp_scope,scopes) rhs)
 
-  and intern_return_type (_,_,scopes as env) (na,t) ids =
+  and intern_return_type (vars,_,scopes as env) (na,t) tm ids =
     let ids,typ = match t with
     | Some t -> 
 	let tids = names_of_cases_indtype t in
@@ -734,6 +735,9 @@ let internalise sigma env allow_soapp lvar c =
 	end
     | None -> 
 	ids, None in
+    let na = match tm, na with
+      | RVar (_,id), Anonymous when Idset.mem id vars -> Name id
+      | _ -> na in
     (na,typ), name_fold Idset.add na ids
 
   and iterate_prod loc2 env ty body = function
