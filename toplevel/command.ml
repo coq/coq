@@ -106,21 +106,17 @@ let declare_definition ident local bl red_option c typopt =
     error "Evaluation under a local context not supported";
   let ce' = red_constant_entry ce red_option in
   match local with
-    | Global ->
-        declare_global_definition ident ce' Global
-    | Local ->
-        if Lib.is_section_p (Lib.cwd ()) then begin
-          let c =
-            SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
-          let _ = declare_variable ident (Lib.cwd(), c, IsDefinition) in
-          if_verbose message ((string_of_id ident) ^ " is defined");
-          if Pfedit.refining () then 
-            msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
-            str" is not visible from current goals");
-          VarRef ident
-        end
-        else
-          declare_global_definition ident ce' Local
+    | Local when Lib.is_section_p (Lib.cwd ()) ->
+        let c =
+          SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
+        let _ = declare_variable ident (Lib.cwd(), c, IsDefinition) in
+        if_verbose message ((string_of_id ident) ^ " is defined");
+        if Pfedit.refining () then 
+          msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
+          str" is not visible from current goals");
+        VarRef ident
+    | (Global|Local) ->
+        declare_global_definition ident ce' local
 
 let syntax_definition ident c =
   let c = interp_rawconstr Evd.empty (Global.env()) c in 
@@ -136,30 +132,23 @@ let declare_assumption ident (local,kind) bl c =
   let c = prod_rawconstr c bl in
   let c = interp_type Evd.empty (Global.env()) c in
   match local with
-    | Global ->
+    | Local when Lib.is_section_p (Lib.cwd ()) ->
+        let r = 
+          declare_variable ident 
+            (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
+        assumption_message ident;
+        if is_verbose () & Pfedit.refining () then 
+          msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
+          str" is not visible from current goals");
+        VarRef ident
+    | (Global|Local) ->
         let (_,kn) =
           declare_constant ident (ParameterEntry c, IsAssumption kind) in
         assumption_message ident;
+        if local=Local & Options.is_verbose () then
+          msg_warning (pr_id ident ++ str" is declared as a parameter" ++
+          str" because it is at a global level");
         ConstRef kn
-    | Local ->
-        if Lib.is_section_p (Lib.cwd ()) then begin
-          let r = 
-            declare_variable ident
-              (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
-          assumption_message ident;
-          if is_verbose () & Pfedit.refining () then 
-            msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
-            str" is not visible from current goals");
-          VarRef ident
-        end
-        else
-          let (_,kn) =
-            declare_constant ident (ParameterEntry c, IsAssumption kind) in
-          assumption_message ident;
-          if_verbose
-            msg_warning (pr_id ident ++ str" is declared as a parameter" ++
-            str" because it is at a global level");
-          ConstRef kn
 
 (* 3| Mutual Inductive definitions *)
 
@@ -507,10 +496,14 @@ let save id const kind hook =
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
   begin match kind with
-    | IsLocal ->
+    | IsLocal when Lib.is_section_p (Lib.cwd ()) ->
 	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, IsDefinition) in
 	hook Local (VarRef id)
+    | IsLocal ->
+        let k = IsDefinition in
+        let _,kn = declare_constant id (DefinitionEntry const, k) in
+	hook Global (ConstRef kn)
     | IsGlobal k ->
         let k = theorem_kind_of_goal_kind k in
         let _,kn = declare_constant id (DefinitionEntry const, k) in
