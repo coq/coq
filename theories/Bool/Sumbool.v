@@ -17,19 +17,19 @@
 
 Definition sumbool_of_bool : (b:bool) {b=true}+{b=false}.
 Proof.
-  Induction b; Auto.
+  NewDestruct b; Auto.
 Defined.
 
 Hints Resolve sumbool_of_bool : bool.
 
 Definition bool_eq_rec : (b:bool)(P:bool->Set)
                     ((b=true)->(P true))->((b=false)->(P false))->(P b).
-Induction b; Auto.
+NewDestruct b; Auto.
 Defined.
 
 Definition bool_eq_ind : (b:bool)(P:bool->Prop)
                     ((b=true)->(P true))->((b=false)->(P false))->(P b).
-Induction b; Auto.
+NewDestruct b; Auto.
 Defined.
 
 

@@ -88,58 +88,58 @@ Inductive vector: nat -> Set :=
 
 Definition Vhead : (n:nat) (vector (S n)) -> A.
 Proof.
-	Intros; Inversion H; Exact a.
+	Intros n v; Inversion v; Exact a.
 Defined.
 
 Definition Vtail : (n:nat) (vector (S n)) -> (vector n).
 Proof.
-	Intros; Inversion H; Exact H1.
+	Intros n v; Inversion v; Exact H0.
 Defined.
 
 Definition Vlast : (n:nat) (vector (S n)) -> A.
 Proof.
-	Induction n; Intros.
-	Inversion H.
+	NewInduction n as [|n f]; Intro v.
+	Inversion v.
 	Exact a.
 
-	Inversion H0.
-	Exact (H H2).
+	Inversion v.
+	Exact (f H0).
 Defined.
 
 Definition Vconst : (a:A) (n:nat) (vector n).
 Proof.
-	Induction n; Intros.
+	NewInduction n as [|n v].
 	Exact Vnil.
 
-	Exact (Vcons a n0 H).
+	Exact (Vcons a n v).
 Defined.
 
 Lemma Vshiftout : (n:nat) (vector (S n)) -> (vector n).
 Proof.
-	Induction n; Intros.
+	NewInduction n as [|n f]; Intro v.
 	Exact Vnil.
 
-	Inversion H0.
-	Exact (Vcons a n0 (H H2)).
+	Inversion v.
+	Exact (Vcons a n (f H0)).
 Defined.
 
 Lemma Vshiftin : (n:nat) A -> (vector n) -> (vector (S n)).
 Proof.
-	Induction n; Intros.
-	Exact (Vcons H O H0).
+	NewInduction n as [|n f]; Intros a v.
+	Exact (Vcons a O v).
 
-	Inversion H1.
-	Exact (Vcons a (S n0) (H H0 H3)).
+	Inversion v.
+	Exact (Vcons a (S n) (f a H0)).
 Defined.
 
 Lemma Vshiftrepeat : (n:nat) (vector (S n)) -> (vector (S (S n))).
 Proof.
-	Induction n; Intros.
-	Inversion H.
-	Exact (Vcons a (1) H).
+	NewInduction n as [|n f]; Intro v.
+	Inversion v.
+	Exact (Vcons a (1) v).
 
-	Inversion H0.
-	Exact (Vcons a (S (S n0)) (H H2)).
+	Inversion v.
+	Exact (Vcons a (S (S n)) (f H0)).
 Defined.
 
 (*
@@ -151,48 +151,48 @@ Save.
 
 Lemma Vtrunc : (n,p:nat) (gt n p) ->  (vector n) -> (vector (minus n p)).
 Proof.
-	Induction p; Intros.
+	NewInduction p as [|p f]; Intros H v.
 	Rewrite <- minus_n_O.
-	Exact H0.
+	Exact v.
 
-	Apply (Vshiftout (minus n (S n0))).
+	Apply (Vshiftout (minus n (S p))).
 
 Rewrite minus_Sn_m.
-Apply H.
+Apply f.
 Auto with *.
-Exact H1.
+Exact v.
 Auto with *.
 Defined.
 
 Lemma Vextend : (n,p:nat) (vector n) ->  (vector p) -> (vector (plus n p)).
 Proof.
-	Induction n; Intros.
-	Simpl; Exact H0.
+	NewInduction n as [|n f]; Intros p v v0.
+	Simpl; Exact v0.
 
-	Inversion H0.
-	Simpl; Exact (Vcons a (plus n0 p) (H p H3 H1)).
+	Inversion v.
+	Simpl; Exact (Vcons a (plus n p) (f p H0 v0)).
 Defined.
 
 Variable f : A -> A.
 
 Lemma Vunary : (n:nat)(vector n)->(vector n).
 Proof.
-	Induction n; Intros.
+	NewInduction n as [|n g]; Intro v.
 	Exact Vnil.
 
-	Inversion H0.
-	Exact (Vcons (f a) n0 (H H2)).
+	Inversion v.
+	Exact (Vcons (f a) n (g H0)).
 Defined.
 
 Variable g : A -> A -> A.
 
 Lemma Vbinary : (n:nat)(vector n)->(vector n)->(vector n).
 Proof.
-	Induction n; Intros.
+	NewInduction n as [|n h]; Intros v v0.
 	Exact Vnil.
 
-	Inversion H0; Inversion H1.
-	Exact (Vcons (g a a0) n0 (H H3 H5)).
+	Inversion v; Inversion v0.
+	Exact (Vcons (g a a0) n (h H0 H2)).
 Defined.
 
 End VECTORS.
