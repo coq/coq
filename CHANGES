@@ -16,6 +16,13 @@ A revision of the standard library and of concrete syntax of Coq, including
   backquote or double-backquotes delimiters.
 - Symbolic notations for lists and argument of nil is implicit
 
+Logic
+
+- Set now predicate by default
+- New option -strongly-constructive to set Set impredicative
+- New option -strongly-classical to forbid Set to be set impredicative
+  in future development
+
 Syntax translator
 
 - Unsafe for annotation Cases when constructors coercions are used or when
@@ -46,9 +53,12 @@ Vernacular commands
 - Notation now mandatorily requires a precedence and associativity
   (default was to set precedence to 1 and associativity to none)
 - New command "About name" for light printing of type, implicit arguments, etc.
-- New declaration "Conjecture" and command "Admitted" to declare incompletely
-  proven statement as axioms
+- New command "Admitted" to declare incompletely proven statement as axioms
+- New keyword "Conjecture" to declare an axiom intended to be provable
 - New command "SearchNamed" for searching objects by components of their name
+- SearchAbout can now search for lemmas referring to more than one constant
+  and on substrings of the name of the lemma
+- Locate now searches for all names having a given suffix
 
 Commands
 
@@ -80,10 +90,13 @@ Grammar extensions
 
 Library
 
-- "true_sub" used in Zplus now a definition, not a local one
+- New library NArith on binary natural numbers
+- "true_sub" used in Zplus now a definition, not a local one (source
+  of incompatibilities in proof referring to true_sub, may need extra Unfold)
 - Some lemmas about minus moved from fast_integer to Arith/Minus.v
-  (le_minus, lt_mult_left)
-- Lemma add_x_x moved from auxiliary.v to fast_integer.v
+  (le_minus, lt_mult_left) (theoretical source of incompatibilities)
+- Several lemmas moved from auxiliary.v and zarith_aux.v to
+  fast_integer.v (theoretical source of incompatibilities)
 - New file about the factorial function in Arith
 - Variables names of iff_trans changed (source of incompatibilities)
 
@@ -109,6 +122,12 @@ Tactics
   of incompatibilities)
 - Symmetry now applies to hypotheses too
 - Inversion now accept a "as [ ... ]" option to name the hypotheses
+- Contradiction now looks also for contradictory hypotheses stating ~A and A
+  (source of incompatibility)
+- "Contradiction c" try to find an hypothesis in context which
+  contradicts the type of c
+- Ring applies to new library NArith (require file NArithRing)
+- Field now works on types in Set
 
 Bugs
 
@@ -119,6 +138,17 @@ Miscellaneous
 
 - Implicit parameters of inductive types definition now taken into
   account for infering other implicit arguments
+
+Incompatibilities
+
+- Persistence of true_sub (4 incompatibilities in Coq user contributions)
+- Restructuration in ZArith and Arith (no incompatibility in Coq user contribs)
+- Variable names of some constants changed for a better uniformity (2 changes
+  in Coq user contributions)
+- Naming of quantified names in goal now avoid global names (2 occurrences)
+- NewInduction naming for inductive types with functional arguments
+   (no incompatibility)
+- Contradiction now solve more goals (source of 1 incompatibility)
 
 Changes from V7.3.1 to V7.4
 ===========================
