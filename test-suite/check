@@ -86,6 +86,21 @@ test_output() {
 	    echo "Error! (unexpected output)"
         fi 
     done
+    for f in $1/*.v8; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+        cp $f tmp8.v
+        tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
+	$command tmp8.v 2>&1 | tail +3 > $tmpoutput
+        foutput=`dirname $f`/`basename $f .v8`.out8
+        if [ $? = 0 ]; then
+            echo "Ok"
+            nbtestsok=`expr $nbtestsok + 1`
+        else
+            echo "V8 Error! (unexpected output)"
+        fi
+        rm tmp8.v
+    done
 }
 
 # La fonction suivante teste l'analyseur syntaxique fournit par "parser"
@@ -112,9 +127,8 @@ test_parser() {
 
 # Programme principal
 
-# echo "Output tests"
-# test_output output
-echo "[Output tests are off]"
+echo "Output tests"
+test_output output
 echo "Success tests"
 test_success success
 echo "Failure tests"
