@@ -313,8 +313,7 @@ let ast_of_rawconstr = ast_of_raw
 let ast_of_constr at_top env t =
   let t' =
     if !print_casts then t
-    else Reduction.strong (fun _ _ -> strip_outer_cast)
-      empty_env Evd.empty t in
+    else Reduction.local_strong strip_outer_cast t in
   let avoid = if at_top then ids_of_context env else [] in
   ast_of_raw 
     (Detyping.detype avoid (names_of_rel_context env) t')
