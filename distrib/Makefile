@@ -59,7 +59,7 @@ noarguments:
 
 ################## Main targets
 
-distrib: tag tar-gz
+distrib: tag export tar-gz
 rpm: src-rpm arch-rpm
 ide-rpm: ide-src-rpm ide-arch-rpm
 
@@ -68,11 +68,19 @@ tag:
 	echo -n "Tagging the archive with version number $(DASHEDVERSION)...";\
 	cvs rtag -F $(DASHEDVERSION) $(MAJORVERSION)
 
-tar-gz: 
+export:
 	@echo -n Exporting a fresh copy of the archive...
 	@- rm -rf ${COQPACKAGE}
 	@cvs export -d $(COQPACKAGE) -r $(DASHEDVERSION) $(MAJORVERSION)
 	@echo done
+
+export-from-local:
+	@- rm -rf ${COQPACKAGE}
+	mkdir ${COQPACKAGE}
+	cd .. ; cp -rf `ls -a | egrep -v 'distrib|^\.$$|^\.\.$$'` distrib/${COQPACKAGE}/
+	cd ${COQPACKAGE}/ ; $(MAKE) clean
+
+tar-gz: 
 	@echo -n Removing the maintenance files and doc...
 #	@rm -rf ${COQPACKAGE}/doc     # doc is implementation doc
 	@rm -rf ${COQPACKAGE}/distrib
@@ -194,17 +202,18 @@ rpm-config: rpm-dirs
 # Les cibles suivantes ne sont pas acceptées sur DEC (car paramétrées)
 
 ${COQPACKAGE}.tar.gz:
-	${MAKE} tar-gz
+	${MAKE} export tar-gz
 
 # rpm 3.0 met dans LOCALARCH mais rpm 2.5 dans ARCH...
-${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz coq.spec
+${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz RH/coq.spec
 	${MAKE} rpm-config
 	cp -f petit-coq.gif ${RPMTOPDIR}/SOURCES
 	cp -f ${COQPACKAGE}.tar.gz ${RPMTOPDIR}/SOURCES
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
 	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
-	${RPM} -ba coq.spec
+	- rm -fr $(RPMBUILDROOT)
+	${RPM} -ba RH/coq.spec
 	mv ${RPMTOPDIR}/SRPMS/${COQRPMPACKAGE}.src.rpm .
 	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ];\
 	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${COQRPMPACKAGE}.${ARCH}.rpm;\
@@ -218,6 +227,7 @@ ${COQIDERPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz RH/coqide.spec
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
 	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	- rm -fr $(RPMBUILDROOT)
 	${RPM} -ba RH/coqide.spec
 	mv ${RPMTOPDIR}/SRPMS/${COQIDERPMPACKAGE}.src.rpm .
 	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ];\
@@ -230,6 +240,7 @@ ${COQRPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQRPMPACKAGE}.src.rpm
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
 	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	#- rm -fr $(RPMBUILDROOT)
 	${RPM} --rebuild ${COQRPMPACKAGE}.src.rpm
 	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ];\
 	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${COQRPMPACKAGE}.${ARCH}.rpm;\
@@ -240,6 +251,7 @@ ${COQIDERPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQIDERPMPACKAGE}.src.rpm
 	- mkdir ${RPMTOPDIR}/RPMS/${ARCH}
 	- rm ${RPMTOPDIR}/RPMS/${LOCALARCH}
 	- ln -s ${RPMTOPDIR}/RPMS/${ARCH} ${RPMTOPDIR}/RPMS/${LOCALARCH}
+	#- rm -fr $(RPMBUILDROOT)
 	${RPM} --rebuild ${COQIDERPMPACKAGE}.src.rpm
 	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ];\
 	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQIDERPMPACKAGE}.${LOCALARCH}.rpm ${COQIDERPMPACKAGE}.${ARCH}.rpm;\
@@ -250,15 +262,15 @@ RH/coq.list: ${COQPACKAGE}.tar.gz Makefile config.distrib
 	rm -rf RH/${COQPACKAGE} RH/build
 	cd RH ; tar xzf ../${COQPACKAGE}.tar.gz
 	cd RH/${COQPACKAGE} ; sh ../do_build
-	cd RH/${COQPACKAGE} ; make COQINSTALLPREFIX=${DISTRIBDIR}/RH/build install
+	cd RH/${COQPACKAGE} ; make COQINSTALLPREFIX=${DISTRIBDIR}/RH/build install-coq
 	echo "# This file has been generated" > RH/coq.list
 	echo "# Do not edit" >>RH/coq.list
-	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' -e '/coqide/d' >> ../coq.list
+	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g' >> ../coq.list
 
-coq.spec: RH/coq.list RH/coq.spec.tpl
-	echo "# This file has been generated from RH/coq.spec.tpl" > coq.spec
-	echo "# Do not edit" >> coq.spec
-	cd RH ; m4 -P coq.spec.tpl >> ../coq.spec
+RH/coq.spec: RH/coq.list RH/coq.spec.tpl
+	echo "# This file has been generated from RH/coq.spec.tpl" > RH/coq.spec
+	echo "# Do not edit" >> RH/coq.spec
+	cd RH ; m4 -P coq.spec.tpl >> coq.spec
 
 ##########
 contrib-tag:

@@ -1,12 +1,12 @@
 Name: coq
-Version: 8.0beta
+Version: 8.0
 Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0beta/coq-8.0beta.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
 Icon: petit-coq.gif
 
 %description
@@ -32,7 +32,7 @@ m4_include(do_build)
 make clean
 
 %install
-make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install
+make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-coq
 # To install only locally the binaries compiled with absolute paths
 
 %post

@@ -19,13 +19,13 @@ Coq proof assistant
 
 %build
 ./configure -bindir /usr/bin -libdir /usr/lib/coq -mandir /usr/man -emacs emacs -emacslib /usr/share/emacs/site-lisp -opt -reals all # Need ocamlc.opt and ocamlopt.opt
-make ide  # Use native coq to compile theories
+make coqide  # Use native coq to compile theories
 
 %clean
 make clean
 
 %install
-make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-ide
+make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-coqide
 # To install only locally the binaries compiled with absolute paths
 
 %post
@@ -48,6 +48,7 @@ fi
 /usr/bin/coqide.byte
 /usr/bin/coqide.opt
 /usr/bin/coqide
+/usr/lib/coq/ide/utf8.v
 /usr/lib/coq/ide/utf8.vo
 /usr/lib/coq/ide/coq.png
 /usr/lib/coq/ide/.coqide-gtk2rc

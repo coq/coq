@@ -36,8 +36,15 @@ noargument:
 	@echo
 	@echo "For make to be verbose, add VERBOSE=1"
 
+# build and install the three subsystems: coq, coqide, pcoq
+world: coq coqide pcoq
+world8: coq8 coqide pcoq
+world7: coq7 coqide pcoq
 
-
+install: install-coq install-coqide install-pcoq
+install8: install-coq8 install-coqide install-pcoq
+install7: install-coq7 install-coqide install-pcoq
+#install-manpages: install-coq-manpages install-pcoq-manpages
 
 ###########################################################################
 # Compilation options
@@ -217,22 +224,6 @@ ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
-INTERFACE=\
-  contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
-  contrib/interface/paths.cmo contrib/interface/translate.cmo \
-  contrib/interface/pbp.cmo \
-  contrib/interface/dad.cmo \
-  contrib/interface/history.cmo \
-  contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
-  contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
-  contrib/interface/blast.cmo contrib/interface/centaur.cmo
-INTERFACECMX=$(INTERFACE:.cmo=.cmx)
-
-ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
-
-PARSERREQUIRES=$(CMO) # Solution de facilité...
-PARSERREQUIRESCMX=$(CMX)
-
 ML4FILES +=\
   contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
@@ -323,18 +314,14 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
-COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
 
-COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
-             $(COQINTERFACE) 
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP)
 
 coqbinaries:: ${COQBINARIES}
 
-world: coqlib tools coqbinaries coqide coqlib7
-
-world8: coqlib tools coqbinaries coqide
-
-world7: coqlib7 tools coqbinaries coqide
+coq: coqlib tools coqbinaries coqlib7
+coq8: coqlib tools coqbinaries
+coq7: coqlib7 tools coqbinaries
 
 coqlib:: newtheories newcontrib
 
@@ -385,91 +372,6 @@ scripts/tolink.ml: Makefile
 	$(HIDE)echo "let ide = \""$(COQIDECMO)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
-
-# Coq IDE
-
-COQIDEBYTE=bin/coqide.byte$(EXE)
-COQIDEOPT=bin/coqide.opt$(EXE)
-COQIDE=bin/coqide$(EXE)
-
-COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
-	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
-	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
-	  ide/utils/configwin.cmo \
-	  ide/utils/editable_cells.cmo ide/config_parser.cmo \
-	  ide/config_lexer.cmo ide/utf8_convert.cmo ide/preferences.cmo \
-	  ide/ideutils.cmo ide/blaster_window.cmo ide/undo.cmo \
-	  ide/find_phrase.cmo \
-          ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
-	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
-
-COQIDECMX=$(COQIDECMO:.cmo=.cmx)
-COQIDEFLAGS=-thread -I +lablgtk2
-beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
-beforedepend:: ide/config_parser.mli ide/config_parser.ml
-beforedepend:: ide/utf8_convert.ml
-
-FULLIDELIB=$(FULLCOQLIB)/ide
-
-COQIDEVO=ide/utf8.vo
-
-$(COQIDEVO): states/initial.coq 
-	$(BOOTCOQTOP) -compile $*
-
-IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.png ide/.coqide-gtk2rc
-
-coqide: $(IDEFILES) coqide-$(HASCOQIDE)
-coqide-no:
-coqide-byte: $(COQIDEBYTE) $(COQIDE)
-coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
-
-ide: coqide-$(HASCOQIDE) states
-
-clean-ide: 
-	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
-
-$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
-	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
-	$(STRIP) $@
-
-$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide/ide.cma
-	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
-
-$(COQIDE):
-	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
-
-ide/%.cmo: ide/%.ml
-	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
-
-ide/%.cmi: ide/%.mli
-	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
-
-ide/%.cmx: ide/%.ml
-	$(SHOW)'OCAMLOPT  $<'	
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
-
-ide/utils/%.cmo: ide/%.ml
-	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
-
-ide/utils/%.cmi: ide/%.mli
-	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
-
-ide/utils/%.cmx: ide/%.ml
-	$(SHOW)'OCAMLOPT  $<'	
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
-
-clean::
-	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
-	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
-	rm -f ide/utf8_convert.ml
-	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
-	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
 # coqc
 
@@ -608,6 +510,93 @@ parsing/highparsingnew.cmxa: $(HIGHPARSINGNEW:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSINGNEW:.cmo=.cmx)
 
+###########################################################################
+# CoqIde special targets
+###########################################################################
+
+# target to build CoqIde
+coqide:: coqide-files coqide-binaries states
+
+COQIDEBYTE=bin/coqide.byte$(EXE)
+COQIDEOPT=bin/coqide.opt$(EXE)
+COQIDE=bin/coqide$(EXE)
+
+COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
+	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
+	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
+	  ide/utils/configwin.cmo \
+	  ide/utils/editable_cells.cmo ide/config_parser.cmo \
+	  ide/config_lexer.cmo ide/utf8_convert.cmo ide/preferences.cmo \
+	  ide/ideutils.cmo ide/blaster_window.cmo ide/undo.cmo \
+	  ide/find_phrase.cmo \
+          ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
+	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
+
+COQIDECMX=$(COQIDECMO:.cmo=.cmx)
+COQIDEFLAGS=-thread -I +lablgtk2
+beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
+beforedepend:: ide/config_parser.mli ide/config_parser.ml
+beforedepend:: ide/utf8_convert.ml
+
+COQIDEVO=ide/utf8.vo
+
+$(COQIDEVO): states/initial.coq 
+	$(BOOTCOQTOP) -compile $*
+
+IDEFILES=$(COQIDEVO) ide/utf8.v ide/coq.png ide/.coqide-gtk2rc
+
+coqide-binaries: coqide-$(HASCOQIDE)
+coqide-no:
+coqide-byte: $(COQIDEBYTE) $(COQIDE)
+coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+coqide-files: $(IDEFILES)
+
+clean-ide: 
+	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+
+$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
+	$(SHOW)'COQMKTOP -o $@'	
+	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
+	$(STRIP) $@
+
+$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide/ide.cma
+	$(SHOW)'COQMKTOP -o $@'	
+	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
+
+$(COQIDE):
+	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
+
+ide/%.cmo: ide/%.ml
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/%.cmi: ide/%.mli
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/%.cmx: ide/%.ml
+	$(SHOW)'OCAMLOPT  $<'	
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+
+ide/utils/%.cmo: ide/%.ml
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/utils/%.cmi: ide/%.mli
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/utils/%.cmx: ide/%.ml
+	$(SHOW)'OCAMLOPT  $<'	
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+
+clean::
+	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
+	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
+	rm -f ide/utf8_convert.ml
+	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
+	rm -f $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+
 ide/ide.cma: $(COQIDECMO)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
@@ -616,7 +605,55 @@ ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
 
-# special binaries for debugging
+# install targets
+
+FULLIDELIB=$(FULLCOQLIB)/ide
+
+install-coqide:: install-ide-$(HASCOQIDE) install-ide-files install-ide-info
+
+install-ide-no:
+
+install-ide-byte: 
+	cp $(COQIDEBYTE) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
+
+install-ide-opt:
+	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
+
+install-ide-files:
+	$(MKDIR) $(FULLIDELIB)
+	cp $(IDEFILES) $(FULLIDELIB)
+
+install-ide-info:
+	$(MKDIR) $(FULLIDELIB)
+	cp ide/FAQ $(FULLIDELIB)
+
+###########################################################################
+# Pcoq: special binaries for debugging (coq-interface, parser)
+###########################################################################
+
+# target to build Pcoq
+pcoq: pcoq-binaries pcoq-files
+
+INTERFACE=\
+  contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
+  contrib/interface/paths.cmo contrib/interface/translate.cmo \
+  contrib/interface/pbp.cmo \
+  contrib/interface/dad.cmo \
+  contrib/interface/history.cmo \
+  contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
+  contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
+  contrib/interface/blast.cmo contrib/interface/centaur.cmo
+INTERFACECMX=$(INTERFACE:.cmo=.cmx)
+
+ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
+
+PARSERREQUIRES=$(CMO) # Solution de facilité...
+PARSERREQUIRESCMX=$(CMX)
+
+COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
+pcoq-binaries:: $(COQINTERFACE) 
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(SHOW)'COQMKTOP -o $@'
@@ -631,14 +668,39 @@ bin/parser$(EXE): contrib/interface/parse.cmx contrib/interface/line_parser.cmx 
 	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
 	$(PARSERREQUIRESCMX) line_parser.cmx vtp.cmx xlate.cmx parse.cmx
 
+INTERFACEVO=
+
+INTERFACERC= contrib/interface/vernacrc
+
+pcoq-files:: $(INTERFACEVO) $(INTERFACERC)
+
+# Centaur grammar rules now in centaur.ml4
+contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
+	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
+
+# Move the grammar rules to dad.ml ?
+contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/initial.coq
+	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
+
 clean::
 	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
+
+# install targets
+install-pcoq::
+	$(MKDIR) $(FULLBINDIR)
+	cp  $(COQINTERFACE) $(FULLBINDIR)
+
+PCOQMANPAGES=man/coq-interface.1 man/parser.1
+
+install-pcoq-manpages:
+	$(MKDIR) $(FULLMANDIR)/man1
+	cp $(COQMANPAGES) $(FULLMANDIR)/man1
 
 ###########################################################################
 # tests
 ###########################################################################
 
-check:: world $(COQINTERFACE)
+check:: world pcoq
 	cd test-suite; \
 	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
@@ -827,7 +889,7 @@ noreal: logic arith bool zarith lists sets intmap relations wellfounded \
 	setoids sorting
 
 ###########################################################################
-# contribs
+# contribs (interface not included)
 ###########################################################################
 
 OMEGAVO=\
@@ -850,10 +912,6 @@ FIELDVO=\
 
 XMLVO= 
 
-INTERFACEVO=
-
-INTERFACERC= contrib/interface/vernacrc
-
 FOURIERVO=\
  contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
@@ -865,12 +923,11 @@ CCVO=\
  contrib/cc/CCSolve.vo
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
-	    $(FOURIERVO) \
-	    $(JPROVERVO) $(INTERFACEVO) $(CCVO) $(FUNINDVO)
+	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO)
 
 $(CONTRIBVO): states/initial.coq
 
-contrib: $(CONTRIBVO) $(CONTRIBCMO) $(INTERFACERC)
+contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
 # xml_ instead of xml to avoid conflict with "make xml"
@@ -931,41 +988,20 @@ states7/initial.coq: states7/barestate.coq states7/MakeInitial.v $(OLDINITVO) $(
 states/initial.coq: states/MakeInitial.v $(NEWINITVO)
 	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-#newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
-#	@$(MKDIR) newtheories/Init
-#	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
-
 theories7/Init/%.vo: $(BESTCOQTOP) theories7/Init/%.v
 	$(BOOTCOQTOP) $(TRANSLATE) -nois -compile theories7/Init/$*
-
-#newtheories/%.v: theories/%.vo
-#	@$(MKDIR) newtheories/`dirname $*`
-#	@cp -f theories/$*.v8  newtheories/$*.v
 
 theories7/%.vo: theories7/%.v states7/initial.coq
 	$(BOOTCOQTOP) $(TRANSLATE) -compile theories7/$*
 
-#newcontrib/%.v: contrib/%.vo
-#	@$(MKDIR) newcontrib/`dirname $*`
-#	@cp -f contrib/$*.v8  newcontrib/$*.v
-
 contrib7/%.vo: contrib7/%.v states7/initial.coq
 	$(BOOTCOQTOP) $(TRANSLATE) -compile contrib7/$*
-
-#newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
-#	$(BOOTCOQTOP) -nois -compile $*
 
 theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
 	$(BOOTCOQTOP) -nois -compile theories/Init/$*
 
-#newtheories/%.vo: newtheories/%.v states/initialnew.coq
-#	$(BOOTCOQTOP) -compile newtheories/$*
-
 theories/%.vo: theories/%.v states/initial.coq
 	$(BOOTCOQTOP) -compile theories/$*
-
-#newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-#	$(BOOTCOQTOP) -compile newcontrib/$*
 
 contrib/%.vo: contrib/%.v
 	$(BOOTCOQTOP) -compile contrib/$*
@@ -976,40 +1012,13 @@ contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 contrib7/extraction/%.vo: contrib7/extraction/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) $(TRANSLATE) -is states7/barestate.coq -compile $*
 
-# Centaur grammar rules now in centaur.ml4
-contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
-
-#newtheories/Lists/List.v: newtheories/Lists/PolyList.v
-#	(cd newtheories/Lists; cp -f PolyList.v List.v)
-
-#newtheories/Lists/PolyList.vo:
-#	@cd #nil command: don't compile it
-
-#newtheories/Lists/PolyListSyntax.vo:
-#	@cd #nil command: don't compile it
-
-#newtheories/ZArith/ZSyntax.vo:
-#	@cd #nil command: obsolete, don't compile it
-
-#newtheories/ZArith/zarith_aux.vo:
-#	@cd #nil command: obsolete, don't compile it
-
-# Move the grammar rules to dad.ml ?
-contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/initial.coq
-	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
-
 clean::
 	rm -f states/*.coq states7/*.coq
-
-clean::
 	rm -f theories/*/*.vo theories7/*/*.vo
-
-clean::
-	rm -f contrib/*/*.cm[io] contrib/*/*.vo contrib7/*/*.vo user-contrib/*.cm[io]
+	rm -f contrib/*/*.cm[io] contrib/*.cma contrib/*/*.vo contrib7/*/*.vo 
 
 archclean::
-	rm -f contrib/*/*.cmx contrib/*/*.[so]
+	rm -f contrib/*/*.cmx contrib/*.cmxa contrib/*.a contrib/*/*.[so]
 
 # globalizations (for coqdoc)
 
@@ -1030,7 +1039,9 @@ COQWC=bin/coqwc$(EXE)
 COQVO2XML=bin/coq_vo2xml$(EXE)
 RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
-tools:: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) $(COQWC) dev/top_printers.cmo
+TOOLS=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) $(COQWC)
+
+tools:: $(TOOLS) dev/top_printers.cmo
 
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
@@ -1073,7 +1084,7 @@ clean::
 	rm -f tools/coqwc.ml
 
 archclean::
-	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQWC) $(COQMAKEFILE) $(COQVO2XML)
+	rm -f $(TOOLS)
 
 ###########################################################################
 # minicoq
@@ -1117,39 +1128,26 @@ FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)
 FULLMANDIR=$(COQINSTALLPREFIX)$(MANDIR)
 FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
-install: install-$(BEST) install-binaries install-library install-manpages
+install-coq: install-binaries install-library install-coq-info
+install-coq8: install-binaries install-library8 install-coq-info
+install-coq7: install-binaries install-library7 install-coq-info
+install-coqlight: install-binaries install-library-light
 
-install8: install-$(BEST) install-binaries install-library8 install-manpages
+install-binaries:: install-$(BEST) install-tools
 
-install7: install-$(BEST) install-binaries install-library7 install-manpages
-
-install-coqlight: install-$(BEST) install-binaries install-library-light
-
-install-byte:
+install-byte::
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE)
 
-install-opt:
+install-opt::
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE)
 
-install-binaries: install-ide-$(HASCOQIDE)
+install-tools::
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQWC) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
-
-install-ide: install-ide-$(HASCOQIDE)
-
-install-ide-no:
-
-install-ide-byte: 
-	cp $(COQIDEBYTE) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
-
-install-ide-opt:
-	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
+	cp $(TOOLS) $(FULLBINDIR)
 
 LIBFILES=$(OLDTHEORIESVO) $(OLDCONTRIBVO)
 LIBFILESLIGHT=$(OLDTHEORIESLIGHTVO)
@@ -1167,10 +1165,6 @@ install-library8:
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
-	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
-	$(MKDIR) $(FULLIDELIB)
-	cp $(IDEFILES) $(FULLIDELIB)
 
 install-library7:
 	$(MKDIR) $(FULLCOQLIB)
@@ -1180,8 +1174,6 @@ install-library7:
         done
 	$(MKDIR) $(FULLCOQLIB)/states7
 	cp states7/*.coq $(FULLCOQLIB)/states7
-	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
@@ -1193,8 +1185,6 @@ install-library-light:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/states7
 	cp states7/*.coq $(FULLCOQLIB)/states7
-	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 install-allreals::
 	for f in $(ALLREALS); do \
@@ -1202,14 +1192,19 @@ install-allreals::
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
 
+install-coq-info: install-coq-manpages install-emacs
+
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
-	man/coq_makefile.1 man/coqmktop.1 \
-	man/coq-interface.1 man/parser.1 man/coq_vo2xml.1
+	man/coq_makefile.1 man/coqmktop.1 man/coq_vo2xml.1
 
-install-manpages:
+install-coq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
 	cp $(MANPAGES) $(FULLMANDIR)/man1
+
+install-emacs:
+	$(MKDIR) $(FULLEMACSLIB)
+	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 ###########################################################################
 # Documentation
@@ -1508,9 +1503,6 @@ dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories7 Coq -R contrib7 Coq $(COQINCLUDES) \
 	 $(ALLOLDREALS:.vo=.v) $(ALLOLDVO:.vo=.v) > .depend.coq7
 
-#.depend.newcoq: .depend.coq Makefile
-#	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" -e "s| newtheories/Lists/PolyListSyntax| newtheories/Lists/List|g" -e "s| newtheories/Lists/PolyList| newtheories/Lists/List|g" .depend.coq > .depend.newcoq
-
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
 # by making scratchdepend, one gets dependencies OK for .ml files and
@@ -1571,8 +1563,9 @@ devel:
 
 include .depend
 include .depend.coq
-#include .depend.newcoq
 include .depend.coq7
 
 clean::
-	rm -fr *.v8 newtheories newcontrib
+	rm -fr *.v8 states/*.v8 syntax/*.v8 ide/*.v8 \
+	  theories/*/*.v8 theories7/*/*.v8 test-suite/*/*.v8 \
+	  contrib/*/*.v8 contrib7/*/*.v8 \
