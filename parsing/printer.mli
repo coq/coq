@@ -11,6 +11,7 @@ open Sign
 (* These are the entry points for printing terms, context, tac, ... *)
 val gencompr  : path_kind -> Coqast.t -> std_ppcmds
 val gentermpr : path_kind -> 'a assumptions -> constr -> std_ppcmds
+val gentermpr_at_top : path_kind -> 'a assumptions -> constr -> std_ppcmds
 val gentacpr  : Coqast.t -> std_ppcmds
 
 val prterm_env      : 'a assumptions -> constr -> std_ppcmds

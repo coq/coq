@@ -77,6 +77,7 @@ let gentermpr_core at_top k env t =
   with s -> wrap_exception s
 
 let gentermpr k = gentermpr_core false k
+let gentermpr_at_top k = gentermpr_core true k
 
 let prterm_env_at_top a = gentermpr_core true CCI a
 let prterm_env a = gentermpr CCI a
