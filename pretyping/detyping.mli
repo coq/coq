@@ -23,5 +23,5 @@ val lookup_index_as_renamed : constr -> int -> int option
 
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
-val force_if : inductive_path -> bool
-val force_let : inductive_path -> bool
+val force_if : case_info -> bool
+val force_let : case_info -> bool

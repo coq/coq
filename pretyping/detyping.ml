@@ -100,79 +100,65 @@ let ids_of_env = Sign.ids_of_env
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
-(* These functions implement a light form of Termenv.mind_specif_of_mind    *)
-(* specially for handle Cases printing; they respect arities but not typing *)
 
-let indsp_of_id id  =
-  let (oper,_) =
+let encode_inductive id =
+  let (refsp,tyi as indsp) =
     try 
-      let sp = Nametab.sp_of_id CCI id in global_operator sp id
+      let sp = Nametab.sp_of_id CCI id in
+      match global_operator sp id with
+	| MutInd ind_sp,_ -> ind_sp
+	| _ -> errorlabstrm "indsp_of_id" 
+	    [< 'sTR ((string_of_id id)^" is not an inductive type") >]
     with Not_found -> 
       error ("Cannot find reference "^(string_of_id id))
   in
-  match oper with
-    | MutInd(sp,tyi) -> (sp,tyi)
-    | _ -> errorlabstrm "indsp_of_id" 
-	  [< 'sTR ((string_of_id id)^" is not an inductive type") >]
-	  
-let mind_specif_of_mind_light (sp,tyi) =
-  let mib = Global.lookup_mind sp in
-  (mib,mind_nth_type_packet mib tyi)
+  let mip = mind_nth_type_packet (Global.lookup_mind refsp) tyi in
+  let constr_lengths = Array.map List.length mip.mind_listrec in
+  (indsp,constr_lengths)
 
-let rec remove_indtypes = function
-  | (1, DLAMV(_,cl)) -> cl
-  | (n, DLAM (_,c))  -> remove_indtypes (n-1, c)
-  | _                -> anomaly "remove_indtypes: bad list of constructors"
+let sp_of_spi (refsp,tyi) =
+  let mip = mind_nth_type_packet (Global.lookup_mind refsp) tyi in
+  let (pa,_,k) = repr_path refsp in 
+  make_path pa mip.mind_typename k
 
-let rec remove_params n t =
-  if n = 0 then 
-    t
-  else 
-    match t with
-      | DOP2(Prod,_,DLAM(_,c)) -> remove_params (n-1) c
-      | DOP2(Cast,c,_)         -> remove_params n c
-      | _ -> anomaly "remove_params : insufficiently quantified"
-	    
-let rec get_params = function
-  | DOP2(Prod,_,DLAM(x,c)) -> x::(get_params c)
-  | DOP2(Cast,c,_)         -> get_params c
-  | _                      -> []
-
-let lc_of_lmis (mib,mip) =
-  let lc = remove_indtypes (mib.mind_ntypes,mip.mind_lc) in
-  Array.map (remove_params mib.mind_nparams) lc
-
-let sp_of_spi ((sp,_) as spi) =
+(*
   let (_,mip) = mind_specif_of_mind_light spi in
   let (pa,_,k) = repr_path sp in 
   make_path pa (mip.mind_typename) k
-
-
+*)
 (* Parameterization of the translation from constr to ast      *)
 
 (* Tables for Cases printing under a "if" form, a "let" form,  *)
 
 let isomorphic_to_bool lc =
+  Array.length lc = 2 & lc.(0) = 0 & lc.(1) = 0
+
+(*
+let isomorphic_to_bool lc =
   let lcparams = Array.map get_params lc in
   Array.length lcparams = 2 & lcparams.(0) = [] & lcparams.(1) = []
+*)
 
 let isomorphic_to_tuple lc = (Array.length lc = 1)
-
+(*
+let isomorphic_to_tuple lc = (Array.length lc = 1)
+*)
 module PrintingCasesMake =
   functor (Test : sig 
-     val test : constr array -> bool
+     val test : int array -> bool
+(*     val test : constr array -> bool*)
      val error_message : string
      val member_message : identifier -> bool -> string
      val field : string
      val title : string
   end) ->
   struct
-    type t = section_path * int
-    let encode = indsp_of_id
-    let check indsp =
-      if not (Test.test (lc_of_lmis (mind_specif_of_mind_light indsp))) then 
+    type t = inductive_path * int array
+    let encode = encode_inductive
+    let check (_,lc) =
+      if not (Test.test lc) then 
 	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
-    let decode = sp_of_spi
+    let decode (spi,_) = sp_of_spi spi
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message
@@ -213,8 +199,8 @@ module PrintingCasesLet =
 module PrintingIf  = Goptions.MakeTable(PrintingCasesIf)
 module PrintingLet = Goptions.MakeTable(PrintingCasesLet)
 
-let force_let indsp = PrintingLet.active indsp
-let force_if indsp = PrintingIf.active indsp
+let force_let (lc,(indsp,_,_,_,_)) = PrintingLet.active (indsp,lc)
+let force_if (lc,(indsp,_,_,_,_)) = PrintingIf.active (indsp,lc)
 
 (* Options for printing or not wildcard and synthetisable types *)
 
@@ -347,34 +333,28 @@ let rec detype avoid env t =
 	      warning "Printing in old Case syntax";
 	      ROldCase (dummy_loc,false,Some (detype avoid env p),
 			tomatch,Array.map (detype avoid env) bl)
-	  | Some *) indsp ->
-	      let (mib,mip as lmis) = mind_specif_of_mind_light indsp in
-	      let lc = lc_of_lmis lmis in
-	      let lcparams = Array.map get_params lc in
-	      let k = (nb_prod mip.mind_arity.body) - 
-		      mib.mind_nparams in
-	      let pred = 
-		if synth_type & computable p k & lcparams <> [||] then
-		  None
-		else 
-		  Some (detype avoid env p) 
-	      in
-	      let constructs = 
-		Array.init
-		  (Array.length mip.mind_consnames)
-		  (fun i -> ((indsp,i+1),[] (* on triche *))) in
-	      let eqnv =
-		array_map3 (detype_eqn avoid env) constructs lcparams bl in
-	      let eqnl = Array.to_list eqnv in
-	      let tag =
-		if PrintingLet.active indsp then 
-		  PrintLet 
-		else if PrintingIf.active indsp then 
-		  PrintIf 
-		else 
-		  PrintCases
-	      in 
-	      RCases (dummy_loc,tag,pred,[tomatch],eqnl)
+	  | Some *) (consnargsl,(indsp,considl,k,style,tags)) ->
+	    let pred = 
+	      if synth_type & computable p k & considl <> [||] then
+		None
+	      else 
+		Some (detype avoid env p) 
+	    in
+	    let constructs = 
+	      Array.init (Array.length considl)
+		(fun i -> ((indsp,i+1),[] (* on triche *))) in
+	    let eqnv =
+	      array_map3 (detype_eqn avoid env) constructs consnargsl bl in
+	    let eqnl = Array.to_list eqnv in
+	    let tag =
+	      if PrintingLet.active (indsp,consnargsl) then 
+		PrintLet 
+	      else if PrintingIf.active (indsp,consnargsl) then 
+		PrintIf 
+	      else 
+		PrintCases
+	    in 
+	    RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	end
 	
     | IsFix (nv,n,cl,lfn,vt) -> detype_fix (RFix (nv,n)) avoid env cl lfn vt
@@ -389,7 +369,7 @@ and detype_fix fk avoid env cl lfn vt =
        Array.map (detype def_avoid def_env) vt)
 
 
-and detype_eqn avoid env constr_id construct_params branch =
+and detype_eqn avoid env constr_id construct_nargs branch =
   let make_pat x avoid env b ids =
     if not (force_wildcard ()) or (dependent (Rel 1) b) then
       let id = next_name_away_with_default "x" x avoid in
@@ -398,25 +378,27 @@ and detype_eqn avoid env constr_id construct_params branch =
       PatVar (dummy_loc,Anonymous),avoid,(add_rel (Anonymous,()) env),ids
   in
   let rec buildrec ids patlist avoid env = function
-    | _::l, DOP2(Lambda,_,DLAM(x,b)) -> 
-	let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
-        buildrec new_ids (pat::patlist) new_avoid new_env (l,b)
+    | 0  , rhs	-> 
+	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
+	 detype avoid env rhs)
 
-    | l   , DOP2(Cast,b,_) ->    (* Oui, il y a parfois des cast *)
-	buildrec ids patlist avoid env (l,b)
+    | n, DOP2(Lambda,_,DLAM(x,b)) -> 
+	let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
+        buildrec new_ids (pat::patlist) new_avoid new_env (n-1,b)
+
+    | n, DOP2(Cast,b,_) ->    (* Oui, il y a parfois des cast *)
+	buildrec ids patlist avoid env (n,b)
 	  
-    | x::l, b -> (* eta-expansion : n'arrivera plus lorsque tous les
+    | n, b -> (* eta-expansion : n'arrivera plus lorsque tous les
                    termes seront construits à partir de la syntaxe Cases *)
 	(* nommage de la nouvelle variable *)
 	let new_b = DOPN(AppL,[|lift 1 b; Rel 1|]) in
-        let pat,new_avoid,new_env,new_ids = make_pat x avoid env new_b ids in
-	buildrec new_ids (pat::patlist) new_avoid new_env (l,new_b)
+        let pat,new_avoid,new_env,new_ids =
+	  make_pat Anonymous avoid env new_b ids in
+	buildrec new_ids (pat::patlist) new_avoid new_env (n-1,new_b)
 	  
-    | []  , rhs	-> 
-	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
-	 detype avoid env rhs)
   in 
-  buildrec [] [] avoid env (construct_params,branch)
+  buildrec [] [] avoid env (construct_nargs,branch)
 
 and detype_binder bk avoid env na ty c =
   let na',avoid' = match concrete_name avoid env na c with

@@ -52,11 +52,11 @@ let rec execute mf env sigma cstr =
 	let (typ,kind) = destCast (type_of_constructor env sigma cstruct) in
         { uj_val = cstr; uj_type = typ; uj_kind = kind }
 	  
-    | IsMutCase (_,p,c,lf) ->
+    | IsMutCase (ci,p,c,lf) ->
         let cj = execute mf env sigma c in
         let pj = execute mf env sigma p in
         let lfj = execute_array mf env sigma lf in
-        type_of_case env sigma pj cj lfj
+        type_of_case env sigma ci pj cj lfj
   
     | IsFix (vn,i,lar,lfi,vdef) ->
         if (not mf.fix) && array_exists (fun n -> n < 0) vn then
