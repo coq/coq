@@ -11,7 +11,6 @@
 Require Rbase.
 Require Rfunctions.
 Require Ranalysis1.
-Require Omega.
 
 (**********)
 Lemma formule : (x,h,l1,l2:R;f1,f2:R->R) ``h<>0`` -> ``(f2 x)<>0`` -> ``(f2 (x+h))<>0`` -> ``((f1 (x+h))/(f2 (x+h))-(f1 x)/(f2 x))/h-(l1*(f2 x)-l2*(f1 x))/(Rsqr (f2 x))`` == ``/(f2 (x+h))*(((f1 (x+h))-(f1 x))/h-l1) + l1/((f2 x)*(f2 (x+h)))*((f2 x)-(f2 (x+h))) - (f1 x)/((f2 x)*(f2 (x+h)))*(((f2 (x+h))-(f2 x))/h-l2) + (l2*(f1 x))/((Rsqr (f2 x))*(f2 (x+h)))*((f2 (x+h))-(f2 x))``.
@@ -31,14 +30,6 @@ Qed.
 Lemma Rmin_pos : (x,y:R) ``0<x`` -> ``0<y`` -> ``0 < (Rmin x y)``.
 Intros; Unfold Rmin.
 Case (total_order_Rle x y); Intro; Assumption.
-Qed.
-
-Lemma Rgt_8_0 : ``0 < 8``.
-Sup0.
-Qed.
-
-Lemma Rgt_4_0 : ``0 < 4``.
-Sup0.
 Qed.
 
 Lemma maj_term1 : (x,h,eps,l1,alp_f2:R;eps_f2,alp_f1d:posreal;f1,f2:R->R) ``0 < eps`` -> ``(f2 x)<>0`` -> ``(f2 (x+h))<>0`` -> ((h:R)``h <> 0``->``(Rabsolu h) < alp_f1d``->``(Rabsolu (((f1 (x+h))-(f1 x))/h-l1)) < (Rabsolu ((eps*(f2 x))/8))``) -> ((a:R)``(Rabsolu a) < (Rmin eps_f2 alp_f2)``->``/(Rabsolu (f2 (x+a))) < 2/(Rabsolu (f2 x))``) -> ``h<>0`` -> ``(Rabsolu h)<alp_f1d`` -> ``(Rabsolu h) < (Rmin eps_f2 alp_f2)`` -> ``(Rabsolu (/(f2 (x+h))*(((f1 (x+h))-(f1 x))/h-l1))) < eps/4``.
@@ -65,7 +56,7 @@ Replace (Rabsolu eps) with eps.
 Repeat Rewrite <- Rinv_r_sym; Try DiscrR Orelse (Apply Rabsolu_no_R0; Assumption).
 Ring.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
+Symmetry; Apply Rabsolu_right; Left; Sup.
 Qed.
 
 Lemma maj_term2 : (x,h,eps,l1,alp_f2,alp_f2t2:R;eps_f2:posreal;f2:R->R) ``0 < eps`` -> ``(f2 x)<>0`` -> ``(f2 (x+h))<>0`` -> ((a:R)``(Rabsolu a) < alp_f2t2``->``(Rabsolu ((f2 (x+a))-(f2 x))) < (Rabsolu ((eps*(Rsqr (f2 x)))/(8*l1)))``)-> ((a:R)``(Rabsolu a) < (Rmin eps_f2 alp_f2)``->``/(Rabsolu (f2 (x+a))) < 2/(Rabsolu (f2 x))``) -> ``h<>0`` -> ``(Rabsolu h)<alp_f2t2`` -> ``(Rabsolu h) < (Rmin eps_f2 alp_f2)`` -> ``l1<>0`` -> ``(Rabsolu (l1/((f2 x)*(f2 (x+h)))*((f2 x)-(f2 (x+h))))) < eps/4``.
@@ -111,7 +102,7 @@ Replace ``2*((Rabsolu l1)*(/(Rabsolu (f2 x))*/(Rabsolu (f2 x))))*(eps*((Rabsolu 
 Repeat Rewrite <- Rinv_r_sym; Try (Apply Rabsolu_no_R0; Assumption) Orelse DiscrR.
 Ring.
 Symmetry; Apply Rabsolu_right; Left; Sup0.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
+Symmetry; Apply Rabsolu_right; Left; Sup.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
 Qed.
 
@@ -158,7 +149,7 @@ Replace ``2*((Rabsolu (f1 x))*(/(Rabsolu (f2 x))*/(Rabsolu (f2 x))))*((Rabsolu (
 Repeat Rewrite <- Rinv_r_sym; Try DiscrR Orelse (Apply Rabsolu_no_R0; Assumption).
 Ring.
 Symmetry; Apply Rabsolu_right; Left; Sup0.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
+Symmetry; Apply Rabsolu_right; Left; Sup.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
 Qed.
 
@@ -211,7 +202,7 @@ Replace ``2*(Rabsolu l2)*((Rabsolu (f1 x))*(/(Rabsolu (f2 x))*/(Rabsolu (f2 x))*
 Repeat Rewrite <- Rinv_r_sym; Try DiscrR Orelse (Apply Rabsolu_no_R0; Assumption).
 Ring.
 Symmetry; Apply Rabsolu_right; Left; Sup0.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
+Symmetry; Apply Rabsolu_right; Left; Sup.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
 Apply prod_neq_R0; Assumption Orelse DiscrR.
 Apply prod_neq_R0; Assumption.

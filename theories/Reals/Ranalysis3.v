@@ -65,15 +65,15 @@ Apply Rlt_4; Assumption.
 Rewrite H8.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite H8.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite H9.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite <- Rabsolu_mult.
 Apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); Try Assumption Orelse Apply H2.
 Apply H14.
@@ -123,11 +123,11 @@ Apply Rlt_4; Assumption.
 Rewrite H8.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite H8.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite <- Rabsolu_mult.
 Apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); Try Assumption.
 Apply H2; Assumption.
@@ -200,7 +200,7 @@ Apply Rlt_4; Assumption.
 Rewrite H10.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite <- Rabsolu_mult.
 Apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); Try Assumption.
 Apply H2; Assumption.
@@ -208,7 +208,7 @@ Apply Rmin_2; Assumption.
 Rewrite H9.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite <- Rabsolu_mult.
 Apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); Assumption Orelse Idtac.
 Apply H2; Assumption.
@@ -275,7 +275,7 @@ Apply Rmin_2; Assumption.
 Rewrite H9.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite <- Rabsolu_mult.
 Apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); Try Assumption.
 Apply H2; Assumption.
@@ -379,7 +379,7 @@ Apply Rlt_4; Assumption.
 Rewrite H10.
 Unfold Rdiv; Repeat Rewrite Rmult_Or Orelse Rewrite Rmult_Ol.
 Rewrite Rabsolu_R0; Rewrite Rmult_Ol.
-Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_4_0].
+Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup].
 Rewrite <- Rabsolu_mult.
 Apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); Try Assumption.
 Apply H2; Assumption.
