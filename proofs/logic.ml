@@ -556,7 +556,10 @@ let prim_refiner r sigma goal =
 (* Util *)
 let rec rebind id1 id2 = function
   | [] -> []
-  | id::l -> if id = id1 then id2::l else id::(rebind id1 id2 l)
+  | id::l -> 
+      if id = id1 then id2::l else
+        (if id = id2 then (* Hack *) (id_of_string "_@") else id)
+        ::rebind id1 id2 l
 
 let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in

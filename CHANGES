@@ -1,5 +1,9 @@
+Changes from V7.3.1
+===================
+
 Bug fixes
 
+  - Rename bug fixed (#244)
   - Induction principle creation failure in presence of let-in fixed (#238)
   - Inversion bugs fixed (#212 and #220)
   - Omega bug related to Set fixed (#180)
