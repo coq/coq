@@ -305,14 +305,27 @@ let make_all_name_different env =
     env
 
 (* Constants *)
-let defined_constant env (sp,_) = is_defined (lookup_constant sp env)
+let defined_constant env sp = is_defined (lookup_constant sp env)
 
-let opaque_constant env (sp,_) = is_opaque (lookup_constant sp env)
+let opaque_constant env sp = is_opaque (lookup_constant sp env)
 
-(* A const is evaluable if it is defined and not opaque *)
-let evaluable_constant env k =
+(* A global const is evaluable if it is defined and not opaque *)
+let evaluable_constant env sp =
   try 
-    defined_constant env k && not (opaque_constant env k)
+    defined_constant env sp && not (opaque_constant env sp)
+  with Not_found -> 
+    false
+
+(* A local const is evaluable if it is defined and not opaque *)
+let evaluable_named_decl env id =
+  try 
+    lookup_named_value id env <> None
+  with Not_found -> 
+    false
+
+let evaluable_rel_decl env n =
+  try 
+    lookup_rel_value n env <> None
   with Not_found -> 
     false
 

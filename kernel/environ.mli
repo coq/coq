@@ -145,8 +145,11 @@ val it_mkNamedProd_or_LetIn : constr -> named_context -> constr
 val lambda_create : env -> types * constr -> constr
 val prod_create : env -> types * constr -> constr
 
-val defined_constant : env -> constant -> bool
-val evaluable_constant : env -> constant -> bool
+val defined_constant : env -> constant_path -> bool
+val evaluable_constant : env -> constant_path -> bool
+
+val evaluable_named_decl : env -> identifier -> bool
+val evaluable_rel_decl : env -> int -> bool
 
 (*s Opaque / Transparent switching *)
 

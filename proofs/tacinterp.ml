@@ -150,8 +150,11 @@ let glob_const_nvar loc id =
   let qid = make_qualid [] (string_of_id id) in
   try
     match Nametab.locate qid with
-      | ConstRef sp -> sp
-      | _ -> error ((string_of_qualid qid) ^ " does not denote a constant")
+      | ConstRef sp when Environ.evaluable_constant (Global.env ()) sp -> sp
+      | VarRef sp when
+	  Environ.evaluable_named_decl (Global.env ()) (basename sp) -> sp
+      | _ -> error ((string_of_qualid qid) ^
+		    " does not denote an evaluable constant")
   with
     | Not_found ->
 	Pretype_errors.error_global_not_found_loc loc qid
