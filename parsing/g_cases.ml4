@@ -7,7 +7,7 @@ open Pcoq
 open Constr
 
 GEXTEND Gram
-  GLOBAL : constr1 pattern;
+  GLOBAL: constr1 pattern;
 
   pattern:
     [ [ id = ident -> id

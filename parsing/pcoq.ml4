@@ -255,7 +255,7 @@ module Constr =
     let ne_ident_comma_list = gec_list "ne_ident_comma_list"
     let ne_constr_list = gec_list "ne_constr_list"
     let sort = gec "sort"
-    let pattern = Gram.Entry.create "Constr.pattern"
+    let pattern = gec "pattern"
     let ne_binders_list = gec_list "ne_binders_list"
 
     let uconstr = snd (get_univ "constr")
