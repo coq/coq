@@ -284,7 +284,7 @@ let meta_of_binder clause loc b t mvs =
 	  errorlabstrm "clenv_match_args" 
 	    (str "The variable " ++ pr_id s ++ 
 	     str " occurs more than once in binding");
-	meta_with_name clause.env s
+        meta_with_name clause.env s
     | AnonHyp n ->
 	if List.exists (fun (_,b',_) -> b=b') t then
 	  errorlabstrm "clenv_match_args"
@@ -294,29 +294,45 @@ let meta_of_binder clause loc b t mvs =
 	with (Failure _|Invalid_argument _) ->
           errorlabstrm "clenv_match_args" (str "No such binder")
 
+let error_already_defined b =
+  match b with
+      NamedHyp id ->
+        errorlabstrm "clenv_match_args"
+          (str "Binder name \"" ++ pr_id id ++
+           str"\" already defined with incompatible value")
+    | AnonHyp n ->
+        anomalylabstrm "clenv_match_args"
+          (str "Position " ++ int n ++ str" already defined")
+
 let clenv_match_args s clause =
   let mvs = clenv_independent clause in 
   let rec matchrec clause = function
     | [] -> clause
     | (loc,b,c)::t ->
 	let k = meta_of_binder clause loc b t mvs in
-	let k_typ = clenv_hnf_constr clause (clenv_meta_type clause k)
-	(* nf_betaiota was before in type_of - useful to reduce types like *)
-	(* (x:A)([x]P u) *)
-	and c_typ =
-          clenv_hnf_constr clause (nf_betaiota (clenv_get_type_of clause c)) in
-	let cl =
-	  (* Try to infer some Meta/Evar from the type of [c] *)
-	  try clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)
-	  with e when precatchable_exception e ->
-	  (* Try to coerce to the type of [k]; cannot merge with the
-	     previous case because Coercion does not handle Meta *)
-            let (_,c') = w_coerce (cl_env clause) c c_typ k_typ clause.env in
-	    try clenv_unify true CONV (mkMeta k) c' clause
-	    with PretypeError (env,CannotUnify (m,n)) ->
-	      Stdpp.raise_with_loc loc
- 	        (PretypeError (env,CannotUnifyBindingType (m,n)))
-	in matchrec cl t
+        if meta_defined clause.env k then
+          if eq_constr (meta_fvalue clause.env k).rebus c then
+            matchrec clause t
+          else error_already_defined b
+        else
+	  let k_typ = clenv_hnf_constr clause (clenv_meta_type clause k)
+	    (* nf_betaiota was before in type_of - useful to reduce
+               types like (x:A)([x]P u) *)
+	  and c_typ =
+            clenv_hnf_constr clause
+              (nf_betaiota (clenv_get_type_of clause c)) in
+	  let cl =
+	    (* Try to infer some Meta/Evar from the type of [c] *)
+	    try clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)
+	    with e when precatchable_exception e ->
+	      (* Try to coerce to the type of [k]; cannot merge with the
+	         previous case because Coercion does not handle Meta *)
+              let (_,c') = w_coerce (cl_env clause) c c_typ k_typ clause.env in
+	      try clenv_unify true CONV (mkMeta k) c' clause
+	      with PretypeError (env,CannotUnify (m,n)) ->
+	        Stdpp.raise_with_loc loc
+ 	          (PretypeError (env,CannotUnifyBindingType (m,n)))
+	  in matchrec cl t
   in 
   matchrec clause s
 

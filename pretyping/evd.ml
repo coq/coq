@@ -173,8 +173,8 @@ let map_clb f = function
 
 (* name of defined is erased (but it is pretty-printed) *)
 let clb_name = function
-    Cltyp(na,_) -> na
-  | Clval _ -> Anonymous
+    Cltyp(na,_) -> (na,false)
+  | Clval (na,_,_) -> (na,true)
 
 (***********************)
                                                                                
@@ -293,25 +293,32 @@ let meta_assign mv v evd =
           metas = Metamap.add mv (Clval(na,mk_freelisted v, ty)) evd.metas }
     | _ -> anomaly "meta_assign: already defined"
 
+(* If the meta is defined then forget its name *)
 let meta_name evd mv =
-  try clb_name (Metamap.find mv evd.metas)
+  try
+    let (na,def) = clb_name (Metamap.find mv evd.metas) in
+    if def then Anonymous else na
   with Not_found -> Anonymous
 
 let meta_with_name evd id =
   let na = Name id in
-  let mvl =
-    Metamap.fold (fun n clb l -> if clb_name clb = na then n::l else l)
-      evd.metas [] in
-  match mvl with
-    | []  -> 
+  let (mvl,mvnodef) =
+    Metamap.fold
+      (fun n clb (l1,l2 as l) ->
+        let (na',def) = clb_name clb in
+        if na = na' then if def then (n::l1,l2) else (n::l1,n::l2)
+        else l)
+      evd.metas ([],[]) in
+  match mvnodef, mvl with
+    | _,[]  -> 
 	errorlabstrm "Evd.meta_with_name"
           (str"No such bound variable " ++ pr_id id)
-    | [n] -> 
+    | ([n],_|_,[n]) -> 
 	n
-    |  _  -> 
-	 errorlabstrm "Evd.meta_with_name"
-           (str "Binder name \"" ++ pr_id id ++
-            str"\" occurs more than once in clause")
+    | _  -> 
+	errorlabstrm "Evd.meta_with_name"
+          (str "Binder name \"" ++ pr_id id ++
+           str"\" occurs more than once in clause")
 
 
 let meta_merge evd1 evd2 =
