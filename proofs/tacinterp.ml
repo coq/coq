@@ -15,7 +15,6 @@ open Names
 open Proof_type
 open Tacmach
 open Tactic_debug
-open Macros
 open Coqast
 open Ast
 open Term
