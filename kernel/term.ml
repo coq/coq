@@ -25,8 +25,7 @@ type metavariable = int
 type pattern_source = DefaultPat of int | RegularPat
 type case_style = LetStyle | IfStyle | MatchStyle | RegularStyle
 type case_printing =
-  { cnames    : identifier array;
-    ind_nargs : int; (* number of real args of the inductive type *)
+  { ind_nargs : int; (* number of real args of the inductive type *)
     style     : case_style;
     source    : pattern_source array }
 type case_info =
