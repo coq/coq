@@ -12,6 +12,7 @@
 
 open Names
 open Term
+open Ptype
 
 (* Some misc. functions *)
 
@@ -67,6 +68,9 @@ val is_connective : identifier -> bool
 val n_mkNamedProd : constr -> (identifier * constr) list -> constr
 val n_lambda  : constr -> (identifier * constr) list -> constr
 val abstract : (identifier * constr) list -> constr -> constr
+
+val type_v_knsubst : substitution -> type_v -> type_v
+val type_c_knsubst : substitution -> type_c -> type_c
 
 (* for debugging purposes *)
 

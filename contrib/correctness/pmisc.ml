@@ -11,6 +11,7 @@
 (* $Id$ *)
 
 open Pp
+open Util
 open Coqast
 open Names
 open Nameops
@@ -185,4 +186,20 @@ let rec n_lambda v = function
 
 let abstract ids c = n_lambda c (List.rev ids)
 
+(* substitutivity (of kernel names, for modules management) *)
 
+open Ptype
+
+let rec type_v_knsubst s = function
+  | Ref v -> Ref (type_v_knsubst s v)
+  | Array (c, v) -> Array (subst_mps s c, type_v_knsubst s v)
+  | Arrow (bl, c) -> Arrow (List.map (binder_knsubst s) bl, type_c_knsubst s c)
+  | TypePure c -> TypePure (subst_mps s c)
+
+and type_c_knsubst s ((id,v),e,pl,q) =
+  ((id, type_v_knsubst s v), e, 
+   List.map (fun p -> { p with p_value = subst_mps s p.p_value }) pl,
+   option_app (fun q -> { q with a_value = subst_mps s q.a_value }) q)
+
+and binder_knsubst s (id,b) = 
+  (id, match b with BindType v -> BindType (type_v_knsubst s v) | _ -> b)

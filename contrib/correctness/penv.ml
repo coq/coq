@@ -110,13 +110,17 @@ let add_pgm id p = pgm_table := Idmap.add id p !pgm_table
 let cache_global (_,(id,v,p)) =
   env := Env.add id v !env; add_pgm id p
 
+let type_info_app f = function Set -> Set | TypeV v -> TypeV (f v)
+
+let subst_global (_,s,(id,v,p)) = (id, type_info_app (type_v_knsubst s) v, p)
+
 let (inProg,outProg) =
   declare_object { object_name = "programs-objects";
                    cache_function = cache_global;
                    load_function = (fun _ -> cache_global);
                    open_function = (fun _ _ -> ());
-		   classify_function = (fun _ -> Dispose);
-		   subst_function = (fun (_,_,x) -> x);
+		   classify_function = (fun (_,x) -> Substitute x);
+		   subst_function = subst_global;
 		   export_function = (fun x -> Some x) }
 
 let is_mutable = function Ref _ | Array _ -> true | _ -> false
@@ -174,14 +178,16 @@ let all_refs () =
 let cache_init (_,(id,c)) =
   init_table := Idmap.add id c !init_table
 
+let subst_init (_,s,(id,c)) = (id, subst_mps s c)
+
 let (inInit,outInit) =
   declare_object { object_name = "programs-objects-init";
                    cache_function = cache_init;
                    load_function = (fun _ -> cache_init);
 		   open_function = (fun _ _-> ());
-		   classify_function = (fun _ -> Dispose);
-		   subst_function = (fun (_,_,x) -> x);
-                   export_function = fun x -> Some x }
+		   classify_function = (fun (_,x) -> Substitute x);
+		   subst_function = subst_init;
+                   export_function = (fun x -> Some x) }
 
 let initialize id c = Lib.add_anonymous_leaf (inInit (id,c))
 
