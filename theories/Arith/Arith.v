@@ -16,6 +16,8 @@ Require Export Minus.
 Require Export Mult.
 Require Export Between.
 Require Export Minus.
+Require Export Peano_dec.
+Require Export Compare_dec.
 
 Axiom My_special_variable : nat -> nat.
 
