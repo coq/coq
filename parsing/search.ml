@@ -72,6 +72,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	  | Some (IndRef ((kn',tyi) as ind)) when kn=kn' ->
 	      print_constructors ind fn env
 	        (Array.length (mib.mind_packets.(tyi).mind_user_lc))
+          | Some _ -> ()
 	  | _ ->
               Array.iteri 
 	        (fun i mip -> print_constructors (kn,i) fn env
