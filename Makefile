@@ -42,7 +42,7 @@ OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
 COQINCLUDES=-I theories/Init -I theories/Logic -I theories/Arith \
-            -I theories/Bool
+            -I theories/Bool -I theories/Zarith
 
 ###########################################################################
 # Objects files 
@@ -229,12 +229,18 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 BOOLVO=theories/Bool/Bool.vo  theories/Bool/IfProp.vo \
        theories/Bool/Zerob.vo theories/Bool/DecBool.vo theories/Bool/Sumbool.vo
 
-theories: $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO)
+ZARITHVO=theories/Zarith/Wf_Z.vo        theories/Zarith/Zsyntax.vo \
+	 theories/Zarith/ZArith.vo      theories/Zarith/auxiliary.vo \
+	 theories/Zarith/ZArith_dec.vo  theories/Zarith/fast_integer.vo \
+	 theories/Zarith/Zmisc.vo       theories/Zarith/zarith_aux.vo
+
+theories: $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO)
 
 init: $(INITVO)
 logic: $(LOGICVO)
 arith: $(ARITHVO)
 bool: $(BOOLVO)
+zarith: $(ZARITHVO)
 
 clean::
 	rm -f theories/*/*.vo theories/*/*~
