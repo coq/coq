@@ -327,8 +327,8 @@ The general equivalence for an inductive type with one constructors {\tt C} is
 
 \smallskip
 {\tt let ({\ident}$_1$,\ldots,{\ident}$_n$) \zeroone{\ifitem} := {\term} in {\term}'} \\
-$\equiv\;$
-{\tt match {\term} \zeroone{\ifitem} with \verb!|! C {\ident}$_1$ {\ldots} {\ident}$_n$ \verb!=>! {\term}' end}
+$\equiv$~
+{\tt match {\term} \zeroone{\ifitem} with C {\ident}$_1$ {\ldots} {\ident}$_n$ \verb!=>! {\term}' end}
 
 \subsection{Options for pretty-printing of {\tt match}
 \label{printing-options}}
