@@ -15,6 +15,8 @@ open Tacmach
 open Tacexpr
 open Proof_type
 open Evd
+open Sign
+open Termops
 
 (* The instantiate tactic *)
 
@@ -32,7 +34,7 @@ let instantiate n rawc ido gl =
     match ido with
 	ConclLocation () -> evars_of wc.sigma gl.it.evar_concl 
       | HypLocation (id,hloc) ->
-	  let decl = Sign.lookup_named id gl.it.evar_hyps in
+	  let decl = lookup_named id gl.it.evar_hyps in
 	    match hloc with
 		InHyp ->  
 		  (match decl with 
@@ -70,4 +72,7 @@ let let_evar nam typ gls =
   let evd = Evarutil.create_evar_defs gls.sigma in
   let evd' = Unification.w_Declare (pf_env gls) sp typ evd in
   let ngls = {gls with sigma = Evarutil.evars_of evd'} in
-    Tactics.forward true nam (mkEvar(sp,[||])) ngls 
+  let args = Array.of_list 
+	       (List.map mkVar (ids_of_named_context (pf_hyps gls))) in
+    Tactics.forward true nam (mkEvar(sp,args)) ngls
+ 
