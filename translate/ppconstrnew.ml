@@ -118,7 +118,7 @@ let pr_or_var pr = function
   | Genarg.ArgArg x -> pr x
   | Genarg.ArgVar (loc,s) -> pr_with_comments loc (pr_id s)
 
-let las = 12
+let las = lapp
 
 let rec pr_patt inh p =
   let (strm,prec) = match p with
