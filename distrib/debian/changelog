@@ -1,8 +1,15 @@
-coq (7.0-2) unstable; urgency=low
+coq (7.1-2) unstable; urgency=low
+  * Fixed policy problem (conf files).
+
   * Trying to compile in bytecode if native code compilation fails (closes: Bug#119714)
   * Errors raised by the Simpl tactic is an upstream bug and was probably fixed by switching to 7.0 (closes: Bug#74518).
 
  -- Judicaël Courant <Judicael.Courant@lri.fr>  Tue, 11 Dec 2001 13:33:15 +0200
+
+coq (7.1-1) unstable; urgency=low
+  * New upstream version.
+
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Tue,  25 Sep 2001 16:27:04 +0200
 
 coq (7.0-1) unstable; urgency=low
   * New maintainer Judicaël Courant <Judicael.Courant@lri.fr>.

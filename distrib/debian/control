@@ -7,8 +7,8 @@ Build-Depends: debhelper (>= 2), ocaml (>= 3.01), camlp4 (>= 3.01)
 
 Package: coq
 Architecture: any
-Depends: ocaml (>= 3.01), ${shlibs:Depends}
-Suggests: ocaml (>= 3.01), camlp4 (>= 3.01), cle
+Depends: ${shlibs:Depends}
+Suggests: coq-doc, ocaml (>= 3.01-1), camlp4 (>= 3.01-1), cle
 Recommends: coq-doc
 Description: a proof assistant for higher-order logic.
  Coq is a proof assistant for higher-order logic, which allows the

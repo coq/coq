@@ -6,7 +6,7 @@
 #export DH_VERBOSE=1
 
 # This is the debhelper compatability version to use.
-export DH_COMPAT=2
+export DH_COMPAT=3
 
 configure: configure-stamp
 configure-stamp:
@@ -21,7 +21,7 @@ build-stamp:
 	dh_testdir
 
 	# Add here commands to compile the package.
-	$(MAKE) world || (echo ERROR: trying to build in bytecode && echo "OPT=byte" >> config/Makefile && $(MAKE) world)
+	$(MAKE) world || (echo WARNING: NATIVE CODE COMPILATION FAILED && echo Trying to build coq in bytecode && echo "OPT=byte" >> config/Makefile && $(MAKE) world)
 	#/usr/bin/docbook-to-man debian/coq.sgml > coq.1
 
 	touch build-stamp

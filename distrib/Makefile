@@ -23,6 +23,8 @@ RPM=${RAWRPM} ${RPMBUILDROOTOPT} --rcfile rpmrc
 FTPDIR=/net/pauillac/infosystems/ftp/coq/coq
 WWWDIR=/net/pauillac/infosystems/www/coq
 
+COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
+
 COQPACKAGE=coq-${VERSION}
 COQRPMPACKAGE=coq-${VERSION}-${RELEASENUM}
 COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
