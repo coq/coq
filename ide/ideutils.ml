@@ -106,3 +106,14 @@ let set_highlight_timer f =
 	revert_timer := 
 	Some (GMain.Timeout.add ~ms:2000 
 		~callback:(fun () -> f (); highlight_timer := None; true))
+
+
+(* Get back the standard coq out channels *)
+let read_stdout,clear_stdout =
+  let out_buff = Buffer.create 100 in
+  Pp_control.std_ft := Format.formatter_of_buffer out_buff;
+  (fun () -> Format.pp_print_flush !Pp_control.std_ft (); 
+     let r = Buffer.contents out_buff in
+     Buffer.clear out_buff; r),
+  (fun () -> 
+     Format.pp_print_flush !Pp_control.std_ft (); Buffer.clear out_buff)

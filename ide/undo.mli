@@ -5,6 +5,7 @@ object
   inherit GText.view
   method undo : bool
   method redo : bool
+  method clear_undo : unit
 end
 
 val undoable_view : 

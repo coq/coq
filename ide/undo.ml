@@ -4,12 +4,17 @@ type action =
   | Insert of string * int * int (* content*pos*length *) 
   | Delete of string * int * int (* content*pos*length *) 
 
+let neg act = match act with
+  | Insert (s,i,l) -> Delete (s,i,l)
+  | Delete (s,i,l) -> Insert (s,i,l)
+
 class undoable_view (tv:Gtk.textview Gtk.obj) =
   let undo_lock = ref true in 
 object(self)
   inherit GText.view tv as super
   val history = (Stack.create () : action Stack.t)
   val redo = (Queue.create () : action Queue.t)
+  val nredo = (Stack.create () : action Stack.t)
 
   method private dump_debug =
     if !debug then begin
@@ -36,6 +41,7 @@ object(self)
 
     end
 
+  method clear_undo = Stack.clear history
   method undo = if !undo_lock then begin
     undo_lock := false;
     prerr_endline "UNDO";
@@ -54,7 +60,9 @@ object(self)
 	      (Stack.push act history; false)
       in if r then begin
 	process_pending ();
-	Queue.push (Stack.pop history) redo
+	let act = Stack.pop history in
+	Queue.push act redo;
+	Stack.push act nredo
       end;
       undo_lock := true; 
       r
@@ -71,6 +79,8 @@ object(self)
 	      ~callback:
 	      (fun it s ->
 		 if !undo_lock && not (Queue.is_empty redo) then begin
+		   Stack.iter (fun e -> Stack.push (neg e) history) nredo;
+		   Stack.clear nredo;
 		   Queue.iter (fun e -> Stack.push e history) redo;
 		   Queue.clear redo;
 		 end;
@@ -101,7 +111,6 @@ object(self)
 		   Queue.iter (fun e -> Stack.push e history) redo;
 		   Queue.clear redo;
 		 end;
-		 
 		 Stack.push 
 		   (Delete(self#buffer#get_text ~start ~stop (),
 			   start#offset,

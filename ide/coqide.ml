@@ -3,7 +3,7 @@ open Vernacexpr
 open Coq
 open Ideutils
 
-let out_some s = match s with | None -> assert false | Some f -> f
+let out_some s = match s with | None -> failwith "toto" | Some f -> f
 
 let cb_ = ref None
 let cb () = out_some !cb_
@@ -110,6 +110,8 @@ type 'a viewable_script =
      mutable analyzed_view : 'a option;
     }
 
+
+
 class type analyzed_views = 
 object('self)
     val mutable act_id : GtkSignal.id option
@@ -127,6 +129,7 @@ object('self)
     val mutable read_only : bool
     val mutable filename : string option
     val mutable stats : Unix.stats option
+    method view : Undo.undoable_view
     method filename : string option
     method stats :  Unix.stats option
     method set_filename : string option -> unit
@@ -231,6 +234,21 @@ let remove_current_view_page () =
   kill_input_view c;
   ((notebook ())#get_nth_page c)#misc#hide ()
 
+
+let get_current_word () =
+  let av = out_some ((get_current_view ()).analyzed_view) in 
+  match GtkBase.Clipboard.wait_for_text (cb ()) with
+    | None -> 
+	prerr_endline "None selected";
+	let it = av#get_insert in
+	let start = it#backward_word_start in
+	let stop = start#forward_word_end in
+	av#view#buffer#get_text ~slice:true ~start ~stop ()
+    | Some t ->
+ 	prerr_endline "Some selected";
+	prerr_endline t;
+	t
+	  
 let status = ref None
 let push_info = ref (function s -> failwith "not ready")
 let pop_info = ref (function s -> failwith "not ready")
@@ -337,16 +355,6 @@ let break () = Unix.kill pid Sys.sigusr1
 let can_break () = set_break () 
 let cant_break () = unset_break () 
 
-(* Get back the standard coq out channels *)
-let read_stdout,clear_stdout =
-  let out_buff = Buffer.create 100 in
-  Pp_control.std_ft := Format.formatter_of_buffer out_buff;
-  (fun () -> Format.pp_print_flush !Pp_control.std_ft (); 
-     let r = Buffer.contents out_buff in
-     Buffer.clear out_buff; r),
-  (fun () -> 
-     Format.pp_print_flush !Pp_control.std_ft (); Buffer.clear out_buff)
-
 let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
     (if not (it#begins_tag (Some tag)) 
      then it#backward_to_tag_toggle (Some tag)
@@ -383,6 +391,7 @@ object(self)
   val mutable read_only = false
   val mutable filename = None 
   val mutable stats = None
+  method view = input_view
   method filename = filename
   method stats = stats
   method set_filename f = 
@@ -401,21 +410,21 @@ object(self)
       | Some f -> begin
 	  let do_revert () = begin
 	    !push_info "Reverting buffer";
-	      try
-		if is_active then self#reset_initial;
-		let b = Buffer.create 1024 in
-		with_file f ~f:(input_channel b);
-		let s = try_convert (Buffer.contents b) in
-		input_buffer#set_text s;
-		self#update_stats;
-		input_buffer#place_cursor input_buffer#start_iter;
-		input_buffer#set_modified false;
-		!pop_info ();
-		!flash_info "Buffer reverted";
-		Highlight.highlight_all input_buffer;
-	      with _  -> 
-		!pop_info ();
-		!flash_info "Warning: could not revert buffer";
+	    try
+	      if is_active then self#reset_initial;
+	      let b = Buffer.create 1024 in
+	      with_file f ~f:(input_channel b);
+	      let s = try_convert (Buffer.contents b) in
+	      input_buffer#set_text s;
+	      self#update_stats;
+	      input_buffer#place_cursor input_buffer#start_iter;
+	      input_buffer#set_modified false;
+	      !pop_info ();
+	      !flash_info "Buffer reverted";
+	      Highlight.highlight_all input_buffer;
+	    with _  -> 
+	      !pop_info ();
+	      !flash_info "Warning: could not revert buffer";
 	  end
 	  in
 	  if input_buffer#modified then 
@@ -439,7 +448,7 @@ object(self)
 	  else do_revert () 
 	end
       | None -> ()
-      
+	  
   method save f = 
     filename <- Some f;
     try_export f (input_buffer#get_text ());
@@ -485,85 +494,85 @@ object(self)
 	      let tag = proof_buffer#create_tag []
 	      in 
 	      ignore
-	      (tag#connect#event ~callback:
-		 (fun ~origin ev it ->
-		    
-		    match GdkEvent.get_type ev with 
-		      | `BUTTON_PRESS -> 
-			  let ev = (GdkEvent.Button.cast ev) in
-			  if (GdkEvent.Button.button ev) = 3
-			  then begin 
-			    let loc_menu = GMenu.menu () in
-			    let factory = new GMenu.factory loc_menu in
-			    let add_coq_command (cp,ip) = 
-			      ignore (factory#add_item cp 
-					~callback:
-					(fun () -> ignore
-					   (self#insert_this_phrase_on_success 
-					      true
-					      true 
-					      false 
-					      (ip^"\n") 
-					      (ip^"\n"))
-					)
-				     )
-			    in
-			    List.iter add_coq_command commands;
-			    loc_menu#popup 
-			      ~button:3
-			      ~time:(GdkEvent.Button.time ev);
-			  end
-		      | `MOTION_NOTIFY -> 
-			  proof_buffer#remove_tag
-			  ~start:proof_buffer#start_iter
-			  ~stop:proof_buffer#end_iter
-			  last_shown_area;
-			  prerr_endline "Before find_tag_limits";
-			  let s,e = find_tag_limits tag 
-				      (new GText.iter it) 
-			  in
-			  prerr_endline "Apres find_tag_limits";
-			  proof_buffer#apply_tag 
-			    ~start:s 
-			    ~stop:e 
+		(tag#connect#event ~callback:
+		   (fun ~origin ev it ->
+		      
+		      match GdkEvent.get_type ev with 
+			| `BUTTON_PRESS -> 
+			    let ev = (GdkEvent.Button.cast ev) in
+			    if (GdkEvent.Button.button ev) = 3
+			    then begin 
+			      let loc_menu = GMenu.menu () in
+			      let factory = new GMenu.factory loc_menu in
+			      let add_coq_command (cp,ip) = 
+				ignore (factory#add_item cp 
+					  ~callback:
+					  (fun () -> ignore
+					     (self#insert_this_phrase_on_success 
+						true
+						true 
+						false 
+						(ip^"\n") 
+						(ip^"\n"))
+					  )
+				       )
+			      in
+			      List.iter add_coq_command commands;
+			      loc_menu#popup 
+				~button:3
+				~time:(GdkEvent.Button.time ev);
+			    end
+			| `MOTION_NOTIFY -> 
+			    proof_buffer#remove_tag
+			    ~start:proof_buffer#start_iter
+			    ~stop:proof_buffer#end_iter
 			    last_shown_area;
-			  prerr_endline "Applied tag";
-			  ()
-		      | _ -> ())
-	      );
+			    prerr_endline "Before find_tag_limits";
+			    let s,e = find_tag_limits tag 
+					(new GText.iter it) 
+			    in
+			    prerr_endline "Apres find_tag_limits";
+			    proof_buffer#apply_tag 
+			      ~start:s 
+			      ~stop:e 
+			      last_shown_area;
+			    prerr_endline "Applied tag";
+			    ()
+			| _ -> ())
+		);
 	      tag
-	  in
-	  List.iter
-	    (fun ((_,_,_,(s,_)) as hyp) -> 
-	       let tag = coq_menu (hyp_menu hyp) in
-	       proof_buffer#insert ~tags:[tag] (s^"\n"))
-	    hyps;
-	  proof_buffer#insert ("---------------------------------------(1/"^
-			       (string_of_int goal_nb)^
-			       ")\n") 
-	  ;
-	  let tag = coq_menu (concl_menu concl) in
-	  let _,_,_,sconcl = concl in
-	  proof_buffer#insert ~tags:[tag] sconcl;
-	  proof_buffer#insert "\n";
-	  let my_mark = `NAME "end_of_conclusion" in
-	  proof_buffer#move_mark
-	    ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
-	  proof_buffer#insert "\n\n";
-	  let i = ref 1 in
-	  List.iter 
-	    (function (_,(_,_,_,concl)) -> 
-	       incr i;
-	       proof_buffer#insert ("--------------------------------------("^
-				    (string_of_int !i)^
-				    "/"^
-				    (string_of_int goal_nb)^
-				    ")\n");
-	       proof_buffer#insert concl;
-	       proof_buffer#insert "\n\n";
-	    )
-	    r;
-	  ignore (proof_view#scroll_to_mark my_mark) 
+	    in
+	    List.iter
+	      (fun ((_,_,_,(s,_)) as hyp) -> 
+		 let tag = coq_menu (hyp_menu hyp) in
+		 proof_buffer#insert ~tags:[tag] (s^"\n"))
+	      hyps;
+	    proof_buffer#insert ("---------------------------------------(1/"^
+				 (string_of_int goal_nb)^
+				 ")\n") 
+	    ;
+	    let tag = coq_menu (concl_menu concl) in
+	    let _,_,_,sconcl = concl in
+	    proof_buffer#insert ~tags:[tag] sconcl;
+	    proof_buffer#insert "\n";
+	    let my_mark = `NAME "end_of_conclusion" in
+	    proof_buffer#move_mark
+	      ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
+	    proof_buffer#insert "\n\n";
+	    let i = ref 1 in
+	    List.iter 
+	      (function (_,(_,_,_,concl)) -> 
+		 incr i;
+		 proof_buffer#insert ("--------------------------------------("^
+				      (string_of_int !i)^
+				      "/"^
+				      (string_of_int goal_nb)^
+				      ")\n");
+		 proof_buffer#insert concl;
+		 proof_buffer#insert "\n\n";
+	      )
+	      r;
+	    ignore (proof_view#scroll_to_mark my_mark) 
       with e -> prerr_endline (Printexc.to_string e)
 
   method send_to_coq phrase show_output show_error localize =
@@ -685,7 +694,8 @@ object(self)
 	  end;
 	  r
 
-  method insert_this_phrase_on_success show_output show_msg localize coqphrase insertphrase = 
+  method insert_this_phrase_on_success 
+    show_output show_msg localize coqphrase insertphrase = 
     match self#send_to_coq coqphrase show_output show_msg localize with
       | Some ast ->
 	  begin
@@ -702,7 +712,7 @@ object(self)
 	    let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
 	    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
 	    self#show_goals;
-	    (try (match Coq.get_current_goals () with 
+	    (*try (match Coq.get_current_goals () with 
 		    | [] ->  
 			(match self#send_to_coq "Save.\n" true true true with
 			   | Some ast -> 
@@ -722,7 +732,7 @@ object(self)
 		      	       end
 			   | None -> ())
 		    | _ -> ())
-	     with _ -> ());
+	     with _ -> ()*)
 	    true
 	  end
       | None -> self#insert_message ("Unsuccesfully tried: "^coqphrase);
@@ -869,26 +879,28 @@ object(self)
 		 self#insert_this_phrase_on_success true false false cp ip) l)
 
   method active_keypress_handler k = 
-    if !coq_computing then true else
-      match GdkEvent.Key.state k with
-	| l when List.mem `MOD1 l ->
-	    let k = GdkEvent.Key.keyval k in
-	    if GdkKeysyms._Return=k
-	    then ignore(
-	      if (input_buffer#insert_interactive "\n") then
-		begin
-		  let i= self#get_insert#backward_word_start in
-		  input_buffer#place_cursor i;
-		  self#process_until_insert_or_error
-		end);
-	    true
-	| l when List.mem `CONTROL l -> 
-	    let k = GdkEvent.Key.keyval k in
-	    if GdkKeysyms._c=k
-	    then break ();
-	    false
-	| l -> false
-
+    if !coq_computing then true else 
+      let state = GdkEvent.Key.state k in
+      begin
+	match  state with
+	  | l when List.mem `MOD1 l ->
+	      let k = GdkEvent.Key.keyval k in
+	      if GdkKeysyms._Return=k
+	      then ignore(
+		if (input_buffer#insert_interactive "\n") then
+		  begin
+		    let i= self#get_insert#backward_word_start in
+		    input_buffer#place_cursor i;
+		    self#process_until_insert_or_error
+		  end);
+	      true
+	  | l when List.mem `CONTROL l -> 
+	      let k = GdkEvent.Key.keyval k in
+	      if GdkKeysyms._c=k
+	      then break ();
+	      false
+	  | l -> false
+      end
   method disconnected_keypress_handler k = 
     match GdkEvent.Key.state k with
       | l when List.mem `CONTROL l -> 
@@ -956,13 +968,9 @@ object(self)
 	   end;
 	 end;
 	 last_index <- not last_index;)
+  
+  method help_for_keyword () = browse_keyword (get_current_word ())
 
-  method help_for_keyword () =
-    let it = self#get_insert in
-    let start = it#backward_word_start in
-    let stop = start#forward_word_end in
-    let text = input_buffer#get_text ~slice:true ~start ~stop () in
-    browse_keyword text
   initializer 
     ignore (message_buffer#connect#after#insert_text
 	      ~callback:(fun it s -> ignore 
@@ -998,8 +1006,8 @@ object(self)
 	    else set_tab_image index yes_icon;
 	 ));
     ignore (input_view#connect#after#paste_clipboard
-	   ~callback:(fun () ->
-			prerr_endline "Paste occured"));
+	      ~callback:(fun () ->
+			   prerr_endline "Paste occured"));
     ignore (input_buffer#connect#changed
 	      ~callback:(fun () -> 
 			   let r = input_view#visible_rect in
@@ -1078,7 +1086,7 @@ let create_input_tab filename =
 	    ~name:"processed" 
 	    [`BACKGROUND "light green" ;`EDITABLE false]);
   tv1
-  
+ 
 let main files = 
   let w = GWindow.window 
 	    ~allow_grow:true ~allow_shrink:true 
@@ -1345,7 +1353,10 @@ let main files =
   (* Edit Menu *)
   let edit_menu = factory#add_submenu "_Edit" in
   let edit_f = new GMenu.factory edit_menu ~accel_group in
-  ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._z ~callback:
+  ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._u ~callback:
+	   (fun () -> 
+	      ignore (get_current_view()).view#undo));
+  ignore(edit_f#add_item "_Clear Undo Stack" ~key:GdkKeysyms._exclam ~callback:
 	   (fun () -> 
 	      ignore (get_current_view()).view#undo));
   ignore(edit_f#add_separator ());
@@ -1372,6 +1383,8 @@ let main files =
 				   (out_some v.analyzed_view)#set_read_only b
 				) 
   in
+  read_only_i#misc#set_state `INSENSITIVE;
+
   to_do_on_page_switch := 
   (fun i -> 
      prerr_endline ("Switching to tab "^(string_of_int i));
@@ -1519,14 +1532,15 @@ let main files =
   add_complex_template 
     ("_Inductive __", "Inductive ident : :=\n  | : .\n",
      14, 5, Some GdkKeysyms._I);
-  let add_simple_template (menu_text, text) =
-    ignore (templates_factory#add_item menu_text
+  let add_simple_template (factory: GMenu.menu GMenu.factory) 
+(menu_text, text) =
+    ignore (factory#add_item menu_text
 	    ~callback:(fun () -> 
 			 let {view = view } = get_current_view () in
 			 ignore (view#buffer#insert_interactive text)))
   in
   ignore (templates_factory#add_separator ());
-  List.iter add_simple_template 
+  List.iter (add_simple_template templates_factory)
     [ "_Auto", "Auto ";
       "_Auto with *", "Auto with * ";
       "_EAuto", "EAuto ";
@@ -1539,13 +1553,38 @@ let main files =
     ];
   ignore (templates_factory#add_separator ());
   List.iter 
-    (fun s -> add_simple_template ("_"^s, s^" ")) 
+    (fun l -> 
+       match l with 
+	 |[s] -> add_simple_template templates_factory ("_"^s, s^" ") 
+	 | [] -> ()
+	 | s::r -> 
+	     let a = "_@..." in
+	     a.[1] <- s.[0];
+	     let f = templates_factory#add_submenu a in 
+	     let ff = new GMenu.factory f ~accel_group in
+	     List.iter 
+	       (fun x -> 
+		  add_simple_template 
+		  ff 
+		  ((String.sub x 0 1)^
+		   "_"^
+		   (String.sub x 1 (String.length x - 1)),
+		     x^" "))
+	       l
+    ) 
     Coq_commands.commands;
   
   (* Commands Menu *)
   let commands_menu =  factory#add_submenu "_Commands" in
   let commands_factory = new GMenu.factory commands_menu ~accel_group in
-
+  
+  (* Command/Show commands *)
+  let commands_show_m = commands_factory#add_item 
+			  "_Show commands" 
+			  ~callback:(Command_windows.command_window ())
+			  #window#present
+  in  
+  
   (* Command/Compile Menu *)
   let compile_f () =
     let v = get_active_view () in
@@ -1578,7 +1617,8 @@ let main files =
     !flash_info 
       (current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
   in
-  let _ = commands_factory#add_item "_Make Makefile" ~callback:coq_makefile_f in
+  let _ = commands_factory#add_item "_Make Makefile" ~callback:coq_makefile_f 
+  in
 
   (* Configuration Menu *)
   let reset_revert_timer () =
@@ -1628,16 +1668,17 @@ let main files =
 	    ~callback:(fun () -> browse current.library_url) in
   let _ = 
     help_factory#add_item "Help for _keyword" ~key:GdkKeysyms._F1
-      ~callback:(fun () ->
-		   let av = out_some ((get_current_view ()).analyzed_view) in 
-		   match GtkBase.Clipboard.wait_for_text (cb ()) with
-		     | None -> 
-			 prerr_endline "None selected";
-			 av#help_for_keyword ()
-		     | Some t ->
- 			 prerr_endline "Some selected";
-			 prerr_endline t;
-			 browse_keyword t)
+      ~callback:(fun () -> 
+  let av = out_some ((get_current_view ()).analyzed_view) in 
+		 av#help_for_keyword ())
+  in
+  let _ = 
+    help_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
+      ~callback:(fun () -> let term = get_current_word () in
+		(Command_windows.command_window ())#new_command
+		 ~command:"SearchAbout"
+		  ~term 
+		  ())
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "_About" in
@@ -1788,12 +1829,15 @@ let start () =
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
   with Not_found -> ());
   ignore (GtkMain.Main.init ());
+  GtkData.AccelGroup.set_default_mod_mask 
+    (Some [`CONTROL;`SHIFT;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5;`LOCK]);
   cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
   Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 						      `WARNING;`CRITICAL]
     (fun ~level msg ->
          failwith ("Coqide internal error: " ^ msg)
     );
+  Command_windows.main ();
   main files;
   Sys.catch_break true;
   while true do 

@@ -454,6 +454,8 @@ dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     pretyping/termops.cmx kernel/univ.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
+ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmo 
+ide/command_windows.cmx: ide/coq.cmx ide/coq_commands.cmx ide/ideutils.cmx 
 ide/coq.cmo: toplevel/cerrors.cmi config/coq_config.cmi toplevel/coqtop.cmi \
     kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     tactics/hipattern.cmi ide/ideutils.cmo library/lib.cmi kernel/names.cmi \
@@ -470,18 +472,20 @@ ide/coq.cmx: toplevel/cerrors.cmx config/coq_config.cmx toplevel/coqtop.cmx \
     proofs/refiner.cmx library/states.cmx proofs/tacmach.cmx kernel/term.cmx \
     lib/util.cmx toplevel/vernac.cmx toplevel/vernacentries.cmx \
     toplevel/vernacexpr.cmx ide/coq.cmi 
-ide/coqide.cmo: ide/coq.cmi ide/coq_commands.cmo ide/find_phrase.cmo \
-    ide/highlight.cmo ide/ideutils.cmo proofs/pfedit.cmi lib/pp_control.cmi \
+ide/coqide.cmo: ide/command_windows.cmo ide/coq.cmi ide/coq_commands.cmo \
+    ide/find_phrase.cmo ide/highlight.cmo ide/ideutils.cmo proofs/pfedit.cmi \
     ide/preferences.cmo ide/undo.cmi lib/util.cmi toplevel/vernacexpr.cmo 
-ide/coqide.cmx: ide/coq.cmx ide/coq_commands.cmx ide/find_phrase.cmx \
-    ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx lib/pp_control.cmx \
+ide/coqide.cmx: ide/command_windows.cmx ide/coq.cmx ide/coq_commands.cmx \
+    ide/find_phrase.cmx ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx \
     ide/preferences.cmx ide/undo.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 ide/find_phrase.cmo: ide/ideutils.cmo 
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmo 
 ide/highlight.cmx: ide/ideutils.cmx 
-ide/ideutils.cmo: config/coq_config.cmi lib/options.cmi ide/preferences.cmo 
-ide/ideutils.cmx: config/coq_config.cmx lib/options.cmx ide/preferences.cmx 
+ide/ideutils.cmo: config/coq_config.cmi lib/options.cmi lib/pp_control.cmi \
+    ide/preferences.cmo 
+ide/ideutils.cmx: config/coq_config.cmx lib/options.cmx lib/pp_control.cmx \
+    ide/preferences.cmx 
 ide/preferences.cmo: ide/config_lexer.cmo ide/utils/configwin.cmi 
 ide/preferences.cmx: ide/config_lexer.cmx ide/utils/configwin.cmx 
 ide/undo.cmo: ide/ideutils.cmo ide/undo.cmi 

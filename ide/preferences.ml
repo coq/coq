@@ -126,7 +126,7 @@ let (current:pref) =
     automatic_tactics = [];
     
     modifier_for_navigation = [`CONTROL; `MOD1];
-    modifier_for_templates = [`SHIFT; `CONTROL];
+    modifier_for_templates = [`MOD4];
     
     cmd_browse = "netscape -remote \"OpenURL(", ")\"";
 

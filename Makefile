@@ -445,9 +445,10 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo ide/config_lexer.cmo ide/preferences.cmo \
-	  ide/ideutils.cmo ide/undo.cmo ide/find_phrase.cmo \
+	  ide/ideutils.cmo ide/undo.cmo \
+	  ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
-	  ide/coq_tactics.cmo ide/coqide.cmo
+	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
 
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-I +lablgtk2
@@ -466,19 +467,19 @@ $(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(COQIDECMO)
 	$(COQMKTOP) -g -ide -top $(COQIDEFLAGS) lablgtk.cma $(LOCALINCLUDES) $(CAMLDEBUG) -o $@ $(COQIDECMO)
 
 ide/%.cmo: ide/%.ml
-	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmi: ide/%.mli
-	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmx: ide/%.ml
 	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 ide/utils/%.cmo: ide/%.ml
-	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/utils/%.cmi: ide/%.mli
-	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/utils/%.cmx: ide/%.ml
 	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<

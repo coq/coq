@@ -3,6 +3,7 @@ binding "text" {
 		   "move-cursor" (paragraphs,1,0)
 		   "cut-clipboard" ()	
 		}
+  bind "<ctrl>x" { }
 }
 class "GtkTextView" binding "text"
 
@@ -24,4 +25,5 @@ font_name = "Serif 10"
 class "GtkLabel" style "menu"
 
 gtk-key-theme-name = "Emacs"
+gtk-can-change-accels = 1
 
