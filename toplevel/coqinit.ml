@@ -48,10 +48,14 @@ let add_include s alias =
   Mltop.dir_ml_dir s;
   Library.add_path s alias
 
+let add_coq_include s = add_include s [Nametab.coq_root]
+
 let add_rec_include s alias = 
   let subdirs = all_subdirs s (Some alias) in
   List.iter (fun lpe -> Mltop.dir_ml_dir lpe.directory) subdirs;
   List.iter Library.add_load_path_entry subdirs
+
+let add_coq_rec_include s = add_rec_include s [Nametab.coq_root]
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -70,19 +74,19 @@ let init_load_path () =
   if Coq_config.local then begin
     (* local use (no installation) *)
     List.iter 
-      (fun s -> add_include (Filename.concat Coq_config.coqtop s) ["Coq"])
+      (fun s -> add_coq_include (Filename.concat Coq_config.coqtop s))
       ["states"; "dev"];
-    add_rec_include (Filename.concat Coq_config.coqtop "theories") ["Coq"];
-    add_include (Filename.concat Coq_config.coqtop "tactics") ["Coq"];
-    add_rec_include (Filename.concat Coq_config.coqtop "contrib") ["Coq"];
+    add_coq_rec_include (Filename.concat Coq_config.coqtop "theories");
+    add_coq_include (Filename.concat Coq_config.coqtop "tactics");
+    add_coq_rec_include (Filename.concat Coq_config.coqtop "contrib");
   end else begin
     (* default load path; variable COQLIB overrides the default library *)
     let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
-    add_rec_include coqlib ["Coq"]
+    add_coq_rec_include coqlib
   end;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;
-  add_include "." ["Scratch"];
+  add_include "." [Nametab.default_root];
   (* additional loadpath, given with -I -include -R options *)
   List.iter 
     (fun (s,alias,reci) ->

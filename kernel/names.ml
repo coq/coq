@@ -163,9 +163,6 @@ let pr_qualid (l,s) = prlist_with_sep (fun () -> pr_str ".") pr_str (l@[s])
 (*s Directory paths = section names paths *)
 type dir_path = string list
 
-(* The root of absolute names *)
-let coq_root = []
-
 (*s Section paths are absolute names *)
 
 type section_path = {
@@ -181,15 +178,15 @@ let basename sp = sp.basename
 let dirpath sp = sp.dirpath
 
 let qualid_of_sp sp =
-  make_qualid (coq_root @ dirpath sp) (string_of_id (basename sp))
+  make_qualid (dirpath sp) (string_of_id (basename sp))
 
 (* parsing and printing of section paths *)
-let string_of_dirpath sl = String.concat "." (coq_root@sl)
+let string_of_dirpath sl = String.concat "." sl
 
 let string_of_path sp =
   let (sl,id,k) = repr_path sp in
   String.concat ""
-    (List.flatten (List.map (fun s -> [s;"."]) (coq_root@sl))
+    (List.flatten (List.map (fun s -> [s;"."]) sl)
      @ [ string_of_id id ])
 
 let parse_sp s =

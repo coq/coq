@@ -29,21 +29,11 @@ let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
-let coqpath d =
-  let alias = Filename.basename d in
-  let alias =
-    if alias = "." then
-      Filename.basename (Unix.getcwd ())
-    else if alias = ".." then
-      Filename.basename (Filename.dirname (Unix.getcwd ()))
-    else alias in
-  if not (Names.is_ident alias) then 
-    error ("Cannot find a name to which "^d^" may map in Coq library");
-  alias
 let set_include d p = push_include (d,Names.dirpath_of_string p)
 let set_rec_include d p = push_rec_include (d,Names.dirpath_of_string p)
-
-
+let set_default_include d = set_include d Nametab.default_root
+let set_default_rec_include d = set_rec_include d Nametab.default_root
+ 
 let load_vernacular_list = ref ([] : string list)
 let add_load_vernacular s =
   load_vernacular_list := (make_suffix s ".v") :: !load_vernacular_list
@@ -99,11 +89,11 @@ let parse_args () =
     | [] -> ()
 
     | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
-    | ("-I"|"-include") :: d :: rem -> set_include d (coqpath d); parse rem
+    | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
     | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p; parse rem
-    | "-R" :: d :: rem -> set_rec_include d (coqpath d); parse rem
+    | "-R" :: d :: rem -> set_default_rec_include d; parse rem
     | "-R" :: []       -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem

@@ -51,8 +51,6 @@ val kind_of_string : string -> path_kind
 (*s Directory paths = section names paths *)
 type dir_path = string list
 
-val coq_root : dir_path
-
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 
