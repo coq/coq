@@ -1594,7 +1594,7 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
 
 let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
  let but = pf_concl gl in
- let (hyp,c1,c2) =
+ let (sigma,hyp,c1,c2) =
    let (env',c1) =
     try
      (* ~mod_delta:false to allow to mark occurences that must not be
@@ -1609,12 +1609,12 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
    in
    let cl' = {cl with env = env' } in
    let c2 = Clenv.clenv_nf_meta cl' c2 in
-    (input_direction,Clenv.clenv_value cl'), c1, c2
+    env',(input_direction,Clenv.clenv_value cl'), c1, c2
  in
   try
    let input_relation =
     relation_class_that_matches_a_constr "Setoid_rewrite"
-     new_goals (pf_type_of gl (snd hyp)) in
+     new_goals (Typing.mtype_of (pf_env gl) sigma (snd hyp)) in
    let output_relation,output_direction,marked_but =
     mark_occur gl ~new_goals c1 but input_relation input_direction in
    let cic_output_direction = cic_direction_of_direction output_direction in
