@@ -221,7 +221,8 @@ let register id id' =
   try
     let (v,p) = Idmap.find id !edited in
     let _ = add_global id' v (Some p) in
-    mSGNL (hOV 0 [< 'sTR"Program "; pr_id id'; 'sPC; 'sTR"is defined" >]);
+    Options.if_verbose 
+      mSGNL (hOV 0 [< 'sTR"Program "; pr_id id'; 'sPC; 'sTR"is defined" >]);
     edited := Idmap.remove id !edited
   with Not_found -> ()
 
