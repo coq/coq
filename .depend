@@ -1084,17 +1084,19 @@ toplevel/discharge.cmo: toplevel/class.cmi pretyping/classops.cmi \
     kernel/environ.cmi library/global.cmi library/impargs.cmi \
     kernel/inductive.cmi kernel/instantiate.cmi library/lib.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
-    library/nametab.cmi lib/options.cmi lib/pp.cmi pretyping/recordops.cmi \
-    kernel/reduction.cmi kernel/sign.cmi library/summary.cmi kernel/term.cmi \
-    kernel/typeops.cmi lib/util.cmi toplevel/discharge.cmi 
+    library/nametab.cmi lib/options.cmi lib/pp.cmi toplevel/recordobj.cmi \
+    pretyping/recordops.cmi kernel/reduction.cmi kernel/sign.cmi \
+    library/summary.cmi kernel/term.cmi kernel/typeops.cmi lib/util.cmi \
+    toplevel/discharge.cmi 
 toplevel/discharge.cmx: toplevel/class.cmx pretyping/classops.cmx \
     kernel/cooking.cmx kernel/declarations.cmx library/declare.cmx \
     kernel/environ.cmx library/global.cmx library/impargs.cmx \
     kernel/inductive.cmx kernel/instantiate.cmx library/lib.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
-    library/nametab.cmx lib/options.cmx lib/pp.cmx pretyping/recordops.cmx \
-    kernel/reduction.cmx kernel/sign.cmx library/summary.cmx kernel/term.cmx \
-    kernel/typeops.cmx lib/util.cmx toplevel/discharge.cmi 
+    library/nametab.cmx lib/options.cmx lib/pp.cmx toplevel/recordobj.cmx \
+    pretyping/recordops.cmx kernel/reduction.cmx kernel/sign.cmx \
+    library/summary.cmx kernel/term.cmx kernel/typeops.cmx lib/util.cmx \
+    toplevel/discharge.cmi 
 toplevel/errors.cmo: parsing/ast.cmi toplevel/himsg.cmi kernel/indtypes.cmi \
     parsing/lexer.cmi proofs/logic.cmi lib/options.cmi lib/pp.cmi \
     proofs/tacmach.cmi kernel/type_errors.cmi kernel/univ.cmi lib/util.cmi \

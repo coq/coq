@@ -1,4 +1,5 @@
 Hints Resolve fait une anomalie si la constante n'existe pas
+--> CORRIGÉ
 
 (* Probleme de lancement de coqtop lorsque le fichier n'est pas sauve 
 sous emacs et qu'un lien (lock ?) .#fichier a ete cree *)
@@ -60,7 +61,8 @@ File "./Int_typ.v", line 209, characters 30-44
 Problème d'alias dépendant dans un Cases (idem SUBST)
 
 Rocq/ALGEBRA/SETOIDS
---> Token "=_S" non reconnus
+File "CATEGORY_THEORY/CATEGORY/ONE.v", line 83, characters 0-61
+Error: There is an unknown subterm I cannot solve
 
 Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944

@@ -7,6 +7,11 @@ Différences V7.0beta / V7.0
 - Rétablissement des @Definition and co
 - Rétablissement des token extensibles et mélangeant symboles et lettres
 
+Différences oubliées dans la V7.0beta :
+
+- Du fait des noms qualifiés, les variables de buts n'évitent plus les
+globaux de même nom de base
+
 ----------------------------------------------------------------------
 English version of changes is available on
 
