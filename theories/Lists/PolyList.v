@@ -16,11 +16,8 @@ Section Lists.
 Variable A : Set.
 
 Set Implicit Arguments.
-Set Contextual Implicits.
 
 Inductive list : Set := nil : list | cons : A -> list -> list.
-
-Unset Contextual Implicits.
 
 Infix "::" cons (at level 7, right associativity) : list_scope
   V8only (at level 45, right associativity).
@@ -555,6 +552,7 @@ End Reverse_Induction.
 
 End Lists.
 
+Implicits nil [1].
 V7only [Implicits nil [].].
 
 Hints Resolve nil_cons app_nil_end ass_app app_ass : datatypes v62.
