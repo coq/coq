@@ -1032,15 +1032,6 @@ let splay_arity env sigma c =
 
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
   
-let decomp_prod env sigma = 
-  let rec decrec m c =
-    match whd_betadeltaiota env sigma c with
-      | DOP0(Sort _) as x -> m,x
-      | DOP2(Prod,a,DLAM(n,c_0)) -> decrec (m+1) c_0
-      | _ -> error "decomp_prod: Not a product"
-  in 
-  decrec 0
-    
 let decomp_n_prod env sigma n = 
   let rec decrec m ln c = if m = 0 then (ln,c) else 
     match whd_betadeltaiota env sigma c with
