@@ -67,6 +67,21 @@ let ext_of_tag =
   | _                 -> "err" (* uninteresting thing that won't be printed *)
 ;;
 
+(*CSC: ORRENDO!!! MODIFICARE V7*)
+let tag_of_sp sp =
+ let module G = Global in
+  try
+   let _ = G.lookup_constant sp in "CONSTANT"
+  with
+   Not_found ->
+    try
+     let _ = G.lookup_mind sp in "MUTUALINDUCTIVE"
+    with
+     Not_found ->
+      (* We could only hope it is a variable *)
+      "VARIABLE"
+;;
+
 (* could_have_namesakes sp = true iff o is an object that could be cooked and *)
 (* than that could exists in cooked form with the same name in a super        *)
 (* section of the actual section                                              *)
@@ -87,16 +102,7 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 (* uri_of_path sp is a broken (wrong) uri pointing to the object whose        *)
 (* section path is sp                                                         *)
 let uri_of_path sp =
-(*CSCV7
- let ext_of_sp sp =
-  let module N = Names in
-   try
-    let lobj = Lib.map_leaf (N.objsp_of sp) in
-    let tag = Libobject.object_tag lobj in
-     ext_of_tag tag
-   with _ -> Util.anomaly ("wrong search of term " ^ N.string_of_path sp)
-*) let ext_of_sp sp = "v7"
- in
+ let ext_of_sp sp = ext_of_tag (tag_of_sp sp) in
   let module S = String in
    let str = Names.string_of_path sp in
     let uri = Str.substitute str '#' '/' in
@@ -522,7 +528,11 @@ let print id fn =
         print_mutual_inductive packs (Actual "") nparams
       with
        Not_found ->
-        Util.anomaly ("print: this should not happen")
+        try
+         let (_,typ) = G.lookup_named id in
+          print_variable id (T.body_of_type typ)
+        with
+         Not_found -> Util.anomaly ("print: this should not happen")
    end
   in
    Xml.pp pp_cmds fn
