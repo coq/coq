@@ -15,17 +15,42 @@ open Coqast
 open Ast
 open Rawterm
 
-(* In this file, we translate constr to ast, in order to print constr *)
+(* In this file, we translate rawconstr to ast, in order to print constr *)
+
+(**********************************************************************)
+(* Parametrization                                                    *)
+
+(* This governs printing of local context of references *)
+let print_arguments = ref false
+
+(* This forces printing of cast nodes *)
+let print_casts = ref false
+
+(* This governs printing of implicit arguments.  When
+   [print_implicits] is on then [print_implicits_explicit_args] tells
+   how jimplicit args are printed. If on, implicit args are printed
+   prefixed by "!" otherwise the function and not the arguments is
+   prefixed by "!" *)
+let print_implicits = ref false
+let print_implicits_explicit_args = ref false
+
+(* This forces printing of coercions *)
+let print_coercions = ref false
+
+let with_option o f x =
+  let old = !o in o:=true;
+  try let r = f x in o := old; r
+  with e -> o := old; raise e
+
+let with_arguments f = with_option print_arguments f
+let with_casts f = with_option print_casts f
+let with_implicits f = with_option print_implicits f
+let with_coercions f = with_option print_coercions f
 
 (**********************************************************************)
 (* conversion of references                                           *)
 
-let ids_of_var cl =
-  List.map
-    (function 
-       | RRef (_,RVar id) -> id
-       | _-> anomaly "ids_of_var")
-    (Array.to_list cl)
+let ids_of_ctxt = array_map_to_list (function VAR id -> id | _ -> assert false)
 
 let ast_of_ident id = nvar (string_of_id id)
 
@@ -37,26 +62,50 @@ let stringopt_of_name = function
   | Name id -> Some (string_of_id id)
   | Anonymous -> None
 
-let ast_of_constructor (((sp,tyi),n),ids) =
-  ope("MUTCONSTRUCT",
-      (path_section dummy_loc sp)::(num tyi)::(num n)
-      ::(List.map ast_of_ident ids))
+let ast_of_qualified sp id =
+  if Nametab.sp_of_id (kind_of_path sp) id = sp then nvar (string_of_id id)
+  else nvar (string_of_path sp)
 
-let ast_of_mutind ((sp,tyi),ids) =
-  ope("MUTIND",
-      (path_section dummy_loc sp)::(num tyi)::(List.map ast_of_ident ids))
-    
+let ast_of_constant_ref (sp,ids) =
+  if !print_arguments then
+    ope("CONST", (path_section dummy_loc sp)::(List.map ast_of_ident ids))
+  else ast_of_qualified sp (basename sp)
+
+let ast_of_constant (ev,ids) = ast_of_constant_ref (ev,ids_of_ctxt ids)
+
+let ast_of_existential_ref (ev,ids) =
+  if !print_arguments then
+      ope("EVAR", (num ev)::(List.map ast_of_ident ids))
+  else nvar ("?" ^ string_of_int ev)
+
+let ast_of_existential (ev,ids) = ast_of_existential_ref (ev,ids_of_ctxt ids)
+
+let ast_of_constructor_ref (((sp,tyi),n) as cstr_sp,ids) =
+  if !print_arguments then
+    ope("MUTCONSTRUCT",
+	(path_section dummy_loc sp)::(num tyi)::(num n)
+	::(List.map ast_of_ident ids))
+  else ast_of_qualified sp (Global.id_of_global (MutConstruct cstr_sp))
+
+let ast_of_constructor (ev,ids) = ast_of_constructor_ref (ev,ids_of_ctxt ids)
+
+let ast_of_inductive_ref ((sp,tyi) as ind_sp,ids) =
+  if !print_arguments then
+    ope("MUTIND",
+	(path_section dummy_loc sp)::(num tyi)::(List.map ast_of_ident ids))
+  else ast_of_qualified sp (Global.id_of_global (MutInd ind_sp))
+
+let ast_of_inductive (ev,ids) = ast_of_inductive_ref (ev,ids_of_ctxt ids)
+
 let ast_of_ref = function
-  | RConst (sp,idl) ->
-      ope("CONST", (path_section dummy_loc sp)::(List.map ast_of_ident idl))
+  | RConst (sp,ids) -> ast_of_constant_ref (sp,ids)
   | RAbst (sp) ->
       ope("ABST", (path_section dummy_loc sp)
 	    ::(List.map ast_of_ident (* on triche *) []))
-  | RInd (ind,idl) -> ast_of_mutind(ind,idl)
-  | RConstruct (cstr,idl) -> ast_of_constructor (cstr,idl)
+  | RInd (ind,ids) -> ast_of_inductive_ref (ind,ids)
+  | RConstruct (cstr,ids) -> ast_of_constructor_ref (cstr,ids)
   | RVar id -> nvar (string_of_id id)
-  | REVar (ev,idl) ->
-      ope("EVAR", (num ev)::(List.map ast_of_ident idl))
+  | REVar (ev,ids) -> ast_of_existential_ref (ev,ids)
   | RMeta n -> ope("META",[num n])
 
 (**********************************************************************)
@@ -69,11 +118,181 @@ let rec ast_of_pattern = function   (* loc is thrown away for printing *)
       ope("PATTAS",
 	  [nvar (string_of_id id);
 	   ope("PATTCONSTRUCT",
-	       (ast_of_constructor cstr)::List.map ast_of_pattern args)])
+	       (ast_of_constructor_ref cstr)::List.map ast_of_pattern args)])
   | PatCstr(loc,cstr,args,Anonymous) ->
       ope("PATTCONSTRUCT",
-	  (ast_of_constructor cstr)::List.map ast_of_pattern args)
+	  (ast_of_constructor_ref cstr)::List.map ast_of_pattern args)
 	
+let ast_dependent na aty =
+  match na with
+    | Name id -> occur_var_ast (string_of_id id) aty
+    | Anonymous -> false
+
+(* Implicit args indexes are in ascending order *)
+let explicitize =
+  let rec exprec n lastimplargs impl = function
+    | a::args ->
+	(match impl with
+	   | i::l when i=n ->
+	       exprec (n+1) (ope("EXPL", [num i; a])::lastimplargs) l args
+	   | _ ->
+	       let tail = a::(exprec (n+1) [] impl args) in
+	       if (!print_implicits & !print_implicits_explicit_args) then
+		 List.rev_append lastimplargs tail
+	       else tail)
+    (* Tail impl args are always printed even if implicit printing is off *)
+    | [] -> List.rev lastimplargs
+  in exprec 0 []
+
+let implicit_of_ref = function
+  | RConstruct (cstrid,_) -> constructor_implicits_list cstrid
+  | RInd (indid,_) -> inductive_implicits_list indid
+  | RConst (sp,_) -> constant_implicits_list sp
+  | RVar id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
+  | _ -> []
+
+let rec skip_coercion (f,args as app) =
+  if !print_coercions then app
+  else
+    try
+      match f with
+	| RRef (_,r) ->
+	    let n = Classops.coercion_params r in
+	    if n >= List.length args then app
+	    else (* We skip a coercion *)
+	      let _,fargs = list_chop n args in
+	      skip_coercion (List.hd fargs,List.tl fargs)
+	| _ -> app
+    with Not_found -> app
+
+let ast_of_app impl f args =
+  if !print_implicits & not !print_implicits_explicit_args then 
+    ope("APPLISTEXPL", f::args)
+  else
+    ope("APPLIST", f::(explicitize impl args))
+(*
+    let largs = List.length args in
+    let impl = List.rev (List.filter (fun i -> i <= largs) impl) in
+    let impl1,impl2 = div_implicits largs impl in
+    let al1 = Array.of_list args in
+    List.iter
+      (fun i -> al1.(i) <-
+         ope("EXPL", [str "EX"; num i; al1.(i)]))
+      impl2;
+    List.iter
+      (fun i -> al1.(i) <-
+         ope("EXPL",[num i; al1.(i)]))
+      impl1;
+    (* On laisse les implicites, à charge du PP de ne pas les imprimer *)
+    ope("APPLISTEXPL",f::(Array.to_list al1))
+*)
+
+let rec ast_of_raw = function
+  | RRef (_,ref) -> ast_of_ref ref
+  | RApp (_,f,args) ->
+      let (f,args) = skip_coercion (f,args) in
+      let astf = ast_of_raw f in
+      let astargs = List.map ast_of_raw args in
+      (match f with 
+	 | RRef (_,ref) -> ast_of_app (implicit_of_ref ref) astf astargs
+	 | _           -> ast_of_app [] astf astargs)
+  | RBinder (_,BProd,Anonymous,t,c) ->
+      (* Anonymous product are never factorized *)
+      ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
+  | RBinder (_,bk,na,t,c) ->
+      let (n,a) = factorize_binder 1 bk na (ast_of_raw t) c in
+      let tag = match bk with
+	  (* LAMBDA et LAMBDALIST se comportent pareil *)
+	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
+	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
+	  (* non dépendant, pour isoler l'implication; peut-être un *)
+	  (* constructeur ARROW serait-il plus justifié ? *) 
+	| BProd -> if n=1 then "PROD" else "PRODLIST" 
+      in
+      ope(tag,[ast_of_raw t;a])
+
+  | RCases (_,printinfo,typopt,tml,eqns) ->
+      let pred = ast_of_rawopt typopt in
+      let tag = match printinfo with
+	| PrintIf -> "FORCEIF"
+	| PrintLet -> "FORCELET"
+	| PrintCases -> "CASES" 
+      in
+      let asttomatch = ope("TOMATCH", List.map ast_of_raw tml) in
+      let asteqns = List.map ast_of_eqn eqns in 
+      ope(tag,pred::asttomatch::asteqns)
+	
+  | ROldCase (_,isrec,typopt,tm,bv) ->
+      warning "Old Case syntax";
+      ope("MUTCASE",(ast_of_rawopt typopt)
+	    ::(ast_of_raw tm)
+	    ::(Array.to_list (Array.map ast_of_raw bv)))
+  | RRec (_,fk,idv,tyv,bv) ->
+      let alfi = Array.map ast_of_ident idv in
+      (match fk with
+	 | RFix (nv,n) ->
+             let rec split_lambda binds = function
+	       | (0, t) -> (binds,ast_of_raw t)
+	       | (n, RBinder(_,BLambda,na,t,b)) ->
+		   let bind = ope("BINDER",[ast_of_raw t;ast_of_name na]) in
+		   split_lambda (bind::binds) (n-1,b)
+	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint body" in
+	     let rec split_product = function
+	       | (0, t) -> ast_of_raw t
+	       | (n, RBinder(_,BProd,na,t,b)) -> split_product (n-1,b)
+	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint type" in
+	     let listdecl = 
+	       Array.mapi
+		 (fun i fi ->
+		    let (lparams,astdef) = split_lambda [] (nv.(i)+1,bv.(i)) in
+		    let asttyp = split_product (nv.(i)+1,tyv.(i)) in
+		    ope("FDECL",
+		       	[fi; ope ("BINDERS",List.rev lparams); 
+			 asttyp; astdef]))
+		 alfi
+	     in 
+	     ope("FIX", alfi.(n)::(Array.to_list listdecl))
+	 | RCofix n -> 
+	     let listdecl =
+               Array.mapi 
+		 (fun i fi ->
+		    ope("CFDECL",[fi; ast_of_raw tyv.(i); ast_of_raw bv.(i)]))
+		 alfi
+	     in 
+	     ope("COFIX", alfi.(n)::(Array.to_list listdecl)))
+
+  | RSort (_,s) ->
+      (match s with
+	 | RProp Null -> ope("PROP",[])
+	 | RProp Pos -> ope("SET",[])
+	 | RType -> ope("TYPE",[]))
+  | RHole _ -> ope("ISEVAR",[])
+  | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
+	
+and ast_of_eqn (ids,pl,c) =
+  ope("EQN", (ast_of_raw c)::(List.map ast_of_pattern pl))
+
+and ast_of_rawopt = function
+  | None -> (str "SYNTH")
+  | Some p -> ast_of_raw p
+
+and factorize_binder n oper na aty c =
+  let (p,body) = match c with
+    | RBinder(_,oper',na',ty',c')
+	when (oper = oper') & (aty = ast_of_raw ty')
+	  & not (ast_dependent na aty) (* To avoid na in ty' escapes scope *)
+	  & not (na' = Anonymous & oper = BProd)
+	  -> factorize_binder (n+1) oper na' aty c'
+    | _ -> (n,ast_of_raw c)
+  in
+  (p,slam(stringopt_of_name na, body))
+
+let ast_of_rawconstr = ast_of_raw
+
+(*****************************************************************)
+(* TO EJECT ... REPRIS DANS detyping *)
+
+
 (* Nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
 
@@ -208,127 +427,6 @@ let sp_of_spi ((sp,_) as spi) =
   let (pa,_,k) = repr_path sp in 
   make_path pa (mip.mind_typename) k
 
-
-(* Parameterization of the translation from constr to ast      *)
-
-(* Tables for Cases printing under a "if" form, a "let" form,  *)
-
-let isomorphic_to_bool lc =
-  let lcparams = Array.map get_params lc in
-  Array.length lcparams = 2 & lcparams.(0) = [] & lcparams.(1) = []
-
-let isomorphic_to_tuple lc = (Array.length lc = 1)
-
-module PrintingCasesMake =
-  functor (Test : sig 
-     val test : constr array -> bool
-     val error_message : string
-     val member_message : identifier -> bool -> string
-     val field : string
-     val title : string
-  end) ->
-  struct
-    type t = section_path * int
-    let encode = indsp_of_id
-    let check indsp =
-      if not (Test.test (lc_of_lmis (mind_specif_of_mind_light indsp))) then 
-	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
-    let decode = sp_of_spi
-    let key = Goptions.SecondaryTable ("Printing",Test.field)
-    let title = Test.title
-    let member_message = Test.member_message
-    let synchronous = true
-  end
-
-module PrintingCasesIf =
-  PrintingCasesMake (struct 
-    let test = isomorphic_to_bool
-    let error_message = "This type cannot be seen as a boolean type"
-    let field = "If"
-    let title = "Types leading to pretty-printing of Cases using a `if' form: "
-    let member_message id = function
-      | true  -> 
-          "Cases on elements of " ^ (string_of_id id)
-          ^ " are printed using a `if' form"
-      | false -> 
-          "Cases on elements of " ^ (string_of_id id)
-          ^ " are not printed using `if' form"
-  end)
-
-module PrintingCasesLet =
-  PrintingCasesMake (struct 
-    let test = isomorphic_to_tuple
-    let error_message = "This type cannot be seen as a tuple type"
-    let field = "Let"
-    let title = 
-      "Types leading to a pretty-printing of Cases using a `let' form:"
-    let member_message id = function
-      | true  -> 
-          "Cases on elements of " ^ (string_of_id id)
-          ^ " are printed using a `let' form"
-      | false -> 
-          "Cases on elements of " ^ (string_of_id id)
-          ^ " are not printed using a `let' form"
-  end)
-
-module PrintingIf  = Goptions.MakeTable(PrintingCasesIf)
-module PrintingLet = Goptions.MakeTable(PrintingCasesLet)
-
-(* Options for printing or not wildcard and synthetisable types *)
-
-open Goptions
-
-let wildcard_value = ref true
-let force_wildcard () = !wildcard_value
-
-let _ =                           
-  declare_async_bool_option 
-    { optasyncname  = "the forced wildcard option";
-      optasynckey   = SecondaryTable ("Printing","Wildcard");
-      optasyncread  = force_wildcard;
-      optasyncwrite = (fun v -> wildcard_value := v) }
-
-let synth_type_value = ref true
-let synthetize_type () = !synth_type_value
-
-let _ = 
-  declare_async_bool_option 
-    { optasyncname = "the synthesisablity";
-      optasynckey   = SecondaryTable ("Printing","Synth");
-      optasyncread = synthetize_type;
-      optasyncwrite = (fun v -> synth_type_value := v) }
-
-(* Printing of implicit *)
-
-let print_implicits = ref false
-
-
-(**************************************************)
-(* The main translation function is bdize_depcast *)
-
-(* pour les implicites *)
-
-(* l est ordonne'ee (croissant), ne garder que les elements <= n *)
-let filter_until n l =
-  let rec aux = function
-    | [] -> []
-    | i::l -> if i > n then [] else i::(aux l)
-  in 
-  aux l
-
-(* l est ordonne'e (de'croissant), n>=max(l), diviser l en deux listes,
-   la 2eme est la plus longue se'quence commencant par n,
-   la 1ere contient les autres elements *)
-
-let rec div_implicits n = 
-  function 
-    | [] -> [],[]
-    | i::l -> 
-	if i = n then 
-	  let l1,l2=(div_implicits (n-1) l) in l1,i::l2
-        else 
-	  i::l,[]
-
 let bdize_app c al =
   let impl =
     match c with
@@ -338,52 +436,10 @@ let bdize_app c al =
       | VAR id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
       | _ -> []
   in
-  if impl = [] then 
-    ope("APPLIST", al)
-  else if !print_implicits then 
-    ope("APPLIST", ope("XTRA",[str "!";List.hd al])::List.tl al)
-  else 
-    let largs = List.length al - 1 in
-    let impl = List.rev (filter_until largs impl) in
-    let impl1,impl2=div_implicits largs impl in
-    let al1 = Array.of_list al in
-    List.iter
-      (fun i -> al1.(i) <-
-         ope("XTRA", [str "!"; str "EX"; num i; al1.(i)]))
-      impl2;
-    List.iter
-      (fun i -> al1.(i) <-
-         ope("XTRA",[str "!"; num i; al1.(i)]))
-      impl1;
-    al1.(0) <- ope("XTRA",[str "!"; al1.(0)]);
-    ope("APPLIST",Array.to_list al1)
-
-type optioncast = WithCast | WithoutCast
-
-(* [reference_tree p] pre-computes the variables and de bruijn occurring
-   in a term to avoid a O(n2) factor when computing dependent each time *)
-
-type ref_tree =
-  NODE of (int list * identifier list) * ref_tree list
-
-let combine l =
-  let rec combine_rec = function
-    | [] -> [],[]
-    | NODE ((a,b),_)::l -> 
-        let a',b' = combine_rec l in (list_union a a',list_union b b')
-  in 
-  NODE (combine_rec l,l)
-
-let rec reference_tree p = function
-  | VAR id -> NODE (([],[id]),[])
-  | Rel n  -> NODE (([n-p],[]),[])
-  | DOP0 op -> NODE (([],[]),[])
-  | DOP1(op,c) -> reference_tree p c
-  | DOP2(op,c1,c2) -> combine [reference_tree p c1;reference_tree p c2]
-  | DOPN(op,cl) -> combine (List.map (reference_tree p) (Array.to_list cl))
-  | DOPL(op,cl) -> combine (List.map (reference_tree p) cl)
-  | DLAM(na,c) -> reference_tree (p+1) c 
-  | DLAMV(na,cl) -> combine (List.map (reference_tree (p+1))(Array.to_list cl))
+  if !print_implicits then 
+    ope("APPLISTEXPL", al)
+  else
+    ope("APPLIST", explicitize impl al)
 
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
@@ -413,9 +469,16 @@ let computable p k =
   in 
   striprec (k,p)
 
+let ids_of_var cl =
+  List.map
+    (function 
+       | RRef (_,RVar id) -> id
+       | _-> anomaly "ids_of_var")
+    (Array.to_list cl)
+
 (* Main translation function from constr -> ast *)
 
-let old_bdize_depcast opcast at_top env t =
+let old_bdize at_top env t =
   let init_avoid = if at_top then ids_of_env env else [] in
   let rec bdrec avoid env t = match collapse_appl t with
     (* Not well-formed constructions *)
@@ -458,7 +521,7 @@ let old_bdize_depcast opcast at_top env t =
 		      ope("TYPE",
 			  [path_section dummy_loc u.u_sp; num u.u_num]))
 	   | IsCast (c1,c2) ->
-	       if opcast=WithoutCast then 
+	       if !print_casts then 
 		 bdrec avoid env c1 
 	       else 
 		 ope("CAST",[bdrec avoid env c1;bdrec avoid env c2])
@@ -497,7 +560,7 @@ let old_bdize_depcast opcast at_top env t =
 		   ((path_section dummy_loc sp)::(num tyi)::(num n)::
 		    (array_map_to_list (bdrec avoid env) cl)))
 	   | IsMutCase (annot,p,c,bl) ->
-	       let synth_type = synthetize_type () in
+	       let synth_type = Detyping.synthetize_type () in
 	       let tomatch = bdrec avoid env c in
 	       begin 
 		 match annot with
@@ -519,7 +582,7 @@ let old_bdize_depcast opcast at_top env t =
 		       else 
 			 bdrec avoid env p 
 		     in
-		     if PrintingIf.active indsp then 
+		     if Detyping.force_if indsp then 
 		       ope("FORCEIF", [ pred; tomatch;
 					bdrec avoid env bl.(0); 
 					bdrec avoid env bl.(1) ])
@@ -531,10 +594,10 @@ let old_bdize_depcast opcast at_top env t =
 			   lcparams bl in
 		       let eqnl = Array.to_list eqnv in
 		       let tag =
-			 if PrintingLet.active indsp then 
+			 if Detyping.force_let indsp then 
 			   "FORCELET" 
 			 else 
-			   "MULTCASE"
+			   "CASES"
 		       in 
 		       ope(tag,pred::asttomatch::eqnl)
 	       end
@@ -601,7 +664,7 @@ let old_bdize_depcast opcast at_top env t =
 	       ope("COFIX", (nvar (string_of_id f))::listdecl))
 
   and bdize_eqn avoid env constructid construct_params branch =
-    let print_underscore = force_wildcard () in
+    let print_underscore = Detyping.force_wildcard () in
     let cnvar = nvar (string_of_id constructid) in
     let rec buildrec nvarlist avoid env = function
 
@@ -654,320 +717,16 @@ let old_bdize_depcast opcast at_top env t =
 
   in
     bdrec init_avoid env t
-
-let lookup_name_as_renamed env t s =
-  let rec lookup avoid env n = function
-      DOP2(Prod,_,DLAM(name,c')) ->
-       (match concrete_name avoid env name c' with
-          (Some id,avoid') -> 
-	    if id=s then (Some n) 
-	    else lookup avoid' (add_rel (Name id,()) env) (n+1) c'
-	  | (None,avoid')    -> lookup avoid' env (n+1) (pop c'))
-     | DOP2(Cast,c,_) -> lookup avoid env n c
-     | _ -> None
-  in lookup (ids_of_env env) env 1 t
-
-let lookup_index_as_renamed t n =
-  let rec lookup n d = function
-      DOP2(Prod,_,DLAM(name,c')) -> 
-	  (match concrete_name [] (gLOB nil_sign) name c' with
-          (Some _,_) -> lookup n (d+1) c'
-        | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
-    | DOP2(Cast,c,_) -> lookup n d c
-    | _ -> None
-  in lookup n 1 t
-
-(*
-Until V6.2.4, similar names were allowed in hypothesis and quantified
-variables of a goal.
-*)
-
-(* $Id$ *)
-
-exception StillDLAM
-
-let rec detype avoid env t =
-  match collapse_appl t with
-    (* Not well-formed constructions *)
-    | DLAM _ | DLAMV _ -> raise StillDLAM
-    (* Well-formed constructions *)
-    | regular_constr -> 
-    (match kind_of_term regular_constr with
-    | IsRel n ->
-      (try match fst (lookup_rel n env) with
-	 | Name id   -> RRef (dummy_loc, RVar id)
-	 | Anonymous -> anomaly "detype: index to an anonymous variable"
-       with Not_found ->
-	 let s = "[REL "^(string_of_int (n - List.length (get_rels env)))^"]"
-	 in RRef (dummy_loc, RVar (id_of_string s)))
-    | IsMeta n -> RRef (dummy_loc,RMeta n)
-    | IsVar id -> RRef (dummy_loc,RVar id)
-    | IsXtra s -> warning "bdize: Xtra should no longer occur in constr";
-	RRef(dummy_loc,RVar (id_of_string ("XTRA"^s)))
-        (* ope("XTRA",((str s):: pl@(List.map detype cl)))*) 
-    | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
-    | IsSort (Type _) -> RSort (dummy_loc,RType)
-    | IsCast (c1,c2) ->
-	RCast(dummy_loc,detype avoid env c1,detype avoid env c2)
-    | IsProd (na,ty,c) -> detype_binder BProd avoid env na ty c
-    | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
-    | IsAppL (f,args) ->
-	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
-    | IsConst (sp,cl) ->
-	RRef(dummy_loc,RConst(sp,ids_of_var (Array.map (detype avoid env) cl)))
-    | IsEvar (ev,cl) ->
-	RRef(dummy_loc,REVar(ev,ids_of_var (Array.map (detype avoid env) cl)))
-    | IsAbst (sp,cl) -> 
-	anomaly "bdize: Abst should no longer occur in constr"
-    | IsMutInd (ind_sp,cl) ->
-	let ids = ids_of_var (Array.map (detype avoid env) cl) in
-	RRef (dummy_loc,RInd (ind_sp,ids))
-    | IsMutConstruct (cstr_sp,cl) ->
-	let ids = ids_of_var (Array.map (detype avoid env) cl) in
-	RRef (dummy_loc,RConstruct (cstr_sp,ids))
-    | IsMutCase (annot,p,c,bl) ->
-	let synth_type = synthetize_type () in
-	let tomatch = detype avoid env c in
-	begin 
-	  match annot with
-(*	  | None -> (* Pas d'annotation --> affichage avec vieux Case *)
-	      warning "Printing in old Case syntax";
-	      ROldCase (dummy_loc,false,Some (detype avoid env p),
-			tomatch,Array.map (detype avoid env) bl)
-	  | Some *) indsp ->
-	      let (mib,mip as lmis) = mind_specif_of_mind_light indsp in
-	      let lc = lc_of_lmis lmis in
-	      let lcparams = Array.map get_params lc in
-	      let k = (nb_prod mip.mind_arity.body) - 
-		      mib.mind_nparams in
-	      let pred = 
-		if synth_type & computable p k & lcparams <> [||] then
-		  None
-		else 
-		  Some (detype avoid env p) 
-	      in
-	      let constructs = 
-		Array.init
-		  (Array.length mip.mind_consnames)
-		  (fun i -> ((indsp,i+1),[] (* on triche *))) in
-	      let eqnv =
-		array_map3 (detype_eqn avoid env) constructs lcparams bl in
-	      let eqnl = Array.to_list eqnv in
-	      let tag =
-		if PrintingLet.active indsp then 
-		  PrintLet 
-		else if PrintingIf.active indsp then 
-		  PrintIf 
-		else 
-		  PrintCases
-	      in 
-	      RCases (dummy_loc,tag,pred,[tomatch],eqnl)
-	end
-	
-    | IsFix (nv,n,cl,lfn,vt) -> detype_fix (RFix (nv,n)) avoid env cl lfn vt
-    | IsCoFix (n,cl,lfn,vt)  -> detype_fix (RCofix n) avoid env cl lfn vt)
-
-and detype_fix fk avoid env cl lfn vt =
-  let lfi = List.map (fun id -> next_name_away id avoid) lfn in
-  let def_avoid = lfi@avoid in
-  let def_env =
-    List.fold_left (fun env id -> add_rel (Name id,()) env) env lfi in
-  RRec(dummy_loc,fk,Array.of_list lfi,Array.map (detype avoid env) cl,
-       Array.map (detype def_avoid def_env) vt)
-
-
-and detype_eqn avoid env constr_id construct_params branch =
-  let make_pat x avoid env b ids =
-    if not (force_wildcard ()) or (dependent (Rel 1) b) then
-      let id = next_name_away_with_default "x" x avoid in
-      PatVar (dummy_loc,Name id),id::avoid,(add_rel (Name id,()) env),id::ids
-    else 
-      PatVar (dummy_loc,Anonymous),avoid,(add_rel (Anonymous,()) env),ids
-  in
-  let rec buildrec ids patlist avoid env = function
-    | _::l, DOP2(Lambda,_,DLAM(x,b)) -> 
-	let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
-        buildrec new_ids (pat::patlist) new_avoid new_env (l,b)
-
-    | l   , DOP2(Cast,b,_) ->    (* Oui, il y a parfois des cast *)
-	buildrec ids patlist avoid env (l,b)
-	  
-    | x::l, b -> (* eta-expansion : n'arrivera plus lorsque tous les
-                   termes seront construits à partir de la syntaxe Cases *)
-	(* nommage de la nouvelle variable *)
-	let new_b = DOPN(AppL,[|lift 1 b; Rel 1|]) in
-        let pat,new_avoid,new_env,new_ids = make_pat x avoid env new_b ids in
-	buildrec new_ids (pat::patlist) new_avoid new_env (l,new_b)
-	  
-    | []  , rhs	-> 
-	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
-	 detype avoid env rhs)
-  in 
-  buildrec [] [] avoid env (construct_params,branch)
-
-and detype_binder bk avoid env na ty c =
-  let na',avoid' = match concrete_name avoid env na c with
-    | (Some id,l') -> (Name id), l'
-    | (None,l')    -> Anonymous, l' in
-  RBinder (dummy_loc,bk,
-	   na',detype [] env ty,
-	   detype avoid' (add_rel (na',()) env) c)
-
-let ast_dependent na aty =
-  match na with
-    | Name id -> occur_var_ast (string_of_id id) aty
-    | Anonymous -> false
-
-let implicit_of_ref = function
-  | RConstruct (cstrid,_) -> constructor_implicits_list cstrid
-  | RInd (indid,_) -> inductive_implicits_list indid
-  | RConst (sp,_) -> constant_implicits_list sp
-  | RVar id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
-  | _ -> []
-
-let ast_of_app impl f args =
-  if impl = [] then 
-    ope("APPLIST", f::args)
-  else if !print_implicits then 
-    ope("APPLISTEXPL", (f::args))
-  else 
-    let largs = List.length args in
-    let impl = List.rev (filter_until largs impl) in
-    let impl1,impl2=div_implicits largs impl in
-    let al1 = Array.of_list args in
-    List.iter
-      (fun i -> al1.(i) <-
-         ope("EXPL", [str "EX"; num i; al1.(i)]))
-      impl2;
-    List.iter
-      (fun i -> al1.(i) <-
-         ope("EXPL",[num i; al1.(i)]))
-      impl1;
-    (* On laisse les implicites, à charge du PP de ne pas les imprimer *)
-    ope("APPLISTEXPL",f::(Array.to_list al1))
-
-let rec ast_of_raw = function
-  | RRef (_,ref) -> ast_of_ref ref
-  | RApp (_,f,args) ->
-      let astf = ast_of_raw f in
-      let astargs = List.map ast_of_raw args in
-      (match f with 
-	 | RRef (_,ref) -> ast_of_app (implicit_of_ref ref) astf astargs
-	 | _           -> ast_of_app [] astf astargs)
-  | RBinder (_,BProd,Anonymous,t,c) ->
-      (* Anonymous product are never factorized *)
-      ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
-  | RBinder (_,bk,na,t,c) ->
-      let (n,a) = factorize_binder 1 bk na (ast_of_raw t) c in
-      let tag = match bk with
-	  (* LAMBDA et LAMBDALIST se comportent pareil *)
-	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
-	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
-	  (* non dépendant, pour isoler l'implication; peut-être un *)
-	  (* constructeur ARROW serait-il plus justifié ? *) 
-	| BProd -> if n=1 then "PROD" else "PRODLIST" 
-      in
-      ope(tag,[ast_of_raw t;a])
-
-  | RCases (_,printinfo,typopt,tml,eqns) ->
-      let pred = ast_of_rawopt typopt in
-      let tag = match printinfo with
-	| PrintIf -> "FORCEIF"
-	| PrintLet -> "FORCELET"
-	| PrintCases -> "MULTCASE" 
-      in
-      let asttomatch = ope("TOMATCH", List.map ast_of_raw tml) in
-      let asteqns = List.map ast_of_eqn eqns in 
-      ope(tag,pred::asttomatch::asteqns)
-	
-  | ROldCase (_,isrec,typopt,tm,bv) ->
-      warning "Old Case syntax";
-      ope("MUTCASE",(ast_of_rawopt typopt)
-	    ::(ast_of_raw tm)
-	    ::(Array.to_list (Array.map ast_of_raw bv)))
-  | RRec (_,fk,idv,tyv,bv) ->
-      let alfi = Array.map ast_of_ident idv in
-      (match fk with
-	 | RFix (nv,n) ->
-             let rec split_lambda binds = function
-	       | (0, t) -> (binds,ast_of_raw t)
-	       | (n, RBinder(_,BLambda,na,t,b)) ->
-		   let bind = ope("BINDER",[ast_of_raw t;ast_of_name na]) in
-		   split_lambda (bind::binds) (n-1,b)
-	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint body" in
-	     let rec split_product = function
-	       | (0, t) -> ast_of_raw t
-	       | (n, RBinder(_,BProd,na,t,b)) -> split_product (n-1,b)
-	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint type" in
-	     let listdecl = 
-	       Array.mapi
-		 (fun i fi ->
-		    let (lparams,astdef) = split_lambda [] (nv.(i)+1,bv.(i)) in
-		    let asttyp = split_product (nv.(i)+1,tyv.(i)) in
-		    ope("FDECL",
-		       	[fi; ope ("BINDERS",List.rev lparams); 
-			 asttyp; astdef]))
-		 alfi
-	     in 
-	     ope("FIX", alfi.(n)::(Array.to_list listdecl))
-	 | RCofix n -> 
-	     let listdecl =
-               Array.mapi 
-		 (fun i fi ->
-		    ope("CFDECL",[fi; ast_of_raw tyv.(i); ast_of_raw bv.(i)]))
-		 alfi
-	     in 
-	     ope("COFIX", alfi.(n)::(Array.to_list listdecl)))
-
-  | RSort (_,s) ->
-      (match s with
-	 | RProp Null -> ope("PROP",[])
-	 | RProp Pos -> ope("SET",[])
-	 | RType -> ope("TYPE",[]))
-  | RHole _ -> ope("ISEVAR",[])
-  | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
-	
-and ast_of_eqn (idl,pl,c) =
-  ope("EQN", (ast_of_raw c)::(List.map ast_of_pattern pl))
-
-and ast_of_rawopt = function
-  | None -> (str "SYNTH")
-  | Some p -> ast_of_raw p
-
-and factorize_binder n oper na aty c =
-  let (p,body) = match c with
-    | RBinder(_,oper',na',ty',c')
-	when (oper = oper') & (aty = ast_of_raw ty')
-	  & not (ast_dependent na aty) (* To avoid na in ty' escapes scope *)
-	  & not (na' = Anonymous & oper = BProd)
-	  -> factorize_binder (n+1) oper na' aty c'
-    | _ -> (n,ast_of_raw c)
-  in
-  (p,slam(stringopt_of_name na, body))
-
-let ast_of_rawconstr = ast_of_raw
+(* FIN TO EJECT *)
+(******************************************************************)
        
 let bdize at_top env t =
+  let t' =
+    if !print_casts then t
+    else Reduction.strong (fun _ _ -> strip_outer_cast)
+      Environ.empty_env Evd.empty t in
   try
     let avoid = if at_top then ids_of_env env else [] in
-    ast_of_raw (detype avoid env t)
-  with StillDLAM -> 
-    old_bdize_depcast WithoutCast at_top env t
-
-(* En attendant que strong aille dans term.ml *)
-let rec strong whdfun t = 
-  match whdfun t with 
-    | DOP0 _ as t -> t
-	(* Cas ad hoc *)
-    | DOP1(oper,c) -> DOP1(oper,strong whdfun c)
-    | DOP2(oper,c1,c2) -> DOP2(oper,strong whdfun c1,strong whdfun c2)
-    | DOPN(oper,cl) -> DOPN(oper,Array.map (strong whdfun) cl)
-    | DOPL(oper,cl) -> DOPL(oper,List.map (strong whdfun) cl)
-    | DLAM(na,c) -> DLAM(na,strong whdfun c)
-    | DLAMV(na,c) -> DLAMV(na,Array.map (strong whdfun) c)
-    | VAR _ as t -> t
-    | Rel _ as t -> t
-
-let bdize_no_casts at_top env t = bdize at_top env (strong strip_outer_cast t) 
-			   
-
+    ast_of_raw (Detyping.detype avoid env t')
+  with Detyping.StillDLAM ->
+    old_bdize at_top env t'

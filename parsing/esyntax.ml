@@ -83,14 +83,13 @@ let add_rule whatfor se =
   from_name_table := Gmap.add name se !from_name_table;
   from_key_table := Gmapl.add key se !from_key_table
     
-let add_ppobject (wf,sel) = List.iter (add_rule wf) sel
+let add_ppobject {sc_univ=wf;sc_entries=sel} = List.iter (add_rule wf) sel
 
 
 (* Pretty-printing machinery *)
 
 type std_printer = Coqast.t -> std_ppcmds
-type unparsing_subfunction =
-    ((string * precedence) * parenRelation) option -> std_printer
+type unparsing_subfunction = string -> tolerability option -> std_printer
 
 (* Module of primitive printers *)
 module Ppprim =
@@ -124,19 +123,17 @@ let _ = Ppprim.add ("print_as",print_as_printer)
  * printed using the token_printer, unless another primitive printer
  * is specified. *)
 
-let print_syntax_entry sub_pr env se = 
+let print_syntax_entry whatfor sub_pr env se = 
   let rule_prec = (se.syn_id, se.syn_prec) in
   let rec print_hunk = function
-    | PH(e,pprim,reln) ->
-        let sub_printer = sub_pr (Some(rule_prec,reln)) in
+    | PH(e,externpr,reln) ->
         let printer =
-          match pprim with (* If a primitive printer is specified, use it *)
-            | Some c ->
-                (try 
-		   (Ppprim.map c) sub_printer
-                 with Not_found ->
-                   (fun _ -> [< 'sTR"<printer "; 'sTR c; 'sTR" not found>" >]))
-            | None -> token_printer sub_printer
+          match externpr with (* May branch to an other printer *)
+            | Some (c,entry_prec) ->
+                (try (* Test for a primitive printer *)
+		   (Ppprim.map c) (sub_pr whatfor (Some(rule_prec,reln)))
+                 with Not_found -> token_printer (sub_pr c entry_prec))
+            | None -> token_printer (sub_pr whatfor (Some(rule_prec,reln)))
         in 
 	printer (Ast.pat_sub Ast.dummy_loc env e)
     | RO s -> [< 'sTR s >]
@@ -155,21 +152,21 @@ let print_syntax_entry sub_pr env se =
  * In the case of tactics and commands, dflt also prints 
  * global constants basenames. *)
 
-let genprint whatfor dflt inhprec ast =
-  let rec rec_pr inherited gt =
+let genprint dflt whatfor inhprec ast =
+  let rec rec_pr whatfor inherited gt =
     match find_syntax_entry whatfor gt with
       | Some(se, env) ->     
-          let rule_prec = (se.syn_id, se.syn_prec) in
-          let no_paren = tolerable_prec inherited rule_prec in
-          let printed_gt = print_syntax_entry rec_pr env se in
-          if no_paren then 
+	  let rule_prec = (se.syn_id, se.syn_prec) in
+	  let no_paren = tolerable_prec inherited rule_prec in
+	  let printed_gt = print_syntax_entry whatfor rec_pr env se in
+	  if no_paren then 
 	    printed_gt
-          else 
+	  else 
 	    [< 'sTR"(" ; printed_gt; 'sTR")" >]
       | None -> dflt gt (* No rule found *)
   in
   try 
-    rec_pr inhprec ast
+    rec_pr whatfor inhprec ast
   with
     | Failure _ -> [< 'sTR"<PP failure: "; dflt ast; 'sTR">" >]
     | Not_found -> [< 'sTR"<PP search failure: "; dflt ast; 'sTR">" >]

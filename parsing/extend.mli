@@ -34,8 +34,9 @@ type grammar_command = {
   gc_univ : string; 
   gc_entries : grammar_entry list }
 
-val gram_assoc: Coqast.t -> Gramext.g_assoc option
-val gram_of_ast: string -> Coqast.t list -> grammar_command
+val gram_assoc : Coqast.t -> Gramext.g_assoc option
+
+val interp_grammar_command : string -> Coqast.t list -> grammar_command
 
 
 (*s Pretty-print. *)
@@ -50,10 +51,9 @@ type parenRelation = L | E | Any
    highest precedence), and the child's one, follow the given
    relation. *)
 
-val tolerable_prec : ((string * precedence) * parenRelation) option ->
-  (string * precedence) -> bool
+type tolerability = (string * precedence) * parenRelation
 
-val prec_of_ast : Coqast.t -> precedence
+val tolerable_prec : tolerability option -> (string * precedence) -> bool
 
 (* unparsing objects *)
 
@@ -65,7 +65,7 @@ type ppbox =
   | PpTB
 
 type unparsing_hunk = 
-  | PH of Ast.pat * string option * parenRelation
+  | PH of Ast.pat * (string * tolerability option) option * parenRelation
   | RO of string
   | UNP_BOX of ppbox * unparsing_hunk list
   | UNP_BRK of int * int
@@ -83,8 +83,10 @@ type syntax_entry = {
   syn_astpat : Ast.pat;
   syn_hunks : unparsing_hunk list }
 
-val rule_of_ast : string -> precedence -> Coqast.t -> syntax_entry
+type syntax_command = { 
+  sc_univ : string; 
+  sc_entries : syntax_entry list }
 
-val level_of_ast : string -> Coqast.t -> syntax_entry list
+val interp_syntax_entry : string -> Coqast.t list -> syntax_command
 
 

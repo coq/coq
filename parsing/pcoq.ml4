@@ -71,7 +71,7 @@ module Gram =
   end
 
 
-(* This extension command is used by the Grammar command *)
+(* This extension command is used by the Grammar constr *)
 
 let grammar_extend te pos rls =
   camlp4_state := ByGrammar (te,pos,rls) :: !camlp4_state;
@@ -205,60 +205,54 @@ let force_entry_type (u, utab) s etyp =
 
 (* Grammar entries *)
 
-module Command =
+module Constr =
   struct
-    let ucommand = snd (get_univ "command")
+    let uconstr = snd (get_univ "constr")
     let gec s =
-      let e = Gram.Entry.create ("Command." ^ s) in
-      Hashtbl.add ucommand s (Ast e); e
+      let e = Gram.Entry.create ("Constr." ^ s) in
+      Hashtbl.add uconstr s (Ast e); e
 	
     let gec_list s =
-      let e = Gram.Entry.create ("Command." ^ s) in
-      Hashtbl.add ucommand s (ListAst e); e
+      let e = Gram.Entry.create ("Constr." ^ s) in
+      Hashtbl.add uconstr s (ListAst e); e
+
+    let constr = gec "constr"
+    let constr0 = gec "constr0"
+    let constr1 = gec "constr1"
+    let constr2 = gec "constr2"
+    let constr3 = gec "constr3"
+    let lassoc_constr4 = gec "lassoc_constr4"
+    let constr5 = gec "constr5"
+    let constr6 = gec "constr6"
+    let constr7 = gec "constr7"
+    let constr8 = gec "constr8"
+    let constr9 = gec "constr9"
+    let constr91 = gec "constr91"
+    let constr10 = gec "constr10"
+    let constr_eoi = eoi_entry constr
+    let lconstr = gec "lconstr"
+    let ident = gec "ident"
+    let ne_ident_comma_list = gec_list "ne_ident_comma_list"
+    let ne_constr_list = gec_list "ne_constr_list"
+
+    let pattern = Gram.Entry.create "Constr.pattern"
+
+(*
+    let binder = gec "binder"
 
     let abstraction_tail = gec "abstraction_tail"
-    let binder = gec "binder"
     let cofixbinder = gec "cofixbinder"
     let cofixbinders = gec_list "cofixbinders"
-    let command = gec "command"
-    let command0 = gec "command0"
-    let command1 = gec "command1"
-    let command10 = gec "command10"
-    let command2 = gec "command2"
-    let command3 = gec "command3"
-    let command5 = gec "command5"
-    let command6 = gec "command6"
-    let command7 = gec "command7"
-    let command8 = gec "command8"
-    let command9 = gec "command9"
-    let command91 = gec "command91"
-    let command_eoi = eoi_entry command
-    let equation = gec "equation"
     let fixbinder = gec "fixbinder"
     let fixbinders = gec_list "fixbinders"
-    let ident = gec "ident"
-    let lassoc_command4 = gec "lassoc_command4"
-    let lcommand = gec "lcommand"
-    let lsimple_pattern = Gram.Entry.create "Command.lsimple_pattern"
+
     let ne_binder_list = gec_list "ne_binder_list"
-    let ne_command91_list = gec_list "ne_command91_list"
-    let ne_command9_list = gec_list "ne_command9_list"
-    let ne_command_list = gec_list "ne_command_list"
-    let ne_eqn_list = gec_list "ne_eqn_list"
-    let ne_ident_comma_list = gec_list "ne_ident_comma_list"
-    let ne_pattern_list = Gram.Entry.create "Command.ne_pattern_list"
-    let pattern = Gram.Entry.create "Command.pattern"
-    let pattern_list = Gram.Entry.create "Command.pattern_list"
-    let product_tail = gec "product_tail"
-    let raw_command = gec "raw_command"
-    let simple_pattern = Gram.Entry.create "Command.simple_pattern"
-    let simple_pattern2 = Gram.Entry.create "Command.simple_pattern2"
-    let simple_pattern_list =
-	 Gram.Entry.create "Command.simple_pattern_list"
-    let type_option = gec "type_option"
-    let weak_binder = gec "weak_binder"
-    let ne_weak_binder_list = gec_list "ne_weak_binder"
-    let ucommand = snd (get_univ "command")
+
+    let ne_pattern_list = Gram.Entry.create "Constr.ne_pattern_list"
+    let pattern_list = Gram.Entry.create "Constr.pattern_list"
+    let simple_pattern = Gram.Entry.create "Constr.simple_pattern"
+*)
+    let uconstr = snd (get_univ "constr")
   end
 
 

@@ -56,49 +56,44 @@ val main_entry : Coqast.t option Gram.Entry.e
 
 (* Initial state of the grammar *)
 
-module Command :
+module Constr :
   sig
-    val abstraction_tail : Coqast.t Gram.Entry.e
+    val constr : Coqast.t Gram.Entry.e
+    val constr0 : Coqast.t Gram.Entry.e
+    val constr1 : Coqast.t Gram.Entry.e
+    val constr2 : Coqast.t Gram.Entry.e
+    val constr3 : Coqast.t Gram.Entry.e
+    val lassoc_constr4 : Coqast.t Gram.Entry.e
+    val constr5 : Coqast.t Gram.Entry.e
+    val constr6 : Coqast.t Gram.Entry.e
+    val constr7 : Coqast.t Gram.Entry.e
+    val constr8 : Coqast.t Gram.Entry.e
+    val constr9 : Coqast.t Gram.Entry.e
+    val constr91 : Coqast.t Gram.Entry.e
+    val constr10 : Coqast.t Gram.Entry.e
+    val constr_eoi : Coqast.t Gram.Entry.e
+    val lconstr : Coqast.t Gram.Entry.e
+    val ident : Coqast.t Gram.Entry.e
+    val ne_ident_comma_list : Coqast.t list Gram.Entry.e
+    val ne_constr_list : Coqast.t list Gram.Entry.e
+
+    val pattern : Coqast.t Gram.Entry.e
+
+(*
     val binder : Coqast.t Gram.Entry.e
+
+    val abstraction_tail : Coqast.t Gram.Entry.e
     val cofixbinder : Coqast.t Gram.Entry.e
     val cofixbinders : Coqast.t list Gram.Entry.e
-    val command : Coqast.t Gram.Entry.e
-    val command0 : Coqast.t Gram.Entry.e
-    val command1 : Coqast.t Gram.Entry.e
-    val command10 : Coqast.t Gram.Entry.e
-    val command2 : Coqast.t Gram.Entry.e
-    val command3 : Coqast.t Gram.Entry.e
-    val command5 : Coqast.t Gram.Entry.e
-    val command6 : Coqast.t Gram.Entry.e
-    val command7 : Coqast.t Gram.Entry.e
-    val command8 : Coqast.t Gram.Entry.e
-    val command9 : Coqast.t Gram.Entry.e
-    val command91 : Coqast.t Gram.Entry.e
-    val command_eoi : Coqast.t Gram.Entry.e
-    val equation : Coqast.t Gram.Entry.e
     val fixbinder : Coqast.t Gram.Entry.e
     val fixbinders : Coqast.t list Gram.Entry.e
-    val ident : Coqast.t Gram.Entry.e
-    val lassoc_command4 : Coqast.t Gram.Entry.e
-    val lcommand : Coqast.t Gram.Entry.e
-    val lsimple_pattern : Coqast.t Gram.Entry.e
+
     val ne_binder_list : Coqast.t list Gram.Entry.e
-    val ne_command91_list : Coqast.t list Gram.Entry.e
-    val ne_command9_list : Coqast.t list Gram.Entry.e
-    val ne_command_list : Coqast.t list Gram.Entry.e
-    val ne_eqn_list : Coqast.t list Gram.Entry.e
-    val ne_ident_comma_list : Coqast.t list Gram.Entry.e
+
     val ne_pattern_list : Coqast.t list Gram.Entry.e
-    val pattern : Coqast.t Gram.Entry.e
     val pattern_list : Coqast.t list Gram.Entry.e
-    val product_tail : Coqast.t Gram.Entry.e
-    val raw_command : Coqast.t Gram.Entry.e
     val simple_pattern : Coqast.t Gram.Entry.e
-    val simple_pattern2 : Coqast.t Gram.Entry.e
-    val simple_pattern_list : Coqast.t list Gram.Entry.e
-    val type_option : Coqast.t Gram.Entry.e
-    val weak_binder : Coqast.t Gram.Entry.e
-    val ne_weak_binder_list : Coqast.t list Gram.Entry.e
+*)
   end
 
 module Tactic :

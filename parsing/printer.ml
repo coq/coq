@@ -10,56 +10,25 @@ open Environ
 open Global
 open Declare
 open Coqast
+open Termast
 
-let print_arguments = ref false
-let print_casts = ref false
-let print_emacs = ref false
+let emacs_str s = if !Options.print_emacs then s else "" 
 
-let emacs_str s =
-  if !print_emacs then s else "" 
+let dfltpr ast = [< 'sTR"#GENTERM " ; Ast.print_ast ast >];;
 
+(*
 let section_path sl s =
   let sl = List.rev sl in
   make_path (List.tl sl) (id_of_string (List.hd sl)) (kind_of_string s)
 
-let with_implicits f x =
-  let oimpl = !Termast.print_implicits in
-  Termast.print_implicits := true; 
-  try
-    let r = f x in
-    Termast.print_implicits := oimpl;
-    r
-  with e -> 
-    Termast.print_implicits := oimpl; raise e
-
-let pr_qualified sp id = 
-  if Nametab.sp_of_id (kind_of_path sp) id = sp then 
-    [< 'sTR(string_of_id id) >]
-  else 
-    [< 'sTR(string_of_path sp) >]
-
-let pr_constant (sp,_) = pr_qualified sp (basename sp)
-
-let pr_existential (ev,_) = [< 'sTR ("?" ^ string_of_int ev) >]
-
-let pr_inductive (sp,tyi as ind_sp,_) =
-  let id = id_of_global (MutInd ind_sp) in
-  pr_qualified sp id
-
-let pr_constructor ((sp,tyi),i as cstr_sp,_) =
-  let id = id_of_global (MutConstruct cstr_sp) in
-  pr_qualified sp id
-
-(*
 let pr_global k oper =
   let id = id_of_global oper in
   [< 'sTR (string_of_id id) >]
 *)
 
-let dfltpr ast = [< 'sTR"#GENTERM " ; Ast.print_ast ast >]
-
 let globpr k gt = match gt with
   | Nvar(_,s) -> [< 'sTR s >]
+(*
   | Node(_,"EVAR", (Num (_,ev))::_) ->
       if !print_arguments then dfltpr gt
       else pr_existential (ev,[])
@@ -72,29 +41,10 @@ let globpr k gt = match gt with
   | Node(_,"MUTCONSTRUCT",(Path(_,sl,s))::(Num(_,tyi))::(Num(_,i))::_) ->
       if !print_arguments then (dfltpr gt)
       else pr_constructor (((section_path sl s,tyi),i),[])
+*)
   | gt -> dfltpr gt
 
-let apply_prec = Some (("Term",(9,0,0)),Extend.L)
-let apply_tacprec = Some (("Tactic",(9,0,0)),Extend.L)
-
-let rec gencompr k gt =
-  let uni = match k with
-    | CCI | FW -> "constr"
-    | _ -> "<undefined>" 
-  in
-  let rec gpr gt =
-    Esyntax.genprint uni
-      (function
-         | Node(_,"PPUNI$COMMAND",[Str(_,"CCI");c]) -> gencompr CCI c
-         | Node(_,"PPUNI$COMMAND",[c]) -> gencompr CCI c
-         | Node(_,"PPUNI$COMMAND",[Str(_,"FW");c]) -> gencompr FW c
-         | gt -> globpr k gt)
-      apply_prec
-      gt
-  in 
-  gpr gt
-
-let print_if_exception = function
+let wrap_exception = function
     Anomaly (s1,s2) ->
       warning ("Anomaly ("^s1^")");pP s2;
       [< 'sTR"<PP error: non-printable term>" >]
@@ -102,75 +52,75 @@ let print_if_exception = function
       [< 'sTR"<PP error: non-printable term>" >]
   | s -> raise s
 
+(* These are the names of the universes where the pp rules for constr and
+   tactic are put (must be consistent with files PPConstr.v and PPTactic.v *)
+
+let constr_syntax_universe = "constr"
+let tactic_syntax_universe = "tactic"
+
+(* This is starting precedence for printing constructions or tactics *)
+(* Level 9 means no parentheses except for applicative terms (at level 10) *)
+let constr_initial_prec = Some ((constr_syntax_universe,(9,0,0)),Extend.L)
+let tactic_initial_prec = Some ((tactic_syntax_universe,(9,0,0)),Extend.L)
+
+let gencompr k gt =
+  let uni = match k with
+    | CCI | FW -> constr_syntax_universe
+    | _ -> anomaly "gencompr: not a construction"
+	(* WAS "<undefined>" *)
+  in Esyntax.genprint (globpr k) uni constr_initial_prec gt
+
 (* [at_top] means ids of env must be avoided in bound variables *)
 let gentermpr_core at_top k env t =
   let uenv = unitize_env env in
-  try 
-    let ogt = 
-      if !print_casts then 
-	Termast.bdize at_top uenv t
-      else 
-	Termast.bdize_no_casts at_top uenv t
-    in 
-    gencompr k ogt
-  with s -> print_if_exception s
+  try gencompr k (Termast.bdize at_top uenv t)
+  with s -> wrap_exception s
 
-let term0_at_top a = gentermpr_core true CCI a
-let gentermpr a = gentermpr_core false a
+let gentermpr k = gentermpr_core false k
 
-let term0 a = gentermpr CCI a
-let prterm = term0 (gLOB nil_sign)
-let fterm0 a = gentermpr FW a
-let fprterm = fterm0 (gLOB nil_sign)
+let prterm_env_at_top a = gentermpr_core true CCI a
+let prterm_env a = gentermpr CCI a
+let prterm = prterm_env (gLOB nil_sign)
 
-let prtype_env env typ =
-  if !print_casts then 
-    term0 env (mkCast typ.body (mkSort typ.typ))
-  else 
-    prterm typ.body
+let fprterm_env a = gentermpr FW a
+let fprterm = fprterm_env (gLOB nil_sign)
 
+let prtype_env env typ = prterm_env env (mkCast typ.body (mkSort typ.typ))
 let prtype = prtype_env (gLOB nil_sign)
 
-let fprtype_env env typ =
-  if !print_casts then 
-    fterm0 env (mkCast typ.body (mkSort typ.typ))
-  else 
-    fterm0 env typ.body
-
+let fprtype_env env typ = fprterm_env env (mkCast typ.body (mkSort typ.typ))
 let fprtype = fprtype_env (gLOB nil_sign)
 
+let pr_constant cst = gencompr CCI (ast_of_constant cst)
+let pr_existential ev = gencompr CCI (ast_of_existential ev)
+let pr_inductive ind = gencompr CCI (ast_of_inductive ind)
+let pr_constructor cstr = gencompr CCI (ast_of_constructor cstr)
+
+(* For compatibility *)
+let term0 = prterm_env
+let fterm0 = fprterm_env
+
 let genpatternpr k t =
-  try 
-    gencompr k (Termast.ast_of_pattern t)
-  with s -> print_if_exception s
+  try gencompr k (Termast.ast_of_pattern t)
+  with s -> wrap_exception s
 
 let prpattern = genpatternpr CCI
 
 let genrawtermpr k env t =
-  try 
-    gencompr k (Termast.ast_of_rawconstr t)
-  with s -> print_if_exception s
+  try gencompr k (Termast.ast_of_rawconstr t)
+  with s -> wrap_exception s
 
 let prrawterm = genrawtermpr CCI (gLOB nil_sign)
 
-let gentacpr gt =
-  let rec gpr gt =
-    Esyntax.genprint "tactic"
-      (function 
-         | Nvar(_,s) -> [< 'sTR s >]
-         | Node(_,"PPUNI$COMMAND",[Str(_,"CCI");c]) -> gencompr CCI c
-         | Node(_,"PPUNI$COMMAND",[c]) -> gencompr CCI c
-         | Node(_,"PPUNI$COMMAND",[Str(_,"FW");c]) -> gencompr FW c
-         | gt -> default_tacpr gt)
-      apply_tacprec
-      gt
-  and default_tacpr = function
+let rec gentacpr gt =
+  Esyntax.genprint default_tacpr tactic_syntax_universe tactic_initial_prec gt
+
+and default_tacpr = function
+    | Nvar(_,s) -> [< 'sTR s >]
     | Node(_,s,[]) -> [< 'sTR s >]
     | Node(_,s,ta) ->
-	[< 'sTR s; 'bRK(1,2); hOV 0 (prlist_with_sep pr_spc gpr ta) >]
+	[< 'sTR s; 'bRK(1,2); hOV 0 (prlist_with_sep pr_spc gentacpr ta) >]
     | gt -> dfltpr gt
-  in 
-  gpr gt
 
 let print_decl k sign (s,typ) =
   let ptyp = gentermpr k (gLOB sign) typ.body in
@@ -262,5 +212,3 @@ let pr_env_limit n env =
 let pr_env_opt env = match Options.print_hyps_limit () with 
   | None -> hV 0 (pr_env CCI env)
   | Some n -> hV 0 (pr_env_limit n env)
-
-let emacs_str s = if !Options.print_emacs then s else "" 

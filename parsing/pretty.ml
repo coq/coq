@@ -43,8 +43,8 @@ let print_closed_sections = ref false
 
 let print_typed_value_in_env env (trm,typ) =
   let sign = Environ.var_context env in
-  [< term0 (gLOB sign) trm ; 'fNL ;
-     'sTR "     : "; term0 (gLOB sign) typ ; 'fNL >]
+  [< prterm_env (gLOB sign) trm ; 'fNL ;
+     'sTR "     : "; prterm_env (gLOB sign) typ ; 'fNL >]
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 			  		  
@@ -77,7 +77,7 @@ let print_var name typ =
   [< 'sTR "*** [" ; 'sTR name ; 'sTR " : "; prtype typ; 'sTR "]"; 'fNL >]
 
 let print_env pk = 
-  let pterminenv = if pk = FW then fterm0 else term0 in
+  let pterminenv = if pk = FW then fprterm_env else prterm_env in
   let pr_binder env (na,c) =
     match na with
       | Name id as name ->
@@ -99,7 +99,7 @@ let assumptions_for_print lna =
 
 let print_constructors_with_sep pk fsep mip = 
   let pterm,pterminenv =
-    if pk = FW then (fprterm,fterm0) else (prterm,term0) in
+    if pk = FW then (fprterm,fprterm_env) else (prterm,prterm_env) in
   let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = Array.to_list 
@@ -131,7 +131,7 @@ let implicit_args_msg sp mipv =
 let print_mutual sp mib = 
   let pk = kind_of_path sp in
   let pterm,pterminenv =
-    if pk = FW then (fprterm,fterm0) else (prterm,term0) in
+    if pk = FW then (fprterm,fprterm_env) else (prterm,prterm_env) in
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
@@ -395,7 +395,7 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
 
 let print_crible name =
   crible (fun str ass_name constr -> 
-            let pc = term0 ass_name constr in
+            let pc = prterm_env ass_name constr in
             mSG[<'sTR str; 'sTR":"; pc; 'fNL >]) name
 
 let read_sec_context sec =

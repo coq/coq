@@ -8,137 +8,6 @@ open Pcoq
 open Coqast
 open Ast
 
-open Pcoq.Vernac
-
-GEXTEND Gram
-  vernac:
-    [ RIGHTA
-     [ "Drop"; "." -> <:ast< (DROP) >>
-     | "ProtectedLoop"; "." -> <:ast< (PROTECTEDLOOP)>>
-     | "Load"; verbosely = [ IDENT "Verbose" -> "Verbose" | -> "" ];
-       s = [ s = STRING -> s | s = IDENT -> s ]; "." ->
-         <:ast< (LoadFile ($STR $verbosely) ($STR $s)) >>
-
-     (* TODO: deplacer vers g_vernac & Vernac.v *)
-     | "Compile";
-       verbosely =
-         [ IDENT "Verbose" -> "Verbose"
-         | -> "" ];
-       IDENT "Module";
-       only_spec =
-         [ IDENT "Specification" -> "Specification"
-         | -> "" ];
-       mname = [ s = STRING -> s | s = IDENT -> s ];
-       fname = OPT [ s = STRING -> s | s = IDENT -> s ]; "." ->
-         let fname = match fname with Some s -> s | None -> mname in
-         <:ast< (CompileFile ($STR $verbosely) ($STR $only_spec)
-                   ($STR $mname) ($STR $fname))>> ]]
-  ;
-END
-
-(* These are the entries without which MakeBare cannot be compiled *)
-GEXTEND Gram
-  GLOBAL: vernac Prim.syntax_entry Prim.grammar_entry;
-
-  vernac:
-    [[ "Token"; s = STRING; "." -> <:ast< (TOKEN ($STR $s)) >>
-
-     | "Grammar"; univ=IDENT; tl=LIST1 Prim.grammar_entry SEP "with"; "." ->
-         <:ast< (GRAMMAR ($VAR univ) (ASTLIST ($LIST tl))) >>
-
-     | "Syntax"; whatfor=IDENT; el=LIST1 Prim.syntax_entry SEP ";"; "." ->
-         <:ast< (SYNTAX ($VAR whatfor) (ASTLIST ($LIST el))) >>
-     | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
-       p = identarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
-     | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;
-       p = identarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >> ]]
-  ;
-
-  (* Syntax entries for Grammar. Only grammar_entry is exported *)
-  Prim.grammar_entry:
-    [[ nont = Prim.ident; etyp = Prim.entry_type; ":=";
-       ep = entry_prec; rl = LIST0 grammar_rule SEP "|" ->
-         <:ast< (ENTRY $nont $etyp $ep ($LIST rl)) >> ]]
-  ;
-  entry_prec:
-    [[ IDENT "LEFTA" -> <:ast< {LEFTA} >>
-     | IDENT "RIGHTA" -> <:ast< {RIGHTA} >>
-     | IDENT "NONA" -> <:ast< {NONA} >>
-     | ->  <:ast< {NONE} >> ] ]
-  ;
-  grammar_rule:
-    [[ name = rule_name; "["; pil = LIST0 production_item; "]"; "->";
-       a = Prim.astact ->
-        <:ast< (RULE ($ID name) $a ($LIST pil)) >> ]]
-  ;
-  rule_name:
-    [[ name = IDENT -> name ]]
-  ;
-  production_item:
-    [[ s = STRING -> <:ast< ($STR $s) >>
-     | nt = non_terminal; po = OPT [ "("; p = Prim.ident; ")" -> p ] ->
-         match po with
-           | Some p -> <:ast< (NT $nt $p) >>
-           | _ -> <:ast< (NT $nt) >> ]]
-  ;
-  non_terminal:
-    [[ u = Prim.ident; ":"; nt = Prim.ident -> <:ast< (QUAL $u $nt) >>
-     | nt = Prim.ident -> <:ast< $nt >> ]]
-  ;
-
-
-  (* Syntax entries for Syntax. Only syntax_entry is exported *)
-  Prim.syntax_entry:
-    [ [ IDENT "level"; p = precedence; ":"; rl = LIST1 syntax_rule SEP "|" ->
-          <:ast< (SYNTAXENTRY $p ($LIST $rl)) >> ] ]
-  ;
-  syntax_rule:
-    [ [ nm = IDENT; "["; s = Prim.astpat; "]"; "->"; u = unparsing ->
-          <:ast< (RULE ($ID $nm) $s $u) >> ] ]
-  ;
-  precedence:
-    [ [ a = Prim.number ->  <:ast< (PREC $a 0 0) >>
-      | "["; a1 = Prim.number; a2 = Prim.number; a3 = Prim.number; "]" ->
-          <:ast< (PREC $a1 $a2 $a3) >> ] ]
-  ;
-  unparsing:
-    [ [ "["; ll = LIST0 next_hunks; "]" -> <:ast< (UNPARSING ($LIST $ll))>> ] ]
-  ;
-  next_hunks:
-    [ [ IDENT "FNL" -> <:ast< (UNP_FNL) >>
-      | IDENT "TAB" -> <:ast< (UNP_TAB) >>
-      | c = STRING -> <:ast< (RO ($STR $c)) >>
-      | "[";
-        x =
-          [ b = box; ll = LIST0 next_hunks -> <:ast<(UNP_BOX $b ($LIST $ll))>>
-          | n = Prim.number; m = Prim.number -> <:ast< (UNP_BRK $n $m) >>
-          | IDENT "TBRK";
-            n = Prim.number; m = Prim.number -> <:ast< (UNP_TBRK $n $m) >> ];
-        "]" -> x
-      | e = Prim.ast; oprec = OPT [ ":"; pr = paren_reln -> pr ] ->
-            match oprec with
-	      | Some pr -> <:ast< (PH $e $pr) >>
-              | None -> <:ast< (PH $e {Any}) >> ]]
-  ;
-  box:
-    [ [ "<"; bk = box_kind; ">" -> bk ] ]
-  ;
-  box_kind:
-    [ [ IDENT "h"; n = Prim.number -> <:ast< (PpHB $n) >>
-      | IDENT "v"; n = Prim.number -> <:ast< (PpVB $n) >>
-      | IDENT "hv"; n = Prim.number -> <:ast< (PpHVB $n) >>
-      | IDENT "hov"; n = Prim.number -> <:ast< (PpHOVB $n) >>
-      | IDENT "t" -> <:ast< (PpTB) >> ] ]
-  ;
-  paren_reln:
-    [ [ IDENT "L" -> <:ast< {L} >>
-      | IDENT "E" -> <:ast< {E} >>
-      | pprim = STRING -> <:ast< ($STR $pprim) >> ] ]
-  ;
-END
-
-
-
 (* Converting and checking grammar command *)
 
 type nonterm =
@@ -207,12 +76,21 @@ let qualified_nterm current_univ ntrm =
       NtQual (univ, en) -> (get_univ univ, en)
     | NtShort en -> (current_univ, en)
 
+(* For compatibility *)
+let rename_command nt =
+  if String.length nt >= 7 & String.sub nt 0 7 = "command"
+  then "constr"^(String.sub nt 7 (String.length nt - 7))
+  else if nt = "lcommand" then "lconstr"
+  else if nt = "lassoc_command4" then "lassoc_constr4"
+  else nt
 
 let nterm univ ast =
+
   let nont =
     match ast with
-      | Node (_, "QUAL", [Id (_, u); Id (_, nt)]) -> NtQual (u, nt)
-      | Id (_, nt) -> NtShort nt
+      | Node (_, "QUAL", [Id (_, u); Id (_, nt)]) ->
+	  NtQual (rename_command u, rename_command nt)
+      | Id (_, nt) -> NtShort (rename_command nt)
       | _ -> invalid_arg_loc (Ast.loc ast, "Extend.nterm") 
   in
   let (u,n) = qualified_nterm univ nont in
@@ -250,7 +128,7 @@ let rec prod_item_list univ penv pil =
 
 let gram_rule univ etyp ast =
   match ast with
-    | Node (_, "RULE", (Id (_, name) :: act :: pil)) ->
+    | Node (_, "GRAMMARRULE", (Id (_, name) :: act :: pil)) ->
 	let (pilc, act_env) = prod_item_list univ [] pil in
 	let a = Ast.to_act_check_vars act_env etyp act in
         { gr_name=name; gr_production=pilc; gr_action=a }
@@ -270,9 +148,13 @@ let gram_assoc = function
   | ast -> invalid_arg_loc (Ast.loc ast, "Egrammar.assoc")
 
 let gram_define_entry univ = function
-  | Node (_, "ENTRY", (Id (ntl, nt) :: et :: ass :: rl)) ->
+  | Node (_, "GRAMMARENTRY", (Id (ntl, nt) :: et :: ass :: rl)) ->
       let etyp = entry_type et in
       let assoc = gram_assoc ass in
+
+      (* For compatibility *)
+      let nt = rename_command nt in
+
       let _ =
         try 
 	  create_entry univ nt etyp
@@ -282,7 +164,11 @@ let gram_define_entry univ = function
       (nt, etyp, assoc, rl)
   | ast -> invalid_arg_loc (Ast.loc ast, "Egrammar.gram_define_entry")
 
-let gram_of_ast univ astl =
+let interp_grammar_command univ astl =
+
+      (* For compatibility *)
+      let univ = rename_command univ in
+
   let u = get_univ univ in
   let entryl = List.map (gram_define_entry u) astl in
   { gc_univ = univ;
@@ -314,8 +200,10 @@ type ppbox =
   | PpVB of int
   | PpTB
 
+type tolerability = (string * precedence) * parenRelation
+
 type unparsing_hunk = 
-  | PH of Ast.pat * string option * parenRelation
+  | PH of Ast.pat * (string * tolerability option) option * parenRelation
   | RO of string
   | UNP_BOX of ppbox * unparsing_hunk list
   | UNP_BRK of int * int
@@ -340,15 +228,24 @@ let box_of_ast = function
   | Node (_, "PpTB", [])           -> PpTB
   | p -> invalid_arg_loc (Ast.loc p,"Syntaxext.box_of_ast")
 
+let prec_of_ast = function
+  | Node(_,"PREC",[Num(_,a1); Num(_,a2); Num(_,a3)]) -> (a1,a2,a3)
+  | ast -> invalid_arg_loc (Ast.loc ast,"Syntaxext.prec_of_ast")
+
+let extern_of_ast loc = function
+  | [Str(_,ppextern)] -> Some (ppextern,None)
+  | [Str(_,ppextern);p] -> Some (ppextern,Some ((ppextern,prec_of_ast p),Any))
+  |  _ -> invalid_arg_loc (loc,"Syntaxext.extern_of_ast")
+
 let rec unparsing_hunk_of_ast vars = function
-  | Node(_, "PH", [e; Str(_,pprim)]) ->
-      PH (Ast.val_of_ast vars e, Some pprim, Any)
+  | Node(_, "PH", [e; Node (loc,"EXTERN", ext_args)]) ->
+      PH (Ast.val_of_ast vars e, extern_of_ast loc ext_args, Any)
   | Node(loc, "PH", [e; Id(_,pr)]) ->
       let reln =
         (match pr with
            | "L" -> L
            | "E" -> E
-           | "Any" -> Any 
+           | "Any" -> Any
            | _ -> invalid_arg_loc (loc,"Syntaxext.paren_reln_of_ast")) in
       PH (Ast.val_of_ast vars e, None, reln)
   | Node (_, "RO", [Str(_,s)]) -> RO s
@@ -366,19 +263,18 @@ let unparsing_of_ast vars = function
       List.map (unparsing_hunk_of_ast vars) ll
   | u -> invalid_arg_loc (Ast.loc u,"Syntaxext.unp_of_ast")
 
-let prec_of_ast = function
-  | Node(_,"PREC",[Num(_,a1); Num(_,a2); Num(_,a3)]) -> (a1,a2,a3)
-  | ast -> invalid_arg_loc (Ast.loc ast,"Syntaxext.prec_of_ast")
-
-
 type syntax_entry = {
   syn_id : string;
   syn_prec: precedence;
   syn_astpat : Ast.pat;
   syn_hunks : unparsing_hunk list }
 
+type syntax_command = { 
+  sc_univ : string; 
+  sc_entries : syntax_entry list }
+
 let rule_of_ast whatfor prec = function
-  | Node(_,"RULE",[Id(_,s); spat; unp]) ->
+  | Node(_,"SYNTAXRULE",[Id(_,s); spat; unp]) ->
       let (astpat,meta_env) = Ast.to_pat [] spat in
       let hunks = unparsing_of_ast meta_env unp in
       { syn_id = s;
@@ -392,3 +288,9 @@ let level_of_ast whatfor = function
       let prec = prec_of_ast pr in
       List.map (rule_of_ast whatfor prec) rl
   | ast -> invalid_arg_loc (Ast.loc ast,"Metasyntax.level_of_ast")
+
+let interp_syntax_entry univ sel =
+  { sc_univ = univ;
+    sc_entries = List.flatten (List.map (level_of_ast univ) sel)}
+
+

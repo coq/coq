@@ -286,7 +286,7 @@ let dbize k sigma =
     | Node(loc,"APPLIST", f::args) ->	   
 	RApp (loc,dbrec env f,List.map (dbrec env) args)
 	  
-    | Node(loc,"MULTCASE", p:: Node(_,"TOMATCH",tms):: eqns) ->
+    | Node(loc,"CASES", p:: Node(_,"TOMATCH",tms):: eqns) ->
 	let po = match p with 
 	  | Str(_,"SYNTH") -> None 
 	  | _ -> Some(dbrec env p) in
@@ -449,7 +449,7 @@ let globalize_ast ast =
 (* Installation of the AST quotations. "command" is used by default. *)
 let _ = 
   Pcoq.define_quotation true "command" 
-    (Pcoq.map_entry globalize_command Pcoq.Command.command)
+    (Pcoq.map_entry globalize_command Pcoq.Constr.constr)
 let _ = 
   Pcoq.define_quotation false "tactic" 
     (Pcoq.map_entry globalize_ast Pcoq.Tactic.tactic)
