@@ -14,6 +14,7 @@ open Names
 open Libnames
 open Libobject
 open Summary
+open Mod_subst
 (*i*)
 
 (*s This module provides a general mechanism to keep a trace of all operations

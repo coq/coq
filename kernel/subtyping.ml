@@ -18,6 +18,7 @@ open Environ
 open Reduction
 open Inductive
 open Modops
+open Mod_subst
 (*i*)
 
 (* This local type is used to subtype a constant with a constructor or

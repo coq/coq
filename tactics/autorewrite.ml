@@ -20,6 +20,7 @@ open Term
 open Util
 open Vernacinterp
 open Tacexpr
+open Mod_subst
 
 (* Rewriting rules *)
 (* the type is the statement of the lemma constr. Used to elim duplicates. *)
@@ -88,7 +89,7 @@ let export_hintrewrite x = Some x
 
 let subst_hintrewrite (_,subst,(rbase,list as node)) = 
   let subst_first (cst,typ,b,t as pair) = 
-    let cst' = Term.subst_mps subst cst in
+    let cst' = subst_mps subst cst in
     let typ' =
      (* here we do not have the environment and Global.env () is not the
         one where cst' lives in. Thus we can just put a dummy value and

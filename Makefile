@@ -126,7 +126,7 @@ BYTERUN=\
 
 KERNEL=\
   kernel/names.cmo kernel/univ.cmo \
-  kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
+  kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo \
   kernel/cemitcodes.cmo kernel/vm.cmo \
   kernel/declarations.cmo kernel/environ.cmo  kernel/conv_oracle.cmo \
@@ -1353,7 +1353,7 @@ GRAMMARNEEDEDCMO=\
   lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
   lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo \
-  kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
+  kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
   kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \
   kernel/declarations.cmo kernel/environ.cmo  kernel/conv_oracle.cmo \
   kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\

@@ -21,6 +21,7 @@ open Util
 open Vernacinterp
 open Vernacexpr
 open Tacexpr
+open Mod_subst
 
 (* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c

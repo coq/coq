@@ -14,6 +14,7 @@ open Names
 open Term
 open Sign
 open Libnames
+open Mod_subst
 (*i*)
 
 (* The type of mappings for existential variables.

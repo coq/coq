@@ -13,6 +13,7 @@ open Pp
 open Util
 open Names
 open Term
+open Mod_subst
 (*i*)
 
 (*s Global reference is a kernel side type for all references together *)

@@ -19,6 +19,7 @@ open Table
 open Extraction
 open Modutil
 open Common
+open Mod_subst
 
 (*s Obtaining Coq environment. *)
 

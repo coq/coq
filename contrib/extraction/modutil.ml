@@ -16,6 +16,7 @@ open Util
 open Miniml
 open Table
 open Mlutil
+open Mod_subst
 
 (*S Functions upon modules missing in [Modops]. *) 
 

@@ -15,6 +15,7 @@ open Term
 open Evd
 open Environ
 open Nametab
+open Mod_subst
 (*i*)
 
 (*s This is the type of class kinds *)

@@ -19,6 +19,7 @@ open Typeops
 open Libobject
 open Library
 open Classops
+open Mod_subst
 
 (*s Une structure S est un type inductif non récursif à un seul
    constructeur (de nom par défaut Build_S) *)

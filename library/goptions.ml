@@ -17,6 +17,7 @@ open Names
 open Libnames
 open Term
 open Nametab
+open Mod_subst
 
 (****************************************************************************)
 (* 0- Common things                                                         *)

@@ -15,6 +15,7 @@ open Names
 open Libnames
 open Rawterm
 open Term
+open Mod_subst
 (*i*)
 
 (*s This is the subtype of rawconstr allowed in syntactic extensions *)
@@ -47,7 +48,7 @@ val rawconstr_of_aconstr_with_binders : loc ->
   (identifier -> 'a -> identifier * 'a) ->
   ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
 
-val subst_aconstr : Names.substitution -> aconstr -> aconstr
+val subst_aconstr : substitution -> aconstr -> aconstr
 
 val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 

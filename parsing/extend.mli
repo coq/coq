@@ -17,6 +17,7 @@ open Coqast
 open Ppextend
 open Topconstr
 open Genarg
+open Mod_subst
 (*i*)
 
 type entry_type = argument_type
@@ -98,7 +99,7 @@ val rename_command_entry : string -> string
 val explicitize_entry : string -> string -> constr_entry
 
 val subst_grammar_command : 
-  Names.substitution -> grammar_command -> grammar_command
+  substitution -> grammar_command -> grammar_command
 
 (* unparsing objects *)
 
@@ -113,7 +114,7 @@ type 'pat unparsing_hunk =
   | UNP_SYMBOLIC of string option * string * 'pat unparsing_hunk
 
 (*val subst_unparsing_hunk : 
-  Names.substitution -> (Names.substitution -> 'pat -> 'pat) -> 
+  substitution -> (substitution -> 'pat -> 'pat) -> 
   'pat unparsing_hunk -> 'pat unparsing_hunk
 *)
 
@@ -130,8 +131,8 @@ type 'pat syntax_entry = {
   syn_hunks : 'pat unparsing_hunk list }
 
 val subst_syntax_entry : 
-  (Names.substitution -> 'pat -> 'pat) -> 
-  Names.substitution -> 'pat syntax_entry -> 'pat syntax_entry
+  (substitution -> 'pat -> 'pat) -> 
+  substitution -> 'pat syntax_entry -> 'pat syntax_entry
 
 
 type 'pat syntax_command = { 
@@ -139,8 +140,8 @@ type 'pat syntax_command = {
   sc_entries : 'pat syntax_entry list }
 
 val subst_syntax_command : 
-  (Names.substitution -> 'pat -> 'pat) -> 
-  Names.substitution -> 'pat syntax_command -> 'pat syntax_command
+  (substitution -> 'pat -> 'pat) -> 
+  substitution -> 'pat syntax_command -> 'pat syntax_command
 
 type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
 type raw_syntax_entry = precedence * syntax_rule list

@@ -19,6 +19,7 @@ open Term
 open Tacexpr
 open Genarg
 open Topconstr
+open Mod_subst
 (*i*)
 
 (* Values for interpretation *)
@@ -78,7 +79,7 @@ val add_interp_genarg :
     (glob_sign -> raw_generic_argument -> glob_generic_argument) *
     (interp_sign -> goal sigma -> glob_generic_argument -> 
       closed_generic_argument) *
-    (Names.substitution -> glob_generic_argument -> glob_generic_argument)
+    (substitution -> glob_generic_argument -> glob_generic_argument)
     -> unit
 
 val interp_genarg :
@@ -94,10 +95,10 @@ val intern_hyp :
   glob_sign -> identifier Util.located -> identifier Util.located
 
 val subst_genarg :
-  Names.substitution -> glob_generic_argument -> glob_generic_argument
+  substitution -> glob_generic_argument -> glob_generic_argument
 
 val subst_rawconstr :
-  Names.substitution -> rawconstr_and_expr -> rawconstr_and_expr
+  substitution -> rawconstr_and_expr -> rawconstr_and_expr
 
 (* Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value

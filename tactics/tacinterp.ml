@@ -41,6 +41,7 @@ open Typing
 open Hiddentac
 open Genarg
 open Decl_kinds
+open Mod_subst
 
 let strip_meta id = (* For Grammar v7 compatibility *)
   let s = string_of_id id in
@@ -312,7 +313,7 @@ type interp_genarg_type =
   (glob_sign -> raw_generic_argument -> glob_generic_argument) *
   (interp_sign -> goal sigma -> glob_generic_argument -> 
     closed_generic_argument) *
-  (Names.substitution -> glob_generic_argument -> glob_generic_argument)
+  (substitution -> glob_generic_argument -> glob_generic_argument)
 
 let extragenargtab =
   ref (Gmap.empty : (string,interp_genarg_type) Gmap.t)

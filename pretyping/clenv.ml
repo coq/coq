@@ -26,6 +26,7 @@ open Tacred
 open Pretype_errors
 open Evarutil
 open Unification
+open Mod_subst
 
 (* *)
 let w_coerce env c ctyp target evd =

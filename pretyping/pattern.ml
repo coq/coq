@@ -17,6 +17,7 @@ open Rawterm
 open Environ
 open Nametab
 open Pp
+open Mod_subst
 
 (* Metavariables *)
 

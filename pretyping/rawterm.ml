@@ -16,6 +16,7 @@ open Term
 open Libnames
 open Nametab
 open Evd
+open Mod_subst
 (*i*)
 
 (* Untyped intermediate terms, after ASTs and before constr. *)

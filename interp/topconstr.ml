@@ -16,6 +16,7 @@ open Nameops
 open Libnames
 open Rawterm
 open Term
+open Mod_subst
 (*i*)
 
 (**********************************************************************)

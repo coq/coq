@@ -17,6 +17,7 @@ open Termops
 open Sign
 open Environ
 open Libnames
+open Mod_subst
 
 (* The type of mappings for existential variables *)
 

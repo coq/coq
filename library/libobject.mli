@@ -11,6 +11,7 @@
 (*i*)
 open Names
 open Libnames
+open Mod_subst
 (*i*)
 
 (* [Libobject] declares persistent objects, given with methods:

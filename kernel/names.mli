@@ -83,50 +83,6 @@ val string_of_mp : module_path -> string
 module MPset : Set.S with type elt = module_path
 module MPmap : Map.S with type key = module_path
 
-
-(*s Substitutions *)
-
-type substitution
-
-val empty_subst : substitution
-
-val add_msid : 
-  mod_self_id -> module_path -> substitution -> substitution
-val add_mbid : 
-  mod_bound_id -> module_path -> substitution -> substitution
-
-val map_msid : mod_self_id -> module_path -> substitution
-val map_mbid : mod_bound_id -> module_path -> substitution
-
-(* sequential composition: 
-   [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
-*)
-val join : substitution -> substitution -> substitution
-
-type 'a substituted
-val from_val : 'a -> 'a substituted
-val force : (substitution -> 'a -> 'a) -> 'a substituted -> 'a
-val subst_substituted : substitution -> 'a substituted -> 'a substituted
-
-(*i debugging *)
-val debug_string_of_subst : substitution -> string
-val debug_pr_subst : substitution -> Pp.std_ppcmds
-(*i*)
-
-(* [subst_mp sub mp] guarantees that whenever the result of the
-   substitution is structutally equal [mp], it is equal by pointers 
-   as well [==] *) 
-
-val subst_mp : 
-  substitution -> module_path -> module_path
-
-(* [occur_*id id sub] returns true iff [id] occurs in [sub] 
-   on either side *)
-
-val occur_msid : mod_self_id -> substitution -> bool
-val occur_mbid : mod_bound_id -> substitution -> bool
-     
-
 (* Name of the toplevel structure *)
 val initial_msid : mod_self_id
 val initial_path : module_path (* [= MPself initial_msid] *)
@@ -147,7 +103,6 @@ val label : kernel_name -> label
 
 val string_of_kn : kernel_name -> string
 val pr_kn : kernel_name -> Pp.std_ppcmds
-val subst_kn : substitution -> kernel_name -> kernel_name
 
 
 module KNset  : Set.S with type elt = kernel_name
@@ -176,7 +131,6 @@ val string_of_con : constant -> string
 val con_label : constant -> label
 val con_modpath : constant -> module_path
 val pr_con : constant -> Pp.std_ppcmds
-val subst_con : substitution -> constant -> constant
 
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor

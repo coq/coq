@@ -16,6 +16,7 @@ open Libnames
 open Coqast
 open Topconstr
 open Genarg
+open Mod_subst
 (*i*)
 
 (* Abstract syntax trees. *)
@@ -120,4 +121,4 @@ val first_matchl : ('a -> patlist) -> env -> Coqast.t list -> 'a list ->
 val to_pat : entry_env -> Coqast.t -> (astpat * entry_env)
 
 (* Object substitution in modules *)
-val subst_astpat : Names.substitution -> astpat -> astpat
+val subst_astpat : substitution -> astpat -> astpat

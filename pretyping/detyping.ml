@@ -24,6 +24,7 @@ open Termops
 open Libnames
 open Nametab
 open Evd
+open Mod_subst
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)

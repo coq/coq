@@ -21,6 +21,7 @@ open Environ
 open Evd
 open Libnames
 open Vernacexpr
+open Mod_subst
 (*i*)
   
 type auto_tactic = 
@@ -126,7 +127,7 @@ val set_extern_intern_tac :
   -> unit
 
 val set_extern_subst_tactic :
-  (Names.substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr)
+  (substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr)
   -> unit
 
 (* Create a Hint database from the pairs (name, constr).

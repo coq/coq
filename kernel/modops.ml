@@ -17,6 +17,7 @@ open Term
 open Declarations
 open Environ
 open Entries
+open Mod_subst
 (*i*)
 
 let error_existing_label l = 

@@ -16,6 +16,7 @@ open Sign
 open Environ
 open Evd
 open Evarutil
+open Mod_subst
 (*i*)
 
 (***************************************************************)

@@ -13,6 +13,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Mod_subst
 
 type global_reference =
   | VarRef of variable

@@ -39,6 +39,7 @@ open Library
 open Printer
 open Declarations
 open Tacexpr
+open Mod_subst
 
 (****************************************************************************)
 (*            The Type of Constructions Autotactic Hints                    *)
@@ -291,21 +292,21 @@ let cache_autohint (_,(local,name,hintlist)) = add_hint name hintlist
     let recalc_hint ((_,data) as hint) =
       match data.code with
 	| Res_pf (c,_) ->
-	    let c' = Term.subst_mps subst c in
+	    let c' = subst_mps subst c in
 	      if c==c' then hint else
 		make_apply_entry env sigma (false,false) 
 		  data.hname (c', type_of env sigma c')
 	| ERes_pf (c,_) ->
-	    let c' = Term.subst_mps subst c in
+	    let c' = subst_mps subst c in
 	      if c==c' then hint else
 		make_apply_entry env sigma (true,false) 
 		  data.hname (c', type_of env sigma c')
 	| Give_exact c ->
-	    let c' = Term.subst_mps subst c in
+	    let c' = subst_mps subst c in
 	      if c==c' then hint else
 		make_exact_entry data.hname (c',type_of env sigma c')
 	| Res_pf_THEN_trivial_fail (c,_) ->
-	    let c' = Term.subst_mps subst c in
+	    let c' = subst_mps subst c in
 	      if c==c' then hint else
 		make_trivial env sigma (data.hname,c')
 	| Unfold_nth ref -> 
@@ -335,19 +336,19 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
     let lab' = subst_label subst lab in
     let data' = match data.code with
       | Res_pf (c, clenv) ->
-	  let c' = Term.subst_mps subst c in
+	  let c' = subst_mps subst c in
 	    if c==c' then data else
 	      trans_data data (Res_pf (c', trans_clenv clenv))
       | ERes_pf (c, clenv) ->
-	  let c' = Term.subst_mps subst c in
+	  let c' = subst_mps subst c in
 	    if c==c' then data else
 	      trans_data data (ERes_pf (c', trans_clenv clenv))
       | Give_exact c ->
-	  let c' = Term.subst_mps subst c in
+	  let c' = subst_mps subst c in
 	    if c==c' then data else
 	      trans_data data (Give_exact c')
       | Res_pf_THEN_trivial_fail (c, clenv) ->
-	  let c' = Term.subst_mps subst c in
+	  let c' = subst_mps subst c in
 	    if c==c' then data else
 	      let code' = Res_pf_THEN_trivial_fail (c', trans_clenv clenv) in
 		trans_data data code'

@@ -17,6 +17,7 @@ open Environ
 open Term_typing
 open Modops
 open Subtyping
+open Mod_subst
 
 exception Not_path
 

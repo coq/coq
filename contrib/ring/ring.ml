@@ -34,6 +34,7 @@ open Pattern
 open Hiddentac
 open Nametab
 open Quote
+open Mod_subst
 
 let mt_evd = Evd.empty
 let constr_of c = Constrintern.interp_constr mt_evd (Global.env()) c

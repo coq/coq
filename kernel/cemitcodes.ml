@@ -2,6 +2,7 @@ open Names
 open Term
 open Cbytecodes
 open Copcodes
+open Mod_subst
 
 (* Relocation information *)
 type reloc_info =

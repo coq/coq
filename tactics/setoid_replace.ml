@@ -31,6 +31,7 @@ open Safe_typing
 open Nametab
 open Decl_kinds
 open Constrintern
+open Mod_subst
 
 let replace = ref (fun _ _ -> assert false)
 let register_replace f = replace := f

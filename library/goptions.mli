@@ -59,6 +59,7 @@ open Names
 open Libnames
 open Term
 open Nametab
+open Mod_subst
 (*i*)
 
 (*s Things common to tables and options. *)

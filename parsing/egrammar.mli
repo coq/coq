@@ -16,6 +16,7 @@ open Coqast
 open Vernacexpr
 open Extend
 open Rawterm
+open Mod_subst
 (*i*)
 
 type all_grammar_command =
@@ -48,7 +49,7 @@ val get_extend_vernac_grammars :
 val reset_extend_grammars_v8 : unit -> unit
 
 val subst_all_grammar_command :
-  Names.substitution -> all_grammar_command -> all_grammar_command
+  substitution -> all_grammar_command -> all_grammar_command
 
 val interp_entry_name : string -> string -> 
   entry_type * Token.t Gramext.g_symbol

@@ -11,6 +11,7 @@
 open Util
 open Names
 open Libnames
+open Mod_subst
 
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one

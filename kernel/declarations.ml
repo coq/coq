@@ -14,6 +14,7 @@ open Names
 open Univ
 open Term
 open Sign
+open Mod_subst
 (*i*)
 
 (* This module defines the types of global declarations. This includes
@@ -109,7 +110,7 @@ type mutual_inductive_body = {
 let subst_const_body sub cb = {
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_body = option_app (subst_constr_subst sub) cb.const_body;
-    const_type = type_app (Term.subst_mps sub) cb.const_type;
+    const_type = type_app (subst_mps sub) cb.const_type;
     const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
     (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;
@@ -119,17 +120,17 @@ let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_typename = mbp.mind_typename;
     mind_nf_lc = 
-      array_smartmap (type_app (Term.subst_mps sub)) mbp.mind_nf_lc;
-    mind_nf_arity = type_app (Term.subst_mps sub) mbp.mind_nf_arity;
+      array_smartmap (type_app (subst_mps sub)) mbp.mind_nf_lc;
+    mind_nf_arity = type_app (subst_mps sub) mbp.mind_nf_arity;
     mind_user_lc = 
-      array_smartmap (type_app (Term.subst_mps sub)) mbp.mind_user_lc;
-    mind_user_arity = type_app (Term.subst_mps sub) mbp.mind_user_arity;
+      array_smartmap (type_app (subst_mps sub)) mbp.mind_user_lc;
+    mind_user_arity = type_app (subst_mps sub) mbp.mind_user_arity;
     mind_sort = mbp.mind_sort;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_kelim = mbp.mind_kelim;
     mind_nparams = mbp.mind_nparams;
     mind_params_ctxt = 
-      map_rel_context (Term.subst_mps sub) mbp.mind_params_ctxt;
+      map_rel_context (subst_mps sub) mbp.mind_params_ctxt;
     mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;

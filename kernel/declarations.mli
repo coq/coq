@@ -14,6 +14,7 @@ open Univ
 open Term
 open Cemitcodes
 open Sign
+open Mod_subst
 (*i*)
 
 (* This module defines the internal representation of global

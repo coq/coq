@@ -17,6 +17,7 @@ open Environ
 open Libnames
 open Nametab
 open Rawterm
+open Mod_subst
 (*i*)
 
 (* Pattern variables *)

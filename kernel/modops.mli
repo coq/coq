@@ -15,6 +15,7 @@ open Univ
 open Environ
 open Declarations
 open Entries
+open Mod_subst
 (*i*)
 
 (* Various operations on modules and module types *)

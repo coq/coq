@@ -12,6 +12,7 @@
 open Util
 open Names
 open Libnames
+open Mod_subst
 (*i*)
 
 type t =
@@ -116,11 +117,11 @@ let rec subst_ast subst ast = match ast with
 	if ast1' == ast1 then ast else
 	  Smetalam (l,s,ast1')
   | Path (loc,kn) -> 
-      let kn' = Names.subst_kn subst kn in
+      let kn' = subst_kn subst kn in
 	if kn' == kn then ast else
 	  Path(loc,kn')
   | ConPath (loc,kn) -> 
-      let kn' = Names.subst_con subst kn in
+      let kn' = subst_con subst kn in
 	if kn' == kn then ast else
 	  ConPath(loc,kn')
   | Nmeta _

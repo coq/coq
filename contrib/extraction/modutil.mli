@@ -13,6 +13,7 @@ open Declarations
 open Environ
 open Libnames
 open Miniml
+open Mod_subst
 
 (*s Functions upon modules missing in [Modops]. *) 
 
