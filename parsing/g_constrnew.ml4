@@ -21,7 +21,7 @@ open Util
 
 let constr_kw =
   [ "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; "end"; "as";
-    "let"; "if"; "then"; "else"; "struct"; "Prop"; "Set"; "Type" ]
+    "let"; "if"; "then"; "else"; "struct"; "Prop"; "Set"; "Type"; ".(" ]
 let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 let _ = Options.v7 := false
 
