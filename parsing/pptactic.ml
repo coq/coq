@@ -120,7 +120,7 @@ let pr_bindings prc prlc = function
   | ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++ 
         prlist_with_sep spc
-          (fun b -> if Options.do_translate () then
+          (fun b -> if Options.do_translate () or not !Options.v7 then
 	    str"(" ++ pr_binding prlc b ++ str")" 
 	   else
 	    pr_binding prc b)
@@ -265,7 +265,8 @@ let rec pr_raw_generic prc prlc prtac x =
             pr_raw_generic prc prlc prtac b)
 	  x)
   | ExtraArgType s -> 
-      let tab = if Options.do_translate() then !genarg_pprule
+      let tab =
+	if Options.do_translate() or not !Options.v7 then !genarg_pprule
         else !genarg_pprule_v7 in
       try pi1 (Stringmap.find s tab) prc prtac x
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
@@ -307,7 +308,8 @@ let rec pr_glob_generic prc prlc prtac x =
             pr_glob_generic prc prlc prtac b)
 	  x)
   | ExtraArgType s -> 
-      let tab = if Options.do_translate() then !genarg_pprule
+      let tab =
+	if Options.do_translate() or not !Options.v7 then !genarg_pprule
         else !genarg_pprule_v7 in
       try pi2 (Stringmap.find s tab) prc prtac x
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
@@ -348,7 +350,8 @@ let rec pr_generic prc prlc prtac x =
             pr_generic prc prlc prtac b)
 	  x)
   | ExtraArgType s -> 
-      let tab = if Options.do_translate() then !genarg_pprule
+      let tab = 
+	if Options.do_translate() or not !Options.v7 then !genarg_pprule
         else !genarg_pprule_v7 in
       try pi3 (Stringmap.find s tab) prc prtac x
       with Not_found -> str " [no printer for " ++ str s ++ str "]"
