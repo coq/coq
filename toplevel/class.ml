@@ -244,11 +244,11 @@ let build_id_coercion idf_opt ids =
       (mkProd (Anonymous, applistc vs (rel_list 0 llams), lift 1 t))
       lams
   in
-  let constr_f = mkCast (val_f, typ_f) in
   (* juste pour verification *)
   let _ = 
     try 
-      Typing.type_of env Evd.empty constr_f
+      Reduction.conv_leq env Evd.empty
+	(Typing.type_of env Evd.empty val_f) typ_f
     with _ -> 
       error ("cannot be defined as coercion - "^
 	     "may be a bad number of arguments") 
@@ -261,7 +261,7 @@ let build_id_coercion idf_opt ids =
                         (string_of_cl (fst (constructor_at_head t)))) 
   in
   let constr_entry = 
-    { const_entry_body = constr_f; const_entry_type = None } in
+    { const_entry_body = val_f; const_entry_type = None } in
   declare_constant idf (ConstantEntry constr_entry,NeverDischarge);
   idf
 
