@@ -204,10 +204,21 @@ let add_tactic_grammar g =
 
 (* printing grammar entries *)
 let print_grammar univ entry =
-  let u = get_univ univ in
-  let typ = explicitize_entry (fst u) entry in
-  let te,_,_ = get_constr_entry typ in
-  Gram.Entry.print te
+  if !Options.v7 then
+    let u = get_univ univ in
+    let typ = explicitize_entry (fst u) entry in
+    let te,_,_ = get_constr_entry false typ in
+    Gram.Entry.print te
+  else
+    let te = 
+      match entry with
+	| "constr" | "operconstr" -> weaken_entry Pcoq.Constr.operconstr
+	| "tuple_constr" -> weaken_entry Pcoq.Constr.tuple_constr
+	| "pattern" -> weaken_entry Pcoq.Constr.pattern
+	| "tuple_pattern" -> weaken_entry Pcoq.Constr.tuple_pattern
+	| "tactic" -> weaken_entry Pcoq.Tactic.simple_tactic
+	| _ -> error "Unknown or unprintable grammar entry" in
+    Gram.Entry.print te
 
 (* Parse a format *)
 let parse_format (loc,str) =
@@ -1160,8 +1171,8 @@ let add_infix local (inf,modl) pr mv8 sc =
       onlyparse false
   else
   (* Infix defaults to LEFTA in V7 (cf doc) *)
-  let mv = match n with None -> SetLevel 1 :: modl | _ -> modl in
-  let mv = match assoc with None -> SetAssoc Gramext.LeftA :: mv | _ -> mv in
+  let mv = match n with None when !Options.v7 -> SetLevel 1 :: modl | _ -> modl in
+  let mv = match assoc with None when !Options.v7 -> SetAssoc Gramext.LeftA :: mv | _ -> mv in
   let mv8 = match mv8 with
       None -> None
     | Some(s8,mv8) ->
