@@ -204,276 +204,326 @@ print_endline "PASSATO" ; flush stdout ;
             None -> ()
           | Some ainnertypes -> Hashtbl.add ids_to_inner_types id ainnertypes
         in
-         match T.kind_of_term tt with
-            T.Rel n ->
-             let id =
-              match List.nth (E.rel_context env) (n - 1) with
-                 (N.Name id,_,_)   -> id
-               | (N.Anonymous,_,_) -> Nameops.make_ident "_" None
+
+         (* explicit_substitute_and_eta_expand_if_required h t t'         *)
+         (* where [t] = [] and [tt] = [h]{[t']} ("{.}" denotes explicit   *)
+         (* named substitution) or [tt] = (App [h]::[t]) (and [t'] = [])  *)
+         (* check if [h] is a term that requires an explicit named        *)
+         (* substitution and, in that case, uses the first arguments of   *)
+         (* [t] as the actual arguments of the substitution. If there     *)
+         (* are not enough parameters in the list [t], then eta-expansion *)
+         (* is performed.                                                 *)
+         let
+          explicit_substitute_and_eta_expand_if_required h t t'
+           compute_result_if_eta_expansion_not_required
+         =
+          let subst,residual_args,uninst_vars =
+           let variables,basedir =
+            match T.kind_of_term h with
+               T.Const sp
+             | T.Ind (sp,_)
+             | T.Construct ((sp,_),_) ->
+                Dischargedhypsmap.get_discharged_hyps sp,
+                 fst (Names.repr_path sp)
+             | T.Var id ->
+                let sp = Declare.find_section_variable id in
+                 Dischargedhypsmap.get_discharged_hyps sp,
+                  fst (Names.repr_path sp)
+             | _ ->
+                (* no explicit substitution *)
+                [], Nameops.dirpath_of_string "dummy"
+           in
+           (* returns a triple whose first element is  *)
+           (* an explicit named substitution of "type" *)
+           (* (variable * argument) list, whose        *)
+           (* second element is the list of residual   *)
+           (* arguments and whose third argument is    *) 
+           (* the list of uninstantiated variables     *)
+           let rec get_explicit_subst variables arguments =
+            match variables,arguments with
+               [],_ -> [],arguments,[]
+             | _,[] -> [],[],variables
+             | he1::tl1,he2::tl2 ->
+                let subst,extra_args,uninst = get_explicit_subst tl1 tl2 in
+                let (he1_sp, he1_id) = Names.repr_path he1 in
+                let he1' =
+                 remove_module_dirpath_from_dirpath ~basedir he1_sp ^ "/" ^
+                  (Names.string_of_id he1_id) ^ ".var"
+                in
+                 (he1',he2)::subst, extra_args, uninst
+           in
+            get_explicit_subst variables t'
+          in
+           let uninst_vars_length = List.length uninst_vars in
+            if uninst_vars_length > 0 then
+             (* Not enough arguments provided. We must eta-expand! *)
+             let un_args,_ =
+              T.decompose_prod_n uninst_vars_length
+               (Retyping.get_type_of env evar_map tt)
              in
+              let eta_expanded =
+               let arguments =
+                List.map (T.lift uninst_vars_length) t @
+                 Termops.rel_list 0 uninst_vars_length
+               in
+                T.unshare
+                 (T.lamn uninst_vars_length un_args
+                  (T.applistc h arguments))
+              in
+               D.double_type_of env evar_map eta_expanded
+                None terms_to_types ;
+               Hashtbl.remove ids_to_inner_types fresh_id'' ;
+               aux' env idrefs eta_expanded
+            else
+             compute_result_if_eta_expansion_not_required subst residual_args
+         in
+
+          (* Now that we have all the auxiliary functions we  *)
+          (* can finally proceed with the main case analysis. *) 
+          match T.kind_of_term tt with
+             T.Rel n ->
+              let id =
+               match List.nth (E.rel_context env) (n - 1) with
+                  (N.Name id,_,_)   -> id
+                | (N.Anonymous,_,_) -> Nameops.make_ident "_" None
+              in
+               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+               if innersort = "Prop"  && expected_available then
+                add_inner_type fresh_id'' ;
+               A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
+           | T.Var id ->
+              let path = get_relative_uri_of_var (N.string_of_id id) pvars in
+               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+               if innersort = "Prop"  && expected_available then
+                add_inner_type fresh_id'' ;
+               A.AVar
+                (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
+           | T.Evar (n,l) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if innersort = "Prop"  && expected_available then
                add_inner_type fresh_id'' ;
-              A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
-          | T.Var id ->
-             let path = get_relative_uri_of_var (N.string_of_id id) pvars in
+              A.AEvar
+               (fresh_id'', n, Array.to_list (Array.map (aux' env idrefs) l))
+           | T.Meta _ -> Util.anomaly "Meta met during exporting to XML"
+           | T.Sort s -> A.ASort (fresh_id'', s)
+           | T.Cast (v,t) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop"  && expected_available then
+              if innersort = "Prop" then
                add_inner_type fresh_id'' ;
-              A.AVar
-               (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
-          | T.Evar (n,l) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop"  && expected_available then
-              add_inner_type fresh_id'' ;
-             A.AEvar
-              (fresh_id'', n, Array.to_list (Array.map (aux' env idrefs) l))
-          | T.Meta _ -> Util.anomaly "Meta met during exporting to XML"
-          | T.Sort s -> A.ASort (fresh_id'', s)
-          | T.Cast (v,t) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then
-              add_inner_type fresh_id'' ;
-             A.ACast (fresh_id'', aux' env idrefs v, aux' env idrefs t)
-          | T.Prod (n,s,t) ->
-             let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
-              Hashtbl.add ids_to_inner_sorts fresh_id''
-               (string_of_sort innertype) ;
-              let sourcetype = Retyping.get_type_of env evar_map s in
-               Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
-                (string_of_sort sourcetype) ;
-              let new_passed_prods =
-               let father_is_prod =
+              A.ACast (fresh_id'', aux' env idrefs v, aux' env idrefs t)
+           | T.Prod (n,s,t) ->
+              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+               Hashtbl.add ids_to_inner_sorts fresh_id''
+                (string_of_sort innertype) ;
+               let sourcetype = Retyping.get_type_of env evar_map s in
+                Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
+                 (string_of_sort sourcetype) ;
+               let new_passed_prods =
+                let father_is_prod =
+                 match father with
+                    None -> false
+                  | Some father' ->
+                     match
+                      Term.kind_of_term (Hashtbl.find ids_to_terms father')
+                     with
+                        T.Prod _ -> true
+                      | _ -> false
+                in
+                 (fresh_id'', n, aux' env idrefs s)::
+                  (if father_is_prod then
+                    passed_lambdas_or_prods_or_letins
+                   else [])
+               in
+                let new_env = E.push_rel (N.Name n', None, s) env in
+                let new_idrefs = fresh_id''::idrefs in
+                 (match Term.kind_of_term t with
+                     T.Prod _ ->
+                      aux computeinnertypes (Some fresh_id'') new_passed_prods
+                       new_env new_idrefs t
+                   | _ ->
+                     A.AProds (new_passed_prods, aux' new_env new_idrefs t))
+           | T.Lambda (n,s,t) ->
+              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+               let sourcetype = Retyping.get_type_of env evar_map s in
+                Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
+                 (string_of_sort sourcetype) ;
+               let father_is_lambda =
                 match father with
                    None -> false
                  | Some father' ->
                     match
                      Term.kind_of_term (Hashtbl.find ids_to_terms father')
                     with
-                       T.Prod _ -> true
+                       T.Lambda _ -> true
                      | _ -> false
                in
-                (fresh_id'', n, aux' env idrefs s)::
-                 (if father_is_prod then
-                   passed_lambdas_or_prods_or_letins
-                  else [])
-              in
-               let new_env = E.push_rel (N.Name n', None, s) env in
-               let new_idrefs = fresh_id''::idrefs in
-                (match Term.kind_of_term t with
-                    T.Prod _ ->
-                     aux computeinnertypes (Some fresh_id'') new_passed_prods
-                      new_env new_idrefs t
-                  | _ -> A.AProds (new_passed_prods, aux' new_env new_idrefs t))
-          | T.Lambda (n,s,t) ->
-             let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+                if innersort = "Prop" &&
+                   ((not father_is_lambda) || expected_available)
+                then add_inner_type fresh_id'' ;
+                let new_passed_lambdas =
+                 (fresh_id'',n, aux' env idrefs s)::
+                  (if father_is_lambda then
+                    passed_lambdas_or_prods_or_letins
+                   else []) in
+                let new_env = E.push_rel (N.Name n', None, s) env in
+                let new_idrefs = fresh_id''::idrefs in
+                 (match Term.kind_of_term t with
+                     T.Lambda _ ->
+                      aux computeinnertypes (Some fresh_id'') new_passed_lambdas
+                       new_env new_idrefs t
+                   | _ -> A.ALambdas
+                           (new_passed_lambdas, aux' new_env new_idrefs t))
+           | T.LetIn (n,s,t,d) ->
+              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+               let sourcesort =
+                Retyping.get_sort_family_of env evar_map
+                 (Retyping.get_type_of env evar_map s)
+               in
+                Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
+                 (string_of_sort_family sourcesort) ;
+               let father_is_letin =
+                match father with
+                   None -> false
+                 | Some father' ->
+                    match
+                     Term.kind_of_term (Hashtbl.find ids_to_terms father')
+                    with
+                       T.LetIn _ -> true
+                     | _ -> false
+               in
+                if innersort = "Prop" then
+                 add_inner_type fresh_id'' ;
+                let new_passed_letins =
+                 (fresh_id'',n, aux' env idrefs s)::
+                  (if father_is_letin then
+                    passed_lambdas_or_prods_or_letins
+                   else []) in
+                let new_env = E.push_rel (N.Name n', Some s, t) env in
+                let new_idrefs = fresh_id''::idrefs in
+                 (match Term.kind_of_term d with
+                     T.LetIn _ ->
+                      aux computeinnertypes (Some fresh_id'') new_passed_letins
+                       new_env new_idrefs d
+                   | _ -> A.ALetIns
+                           (new_passed_letins, aux' new_env new_idrefs d))
+           | T.App (h,t) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              let sourcetype = Retyping.get_type_of env evar_map s in
-               Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
-                (string_of_sort sourcetype) ;
-              let father_is_lambda =
-               match father with
-                  None -> false
-                | Some father' ->
-                   match
-                    Term.kind_of_term (Hashtbl.find ids_to_terms father')
-                   with
-                      T.Lambda _ -> true
-                    | _ -> false
+              if innersort = "Prop" then
+               add_inner_type fresh_id'' ;
+              let
+               compute_result_if_eta_expansion_not_required subst residual_args
+              =
+               let residual_args_not_empty = List.length residual_args > 0 in
+               let h' =
+                if residual_args_not_empty then
+                 aux' env idrefs ~subst:(None,subst) h
+                else
+                 aux' env idrefs ~subst:(Some fresh_id'',subst) h
+               in
+                (* maybe all the arguments were used for the explicit *)
+                (* named substitution                                 *)
+                if residual_args_not_empty then
+                 A.AApp (fresh_id'', h'::residual_args)
+                else
+                 h'
               in
-               if innersort = "Prop" &&
-                  ((not father_is_lambda) || expected_available)
-               then add_inner_type fresh_id'' ;
-               let new_passed_lambdas =
-                (fresh_id'',n, aux' env idrefs s)::
-                 (if father_is_lambda then
-                   passed_lambdas_or_prods_or_letins
-                  else []) in
-               let new_env = E.push_rel (N.Name n', None, s) env in
-               let new_idrefs = fresh_id''::idrefs in
-                (match Term.kind_of_term t with
-                    T.Lambda _ ->
-                     aux computeinnertypes (Some fresh_id'') new_passed_lambdas
-                      new_env new_idrefs t
-                  | _ -> A.ALambdas
-                          (new_passed_lambdas, aux' new_env new_idrefs t))
-          | T.LetIn (n,s,t,d) ->
-             let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
+               let t' =
+                Array.fold_right (fun x i -> (aux' env idrefs x)::i) t []
+               in
+                explicit_substitute_and_eta_expand_if_required h
+                 (Array.to_list t) t'
+                 compute_result_if_eta_expansion_not_required
+           | T.Const sp ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              let sourcesort =
-               Retyping.get_sort_family_of env evar_map
-                (Retyping.get_type_of env evar_map s)
+              if innersort = "Prop"  && expected_available then
+               add_inner_type fresh_id'' ;
+              let compute_result_if_eta_expansion_not_required _ _ =
+               A.AConst (fresh_id'', subst, (uri_of_path sp Constant))
               in
-               Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
-                (string_of_sort_family sourcesort) ;
-              let father_is_letin =
-               match father with
-                  None -> false
-                | Some father' ->
-                   match
-                    Term.kind_of_term (Hashtbl.find ids_to_terms father')
-                   with
-                      T.LetIn _ -> true
-                    | _ -> false
+               let (_,subst') = subst in
+                explicit_substitute_and_eta_expand_if_required tt []
+                 (List.map snd subst')
+                 compute_result_if_eta_expansion_not_required
+           | T.Ind (sp,i) ->
+              let compute_result_if_eta_expansion_not_required _ _ =
+               A.AInd (fresh_id'', subst, (uri_of_path sp Inductive), i)
               in
-               if innersort = "Prop" then
-                add_inner_type fresh_id'' ;
-               let new_passed_letins =
-                (fresh_id'',n, aux' env idrefs s)::
-                 (if father_is_letin then
-                   passed_lambdas_or_prods_or_letins
-                  else []) in
-               let new_env = E.push_rel (N.Name n', Some s, t) env in
-               let new_idrefs = fresh_id''::idrefs in
-                (match Term.kind_of_term d with
-                    T.LetIn _ ->
-                     aux computeinnertypes (Some fresh_id'') new_passed_letins
-                      new_env new_idrefs d
-                  | _ -> A.ALetIns
-                          (new_passed_letins, aux' new_env new_idrefs d))
-          | T.App (h,t) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then
-              add_inner_type fresh_id'' ;
-             let t' =
-              Array.fold_right (fun x i -> (aux' env idrefs x)::i) t [] in
-             (* begin of the stuff for explicit named substitution *)
-             let subst,residual_args,uninst_vars =
-              let variables,basedir =
-               match T.kind_of_term h with
-                  T.Const sp
-                | T.Ind (sp,_)
-                | T.Construct ((sp,_),_) ->
-                   Dischargedhypsmap.get_discharged_hyps sp,
-                    fst (Names.repr_path sp)
-                | T.Var id ->
-                   let sp = Declare.find_section_variable id in
-                    Dischargedhypsmap.get_discharged_hyps sp,
-                     fst (Names.repr_path sp)
-                | _ ->
-                   (* no explicit substitution *)
-                   [], Nameops.dirpath_of_string "dummy"
+               let (_,subst') = subst in
+                explicit_substitute_and_eta_expand_if_required tt []
+                 (List.map snd subst')
+                 compute_result_if_eta_expansion_not_required
+           | T.Construct ((sp,i),j) ->
+              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+              if innersort = "Prop"  && expected_available then
+               add_inner_type fresh_id'' ;
+              let compute_result_if_eta_expansion_not_required _ _ =
+               A.AConstruct
+                (fresh_id'', subst, (uri_of_path sp Inductive), i, j)
               in
-              (* returns a triple whose first element is  *)
-              (* an explicit named substitution of "type" *)
-              (* (variable * argument) list, whose        *)
-              (* second element is the list of residual   *)
-              (* arguments and whose third argument is    *) 
-              (* the list of uninstantiated variables     *)
-              let rec get_explicit_subst variables arguments =
-               match variables,arguments with
-                  [],_ -> [],arguments,[]
-                | _,[] -> [],[],variables
-                | he1::tl1,he2::tl2 ->
-                   let subst,extra_args,uninst = get_explicit_subst tl1 tl2 in
-                   let (he1_sp, he1_id) = Names.repr_path he1 in
-                   let he1' =
-                    remove_module_dirpath_from_dirpath ~basedir he1_sp ^ "/" ^
-                     (Names.string_of_id he1_id) ^ ".var"
+               let (_,subst') = subst in
+                explicit_substitute_and_eta_expand_if_required tt []
+                 (List.map snd subst')
+                 compute_result_if_eta_expansion_not_required
+           | T.Case ({T.ci_ind=(sp,i)},ty,term,a) ->
+              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+              if innersort = "Prop" then
+               add_inner_type fresh_id'' ;
+              let a' =
+               Array.fold_right (fun x i -> (aux' env idrefs x)::i) a []
+              in
+               A.ACase
+                (fresh_id'', (uri_of_path sp Inductive), i, aux' env idrefs ty,
+                 aux' env idrefs term, a')
+           | T.Fix ((ai,i),((f,t,b) as rec_decl)) ->
+              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+              if innersort = "Prop" then add_inner_type fresh_id'' ;
+              let fresh_idrefs =
+               Array.init (Array.length t) (function _ -> gen_id seed) in
+              let new_idrefs =
+               (List.rev (Array.to_list fresh_idrefs)) @ idrefs
+              in
+               A.AFix (fresh_id'', i,
+                Array.fold_right
+                 (fun (id,fi,ti,bi,ai) i ->
+                   let fi' =
+                    match fi with
+                       N.Name fi -> fi
+                     | N.Anonymous -> Util.error "Anonymous fix function met"
                    in
-                    (he1',he2)::subst, extra_args, uninst
+                    (id, fi', ai,
+                     aux' (E.push_rec_types rec_decl env) new_idrefs bi,
+                     aux' env idrefs ti)::i)
+                 (Array.mapi
+                  (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j),ai.(j))) f 
+                 ) []
+                )
+           | T.CoFix (i,((f,t,b) as rec_decl)) ->
+              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+              if innersort = "Prop" then add_inner_type fresh_id'' ;
+              let fresh_idrefs =
+               Array.init (Array.length t) (function _ -> gen_id seed) in
+              let new_idrefs =
+               (List.rev (Array.to_list fresh_idrefs)) @ idrefs
               in
-               get_explicit_subst variables t'
-             in
-              let uninst_vars_length = List.length uninst_vars in
-               if uninst_vars_length > 0 then
-                (* Not enough arguments provided. We must eta-expand! *)
-                let un_args,_ =
-                 T.decompose_prod_n uninst_vars_length
-                  (Retyping.get_type_of env evar_map tt)
-                in
-                 let eta_expanded =
-                  let arguments =
-                   List.map (T.lift uninst_vars_length) (Array.to_list t) @
-                    Termops.rel_list 0 uninst_vars_length
-                  in
-                   T.unshare
-                    (T.lamn uninst_vars_length un_args
-                     (T.applistc h arguments))
-                 in
-                  D.double_type_of env evar_map eta_expanded
-                   None terms_to_types ;
-                  Hashtbl.remove ids_to_inner_types fresh_id'' ;
-                  aux' env idrefs eta_expanded
-               else
-                let residual_args_not_empty = List.length residual_args > 0 in
-                let h' =
-                 if residual_args_not_empty then
-                  aux' env idrefs ~subst:(None,subst) h
-                 else
-                  aux' env idrefs ~subst:(Some fresh_id'',subst) h
-                in
-                 (* maybe all the arguments were used for the explicit *)
-                 (* named substitution                                 *)
-                 if residual_args_not_empty then
-                  A.AApp (fresh_id'', h'::residual_args)
-                 else
-                  h'
-          | T.Const sp ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop"  && expected_available then
-              add_inner_type fresh_id'' ;
-             A.AConst (fresh_id'', subst, (uri_of_path sp Constant))
-          | T.Ind (sp,i) ->
-             A.AInd (fresh_id'', subst, (uri_of_path sp Inductive), i)
-          | T.Construct ((sp,i),j) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop"  && expected_available then
-              add_inner_type fresh_id'' ;
-             A.AConstruct (fresh_id'', subst, (uri_of_path sp Inductive), i, j)
-          | T.Case ({T.ci_ind=(sp,i)},ty,term,a) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then
-              add_inner_type fresh_id'' ;
-             let a' =
-              Array.fold_right (fun x i -> (aux' env idrefs x)::i) a []
-             in
-              A.ACase
-               (fresh_id'', (uri_of_path sp Inductive), i, aux' env idrefs ty,
-                aux' env idrefs term, a')
-          | T.Fix ((ai,i),((f,t,b) as rec_decl)) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then add_inner_type fresh_id'' ;
-             let fresh_idrefs =
-              Array.init (Array.length t) (function _ -> gen_id seed) in
-             let new_idrefs =(List.rev (Array.to_list fresh_idrefs)) @ idrefs in
-              A.AFix (fresh_id'', i,
-               Array.fold_right
-                (fun (id,fi,ti,bi,ai) i ->
-                  let fi' =
-                   match fi with
-                      N.Name fi -> fi
-                    | N.Anonymous -> Util.error "Anonymous fix function met"
-                  in
-                   (id, fi', ai,
-                    aux' (E.push_rec_types rec_decl env) new_idrefs bi,
-                    aux' env idrefs ti)::i)
-                (Array.mapi
-                 (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j),ai.(j))) f 
-                ) []
-               )
-          | T.CoFix (i,((f,t,b) as rec_decl)) ->
-             Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then add_inner_type fresh_id'' ;
-             let fresh_idrefs =
-              Array.init (Array.length t) (function _ -> gen_id seed) in
-             let new_idrefs =(List.rev (Array.to_list fresh_idrefs)) @ idrefs in
-              A.ACoFix (fresh_id'', i,
-               Array.fold_right
-                (fun (id,fi,ti,bi) i ->
-                  let fi' =
-                   match fi with
-                      N.Name fi -> fi
-                    | N.Anonymous -> Util.error "Anonymous fix function met"
-                  in
-                   (id, fi', aux' (E.push_rec_types rec_decl env) new_idrefs bi,
-                    aux' env idrefs ti)::i)
-                (Array.mapi
-                  (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j)) ) f
-                ) []
-               )
-        in
-         aux computeinnertypes None [] env idrefs t
+               A.ACoFix (fresh_id'', i,
+                Array.fold_right
+                 (fun (id,fi,ti,bi) i ->
+                   let fi' =
+                    match fi with
+                       N.Name fi -> fi
+                     | N.Anonymous -> Util.error "Anonymous fix function met"
+                   in
+                    (id, fi',
+                     aux' (E.push_rec_types rec_decl env) new_idrefs bi,
+                     aux' env idrefs ti)::i)
+                 (Array.mapi
+                   (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j)) ) f
+                 ) []
+                )
+    in
+     aux computeinnertypes None [] env idrefs t
 ;;
 
 let acic_of_cic_context metasenv context t =
