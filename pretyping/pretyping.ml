@@ -330,6 +330,102 @@ let rec pretype tycon env isevars lvar lmeta = function
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = type_app (subst1 j.uj_val) j'.uj_type }
       
+  | ROldCase (loc,false,po,c,[| f |]) ->
+      let cj = pretype empty_tycon env isevars lvar lmeta c in
+      let (IndType (indf,realargs) as indt) = 
+	try find_rectype env (evars_of isevars) cj.uj_type
+	with Not_found ->
+	  let cloc = loc_of_rawconstr c in
+	  error_case_not_inductive_loc cloc env (evars_of isevars) cj in
+      (match po with
+	| Some p ->
+            let pj = pretype empty_tycon env isevars lvar lmeta p in
+            let dep = is_dependent_elimination env pj.uj_type indf in
+            let ar =
+              arity_of_case_predicate env indf dep (Type (new_univ())) in
+            let _ = the_conv_x_leq env isevars pj.uj_type ar in
+	    let pj = j_nf_evar (evars_of isevars) pj in
+	    let pj = if dep then pj else 
+	      let n = List.length realargs in
+	      let rec decomp n p =
+		if n=0 then p else
+		  match kind_of_term p with
+		    | Lambda (_,_,c) -> decomp (n-1) c
+		    | _ -> decomp (n-1) (applist (lift 1 p, [mkRel 1])) in
+	      let sign,s = decompose_prod_n n pj.uj_type in
+	      let ind = build_dependent_inductive env indf in
+	      let s' = mkProd (Anonymous, ind, s) in
+	      let ccl = lift 1 (decomp n pj.uj_val) in
+	      let ccl' = mkLambda (Anonymous, ind, ccl) in
+		{uj_val=lam_it ccl' sign; uj_type=prod_it s' sign} in
+	    let (bty,rsty) = Indrec.type_rec_branches false env (evars_of isevars) indt pj cj.uj_val in
+	      if Array.length bty <> 1 then
+		error_number_branches_loc loc env (evars_of isevars)  cj (Array.length bty)
+	      else
+		let fj = let tyc = bty.(0) in pretype (mk_tycon tyc) env isevars lvar lmeta f in
+		let fv = j_val fj in
+		let ft = fj.uj_type in
+		  check_branches_message loc env isevars cj.uj_val (bty,[|ft|]);
+		  let v =
+		    let mis,_ = dest_ind_family indf in
+		    let ci = make_default_case_info env mis in
+		      mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|])
+		  in { uj_val = v;  uj_type = rsty }
+
+	| None -> 
+            (* get type information from type of branches *)
+	    let expbr = Cases.branch_scheme env isevars false indf in
+	      if Array.length expbr <> 1 then
+		error_number_branches_loc loc env (evars_of isevars) 
+		  cj (Array.length expbr);
+            let expti = expbr.(0) in
+	    let fj = pretype (mk_tycon expti) env isevars lvar lmeta f in
+	    let pred = Cases.pred_case_ml env (evars_of isevars) false indt (0,fj.uj_type) in 
+            let pj =
+	      if has_undefined_isevars isevars pred then
+                (* get type information from constraint *)
+                (* warning: if the constraint comes from an evar type, it *)
+                (* may be Type while Prop or Set would be expected *)
+	        match tycon with
+		  | Some pred ->
+                       Retyping.get_judgment_of env (evars_of isevars) pred
+	          | None ->
+                      let sigma = evars_of isevars in
+                      error_cant_find_case_type_loc loc env sigma cj.uj_val
+	      else
+		let pty =
+                  Retyping.get_type_of env (evars_of isevars) pred in
+		let pj = { uj_val = pred; uj_type = pty } in
+                let _ = option_app (the_conv_x_leq env isevars pred) tycon
+                in pj
+	    in let pj = j_nf_evar (evars_of isevars) pj in
+	    let pj =
+	      let n = List.length realargs in
+	      let rec decomp n p =
+		if n=0 then p else
+		  match kind_of_term p with
+		    | Lambda (_,_,c) -> decomp (n-1) c
+		    | _ -> decomp (n-1) (applist (lift 1 p, [mkRel 1])) in
+	      let sign,s = decompose_prod_n n pj.uj_type in
+	      let ind = build_dependent_inductive env indf in
+	      let s' = mkProd (Anonymous, ind, s) in
+	      let ccl = lift 1 (decomp n pj.uj_val) in
+	      let ccl' = mkLambda (Anonymous, ind, ccl) in
+		{uj_val=lam_it ccl' sign; uj_type=prod_it s' sign} in
+	      
+	      let fv = fj.uj_val in
+	      let ft = fj.uj_type in
+	let v =
+	    let mis,_ = dest_ind_family indf in
+	    let ci = make_default_case_info env mis in
+	    mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|] ) 
+	in
+	 let (_,rsty) =
+	   Indrec.type_rec_branches
+             false env (evars_of isevars) indt pj cj.uj_val in
+	   { uj_val = v;
+	     uj_type = rsty })
+
   | ROldCase (loc,isrec,po,c,lf) ->
       let cj = pretype empty_tycon env isevars lvar lmeta c in
       let (IndType (indf,realargs) as indt) = 
