@@ -36,14 +36,16 @@ Chapter Well_founded.
   (** the informative elimination :
      [let Acc_rec F = let rec wf x = F x wf in wf] *)
 
- Section AccRec.
-  Variable P : A -> Set.
+ Section AccRecType.
+  Variable P : A -> Type.
   Variable F : (x:A)((y:A)(R y x)->(Acc y))->((y:A)(R y x)->(P y))->(P x).
 
-  Fixpoint Acc_rec [x:A;a:(Acc x)] : (P x)
-     := (F x (Acc_inv x a) ([y:A][h:(R y x)](Acc_rec y (Acc_inv x a y h)))).
+  Fixpoint Acc_rect [x:A;a:(Acc x)] : (P x)
+     := (F x (Acc_inv x a) ([y:A][h:(R y x)](Acc_rect y (Acc_inv x a y h)))).
 
- End AccRec.
+ End AccRecType.
+
+ Definition Acc_rec [P:A->Set] := (Acc_rect P).
 
  (** A relation is well-founded if every element is accessible *)
 
@@ -53,17 +55,23 @@ Chapter Well_founded.
 
  Hypothesis Rwf : well_founded.
 
- Theorem well_founded_induction : 
-        (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
+ Theorem well_founded_induction_type : 
+        (P:A->Type)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
-  Intros; Apply (Acc_rec P); Auto.
+  Intros; Apply (Acc_rect P); Auto.
  Save.
 
-  Theorem well_founded_ind : 
+ Theorem well_founded_induction :
+        (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
+ Proof.
+  Exact [P:A->Set](well_founded_induction_type P).
+ Save.
+
+ Theorem well_founded_ind : 
          (P:A->Prop)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
-   Proof.
-    Intros; Apply (Acc_ind P); Auto.
-   Qed.
+ Proof.
+  Exact [P:A->Prop](well_founded_induction_type P).
+ Qed.
 
 (** Building fixpoints  *) 
 
