@@ -79,15 +79,6 @@ let floor_div a b =
     | true, false -> (a-one) / b - one
     | false,true  -> (a+one) / b - one
 
-let new_id =
-  let cpt = ref 0 in fun () -> incr cpt; ! cpt
-
-let new_var =
-  let cpt = ref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
-    
-let new_var_num =
-  let cpt = ref 1000 in (fun () -> incr cpt; !cpt)
-
 type coeff = {c: bigint ; v: int}
 
 type linear = coeff list
@@ -169,9 +160,9 @@ let kind_of = function
 let display_system print_var l = 
   List.iter 
     (fun { kind=b; body=e; constant=c; id=id} -> 
-       print_int id; print_string ": ";
-       display_eq print_var (e,c); print_string (operator_of_eq b);
-       print_string "0\n") 
+       Printf.printf "E%d: " id;
+       display_eq print_var (e,c);
+       Printf.printf "%s 0\n" (operator_of_eq b))
     l;
   print_string "------------------------\n\n"
 
@@ -204,12 +195,12 @@ let rec display_action print_var = function
             "We state %s E%d = %s %s E%d + %s %s E%d.\n" 
             (kind_of e1.kind) e (sbi c1) (kind_of e1.kind) e1.id (sbi c2)
             (kind_of e2.kind) e2.id
-      | STATE { st_new_eq = e; st_coef = x} ->
-          Printf.printf "We define a new equation %d :" e.id; 
+      | STATE { st_new_eq = e } ->
+          Printf.printf "We define a new equation E%d: " e.id; 
           display_eq print_var (e.body,e.constant); 
-          print_string (operator_of_eq e.kind); print_string " 0\n"
+          print_string (operator_of_eq e.kind); print_string " 0"
       | HYP e ->   
-          Printf.printf "We define %d :" e.id; 
+          Printf.printf "We define E%d: " e.id; 
           display_eq print_var (e.body,e.constant); 
           print_string (operator_of_eq e.kind); print_string " 0\n"
       | FORGET_C e ->  Printf.printf "E%d is trivially satisfiable.\n" e
@@ -219,20 +210,20 @@ let rec display_action print_var = function
          Printf.printf "E%d and E%d can be merged into E%d.\n" e1.id e2 e
       | CONTRADICTION (e1,e2) -> 
           Printf.printf
-            "equations E%d and E%d implie a contradiction on their \
+            "Equations E%d and E%d imply a contradiction on their \
             constant factors.\n" e1.id e2.id
       | NEGATE_CONTRADICT(e1,e2,b) ->
           Printf.printf
-            "Eqations E%d and E%d state that their body is at the same time
+            "Equations E%d and E%d state that their body is at the same time
             equal and different\n" e1.id e2.id
       | CONSTANT_NOT_NUL (e,k) -> 
-          Printf.printf "equation E%d states %s=0.\n" e (sbi k)
+          Printf.printf "Equation E%d states %s = 0.\n" e (sbi k)
       | CONSTANT_NEG(e,k) -> 
-          Printf.printf "equation E%d states %s >= 0.\n" e (sbi k)
+          Printf.printf "Equation E%d states %s >= 0.\n" e (sbi k)
       | CONSTANT_NUL e ->
-          Printf.printf "inequation E%d states 0 != 0.\n" e
+          Printf.printf "Inequation E%d states 0 != 0.\n" e
       | SPLIT_INEQ (e,(e1,l1),(e2,l2)) -> 
-          Printf.printf "equation E%d is split in E%d and E%d\n\n" e.id e1 e2;
+          Printf.printf "Equation E%d is split in E%d and E%d\n\n" e.id e1 e2;
           display_action print_var l1;
           print_newline ();
           display_action print_var l2;
@@ -241,9 +232,9 @@ let rec display_action print_var = function
   | [] -> 
       flush stdout
 
-(*""*)
-let default_print_var v = Printf.sprintf "XX%d" v
+let default_print_var v = Printf.sprintf "X%d" v (* For debugging *)
 
+(*""*)
 let add_event, history, clear_history =
   let accu = ref [] in
   (fun (v:action) -> if !debug then display_action default_print_var [v]; push v accu),
@@ -357,7 +348,7 @@ let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 =
                              original.body;
       id = new_eq_id (); kind = EQUA } in
   add_event (STATE {st_new_eq = new_eq; st_def = definition;
-		    st_orig =original; st_coef = m; st_var = sigma});
+		    st_orig = original; st_coef = m; st_var = sigma});
   let new_eq = List.hd (normalize new_eq) in
   let eliminated_var, def = chop_var var new_eq.body in
   let other_equations = 
@@ -569,8 +560,8 @@ let rec depend relie_on accu = function
 	      depend (e1.id::e2.id::relie_on) (act::accu) l
             else 
 	      depend relie_on accu l
-	| STATE {st_new_eq=e} ->
-            if List.mem e.id relie_on then depend relie_on (act::accu) l
+	| STATE {st_new_eq=e;st_orig=o} ->
+            if List.mem e.id relie_on then depend (o.id::relie_on) (act::accu) l
             else depend relie_on accu l
 	| HYP e ->   
             if List.mem e.id relie_on then depend relie_on (act::accu) l
