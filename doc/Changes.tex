@@ -12,46 +12,45 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \shorttitle{Changes from {\Coq} V6.3.1 to {\Coq} V7}
 
-%This document describes the main differences between \Coq~ V6.3.1 and
-%V7. This new version of \Coq~ is characterized by fixed bugs, and
+%This document describes the main differences between {\Coq} V6.3.1 and
+%V7. This new version of {\Coq} is characterized by fixed bugs, and
 %improvement of implicit arguments synthesis and speed in tactic
 %applications.
 
-TODO: Nom de l'ancien Tauto, expliquer les changements de AutoRewrite
+TODO: expliquer les changements de AutoRewrite
 
 \section*{Overview}
 
-The new major version number is explained by a deep restructuration of
-the implementation code of \Coq. For the end-user, \Coq~
+The new major version number is justified by a deep restructuration of
+the implementation code of \Coq. For the end-user, {\Coq}
 V7 provides the following novelties:
 
 \begin{itemize}
 \item A mini-language to write tactics with high-level
 pattern-matching on goals  (see section \ref{Tactics})
 
-\item A primitive let-in constructions (see section \ref{Letin})
-\item Structuration of the name space and access to names by the dot notation (see section \ref{Names})
-\item A command to export theories to XML to be used with rendering
-tools by Bologna University (see section \ref{Tools})
+\item A primitive let-in construction (see section \ref{Letin})
+\item Structuration of the developments in libraries and use of the
+dot notation to access names (see section \ref{Names})
 \item Various improvements, including a search facilities by pattern
-provided by Yves Bertot (see section \ref{Tools})
+provided by Yves Bertot (see section \ref{Search})
 \item A ``natural'' syntax for real numbers (see section
 \ref{SyntaxExtensions}) 
-\item A command to export definitions, theorems and proofs to XML to
-be used with Bologna publishing and rendering tools (see section \ref{XML})
+\item A command to export theories to XML to
+be used with Helm's publishing and rendering tools (see section \ref{XML})
 \item As usual, several bugs fixed and a lot of new ones introduced
 \end{itemize}
 
 Incompatibilities are described in section
 \ref{Incompatibilities}. Please notice that extraction and the
-{\tt Program/Realizer} tactic are unavailable in \Coq~ V7.
+{\tt Program/Realizer} tactic are not yet available in {\Coq} V7.
 Developers of tactics in ML are invited to read section
 \ref{Developers}.
 
 \section{Language}
 
 \label{Language}
-\subsection{Primitive {\tt let ... in ...} constructions}
+\subsection{Primitive {\tt let ... in ...} construction}
 \label{Letin}
 The {\tt let ... in ...} syntax in V6.3.1 was implemented as a
 macro. It is now a first-class constructions.
@@ -73,8 +72,8 @@ End A.
 Print four.
 \end{coq_example}
 
-The unfolding of a reference to a definition local to a section
-depends on $\delta$ rule. But a ``{\tt let ... in ...}'' inside a term
+The unfolding of a reference with respect to a definition local to a section
+is performed by $\delta$ rule. But a ``{\tt let ... in ...}'' inside a term
 is not concerned by $\delta$ reduction. Commands to finely reduce this
 kind of expression remain to be provided.
 \medskip
@@ -82,70 +81,106 @@ kind of expression remain to be provided.
 Remark: A less symbolic but equivalent syntax is available as {\tt let
 two = `1 + 1` in `two + two`}.
 
-\subsection{Names}
+\subsection{Libraries and qualified names}
 \label{Names}
 
-\paragraph{Structured absolute names} The naming strategy for constructions
-has been made clearer. A \Coq~ name is now unique and has the form
+\paragraph{Identifiers} An identifier is any string beginning by a
+letter and followed by letters, digits or simple quotes. The bug with
+identifier ended by a number greater than $2^{31}$ behave now correctly.
 
-\begin{quote}
-{\tt Coq.Init.Logic.Equality.eq}
-\end{quote}
+\paragraph{Libraries}
 
--- {\tt eq} is the name of the construction.
+The theories developed in {\Coq} are now stored in {\it libraries}.  A
+library is characterized by a name called {\it root} of the
+library. By default, two libraries are defined at the beginning of a
+{\Coq} session. The first library has root name {\tt Coq} and contains the
+standard library of \Coq. The second has root name {\tt Scratch} and
+contains all definitions and theorems not explicitly put in a specific
+library. 
 
--- {\tt Coq} means {\tt eq} is a construction of the standard library of
-\Coq.
-
--- {\tt Init} means it is defined in directory {\tt Init} of the
-standard library of \Coq.
-
--- {\tt Logic} means it is defined in file {\tt Logic.v} of the
-directory {\tt Init} in the standard library of \Coq.
-
--- {\tt Equality} means it is defined in section {\tt Equality}
-of the file {\tt Logic.v} in the directory {\tt Init} of the
-standard library of \Coq.
+Libraries have a tree structure. Typically, the {\tt Coq} library
+contains the (sub-)libraries {\tt Init}, {\tt Logic}, {\tt Arith},
+{\tt Lists}, ... The ``dot notation'' is used to write
+(sub-)libraries. Typically, the {\tt Arith} library of {\Coq} standard
+library is written ``{\tt Coq.Arith}''.
 
 \smallskip
+Remark: no space is allowed
+between the dot and the following identifier, otherwise the dot is
+interpreted as the final dot of the command!
+\smallskip
 
-Of course, there is no limit to the number of directories to traverse to
-find the corresponding file and no limit to the number of sections to
-traverse in the file to find the corresponding definition.
-
-\paragraph{Dot notation} Almost all commands accept the ``.'' notation to
-write absolute names.
-
-\paragraph{Open mechanism} Usually all required modules ({\tt .vo}
-files) and closed sections are ``open'' by default. This means that
-constructions there can be accessed just by their identifier.
-{\tt Import {\module}} makes visible all definitions from {\module}.
-This may be useful to recover a direct access to a definition
-which has been hidden.
-
-\paragraph{Mapping physical directories to logical directories}
-
-Files physically reside on the file system of the operating system. To
-  map a physical directory to a logical name of the libraries known by
-  \Coq, the following commands are available:
+Libraries and sublibraries can be mapped to physical directories of the
+operating system using the command
 
 \begin{quote}
-{\tt Add LoadPath {\it physical\_dir} as {\it logical\_dir}}\\
-{\tt Add Rec LoadPath {\it physical\_dir} as {\it logical\_dir}}
+{\tt Add LoadPath {\it physical\_dir} as {\it (sub-)library}}.
 \end{quote}
 
-Then, when a ``.vo'' file is required, it is adequately mapped in the
-libraries known by \Coq. However, no consistency check is currently
-done to ensure the required module has actually been compiled with the
-same logical name (example: a module can be compiled with
-logical name Mycontrib.Arith.Plus but required with name
-HisContrib.Zarith.Plus).
+Incidentally, if a {\it (sub-)library} does not already
+exists, it is created by the command. This allows users to define new
+root libraries.
 
-Command {\tt Add Rec LoadPath} is also available from {\tt coqtop} and
-{\tt coqc} by using option \verb=-R= (see section \ref{Tools}).
+A library can inherit the tree structure of a physical directory by
+using the command
 
-\paragraph{Identifier overflow} The identifiers ended by a number
-greater than $2^{31}$ behave now correctly.
+\begin{quote}
+{\tt Add Rec LoadPath {\it physical\_dir} as {\it (sub-)library}}.
+\end{quote}
+
+At some point, (sub-)libraries contain {\it modules} which coincides
+with files at the physical level. Modules themselves may contain
+sections, subsections, ... and eventually definitions and theorems.
+
+As for sublibraries, the dot notation is used to denote a specific
+module, section, definition or theorem of a library. Typically, {\tt
+Coq.Init.Logic.Equality.eq} denotes the Leibniz' equality defined in
+section {\tt Equality} of the module {\tt Logic} in the
+sublibrary {\tt Init} of the standard library of \Coq. By
+this way, a module, section, definition or theorem name is now unique
+in \Coq.
+
+\paragraph{Absolute and short names}
+
+The full name of a library, module, section, definition or theorem is
+called {\it absolute}. The final identifier {\tt eq} is called the
+{\it base name}. We call {\it short name} a name reduced to a single
+identifier.  {\Coq} maintains a {\it name table} mapping short names
+to absolute names. This greatly simplifies the notations and preserves
+compatibility with the previous versions of \Coq.
+
+\paragraph{Visibility and qualified names}
+An absolute path is called {\it visible} when its base name suffices
+to denote it. This means the base name is mapped to the absolute name
+in {\Coq} name table.
+
+All the base names of sublibraries, modules, sections, definitions and
+theorems are automatically put in {\Coq} name table. But sometimes,
+names used in a module can hide names defined in another module.
+Instead of just distinguishing the clashing names by using the
+absolute names, it is enough to prefix the base name just by the name
+of its containing section (or module or library). E.g. if {\tt eq}
+above is hidden by another definition of same base name, it is enough
+to write {\tt Equality.eq} to access it... unless section {\tt
+Equality} itself has been hidden in which case, it is necessary to
+write {\tt Logic.Equality.eq} and so on. Such a name built from
+single identifiers separated by dots is called a {\it qualified}
+name. Especially, both absolute names and short names are qualified
+names. Root names cannot be hidden in such a way fully qualified
+(i.e. absolute names) cannot be hidden.
+
+\paragraph{Requiring a file}
+
+When a ``.vo'' file is required in a physical directory mapped to some
+(sub-)library, it is adequately mapped in the whole library structure
+known by \Coq. However, no consistency check is currently done to
+ensure the required module has actually been compiled with the same
+absolute name (e.g. a module can be compiled with absolute name
+{\tt Mycontrib.Arith.Plus} but required with absolute name
+{\tt HisContrib.Zarith.Plus}).
+
+The command {\tt Add Rec LoadPath} is also available from {\tt coqtop}
+and {\tt coqc} by using option \verb=-R= (see section \ref{Tools}).
 
 \subsection{Syntax extensions}
 \label{SyntaxExtensions}
@@ -157,15 +192,18 @@ available by putting expressions inside pairs of backquotes.
 
 \begin{coq_example}
 Require Reals.
-Check ``2*3/(5+2)``.
+Check ``2*3/(4+2)``.
 \end{coq_example}
 
-Remark: What is written, say \verb:``5``:, is equivalent to
-\verb:``((((1+1)+1)+1)+1)``, that is to `\verb:``4+1``: but there is a small
-bug: when such an expression is not subterm of another, it is written
-as \verb:``4+1``: instead of \verb:``5``:.
+Remark: A constant, say \verb:``4``:, is equivalent to
+\verb:``(((1+1)+1)+1)``:.
 
-\paragraph{Infix} was inactive on pretty-printer. Now it works.
+\paragraph{{\tt Infix}} was inactive on pretty-printer. Now it works.
+
+\paragraph{Consecutive tokens} should now be separated (e.g. by a
+space). Typically, the string \verb:A->~<nat>O=O: is no longer
+recognized. It should be written \verb:A-> ~ <nat>O=O:... or simply
+\verb:A->~ <nat>O=O: because of a special treatment for \verb:->:!
 
 \paragraph{The {\tt command} syntactic class for {\tt Grammar}} has
 been renamed {\tt constr} consistently with the usage for {\tt Syntax}
@@ -191,13 +229,13 @@ different from {\tt constr}, {\tt tactic}, {\tt vernac} or {\tt ast},
 any of the previous keyword can be used as type (and therefore as
 parser).
 
-See examples in appendix \ref{Appendix}.
+See examples in appendix.
 
 \paragraph{Syntax overloading}
 
  Binding of constructions in Grammar rules is now done with absolute
   paths. This means overloading of syntax for different constructions
-  having same base name is no longer possible.
+  having the same base name is no longer possible.
 
 \paragraph{Timing or abbreviating a sequence of commands}
 
@@ -214,24 +252,19 @@ available to group several commands into a single one (useful for
 $\ltac$ is a mini-language to write tactics with high-level
 pattern-matching on goals. It has been contributed by David
 Delahaye. A separate documentation entitled $\ltac$ is available in
-the archive or at the author page http://logical.inria.fr/~delahaye.
+the archive or at the author page http://logical.inria.fr/\~delahaye.
 
 \subsection{Changes in pre-existing tactics}
 \label{TacticChanges}
 
    \paragraph{{\tt Tauto} and {\bf\tt Intuition}} have been rewritten
-   in $\ltac$. This has introduced some changes in the hypotheses names
-   generated by {\tt Intuition}. The previous versions of {\tt
-   Tauto} and {\tt Intuition} remain available under the names
-   ???.
+   in $\ltac$. The behaviour of {\bf\tt Intuition} is slightly
+   different w.r.t. to subformulas of the form $(x:A)(P~x)$. This may
+   lead to some incompatibilities.
 
   \paragraph{{\tt Simpl}} now simplifies mutually defined fixpoints
   as expected (i.e. it does not introduce {\tt Fix id
   \{...\}} expressions).
-
-  \paragraph{Old {\tt Induction} tactic} has been renamed into {\tt
-  RawInduction} and new {\tt Induction} now performs in a more
-  ``natural'' way.
 
   \paragraph{{\tt AutoRewrite}} now applies only on main goal (remaining
   subgoals are handled by {\tt Hint Rewrite}.
@@ -248,9 +281,11 @@ the archive or at the author page http://logical.inria.fr/~delahaye.
   \paragraph{Tactic {\tt Let}} has been renamed into {\tt LetTac}
   and it now relies on the primitive {\tt let-in} constructions
 
-  \paragraph{{\tt Elim}} can no longer be used implicitly with a
-  elimination scheme built by hand. Use {\tt Elim {\term} with
-  {\it elimination scheme name}} instead.
+  \paragraph{{\tt Elim}} was looking for elimination schemes named
+  from the name of the eliminated type and a suffix such as
+  \verb:_rec: or \verb:_ind:. When these elimination schemes are
+  redefined by the user, it does not work any longer by just calling
+  {\tt Elim}. Use {\tt Elim ... with ...} instead.
 
   \paragraph{{\tt Apply ... with ...}} when instantiations are
   redundant or incompatible now behaves smoothly.
@@ -258,18 +293,20 @@ the archive or at the author page http://logical.inria.fr/~delahaye.
   \paragraph{{\tt Decompose}} has now less bugs. Also hypotheses
   are now numbered in order.
 
-  \paragraph{{\tt Linear}} tactic is discontinued.
+  \paragraph{{\tt Linear}} seems to be very rarely used. It has not
+  been ported.
 
-  \paragraph{{\tt Program/Realizer}} is not available in \Coq V7.
+  \paragraph{{\tt Program/Realizer}} and {\tt Correctness} are not yet
+  available in {\Coq} V7.
 
 \section{Toplevel commands}
 
 \subsection{Searching the environment}
-
+\label{Search}
 A new searching mechanism by pattern has been contributed by Yves Bertot.
 
 
-\paragraph{{\tt SearchPattern {\term}.}}
+\paragraph{{\tt SearchPattern {\term}}}
 displays the name and type of all theorems of the current
 context whose statement's conclusion matches the expression {\term}
 where holes in the latter are denoted by ``{\tt ?}''.
@@ -290,10 +327,10 @@ Require Arith.
 SearchPattern (plus ? ?1)=(mult ?1 ?).
 \end{coq_example}
 
-\paragraph{{\tt SearchRewrite {\term}.}}
+\paragraph{{\tt SearchRewrite {\term}}}
 displays the name and type of all theorems of the current
 context whose statement's conclusion is an equality of which one side matches
-the expression {\term =}. Holes in {\term} are denoted by ``{\tt ?}''.
+the expression {\term}. Holes in {\term} are denoted by ``{\tt ?}''.
 
 \begin{coq_example}
 Require Arith.
@@ -322,7 +359,7 @@ identifiers and the {\tt inside} and {\tt outside} restrictions as
 \subsection{XML output}
 \label{XML}
 
-A printer of \Coq~ theories into XML syntax has been contributed by
+A printer of {\Coq} theories into XML syntax has been contributed by
 Claudio Sacerdoti Coen. Various printing commands (such as {\tt Print
 XML Module Disk "{\it dir}" {\ident}}) allow to produce XML files from
 ``.vo'' files. These XML files can be published on the Web, retrieved
@@ -401,12 +438,12 @@ located in the source file.
 
 \section{Developers}
 \label{Developers}
-The internals of \Coq~ has changed a lot and will continue to change
+The internals of {\Coq} has changed a lot and will continue to change
 significantly in the next months. We recommend tactic developers to
 take contact with us for adapting their code. A document describing
-the interfaces of the ML modules constituting \Coq~ is available
+the interfaces of the ML modules constituting {\Coq} is available
 thanks to J.-C. Filliatre's ocamlweb
-documentation tool (see the ``doc'' directory in \Coq~ source archive).
+documentation tool (see the ``doc'' directory in {\Coq} source).
 
 \section{Incompatibilities}
 \label{Incompatibilities}
@@ -421,12 +458,13 @@ documentation tool (see the ``doc'' directory in \Coq~ source archive).
   \item The ``.vo'' files are not compatible and all ``.v'' files should
   be recompiled.
 
-  \item Consecutive tokens should now be separated (e.g. by a space).
+  \item Consecutive tokens should now be separated (see section
+  \ref{SyntaxExtensions}).
 
   \item Default parsers in {\tt Grammar} and {\tt Syntax} are
   different (see section \ref{GrammarSyntax}).
 
-  \item {\tt Extraction} is currently unavailable in \Coq~ V7.
+  \item {\tt Extraction} is currently not available in {\Coq} V7.
 
   \end{itemize}
 
@@ -442,7 +480,7 @@ translation there).
 
 %\subsection{Operating System Issues -- Requirements}
 
-\Coq~ is available as a source package at 
+{\Coq} is available as a source package at 
 
 \begin{quote}
 \verb|ftp://ftp.inria.fr/INRIA/coq/V7|\\
@@ -490,12 +528,12 @@ package is available for this beta release.
 
 \section*{Appendix}
 \label{Appendix}
-We detail the differences between \Coq~ V6.3.1 and V7beta for the {\tt
+We detail the differences between {\Coq} V6.3.1 and V7.0beta for the {\tt
 Syntax} and {\tt Grammar} default parsers.
 
 \medskip
 
-Examples in V6.3.1
+{\bf Examples in V6.3.1}
 
 \begin{verbatim}
 Grammar command command0 :=
@@ -519,7 +557,9 @@ Grammar tactic simple_tactic :=
   tauto [ "Tauto" ] -> [(Tauto)].
 \end{verbatim}
 
-New form in V7.0
+\medskip
+
+{\bf New form in V7.0beta}
 
 \begin{verbatim}
 Grammar constr constr0 :=
