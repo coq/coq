@@ -46,3 +46,19 @@ Qed.
 Lemma JMeq_rec_r : (A:Set)(x,y:A)(P:A->Set)(P y)->(JMeq x y)->(P x).
 Intros A x y P H H'; Case JMeq_eq with 1:=(sym_JMeq H'); Trivial.
 Qed.
+
+(** [JMeq] is equivalent to [(eq_dep Set [X]X)] *)
+
+Require Eqdep.
+
+Lemma JMeq_eq_dep : (A,B:Set)(x:A)(y:B)(JMeq x y)->(eq_dep Set [X]X A x B y).
+Proof.
+NewDestruct 1.
+Apply eq_dep_intro.
+Qed.
+
+Lemma eq_dep_JMeq : (A,B:Set)(x:A)(y:B)(eq_dep Set [X]X A x B y)->(JMeq x y).
+Proof.
+NewDestruct 1.
+Apply JMeq_refl. 
+Qed.

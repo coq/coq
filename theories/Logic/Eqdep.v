@@ -110,19 +110,29 @@ Elim p1 using eq_indd.
 Apply eq_dep_intro.
 Qed.
 
-(** Streicher axiom K is a direct instance of UIP *)
+(** Uniqueness of Reflexive Identity Proofs is a direct instance of UIP *)
 
-Lemma Streicher_K : (U:Type)(x:U)(p:x=x)p=(refl_equal U x).
+Lemma UIP_refl : (U:Type)(x:U)(p:x=x)p=(refl_equal U x).
 Proof.
 Intros; Apply UIP.
+Qed.
+
+(** Streicher axiom K is a direct consequence of Uniqueness of
+    Reflexive Identity Proofs *)
+
+Lemma Streicher_K : (U:Type)(x:U)(P:x=x->Prop)
+  (P (refl_equal ? x))->(p:x=x)(P p).
+Proof.
+Intros; Rewrite UIP_refl; Assumption.
 Qed.
 
 (** We finally recover eq_rec_eq (alternatively eq_rect_eq) from K *)
 
 Lemma eq_rec_eq : (U:Type)(P:U->Set)(p:U)(x:(P p))(h:p=p)
   x=(eq_rec U p P x p h).
+Proof.
 Intros.
-Rewrite Streicher_K with p:=h.
+Apply Streicher_K with p:=h.
 Reflexivity.
 Qed.
 
