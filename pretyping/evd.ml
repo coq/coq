@@ -222,7 +222,7 @@ let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source ev d =
   try List.assoc ev d.history
-  with Failure _ -> (dummy_loc, InternalHole)
+  with Not_found -> (dummy_loc, InternalHole)
 
 (* define the existential of section path sp as the constr body *)
 let evar_define sp body isevars =
