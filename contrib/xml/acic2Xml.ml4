@@ -184,6 +184,7 @@ let print_object curi ids_to_inner_sorts =
     function
        A.ACurrentProof (id,n,conjectures,bo,ty) ->
         let xml_for_current_proof =
+(*CSC: Should the CurrentProof also have the list of variables it depends on? *)
          X.xml_nempty "CurrentProof" ["name",n ; "id", id]
           [< List.fold_left
               (fun i (cid,n,canonical_context,t) ->
@@ -215,8 +216,6 @@ let print_object curi ids_to_inner_sorts =
         in
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
             X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \""^dtdname ^"\">\n\n");
-(*CSC: Should the CurrentProof also have the list of variables it depends on? *)
-            X.xml_nempty "CurrentProof" ["name",n ; "id", id]
              xml_for_current_proof
          >]
      | A.ADefinition (id,n,bo,ty,params) ->
