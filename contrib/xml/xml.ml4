@@ -73,7 +73,7 @@ let pp strm fn =
        channel := open_out filename ;
        pp_r 0 strm ;
        close_out !channel ;
-       print_string ("\nWriting on file \"" ^ filename ^ "\" was succesfull\n");
+       print_string ("\nWriting on file \"" ^ filename ^ "\" was succesful\n");
        flush stdout
    | None ->
        pp_r 0 strm
