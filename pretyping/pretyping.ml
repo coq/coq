@@ -373,18 +373,19 @@ let rec pretype tycon env isevars lvar lmeta = function
 
       let dep = find_case_dep_nparams env !isevars (cj.uj_val,pj.uj_val) indf evalPt in
 
-      let (p,pt) = (* Buggé ... mettre le lambda après les realargs *)
+      let (p,pt) =
 	if dep then (pj.uj_val, evalPt) else
 	  let n = List.length realargs in
 	  let rec decomp n p =
 	    if n=0 then p else
 	      match kind_of_term p with
-		| IsLambda (_,_,c) -> decomp (n-1) p
+		| IsLambda (_,_,c) -> decomp (n-1) c
 		| _ -> decomp (n-1) (applist (lift 1 p, [mkRel 1])) in
 	  let sign,s = decompose_prod_n n evalPt in
-	  let s' = mkProd (Anonymous, mkAppliedInd indt, lift 1 evalPt) in
+	  let ind = build_dependent_inductive indf in
+	  let s' = mkProd (Anonymous, ind, s) in
 	  let ccl = lift 1 (decomp n pj.uj_val) in
-	  let ccl' = mkLambda (Anonymous, mkAppliedInd indt, ccl) in
+	  let ccl' = mkLambda (Anonymous, ind, ccl) in
 	  (lam_it ccl' sign, prod_it s' sign) in
       let (bty,rsty) =
 	Indrec.type_rec_branches isrec env !isevars indt pt p cj.uj_val in
