@@ -45,7 +45,7 @@ let rec execute mf env cstr =
 	anomaly "the kernel does not understand existential variables"
 	
     | IsRel n -> 
-	(relative env n, cst0)
+	(relative env Evd.empty n, cst0)
 
     | IsVar id -> 
 	(make_judge cstr (snd (lookup_var id env)), cst0)
@@ -117,8 +117,7 @@ let rec execute mf env cstr =
      | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
         let varj = type_judgment env Evd.empty j in
-	let var = assumption_of_type_judgment varj in
-	let env1 = push_rel (name,var) env in
+	let env1 = push_rel (name,assumption_of_type_judgment varj) env in
         let (j',cst2) = execute mf env1 c2 in
 	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
@@ -130,7 +129,7 @@ let rec execute mf env cstr =
 	let cst = Constraint.union cst1 cst2 in
         (cast_rel env Evd.empty cj tj, cst)
 	  
-      | _ -> error_cant_execute CCI env cstr
+    | IsXtra _ -> anomaly "Safe_typing: found an Extra"
 	  
 and execute_fix mf env lar lfi vdef =
   let (larj,cst1) = execute_array mf env lar in
@@ -360,7 +359,7 @@ let rec infos_and_sort env t =
 	let logic = not (is_info_type env Evd.empty varj) in
 	let small = is_small s1 in
 	((logic,small) :: infos, smax', cst')
-    | IsCast (c,t) -> infos_and_sort env c
+    | IsCast (c,_) -> infos_and_sort env c
     | _ ->
 	([],prop (* = neutral element of max_universe *),Constraint.empty)
 

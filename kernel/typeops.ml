@@ -23,28 +23,30 @@ let j_val_only j = j.uj_val
 
 let typed_type_of_judgment env sigma j = j.uj_type
 
+(* This should be a type intended to be assumed *)
 let assumption_of_judgment env sigma j =
   match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
     | DOP0(Sort s) -> make_typed j.uj_val s
     | _ -> error_assumption CCI env j.uj_val
 
-let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
-
+(* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env sigma j =
   match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
     | DOP0(Sort s) -> {utj_val = j.uj_val; utj_type = s }
-    | _ -> error_assumption CCI env j.uj_val
+    | _ -> error_not_type CCI env j
+
+let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
 
 
 (* Type of a de Bruijn index. *)
 	  
-let relative env n = 
+let relative env sigma n = 
   try
     let (_,typ) = lookup_rel n env in
     { uj_val  = Rel n;
       uj_type = typed_app (lift n) typ }
   with Not_found -> 
-    error_unbound_rel CCI env n
+    error_unbound_rel CCI env sigma n
 
 (* Management of context of variables. *)
 
@@ -288,12 +290,11 @@ let abs_rel env sigma name var j =
 let gen_rel env sigma name varj j =
   let var = assumption_of_type_judgment varj in
   match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
-    | DOP0(Sort s) as ts ->
-	let ts = (* mkCast *) j.uj_val (* ts *) in
+    | DOP0(Sort s) ->
 	let (s',g) = sort_of_product varj.utj_type s (universes env) in
 	let res_type = mkSort s' in
 	let (res_kind,g') = type_of_sort res_type in
-        { uj_val = mkProd name (incast_type var) ts;
+        { uj_val = mkProd name (incast_type var) j.uj_val;
           uj_type = make_typed res_type res_kind },
 	g'
     | _ -> 
@@ -301,7 +302,7 @@ let gen_rel env sigma name varj j =
 	  error "Proof objects can only be abstracted" 
 	else
 *)
-	  error_generalization CCI env (name,var) j.uj_val
+	  error_generalization CCI env sigma (name,var) j
 
 (* Type of a cast. *)
 	    
@@ -332,7 +333,8 @@ let apply_rel_list env sigma nocheck argjl funj =
 		   let cst' = Constraint.union cst c in
 		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
-		   error_cant_apply_bad_type CCI env (n,body_of_type hj.uj_type,c1)
+		   error_cant_apply_bad_type CCI env sigma
+		     (n,body_of_type hj.uj_type,c1)
 		     funj argjl)
           | _ ->
 	      error_cant_apply_not_functional CCI env funj argjl
