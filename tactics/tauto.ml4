@@ -67,7 +67,7 @@ let simplif () =
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
           $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intro;Apply id;
             Left;Assumption]|Intro;Apply id;Right;Assumption]
-        | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
+        | [id0: ?1-> ?; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
         | [|- (?1 ? ?)] -> $t_is_conj;Split);$t_not_dep_intros)>>
 
 let rec tauto_main () =
@@ -100,12 +100,10 @@ let compute = function
 let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
 
 let tauto =
-  (tclTHEN (interp <:tactic<Intros>>)
-    (tclTHEN reduction (interp (tauto_main ()))))
+  (tclTHEN reduction (interp (tauto_main ())))
 
 let intuition =
-  (tclTHEN (interp <:tactic<Intros>>)
-    (tclTHEN reduction (interp (intuition_main ()))))
+  (tclTHEN reduction (interp (intuition_main ())))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
