@@ -222,11 +222,12 @@ let rec pp_expr par env args =
 		(hov 2 (str "let " ++ pp_id ++ str " =" ++ spc () ++ pp_a1) ++ 
 		 spc () ++ str "in") ++ 
 	      spc () ++ hov 0 pp_a2))
-    | MLglob r when is_projection r && args <> [] ->
-	let record = List.hd args in 
-	pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
     | MLglob r -> 
-	apply (pp_global r)
+	(try 
+	   let _,args = list_chop (projection_arity r) args in 
+	   let record = List.hd args in 
+	   pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
+	 with _ -> apply (pp_global r))
     | MLcons (r,[]) ->
 	assert (args=[]);
 	if Refset.mem (long_r r) !cons_cofix then 
@@ -250,22 +251,43 @@ let rec pp_expr par env args =
 	  (pp_expr false env [] t) 
 	in 
 	let record = 
-	  try ignore (find_projections (kn_of_r r)); true with Not_found -> false
+	  try Some (find_projections (kn_of_r r)) with Not_found -> None
 	in 
-	if Array.length pv = 1 && not record then 
-	  let s1,s2 = pp_one_pat env pv.(0) in 
-	  apply 
-	    (hv 0 
-	       (pp_par par' 
-		  (hv 0 
-		     (hov 2 (str "let " ++ s1 ++ str " =" ++ spc () ++ expr) 
-		      ++ spc () ++ str "in") ++ 
-		   spc () ++ hov 0 s2)))
-	else
-	  apply
-      	    (pp_par par' 
-      	       (v 0 (str "match " ++ expr ++ str " with" ++
-		     fnl () ++ str "  | " ++ pp_pat env pv)))
+	(try 
+	   match record with 
+	     | None -> raise Not_found 
+	     | Some projs -> 
+		 let (_, ids, c) = pv.(0) in 
+		 let n = List.length ids in 
+		 match c with 
+		   | MLrel i when i <= n -> 
+		       apply (pp_par par' (pp_expr true env [] t ++ str "." ++ 
+					   pp_global (List.nth projs (n-i)))) 
+		   | MLapp (MLrel i, a) when i <= n -> 
+		       if List.exists (ast_occurs_itvl 1 n) a 
+		       then raise Not_found
+		       else
+			 let ids,env' = push_vars (List.rev ids) env in
+			 (pp_apply 
+			    (pp_expr true env [] t ++ str "." ++ 
+			     pp_global (List.nth projs (n-i)))
+			    par ((List.map (pp_expr true env' []) a) @ args))
+	     | _ -> raise Not_found
+	 with Not_found -> 
+	   if Array.length pv = 1 && record = None then 
+	     let s1,s2 = pp_one_pat env pv.(0) in 
+	     apply 
+	       (hv 0 
+		  (pp_par par' 
+		     (hv 0 
+			(hov 2 (str "let " ++ s1 ++ str " =" ++ spc () ++ expr) 
+			 ++ spc () ++ str "in") ++ 
+		      spc () ++ hov 0 s2)))
+	   else
+	     apply
+      	       (pp_par par' 
+      		  (v 0 (str "match " ++ expr ++ str " with" ++
+			fnl () ++ str "  | " ++ pp_pat env pv))))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -476,7 +498,10 @@ let pp_decl mp =
 	    (str "let " ++ 
 	     if is_custom r then 
 	       e ++ str " = " ++ str (find_custom r)
-	     else if is_projection r then e ++ str " x = x." ++ e
+	     else if is_projection r then 
+	       let s = prvecti (fun _ -> str) 
+			 (Array.make (projection_arity r) " _") in 
+	       e ++ s ++ str " x = x." ++ e
 	     else pp_function (empty_env ()) e a)
     | Dfix (rv,defs,typs) ->
 	pp_Dfix true 0 (rv,defs,typs)

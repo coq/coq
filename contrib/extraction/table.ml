@@ -154,15 +154,16 @@ let is_recursor = function
 let records = ref (KNmap.empty : global_reference list KNmap.t)
 let init_records () = records := KNmap.empty
 
-let projs = ref Refset.empty
-let init_projs () = projs := Refset.empty
+let projs = ref (Refmap.empty : int Refmap.t)
+let init_projs () = projs := Refmap.empty
 
-let add_record kn l = 
+let add_record kn n l = 
   records := KNmap.add (long_kn kn) l !records; 
-  projs := List.fold_right (fun r -> Refset.add (long_r r)) l !projs
+  projs := List.fold_right (fun r -> Refmap.add (long_r r) n) l !projs
 
 let find_projections kn = KNmap.find (long_kn kn) !records
-let is_projection r = Refset.mem (long_r r) !projs
+let is_projection r = Refmap.mem (long_r r) !projs
+let projection_arity r = Refmap.find (long_r r) !projs
 
 (*s Tables synchronization. *)
 

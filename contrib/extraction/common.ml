@@ -33,19 +33,6 @@ let add_structure mp msb env =
       | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
   in List.fold_left add_one env msb
 
-(* Add _all_ direct subobjects of a module, not only those exported. 
-   Build on the Modops.add_signature model. *)
-
-let add_structure mp msb env = 
-  let add_one env (l,elem) = 
-    let kn = make_kn mp empty_dirpath l in 
-    match elem with 
-      | SEBconst cb -> Environ.add_constant kn cb env 
-      | SEBmind mib -> Environ.add_mind kn mib env 
-      | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
-      | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
-  in List.fold_left add_one env msb
-
 let add_functor mbid mtb env = 
   Modops.add_module (MPbound mbid) (Modops.module_body_of_type mtb) env 
 
