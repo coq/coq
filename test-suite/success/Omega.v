@@ -1,3 +1,4 @@
+
 Require Omega.
 
 (* Submitted by Xavier Urbain 18 Jan 2002 *)
@@ -54,7 +55,7 @@ Qed.
 End B.
 
 (* From Nicolas Oury (bug #180): handling -> on Set (fixed Oct 2002) *)
-Lemma lem4: (A: Set) (i:Z) `i<= 0` -> (`i<= 0` -> A) -> `i<=0`.
+Lemma lem6: (A: Set) (i:Z) `i<= 0` -> (`i<= 0` -> A) -> `i<=0`.
 Intros.
 Omega.
 Qed.
@@ -67,15 +68,22 @@ Parameter f:(m:nat)(H:~m=O)(g m H).
 Variable n:nat.
 Variable ap_n:~n=O.
 Local delta:=(f n ap_n).
-Lemma lem6 : n=n.
+Lemma lem7 : n=n.
 Omega.
 Qed.
 End C.
 
 (* Problem of dependencies *)
 Require Omega.
-Lemma lem7 : (H:O=O->O=O) H=H -> O=O.
+Lemma lem8 : (H:O=O->O=O) H=H -> O=O.
 Intros; Omega.
 Qed.
 
+(* Bug that what caused by the use of intro_using in Omega *)
+Require Omega.
+Lemma lem9 : (p,q:nat)
+  ~((le p q)/\(lt p q)\/(le q p)/\(lt p q))
+  -> (lt p p)\/(le p p).
+Intros; Omega.
+Qed.
 
