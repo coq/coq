@@ -307,7 +307,8 @@ GEXTEND Gram
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
 	   s = STRING; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
              let (a,s,c) = Metasyntax.translate_distfix a s p in
-             VernacNotation (local,c,Some(s,[SetLevel n;SetAssoc a]),None,sc)
+	     let mv = Some(s,[SetLevel n;SetAssoc a]) in
+             VernacNotation (local,c,mv,mv,sc)
 (*
 	     VernacDistfix (local,a,n,s,p,sc)
 *)
