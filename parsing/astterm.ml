@@ -222,7 +222,9 @@ let rec collapse_env n env = if n=0 then env else
 *)
 
 let check_capture s ty = function
-  | Slam _ when occur_var_ast s ty -> error "Capturing variable"
+  | Slam _ when occur_var_ast s ty ->
+      errorlabstrm "check_capture"
+	[< 'sTR ("The variable "^s^" occurs in its type") >]
   | _ -> ()
 
 let dbize k sigma =
