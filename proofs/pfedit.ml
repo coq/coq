@@ -58,24 +58,6 @@ let get_state () =
 let get_topstate ()    = snd(get_state())
 let get_pftreestate () = fst(get_state())
 
-(*i
-let get_evmap_sign og =
-  let og = match og with
-    | Some n ->
-        let pftree = get_pftreestate () in
-        Some (nth_goal_of_pftreestate n pftree)
-    | None ->
-        try
-          let pftree = get_pftreestate () in
-          Some (nth_goal_of_pftreestate 1 pftree)
-        with e when Logic.catchable_exception e -> 
-	  None 
-  in
-  match og with
-    | Some goal -> (project goal, pf_env goal)
-    | _ -> (Evd.empty, Global.env())
-i*)
-
 let get_goal_context n =
   let pftree = get_pftreestate () in
   let goal = nth_goal_of_pftreestate n pftree in
@@ -220,16 +202,6 @@ let start_proof na str sign concl =
   in
   start(na,ts);
   set_current_proof na
-
-(*
-let start_proof_constr na str concl =
-  let sigma = Evd.empty in
-  let env = Global.env() in
-(* Si c'est un constr, il est supposé typable dans le contexte courant
-  let _ = execute_type env sigma concl in
-*)
-  start_proof_with_type na str env concl
-*)
 
 let solve_nth k tac =
   let pft = get_pftreestate() in
