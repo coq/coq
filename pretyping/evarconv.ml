@@ -173,6 +173,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | MaybeFlexible flex1, MaybeFlexible flex2 ->
 	let f2 () =
           (flex1 = flex2)
+	  & (List.length l1 = List.length l2)
 	  & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 	and f3 () =
 	  (try conv_record env isevars 

@@ -1,19 +1,16 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V7.3 SYSTEM
-            -----------------------------------------------
+            INSTALLATION PROCEDURES FOR THE COQ V7.3.1 SYSTEM
+            -------------------------------------------------
 
 WHAT DO YOU NEED ?
 ==================
 
    Coq is designed to work on computers equipped with the Unix operating 
-   system. In order to compile Coq V7.3 you need:
+   system. In order to compile Coq V7.3.1 you need:
 
-     - Objective Caml version 3.01 or later
+     - Objective Caml version 3.06 or later
        (available at http://caml.inria.fr/)
   
-     - the Camlp4 preprocessor with same version number as ocaml
-       (available at http://caml.inria.fr/camlp4/)
-
    Until now, it has mainly been tested on Sun workstations running Solaris,
    and DEC alpha and Pentium workstations running Linux. By FTP, Coq
    comes as a single compressed tar-file. You have probably already
@@ -32,7 +29,7 @@ QUICK INSTALLATION PROCEDURE.
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
-1- Check that you have the Objective Caml compiler version 3.01 (or later)
+1- Check that you have the Objective Caml compiler version 3.06 (or later)
    installed on your computer and that "ocamlmktop" and "ocamlc" (or
    its native code version "ocamlc.opt") lie in a directory which is present
    in your $PATH environment variable. 
@@ -42,20 +39,14 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    you will also need the "ocamlopt" (or its native code version
    "ocamlopt.opt") command.
 
-2- Check that you have Camlp4 installed on your 
-   computer and that the command "camlp4" lies in a directory which
-   is present in your $PATH environment variable path.
-   (You need Camlp4 in both bytecode and native versions if
-   your platform supports it).
-
-3- The uncompression and un-tarring of the distribution file gave birth 
+2- The uncompression and un-tarring of the distribution file gave birth 
    to a directory named "coq-7.xx". You can rename this directory and put 
    it wherever you want. Just keep in mind that you will need some spare
    space during the compilation (reckon on about 50 Mb of disk space
    for the whole system in native-code compilation). Once installed, the
    binaries take about 14 Mb, and the library about 9 Mb.
 
-4- First you need to configure the system. It is done automatically with
+3- First you need to configure the system. It is done automatically with
    the command:
 
 	./configure <options>

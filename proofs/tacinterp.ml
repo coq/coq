@@ -892,7 +892,9 @@ and vcontext_interp ist = function
   | (VContext (ist', ast, lmr)) as v ->
     (match ist.goalopt with
     | None -> v
-    | Some g -> match_context_interp ist' ast lmr g)
+    | Some g as go -> 
+        let ist = { ist' with goalopt = go; env = pf_env g; evc = project g }
+        in match_context_interp ist ast lmr g)
   | v -> v
 
 (* Interprets the Match expressions *)

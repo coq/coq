@@ -10,9 +10,9 @@
 
 (* The lexer and parser of Coq. *)
 
-val lexer : Token.lexer
+val lexer : Token.t Token.glexer
 
-module Gram : Grammar.S
+module Gram : Grammar.S with type te = Token.t
 
 type typed_entry =
   | Ast of Coqast.t Gram.Entry.e
@@ -21,7 +21,7 @@ type typed_entry =
 val grammar_extend :
   typed_entry -> Gramext.position option ->
     (string option * Gramext.g_assoc option *
-     (Gramext.g_symbol list * Gramext.g_action) list) list
+     (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
     -> unit
 
 val remove_grammars : int -> unit

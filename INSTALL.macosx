@@ -1,31 +1,15 @@
-INSTALLATION PROCEDURE FOR THE COQ V7.3 SYSTEM UNDER MACOS X
-------------------------------------------------------------
+INSTALLATION PROCEDURE FOR THE COQ V7.3.1 SYSTEM UNDER MACOS X
+--------------------------------------------------------------
 
-1) Download compressed archive coq-7.2-Darwin-MacOS-X.tar.gz
+1) Download archive coq-7.3.1-macosx.dmg.
 
-2) Open a Terminal window (e.g. from the dock)
+2) Double-click on its icon; it mounts a disk volume named "Coq V7.3.1".
 
-3) Move to the directory where the archive is
-   (probably in Desktop; then type the command "cd Desktop")
+3) Open volume "Coq 7.3.1" and double-click on coq-7.3.1.pkg to launch the
+   installer (you'll need administrator permissions).
 
-4) Type the command
-
-     sudo tar -C / -xzf coq-7.2-Darwin-MacOS-X.tar.gz
-
-5) Some browsers do too much and create a file coq-7.2-Darwin-MacOS-X.tar
-   (without trailing .gz) and a folder "usr" on the Desktop; these are 
-   useless, move them to the trash (or "rm" them from a Terminal window)
-
-6) Type the command
-
-     rehash
-
-7) To launch Coq, just type
-
-     coqtop
-
-You're done
-
+4) Coq installs in /usr/local/bin and can be used from a Terminal window: the
+   interactive toplevel is named coqtop and the compiler is coqc.
 
 If you have any trouble with this installation, please contact:
 coq-bugs@pauillac.inria.fr.

@@ -1,12 +1,12 @@
 Name: coq
-Version: 7.3
+Version: 7.3.1
 Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA Rocquencourt
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V7.3/coq-7.3.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V7.3.1/coq-7.3.1.tar.gz
 Icon: petit-coq.gif
 
 %description
@@ -19,7 +19,7 @@ Coq is a proof assistant which:
 
 # Ocaml is required but it is better to install it not with rpm but by
 # hand in /usr/local
-# Requires: ocaml >= 3.01
+# Requires: ocaml >= 3.06
 
 
 %prep
