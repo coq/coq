@@ -11,6 +11,9 @@
 Require Arith.
 Require Bool.
 
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
+
 Definition zerob : nat->bool 
       := [n:nat]Cases n of O => true | (S _) => false end.
 

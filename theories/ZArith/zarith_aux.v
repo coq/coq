@@ -12,6 +12,9 @@
 Require Arith.
 Require Export fast_integer.
 
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
+
 Tactic Definition ElimCompare com1 com2:=
   Elim (Dcompare (Zcompare com1 com2)); [
          Idtac 

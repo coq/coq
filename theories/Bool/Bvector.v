@@ -14,6 +14,9 @@ Require Export Bool.
 Require Export Sumbool.
 Require Arith.
 
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
+
 (*  
 On s'inspire de PolyList pour fabriquer les vecteurs de bits.
 La dimension du vecteur est un paramètre trop important pour
