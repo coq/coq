@@ -42,7 +42,7 @@ let _=
       
 let ground_tac solver startseq gl=
   let rec toptac seq gl=
-    if Tacinterp.get_debug()=Tactic_debug.DebugOn 
+    if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
     then Pp.msgnl (Proof_trees.pr_goal (sig_it gl));
     match seq.gl with 
 	Atomic t->
