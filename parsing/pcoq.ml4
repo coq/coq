@@ -138,7 +138,7 @@ let slam_ast (_,fin) id ast =
 let abstract_binder_ast (_,fin as loc) name a b =
   match a with
     | Coqast.Node((deb,_),s,d::l) ->
-	let s' = if s="$BINDER" then name else s in
+	let s' = if s="BINDER" then name else s in
 	Coqast.Node((deb,fin),s', [d; List.fold_right (slam_ast loc) l b])
     | _ -> invalid_arg "Bad usage of $ABSTRACT macro"
 
