@@ -127,7 +127,7 @@ let _ = declare_summary "Extraction Inline"
 
 let extraction_inline b vl =
   let refs = List.map (fun x -> check_constant (Nametab.global x)) vl in 
-  add_anonymous_leaf (inline_extraction (true,refs))
+  add_anonymous_leaf (inline_extraction (b,refs))
 
 (*s Printing part *)
 
