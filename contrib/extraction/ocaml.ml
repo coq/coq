@@ -250,31 +250,26 @@ let rec pp_expr par env args =
 	else 
 	  (pp_expr false env [] t) 
 	in 
-	let record = 
-	  try Some (find_projections (kn_of_r r)) with Not_found -> None
-	in 
 	(try 
-	   match record with 
-	     | None -> raise Not_found 
-	     | Some projs -> 
-		 let (_, ids, c) = pv.(0) in 
-		 let n = List.length ids in 
-		 match c with 
-		   | MLrel i when i <= n -> 
-		       apply (pp_par par' (pp_expr true env [] t ++ str "." ++ 
-					   pp_global (List.nth projs (n-i)))) 
-		   | MLapp (MLrel i, a) when i <= n -> 
-		       if List.exists (ast_occurs_itvl 1 n) a 
-		       then raise Not_found
-		       else
-			 let ids,env' = push_vars (List.rev ids) env in
-			 (pp_apply 
-			    (pp_expr true env [] t ++ str "." ++ 
-			     pp_global (List.nth projs (n-i)))
-			    par ((List.map (pp_expr true env' []) a) @ args))
+	   let projs = find_projections (kn_of_r r) in 
+	   let (_, ids, c) = pv.(0) in 
+	   let n = List.length ids in 
+	   match c with 
+	     | MLrel i when i <= n -> 
+		 apply (pp_par par' (pp_expr true env [] t ++ str "." ++ 
+				     pp_global (List.nth projs (n-i)))) 
+	     | MLapp (MLrel i, a) when i <= n -> 
+		 if List.exists (ast_occurs_itvl 1 n) a 
+		 then raise Not_found
+		 else
+		   let ids,env' = push_vars (List.rev ids) env in
+		   (pp_apply 
+		      (pp_expr true env [] t ++ str "." ++ 
+		       pp_global (List.nth projs (n-i)))
+		      par ((List.map (pp_expr true env' []) a) @ args))
 	     | _ -> raise Not_found
 	 with Not_found -> 
-	   if Array.length pv = 1 && record = None then 
+	   if Array.length pv = 1 then 
 	     let s1,s2 = pp_one_pat env pv.(0) in 
 	     apply 
 	       (hv 0 
