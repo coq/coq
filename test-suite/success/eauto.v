@@ -33,6 +33,17 @@ Intros.
 EAuto with essai.
 Save.
 
+(* Example from Nicolas Magaud on coq-club - Jul 2000 *)
 
+Definition Nat: Set := nat.
+Parameter S':Nat ->Nat.
+Parameter plus':Nat -> Nat ->Nat.
 
-
+Lemma simpl_plus_l_rr1:
+  ((n0:Nat) ((m, p:Nat) (plus' n0 m)=(plus' n0 p) ->m=p) ->
+   (m, p:Nat) (S' (plus' n0 m))=(S' (plus' n0 p)) ->m=p) ->
+  (n:Nat) ((m, p:Nat) (plus' n m)=(plus' n p) ->m=p) ->
+  (m, p:Nat) (S' (plus' n m))=(S' (plus' n p)) ->m=p.
+Intros.
+EAuto. (* does EApply H *) 
+Qed.
