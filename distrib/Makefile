@@ -222,7 +222,7 @@ $(RPMTOPDIR):
 	@mkdir -p $(RPMTMPPATHDIR)
 	@mkdir -p $(RPMTOPDIR)/RPMS/$(ARCH)
 
-RH/rpmrc: config.distrib
+RH/rpmrc: config.distrib $(RPMTOPDIR)
 	(if [ "$(RPMVERSION)" != "2" ];\
 	then\
 	echo %_topdir $(RPMTOPDIR) > RH/rpmmacros;\
