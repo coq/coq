@@ -322,6 +322,11 @@ let array_last v =
 
 let array_cons e v = Array.append [|e|] v
 
+let array_fold_left_i f v a =
+  let n = Array.length a in
+  let rec fold i v = if i = n then v else fold (succ i) (f i v a.(i)) in
+  fold 0 v
+
 let array_fold_left2 f a v1 v2 =
   let lv1 = Array.length v1 in
   let rec fold a n = 
