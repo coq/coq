@@ -181,6 +181,7 @@ let (in_constant, out_constant) =
 
 let hcons_constant_declaration = function
   | (ConstantEntry ce, stre) ->
+      let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       (ConstantEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
@@ -188,7 +189,7 @@ let hcons_constant_declaration = function
   | cd -> cd
 
 let declare_constant id cd =
-  (* let cd = hcons_constant_declaration cd in *)
+  let cd = hcons_constant_declaration cd in
   let sp = add_leaf id (in_constant cd) in
   if is_implicit_args() then declare_constant_implicits sp;
   sp

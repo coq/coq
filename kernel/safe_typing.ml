@@ -45,7 +45,8 @@ let constrain_type env j cst1 = function
       let cst3 =
 	try conv_leq env j.uj_type tj.utj_val
 	with NotConvertible -> error_actual_type env j tj.utj_val in
-      tj.utj_val, Constraint.union (Constraint.union cst1 cst2) cst3
+      let t = if t = tj.utj_val then t else tj.utj_val in
+      t, Constraint.union (Constraint.union cst1 cst2) cst3
 
 let push_rel_or_named_def push (id,b,topt) env =
   let (j,cst) = safe_infer env b in
@@ -100,12 +101,16 @@ let safe_infer_declaration env dcl =
   | ConstantEntry c ->
       let (j,cst) = safe_infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
-      Some j.uj_val, typ, cst, c.const_entry_opaque
+      let b =
+        if c.const_entry_body = j.uj_val then c.const_entry_body
+        else j.uj_val in
+      Some b, typ, cst, c.const_entry_opaque
   | ParameterEntry t ->
       let (j,cst) = safe_infer env t in
       None, Typeops.assumption_of_judgment env j, cst, false
   | GlobalRecipe r ->
-      Cooking.cook_constant env r
+      let (bd,t,cst,b) = Cooking.cook_constant env r in
+      option_app (fst (hcons_constr (hcons_names()))) bd,t,cst,b
 
 let add_global_declaration sp env (body,typ,cst,op) =
   let env' = add_constraints cst env in

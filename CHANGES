@@ -4,6 +4,10 @@ Bug fixes
   - Omega bug related to Set fixed (#180)
   - Type-checking inefficiency of nested destructuring let-in fixed (#216)
 
+Misc
+
+  - Implementation of a memory sharing strategy
+
 Changes from V7.3 to V7.3.1
 ===========================
 
