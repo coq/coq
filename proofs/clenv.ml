@@ -874,6 +874,8 @@ let clenv_add_sign (id,sign) clenv =
     hook = w_add_sign (id,sign) clenv.hook}
 
 let clenv_type_of ce c =
+  Typing.type_of (w_env ce.hook) (w_Underlying ce.hook) c
+  (***
   let metamap =
     List.map 
       (function
@@ -881,8 +883,6 @@ let clenv_type_of ce c =
          | (n,Cltyp typ)    -> (n,typ.rebus))
       (intmap_to_list ce.env)
   in
-  failwith "clenv_type_of: TODO"
-  (***
   (Pretyping.ise_resolve true (w_Underlying ce.hook) metamap
      (gLOB(w_hyps ce.hook)) c).uj_type
   ***)

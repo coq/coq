@@ -12,6 +12,7 @@ open Sign
 open Environ
 open Type_errors
 open Reduction
+open Logic
 open Pretty
 open Printer
 open Ast
@@ -285,24 +286,47 @@ let explain_type_error k ctx = function
   | NeedsInversion (x,t) ->
       explain_needs_inversion k ctx x t
 
-let explain_refiner_bad_type k ctx arg ty conclty =
+let explain_refiner_bad_type arg ty conclty =
   [< 'sTR"refiner was given an argument"; 'bRK(1,1); 
-     gentermpr k ctx arg; 'sPC;
-     'sTR"of type"; 'bRK(1,1); gentermpr k ctx ty; 'sPC;
-     'sTR"instead of"; 'bRK(1,1); gentermpr k ctx conclty >]
+     prterm arg; 'sPC;
+     'sTR"of type"; 'bRK(1,1); prterm ty; 'sPC;
+     'sTR"instead of"; 'bRK(1,1); prterm conclty >]
 
-let explain_refiner_occur_meta k ctx t =
-  [< 'sTR"cannot refine with term"; 'bRK(1,1); gentermpr k ctx t;
+let explain_refiner_occur_meta t =
+  [< 'sTR"cannot refine with term"; 'bRK(1,1); prterm t;
      'sPC; 'sTR"because there are metavariables, and it is";
      'sPC; 'sTR"neither an application nor a Case" >]
 
-let explain_refiner_cannot_applt k ctx t harg =
+let explain_refiner_cannot_applt t harg =
   [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
-     gentermpr k ctx t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
-     gentermpr k ctx harg >]
+     prterm t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
+     prterm harg >]
 
-let explain_refiner_error e =
-  [< 'sTR "TODO: EXPLAIN REFINER ERROR" >]
+let explain_refiner_cannot_unify m n =
+  let pm = prterm m in 
+  let pn = prterm n in
+  [< 'sTR"Impossible to unify"; 'bRK(1,1) ; pm; 'sPC ;
+     'sTR"with"; 'bRK(1,1) ; pn >]
+
+let explain_refiner_cannot_generalize ty =
+  [< 'sTR "cannot find a generalisation of the goal with type : "; 
+     prterm ty >]
+
+let explain_refiner_not_well_typed c =
+  [< 'sTR"The term " ; prterm c ; 'sTR" is not well-typed" >]
+
+let explain_refiner_bad_tactic_args s l =
+  [< 'sTR "Internal tactic "; 'sTR s; 'sTR " cannot be applied to ";
+     Tacmach.pr_tactic (s,l) >]
+
+let explain_refiner_error = function
+  | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
+  | OccurMeta t -> explain_refiner_occur_meta t
+  | CannotApply (t,harg) -> explain_refiner_cannot_applt t harg
+  | CannotUnify (m,n) -> explain_refiner_cannot_unify m n
+  | CannotGeneralize (_,ty) -> explain_refiner_cannot_generalize ty
+  | NotWellTyped c -> explain_refiner_not_well_typed c
+  | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
 
 let error_non_strictly_positive k lna c v  =
   let env = assumptions_for_print lna in

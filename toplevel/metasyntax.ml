@@ -72,7 +72,7 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 let (inGrammar, outGrammar) =
   declare_object
     ("GRAMMAR",
-     { load_function = (fun _ -> ());
+     { load_function = (fun (_, a) -> Egrammar.extend_grammar a);
        open_function = (fun _ -> ());
        cache_function = (fun (_, a) -> Egrammar.extend_grammar a);
        specification_function = (fun x -> x)})

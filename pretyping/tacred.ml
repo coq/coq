@@ -270,7 +270,6 @@ type red_expr =
   | Lazy of Closure.flags
   | Unfold of (int list * section_path) list
   | Fold of constr list
-  | Change of constr
   | Pattern of (int list * constr * constr) list
 
 let reduction_of_redexp = function
@@ -281,7 +280,6 @@ let reduction_of_redexp = function
   | Lazy f -> clos_norm_flags f
   | Unfold ubinds -> unfoldn ubinds
   | Fold cl -> fold_commands cl
-  | Change t -> (fun _ _ _ -> t)
   | Pattern lp -> pattern_occs lp
 
 (* Used in several tactics. *)

@@ -129,7 +129,6 @@ GEXTEND Gram
       | IDENT "Unfold"; ul = ne_unfold_occ_list ->
           <:ast< (Unfold ($LIST ul)) >>
       | IDENT "Fold"; cl = comarg_list -> <:ast< (Fold ($LIST cl)) >>
-      | IDENT "Change"; c = comarg -> <:ast< (Change $c) >>
       | IDENT "Pattern"; pl = ne_pattern_list ->
           <:ast< (Pattern ($LIST $pl)) >> ] ]
   ;
@@ -306,7 +305,10 @@ GEXTEND Gram
       | IDENT "Idtac" -> <:ast< (Idtac) >>
       | IDENT "Fail" -> <:ast< (Fail) >>
       | "("; tcl = tactic_com_list; ")" -> tcl
-      | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >> ]
+      | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >>
+      (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
+      | IDENT "Change"; c = comarg; cl = clausearg ->
+	  <:ast< (Change $c $cl) >> ]
 
     | [ id = identarg; l = comarg_list ->
           match (isMeta (nvar_of_ast id), l) with

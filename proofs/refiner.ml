@@ -11,6 +11,7 @@ open Evd
 open Environ
 open Reduction
 open Instantiate
+open Type_errors
 open Proof_trees
 open Logic
 
@@ -317,6 +318,10 @@ let tclIDTAC gls =
 	   [< 'sTR "tclIDTAC validation is applicable only to"; 'sPC;
 	      'sTR "a one-proof list" >])
 
+let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>]
+let (tclFAIL : tactic) = 
+  fun _ -> errorlabstrm "Refiner.tclFAIL" [< 'sTR"Failtac always fails.">]
+
 (* solve_subgoal n tac pf_sigma applies the tactic tac at the nth subgoal of
    pf_sigma *)
 
@@ -483,12 +488,22 @@ let tclNOTSAMEGOAL (tac:tactic) (ptree : goal sigma) =
       [< 'sTR"Tactic generated a subgoal identical to the original goal.">];
   rslt
 
-(* ORELSE f1 f2 tries to apply f1 and if it fails, applies f2 *)
+(* ORELSE0 f1 f2 tries to apply f1 and if it fails, applies f2 *)
+let tclORELSE0 f1 f2 g =
+  try 
+    f1 g
+  with UserError _ | TypeError _ | RefinerError _
+     | Stdpp.Exc_located(_,(UserError _ | TypeError _ | RefinerError _)) -> 
+    f2 g
+
+(* ORELSE f1 f2 tries to apply f1 and if it fails or does not progress, 
+   then applies f2 *)
 
 let tclORELSE (f1:tactic) (f2:tactic) (g:goal sigma) =
   try 
     (tclPROGRESS f1) g
-  with UserError _ | Stdpp.Exc_located(_,UserError _) -> 
+  with UserError _ | TypeError _ | RefinerError _
+     | Stdpp.Exc_located(_,(UserError _ | TypeError _ | RefinerError _)) ->
     f2 g 
 
 (* TRY f tries to apply f, and if it fails, leave the goal unchanged *)
@@ -510,36 +525,18 @@ let rec tclREPEAT = fun t g ->
 
 (*Try the first tactic that does not fail in a list of tactics*)
 
-let rec tclFIRST = fun tacl g ->
-  match tacl with
-    | [] -> errorlabstrm "Refiner.tclFIRST" [< 'sTR"No applicable tactic.">]
-    |  t::rest -> (try t g with UserError _ -> tclFIRST rest g)
+let rec tclFIRST = function
+  | [] -> tclFAIL_s "No applicable tactic."
+  |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
 (*Try the first thats solves the current goal*)
 
-let tclSOLVE=fun tacl gls ->
-  let (sigr,gl)=unpackage gls in
-  let rec solve=function
-    | [] -> errorlabstrm "Refiner.tclSOLVE" [< 'sTR"Cannot solve the goal.">]
-    | e::tail ->
-        (try
-           let (ngl,p)=apply_sig_tac sigr e gl in
-           if ngl = [] then
-             (repackage sigr ngl,p)
-           else
-             solve tail
-         with UserError _ -> 
-	   solve tail)
-  in
-  solve tacl
+let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
   
 let tclTRY t = (tclORELSE t tclIDTAC)
 		 
 let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 			   
-let (tclFAIL:tactic) = 
-  fun _ -> errorlabstrm "Refiner.tclFAIL" [< 'sTR"Failtac always fails.">]
-
 (* Iteration tactical *)
 
 let tclDO n t = 

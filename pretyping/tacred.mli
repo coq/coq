@@ -31,7 +31,6 @@ type red_expr =
   | Lazy of Closure.flags
   | Unfold of (int list * section_path) list
   | Fold of constr list
-  | Change of constr
   | Pattern of (int list * constr * constr) list
 
 val reduction_of_redexp : red_expr -> 'a reduction_function

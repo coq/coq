@@ -52,6 +52,8 @@ let rec explain_exn_default = function
 
   | InductiveError e -> hOV 0 (Himsg.explain_inductive_error e)
 
+  | Logic.RefinerError e -> hOV 0 (Himsg.explain_refiner_error e)
+
   | Stdpp.Exc_located (loc,exc) ->
       hOV 0 [< if loc = Ast.dummy_loc then [<>]
                else [< 'sTR"At location "; print_loc loc; 'sTR":"; 'fNL >];

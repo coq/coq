@@ -180,7 +180,7 @@ states: states/barestate.coq
 SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) coqtop.byte
-	./coqtop.byte -q -batch -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+	./coqtop.byte -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
 ###########################################################################
 # theories
@@ -382,7 +382,7 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 .v.vo:
-	$(COQC) $(COQINCLUDES) $<
+	$(COQC) $(COQINCLUDES) -q $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
