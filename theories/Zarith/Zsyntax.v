@@ -49,7 +49,7 @@ with expr1 :=
 
 with expr0 :=
   expr_id [ ident($c) ] -> [$c]
-| expr_com [ "[" command:command($c) "]" ] -> [$c]
+| expr_com [ "[" constr:constr($c) "]" ] -> [$c]
 | expr_appl [ "(" application($a) ")" ] -> [$a]
 | expr_num [ number($s) ] -> [$s ]
 | expr_negnum [ "-" negnumber($n) ] -> [ $n ]
@@ -61,10 +61,10 @@ with application :=
 | appl0 [ expr($a) ] -> [$a]
 .
 
-Grammar command command0 :=
+Grammar constr constr0 :=
   z_in_com [ "`" znatural:formula($c) "`" ] -> [$c].
 
-Grammar command atomic_pattern :=
+Grammar constr pattern :=
   z_in_pattern [ "`" znatural:number($c) "`" ] -> [$c].   
 
 (* The symbols "`" "`" must be printed just once at the top of the expession,

@@ -14,16 +14,17 @@ Axiom My_special_variable : nat -> nat.
 
 Grammar nat number :=.
 
-Grammar command command10 :=
+Grammar constr constr10 :=
   natural_nat [ nat:number($c) ] -> [$c].
 
-Grammar command atomic_pattern :=
+Grammar constr pattern :=
   natural_pat [ nat:number($c) ] -> [$c].
 
 Syntax constr
   level  0:
- myspecialvariable [<<My_special_variable>>] -> ["S"];
+    myspecialvariable [ My_special_variable ] -> ["S"];
+
   level 10:
-  S [<<(S $p)>>] -> [$p:"nat_printer"]
-| O [<<O>>] -> [ "0" ]
+  S [ (S $p) ] -> [$p:"nat_printer"]
+| O [ O ] -> [ "0" ]
 .
