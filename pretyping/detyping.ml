@@ -254,12 +254,14 @@ let computable p k =
   in 
   striprec (k,p)
 
+(*
 let ids_of_var cl =
   List.map
     (function 
        | RRef (_,RVar id) -> id
        | _-> anomaly "ids_of_var")
     (Array.to_list cl)
+*)
 
 let lookup_name_as_renamed env t s =
   let rec lookup avoid env n = function
@@ -313,17 +315,17 @@ let rec detype avoid env t =
     | IsAppL (f,args) ->
 	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
     | IsConst (sp,cl) ->
-	RRef(dummy_loc,RConst(sp,ids_of_var (Array.map (detype avoid env) cl)))
+	RRef(dummy_loc,RConst(sp,Array.map (detype avoid env) cl))
     | IsEvar (ev,cl) ->
-	RRef(dummy_loc,REVar(ev,ids_of_var (Array.map (detype avoid env) cl)))
+	RRef(dummy_loc,REVar(ev,Array.map (detype avoid env) cl))
     | IsAbst (sp,cl) -> 
 	anomaly "bdize: Abst should no longer occur in constr"
     | IsMutInd (ind_sp,cl) ->
-	let ids = ids_of_var (Array.map (detype avoid env) cl) in
-	RRef (dummy_loc,RInd (ind_sp,ids))
+	let ctxt = Array.map (detype avoid env) cl in
+	RRef (dummy_loc,RInd (ind_sp,ctxt))
     | IsMutConstruct (cstr_sp,cl) ->
-	let ids = ids_of_var (Array.map (detype avoid env) cl) in
-	RRef (dummy_loc,RConstruct (cstr_sp,ids))
+	let ctxt = Array.map (detype avoid env) cl in
+	RRef (dummy_loc,RConstruct (cstr_sp,ctxt))
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in

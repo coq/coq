@@ -143,8 +143,13 @@ let transform_rec loc env sigma cl (ct,pt) =
     mkMutCaseA ci p c lf
 
 (***********************************************************************)
+
 let ctxt_of_ids ids =
-  Array.of_list (List.map (function id -> VAR id) ids)
+  Array.map
+    (function
+       | RRef (_,RVar id) -> VAR id
+       | _ -> error "pretyping: arbitrary subst of ref not implemented")
+    ids
 
 let mt_evd = Evd.empty
 
@@ -230,9 +235,10 @@ let pretype_ref loc isevars env = function
     let metaty =
       try List.assoc n !trad_metamap
       with Not_found ->
+	(* Tester si la référence est castée *)
 	user_err_loc 
 	  (loc,"pretype",
-	   [< 'sTR "Metavariable "; 'iNT n; 'sTR "remains non instanciated" >])
+	   [< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
 	  in
     (match kind_of_term metaty with
       IsCast (typ,kind) -> {uj_val=DOP0 (Meta n); uj_type=typ; uj_kind=kind}
@@ -244,8 +250,8 @@ let pretype_ref loc isevars env = function
 
 | RVar id -> pretype_var loc env id
 
-| RConst (sp,ids) ->
-    let cst = (sp,ctxt_of_ids ids) in
+| RConst (sp,ctxt) ->
+    let cst = (sp,ctxt_of_ids ctxt) in
     make_judge (mkConst cst) (type_of_constant env !isevars cst)
 
 | RAbst sp -> failwith "Pretype: abst doit disparaître"
@@ -269,17 +275,17 @@ let pretype_ref loc isevars env = function
      pretype vtcon isevars env (abst_value cstr)
    else error "Cannot typecheck an unevaluable abstraction"
 *)
-| REVar (sp,ids) -> error " Not able to type terms with dependent subgoals"
+| REVar (sp,ctxt) -> error " Not able to type terms with dependent subgoals"
 (* Not able to type goal existential yet
     let cstr = mkConst (sp,ctxt_of_ids ids) in
     make_judge cstr (type_of_existential env !isevars cstr)
 *)
-| RInd (ind_sp,ids) ->
-    let ind = (ind_sp,ctxt_of_ids ids) in
+| RInd (ind_sp,ctxt) ->
+    let ind = (ind_sp,ctxt_of_ids ctxt) in
     make_judge (mkMutInd ind) (type_of_inductive env !isevars ind)
  
-| RConstruct (cstr_sp,ids) ->
-    let cstr = (cstr_sp,ctxt_of_ids ids) in
+| RConstruct (cstr_sp,ctxt) ->
+    let cstr = (cstr_sp,ctxt_of_ids ctxt) in
     let (typ,kind) = destCast (type_of_constructor env !isevars cstr) in
     {uj_val=mkMutConstruct cstr; uj_type=typ; uj_kind=kind}
 
