@@ -57,6 +57,33 @@ let explode s =
 
 let implode sl = String.concat "" sl
 
+(* substring searching... *)
+
+(* gdzie = where, co = what *)
+(* gdzie=gdzie(string) gl=gdzie(length) gi=gdzie(index) *)
+let rec is_sub gdzie gl gi co cl ci = 
+  (ci>=cl) ||
+  ((String.unsafe_get gdzie gi = String.unsafe_get co ci) && 
+   (is_sub gdzie gl (gi+1) co cl (ci+1)))
+
+let rec raw_str_index i gdzie l c co cl = 
+  let i' = String.index_from gdzie i c in
+    if (i'+cl <= l) && (is_sub gdzie l i' co cl 0) then i' else
+      raw_str_index (i'+1) gdzie l c co cl
+
+let str_index_from gdzie i co = 
+  if co="" then i else
+    raw_str_index i gdzie (String.length gdzie)
+      (String.unsafe_get co 0) co (String.length co)
+
+let string_string_contains ~where ~what =
+  try
+    let _ = str_index_from where 0 what in true
+  with
+      Not_found -> false
+
+(* string parsing *)
+
 let parse_loadpath s =
   let len = String.length s in
   let rec decoupe_dirs n =
