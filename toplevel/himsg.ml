@@ -42,6 +42,7 @@ let pr_db ctx i =
   with Not_found -> str"UNBOUND_REL_"++int i
 
 let explain_unbound_rel ctx n =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   str"Unbound reference: " ++ pe ++
   str"The reference " ++ int n ++ str " is free"
@@ -51,6 +52,7 @@ let explain_unbound_var ctx v =
   str"No such section variable or assumption : " ++ var
 
 let explain_not_type ctx j =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
   pe ++ str "the term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -58,6 +60,7 @@ let explain_not_type ctx j =
   str"which should be Set, Prop or Type."
 
 let explain_bad_assumption ctx j =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
   pe ++ str "cannot declare a variable or hypothesis over the term" ++
@@ -129,6 +132,7 @@ let explain_ill_formed_branch ctx c i actty expty =
   str "which should be" ++ brk(1,1) ++ pe
 
 let explain_generalization ctx (name,var) j =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   let pv = prtype_env ctx var in
   let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
@@ -139,6 +143,7 @@ let explain_generalization ctx (name,var) j =
   spc () ++ str"which should be Set, Prop or Type."
 
 let explain_actual_type ctx j pt =
+  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   let (pc,pct) = prjudge_env ctx j in
   let pt = prterm_env ctx pt in
@@ -148,6 +153,7 @@ let explain_actual_type ctx j pt =
   str "while it is expected to have type" ++ brk(1,1) ++ pt
 
 let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
+  let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr,prt = prjudge_env ctx rator in
@@ -170,6 +176,7 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   str"which should be coercible to" ++ brk(1,1) ++ prterm_env ctx exptyp
 
 let explain_cant_apply_not_functional ctx rator randl =
+  let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr = prterm_env ctx rator.uj_val in
