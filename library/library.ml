@@ -167,7 +167,7 @@ let module_segment = function
 
 let module_full_filename m = (find_module m).module_filename
 
-let vo_magic_number = 0701 (* V7.1 *)
+let vo_magic_number = 0702 (* V7.2 *)
 
 let (raw_extern_module, raw_intern_module) =
   System.raw_extern_intern vo_magic_number ".vo"
