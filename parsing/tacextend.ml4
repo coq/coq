@@ -14,8 +14,8 @@ open Q_coqast
 open Argextend
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
-let loc = (0,0)
-let default_loc = <:expr< (0,0) >>
+let loc = Util.dummy_loc
+let default_loc = <:expr< Util.dummy_loc >>
 
 type grammar_tactic_production_expr =
   | TacTerm of string
@@ -204,7 +204,8 @@ let declare_tactic loc s cl =
         let _=Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ]) in
         List.iter
           (fun s -> Tacinterp.add_primitive_tactic s
-              (Tacexpr.TacAtom((0,0),Tacexpr.TacExtend((0,0),s,[]))))
+              (Tacexpr.TacAtom($default_loc$,
+                 Tacexpr.TacExtend($default_loc$,s,[]))))
           $atomic_tactics$
       with e -> Pp.pp (Cerrors.explain_exn e);
       if Options.v7.val then Egrammar.extend_tactic_grammar $se'$ $gl$

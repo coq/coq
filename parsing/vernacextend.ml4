@@ -15,8 +15,8 @@ open Ast
 open Argextend
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
-let loc = (0,0)
-let default_loc = <:expr< (0,0) >>
+let loc = Util.dummy_loc
+let default_loc = <:expr< Util.dummy_loc >>
 
 type grammar_tactic_production_expr =
   | VernacTerm of string

@@ -14,8 +14,8 @@ open Q_coqast
 open Ast
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
-let loc = (0,0)
-let default_loc = <:expr< (0,0) >>
+let loc = Util.dummy_loc
+let default_loc = <:expr< Util.dummy_loc >>
 
 let rec make_rawwit loc = function
   | BoolArgType -> <:expr< Genarg.rawwit_bool >>
