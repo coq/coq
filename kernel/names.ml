@@ -132,21 +132,19 @@ module Hdir = Hashcons.Make(
     type t = dir_path
     type u = identifier -> identifier
     let hash_sub hident d = List.map hident d
-    let equal d1 d2 = List.for_all2 (==) d1 d2
+    let equal = list_for_all2_eq (==)
     let hash = Hashtbl.hash
   end)
 
 module Hsp = Hashcons.Make(
   struct 
     type t = section_path
-    type u = identifier -> identifier
-    let hash_sub hident sp =
-      { dirpath = List.map hident sp.dirpath;
+    type u = (dir_path -> dir_path) * (identifier -> identifier)
+    let hash_sub (hdir,hident) sp =
+      { dirpath = hdir sp.dirpath;
         basename = hident sp.basename }
     let equal sp1 sp2 =
-      (List.length sp1.dirpath = List.length sp2.dirpath) &&
-      (List.for_all2 (==) sp1.dirpath sp2.dirpath) &&
-      sp1.basename == sp2.basename
+      (sp1.dirpath == sp2.dirpath) && (sp1.basename == sp2.basename)
     let hash = Hashtbl.hash
   end)
 
@@ -155,5 +153,5 @@ let hcons_names () =
   let hident = Hashcons.simple_hcons Hident.f hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
   let hdir = Hashcons.simple_hcons Hdir.f hident in
-  let hspcci = Hashcons.simple_hcons Hsp.f hident in
+  let hspcci = Hashcons.simple_hcons Hsp.f (hdir,hident) in
   (hspcci,hdir,hname,hident,hstring)
