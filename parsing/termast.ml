@@ -195,7 +195,10 @@ let rec ast_of_raw = function
       let astf = ast_of_raw f in
       let astargs = List.map ast_of_raw args in
       (match f with 
+	 | RRef (_,(EvarRef _ as ref)) ->
+	     ast_of_ref ast_of_raw ref (* we drop args *)
 	 | RRef (_,ref) -> ast_of_app (implicits_of_global ref) astf astargs
+
 	 | RVar (_,id) ->
 	     let imp =
 	       try 
