@@ -37,7 +37,6 @@ Rewrite <- Rinv_l_sym; [Rewrite Rmult_sym; Assumption | DiscrR].
 Qed.
 
 (**********)
-(* Un encadrement de sin par ses sommes partielles sur [0;PI] *)
 Theorem sin_bound : (a:R; n:nat) ``0 <= a``->``a <= PI``->``(sin_approx a (plus (mult (S (S O)) n) (S O))) <= (sin a)<= (sin_approx a (mult (S (S O)) (plus n (S O))))``.
 Intros; Case (Req_EM a R0); Intro Hyp_a.
 Rewrite Hyp_a; Rewrite sin_0; Split; Right; Unfold sin_approx; Apply sum_eq_R0 Orelse (Symmetry; Apply sum_eq_R0); Intros; Unfold sin_term; Rewrite pow_add; Simpl; Unfold Rdiv; Rewrite Rmult_Ol; Ring.
@@ -167,8 +166,6 @@ Inversion H; [Assumption | Elim Hyp_a; Symmetry; Assumption].
 Qed.
 
 (**********)
-(* Un encadrement de cos par ses sommes partielles sur [-PI/2;PI/2] *)
-(* La preuve utilise bien sur la parite de cos et des sommes partielles *)
 Lemma cos_bound : (a:R; n:nat) `` -PI/2 <= a``->``a <= PI/2``->``(cos_approx a (plus (mult (S (S O)) n) (S O))) <= (cos a) <= (cos_approx a (mult (S (S O)) (plus n (S O))))``. 
 Cut ((a:R; n:nat) ``0 <= a``->``a <= PI/2``->``(cos_approx a (plus (mult (S (S O)) n) (S O))) <= (cos a) <= (cos_approx a (mult (S (S O)) (plus n (S O))))``) -> ((a:R; n:nat) `` -PI/2 <= a``->``a <= PI/2``->``(cos_approx a (plus (mult (S (S O)) n) (S O))) <= (cos a) <= (cos_approx a (mult (S (S O)) (plus n (S O))))``).
 Intros H a n; Apply H.
