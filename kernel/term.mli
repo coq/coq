@@ -453,16 +453,6 @@ val subst_mps : substitution -> constr -> constr
 
 val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
 
-(* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
-   subterms of [c] starting from [acc] and proceeding from left to
-   right according to the usual representation of the constructions as
-   [fold_constr] but it carries an extra data [n] (typically a lift
-   index) which is processed by [g] (which typically add 1 to [n]) at
-   each binder traversal; it is not recursive *)
-
-val fold_constr_with_binders :
-  ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
-
 (* [map_constr f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
    not specified *)

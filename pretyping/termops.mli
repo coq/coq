@@ -43,6 +43,9 @@ val it_named_context_quantifier :
 val it_mkNamedProd_or_LetIn   : init:types -> named_context -> types
 val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
 
+(**********************************************************************)
+(* Generic iterators on constr                                        *)
+
 val map_constr_with_named_binders :
   (name -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
@@ -53,6 +56,18 @@ val map_constr_with_binders_left_to_right :
 val map_constr_with_full_binders :
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
+
+(* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
+   subterms of [c] starting from [acc] and proceeding from left to
+   right according to the usual representation of the constructions as
+   [fold_constr] but it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive *)
+
+val fold_constr_with_binders :
+  ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
+
+(**********************************************************************)
 
 val strip_head_cast : constr -> constr
 

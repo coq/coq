@@ -286,6 +286,32 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
       then cstr
       else mkCoFix (ln,(lna,tl',bl'))
 
+(* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
+   subterms of [c] starting from [acc] and proceeding from left to
+   right according to the usual representation of the constructions as
+   [fold_constr] but it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive *)
+
+let fold_constr_with_binders g f n acc c = match kind_of_term c with
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+    | Construct _) -> acc
+  | Cast (c,t) -> f n (f n acc c) t
+  | Prod (_,t,c) -> f (g n) (f n acc t) c
+  | Lambda (_,t,c) -> f (g n) (f n acc t) c
+  | LetIn (_,b,t,c) -> f (g n) (f n (f n acc b) t) c
+  | App (c,l) -> Array.fold_left (f n) (f n acc c) l
+  | Evar (_,l) -> Array.fold_left (f n) acc l
+  | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | Fix (_,(lna,tl,bl)) -> 
+      let n' = iterate g (Array.length tl) n in
+      let fd = array_map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n (f n' acc t) b) acc fd
+  | CoFix (_,(lna,tl,bl)) ->
+      let n' = iterate g (Array.length tl) n in
+      let fd = array_map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n (f n' acc t) b) acc fd
+
 (***************************)
 (* occurs check functions  *)                         
 (***************************)
