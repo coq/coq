@@ -410,11 +410,10 @@ Qed.
 (* ||a|-|b||<=|a-b| *)
 Lemma Rabsolu_triang_inv2 : (a,b:R) ``(Rabsolu ((Rabsolu a)-(Rabsolu b)))<=(Rabsolu (a-b))``. 
 Cut (a,b:R) ``(Rabsolu b)<=(Rabsolu a)``->``(Rabsolu ((Rabsolu a)-(Rabsolu b))) <= (Rabsolu (a-b))``. 
-Intros; Case (total_order_T (Rabsolu a) (Rabsolu b)); Intro. 
-Elim s; Intro. 
+Intros; NewDestruct (total_order (Rabsolu a) (Rabsolu b)) as [Hlt|[Heq|Hgt]].
 Rewrite <- (Rabsolu_Ropp ``(Rabsolu a)-(Rabsolu b)``); Rewrite <- (Rabsolu_Ropp ``a-b``); Do 2 Rewrite Ropp_distr2. 
 Apply H; Left; Assumption. 
-Rewrite b0; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply Rabsolu_pos. 
+Rewrite Heq; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply Rabsolu_pos. 
 Apply H; Left; Assumption. 
 Intros; Replace ``(Rabsolu ((Rabsolu a)-(Rabsolu b)))`` with ``(Rabsolu a)-(Rabsolu b)``. 
 Apply Rabsolu_triang_inv. 
