@@ -1,0 +1,121 @@
+
+  Some hints for translation (DRAFT):
+
+I) Implicit Arguments
+   ------------------
+
+1) Strict Implicit Arguments 
+
+  "Set Implicit Arguments" changes its meaning in v8: the default is
+to turn implicit only the arguments that are _strictly_ implicit (or
+rigid), i.e. that remains inferable whatever the other arguments
+are. E.g "x" inferable from "P x" is not strictly inferable since it
+can disappears if "P" is instanciated by a term which erase "x".
+
+  If you really wish to keep the old meaning of "Set Implicit
+Arguments", you have to replace every occurrence of it by
+
+  Set Implicit Arguments.
+  Unset Strict Implicits.
+
+  Warning: Changing the number of implicit arguments can break the notations.
+Then use the V8only modifier of Notations.
+
+2) Implicit Arguments in standard library
+
+  Main definitions of standard library have now implicit
+arguments. These arguments are dropped in the translated files. This
+can exceptionally be a source of incompatibilities which has to be
+solved by hand.
+
+II) Notations
+    ---------
+
+  Grammar (on constr) and Syntax are no longer supported. Replace them by
+Notation before translation.
+
+III) Main examples for new syntax
+     ----------------------------
+
+1) Constructions
+
+  Applicative terms don't any longer require to be surrounded by parentheses as
+e.g in
+
+  "x = f y -> S x = S (f y)"
+
+
+  Product is written
+
+     "forall x y : T, U"
+     "forall x y, U"
+     "forall (x y : T) z (v w : V), U"
+     etc.
+
+  Abstraction is written
+
+     "fun x y : T, U"
+     "fun x y, U"
+     "fun (x y : T) z (v w : V), U"
+     etc.
+
+  Pattern-matching is written
+
+     "match x with c1 x1 x2 => t | c2 y as z => u end"
+     "match v1, v2 with c1 x1 x2, _ => t | c2 y, d z => u end"
+     "match v1 as y in le _ n, v2 as z in I p q return P n y p q z with
+         c1 x1 x2, _ => t | c2 y, d z => u end"
+
+     The last example is the new form of what was written
+
+    "<[n;y:(le ? n);p;q;z:(I p q)](P n y p q z)>Cases v1 v2 of
+         (c1 x1 x2) _ => t | (c2 y) (d z) => u end"
+
+  Pattern-matching of type with one constructors and no dependencies
+of the arguments in the resulting type can be written
+
+    "let (x,y,z) as u return P u := t in v"
+     
+  Local fixpoints are written
+
+    "Fix f (n m:nat) z (x : X) {struct m} : nat := ...
+     with ..."
+
+    and "struct" tells which argument is structurally decreasing.
+
+  Explicitation of implicit arguments is written
+
+     "f @1:=u v @3:=w t"
+     "@f u v w t"
+
+2) Tactics
+
+  The main change is that tactics names are now lowercase. Besides
+this, the following renaming are applied:
+
+  "NewDestruct" -> "destruct"
+  "NewInduction" -> "induction"
+  "Induction" -> "oldinduction"
+  "Destruct" -> "olddestruct"
+
+  For tactics with occurrences, the occurrences now comes after and
+  repeated uses is separated by coma as in
+
+  "Pattern 1 3 c d 4 e" -> "pattern c 3 1, d, e 4"
+  "Unfold 1 3 f 4 g" -> "unfold f 1 3, g 4"
+  "Simpl 1 3 e" -> "simpl e 1 3"
+
+3) Tactic language
+
+  Definition are now introduced with keyword "Ltac" (instead of
+"Tactic"/"Meta" "Definition") and are implicitly recursive
+("Recursive" is no longer used).
+
+  The new rule for simple quotes is:
+
+  Quote any tactic in argument position and any construction in head position.
+
+4) Vernacular language
+
+
+
