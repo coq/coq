@@ -13,7 +13,6 @@ open Pp
 open Term
 open Names
 open Environ
-open Univ
 open Esubst
 
 
