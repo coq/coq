@@ -1223,6 +1223,7 @@ let subst_one x gl =
     in
     map_succeed test hyps
   in
+  let clear_x = let (_,d,_) = Sign.lookup_named x (pf_hyps gl) in d = None in
   let dephyps = List.rev dephyps in
   tclTHENLIST [
     generalize (List.map mkVar dephyps);
@@ -1230,7 +1231,7 @@ let subst_one x gl =
     rewriteLR (mkVar hyp);
     intros_using dephyps;
     clear [hyp];
-    tclTRY (clear [x])
+    if clear_x then tclTRY (clear [x]) else tclIDTAC
   ] gl
 
 let rec subst = function
