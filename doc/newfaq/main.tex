@@ -89,11 +89,11 @@
 
 %%%%%%% Coq pour les nuls %%%%%%%
 
-\title{Coq for the Clueless\\
+\title{Coq Version 8.0 for the Clueless\\
   \large(\protect\ref{lastquestion}
   \ Hints)
 }
-\author{Florent Kirchner \and Julien Narboux}
+\author{Hugo Herbelin \and Florent Kirchner \and Benjamin Monate \and Julien Narboux}
 \maketitle
 
 %%%%%%%
@@ -224,7 +224,7 @@ This FAQ is available online at \url{http://coq.inria.fr/faq.html}.
 \Question{How can I submit suggestions / improvements / additions for this FAQ?}
 
 This FAQ is unfinished (in the sense that there are some obvious
-sections that are missing). Please send contributions to the authors.
+sections that are missing). Please send contributions to \texttt{Florent.Kirchner at lix.polytechnique.fr} and \texttt{Julien.Narboux at inria.fr}.
 
 \Question{Is there any mailing list about \Coq ?} 
 The main \Coq mailing list is \url{coq-club@coq.inria.fr}, which
@@ -622,6 +622,8 @@ Qed.
 
 You need the \gb tactic see \url{todo}.
 
+\subsection{Tactics usage}
+
 
 \Question{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
 
@@ -639,12 +641,8 @@ Ltac assert_later t := cut t;[intro|idtac].
 
 \Question{What is the difference between \Qed and \Defined ?}
 
-These two commands perform type checking, but when \Defined is used the new definition is set as transparent, otherwise it is defined as opaque.
+These two commands perform type checking, but when \Defined is used the new definition is set as transparent, otherwise it is defined as opaque (see \ref{opaque}).
 
-
-\Question{What is the difference between opaque and transparent ?}
-
-Opaque definitions can not be unfolded but transparent ones can.
 
 \Question{How can I know what a tactic does ?}
 
@@ -660,6 +658,18 @@ Perhaps you may need to use \eauto.
 This is the same tactic as \auto, but it does some \eapply instead of \apply.
 
 todo les espaces
+
+
+\Question{How can I speed up \auto ?}
+
+You can use info \auto to replace \auto by the tactics it generates.
+You can split your hint bases into smaller ones.
+
+
+\Question{What is the equivalent of \tauto for classical logic ?}
+
+Currently there are no equivalent tactic for classical logic. You can todo godel
+
 
 \Question{I want to replace some term with another in the goal, how can I do it ?}
 
@@ -764,11 +774,60 @@ You should use the \eapply tactic, this will generate some goals containing meta
 Just use the \instantiate tactic.
 
 
+\Question{What is the use of the \pattern tactic ?}
 
-\Question{What can I do when {\tt Qed.} is slow ?}
+The \pattern tactic transforms the current goal, performing
+beta-expansion on all the applications featuring this tactic's
+argument. For instance, if the current goal includes a subterm {\tt
+phi(t)}, then {\tt pattern t} transforms the subterm into {\tt (fun
+x:A => phi(x)) t}. This can be useful when \apply fails on matching,
+to abstract the appropriate terms.
 
-Sometime you can use the \abstractt tactic, which makes as if you had
-stated some local lemma, this speeds up the typing process.
+\Question{What is the difference between assert, cut and generalize ?}
+
+PS: Notice for people that are interested in proof rendering that Assert
+and Pose (and Cut) are not rendered the same as Generalize (see the
+HELM experimental rendering tool at \url{http://mowgli.cs.unibo.it}, link
+HELM, link COQ Online). Indeed \generalize builds a beta-expanded term
+while \assert, \pose and \cut uses a let-in.
+
+\begin{verbatim}
+  (* Goal is T *)
+  generalize (H1 H2).
+  (* Goal is A->T *)
+  ... a proof of A->T ...
+\end{verbatim}
+
+is rendered into something like
+\begin{verbatim}
+  (h) ... the proof of A->T ...
+      we proved A->T
+  (h0) by (H1 H2) we proved A
+  by (h h0) we proved T
+\end{verbatim}
+while 
+\begin{verbatim}
+  (* Goal is T *)
+  assert q := (H1 H2).
+  (* Goal is A *)
+  ... a proof of A ...
+  (* Goal is A |- T *)
+  ... a proof of T ...
+\end{verbatim}
+is rendered into something like
+\begin{verbatim}
+  (q) ... the proof of A ...
+      we proved A
+  ... the proof of T ...
+  we proved T
+\end{verbatim}
+Otherwise said, \generalize is not rendered in a forward-reasoning way,
+while \assert is.
+
+
+
+\Question{Is there anyway to do pattern matching with dependent types ?}
+
 
 
 \section{Proof management}
@@ -800,6 +859,19 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 You can use the {\tt Admitted} command to state your current proof as an axiom.
 
 
+\Question{What is the difference between a lemma, a fact and a theorem ?}
+
+From \Coq point of view there are no difference. But some tools can
+have a different behaviour when you use a lemma rather than a
+theorem. For instance {\tt coqdoc} will not generate documentation for
+the lemmas within your development.
+
+\Question{How can I organize my proofs ?}
+
+You can organize your proofs using the section mechanism of \Coq. Have
+a look at the manual for further information.
+
+
 \section{Inductive types}
 
 
@@ -820,14 +892,10 @@ Qed.
 
 
 
-\Question{Do you know a coq-error-to-english translator ?}
-
-
-
 
 \section{Syntax and notations}
 
-\Question{I do not want to type ``forall'' because it is too long, how can I do ?}
+\Question{I do not want to type ``forall'' because it is too long, what can I do ?}
 
 You can define your own notation for forall :
 \begin{verbatim}
@@ -854,11 +922,7 @@ because ``$^2$'' is an iso-latin character. If you really want this kind of nota
 \section{Modules}
 
 
-\section{Tactics in ml}
 
-\Question{Can you show me an example of a tactic writen in OCaml ?}
-
-You have some examples of tactics written in Ocaml in the ``contrib'' directory of \Coq sources. 
 
 %%%%%%%
 \section{\Ltac}
@@ -931,137 +995,25 @@ todo
 
 \Question{How can I define static and dynamic code ?}
 
+\section{Tactics writen in Ocaml}
+
+\Question{Can you show me an example of a tactic writen in OCaml ?}
+
+You have some examples of tactics written in Ocaml in the ``contrib'' directory of \Coq sources. 
 
 
-\Question{Is there anyway to do pattern matching with dependent types ?}
 
-\Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
 
-You can help coq using the \pattern tactic.
-
-\Question{What is the use of the \pattern tactic ?}
-
-The \pattern tactic transforms the current goal, performing
-beta-expansion on all the applications featuring this tactic's
-argument. For instance, if the current goal includes a subterm {\tt
-phi(t)}, then {\tt pattern t} transforms the subterm into {\tt (fun
-x:A => phi(x)) t}. This can be useful when \apply fails on matching,
-to abstract the appropriate terms.
-
-\Question{What is the difference between assert, cut and generalize ?}
-
-PS: Notice for people that are interested in proof rendering that Assert
-and Pose (and Cut) are not rendered the same as Generalize (see the
-HELM experimental rendering tool at \url{http://mowgli.cs.unibo.it}, link
-HELM, link COQ Online). Indeed \generalize builds a beta-expanded term
-while \assert, \pose and \cut uses a let-in.
-
-\begin{verbatim}
-  (* Goal is T *)
-  generalize (H1 H2).
-  (* Goal is A->T *)
-  ... a proof of A->T ...
-\end{verbatim}
-
-is rendered into something like
-\begin{verbatim}
-  (h) ... the proof of A->T ...
-      we proved A->T
-  (h0) by (H1 H2) we proved A
-  by (h h0) we proved T
-\end{verbatim}
-while 
-\begin{verbatim}
-  (* Goal is T *)
-  assert q := (H1 H2).
-  (* Goal is A *)
-  ... a proof of A ...
-  (* Goal is A |- T *)
-  ... a proof of T ...
-\end{verbatim}
-is rendered into something like
-\begin{verbatim}
-  (q) ... the proof of A ...
-      we proved A
-  ... the proof of T ...
-  we proved T
-\end{verbatim}
-Otherwise said, \generalize is not rendered in a forward-reasoning way,
-while \assert is.
+\section{Case studies}
 
 
 \Question{How can I define vectors or lists of size n ?}
 
 
-\Question{How can I speed up \auto ?}
-
-You can use info \auto to replace \auto by the tactics it generates.
-You can split your hint bases into smaller ones.
-
-\Question{Can you explain me what an evaluable constant is ?}
-
-\Question{What is the equivalent of \tauto for classical logic ?}
-
-Currently there are no equivalent tactic for classical logic. You can todo godel
 
 
-%%%%%%%
-\section{Glossary}
-
-\Question{What is a goal ?}
-
-The goal is the statement to be proved.
-
-\Question{What is a meta variable ?}
-
-A meta variable in \Coq represents a ``hole'', i.e. a part of a proof
-that is still unknown. 
-
-\Question{What is a constr ?}
-
-\Question{What is Gallina ?}  
-
-Gallina is the specification language of \Coq. Complete documentation
-of this language can be found in the Reference Manual.
-
-\Question{What is a command ?}
-
-\Question{What is the difference between a lemma, a fact and a theorem ?}
-
-From \Coq point of view there are no difference. But some tools can
-have a different behaviour when you use a lemma rather than a
-theorem. For instance {\tt coqdoc} will not generate documentation for
-the lemmas within your development.
-
-\Question{How can I organize my proofs ?}
-
-You can organize your proofs using the section mechanism of \Coq. Have
-a look at the manual for further information.
-
-\Question{What is a dependent type ?}
-
-A dependant type is a type which depends on some term. For instance
-``vector of size n'' is a dependant type representing all the vectors
-of size $n$. Theis type depends on $n$
-
-\Question{What is a proof by reflection ?}
-
-This is a proof generated by some computation which is done using the
-internal reduction of \Coq (not using the tactic language of \Coq
-(\Ltac) nor the implementation language for \Coq).  An example of
-tactic using the reflection mechanism is the \ring tactic. The
-reflection method consist in reflecting a subset of \Coq language (for
-example the arithmetical expressions) into an object of the \Coq
-language itself (in this case an inductive type denoting arithmetical
-expressions).  For more information see~\cite{howe,harrison,boutin}
-and the last chapter of the Coq'Art.
-
-\Question{What is intuitionnistic logic ?}
-
-This is any logic which does not assume that ``A or not A''.
 
 
-\Question{What is proof-irrelevance ?}
 
 
 
@@ -1077,11 +1029,24 @@ You can use {\tt coqdoc}.
 
 \Question{How can I generate some dependency graph from my development ?}
 
-
-
 \Question{How can I cite some \Coq in my latex document ?}
 
 You can use {\tt coq\_tex}.
+
+\Question{How can I cite the \Coq reference manual ?}
+
+You can use this bibtex entry :
+\begin{verbatim}
+@Manual{Coq:manual,
+  title =        {The Coq proof assistant reference manual},
+  author =       {\mbox{The Coq development team}},
+  organization = {LogiCal Project},
+  note =         {Version 8.0},
+  year =         {2004},
+  url =          "http://coq.inria.fr"
+}
+\end{verbatim}
+
 
 \section{\CoqIde}
 
@@ -1188,6 +1153,76 @@ You can extract your programs to Objective Caml and Haskell.
 \Question{How can I extract an incomplete proof ?}
 
 You can provide programs for your axioms.
+
+
+
+%%%%%%%
+\section{Glossary}
+
+\Question{Can you explain me what an evaluable constant is ?}
+
+\Question{What is a goal ?}
+
+The goal is the statement to be proved.
+
+\Question{What is a meta variable ?}
+
+A meta variable in \Coq represents a ``hole'', i.e. a part of a proof
+that is still unknown. 
+
+\Question{What is a constr ?}
+
+\Question{What is Gallina ?}  
+
+Gallina is the specification language of \Coq. Complete documentation
+of this language can be found in the Reference Manual.
+
+\Question{What is a command ?}
+
+
+\Question{What is a dependent type ?}
+
+A dependant type is a type which depends on some term. For instance
+``vector of size n'' is a dependant type representing all the vectors
+of size $n$. Theis type depends on $n$
+
+\Question{What is a proof by reflection ?}
+
+This is a proof generated by some computation which is done using the
+internal reduction of \Coq (not using the tactic language of \Coq
+(\Ltac) nor the implementation language for \Coq).  An example of
+tactic using the reflection mechanism is the \ring tactic. The
+reflection method consist in reflecting a subset of \Coq language (for
+example the arithmetical expressions) into an object of the \Coq
+language itself (in this case an inductive type denoting arithmetical
+expressions).  For more information see~\cite{howe,harrison,boutin}
+and the last chapter of the Coq'Art.
+
+\Question{What is intuitionnistic logic ?}
+
+This is any logic which does not assume that ``A or not A''.
+
+
+\Question{What is proof-irrelevance ?}
+
+
+\Question{What is the difference between opaque and transparent ?}{\label{opaque}}	
+
+Opaque definitions can not be unfolded but transparent ones can.
+
+
+
+\section{Troubleshooting}
+
+\Question{What can I do when {\tt Qed.} is slow ?}
+
+Sometime you can use the \abstractt tactic, which makes as if you had
+stated some local lemma, this speeds up the typing process.
+
+\Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
+
+You can help coq using the \pattern tactic.
+
 
 
 \section{Conclusion and Farewell.}
