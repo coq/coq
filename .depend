@@ -49,6 +49,8 @@ kernel/mod_typing.cmi: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi 
 kernel/names.cmi: lib/pp.cmi lib/predicate.cmi 
 kernel/ordering.cmi: kernel/symbol.cmi kernel/term.cmi 
+kernel/positivity.cmi: kernel/environ.cmi kernel/names.cmi kernel/symbol.cmi \
+    kernel/term.cmi 
 kernel/precedence.cmi: kernel/names.cmi 
 kernel/print.cmi: kernel/declarations.cmi kernel/names.cmi kernel/term.cmi 
 kernel/reduction.cmi: kernel/environ.cmi kernel/sign.cmi kernel/term.cmi \
@@ -819,6 +821,12 @@ kernel/ordering.cmo: cime/orderings/orderings_generalities.cmi \
     kernel/symbol.cmi kernel/term.cmi lib/util.cmi kernel/ordering.cmi 
 kernel/ordering.cmx: cime/orderings/orderings_generalities.cmx \
     kernel/symbol.cmx kernel/term.cmx lib/util.cmx kernel/ordering.cmi 
+kernel/positivity.cmo: kernel/declarations.cmi kernel/environ.cmi \
+    kernel/precedence.cmi kernel/symbol.cmi kernel/term.cmi lib/util.cmi \
+    kernel/positivity.cmi 
+kernel/positivity.cmx: kernel/declarations.cmx kernel/environ.cmx \
+    kernel/precedence.cmx kernel/symbol.cmx kernel/term.cmx lib/util.cmx \
+    kernel/positivity.cmi 
 kernel/precedence.cmo: cime/orderings/finite_ord.cmi kernel/names.cmi \
     cime/orderings/orderings_generalities.cmi lib/util.cmi \
     kernel/precedence.cmi 
