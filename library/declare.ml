@@ -344,7 +344,7 @@ let constr_of_reference sigma env ref =
   let hyps = context_of_global_reference sigma env ref in
   let hyps0 = current_section_context () in
   let env0 = Environ.reset_context env in
-  let args = List.map mkVar (ids_of_named_context hyps) in
+  let args = instance_from_named_context hyps in
   let body = match ref with
     | EvarRef n -> mkEvar (n,Array.of_list args)
     | VarRef sp -> mkVar (basename sp)
@@ -392,7 +392,7 @@ let dirpath_of_global = function
 
 let is_global id =
   try 
-    let osp = Nametab.locate (make_qualid [] id) in
+    let osp = Nametab.locate (make_qualid [] (string_of_id id)) in
     list_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false
@@ -426,8 +426,8 @@ let declare_eliminations sp i =
   if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then
     error ("Declarations of elimination scheme outside the section "^
     "of the inductive definition is not implemented");
-  let ctxt = Array.of_list (List.map mkVar ids) in
-  let mispec = Global.lookup_mind_specif ((sp,i),ctxt) in 
+  let ctxt = instance_from_named_context mib.mind_hyps in
+  let mispec = Global.lookup_mind_specif ((sp,i),Array.of_list ctxt) in 
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     declare_constant (id_of_string na)

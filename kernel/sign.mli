@@ -34,6 +34,7 @@ val it_named_context_quantifier :
 val instantiate_sign :
   named_context -> constr list -> (identifier * constr) list
 val keep_hyps : Idset.t -> named_context -> named_context
+val instance_from_named_context : named_context -> constr list
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)

@@ -36,6 +36,10 @@ let pop_named_decl id = function
   | (id',_,_) :: sign -> assert (id = id'); sign
   | [] -> assert false
 let ids_of_named_context = List.map (fun (id,_,_) -> id)
+let rec instance_from_named_context = function
+  | (id,None,_) :: sign -> mkVar id :: instance_from_named_context sign
+  | _ :: sign -> instance_from_named_context sign
+  | [] -> []
 let map_named_context = map
 let rec mem_named_context id = function
   | (id',_,_) :: _ when id=id' -> true
@@ -98,8 +102,8 @@ let map_rel_context = map
 let instantiate_sign sign args =
   let rec instrec = function
     | ((id,None,_) :: sign, c::args) -> (id,c) :: (instrec (sign,args))
-    | ((id,Some c,_) :: sign, args)     -> (id,c) :: (instrec (sign,args))
-    | ([],[])                       -> []
+    | ((id,Some c,_) :: sign, args)  -> instrec (sign,args)
+    | ([],[])                        -> []
     | ([],_) | (_,[]) ->
     anomaly "Signature and its instance do not match"
   in 
