@@ -760,8 +760,16 @@ let _ =
     { optsync  = true;
       optname  = "coercion printing";
       optkey   = (SecondaryTable ("Printing","Coercions"));
-      optread  = (fun () -> !Termast.print_coercions);
-      optwrite = (fun b ->  Termast.print_coercions := b) }
+      optread  = (fun () -> !Constrextern.print_coercions);
+      optwrite = (fun b ->  Constrextern.print_coercions := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "implicits printing";
+      optkey   = (SecondaryTable ("Printing","Implicits"));
+      optread  = (fun () -> !Constrextern.print_implicits);
+      optwrite = (fun b ->  Constrextern.print_implicits := b) }
 
 let _ =
   declare_bool_option 
