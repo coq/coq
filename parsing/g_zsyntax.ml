@@ -20,7 +20,7 @@ open Libnames
 open Bignat
 
 (**********************************************************************)
-(* Parsing via Grammar *)
+(* V7 parsing via Grammar *)
 
 let get_z_sign loc =
   let mkid id =
@@ -77,7 +77,7 @@ let _ =
       Gramext.action (z_of_string false)]]
 
 (**********************************************************************)
-(* Old ast printing *)
+(* Old v7 ast printing *)
 
 exception Non_closed_number
 
@@ -151,12 +151,13 @@ in ()
 open Libnames
 open Rawterm
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
-let fast_integer_module = make_dir ["Coq";"ZArith";"fast_integer"]
+let positive_module = ["Coq";"NArith";"BinPos"]
 
 (* TODO: temporary hack *)
 let make_path dir id = Libnames.encode_kn dir id
 
-let positive_path = make_path fast_integer_module (id_of_string "positive")
+let positive_path = 
+  make_path (make_dir positive_module) (id_of_string "positive")
 let path_of_xI = ((positive_path,0),1)
 let path_of_xO = ((positive_path,0),2)
 let path_of_xH = ((positive_path,0),3)
@@ -218,7 +219,7 @@ let uninterp_positive p =
 (***********************************************************************)
 
 let _ = Symbols.declare_numeral_interpreter "positive_scope"
-  ["Coq";"ZArith";"fast_integer"]
+  positive_module
   (interp_positive,Some pat_interp_positive)
   ([RRef (dummy_loc, glob_xI); 
     RRef (dummy_loc, glob_xO); 
@@ -227,10 +228,74 @@ let _ = Symbols.declare_numeral_interpreter "positive_scope"
    None)
 
 (**********************************************************************)
+(* Parsing N via scopes                                               *)
+(**********************************************************************)
+
+let binnat_module = ["Coq";"NArith";"BinNat"]
+let n_path = make_path (make_dir binnat_module)
+  (id_of_string (if !Options.v7 then "entier" else "N"))
+let glob_n = IndRef (n_path,0)
+let path_of_N0 = ((n_path,0),1)
+let path_of_Npos = ((n_path,0),2)
+let glob_N0 = ConstructRef path_of_N0
+let glob_Npos = ConstructRef path_of_Npos
+
+let n_of_posint dloc pos_or_neg n = 
+  if is_nonzero n then
+    RApp(dloc, RRef (dloc,glob_Npos), [pos_of_bignat dloc n])
+  else 
+    RRef (dloc, glob_N0)
+
+let n_of_int dloc n =
+  match n with
+  | POS n -> n_of_posint dloc true n 
+  | NEG n -> 
+      user_err_loc (dloc, "",
+        str "No negative number in type N")
+
+let pat_n_of_binnat dloc n name = 
+  if is_nonzero n then
+    PatCstr (dloc, path_of_Npos, [pat_pos_of_bignat dloc n Anonymous], name)
+  else 
+    PatCstr (dloc, path_of_N0, [], name)
+
+let pat_n_of_int dloc n name =
+  match n with
+  | POS n -> pat_n_of_binnat dloc n name
+  | NEG n ->
+      user_err_loc (dloc, "",
+        str "No negative number in type N")
+
+(**********************************************************************)
+(* Printing N via scopes                                              *)
+(**********************************************************************)
+
+let bignat_of_n = function
+  | RApp (_, RRef (_,b),[a]) when b = glob_Npos -> POS (bignat_of_pos a)
+  | RRef (_, a) when a = glob_N0 -> POS (Bignat.zero)
+  | _ -> raise Non_closed_number
+
+let uninterp_n p =
+  try Some (bignat_of_n p)
+  with Non_closed_number -> None
+
+(***********************************************************************)
+(* Declaring interpreters and uninterpreters for N *)
+
+let _ = Symbols.declare_numeral_interpreter "N_scope"
+  binnat_module
+  (n_of_int,Some pat_n_of_int)
+  ([RRef (dummy_loc, glob_N0); 
+    RRef (dummy_loc, glob_Npos)],
+  uninterp_n,
+  None)
+   
+(**********************************************************************)
 (* Parsing Z via scopes                                               *)
 (**********************************************************************)
 
-let z_path = make_path fast_integer_module (id_of_string "Z")
+let fast_integer_module = ["Coq";"ZArith";"fast_integer"]
+let z_path = make_path (make_dir fast_integer_module) (id_of_string "Z")
 let glob_z = IndRef (z_path,0)
 let path_of_ZERO = ((z_path,0),1)
 let path_of_POS = ((z_path,0),2)
@@ -282,7 +347,7 @@ let uninterp_z p =
 (* Declaring interpreters and uninterpreters for Z *)
 
 let _ = Symbols.declare_numeral_interpreter "Z_scope"
-  ["Coq";"ZArith";"fast_integer"]
+  fast_integer_module
   (z_of_int,Some pat_z_of_int)
   ([RRef (dummy_loc, glob_ZERO); 
     RRef (dummy_loc, glob_POS); 
@@ -291,7 +356,7 @@ let _ = Symbols.declare_numeral_interpreter "Z_scope"
   None)
    
 (***********************************************************************)
-(* Old ast Printers *)
+(* Old V7 ast Printers *)
 
 open Esyntax
 
