@@ -42,7 +42,7 @@ let print_impl_args = function
   | [i] -> str"Position [" ++ int i ++ str"] is implicit"
   | l   -> 
       str"Positions [" ++ 
-      prlist_with_sep (fun () -> str " ++") (fun i -> int i) l ++
+      prlist_with_sep (fun () -> str "; ") int l ++
       str"] are implicit"
 
 (* To be improved; the type should be used to provide the types in the
