@@ -44,7 +44,7 @@ Save.
 
 (**********)
 Lemma fp_R0:(frac_part R0)==R0.
-Unfold frac_part; Unfold Int_part; Unfold up; Elim (archimed R0);
+Unfold frac_part; Unfold Int_part;Elim (archimed R0);
  Intros; Unfold Rminus;
  Elim (Rplus_ne (Ropp (IZR `(up R0)-1`))); Intros a b;
  Rewrite b;Clear a b;Rewrite <- Z_R_minus;Cut (up R0)=`1`.
@@ -100,7 +100,7 @@ Save.
 (**********)
 Lemma base_Int_part:(r:R)(Rle (IZR (Int_part r)) r)/\
                     (Rgt (Rminus (IZR (Int_part r)) r) (Ropp R1)). 
-Intro;Unfold Int_part;Elim (archimed r);Intros;Unfold up.
+Intro;Unfold Int_part;Elim (archimed r);Intros.
 Split;Rewrite <- (Z_R_minus (up r) `1`);Simpl.
 Generalize (Rle_minus (Rminus (IZR (up r)) r) R1 H0);Intro;
  Unfold Rminus in H1;
