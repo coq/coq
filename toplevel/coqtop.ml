@@ -91,11 +91,11 @@ let re_exec s =
     let prog = Sys.argv.(0) in
     let newprog = 
       let dir = Filename.dirname prog in
-      let com = "coqtop." ^ s in
+      let com = "coqtop." ^ s ^ Coq_config.exec_extension in
       if dir <> "." then Filename.concat dir com else com 
     in
     Sys.argv.(0) <- newprog;
-    Unix.execvp newprog Sys.argv
+    Unix.handle_unix_error Unix.execvp newprog Sys.argv
   end
 
 (*s Parsing of the command line.
