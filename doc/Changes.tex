@@ -12,192 +12,401 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \shorttitle{Changes from {\Coq} V6.3.1 to {\Coq} V7}
 
-This document describes the main differences between Coq V7 and
-V6.3.1. This new version of Coq is characterized by fixed bugs, and
-improvement of implicit arguments synthesis and speed in tactic
-applications.
+%This document describes the main differences between \Coq~ V6.3.1 and
+%V7. This new version of \Coq~ is characterized by fixed bugs, and
+%improvement of implicit arguments synthesis and speed in tactic
+%applications.
 
-\section{Changes overview}
+TODO: Nom de l'ancien Tauto, expliquer les changements de AutoRewrite
+
+\section*{Overview}
 
 The new major version number is explained by a deep restructuration of
-the implementation code of Coq. From a user point of view, Coq V7 is
-characterized by the following novelties:
+the implementation code of \Coq. For the end-user, \Coq~
+V7 provides the following novelties:
 
 \begin{itemize}
 \item A mini-language to write tactics with high-level
 pattern-matching on goals  (see section \ref{Tactics})
 
-\item A primitive let-in constructions (see section \ref{Metatheory})
-\item Structuration of the name space and access to names by the dot notation (see section \ref{Metatheory})
+\item A primitive let-in constructions (see section \ref{Letin})
+\item Structuration of the name space and access to names by the dot notation (see section \ref{Names})
 \item A command to export theories to XML to be used with rendering
 tools by Bologna University (see section \ref{Tools})
 \item Various improvements, including a search facilities by pattern
 provided by Yves Bertot (see section \ref{Tools})
+\item A ``natural'' syntax for real numbers (see section
+\ref{SyntaxExtensions}) 
+\item A command to export definitions, theorems and proofs to XML to
+be used with Bologna publishing and rendering tools (see section \ref{XML})
 \item As usual, several bugs fixed and a lot of new ones introduced
 \end{itemize}
 
 Incompatibilities are described in section
 \ref{Incompatibilities}. Please notice that extraction and the
-{\texttt Program/Realizer} tactic are unavailable in Coq V7.
-Developpers of tactics in ML are invited to read section
+{\tt Program/Realizer} tactic are unavailable in \Coq~ V7.
+Developers of tactics in ML are invited to read section
 \ref{Developers}.
+
+\section{Language}
+
+\label{Language}
+\subsection{Primitive {\tt let ... in ...} constructions}
+\label{Letin}
+The {\tt let ... in ...} syntax in V6.3.1 was implemented as a
+macro. It is now a first-class constructions.
+
+\begin{coq_example}
+Require ZArith.
+Definition eight := [two:=`1 + 1`][four:=`two + two`]`four + four`. 
+Print eight.
+\end{coq_example}
+
+{\tt Local} definitions and {\tt Remark} inside a section now behaves
+as local definitions outside the section.
+
+\begin{coq_example}
+Section A.
+Local two := `1 + 1`.
+Definition four := `two + two`.
+End A.
+Print four.
+\end{coq_example}
+
+The unfolding of a reference to a definition local to a section
+depends on $\delta$ rule. But a ``{\tt let ... in ...}'' inside a term
+is not concerned by $\delta$ reduction. Commands to finely reduce this
+kind of expression remain to be provided.
+\medskip
+
+Remark: A less symbolic but equivalent syntax is available as {\tt let
+two = `1 + 1` in `two + two`}.
+
+\subsection{Names}
+\label{Names}
+
+\paragraph{Structured absolute names} The naming strategy for constructions
+has been made clearer. A \Coq~ name is now unique and has the form
+
+\begin{quote}
+{\tt Coq.Init.Logic.Equality.eq}
+\end{quote}
+
+-- {\tt eq} is the name of the construction.
+
+-- {\tt Coq} means {\tt eq} is a construction of the standard library of
+\Coq.
+
+-- {\tt Init} means it is defined in directory {\tt Init} of the
+standard library of \Coq.
+
+-- {\tt Logic} means it is defined in file {\tt Logic.v} of the
+directory {\tt Init} in the standard library of \Coq.
+
+-- {\tt Equality} means it is defined in section {\tt Equality}
+of the file {\tt Logic.v} in the directory {\tt Init} of the
+standard library of \Coq.
+
+\smallskip
+
+Of course, there is no limit to the number of directories to traverse to
+find the corresponding file and no limit to the number of sections to
+traverse in the file to find the corresponding definition.
+
+\paragraph{Dot notation} Almost all commands accept the ``.'' notation to
+write absolute names.
+
+\paragraph{Open mechanism} Usually all required modules ({\tt .vo}
+files) and closed sections are ``open'' by default. This means that
+constructions there can be accessed just by their identifier.
+{\tt Import {\module}} makes visible all definitions from {\module}.
+This may be useful to recover a direct access to a definition
+which has been hidden.
+
+\paragraph{Mapping physical directories to logical directories}
+
+Files physically reside on the file system of the operating system. To
+  map a physical directory to a logical name of the libraries known by
+  \Coq, the following commands are available:
+
+\begin{quote}
+{\tt Add LoadPath {\it physical\_dir} as {\it logical\_dir}}\\
+{\tt Add Rec LoadPath {\it physical\_dir} as {\it logical\_dir}}
+\end{quote}
+
+Then, when a ``.vo'' file is required, it is adequately mapped in the
+libraries known by \Coq. However, no consistency check is currently
+done to ensure the required module has actually been compiled with the
+same logical name (example: a module can be compiled with
+logical name Mycontrib.Arith.Plus but required with name
+HisContrib.Zarith.Plus).
+
+Command {\tt Add Rec LoadPath} is also available from {\tt coqtop} and
+{\tt coqc} by using option \verb=-R= (see section \ref{Tools}).
+
+\paragraph{Identifier overflow} The identifiers ended by a number
+greater than $2^{31}$ behave now correctly.
+
+\subsection{Syntax extensions}
+\label{SyntaxExtensions}
+
+\paragraph{``Natural'' syntax for real numbers}
+
+A ``natural'' syntax for real numbers and operations on reals is now
+available by putting expressions inside pairs of backquotes.
+
+\begin{coq_example}
+Require Reals.
+Check ``2*3/(5+2)``.
+\end{coq_example}
+
+Remark: What is written, say \verb:``5``:, is equivalent to
+\verb:``((((1+1)+1)+1)+1)``, that is to `\verb:``4+1``: but there is a small
+bug: when such an expression is not subterm of another, it is written
+as \verb:``4+1``: instead of \verb:``5``:.
+
+\paragraph{Infix} was inactive on pretty-printer. Now it works.
+
+\paragraph{The {\tt command} syntactic class for {\tt Grammar}} has
+been renamed {\tt constr} consistently with the usage for {\tt Syntax}
+extensions. Entries {\tt command1}, {\tt command2}, etc are renamed
+accordingly. The type {\tt List} in {\tt Grammar} rules has been
+renamed {\tt ast list}.
+
+\paragraph{Default parser in {\tt Grammar} and {\tt Syntax}}
+\label{GrammarSyntax}
+
+The default parser for right-hand-side of {\tt Grammar} rules and for
+left-hand-side of {\tt Syntax} rule was the {\tt ast} parser.  Now it
+is the one of same name as the syntactic class extended (i.e. {\tt
+constr}, {\tt tactic} or {\tt vernac}). As a consequence, 
+{\verb:<< ... >>:} should be removed.
+
+On the opposite, in rules expecting the {\tt ast} parser,
+{\verb:<< ... >>:} should be added in the left-hand-side of {\tt Syntax} rule.
+As for {\tt Grammar} rule, a typing constraint, {\tt ast} or {\tt ast
+list} needs to be explicitly given to force the use of the {\tt ast}
+parser. For {\tt Grammar} rule building a new syntactic class,
+different from {\tt constr}, {\tt tactic}, {\tt vernac} or {\tt ast},
+any of the previous keyword can be used as type (and therefore as
+parser).
+
+See examples in appendix \ref{Appendix}.
+
+\paragraph{Syntax overloading}
+
+ Binding of constructions in Grammar rules is now done with absolute
+  paths. This means overloading of syntax for different constructions
+  having same base name is no longer possible.
+
+\paragraph{Timing or abbreviating a sequence of commands}
+
+The syntax {\tt [ {\it phrase$_1$} ... {\it phrase$_n$} ].} is now
+available to group several commands into a single one (useful for
+{\tt Time} or for grammar extensions abbreviating sequence of commands).
 
 \section{Tactics}
 \label{Tactics}
 \def\ltac{{\cal L}_{tac}}
 
-\begin{description}
+\subsection{A tactic language: $\ltac$}
 
-\item[The main novelty is $\ltac$,] a mini-language contributed
-by David Delahaye to write tactics with high-level pattern-matching on
-goals. A separate documentation entitled $\ltac$ is available
-in the archive or at the author page
-http://logical.inria.fr/~delahaye.
+$\ltac$ is a mini-language to write tactics with high-level
+pattern-matching on goals. It has been contributed by David
+Delahaye. A separate documentation entitled $\ltac$ is available in
+the archive or at the author page http://logical.inria.fr/~delahaye.
 
+\subsection{Changes in pre-existing tactics}
+\label{TacticChanges}
 
-\item[Other changes]
+   \paragraph{{\tt Tauto} and {\bf\tt Intuition}} have been rewritten
+   in $\ltac$. This has introduced some changes in the hypotheses names
+   generated by {\tt Intuition}. The previous versions of {\tt
+   Tauto} and {\tt Intuition} remain available under the names
+   ???.
 
-  \begin{itemize}
+  \paragraph{{\tt Simpl}} now simplifies mutually defined fixpoints
+  as expected (i.e. it does not introduce {\tt Fix id
+  \{...\}} expressions).
 
-  \item {\texttt Tauto} and {\texttt Intuition} has been rewritten in
-$\ltac$. This has introduced some changes in the hypotheses names
-generated by {\texttt Intuition}. The previous versions of {\texttt
-Tauto} and {\texttt Intuition} remains available under the names ???.\\
+  \paragraph{Old {\tt Induction} tactic} has been renamed into {\tt
+  RawInduction} and new {\tt Induction} now performs in a more
+  ``natural'' way.
 
-  \item	Redondant or incompatible instantiations in {\texttt
-  Apply ... with ...} now correctly trapped
+  \paragraph{{\tt AutoRewrite}} now applies only on main goal (remaining
+  subgoals are handled by {\tt Hint Rewrite}.
 
-  \end{itemize}
+  \paragraph{{\tt Intro $hyp$} and {\bf \tt Intros $hyp_1$ ... $hyp_n$}}
+  now fail if the hypothesis/variable name provided already exists.
 
-  \item[Program/Realizer] is unavailable in Coq V7.
+  \paragraph{{\tt Prolog}} is now part of the core
+  system. Don't use {\tt Require Prolog}.
 
-\end{description}
+  \paragraph{{\tt Unfold}} now fails when its argument is not an
+  unfoldable constant.
+
+  \paragraph{Tactic {\tt Let}} has been renamed into {\tt LetTac}
+  and it now relies on the primitive {\tt let-in} constructions
+
+  \paragraph{{\tt Elim}} can no longer be used implicitly with a
+  elimination scheme built by hand. Use {\tt Elim {\term} with
+  {\it elimination scheme name}} instead.
+
+  \paragraph{{\tt Apply ... with ...}} when instantiations are
+  redundant or incompatible now behaves smoothly.
+
+  \paragraph{{\tt Decompose}} has now less bugs. Also hypotheses
+  are now numbered in order.
+
+  \paragraph{{\tt Linear}} tactic is discontinued.
+
+  \paragraph{{\tt Program/Realizer}} is not available in \Coq V7.
 
 \section{Toplevel commands}
 
-\begin{description}
-    
-\item[New searching mechanism by pattern] contributed by Yves Bertot
+\subsection{Searching the environment}
 
-\begin{itemize}
+A new searching mechanism by pattern has been contributed by Yves Bertot.
 
-\item {\texttt SearchPattern {\term}.}
 
-This command displays the name and type of all theorems of the current
+\paragraph{{\tt SearchPattern {\term}.}}
+displays the name and type of all theorems of the current
 context whose statement's conclusion matches the expression {\term}
-where holes in the latter are denoted by ``{\texttt ?}''.
+where holes in the latter are denoted by ``{\tt ?}''.
 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 \begin{coq_example}
 Require Arith.
 SearchPattern (plus ? ?)=?.
 \end{coq_example}
 
 Patterns need not be linear: you can express that the same
-expression must occur in two places by using indexed `{\texttt ?}''.
+expression must occur in two places by using indexed ``{\tt ?}''.
 
 \begin{coq_example}
 Require Arith.
-SearchPattern (plus ?1 ?)=?1.
+SearchPattern (plus ? ?1)=(mult ?1 ?).
 \end{coq_example}
 
-\item {\texttt SearchRewrite {\term}.}
-
-This command displays the name and type of all theorems of the current
+\paragraph{{\tt SearchRewrite {\term}.}}
+displays the name and type of all theorems of the current
 context whose statement's conclusion is an equality of which one side matches
-the expression {\term =}. Holes in {\term} are denoted by ``{\texttt ?}''.
+the expression {\term =}. Holes in {\term} are denoted by ``{\tt ?}''.
 
 \begin{coq_example}
 Require Arith.
-SearchRewrite (plus ? ?).
+SearchRewrite (plus ? (plus ? ?)).
 \end{coq_example}
-\end{itemize}
 
 \begin{Variants}
+
 \item {\tt SearchPattern {\term} inside {\module$_1$}...{\module$_n$}}\\
+{\tt SearchRewrite {\term} inside
+{\module$_1$}...{\module$_n$}.}
+
   This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
 
 \item {\tt SearchPattern {\term} outside {\module}.}\\
-  This restricts the search to constructions not defined in modules
-{\module$_1$}...{\module$_n$}.
+{\tt SearchRewrite {\term} outside {\module$_1$}...{\module$_n$}.}
 
-\item {\tt SearchRewrite {\term} inside
-{\module$_1$}...{\module$_n$}.}\\
-  This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
-
-\item {\tt SearchRewrite {\term} outside {\module$_1$}...{\module$_n$}.}\\
   This restricts the search to constructions not defined in modules {\module$_1$}...{\module$_n$}.
 
 \end{Variants}
 
-\item {\texttt Search {\ident}} has been extended to accept qualified
+\paragraph{{\tt Search {\ident}.}} has been extended to accept qualified
 identifiers and the {\tt inside} and {\tt outside} restrictions as
-{\texttt SearchPattern} and {\texttt SearchRewrite}.
+{\tt SearchPattern} and {\tt SearchRewrite}.
 
-\end{description}
+\subsection{XML output}
+\label{XML}
 
-\section{Language}
-\label{Language}
+A printer of \Coq~ theories into XML syntax has been contributed by
+Claudio Sacerdoti Coen. Various printing commands (such as {\tt Print
+XML Module Disk "{\it dir}" {\ident}}) allow to produce XML files from
+``.vo'' files. These XML files can be published on the Web, retrieved
+and rendered by tools developed in the HELM project (see
+http://www.cs.unibo.it/helm).
 
-\subsection{Names}
-
-\begin{description}
-
-\item[Structured absolute names] The naming strategy for constructions
-has been made clearer. A Coq name is now unique and has the form
-
-\begin{quote}
-{\texttt Coq.Init.Logic.Equality.eq}
-\end{quote}
-
-{\texttt eq} is the name of the construction.
-
-{\texttt Coq} means {\texttt eq} is a construction of the standard library of
-Coq.
-
-{\texttt Init} means it is defined in directory {\texttt Init} of the
-standard library of Coq.
-
-{\texttt Logic} means it is defined in file {\texttt Logic.v} of the
-directory {\texttt Init} in the standard library of Coq.
-
-{\texttt Equality} means it is defined in section {\texttt Equality}
-of the file {\texttt Logic.v} in the directory {\texttt Init} of the
-standard library of Coq.
-
-Of course, there is no limit to the number of directory to traverse to
-find the corresponding file and no limit to the number of section to
-traverse in the file to find the corresponding definition.
-
-\item[Dot notation] Almost all commands accept the ``.'' notation to
-write absolute names.
-
-\item[Open mechanism] Usually all required modules ({\texttt .vo}
-files) and closed sections are ``open'' by default. This means that
-constructions there can be accessed just by their identifier.
+\subsection{Other new commands}
 
 
-\item[Bug] with identifiers ended by a number greater than $2^{31}$ fixed.
+  \paragraph{{\tt Implicits {\ident}}} turns the implicit arguments
+  mode on for {\ident} even if the mode is not globally turned on.
 
-\end{description}
+  \paragraph{{\tt Implicits {\ident} [{\num} \ldots {\num}]}}
+	allows to explicitly give what arguments
+	have to be considered as implicit in {\ident}.
+
+
+\subsection{Syntax standardisation}
+
+The commands on the left are now equivalent for (old) commands on
+the right.
+
+\medskip
+
+\begin{tt}
+\begin{tabular}{ll}
+Set Implicit Arguments & Implicit Arguments On \\
+Unset Implicit Arguments ~~~~~ & Implicit Arguments Off \\
+Add LoadPath & AddPath \\
+Add Rec LoadPath & AddRecPath \\
+Remove LoadPath & DelPath \\
+Set Silent & Begin Silent \\
+Unset Silent & End Silent \\
+Print Section Path & Print Path\\
+\end{tabular}
+\end{tt}
+
+\medskip
+
+For compatibility, commands on the right remains available (except for
+{\tt Begin Silent} and {\tt End Silent} which interfere with
+section closing, and for the misunderstandable {\tt Print Path}).
+
+\subsection{Other Changes}
+
+
+\paragraph{Final dot} Commands should now be ended by a final dot ``.'' followed by a blank
+(space, return, line feed or tabulation). This is to distinguish from
+the dot notation for qualified names where the dot must immediately be
+followed by a letter (see section \ref{Names}).
+
+\paragraph{Eval Cbv Delta ... in ...} The {\tt [- {\it
+const}]}, if any, should now immediately follow the {\tt Delta} keyword.
+
 
 \section{Tools}
 \label{Tools}
 
-\begin{description}
+\paragraph{Consistency check for {\tt .vo} files} A check-sum test
+avoids to require inconsistent {\tt .vo} files.
 
-\item[Consistency check for {\texttt .vo} files] A check-sum test
-avoids to require inconsistent {\texttt .vo} files.
+\paragraph{Optimal compiler} If your architecture supports it, the native
+version of {\tt coqtop} and {\tt coqc} is used by default.
 
-\item[Optimal compiler] If your architecture supports it, the native
-version of {\texttt coqtop} and {\texttt coqc} is used by default.
+\paragraph{Option -R} The {\tt -R} option to {\tt coqtop} and {\tt
+coqc} now serves to link physical path to logical paths (see
+\ref{Names}). It expects two arguments, the first being the physical
+path and the second its logical alias. It still recursively scans
+subdirectories.
 
-\item[Miscellaneous]
+\paragraph{Makefile automatic generation} {\tt coq\_makefile} is the
+new name for {\tt do\_Makefile}.
 
-\begin{itemize}
-\item {\texttt do\_Makefile} is now called {\texttt coq\_makefile}.
+\paragraph{Error localisation} Several kind of typing errors are now
+located in the source file.
 
-\end{itemize}
-\end{description}
+\section{Developers}
+\label{Developers}
+The internals of \Coq~ has changed a lot and will continue to change
+significantly in the next months. We recommend tactic developers to
+take contact with us for adapting their code. A document describing
+the interfaces of the ML modules constituting \Coq~ is available
+thanks to J.-C. Filliatre's ocamlweb
+documentation tool (see the ``doc'' directory in \Coq~ source archive).
 
 \section{Incompatibilities}
 \label{Incompatibilities}
@@ -207,77 +416,125 @@ version of {\texttt coqtop} and {\texttt coqc} is used by default.
 
   \begin{itemize}
  
-  \item {\texttt Intuition} now remove true hypotheses.
+  \item Any of the tactic changes mentioned in section \ref{TacticChanges}.
 
-  \item In all cases, the ``.vo'' files are not compatible and should
+  \item The ``.vo'' files are not compatible and all ``.v'' files should
   be recompiled.
 
-  \item[Extraction] is currently unavailable in Coq V7.
+  \item Consecutive tokens should now be separated (e.g. by a space).
 
-  \item[Program/Realizer] tactics are currently unavailable in Coq V7.
+  \item Default parsers in {\tt Grammar} and {\tt Syntax} are
+  different (see section \ref{GrammarSyntax}).
 
-  \item[Linear] tactic is discontinued.
+  \item {\tt Extraction} is currently unavailable in \Coq~ V7.
 
   \end{itemize}
 
-\section{New users contributions}
-
-  \begin{description}
-
-  \item[Binary Decision Diagrams] provided by Kumar Verma (Dyade)
-
-  \item[A distributed reference counter] (part of a
-  garbage collector) provided by Jean Duprat (ENS-Lyon)
-
-\end{description}
+%\section{New users contributions}
 
 \section{Installation procedure}
 
-\subsection{Uninstalling Coq}
+%\subsection{Operating System Issues -- Requirements}
 
-\paragraph{Warning} 
-It is strongly recommended to clean-up the V6.3 Coq library directory
-before you install the new version.
-Use the option to coqtop \texttt{-uninstall} that will remove
-the binaries and the library files of Coq V6.3 on a Unix system.
+\Coq~ is available as a source package at 
 
-\subsection{OS Issues -- Requirements}
+\begin{quote}
+\verb|ftp://ftp.inria.fr/INRIA/coq/V7|\\
+\verb|http://coq.inria.fr|
+\end{quote}
 
-\subsubsection{Unix users}
-You need Objective Caml version 2.01 or later, and the corresponding 
+You need Objective Caml version 3.00 or later, and the corresponding 
 Camlp4 version to compile the system. Both are available by anonymous ftp
-at: \\
-\verb|ftp://ftp.inria.fr/Projects/Cristal|.
-\bigskip
+at:
+
+\begin{quote}
+\verb|ftp://ftp.inria.fr/Projects/Cristal|\\
+\verb|http://caml.inria.fr|
+\end{quote}
 
 \noindent
-Binary distributions are available for the following architectures:
+%Binary distributions are available for the following architectures:
+%
+%\bigskip
+%\begin{tabular}{l|c|r}
+%{\bf OS } & {\bf Processor} & {name of the package}\\
+%\hline
+%Linux & 80386 and higher & coq-6.3.1-Linux-i386.tar.gz \\
+%Solaris & Sparc & coq-6.3.1-solaris-sparc.tar.gz\\
+%Digital & Alpha & coq-6.3.1-OSF1-alpha.tar.gz\\
+%\end{tabular}
+%\bigskip
 
-\bigskip
-\begin{tabular}{l|c|r}
-{\bf OS } & {\bf Processor} & {name of the package}\\
-\hline
-Linux & 80386 and higher & coq-6.3.1-Linux-i386.tar.gz \\
-Solaris & Sparc & coq-6.3.1-solaris-sparc.tar.gz\\
-Digital & Alpha & coq-6.3.1-OSF1-alpha.tar.gz\\
-\end{tabular}
-\bigskip
+A rpm package is available for i386 Linux users. No other binary
+package is available for this beta release.
 
-There is also rpm packages for Linux.
+%\bigskip
+%
+%If your configuration is in the above list, you don't need to install
+%Caml and Camlp4 and to compile the system: 
+%just download the package and install the binaries in the right place.
 
-\bigskip
+%\paragraph{MS Windows users}
+%
+%A binary distribution is available for PC under MS Windows 95/98/NT.
+%The package is named coq-6.3.1-win.zip.
+%
+%For installation information see the 
+%files INSTALL.win and README.win.
 
-If your configuration is in the above list, you don't need to install
-Caml and Camlp4 and to compile the system: 
-just download the package and install the binaries in the right place.
+\section*{Appendix}
+\label{Appendix}
+We detail the differences between \Coq~ V6.3.1 and V7beta for the {\tt
+Syntax} and {\tt Grammar} default parsers.
 
-\subsubsection{MS Windows users}
+\medskip
 
-A binary distribution is available for PC under MS Windows 95/98/NT.
-The package is named coq-6.3.1-win.zip.
+Examples in V6.3.1
 
-For installation information see the 
-files INSTALL.win and README.win.
+\begin{verbatim}
+Grammar command command0 :=
+  pair [ "(" lcommand($lc1) "," lcommand($lc2) ")" ] ->
+	 [<<(pair ? ? $lc1 $lc2)>>].
+
+Syntax constr
+  level 1:
+  pair [<<(pair $_ $_ $t3 $t4)>>] -> [[<hov 0> "(" $t3:E ","[0 1] $t4:E ")" ]].
+
+Grammar znatural formula :=
+  form_expr [ expr($p) ] -> [$p]
+| form_eq [ expr($p) "=" expr($c) ] -> [<<(eq Z $p $c)>>].
+
+Syntax constr
+  level 0:
+    Zeq [<<(eq Z $n1 $n2)>>] -> 
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] "= "(ZEXPR $n2)"`"]].
+
+Grammar tactic simple_tactic :=
+  tauto [ "Tauto" ] -> [(Tauto)].
+\end{verbatim}
+
+New form in V7.0
+
+\begin{verbatim}
+Grammar constr constr0 :=
+  pair [ "(" lconstr($lc1) "," lconstr($lc2) ")" ] -> [ (pair ? ? $lc1 $lc2) ].
+
+Syntax constr
+  level 1:
+    pair [ (pair $_ $_ $t3 $t4) ] -> [[<hov 0> "(" $t3:E ","[0 1] $t4:E ")" ]].
+
+Grammar znatural formula : constr :=
+  form_expr [ expr($p) ] -> [ $p ]
+| form_eq [ expr($p) "=" expr($c) ] -> [ (eq Z $p $c) ].
+
+Syntax constr
+ level 0:
+  Zeq [ (eq Z $n1 $n2) ] -> 
+    [<hov 0> "`" (ZEXPR $n1) [1 0] "= "(ZEXPR $n2)"`"]].
+
+Grammar tactic simple_tactic: ast :=
+  tauto [ "Tauto" ] -> [(Tauto)].
+\end{verbatim}
 
 \end{document}
 
