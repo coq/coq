@@ -67,6 +67,8 @@ Fixpoint pow [r:R;n:nat]:R:=
     |(S n) => (Rmult r (pow r n))
   end.
 
+Infix "^" pow (at level 2, left associativity) : R_scope.
+
 Lemma pow_O: (e : R)  (pow e O) == R1.
 Simpl; Auto with real.
 Qed.
