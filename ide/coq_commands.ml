@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 let commands = [
-  ["Abort";
+  [(* "Abort"; *)
    "Add Abstract Ring";
    "Add Abstract Semi Ring";
    "Add Field";
@@ -30,12 +30,12 @@ let commands = [
   ["Canonical Structure";
    "Cd";
    "Chapter";
-   "Check";
+   (* "Check"; *)
    "Coercion";
    "Coercion Local";
    "CoFixpoint";
    "CoInductive";
-   "Correctness";];
+   (* "Correctness"; *)];
   ["Declare ML Module";
    "Defined";
    "Definition";
@@ -43,10 +43,10 @@ let commands = [
    "Derive Dependent Inversion_clear";
    "Derive Inversion";
    "Derive Inversion_clear";
-   "Drop";];
+   (* "Drop"; *)];
   ["End";
    "End Silent";
-   "Eval";
+   "Eval"; 
    "Explicitation of implicit arguments";
    "Extract Constant";
    "Extract Inductive";
@@ -93,7 +93,7 @@ let commands = [
   ["Notation";];
   ["Opaque";];
   ["Parameter";
-   "Print";
+   (*"Print";
    "Print All";
    "Print Classes";
    "Print Coercion Paths";
@@ -111,11 +111,11 @@ let commands = [
    "Print Proof";
    "Print Section";
    "Print Table Printing If";
-   "Print Table Printing Let";
+   "Print Table Printing Let";*)
    "Proof";
-   "Pwd";];
+   (*"Pwd";*)];
   ["Qed";
-   "Quit";];
+   (* "Quit";*)];
   ["Read Module";
    "Record";
    "Recursive Extraction";
@@ -126,15 +126,15 @@ let commands = [
    "Remove Printing Let";
    "Require";
    "Require Export";
-   "Reset";
+   (* "Reset"; *)
    "Reset Extraction Inline";
-   "Reset Initial";
-   "Restart";
+   (* "Reset Initial"; *)
+   (* "Restart"; *)
    "Restore State";
    "Resume";];
   [  "Save";
      "Scheme";
-     "Search";
+     (*"Search";
      "Search ... inside ...";
      "Search ... outside ...";
      "SearchAbout";
@@ -143,7 +143,7 @@ let commands = [
      "SearchPattern ... outside ...";
      "SearchRewrite";
      "SearchRewrite ... inside ...";
-     "SearchRewrite ... outside ...";
+     "SearchRewrite ... outside ..."; *)
      "Section";
      "Set Extraction AutoInline";
      "Set Extraction Optimize";
@@ -154,7 +154,7 @@ let commands = [
      "Set Printing Synth";
      "Set Printing Wildcard";
      "Set Undo";
-     "Show";
+     (*"Show";
      "Show Conjectures";
      "Show Implicits";
      "Show Intro";
@@ -162,9 +162,9 @@ let commands = [
      "Show Programs";
      "Show Proof";
      "Show Script";
-     "Show Tree";
+     "Show Tree";*)
      "Structure";
-     "Suspend";
+     (* "Suspend"; *)
      "Syntactic Definition";
      "Syntax";];
   ["Tactic Definition";
@@ -175,7 +175,7 @@ let commands = [
    "Theorem";
    "Time";
    "Transparent";];
-  ["Undo";
+  [(* "Undo"; *)
    "Unfocus";
    "Unset Extraction AutoInline";
    "Unset Extraction Optimize";

@@ -266,7 +266,10 @@ let load_pref () =
     set_int "query_window_width" (fun v -> np.query_window_width <- v);
     set_int "query_window_height" (fun v -> np.query_window_height <- v);
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
-    current := np
+    current := np;
+(*
+    Format.printf "in laod_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+*)
   with e -> 
     prerr_endline ("Could not load preferences ("^
 		   (Printexc.to_string e)^").")
@@ -300,6 +303,9 @@ let configure () =
       (fun () -> 
 	 let fd =  w#font_name in
 	 !current.text_font <- (Pango.Font.from_string fd) ; 
+(*
+	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+*)
 	 !change_font !current.text_font)
       true
   in
@@ -473,14 +479,16 @@ let configure () =
 
   let misc = [contextual_menus_on_goal;auto_complete] in
    
+(* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
+   (shame on Benjamin) *)
   let cmds =
-    [Section("Files",
-	     [global_auto_revert;global_auto_revert_delay;
-	     auto_save; auto_save_delay; (* auto_save_name*)
-	     encodings;
-	     ]);
-     Section("Fonts",
+    [Section("Fonts",
 	     [config_font]);
+     Section("Files",
+	     [global_auto_revert;global_auto_revert_delay;
+	      auto_save; auto_save_delay; (* auto_save_name*)
+	      encodings;
+	     ]);     
 (*
      Section("Appearance",
 	     config_appearance);
@@ -496,7 +504,14 @@ let configure () =
      Section("Misc",
 	     misc)]
   in
-  match edit ~width:500 "Customizations" cmds
-  with 
+(*
+  Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+*)
+  let x = edit ~width:500 "Customizations" cmds in
+(*
+  Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+*)
+  match x with 
     | Return_apply | Return_ok -> save_pref ()
     | Return_cancel -> ()
+

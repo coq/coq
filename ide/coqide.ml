@@ -2202,12 +2202,6 @@ let main files =
 	      ~callback
 	      ())
   in
-  add_to_menu_toolbar "_Interrupt"
-    ~tooltip:"Interrupt computations"    
-    ~key:GdkKeysyms._Break 
-    ~callback:break
-    `STOP
-  ;
   add_to_menu_toolbar 
     "_Forward" 
     ~tooltip:"Forward one command" 
@@ -2251,6 +2245,12 @@ let main files =
     ~key:GdkKeysyms._End
     ~callback:(do_or_activate (fun a -> a#process_until_end_or_error))
     `GOTO_BOTTOM;
+  add_to_menu_toolbar "_Interrupt"
+    ~tooltip:"Interrupt computations"    
+    ~key:GdkKeysyms._Break 
+    ~callback:break
+    `STOP
+  ;
 
   (* Tactics Menu *)
   let tactics_menu =  factory#add_submenu "_Try Tactics" in
@@ -2371,41 +2371,43 @@ let main files =
   add_complex_template 
     ("_Inductive __", "Inductive ident : :=\n  | : .\n",
      14, 5, Some GdkKeysyms._I);
+  add_complex_template 
+    ("_Fixpoint __", "Fixpoint ident (_ : _) {struct _} : _ :=\n.\n",
+     29, 5, Some GdkKeysyms._F);
   add_complex_template("_Scheme __",
 		       "Scheme new_scheme := Induction for _ Sort _
 with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
   (* Template for match *)
-  let callback = (fun () -> 
-		    let w = get_current_word () in
-		    try 
-		      let cases = Coq.make_cases w
-		      in
-		      let print c = function
-			| [x] -> fprintf c "  | %s => _@\n" x
-			| x::l -> fprintf c "  | (%s%a) => _@\n" x 
-			    (print_list (fun c s -> fprintf c " %s" s)) l
-			| [] -> assert false
-		      in
-		      let b = Buffer.create 1024 in
-		      let fmt = formatter_of_buffer b in
-		      fprintf fmt "@[match var with@\n%aend@]@."
-			(print_list print) cases;
-		      let s = Buffer.contents b in
-		      prerr_endline s;
-		      let {view = view } = get_current_view () in
-		      ignore (view#buffer#delete_selection ());
-		      let m = view#buffer#create_mark 
-				(view#buffer#get_iter `INSERT)
-		      in
-		      if view#buffer#insert_interactive s then 
-			let i = view#buffer#get_iter (`MARK m) in
-			let _ = i#nocopy#forward_chars 9 in
-			view#buffer#place_cursor i;
-			view#buffer#move_mark ~where:(i#backward_chars 3)
-			  `SEL_BOUND 
-		    with Not_found -> !flash_info "Not an inductive type"
-		 )
+  let callback () = 
+    let w = get_current_word () in
+    try 
+      let cases = Coq.make_cases w
+      in
+      let print c = function
+	| [x] -> fprintf c "  | %s => _@\n" x
+	| x::l -> fprintf c "  | (%s%a) => _@\n" x 
+	      (print_list (fun c s -> fprintf c " %s" s)) l
+	| [] -> assert false
+      in
+      let b = Buffer.create 1024 in
+      let fmt = formatter_of_buffer b in
+      fprintf fmt "@[match var with@\n%aend@]@."
+	(print_list print) cases;
+      let s = Buffer.contents b in
+      prerr_endline s;
+      let {view = view } = get_current_view () in
+      ignore (view#buffer#delete_selection ());
+      let m = view#buffer#create_mark 
+		(view#buffer#get_iter `INSERT)
+      in
+      if view#buffer#insert_interactive s then 
+	let i = view#buffer#get_iter (`MARK m) in
+      let _ = i#nocopy#forward_chars 9 in
+      view#buffer#place_cursor i;
+      view#buffer#move_mark ~where:(i#backward_chars 3)
+	`SEL_BOUND 
+    with Not_found -> !flash_info "Not an inductive type"
   in
   ignore (templates_factory#add_item "match ..."
 	    ~key:GdkKeysyms._C
