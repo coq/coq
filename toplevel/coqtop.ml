@@ -19,11 +19,20 @@ open States
 open Toplevel
 open Coqinit
 
+let get_version_date () =
+  try
+    let ch = open_in "make.result" in
+    let l = input_line ch in
+    let i = String.index l ' ' in
+    let j = String.index_from l (i+1) ' ' in
+    "checked out on "^(String.sub l (i+1) (j-i-1))
+  with _ -> Coq_config.date
+
 let print_header () =
   Printf.printf "Welcome to Coq %s%s (%s)\n"
     Coq_config.version 
     (if !Options.v7 then " (V7 syntax)" else "")
-    Coq_config.date;
+    (get_version_date ());
   flush stdout
 
 let memory_stat = ref false
