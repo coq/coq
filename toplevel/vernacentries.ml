@@ -1732,7 +1732,7 @@ let _ =
        (fun () -> 
 	  if not (refining ()) then
 	    error "Unknown command of the non proof-editing mode";
-	  solve_nth n (Tacinterp.interp tcom);
+	  solve_nth n (Tacinterp.hide_interp tcom);
 	  print_subgoals();
           (* in case a strict subtree was completed, 
              go back to the top of the prooftree *) 

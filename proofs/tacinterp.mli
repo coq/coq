@@ -59,7 +59,10 @@ val val_interp : interp_sign -> Coqast.t -> value
 val interp_tacarg : interp_sign -> Coqast.t -> tactic_arg
 
 (* Initial call for interpretation *)
-val interp               : Coqast.t -> tactic
+val interp : Coqast.t -> tactic
+
+(* Hides interpretation for pretty-print *)
+val hide_interp : Coqast.t -> tactic
 
 (* For bad tactic calls *)
 val bad_tactic_args : string -> 'a

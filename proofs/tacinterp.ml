@@ -1149,6 +1149,13 @@ let interp_tacarg sign ast = unvarg (val_interp sign ast)
 (* Initial call for interpretation *)
 let interp = fun ast -> tac_interp [] [] !debug ast
 
+(* Hides interpretation for pretty-print *)
+let hide_interp =
+  let htac = hide_tactic "Interp"
+    (function [Tacexp t] -> interp t
+     | _ -> anomalylabstrm "hide_interp" [<'sTR "Not a tactic AST">]) in
+  fun ast -> htac [Tacexp ast]
+
 (* For bad tactic calls *)
 let bad_tactic_args s =
   anomalylabstrm s
