@@ -12,6 +12,13 @@ open Proof_type
 open Tacmach
 (*i*)
 
+(*s Several proofs can be opened simultaneously but at most one is
+   focused at some time. The following functions work by side-effect
+   on current set of open proofs. In this module, ``proofs'' means an
+   open proof (something started by vernacular command [Goal], [Lemma]
+   or [Theorem], and ``goal'' means a subgoal of the current focused
+   proof *)
+
 (* [refining ()] tells if there is some proof in progress, even if a not
    focused one *)
 
@@ -22,19 +29,19 @@ val refining : unit -> bool
 
 val check_no_pending_proofs : unit -> unit
 
-(* [abort_goal name] aborts proof of name [name] or failed if no proof
+(* [abort_proof name] aborts proof of name [name] or failed if no proof
 has this name *)
 
-val abort_goal : string -> unit
+val abort_proof : string -> unit
 
-(* [abort_current_goal ()] aborts current focused proof or failed if
+(* [abort_current_proof ()] aborts current focused proof or failed if
     no proof is focused *)
 
-val abort_current_goal : unit -> unit
+val abort_current_proof : unit -> unit
 
-(* [abort_goals ()] aborts all open proofs if any *)
+(* [abort_all_proofs ()] aborts all open proofs if any *)
 
-val abort_goals : unit -> unit
+val abort_all_proofs : unit -> unit
 
 (* [undo n] undoes the effect of the last [n] tactics applied to the
     current proof; it fails if no proof is focused or if the ``undo''
@@ -71,25 +78,29 @@ val get_goal_context : int -> evar_declarations * env
 
 val get_current_goal_context : unit -> evar_declarations * env
 
-(* [set_current_proof None] unfocuses the current focused proof; [set_proof
-(Some name)] focuses on the proof of name [name] or raises a
-[UserError] if no proof has name [name] *)
+(* [resume_proof name] focuses on the proof of name [name] or
+   raises [UserError] if no proof has name [name] *)
 
-val set_current_proof : string option -> unit
+val resume_proof : string -> unit
+
+(* [suspend_proof ()] unfocuses the current focused proof or
+   failed with [UserError] if no proof is currently focused *)
+
+val suspend_proof : unit -> unit
 
 (* [get_current_proof_name ()] return the name of the current focused
     proof or failed if no proof is focused *)
 
 val get_current_proof_name : unit -> string
 
-(* [list_proofs ()] returns the list of all pending proof names *)
+(* [get_all_proof_names ()] returns the list of all pending proof names *)
 
 val get_all_proof_names : unit -> string list
 
-(* [restart ()] restarts the current focused proof from the beginning
+(* [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)
 
-val restart : unit -> unit
+val restart_proof : unit -> unit
 
 (* [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
 
@@ -130,7 +141,7 @@ val by : tactic -> unit
 
 val instantiate_nth_evar_com : int -> Coqast.t -> unit
 
-(* To deal with focus *)
+(* To deal with subgoal focus *)
 
 val make_focus : int -> unit
 val focus : unit -> int

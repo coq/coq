@@ -18,6 +18,11 @@ open Proof_type
 open Lib
 open Astterm
 
+(*********************************************************************)
+(* Managing the proofs state                                         *)
+(* Mainly contributed by C. Murthy                                   *)
+(*********************************************************************)
+
 type proof_topstate = {
   top_hyps : env * env;
   top_goal : goal;
@@ -84,12 +89,21 @@ let set_current_proof s =
   with Invalid_argument "Edit.focus" ->
     errorlabstrm "Pfedit.set_proof"
       [< 'sTR"No such proof" ; (msg_proofs false) >]
+
+let resume_proof = set_current_proof
+
+let suspend_proof () =
+  try 
+    Edit.unfocus proof_edits
+  with Invalid_argument "Edit.unfocus" ->
+    errorlabstrm "Pfedit.suspend_current_proof"
+      [< 'sTR"No active proof" ; (msg_proofs true) >]
       
 let resume_last_proof () =
   match (Edit.last_focused proof_edits) with
     | None ->
         errorlabstrm "resume_last" [< 'sTR"No proof-editing in progress." >]
-    | p -> 
+    | Some p -> 
 	Edit.focus proof_edits p
 	  
 let get_current_proof_name () =
@@ -122,7 +136,7 @@ let start (na,ts) =
   let pfs = mk_pftreestate ts.top_goal in 
   add_proof(na,pfs,ts)
     
-let restart () =
+let restart_proof () =
   match Edit.read proof_edits with
     | None -> 
 	errorlabstrm "Pfedit.restart"
@@ -130,7 +144,7 @@ let restart () =
     | Some(na,_,ts) -> 
 	del_proof na;
         start (na,ts);
-        set_current_proof (Some na)
+        set_current_proof na
 
 let proof_term () =
   extract_pftreestate (get_pftreestate())
@@ -217,11 +231,11 @@ let check_no_pending_proofs () =
       [< 'sTR"Proof editing in progress" ; (msg_proofs false) ;
          'sTR"Use \"Abort All\" first or complete proof(s)." >]
 
-let abort_goal pn = del_proof pn
+let abort_proof = del_proof
 
-let abort_current_goal () = del_proof (get_current_proof_name ())
+let abort_current_proof () = del_proof (get_current_proof_name ())
 
-let abort_goals = init_proofs
+let abort_all_proofs = init_proofs
    
 (*********************************************************************)
 (*              Modifying the current prooftree                      *)
@@ -235,7 +249,7 @@ let start_proof na str env concl =
     top_strength = str }
   in
   start(na,ts);
-  set_current_proof (Some na)
+  set_current_proof na
 
 (*
 let start_proof_constr na str concl =

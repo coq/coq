@@ -15,24 +15,32 @@ let empty () = {
   buf = Hashtbl.create 17 }
 
 let focus e nd =
-  begin match nd with
-    | None -> ()
-    | Some f -> if not (Hashtbl.mem e.buf f) then invalid_arg "Edit.focus"
-  end;
+  if not (Hashtbl.mem e.buf nd) then invalid_arg "Edit.focus";
   begin match e.focus with
-    | None -> if nd = None then warning "There is already no focused proof"
-    | Some foc -> 
-	if e.focus <> nd then
-          e.last_focused_stk <- foc::(list_except foc e.last_focused_stk)
+    | Some foc when foc <> nd ->
+        e.last_focused_stk <- foc::(list_except foc e.last_focused_stk);
+    | _ -> ()
   end;
-  e.focus <- nd
+  e.focus <- Some nd
+
+let unfocus e =
+  match e.focus with
+    | None -> invalid_arg "Edit.unfocus"
+    | Some foc ->
+	begin
+	  e.last_focused_stk <- foc::(list_except foc e.last_focused_stk);
+	  e.focus <- None
+	end
     
 let last_focused e =
   match e.last_focused_stk with
     | [] -> None
     | f::_ -> Some f
 
-let restore_last_focus e = focus e (last_focused e)
+let restore_last_focus e =
+  match e.last_focused_stk with
+    | [] -> ()
+    | f::_ -> focus e f
 			     
 let focusedp e =
   match e.focus with

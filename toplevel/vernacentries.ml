@@ -214,7 +214,7 @@ let _ =
 (* Managing states *)
 
 let abort_refine f x =
-  if Pfedit.refining() then abort_goals ();
+  if Pfedit.refining() then abort_all_proofs ();
   f x
   (* used to be: error "Must save or abort current goal first" *)
 
@@ -353,9 +353,9 @@ let _ =
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
 	      let s = string_of_id id in
-	      abort_goal s; message ("Goal "^s^" aborted"))
+	      abort_proof s; message ("Goal "^s^" aborted"))
        | [] -> (fun () -> 
-		  abort_current_goal ();
+		  abort_current_proof ();
 		  message "Current goal aborted")
        | _  -> bad_vernac_args "ABORT")
 
@@ -364,7 +364,7 @@ let _ =
     (function 
        | [] -> (fun () ->
 		  if refining() then begin
-		    abort_goals ();
+		    abort_all_proofs ();
 		    message "Current goals aborted"
 		  end else
 		    error "No proof-editing in progress")
@@ -374,20 +374,20 @@ let _ =
 let _ =
   add "RESTART"
     (function 
-       | [] -> (fun () -> (restart();show_open_subgoals ()))
+       | [] -> (fun () -> (restart_proof();show_open_subgoals ()))
        | _  -> bad_vernac_args "RESTART")
 
 let _ =
   add "SUSPEND"
     (function 
-       | [] -> (fun () -> set_current_proof None)
+       | [] -> (fun () -> suspend_proof ())
        | _  -> bad_vernac_args "SUSPEND")
 
 let _ =
   add "RESUME"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   (fun () -> set_current_proof (Some(string_of_id id)))
+	   (fun () -> resume_proof (string_of_id id))
        | [] -> (fun () -> resume_last_proof ())
        | _  -> bad_vernac_args "RESUME")
 
@@ -719,7 +719,7 @@ let _ =
                   mSGNL [< 'sTR"Error: checking of theorem " ; print_id s ;
                            'sPC ; 'sTR"failed" ;
                            'sTR"... converting to Axiom" >];
-                  abort_goal (string_of_id s);
+                  abort_proof (string_of_id s);
                   parameter_def_var (string_of_id s) com
            	end else 
 		  errorlabstrm "vernacentries__TheoremProof"

@@ -13,9 +13,11 @@ type ('a,'b,'c) t
 
 val empty : unit -> ('a,'b,'c) t
 
-(* sets the focus to the specified domain element, or if [None],
- * unsets the focus *)
-val focus : ('a,'b,'c) t -> 'a option -> unit
+(* sets the focus to the specified domain element *)
+val focus : ('a,'b,'c) t -> 'a -> unit
+
+(* unsets the focus which must not already be unfocused *)
+val unfocus : ('a,'b,'c) t -> unit
 
 (* gives the last focused element or [None] if none *)
 val last_focused : ('a,'b,'c) t -> 'a option
