@@ -71,6 +71,10 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Section"; s = identarg; "." ->
           <:ast< (PrintSec $s) >>
       | IDENT "Print"; IDENT "States"; "." -> <:ast< (PrintStates) >>
+      (* This should be in "syntax" section but is here for factorization *)
+      | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg; "." ->
+          <:ast< (PrintGrammar $uni $ent) >>
+
       | IDENT "Locate"; IDENT "File"; f = stringarg; "." ->
 	  <:ast< (LocateFile $f) >>
       | IDENT "Locate"; IDENT "Library"; id = identarg; "." ->
@@ -205,8 +209,8 @@ GEXTEND Gram
        p = identarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
      | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;
        p = identarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
-     | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg; "." ->
-         <:ast< (PrintGrammar $uni $ent) >>
+     (* "Print" "Grammar" should be here but is in "command" entry in order 
+        to factorize with other "Print"-based vernac entries *)
   ] ]
   ;
 
