@@ -1267,14 +1267,14 @@ pretyping/cbv.cmx: kernel/closure.cmx kernel/environ.cmx kernel/esubst.cmx \
     pretyping/evd.cmx pretyping/instantiate.cmx kernel/names.cmx lib/pp.cmx \
     kernel/term.cmx kernel/univ.cmx lib/util.cmx pretyping/cbv.cmi 
 pretyping/classops.cmo: library/decl_kinds.cmo library/declare.cmi \
-    kernel/environ.cmi pretyping/evd.cmi library/global.cmi \
+    kernel/environ.cmi pretyping/evd.cmi library/global.cmi lib/gmap.cmi \
     library/goptions.cmi library/lib.cmi library/libnames.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
     library/nametab.cmi lib/options.cmi lib/pp.cmi pretyping/rawterm.cmi \
     pretyping/reductionops.cmi library/summary.cmi pretyping/tacred.cmi \
     kernel/term.cmi pretyping/termops.cmi lib/util.cmi pretyping/classops.cmi 
 pretyping/classops.cmx: library/decl_kinds.cmx library/declare.cmx \
-    kernel/environ.cmx pretyping/evd.cmx library/global.cmx \
+    kernel/environ.cmx pretyping/evd.cmx library/global.cmx lib/gmap.cmx \
     library/goptions.cmx library/lib.cmx library/libnames.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
     library/nametab.cmx lib/options.cmx lib/pp.cmx pretyping/rawterm.cmx \
