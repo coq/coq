@@ -36,7 +36,7 @@ type open_constr = (existential * types) list * constr
    typopt : is not None, this is the expected type for raw (used to define evars)
 *)
 val understand_gen :
-  'a evar_map -> env -> var_map -> meta_map 
+  evar_map -> env -> var_map -> meta_map 
     -> expected_type:(constr option) -> rawconstr -> constr
 
 
@@ -44,20 +44,20 @@ val understand_gen :
    unresolved holes into metas. Returns also the typing context of
    these metas. Work as [understand_gen] for the rest. *)
 val understand_gen_tcc :
-  'a evar_map -> env -> var_map -> meta_map 
+  evar_map -> env -> var_map -> meta_map 
     -> constr option -> rawconstr -> open_constr
 
 (* Standard call to get a constr from a rawconstr, resolving implicit args *)
-val understand : 'a evar_map -> env -> rawconstr -> constr
+val understand : evar_map -> env -> rawconstr -> constr
 
 (* Idem but the rawconstr is intended to be a type *)
-val understand_type : 'a evar_map -> env -> rawconstr -> constr
+val understand_type : evar_map -> env -> rawconstr -> constr
 
 (* Idem but returns the judgment of the understood term *)
-val understand_judgment : 'a evar_map -> env -> rawconstr -> unsafe_judgment
+val understand_judgment : evar_map -> env -> rawconstr -> unsafe_judgment
 
 (* Idem but returns the judgment of the understood type *)
-val understand_type_judgment : 'a evar_map -> env -> rawconstr 
+val understand_type_judgment : evar_map -> env -> rawconstr 
   -> unsafe_type_judgment
 
 (* To embed constr in rawconstr *)
@@ -69,10 +69,10 @@ val constr_out : Dyn.t -> constr
  * Unused outside, but useful for debugging
  *)
 val pretype : 
-  type_constraint -> env -> 'a evar_defs -> var_map -> meta_map ->
+  type_constraint -> env -> evar_defs -> var_map -> meta_map ->
     rawconstr -> unsafe_judgment
 
 val pretype_type : 
-  val_constraint -> env -> 'a evar_defs -> var_map -> meta_map ->
+  val_constraint -> env -> evar_defs -> var_map -> meta_map ->
     rawconstr -> unsafe_type_judgment
 (*i*)

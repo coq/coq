@@ -26,18 +26,18 @@ exception Elimconst
 (* The type of (machine) states (= lambda-bar-calculus' cuts) *) 
 type state = constr * constr stack
 
-type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
-type 'a reduction_function = 'a contextual_reduction_function
+type  contextual_reduction_function = env ->  evar_map -> constr -> constr
+type  reduction_function =  contextual_reduction_function
 type local_reduction_function = constr -> constr
 
-type 'a contextual_stack_reduction_function = 
-    env -> 'a evar_map -> constr -> constr * constr list
-type 'a stack_reduction_function = 'a contextual_stack_reduction_function
+type  contextual_stack_reduction_function = 
+    env ->  evar_map -> constr -> constr * constr list
+type  stack_reduction_function =  contextual_stack_reduction_function
 type local_stack_reduction_function = constr -> constr * constr list
 
-type 'a contextual_state_reduction_function = 
-    env -> 'a evar_map -> state -> state
-type 'a state_reduction_function = 'a contextual_state_reduction_function
+type  contextual_state_reduction_function = 
+    env ->  evar_map -> state -> state
+type  state_reduction_function =  contextual_state_reduction_function
 type local_state_reduction_function = state -> state
 
 (*************************************)
@@ -452,8 +452,8 @@ let fakey = Profile.declare_profile "fhnf_apply";;
 let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
 *)
 
-type 'a conversion_function = 
-    env -> 'a evar_map -> constr -> constr -> constraints
+type  conversion_function = 
+    env ->  evar_map -> constr -> constr -> constraints
 
 (* Conversion utility functions *)
 

@@ -36,8 +36,8 @@ type wc = walking_constraints
 
 val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
 
-val add_prod_rel : 'a evar_map -> constr * env -> constr * env
-val add_prods_rel : 'a evar_map -> constr * env -> constr * env
+val add_prod_rel : evar_map -> constr * env -> constr * env
+val add_prods_rel : evar_map -> constr * env -> constr * env
 
 (*i**
 val add_prod_sign : 

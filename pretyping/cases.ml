@@ -382,9 +382,9 @@ let push_history_pattern n current cont =
   of variables).
 
 *)
-type 'a pattern_matching_problem =
+type pattern_matching_problem =
     { env      : env;
-      isevars  : 'a evar_defs;
+      isevars  : evar_defs;
       pred     : predicate_signature option;
       tomatch  : tomatch_stack;
       history  : pattern_continuation;

@@ -60,7 +60,7 @@ val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 val constructor_at_head : constr -> cl_typ * int
 
 (* raises [Not_found] if not convertible to a class *)
-val class_of : env -> 'c evar_map -> constr -> constr * cl_index
+val class_of : env -> evar_map -> constr -> constr * cl_index
 
 val class_args_of : constr -> constr list
 

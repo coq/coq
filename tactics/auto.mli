@@ -76,7 +76,7 @@ val make_exact_entry :
    [cty] is the type of [hc]. *)
 
 val make_apply_entry :
-  env -> 'a evar_map -> bool * bool -> identifier -> constr * constr
+  env -> evar_map -> bool * bool -> identifier -> constr * constr
       -> constr_label * pri_auto_tactic
 
 (* A constr which is Hint'ed will be:
@@ -87,7 +87,7 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  env -> 'a evar_map -> identifier -> bool * bool -> constr * constr -> 
+  env -> evar_map -> identifier -> bool * bool -> constr * constr -> 
     (constr_label * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].
@@ -96,7 +96,7 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp : 
-  env -> 'a evar_map -> named_declaration ->
+  env -> evar_map -> named_declaration ->
       (constr_label * pri_auto_tactic) list
 
 (* [make_extern name pri pattern tactic_ast] *)

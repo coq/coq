@@ -22,41 +22,41 @@ open Closure
 exception Redelimination
 
 (* Red (raise Redelimination if nothing reducible) *)
-val red_product : 'a reduction_function
+val red_product : reduction_function
 
 (* Hnf *)
-val hnf_constr : 'a reduction_function
+val hnf_constr :  reduction_function
 
 (* Simpl *)
-val nf : 'a reduction_function
+val nf :  reduction_function
 
 (* Unfold *)
 val unfoldn : 
-  (int list * evaluable_global_reference) list -> 'a reduction_function
+  (int list * evaluable_global_reference) list ->  reduction_function
 
 (* Fold *)
-val fold_commands : constr list -> 'a reduction_function
+val fold_commands : constr list ->  reduction_function
 
 (* Pattern *)
-val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
+val pattern_occs : (int list * constr * constr) list ->  reduction_function
 (* Rem: Lazy strategies are defined in Reduction *)
 
 (* Call by value strategy (uses Closures) *)
-val cbv_norm_flags : Closure.flags -> 'a reduction_function
+val cbv_norm_flags : Closure.flags ->  reduction_function
   val cbv_beta : local_reduction_function
   val cbv_betaiota : local_reduction_function
-  val cbv_betadeltaiota : 'a reduction_function
-  val compute : 'a reduction_function  (* = [cbv_betadeltaiota] *)
+  val cbv_betadeltaiota :  reduction_function
+  val compute :  reduction_function  (* = [cbv_betadeltaiota] *)
 
 (* [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
    with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_atomic_ind : env -> 'a evar_map -> types -> inductive * types
+val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
 
 (* [reduce_to_quantified_ind env sigma t] puts [t] in the form
    [t'=(x1:A1)..(xn:An)(I args)] with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_quantified_ind : env -> 'a evar_map -> types -> inductive * types
+val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 
 type red_expr =
   | Red of bool    (* raise Redelimination if true otherwise UserError *)
@@ -68,4 +68,4 @@ type red_expr =
   | Fold of constr list
   | Pattern of (int list * constr * constr) list
 
-val reduction_of_redexp : red_expr -> 'a reduction_function
+val reduction_of_redexp : red_expr ->  reduction_function

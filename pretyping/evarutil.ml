@@ -115,7 +115,7 @@ let new_isevar_sign env sigma typ instance =
     error "new_isevar_sign: two vars have the same name";
   let newev = new_evar() in
   let info = { evar_concl = typ; evar_hyps = sign; 
-	       evar_body = Evar_empty; evar_info = None } in
+	       evar_body = Evar_empty } in
   (Evd.add sigma newev info, mkEvar (newev,Array.of_list instance))
 
 (* We don't try to guess in which sort the type should be defined, since
@@ -204,8 +204,8 @@ let do_restrict_hyps sigma ev args =
  *------------------------------------*)
 
 type evar_constraint = conv_pb * constr * constr
-type 'a evar_defs =
-    { mutable evars : 'a Evd.evar_map;
+type evar_defs =
+    { mutable evars : Evd.evar_map;
       mutable conv_pbs : evar_constraint list }
 
 let create_evar_defs evd = { evars=evd; conv_pbs=[] }
@@ -464,7 +464,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   let nargs = (Array.of_list (List.map mkVar (ids_of_named_context nsign))) in
   let newev = new_evar () in
   let info = { evar_concl = evd.evar_concl; evar_hyps = nsign;
-	       evar_body = Evar_empty; evar_info = None } in
+	       evar_body = Evar_empty } in
   isevars.evars <-
     Evd.define (Evd.add isevars.evars newev info) ev (mkEvar (newev,nargs));
   [ev]

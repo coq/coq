@@ -18,7 +18,6 @@ install_printer Top_printers.prj
 
 install_printer Top_printers.prgoal
 install_printer Top_printers.prsigmagoal
-install_printer Top_printers.prctxt
 install_printer Top_printers.pproof
 install_printer Top_printers.prevd
 install_printer Top_printers.prevc

@@ -23,14 +23,14 @@ open Environ
 
 type metamap = (int * constr) list
 
-val get_type_of : env -> 'a evar_map -> constr -> constr
-val get_sort_of : env -> 'a evar_map -> types -> sorts
-val get_sort_family_of : env -> 'a evar_map -> types -> sorts_family
+val get_type_of : env -> evar_map -> constr -> constr
+val get_sort_of : env -> evar_map -> types -> sorts
+val get_sort_family_of : env -> evar_map -> types -> sorts_family
 
-val get_type_of_with_meta : env -> 'a evar_map -> metamap -> constr -> constr
+val get_type_of_with_meta : env -> evar_map -> metamap -> constr -> constr
 
 (* Makes an assumption from a constr *)
-val get_assumption_of : env -> 'a evar_map -> constr -> types
+val get_assumption_of : env -> evar_map -> constr -> types
 
 (* Makes an unsafe judgment from a constr *)
-val get_judgment_of : env -> 'a evar_map -> constr -> unsafe_judgment
+val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment

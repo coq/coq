@@ -22,49 +22,49 @@ open Reductionops
 (* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
 (* *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
 
-val nf_evar : 'a evar_map -> constr -> constr
-val j_nf_evar : 'a evar_map -> unsafe_judgment -> unsafe_judgment
+val nf_evar :  evar_map -> constr -> constr
+val j_nf_evar :  evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_evar :
-  'a evar_map -> unsafe_judgment list -> unsafe_judgment list
+   evar_map -> unsafe_judgment list -> unsafe_judgment list
 val jv_nf_evar :
-  'a evar_map -> unsafe_judgment array -> unsafe_judgment array
+   evar_map -> unsafe_judgment array -> unsafe_judgment array
 val tj_nf_evar :
-  'a evar_map -> unsafe_type_judgment -> unsafe_type_judgment
+   evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 (* Replacing all evars *)
 exception Uninstantiated_evar of int
-val whd_ise : 'a evar_map -> constr -> constr
-val whd_castappevar : 'a evar_map -> constr -> constr
+val whd_ise :  evar_map -> constr -> constr
+val whd_castappevar :  evar_map -> constr -> constr
 
 (* Creating new existential variables *)
 val new_evar : unit -> evar
 val new_evar_in_sign : env -> constr
 
-val evar_env : 'a evar_info -> env
+val evar_env :  evar_info -> env
 
-type 'a evar_defs
-val evars_of : 'a evar_defs -> 'a evar_map
-val create_evar_defs : 'a evar_map -> 'a evar_defs
-val evars_reset_evd : 'a evar_map -> 'a evar_defs -> unit
+type evar_defs
+val evars_of :  evar_defs ->  evar_map
+val create_evar_defs :  evar_map ->  evar_defs
+val evars_reset_evd :  evar_map ->  evar_defs -> unit
 
 type evar_constraint = conv_pb * constr * constr
-val add_conv_pb : 'a evar_defs -> evar_constraint -> unit
+val add_conv_pb :  evar_defs -> evar_constraint -> unit
 
-val is_defined_evar : 'a evar_defs -> existential -> bool
-val ise_try : 'a evar_defs -> (unit -> bool) list -> bool
-val ise_undefined : 'a evar_defs -> constr -> bool
-val has_undefined_isevars : 'a evar_defs -> constr -> bool
+val is_defined_evar :  evar_defs -> existential -> bool
+val ise_try :  evar_defs -> (unit -> bool) list -> bool
+val ise_undefined :  evar_defs -> constr -> bool
+val has_undefined_isevars :  evar_defs -> constr -> bool
 
-val new_isevar : 'a evar_defs -> env -> constr -> constr
+val new_isevar :  evar_defs -> env -> constr -> constr
 
 val is_eliminator : constr -> bool
-val head_is_embedded_evar : 'a evar_defs -> constr -> bool
+val head_is_embedded_evar :  evar_defs -> constr -> bool
 val solve_simple_eqn :
-  (env -> 'a evar_defs -> conv_pb -> constr -> constr -> bool)
-  -> env -> 'a evar_defs -> conv_pb * existential * constr -> bool
+  (env ->  evar_defs -> conv_pb -> constr -> constr -> bool)
+  -> env ->  evar_defs -> conv_pb * existential * constr -> bool
 
-val define_evar_as_arrow : 'a evar_map -> existential -> 'a evar_map * types
-val define_evar_as_sort : 'a evar_map -> existential -> 'a evar_map * sorts
+val define_evar_as_arrow :  evar_map -> existential ->  evar_map * types
+val define_evar_as_sort :  evar_map -> existential ->  evar_map * sorts
 
 (* Value/Type constraints *)
 
@@ -81,7 +81,7 @@ val empty_valcon : val_constraint
 val mk_valcon : constr -> val_constraint
 
 val split_tycon :
-  Rawterm.loc -> env -> 'a evar_defs -> type_constraint -> 
+  Rawterm.loc -> env ->  evar_defs -> type_constraint -> 
     type_constraint * type_constraint
 
 val valcon_of_tycon : type_constraint -> val_constraint

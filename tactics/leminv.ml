@@ -212,7 +212,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     [< 'sTR"Computed inversion goal was not closed in initial signature" >];
   *)
   let invSign = named_context invEnv in
-  let pfs = mk_pftreestate (mk_goal (mt_ctxt Intset.empty) invSign invGoal) in
+  let pfs = mk_pftreestate (mk_goal invSign invGoal) in
   let pfs = solve_pftreestate (tclTHEN intro (onLastHyp inv_op)) pfs in
   let (pfterm,meta_types) = extract_open_pftreestate pfs in
   let global_named_context = Global.named_context () in

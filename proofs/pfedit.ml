@@ -204,7 +204,7 @@ let delete_all_proofs = init_proofs
 (*********************************************************************)
 
 let start_proof na str sign concl =
-  let top_goal = mk_goal (mt_ctxt Intset.empty) sign concl in
+  let top_goal = mk_goal sign concl in
   let ts = { 
     top_hyps = (sign,empty_named_context);
     top_goal = top_goal;

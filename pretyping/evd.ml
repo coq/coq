@@ -21,13 +21,12 @@ type evar_body =
   | Evar_empty 
   | Evar_defined of constr
 
-type 'a evar_info = {
+type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context;
-  evar_body : evar_body;
-  evar_info : 'a option }
+  evar_body : evar_body}
 
-type 'a evar_map = 'a evar_info Intmap.t
+type evar_map = evar_info Intmap.t
 
 let empty = Intmap.empty
 
@@ -45,8 +44,7 @@ let define evd ev body =
   let newinfo =
     { evar_concl = oldinfo.evar_concl;
       evar_hyps = oldinfo.evar_hyps;
-      evar_body = Evar_defined body;
-      evar_info = oldinfo.evar_info } 
+      evar_body = Evar_defined body} 
   in
   match oldinfo.evar_body with
     | Evar_empty -> Intmap.add ev newinfo evd

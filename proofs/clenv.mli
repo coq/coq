@@ -129,5 +129,5 @@ val pr_clenv : 'a clausenv -> Pp.std_ppcmds
 (* [abstract_list_all env sigma t c l]                     *)
 (* abstracts the terms in l over c to get a term of type t *)
 val abstract_list_all :
-  Environ.env -> 'a Evd.evar_map -> constr -> constr -> constr list -> constr
+  Environ.env -> Evd.evar_map -> constr -> constr -> constr list -> constr
 

@@ -34,7 +34,7 @@ val without_check : tactic -> tactic
 
 (* The primitive refiner. *)
 
-val prim_refiner : prim_rule -> 'a evar_map -> goal -> goal list
+val prim_refiner : prim_rule -> evar_map -> goal -> goal list
 
 val prim_extractor :
   (identifier list -> proof_tree -> constr)

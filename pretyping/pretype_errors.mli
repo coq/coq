@@ -39,65 +39,65 @@ type pretype_error =
 exception PretypeError of env * pretype_error
 
 (* Presenting terms without solved evars *)
-val nf_evar : 'a Evd.evar_map -> constr -> constr
-val j_nf_evar : 'a Evd.evar_map -> unsafe_judgment -> unsafe_judgment
+val nf_evar :  Evd.evar_map -> constr -> constr
+val j_nf_evar :  Evd.evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_evar :
-  'a Evd.evar_map -> unsafe_judgment list -> unsafe_judgment list
+   Evd.evar_map -> unsafe_judgment list -> unsafe_judgment list
 val jv_nf_evar :
-  'a Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
+   Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
 val tj_nf_evar :
-  'a Evd.evar_map -> unsafe_type_judgment -> unsafe_type_judgment
+   Evd.evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 
 (* Raising errors *)
 val error_actual_type_loc :
-  loc -> env -> 'a Evd.evar_map -> unsafe_judgment -> constr -> 'b
+  loc -> env ->  Evd.evar_map -> unsafe_judgment -> constr -> 'b
 
 val error_cant_apply_not_functional_loc : 
-  loc -> env -> 'a Evd.evar_map ->
+  loc -> env ->  Evd.evar_map ->
       unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_cant_apply_bad_type_loc : 
-  loc -> env -> 'a Evd.evar_map -> int * constr * constr -> 
+  loc -> env ->  Evd.evar_map -> int * constr * constr -> 
       unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_cant_find_case_type_loc :
-  loc -> env -> 'a Evd.evar_map -> constr -> 'b
+  loc -> env ->  Evd.evar_map -> constr -> 'b
 
 val error_case_not_inductive_loc :
-  loc -> env -> 'a Evd.evar_map -> unsafe_judgment -> 'b
+  loc -> env ->  Evd.evar_map -> unsafe_judgment -> 'b
 
 val error_ill_formed_branch_loc : 
-  loc -> env -> 'a Evd.evar_map ->
+  loc -> env ->  Evd.evar_map ->
       constr -> int -> constr -> constr -> 'b
 
 val error_number_branches_loc : 
-  loc -> env -> 'a Evd.evar_map ->
+  loc -> env ->  Evd.evar_map ->
       unsafe_judgment -> int -> 'b
 
 val error_ill_typed_rec_body_loc :
-  loc -> env -> 'a Evd.evar_map ->
+  loc -> env ->  Evd.evar_map ->
       int -> name array -> unsafe_judgment array -> types array -> 'b
 
 (*s Implicit arguments synthesis errors *)
 
-val error_occur_check : env -> 'a Evd.evar_map -> int -> constr -> 'b
+val error_occur_check : env ->  Evd.evar_map -> int -> constr -> 'b
 
-val error_not_clean : env -> 'a Evd.evar_map -> int -> constr -> 'b
+val error_not_clean : env ->  Evd.evar_map -> int -> constr -> 'b
 
 (*s Ml Case errors *)
 
 val error_ml_case_loc :
-  loc -> env -> 'a Evd.evar_map ->
+  loc -> env ->  Evd.evar_map ->
       ml_case_error -> inductive_type -> unsafe_judgment -> 'b
 
 (*s Pretyping errors *)
 
 val error_unexpected_type_loc :
-  loc -> env -> 'a Evd.evar_map -> constr -> constr -> 'b
+  loc -> env ->  Evd.evar_map -> constr -> constr -> 'b
 
 val error_not_product_loc :
-  loc -> env -> 'a Evd.evar_map -> constr -> 'b
+  loc -> env ->  Evd.evar_map -> constr -> 'b
 
 (*s Error in conversion from AST to rawterms *)
 

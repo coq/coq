@@ -82,7 +82,7 @@ val is_matching      :
    increasing order based on the numbers given in the pattern *)
 
 val matches_conv :
-  env -> 'a Evd.evar_map -> constr_pattern -> constr -> (int * constr) list
+  env -> Evd.evar_map -> constr_pattern -> constr -> (int * constr) list
 
 (* To skip to the next occurrence *)
 exception NextOccurrence of int
@@ -95,4 +95,4 @@ val sub_match :
    up to conversion for constants in patterns *)
 
 val is_matching_conv :
-  env -> 'a Evd.evar_map -> constr_pattern -> constr -> bool
+  env -> Evd.evar_map -> constr_pattern -> constr -> bool

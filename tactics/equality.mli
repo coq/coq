@@ -87,7 +87,7 @@ val dEq : clause -> tactic
 val dEqThen : (int -> tactic) -> clause -> tactic
 
 val make_iterated_tuple : 
-  env -> 'a evar_map -> (constr * constr) -> (constr * constr) 
+  env -> evar_map -> (constr * constr) -> (constr * constr) 
     -> constr * constr * constr
 
 val subst : constr -> clause -> tactic
@@ -95,7 +95,7 @@ val hypSubst : identifier -> clause -> tactic
 val revSubst : constr -> clause -> tactic
 val revHypSubst : identifier -> clause -> tactic
 
-val discriminable : env -> 'a evar_map -> constr -> constr -> bool
+val discriminable : env -> evar_map -> constr -> constr -> bool
 
 (***************)
 (* AutoRewrite *)

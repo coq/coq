@@ -26,32 +26,31 @@ type evar_body =
   | Evar_empty 
   | Evar_defined of constr
 
-type 'a evar_info = {
+type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context;
-  evar_body : evar_body;
-  evar_info : 'a option }
+  evar_body : evar_body}
 
-type 'a evar_map
+type evar_map
 
-val empty : 'a evar_map
+val empty : evar_map
 
-val add : 'a evar_map -> evar -> 'a evar_info -> 'a evar_map
+val add : evar_map -> evar -> evar_info -> evar_map
 
-val dom : 'a evar_map -> evar list
-val map : 'a evar_map -> evar -> 'a evar_info
-val rmv : 'a evar_map -> evar -> 'a evar_map
-val remap : 'a evar_map -> evar -> 'a evar_info -> 'a evar_map
-val in_dom : 'a evar_map -> evar -> bool
-val to_list : 'a evar_map -> (evar * 'a evar_info) list
+val dom : evar_map -> evar list
+val map : evar_map -> evar -> evar_info
+val rmv : evar_map -> evar -> evar_map
+val remap : evar_map -> evar -> evar_info -> evar_map
+val in_dom : evar_map -> evar -> bool
+val to_list : evar_map -> (evar * evar_info) list
 
-val define : 'a evar_map -> evar -> constr -> 'a evar_map
+val define : evar_map -> evar -> constr -> evar_map
 
-val non_instantiated : 'a evar_map -> (evar * 'a evar_info) list
-val is_evar : 'a evar_map -> evar -> bool
+val non_instantiated : evar_map -> (evar * evar_info) list
+val is_evar : evar_map -> evar -> bool
 
-val is_defined : 'a evar_map -> evar -> bool
+val is_defined : evar_map -> evar -> bool
 
-val evar_body : 'a evar_info -> evar_body
+val evar_body : evar_info -> evar_body
 
 val id_of_existential : evar -> identifier

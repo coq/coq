@@ -18,7 +18,6 @@
 
 #install_printer  (* goal *)  prgoal;;
 #install_printer  (* sigma goal *)  prsigmagoal;;
-#install_printer  (* ctxt *)  prctxt;;
 #install_printer  (* proof *)  pproof;;
 #install_printer  (* global_constraints *)  prevd;;
 #install_printer  (* readable_constraints *)  prevc;;

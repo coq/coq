@@ -32,7 +32,7 @@ type 'a result_w_tactic = walking_constraints -> walking_constraints * 'a
 type w_tactic = walking_constraints -> walking_constraints
 
 
-let local_Constraints lc gs = refiner (Local_constraints lc) gs
+let local_Constraints lc gs = refiner Change_evars gs
 
 let startWalk gls =
   let evc = project_with_focus gls in
@@ -40,11 +40,11 @@ let startWalk gls =
   (wc,
    (fun wc' gls' ->
       if not !Options.debug or (ids_eq wc wc' & gls.it = gls'.it) then
-        if Intset.equal (get_lc gls.it) (get_focus (ids_it wc')) then
+(*        if Intset.equal (get_lc gls.it) (get_focus (ids_it wc')) then*)
           tclIDTAC {it=gls'.it; sigma = get_gc (ids_it wc')}
-        else
+(*        else
           (local_Constraints (get_focus (ids_it wc'))
-             {it=gls'.it; sigma = get_gc (ids_it wc')})
+             {it=gls'.it; sigma = get_gc (ids_it wc')})*)
       else error "Walking"))
 
 let walking_THEN wt rt gls =
@@ -58,17 +58,10 @@ let extract_decl sp evc =
   let evdmap = (ts_it evc).decls in
   let evd = Evd.map evdmap sp in 
   (ts_mk { hyps = evd.evar_hyps;
-           focus = get_lc evd;
            decls = Evd.rmv evdmap sp })
 
 let restore_decl sp evd evc =
-  let newctxt = { lc = (ts_it evc).focus;
-                  pgm = (get_pgm evd) } in
-  let newgoal = { evar_hyps = evd.evar_hyps; 
-		  evar_concl = evd.evar_concl;
-		  evar_body = evd.evar_body;
-                  evar_info = Some newctxt } in
-  (rc_add evc (sp,newgoal))
+  (rc_add evc (sp,evd))
 
 
 (* [w_Focusing sp wt wc]
@@ -82,8 +75,7 @@ let restore_decl sp evd evc =
 
 let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
                        (wc : walking_constraints) =
-  let focus = (ts_it (ids_it wc)).focus
-  and hyps  = (ts_it (ids_it wc)).hyps
+  let hyps  = (ts_it (ids_it wc)).hyps
   and evd   = Evd.map (ts_it (ids_it wc)).decls sp in
   let (wc' : walking_constraints) = ids_mod (extract_decl sp) wc in
   let (wc'',rslt) = wt wc' in 
@@ -96,15 +88,13 @@ let w_Focusing_THEN sp (wt : 'a result_w_tactic) (wt' : 'a -> w_tactic)
       (ids_mod
          (ts_mod (fun evc ->
                     { hyps = hyps;
-                      focus = focus;
                       decls = evc.decls }))
          wc''')
       
 let w_add_sign (id,t) (wc : walking_constraints) =
   ids_mk (ts_mod
             (fun evr ->
-               { focus = evr.focus;
-		 hyps = Sign.add_named_decl (id,None,t) evr.hyps;
+	       { hyps = Sign.add_named_decl (id,None,t) evr.hyps;
 		 decls = evr.decls })
             (ids_it wc))
 
@@ -135,24 +125,9 @@ let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
 
 let w_Declare sp ty (wc : walking_constraints) =
   let _ = w_type_of wc ty in (* Utile ?? *)
-  let access  = get_focus (ids_it wc)
-  and sign = get_hyps (ids_it wc) in
-  let newdecl = mk_goal (mt_ctxt access) sign ty in 
+  let sign = get_hyps (ids_it wc) in
+  let newdecl = mk_goal sign ty in 
   ((ids_mod (fun evc -> (rc_add evc (sp,newdecl))) wc): walking_constraints)
-
-let w_Declare_At sp sp' c = w_Focusing sp (w_Declare sp' c)
-
-let evars_of sigma constr = 
-  let rec filtrec acc c =
-    match kind_of_term c with
-    | Evar (ev, cl) ->
-	if Evd.in_dom (ts_it sigma).decls ev then
-	  Intset.add ev (Array.fold_left filtrec acc cl)
-	else
-	  Array.fold_left filtrec acc cl
-    | _ -> fold_constr filtrec acc c
-  in 
-  filtrec Intset.empty constr
 
 let w_Define sp c wc =
   let spdecl = Evd.map (w_Underlying wc) sp in
@@ -164,10 +139,8 @@ let w_Define sp c wc =
   in 
   match spdecl.evar_body with
     | Evar_empty ->
-    	let access = evars_of (ids_it wc) c in
     	let spdecl' = { evar_hyps = spdecl.evar_hyps;
                        	evar_concl = spdecl.evar_concl;
-                       	evar_info = Some (mt_ctxt access);
                        	evar_body = Evar_defined c }
     	in 
 	(ids_mod (fun evc -> (Proof_trees.remap evc (sp,spdecl'))) wc)

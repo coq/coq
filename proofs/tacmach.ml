@@ -71,8 +71,6 @@ let pf_get_hyp_typ gls id =
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
-let pf_ctxt gls      = get_ctxt (sig_it gls)
-
 let pf_interp_constr gls c =
   let evc = project gls in 
   Astterm.interp_constr evc (pf_env gls) c
@@ -287,7 +285,6 @@ let rename_bound_var_goal gls =
 (***************************************)
 
 let vernac_tactic = vernac_tactic
-let context       = context
 
 let add_tactic = Refiner.add_tactic
 

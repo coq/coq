@@ -34,7 +34,6 @@ val overwriting_add_tactic : string -> (tactic_arg list -> tactic) -> unit
 val lookup_tactic          : string -> (tactic_arg list) -> tactic
 
 val refiner : rule -> tactic
-val context : ctxtty -> tactic
 val vernac_tactic : tactic_expression -> tactic
 val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list

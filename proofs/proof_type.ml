@@ -57,11 +57,7 @@ type prim_rule = {
 
 type local_constraints = Intset.t
 
-type ctxtty = {
-  pgm    : constr option;
-  lc     : local_constraints } 
-
-type enamed_declarations = ctxtty evar_map
+type enamed_declarations = evar_map
 
 (* A global constraint is a mappings of existential variables
    with some extra information for the program tactic *)
@@ -88,10 +84,9 @@ type proof_tree = {
 and rule =
   | Prim of prim_rule
   | Tactic of tactic_expression
-  | Context of ctxtty
-  | Local_constraints of local_constraints
+  | Change_evars
 
-and goal = ctxtty evar_info
+and goal = evar_info
 
 and tactic = goal sigma -> (goal list sigma * validation)
 

@@ -58,8 +58,7 @@ let norm_goal sigma gl =
       (fun (d,b,ty) sign ->
         add_named_decl (d, option_app red_fun b, red_fun ty) sign)
       empty_named_context gl.evar_hyps;
-    evar_body = gl.evar_body;
-    evar_info = gl.evar_info }
+    evar_body = gl.evar_body}
 
 
 (* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
@@ -184,27 +183,13 @@ let refiner = function
               subproof = Some hidden_proof;
               ref = Some(r,spfl) }))
       
-  | (Context ctxt) as r ->
-      (fun goal_sigma ->
-         let gl = goal_sigma.it in
-         let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
-         ({it=[sg];sigma=goal_sigma.sigma},
-          (fun spfl -> 
-	     assert (check_subproof_connection [sg] spfl);
-             { status = (List.hd spfl).status;
-               goal = gl;
-               subproof = None;
-               ref = Some(r,spfl) })))
-
    (* [Local_constraints lc] makes the local constraints be [lc] and
       normalizes evars *)
 
-  | (Local_constraints lc) as r ->
+  | Change_evars as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it in
-         let ctxt = set_lc lc (out_some gl.evar_info) in 
-         let sg = mk_goal ctxt gl.evar_hyps gl.evar_concl in
-	 let sgl = [norm_goal (ts_it goal_sigma.sigma) sg] in
+	 let sgl = [norm_goal (ts_it goal_sigma.sigma) gl] in
 	 ({it=sgl;sigma=goal_sigma.sigma},
           (fun spfl -> 
 	    assert (check_subproof_connection sgl spfl);
@@ -213,9 +198,8 @@ let refiner = function
                subproof = None;
                ref = Some(r,spfl) })))
 
-let context ctxt = refiner (Context ctxt)
 let vernac_tactic texp = refiner (Tactic texp)
-let norm_evar_tac gl = refiner (Local_constraints (get_lc gl.it)) gl
+let norm_evar_tac gl = refiner Change_evars gl
 
 (* [rc_of_pfsigma : proof sigma -> readable_constraints] *)
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
@@ -241,9 +225,7 @@ let extract_open_proof sigma pf =
 	let flat_proof = v spfl in
 	proof_extractor vl flat_proof
 	  
-    | {ref=Some(Context ctxt,[pf])} -> (proof_extractor vl) pf
-	  
-    | {ref=Some(Local_constraints lc,[pf])} -> (proof_extractor vl) pf
+    | {ref=Some(Change_evars,[pf])} -> (proof_extractor vl) pf
 	  
     | {ref=None;goal=goal} ->
 	let visible_rels =
@@ -390,8 +372,7 @@ let rec tclTHENLIST = function
 (* various progress criterions *)
 let same_goal gl subgoal = 
   (hypotheses subgoal) = (hypotheses gl) &
-  eq_constr (conclusion subgoal) (conclusion gl) &
-  (subgoal.evar_info = gl.evar_info)
+  eq_constr (conclusion subgoal) (conclusion gl)
 
 
 let weak_progress gls ptree =
@@ -801,8 +782,7 @@ let pr_tactic (s,l) =
 let pr_rule = function
   | Prim r -> pr_prim_rule r
   | Tactic texp -> hOV 0 (pr_tactic texp)
-  | Context ctxt -> pr_ctxt ctxt
-  | Local_constraints lc ->
+  | Change_evars ->
       (* This is internal tactic and cannot be replayed at user-level *)
       (* [< 'sTR"Local constraint change" >] *)
       (* Use Idtac instead *)
@@ -823,15 +803,15 @@ let thin_sign osign sign =
 
 let rec print_proof sigma osign pf =
   let {evar_hyps=hyps; evar_concl=cl; 
-       evar_info=info; evar_body=body} = pf.goal in
+       evar_body=body} = pf.goal in
   let hyps' = thin_sign osign hyps in
   match pf.ref with
     | None -> 
 	hOV 0 [< pr_seq {evar_hyps=hyps'; evar_concl=cl;
-			 evar_info=info; evar_body=body} >]
+			 evar_body=body} >]
     | Some(r,spfl) ->
     	hOV 0 [< hOV 0 (pr_seq {evar_hyps=hyps'; evar_concl=cl;
-				evar_info=info; evar_body=body});
+				evar_body=body});
 		 'sPC ; 'sTR" BY ";
 		 hOV 0 [< pr_rule r >]; 'fNL ;
 		 'sTR"  ";

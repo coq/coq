@@ -20,6 +20,6 @@ open Environ
 no body and [Not_found] if it does not exist in [sigma] *)
 
 exception NotInstantiatedEvar
-val existential_value : 'a evar_map -> existential -> constr
-val existential_type : 'a evar_map -> existential -> types
-val existential_opt_value : 'a evar_map -> existential -> constr option
+val existential_value : evar_map -> existential -> constr
+val existential_type : evar_map -> existential -> types
+val existential_opt_value : evar_map -> existential -> constr option

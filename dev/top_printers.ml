@@ -63,8 +63,6 @@ let prgls gls = pP(pr_gls gls)
 
 let prglls glls = pP(pr_glls glls)
 
-let prctxt ctxt = pP(pr_ctxt ctxt)
-
 let pproof p = pP(print_proof Evd.empty empty_named_context p)
 
 let prevd evd = pP(pr_decls evd)

@@ -27,27 +27,11 @@ let is_bind = function
   | Bindings _ -> true
   | _ -> false
 
-let lc_toList lc = Intset.elements lc
-
 (* Functions on goals *)
 
-let mk_goal ctxt hyps cl = 
+let mk_goal hyps cl = 
   { evar_hyps = hyps; evar_concl = cl; 
-    evar_body = Evar_empty; evar_info = Some ctxt }
-
-(* Functions on the information associated with existential variables  *)
-
-let mt_ctxt lc = { pgm = None; lc = lc }
-
-let get_ctxt gl = out_some gl.evar_info
-
-let get_pgm gl = (out_some gl.evar_info).pgm
-
-let set_pgm pgm ctxt = { ctxt with pgm = pgm }
-
-let get_lc gl = (out_some gl.evar_info).lc
-
-let set_lc lc ctxt = { ctxt with lc = lc }
+    evar_body = Evar_empty}
 
 (* Functions on proof trees *)
 
@@ -96,7 +80,6 @@ type global_constraints  = enamed_declarations timestamped
    of existential variables and a signature. *)
 
 type evar_recordty = {
-  focus : local_constraints;
   hyps  : named_context;
   decls : enamed_declarations }
 
@@ -104,62 +87,30 @@ and readable_constraints = evar_recordty timestamped
 
 (* Functions on readable constraints *)
 			     
-let mt_evcty lc gc = 
-  ts_mk { focus = lc; hyps = empty_named_context; decls = gc }
+let mt_evcty gc = 
+  ts_mk { hyps = empty_named_context; decls = gc }
 
 let evc_of_evds evds gl = 
-  ts_mk { focus = (get_lc gl); hyps = gl.evar_hyps; decls = evds }
+  ts_mk { hyps = gl.evar_hyps; decls = evds }
 
 let rc_of_gc gc gl = evc_of_evds (ts_it gc) gl
 		       
 let rc_add evc (k,v) = 
   ts_mod
-    (fun evc -> { focus = (Intset.add k evc.focus);
-                  hyps  = evc.hyps;
+    (fun evc -> { hyps  = evc.hyps;
                   decls = Evd.add evc.decls k v })
     evc
 
 let get_hyps  evc = (ts_it evc).hyps
 let get_env   evc = Global.env_of_context (ts_it evc).hyps
-let get_focus evc = (ts_it evc).focus
 let get_decls evc = (ts_it evc).decls
 let get_gc    evc = (ts_mk (ts_it evc).decls)
 
 let remap evc (k,v) = 
   ts_mod
-    (fun evc -> { focus = evc.focus;
-                  hyps  = evc.hyps;
+    (fun evc -> { hyps  = evc.hyps;
                   decls = Evd.add evc.decls k v })
     evc
-
-let lc_exists f lc = Intset.fold (fun e b -> (f e) or b) lc false
-
-(* [mentions sigma sp loc] is true exactly when [loc] is defined, and [sp] is
- * on [loc]'s access list, or an evar on [loc]'s access list mentions [sp]. *)
-
-let rec mentions sigma sp loc =
-  let loc_evd = Evd.map (ts_it sigma).decls loc in 
-  match loc_evd.evar_body with 
-    | Evar_defined _ -> (Intset.mem sp (get_lc loc_evd) 
-			 or lc_exists (mentions sigma sp) (get_lc loc_evd))
-    | _ -> false
-
-(* ACCESSIBLE SIGMA SP LOC is true exactly when SP is on LOC's access list,
- * or there exists a LOC' on LOC's access list such that
- * MENTIONS SIGMA SP LOC' is true. *)
-
-let rec accessible sigma sp loc =
-  let loc_evd = Evd.map (ts_it sigma).decls loc in 
-  lc_exists (fun loc' -> sp = loc' or mentions sigma sp loc') (get_lc loc_evd)
-
-
-(* [ctxt_access sigma sp] is true when SIGMA is accessing a current
- * accessibility list ACCL, and SP is either on ACCL, or is mentioned
- * in the body of one of the ACCL. *)
-
-let ctxt_access sigma sp =
-  lc_exists (fun sp' -> sp' = sp or mentions sigma sp sp') (ts_it sigma).focus
-
 
 let pf_lookup_name_as_renamed hyps ccl s =
   Detyping.lookup_name_as_renamed hyps ccl s
@@ -235,41 +186,27 @@ let pr_subgoal n =
   in 
   prrec n
 
-let pr_pgm ctxt = match ctxt.pgm with
-  | None -> [< >]
-  | Some pgm -> let ppgm = fprterm pgm in [< 'sTR"Realizer " ; ppgm >]
-					    
-let pr_ctxt ctxt =
-  let pc = pr_pgm ctxt in [< 'sTR"[" ; pc; 'sTR"]" >]
-
 let pr_seq evd = 
   let env = evar_env evd
   and cl = evd.evar_concl
-  and info = match evd.evar_info with 
-    | Some i -> i 
-    | None -> anomaly "pr_seq : info = None"
   in
-  let pc = pr_ctxt info in
   let pdcl = pr_named_context_of env in
   let pcl = prterm_env_at_top env cl in
-  hOV 0 [< pc; pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
+  hOV 0 [< pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
 
 let prgl gl =
-  let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
   let pgl = pr_seq gl in
-  [< 'sTR"[[" ; plc; 'sTR"]" ; pgl ; 'sTR"]" ; 'sPC >]
+  [< 'sTR"[" ; pgl ; 'sTR"]" ; 'sPC >]
 
 let pr_evgl gl =
-  let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
   let phyps = pr_idl (ids_of_named_context gl.evar_hyps) in
   let pc = prterm gl.evar_concl in
-  hOV 0 [< 'sTR"[[" ; plc; 'sTR"] " ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
+  hOV 0 [< 'sTR"[" ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 
 let pr_evgl_sign gl = 
-  let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
   let ps = pr_named_context_of (evar_env gl) in
   let pc = prterm gl.evar_concl in
-  hOV 0 [< 'sTR"[[" ; plc ; 'sTR"] " ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
+  hOV 0 [< 'sTR"[" ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 
 (*  evd.evgoal.lc seems to be printed twice *)
 let pr_decl evd =
@@ -290,13 +227,11 @@ let pr_evd evd =
     
 let pr_decls decls = pr_evd (ts_it decls)
 		       
-let pr_focus accl = pr_idl (List.map id_of_existential (lc_toList accl))
-
 let pr_evc evc =
   let stamp = ts_stamp evc in
   let evc   = ts_it evc in
   let pe = pr_evd evc.decls in
-  [< 'sTR"#" ; 'iNT stamp ; 'sTR"[" ; pr_focus evc.focus ; 'sTR"]=" ; pe >]
+  [< 'sTR"#" ; 'iNT stamp ; 'sTR"]=" ; pe >]
 
 let pr_evars = 
   prlist_with_sep pr_fnl

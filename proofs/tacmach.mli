@@ -45,7 +45,6 @@ val pf_hyps_types         : goal sigma -> (identifier * constr) list
 val pf_nth_hyp_id         : goal sigma -> int -> identifier
 val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> identifier list
-val pf_ctxt               : goal sigma -> ctxtty
 val pf_global             : goal sigma -> identifier -> constr
 val pf_parse_const        : goal sigma -> string -> constr
 val pf_type_of            : goal sigma -> constr -> constr
@@ -151,8 +150,6 @@ val tclINFO          : tactic -> tactic
 
 val unTAC         : tactic -> goal sigma -> proof_tree sigma
 val vernac_tactic : tactic_expression -> tactic
-val context       : ctxtty -> tactic
-
 
 (*s The most primitive tactics. *)
 
@@ -246,7 +243,7 @@ val hide_cbindll_tactic :
 open Pp
 (*i*)
 
-val pr_com    : 'a Evd.evar_map -> goal -> Coqast.t -> std_ppcmds
+val pr_com    : Evd.evar_map -> goal -> Coqast.t -> std_ppcmds
 val pr_gls    : goal sigma -> std_ppcmds
 val pr_glls   : goal list sigma -> std_ppcmds
 val pr_tactic : tactic_expression -> std_ppcmds

@@ -53,7 +53,6 @@ val w_Focusing_THEN :
   evar -> 'a result_w_tactic -> ('a -> w_tactic) -> w_tactic
 
 val w_Declare    : evar -> types -> w_tactic
-val w_Declare_At : evar -> evar -> types -> w_tactic
 val w_Define     : evar -> constr -> w_tactic
 
 val w_Underlying : walking_constraints -> enamed_declarations
@@ -73,8 +72,6 @@ val w_conv_x            : walking_constraints -> constr -> constr -> bool
 val w_const_value       : walking_constraints -> constant -> constr
 val w_defined_const     : walking_constraints -> constant -> bool
 val w_defined_evar      : walking_constraints -> existential_key -> bool
-
-val evars_of     : readable_constraints -> constr -> local_constraints
 
 val instantiate_pf     : int -> constr -> pftreestate -> pftreestate
 val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate

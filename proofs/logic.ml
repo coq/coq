@@ -96,8 +96,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     | Meta _ ->
 	if occur_meta conclty then
           raise (RefinerError (OccurMetaGoal conclty));
-	let ctxt = out_some goal.evar_info in 
-	(mk_goal ctxt hyps (nf_betaiota conclty))::goalacc, conclty
+	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
 
     | Cast (t,ty) ->
 	let _ = type_of env sigma ty in
@@ -136,8 +135,7 @@ and mk_hdgoals sigma goal goalacc trm =
   match kind_of_term trm with
     | Cast (c,ty) when isMeta c ->
 	let _ = type_of env sigma ty in
-	let ctxt = out_some goal.evar_info in  
-	(mk_goal ctxt hyps (nf_betaiota ty))::goalacc,ty
+	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
 
     | App (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
@@ -373,7 +371,6 @@ let prim_refiner r sigma goal =
   let env = evar_env goal in
   let sign = goal.evar_hyps in
   let cl = goal.evar_concl in
-  let info = out_some goal.evar_info in
   match r with
     | { name = Intro; newids = [id] } ->
     	if !check && mem_named_context id sign then
@@ -381,13 +378,13 @@ let prim_refiner r sigma goal =
         (match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sg = mk_goal info (add_named_decl (id,None,c1) sign)
+	       let sg = mk_goal (add_named_decl (id,None,c1) sign)
 			  (subst1 (mkVar id) b) in
 	       [sg]
 	   | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sg =
-		 mk_goal info (add_named_decl (id,Some c1,t1) sign)
+		 mk_goal (add_named_decl (id,Some c1,t1) sign)
 		   (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
@@ -401,12 +398,12 @@ let prim_refiner r sigma goal =
 	   | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let sign' = insert_after_hyp sign whereid (id,None,c1) in
-	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in 
+	       let sg = mk_goal sign' (subst1 (mkVar id) b) in 
 	       [sg]
 	   | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sign' = insert_after_hyp sign whereid (id,Some c1,t1) in
-	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in 
+	       let sg = mk_goal sign' (subst1 (mkVar id) b) in 
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -417,12 +414,12 @@ let prim_refiner r sigma goal =
            | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let sign' = replace_hyp sign id (id,None,c1) in
-	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in
+	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
            | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let sign' = replace_hyp sign id (id,Some c1,t1) in
-	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in
+	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -430,8 +427,8 @@ let prim_refiner r sigma goal =
 	
     | { name = Cut b; terms = [t]; newids = [id] } ->
         if occur_meta t then error_use_instantiate();
-        let sg1 = mk_goal info sign (nf_betaiota t) in
-        let sg2 = mk_goal info (add_named_decl (id,None,t) sign) cl in
+        let sg1 = mk_goal sign (nf_betaiota t) in
+        let sg2 = mk_goal (add_named_decl (id,None,t) sign) cl in
         if b then [sg1;sg2] else [sg2;sg1]  
 
     | { name = FixRule; hypspecs = []; terms = []; 
@@ -451,7 +448,7 @@ let prim_refiner r sigma goal =
      	check_ind n cl;
 	if !check && mem_named_context f sign then
 	  error ("The name "^(string_of_id f)^" is already used");
-        let sg = mk_goal info (add_named_decl (f,None,cl) sign) cl in
+        let sg = mk_goal (add_named_decl (f,None,cl) sign) cl in
         [sg]
     
     | { name = FixRule; hypspecs = []; terms = lar; newids = lf; params = ln } ->
@@ -479,7 +476,7 @@ let prim_refiner r sigma goal =
 		error "name already used in the environment";
 	      mk_sign (add_named_decl (f,None,ar) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
-	      List.map (mk_goal info sign) (cl::lar)
+	      List.map (mk_goal sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
 	in 
 	mk_sign sign (cl::lar,lf,ln)
@@ -505,7 +502,7 @@ let prim_refiner r sigma goal =
               with
               |	Not_found ->
                   mk_sign (add_named_decl (f,None,ar) sign) (lar',lf'))
-	  | ([],[]) -> List.map (mk_goal info sign) (cl::lar)
+	  | ([],[]) -> List.map (mk_goal sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
 	mk_sign sign (cl::lar,lf)
@@ -520,19 +517,19 @@ let prim_refiner r sigma goal =
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
-          let sg = mk_goal info sign cl' in
+          let sg = mk_goal sign cl' in
           [sg]
 	else 
 	  error "convert-concl rule passed non-converting term"
 
     | { name = Convert_hyp; hypspecs = [id]; terms = [ty] } ->
-	[mk_goal info (convert_hyp sign sigma id ty) cl]
+	[mk_goal (convert_hyp sign sigma id ty) cl]
 
     | { name = Convert_defbody; hypspecs = [id]; terms = [c] } ->
-	[mk_goal info (convert_def true sign sigma id c) cl]
+	[mk_goal (convert_def true sign sigma id c) cl]
 
     | { name = Convert_deftype; hypspecs = [id]; terms = [ty] } ->
-	[mk_goal info (convert_def false sign sigma id ty) cl]
+	[mk_goal (convert_def false sign sigma id ty) cl]
 
     | { name = Thin; hypspecs = ids } ->
 	let clear_aux sign id =
@@ -541,7 +538,7 @@ let prim_refiner r sigma goal =
           remove_hyp sign id 
 	in
 	let sign' = List.fold_left clear_aux sign ids in
-     	let sg = mk_goal info sign' cl in
+     	let sg = mk_goal sign' cl in
      	[sg]
 
     | { name = ThinBody; hypspecs = ids } ->
@@ -551,7 +548,7 @@ let prim_refiner r sigma goal =
           env'
 	in
 	let sign' = named_context (List.fold_left clear_aux env ids) in
-     	let sg = mk_goal info sign' cl in
+     	let sg = mk_goal sign' cl in
      	[sg]
 
     | { name = Move withdep; hypspecs = ids } ->
@@ -560,7 +557,7 @@ let prim_refiner r sigma goal =
   	let (left,right,declfrom,toleft) = split_sign hfrom hto sign in
   	let hyps' = 
 	  move_after withdep toleft (left,declfrom,right) hto in
-  	[mk_goal info hyps' cl]
+  	[mk_goal hyps' cl]
 	
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
 

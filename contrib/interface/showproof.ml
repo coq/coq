@@ -228,7 +228,7 @@ let old_sign osign sign =
 (* convertit l'arbre de preuve courant en ntree *)
 let  to_nproof sigma osign pf =
   let rec to_nproof_rec sigma osign pf =
-    let {evar_hyps=sign;evar_concl=cl;evar_info=info} = pf.goal in
+    let {evar_hyps=sign;evar_concl=cl} = pf.goal in
     let nsign = new_sign osign sign in 
     let oldsign = old_sign osign sign in 
     match pf.ref with

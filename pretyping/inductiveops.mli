@@ -72,14 +72,14 @@ val build_branch_type :
 exception Induc
 val extract_mrectype : constr -> inductive * constr list
 val find_mrectype :
-  env -> 'a evar_map -> constr -> inductive * constr list
+  env -> evar_map -> constr -> inductive * constr list
 val find_rectype :
-  env -> 'a evar_map -> constr -> inductive_type
+  env -> evar_map -> constr -> inductive_type
 val find_inductive :
-  env -> 'a evar_map -> constr -> inductive * constr list
+  env -> evar_map -> constr -> inductive * constr list
 val find_coinductive :
   env ->
-  'a evar_map -> constr -> inductive * constr list
+  evar_map -> constr -> inductive * constr list
 val type_case_branches_with_names :
   env -> inductive * constr list -> unsafe_judgment -> constr ->
     types array * types

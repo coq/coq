@@ -24,18 +24,18 @@ open Pattern
 val constrIn : constr -> Coqast.t
 val constrOut : Coqast.t -> constr
 
-val interp_rawconstr     : 'a evar_map -> env -> Coqast.t -> rawconstr
-val interp_constr        : 'a evar_map -> env -> Coqast.t -> constr
-val interp_casted_constr : 'a evar_map -> env -> Coqast.t -> constr -> constr
-val interp_type          : 'a evar_map -> env -> Coqast.t -> types
+val interp_rawconstr     : evar_map -> env -> Coqast.t -> rawconstr
+val interp_constr        : evar_map -> env -> Coqast.t -> constr
+val interp_casted_constr : evar_map -> env -> Coqast.t -> constr -> constr
+val interp_type          : evar_map -> env -> Coqast.t -> types
 val interp_sort          : Coqast.t -> sorts
 
 val interp_elimination_sort : Coqast.t -> sorts_family
 
 val interp_openconstr    :
-  'a evar_map -> env -> Coqast.t -> (existential * constr) list * constr
+  evar_map -> env -> Coqast.t -> (existential * constr) list * constr
 val interp_casted_openconstr    :
-  'a evar_map -> env -> Coqast.t -> constr ->
+  evar_map -> env -> Coqast.t -> constr ->
     (existential * constr) list * constr
 
 (* [interp_type_with_implicits] extends [interp_type] by allowing
@@ -43,34 +43,34 @@ val interp_casted_openconstr    :
    argument associates a list of implicit positions to identifiers
    declared in the rel_context of [env] *)
 val interp_type_with_implicits : 
-  'a evar_map -> env -> 
+  evar_map -> env -> 
    (identifier * Impargs.implicits_list) list -> Coqast.t -> types
 
-val judgment_of_rawconstr : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
+val judgment_of_rawconstr : evar_map -> env -> Coqast.t -> unsafe_judgment
 val type_judgment_of_rawconstr :
-  'a evar_map -> env -> Coqast.t -> unsafe_type_judgment
+  evar_map -> env -> Coqast.t -> unsafe_type_judgment
 
 (*Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it*)
 val interp_constr_gen     :
-  'a evar_map -> env -> (identifier * constr) list ->
+  evar_map -> env -> (identifier * constr) list ->
     (int * constr) list -> Coqast.t -> constr option -> constr
 
 (*Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it, and turning unresolved evar into metas*)
 val interp_openconstr_gen     :
-  'a evar_map -> env -> (identifier * constr) list ->
+  evar_map -> env -> (identifier * constr) list ->
     (int * constr) list -> Coqast.t -> constr option
       -> (existential * constr) list * constr
 
 (*Interprets constr patterns according to a list of instantiations
   (variables)*)
 val interp_constrpattern_gen :
-  'a evar_map -> env -> (identifier * constr) list -> Coqast.t ->
+  evar_map -> env -> (identifier * constr) list -> Coqast.t ->
     int list * constr_pattern
 
 val interp_constrpattern : 
-  'a evar_map -> env -> Coqast.t -> int list * constr_pattern
+  evar_map -> env -> Coqast.t -> int list * constr_pattern
 
 (*s Globalization of AST quotations (mainly used to get statically
     bound idents in grammar or pretty-printing rules) *)

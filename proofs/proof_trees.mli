@@ -22,14 +22,7 @@ open Proof_type
 (* This module declares readable constraints, and a few utilities on
    constraints and proof trees *)
 
-val mk_goal : ctxtty -> named_context -> constr -> goal
-
-val mt_ctxt    : local_constraints -> ctxtty
-val get_ctxt   : goal -> ctxtty
-val get_pgm    : goal -> constr option
-val set_pgm    : constr option -> ctxtty -> ctxtty
-val get_lc     : goal -> local_constraints
-val set_lc     : local_constraints -> ctxtty -> ctxtty
+val mk_goal : named_context -> constr -> goal
 
 val rule_of_proof     : proof_tree -> rule
 val ref_of_proof      : proof_tree -> (rule * proof_tree list)
@@ -51,7 +44,6 @@ type global_constraints = enamed_declarations timestamped
     of existential variables and a signature. *)
 
 type evar_recordty = {
-  focus : local_constraints;
   hyps  : named_context;
   decls : enamed_declarations }
 
@@ -61,11 +53,9 @@ val rc_of_gc  : global_constraints -> goal -> readable_constraints
 val rc_add    : readable_constraints -> int * goal -> readable_constraints
 val get_hyps  : readable_constraints -> named_context
 val get_env   : readable_constraints -> env
-val get_focus : readable_constraints -> local_constraints
 val get_decls : readable_constraints -> enamed_declarations
 val get_gc    : readable_constraints -> global_constraints
 val remap     : readable_constraints -> int * goal -> readable_constraints
-val ctxt_access : readable_constraints -> int -> bool
 
 val pf_lookup_name_as_renamed : 
   named_context -> constr -> identifier -> int option
@@ -88,8 +78,6 @@ val pr_evc       : readable_constraints -> std_ppcmds
 
 val prgl         : goal -> std_ppcmds
 val pr_seq       : goal -> std_ppcmds
-val pr_focus     : local_constraints -> std_ppcmds
-val pr_ctxt      : ctxtty -> std_ppcmds
 val pr_evars     : (int * goal) list -> std_ppcmds
 val pr_evars_int : int -> (int * goal) list -> std_ppcmds
 val pr_subgoals_existential : enamed_declarations -> goal list -> std_ppcmds

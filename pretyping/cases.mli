@@ -32,16 +32,16 @@ exception PatternMatchingError of env * pattern_matching_error
 (* Used for old cases in pretyping *)
 
 val branch_scheme : 
-  env -> 'a evar_defs -> bool -> inductive * constr list -> constr array
+  env -> evar_defs -> bool -> inductive * constr list -> constr array
 
-val pred_case_ml_onebranch : loc -> env -> 'c evar_map -> bool ->
+val pred_case_ml_onebranch : loc -> env -> evar_map -> bool ->
   inductive_type -> int * unsafe_judgment -> constr 
 
 (* Compilation of pattern-matching. *)
 
 val compile_cases :
   loc -> (type_constraint -> env -> rawconstr -> unsafe_judgment)
-  * 'a evar_defs -> type_constraint -> env ->
+  * evar_defs -> type_constraint -> env ->
     rawconstr option * rawconstr list *
     (loc * identifier list * cases_pattern list * rawconstr) list ->
     unsafe_judgment
