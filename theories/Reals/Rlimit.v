@@ -584,7 +584,7 @@ Unfold limit1_in;Unfold limit_in;Simpl;Intros;
 Save.
 
 (*********)
-(*
+
 Lemma limit_inv : (f:R->R)(D:R->Prop)(l:R)(x0:R) (limit1_in f D l x0)->~(l==R0)->(limit1_in [x:R](Rinv (f x)) D (Rinv l) x0).
 Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H ``(Rabsolu l)/2``).
 Intros delta1 H2; Elim (H ``eps*((Rsqr l)/2)``).
@@ -611,7 +611,10 @@ Rewrite (Rsqr_abs l); Unfold Rsqr; Unfold Rdiv; Rewrite Rinv_Rmult.
 Repeat Rewrite <- Rmult_assoc; Apply Rlt_monotony_r.
 Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Assumption.
 Apply Rlt_monotony_contra with ``(Rabsolu (f x))*(Rabsolu l)*/2``.
-Repeat Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Repeat Apply Rmult_lt_pos.
+Apply Rabsolu_pos_lt; Assumption.
+Apply Rabsolu_pos_lt; Assumption.
+Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H17; Generalize (lt_INR_0 (2) (neq_O_lt (2) H17)); Unfold INR; Intro H18; Assumption | Discriminate].
 Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*/(Rabsolu (f x))`` with ``(Rabsolu l)/2``.
 Replace ``(Rabsolu (f x))*(Rabsolu l)*/2*(2*/(Rabsolu l))`` with ``(Rabsolu (f x))``.
 Assumption.
@@ -625,11 +628,15 @@ Apply prod_neq_R0; Assumption.
 Field; Repeat Apply prod_neq_R0; Assumption.
 Red; Intro; Rewrite H16 in H15; Rewrite Rabsolu_R0 in H15; Cut ``0<(Rabsolu l)/2``.
 Intro; Elim (Rlt_antirefl ``0`` (Rlt_trans ``0`` ``(Rabsolu l)/2`` ``0`` H17 H15)).
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Apply Rmult_lt_pos.
+Apply Rabsolu_pos_lt; Assumption.
+Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H17; Generalize (lt_INR_0 (2) (neq_O_lt (2) H17)); Unfold INR; Intro; Assumption | Discriminate].
 Unfold Rdiv; Field; DiscrR.
 Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_r]].
 Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption | Apply Rmin_l]].
-Change ``0<eps*(Rsqr l)/2``; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Repeat Apply Rmult_lt_pos; [Assumption | Apply Rsqr_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
-Change ``0<(Rabsolu l)/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Change ``0<eps*(Rsqr l)/2``; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Repeat Apply Rmult_lt_pos.
+Assumption.
+Apply Rsqr_pos_lt; Assumption.
+Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H3; Generalize (lt_INR_0 (2) (neq_O_lt (2) H3)); Unfold INR; Intro; Assumption | Discriminate].
+Change ``0<(Rabsolu l)/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H3; Generalize (lt_INR_0 (2) (neq_O_lt (2) H3)); Unfold INR; Intro; Assumption | Discriminate]].
 Save.
-*)
