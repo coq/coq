@@ -38,10 +38,10 @@ let new_evar_in_sign env =
   DOPN(Evar ev,
        Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps)))
 
-let rec w_whd_evar wc = function
+let rec whd_evar env sigma = function
   | DOPN(Evar ev,_) as k ->
-      if is_defined (w_Underlying wc) ev then
-        w_whd_evar wc (w_const_value wc k)
+      if is_defined sigma ev then
+        whd_evar env sigma (constant_value env k)
       else 
 	collapse_appl k
   | t -> 
@@ -80,9 +80,11 @@ let mimick_evar hdc nargs sp wc =
    même meta ou evar, il peut rester des doublons *)
 
 let unify_0 mc wc m n =
+  let env = w_env wc
+  and sigma = w_Underlying wc in
   let rec unirec_rec ((metasubst,evarsubst) as substn) m n =
-    let cM = w_whd_evar wc m
-    and cN = w_whd_evar wc n in 
+    let cM = whd_evar env sigma m
+    and cN = whd_evar env sigma n in 
     try 
       match (cM,cN) with
 	| DOP2(Cast,c,_),t2 -> unirec_rec substn c t2
@@ -120,17 +122,23 @@ let unify_0 mc wc m n =
 	      error_cannot_unify CCI (m,n)
 		
 	| DOPN(MutConstruct _,_),DOPN(MutConstruct _,_) ->
-	    if w_conv_x wc cM cN then substn else error_cannot_unify CCI (m,n)
+	    if is_conv env sigma cM cN then
+	      substn
+	    else
+	      error_cannot_unify CCI (m,n)
 	      
 	| DOPN(MutInd _,_),DOPN(MutInd _,_) ->
-	    if w_conv_x wc cM cN then substn else error_cannot_unify CCI (m,n)
+	    if is_conv env sigma  cM cN then
+	      substn
+	    else
+	      error_cannot_unify CCI (m,n)
 	      
 	| (DOPN(Evar _,_)),(DOPN((Const _ | Evar _),_)) ->
 	    metasubst,((cM,cN)::evarsubst)
 	| (DOPN((Const _ | Evar _),_)),(DOPN(Evar _,_)) ->
 	    metasubst,((cN,cM)::evarsubst)
 	| (DOPN(Const _,_)),(DOPN(Const _,_)) ->
-	    if w_conv_x wc cM cN then 
+	    if is_conv env sigma cM cN then 
 	      substn
 	    else 
 	      error_cannot_unify CCI (m,n)
@@ -138,7 +146,7 @@ let unify_0 mc wc m n =
 	| (DOPN(Evar _,_)),_ ->
 	    metasubst,((cM,cN)::evarsubst)
 	| (DOPN(Const _,_)),_ ->
-	    if w_conv_x wc cM cN then 
+	    if is_conv env sigma cM cN then
 	      substn
 	    else 
 	      error_cannot_unify CCI (m,n)
@@ -146,7 +154,7 @@ let unify_0 mc wc m n =
 	| _,(DOPN(Evar _,_)) ->
 	    metasubst,((cN,cM)::evarsubst)
 	| _,(DOPN(Const _,_)) ->
-	    if (not (occur_meta cM)) & w_conv_x wc cM cN then 
+	    if (not (occur_meta cM)) & is_conv env sigma cM cN then 
 	      substn
 	    else 
 	      error_cannot_unify CCI (m,n)
@@ -154,13 +162,13 @@ let unify_0 mc wc m n =
 	| _ -> error_cannot_unify CCI (m,n)
 	      
     with ex when catchable_exception ex ->
-      if (not(occur_meta cM)) & w_conv_x wc cM cN then 
+      if (not(occur_meta cM)) & is_conv env sigma cM cN then 
 	substn
       else 
 	raise ex
 
     in
-    if (not((occur_meta m))) & w_conv_x wc m n then 
+    if (not((occur_meta m))) & is_conv env sigma m n then 
       (mc,[])
     else 
       unirec_rec (mc,[]) m n
