@@ -70,7 +70,7 @@ newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Notations.vo newt
 newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
 newtheories/Logic/Hurkens.vo: newtheories/Logic/Hurkens.v
 newtheories/Logic/ProofIrrelevance.vo: newtheories/Logic/ProofIrrelevance.v newtheories/Logic/Hurkens.vo
-newtheories/Logic/Classical.vo: newtheories/Logic/Classical.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Set.vo
+newtheories/Logic/Classical.vo: newtheories/Logic/Classical.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Type.vo
 newtheories/Logic/Classical_Type.vo: newtheories/Logic/Classical_Type.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Type.vo
 newtheories/Logic/Classical_Pred_Set.vo: newtheories/Logic/Classical_Pred_Set.v newtheories/Logic/Classical_Prop.vo
 newtheories/Logic/Eqdep.vo: newtheories/Logic/Eqdep.v
@@ -82,6 +82,9 @@ newtheories/Logic/Berardi.vo: newtheories/Logic/Berardi.v
 newtheories/Logic/Eqdep_dec.vo: newtheories/Logic/Eqdep_dec.v
 newtheories/Logic/Decidable.vo: newtheories/Logic/Decidable.v
 newtheories/Logic/JMeq.vo: newtheories/Logic/JMeq.v newtheories/Logic/Eqdep.vo
+newtheories/Logic/ClassicalDescription.vo: newtheories/Logic/ClassicalDescription.v newtheories/Logic/Classical.vo
+newtheories/Logic/ClassicalChoice.vo: newtheories/Logic/ClassicalChoice.v newtheories/Logic/ClassicalDescription.vo newtheories/Logic/RelationalChoice.vo newtheories/Logic/ChoiceFacts.vo
+newtheories/Logic/RelationalChoice.vo: newtheories/Logic/RelationalChoice.v
 newtheories/Arith/Arith.vo: newtheories/Arith/Arith.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo newtheories/Arith/Gt.vo newtheories/Arith/Minus.vo newtheories/Arith/Mult.vo newtheories/Arith/Between.vo newtheories/Arith/Peano_dec.vo newtheories/Arith/Compare_dec.vo newtheories/Arith/Factorial.vo
 newtheories/Arith/Gt.vo: newtheories/Arith/Gt.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo
 newtheories/Arith/Between.vo: newtheories/Arith/Between.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo
