@@ -250,12 +250,12 @@ let pretype_ref loc isevars env = function
   if sp = let_path then
       (match Array.to_list cl with
        [m;DLAM(na,b)] ->
-       let mj = pretype mt_tycon isevars env m in
+       let mj = pretype empty_tycon isevars env m in
 	 (try 
 	    let mj = inh_ass_of_j isevars env mj in
 	    let mb = body_of_type mj in
 	    let bj =
-	     pretype mt_tycon (push_rel (na,mj) env) isevars b in
+	     pretype empty_tycon (push_rel (na,mj) env) isevars b in
 	   {uj_val = DOPN(Abst sp,[|mb;DLAM(na,bj.uj_val)|]);
             uj_type = sAPP (DLAM(na,bj.uj_type)) mb;
             uj_kind = pop bj.uj_kind }
@@ -344,7 +344,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     { uj_val = dummy_sort; uj_type = dummy_sort; uj_kind = dummy_sort }
 
 | RApp (loc,f,args) -> 
-    let j = pretype mt_tycon env isevars f in
+    let j = pretype empty_tycon env isevars f in
     let j = inh_app_fun env isevars j in
     let apply_one_arg (tycon,jl) c =
       let cj = pretype (app_dom_tycon env isevars tycon) env isevars c in
@@ -372,13 +372,13 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     fst (gen_rel env !isevars name assum j'')
 
 | ROldCase (loc,isrec,po,c,lf) ->
-  let cj = pretype mt_tycon env isevars c in
+  let cj = pretype empty_tycon env isevars c in
   let {mind=mind;params=params;realargs=realargs} =
     try try_mutind_of env !isevars cj.uj_type
     with Induc -> error_case_not_inductive CCI env
 	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars cj.uj_type) in
   let pj = match po with
-    | Some p -> pretype mt_tycon env isevars p
+    | Some p -> pretype empty_tycon env isevars p
     | None -> 
 	try match vtcon with
 	    (_,(_,Some pred)) -> 
@@ -435,9 +435,9 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
        uj_kind = snd (splay_prod env !isevars evalPt)}
 
 | RCases (loc,prinfo,po,tml,eqns) ->
-    Cases.compile_multcase
+    Cases.compile_cases
       ((fun vtyc env -> pretype vtyc env isevars),isevars)
-      vtcon env loc (po,tml,eqns)
+      vtcon env (* loc *) (po,tml,eqns)
 
 | RCast(loc,c,t) ->
   let tj = pretype def_vty_con env isevars t in
@@ -491,7 +491,7 @@ let ise_resolve_casted sigma env typ c =
 
 let ise_resolve fail_evar sigma metamap env c =
   let isevars = ref sigma in
-  let j = unsafe_fmachine mt_tycon false isevars metamap env c in
+  let j = unsafe_fmachine empty_tycon false isevars metamap env c in
   j_apply (fun _ -> process_evars fail_evar) env !isevars j
 
 
@@ -504,7 +504,7 @@ let ise_resolve_type fail_evar sigma metamap env c =
 
 let ise_resolve_nocheck sigma metamap env c =
   let isevars = ref sigma in
-  let j = unsafe_fmachine mt_tycon true isevars metamap env c in
+  let j = unsafe_fmachine empty_tycon true isevars metamap env c in
   j_apply (fun _ -> process_evars true) env !isevars j
 
 

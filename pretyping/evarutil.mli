@@ -52,7 +52,7 @@ val status_changed : int list -> conv_pb * constr * constr -> bool
 
 type trad_constraint = bool * (constr option * constr option)
 
-val mt_tycon : trad_constraint
+val empty_tycon : trad_constraint
 val def_vty_con : trad_constraint
 val mk_tycon : constr -> trad_constraint
 val mk_tycon2 : trad_constraint -> constr -> trad_constraint

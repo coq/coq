@@ -392,7 +392,7 @@ type trad_constraint = bool * (constr option * constr option)
  *)
 
 (* The empty constraint *)
-let mt_tycon = (false,(None,None))
+let empty_tycon = (false,(None,None))
 
 (* The default constraints for types. *)
 let def_vty_con = (true,(None,None))
@@ -436,7 +436,7 @@ let app_rng_tycon env isevars arg = function
   | (_,(_,Some c)) ->
       (match whd_betadeltaiota env !isevars c with
          | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon (subst1 arg b)
-	 | _ -> mt_tycon)
+	 | _ -> empty_tycon)
 
 (* Given a constraint on an abstraction, returns the constraint on the value
  * of the domain type. If we had no constraint, we still know it should be
@@ -447,8 +447,8 @@ let abs_dom_valcon env isevars (_,(_,tyc)) =
 
 (* Given a constraint on an abstraction, returns the constraint on the body *)
 let abs_rng_tycon env isevars = function
-  | (_,(_,None)) -> mt_tycon
+  | (_,(_,None)) -> empty_tycon
   | (_,(_,Some c)) ->
       (match whd_betadeltaiota env !isevars c with
 	 | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon b
-	 | _ -> mt_tycon)
+	 | _ -> empty_tycon)
