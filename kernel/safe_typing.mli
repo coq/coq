@@ -65,6 +65,8 @@ val add_modtype :
 val add_constraints : 
   Univ.constraints -> safe_environment -> safe_environment
 
+(* Adding rewriting rules *)
+val add_rule : constr * constr -> safe_environment -> safe_environment
 
 (*s Interactive module functions *)
 val start_module : 

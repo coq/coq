@@ -256,6 +256,7 @@ let initial_path = MPself initial_msid
 
 type variable = identifier
 type constant = kernel_name
+type symbol = kernel_name
 type mutual_inductive = kernel_name
 type inductive = mutual_inductive * int
 type constructor = inductive * int

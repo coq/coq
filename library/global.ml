@@ -66,8 +66,7 @@ let add_modtype = add_thing (fun _ -> add_modtype) ()
 let add_module = add_thing (fun _ -> add_module) ()
 
 let add_constraints c = global_env := add_constraints c !global_env
-
-
+let add_rule rule = global_env := add_rule rule !global_env
 
 let start_module id params mtyo =
   let l = label_of_id id in

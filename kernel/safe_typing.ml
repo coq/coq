@@ -406,7 +406,17 @@ let current_msid senv = senv.modinfo.msid
 let add_constraints cst senv = 
   {senv with env = Environ.add_constraints cst senv.env}
 
-
+let add_rule rule senv =
+  let kn,rule = Rules.check_rule senv.env rule in
+  let env' = Environ.add_rule kn rule senv.env in
+  { old = senv.old;
+    env = env';
+    modinfo = senv.modinfo;
+    labset = senv.labset;
+    revsign = senv.revsign; (* Trace dans la signature ? *) 
+    revstruct = senv.revstruct; (* Trace dans le module exporté *)
+    imports = senv.imports;
+    loads = senv.loads }
 
 (* Libraries = Compiled modules *)
 

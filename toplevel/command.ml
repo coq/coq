@@ -38,7 +38,7 @@ open Vernacexpr
 open Decl_kinds
 open Pretyping
 
-let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
+let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC([dummy_loc,Name x],a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
 let rec abstract_rawconstr c = function
@@ -145,7 +145,8 @@ let declare_assumption ident (local,kind) bl c =
         VarRef ident
     | (Global|Local) ->
         let (_,kn) =
-          declare_constant ident (ParameterEntry c, IsAssumption kind) in
+          declare_constant ident 
+	    (ParameterEntry (c,kind<>Symbol), IsAssumption kind) in
         assumption_message ident;
         if local=Local & Options.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
@@ -451,6 +452,16 @@ let build_scheme lnamedepindsort =
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
+
+let interp_in_context ctx l =
+  let genl = mkLambdaCit ctx l in
+  let genl = interp_constr Evd.empty (Global.env()) genl in
+  snd (decompose_lam_n (List.length ctx) genl)
+
+let build_rule ctx (l,r) =
+  let l = interp_in_context ctx l in
+  let r = interp_in_context ctx r in
+  Global.add_rule (l,r)
 
 let rec generalize_rawconstr c = function
   | [] -> c

@@ -119,6 +119,10 @@ val set_universes   :   Univ.universes -> env -> env
 val add_constraints : Univ.constraints -> env -> env
 
 (***********************************************************************)
+(*s Rewriting rules *)
+val add_rule : symbol -> constr * constr -> env -> env
+
+(***********************************************************************)
 (* Sets of referred section variables *)
 (* [global_vars_set env c] returns the list of [id]'s occurring as
    [VAR id] in [c] *)

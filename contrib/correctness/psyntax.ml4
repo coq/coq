@@ -552,7 +552,7 @@ let _ =
 	      let v = Ptyping.cic_type_v env ren v in
 	      if not (is_mutable v) then begin
 		let c = 
-		  Entries.ParameterEntry (trad_ml_type_v ren env v),
+		  Entries.ParameterEntry (trad_ml_type_v ren env v,false),
 		  Decl_kinds.IsAssumption Decl_kinds.Definitional in
 		List.iter 
 		  (fun id -> ignore (Declare.declare_constant id c)) ids;

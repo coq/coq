@@ -157,7 +157,7 @@ let open_constant i ((sp,kn),_) =
   Nametab.push (Nametab.Exactly i) sp (ConstRef kn)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)
+let dummy_constant_entry = ConstantEntry (ParameterEntry (mkProp,false))
 
 let dummy_constant (ce,mk) = dummy_constant_entry,mk
 

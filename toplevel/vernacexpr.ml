@@ -180,6 +180,7 @@ type vernac_expr =
   | VernacFixpoint of fixpoint_expr list
   | VernacCoFixpoint of cofixpoint_expr list
   | VernacScheme of (identifier * bool * reference * sort_expr) list
+  | VernacRule of simple_binder list * constr_expr * constr_expr
 
   (* Gallina extensions *)
   | VernacRecord of identifier with_coercion * simple_binder list

@@ -154,6 +154,7 @@ module KNmap  : Map.S with type key = kernel_name
 
 type variable = identifier
 type constant = kernel_name
+type symbol = kernel_name
 type mutual_inductive = kernel_name
 (* Beware: first inductive has index 0 *)
 type inductive = mutual_inductive * int

@@ -60,7 +60,7 @@ type definition_entry = {
   const_entry_type   : types option;
   const_entry_opaque : bool }
 
-type parameter_entry = types
+type parameter_entry = types * (* opacity *) bool
 
 type constant_entry = 
   | DefinitionEntry of definition_entry

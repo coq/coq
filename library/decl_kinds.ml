@@ -31,7 +31,7 @@ type locality_flag = (*bool (* local = true; global = false *)*)
 
 type strength = locality_flag (* For compatibility *)
 
-type type_as_formula_kind = Definitional | Logical
+type type_as_formula_kind = Definitional | Logical | Symbol
 
 (* [assumption_kind] 
 

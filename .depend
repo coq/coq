@@ -47,6 +47,7 @@ kernel/modops.cmi: kernel/declarations.cmi kernel/entries.cmi \
 kernel/names.cmi: lib/pp.cmi lib/predicate.cmi 
 kernel/reduction.cmi: kernel/environ.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
+kernel/rules.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi 
 kernel/safe_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/names.cmi kernel/term.cmi \
     kernel/univ.cmi 
@@ -640,17 +641,21 @@ kernel/reduction.cmx: kernel/closure.cmx kernel/conv_oracle.cmx \
     kernel/declarations.cmx kernel/environ.cmx kernel/esubst.cmx \
     kernel/names.cmx kernel/sign.cmx kernel/term.cmx kernel/univ.cmx \
     lib/util.cmx kernel/reduction.cmi 
+kernel/rules.cmo: kernel/declarations.cmi kernel/environ.cmi kernel/term.cmi \
+    lib/util.cmi kernel/rules.cmi 
+kernel/rules.cmx: kernel/declarations.cmx kernel/environ.cmx kernel/term.cmx \
+    lib/util.cmx kernel/rules.cmi 
 kernel/safe_typing.cmo: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/indtypes.cmi \
     kernel/inductive.cmi kernel/mod_typing.cmi kernel/modops.cmi \
-    kernel/names.cmi kernel/reduction.cmi kernel/sign.cmi \
+    kernel/names.cmi kernel/reduction.cmi kernel/rules.cmi kernel/sign.cmi \
     kernel/subtyping.cmi kernel/term.cmi kernel/term_typing.cmi \
     kernel/type_errors.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
     kernel/safe_typing.cmi 
 kernel/safe_typing.cmx: kernel/cooking.cmx kernel/declarations.cmx \
     kernel/entries.cmx kernel/environ.cmx kernel/indtypes.cmx \
     kernel/inductive.cmx kernel/mod_typing.cmx kernel/modops.cmx \
-    kernel/names.cmx kernel/reduction.cmx kernel/sign.cmx \
+    kernel/names.cmx kernel/reduction.cmx kernel/rules.cmx kernel/sign.cmx \
     kernel/subtyping.cmx kernel/term.cmx kernel/term_typing.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
     kernel/safe_typing.cmi 

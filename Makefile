@@ -91,7 +91,8 @@ KERNEL=\
   kernel/modops.cmo \
   kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
   kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
+  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/rules.cmo \
+  kernel/safe_typing.cmo
 
 LIBRARY=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
@@ -211,7 +212,8 @@ PARSERREQUIRES=\
   kernel/reduction.cmo kernel/modops.cmo kernel/type_errors.cmo \
   kernel/inductive.cmo kernel/typeops.cmo kernel/indtypes.cmo \
   kernel/cooking.cmo kernel/term_typing.cmo kernel/subtyping.cmo \
-  kernel/mod_typing.cmo kernel/safe_typing.cmo library/nameops.cmo \
+  kernel/mod_typing.cmo kernel/rules.cmo kernel/safe_typing.cmo \
+  library/nameops.cmo \
   library/libnames.cmo library/libobject.cmo library/summary.cmo \
   library/nametab.cmo library/lib.cmo library/global.cmo \
   library/declaremods.cmo library/library.cmo library/impargs.cmo \

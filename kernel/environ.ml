@@ -27,7 +27,8 @@ type globals = {
   env_constants : constant_body KNmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body KNmap.t }
+  env_modtypes : module_type_body KNmap.t;
+  env_rules : (constr * constr) list KNmap.t }
 
 type env = {
   env_globals       : globals;
@@ -40,7 +41,8 @@ let empty_env = {
     env_constants = KNmap.empty;
     env_inductives = KNmap.empty;
     env_modules = MPmap.empty;
-    env_modtypes = KNmap.empty };
+    env_modtypes = KNmap.empty;
+    env_rules = KNmap.empty };
   env_named_context = empty_named_context;
   env_rel_context = empty_rel_context;
   env_universes = initial_universes }
@@ -130,6 +132,14 @@ let add_constant kn cb env =
   let new_globals = 
     { env.env_globals with 
 	env_constants = new_constants } in 
+  { env with env_globals = new_globals }
+
+let add_rule kn (l,r as rule) env =
+  let knrules = 
+    try KNmap.find kn env.env_globals.env_rules 
+    with Not_found -> [] in
+  let new_rules = KNmap.add kn (rule::knrules) env.env_globals.env_rules in
+  let new_globals = { env.env_globals with env_rules = new_rules } in 
   { env with env_globals = new_globals }
 
 (* constant_type gives the type of a constant *)

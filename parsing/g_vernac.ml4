@@ -111,7 +111,8 @@ GEXTEND Gram
     [ [ "Hypothesis" -> (Local, Logical)
       | "Variable" -> (Local, Definitional)
       | "Axiom" -> (Global, Logical)
-      | "Parameter" -> (Global, Definitional) ] ]
+      | "Parameter" -> (Global, Definitional)
+      | "Symbol" -> (Global, Symbol) ] ]
   ;
   assumptions_token:
     [ [ IDENT "Hypotheses" -> (Local, Logical)
@@ -185,6 +186,9 @@ GEXTEND Gram
       | stre = assumptions_token; bl = ne_params_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, bl)
+      (* Rewriting rules *)
+      | "Rule"; bl = simple_binders_list; l = constr; "=>"; r = constr ->
+	  VernacRule (bl,l,r)
       ] ]
   ;
   (* Gallina inductive declarations *)
@@ -213,10 +217,10 @@ GEXTEND Gram
           (id,c,lc) ] ]
   ;
   oneind:
-    [ [ id = base_ident; indpar = indpar; ":"; c = constr; ":=";
+    [ [ id = base_ident; indpar = simple_binders_list; ":"; c = constr; ":=";
 	lc = constructor_list -> (id,indpar,c,lc) ] ]
   ;
-  indpar:
+  simple_binders_list:
     [ [ bl = ne_simple_binders_list -> bl
       |  -> [] ] ]
   ;
@@ -297,7 +301,8 @@ GEXTEND Gram
         indl = block_old_style ->
 	  let indl' = List.map (fun (id,ar,c) -> (id,bl,ar,c)) indl in
 	  VernacInductive (f,indl')
-      | record_token; oc = opt_coercion; name = base_ident; ps = indpar; ":";
+      | record_token; oc = opt_coercion; name = base_ident;
+	ps = simple_binders_list; ":";
 	s = constr; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
 	  VernacRecord ((oc,name),ps,s,c,fs)
     ] ]
@@ -310,8 +315,8 @@ GEXTEND Gram
       | "Fixpoint"; recs = specifrec -> VernacFixpoint recs
       | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint corecs
       | IDENT "Scheme"; l = schemes -> VernacScheme l
-      | f = finite_token; s = csort; id = base_ident; indpar = indpar; ":=";
-        lc = constructor_list -> 
+      | f = finite_token; s = csort; id = base_ident;
+	indpar = simple_binders_list; ":="; lc = constructor_list -> 
           VernacInductive (f,[id,indpar,s,lc]) ] ]
   ;
   csort:

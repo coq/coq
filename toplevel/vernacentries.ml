@@ -375,6 +375,8 @@ let vernac_cofixpoint = build_corecursive
 
 let vernac_scheme = build_scheme
 
+let vernac_rule = build_rule
+
 (**********************)
 (* Modules            *)
 
@@ -1141,6 +1143,7 @@ let interp c = match c with
   | VernacFixpoint l -> vernac_fixpoint l
   | VernacCoFixpoint l -> vernac_cofixpoint l
   | VernacScheme l -> vernac_scheme l
+  | VernacRule (ctx,l,r) -> vernac_rule ctx (l,r)
 
   (* Modules *)
   | VernacDeclareModule (id,bl,mtyo,mexpro) -> 
