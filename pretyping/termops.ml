@@ -215,8 +215,12 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       let t' = f l t in
       let c' = f (g (na,Some b,t) l) c in
       mkLetIn (na, b', t', c')
-  | App (c,al) -> 
-      let c' = f l c in mkApp (c', array_map_left (f l) al)
+  | App (c,[||]) -> assert false
+  | App (c,al) ->
+      (*Special treatment to be able to recognize partially applied subterms*)
+      let a = al.(Array.length al - 1) in
+      let hd = f l (mkApp (c, Array.sub al 0 (Array.length al - 1))) in
+      mkApp (hd, [| f l a |])
   | Evar (e,al) -> mkEvar (e, array_map_left (f l) al)
   | Case (ci,p,c,bl) ->
       let p' = f l p in let c' = f l c in
