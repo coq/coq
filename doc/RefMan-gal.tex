@@ -28,7 +28,7 @@ The notation ``\nelist{\gensymbol}{sep}'' stands for a non empty
 sequence of expressions parsed by the ``{\gensymbol}'' entry and
 separated by the literal ``{\tt sep}''\footnote{This is similar to the
 expression ``{\gensymbol} $\{$ {\tt sep} {\gensymbol} $\}$'' in
-standard BNF, or``{\gensymbol} $($ {\tt sep} {\gensymbol} $)$*'' in
+standard BNF, or ``{\gensymbol} $($ {\tt sep} {\gensymbol} $)$*'' in
 the syntax of regular expressions.}.
 
 Similarly, the notation ``\nelist{\gensymbol}{}'' stands for a non
@@ -64,7 +64,7 @@ they are recognized by the following lexical class:
 \begin{tabular}{rcl} 
 {\firstletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{\_}\op\ml{\$} \\
 {\subsequentletter} & ::= & \ml{a..z}\op\ml{A..Z}\op\ml{0..9}\op\ml{\_}\op\ml{\$}\op\ml{'} \\
-{\ident} & ::= & {\firstletter}\sequencewithoutblank{\subsequentletter}{}\\
+{\ident} & ::= & {\firstletter} \sequencewithoutblank{\subsequentletter}{}\\
 \end{tabular}
 \end{center}
 Identifiers can contain at most 80 characters, and all characters are
@@ -107,7 +107,7 @@ the end of each line, just before the newline. For instance,
 \begin{flushleft}
 \begin{small}
 \begin{verbatim}
-AddPath "$COQLIB/\
+AddPath "/usr/local/coq/\
 contrib/Rocq/LAMBDA".
 \end{verbatim}
 \end{small}

@@ -49,8 +49,8 @@ compile it into a {\em file}{\tt .vo} file (See ~\ref{compiled}).
 \Warning The name {\em file} must be a regular {\Coq} identifier, as
 defined in the section \ref{lexical}. It
 must only contain letters, digits or underscores
-(\_). Thus it can be \verb+/bar/foo/toto.v+ but not 
-\verb+/bar/foo/to-to+ . 
+(\_). Thus it can be \verb+/bar/foo/toto.v+ but cannot be
+\verb+/bar/foo/to-to.v+ . 
 
 Notice that the \verb!-byte! and \verb!-opt! options are still
 available with \verb!coqc!  and allow you to select the byte-code or
@@ -69,46 +69,7 @@ below), or the name of another user to load the resource file of
 someone else (see option \verb:-user:).
 
 This file may contain, for instance, \verb:AddPath: commands to add
-directories to the load path of \Coq.  You can use the environment
-variable \verb:$COQLIB: which refer to the \Coq\
-library. Remember that the
-default load path already contains the following directories:
-\begin{verbatim}
-           .
-           $CAMLP4LIB
-           $COQLIB/tactics/tcc
-           $COQLIB/tactics/programs/EXAMPLES
-           $COQLIB/tactics/programs
-           $COQLIB/tactics/contrib/polynom
-           $COQLIB/tactics/contrib/omega
-           $COQLIB/tactics/contrib/natural
-           $COQLIB/tactics/contrib/linear
-           $COQLIB/tactics/contrib/extraction
-           $COQLIB/tactics/contrib/acdsimpl/simplify_rings
-           $COQLIB/tactics/contrib/acdsimpl/simplify_naturals
-           $COQLIB/tactics/contrib/acdsimpl/acd_simpl_def
-           $COQLIB/tactics/contrib/acdsimpl
-           $COQLIB/tactics/contrib
-           $COQLIB/theories/ZARITH
-           $COQLIB/theories/TREES
-           $COQLIB/theories/TESTS
-           $COQLIB/theories/SORTING
-           $COQLIB/theories/SETS
-           $COQLIB/theories/RELATIONS/WELLFOUNDED
-           $COQLIB/theories/RELATIONS
-           $COQLIB/theories/LOGIC
-           $COQLIB/theories/LISTS
-           $COQLIB/theories/INIT
-           $COQLIB/theories/DEMOS/PROGRAMS
-           $COQLIB/theories/DEMOS/OMEGA
-           $COQLIB/theories/DEMOS
-           $COQLIB/theories/BOOL
-           $COQLIB/theories/REALS
-           $COQLIB/theories/ARITH
-           $COQLIB/tactics
-           $COQLIB/states
-\end{verbatim}
-
+directories to the load path of \Coq.
 It is possible to skip the loading of the resource file with the
 option \verb:-q:.
 
@@ -116,14 +77,14 @@ option \verb:-q:.
 \label{EnvVariables}
 \index{Environment variables}
 
-There are 3 environment variables used by the \Coq\ system.
+There are three environment variables used by the \Coq\ system.
 \verb:$COQBIN: for the directory where the binaries are,
 \verb:$COQLIB: for the directory whrer the standard library is, and 
 \verb:$COQTOP: for the directory of the sources. The latter is useful
-only for developpers that are writing there own tactics using
+only for developers that are writing their own tactics and are using
 \texttt{coq\_makefile} (see \ref{Makefile}). If \verb:$COQBIN: or
 \verb:$COQLIB: are not defined, \Coq\ will use the default values
-(choosen at installation time). So these variables are useful onlt if
+(defined at installation time). So these variables are useful only if
 you move the \Coq\ binaries and library after installation.
 
 \section{Options}
@@ -149,7 +110,7 @@ The following command-line options are recognized by the commands {\tt
 
 \item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ \\
   Cause \Coq~to use the state put in the file {\em file} as its input
-  state. The default state is {\em tactics.coq}.
+  state. The default state is {\em initial.coq}.
   Mainly useful to build the standard input state.
 
 \item[{\tt -nois}]\ \\
@@ -157,11 +118,10 @@ The following command-line options are recognized by the commands {\tt
   standard input state.
 
 \item[{\tt -notactics}]\ \\
-  Forbid the dynamic loading of tactics, and start on the input state
-  {\em state.coq}.
+  Forbid the dynamic loading of tactics.
 
 \item[{\tt -init-file} {\em file}]\ \\
-  Take {\em file} as resource file, instead of {\tt \$HOME/.coqrc.7.0}.
+  Take {\em file} as the resource file.
 
 \item[{\tt -q}]\ \\
   Cause \Coq~not to load the resource file.
@@ -209,13 +169,14 @@ The following command-line options are recognized by the commands {\tt
   instead of the standard one. Not of general use.
 
 \item[{\tt -bindir} {\em directory}]\ \\
+  Set the directory containing \Coq\ binaries.
   It is equivalent to do \texttt{export COQBIN=}{\em directory}
   before lauching \Coq.
 
 \item[{\tt -libdir} {\em file}]\ \\
+  Set the directory containing \Coq\ libraries.
   It is equivalent to do \texttt{export COQLIB=}{\em directory}
   before lauching \Coq.
-  
 
 \item[{\tt -where}]\ \\
   Print the \Coq's standard library location and exit.
@@ -227,15 +188,14 @@ The following command-line options are recognized by the commands {\tt
   Print a short usage and exit.
 \end{description}
 
-{\tt coqtop} owns an additional option:
+% {\tt coqtop} owns an additional option:
 
-\begin{description}
-\item[{\tt -searchisos}]\ \\
-  Launch the {\sf Coq\_SearchIsos} toplevel
-  (see section~\ref{coqsearchisos}, page~\pageref{coqsearchisos}).
-\end{description}
+% \begin{description}
+% \item[{\tt -searchisos}]\ \\
+%   Launch the {\sf Coq\_SearchIsos} toplevel
+%   (see section~\ref{coqsearchisos}, page~\pageref{coqsearchisos}).
+% \end{description}
 
-See the manual pages for more details.
 % $Id$ 
 
 %%% Local Variables: 
