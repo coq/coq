@@ -3,7 +3,7 @@ Changes from V7.4
 
 A revision of the standard library and of concrete syntax of Coq, including
 
-- a completely new syntax for terms
+- a completely new syntax for terms coming with an automatic translator
 - renaming of various standard notions from French to English (esp in ZArith)
 - notions of the standard library are declared with (strict) implicit arguments
 - eq merged with eqT: old eq disappear, new eq (written =) is old eqT
@@ -12,6 +12,18 @@ A revision of the standard library and of concrete syntax of Coq, including
 - similarly, ex, ex2 and all are merged with exT, exT2 and allT.
 - a additional elimination Acc_iter for Acc, simplier than Acc_rect. 
   This new elimination principle is used for definition well_founded_induction.
+
+Syntax translator
+
+- Unsafe for annotation Cases when constructors coercions are used or when
+  annotations are eta-reduced predicates
+- Recursive keyword set by default (and no longer needed) in Tactic Definition
+
+Syntax for arithmetic
+
+- Notation "=" and "<>" in Z and R are no longer implicitly in Z or R
+  (with possible introduction of a coercion), use <Z>...=... or
+  <Z>...<>... instead
 
 Vernacular commands
 
@@ -39,8 +51,15 @@ Grammar extensions
 - UTF-8 encoded unicode blocks 0380-03FF (greek letters) and 2100-214F
   (letter-like, including aleph and double N,Z,Q,R) are supported
   identifiers; UTF-8 unicode blocs 2200-22FF (mathematical operators),
-  2300-23FF (miscellaneous technical, including sqrt symbol) and
-  2600-26FF (miscellaneous symbols) are supported symbols
+  2A00-2AFF (supplemental mathematical operators) 2300-23FF
+  (miscellaneous technical, including sqrt symbol), 2600-26FF
+  (miscellaneous symbols) 2190-21FF (arrows A) and 2900-297F (arrows B)
+  are supported symbols
+
+Library
+
+- New file about the factorial function in Arith
+- Variables names of iff_trans changed (source of incompatibilities)
 
 Tactic language
 
@@ -53,10 +72,14 @@ Tactics
   if the right-hand-side of "Match term With" are tactics, these
   tactics are never evaluated immediately and do not induce
   backtracking (in contrast with "Match Context")
+- Quantified names now avoid global names of the current module (like
+  Intro names did) [source of rare incompatibilities: 2 changes in the set of
+  user contribs]
 
 Bugs
 
 - Rename bug fixed (#244)
+- see coq-bugs server for the complete list of fixed bugs
 
 Changes from V7.3.1 to V7.4
 ===========================
