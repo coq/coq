@@ -20,6 +20,27 @@
 \def\Ltac{\textsc{Ltac }}
 \def\CoqIde{\textsc{CoqIde }}
 
+% macro pour les tactics
+\def\split{{\tt split}}
+\def\assumption{{\tt assumption}}
+\def\auto{{\tt auto}}
+\def\trivial{{\tt trivial}}
+\def\tauto{{\tt tauto}}
+\def\left{{\tt left}}
+\def\right{{\tt right}}
+\def\decompose{{\tt decompose}}
+\def\intro{{\tt intro}}
+\def\intros{{\tt intros}}
+\def\field{{\tt field}}
+\def\ring{{\tt ring}}
+\def\apply{{\tt apply}}
+\def\exact{{\tt exact}}
+\def\cut{{\tt cut}}
+\def\assert{{\tt assert}}
+\def\solve{{\tt solve}}
+
+
+
 \begin{document}
 \bibliographystyle{plain}
 
@@ -219,7 +240,7 @@ Windows. The sources can be easily adapted to all platforms supporting Objective
 
 \Question[conjonction]{My goal is a conjunction, how can I prove it ?}
 
-Use some theorem or assumption or use the {\tt split} tactic.
+Use some theorem or assumption or use the \split tactic.
 \begin{coq_example}
 Goal forall A B:Prop, A->B-> A/\B.
 intros.
@@ -377,7 +398,7 @@ Use a base of Hints.
 
 \Question[assumption]{My goal is one of the hypothesis, how can I prove it ?}
 
-Use the {\tt assumption} tactic.
+Use the \assumption tactic.
 
 \begin{coq_example}
 Goal 1=1 -> 1=1.
@@ -385,6 +406,21 @@ intro.
 assumption.
 Qed.
 \end{coq_example}
+
+
+\Question[assumption2]{My goal is more than one of the hypothesis and I want to chose which one is used, how can I do it ?}
+
+Use the {\tt exact} tactic.
+\begin{coq_example}
+Goal 1=1 -> 1=1 -> 1=1.
+intros.
+exact H0.
+Qed.
+\end{coq_example}
+
+\Question[assumption2bis]{What can be the difference between applying one hypothese or another in the context of the last question ?}
+
+From a proof point of view it is equivalent but if you want to extract a program from your proof, the two hyphoteses can lead to different programs.
 
 \Question[trivial]{My goal is ???, how can I prove it ?}
 
@@ -396,7 +432,7 @@ When you use the {\tt intro} tactic you don't have to give a name to your hyphot
 
 \Question[assert]{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
 
-If you want to use forward reasoning (first proving the fact and then using it) You just need to use the {\tt assert} tactic. If you want to use backward reasoning (proving your goal using an assumption and then proving the assumption) use the {\tt cut} tactic.
+If you want to use forward reasoning (first proving the fact and then using it) You just need to use the \assert tactic. If you want to use backward reasoning (proving your goal using an assumption and then proving the assumption) use the \cut tactic.
 
 
 
@@ -410,7 +446,7 @@ For instance :
 
 \Question[complete]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
 
-You need to use the {\tt solve} tactic.
+You need to use the \solve tactic.
 
 \Question[subgoalsorder]{How can I change the order of the subgoals ?}
 
