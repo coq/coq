@@ -746,8 +746,46 @@ let prepare_unif_pb typ cs =
   (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
   (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
 
+
 (* Infering the predicate *)
 (*
+The problem to solve is the following:
+
+We match Gamma |- t : I(u01..u0q) against the following constructors:
+
+  Gamma, x11...x1p1 |- C1(x11..x1p1) : I(u11..u1q)
+   ...
+  Gamma, xn1...xnpn |- Cn(xn1..xnp1) : I(un1..unq)
+
+Assume the types in the branches are the following
+
+  Gamma, x11...x1p1 |- branch1 : T1
+   ...
+  Gamma, xn1...xnpn |- branchn : Tn
+
+Assume the type of the global case expression is Gamma |- T
+
+The predicate has the form phi = [y1..yq][z:I(y1..yq)]? and must satisfy
+the following n+1 equations:
+
+  Gamma, x11...x1p1 |- (phi u11..u1q (C1 x11..x1p1))  =  T1
+   ...
+  Gamma, xn1...xnpn |- (phi un1..unq (Cn xn1..xnpn))  =  Tn
+  Gamma             |- (phi u01..u0q t)               =  T
+
+Some hints:
+
+- Clearly, if xij occurs in Ti, then, a "Cases z of (Ci xi1..xipi) => ..."
+  should be inserted somewhere in Ti.
+
+- If T is undefined, an easy solution is to insert a "Cases z of (Ci
+  xi1..xipi) => ..." in front of each Ti
+
+- Otherwise, T1..Tn and T must be step by step unified, if some of them
+  diverge, then try to replace the diverging subterm by one of y1..yq or z.
+
+- The main problem is what to do when an existential variables is encountered
+
 let prepare_unif_pb typ cs =
   let n = cs.cs_nargs in
   let _,p = decompose_prod_n n typ in
@@ -797,13 +835,20 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
     in
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
-    let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
+(*    let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in*)
     let (sign,_) = get_arity indf in
-    if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
+    let mtyp =
+      if array_exists is_Type typs then
+	(* Heuristic to avoid comparison between non-variables algebric univs*)
+	new_Type ()
+      else
+	mkExistential isevars env
+    in
+    if array_for_all (fun (_,_,typ) -> the_conv_x_leq env isevars typ mtyp) eqns
     then
       (* Non dependent case -> turn it into a (dummy) dependent one *)
       let sign = (Anonymous,None,build_dependent_inductive indf)::sign in
-      let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
+      let pred = it_mkLambda_or_LetIn (lift (List.length sign) mtyp) sign in
       (true,pred) (* true = dependent -- par défaut *)
     else
       let s = get_sort_of env (evars_of isevars) typs.(0) in
@@ -811,7 +856,7 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
       let predbody = mkMutCase (caseinfo, (nf_betaiota predpred), mkRel 1, brs) in
-      let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
+      let pred = it_mkLambda_or_LetIn (lift (List.length sign) mtyp) sign in
       (* "TODO4-2" *)
       error ("Unable to infer a Cases predicate\n"^
 "Either there is a type incompatiblity or the problem involves dependencies");
