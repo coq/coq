@@ -493,18 +493,18 @@ parsing/termast.cmx: parsing/ast.cmx parsing/coqast.cmx library/declare.cmx \
     library/impargs.cmx kernel/inductive.cmx kernel/names.cmx \
     library/nametab.cmx lib/pp.cmx pretyping/rawterm.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/univ.cmx lib/util.cmx parsing/termast.cmi 
-pretyping/cases.cmo: parsing/ast.cmi kernel/environ.cmi \
-    pretyping/evarconv.cmi pretyping/evarutil.cmi kernel/evd.cmi \
-    kernel/generic.cmi library/global.cmi library/indrec.cmi \
-    kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
+pretyping/cases.cmo: kernel/environ.cmi pretyping/evarconv.cmi \
+    pretyping/evarutil.cmi kernel/evd.cmi kernel/generic.cmi \
+    library/global.cmi library/indrec.cmi kernel/inductive.cmi \
+    kernel/instantiate.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/pretype_errors.cmi pretyping/rawterm.cmi kernel/reduction.cmi \
     pretyping/retyping.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/type_errors.cmi kernel/typeops.cmi lib/util.cmi \
     pretyping/cases.cmi 
-pretyping/cases.cmx: parsing/ast.cmx kernel/environ.cmx \
-    pretyping/evarconv.cmx pretyping/evarutil.cmx kernel/evd.cmx \
-    kernel/generic.cmx library/global.cmx library/indrec.cmx \
-    kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
+pretyping/cases.cmx: kernel/environ.cmx pretyping/evarconv.cmx \
+    pretyping/evarutil.cmx kernel/evd.cmx kernel/generic.cmx \
+    library/global.cmx library/indrec.cmx kernel/inductive.cmx \
+    kernel/instantiate.cmx kernel/names.cmx lib/pp.cmx \
     pretyping/pretype_errors.cmx pretyping/rawterm.cmx kernel/reduction.cmx \
     pretyping/retyping.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
@@ -817,6 +817,10 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx kernel/evd.cmx \
     kernel/generic.cmx library/global.cmx proofs/logic.cmx kernel/names.cmx \
     lib/pp.cmx proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx lib/util.cmx tactics/wcclausenv.cmi 
+tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
+tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
+tools/coqdep_lexer.cmo: config/coq_config.cmi 
+tools/coqdep_lexer.cmx: config/coq_config.cmx 
 toplevel/class.cmo: pretyping/classops.cmi kernel/constant.cmi \
     library/declare.cmi kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
     library/global.cmi kernel/inductive.cmi kernel/instantiate.cmi \

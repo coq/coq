@@ -27,7 +27,7 @@ noargument:
 # Compilation options
 ###########################################################################
 
-LOCALINCLUDES=-I config -I scripts -I lib -I kernel -I library \
+LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
@@ -170,7 +170,26 @@ states/barestate.coq: $(SYNTAXPP) coqtop.byte
 # tools
 ###########################################################################
 
-tools: dev/db_printers.cmo
+tools: tools/coqdep tools/coq_makefile tools/gallina tools/coq-tex \
+       tools/coq.elc dev/db_printers.cmo
+
+COQDEPCMX= config/coq_config.cmx tools/coqdep_lexer.cmx tools/coqdep.cmx
+
+tools/coqdep: $(COQDEPCMX)
+	$(OCAMLOPT) $(OPTFLAGS) -o tools/coqdep unix.cmxa $(COQDEPCMX) \
+          $(OSDEPLIBS)
+
+GALLINACMX=tools/gallina_lexer.cmx tools/gallina.cmx
+
+tools/gallina: $(GALLINACMX)
+	$(OCAMLOPT) $(OPTFLAGS) -o tools/gallina $(GALLINACMX)
+
+tools/coq_makefile: tools/coq_makefile.ml
+	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq_makefile tools/coq_makefile.ml
+
+tools/coq-tex: tools/coq-tex.ml
+	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq-tex str.cmxa tools/coq-tex.ml \
+          $(STRLIB)
 
 ###########################################################################
 # minicoq
@@ -183,6 +202,24 @@ MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 minicoq: $(MINICOQCMO)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CMA) $(MINICOQCMO) \
 	  $(OSDEPLIBS)
+
+###########################################################################
+# Installation
+###########################################################################
+
+install: install-binaries install-library install-manpages
+
+install-binaries:
+	cp tools/coqdep tools/gallina tools/coq_makefile tools/coq-tex \
+	  $(BINDIR)
+
+install-library:
+	cp tools/coq.el tools/coq.elc $(EMACSLIB)
+
+MANPAGES=tools/coq-tex.1 tools/coqdep.1 tools/gallina.1
+
+install-manpages:
+	cp $(MANPAGES) $(MANDIR)/man1
 
 ###########################################################################
 # Documentation
@@ -295,7 +332,7 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 # Default rules
 ###########################################################################
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4 .el .elc
 
 .ml.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -c $<
@@ -315,6 +352,12 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 .ml4.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
+.el.elc:
+	echo "(setq load-path (cons \".\" load-path))" > $*.compile
+	echo "(byte-compile-file \"$<\")" >> $*.compile
+	$(EMACS) -batch -l $*.compile
+	rm -f $*.compile        
+
 ###########################################################################
 # Cleaning
 ###########################################################################
@@ -329,7 +372,9 @@ archclean::
 	rm -f parsing/*.cmx parsing/*.[so]
 	rm -f pretyping/*.cmx pretyping/*.[so]
 	rm -f toplevel/*.cmx toplevel/*.[so]
+	rm -f tools/*.cmx tools/*.[so]
 	rm -f coqtop.opt coqtop.byte minicoq
+	rm -f tools/coqdep tools/gallina tools/coq-tex tools/coq_makefile
 
 cleanall:: archclean
 	rm -f *~
@@ -343,6 +388,7 @@ cleanall:: archclean
 	rm -f parsing/*.cm[io] parsing/*.ppo parsing/*~
 	rm -f pretyping/*.cm[io] pretyping/*~
 	rm -f toplevel/*.cm[io] toplevel/*~
+	rm -f tools/*.cm[io] tools/*~
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml
