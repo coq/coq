@@ -102,9 +102,9 @@ val clenv_independent : wc clausenv -> metavariable list
 val clenv_missing : 'a clausenv -> metavariable list
 val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
   constr list -> wc clausenv -> wc clausenv
-(*
+(*i
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
-*)
+i*)
 val clenv_lookup_name : 'a clausenv -> identifier -> metavariable
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 

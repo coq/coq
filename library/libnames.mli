@@ -111,8 +111,8 @@ val qualid_of_dirpath : dir_path -> qualid
 
 val make_short_qualid : identifier -> qualid
 
-(* Both names are passed to objects: a "semantic" kernel_name, which
-   can be substituted and a "syntactic" section_path which can be printed
+(* Both names are passed to objects: a "semantic" [kernel_name], which
+   can be substituted and a "syntactic" [section_path] which can be printed
 *)
 
 type object_name = section_path * kernel_name
@@ -121,7 +121,7 @@ type object_prefix = dir_path * (module_path * dir_path)
 
 val make_oname : object_prefix -> identifier -> object_name
 
-(* to this type are mapped dir_path's in the nametab *)
+(* to this type are mapped [dir_path]'s in the nametab *)
 type global_dir_reference = 
   | DirOpenModule of object_prefix
   | DirOpenModtype of object_prefix

@@ -20,7 +20,7 @@ val mk_node  : 'a -> 'a t array -> 'a t
 val mk_rec   : 'a t array -> 'a t array
 
 (* [lift k t] increases of [k] the free parameters of [t]. Needed
-   to avoid captures when a tree appears under mk_rec *) 
+   to avoid captures when a tree appears under [mk_rec] *) 
 val lift : int -> 'a t -> 'a t
 
 val map : ('a -> 'b) -> 'a t -> 'b t

@@ -62,7 +62,7 @@ val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
 val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 
 (* [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
-   [t'=(x1:A1)..(xn:An)(ref args)] and raise Not_found if not possible *)
+   [t'=(x1:A1)..(xn:An)(ref args)] and raise [Not_found] if not possible *)
 val reduce_to_quantified_ref :
   env ->  evar_map -> Libnames.global_reference -> types -> types
 

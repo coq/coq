@@ -43,9 +43,9 @@ val hcons_ast:
 
 val subst_ast: Names.substitution -> t -> t
 
-(*
+(*i
 val map_tactic_expr : (t -> t) -> (tactic_expr -> tactic_expr) -> tactic_expr -> tactic_expr
 val fold_tactic_expr :
   ('a -> t -> 'a) -> ('a -> tactic_expr -> 'a) -> 'a -> tactic_expr -> 'a
 val iter_tactic_expr : (tactic_expr -> unit) -> tactic_expr -> unit
-*)
+i*)

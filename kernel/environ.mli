@@ -44,7 +44,7 @@ val engagement    : env -> engagement option
 val empty_context : env -> bool
 
 (************************************************************************)
-(*s Context of de Bruijn variables (rel_context) *)
+(*s Context of de Bruijn variables ([rel_context]) *)
 val push_rel         : rel_declaration -> env -> env
 val push_rel_context :     rel_context -> env -> env
 val push_rec_types   : rec_declaration -> env -> env

@@ -51,7 +51,7 @@ val w_const_value       : wc -> constant -> constr
 val w_defined_evar      : wc -> existential_key -> bool
 
 val instantiate : int -> constr -> identifier Tacexpr.gsimple_clause -> tactic
-(*
+(*i
 val instantiate_tac : tactic_arg list -> tactic
-*)
+i*)
 val instantiate_pf_com : int -> Topconstr.constr_expr -> pftreestate -> pftreestate

@@ -42,7 +42,7 @@ val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 (* To skip to the next occurrence *)
 exception NextOccurrence of int
 
-(* Tries to match a _closed_ subterm of [c] with [pat] *)
+(* Tries to match a **closed** subterm of [c] with [pat] *)
 val sub_match : int -> constr_pattern -> constr -> patvar_map * constr
 
 (* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]

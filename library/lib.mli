@@ -59,7 +59,7 @@ val add_leaf : identifier -> obj -> object_name
 val add_absolutely_named_leaf : object_name -> obj -> unit
 val add_anonymous_leaf : obj -> unit
 
-(* this operation adds all objects with the same name and calls load_object 
+(* this operation adds all objects with the same name and calls [load_object]
    for each of them *)
 val add_leaves : identifier -> obj list -> object_name
 
@@ -107,7 +107,7 @@ val start_modtype :
   module_ident -> module_path -> Summary.frozen -> object_prefix
 val end_modtype : module_ident 
   -> object_name * object_prefix * Summary.frozen * library_segment
-(* Lib.add_frozen_state must be called after each of the above functions *)
+(* [Lib.add_frozen_state] must be called after each of the above functions *)
 
 (*s Compilation units *)
 

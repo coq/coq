@@ -105,7 +105,7 @@ val make_resolves :
 
 (* [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;
-   Never raises an User_exception;
+   Never raises a user exception;
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp : 

@@ -26,7 +26,7 @@ val is_one : bignat -> bool
 val div2_with_rest : bignat -> bignat * bool (* true=odd; false=even *)
 
 val add_1 : bignat -> bignat
-val sub_1 : bignat -> bignat (* Remark: (sub_1 0)=0 *)
+val sub_1 : bignat -> bignat (* Remark: [sub_1 0]=0 *)
 val mult_2 : bignat -> bignat
 
 val less_than : bignat -> bignat -> bool

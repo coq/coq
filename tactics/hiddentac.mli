@@ -78,9 +78,9 @@ val h_rename          : identifier -> identifier -> tactic
 
 
 (* Constructors *)
-(*
+(*i
 val h_any_constructor : tactic -> tactic
-*)
+i*)
 val h_constructor     : int -> constr bindings -> tactic
 val h_left            : constr bindings -> tactic
 val h_right           : constr bindings -> tactic

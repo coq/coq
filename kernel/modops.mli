@@ -41,7 +41,7 @@ val subst_signature_msid :
   module_signature_body -> module_signature_body
 
 (* [add_signature mp sign env] assumes that the substitution [msid]
-   \mapsto [mp] has already been performed (or is not necessary, like
+   $\mapsto$ [mp] has already been performed (or is not necessary, like
    when [mp = MPself msid]) *)
 val add_signature : 
   module_path -> module_signature_body -> env -> env
