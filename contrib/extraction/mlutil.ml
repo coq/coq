@@ -1087,16 +1087,17 @@ let manual_inline = function
    we are free to act (AutoInline is set)
    \end{itemize} *)
 
-let inline_test' r t = 
+(*i  DEBUG 
+  let inline_test' r t = 
   let b = inline_test t in 
   if b then msgnl (Printer.pr_global r); 
-  b
+  b i*)
 
 let inline r t = 
   not (to_keep r) (* The user DOES want to keep it *)
   && (to_inline r (* The user DOES want to inline it *) 
      || (auto_inline () && lang () <> Haskell 
-	 && (is_recursor r || manual_inline r || inline_test' r t)))
+	 && (is_recursor r || manual_inline r || inline_test t)))
 
 (*S Optimization. *)
 
