@@ -101,18 +101,17 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
 
 (** First-order quantifiers *)
 
-  (** [(ex A P)], or simply [(EX x | P(x))], expresses the existence of an 
+  (** [ex A P], or simply [exists x, P x], expresses the existence of an 
       [x] of type [A] which satisfies the predicate [P] ([A] is of type 
       [Set]). This is existential quantification. *)
 
-  (** [(ex2 A P Q)], or simply [(EX x | P(x) & Q(x))], expresses the
+  (** [ex2 A P Q], or simply [exists2 x, P x & Q x], expresses the
       existence of an [x] of type [A] which satisfies both the predicates
       [P] and [Q] *)
 
   (** Universal quantification (especially first-order one) is normally 
-      written [(x:A)(P x)]. For duality with existential quantification, the 
-      construction [(all A P)], or simply [(All P)], is provided as an 
-      abbreviation of [(x:A)(P x)] *) 
+      written [forall x:A, P x]. For duality with existential quantification, 
+      the construction [all P] is provided too *)
 
 Inductive ex [A:Type;P:A->Prop] : Prop 
     := ex_intro : (x:A)(P x)->(ex A P).
@@ -173,7 +172,7 @@ Section universal_quantification.
 
 (** Equality *)
 
-(** [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
+(** [eq A x y], or simply [x=y], expresses the (Leibniz') equality
     of [x] and [y]. Both [x] and [y] must belong to the same type [A].
     The definition is inductive and states the reflexivity of the equality.
     The others properties (symmetry, transitivity, replacement of 
