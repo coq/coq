@@ -2874,17 +2874,17 @@ contrib/interface/name_to_ast.cmx: parsing/ast.cmx pretyping/classops.cmx \
 contrib/interface/parse.cmo: contrib/interface/ascent.cmi \
     toplevel/cerrors.cmi config/coq_config.cmi library/declaremods.cmi \
     parsing/esyntax.cmi library/libnames.cmi library/libobject.cmi \
-    library/library.cmi contrib/interface/line_parser.cmi library/nameops.cmi \
-    kernel/names.cmi library/nametab.cmi parsing/pcoq.cmi lib/pp.cmi \
-    lib/system.cmi lib/util.cmi toplevel/vernacentries.cmi \
+    library/library.cmi contrib/interface/line_parser.cmi toplevel/mltop.cmi \
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi parsing/pcoq.cmi \
+    lib/pp.cmi lib/system.cmi lib/util.cmi toplevel/vernacentries.cmi \
     toplevel/vernacexpr.cmo contrib/interface/vtp.cmi \
     contrib/interface/xlate.cmi 
 contrib/interface/parse.cmx: contrib/interface/ascent.cmi \
     toplevel/cerrors.cmx config/coq_config.cmx library/declaremods.cmx \
     parsing/esyntax.cmx library/libnames.cmx library/libobject.cmx \
-    library/library.cmx contrib/interface/line_parser.cmx library/nameops.cmx \
-    kernel/names.cmx library/nametab.cmx parsing/pcoq.cmx lib/pp.cmx \
-    lib/system.cmx lib/util.cmx toplevel/vernacentries.cmx \
+    library/library.cmx contrib/interface/line_parser.cmx toplevel/mltop.cmx \
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx parsing/pcoq.cmx \
+    lib/pp.cmx lib/system.cmx lib/util.cmx toplevel/vernacentries.cmx \
     toplevel/vernacexpr.cmx contrib/interface/vtp.cmx \
     contrib/interface/xlate.cmx 
 contrib/interface/paths.cmo: contrib/interface/paths.cmi 
