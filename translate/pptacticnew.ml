@@ -213,7 +213,7 @@ let rec pr_intro_pattern = function
   | IntroIdentifier id -> pr_id id
 
 and pr_case_intro_pattern = function
-  | [pl] ->
+  | [_::_ as pl] ->
       str "(" ++ hv 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
   | pll ->
       str "[" ++
