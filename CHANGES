@@ -1,6 +1,7 @@
 Métathéorie
 
-- Ajout de définitions locales (Let-In)
+- Ajout de définitions locales (Let-In) avec la syntaxe [x:=u]t. Cela
+peut entrainer des comportements nouveaux pour certaines tactiques.
 
 Parsing
 
@@ -26,6 +27,12 @@ Syntaxe des constructions
   cas de clauses par défaut redondantes auquel cas la première est prise
   avec un avertissement.
 
+- Les déclarations de constantes et de variables peuvent maintenant
+être accédées par un nom long de la forme "Logic.f_equal". La
+bibliothèque standard a maintenant une racine nommée "Coq". Tout nom
+de la forme "Coq.Logic.f_equal" dénote ainsi un chemin absolu vers une
+déclaration.
+
 Syntaxe des theories
 
 - Ajout d'une syntaxe pour les reels: ``Rexpr``.
@@ -41,7 +48,7 @@ commandes)
 
 - Le parseur par défaut des actions des règles de grammaires et des
 motifs des règles d'affichage est maintenant celui associé au nom de
-la grammaire (vernac, tactic ou constr). Donc plus de piquants
+la grammaire (vernac, tactic ou constr). Donc plus de piqants
 <:vernac:<...>> etc. Pour retourner de l'ast, il faut typer
 explicitement la grammaire avec "ast" ou "List" (renommé d'ailleurs
 "ast list"), ou, si c'est dans une règle Syntax, utiliser la quotation
@@ -95,6 +102,8 @@ Tactiques
 - Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
 
 - Plus de "Require Prolog" (intégré par défaut)
+
+- Unfold échoue si on lui donne en argument une définition non dépliable
 
 Outils
 
