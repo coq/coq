@@ -205,6 +205,7 @@ type option_value_ref =
 module Key = struct type t = option_name let compare = Pervasives.compare end
 module OptionMap = Map.Make(Key)
 
+let sync_value_init_tab = ref OptionMap.empty
 let sync_value_tab = ref OptionMap.empty
 let async_value_tab = ref OptionMap.empty
 
@@ -224,7 +225,7 @@ let (inOptVal,_) =
 
 let freeze_sync_table () = !sync_value_tab
 let unfreeze_sync_table l = sync_value_tab := l
-let init_sync_table () = sync_value_tab := OptionMap.empty
+let init_sync_table () = sync_value_tab := !sync_value_init_tab
 let _ = 
   Summary.declare_summary "Sync_option"
     { Summary.freeze_function = freeze_sync_table;
@@ -263,6 +264,8 @@ let declare_sync_option (cast,uncast)
       or List.mem_assoc (nickname key) !ident_table
     then error "Sorry, this option name is already used";
     sync_value_tab := OptionMap.add key (name,(cast default)) !sync_value_tab;
+    sync_value_init_tab := 
+    OptionMap.add key (name,(cast default)) !sync_value_init_tab;
     fun () -> uncast (snd (OptionMap.find key !sync_value_tab))
 
 type 'a value_function = unit -> 'a

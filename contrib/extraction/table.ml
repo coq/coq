@@ -53,31 +53,21 @@ let refs_of_vargl = List.map reference_of_varg
 
 (*s AutoInline parameter *)
 
-let auto_inline_ref = ref true
-
-let auto_inline () = !auto_inline_ref
-
 let auto_inline_params = 
-  {optasyncname = "Extraction AutoInline";
-   optasynckey = SecondaryTable ("Extraction", "AutoInline");
-   optasyncread = auto_inline;
-   optasyncwrite = (fun b ->auto_inline_ref := b)}
+  {optsyncname = "Extraction AutoInline";
+   optsynckey = SecondaryTable ("Extraction", "AutoInline");
+   optsyncdefault = true }
 
-let _ = declare_async_bool_option auto_inline_params
+let auto_inline = declare_sync_bool_option auto_inline_params
 
 (*s Optimize parameter *)
 
-let optim_ref = ref true
-
-let optim () = !optim_ref
-
 let optim_params = 
-  {optasyncname = "Extraction Optimize";
-   optasynckey = SecondaryTable ("Extraction", "Optimize");
-   optasyncread = optim;
-   optasyncwrite = (fun b ->optim_ref := b)}
+  {optsyncname = "Extraction Optimize";
+   optsynckey = SecondaryTable ("Extraction", "Optimize");
+   optsyncdefault = true }
 
-let _ = declare_async_bool_option optim_params
+let optim = declare_sync_bool_option optim_params
 
 (*s Table for custom inlining *)
 
