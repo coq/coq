@@ -986,8 +986,8 @@ let splay_prod_assum env sigma =
     | IsProd (x,t,c)  -> prodec_rec (Sign.add_rel_decl (x,outcast_type t) l) c
     | IsLetIn (x,b,t,c) -> prodec_rec (Sign.add_rel_def (x,b,outcast_type t) l) c
     | IsCast (c,_)    -> prodec_rec l c
-    | _               -> l,c
-  in 
+    | _               -> l,t
+  in
   prodec_rec Sign.empty_rel_context
 
 let splay_arity env sigma c =
