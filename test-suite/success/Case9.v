@@ -1,3 +1,5 @@
+Inductive List [A:Set] :Set := 
+ Nil:(List A) | Cons:A->(List A)->(List A).
 
 Inductive eqlong : (List nat)-> (List nat)-> Prop :=
  eql_cons : (n,m:nat)(x,y:(List nat)) 

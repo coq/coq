@@ -1,3 +1,7 @@
+Inductive listn : nat-> Set := 
+  niln : (listn O) 
+| consn : (n:nat)nat->(listn n) -> (listn (S n)).
+
 Inductive empty : (n:nat)(listn n)-> Prop := 
   intro_empty: (empty O niln).
 
