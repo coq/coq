@@ -476,7 +476,7 @@ let update_on_end_of_proof id =
 	prerr_endline "Toggling Changing Reset id"; 
 	r := false
       end
-  | { ast = _, (VernacAbort _ | VernacAbortAll) } -> raise Exit
+  | { ast = _, (VernacAbort _ | VernacAbortAll | VernacGoal _) } -> raise Exit
   | _ -> ()
   in
   try Stack.iter lookup_lemma processed_stack with Exit -> ()
