@@ -261,7 +261,7 @@ Trivial with bool.
 Save.
 
 Lemma orb_true_elim : (b1,b2:bool)(orb b1 b2)=true -> {b1=true}+{b2=true}.
-NewDestruct b1; [Auto with bool | NewDestruct b2; Auto with bool].
+NewDestruct b1; Simpl; Auto with bool.
 Save.
 Lemma orb_false_intro 
     : (b1,b2:bool)(b1=false)->(b2=false)->(orb b1 b2)=false.
@@ -371,7 +371,7 @@ Save.
 
 Lemma andb_false_elim : 
     (b1,b2:bool)(andb b1 b2)=false -> {b1=false}+{b2=false}.
-NewDestruct b1; NewDestruct b2; Simpl; Auto with bool.
+NewDestruct b1; Simpl; Auto with bool.
 Save.
 Hints Resolve andb_false_elim : bool v62.
 
