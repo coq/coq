@@ -8,10 +8,4 @@
 
 (* $Id$ *)
 
-Declare ML Module "refine".
-
-Grammar tactic simple_tactic: ast :=
-  tcc [ "Refine" castedopenconstrarg($c) ] -> [(Tcc $c)].
-
-Syntax tactic level 0:
-  tcc [ <<(Tcc $C)>> ] -> ["Refine " $C].
+(* Command declarations are moved to the ML side *)

@@ -16,7 +16,7 @@ open Hipattern
 open Names
 open Pp
 open Proof_type
-open Tacmach
+open Tacticals
 open Tacinterp
 open Tactics
 open Util
@@ -112,13 +112,26 @@ let rec tauto_intuit t_reduce t_solver ist =
 
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
-  | Some id ->
-    let ast_id = nvar id in
-    interp <:tactic<Unfold not iff in $ast_id>>
+  | Some id -> let id = (dummy_loc,id) in interp <:tactic<Unfold not iff in $id>>
 
-let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
+let reduction_not_iff =
+  Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
-let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
+let t_reduction_not_iff = Tacexpr.TacArg (valueIn (VTactic reduction_not_iff))
+
+(*
+let reduction_not_iff ist =
+  match ist.goalopt with 
+    | None -> anomaly "reduction_not_iff"
+    | Some gl ->
+	List.fold_right
+	(fun id tac -> 
+	  let id = (dummy_loc,id) in <:tactic<Unfold not iff in $id; $tac>>)
+	(Tacmach.pf_ids_of_hyps gl)
+	<:tactic<Unfold not iff>>
+
+let t_reduction_not_iff = tacticIn reduction_not_iff
+*)
 
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
@@ -129,12 +142,11 @@ let tauto g =
 
 let default_intuition_tac = <:tactic< Auto with * >>
 
-let intuition args =
-  match args with
-    | [] -> intuition_gen default_intuition_tac
-    | [ Tac(_, t)] -> intuition_gen t
-    | _ -> assert false
+TACTIC EXTEND Tauto
+| [ "Tauto" ] -> [ tauto ]
+END
 
-let _ = hide_atomic_tactic "Tauto" tauto
-let _ = hide_tactic "Intuition" intuition
-
+TACTIC EXTEND Intuition
+| [ "Intuition" ] -> [ intuition_gen default_intuition_tac ]
+| [ "Intuition" tactic(t) ] -> [ intuition_gen t ]
+END
