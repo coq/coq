@@ -84,18 +84,23 @@ let rec tauto_main () =
   <:tactic<
     $t_simplif;$t_axioms
     Orelse
-      Match Context With
+      (Match Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intros;
           Assumption];$t_tauto_main
       | [|- (?1 ? ?)] ->
-        $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main)>>
+        $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main))
+    Orelse
+      (Intro;$t_tauto_main)>>
 
-let intuition_main () =
+let rec intuition_main () =
   let t_axioms = tacticIn axioms
-  and t_simplif = tacticIn simplif in
-  <:tactic<$t_simplif;$t_axioms Orelse Auto with *>>
+  and t_simplif = tacticIn simplif
+  and t_intuition_main = tacticIn intuition_main in
+  <:tactic<
+    $t_simplif;$t_axioms
+    Orelse Try (Solve [Auto with *|Intro;$t_intuition_main])>>
 
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
