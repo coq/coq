@@ -47,22 +47,22 @@ Intros x y;Split; Intro E; [ Apply Zcompare_EGAL_eq; Assumption
   | Rewrite E; Apply Zcompare_x_x ].
 Qed.
 
+Lemma Zcompare_antisym :
+  (x,y:Z)(Op (Zcompare x y)) = (Zcompare y x).
+Proof.
+Intros x y; NewDestruct x; NewDestruct y; Simpl;
+  Reflexivity Orelse Discriminate H Orelse 
+  Rewrite Pcompare_antisym; Reflexivity.
+Qed.
+
 Lemma Zcompare_ANTISYM : 
   (x,y:Z) (Zcompare x y) = SUPERIEUR <->  (Zcompare y x) = INFERIEUR.
 Proof.
-Intros x y;Split; [
-  Case x;Case y;Simpl;Intros;(Trivial with arith Orelse Discriminate H Orelse
-    (Apply ZC1; Assumption) Orelse
-    (Cut (compare p p0 EGAL)=SUPERIEUR; [
-       Intros H1;Rewrite H1;Auto with arith
-     | Apply ZC2; Generalize H ; Case (compare p0 p EGAL);
-       Trivial with arith Orelse (Intros H2;Discriminate H2)]))
-| Case x;Case y;Simpl;Intros;(Trivial with arith Orelse Discriminate H Orelse
-    (Apply ZC2; Assumption) Orelse
-    (Cut (compare p0 p EGAL)=INFERIEUR; [
-       Intros H1;Rewrite H1;Auto with arith
-     | Apply ZC1; Generalize H ; Case (compare p p0 EGAL);
-       Trivial with arith Orelse (Intros H2;Discriminate H2)]))].
+Intros x y; Split; Intro H; [ 
+  Change INFERIEUR with (Op SUPERIEUR); 
+  Rewrite <- Zcompare_antisym; Rewrite H; Reflexivity
+| Change SUPERIEUR with (Op INFERIEUR); 
+  Rewrite <- Zcompare_antisym; Rewrite H; Reflexivity ].
 Qed.
 
 (** Transitivity of comparison *)
@@ -460,7 +460,7 @@ Qed.
 
 V7only [Set Implicit Arguments.].
 
-Theorem  Zcompare_Zmult_left : (x,y,z:Z)`z>0` -> `x ?= y`=`z*x ?= z*y`.
+Lemma  Zcompare_Zmult_left : (x,y,z:Z)`z>0` -> `x ?= y`=`z*x ?= z*y`.
 Proof.
 Intros x y z H; NewDestruct z.
   Discriminate H.
@@ -468,7 +468,7 @@ Intros x y z H; NewDestruct z.
   Discriminate H.
 Qed.
 
-Theorem Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
+Lemma Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
 Proof.
 Intros x y z H;
 Rewrite (Zmult_sym x z);
