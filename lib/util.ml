@@ -559,6 +559,10 @@ let option_app f = function
   | None -> None
   | Some x -> Some (f x)
 
+let option_cons a l = match a with
+  | Some x -> x::l
+  | None -> l
+
 let option_fold_left2 f e a b = match (a,b) with
   | Some x, Some y -> f e x y
   | _ -> e
