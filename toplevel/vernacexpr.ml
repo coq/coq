@@ -132,6 +132,7 @@ type coercion_flag  = bool (* true = AddCoercion;   false = NoCoercion     *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = bool (* true = Inductive;     false = CoInductive    *)
+type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 
 type sort_expr = Rawterm.rawsort
 
@@ -245,7 +246,8 @@ type vernac_expr =
   | VernacDeclareTacticDefinition of
       rec_flag * (lident * raw_tactic_expr) list
   | VernacHints of locality_flag * lstring list * hints
-  | VernacSyntacticDefinition of lident * constr_expr * int option
+  | VernacSyntacticDefinition of identifier * constr_expr * locality_flag *
+      onlyparsing_flag
   | VernacDeclareImplicits of lreference * explicitation list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of opacity_flag * lreference list

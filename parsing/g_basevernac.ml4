@@ -337,10 +337,9 @@ GEXTEND Gram
 (*
 	     VernacDistfix (local,a,n,s,p,sc)
 *)
-     | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
-	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
-	       | -> [] ] ->
-	 VernacNotation (local,c,Some("'"^s^"'",l),None,None)
+     | IDENT "Notation"; local = locality; id = ident; ":="; c = constr;
+         b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
+	 VernacSyntacticDefinition (id,c,local,b)
      | IDENT "Notation"; local = locality; s = lstring; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ];

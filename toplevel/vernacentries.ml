@@ -659,12 +659,7 @@ let vernac_declare_tactic_definition = Tacinterp.add_tacdef
 
 let vernac_hints = Auto.add_hints
 
-let vernac_syntactic_definition id c = function
-  | None -> syntax_definition id c
-  | Some n ->
-      let l = list_tabulate (fun _ -> (CHole (dummy_loc),None)) n in
-      let c = CApp (dummy_loc,(None,c),l) in
-      syntax_definition id c
+let vernac_syntactic_definition = Command.syntax_definition 
 
 let vernac_declare_implicits locqid = function
   | Some imps -> Impargs.declare_manual_implicits (Nametab.global locqid) imps
@@ -1197,7 +1192,7 @@ let interp c = match c with
   (* Commands *)
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
-  | VernacSyntacticDefinition ((_,id),c,n) -> vernac_syntactic_definition id c n
+  | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (qid,l) -> vernac_declare_implicits qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c
   | VernacSetOpacity (opaq, qidl) -> List.iter (vernac_set_opacity opaq) qidl

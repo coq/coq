@@ -1111,14 +1111,6 @@ let add_notation local c dfmod mv8 sc =
   | Some (df,modifiers) ->
   let toks = split_notation_string df in
   match toks with 
-    | [String x] when is_quoted_ident x 
-	(* This is an ident that can be qualified: a syntactic definition *)
-	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
-        (* Means a Syntactic Definition *)
-        let ident = id_of_string (unquote_notation_token x) in
-	let c = snd (interp_aconstr [] [] c) in
-	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
-        Syntax_def.declare_syntactic_definition local ident onlyparse c
     | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
 	(* This is a ident to be declared as a rule *)
         add_notation_in_scope local df c (SetLevel 0::modifiers) mv8 sc toks

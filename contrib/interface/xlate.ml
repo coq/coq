@@ -1798,8 +1798,10 @@ let rec xlate_vernac =
 	     xlate_sort sort) in
         CT_ind_scheme
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
-   | VernacSyntacticDefinition ((_,id), c, nopt) ->
-         CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt nopt)
+   | VernacSyntacticDefinition (id, c, false, _) ->
+       CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt None)
+   | VernacSyntacticDefinition (id, c, true, _) ->
+       xlate_error "TODO: Local abbreviations"
    | VernacRequire (impexp, spec, id::idl) ->
       let ct_impexp, ct_spec = get_require_flags impexp spec in
       CT_require (ct_impexp, ct_spec, 

@@ -418,14 +418,14 @@ GEXTEND Gram
          n = OPT [ "|"; n = natural -> n ] ->
 	   VernacSyntacticDefinition (id,c,n)
 *)
-      | IDENT "Syntactic"; "Definition"; id = IDENT; ":="; c = constr;
+      | IDENT "Syntactic"; "Definition"; id = ident; ":="; c = constr;
          n = OPT [ "|"; n = natural -> n ] ->
 	   let c = match n with
 	     | Some n ->
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
 		 CApp (loc,(None,c),l)
 	     | None -> c in
-	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
+	   VernacSyntacticDefinition (id,c,false,true)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
 	  let l = List.map (fun n -> ExplByPos n) l in
 	  VernacDeclareImplicits (qid,Some l)

@@ -308,7 +308,8 @@ let print_inductive sp = (print_mutual sp)
 let print_syntactic_def sep kn =
   let qid = Nametab.shortest_qualid_of_syndef kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
-  (str"Syntactic Definition " ++ pr_qualid qid ++ str sep ++ 
+  (str (if !Options.v7 then "Syntactic Definition " else "Notation ")
+   ++ pr_qualid qid ++ str sep ++ 
   Constrextern.without_symbols pr_rawterm c ++ fnl ())
 
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
@@ -419,7 +420,7 @@ let print_name ref =
   | Term (IndRef (sp,_)) -> print_inductive sp
   | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
   | Term (VarRef sp) -> print_section_variable sp
-  | Syntactic kn -> print_syntactic_def " = " kn
+  | Syntactic kn -> print_syntactic_def " := " kn
   | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
   | Dir _ -> mt ()
   | ModuleType (_,kn) -> print_modtype kn
@@ -481,7 +482,7 @@ let print_about ref =
   let k = locate_any_name ref in
   begin match k with
   | Term ref -> print_ref false ref ++ print_name_infos ref
-  | Syntactic kn -> print_syntactic_def " = " kn
+  | Syntactic kn -> print_syntactic_def " := " kn
   | Dir _ | ModuleType _ | Undefined _ -> mt () end
   ++
   hov 0 (str "Expands to: " ++ pr_located_qualid k)

@@ -33,7 +33,7 @@ val declare_definition : identifier -> definition_kind ->
   local_binder list -> Tacred.red_expr option -> constr_expr ->
     constr_expr option -> declaration_hook -> unit
 
-val syntax_definition : identifier -> constr_expr -> unit
+val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 
 val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> unit
