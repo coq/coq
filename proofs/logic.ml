@@ -472,6 +472,10 @@ let prim_extractor subfun vl pft =
 	   | IsProd (_,ty,_) ->
 	       let cty = subst_vars vl ty in
 	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	   | IsLetIn (_,b,ty,_) ->
+	       let cb = subst_vars vl b in
+	       let cty = subst_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | { ref = Some (Prim { name = Intro_after; newids = [id]}, [spf]) } -> 
@@ -479,6 +483,10 @@ let prim_extractor subfun vl pft =
 	   | IsProd (_,ty,_) ->
 	       let cty = subst_vars vl ty in
 	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	   | IsLetIn (_,b,ty,_) ->
+	       let cb = subst_vars vl b in
+	       let cty = subst_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | {ref=Some(Prim{name=Intro_replacing;hypspecs=[id]},[spf]) } ->
@@ -486,6 +494,10 @@ let prim_extractor subfun vl pft =
 	   | IsProd (_,ty,_) ->
 	       let cty = subst_vars vl ty in
 	       mkLambda (Name id, cty, subfun (id::vl) spf)
+	   | IsLetIn (_,b,ty,_) ->
+	       let cb = subst_vars vl b in
+	       let cty = subst_vars vl ty in
+	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
