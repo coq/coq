@@ -125,7 +125,7 @@ let nat_of_int dloc n =
   match n with
   | POS n ->
       if less_than (of_string "5000") n & Options.is_verbose () then begin
-	warning ("You may experiment stack overflow and segmentation fault\
+	warning ("You may experience stack overflow and segmentation fault\
                   \nwhile parsing numbers in nat greater than 5000");
 	flush_all ()
       end;
