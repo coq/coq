@@ -76,6 +76,10 @@ let dest_subterms p =
   let (_,cstrs) = Rtree.dest_node p in
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
+let recarg_length p j = 
+  let (_,cstrs) = Rtree.dest_node p in
+  Array.length (snd (Rtree.dest_node cstrs.(j-1)))
+
 let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
 (* [mind_typename] is the name of the inductive; [mind_arity] is
