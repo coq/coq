@@ -31,7 +31,7 @@ let ident = firstchar identchar*
 let keyword = 
   "Add" | "AddPath" | "Chapter" |
   "CoInductive" |  "Compile" | "Defined" | 
-  "End" | "Export" | "Fact" | "Fix" | "Global" | 
+  "End" | "Export" | "Extraction" | "Fact" | "Fix" | "Global" | 
   "Grammar" | "Hint" |
   "Hints" | ("Hints" space+ "Resolve") |
   "Immediate" | "Implicits" | "Import" | 
