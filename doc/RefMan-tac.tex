@@ -33,7 +33,7 @@ satisfied. If it is not the case, the tactic raises an error message.
 Tactics are build from atomic tactics and tactic expressions (which
 extends the folklore notion of tactical) to combine those atomic
 tactics. This chapter is devoted to atomic tactics. The tactic
-language will be descrbed in chapter~\ref{TacticLanguage}.
+language will be described in chapter~\ref{TacticLanguage}.
 
 There are, at least, three levels of atomic tactics. The simplest one
 implements basic rules of the logical framework. The second level is
@@ -41,7 +41,7 @@ the one of {\em derived rules} which are built by combination of other
 tactics. The third one implements heuristics or decision procedures to
 build a complete proof of a goal.
 
-\section{Invokation of tactics}
+\section{Invocation of tactics}
 \label{tactic-syntax}
 \index{tactic@{\tac}}
 
@@ -75,7 +75,7 @@ convertible (see section \ref{conv-rules}).
 \index{?@{\texttt{?}}}
 
 This tactic allows to give an exact proof but still with some
-holes. The holes are noted ``\texttt{?}''.
+holes. The holes are noted ``\texttt{\_}''.
 
 \begin{ErrMsgs}
 \item \errindex{invalid argument}: 
@@ -175,8 +175,8 @@ generated since the other one can be automatically checked.}.  If the
 goal starts with a let binder then the tactic implements a mix of the
 ``Let''\index{Typing rules!Let} and ``Conv''\index{Typing rules!Conv}.
 
-If the current goal is a dependent product {\tt (x:T)U} (resp {\tt
-[x:=t]U}) then {\tt intro} puts {\tt x:T} (resp {\tt x:=t}) in the
+If the current goal is a dependent product {\tt forall (x:T), U} (resp {\tt
+let x:=t in U}) then {\tt intro} puts {\tt x:T} (resp {\tt x:=t}) in the
 local context.
 % Obsolete (quantified names already avoid hypotheses names):
 % Otherwise, it puts
@@ -240,7 +240,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
   
 \item {\tt intros until {\num}}  \tacindex{intros until}
   
-  Repeats {\tt intro} until the {\num}-th non-dependant premise. For
+  Repeats {\tt intro} until the {\num}-th non-dependent premise. For
   instance, on the subgoal \verb+forall x y:nat, x=y -> forall z:nat,z=x->z=y+ the
   tactic \texttt{intros until 2} is equivalent to \texttt{intros x y H
     z H0} (assuming \texttt{x, y, H, z} and \texttt{H0} do not already
@@ -248,7 +248,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
   \ErrMsg \errindex{No such hypothesis in current goal}
 
-  Happens when {\num} is 0 or is greater than the number of non-dependant
+  Happens when {\num} is 0 or is greater than the number of non-dependent
   products of the goal.
 
 \item {\tt intro after \ident} \tacindex{intro after}
@@ -316,8 +316,8 @@ instantiations of the premises of the type of {\term}.
 
   \ErrMsg \errindex{Not the right number of missing arguments}
 
-\item{\tt apply {\term} with {\vref$_1$} := {\term$_1$} \dots\ {\vref$_n$}
-    := {\term$_n$}} 
+\item{\tt apply {\term} with ({\vref$_1$} := {\term$_1$}) \dots\ ({\vref$_n$}
+    := {\term$_n$})} 
   
   This also provides {\tt apply} with values for instantiating
   premises. But variables are referred by names and non dependent
@@ -394,7 +394,7 @@ should not be substituted.
 \item {\tt pose (  {\ident} {\tt :=} {\term} {\tt )}}
 \tacindex{pose}
 
-  This is equivalent to the default behaviour in {\tt set}.
+  This is equivalent to the default behavior in {\tt set}.
   
 %  This adds the local definition {\ident} := {\term} to the current
 %  context without performing any replacement in the goal or in the
@@ -500,7 +500,7 @@ Abort.
 \end{coq_eval}
 
 If the goal is $G$ and $t$ is a subterm of type $T$ in the goal, then
-{\tt generalize} \textit{t} replaces the goal by {\tt (x:$T$)$G'$}
+{\tt generalize} \textit{t} replaces the goal by {\tt forall (x:$T$), $G'$}
 where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 {\tt x}. The name of the variable (here {\tt n}) is chosen accordingly
 to $T$.
@@ -642,7 +642,7 @@ two flags can occur only after the {\tt delta} flag.  For these
 tactics, the {\tt delta} flag does not apply to variables bound by a
 let-in construction of which the unfolding is controlled by the {\tt
   zeta} flag only.  In addition, there is a flag {\tt Evar} to perform
-instantiation of exitential variables (``?'') when an instantiation
+instantiation of existential variables (``?'') when an instantiation
 actually exists.  The goal may be normalized with two strategies: {\em
   lazy} ({\tt lazy} tactic), or {\em call-by-value} ({\tt cbv}
 tactic).
@@ -682,7 +682,7 @@ computational expressions (i.e. with few dead code).
 \tacindex{red}
 
 This tactic applies to a goal which have form {\tt
-  (x:T1)\dots(xk:Tk)(c t1 \dots\ tn)} where {\tt c} is a constant.  If
+  forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
 {\tt c} is transparent then it replaces {\tt c} with its definition
 (say {\tt t}) and then reduces {\tt (t t1 \dots\ tn)} according to
 $\beta\iota$-reduction rules.
@@ -700,7 +700,7 @@ head normal form according to the $\beta\delta\iota$-reduction rules.
 product or an applicative term in head normal form or a variable.
 
 \Example
-The term \verb+(n:nat)(plus (S n) (S n))+ is not reduced by {\tt hnf}.
+The term \verb+forall (n:nat), (plus (S n) (S n))+ is not reduced by {\tt hnf}.
 
 \Rem The $\delta$ rule will only be applied to transparent constants
 (i.e. which have not been frozen with an {\tt Opaque} command; see
@@ -840,7 +840,7 @@ hypotheses \ident$_1$, \ldots, \ident$_n$. The tactic {\convtactic} is
 any of the conversion tactics listed in this section. 
 
 If \ident$_i$ is a local definition, then \ident$_i$ can be replaced
-by (Type of \ident$_i$) to adress not the body but the type of the
+by (Type of \ident$_i$) to address not the body but the type of the
 local definition. Example: {\tt unfold not in (Type of H1) (Type of H3).}
 
 \begin{ErrMsgs}
@@ -1005,7 +1005,7 @@ and {\tt induction {\term} as {\intropattern}}.
   tactic). For instance, assume that our proof context contains {\tt
     n:nat}, assume that our current goal is {\tt T} of type {\tt
     Prop}, then {\tt elim n} is equivalent to {\tt apply nat\_ind with
-    n:=n}.  The tactic {\tt elim} does not affect the hypotheses of
+    (n:=n)}.  The tactic {\tt elim} does not affect the hypotheses of
   the goal, neither introduces the induction loading into the context
   of hypotheses.
 
@@ -1287,7 +1287,7 @@ and induction following the definition of a function.
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Lemma moins_le : forall n m:nat, (n - m <= n).
+Lemma le_minus : forall n m:nat, (n - m <= n).
 intros n m.
 functional induction minus n m; simpl; auto.
 \end{coq_example}
@@ -1308,12 +1308,10 @@ functions built by certain tactics.
 
 \section{Equality}
 
-These tactics use the equality {\tt eq:(A:Set)A->A->Prop} defined
-in file {\tt Logic.v} and the equality {\tt
-  eqT:(A:Type)A->A->Prop} defined in file {\tt Logic\_Type.v} (see
-section \ref{Equality}). They are simply written {\tt t=u} and
-{\tt t==u}, respectively.  In the following, the notation {\tt
-  t=u} will represent either one of these two equalities.
+These tactics use the equality {\tt eq:forall A:Type, A->A->Prop}
+defined in file {\tt Logic.v} (see section \ref{Equality}). The
+notation for {\tt eq}~$T~t~u$ is simply {\tt $t$=$u$} dropping the
+implicit type of $t$ and $u$.
 
 \subsection{\tt rewrite \term}
 \label{rewrite}
@@ -1396,17 +1394,22 @@ to {\tt cut \term$_2$=\term$_1$; intro H{\sl n}; rewrite <- H{\sl n};
 \tacindex{reflexivity}
 This tactic applies to a goal which has the form {\tt t=u}. It checks
 that {\tt t} and {\tt u} are convertible and then solves the goal.
-It is equivalent to {\tt apply refl\_equal} (or {\tt apply
-  refl\_equalT} for an equality in the \Type\ universe).
+It is equivalent to {\tt apply refl\_equal}.
 
 \begin{ErrMsgs}
 \item \errindex{The conclusion is not a substitutive equation}
 \item \errindex{Impossible to unify \dots\ with ..}
 \end{ErrMsgs}
 
-\subsection{\tt symmetry}\tacindex{symmetry}
-This tactic applies to a goal which have form {\tt t=u}
-(resp. \texttt{t==u}) and changes it into {\tt u=t} (resp. \texttt{u==t}).
+\subsection{\tt symmetry}
+\tacindex{symmetry}
+\tacindex{symmetry in}
+This tactic applies to a goal which has form {\tt t=u} and changes it
+into {\tt u=t}.
+
+\variant {\tt symmetry in {\ident}}\\
+If the statement of the hypothesis {\ident} has the form {\tt t=u},
+the tactic changes it to {\tt u=t}.
 
 \subsection{\tt transitivity \term}\tacindex{transitivity}
 This tactic applies to a goal which have form {\tt t=u}
@@ -1434,24 +1437,18 @@ When several hypotheses have the form {\tt \ident=t} or {\tt
 
 
 \section{Equality and inductive sets}
-We describe in this section some special purpose
-tactics dealing with equality and inductive sets or
-types.  These tactics use the equalities {\tt
-eq:(A:Set)A->A->Prop} defined in file {\tt Logic.v}
-and {\tt eqT:(A:Type)A->A->Prop} defined in file
-{\tt Logic\_Type.v} (see section \ref{Equality}).
-They are written {\tt t=u} and {\tt t==u},
-respectively. In the following, unless it is stated
-otherwise, the notation {\tt t=u} will represent
-either one of these two equalities.
+We describe in this section some special purpose tactics dealing with
+equality and inductive sets or types. These tactics use the equality
+{\tt eq:forall (A:Type), A->A->Prop}, simply written with the
+infix symbol {\tt =}.
 
 \subsection{\tt decide equality}
 \label{decideequality}
 \tacindex{decide equality}
 This tactic solves a goal of the form
-$(x,y:R)\{x=y\}+\{\verb|~|x=y\}$, where $R$ is an inductive type
-such that its constructors do not take proofs or functions as
-arguments, nor objects in dependent types.
+{\tt forall $x$ $y$:$R$, \{$x$=$y$\}+\{\verb|~|$x$=$y$\}}, where $R$
+is an inductive type such that its constructors do not take proofs or
+functions as arguments, nor objects in dependent types.
 
 \begin{Variants}
 \item {\tt decide equality {\term}$_1$ {\term}$_2$ }.\\
@@ -1754,8 +1751,8 @@ Abort.
   This variant allow to give the good generalization of the goal. It
   is useful when the system fails to generalize the goal automatically. If
   {\ident} has type $(I~\vec{t})$ and $I$ has type
-  $(\vec{x}:\vec{T})s$,   then \term~  must be of type
-  $I:(\vec{x}:\vec{T})(I~\vec{x})\to s'$ where $s'$ is the
+  $forall (\vec{x}:\vec{T}), s$,   then \term~  must be of type
+  $I:forall (\vec{x}:\vec{T}), I~\vec{x}\to s'$ where $s'$ is the
   type of the goal.
 \item \texttt{dependent inversion } {\ident} \texttt{as} {\intropattern} \texttt{ with } \term \\
   \tacindex{dependent inversion \dots\ as \dots\ with}
@@ -1794,7 +1791,7 @@ Abort.
 \SeeAlso~\ref{inversion-examples} for detailed examples
 
 \subsection{\tt Derive Inversion {\ident} with
-  $(\vec{x}:\vec{T})(I~\vec{t})$ Sort \sort}
+  $forall (\vec{x}:\vec{T}), I~\vec{t}$ Sort \sort}
 \label{Derive-Inversion}
 \comindex{Derive Inversion}
 \index[tactic]{Derive Inversion@{\tt Derive Inversion}}
@@ -1804,25 +1801,25 @@ This command generates an inversion principle for the
 Let $I$ be an inductive predicate and $\vec{x}$ the variables
 occurring in $\vec{t}$. This command generates and stocks the
 inversion lemma for the sort \sort~ corresponding to the instance
-$(\vec{x}:\vec{T})(I~\vec{t})$ with the name {\ident} in the {\bf
+$forall (\vec{x}:\vec{T}), I~\vec{t}$ with the name {\ident} in the {\bf
 global} environment. When applied it is equivalent to have inverted
 the instance with the tactic {\tt inversion}.
 
 \begin{Variants}
 \item \texttt{Derive Inversion\_clear} {\ident} \texttt{with}
   \comindex{Derive Inversion\_clear}
-  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~ \\ 
+  $forall (\vec{x}:\vec{T}), I~\vec{t}$ \texttt{Sort} \sort~ \\ 
   \index{Derive Inversion\_clear \dots\ with}
   When applied it is equivalent to having
   inverted the instance with the tactic \texttt{inversion}
   replaced by the tactic \texttt{inversion\_clear}.
 \item \texttt{Derive Dependent Inversion} {\ident} \texttt{with}
-  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~\\
+  $forall (\vec{x}:\vec{T}), I~\vec{t}$ \texttt{Sort} \sort~\\
   \comindex{Derive Dependent Inversion}
   When applied it is equivalent to having
   inverted the instance with the tactic \texttt{dependent inversion}.
 \item \texttt{Derive Dependent Inversion\_clear} {\ident} \texttt{with}
-  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~\\
+  $forall (\vec{x}:\vec{T}), I~\vec{t}$ \texttt{Sort} \sort~\\
   \comindex{Derive Dependent Inversion\_clear}
   When applied it is equivalent to having
   inverted the instance with the tactic \texttt{dependent inversion\_clear}.
@@ -1869,19 +1866,19 @@ with lower cost). This process is recursively applied to the generated
 subgoals. 
 
 By default, \texttt{auto} only uses the hypotheses of the current goal and the
-hints of the database named "core". 
+hints of the database named {\tt core}. 
 
 \begin{Variants}
 \item  {\tt auto \num}\\
   Forces the search depth to be \num. The maximal search depth is 5 by default.
 \item {\tt auto with \ident$_1$ \dots\ \ident$_n$}\\
   Uses the hint databases $\ident_1$ \dots\ $\ident_n$ in addition to
-  the database "core". See section \ref{Hints-databases} for the list
+  the database {\tt core}. See section \ref{Hints-databases} for the list
   of pre-defined databases and the way to create or extend a database.
   This option can be combined with the previous one.
 \item {\tt auto with *}\\
   Uses all existing hint databases, minus the special database
-  "v62". See section \ref{Hints-databases}
+  {\tt v62}. See section \ref{Hints-databases}
 \item {\tt trivial}\tacindex{trivial}\\
   This tactic is a restriction of {\tt auto} that is not recursive and 
   tries only hints which cost is 0. Typically it solves trivial
@@ -1905,7 +1902,7 @@ against the hints rather than pattern-matching
 As a consequence, {\tt eauto} can solve such a goal:
 
 \begin{coq_example}
-Hints Resolve ex_intro.
+Hint Resolve ex_intro.
 Goal forall P:nat -> Prop, P 0 ->  exists n, P n.
 eauto.
 \end{coq_example}
@@ -1999,7 +1996,7 @@ original one (but simpler than it) and applies the tactic
 
 For instance, the tactic {\tt intuition auto} applied to the goal
 \begin{verbatim}
-(forall (x:nat), P x)/\B -> (foral (y:nat),P y)/\ P O \/B/\ P O
+(forall (x:nat), P x)/\B -> (forall (y:nat),P y)/\ P O \/B/\ P O
 \end{verbatim}
 internally replaces it by the equivalent one:
 \begin{verbatim}
@@ -2042,7 +2039,7 @@ instead may reason about any first-order class inductive definition.
    environment.
  \item {\tt firstorder using \ident$_1$ \dots\ \ident$_n$ }\\
    \tacindex{\tt firstorder using}
-   Adds lemmata in {\tt auto} Hints bases \ident$_1$ \dots\ \ident$_n$
+   Adds lemmata in {\tt auto} hints bases \ident$_1$ \dots\ \ident$_n$
    to the proof-search environment.
 \end{Variants}
 
@@ -2214,7 +2211,7 @@ arithmetic. It solves quantifier-free
 formulae build with \verb|~|, \verb|\/|, \verb|/\|,
 \verb|->| on top of equations and inequations on
 both the type \texttt{nat} of natural numbers and \texttt{Z} of binary
-integers. This tactic must be loaded by the command \texttt{Require
+integers. This tactic must be loaded by the command \texttt{Require Import
   Omega}. See the additional documentation about \texttt{omega}
 (chapter~\ref{OmegaChapter}).
 
@@ -2223,17 +2220,17 @@ integers. This tactic must be loaded by the command \texttt{Require
 \comindex{Add Ring}
 \comindex{Add Semi Ring}
 
-This tactic, written by Samuel Boutin and Patrick Loiseleur, 
-does AC rewriting on every
-ring. The tactic must be loaded by \texttt{Require Ring} under
-\texttt{coqtop} or \texttt{coqtop -full}.
-The ring must be declared in the \texttt{Add Ring}
-command (see \ref{ring}). The ring of booleans is predefined; if one
-wants to use the tactic on \texttt{nat} one must do \texttt{Require
-  ArithRing}; for \texttt{Z}, do \texttt{Require ZArithRing}.
+This tactic, written by Samuel Boutin and Patrick Loiseleur, applies
+associative commutative rewriting on every ring.  The tactic must be
+loaded by \texttt{Require Import Ring}. The ring must be declared in
+the \texttt{Add Ring} command (see \ref{ring}). The ring of booleans
+is predefined; if one wants to use the tactic on \texttt{nat} one must
+first require the module \texttt{ArithRing}; for \texttt{Z}, do
+\texttt{Require Import ZArithRing}; for \texttt{N}, do \texttt{Require
+Import NArithRing}.
 
-\term$_1$, \dots, \term$_n$ must be subterms of the goal
-conclusion. \texttt{ring} normalize these terms
+The terms \term$_1$, \dots, \term$_n$ must be subterms of the goal
+conclusion. The tactic \texttt{ring} normalizes these terms
 w.r.t. associativity and commutativity and replace them by their
 normal form.
 
@@ -2280,7 +2277,7 @@ This tactic written by David~Delahaye and Micaela~Mayero solves equalities
 using commutative field theory. Denominators have to be non equal to zero and,
 as this is not decidable in general, this tactic may generate side conditions
 requiring some expressions to be non equal to zero. This tactic must be loaded
-by {\tt Require Field}. Field theories are declared (as for {\tt ring}) with
+by {\tt Require Import Field}. Field theories are declared (as for {\tt ring}) with
 the {\tt Add Field} command.
 
 \Example
@@ -2316,7 +2313,7 @@ term of type {\tt A}, {\tt {\it Aopp}} is a term of type {\tt A->A}, {\tt {\it
 Aeq}} is a term of type {\tt A->bool}, {\tt {\it Ainv}} is a term of type {\tt
 A->A}, {\tt {\it Rth}} is a term of type {\tt (Ring\_Theory {\it A Aplus Amult
 Aone Azero Ainv Aeq})}, and {\tt {\it Tinvl}} is a term of type {\tt
-(n:{\it A}){\~{}}(n=={\it Azero})->({\it Amult} ({\it Ainv} n) n)=={\it Aone}}.
+forall n:{\it A}, {\~{}}(n={\it Azero})->({\it Amult} ({\it Ainv} n) n)={\it Aone}}.
 To build a ring theory, refer to chapter~\ref{ring} for more details.
 
 This command adds also an entry in the ring theory table if this theory is not
@@ -2324,7 +2321,7 @@ already declared. So, it is useless to keep, for a given type, the {\tt Add
 Ring} command if you declare a theory with {\tt Add Field}, except if you plan
 to use specific features of {\tt ring} (see chapter~\ref{ring}). However, the
 module {\tt ring} is not loaded by {\tt Add Field} and you have to make a {\tt
-Require Ring} if you want to call the {\tt ring} tactic.
+Require Import Ring} if you want to call the {\tt ring} tactic.
 
 \begin{Variants}
 \item {\tt Add Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
@@ -2352,7 +2349,7 @@ field}.
 
 This tactic written by Lo{\"\i}c Pottier solves linear inequations on real numbers 
 using Fourier's method (\cite{Fourier}). This tactic must be loaded by 
-{\tt Require Fourier}.
+{\tt Require Import Fourier}.
 
 \Example
 \begin{coq_example*}
@@ -2397,12 +2394,14 @@ Performs, in the same way, all the rewritings of the bases {\tt $ident_1$ $...$
 $ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
 \end{Variant}
 
-\subsection{\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in \ident}
+\subsection{\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident}
 \comindex{Hint Rewrite}
 
-This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$} (their
-types must be equalities) in the rewriting base {\tt \ident} with the default
-orientation (left to right).
+This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$}
+(their types must be equalities) in the rewriting base {\tt \ident}
+with the default orientation (left to right). Notice that the
+rewriting bases are distinct from the {\tt auto} hint bases and that
+{\tt auto} does not take them into account.
 
 This command is synchronous with the section mechanism (see \ref{Section}):
 when closing a section, all aliases created by \texttt{Hint Rewrite} in that
@@ -2410,15 +2409,15 @@ section are lost. Conversely, when loading a module, all \texttt{Hint Rewrite}
 declarations at the global level of that module are loaded.
 
 \begin{Variants}
-\item {\tt Hint Rewrite -> [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+\item {\tt Hint Rewrite -> \term$_1$ \dots \term$_n$ : \ident}\\
 This is strictly equivalent to the command above (we only precise the
 orientation which is the default one).
 
-\item {\tt Hint Rewrite <- [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+\item {\tt Hint Rewrite <- \term$_1$ \dots \term$_n$ : \ident}\\
 Adds the rewriting rules {\tt \term$_1$ \dots \term$_n$} with a right-to-left
 orientation in the base {\tt \ident}.
 
-\item {\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using \tac}\\
+\item {\tt Hint Rewrite \term$_1$ \dots \term$_n$ using {\tac} : {\ident}}\\
 When the rewriting rules {\tt \term$_1$ \dots \term$_n$} in {\tt \ident} will
 be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
 main subgoal excluded.
@@ -2431,9 +2430,8 @@ main subgoal excluded.
 
 \section{The hints databases for auto and eauto}
 \index{Hints databases}\label{Hints-databases}\comindex{Hint}
-The hints for \texttt{auto} and \texttt{eauto} have been reorganized
-since \Coq{} 
-6.2.3. They are stored in several databases. Each databases maps head
+The hints for \texttt{auto} and \texttt{eauto} are stored in databases.
+Each databases maps head
 symbols to list of hints. One can use the command \texttt{Print Hint \ident}
 to display the hints associated to the head symbol \ident{}
 (see \ref{PrintHint}). Each hint has 
@@ -2576,13 +2574,18 @@ pattern-matching on hypotheses.
 
 \begin{Variants}
 \item \texttt{Hint} \textsl{hint\_definition} \\
-  No database name is given : the hint is registered in the "core" 
+  No database name is given : the hint is registered in the {\tt core} 
     database. 
 
 \item\texttt{Hint Local} \textsl{hint\_definition} \texttt{:}
-  \textsl{databases} \\
-    
+   \ident$_1$ \ldots\ \ident$_n$\\
+  This is used to declare hints that must not be exported to the other
+  modules that require and import the current module. Inside a
+  section, the option {\tt Local} is useless since hints do not
+  survive anyway to the closure of sections.
+
 \item\texttt{Hint Local} \textsl{hint\_definition} \\
+  Idem for the {\tt core} database.
     
 \end{Variants}
 
@@ -2613,51 +2616,47 @@ library. There is no systematic relation between the directories of the
 library and the databases.
 
 \begin{description}
-\item[core] This special database is automatically used by
+\item[\tt core] This special database is automatically used by
   \texttt{auto}. It contains only basic lemmas about negation,
   conjunction, and so on from. Most of the hints in this database come 
-  from the \texttt{INIT} and \texttt{LOGIC} directories.
+  from the \texttt{Init} and \texttt{Logic} directories.
 
-\item[arith] This databases contains all lemmas about Peano's
-  arithmetic proven in the directories \texttt{INIT} and
-  \texttt{ARITH}
+\item[\tt arith] This database contains all lemmas about Peano's
+  arithmetic proven in the directories \texttt{Init} and
+  \texttt{Arith}
 
-\item[zarith] contains lemmas about binary signed integers from the
-  directories \texttt{theories/ZARITH} and
-  \texttt{tactics/contrib/Omega}. It contains also a hint with a high
-  cost that calls Omega.
+\item[\tt zarith] contains lemmas about binary signed integers from the
+  directories \texttt{theories/ZArith} and
+  \texttt{contrib/omega}. It contains also a hint with a high
+  cost that calls {\tt omega}.
 
-\item[bool] contains lemmas about booleans, mostly from directory
-  \texttt{theories/BOOL}.
+\item[\tt bool] contains lemmas about booleans, mostly from directory
+  \texttt{theories/Bool}.
 
-\item[datatypes] is for lemmas about about lists, trees, streams and so on that 
-  are proven in \texttt{LISTS}, \texttt{TREES} subdirectories.
+\item[\tt datatypes] is for lemmas about lists, streams and so on that 
+  are mainly proven in the \texttt{Lists} subdirectory.
 
-\item[sets] contains lemmas about sets and relations from the 
-  directory \texttt{SETS} and \texttt{RELATIONS}.
+\item[\tt sets] contains lemmas about sets and relations from the 
+  directories \texttt{Sets} and \texttt{Relations}.
 \end{description}
 
-There is also a special database called "v62". It contains all things that are
-currently hinted in the 6.2.x releases. It will not be extended later. It is
-not included in the hint databases list used in the "auto with *" tactic.
+There is also a special database called {\tt v62}. It collects all
+hints that were declared in the versions of {\Coq} prior to version
+6.2.4 when the databases {\tt core}, {\tt arith}, and so on were
+introduced.  The purpose of the database {\tt v62} is to ensure
+compatibility with further versions of Coq for developments done in
+versions prior to 6.2.4 ({\tt auto} being replaced by {\tt auto with v62}).
+The database {\tt v62} is intended not to be extended (!). It is not
+included in the hint databases list used in the {\tt auto with *} tactic.
 
-The only purpose of the database "v62" is to ensure compatibility for
-old developpements with further versions of Coq. 
-If you have a developpement that used to compile with 6.2.2 and that not
-compiles with 6.2.4, try to replace "auto" with "auto with v62" using the
-script documented below. This will ensure your developpement will compile
-will further releases of Coq.
-
-To write a new developpement, or to update a developpement not finished yet, 
-you are strongly advised NOT to use this database, but the pre-defined
-databases. Furthermore, you are advised not to put your own Hints in the
-"core" database, but use one or several databases specific to your
-developpement.
+Furthermore, you are advised not to put your own hints in the
+{\tt core} database, but use one or several databases specific to your
+development.
 
 \subsection{\tt Print Hint}
 \label{PrintHint}
 \comindex{Print Hint}
-\index[tactic]{Hints!\texttt{Print Hint}}
+\index[tactic]{Hint!\texttt{Print Hint}}
 This command displays all hints that apply to the current goal. It
 fails if no proof is being edited, while the two variants can be used at
 every moment.
@@ -2681,14 +2680,11 @@ every moment.
 \subsection{Hints and sections}
 \label{Hint-and-Section}
 
-Like grammar rules and structures for the \texttt{ring} tactic, things 
-added by the \texttt{Hint} command will be erased when closing a
-section.
-
-Conversely, when the user does \texttt{Require A.}, all hints 
-of the module \texttt{A} that are not defined inside a section are
-loaded.
-
+Hints provided by the \texttt{Hint} commands are erased when closing a
+section. Conversely, all hints of a module \texttt{A} that are not
+defined inside a section (and not defined with option {\tt Local}) become
+available when the module {\tt A} is imported (using
+e.g. \texttt{Require Import A.}).
 
 \section{Generation of induction principles with {\tt Scheme}}
 \label{Scheme}
