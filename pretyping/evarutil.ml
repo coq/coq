@@ -189,7 +189,7 @@ let real_clean isevars sp args rhs =
  	 if i<=k then t
  	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
       | IsVar _ -> (try List.assoc t subst with Not_found -> t)
-      | _ -> map_constr_with_binders (fun na k -> k+1) subs k t
+      | _ -> map_constr_with_binders succ subs k t
   in
   let body = subs 0 rhs in
   (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
