@@ -41,10 +41,10 @@ Fixpoint Zdiv_eucl_POS [a:positive] : Z -> Z*Z := [b:Z]
  | xH => if `(Zge_bool b 2)` then `(0,1)` else `(1,0)` 
  | (xO a') => 
     let (q,r) = (Zdiv_eucl_POS a' b) in 
-    if `(Zgt_bool b (r+r))` then `(q+q,r+r)` else `(q+q+1,r+r-b)`
+    [r':=`2*r`] if `(Zgt_bool b r')` then `(2*q,r')` else `(2*q+1,r'-b)`
  | (xI a') =>
     let (q,r) = (Zdiv_eucl_POS a' b) in 
-    if `(Zgt_bool b (r+r+1))` then `(q+q,r+r+1)` else `(q+q+1,r+r+1-b)`
+    [r':=`2*r+1`] if `(Zgt_bool b r')` then `(2*q,r')` else `(2*q+1,r'-b)`
  end.
 
 
@@ -126,28 +126,23 @@ Eval Compute in `(Zdiv_eucl (-7) (-3))`.
 Lemma Z_div_mod_POS : (b:Z)`b > 0` -> (a:positive)
   let (q,r)=(Zdiv_eucl_POS a b) in `(POS a) = b*q + r`/\`0<=r<b`.
 Proof.
-Induction a; Simpl.
-Intro p.
-Case (Zdiv_eucl_POS p b).
-Intros q r H1.
-Decompose [and] H1.
-Generalize (Zgt_cases b `r+r+1`).
-Case (Zgt_bool b `r+r+1`); 
+Induction a; Unfold Zdiv_eucl_POS; Fold Zdiv_eucl_POS.
+
+Intro p; Case (Zdiv_eucl_POS p b); Intros q r (H0,H1).
+Generalize (Zgt_cases b `2*r+1`).
+Case (Zgt_bool b `2*r+1`); 
 (Rewrite POS_xI; Rewrite H0; Split ; [ Ring | Omega ]).
 
-Intros p.
-Case (Zdiv_eucl_POS p b).
-Intros q r H1.
-Decompose [and] H1.
-Generalize (Zgt_cases b `r+r`).
-Case (Zgt_bool b `r+r`);
-(Rewrite POS_xO; Rewrite H0; Split ; [ Ring | Omega ]).
+Intros p; Case (Zdiv_eucl_POS p b); Intros q r (H0,H1).
+Generalize (Zgt_cases b `2*r`).
+Case (Zgt_bool b `2*r`);
+ Rewrite POS_xO; Change (POS (xO p)) with `2*(POS p)`; 
+ Rewrite H0; (Split; [Ring | Omega]).
 
 Generalize (Zge_cases b `2`).
 Case (Zge_bool b `2`); (Intros; Split; [Ring | Omega ]).
 Omega.
 Qed.
-
 
 
 Theorem Z_div_mod : (a,b:Z)`b > 0` -> 
@@ -234,11 +229,11 @@ Save.
 Lemma Z_div_POS_ge0 : (b:Z)(a:positive)
   let (q,_) = (Zdiv_eucl_POS a b) in `q >= 0`.
 Proof.
-Induction a; Intros; Simpl.
-Generalize H; Case (Zdiv_eucl_POS p b); Simpl.
-Intros; Case (Zgt_bool b `z0+z0+1`); Simpl; Omega.
-Generalize H; Case (Zdiv_eucl_POS p b); Simpl.
-Intros; Case (Zgt_bool b `z0+z0`); Simpl; Omega.
+Induction a; Unfold Zdiv_eucl_POS; Fold Zdiv_eucl_POS.
+Intro p; Case (Zdiv_eucl_POS p b).
+Intros; Case (Zgt_bool b `2*z0+1`); Intros; Omega.
+Intro p; Case (Zdiv_eucl_POS p b).
+Intros; Case (Zgt_bool b `2*z0`); Intros; Omega.
 Case (Zge_bool b `2`); Simpl; Omega.
 Save.
 
