@@ -44,7 +44,7 @@ type level = precedence * tolerability list
 type delimiters = string
 
 type scope = {
-  notations: (interpretation * string) Stringmap.t;
+  notations: (interpretation * string * bool) Stringmap.t;
   delimiters: delimiters option
 }
 
@@ -220,11 +220,11 @@ let level_of_notation ntn =
 
 (* The mapping between notations and their interpretation *)
 
-let declare_notation_interpretation ntn scope pat df =
+let declare_notation_interpretation ntn scope pat df pp8only =
   let sc = find_scope scope in
   if Stringmap.mem ntn sc.notations && Options.is_verbose () then
     warning ("Notation "^ntn^" is already used in scope "^scope);
-  let sc = { sc with notations = Stringmap.add ntn (pat,df) sc.notations } in
+  let sc = { sc with notations = Stringmap.add ntn (pat,df,pp8only) sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map
 
 let declare_uninterpretation rule (metas,c as pat) =
@@ -238,7 +238,10 @@ let rec find_interpretation f = function
   | [] -> raise Not_found
 
 let rec interp_notation ntn scopes =
-  let f scope = fst (Stringmap.find ntn scope.notations) in
+  let f scope =
+    let (pat,_,pp8only) = Stringmap.find ntn scope.notations in
+    if pp8only then raise Not_found;
+    pat in
   try find_interpretation f (scopes @ !scope_stack)
   with Not_found -> error ("Unknown interpretation for notation "^ntn)
 
@@ -294,9 +297,9 @@ let availability_of_numeral printer_scope scopes =
 let exists_notation_in_scope scope ntn r =
   try
     let sc = Stringmap.find scope !scope_map in
-    let (r',_) = Stringmap.find ntn sc.notations in
-    r' = r
-  with Not_found -> false
+    let (r',_,pp8only) = Stringmap.find ntn sc.notations in
+    r' = r, pp8only
+  with Not_found -> false, false
 
 (* Exportation of scopes *)
 let cache_scope (_,(local,sc)) =
@@ -444,7 +447,7 @@ let pr_named_scope prraw scope sc =
   ++ pr_delimiters_info sc.delimiters ++ fnl ()
   ++ pr_scope_classes scope
   ++ Stringmap.fold
-       (fun ntn ((_,r),df) strm ->
+       (fun ntn ((_,r),df,_) strm ->
 	 pr_notation_info prraw df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
@@ -484,7 +487,7 @@ let browse_notation ntn map =
   let l =
     Stringmap.fold 
       (fun scope_name sc ->
-	Stringmap.fold (fun ntn ((_,r),df) l ->
+	Stringmap.fold (fun ntn ((_,r),df,_) l ->
 	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
   let l = List.sort (fun x y -> Pervasives.compare (fst x) (fst y)) l in

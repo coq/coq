@@ -83,7 +83,7 @@ type interp_rule =
   | NotationRule of scope_name * notation
   | SynDefRule of kernel_name
 val declare_notation_interpretation : notation -> scope_name ->
-      interpretation -> string -> unit
+      interpretation -> string -> bool -> unit
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
@@ -110,7 +110,7 @@ val level_of_notation : notation -> level option * level (* [Not_found] if no le
 
 (* Checks for already existing notations *)
 val exists_notation_in_scope : scope_name -> notation ->
-      interpretation-> bool
+      interpretation -> bool * bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope: global_reference -> scope_name option list -> unit

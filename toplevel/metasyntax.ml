@@ -665,15 +665,15 @@ let add_syntax_extension local mv mv8 =
 let load_notation _ (_,(_,_,ntn,scope,pat,onlyparse,_,_)) =
   Symbols.declare_scope scope
 
-let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,onlypp,df)) =
+let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,pp8only,df)) =
   if i=1 then begin
-    let b = Symbols.exists_notation_in_scope scope ntn pat in
+    let b,oldpp8only = Symbols.exists_notation_in_scope scope ntn pat in
     (* Declare the old printer rule and its interpretation *)
     if not b & oldse <> None then
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
-    if not b & not onlypp then
-      Symbols.declare_notation_interpretation ntn scope pat df;
+    if not b or (oldpp8only & not pp8only) then
+      Symbols.declare_notation_interpretation ntn scope pat df pp8only;
     if not b & not onlyparse then
       Symbols.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
