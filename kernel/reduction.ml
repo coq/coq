@@ -44,7 +44,7 @@ let compare_stack_shape stk1 stk2 =
     | (Zapp l1::s1, _) -> compare_rec (bal+List.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-List.length l2) stk1 s2
     | (Zcase(c1,_,_)::s1, Zcase(c2,_,_)::s2) ->
-        bal=0 && c1.ci_ind = c2.ci_ind && compare_rec 0 s1 s2
+        bal=0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
         bal=0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
     | (_,_) -> false in
@@ -104,7 +104,7 @@ type 'a conversion_function = env -> 'a -> 'a -> Univ.constraints
 exception NotConvertible
 exception NotConvertibleVect of int
 
-let compare_stacks f lft1 stk1 lft2 stk2 cuniv =
+let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
   let rec cmp_rec pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
       | (z1::s1, z2::s2) ->
@@ -115,7 +115,9 @@ let compare_stacks f lft1 stk1 lft2 stk2 cuniv =
                 let c2 = f fx1 fx2 c1 in
                 cmp_rec a1 a2 c2
             | (Zcase(ci1,p1,br1),Zcase(ci2,p2,br2)) ->
-                let c2 = f p1 p2 c1 in
+                if not (fmind ci1.ci_ind ci2.ci_ind) then
+		  raise NotConvertible;
+		let c2 = f p1 p2 c1 in
                 array_fold_right2 f br1 br2 c2
             | _ -> assert false)
       | _ -> cuniv in
@@ -288,6 +290,7 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
 and convert_stacks infos lft1 lft2 stk1 stk2 cuniv =
   compare_stacks
     (fun (l1,t1) (l2,t2) c -> ccnv CONV infos l1 l2 t1 t2 c)
+    (fun (mind1,i1) (mind2,i2) -> i1=i2 && mind_equiv infos mind1 mind2)
     lft1 stk1 lft2 stk2 cuniv
 
 and convert_vect infos lft1 lft2 v1 v2 cuniv =
