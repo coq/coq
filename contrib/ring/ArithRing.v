@@ -45,4 +45,34 @@ Goal (n:nat)(S n)=(plus (S O) n).
 Intro; Reflexivity.
 Save S_to_plus_one.
 
-Tactic Definition NatRing := (Repeat Rewrite S_to_plus_one); Ring.
+(* Replace all occurrences of (S exp) by (plus (S O) exp), except when
+   exp is already O and only for those occurrences than can be reached by going
+   down plus and mult operations  *)
+Recursive Meta Definition S_to_plus t :=
+   Match t With 
+   | [(S O)] -> '(S O)
+   | [(S ?1)] -> Let t1 = (S_to_plus ?1) In
+                 '(plus (S O) t1)
+   | [(plus ?1 ?2)] -> Let t1 = (S_to_plus ?1) 
+                     And t2 = (S_to_plus ?2) In
+                     '(plus t1 t2)
+   | [(mult ?1 ?2)] -> Let t1 = (S_to_plus ?1)
+                     And t2 = (S_to_plus ?2) In
+                     '(mult t1 t2)
+   | [?] -> 't.
+
+(* Apply S_to_plus on both sides of an equality *)
+Tactic Definition S_to_plus_eq :=
+   Match Context With
+   | [ |- ?1 = ?2 ] -> 
+      (**) Try (**)
+      Let t1 = (S_to_plus ?1)
+      And t2 = (S_to_plus ?2) In
+        Change t1=t2
+   | [ |- ?1 == ?2 ] ->
+      (**) Try (**)
+      Let t1 = (S_to_plus ?1)
+      And t2 = (S_to_plus ?2) In
+        Change (t1==t2).
+
+Tactic Definition NatRing := S_to_plus_eq;Ring.
