@@ -423,7 +423,7 @@ let error_ill_formed_constructor env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   str "The conclusion of" ++ brk(1,1) ++ pc ++ brk(1,1) ++ 
-  str "is not valid ++" ++ brk(1,1) ++ str "it must be built from " ++ pv
+  str "is not valid;" ++ brk(1,1) ++ str "it must be built from " ++ pv
 
 let str_of_nth n =
   (string_of_int n)^
