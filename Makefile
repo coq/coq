@@ -624,9 +624,11 @@ install-allreals::
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
+setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
 
-noreal: logic arith bool zarith lists sets intmap relations wellfounded sorting
+noreal: logic arith bool zarith lists sets intmap relations wellfounded \
+	setoids sorting
 
 # globalizations (for coqdoc)
 
