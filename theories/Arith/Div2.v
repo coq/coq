@@ -26,7 +26,7 @@ Cut (n:nat)(P n)/\(P (S n)).
 Intros. Elim (H2 n). Auto with arith.
 
 Induction n0. Auto with arith.
-Intros. (Elim H2; Auto with arith).
+Intros. Elim H2; Auto with arith.
 Save.
 
 (* 0 <n  =>  n/2 < n *)
