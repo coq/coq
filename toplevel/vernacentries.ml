@@ -472,6 +472,29 @@ let _ =
 		message "Implicit arguments mode is unset")
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
+let _ =          
+  add "PRINTING_COERCIONS_ON"
+    (function 
+       | [] -> (fun () -> Termast.print_coercions := true)
+       | _  -> bad_vernac_args "PRINTING_COERCIONS_ON")
+
+let _ =
+  add "PRINTING_COERCIONS_OFF"
+    (function 
+       | [] -> (fun () -> Termast.print_coercions := false)
+       | _  -> bad_vernac_args "PRINTING_COERCIONS_OFF")
+
+let _ =
+  add "TEST_PRINTING_COERCIONS"
+    (function 
+       | [] ->
+	   (fun () ->
+	      if !(Termast.print_coercions) = true then
+		message "Printing of coercions is set"
+	      else 
+		message "Printing of coercions is unset")
+       | _  -> bad_vernac_args "TEST_PRINTING_COERCIONS")
+
 let number_list = 
   List.map (function VARG_NUMBER n -> n | _ -> bad_vernac_args "Number list") 
 

@@ -173,6 +173,14 @@ GEXTEND Gram
       | IDENT "Test"; IDENT "Implicit"; IDENT "Arguments" ->
           <:ast< (TEST_IMPLICIT_ARGS) >>
 
+      (* Set printing of coercions *)
+      | "Set"; IDENT "Printing"; IDENT "Coercions" ->
+          <:ast< (PRINTING_COERCIONS_ON) >>
+      | IDENT "Unset"; IDENT "Printing"; IDENT "Coercions" ->
+          <:ast< (PRINTING_COERCIONS_OFF) >>
+      | IDENT "Test"; IDENT "Printing"; IDENT "Coercions" ->
+          <:ast< (TEST_PRINTING_COERCIONS) >>
+
       (* Pour intervenir sur les tables de paramètres *)
       | "Set"; table = identarg; field = identarg;
                       value = option_value ->
