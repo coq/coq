@@ -153,8 +153,6 @@ doc-html.tar.gz: all-html
 	- $(MKDIR) coq-docs-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
-#	cp Changes.v.html coq-docs-html/changes.html
-#	cp Library.html coq-docs-html/library.html
 	cp Reference-Manual.html coq-docs-html 
 	(cd coq-docs-html;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
@@ -168,8 +166,6 @@ html-www: all-html
 	- $(MKDIR) www
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
-#	cp Changes.v.html www/changes.html
-#	cp Library.html www/library.html
 	cp Reference-Manual.html www
 	(cd www;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
