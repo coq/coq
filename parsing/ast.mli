@@ -107,6 +107,11 @@ val coerce_reference_to_id : Tacexpr.reference_expr -> identifier
 val abstract_binders_ast :
   Coqast.loc -> string -> Coqast.t -> Coqast.t -> Coqast.t
 
+val mkCastC : Coqast.t * Coqast.t -> Coqast.t
+val mkLambdaC : identifier * Coqast.t * Coqast.t -> Coqast.t
+val mkLetInC : identifier * Coqast.t * Coqast.t -> Coqast.t
+val mkProdC : identifier * Coqast.t * Coqast.t -> Coqast.t
+
 exception No_match of string
 
 val isMeta : string -> bool

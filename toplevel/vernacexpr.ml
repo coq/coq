@@ -149,6 +149,13 @@ type fixpoint_expr =
     identifier * simple_binder list * constr_ast * constr_ast
 type cofixpoint_expr =
     identifier * constr_ast * constr_ast
+type local_binder =
+  | LocalRawDef of identifier * constr_ast
+  | LocalRawAssum of identifier list * constr_ast
+type definition_expr =
+  | ProveBody of local_binder list * constr_ast
+  | DefineBody of local_binder list * raw_red_expr option * constr_ast
+      * constr_ast option
 
 type local_decl_expr =
   | AssumExpr of identifier * constr_ast
@@ -174,11 +181,10 @@ type vernac_expr =
   | VernacDistfix of grammar_associativity * int * string * qualid located
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * identifier *
-      raw_red_expr option * constr_ast * constr_ast option *
+  | VernacDefinition of definition_kind * identifier * definition_expr *
       Proof_type.declaration_hook
-  | VernacStartProof of goal_kind * identifier option *
-      constr_ast * bool * Proof_type.declaration_hook
+  | VernacStartTheoremProof of theorem_kind * identifier * Coqast.t * bool *
+      Proof_type.declaration_hook
   | VernacEndProof of opacity_flag * (identifier * theorem_kind option) option
   | VernacExactProof of constr_ast
   | VernacAssumption of assumption_kind * simple_binder with_coercion list
@@ -245,7 +251,7 @@ type vernac_expr =
   | VernacNop
 
   (* Proof management *)
-(*  | VernacGoal of constr_ast option*)
+  | VernacGoal of constr_ast
   | VernacAbort of identifier option
   | VernacAbortAll
   | VernacRestart

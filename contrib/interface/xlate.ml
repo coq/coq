@@ -2582,7 +2582,7 @@ let xlate_vernac =
      | "FOCUS", [Varg_int n] -> CT_focus (CT_coerce_INT_to_INT_OPT n)
      | "UNFOCUS", [] -> CT_unfocus
 *)
-    | VernacStartProof (_, None, c, _, _) ->
+    | VernacGoal c ->
 	CT_coerce_THEOREM_GOAL_to_COMMAND (CT_goal (xlate_constr c))
     | VernacAbort (Some id) -> CT_abort(ctf_ID_OPT_OR_ALL_SOME(xlate_ident id))
     | VernacAbort None -> CT_abort ctv_ID_OPT_OR_ALL_NONE
@@ -2869,9 +2869,9 @@ let xlate_vernac =
      | "StartProof",
          ((Varg_string (CT_string kind)) :: ((Varg_ident s) :: (c :: []))) ->
 *)
-  | VernacStartProof (kind, Some s, c, _, _) ->
+  | VernacStartTheoremProof (k, s, c, _, _) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND(
-	CT_theorem_goal (xlate_defn_or_thm kind, xlate_ident s,xlate_constr c))
+	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,xlate_constr c))
 (*
      | (*My attempt: suspend and resume as separate nodes *)
        "SUSPEND", [] -> CT_suspend
@@ -2898,7 +2898,12 @@ let xlate_vernac =
                     (CT_coerce_SORT_TYPE_to_FORMULA b), None
 	   | _ -> assert false in
 *)
-  | VernacDefinition (kind,s,red_option,c,typ_opt,_) ->
+  | VernacDefinition (k,s,ProveBody (bl,typ),_) ->
+      if bl <> [] then xlate_error "TODO: Def bindings";
+      CT_coerce_THEOREM_GOAL_to_COMMAND(
+	CT_theorem_goal (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k), xlate_ident s,xlate_constr typ))
+  | VernacDefinition (kind,s,DefineBody(bl,red_option,c,typ_opt),_) ->
+      if bl <> [] then xlate_error "TODO: Def bindings";
       CT_definition
 	(xlate_defn kind, xlate_ident s, 
 	   cvt_optional_eval_for_definition c red_option,

@@ -14,6 +14,7 @@ open Names
 open Term
 open Nametab
 open Library
+open Vernacexpr
 (*i*)
 
 (*s Declaration functions. The following functions take ASTs,
@@ -21,8 +22,9 @@ open Library
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
-val declare_definition : Tacred.red_expr option -> identifier
-  -> bool * strength -> Coqast.t -> Coqast.t option -> global_reference
+val declare_definition : identifier -> bool * strength ->
+  local_binder list -> Tacred.red_expr option -> Coqast.t -> Coqast.t option
+    -> global_reference
 
 val syntax_definition : identifier -> Coqast.t -> unit
 

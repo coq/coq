@@ -33,30 +33,44 @@ open Safe_typing
 open Nametab
 open Typeops
 open Indtypes
+open Vernacexpr
 
-let mkCastC(a,b) = ope("CAST",[a;b])
-let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
-let mkProdC (x,a,b) = ope("PROD",[a;slam(Some x,b)])
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
+
+let rec abstract_rawconstr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_rawconstr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkLambdaC(x,t,b)) idl
+        (abstract_rawconstr c bl)
+
+let rec destSubCast c = match kind_of_term c with
+  | Lambda (x,t,c) -> 
+      let (b,u) = destSubCast c in mkLambda (x,t,b), mkProd (x,t,u)
+  | LetIn (x,b,t,c) ->
+      let (d,u) = destSubCast c in mkLetIn (x,b,t,d), mkLetIn (x,b,t,u)
+  | Cast (b,u) -> (b,u)
+  | _ -> assert false
 
 (* Commands of the interface *)
 
 (* 1| Constant definitions *)
 
-let constant_entry_of_com (com,comtypopt,opacity) =
+let constant_entry_of_com (bl,com,comtypopt,opacity) =
   let sigma = Evd.empty in
   let env = Global.env() in
   match comtypopt with
       None -> 
-	{ const_entry_body = interp_constr sigma env com;
+	let b = abstract_rawconstr com bl in
+	{ const_entry_body = interp_constr sigma env b;
 	  const_entry_type = None;
           const_entry_opaque = opacity }
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
-	let b = mkCastC (com,comtyp) in
-	let (body,typ) = destCast (interp_constr sigma env b) in
+	let b = abstract_rawconstr (mkCastC (com,comtyp)) bl in
+	let (body,typ) = destSubCast (interp_constr sigma env b) in
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = opacity }
@@ -75,8 +89,10 @@ let declare_global_definition ident ce n local =
   if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef sp
 
-let declare_definition red_option ident (local,n) c typopt = 
-  let ce = constant_entry_of_com (c,typopt,false) in
+let declare_definition ident (local,n) bl red_option c typopt = 
+  let ce = constant_entry_of_com (bl,c,typopt,false) in
+  if bl<>[] && red_option <> None then 
+    error "Evaluation under a local context not supported";
   let ce' = red_constant_entry ce red_option in
   match n with
     | NeverDischarge -> declare_global_definition ident ce' n local

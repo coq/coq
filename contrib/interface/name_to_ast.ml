@@ -161,9 +161,9 @@ let make_definition_ast name c typ implicits =
   (implicits_to_ast_list implicits);;
 *)
 let make_definition_ast name c typ implicits =
-  VernacDefinition (Definition, name, None,
-    (ope("CAST", [(constr_to_ast c);(constr_to_ast (body_of_type typ))])),
-    None, (fun _ _ -> ()))
+  VernacDefinition (Definition, name, DefineBody ([], None,
+    (constr_to_ast c), Some (constr_to_ast (body_of_type typ))),
+    (fun _ _ -> ()))
   ::(implicits_to_ast_list implicits);;
 
 (* This function is inspired by print_constant *)

@@ -25,26 +25,13 @@ let join_binders (idl,c) = List.map (fun id -> (id,c)) idl
 
 open Genarg
 
-let cast_constr loc c = function
-  | None -> c
-  | Some t -> <:ast< (CAST $c $t) >>
-
-let abstract_constr bl c =
-  let loc = dummy_loc in 
-  <:ast<($ABSTRACT "LAMBDALIST" $bl $c)>>
-
-let generalize_constr bl c =
-  let loc = dummy_loc in 
-  <:ast< ($ABSTRACT "PRODLIST" $bl $c) >>
-
-let evar_constr = let loc = dummy_loc in <:ast< (ISEVAR) >>
-
+let evar_constr loc = <:ast< (ISEVAR) >>
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
 GEXTEND Gram
-  GLOBAL: vernac;
+  GLOBAL: vernac gallina_ext;
   vernac:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
@@ -72,13 +59,10 @@ GEXTEND Gram
 	  VernacSolveExistential (n,c)
     ] ]
   ;
-  def_body:
-    [ [ ":="; c = constr; ":"; t = constr -> c, Some t
-      | ":"; t = constr; ":="; c = constr -> c, Some t
-      | ":="; c = constr -> c, None ] ]
-  ;
   constr_body:
-    [ [	(c,t) = def_body -> cast_constr loc c t ] ]
+    [ [ ":="; c = constr; ":"; t = constr -> <:ast< (CAST $c $t) >>
+      | ":"; t = constr; ":="; c = constr -> <:ast< (CAST $c $t) >>
+      | ":="; c = constr -> c ] ]
   ;
   vernac_list_tail:
     [ [ v = located_vernac; l = vernac_list_tail -> v :: l
@@ -111,8 +95,7 @@ GEXTEND Gram
       | IDENT "Local" -> (fun _ _ -> ()), LocalDefinition
       | IDENT "SubClass"  -> Class.add_subclass_hook, Definition
       | IDENT "Local"; IDENT "SubClass"  ->
-	  Class.add_subclass_hook, LocalDefinition
- ] ]  
+	  Class.add_subclass_hook, LocalDefinition ] ]  
   ;
   assumption_token:
     [ [ "Hypothesis" -> AssumptionHypothesis
@@ -138,38 +121,50 @@ GEXTEND Gram
   ne_params_list:
     [ [ ll = LIST1 params SEP ";" -> List.flatten ll ] ]
   ;
+ident_comma_list_tail:
+    [ [ ","; idl = LIST1 ident SEP "," -> idl | -> [] ] ]
+  ;
+  type_option:
+    [ [ ":"; c = constr -> c 
+      | -> evar_constr loc ] ]
+  ;
+  opt_casted_constr:
+    [ [ c = constr;  ":"; t = constr -> <:ast< (CAST $c $t) >>
+      | c = constr -> c ] ]
+  ;
+  vardecls:
+    [ [ id = ident; idl = ident_comma_list_tail; c = type_option ->
+          LocalRawAssum (id::idl,c)
+      | id = ident; [ "=" | ":=" ]; c = opt_casted_constr ->
+          LocalRawDef (id,c)
+    ] ]
+  ;
+  binders:
+    [ [ "["; bl = LIST1 vardecls SEP ";"; "]" -> bl ] ]
+  ;
+  binders_list:
+    [ [ bls = LIST0 binders -> List.flatten bls ] ]
+  ;
   reduce:
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
       | -> None ] ]
   ;
-  binders_list:
-    [ [ idl = ne_binders_list -> <:ast< (BINDERS ($LIST $idl)) >>
-      | -> <:ast< (BINDERS) >> ] ]
+  def_body:
+    [ [ bl = binders_list; ":="; red = reduce; c = constr; ":"; t = constr ->
+          DefineBody (bl, red, c, Some t)
+      | bl = binders_list; ":"; t = constr; ":="; red = reduce; c = constr ->
+          DefineBody (bl, red, c, Some t)
+      | bl = binders_list; ":="; red = reduce; c = constr ->
+          DefineBody (bl, red, c, None)
+      | bl = binders_list; ":"; t = constr ->
+          ProveBody (bl, t) ] ]
   ;
   gallina:
-    (* Definition, Goal *)
+    (* Definition, Theorem, Variable, Axiom, ... *)
     [ [ thm = thm_token; id = ident; ":"; c = constr -> 
-         VernacStartProof
-           (StartTheoremProof thm, Some id, c, false, (fun _ _ -> ()))
-
-      | (f,d) = def_token; id = ident; bl = binders_list;
-	":"; t = constr -> 
-          VernacStartProof 
-            (StartDefinitionBody d, Some id, generalize_constr bl t, false, f)
-      | (f,def) = def_token; s = Prim.ident; bl = binders_list;
-	":="; red = reduce; c = constr ->
-	  VernacDefinition
-	    (def, s, red, abstract_constr bl c, None, f)
-      | (f,def) = def_token; s = Prim.ident; bl = binders_list;
-	":="; red = reduce; c = constr; ":"; t = constr -> 
-	  VernacDefinition
-	    (def, s, red, abstract_constr bl c,
-            Some (generalize_constr bl t), f)
-      | (f,def) = def_token; s = Prim.ident; bl = binders_list;
-	":"; t = constr; ":="; red = reduce; c = constr -> 
-	  VernacDefinition
-	    (def, s, red, abstract_constr bl c,
-            Some (generalize_constr bl t), f)
+         VernacStartTheoremProof (thm, id, c, false, (fun _ _ -> ()))
+      | (f,d) = def_token; id = ident; b = def_body -> 
+          VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = ne_params_list -> 
 	  VernacAssumption (stre, bl)
       | stre = assumptions_token; bl = ne_params_list ->
@@ -177,12 +172,7 @@ GEXTEND Gram
 	  VernacAssumption (stre, bl)
       ] ]
   ;
-  END
-
-(* Gallina inductive declarations *)
-GEXTEND Gram
-  GLOBAL: gallina gallina_ext;
-
+  (* Gallina inductive declarations *)
   finite_token:
     [ [ "Inductive" -> true
       | "CoInductive" -> false ] ]
@@ -227,11 +217,6 @@ GEXTEND Gram
     [ [ ">" -> true
       |  -> false ] ]
   ;
-  of_type_with_opt_coercion:
-    [ [ ":>" -> true
-      | ":"; ">" -> true
-      | ":" -> false ] ]
-  ;
   onescheme:
     [ [ id = ident; ":="; dep = dep; ind = qualid; IDENT "Sort";
         s = sort -> (id,dep,ind,s) ] ]
@@ -271,7 +256,7 @@ GEXTEND Gram
   ;
   simple_params:
     [ [ idl = LIST1 ident SEP ","; ":"; c = constr -> join_binders (idl, c)
-      | idl = LIST1 ident SEP "," -> join_binders (idl, evar_constr)
+      | idl = LIST1 ident SEP "," -> join_binders (idl, evar_constr dummy_loc)
     ] ]
   ;
   simple_binders:
@@ -306,16 +291,6 @@ GEXTEND Gram
       | f = finite_token; indl = block ->
           VernacInductive (f,indl) ] ]
   ;
-  END
-
-GEXTEND Gram
-  GLOBAL: gallina_ext;
-
-  def_body:
-    [ [ ":="; c = constr; ":"; t = constr -> c, Some t
-      | ":"; t = constr; ":="; c = constr -> c, Some t
-      | ":="; c = constr -> c, None ] ]
-  ;
   gallina_ext:
     [ [ 
 (* Sections *)
@@ -332,20 +307,25 @@ GEXTEND Gram
 (* Canonical structure *)
       | IDENT "Canonical"; IDENT "Structure"; qid = qualid ->
 	  VernacCanonical qid
-      | IDENT "Canonical"; IDENT "Structure"; qid = qualid; (c,t) = def_body
-          ->
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualid; d = def_body ->
           let s = Ast.coerce_qualid_to_id qid in
+	  VernacDefinition (Definition,s,d,Recordobj.add_object_hook)
+(*
 	  VernacDefinition (Definition,s,None,c,t,Recordobj.add_object_hook)
+*)
       (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
          (they were unused and undocumented) *)
 
 (* Coercions *)
-      | IDENT "Coercion"; qid = qualid; (c,t) = def_body ->
+      | IDENT "Coercion"; qid = qualid; d = def_body ->
           let s = Ast.coerce_qualid_to_id qid in
+(*
 	  VernacDefinition (Definition,s,None,c,t,Class.add_coercion_hook)
-      | IDENT "Coercion"; IDENT "Local"; qid = qualid; (c,t) = def_body ->
+*)
+	  VernacDefinition (Definition,s,d,Class.add_coercion_hook)
+      | IDENT "Coercion"; IDENT "Local"; qid = qualid; d = def_body ->
            let s = Ast.coerce_qualid_to_id qid in
-	  VernacDefinition (LocalDefinition,s,None,c,t,Class.add_coercion_hook)
+	  VernacDefinition (LocalDefinition,s,d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = Prim.ident;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Declare.make_strength_0 (), f, s, t)
