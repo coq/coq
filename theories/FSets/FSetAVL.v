@@ -999,10 +999,51 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Exists s'; Do 3 (Split; Trivial).
     Clear H5; AVL H2; AVL H3; Omega.
     Clear H0; Intro; Generalize (H5 y); Clear H5; Intuition.
-
+    Apply (!E.lt_not_eq y t1); Auto.
+    Inversion_clear H1; Apply H10; Auto.
+    Apply X.eq_trans with x; Auto.
+    Apply (!E.lt_not_eq t1 y); Auto.
+    Inversion_clear H1; Apply H11; Auto.
+    Apply X.eq_trans with x; Auto.
+    Inversion_clear H8; Intuition.
+    Absurd (X.eq y x); Auto.
+    Apply X.eq_trans with t1; Auto.
+    (* t1 < x *)
+    Clear H; Case H0; Clear H0.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Intros t'2; Intuition.
+    Case (bal t0 t1 t'2); Auto.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Inversion_clear H1; Auto.
+    Inversion_clear H1; Auto.
+    Clear H0; Intro; Intro; Generalize (H5 y); Clear H5; Intuition.
+    Clear H5; AVL H2; AVL H3; Omega.
+    Intros s'; Unfold height_of_node; Intuition.
+    Exists s'; Do 3 (Split; Trivial).
+    Clear H5 H9; AVL H2; AVL H3; AVL H7; Omega.
+    Clear H0 H8 H6; Intuition.
+    Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
+    Apply (!ME.eq_not_lt t1 y); Auto.
+    Apply ME.lt_eq with x; Auto.
+    Apply (!ME.lt_not_gt y t1); Auto.
+    Inversion_clear H1; Apply H15; Auto.
+    Apply ME.lt_eq with x; Auto.
+    Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
+    Inversion_clear H8; 
+    Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
   Defined.
 
   (** * Deletion *)
+
+  Definition remove : (x:elt)(s:t)
+                      { s':t | (y:elt)(In y s') <-> (~(E.eq y x) /\ (In y s))}.
+  Proof.
+    Intros x (s,Hs,Hrb); Case (remove_rec x s); Trivial.
+    Intros s'; Intuition; Clear H0.
+    Exists (t_intro s' H H1); Intuition.
+  Defined.
 
 
 End Make.
