@@ -22,7 +22,7 @@ Require Ranalysis1.
 Require Exp_prop.
 Require Rsqrt_def.
 Require R_sqrt.
-Require TAF.
+Require MVT.
 Require Ranalysis4.
 
 Lemma P_Rmin: (P : R ->  Prop) (x, y : R) (P x) -> (P y) ->  (P (Rmin x y)).

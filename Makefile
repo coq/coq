@@ -580,7 +580,7 @@ REALS_all=theories/Reals/R_Ifp.vo \
 	theories/Reals/Rderiv.vo       theories/Reals/RList.vo \
 	theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
 	theories/Reals/Ranalysis3.vo   theories/Reals/Rtopology.vo \
-	theories/Reals/TAF.vo          theories/Reals/PSeries_reg.vo \
+	theories/Reals/MVT.vo          theories/Reals/PSeries_reg.vo \
 	theories/Reals/Exp_prop.vo     theories/Reals/Rtrigo_reg.vo \
 	theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
 	theories/Reals/Rtrigo_calc.vo  theories/Reals/Rgeom.vo \
