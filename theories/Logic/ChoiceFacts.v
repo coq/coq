@@ -112,7 +112,7 @@ Exists y. Split.
       NewDestruct HR''xy' as [H'Px HR'xy'].
       Rewrite proof_irrel with a1:=HPx a2:=H'Px.
       Exact HR'xy'.
-.Qed.
+Qed.
 
 Definition IndependenceOfPremises :=
  (A:Type)(P:A->Prop)(Q:Prop)(Q->(EXT x|(P x)))->(EXT x|Q->(P x)).
