@@ -41,15 +41,19 @@ let specification = ref false
 let keep = ref false
 let verbose = ref false
 
-(* Verifies that a string do not contains others caracters than letters, 
-   digits, or `_` *)
+(* Verifies that a string starts by a letter and do not contain
+   others caracters than letters, digits, or `_` *)
 
-let check_module_name s = 
-  let err () = 
-    output_string stderr
-      "Modules names must only contain letters, digits, or underscores\n"; 
-    output_string stderr
-      "and must begin with a letter\n";
+let check_module_name s =
+  let err c =
+    output_string stderr "Invalid module name: ";
+    output_string stderr s;
+    output_string stderr " character ";
+    if c = '\'' then
+      output_string stderr "\"'\""
+    else
+      (output_string stderr"'"; output_char stderr c; output_string stderr"'");
+    output_string stderr " is not allowed in module names\n";
     exit 1 
   in
   match String.get s 0 with 
@@ -57,9 +61,9 @@ let check_module_name s =
 	for i = 1 to (String.length s)-1 do
 	  match String.get s i with 
 	    | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_'  -> ()
-	    | _ -> err ()
+	    | c -> err c
 	done
-    | _ -> err ()
+    | c -> err c
 
  (* compilation of a file [file] with command [command] and args [args] *)
 
