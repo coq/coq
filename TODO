@@ -7,7 +7,6 @@ Distribution:
 Environnement:
 
 - Porter SearchIsos
-- Interdire de faire 2 fois la même définition avec le même nom absolu FAIT
 
 Tactiques:
 
@@ -15,19 +14,12 @@ Tactiques:
 
 Noyau:
 
-- Gérer les let in dans la condition de garde, exemple:
-  Fixpoint F [n:nat]:nat:= Cases n of O => O | (S n0) => 
-      Cases n0 of O => (S O) | (S n1) => [n2:=(S n1)](S (F n2)) end
-
-
 Vernac:
 
-- Imprimer les paths avec "." FAIT
 - Pb noms cachés (utilisation de noms absolus ?) 
 
 Grammaires:
 
-- pb avec les extensions constr (cf Zsyntax et Cases x of `0` => ...)
 - revoir numarg/pure_numarg dans g_tactic.ml4 (regles a factoriser)
 
 Doc:
