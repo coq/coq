@@ -180,9 +180,7 @@ type leibniz_eq = {
   congr: marked_term;
   sym  : marked_term }
 
-let mmk = make_module_marker 
-	    [ "#Prelude.obj"; "#Logic_Type.obj"; "#Specif.obj";
-	      "#Logic.obj"; "#Core.obj"]
+let mmk = make_module_marker [ "Prelude"; "Logic_Type"; "Specif"; "Logic" ]
 
 let eq_pattern = put_pat mmk "(eq ? ? ?)"
 let not_pattern = put_pat mmk "(not ?)"
@@ -631,7 +629,8 @@ let discrClause cls gls =
 let discrEverywhere = 
   tclORELSE
     (Tacticals.tryAllClauses discrClause)
-    (errorlabstrm "DiscrEverywhere" [< 'sTR" No discriminable equalities" >])
+    (fun gls -> 
+       errorlabstrm "DiscrEverywhere" [< 'sTR" No discriminable equalities" >])
 
 let discrConcl gls  = discrClause None gls
 let discrHyp id gls = discrClause (Some id) gls

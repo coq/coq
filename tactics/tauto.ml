@@ -45,8 +45,8 @@ let classically cltac = function
   | None -> cltac None
 
 let somatch m pat = somatch None (get_pat pat) m
-let module_mark   = ["#Logic.obj"]
-let mmk           = make_module_marker ["#Prelude.obj"]
+let module_mark   = ["Logic"]
+let mmk           = make_module_marker ["Prelude"]
 let false_pattern = put_pat mmk "False"
 let true_pattern = put_pat mmk "True"
 let and_pattern   = put_pat mmk "(and ? ?)"

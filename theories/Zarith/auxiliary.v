@@ -8,7 +8,6 @@
 
 (* $Id$ *)
 
-Require Equality.
 Require Export Arith.
 Require fast_integer.
 Require zarith_aux.

@@ -109,7 +109,7 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
-            tactics/tauto.cmo
+            tactics/tauto.cmo 
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -200,7 +200,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq
 	$(COQC) -q -I theories/Init -is states/barestate.coq $<
 
-TACTICSVO=tactics/Equality.vo tactics/Tauto.vo
+TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo
 
 tactics/%.vo: tactics/%.v states/barestate.coq
 	$(COQC) -q -I tactics -is states/barestate.coq $<

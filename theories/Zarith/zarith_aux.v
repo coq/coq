@@ -12,7 +12,7 @@ Require Arith.
 Require Export fast_integer.
 
 Tactic Definition ElimCompare [$com1 $com2] :=
-  [<:tactic:<  
+  [ < : tactic : <  
        Elim (Dcompare (Zcompare $com1 $com2)); [
          Idtac 
        | Intro hidden_auxiliary; Elim hidden_auxiliary; 
@@ -90,7 +90,7 @@ Theorem Zgt_n_S : (n,m:Z)(Zgt m n) -> (Zgt (Zs m) (Zs n)).
 Unfold Zgt; Intros n m H; Rewrite Zcompare_n_S; Auto with arith.
 Save.
 
-Lemma Zle_not_gt     : (n,m:Z)(Zle n m)->~(Zgt n m).
+Lemma Zle_not_gt     : (n,m:Z)(Zle n m) -> ~(Zgt n m).
 
 Unfold Zle Zgt; Auto with arith.
 Save.
@@ -101,13 +101,13 @@ Unfold Zgt ;Intros n; Elim (Zcompare_EGAL n n); Intros H1 H2;
 Rewrite H2; [ Discriminate | Trivial with arith ].
 Save.
 
-Lemma Zgt_not_sym    : (n,m:Z)(Zgt n m)->~(Zgt m n).
+Lemma Zgt_not_sym    : (n,m:Z)(Zgt n m) -> ~(Zgt m n).
 
 Unfold Zgt ;Intros n m H; Elim (Zcompare_ANTISYM n m); Intros H1 H2;
 Rewrite -> H1; [ Discriminate | Assumption ].
 Save.
 
-Lemma Zgt_not_le     : (n,m:Z)(Zgt n m)->~(Zle n m).
+Lemma Zgt_not_le     : (n,m:Z)(Zgt n m) -> ~(Zle n m).
 
 Unfold Zgt Zle not; Auto with arith.
 Save.
@@ -446,18 +446,18 @@ Unfold Zle Zlt ;Intros n m; ElimCompare n m; [
 | Elim (Zcompare_ANTISYM n m); Auto with arith ].
 Save.
 
-Theorem Zle_not_lt : (n,m:Z)(Zle n m)->~(Zlt m n).
+Theorem Zle_not_lt : (n,m:Z)(Zle n m) -> ~(Zlt m n).
 
 Unfold Zle Zlt; Unfold not ;Intros n m H1 H2;Apply H1; 
 Elim (Zcompare_ANTISYM n m);Auto with arith.
 Save.
 
-Theorem Zlt_not_le : (n,m:Z)(Zlt n m)->~(Zle m n).
+Theorem Zlt_not_le : (n,m:Z)(Zlt n m) -> ~(Zle m n).
 Unfold Zlt Zle not ;Intros n m H1 H2; Apply H2; Elim (Zcompare_ANTISYM m n);
 Auto with arith.
 Save.
 
-Theorem Zlt_not_sym : (n,m:Z)(Zlt n m)->~(Zlt m n).
+Theorem Zlt_not_sym : (n,m:Z)(Zlt n m) -> ~(Zlt m n).
 Intros n m H;Apply Zle_not_lt; Apply Zlt_le_weak; Assumption.
 Save.
 
