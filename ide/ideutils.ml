@@ -10,14 +10,22 @@ let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 let is_char_start c = let code = Char.code c in code < 0x80 || code >= 0xc0
 
 let byte_offset_to_char_offset s byte_offset = 
-  assert (byte_offset < String.length s);
-  let count_delta = ref 0 in
-  for i = 0 to byte_offset do
-    let code = Char.code s.[i] in
-    if code >= 0x80 && code < 0xc0 then incr count_delta
-  done;
-  byte_offset - !count_delta
-
+  if (byte_offset < String.length s) then begin
+    let count_delta = ref 0 in
+    for i = 0 to byte_offset do
+      let code = Char.code s.[i] in
+      if code >= 0x80 && code < 0xc0 then incr count_delta
+    done;
+    byte_offset - !count_delta
+  end
+  else begin
+    let count_delta = ref 0 in
+    for i = 0 to String.length s - 1 do
+      let code = Char.code s.[i] in
+      if code >= 0x80 && code < 0xc0 then incr count_delta
+    done;
+    byte_offset - !count_delta
+  end
 
 let process_pending () =
   while Glib.Main.pending () do 
@@ -50,7 +58,7 @@ let try_export file_name s =
       if (fst (Glib.Convert.get_charset ())) then
 	s 
       else
-	Glib.Convert.locale_from_utf8 s 
+	(try Glib.Convert.locale_from_utf8 s with _ -> prerr_endline "Warning: exporting to utf8";s)
     in
     let oc = open_out file_name in
     output_string oc s;

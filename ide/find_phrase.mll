@@ -8,6 +8,12 @@ rule next_phrase = parse
   | "(*" { incr length; incr length; 
 	   skip_comment lexbuf;
 	   next_phrase lexbuf}
+  | '"'[^'"']*'"' { let lexeme = Lexing.lexeme lexbuf in 
+		 let ulen = Glib.Utf8.length lexeme in
+		 length := !length + ulen;
+		 Buffer.add_string buff lexeme;
+		 next_phrase lexbuf
+	       }
   | '.'[' ''\n''\t''\r'] {	
       length := !length + 2; 
       Buffer.add_string buff (Lexing.lexeme lexbuf);
@@ -19,7 +25,7 @@ rule next_phrase = parse
 	Buffer.add_char buff c ;
 	next_phrase lexbuf
       }
-  | eof  { raise (Lex_error "no phrase") }
+  | eof  { raise (Lex_error "Phrase should end with . followed by a separator") }
 and skip_comment = parse
   | "*)" {incr length; incr length; ()}
   | "(*" {incr length; incr length; 

@@ -41,7 +41,8 @@ object(self)
 
     end
 
-  method clear_undo = Stack.clear history
+  method clear_undo = Stack.clear history; Stack.clear nredo; Queue.clear redo
+
   method undo = if !undo_lock then begin
     undo_lock := false;
     prerr_endline "UNDO";

@@ -73,7 +73,7 @@ and comment = parse
 	let lb = Lexing.from_string s in
 	try 
 	  while true do
-	    process_pending ();
+	    (* process_pending (); This is VERY DANGEROUS *)
 	    let b,e,o=next_order lb in
 	    let b,e = convert_pos b,convert_pos e in
 	    let start = input_buffer#get_iter_at_char (offset + b) in

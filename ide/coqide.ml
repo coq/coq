@@ -593,7 +593,7 @@ object(self)
 	 if localize then 
 	   (match loc with 
 	      | None -> ()
-	      | Some (start,stop) -> 
+	      | Some (start,stop) ->
 		  let convert_pos = byte_offset_to_char_offset phrase in
 		  let start = convert_pos start in
 		  let stop = convert_pos stop in
@@ -1006,7 +1006,7 @@ object(self)
 	    else set_tab_image index yes_icon;
 	 ));
     ignore (input_view#connect#after#paste_clipboard
-	      ~callback:(fun () ->
+	      ~callback:(fun () -> 
 			   prerr_endline "Paste occured"));
     ignore (input_buffer#connect#changed
 	      ~callback:(fun () -> 
@@ -1088,6 +1088,10 @@ let create_input_tab filename =
   tv1
  
 let main files = 
+  (* Statup preferences *)
+  load_pref current;
+
+  (* Main window *)
   let w = GWindow.window 
 	    ~allow_grow:true ~allow_shrink:true 
 	    ~width:window_width ~height:window_height 
@@ -1138,9 +1142,10 @@ let main files =
       input_buffer#place_cursor input_buffer#start_iter;
       set_current_view index;
       Highlight.highlight_all input_buffer;
-      input_buffer#set_modified false
+      input_buffer#set_modified false;
+      av#view#clear_undo
     with       
-      | Vector.Found i -> !flash_info "File already opened"
+      | Vector.Found i -> set_current_view i
       | e -> !flash_info "Load failed"
   in
   let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
@@ -1358,7 +1363,7 @@ let main files =
 	      ignore (get_current_view()).view#undo));
   ignore(edit_f#add_item "_Clear Undo Stack" ~key:GdkKeysyms._exclam ~callback:
 	   (fun () -> 
-	      ignore (get_current_view()).view#undo));
+	      ignore (get_current_view()).view#clear_undo));
   ignore(edit_f#add_separator ());
   ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
 	   (fun () -> GtkSignal.emit_unit
@@ -1433,11 +1438,11 @@ let main files =
 	 );
 
   (* Tactics Menu *)
-  let tactics_menu =  factory#add_submenu "T_actics" in
+  let tactics_menu =  factory#add_submenu "_Try Tactics" in
   let tactics_factory = 
     new GMenu.factory tactics_menu 
       ~accel_group 
-      ~accel_modi:current.modifier_for_templates 
+      ~accel_modi:current.modifier_for_tactics
   in
   let do_if_active f () = 
     let current = get_current_view () in
@@ -1627,7 +1632,8 @@ let main files =
       revert_timer := Some
 	(GMain.Timeout.add ~ms:current.global_auto_revert_delay 
 	   ~callback:(fun () -> revert_f ();true))
-  in
+  in reset_revert_timer (); (* to enable statup preferences timer *)
+
   let configuration_menu = factory#add_submenu "Confi_guration" in
   let configuration_factory = new GMenu.factory configuration_menu ~accel_group
   in
@@ -1682,10 +1688,6 @@ let main files =
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "_About" in
-
-  (* Statup preferences *)
-  load_pref current;
-  reset_revert_timer ();
 
   (* Window layout *)
 
@@ -1830,7 +1832,7 @@ let start () =
   with Not_found -> ());
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 
-    (Some [`CONTROL;`SHIFT;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5;`LOCK]);
+    (Some [`CONTROL;`SHIFT;`MOD1;`MOD4]);
   cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
   Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 						      `WARNING;`CRITICAL]
@@ -1846,6 +1848,7 @@ let start () =
     with 
       | Sys.Break -> prerr_endline "Interrupted." ; flush stderr
       | e -> 
-	  prerr_endline ("CoqIde fatal error:" ^ (Printexc.to_string e));
+	  Pervasives.prerr_endline ("CoqIde unexpected error:" ^ (Printexc.to_string e));
+	  flush stderr;
 	  crash_save 127
   done

@@ -57,7 +57,9 @@ type pref =
 
       mutable modifier_for_navigation : Gdk.Tags.modifier list;
       mutable modifier_for_templates : Gdk.Tags.modifier list;
-      
+      mutable modifier_for_tactics : Gdk.Tags.modifier list;
+      mutable modifiers_valid : Gdk.Tags.modifier list;
+
       mutable cmd_browse : string * string;
 
       mutable doc_url : string;
@@ -104,6 +106,15 @@ let save_pref p =
       "modifier_for_templates" 
       output_modi 
       p.modifier_for_templates;
+    output_list 
+      "modifier_for_tactics" 
+      output_modi 
+      p.modifier_for_navigation;
+   output_list 
+      "modifiers_valid" 
+      output_modi 
+      p.modifiers_valid;
+
     close_out fd
   with _ -> prerr_endline "Could not save preferences."
   
@@ -127,6 +138,9 @@ let (current:pref) =
     
     modifier_for_navigation = [`CONTROL; `MOD1];
     modifier_for_templates = [`MOD4];
+    modifier_for_tactics = [`CONTROL; `MOD1];
+    modifiers_valid = [`SHIFT; `CONTROL; `MOD1; `MOD4];
+
     
     cmd_browse = "netscape -remote \"OpenURL(", ")\"";
 
@@ -140,39 +154,45 @@ let load_pref p =
     List.iter 
       (function k,v -> try match k with
 	 | "cmd_coqc" -> p.cmd_coqc <- v
-       | "cmd_make" -> p.cmd_make <-  v
-       | "cmd_coqmakefile" -> p.cmd_coqmakefile <- v
-       | "cmd_coqdoc" -> p.cmd_coqdoc <-  v
-       | "cmd_print" -> p.cmd_print <-  v
-       | "global_auto_revert" -> p.global_auto_revert <- bool_of_string v
-       | "global_auto_revert_delay" -> 
-	   p.global_auto_revert_delay <- int_of_string v
-       | "auto_save" -> p.auto_save <- bool_of_string v
-       | "auto_save_delay" -> p.auto_save_delay <- int_of_string v
-       | "auto_save_prefix" -> 
-	   let x,y = p.auto_save_name in
-	   p.auto_save_name <- (v,y)
-       | "auto_save_suffix" -> 
-	   let x,y = p.auto_save_name in
-	   p.auto_save_name <- (x,v)
-
-       | "cmd_browse_prefix" -> 
-	   let x,y = p.cmd_browse in
-	   p.cmd_browse <- (v,y)
-       | "cmd_browse_suffix" ->
-	   let x,y = p.cmd_browse in
-	   p.cmd_browse <- (x,v)
-       | "doc_url" -> p.doc_url <- v
-       | "library_url" -> p.library_url <- v
-       | "modifier_for_navigation" ->
-	   p.modifier_for_navigation <- 
-	   List.rev_map str_to_mod (Config_lexer.split v)
-       | "modifier_for_templates" ->
-	   p.modifier_for_templates <- 
-	   List.rev_map str_to_mod (Config_lexer.split v)
-       | _ -> prerr_endline ("Warning: unknown option "^k)
-     with _ -> ())
-    l
+	 | "cmd_make" -> p.cmd_make <-  v
+	 | "cmd_coqmakefile" -> p.cmd_coqmakefile <- v
+	 | "cmd_coqdoc" -> p.cmd_coqdoc <-  v
+	 | "cmd_print" -> p.cmd_print <-  v
+	 | "global_auto_revert" -> p.global_auto_revert <- bool_of_string v
+	 | "global_auto_revert_delay" -> 
+	     p.global_auto_revert_delay <- int_of_string v
+	 | "auto_save" -> p.auto_save <- bool_of_string v
+	 | "auto_save_delay" -> p.auto_save_delay <- int_of_string v
+	 | "auto_save_prefix" -> 
+	     let x,y = p.auto_save_name in
+	     p.auto_save_name <- (v,y)
+	 | "auto_save_suffix" -> 
+	     let x,y = p.auto_save_name in
+	     p.auto_save_name <- (x,v)
+	       
+	 | "cmd_browse_prefix" -> 
+	     let x,y = p.cmd_browse in
+	     p.cmd_browse <- (v,y)
+	 | "cmd_browse_suffix" ->
+	     let x,y = p.cmd_browse in
+	     p.cmd_browse <- (x,v)
+	 | "doc_url" -> p.doc_url <- v
+	 | "library_url" -> p.library_url <- v
+	 | "modifier_for_navigation" ->
+	     p.modifier_for_navigation <- 
+	     List.rev_map str_to_mod (Config_lexer.split v)
+	 | "modifier_for_templates" ->
+	     p.modifier_for_templates <- 
+	     List.rev_map str_to_mod (Config_lexer.split v)
+	 | "modifier_for_tactics" ->
+	     p.modifier_for_tactics <- 
+	     List.rev_map str_to_mod (Config_lexer.split v)
+	 | "modifiers_valid" ->
+	     p.modifiers_valid <- 
+	     List.rev_map str_to_mod (Config_lexer.split v)
+	 | _ -> prerr_endline ("Warning: unknown option "^k)
+       with _ -> ())
+      l
   with _ -> prerr_endline "Could not load preferences."
 
 let configure () = 
@@ -199,12 +219,41 @@ let configure () =
       "Global auto revert delay (ms)" 
       (string_of_int current.global_auto_revert_delay)
   in  
+
+  let modifier_for_tactics = 
+    modifiers
+      ~allow:current.modifiers_valid
+      ~f:(fun l -> current.modifier_for_tactics <- l)
+      "Modifiers for Tactics Menu"
+      current.modifier_for_tactics
+  in
+  let modifier_for_templates = 
+    modifiers
+      ~allow:current.modifiers_valid
+      ~f:(fun l -> current.modifier_for_templates <- l)
+      "Modifiers for Templates Menu"
+      current.modifier_for_templates
+  in
+  let modifier_for_navigation = 
+    modifiers
+      ~allow:current.modifiers_valid
+      ~f:(fun l -> current.modifier_for_navigation <- l)
+      "Modifiers for Navigation Menu"
+      current.modifier_for_navigation
+  in
+  let modifiers_valid = 
+    modifiers
+      ~f:(fun l -> current.modifiers_valid <- l)
+      "Allowed modifiers"
+      current.modifiers_valid
+  in
   let cmds =
-      [Section(
-	 "Commands",
-	 [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print]);
-       Section ("Files",
-		[global_auto_revert;global_auto_revert_delay])]
+    [Section("Commands",
+	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print]);
+     Section("Files",
+	     [global_auto_revert;global_auto_revert_delay]);
+     Section("Shortcuts(need restart)",
+	     [modifiers_valid; modifier_for_tactics;modifier_for_templates; modifier_for_navigation])]
   in
   match edit "Customizations" cmds
   with | Return_apply | Return_ok -> save_pref current

@@ -765,6 +765,58 @@ class hotkey_param_box param =
 	()
   end ;;
 
+class modifiers_param_box param =
+  let hbox = GPack.hbox () in
+  let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
+  let wl = GMisc.label ~text: param.md_label 
+      ~packing: wev#add () 
+  in
+  let we = GEdit.entry
+      ~editable: false
+      ~packing: (hbox#pack ~expand: param.md_expand ~padding: 2)
+      ()
+  in
+  let value = ref param.md_value in
+  let _ = 
+    match param.md_help with
+      None -> ()
+    | Some help ->
+	let tooltips = GData.tooltips () in
+	ignore (hbox#connect#destroy ~callback: tooltips#destroy);
+	tooltips#set_tip wev#coerce ~text: help ~privat: help 
+  in
+  let _ = we#set_text (KeyOption.modifiers_to_string param.md_value) in
+  let mods_we_care = param.md_allow in
+  let capture ev =
+    let modifiers = GdkEvent.Key.state ev in
+    let mods = List.filter
+	(fun m -> (List.mem m mods_we_care))
+	modifiers
+    in
+    value := mods;
+    we#set_text (KeyOption.modifiers_to_string !value);
+    false
+  in
+  let _ = 
+    if param.md_editable then
+      ignore (we#event#connect#key_press capture)
+    else
+      ()
+  in
+
+  object (self)
+    (** This method returns the main box ready to be packed. *)
+    method box = hbox#coerce
+    (** This method applies the new value of the parameter. *)
+    method apply =
+      let new_value = !value in
+      if new_value <> param.md_value then
+	let _ = param.md_f_apply new_value in
+	param.md_value <- new_value
+      else
+	()
+  end ;;
+
 (** This class is used to build a box for a date parameter.*)
 class date_param_box param =
   let v = ref param.date_value in
@@ -889,6 +941,10 @@ class configuration_box conf_struct (notebook : GPack.notebook) =
 		  box
 	      |	Hotkey_param p ->
 		  let box = new hotkey_param_box p in
+		  let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+		  box
+	      |	Modifiers_param p ->
+		  let box = new modifiers_param_box p in
 		  let _ = main_box#pack ~expand: false ~padding: 2 box#box in
 		  box
 	      |	Html_param p ->
@@ -1091,6 +1147,10 @@ let box param_list buttons =
 	box
     | Hotkey_param p ->
 	let box = new hotkey_param_box p in
+	let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+	box
+    | Modifiers_param p ->
+	let box = new modifiers_param_box p in
 	let _ = main_box#pack ~expand: false ~padding: 2 box#box in
 	box
     | Html_param p ->
@@ -1325,6 +1385,23 @@ let hotkey ?(editable=true) ?(expand=true) ?help ?(f=(fun _ -> ())) label v =
       hk_editable = editable ;
       hk_f_apply = f ;
       hk_expand = expand ;
+    } 
+
+let modifiers 
+  ?(editable=true) 
+  ?(expand=true) 
+  ?help 
+  ?(allow=[`CONTROL;`SHIFT;`LOCK;`MOD1;`MOD1;`MOD2;`MOD3;`MOD4;`MOD5]) 
+  ?(f=(fun _ -> ())) label v =
+  Modifiers_param
+    {
+      md_label = label ;
+      md_help = help ;
+      md_value = v ;
+      md_editable = editable ;
+      md_f_apply = f ;
+      md_expand = expand ;
+      md_allow = allow ;
     } 
 
 (** Create a custom param.*)

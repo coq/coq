@@ -37,6 +37,7 @@ let combo = Configwin_ihm.combo
 let custom = Configwin_ihm.custom
 let date = Configwin_ihm.date
 let hotkey = Configwin_ihm.hotkey
+let modifiers = Configwin_ihm.modifiers
 let html = Configwin_ihm.html
 
 let edit 

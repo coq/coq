@@ -79,6 +79,26 @@ module KeyOption = struct
                      ) ^ s)
         in
         iter m ("-" ^ s)
+
+  let modifiers_to_string m =
+    let rec iter m s =
+      match m with
+          [] -> s
+        | c :: m ->
+            iter m ((
+                      match c with
+			  `CONTROL -> "<ctrl>"
+			| `SHIFT -> "<shft>"
+			| `LOCK -> "<lock>"
+			| `MOD1 -> "<alt>"
+			| `MOD2 -> "<mod2>"
+			| `MOD3 -> "<mod3>"
+			| `MOD4 -> "<mod4>"
+			| `MOD5 -> "<mod5>"
+			| _  -> raise Not_found
+                    ) ^ s)
+    in
+    iter m ""
 	  
   let value_to_key v =
     match v with
@@ -190,6 +210,17 @@ type hotkey_param = {
     hk_expand : bool ; (** expand or not *)
   } 
 
+type modifiers_param = {
+    md_label : string ; (** the label of the parameter *)
+    mutable md_value : Gdk.Tags.modifier list ; 
+             (** The value, as a list of modifiers and a key code *)
+    md_editable : bool ; (** indicates if the value can be changed *)
+    md_f_apply : Gdk.Tags.modifier list -> unit ;
+             (** the function to call to apply the new value of the paramter *)
+    md_help : string option ; (** optional help string *)
+    md_expand : bool ; (** expand or not *)
+    md_allow : Gdk.Tags.modifier list
+  } 
 
 (** This type represents the different kinds of parameters. *)
 type parameter_kind =
@@ -204,6 +235,7 @@ type parameter_kind =
   | Date_param of date_param
   | Font_param of font_param
   | Hotkey_param of hotkey_param
+  | Modifiers_param of modifiers_param
   | Html_param of string_param
 ;;
 

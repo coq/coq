@@ -211,6 +211,11 @@ val hotkey : ?editable: bool -> ?expand: bool -> ?help: string ->
   ?f: ((Gdk.Tags.modifier list * int) -> unit) -> 
     string -> (Gdk.Tags.modifier list * int) -> parameter_kind
 
+val modifiers : ?editable: bool -> ?expand: bool -> ?help: string ->
+  ?allow:(Gdk.Tags.modifier list) ->
+  ?f: (Gdk.Tags.modifier list -> unit) -> 
+    string -> Gdk.Tags.modifier list -> parameter_kind
+
 
 (** [custom box f expand] creates a custom parameter, with
    the given [box], the [f] function is called when the user
