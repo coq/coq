@@ -2,11 +2,20 @@ Métathéorie
 
 - Ajout de définitions locales (Let-In)
 
+Parsing
+
+- Le Lexeur considère maintenant comme token toute suite de symboles.
+
+- "command" in grammars and quotations is now "constr" as in
+  pretty-printing rules
+
+
 Syntaxe des constructions
 
 - Consecutive as in patterns are forbidden
 
 - Names generated in Cases are different (source d'incompatibilité)
+  Consecutive 'as' in patterns are forbidden
 
 - Davantage d'inférence automatique de "?".
 
@@ -15,9 +24,6 @@ Syntaxe des constructions
   avec un avertissement.
 
 Vernac
-
-- "command" in grammars and quotations is now "constr" as in
-  pretty-printing rules
 
 - Ajout de la syntaxe "[" phrase_1 ... phrase_n"]." pour grouper des
 phrases (utile pour Time et pour des grammaires abrégeant plusieurs

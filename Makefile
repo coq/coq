@@ -88,12 +88,12 @@ PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/syntax_def.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
+	parsing/pattern.cmo parsing/astterm.cmo parsing/termast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
-        parsing/extend.cmo parsing/termast.cmo \
-        parsing/esyntax.cmo parsing/printer.cmo parsing/pretty.cmo \
-	parsing/pattern.cmo parsing/astterm.cmo parsing/egrammar.cmo
+        parsing/extend.cmo parsing/esyntax.cmo \
+	parsing/printer.cmo parsing/pretty.cmo parsing/egrammar.cmo
 
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 
