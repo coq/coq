@@ -1,7 +1,11 @@
 
 # Makefile for doc/
 
-all: minicoq.dvi
+all: newsyntax.dvi minicoq.dvi
+
+newsyntax.dvi: newsyntax.tex
+	latex $<
+	latex $<
 
 coq.dvi: coq.tex
 	latex coq
