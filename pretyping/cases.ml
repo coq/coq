@@ -654,8 +654,8 @@ let get_names env sign eqns =
 	     (fun (na,t) -> Name (next_name_away (named_hd env t na) avoid))
 	     d na 
 	 in
-      (na::l,(out_name na)::avoid)) ([],allvars) sign names2 in
-  List.rev names4
+      (na::l,(out_name na)::avoid)) ([],allvars) (List.rev sign) names2 in
+  names4
 
 (************************************************************************)
 (* Recovering names for variables pushed to the rhs' environment *)
