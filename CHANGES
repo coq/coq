@@ -13,6 +13,11 @@ Syntax
 - "assert" semantics now consistent with reference manual
 - Redundant syntax "Implicit Arguments On/Off" discontinued
 
+Interpretation scopes
+
+- Add scope %bool
+- Import no more needed to activate argument scopes from a module
+
 Tools
 
 - Coqdoc support for notation links
@@ -29,6 +34,9 @@ Bug fixes
 - Fix pattern-matching compilation bugs (and new support for patterns
   in a same column but in different inductive types)
 - Fix a potential precedence problem with notations including pattern "{ _ }"
+- Fix nested coercion printing bug
+- Fix printing of notation when interleaved with coercions 
+- Fix "Tactic Notation" translation bugs
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
