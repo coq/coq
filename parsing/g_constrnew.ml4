@@ -45,45 +45,10 @@ let mk_lam = function
 let mk_match (loc,cil,rty,br) =
   CCases(loc,(None,rty),cil,br)
 
-let index_of_annot bl ann =
-  match bl,ann with
-      [([_],_)], None -> 0
-    | _, Some x ->
-        let ids = List.map snd (List.flatten (List.map fst bl)) in
-        (try list_index (snd x) ids - 1
-        with Not_found -> error "no such fix variable")
-    | _ -> error "cannot guess decreasing argument of fix"
-
-let mk_fixb (loc,id,bl,ann,body,(tloc,tyc)) =
-  let n = index_of_annot bl ann in
-  let ty = match tyc with
-      None -> CHole tloc
-    | Some t -> CProdN(loc,bl,t) in
-  (snd id,n,ty,CLambdaN(loc,bl,body))
-
-let mk_cofixb (loc,id,bl,ann,body,(tloc,tyc)) =
-  let _ = option_app (fun (aloc,_) ->
-    Util.user_err_loc
-      (aloc,"Constr:mk_cofixb",
-       Pp.str"Annotation forbidden in cofix expression")) ann in
-  let ty = match tyc with
-      None -> CHole tloc
-    | Some t -> CProdN(loc,bl,t) in
-  (snd id,ty,CLambdaN(loc,bl,body))
-
-let mk_fix(loc,kw,id,dcls) =
-  if kw then 
-    let fb = List.map mk_fixb dcls in
-    CFix(loc,id,fb)
-  else
-    let fb = List.map mk_cofixb dcls in
-    CCoFix(loc,id,fb)
-
-let mk_single_fix (loc,kw,dcl) =
-  let (_,id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
-
-let binder_constr =
-  create_constr_entry (get_univ "constr") "binder_constr"
+let loc_of_binder_let = function
+  | LocalRawAssum ((loc,_)::_,_)::_ -> loc
+  | LocalRawDef ((loc,_),_)::_ -> loc
+  | _ -> dummy_loc
 
 let rec mkCProdN loc bll c =
   match bll with
@@ -102,6 +67,51 @@ let rec mkCLambdaN loc bll c =
       CLetIn (loc,id,b,mkCLambdaN (join_loc loc1 loc) bll c)
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
+
+let rec decls_of_binders = function
+  | [] -> []
+  | LocalRawDef _::bl -> decls_of_binders bl
+  | LocalRawAssum (idl,_)::bl -> idl @ decls_of_binders bl
+
+let rec index_of_annot bl ann =
+  match decls_of_binders bl,ann with
+    | [_], None -> 0
+    | lids, Some x ->
+        let ids = List.map snd lids in
+        (try list_index (snd x) ids - 1
+        with Not_found -> error "no such fix variable")
+    | _ -> error "cannot guess decreasing argument of fix"
+
+let mk_fixb (loc,id,bl,ann,body,(tloc,tyc)) =
+  let n = index_of_annot bl ann in
+  let ty = match tyc with
+      None -> CHole tloc
+    | Some t -> mkCProdN loc bl t in
+  (snd id,n,ty,mkCLambdaN loc bl body)
+
+let mk_cofixb (loc,id,bl,ann,body,(tloc,tyc)) =
+  let _ = option_app (fun (aloc,_) ->
+    Util.user_err_loc
+      (aloc,"Constr:mk_cofixb",
+       Pp.str"Annotation forbidden in cofix expression")) ann in
+  let ty = match tyc with
+      None -> CHole tloc
+    | Some t -> mkCProdN loc bl t in
+  (snd id,ty,mkCLambdaN loc bl body)
+
+let mk_fix(loc,kw,id,dcls) =
+  if kw then 
+    let fb = List.map mk_fixb dcls in
+    CFix(loc,id,fb)
+  else
+    let fb = List.map mk_cofixb dcls in
+    CCoFix(loc,id,fb)
+
+let mk_single_fix (loc,kw,dcl) =
+  let (_,id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
+
+let binder_constr =
+  create_constr_entry (get_univ "constr") "binder_constr"
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
@@ -195,10 +205,7 @@ GEXTEND Gram
           mkCLambdaN loc bl c
       | "let"; id=name; bl = LIST0 binder_let; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
-          let loc1 = match bl with
-            | LocalRawAssum ((loc,_)::_,_)::_ -> loc
-            | LocalRawDef ((loc,_),_)::_ -> loc
-            | _ -> dummy_loc in
+          let loc1 = loc_of_binder_let bl in
           CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
@@ -245,7 +252,7 @@ GEXTEND Gram
       | "cofix" -> false ] ]
   ;
   fix_decl:
-    [ [ id=identref; bl=LIST0 binder; ann=fixannot; ty=type_cstr; ":=";
+    [ [ id=identref; bl=LIST0 binder_let; ann=fixannot; ty=type_cstr; ":=";
         c=operconstr LEVEL "200" -> (loc,id,bl,ann,c,ty) ] ]
   ;
   fixannot:

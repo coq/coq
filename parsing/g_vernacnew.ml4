@@ -206,10 +206,10 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = base_ident; bl = LIST1 binder_nodef;
+    [ [ id = base_ident; bl = LIST1 binder_let;
         annot = OPT rec_annotation; type_ = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
-          let names = List.map snd (List.flatten (List.map fst bl)) in
+          let names = List.map snd (G_constrnew.decls_of_binders bl) in
           let ni =
             match annot with
                 Some id ->
@@ -223,15 +223,17 @@ GEXTEND Gram
                       (loc,"Fixpoint",
                        Pp.str "the recursive argument needs to be specified");
                   0 in
-          let loc0 = fst (List.hd (fst (List.hd bl))) in
+          let loc0 = G_constrnew.loc_of_binder_let bl in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
-	  ((id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)),ntn) ] ]
+	  ((id, ni, G_constrnew.mkCProdN loc1 bl type_,
+	    G_constrnew.mkCLambdaN loc2 bl def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = base_ident; bl = LIST0 binder_nodef; c = type_cstr; ":=";
+    [ [ id = base_ident; bl = LIST0 binder_let; c = type_cstr; ":=";
         def = lconstr ->
-          (id,CProdN(loc,bl,c),CLambdaN(loc,bl,def)) ] ]
+          (id,G_constrnew.mkCProdN loc bl c ,
+	   G_constrnew.mkCLambdaN loc bl def) ] ]
   ;
   rec_annotation:
     [ [ "{"; IDENT "struct"; id=IDENT; "}" -> id_of_string id ] ]
@@ -251,6 +253,7 @@ GEXTEND Gram
       | IDENT "Minimality" -> false ] ]
   ;
   (* Various Binders *)
+(*
   (* ... without coercions *)
   binder_nodef:
     [ [ b = binder_let ->
@@ -260,6 +263,7 @@ GEXTEND Gram
             Util.user_err_loc
               (loc,"fix_param",Pp.str"defined binder not allowed here")) ] ]
   ;
+*)
   (* ... with coercions *)
   record_field:
     [ [ id = base_ident -> (false,AssumExpr(id,CHole loc))
@@ -589,7 +593,9 @@ GEXTEND Gram
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
       | IDENT "Tables" -> PrintTables
+(* Obsolete: was used for cooking V6.3 recipes ??
       | IDENT "Proof"; qid = global -> PrintOpaqueName qid
+*)
       | IDENT "Hint" -> PrintHintGoal
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
