@@ -1,28 +1,24 @@
 Changes from V7.3.1 to V7.4
 ===========================
 
-Grammar extension
-
-- In old syntax, the only predefined non-terminal entries are ident,
-  global, constr and pattern (e.g. nvar, numarg disappears); the only
-  allowed grammar types are constr and pattern; ast and ast list are no
-  longer supported.
-- Some incompatibilities: precedence of product (cf FTA); when a
-  syntax is a initial segment of the other, Grammar does not work, use
-  Notation
-
 Symbolic notations
 
 - Introduction of a notion of scope gathering notations in a consistent set;
-  set a notation sets has been developped for nat, Z and R
+  a notation sets has been developped for nat, Z and R (undocumented)
 - New command "Notation" for declaring notations simultaneously for
-  parsing and printing
+  parsing and printing (see chap 10 of the reference manual)
 - Declarations with only implicit arguments now handled (e.g. the
   argument of nil can be set implicit; use !nil to refer to nil
   without arguments)
-- "Print Scope sc" and "Locate ntn" allows to know to what a notation is bound
+- "Print Scope sc" and "Locate ntn" allows to know to what expression a 
+  notation is bound
 - New defensive strategy for printing or not implicit arguments to ensure
   re-type-checkability of the printed term
+- In Grammar command, the only predefined non-terminal entries are ident,
+  global, constr and pattern (e.g. nvar, numarg disappears); the only
+  allowed grammar types are constr and pattern; ast and ast list are no
+  longer supported; some incompatibilities in Grammar: when a syntax is a 
+  initial segment of an other one,  Grammar does not work, use Notation
 
 Library
 
@@ -112,6 +108,11 @@ Extraction (See details in contrib/extraction/CHANGES and README):
 - Concerning Ocaml, extracted code is now ensured to always type-check, 
   thanks to automatic inserting of Obj.magic.
 - Experimental extraction of Coq new modules to Ocaml modules.
+
+Proof rendering in natural language
+
+- Export of theories to XML for publishing and rendering purposes now
+  includes proof-trees (see http://www.cs.unibo.it/helm)
 
 Miscellaneous
 
