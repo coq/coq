@@ -44,7 +44,12 @@ Please set your locale according to your file encoding.*)"
 
 let try_export file_name s = 
   try 
-    let s = Glib.Convert.locale_from_utf8 s in
+    let s = 
+      if (fst (Glib.Convert.get_charset ())) then
+	s 
+      else
+	Glib.Convert.locale_from_utf8 s 
+    in
     let oc = open_out file_name in
     output_string oc s;
     close_out oc
@@ -86,3 +91,16 @@ let revert_timer = ref None
 let disconnect_revert_timer () = match !revert_timer with
   | None -> ()
   | Some id -> GMain.Timeout.remove id; revert_timer := None
+
+let highlight_timer = ref None
+let set_highlight_timer f = 
+  match !highlight_timer with 
+    | None -> 
+	revert_timer := 
+      Some (GMain.Timeout.add ~ms:2000 
+	      ~callback:(fun () -> f (); highlight_timer := None; true))
+    | Some id -> 
+	GMain.Timeout.remove id;
+	revert_timer := 
+	Some (GMain.Timeout.add ~ms:2000 
+		~callback:(fun () -> f (); highlight_timer := None; true))

@@ -59,24 +59,34 @@ and comment = parse
 {
   open Ideutils
 
+  let highlighting = ref false
+
   let highlight_slice (input_buffer:GText.buffer) (start:GText.iter) stop = 
-    try begin
-      let offset = start#offset in
-      let s = start#get_slice ~stop in
-      let convert_pos = byte_offset_to_char_offset s in
-      let lb = Lexing.from_string s in
-      try 
-	while true do
-	  process_pending ();
-	  let b,e,o=next_order lb in
-	  let b,e = convert_pos b,convert_pos e in
-	  let start = input_buffer#get_iter_at_char (offset + b) in
-	  let stop = input_buffer#get_iter_at_char (offset + e) in
-	  input_buffer#apply_tag_by_name ~start ~stop o 
-	done
-      with End_of_file -> ()
+    if !highlighting then prerr_endline "Rejected highlight" 
+    else begin
+      highlighting := true;
+      prerr_endline "Highlighting now";
+      (try begin
+	let offset = start#offset in
+	let s = start#get_slice ~stop in
+	let convert_pos = byte_offset_to_char_offset s in
+	let lb = Lexing.from_string s in
+	try 
+	  while true do
+	    process_pending ();
+	    let b,e,o=next_order lb in
+	    let b,e = convert_pos b,convert_pos e in
+	    let start = input_buffer#get_iter_at_char (offset + b) in
+	    let stop = input_buffer#get_iter_at_char (offset + e) in
+	    input_buffer#remove_tag_by_name ~start ~stop "kwd";
+	    input_buffer#remove_tag_by_name ~start ~stop "decl";
+	    input_buffer#apply_tag_by_name ~start ~stop o 
+	  done
+	with End_of_file -> ()
+      end
+      with _ -> ());
+      highlighting := false
     end
-    with _ -> ()
 
   let highlight_current_line input_buffer = 
     try 

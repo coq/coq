@@ -43,7 +43,6 @@ and split_list = parse
     begin try 
       while true do 
 	let r = next_config lb in
-	prerr_endline (fst r);
 	result := r::!result
       done
     with End_of_file -> close_in ci; 

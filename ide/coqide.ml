@@ -58,22 +58,24 @@ let decompose_tab w =
 	
 let set_tab_label i n =
   let nb = notebook () in
-  let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget in
+  let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget 
+  in
   lbl#set_markup n
 
 let set_tab_image i s = 
   let nb = notebook () in
-  let _,img,_ = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget in
+  let _,img,_ = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget
+  in
   img#set_stock s ~size:1
 
 let set_current_tab_image s = set_tab_image (notebook())#current_page s
   
-let set_current_tab_label n = 
-  set_tab_label (notebook())#current_page n 
+let set_current_tab_label n = set_tab_label (notebook())#current_page n 
 
 let get_tab_label i =
   let nb = notebook () in
-  let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget in
+  let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget 
+  in
   lbl#text
 
 let get_current_tab_label () = get_tab_label (notebook())#current_page
@@ -98,8 +100,6 @@ end
 type 'a viewable_script =
     {view : GText.view;
      mutable analyzed_view : 'a option;
-     mutable filename : string option;
-     mutable stats : Unix.stats option;
     }
 
 class type analyzed_views = 
@@ -117,7 +117,14 @@ object('self)
     val proof_view : GText.view
     val mutable is_active : bool
     val mutable read_only : bool
-    method revert : string -> unit
+    val mutable filename : string option
+    val mutable stats : Unix.stats option
+    method filename : string option
+    method stats :  Unix.stats option
+    method set_filename : string option -> unit
+    method update_stats : unit
+    method revert : unit
+    method save : string -> unit
     method read_only : bool
     method set_read_only : bool -> unit
     method is_active : bool
@@ -159,25 +166,30 @@ let crash_save i =
   Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
   let count = ref 0 in 
   Vector.iter 
-    (function {view=view;filename=filename} -> 
-       let filename = match filename with 
-	 | None -> incr count; "Unamed_coqscript_"^(string_of_int !count)^".crashcoqide"
+    (function {view=view; analyzed_view = Some av } -> 
+       (let filename = match av#filename with 
+	 | None -> 
+	     incr count; 
+	     "Unamed_coqscript_"^(string_of_int !count)^".crashcoqide"
 	 | Some f -> f^".crashcoqide"
        in
        try 
 	 try_export filename (view#buffer#get_text ());
 	 Pervasives.prerr_endline ("Saved "^filename)
-       with _ -> Pervasives.prerr_endline ("Could not save "^filename)
+       with _ -> Pervasives.prerr_endline ("Could not save "^filename))
+       | _ -> Pervasives.prerr_endline "Unanalyzed view found. Please report."
     )
     input_views;
   Pervasives.prerr_endline "Done. Please report.";
   exit i
 
 let _ = 
-  let signals_to_catch = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; Sys.sigill; 
-			  Sys.sigint; Sys.sigpipe; Sys.sigquit; Sys.sigsegv; 
-			  Sys.sigterm; Sys.sigusr2] 
-  in List.iter (fun i -> Sys.set_signal i (Sys.Signal_handle crash_save)) signals_to_catch
+  let signals_to_catch = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
+			  Sys.sigill; Sys.sigint; Sys.sigpipe; Sys.sigquit; 
+			  Sys.sigsegv; Sys.sigterm; Sys.sigusr2] 
+  in List.iter 
+       (fun i -> Sys.set_signal i (Sys.Signal_handle crash_save)) 
+       signals_to_catch
 
 let add_input_view tv = 
   Vector.append input_views tv
@@ -359,22 +371,68 @@ object(self)
   val message_buffer = message_view_#buffer 
   val mutable is_active = false
   val mutable read_only = false
-  method revert f = 
-    !push_info "Reverting buffer";
-    try
-      if is_active then self#reset_initial;
-      let b = Buffer.create 1024 in
-      with_file f ~f:(input_channel b);
-      let s = try_convert (Buffer.contents b) in
-      input_buffer#set_text s;
-      input_buffer#place_cursor input_buffer#start_iter;
-      Highlight.highlight_all input_buffer;
-      input_buffer#set_modified false;
-      !pop_info ();
-      !flash_info "Buffer reverted";
-    with _  -> 
-      !pop_info ();
-      !flash_info "Warning: could not revert buffer";
+  val mutable filename = None 
+  val mutable stats = None
+  method filename = filename
+  method stats = stats
+  method set_filename f = 
+    filename <- f;
+    match f with 
+      | Some f -> stats <- my_stat f
+      | None -> ()
+
+  method update_stats = 
+    match filename with 
+      | Some f -> stats <- my_stat f 
+      | _ -> ()
+
+  method revert = 
+    match filename with 
+      | Some f -> begin
+	  let do_revert () = begin
+	    !push_info "Reverting buffer";
+	      try
+		if is_active then self#reset_initial;
+		let b = Buffer.create 1024 in
+		with_file f ~f:(input_channel b);
+		let s = try_convert (Buffer.contents b) in
+		input_buffer#set_text s;
+		self#update_stats;
+		input_buffer#place_cursor input_buffer#start_iter;
+		input_buffer#set_modified false;
+		!pop_info ();
+		!flash_info "Buffer reverted";
+		Highlight.highlight_all input_buffer;
+	      with _  -> 
+		!pop_info ();
+		!flash_info "Warning: could not revert buffer";
+	  end
+	  in
+	  if input_buffer#modified then 
+	    match (GToolbox.question_box 
+		     ~title:"Modified buffer changed on disk"
+		     ~buttons:["Revert from File";
+			       "Overwrite File";
+			       "Disable Auto Revert"] 
+		     ~default:0
+		     ~icon:(let img = GMisc.image () 
+			    in img#set_stock "gtk-dialog-warning" ~size:6;
+			    img#coerce)
+		     "There are unsaved buffers"
+		  )
+	    with 1 -> do_revert ()
+	      | 2 -> self#save f
+	      | _ -> current.global_auto_revert <- false 
+	  else do_revert () 
+	end
+      | None -> ()
+      
+  method save f = 
+    filename <- Some f;
+    try_export f (input_buffer#get_text ());
+    input_buffer#set_modified false;
+    stats <- my_stat f;
+
 
   method set_read_only b = read_only<-b
   method read_only = read_only
@@ -584,24 +642,24 @@ object(self)
 	  let phrase = start#get_slice ~stop in
 	  let r = 
 	    match self#send_to_coq phrase true true true with
-	    | Some ast ->
-		begin
-		  b#move_mark ~where:stop (`NAME "start_of_input");
-		  b#apply_tag_by_name "processed" ~start ~stop;
-		  if (self#get_insert#compare) stop <= 0 then 
-		    begin
-		      b#place_cursor stop;
-		      self#recenter_insert
-		    end;
-		  let start_of_phrase_mark = `MARK (b#create_mark start) in
-		  let end_of_phrase_mark = `MARK (b#create_mark stop) in
-		  push_phrase start_of_phrase_mark end_of_phrase_mark ast;
-		  if display_goals then
-		    (try self#show_goals with e -> 
-		       prerr_endline (Printexc.to_string e);());
-		  true
-		end
-	    | None -> false
+	      | Some ast ->
+		  begin
+		    b#move_mark ~where:stop (`NAME "start_of_input");
+		    b#apply_tag_by_name "processed" ~start ~stop;
+		    if (self#get_insert#compare) stop <= 0 then 
+		      begin
+			b#place_cursor stop;
+			self#recenter_insert
+		      end;
+		    let start_of_phrase_mark = `MARK (b#create_mark start) in
+		    let end_of_phrase_mark = `MARK (b#create_mark stop) in
+		    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
+		    if display_goals then
+		      (try self#show_goals with e -> 
+			 prerr_endline (Printexc.to_string e);());
+		    true
+		  end
+	      | None -> false
 	  in
 	  if do_highlight then begin
 	    b#remove_tag_by_name ~start ~stop "to_process" ;
@@ -815,14 +873,14 @@ object(self)
 	| l -> false
 
   method disconnected_keypress_handler k = 
-      match GdkEvent.Key.state k with
-	| l when List.mem `CONTROL l -> 
-	    let k = GdkEvent.Key.keyval k in
-	    if GdkKeysyms._c=k
-	    then break ();
-	    false
-	| l -> false
-	    
+    match GdkEvent.Key.state k with
+      | l when List.mem `CONTROL l -> 
+	  let k = GdkEvent.Key.keyval k in
+	  if GdkKeysyms._c=k
+	  then break ();
+	  false
+      | l -> false
+	  
 
   val mutable deact_id = None
   val mutable act_id = None
@@ -852,15 +910,18 @@ object(self)
       (input_view#event#connect#key_press self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
     print_id (out_some act_id);
-    let dir = (match (Vector.get input_views index).filename with
+    let dir = (match 
+		 (out_some ((Vector.get input_views index).analyzed_view))
+		 #filename 
+	       with
 		 | None -> initial_cwd
 		 | Some f -> Filename.dirname f
 	      )
     in 
     ignore (Coq.interp (Printf.sprintf "Add LoadPath \"%s\". " dir));
     Sys.chdir dir
-    
-  
+      
+      
   method electric_handler = 
     input_buffer#connect#insert_text ~callback:
       (fun it x -> 
@@ -896,16 +957,21 @@ object(self)
 			   if String.length s > 1 then 
 			     input_buffer#place_cursor it));
 
-    ignore (input_buffer#connect#modified_changed
-	      ~callback:(fun () ->
-			   if input_buffer#modified then 
-			     set_tab_image index 
-			       (match current_all.filename with 
-				  | None -> saveas_icon
-				  | Some _ -> save_icon
-			       )
-			   else set_tab_image index yes_icon;
-			));
+    ignore 
+      (input_buffer#connect#modified_changed
+	 ~callback:
+	 (fun () ->
+	    if input_buffer#modified then 
+	      set_tab_image index 
+		(match (out_some (current_all.analyzed_view))#filename with 
+		   | None -> saveas_icon
+		   | Some _ -> save_icon
+		)
+	    else set_tab_image index yes_icon;
+	 ));
+    ignore (input_view#connect#after#paste_clipboard
+	   ~callback:(fun () ->
+			prerr_endline "Paste occured"));
     ignore (input_buffer#connect#changed
 	      ~callback:(fun () -> 
 			   let r = input_view#visible_rect in
@@ -915,18 +981,18 @@ object(self)
 			       ~y:(Gdk.Rectangle.y r + Gdk.Rectangle.height r)
 			   in
 			   input_buffer#remove_tag_by_name 
-			   ~start:self#get_start_of_input
-			   ~stop
-			   "error";
-			   input_buffer#remove_tag_by_name 
-			   ~start:self#get_start_of_input
-			   ~stop
-			   "processed";
-			   Highlight.highlight_around_current_line 
-			     input_buffer
+			     ~start:self#get_start_of_input
+			     ~stop
+			     "error";
+			   (* input_buffer#remove_tag_by_name 
+			     ~start:self#get_start_of_input
+			     ~stop
+			     "processed";*)
+			   Highlight.highlight_slice
+			     input_buffer self#get_start_of_input stop
 			)
 	   );
-    ignore (input_buffer#add_selection_clipboard (cb()))
+    ignore (input_buffer#add_selection_clipboard (cb()));
 end
 
 let create_input_tab filename =
@@ -950,19 +1016,22 @@ let create_input_tab filename =
   b#place_cursor ~where:(b#start_iter);
   ignore (tv1#event#connect#button_press ~callback:
 	    (fun ev -> GdkEvent.Button.button ev = 3));
+(*  ignore (tv1#event#connect#button_press ~callback:
+	    (fun ev -> 
+	       if (GdkEvent.Button.button ev=2) then
+		 (try 
+		    prerr_endline "Paste invoked";
+		    GtkSignal.emit_unit 
+		      (get_current_view()).view#as_view 
+		      GtkText.View.Signals.paste_clipboard;
+		    true
+		  with _ -> false)
+	       else false
+	    ));*)
   tv1#misc#grab_focus ();
   ignore (tv1#buffer#create_mark 
 	    ~name:"start_of_input" 
 	    tv1#buffer#start_iter);
-  ignore (tv1#buffer#create_tag 
-	    ~name:"to_process" 
-	    [`BACKGROUND "light blue" ;`EDITABLE false]);
-  ignore (tv1#buffer#create_tag 
-	    ~name:"processed" 
-	    [`BACKGROUND "light green" ;`EDITABLE false]);
-  ignore (tv1#buffer#create_tag 
-	    ~name:"error" 
-	    [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]);
   ignore (tv1#buffer#create_tag 
 	    ~name:"kwd" 
 	    [`FOREGROUND "blue"]);
@@ -975,6 +1044,15 @@ let create_input_tab filename =
   ignore (tv1#buffer#create_tag 
 	    ~name:"reserved" 
 	    [`FOREGROUND "dark red"]);
+  ignore (tv1#buffer#create_tag 
+	    ~name:"error" 
+	    [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]);
+  ignore (tv1#buffer#create_tag 
+	    ~name:"to_process" 
+	    [`BACKGROUND "light blue" ;`EDITABLE false]);
+  ignore (tv1#buffer#create_tag 
+	    ~name:"processed" 
+	    [`BACKGROUND "light green" ;`EDITABLE false]);
   tv1
   
 let main () = 
@@ -1009,12 +1087,12 @@ let main () =
 	       | Some n -> view#misc#modify_font n);
 	    let index = add_input_view {view = view;
 					analyzed_view = None;
-					filename = fn;
-					stats = my_stat f
 				       }
 	    in
-	    (get_input_view index).analyzed_view <- 
-	    Some (new analyzed_view index);
+	    let av = (new analyzed_view index) in 
+	    (get_input_view index).analyzed_view <- Some av;
+	    av#set_filename fn;
+	    av#update_stats;
 	    activate_input index;
 	    let input_buffer = view#buffer in
 	    input_buffer#set_text s;
@@ -1030,23 +1108,21 @@ let main () =
   let save_f () = 
     let current = get_current_view () in
     try
-      (match current.filename with 
-	   | None ->
-	       begin match GToolbox.select_file ~title:"Save file" ()
-	       with
-		 | None -> ()
-		 | Some f -> 
-		     try_export f (current.view#buffer#get_text ());
-		     current.filename <- Some f;
-		     current.stats <- my_stat f;
-		     set_current_tab_label (Filename.basename f);
-		     current.view#buffer#set_modified false
-	       end
-	   | Some f -> 
-	       try_export f (current.view#buffer#get_text ());
-	       current.stats <- my_stat f;
-	       current.view#buffer#set_modified false);
-      !flash_info "Saved"
+      (match (out_some current.analyzed_view)#filename with 
+	 | None ->
+	     begin match GToolbox.select_file ~title:"Save file" ()
+	     with
+	       | None -> ()
+	       | Some f -> 
+		   (out_some current.analyzed_view)#save f;
+		   set_current_tab_label (Filename.basename f);
+		   !flash_info "Saved"
+	     end
+	 | Some f -> 
+	     (out_some current.analyzed_view)#save f;
+	     !flash_info "Saved"
+	     
+      )
     with e -> !flash_info "Save failed"
   in   
   ignore (save_m#connect#activate save_f);
@@ -1055,17 +1131,15 @@ let main () =
   let saveas_m = file_factory#add_item "S_ave as" in
   let saveas_f () = 
     let current = get_current_view () in
-    try (match current.filename with 
+    try (match (out_some current.analyzed_view)#filename with 
 	   | None -> 
 	       begin match GToolbox.select_file ~title:"Save file as" ()
 	       with
 		 | None -> ()
 		 | Some f -> 
-		     try_export f (current.view#buffer#get_text ());
-		     current.filename <- Some f;
-		     current.stats <- my_stat f;
-		     set_current_tab_label (Filename.basename f);
-		     current.view#buffer#set_modified false
+		     (out_some current.analyzed_view)#save f;
+		      set_current_tab_label (Filename.basename f);
+		      !flash_info "Saved"
 	       end
 	   | Some f -> 
 	       begin match GToolbox.select_file 
@@ -1075,13 +1149,10 @@ let main () =
 	       with
 		 | None -> ()
 		 | Some f -> 
-		     try_export f (current.view#buffer#get_text ());
-		     current.filename <- Some f;
-		     current.stats <- my_stat f;
+		     (out_some current.analyzed_view)#save f;
 		     set_current_tab_label (Filename.basename f);
-		     current.view#buffer#set_modified false
+		     !flash_info "Saved"
 	       end);
-      !flash_info "Saved"
     with e -> !flash_info "Save failed"
   in   
   ignore (saveas_m#connect#activate saveas_f);
@@ -1090,14 +1161,15 @@ let main () =
   (* File/Save All Menu *)
   let saveall_m = file_factory#add_item "Sa_ve All" in
   let saveall_f () = 
-    Vector.iter 
-      (function {view = view ; filename = filename } as full -> 
-	 match filename with 
-	   | None -> ()
-	   | Some f ->
-	       try_export f (view#buffer#get_text ());
-	       full.stats <- my_stat f;
-	       view#buffer#set_modified false
+    Vector.iter
+      (function 
+	 | {view = view ; analyzed_view = Some av} as full -> 
+	     begin match av#filename with 
+	       | None -> ()
+	       | Some f ->
+		   av#save f;
+	     end
+	 | _ -> ()
       )  input_views
   in
   let has_something_to_save () = 
@@ -1112,14 +1184,16 @@ let main () =
   let revert_f () = 
     Vector.iter 
       (function 
-	   {view = view ; analyzed_view = Some av ;
-	    filename = Some f ; stats = Some stats } as full -> 
+	   {view = view ; analyzed_view = Some av} as full -> 
 	     (try 
-	       let new_stats = Unix.stat f in
-	       if new_stats.Unix.st_mtime > 
-		 stats.Unix.st_mtime 
-	       then begin av#revert f; full.stats <- Some new_stats end
-	     with _ -> av#revert f)
+		match av#filename,av#stats with 
+		  | Some f,Some stats -> 
+		      let new_stats = Unix.stat f in
+		      if new_stats.Unix.st_mtime > stats.Unix.st_mtime 
+		      then av#revert
+		  | Some _, None -> av#revert
+		  | _ -> ()
+	      with _ -> av#revert)
 	 | _ -> ()
       )  input_views
   in
@@ -1129,7 +1203,7 @@ let main () =
   let print_f () =
     let v = get_current_view () in
     let av = out_some v.analyzed_view in
-    match v.filename with
+    match av#filename with
       | None -> 
 	  !flash_info "Cannot print: this buffer has no name"
       | Some f ->
@@ -1147,7 +1221,7 @@ let main () =
   let export_f kind () =
     let v = get_current_view () in
     let av = out_some v.analyzed_view in
-    match v.filename with
+    match av#filename with
       | None -> 
 	  !flash_info "Cannot print: this buffer has no name"
       | Some f ->
@@ -1219,20 +1293,20 @@ let main () =
   let edit_menu = factory#add_submenu "_Edit" in
   let edit_f = new GMenu.factory edit_menu ~accel_group in
   ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
-	    (fun () -> GtkSignal.emit_unit
-	       (get_current_view()).view#as_view 
-	       GtkText.View.Signals.copy_clipboard));
+	   (fun () -> GtkSignal.emit_unit
+	      (get_current_view()).view#as_view 
+	      GtkText.View.Signals.copy_clipboard));
   ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
 	   (do_if_not_computing 
 	      (fun () -> GtkSignal.emit_unit
 		 (get_current_view()).view#as_view 
 		 GtkText.View.Signals.cut_clipboard)));
   ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
-    (fun () -> 
-       try GtkSignal.emit_unit
-	 (get_current_view()).view#as_view 
-	 GtkText.View.Signals.paste_clipboard
-       with _ -> prerr_endline "EMIT PASTE FAILED"));
+	   (fun () -> 
+	      try GtkSignal.emit_unit
+		(get_current_view()).view#as_view 
+		GtkText.View.Signals.paste_clipboard
+	      with _ -> prerr_endline "EMIT PASTE FAILED"));
   ignore (edit_f#add_separator ());
   let read_only_i = edit_f#add_check_item "Read only" ~active:false
 		      ~callback:(fun b -> 
@@ -1399,7 +1473,7 @@ let main () =
   let compile_f () =
     let v = get_active_view () in
     let av = out_some v.analyzed_view in
-    match v.filename with
+    match av#filename with
       | None -> 
 	  !flash_info "Active buffer has no name"
       | Some f ->
@@ -1439,14 +1513,14 @@ let main () =
     configuration_factory#add_item "Edit preferences"
       ~callback:(fun () -> configure ();reset_revert_timer ())
   in
-(* let save_prefs_m =
-    configuration_factory#add_item "Save preferences"
-      ~callback:(fun () ->
-		   let fd = open_out "toto" in
-		   output_pref fd current;
-  close_out fd)
-  in
-*)
+  (* let save_prefs_m =
+     configuration_factory#add_item "Save preferences"
+     ~callback:(fun () ->
+     let fd = open_out "toto" in
+     output_pref fd current;
+     close_out fd)
+     in
+  *)
   font_selector := 
   Some (GWindow.font_selection_dialog 
 	  ~title:"Select font..."
@@ -1464,24 +1538,24 @@ let main () =
 
   let help_menu = factory#add_submenu "Help" in
   let help_factory = new GMenu.factory help_menu  
-		     ~accel_modi:[]
-		     ~accel_group in
+		       ~accel_modi:[]
+		       ~accel_group in
   let _ = help_factory#add_item "Browse Coq Manual" 
-	  ~callback:(fun () -> browse (current.doc_url ^ "main.html")) in
+	    ~callback:(fun () -> browse (current.doc_url ^ "main.html")) in
   let _ = help_factory#add_item "Browse Coq Library" 
-	  ~callback:(fun () -> browse current.library_url) in
+	    ~callback:(fun () -> browse current.library_url) in
   let _ = 
     help_factory#add_item "Help for keyword" ~key:GdkKeysyms._F1
-    ~callback:(fun () ->
-		 let av = out_some ((get_current_view ()).analyzed_view) in 
-		 match GtkBase.Clipboard.wait_for_text (cb ()) with
-		   | None -> 
-		       prerr_endline "None selected";
-		       av#help_for_keyword ()
-		   | Some t ->
- 		       prerr_endline "Some selected";
-		       prerr_endline t;
-		       browse_keyword t)
+      ~callback:(fun () ->
+		   let av = out_some ((get_current_view ()).analyzed_view) in 
+		   match GtkBase.Clipboard.wait_for_text (cb ()) with
+		     | None -> 
+			 prerr_endline "None selected";
+			 av#help_for_keyword ()
+		     | Some t ->
+ 			 prerr_endline "Some selected";
+			 prerr_endline t;
+			 browse_keyword t)
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "About" in
@@ -1592,8 +1666,7 @@ let main () =
   let view = create_input_tab "*Unamed Buffer*" in
   let index = add_input_view {view = view;
 			      analyzed_view = None;
-			      filename = None;
-			      stats = None}
+			     }
   in
   (get_input_view index).analyzed_view <- Some (new analyzed_view index);
   activate_input index;
@@ -1603,7 +1676,7 @@ let main () =
      | None -> ()
      | Some f -> view#misc#modify_font f; tv2#misc#modify_font f; tv3#misc#modify_font f);
   ignore (about_m#connect#activate 
-	  ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
+	    ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
   ignore (w#misc#connect#size_allocate 
 	    (let old_w = ref 0 
 	     and old_h = ref 0 in

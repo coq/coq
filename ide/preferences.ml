@@ -165,7 +165,6 @@ let load_pref p =
        | "doc_url" -> p.doc_url <- v
        | "library_url" -> p.library_url <- v
        | "modifier_for_navigation" ->
-	   prerr_endline v;
 	   p.modifier_for_navigation <- 
 	   List.rev_map str_to_mod (Config_lexer.split v)
        | "modifier_for_templates" ->
