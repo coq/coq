@@ -180,7 +180,7 @@ type names_context = name list
 let add_name n nl = n::nl
 let lookup_name_of_rel p names =
   try List.nth names (p-1)
-  with Failure "nth" -> raise Not_found
+  with Invalid_argument _ -> raise Not_found
 let rec lookup_rel_of_name id names = 
   let rec lookrec n = function
     | Anonymous :: l  -> lookrec (n+1) l
