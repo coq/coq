@@ -454,7 +454,7 @@ ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo \
 	 theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
 	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
-	 theories/ZArith/Zdiv.vo
+	 theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
