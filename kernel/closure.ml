@@ -745,7 +745,7 @@ and frterm =
 
 and frreference =
   (* only vars as args of FConst ... exploited for caching *)
-  | FConst of constant
+  | FConst of section_path * freeze array
   | FEvar of (existential * freeze subs)
   | FVar of identifier
   | FFarRel of int (* index in the rel_context part of _initial_ environment *)
@@ -827,10 +827,9 @@ let rec traverse_term env t =
         { norm = false; term = FInd (sp, Array.map (traverse_term env) v) }
     | IsMutConstruct (sp,v) ->
         { norm = false; term = FConstruct (sp,Array.map (traverse_term env) v)}
-    | IsConst (_,v as cst) ->
-	assert (array_for_all isVar v);
+    | IsConst (sp,v) ->
         { norm = false;
-	  term = FFlex (FConst cst) }
+	  term = FFlex (FConst (sp,Array.map (traverse_term env) v)) }
     | IsEvar (_,v as ev) ->
 	assert (array_for_all (fun a -> isVar a or isRel a) v);
         { norm = false;
@@ -880,8 +879,8 @@ let rec lift_term_of_freeze lfts v =
     | FAtom c -> c
     | FCast (a,b) ->
         mkCast (lift_term_of_freeze lfts a, lift_term_of_freeze lfts b)
-    | FFlex (FConst cst) ->
-	mkConst cst
+    | FFlex (FConst (op, ve)) ->
+	mkConst (op, Array.map (lift_term_of_freeze lfts) ve) 
     | FFlex (FEvar ((n,args), env)) ->
 	let f a = lift_term_of_freeze lfts (traverse_term env a) in
 	mkEvar (n, Array.map f args)
@@ -938,7 +937,7 @@ let rec fstrong unfreeze_fun lfts v =
     | FCast (a,b) ->
         mkCast (fstrong unfreeze_fun lfts a, fstrong unfreeze_fun lfts b)
     | FFlex (FConst (op,ve)) ->
-	mkConst (op, ve)
+	mkConst (op, Array.map (fstrong unfreeze_fun lfts) ve)
     | FFlex (FEvar ((n,args),env)) ->
 	let f a = fstrong unfreeze_fun lfts (freeze env a) in
 	mkEvar (n, Array.map f args)
@@ -1077,7 +1076,8 @@ and whnf_frterm info ft =
           { norm = uf.norm; term = FLIFT(k, uf) }
       | FCast (f,_) -> whnf_frterm info f  (* remove outer casts *)
       | FApp (f,appl) -> whnf_apply info f appl
-      | FFlex (FConst (sp,vars as cst)) ->
+      | FFlex (FConst (sp,vars)) ->
+	  let cst = (sp, Array.map term_of_freeze vars) in
 	  if red_under info.i_flags (CONST [sp]) then
             (match ref_value_cache info (ConstBinding cst) with
                | Some def ->
@@ -1188,8 +1188,9 @@ and whnf_term info env t =
     | IsApp (f,ve) ->
       	whnf_frterm info
 	  { norm = false; term = FApp (freeze env f, freeze_vect env ve)}
-    | IsConst cst ->
-      	whnf_frterm info { norm = false; term = FFlex (FConst cst) }
+    | IsConst (op,v) ->
+      	whnf_frterm info 
+	  { norm = false; term = FFlex (FConst (op, freeze_vect env v)) }
     | IsEvar ev ->
       	whnf_frterm info { norm = false; term = FFlex (FEvar (ev, env)) }
     | IsMutCase (ci,p,c,ve) ->
@@ -1239,7 +1240,9 @@ let whd_val info v =
 let inject = freeze (ESID 0)
 
 let search_frozen_value info = function
-  | FConst cst -> ref_value_cache info (ConstBinding cst)
+  | FConst (op,v) -> 
+      let cst = (op, Array.map (norm_val info) v) in
+      ref_value_cache info (ConstBinding cst)
   | FEvar ev -> ref_value_cache info (EvarBinding ev)
   | FVar id -> ref_value_cache info (VarBinding id)
   | FFarRel p -> ref_value_cache info (FarRelBinding p)

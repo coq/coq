@@ -32,7 +32,8 @@ let rec_add_path dir =
 type module_disk = { 
   md_name : string;
   md_compiled_env : compiled_env;
-  md_declarations : library_segment * Nametab.module_contents;
+  md_declarations : library_segment;
+  md_nametab : Nametab.module_contents;
   md_deps : (string * Digest.t * bool) list }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -42,7 +43,8 @@ type module_t = {
   module_name : string;
   module_filename : load_path_entry * string;
   module_compiled_env : compiled_env;
-  module_declarations : library_segment * Nametab.module_contents;
+  module_declarations : library_segment;
+  module_nametab : Nametab.module_contents;
   mutable module_opened : bool;
   mutable module_exported : bool;
   module_deps : (string * Digest.t * bool) list;
@@ -78,7 +80,7 @@ let opened_modules () =
 
 let module_segment = function
   | None -> contents_after None
-  | Some m -> fst (find_module m).module_declarations
+  | Some m -> (find_module m).module_declarations
 
 let module_filename m = (find_module m).module_filename
 
@@ -91,7 +93,7 @@ let segment_rec_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
-    | _,ClosedSection (_,_,seg,_) -> iter seg
+    | _,ClosedSection (_,_,seg) -> iter seg
     | _,(FrozenState _ | Module _) -> ()
   and iter seg =
     List.iter apply seg
@@ -102,7 +104,7 @@ let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
-    | _,ClosedSection (export,_,seg,_) -> if export then iter seg
+    | _,ClosedSection (export,s,seg) -> if export then iter seg
     | _,(FrozenState _ | Module _) -> ()
   and iter seg =
     List.iter apply seg
@@ -120,8 +122,8 @@ let rec open_module s =
   let m = find_module s in
   if not m.module_opened then begin
     List.iter (fun (m,_,exp) -> if exp then open_module m) m.module_deps;
-    (* open_objects m.module_declarations; *)
-    Nametab.open_module_contents s;
+    open_objects m.module_declarations;
+    Nametab.open_module_contents s; 
     m.module_opened <- true
   end
 
@@ -136,26 +138,28 @@ let load_objects decls =
   segment_rec_iter load_object decls
 
 let rec load_module_from s f =
-  let (lpe,fname,ch) = raw_intern_module (get_load_path ()) f in
-  let md = System.marshal_in ch in
-  let digest = System.marshal_in ch in
-  close_in ch;
-  let m = { module_name = md.md_name;
-	    module_filename = (lpe,fname);
-	    module_compiled_env = md.md_compiled_env;
-	    module_declarations = md.md_declarations;
-	    module_opened = false;
-	    module_exported = false;
-	    module_deps = md.md_deps;
-	    module_digest = digest } in
-  if s <> md.md_name then
-    error ("The file " ^ fname ^ " does not contain module " ^ s);
-  List.iter (load_mandatory_module s) m.module_deps;
-  Global.import m.module_compiled_env;
-  load_objects (fst m.module_declarations);
-  Nametab.push_module s (snd m.module_declarations);
-  modules_table := Stringmap.add s m !modules_table;
-  m
+  if not (module_is_loaded s) then begin
+    let (lpe,fname,ch) = raw_intern_module (get_load_path ()) f in
+    let md = System.marshal_in ch in
+    let digest = System.marshal_in ch in
+    close_in ch;
+    let m = { module_name = md.md_name;
+	      module_filename = (lpe,fname);
+	      module_compiled_env = md.md_compiled_env;
+	      module_declarations = md.md_declarations;
+	      module_nametab = md.md_nametab;
+	      module_opened = false;
+	      module_exported = false;
+	      module_deps = md.md_deps;
+	      module_digest = digest } in
+    if s <> md.md_name then
+      error ("The file " ^ fname ^ " does not contain module " ^ s);
+    List.iter (load_mandatory_module s) m.module_deps;
+    Global.import m.module_compiled_env;
+    load_objects m.module_declarations;
+    Nametab.push_module s m.module_nametab;
+    modules_table := Stringmap.add s m !modules_table
+  end
 
 and load_mandatory_module caller (s,d,_) =
   let m = find_module s s in
@@ -166,20 +170,23 @@ and find_module s f =
   try 
     Stringmap.find s !modules_table 
   with Not_found -> 
-    load_module_from s f
+    load_module_from s f;
+    Stringmap.find s !modules_table 
 
 let load_module s = function
-  | None -> let _ = load_module_from s s in ()
-  | Some f -> let _ = load_module_from s f in ()
+  | None -> load_module_from s s
+  | Some f -> load_module_from s f
 
 
 (*s [require_module] loads and opens a module. This is a synchronized
     operation. *)
 
 let cache_require (_,(name,file,export)) =
-  let m = load_module_from name file in
+  load_module_from name file;
   open_module name;
-  if export then m.module_exported <- true
+  if export then 
+    let m = Stringmap.find name !modules_table in
+    m.module_exported <- true
 
 let (in_require, _) =
   declare_object
@@ -208,7 +215,8 @@ let save_module_to process s f =
   let md = { 
     md_name = s;
     md_compiled_env = Global.export s;
-    md_declarations = seg, process seg;
+    md_declarations = seg;
+    md_nametab = process seg;
     md_deps = current_imports () } in
   let (f',ch) = raw_extern_module f in
   System.marshal_out ch md;
@@ -222,13 +230,13 @@ let save_module_to process s f =
 let fold_all_segments insec f x =
   let rec apply acc = function
     | sp, Leaf o -> f acc sp o
-    | _, ClosedSection (_,_,seg,_) -> 
+    | _, ClosedSection (_,_,seg) -> 
 	if insec then List.fold_left apply acc seg else acc
     | _ -> acc
   in
   let acc' = 
     Stringmap.fold 
-      (fun _ m acc -> List.fold_left apply acc (fst m.module_declarations)) 
+      (fun _ m acc -> List.fold_left apply acc m.module_declarations) 
       !modules_table x
   in
   List.fold_left apply acc' (Lib.contents_after None)
@@ -236,11 +244,11 @@ let fold_all_segments insec f x =
 let iter_all_segments insec f =
   let rec apply = function
     | sp, Leaf o -> f sp o
-    | _, ClosedSection (_,_,seg,_) -> if insec then List.iter apply seg
+    | _, ClosedSection (_,_,seg) -> if insec then List.iter apply seg
     | _ -> ()
   in
   Stringmap.iter 
-    (fun _ m -> List.iter apply (fst m.module_declarations)) !modules_table;
+    (fun _ m -> List.iter apply m.module_declarations) !modules_table;
   List.iter apply (Lib.contents_after None)
 
 (*s Pretty-printing of modules state. *)

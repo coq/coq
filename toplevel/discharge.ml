@@ -256,6 +256,26 @@ let push_inductive_names ccitab sp mie =
       mie.mind_entry_inds
   in ccitab
 
+(*s Operations performed at section closing. *)
+
+let cache_end_section (_,(s,mc)) =
+  Nametab.push_module s mc;
+  Nametab.open_module_contents s
+
+let load_end_section (_,(s,mc)) =
+  Nametab.push_module s mc
+
+let open_end_section (_,(s,_)) =
+  Nametab.rec_open_module_contents s
+
+let (in_end_section, out_end_section) =
+  declare_object
+    ("END-SECTION",
+     { cache_function = cache_end_section;
+       load_function = load_end_section;
+       open_function = open_end_section;
+       export_function = (fun x -> Some x) })
+
 let rec process_object (ccitab, objtab, modtab as tabs) = function
   | sp,Leaf obj -> 
       begin match object_tag obj with
@@ -267,6 +287,9 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
 	    (push_inductive_names ccitab sp mie, objtab, modtab)
         (* Variables are never visible *)
 	| "VARIABLE" -> tabs
+	| "END-SECTION" ->
+	    let (id,mc) = out_end_section obj in
+	    (ccitab, objtab, Stringmap.add id mc modtab)
         (* All the rest is visible only at toplevel ??? *)
         (* Actually it is unsafe, it should be visible only in empty context *)
         (* ou quelque chose comme cela *)
@@ -276,34 +299,31 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
 	     Stringmap.add (string_of_id (basename sp)) (sp,obj) objtab,
 	     modtab)
       end 
-  | sp,ClosedSection (export,_,seg,contents) ->
-      let id = string_of_id (basename sp) in
-      (ccitab, objtab, Stringmap.add id contents modtab)
-  | _,(OpenedSection _ | FrozenState _ | Module _) ->  tabs
+  | _,(ClosedSection _ | OpenedSection _ | FrozenState _ | Module _) ->  tabs
 
-and module_contents seg =
+and segment_contents seg =
   let ccitab, objtab, modtab =
     List.fold_left process_object
       (Stringmap.empty, Stringmap.empty, Stringmap.empty)
       seg
-  in Nametab.Closed (ccitab, objtab, modtab)
+  in 
+  Nametab.Closed (ccitab, objtab, modtab)
 
 let close_section _ s = 
   let oldenv = Global.env() in
-  let process_segment fs sec_sp decls =
-    let newdir = dirpath sec_sp in
-    let olddir = wd_of_sp sec_sp in
-    let (ops,ids,_) = 
-      List.fold_left 
-	(process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
-    in 
-    Summary.unfreeze_lost_summaries fs;
-    Global.pop_named_decls ids;
-    List.iter process_operation (List.rev ops);
-    module_contents decls 
-  in
-  close_section false process_segment s
+  let sec_sp,decls,fs = close_section false s in
+  let newdir = dirpath sec_sp in
+  let olddir = wd_of_sp sec_sp in
+  let (ops,ids,_) = 
+    List.fold_left 
+      (process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
+  in 
+  Global.pop_named_decls ids;
+  Summary.unfreeze_lost_summaries fs;
+  let mc = segment_contents decls in
+  add_anonymous_leaf (in_end_section (s,mc));
+  List.iter process_operation (List.rev ops)
 
 let save_module_to s f =
-  Library.save_module_to module_contents s f
+  Library.save_module_to segment_contents s f
 

@@ -496,7 +496,7 @@ let ast_of_qualid loc sp =
   try
     let ref = Nametab.locate sp in
     let c = Declare.constr_of_reference Evd.empty (Global.env()) ref in
-    match kind_of_term c with
+    match kind_of_term (snd (decompose_lam c)) with
       | IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
       | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
       | IsMutConstruct (((sp, i), j), _) ->

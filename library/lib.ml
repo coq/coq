@@ -11,7 +11,7 @@ type node =
   | Module of string
   | OpenedSection of string * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
-  | ClosedSection of bool * string * library_segment * Nametab.module_contents
+  | ClosedSection of bool * string * library_segment
   | FrozenState of Summary.frozen
 
 and library_entry = section_path * node
@@ -137,7 +137,7 @@ let export_segment seg =
   in
   clean [] seg
 
-let close_section export f s =
+let close_section export s =
   let sp,fs = 
     try match find_entry_p is_opened_section with
       | sp,OpenedSection (s',fs) -> 
@@ -150,12 +150,10 @@ let close_section export f s =
   lib_stk := before;
   let after' = export_segment after in
   pop_path_prefix ();
-  let contents = f fs sp after in
-  add_entry (make_path (id_of_string s) OBJ)
-    (ClosedSection (export, s,after',contents));
-  Nametab.push_module s contents;
-  if export then Nametab.open_module_contents s;
-  add_frozen_state ()
+  add_entry 
+    (make_path (id_of_string s) OBJ) (ClosedSection (export, s,after'));
+  add_frozen_state ();
+  (sp,after,fs)
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and

@@ -154,7 +154,7 @@ and frterm =
   | FFROZEN of constr * freeze subs
 
 and frreference =
-  | FConst of constant
+  | FConst of section_path * freeze array
   | FEvar of (existential * freeze subs)
   | FVar of identifier
   | FFarRel of int

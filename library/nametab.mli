@@ -29,6 +29,7 @@ val locate_obj : qualid -> (section_path * Libobject.obj)
 val locate_constant : qualid -> constant_path
 
 val open_module_contents : string -> unit
+val rec_open_module_contents : string -> unit
 
 
 

@@ -275,16 +275,6 @@ let occur_decl env (id,c,t) hyps =
   with Not_found -> false
 
 (*
-let rec find_common_hyps_then_abstract c env hyps' = function
-  | (id,_,_ as d) :: hyps when occur_decl env d hyps' ->
-      find_common_hyps_then_abstract c (Environ.push_named_decl d env) hyps' hyps
-  | hyps ->
-      Environ.it_mkNamedLambda_or_LetIn c hyps
-
-let find_common_hyps_then_abstract c env hyps' hyps =
-  find_common_hyps_then_abstract c env hyps' (List.rev hyps)
-*)
-
 let find_common_hyps_then_abstract c env hyps' hyps = 
   snd (fold_named_context_both_sides
 	 (fun
@@ -292,13 +282,30 @@ let find_common_hyps_then_abstract c env hyps' hyps =
 	      if occur_decl env d hyps' then 
 		(Environ.push_named_decl d env,c)
 	      else
-		(env, Environ.it_mkNamedLambda_or_LetIn c hyps))
+		let hyps'' = List.rev (d :: hyps) in
+		(env, Environ.it_mkNamedLambda_or_LetIn c hyps''))
 	 hyps
 	 (env,c))
+*)
+
+let rec find_common_hyps_then_abstract c env hyps' = function
+  | (id,_,_ as d) :: hyps when occur_decl env d hyps' ->
+      find_common_hyps_then_abstract c (Environ.push_named_decl d env) hyps' hyps
+  | hyps ->
+      Environ.it_mkNamedLambda_or_LetIn c (List.rev hyps)
+
+let find_common_hyps_then_abstract c env hyps' hyps =
+  find_common_hyps_then_abstract c env hyps' (List.rev hyps)
+
+let current_section_context () =
+  List.fold_right
+    (fun (id,_,_ as d) hyps ->
+       if Spmap.mem (Lib.make_path id CCI) !vartab then d::hyps else hyps)
+    (Global.named_context ()) []
 
 let extract_instance ref args =
   let hyps = context_of_global_reference Evd.empty (Global.env ()) ref in
-  let hyps0 = Global.named_context () in
+  let hyps0 = current_section_context () in
   let na = Array.length args in
   let rec peel n acc = function
     | d::hyps ->
@@ -309,7 +316,7 @@ let extract_instance ref args =
 
 let constr_of_reference sigma env ref =
   let hyps = context_of_global_reference sigma env ref in
-  let hyps0 = Global.named_context () in
+  let hyps0 = current_section_context () in
   let env0 = Environ.reset_context env in
   let args = List.map mkVar (ids_of_named_context hyps) in
   let body = match ref with

@@ -56,10 +56,17 @@ let locate_constant qid =
 let open_module_contents s =
   let (Closed (ccitab,objtab,modtab)) = Stringmap.find s !mod_tab in
   Stringmap.iter push_cci ccitab;
-  Stringmap.iter (fun _ -> Libobject.open_object) objtab;
+(*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
   Stringmap.iter push_module modtab
 
-(* Registration as a global table and roolback. *)
+let rec rec_open_module_contents id =
+  let (Closed (ccitab,objtab,modtab)) = Stringmap.find id !mod_tab in
+  Stringmap.iter push_cci ccitab;
+(*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
+  Stringmap.iter 
+    (fun m mt -> push_module m mt; rec_open_module_contents m) modtab
+
+(* Registration as a global table and rollback. *)
     
 let init () =
   cci_tab := Stringmap.empty;
