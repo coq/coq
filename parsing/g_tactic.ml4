@@ -282,6 +282,8 @@ GEXTEND Gram
         <:ast< (TRY (ORELSE $ta0 $ta1)) >>
       |	IDENT "Try"; ta = tactic_atom -> <:ast< (TRY $ta) >>
       | IDENT "Do"; n = pure_numarg; ta = tactic_atom -> <:ast< (DO $n $ta) >>
+      |	IDENT "Repeat"; ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
+        <:ast< (REPEAT (ORELSE $ta0 $ta1)) >>
       | IDENT "Repeat"; ta = tactic_atom -> <:ast< (REPEAT $ta) >>
       |	IDENT "Idtac" -> <:ast< (IDTAC) >>
       |	IDENT "Fail" -> <:ast<(FAIL)>>

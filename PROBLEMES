@@ -32,10 +32,6 @@ plus sûr
 REPONSE PROVISOIRE: si c'est pour Specialize, faudrait en changer la
 syntaxe, elle est incompatible avec L_tac.
 
-Associativite Repeat Orelse changee
-	Repeat A Orelse B se lit (Repeat A) Orelse B 
-ce n'est pas malin car Repeat A n'echoue jamais
-
 CONTRIBS
 ---------
 BellLabs/lazyPCF : OK
