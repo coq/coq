@@ -42,8 +42,6 @@ Bind Scope Z_scope with Z.
 Arguments Scope POS [ Z_scope ].
 Arguments Scope NEG [ Z_scope ].
 
-Section fast_integers.
-
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
 
@@ -183,7 +181,7 @@ Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
 Apply compare_positive_to_nat_O.
 Qed.
 
-Hints Resolve compare_convert_O.
+Hints Local Resolve compare_convert_O.
 
 (** Subtraction *)
 Fixpoint double_moins_un [x:positive]:positive :=
@@ -935,7 +933,7 @@ Proof.
 Induction x; Auto with arith.
 Qed.
 
-Hints Resolve Zero_left Zero_right.
+Hints Local Resolve Zero_left Zero_right.
 
 Theorem weak_assoc :
   (x,y:positive)(z:Z) (Zplus (POS x) (Zplus (POS y) z))=
@@ -1041,7 +1039,7 @@ Intros x y z';Case z'; [
       Rewrite add_sym; Trivial with arith ]]].
 Qed.
 
-Hints Resolve weak_assoc.
+Hints Local Resolve weak_assoc.
 
 Theorem Zplus_assoc :
   (x,y,z:Z) (Zplus x (Zplus y z))= (Zplus (Zplus x y) z).
@@ -1187,7 +1185,7 @@ Proof.
 Induction x; Auto with arith.
 Qed.
 
-Hints Resolve Zero_mult_left Zero_mult_right.
+Hints Local Resolve Zero_mult_left Zero_mult_right.
 
 (* Multiplication and Opposite *)
 Theorem Zopp_Zmult:
@@ -1312,7 +1310,7 @@ Proof.
 Intros;Rewrite <- ZC4;Trivial with arith.
 Qed.
 
-Hints Resolve convert_compare_EGAL.
+Hints Local Resolve convert_compare_EGAL.
 
 Theorem weaken_Zcompare_Zplus_compatible : 
   ((x,y:Z) (z:positive) 
@@ -1325,7 +1323,7 @@ Try (Intros; Rewrite Zcompare_Zopp; Do 2 Rewrite Zopp_Zplus;
 Try (Intros; Simpl; Rewrite <- ZC4; Auto with arith).
 Qed.
 
-Hints Resolve ZC4.
+Hints Local Resolve ZC4.
 
 Theorem weak_Zcompare_Zplus_compatible : 
   (x,y:Z) (z:positive) 
@@ -1530,8 +1528,6 @@ Intros x y;Case x;Case y; [
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Qed.
 
-End fast_integers.
-
 V7only [
   Comments "Compatibility with the old version of times and times_convert".
   Syntactic Definition times1 :=
@@ -1539,9 +1535,3 @@ V7only [
   Syntactic Definition times1_convert :=
     [x,y:positive;_:positive->positive](times_convert x y).
 ].
-
-V8Infix "+" Zplus : Z_scope.
-V8Infix "*" times : positive_scope.
-V8Infix "+" Zplus : Z_scope.
-V8Infix "*" Zmult : Z_scope.
-V8Infix "?=" Zcompare (at level 50, no associativity) : Z_scope.
