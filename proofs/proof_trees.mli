@@ -68,7 +68,7 @@ val remap     : readable_constraints -> int * goal -> readable_constraints
 val ctxt_access : readable_constraints -> int -> bool
 
 val pf_lookup_name_as_renamed : 
-  named_context -> constr -> identifier -> int option
+  named_context -> constr -> Identifier.identifier -> int option
 val pf_lookup_index_as_renamed : constr -> int -> int option
 
 

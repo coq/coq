@@ -8,8 +8,10 @@
 
 (*i $Id$ i*)
 
+open Identifier
 open Names
 open Term
+open Libnames
 open Miniml
 
 (*s Special identifiers. [prop_name] is to be used for propositions

@@ -10,6 +10,11 @@
 
 open Pp
 open Util
+
+let close_section _ _ = anomaly "No sections today..."
+
+(*
+open Identifier
 open Names
 open Sign
 open Term
@@ -19,6 +24,7 @@ open Instantiate
 open Reduction
 open Cooking
 open Typeops
+open Libnames
 open Libobject
 open Lib
 open Declare
@@ -29,7 +35,7 @@ open Recordops
 open Library
 
 let recalc_sp dir sp =
-  let (_,spid,k) = repr_path sp in Names.make_path dir spid k
+  let (_,spid,k) = repr_path sp in Libnames.make_path dir spid k
 
 let rec find_var id = function
   | [] -> raise Not_found
@@ -120,7 +126,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	  Array.to_list lc))
       mib.mind_packets
   in
-  let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) mib.mind_hyps in
+  let hyps = mib.mind_hyps in
   let hyps' = map_named_context (expmod_constr oldenv modlist) hyps in
   let (inds',modl) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
@@ -151,10 +157,10 @@ let inductive_message inds =
 	 (match inds with
 	    | [] -> assert false
 	    | [ind] ->
-		[< pr_id ind.mind_entry_typename; 'sTR " is discharged." >]
+		[< pr_label ind.mind_entry_typename; 'sTR " is discharged." >]
 	    | l ->
 		[< prlist_with_sep pr_coma 
-		     (fun ind -> pr_id ind.mind_entry_typename) l;
+		     (fun ind -> pr_label ind.mind_entry_typename) l;
 		   'sPC; 'sTR "are discharged.">]))
 
 (* Discharge operations for the various objects of the environment. *)
@@ -328,3 +334,4 @@ let close_section _ s =
   else
     catch_not_found (List.iter process_operation) (List.rev ops);
   Nametab.push_section olddir
+*)

@@ -11,11 +11,13 @@
 open Pp
 open Util
 open Univ
+open Identifier
 open Names
 open Term
 open Inductive
 open Environ
 open Sign
+open Libnames
 open Declare
 open Impargs
 open Rawterm
@@ -46,11 +48,11 @@ let occur_rel p env id =
 let occur_id env id0 c =
   let rec occur n c = match kind_of_term c with
     | IsVar id when  id=id0 -> raise Occur
-    | IsConst (sp, _) when basename sp = id0 -> raise Occur
-    | IsMutInd (ind_sp, _)
-	when basename (path_of_inductive_path ind_sp) = id0 -> raise Occur
+    | IsConst (sp, _) when Names.basename sp = id0 -> raise Occur
+    | IsMutInd (ind_sp, args)
+	when Nametab.get_ident (IndRef ind_sp) = id0 -> raise Occur
     | IsMutConstruct (cstr_sp, _) 
-	when basename (path_of_constructor_path cstr_sp) = id0 -> raise Occur
+	when Nametab.get_ident (ConstructRef cstr_sp) = id0 -> raise Occur
     | IsRel p when p>n & occur_rel (p-n) env id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c
   in 
@@ -86,9 +88,9 @@ let global_vars_and_consts t =
     let acc' = Array.fold_left collect acc cl in
     match op with
     | OpVar id -> id::acc'
-    | OpConst sp -> (basename sp)::acc'
-    | OpMutInd ind_sp -> (basename (path_of_inductive_path ind_sp))::acc'
-    | OpMutConstruct csp -> (basename (path_of_constructor_path csp))::acc'
+    | OpConst sp -> (Names.basename sp)::acc'
+    | OpMutInd ind_sp -> (Nametab.get_ident (IndRef ind_sp))::acc'
+    | OpMutConstruct csp -> (Nametab.get_ident (ConstructRef csp))::acc'
     | _ -> acc'
   in
   list_uniquize (collect [] t)
@@ -101,7 +103,7 @@ let used_of = global_vars_and_consts
 let encode_inductive id =
   let (indsp,_ as ind) =
     try 
-      match kind_of_term (global_reference CCI id) with
+      match kind_of_term (global_reference id) with
         | IsMutInd (indsp,args) -> (indsp,args)
 	| _ -> errorlabstrm "indsp_of_id" 
 	    [< 'sTR ((string_of_id id)^" is not an inductive type") >]
@@ -115,11 +117,6 @@ let encode_inductive id =
 let constr_nargs indsp =
   let mis = Global.lookup_mind_specif (indsp,[||] (* ?? *)) in
   Array.map List.length (mis_recarg mis)
-
-let sp_of_spi (refsp,tyi) =
-  let mip = Declarations.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
-  let (pa,_,k) = repr_path refsp in 
-  make_path pa mip.Declarations.mind_typename k
 
 (* Parameterization of the translation from constr to ast      *)
 
@@ -144,7 +141,8 @@ module PrintingCasesMake =
     let check (_,lc) =
       if not (Test.test lc) then 
 	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
-    let printer (spi,_) = [< 'sTR(string_of_path (sp_of_spi spi)) >]
+    let printer (spi,_) = 
+      [< 'sTR (string_of_qualid (Nametab.get_short_qualid (IndRef spi))) >]
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message

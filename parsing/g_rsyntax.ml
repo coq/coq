@@ -9,7 +9,7 @@ open Coqast
 open Ast
 open Pp
 open Util
-open Names
+open Identifier
 open Pcoq
 
 exception Non_closed_number

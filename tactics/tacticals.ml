@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Sign
@@ -263,7 +264,7 @@ let reduce_to_ind_goal gl t =
     let c,args = decomp_app t in
     match kind_of_term c with
       | IsMutInd (ind_sp,args as ity) -> 
-	  ((ity, path_of_inductive_path ind_sp, t), t)
+	  ((ity, ind_sp, t), t)
       | IsCast (c,_) when args = [] ->
 	  elimrec c
       | IsProd (n,ty,t') when args = [] ->
@@ -329,7 +330,7 @@ let general_elim_then_using
       | _ ->
 	  let name_elim =
 	    match kind_of_term elim with
-	      | IsConst (sp,_) -> string_of_path sp
+	      | IsConst (ln,_) -> string_of_long_name ln
 	      | IsVar id -> string_of_id id
 	      | _ -> "\b"
 	  in

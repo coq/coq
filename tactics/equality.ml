@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Univ
 open Term
@@ -1272,7 +1273,7 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
 	 [< 'sTR"No such hypothesis : "; pr_id id >])
   in
   let (wc,_) = startWalk gls
-  and (_,_,t) = reduce_to_ind (pf_env gls) (project gls) (pf_type_of gls c) in
+  and (_,_,t) = reduce_to_mind (pf_env gls) (project gls) (pf_type_of gls c) in
   let ctype = type_clenv_binding wc (c,t) lb in
   match (match_with_equation ctype) with
     | None -> error "The term provided does not end with an equation" 

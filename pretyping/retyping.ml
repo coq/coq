@@ -11,6 +11,7 @@
 open Util
 open Term
 open Inductive
+open Identifier
 open Names
 open Reduction
 open Environ

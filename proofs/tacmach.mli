@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Term
 open Sign
@@ -76,7 +77,7 @@ val pf_nf_betaiota             : goal sigma -> constr -> constr
 val pf_one_step_reduce         : goal sigma -> constr -> constr
 val pf_reduce_to_mind : goal sigma -> constr -> inductive * constr * constr
 val pf_reduce_to_ind  :
-  goal sigma  -> constr -> section_path * constr * constr
+  goal sigma  -> constr -> inductive_path * constr * constr
 val pf_compute        : goal sigma -> constr -> constr
 val pf_unfoldn    : (int list * Closure.evaluable_global_reference) list
         -> goal sigma -> constr -> constr

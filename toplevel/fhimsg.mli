@@ -10,11 +10,12 @@
 
 (*i*)
 open Pp
-open Names
+open Identifier
 open Term
 open Sign
 open Environ
 open Type_errors
+open Indtypes
 (*i*)
 
 (* This module provides functions to explain the various typing errors.
@@ -22,7 +23,7 @@ open Type_errors
    context. *)
 
 module type Printer = sig
-  val pr_term : path_kind -> env -> constr -> std_ppcmds
+  val pr_term : env -> constr -> std_ppcmds
 end
 
 (*s The result is a module which provides a function [explain_type_error]
@@ -32,43 +33,45 @@ end
 
 module Make (P : Printer) : sig
 
-val explain_type_error : path_kind -> env -> type_error -> std_ppcmds
+val explain_type_error : env -> type_error -> std_ppcmds
 
-val pr_ne_ctx : std_ppcmds -> path_kind -> env -> std_ppcmds
+val pr_ne_ctx : std_ppcmds -> env -> std_ppcmds
 
-val explain_unbound_rel : path_kind -> env -> int -> std_ppcmds
+val explain_unbound_rel : env -> int -> std_ppcmds
 
-val explain_not_type : path_kind -> env -> constr -> std_ppcmds
+val explain_not_type : env -> constr -> std_ppcmds
 
-val explain_bad_assumption : path_kind -> env -> constr -> std_ppcmds
+val explain_bad_assumption : env -> constr -> std_ppcmds
  
 val explain_reference_variables : identifier -> std_ppcmds
 
 val explain_elim_arity : 
-  path_kind -> env -> constr -> constr list -> constr 
+  env -> constr -> constr list -> constr 
     -> unsafe_judgment -> (constr * constr * string) option -> std_ppcmds
 
 val explain_case_not_inductive : 
-  path_kind -> env -> unsafe_judgment -> std_ppcmds
+  env -> unsafe_judgment -> std_ppcmds
 
 val explain_number_branches : 
-  path_kind -> env -> unsafe_judgment -> int -> std_ppcmds
+  env -> unsafe_judgment -> int -> std_ppcmds
 
 val explain_ill_formed_branch :
-  path_kind -> env -> constr -> int -> constr -> constr -> std_ppcmds
+  env -> constr -> int -> constr -> constr -> std_ppcmds
 
 val explain_generalization :
-  path_kind -> env -> name * types -> constr -> std_ppcmds
+  env -> name * types -> constr -> std_ppcmds
 
 val explain_actual_type :
-  path_kind -> env -> constr -> constr -> constr -> std_ppcmds
+  env -> constr -> constr -> constr -> std_ppcmds
 
 val explain_ill_formed_rec_body :
-  path_kind -> env -> guard_error -> 
+  env -> guard_error -> 
     name array -> int -> constr array -> std_ppcmds
 
 val explain_ill_typed_rec_body  :
-  path_kind -> env -> int -> name list -> unsafe_judgment array 
+  env -> int -> name list -> unsafe_judgment array 
     -> types array -> std_ppcmds
+
+val explain_inductive_error :  inductive_error -> std_ppcmds
 
 end

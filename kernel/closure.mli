@@ -10,6 +10,7 @@
 
 (*i*)
 open Pp
+open Identifier
 open Names
 open Term
 open Evd
@@ -25,10 +26,10 @@ val with_stats: 'a Lazy.t -> 'a
 
 type evaluable_global_reference =
   | EvalVarRef of identifier
-  | EvalConstRef of section_path
+  | EvalConstRef of long_name
 
 (*s Delta implies all consts (both global (= by
-  [section_path]) and local (= by [Rel] or [Var])), all evars, and letin's.
+  [long_name]) and local (= by [Rel] or [Var])), all evars, and letin's.
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
@@ -39,8 +40,8 @@ type red_kind =
   | ZETA
   | EVAR
   | IOTA
-  | CONST of section_path list
-  | CONSTBUT of section_path list
+  | CONST of long_name list
+  | CONSTBUT of long_name list
   | VAR of identifier
   | VARBUT of identifier
 *)
@@ -184,7 +185,7 @@ type fterm =
   | FCLOS of constr * fconstr subs
 
 and freference =
-  | FConst of section_path * fconstr array
+  | FConst of long_name * fconstr array
   | FEvar of (existential * fconstr subs)
   | FVar of identifier
   | FFarRel of int

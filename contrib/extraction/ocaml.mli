@@ -12,7 +12,7 @@
 
 open Pp
 open Miniml
-open Names
+open Identifier
 
 val string : string -> std_ppcmds
 val open_par : bool -> std_ppcmds
@@ -32,7 +32,7 @@ open Mlutil
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 
-val current_module : Names.identifier option ref
+val current_module : identifier option ref
 val extract_to_file : string -> extraction_params -> ml_decl list -> unit
 
 

@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
-open Names
+open Libnames
 (*i*)
 
 (* [Libobject] declares persistent objects, given with three methods:

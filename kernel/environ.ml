@@ -10,25 +10,21 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Sign
 open Univ
 open Term
 open Declarations
+open Mod_declarations
 
 (* The type of environments. *)
 
-type checksum = int
-
-type compilation_unit_name = dir_path * checksum
-
-type global = Constant | Inductive
-
 type globals = {
-  env_constants : constant_body Spmap.t;
-  env_inductives : mutual_inductive_body Spmap.t;
-  env_locals : (global * section_path) list;
-  env_imports : compilation_unit_name list }
+  env_constants : constant_body LNmap.t;
+  env_inductives : mutual_inductive_body LNmap.t;
+  env_modules : module_body MPmap.t;
+  env_modtypes : module_type_body LNmap.t }
 
 type context = {
   env_named_context : named_context;
@@ -46,14 +42,14 @@ let empty_context = {
 let empty_env = { 
   env_context = empty_context;
   env_globals = {
-    env_constants = Spmap.empty;
-    env_inductives = Spmap.empty;
-    env_locals = [];
-    env_imports = [] };
+    env_constants = LNmap.empty;
+    env_inductives = LNmap.empty;
+    env_modules = MPmap.empty;
+    env_modtypes = LNmap.empty };
   env_universes = initial_universes }
 
 let universes env = env.env_universes
-let context env = env.env_context
+(*let context env = env.env_context*)
 let named_context env = env.env_context.env_named_context
 let rel_context env = env.env_context.env_rel_context
 
@@ -174,22 +170,32 @@ let add_constraints c env =
   else 
     { env with env_universes = merge_constraints c env.env_universes }
 
-let add_constant sp cb env =
-  let new_constants = Spmap.add sp cb env.env_globals.env_constants in
-  let new_locals = (Constant,sp)::env.env_globals.env_locals in
+let add_constant ln cb env =
+  let new_constants = LNmap.add ln cb env.env_globals.env_constants in
   let new_globals = 
     { env.env_globals with 
-	env_constants = new_constants; 
-	env_locals = new_locals } in
+	env_constants = new_constants } in
   { env with env_globals = new_globals }
 
-let add_mind sp mib env =
-  let new_inds = Spmap.add sp mib env.env_globals.env_inductives in
-  let new_locals = (Inductive,sp)::env.env_globals.env_locals in
+let add_mind ln mib env =
+  let new_inds = LNmap.add ln mib env.env_globals.env_inductives in
   let new_globals = 
     { env.env_globals with 
-	env_inductives = new_inds;
-	env_locals = new_locals } in
+	env_inductives = new_inds } in
+  { env with env_globals = new_globals }
+
+let add_modtype ln mtb env = 
+  let new_modtypes = LNmap.add ln mtb env.env_globals.env_modtypes in
+  let new_globals = 
+    { env.env_globals with 
+	env_modtypes = new_modtypes } in
+  { env with env_globals = new_globals }
+
+let shallow_add_module mp mb env = 
+  let new_mods = MPmap.add mp mb env.env_globals.env_modules in
+  let new_globals = 
+    { env.env_globals with 
+	env_modules = new_mods } in
   { env with env_globals = new_globals }
 
 (* Access functions. *)
@@ -208,33 +214,48 @@ let lookup_rel_type n env =
 let lookup_rel_value n env =
   Sign.lookup_rel_value n env.env_context.env_rel_context
 
-let lookup_constant sp env =
-  Spmap.find sp env.env_globals.env_constants
+let lookup_constant ln env =
+  LNmap.find ln env.env_globals.env_constants
 
-let lookup_mind sp env =
-  Spmap.find sp env.env_globals.env_inductives
+let lookup_mind ln env =
+  LNmap.find ln env.env_globals.env_inductives
+
+let lookup_module mp env = 
+  MPmap.find mp env.env_globals.env_modules
+
+let lookup_modtype ln env = 
+  LNmap.find ln env.env_globals.env_modtypes
+
+(*s Global references *)
+
+type global_reference =
+  | VarRef of identifier
+  | ConstRef of constant_path
+  | IndRef of inductive_path
+  | ConstructRef of constructor_path
+  | ModRef of module_path
+  | ModTypeRef of long_name
 
 (* First character of a constr *)
+let lowercase_first_char l = String.lowercase (first_char l)
 
-let lowercase_first_char id = String.lowercase (first_char id)
-
-(* id_of_global gives the name of the given sort oper *)
-let sp_of_global env = function
-  | VarRef sp -> sp
-  | ConstRef sp -> sp
-  | IndRef (sp,tyi) -> 
+let id_of_global env = function
+  | VarRef id -> id
+  | ConstRef ln -> basename ln
+  | IndRef (ln,tyi) -> 
       (* Does not work with extracted inductive types when the first 
 	 inductive is logic : if tyi=0 then basename sp else *)
-      let mib = lookup_mind sp env in
+      let mib = lookup_mind ln env in
       let mip = mind_nth_type_packet mib tyi in
-      make_path (dirpath sp) mip.mind_typename CCI
-  | ConstructRef ((sp,tyi),i) ->
-      let mib = lookup_mind sp env in
+	ident_of_label mip.mind_typename
+  | ConstructRef ((ln,tyi),i) ->
+      let mib = lookup_mind ln env in
       let mip = mind_nth_type_packet mib tyi in
-      assert (i <= Array.length mip.mind_consnames && i > 0);
-      make_path (dirpath sp) mip.mind_consnames.(i-1) CCI
-
-let id_of_global env ref = basename (sp_of_global env ref)
+	assert (i <= Array.length mip.mind_consnames && i > 0);
+	ident_of_label mip.mind_consnames.(i-1)
+  | ModRef (MPdot (_,l)) -> ident_of_label l
+  | ModRef _ -> anomaly "Environ.id_of_global: ModRef is not mp.l"
+  | ModTypeRef ln -> basename ln
 
 let hdchar env c = 
   let rec hdrec k c =
@@ -244,12 +265,12 @@ let hdchar env c =
     | IsLetIn (_,_,_,c)    -> hdrec (k+1) c
     | IsCast (c,_)         -> hdrec k c
     | IsApp (f,l)         -> hdrec k f
-    | IsConst (sp,_)       ->
-	let c = lowercase_first_char (basename sp) in
+    | IsConst (ln,_)       ->
+	let c = lowercase_first_char (basename ln) in
 	if c = "?" then "y" else c
-    | IsMutInd ((sp,i) as x,_) ->
+    | IsMutInd ((ln,i) as x,_) ->
 	if i=0 then 
-	  lowercase_first_char (basename sp)
+	  lowercase_first_char (basename ln)
 	else 
 	  lowercase_first_char (id_of_global env (IndRef x))
     | IsMutConstruct ((sp,i) as x,_) ->
@@ -363,66 +384,6 @@ let set_transparent env sp =
   let cb = lookup_constant sp env in
   cb.const_opaque <- false
 
-(*s Modules (i.e. compiled environments). *)
-
-type compiled_env = {
-  cenv_stamped_id : compilation_unit_name;
-  cenv_needed : compilation_unit_name list;
-  cenv_constants : (section_path * constant_body) list;
-  cenv_inductives : (section_path * mutual_inductive_body) list }
-
-let exported_objects env =
-  let gl = env.env_globals in
-  let separate (cst,ind) = function
-    | (Constant,sp) -> (sp,Spmap.find sp gl.env_constants)::cst,ind
-    | (Inductive,sp) -> cst,(sp,Spmap.find sp gl.env_inductives)::ind
-  in
-  List.fold_left separate ([],[]) gl.env_locals
-
-let export env id = 
-  let (cst,ind) = exported_objects env in
-  { cenv_stamped_id = (id,0);
-    cenv_needed = env.env_globals.env_imports;
-    cenv_constants = cst;
-    cenv_inductives = ind }
-
-let check_imports env needed =
-  let imports = env.env_globals.env_imports in
-  let check (id,stamp) =
-    try
-      let actual_stamp = List.assoc id imports in
-      if stamp <> actual_stamp then
-	error ("Inconsistent assumptions over module " ^(string_of_dirpath id))
-    with Not_found -> 
-      error ("Reference to unknown module " ^ (string_of_dirpath id))
-  in
-  List.iter check needed
-
-let import_constraints g sp cst =
-  try
-    merge_constraints cst g
-  with UniverseInconsistency ->
-    errorlabstrm "import_constraints"
-      [< 'sTR "Universe Inconsistency during import of"; 'sPC; pr_sp sp >]
-
-let import cenv env =
-  check_imports env cenv.cenv_needed;
-  let add_list t = List.fold_left (fun t (sp,x) -> Spmap.add sp x t) t in
-  let gl = env.env_globals in
-  let new_globals = 
-    { env_constants = add_list gl.env_constants cenv.cenv_constants;
-      env_inductives = add_list gl.env_inductives cenv.cenv_inductives;
-      env_locals = gl.env_locals;
-      env_imports = cenv.cenv_stamped_id :: gl.env_imports }
-  in
-  let g = universes env in
-  let g = List.fold_left 
-	    (fun g (sp,cb) -> import_constraints g sp cb.const_constraints) 
-	    g cenv.cenv_constants in
-  let g = List.fold_left 
-	    (fun g (sp,mib) -> import_constraints g sp mib.mind_constraints) 
-	    g cenv.cenv_inductives in
-  { env with env_globals = new_globals; env_universes = g }
 
 (*s Judgments. *)
 
@@ -443,3 +404,5 @@ let mem env =
   h 0 [< 'sTR (sprintf "%dk (cst = %dk / ind = %dk / unv = %dk)"
 		 (size_kb env) (size_kb glb.env_constants) 
 		 (size_kb glb.env_inductives) (size_kb env.env_universes)) >]
+
+

@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Sign
@@ -137,13 +138,13 @@ let unify_0 mc wc m n =
 	    if is_conv env sigma cM cN then
 	      substn
 	    else
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 	      
 	| IsMutInd _, IsMutInd _ ->
 	    if is_conv env sigma  cM cN then
 	      substn
 	    else
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 	      
 	| IsEvar _, _ ->
 	    metasubst,((cM,cN)::evarsubst)
@@ -154,17 +155,17 @@ let unify_0 mc wc m n =
 	    if is_conv env sigma cM cN then
 	      substn
 	    else 
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 		
 	| _, (IsConst _ | IsVar _| IsRel _) ->
 	    if (not (occur_meta cM)) & is_conv env sigma cM cN then 
 	      substn
 	    else 
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 
 	| IsLetIn (_,b,_,c), _ -> unirec_rec substn (subst1 b c) cN
 		
-	| _ -> error_cannot_unify CCI (m,n)
+	| _ -> error_cannot_unify (m,n)
 	      
     with ex when catchable_exception ex ->
       if (not(occur_meta cM)) & is_conv env sigma cM cN then 

@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
 open Declarations
@@ -60,7 +61,7 @@ let error_needs_inversion k env x t =
 (* A) Typing old cases                                               *)
 (* This was previously in Indrec but creates existential holes       *)
 
-let mkExistential isevars env = new_isevar isevars env dummy_sort CCI
+let mkExistential isevars env = new_isevar isevars env dummy_sort
 
 let norec_branch_scheme env isevars cstr =
   let rec crec env = function
@@ -1278,7 +1279,7 @@ let inh_coerce_to_ind isevars env ty tyi =
     List.fold_right
       (fun (na,ty) (env,evl) ->
 	 (push_rel_assum (na,ty) env,
-	    (new_isevar isevars env ty CCI)::evl))
+	    (new_isevar isevars env ty)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkMutInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
@@ -1304,7 +1305,7 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 		 (constructor_of_rawconstructor c) mind
 	     with Induc ->
 	       error_case_not_inductive_loc
-		 (loc_of_rawconstr tomatch) CCI env (evars_of isevars) j)
+		 (loc_of_rawconstr tomatch) env (evars_of isevars) j)
       | None -> 
 	  try IsInd (typ,find_rectype env (evars_of isevars) typ)
 	  with Induc -> NotInd typ

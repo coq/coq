@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Term
 open Proof_type
@@ -28,7 +29,7 @@ val general_decompose : (identifier * constr -> bool) -> constr -> tactic
 val decompose_nonrec  : constr -> tactic
 val decompose_and     : constr -> tactic
 val decompose_or      : constr -> tactic
-val h_decompose       : section_path list -> constr -> tactic
+val h_decompose       : Libnames.section_path list -> constr -> tactic
 
 val double_ind : int -> int -> tactic
 

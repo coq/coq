@@ -23,9 +23,9 @@ open Extend
  * according to the key of the pattern. *)
 
 type key =
-  | Cst of Names.section_path (* keys for global constants rules *)
-  | Ind of Names.section_path * int 
-  | Cstr of (Names.section_path * int) * int
+  | Cst of Names.long_name (* keys for global constants rules *)
+  | Ind of Names.long_name * int 
+  | Cstr of (Names.long_name * int) * int
   | Nod of string      (* keys for other constructed asts rules *)
   | Oth                (* key for other syntax rules *)
   | All     (* key for catch-all rules (i.e. with a pattern such as $x .. *)

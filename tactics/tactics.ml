@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Stamps
+open Identifier
 open Names
 open Sign
 open Term
@@ -253,7 +254,7 @@ let dyn_reduce = function
 
 let unfold_constr = function 
   | ConstRef sp -> unfold_in_concl [[],Closure.EvalConstRef sp]
-  | VarRef sp -> unfold_in_concl [[],Closure.EvalVarRef (basename sp)]
+  | VarRef id -> unfold_in_concl [[],Closure.EvalVarRef id]
   | _ -> errorlabstrm "unfold_constr" [< 'sTR "Cannot unfold a non-constant.">]
 
 (*******************************************)
@@ -1047,7 +1048,7 @@ let type_clenv_binding wc (c,t) lbind =
 let general_elim (c,lbindc) (elimc,lbindelimc) gl = 
   let (wc,kONT)  = startWalk gl in
   let ct = pf_type_of gl c in
-  let t = try let (_,_,t)    = reduce_to_ind (pf_env gl) (project gl) ct in t 
+  let t = try let (_,_,t)    = reduce_to_mind (pf_env gl) (project gl) ct in t 
   with UserError _ -> ct
   in
   let indclause  = make_clenv_binding wc (c,t) lbindc  in
@@ -1065,7 +1066,7 @@ let default_elim (c,lbindc)  gl =
   let elimc =
     try lookup_eliminator env path s 
     with Not_found -> 
-      let dir, base,k = repr_path path in
+      let dir, base = Libnames.repr_qualid (Nametab.get_full_qualid (IndRef path)) in
       let id = make_elimination_ident base s in
       errorlabstrm "default_elim"
 	[< 'sTR "Cannot find the elimination combinator :";
@@ -1118,7 +1119,7 @@ comes from a canonically generated one *)
 let rec is_rec_arg env sigma indpath t =
   try
     let ((ind_sp,_),_) = find_mrectype env sigma t in
-    Declare.path_of_inductive_path ind_sp = indpath
+    Nametab.get_full_qualid (IndRef ind_sp) = indpath
   with Induc -> 
     false
 
@@ -1421,9 +1422,8 @@ let induction_from_context isrec style hyp0 gl =
   let env = pf_env gl in
   let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind indtyp in
-  let mindpath = Declare.path_of_inductive_path ind_sp in
   let elimc =
-    if isrec then lookup_eliminator env mindpath (sort_of_goal gl)
+    if isrec then lookup_eliminator env ind_sp (sort_of_goal gl)
     else Indrec.make_case_gen env (project gl) mind (sort_of_goal gl)
   in
   let elimt = pf_type_of gl elimc in
@@ -1585,8 +1585,8 @@ let elim_scheme_type elim t gl =
     | _ -> anomaly "elim_scheme_type"
 
 let elim_type t gl =
-  let (path_name,tind,t) = reduce_to_ind (pf_env gl) (project gl) t in
-  let elimc = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
+  let (ind_p,tind,t) = reduce_to_ind (pf_env gl) (project gl) t in
+  let elimc = lookup_eliminator (pf_env gl) ind_p (sort_of_goal gl) in
   match kind_of_term t with 
     | IsProd (_,_,_) -> error "Not an inductive definition"
     | _              -> elim_scheme_type elimc tind gl

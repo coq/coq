@@ -14,11 +14,12 @@
    from a well-founded ordering on a given set *)
 
 Require Export Logic.
+Require Export LogicHints.
 Require Export LogicSyntax.
 
 (* Well-founded induction principle on Prop *)
 
-Chapter Well_founded.
+(* Chapter Well_founded. *)
 
  Variable A : Set.
  Variable R : A -> A -> Prop.
@@ -35,14 +36,15 @@ Chapter Well_founded.
   (* the informative elimination :
      [let Acc_rec F = let rec wf x = F x wf in wf] *)
 
- Section AccRec.
-  Variable P : A -> Set.
-  Variable F : (x:A)((y:A)(R y x)->(Acc y))->((y:A)(R y x)->(P y))->(P x).
+ (* Section AccRec. *)
+  (* Variable P : A -> Set *)
+  (* Variable F : (x:A)((y:A)(R y x)->(Acc y))->((y:A)(R y x)->(P y))->(P x) *)
 
-  Fixpoint Acc_rec [x:A;a:(Acc x)] : (P x)
-     := (F x (Acc_inv x a) ([y:A][h:(R y x)](Acc_rec y (Acc_inv x a y h)))).
+  Fixpoint Acc_rec [P : A -> Set][F : (x:A)((y:A)(R y x)->(Acc y))->((y:A)(R y x)->(P y))->(P x)]
+	[x:A;a:(Acc x)] : (P x)
+     := (F x (Acc_inv x a) ([y:A][h:(R y x)](Acc_rec P F y (Acc_inv x a y h)))).
 
- End AccRec.
+ (* End AccRec. *)
 
  (* A relation is well-founded if every element is accessible *)
 
@@ -55,18 +57,18 @@ Chapter Well_founded.
  Theorem well_founded_induction : 
         (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
-  Intros; Apply (Acc_rec P); Auto.
+  Intros; Apply (Acc_rec P); Auto; Apply Rwf.
  Save.
 
   Theorem well_founded_ind : 
          (P:A->Prop)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
    Proof.
-    Intros; Apply (Acc_ind P); Auto.
+    Intros; Apply (Acc_ind P); Auto; Apply Rwf.
    Qed.
 
 (* Building fixpoints  *) 
 
-Section FixPoint.
+(* Section FixPoint. *)
 
 Variable P : A -> Set.
 Variable F : (x:A)((y:A)(R y x)->(P y))->(P x).
@@ -105,6 +107,6 @@ Apply F_ext; Intros.
 Apply Fix_F_inv.
 Save.
 
-End FixPoint.
+(* End FixPoint. *)
 
-End Well_founded. 
+(* End Well_founded. *)

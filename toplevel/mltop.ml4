@@ -160,7 +160,7 @@ let add_path dir coq_dirpath =
 let add_rec_path dir coq_dirpath =
   let dirs = all_subdirs dir in
   if dirs <> [] then
-    let convert = List.map Names.id_of_string in
+    let convert = List.map Identifier.id_of_string in
     let dirs = List.map (fun (lp,cp) -> (lp,coq_dirpath@(convert cp))) dirs in
     begin
       List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;

@@ -11,8 +11,10 @@
 open Pp
 open Util
 
+open Identifier
 open Names
-open Environ
+open Safe_env
+open Libnames
 open Libobject
 open Lib
 open Nametab
@@ -64,7 +66,7 @@ type compilation_unit_name = dir_path
 
 type module_disk = { 
   md_name : compilation_unit_name;
-  md_compiled_env : compiled_env;
+  md_compiled_env : compiled_module;
   md_declarations : library_segment;
   md_deps : (compilation_unit_name * Digest.t * bool) list }
 
@@ -74,7 +76,7 @@ type module_disk = {
 type module_t = {
   module_name : compilation_unit_name;
   module_filename : System.physical_path;
-  module_compiled_env : compiled_env;
+  module_compiled_env : compiled_module;
   module_declarations : library_segment;
   mutable module_opened : bool;
   mutable module_exported : bool;
@@ -244,10 +246,12 @@ and intern_module digest fname md =
 	    module_deps = md.md_deps;
 	    module_digest = digest } in
   List.iter (load_mandatory_module md.md_name) m.module_deps;
-  Global.import m.module_compiled_env;
+  let mp = Global.import m.module_compiled_env digest in
   load_objects m.module_declarations;
   modules_table := CompUnitmap.add md.md_name m !modules_table;
   Nametab.push_loaded_library md.md_name;
+(* TODO: revise this! *)
+  Declare.declare_module_components m.module_name mp;
   m
 
 and load_mandatory_module caller (dir,d,_) =

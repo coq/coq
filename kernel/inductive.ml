@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Univ
 open Term
@@ -18,15 +19,15 @@ open Environ
 open Reduction
 
 type inductive_instance = {
-  mis_sp : section_path;
+  mis_ln : long_name;
   mis_mib : mutual_inductive_body;
   mis_tyi : int;
   mis_args : constr array;
   mis_mip : one_inductive_body }
 
 
-let build_mis ((sp,tyi),args) mib =
-  { mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
+let build_mis ((ln,tyi),args) mib =
+  { mis_ln = ln; mis_mib = mib; mis_tyi = tyi; mis_args = args;
     mis_mip = mind_nth_type_packet mib tyi }
 
 let mis_ntypes mis = mis.mis_mib.mind_ntypes
@@ -40,14 +41,14 @@ let mis_kelim mis = mis.mis_mip.mind_kelim
 let mis_recargs mis =
   Array.map (fun mip -> mip.mind_listrec) mis.mis_mib.mind_packets
 let mis_recarg mis = mis.mis_mip.mind_listrec
-let mis_typename mis = mis.mis_mip.mind_typename
+let mis_typename mis = ident_of_label mis.mis_mip.mind_typename
 let mis_typepath mis =
-  make_path (dirpath mis.mis_sp) mis.mis_mip.mind_typename CCI
-let mis_consnames mis = mis.mis_mip.mind_consnames
+  (mis.mis_ln,mis.mis_tyi)
+let mis_consnames mis = Array.map ident_of_label mis.mis_mip.mind_consnames
 let mis_conspaths mis =
-  let dir = dirpath mis.mis_sp in
-  Array.map (fun id -> make_path dir id CCI) mis.mis_mip.mind_consnames
-let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
+  let ind_p = mis_typepath mis in 
+  Array.init (mis_nconstr mis) (fun i -> (ind_p,i+1)) 
+let mis_inductive mis = ((mis.mis_ln,mis.mis_tyi),mis.mis_args)
 let mis_finite mis = mis.mis_mip.mind_finite
 
 let mis_typed_nf_lc mis =
@@ -78,9 +79,9 @@ let mis_type_mconstructs mispec =
   let specif = Array.map body_of_type (mis_user_lc mispec)
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
-  let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) 
+  let make_Ik k = mkMutInd ((mispec.mis_ln,ntypes-k-1),mispec.mis_args) 
   and make_Ck k = mkMutConstruct
-		    (((mispec.mis_sp,mispec.mis_tyi),k+1),
+		    (((mispec.mis_ln,mispec.mis_tyi),k+1),
 		       mispec.mis_args) in
   (Array.init nconstr make_Ck, 
    Array.map (substl (list_tabulate make_Ik ntypes)) specif)
@@ -89,7 +90,7 @@ let mis_nf_constructor_type i mispec =
   let specif = mis_nf_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
-  let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
+  let make_Ik k = mkMutInd ((mispec.mis_ln,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
   substl (list_tabulate make_Ik ntypes) specif.(i-1)
 
@@ -97,7 +98,7 @@ let mis_constructor_type i mispec =
   let specif = mis_user_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
-  let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
+  let make_Ik k = mkMutInd ((mispec.mis_ln,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
   substl (list_tabulate make_Ik ntypes) specif.(i-1)
 
@@ -125,7 +126,7 @@ let mis_params_ctxt mis = mis.mis_mip.mind_params_ctxt
 let mis_sort mispec = mispec.mis_mip.mind_sort
 
 let liftn_inductive_instance n depth mis = {
-  mis_sp = mis.mis_sp;
+  mis_ln = mis.mis_ln;
   mis_mib = mis.mis_mib;
   mis_tyi = mis.mis_tyi;
   mis_args = Array.map (liftn n depth) mis.mis_args;
@@ -135,7 +136,7 @@ let liftn_inductive_instance n depth mis = {
 let lift_inductive_instance n = liftn_inductive_instance n 1
 
 let substnl_ind_instance l n mis = {
-  mis_sp = mis.mis_sp;
+  mis_ln = mis.mis_ln;
   mis_mib = mis.mis_mib;
   mis_tyi = mis.mis_tyi;
   mis_args = Array.map (substnl l n) mis.mis_args;
@@ -187,23 +188,22 @@ let mis_is_recursive mis =
 
 (* Annotation for cases *)
 let make_case_info mis style pats_source =
-(*  let constr_lengths = Array.map List.length (mis_recarg mis) in*)
-  let indsp = (mis.mis_sp,mis.mis_tyi) in
+  let indln = (mis.mis_ln,mis.mis_tyi) in
   let print_info =
-    (indsp,mis_consnames mis,mis.mis_mip.mind_nrealargs,style,pats_source) in
-  ((*constr_lengths*) mis_nparams mis,print_info)
+    (indln,mis_consnames mis,mis.mis_mip.mind_nrealargs,style,pats_source) in
+  (mis_nparams mis,print_info)
 
 let make_default_case_info mis =
   make_case_info mis None (Array.init (mis_nconstr mis) (fun _ -> RegularPat))
 
 (*s Useful functions *)
 
-let inductive_path_of_constructor_path (ind_sp,i) = ind_sp
-let ith_constructor_path_of_inductive_path ind_sp i = (ind_sp,i)
+let inductive_path_of_constructor_path (ind_ln,i) = ind_ln
+let ith_constructor_path_of_inductive_path ind_ln i = (ind_ln,i)
 
-let inductive_of_constructor ((ind_sp,i),args) = (ind_sp,args)
-let index_of_constructor ((ind_sp,i),args) = i
-let ith_constructor_of_inductive (ind_sp,args) i = ((ind_sp,i),args)
+let inductive_of_constructor ((ind_ln,i),args) = (ind_ln,args)
+let index_of_constructor ((ind_ln,i),args) = i
+let ith_constructor_of_inductive (ind_ln,args) i = ((ind_ln,i),args)
 
 exception Induc
 
@@ -222,20 +222,20 @@ let find_mrectype env sigma c =
 let find_inductive env sigma c =
   let (t, l) = whd_betadeltaiota_stack env sigma c in
   match kind_of_term t with
-    | IsMutInd ((sp,i),_ as ind)
-        when mind_type_finite (lookup_mind sp env) i -> (ind, l)
+    | IsMutInd ((ln,i),_ as ind)
+        when mind_type_finite (lookup_mind ln env) i -> (ind, l)
     | _ -> raise Induc
 
 let find_coinductive env sigma c =
   let (t, l) = whd_betadeltaiota_stack env sigma c in
   match kind_of_term t with
-    | IsMutInd ((sp,i),_ as ind)
-        when not (mind_type_finite (lookup_mind sp env) i) -> (ind, l)
+    | IsMutInd ((ln,i),_ as ind)
+        when not (mind_type_finite (lookup_mind ln env) i) -> (ind, l)
     | _ -> raise Induc
 
 (* raise Induc if not an inductive type *)
-let lookup_mind_specif ((sp,tyi),args as ind) env =
-  build_mis ind (lookup_mind sp env)
+let lookup_mind_specif ((ln,tyi),args as ind) env =
+  build_mis ind (lookup_mind ln env)
 
 let find_rectype env sigma ty =
   let (mind,largs) = find_mrectype env sigma ty in
@@ -349,4 +349,5 @@ let build_branch_type env dep p cs =
       cs.cs_args
   else
     it_mkProd_or_LetIn base cs.cs_args
+
 

@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Univ
+open Identifier
 open Names
 open Term
 open Inductive
@@ -103,10 +104,10 @@ let ast_of_ref = function
   | ConstRef sp -> ast_of_constant_ref sp
   | IndRef sp -> ast_of_inductive_ref sp
   | ConstructRef sp -> ast_of_constructor_ref sp
-  | VarRef sp -> ast_of_ident (basename sp)
+  | VarRef id -> ast_of_ident id
 
 let ast_of_qualid p =
-  let dir, s = repr_qualid p in
+  let dir, s = Libnames.repr_qualid p in
   let args = List.map nvar (dir@[s]) in
   ope ("QUALID", args)
 

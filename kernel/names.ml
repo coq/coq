@@ -6,215 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
+(*i*)
 open Pp
 open Util
+open Identifier
+(*i*)
 
-(*s Identifiers *)
+(* This file implements long names *)
 
-(* Utilities *)
 
-let code_of_0 = Char.code '0'
-let code_of_9 = Char.code '9'
-
-(* Identifiers *)
-
-type identifier = string
-
-let cut_ident s =
-  let slen = String.length s in
-  (* [n'] is the position of the first non nullary digit *)
-  let rec numpart n n' =
-    if n = 0 then 
-      failwith
-	("The string " ^ s ^ " is not an identifier: it contains only digits")
-    else 
-      let c = Char.code (String.get s (n-1)) in
-      if c = code_of_0 && n <> slen then 
-	numpart (n-1) n' 
-      else if code_of_0 <= c && c <= code_of_9 then 
-	numpart (n-1) (n-1)
-      else 
-	n'
-  in
-  numpart slen slen
-
-let repr_ident s =
-  let slen = String.length s in
-  let numstart = cut_ident s in
-  if numstart = slen then 
-    (s, None)
-  else
-    (String.sub s 0 numstart,
-     Some (int_of_string (String.sub s numstart (slen - numstart))))
-
-let make_ident sa = function
-  | Some n -> 
-      let c = Char.code (String.get sa (String.length sa -1)) in
-      if c < code_of_0 or c > code_of_9 then sa ^ (string_of_int n)
-      else sa ^ "_" ^ (string_of_int n)
-  | None -> String.copy sa
-
-let first_char id =
-  assert (id <> "");
-  String.make 1 id.[0]
-
-let id_ord = Pervasives.compare
-
-(* Rem: semantics is a bit different, if an ident starts with toto00 then
-  after successive renamings it comes to toto09, then it goes on with toto10 *)
-let lift_subscript id =
-  let len = String.length id in
-  let rec add carrypos =
-    let c = id.[carrypos] in
-    if is_digit c then
-      if c = '9' then begin
-	assert (carrypos>0);
-	add (carrypos-1)
-      end
-      else begin
-	let newid = String.copy id in
-	String.fill newid (carrypos+1) (len-1-carrypos) '0';
-	newid.[carrypos] <- Char.chr (Char.code c + 1);
-	newid
-      end
-    else begin
-      let newid = id^"0" in
-      if carrypos < len-1 then begin
-	String.fill newid (carrypos+1) (len-1-carrypos) '0';
-	newid.[carrypos+1] <- '1'
-      end;
-      newid
-    end
-  in add (len-1)
-
-let has_subscript id = is_digit (id.[String.length id - 1])
-
-let forget_subscript id =
-  let len = String.length id in
-  let numstart = cut_ident id in
-  let newid = String.make (numstart+1) '0' in
-  String.blit id 0 newid 0 numstart;
-  newid
-
-(* This checks that a string is acceptable as an ident, i.e. starts
-   with a letter and contains only letters, digits or "'" *)
-
-let check_ident_suffix i l s =
-  for i=1 to l-1 do
-    let c = String.get s i in
-    if not (is_letter c or is_digit c or c = '\'' or c = '_' or c = '@') then
-      error
-	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
-  done
-
-let check_ident s =
-  let l = String.length s in
-  if l = 0 then error "The empty string is not an identifier";
-  let c = String.get s 0 in
-  if (is_letter c) or c = '_' or c = '$' then check_ident_suffix 1 l s
-  else error (s^": an identifier starts with a letter")
-
-let is_ident s = try check_ident s; true with _ -> false
-
-let check_suffix s = check_ident_suffix 0 (String.length s) s
-
-let add_suffix id s = check_suffix s; id^s
-let add_prefix s id = check_ident s; s^id
-
-let string_of_id id = String.copy id
-let id_of_string s = check_ident s; String.copy s
-
-(* Hash-consing of identifier *)
-module Hident = Hashcons.Make(
-  struct 
-    type t = string
-    type u = string -> string
-    let hash_sub hstr id = hstr id
-    let equal id1 id2 = id1 == id2
-    let hash = Hashtbl.hash
-  end)
-
-module IdOrdered = 
-  struct
-    type t = identifier
-    let compare = id_ord
-  end
-
-module Idset = Set.Make(IdOrdered)
-module Idmap = Map.Make(IdOrdered)
-
-let atompart_of_id id = fst (repr_ident id)
-let index_of_id id = snd (repr_ident id)
-let pr_id id = [< 'sTR (string_of_id id) >]
-
-let wildcard = id_of_string "_"
-
-(* Fresh names *)
-
-let lift_ident = lift_subscript
-
-let next_ident_away id avoid = 
-  if List.mem id avoid then
-    let id0 = if not (has_subscript id) then id else 
-    (* Ce serait sans doute mieux avec quelque chose inspiré de 
-       *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
-    forget_subscript id in
-    let rec name_rec id =
-      if List.mem id avoid then name_rec (lift_ident id) else id in 
-    name_rec id0
-  else id
-
-let next_ident_away_from id avoid = 
-  let rec name_rec id =
-    if List.mem id avoid then name_rec (lift_ident id) else id in 
-  name_rec id 
-
-(* Names *)
-
-type name = Name of identifier | Anonymous
-
-let next_name_away_with_default default name l = 
-  match name with
-    | Name str  -> next_ident_away str l
-    | Anonymous -> next_ident_away (id_of_string default) l
-
-let next_name_away name l = 
-  match name with
-    | Name str  -> next_ident_away str l
-    | Anonymous -> id_of_string "_"
-
-let out_name = function
-  | Name id -> id
-  | Anonymous -> anomaly "out_name: expects a defined name"
-
-(* Kinds *)
-
-type path_kind = CCI | FW | OBJ
-
-let string_of_kind = function
-  | CCI -> "cci" 
-  | FW -> "fw" 
-  | OBJ -> "obj"
-
-let kind_of_string = function
-  | "cci" -> CCI 
-  | "fw" -> FW 
-  | "obj" -> OBJ
-  | _ -> invalid_arg "kind_of_string"
-
-(*s Directory paths = section names paths *)
-type module_ident = identifier
-type dir_path = module_ident list
-
-module ModIdOrdered = 
-  struct
-    type t = identifier
-    let compare = Pervasives.compare
-  end
-
-module ModIdmap = Map.Make(ModIdOrdered)
+type dir_path = identifier list
 
 let make_dirpath x = x
 let repr_dirpath x = x
@@ -252,106 +55,156 @@ let string_of_dirpath sl = String.concat "." (List.map string_of_id sl)
 
 let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
 
-(*s Section paths are absolute names *)
-
-type section_path = {
-  dirpath : dir_path ;
-  basename : identifier ;
-  kind : path_kind }
-
-let make_path pa id k = { dirpath = pa; basename = id; kind = k }
-let repr_path { dirpath = pa; basename = id; kind = k} = (pa,id,k)
-
-let kind_of_path sp = sp.kind
-let basename sp = sp.basename
-let dirpath sp = sp.dirpath
-
-(* parsing and printing of section paths *)
-let string_of_path sp =
-  let (sl,id,k) = repr_path sp in
-  (string_of_dirpath sl) ^ "." ^ (string_of_id id)
-
-let path_of_string s =
-  try
-    let sl,s = parse_sp s in
-    make_path sl s CCI
-  with
-    | Invalid_argument _ -> invalid_arg "path_of_string"
-
-let pr_sp sp = [< 'sTR (string_of_path sp) >]
-
-let sp_of_wd = function
-  | [] -> invalid_arg "Names.sp_of_wd"
-  | l -> let (bn,dp) = list_sep_last l in make_path dp bn OBJ
-
-let wd_of_sp sp = 
-  let (sp,id,_) = repr_path sp in sp @ [id]
-
-let sp_ord sp1 sp2 =
-  let (p1,id1,k) = repr_path sp1
-  and (p2,id2,k') = repr_path sp2 in
-  let ck = compare k k' in
-  if ck = 0 then
-    let p_bit = compare p1 p2 in
-    if p_bit = 0 then id_ord id1 id2 else p_bit
-  else
-    ck
-
 let is_dirpath_prefix_of = list_prefix_of
 
-module SpOrdered =
-  struct
-    type t = section_path
-    let compare = sp_ord
-  end
 
-module Spset = Set.Make(SpOrdered)
 
-module Spmap = Map.Make(SpOrdered)
+type mod_str_id=uniq_ident
+let msid_of_string = unique
 
-(* Special references for inductive objects *)
+type mod_bound_id=uniq_ident
+let mbid_of_string = unique
+let string_of_mbid = string_of_uid
 
-type variable_path = section_path
-type constant_path = section_path
-type inductive_path = section_path * int
+type module_path =
+  | MPcomp of dir_path
+  | MPbid of mod_bound_id
+  | MPsid of mod_str_id 
+  | MPdot of module_path * label
+(*i  | MPapply of module_path * module_path    in the future (maybe) i*)
+
+(* debugging *)
+let rec string_of_modpath = function
+  | MPcomp sl -> string_of_dirpath sl
+  | MPbid uid -> string_of_uid uid
+  | MPsid uid -> string_of_uid uid
+  | MPdot (mp,l) -> string_of_modpath mp ^ "." ^ string_of_label l
+
+let rec pr_modpath = function
+  | MPcomp sl -> pr_dirpath sl
+  | MPbid uid -> pr_uid uid
+  | MPsid uid -> pr_uid uid
+  | MPdot (mp,l) -> [< pr_modpath mp; 'sTR "."; pr_label l >]
+
+let rec subst_modpath_msid sids mps mp = (* 's like subst *)
+  match mp with
+    | MPsid sid when sid = sids -> mps
+    | MPdot (mp1,l) -> 
+	let mp1' = subst_modpath_msid sids mps mp1 in
+	  if mp1==mp1' then 
+	    mp
+	  else
+	    MPdot (mp1',l)
+    | _ -> mp
+
+let rec subst_modpath_mbid bids mps mp = (* 's like subst *)
+  match mp with
+    | MPbid bid when bid = bids -> mps
+    | MPdot (mp1,l) -> 
+	let mp1' = subst_modpath_mbid bids mps mp1 in
+	  if mp1==mp1' then 
+	    mp
+	  else
+	    MPdot (mp1',l)
+    | _ -> mp
+
+(* the same as above, more compact, but less effective 
+let rec subst_dot mp mp1 l subst = 
+  let mp1'=subst sids mps mp1 in
+    if mp1==mp1' then 
+      mp
+    else
+      MPdot (mp1',l)
+  
+let rec subst_modpath_msid sids mps mp = (* 's like subst *)
+  match mp with
+    | MPsid sid when sid = sids -> mps
+    | MPdot (mp1,l) -> subst_dot mp mp1 l (subst_modpath_msid sids mps)
+    | _ -> mp
+
+let rec subst_modpath_mbid bids mps mp = (* 's like subst *)
+  match mp with
+    | MPbid bid when bid = bids -> mps
+    | MPdot (mp1,l) -> subst_dot mp mp1 l (subst_modpath_mbid bids mps)
+    | _ -> mp
+*)
+
+let rec occur_msid sid = function
+  | MPsid sid' -> sid' = sid
+  | MPdot (mp1,_) -> occur_msid sid mp1
+  | _ -> false
+    
+let rec occur_mbid bid = function
+  | MPbid bid' -> bid' = bid
+  | MPdot (mp1,_) -> occur_mbid bid mp1
+  |  _ -> false
+    
+
+(* we compare labels first if two MPdot's *)
+let rec mp_ord mp1 mp2 = match (mp1,mp2) with
+    MPdot(mp1,l1), MPdot(mp2,l2) -> let c=compare l1 l2 in
+      if c=0 then
+	mp_ord mp1 mp2
+      else
+	c
+  |  _,_ -> compare mp1 mp2
+
+let top_msid = unique "ROOT"
+let top_path = MPsid top_msid
+
+module MPmap = Map.Make(struct 
+			  type t=module_path 
+			  let compare=mp_ord 
+			end)
+
+(* Long names of constants,... *)
+
+type long_name = module_path * label
+
+let make_ln mp l = (mp, l)
+
+let modname = fst
+let label = snd
+let basename (_,l) = ident_of_label l
+
+
+let subst_longname_msid sid mp ((mp1,l) as ln) = 
+  let mp1'=subst_modpath_msid sid mp mp1 in
+    if mp1==mp1' then 
+      ln
+    else
+      (mp1',l)
+      
+let subst_longname_mbid bid mp ((mp1,l) as ln) = 
+  let mp1'=subst_modpath_mbid bid mp mp1 in
+    if mp1==mp1' then 
+      ln
+    else
+      (mp1',l)
+      
+
+(* debugging *)
+let string_of_long_name (mp,l) = string_of_modpath (MPdot(mp,l))
+let pr_ln (mp,l) = pr_modpath (MPdot(mp,l))
+
+let ln_ord (mp1,l1) (mp2,l2) = mp_ord (MPdot(mp1,l1)) (MPdot(mp2,l2))
+
+
+module LNmap = Map.Make(struct 
+			  type t=long_name 
+			  let compare=ln_ord 
+			end)
+
+(*s Specific paths for declarations *)
+
+type variable_path = identifier
+type constant_path = long_name
+type inductive_path = long_name * int
 type constructor_path = inductive_path * int
-type mutual_inductive_path = section_path
+type mutual_inductive_path = long_name
 
-(* Hash-consing of name objects *)
-module Hname = Hashcons.Make(
-  struct 
-    type t = name
-    type u = identifier -> identifier
-    let hash_sub hident = function
-      | Name id -> Name (hident id)
-      | n -> n
-    let equal n1 n2 =
-      match (n1,n2) with
-	| (Name id1, Name id2) -> id1 == id2
-        | (Anonymous,Anonymous) -> true
-        | _ -> false
-    let hash = Hashtbl.hash
-  end)
-
-module Hsp = Hashcons.Make(
-  struct 
-    type t = section_path
-    type u = identifier -> identifier
-    let hash_sub hident sp =
-      { dirpath = List.map hident sp.dirpath;
-        basename = hident sp.basename;
-        kind = sp.kind }
-    let equal sp1 sp2 =
-      (sp1.basename == sp2.basename) && (sp1.kind = sp2.kind)
-      && (List.length sp1.dirpath = List.length sp2.dirpath)
-      && List.for_all2 (==) sp1.dirpath sp2.dirpath
-    let hash = Hashtbl.hash
-  end)
-
-let hcons_names () =
-  let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
-  let hident = Hashcons.simple_hcons Hident.f hstring in
-  let hname = Hashcons.simple_hcons Hname.f hident in
-  let hspcci = Hashcons.simple_hcons Hsp.f hident in
-  let hspfw = Hashcons.simple_hcons Hsp.f hident in
-  (hspcci,hspfw,hname,hident,hstring)
+type global_reference =
+  | VarRef of variable_path
+  | ConstRef of constant_path
+  | IndRef of inductive_path
+  | ConstructRef of constructor_path

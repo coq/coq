@@ -10,8 +10,10 @@
 
 open Util
 open Pp
+open Identifier
 open Names
 open Rawterm
+open Libnames
 open Libobject
 open Lib
 

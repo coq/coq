@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Evd
 open Term
@@ -64,7 +65,7 @@ let catchable_exception = function
     Nametab.GlobalizationError _)) -> true
   | _ -> false
 
-let error_cannot_unify k (m,n) =
+let error_cannot_unify (m,n) =
   raise (RefinerError (CannotUnify (m,n)))
 
 let check = ref true

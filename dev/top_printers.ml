@@ -11,11 +11,13 @@
 open System
 open Pp
 open Ast
+open Identifier
 open Names
 open Sign
 open Univ
 open Proof_trees
 open Environ
+open Libnames
 open Printer
 open Refiner
 open Tacmach
@@ -51,7 +53,7 @@ let prj j = pP (genprj prjudge j)
 
 let prsp sp = pP[< pr_sp sp >]
 
-let prqualid qid = pP[< Nametab.pr_qualid qid >]
+let prqualid qid = pP[< pr_qualid qid >]
 
 let prgoal g = pP(prgl g)
 
@@ -97,12 +99,12 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | IsApp (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | IsEvar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
-  | IsConst (c,l) -> "Const("^(string_of_path c)^","^(array_display l)^")"
+  | IsConst (c,l) -> "Const("^(string_of_long_name c)^","^(array_display l)^")"
   | IsMutInd ((sp,i),l) ->
-      "MutInd(("^(string_of_path sp)^","^(string_of_int i)^"),"
+      "MutInd(("^(string_of_long_name sp)^","^(string_of_int i)^"),"
       ^(array_display l)^")"
   | IsMutConstruct (((sp,i),j),l) ->
-      "MutConstruct((("^(string_of_path sp)^","^(string_of_int i)^"),"
+      "MutConstruct((("^(string_of_long_name sp)^","^(string_of_int i)^"),"
       ^(string_of_int j)^"),"^(array_display l)^")"
   | IsMutCase (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
@@ -247,14 +249,16 @@ let print_pure_constr csr =
     | Name id -> print_string (string_of_id id)
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
-  and sp_display sp = let ls = 
+  and sp_display sp = print_string (string_of_long_name sp)
+
+(*let ls = 
     match List.map string_of_id (dirpath sp) with 
         ("Scratch"::l)-> l
       | ("Coq"::_::l) -> l 
       | l             -> l
   in  List.iter (fun x -> print_string x; print_string ".") ls;
       print_string (string_of_id  (basename sp))
-
+*)
   in
      box_display csr; print_newline()
 (*

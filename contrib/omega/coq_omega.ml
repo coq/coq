@@ -20,6 +20,7 @@ open Pp
 open Reduction
 open Proof_type
 open Ast
+open Identifier
 open Names
 open Term
 open Environ
@@ -177,7 +178,7 @@ let dest_const_apply t =
     | IsMutInd (isp,_)       -> IndRef isp
     | _ -> raise Destruct
   in
-  basename (Global.sp_of_global ref), args
+  Nametab.get_ident ref, args
 
 type result = 
   | Kvar of string

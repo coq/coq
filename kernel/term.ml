@@ -12,6 +12,7 @@
 
 open Util
 open Pp
+open Identifier
 open Names
 open Univ
 open Esubst
@@ -45,14 +46,6 @@ let print_sort = function
 (*  | Type _ -> [< 'sTR "Type" >] *)
   | Type u -> [< 'sTR "Type("; pr_uni u; 'sTR ")" >]
 
-(********************************************************************)
-(* type of global reference *)
-
-type global_reference =
-  | VarRef of section_path
-  | ConstRef of constant_path
-  | IndRef of inductive_path
-  | ConstructRef of constructor_path
 
 (********************************************************************)
 (*       Constructions as implemented                               *)
@@ -126,54 +119,35 @@ module Internal : InternalSig =
 struct
 *)
 
-module Polymorph =
-struct
-(* [constr array] is an instance matching definitional [named_context] in
-   the same order (i.e. last argument first) *)
-type 'constr existential = existential_key * 'constr array
-type 'constr constant = constant_path * 'constr array
-type 'constr constructor = constructor_path * 'constr array
-type 'constr inductive = inductive_path * 'constr array
-type ('constr, 'types) rec_declaration =
-    name array * 'types array * 'constr array
-type ('constr, 'types) fixpoint =
-    (int array * int) * ('constr, 'types) rec_declaration
-type ('constr, 'types) cofixpoint =
-    int * ('constr, 'types) rec_declaration
+type constr = kind_of_term
 
-(* [IsVar] is used for named variables and [IsRel] for variables as
-   de Bruijn indices. *)
-
-end 
-open Polymorph
-
-type ('constr, 'types) kind_of_term =
+and kind_of_term =
   | IsRel          of int
   | IsMeta         of int
   | IsVar          of identifier
   | IsSort         of sorts
-  | IsCast         of 'constr * 'constr
-  | IsProd         of name * 'types * 'constr 
-  | IsLambda       of name * 'types * 'constr
-  | IsLetIn        of name * 'constr * 'types * 'constr
-  | IsApp          of 'constr * 'constr array
-  | IsEvar         of 'constr existential
-  | IsConst        of 'constr constant
-  | IsMutInd       of 'constr inductive
-  | IsMutConstruct of 'constr constructor
-  | IsMutCase      of case_info * 'constr * 'constr * 'constr array
-  | IsFix          of ('constr, 'types) fixpoint
-  | IsCoFix        of ('constr, 'types) cofixpoint
+  | IsCast         of constr * constr
+  | IsProd         of name * types * constr 
+  | IsLambda       of name * types * constr
+  | IsLetIn        of name * constr * types * constr
+  | IsApp          of constr * constr array
+  | IsEvar         of existential
+  | IsConst        of constant
+  | IsMutInd       of inductive
+  | IsMutConstruct of constructor
+  | IsMutCase      of case_info * constr * constr * constr array
+  | IsFix          of fixpoint
+  | IsCoFix        of cofixpoint
 
-type constr = (constr,constr) kind_of_term
+and existential = existential_key * constr array
+and constant = constant_path * constr array
+and constructor = constructor_path * constr array
+and inductive = inductive_path * constr array
+and rec_declaration = name array * constr array * constr array
+and fixpoint = (int array * int) * rec_declaration
+and cofixpoint = int * rec_declaration
 
-type existential = existential_key * constr array
-type constant = constant_path * constr array
-type constructor = constructor_path * constr array
-type inductive = inductive_path * constr array
-type rec_declaration = name array * constr array * constr array
-type fixpoint = (int array * int) * rec_declaration
-type cofixpoint = int * rec_declaration
+and types = constr
 
 (***************************)
 (* hash-consing functions  *)                         
@@ -241,7 +215,7 @@ module Hconstr =
     struct
       type t = constr
       type u = (constr -> constr) *
-               ((sorts -> sorts) * (section_path -> section_path)
+               ((sorts -> sorts) * (long_name -> long_name)
 		* (name -> name) * (identifier -> identifier))
       let hash_sub = hash_term
       let equal = comp_term
@@ -841,7 +815,7 @@ let compare_constr f t1 t2 =
 (*     Type of assumptions                                                 *)
 (***************************************************************************)
 
-type types = constr
+(* type types = constr *)
 
 let type_app f tt = f tt
 
@@ -1629,6 +1603,30 @@ let subst_term_eta = subst_term_gen eta_eq_constr
 
 let replace_term = replace_term_gen eq_constr
 
+(* 
+map_longnames : (long_name -> long_name) -> constr -> constr
+
+This should be rewritten to prevent duplication of constr's when not
+necessary.
+For now, it uses map_constr and is rather ineffective
+*)
+
+let rec map_longnames f c = 
+  let func = map_longnames f in
+    match kind_of_term c with
+      | IsConst (ln,l) -> 
+	  mkConst (f ln, Array.map func l)
+      | IsMutInd ((ln,i),l) -> 
+	  mkMutInd ((f ln,i), Array.map func l)
+      | IsMutConstruct (((ln,i),j),l) -> 
+	  mkMutConstruct (((f ln,i),j), Array.map func l)
+      | _ -> map_constr func c
+
+let subst_constr_msid msid mp = 
+  map_longnames (subst_longname_msid msid mp)
+let subst_constr_mbid mbid mp = 
+  map_longnames (subst_longname_mbid mbid mp)
+
 (* bl : (int,constr) Listmap.t = (int * constr) list *)
 (* c : constr *)
 (* for each binding (i,c_i) in bl, substitutes the metavar i by c_i in c *)
@@ -1760,12 +1758,16 @@ let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
   (hcci,hfw,htcci)
 
 let hcons1_constr =
-  let hnames = hcons_names () in
+  let hnames = todo "Term.hash-consing"; 
+    (fun x->x),(fun x->x),(fun x->x),(fun x->x),(fun x->x)
+  in
   let (hc,_,_) = hcons_constr hnames in
   hc
 
 let hcons1_types =
-  let hnames = hcons_names () in
+  let hnames = todo "Term.hash-consing"; 
+    (fun x->x),(fun x->x),(fun x->x),(fun x->x),(fun x->x)
+  in
   let (_,_,ht) = hcons_constr hnames in
   ht
 
@@ -1892,3 +1894,4 @@ let generic_fold_left f acc bl tl =
 	   | None -> f acc t
 	   | Some b -> f (f acc b) t) acc bl in
   Array.fold_left f acc tl
+

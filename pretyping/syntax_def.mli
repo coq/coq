@@ -9,7 +9,8 @@
 (*i $Id$ i*)
 
 (*i*)
-open Names
+open Identifier
+open Libnames
 open Rawterm
 (*i*)
 
@@ -19,6 +20,6 @@ val declare_syntactic_definition : identifier -> rawconstr -> unit
 
 val search_syntactic_definition : section_path -> rawconstr
 
-val locate_syntactic_definition : Nametab.qualid -> section_path
+val locate_syntactic_definition : qualid -> section_path
 
 

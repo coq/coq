@@ -10,8 +10,10 @@
 
 (* $Id$ *)
 
+open Identifier
 open Names
 open Term
+open Libnames
 
 module SpSet : Set.S with type elt = section_path
 

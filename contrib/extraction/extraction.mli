@@ -10,6 +10,7 @@
 
 (*s Extraction from Coq terms to Miniml. *)
 
+open Identifier
 open Names
 open Term
 open Miniml

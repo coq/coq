@@ -10,6 +10,7 @@
 
 open Util
 open Stamps
+open Identifier
 open Names
 open Sign
 open Term
@@ -82,7 +83,7 @@ let pf_interp_type gls c =
   let evc = project gls in 
   Astterm.interp_type evc (pf_env gls) c
 
-let pf_global gls id = Declare.construct_reference (pf_env gls) CCI id
+let pf_global gls id = Declare.construct_reference (pf_env gls) id
 
 let pf_parse_const gls = compose (pf_global gls) id_of_string
 

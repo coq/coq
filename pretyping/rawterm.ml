@@ -10,7 +10,9 @@
 
 (*i*)
 open Util
+open Identifier
 open Names
+open Libnames
 open Sign
 open Term
 (*i*)

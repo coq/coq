@@ -68,7 +68,7 @@ let add_require s = require_list := s :: !require_list
 let require () =
   List.iter
     (fun s -> 
-      let qid = Nametab.make_qualid [] (id_of_string (Filename.basename s)) in
+      let qid = Libnames.make_qualid [] (Identifier.id_of_string (Filename.basename s)) in
       Library.require_module None qid  (Some s) false)
     (List.rev !require_list)
 
@@ -111,7 +111,7 @@ let parse_args () =
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: p :: rem ->set_rec_include d (dirpath_of_string p);parse rem
+    | "-R" :: d :: p :: rem ->set_rec_include d (Libnames.dirpath_of_string p);parse rem
     | "-R" :: ([] | [_]) -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem

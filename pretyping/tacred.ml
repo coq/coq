@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Inductive
@@ -118,7 +119,7 @@ let invert_name labs l na0 env sigma ref = function
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
 	  | EvalConst (sp,args) ->
-	      Some (EvalConst (make_path (dirpath sp) id CCI, args)) in
+	      Some (EvalConst (make_ln (modname sp) (label_of_ident id), args)) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -296,7 +297,7 @@ let reduce_mind_case_use_function (sp,args) env mia =
 	let build_fix_name i =
 	  match names.(i) with 
 	    | Name id ->
-		let sp = make_path (dirpath sp) id (kind_of_path sp) in
+		let sp = make_ln (modname sp) (label_of_ident id) in
 		(match constant_opt_value env (sp,args) with
 		  | None -> None
 		  | Some _ -> Some (mkConst (sp,args)))
@@ -509,7 +510,8 @@ let rec substlin env name n ol c =
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  [< pr_sp sp; 'sTR " is not a defined constant" >]
+		  [< Libnames.pr_qualid (Nametab.get_full_qualid (ConstRef sp)); 
+		     'sTR " is not a defined constant" >]
         else 
 	  ((n+1), ol, c)
 
@@ -602,7 +604,7 @@ let unfold env sigma name =
 
 let string_of_evaluable_ref = function
   | EvalVarRef id -> string_of_id id
-  | EvalConstRef sp -> string_of_path sp
+  | EvalConstRef sp -> string_of_long_name sp
 
 (* [unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -738,5 +740,5 @@ let reduce_to_mind env sigma t =
 
 let reduce_to_ind env sigma t =
   let ((ind_sp,_),redt,c) = reduce_to_mind env sigma t in 
-  (Declare.path_of_inductive_path ind_sp, redt, c)
+  (ind_sp, redt, c)
 

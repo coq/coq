@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Rawterm
@@ -53,23 +54,25 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
     match object_tag lobj with
       | "VARIABLE" ->
 	  (try 
-	     let ((idc,_,typ),_,_) = get_variable sp in 
-             if (head_const typ) = const then fn (VarRef sp) env typ
+	     let ((idc,_,typ),_,_) = get_variable (Libnames.basename sp) in 
+             if (head_const typ) = const then fn (VarRef idc) env typ
 	   with Not_found -> (* we are in a section *) ())
       | "CONSTANT" 
       | "PARAMETER" ->
-	  let {const_type=typ} = Global.lookup_constant sp in
-	  if (head_const typ) = const then fn (ConstRef sp) env typ
+	  let cp = Nametab.locate_constant (Libnames.qualid_of_sp sp) in
+	  let {const_type=typ} = Global.lookup_constant cp in
+	  if (head_const typ) = const then fn (ConstRef cp) env typ
       | "INDUCTIVE" -> 
-          let mib = Global.lookup_mind sp in 
+	  let ln = Nametab.locate_mind (Libnames.qualid_of_sp sp) in
+          let mib = Global.lookup_mind ln in 
 	  let arities =
 	    array_map_to_list 
 	      (fun mip ->
-		 (Name mip.mind_typename, None, mip.mind_nf_arity))
+		 (Name (ident_of_label mip.mind_typename), None, mip.mind_nf_arity))
 	      mib.mind_packets in
           (match kind_of_term const with 
-	     | IsMutInd ((sp',tyi) as indsp,_) -> 
-		 if sp=sp' then
+	     | IsMutInd ((ln',tyi) as indsp,_) -> 
+		 if ln=ln' then
 		   print_constructors indsp fn env
 		     (mind_nth_type_packet mib tyi)
 	     | _ -> ())
@@ -105,8 +108,7 @@ let plain_display ref a c =
 let filter_by_module (module_list:dir_path list) (accept:bool) 
   (ref:global_reference) (env:env) _ =
   try
-    let sp = sp_of_global env ref in
-    let sl = dirpath sp in
+    let sl,_ = Libnames.repr_qualid (Nametab.get_full_qualid ref) in
     let rec filter_aux = function
       | m :: tl -> (not (is_dirpath_prefix_of m sl)) && (filter_aux tl)
       | [] -> true 
@@ -116,9 +118,9 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
     false
 
 let gref_eq =
-  IndRef (make_path Coqlib.logic_module (id_of_string "eq") CCI, 0)
+  IndRef (make_ln (MPcomp Coqlib.logic_module) (label_of_string "eq"), 0)
 let gref_eqT =
-  IndRef (make_path Coqlib.logic_type_module (id_of_string "eqT") CCI, 0)
+  IndRef (make_ln (MPcomp Coqlib.logic_type_module) (label_of_string "eqT"), 0)
 
 let mk_rewrite_pattern1 eq pattern =
   PApp (PRef eq, [| PMeta None; pattern; PMeta None |])

@@ -22,7 +22,11 @@ val implicit_univ : universe
 val prop_univ : universe
 val prop_univ_univ : universe
 
-val set_module : dir_path -> unit
+val set_module : module_path -> unit
+
+(* [with_module mp f x] changes the module to [mp] during the 
+   application [f x] and restores the old [module] afterwards *)
+val with_module : module_path -> ('a -> 'b) -> 'a -> 'b
 
 val new_univ : unit -> universe
 
@@ -59,7 +63,14 @@ val sup : universe -> universe -> universes -> universe * constraints
 
 exception UniverseInconsistency
 
-val merge_constraints : constraints -> universes -> universes
+val merge_constraints : 
+  constraints -> universes -> universes
+
+(* [merge_module_constraints mp c g] merges the constraints in c
+   verifying  if they did not impose new conditions on old universes *)
+val merge_module_constraints : 
+  module_path -> constraints -> universes -> universes
+
 
 (*s Pretty-printing of universes. *)
 

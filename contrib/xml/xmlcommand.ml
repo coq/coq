@@ -511,7 +511,7 @@ let print_term inner_types l env csr =
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
 let print_current_proof c typ id mv inner_types =
  let module X = Xml in
-  let env = (Safe_typing.env_of_safe_env (Global.safe_env ())) in
+  let env = (Safe_env.env_of_safe_env (Global.safe_env ())) in
    [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
       X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
       X.xml_nempty "CurrentProof" ["name",id ; "id", get_next_id `I]
@@ -707,7 +707,7 @@ let print sp fn =
  let module X = Xml in
   let (_,id) = N.repr_qualid sp in
   let glob_ref = Nametab.locate sp in
-  let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
+  let env = (Safe_env.env_of_safe_env (G.safe_env ())) in
   reset_ids () ;
   let inner_types = ref [] in
   let sp,tag,pp_cmds =
@@ -946,7 +946,7 @@ let print_closed_section s ls dn =
  let module L = Lib in
   printed := [] ;
   pvars := [[]] ;
-  cumenv := Safe_typing.env_of_safe_env (Global.safe_env ()) ;
+  cumenv := Safe_env.env_of_safe_env (Global.safe_env ()) ;
   print_if_verbose ("Module " ^ s ^ ":\n") ;
   print_library_segment ls true dn ;
   print_if_verbose "\n/Module\n" ;

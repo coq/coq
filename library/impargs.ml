@@ -9,12 +9,14 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
 open Reduction
 open Declarations
 open Environ
 open Inductive
+open Libnames
 open Libobject
 open Lib
 
@@ -91,15 +93,15 @@ let list_of_implicits = function
 
 (*s Constants. *)
 
-let constants_table = ref Spmap.empty
+let constants_table = ref LNmap.empty
 
-let compute_constant_implicits sp =
+let compute_constant_implicits ln =
   let env = Global.env () in
-  let cb = lookup_constant sp env in
+  let cb = lookup_constant ln env in
   auto_implicits env (body_of_type cb.const_type)
 
-let cache_constant_implicits (_,(sp,imps)) = 
-  constants_table := Spmap.add sp imps !constants_table
+let cache_constant_implicits (_,(ln,imps)) = 
+  constants_table := LNmap.add ln imps !constants_table
 
 let (in_constant_implicits, _) =
   let od = {
@@ -110,15 +112,15 @@ let (in_constant_implicits, _) =
   in
   declare_object ("CONSTANT-IMPLICITS", od)
 
-let declare_constant_implicits sp =
-  let imps = compute_constant_implicits sp in
-  add_anonymous_leaf (in_constant_implicits (sp,imps))
+let declare_constant_implicits ln =
+  let imps = compute_constant_implicits ln in
+  add_anonymous_leaf (in_constant_implicits (ln,imps))
 
-let constant_implicits sp =
-  try Spmap.find sp !constants_table with Not_found -> No_impl
+let constant_implicits ln =
+  try LNmap.find ln !constants_table with Not_found -> No_impl
 
-let constant_implicits_list sp =
-  list_of_implicits (constant_implicits sp)
+let constant_implicits_list ln =
+  list_of_implicits (constant_implicits ln)
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
@@ -128,7 +130,7 @@ let constant_implicits_list sp =
 module Inductive_path = struct
   type t = inductive_path
   let compare (spx,ix) (spy,iy) = 
-    let c = ix - iy in if c = 0 then sp_ord spx spy else c
+    let c = ix - iy in if c = 0 then compare spx spy else c
 end
 
 module Indmap = Map.Make(Inductive_path)
@@ -220,15 +222,15 @@ let inductive_implicits_list ind_sp =
 
 (*s Variables. *)
 
-let var_table = ref Spmap.empty
+let var_table = ref Idmap.empty
 
-let compute_var_implicits sp =
+let compute_var_implicits id =
   let env = Global.env () in
-  let (_,ty) = lookup_named (basename sp) env in
+  let (_,ty) = lookup_named id env in
   auto_implicits env (body_of_type ty)
 
-let cache_var_implicits (_,(sp,imps)) =
-  var_table := Spmap.add sp imps !var_table
+let cache_var_implicits (_,(id,imps)) =
+  var_table := Idmap.add id imps !var_table
 
 let (in_var_implicits, _) =
   let od = {
@@ -239,18 +241,18 @@ let (in_var_implicits, _) =
   in
   declare_object ("VARIABLE-IMPLICITS", od)
 
-let declare_var_implicits sp =
-  let imps = compute_var_implicits sp in
-  add_anonymous_leaf (in_var_implicits (sp,imps))
+let declare_var_implicits id =
+  let imps = compute_var_implicits id in
+  add_anonymous_leaf (in_var_implicits (id,imps))
 
 let implicits_of_var sp =
-  list_of_implicits (try Spmap.find sp !var_table with Not_found -> No_impl)
+  list_of_implicits (try Idmap.find sp !var_table with Not_found -> No_impl)
 
 (*s Implicits of a global reference. *)
 
 let declare_implicits = function
-  | VarRef sp -> 
-      declare_var_implicits sp
+  | VarRef id -> 
+      declare_var_implicits id
   | ConstRef sp -> 
       declare_constant_implicits sp
   | IndRef ((sp,i) as indp) -> 
@@ -275,14 +277,14 @@ let declare_manual_implicits r l = match r with
 (*s Tests if declared implicit *)
 
 let is_implicit_constant sp =
-  try let _ = Spmap.find sp !constants_table in true with Not_found -> false
+  try let _ = LNmap.find sp !constants_table in true with Not_found -> false
 
 let is_implicit_inductive_definition indp =
   try let _ = Indmap.find indp !inductives_table in true 
   with Not_found -> false
 
 let is_implicit_var sp =
-  try let _ = Spmap.find sp !var_table in true with Not_found -> false
+  try let _ = Idmap.find sp !var_table in true with Not_found -> false
 
 let implicits_of_global = function
   | VarRef sp -> implicits_of_var sp
@@ -293,16 +295,16 @@ let implicits_of_global = function
 (*s Registration as global tables and rollback. *)
 
 type frozen_t = bool
-              * implicits Spmap.t 
+              * implicits LNmap.t 
               * implicits Indmap.t 
 	      * implicits Constrmap.t
-              * implicits Spmap.t
+              * implicits Idmap.t
 
 let init () =
-  constants_table := Spmap.empty;
+  constants_table := LNmap.empty;
   inductives_table := Indmap.empty;
   constructors_table := Constrmap.empty;
-  var_table := Spmap.empty
+  var_table := Idmap.empty
 
 let freeze () =
   (!implicit_args, !constants_table, !inductives_table, 

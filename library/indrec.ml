@@ -10,7 +10,7 @@
 
 open Pp
 open Util
-open Names
+open Identifier
 open Term
 open Declarations
 open Inductive

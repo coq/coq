@@ -72,17 +72,30 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo
 
-KERNEL=kernel/names.cmo kernel/univ.cmo \
-       kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-       kernel/declarations.cmo kernel/environ.cmo kernel/evd.cmo \
-       kernel/instantiate.cmo kernel/closure.cmo kernel/reduction.cmo \
-       kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
-       kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
+KERNEL=kernel/identifier.cmo kernel/names.cmo kernel/univ.cmo \
+	 kernel/esubst.cmo kernel/term.cmo \
+	 kernel/sign.cmo kernel/declarations.cmo \
+	 kernel/mod_declarations.cmo \
+	 kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
+	 kernel/closure.cmo kernel/reduction.cmo \
+	 kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
+	 kernel/indtypes.cmo kernel/term_typing.cmo \
+	 kernel/modops.cmo kernel/subtyping.cmo kernel/mod_typing.cmo \
+	 kernel/safe_env.cmo
 
-LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
-	library/lib.cmo library/goptions.cmo \
-	library/global.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/indrec.cmo library/declare.cmo 
+# KERNEL=kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
+#        kernel/sign.cmo kernel/declarations.cmo \
+#        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
+#        kernel/closure.cmo kernel/reduction.cmo \
+#        kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
+#        kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo 
+
+LIBRARY=library/libnames.cmo						\
+	library/libobject.cmo library/summary.cmo library/nametab.cmo	\
+	library/lib.cmo library/goptions.cmo				\
+	library/global.cmo library/impargs.cmo library/indrec.cmo	\
+	library/declare.cmo library/library.cmo				\
+	library/states.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/retyping.cmo pretyping/cbv.cmo pretyping/tacred.cmo \
@@ -208,7 +221,10 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
-    $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS) $(CONTRIB)
+    $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS) 
+
+## $(CONTRIB)
+
 CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
@@ -256,7 +272,8 @@ scripts/tolink.ml: Makefile
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
-	echo "let contrib = \""$(CONTRIB)"\"" >> $@
+	echo "let contrib = \"\"" >> $@
+#	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
 
@@ -283,6 +300,7 @@ proofs: $(PROOFS)
 tactics: $(TACTICS)
 parsing: $(PARSING)
 pretyping: $(PRETYPING)
+hightactics: $(HIGHTACTICS)
 toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
@@ -316,12 +334,17 @@ SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
-INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
-       theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
-       theories/Init/Logic.vo             theories/Init/Specif.vo        \
-       theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
-       theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-       theories/Init/Logic_TypeSyntax.vo
+INITVO=theories/Init/Datatypes.vo theories/Init/DatatypesHints.vo	\
+       theories/Init/DatatypesSyntax.vo					\
+       theories/Init/Logic.vo						\
+       theories/Init/LogicSyntax.vo theories/Init/LogicHints.vo		\
+       theories/Init/Peano.vo						\
+       theories/Init/Specif.vo						\
+       theories/Init/SpecifHints.vo theories/Init/SpecifSyntax.vo	\
+       theories/Init/Wf.vo						\
+       theories/Init/Logic_Type.vo theories/Init/Logic_TypeHints.vo	\
+       theories/Init/Logic_TypeSyntax.vo				\
+       theories/Init/Prelude.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 	$(COQC) -boot -$(BEST) -R theories Coq -is states/barestate.coq $<
@@ -670,11 +693,11 @@ clean::
 ###########################################################################
 
 tags:
-	find . -name "*.ml*" | sort -r | xargs \
-	etags "--regex='/let[ \t]+\([^ \t]+\)/\1/'" \
+	find . -name "*.ml*" -not -path "*[~#]" | sort -r | xargs \
+	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
-	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
-	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\(([^)]*)[ \t]+\|'[^ \t]*[ \t]+\)?\([^ \t]+\)/\2/" \
+	      "--regex=/type[ \t]+\(([^)]*)[ \t]+\|'[^ \t]*[ \t]+\)?\([^ \t]+\)/\2/" \
               "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
@@ -690,7 +713,8 @@ ML4FILES += parsing/lexer.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
-	   lib/hashcons.cmo kernel/names.cmo \
+	   lib/hashcons.cmo \
+	   kernel/identifier.cmo kernel/names.cmo library/libnames.cmo \
 	   parsing/coqast.cmo parsing/lexer.cmo \
 	   parsing/pcoq.cmo parsing/q_coqast.cmo parsing/g_prim.cmo
 

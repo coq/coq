@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Sign
@@ -28,23 +29,23 @@ let pr_global ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent
   paresseusement : il faut forcer l'évaluation pour capturer
   l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
-  let s = Global.string_of_global ref in
+  let s = Libnames.string_of_qualid (Nametab.get_short_qualid ref) in
   [< 'sTR s >]
 
 let global_const_name sp =
   try pr_global (ConstRef sp)
   with Not_found -> (* May happen in debug *)
-    [< 'sTR ("CONST("^(string_of_path sp)^")") >]
+    [< 'sTR ("CONST("^(string_of_long_name sp)^")") >]
 
 let global_ind_name (sp,tyi) =
   try pr_global (IndRef (sp,tyi))
   with Not_found -> (* May happen in debug *)
-    [< 'sTR ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")") >]
+    [< 'sTR ("IND("^(string_of_long_name sp)^","^(string_of_int tyi)^")") >]
 
 let global_constr_name ((sp,tyi),i) =
   try pr_global (ConstructRef ((sp,tyi),i))
   with Not_found -> (* May happen in debug *)
-    [< 'sTR ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
+    [< 'sTR ("CONSTRUCT("^(string_of_long_name sp)^","^(string_of_int tyi)
 		  ^","^(string_of_int i)^")") >]
 
 let globpr gt = match gt with
@@ -124,7 +125,7 @@ let pr_ref_label = function (* On triche sur le contexte *)
   | IndNode sp -> pr_inductive (Global.env()) (sp,[||])
   | CstrNode sp -> pr_constructor (Global.env()) (sp,[||])
   | VarNode id -> pr_id id
-  | SectionVarNode sp -> pr_id (basename sp)
+  | SectionVarNode id -> pr_id id
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)
 let pr_rawterm t = gentermpr (Termast.ast_of_rawconstr t)
@@ -216,8 +217,9 @@ let pr_context_unlimited env =
   in 
   [< sign_env; db_env >]
 
-let pr_ne_context_of header k env =
-  if Environ.context env = empty_context then [< >]
+let pr_ne_context_of header env =
+  if Environ.named_context env = [] 
+     && Environ.rel_context env = [] then [< >]
   else let penv = pr_context_unlimited env in [< header; penv; 'fNL >]
 
 let pr_context_limit n env =

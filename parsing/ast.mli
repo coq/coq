@@ -10,7 +10,9 @@
 
 (*i*)
 open Pp
+open Identifier
 open Names
+open Libnames
 open Pcoq
 (*i*)
 
@@ -26,13 +28,13 @@ val nvar : identifier -> Coqast.t
 val ide : string -> Coqast.t
 val num : int -> Coqast.t
 val str : string -> Coqast.t
-val path : section_path -> Coqast.t
+val path : long_name -> Coqast.t
 val dynamic : Dyn.t -> Coqast.t
 
 val set_loc : Coqast.loc -> Coqast.t -> Coqast.t
 
-val path_section : Coqast.loc -> section_path -> Coqast.t
-val section_path : section_path -> section_path
+val path_section : Coqast.loc -> long_name -> Coqast.t
+val section_path : long_name -> long_name
 
 (* ast destructors *)
 val num_of_ast : Coqast.t -> int

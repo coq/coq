@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Sign
 open Term
@@ -177,7 +178,7 @@ let cook_proof () =
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in
   (ident,
-   ({ const_entry_body = pfterm; const_entry_type = Some concl },
+   ({ const_entry_body = Some pfterm; const_entry_type = Some concl },
     strength))
 
 (*********************************************************************)

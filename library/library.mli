@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Libobject
 (*i*)
 
@@ -20,7 +21,7 @@ open Libobject
    provides a high level function [require] which corresponds to the 
    vernacular command [Require]. *)
 
-val read_module : Nametab.qualid -> unit
+val read_module : qualid -> unit
 val read_module_from_file : System.physical_path -> unit
 val import_module : dir_path -> unit
 
@@ -39,7 +40,7 @@ val fmt_modules_state : unit -> Pp.std_ppcmds
   exported. *)
 
 val require_module :
-  bool option -> Nametab.qualid -> string option -> bool -> unit
+  bool option -> qualid -> string option -> bool -> unit
 
 (*s [save_module_to s f] saves the current environment as a module [s]
   in the file [f]. *)
@@ -78,7 +79,7 @@ exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
 val locate_qualified_library :
-  Nametab.qualid -> library_location * dir_path * System.physical_path
+  qualid -> library_location * dir_path * System.physical_path
 
 (*s Displays the memory use of a module. *)
 

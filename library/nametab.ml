@@ -10,26 +10,12 @@
 
 open Util
 open Pp
+open Identifier
 open Names
-open Libobject
 open Declarations
 open Term
-
-(*s qualified names *)
-type qualid = dir_path * identifier
-
-let make_qualid p id = (p,id)
-let repr_qualid q = q
-
-let string_of_qualid (l,id) =
-  let dir = if l = [] then "" else string_of_dirpath l ^ "." in
-  dir ^ string_of_id id
-let pr_qualid p = pr_str (string_of_qualid p)
-
-let qualid_of_sp sp = make_qualid (dirpath sp) (basename sp)
-let qualid_of_dirpath dir = 
-  let a,l = list_sep_last (repr_qualid dir) in
-  make_qualid l a
+open Libnames
+open Libobject
 
 exception GlobalizationError of qualid
 
@@ -41,10 +27,11 @@ let error_global_not_found q = raise (GlobalizationError q)
 (*s Roots of the space of absolute names *)
 
 let roots = ref []
-let push_library_root s = roots := list_add_set s !roots
+let push_library_root s = 
+  roots := list_add_set s !roots
 
 let coq_root = id_of_string "Coq"
-let default_root_prefix = []
+let default_root_prefix = [(id_of_string "Scratch")]
 
 (* Constructions and syntactic definitions live in the same space *)
 type extended_global_reference =
@@ -60,6 +47,15 @@ let the_ccitab = ref (Idmap.empty : ccitab)
 let the_libtab = ref (ModIdmap.empty : dirtab)
 let the_sectab = ref (ModIdmap.empty : dirtab)
 let the_objtab = ref (Idmap.empty : objtab)
+
+
+(* This table will translate global_references back to section paths *)
+module Globtab = Map.Make(struct type t=global_reference 
+				 let compare = compare end)
+
+type globtab = qualid Globtab.t
+
+let the_globtab = ref (Globtab.empty : globtab)
 
 (* How necessarily_open works: concretely, roots and directory are
    always open but libraries are open only during their interactive
@@ -109,14 +105,18 @@ let push_long_names_libpath = push_modidtree the_libtab
 let push_cci sp ref =
   let dir, s = repr_qualid (qualid_of_sp sp) in
   (* We push partially qualified name (with at least one prefix) *)
-  push_long_names_ccipath dir s (TrueGlobal ref)
+  push_long_names_ccipath dir s (TrueGlobal ref);
+  the_globtab := Globtab.add ref (qualid_of_sp sp) !the_globtab
 
 let push = push_cci
 
 let push_short_name id ref =
   (* We push a volatile unqualified name *)
-  push_short_name_ccipath [] id (TrueGlobal ref)
-
+  push_short_name_ccipath [] id (TrueGlobal ref);
+  match ref with
+    | VarRef id -> 
+	the_globtab := Globtab.add ref (make_qualid [] id) !the_globtab
+    | _ -> ()
 (* This is for Syntactic Definitions *)
 
 let push_syntactic_definition sp =
@@ -186,7 +186,12 @@ let locate_section qid =
 
 let locate_constant qid =
   match locate_cci qid with
-    | TrueGlobal (ConstRef sp) -> sp
+    | TrueGlobal (ConstRef ln) -> ln
+    | _ -> raise Not_found
+
+let locate_mind qid =
+  match locate_cci qid with
+    | TrueGlobal (IndRef (ln,_)) -> ln
     | _ -> raise Not_found
 
 let sp_of_id _ id = match locate_cci (make_qualid [] id) with
@@ -194,11 +199,6 @@ let sp_of_id _ id = match locate_cci (make_qualid [] id) with
   | SyntacticDef _ ->
       anomaly ("sp_of_id: "^(string_of_id id)
 	       ^" is not a true global reference but a syntactic definition")
-
-let constant_sp_of_id id =
-  match locate_cci (make_qualid [] id) with
-    | TrueGlobal (ConstRef sp) -> sp
-    | _ -> raise Not_found
 
 let check_absoluteness dir =
   match dir with
@@ -252,18 +252,35 @@ let exists_section dir =
   try let _ = locate_section (qualid_of_dirpath dir) in true
   with Not_found -> false
 
-(********************************************************************)
+
+let get_full_qualid ref = Globtab.find ref !the_globtab
+
+let get_ident ref = snd (repr_qualid (get_full_qualid ref))
+
+let get_short_qualid ref = 
+  let full_qid = get_full_qualid ref in
+  let dir,id = repr_qualid full_qid in
+  let rec find_visible dir qdir =
+    let qid = make_qualid qdir id in
+    if (try locate qid = ref with Not_found -> false) then qid
+    else match dir with
+      | [] -> full_qid
+      | a::l -> find_visible l (a::qdir)
+  in
+  find_visible (List.rev dir) []
+
 
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * dirtab * objtab * identifier list
+type frozen = ccitab * dirtab * dirtab * objtab * globtab * identifier list
 
 let init () = 
   the_ccitab := Idmap.empty; 
   the_libtab := ModIdmap.empty;
   the_sectab := ModIdmap.empty;
   the_objtab := Idmap.empty;
+  the_globtab := Globtab.empty;
   roots := []
 
 let freeze () =
@@ -271,13 +288,15 @@ let freeze () =
   !the_libtab,
   !the_sectab,
   !the_objtab,
+  !the_globtab,
   !roots
 
-let unfreeze (mc,ml,ms,mo,r) =
+let unfreeze (mc,ml,ms,mo,gt,r) =
   the_ccitab := mc;
   the_libtab := ml;
   the_sectab := ms;
   the_objtab := mo;
+  the_globtab := gt;
   roots := r
 
 let _ = 
@@ -286,3 +305,4 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
       Summary.survive_section = false }
+

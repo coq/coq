@@ -9,7 +9,9 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
+open Libnames
 open Libobject
 open Summary
 (*i*)

@@ -13,10 +13,12 @@
 (**************************************************************)
 
 Require Export Logic.
+Require Export LogicHints.
 Require LogicSyntax.
 Require Datatypes.
+Require DatatypesHints.
 
-Section Subsets.
+(* Section Subsets. *)
 
   (* [(sig A P)], or more suggestively [{x:A | (P x)}], denotes the subset 
      of elements of the Set [A] which satisfy the predicate [P].
@@ -39,7 +41,7 @@ Section Subsets.
   Inductive sigS2 [A:Set;P,Q:A->Set] : Set
       := existS2 : (x:A)(P x) -> (Q x) -> (sigS2 A P Q).
 
-End Subsets.
+(* End Subsets. *)
 
 Add Printing Let sig.
 Add Printing Let sig2.
@@ -51,29 +53,29 @@ Add Printing Let sigS2.
 (* Projections of sig *)
 (***********************)
 
-Section Subset_projections.
+(* Section Subset_projections. *)
 
-  Variable A:Set.
-  Variable P:A->Prop.
+  (* Variable A:Set (* (A:Set) [A:Set] *) *)
+  (* Variable P:A->Prop (* (P:A->Prop) [P:A->Prop] *) *)
 
   Definition proj1_sig :=
-   [e:(sig A P)]Cases e of (exist a b) => a  end.
+   [A:Set][P:A->Prop][e:(sig A P)]Cases e of (exist a b) => a  end.
 
   Definition proj2_sig :=
-   [e:(sig A P)]
-     <[e:(sig A P)](P (proj1_sig e))>Cases e of (exist a b) => b  end.
+   [A:Set][P:A->Prop][e:(sig A P)]
+     <[e:(sig A P)](P (proj1_sig A P e))>Cases e of (exist a b) => b  end.
 
-End Subset_projections.
+(* End Subset_projections. *)
 
 
 (***********************)
 (* Projections of sigS *)
 (***********************)
 
-Section Projections.
+(* Section Projections. *)
 
-  Variable A:Set.
-  Variable P:A->Set.
+  (* Variable A:Set (* (A:Set) [A:Set] *) *)
+  (* Variable P:A->Set (* (P:A->Set) [P:A->Set] *) *)
 
   (* An element [y] of a subset [[{x:A & (P x)}] is the pair of an [a] of 
      type [A] and of a proof [h] that [a] satisfies [P].
@@ -81,18 +83,18 @@ Section Projections.
      and [(projS2 y)] is the proof of [(P a)] *)
 
   Definition projS1 (* : (A:Set)(P:A->Set)(sigS A P) -> A *)
-           := [x:(sigS A P)]Cases x of (existS a _) => a end.
+           := [A:Set][P:A->Set][x:(sigS A P)]Cases x of (existS a _) => a end.
   Definition projS2 (* : (A:Set)(P:A->Set)(H:(sigS A P))(P (projS1 A P H)) *)
-           := [x:(sigS A P)]<[x:(sigS A P)](P (projS1 x))> 
+           := [A:Set][P:A->Set][x:(sigS A P)]<[x:(sigS A P)](P (projS1 A P x))> 
                   Cases x of (existS _ h) => h end.
 
-End Projections.
+(* End Projections. *)
 
 Syntactic Definition ProjS1 := (projS1 ? ?).
 Syntactic Definition ProjS2 := (projS2 ? ?).
 
 
-Section Extended_booleans.
+(* Section Extended_booleans. *)
 
   (* Syntax sumbool ["{_}+{_}"]. *)
   Inductive sumbool [A,B:Prop] : Set
@@ -105,51 +107,54 @@ Section Extended_booleans.
        | inright : B -> (sumor A B).
 
 
-End Extended_booleans.
+(* End Extended_booleans. *)
 
 
 (**********)
 (* Choice *)
 (**********)
 
-Section Choice_lemmas.
+(* Section Choice_lemmas. *)
 
   (* The following lemmas state various forms of the axiom of choice *)
 
-  Variables S,S':Set.
-  Variable R:S->S'->Prop.
-  Variable R':S->S'->Set.
-  Variables R1,R2 :S->Prop.
+  (* Variables S,S':Set (* (S,S':Set) [S,S':Set] *) *)
+  (* Variable R:S->S'->Prop (* (R:S->S'->Prop) [R:S->S'->Prop] *) *)
+  (* Variable R':S->S'->Set (* (R':S->S'->Set) [R':S->S'->Set] *) *)
+  (* Variables R1,R2 :S->Prop (* (R1,R2 :S->Prop) [R1,R2 :S->Prop] *) *)
 
-  Lemma Choice : ((x:S)(sig ? [y:S'](R x y))) ->
+  Lemma Choice : (S,S':Set)(R:S->S'->Prop)((x:S)(sig ? [y:S'](R x y))) ->
                      (sig ? [f:S->S'](z:S)(R z (f z))).
   Proof.
-   Intro H.
-   Exists [z:S]Cases (H z) of (exist y _) => y end.
-   Intro z; Elim (H z); Trivial.
+    Intros S S' R.
+    Intro H.
+    Exists [z:S]Cases (H z) of (exist y _) => y end.
+    Intro z; Elim (H z); Trivial.
   Qed.
 
-  Lemma Choice2 : ((x:S)(sigS ? [y:S'](R' x y))) ->
+  Lemma Choice2 : (S,S':Set)(R':S->S'->Set)((x:S)(sigS ? [y:S'](R' x y))) ->
                      (sigS ? [f:S->S'](z:S)(R' z (f z))).
   Proof.
+    Intros S S' R'.
     Intro H.
     Exists [z:S]Cases (H z) of (existS y _) => y end.
     Intro z; Elim (H z); Trivial.
   Qed.
 
   Lemma bool_choice : 
-    ((x:S)(sumbool (R1 x) (R2 x))) ->
+    (S:Set)(R1,R2 :S->Prop)((x:S)(sumbool (R1 x) (R2 x))) ->
     (sig ? [f:S->bool] (x:S)( ((f x)=true  /\ (R1 x)) 
                            \/ ((f x)=false /\ (R2 x)))).
   Proof.
+    Intros S R1 R2.
     Intro H.
     Exists [z:S]Cases (H z) of (left _) => true | (right _) => false end.
     Intro z; Elim (H z); Auto.
   Qed.
 
-End Choice_lemmas.
+(* End Choice_lemmas. *)
 
-Section Exceptions.
+(* Section Exceptions. *)
 
   (* A result of type [(Exc A)] is either a normal value of type [A] or 
      an [error]. *) 
@@ -157,7 +162,7 @@ Section Exceptions.
   Inductive Exc [A:Set] : Set := value : A->(Exc A) 
                                | error : (Exc A).
 
-End Exceptions.
+(* End Exceptions. *)
 
 Syntactic Definition Error := (error ?).
 Syntactic Definition Value := (value ?).
@@ -223,16 +228,16 @@ Hints Resolve left right inleft inright : core v62.
 Inductive sigT [A:Type;P:A->Type] : Type
     := existT : (x:A)(P x) -> (sigT A P).
 
-Section projections_sigT.
+(* Section projections_sigT. *)
 
-  Variable A:Type.
-  Variable P:A->Type.
+  (* Variable A:Type (* (A:Type) [A:Type] *) *)
+  (* Variable P:A->Type (* (P:A->Type) [P:A->Type] *) *)
 
   Definition projT1 (* : (A:Type)(P:A->Type)(sigT A P) -> A *)
-              := [H:(sigT A P)]Cases H of (existT x _) => x end.
+              := [A:Type][P:A->Type][H:(sigT A P)]Cases H of (existT x _) => x end.
    
   Definition projT2 (* : (A:Type)(P:A->Type)(p:(sigT A P))(P (projT1 A P p)) *)
-              := [H:(sigT A P)]<[H:(sigT A P)](P (projT1 H))> 
+              := [A:Type][P:A->Type][H:(sigT A P)]<[H:(sigT A P)](P (projT1 A P H))> 
                      Cases H of (existT x h) => h end.
 
-End projections_sigT.
+(* End projections_sigT. *)

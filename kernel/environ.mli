@@ -9,11 +9,14 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Term
 open Declarations
+open Mod_declarations
 open Univ
 open Sign
+
 (*i*)
 
 (*s Unsafe environments. We define here a datatype for environments. 
@@ -21,14 +24,12 @@ open Sign
    informations added in environments, and that is why we speak here
    of ``unsafe'' environments. *)
 
-type context
 type env
 
-val empty_context : context
 val empty_env : env
 
 val universes : env -> universes
-val context : env -> context
+
 val rel_context : env -> rel_context
 val named_context : env -> named_context
 
@@ -84,12 +85,18 @@ val process_rel_context : (env -> rel_declaration -> env) -> env -> env
 (*s add entries to environment *)
 val set_universes : universes -> env -> env
 val add_constraints : constraints -> env -> env
-val add_constant : 
-  section_path -> constant_body -> env -> env
-val add_mind : 
-  section_path -> mutual_inductive_body -> env -> env
+val add_constant : long_name -> constant_body -> env -> env
+val add_mind : long_name -> mutual_inductive_body -> env -> env
+val add_modtype : long_name -> module_type_body -> env -> env
 
-(*s Looks up in environment *)
+(* this function does not add module components *)
+val shallow_add_module : module_path -> module_body -> env -> env
+
+(* [merge env1 env2] merges two environments. Its principal
+   purpose is to add loaded file's components *)
+(* val merge : env -> env -> env *)
+
+(*s Look up in environment *)
 
 (* Looks up in the context of local vars referred by names ([named_context]) *)
 (* raises [Not_found] if the identifier is not found *)
@@ -102,21 +109,21 @@ val lookup_named : identifier -> env -> constr option * types
 val lookup_rel_type : int -> env -> name * types
 val lookup_rel_value : int -> env -> constr option
 
-(* Looks up in the context of global constant names *)
-(* raises [Not_found] if the required path is not found *)
-val lookup_constant : constant_path -> env -> constant_body
-
-(* Looks up in the context of global inductive names *)
-(* raises [Not_found] if the required path is not found *)
-val lookup_mind : section_path -> env -> mutual_inductive_body
+(* Look up in the context of global names *)
+(* raise [Not_found] if the required path is not found *)
+val lookup_constant : long_name -> env -> constant_body
+val lookup_mind : long_name -> env -> mutual_inductive_body
+val lookup_module : module_path -> env -> module_body
+val lookup_modtype : long_name -> env -> module_type_body
 
 (*s Miscellanous *)
 
-val sp_of_global : env -> global_reference -> section_path
+(*val sp_of_global : env -> global_reference -> long_name
 
 val id_of_global : env -> global_reference -> identifier
+*)
 
-val make_all_name_different : env -> env
+val make_all_name_different : env -> env 
 
 (*s Functions creating names for anonymous names *)
 
@@ -169,13 +176,6 @@ val evaluable_rel_decl : env -> int -> bool
 val set_opaque : env -> constant_path -> unit
 val set_transparent : env -> constant_path -> unit
 
-(*s Modules. *)
-
-type compiled_env
-
-val export : env -> dir_path -> compiled_env
-val import : compiled_env -> env -> env
-
 (*s Unsafe judgments. We introduce here the pre-type of judgments, which is
   actually only a datatype to store a term with its type and the type of its
   type. *)
@@ -191,3 +191,6 @@ type unsafe_type_judgment = {
 (*s Displays the memory use of an environment. *)
 
 val mem : env -> Pp.std_ppcmds
+
+
+

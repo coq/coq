@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Sign
@@ -52,7 +53,6 @@ let instantiate_constr sign c args =
   if Options.immediate_discharge then
     c
   else
-    let sign = List.map (fun (sp,b,t) -> (basename sp,b,t)) sign in
     instantiate sign c args
 
 let instantiate_type sign tty args =

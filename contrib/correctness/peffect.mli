@@ -10,7 +10,7 @@
 
 (* $Id$ *)
 
-open Names
+open Identifier
 
 (* The abstract type of effects *)
 

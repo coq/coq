@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 (*i*)
+open Names
 open Term
 open Pattern
 (*i*)
@@ -19,8 +20,8 @@ open Pattern
 (*s Global references *)
 
 (* Modules *)
-val logic_module : Names.dir_path
-val logic_type_module : Names.dir_path
+val logic_module : dir_path
+val logic_type_module : dir_path
 
 (* Natural numbers *)
 val glob_nat : global_reference

@@ -13,6 +13,7 @@
 open Pp
 open Util
 open Libobject
+open Identifier
 open Names
 
 (****************************************************************************)

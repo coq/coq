@@ -10,22 +10,26 @@
 
 (*i*)
 open Pp
+open Identifier
 open Names
 open Term
+open Mod_declarations
 open Environ
 (*i*)
 
 val term : constr Grammar.Entry.e
 
 type command =
-  | Definition of identifier * constr option * constr
-  | Parameter of identifier * constr
-  | Variable of identifier * constr
-  | Inductive of 
-      (identifier * constr) list *
-      (identifier * constr * (identifier * constr) list) list
+  | Entry of (label * specification_entry)
+  | BeginModule of label * (mod_bound_id * module_type_entry) list * 
+      module_type_entry option
+  | EndModule of label
   | Check of constr
+  | Abbrev of identifier * constr
+  | Print of long_name
+  | Reduce of constr
 
 val command : command Grammar.Entry.e
 
-val pr_term : path_kind -> env -> constr -> std_ppcmds
+val pr_term : env -> constr -> std_ppcmds
+

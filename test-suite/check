@@ -2,7 +2,7 @@
 
 # Automatic test of Coq
 
-command="../bin/coqtop.opt -q -batch -load-vernac-source"
+command="../bin/coqtop -q -batch -load-vernac-source"
 
 # on compte le nombre de tests et de succès
 nbtests=0

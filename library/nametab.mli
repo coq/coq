@@ -11,8 +11,10 @@
 (*i*)
 open Util
 open Pp
+open Identifier
 open Names
 open Term
+open Libnames
 (*i*)
 
 (*s This module contains the table for globalization, which associates global
@@ -21,20 +23,6 @@ open Term
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of section_path
-
-(*s A [qualid] is a partially qualified ident; it includes fully
-    qualified names (= absolute names) and all intermediate partial
-    qualifications of absolute names, including single identifiers *)
-type qualid
-
-val make_qualid : dir_path -> identifier -> qualid
-val repr_qualid : qualid -> dir_path * identifier
-
-val string_of_qualid : qualid -> string
-val pr_qualid : qualid -> std_ppcmds
-
-(* Turns an absolute name into a qualified name denoting the same name *)
-val qualid_of_sp : section_path -> qualid
 
 exception GlobalizationError of qualid
 
@@ -54,13 +42,7 @@ val push_short_name_object : section_path -> unit
 (*s Register visibility by all qualifications *)
 val push_section : dir_path -> unit
 
-(* This should eventually disappear *)
-val sp_of_id : path_kind -> identifier -> global_reference
-
 (*s The following functions perform globalization of qualified names *)
-
-(* This returns the section path of a constant or fails with [Not_found] *)
-val constant_sp_of_id : identifier -> section_path
 
 val locate : qualid -> global_reference
 
@@ -70,11 +52,20 @@ val extended_locate : qualid -> extended_global_reference
 val locate_obj : qualid -> section_path
 
 val locate_constant : qualid -> constant_path
+val locate_mind : qualid -> mutual_inductive_path
 val locate_section : qualid -> dir_path
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool
 val exists_section : dir_path -> bool
+
+(* lookup the other way around, gives names of constructors and
+inductive types *)
+
+val get_full_qualid : global_reference -> qualid
+val get_short_qualid : global_reference -> qualid
+val get_ident : global_reference -> identifier
+
 (*
 val open_module_contents : qualid -> unit
 val rec_open_module_contents : qualid -> unit
@@ -107,3 +98,4 @@ val locate_in_absolute_module : dir_path -> identifier -> global_reference
 
 val push_loaded_library : dir_path -> unit
 val locate_loaded_library : qualid -> dir_path
+

@@ -44,7 +44,7 @@ let rec execute mf env sigma cstr =
       (try
          make_judge cstr (snd (lookup_named id env))
        with Not_found ->
-         error ("execute: variable " ^ (string_of_id id) ^ " not defined"))
+         error ("execute: variable " ^ (Identifier.string_of_id id) ^ " not defined"))
 	  
     | IsConst c ->
         make_judge cstr (type_of_constant env sigma c)

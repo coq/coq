@@ -10,7 +10,7 @@
 
 (* $Id$ *)
 
-open Names
+open Identifier
 
 (* Abstract type for renamings 
  * 

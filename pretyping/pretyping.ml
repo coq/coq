@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Sign
 open Evd
@@ -46,7 +47,7 @@ let transform_rec loc env sigma (pj,c,lf) indt =
   let tyi = mis_index mispec in
   if Array.length lf <> mis_nconstr mispec then 
     (let cj = {uj_val=c; uj_type=mkAppliedInd indt} in
-     error_number_branches_loc loc CCI env sigma cj (mis_nconstr mispec));
+     error_number_branches_loc loc env sigma cj (mis_nconstr mispec));
   if mis_is_recursive_subset [tyi] mispec then
     let (dep,_) = find_case_dep_nparams env sigma (c,pj) indf in 
     let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
@@ -120,7 +121,7 @@ let evar_type_fixpoint loc env isevars lna lar vdefj =
         if not (the_conv_x_leq env isevars
 		  (vdefj.(i)).uj_type
 		  (lift lt lar.(i))) then
-          error_ill_typed_rec_body_loc loc CCI env (evars_of isevars)
+          error_ill_typed_rec_body_loc loc env (evars_of isevars)
             i lna vdefj lar
       done
 
@@ -128,7 +129,7 @@ let check_branches_message loc env isevars c (explft,lft) =
   for i = 0 to Array.length explft - 1 do
     if not (the_conv_x_leq env isevars lft.(i) explft.(i)) then 
       let sigma = evars_of isevars in
-      error_ill_formed_branch_loc loc CCI env sigma c i lft.(i) explft.(i)
+      error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
   done
 
 (* coerce to tycon if any *)
@@ -236,7 +237,7 @@ let rec pretype tycon env isevars lvar lmeta = function
   | RHole loc ->
       if !compter then nbimpl:=!nbimpl+1;
       (match tycon with
-	 | Some ty -> { uj_val = new_isevar isevars env ty CCI; uj_type = ty }
+	 | Some ty -> { uj_val = new_isevar isevars env ty; uj_type = ty }
 	 | None ->
 	     (match loc with
 		  None -> anomaly "There is an implicit argument I cannot solve"
@@ -346,7 +347,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       let (IndType (indf,realargs) as indt) = 
 	try find_rectype env (evars_of isevars) cj.uj_type
 	with Induc ->
-          error_case_not_inductive_loc loc CCI env (evars_of isevars) cj in
+          error_case_not_inductive_loc loc env (evars_of isevars) cj in
       let pj = match po with
 	| Some p -> pretype empty_tycon env isevars lvar lmeta p
 	| None -> 
@@ -400,7 +401,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	Indrec.type_rec_branches
           isrec env (evars_of isevars) indt pj cj.uj_val in
       if Array.length bty <> Array.length lf then
-	error_number_branches_loc loc CCI env (evars_of isevars) 
+	error_number_branches_loc loc env (evars_of isevars) 
 	  cj (Array.length bty)
       else
 	let lfj =
@@ -443,7 +444,7 @@ and pretype_type valcon env isevars lvar lmeta = function
 	     { utj_val = v;
 	       utj_type = Retyping.get_sort_of env (evars_of isevars) v }
 	 | None ->
-	     { utj_val = new_isevar isevars env dummy_sort CCI;
+	     { utj_val = new_isevar isevars env dummy_sort;
 	       utj_type = Type Univ.dummy_univ })
   | c ->
       let j = pretype empty_tycon env isevars lvar lmeta c in

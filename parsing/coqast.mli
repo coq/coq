@@ -9,7 +9,8 @@
 (*i $Id$ i*)
 
 (*i*)
-open Names
+open Identifier
+open Libnames
 (*i*)
 
 (* Abstract syntax trees. *)
@@ -25,7 +26,7 @@ type t =
   | Num of loc * int
   | Str of loc * string
   | Id of loc * string
-  | Path of loc * section_path
+  | Path of loc * Names.long_name
   | Dynamic of loc * Dyn.t
 
 (* returns the list of metas occuring in the ast *)
@@ -37,6 +38,6 @@ val subst_meta : (int * t) list -> t -> t
 
 (* hash-consing function *)
 val hcons_ast: 
-  (string -> string) * (Names.identifier -> Names.identifier)
-  * (section_path -> section_path)
+  (string -> string) * (identifier -> identifier)
+  * (Names.long_name -> Names.long_name)
   -> (t -> t) * (loc -> loc)

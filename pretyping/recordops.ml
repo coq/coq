@@ -10,6 +10,7 @@
 
 open Util
 open Pp
+open Identifier
 open Names
 open Term
 open Typeops
@@ -32,7 +33,7 @@ let compter = ref false
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
-  s_PROJ : section_path option list }
+  s_PROJ : long_name option list }
 
 let sTRUCS = (ref [] : (inductive_path * struc_typ) list ref)
 
@@ -92,7 +93,7 @@ let add_new_objdef (o,c,la,lp,l) =
 
 let cache_objdef1 (_,sp) = ()
 
-let ((inObjDef1 : section_path -> obj),(outObjDef1 : obj -> section_path)) =
+let ((inObjDef1 : long_name -> obj),(outObjDef1 : obj -> long_name)) =
   declare_object ("OBJDEF1",
                   { load_function = (fun _ -> ());
 		    open_function = cache_objdef1;

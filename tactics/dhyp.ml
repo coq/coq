@@ -113,7 +113,7 @@ Qed.
 
 open Pp
 open Util
-open Names
+open Identifier
 open Term
 open Environ
 open Reduction

@@ -10,7 +10,9 @@
 
 open Pp
 open Util
+open Identifier
 open Names
+open Libnames
 open Libobject
 open Summary
 
@@ -59,7 +61,7 @@ let pop_path_prefix () =
   in
   path_prefix := pop !path_prefix
 
-let make_path id k = Names.make_path !path_prefix id k
+let make_path id k = Libnames.make_path !path_prefix id k
 
 let cwd () = !path_prefix
 
@@ -135,7 +137,7 @@ let start_module s =
     error "some sections are already opened";
   module_name := Some s;
   (match split_dirpath s with [],id -> Nametab.push_library_root id | _ -> ());
-  Univ.set_module s;
+  Univ.set_module (MPcomp s);
   let _ = add_anonymous_entry (Module s) in
   path_prefix := s
 
@@ -241,7 +243,7 @@ let init () =
   lib_stk := [];
   add_frozen_state ();
   module_name := None;
-  path_prefix := [];
+  path_prefix := default_module;
   init_summaries()
 
 (* Initial state. *)

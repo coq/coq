@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Environ
@@ -63,7 +64,7 @@ let typecheck_params_and_field ps fs =
 
 type record_error =
   | MissingProj of identifier * identifier list
-  | BadTypedProj of identifier * path_kind * env * Type_errors.type_error
+  | BadTypedProj of identifier * env * Type_errors.type_error
 
 let warning_or_error coe err =
   let st = match err with
@@ -72,10 +73,10 @@ let warning_or_error coe err =
         [< 'sTR(string_of_id fi);
 	   'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
            prlist_with_sep pr_coma pr_id projs; 'sPC; 'sTR have; 'sTR "n't." >]
-    | BadTypedProj (fi,k,ctx,te) ->
+    | BadTypedProj (fi,ctx,te) ->
         [<'sTR (string_of_id fi); 
           'sTR" cannot be defined for the following reason:";
-	  'fNL; 'sTR "  "; hOV 2 (Himsg.explain_type_error k ctx te) >]
+	  'fNL; 'sTR "  "; hOV 2 (Himsg.explain_type_error ctx te) >]
   in
   if coe then errorlabstrm "structure" st;
   pPNL (hOV 0 [< 'sTR"Warning: "; st >])
@@ -117,12 +118,12 @@ let declare_projections indsp coers fields =
 	   let name = 
 	     try
 	       let proj = instantiate_inductive_section_params proj indsp in
-	       let cie = { const_entry_body = proj; const_entry_type = None} in
+	       let cie = { const_entry_body = Some proj; const_entry_type = None} in
 	       let sp =
 		 declare_constant fi (ConstantEntry cie,NeverDischarge,false)
 	       in Some sp
-             with Type_errors.TypeError (k,ctx,te) -> begin
-               warning_or_error coe (BadTypedProj (fi,k,ctx,te));
+             with Type_errors.TypeError (ctx,te) -> begin
+               warning_or_error coe (BadTypedProj (fi,ctx,te));
 	       None
 	     end in
 	   match name with
@@ -154,6 +155,7 @@ let degenerate_decl env =
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
+  let labbuild = label_of_ident idbuild in
   let coers,fs = List.split cfs in
   let nparams = List.length ps in
   let idps = List.map fst ps in
@@ -170,9 +172,9 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
   let mie_ind =
     { mind_entry_nparams = nparams;
       mind_entry_params = degenerate_decl params;
-      mind_entry_typename = idstruc;
+      mind_entry_typename = label_of_ident idstruc;
       mind_entry_arity = mkSort s;
-      mind_entry_consnames = [idbuild];
+      mind_entry_consnames = [labbuild];
       mind_entry_lc = [type_constructor] } in
   let mie =
     { mind_entry_finite = true;

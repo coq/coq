@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Declarations
@@ -20,6 +21,7 @@ open Environ
 open Instantiate
 open Declare
 open Impargs
+open Libnames
 open Libobject
 open Printer
 open Nametab
@@ -82,11 +84,11 @@ let implicit_args_msg sp mipv =
   [< prvecti
        (fun i mip -> 
 	  let imps = inductive_implicits_list (sp,i) in
-          [< (implicit_args_id mip.mind_typename imps);
+          [< (implicit_args_id (ident_of_label mip.mind_typename) imps);
              prvecti 
 	       (fun j idc ->
 		  let imps = constructor_implicits_list ((sp,i),succ j) in
-                  (implicit_args_id idc imps))
+                  (implicit_args_id (ident_of_label idc) imps))
                mip.mind_consnames 
           >])
        mipv >]
@@ -272,10 +274,9 @@ let print_typed_body (val_0,typ) =
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
-  if kind_of_path sp = CCI then
-    let val_0 = cb.const_body in
-    let typ = cb.const_type in
-    let impls = constant_implicits_list sp in
+  let val_0 = cb.const_body in
+  let typ = cb.const_type in
+  let impls = constant_implicits_list sp in
     hOV 0 [< (match val_0 with 
 		| None -> 
 		    [< 'sTR"*** [ "; 
@@ -289,16 +290,12 @@ let print_constant with_values sep sp =
 		       else 
 			 [< prtype typ ; 'fNL >] >]); 
 	     print_impl_args impls; 'fNL >]
-  else
-    hOV 0 [< 'sTR"Fw constant " ; 
-	     print_basename sp ; 'fNL>]
 
 let print_inductive sp =
-  if kind_of_path sp = CCI then
     [< print_mutual sp; 'fNL >]
-  else
+(*  else
     hOV 0 [< 'sTR"Fw inductive definition "; 
-	     print_basename sp; 'fNL >]
+	     print_basename sp; 'fNL >] *)
 
 let print_syntactic_def sep sp =
   let id = basename sp in
@@ -309,11 +306,12 @@ let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
   match (sp,tag) with
     | (_,"VARIABLE") ->
-	print_section_variable sp
+	print_section_variable (basename sp)
     | (_,("CONSTANT"|"PARAMETER")) ->
-	print_constant with_values sep sp
+	print_constant with_values sep 
+	  (Nametab.locate_constant (qualid_of_sp sp))
     | (_,"INDUCTIVE") ->
-	print_inductive sp
+	print_inductive (Nametab.locate_mind (qualid_of_sp sp))
     | (_,"AUTOHINT") -> 
 	[< 'sTR" Hint Marker"; 'fNL >]
     | (_,"GRAMMAR") -> 
@@ -397,8 +395,8 @@ let print_judgment env {uj_val=trm;uj_type=typ} =
   print_typed_value_in_env env (trm, typ)
     
 let print_safe_judgment env j =
-  let trm = Safe_typing.j_val j in
-  let typ = Safe_typing.j_type j in
+  let trm = Safe_env.j_val j in
+  let typ = Safe_env.j_type j in
   print_typed_value_in_env env (trm, typ)
     
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
@@ -470,7 +468,7 @@ let print_local_context () =
     | [] -> [< >]
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (d,_,_) = get_variable sp in 
+          let (d,_,_) = get_variable (basename sp) in 
 	  [< print_var_rec rest;
              print_named_decl d >]
 	else 
@@ -481,13 +479,16 @@ let print_local_context () =
     | (sp,Lib.Leaf lobj)::rest -> 
         (match object_tag lobj with
            | "CONSTANT" | "PARAMETER" -> 
+	       let cp = Nametab.locate_constant 
+			  (Libnames.qualid_of_sp sp) in
                let {const_body=val_0;const_type=typ} = 
-		 Global.lookup_constant sp in
+		 Global.lookup_constant cp in
                [< print_last_const rest;
-                  print_basename sp ;'sTR" = ";
+                  print_basename cp ;'sTR" = ";
                   print_typed_body (val_0,typ) >]
            | "INDUCTIVE" -> 
-               [< print_last_const rest;print_mutual sp; 'fNL >]
+	       let ln = Nametab.locate_mind (Libnames.qualid_of_sp sp) in
+		 [< print_last_const rest;print_mutual ln; 'fNL>]
            | "VARIABLE" ->  [< >]
            | _          ->  print_last_const rest)
     | _ -> [< >]
@@ -568,7 +569,7 @@ let cl_of_id id =
   match string_of_id id with
     | "FUNCLASS" -> CL_FUN
     | "SORTCLASS" -> CL_SORT
-    | _ -> let v = Declare.global_reference CCI id in
+    | _ -> let v = Declare.global_reference id in
 	   let cl,_ = constructor_at_head v in 
 	   cl
 

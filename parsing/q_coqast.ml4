@@ -43,7 +43,7 @@ let rec expr_of_ast = function
       if String.length s > 0 && String.sub s 0 1 = "$" then
 	failwith "Wrong ast: $VAR should not be bound to a meta variable"
       else
-	Coqast.Nvar loc (Names.id_of_string s) >>
+	Coqast.Nvar loc (Identifier.id_of_string s) >>
   | Coqast.Node _ "$PATH" [Coqast.Nmeta loc x] ->
       <:expr< Coqast.Path loc $anti loc x$ >>
   | Coqast.Node _ "$ID" [Coqast.Nmeta loc x] ->
@@ -62,7 +62,7 @@ let rec expr_of_ast = function
       let e = expr_list_of_ast_list al in
       <:expr< Coqast.Node loc $str:nn$ $e$ >>
   | Coqast.Nvar loc id ->
-      <:expr< Coqast.Nvar loc (Names.id_of_string $str:Names.string_of_id id$) >>
+      <:expr< Coqast.Nvar loc (Identifier.id_of_string $str:Identifier.string_of_id id$) >>
   | Coqast.Slam loc None a ->
       <:expr< Coqast.Slam loc None $expr_of_ast a$ >>
   | Coqast.Smetalam loc s a ->
@@ -72,19 +72,26 @@ let rec expr_of_ast = function
 	| Coqast.Nmeta _ s -> Coqast.Smetalam loc s $expr_of_ast a$
 	| _ -> failwith "Slam expects a var or a metavar" ] >>
   | Coqast.Slam loc (Some s) a ->
-      let se = <:expr< Names.id_of_string $str:Names.string_of_id s$ >> in
+      let se = <:expr< Identifier.id_of_string $str:Identifier.string_of_id s$ >> in
       <:expr< Coqast.Slam loc (Some $se$) $expr_of_ast a$ >>
   | Coqast.Num loc i -> <:expr< Coqast.Num loc $int:string_of_int i$ >>
   | Coqast.Id loc id -> <:expr< Coqast.Id loc $str:id$ >>
   | Coqast.Str loc str -> <:expr< Coqast.Str loc $str:str$ >>
   | Coqast.Path loc qid ->
-      let l,a,_ = Names.repr_path qid in
+(*      let l,a,_ = Libnames.repr_path qid in*)
+      let Names.MPcomp l = Names.modname qid in
+      let a = Names.label qid in
       let expr_of_modid id =
-	<:expr< Names.id_of_string $str:Names.string_of_id id$ >> in
+	<:expr< Identifier.id_of_string $str:Identifier.string_of_id id$ >> in
       let e = List.map expr_of_modid (Names.repr_dirpath l) in
-      let e = expr_list_of_var_list e in
-      <:expr< Coqast.Path loc (Names.make_path (Names.make_dirpath
-      $e$) (Names.id_of_string $str:Names.string_of_id a$) Names.CCI) >> 
+      let e = expr_list_of_var_list e in 
+(*      <:expr< Coqast.Path loc (Libnames.make_path (Names.make_dirpath
+      $e$) (Identifier.id_of_string $str:Identifier.string_of_id a$) Libnames.CCI) >> *)
+      <:expr< Coqast.Path loc 
+             (Names.make_ln 
+		(Names.MPcomp (Names.make_dirpath $e$)) 
+		(Identifier.label_of_string $str:Identifier.string_of_label a$)) >>
+
   | Coqast.Dynamic _ _ ->
       failwith "Q_Coqast: dynamic: not implemented"
 

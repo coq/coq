@@ -11,6 +11,7 @@
 (*i*)
 open Dyn
 open Pp
+open Identifier
 open Names
 open Proof_type
 open Tacmach

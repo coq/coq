@@ -10,7 +10,6 @@
 
 open Pp
 open Util
-open Names
 
 type 'a summary_declaration = {
   freeze_function : unit -> 'a;

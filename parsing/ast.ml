@@ -10,7 +10,9 @@
 
 open Pp
 open Util
+open Identifier
 open Names
+open Libnames
 open Coqast
 open Pcoq
 
@@ -104,7 +106,7 @@ let rec print_ast ast =
   match ast with
     | Num(_,n) -> [< 'iNT n >]
     | Str(_,s) -> [< 'qS s >]
-    | Path(_,sl) -> [< pr_sp sl >]
+    | Path(_,sl) -> [< pr_ln sl >]
     | Id (_,s) -> [< 'sTR"{" ; 'sTR s ; 'sTR"}" >]
     | Nvar(_,s) -> [< pr_id s >]
     | Nmeta(_,s) -> [< 'sTR s >]

@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Sign
 open Term
@@ -25,6 +26,7 @@ open Pretyping
 open Evarutil
 open Ast
 open Coqast
+open Libnames
 open Nametab
 
 (*Takes a list of variables which must not be globalized*)
@@ -121,6 +123,14 @@ let ast_to_sp = function
   | ast -> anomaly_loc(Ast.loc ast,"Astterm.ast_to_sp",
                      [< 'sTR"not a section-path" >])
 
+let sp_of_ln ln = 
+  match (modname ln) with
+    | MPcomp dir -> make_path dir (ident_of_label (label ln)) OBJ
+    | _ -> anomaly "MPcomp module path expected"
+
+let ln_of_sp sp = 
+  make_ln (MPcomp (dirpath sp)) (label_of_ident (basename sp))
+
 let is_underscore id = (id = wildcard)
 
 let name_of_nvar s =
@@ -185,11 +195,14 @@ let maybe_constructor env = function
       (* Buggy: needs to compute the context *)
       IsConstrPat (loc,(((ast_to_sp sp,ti),n),[]))
 
-  | Path(loc,sp) ->
-      (match absolute_reference sp with 
+  | Path(loc,ln) ->
+      (*(match absolute_reference sp with 
 	| ConstructRef (spi,j) -> 
 	    IsConstrPat (loc,((spi,j),[]))
-	| _ -> error ("Unknown absolute constructor name: "^(string_of_path sp)))
+	| _ -> 
+	error("Unknown absolute constructor name: "^(string_of_path sp)))
+      *)
+      error ("Unknown absolute constructor name: "^(string_of_long_name ln))
 
   | Node(loc,("CONST"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
       user_err_loc (loc,"ast_to_pattern",
@@ -221,7 +234,7 @@ let ast_to_global loc c =
     | ("EVAR", [(Num (_,ev))]) ->
 	REvar (loc, ev), [], []
     | ("SYNCONST", [sp]) ->
-	Syntax_def.search_syntactic_definition (ast_to_sp sp), [], []
+	Syntax_def.search_syntactic_definition (sp_of_ln (ast_to_sp sp)), [], []
     | _ -> anomaly_loc (loc,"ast_to_global",
 			[< 'sTR "Bad ast for this global a reference">])
 
@@ -589,7 +602,7 @@ let ast_of_ref loc = function
 *)
 let ast_of_ref_loc loc ref = set_loc loc (Termast.ast_of_ref ref)
 
-let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
+let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc (ln_of_sp sp)])
 
 let ast_of_extended_ref_loc loc = function
   | TrueGlobal ref -> ast_of_ref_loc loc ref

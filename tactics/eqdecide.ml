@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 open Util
+open Identifier
 open Names
 open Term
 open Tactics

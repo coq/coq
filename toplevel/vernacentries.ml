@@ -15,6 +15,7 @@ open Pp
 open Util
 open Options
 open System
+open Identifier
 open Names
 open Term
 open Pfedit
@@ -114,7 +115,7 @@ let locate_qualid loc qid =
     let _ = Syntax_def.locate_syntactic_definition qid in
     error
       ("Unexpected reference to a syntactic definition: "
-       ^(Nametab.string_of_qualid qid))
+       ^(Libnames.string_of_qualid qid))
   with Not_found ->
     Nametab.error_global_not_found_loc loc qid
 
@@ -134,14 +135,14 @@ let print_located_qualid qid =
   try
     let ref = Nametab.locate qid in
     mSG
-      [< 'sTR (string_of_path (sp_of_global (Global.env()) ref)); 'fNL >]
+      [< 'sTR (Libnames.string_of_qualid (Nametab.get_full_qualid ref)); 'fNL >]
   with Not_found -> 
   try
     mSG
-      [< 'sTR (string_of_path (Syntax_def.locate_syntactic_definition qid));
+      [< 'sTR (Libnames.string_of_path (Syntax_def.locate_syntactic_definition qid));
 	 'fNL >]
   with Not_found ->
-    error ((Nametab.string_of_qualid qid) ^ " not a defined object")
+    error ((Libnames.string_of_qualid qid) ^ " not a defined object")
 
 let print_path_entry (s,l) =
   [< 'sTR s; 'tBRK (0,2); 'sTR (string_of_dirpath l) >]
@@ -178,11 +179,11 @@ let msg_found_library = function
 
 let msg_notfound_library qid = function
   | Library.LibUnmappedDir ->
-      let dir = fst (Nametab.repr_qualid qid) in
+      let dir = fst (Libnames.repr_qualid qid) in
       mSG [< 'sTR "No physical path is bound to "; pr_dirpath dir; 'fNL >]
   | Library.LibNotFound ->
       mSG (hOV 0 
-	[< 'sTR"Unable to locate library"; 'sPC; Nametab.pr_qualid qid; 'fNL >])
+	[< 'sTR"Unable to locate library"; 'sPC; Libnames.pr_qualid qid; 'fNL >])
   | _ -> assert false
 
 let _ = 
@@ -207,7 +208,7 @@ let _ =
        | [VARG_STRING dir] ->
 	   (fun () -> Mltop.add_path dir Nametab.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
-           let aliasdir,aliasname = Nametab.repr_qualid alias in
+           let aliasdir,aliasname = Libnames.repr_qualid alias in
 	   (fun () -> Mltop.add_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "ADDPATH")
 
@@ -224,7 +225,7 @@ let _ =
        | [VARG_STRING dir] ->
 	   (fun () -> Mltop.add_rec_path dir Nametab.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
-           let aliasdir,aliasname = Nametab.repr_qualid alias in
+           let aliasdir,aliasname = Libnames.repr_qualid alias in
 	    (fun () -> Mltop.add_rec_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "RECADDPATH")
 
@@ -563,11 +564,11 @@ let _ =
 		   let coe = coercion_of_qualid dummy_loc qid in
 	           if Classops.is_coercion_visible coe then
 		     message
-		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
+		       ("Printing of coercion "^(Libnames.string_of_qualid qid)^
 			" is set")
 		   else 
 		     message 
-		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
+		       ("Printing of coercion "^(Libnames.string_of_qualid qid)^
 			" is unset"))
 		ql))
     
@@ -655,7 +656,7 @@ let _ =
        List.iter
 	 (function 
 	    | VARG_CONSTANT sp ->
-		warning_opaque (Global.string_of_global (ConstRef sp));
+		warning_opaque (Libnames.string_of_qualid (Nametab.get_short_qualid (ConstRef sp)));
 		Global.set_opaque sp
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
@@ -896,12 +897,15 @@ let _ =
                        save_named opacity
                      else
                        let csr = interp_type Evd.empty (Global.env ()) com
-                       and (_,({const_entry_body = pft;
+                       and (_,({const_entry_body = opft;
                                 const_entry_type = _},_)) = cook_proof () in
-                       let cutt = vernac_tactic ("Cut",[Constr csr])
-                       and exat = vernac_tactic ("Exact",[Constr pft]) in
-                       delete_proof id;
-                       by (tclTHENS cutt [introduction id;exat]))
+			 match opft with
+			   | None -> anomaly "empty constant body"
+			   | Some pft -> 
+			       let cutt = vernac_tactic ("Cut",[Constr csr])
+			       and exat = vernac_tactic ("Exact",[Constr pft]) in
+				 delete_proof id;
+				 by (tclTHENS cutt [introduction id;exat]))
 		  ()
               with e ->
             	if (is_unsafe "proof") && not (kind = "LETTOP") then begin
@@ -1018,14 +1022,14 @@ let _ =
               let env = Global.env() in
               let c = interp_constr evmap env c in
               let senv = Global.safe_env() in
-              let j = Safe_typing.typing senv c in
+              let j = Safe_env.typing senv c in
               mSG (print_safe_judgment env j))
        | VARG_STRING "CHECK" :: VARG_CONSTR c :: g ->
 	   (fun () ->
 	      let (evmap, env) = get_current_context_of_args g in
               let c = interp_constr evmap env c in
-              let j = Safe_typing.typing_in_unsafe_env env c in
-              mSG (print_safe_judgment env j))
+              let j = Safe_env.typing_in_unsafe_env env c in
+              mSG (print_judgment env j))
        | _ -> bad_vernac_args "Check")
     
 
@@ -1033,7 +1037,7 @@ let extract_qualid = function
   | VARG_QUALID qid ->
       (try Nametab.locate_loaded_library qid
        with Not_found -> 
-	 error ("Module/section "^(Nametab.string_of_qualid qid)^" not found"))
+	 error ("Module/section "^(Libnames.string_of_qualid qid)^" not found"))
   | _ -> bad_vernac_args "extract_qualid"
 
 let inside_outside = function
@@ -1340,11 +1344,11 @@ let _ =
 	     let ref = locate_qualid dummy_loc qid in
 	     Class.try_add_new_class ref stre;
              if_verbose message
-               ((Nametab.string_of_qualid qid) ^ " is now a class")
+               ((Libnames.string_of_qualid qid) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
 
 let cl_of_qualid qid =
-  match Nametab.repr_qualid qid with
+  match Libnames.repr_qualid qid with
     | [], id when string_of_id id = "FUNCLASS" -> Classops.CL_FUN
     | [], id when string_of_id id = "SORTCLASS" -> Classops.CL_SORT
     | _ -> Class.class_of_ref (locate_qualid dummy_loc qid)	
@@ -1364,7 +1368,7 @@ let _ =
 	   let target = cl_of_qualid qidt in
 	   let source = cl_of_qualid qids in
 	   fun () ->
-	     if isid then match Nametab.repr_qualid qid with
+	     if isid then match Libnames.repr_qualid qid with
 	       | [], id ->
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
@@ -1373,7 +1377,7 @@ let _ =
 	       Class.try_add_new_coercion_with_target ref stre source target;
 	       if_verbose
 		 message
-                 ((Nametab.string_of_qualid qid) ^ " is now a coercion")
+                 ((Libnames.string_of_qualid qid) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 
 let _ =
@@ -1664,7 +1668,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      mSG(print_name (Nametab.make_qualid [] t)))
+	      mSG(print_name (Libnames.make_qualid [] t)))
      | _ -> bad_vernac_args "TableField")
 
 

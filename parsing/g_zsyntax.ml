@@ -12,7 +12,7 @@ open Coqast
 open Pcoq
 open Pp
 open Util
-open Names
+open Identifier
 open Ast
 
 let get_z_sign loc =

@@ -44,7 +44,7 @@ let constr_pat_discr t =
     match decomp_pat t with
       | PRef (IndRef sp), args -> Some(IndNode sp,args)
       | PRef (ConstructRef sp), args -> Some(CstrNode sp,args)
-      | PRef (VarRef sp), args -> Some(VarNode (basename sp),args)
+      | PRef (VarRef id), args -> Some(VarNode id,args)
       | _ -> None
 
 let constr_val_discr t =

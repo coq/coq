@@ -13,6 +13,7 @@ open Closure
 open RedFlags
 open Declarations
 open Dyn
+open Libnames
 open Libobject
 open Pattern
 open Pp
@@ -20,6 +21,7 @@ open Rawterm
 open Sign
 open Tacred
 open Util
+open Identifier
 open Names
 open Nametab
 open Pfedit
@@ -103,7 +105,7 @@ let make_qid = function
   | VArg (Identifier id) -> VArg (Qualid (make_qualid [] id))
   | VArg (Constr c) ->
     (match (kind_of_term c) with
-    | IsConst _ -> VArg (Qualid (qualid_of_sp (path_of_const c)))
+    | IsConst _ -> VArg (Qualid (get_full_qualid (ConstRef (path_of_const c))))
     | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >])
   | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >]
 
@@ -118,7 +120,7 @@ let constr_of_id id = function
     if mem_named_context id hyps then
       mkVar id
     else
-      let csr = Declare.global_reference CCI id in
+      let csr = Declare.global_reference id in
       (match kind_of_term csr with
       | IsVar _ -> raise Not_found
       | _ -> csr)
@@ -188,7 +190,7 @@ let look_for_interp = Hashtbl.find interp_tab
 let glob_const_nvar loc env qid =
   try
     (* We first look for a variable of the current proof *)
-    match Nametab.repr_qualid qid with
+    match repr_qualid qid with
       | [],id ->
 	  (* lookup_value may raise Not_found *)
 	  (match Environ.lookup_named_value id env with
@@ -201,10 +203,10 @@ let glob_const_nvar loc env qid =
     match Nametab.locate qid with
       | ConstRef sp when Environ.evaluable_constant (Global.env ()) sp ->
 	  EvalConstRef sp
-      | VarRef sp when
-	  Environ.evaluable_named_decl (Global.env ()) (basename sp) ->
-	  EvalVarRef (basename sp)
-      | _ -> error ((Nametab.string_of_qualid qid) ^
+      | VarRef id when
+	  Environ.evaluable_named_decl (Global.env ()) id ->
+	  EvalVarRef id
+      | _ -> error ((string_of_qualid qid) ^
 		    " does not denote an evaluable constant")
   with Not_found ->
     Nametab.error_global_not_found_loc loc qid
@@ -647,11 +649,14 @@ and letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
            | Some g -> pf_hyps g) in
          start_proof id NeverDischarge ndc typ;
          by t;
-         let (_,({const_entry_body = pft; const_entry_type = _},_)) =
+         let (_,({const_entry_body = opft; const_entry_type = _},_)) =
            cook_proof () in
-         delete_proof id;
-         (id,VArg (Constr (mkCast (pft,typ))))::
-         (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
+	 match opft with
+	   | Some pft ->
+               delete_proof id;
+               (id,VArg (Constr (mkCast (pft,typ))))::
+               (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
+	   | _ -> anomaly "Tacinterp.letin_interp: empty const_entry_body!"
        with | NotTactic ->
          delete_proof id;
          errorlabstrm "Tacinterp.letin_interp"
@@ -700,14 +705,16 @@ and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
          let t = tactic_of_value tac in
          start_proof id NeverDischarge ndc typ;
          by t;
-         let (_,({const_entry_body = pft; const_entry_type = _},_)) =
+         let (_,({const_entry_body = opft; const_entry_type = _},_)) =
            cook_proof () in
-         delete_proof id;
-         let cutt = interp_atomic "Cut" [Constr typ]
-         and exat = interp_atomic "Exact" [Constr pft] in
-         tclTHENS cutt [tclTHEN (introduction id)
-         (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
-
+	 match opft with
+           | Some pft ->
+	       delete_proof id;
+               let cutt = interp_atomic "Cut" [Constr typ]
+               and exat = interp_atomic "Exact" [Constr pft] in
+		 tclTHENS cutt [tclTHEN (introduction id)
+		(letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
+	   | _ -> anomaly "Tacinterp.letin_interp : empty const_entry_body"
 (*         let lic = mkLetIn (Name id,pft,typ,ccl) in
          let ntac = refine (mkCast (mkMeta (Logic.new_meta ()),lic)) in
          tclTHEN ntac (tclTHEN (introduction id)
@@ -1049,7 +1056,7 @@ and cast_opencom_interp (evc,env,lfun,lmatch,goalopt,debug) com =
 and qid_interp (evc,env,lfun,lmatch,goalopt,debug) = function
   | Node(loc,"QUALIDARG",p) -> interp_qualid p
   | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
-    Nametab.qualid_of_sp (path_of_const (List.assoc n lmatch))
+    get_full_qualid (ConstRef (path_of_const (List.assoc n lmatch)))
   | ast -> 
       anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",[<'sTR
         "Unrecognizable qualid ast: "; print_ast ast>])

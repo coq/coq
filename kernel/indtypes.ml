@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
 open Declarations
@@ -17,7 +18,6 @@ open Sign
 open Environ
 open Instantiate
 open Reduction
-open Typeops
 
 (* In the following, each time an [evar_map] is required, then [Evd.empty]
    is given, since inductive types are typed in an environment without 
@@ -37,9 +37,10 @@ type inductive_error =
   | NotEnoughArgs of env * constr * constr
   | NotConstructor of env * constr * constr
   | NonPar of env * constr * int * constr * constr
-  | SameNamesTypes of identifier
-  | SameNamesConstructors of identifier * identifier
-  | NotAnArity of identifier
+  | SameNamesTypes of label
+  | SameNamesConstructors of label * label
+  | SameNamesOverlap of label list
+  | NotAnArity of label
   | BadEntry
   (* These are errors related to recursors building in Indrec *)
   | NotAllowedCaseAnalysis of bool * sorts * inductive
@@ -48,14 +49,14 @@ type inductive_error =
 
 exception InductiveError of inductive_error
 
-let check_constructors_names id =
-  let rec check idset = function
-    | [] -> idset
+let check_constructors_names tl =
+  let rec check labset = function
+    | [] -> labset
     | c::cl -> 
-	if Idset.mem c idset then 
-	  raise (InductiveError (SameNamesConstructors (id,c)))
+	if Labset.mem c labset then 
+	  raise (InductiveError (SameNamesConstructors (tl,c)))
 	else
-	  check (Idset.add c idset) cl
+	  check (Labset.add c labset) cl
   in
   check
 
@@ -65,17 +66,20 @@ let check_constructors_names id =
 
 let mind_check_names mie =
   let rec check indset cstset = function
-    | [] -> ()
+    | [] -> Labset.inter indset cstset
     | ind::inds -> 
-	let id = ind.mind_entry_typename in
+	let tlab = ind.mind_entry_typename in
 	let cl = ind.mind_entry_consnames in
-	if Idset.mem id indset then
-	  raise (InductiveError (SameNamesTypes id))
+	if Labset.mem tlab indset then
+	  raise (InductiveError (SameNamesTypes tlab))
 	else
-	  let cstset' = check_constructors_names id cstset cl in
-	  check (Idset.add id indset) cstset' inds
+	  let cstset' = check_constructors_names tlab cstset cl in
+	  check (Labset.add tlab indset) cstset' inds
   in
-  check Idset.empty Idset.empty mie.mind_entry_inds
+  let inter = check Labset.empty Labset.empty mie.mind_entry_inds in
+    if not (Labset.is_empty inter) then
+      raise (InductiveError (SameNamesOverlap (Labset.elements inter)))
+    
 
 (* [mind_extract_params mie] extracts the params from an inductive types
    declaration, and checks that they are all present (and all the same)
@@ -84,12 +88,12 @@ let mind_check_names mie =
 let mind_extract_params = decompose_prod_n_assum
 
 let mind_check_arities env mie =
-  let check_arity id c =
+  let check_arity l c =
     if not (is_arity env Evd.empty c) then 
-      raise (InductiveError (NotAnArity id))
+      raise (InductiveError (NotAnArity l))
   in
   List.iter
-    (fun {mind_entry_typename=id; mind_entry_arity=ar} -> check_arity id ar)
+    (fun {mind_entry_typename=l; mind_entry_arity=ar} -> check_arity l ar)
     mie.mind_entry_inds
 
 let mind_check_wellformed env mie =
@@ -323,7 +327,7 @@ let abstract_inductive ntypes hyps (par,np,id,arity,cnames,issmall,isunit,lc) =
   let par' = push_named_to_rel_context hyps par in
   (par',np+nparams,id,arity',cnames,issmall,isunit,lc')
 
-let cci_inductive locals env env_ar kind finite inds cst =
+let cci_inductive env env_ar finite inds cst =
   let ntypes = List.length inds in
   let ids = 
     List.fold_left 
@@ -370,11 +374,8 @@ let cci_inductive locals env env_ar kind finite inds cst =
       mind_nparams = nparams;
       mind_params_ctxt = params }
   in
-  let sp_hyps = List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
   let packets = Array.of_list (list_map_i one_packet 1 inds') in
-  { mind_kind = kind;
-    mind_ntypes = ntypes;
-    mind_hyps = sp_hyps;
+  { mind_ntypes = ntypes;
+    mind_hyps = hyps;
     mind_packets = packets;
-    mind_constraints = cst;
-    mind_singl = None }
+    mind_constraints = cst }

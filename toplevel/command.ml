@@ -18,6 +18,7 @@ open Environ
 open Reduction
 open Tacred
 open Declare
+open Identifier
 open Names
 open Coqast
 open Ast
@@ -42,11 +43,11 @@ let constant_entry_of_com (com,comtypopt) =
   let env = Global.env() in
   match comtypopt with
       None -> 
-	{ const_entry_body = interp_constr sigma env com;
+	{ const_entry_body = Some (interp_constr sigma env com);
 	  const_entry_type = None }
     | Some comtyp ->
 	let typ = interp_type sigma env comtyp in
-	{ const_entry_body = interp_casted_constr sigma env com typ;
+	{ const_entry_body = Some (interp_casted_constr sigma env com typ);
 	  const_entry_type = Some typ }
 
 let red_constant_entry ce = function
@@ -54,14 +55,17 @@ let red_constant_entry ce = function
   | Some red ->
       let body = ce.const_entry_body in
       { const_entry_body = 
-	  reduction_of_redexp red (Global.env()) Evd.empty body; 
+	  option_app (reduction_of_redexp red (Global.env()) Evd.empty) body; 
 	const_entry_type = 
 	  ce.const_entry_type }
 
 let constr_of_constr_entry ce =
-  match ce.const_entry_type with
-    | None -> ce.const_entry_body 
-    | Some t -> mkCast (ce.const_entry_body, t)
+  match ce.const_entry_body with
+    | None -> anomaly "empty constant body"
+    | Some b ->
+	match ce.const_entry_type with
+	  | None -> b
+	  | Some t -> mkCast (b, t)
 
 let declare_global_definition ident ce n local =
   let sp = declare_constant ident (ConstantEntry ce,n,false) in
@@ -102,7 +106,8 @@ let syntax_definition ident com =
 
 let parameter_def_var ident c =
   let c = interp_type Evd.empty (Global.env()) c in
-  let sp = declare_parameter ident c in
+  let ce = {const_entry_body = None; const_entry_type = Some c} in
+  let sp = declare_constant ident (ConstantEntry ce,NeverDischarge,false) in
   if_verbose message ((string_of_id ident) ^ " is assumed");
   sp
 
@@ -201,9 +206,9 @@ let interp_mutual lparams lnamearconstrs finite =
 	 in
 	 { mind_entry_nparams = nparams;
 	   mind_entry_params = params';
-	   mind_entry_typename = name;
+	   mind_entry_typename = label_of_ident name;
 	   mind_entry_arity = ar;
-	   mind_entry_consnames = constrnames;
+	   mind_entry_consnames = List.map label_of_ident constrnames;
 	   mind_entry_lc = constrs })
       (List.rev arityl) lnamearconstrs
   in
@@ -211,7 +216,7 @@ let interp_mutual lparams lnamearconstrs finite =
 
 let declare_mutual_with_eliminations mie =
   let lrecnames =
-    List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
+    List.map (fun e -> ident_of_label e.mind_entry_typename) mie.mind_entry_inds in
   let sp = declare_mind mie in
   if_verbose pPNL (minductive_message lrecnames);
   declare_eliminations sp;
@@ -294,11 +299,11 @@ let build_recursive lnameargsardef =
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
   let rec declare i fi =
     let ce = 
-      { const_entry_body =
-	  mkFix ((nvrec,i),
-	         (Array.map (fun id -> Name id) namerec,
-                  arrec,
-		  recvec));
+      { const_entry_body = Some 
+	  (mkFix ((nvrec,i),
+	          (Array.map (fun id -> Name id) namerec,
+                   arrec,
+		   recvec)));
         const_entry_type = None } in
     let sp = declare_constant fi (ConstantEntry ce, n, false) in
     (ConstRef sp)
@@ -307,11 +312,11 @@ let build_recursive lnameargsardef =
   let lrefrec = Array.mapi declare namerec in
   if_verbose pPNL (recursive_message lrefrec);
   (* The others are declared as normal definitions *)
-  let var_subst id = (id, global_reference CCI id) in
+  let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = replace_vars subst def;
+	 let ce = { const_entry_body = Some (replace_vars subst def);
 		    const_entry_type = None } in
 	 let _ = declare_constant f (ConstantEntry ce,n,false) in
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -356,10 +361,10 @@ let build_corecursive lnameardef =
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
   let rec declare i fi =
     let ce = 
-      { const_entry_body =
-	  mkCoFix (i, (Array.map (fun id -> Name id) namerec,
-                       arrec,
-		       recvec));
+      { const_entry_body = Some 
+	  (mkCoFix (i, (Array.map (fun id -> Name id) namerec,
+                        arrec,
+		        recvec)));
         const_entry_type = None } 
     in
     let sp = declare_constant fi (ConstantEntry ce,n,false) in
@@ -367,11 +372,11 @@ let build_corecursive lnameardef =
   in 
   let lrefrec = Array.mapi declare namerec in
   if_verbose pPNL (corecursive_message lrefrec);
-  let var_subst id = (id, global_reference CCI id) in
+  let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = replace_vars subst def;
+	 let ce = { const_entry_body = Some (replace_vars subst def);
 		    const_entry_type = None } in
 	 let _ = declare_constant f (ConstantEntry ce,n,false) in
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -383,12 +388,12 @@ let build_corecursive lnameardef =
 
 let inductive_of_ident id =
   let c =
-    try global_reference CCI id
+    try global_reference id
     with Not_found ->
       errorlabstrm "inductive_of_ident"
 	[< 'sTR ((string_of_id id) ^ " not found") >]
   in
-  match kind_of_term (global_reference CCI id) with
+  match kind_of_term (global_reference id) with
     | IsMutInd ind -> ind
     | _ -> errorlabstrm "inductive_of_ident"
 	[< 'sTR (string_of_id id); 'sPC; 'sTR "is not an inductive type" >]
@@ -405,7 +410,7 @@ let build_scheme lnamedepindsort =
   let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi lrecref =
-    let ce = { const_entry_body = decl; const_entry_type = None } in
+    let ce = { const_entry_body = Some decl; const_entry_type = None } in
     let sp = declare_constant fi (ConstantEntry ce,n,false) in
     ConstRef sp :: lrecref
   in 
@@ -422,7 +427,7 @@ let start_proof_com sopt stre com =
 	  (Pfedit.get_all_proof_names ())
   in
   let c = interp_type Evd.empty env com in
-  let _ = Safe_typing.typing_in_unsafe_env env c in
+  let _ = Safe_env.typing_in_unsafe_env env c in
   Pfedit.start_proof id stre sign c
 
 let apply_tac_not_declare id pft = function
@@ -433,21 +438,24 @@ let apply_tac_not_declare id pft = function
     Pfedit.delete_current_proof ();
     Pfedit.by (tclTHENS cutt [introduction id;exat])
 
-let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
+let save opacity id ({const_entry_body = opft; const_entry_type = tpo} as const)
   strength =
-  begin match strength with
-    | DischargeAt disch_sp when Lib.is_section_p disch_sp (*&& not opacity*) ->
-	let c = constr_of_constr_entry const in
-	let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
-    | NeverDischarge | DischargeAt _ ->
-        let _ = declare_constant id (ConstantEntry const,strength,opacity)in ()
-    | NotDeclare -> apply_tac_not_declare id pft tpo
-  end;
-  if not (strength = NotDeclare) then
-  begin
-    Pfedit.delete_current_proof ();
-    if_verbose message ((string_of_id id) ^ " is defined")
-  end
+  match opft with
+    | None -> anomaly "Empty const_entry_body"
+    | Some pft ->
+	begin match strength with
+	  | DischargeAt disch_sp when Lib.is_section_p disch_sp (*&& not opacity*) ->
+	      let c = constr_of_constr_entry const in
+	      let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
+	  | NeverDischarge | DischargeAt _ ->
+			       let _ = declare_constant id (ConstantEntry const,strength,opacity)in ()
+	  | NotDeclare -> apply_tac_not_declare id pft tpo
+	end;
+	if not (strength = NotDeclare) then
+	begin
+	  Pfedit.delete_current_proof ();
+	  if_verbose message ((string_of_id id) ^ " is defined")
+	end
 
 let save_named opacity =
   let id,(const,strength) = Pfedit.cook_proof () in

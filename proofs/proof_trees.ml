@@ -10,6 +10,7 @@
 
 open Closure
 open Util
+open Identifier
 open Names
 open Term
 open Sign
@@ -364,7 +365,7 @@ let last_of_cvt_flags (_,red) =
        (function
 	  | EvalVarRef id -> nvar id
 	  | EvalConstRef sp ->
-	      ast_of_qualid (Global.qualid_of_global (ConstRef sp)))
+	      ast_of_qualid (Nametab.get_short_qualid (ConstRef sp)))
        lconst in
    if lqid = [] then []
    else if n_unf then [ope("Delta",[]);ope("UnfBut",lqid)]
@@ -384,7 +385,7 @@ let ast_of_cvt_redexp = function
       [match sp with
 	| EvalVarRef id -> nvar id
 	| EvalConstRef sp -> 					
-	    ast_of_qualid (Global.qualid_of_global (ConstRef sp))]
+	    ast_of_qualid (Nametab.get_short_qualid (ConstRef sp))]
       @(List.map num locc))) l)
   | Fold l ->
     ope("Fold",List.map (fun c -> ope ("COMMAND",

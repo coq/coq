@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 open Util
-open Names
+open Libnames
 
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one

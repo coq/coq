@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-open Names
+open Identifier
 
 (* This module implements the discharge mechanism. It provides a function to
    close the last opened section. That function calls [Lib.close_section] and

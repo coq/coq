@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Util
 open Pp
 open Names
@@ -38,34 +39,6 @@ type case_printing =
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int * case_printing
 
-(* Concrete type for making pattern-matching. *)
-module Polymorph :
-sig
-(* [constr array] is an instance matching definitional [named_context] in
-   the same order (i.e. last argument first) *)
-type 'constr existential = existential_key * 'constr array
-type 'constr constant = constant_path * 'constr array
-type 'constr constructor = constructor_path * 'constr array
-type 'constr inductive = inductive_path * 'constr array
-type ('constr, 'types) rec_declaration =
-    name array * 'types array * 'constr array
-type ('constr, 'types) fixpoint =
-    (int array * int) * ('constr, 'types) rec_declaration
-type ('constr, 'types) cofixpoint =
-    int * ('constr, 'types) rec_declaration
-
-(* [IsVar] is used for named variables and [IsRel] for variables as
-   de Bruijn indices. *)
-end 
-
-(********************************************************************)
-(* type of global reference *)
-
-type global_reference =
-  | VarRef of section_path
-  | ConstRef of constant_path
-  | IndRef of inductive_path
-  | ConstructRef of constructor_path
 
 (********************************************************************)
 (* The type of constructions *)
@@ -73,7 +46,7 @@ type global_reference =
 type constr
 
 (* [types] is the same as [constr] but is intended to be used where a
-   {\em type} in CCI sense is expected (Rem:plurial form since [type] is a
+   {\em type} in CCI sense is expected (Rem:plural form since [type] is a
    reserved ML keyword) *)
 
 type types = constr
@@ -96,43 +69,42 @@ type rel_declaration = name * constr option * types
 
 type arity = rel_declaration list * sorts
 
-(*s Functions for dealing with constr terms.
-  The following functions are intended to simplify and to uniform the 
-  manipulation of terms. Some of these functions may be overlapped with
-  previous ones. *)
+(*s User view of [constr]. For [IsApp], it is ensured there is at
+   least one argument and the function is not itself an applicative
+   term *)
 
-open Polymorph
-type ('constr, 'types) kind_of_term =
+type kind_of_term =
   | IsRel          of int
   | IsMeta         of int
   | IsVar          of identifier
   | IsSort         of sorts
-  | IsCast         of 'constr * 'constr
-  | IsProd         of name * 'types * 'constr 
-  | IsLambda       of name * 'types * 'constr
-  | IsLetIn        of name * 'constr * 'types * 'constr
-  | IsApp          of 'constr * 'constr array
-  | IsEvar         of 'constr existential
-  | IsConst        of 'constr constant
-  | IsMutInd       of 'constr inductive
-  | IsMutConstruct of 'constr constructor
-  | IsMutCase      of case_info * 'constr * 'constr * 'constr array
-  | IsFix          of ('constr, 'types) fixpoint
-  | IsCoFix        of ('constr, 'types) cofixpoint
+  | IsCast         of constr * constr
+  | IsProd         of name * types * constr 
+  | IsLambda       of name * types * constr
+  | IsLetIn        of name * constr * types * constr
+  | IsApp          of constr * constr array
+  | IsEvar         of existential
+  | IsConst        of constant
+  | IsMutInd       of inductive
+  | IsMutConstruct of constructor
+  | IsMutCase      of case_info * constr * constr * constr array
+  | IsFix          of fixpoint
+  | IsCoFix        of cofixpoint
 
-type existential = existential_key * constr array
-type constant = constant_path * constr array
-type constructor = constructor_path * constr array
-type inductive = inductive_path * constr array
-type rec_declaration = name array * types array * constr array
-type fixpoint = (int array * int) * rec_declaration
-type cofixpoint = int * rec_declaration
+and existential = existential_key * constr array
+and constant = constant_path * constr array
+and constructor = constructor_path * constr array
+and inductive = inductive_path * constr array
+and rec_declaration = name array * types array * constr array
+and fixpoint = (int array * int) * rec_declaration
+and cofixpoint = int * rec_declaration
 
-(* User view of [constr]. For [IsApp], it is ensured there is at
-   least one argument and the function is not itself an applicative
-   term *)
+val kind_of_term : constr -> kind_of_term
 
-val kind_of_term : constr -> (constr, types) kind_of_term
+(*s Functions for dealing with constr terms.
+  The following functions are intended to simplify and to uniform the 
+  manipulation of terms. Some of these functions may be overlapped with
+  previous ones. *)
 
 (*s Term constructors. *)
 
@@ -550,6 +522,12 @@ val replace_term : constr -> constr -> constr -> constr
 
 val subst_meta : (int * constr) list -> constr -> constr
 
+(* [subst_constr_*id id mp c] replaces all occurences of [id] in [c] 
+   with [mp] *)
+
+val subst_constr_msid : mod_str_id -> module_path -> constr -> constr
+val subst_constr_mbid : mod_bound_id -> module_path -> constr -> constr
+
 (*s Generic representation of constructions *)
 
 type fix_kind = RFix of (int array * int) | RCoFix of int
@@ -669,8 +647,8 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 (*s Hash-consing functions for constr. *)
 
 val hcons_constr:
-  (section_path -> section_path) *
-  (section_path -> section_path) *
+  (long_name -> long_name) *
+  (long_name -> long_name) *
   (name -> name) *
   (identifier -> identifier) *
   (string -> string) 
@@ -681,3 +659,4 @@ val hcons_constr:
 
 val hcons1_constr : constr -> constr
 val hcons1_types : types -> types
+

@@ -22,8 +22,9 @@
 
 open Pp
 open Util
+open Names
 
-type universe = { u_mod : Names.dir_path; u_num : int }
+type universe = { u_mod : module_path; u_num : int }
 
 let universe_ord x y =
   let c = x.u_num - y.u_num in
@@ -35,21 +36,33 @@ module UniverseOrdered = struct
 end
 
 let string_of_univ u = 
-  (Names.string_of_dirpath u.u_mod)^"."^(string_of_int u.u_num)
+  (string_of_modpath u.u_mod)^"."^(string_of_int u.u_num)
 
 let pr_uni u =
-  [< 'sTR (Names.string_of_dirpath u.u_mod) ; 'sTR"." ; 'iNT u.u_num >]
+  [< pr_modpath u.u_mod ; 'sTR"." ; 'iNT u.u_num >]
 
-let dummy_univ =  (* for prover terms *)
-  { u_mod = Names.make_dirpath [Names.id_of_string "dummy_univ"];
-    u_num = 0 }
-let implicit_univ =
-  { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
+let dummy_univ = 
+  { u_mod = MPsid (msid_of_string "dummy univ"); 
+    u_num = 0 } (* for prover terms *)
+
+let implicit_univ = 
+  { u_mod = MPsid (msid_of_string "implicit univ"); 
     u_num = 0 }
 
-let current_module = ref []
+let current_module = ref top_path
 
 let set_module m = current_module := m
+
+let with_module mp f x = 
+  let old_module = !current_module in
+    current_module := mp;
+    try
+      let result = f x in
+	current_module := old_module;
+	result
+    with e ->
+      current_module := old_module;
+      raise e
 
 let new_univ = 
   let univ_gen = ref 0 in
@@ -58,6 +71,8 @@ let new_univ =
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
     { univ: universe; gt: universe list; ge: universe list }
+
+let arc_ord {univ=u1} {univ=u2} = universe_ord u1 u2
 
 let terminal u = {univ=u; gt=[]; ge=[]}
 
@@ -86,9 +101,9 @@ let declare_univ u g =
 (* The universes of Prop and Set: Type_0, Type_1 and the
    resulting graph. *)
 let (initial_universes,prop_univ,prop_univ_univ) =
-  let prop_sp = Names.make_dirpath [Names.id_of_string "prop_univ"] in
-  let u = { u_mod = prop_sp; u_num = 0 } in
-  let su = { u_mod = prop_sp; u_num = 1 } in
+  let prop_ln = MPsid (msid_of_string "prop_univ") in
+  let u = { u_mod = prop_ln; u_num = 0 } in
+  let su = { u_mod = prop_ln; u_num = 1 } in
   let g = enter_arc (terminal u) UniverseMap.empty in
   let g = enter_arc {univ=su; gt=[u]; ge=[]} g in
   (g,u,su)
@@ -147,6 +162,10 @@ let reprgeq g arcu =
   in 
   searchrec [] arcu.ge
 
+(* collect_eq : *)
+let collect_eq g arcu = 
+  let check_repr v _ l = if (repr g v)==arcu then v::l else l in
+  UniverseMap.fold check_repr g []
 
 (* between : universe -> canonical_arc -> canonical_arc list *)
 (* between u v = {w|u>=w>=v, w canonical}          *)     
@@ -354,6 +373,73 @@ let enforce_eq u v c = Constraint.add (u,Eq,v) c
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
 
+
+(* problem : 
+   in oldg: u > v, v cannonical,
+   in newg: v=w, w new
+   v does not apprear on the > list of u any more
+   implemented solution : 
+   check if the new list is smaller (and not equal) than the old list
+*)
+
+(* TODO: sprawdzanie rownosci jest za drogie!
+   trzeba zrobic jeden przejazd po oldg i newg, wyznaczajacy 
+   rownoczesnie rownych dla kozdego z top_univ
+   Map.S (univ -> univ list "jemu rowne")
+   init = "old_univ -> []"
+   i potem jeden fold g, ktory dla kazdego u w g sprawdza, czy 
+   (repr u g) jest w mapie i jesli tak, to sie mu dodaje do listy
+
+   a funkcje collect_eq wyrzucic
+*)   
+
+let merge_module_constraints mp c oldg = 
+  let newg = merge_constraints c oldg 
+  in
+
+  let select c l = match c with
+      (u,Gt,_) -> u::l
+    | (u,Geq,_) -> u::l
+    | (u,Eq,v) -> u::v::l
+  in
+  let old_only_univ u = u.u_mod <> mp in
+  let top_univ = 
+    List.filter old_only_univ (Constraint.fold select c []) 
+  in  
+
+  let old_only_arc {univ=u} = u.u_mod <> mp in
+  let filter_old = List.filter old_only_arc in
+  let collect_select g u filter_arc filter_univ = 
+    let arcu = repr g u in
+    let gtgeq = collect g arcu in
+    let gt = List.sort arc_ord (filter_arc (fst gtgeq))
+    and geq = List.sort arc_ord (filter_arc (snd gtgeq))
+    and eq = List.sort universe_ord (filter_univ (collect_eq g arcu))
+    in
+      (gt, geq, eq)
+  in
+  let rec check_sorted_lists oldl newl = match oldl, newl with
+      _, [] -> ()
+    | [],_ -> error_inconsistency ()
+    | oh::_, nh::_ when oh!=nh -> error_inconsistency ()
+    | _::ol,_::nl -> check_sorted_lists ol nl
+  in
+  let check_univ u = 
+    let oldgt,oldgeq,oldeq = 
+      collect_select oldg u (fun l->l) (fun l->l)
+    in
+    let newgt,newgeq,neweq = 
+      collect_select newg u 
+	(List.filter old_only_arc) 
+	(List.filter old_only_univ) 
+    in
+      check_sorted_lists oldgt newgt;
+      check_sorted_lists oldgeq newgeq; 
+      check_sorted_lists oldeq neweq
+  in
+    List.iter check_univ top_univ;
+    newg
+      
 (* Returns a fresh universe, juste above u. Does not create new universes
    for Type_0 (the sort of Prop and Set).
    Used to type the sort u. *)
@@ -433,17 +519,13 @@ module Huniv =
   Hashcons.Make(
     struct
       type t = universe
-      type u = Names.identifier -> Names.identifier
-      let hash_sub hstr {u_mod=sp; u_num=n} = 
-	{u_mod=List.map hstr sp; u_num=n}
-      let equal {u_mod=sp1; u_num=n1} {u_mod=sp2; u_num=n2} =
-          (List.length sp1 = List.length sp2)
-              & List.for_all2 (==) sp1 sp2 & n1=n2
+      type u = string -> string
+      let hash_sub hstr {u_mod=ln; u_num=n} = 
+	{u_mod=(todo "Univ.Huniv"; ln); u_num=n}
+      let equal {u_mod=ln1; u_num=n1} {u_mod=ln2; u_num=n2} =
+	ln1==ln2 & n1=n2
       let hash = Hashtbl.hash
     end)
 
 
-let hcons1_univ u =
-  let _,_,_,hid,_ = Names.hcons_names () in
-  Hashcons.simple_hcons Huniv.f hid u
-
+let hcons1_univ u = u (* todo *)

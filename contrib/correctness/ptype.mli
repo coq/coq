@@ -29,9 +29,9 @@ open Term
 
 (* pre and post conditions *)
 
-type 'a precondition = { p_assert : bool; p_name : Names.name; p_value : 'a }
+type 'a precondition = { p_assert : bool; p_name : name; p_value : 'a }
 
-type 'a assertion  = { a_name : Names.name; a_value : 'a }
+type 'a assertion  = { a_name : Identifier.name; a_value : 'a }
 
 type 'a postcondition = 'a assertion
 
@@ -44,7 +44,7 @@ type 'a binder_type =
   | BindSet
   | Untyped
 
-type 'a binder = Names.identifier * 'a binder_type
+type 'a binder = Identifier.identifier * 'a binder_type
 
 (* variant *)
 
@@ -62,7 +62,7 @@ type 'a ml_type_v =
 (* et type des calculs *)
 
 and 'a ml_type_c =
-    (Names.identifier * 'a ml_type_v) 
+    (Identifier.identifier * 'a ml_type_v) 
   * Peffect.t
   * ('a precondition list) * ('a postcondition option)
 

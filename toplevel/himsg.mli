@@ -21,7 +21,7 @@ open Logic
 
 (* This module provides functions to explain the type errors. *)
 
-val explain_type_error : path_kind -> env -> type_error -> std_ppcmds
+val explain_type_error : env -> type_error -> std_ppcmds
 
 val explain_pretype_error : env -> pretype_error -> std_ppcmds
 

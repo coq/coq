@@ -10,6 +10,7 @@
 
 open Util
 open Pp
+open Identifier
 open Names
 open Univ
 open Term
@@ -288,7 +289,7 @@ let make_subst env args =
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 
-let new_isevar isevars env typ k =
+let new_isevar isevars env typ =
   let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
   let instance = make_evar_instance_with_rel env in

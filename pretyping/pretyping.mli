@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Sign
 open Term

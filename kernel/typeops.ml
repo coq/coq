@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Univ
 open Term
@@ -31,19 +32,14 @@ let j_val j = j.uj_val
 let assumption_of_judgment env sigma j =
   match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
     | IsSort s -> j.uj_val
-    | _ -> error_assumption CCI env j.uj_val
+    | _ -> error_assumption env j.uj_val
 
-(*
-let aojkey = Profile.declare_profile "assumption_of_judgment";;
-let assumption_of_judgment env sigma j
-  = Profile.profile3 aojkey assumption_of_judgment env sigma j;;
-*)
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env sigma j =
   match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
     | IsSort s -> {utj_val = j.uj_val; utj_type = s }
-    | _ -> error_not_type CCI env j
+    | _ -> error_not_type env j
 
 
 (************************************************)
@@ -90,52 +86,13 @@ let relative env n =
     { uj_val  = mkRel n;
       uj_type = type_app (lift n) typ }
   with Not_found -> 
-    error_unbound_rel CCI env n
+    error_unbound_rel env n
 
-(*
-let relativekey = Profile.declare_profile "relative";;
-let relative env sigma n = Profile.profile3 relativekey relative env sigma n;;
-*)
 
-(* Management of context of variables. *)
-
-(* Checks if a context of variable is included in another one. *)
-(*
-let rec hyps_inclusion env sigma sign1 sign2 =
-  if sign1 = empty_named_context then true
-  else
-    let (id1,ty1) = hd_sign sign1 in
-    let rec search sign2 =
-      if sign2 = empty_named_context then false
-      else
-	let (id2,ty2) = hd_sign sign2 in
-        if id1 = id2 then
-	  (is_conv env sigma (body_of_type ty1) (body_of_type ty2))
-	  &
-	  hyps_inclusion env sigma (tl_sign sign1) (tl_sign sign2)
-        else 
-	  search (tl_sign sign2)
-    in 
-    search sign2
-*)
-
-(* Checks if the given context of variables [hyps] is included in the
-   current context of [env]. *)
-(*
-let check_hyps id env sigma hyps =
-  let hyps' = named_context env in
-  if not (hyps_inclusion env sigma hyps hyps') then
-    error_reference_variables CCI env id
-*)
 (* Instantiation of terms on real arguments. *)
 
 let type_of_constant = Instantiate.constant_type
 
-(*
-let tockey = Profile.declare_profile "type_of_constant";;
-let type_of_constant env sigma c 
-  = Profile.profile3 tockey type_of_constant env sigma c;;
-*)
 
 (* Type of an existential variable. Not used in kernel. *)
 let type_of_existential env sigma ev =
@@ -206,20 +163,14 @@ let apply_rel_list env sigma nocheck argjl funj =
 		   let cst' = Constraint.union cst c in
 		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
-		   error_cant_apply_bad_type CCI env
+		   error_cant_apply_bad_type env
 		     (n,c1,body_of_type hj.uj_type)
 		     funj argjl)
 
           | _ ->
-	      error_cant_apply_not_functional CCI env funj argjl
+	      error_cant_apply_not_functional env funj argjl
   in 
   apply_rec 1 (body_of_type funj.uj_type) Constraint.empty argjl
-
-(*
-let applykey = Profile.declare_profile "apply_rel_list";;
-let apply_rel_list env sigma nocheck argjl funj
-  = Profile.profile5 applykey apply_rel_list env sigma nocheck argjl funj;;
-*)
 
 (* Type of product *)
 let gen_rel env sigma name t1 t2 =
@@ -243,7 +194,7 @@ let cast_rel env sigma cj t =
       uj_type = t },
     cst
   with NotConvertible ->
-    error_actual_type CCI env cj.uj_val (body_of_type cj.uj_type) t
+    error_actual_type env cj.uj_val (body_of_type cj.uj_type) t
 
 (* Inductive types. *)
 
@@ -251,11 +202,6 @@ let type_of_inductive env sigma i =
   (* TODO: check args *)
   mis_arity (lookup_mind_specif i env)
 
-(*
-let toikey = Profile.declare_profile "type_of_inductive";;
-let type_of_inductive env sigma i
-  = Profile.profile3 toikey type_of_inductive env sigma i;;
-*)
 
 (* Constructors. *)
 
@@ -264,11 +210,6 @@ let type_of_constructor env sigma cstr =
     (index_of_constructor cstr) 
     (lookup_mind_specif (inductive_of_constructor cstr) env)
 
-(*
-let tockey = Profile.declare_profile "type_of_constructor";;
-let type_of_constructor env sigma cstr
-  = Profile.profile3 tockey type_of_constructor env sigma cstr;;
-*)
 
 (* Case. *)
 
@@ -328,7 +269,7 @@ let is_correct_arity env sigma kelim (c,pj) indf t =
       @(List.map (make_arity env false indf) kelim)
     in 
     let ind = mis_inductive (fst (dest_ind_family indf)) in
-    error_elim_arity CCI env ind listarity c pj kinds
+    error_elim_arity env ind listarity c pj kinds
 
 
 let find_case_dep_nparams env sigma (c,pj) (IndFamily (mis,_) as indf) =
@@ -358,14 +299,14 @@ let type_case_branches env sigma (IndType (indf,realargs)) pj c =
 
 let check_branches_message env sigma cj (explft,lft) = 
   let expn = Array.length explft and n = Array.length lft in
-  if n<>expn then error_number_branches CCI env cj expn;
+  if n<>expn then error_number_branches env cj expn;
   let univ = ref Constraint.empty in
   (for i = 0 to n-1 do
     try
       univ := Constraint.union !univ
         (conv_leq env sigma lft.(i) (explft.(i)))
     with NotConvertible ->
-      error_ill_formed_branch CCI env cj.uj_val i lft.(i) explft.(i)
+      error_ill_formed_branch env cj.uj_val i lft.(i) explft.(i)
   done;
   !univ)
 
@@ -375,7 +316,7 @@ let judge_of_case env sigma (np,_ as ci) pj cj lfj =
   let lft = Array.map (fun j -> body_of_type j.uj_type) lfj in
   let indspec =
     try find_rectype env sigma (body_of_type cj.uj_type)
-    with Induc -> error_case_not_inductive CCI env cj in
+    with Induc -> error_case_not_inductive env cj in
   if np <> nparams_of indspec then 
     anomaly "judge_of_case: wrong parameters number";
   let (bty,rslty,univ) = type_case_branches env sigma indspec pj cj.uj_val in
@@ -385,11 +326,6 @@ let judge_of_case env sigma (np,_ as ci) pj cj lfj =
      uj_type = rslty },
   Constraint.union univ univ')
 
-(*
-let tocasekey = Profile.declare_profile "type_of_case";;
-let type_of_case env sigma ci pj cj lfj
-  = Profile.profile6 tocasekey type_of_case env sigma ci pj cj lfj;;
-*)
 
 (* Fixpoints. *)
 
@@ -757,7 +693,7 @@ let check_fix env sigma ((nvect,bodynum),(names,types,bodies as recdef)) =
       let _ = check_subterm_rec_meta fixenv sigma nvect nvect.(i) bodies.(i)
       in ()
     with FixGuardError err ->
-      error_ill_formed_rec_body	CCI fixenv err names i bodies
+      error_ill_formed_rec_body	fixenv err names i bodies
   done 
 
 (*
@@ -895,7 +831,7 @@ let check_cofix env sigma (bodynum,(names,types,bodies as recdef)) =
       let _ = check_guard_rec_meta fixenv sigma nbfix bodies.(i) types.(i)
       in ()
     with CoFixGuardError err -> 
-      error_ill_formed_rec_body CCI fixenv err names i bodies
+      error_ill_formed_rec_body fixenv err names i bodies
   done
 
 (* Checks the type of a (co)fixpoint.
@@ -915,7 +851,7 @@ let type_fixpoint env sigma lna lar vdefj =
       (Array.map (fun j -> body_of_type j.uj_type) vdefj)
       (Array.map body_of_type lar)
   with IllBranch i ->
-    error_ill_typed_rec_body CCI env i lna vdefj lar
+    error_ill_typed_rec_body env i lna vdefj lar
 
 
 (* A function which checks that a term well typed verifies both
@@ -945,3 +881,4 @@ let control_only_guard env sigma =
     | IsLetIn (_,c1,c2,c3) -> control_rec c1; control_rec c2; control_rec c3
   in 
   control_rec 
+

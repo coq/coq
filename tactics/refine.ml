@@ -48,6 +48,7 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Term
 open Tacmach

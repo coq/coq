@@ -8,6 +8,7 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
 open Reduction

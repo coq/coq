@@ -54,7 +54,7 @@ val reduce_to_mind :
   env -> 'a evar_map -> constr -> inductive * constr * constr
 
 val reduce_to_ind : 
-  env -> 'a evar_map -> constr -> section_path * constr * constr
+  env -> 'a evar_map -> constr -> inductive_path * constr * constr
 
 type red_expr =
   | Red of bool    (* raise Redelimination if true otherwise UserError *)

@@ -9,8 +9,10 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
+open Libnames
 open Declare
 open Pattern
 open Nametab
@@ -26,9 +28,9 @@ let logic_type_module = make_dir ["Coq";"Init";"Logic_Type"]
 let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
 let arith_module = make_dir ["Coq";"Arith";"Arith"]
 
-let nat_path = make_path datatypes_module (id_of_string "nat") CCI
+let nat_path = make_ln (MPcomp datatypes_module) (label_of_string "nat") 
 let myvar_path =
-  make_path arith_module (id_of_string "My_special_variable") CCI
+  make_ln (MPcomp arith_module) (label_of_string "My_special_variable") 
 
 let glob_nat = IndRef (nat_path,0)
 
@@ -37,8 +39,8 @@ let glob_S = ConstructRef ((nat_path,0),2)
 
 let glob_My_special_variable_nat = ConstRef myvar_path
 
-let eq_path = make_path logic_module (id_of_string "eq") CCI
-let eqT_path = make_path logic_type_module (id_of_string "eqT") CCI
+let eq_path = make_ln (MPcomp logic_module) (label_of_string "eq")
+let eqT_path = make_ln (MPcomp logic_type_module) (label_of_string "eqT")
 
 let glob_eq = IndRef (eq_path,0)
 let glob_eqT = IndRef (eqT_path,0)

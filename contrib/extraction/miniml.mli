@@ -11,6 +11,7 @@
 (*s Target language for extraction: a core ML called MiniML. *)
 
 open Pp
+open Identifier
 open Names
 open Term
 

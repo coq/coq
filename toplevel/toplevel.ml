@@ -171,7 +171,7 @@ let valid_buffer_loc ib dloc (b,e) =
     from cycling. *)
 let make_prompt () =
   try
-    (Names.string_of_id (Pfedit.get_current_proof_name ())) ^ " < "
+    (Identifier.string_of_id (Pfedit.get_current_proof_name ())) ^ " < "
   with _ -> 
     "Coq < "
 

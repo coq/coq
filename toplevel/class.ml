@@ -10,6 +10,7 @@
 
 open Util
 open Pp
+open Identifier
 open Names
 open Term
 open Inductive
@@ -227,8 +228,8 @@ let id_of_cl  = function
   | CL_SORT -> (id_of_string "SORTCLASS") 
   | CL_CONST sp -> (basename sp)
   | CL_IND (sp,i) ->
-      (mind_nth_type_packet (Global.lookup_mind sp) i).mind_typename
-  | CL_SECVAR sp -> (basename sp)
+      ident_of_label (mind_nth_type_packet (Global.lookup_mind sp) i).mind_typename
+  | CL_SECVAR id -> id
 
 let class_of_ref = function
   | ConstRef sp -> CL_CONST sp
@@ -348,7 +349,7 @@ let build_id_coercion idf_opt source =
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     ConstantEntry
-      { const_entry_body = mkCast (val_f, typ_f);
+      { const_entry_body = Some (mkCast (val_f, typ_f));
 	const_entry_type = None } in
   let sp = declare_constant idf (constr_entry,NeverDischarge,false) in
   ConstRef sp
@@ -443,14 +444,17 @@ let count_extra_abstractions hyps ids_to_discard =
       (hyps,0) ids_to_discard
   in n
 
-let defined_in_sec sp sec_sp = dirpath sp = sec_sp
+let defined_in_sec ref sec_sp = 
+  snd (Libnames.repr_qualid (Nametab.get_full_qualid ref)) = sec_sp
 
 (* This moves the global path one step below *)
-let process_global = function
+let process_global _ = 
+  anomaly "I forgot sections ... :("
+(*
   | VarRef _ ->
       anomaly "process_global only processes global surviving the section"
-  | ConstRef sp ->
-      let ((_,spid,spk)) = repr_path sp in
+  | ConstRef ln ->
+      let id = ident_of_label (label ln) in
       let newsp = Lib.make_path spid CCI in
       ConstRef newsp
   | IndRef (sp,i) -> 
@@ -461,17 +465,20 @@ let process_global = function
       let ((_,spid,spk)) = repr_path sp in
       let newsp = Lib.make_path spid CCI in
       ConstructRef ((newsp,i),j)
+*)
 
 let process_class sec_sp ids_to_discard x =
-  let (cl,{cl_strength=stre; cl_param=p}) = x in
+  anomaly "Eer, I forgot sections..."
+
+(*  let (cl,{cl_strength=stre; cl_param=p}) = x in
 (*  let env = Global.env () in*)
   match cl with 
     | CL_SECVAR _ -> x
-    | CL_CONST sp -> 
-        if defined_in_sec sp sec_sp then
+    | CL_CONST cp -> 
+        if defined_in_sec (ConstRef cp) sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
           let newsp = Lib.make_path spid CCI in
-	  let hyps = (Global.lookup_constant sp).const_hyps in
+	  let hyps = (Global.lookup_constant cp).const_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
 (*
           let v = global_reference CCI spid in
@@ -496,9 +503,11 @@ let process_class sec_sp ids_to_discard x =
         else 
 	  x
     | _ -> anomaly "process_class" 
+*)
 
 let process_cl sec_sp cl =
-  match cl with
+  anomaly "I forgot sections"
+(*  match cl with
     | CL_SECVAR id -> cl
     | CL_CONST sp ->
 	if defined_in_sec sp sec_sp then
@@ -515,9 +524,12 @@ let process_cl sec_sp cl =
         else 
 	  cl
     | _ -> cl
-
+*)
 let process_coercion sec_sp ids_to_discard ((coe,coeinfo),cls,clt) =
+  anomaly "Now sections!!! Ha ha ha!!!"
+(*
   let hyps = context_of_global_reference coe in let nargs =
   count_extra_abstractions hyps ids_to_discard in (process_global coe,
   coercion_strength coeinfo, coercion_identity coeinfo, process_cl
   sec_sp cls, process_cl sec_sp clt, nargs + coercion_params coeinfo)
+*)

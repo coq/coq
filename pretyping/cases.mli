@@ -43,5 +43,5 @@ val compile_cases :
   loc -> (type_constraint -> env -> rawconstr -> unsafe_judgment)
   * 'a evar_defs -> type_constraint -> env ->
     rawconstr option * rawconstr list *
-    (loc * identifier list * cases_pattern list * rawconstr) list ->
+    (loc * Identifier.identifier list * cases_pattern list * rawconstr) list ->
     unsafe_judgment

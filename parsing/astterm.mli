@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Term
 open Sign
@@ -73,7 +74,7 @@ val globalize_ast    : Coqast.t -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)
-val interp_qualid : Coqast.t list -> Nametab.qualid
+val interp_qualid : Coqast.t list -> Libnames.qualid
 
 (* Translation rules from V6 to V7:
 

@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Univ
 open Term
@@ -45,11 +46,11 @@ val mis_kelim : inductive_instance -> sorts list
 val mis_recargs : inductive_instance -> (recarg list) array array
 val mis_recarg : inductive_instance -> (recarg list) array
 val mis_typename : inductive_instance -> identifier
-val mis_typepath : inductive_instance -> section_path
+val mis_typepath : inductive_instance -> inductive_path
 val mis_is_recursive_subset : int list -> inductive_instance -> bool
 val mis_is_recursive : inductive_instance -> bool
 val mis_consnames : inductive_instance -> identifier array
-val mis_conspaths : inductive_instance -> section_path array
+val mis_conspaths : inductive_instance -> constructor_path array
 val mis_inductive : inductive_instance -> inductive
 val mis_arity : inductive_instance -> types
 val mis_nf_arity : inductive_instance -> types

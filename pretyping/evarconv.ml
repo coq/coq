@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
 open Reduction
@@ -290,7 +291,7 @@ and conv_record env isevars (c,bs,(xs,xs1),(us,us1),(ts,ts1),t) =
   let ks =
     List.fold_left
       (fun ks b ->
-	 (new_isevar isevars env (substl ks b) CCI)::ks)
+	 (new_isevar isevars env (substl ks b))::ks)
       [] bs
   in
   if (list_for_all2eq 

@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Identifier
 open Names
 open Term
 open Reduction
@@ -46,11 +47,11 @@ let rec occur_meta_pattern = function
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
 type constr_label =
-  | ConstNode of section_path
+  | ConstNode of constant_path
   | IndNode of inductive_path
   | CstrNode of constructor_path
   | VarNode of identifier
-  | SectionVarNode of section_path
+  | SectionVarNode of variable_path
 (*
   | ... 
 *)
@@ -161,7 +162,7 @@ let matches_core convert pat c =
 
       | PMeta None, m -> sigma
 
-      | PRef (VarRef sp1), IsVar v2 when basename sp1 = v2 -> sigma
+      | PRef (VarRef v1), IsVar v2 when v1 = v2 -> sigma
 
       | PVar v1, IsVar v2 when v1 = v2 -> sigma
 

@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 Require Export Datatypes.
+Require Export DatatypesHints.
 
 (* [True] is the always true proposition *)
 Inductive True : Prop := I : True. 
@@ -21,7 +22,7 @@ Definition not := [A:Prop]A->False.
 
 Hints Unfold not : core.
 
-Section Conjunction.
+(* Section Conjunction. *)
 
   (* [and A B], written [A /\ B], is the conjunction of [A] and [B] *)
   (* [conj A B p q], written [<p,q>] is a proof of [A /\ B] as soon as 
@@ -30,21 +31,21 @@ Section Conjunction.
 
   Inductive and [A,B:Prop] : Prop := conj : A -> B -> (and A B).
 
-  Variables A,B : Prop.
+(*  Variables A,B : Prop. *)
 
-  Theorem proj1 : (and A B) -> A.
+  Theorem proj1 : (A,B : Prop)(and A B) -> A.
   Proof.
   Induction 1; Trivial.
   Qed.
 
-  Theorem proj2 : (and A B) -> B.
+  Theorem proj2 : (A,B : Prop)(and A B) -> B.
   Proof.
   Induction 1; Trivial.
   Qed.
 
-End Conjunction.
+(* End Conjunction. *)
 
-Section Disjunction.
+(* Section Disjunction. *)
 
   (* [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
@@ -52,21 +53,21 @@ Section Disjunction.
        or_introl : A -> (or A B) 
      | or_intror : B -> (or A B).
 
-End Disjunction.
+(* End Disjunction. *)
 
-Section Equivalence.
+(* Section Equivalence. *)
 
   (* [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
   Definition iff := [P,Q:Prop] (and (P->Q) (Q->P)).
 
-End Equivalence.
+(* End Equivalence. *)
 
 (* [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
    denotes either [P] and [Q], or [~P] and [Q] *)
 Definition IF := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
 
-Section First_order_quantifiers.
+(* Section First_order_quantifiers. *)
 
   (* [(ex A P)], or simply [(EX x | P(x))], expresses the existence of an 
      [x] of type [A] which satisfies the predicate [P] ([A] is of type 
@@ -89,9 +90,9 @@ Section First_order_quantifiers.
 
   Definition all := [A:Set][P:A->Prop](x:A)(P x). 
 
-End First_order_quantifiers.
+(* End First_order_quantifiers. *)
 
-Section Equality.
+(* Section Equality. *)
 
   (* [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
      of [x] and [y]. Both [x] and [y] must belong to the same type [A].
@@ -102,12 +103,12 @@ Section Equality.
   Inductive eq [A:Set;x:A] : A->Prop
          := refl_equal : (eq A x x).
 
-End Equality.
+(* End Equality. *)
 
 Hints Resolve I conj or_introl or_intror refl_equal : core v62.
 Hints Resolve ex_intro ex_intro2 : core v62.
 
-Section Logic_lemmas.
+(* Section Logic_lemmas. *)
 
   Theorem absurd : (A:Prop)(C:Prop) A -> (not A) -> C.
   Proof.
@@ -115,36 +116,36 @@ Section Logic_lemmas.
     Elim (h2 h1).
   Qed.
 
-  Section equality.
-    Variable A,B : Set.
-    Variable f   : A->B.
-    Variable x,y,z : A.
+  (* Section equality. *)
+    (* Variable A,B : Set. *)
+    (* Variable f   : A->B. *)
+    (* Variable x,y,z : A. *)
 
-    Theorem sym_eq : (eq ? x y) -> (eq ? y x).
+    Theorem sym_eq : (A:Set)(x,y:A)(eq ? x y) -> (eq ? y x).
       Proof.
      Induction 1; Trivial.
     Qed.
 
-    Theorem trans_eq : (eq ? x y) -> (eq ? y z) -> (eq ? x z).
+    Theorem trans_eq : (A:Set)(x,y,z:A)(eq ? x y) -> (eq ? y z) -> (eq ? x z).
     Proof.
      Induction 2; Trivial.
     Qed.
 
-    Theorem f_equal : (eq ? x y) -> (eq ? (f x) (f y)).
+    Theorem f_equal : (A,B:Set)(f:A->B)(x,y:A)(eq ? x y) -> (eq ? (f x) (f y)).
     Proof.
      Induction 1; Trivial.
     Qed.
 
-    Theorem sym_not_eq : (not (eq ? x y)) -> (not (eq ? y x)).
+    Theorem sym_not_eq : (A:Set)(x,y:A)(not (eq ? x y)) -> (not (eq ? y x)).
     Proof.
-     Red; Intros h1 h2; Apply h1; Elim h2; Trivial.
+     Intros A x y; Red; Intros h1 h2; Apply h1; Elim h2; Trivial.
     Qed.
 
     Definition sym_equal     := sym_eq.
     Definition sym_not_equal := sym_not_eq.
     Definition trans_equal   := trans_eq.
 
-  End equality.
+  (* End equality. *)
 
   Theorem eq_rect: (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(eq ? x y)->(P y).
   Proof.
@@ -165,7 +166,7 @@ Section Logic_lemmas.
   Definition eq_rect_r : (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(eq ? y x)->(P y).
     Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
   Defined.
-End Logic_lemmas.
+(* End Logic_lemmas. *)
 
 Theorem f_equal2 : (A1,A2,B:Set)(f:A1->A2->B)(x1,y1:A1)(x2,y2:A2)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? (f x1 x2) (f y1 y2)).

@@ -11,6 +11,7 @@
 open Util
 open Pp
 open Term
+open Identifier
 open Names
 open Environ
 open Instantiate
@@ -56,7 +57,7 @@ let with_stats c =
 
 type evaluable_global_reference =
   | EvalVarRef of identifier
-  | EvalConstRef of section_path
+  | EvalConstRef of long_name
 
 module type RedFlagsSig = sig
   type reds
@@ -225,10 +226,10 @@ let betaiotazeta_red = {
   r_evar = false;
   r_iota = true }
 
-let unfold_red sp =
-  let c = match sp with
+let unfold_red egref =
+  let c = match egref with
     | EvalVarRef id -> false,[],[id]
-    | EvalConstRef sp -> false,[sp],[]
+    | EvalConstRef ln -> false,[ln],[]
   in {
   r_beta = true;
   r_const = c;
@@ -238,7 +239,7 @@ let unfold_red sp =
 
 (* Sets of reduction kinds.
    Main rule: delta implies all consts (both global (= by
-   section_path) and local (= by Rel or Var)), all evars, and zeta (= letin's).
+   long_name) and local (= by Rel or Var)), all evars, and zeta (= letin's).
    Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
    a LetIn expression is Letin reduction *)
 
@@ -287,11 +288,11 @@ let red_local_const = red_delta_set
 (* to know if a redex is allowed, only a subset of red_kind is used ... *)
 let red_set red = function
   | BETA -> incr_cnt red.r_beta beta
-  | CONST [sp] -> 
+  | CONST [ln] -> 
       let (b,l,_) = red.r_const in
-      let c = List.mem sp l in
+      let c = List.mem ln l in
       incr_cnt ((b & not c) or (c & not b)) delta
-  | VAR id -> (* En attendant d'avoir des sp pour les Var *)
+  | VAR id -> 
      let (b,_,l) = red.r_const in
       let c = List.mem id l in
       incr_cnt ((b & not c) or (c & not b)) delta
@@ -328,7 +329,7 @@ let betaiota = (UNIFORM,betaiota_red)
 let betadeltaiota = (UNIFORM,betadeltaiota_red)
 
 let hnf_flags = (SIMPL,betaiotazeta_red)
-let unfold_flags sp = (UNIFORM, unfold_red sp)
+let unfold_flags egref = (UNIFORM, unfold_red egref)
 
 let flags_under = function
   | (SIMPL,r) -> (WITHBACK,r)
@@ -573,7 +574,7 @@ and fterm =
 
 and freference =
   (* only vars as args of FConst ... exploited for caching *)
-  | FConst of section_path * fconstr array
+  | FConst of long_name * fconstr array
   | FEvar of (existential * fconstr subs)
   | FVar of identifier
   | FFarRel of int (* index in the rel_context part of _initial_ environment *)
@@ -642,13 +643,13 @@ let mk_clos_deep clos_fun env t =
     | IsApp (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
-    | IsMutInd (sp,v) ->
-        { norm = Cstr; term = FInd (sp, Array.map (clos_fun env) v) }
-    | IsMutConstruct (sp,v) ->
-        { norm = Cstr; term = FConstruct (sp,Array.map (clos_fun env) v)}
-    | IsConst (sp,v) ->
+    | IsMutInd (ln,v) ->
+        { norm = Cstr; term = FInd (ln, Array.map (clos_fun env) v) }
+    | IsMutConstruct (ln,v) ->
+        { norm = Cstr; term = FConstruct (ln,Array.map (clos_fun env) v)}
+    | IsConst (ln,v) ->
         { norm = Red;
-	  term = FFlex (FConst (sp,Array.map (clos_fun env) v)) }
+	  term = FFlex (FConst (ln,Array.map (clos_fun env) v)) }
     | IsEvar (_,v as ev) ->
         { norm = Red;
 	  term = FFlex (FEvar (ev, env)) }
@@ -946,8 +947,8 @@ let rec knr info m stk =
       (match get_arg m stk with
           (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
         | (None,s) -> (m,s))
-  | FFlex(FConst(sp,args)) when can_red info stk (fCONST sp) ->
-      let cst = (sp, Array.map term_of_fconstr args) in
+  | FFlex(FConst(ln,args)) when can_red info stk (fCONST ln) ->
+      let cst = (ln, Array.map term_of_fconstr args) in
       (match ref_value_cache info (ConstBinding cst) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
@@ -965,7 +966,7 @@ let rec knr info m stk =
       (match ref_value_cache info (FarRelBinding k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((sp,c),args) when can_red info stk fIOTA ->
+  | FConstruct((ln,c),args) when can_red info stk fIOTA ->
       (match strip_update_shift_app m stk with
           (depth, args, Zcase(((*cn*) npar,_),_,br)::s) ->
             assert (npar>=0);
@@ -1029,8 +1030,8 @@ and down_then_up info m stk =
         | FCoFix(n,(na,ftys,fbds),bds,e) ->
             FCoFix(n,(na, Array.map (kl info) ftys,
                           Array.map (kl info) fbds),bds,e)
-        | FFlex(FConst(sp,args)) ->
-            FFlex(FConst(sp, Array.map (kl info) args))
+        | FFlex(FConst(ln,args)) ->
+            FFlex(FConst(ln, Array.map (kl info) args))
         | FFlex(FEvar((i,args),e)) ->
             FFlex(FEvar((i,args),e))
         | t -> t in
@@ -1085,3 +1086,4 @@ let fhnf info v =
 let fhnf_apply info k head appl =
   let stk = zshift k appl in
   strip_applstack 0 [] (kh info head stk)
+

@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+open Identifier
 open Names
 open Util
 open Term
@@ -59,11 +60,11 @@ let it_named_context_quantifier f = List.fold_left (fun c d -> f d c)
 
 (*s Signatures of ordered section variables *)
 
-type section_declaration = variable_path * constr option * constr
+type section_declaration = identifier * constr option * constr
 type section_context = section_declaration list
 let rec instance_from_section_context = function
-  | (sp,None,_) :: sign -> 
-      mkVar (basename sp) :: instance_from_section_context sign
+  | (id,None,_) :: sign -> 
+      mkVar id :: instance_from_section_context sign
   | _ :: sign -> instance_from_section_context sign
   | [] -> []
 let instance_from_section_context x =

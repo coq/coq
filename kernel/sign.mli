@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Term
 (*i*)
@@ -45,7 +46,7 @@ val instance_from_named_context : named_context -> constr list
 
 (*s Signatures of ordered section variables *)
 
-type section_declaration = variable_path * constr option * constr
+type section_declaration = identifier * constr option * types
 type section_context = section_declaration list
 
 val instance_from_section_context : section_context -> constr list

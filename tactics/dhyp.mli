@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
-open Names
+open Identifier
 open Tacmach
 (*i*)
 

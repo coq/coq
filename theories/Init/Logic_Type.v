@@ -20,22 +20,22 @@ Require LogicSyntax.
 
 Definition allT := [A:Type][P:A->Prop](x:A)(P x). 
 
-Section universal_quantification.
+(* Section universal_quantification. *)
 
-Variable A : Type.
-Variable P : A->Prop.
+(* Variable A : Type. (* (A : Type) *) *)
+(* Variable P : A->Prop. (* (P : A->Prop) *) *)
 
-Theorem inst :  (x:A)(allT ? [x](P x))->(P x).
+Theorem inst :  (A : Type)(P : A->Prop)(x:A)(allT ? [x](P x))->(P x).
 Proof.
 Unfold allT; Auto.
 Qed.
 
-Theorem gen : (B:Prop)(f:(y:A)B->(P y))B->(allT A P).
+Theorem gen : (A : Type)(P : A->Prop)(B:Prop)(f:(y:A)B->(P y))B->(allT A P).
 Proof.
 Red; Auto.
 Qed.
 
-End universal_quantification.
+(* End universal_quantification. *)
 
 (* Existential Quantification *)
 
@@ -62,34 +62,34 @@ Inductive eqT [A:Type;x:A] : A -> Prop
 
 Hints Resolve refl_eqT exT_intro2 exT_intro : core v62.
 
-Section Equality_is_a_congruence.
+(* Section Equality_is_a_congruence. *)
 
- Variables A,B : Type.
- Variable  f : A->B.
+ (* Variables A,B : Type. (* (A,B : Type) *) *)
+ (* Variable  f : A->B. (* ( f : A->B) *) *)
 
- Variable x,y,z : A.
+ (* Variable x,y,z : A. (* (x,y,z : A) *) *)
  
- Lemma sym_eqT : (eqT ? x y) -> (eqT ? y x).
+ Lemma sym_eqT : (A:Type)(x,y:A)(eqT ? x y) -> (eqT ? y x).
  Proof.
   Induction 1; Trivial.
  Qed.
 
- Lemma trans_eqT : (eqT ? x y) -> (eqT ? y z) -> (eqT ? x z).
+ Lemma trans_eqT : (A:Type)(x,y,z:A)(eqT ? x y) -> (eqT ? y z) -> (eqT ? x z).
  Proof.
   Induction 2; Trivial.
  Qed.
 
- Lemma congr_eqT : (eqT ? x y)->(eqT ? (f x) (f y)).
+ Lemma congr_eqT : (A,B:Type)(x,y:A)(f:A->B)(eqT ? x y)->(eqT ? (f x) (f y)).
  Proof.
   Induction 1; Trivial.
  Qed.
 
- Lemma sym_not_eqT : ~(eqT ? x y) -> ~(eqT ? y x).
+ Lemma sym_not_eqT : (A:Type)(x,y:A)~(eqT ? x y) -> ~(eqT ? y x).
  Proof.
-  Red; Intros H H'; Apply H; Elim H'; Trivial.
+  Intros A x y; Red; Intros H H'; Apply H; Elim H'; Trivial.
  Qed.
 
-End Equality_is_a_congruence.
+(* End Equality_is_a_congruence. *)
 
 Hints Immediate sym_eqT sym_not_eqT : core v62.
 
@@ -121,34 +121,34 @@ Inductive identityT [A:Type; a:A] : A->Type :=
 
 Hints Resolve refl_identityT : core v62.
 
-Section IdentityT_is_a_congruence.
+(* Section IdentityT_is_a_congruence. *)
 
- Variables A,B : Type.
- Variable  f : A->B.
+ (* Variables A,B : Type. (* (A,B : Type.) *) *)
+ (* Variable  f : A->B. (* ( f : A->B.) *) *)
 
- Variable x,y,z : A.
+ (* Variable x,y,z : A. (* (x,y,z : A.) *) *)
  
- Lemma sym_idT : (identityT ? x y) -> (identityT ? y x).
+ Lemma sym_idT : (A:Type)(x,y:A)(identityT ? x y) -> (identityT ? y x).
  Proof.
   Induction 1; Trivial.
  Qed.
 
- Lemma trans_idT : (identityT ? x y) -> (identityT ? y z) -> (identityT ? x z).
+ Lemma trans_idT :  (A:Type)(x,y,z:A)(identityT ? x y) -> (identityT ? y z) -> (identityT ? x z).
  Proof.
   Induction 2; Trivial.
  Qed.
 
- Lemma congr_idT : (identityT ? x y)->(identityT ? (f x) (f y)).
+ Lemma congr_idT : (A,B:Type)(x,y:A)(f:A->B)(identityT ? x y)->(identityT ? (f x) (f y)).
  Proof.
   Induction 1; Trivial.
  Qed.
 
- Lemma sym_not_idT : (notT (identityT ? x y)) -> (notT (identityT ? y x)).
+ Lemma sym_not_idT : (A:Type)(x,y:A)(notT (identityT ? x y)) -> (notT (identityT ? y x)).
  Proof.
-  Red; Intros H H'; Apply H; Elim H'; Trivial.
+  Intros A x y; Red; Intros H H'; Apply H; Elim H'; Trivial.
  Qed.
 
-End IdentityT_is_a_congruence.
+(* End IdentityT_is_a_congruence. *)
 
 Definition identityT_ind_r :
      (A:Type)
@@ -176,28 +176,28 @@ Defined.
 
 Inductive sigT [A:Set; P:A->Prop] : Type := existT : (x:A)(P x)->(sigT A P).
 
-Section sigT_proj.
+(* Section sigT_proj. *)
 
-  Variable A : Set.
-  Variable P : A->Prop.
+  (* Variable A : Set. (* (A : Set) *) *)
+  (* Variable P : A->Prop. (* (P : A->Prop) *) *)
 
-  Definition projT1 := [H:(sigT A P)]
+  Definition projT1 := [A : Set][P : A->Prop][H:(sigT A P)]
     let (x, _) = H in x.
-  Definition projT2 := [H:(sigT A P)]<[H:(sigT A P)](P (projT1 H))>
+  Definition projT2 := [A : Set][P : A->Prop][H:(sigT A P)]<[H:(sigT A P)](P (projT1 A P H))>
     let (_, h) = H in h.
 
-End sigT_proj.
+(* End sigT_proj. *)
 
 Inductive prodT [A,B:Type] : Type := pairT : A -> B -> (prodT A B).
 
-Section prodT_proj.
+(* Section prodT_proj. *)
 
-  Variables A, B : Type.
+  (* Variables A, B : Type. (* (A, B : Type.) *) *)
 
-  Definition fstT := [H:(prodT A B)]Cases H of (pairT x _) => x end.
-  Definition sndT := [H:(prodT A B)]Cases H of (pairT _ y) => y end.
+  Definition fstT := [A,B:Type][H:(prodT A B)]Cases H of (pairT x _) => x end.
+  Definition sndT := [A,B:Type][H:(prodT A B)]Cases H of (pairT _ y) => y end.
 
-End prodT_proj.
+(* End prodT_proj. *)
 
 Definition prodT_uncurry : (A,B,C:Type)((prodT A B)->C)->A->B->C :=
   [A,B,C:Type; f:((prodT A B)->C); x:A; y:B]

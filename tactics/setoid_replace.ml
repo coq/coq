@@ -13,6 +13,7 @@ open Proof_type
 open Libobject
 open Reduction
 open Term
+open Identifier
 open Names
 open Util
 open Pp
@@ -44,7 +45,7 @@ let constant dir s =
     try 
       Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+    anomaly ("Setoid: cannot find "^(Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 let global_constant dir s =
   let dir = make_dirpath (List.map id_of_string ("Coq"::"Init"::dir)) in
@@ -52,11 +53,11 @@ let global_constant dir s =
     try 
       Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+    anomaly ("Setoid: cannot find "^(Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 let current_constant id =
   try
-    Declare.global_reference CCI id
+    Declare.global_reference id
   with Not_found ->
     anomaly ("Setoid: cannot find "^(string_of_id id))
 
@@ -228,11 +229,11 @@ let add_setoid a aeq th =
 	    let eq_ext_name = gen_eq_lem_name () in 
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
-		      ((Declare.ConstantEntry {Declarations.const_entry_body = eq_morph; 
+		      ((Declare.ConstantEntry {Declarations.const_entry_body = Some eq_morph; 
 					       Declarations.const_entry_type = None}),
 		       Declare.NeverDischarge,true) in
 	    let _ = Declare.declare_constant eq_ext_name2
-		      ((Declare.ConstantEntry {Declarations.const_entry_body = eq_morph2; 
+		      ((Declare.ConstantEntry {Declarations.const_entry_body = Some eq_morph2; 
 					       Declarations.const_entry_type = None}),
 		       Declare.NeverDischarge,true) in
 	    let eqmorph = (current_constant eq_ext_name) in
@@ -451,7 +452,7 @@ let add_morphism lem_name (m,profil) =
 	 (let lem_2 = gen_lem_iff env m mext args_t poss in
 	  let lem2_name = add_suffix lem_name "2" in
 	  let _ = Declare.declare_constant lem2_name
-		    ((Declare.ConstantEntry {Declarations.const_entry_body = lem_2; 
+		    ((Declare.ConstantEntry {Declarations.const_entry_body = Some lem_2; 
 					     Declarations.const_entry_type = None}),
 		     Declare.NeverDischarge,true) in
 	  let lem2 = (current_constant lem2_name) in

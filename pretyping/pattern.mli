@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Sign
 open Term
@@ -34,11 +35,11 @@ type constr_pattern =
 val occur_meta_pattern : constr_pattern -> bool
 
 type constr_label =
-  | ConstNode of section_path
+  | ConstNode of constant_path
   | IndNode of inductive_path
   | CstrNode of constructor_path
   | VarNode of identifier
-  | SectionVarNode of section_path
+  | SectionVarNode of variable_path
 
 val label_of_ref : global_reference -> constr_label
 

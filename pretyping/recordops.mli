@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Term
 open Classops
@@ -26,10 +27,10 @@ val compter : bool ref
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;
-  s_PROJ : section_path option list }
+  s_PROJ : long_name option list }
 
 val add_new_struc : 
-  inductive_path * identifier * int * section_path option list -> unit
+  inductive_path * identifier * int * long_name option list -> unit
 
 (* [find_structure isp] returns the infos associated to inductive path
    [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)
@@ -49,7 +50,7 @@ val add_new_objdef :
 
 val inStruc : inductive_path * struc_typ -> obj
 val outStruc : obj -> inductive_path * struc_typ
-val inObjDef1 : section_path -> obj
-val outObjDef1 : obj -> section_path
+val inObjDef1 : long_name -> obj
+val outObjDef1 : obj -> long_name
 
 val add_new_objdef1 : ((global_reference * global_reference) * obj_typ) -> unit

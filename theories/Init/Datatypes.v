@@ -48,11 +48,8 @@ Inductive sum [A,B:Set] : Set
 Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
 Add Printing Let prod.
 
-Section projections.
-   Variables A,B:Set.
-   Definition fst := [p:(prod A B)]Cases p of (pair x y) => x end.
-   Definition snd := [p:(prod A B)]Cases p of (pair x y) => y end.
-End projections. 
+Definition fst := [A,B:Set][p:(prod A B)]Cases p of (pair x y) => x end.
+Definition snd := [A,B:Set][p:(prod A B)]Cases p of (pair x y) => y end.
 
 Syntactic Definition Fst := (fst ? ?).
 Syntactic Definition Snd := (snd ? ?).

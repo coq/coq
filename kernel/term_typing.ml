@@ -10,25 +10,18 @@
 
 open Pp
 open Util
+open Identifier
 open Names
 open Univ
 open Term
 open Reduction
 open Sign
 open Declarations
-open Inductive
 open Environ
 open Type_errors
 open Typeops
+open Inductive
 open Indtypes
-
-type judgment = unsafe_judgment
-
-let j_val j = j.uj_val
-let j_type j = body_of_type j.uj_type
-
-let vect_lift = Array.mapi lift
-let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
 (* The typing machine without information. *)
 
@@ -71,7 +64,7 @@ let rec execute env cstr cu =
         let varj = type_judgment env Evd.empty j in
 	let env1 = push_rel_assum (name,varj.utj_val) env in
         let (j',cu2) = execute env1 c2 cu1 in
-        let varj' = type_judgment env Evd.empty j' in
+        let varj' = type_judgment env1 Evd.empty j' in
 	univ_combinator cu2
           (gen_rel env1 Evd.empty name varj varj')
 
@@ -156,56 +149,22 @@ let execute_type env constr cu =
 
 (* Exported machines. *)
 
-let safe_infer env constr =
+let infer env constr =
   let (j,(cst,_)) =
     execute env constr (Constraint.empty, universes env) in
   (j, cst)
 
-let safe_infer_type env constr =
+let infer_type env constr =
   let (j,(cst,_)) =
     execute_type env constr (Constraint.empty, universes env) in
   (j, cst)
 
-(* Typing of several terms. *)
-
-let safe_infer_l env cl =
-  let type_one (cst,l) c =
-    let (j,cst') = safe_infer env c in
-    (Constraint.union cst cst', j::l)
-  in
-  List.fold_left type_one (Constraint.empty,[]) cl
-
-let safe_infer_v env cv =
-  let type_one (cst,l) c =
-    let (j,cst') = safe_infer env c in
-    (Constraint.union cst cst', j::l)
-  in
-  let cst',l = Array.fold_left type_one (Constraint.empty,[]) cv in
-  (cst', Array.of_list l)
- 
-
-(*s Safe environments. *)
-
-type safe_environment = env
-
-let empty_environment = empty_env
-
-let universes = universes
-let context = context
-let named_context = named_context
-
-let lookup_named_type = lookup_named_type
-let lookup_rel_type = lookup_rel_type
-let lookup_named = lookup_named
-let lookup_constant = lookup_constant
-let lookup_mind = lookup_mind
-let lookup_mind_specif = lookup_mind_specif
 
 (* Insertion of variables (named and de Bruijn'ed). They are now typed before
    being added to the environment. *)
 
 let push_rel_or_named_def push (id,b) env =
-  let (j,cst) = safe_infer env b in
+  let (j,cst) = infer env b in
   let env' = add_constraints cst env in
   push (id,j.uj_val,j.uj_type) env'
 
@@ -213,7 +172,7 @@ let push_named_def = push_rel_or_named_def push_named_def
 let push_rel_def = push_rel_or_named_def push_rel_def
 
 let push_rel_or_named_assum push (id,t) env =
-  let (j,cst) = safe_infer env t in
+  let (j,cst) = infer env t in
   let env' = add_constraints cst env in
   let t = assumption_of_judgment env Evd.empty j in
   push (id,t) env'
@@ -224,109 +183,60 @@ let push_rel_assum = push_rel_or_named_assum push_rel_assum
 let push_rels_with_univ vars env =
   List.fold_left (fun env nvar -> push_rel_assum nvar env) env vars
 
-let safe_infer_local_decl env id = function
+let infer_local_decl env id = function
   | LocalDef c -> 
-      let (j,cst) = safe_infer env c in
+      let (j,cst) = infer env c in
       (Name id, Some j.uj_val, j.uj_type), cst
   | LocalAssum c ->
-      let (j,cst) = safe_infer env c in
+      let (j,cst) = infer env c in
       (Name id, None, assumption_of_judgment env Evd.empty j), cst
 
-let safe_infer_local_decls env decls =
+let infer_local_decls env decls =
   let rec inferec env = function
   | (id, d) :: l -> 
       let env, l, cst1 = inferec env l in
-      let d, cst2 = safe_infer_local_decl env id d in
+      let d, cst2 = infer_local_decl env id d in
       push_rel d env, d :: l, Constraint.union cst1 cst2
   | [] -> env, [], Constraint.empty in
   inferec env decls
 
-(* Insertion of constants and parameters in environment. *)
-type global_declaration = Def of constr | Assum of constr
+(* Translation of constant entry to constant body. *)
 
-let safe_infer_declaration env = function
-  | Def c ->
-      let (j,cst) = safe_infer env c in
-      Some j.uj_val, j.uj_type, cst
-  | Assum t ->
-      let (j,cst) = safe_infer env t in
-      None, assumption_of_judgment env Evd.empty j, cst
-
-type local_names = (identifier * variable_path) list
-
-let add_global_declaration sp env locals (body,typ,cst) =
-  let env' = add_constraints cst env in
+let make_constant_body env (body,typ,cst) =
   let ids = match body with 
     | None -> global_vars_set typ
     | Some b -> Idset.union (global_vars_set b) (global_vars_set typ) in
   let hyps = keep_hyps ids (named_context env) in
-  let body, typ =
-    if Options.immediate_discharge then
-      option_app (fun c -> it_mkNamedLambda_or_LetIn c hyps) body,
-      it_mkNamedProd_or_LetIn typ hyps
-    else
-      body,typ in
-  let sp_hyps = List.map (fun (id,b,t) -> (List.assoc id locals, b, t)) hyps in
-  let cb = {
-    const_kind = kind_of_path sp;
-    const_body = body;
-    const_type = typ;
-    const_hyps = sp_hyps;
-    const_constraints = cst;
-    const_opaque = false } 
+    {
+      const_body = body;
+      const_type = typ;
+      const_hyps = hyps;
+      const_constraints = cst;
+      const_opaque = false } 
+
+let translate_constant env ce = 
+  let (body,typ,cst) as body_info = 
+    match ce.const_entry_body with
+      | None -> 
+	  (match ce.const_entry_type with
+	     | None -> 
+		 anomaly "Term_typing.translate_constant: No body, no type"
+	     | Some ty ->
+		 let (j,cst) = infer env ty in
+		   None, assumption_of_judgment env Evd.empty j, cst
+	  )
+      | Some b ->
+	  let b'=  match ce.const_entry_type with
+	    | None -> b
+	    | Some ty -> mkCast (b, ty) 
+	  in
+	  let (j,cst) = infer env b' in
+	    Some j.uj_val, j.uj_type, cst
   in
-  Environ.add_constant sp cb env'
-
-let add_parameter sp t locals env =
-  add_global_declaration sp env locals (safe_infer_declaration env (Assum t))
-
-let add_constant_with_value sp body typ locals env =
-  let body' =
-    match typ with
-      | None -> body
-      | Some ty -> mkCast (body, ty) in
-  add_global_declaration sp env locals (safe_infer_declaration env (Def body'))
-
-let add_constant sp ce locals env =
-  add_constant_with_value sp ce.const_entry_body ce.const_entry_type locals env
-
-let add_discharged_constant sp r locals env =
-  let (body,typ) = Cooking.cook_constant env r in
-  match body with
-    | None -> 
-	add_parameter sp typ locals (* Bricolage avant poubelle *) env
-    | Some c -> 
-	(* let c = hcons1_constr c in *)
-	let (jtyp,cst) = safe_infer env typ in
-	let env' = add_constraints cst env in
-	let ids = 
-	  Idset.union (global_vars_set c) 
-	    (global_vars_set (body_of_type jtyp.uj_val))
-	in
-	let hyps = keep_hyps ids (named_context env) in
-	let sp_hyps =
-	  List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
-	let cb =
-	  { const_kind = kind_of_path sp;
-	    const_body = Some c;
-	    const_type = assumption_of_judgment env' Evd.empty jtyp;
-	    const_hyps = sp_hyps;
-	    const_constraints = cst;
-	    const_opaque = false } 
-	in
-	Environ.add_constant sp cb env'
+    make_constant_body env body_info 
 
 
-(* Insertion of inductive types. *)
-
-(* Only the case where at least s1 or s2 is a [Type] is taken into account *)
-let max_universe (s1,cst1) (s2,cst2) g =
-  match s1,s2 with
-    | Type u1, Type u2 ->
-	let (u12,cst) = sup u1 u2 g in
-	Type u12, Constraint.union cst (Constraint.union cst1 cst2)
-    | Type u1, _  -> s1, cst1
-    | _, _ -> s2, cst2
+(* Translation of inductive types. *)
 
 (* This (re)computes informations relevant to extraction and the sort of an
    arity or type constructor; we do not to recompute universes constraints *)
@@ -334,7 +244,7 @@ let max_universe (s1,cst1) (s2,cst2) g =
 let rec infos_and_sort env t =
   match kind_of_term t with
     | IsProd (name,c1,c2) ->
-        let (varj,_) = safe_infer_type env c1 in
+        let (varj,_) = infer_type env c1 in
 	let env1 = Environ.push_rel_assum (name,varj.utj_val) env in
 	let s1 = varj.utj_type in
 	let logic = not (is_info_type env Evd.empty varj) in
@@ -373,7 +283,7 @@ let type_one_constructor env_ar_par params arsort c =
   let infos = infos_and_sort env_ar_par c in
 
   (* Each constructor is typed-checked here *)
-  let (j,cst) = safe_infer_type env_ar_par c in
+  let (j,cst) = infer_type env_ar_par c in
   let full_cstr_type = it_mkProd_or_LetIn j.utj_val params in
 
   (* If the arity is at some level Type arsort, then the sort of the
@@ -397,7 +307,7 @@ let infer_constructor_packet env_ar params short_arity arsort vc =
   let issmall,isunit = small_unit constrsinfos (env_ar_par,short_arity) in
   (issmall,isunit,vc', cst)
 
-let add_mind sp mie locals env =
+let translate_mind env mie =
   mind_check_wellformed env mie;
 
   (* We first type params and arity of each inductive definition *)
@@ -408,9 +318,9 @@ let add_mind sp mie locals env =
       (fun (cst,env_arities,l) ind ->
          (* Params are typed-checked here *)
 	 let params = ind.mind_entry_params in
-	 let env_params, params, cst1 = safe_infer_local_decls env params in
+	 let env_params, params, cst1 = infer_local_decls env params in
          (* Arities (without params) are typed-checked here *)
-	 let arity, cst2 = safe_infer_type env_params ind.mind_entry_arity in
+	 let arity, cst2 = infer_type env_params ind.mind_entry_arity in
 	 (* We do not need to generate the universe of full_arity; if
 	    later, after the validation of the inductive definition,
 	    full_arity is used as argument or subject to cast, an
@@ -418,7 +328,7 @@ let add_mind sp mie locals env =
 	 let id = ind.mind_entry_typename in
 	 let full_arity = it_mkProd_or_LetIn arity.utj_val params in
 	 Constraint.union cst (Constraint.union cst1 cst2),
-	 push_rel_assum (Name id, full_arity) env_arities,
+	 push_rel_assum (Name (ident_of_label id), full_arity) env_arities,
          (params, id, full_arity, arity.utj_val)::l)
       (Constraint.empty,env,[])
       mie.mind_entry_inds in
@@ -443,31 +353,7 @@ let add_mind sp mie locals env =
       params_arity_list
       ([],cst) in
 
-  (* Finally, we build the inductive packet and push it to env *)
-  let kind = kind_of_path sp in
-  let mib = cci_inductive locals env env_arities kind mie.mind_entry_finite inds cst
-  in
-  add_mind sp mib (add_constraints cst env)
-    
-let add_constraints = add_constraints
+  (* Finally, we build the inductive packet *)
+  cci_inductive env env_arities mie.mind_entry_finite inds cst
 
-let rec pop_named_decls idl env =
-  match idl with 
-    | [] -> env
-    | id::l -> pop_named_decls l (Environ.pop_named_decl id env)
 
-let set_opaque = Environ.set_opaque
-let set_transparent = Environ.set_transparent
-
-let export = export
-let import = import
-
-let env_of_safe_env e = e
-
-(* Exported typing functions *)
-
-let typing env c = 
-  let (j,cst) = safe_infer env c in
-  j
-
-let typing_in_unsafe_env = typing

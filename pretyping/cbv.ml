@@ -11,6 +11,7 @@
 open Util
 open Pp
 open Term
+open Identifier
 open Names
 open Environ
 open Instantiate

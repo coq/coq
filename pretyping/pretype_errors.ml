@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+open Identifier
 open Names
 open Sign
 open Term
@@ -58,23 +59,23 @@ let env_ise sigma env =
 let raise_pretype_error (loc,ctx,sigma,te) =
   Stdpp.raise_with_loc loc (PretypeError(env_ise sigma ctx,te))
 
-let raise_located_type_error (loc,k,ctx,sigma,te) =
-  Stdpp.raise_with_loc loc (TypeError(k,env_ise sigma ctx,te))
+let raise_located_type_error (loc,ctx,sigma,te) =
+  Stdpp.raise_with_loc loc (TypeError(env_ise sigma ctx,te))
 
 
 let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty =
   raise_located_type_error
-    (loc, CCI, env, sigma,
+    (loc, env, sigma,
      ActualType (c,nf_evar sigma actty, nf_evar sigma expty))
 
 let error_cant_apply_not_functional_loc loc env sigma rator randl =
   raise_located_type_error
-    (loc, CCI, env, sigma,
+    (loc, env, sigma,
     CantApplyNonFunctional (j_nf_evar sigma rator, jl_nf_evar sigma randl))
 
 let error_cant_apply_bad_type_loc loc env sigma (n,c,t) rator randl =
   raise_located_type_error
-    (loc, CCI, env, sigma,
+    (loc, env, sigma,
      CantApplyBadType
        ((n,nf_evar sigma c, nf_evar sigma t),
         j_nf_evar sigma rator, jl_nf_evar sigma randl))
@@ -83,24 +84,24 @@ let error_cant_find_case_type_loc loc env sigma expr =
   raise_pretype_error
     (loc, env, sigma, CantFindCaseType (nf_evar sigma expr))
 
-let error_ill_formed_branch_loc loc k env sigma c i actty expty =
+let error_ill_formed_branch_loc loc env sigma c i actty expty =
   let simp t = Reduction.nf_betaiota (nf_evar sigma t) in
   raise_located_type_error
-    (loc, k, env, sigma,
+    (loc, env, sigma,
      IllFormedBranch (nf_evar sigma c,i,simp actty, simp expty))
 
-let error_number_branches_loc loc k env sigma cj expn =
+let error_number_branches_loc loc env sigma cj expn =
   raise_located_type_error
-    (loc, k, env, sigma,
+    (loc, env, sigma,
      NumberBranches (j_nf_evar sigma cj, expn))
 
-let error_case_not_inductive_loc loc k env sigma cj =
+let error_case_not_inductive_loc loc env sigma cj =
   raise_located_type_error
-    (loc, k, env, sigma, CaseNotInductive (j_nf_evar sigma cj))
+    (loc, env, sigma, CaseNotInductive (j_nf_evar sigma cj))
 
-let error_ill_typed_rec_body_loc loc k env sigma i na jl tys =
+let error_ill_typed_rec_body_loc loc env sigma i na jl tys =
   raise_located_type_error
-    (loc, k, env, sigma,
+    (loc, env, sigma,
      IllTypedRecBody (i,na,jv_nf_evar sigma jl,
                       Array.map (nf_evar sigma) tys))
 
@@ -135,3 +136,4 @@ let error_not_product_loc loc env sigma c =
 
 let error_var_not_found_loc loc s =
   raise_pretype_error (loc, empty_env, Evd.empty, VarNotFound s)
+

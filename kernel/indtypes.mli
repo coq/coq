@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Identifier
 open Names
 open Univ
 open Term
@@ -26,9 +27,10 @@ type inductive_error =
   | NotEnoughArgs of env * constr * constr
   | NotConstructor of env * constr * constr
   | NonPar of env * constr * int * constr * constr
-  | SameNamesTypes of identifier
-  | SameNamesConstructors of identifier * identifier
-  | NotAnArity of identifier
+  | SameNamesTypes of label
+  | SameNamesConstructors of label * label
+  | SameNamesOverlap of label list
+  | NotAnArity of label
   | BadEntry
   (* These are errors related to recursors building in Indrec *)
   | NotAllowedCaseAnalysis of bool * sorts * inductive
@@ -49,9 +51,9 @@ val mind_check_wellformed : env -> mutual_inductive_entry -> unit
 (* [cci_inductive] checks positivity and builds an inductive body *)
 
 val cci_inductive : 
-  (identifier * variable_path) list -> env -> env -> path_kind -> bool -> 
-   (Sign.rel_context * int * identifier * types * 
-    identifier list * bool * bool * types array)
+  env -> env -> bool -> 
+   (Sign.rel_context * int * label * types * 
+    label list * bool * bool * types array)
       list ->
       constraints ->
       	mutual_inductive_body

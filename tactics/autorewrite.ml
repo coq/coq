@@ -9,6 +9,7 @@ open Ast
 open Coqast
 open Equality
 open Hipattern
+open Identifier
 open Names
 open Pp
 open Proof_type
@@ -67,8 +68,7 @@ let export_hintrewrite x = Some x
 
 (* Declaration of the Hint Rewrite library object *)
 let (in_hintrewrite,out_hintrewrite)=
-  Libobject.declare_object
-    ("HINT_REWRITE",
+  Libobject.declare_object ("HINT_REWRITE",
      { Libobject.load_function = load_hintrewrite;
        Libobject.open_function = cache_hintrewrite;
        Libobject.cache_function = cache_hintrewrite;

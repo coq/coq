@@ -54,7 +54,7 @@
 
 (*i*)
 open Pp
-open Names
+open Identifier
 (*i*)
 
 (*s Things common to tables and options. *)
