@@ -15,7 +15,7 @@ type type_error =
   | NotAType of constr
   | BadAssumption of constr
   | ReferenceVariables of identifier
-  | ElimArity of constr * constr list * constr * constr * constr
+  | ElimArity of inductive * constr list * constr * constr * constr
       * (constr * constr * string) option
   | CaseNotInductive of constr * constr
   | NumberBranches of constr * constr * int

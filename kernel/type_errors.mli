@@ -17,7 +17,7 @@ type type_error =
   | NotAType of constr
   | BadAssumption of constr
   | ReferenceVariables of identifier
-  | ElimArity of constr * constr list * constr * constr * constr
+  | ElimArity of inductive * constr list * constr * constr * constr
       * (constr * constr * string) option
   | CaseNotInductive of constr * constr
   | NumberBranches of constr * constr * int
@@ -53,7 +53,7 @@ val error_assumption : path_kind -> env -> constr -> 'b
 val error_reference_variables : path_kind -> env -> identifier -> 'b
 
 val error_elim_arity : 
-  path_kind -> env -> constr -> constr list -> constr 
+  path_kind -> env -> inductive -> constr list -> constr 
     -> constr -> constr -> (constr * constr * string) option -> 'b
 
 val error_case_not_inductive : 

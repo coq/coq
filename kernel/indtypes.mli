@@ -5,7 +5,7 @@
 open Names
 open Univ
 open Term
-open Inductive
+open Constant
 open Environ
 (*i*)
 
@@ -14,6 +14,7 @@ open Environ
   definition. *)
 
 type inductive_error =
+  (* These are errors related to inductive constructions in this module *)
   | NonPos of name list * constr * constr
   | NotEnoughArgs of name list * constr * constr
   | NotConstructor of name list * constr * constr
@@ -22,6 +23,10 @@ type inductive_error =
   | SameNamesConstructors of identifier * identifier
   | NotAnArity of identifier
   | BadEntry
+  (* These are errors related to recursors building in Indrec *)
+  | NotAllowedCaseAnalysis of bool * sorts * inductive
+  | BadInduction of bool * identifier * sorts
+  | NotMutualInScheme
 
 exception InductiveError of inductive_error
 

@@ -57,7 +57,7 @@ let msg_bad_elimination ctx k = function
       [<>]
 
 let explain_elim_arity k ctx ind aritylst c p pt okinds = 
-  let pi = prterm_env ctx ind in
+  let pi = pr_inductive ind in
   let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
   let pp = prterm_env ctx p in
@@ -325,7 +325,7 @@ let explain_refiner_error = function
   | OccurMeta t -> explain_refiner_occur_meta t
   | CannotApply (t,harg) -> explain_refiner_cannot_applt t harg
   | CannotUnify (m,n) -> explain_refiner_cannot_unify m n
-  | CannotGeneralize (_,ty) -> explain_refiner_cannot_generalize ty
+  | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
 
@@ -381,7 +381,23 @@ let error_not_an_arity id =
 let error_bad_entry () =
   [< 'sTR "Bad inductive definition." >]
 
+let error_not_allowed_case_analysis dep kind i =
+  [< 'sTR (if dep then "Dependent" else "Non Dependent");
+     'sTR " case analysis on sort: "; print_sort kind; 'fNL;
+     'sTR "is not allowed for inductive definition: ";
+     pr_inductive i >]
+
+let error_bad_induction dep indid kind =
+  [<'sTR (if dep then "Dependent" else "Non dependend");
+    'sTR " induction for type "; print_id indid;
+    'sTR " and sort "; print_sort kind; 
+    'sTR "is not allowed">]
+
+let error_not_mutual_in_scheme () =
+ [< 'sTR "Induction schemes is concerned only with mutually inductive types" >]
+
 let explain_inductive_error = function
+  (* These are errors related to inductive constructions *)
   | NonPos (lna,c,v) -> error_non_strictly_positive CCI lna c v
   | NotEnoughArgs (lna,c,v) -> error_ill_formed_inductive CCI lna c v
   | NotConstructor (lna,c,v) -> error_ill_formed_constructor CCI lna c v
@@ -390,3 +406,7 @@ let explain_inductive_error = function
   | SameNamesConstructors (id,cid) -> error_same_names_constructors id cid
   | NotAnArity id -> error_not_an_arity id
   | BadEntry -> error_bad_entry ()
+  (* These are errors related to recursors *)
+  | NotAllowedCaseAnalysis (dep,k,i) -> error_not_allowed_case_analysis dep k i
+  | BadInduction (dep,indid,kind) -> error_bad_induction dep indid kind
+  | NotMutualInScheme -> error_not_mutual_in_scheme ()

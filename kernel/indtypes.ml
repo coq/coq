@@ -5,6 +5,7 @@ open Util
 open Names
 open Generic
 open Term
+open Constant
 open Inductive
 open Sign
 open Environ
@@ -25,6 +26,7 @@ open Typeops
 (* Various well-formedness check for inductive declarations            *)
 
 type inductive_error =
+  (* These are errors related to inductive constructions in this module *)
   | NonPos of name list * constr * constr
   | NotEnoughArgs of name list * constr * constr
   | NotConstructor of name list * constr * constr
@@ -33,6 +35,10 @@ type inductive_error =
   | SameNamesConstructors of identifier * identifier
   | NotAnArity of identifier
   | BadEntry
+  (* These are errors related to recursors building in Indrec *)
+  | NotAllowedCaseAnalysis of bool * sorts * inductive
+  | BadInduction of bool * identifier * sorts
+  | NotMutualInScheme
 
 exception InductiveError of inductive_error
 
@@ -225,7 +231,7 @@ let listrec_mconstr env ntypes nparams i indlc =
       (* when substituted *) 
       Array.map 
 	(function c -> 
-	   let c' = hnf_prod_appvect env Evd.empty "is_imbr_pos" c 
+	   let c' = hnf_prod_appvect env Evd.empty c 
 		      (Array.map (lift auxntyp) lpar) in 
 	   check_construct false newidx c') 
 	auxlcvect
@@ -312,6 +318,7 @@ let cci_inductive env env_ar kind nparams finite inds cst =
       mind_lc = lc;
       mind_nrealargs = List.length ar_sign - nparams;
       mind_arity  = ar;
+      mind_sort = ar_sort;
       mind_kelim = kelim;
       mind_listrec = recargs;
       mind_finite = finite }
