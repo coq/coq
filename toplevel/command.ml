@@ -692,7 +692,8 @@ let admit () =
   if k <> IsGlobal (Proof Conjecture) then
     error "Only statements declared as conjecture can be admitted";
 *)
-  let (_,kn) = declare_constant id (ParameterEntry typ, IsConjecture) in
+  let (_,kn) =
+    declare_constant id (ParameterEntry typ, IsAssumption Conjectural) in
   hook Global (ConstRef kn);
   Pfedit.delete_current_proof ();
   assumption_message id

@@ -455,7 +455,6 @@ let kind_of_variable id =
     | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
     | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
     | DK.IsDefinition -> "VARIABLE","LocalDefinition"
-    | DK.IsConjecture -> "VARIABLE","Conjecture"
     | DK.IsProof DK.LocalStatement -> "VARIABLE","LocalFact"
 ;;
 
@@ -466,7 +465,6 @@ let kind_of_constant kn =
     | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
     | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
     | DK.IsDefinition -> "DEFINITION","Definition"
-    | DK.IsConjecture -> "THEOREM","Conjecture"
     | DK.IsProof thm -> "THEOREM",kind_of_theorem thm
 ;;
 
