@@ -456,6 +456,10 @@ Proof.
   NewDestruct l;Trivial.
 Save.
 
+Hint ivl_aux_ok_ := Resolve ivl_aux_ok.
+Hint ics_aux_ok_ := Resolve ics_aux_ok.
+Hint interp_m_ok_ := Resolve interp_m_ok.
+
 (* Hints Resolve ivl_aux_ok ics_aux_ok interp_m_ok. *)
 
 Lemma canonical_sum_merge_ok : (x,y:canonical_sum)
