@@ -365,10 +365,13 @@ and ct_INT =
     CT_int of int
 and ct_INTRO_PATT =
     CT_coerce_ID_to_INTRO_PATT of ct_ID
-  | CT_conj_pattern of ct_INTRO_PATT_LIST
-  | CT_disj_pattern of ct_INTRO_PATT_LIST
+  | CT_conj_pattern of ct_INTRO_PATT_LIST * ct_INTRO_PATT_LIST list
+  | CT_disj_pattern of ct_INTRO_PATT_LIST * ct_INTRO_PATT_LIST list
 and ct_INTRO_PATT_LIST =
     CT_intro_patt_list of ct_INTRO_PATT list
+and ct_INTRO_PATT_OPT =
+    CT_coerce_ID_OPT_to_INTRO_PATT_OPT of ct_ID_OPT
+  | CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT of ct_INTRO_PATT
 and ct_INT_LIST =
     CT_int_list of ct_INT list
 and ct_INT_NE_LIST =
@@ -575,7 +578,7 @@ and ct_TACTIC_COM =
   | CT_decompose_list of ct_ID_NE_LIST * ct_FORMULA
   | CT_decompose_record of ct_FORMULA
   | CT_decompose_sum of ct_FORMULA
-  | CT_depinversion of ct_INV_TYPE * ct_ID_OR_INT * ct_INTRO_PATT_LIST * ct_FORMULA_OPT
+  | CT_depinversion of ct_INV_TYPE * ct_ID_OR_INT * ct_INTRO_PATT_OPT * ct_FORMULA_OPT
   | CT_deprewrite_lr of ct_ID
   | CT_deprewrite_rl of ct_ID
   | CT_destruct of ct_ID_OR_INT
@@ -603,7 +606,7 @@ and ct_TACTIC_COM =
   | CT_intro_after of ct_ID_OPT * ct_ID
   | CT_intros of ct_INTRO_PATT_LIST
   | CT_intros_until of ct_ID_OR_INT
-  | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_INTRO_PATT_LIST * ct_ID_LIST
+  | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_INTRO_PATT_OPT * ct_ID_LIST
   | CT_left of ct_SPEC_LIST
   | CT_let_ltac of ct_LET_CLAUSES * ct_LET_VALUE
   | CT_lettac of ct_ID_OPT * ct_FORMULA * ct_CLAUSE
@@ -611,8 +614,8 @@ and ct_TACTIC_COM =
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
-  | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_LIST
-  | CT_new_induction of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_LIST
+  | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_OPT
+  | CT_new_induction of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_OPT
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
   | CT_parallel of ct_TACTIC_COM * ct_TACTIC_COM list

@@ -601,14 +601,20 @@ let get_flag r =
   (* Rem: EVAR flag obsolète *)
   conv_flags, red_ids
 
-let rec xlate_intro_pattern =
+let ct_conj_pattern x y = CT_conj_pattern(x, y);;
+
+let ct_disj_pattern x y = CT_disj_pattern(x,y);;
+
+let rec xlate_intro_pattern b =
  function
-  | IntroOrAndPattern [l] ->
-      CT_conj_pattern(CT_intro_patt_list (List.map xlate_intro_pattern l))
-  | IntroOrAndPattern ll ->
-      let insert_conj l = CT_conj_pattern (CT_intro_patt_list
-        (List.map xlate_intro_pattern l))
-      in CT_disj_pattern(CT_intro_patt_list (List.map insert_conj ll))
+  | IntroOrAndPattern [] -> assert false
+  | IntroOrAndPattern (fp::ll) ->
+      (if b then ct_disj_pattern else ct_conj_pattern)
+      (CT_intro_patt_list(List.map (xlate_intro_pattern (not b)) fp))
+      (List.map 
+	 (fun l ->
+	    CT_intro_patt_list(List.map (xlate_intro_pattern (not b)) l))
+	 ll)
   | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
 
@@ -672,12 +678,16 @@ let xlate_lettac_clauses = function
 	      CT_unfold_list((CT_coerce_ID_to_UNFOLD(CT_ident "Goal"))::res)
 	  | None -> CT_unfold_list res;;
 
-let xlate_intro_patt_list c =
- CT_intro_patt_list
-   (List.map
-      (fun l -> 
-	 CT_conj_pattern (CT_intro_patt_list (List.map xlate_intro_pattern l)))
-      c);;
+let xlate_intro_patt_list = function
+    [] -> assert false
+  | (fp::ll) ->
+      CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT
+	(CT_disj_pattern
+    	   (CT_intro_patt_list(List.map (xlate_intro_pattern false) fp),
+	    List.map
+	      (fun l -> 
+		 CT_intro_patt_list(List.map (xlate_intro_pattern false) l))
+	      ll));;
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
@@ -922,7 +932,8 @@ and xlate_tac =
 	CT_move_after(xlate_hyp id1, xlate_hyp id2)
     | TacMove (false, id1, id2) -> xlate_error "Non dep Move is only internal"
     | TacIntroPattern patt_list ->
-	CT_intros (CT_intro_patt_list (List.map xlate_intro_pattern patt_list))
+	CT_intros
+	  (CT_intro_patt_list (List.map (xlate_intro_pattern true) patt_list))
     | TacIntroMove (Some id, None) ->
      CT_intros (CT_intro_patt_list[CT_coerce_ID_to_INTRO_PATT(xlate_ident id)])
     | TacIntroMove (None, None) ->  CT_intro (CT_coerce_NONE_to_ID_OPT CT_none)

@@ -917,16 +917,21 @@ and fINT = function
    (f_atom_int x);
    print_string "\n"and fINTRO_PATT = function
 | CT_coerce_ID_to_INTRO_PATT x -> fID x
-| CT_conj_pattern(x1) ->
-   fINTRO_PATT_LIST x1;
-   fNODE "conj_pattern" 1
-| CT_disj_pattern(x1) ->
-   fINTRO_PATT_LIST x1;
-   fNODE "disj_pattern" 1
+| CT_conj_pattern(x,l) ->
+   fINTRO_PATT_LIST x;
+   (List.iter fINTRO_PATT_LIST l);
+   fNODE "conj_pattern" (1 + (List.length l))
+| CT_disj_pattern(x,l) ->
+   fINTRO_PATT_LIST x;
+   (List.iter fINTRO_PATT_LIST l);
+   fNODE "disj_pattern" (1 + (List.length l))
 and fINTRO_PATT_LIST = function
 | CT_intro_patt_list l ->
    (List.iter fINTRO_PATT l);
    fNODE "intro_patt_list" (List.length l)
+and fINTRO_PATT_OPT = function
+| CT_coerce_ID_OPT_to_INTRO_PATT_OPT x -> fID_OPT x
+| CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT x -> fINTRO_PATT x
 and fINT_LIST = function
 | CT_int_list l ->
    (List.iter fINT l);
@@ -1366,7 +1371,7 @@ and fTACTIC_COM = function
 | CT_depinversion(x1, x2, x3, x4) ->
    fINV_TYPE x1;
    fID_OR_INT x2;
-   fINTRO_PATT_LIST x3;
+   fINTRO_PATT_OPT x3;
    fFORMULA_OPT x4;
    fNODE "depinversion" 4
 | CT_deprewrite_lr(x1) ->
@@ -1467,7 +1472,7 @@ and fTACTIC_COM = function
 | CT_inversion(x1, x2, x3, x4) ->
    fINV_TYPE x1;
    fID_OR_INT x2;
-   fINTRO_PATT_LIST x3;
+   fINTRO_PATT_OPT x3;
    fID_LIST x4;
    fNODE "inversion" 4
 | CT_left(x1) ->
@@ -1501,12 +1506,12 @@ and fTACTIC_COM = function
 | CT_new_destruct(x1, x2, x3) ->
    fFORMULA_OR_INT x1;
    fUSING x2;
-   fINTRO_PATT_LIST x3;
+   fINTRO_PATT_OPT x3;
    fNODE "new_destruct" 3
 | CT_new_induction(x1, x2, x3) ->
    fFORMULA_OR_INT x1;
    fUSING x2;
-   fINTRO_PATT_LIST x3;
+   fINTRO_PATT_OPT x3;
    fNODE "new_induction" 3
 | CT_omega -> fNODE "omega" 0
 | CT_orelse(x1, x2) ->
