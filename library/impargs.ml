@@ -250,7 +250,7 @@ let var_table = ref Idmap.empty
 let compute_var_implicits id =
   let env = Global.env () in
   let (_,_,ty) = lookup_named id env in
-  auto_implicits env (body_of_type ty)
+  auto_implicits env ty
 
 let cache_var_implicits (_,(id,imps)) =
   var_table := Idmap.add id imps !var_table
