@@ -98,7 +98,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
-	parsing/printer.cmo parsing/pretty.cmo parsing/search.cmo \
+	parsing/printer.cmo parsing/prettyp.cmo parsing/search.cmo \
         parsing/egrammar.cmo \
         parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
@@ -230,7 +230,7 @@ $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
-	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@
+	$(COQMKTOP) -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
 $(COQTOP):
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)

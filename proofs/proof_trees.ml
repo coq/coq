@@ -339,7 +339,6 @@ let pr_subgoals_existential sigma = function
 
 open Ast
 open Termast
-open Pretty
 
 let ast_of_cvt_bind f = function
   | (NoDep n,c) -> ope ("BINDING", [(num n); ope ("COMMAND",[(f c)])])

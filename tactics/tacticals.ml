@@ -23,7 +23,6 @@ open Clenv
 open Pattern
 open Evar_refiner
 open Wcclausenv
-open Pretty
 
 (******************************************)
 (*         Basic Tacticals                *)

@@ -27,7 +27,7 @@ open Vernacinterp
 open Coqast
 open Ast
 open Astterm
-open Pretty
+open Prettyp
 open Printer
 open Tacinterp
 open Tactic_debug
@@ -1383,26 +1383,26 @@ let _ =
 let _ =
   add "PrintGRAPH"
     (function 
-       | [] -> (fun () -> pPNL (Pretty.print_graph()))
+       | [] -> (fun () -> pPNL (Prettyp.print_graph()))
        | _  -> bad_vernac_args "PrintGRAPH")
 
 let _ =
   add "PrintCLASSES"
     (function 
-       | [] -> (fun () -> pPNL (Pretty.print_classes()))
+       | [] -> (fun () -> pPNL (Prettyp.print_classes()))
        | _  -> bad_vernac_args "PrintCLASSES")
 
 let _ =
   add "PrintCOERCIONS"
     (function 
-       | [] -> (fun () -> pPNL (Pretty.print_coercions()))
+       | [] -> (fun () -> pPNL (Prettyp.print_coercions()))
        | _  -> bad_vernac_args "PrintCOERCIONS")
 
 let _ =
   add "PrintPATH"
     (function 
        | [VARG_IDENTIFIER ids;VARG_IDENTIFIER idt] -> 
-	   (fun () -> pPNL (Pretty.print_path_between ids idt))
+	   (fun () -> pPNL (Prettyp.print_path_between ids idt))
        | _ -> bad_vernac_args "PrintPATH")
 
 (* Meta-syntax commands *)

@@ -18,7 +18,6 @@ open Libobject
 open Declare
 open Coqast
 open Astterm
-open Pretty
 open Environ
 open Pattern
 open Printer

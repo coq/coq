@@ -22,7 +22,6 @@ open Type_errors
 open Reduction
 open Cases
 open Logic
-open Pretty
 open Printer
 open Ast
 

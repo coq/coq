@@ -10,7 +10,7 @@ open Reduction;;
 open Libobject;;
 open Environ;;
 open Declarations;;
-open Pretty;;
+open Prettyp;;
 open Inductive;;
 open Util;;
 open Pp;;
