@@ -567,10 +567,10 @@ type constr_operator =
 
 val splay_constr : constr -> constr_operator * constr array
 val gather_constr : constr_operator * constr array -> constr
-(*
+(*i
 val splay_constr : ('a,'a)kind_of_term -> constr_operator * 'a array
 val gather_constr : constr_operator * 'a array -> ('a,'a) kind_of_term
-*)
+i*)
 val splay_constr_with_binders : constr ->
       constr_operator * rel_declaration list * constr array
 val gather_constr_with_binders : 
