@@ -31,11 +31,12 @@ let myprint env rc t=
 	let ppstr=Printer.prterm_env env2 t in
 	Pp.msgnl ppstr
 
-let tacinj tac=valueIn (VTactic (tac))
+let tacinj tac=valueIn (VTactic (dummy_loc,tac))
 
 let tclATMOSTn n tac1 gl=
   let result=tac1 gl in
-    if List.length (fst result).it <= n then result else (tclFAIL 0 gl)
+    if List.length (fst result).it <= n then result
+    else (tclFAIL 0 "Not enough subgoals" gl)
 
 let tclTRY_REV_HYPS (tac : constr->tactic) gl = 
   tclTRY_sign tac (List.rev (Tacmach.pf_hyps gl)) gl
@@ -81,9 +82,9 @@ let rule_named_llarrow id gl=
     (try let nam=destVar id in
     let body=Tacmach.pf_get_hyp_typ gl nam in
     let (_,cc,c)=destProd body in
-    if dependent (mkRel 1) c then tclFAIL 0 else
+    if dependent (mkRel 1) c then tclFAIL 0 "" else
     let (_,ta,b)=destProd cc in
-    if dependent (mkRel 1) b then tclFAIL 0 else 
+    if dependent (mkRel 1) b then tclFAIL 0 "" else 
     let tb=pop b and tc=pop c in
     let d=mkLambda (Anonymous,tb,
     mkApp (id,[|mkLambda (Anonymous,(lift 1 ta),(mkRel 2))|])) in
@@ -92,7 +93,7 @@ let rule_named_llarrow id gl=
 	[tclTHEN intro (clear [nam]);
 	 tclTHENS (cut cc) 
 	   [exact_check id; tclTHENLIST [generalize [d];intro;clear [nam]]]]
-   with Invalid_argument _ -> tclFAIL 0) gl
+   with Invalid_argument _ -> tclFAIL 0 "") gl
 
 let rule_llarrow tac=
   tclTRY_REV_HYPS 
@@ -102,16 +103,18 @@ let rule_llarrow tac=
 let rule_rind tac gl=
   (let (hdapp,args)=decompose_app gl.it.Evd.evar_concl in
      try let ind=destInd hdapp in
-       if isrec ind then tclFAIL 0 else
+       if isrec ind then tclFAIL 0 "Found a recursive inductive type" else
 	 any_constructor (Some tac)
-     with Invalid_argument _ -> tclFAIL 0) gl 
+     with Invalid_argument _ -> tclFAIL 0 "") gl 
   
 let rule_rind_rev (* b *) gl=  
   (let (hdapp,args)=decompose_app gl.it.Evd.evar_concl in
      try let ind=destInd hdapp in
-       if (isrec ind)(* || (not b && (nhyps ind).(0)>1) *)then tclFAIL 0 else
+       if (isrec ind)(* || (not b && (nhyps ind).(0)>1) *) then
+	 tclFAIL 0 "Found a recursive inductive type"
+       else
 	 simplest_split
-     with Invalid_argument _ -> tclFAIL 0) gl 
+     with Invalid_argument _ -> tclFAIL 0 "") gl 
   (* this rule increases the number of goals 
 if the unique constructor has several hyps.
 i.e if (nhyps ind).(0)>1 *)
@@ -120,8 +123,8 @@ let rule_named_false id gl=
   (try let nam=destVar id in
    let body=Tacmach.pf_get_hyp_typ gl nam in
      if is_empty_type body then (simplest_elim id)
-     else tclFAIL 0
-   with Invalid_argument _ -> tclFAIL 0) gl
+     else tclFAIL 0 "Found an non empty type"
+   with Invalid_argument _ -> tclFAIL 0 "") gl
 
 let rule_false=tclTRY_REV_HYPS rule_named_false
 
@@ -133,11 +136,13 @@ let rule_named_lind (*b*) id gl=
    (*let nconstr=
     if b then 0 else 
       Array.length (snd (Global.lookup_inductive ind)).mind_consnames in *)
-     if (isrec ind) (*|| (nconstr>1)*) then tclFAIL 0 else 
+     if (isrec ind) (*|| (nconstr>1)*) then 
+       tclFAIL 0 "Found a recursive inductive type"
+     else 
        let l=nhyps ind in
        let f n= tclDO n intro in
 	 tclTHENSV (tclTHEN (simplest_elim id) (clear [nam])) (Array.map f l)
-   with Invalid_argument _ -> tclFAIL 0) gl
+   with Invalid_argument _ -> tclFAIL 0 "") gl
   
 let rule_lind (* b *) =
   tclTRY_REV_HYPS (rule_named_lind (* b *))
@@ -147,14 +152,14 @@ let rule_named_llind id gl=
     (try let nam=destVar id in 
     let body=Tacmach.pf_get_hyp_typ gl nam in
     let (_,xind,b) =destProd body in
-    if dependent (mkRel 1) b then tclFAIL 0 else  
+    if dependent (mkRel 1) b then tclFAIL 0 "Found a dependent product" else  
     let (hdapp,args) = decompose_app xind in
     let vargs=Array.of_list args in
     let ind=destInd hdapp in
-    if isrec ind then tclFAIL 0 else
+    if isrec ind then tclFAIL 0 "" else
     let (mib,mip) = Global.lookup_inductive ind in
     let n=mip.mind_nparams in
-    if n<>(List.length args) then tclFAIL 0 else
+    if n<>(List.length args) then tclFAIL 0 "" else
     let p=nhyps ind in
     let types= mip.mind_nf_lc in
     let names= mip.mind_consnames in
@@ -173,7 +178,7 @@ let rule_named_llind id gl=
     let newhyps=List.map myterm (interval 0 ((Array.length p)-1)) in
      tclTHEN (generalize newhyps)
 	(tclTHEN (clear [nam]) (tclDO (Array.length p) intro))
-	with Invalid_argument _ ->tclFAIL 0) gl
+	with Invalid_argument _ ->tclFAIL 0 "") gl
 
 let rule_llind=tclTRY_REV_HYPS rule_named_llind
 
@@ -196,19 +201,19 @@ let rec newtauto b stac gl=
 		rule_llarrow (tclSOLVE [newtauto b stac]);
 		rule_rind (tclSOLVE [newtauto b stac]);
 		rule_rforall (tclSOLVE [newtauto b stac]);
-		if b then tclFAIL 0 else (rule_simp_larrow stac)])
+		if b then tclFAIL 0 "" else (rule_simp_larrow stac)])
 		(tclPROGRESS (newtauto b stac)))
 		stac)) gl
  
 let q_elim tac=
-  let vtac=Tacexpr.TacArg (valueIn (VTactic tac)) in	
+  let vtac=Tacexpr.TacArg (valueIn (VTactic (dummy_loc,tac))) in	
   interp <:tactic<
   Match Context With 
     [x:?1;H:?1->?|-?]->
       Generalize (H x);Clear H;$vtac>>
 
 let rec lfo n=
-  if n=0 then (tclFAIL 0) else
+  if n=0 then (tclFAIL 0 "NewLinearIntuition failed") else
     let p=if n<0 then n else (n-1) in
     let lfo_rec=q_elim (fun gl->lfo p gl) in
       newtauto true lfo_rec
@@ -230,7 +235,7 @@ TACTIC EXTEND Intuition1
 END
 
 TACTIC EXTEND NewTauto
-  [ "NewTauto" ] -> [ newtauto true (tclFAIL 0) ]
+  [ "NewTauto" ] -> [ newtauto true (tclFAIL 0 "NewTauto failed") ]
 END
 
 TACTIC EXTEND NewLinearIntuition

@@ -850,7 +850,8 @@ let compileAutoArg contac = function
 		 then 
 		   tclTHENSEQ [simplest_elim (mkVar id); clear [id]; contac] 
                  else 
-		   tclFAIL 0) ctx) g)
+		   tclFAIL 0 ((string_of_id id)^"is not a conjunction"))
+	     ctx) g)
   | UsingTDB ->  
       (tclTHEN  
          (Tacticals.tryAllClauses 

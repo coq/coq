@@ -65,7 +65,7 @@ type ltac_type =
 
 (* Values for interpretation *)
 type value =
-  | VTactic of tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
+  | VTactic of loc * tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VRTactic of (goal list sigma * validation) (* For Match results *)
                                                (* Not a true value *)
   | VFun of (identifier * value) list * identifier option list *raw_tactic_expr
@@ -77,6 +77,17 @@ type value =
   | VConstr of constr         (* includes idents known bound and references *)
   | VConstr_context of constr
   | VRec of value ref
+
+let locate_tactic_call loc = function
+  | VTactic (_,t) -> VTactic (loc,t)
+  | v -> v
+
+let catch_error loc tac g =
+  try tac g
+  with e when loc <> dummy_loc ->
+    match e with
+      |	Stdpp.Exc_located (_,e) -> raise (Stdpp.Exc_located (loc,e))
+      |	e -> raise (Stdpp.Exc_located (loc,e))
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
@@ -591,7 +602,7 @@ and glob_tactic_seq (lfun,lmeta,sigma,env as ist) = function
   | TacMatch (c,lmr) ->
       lfun, TacMatch (glob_constr_may_eval ist c,glob_match_rule ist lmr)
   | TacId -> lfun, TacId
-  | TacFail n as x -> lfun, x
+  | TacFail _ as x -> lfun, x
   | TacProgress tac -> lfun, TacProgress (glob_tactic ist tac)
   | TacAbstract (tac,s) -> lfun, TacAbstract (glob_tactic ist tac,s)
   | TacThen (t1,t2) ->
@@ -745,11 +756,15 @@ let rec read_match_rule evc env lfun = function
 (* For Match Context and Match *)
 exception No_match
 exception Not_coherent_metas
-exception Eval_fail
+exception Eval_fail of string
+
+let is_failure = function
+  | FailError _ | Stdpp.Exc_located (_,FailError _) -> true
+  | _ -> false
 
 let is_match_catchable = function
-  | No_match | Eval_fail | FailError _ -> true
-  | e -> Logic.catchable_exception e
+  | No_match | Eval_fail _ -> true
+  | e -> is_failure e or Logic.catchable_exception e
 
 (* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence gl lcm = function
@@ -1112,7 +1127,7 @@ let rec val_interp ist gl tac =
     | TacMatch (c,lmr) -> match_interp ist gl c lmr
     | TacArg a -> tacarg_interp ist gl a
     (* Delayed evaluation *)
-    | t -> VTactic (eval_tactic ist t)
+    | t -> VTactic (dummy_loc,eval_tactic ist t)
   in 
   match ist.debug with
   | DebugOn | Run _ ->
@@ -1121,9 +1136,7 @@ let rec val_interp ist gl tac =
   | _ -> value_interp ist
 
 and eval_tactic ist = function
-  | TacAtom (loc,t) -> fun gl ->
-      (try interp_atomic ist gl t gl
-       with e -> Stdpp.raise_with_loc loc e)
+  | TacAtom (loc,t) -> fun gl -> catch_error loc (interp_atomic ist gl t) gl
   | TacFun (it,body) -> assert false
   | TacLetRecIn (lrc,u) -> assert false
   | TacLetIn (l,u) -> assert false
@@ -1131,7 +1144,7 @@ and eval_tactic ist = function
   | TacMatchContext _ -> assert false
   | TacMatch (c,lmr) -> assert false
   | TacId -> tclIDTAC
-  | TacFail n -> tclFAIL n
+  | TacFail (n,s) -> tclFAIL n s
   | TacProgress tac -> tclPROGRESS (tactic_interp ist tac)
   | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (tactic_interp ist tac)
   | TacThen (t1,t2) -> tclTHEN (tactic_interp ist t1) (tactic_interp ist t2)
@@ -1148,8 +1161,11 @@ and eval_tactic ist = function
   | TacArg a -> assert false
 
 and interp_ltac_qualid is_applied ist gl (loc,qid as lqid) =
-  try val_interp {lfun=[];lmatch=[];debug=ist.debug} gl (lookup qid)
-  with Not_found -> interp_pure_qualid is_applied (pf_env gl) lqid
+  try 
+    let v = val_interp {lfun=[];lmatch=[];debug=ist.debug} gl (lookup qid) in
+    if is_applied then v else locate_tactic_call loc v
+  with
+      Not_found -> interp_pure_qualid is_applied (pf_env gl) lqid
 
 and interp_ltac_reference isapplied ist gl = function
   | Ident (loc,id) -> 
@@ -1194,7 +1210,8 @@ and app_interp ist gl fv largs loc =
       let (newlfun,lvar,lval)=head_with_value (var,largs) in
       if lvar=[] then
 	let v = val_interp { ist with lfun=newlfun@olfun } gl body in
-        if lval=[] then v else app_interp ist gl v lval loc
+        if lval=[] then locate_tactic_call loc v
+	else app_interp ist gl v lval loc
       else
         VFun(newlfun@olfun,lvar,body)
     | _ ->
@@ -1205,7 +1222,7 @@ and app_interp ist gl fv largs loc =
 and tactic_of_value vle g =
   match vle with
   | VRTactic res -> res
-  | VTactic tac -> tac g
+  | VTactic (loc,tac) -> catch_error loc tac g
   | VFun _ -> error "A fully applied tactic is expected"
   | _ -> raise NotTactic
 
@@ -1213,13 +1230,15 @@ and tactic_of_value vle g =
 and eval_with_fail interp tac goal =
   try
     (match interp goal tac with
-    | VTactic tac -> VRTactic (tac goal)
+    | VTactic (loc,tac) -> VRTactic (catch_error loc tac goal)
     | a -> a)
-  with | FailError lvl ->
-    if lvl = 0 then
-      raise Eval_fail
-    else
-      raise (FailError (lvl - 1))
+  with
+    | Stdpp.Exc_located (_,FailError (0,s)) | FailError (0,s) ->
+	raise (Eval_fail s)
+    | Stdpp.Exc_located (s',FailError (lvl,s)) ->
+	raise (Stdpp.Exc_located (s',FailError (lvl - 1, s)))
+    | FailError (lvl,s) ->
+	raise (FailError (lvl - 1, s))
 
 (* Interprets recursive expressions *)
 and letrec_interp ist gl lrc u =
@@ -1301,7 +1320,7 @@ and match_context_interp ist g lr lmr =
       else
         apply_hyps_context ist env goal mt lgoal mhyps hyps
     with
-    | (FailError _) as e -> raise e
+    | e when is_failure e -> raise e
     | NextOccurrence _ -> raise No_match
     | e when is_match_catchable e ->
       apply_goal_sub ist env goal (nocc + 1) (id,c) csr mt mhyps hyps in
@@ -1341,7 +1360,7 @@ and match_context_interp ist g lr lmr =
           begin 
             (match e with
             | No_match -> db_matching_failure ist.debug
-            | Eval_fail -> db_eval_failure ist.debug
+            | Eval_fail s -> db_eval_failure ist.debug s
             | _ -> db_logic_failure ist.debug e);
             apply_match_context ist env goal (nrs+1) (List.tl lex) tl
           end)
@@ -1385,7 +1404,7 @@ and apply_hyps_context ist env goal mt lgmatch mhyps hyps =
             apply_hyps_context_rec ist mt
               (lfun@lid@lc) (lmatch@lm) tl nextlhyps nextlhyps None
            with
-           | (FailError _) as e -> raise e
+           | e when is_failure e -> raise e
 	   | e when is_match_catchable e -> 
              (match noccopt with
              | None ->
