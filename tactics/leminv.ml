@@ -29,7 +29,6 @@ open Pfedit
 open Evar_refiner
 open Clenv
 open Declare
-open Wcclausenv
 open Tacticals
 open Tactics
 open Inv
@@ -293,10 +292,6 @@ let lemInv id c gls =
     let clause = clenv_constrain_with_bindings [(-1,mkVar id)] clause in
     elim_res_pf kONT clause true gls
   with 
-(* Ce n'est pas l'endroit pour cela
-    | Not_found  ->  
-	errorlabstrm "LemInv" (not_found_message [id])
- *)
     |  UserError (a,b) -> 
 	 errorlabstrm "LemInv" 
 	   (str "Cannot refine current goal with the lemma " ++ 
@@ -313,11 +308,11 @@ let lemInvIn id c ids gls =
     else 
       (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)) gls
   in 
-(*  try *)
-    ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
-        (intros_replace_ids)) gls)
-(*  with Not_found -> errorlabstrm "LemInvIn" (not_found_message ids)
-    |  UserError(a,b) -> errorlabstrm "LemInvIn" b  
-*)
+  ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
+    (intros_replace_ids)) gls)
 
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
+
+let lemInv_clause id c = function
+  | [] -> lemInv_gen id c
+  | l -> lemInvIn_gen id c l
