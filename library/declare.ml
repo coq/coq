@@ -166,14 +166,18 @@ let open_constant i ((sp,kn),(_,stre)) =
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry (ParameterEntry mkProp)
 
-let export_constant (ce,stre) = Some (dummy_constant_entry,stre)
+let dummy_constant (ce,stre) = dummy_constant_entry,stre
+
+let export_constant cst = Some (dummy_constant cst)
+
+let classify_constant (_,cst) = Substitute (dummy_constant cst)
 
 let (in_constant, out_constant) =
   declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
-    classify_function = (fun (_,a) -> Substitute a);
+    classify_function = classify_constant;
     subst_function = ident_subst_function;
     export_function = export_constant } 
 
@@ -268,7 +272,7 @@ let (in_inductive, out_inductive) =
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
-    classify_function = (fun (_,a) -> Substitute a);
+    classify_function = (fun (_,a) -> Substitute (dummy_inductive_entry a));
     subst_function = ident_subst_function;
     export_function = export_inductive } 
 

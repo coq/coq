@@ -253,6 +253,10 @@ let make_infix_symbols assoc n sl =
   NonTerminal ((n,lp),"$a")::(List.map (fun s -> Terminal s) sl)
   @[NonTerminal ((n,rp),"$b")]
 
+let subst_infix2 (_, subst, (ref,inf as node)) = 
+  let ref' = Libnames.subst_ext subst ref in
+    if ref' == ref then node else
+      (ref', inf)
 
 let cache_infix2 (_,(ref,inf)) =
   let sp = match ref with
@@ -264,6 +268,8 @@ let (inInfix2, outInfix2) =
   declare_object {(default_object "INFIX2") with
        open_function = (fun i o -> if i=1 then cache_infix2 o);
        cache_function = cache_infix2;
+       subst_function = subst_infix2;
+       classify_function = (fun (_,o) -> Substitute o);
        export_function = (fun x -> Some x)}
 
 let add_infix assoc n inf (loc,qid) =

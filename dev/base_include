@@ -16,6 +16,11 @@
 #install_printer  (* kernel_name *) prkn;;
 #install_printer  (* constr *)  print_pure_constr;;
 
+(* parsing of names *)
+
+let qid_of_string s = Libnames.qualid_of_sp (Libnames.path_of_string s);;
+let qualid_of_string = qid_of_string;;
+
 (* parsing of terms *)
 
 let parse_com   = Pcoq.parse_string Pcoq.Constr.constr;;

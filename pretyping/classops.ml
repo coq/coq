@@ -204,7 +204,7 @@ let subst_class (_,subst,(ct,ci as obj)) =
 
 let (inClass,outClass) =
   declare_object {(default_object "CLASS") with 
-		    open_function = (fun i o -> if i=1 then cache_class o);
+		    load_function = (fun _ o -> cache_class o);
                     cache_function = cache_class;
 		    subst_function = subst_class;
 		    classify_function = (fun (_,x) -> Substitute x); 
@@ -362,7 +362,7 @@ let subst_coercion (_,subst,((coe,xf),cls,clt as obj)) =
 
 let (inCoercion,outCoercion) =
   declare_object {(default_object "COERCION") with 
-		    open_function = (fun i o -> if i=1 then cache_coercion o);
+		    load_function = (fun _ o -> cache_coercion o);
                     cache_function = cache_coercion;
 		    subst_function = subst_coercion;
 		    classify_function = (fun (_,x) -> Substitute x); 

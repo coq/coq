@@ -107,7 +107,8 @@ let subst_mind_packet sub mbp =
     mind_nrealargs = mbp.mind_nrealargs;
     mind_kelim = (* TODO *) mbp.mind_kelim;
     mind_nparams = mbp.mind_nparams;
-    mind_params_ctxt = mbp.mind_params_ctxt;
+    mind_params_ctxt = 
+      map_rel_context (Term.subst_mps sub) mbp.mind_params_ctxt;
     mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
 }
 

@@ -551,14 +551,19 @@ let declare_eliminations sp =
 (* Look up function for the default elimination constant *)
 
 let lookup_eliminator ind_sp s =
-  let kn,_ = ind_sp in
+  let kn,i = ind_sp in
   let mp,dp,l = repr_kn kn in
-  let id = add_suffix (id_of_label l) (elimination_suffix s) in
+  let ind_id = (Global.lookup_mind kn).mind_packets.(i).mind_typename in
+  let id = add_suffix ind_id (elimination_suffix s) in
+  (* Try first to get an eliminator defined in the same section as the *)
+  (* inductive type *)
   let ref = ConstRef (make_kn mp dp (label_of_id id)) in
   try 
     let _ = full_name ref in
       constr_of_reference ref
   with Not_found ->
+  (* Then try to get a user-defined eliminator in some other places *)
+  (* using short name (e.g. for "eq_rec") *)
     try construct_reference None id
     with Not_found ->
       errorlabstrm "default_elim"
