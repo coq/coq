@@ -41,9 +41,10 @@ let err_msg_tactic_not_found macro_loc macro =
 
 (* Values for interpretation *)
 type value =
-  | VTactic of interp_sign * Coqast.t
+  | VTacticClos of interp_sign * Coqast.t
   | VFTactic of tactic_arg list * string
   | VRTactic of (goal list sigma * validation)
+  | VTactic of tactic (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VContext of interp_sign * Coqast.t * Coqast.t list
   | VArg of tactic_arg
   | VFun of (identifier * value) list * identifier option list * Coqast.t
@@ -489,7 +490,7 @@ let rec val_interp ist ast =
           | Some g -> match_context_interp ist ast lmr g)
     | Node(_,"MATCH",lmr) -> match_interp ist ast lmr
     (* Delayed evaluation *)
-    | Node(loc,("LETCUT"|"IDTAC"|"FAIL"|"PROGRESS"|"TACTICLIST"|"DO"|"TRY"|"INFO"|"REPEAT"|"ORELSE"|"FIRST"|"TCLSOLVE"),_) -> VTactic (ist,ast)
+    | Node(loc,("LETCUT"|"IDTAC"|"FAIL"|"PROGRESS"|"TACTICLIST"|"DO"|"TRY"|"INFO"|"REPEAT"|"ORELSE"|"FIRST"|"TCLSOLVE"),_) -> VTacticClos (ist,ast)
     (* Arguments and primitive tactics *)
     | Node(_,"VOID",[]) -> VVoid
     | Nvar(_,s) ->
@@ -555,7 +556,7 @@ let rec val_interp ist ast =
           (str "Unrecognizable ast: " ++ print_ast ast)) in
   if ist.debug = DebugOn then
     match debug_prompt ist.goalopt ast with
-    | Exit -> VTactic (ist,Node(dummy_loc,"IDTAC",[]))
+    | Exit -> VTacticClos (ist,Node(dummy_loc,"IDTAC",[]))
     | v -> value_interp {ist with debug=v}
   else
     value_interp ist
@@ -606,17 +607,19 @@ and app_interp ist fv largs ast =
 (* Gives the tactic corresponding to the tactic value *)
 and tactic_of_value vle g =
   match vle with
-  | VTactic (ist,tac) -> eval_tactic ist tac g
+  | VTacticClos (ist,tac) -> eval_tactic ist tac g
   | VFTactic (largs,f) -> (interp_atomic f largs g) 
   | VRTactic res -> res
+  | VTactic tac -> tac g
   | _ -> raise NotTactic
 
 (* Evaluation with FailError catching *)
 and eval_with_fail interp ast goal =
   try 
     (match interp ast with
-    | VTactic (ist,tac) -> VRTactic (eval_tactic ist tac goal)
+    | VTacticClos (ist,tac) -> VRTactic (eval_tactic ist tac goal)
     | VFTactic (largs,f) -> VRTactic (interp_atomic f largs goal)
+    | VTactic tac -> VRTactic (tac goal)
     | a -> a)
   with | FailError lvl ->
     if lvl = 0 then
@@ -971,7 +974,7 @@ and tac_interp lfun lmatch debug ast g =
     "Interpretation gives a non-tactic value") *)
 
 (*    match (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) with
-      | VTactic tac -> (tac g)
+      | VTacticClos tac -> (tac g)
       | VFTactic (largs,f) -> (f largs g) 
       | VRTactic res -> res
       | _ ->
