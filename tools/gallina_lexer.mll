@@ -40,6 +40,7 @@ rule action = parse
   | "Definition" space  { print "Definition "; body_def lexbuf;
 			  cRcpt := 1; action lexbuf }
   | "Hint" space        { skip_until_point lexbuf ; action lexbuf }
+  | "Hints" space        { skip_until_point lexbuf ; action lexbuf }
   | "Transparent" space { skip_until_point lexbuf ; action lexbuf }
   | "Immediate"	space   { skip_until_point lexbuf ; action lexbuf }
   | "Syntax" space      { skip_until_point lexbuf ; action lexbuf }
