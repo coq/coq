@@ -20,7 +20,10 @@ open Toplevel
 open Coqinit
 
 let print_header () =
-  Printf.printf "Welcome to Coq %s (%s)\n" Coq_config.version Coq_config.date;
+  Printf.printf "Welcome to Coq %s%s (%s)\n"
+    Coq_config.version 
+    (if !Options.v7 then " (V7 syntax)" else "")
+    Coq_config.date;
   flush stdout
 
 let memory_stat = ref false
@@ -94,17 +97,17 @@ let set_opt () = re_exec_version := "opt"
 let re_exec () =
   let s = !re_exec_version in
   let is_native = (Mltop.get()) = Mltop.Native in
-  let mustbe_v8 = not !Options.v7 in
+(*  let mustbe_v8 = not !Options.v7 in*)
   let prog = Sys.argv.(0) in
   let coq = Filename.basename prog in
-  let is_v8 = coq = "coqtopnew.byte" or coq = "coqtopnew.opt" in
+(*  let is_v8 = coq = "coqtopnew.byte" or coq = "coqtopnew.opt" in*)
   if (is_native && s = "byte") || ((not is_native) && s = "opt")
-    || (is_v8 <> mustbe_v8)
+(*    || (is_v8 <> mustbe_v8)*)
   then begin
     let s = if s = "" then if is_native then "opt" else "byte" else s in
     let newprog = 
       let dir = Filename.dirname prog in
-      let coqtop = if mustbe_v8 then "coqtopnew." else "coqtop." in
+      let coqtop = (* if mustbe_v8 then "coqtopnew." else *) "coqtop." in
       let com = coqtop ^ s ^ Coq_config.exec_extension in
       if dir <> "." then Filename.concat dir com else com 
     in
@@ -212,13 +215,9 @@ let parse_args is_ide =
 
     | "-xml" :: rem -> Options.xml_export := true; parse rem
 
-    | "-v7" :: rem -> Options.v7 := true; parse rem
-
-    | "-v8" :: rem ->
-       Options.v7 := false;
-       (* implicites stricts par défaut en v8 *)
-       Impargs.make_strict_implicit_args true;
-       parse rem
+    (* Scanned in Options! *)
+    | "-v7" :: rem -> (* Options.v7 := true; *) parse rem
+    | "-v8" :: rem -> (* Options.v7 := false; *) parse rem
 
     (* Translator options *)
     | "-no-strict" :: rem -> 

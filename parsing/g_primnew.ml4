@@ -14,8 +14,11 @@ open Names
 open Libnames
 open Topconstr
 
-let _ = Pcoq.reset_all_grammars()
 let _ =
+  if not !Options.v7 then
+    Pcoq.reset_all_grammars()
+let _ =
+  if not !Options.v7 then
   let f = Gram.Unsafe.clear_entry in
   f Prim.bigint;
   f Prim.qualid;
@@ -23,7 +26,9 @@ let _ =
   f Prim.reference
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "<>"; "<<"; ">>"; "'"]
-let _ = List.iter (fun s -> Lexer.add_token("",s)) prim_kw
+let _ = 
+  if not !Options.v7 then
+    List.iter (fun s -> Lexer.add_token("",s)) prim_kw
 
 ifdef Quotify then
 open Qast
@@ -77,6 +82,7 @@ open Prelude
 ifdef Quotify then
 open Q
 
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: ast bigint qualid reference;
   metaident:
@@ -134,6 +140,7 @@ GEXTEND Gram
   ;
 END
 
+(*
 let constr_to_ast a =
   Termast.ast_of_rawconstr
     (Constrintern.interp_rawconstr Evd.empty (Global.env()) a)
@@ -141,3 +148,4 @@ let constr_to_ast a =
 let constr_parser_with_glob = Pcoq.map_entry constr_to_ast Constr.constr
 
 let _ = define_ast_quotation true "constr" constr_parser_with_glob
+*)

@@ -25,7 +25,9 @@ open Tactic
 
 let tactic_kw =
   [ "using"; "Orelse"; "Proof"; "Qed"; "And"; "()"; "|-" ]
-let _ = List.iter (fun s -> Lexer.add_token ("",s)) tactic_kw
+let _ =
+  if !Options.v7 then
+    List.iter (fun s -> Lexer.add_token ("",s)) tactic_kw
 
 (* Functions overloaded by quotifier *)
 
@@ -58,6 +60,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 (* Auxiliary grammar rules *)
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constrarg constr_with_bindings quantified_hypothesis
     red_expr int_or_var castedopenconstr;

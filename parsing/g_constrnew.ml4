@@ -23,8 +23,14 @@ let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
     "Prop"; "Set"; "Type"; ".(" ]
-let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
+
+let _ = 
+  if not !Options.v7 then
+    List.iter (fun s -> Lexer.add_token("",s)) constr_kw
+
+(*
 let _ = Options.v7 := false
+*)
 
 (* For Correctness syntax; doesn't work if in psyntax (freeze pb?)  *)
 let _ = Lexer.add_token ("","!")
@@ -126,6 +132,7 @@ let rec mkCLambdaN loc bll c =
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
 
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern Constr.ident binder_let tuple_constr;
@@ -324,4 +331,4 @@ GEXTEND Gram
   type_cstr:
     [ [ c=OPT [":"; c=lconstr -> c] -> (loc,c) ] ]
   ;
-END;;
+  END;;

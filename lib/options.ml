@@ -26,9 +26,10 @@ let xml_export = ref false
 
 let dont_load_proofs = ref false
 
-let v7 = 
+let v7 =
   let f = Filename.basename Sys.argv.(0) in
-  ref (not (f = "coqtopnew.byte" or f = "coqtopnew.opt" or f = "coqtopnew"))
+  ref (not (f = "coqtopnew.byte" or f = "coqtopnew.opt" or f = "coqtopnew"
+  or array_exists ((=) "-v8") Sys.argv))
 
 let v7_only = ref false
 

@@ -68,6 +68,7 @@ open Prelude
 
 let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
 
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: tactic Vernac_.command tactic_expr tactic_arg;
 

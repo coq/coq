@@ -29,7 +29,9 @@ open Module
 
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:" ]
-let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
+let _ = 
+  if not !Options.v7 then
+    List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
@@ -39,6 +41,7 @@ let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: vernac gallina_ext;
   vernac:
@@ -91,6 +94,7 @@ let flatten_assum l =
     (List.map (fun (oc,(idl,t)) -> List.map (fun id -> (oc,(id,t))) idl) l)
 
 (* Gallina declarations *)
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body;
 
@@ -296,6 +300,7 @@ END
 
 
 (* Modules and Sections *)
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina_ext module_expr module_type;
 
@@ -383,6 +388,7 @@ GEXTEND Gram
 END
 
 (* Extensions: implicits, coercions, etc. *)   
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina_ext;
 
@@ -448,6 +454,7 @@ GEXTEND Gram
   ;
 END
 
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: command check_command class_rawexpr;
 
@@ -630,6 +637,7 @@ GEXTEND Gram
   ;
 END;
 
+if not !Options.v7 then
 GEXTEND Gram
   command:
     [ [ 
@@ -655,6 +663,7 @@ GEXTEND Gram
 
 (* Grammar extensions *)
 	  
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: syntax;
 
@@ -873,4 +882,6 @@ GEXTEND Gram
 END
 
 (* Reinstall tactic and vernac extensions *)
-let _ = Egrammar.reset_extend_grammars_v8()
+let _ = 
+  if not !Options.v7 then
+    Egrammar.reset_extend_grammars_v8()

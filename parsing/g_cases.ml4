@@ -19,6 +19,7 @@ open Prim
 let pair loc =
   Qualid (loc, Libnames.qualid_of_string "Coq.Init.Datatypes.pair")
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: operconstr pattern;
 

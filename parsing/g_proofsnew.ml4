@@ -21,6 +21,7 @@ open Constr
 let thm_token = G_vernacnew.thm_token
 
 (* Proof commands *)
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: command;
 

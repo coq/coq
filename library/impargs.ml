@@ -22,8 +22,9 @@ open Nametab
 
 (*s Flags governing the computation of implicit arguments *)
 
+(* les implicites sont stricts par défaut en v8 *)
 let implicit_args = ref false
-let strict_implicit_args = ref false
+let strict_implicit_args = ref (not !Options.v7)
 let contextual_implicit_args = ref false
 
 let implicit_args_out = ref false
@@ -485,7 +486,7 @@ let _ =
 let init () =
   (* strict_implicit_args_out must be not !Options.v7 
      but init is done before parsing *)
-  strict_implicit_args:=false;
+  strict_implicit_args:=not !Options.v7;
   implicit_args_out:=false;
   (* strict_implicit_args_out needs to be not !Options.v7 or
      Options.do_translate() but init is done before parsing *)

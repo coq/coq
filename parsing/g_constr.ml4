@@ -25,7 +25,9 @@ let constr_kw =
     "<->"; "\\/"; "/\\"; "`"; "``"; "&"; "*"; "+"; "@"; "^"; "#"; "-";
     "~"; "'"; "<<"; ">>"; "<>"
   ]
-let _ = List.iter (fun s -> Lexer.add_token ("",s)) constr_kw
+let _ =
+  if !Options.v7 then
+  List.iter (fun s -> Lexer.add_token ("",s)) constr_kw
 (* "let" is not a keyword because #Core#let.cci would not parse.
    Is it still accurate ? *)
 
@@ -92,6 +94,7 @@ let test_ident_colon =
         | _ -> raise Stream.Failure)
 
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: operconstr lconstr constr sort global constr_pattern Constr.ident annot
           (*ne_name_comma_list*);

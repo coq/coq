@@ -66,6 +66,7 @@ let arg_of_expr = function
     
 (* Tactics grammar rules *)
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: tactic Vernac_.command tactic_arg;
 

@@ -18,6 +18,7 @@ open Topconstr
 
 (* Grammar rules for module expressions and types *)
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: module_expr module_type;
  

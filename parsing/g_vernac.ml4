@@ -33,6 +33,7 @@ let thm_token = G_proofs.thm_token
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: vernac gallina_ext;
   vernac:
@@ -95,6 +96,7 @@ let test_plurial_form = function
   | _ -> ()
 
 (* Gallina declarations *)
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token;
 
@@ -439,6 +441,7 @@ GEXTEND Gram
 END
 
 (* Modules management *)   
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: command;
 
@@ -489,6 +492,7 @@ GEXTEND Gram
   ;
 END
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: command;
 

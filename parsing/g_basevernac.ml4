@@ -23,10 +23,13 @@ let vernac_kw =
     "Definition"; "Inductive"; "CoInductive"; 
     "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
     "."; ">->" ]
-let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
+let _ = 
+  if !Options.v7 then
+    List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
 
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: class_rawexpr;
 
@@ -37,6 +40,7 @@ GEXTEND Gram
   ;
 END;
 
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: command;
 
@@ -219,6 +223,7 @@ let map_modl = function
   | SetLevel n -> SetLevel(adapt_level n)
   | m -> m
 	  
+if !Options.v7 then
 GEXTEND Gram
   GLOBAL: syntax;
 

@@ -18,7 +18,9 @@ open Genarg
 
 let tactic_kw =
   [ "->"; "<-" ]
-let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
+let _ = 
+  if not !Options.v7 then
+    List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
 
 (* Hack to parse "with n := c ..." as a binder without conflicts with the *)
 (* admissible notation "with c1 c2..." *)
@@ -71,6 +73,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 (* Auxiliary grammar rules *)
 
+if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constrarg constr_with_bindings quantified_hypothesis
     red_expr int_or_var castedopenconstr;
