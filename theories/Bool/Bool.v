@@ -8,12 +8,12 @@
 
 (* $Id$ *)
 
-(************)
-(* Booleans *)
-(************)
+(*************)
+(*s Booleans *)
+(* The type [bool] is defined in the prelude as \\
+    [Inductive bool : Set := true : bool | false : bool (from Prelude)] *)
 
-(* Inductive bool : Set := true : bool | false : bool (from Prelude) *)
-
+(*s Interpretation of booleans as Propopsition *)
 Definition Is_true := [b:bool](Cases b of
                                  true  => True
                                | false => False
@@ -32,9 +32,9 @@ Save.
 
 Hints Immediate Is_true_eq_right Is_true_eq_left : bool.
 
-(******************)
-(* Discrimination *)
-(******************)
+(*******************)
+(*s Discrimination *)
+(*******************)
 
 Lemma diff_true_false : ~true=false.
 Goal.
@@ -73,9 +73,9 @@ Intro H; Red in H; Elim H.
 Reflexivity.
 Save.
 
-(*********************)
-(* Order on booleans *)
-(*********************)
+(**********************)
+(*s Order on booleans *)
+(**********************)
 
 Definition leb := [b1,b2:bool]
   Cases b1 of 
@@ -84,9 +84,9 @@ Definition leb := [b1,b2:bool]
   end.
 Hints Unfold leb : bool v62.
 
-(************)
-(* Equality *)
-(************)
+(*************)
+(*s Equality *)
+(*************)
 
 Definition eqb : bool->bool->bool :=
  [b1,b2:bool]
@@ -142,9 +142,9 @@ Destruct a; Destruct b; Simpl; Intro;
 Save.
 
 
-(***********************)
-(* Logical combinators *)
-(***********************)
+(************************)
+(*s Logical combinators *)
+(************************)
  
 Definition ifb : bool -> bool -> bool -> bool
      := [b1,b2,b3:bool](Cases b1 of true => b2 | false => b3 end).
@@ -173,9 +173,9 @@ Definition negb := [b:bool]Cases b of
                            end.
 
 
-(*************************)
-(* Lemmas about Negation *)
-(*************************)
+(**************************)
+(*s Lemmas about [negb]   *)
+(**************************)
 
 Lemma negb_intro : (b:bool)b=(negb (negb b)).
 Goal.
@@ -222,9 +222,15 @@ Trivial with bool.
 Save.
 
 
-(*************************)
-(* A few lemmas about Or *)
-(*************************)
+Lemma if_negb : (A:Set) (b:bool) (x,y:A) (if (negb b) then x else y)=(if b then y else x).
+Proof.
+  Induction b;Trivial.
+Qed.
+
+
+(****************************)
+(*s A few lemmas about [or] *)
+(****************************)
 
 Lemma orb_prop : 
   (a,b:bool)(orb a b)=true -> (a = true)\/(b = true).
@@ -303,9 +309,9 @@ Save.
 
 Hints Resolve orb_sym orb_assoc orb_b_false orb_false_b : bool v62.
 
-(**************************)
-(* A few lemmas about And *)
-(**************************)
+(*****************************)
+(*s A few lemmas about [and] *)
+(*****************************)
 
 Lemma andb_prop : 
   (a,b:bool)(andb a b) = true -> (a = true)/\(b = true).
@@ -386,7 +392,73 @@ Save.
 Hints Resolve andb_sym andb_assoc : bool v62.
 
 (*******************************)
-(* De Morgan's law             *)
+(*s Properties of [xorb]       *)
+(*******************************)
+
+Lemma xorb_false : (b:bool) (xorb b false)=b.
+Proof.
+  Induction b; Trivial.
+Qed.
+
+Lemma false_xorb : (b:bool) (xorb false b)=b.
+Proof.
+  Induction b; Trivial.
+Qed.
+
+Lemma xorb_true : (b:bool) (xorb b true)=(negb b).
+Proof.
+  Trivial.
+Qed.
+
+Lemma true_xorb : (b:bool) (xorb true b)=(negb b).
+Proof.
+  Induction b; Trivial.
+Qed.
+
+Lemma xorb_nilpotent : (b:bool) (xorb b b)=false.
+Proof.
+  Induction b; Trivial.
+Qed.
+
+Lemma xorb_comm : (b,b':bool) (xorb b b')=(xorb b' b).
+Proof.
+  Induction b; Induction b'; Trivial.
+Qed.
+
+Lemma xorb_assoc : (b,b',b'':bool) (xorb (xorb b b') b'')=(xorb b (xorb b' b'')).
+Proof.
+  Induction b; Induction b'; Induction b''; Trivial.
+Qed.
+
+Lemma xorb_eq : (b,b':bool) (xorb b b')=false -> b=b'.
+Proof.
+  Induction b; Induction b'; Trivial.
+  Unfold xorb. Intros. Rewrite H. Reflexivity.
+Qed.
+
+Lemma xorb_move_l_r_1 : (b,b',b'':bool) (xorb b b')=b'' -> b'=(xorb b b'').
+Proof.
+  Intros. Rewrite <- (false_xorb b'). Rewrite <- (xorb_nilpotent b). Rewrite xorb_assoc.
+  Rewrite H. Reflexivity.
+Qed.
+
+Lemma xorb_move_l_r_2 : (b,b',b'':bool) (xorb b b')=b'' -> b=(xorb b'' b').
+Proof.
+  Intros. Rewrite (xorb_comm b b') in H. Rewrite (xorb_move_l_r_1 b' b b'' H). Apply xorb_comm.
+Qed.
+
+Lemma xorb_move_r_l_1 : (b,b',b'':bool) b=(xorb b' b'') -> (xorb b' b)=b''.
+Proof.
+  Intros. Rewrite H. Rewrite <- xorb_assoc. Rewrite xorb_nilpotent. Apply false_xorb.
+Qed.
+
+Lemma xorb_move_r_l_2 : (b,b',b'':bool) b=(xorb b' b'') -> (xorb b b'')=b'.
+Proof.
+  Intros. Rewrite H. Rewrite xorb_assoc. Rewrite xorb_nilpotent. Apply xorb_false.
+Qed.
+
+(*******************************)
+(*s De Morgan's law            *)
 (*******************************)
 
 Lemma demorgan1 : (b1,b2,b3:bool)
