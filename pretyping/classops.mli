@@ -55,9 +55,9 @@ val class_info : cl_typ -> (cl_index * cl_info_typ)
 val class_exists : cl_typ -> bool
 val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
-(* [constructor_at_head c] returns the head reference of c and its
-   number of arguments *)
-val constructor_at_head : constr -> cl_typ * int
+(* [find_class_type c] returns the head reference of c and its
+   arguments *)
+val find_class_type : constr -> cl_typ * constr list
 
 (* raises [Not_found] if not convertible to a class *)
 val class_of : env -> evar_map -> constr -> constr * cl_index

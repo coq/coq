@@ -74,8 +74,11 @@ let stre_of_global = function
   | VarRef id -> variable_strength id
   | IndRef _ | ConstructRef _ -> NeverDischarge 
 
-(* verfications pour l'ajout d'une classe *)
+(* Errors *)
 
+(******
+<<<<<<< class.ml
+=======
 let rec arity_sort a = match kind_of_term a with
   | Sort (Prop _ | Type _) -> 0
   | Prod (_,_,c) -> (arity_sort c) +1
@@ -111,97 +114,93 @@ let try_add_new_class ref stre =
         [< 'sTR "Type of "; Printer.pr_global ref;
            'sTR " does not end with a sort" >] 
   in
-  let cl = fst (constructor_at_head v) in
+  let cl = fst (find_class_type v) in
   let _ = try_add_class (cl,p1) (Some stre) true in () 
 
 (* Coercions *)
 
+******)
 type coercion_error_kind =
   | AlreadyExists
-  | NotACoercion
-  | NoSource of string
+  | NotAFunction
+  | NoSource
+  | NoSourceFunClass
+  | NoSourceSortClass
   | NotUniform
   | NoTarget
   | WrongTarget of cl_typ * cl_typ
-  | NotAClass of cl_typ
+  | NotAClass of global_reference
   | NotEnoughClassArgs of cl_typ
 
 exception CoercionError of coercion_error_kind
 
 let explain_coercion_error g = function
   | AlreadyExists ->
-      errorlabstrm "try_add_coercion" 
-	[< Printer.pr_global g; 'sTR" is already a coercion" >]
-  | NotACoercion ->
-      errorlabstrm "try_add_coercion"         
-	[< Printer.pr_global g; 'sTR" does not correspond to a coercion" >]
-  | NoSource s ->
-    errorlabstrm "try_add_coercion" 
-      [< Printer.pr_global g; 'sTR ": "; 'sTR s >]
+      [< Printer.pr_global g; 'sTR" is already a coercion" >]
+  | NotAFunction ->
+      [< Printer.pr_global g; 'sTR" is not a function" >]
+  | NoSource ->
+      [< Printer.pr_global g; 'sTR ": cannot find the source class"  >]
+  | NoSourceFunClass ->
+      [< Printer.pr_global g; 'sTR ": FUNCLASS cannot be a source class" >]
+  | NoSourceSortClass ->
+      [< Printer.pr_global g; 'sTR ": SORTCLASS cannot be a source class" >]
   | NotUniform ->
-    errorlabstrm "try_add_coercion" 
       [< Printer.pr_global g;
          'sTR" does not respect the inheritance uniform condition" >];
   | NoTarget ->
-      errorlabstrm "try_add_coercion" 
-        [<'sTR"We cannot find the target class" >]
+      [<'sTR"Cannot find the target class" >]
   | WrongTarget (clt,cl) ->
-      errorlabstrm "try_add_coercion" 
-        [<'sTR"Found target class "; 'sTR(string_of_class cl);
-	  'sTR " while "; 'sTR(string_of_class clt);
-	  'sTR " is expected" >]
-  | NotAClass cl ->
-	errorlabstrm "check_class" 
-          [< 'sTR "Type of "; 'sTR (string_of_class cl);
-             'sTR " does not end with a sort" >] 
+      [<'sTR"Found target class "; 'sTR(string_of_class cl);
+	'sTR " while "; 'sTR(string_of_class clt);
+	'sTR " is expected" >]
+  | NotAClass ref ->
+      [< 'sTR "Type of "; Printer.pr_global ref;
+         'sTR " does not end with a sort" >]
   | NotEnoughClassArgs cl ->
-      errorlabstrm "fully_applied" 
-	[< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
+      [< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
 
-let check_fully_applied cl p p1 =
-  if p <> p1 then raise (CoercionError (NotEnoughClassArgs cl))
+(* Verifications pour l'ajout d'une classe *)
 
-(* check_class : Names.identifier ->
-  Term.constr -> cl_typ -> int -> int * Libobject.strength *)
+let rec arity_sort a = match kind_of_term a with
+  | Sort (Prop _ | Type _) -> 0
+  | Prod (_,_,c) -> (arity_sort c) +1
+  | LetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
+  | Cast (c,_) -> arity_sort c
+  | _ -> raise Not_found
 
-let check_class v cl p =
-  try 
-    let _,clinfo = class_info cl in
-    check_fully_applied cl p clinfo.cl_param
-  with Not_found -> 
-    let env = Global.env () in
-    let t = Retyping.get_type_of env Evd.empty v in
-    let p1 =
-      try 
-	arity_sort t 
-      with Not_found -> raise (CoercionError (NotAClass cl))
+let check_reference_arity ref =
+  try arity_sort (Global.type_of_global ref)
+  with Not_found -> raise (CoercionError (NotAClass ref))
+
+let check_arity = function
+  | CL_FUN | CL_SORT -> 0
+  | CL_CONST sp -> check_reference_arity (ConstRef sp)
+  | CL_SECVAR sp -> check_reference_arity (VarRef sp)
+  | CL_IND sp  -> check_reference_arity (IndRef sp)
+
+(* try_add_class : cl_typ -> strength option -> bool -> unit *)
+
+let try_add_class cl streopt fail_if_exists =
+  if not (class_exists cl) then
+    let p = check_arity cl in
+    let stre' = strength_of_cl cl in 
+    let stre = match streopt with
+      | Some stre -> stre_max (stre,stre')
+      | None -> stre'
     in
-    check_fully_applied cl p p1;
-    try_add_class (cl,p1) None false
+    declare_class (cl,stre,p)
+  else
+    if fail_if_exists then errorlabstrm "try_add_new_class" 
+      [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >]
+
+
+(* Coercions *)
 
 (* check that the computed target is the provided one *)
 let check_target clt = function
   | Some cl when cl <> clt -> raise (CoercionError (WrongTarget(clt,cl)))
   | _ -> ()
-
-(* decomposition de constr vers coe_typ *)
-
-let constructor_at_head1 t = 
-  let rec aux t' =
-    match kind_of_term t' with
-      | Const sp -> t',[],CL_CONST sp,0
-      | Ind ind_sp -> t',[],CL_IND ind_sp,0
-      | Var id -> t',[],CL_SECVAR id,0
-      | Cast (c,_) -> aux c
-      | App(f,args) -> 
-	  let t',_,l,_ = aux f in t',Array.to_list args,l,Array.length args
-      | Prod (_,_,_) -> t',[],CL_FUN,0
-      | LetIn (_,_,_,c) -> aux c
-      | Sort _ -> t',[],CL_SORT,0
-      |  _ -> raise Not_found
-  in 
-  aux (collapse_appl t)
-
 
 (* condition d'heritage uniforme *)
 
@@ -236,46 +235,44 @@ lp est la liste (inverse'e) des arguments de la coercion
 ids est le nom de la classe source
 sps_opt est le sp de la classe source dans le cas des structures
 retourne:
-la classe souce
+la classe source
 nbre d'arguments de la classe
 le constr de la class
-l'indice de la classe source dans la liste lp
 la liste des variables dont depend la classe source
+l'indice de la classe source dans la liste lp
 *)
 
 let get_source lp source =
   match source with
     | None ->
-	let (v1,lv1,cl1,p1) =
-	  match lp with
+	let (cl1,lv1) =
+          match lp with
 	    | [] -> raise Not_found
-            | t1::_ ->
-		try constructor_at_head1 t1
-                with _ -> raise Not_found
+            | t1::_ -> find_class_type t1
         in 
-	(cl1,p1,v1,lv1,1)
+	(cl1,lv1,1)
     | Some cl ->
 	let rec aux n = function
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try 
-		let v1,lv1,cl1,p1 = constructor_at_head1 t1 in
-		if cl1 = cl then cl1,p1,v1,lv1,n
-		else aux (n+1) lt
-              with _ -> aux (n + 1) lt
+		let cl1,lv1 = find_class_type t1 in
+		if cl = cl1 then cl1,lv1,n
+		else raise Not_found
+              with Not_found -> aux (n+1) lt
 	in aux 1 lp
 
 let get_target t ind =
   if (ind > 1) then 
-    CL_FUN,0,t
+    CL_FUN
   else 
-    let v2,_,cl2,p2 = constructor_at_head1 t in cl2,p2,v2
+    fst (find_class_type t)
 
 let prods_of t = 
   let rec aux acc d = match kind_of_term d with
     | Prod (_,c1,c2) -> aux (c1::acc) c2
     | Cast (c,_) -> aux acc c
-    | _ -> d::acc
+    | _ -> (d,acc)
   in 
   aux [] t
 
@@ -331,7 +328,7 @@ let build_id_coercion idf_opt source =
       | Some idf -> idf
       | None ->
 	  id_of_string ("Id_"^(string_of_class source)^"_"^
-                        (string_of_class (fst (constructor_at_head t)))) 
+                        (string_of_class (fst (find_class_type t)))) 
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     ConstantEntry
@@ -357,36 +354,35 @@ let add_new_coercion_core coef stre source target isid =
   let v = constr_of_reference coef in
   let vj = Retyping.get_judgment_of env Evd.empty v in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
-  let lp = prods_of (vj.uj_type) in
+  let tg,lp = prods_of (vj.uj_type) in
   let llp = List.length lp in
-  if llp <= 1 then raise (CoercionError NotACoercion);
-  let (cls,ps,vs,lvs,ind) =
+  if llp = 0 then raise (CoercionError NotAFunction);
+  let (cls,lvs,ind) =
     try 
-      get_source (List.tl lp) source
+      get_source lp source
     with Not_found ->
-      raise (CoercionError (NoSource "Cannot find the source class "))
+      raise (CoercionError NoSource)
   in
-  if (cls = CL_FUN) then
-    raise (CoercionError (NoSource "FUNCLASS cannot be a source class"));
-  if (cls = CL_SORT) then
-    raise (CoercionError (NoSource "SORTCLASS cannot be a source class"));
-  if not (uniform_cond (llp-1-ind) lvs) then
+  if (cls = CL_FUN) then raise (CoercionError NoSourceFunClass);
+  if (cls = CL_SORT) then raise (CoercionError NoSourceSortClass);
+  if not (uniform_cond (llp-ind) lvs) then
     raise (CoercionError NotUniform);
-  let clt,pt,vt =
+  let clt =
     try
-      get_target (List.hd lp) ind 
+      get_target tg ind 
     with Not_found ->
       raise (CoercionError NoTarget)
   in
   check_target clt target;
-  check_class vs cls ps;
-  check_class vt clt pt;
+  try_add_class cls None false;
+  try_add_class clt None false;
   let stre' = get_strength stre coef cls clt in
-  declare_coercion coef vj stre' isid cls clt ps
+  declare_coercion coef vj stre' isid cls clt (List.length lvs)
 
 let try_add_new_coercion_core ref b c d e =
   try add_new_coercion_core ref b c d e
-  with CoercionError e -> explain_coercion_error ref e
+  with CoercionError e ->
+      errorlabstrm "try_add_new_coercion_core" (explain_coercion_error ref e)
 
 let try_add_new_coercion ref stre =
   try_add_new_coercion_core ref stre None None false
@@ -404,6 +400,19 @@ let try_add_new_identity_coercion id stre source target =
 
 let try_add_new_coercion_with_source ref stre source =
   try_add_new_coercion_core ref stre (Some source) None false
+
+(* try_add_new_class : global_reference -> strength -> unit *)
+
+let class_of_global = function
+  | VarRef sp -> CL_SECVAR sp
+  | ConstRef sp -> CL_CONST sp
+  | IndRef sp -> CL_IND sp
+  | ConstructRef _ as ref -> raise (CoercionError (NotAClass ref))
+
+let try_add_new_class ref stre =
+  try try_add_class (class_of_global ref) (Some stre) true
+  with CoercionError e ->
+    errorlabstrm "try_add_new_class" (explain_coercion_error ref e)
 
 (* fonctions pour le discharge: encore un peu sale mais ça s'améliore *)
 

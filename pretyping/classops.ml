@@ -23,6 +23,9 @@ open Rawterm
 
 (* usage qque peu general: utilise aussi dans record *)
 
+(* A class is a type constructor, its type is an arity whose number of
+   arguments is cl_param (0 for CL_SORT and CL_FUN) *)
+
 type cl_typ = 
   | CL_SORT 
   | CL_FUN
@@ -32,7 +35,8 @@ type cl_typ =
 
 type cl_info_typ = {
   cl_strength : strength;
-  cl_param : int }
+  cl_param : int
+}
 
 type coe_typ = global_reference
 
@@ -187,37 +191,33 @@ let _ =
 
 (* classe d'un terme *)
 
-(* constructor_at_head : constr -> cl_typ * int *)
+(* find_class_type : constr -> cl_typ * int *)
 
-let constructor_at_head t = 
-  let rec aux t' = match kind_of_term t' with
-    | Var id -> CL_SECVAR id,0
-    | Const sp -> CL_CONST sp,0
-    | Ind ind_sp -> CL_IND ind_sp,0
-    | Prod (_,_,c) -> CL_FUN,0
-    | LetIn (_,_,_,c) -> aux c
-    | Sort _ -> CL_SORT,0
-    | Cast (c,_) -> aux (collapse_appl c)
-    | App (f,args) -> let c,_ = aux f in c, Array.length args
+let find_class_type t =
+  let t', args = decompose_app (Reductionops.whd_betaiotazeta t) in
+  match kind_of_term t' with
+    | Var id -> CL_SECVAR id, args
+    | Const sp -> CL_CONST sp, args
+    | Ind ind_sp -> CL_IND ind_sp, args
+    | Prod (_,_,_) -> CL_FUN, []
+    | Sort _ -> CL_SORT, []
     |  _ -> raise Not_found
-  in 
-  aux (collapse_appl t)
 
 (* class_of : Term.constr -> int *)
 
 let class_of env sigma t = 
-  let t,n,n1,i = 
-    (try 
-       let (cl,n) = constructor_at_head t in
-       let (i,{cl_param=n1}) = class_info cl in
-       t,n,n1,i              
-     with _ -> 
-       let t = Tacred.hnf_constr env sigma t in
-       let (cl,n) = constructor_at_head t in
-       let (i,{cl_param=n1}) = class_info cl in
-       t,n,n1,i) 
+  let (t, n1, i, args) = 
+    try
+      let (cl,args) = find_class_type t in
+      let (i, { cl_param = n1 } ) = class_info cl in
+      (t, n1, i, args)
+    with Not_found ->
+      let t = Tacred.hnf_constr env sigma t in
+      let (cl, args) = find_class_type t in 
+      let (i, { cl_param = n1 } ) = class_info cl in
+      (t, n1, i, args)
   in
-  if n = n1 then t,i else raise Not_found
+  if List.length args = n1 then t, i else raise Not_found
 
 let class_args_of c = snd (decompose_app c)
 
@@ -256,6 +256,9 @@ let message_ambig l =
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit 
                          coercion,source,target *)
 
+let different_class_params i j =
+  (snd (class_info_from_index i)).cl_param > 0
+
 let add_coercion_in_graph (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
@@ -263,7 +266,7 @@ let add_coercion_in_graph (ic,source,target) =
   let try_add_new_path (p,i,j) =
     try 
       if i=j then begin
-	if (snd (class_info_from_index i)).cl_param > 0 then begin
+	if different_class_params i j then begin
 	  let _ = lookup_path_between (i,j) in
           ambig_paths := ((i,j),p)::!ambig_paths
 	end
