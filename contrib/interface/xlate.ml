@@ -291,6 +291,14 @@ let rec decompose_last = function
   | [a] -> [], a
   | a::tl -> let rl, b = decompose_last tl in (a::rl), b;;
 
+let rec make_fix_struct b = function
+    0, CProdN(_, [([na],_)], CProdN(_, _,_)) -> xlate_id_opt na
+  | 0, CProdN(_, [([na],_)], _) ->
+      if b then xlate_id_opt na else ctv_ID_OPT_NONE
+  | n, CProdN(_, [([_],_)],body) -> make_fix_struct true ((n-1),body)
+  | _, _ -> xlate_error "unexpected result of parsing for Fixpoint";;
+
+
 let rec xlate_binder = function
     (l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
 and xlate_formula_opt =
@@ -360,8 +368,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		xlate_formula_opt ret_type,
                 CT_eqn_list (List.map (fun x -> translate_one_equation x) eqns))
    | COrderedCase (_,Term.IfStyle,po,c,[b1;b2]) -> 
-		   CT_if(xlate_formula_opt po,
-                   xlate_formula c,xlate_formula b1,xlate_formula b2)		
+       xlate_error "No more COrderedCase"
    | CLetTuple (_,a::l, (na,po), c, b) -> 
       CT_let_tuple(CT_id_opt_ne_list(xlate_id_opt_aux a,
 				     List.map xlate_id_opt_aux l),
@@ -370,10 +377,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		   xlate_formula c,
 		   xlate_formula b)
    | CLetTuple (_, [], _, _, _) -> xlate_error "NOT parsed: Let with ()"
-   | CIf (_,c, (na,None), b1, b2) ->
-		   CT_if(ctv_FORMULA_OPT_NONE,
-                   xlate_formula c,xlate_formula b1,xlate_formula b2)
-   | CIf (_,c, (na,Some p), b1, b2) -> xlate_error "If: TODO"
+   | CIf (_,c, (na, p), b1, b2) -> 
+       CT_if
+	 (xlate_formula c, xlate_id_opt_aux na, xlate_formula_opt p,
+	  xlate_formula b1, xlate_formula b2)
 
    | COrderedCase (_,Term.LetStyle, po, c, [CLambdaN(_,[l,_],b)]) ->
        CT_inductive_let(xlate_formula_opt po,
@@ -409,13 +416,14 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
      let strip_mutrec (fid, n, arf, ardef) =
+       let struct_arg = make_fix_struct false (n, arf) in
         let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match cvt_fixpoint_binders bl with
 	  | CT_binder_list (b :: bl) ->
 	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
-                arf, ardef)
+			  struct_arg, arf, ardef)
           | _ -> xlate_error "mutual recursive" in
        CT_fixc (xlate_ident id, 
          	CT_fix_binder_list
@@ -1640,14 +1648,18 @@ let xlate_vernac =
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
       let strip_mutrec ((fid, n, arf, ardef), ntn) =
-	(* TODO: handle ntn in mutual recursive *)
+(* The boolean argument should be false if a name is not really necessary, 
+   for instance if there is only one argument.  On the other hand, all
+   recursive calls in this function should have the boolean argument to true,
+   because recursive calls mean that there is more than one argument. *)
+	let struct_arg = make_fix_struct false (n, arf) in
         let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match cvt_fixpoint_binders bl with
 	  | CT_binder_list (b :: bl) ->
-	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
-                arf, ardef)
+	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl), 
+			  struct_arg, arf, ardef)
           | _ -> xlate_error "mutual recursive" in
         CT_fix_decl
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))

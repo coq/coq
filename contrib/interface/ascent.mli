@@ -218,7 +218,7 @@ and ct_FIX_BINDER =
 and ct_FIX_BINDER_LIST =
     CT_fix_binder_list of ct_FIX_BINDER * ct_FIX_BINDER list
 and ct_FIX_REC =
-    CT_fix_rec of ct_ID * ct_BINDER_NE_LIST * ct_FORMULA * ct_FORMULA
+    CT_fix_rec of ct_ID * ct_BINDER_NE_LIST * ct_ID_OPT * ct_FORMULA * ct_FORMULA
 and ct_FIX_REC_LIST =
     CT_fix_rec_list of ct_FIX_REC * ct_FIX_REC list
 and ct_FIX_TAC_LIST =
@@ -237,7 +237,7 @@ and ct_FORMULA =
   | CT_elimc of ct_CASE * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA_LIST
   | CT_existvarc
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
-  | CT_if of ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA * ct_FORMULA
+  | CT_if of ct_FORMULA * ct_ID_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA
   | CT_inductive_let of ct_FORMULA_OPT * ct_ID_OPT_NE_LIST * ct_FORMULA * ct_FORMULA
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
   | CT_let_tuple of ct_ID_OPT_NE_LIST * ct_ID_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA

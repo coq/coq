@@ -555,12 +555,13 @@ and fFIX_BINDER_LIST = function
    (List.iter fFIX_BINDER l);
    fNODE "fix_binder_list" (1 + (List.length l))
 and fFIX_REC = function
-| CT_fix_rec(x1, x2, x3, x4) ->
+| CT_fix_rec(x1, x2, x3, x4, x5) ->
    fID x1;
    fBINDER_NE_LIST x2;
-   fFORMULA x3;
+   fID_OPT x3;
    fFORMULA x4;
-   fNODE "fix_rec" 4
+   fFORMULA x5;
+   fNODE "fix_rec" 5
 and fFIX_REC_LIST = function
 | CT_fix_rec_list(x,l) ->
    fFIX_REC x;
@@ -608,12 +609,13 @@ and fFORMULA = function
    fID x1;
    fFIX_BINDER_LIST x2;
    fNODE "fixc" 2
-| CT_if(x1, x2, x3, x4) ->
-   fFORMULA_OPT x1;
-   fFORMULA x2;
-   fFORMULA x3;
+| CT_if(x1, x2, x3, x4, x5) ->
+   fFORMULA x1;
+   fID_OPT x2;
+   fFORMULA_OPT x3;
    fFORMULA x4;
-   fNODE "if" 4
+   fFORMULA x5;
+   fNODE "if" 5
 | CT_inductive_let(x1, x2, x3, x4) ->
    fFORMULA_OPT x1;
    fID_OPT_NE_LIST x2;
