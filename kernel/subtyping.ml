@@ -160,9 +160,10 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
     let cst = check_conv cst conv_leq env cb1.const_type cb2.const_type in
     match cb2.const_body with
       | None -> cst
-      | Some c2 ->
+      | Some lc2 ->
+	  let c2 = Lazy.force_val lc2 in
 	  let c1 = match cb1.const_body with
-	    | Some c1 -> c1
+	    | Some c1 -> Lazy.force_val c1
 	    | None -> mkConst (make_kn (MPself msid1) empty_dirpath l)
 	  in
 	    check_conv cst conv env c1 c2

@@ -23,7 +23,7 @@ open Sign
 
 type constant_body = {
   const_hyps : section_context; (* New: younger hyp at top *)
-  const_body : constr option;
+  const_body : constr Lazy.t option;
   const_type : types;
   const_constraints : constraints;
   const_opaque : bool }
@@ -88,9 +88,12 @@ type mutual_inductive_body = {
   mind_equiv : kernel_name option
  }
 
+let lazy_subst sub l_constr = 
+  lazy (subst_mps sub (Lazy.force_val l_constr))
+
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = 
-  { const_body = option_app (Term.subst_mps sub) cb.const_body;
+  { const_body = option_app (lazy_subst sub) cb.const_body;
     const_type = type_app (Term.subst_mps sub) cb.const_type;
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_constraints = cb.const_constraints;

@@ -16,6 +16,8 @@ Vernac:
 
 - Print / Print Proof en fait identiques ; Print ne devrait pas afficher
   les constantes opaques (devrait afficher qqchose comme <opaque>)
+- Print Module d'un module a l'interier d'un type de module ne devrait pas
+  afficher son corps (il n'a pas de corps!)
 
 Theories:
 

@@ -304,10 +304,13 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
-COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
 
-COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
-             $(COQINTERFACE) 
+# COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
+
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) 
+
+#\
+# $(COQINTERFACE) 
 
 coqbinaries:: ${COQBINARIES}
 
@@ -620,7 +623,8 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
-	    $(JPROVERVO) $(INTERFACEV0) $(CCVO)
+	    $(JPROVERVO) $(CCVO)
+# $(INTERFACEV0)
 
 $(CONTRIBVO): states/initial.coq
 

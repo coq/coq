@@ -51,13 +51,23 @@ ifneq ($(wildcard $(TOPDIR)/dev/Makefile.local),)
 include $(TOPDIR)/dev/Makefile.local
 endif
 
+
 usage::
 	@echo "  total		-- runs coqtop with all theories required"
 total:
 	ledit ./bin/coqtop.byte $(foreach th,$(THEORIESVO),-require $(notdir $(basename $(th))))
+
 
 usage::
 	@echo "  run		-- makes and runs bytecode coqtop using ledit and the history file"
 	@echo "		   if you want to pass arguments to coqtop, use make run ARG=<args>"
 run:	$(TOPDIR)/coqtop
 	ledit -h $(TOPDIR)/dev/debug_history -x $(TOPDIR)/coqtop $(ARG) $(ARGS)
+
+
+usage::
+	@echo " vars		-- echos commands to set COQTOP and COQBIN variables"
+vars:
+	@(cd $(TOPDIR); \
+	echo export COQTOP=`pwd`/ ; \
+	echo export COQBIN=`pwd`/bin/ )

@@ -107,7 +107,7 @@ let expmod_constr modlist c =
         str"and then require that theorems which use them" ++ spc () ++
         str"be transparent");
     match cb.const_body with
-      | Some body -> body
+      | Some body -> Lazy.force_val body
       | None -> assert false
   in
   let c' = modify_opers expfun modlist c in
@@ -119,23 +119,44 @@ let expmod_type modlist c =
   type_app (expmod_constr modlist) c
 
 let abstract_constant ids_to_abs hyps (body,typ) =
-  let abstract_once ((hyps,body,typ) as sofar) id =
+  let abstract_once_typ ((hyps,typ) as sofar) id =
     match hyps with
       | (hyp,c,t as decl)::rest when hyp = id ->
-	  let body' = option_app (mkNamedLambda_or_LetIn decl) body in
 	  let typ' = mkNamedProd_wo_LetIn decl typ in
-	  (rest, body', typ')
+	  (rest, typ')
       | _ -> 
 	  sofar
   in
-  let (_,body',typ') =
-    List.fold_left abstract_once (hyps,body,typ) ids_to_abs in
-  (body',typ')
+  let abstract_once_body ((hyps,body) as sofar) id =
+    match hyps with
+      | (hyp,c,t as decl)::rest when hyp = id ->
+	  let body' = mkNamedLambda_or_LetIn decl body in
+	  (rest, body')
+      | _ -> 
+	  sofar
+  in
+  let (_,typ') =
+    List.fold_left abstract_once_typ (hyps,typ) ids_to_abs 
+  in
+  let body' = match body with
+      None -> None
+    | Some l_body -> 
+	Some (lazy (let body = Lazy.force_val l_body in
+		    let (_,body') = 
+		      List.fold_left abstract_once_body (hyps,body) ids_to_abs
+		    in
+		      body'))
+  in
+    (body',typ')
 
 let cook_constant env r =
   let cb = r.d_from in
   let typ = expmod_type r.d_modlist cb.const_type in
-  let body = option_app (expmod_constr r.d_modlist) cb.const_body in
+  let body = 
+    option_app 
+      (fun lconstr -> lazy (expmod_constr r.d_modlist (Lazy.force_val lconstr))) 
+      cb.const_body
+  in
   let hyps =
     Sign.fold_named_context
       (fun d ctxt ->

@@ -23,7 +23,7 @@ open Sign
 
 type constant_body = {
   const_hyps : section_context; (* New: younger hyp at top *)
-  const_body : constr option;
+  const_body : constr Lazy.t option;
   const_type : types;
   const_constraints : constraints;
   const_opaque : bool }

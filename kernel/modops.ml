@@ -163,7 +163,10 @@ and add_module mp mb env =
 
 let strengthen_const env mp l cb = match cb.const_body with
   | Some _ -> cb
-  | None -> {cb with const_body = Some (mkConst (make_kn mp empty_dirpath l))}
+  | None -> {cb with const_body = 
+	       let const = mkConst (make_kn mp empty_dirpath l) in 
+		 Some (Lazy.lazy_from_val const)
+	    }
 
 let strengthen_mind env mp l mib = match mib.mind_equiv with
   | Some _ -> mib

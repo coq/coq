@@ -140,7 +140,7 @@ let try_remove f =
   with _ -> msgnl (str"Warning: " ++ str"Could not remove file " ++
                    str f ++ str" which is corrupted!" )
 
-let marshal_out ch v = Marshal.to_channel ch v []
+let marshal_out ch v = Marshal.to_channel ch v [Marshal.Closures]
 let marshal_in ch =
   try Marshal.from_channel ch
   with End_of_file -> error "corrupted file: reached end of file"

@@ -141,7 +141,7 @@ let constant_value env kn =
   let cb = lookup_constant kn env in
   if cb.const_opaque then raise (NotEvaluableConst Opaque);
   match cb.const_body with
-    | Some body -> body
+    | Some l_body -> Lazy.force_val l_body
     | None -> raise (NotEvaluableConst NoBody)
 
 let constant_opt_value env cst =

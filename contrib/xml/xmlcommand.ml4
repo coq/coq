@@ -739,7 +739,9 @@ let print (_,qid as locqid) fn =
         begin
          match val0 with
             None ->   print_axiom id typ [] hyps env inner_types
-          | Some c -> print_definition id c typ [] hyps env inner_types
+          | Some lc -> 
+	      let c = Lazy.force_val lc in
+	      print_definition id c typ [] hyps env inner_types
         end
     | Ln.IndRef (kn,_) ->
        let sp = Nt.sp_of_global None (Ln.IndRef(kn,0)) in  
@@ -856,7 +858,9 @@ let print_object lobj id (sp,kn) dn fv env =
             begin
              match val0 with
                 None -> print_axiom id typ fv hyps env inner_types
-              | Some c -> print_definition id c typ fv hyps env inner_types
+              | Some lc -> 
+		  let c = Lazy.force_val lc in
+		  print_definition id c typ fv hyps env inner_types
             end
       | "INDUCTIVE" ->
            let

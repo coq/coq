@@ -665,20 +665,22 @@ let extract_constant kn r =
 	       DdummyType r
 	   | (Logic,_) -> axiom_warning_message kn;
 	       Dterm (r, MLdummy'))
-    | Some body ->
+    | Some l_body ->
 	(match flag_of_type env typ with
 	   | (Logic, Arity) -> DdummyType r
 	   | (Info, Arity) -> 
 	       let s,vl = type_sign_vl env typ in 
 	       let db = db_from_sign s in 
+	       let body = Lazy.force_val l_body in
 	       let t = extract_type_arity env db body (List.length s)
 	       in Dtype (r, vl, t)
 	   | (Logic, _) -> Dterm (r, MLdummy')
 	   | (Info, _) -> 
-		 let a = extract_term env body in
-		 if a <> MLdummy' then 
-		   Dterm (r, kill_prop_lams_eta a (signature_of_kn kn))
-		 else Dterm (r, a))
+	       let body = Lazy.force_val l_body in
+	       let a = extract_term env body in
+	       if a <> MLdummy' then 
+		 Dterm (r, kill_prop_lams_eta a (signature_of_kn kn))
+	       else Dterm (r, a))
 		   
 let extract_constant_cache kn r = 
   try lookup_constant kn 

@@ -91,13 +91,14 @@ and merge_with env mtb with_decl =
 			  cst2
 		      in
 			SPBconst {cb with 
-				    const_body = Some j.uj_val;
+				    const_body = 
+				      Some (Lazy.lazy_from_val j.uj_val);
 				    const_constraints = cst}
 		  | Some b -> 
-		      let cst1 = Reduction.conv env' c b in 
+		      let cst1 = Reduction.conv env' c (Lazy.force_val b) in 
 		      let cst = Constraint.union cb.const_constraints cst1 in
 			SPBconst {cb with 
-				    const_body = Some c;
+				    const_body = Some (Lazy.lazy_from_val c);
 				    const_constraints = cst}
 	      end	
 	| With_Module (id, mp) ->

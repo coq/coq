@@ -119,9 +119,14 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 let hcons_constant_body cb =
-  { cb with
-    const_body = option_app hcons1_constr cb.const_body;
-    const_type = hcons1_constr cb.const_type }
+  let body = match cb.const_body with
+      None -> None
+    | Some l_constr -> let constr = Lazy.force_val l_constr in
+	Some (Lazy.lazy_from_val (hcons1_constr constr))
+  in
+    { cb with
+	const_body = body;
+	const_type = hcons1_constr cb.const_type }
 
 let add_constant dir l decl senv =
   check_label l senv.labset;
