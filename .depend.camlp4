@@ -19,7 +19,7 @@ contrib/interface/debug_tac.ml: parsing/grammar.cma
 contrib/interface/centaur.ml: parsing/grammar.cma
 parsing/lexer.ml: 
 parsing/q_util.ml: 
-parsing/q_coqast.ml: pa_ifdef.cmo
+parsing/q_coqast.ml: 
 parsing/g_prim.ml: 
 parsing/pcoq.ml: 
 parsing/g_basevernac.ml: 
