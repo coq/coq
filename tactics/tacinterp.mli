@@ -23,12 +23,8 @@ open Topconstr
 
 (* Values for interpretation *)
 type value =
-  | VClosure of interp_sign * raw_tactic_expr
   | VTactic of tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
-  | VFTactic of value list * (value list->tactic)
   | VRTactic of (goal list sigma * validation)
-  | VContext of interp_sign * direction_flag
-      * (pattern_expr,raw_tactic_expr) match_rule list
   | VFun of (identifier * value) list * identifier option list *raw_tactic_expr
   | VVoid
   | VInteger of int
@@ -39,21 +35,18 @@ type value =
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
-  { evc : Evd.evar_map;
-    env : Environ.env;
-    lfun : (identifier * value) list;
+  { lfun : (identifier * value) list;
     lmatch : (int * constr) list;
-    goalopt : goal sigma option;
     debug : debug_info }
 
 (* Gives the identifier corresponding to an Identifier [tactic_arg] *)
-val id_of_Identifier : value -> identifier
+val id_of_Identifier : Environ.env -> value -> identifier
 
 (* Gives the constr corresponding to a Constr [value] *)
-val constr_of_VConstr : value -> constr
+val constr_of_VConstr : Environ.env -> value -> constr
 
 (* Transforms an id into a constr if possible *)
-val constr_of_id : interp_sign -> identifier -> constr
+val constr_of_id : Environ.env -> identifier -> constr
 
 (* To embed several objects in Coqast.t *)
 val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
@@ -70,18 +63,19 @@ val set_debug : debug_info -> unit
 val get_debug : unit -> debug_info
 
 (* Adds a definition for tactics in the table *)
-val add_tacdef : (identifier Util.located * raw_tactic_expr) list -> unit
+val add_tacdef :
+  bool -> (identifier Util.located * raw_tactic_expr) list -> unit
 
 (* Adds an interpretation function for extra generic arguments *)
 val add_genarg_interp :
   string ->
-    (interp_sign -> raw_generic_argument -> closed_generic_argument) -> unit
+    (interp_sign -> goal sigma -> raw_generic_argument -> closed_generic_argument) -> unit
 
 val genarg_interp :
-  interp_sign -> raw_generic_argument -> closed_generic_argument
+  interp_sign -> goal sigma -> raw_generic_argument -> closed_generic_argument
 
 (* Interprets any expression *)
-val val_interp : interp_sign -> raw_tactic_expr -> value
+val val_interp : interp_sign -> goal sigma -> raw_tactic_expr -> value
 
 (*
 (* Interprets tactic arguments *)
@@ -97,7 +91,7 @@ val tac_interp : (identifier * value) list -> (int * constr) list ->
                  debug_info -> raw_tactic_expr -> tactic
 
 (* Interprets constr expressions *)
-val constr_interp : interp_sign -> constr_expr -> constr
+val constr_interp : interp_sign -> Evd.evar_map -> Environ.env -> constr_expr -> constr
 
 (* Initial call for interpretation *)
 val interp : raw_tactic_expr -> tactic

@@ -131,12 +131,19 @@ let set_var_scope loc id (_,_,scopes) (_,_,varscopes) =
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let intern_var (env,impls,scopes) (vars1,vars2,_) loc id =
-  (* Is [id] bound in  *)
+let intern_var (env,impls,scopes) ((vars1,unbndltacvars),vars2,_) loc id =
+  (* Is [id] bound in current env or ltac vars bound to constr *)
   if Idset.mem id env or List.mem id vars1
   then
     RVar (loc,id), (try List.assoc id impls with Not_found -> []), []
   else
+  (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
+  try
+    match List.assoc id unbndltacvars with
+      | None -> user_err_loc (loc,"intern_var",
+	  pr_id id ++ str " ist not bound to a term")
+      | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
+  with Not_found ->
   (* Is [id] a section variable *)
   let _ = Sign.lookup_named id vars2 in
   (* Car Fixpoint met les fns définies temporairement comme vars de sect *)
@@ -327,8 +334,8 @@ let check_capture loc ty = function
   | _ ->
       ()
 
-let locate_if_isevar loc id = function
-  | RHole _ -> RHole (loc, AbstractionType id)
+let locate_if_isevar loc na = function
+  | RHole _ -> RHole (loc, AbstractionType na))
   | x -> x
 
 (**********************************************************************)
@@ -471,7 +478,8 @@ let internalise isarity sigma env allow_soapp lvar c =
 	if nal <> [] then check_capture loc1 ty na;
 	let ids' = name_fold Idset.add na ids in
 	let body = iterate_prod loc2 (ids',impls,scopes) ty body nal in
-	RProd (join_loc loc1 loc2, na, intern true env ty, body)
+	let ty = locate_if_isevar loc1 na (intern true env ty) in
+	RProd (join_loc loc1 loc2, na, ty, body)
     | [] -> intern true env body
 
   and iterate_lam loc2 isarity (ids,impls,scopes as env) ty body = function
@@ -540,18 +548,18 @@ let extract_ids env =
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Idset.empty
 
-let interp_rawconstr_gen isarity sigma env impls allow_soapp lvar c =
+let interp_rawconstr_gen isarity sigma env impls allow_soapp ltacvar c =
   internalise isarity sigma (extract_ids env, impls, [])
-    allow_soapp (lvar,Environ.named_context env, []) c
+    allow_soapp (ltacvar,Environ.named_context env, []) c
 
 let interp_rawconstr sigma env c =
-  interp_rawconstr_gen false sigma env [] false [] c
+  interp_rawconstr_gen false sigma env [] false ([],[]) c
 
 let interp_rawtype sigma env c =
-  interp_rawconstr_gen true sigma env [] false [] c
+  interp_rawconstr_gen true sigma env [] false ([],[]) c
 
 let interp_rawtype_with_implicits sigma env impls c =
-  interp_rawconstr_gen true sigma env impls false [] c
+  interp_rawconstr_gen true sigma env impls false ([],[]) c
 
 (*
 (* The same as interp_rawconstr but with a list of variables which must not be
@@ -593,20 +601,28 @@ let retype_list sigma env lst =
 
 (*  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst*)
 
+type ltac_sign = 
+  identifier list * (identifier * identifier option) list
+
+type ltac_env = 
+  (identifier * Term.constr) list * (identifier * identifier option) list
+
 (* Interprets a constr according to two lists *)
 (* of instantiations (variables and metas)    *)
 (* Note: typ is retyped *)
-let interp_constr_gen sigma env lvar lmeta c exptyp =
-  let c = interp_rawconstr_gen false sigma env [] false (List.map fst lvar) c
+let interp_constr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
+  let c = interp_rawconstr_gen false sigma env [] false 
+    (List.map fst ltacvar,unbndltacvar) c
   and rtype lst = retype_list sigma env lst in
-  understand_gen sigma env (rtype lvar) (rtype lmeta) exptyp c;;
+  understand_gen sigma env (rtype ltacvar) (rtype lmeta) exptyp c;;
 
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
-let interp_openconstr_gen sigma env lvar lmeta c exptyp =
-  let c = interp_rawconstr_gen false sigma env [] false (List.map fst lvar) c
+let interp_openconstr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
+  let c = interp_rawconstr_gen false sigma env [] false
+    (List.map fst ltacvar,unbndltacvar) c
   and rtype lst = retype_list sigma env lst in
-  understand_gen_tcc sigma env (rtype lvar) (rtype lmeta) exptyp c;;
+  understand_gen_tcc sigma env (rtype ltacvar) (rtype lmeta) exptyp c;;
 
 let interp_casted_constr sigma env c typ = 
   understand_gen sigma env [] [] (Some typ) (interp_rawconstr sigma env c)
@@ -658,20 +674,21 @@ let pattern_of_rawconstr lvar c =
   let p = pat_of_raw metas [] lvar c in
   (!metas,p)
 
-let interp_constrpattern_gen sigma env lvar c =
-  let c = interp_rawconstr_gen false sigma env [] true (List.map fst lvar) c in
-  let nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
+let interp_constrpattern_gen sigma env (ltacvar,unbndltacvar) c =
+  let c = interp_rawconstr_gen false sigma env [] true
+    (List.map fst ltacvar,unbndltacvar) c in
+  let nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) ltacvar in
   pattern_of_rawconstr nlvar c
 
 let interp_constrpattern sigma env c =
-  interp_constrpattern_gen sigma env [] c
+  interp_constrpattern_gen sigma env ([],[]) c
 
 let interp_aconstr vars a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
   let c = for_grammar (internalise false Evd.empty (extract_ids env, [], [])
-    false ([],Environ.named_context env,vl)) a in
+    false (([],[]),Environ.named_context env,vl)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)

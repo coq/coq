@@ -34,10 +34,16 @@ open Topconstr
 
 type implicits_env = (identifier * Impargs.implicits_list) list
 
+type ltac_sign = 
+  identifier list * (identifier * identifier option) list
+
+type ltac_env = 
+  (identifier * constr) list * (identifier * identifier option) list
+
 (* Interprets global names, including syntactic defs and section variables *)
 val interp_rawconstr     : evar_map -> env -> constr_expr -> rawconstr
 val interp_rawconstr_gen : bool -> evar_map -> env -> implicits_env -> 
-    bool -> identifier list -> constr_expr -> rawconstr
+    bool -> ltac_sign -> constr_expr -> rawconstr
 
 (*s Composing the translation with typing *)
 val interp_constr        : evar_map -> env -> constr_expr -> constr
@@ -62,25 +68,24 @@ val type_judgment_of_rawconstr :
 (* Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it*)
 val interp_constr_gen     :
-  evar_map -> env -> (identifier * constr) list ->
-    (int * constr) list -> constr_expr -> constr option -> constr
+  evar_map -> env -> ltac_env -> (int * constr) list -> constr_expr -> 
+    constr option -> constr
 
 (* Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it, and turning unresolved evar into metas*)
 val interp_openconstr_gen     :
-  evar_map -> env -> (identifier * constr) list ->
+  evar_map -> env -> ltac_env ->
     (int * constr) list -> constr_expr -> constr option -> evar_map * constr
 
 (* Interprets constr patterns according to a list of instantiations
   (variables)*)
 val interp_constrpattern_gen :
-  evar_map -> env -> (identifier * constr) list -> constr_expr ->
-    int list * constr_pattern
+  evar_map -> env -> ltac_env -> constr_expr -> int list * constr_pattern
 
 val interp_constrpattern : 
   evar_map -> env -> constr_expr -> int list * constr_pattern
 
-val interp_reference : identifier list -> reference -> rawconstr
+val interp_reference : ltac_sign -> reference -> rawconstr
 
 (* Interprets into a abbreviatable constr *)
 val interp_aconstr : identifier list -> constr_expr -> interpretation
