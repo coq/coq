@@ -61,7 +61,7 @@ cut
   a + sum_f_R0 (fun i:nat => sin_term a (S i)) (pred (2 * n + 1)) <= sin a /\
   sin a <= a + sum_f_R0 (fun i:nat => sin_term a (S i)) (pred (2 * (n + 1)))).
 intro; apply H1.
-pose (Un := fun n:nat => a ^ (2 * S n + 1) / INR (fact (2 * S n + 1))).
+set (Un := fun n:nat => a ^ (2 * S n + 1) / INR (fact (2 * S n + 1))).
 replace (pred (2 * n + 1)) with (2 * n)%nat.
 replace (pred (2 * (n + 1))) with (S (2 * n)).
 replace (sum_f_R0 (fun i:nat => sin_term a (S i)) (2 * n)) with
@@ -256,7 +256,7 @@ cut
   cos a0 <=
   1 + sum_f_R0 (fun i:nat => cos_term a0 (S i)) (pred (2 * (n0 + 1)))).
 intro; apply H2.
-pose (Un := fun n:nat => a0 ^ (2 * S n) / INR (fact (2 * S n))).
+set (Un := fun n:nat => a0 ^ (2 * S n) / INR (fact (2 * S n))).
 replace (pred (2 * n0 + 1)) with (2 * n0)%nat.
 replace (pred (2 * (n0 + 1))) with (S (2 * n0)).
 replace (sum_f_R0 (fun i:nat => cos_term a0 (S i)) (2 * n0)) with

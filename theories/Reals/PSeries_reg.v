@@ -110,7 +110,7 @@ elim H6; intros del1 H7.
 unfold continuity_pt in H5; unfold continue_in in H5; unfold limit1_in in H5;
  unfold limit_in in H5; simpl in H5; unfold R_dist in H5.
 elim (H5 _ H3); intros del2 H8.
-pose (del := Rmin del1 del2).
+set (del := Rmin del1 del2).
 exists del; intros.
 split.
 unfold del in |- *; unfold Rmin in |- *; case (Rle_dec del1 del2); intro.
@@ -226,7 +226,7 @@ Lemma CVN_R_CVS :
  forall fn:nat -> R -> R,
    CVN_R fn -> forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l).
 intros; apply R_complete.
-unfold SP in |- *; pose (An := fun N:nat => fn N x).
+unfold SP in |- *; set (An := fun N:nat => fn N x).
 change (Cauchy_crit_series An) in |- *.
 apply cauchy_abs.
 unfold Cauchy_crit_series in |- *; apply CV_Cauchy.

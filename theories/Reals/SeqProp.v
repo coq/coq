@@ -493,7 +493,7 @@ Lemma approx_maj :
  forall (Un:nat -> R) (pr:has_ub Un) (eps:R),
    0 < eps ->  exists k : nat, Rabs (majorant Un pr - Un k) < eps.
 intros.
-pose (P := fun k:nat => Rabs (majorant Un pr - Un k) < eps).
+set (P := fun k:nat => Rabs (majorant Un pr - Un k) < eps).
 unfold P in |- *.
 cut
  ((exists k : nat, P k) ->
@@ -561,7 +561,7 @@ Lemma approx_min :
  forall (Un:nat -> R) (pr:has_lb Un) (eps:R),
    0 < eps ->  exists k : nat, Rabs (minorant Un pr - Un k) < eps.
 intros.
-pose (P := fun k:nat => Rabs (minorant Un pr - Un k) < eps).
+set (P := fun k:nat => Rabs (minorant Un pr - Un k) < eps).
 unfold P in |- *.
 cut
  ((exists k : nat, P k) ->
@@ -639,7 +639,7 @@ intros; cut (0 < eps / 2);
     [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ]. 
 elim (H (eps / 2) H2); intros. 
 elim (H0 (eps / 2) H2); intros. 
-pose (N := max x x0). 
+set (N := max x x0). 
 apply Rle_lt_trans with (Rabs (l1 - Un N) + Rabs (Un N - l2)). 
 replace (l1 - l2) with (l1 - Un N + (Un N - l2));
  [ apply Rabs_triang | ring ]. 
@@ -660,7 +660,7 @@ cut (0 < eps / 2);
     [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ]. 
 elim (H (eps / 2) H2); intros. 
 elim (H0 (eps / 2) H2); intros. 
-pose (N := max x x0). 
+set (N := max x x0). 
 exists N; intros. 
 replace (An n + Bn n - (l1 + l2)) with (An n - l1 + (Bn n - l2));
  [ idtac | ring ]. 
@@ -799,7 +799,7 @@ unfold Un_cv in H; unfold R_dist in H; unfold Un_cv in H0;
  unfold R_dist in H0. 
 elim (H (eps / (2 * Rabs l2)) H8); intros N1 H9. 
 elim (H0 (eps / (2 * M)) H6); intros N2 H10. 
-pose (N := max N1 N2). 
+set (N := max N1 N2). 
 exists N; intros. 
 apply Rle_lt_trans with
  (Rabs (An n * Bn n - An n * l2) + Rabs (An n * l2 - l1 * l2)). 
@@ -997,7 +997,7 @@ right; assumption.
 cut (0 < Un n - l).
 intro; unfold Un_cv in H0; unfold R_dist in H0.
 elim (H0 (Un n - l) H1); intros N1 H2.
-pose (N := max n N1).
+set (N := max n N1).
 cut (Un n - l <= Un N - l).
 intro; cut (Un N - l < Un n - l).
 intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H3 H4)).
@@ -1111,9 +1111,9 @@ rewrite H1; unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r;
  rewrite Rabs_R0; rewrite pow_ne_zero;
  [ unfold Rdiv in |- *; rewrite Rmult_0_l; rewrite Rabs_R0; assumption
  | red in |- *; intro; rewrite H3 in H2; elim (le_Sn_n _ H2) ].
-assert (H2 := Rabs_pos_lt x H1); pose (M := up (Rabs x)); cut (0 <= M)%Z.
+assert (H2 := Rabs_pos_lt x H1); set (M := up (Rabs x)); cut (0 <= M)%Z.
 intro; elim (IZN M H3); intros M_nat H4.
-pose (Un := fun n:nat => Rabs x ^ (M_nat + n) / INR (fact (M_nat + n))).
+set (Un := fun n:nat => Rabs x ^ (M_nat + n) / INR (fact (M_nat + n))).
 cut (Un_cv Un 0); unfold Un_cv in |- *; unfold R_dist in |- *; intros.
 elim (H5 eps H0); intros N H6.
 exists (M_nat + N)%nat; intros;
@@ -1130,7 +1130,7 @@ apply le_plus_l.
 assumption.
 apply le_plus_minus; apply le_trans with (M_nat + N)%nat;
  [ apply le_plus_l | assumption ].
-pose (Vn := fun n:nat => Rabs x * (Un 0%nat / INR (S n))).
+set (Vn := fun n:nat => Rabs x * (Un 0%nat / INR (S n))).
 cut (1 <= M_nat)%nat.
 intro; cut (forall n:nat, 0 < Un n).
 intro; cut (Un_decreasing Un).
@@ -1195,7 +1195,7 @@ elim s; intro.
 exists 0%nat; intros.
 apply Rlt_trans with 0; [ assumption | apply lt_INR_0; apply lt_O_Sn ].
 exists 0%nat; intros; rewrite b; apply lt_INR_0; apply lt_O_Sn.
-pose (M0_z := up M0).
+set (M0_z := up M0).
 assert (H10 := archimed M0).
 cut (0 <= M0_z)%Z.
 intro; elim (IZN _ H11); intros M0_nat H12.

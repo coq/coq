@@ -20,7 +20,7 @@ intros; red in |- *; intro.
 cut (forall n m:nat, (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
 intro; assert (H2 := H1 _ _ (lt_le_weak _ _ H) H0); rewrite H2 in H;
  elim (lt_irrefl _ H).
-pose (R := fun n m:nat => (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
+set (R := fun n m:nat => (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
 cut
  ((forall n m:nat, R n m) ->
   forall n0 m:nat, (m <= n0)%nat -> (n0 - m)%nat = 0%nat -> n0 = m).
@@ -34,7 +34,7 @@ unfold R in |- *; intros; apply H1; assumption.
 Qed.
 
 Lemma le_minusni_n : forall n i:nat, (i <= n)%nat -> (n - i <= n)%nat.
-pose (R := fun m n:nat => (n <= m)%nat -> (m - n <= m)%nat).
+set (R := fun m n:nat => (n <= m)%nat -> (m - n <= m)%nat).
 cut
  ((forall m n:nat, R m n) -> forall n i:nat, (i <= n)%nat -> (n - i <= n)%nat).
 intro; apply H.
@@ -89,7 +89,7 @@ Lemma euclidian_division :
    y <> 0 ->
     exists k : Z, (exists r : R, x = IZR k * y + r /\ 0 <= r < Rabs y).
 intros.
-pose
+set
  (k0 :=
   match Rcase_abs y with
   | left _ => (1 - up (x / - y))%Z

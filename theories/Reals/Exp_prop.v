@@ -114,7 +114,7 @@ Qed.
 Lemma Reste_E_maj :
  forall (x y:R) (N:nat),
    (0 < N)%nat -> Rabs (Reste_E x y N) <= maj_Reste_E x y N.
-intros; pose (M := Rmax 1 (Rmax (Rabs x) (Rabs y))).
+intros; set (M := Rmax 1 (Rmax (Rabs x) (Rabs y))).
 apply Rle_trans with
  (M ^ (2 * N) *
   sum_f_R0
@@ -742,7 +742,7 @@ Qed.
 
 (**********)
 Lemma exp_pos_pos : forall x:R, 0 < x -> 0 < exp x.
-intros; pose (An := fun N:nat => / INR (fact N) * x ^ N).
+intros; set (An := fun N:nat => / INR (fact N) * x ^ N).
 cut (Un_cv (fun n:nat => sum_f_R0 An n) (exp x)).
 intro; apply Rlt_le_trans with (sum_f_R0 An 0).
 unfold An in |- *; simpl in |- *; rewrite Rinv_1; rewrite Rmult_1_r;
@@ -784,7 +784,7 @@ Qed.
 (* ((exp h)-1)/h -> 0 quand h->0 *)
 Lemma derivable_pt_lim_exp_0 : derivable_pt_lim exp 0 1.
 unfold derivable_pt_lim in |- *; intros.
-pose (fn := fun (N:nat) (x:R) => x ^ N / INR (fact (S N))).
+set (fn := fun (N:nat) (x:R) => x ^ N / INR (fact (S N))).
 cut (CVN_R fn).
 intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
 intro cv; cut (forall n:nat, continuity (fn n)).

@@ -267,7 +267,7 @@ unfold cv_infty in |- *.
 intro.
 case (total_order_T 0 M); intro.
 elim s; intro.
-pose (N := up M).
+set (N := up M).
 cut (0 <= N)%Z.
 intro.
 elim (IZN N H0); intros N0 H1.
@@ -475,8 +475,8 @@ apply dicho_up_decreasing; assumption.
 assumption.
 right; reflexivity.
 2: left; assumption.
-pose (Vn := fun n:nat => dicho_lb x y (fun z:R => cond_positivity (f z)) n).
-pose (Wn := fun n:nat => dicho_up x y (fun z:R => cond_positivity (f z)) n).
+set (Vn := fun n:nat => dicho_lb x y (fun z:R => cond_positivity (f z)) n).
+set (Wn := fun n:nat => dicho_up x y (fun z:R => cond_positivity (f z)) n).
 cut ((forall n:nat, f (Vn n) <= 0) -> f x0 <= 0).
 cut ((forall n:nat, 0 <= f (Wn n)) -> 0 <= f x0).
 intros.
@@ -652,7 +652,7 @@ Qed.
 Lemma Rsqrt_exists :
  forall y:R, 0 <= y -> sigT (fun z:R => 0 <= z /\ y = Rsqr z).
 intros.
-pose (f := fun x:R => Rsqr x - y).
+set (f := fun x:R => Rsqr x - y).
 cut (f 0 <= 0).
 intro.
 cut (continuity f).

@@ -343,7 +343,7 @@ Definition cos_ub (a:R) : R := cos_approx a 4.
 Lemma sin_lb_gt_0 : forall a:R, 0 < a -> a <= PI / 2 -> 0 < sin_lb a.
 intros.
 unfold sin_lb in |- *; unfold sin_approx in |- *; unfold sin_term in |- *.
-pose (Un := fun i:nat => a ^ (2 * i + 1) / INR (fact (2 * i + 1))).
+set (Un := fun i:nat => a ^ (2 * i + 1) / INR (fact (2 * i + 1))).
 replace
  (sum_f_R0
     (fun i:nat => (-1) ^ i * (a ^ (2 * i + 1) / INR (fact (2 * i + 1)))) 3)
@@ -407,7 +407,7 @@ apply Rmult_lt_compat_l.
 apply lt_INR_0; apply neq_O_lt.
 assert (H2 := fact_neq_0 (2 * n + 1)).
 red in |- *; intro; elim H2; symmetry  in |- *; assumption.
-do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR; pose (x := INR n);
+do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR; set (x := INR n);
  unfold INR in |- *.
 replace ((2 * x + 1 + 1 + 1) * (2 * x + 1 + 1)) with (4 * x * x + 10 * x + 6);
  [ idtac | ring ].

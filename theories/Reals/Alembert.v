@@ -121,8 +121,8 @@ Lemma Alembert_C2 :
    Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
 intros.
-pose (Vn := fun i:nat => (2 * Rabs (An i) + An i) / 2).
-pose (Wn := fun i:nat => (2 * Rabs (An i) - An i) / 2).
+set (Vn := fun i:nat => (2 * Rabs (An i) + An i) / 2).
+set (Wn := fun i:nat => (2 * Rabs (An i) - An i) / 2).
 cut (forall n:nat, 0 < Vn n).
 intro; cut (forall n:nat, 0 < Wn n).
 intro; cut (Un_cv (fun n:nat => Rabs (Vn (S n) / Vn n)) 0).
@@ -135,7 +135,7 @@ apply existT with (x - x0); unfold Un_cv in |- *; unfold Un_cv in p;
  unfold Un_cv in p0; intros; cut (0 < eps / 2).
 intro; elim (p (eps / 2) H8); clear p; intros.
 elim (p0 (eps / 2) H8); clear p0; intros.
-pose (N := max x1 x2).
+set (N := max x1 x2).
 exists N; intros;
  replace (sum_f_R0 An n) with (sum_f_R0 Vn n - sum_f_R0 Wn n).
 unfold R_dist in |- *;
@@ -340,7 +340,7 @@ Lemma AlembertC3_step1 :
    (forall n:nat, An n <> 0) ->
    Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
    sigT (fun l:R => Pser An x l).
-intros; pose (Bn := fun i:nat => An i * x ^ i).
+intros; set (Bn := fun i:nat => An i * x ^ i).
 cut (forall n:nat, Bn n <> 0).
 intro; cut (Un_cv (fun n:nat => Rabs (Bn (S n) / Bn n)) 0).
 intro; assert (H4 := Alembert_C2 Bn H2 H3).

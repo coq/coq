@@ -135,7 +135,7 @@ replace (y ^ 0) with 1; [ rewrite Rmult_1_r | simpl in |- *; reflexivity ].
 induction  n as [| n Hrecn0].
 simpl in |- *; do 2 rewrite H; ring.
 (* N >= 1 *)
-pose (N := S n).
+set (N := S n).
 rewrite Rmult_plus_distr_l.
 replace (sum_f_R0 (fun i:nat => C N i * x ^ i * y ^ (N - i)) N * x) with
  (sum_f_R0 (fun i:nat => C N i * x ^ S i * y ^ (N - i)) N).
@@ -145,8 +145,8 @@ rewrite (decomp_sum (fun i:nat => C (S N) i * x ^ i * y ^ (S N - i)) N).
 rewrite H; replace (x ^ 0) with 1; [ idtac | reflexivity ].
 do 2 rewrite Rmult_1_l.
 replace (S N - 0)%nat with (S N); [ idtac | reflexivity ].
-pose (An := fun i:nat => C N i * x ^ S i * y ^ (N - i)).
-pose (Bn := fun i:nat => C N (S i) * x ^ S i * y ^ (N - i)).
+set (An := fun i:nat => C N i * x ^ S i * y ^ (N - i)).
+set (Bn := fun i:nat => C N (S i) * x ^ S i * y ^ (N - i)).
 replace (pred N) with n.
 replace (sum_f_R0 (fun i:nat => C (S N) (S i) * x ^ S i * y ^ (S N - S i)) n)
  with (sum_f_R0 (fun i:nat => An i + Bn i) n).
@@ -156,7 +156,7 @@ rewrite (Rplus_comm (sum_f_R0 An n)).
 repeat rewrite Rplus_assoc.
 rewrite <- tech5.
 fold N in |- *.
-pose (Cn := fun i:nat => C N i * x ^ i * y ^ (S N - i)).
+set (Cn := fun i:nat => C N i * x ^ i * y ^ (S N - i)).
 cut (forall i:nat, (i < N)%nat -> Cn (S i) = Bn i).
 intro; replace (sum_f_R0 Bn n) with (sum_f_R0 (fun i:nat => Cn (S i)) n).
 replace (y ^ S N) with (Cn 0%nat).

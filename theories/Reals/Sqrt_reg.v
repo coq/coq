@@ -104,7 +104,7 @@ unfold continuity_pt in |- *; unfold continue_in in |- *;
  unfold limit1_in in |- *; unfold limit_in in |- *; 
  unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
  intros.
-pose (alpha := Rmin eps 1).
+set (alpha := Rmin eps 1).
 exists alpha; intros.
 split.
 unfold alpha in |- *; unfold Rmin in |- *; case (Rle_dec eps 1); intro.
@@ -131,7 +131,7 @@ unfold continuity_pt in |- *; unfold continue_in in |- *;
 cut (0 < eps / sqrt x).
 intro; elim (H0 _ H2); intros alp_1 H3.
 elim H3; intros.
-pose (alpha := alp_1 * x).
+set (alpha := alp_1 * x).
 exists (Rmin alpha x); intros.
 split.
 change (0 < Rmin alpha x) in |- *; unfold Rmin in |- *;
@@ -228,7 +228,7 @@ Qed.
 (* sqrt is derivable for all x>0 *)
 Lemma derivable_pt_lim_sqrt :
  forall x:R, 0 < x -> derivable_pt_lim sqrt x (/ (2 * sqrt x)).
-intros; pose (g := fun h:R => sqrt x + sqrt (x + h)).
+intros; set (g := fun h:R => sqrt x + sqrt (x + h)).
 cut (continuity_pt g 0).
 intro; cut (g 0 <> 0).
 intro; assert (H2 := continuity_pt_inv g 0 H0 H1).
@@ -237,7 +237,7 @@ unfold derivable_pt_lim in |- *; intros; unfold continuity_pt in H2;
  unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
 elim (H2 eps H3); intros alpha H4.
 elim H4; intros.
-pose (alpha1 := Rmin alpha x).
+set (alpha1 := Rmin alpha x).
 cut (0 < alpha1).
 intro; exists (mkposreal alpha1 H7); intros.
 replace ((sqrt (x + h) - sqrt x) / h) with (/ (sqrt x + sqrt (x + h))).

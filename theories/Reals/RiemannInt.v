@@ -144,8 +144,8 @@ Lemma RiemannInt_P3 :
 intros; case (Rle_dec a b); intro.
 apply RiemannInt_P2 with f un wn; assumption.
 assert (H1 : b <= a); auto with real.
-pose (vn' := fun n:nat => mkStepFun (StepFun_P6 (pre (vn n))));
- pose (wn' := fun n:nat => mkStepFun (StepFun_P6 (pre (wn n))));
+set (vn' := fun n:nat => mkStepFun (StepFun_P6 (pre (vn n))));
+ set (wn' := fun n:nat => mkStepFun (StepFun_P6 (pre (wn n))));
  assert
   (H2 :
    forall n:nat,
@@ -221,7 +221,7 @@ unfold Un_cv in |- *; unfold R_dist in |- *; intros f; intros;
 unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H _ H3); clear H; intros N0 H; elim (H0 _ H3); clear H0; intros N1 H0;
- elim (H1 _ H3); clear H1; intros N2 H1; pose (N := max (max N0 N1) N2);
+ elim (H1 _ H3); clear H1; intros N2 H1; set (N := max (max N0 N1) N2);
  exists N; intros;
  apply Rle_lt_trans with
   (Rabs
@@ -426,7 +426,7 @@ Lemma maxN :
  forall (a b:R) (del:posreal),
    a < b ->
    sigT (fun n:nat => a + INR n * del < b /\ b <= a + INR (S n) * del).
-intros; pose (I := fun n:nat => a + INR n * del < b);
+intros; set (I := fun n:nat => a + INR n * del < b);
  assert (H0 :  exists n : nat, I n).
 exists 0%nat; unfold I in |- *; rewrite Rmult_0_l; rewrite Rplus_0_r;
  assumption.
@@ -487,7 +487,7 @@ Lemma Heine_cor1 :
              a <= x <= b ->
              a <= y <= b -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps)).
 intro f; intros;
- pose
+ set
   (E :=
    fun l:R =>
      0 < l <= b - a /\
@@ -512,7 +512,7 @@ assert (H3 := completeness E H1 H2); elim H3; intros; cut (0 < x <= b - a).
 intro; elim H4; clear H4; intros; apply existT with (mkposreal _ H4); split.
 apply H5.
 unfold is_lub in p; elim p; intros; unfold is_upper_bound in H6;
- pose (D := Rabs (x0 - y)); elim (classic (exists y : R, D < y /\ E y));
+ set (D := Rabs (x0 - y)); elim (classic (exists y : R, D < y /\ E y));
  intro.
 elim H11; intros; elim H12; clear H12; intros; unfold E in H13; elim H13;
  intros; apply H15; assumption.
@@ -743,7 +743,7 @@ apply le_lt_n_Sm; assumption.
 apply Rge_minus; apply Rle_ge; assumption.
 intros; clear H0 H1 H4 phi H5 H6 t H7; case (Req_dec t0 b); intro.
 left; assumption.
-right; pose (I := fun j:nat => a + INR j * del <= t0);
+right; set (I := fun j:nat => a + INR j * del <= t0);
  assert (H1 :  exists n : nat, I n).
 exists 0%nat; unfold I in |- *; rewrite Rmult_0_l; rewrite Rplus_0_r; elim H8;
  intros; assumption.
@@ -1070,7 +1070,7 @@ unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H _ H4); clear H; intros N0 H.
 elim (H2 _ H4); clear H2; intros N1 H2.
-pose (N := max N0 N1); exists N; intros; unfold R_dist in |- *.
+set (N := max N0 N1); exists N; intros; unfold R_dist in |- *.
 apply Rle_lt_trans with
  (Rabs (RiemannInt_SF (phi2 n) - RiemannInt_SF (phi1 n)) +
   Rabs (RiemannInt_SF (phi1 n) - l)).
@@ -1142,7 +1142,7 @@ unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H _ H4); clear H; intros N0 H.
 elim (H2 _ H4); clear H2; intros N1 H2.
-pose (N := max N0 N1); exists N; intros; unfold R_dist in |- *.
+set (N := max N0 N1); exists N; intros; unfold R_dist in |- *.
 apply Rle_lt_trans with
  (Rabs (RiemannInt_SF (phi2 n) - RiemannInt_SF (phi1 n)) +
   Rabs (RiemannInt_SF (phi1 n) - l)).
@@ -1242,8 +1242,8 @@ pattern l at 2 in |- *; rewrite H0; rewrite Rmult_0_l; rewrite Rplus_0_r;
  case (RiemannInt_exists pr1 RinvN RinvN_cv); intros; 
  eapply UL_sequence;
  [ apply u0
- | pose (psi1 := fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n));
-    pose (psi2 := fun n:nat => projT1 (phi_sequence_prop RinvN pr3 n));
+ | set (psi1 := fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n));
+    set (psi2 := fun n:nat => projT1 (phi_sequence_prop RinvN pr3 n));
     apply RiemannInt_P11 with f RinvN (phi_sequence RinvN pr1) psi1 psi2;
     [ apply RinvN_cv
     | intro; apply (projT2 (phi_sequence_prop RinvN pr1 n))
@@ -1277,7 +1277,7 @@ unfold Rdiv in |- *; apply Rmult_lt_0_compat;
     [ prove_sup0 | apply Rabs_pos_lt; assumption ] ].
 elim (u _ H5); clear u; intros N2 H6; assert (H7 := RinvN_cv);
  unfold Un_cv in H7; elim (H7 _ H5); clear H7 H5; intros N3 H5;
- unfold R_dist in H3, H4, H5, H6; pose (N := max (max N0 N1) (max N2 N3)).
+ unfold R_dist in H3, H4, H5, H6; set (N := max (max N0 N1) (max N2 N3)).
 assert (H7 : forall n:nat, (n >= N1)%nat -> RinvN n < eps / 5).
 intros; replace (pos (RinvN n)) with (Rabs (RinvN n - 0));
  [ unfold RinvN in |- *; apply H4; assumption
@@ -1508,9 +1508,9 @@ Lemma RiemannInt_P15 :
 intros; unfold RiemannInt in |- *; case (RiemannInt_exists pr RinvN RinvN_cv);
  intros; eapply UL_sequence.
 apply u.
-pose (phi1 := fun N:nat => phi_sequence RinvN pr N);
+set (phi1 := fun N:nat => phi_sequence RinvN pr N);
  change (Un_cv (fun N:nat => RiemannInt_SF (phi1 N)) (c * (b - a))) in |- *;
- pose (f := fct_cte c);
+ set (f := fct_cte c);
  assert
   (H1 :
     exists psi1 : nat -> StepFun a b,
@@ -1522,8 +1522,8 @@ pose (phi1 := fun N:nat => phi_sequence RinvN pr N);
 split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr n)).
 elim H1; clear H1; intros psi1 H1;
- pose (phi2 := fun n:nat => mkStepFun (StepFun_P4 a b c));
- pose (psi2 := fun n:nat => mkStepFun (StepFun_P4 a b 0));
+ set (phi2 := fun n:nat => mkStepFun (StepFun_P4 a b c));
+ set (psi2 := fun n:nat => mkStepFun (StepFun_P4 a b 0));
  apply RiemannInt_P11 with f RinvN phi2 psi2 psi1; 
  try assumption.
 apply RinvN_cv.
@@ -1559,7 +1559,7 @@ clear n; assert (H3 : 0 < (l1 - l2) / 2).
 unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ apply Rlt_Rminus; assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H1 _ H3); elim (H0 _ H3); clear H0 H1; unfold R_dist in |- *; intros;
- pose (N := max x x0); cut (Vn N < Un N).
+ set (N := max x x0); cut (Vn N < Un N).
 intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ (H N) H4)).
 apply Rlt_trans with ((l1 + l2) / 2).
 apply Rplus_lt_reg_r with (- l2);
@@ -1593,8 +1593,8 @@ Lemma RiemannInt_P17 :
 intro f; intros; unfold RiemannInt in |- *;
  case (RiemannInt_exists pr1 RinvN RinvN_cv);
  case (RiemannInt_exists pr2 RinvN RinvN_cv); intros;
- pose (phi1 := phi_sequence RinvN pr1);
- pose (phi2 := fun N:nat => mkStepFun (StepFun_P32 (phi1 N)));
+ set (phi1 := phi_sequence RinvN pr1);
+ set (phi2 := fun N:nat => mkStepFun (StepFun_P32 (phi1 N)));
  apply Rle_cv_lim with
   (fun N:nat => Rabs (RiemannInt_SF (phi1 N)))
   (fun N:nat => RiemannInt_SF (phi2 N)).
@@ -1603,7 +1603,7 @@ fold phi1 in u0;
  apply (continuity_seq Rabs (fun N:nat => RiemannInt_SF (phi1 N)) x0);
  try assumption.
 apply Rcontinuity_abs.
-pose (phi3 := phi_sequence RinvN pr2);
+set (phi3 := phi_sequence RinvN pr2);
  assert
   (H0 :
     exists psi3 : nat -> StepFun a b,
@@ -1652,7 +1652,7 @@ intro f; intros; unfold RiemannInt in |- *;
  case (RiemannInt_exists pr2 RinvN RinvN_cv); intros; 
  eapply UL_sequence.
 apply u0.
-pose (phi1 := fun N:nat => phi_sequence RinvN pr1 N);
+set (phi1 := fun N:nat => phi_sequence RinvN pr1 N);
  change (Un_cv (fun N:nat => RiemannInt_SF (phi1 N)) x) in |- *;
  assert
   (H1 :
@@ -1665,8 +1665,8 @@ pose (phi1 := fun N:nat => phi_sequence RinvN pr1 N);
 split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
  apply (projT2 (phi_sequence_prop RinvN pr1 n)). 
 elim H1; clear H1; intros psi1 H1;
- pose (phi2 := fun N:nat => phi_sequence RinvN pr2 N).
-pose
+ set (phi2 := fun N:nat => phi_sequence RinvN pr2 N).
+set
  (phi2_aux :=
   fun (N:nat) (x:R) =>
     match Req_EM_T x a with
@@ -1678,7 +1678,7 @@ pose
         end
     end).
 cut (forall N:nat, IsStepFun (phi2_aux N) a b).
-intro; pose (phi2_m := fun N:nat => mkStepFun (X N)).
+intro; set (phi2_m := fun N:nat => mkStepFun (X N)).
 assert
  (H2 :
    exists psi2 : nat -> StepFun a b,
@@ -1850,7 +1850,7 @@ unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ apply (cond_pos eps) | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (X (mkposreal _ H)); clear X; intros phi1 [psi1 H1];
  elim (X0 (mkposreal _ H)); clear X0; intros phi2 [psi2 H2].
-pose
+set
  (phi3 :=
   fun x:R =>
     match Rle_dec a x with
@@ -1861,7 +1861,7 @@ pose
         end
     | right _ => 0
     end).
-pose
+set
  (psi3 :=
   fun x:R =>
     match Rle_dec a x with
@@ -2276,7 +2276,7 @@ elim (u1 _ H0); clear u1; intros N1 H1; elim (u0 _ H0); clear u0;
         (RiemannInt_SF (phi_sequence RinvN pr1 n) +
          RiemannInt_SF (phi_sequence RinvN pr2 n))) 0).
 intro; elim (H3 _ H0); clear H3; intros N3 H3;
- pose (N0 := max (max N1 N2) N3); exists N0; intros; 
+ set (N0 := max (max N1 N2) N3); exists N0; intros; 
  unfold R_dist in |- *;
  apply Rle_lt_trans with
   (Rabs
@@ -2372,9 +2372,9 @@ unfold R_dist in |- *; unfold Rminus in |- *; rewrite Ropp_0;
  left; apply (cond_pos (RinvN n)).
 exists N0; intros; elim (H1 n); elim (H2 n); elim (H3 n); clear H1 H2 H3;
  intros; unfold R_dist in |- *; unfold Rminus in |- *; 
- rewrite Ropp_0; rewrite Rplus_0_r; pose (phi1 := phi_sequence RinvN pr1 n);
- fold phi1 in H8; pose (phi2 := phi_sequence RinvN pr2 n); 
- fold phi2 in H3; pose (phi3 := phi_sequence RinvN pr3 n); 
+ rewrite Ropp_0; rewrite Rplus_0_r; set (phi1 := phi_sequence RinvN pr1 n);
+ fold phi1 in H8; set (phi2 := phi_sequence RinvN pr2 n); 
+ fold phi2 in H3; set (phi3 := phi_sequence RinvN pr3 n); 
  fold phi2 in H1; assert (H10 : IsStepFun phi3 a b).
 apply StepFun_P44 with c.
 apply (pre phi3).
@@ -2577,7 +2577,7 @@ unfold derivable_pt_lim in |- *; intros; assert (Hyp : 0 < eps / 2).
 unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H1 _ Hyp); unfold dist, D_x, no_cond in |- *; simpl in |- *;
- unfold R_dist in |- *; intros; pose (del := Rmin x0 (Rmin (b - x) (x - a)));
+ unfold R_dist in |- *; intros; set (del := Rmin x0 (Rmin (b - x) (x - a)));
  assert (H4 : 0 < del).
 unfold del in |- *; unfold Rmin in |- *; case (Rle_dec (b - x) (x - a));
  intro.
@@ -2786,7 +2786,7 @@ intro f; intros; elim h; intro.
 elim H; clear H; intros; elim H; intro.
 elim H1; intro.
 apply RiemannInt_P27; split; assumption.
-pose
+set
  (f_b := fun x:R => f b * (x - b) + RiemannInt (FTC_P1 h C0 h (Rle_refl b)));
  rewrite H3.
 assert (H4 : derivable_pt_lim f_b b (f b)).
@@ -2815,7 +2815,7 @@ assert (H8 : 0 < eps / 2).
 unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H7 _ H8); unfold D_x, no_cond, dist in |- *; simpl in |- *;
- unfold R_dist in |- *; intros; pose (del := Rmin x0 (Rmin x1 (b - a)));
+ unfold R_dist in |- *; intros; set (del := Rmin x0 (Rmin x1 (b - a)));
  assert (H10 : 0 < del).
 unfold del in |- *; unfold Rmin in |- *; case (Rle_dec x1 (b - a)); intros.
 case (Rle_dec x0 x1); intro;
@@ -2960,7 +2960,7 @@ unfold f_b in |- *; unfold Rminus in |- *; rewrite Rplus_opp_r;
  | elim n; left; assumption
  | elim n; right; reflexivity ].
 (*****)
-pose (f_a := fun x:R => f a * (x - a)); rewrite <- H2;
+set (f_a := fun x:R => f a * (x - a)); rewrite <- H2;
  assert (H3 : derivable_pt_lim f_a a (f a)).
 unfold f_a in |- *;
  change (derivable_pt_lim (fct_cte (f a) * (id - fct_cte a)%F) a (f a))
@@ -2981,7 +2981,7 @@ unfold Rdiv in |- *; apply Rmult_lt_0_compat;
  [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 elim (H6 _ H7); unfold D_x, no_cond, dist in |- *; simpl in |- *;
  unfold R_dist in |- *; intros.
-pose (del := Rmin x0 (Rmin x1 (b - a))).
+set (del := Rmin x0 (Rmin x1 (b - a))).
 assert (H9 : 0 < del).
 unfold del in |- *; unfold Rmin in |- *.
 case (Rle_dec x1 (b - a)); intros.
@@ -3116,7 +3116,7 @@ rewrite Rplus_comm; apply Rle_trans with del;
 (*****)
 assert (H1 : x = a).
 rewrite <- H0 in H; elim H; intros; apply Rle_antisym; assumption.
-pose (f_a := fun x:R => f a * (x - a)).
+set (f_a := fun x:R => f a * (x - a)).
 assert (H2 : derivable_pt_lim f_a a (f a)).
 unfold f_a in |- *;
  change (derivable_pt_lim (fct_cte (f a) * (id - fct_cte a)%F) a (f a))
@@ -3129,7 +3129,7 @@ apply derivable_pt_lim_minus.
 apply derivable_pt_lim_id.
 apply derivable_pt_lim_const.
 unfold fct_cte in |- *; ring.
-pose
+set
  (f_b := fun x:R => f b * (x - b) + RiemannInt (FTC_P1 h C0 h (Rle_refl b))).
 assert (H3 : derivable_pt_lim f_b b (f b)).
 unfold f_b in |- *; pattern (f b) at 2 in |- *; replace (f b) with (f b + 0).
@@ -3151,7 +3151,7 @@ unfold fct_cte in |- *; ring.
 apply derivable_pt_lim_const.
 ring.
 unfold derivable_pt_lim in |- *; intros; elim (H2 _ H4); intros;
- elim (H3 _ H4); intros; pose (del := Rmin x0 x1).
+ elim (H3 _ H4); intros; set (del := Rmin x0 x1).
 assert (H7 : 0 < del).
 unfold del in |- *; unfold Rmin in |- *; case (Rle_dec x0 x1); intro.
 apply (cond_pos x0).

@@ -130,7 +130,7 @@ Lemma aux : prop_extensionality -> bool_dep_induction -> true = false.
 Proof.
 intros Ext Ind.
 case (ext_prop_fixpoint Ext bool true); intros G Gfix.
-pose (neg := fun b:bool => bool_elim bool false true b).
+set (neg := fun b:bool => bool_elim bool false true b).
 generalize (refl_equal (G neg)).
 pattern (G neg) at 1 in |- *.
 apply Ind with (b := G neg); intro Heq.
@@ -145,7 +145,7 @@ Lemma ext_prop_dep_proof_irrel_gen :
  prop_extensionality -> bool_dep_induction -> proof_irrelevance.
 Proof.
 intros Ext Ind A a1 a2.
-pose (f := fun b:bool => bool_elim A a1 a2 b).
+set (f := fun b:bool => bool_elim A a1 a2 b).
 rewrite (bool_elim_redl A a1 a2).
 change (f true = a2) in |- *.
 rewrite (bool_elim_redr A a1 a2).

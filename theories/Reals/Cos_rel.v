@@ -98,7 +98,7 @@ replace
        sum_f_R0
          (fun l:nat => C (2 * k) (2 * l) * x ^ (2 * l) * y ^ (2 * (k - l))) k)
     (S n)).
-pose
+set
  (sin_nnn :=
   fun n:nat =>
     match n with
@@ -135,7 +135,7 @@ unfold sin_nnn in |- *.
 rewrite <- Rmult_plus_distr_l.
 apply Rmult_eq_compat_l.
 rewrite binomial.
-pose (Wn := fun i0:nat => C (2 * S i) i0 * x ^ i0 * y ^ (2 * S i - i0)).
+set (Wn := fun i0:nat => C (2 * S i) i0 * x ^ i0 * y ^ (2 * S i - i0)).
 replace
  (sum_f_R0
     (fun l:nat => C (2 * S i) (2 * l) * x ^ (2 * l) * y ^ (2 * (S i - l)))

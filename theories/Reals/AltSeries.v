@@ -164,7 +164,7 @@ intros; cut (0 < eps / 2);
     [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
 elim (H1 (eps / 2) H5); intros N2 H6.
 elim (p (eps / 2) H5); intros N1 H7.
-pose (N := max (S (2 * N1)) N2).
+set (N := max (S (2 * N1)) N2).
 exists N; intros.
 assert (H9 := even_odd_cor n).
 elim H9; intros P H10.

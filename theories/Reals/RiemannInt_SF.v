@@ -31,7 +31,7 @@ Lemma Nzorn :
  forall I:nat -> Prop,
    (exists n : nat, I n) ->
    Nbound I -> sigT (fun n:nat => I n /\ (forall i:nat, I i -> (i <= n)%nat)).
-intros I H H0; pose (E := fun x:R =>  exists i : nat, I i /\ INR i = x);
+intros I H H0; set (E := fun x:R =>  exists i : nat, I i /\ INR i = x);
  assert (H1 : bound E).
 unfold Nbound in H0; elim H0; intros N H1; unfold bound in |- *;
  exists (INR N); unfold is_upper_bound in |- *; intros; 
@@ -534,7 +534,7 @@ rewrite <- H4; apply RList_P7;
 clear Hrecs3; induction  lf2 as [| r5 lf2 Hreclf2].
 simpl in H11; discriminate.
 clear Hreclf2; assert (H17 : r3 = r4).
-pose (x := (r + s2) / 2); assert (H17 := H8 0%nat (lt_O_Sn _));
+set (x := (r + s2) / 2); assert (H17 := H8 0%nat (lt_O_Sn _));
  assert (H18 := H13 0%nat (lt_O_Sn _));
  unfold constant_D_eq, open_interval in H17, H18; simpl in H17; 
  simpl in H18; rewrite <- (H17 x).
@@ -578,7 +578,7 @@ assert (H19 : r3 = r5).
 assert (H19 := H7 1%nat); simpl in H19;
  assert (H20 := H19 (lt_n_S _ _ (lt_O_Sn _))); elim H20; 
  intro.
-pose (x := (s2 + Rmin r1 r0) / 2); assert (H22 := H8 0%nat);
+set (x := (s2 + Rmin r1 r0) / 2); assert (H22 := H8 0%nat);
  assert (H23 := H13 1%nat); simpl in H22; simpl in H23;
  rewrite <- (H22 (lt_O_Sn _) x).
 rewrite <- (H23 (lt_n_S _ _ (lt_O_Sn _)) x).
@@ -703,7 +703,7 @@ case (Req_dec r r1); intro.
 right; assumption.
 left; cut (r1 <= s2).
 intro; unfold adapted_couple in H2, H; decompose [and] H; decompose [and] H2;
- clear H H2; pose (x := (r + r1) / 2); assert (H18 := H14 0%nat);
+ clear H H2; set (x := (r + r1) / 2); assert (H18 := H14 0%nat);
  assert (H20 := H19 0%nat); unfold constant_D_eq, open_interval in H18, H20;
  simpl in H18; simpl in H20; rewrite <- (H18 (lt_O_Sn _) x).
 rewrite <- (H20 (lt_O_Sn _) x).
@@ -1148,7 +1148,7 @@ apply lt_n_Sm_le; apply lt_n_S; assumption.
 apply lt_pred_n_n; apply neq_O_lt; red in |- *; intro; rewrite <- H13 in H8;
  elim (lt_n_O _ H8).
 rewrite H0; assumption.
-pose
+set
  (I :=
   fun j:nat =>
     pos_Rl lf j <= pos_Rl (cons_ORlist lf lg) i /\ (j < Rlength lf)%nat);
@@ -1395,7 +1395,7 @@ apply lt_n_Sm_le; apply lt_n_S; assumption.
 apply lt_pred_n_n; apply neq_O_lt; red in |- *; intro; rewrite <- H13 in H8;
  elim (lt_n_O _ H8).
 rewrite H0; assumption.
-pose
+set
  (I :=
   fun j:nat =>
     pos_Rl lg j <= pos_Rl (cons_ORlist lf lg) i /\ (j < Rlength lg)%nat);
@@ -1774,7 +1774,7 @@ reflexivity.
 assert (H4 : pos_Rl (cons r1 l) (pred (Rlength (cons r1 l))) = b).
 rewrite <- H1; reflexivity.
 elim (IHl r1 H2 H3 H4); intros g [H5 H6].
-pose
+set
  (g' :=
   fun x:R => match Rle_dec r1 x with
              | left _ => g x

@@ -45,7 +45,7 @@ Qed.
 Theorem classic_set : ((forall P:Prop, {P} + {~ P}) -> False) -> False.
 Proof.
 intro HnotEM.
-pose (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
+set (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
 assert (H :  exists f : Prop -> bool, (forall A:Prop, R A (f A))).
 apply description.
 intro A.

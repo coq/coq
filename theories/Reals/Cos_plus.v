@@ -20,8 +20,8 @@ Definition Majxy (x y:R) (n:nat) : R :=
 
 Lemma Majxy_cv_R0 : forall x y:R, Un_cv (Majxy x y) 0.
 intros.
-pose (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
-pose (C0 := C ^ 4).
+set (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
+set (C0 := C ^ 4).
 cut (0 < C).
 intro.
 cut (0 < C0).
@@ -69,7 +69,7 @@ Lemma reste1_maj :
  forall (x y:R) (N:nat),
    (0 < N)%nat -> Rabs (Reste1 x y N) <= Majxy x y (pred N).
 intros.
-pose (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
+set (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
 unfold Reste1 in |- *.
 apply Rle_trans with
  (sum_f_R0
@@ -454,7 +454,7 @@ Qed.
 Lemma reste2_maj :
  forall (x y:R) (N:nat), (0 < N)%nat -> Rabs (Reste2 x y N) <= Majxy x y N.
 intros.
-pose (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
+set (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
 unfold Reste2 in |- *.
 apply Rle_trans with
  (sum_f_R0
@@ -926,8 +926,8 @@ Qed.
 Lemma reste_cv_R0 : forall x y:R, Un_cv (Reste x y) 0.
 intros.
 unfold Reste in |- *.
-pose (An := fun n:nat => Reste2 x y n).
-pose (Bn := fun n:nat => Reste1 x y (S n)).
+set (An := fun n:nat => Reste2 x y n).
+set (Bn := fun n:nat => Reste1 x y (S n)).
 cut
  (Un_cv (fun n:nat => An n - Bn n) (0 - 0) ->
   Un_cv (fun N:nat => Reste2 x y N - Reste1 x y (S N)) 0).
@@ -979,7 +979,7 @@ cut (0 < eps / 3);
 elim (H4 (eps / 3) H7); intros N1 H8. 
 elim (H5 (eps / 3) H7); intros N2 H9. 
 elim (H6 (eps / 3) H7); intros N3 H10.
-pose (N := S (S (max (max N1 N2) N3))). 
+set (N := S (S (max (max N1 N2) N3))). 
 exists N. 
 intros. 
 cut (n = S (pred n)). 

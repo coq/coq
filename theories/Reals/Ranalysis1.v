@@ -931,7 +931,7 @@ reflexivity.
 replace (fun y:R => y ^ S n) with (fun y:R => y * y ^ n).
 replace (pred (S n)) with n; [ idtac | reflexivity ].
 replace (fun y:R => y * y ^ n) with (id * (fun y:R => y ^ n))%F.
-pose (f := fun y:R => y ^ n).
+set (f := fun y:R => y ^ n).
 replace (INR (S n) * x ^ n) with (1 * f x + id x * (INR n * x ^ pred n)).
 apply derivable_pt_lim_mult.
 apply derivable_pt_lim_id.

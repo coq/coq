@@ -26,8 +26,8 @@ Open Local Scope R_scope.
 Theorem R_complete :
  forall Un:nat -> R, Cauchy_crit Un -> sigT (fun l:R => Un_cv Un l).
 intros.
-pose (Vn := sequence_minorant Un (cauchy_min Un H)).
-pose (Wn := sequence_majorant Un (cauchy_maj Un H)).
+set (Vn := sequence_minorant Un (cauchy_min Un H)).
+set (Wn := sequence_majorant Un (cauchy_maj Un H)).
 assert (H0 := maj_cv Un H).
 fold Wn in H0.
 assert (H1 := min_cv Un H).
@@ -118,7 +118,7 @@ elim (p0 (eps / 5) H3); intros N2 H5.
 unfold Cauchy_crit in H.
 unfold R_dist in H.
 elim (H (eps / 5) H3); intros N3 H6.
-pose (N := max (max N1 N2) N3).
+set (N := max (max N1 N2) N3).
 apply Rle_lt_trans with (Rabs (x - Wn N) + Rabs (Wn N - x0)).
 replace (x - x0) with (x - Wn N + (Wn N - x0)); [ apply Rabs_triang | ring ].
 apply Rle_lt_trans with

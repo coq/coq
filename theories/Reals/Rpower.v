@@ -146,7 +146,7 @@ symmetry  in |- *; apply derive_pt_eq_0; apply derivable_pt_lim_exp.
 Qed.
 
 Lemma ln_exists1 : forall y:R, 0 < y -> 1 <= y -> sigT (fun z:R => y = exp z).
-intros; pose (f := fun x:R => exp x - y); cut (f 0 <= 0).
+intros; set (f := fun x:R => exp x - y); cut (f 0 <= 0).
 intro; cut (continuity f).
 intro; cut (0 <= f y).
 intro; cut (f 0 * f y <= 0).
@@ -560,7 +560,7 @@ Lemma derivable_pt_lim_ln : forall x:R, 0 < x -> derivable_pt_lim ln x (/ x).
 intros; assert (H0 := Dln x H); unfold D_in in H0; unfold limit1_in in H0;
  unfold limit_in in H0; simpl in H0; unfold R_dist in H0;
  unfold derivable_pt_lim in |- *; intros; elim (H0 _ H1); 
- intros; elim H2; clear H2; intros; pose (alp := Rmin x0 (x / 2));
+ intros; elim H2; clear H2; intros; set (alp := Rmin x0 (x / 2));
  assert (H4 : 0 < alp).
 unfold alp in |- *; unfold Rmin in |- *; case (Rle_dec x0 (x / 2)); intro.
 apply H2.

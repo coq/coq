@@ -121,7 +121,7 @@ Qed.
 
 (**********)
 Lemma continuity_cos : continuity cos.
-pose (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)).
+set (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)).
 cut (CVN_R fn).
 intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
 intro cv; cut (forall n:nat, continuity (fn n)).
@@ -299,12 +299,12 @@ Qed.
 (* (sin h)/h -> 1 when h -> 0 *)
 Lemma derivable_pt_lim_sin_0 : derivable_pt_lim sin 0 1.
 unfold derivable_pt_lim in |- *; intros.
-pose
+set
  (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N + 1)) * x ^ (2 * N)).
 cut (CVN_R fn).
 intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
 intro cv.
-pose (r := mkposreal _ Rlt_0_1).
+set (r := mkposreal _ Rlt_0_1).
 cut (CVN_r fn r).
 intro; cut (forall (n:nat) (y:R), Boule 0 r y -> continuity_pt (fn n) y).
 intro; cut (Boule 0 r 0).
@@ -393,7 +393,7 @@ intro; unfold continuity_pt in H3; unfold continue_in in H3;
 cut (0 < eps / 2); [ intro | assumption ].
 elim (H3 _ H4); intros del_c H5.
 cut (0 < Rmin del del_c).
-intro; pose (delta := mkposreal _ H6).
+intro; set (delta := mkposreal _ H6).
 exists delta; intros.
 rewrite Rplus_0_l; replace (cos h - cos 0) with (-2 * Rsqr (sin (h / 2))).
 unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r.
@@ -498,7 +498,7 @@ cut (0 < eps / 2);
     [ apply H1 | apply Rinv_0_lt_compat; prove_sup0 ] ].
 elim (H0 _ H2); intros alp1 H3.
 elim (H _ H2); intros alp2 H4.
-pose (alp := Rmin alp1 alp2).
+set (alp := Rmin alp1 alp2).
 cut (0 < alp).
 intro; exists (mkposreal _ H5); intros.
 replace ((sin (x + h) - sin x) / h - cos x) with

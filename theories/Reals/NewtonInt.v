@@ -288,7 +288,7 @@ assert (H6 := H _ H5); elim H6; clear H6; intros;
 unfold derivable_pt_lim in |- *; assert (H7 : derive_pt F0 x x0 = f x).
 symmetry  in |- *; assumption.
 assert (H8 := derive_pt_eq_1 F0 x (f x) x0 H7); unfold derivable_pt_lim in H8;
- intros; elim (H8 _ H9); intros; pose (D := Rmin x1 (b - x)).
+ intros; elim (H8 _ H9); intros; set (D := Rmin x1 (b - x)).
 assert (H11 : 0 < D).
 unfold D in |- *; unfold Rmin in |- *; case (Rle_dec x1 (b - x)); intro.
 apply (cond_pos x1).
@@ -335,7 +335,7 @@ assert (H11 := derive_pt_eq_1 F0 x (f x) x1 H9);
         | right _ => F1 x + (F0 b - F1 b)
         end) x (f x)).
 unfold derivable_pt_lim in |- *; unfold derivable_pt_lim in H11, H12; intros;
- elim (H11 _ H13); elim (H12 _ H13); intros; pose (D := Rmin x2 x3);
+ elim (H11 _ H13); elim (H12 _ H13); intros; set (D := Rmin x2 x3);
  assert (H16 : 0 < D).
 unfold D in |- *; unfold Rmin in |- *; case (Rle_dec x2 x3); intro.
 apply (cond_pos x2).
@@ -375,7 +375,7 @@ assert (H6 := H0 _ H5); elim H6; clear H6; intros;
 unfold derivable_pt_lim in |- *; assert (H7 : derive_pt F1 x x0 = f x).
 symmetry  in |- *; assumption.
 assert (H8 := derive_pt_eq_1 F1 x (f x) x0 H7); unfold derivable_pt_lim in H8;
- intros; elim (H8 _ H9); intros; pose (D := Rmin x1 (x - b));
+ intros; elim (H8 _ H9); intros; set (D := Rmin x1 (x - b));
  assert (H11 : 0 < D).
 unfold D in |- *; unfold Rmin in |- *; case (Rle_dec x1 (x - b)); intro.
 apply (cond_pos x1).
@@ -462,7 +462,7 @@ Lemma NewtonInt_P7 :
    Newton_integrable f b c -> Newton_integrable f a c.
 unfold Newton_integrable in |- *; intros f a b c Hab Hbc X X0; elim X;
  clear X; intros F0 H0; elim X0; clear X0; intros F1 H1;
- pose
+ set
   (g :=
    fun x:R =>
      match Rle_dec x b with

@@ -100,8 +100,8 @@ intro P.
 (* first we exhibit the choice functional relation R *)
 destruct AC as [R H].
 
-pose (class_of_true := fun b => b = true \/ P).
-pose (class_of_false := fun b => b = false \/ P).
+set (class_of_true := fun b => b = true \/ P).
+set (class_of_false := fun b => b = false \/ P).
 
 (* the actual "decision": is (R class_of_true) = true or false? *)
 destruct (H class_of_true) as [b0 [H0 [H0' H0'']]].

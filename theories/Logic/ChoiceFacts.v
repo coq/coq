@@ -103,7 +103,7 @@ destruct (rel_choice _ _ (fun (x:sigT P) (y:B) => R (projT1 x) y)) as [R' H0].
 intros [x HPx].
 destruct (H x HPx) as [y HRxy].
 exists y; exact HRxy.
-pose (R'' := fun (x:A) (y:B) =>  exists H : P x, R' (existT P x H) y).
+set (R'' := fun (x:A) (y:B) =>  exists H : P x, R' (existT P x H) y).
 exists R''; intros x HPx.
 destruct (H0 (existT P x HPx)) as [y [HRxy [HR'xy Huniq]]].
 exists y. split.

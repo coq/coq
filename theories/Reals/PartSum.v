@@ -212,7 +212,7 @@ assumption.
 cut (0 < Rabs ((l1 - l2) / 2)); [ intro | apply Rabs_pos_lt ].
 elim (H (Rabs ((l1 - l2) / 2)) H2); intros.
 elim (H0 (Rabs ((l1 - l2) / 2)) H2); intros.
-pose (N := max x0 x); cut (N >= x0)%nat.
+set (N := max x0 x); cut (N >= x0)%nat.
 cut (N >= x)%nat.
 intros; assert (H7 := H3 N H5); assert (H8 := H4 N H6).
 cut (Rabs (l1 - l2) <= R_dist (sum_f_R0 An N) l1 + R_dist (sum_f_R0 An N) l2).
@@ -390,7 +390,7 @@ do 2 rewrite Rabs_Ropp.
 rewrite
  (Rabs_right (sum_f_R0 (fun i:nat => Rabs (An (S n + i)%nat)) (m - S n)))
  .
-pose (Bn := fun i:nat => An (S n + i)%nat).
+set (Bn := fun i:nat => An (S n + i)%nat).
 replace (fun i:nat => Rabs (An (S n + i)%nat)) with
  (fun i:nat => Rabs (Bn i)).
 apply Rabs_triang_gen.
@@ -415,7 +415,7 @@ do 2 rewrite Rplus_0_r.
 rewrite
  (Rabs_right (sum_f_R0 (fun i:nat => Rabs (An (S m + i)%nat)) (n - S m)))
  .
-pose (Bn := fun i:nat => An (S m + i)%nat).
+set (Bn := fun i:nat => An (S m + i)%nat).
 replace (fun i:nat => Rabs (An (S m + i)%nat)) with
  (fun i:nat => Rabs (Bn i)).
 apply Rabs_triang_gen.
@@ -489,11 +489,11 @@ elim s; intro.
 left; apply a.
 right; apply b.
 cut (Un_growing (fun n:nat => sum_f_R0 An n)).
-intro; pose (l1 := sum_f_R0 An N).
+intro; set (l1 := sum_f_R0 An N).
 fold l1 in r.
 unfold Un_cv in H; cut (0 < l1 - l).
 intro; elim (H _ H2); intros.
-pose (N0 := max x N); cut (N0 >= x)%nat.
+set (N0 := max x N); cut (N0 >= x)%nat.
 intro; assert (H5 := H3 N0 H4).
 cut (l1 <= sum_f_R0 An N0).
 intro; unfold R_dist in H5; rewrite Rabs_right in H5.
@@ -534,7 +534,7 @@ intro; cut (0 < (Rabs l1 - l2) / 2).
 intro; unfold Un_cv in H, H0.
 elim (H _ H3); intros Na H4.
 elim (H0 _ H3); intros Nb H5.
-pose (N := max Na Nb).
+set (N := max Na Nb).
 unfold R_dist in H4, H5.
 cut (Rabs (sum_f_R0 An N - l2) < (Rabs l1 - l2) / 2).
 intro; cut (Rabs (Rabs l1 - Rabs (SP fn N x)) < (Rabs l1 - l2) / 2).

@@ -25,7 +25,7 @@ Theorem MVT :
         (g b - g a) * derive_pt f c (pr1 c P) =
         (f b - f a) * derive_pt g c (pr2 c P)).
 intros; assert (H2 := Rlt_le _ _ H).
-pose (h := fun y:R => (g b - g a) * f y - (f b - f a) * g y).
+set (h := fun y:R => (g b - g a) * f y - (f b - f a) * g y).
 cut (forall c:R, a < c < b -> derivable_pt h c).
 intro; cut (forall c:R, a <= c <= b -> continuity_pt h c).
 intro; assert (H4 := continuity_ab_maj h a b H2 H3).
@@ -33,7 +33,7 @@ assert (H5 := continuity_ab_min h a b H2 H3).
 elim H4; intros Mx H6.
 elim H5; intros mx H7.
 cut (h a = h b).
-intro; pose (M := h Mx); pose (m := h mx).
+intro; set (M := h Mx); set (m := h mx).
 cut
  (forall (c:R) (P:a < c < b),
     derive_pt h c (X c P) =
