@@ -484,10 +484,11 @@ let pr_scopes prraw =
    !scope_map (mt ())
 
 let rec find_default ntn = function
-  | Scope scope::_ when Stringmap.mem ntn (find_scope scope).notations -> scope
-  | SingleNotation ntn'::_ when ntn = ntn' -> default_scope
+  | Scope scope::_ when Stringmap.mem ntn (find_scope scope).notations ->
+      Some scope
+  | SingleNotation ntn'::_ when ntn = ntn' -> Some default_scope
   | _::scopes -> find_default ntn scopes
-  | [] -> raise Not_found
+  | [] -> None
 
 let factorize_entries = function
   | [] -> []
@@ -534,8 +535,8 @@ let locate_notation prraw ntn =
 	    pr_notation_info prraw df r ++ tbrk (1,2) ++
 	    (if sc = default_scope then mt () else (str ": " ++ str sc)) ++ 
 	    tbrk (1,2) ++
-	    (if sc = scope then str "(default interpretation)" else mt ()) ++
-	    fnl ()))
+	    (if Some sc = scope then str "(default interpretation)" else mt ())
+	    ++ fnl ()))
 	l) ntns)
 
 (**********************************************************************)
