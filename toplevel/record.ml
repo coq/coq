@@ -23,6 +23,7 @@ open Inductive
 open Safe_typing
 open Nametab
 open Indtypes
+open Type_errors
 
 (********** definition d'un record (structure) **************)
 
@@ -70,7 +71,7 @@ type record_error =
   | MissingProj of identifier * identifier list
   | BadTypedProj of identifier * env * Type_errors.type_error
 
-let warning_or_error coe err =
+let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
 	let s,have = if List.length projs > 1 then "s","have" else "","has" in
@@ -78,12 +79,22 @@ let warning_or_error coe err =
 	   'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
            prlist_with_sep pr_coma pr_id projs; 'sPC; 'sTR have; 'sTR "n't." >]
     | BadTypedProj (fi,ctx,te) ->
-        [<'sTR (string_of_id fi); 
-          'sTR" cannot be defined for the following reason:";
-	  'fNL; 'sTR "  "; hOV 2 (Himsg.explain_type_error ctx te) >]
+	match te with
+	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
+              [<'sTR (string_of_id fi); 
+		'sTR" cannot be defined because it is informative and ";
+		Printer.pr_inductive (Global.env()) indsp;
+		'sTR " is not." >]   
+	  | ElimArity (_,_,_,_,Some (_,_,StrongEliminationOnNonSmallType)) ->
+	      [<'sTR (string_of_id fi); 
+		'sTR" cannot be defined because it is large and ";
+		Printer.pr_inductive (Global.env()) indsp;
+		'sTR " is not." >]
+	  | _ -> 
+	      [<'sTR " cannot be defined because it is not typable" >]
   in
   if coe then errorlabstrm "structure" st;
-  pPNL (hOV 0 [< 'sTR"Warning: "; st >])
+  Options.if_verbose pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
 (* We build projections *)
 let declare_projections indsp coers fields =
@@ -106,7 +117,7 @@ let declare_projections indsp coers fields =
 	   | None -> global_vars env ti in
 	 let bad_projs = (list_intersect ids_not_ok fv_ti) in
 	 if bad_projs <> [] then begin
-	   warning_or_error coe (MissingProj (fi,bad_projs));
+	   warning_or_error coe indsp (MissingProj (fi,bad_projs));
            (None::sp_projs,fi::ids_not_ok,subst)
          end else
 	   let body = match optci with
@@ -128,7 +139,7 @@ let declare_projections indsp coers fields =
 		 declare_constant fi (ConstantEntry cie,NeverDischarge)
 	       in Some sp
              with Type_errors.TypeError (ctx,te) -> begin
-               warning_or_error coe (BadTypedProj (fi,ctx,te));
+               warning_or_error coe indsp (BadTypedProj (fi,ctx,te));
 	       None
 	     end in
 	   match name with

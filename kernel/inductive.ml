@@ -222,14 +222,13 @@ let is_info_arity env c =
 
 let error_elim_expln env kp ki =
   if is_info_arity env kp && not (is_info_arity env ki) then
-    "non-informative objects may not construct informative ones."
+    NonInformativeToInformative
   else 
     match (kind_of_term kp,kind_of_term ki) with 
-      | Sort (Type _), Sort (Prop _) ->
-          "strong elimination on non-small inductive types leads to paradoxes."
-      | _ -> "wrong arity"
+      | Sort (Type _), Sort (Prop _) -> StrongEliminationOnNonSmallType
+      | _ -> WrongArity
 
-exception Arity of (constr * constr * string) option
+exception Arity of (constr * constr * arity_error) option
 
 
 let is_correct_arity env kelim (c,pj) indf t = 

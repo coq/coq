@@ -36,6 +36,11 @@ type guard_error =
   | RecCallInCasePred of constr
   | NotGuardedForm
 
+type arity_error =
+  | NonInformativeToInformative
+  | StrongEliminationOnNonSmallType
+  | WrongArity
+
 type type_error =
   | UnboundRel of int
   | UnboundVar of variable
@@ -43,7 +48,7 @@ type type_error =
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
   | ElimArity of inductive * types list * constr * unsafe_judgment
-      * (constr * constr * string) option
+      * (constr * constr * arity_error) option
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
   | NumberBranches of unsafe_judgment * int
@@ -71,7 +76,7 @@ val error_reference_variables : env -> constr -> 'a
 
 val error_elim_arity : 
   env -> inductive -> types list -> constr 
-    -> unsafe_judgment -> (constr * constr * string) option -> 'a
+    -> unsafe_judgment -> (constr * constr * arity_error) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
 

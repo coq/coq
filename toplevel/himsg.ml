@@ -59,30 +59,37 @@ let explain_reference_variables c =
   [< 'sTR "the constant"; 'sPC; pc; 'sPC; 
      'sTR "refers to variables which are not in the context" >]
 
-let msg_bad_elimination ctx = function
-  | Some(kp,ki,explanation) ->
-      let pki = prterm_env ctx ki in
-      let pkp = prterm_env ctx kp in
-      (hOV 0 
-         [< 'fNL; 'sTR "Elimination of an inductive object of sort : ";
-            pki; 'bRK(1,0);
-            'sTR "is not allowed on a predicate in sort : "; pkp ;'fNL;
-            'sTR "because"; 'sPC; 'sTR explanation >])
-  | None -> 
-      [<>]
-
 let explain_elim_arity ctx ind aritylst c pj okinds = 
   let pi = pr_inductive ctx ind in
   let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
   let pp = prterm_env ctx pj.uj_val in
   let ppt = prterm_env ctx pj.uj_type in
+  let msg = match okinds with
+  | Some(kp,ki,explanation) ->
+      let pki = prterm_env ctx ki in
+      let pkp = prterm_env ctx kp in
+      let explanation =	match explanation with
+	| NonInformativeToInformative ->
+	  "non-informative objects may not construct informative ones."
+	| StrongEliminationOnNonSmallType ->
+          "strong elimination on non-small inductive types leads to paradoxes."
+	| WrongArity ->
+	  "wrong arity" in
+	(hOV 0 
+           [< 'fNL; 'sTR "Elimination of an inductive object of sort : ";
+              pki; 'bRK(1,0);
+              'sTR "is not allowed on a predicate in sort : "; pkp ;'fNL;
+              'sTR "because"; 'sPC; 'sTR explanation >])
+  | None -> 
+      [<>]
+  in
   [< 'sTR "Incorrect elimination of"; 'bRK(1,1); pc; 'sPC;
      'sTR "in the inductive type"; 'bRK(1,1); pi; 'fNL;
      'sTR "The elimination predicate"; 'bRK(1,1); pp; 'sPC;
      'sTR "has type"; 'bRK(1,1); ppt; 'fNL;
      'sTR "It should be one of :"; 'bRK(1,1) ; hOV 0 ppar; 'fNL;
-     msg_bad_elimination ctx okinds >]
+     msg >]
 
 let explain_case_not_inductive ctx cj =
   let pc = prterm_env ctx cj.uj_val in
@@ -537,6 +544,13 @@ let explain_non_exhaustive env pats =
   [<'sTR ("Non exhaustive pattern-matching: no clause found for pattern"^s);
     'sPC; hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats) >]
 
+let explain_cannot_infer_predicate env typs =
+  let pr_branch (cstr,typ) =
+    [< 'sTR "For "; prterm_env env cstr; 'sTR " : "; prterm_env env typ >]
+  in
+  [<'sTR "Unable to unify the types found in the branches:";
+    'sPC; hOV 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs)) >]
+
 let explain_pattern_matching_error env = function
   | BadPattern (c,t) -> 
       explain_bad_pattern env c t
@@ -552,3 +566,5 @@ let explain_pattern_matching_error env = function
       explain_unused_clause env tms
   | NonExhaustive tms ->
       explain_non_exhaustive env tms
+  | CannotInferPredicate typs ->
+      explain_cannot_infer_predicate env typs
