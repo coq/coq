@@ -15,21 +15,27 @@ type name = Name of identifier | Anonymous
 let code_of_0 = Char.code '0'
 let code_of_9 = Char.code '9'
 
-let repr_ident { atom = sa; index = n } = (sa,n)
-let make_ident sa n = 
-  let c = Char.code (String.get sa (String.length sa -1)) in
-  if c < code_of_0 or c > code_of_9 then { atom = sa; index = n }
-  else { atom = sa^"_"; index = n }
+let repr_ident { atom = sa; index = n } =
+  if n = -1 then (sa,None) else (sa,Some n)
 
-let string_of_id { atom = s; index = n } =
-  s ^ (if n = -1 then "" else string_of_int n)
+let make_ident sa = function
+  | Some n ->
+      let c = Char.code (String.get sa (String.length sa -1)) in
+      if c < code_of_0 or c > code_of_9 then { atom = sa; index = n }
+      else { atom = sa^"_"; index = n }
+  | None -> { atom = sa; index = -1 }
+
+let string_of_id id = match repr_ident id with
+  | (s,None) -> s
+  | (s,Some n) -> s ^ (string_of_int n)
 
 let id_of_string s =
   let slen = String.length s in
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
     if n = 0 then 
-      failwith ("identifier " ^ s ^ " cannot be split")
+      failwith
+	("The string " ^ s ^ " is not an identifier: it contains only digits")
     else 
       let c = Char.code (String.get s (n-1)) in
       if c = code_of_0 && n <> slen then 
@@ -47,21 +53,18 @@ let id_of_string s =
       index = int_of_string (String.sub s numstart (slen - numstart)) }
 
 let atompart_of_id id = id.atom
-let index_of_id id = id.index
+let index_of_id id = snd (repr_ident id)
 
-let print_id { atom = a; index = n } = 
-  match (a,n) with
-    | ("",-1) -> [< 'sTR"[]" >]
-    | ("",n)  -> [< 'sTR"[" ; 'iNT n ; 'sTR"]" >]
-    | (s,n)   -> [< 'sTR s ; (if n = (-1) then [< >] else [< 'iNT n >]) >]
+let print_id id =
+  match repr_ident id with
+    | ("",None)   -> [< 'sTR"[]" >]
+    | ("",Some n) -> [< 'sTR"[" ; 'iNT n ; 'sTR"]" >]
+    | (s,None)   -> [< 'sTR s >]
+    | (s,Some n) -> [< 'sTR s ; 'iNT n >]
 
-let id_ord id1 id2 =
-  let (s1,n1) = repr_ident id1
-  and (s2,n2) = repr_ident id2 in
+let id_ord { atom = s1; index = n1 } { atom = s2; index = n2 } = 
   let s_bit = Pervasives.compare s1 s2 in
   if s_bit = 0 then n1 - n2 else s_bit
-
-let id_without_number id = id.index = (-1)
 
 let first_char id =
   if id.atom = "" then
@@ -80,45 +83,33 @@ module Idmap = Map.Make(IdOrdered)
 
 
 (* Fresh names *)
-let add_subscript_to_ident id n =
-  if n < 0 then error "Only natural numbers are allowed as subscripts";
-  if id.index = -1 then { atom = id.atom; index = n }
-  else  { atom = (string_of_id id)^"_"; index = n }
-
 let lift_ident { atom = str; index = i } = { atom = str; index = i+1 }
 
 let next_ident_away id avoid = 
   if List.mem id avoid then
-    let str = if id.index = -1 then id.atom else 
+    let id0 = if id.index = -1 then id else 
     (* Ce serait sans doute mieux avec quelque chose inspiré de 
-       *** string_of_id id ^ "_" *** mais ça brise la compatibilité... *)
-      id.atom in
-    let rec name_rec i =
-      let create = {atom=str;index=i} in
-      if List.mem create avoid then name_rec (i+1) else create in 
-    name_rec 0
+       *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
+    { id with index = -1 } in
+    let rec name_rec id =
+      if List.mem id avoid then name_rec (lift_ident id) else id in 
+    name_rec id0
   else id
 
-let next_ident_away_from {atom=str;index=i} avoid = 
-  let rec name_rec i =
-    let create = {atom=str;index=i} in
-    if List.mem create avoid then name_rec (i+1) else create
-  in 
-  name_rec i 
+let next_ident_away_from id avoid = 
+  let rec name_rec id =
+    if List.mem id avoid then name_rec (lift_ident id) else id in 
+  name_rec id 
 
 let next_name_away_with_default default name l = 
   match name with
-    | Name(str) -> next_ident_away str l
+    | Name str  -> next_ident_away str l
     | Anonymous -> next_ident_away (id_of_string default) l
 
 let next_name_away name l = 
   match name with
-    | Name(str) -> next_ident_away str l
+    | Name str  -> next_ident_away str l
     | Anonymous -> id_of_string "_"
-
-let id_of_name default = function
-  | Name s -> s
-  | Anonymous -> default
 
 (* Kinds *)
 

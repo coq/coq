@@ -48,7 +48,7 @@ let new_identifier =
 
 let new_identifier_state = 
   let cpt = ref 0 in 
-  (fun () -> let s = make_ident "State" !cpt in incr cpt; s)
+  (fun () -> let s = make_ident "State" (Some !cpt) in incr cpt; s)
 
 let new_identifier_var = 
   let cpt = ref 0 in 

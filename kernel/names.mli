@@ -11,14 +11,14 @@ type identifier
 type name = Name of identifier | Anonymous
 
 (* Constructor of an identifier;
-   [make_ident] builds an identifier from a string and an index; if
+   [make_ident] builds an identifier from a string and an optional index; if
    the string ends by a digit, a "_" is inserted *)
-val make_ident : string -> int -> identifier
+val make_ident : string -> int option -> identifier
 
 (* Some destructors of an identifier *)
 val atompart_of_id : identifier -> string
 val first_char : identifier -> string
-val index_of_id : identifier -> int
+val index_of_id : identifier -> int option
 
 (* Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
@@ -36,7 +36,7 @@ val next_name_away : name -> identifier list -> identifier
 val next_name_away_with_default : 
   string -> name -> identifier list -> identifier
 
-(*s path_kind is currently degenerated, only [CCI] is used *)
+(*s path_kind is currently degenerated, [FW] is not used *)
 type path_kind = CCI | FW | OBJ
 
 (* parsing and printing of path kinds *)

@@ -1041,7 +1041,7 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
     if n=1 then 
       cname
     else (* To force renumbering if there is only one *)
-      make_ident (string_of_id cname) 1
+      make_ident (string_of_id cname) (Some 1)
   in
   let hyprecname = id_of_string ("Hrec"^(string_of_id recvarname)) in
   let rec peel_tac c = match kind_of_term c with
