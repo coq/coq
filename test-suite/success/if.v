@@ -2,3 +2,4 @@
 (* universes are not cautiously treated *)
 
 Check [b:bool]if b then Type else nat.
+
