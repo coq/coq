@@ -57,18 +57,9 @@ val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
 val constant_or_parameter_strength : section_path -> strength
 
-val is_variable : identifier -> bool
 val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : section_path -> named_declaration * strength * sticky
-val variable_strength : identifier -> strength
-
-
-(*s [global_operator k id] returns the operator (constant, inductive or
-    construtor) corresponding to [id] in global environment, together
-    with its definition environment. *)
-
-val global_operator : 
-  path_kind -> identifier -> global_reference * named_context
+val variable_strength : qualid -> strength
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 

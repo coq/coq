@@ -56,11 +56,14 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.survive_section = false }
 
 let cache_variable (sp,(id,(d,_,_) as vd)) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_variable"
+      [< pr_id (basename sp); 'sTR " already exists" >];
   begin match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
-  Nametab.push id (VarRef sp);
+  Nametab.push sp (VarRef sp);
   vartab := Spmap.add sp vd !vartab
 
 let (in_variable, out_variable) =
@@ -79,13 +82,16 @@ let declare_variable id obj =
 (* Parameters. *)
 
 let cache_parameter (sp,c) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_parameter"
+      [< pr_id (basename sp); 'sTR " already exists" >];
   Global.add_parameter sp c;
-  Nametab.push (basename sp) (ConstRef sp)
+  Nametab.push sp (ConstRef sp)
 
 let load_parameter _ = ()
 
-let open_parameter (sp,_) =
-  Nametab.push (basename sp) (ConstRef sp)
+let open_parameter (sp,_) = ()
+(*  Nametab.push sp (ConstRef sp)*)
 
 let export_parameter x = Some x
 
@@ -119,18 +125,21 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.survive_section = false }
 
 let cache_constant (sp,(cdt,stre)) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_constant"
+      [< pr_id (basename sp); 'sTR " already exists" >] ;
   begin match cdt with 
     | ConstantEntry ce -> Global.add_constant sp ce
     | ConstantRecipe r -> Global.add_discharged_constant sp r
   end;
-  Nametab.push (basename sp) (ConstRef sp);
+  Nametab.push sp (ConstRef sp);
   csttab := Spmap.add sp stre !csttab
 
 let load_constant (sp,(ce,stre)) =
   csttab := Spmap.add sp stre !csttab
 
-let open_constant (sp,_) =
-  Nametab.push (basename sp) (ConstRef sp)
+let open_constant (sp,_) = ()
+(*  Nametab.push sp (ConstRef sp)*)
 
 let export_constant x = Some x
 
@@ -149,6 +158,23 @@ let declare_constant id cd =
  
 (* Inductives. *)
 
+
+let inductive_names sp mie =
+  let names, _ = 
+    List.fold_left
+      (fun (names, n) (id,_,cnames,_) ->
+	 let indsp = (sp,n) in
+	 let names, _ =
+	   List.fold_left
+	     (fun (names, p) id ->
+		let sp = Names.make_path (dirpath sp) id CCI in
+		((sp, ConstructRef (indsp,p)) :: names, p+1))
+	     (names, 1) cnames in
+	 let sp = Names.make_path (dirpath sp) id CCI in
+	 ((sp, IndRef indsp) :: names, n+1))
+      ([], 0) mie.mind_entry_inds
+  in names
+
 let push_inductive_names sp mie =
   let _ = 
     List.fold_left
@@ -157,21 +183,30 @@ let push_inductive_names sp mie =
 	 let _ =
 	   List.fold_left
 	     (fun p id ->
-		Nametab.push id (ConstructRef (indsp,p)); (p+1))
+		let sp = Names.make_path (dirpath sp) id CCI in
+		Nametab.push sp (ConstructRef (indsp,p)); (p+1))
 	     1 cnames in
-	 Nametab.push id (IndRef indsp);
+	 let sp = Names.make_path (dirpath sp) id CCI in
+	 Nametab.push sp (IndRef indsp);
 	 n+1)
       0 mie.mind_entry_inds
   in ()
 
+let check_exists_inductive (sp,_) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_inductive"
+      [< pr_id (basename sp); 'sTR " already exists" >]
+
 let cache_inductive (sp,mie) =
+  let names = inductive_names sp mie in
+  List.iter check_exists_inductive names;
   Global.add_mind sp mie;
-  push_inductive_names sp mie
+  List.iter (fun (sp, ref) -> Nametab.push sp ref) names
 
 let load_inductive _ = ()
 
-let open_inductive (sp,mie) =
-  push_inductive_names sp mie
+let open_inductive (sp,mie) = ()
+(*  push_inductive_names sp mie *)
 
 let export_inductive x = Some x
 
@@ -203,18 +238,13 @@ let constant_strength sp = Spmap.find sp !csttab
 let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
 
-let is_variable id = 
-  match Nametab.sp_of_id CCI id with
-    | VarRef _ -> true
-    | _ -> false
-
 let get_variable sp = 
   let (id,(_,str,sticky)) = Spmap.find sp !vartab in
   let (c,ty) = Global.lookup_named id in
   ((id,c,ty),str,sticky)
 
-let variable_strength id =
-  match Nametab.sp_of_id CCI id with
+let variable_strength qid =
+  match Nametab.locate qid with
     | VarRef sp -> let _,(_,str,_) = Spmap.find sp !vartab in str
     | _ -> anomaly "variable_strength: not the reference to a variable"
 
@@ -257,10 +287,6 @@ let global_sp_operator env sp id =
     let mib = 
     mind_oper_of_id sp id mib, mib.mind_hyps
 *)
-
-let global_operator kind id =
-  let r = Nametab.sp_of_id kind id in
-  r, context_of_global_reference Evd.empty (Global.env()) r
 
 let occur_decl env (id,c,t) hyps =
   try
