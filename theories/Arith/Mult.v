@@ -55,16 +55,19 @@ Qed.
 Hints Resolve mult_assoc_r : arith v62.
 
 Lemma mult_assoc_l : (n,m,p:nat)(mult n (mult m p)) = (mult (mult n m) p).
+Proof.
 Auto with arith.
 Qed.
 Hints Resolve mult_assoc_l : arith v62.
 
 Lemma mult_1_n : (n:nat)(mult (S O) n)=n.
+Proof.
 Simpl; Auto with arith.
 Qed.
 Hints Resolve mult_1_n : arith v62.
 
 Lemma mult_sym : (n,m:nat)(mult n m)=(mult m n).
+Proof.
 Intros; Elim n; Intros; Simpl; Auto with arith.
 Elim mult_n_Sm.
 Elim H; Apply plus_sym.
@@ -72,6 +75,7 @@ Qed.
 Hints Resolve mult_sym : arith v62.
 
 Lemma mult_n_1 : (n:nat)(mult n (S O))=n.
+Proof.
 Intro; Elim mult_sym; Auto with arith.
 Qed.
 Hints Resolve mult_n_1 : arith v62.
@@ -114,6 +118,7 @@ Fixpoint mult_acc [s,m,n:nat] : nat :=
     end.
 
 Lemma mult_acc_aux : (n,s,m:nat)(plus s (mult n m))= (mult_acc s m n).
+Proof.
 Induction n; Simpl;Auto.
 Intros p H s m; Rewrite <- plus_tail_plus; Rewrite <- H.
 Rewrite <- plus_assoc_r; Apply (f_equal2 nat nat);Auto.
@@ -123,6 +128,7 @@ Qed.
 Definition tail_mult := [n,m:nat](mult_acc O m n).
 
 Lemma mult_tail_mult : (n,m:nat)(mult n m)=(tail_mult n m).
+Proof.
 Intros; Unfold tail_mult; Rewrite <- mult_acc_aux;Auto.
 Qed.
 
