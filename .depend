@@ -3217,29 +3217,33 @@ contrib/xml/unshare.cmx: contrib/xml/unshare.cmi
 contrib/xml/xml.cmo: contrib/xml/xml.cmi 
 contrib/xml/xml.cmx: contrib/xml/xml.cmi 
 contrib/xml/xmlcommand.cmo: contrib/xml/acic.cmo contrib/xml/acic2Xml.cmo \
-    contrib/xml/cic2acic.cmo library/decl_kinds.cmo kernel/declarations.cmi \
-    library/declare.cmi kernel/environ.cmi pretyping/evd.cmi \
-    library/global.cmi kernel/inductive.cmi library/lib.cmi \
-    library/libnames.cmi library/libobject.cmi kernel/names.cmi \
-    library/nametab.cmi proofs/pfedit.cmi contrib/xml/proof2aproof.cmo \
-    proofs/proof_trees.cmi kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi \
-    contrib/xml/unshare.cmi lib/util.cmi contrib/xml/xml.cmi \
-    contrib/xml/xmlcommand.cmi 
+    contrib/xml/cic2acic.cmo config/coq_config.cmi library/decl_kinds.cmo \
+    kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
+    pretyping/evd.cmi library/global.cmi kernel/inductive.cmi \
+    parsing/lexer.cmi library/lib.cmi library/libnames.cmi \
+    library/libobject.cmi kernel/names.cmi library/nametab.cmi \
+    proofs/pfedit.cmi contrib/xml/proof2aproof.cmo proofs/proof_trees.cmi \
+    pretyping/recordops.cmi kernel/sign.cmi proofs/tacmach.cmi \
+    kernel/term.cmi contrib/xml/unshare.cmi lib/util.cmi toplevel/vernac.cmi \
+    contrib/xml/xml.cmi contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlcommand.cmx: contrib/xml/acic.cmx contrib/xml/acic2Xml.cmx \
-    contrib/xml/cic2acic.cmx library/decl_kinds.cmx kernel/declarations.cmx \
-    library/declare.cmx kernel/environ.cmx pretyping/evd.cmx \
-    library/global.cmx kernel/inductive.cmx library/lib.cmx \
-    library/libnames.cmx library/libobject.cmx kernel/names.cmx \
-    library/nametab.cmx proofs/pfedit.cmx contrib/xml/proof2aproof.cmx \
-    proofs/proof_trees.cmx kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx \
-    contrib/xml/unshare.cmx lib/util.cmx contrib/xml/xml.cmx \
-    contrib/xml/xmlcommand.cmi 
+    contrib/xml/cic2acic.cmx config/coq_config.cmx library/decl_kinds.cmx \
+    kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
+    pretyping/evd.cmx library/global.cmx kernel/inductive.cmx \
+    parsing/lexer.cmx library/lib.cmx library/libnames.cmx \
+    library/libobject.cmx kernel/names.cmx library/nametab.cmx \
+    proofs/pfedit.cmx contrib/xml/proof2aproof.cmx proofs/proof_trees.cmx \
+    pretyping/recordops.cmx kernel/sign.cmx proofs/tacmach.cmx \
+    kernel/term.cmx contrib/xml/unshare.cmx lib/util.cmx toplevel/vernac.cmx \
+    contrib/xml/xml.cmx contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlentries.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
-    parsing/extend.cmi interp/genarg.cmi parsing/pcoq.cmi lib/pp.cmi \
-    lib/util.cmi toplevel/vernacinterp.cmi contrib/xml/xmlcommand.cmi 
+    parsing/extend.cmi interp/genarg.cmi library/nametab.cmi parsing/pcoq.cmi \
+    lib/pp.cmi lib/util.cmi toplevel/vernacinterp.cmi \
+    contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlentries.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
-    parsing/extend.cmx interp/genarg.cmx parsing/pcoq.cmx lib/pp.cmx \
-    lib/util.cmx toplevel/vernacinterp.cmx contrib/xml/xmlcommand.cmx 
+    parsing/extend.cmx interp/genarg.cmx library/nametab.cmx parsing/pcoq.cmx \
+    lib/pp.cmx lib/util.cmx toplevel/vernacinterp.cmx \
+    contrib/xml/xmlcommand.cmx 
 ide/utils/configwin.cmo: ide/utils/configwin_ihm.cmo \
     ide/utils/configwin_types.cmo ide/utils/configwin.cmi 
 ide/utils/configwin.cmx: ide/utils/configwin_ihm.cmx \
