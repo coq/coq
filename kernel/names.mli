@@ -111,12 +111,20 @@ module Spset  : Set.S with type elt = section_path
 module Sppred : Predicate.S with type elt = section_path
 module Spmap  : Map.S with type key = section_path
 
-(*s Specific paths for declarations *)
+(*s********************************************************************)
+(* type of global reference *)
+
 type variable = section_path
 type constant = section_path
 type inductive = section_path * int
 type constructor = inductive * int
 type mutual_inductive = section_path
+
+type global_reference =
+  | VarRef of section_path
+  | ConstRef of constant
+  | IndRef of inductive
+  | ConstructRef of constructor
 
 (* Hash-consing *)
 val hcons_names : unit ->

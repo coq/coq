@@ -11,9 +11,6 @@
 open Util
 open Pp
 open Names
-open Libobject
-open Declarations
-open Term
 
 (*s qualified names *)
 type qualid = dir_path * identifier

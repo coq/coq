@@ -58,15 +58,6 @@ let family_of_sort = function
   | Type _ -> InType
 
 (********************************************************************)
-(* type of global reference *)
-
-type global_reference =
-  | VarRef of section_path
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
-
-(********************************************************************)
 (*       Constructions as implemented                               *)
 (********************************************************************)
 

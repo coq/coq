@@ -8,6 +8,6 @@
 
 (* $Id$ *)
 
-open Term
+open Names
 
 val objdef_declare : global_reference -> unit

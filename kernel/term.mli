@@ -64,15 +64,6 @@ type ('constr, 'types) cofixpoint =
 end 
 
 (*s*******************************************************************)
-(* type of global reference *)
-
-type global_reference =
-  | VarRef of section_path
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
-
-(*s*******************************************************************)
 (* The type of constructions *)
 
 type constr

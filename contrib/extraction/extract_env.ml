@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Names
 open Term
 open Lib
 open Extraction

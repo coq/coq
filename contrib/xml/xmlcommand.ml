@@ -702,20 +702,21 @@ let pp_cmds_of_inner_types inner_types target_uri =
 let print sp fn =
  let module D = Declarations in
  let module G = Global in
- let module N = Nametab in
+ let module N = Names in
+ let module Nt = Nametab in
  let module T = Term in
  let module X = Xml in
-  let (_,id) = N.repr_qualid sp in
+  let (_,id) = Nt.repr_qualid sp in
   let glob_ref = Nametab.locate sp in
   let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
   reset_ids () ;
   let inner_types = ref [] in
   let sp,tag,pp_cmds =
    match glob_ref with
-      T.VarRef sp ->
+      N.VarRef sp ->
        let (body,typ) = G.lookup_named id in
         sp,Variable,print_variable id body (T.body_of_type typ) env inner_types
-    | T.ConstRef sp ->
+    | N.ConstRef sp ->
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant sp in
        let hyps = string_list_of_named_context_list hyps in
@@ -726,12 +727,12 @@ let print sp fn =
             None ->   print_axiom id typ [] hyps env inner_types
           | Some c -> print_definition id c typ [] hyps env inner_types
         end
-    | T.IndRef (sp,_) ->
+    | N.IndRef (sp,_) ->
        let {D.mind_packets=packs ; D.mind_hyps=hyps} = G.lookup_mind sp in
         let hyps = string_list_of_named_context_list hyps in
          sp,Inductive,
           print_mutual_inductive packs [] hyps env inner_types
-    | T.ConstructRef _ ->
+    | N.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
    Xml.pp pp_cmds fn ;

@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 (*i*)
+open Names
 open Term
 open Pattern
 (*i*)

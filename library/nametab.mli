@@ -12,7 +12,6 @@
 open Util
 open Pp
 open Names
-open Term
 (*i*)
 
 (*s This module contains the table for globalization, which associates global
