@@ -115,9 +115,9 @@ let comment_start_pos = ref 0
 
 let blank = [' ' '\010' '\013' '\009' '\012']
 let firstchar = 
-  ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
 let identchar = 
-  ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
    '\'' '0'-'9']
 let symbolchar = ['!' '$' '%' '&' '*' '+' ',' '@' '^' '#']
 let extrachar = symbolchar | ['\\' '/' '-' '<' '>' '|' ':' '?' '=' '~']
@@ -129,14 +129,21 @@ let bin_literal = '0' ['b' 'B'] ['0'-'1']+
 rule token = parse
   | blank+ 
       { token lexbuf }
+  | "$" identchar* 
+      { ("METAIDENT",Lexing.lexeme lexbuf) }
   | firstchar identchar* 
       { let s = Lexing.lexeme lexbuf in
 	if is_keyword s then ("",s) else ("IDENT",s) }
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { ("INT", Lexing.lexeme lexbuf) }
-  | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";"| "`" | "()" | "'("
+  | "(" | ")" | "[" | "]" | "{" | "}" | "_" | ";"| "`" | "()" | "'("
   | "->" | "\\/" | "/\\" | "|-" | ":=" | "<->" | extrachar
       { ("", Lexing.lexeme lexbuf) }
+  | "." blank
+      { ("", ".") }
+  | "." firstchar identchar* 
+      { let s = Lexing.lexeme lexbuf in
+	("FIELD", String.sub s 1 (String.length s - 1)) }
   | ('\\'(symbolchar | '\\' | '-' | '>' | '|' | ':' | '?' | '=' | '<' | '~')+ |
      '/' (symbolchar | '/'  | '-' | '>' | '|' | ':' | '?' | '=' | '<' | '~')+ |
      '-' (symbolchar | '\\' | '/' | '-' | '|' | ':' | '?' | '=' | '<' | '~')+ |
@@ -252,7 +259,7 @@ let func cs =
 let is_ident s =
   String.length s > 0 &&
   (match s.[0] with
-     | '$' | 'A'..'Z' | 'a'..'z' | '\192'..'\214' | '\216'..'\246' 
+     | 'A'..'Z' | 'a'..'z' | '\192'..'\214' | '\216'..'\246' 
      | '\248'..'\255' -> true
      | _ -> false)
 
