@@ -118,8 +118,8 @@ let rec extract_msig env v mp = function
 	(l,Spec s) :: (extract_msig env v mp msig)
       end
   | (l,SPBmodule {msb_modtype=mtb}) :: msig -> 
-(*      let mpo = Some (MPdot (mp,l)) in  *)
-      (l,Smodule (extract_mtb env v None (* mpo *) mtb)) :: (extract_msig env v mp msig)
+(*i      let mpo = Some (MPdot (mp,l)) in  i*)
+      (l,Smodule (extract_mtb env v None (*i mpo i*) mtb)) :: (extract_msig env v mp msig)
   | (l,SPBmodtype mtb) :: msig -> 
       (l,Smodtype (extract_mtb env v None mtb)) :: (extract_msig env v mp msig)
 
@@ -335,7 +335,7 @@ let extraction_library m =
 	let struc = 
 	  let env = Global.env () in
 	  let select l (mp,meb) = 
-	    if in_mp v mp (* mp est long -> in_mp peut etre sans long_mp *)
+	    if in_mp v mp (* [mp] est long -> [in_mp] peut etre sans [long_mp] *)
 	    then (mp, unpack (extract_meb env v (Some mp) true meb)) :: l 
 	    else l
 	  in 
@@ -371,7 +371,7 @@ let recursive_extraction_library m =
 	let struc = 
 	  let env = Global.env () in
 	  let select l (mp,meb) = 
-	    if in_mp v mp (* mp est long -> in_mp peut etre sans long_mp *)
+	    if in_mp v mp (* [mp] est long -> [in_mp] peut etre sans [long_mp] *)
 	    then (mp, unpack (extract_meb env v (Some mp) true meb)) :: l 
 	    else l
 	  in 
