@@ -314,11 +314,15 @@ let find_common_hyps_then_abstract c env hyps' hyps =
 	 (env,c))
 *)
 
+let rec quantify_extra_hyps c = function
+  | (id,None,t)::hyps -> mkNamedLambda id t (quantify_extra_hyps c hyps)
+  | (_,Some _,_)::hyps -> quantify_extra_hyps c hyps
+  | [] -> c
+
 let rec find_common_hyps_then_abstract c env hyps' = function
   | (id,_,_ as d) :: hyps when occur_decl env d hyps' ->
       find_common_hyps_then_abstract c (Environ.push_named_decl d env) hyps' hyps
-  | hyps ->
-      Environ.it_mkNamedLambda_or_LetIn c (List.rev hyps)
+  | hyps -> quantify_extra_hyps c hyps
 
 let find_common_hyps_then_abstract c env hyps' hyps =
   find_common_hyps_then_abstract c env hyps' (List.rev hyps)
