@@ -37,7 +37,8 @@ val general_s_rewrite_in :
 val add_relation :
  constr_expr -> constr_expr -> constr_expr option -> constr_expr option -> unit
 
-val add_setoid : constr_expr -> constr_expr -> constr_expr -> unit
+val add_setoid :
+ Names.identifier -> constr_expr -> constr_expr -> constr_expr -> unit
 
 val new_named_morphism :
  Names.identifier -> constr_expr -> morphism_signature option -> unit
