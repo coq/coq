@@ -19,8 +19,22 @@
 
 (* CONFIGURATION PARAMETERS *)
 
-(*CSC: was false*)
-let verbose = ref true;; (* always set to true during a "Print XML All" *)
+let verbose = ref false;; (* always set to true during a "Print XML All" *)
+
+(* HOOKS *)
+let print_proof_tree, set_print_proof_tree =
+ let print_proof_tree = ref (fun _ _ _ _ _ _ -> None) in
+  (fun () -> !print_proof_tree),
+   (fun f ->
+     print_proof_tree :=
+     fun
+      curi sigma0 pf proof_tree_to_constr proof_tree_to_flattened_proof_tree
+      constr_to_ids
+     ->
+      Some
+       (f curi sigma0 pf proof_tree_to_constr
+        proof_tree_to_flattened_proof_tree constr_to_ids))
+;;
 
 (* UTILITY FUNCTIONS *)
 
@@ -219,14 +233,15 @@ let print_object uri obj sigma proof_tree_infos filename =
      None -> ()
    | Some (sigma0,proof_tree,proof_tree_to_constr,
            proof_tree_to_flattened_proof_tree) ->
-(*CSC: bug in V8
       let xmlprooftree =
-       ProofTree2Xml.print_proof_tree
+       print_proof_tree ()
         uri sigma0 proof_tree proof_tree_to_constr
         proof_tree_to_flattened_proof_tree constr_to_ids
       in
-       pp xmlprooftree (prooftree_filename_of_filename filename)
-*) ()
+       match xmlprooftree with
+          None -> ()
+        | Some xmlprooftree ->
+           pp xmlprooftree (prooftree_filename_of_filename filename)
 ;;
 
 let string_list_of_named_context_list =

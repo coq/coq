@@ -189,3 +189,7 @@ Pp.ppnl (Pp.(++) (Pp.str
       X.xml_nempty "ProofTree" ["of",curi] (aux pf [])
    >]
 ;;
+
+
+(* Hook registration *)
+Xmlcommand.set_print_proof_tree print_proof_tree;;
