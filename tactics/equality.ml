@@ -189,7 +189,7 @@ type sigma_type = {
   proj2 : constr;
   elim  : constr;
   intro : constr;
-  ex    : constr }
+  typ   : constr }
 
 let mmk = make_module_marker [ "Prelude"; "Logic_Type"; "Specif"; "Logic" ]
 
@@ -678,14 +678,14 @@ let build_sigma_set () =
     proj2 = constant ["Specif"] "projS2";
     elim = constant ["Specif"] "sigS_rec";
     intro = constant ["Specif"] "existS";
-    ex = constant ["Specif"] "sigS" }
+    typ = constant ["Specif"] "sigS" }
 
 let build_sigma_type () =
   { proj1 = constant ["Specif"] "projT1";
     proj2 = constant ["Specif"] "projT2";
     elim = constant ["Specif"] "sigT_rec";
     intro = constant ["Specif"] "existT";
-    ex = constant ["Specif"] "sigT" }
+    typ = constant ["Specif"] "sigT" }
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
@@ -711,7 +711,7 @@ let find_sigma_data s =
 
 let make_tuple env sigma (prev_lind,rterm,rty) lind =
   assert (dependent (mkRel lind) rty);
-  let {intro = exist_term; ex = sig_term} =
+  let {intro = exist_term; typ = sig_term} =
     find_sigma_data (get_sort_of env sigma rty) in
   let a = type_of env sigma (mkRel lind) in
   let na = fst (lookup_rel_type lind env) in
@@ -760,7 +760,7 @@ let minimal_free_rels env sigma (c,cty) =
  *)
 
 let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
-  let { ex = exist_term } = find_sigma_data sort_of_ty in 
+  let { intro = exist_term } = find_sigma_data sort_of_ty in 
   let rec sigrec_clausale_forme siglen ty =
     if siglen = 0 then
       (* We obtain the components dependent in dFLT by matching *)
