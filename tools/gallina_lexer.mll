@@ -22,8 +22,8 @@
 
 }
 
-let space = [' ' '\t' '\n']
-let enddot = '.' (' ' | '\t' | '\n' | eof)
+let space = [' ' '\t' '\n' '\r']
+let enddot = '.' (' ' | '\t' | '\n' | '\r' | eof)
 
 rule action = parse
   | "Theorem" space { print "Theorem "; body lexbuf; 
