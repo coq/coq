@@ -23,6 +23,8 @@ let add_keyword,is_keyword =
       "Prop"; "Set"; "Type" ];
   (fun s -> Hashtbl.add table s ()),
   (fun s -> try Hashtbl.find table s; true with Not_found -> false)
+
+let find_keyword s = if is_keyword s then s else raise Not_found
       
 let char_for_backslash =
   match Sys.os_type with

@@ -5,6 +5,7 @@
 open Pp
 open Names
 open Term
+open Sign
 (*i*)
 
 val gencompr  : path_kind -> Coqast.t -> std_ppcmds

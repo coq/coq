@@ -2,8 +2,9 @@
 (* $Id$ *)
 
 (*i*)
-open Term
 open Names
+open Term
+open Sign
 (*i*)
 
 (* Translation of terms into syntax trees. Used for pretty-printing. *)
