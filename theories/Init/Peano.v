@@ -199,4 +199,3 @@ Infix NONA 5 ">" gt : nat_scope.
 V7only [
 End nat_scope.
 ].
-Delimits Scope nat_scope with N.
