@@ -215,7 +215,6 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
   let idps = List.map fst ps in
   let allnames =  idstruc::idps@(List.map (fun (id,_,_) -> id) fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
-  if occur_fields idstruc fs then error "A record cannot be recursive";
   (* Now, younger decl in params and fields is on top *)
   let params,fields = typecheck_params_and_fields ps fs in
 (*  let args =  List.map mkVar idps in*)
