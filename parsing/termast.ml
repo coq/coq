@@ -383,6 +383,8 @@ let rec ast_of_pattern env = function
 
   | PMeta (Some n) -> ope("META",[num n])
   | PMeta None -> ope("ISEVAR",[])
+  | PFix f -> ast_of_raw (Detyping.detype [] env (mkFix f))
+  | PCoFix c -> ast_of_raw (Detyping.detype [] env (mkCoFix c))
 	
 and ast_of_patopt env = function
   | None -> (str "SYNTH")

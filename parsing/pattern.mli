@@ -18,6 +18,8 @@ type constr_pattern =
   | PSort of Rawterm.rawsort
   | PMeta of int option
   | PCase of constr_pattern option * constr_pattern * constr_pattern array
+  | PFix of fixpoint
+  | PCoFix of cofixpoint
 
 val occur_meta_pattern : constr_pattern -> bool
 

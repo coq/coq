@@ -18,6 +18,8 @@ type constr_pattern =
   | PSort of rawsort
   | PMeta of int option
   | PCase of constr_pattern option * constr_pattern * constr_pattern array
+  | PFix of fixpoint
+  | PCoFix of cofixpoint
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
@@ -29,7 +31,7 @@ let rec occur_meta_pattern = function
       (occur_meta_pattern p) or
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
   | PMeta _ | PSoApp _ -> true
-  | PVar _ | PRef _ | PRel _ | PSort _   -> false
+  | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
 type constr_label =
   | ConstNode of section_path
@@ -58,7 +60,8 @@ let rec head_pattern_bound t =
     | PRef r                -> label_of_ref r
     | PVar id               -> VarNode id
     | PRel _ | PMeta _ | PSoApp _  | PSort _ -> raise BoundPattern
-    | PBinder(BLambda,_,_,_) -> anomaly "head_pattern_bound: not a type"
+    | PBinder(BLambda,_,_,_) | PFix _ | PCoFix _ ->
+      anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
   | IsConst (sp,_) -> ConstNode sp
@@ -179,10 +182,9 @@ let matches_core convert pat c =
 	  (* On ne teste pas le prédicat *)
 	  array_fold_left2 (sorec stk) (sorec stk sigma a1 a2)
 	    br1 br2
-
-      | _,(IsFix _ | IsCoFix _) ->
-	  error "somatch: not implemented"
-
+      (* À faire *)
+      |	PFix f0, IsFix f1 when f0 = f1 -> sigma
+      |	PCoFix c0, IsCoFix c1 when c0 = c1 -> sigma
       | _ -> raise PatternMatchingFailure
 
   in 
@@ -312,7 +314,8 @@ let rec pattern_of_constr t =
     | IsMutCase (ci,p,a,br) ->
 	PCase (Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)
-    | IsFix _ | IsCoFix _ ->
+    | IsFix f -> PFix f
+    | IsCoFix _ ->
 	error "pattern_of_constr: (co)fix currently not supported"
     | IsXtra _   -> anomaly "No longer supported"
 
