@@ -130,9 +130,12 @@ let parse_args () =
 	image := f; parse (cfiles,args) rem
     | "-image" :: [] ->
 	usage ()
-    | "-libdir" :: _ :: rem -> warning "option -libdir deprecated\n"; parse rem
+    | "-libdir" :: _ :: rem ->
+        print_string "Warning: option -libdir deprecated\n"; flush stdout;
+        parse (cfiles,args) rem
     | ("-db"|"-debugger") :: rem ->
-        warning "option -db/-debugger deprecated\n"; parse rem
+        print_string "Warning: option -db/-debugger deprecated\n";flush stdout;
+        parse (cfiles,args) rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
     | ("-I"|"-include"|"-outputstate"
