@@ -1449,7 +1449,7 @@ let _ =
 		 in 
 		 error msg
 	     | None -> ());
-	  solve_nth n (Tacinterp.vernac_interp tcom);
+	  solve_nth n (Tacinterp.interp tcom);
 	  print_subgoals();
           (* in case a strict subtree was completed, 
               go back to the top of the prooftree *) 
