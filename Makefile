@@ -1294,21 +1294,20 @@ ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
 
 GRAMMARNEEDEDCMO=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
-  lib/dyn.cmo lib/options.cmo \
-  lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
+  lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
+  lib/rtree.cmo \
   $(KERNEL) \
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
-  library/goptions.cmo library/decl_kinds.cmo \
-  library/global.cmo \
+  library/goptions.cmo library/decl_kinds.cmo library/global.cmo \
   pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
+  proofs/tacexpr.cmo \
   interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
   parsing/coqast.cmo parsing/ast.cmo \
   parsing/ast.cmo parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
   parsing/egrammar.cmo \
-  proofs/tacexpr.cmo
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
@@ -1322,6 +1321,10 @@ GRAMMARSCMO=\
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 parsing/grammar.cma: $(GRAMMARCMO)
+	$(SHOW)'Testing $@'
+	@touch test.ml4
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
+	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
