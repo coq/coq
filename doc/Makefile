@@ -17,7 +17,7 @@
 DOCCOQTOP=$(COQBIN)/coqtop #.byte
 DOCCOQC=$(COQBIN)/coqc
 COQTOP=`$(DOCCOQC) -where`
-COQTEX=$(COQBIN)/coq-tex -image $(DOCCOQTOP) -v -sl -small
+COQTEX=$(COQBIN)/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
 #COQWEBSTY=$(HOME)/lib/tex/
 COQWEBSTY=/usr/share/texmf/tex/latex/misc/
 HEVEALIB=/usr/local/lib/hevea
@@ -48,7 +48,7 @@ COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
   RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-ide.tex \
-  coqide.eps RefMan-add.tex RefMan-modr.tex \
+  coqide.eps coqide-queries.eps RefMan-add.tex RefMan-modr.tex \
   $(REFMANCOQTEXFILES) 
 
 REFMAN=Reference-Manual
@@ -94,10 +94,6 @@ all-html: Tutorial.v.html Reference-Manual.html # Library.html Changes.v.html
 #version
 version.tex: Makefile
 	echo "\newcommand{\coqversion}{$(VERSION)}" > version.tex
-
-#image coqide
-coqide.eps: coqide.png
-	pngtopnm coqide.png | pnmtops -equalpixels -noturn -rle > coqide.eps
 
 
 # dvips et dviselect existent sur loupiac
@@ -202,7 +198,7 @@ cleanall: clean clean-html
 # Implicit rules
 #########################
 
-.SUFFIXES: .dvi .tex .v.tex .ps .pdf
+.SUFFIXES: .dvi .tex .v.tex .ps .pdf .eps .png
 
 .tex.dvi:
 	$(LATEX) $<
@@ -217,6 +213,10 @@ cleanall: clean clean-html
 
 .dvi.ps:
 	dvips -o $@ $<
+
+%.eps: %.png
+	pngtopnm $< | pnmtops -equalpixels -noturn -rle > $@
+
 
 
 ##########################
@@ -290,21 +290,12 @@ Tutorial.v.pdf: ./title.tex Tutorial.v.tex
 Reference-Manual.ps: Reference-Manual.dvi
 
 Reference-Manual.dvi: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
-	#rm -f Reference-Manual.sh
 	$(LATEX) Reference-Manual
-	#rm Reference-Manual.sh
 	$(BIBTEX) Reference-Manual
-	$(LATEX) Reference-Manual
-	#rm Reference-Manual.sh
-	$(BIBTEX) Reference-Manual
-	$(LATEX) Reference-Manual
-	#rm Reference-Manual.sh
 	$(MAKEINDEX) Reference-Manual
 	$(MAKEINDEX) Reference-Manual.tacidx -o Reference-Manual.tacind
 	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind
 	$(MAKEINDEX) Reference-Manual.erridx -o Reference-Manual.errind
-	$(LATEX) Reference-Manual
-	#rm Reference-Manual.sh
 	$(LATEX) Reference-Manual
 
 Reference-Manual.pdf: Reference-Manual.dvi

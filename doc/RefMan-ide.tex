@@ -105,9 +105,50 @@ arguments.
 
 \section{Queries}
 
+\begin{figure}[t]
+\begin{center}
+%HEVEA\imgsrc{coqide-queries.png}
+%BEGIN LATEX
+\ifx\pdfoutput\undefined   % si on est pas en pdflatex
+\includegraphics[width=1.0\textwidth]{coqide-queries.eps}
+\else
+\includegraphics[width=1.0\textwidth]{coqide-queries.png}
+\fi
+%END LATEX
+\end{center}
+\caption{Coqide main screen}
+\label{fig:querywindow}
+\end{figure}
+
+
+We call \emph{query} any vernacular command that do not change the
+current state, such as \verb|Check|, \verb|SearchAbout|, etc. Those
+commands are of course useless during compilation of a file, hence
+should not be included in scripts. To run such commands without
+writing them in the script, \coqide{} offers another input window
+called the \emph{query window}. This window can be displayed on
+demand, either by using the \texttt{Window} menu, or directly using
+shortcuts given in the \texttt{Queries} menu. Indeed, with \coqide{}
+the simplest way to perform a \texttt{SearchAbout} on some identifier
+is to select it using the mouse, and pressing \verb|F2|. This will
+both make appear the query window ans run the \texttt{SearchAbout} in
+it, displaying the result. Shortcuts \verb|F3| and \verb|F4| are for
+\verb|Check| and \verb|Print| respectively.
+Figure~\ref{fig:querywindow} displays the query window after selection
+of the word ``mult'' in the script windows, and pressing \verb|F4| to
+print its definition.
+
 \section{Compilation}
 
-\section{Preferences}
+The \verb|Compile| menu offers direct commands to compile the current
+buffer, compile a set of files using \verb|make|, and creating a
+\verb|makefile| using \verb|coq_makefile|.
+
+TODO: \verb|Next error| !
+
+\section{Customizations}
+
+Menu \texttt{Edit/Preferences}.
 
 auto save, auto revert, delays
 
