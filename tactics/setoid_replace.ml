@@ -637,7 +637,8 @@ let morphism_theory_id_of_morphism_proof_id id =
 
 (* apply_to_rels c [l1 ; ... ; ln] returns (c Rel1 ... reln) *)
 let apply_to_rels c l =
- applistc c (Util.list_map_i (fun i _ -> mkRel i) 1 l)
+ let len = List.length l in
+  applistc c (Util.list_map_i (fun i _ -> mkRel (len - i)) 0 l)
 
 let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
  let env = Global.env() in
