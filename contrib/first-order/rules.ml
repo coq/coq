@@ -35,10 +35,9 @@ let wrap n b tacrec seq gls=
       match nc with
 	  []->anomaly "Not the expected number of hyps"
 	| ((id,_,typ) as nd)::q->  
-	    if occur_var env id (pf_concl gls) then
-	      seq
-	    else if List.exists (occur_var_in_decl env id) ctx then
-	      seq 
+	    if occur_var env id (pf_concl gls) || 
+	      List.exists (occur_var_in_decl env id) ctx then
+		(aux (i-1) q (nd::ctx))
 	    else
 	      add_left (VarRef id,typ) (aux (i-1) q (nd::ctx)) true gls in
   let seq1=aux n nc [] in
