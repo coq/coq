@@ -1232,6 +1232,7 @@ install-library8:
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
+	$(MKDIR) $(FULLCOQLIB)/user-contrib
 
 install-library7:
 	$(MKDIR) $(FULLCOQLIB)
