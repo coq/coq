@@ -356,6 +356,7 @@ let rec pretype tycon env isevars lvar lmeta = function
   | RLetIn(loc,name,c1,c2)      ->
       let j = pretype empty_tycon env isevars lvar lmeta c1 in
       let var = (name,j.uj_val,j.uj_type) in
+        let tycon = option_app (lift 1) tycon in
       let j' = pretype tycon (push_rel_def var env) isevars lvar lmeta c2 in
       { uj_val = mkLetIn (name, j.uj_val, j.uj_type, j'.uj_val) ;
 	uj_type = type_app (subst1 j.uj_val) j'.uj_type }

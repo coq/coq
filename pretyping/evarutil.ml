@@ -475,3 +475,4 @@ let split_tycon loc env isevars = function
 
 let valcon_of_tycon x = x
 
+let lift_tycon = option_app (lift 1)
