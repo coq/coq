@@ -1,6 +1,6 @@
 Name: coq
 Version: 7.0
-Release: 1
+Release: 2
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
@@ -51,4 +51,5 @@ if [ -L /usr/local/lib/ocaml ]; then
 fi
 
 %files
+%defattr(-,root,root)
 m4_include(coq.list)
