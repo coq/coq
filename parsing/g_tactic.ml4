@@ -240,6 +240,10 @@ GEXTEND Gram
   eliminator:
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
+  with_names:
+    [ [ "as"; "["; ids = LIST1 (LIST0 Prim.ident) SEP "|"; "]" -> ids
+      | -> [] ] ]
+  ;
   simple_tactic:
     [ [ 
       (* Basic tactics *)
@@ -294,13 +298,13 @@ GEXTEND Gram
 
       (* Derived basic tactics *)
       | IDENT "Induction"; h = quantified_hypothesis -> TacOldInduction h
-      | IDENT "NewInduction"; c = induction_arg; el = OPT eliminator ->
-          TacNewInduction (c,el)
+      | IDENT "NewInduction"; c = induction_arg; el = OPT eliminator;
+          ids = with_names -> TacNewInduction (c,el,ids)
       | IDENT "Double"; IDENT "Induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "Destruct"; h = quantified_hypothesis -> TacOldDestruct h
-      | IDENT "NewDestruct"; c = induction_arg; el = OPT eliminator ->
-          TacNewDestruct (c,el)
+      | IDENT "NewDestruct"; c = induction_arg; el = OPT eliminator; 
+          ids = with_names -> TacNewDestruct (c,el,ids)
       | IDENT "Decompose"; IDENT "Record" ; c = constr -> TacDecomposeAnd c
       | IDENT "Decompose"; IDENT "Sum"; c = constr -> TacDecomposeOr c
       | IDENT "Decompose"; "["; l = LIST1 qualid_or_ltac_ref; "]"; c = constr

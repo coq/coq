@@ -503,13 +503,15 @@ let rec glob_atomic lf ist = function
 
   (* Derived basic tactics *)
   | TacOldInduction h -> TacOldInduction (glob_quantified_hypothesis ist h)
-  | TacNewInduction (c,cbo) ->
+  | TacNewInduction (c,cbo,ids) ->
       TacNewInduction (glob_induction_arg ist c,
-               option_app (glob_constr_with_bindings ist) cbo)
+               option_app (glob_constr_with_bindings ist) cbo,
+               List.map (List.map (glob_ident lf ist)) ids)
   | TacOldDestruct h -> TacOldDestruct (glob_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo) ->
+  | TacNewDestruct (c,cbo,ids) ->
       TacNewDestruct (glob_induction_arg ist c,
-               option_app (glob_constr_with_bindings ist) cbo)
+               option_app (glob_constr_with_bindings ist) cbo,
+               List.map (List.map (glob_ident lf ist)) ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = glob_quantified_hypothesis ist h1 in
       let h2 = glob_quantified_hypothesis ist h2 in
@@ -1638,13 +1640,15 @@ and interp_atomic ist = function
 
   (* Derived basic tactics *)
   | TacOldInduction h -> h_old_induction (interp_quantified_hypothesis ist h)
-  | TacNewInduction (c,cbo) ->
+  | TacNewInduction (c,cbo,ids) ->
       h_new_induction (interp_induction_arg ist c)
         (option_app (interp_constr_with_bindings ist) cbo)
+        (List.map (List.map (ident_interp ist)) ids)
   | TacOldDestruct h -> h_old_destruct (interp_quantified_hypothesis ist h)
-  | TacNewDestruct (c,cbo) -> 
+  | TacNewDestruct (c,cbo,ids) -> 
       h_new_destruct (interp_induction_arg ist c)
         (option_app (interp_constr_with_bindings ist) cbo)
+        (List.map (List.map (ident_interp ist)) ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in

@@ -1001,6 +1001,12 @@ let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl =
 
  *)
 
+let check_unused_names names =
+  if names <> [] & Options.is_verbose () then
+    let s,are = if List.tl names = [] then " "," is" else "s "," are" in
+    let names = String.concat " " (List.map string_of_id names) in
+    warning ("Name"^s^names^are^" unused")
+
 (* We recompute recargs because we are not sure the elimination lemma
 comes from a canonically generated one *)
 (* dead code ?
@@ -1017,7 +1023,8 @@ let rec recargs indpath env sigma t =
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
 *)
-let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
+let induct_discharge old_style mind statuslists cname destopt avoid ra names gl
+  =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
@@ -1054,30 +1061,43 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
           else avoid in
       cname, hyprecname, avoid
   in
-  let rec peel_tac = function
+  let rec peel_tac ra names gl = match ra with
     | true :: ra' ->
 		 (* For lstatus but _buggy_: if intro_gen renames
 		    hyprecname differently (because it already exists
 		    in goal, then hypothesis associated to None in
 		    lstatus will be moved at a wrong place *)
-	if !tophyp=None then
-	  tophyp := Some (next_ident_away hyprecname avoid);
+        let recvar,hyprec,names = match names with
+          | [] ->
+              next_ident_away recvarname avoid,
+              next_ident_away hyprecname avoid,
+              []
+          | [id] ->
+              id, next_ident_away (add_prefix "IH" id) avoid, []
+          | id1::id2::names -> (id1,id2,names) in
+	if !tophyp=None then tophyp := Some hyprec;
         tclTHENLIST
-	  [ intro_gen (IntroBasedOn (recvarname,avoid)) destopt false;
-	    intro_gen (IntroBasedOn (hyprecname,avoid)) None false;
-	    peel_tac ra']
+	  [ intro_gen (IntroMustBe (recvar)) destopt false;
+	    intro_gen (IntroMustBe (hyprec)) None false;
+	    peel_tac ra' names ] gl
     | false :: ra' ->
-	tclTHEN (intro_gen (IntroAvoid avoid) destopt false)
-	  (peel_tac ra')
-    | [] -> tclIDTAC
+        let introstyle,names = match names with
+          | [] -> IntroAvoid avoid, []
+          | id::names -> IntroMustBe id,names in
+	tclTHEN (intro_gen introstyle destopt false)
+	  (peel_tac ra' names) gl
+    | [] ->
+        check_unused_names names;
+        tclIDTAC gl
   in
-  let evaluated_peel_tac = peel_tac ra in (* because side effect on tophyp *)
-  let newlstatus = (* if some IH has taken place at the top of hyps *)
-    List.map (function (hyp,None) -> (hyp,!tophyp) | x -> x) lstatus
+  let intros_move lstatus =
+    let newlstatus = (* if some IH has taken place at the top of hyps *)
+      List.map (function (hyp,None) -> (hyp,!tophyp) | x -> x) lstatus in
+    intros_move newlstatus
   in 
-  tclTHENLIST [ evaluated_peel_tac;
+  tclTHENLIST [ peel_tac ra names;
 		intros_rmove rstatus;
-		intros_move newlstatus ] gl
+		intros_move lstatus ] gl
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
@@ -1249,6 +1269,13 @@ let induction_tac varname typ (elimc,elimt,lbindelimc) gl =
     make_clenv_binding wc (mkCast (elimc,elimt),elimt) lbindelimc in
   elimination_clause_scheme kONT elimclause indclause gl
 
+let compute_induction_names n names =
+  let names = if names = [] then Array.make n [] else Array.of_list names in
+  if Array.length names <> n then
+    errorlabstrm "induction_from_context"
+      (str "Expect " ++ int n ++ str " lists of names");
+  names
+
 let is_indhyp p n t =
   let c,_ = decompose_app t in 
   match kind_of_term c with
@@ -1283,7 +1310,7 @@ let compute_elim_signature_and_roughly_check elimt mind =
   let _,elimt3 = decompose_prod_n npred elimt2 in
   Array.of_list (check_elim elimt3 0)
 
-let induction_from_context isrec style elim hyp0 gl =
+let induction_from_context isrec style elim hyp0 names gl =
   (*test suivant sans doute inutile car refait par le letin_tac*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" 
@@ -1305,6 +1332,7 @@ let induction_from_context isrec style elim hyp0 gl =
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let lr = compute_elim_signature_and_roughly_check elimt mind in
+  let names = compute_induction_names (Array.length lr) names in
   let dephyps = List.map (fun (id,_,_) -> id) deps in
   let args =
     List.fold_left
@@ -1329,39 +1357,40 @@ let induction_from_context isrec style elim hyp0 gl =
        	(tclTHEN
 	   (induction_tac hyp0 typ0 (elimc,elimt,lbindelimc))
 	   (thin (hyp0::indhyps)))
-       	(Array.map
+       	(array_map2
 	   (induct_discharge style mind statlists hyp0 lhyp0
-              (List.rev dephyps)) lr)
+              (List.rev dephyps)) lr names)
     ]
     gl
 
-let induction_with_atomization_of_ind_arg isrec elim hyp0 =
+let induction_with_atomization_of_ind_arg isrec elim names hyp0 =
   tclTHEN
     (atomize_param_of_ind hyp0)
-    (induction_from_context isrec false elim hyp0)
+    (induction_from_context isrec false elim hyp0 names)
 
 (* This is Induction since V7 ("natural" induction both in quantified
    premisses and introduced ones) *)
-let new_induct_gen isrec elim c gl =
+let new_induct_gen isrec elim names c gl =
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context())) ->
-	induction_with_atomization_of_ind_arg isrec elim id gl
+	induction_with_atomization_of_ind_arg isrec elim names id gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	tclTHEN
 	  (letin_tac true (Name id) c (None,[]))
-	  (induction_with_atomization_of_ind_arg isrec elim id) gl
+	  (induction_with_atomization_of_ind_arg isrec elim names id) gl
 
-let new_induct_destruct isrec c elim = match c with
-  | ElimOnConstr c -> new_induct_gen isrec elim c
+let new_induct_destruct isrec c elim names = match c with
+  | ElimOnConstr c -> new_induct_gen isrec elim names c
   | ElimOnAnonHyp n ->
-      tclTHEN (intros_until_n n) (tclLAST_HYP (new_induct_gen isrec elim))
+      tclTHEN (intros_until_n n)
+        (tclLAST_HYP (new_induct_gen isrec elim names))
   (* Identifier apart because id can be quantified in goal and not typable *)
   | ElimOnIdent (_,id) ->
       tclTHEN (tclTRY (intros_until_id id))
-        (new_induct_gen isrec elim (mkVar id))
+        (new_induct_gen isrec elim names (mkVar id))
 
 let new_induct = new_induct_destruct true
 let new_destruct = new_induct_destruct false
@@ -1377,7 +1406,7 @@ let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
 let old_induct_id s =
-  tclORELSE (raw_induct s) (induction_from_context true true None s)
+  tclORELSE (raw_induct s) (induction_from_context true true None s [])
 let old_induct_nodep = raw_induct_nodep
 
 let old_induct = function

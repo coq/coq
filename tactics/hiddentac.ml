@@ -52,10 +52,10 @@ let h_instantiate n c =
 (* Derived basic tactics *)
 let h_old_induction h = abstract_tactic (TacOldInduction h) (old_induct h)
 let h_old_destruct h  = abstract_tactic (TacOldDestruct h) (old_destruct h)
-let h_new_induction c e =
-  abstract_tactic (TacNewInduction (c,e)) (new_induct c e)
-let h_new_destruct c e =
-  abstract_tactic (TacNewDestruct (c,e)) (new_destruct c e)
+let h_new_induction c e idl =
+  abstract_tactic (TacNewInduction (c,e,idl)) (new_induct c e idl)
+let h_new_destruct c e idl =
+  abstract_tactic (TacNewDestruct (c,e,idl)) (new_destruct c e idl)
 let h_specialize n (c,bl as d) =
   abstract_tactic (TacSpecialize (n,d)) (new_hyp n c bl)
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)
@@ -94,29 +94,7 @@ let h_symmetry       = abstract_tactic TacSymmetry intros_symmetry
 let h_transitivity c =
   abstract_tactic (TacTransitivity c) (intros_transitivity c)
 
-(*
-let h_clear ids         = v_clear  [(Clause (List.map (fun x -> InHyp x) ids))]
-let h_move dep id1 id2  = 
- (if dep then v_move else v_move_dep) [Identifier id1;Identifier id2]
-let h_reflexivity       = v_reflexivity   []
-let h_symmetry          = v_symmetry      []
-let h_one_constructor i = v_constructor [(Integer i)]
-let h_any_constructor   = v_constructor []
-let h_transitivity c    = v_transitivity [(Constr c)]
-let h_simplest_left     = v_left [(Cbindings [])]
-let h_simplest_right    = v_right [(Cbindings [])]
-let h_split     c       = v_split [(Constr c);(Cbindings [])]
-*)
-
 let h_simplest_apply c  = h_apply (c,NoBindings)
 let h_simplest_elim c   = h_elim (c,NoBindings) None
-(*
-let h_inductionInt  i   = v_induction[(Integer i)]
-let h_inductionId   id  = v_induction[(Identifier id)]
-*)
 let h_simplest_case   c = h_case (c,NoBindings)
-(*
-let h_destructInt  i    = v_destruct [(Integer i)]
-let h_destructId   id   = v_destruct [(Identifier id)]
-*)
 

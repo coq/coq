@@ -99,6 +99,12 @@ let pr_bindings prc = function
 
 let pr_with_bindings prc (c,bl) = prc c ++ hv 0 (pr_bindings prc bl)
 
+let pr_with_names = function
+  | [] -> mt ()
+  | ids -> spc () ++ str "as [" ++
+      hv 0 (prlist_with_sep (fun () -> spc () ++ str "| ")
+              (prlist_with_sep spc pr_id) ids ++ str "]")
+
 let rec pr_intro_pattern = function
   | IntroOrAndPattern pll ->
       str "[" ++
@@ -383,14 +389,14 @@ and pr_atom1 = function
   (* Derived basic tactics *)
   | TacOldInduction h ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (h,e) ->
+  | TacNewInduction (h,e,ids) ->
       hov 1 (str "NewInduction" ++ spc () ++ pr_induction_arg pr_constr h ++
-        pr_opt pr_eliminator e)
+        pr_opt pr_eliminator e ++ pr_with_names ids)
   | TacOldDestruct h ->
       hov 1 (str "Destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (h,e) ->
+  | TacNewDestruct (h,e,ids) ->
       hov 1 (str "NewDestruct" ++ spc () ++ pr_induction_arg pr_constr h ++
-        pr_opt pr_eliminator e)
+        pr_opt pr_eliminator e ++ pr_with_names ids)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "Double Induction" ++ 
