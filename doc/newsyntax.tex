@@ -46,6 +46,7 @@
 \maketitle
 
 \section{Grammaire des tactiques}
+\label{tacticsyntax}
 
 La réflexion de la rénovation de la syntaxe des tactiques n'est pas
 encore aussi poussée que pour les termes (section~\ref{constrsyntax}),
@@ -69,7 +70,8 @@ souhaite suivre.
 \begin{rulebox}
 \DEFNT{tactic}
        \NT{tactic} ~\TERM{\&} ~\NT{tactic}            & \RNAME{then}
-\nlsep \TERM{[} ~\NT{tactic} SEP ~\TERM{|} \TERM{]}   & \RNAME{par}
+\nlsep \TERM{[} ~\NT{tactic}~\TERM{|}~...
+      ~\TERM{|}~\NT{tactic}~\TERM{]}                  & \RNAME{par}
 \nlsep \NT{ident} ~\STAR{\NT{tactic-arg}}   ~~~       & \RNAME{apply}
 \nlsep \TERM{fun} ~....                               & \RNAME{function}
 \nlsep \NT{simple-tactic}
@@ -79,12 +81,122 @@ souhaite suivre.
 \nlsep \TERM{'} ~\NT{tactic}
 \SEPDEF
 \DEFNT{simple-tactic}
-       \TERM{Apply} ~...
+       \TERM{Apply} ~\NT{binding-term}
+\nlsep \NT{elim-kw} ~\NT{binding-term}
+\nlsep \NT{elim-kw} ~\NT{binding-term} ~\TERM{using} ~\NT{binding-term}
+\nlsep \TERM{Intros} ~\NT{intro-pattern}
+\SEPDEF
+\DEFNT{elim-kw}
+       \TERM{Elim} ~\mid~ \TERM{Case} ~\mid~ \TERM{Induction}
+       ~\mid~ \TERM{Destruct}
 \end{rulebox}
 \caption{Grammaire des tactiques}
 \label{tactic}
 \end{figure}
 
+
+\subsection{Arguments de tactiques}
+
+La syntaxe actuelle des arguments de tactiques est que l'on parse par
+défaut une expression de tactique, ou bien l'on parse un terme si
+celui-ci est préfixé par \TERM{'} (sauf dans le cas des
+variables). Cela est gênant pour les utilisateurs qui doivent écrire
+des \TERM{'} pour leurs tactiques.
+
+À mon avis, il n'est pas souhaitable pour l'utilisateur de l'obliger à
+marquer une différence entre les tactiques ``primitives'' (en fait
+``système'') et les tactiques définies par Ltac. En effet, on se
+dirige inévitablement vers une situation où il existera des librairies
+de tactiques et il va devenir difficile de savoir facilement s'il faut
+ou non mettre des \TERM{'}.
+
+
+
+\subsection{Bindings}
+
+Dans un premier temps, les ``bindings'' sont toujours considérés comme
+une construction du langage des tactiques, mais il est intéressant de
+prévoir l'extension de ce procédé aux termes, puisqu'il s'agit
+simplement de construire un n{\oe}ud d'application dans lequel on
+donne les arguments par nom ou par position, les autres restant à
+inférer. Le principal point est de trouver comment combiner de manière
+uniforme ce procédé avec les arguments implicites.
+
+Il est toutefois important de réfléchir dès maintenant à une syntaxe
+pour éviter de rechanger encore la syntaxe.
+
+Intégrer la notation \TERM{with} aux termes peut poser des problèmes
+puisque ce mot-clé est utilisé pour le filtrage: comment parser (en
+LL(1)) l'expression:
+\begin{verbatim}
+Cases x with y ...
+\end{verbatim}
+
+Soit on trouve un autre mot-clé, soit on joue avec les niveaus de
+priorité en obligeant a parenthéser le \TERM{with} des ``bindings'':
+\begin{verbatim}
+Cases (x with y) with (C z) => ...
+\end{verbatim}
+ce qui introduit un constructeur moralement équivalent à une
+application situé à une priorité totalement différente (les
+``bindings'' seraient au plus haut niveau alors que l'application est
+à un niveau bas).
+
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{binding-term}
+       \NT{constr} ~\TERM{with} ~\STAR{\NT{binding}}
+\SEPDEF
+\DEFNT{binding}
+       \NT{constr}
+\end{rulebox}
+\caption{Grammaire des bindings}
+\label{bindings}
+\end{figure}
+
+\subsection{Enregistrements}
+
+Il faudrait aménager la syntaxe des enregistrements dans l'optique
+d'avoir des enregistrements anonymes (termes de première classe), même
+si pour l'instant, on ne dispose que d'enregistrements définis a
+toplevel.
+
+Exemple de syntaxe pour les types d'enregistrements:
+\begin{verbatim}
+{ x1 : A1;
+  x2 : A2(x1);
+  _ : T;   (* Pas de projection disponible *)
+  y;       (* Type infere *)
+  ...      (* ; optionnel pour le dernier champ *)
+}
+\end{verbatim}
+
+Exemple de syntaxe pour le constructeur:
+\begin{verbatim}
+{ x1 = O;
+  x2 : A2(x1) = v1;
+  _ = v2;
+  ...
+}
+\end{verbatim}
+Quant aux dépendences, une convention pourrait être de considérer les
+champs non annotés par le type comme non dépendants.
+
+Plusieurs interrogations:
+\begin{itemize}
+\item l'ordre des champs doit-il être respecté ?
+  sinon, que faire pour les champs sans projection ?
+\item autorise-t-on \texttt{v1} a mentionner \texttt{x1} (comme dans
+  la définition d'un module), ce qui se comporterait comme si on avait
+  écrit \texttt{v1} à la place. Cela pourrait être une autre manière
+  de déclarer les dépendences
+\end{itemize}
+
+La notation pointée pour les projections pose un problème de parsing,
+sauf si l'on a une convention lexicale qui discrimine les noms de
+modules des projections et identificateurs: \texttt{x.y.z} peut être
+compris comme \texttt{(x.y).z} ou texttt{x.(y.z)}.
 
 
 \section{Grammaire des termes}
