@@ -165,15 +165,18 @@ let build_dependent_inductive env ((ind, params) as indf) =
 
 (* builds the arity of an elimination predicate in sort [s] *)
 
-let make_arity env dep indf s =
+let make_arity_signature env dep indf =
   let (arsign,_) = get_arity env indf in
   if dep then
     (* We need names everywhere *)
-    it_mkProd_or_LetIn_name env
-      (mkArrow (build_dependent_inductive env indf) (mkSort s)) arsign
+    name_context env
+      ((Anonymous,None,build_dependent_inductive env indf)::arsign)
+      (* Costly: would be better to name one for all at definition time *)
   else
     (* No need to enforce names *)
-    it_mkProd_or_LetIn (mkSort s) arsign
+    arsign
+
+let make_arity env dep indf s = mkArity (make_arity_signature env dep indf, s)
 
 (* [p] is the predicate and [cs] a constructor summary *)
 let build_branch_type env dep p cs =

@@ -54,6 +54,8 @@ val get_constructors :
 val get_arity : env -> inductive * constr list -> Sign.arity
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive * constr list -> constr
+val make_arity_signature :
+  env -> bool -> inductive * constr list -> Sign.rel_context
 val make_arity : env -> bool -> inductive * constr list -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 
