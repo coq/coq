@@ -330,7 +330,7 @@ Ring.
 Omega.
 Omega.
 LetTac q := `b+a/c-(a+b*c)/c`.
-Apply (Zcases q); Intros.
+Apply (Zcase_sign q); Intros.
 Assert `c*q=0`.
 Rewrite H4; Ring.
 Rewrite H5 in H3.
@@ -366,3 +366,35 @@ Pattern 1 `a+b*c`; Rewrite H0.
 Ring.
 Save.
 
+Lemma Z_mult_div_ge : (a,b:Z)`b>0`->`b*(a/b) <= a`.
+Proof.
+Intros a b bPos.
+Generalize (Z_div_mod_eq `a` ? bPos); Intros.
+Generalize (Z_mod_lt `a` ? bPos); Intros.
+Pattern 2 a; Rewrite H.
+Omega.
+Save.
+
+Lemma Z_mod_same : (a:Z)`a>0`->`a%a=0`.
+Proof.
+Intros a aPos.
+Generalize (Z_mod_plus `0` `1` a aPos).
+Replace `0+1*a` with `a`.
+Intros.
+Rewrite H.
+Compute.
+Trivial.
+Ring.
+Save.
+
+Lemma Z_div_same : (a:Z)`a>0`->`a/a=1`.
+Proof.
+Intros a aPos.
+Generalize (Z_div_plus `0` `1` a aPos).
+Replace `0+1*a` with `a`.
+Intros.
+Rewrite H.
+Compute.
+Trivial.
+Ring.
+Save.

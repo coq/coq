@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require ZArith.
+Require ZArithRing.
 Require Omega.
 Require Wf_nat.
 
@@ -254,10 +255,10 @@ Qed.
 
 Unset Implicit Arguments.
 
-Lemma Zcases : (x:Z)(P:Prop)
- (`x=0`->P)->
- (`x>0`->P)->
- (`x<0`->P)->P.
+Lemma Zcase_sign : (x:Z)(P:Prop)
+ (`x=0` -> P) ->
+ (`x>0` -> P) ->
+ (`x<0` -> P) -> P.
 Proof.
 Intros x P Hzero Hpos Hneg.
 Induction x.
@@ -266,3 +267,17 @@ Apply Hpos; Apply POS_gt_ZERO.
 Apply Hneg; Apply NEG_lt_ZERO.
 Save.
 
+Lemma sqr_pos : (x:Z)`x*x >= 0`.
+Proof.
+Intro x.
+Apply (Zcase_sign x `x*x >= 0`).
+Intros H; Rewrite H; Omega.
+Intros H; Replace `0` with `0*0`.
+Apply Zge_Zmult_pos_compat; Omega.
+Omega.
+Intros H; Replace `0` with `0*0`.
+Replace `x*x` with `(-x)*(-x)`.
+Apply Zge_Zmult_pos_compat; Omega.
+Ring.
+Omega.
+Save.
