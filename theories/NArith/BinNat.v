@@ -107,7 +107,7 @@ Rewrite add_sym; Reflexivity.
 Qed.
 
 Theorem Nplus_assoc : 
-  (n,m,p:entier)(Nplus (Nplus n m) p)=(Nplus n (Nplus m p)).
+  (n,m,p:entier)(Nplus n (Nplus m p))=(Nplus (Nplus n m) p).
 Proof.
 Intros.
 NewDestruct n; Try Reflexivity.
@@ -163,7 +163,7 @@ Rewrite times_sym; Reflexivity.
 Qed.
 
 Theorem Nmult_assoc : 
-  (n,m,p:entier)(Nmult (Nmult n m) p)=(Nmult n (Nmult m p)).
+  (n,m,p:entier)(Nmult n (Nmult m p))=(Nmult (Nmult n m) p).
 Proof.
 Intros.
 NewDestruct n; Try Reflexivity.

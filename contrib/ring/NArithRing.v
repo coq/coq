@@ -30,9 +30,9 @@ Save.
 Definition NTheory : (Semi_Ring_Theory Nplus Nmult (Pos xH) Nul Neq).
   Split.
     Apply Nplus_comm.
-    Symmetry; Apply Nplus_assoc.
+    Apply Nplus_assoc.
     Apply Nmult_comm.
-    Symmetry; Apply Nmult_assoc.
+    Apply Nmult_assoc.
     Apply Nplus_0_l.
     Apply Nmult_1_l.
     Apply Nmult_0_l.
