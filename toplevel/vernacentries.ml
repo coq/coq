@@ -1146,7 +1146,7 @@ let interp c = match c with
   | VernacFixpoint l -> vernac_fixpoint l
   | VernacCoFixpoint l -> vernac_cofixpoint l
   | VernacScheme l -> vernac_scheme l
-  | VernacSymbol (id,t,a,e,s,m,am) -> vernac_symbol id t a e s m am
+  | VernacSymbol (id,t,a,e,s,m,am,l) -> vernac_symbol id t a e s m am l
   | VernacRules (ctx,subs,rules) -> vernac_rules ctx subs rules
 
   (* Modules *)

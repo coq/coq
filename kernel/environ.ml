@@ -36,8 +36,7 @@ type globals = {
   env_rules : rules_body list KNmap.t;
   env_all_rules : (constr * constr) list;
   env_cime : Cime.env;
-  env_prec : precedence;
-  env_status : status KNmap.t }
+  env_prec : precedence }
 
 type env = {
   env_globals       : globals;
@@ -54,8 +53,7 @@ let empty_env = {
     env_rules = KNmap.empty;
     env_all_rules = [];
     env_cime = Cime.empty_env;
-    env_prec = empty_prec;
-    env_status = KNmap.empty };
+    env_prec = empty_prec };
   env_named_context = empty_named_context;
   env_rel_context = empty_rel_context;
   env_universes = initial_universes }
@@ -143,11 +141,18 @@ let lookup_constant kn env =
 
 let add_constant kn cb env =
   let globals = env.env_globals in
-  let new_constants = KNmap.add kn cb globals.env_constants in
+  let new_constants = KNmap.add kn cb globals.env_constants
+  and new_prec =
+    match cb.const_symb with
+      | Some si ->
+	  List.fold_left (add_prec_list kn) globals.env_prec si.symb_prec_defs
+      | _ -> globals.env_prec
+  in
   let new_cime = Cime.add_symbol new_constants globals.env_cime in
   let new_globals =
     { globals with 
-	env_constants = new_constants; env_cime = new_cime } in 
+	env_constants = new_constants; env_cime = new_cime;
+	env_prec = new_prec } in 
   { env with env_globals = new_globals }
 
 (* Rewrite rules *)

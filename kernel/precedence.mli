@@ -31,3 +31,7 @@ exception Incompatible
 
 val add_equiv : precedence -> kernel_name -> kernel_name -> precedence
 val add_greater : precedence -> kernel_name -> kernel_name -> precedence
+
+type prec_def = result * kernel_name list
+
+val add_prec_list : kernel_name -> precedence -> prec_def -> precedence

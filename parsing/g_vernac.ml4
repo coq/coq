@@ -20,6 +20,7 @@ open Vernac_
 open Prim
 open Symbol
 open Decl_kinds
+open Precedence
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders (idl,c) = List.map (fun id -> (id,c)) idl
@@ -188,23 +189,27 @@ GEXTEND Gram
 	  VernacAssumption (stre, bl)
 
       (* Symbols and rules *)
-      | IDENT "Symbol"; id = base_ident; (a,e) = symb_arity; s = symb_status;
-	  m = symb_mons; am = symb_antimons; ":"; t = constr ->
-	    VernacSymbol (id,t,a,e,s,m,am)
+      | IDENT "Symbol"; id = base_ident;
+	  (aopt,e) = symb_arity; sopt = symb_status;
+	  m = symb_mons; am = symb_antimons;
+	  l = symb_prec_list; ":"; t = constr ->
+	    VernacSymbol (id,t,aopt,e,sopt,m,am,l)
       | IDENT "Rules"; ctx = rew_rules_ctx; subs = rew_rules_subs;
        "{"; rules = ne_rew_rules_list; "}" -> VernacRules (ctx,subs,rules)
       ] ]
   ;
   symb_arity:
-    [ [ IDENT "C" -> 2,C
-      | IDENT "AC" -> 2,AC
-      | n = natural -> n,Free ] ]
+    [ [ IDENT "C" -> None,C
+      | IDENT "AC" -> None,AC
+      | n = natural -> Some n,Free
+      | -> None,Free ] ]
   ;
   symb_status:
-    [ [ IDENT "Lex" -> Lex
-      | IDENT "Mul" -> Mul
-      | IDENT "RLex" -> RevLex
-      | IDENT "Lex"; "("; l = LIST1 mul_status SEP ","; ")" -> Comb l ] ]
+    [ [ IDENT "Lex" -> Some Lex
+      | IDENT "Mul" -> Some Mul
+      | IDENT "RLex" -> Some RevLex
+      | IDENT "Lex"; "("; l = LIST1 mul_status SEP ","; ")" -> Some (Comb l)
+      | -> None ] ]
   ;
   mul_status:
     [ [ n = natural -> [n]
@@ -217,6 +222,17 @@ GEXTEND Gram
   symb_antimons:
     [ [ IDENT "Antimon"; "("; l = LIST1 natural SEP ","; ")" -> l
       | -> [] ] ]
+  ;
+  symb_prec_list:
+    [ [ l = LIST0 symb_prec -> l ] ]
+  ;
+  symb_prec:
+    [ [ o = symb_prec_op; l = LIST1 base_ident -> (o,l) ] ]
+  ;
+  symb_prec_op:
+    [ [ "<" -> Smaller
+      | "=" -> Equivalent
+      | ">" -> Greater ] ]
   ;
   rew_rules_ctx:
     [ [ "["; l = LIST1 rew_rules_var_decl SEP ";"; "]" -> List.flatten l

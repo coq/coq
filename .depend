@@ -30,10 +30,10 @@ kernel/closure.cmi: kernel/cime.cmi kernel/declarations.cmi \
 kernel/conv_oracle.cmi: kernel/closure.cmi kernel/names.cmi 
 kernel/cooking.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
-kernel/declarations.cmi: kernel/names.cmi lib/rtree.cmi kernel/sign.cmi \
+kernel/declarations.cmi: kernel/names.cmi kernel/precedence.cmi lib/rtree.cmi \
+    kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi kernel/univ.cmi 
+kernel/entries.cmi: kernel/names.cmi kernel/precedence.cmi kernel/sign.cmi \
     kernel/symbol.cmi kernel/term.cmi kernel/univ.cmi 
-kernel/entries.cmi: kernel/names.cmi kernel/sign.cmi kernel/symbol.cmi \
-    kernel/term.cmi kernel/univ.cmi 
 kernel/environ.cmi: kernel/cime.cmi kernel/declarations.cmi kernel/names.cmi \
     kernel/precedence.cmi kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi \
     kernel/univ.cmi 
@@ -62,6 +62,7 @@ kernel/safe_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
 kernel/sign.cmi: kernel/names.cmi kernel/term.cmi 
 kernel/subtyping.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/univ.cmi 
+kernel/symbol.cmi: kernel/precedence.cmi 
 kernel/term.cmi: kernel/names.cmi kernel/univ.cmi 
 kernel/term_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/inductive.cmi \
@@ -295,8 +296,8 @@ toplevel/class.cmi: pretyping/classops.cmi library/decl_kinds.cmo \
 toplevel/command.cmi: library/decl_kinds.cmo library/declare.cmi \
     kernel/entries.cmi kernel/environ.cmi pretyping/evd.cmi \
     library/libnames.cmi library/library.cmi kernel/names.cmi \
-    library/nametab.cmi pretyping/rawterm.cmi kernel/symbol.cmi \
-    proofs/tacexpr.cmo pretyping/tacred.cmi kernel/term.cmi \
+    library/nametab.cmi kernel/precedence.cmi pretyping/rawterm.cmi \
+    kernel/symbol.cmi proofs/tacexpr.cmo pretyping/tacred.cmi kernel/term.cmi \
     interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 toplevel/coqinit.cmi: kernel/names.cmi 
 toplevel/discharge.cmi: kernel/names.cmi 
@@ -772,10 +773,10 @@ kernel/declarations.cmo: lib/debug.cmi kernel/names.cmi lib/rtree.cmi \
 kernel/declarations.cmx: lib/debug.cmx kernel/names.cmx lib/rtree.cmx \
     kernel/sign.cmx kernel/symbol.cmx kernel/term.cmx kernel/univ.cmx \
     lib/util.cmx kernel/declarations.cmi 
-kernel/entries.cmo: kernel/names.cmi kernel/sign.cmi kernel/symbol.cmi \
-    kernel/term.cmi kernel/univ.cmi kernel/entries.cmi 
-kernel/entries.cmx: kernel/names.cmx kernel/sign.cmx kernel/symbol.cmx \
-    kernel/term.cmx kernel/univ.cmx kernel/entries.cmi 
+kernel/entries.cmo: kernel/names.cmi kernel/precedence.cmi kernel/sign.cmi \
+    kernel/symbol.cmi kernel/term.cmi kernel/univ.cmi kernel/entries.cmi 
+kernel/entries.cmx: kernel/names.cmx kernel/precedence.cmx kernel/sign.cmx \
+    kernel/symbol.cmx kernel/term.cmx kernel/univ.cmx kernel/entries.cmi 
 kernel/environ.cmo: kernel/cime.cmi kernel/declarations.cmi kernel/names.cmi \
     kernel/precedence.cmi kernel/sign.cmi kernel/symbol.cmi kernel/term.cmi \
     kernel/univ.cmi lib/util.cmi kernel/environ.cmi 
@@ -876,8 +877,8 @@ kernel/subtyping.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/inductive.cmx kernel/modops.cmx kernel/names.cmx \
     kernel/reduction.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
     kernel/subtyping.cmi 
-kernel/symbol.cmo: lib/util.cmi kernel/symbol.cmi 
-kernel/symbol.cmx: lib/util.cmx kernel/symbol.cmi 
+kernel/symbol.cmo: kernel/precedence.cmi lib/util.cmi kernel/symbol.cmi 
+kernel/symbol.cmx: kernel/precedence.cmx lib/util.cmx kernel/symbol.cmi 
 kernel/term.cmo: kernel/esubst.cmi lib/hashcons.cmi kernel/names.cmi \
     lib/pp.cmi kernel/univ.cmi lib/util.cmi kernel/term.cmi 
 kernel/term.cmx: kernel/esubst.cmx lib/hashcons.cmx kernel/names.cmx \
@@ -1183,13 +1184,13 @@ parsing/g_tactic.cmx: parsing/ast.cmx interp/genarg.cmx kernel/names.cmx \
 parsing/g_vernac.cmo: parsing/ast.cmi toplevel/class.cmi \
     library/decl_kinds.cmo interp/genarg.cmi library/goptions.cmi \
     kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
-    toplevel/recordobj.cmi kernel/symbol.cmi interp/topconstr.cmi \
-    lib/util.cmi toplevel/vernacexpr.cmo 
+    kernel/precedence.cmi toplevel/recordobj.cmi kernel/symbol.cmi \
+    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 parsing/g_vernac.cmx: parsing/ast.cmx toplevel/class.cmx \
     library/decl_kinds.cmx interp/genarg.cmx library/goptions.cmx \
     kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
-    toplevel/recordobj.cmx kernel/symbol.cmx interp/topconstr.cmx \
-    lib/util.cmx toplevel/vernacexpr.cmx 
+    kernel/precedence.cmx toplevel/recordobj.cmx kernel/symbol.cmx \
+    interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 parsing/g_zsyntax.cmo: parsing/ast.cmi lib/bignat.cmi parsing/coqast.cmi \
     parsing/esyntax.cmi parsing/extend.cmi library/libnames.cmi \
     kernel/names.cmi library/nametab.cmi parsing/pcoq.cmi lib/pp.cmi \
@@ -2112,10 +2113,10 @@ toplevel/command.cmo: toplevel/class.cmi interp/constrintern.cmi \
     library/nametab.cmi lib/options.cmi proofs/pfedit.cmi lib/pp.cmi \
     pretyping/pretyping.cmi parsing/printer.cmi proofs/proof_type.cmi \
     kernel/reduction.cmi pretyping/retyping.cmi kernel/safe_typing.cmi \
-    library/states.cmi interp/syntax_def.cmi proofs/tacmach.cmi \
-    pretyping/tacred.cmi kernel/term.cmi pretyping/termops.cmi \
-    interp/topconstr.cmi kernel/typeops.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo toplevel/command.cmi 
+    library/states.cmi kernel/symbol.cmi interp/syntax_def.cmi \
+    proofs/tacmach.cmi pretyping/tacred.cmi kernel/term.cmi \
+    pretyping/termops.cmi interp/topconstr.cmi kernel/typeops.cmi \
+    lib/util.cmi toplevel/vernacexpr.cmo toplevel/command.cmi 
 toplevel/command.cmx: toplevel/class.cmx interp/constrintern.cmx \
     library/decl_kinds.cmx kernel/declarations.cmx library/declare.cmx \
     kernel/entries.cmx kernel/environ.cmx pretyping/evarutil.cmx \
@@ -2126,10 +2127,10 @@ toplevel/command.cmx: toplevel/class.cmx interp/constrintern.cmx \
     library/nametab.cmx lib/options.cmx proofs/pfedit.cmx lib/pp.cmx \
     pretyping/pretyping.cmx parsing/printer.cmx proofs/proof_type.cmx \
     kernel/reduction.cmx pretyping/retyping.cmx kernel/safe_typing.cmx \
-    library/states.cmx interp/syntax_def.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx kernel/term.cmx pretyping/termops.cmx \
-    interp/topconstr.cmx kernel/typeops.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx toplevel/command.cmi 
+    library/states.cmx kernel/symbol.cmx interp/syntax_def.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx kernel/term.cmx \
+    pretyping/termops.cmx interp/topconstr.cmx kernel/typeops.cmx \
+    lib/util.cmx toplevel/vernacexpr.cmx toplevel/command.cmi 
 toplevel/coqinit.cmo: config/coq_config.cmi toplevel/mltop.cmi \
     library/nameops.cmi kernel/names.cmi lib/options.cmi lib/pp.cmi \
     lib/system.cmi toplevel/toplevel.cmi toplevel/vernac.cmi \
@@ -2317,13 +2318,13 @@ toplevel/vernacentries.cmx: tactics/auto.cmx toplevel/class.cmx \
 toplevel/vernacexpr.cmo: library/decl_kinds.cmo parsing/extend.cmi \
     interp/genarg.cmi library/goptions.cmi library/libnames.cmi \
     kernel/names.cmi library/nametab.cmi interp/ppextend.cmi \
-    pretyping/rawterm.cmi kernel/symbol.cmi proofs/tacexpr.cmo \
-    interp/topconstr.cmi lib/util.cmi 
+    kernel/precedence.cmi pretyping/rawterm.cmi kernel/symbol.cmi \
+    proofs/tacexpr.cmo interp/topconstr.cmi lib/util.cmi 
 toplevel/vernacexpr.cmx: library/decl_kinds.cmx parsing/extend.cmx \
     interp/genarg.cmx library/goptions.cmx library/libnames.cmx \
     kernel/names.cmx library/nametab.cmx interp/ppextend.cmx \
-    pretyping/rawterm.cmx kernel/symbol.cmx proofs/tacexpr.cmx \
-    interp/topconstr.cmx lib/util.cmx 
+    kernel/precedence.cmx pretyping/rawterm.cmx kernel/symbol.cmx \
+    proofs/tacexpr.cmx interp/topconstr.cmx lib/util.cmx 
 toplevel/vernacinterp.cmo: parsing/ast.cmi parsing/coqast.cmi \
     parsing/extend.cmi toplevel/himsg.cmi library/libnames.cmi \
     kernel/names.cmi lib/options.cmi lib/pp.cmi proofs/proof_type.cmi \

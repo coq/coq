@@ -37,6 +37,7 @@ open Indtypes
 open Vernacexpr
 open Decl_kinds
 open Pretyping
+open Symbol
 
 let mkLambdaCit =
   List.fold_right (fun (x,a) b -> mkLambdaC([dummy_loc,Name x],a,b))
@@ -156,10 +157,31 @@ let declare_assumption ident (local,kind) bl c =
         ConstRef kn
 
 (* Symbols *)
-let declare_symbol id t a e s m am =
+let interp_symb id =
+  let ce = CRef(Ident(dummy_loc,id)) and env = Global.env() in
+    match kind_of_term (interp_constr Evd.empty env ce) with
+      | Const kn ->
+	  if is_symbol (lookup_constant kn env) then kn
+	  else error "A precedence can be defined on symbols only."
+      | _ -> error "A precedence can be defined on symbols only."
+
+let interp_prec_def (op,l) = (op, List.map interp_symb l)
+
+let declare_symbol id t aopt e sopt m am l =
   let t = interp_type Evd.empty (Global.env()) t
-  and se = { symb_entry_arity = a; symb_entry_eqth = e; symb_entry_status = s;
-	     symb_entry_mons = m; symb_entry_antimons = am; } in
+  and prec_defs = List.map interp_prec_def l in
+  let a =
+    match aopt with
+      | Some a -> a
+      | None -> (match e with Free -> nb_prod t | _ -> 2)
+  and s =
+    match sopt with
+      | Some s -> s
+      | None -> (match e with Free -> Lex | _ -> Mul)
+  in
+  let se = { symb_entry_arity = a; symb_entry_eqth = e;
+	     symb_entry_status = s; symb_entry_mons = m;
+	     symb_entry_antimons = am; symb_entry_prec_defs = prec_defs } in
   let _ = declare_constant id (SymbolEntry (t,se),IsAssumption Definitional) in
     assumption_message id
 

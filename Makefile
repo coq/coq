@@ -94,8 +94,9 @@ LIBREP=\
 KERNEL=\
   lib/debug.cmo kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-  kernel/declarations.cmo kernel/symbol.cmo kernel/cime.cmo \
-  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
+  cime/orderings/finite_ord.cmo kernel/precedence.cmo \
+  kernel/symbol.cmo kernel/declarations.cmo kernel/cime.cmo \
+  kernel/environ.cmo \
   kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
   kernel/entries.cmo kernel/modops.cmo \
   kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
@@ -217,10 +218,10 @@ PARSERREQUIRES=\
   lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo lib/system.cmo \
   lib/bstack.cmo lib/edit.cmo lib/options.cmo lib/rtree.cmo lib/gset.cmo \
   lib/tlm.cmo kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-  kernel/term.cmo kernel/sign.cmo kernel/symbol.cmo library/decl_kinds.cmo \
-  kernel/declarations.cmo kernel/cime.cmo \
-  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
-  kernel/closure.cmo kernel/conv_oracle.cmo \
+  kernel/term.cmo kernel/sign.cmo \
+  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/symbol.cmo \
+  library/decl_kinds.cmo kernel/declarations.cmo kernel/cime.cmo \
+  kernel/environ.cmo kernel/closure.cmo kernel/conv_oracle.cmo \
   kernel/reduction.cmo kernel/modops.cmo kernel/type_errors.cmo \
   kernel/inductive.cmo kernel/typeops.cmo kernel/indtypes.cmo \
   kernel/cooking.cmo \
@@ -1062,9 +1063,9 @@ GRAMMARNEEDEDCMO=\
   lib/dyn.cmo lib/options.cmo \
   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
-  kernel/sign.cmo kernel/symbol.cmo library/decl_kinds.cmo \
-  kernel/declarations.cmo kernel/cime.cmo \
-  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
+  kernel/sign.cmo library/decl_kinds.cmo \
+  cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/symbol.cmo \
+  kernel/declarations.cmo kernel/cime.cmo kernel/environ.cmo \
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \

@@ -82,7 +82,7 @@ Hints Resolve n_Sn : core v62.
       O   => m 
   | (S p) => (S (plus p m)) end. *)
 
-Symbol plus 2 Lex : nat -> nat -> nat.
+Symbol plus : nat -> nat -> nat.
 
 Rules [x,y:nat] {
   (plus O x) => x;
@@ -119,6 +119,14 @@ Qed.
 Fixpoint  mult [n:nat] : nat -> nat := 
    [m:nat]Cases n of O => O 
                | (S p) => (plus m (mult p m)) end.
+
+(* Symbol mult > plus : nat -> nat -> nat.
+
+Rules [x,y:nat] {
+  (mult O x) => x;
+  (mult (S x) y) => (plus y (mult x y))
+}. *)
+
 Hint eq_mult : core v62 := Resolve (f_equal2 nat nat nat mult).
 
 Lemma mult_n_O : (n:nat) O=(mult n O).

@@ -82,6 +82,11 @@ let delta cb k =
     | Some si -> si.symb_mons.(k)
     | _ -> anomaly "delta"
 
+let prec_defs cb =
+  match cb.const_symb with
+    | Some si -> si.symb_prec_defs
+    | _ -> anomaly "prec_defs"
+
 (*s Rewrite rules *)
 
 type rules_body =

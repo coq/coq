@@ -119,22 +119,18 @@ let check_access env ar t =
 
 (* check that a symbol declaration is correct *)
 let check_symbol env t se =
-  let ar = se.symb_entry_arity
-  and eq = se.symb_entry_eqth
-  and st = se.symb_entry_status
-  and mons = se.symb_entry_mons
-  and antimons = se.symb_entry_mons in
+  let ar = se.symb_entry_arity and eq = se.symb_entry_eqth
+  and st = se.symb_entry_status and mons = se.symb_entry_mons
+  and antimons = se.symb_entry_mons and prec_defs = se.symb_entry_prec_defs in
     if nb_prod t < ar then error "Type not compatible with arity.";
     if not (check_eqth eq t) then
       error "Type not compatible with equational theory";
-    let deltas = check_mons ar mons antimons in
-    let accs = check_access env ar t in
-      { symb_arity = ar;
-	symb_eqth = eq;
-	symb_status = st;
-	symb_mons = deltas;
-	symb_termin = General_Schema;
-	symb_acc = accs }
+    let deltas = check_mons ar mons antimons
+    and accs = check_access env ar t in
+    { symb_arity = ar; symb_eqth = eq;
+      symb_status = st; symb_mons = deltas;
+      symb_termin = General_Schema; symb_acc = accs;
+      symb_prec_defs = prec_defs }
 
 (* say if a constr is an admissible RHS *)
 let is_wf_rhs env =

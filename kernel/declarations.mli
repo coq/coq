@@ -14,6 +14,7 @@ open Univ
 open Term
 open Sign
 open Symbol
+open Precedence
 (*i*)
 
 (* This module defines the internal representation of global
@@ -45,7 +46,7 @@ val arity : constant_body -> int
 val eqth : constant_body -> eqth
 val status : constant_body -> status
 val delta : constant_body -> int -> delta
-
+val prec_defs : constant_body -> prec_def list
 
 (*s Rewrite rules *)
 

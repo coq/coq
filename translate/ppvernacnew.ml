@@ -371,7 +371,7 @@ let rec pr_vernac = function
   | VernacScheme l -> hov 1 (str"Scheme" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"with") pr_onescheme l)
 
   (* Symbols and rewrite rules *)
-  | VernacSymbol (id,t,a,e,s,m,am) -> str"Symbol" (* TO DO *)
+  | VernacSymbol (id,t,a,e,s,m,am,l) -> str"Symbol" (* TO DO *)
   | VernacRules (ctx,subs,rules) -> str"Rules" (* TO DO *)
 
   (* Gallina extensions *)

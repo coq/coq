@@ -53,8 +53,16 @@ let extension s =
     | RevLex -> revlex_extension
     | Comb l -> comb_extension l
 
-(* structurally compare t and u *)
-let struct_compare t =
+(* for debugging *)
+let prcomp = function
+  | Equivalent -> print_string "="
+  | Less_than -> print_string "<"
+  | Greater_than -> print_string ">"
+  | Uncomparable -> print_string "#"
+  | _ -> print_string "?"
+
+(* check whether [t] is structurally greater than [u] *)
+let greater_than t =
   let rec greater_than_t u =
     if eq_constr t u then Equivalent
     else
@@ -67,7 +75,15 @@ let struct_compare t =
   and is_greater_than_t u = greater_than_t u <> Uncomparable
   in greater_than_t
 
+(* structurally compare t and u *)
+let struct_compare t u =
+  match greater_than t u with
+    | Uncomparable ->
+	(match greater_than u t with
+	   | Less_than -> Greater_than
+	   | x -> x)
+    | x -> x
+
 (* say if [vt] is structurally smaller than [vu] wrt status [s] *)
 let is_struct_smaller_vec s vt vu =
   extension s struct_compare vt vu = Less_than
-

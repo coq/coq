@@ -182,8 +182,9 @@ type vernac_expr =
   | VernacFixpoint of fixpoint_expr list
   | VernacCoFixpoint of cofixpoint_expr list
   | VernacScheme of (identifier * bool * reference * sort_expr) list
-  | VernacSymbol of identifier * constr_expr * int * eqth * status
-      * int list * int list
+  | VernacSymbol of identifier * constr_expr * int option * eqth
+      * status option * int list * int list
+      * (Precedence.result * identifier list) list
   | VernacRules of (identifier * constr_expr) list
       * (identifier * constr_expr) list * (constr_expr * constr_expr) list
 

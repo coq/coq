@@ -1,0 +1,105 @@
+*******************************************************************************
+*                                                                             *
+*                          COQ with Rewriting                                 *
+*                                                                             *
+*******************************************************************************
+
+If you have any problem, question or suggestion about this new extension of
+Coq, please contact Frederic Blanqui (blanqui@lix.polytechnique.fr).
+
+In this extension, you can declare special parameters called "symbols" that can
+later be defined by rewrite rules [1]. Then, a tactic called "Simpl_rew" allows
+you to simplify goals and hypothesis by using these rewrite rules.
+
+Rewriting uses CiME (http://cime.lri.fr/).
+
+-------------------------------------------------------------------------------
+Basic examples:
+-------------------------------------------------------------------------------
+
+Symbol plus AC : nat->nat->nat.
+
+Rules [x,y:nat] {
+  (plus O x) => x;
+  (plus (S x) y) => (S (plus x y))
+}.
+
+Symbol mult AC > plus : nat->nat->nat.
+
+Rules [x,y,z:nat] {
+  (mult O x) => O;
+  (mult (S x) y) => (plus y (mult x y));
+  (mult (plus x y) z) => (plus (mult x z) (mult y z))
+}.
+
+-------------------------------------------------------------------------------
+Declaring symbols that can be later defined by rewrite rules:
+-------------------------------------------------------------------------------
+
+"Symbol" identifier [arity] [status] [monotonic_args] [anti_monotonic_args]
+prec_def* ":" type
+
+arity ::= "C" | "AC" | positive_number
+
+status ::= "Lex" | "Mul" | "RLex" | comb
+
+comb ::= "Lex" "(" mul ("," mul)* ")"
+
+mul ::= positive_number | "Mul" positive_number+
+
+monotonic_args ::= "Mon" pos_seq
+
+anti_monotonic_args ::= "Antimon" pos_seq
+
+pos_seq ::= "(" positive_number ("," positive number)* ")"
+
+prec_def ::= prec name+
+
+prec ::= "<" | "=" | ">"
+
+NB:
+- if no arity is given, it is taken from the number of products in the type
+- if the arity is "C", the symbol is declared as binary and commutative
+- if the arity is "AC", the symbol is declared as binary, associative and
+commutative
+- if no status is given, it is "Mul" if its arity is "C" or "AC",
+otherwise it is "Lex"
+- "Rlex" means reverse lexicographic ordering
+
+-------------------------------------------------------------------------------
+Adding rules in the environment:
+-------------------------------------------------------------------------------
+
+"Rules" [decl (";" decl)*] "{" rule (";" rule)* "}"
+
+rule ::= term "=>" term
+
+decl ::= name ("," name)* ":" type
+
+NB:
+- left-hand sides must be algebraic, ie. a variable or of the form (f t1 .. tn)
+with f a symbol or a constructor and t1, .., tn algebraic
+- left-hand sides must be linear, ie. no variable must occur more than once
+- the added rules together with the rules of the environment must be locally
+confluent
+- the rules must satisfy the General Schema [1]
+
+-------------------------------------------------------------------------------
+Simplification tactic using rewriting:
+-------------------------------------------------------------------------------
+
+"Simpl_rew"
+
+-------------------------------------------------------------------------------
+Showing the rules declared in the environment:
+-------------------------------------------------------------------------------
+
+"Print" "Rules"
+
+-------------------------------------------------------------------------------
+References:
+-------------------------------------------------------------------------------
+
+[1] "Definitions by rewriting in the Calculus of Constructions" in Mathematical
+Structures in Computer Science (MSCS), 2003, to appear. A preliminary version
+is available at http://www.lix.polytechnique.fr/~blanqui/.

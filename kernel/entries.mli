@@ -14,6 +14,7 @@ open Univ
 open Term
 open Sign
 open Symbol
+open Precedence
 (*i*)
 
 (* This module defines the entry types for global declarations. This
@@ -66,7 +67,8 @@ type symbol_entry = {
   symb_entry_eqth : eqth;
   symb_entry_status : status;
   symb_entry_mons : int list;
-  symb_entry_antimons : int list }
+  symb_entry_antimons : int list;
+  symb_entry_prec_defs : prec_def list }
 
 type parameter_entry = types * bool
 

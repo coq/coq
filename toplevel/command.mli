@@ -50,8 +50,9 @@ val build_corecursive : cofixpoint_expr list -> unit
 
 val build_scheme : (identifier * bool * reference * rawsort) list -> unit
 
-val declare_symbol : identifier -> constr_expr -> int -> eqth -> status ->
-  int list -> int list -> unit
+val declare_symbol : identifier -> constr_expr -> int option -> eqth
+  -> status option -> int list -> int list
+  -> (Precedence.result * identifier list) list -> unit
 
 val declare_rules : (identifier * constr_expr) list ->
   (identifier * constr_expr) list -> (constr_expr * constr_expr) list -> unit

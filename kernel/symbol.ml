@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Precedence
 
 (* equational theories *)
 type eqth = Free | C | AC
@@ -55,4 +56,5 @@ type symbol_info = {
   symb_mons : delta array;
   symb_termin : termin;
   symb_acc : bool array;
+  symb_prec_defs : prec_def list;
 }

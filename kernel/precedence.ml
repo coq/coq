@@ -61,6 +61,19 @@ let are_uncomparable prec kn kn' =
 
 exception Incompatible = Finite_ord.Incompatible
 
-let add_equiv prec = Prec.add_equiv prec
-let add_greater prec = Prec.add_greater prec
+let add_equiv = Prec.add_equiv
+let add_greater = Prec.add_greater
 
+let add_smaller prec kn kn' = add_greater prec kn' kn
+
+let add_prec = function
+  | Equivalent -> add_equiv
+  | Smaller -> add_smaller
+  | Greater -> add_greater
+  | _ -> invalid_arg "add_prec"
+
+type prec_def = result * kernel_name list
+
+let add_prec_list kn prec (op,l) =
+  let f prec' kn' = add_prec op prec' kn kn' in
+  List.fold_left f prec l
