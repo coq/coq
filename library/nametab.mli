@@ -36,6 +36,7 @@ exception GlobalizationError of qualid
 
 (* Raises a globalization error *)
 val error_global_not_found_loc : loc -> qualid -> 'a
+val error_global_not_found     : qualid -> 'a
 
 (*s Names tables *)
 type cci_table = global_reference Idmap.t

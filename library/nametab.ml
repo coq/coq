@@ -32,6 +32,8 @@ exception GlobalizationError of qualid
 let error_global_not_found_loc loc q =
   Stdpp.raise_with_loc loc (GlobalizationError q)
 
+let error_global_not_found q = raise (GlobalizationError q)
+
 (*s Roots of the space of absolute names *)
 
 let roots = ref []
