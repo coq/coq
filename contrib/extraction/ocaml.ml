@@ -30,6 +30,28 @@ let pp_tuple f = function
 
 let space_if = function true -> [< 'sPC >] | false -> [<>]
 
+(* collect_lambda MLlam(id1,...MLlam(idn,t)...) = [id1;...;idn],t *)
+
+let collect_lambda = 
+  let rec collect acc = function
+    | MLlam(id,t) -> collect (id::acc) t
+    | x           -> acc,x
+  in 
+  collect []
+
+let rec rename_bvars avoid = function
+  | [] -> []
+  | id :: idl ->
+      let v = next_ident_away id avoid in 
+      v :: (rename_bvars (v::avoid) idl)
+
+let abst = function
+  | [] -> [< >]
+  | l  -> [< 'sTR"fun " ;
+             prlist_with_sep (fun  ()-> [< 'sTR" " >])
+      	       	       	     (fun id -> [< 'sTR(string_of_id id) >]) l ;
+             'sTR" ->" ; 'sPC >]
+
 (*s The pretty-printing functor. *)
 
 module Make = functor(P : Mlpp_param) -> struct
@@ -75,17 +97,14 @@ let rec pp_expr par env args =
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
-    | MLlam (id,a) -> 
-	failwith "todo"
-	(*i
+    | MLlam _ as a -> 
       	let fl,a' = collect_lambda a in
 	let fl = rename_bvars env fl in
-	let st = [< abst (List.rev fl) ; pp_rec false (fl@env) [] a' >] in
+	let st = [< abst (List.rev fl); pp_expr false (fl@env) [] a' >] in
 	if args = [] then
           [< open_par par; st; close_par par >]
         else
           apply [< 'sTR "("; st; 'sTR ")" >]
-        i*)
     | MLglob r -> 
 	apply (P.pp_global r)
     | MLcons (_,id,[]) ->
@@ -120,7 +139,7 @@ and pp_pat env pv = failwith "todo"
 
 and pp_fix par env f args = failwith "todo"
 
-let pp_ast = pp_expr false [] []
+let pp_ast a = hOV 0 (pp_expr false [] [] a)
 
 (*s Pretty-printing of inductive types declaration. *)
 
