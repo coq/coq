@@ -32,11 +32,11 @@ let prid id = pP [< 'sTR(string_of_id id) >]
 
 let prconst (sp,j) =
     pP [< 'sTR"#"; 'sTR(string_of_path sp); 
-	  'sTR"="; term0 (gLOB nil_sign) j.uj_val >]
+	  'sTR"="; prterm j.uj_val >]
 
 let prvar ((id,a)) =
     pP [< 'sTR"#" ; 'sTR(string_of_id id) ; 'sTR":" ; 
-	  term0 (gLOB nil_sign) a >]
+	  prterm a >]
 
 let genprj f j =
   let (c,t) = Termast.with_casts f j in [< c; 'sTR " : "; t >]
@@ -56,7 +56,7 @@ let prglls glls = pP(pr_glls glls)
 
 let prctxt ctxt = pP(pr_ctxt ctxt)
 
-let pproof p = pP(print_proof Evd.empty nil_sign p)
+let pproof p = pP(print_proof Evd.empty empty_var_context p)
 
 let prevd evd = pP(pr_decls evd)
 
