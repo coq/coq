@@ -792,8 +792,9 @@ let add_ml_decls prm decls =
 let rec expunge_fix_decls prm v c b = function 
   | [] -> b, [] 
   | Dglob (r, t) :: l when array_exists ((=) r) v -> 
-      let t = optimize_fix (normalize t) in 
-      (match t with 
+      let t = normalize t in 
+      let t' = optimize_fix t in 
+      (match t' with 
 	 | MLfix(_,_,c') when c=c' -> 
 	     let b',l = inline_glob r t l in 
 	     expunge_fix_decls prm v c (b || b' || List.mem r prm.to_appear) l 
@@ -807,20 +808,19 @@ let rec optimize prm = function
       if List.mem r prm.to_appear then d :: (optimize prm l) 
       else optimize prm l
   | Dglob (r,t) :: l ->
-      let t = optimize_fix (normalize t) in
-      (try optimize_Dfix prm r t l 
+      let t = normalize t in
+      let b,l = inline_glob r t l in 
+      let t' = optimize_fix t in
+      (try optimize_Dfix prm r t' b l 
       with Impossible -> 
-	let b,l = inline_glob r t l in 
 	if (b || prm.modular || List.mem r prm.to_appear) then 
-	  Dglob (r,t) :: (optimize prm l)
+	  Dglob (r,t') :: (optimize prm l)
 	else optimize prm l)
   | d :: l -> d :: (optimize prm l)
 
-and optimize_Dfix prm r t l = 
+and optimize_Dfix prm r t b l = 
   match t with 
     | MLfix (_, f, c) -> 
-	let b = not (inline r t) in 
-	let l = if b then l else List.map (subst_glob_decl r t) l in
 	if Array.length f = 1 then 
 	  if b then 
 	    Dfix ([|r|], c) :: (optimize prm l)
