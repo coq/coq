@@ -192,8 +192,10 @@ Syntax tactic
   | absurd [<<(Absurd $C)>>] -> ["Absurd " $C]
 
   | cut [<<(Cut $C)>>] -> ["Cut " $C]
-  | lettac [<<(LetTac $id $c (LETPATTERNS ($LIST $pl)))>>] -> 
-	["LetTac" [1 1] $id ":=" $c [1 1] "in" [1 1] (LETPATTERNS ($LIST $pl))]
+  | lettac_cons [<<(LetTac $id $c (LETPATTERNS $p ($LIST $pl)))>>] -> 
+	["LetTac" [1 1] $id ":=" $c [1 1] "in" [1 1] (LETPATTERNS $p ($LIST $pl))]
+  | lettac_nil [<<(LetTac $id $c (LETPATTERNS))>>] -> 
+	["LetTac" [1 1] $id ":=" $c]
 
   | left [<<(Left $b)>>] -> ["Left" (WITHBINDING $b)]
   | right [<<(Right $b)>>] -> [ "Right" (WITHBINDING $b)]
