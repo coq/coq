@@ -6,18 +6,8 @@ open Util
 
 (* Utilities *)
 
-let is_letter c =
-  (c >= Char.code 'a' && c <= Char.code 'z') or
-  (c >= Char.code 'A' && c <= Char.code 'Z') or
-  (c >= Char.code '\248' && c <= Char.code '\255') or
-  (c >= Char.code '\192' && c <= Char.code '\214') or
-  (c >= Char.code '\216' && c <= Char.code '\246')
-
 let code_of_0 = Char.code '0'
 let code_of_9 = Char.code '9'
-
-let is_digit c = (c >= code_of_0 && c <= code_of_9)
-
 
 (* This checks that a string is acceptable as an ident, i.e. starts
    with a letter and contains only letters, digits or "'" *)
@@ -25,11 +15,11 @@ let is_digit c = (c >= code_of_0 && c <= code_of_9)
 let check_ident s =
   let l = String.length s in
   if l = 0 then error "The empty string is not an identifier"; 
-  let c = Char.code (String.get s 0) in
+  let c = String.get s 0 in
   if not (is_letter c) then error "An identifier starts with a letter";
   for i=1 to l-1 do
-    let c = Char.code (String.get s i) in
-    if not (is_letter c or is_digit c or c = Char.code '\'') then
+    let c = String.get s i in
+    if not (is_letter c or is_digit c or c = '\'') then
       error
 	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
   done
@@ -153,16 +143,16 @@ let id_ord = Pervasives.compare
 let lift_ident id =
   let len = String.length id in
   let rec add carrypos =
-    let c = Char.code (id.[carrypos]) in
+    let c = id.[carrypos] in
     if is_digit c then
-      if c = code_of_9 then begin
+      if c = '9' then begin
 	assert (carrypos>0);
 	add (carrypos-1)
       end
       else begin
 	let newid = String.copy id in
 	String.fill newid (carrypos+1) (len-1-carrypos) '0';
-	newid.[carrypos] <- Char.chr (c + 1);
+	newid.[carrypos] <- Char.chr (Char.code c + 1);
 	newid
       end
     else begin
@@ -175,7 +165,7 @@ let lift_ident id =
     end
   in add (len-1)
 
-let has_index id = is_digit (Char.code (id.[String.length id - 1]))
+let has_index id = is_digit (id.[String.length id - 1])
 
 let restart_ident id =
   let len = String.length id in

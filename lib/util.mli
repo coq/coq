@@ -25,6 +25,11 @@ val anomaly_loc : loc * string * std_ppcmds -> 'a
 val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
 
+(*s Chars. *)
+
+val is_letter : char -> bool
+val is_digit : char -> bool
+
 (*s Strings. *)
 
 val explode : string -> string list

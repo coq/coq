@@ -19,6 +19,17 @@ let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
 
+(* Characters *)
+
+let is_letter c =
+  (c >= 'a' && c <= 'z') or
+  (c >= 'A' && c <= 'Z') or
+  (c >= '\248' && c <= '\255') or
+  (c >= '\192' && c <= '\214') or
+  (c >= '\216' && c <= '\246')
+
+let is_digit c = (c >= '0' && c <= '9')
+
 (* Strings *)
 
 let explode s = 

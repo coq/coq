@@ -168,6 +168,10 @@ let infix_syntax_entry assoc n inf prefname astpref =
     | Some(Gramext.NonA) -> (Extend.L,Extend.L)
     | None -> (Extend.E,Extend.L)  (* LEFTA by default *)
   in
+  let inf =
+    (* Not necessary but increases legibility (e.g. for "=_S") *)
+    if is_letter (inf.[String.length inf -1]) then " "^inf^" " else inf
+  in
   [{Extend.syn_id = prefname;
     Extend.syn_prec = n,0,0;
     Extend.syn_astpat = 
