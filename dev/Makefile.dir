@@ -50,10 +50,12 @@ list:
 clean::  
 	rm -f *.cmi *.cmo *.cmx *.o
 
+
 # if grammar.cmo files cannot be compiled and main .depend cannot be
 # rebuilt, this is quite useful
 depend:
 	(cd $(TOPDIR); ocamldep -I $(BASEDIR) $(BASEDIR)/*.ml $(BASEDIR)/*.mli > .depend.devel)
+
 
 # displays the dependency graph of the current directory (vertically,
 # unlike in doc/)
@@ -95,7 +97,22 @@ pretty:	depend.ps
 #	gv -spartan $< &
 
 
-# this is not perfect bot mostly WORKS! It just calls the main makefile
+
+# generating file.ml.mli by tricking make to pass -i to ocamlc 
+
+%.ml.mli:	FORCE
+	@(cmo=`basename $@ .ml.mli`.cmo ; \
+	mv -f $$cmo $$cmo.tmp ; \
+	$(MAKE) -s -C $(TOPDIR) $(BASEDIR)/$$cmo CAMLDEBUG=-i > $@ ; \
+	echo Generated interface file $@ ; \
+	mv -f $$cmo.tmp $$cmo)
+
+FORCE:
+
+clean::
+	rm -f *.ml.mli
+
+# this is not perfect but mostly WORKS! It just calls the main makefile
 
 %.cmi:	*.mli
 	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@

@@ -72,6 +72,10 @@ let (inThing,outThing) =
 	       ("constr option"."option_smartmap (subst_mps subst)")
 	       ("constr list"."list_smartmap (subst_mps subst)")
 	       ("constr array"."array_smartmap (subst_mps subst)")
+	       ("constr_pattern"."subst_pattern subst")
+	       ("constr_pattern option"."option_smartmap (subst_pattern subst)")
+	       ("constr_pattern array"."array_smartmap (subst_pattern subst)")
+	       ("constr_pattern list"."list_smartmap (subst_pattern subst)")
 	       ("global_reference"."subst_global subst")
 	       ("extended_global_reference"."subst_ext subst")
 	       ("obj_typ"."subst_obj subst")
@@ -93,7 +97,7 @@ let (inThing,outThing) =
     )
   )
 
-(global-set-key [f3] 'make-if)
+(global-set-key [f4] 'make-if)
 
 (defun make-record nil
   (interactive)
@@ -106,20 +110,20 @@ let (inThing,outThing) =
     )
   )
 
-(global-set-key [f4] 'make-record)
+(global-set-key [f5] 'make-record)
 
 (defun make-prim nil
   (interactive)
   (save-excursion (query-replace-regexp "\\<[a-zA-Z'_0-9]*\\>" "\\&'"))
   )
 
-(global-set-key [f5] 'make-prim)
+(global-set-key [f6] 'make-prim)
 
 
 ; eval the above, yank the text below and do 
 ; paste f2 morph.
-; paste f3 morph.
-; paste f4
+; paste f4 morph.
+; paste f5
 
       lem : constr;
       profil : bool list;

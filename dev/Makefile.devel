@@ -6,22 +6,36 @@ BASEDIR=
 
 SOURCEDIRS=lib kernel library pretyping parsing proofs tactics toplevel
 
-default:	noargument
+default:	usage noargument
 
-# set the devel makefile
+usage::
+	@echo Usage: make \<target\>
+	@echo Targets are:
+
+usage::
+	@echo "  setup-devel	-- set the devel makefile"
 setup-devel:
 	@ln -sfv dev/Makefile.devel makefile
 	@(for i in $(SOURCEDIRS); do \
 	    (cd $(TOPDIR)/$$i; ln -sfv ../dev/Makefile.dir Makefile) \
 	done)
 
+
+usage::
+	@echo "  clean-devel	-- clear all devel files"
 clean-devel:
 	echo rm -f makefile .depend.devel
 	echo rm -f $(foreach dir,$(SOURCEDIRS), $(TOPDIR)/$(dir)/Makefile)
 
+
+usage::
+	@echo "  coqtop	-- make until the bytecode executable, make the link"
 coqtop:	bin/coqtop.byte
 	ln -sf bin/coqtop.byte coqtop
 
+
+usage::
+	@echo "  quick		-- make bytecode executable and states"
 quick: 
 	$(MAKE) states BEST=byte
 
@@ -37,10 +51,13 @@ ifneq ($(wildcard $(TOPDIR)/dev/Makefile.local),)
 include $(TOPDIR)/dev/Makefile.local
 endif
 
-#runs coqtop with all theories required
+usage::
+	@echo "  total		-- runs coqtop with all theories required"
 total:
 	ledit ./bin/coqtop.byte $(foreach th,$(THEORIESVO),-require $(notdir $(basename $(th))))
 
-#runs coqtop storing using the history file
+usage::
+	@echo "  run		-- makes and runs bytecode coqtop using ledit and the history file"
+	@echo "		   if you want to pass arguments to coqtop, use make run ARG=<args>"
 run:	$(TOPDIR)/coqtop
 	ledit -h $(TOPDIR)/dev/debug_history -x $(TOPDIR)/coqtop $(ARG) $(ARGS)
