@@ -69,7 +69,7 @@ let bad_token str = raise (Error (Bad_token str))
 
 let check_special_token str =
   let rec loop = parser
-    | [< ' (' ' | '\n' | '\r' | '\t') >] -> bad_token str
+    | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
     | [< _ = Stream.empty >] -> ()
     | [< '_ ; s >] -> loop s
   in
@@ -109,7 +109,7 @@ let is_keyword s =
 let is_normal_token str =
   if String.length str > 0 then
     match str.[0] with
-      | ' ' | '\n' | '\r' | '\t' | '0'..'9' | '"' -> bad_token str
+      | ' ' | '\n' | '\r' | '\t' | '"' -> bad_token str
       | '_' | '$' | 'a'..'z' | 'A'..'Z' -> true
 	  (* utf-8 symbols of the form "E2 xx xx" [E2=226] *)
       | '\226' when String.length str > 2 ->
