@@ -46,15 +46,15 @@ Inductive Setoid : Type
 
 Definition elem := [A:Setoid] let (S,R,e)=A in S.
 
-Grammar command command1 :=
- elem  [ "|" command0($s) "|"] -> [ <<(elem $s)>>].
+Grammar constr constr1 :=
+ elem  [ "|" constr0($s) "|"] -> [ (elem $s) ].
 
 Definition equal := [A:Setoid]
    <[s:Setoid](Relation |s|)>let (S,R,e)=A in R.
 
-Grammar command command1 :=
- equal   [ command0($c) "=" "%" "S" command0($c2) ] -> 
-         [ <<(equal ? $c $c2)>>].
+Grammar constr constr1 :=
+ equal   [ constr0($c) "=" "%" "S" constr0($c2) ] -> 
+         [ (equal ? $c $c2) ].
 
 
 Axiom prf_equiv : (A:Setoid)(Equivalence |A| (equal A)).
@@ -87,9 +87,9 @@ End Maps.
 
 Syntactic Definition ap := (explicit_ap ? ?). 
 
-Grammar command command8 :=
-  map_setoid [ command7($c1) "=>" command8($c2) ] 
-                 -> [ <<(Map_setoid $c1 $c2)>>].
+Grammar constr constr8 :=
+  map_setoid [ constr7($c1) "=>" constr8($c2) ] 
+                 -> [ (Map_setoid $c1 $c2) ].
 
 
 Definition ap2 := [A,B,C:Setoid][f:|(A=>(B=>C))|][a:|A|] (ap (ap f a)).
@@ -194,9 +194,8 @@ Parameter t1,t2: TERM.
 
 Type 
  Cases t1 t2 of 
-   (var  v1) (var v2) => True
-
- | (oper op1 l1)  (oper op2 l2) => False
+ | (var  v1) (var v2) => True
+ | (oper op1 l1) (oper op2 l2) => False
  | _ _ => False 
  end.
 
