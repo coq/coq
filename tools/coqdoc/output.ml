@@ -363,8 +363,8 @@ module Html = struct
   let latex_char _ = ()
   let latex_string _ = ()
 
-  let html_char = char
-  let html_string = raw_ident
+  let html_char = output_char
+  let html_string = output_string
 
   let start_latex_math () = ()
   let stop_latex_math () = ()

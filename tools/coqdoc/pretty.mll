@@ -400,10 +400,6 @@ and doc = parse
       { escaped_html lexbuf; doc lexbuf }
   | "##"
       { char '#'; doc lexbuf }
-  | "^"
-      { escaped lexbuf; doc lexbuf }
-  | "^^"
-      { char '^'; doc lexbuf }
   | eof 
       { false }
   | _ 
@@ -429,13 +425,6 @@ and escaped_html = parse
         { html_char '#'; escaped_html lexbuf }
   | eof { () }
   | _   { html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
-
-and escaped = parse
-  | "^" { () }
-  | "^^"
-        { hard_verbatim_char '^'; escaped lexbuf }
-  | eof { () }
-  | _   { hard_verbatim_char (lexeme_char lexbuf 0); escaped lexbuf }
 
 and verbatim = parse
   | "\n>>" { verbatim_char '\n'; stop_verbatim () }
