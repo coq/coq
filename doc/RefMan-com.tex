@@ -19,7 +19,7 @@ roughly described below. You can also look at the \verb!man! pages of
 \section{Interactive use ({\tt coqtop})}
 In the interactive mode, also known as the \Coq~toplevel, the user can
 develop his theories and proofs step by step.  The \Coq~toplevel is
-ran by the command {\tt coqtop}. 
+run by the command {\tt coqtop}. 
 
 \index{byte-code}
 \index{native code}
@@ -68,7 +68,7 @@ arbitrary name for the resource file (see option \verb:-init-file:
 below), or the name of another user to load the resource file of
 someone else (see option \verb:-user:).
 
-This file may contain, for instance, \verb:AddPath: commands to add
+This file may contain, for instance, \verb:Add LoadPath: commands to add
 directories to the load path of \Coq.
 It is possible to skip the loading of the resource file with the
 option \verb:-q:.
@@ -104,9 +104,10 @@ The following command-line options are recognized by the commands {\tt
   Add {\em directory} to the searched directories when looking for a
   file.
 
-\item[{\tt -R} {\em directory} {\em logical-path}]\ \\
-  Add recursively {\em directory} to the searched directories when looking for
-  a file, and maps this root directory to the given {\em logical path}.
+\item[{\tt -R} {\em directory} {\dirpath}]\ \\
+  This maps the subdirectory structure of physical {\em directory} to
+  logical {\dirpath} and adds {\em directory} and its subdirectories
+  to the searched directories when looking for a file.
 
 \item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ \\
   Cause \Coq~to use the state put in the file {\em file} as its input
@@ -149,6 +150,17 @@ The following command-line options are recognized by the commands {\tt
 \item[{\tt -require} {\em file}]\ \\
   Load \Coq~compiled file {\em file}{\tt .vo} and import it ({\tt
     Require} {\em file}).
+
+\item[{\tt -compile} {\em file}]\ \\
+  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo}.
+  This option implies option {\tt -batch} and {\tt -silent}. It is
+  only available for {\tt coqtop}.
+
+%\item[{\tt -compile-verbose} {\em file}]\ \\
+%  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} with
+%  a copy of the contents of the file on standard input.
+%  This option implies option {\tt -batch} and {\tt -silent}. It is
+%  only available for {\tt coqtop}.
 
 \item[{\tt -batch}]\ \\
   Batch mode : exit just after arguments parsing. This option is only
