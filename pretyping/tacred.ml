@@ -125,8 +125,8 @@ let special_red_case env whfun p c ci lf  =
 	    raise Redelimination
       | _ ->
           if reducible_mind_case constr then
-            reduce_mind_case env
-              {mP=p; mconstr=constr; mcargs=cargs; mci=ci; mlf=lf}
+            reduce_mind_case
+	      {mP=p; mconstr=constr; mcargs=cargs; mci=ci; mlf=lf}
           else 
 	    raise Redelimination
   in 
