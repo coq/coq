@@ -914,14 +914,14 @@ parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx library/libnames.cmx \
     kernel/names.cmx lib/util.cmx parsing/coqast.cmi 
 parsing/egrammar.cmo: parsing/ast.cmi lib/bignat.cmi parsing/extend.cmi \
     interp/genarg.cmi parsing/lexer.cmi library/libnames.cmi kernel/names.cmi \
-    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi proofs/tacexpr.cmo \
-    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    parsing/egrammar.cmi 
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi library/summary.cmi \
+    proofs/tacexpr.cmo interp/topconstr.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo parsing/egrammar.cmi 
 parsing/egrammar.cmx: parsing/ast.cmx lib/bignat.cmx parsing/extend.cmx \
     interp/genarg.cmx parsing/lexer.cmx library/libnames.cmx kernel/names.cmx \
-    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx proofs/tacexpr.cmx \
-    interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    parsing/egrammar.cmi 
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx library/summary.cmx \
+    proofs/tacexpr.cmx interp/topconstr.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx parsing/egrammar.cmi 
 parsing/esyntax.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     lib/gmap.cmi lib/gmapl.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi lib/options.cmi lib/pp.cmi interp/ppextend.cmi \
@@ -1133,9 +1133,9 @@ parsing/prettyp.cmo: pretyping/classops.cmi interp/constrextern.cmi \
     library/lib.cmi library/libnames.cmi library/libobject.cmi \
     library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
     lib/pp.cmi parsing/printer.cmi parsing/printmod.cmi kernel/reduction.cmi \
-    kernel/safe_typing.cmi kernel/sign.cmi interp/symbols.cmi \
-    interp/syntax_def.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi \
-    parsing/prettyp.cmi 
+    pretyping/reductionops.cmi kernel/safe_typing.cmi kernel/sign.cmi \
+    interp/symbols.cmi interp/syntax_def.cmi kernel/term.cmi \
+    pretyping/termops.cmi lib/util.cmi parsing/prettyp.cmi 
 parsing/prettyp.cmx: pretyping/classops.cmx interp/constrextern.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
     pretyping/evd.cmx library/global.cmx library/impargs.cmx \
@@ -1143,9 +1143,9 @@ parsing/prettyp.cmx: pretyping/classops.cmx interp/constrextern.cmx \
     library/lib.cmx library/libnames.cmx library/libobject.cmx \
     library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
     lib/pp.cmx parsing/printer.cmx parsing/printmod.cmx kernel/reduction.cmx \
-    kernel/safe_typing.cmx kernel/sign.cmx interp/symbols.cmx \
-    interp/syntax_def.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx \
-    parsing/prettyp.cmi 
+    pretyping/reductionops.cmx kernel/safe_typing.cmx kernel/sign.cmx \
+    interp/symbols.cmx interp/syntax_def.cmx kernel/term.cmx \
+    pretyping/termops.cmx lib/util.cmx parsing/prettyp.cmi 
 parsing/printer.cmo: parsing/ast.cmi interp/constrextern.cmi \
     parsing/coqast.cmi library/declare.cmi lib/dyn.cmi kernel/environ.cmi \
     parsing/esyntax.cmi parsing/extend.cmi library/global.cmi \
@@ -1482,14 +1482,16 @@ proofs/evar_refiner.cmo: interp/constrintern.cmi kernel/environ.cmi \
     lib/options.cmi lib/pp.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     pretyping/reductionops.cmi proofs/refiner.cmi kernel/sign.cmi \
     proofs/tacexpr.cmo pretyping/tacred.cmi kernel/term.cmi \
-    pretyping/typing.cmi lib/util.cmi proofs/evar_refiner.cmi 
+    kernel/type_errors.cmi pretyping/typing.cmi lib/util.cmi \
+    proofs/evar_refiner.cmi 
 proofs/evar_refiner.cmx: interp/constrintern.cmx kernel/environ.cmx \
     pretyping/evarutil.cmx pretyping/evd.cmx library/global.cmx \
     pretyping/instantiate.cmx proofs/logic.cmx kernel/names.cmx \
     lib/options.cmx lib/pp.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
     pretyping/reductionops.cmx proofs/refiner.cmx kernel/sign.cmx \
     proofs/tacexpr.cmx pretyping/tacred.cmx kernel/term.cmx \
-    pretyping/typing.cmx lib/util.cmx proofs/evar_refiner.cmi 
+    kernel/type_errors.cmx pretyping/typing.cmx lib/util.cmx \
+    proofs/evar_refiner.cmi 
 proofs/logic.cmo: interp/constrextern.cmi parsing/coqast.cmi \
     kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     library/global.cmi kernel/inductive.cmi pretyping/inductiveops.cmi \
