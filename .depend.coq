@@ -43,7 +43,6 @@ theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/R_Ifp.v
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo theories/Logic/Classical_Prop.vo contrib/omega/Omega.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/Zarith/ZArith.vo theories/Reals/TypeSyntax.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
-theories/Logic/Extensionality.vo: theories/Logic/Extensionality.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
 theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v
 theories/Logic/Classical_Type.vo: theories/Logic/Classical_Type.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
