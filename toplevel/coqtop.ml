@@ -88,13 +88,11 @@ let parse_args () =
   let rec parse = function
     | [] -> ()
 
-    | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p; parse rem
-    | "-R" :: d :: rem -> set_default_rec_include d; parse rem
-    | "-R" :: []       -> usage ()
+    | "-R" :: d :: p :: rem -> set_rec_include d p; parse rem
+    | "-R" :: ([] | _ :: _) -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem
 

@@ -15,7 +15,7 @@ let print_usage_channel co command =
   output_string co
 "  -I dir                 add directory dir in the include path
   -include dir           (idem)
-  -R dir                 add dir recursively
+  -R dir coqdir          recursively map physical dir to logical coqdir 
   -src                   add source directories in the include path
 
   -inputstate f          read state from file f.coq
