@@ -10,19 +10,21 @@ open Libobject
 open Declare
 open Term
 open Generic
+open Rawterm
 
 (* usage qque peu general: utilise aussi dans record *)
 
 type cte_typ = 
   | NAM_Var of identifier
-  | NAM_SP of section_path
-  | NAM_Construct of constructor_path
+  | NAM_Constant of section_path
+  | NAM_Inductive of inductive_path
+  | NAM_Constructor of constructor_path
 
 let cte_of_constr = function  
-  | DOPN(Const sp,_) -> NAM_SP sp
-  | DOPN(MutInd (sp,_),_) -> NAM_SP sp
+  | DOPN(Const sp,_) -> NAM_Constant sp
+  | DOPN(MutInd ind_sp,_) -> NAM_Inductive ind_sp
+  | DOPN(MutConstruct cstr_cp,_) -> NAM_Constructor cstr_cp
   | VAR id -> NAM_Var id
-  | DOPN(MutConstruct cstr_cp,_) -> NAM_Construct cstr_cp
   |  _ -> raise Not_found
 
 type cl_typ = 
@@ -95,7 +97,7 @@ let add_new_coercion (coe,s) =
 let add_new_path x =
   iNHERITANCE_GRAPH := x::(!iNHERITANCE_GRAPH)
 
-let init () = 
+let init () =
   cLASSES:= []; 
   add_new_class1 (CL_FUN,{cL_STR="FUNCLASS";
 			  cL_PARAM=0;cL_STRE=NeverDischarge});
@@ -134,6 +136,17 @@ let coercion_info coe = search_info coe (!cOERCIONS)
 let coercion_exists coe =
   try let _ = coercion_info coe in true
   with Not_found -> false
+
+let coe_of_reference = function
+  | RConst (sp,l) -> NAM_Constant sp
+  | RInd (ind_sp,l) -> NAM_Inductive ind_sp
+  | RConstruct (cstr_sp,l) -> NAM_Constructor cstr_sp
+  | RVar id  -> NAM_Var id
+  | _ -> raise Not_found
+
+let coercion_params r =
+  let _,coe_info = coercion_info (coe_of_reference r) in
+  coe_info.cOE_PARAM
 
 (* coercion_info_from_index : int -> coe_typ * coe_info_typ *)
 
@@ -176,14 +189,13 @@ let _ =
 
 let constructor_at_head t = 
   let rec aux t' = match t' with
-    | (DOPN(Const sp,_)) -> CL_SP sp,0
-    | (DOPN(MutInd (sp,i),_)) -> CL_IND (sp,i),0
-    | (VAR(id)) -> CL_Var id,0
-    | (DOP2(Cast,c,_)) -> aux (collapse_appl c)
-    | (DOPN(AppL,cl)) -> 
-	let c,_ = aux (array_hd cl) in c,Array.length(cl)-1
+    | VAR id -> CL_Var id,0
+    | DOPN(Const sp,_) -> CL_SP sp,0
+    | DOPN(MutInd ind_sp,_) -> CL_IND ind_sp,0
     | DOP2(Prod,_,DLAM(_,c)) -> CL_FUN,0
     | DOP0(Sort(_)) -> CL_SORT,0
+    | DOP2(Cast,c,_) -> aux (collapse_appl c)
+    | DOPN(AppL,cl) -> let c,_ = aux (array_hd cl) in c,Array.length(cl)-1
     |  _ -> raise Not_found
   in 
   aux (collapse_appl t)

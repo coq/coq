@@ -301,8 +301,7 @@ let process_operation = function
   | Struc (newsp,strobj) ->
       Lib.add_anonymous_leaf (inStruc (newsp,strobj))
   | Coercion ((_,_,clt) as y,idf,ps) ->
-      Lib.add_anonymous_leaf (inCoercion y); 
-      coercion_syntax idf ps clt
+      Lib.add_anonymous_leaf (inCoercion y) 
 
 let close_section _ s = 
   let oldenv = Global.env() in

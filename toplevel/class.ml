@@ -53,12 +53,9 @@ let rec stre_unif_cond = function
 	stre_max (stre1,stre2)
 
 let stre_of_coe = function
-  | NAM_SP sp ->
-      (match global_operator sp (basename sp) with
-	 | Const sp, _ -> constant_strength sp
-	 | _ -> NeverDischarge)
+  | NAM_Constant sp -> constant_strength sp
   | NAM_Var id -> variable_strength id
-  | _ -> NeverDischarge
+  | NAM_Inductive _ | NAM_Constructor _ -> NeverDischarge 
 	
 (* try_add_class : Names.identifier ->
   Term.constr -> (cl_typ * int) option -> bool -> int * Libobject.strength *)
@@ -113,18 +110,14 @@ let check_class id v cl p =
 
 (* decomposition de constr vers coe_typ *)
 
-let coe_constructor_at_head t = 
-  let rec aux t' =
-    match kind_of_term t' with
-      | IsConst (sp,l) -> (Array.to_list l),NAM_SP sp
-      | IsMutInd ((sp,_),l) -> (Array.to_list l),NAM_SP sp
-      | IsVar id  -> [],NAM_Var id
-      | IsCast (c,_) -> aux c
-      | IsMutConstruct (cstr_sp,l) -> (Array.to_list l),NAM_Construct cstr_sp
-      | IsAppL(f,args) -> aux f
-      |  _ -> raise Not_found
-  in 
-  aux (collapse_appl t)
+(* t provient de global_reference donc pas de Cast, pas de AppL *)
+let coe_of_reference t = 
+  match kind_of_term t with
+    | IsConst (sp,l) -> (Array.to_list l),NAM_Constant sp
+    | IsMutInd (ind_sp,l) -> (Array.to_list l),NAM_Inductive ind_sp
+    | IsMutConstruct (cstr_sp,l) -> (Array.to_list l),NAM_Constructor cstr_sp
+    | IsVar id  -> [],NAM_Var id
+    |  _ -> anomaly "Not a reference"
 
 let constructor_at_head1 t = 
   let rec aux t' =
@@ -294,47 +287,12 @@ let build_id_coercion idf_opt ids =
   declare_constant idf (constr_entry,NeverDischarge);
   idf
 
-let coercion_syntax_entry id n =
-  let args = (String.concat " " (list_tabulate (fun _ -> "$_") n)) ^ " $c" in
-  let str = "level 10: " ^ (string_of_id id) ^
-            " [ <<(" ^ (string_of_id id) ^ " " ^ args ^ ")>> ]" ^
-            " -> [ (APPLIST $c):E ]"
-  in
-  try
-    let se = Pcoq.parse_string Pcoq.Prim.syntax_entry_eoi str in
-    Metasyntax.add_syntax_obj "constr" [se]
-  with Stdpp.Exc_located _ -> 
-    anomaly ("ill-formed syntax entry: "^str)
-
-let fun_coercion_syntax_entry id n =
-  let args =
-    if n<0 then anomaly "fun_coercion_syntax_entry";
-    String.concat " " (list_tabulate (fun _ -> "$_") n) ^ " $c ($LIST $l)" 
-  in
-  let str = "level 10: " ^ ((string_of_id id)^"1") ^
-            " [ (APPLIST " ^ (string_of_id id) ^ " " ^ args ^ ") ] "  ^
-      	    "-> [ (APPLIST $c ($LIST $l)):E ]"
-  in
-  try
-    let se = Pcoq.parse_string Pcoq.Prim.syntax_entry_eoi str in
-    Metasyntax.add_syntax_obj "constr" [se]
-  with Stdpp.Exc_located _ -> 
-    anomaly ("ill-formed syntax entry: "^str)
-
-let coercion_syntax idf ps clt =
-  match clt with
-    | CL_FUN -> 
-	fun_coercion_syntax_entry idf ps;
-	coercion_syntax_entry idf ps
-    | _ -> coercion_syntax_entry idf ps
-
 let add_new_coercion_in_graph1 (coef,v,stre,isid,cls,clt) idf ps =
   add_anonymous_leaf
     (inCoercion
        ((coef,
 	 {cOE_VALUE=v;cOE_STRE=stre;cOE_ISID=isid;cOE_PARAM=ps}),
-	cls,clt));
-  coercion_syntax idf ps clt
+	cls,clt))
 
 (* 
 nom de la fonction coercion
@@ -353,7 +311,7 @@ let try_add_new_coercion_core idf stre source target isid =
   let t = Retyping.get_type_of env Evd.empty v in
   let k = Retyping.get_type_of env Evd.empty t in
   let vj = {uj_val=v; uj_type=t; uj_kind = k} in
-  let f_vardep,coef = coe_constructor_at_head v in
+  let f_vardep,coef = coe_of_reference v in
   if coercion_exists coef then
     errorlabstrm "try_add_coercion" 
       [< 'sTR(string_of_id idf) ; 'sTR" is already a coercion" >];
@@ -400,7 +358,10 @@ let try_add_new_coercion_core idf stre source target isid =
   let stres = check_class ids vs cls ps in
   let stret = check_class idt vt clt pt in
   let stref = stre_of_coe coef in
+(* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
   let streunif = stre_unif_cond (s_vardep,f_vardep) in
+ *)
+  let streunif = NeverDischarge in
   let stre' = stre_max4 stres stret stref streunif in
   (* if (stre=NeverDischarge) & (stre'<>NeverDischarge)
      then errorlabstrm "try_add_coercion" 
@@ -480,28 +441,34 @@ let process_cl sec_sp cl =
 	  cl
     | _ -> cl
 
+(* Pour le discharge *)
 let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
   let s1= process_cl sec_sp s in
   let t1 = process_cl sec_sp t in
   let p = (snd (class_info s1)).cL_PARAM in
   match coe with 
     | NAM_Var id -> ((coe,coeinfo),s1,t1),id,p
-    | NAM_SP sp -> 
+    | NAM_Constant sp -> 
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  let v = global_reference CCI spid in
-	  ((NAM_SP newsp,coeinfo),s1,t1),spid,p
-	else 
+	  ((NAM_Constant newsp,coeinfo),s1,t1),spid,p
+	else
 	  ((coe,coeinfo),s1,t1),basename sp,p
-    | NAM_Construct ((sp,i),j) -> 
+    | NAM_Inductive (sp,i) -> 
+	if defined_in_sec sp sec_sp then
+	  let ((_,spid,spk)) = repr_path sp in
+	  let newsp = Lib.make_path spid CCI in
+	  ((NAM_Inductive (newsp,i),coeinfo),s1,t1),spid,p
+	else
+	  ((coe,coeinfo),s1,t1),basename sp,p
+    | NAM_Constructor ((sp,i),j) -> 
 	if defined_in_sec sp sec_sp then 
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
 	  let id = Global.id_of_global (MutConstruct((newsp,i),j)) in
-	  let v = global_reference CCI id in
-          (((NAM_Construct ((newsp,i),j)),coeinfo),s1,t1),id,p
-	else 
+          (((NAM_Constructor ((newsp,i),j)),coeinfo),s1,t1),id,p
+	else
 	  ((coe,coeinfo),s1,t1),
 	  Global.id_of_global (MutConstruct((sp,i),j)),
 	  p

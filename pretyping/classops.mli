@@ -9,6 +9,7 @@ open Evd
 open Environ
 open Libobject
 open Declare
+open Rawterm
 (*i*)
 
 type cl_typ = 
@@ -25,8 +26,9 @@ type cl_info_typ = {
 
 type cte_typ = 
   | NAM_Var of identifier 
-  | NAM_SP of section_path 
-  | NAM_Construct of constructor_path
+  | NAM_Constant of section_path
+  | NAM_Inductive of inductive_path
+  | NAM_Constructor of constructor_path
 
 type coe_typ = cte_typ
 
@@ -50,6 +52,7 @@ val class_info_from_index : int -> cl_typ * cl_info_typ
 val coercion_exists : coe_typ -> bool
 val coercion_info : coe_typ -> (int * coe_info_typ)
 val coercion_info_from_index : int -> coe_typ * coe_info_typ
+val coercion_params : reference -> int (* raise Not_found if not a coercion *)
 val constructor_at_head : constr -> cl_typ * int
 val class_of : env -> 'c evar_map -> constr -> constr * int
 val class_args_of : constr -> constr list

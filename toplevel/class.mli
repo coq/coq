@@ -24,6 +24,3 @@ val process_coercion :
     ((coe_typ * coe_info_typ) * cl_typ * cl_typ) * identifier * int 
 
 val defined_in_sec : section_path -> section_path -> bool
-val coercion_syntax : identifier -> int -> cl_typ -> unit
-val fun_coercion_syntax_entry : identifier -> int -> unit
-val coercion_syntax_entry : identifier -> int -> unit
