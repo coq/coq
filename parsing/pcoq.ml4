@@ -353,6 +353,7 @@ module Constr =
     let pattern = Gram.Entry.create "constr:pattern"
     let annot = Gram.Entry.create "constr:annot"
     let constr_pattern = gec_constr "constr_pattern"
+    let lconstr_pattern = gec_constr "lconstr_pattern"
     let binder_let = Gram.Entry.create "constr:binder_list"
     let tuple_constr = gec_constr "tuple_constr"
   end
@@ -409,7 +410,7 @@ let reset_all_grammars () =
   let f = Gram.Unsafe.clear_entry in
   List.iter f
     [Constr.constr;Constr.operconstr;Constr.lconstr;Constr.annot;
-     Constr.constr_pattern];
+     Constr.constr_pattern;Constr.lconstr_pattern];
   f Constr.ident; f Constr.global; f Constr.sort; f Constr.pattern;
   f Module.module_expr; f Module.module_type;
   f Tactic.simple_tactic;

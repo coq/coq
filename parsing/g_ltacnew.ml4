@@ -160,10 +160,10 @@ GEXTEND Gram
           (name,(it,body)) ] ]
   ;
   match_pattern:
-    [ [ id = Constr.constr_pattern; "["; pc = Constr.constr_pattern; "]" ->
+    [ [ id = Constr.lconstr_pattern; "["; pc = Constr.lconstr_pattern; "]" ->
         let s = coerce_to_id id in Subterm (Some s, pc)
-      | "["; pc = Constr.constr_pattern; "]" -> Subterm (None,pc)
-      | pc = Constr.constr_pattern -> Term pc ] ]
+      | "["; pc = Constr.lconstr_pattern; "]" -> Subterm (None,pc)
+      | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;
   match_hyps:
     [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) ] ]
