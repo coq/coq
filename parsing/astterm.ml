@@ -10,6 +10,7 @@ open Environ
 open Evd
 open Reduction
 open Impargs
+open Declare
 open Rawterm
 open Pattern
 open Typing
@@ -116,6 +117,16 @@ let ident_of_nvar loc s =
     user_err_loc (loc,"ident_of_nvar", [< 'sTR "Unexpected wildcard" >])
   else (id_of_string s)
 
+let interp_qualid p =
+  let outnvar = function
+    | Nvar (loc,s) -> s
+    | _ -> anomaly "interp_qualid: bad-formed qualified identifier" in
+  match p with
+    | [] -> anomaly "interp_qualid: empty qualified identifier"
+    | l -> 
+	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
+	make_qualid p (List.hd r)
+
 let ids_of_ctxt ctxt =
   Array.to_list
     (Array.map
@@ -126,14 +137,44 @@ let ids_of_ctxt ctxt =
 	"Astterm: arbitrary substitution of references not yet implemented")
     ctxt)
 
-let maybe_constructor env s =
-  try 
-    match kind_of_term (Declare.global_reference CCI (id_of_string s)) with 
-      | IsMutConstruct ((spi,j),cl) -> Some ((spi,j),ids_of_ctxt cl)
-      | _ -> warning ("Defined identifier "
-		      ^s^" is here considered as a matching variable"); None
-  with Not_found -> 
-    None
+type pattern_qualid_kind =
+  | IsConstrPat of loc * (constructor_path * identifier list)
+  | IsVarPat of loc * string
+
+let maybe_constructor env = function
+  | Node(loc,"QUALID",l) ->
+      let qid = interp_qualid l in
+      (try 
+	match kind_of_term (global_qualified_reference qid) with 
+	  | IsMutConstruct ((spi,j),cl) -> 
+	      IsConstrPat (loc,((spi,j),ids_of_ctxt cl))
+	  | _ -> 
+	      (match repr_qualid qid with
+		 | [], s -> 
+		     warning ("Defined reference "^(string_of_qualid qid)
+			      ^" is here considered as a matching variable");
+		     IsVarPat (loc,s)
+		 | _ -> error ("This reference does not denote a constructor: "
+			       ^(string_of_qualid qid)))
+      with Not_found -> 
+	match repr_qualid qid with
+	  | [], s -> IsVarPat (loc,s)
+	  | _ -> error ("Unknown qualified constructor: "
+			^(string_of_qualid qid)))
+
+  (* This may happen in quotations *)
+  | Node(loc,"MUTCONSTRUCT",[sp;Num(_,ti);Num(_,n)]) ->
+      (* Buggy: needs to compute the context *)
+      IsConstrPat (loc,(((ast_to_sp sp,ti),n),[]))
+     
+  | Node(loc,("CONST"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
+      user_err_loc (loc,"ast_to_pattern",
+   [< 'sTR "Found a pattern involving global references which are not constructors"
+   >])
+
+  | _ -> anomaly "ast_to_pattern: badly-formed ast for Cases pattern"
+
+
 (*
 let ast_to_ctxt ctxt =
   let l =
@@ -196,16 +237,6 @@ let ast_to_var env (vars1,vars2) loc s =
       try implicits_of_global (Nametab.locate (make_qualid [] s))
       with _ -> []
   in RVar (loc, id), imp
-
-let interp_qualid p =
-  let outnvar = function
-    | Nvar (loc,s) -> s
-    | _ -> anomaly "interp_qualid: bad-formed qualified identifier" in
-  match p with
-    | [] -> anomaly "interp_qualid: empty qualified identifier"
-    | l -> 
-	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
-	make_qualid p (List.hd r)
 
 (********************************************************************)
 (* This is generic code to deal with globalization                  *)
@@ -293,22 +324,23 @@ let rec ast_to_pattern env aliases = function
   | Node(_,"PATTAS",[Nvar (loc,s); p]) ->
       let aliases' = merge_aliases aliases (name_of_nvar s) in
       ast_to_pattern env aliases' p
-  | Nvar(loc,s) ->
-      (match maybe_constructor env s with
-	 | Some c -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
-	 | None ->
-	     let aliases = merge_aliases aliases (name_of_nvar s) in
-	     ([aliases], PatVar (loc,alias_of aliases)))
-  | Node(_,"PATTCONSTRUCT", Nvar(loc,s)::((_::_) as pl)) ->
-      (match maybe_constructor env s with
-	 | Some c ->
+
+  | Node(_,"PATTCONSTRUCT", head::((_::_) as pl)) ->
+      (match maybe_constructor env head with
+	 | IsConstrPat (loc,c) ->
 	     let (idsl,pl') =
 	       List.split (List.map (ast_to_pattern env ([],[])) pl) in
 	     (aliases::(List.flatten idsl),
 	      PatCstr (loc,c,pl',alias_of aliases))
-	 | None ->
+	 | IsVarPat (loc,s) ->
 	     user_err_loc (loc,"ast_to_pattern",mssg_hd_is_not_constructor s))
-  | _ -> anomaly "ast_to_pattern: badly-formed ast for Cases pattern"
+
+  | ast ->
+      (match maybe_constructor env ast with
+	 | IsConstrPat (loc,c) -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
+	 | IsVarPat (loc,s) ->
+	     let aliases = merge_aliases aliases (name_of_nvar s) in
+	     ([aliases], PatVar (loc,alias_of aliases)))
 
 let rec ast_to_fix = function
   | [] -> ([],[],[],[])
@@ -397,18 +429,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | Node(loc,"APPLISTEXPL", f::args) ->
 	RApp (loc,dbrec env f,ast_to_args env args)
-(*
-    | Node(loc,"APPLIST", Nvar(locs,s)::args) ->
-	let (c, impargs) = rawconstr_of_var env lvar locs (ident_of_nvar s)
-        in
-	  RApp (loc, c, ast_to_impargs env impargs args)
-    | Node(loc,"APPLIST", Node(locs,"QUALID",p)::args) ->
-	let (c, impargs) = rawconstr_of_qualid env lvar locs (interp_qualid p)
-        in
-	  RApp (loc, c, ast_to_impargs env impargs args)
-    | Node(loc,"APPLIST", f::args) ->	   
-	RApp (loc,dbrec env f,ast_to_args env args)
-*)
+
     | Node(loc,"APPLIST", f::args) ->
 	let (c, impargs) =
 	  match f with
@@ -537,9 +558,8 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 (* Globalization of AST quotations (mainly used to get statically         *)
 (* bound idents in grammar or pretty-printing rules)                      *)
 (**************************************************************************)
-
 let ast_of_ref loc ref = (* A brancher ultérieurement sur Termast.ast_of_ref *)
-  let c = Declare.constr_of_reference Evd.empty (Global.env()) ref in
+  let c = constr_of_reference Evd.empty (Global.env()) ref in
   let a = match kind_of_term c with
     | IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
     | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
@@ -547,7 +567,7 @@ let ast_of_ref loc ref = (* A brancher ultérieurement sur Termast.ast_of_ref *)
         Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
     | IsMutInd ((sp, i), _) ->
         Node (loc, "MUTIND", [path_section loc sp; num i])
-    | IsVar id -> failwith "TODO"
+    | IsVar id -> failwith "ast_of_ref: TODO"
     | _ -> anomaly "Not a reference" in
 (*  Node (loc, "$QUOTE", [a])*)
   a
