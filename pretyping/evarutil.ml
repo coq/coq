@@ -164,18 +164,8 @@ let do_restrict_hyps sigma ev args =
   let evd = Evd.map sigma ev in
   let env = evar_env evd in
   let hyps = evd.evar_hyps in
-  let (_,(rsign,ncargs)) =
-    List.fold_left 
-      (fun (sign,(rs,na)) a ->
-	 (List.tl sign,
-	  if not(closed0 a) then 
-	    (rs,na)
-	  else 
-	    (add_named_decl (List.hd sign) rs, a::na)))
-      (hyps,([],[])) args 
-  in
-  let sign' = List.rev rsign in
-  let env' = reset_with_named_context sign' env in
+  let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
+  let env' = reset_with_named_context sign env in
   let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl ncargs in
   let nc = refresh_universes nc in (* needed only if nc is an inferred type *)
   let sigma'' = Evd.define sigma' ev nc in
