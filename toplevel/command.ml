@@ -285,17 +285,27 @@ let interp_mutual lparams lnamearconstrs finite =
 		  | None -> (id, LocalAssum t)
 		  | Some b -> (id, LocalDef b)) params
   in
+  let paramassums = 
+    List.fold_right (fun d l -> match d with
+	(id,LocalAssum _) -> id::l | (_,LocalDef _) -> l) params' [] in
+  let nparamassums = List.length paramassums in
   let (ind_env,ind_impls,arityl) =
     List.fold_left
       (fun (env, ind_impls, arl) (recname, _, arityc, _) ->
          let arity = interp_type sigma env_params arityc in
 	 let fullarity = it_mkProd_or_LetIn arity params in
 	 let env' = Termops.push_rel_assum (Name recname,fullarity) env in
-	 let impls = 
-	   if Impargs.is_implicit_args()
-	   then Impargs.compute_implicits false env_params fullarity
-	   else [] in
-	 (env', (recname,impls)::ind_impls, (arity::arl)))
+	 let ind_impls' = 
+	   if Impargs.is_implicit_args() then
+	     let impl = Impargs.compute_implicits false env_params fullarity in
+	     let paramimpl,_ = list_chop nparamassums impl in
+	     let l = List.fold_right
+	       (fun imp l -> if Impargs.is_status_implicit imp then
+		 Impargs.name_of_implicit imp::l else l) paramimpl [] in
+	     (recname,(l,impl))::ind_impls
+	   else
+	     ind_impls in
+	 (env', ind_impls', (arity::arl)))
       (env0, [], []) lnamearconstrs
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
@@ -336,7 +346,9 @@ let interp_mutual lparams lnamearconstrs finite =
          (* Interpret the constructor types *)
          let constrs =
 	   List.map 
-	     (interp_type_with_implicits sigma ind_env_params ind_impls) bodies
+	     (interp_type_with_implicits sigma ind_env_params
+	       (paramassums,ind_impls))
+	     bodies
 	 in
 
          (* Build the inductive entry *)

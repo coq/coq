@@ -33,7 +33,9 @@ open Termops
    - insert existential variables for implicit arguments
 *)
 
-type implicits_env = (identifier * Impargs.implicits_list) list
+type implicits_env = (* For interpretation of inductive type with implicits *)
+    identifier list * 
+    (identifier * (identifier list * Impargs.implicits_list)) list
 
 type ltac_sign = 
   identifier list * (identifier * identifier option) list
@@ -43,7 +45,7 @@ type ltac_env =
 
 (* Interprets global names, including syntactic defs and section variables *)
 val interp_rawconstr     : evar_map -> env -> constr_expr -> rawconstr
-val interp_rawconstr_gen : bool -> evar_map -> env -> implicits_env -> 
+val interp_rawconstr_gen : bool -> evar_map -> env -> 
     bool -> ltac_sign -> constr_expr -> rawconstr
 
 (*s Composing the translation with typing *)
@@ -80,8 +82,8 @@ val interp_openconstr_gen     :
 
 (* Interprets constr patterns according to a list of instantiations
   (variables)*)
-val interp_constrpattern_gen : evar_map -> env -> ltac_env -> constr_expr ->
-  patvar list * constr_pattern
+val interp_constrpattern_gen : evar_map -> env -> identifier list ->
+  constr_expr -> patvar list * constr_pattern
 
 val interp_constrpattern : 
   evar_map -> env -> constr_expr -> patvar list * constr_pattern
