@@ -68,3 +68,45 @@ Apply H.
 Symmetry.
 Assumption.
 Qed.
+
+(* Check context binding in match goal *)
+(* This wasn't working in V8.0pl1, as the list of matched hyps wasn't empty *)
+Tactic Definition sym' := 
+  Match Context With [_:True|-C[?1=?2]] -> Let t = Inst C[?2=?1] In Assert t.
+
+Lemma sym' : True->~(0)=(1)->~(1)=(0).
+Intros Ht H.
+sym'.
+Exact H.
+Intro H1.
+Apply H.
+Symmetry.
+Assumption.
+Qed.
+
+(* Check that fails abort the current match context *)
+Lemma decide : True \/ False.
+(Match Context With
+| _ -> Fail 1
+| _ -> Right) Orelse Left.
+Exact I.
+Qed.
+
+(* Check that "match c with" backtracks on subterms *)
+Lemma refl : (1)=(1).
+Let t = (Match (1)=(2) With
+  [[(S ?1)]] -> '((refl_equal nat ?1) :: (1)=(1)))
+In Assert H:=t.
+Assumption.
+Qed.
+
+(* Note that backtracking in "match c with" is only on type-checking not on
+evaluation of tactics. E.g., this does not work
+
+Lemma refl : (1)=(1).
+Match (1)=(2) With
+  [[(S ?1)]] -> Apply (refl_equal nat ?1).
+Qed.
+*)
+
+
