@@ -565,8 +565,10 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
   let ni = mis_constr_nargs ip in
   let br_size = Array.length br in 
   assert (Array.length ni = br_size); 
-  if br_size = 0 then MLexn "absurd case"
-  else 
+  if br_size = 0 then begin 
+    add_recursors kn; 
+    MLexn "absurd case"
+  end else 
     (* [c] has an inductive type, and is not a type scheme type. *)
     let t = type_of env c in 
     (* The only non-informative case: [c] is of sort [Prop] *)
@@ -574,6 +576,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
       begin 
 	(* Logical singleton case: *)
 	(* [match c with C i j k -> t] becomes [t'] *)
+	add_recursors kn; 
 	assert (br_size = 1);
 	let s = iterate (fun l -> false :: l) ni.(0) [] in
 	let mlt = iterate (fun t -> Tarr (Tdummy, t)) ni.(0) mlt in 
