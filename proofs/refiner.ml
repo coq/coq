@@ -674,8 +674,8 @@ let extract_pftreestate pts =
    [< 'sTR "Attempt to save an incomplete proof" >];
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
   strong whd_betaiotaevar env (ts_it pts.tpfsigma) pfterm
-  (***  
-  local_strong (whd_ise (ts_it pts.tpfsigma)) pfterm
+  (***
+  local_strong (Evarutil.whd_ise (ts_it pts.tpfsigma)) pfterm
   ***)
 (* Focus on the first leaf proof in a proof-tree state *)
 
@@ -797,7 +797,9 @@ let pr_rule = function
   | Prim r -> pr_prim_rule r
   | Tactic texp -> hOV 0 (pr_tactic texp)
   | Context ctxt -> pr_ctxt ctxt
-  | Local_constraints lc -> [< 'sTR"Local constraint change" >]
+  | Local_constraints lc ->
+      (* This is internal tactic and cannot be replayed at user-level *)
+      [< (* 'sTR"Local constraint change" *) >]
 
 exception Different
 
