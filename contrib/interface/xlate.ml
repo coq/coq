@@ -257,7 +257,8 @@ let rec xlate_match_pattern =
      CT_pattern_as
       (xlate_match_pattern pattern, CT_coerce_ID_to_ID_OPT (xlate_ident id))
     | CPatDelimiters(_, _, _) -> xlate_error "CPatDelimitors"
-    | CPatNumeral(_,_) -> xlate_error "CPatNumeral";;
+    | CPatNumeral(_,_) -> xlate_error "CPatNumeral"
+    | CPatNotation _ -> xlate_error "CPatNotation";;
 
 
 
@@ -1462,6 +1463,7 @@ let xlate_vernac =
         | PrintModule _ -> xlate_error "TODO: Print Module"
         | PrintScopes -> xlate_error "TODO: Print Scopes"
         | PrintScope _ -> xlate_error "TODO: Print Scope"
+	| PrintVisibility _ -> xlate_error "TODO: Print Visibility"
         | PrintAbout _ -> xlate_error "TODO: Print About")
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
