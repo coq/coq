@@ -64,7 +64,7 @@ let is_constant r = match r with
 let check_constant r = 
   if (is_constant r) then r 
   else errorlabstrm "extract_constant"
-	(Printer.pr_global r ++ spc () ++ str "is not a constant") 
+	(Printer.pr_global r ++ spc () ++ str "is not a constant.") 
 
 let string_of_varg = function
   | VARG_IDENTIFIER id -> string_of_id id
@@ -73,7 +73,7 @@ let string_of_varg = function
 
 let no_such_reference q =
   errorlabstrm "reference_of_varg" 
-    (Nametab.pr_qualid q ++ str ": no such reference")
+    (str "There is no such reference " ++ Nametab.pr_qualid q ++ str ".")
 
 let reference_of_varg = function
   | VARG_QUALID q -> 
@@ -262,7 +262,7 @@ let extract_inductive r (id2,l2) = match r with
       let mib = Global.lookup_mind sp in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
       if n <> List.length l2 then
-	error "not the right number of constructors";
+	error "Not the right number of constructors.";
       add_anonymous_leaf (in_ml_extraction (r,id2));
       list_iter_i
 	(fun j s -> 
@@ -271,7 +271,7 @@ let extract_inductive r (id2,l2) = match r with
 	   add_anonymous_leaf (in_ml_extraction (r,s))) l2
   | _ -> 
       errorlabstrm "extract_inductive"
-	(Printer.pr_global r ++ spc () ++ str "is not an inductive type")
+	(Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
 
 let _ = 
   vinterp_add "ExtractInductive"

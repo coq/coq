@@ -369,7 +369,6 @@ let pp_coind il =
    fnl () ++ str "and " ++ 
    prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_ind "__") il ++
    fnl ())
- 
 
 (*s Pretty-printing of a declaration. *)
 

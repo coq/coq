@@ -319,7 +319,6 @@ let rec permut_case_fun br acc =
   done; 
   (ids,br)
   
-  
 (*s Generalized iota-reduction. *)
 
 (* Definition of a generalized iota-redex: it's a [MLcase(e,_)] 

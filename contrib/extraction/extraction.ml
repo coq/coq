@@ -289,11 +289,11 @@ let eta_expanse_w_prop e s =
 let axiom_message sp =
   errorlabstrm "axiom_message"
     (str "You must specify an extraction for axiom" ++ spc () ++ 
-       pr_sp sp ++ spc () ++ str "first")
+       pr_sp sp ++ spc () ++ str "first.")
 
 let section_message () = 
   errorlabstrm "section_message"
-    (str "You can't extract within a section. Close it and try again")
+    (str "You can't extract within a section. Close it and try again.")
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
@@ -995,9 +995,16 @@ let extract_declaration r = match r with
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false
 
-(*s Check whether a global reference corresponds to a logical inductive. *)
+(*s Check if a global reference corresponds to a logical inductive. *)
 
-let declaration_is_logical_ind = function 
+let decl_is_logical_ind = function 
   | IndRef ip -> extract_inductive ip = Iprop 
   | ConstructRef cp -> extract_constructor cp  = Cprop
   | _ -> false
+
+(*s Check if a global reference corresponds to the constructor of 
+  a singleton inductive. *)
+
+let decl_is_singleton = function 
+  | ConstructRef cp -> is_singleton_constructor cp 
+  | _ -> false 

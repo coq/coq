@@ -24,6 +24,9 @@ val short_module : global_reference -> identifier
 
 val pp_logical_ind : global_reference -> std_ppcmds
 
+val pp_singleton_ind : global_reference -> std_ppcmds
+
 val extract_to_file : 
   string option -> extraction_params -> ml_decl list -> unit
+
 

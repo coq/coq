@@ -225,6 +225,9 @@ let pp_comment s = match lang () with
 let pp_logical_ind r = 
   pp_comment (Printer.pr_global r ++ str " : logical inductive")
 
+let pp_singleton_ind r = 
+  pp_comment (Printer.pr_global r ++ str " : singleton inductive constructor")
+
 (*s Extraction to a file. *)
 
 let extract_to_file f prm decls =
@@ -255,7 +258,10 @@ let extract_to_file f prm decls =
   let ft = Pp_control.with_output_to cout in
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_logical_ind r)) 
-      (List.filter declaration_is_logical_ind prm.to_appear); 
+      (List.filter decl_is_logical_ind prm.to_appear); 
+  if not prm.modular then 
+    List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
+      (List.filter decl_is_singleton prm.to_appear); 
   pp_with ft (preamble prm used_modules (decl_print_prop decls));
   begin 
     try
@@ -267,7 +273,7 @@ let extract_to_file f prm decls =
   if f <> None then close_out cout;  
 
 (*i 
-  (* names resolution *)
+  (* DO NOT REMOVE: used when making names resolution *)
   let cout = open_out (f^".ren") in 
   let ft = Pp_control.with_output_to cout in
   Hashtbl.iter 

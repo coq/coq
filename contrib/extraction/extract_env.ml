@@ -224,8 +224,10 @@ let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
   else
-    if declaration_is_logical_ind r then 
+    if decl_is_logical_ind r then 
       msgnl (pp_logical_ind r) 
+    else if decl_is_singleton r then 
+      msgnl (pp_singleton_ind r) 
     else
       let prm = 
 	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
@@ -249,8 +251,8 @@ let _ =
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) c with
-		      | Emltype (t,_,_) -> msgnl (pp_type t)
-		      | Emlterm a -> msgnl (pp_ast (normalize a)))
+		      | Emltype (t,_,_) -> msgnl (pp_type t ++ fnl ())
+		      | Emlterm a -> msgnl (pp_ast (normalize a) ++ fnl ()))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is

@@ -40,4 +40,9 @@ val extract_declaration : global_reference -> ml_decl
 
 (*s Check whether a global reference corresponds to a logical inductive. *)
 
-val declaration_is_logical_ind : global_reference -> bool
+val decl_is_logical_ind : global_reference -> bool
+
+(*s Check if a global reference corresponds to the constructor of 
+  a singleton inductive. *)
+
+val decl_is_singleton : global_reference -> bool
