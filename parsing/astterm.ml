@@ -127,7 +127,7 @@ let maybe_constructor env s =
 		      ^s^" is here considered as a matching variable"); None
   with Not_found -> 
     None
-
+(*
 let ast_to_ctxt ctxt =
   let l =
     List.map
@@ -139,32 +139,27 @@ let ast_to_ctxt ctxt =
   in
   Array.of_list l
 
-let ast_to_constr_ctxt =
-  Array.map
-    (function c -> match kind_of_term c with
-       | IsVar id ->
-	   (* RRef (dummy_loc,RVar (ident_of_nvar loc s)) *)
-	   RRef (dummy_loc, RVar id)
-       | _ -> anomaly "Bad ast for local ctxt of a global reference")
-
 let ast_to_rawconstr_ctxt =
   Array.map
     (function
        | RRef (_, RVar id) -> mkVar id
        | _ -> anomaly "Bad ast for local ctxt of a global reference")
-
+*)
 let ast_to_global loc = function
-  | ("CONST", sp::ctxt) -> 
-      RRef (loc,RConst (ast_to_sp sp,ast_to_ctxt ctxt))
-  | ("EVAR", (Num (_,ev))::ctxt) ->
-      RRef (loc,REVar (ev,ast_to_ctxt ctxt))
-  | ("MUTIND", sp::Num(_,tyi)::ctxt) -> 
-      RRef (loc,RInd ((ast_to_sp sp, tyi),ast_to_ctxt ctxt))
-  | ("MUTCONSTRUCT", sp::Num(_,ti)::Num(_,n)::ctxt) ->
-      RRef (loc,RConstruct (((ast_to_sp sp,ti),n),ast_to_ctxt ctxt))
+  | ("CONST", [sp]) ->
+      RRef (loc,ConstRef (ast_to_sp sp))
+  | ("EVAR", [(Num (_,ev))]) ->
+      RRef (loc,EvarRef ev)
+  | ("MUTIND", [sp;Num(_,tyi)]) -> 
+      RRef (loc,IndRef ((ast_to_sp sp, tyi)))
+  | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
+      RRef (loc,ConstructRef (((ast_to_sp sp,ti),n)))
+  | ("SYNCONST", [sp]) ->
+      Syntax_def.search_syntactic_definition (ast_to_sp sp)
   | _ -> anomaly_loc (loc,"ast_to_global",
 		      [< 'sTR "Bad ast for this global a reference">])
 
+(*
 let ref_from_constr c = match kind_of_term c with
   | IsConst (sp,ctxt) -> RConst (sp, ast_to_constr_ctxt ctxt)
   | IsEvar (ev,ctxt) -> REVar (ev, ast_to_constr_ctxt ctxt) 
@@ -172,31 +167,91 @@ let ref_from_constr c = match kind_of_term c with
   | IsMutInd (isp,ctxt) -> RInd (isp, ast_to_constr_ctxt ctxt)
   | IsVar id -> RVar id  (* utilisé pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
+*)
 
 (* [vars1] is a set of name to avoid (used for the tactic language);
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
-let ast_to_ref sigma env loc s (vars1,vars2)=
-  let id = ident_of_nvar loc s in
-  if Idset.mem id env then
-    RRef (loc,RVar id),[]
-  else
-  if List.mem s vars1 then
-    RRef(loc,RVar id),[]
-  else
+
+let ast_to_var env (vars1,vars2) loc id =
+  let imp = 
+    if Idset.mem id env or List.mem (string_of_id id) vars1
+    then []
+    else
+      let _ = lookup_id id vars2 in
+      (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
+      try implicits_of_global (Nametab.locate (make_path [] id CCI))
+      with _ -> []
+  in RVar (loc, id), imp
+
+(*
+let ast_to_global_ref loc qualid =
   try
-    let _ = lookup_id id vars2 in
-    RRef (loc,RVar id), (try implicits_of_var id with _ -> [])
+    let ref = Nametab.locate qualid in
+    RRef (loc, ref), implicits_of_global ref
   with Not_found ->
-  try 
-    let c,il = Declare.global_reference_imps CCI id in
-    RRef (loc,ref_from_constr c), il
+    let sp = Syntax_def.locate_syntactic_definition qualid in
+    Syntax_def.search_syntactic_definition sp, []
+
+let ast_to_ref env (vars1,vars2) loc s =
+  let id = ident_of_nvar loc s in
+  try
+    let id, imp = ast_to_var env (vars1,vars2) loc s in
+    RVar (loc, id), imp
   with Not_found ->
-  try 
-    (Syntax_def.search_syntactic_definition id, [])
-  with Not_found -> 
+  try
+    ast_to_global_ref loc (make_path [] id CCI)
+  with Not_found ->
     error_var_not_found_loc loc CCI id
-	  
+
+let ast_to_qualid env vars loc p =
+  let outnvar = function
+    | Nvar (loc,s) -> s
+    | _ -> anomaly "bad-formed path" in
+  match p with
+    | [] -> anomaly "ast_to_qualid: Empty qualified id"
+    | [s] -> ast_to_ref env vars loc (outnvar s)
+    | l -> 
+	let p,r = list_chop (List.length l -1) (List.map outnvar l) in
+	let id = id_of_string (List.hd r) in
+	ast_to_global_ref loc (make_path p id CCI)
+*)
+
+let interp_qualid p =
+  let outnvar = function
+    | Nvar (loc,s) -> s
+    | _ -> anomaly "interp_qualid: bad-formed qualified identifier" in
+  match p with
+    | [] -> anomaly "interp_qualid: empty qualified identifier"
+    | l -> 
+	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
+	let id = id_of_string (List.hd r) in
+	make_path p id CCI
+
+let rawconstr_of_var env vars loc id =
+  try
+    ast_to_var env vars loc id
+  with Not_found ->
+    error_var_not_found_loc loc CCI id
+
+let rawconstr_of_qualid env vars loc sp =
+  (* Is it a bound variable? *)
+  try
+    if dirpath sp <> [] then raise Not_found;
+    ast_to_var env vars loc (basename sp)
+  with Not_found ->
+  (* Is it a global reference? *)
+  try
+    let ref = Nametab.locate sp in
+    RRef (loc, ref), implicits_of_global ref
+  with Not_found ->
+  (* Is it a reference to a syntactic definition? *)
+  try
+    let sp = Syntax_def.locate_syntactic_definition sp in
+    Syntax_def.search_syntactic_definition sp, []
+  with Not_found ->
+    error_global_not_found_loc loc sp
+
 let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdC (x,a,b) = ope("PROD",[a;slam(Some (string_of_id x),b)])
@@ -277,8 +332,12 @@ let check_capture loc s ty = function
 
 let ast_to_rawconstr sigma env allow_soapp lvar =
   let rec dbrec env = function
-    | Nvar(loc,s) -> fst (ast_to_ref sigma env loc s lvar)
-	  
+    | Nvar(loc,s) ->
+	fst (rawconstr_of_var env lvar loc (ident_of_nvar loc s))
+
+    | Node(loc,"QUALID", l) ->
+	fst (rawconstr_of_qualid env lvar loc (interp_qualid l))
+  
     | Node(loc,"FIX", (Nvar (locid,iddef))::ldecl) ->
 	let (lf,ln,lA,lt) = ast_to_fix ldecl in
 	let n =
@@ -323,8 +382,14 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | Node(loc,"APPLISTEXPL", f::args) ->
 	RApp (loc,dbrec env f,ast_to_args env args)
+(*
     | Node(loc,"APPLIST", Nvar(locs,s)::args) ->
-	let (c, impargs) = ast_to_ref sigma env locs s lvar
+	let (c, impargs) = rawconstr_of_var env lvar locs (ident_of_nvar s)
+        in
+	  RApp (loc, c, ast_to_impargs env impargs args)
+*)
+    | Node(loc,"APPLIST", Node(locs,"QUALID",p)::args) ->
+	let (c, impargs) = rawconstr_of_qualid env lvar locs (interp_qualid p)
         in
 	  RApp (loc, c, ast_to_impargs env impargs args)
     | Node(loc,"APPLIST", f::args) ->	   
@@ -356,7 +421,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
     | Node(loc,"SET", [])  -> RSort(loc,RProp Pos)
     | Node(loc,"TYPE", []) -> RSort(loc,RType)
 	  
-    (* This case mainly parses things build from   in a quotation *)
+    (* This case mainly parses things build in a quotation *)
     | Node(loc,("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
 	ast_to_global loc (key,l)
 
@@ -442,32 +507,43 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 (* bound idents in grammar or pretty-printing rules)                      *)
 (**************************************************************************)
 
+let ast_of_qualid loc sp =
+  try
+    let ref = Nametab.locate sp in
+    let c = Declare.constr_of_reference Evd.empty (Global.env()) ref in
+    match kind_of_term c with
+      | IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
+      | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
+      | IsMutConstruct (((sp, i), j), _) ->
+          Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
+      | IsMutInd ((sp, i), _) ->
+          Node (loc, "MUTIND", [path_section loc sp; num i])
+      | IsVar id -> failwith "TODO"
+      | _ -> anomaly "Not a reference"
+  with Not_found ->
+    let sp = Syntax_def.locate_syntactic_definition sp in
+    Node (loc, "SYNCONST", [path_section loc sp])
+
 let ast_adjust_consts sigma =
-  let rec dbrec env =
-    function
-      Nvar (loc, s) as ast ->
+  let rec dbrec env = function
+    | Nvar (loc, s) as ast ->
         let id = id_of_string s in
         if isMeta s then ast
         else if Idset.mem id env then ast
-        else
-          begin try
-            match kind_of_term (Declare.global_reference Names.CCI id) with
-              IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
-            | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
-            | IsMutConstruct (((sp, i), j), _) ->
-                Node
-                  (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
-            | IsMutInd ((sp, i), _) ->
-                Node (loc, "MUTIND", [path_section loc sp; num i])
-            | _ -> anomaly "Not a reference"
-          with
-            UserError _ | Not_found ->
-              try
-                let _ = Syntax_def.search_syntactic_definition id in
-                Node (loc, "SYNCONST", [Nvar (loc, s)])
-              with
-                Not_found -> warning ("Could not globalize " ^ s); ast
-          end
+        else 
+	  (try
+	     ast_of_qualid loc (make_path [] id CCI)
+	   with Not_found ->
+	     warning ("Could not globalize " ^ s); ast)
+    | Node (loc, "QUALID", p) as ast ->
+	(match p with
+	   | [Nvar (_,s) as v] when isMeta s -> v
+	   | _ ->
+	       let sp = interp_qualid p in
+	       try
+		 ast_of_qualid loc sp
+	       with Not_found -> 
+		 warning ("Could not globalize " ^ (string_of_path sp)); ast)
     | Slam (loc, None, t) -> Slam (loc, None, dbrec env t)
     | Slam (loc, Some na, t) ->
         let env' = Idset.add (id_of_string na) env in
@@ -587,24 +663,24 @@ let interp_casted_constr sigma env com typ =
    without typing at all. *)
 
 let ctxt_of_ids ids = Array.of_list (List.map mkVar ids)
-
+(*
 let rec pat_of_ref metas vars = function
   | RConst (sp,ctxt) -> RConst (sp, ast_to_rawconstr_ctxt ctxt)
   | RInd (ip,ctxt) -> RInd (ip, ast_to_rawconstr_ctxt ctxt)
   | RConstruct(cp,ctxt) ->RConstruct(cp, ast_to_rawconstr_ctxt ctxt)
   | REVar (n,ctxt) -> REVar (n, ast_to_rawconstr_ctxt ctxt)
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
-
-and pat_of_raw metas vars lvar = function
-  | RRef (_,RVar id) -> 
+*)
+let rec pat_of_raw metas vars lvar = function
+  | RVar (_,id) ->
       (try PRel (list_index (Name id) vars)
        with Not_found ->
-         (try (List.assoc id lvar)
-          with Not_found -> PRef (RVar id)))
+       try List.assoc id lvar
+       with Not_found -> PVar id)
   | RMeta (_,n) ->
       metas := n::!metas; PMeta (Some n)
   | RRef (_,r) ->
-      PRef (pat_of_ref metas vars r)
+      PRef r
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | RApp (_, RMeta (_,n), cl) when n<0 ->
       PSoApp (- n, List.map (pat_of_raw metas vars lvar) cl)

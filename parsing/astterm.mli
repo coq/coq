@@ -55,6 +55,12 @@ val interp_constrpattern :
 val globalize_constr : Coqast.t -> Coqast.t
 val globalize_ast    : Coqast.t -> Coqast.t
 
+(* This transforms args of a qualid keyword into a qualified ident *)
+(* it does no relocation *)
+val interp_qualid : Coqast.t list -> section_path
+
+val ast_of_qualid : Coqast.loc -> section_path -> Coqast.t
+
 (* Translation rules from V6 to V7:
 
 constr_of_com_casted -> interp_casted_constr
