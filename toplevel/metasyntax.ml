@@ -226,6 +226,7 @@ let precedence_of_entry_type = function
   | ETConstr (n,BorderProd (left,Some a)) ->
       n, let (lp,rp) = prec_assoc a in if left then lp else rp
   | ETConstr (n,InternalProd) -> n, Prec n
+  | ETOther ("constr","annot") -> 10, Prec 10
   | _ -> 0, E (* ?? *)
 
 (* x = y |-> x brk = y (breaks before any symbol) *)
@@ -271,6 +272,10 @@ let is_bracket s =
   (s.[0] = '{' or s.[0] = '[' or s.[0] = '(' or
    s.[l-1] = '}' or s.[l-1] = ']' or s.[l-1] = ')')
 
+let is_comma s =
+  let l = String.length s in l <> 0 &
+  (s.[0] = ',' or s.[0] = ';' or s.[0] = ':')
+
 let is_operator s =
   let l = String.length s in l <> 0 &
   (s.[0] = '+' or s.[0] = '*' or s.[0] = '=' or
@@ -292,18 +297,19 @@ let make_hunks etyps symbols =
 	    let nextsep,(s,l) =
 	      if
 		is_letter (s.[0]) or 
-		is_letter (s.[String.length s -1]) or
-		is_digit (s.[String.length s -1])
+		(ws = NextIsTerminal & 
+		  (is_letter (s.[String.length s -1])) or
+		  (is_digit (s.[String.length s -1])))
 	      then
 		(* We want spaces around both sides *)
 		Separate 1,
 		if ws = Separate 0 then s^" ",l else s,add_break l ws
 	      else
-		(* We want a break before symbols but brackets*)
-		if is_bracket s then
+		(* We want a break before symbols but brackets and commas *)
+		if is_bracket s or is_comma s then
 		  Juxtapose,
 		  (s,if ws = Separate 0 then add_break l ws else l)
-		 else
+		else
 		  Separate 0, (s,l)
 	    in
 	    (nextsep, UnpTerminal s :: l)

@@ -157,17 +157,18 @@ let pr_binder pr (nal,t) =
 let pr_binders pr bl =
   hv 0 (prlist_with_sep pr_semicolon (pr_binder pr) bl)
 
-let rec pr_lambda_tail pr = function
+let rec pr_lambda_tail pr bll = function
   | CLambdaN (_,bl,a) ->
-      pr_semicolon () ++ pr_binders pr bl ++ pr_lambda_tail pr a
+      pr_lambda_tail pr (bll ++ pr_semicolon() ++ pr_binders pr bl) a
   | CLetIn (_,x,a,b) ->
-      pr_semicolon () ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr b
-  | a -> str "]" ++ brk(0,1) ++ pr ltop a
+      pr_lambda_tail pr (bll ++ pr_semicolon() ++ pr_let_binder pr (snd x) a) b
+  | a ->
+      bll, pr ltop a
 
-let rec pr_prod_tail pr = function
+let rec pr_prod_tail pr bll = function
   | CProdN (_,bl,a) ->
-      pr_semicolon () ++ pr_binders pr bl ++ pr_prod_tail pr a
-  | a -> str ")" ++ brk(0,1) ++ pr ltop a
+      pr_prod_tail pr (bll ++ pr_semicolon () ++ pr_binders pr bl) a
+  | a -> bll, pr ltop a
 
 let pr_recursive_decl pr id binders t c =
   pr_id id ++ binders ++
@@ -187,13 +188,17 @@ let split_product = function
   | CProdN (loc,(na::nal,t)::bl,c) -> (na,t,CProdN(loc,(nal,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
+let concat_binder na t = function
+  | [] -> [[na],t]
+  | (nal,u)::bl' as bl -> if t=u then (na::nal,t)::bl' else ([na],t)::bl
+
 let rec split_fix n typ def =
   if n = 0 then ([],typ,def)
   else
     let (na,_,def) = split_lambda def in
     let (_,t,typ) = split_product typ in
     let (bl,typ,def) = split_fix (n-1) typ def in
-    (([na],t)::bl,typ,def)
+    (concat_binder na t bl,typ,def)
 
 let pr_fixdecl pr (id,n,t,c) =
   let (bl,t,c) = split_fix (n+1) t c in
@@ -221,7 +226,9 @@ let rec pr_arrow pr = function
   | CArrow (_,a,b) -> pr (larrow,L) a ++ cut () ++ str "->" ++ pr_arrow pr b
   | a -> pr (larrow,E) a
 
-let pr_annotation pr t = str "<" ++ pr ltop t ++ str ">" ++ brk (0,2)
+let pr_annotation pr = function
+  | None -> mt ()
+  | Some t -> str "<" ++ pr ltop t ++ str ">" ++ brk (0,2)
 
 let rec pr_pat = function
   | CPatAlias (_,p,x) -> pr_pat p ++ spc () ++ str "as" ++ spc () ++ pr_id x
@@ -239,17 +246,17 @@ let pr_eqn pr (_,patl,rhs) =
   hov 0 (
     prlist_with_sep spc pr_pat patl ++ spc () ++
     str "=>" ++
-    brk (1,1) ++ pr ltop rhs)
+    brk (1,1) ++ pr ltop rhs) ++ spc ()
 
 let pr_cases pr po tml eqns =
   hov 0 (
-    pr_opt (pr_annotation pr) po ++
+    pr_annotation pr po ++
     hv 0 (
       hv 0 (
 	str "Cases" ++ brk (1,2) ++
 	prlist_with_sep spc (pr ltop) tml ++ spc() ++ str "of") ++ brk(1,2) ++
-      prlist_with_sep (fun () -> spc () ++ str "| ") (pr_eqn pr) eqns ++
-      spc () ++ str "end"))
+      prlist_with_sep (fun () -> str "| ") (pr_eqn pr) eqns ++
+      str "end"))
 
 let rec pr inherited a =
   let (strm,prec) = match a with
@@ -258,12 +265,20 @@ let rec pr inherited a =
   | CCoFix (_,id,cofix) -> pr_cofix pr (snd id) cofix, latom
   | CArrow _ -> hv 0 (pr_arrow pr a), larrow
   | CProdN (_,bl,a) ->
-      hv 1 (str "(" ++ pr_binders pr bl ++ pr_prod_tail pr a), lprod
+      let bll, a = pr_prod_tail pr (mt()) a in
+      hv 1 (
+	hv 1 (str "(" ++ pr_binders pr bl ++ bll ++ str ")") ++
+	brk (0,1) ++ a), lprod
   | CLambdaN (_,bl,a) ->
-      hv 1 (str "[" ++ pr_binders pr bl ++ pr_lambda_tail pr a), llambda
+      let bll, a = pr_lambda_tail pr (mt()) a in
+      hv 1 (
+	hv 1 (str "[" ++ pr_binders pr bl ++ bll ++ str "]") ++
+      brk (0,1) ++ a), llambda
   | CLetIn (_,x,a,b) ->
-      hv 1 (str "[" ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr b),
-      lletin
+      let bll, b = pr_lambda_tail pr (mt()) b in
+      hv 1 (
+	hv 1 (str "[" ++ pr_let_binder pr (snd x) a ++ bll ++ str "]") ++
+	brk (0,1) ++ b), lletin
   | CAppExpl (_,f,l) ->
       hov 0 (
 	str "!" ++ pr_reference f ++
@@ -278,14 +293,14 @@ let rec pr inherited a =
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
       hov 0 (
-	pr_opt (pr_annotation pr) po ++
+	pr_annotation pr po ++
 	hv 0 (
 	  str "if " ++ pr ltop c ++ spc () ++
 	  hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
 	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lif
   | COrderedCase (_,LetStyle,po,c,[CLambdaN(_,[_,CHole _ as bd],b)]) ->
       hov 0 (
-	pr_opt (pr_annotation pr) po ++
+	pr_annotation pr po ++
 	hv 0 (
           str "let" ++ brk (1,1) ++
 	  hov 0 (str "(" ++ pr_binder pr bd ++ str ")") ++
@@ -295,14 +310,14 @@ let rec pr inherited a =
   | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->
       hov 0 (
 	hov 0 (
-	pr_opt (pr_annotation pr) po ++
+	pr_annotation pr po ++
 	  hov 0 (
 	    str (if style=RegularStyle then "Case" else "Match") ++ 
 	    brk (1,1) ++ pr ltop c ++ spc () ++
 	    str (if style=RegularStyle then "of" else "with") ++
-	  brk (1,3) ++
-	  hov 0 (prlist (fun b -> pr ltop b ++ fnl ()) bl)) ++
-	str "end")), lcases
+	    brk (1,3) ++
+	    fnl () ++ hov 0 (prlist (fun b -> pr ltop b ++ fnl ()) bl) ++
+	    str "end"))), lcases
   | COrderedCase (_,_,_,_,_) -> 
       anomaly "malformed if or destructuring let"
   | CHole _ -> str "?", latom
