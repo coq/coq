@@ -8,7 +8,14 @@
 
 (*i $Id$ i*)
 
-(** John Major's Equality as proposed by C. Mc Bride *)
+(** John Major's Equality as proposed by C. Mc Bride
+
+  Reference:
+
+  [McBride] Elimination with a Motive, Proceedings of TYPES 2000,
+  LNCS 2277, pp 197-216, 2002.
+
+*)
 
 Set Implicit Arguments.
 
