@@ -64,8 +64,7 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=           # is "-dump-glob file" when making the doc
 COQ_XML=	# is "-xml" when building XML library
-SYNTAX= 	# is "-translate" for new syntax
-COQOPTS=$(SYNTAX) $(GLOB) $(COQ_XML)
+COQOPTS=$(GLOB) $(COQ_XML)
 
 BOOTCOQTOP=$(BESTCOQTOP) -boot $(COQOPTS)
 
@@ -514,43 +513,43 @@ check:: world $(COQINTERFACE)
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -translate -no-strict -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
+	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
 	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
-	$(BOOTCOQTOP) -v8 -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
 
-newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.v
+newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
 	@$(MKDIR) newtheories/Init
-	cp -f theories/Init/$*.v8  newtheories/Init/$*.v
+	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
 
 theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
 	$(BOOTCOQTOP) -translate -no-strict -nois -compile theories/Init/$*
 
 newtheories/%.v: theories/%.vo states/initialnew.coq
 	@$(MKDIR) newtheories/`dirname $*`
-	cp -f theories/$*.v8  newtheories/$*.v
+	@cp -f theories/$*.v8  newtheories/$*.v
 
 theories/%.vo: theories/%.v states/initial.coq
 	$(BOOTCOQTOP) -translate -no-strict -compile theories/$*
 
 newcontrib/%.v: contrib/%.vo states/initial.coq
 	@$(MKDIR) newcontrib/`dirname $*`
-	cp -f contrib/$*.v8  newcontrib/$*.v
+	@cp -f contrib/$*.v8  newcontrib/$*.v
 
 contrib/%.vo: contrib/%.v states/initial.coq
 	$(BOOTCOQTOP) -translate -no-strict -compile contrib/$*
 
 newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
-	$(BOOTCOQTOP) -v8 -nois -compile $*
+	$(BOOTCOQTOP) -nois -compile $*
 
 newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -v8 -compile newtheories/$*
+	$(BOOTCOQTOP) -compile newtheories/$*
 
 newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -v8 -compile newcontrib/$*
+	$(BOOTCOQTOP) -compile newcontrib/$*
 
 INITVO=\
  theories/Init/Notations.vo \
