@@ -12,6 +12,7 @@ open Proof_type
 open Tacmach
 open Tacinterp
 open Tactics
+open Util
 
 let is_empty () =
   if (is_empty_type (List.assoc 1 !r_lmatch)) then
@@ -91,7 +92,6 @@ let rec tauto_main () =
       | [|- (?1 ? ?)] ->
         $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main)>>
 
-
 let intuition_main () =
   let t_axioms = tacticIn axioms
   and t_simplif = tacticIn simplif in
@@ -116,17 +116,19 @@ let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
 (* As a simple heuristic, first we try to avoid reduction both in *)
 (* tauto and intuition                                            *)
 
-let tauto =
-  tclTHEN (init_intros ())
-    (tclORELSE
-      (tclTHEN reduction_not_iff (interp (tauto_main ())))
-      (tclTHEN reduction (interp (tauto_main ()))))
+let tauto g =
+  try
+    (tclTHEN (init_intros ())
+      (tclORELSE
+        (tclTHEN reduction_not_iff (interp (tauto_main ())))
+        (tclTHEN reduction (interp (tauto_main ()))))) g
+  with UserError _ -> errorlabstrm "tauto" [< 'sTR "Tauto failed" >]
 
 let intuition =
- tclTHEN (init_intros ())
-  (tclORELSE
-    (tclTHEN reduction_not_iff (interp (intuition_main ())))
-    (tclTHEN reduction (interp (intuition_main ()))))
+  tclTHEN (init_intros ())
+    (tclORELSE
+      (tclTHEN reduction_not_iff (interp (intuition_main ())))
+      (tclTHEN reduction (interp (intuition_main ()))))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
