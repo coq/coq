@@ -21,7 +21,7 @@
 (*  Pour cela, on procède de la manière suivante :
  *
  *  1. Un terme de preuve incomplet est un terme contenant des variables
- *     existentielles (XTRA "ISEVAR") i.e. "?" en syntaxe concrète.
+ *     existentielles Evar i.e. "?" en syntaxe concrète.
  *     La résolution de ces variables n'est plus nécessairement totale
  *     (ise_resolve called with fail_evar=false) et les variables
  *     existentielles restantes sont remplacées par des méta-variables
