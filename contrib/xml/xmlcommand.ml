@@ -133,7 +133,8 @@ let filter_params pvars hyps =
       let ids'' =
        "cic:/" ^
         String.concat "/" (List.rev (List.map Names.string_of_id ids')) in
-      let he' = ids'', List.filter (function x -> List.mem x hyps) he in
+      let he' =
+       ids'', List.rev (List.filter (function x -> List.mem x hyps) he) in
       let tl' = aux ids' tl in
        match he' with
           _,[] -> tl'
