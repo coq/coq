@@ -123,9 +123,10 @@ let parse_args () =
     | "-opt" :: rem ->
 	binary := "coqtop.opt"; parse (cfiles,args) rem
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-    | ("-image"|"-libdir"|"-I"|"-R"|"-include"|"-outputstate"|"-inputstate"
-      |"-is"|"-load-vernac-source"|"-load-vernac-object"|"-load-ml-source"
-      |"-require"|"-load-ml-object"|"-user"|"-init-file" as o) :: rem ->
+    | ("-image"|"-libdir"|"-I"|"-R"|"-as"|"-include"|"-outputstate"
+      |"-inputstate"|"-is"|"-load-vernac-source"|"-load-vernac-object"
+      |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
+      |"-init-file" as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
