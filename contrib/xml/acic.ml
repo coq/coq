@@ -48,7 +48,7 @@ and constructor =
  identifier * constr                          (* id, type *)
 
 type aconstr =
-  | ARel       of id * int * identifier
+  | ARel       of id * int * id * identifier
   | AVar       of id * uri
   | AEvar      of id * int * aconstr list
   | ASort      of id * sorts
@@ -64,9 +64,9 @@ type aconstr =
   | AFix       of id * int * ainductivefun list
   | ACoFix     of id * int * acoinductivefun list
 and ainductivefun = 
- identifier * int * aconstr * aconstr
+ id * identifier * int * aconstr * aconstr
 and acoinductivefun = 
- identifier * aconstr * aconstr
+ id * identifier * aconstr * aconstr
 and explicit_named_substitution = id option * (uri * aconstr) list
 
 type acontext = (id * aconstr hypothesis) list
@@ -86,7 +86,7 @@ type aobj =
     anninductiveType list *                        (* inductive types ,      *)
     params * int                                   (*  parameters,n ind. pars*)
 and anninductiveType = 
- identifier * bool * aconstr *                (* typename, inductive, arity *)
+ id * identifier * bool * aconstr *           (* typename, inductive, arity *)
   annconstructor list                         (*  constructors              *)
 and annconstructor =
  identifier * aconstr                         (* id, type *)

@@ -43,11 +43,11 @@ let print_term ids_to_inner_sorts =
   let module N = Names in
   let module X = Xml in
     function
-       A.ARel (id,n,b) ->
+       A.ARel (id,n,idref,b) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_empty "REL"
           ["value",(string_of_int n) ; "binder",(N.string_of_id b) ;
-           "id",id ; "sort",sort]
+           "id",id ; "idref",idref; "sort",sort]
      | A.AVar (id,uri) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_empty "VAR" ["relUri", uri ; "id",id ; "sort",sort]
@@ -166,10 +166,10 @@ let print_term ids_to_inner_sorts =
          X.xml_nempty "FIX"
           ["noFun", (string_of_int no) ; "id",id ; "sort",sort]
           [< List.fold_left
-              (fun i (fi,ai,ti,bi) ->
+              (fun i (id,fi,ai,ti,bi) ->
                 [< i ;
                    X.xml_nempty "FixFunction"
-                    ["name", (Names.string_of_id fi);
+                    ["id",id ; "name", (Names.string_of_id fi) ;
                      "recIndex", (string_of_int ai)]
                     [< X.xml_nempty "type" [] [< aux ti >] ;
                        X.xml_nempty "body" [] [< aux bi >]
@@ -182,9 +182,10 @@ let print_term ids_to_inner_sorts =
          X.xml_nempty "COFIX"
           ["noFun", (string_of_int no) ; "id",id ; "sort",sort]
           [< List.fold_left
-              (fun i (fi,ti,bi) ->
+              (fun i (id,fi,ti,bi) ->
                 [< i ;
-                   X.xml_nempty "CofixFunction" ["name", Names.string_of_id fi]
+                   X.xml_nempty "CofixFunction"
+                    ["id",id ; "name", Names.string_of_id fi]
                     [< X.xml_nempty "type" [] [< aux ti >] ;
                        X.xml_nempty "body" [] [< aux bi >]
                     >]
@@ -318,10 +319,10 @@ let print_object uri ids_to_inner_sorts =
               "id",id ;
               "params",params']
              [< (List.fold_left
-                  (fun i (typename,finite,arity,cons) ->
+                  (fun i (id,typename,finite,arity,cons) ->
                     [< i ;
                        X.xml_nempty "InductiveType"
-                        ["name",Names.string_of_id typename ;
+                        ["id",id ; "name",Names.string_of_id typename ;
                          "inductive",(string_of_bool finite)
                         ]
                         [< X.xml_nempty "arity" []

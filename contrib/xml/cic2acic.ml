@@ -101,10 +101,15 @@ type anntypes =
  {annsynthesized : Acic.aconstr ; annexpected : Acic.aconstr option}
 ;;
 
+let gen_id seed =
+ let res = "i" ^ string_of_int !seed in
+  incr seed ;
+  res
+;;
+
 let fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids =
  fun father t ->
-  let res = "i" ^ string_of_int !seed in
-   incr seed ;
+  let res = gen_id seed in
    Hashtbl.add ids_to_father_ids res father ;
    Hashtbl.add ids_to_terms res t ;
    Acic.CicHash.add constr_to_ids t res ;
@@ -114,8 +119,8 @@ let fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids =
 let source_id_of_id id = "#source#" ^ id;;
 
 let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
- ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars env evar_map t
- expectedty
+ ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars env idrefs
+ evar_map t expectedty
 =
  let module D = DoubleTypeInference in
  let module E = Environ in
@@ -127,7 +132,7 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
     D.double_type_of env evar_map t expectedty
    in
     let rec aux computeinnertypes father passed_lambdas_or_prods_or_letins env
-     ?(subst=None,[]) tt
+     idrefs ?(subst=None,[]) tt
     =
      let fresh_id'' = fresh_id' father tt in
      let aux' = aux computeinnertypes (Some fresh_id'') [] in
@@ -180,11 +185,12 @@ print_endline "PASSATO" ; flush stdout ;
                match expected with
                   None -> None,false
                 | Some expectedty' ->
-                   Some (aux false (Some fresh_id'') [] env expectedty'),true
+                   Some (aux false (Some fresh_id'') [] env idrefs expectedty'),
+                    true
             in
              Some
               {annsynthesized =
-                aux false (Some fresh_id'') [] env synthesized ;
+                aux false (Some fresh_id'') [] env idrefs synthesized ;
                annexpected = annexpected
               }, expected_available
            else
@@ -208,7 +214,7 @@ print_endline "PASSATO" ; flush stdout ;
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if innersort = "Prop"  && expected_available then
                add_inner_type fresh_id'' ;
-              A.ARel (fresh_id'', n, id)
+              A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
           | T.Var id ->
              let path = get_relative_uri_of_var (N.string_of_id id) pvars in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
@@ -220,14 +226,15 @@ print_endline "PASSATO" ; flush stdout ;
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then
               add_inner_type fresh_id'' ;
-             A.AEvar (fresh_id'', n, Array.to_list (Array.map (aux' env) l))
+             A.AEvar
+              (fresh_id'', n, Array.to_list (Array.map (aux' env idrefs) l))
           | T.Meta _ -> Util.anomaly "Meta met during exporting to XML"
           | T.Sort s -> A.ASort (fresh_id'', s)
           | T.Cast (v,t) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop" then
               add_inner_type fresh_id'' ;
-             A.ACast (fresh_id'', aux' env v, aux' env t)
+             A.ACast (fresh_id'', aux' env idrefs v, aux' env idrefs t)
           | T.Prod (n,s,t) ->
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id''
@@ -246,17 +253,18 @@ print_endline "PASSATO" ; flush stdout ;
                        T.Prod _ -> true
                      | _ -> false
                in
-                (fresh_id'', n, aux' env s)::
+                (fresh_id'', n, aux' env idrefs s)::
                  (if father_is_prod then
                    passed_lambdas_or_prods_or_letins
                   else [])
               in
                let new_env = E.push_rel (N.Name n', None, s) env in
+               let new_idrefs = fresh_id''::idrefs in
                 (match Term.kind_of_term t with
                     T.Prod _ ->
                      aux computeinnertypes (Some fresh_id'') new_passed_prods
-                      new_env t
-                  | _ -> A.AProds (new_passed_prods, aux' new_env t))
+                      new_env new_idrefs t
+                  | _ -> A.AProds (new_passed_prods, aux' new_env new_idrefs t))
           | T.Lambda (n,s,t) ->
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
@@ -277,16 +285,18 @@ print_endline "PASSATO" ; flush stdout ;
                   ((not father_is_lambda) || expected_available)
                then add_inner_type fresh_id'' ;
                let new_passed_lambdas =
-                (fresh_id'',n, aux' env s)::
+                (fresh_id'',n, aux' env idrefs s)::
                  (if father_is_lambda then
                    passed_lambdas_or_prods_or_letins
                   else []) in
                let new_env = E.push_rel (N.Name n', None, s) env in
+               let new_idrefs = fresh_id''::idrefs in
                 (match Term.kind_of_term t with
                     T.Lambda _ ->
                      aux computeinnertypes (Some fresh_id'') new_passed_lambdas
-                      new_env t
-                  | _ -> A.ALambdas (new_passed_lambdas, aux' new_env t))
+                      new_env new_idrefs t
+                  | _ -> A.ALambdas
+                          (new_passed_lambdas, aux' new_env new_idrefs t))
           | T.LetIn (n,s,t,d) ->
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
@@ -309,21 +319,24 @@ print_endline "PASSATO" ; flush stdout ;
                if innersort = "Prop" then
                 add_inner_type fresh_id'' ;
                let new_passed_letins =
-                (fresh_id'',n, aux' env s)::
+                (fresh_id'',n, aux' env idrefs s)::
                  (if father_is_letin then
                    passed_lambdas_or_prods_or_letins
                   else []) in
                let new_env = E.push_rel (N.Name n', Some s, t) env in
+               let new_idrefs = fresh_id''::idrefs in
                 (match Term.kind_of_term d with
                     T.LetIn _ ->
                      aux computeinnertypes (Some fresh_id'') new_passed_letins
-                      new_env d
-                  | _ -> A.ALetIns (new_passed_letins, aux' new_env d))
+                      new_env new_idrefs d
+                  | _ -> A.ALetIns
+                          (new_passed_letins, aux' new_env new_idrefs d))
           | T.App (h,t) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop" then
               add_inner_type fresh_id'' ;
-             let t' = Array.fold_right (fun x i -> (aux' env x)::i) t [] in
+             let t' =
+              Array.fold_right (fun x i -> (aux' env idrefs x)::i) t [] in
 (*CSC: stuff for explicit named substitution *)
              let subst,residual_args =
               let variables,basedir =
@@ -364,9 +377,9 @@ print_endline "PASSATO" ; flush stdout ;
               let residual_args_not_empty = List.length residual_args > 0 in
               let h' =
                if residual_args_not_empty then
-                aux' env ~subst:(None,subst) h
+                aux' env idrefs ~subst:(None,subst) h
                else
-                aux' env ~subst:(Some fresh_id'',subst) h
+                aux' env idrefs ~subst:(Some fresh_id'',subst) h
               in
                (* maybe all the arguments were used for the explicit *)
                (* named substitution                                 *)
@@ -390,43 +403,55 @@ print_endline "PASSATO" ; flush stdout ;
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop" then
               add_inner_type fresh_id'' ;
-             let a' = Array.fold_right (fun x i -> (aux' env x)::i) a [] in
-              A.ACase (fresh_id'', (uri_of_path sp Inductive), i, aux' env ty,
-               aux' env term, a')
+             let a' =
+              Array.fold_right (fun x i -> (aux' env idrefs x)::i) a []
+             in
+              A.ACase
+               (fresh_id'', (uri_of_path sp Inductive), i, aux' env idrefs ty,
+                aux' env idrefs term, a')
           | T.Fix ((ai,i),((f,t,b) as rec_decl)) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then
-              add_inner_type fresh_id'' ;
-             A.AFix (fresh_id'', i,
-              Array.fold_right
-               (fun (fi,ti,bi,ai) i ->
-                 let fi' =
-                  match fi with
-                     N.Name fi -> fi
-                   | N.Anonymous -> Util.error "Anonymous fix function met"
-                 in
-                  (fi', ai, aux' (E.push_rec_types rec_decl env) bi,
-                   aux' env ti)::i
-               ) (Array.mapi (fun j x -> (x,t.(j),b.(j),ai.(j)) ) f ) []
-             )
+             if innersort = "Prop" then add_inner_type fresh_id'' ;
+             let fresh_idrefs =
+              Array.init (Array.length t) (function _ -> gen_id seed) in
+             let new_idrefs =(List.rev (Array.to_list fresh_idrefs)) @ idrefs in
+              A.AFix (fresh_id'', i,
+               Array.fold_right
+                (fun (id,fi,ti,bi,ai) i ->
+                  let fi' =
+                   match fi with
+                      N.Name fi -> fi
+                    | N.Anonymous -> Util.error "Anonymous fix function met"
+                  in
+                   (id, fi', ai,
+                    aux' (E.push_rec_types rec_decl env) new_idrefs bi,
+                    aux' env idrefs ti)::i)
+                (Array.mapi
+                 (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j),ai.(j))) f 
+                ) []
+               )
           | T.CoFix (i,((f,t,b) as rec_decl)) ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-             if innersort = "Prop" then
-              add_inner_type fresh_id'' ;
-             A.ACoFix (fresh_id'', i,
-              Array.fold_right
-               (fun (fi,ti,bi) i ->
-                 let fi' =
-                  match fi with
-                     N.Name fi -> fi
-                   | N.Anonymous -> Util.error "Anonymous fix function met"
-                 in
-                  (fi', aux' (E.push_rec_types rec_decl env) bi,
-                   aux' env ti)::i
-               ) (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) f ) []
-             )
+             if innersort = "Prop" then add_inner_type fresh_id'' ;
+             let fresh_idrefs =
+              Array.init (Array.length t) (function _ -> gen_id seed) in
+             let new_idrefs =(List.rev (Array.to_list fresh_idrefs)) @ idrefs in
+              A.ACoFix (fresh_id'', i,
+               Array.fold_right
+                (fun (id,fi,ti,bi) i ->
+                  let fi' =
+                   match fi with
+                      N.Name fi -> fi
+                    | N.Anonymous -> Util.error "Anonymous fix function met"
+                  in
+                   (id, fi', aux' (E.push_rec_types rec_decl env) new_idrefs bi,
+                    aux' env idrefs ti)::i)
+                (Array.mapi
+                  (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j)) ) f
+                ) []
+               )
         in
-         aux computeinnertypes None [] env t
+         aux computeinnertypes None [] env idrefs t
 ;;
 
 let acic_of_cic_context metasenv context t =
@@ -461,7 +486,7 @@ let acic_object_of_cic_object pvars sigma obj =
 (*CSC: either in the environment or in the named context (in the case *)
 (*CSC: of variables. Is this a problem?                               *)
   let env = Global.env () in
-  let acic_term_of_cic_term' = acic_term_of_cic_term_context' env sigma in
+  let acic_term_of_cic_term' = acic_term_of_cic_term_context' env [] sigma in
 (*CSC: the fresh_id is not stored anywhere. This _MUST_ be fixed using *)
 (*CSC: a modified version of the already existent fresh_id function    *)
   let fresh_id () =
@@ -494,66 +519,71 @@ let acic_object_of_cic_object pvars sigma obj =
            let cid = "c" ^ string_of_int !conjectures_seed in
             Hashtbl.add ids_to_conjectures cid conjecture ;
             incr conjectures_seed ;
-            let canonical_env,acanonical_context =
-             let rec aux env =
+            let canonical_env,idrefs',acanonical_context =
+             let rec aux env idrefs =
               function
-                 [] -> env,[]
+                 [] -> env,idrefs,[]
                | ((n,decl_or_def) as hyp)::tl ->
                   let hid = "h" ^ string_of_int !hypotheses_seed in
+                  let new_idrefs = hid::idrefs in
                    Hashtbl.add ids_to_hypotheses hid hyp ;
                    incr hypotheses_seed ;
                    match decl_or_def with
                        A.Decl t ->
-                        let final_env,atl =
-                         aux (Environ.push_rel (Names.Name n,None,t) env) tl
+                        let final_env,final_idrefs,atl =
+                         aux (Environ.push_rel (Names.Name n,None,t) env)
+                          new_idrefs tl
                         in
                          let at =
-                          acic_term_of_cic_term_context' env sigma t None
+                          acic_term_of_cic_term_context' env idrefs sigma t None
                          in
-                          final_env,(hid,(n,A.Decl at))::atl
+                          final_env,final_idrefs,(hid,(n,A.Decl at))::atl
                      | A.Def (t,ty) ->
-                        let final_env,atl =
+                        let final_env,final_idrefs,atl =
                          aux
-                          (Environ.push_rel (Names.Name n,Some t,ty)
-                            env) tl
+                          (Environ.push_rel (Names.Name n,Some t,ty) env)
+                           new_idrefs tl
                         in
                          let at =
-                          acic_term_of_cic_term_context' env sigma t None in
+                          acic_term_of_cic_term_context' env idrefs sigma t None
+                         in
                          let dummy_never_used =
                           let s = "dummy_never_used" in
-                           A.ARel (s,99,Names.id_of_string s)
+                           A.ARel (s,99,s,Names.id_of_string s)
                          in
-                          final_env,(hid,(n,A.Def (at,dummy_never_used)))::atl
+                          final_env,final_idrefs,
+                           (hid,(n,A.Def (at,dummy_never_used)))::atl
              in
-              aux env canonical_context
+              aux env [] canonical_context
             in
              let aterm =
-              acic_term_of_cic_term_context' canonical_env sigma term None
+              acic_term_of_cic_term_context' canonical_env idrefs' sigma term
+               None
              in
               (cid,i,List.rev acanonical_context,aterm)
          ) conjectures in
-       let abo = acic_term_of_cic_term_context' env sigma bo (Some ty) in
-       let aty = acic_term_of_cic_term_context' env sigma ty None in
+       let abo = acic_term_of_cic_term_context' env [] sigma bo (Some ty) in
+       let aty = acic_term_of_cic_term_context' env [] sigma ty None in
         A.ACurrentProof (fresh_id (),id,aconjectures,abo,aty)
     | A.InductiveDefinition (tys,params,paramsno) ->
        let env' =
         List.fold_right
          (fun (name,_,arity,_) env ->
            Environ.push_rel (Names.Name name, None, arity) env
-         ) (List.rev tys) env
-       in
+         ) (List.rev tys) env in
+       let idrefs = List.map (function _ -> gen_id seed) tys in
        let atys =
-        List.map
-         (function (name,inductive,ty,cons) ->
+        List.map2
+         (fun id (name,inductive,ty,cons) ->
            let acons =
             List.map
              (function (name,ty) ->
-               (name,acic_term_of_cic_term_context' env' Evd.empty ty None)
+               (name,
+                 acic_term_of_cic_term_context' env' idrefs Evd.empty ty None)
              ) cons
            in
-            (name,inductive,acic_term_of_cic_term' ty None,acons)
-         )
-         tys
+            (id,name,inductive,acic_term_of_cic_term' ty None,acons)
+         ) (List.rev idrefs) tys
        in
        A.AInductiveDefinition (fresh_id (),atys,params,paramsno)
    in

@@ -5,6 +5,7 @@ let std_ppcmds_to_string s =
    Format.flush_str_formatter ()
 ;;
 
+let idref_of_id id = "v" ^ id;;
 
 (* Transform a constr to an Xml.token Stream.t *)
 (* env is a named context                      *)
@@ -25,6 +26,9 @@ let constr_to_xml obj sigma env =
   let named_context' =
    List.filter (function n -> not (List.mem n real_named_context)) named_context
   in
+  let idrefs =
+   List.map
+    (function x,_,_ -> idref_of_id (Names.string_of_id x)) named_context' in
   let rel_context = Sign.push_named_to_rel_context named_context' [] in
   let rel_env =
    Environ.push_rel_context rel_context
@@ -36,7 +40,7 @@ let constr_to_xml obj sigma env =
     let annobj =
      Cic2acic.acic_of_cic_context' false seed ids_to_terms constr_to_ids
       ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars rel_env
-      sigma (Term.unshare obj') None
+      idrefs sigma (Term.unshare obj') None
     in
      Acic2Xml.print_term ids_to_inner_sorts annobj
    with e ->
@@ -150,16 +154,19 @@ Pp.ppnl (Pp.(++) (Pp.str
          let hyps = Proof_trees.get_hyps rc in
          let env= Proof_trees.get_env rc in
 
-         let xgoal = X.xml_nempty "Goal" [] (constr_to_xml concl sigma env) in
+         let xgoal =
+          X.xml_nempty "Goal" [] (constr_to_xml concl sigma env) in
 
          let rec build_hyps =
           function
            | [] -> xgoal
            | (id,c,tid)::hyps1 ->
-              [< build_hyps hyps1;
-                 (X.xml_nempty "Hypothesis" ["name",(Names.string_of_id id)]
-                   (constr_to_xml tid sigma env))
-              >] in
+              let id' = Names.string_of_id id in
+               [< build_hyps hyps1;
+                  (X.xml_nempty "Hypothesis"
+                    ["id",idref_of_id id' ; "name",id']
+                    (constr_to_xml tid sigma env))
+               >] in
          let old_names = List.map (fun (id,c,tid)->id) old_hyps in
          let new_hyps =
           List.filter (fun (id,c,tid)-> not (List.mem id old_names)) hyps in
