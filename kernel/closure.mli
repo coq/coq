@@ -32,18 +32,6 @@ type evaluable_global_reference =
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
-(*
-type red_kind = 
-  | BETA
-  | DELTA
-  | ZETA
-  | EVAR
-  | IOTA
-  | CONST of section_path list
-  | CONSTBUT of section_path list
-  | VAR of identifier
-  | VARBUT of identifier
-*)
 (* Sets of reduction kinds. *)
 module type RedFlagsSig = sig
   type reds

@@ -144,12 +144,6 @@ let push_cci n sp ref =
 
 let push = push_cci
 
-(*
-let push_short_name sp ref =
-  (* We push a volatile unqualified name *)
-  push_short_name_ccipath 0 [] (basename sp) (TrueGlobal ref)
-*)
-
 (* This is for Syntactic Definitions *)
 
 let push_syntactic_definition sp =
@@ -234,25 +228,6 @@ let constant_sp_of_id id =
   match locate_cci (make_qualid [] id) with
     | TrueGlobal (ConstRef sp) -> sp
     | _ -> raise Not_found
-
-(*
-let check_absoluteness dir =
-  match dir with
-    | a::_ when List.mem a !roots -> ()
-    | _ -> anomaly ("Not an absolute dirpath: "^(string_of_dirpath dir))
-
-let is_absolute_dirpath = function
-    | a::_ when List.mem a !roots -> true
-    | _ -> false
-
-let absolute_reference sp =
-  check_absoluteness (dirpath sp);
-  locate (qualid_of_sp sp)
-
-let locate_in_absolute_module dir id =
-  check_absoluteness dir;
-  locate (make_qualid dir id)
-*)
 
 let absolute_reference sp =
   let a = locate_cci (qualid_of_sp sp) in

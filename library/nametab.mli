@@ -79,14 +79,7 @@ val locate_section : qualid -> dir_path
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool
 val exists_section : dir_path -> bool
-(*
-val open_module_contents : qualid -> unit
-val rec_open_module_contents : qualid -> unit
 
-(*s Entry points for sections *)
-val open_section_contents : qualid -> unit
-val push_section : section_path -> module_contents -> unit
-*)
 (*s Roots of the space of absolute names *)
 
 (* This is the root of the standard library of Coq *)
@@ -102,10 +95,6 @@ val push_library_root : module_ident -> unit
    especially, constructor/inductive names are turned into internal
    references inside a block of mutual inductive *)
 val absolute_reference : section_path -> global_reference
-
-(*
-val is_absolute_dirpath : dir_path -> bool
-*)
 
 (* [locate_in_absolute_module dir id] finds [id] in module [dir] or in
    one of its section/subsection *)
