@@ -994,7 +994,8 @@ let rec pr_vernac = function
 	| PrintSectionContext s ->
             str"Print Section" ++ spc() ++ Libnames.pr_reference s
 	| PrintGrammar (uni,ent) ->
-            str"Print Grammar" ++ spc() ++ str uni ++ spc() ++ str ent
+            msgerrnl (str "warning: no direct translation of Print Grammar entry"); 
+            str"Print Grammar" ++ spc() ++ str ent
 	| PrintLoadPath -> str"Print LoadPath"
 	| PrintModules -> str"Print Modules"
 	| PrintMLLoadPath -> str"Print ML Path"
