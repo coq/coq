@@ -2049,14 +2049,16 @@ let rec prove  tauto_intu g   =
 			    (prove tauto_intu)))
    tauto_intu)))))))))) g
 
+let strToOccs x = 
+  ([], Closure.EvalConstRef (Nametab.constant_sp_of_id (id_of_string x)))
+
 let tauto gls = 
-  let strToOccs x = ([],Nametab.constant_sp_of_id (id_of_string x)) in  
-  (tclTHEN (onAllClausesLR 
-              (unfold_option [strToOccs "not";strToOccs "iff"])) 
+  (tclTHEN 
+     (onAllClausesLR 
+        (unfold_option [strToOccs "not";strToOccs "iff"])) 
      (prove tautoOR_0)) gls
 
 let intuition gls =
-  let strToOccs x = ([],Nametab.constant_sp_of_id (id_of_string x)) in  
   (tclTHEN 
      ((tclTHEN (onAllClausesLR 
 		  (unfold_option [strToOccs "not";strToOccs "iff"])) 
