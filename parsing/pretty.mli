@@ -34,6 +34,9 @@ val print_judgment : env -> unsafe_judgment -> std_ppcmds
 val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
   'a reduction_function -> env -> unsafe_judgment -> std_ppcmds
+(* This function is exported for the graphical user-interface pcoq *)
+val build_inductive : section_path -> int ->
+  global_reference * rel_context * types * identifier array * types array
 val print_mutual : section_path -> std_ppcmds
 val print_name : Nametab.qualid -> std_ppcmds
 val print_opaque_name : Nametab.qualid -> std_ppcmds
