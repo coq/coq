@@ -138,8 +138,3 @@ let type_of_reference env = function
   | ConstructRef cstr -> Inductive.type_of_constructor env cstr
 
 let type_of_global t = type_of_reference (env ()) t
-
-
-(*let get_kn dp l = 
-  make_kn (current_modpath !global_env) dp l
-*)
