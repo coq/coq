@@ -1375,7 +1375,11 @@ let rec global_varsl l constr = match kind_of_term constr with
   | IsVar id -> id::l
   | _        -> fold_constr global_varsl l constr
 
-let global_vars constr = global_varsl [] constr
+let global_vars = global_varsl []
+
+let global_vars_decl = function
+  | (_, None, t) -> global_vars t
+  | (_, Some c, t) -> (global_vars c)@(global_vars t)
 
 let global_vars_set constr = 
   let rec filtrec acc c = match kind_of_term c with

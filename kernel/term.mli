@@ -463,6 +463,10 @@ val subst1_decl : constr -> named_declaration -> named_declaration
 (* [global_vars c] returns the list of [id]'s occurring as [VAR id] in [c] *)
 val global_vars : constr -> identifier list
 
+(* [global_vars_decl d] returns the list of [id]'s occurring as [VAR
+    id] in declaration [d] (type and body if any) *)
+val global_vars_decl : named_declaration -> identifier list
+
 val global_vars_set : constr -> Idset.t
 val replace_vars : (identifier * constr) list -> constr -> constr
 val subst_var : identifier -> constr -> constr
