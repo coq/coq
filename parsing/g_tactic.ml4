@@ -14,6 +14,31 @@ open Util
 (* Auxiliary grammar rules *)
 
 GEXTEND Gram
+  GLOBAL: autoargs;
+
+  autoarg_depth:
+  [ [ n = pure_numarg -> <:ast< $n>>
+     | -> Coqast.Str(loc,"NoAutoArg") ] ]
+  ;
+  autoarg_adding:
+  [ [ IDENT "Adding" ; "["; l = ne_qualidarg_list; "]" -> l
+      | -> [] ] ]
+  ;
+  autoarg_destructing:
+  [ [ IDENT "Destructing" -> Coqast.Str(loc,"Destructing")
+      | -> Coqast.Str(loc,"NoAutoArg") ] ]
+  ;
+  autoarg_usingTDB:
+  [ [ "Using"; "TDB"  ->  Coqast.Str(loc,"UsingTDB")
+      | -> Coqast.Str(loc,"NoAutoArg")  ] ]
+  ;
+  autoargs:
+  [ [ a0 = autoarg_depth; l = autoarg_adding; 
+      a2 = autoarg_destructing; a3 = autoarg_usingTDB -> a0::a2::a3::l ] ]
+  ;
+  END
+
+GEXTEND Gram
 
   identarg:
     [ [ id = Constr.ident -> id ] ]
@@ -62,9 +87,6 @@ GEXTEND Gram
   ;
   ne_qualidconstarg_list:
     [ [ l = LIST1 qualidconstarg -> l ] ]
-  ;
-  ne_num_list:
-    [ [ n = numarg; l = ne_num_list -> n :: l | n = numarg -> [n] ] ]
   ;
   pattern_occ:
     [ [ nl = LIST1 pure_numarg; c = constrarg ->
@@ -174,23 +196,6 @@ GEXTEND Gram
   clausearg:
     [ [ "in"; idl = ne_identarg_list -> <:ast< (CLAUSE ($LIST idl)) >>
       | -> <:ast< (CLAUSE) >> ] ]
-  ;
-  autoarg_depth:
-  [ [ n = pure_numarg -> <:ast< $n>>
-     | -> Coqast.Str(loc,"NoAutoArg") ] ]
-  ;
-  autoarg_adding:
-  [ [ IDENT "Adding" ; "["; l = ne_identarg_list; "]" -> 
-        <:ast< (CLAUSE ($LIST $l))>>
-      | -> <:ast< (CLAUSE) >> ] ]
-  ;
-  autoarg_destructing:
-  [ [ IDENT "Destructing" -> Coqast.Str(loc,"Destructing")
-      | -> Coqast.Str(loc,"NoAutoArg") ] ]
-  ;
-  autoarg_usingTDB:
-  [ [ "Using"; "TDB"  ->  Coqast.Str(loc,"UsingTDB")
-      | -> Coqast.Str(loc,"NoAutoArg")  ] ]
   ;
   fixdecl:
     [ [ id = identarg; n = pure_numarg; ":"; c = constrarg; fd = fixdecl ->
@@ -362,12 +367,8 @@ GEXTEND Gram
       | IDENT "DHyp";  id=identarg  -> <:ast< (DHyp  $id)>>
       | IDENT "CDHyp"; id=identarg -> <:ast<  (CDHyp $id)>>
       | IDENT "DConcl"  -> <:ast< (DConcl)>>
-      | IDENT "SuperAuto"; 
-                       a0 = autoarg_depth;
-                       a1 = autoarg_adding; 
-                       a2 = autoarg_destructing; 
-                       a3 = autoarg_usingTDB -> 
-                   <:ast< (SuperAuto $a0 $a1 $a2 $a3) >>
+      | IDENT "SuperAuto"; l = autoargs ->
+                   <:ast< (SuperAuto ($LIST $l)) >>
       | IDENT "Auto"; n = pure_numarg; IDENT "Decomp" -> <:ast< (DAuto $n) >>
       | IDENT "Auto"; IDENT "Decomp" -> <:ast< (DAuto) >>
       | IDENT "Auto"; n = pure_numarg; IDENT "Decomp"; p = pure_numarg ->

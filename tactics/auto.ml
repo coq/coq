@@ -926,41 +926,47 @@ let rec super_search n db_list local_db argl goal =
       (compileAutoArgList  
          (super_search (n-1) db_list local_db argl) argl))) goal
 
-let search_superauto n ids argl g = 
+let search_superauto n to_add argl g = 
   let sigma =
     List.fold_right
-      (fun id -> add_named_assum (id, pf_type_of g (pf_global g id)))
-      ids empty_named_context in
+      (fun (id,c) -> add_named_assum (id, pf_type_of g c))
+      to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
   let db = Hint_db.add_list db0 (make_local_hint_db g) in
   super_search n [Stringmap.find "core" !searchtable] db argl g
 
-let superauto n ids_add argl  = 
-  tclTRY (tclCOMPLETE (search_superauto n ids_add argl))
+let superauto n to_add argl  = 
+  tclTRY (tclCOMPLETE (search_superauto n to_add argl))
 
 let default_superauto g = superauto !default_search_depth [] [] g
 
-let cvt_autoArgs = function
+let cvt_autoArg = function
   | "Destructing"  -> [Destructing]
   | "UsingTDB"     -> [UsingTDB]
   | "NoAutoArg"    -> []
-  | x -> errorlabstrm "cvt_autoArgs"
+  | x -> errorlabstrm "cvt_autoArg"
         [< 'sTR "Unexpected argument for Auto!"; 'sTR x >]
+
+let cvt_autoArgs =
+  list_join_map
+    (function 
+       | Quoted_string s -> (cvt_autoArg s)
+       | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "String expected" >])
+
+let interp_to_add gl = function
+  | (Qualid qid) ->
+      let _,id = repr_qualid qid in
+      (next_ident_away (id_of_string id) (pf_ids_of_hyps gl), 
+       Declare.constr_of_reference Evd.empty (Global.env()) (global qid))
+  | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "Qualid expected" >]
 
 let dyn_superauto l g = 
   match l with
-    | (Integer n)::(Clause ids_add)::l -> 
-        superauto n ids_add 
-          (list_join_map
-             (function 
-		| Quoted_string s -> (cvt_autoArgs s)
-                | _ -> assert false) l) g
-    | _::(Clause ids_add)::l  -> 
-        superauto !default_search_depth ids_add 
-          (list_join_map
-             (function 
-		| Quoted_string s -> (cvt_autoArgs s)
-                | _ -> assert false) l) g
+    | (Integer n)::a::b::c::to_add ->
+        superauto n (List.map (interp_to_add g) to_add) (cvt_autoArgs [a;b;c])g
+    | _::a::b::c::to_add  -> 
+        superauto !default_search_depth (List.map (interp_to_add g) to_add)
+	  (cvt_autoArgs [a;b;c]) g
     | l -> bad_tactic_args "SuperAuto" l g
 
 let h_superauto = hide_tactic "SuperAuto" dyn_superauto

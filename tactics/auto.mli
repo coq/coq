@@ -145,4 +145,5 @@ type autoArguments =
   | UsingTDB       
   | Destructing   
 
-val superauto : int -> identifier list -> autoArguments list -> tactic
+val superauto : int -> (identifier * constr) list -> autoArguments list
+      -> tactic

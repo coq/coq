@@ -96,11 +96,7 @@ module Constr :
 
 module Tactic :
   sig
-    val autoarg_adding : Coqast.t Gram.Entry.e
-    val autoarg_depth : Coqast.t Gram.Entry.e
-    val autoarg_destructing : Coqast.t Gram.Entry.e
-    val autoarg_excluding : Coqast.t Gram.Entry.e
-    val autoarg_usingTDB : Coqast.t Gram.Entry.e
+    val autoargs : Coqast.t list Gram.Entry.e
     val binding_list : Coqast.t Gram.Entry.e
     val castedopenconstrarg : Coqast.t Gram.Entry.e
     val castedconstrarg : Coqast.t Gram.Entry.e
@@ -131,7 +127,6 @@ module Tactic :
     val ne_qualidarg_list : Coqast.t list Gram.Entry.e
     val ne_qualidconstarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e
-    val ne_num_list : Coqast.t list Gram.Entry.e
     val ne_pattern_list : Coqast.t list Gram.Entry.e
     val clause_pattern : Coqast.t Gram.Entry.e
     val ne_unfold_occ_list : Coqast.t list Gram.Entry.e

@@ -389,6 +389,7 @@ let ast_of_cvt_redexp = function
 (* Gives the ast corresponding to a tactic argument *)
 let ast_of_cvt_arg = function
   | Identifier id   -> nvar (string_of_id id) 
+  | Qualid qid      -> nvar (string_of_qualid qid) 
   | Quoted_string s -> str s
   | Integer n       -> num n 
   | Command c       -> ope ("COMMAND",[c])

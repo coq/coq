@@ -272,7 +272,8 @@ module Tactic =
     let gec_list s =
       let e = Gram.Entry.create ("Tactic." ^ s) in
       Hashtbl.add utactic s (ListAst e); e
-    
+
+    let autoargs = gec_list "autoargs"    
     let binding_list = gec "binding_list"
     let castedopenconstrarg = gec "castedopenconstrarg"
     let castedconstrarg = gec "castedconstrarg"
@@ -300,7 +301,6 @@ module Tactic =
     let ne_identarg_list = gec_list "ne_identarg_list"
     let ne_qualidarg_list = gec_list "ne_qualidarg_list"
     let ne_qualidconstarg_list = gec_list "ne_qualidconstarg_list"
-    let ne_num_list = gec_list "ne_num_list"
     let ne_pattern_list = gec_list "ne_pattern_list"
     let clause_pattern = gec "clause_pattern"
     let one_intropattern = gec "one_intropattern"
@@ -311,11 +311,6 @@ module Tactic =
     let rec_clause = gec "rec_clause"
     let red_tactic = gec "red_tactic"
     let red_flag = gec "red_flag"
-    let autoarg_depth = gec "autoarg_depth"
-    let autoarg_excluding = gec "autoarg_excluding"
-    let autoarg_adding = gec "autoarg_adding"
-    let autoarg_destructing = gec "autoarg_destructing"
-    let autoarg_usingTDB = gec "autoarg_usingTDB"
     let numarg = gec "numarg"
     let pattern_occ = gec "pattern_occ"
     let pattern_occ_hyp = gec "pattern_occ_hyp"
