@@ -1166,7 +1166,7 @@ only constructors of $I$.
 \end{description}
 
 \paragraph{Example.}
-For \List\ and \Length\ the typing rules for the {\tt Case} expression
+For \List\ and \Length\ the typing rules for the {\tt match} expression
 are (writing just $t:M$ instead of \WTEG{t}{M}, the environment and
 context being the same in all the judgments).
 
@@ -1176,7 +1176,7 @@ context being the same in all the judgments).
 
 \[\frac{
      \begin{array}[b]{c} 
-H:(\LengthA~L~N) \\ P:(l:\ListA)(n:\nat)(\LengthA~l~n)\ra
+H:(\LengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\LengthA~l~n)\ra
   \Prop\\
  f_1:(P~(\Nil~A)~\nO~\LNil) \\
    f_2:\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
@@ -1203,10 +1203,21 @@ to the general reduction rule:
 \label{Fix-term} \index{Fix@{\tt Fix}}
 The second operator for elimination is fixpoint definition. 
 This fixpoint may involve several mutually recursive definitions.
-The basic syntax for a recursive set of declarations is 
-\[\Fix{}{f_1:A_1:=t_1 \ldots f_n:A_n:=t_n}\]
+The basic concrete syntax for a recursive set of mutually recursive 
+declarations is (with $\Gamma_i$ contexts)~: 
+\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with} f_n
+(\Gamma_n) :A_n:=t_n\]
 The terms are obtained by projections from this set of declarations
-and are written $\Fix{f_i}{f_1:A_1:=t_1 \ldots f_n:A_n:=t_n}$
+and are written 
+\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with} f_n
+(\Gamma_n) :A_n:=t_n~\kw{for}~f_i\]
+In the inference rules, we represent such a
+term by 
+\[\Fix{f_i}{f_1:A_1':=t_1' \ldots f_n:A_n':=t_n'}\]
+with $t_i'$ (resp. $A_i'$) representing the term $t_i$ abstracted
+(resp. generalised) with
+respect to the bindings in the context $\Gamma_i$, namely
+$t_i'=\lb \Gamma_i \mto t_i$ and $A_i'=\forall \Gamma_i, A_i$.
 
 \subsubsection{Typing rule}
 The typing rule is the expected one for a fixpoint.
@@ -1223,18 +1234,20 @@ will lead to proofs of absurdity.
 
 The basic scheme of recursion that should be allowed is the one needed for 
 defining primitive
-recursive functionals. In that case the fixpoint enjoys special
+recursive functionals. In that case the fixpoint enjoys a special
 syntactic restriction, namely one of the arguments belongs to an
 inductive type, the function starts with a case analysis and recursive
 calls are done on variables coming from patterns and representing subterms.
 
 For instance in the case of natural numbers, a proof of the induction
 principle of type 
-\[(P:\nat\ra\Prop)(P~\nO)\ra((n:\nat)(P~n)\ra(P~(\nS~n)))\ra(n:\nat)(P~n)\]
+\[\forall P:\nat\ra\Prop, (P~\nO)\ra((n:\nat)(P~n)\ra(P~(\nS~n)))\ra(n:\nat)(P~n)\]
 can be represented by the term:
 \[\begin{array}{l}
-[P:\nat\ra\Prop][f:(P~\nO)][g:\forall n:\nat, (P~n)\ra(P~(\nS~n))]\\
-\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~[p:\nat](g~p~(h~p))}}
+\lb P:\nat\ra\Prop\mto\lb f:(P~\nO)\mto \lb g:(\forall n:\nat,
+(P~n)\ra(P~(\nS~n))) \mto\\
+\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~\lb
+    p:\nat\mto (g~p~(h~p))}}
 \end{array}
 \]
 
@@ -1341,7 +1354,8 @@ Abort.
 \end{coq_example}
 But assuming the definition of a son function from \tree\ to \forest:
 \begin{coq_example}
-Definition sont (t:tree) : forest := let (f) := t in f.
+Definition sont (t:tree) : forest 
+   := let (f) := t in f.
 \end{coq_example}
 The following is not a conversion but can be proved after a case analysis.
 \begin{coq_example}
@@ -1397,6 +1411,7 @@ The implementation contains also coinductive definitions, which are
 types inhabited by infinite objects. 
 More information on coinductive definitions can be found
 in~\cite{Gimenez95b,Gim98}.
+%They are described inchapter~\ref{Coinductives}.
 
 \section{\iCIC : the Calculus of Inductive Construction with
   impredicative \Set}\label{impredicativity}
@@ -1414,7 +1429,7 @@ is rejected.
 ***)
 \end{coq_eval}
 \begin{coq_example}
-Definition id: Set := forall (X:Set),X->X.
+Definition id: Set := forall X:Set,X->X.
 \end{coq_example}
 while it will type-check, if one use instead the \texttt{coqtop
   -impredicative-set} command.
@@ -1444,7 +1459,7 @@ impredicative system for sort \Set{} become~:
          {\compat{I:\Set}{I\ra s}}}
 \end{description}
      
-%They are described inchapter~\ref{Coinductives}.
+
 
 % $Id$ 
 
