@@ -196,7 +196,9 @@ let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
 		  (try 
 		     inh_conv_coerce_to_fail env isevars c1 hj 
 		   with NoCoercion ->
-                     error_cant_apply_bad_type_loc apploc env (n,c1,body_of_type hj.uj_type)
+                     error_cant_apply_bad_type_loc apploc env 
+		       (n,nf_ise1 !isevars c1,
+			nf_ise1 !isevars (body_of_type hj.uj_type))
 		       (j_nf_ise env !isevars funj)
 		       (jl_nf_ise env !isevars argjl)) 
 	      in
