@@ -12,7 +12,6 @@
 (** Binary positive numbers *)
 
 (** Original development by Pierre Crégut, CNET, Lannion, France *)
-Unset Boxed Definitions.
 
 Inductive positive : Set :=
   | xI : positive -> positive
