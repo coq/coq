@@ -27,9 +27,9 @@ let pr_arg pr x = spc () ++ pr x
 
 let pr_ltac_constant sp = pr_qualid (Nametab.shortest_qualid_of_tactic sp)
 
-let pr_evaluable_reference = function 
-  | EvalVarRef id -> pr_id id
-  | EvalConstRef sp -> pr_global Idset.empty (Libnames.ConstRef sp)
+let pr_evaluable_reference_env env = function 
+  | EvalVarRef id -> pr_id (Constrextern.v7_to_v8_id id)
+  | EvalConstRef sp -> pr_global (Termops.vars_of_env env) (Libnames.ConstRef sp)
 
 let pr_inductive vars ind = pr_global vars (Libnames.IndRef ind)
 
@@ -345,7 +345,7 @@ and pr_atom1 env = function
 
   (* Conversion *)  
   | TacReduce (r,h) ->
-      hov 1 (pr_red_expr (pr_constr env,pr_lconstr env,pr_cst) r ++
+      hov 1 (pr_red_expr (pr_constr env,pr_lconstr env,pr_cst env) r ++
              pr_clause pr_ident h)
   | TacChange (occ,c,h) -> (* A Verifier *)
       hov 1 (str "change" ++ brk (1,1) ++
@@ -394,14 +394,14 @@ let rec pr_tac env inherited tac =
       llet
   | TacLetIn (llc,u) ->
       v 0
-       (hv 0 (pr_let_clauses (pr_tac env ltop) (pr_constr env) pr_cst llc ++ 
-       str " in") ++
+       (hv 0 (pr_let_clauses (pr_tac env ltop) (pr_constr env) (pr_cst env) llc
+       ++ str " in") ++
        fnl () ++ pr_tac env (llet,E) u),
       llet
   | TacLetCut llc -> assert false
   | TacMatch (t,lrul) ->
       hov 0 (str "match " ++
-             pr_may_eval (pr_constr env) (pr_lconstr env) pr_cst t
+             pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) t
         ++ str " with"
         ++ prlist
 	  (fun r -> fnl () ++ str "| " ++
@@ -463,7 +463,7 @@ let rec pr_tac env inherited tac =
   | TacArg(Tacexp e) -> pr_tac0 env e, latom
   | TacArg(ConstrMayEval (ConstrTerm c)) -> str "'" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
-      pr_may_eval (pr_constr env) (pr_lconstr env) pr_cst c, leval
+      pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
   | TacArg(Integer n) -> int n, latom
   | TacArg(TacCall(_,f,l)) ->
       hov 1 (pr_ref f ++ spc () ++
@@ -481,7 +481,7 @@ and pr_tacarg env = function
   | TacVoid -> str "()"
   | Reference r -> pr_ref r
   | ConstrMayEval (ConstrTerm c) -> pr_constr env c
-  | TacFreshId sopt -> str "FreshId" ++ pr_opt qstring sopt
+  | TacFreshId sopt -> str "fresh" ++ pr_opt qstring sopt
   | (ConstrMayEval _|TacCall _|Tacexp _|Integer _) as a ->
       str "'" ++ pr_tac env (latom,E) (TacArg a)
 
@@ -499,7 +499,7 @@ let rec raw_printers =
      Ppconstrnew.pr_constr_env,
      Ppconstrnew.pr_lconstr_env,
      Ppconstrnew.pr_pattern,
-     pr_reference,
+     (fun _ -> pr_reference),
      (fun _ -> pr_reference),
      pr_reference,
      pr_or_metaid (pr_located pr_id),
@@ -519,10 +519,10 @@ let pr_and_constr_expr pr (c,_) = pr c
 let rec glob_printers =
     (pr_glob_tactic, 
      pr_glob_tactic0,
-     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env env)),
-     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env env)),
-     Printer.pr_pattern,
-     pr_or_var (pr_and_short_name pr_evaluable_reference),
+     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env_no_translate env)),
+     (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env_no_translate env)),
+     (fun c -> Ppconstrnew.pr_pattern_env_no_translate (Global.env()) c),
+     (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun vars -> pr_or_var (pr_inductive vars)),
      pr_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,
@@ -544,7 +544,7 @@ let (pr_tactic,_,_) =
      Printer.prterm_env,
      Printer.prterm_env,
      Printer.pr_pattern,
-     pr_evaluable_reference,
+     pr_evaluable_reference_env,
      pr_inductive,
      pr_ltac_constant,
      pr_id,
