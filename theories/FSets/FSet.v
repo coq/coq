@@ -8,9 +8,9 @@
 
 (* $Id$ *)
 
-Require FSetInterface.
-Require FSetBridge.
-Require FSetProperties.
-Require FSetList.
-Require FSetRBT.
+Require Export FSetInterface.
+Require Export FSetBridge.
+Require Export FSetProperties.
+Require Export FSetList.
+Require Export FSetRBT.
 
