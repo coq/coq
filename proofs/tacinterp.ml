@@ -463,7 +463,6 @@ let set_debug pos = debug := pos
 (* Gives the state of debug *)
 let get_debug () = !debug
 
-
 (* Interprets any expression *)
 let rec val_interp ist ast =
 
@@ -899,10 +898,9 @@ and match_interp ist ast lmr =
     | _ ->
       errorlabstrm "Tacinterp.apply_match" [<'sTR
         "No matching clauses for Match">] in
-  let csr =
-    constr_of_Constr (unvarg (val_interp ist (List.hd lmr)))
-  and ilr = read_match_rule
-    ist.evc ist.env (constr_list ist.goalopt ist.lfun) (List.tl lmr) in
+  let csr = constr_of_Constr (unvarg (val_interp ist (List.hd lmr)))
+  and ilr = read_match_rule ist.evc ist.env (constr_list ist.goalopt ist.lfun)
+    (List.tl lmr) in
   apply_match ist csr ilr
 
 and tactic_interp ist ast g =

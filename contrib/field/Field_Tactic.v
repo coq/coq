@@ -207,31 +207,35 @@ Tactic Definition ApplyInverse mul FT lvar trm :=
 
 (**** Inverse test ****)
 
+Tactic Definition StrongFail tac := First [tac|Fail 2].
+
 Tactic Definition InverseTestAux FT trm :=
   Let AplusT = Eval Compute in (Aplus FT)
   And AmultT = Eval Compute in (Amult FT)
   And AoppT  = Eval Compute in (Aopp FT)
   And AinvT  = Eval Compute in (Ainv FT) In
   Match trm With
-  | [(AinvT ?)] -> Fail
-  | [(AoppT ?1)] -> (InverseTestAux FT ?1)
-  | [(AplusT ?1 ?2)] -> (InverseTestAux FT ?1);(InverseTestAux FT ?2)
-  | [(AmultT ?1 ?2)] -> (InverseTestAux FT ?1);(InverseTestAux FT ?2)
+  | [(AinvT ?)] -> Fail 1
+  | [(AoppT ?1)] -> StrongFail (InverseTestAux FT ?1)
+  | [(AplusT ?1 ?2)] ->
+    StrongFail ((InverseTestAux FT ?1);(InverseTestAux FT ?2))
+  | [(AmultT ?1 ?2)] ->
+    StrongFail ((InverseTestAux FT ?1);(InverseTestAux FT ?2))
   | _ -> Idtac.
 
 Tactic Definition InverseTest FT :=
   Let AplusT = Eval Compute in (Aplus FT) In
   Match Context With
-  | [|-?1== ?2] -> (InverseTestAux FT '(AplusT ?1 ?2)).
+  | [|- ?1==?2] -> (InverseTestAux FT '(AplusT ?1 ?2)).
 
 (**** Field itself ****)
 
 Tactic Definition ApplySimplif sfun :=
   (Match Context With
-   | [ |- (interp_ExprA ?1 ?2 ?3)==(interp_ExprA ? ? ?) ] ->
+   | [|- (interp_ExprA ?1 ?2 ?3)==(interp_ExprA ? ? ?)] ->
      (sfun ?1 ?2 ?3));
   (Match Context With
-   | [ |- (interp_ExprA ? ? ?)==(interp_ExprA ?1 ?2 ?3) ] ->
+   | [|- (interp_ExprA ? ? ?)==(interp_ExprA ?1 ?2 ?3)] ->
      (sfun ?1 ?2 ?3)).
 
 Tactic Definition Unfolds FT :=
@@ -257,4 +261,4 @@ Tactic Definition Field_Gen FT :=
      (Multiply mul);[(ApplySimplif ApplyMultiply);
        (ApplySimplif (ApplyInverse mul));
        (Let id = GrepMult In Clear id);Compute;
-       First [(InverseTest FT);Ring|(Field_Gen FT)]|Idtac]].
+       First [(InverseTest FT);Ring|Clear ft vm;(Field_Gen FT)]|Idtac]].
