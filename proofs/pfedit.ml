@@ -8,14 +8,17 @@ open Sign
 open Generic
 open Term
 open Constant
+open Environ
 open Evd
 open Declare
+open Typing
 open Tacmach
 open Proof_trees
 open Lib
+open Astterm
 
 type proof_topstate = {
-  top_hyps : var_context * var_context;
+  top_hyps : env * env;
   top_goal : goal;
   top_strength : strength }
 
@@ -61,8 +64,8 @@ let get_evmap_sign og =
 	  None 
   in
   match og with
-    | Some goal -> (project goal, pf_hyps goal)
-    | _ -> (Evd.empty, Global.var_context())
+    | Some goal -> (project goal, pf_env goal)
+    | _ -> (Evd.empty, Global.env())
  
 let set_proof s = 
   try 
@@ -171,8 +174,9 @@ let save_named opacity =
   let {evar_concl=concl} = ts.top_goal 
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in 
-  declare_constant (id_of_string ident) (*** opacity strength ***) 
-    { const_entry_body = pfterm; const_entry_type = Some concl };
+  declare_constant (id_of_string ident)
+    ({ const_entry_body = pfterm; const_entry_type = Some concl },
+      strength, opacity);
   del_proof ident;
   message(ident ^ " is defined")
     
@@ -183,12 +187,14 @@ let save_anonymous opacity save_ident n =
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in 
   if ident = "Unnamed_thm" then
-    declare_constant (id_of_string save_ident) (*** opacity,strength ***)
-      { const_entry_body = pfterm; const_entry_type = Some concl }
+    declare_constant (id_of_string save_ident)
+      ({ const_entry_body = pfterm; const_entry_type = Some concl },
+       strength, opacity)
   else begin
     message("Overriding name " ^ ident ^ " and using " ^ save_ident);
-    declare_constant (id_of_string save_ident) (*** opacity,strength ***)
-      { const_entry_body = pfterm; const_entry_type = Some concl }
+    declare_constant (id_of_string save_ident)
+      ({ const_entry_body = pfterm; const_entry_type = Some concl },
+       strength, opacity)
   end;
   del_proof ident;
   message(save_ident ^ " is defined")
@@ -241,10 +247,10 @@ and reset_initial () = restore_state "Initial"
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
 
-let start_proof_with_type na str sign fsign concl =
-  let top_goal = mk_goal (mt_ctxt Intset.empty) sign concl in
+let start_proof_with_type na str env concl =
+  let top_goal = mk_goal (mt_ctxt Intset.empty) env concl in
   let ts = { 
-    top_hyps = (sign,fsign);
+    top_hyps = (env,empty_env);
     top_goal = top_goal;
     top_strength = str }
   in
@@ -252,14 +258,16 @@ let start_proof_with_type na str sign fsign concl =
   set_proof (Some na)
 
 let start_proof na str concl_com =
-  let (sigma,(sign,fsign)) = initial_sigma_assumptions() in
-  let concl = fconstruct_type sigma sign concl_com in
-  start_proof_with_type na str sign fsign concl.body
+  let sigma = Evd.empty in
+  let env = Global.env() in
+  let concl = fconstruct_type sigma (Environ.context env) concl_com in
+  start_proof_with_type na str env concl.body
 
 let start_proof_constr na str concl =
-  let (sigma,(sign,fsign)) = initial_sigma_assumptions() in
-  let _ = type_of_type sigma sign concl in
-  start_proof_with_type na str sign fsign concl
+  let sigma = Evd.empty in
+  let env = Global.env() in
+  let _ = execute_type env sigma concl in
+  start_proof_with_type na str env concl
 
 let solve_nth k tac =
   let pft = get_pftreestate() in
@@ -301,7 +309,7 @@ let traverse n = rev_mutate (traverse n)
 
 let rec nth_cdr = function
   | 0 -> (function l -> l)
-  | n -> (comp List.tl (nth_cdr (n - 1)))
+  | n -> (compose List.tl (nth_cdr (n - 1)))
 	
 let rec common_ancestor_equal_length = function
   | ((a::l1), (b::l2)) ->
@@ -319,7 +327,7 @@ let rec common_ancestor_equal_length = function
 let common_ancestor l1 l2 =
   let diff_lengths = (List.length l1) - (List.length l2) in
   if diff_lengths > 0 then
-    let head,tail = chop_list diff_lengths l1 in
+    let head,tail = list_chop diff_lengths l1 in
     let (prefx,n) = common_ancestor_equal_length (tail,l2) in 
     (head@prefx),n
   else if diff_lengths < 0 then
@@ -347,3 +355,11 @@ let traverse_to path =
 
 (* traverse the proof tree until it reach the nth subgoal *)
 let traverse_nth_goal n = mutate (nth_unproven n)
+
+(* The goal focused on *)
+let focus_n = ref 0
+let make_focus n = focus_n := n
+let focus () = !focus_n
+let focused_goal () = let n = !focus_n in if n=0 then 1 else n
+
+

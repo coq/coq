@@ -20,14 +20,14 @@ type strength =
   | DischargeAt of section_path 
   | NeverDischarge
 
-type variable_declaration = identifier * constr * strength * bool
+type variable_declaration = constr * strength * bool
 
-val declare_variable : variable_declaration -> unit
+val declare_variable : identifier -> variable_declaration -> unit
 
 
-type constant_declaration = identifier * constant_entry * strength * bool
+type constant_declaration = constant_entry * strength * bool
 
-val declare_constant : constant_declaration -> unit
+val declare_constant : identifier -> constant_declaration -> unit
 
 val declare_parameter : identifier -> constr -> unit
 
@@ -41,6 +41,9 @@ val declare_eliminations : section_path -> unit
 val declare_syntax_constant : identifier -> constr -> unit
 
 val make_strength : string list -> strength
+val make_strength_0 : unit -> strength
+val make_strength_1 : unit -> strength
+val make_strength_2 : unit -> strength
 
 (*s Corresponding test and access functions. *)
 

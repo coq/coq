@@ -937,3 +937,27 @@ let type_fixpoint env sigma lna lar vdefj =
       (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)
   with IllBranch i ->
     error_ill_typed_rec_body CCI env i lna vdefj lar
+
+
+(* A function which checks that a term well typed verifies both
+   syntaxic conditions *)
+
+let control_only_guard env sigma = 
+  let rec control_rec = function
+    | Rel(p)        -> ()
+    | VAR _         -> ()
+    | DOP0(_)       -> ()
+    | DOPN(CoFix(_),cl) as cofix ->
+	check_cofix env sigma cofix; 
+	Array.iter control_rec cl
+    | DOPN(Fix(_),cl) as fix  -> 
+	check_fix env sigma fix; 
+        Array.iter control_rec cl
+    | DOPN(_,cl)    -> Array.iter control_rec cl
+    | DOPL(_,cl)    -> List.iter control_rec cl
+    | DOP1(_,c)     -> control_rec c
+    | DOP2(_,c1,c2) -> control_rec c1; control_rec c2
+    | DLAM(_,c)     -> control_rec c
+    | DLAMV(_,v)    -> Array.iter control_rec v
+  in 
+  control_rec 

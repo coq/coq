@@ -3,6 +3,7 @@
 
 open Pp
 open Util
+open Unix
 
 (* Files and load path. *)
 
@@ -13,6 +14,37 @@ let add_path dir = load_path := dir :: !load_path
 let del_path dir =
   if List.mem dir !load_path then
     load_path := List.filter (fun s -> s <> dir) !load_path
+
+let search_paths () = !load_path
+
+(* All subdirectories, recursively *)
+
+let all_subdirs dir =
+  let l = ref [] in
+  let add f = l := f :: !l in
+  let rec traverse dir =
+    Printf.printf "%s\n" dir;
+    let dirh = 
+      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
+    in
+    try
+      while true do
+	let f = readdir dirh in
+	if f <> "." && f <> ".." then
+	  let file = Filename.concat dir f in
+	  if (stat file).st_kind = S_DIR then begin
+	    add file;
+	    traverse file
+	  end
+      done
+    with End_of_file ->
+      closedir dirh
+  in
+  traverse dir; List.rev !l
+
+let radd_path dir = List.iter add_path (all_subdirs dir)
+
+
 
 (* TODO: rétablir glob (expansion ~user et $VAR) si on le juge nécessaire *)
 let glob s = s
@@ -49,26 +81,6 @@ let is_in_path lpath filename =
 
 let make_suffix name suffix =
   if Filename.check_suffix name suffix then name else (name ^ suffix)
-
-(*Gives the list of all the directories under dir*)
-let alldir dir =
-  let ini = Unix.getcwd()
-  and tmp = Filename.temp_file "coq" "rec"
-  and lst = ref [] in
-  Unix.chdir dir;
-  let bse = Unix.getcwd() in
-  let _ = Sys.command ("find "^bse^" -type d >> "^tmp) in
-  let inf = open_in tmp in
-  try
-    while true do
-      lst := !lst @ [input_line inf]
-    done;
-    []
-  with End_of_file ->
-    close_in inf;
-    Sys.remove tmp;
-    Unix.chdir ini;
-    !lst
 
 let open_trapping_failure open_fun name suffix =
   let rname = make_suffix name suffix in

@@ -3,7 +3,7 @@
 
 (*s Files. *)
 
-val alldir : string -> string list
+val all_subdirs : string -> string list
 val is_in_path : string list -> string -> bool
 val where_in_path : string list -> string -> string
 
@@ -15,6 +15,9 @@ val glob : string -> string
 
 val add_path : string -> unit
 val del_path : string -> unit
+val radd_path : string -> unit
+
+val search_paths : unit -> string list
 
 val find_file_in_path : string -> string
 

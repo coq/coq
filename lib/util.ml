@@ -207,6 +207,12 @@ let list_map_append f l = List.flatten (List.map f l)
 
 let list_map_append2 f l1 l2 = List.flatten (List.map2 f l1 l2)
 
+let list_share_tails l1 l2 =
+  let rec shr_rev acc = function
+    | ((x1::l1), (x2::l2)) when x1 == x2 -> shr_rev (x1::acc) (l1,l2)
+    | (l1,l2) -> (List.rev l1, List.rev l2, acc)
+  in 
+  shr_rev [] (List.rev l1, List.rev l2)
 
 (* Arrays *)
 

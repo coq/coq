@@ -64,6 +64,7 @@ val apply_rel_list :
 
 val check_fix : env -> 'a evar_map -> constr -> unit
 val check_cofix : env -> 'a evar_map -> constr -> unit
+val control_only_guard : env -> 'a evar_map -> constr -> unit
 
 val type_fixpoint : env -> 'a evar_map -> name list -> typed_type array 
     -> unsafe_judgment array -> constraints

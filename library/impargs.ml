@@ -15,6 +15,21 @@ type implicits =
 
 let implicit_args = ref false
 
+let make_implicit_args flag = implicit_args := flag
+let is_implicit_args () = !implicit_args
+
+let implicitely f x =
+  let oimplicit = !implicit_args in
+  try 
+    implicit_args := true;
+    let rslt = f x in 
+    implicit_args := oimplicit;
+    rslt
+  with e -> begin
+    implicit_args := oimplicit;
+    raise e
+  end
+
 let auto_implicits ty =
   if !implicit_args then
     let genv = Global.env() in

@@ -62,6 +62,7 @@ val list_prefix_of : 'a list -> 'a list -> bool
 val list_map_append : ('a -> 'b list) -> 'a list -> 'b list
 (* raises [Invalid_argument] if the two lists don't have the same length *)
 val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
+val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 
 (*s Arrays. *)
 

@@ -31,7 +31,7 @@ let rec whd_replmeta = function
 let raw_sopattern_of_compattern sign com =
   failwith "raw_sopattern_of_compattern: TODO"
   (***
-  let c = Astterm.raw_constr_of_compattern empty_evd (gLOB sign) com in
+  let c = Astterm.raw_constr_of_compattern Evd.empty (gLOB sign) com in
   strong whd_replmeta c
   ***)
 

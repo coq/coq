@@ -1,6 +1,8 @@
 
 (* $Id$ *)
 
+open Util
+
 let batch_mode = ref false
 
 let debug = ref false
@@ -41,3 +43,10 @@ let without_mes_ambig f x =
   try make_mes_ambig false;
       let rslt = f x in (make_mes_ambig old; rslt)
   with e -> (make_mes_ambig old; raise e)
+
+(* A list of the areas of the system where "unsafe" operation
+ * has been requested *)
+let unsafe_set = ref Stringset.empty
+let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set
+let is_unsafe s = Stringset.mem s !unsafe_set
+

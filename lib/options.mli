@@ -22,3 +22,6 @@ val make_mes_ambig : bool -> unit
 val is_mes_ambig : unit -> bool
 val without_mes_ambig : ('a -> 'b) -> 'a -> 'b
 
+val add_unsafe : string -> unit
+val is_unsafe : string -> bool
+

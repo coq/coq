@@ -57,7 +57,8 @@ PRETYPING=pretyping/typing.cmo pretyping/classops.cmo pretyping/recordops.cmo \
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo\
-        parsing/printer.cmo parsing/pretty.cmo parsing/astterm.cmo
+        parsing/printer.cmo parsing/pretty.cmo parsing/astterm.cmo \
+        parsing/egrammar.cmo
 
 PROOFS=proofs/tacred.cmo \
        proofs/proof_trees.cmo proofs/logic.cmo \
@@ -71,6 +72,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
+         toplevel/metasyntax.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
 
@@ -91,6 +93,7 @@ link: $(LINK)
 	ocamlc -custom $(INCLUDES) -o link $(CMA) $(LINK) $(OSDEPLIBS)
 	rm -f link 
 
+lib: $(LIB)
 kernel: $(KERNEL)
 library: $(LIBRARY)
 proofs: $(PROOFS)

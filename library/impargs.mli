@@ -14,7 +14,9 @@ type implicits =
   | Impl_manual of int list
   | No_impl
 
-val implicit_args : bool ref
+val make_implicit_args : bool -> unit
+val is_implicit_args : unit -> bool
+val implicitely : ('a -> 'b) -> 'a -> 'b
 
 val list_of_implicits : implicits -> int list
 
