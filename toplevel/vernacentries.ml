@@ -112,11 +112,18 @@ let locate_file f =
     mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
 		  'sTR"on loadpath"; 'fNL >])
 
-let locate_id id =
+let locate_sp sp =
   try
-    mSG [< 'sTR (string_of_path (Nametab.sp_of_id CCI id)); 'fNL >]
+    let ref = Nametab.locate sp in
+    mSG
+      [< 'sTR (string_of_path (sp_of_global (Global.env()) ref)); 'fNL >]
   with Not_found -> 
-    error ((string_of_id id) ^ " not a defined object")
+  try
+    mSG
+      [< 'sTR (string_of_path (Syntax_def.locate_syntactic_definition sp));
+	 'fNL >]
+  with Not_found ->
+    error ((string_of_path sp) ^ " not a defined object")
 
 let print_loadpath () =
   let l = get_load_path () in
@@ -150,7 +157,7 @@ let _ =
 let _ = 
   add "Locate"
     (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> locate_id id)
+       | [VARG_QUALID sp] -> (fun () -> locate_sp sp)
        | _  -> bad_vernac_args "Locate")
 
 (* For compatibility *)
@@ -282,9 +289,9 @@ let _ =
   add "WriteModule"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   fun () -> let m = string_of_id id in Library.save_module_to m m
+	   fun () -> let m = string_of_id id in Discharge.save_module_to m m
        | [VARG_IDENTIFIER id; VARG_STRING f] ->
-	   fun () -> Library.save_module_to (string_of_id id) f
+	   fun () -> Discharge.save_module_to (string_of_id id) f
        | _ -> bad_vernac_args "WriteModule")
 
 let _ =
@@ -465,8 +472,7 @@ let _ =
     (fun id_list () ->
        List.iter 
 	 (function 
-	    | VARG_IDENTIFIER id -> 
-		let sp = Nametab.sp_of_id CCI id in Global.set_transparent sp
+	    | VARG_CONSTANT sp -> Global.set_transparent sp
 	    |   _  -> bad_vernac_args "TRANSPARENT")
 	 id_list)
     
@@ -475,8 +481,7 @@ let _ =
     (fun id_list () ->
        List.iter
 	 (function 
-	    | VARG_IDENTIFIER id -> 
-		let sp = Nametab.sp_of_id CCI id in Global.set_opaque sp
+	    | VARG_CONSTANT sp -> Global.set_opaque sp
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
 
@@ -864,7 +869,13 @@ let _ =
 let _ =
   add "SEARCH"
     (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> print_crible id)
+       | [VARG_QUALID q] ->
+	   (fun () ->
+	      let ref =
+		try Nametab.locate q
+		with Not_found ->
+		  Pretype_errors.error_global_not_found_loc loc q
+	      in search_by_head ref)
        | _ -> bad_vernac_args "SEARCH")
 
 let _ =
@@ -1230,20 +1241,17 @@ let _ =
 let _ =
   add "INFIX"
     (function
-       | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING inf; 
-          VARG_IDENTIFIER pref] ->
+       | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING inf; VARG_QUALID pref] ->
            (fun () ->
-              Metasyntax.add_infix
-               	(Extend.gram_assoc assoc) n inf (string_of_id pref))
+	      Metasyntax.add_infix (Extend.gram_assoc assoc) n inf pref)
        | _ -> bad_vernac_args "INFIX")
 
 let _ =
   add "DISTFIX"
     (function
-       | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING s; VARG_IDENTIFIER f] ->
+       | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING s; VARG_QUALID pref] ->
            (fun () ->
-              Metasyntax.add_distfix
-               	(Extend.gram_assoc assoc) n s (string_of_id f))
+              Metasyntax.add_distfix (Extend.gram_assoc assoc) n s pref)
        | _ -> bad_vernac_args "DISTFIX")
 
 let _ =

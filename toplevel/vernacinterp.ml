@@ -24,6 +24,8 @@ type vernac_arg =
   | VARG_NUMBER of int
   | VARG_NUMBERLIST of int list
   | VARG_IDENTIFIER of identifier
+  | VARG_QUALID of section_path
+  | VARG_CONSTANT of constant_path
   | VCALL of string * vernac_arg list
   | VARG_CONSTR of Coqast.t
   | VARG_CONSTRLIST of Coqast.t list
@@ -77,6 +79,13 @@ let rec cvt_varg ast =
         VCALL (na,List.map cvt_varg l)
 
     | Nvar(_,s) -> VARG_IDENTIFIER (id_of_string s)
+    | Node(loc,"QUALIDARG",p) -> VARG_QUALID (Astterm.interp_qualid p)
+    | Node(loc,"QUALIDCONSTARG",p) ->
+	let q = Astterm.interp_qualid p in
+	let sp =
+	  try Nametab.locate_constant q
+	  with Not_found -> Pretype_errors.error_global_not_found_loc loc q
+	in VARG_CONSTANT sp
     | Str(_,s) -> VARG_STRING s
     | Num(_,n) -> VARG_NUMBER n
     | Node(_,"NONE",[]) -> VARG_UNIT

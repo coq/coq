@@ -19,7 +19,7 @@ open Printer
 let print_basename sp =
   let (_,id,k) = repr_path sp in
   try 
-    if sp = Nametab.sp_of_id k id then 
+    if is_visible sp id then 
       string_of_id id
     else 
       (string_of_id id)^"."^(string_of_kind k)
@@ -27,18 +27,6 @@ let print_basename sp =
     warning "Undeclared constants in print_name";
     string_of_path sp
 
-(*
-let print_basename_mind sp mindid =
-  let (_,id,k) = repr_path sp in
-  try 
-    if sp = Nametab.sp_of_id k id then  
-      string_of_id mindid
-    else 
-      (string_of_id mindid)^"."^(string_of_kind k)
-  with Not_found ->
-    warning "Undeclared constants in print_name";
-    string_of_path_mind sp mindid
-*)
 let print_closed_sections = ref false
 
 let print_typed_value_in_env env (trm,typ) =
@@ -186,8 +174,8 @@ let print_mutual sp mib =
              implicit_args_msg sp mipv >])
 
 let print_section_variable sp =
-  let ((id,_,_) as d,_,_) = get_variable sp in
-  let l = implicits_of_var id in
+  let (d,_,_) = get_variable sp in
+  let l = implicits_of_var sp in
   [< print_named_decl d; print_impl_args l; 'fNL >]
 
 let print_body = function
@@ -228,6 +216,15 @@ let print_inductive sp =
     hOV 0 [< 'sTR"Fw inductive definition "; 
 	     'sTR (print_basename sp); 'fNL >]
 
+let print_syntactic_def with_values sep sp =
+  let id = basename sp in
+  [< 'sTR" Syntax Macro "; 
+     print_id id ; 'sTR sep;  
+     if with_values then 
+       let c = Syntax_def.search_syntactic_definition sp in 
+       [< pr_rawterm c >]
+     else [<>]; 'fNL >]
+
 let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
   match (sp,tag) with
@@ -242,13 +239,7 @@ let print_leaf_entry with_values sep (sp,lobj) =
     | (_,"GRAMMAR") -> 
 	[< 'sTR" Grammar Marker"; 'fNL >]
     | (_,"SYNTAXCONSTANT") -> 
-	let id = basename sp in
-        [< 'sTR" Syntax Macro "; 
-      	   print_id id ; 'sTR sep;  
-           if with_values then 
-             let c = Syntax_def.search_syntactic_definition id in 
-	     [< pr_rawterm c >]
-           else [<>]; 'fNL >]
+	print_syntactic_def with_values sep sp
     | (_,"PPSYNTAX") -> 
 	[< 'sTR" Syntax Marker"; 'fNL >]
     | (_,"TOKEN") -> 
@@ -268,8 +259,9 @@ let rec print_library_entry with_values ent =
 	[< print_leaf_entry with_values sep (sp,lobj) >]
     | (_,Lib.OpenedSection str) -> 
         [< 'sTR(" >>>>>>> Section " ^ str); 'fNL >]
-    | (_,Lib.ClosedSection (str,_)) -> 
-        [< 'sTR(" >>>>>>> Closed Section " ^ str); 'fNL >]
+    | (sp,Lib.ClosedSection _) -> 
+        [< 'sTR(" >>>>>>> Closed Section " ^ (string_of_id (basename sp)));
+	   'fNL >]
     | (_,Lib.Module str) ->
 	[< 'sTR(" >>>>>>> Module " ^ str); 'fNL >]
     | (_,Lib.FrozenState _) ->
@@ -321,10 +313,10 @@ let print_constructors fn env_ar mip =
     mip.mind_consnames (mind_user_lc mip)
   in ()
 
-let crible (fn : string -> env -> constr -> unit) name =
+let crible (fn : string -> env -> constr -> unit) ref =
   let env = Global.env () in
   let imported = Library.opened_modules() in
-  let const = global_reference CCI name in 
+  let const = constr_of_reference Evd.empty env ref in 
   let rec crible_rec = function
     | (spopt,Lib.Leaf lobj)::rest ->
 	(match (spopt,object_tag lobj) with
@@ -364,12 +356,13 @@ let crible (fn : string -> env -> constr -> unit) name =
   try 
     crible_rec (Lib.contents_after None)
   with Not_found -> 
-    error ((string_of_id name) ^ " not declared")
+    errorlabstrm "search"
+      [< pr_global_reference env ref; 'sPC; 'sTR "not declared" >]
 
-let print_crible name =
+let search_by_head ref =
   crible (fun str ass_name constr -> 
             let pc = prterm_env ass_name constr in
-            mSG[<'sTR str; 'sTR":"; pc; 'fNL >]) name
+            mSG[<'sTR str; 'sTR":"; pc; 'fNL >]) ref
 
 let read_sec_context sec =
   let rec get_cxt in_cxt = function
@@ -414,13 +407,18 @@ let print_name name =
       | ConstRef sp -> print_constant true " = " sp
       | IndRef (sp,_) -> print_inductive sp
       | ConstructRef ((sp,_),_) -> print_inductive sp
+      | VarRef sp -> print_section_variable sp
+      | EvarRef n -> [< 'sTR "?"; 'iNT n; 'fNL >]
   with Not_found -> 
-  try
+  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let (c,typ) = Global.lookup_named name in 
-    [< print_named_decl (name,c,typ);
-       try print_impl_args (implicits_of_var name)
-       with _ -> [<>] >]
-  with Not_found -> error (str ^ " not a defined object")
+    [< print_named_decl (name,c,typ) >]
+  with Not_found ->
+  try
+    let sp = Syntax_def.locate_syntactic_definition (make_path [] name CCI) in
+    print_syntactic_def true " = " sp
+  with Not_found ->
+    error (str ^ " not a defined object")
 
 let print_opaque_name name = 
   let sigma = Evd.empty in

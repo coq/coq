@@ -20,6 +20,8 @@ type vernac_arg =
   | VARG_NUMBER of int
   | VARG_NUMBERLIST of int list
   | VARG_IDENTIFIER of identifier
+  | VARG_QUALID of section_path
+  | VARG_CONSTANT of constant_path
   | VCALL of string * vernac_arg list
   | VARG_CONSTR of Coqast.t
   | VARG_CONSTRLIST of Coqast.t list

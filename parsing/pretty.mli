@@ -22,7 +22,6 @@ val print_context : bool -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (section_path * Lib.node) -> std_ppcmds
 val print_full_context : unit -> std_ppcmds
 val print_full_context_typ : unit -> std_ppcmds
-val print_crible : identifier -> unit
 val print_sec_context : string -> std_ppcmds
 val print_sec_context_typ : string -> std_ppcmds
 val print_val : env -> unsafe_judgment -> std_ppcmds
@@ -48,7 +47,8 @@ val print_coercions : unit -> std_ppcmds
 val print_path_between : identifier -> identifier -> std_ppcmds
 
 
-val crible : (string -> env -> constr -> unit) -> identifier ->
+val search_by_head : global_reference -> unit
+val crible : (string -> env -> constr -> unit) -> global_reference ->
   unit
 val inspect : int -> std_ppcmds
 
