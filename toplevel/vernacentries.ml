@@ -593,7 +593,7 @@ let vernac_solve_existential = instantiate_nth_evar_com
 let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
-  set_end_tac (Tacinterp.interp tac)
+  if tac <> Tacexpr.TacId then set_end_tac (Tacinterp.interp tac)
 
  
    

@@ -63,14 +63,6 @@ let pr_reference r =
 
 let sep_end () = str"."
 
-let start_theorem = ref false
-
-let insert_proof_keyword () =
-  if !start_theorem then 
-    (start_theorem := false; hv 0 (str "Proof" ++ sep_end () ++ fnl()))
-  else
-    mt ()
-
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
 (*
 let pr_raw_tactic_env l env t = 
@@ -634,7 +626,6 @@ let rec pr_vernac = function
         | Some cc -> str" :=" ++ spc() ++ cc))
 
   | VernacStartTheoremProof (ki,id,(bl,c),b,d) ->
-      start_theorem := true;
       hov 1 (pr_thm_token ki ++ spc() ++ pr_id id ++ spc() ++
       (match bl with
         | [] -> mt()
@@ -649,7 +640,6 @@ pr_vbinders bl ++ spc())
       |	None -> (if opac then str"Save" else str"Defined") ++ spc() ++ pr_id id
       |	Some tok -> str"Save" ++ spc() ++ pr_thm_token tok ++ spc() ++ pr_id id)) 
   | VernacExactProof c ->
-      start_theorem := false;
       hov 2 (str"Proof" ++ pr_lconstrarg c)
   | VernacAssumption (stre,l) ->
       hov 2
@@ -906,13 +896,11 @@ pr_vbinders bl ++ spc())
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      insert_proof_keyword () ++
       (if i = 1 then mt() else int i ++ str ": ") ++
 (*      str "By " ++*)
       (if deftac then mt() else str "!! ") ++
       Options.with_option Options.translate_syntax (pr_raw_tactic_goal i) tac
   | VernacSolveExistential (i,c) ->
-      insert_proof_keyword () ++
       str"Existential " ++ int i ++ pr_lconstrarg c
 
   (* Auxiliary file and library management *)
@@ -1074,6 +1062,7 @@ pr_vbinders bl ++ spc())
   | VernacExtend (s,c) -> pr_extend s c
   | VernacV7only _ -> mt()
   | VernacV8only com -> pr_vernac com
+  | VernacProof Tacexpr.TacId -> str "Proof"
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te 
 
 and pr_extend s cl =
