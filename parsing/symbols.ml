@@ -28,11 +28,12 @@ let pr_bigint = function
 (**********************************************************************)
 (* Scope of symbols *)
 
+type level = Extend.precedence * Extend.precedence list
 type notation = string
 type scope_name = string
 type delimiters = string * string
 type scope = {
-  notations: rawconstr Stringmap.t;
+  notations: (rawconstr * level) Stringmap.t;
   delimiters: delimiters option
 }
 type scopes = scope_name list
@@ -97,11 +98,11 @@ let declare_delimiters scope dlm =
 
 (* The mapping between notations and production *)
 
-let declare_notation nt c scope =
+let declare_notation prec nt c scope =
   let sc = find_scope scope in
   if Stringmap.mem nt sc.notations && Options.is_verbose () then
     warning ("Notation "^nt^" is already used in scope "^scope);
-  let sc = { sc with notations = Stringmap.add nt c sc.notations } in
+  let sc = { sc with notations = Stringmap.add nt (c,prec) sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map
 
 open Coqast
@@ -118,7 +119,7 @@ let rec find_interpretation f = function
 
 let rec interp_notation ntn scopes args =
   let f scope =
-    let c = Stringmap.find ntn scope.notations in
+    let (c,_) = Stringmap.find ntn scope.notations in
     subst_meta_rawconstr args c in
   try find_interpretation f scopes
   with Not_found -> anomaly ("Unknown interpretation for notation "^ntn)
@@ -128,45 +129,39 @@ let find_notation_with_delimiters scope =
     | Some dlm -> Some (Some dlm)
     | None -> None
 
-let rec find_notation_without_delimiters pat_scope pat = function
+let rec find_notation_without_delimiters ntn_scope ntn = function
   | scope::scopes ->
       (* Is the expected printer attached to the most recently open scope? *)
-      if scope = pat_scope then
+      if scope = ntn_scope then
 	Some None
       else
 	(* If the most recently open scope has a printer for this pattern
     	   but not the expected one then we need delimiters *)
-	if Stringmap.mem pat (Stringmap.find scope !scope_map).notations then
-	  find_notation_with_delimiters pat_scope
+	if Stringmap.mem ntn (Stringmap.find scope !scope_map).notations then
+	  find_notation_with_delimiters ntn_scope
 	else
-	  find_notation_without_delimiters pat_scope pat scopes
+	  find_notation_without_delimiters ntn_scope ntn scopes
   | [] ->
-      find_notation_with_delimiters pat_scope
+      find_notation_with_delimiters ntn_scope
 
-let find_notation pat_scope pat scopes =
+let find_notation ntn_scope ntn scopes =
   match 
-    find_notation_without_delimiters pat_scope pat scopes
+    find_notation_without_delimiters ntn_scope ntn scopes
   with
     | None -> None
     | Some None -> Some (None,scopes)
-    | Some x -> Some (x,pat_scope::scopes)
+    | Some x -> Some (x,ntn_scope::scopes)
 
-let exists_notation_in_scope scope ntn r =
-  try Stringmap.find ntn (Stringmap.find scope !scope_map).notations = r
+let exists_notation_in_scope scope prec ntn r =
+  try Stringmap.find ntn (Stringmap.find scope !scope_map).notations = (r,prec)
   with Not_found -> false
 
-let exists_notation nt =
-  Stringmap.fold (fun scn sc b -> Stringmap.mem nt sc.notations or b)
-    !scope_map false 
+let exists_notation_prec prec nt sc =
+  try snd (Stringmap.find nt sc.notations) = prec with Not_found -> false
 
-(* TO DO
-let print_scope sc =
-  try
-    let sc = Stringmap.find scope !scope_map in
-    Stringmap.fold (fun ntn c s -> s ++ str ntn ++ Printer.pr_rawterm c)
-      sc.notations in
-  with Not_found -> str "Unknown scope"
-*)
+let exists_notation prec nt =
+  Stringmap.fold (fun scn sc b -> b or exists_notation_prec prec nt sc)
+    !scope_map false 
 
 (* We have to print delimiters; look for the more recent defined one *)
 (* Do we need to print delimiters? To know it, we look for a numeral *)
@@ -279,6 +274,28 @@ let find_arguments_scope r =
   try Refmap.find r !arguments_scope
   with Not_found -> []
 
+(* Printing *)
+
+let pr_delimiters = function
+  | None -> str "No delimiters"
+  | Some (l,r) -> str "Delimiters are " ++ str l ++ str " and " ++ str r
+
+let pr_notation prraw ntn r =
+  str ntn ++ str " stands for " ++ prraw r
+
+let pr_named_scope prraw scope sc =
+  str "Scope " ++ str scope ++ fnl ()
+  ++ pr_delimiters sc.delimiters ++ fnl ()
+  ++ Stringmap.fold
+       (fun ntn (r,_) strm -> pr_notation prraw ntn r ++ fnl () ++ strm)
+       sc.notations (mt ())
+
+let pr_scope prraw scope = pr_named_scope prraw scope (find_scope scope)
+
+let pr_scopes prraw =
+ Stringmap.fold 
+   (fun scope sc strm -> pr_named_scope prraw scope sc ++ fnl () ++ strm)
+   !scope_map (mt ())
 
 (* Synchronisation with reset *)
 

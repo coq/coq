@@ -17,6 +17,7 @@ type numeral_interpreter =
 (* A scope is a set of interpreters for symbols + optional
    interpreter and printers for integers + optional delimiters *)
 
+type level = Extend.precedence * Extend.precedence list
 type scope_name = string
 type delimiters = string * string
 type scope
@@ -40,15 +41,20 @@ val find_numeral_printer : string -> scopes ->
 
 (* Declare, interpret, and look for a printer for symbolic notations *)
 type notation = string
-val declare_notation : notation -> rawconstr -> scope_name -> unit
+val declare_notation : level -> notation -> rawconstr -> scope_name -> unit
 val interp_notation : notation -> scopes -> rawconstr  list -> rawconstr
 val find_notation : scope_name -> notation -> scopes -> 
   (delimiters option * scopes) option
-val exists_notation_in_scope : scope_name -> notation -> rawconstr -> bool
-val exists_notation : notation -> bool
+val exists_notation_in_scope : 
+  scope_name -> level -> notation -> rawconstr -> bool
+val exists_notation : level -> notation -> bool
 
 (* Declare and look for scopes associated to arguments of a global ref *)
 open Libnames
 val declare_arguments_scope: global_reference -> scope_name option list -> unit
 val find_arguments_scope : global_reference -> scope_name option list
 
+(* Printing scopes *)
+open Pp
+val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
+val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
