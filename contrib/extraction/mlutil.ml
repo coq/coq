@@ -409,6 +409,26 @@ let nb_occur_k k t =
 
 let nb_occur t = nb_occur_k 1 t
 
+(* Number of occurences of [Rel 1] in [t], with special treatment of match:
+   occurences in different branches aren't added, but we rather use max. *)
+
+let nb_occur_match = 
+  let rec nb k = function 
+    | MLrel i -> if i = k then 1 else 0
+    | MLcase(a,v) -> 
+        Array.fold_left 
+	  (fun r (_,ids,a) -> max r (nb (k+(List.length ids)) a)) (nb k a) v
+    | MLletin (_,a,b) -> (nb k a) + (nb (k+1) a) 
+    | MLfix (_,ids,v) -> let k = k+(Array.length ids) in 
+      Array.fold_left (fun r a -> r+(nb k a)) 0 v
+    | MLlam (_,a) -> nb (k+1) a
+    | MLapp (a,l) -> List.fold_left (fun r a -> r+(nb k a)) (nb k a) l
+    | MLcons (_,l) -> List.fold_left (fun r a -> r+(nb k a)) 0 l 
+    | MLcast (a,_) -> nb k a
+    | MLmagic a -> nb k a
+    | MLglob _ | MLexn _ | MLdummy -> 0
+  in nb 1
+
 (*s Lifting on terms.
     [ast_lift k t] lifts the binding depth of [t] across [k] bindings. *)
 
@@ -673,7 +693,7 @@ let rec simpl o = function
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
       simpl_case o br (simpl o e) 
   | MLletin(id,c,e) when 
-      (id = dummy_name) || (is_atomic c) || (nb_occur e <= 1) -> 
+      (id = dummy_name) || (is_atomic c) || (nb_occur_match e <= 1) -> 
 	simpl o (ast_subst c e)
   | MLfix(i,ids,c) as t when o -> 
       let n = Array.length ids in 
@@ -687,7 +707,7 @@ and simpl_app o a = function
   | MLlam (id,t) when id = dummy_name -> 
       simpl o (MLapp (ast_pop t, List.tl a))
   | MLlam (id,t) -> (* Beta redex *)
-      (match nb_occur t with
+      (match nb_occur_match t with
 	 | 0 -> simpl o (MLapp (ast_pop t, List.tl a))
 	 | 1 when o -> 
 	     simpl o (MLapp (ast_subst (List.hd a) t, List.tl a))
