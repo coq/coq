@@ -48,6 +48,9 @@ let pr_reference r =
               | "refl_eqT" -> 
 		  Constrextern.extern_reference dummy_loc Idset.empty 
 		  (reference_of_constr (Coqlib.build_coq_eq_data ()).Coqlib.refl)
+              | "sym_eqT" -> 
+		  Constrextern.extern_reference dummy_loc Idset.empty 
+		  (reference_of_constr (Coqlib.build_coq_eq_data ()).Coqlib.sym)
               | _ -> r)
           else r
 	in pr_reference r
@@ -77,7 +80,7 @@ let pr_raw_tactic_env l env t =
 let pr_gen env t =
   Pptactic.pr_raw_generic (Ppconstrnew.pr_constr_env env)
     (Ppconstrnew.pr_lconstr_env env)
-    (Pptacticnew.pr_raw_tactic env) t
+    (Pptacticnew.pr_raw_tactic env) pr_reference t
 
 let pr_raw_tactic tac =
   pr_raw_tactic_env [] (Global.env()) tac
@@ -136,8 +139,13 @@ let pr_non_terminal = function
   | NtQual (u,nt) -> str u ++ str" : " ++ str nt
   | NtShort nt -> str nt
 
+let strip_meta id =
+  let s = string_of_id id in
+  if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
+  else id
+
 let pr_production_item = function
-  | VNonTerm (loc,nt,Some p) -> pr_non_terminal nt ++ str"(" ++ pr_metaid p ++ str")"
+  | VNonTerm (loc,nt,Some p) -> pr_non_terminal nt ++ str"(" ++ pr_id (strip_meta p) ++ str")"
   | VNonTerm (loc,nt,None) -> pr_non_terminal nt
   | VTerm s -> str s
 
@@ -392,9 +400,16 @@ let pr_syntax_modifier = function
   | SetOnlyParsing -> str"only parsing"
 
 let pr_grammar_tactic_rule (name,(s,pil),t) =
-  str name ++ spc() ++ str"[" ++ qs s ++ spc() ++
-  prlist_with_sep sep pr_production_item pil ++ str"]" ++
-  spc() ++ str"->" ++ spc() ++ str"[" ++ pr_raw_tactic t ++ str"]"
+(*
+  hov 0 (
+  (* str name ++ spc() ++ *)
+  hov 0 (str"[" ++ qs s ++ spc() ++
+  prlist_with_sep sep pr_production_item pil ++ str"]") ++
+  spc() ++ hov 0 (str"->" ++ spc() ++ str"[" ++ pr_raw_tactic t ++ str"]"))
+*)
+  hov 2 (str "Tactic Notation" ++ spc() ++ 
+    hov 0 (qs s ++ spc() ++ prlist_with_sep sep pr_production_item pil ++
+    spc() ++ str":= " ++ spc() ++ pr_raw_tactic t))
 
 let pr_box b = let pr_boxkind = function
   | PpHB n -> str"h" ++ spc() ++ int n
@@ -497,7 +512,11 @@ let rec pr_vernac = function
   | VernacGrammar _ -> 
       msgerrnl (str"Warning : constr Grammar is discontinued; use Notation");
       str"(* <Warning> : Grammar is replaced by Notation *)"
-  | VernacTacticGrammar l -> hov 1 (str"Grammar tactic simple_tactic :=" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"|") pr_grammar_tactic_rule l) (***)
+  | VernacTacticGrammar l ->
+      prlist_with_sep (fun () -> sep_end() ++ fnl()) pr_grammar_tactic_rule l
+(*
+      hov 1 (str"Grammar tactic simple_tactic :=" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"|") pr_grammar_tactic_rule l) (***)
+*)      
   | VernacSyntax (u,el) ->
       msgerrnl (str"Warning : Syntax is discontinued; use Notation");
       str"(* Syntax is discontinued " ++
