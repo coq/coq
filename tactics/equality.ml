@@ -136,7 +136,7 @@ let general_rewrite_in lft2rgt id (c,l) gl =
     | Some (hdcncl,_) -> 
         let hdcncls = string_of_inductive hdcncl in 
 	let suffix =
-          Indrec.elimination_suffix (elimination_sort_of_hyp id gl)in
+          Indrec.elimination_suffix (elimination_sort_of_hyp id gl) in
         let elim =
 	  if lft2rgt then
             pf_global gl (id_of_string (hdcncls^suffix))
