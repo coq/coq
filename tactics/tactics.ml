@@ -654,7 +654,7 @@ let occurrences_of_hyp id cls =
 let occurrences_of_goal cls =
   if cls.onconcl then Some cls.concl_occs else None
 
-let everywhere cls = (cls=allClauses)
+let in_every_hyp cls = (cls.onhyps = None)
 
 (*
 (* Implementation with generalisation then re-intro: introduces noise *)
@@ -721,8 +721,8 @@ let letin_abstract id c occs gl =
       | None -> depdecls
       | Some occ ->
           let newdecl = subst_term_occ_decl occ c d in
-          if d = newdecl then
-	    if not (everywhere occs)
+          if occ = [] & d = newdecl then
+	    if not (in_every_hyp occs)
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	    else depdecls
           else 
