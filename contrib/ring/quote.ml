@@ -393,7 +393,7 @@ let quote_terms ivs lc gl=
               let s1 = matches rhs c in
               let s2 = List.map (fun (i,c_i) -> (i,aux c_i)) s1 in
               Term.subst_meta s2 lhs
-            with UserError("somatch", _) -> auxl tail
+            with PatternMatchingFailure -> auxl tail
             end 
         |  [] -> 
              begin match ivs.variable_lhs with 
