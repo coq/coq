@@ -893,9 +893,13 @@ let set_entry_type etyps (x,typ) =
     with Not_found -> ETConstr typ
   in (x,typ)
 
-let check_rule_reversibility l = 
+let check_rule_productivity l = 
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then
     error "A notation must include at least one symbol"
+
+let is_not_printable = function
+  | AVar _ -> warning "This notation won't be used for printing as it is bound to a \nsingle variable"; true
+  | _ -> false
 
 let find_precedence_v7 lev etyps symbols =
   (match symbols with
@@ -978,7 +982,7 @@ let compute_syntax_data forv7 (df,modifiers) =
   let ntn_for_interp = make_notation_key symbols in
   let symbols = remove_curly_brackets symbols in
   let notation = make_notation_key symbols in
-  check_rule_reversibility symbols;
+  check_rule_productivity symbols;
   let n =
     if !Options.v7 then find_precedence_v7 n etyps symbols
     else find_precedence n etyps symbols in
@@ -1150,7 +1154,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     else
       let r = interp_global_rawconstr_with_vars vars c in
       Some (make_old_pp_rule n symbols typs r intnot scope vars) in
-  let onlyparse = onlyparse or !Options.v7_only in
+  let onlyparse = onlyparse or !Options.v7_only or is_not_printable ac in
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,intnot,scope,a,onlyparse,false,df'))
 
@@ -1202,7 +1206,9 @@ let add_notation_interpretation df names c sc =
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
   let a_for_old = interp_rawconstr_with_implicits Evd.empty (Global.env()) vars names c in
   let for_oldpp = set_data_for_v7_pp recs a_for_old vars in
-  add_notation_interpretation_core false symbs for_oldpp df a sc false false
+  let onlyparse = is_not_printable ac in
+  add_notation_interpretation_core false symbs for_oldpp df a sc onlyparse 
+    false
 
 let add_notation_in_scope_v8only local df c mv8 scope toks =
   let (_,recs,vars,intnot,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
@@ -1210,9 +1216,9 @@ let add_notation_in_scope_v8only local df c mv8 scope toks =
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
   (* Declare the interpretation *)
-  let onlyparse = false in
   let (acvars,ac) = interp_aconstr [] vars c in
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
+  let onlyparse = is_not_printable ac in
   Lib.add_anonymous_leaf
     (inNotation(local,None,intnot,scope,a,onlyparse,true,df'))
 
@@ -1231,8 +1237,9 @@ let add_notation_v8only local c (df,modifiers) sc =
 	      else
 	        (* Declare only interpretation *)
 		let (recs,vars,symbs) = analyse_notation_tokens toks in
-		let onlyparse = modifiers = [SetOnlyParsing] in
                 let (acvars,ac) = interp_aconstr [] vars c in
+		let onlyparse = modifiers = [SetOnlyParsing] 
+                  or is_not_printable ac in
                 let a = (remove_vars recs acvars,ac) in
 		add_notation_interpretation_core local symbs None df a sc 
 		  onlyparse true
@@ -1267,9 +1274,10 @@ let add_notation local c dfmod mv8 sc =
 	        (* Declare only interpretation *)
 		let (recs,vars,symbs) = analyse_notation_tokens toks in
                 if exists_notation_syntax (make_notation_key symbs) then
-		  let onlyparse = modifiers = [SetOnlyParsing] in
                   let (acvars,ac) = interp_aconstr [] vars c in
                   let a = (remove_vars recs acvars,ac) in
+		  let onlyparse = modifiers = [SetOnlyParsing] 
+                    or is_not_printable ac in
 		  let a_for_old = interp_global_rawconstr_with_vars vars c in
                   let for_old = set_data_for_v7_pp recs a_for_old vars in
 		  add_notation_interpretation_core local symbs for_old df a
