@@ -323,30 +323,6 @@ GEXTEND Gram
         -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
       |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->
         <:ast< (MATCH $com ($LIST $mrl)) >>
-
-(*      | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-          <:ast<(FIRST ($LIST $l))>>
-      |	IDENT "Solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-          <:ast<(TCLSOLVE ($LIST $l))>>
-      | IDENT "Info"; tc = tactic_expr_par -> <:ast< (INFO $tc) >>
-      |	IDENT "Try"; ta0 = tactic_expr_par; "Orelse"; ta1 = tactic_expr_par ->
-        <:ast< (TRY (ORELSE $ta0 $ta1)) >>
-      |	IDENT "Try"; ta = tactic_expr_par -> <:ast< (TRY $ta) >>
-      | IDENT "Do"; n = pure_numarg; ta = tactic_expr_par ->
-        <:ast< (DO $n $ta) >>
-      | IDENT "Repeat"; ta = tactic_expr_par -> <:ast< (REPEAT $ta) >>
-      |	IDENT "Repeat"; ta0 = tactic_expr_par; "Orelse";
-        ta1 = tactic_expr_par ->
-        <:ast< (REPEAT (ORELSE $ta0 $ta1)) >>
-      |	IDENT "Idtac" -> <:ast< (IDTAC) >>
-      |	IDENT "Fail" -> <:ast<(FAIL)>>
-      |	IDENT "Fail"; n = pure_numarg -> <:ast<(FAIL $n)>>
-      |	st = simple_tactic -> st
-      |	st = simple_tactic; "Orelse"; ta1 = tactic_expr_par ->
-          <:ast< (ORELSE $st $ta1) >>
-      |	ta0 = tactic_expr_par; "Orelse"; ta1 = tactic_expr_par ->
-          <:ast< (ORELSE $ta0 $ta1) >>*)
-
       |	"("; te = tactic_expr; ")" -> te
       |	"("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
         <:ast< (APP $te ($LIST tel)) >>
