@@ -209,14 +209,10 @@ let print_inductive sp =
     hOV 0 [< 'sTR"Fw inductive definition "; 
 	     print_basename sp; 'fNL >]
 
-let print_syntactic_def with_values sep sp =
+let print_syntactic_def sep sp =
   let id = basename sp in
-  [< 'sTR" Syntax Macro "; 
-     pr_id id ; 'sTR sep;  
-     if with_values then 
-       let c = Syntax_def.search_syntactic_definition sp in 
-       [< pr_rawterm c >]
-     else [<>]; 'fNL >]
+  let c = Syntax_def.search_syntactic_definition sp in 
+  [< 'sTR" Syntactif Definition "; pr_id id ; 'sTR sep; pr_rawterm c; 'fNL >]
 
 let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
@@ -228,11 +224,11 @@ let print_leaf_entry with_values sep (sp,lobj) =
     | (_,"INDUCTIVE") ->
 	print_inductive sp
     | (_,"AUTOHINT") -> 
-	[< 'sTR" Add Auto Marker"; 'fNL >]
+	[< 'sTR" Hint Marker"; 'fNL >]
     | (_,"GRAMMAR") -> 
 	[< 'sTR" Grammar Marker"; 'fNL >]
     | (_,"SYNTAXCONSTANT") -> 
-	print_syntactic_def with_values sep sp
+	print_syntactic_def sep sp
     | (_,"PPSYNTAX") -> 
 	[< 'sTR" Syntax Marker"; 'fNL >]
     | (_,"TOKEN") -> 
@@ -243,6 +239,7 @@ let print_leaf_entry with_values sep (sp,lobj) =
 	[< 'sTR" Coercion Marker"; 'fNL >]
     | (_,"REQUIRE") -> 
 	[< 'sTR" Require Marker"; 'fNL >]
+    | (_,"END-SECTION") -> [< >]
     | (_,s) -> 
 	[< 'sTR(string_of_path sp); 'sTR" : ";
            'sTR"Unrecognized object "; 'sTR s; 'fNL >]
@@ -343,7 +340,7 @@ let print_name qid =
   with Not_found ->
   try
     let sp = Syntax_def.locate_syntactic_definition qid in
-    print_syntactic_def true " = " sp
+    print_syntactic_def " = " sp
   with Not_found ->
     errorlabstrm "print_name"
       [< pr_qualid qid; 'sPC; 'sTR "not a defined object" >]
