@@ -159,6 +159,8 @@ let mlexpr_of_quantified_hypothesis = function
 
 let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
 
+let mlexpr_of_loc loc = <:expr< $dloc$ >>
+
 let mlexpr_of_hyp_location = function
   | Tacexpr.InHyp id ->
       <:expr< Tacexpr.InHyp $mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident) id$ >>
@@ -268,7 +270,7 @@ let rec mlexpr_of_may_eval f = function
 
 let mlexpr_of_binding_kind = function
   | Rawterm.ExplicitBindings l ->
-      let l = mlexpr_of_list (mlexpr_of_pair mlexpr_of_quantified_hypothesis mlexpr_of_constr) l in
+      let l = mlexpr_of_list (mlexpr_of_triple mlexpr_of_loc mlexpr_of_quantified_hypothesis mlexpr_of_constr) l in
       <:expr< Rawterm.ExplicitBindings $l$ >>
   | Rawterm.ImplicitBindings l -> 
       let l = mlexpr_of_list mlexpr_of_constr l in

@@ -413,7 +413,7 @@ let xlate_quantified_hypothesis_opt = function
   | Some (AnonHyp n) -> xlate_int_to_id_or_int_opt n
   | Some (NamedHyp id) -> xlate_id_to_id_or_int_opt id;;
 
-let xlate_explicit_binding (h,c) = 
+let xlate_explicit_binding (loc,h,c) = 
   CT_binding (xlate_quantified_hypothesis h, xlate_formula c)
 
 let xlate_bindings = function

@@ -35,7 +35,7 @@ type binder_kind = BProd | BLambda | BLetIn
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
-type 'a explicit_substitution = (quantified_hypothesis * 'a) list
+type 'a explicit_substitution = (loc * quantified_hypothesis * 'a) list
 
 type 'a substitution = 
   | ImplicitBindings of 'a list

@@ -47,28 +47,9 @@ let local_compute =
     Qast.Node ("FIota", []);
     Qast.Node ("FZeta", [])]
 
-(*
-  let
-    {rBeta = b; rIota = i; rZeta = z; rDelta = d; rConst = l} = make_red_flag s
-  in
-  let quotify_ident id =
-    Qast.Apply ("Names.id_of_string", [Qast.Str (Names.string_of_id id)])
-  in
-  let quotify_path sp =
-    let dir, id = Names.repr_path sp in
-    let l = Names.repr_dirpath dir in
-    Qast.Apply ("Names.make_path",
-      [Qast.Apply ("Names.make_dirpath",
-        [Qast.List (List.map quotify_ident l)]);
-      quotify_ident id]) in
-  Qast.Record 
-    ["rBeta",Qast.Bool b; "rIota",Qast.Bool i;
-     "rZeta",Qast.Bool z; "rDelta",Qast.Bool d;
-     "rConst",Qast.List (List.map quotify_path l)]
-*)
 ifdef Quotify then open Q
 
-(* Please leave several GEXTEND for modular compilation under PowerPC *)
+let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 (* Auxiliary grammar rules *)
 
@@ -169,14 +150,15 @@ GEXTEND Gram
       ] ]
   ;
   simple_binding:
-    [ [ id = base_ident; ":="; c = constr -> (NamedHyp id, c)
-      | n = natural; ":="; c = constr -> (AnonHyp n, c) ] ]
+    [ [ id = base_ident; ":="; c = constr -> (loc, NamedHyp id, c)
+      | n = natural; ":="; c = constr -> (loc, AnonHyp n, c) ] ]
   ;
   binding_list:
     [ [ c1 = constr; ":="; c2 = constr; bl = LIST0 simple_binding ->
-          ExplicitBindings ((NamedHyp (coerce_to_id c1), c2) :: bl)
+          ExplicitBindings
+            ((join_to_constr loc c2,NamedHyp (coerce_to_id c1), c2) :: bl)
       | n = natural; ":="; c = constr; bl = LIST0 simple_binding ->
-	  ExplicitBindings ((AnonHyp n, c) :: bl)
+	  ExplicitBindings ((join_to_constr loc c,AnonHyp n, c) :: bl)
       | c1 = constr; bl = LIST0 constr ->
 	  ImplicitBindings (c1 :: bl) ] ]
   ;

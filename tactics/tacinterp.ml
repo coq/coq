@@ -353,8 +353,8 @@ let glob_constr ist c =
   in c
 
 (* Globalize bindings *)
-let glob_binding ist (b,c) =
-  (glob_quantified_hypothesis ist b,glob_constr ist c)
+let glob_binding ist (loc,b,c) =
+  (loc,glob_quantified_hypothesis ist b,glob_constr ist c)
 
 let glob_bindings ist = function
   | NoBindings -> NoBindings
@@ -1065,8 +1065,8 @@ let interp_induction_arg ist = function
 (*	    (constr_interp ist (Termast.ast_of_qualid (make_short_qualid id)))*)
 	    (constr_interp ist (CRef (Ident (loc,id))))
 
-let binding_interp ist (b,c) =
-  (interp_quantified_hypothesis ist b,constr_interp ist c)
+let binding_interp ist (loc,b,c) =
+  (loc,interp_quantified_hypothesis ist b,constr_interp ist c)
 
 let bindings_interp ist = function
   | NoBindings -> NoBindings

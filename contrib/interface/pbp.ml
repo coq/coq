@@ -196,7 +196,7 @@ let make_pbp_atomic_tactic = function
   | PbpLApply h -> TacAtom (zz, TacLApply (make_var h))
   | PbpApply h -> TacAtom (zz, TacApply (make_var h,NoBindings))
   | PbpElim (hyp_name, names) ->
-      let bind = List.map (fun s -> (NamedHyp s,make_pbp_pattern s)) names in
+      let bind = List.map (fun s ->(zz,NamedHyp s,make_pbp_pattern s)) names in
       TacAtom
 	(zz, TacElim ((make_var hyp_name,ExplicitBindings bind),None))
   | PbpTryClear l -> 

@@ -42,9 +42,11 @@ type refiner_error =
 
   (* Errors raised by the tactics *)
   | CannotUnify of constr * constr
+  | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * identifier
+  | NoOccurrenceFound of constr
 
 exception RefinerError of refiner_error
 

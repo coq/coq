@@ -75,7 +75,6 @@ type 'a freelisted = {
   rebus : 'a;
   freemetas : Intset.t }
 
-
 (* collects all metavar occurences, in left-to-right order, preserving
  * repetitions and all. *)
 
@@ -122,7 +121,7 @@ type wc = named_context sigma
 let mentions clenv mv0 = 
   let rec menrec mv1 =
     try
-      (match Intmap.find mv1 clenv.env with
+     (match Intmap.find mv1 clenv.env with
 	 | Clval (b,_) -> 
 	     Intset.mem mv0 b.freemetas || intset_exists menrec b.freemetas
 	 | Cltyp _ -> false)
@@ -729,23 +728,30 @@ let unify_to_subterm clause (op,cl) =
           | _ -> error "Match_subterm")) 
   in 
   if isMeta op then error "Match_subterm";
-  matchrec cl
+  try matchrec cl
+  with ex when catchable_exception ex ->
+    raise (RefinerError (NoOccurrenceFound op))
 
 (* Possibly gives K-terms in case the operator does not contain 
    a meta : BUG ?? *)
 let unify_to_subterm_list allow_K clause oplist t = 
   List.fold_right 
     (fun op (clause,l) -> 
-       if occur_meta op then 
+       if occur_meta op then
          let (clause',cl) =
-           (try 
-	      unify_to_subterm clause (strip_outer_cast op,t)
-            with e when catchable_exception e ->
-              if allow_K then (clause,op) else raise e)
+           try 
+	     (* This is up to some delta ... *)
+	     unify_to_subterm clause (strip_outer_cast op,t)
+           with RefinerError (NoOccurrenceFound _) when allow_K -> (clause,op)
          in 
 	 (clause',cl::l)
-       else 
-	 (clause,op::l)) 
+       else
+	 if not allow_K & not (dependent op t) then
+	   (* This is not up to delta ... *)
+	   raise (RefinerError (NoOccurrenceFound op))
+	 else
+	 (* Optimisation *)
+	 (clause,op::l))
     oplist 
     (clause,[])
 
@@ -808,17 +814,19 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
 	 with ex when catchable_exception ex -> 
 	   try 
 	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
-	   with ex when catchable_exception ex -> 
+	   with RefinerError (NoOccurrenceFound c) as e -> raise e
+	     | ex when catchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
 
      (* Second order case *)
      | (Meta _, true, _, _ | _, _, Meta _, true) -> 
 	(try 
 	   clenv_unify2 allow_K cv_pb ty1 ty2 clenv
-         with ex when catchable_exception ex -> 
-           try 
+	with RefinerError (NoOccurrenceFound c) as e -> raise e
+	  | ex when catchable_exception ex -> 
+          try 
 	     clenv_typed_unify cv_pb ty1 ty2 clenv
-           with ex when catchable_exception ex -> 
+          with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
      (* General case: try first order *)
@@ -994,20 +1002,21 @@ let clenv_match_args s clause =
   let mvs = clenv_independent clause in 
   let rec matchrec clause = function
     | [] -> clause
-    | (b,c)::t ->
+    | (loc,b,c)::t ->
 	let k =
 	  match b with
             | NamedHyp s ->
-		if List.mem_assoc b t then 
+		if List.exists (fun (_,b',_) -> b=b') t then 
 		  errorlabstrm "clenv_match_args" 
 		    (str "The variable " ++ pr_id s ++ 
 		    str " occurs more than once in binding")
 		else
 		  clenv_lookup_name clause s
 	    | AnonHyp n ->
-		if List.mem_assoc b t then errorlabstrm "clenv_match_args"
-		  (str "The position " ++ int n ++
-		  str " occurs more than once in binding");
+		if List.exists (fun (_,b',_) -> b=b') t then
+		  errorlabstrm "clenv_match_args"
+		    (str "The position " ++ int n ++
+		    str " occurs more than once in binding");
 		try 
 		  List.nth mvs (n-1)
 		with (Failure _|Invalid_argument _) ->
@@ -1026,7 +1035,10 @@ let clenv_match_args s clause =
 	  (* Try to coerce to the type of [k]; cannot merge with the
 	     previous case because Coercion does not handle Meta *)
           let c' = w_coerce clause.hook c c_typ k_typ in
-	  clenv_unify true CONV (mkMeta k) c' clause
+	  try clenv_unify true CONV (mkMeta k) c' clause
+	  with RefinerError (CannotUnify (m,n)) ->
+	    Stdpp.raise_with_loc loc
+ 	      (RefinerError (CannotUnifyBindingType (m,n)))
 	in matchrec cl t
   in 
   matchrec clause s
@@ -1082,6 +1094,14 @@ let clenv_pose_dependent_evars clenv =
 
 (***************************)
 
+let is_dependent clause =
+  match
+    kind_of_term (clenv_instance_template clause),
+    kind_of_term (clenv_instance_template_type clause)
+  with
+      App(f,l), App(g,l') when isMeta g & array_last l = array_last l' -> true
+    | _ -> false
+
 let clenv_unique_resolver allow_K clause gl =
   clenv_unify allow_K CUMUL
     (clenv_instance_template_type clause) (pf_concl gl) clause 
@@ -1092,8 +1112,8 @@ let res_pf kONT clenv gls =
 let res_pf_cast kONT clenv gls =
   clenv_refine_cast kONT (clenv_unique_resolver false clenv gls) gls
 
-let elim_res_pf kONT clenv gls =
-  clenv_refine_cast kONT (clenv_unique_resolver true clenv gls) gls
+let elim_res_pf kONT clenv allow_K gls =
+  clenv_refine_cast kONT (clenv_unique_resolver allow_K clenv gls) gls
 
 let elim_res_pf_THEN_i kONT clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in

@@ -859,7 +859,7 @@ let last_arg c = match kind_of_term c with
   | App (f,cl) ->  array_last cl
   | _ -> anomaly "last_arg"
 	
-let elimination_clause_scheme kONT elimclause indclause gl = 
+let elimination_clause_scheme kONT elimclause indclause allow_K gl = 
   let indmv = 
     (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
        | Meta mv -> mv
@@ -867,7 +867,7 @@ let elimination_clause_scheme kONT elimclause indclause gl =
              (str "The type of elimination clause is not well-formed")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
-  elim_res_pf kONT elimclause' gl
+  elim_res_pf kONT elimclause' allow_K gl
 
 (* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
  * refine fails *)
@@ -883,14 +883,14 @@ let type_clenv_binding wc (c,t) lbind =
  * matching I, lbindc are the expected terms for c arguments 
  *)
 
-let general_elim (c,lbindc) (elimc,lbindelimc) gl = 
+let general_elim (c,lbindc) (elimc,lbindelimc) ?(allow_K=true) gl = 
   let (wc,kONT)  = startWalk gl in
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding wc (c,t) lbindc  in
   let elimt      = w_type_of wc elimc in
   let elimclause = make_clenv_binding wc (elimc,elimt) lbindelimc in 
-  elimination_clause_scheme kONT elimclause indclause gl
+  elimination_clause_scheme kONT elimclause indclause allow_K gl
 
 (* Elimination tactic with bindings but using the default elimination 
  * constant associated with the type. *)
@@ -1251,7 +1251,7 @@ let induction_tac varname typ (elimc,elimt,lbindelimc) gl =
   let indclause  = make_clenv_binding wc (c,typ) NoBindings  in
   let elimclause =
     make_clenv_binding wc (mkCast (elimc,elimt),elimt) lbindelimc in
-  elimination_clause_scheme kONT elimclause indclause gl
+  elimination_clause_scheme kONT elimclause indclause true gl
 
 let compute_induction_names n names =
   let names = if names = [] then Array.make n [] else Array.of_list names in
@@ -1437,7 +1437,7 @@ let elim_scheme_type elim t gl =
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify true CUMUL t (clenv_instance_type clause mv) clause in
-	elim_res_pf kONT clause' gl
+	elim_res_pf kONT clause' true gl
     | _ -> anomaly "elim_scheme_type"
 
 let elim_type t gl =

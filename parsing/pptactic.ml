@@ -75,8 +75,8 @@ let pr_quantified_hypothesis = function
 let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
 
 let pr_binding prc = function
-  | NamedHyp id, c -> hov 1 (pr_id id ++ str ":=" ++ cut () ++ prc c)
-  | AnonHyp n, c -> hov 1 (int n ++ str ":=" ++ cut () ++ prc c)
+  | loc, NamedHyp id, c -> hov 1 (pr_id id ++ str ":=" ++ cut () ++ prc c)
+  | loc, AnonHyp n, c -> hov 1 (int n ++ str ":=" ++ cut () ++ prc c)
 
 let pr_bindings prc = function
   | ImplicitBindings l ->

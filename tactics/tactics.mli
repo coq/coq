@@ -158,7 +158,8 @@ val cut_and_apply         : constr -> tactic
 
 (*s Elimination tactics. *)
 
-val general_elim  : constr with_bindings -> constr with_bindings -> tactic
+val general_elim  : constr with_bindings -> constr with_bindings -> 
+  ?allow_K:bool -> tactic
 val default_elim  : constr with_bindings -> tactic
 val simplest_elim : constr -> tactic
 val elim          : constr with_bindings -> constr with_bindings option -> tactic
