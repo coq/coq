@@ -7,9 +7,9 @@ the {\em conclusion} and (several) formul{\ae} that we call the {\em
 premises}. Indeed, a deduction rule can be read in two ways. The first
 one has the shape: {\it ``if I know this and this then I can deduce
 this''}. For instance, if I have a proof of $A$ and a proof of $B$
-then I have a proof of $A \wedge B$. This is forward reasoning from
+then I have a proof of $A \land B$. This is forward reasoning from
 premises to conclusion. The other way says: {\it ``to prove this I
-have to prove this and this''}. For instance, to prove $A \wedge B$, I
+have to prove this and this''}. For instance, to prove $A \land B$, I
 have to prove $A$ and I have to prove $B$. This is backward reasoning
 which proceeds from conclusion to premises. We say that the conclusion
 is {\em the goal}\index{goal} to prove and premises are {\em the
@@ -829,14 +829,14 @@ of {\tt I}, then {\tt Constructor i} is equivalent to {\tt Intros;
   taken into account).
 \item {\tt Split}\tacindex{Split}\\
   Applies if {\tt I} has only one constructor, typically in the case
-  of conjunction $A\wedge B$. It is equivalent to {\tt Constructor 1}.
+  of conjunction $A\land B$. It is equivalent to {\tt Constructor 1}.
 \item {\tt Exists {\bindinglist}}\tacindex{Exists} \\
   Applies if {\tt I} has only one constructor, for instance in the
   case of existential quantification $\exists x\cdot P(x)$. 
   It is equivalent to {\tt Intros; Constructor 1 with \bindinglist}.
 \item {\tt Left}\tacindex{Left},  {\tt Right}\tacindex{Right}\\
   Apply if {\tt I} has two constructors, for instance in the case of
-  disjunction $A\vee B$. They are respectively equivalent to {\tt
+  disjunction $A\lor B$. They are respectively equivalent to {\tt
     Constructor 1} and {\tt Constructor 2}.
 \item {\tt Left \bindinglist}, {\tt Right \bindinglist}, 
       {\tt Split \bindinglist} \\
@@ -1441,7 +1441,7 @@ introduced hypothesis.
   is useful when the system fails to generalize the goal automatically. If
   \ident~ has type $(I~\vec{t})$ and $I$ has type
   $(\vec{x}:\vec{T})s$,   then \term~  must be of type
-  $I:(\vec{x}:\vec{T})(I~\vec{x})\rightarrow s'$ where $s'$ is the
+  $I:(\vec{x}:\vec{T})(I~\vec{x})\to s'$ where $s'$ is the
   type of the goal.
 \item \texttt{Dependent Inversion\_clear } \ident~ \texttt{ with } \term\\
   \tacindex{Dependent Inversion\_clear \dots\ with}
@@ -1614,45 +1614,65 @@ depth is {\tt \num}.
 This tactic implements a decision procedure for intuitionistic propositional
 calculus based on the contraction-free sequent calculi LJT* of Roy Dyckhoff
 \cite{Dyc92}. Note that {\tt Tauto} succeeds on any instance of an
-intuitionistic tautological proposition. For instance, it succeeds on:
+intuitionistic tautological proposition. {\tt Tauto} unfolds negations
+and logical equivalence but does not unfold any other definition.
 
-\begin{verbatim}
-(x:nat)(P:nat->Prop)x=O\/(P x)->~x=O->(P x)
-\end{verbatim}
+The following goal can be proved by {\tt Tauto} whereas {\tt Auto}
+would fail:
 
-\noindent{}while {\tt Auto} fails.
+\begin{coq_example}
+  Goal (x:nat)(P:nat->Prop)x=O\/(P x)->~x=O->(P x).
+  Intros.
+  Tauto. (* Auto would fail *)
+\end{coq_example}
 
-\subsection{\tt Intuition}
+Moreover, if it has nothing else to do, {\tt Tauto} performs
+introductions. Therefore, the use of {\tt Intros} in the previous
+proof is unnecessary. {\tt Tauto} can for instance prove the
+following:
+\begin{coq_example}
+  Goal (A:Prop)(P:nat->Prop)(A \/ (x:nat) ~A -> (P x)) -> (x:nat) A -> (P x).
+  Tauto.
+\end{coq_example}
+
+\subsection{\tt Intuition {\tac}}
 \tacindex{Intuition}\label{Intuition}
 
 The tactic \verb1Intuition1 takes advantage of the search-tree builded
 by the decision procedure involved in the tactic {\tt Tauto}. It uses
 this information to generate a set of subgoals equivalent to the
 original one (but simpler than it) and applies the tactic 
-{\tt Auto  with *} to them \cite{Mun94}. At the end, {\tt Intuition}
-performs {\tt Intros}.
+{\tac} to them \cite{Mun94}. If this tactic fails on some goals then
+{\tt Intuition} fails. In fact, {\tt Tauto} is simply {\tt Intuition
+  Failtac}.
 
-For instance, the tactic {\tt Intuition} applied to the goal
+For instance, the tactic {\tt Intuition Auto} applied to the goal
 \begin{verbatim}
 ((x:nat)(P x))/\B->((y:nat)(P y))/\(P O)\/B/\(P O)
 \end{verbatim}
 internally replaces it by the equivalent one:
 \begin{verbatim}
-((x:nat)(P x) -> B -> (P O))
+(x:nat)(P x) ; B |- (P O)
 \end{verbatim}
-and then uses {\tt Auto with *} which completes the proof.
+and then uses {\tt Auto} which completes the proof.
 
-Originally due to César~Muñoz, these tactics ({\tt Tauto} and {\tt Intuition})
+Originally due to C{\'e}sar~Mu{\~n}oz, these tactics ({\tt Tauto} and {\tt Intuition})
 have been completely reenginered by David~Delahaye using mainly the tactic
 language (see chapter~\ref{TacticLanguage}). The code is now quite shorter and
 a significant increase in performances has been noticed. The general behavior
-with respect to dependent types has slightly changed to get clearer semantics.
-This may lead to some incompatibilities.
+with respect to dependent types, unfolding and introductions has
+slightly changed to get clearer semantics. This may lead to some
+incompatibilities.
+
+\begin{Variants}
+\item {\tt Intuition}\\
+  Is equivalent to {\tt Intuition Auto with *}.
+\end{Variants}
 
 \SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}
 
 % \subsection{\tt Linear}\tacindex{Linear}\label{Linear}
-% The tactic \texttt{Linear}, due to Jean-Christophe Filliâatre
+% The tactic \texttt{Linear}, due to Jean-Christophe Filli{\^a}atre
 % \cite{Fil94}, implements a decision procedure for {\em Direct
 %   Predicate Calculus}, that is first-order Gentzen's Sequent Calculus
 % without contraction rules \cite{KeWe84,BeKe92}.  Intuitively, a
@@ -1711,7 +1731,7 @@ This may lead to some incompatibilities.
 \tacindex{Omega}
 \label{Omega}
 
-The tactic \texttt{Omega}, due to Pierre Crégut,
+The tactic \texttt{Omega}, due to Pierre Cr{\'e}gut,
 is an automatic decision procedure for Prestburger
 arithmetic. It solves quantifier-free 
 formulae build with \verb|~|, \verb|\/|, \verb|/\|,
@@ -1810,7 +1830,7 @@ term of type {\tt A}, {\tt {\it Aopp}} is a term of type {\tt A->A}, {\tt {\it
 Aeq}} is a term of type {\tt A->bool}, {\tt {\it Ainv}} is a term of type {\tt
 A->A}, {\tt {\it Rth}} is a term of type {\tt (Ring\_Theory {\it A Aplus Amult
 Aone Azero Ainv Aeq})}, and {\tt {\it Tinvl}} is a term of type {\tt
-(n:{\it A})\~{}(n=={\it Azero})->({\it Amult} ({\it Ainv} n) n)=={\it Aone}}.
+(n:{\it A}){\~{}}(n=={\it Azero})->({\it Amult} ({\it Ainv} n) n)=={\it Aone}}.
 To build a ring theory, refer to chapter~\ref{Ring} for more details.
 
 This command adds also an entry in the ring theory table if this theory is not
@@ -1844,7 +1864,7 @@ Field}.
 \subsection{\tt Fourier}
 \tacindex{Fourier}
 
-This tactic written by Loïc Pottier solves linear inequations on real numbers 
+This tactic written by Lo{\"\i}c Pottier solves linear inequations on real numbers 
 using Fourier's method (\cite{Fourier}). This tactic must be loaded by 
 {\tt Require Fourier}.
 
@@ -1979,7 +1999,7 @@ a hint to a database is:
   tactics with cost $0$.
   
   This command is useful for theorems such that the symmetry of equality
-  or $n+1=m+1 \rightarrow n=m$ that we may like to introduce with a
+  or $n+1=m+1 \to n=m$ that we may like to introduce with a
   limited use in order to avoid useless proof-search.
   
   The cost of this tactic (which never generates subgoals) is always 1,
