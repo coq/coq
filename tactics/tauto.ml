@@ -53,14 +53,17 @@ let true_pattern_mark = put_pat mmk "True"
 let and_pattern_mark   = put_pat mmk "(and ?1 ?2)"
 let or_pattern_mark    = put_pat mmk "(or ?1 ?2)"
 let eq_pattern_mark    = put_pat mmk "(eq ?1 ?2 ?3)"
-let pi_pattern    = put_pat mmk "(x : ?)((?)@[x])"
+let pi_pattern    = put_pat mmk "(x : ?)((?1)@[x])"
 let imply_pattern = put_pat mmk "?1 -> ?2"
 let atomic_imply_bot_pattern = put_pat mmk "?1 -> ?2"
 let iff_pattern_mark   = put_pat mmk "(iff ?1 ?2)"
 let not_pattern_mark   = put_pat mmk "(not ?1)"
 (* squeletons *)
+(*
 let imply_squeleton = put_squel mmk "?1 -> ?2"
-let mkIMP a b       = soinstance imply_squeleton [a;b]    
+let mkIMP a b = soinstance imply_squeleton [a;b]
+*)
+let mkIMP a b = mkProd Anonymous a b
 
 let false_pattern () = get_pat false_pattern_mark
 let true_pattern () = get_pat true_pattern_mark
