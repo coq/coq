@@ -291,13 +291,13 @@ let process_operation = function
   | Variable (id,expmod_a,stre,imp) ->
       (* Warning:parentheses needed to get a side-effect from with_implicits *)
       let _ =
-        with_implicits imp (declare_variable id) (Lib.cwd(),expmod_a,stre) in
+        with_implicits imp (redeclare_variable id) (Lib.cwd(),expmod_a,stre) in
       ()
   | Constant (sp,r,stre,imp) ->
       with_implicits imp (redeclare_constant sp) (r,stre);
       constant_message (basename sp)
   | Inductive (mie,imp) ->
-      let _ = with_implicits imp declare_mind mie in
+      let _ = with_implicits imp redeclare_inductive mie in
       inductive_message mie.mind_entry_inds
   | Class (y1,y2) ->
       Lib.add_anonymous_leaf (inClass (y1,y2))

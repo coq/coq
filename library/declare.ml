@@ -70,6 +70,15 @@ let is_less_persistent_strength = function
 let strength_min (stre1,stre2) =
   if is_less_persistent_strength (stre1,stre2) then stre1 else stre2
 
+(* XML output hooks *)
+let xml_declare_variable = ref (fun sp -> ())
+let xml_declare_constant = ref (fun sp -> ())
+let xml_declare_inductive = ref (fun sp -> ())
+
+let set_xml_declare_variable f = xml_declare_variable := f
+let set_xml_declare_constant f = xml_declare_constant := f
+let set_xml_declare_inductive f = xml_declare_inductive := f
+
 (* Section variables. *)
 
 type section_variable_entry =
@@ -112,10 +121,19 @@ let (in_variable, out_variable) =
   in
   declare_object ("VARIABLE", od)
 
-let declare_variable id obj =
+let declare_variable_common id obj =
   let sp = add_leaf id (in_variable (id,obj)) in
   if is_implicit_args() then declare_var_implicits id;
   sp
+
+(* for initial declaration *)
+let declare_variable id obj =
+  let sp = declare_variable_common id obj in
+  !xml_declare_variable sp;
+  sp
+
+(* when coming from discharge: no xml output *)
+let redeclare_variable = declare_variable_common
 
 (* Globals: constants and parameters *)
 
@@ -188,8 +206,10 @@ let declare_constant id cd =
   (* let cd = hcons_constant_declaration cd in *)
   let sp = add_leaf id (in_constant cd) in
   if is_implicit_args() then declare_constant_implicits sp;
+  !xml_declare_constant sp;
   sp
 
+(* when coming from discharge *)
 let redeclare_constant sp (cd,stre) =
   add_absolutely_named_leaf sp (in_constant (GlobalRecipe cd,stre));
   if is_implicit_args() then declare_constant_implicits sp
@@ -262,7 +282,7 @@ let (in_inductive, out_inductive) =
   in
   declare_object ("INDUCTIVE", od)
 
-let declare_mind mie =
+let declare_inductive_common mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives"
@@ -271,6 +291,14 @@ let declare_mind mie =
   if is_implicit_args() then declare_mib_implicits sp;
   sp
 
+(* for initial declaration *)
+let declare_mind mie =
+  let sp = declare_inductive_common mie in
+  !xml_declare_inductive sp;
+  sp
+
+(* when coming from discharge: no xml output *)
+let redeclare_inductive = declare_inductive_common
 
 (*s Test and access functions. *)
 

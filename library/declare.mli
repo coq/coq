@@ -36,6 +36,9 @@ type variable_declaration = dir_path * section_variable_entry * strength
 
 val declare_variable : variable -> variable_declaration -> section_path
 
+(* Declaration from Discharge *)
+val redeclare_variable : variable -> variable_declaration -> section_path
+
 type constant_declaration = global_declaration * strength
 
 (* [declare_constant id cd] declares a global declaration
@@ -53,6 +56,9 @@ val declare_parameter : identifier -> constr -> constant
    their constructors in the current section; it returns the path of
    the whole block *)
 val declare_mind : mutual_inductive_entry -> mutual_inductive
+
+(* Declaration from Discharge *)
+val redeclare_inductive : mutual_inductive_entry -> mutual_inductive
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
@@ -105,3 +111,8 @@ val is_global : identifier -> bool
 val strength_of_global : global_reference -> strength
 
 val library_part : global_reference -> dir_path
+
+(* hooks for XML output *)
+val set_xml_declare_variable : (section_path -> unit) -> unit
+val set_xml_declare_constant : (section_path -> unit) -> unit
+val set_xml_declare_inductive : (section_path -> unit) -> unit
