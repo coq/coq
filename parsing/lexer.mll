@@ -131,3 +131,55 @@ and string = parse
       { Buffer.add_char string_buffer (Lexing.lexeme_char lexbuf 0);
         string lexbuf }
 
+{
+
+let create_loc_table () = ref (Array.create 1024 None)
+
+let find_loc t i = 
+  if i < 0 || i >= Array.length !t then invalid_arg "find_loc";
+  match Array.unsafe_get !t i with 
+    | None -> invalid_arg "find_loc" 
+    | Some l -> l
+
+let add_loc t i l =
+  while i >= Array.length !t do
+    let new_t = Array.create (2 * Array.length !t) None in
+    Array.blit !t 0 new_t 0 (Array.length !t);
+    t := new_t
+  done;
+  !t.(i) <- Some l
+  
+let func cs =
+  let loct = create_loc_table () in
+  let lexbuf = 
+    Lexing.from_function 
+      (fun s _ -> match cs with parser 
+	 | [< 'c >] -> String.unsafe_set s 0 c; 1
+	 | [< >] -> 0)
+  in
+  let next_token i = 
+    let tok = token lexbuf in
+    let loc = (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf) in
+    add_loc loct i loc; Some tok
+  in
+  let ts = Stream.from next_token in
+  (ts, find_loc loct)
+	 
+let token_text = function
+  | ("", t) -> "'" ^ t ^ "'"
+  | ("IDENT", "") -> "identifier"
+  | ("IDENT", t) -> "'" ^ t ^ "'"
+  | ("INT", "") -> "integer"
+  | ("INT", s) -> "'" ^ s ^ "'"
+  | ("STRING", "") -> "string"
+  | ("EOI", "") -> "end of input"
+  | (con, "") -> con
+  | (con, prm) -> con ^ " \"" ^ prm ^ "\""
+
+let tparse (p_con, p_prm) =
+  if p_prm = "" then
+    parser [< '(con, prm) when con = p_con >] -> prm
+  else
+    parser [< '(con, prm) when con = p_con && prm = p_prm >] -> prm
+
+}

@@ -31,6 +31,7 @@ lib/pp.cmi: lib/pp_control.cmi
 lib/util.cmi: lib/pp.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/summary.cmi: kernel/names.cmi 
+parsing/g_minicoq.cmi: /usr/local/lib/camlp4/grammar.cmi kernel/term.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 kernel/abstraction.cmo: kernel/generic.cmi kernel/names.cmi kernel/sosub.cmi \
@@ -145,7 +146,7 @@ library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
     library/summary.cmi 
 library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
     library/summary.cmi 
-parsing/lexer.cmo: lib/util.cmi 
-parsing/lexer.cmx: lib/util.cmx 
+parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
+parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
 toplevel/minicoq.cmo: kernel/generic.cmi kernel/names.cmi 
 toplevel/minicoq.cmx: kernel/generic.cmx kernel/names.cmx 

@@ -16,11 +16,17 @@ OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(INCLUDES)
 
-INCLUDES=-I config -I lib -I kernel -I library
+INCLUDES=-I config -I lib -I kernel -I library -I parsing -I $(CAMLP4LIB)
+
+CAMLP4EXTEND=camlp4o pa_extend.cmo
+OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
+OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 
 # Objects files 
 
 CLIBS=unix.cma
+
+CAMLP4OBJS=gramlib.cma
 
 CONFIG=config/coq_config.cmo
 
@@ -43,15 +49,21 @@ OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING)
 
 # Targets
 
-world: $(OBJS)
-	#$(OCAMLC) -o coqtop.byte $(OBJS)
+world: minicoq
+
+# coqtop
+
+coqtop: $(OBJS)
 	ocamlmktop -o coqtop -custom $(CLIBS) $(OBJS) $(OSDEPLIBS)
 
-MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) $(PARSING) toplevel/minicoq.cmo
+# minicoq
+
+MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) $(PARSING) \
+	    parsing/g_minicoq.cmo toplevel/minicoq.cmo
 
 minicoq: $(OBJS) $(MINICOQOBJS)
-	$(OCAMLC) -o minicoq -custom $(CLIBS) $(OBJS) $(MINICOQOBJS) \
-	  $(OSDEPLIBS)
+	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CLIBS) $(CAMLP4OBJS) \
+	  $(OBJS) $(MINICOQOBJS) $(OSDEPLIBS)
 
 # Literate programming (with ocamlweb)
 
@@ -77,9 +89,14 @@ tags:
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
 
+# Special rules
+
+parsing/lexer.cmo: parsing/lexer.ml
+	$(OCAMLC_P4O) -c $<
+
 # Default rules
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .g4
 
 .ml.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -c $<
@@ -93,18 +110,28 @@ tags:
 .mll.ml:
 	ocamllex $<
 
+.g4.cmo:
+	$(OCAMLC) $(BYTEFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+
+.g4.cmx:
+	$(OCAMLOPT) $(OPTFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+
 # Cleaning
 
 archclean::
 	rm -f config/*.cmx config/*.[so]
 	rm -f lib/*.cmx lib/*.[so]
 	rm -f kernel/*.cmx kernel/*.[so]
+	rm -f library/*.cmx library/*.[so]
+	rm -f parsing/*.cmx parsing/*.[so]
 
 cleanall:: archclean
 	rm -f *~
 	rm -f config/*.cm[io] config/*~
 	rm -f lib/*.cm[io] lib/*~
 	rm -f kernel/*.cm[io] kernel/*~
+	rm -f library/*.cm[io] library/*~
+	rm -f parsing/*.cm[io] parsing/*~
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml
