@@ -184,6 +184,9 @@ let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
 (* Tacticals re-exported from the Refiner module.*)
 (*************************************************)
 
+(* A special exception for levels for the Fail tactic *)
+exception FailError = Refiner.FailError
+
 let tclIDTAC         = tclIDTAC
 let tclORELSE        = tclORELSE
 let tclTHEN          = tclTHEN

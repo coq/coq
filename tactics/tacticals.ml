@@ -45,9 +45,9 @@ let tclWEAK_PROGRESS = Tacmach.tclWEAK_PROGRESS
 let tclMAP tacfun l = 
   List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
 
-let dyn_tclIDTAC = function [] -> tclIDTAC |  _ -> anomaly "tclIDTAC"
+(*let dyn_tclIDTAC = function [] -> tclIDTAC |  _ -> anomaly "tclIDTAC"*)
 
-let dyn_tclFAIL  = function [] -> tclFAIL |  _ -> anomaly "tclFAIL"
+(*let dyn_tclFAIL  = function [] -> tclFAIL |  _ -> anomaly "tclFAIL"*)
 
 (* apply a tactic to the nth element of the signature  *)
 
@@ -61,7 +61,7 @@ let tclLAST_HYP = tclNTH_HYP 1
 
 let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
-    | []      -> tclFAIL
+    | []      -> tclFAIL 0
     | [s]     -> tac (VAR(s)) (* added in order to get useful error messages *)
     | (s::sl) -> tclORELSE (tac (VAR(s))) (arec sl) 
   in 
@@ -73,7 +73,7 @@ let tclTRY_HYPS (tac : constr->tactic) gl =
 (* OR-branch *)
 let tryClauses tac = 
   let rec firstrec = function
-    | []      -> tclFAIL
+    | []      -> tclFAIL 0
     | [cls]   -> tac cls (* added in order to get a useful error message *)
     | cls::tl -> (tclORELSE (tac cls) (firstrec tl))
   in 

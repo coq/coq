@@ -37,7 +37,7 @@ val val_interp : interp_sign -> Coqast.t -> value
 val interp_tacarg : interp_sign -> Coqast.t -> tactic_arg
 
 val interp               : Coqast.t -> tactic
-val vernac_interp        : Coqast.t -> tactic
+(*val vernac_interp        : Coqast.t -> tactic*)
 val vernac_interp_atomic : identifier -> tactic_arg list -> tactic
 
 val is_just_undef_macro  : Coqast.t -> string option

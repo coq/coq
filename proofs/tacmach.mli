@@ -113,6 +113,9 @@ val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate
 
 (*s Tacticals re-exported from the Refiner module. *)
 
+(* A special exception for levels for the Fail tactic *)
+exception FailError of int
+
 val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
@@ -128,7 +131,7 @@ val tclTRY           : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : tactic
+val tclFAIL          : int -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic

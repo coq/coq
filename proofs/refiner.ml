@@ -323,7 +323,13 @@ let tclIDTAC gls = (goal_goal_list gls, idtac_valid);;
 
 (* General failure tactic *)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" [< 'sTR s>];;
-let tclFAIL = tclFAIL_s "Failtac always fails.";;
+
+(* A special exception for levels for the Fail tactic *)
+exception FailError of int
+
+(* The Fail tactic *)
+let tclFAIL lvl g = raise (FailError lvl)
+
 let start_tac gls =
   let (sigr,g) = unpackage gls in
   (sigr,[g],idtac_valid)
@@ -449,8 +455,13 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
 let tclORELSE0 t1 t2 g =
   try 
     t1 g
-  with e when catchable_exception e -> 
-    t2 g
+  with
+  | e when catchable_exception e -> t2 g
+  | FailError lvl ->
+    if lvl = 0 then
+      t2 g
+    else
+      raise (FailError (lvl - 1))
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
    then applies t2 *)

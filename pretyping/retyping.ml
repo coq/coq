@@ -44,7 +44,10 @@ let rec type_of env cstr=
           (try strip_outer_cast (List.assoc n metamap)
            with Not_found -> anomaly "type_of: this is not a well-typed term")
     | IsRel n -> lift n (body_of_type (snd (lookup_rel n env)))
-    | IsVar id -> body_of_type (snd (lookup_var id env))
+    | IsVar id ->
+      (try body_of_type (snd (lookup_var id env))
+       with Not_found ->
+         anomaly ("type_of: variable "^(string_of_id id)^" unbound"))
     | IsAbst _ -> error "No more Abst" (*type_of env (abst_value cstr)*)
     | IsConst c -> body_of_type (type_of_constant env sigma c)
     | IsEvar _ -> type_of_existential env sigma cstr

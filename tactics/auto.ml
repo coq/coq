@@ -753,7 +753,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
   let rec_tacs = 
     List.map 
       (fun ntac -> 
-	 tclTHEN ntac 
+	 tclTHEN ntac
 	   (search_gen decomp (n-1) db_list local_db nil_sign))
       (possible_resolve db_list local_db (pf_concl goal))
   in 
@@ -865,7 +865,7 @@ let compileAutoArg contac = function
                          (clear_one id))
                       contac) 
                  else 
-		   tclFAIL)
+		   tclFAIL 0)
 	      (ids_of_sign ctx) (vals_of_sign ctx)) g)
   | UsingTDB ->  
       (tclTHEN  

@@ -27,7 +27,7 @@ val tclTRY           : tactic -> tactic
 val tclINFO          : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : tactic
+val tclFAIL          : int -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
@@ -37,8 +37,8 @@ val tclLAST_HYP      : (constr -> tactic) -> tactic
 val tclTRY_sign      : (constr -> tactic) -> constr signature -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
 
-val dyn_tclIDTAC     : tactic_arg list -> tactic
-val dyn_tclFAIL      : tactic_arg list -> tactic
+(*val dyn_tclIDTAC     : tactic_arg list -> tactic
+val dyn_tclFAIL      : tactic_arg list -> tactic*)
 
 (*s Clause tacticals. *)
 

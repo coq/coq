@@ -45,6 +45,30 @@ let constr_of_Constr = function
   | Constr c -> c
   | _ -> anomalylabstrm "constr_of_Constr" [<'sTR "Not a CONSTR tactic_arg">]
 
+(* Transforms a type_judgment signature into a (string * constr) list *)
+let make_hyps hyps =
+  let lid = List.map string_of_id (ids_of_sign hyps)
+  and lhyp = List.map body_of_type (vals_of_sign hyps) in
+    List.rev (List.combine lid lhyp)
+
+(* Extracted the constr list from lfun *)
+let rec constr_list goalopt = function
+  | (str,VArg(Constr c))::tl -> (id_of_string str,c)::(constr_list goalopt tl)
+  | (str,VArg(Identifier id))::tl ->
+    (try
+       (id_of_string str,Declare.global_reference CCI id)::(constr_list
+         goalopt tl)
+     with | Not_found ->
+       (match goalopt with
+       | None -> constr_list goalopt tl
+       | Some goal ->
+         if List.mem_assoc (string_of_id id) (make_hyps (pf_hyps goal)) then
+           (id_of_string str,VAR id)::(constr_list goalopt tl)
+         else
+           constr_list goalopt tl))
+  | _::tl -> constr_list goalopt tl
+  | [] -> []
+
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
   evar_declarations * Environ.env * (string * value) list *
@@ -186,53 +210,60 @@ let ast_of_command = function
       "Not a COMMAND ast node: "; print_ast ast>])
 
 (* Reads the hypotheses of a Match Context rule *)
-let rec read_match_context_hyps evc env=function
+let rec read_match_context_hyps evc env lfun = function
   | Node(_,"MATCHCONTEXTHYPS",[pc])::tl ->
-    (NoHypId (snd (interp_constrpattern evc env (ast_of_command
-      pc))))::(read_match_context_hyps evc env tl)
+    (NoHypId (snd (interp_constrpattern_gen evc env lfun (ast_of_command
+      pc))))::(read_match_context_hyps evc env lfun tl)
   | Node(_,"MATCHCONTEXTHYPS",[Nvar(_,s);pc])::tl ->
-    (Hyp (s,snd (interp_constrpattern evc env (ast_of_command
-      pc))))::(read_match_context_hyps evc env tl)
+    (Hyp (s,snd (interp_constrpattern_gen evc env lfun (ast_of_command
+      pc))))::(read_match_context_hyps evc env lfun tl)
   | ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_hyp",[<'sTR
       "Not a MATCHCONTEXTHYP ast node: "; print_ast ast>])
   | [] -> []
 
 (* Reads the rules of a Match Context *)
-let rec read_match_context_rule evc env = function
+let rec read_match_context_rule evc env lfun = function
   | Node(_,"MATCHCONTEXTRULE",[tc])::tl ->
-    (All tc)::(read_match_context_rule evc env tl)
+    (All tc)::(read_match_context_rule evc env lfun tl)
   | Node(_,"MATCHCONTEXTRULE",l)::tl ->
     let rl=List.rev l in
-      (Pat (read_match_context_hyps evc env (List.tl (List.tl rl)),snd
-        (interp_constrpattern evc env (ast_of_command (List.nth rl
-        1))),List.hd rl))::(read_match_context_rule evc env tl)
+      (Pat (read_match_context_hyps evc env lfun (List.tl (List.tl rl)),snd
+        (interp_constrpattern_gen evc env lfun (ast_of_command (List.nth rl
+        1))),List.hd rl))::(read_match_context_rule evc env lfun tl)
   | ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",[<'sTR
       "Not a MATCHCONTEXTRULE ast node: "; print_ast ast>])
   | [] -> []
 
 (* Reads the rules of a Match *)
-let rec read_match_rule evc env = function
+let rec read_match_rule evc env lfun = function
   | Node(_,"MATCHRULE",[te])::tl ->
-    (All te)::(read_match_rule evc env tl)
+    (All te)::(read_match_rule evc env lfun tl)
   | Node(_,"MATCHRULE",[com;te])::tl ->
-    (Pat ([],snd (interp_constrpattern evc env (ast_of_command com)),te)) ::
-      (read_match_rule evc env tl)
+    (Pat ([],snd (interp_constrpattern_gen evc env lfun
+      (ast_of_command com)),te))::(read_match_rule evc env lfun tl)
   | ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_rule",[<'sTR
       "Not a MATCHRULE ast node: "; print_ast ast>])
   | [] -> []
 
-(* Transforms a type_judgment signature into a (string * constr) list *)
-let make_hyps hyps =
-  let lid = List.map string_of_id (ids_of_sign hyps)
-  and lhyp = List.map body_of_type (vals_of_sign hyps) in
-    List.combine lid lhyp
-
 (* For Match Context and Match *)
 exception No_match
 exception Not_coherent_metas
+
+(* Evaluation with FailError catching *)
+let eval_with_fail interp ast goal =
+  try 
+    (match interp ast with
+    | VTactic tac -> VRTactic (tac goal)
+    | VFTactic (largs,f) -> VRTactic (f largs goal)
+    | a -> a)
+  with | FailError lvl ->
+    if lvl = 0 then
+      raise No_match
+    else
+      raise (FailError (lvl - 1))
 
 (* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence lcm = function
@@ -308,7 +339,8 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt) ast =
     | Node(_,"MATCH",lmr) ->
       match_interp evc env lfun lmatch goalopt ast lmr
     | Node(_,"IDTAC",[]) -> VTactic tclIDTAC
-    | Node(_,"FAIL",[]) -> VTactic tclFAIL
+    | Node(_,"FAIL",[]) -> VTactic (tclFAIL 0)
+    | Node(_,"FAIL",[n]) -> VTactic (tclFAIL (num_of_ast n))
     | Node(_,"TACTICLIST",l) ->
       VTactic (interp_semi_list tclIDTAC lfun lmatch l)
     | Node(_,"DO",[n;tac]) ->
@@ -333,14 +365,10 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt) ast =
       VFTactic ([],(interp_atomic loc opn))
     | Node(_,"VOID",[]) -> VVoid
     | Nvar(_,s) ->
-      (try
-         (unrec (List.assoc s (List.rev lfun)))
-       with
-           Not_found ->
-             (try
-                (lookup s)
-              with
-                  Not_found -> VArg (Identifier (id_of_string s))))
+      (try (unrec (List.assoc s (List.rev lfun)))
+       with | Not_found ->
+         (try (lookup s)
+          with | Not_found -> VArg (Identifier (id_of_string s))))
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) -> com_interp (evc,env,lfun,lmatch,goalopt) c
@@ -434,31 +462,33 @@ and let_interp evc env lfun lmatch goalopt ast = function
 
 (* Interprets the Match Context expressions *)
 and match_context_interp evc env lfun lmatch goalopt ast lmr =
-  let rec apply_match_context evc env lfun lmatch goalopt = function
-    | (All t)::tl -> val_interp (evc,env,lfun,lmatch,goalopt) t
+  let goal =
+    (match goalopt with
+    | None ->
+      errorlabstrm "Tacinterp.apply_match_context" [< 'sTR
+        "No goal available" >]
+    | Some g -> g) in
+  let rec apply_match_context evc env lfun lmatch goal = function
+    | (All t)::tl ->
+      (try eval_with_fail (val_interp (evc,env,lfun,lmatch,Some goal)) t goal
+       with No_match -> apply_match_context evc env lfun lmatch goal tl)
     | (Pat (mhyps,mgoal,mt))::tl ->
-      (match goalopt with
-         | None ->
-           errorlabstrm "Tacinterp.apply_match_context" [< 'sTR
-             "No goal available" >]
-         | Some g ->
-           let hyps = make_hyps (pf_hyps g)
-           and concl = pf_concl g in
-             try
-               (let lgoal = apply_matching mgoal concl in
-                  if mhyps = [] then
-                    val_interp (evc,env,lfun,lgoal@lmatch,goalopt) mt
-                  else
-                    apply_hyps_context evc env lfun lmatch g mt lgoal mhyps
-                      hyps)
-             with
-                 No_match ->
-                   apply_match_context evc env lfun lmatch goalopt tl)
+      let hyps = make_hyps (pf_hyps goal)
+      and concl = pf_concl goal in
+      (try
+         (let lgoal = apply_matching mgoal concl in
+          if mhyps = [] then
+            eval_with_fail (val_interp (evc,env,lfun,lgoal@lmatch,Some goal))
+              mt goal
+          else
+            apply_hyps_context evc env lfun lmatch goal mt lgoal mhyps hyps)
+       with
+       | No_match -> apply_match_context evc env lfun lmatch goal tl)
     | _ ->
       errorlabstrm "Tacinterp.apply_match_context" [<'sTR
         "No matching clauses for Match Context">] in
-  apply_match_context evc env lfun lmatch goalopt (read_match_context_rule evc
-    env lmr)
+  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc env
+    (constr_list goalopt lfun) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context evc env lfun_glob lmatch_glob goal mt lgmatch mhyps
@@ -480,9 +510,15 @@ and apply_hyps_context evc env lfun_glob lmatch_glob goal mt lgmatch mhyps
                  apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt
                    (lfun@lid) (lmatch@lm) newmhyps (hyps_acc@tl) [])
           with
-              No_match | _ ->
-                apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt
-                  lfun lmatch mhyps tl (hyps_acc@[hd]))
+         | FailError lvl ->
+                if lvl > 0 then
+                  raise (FailError (lvl - 1))
+                else
+                  apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt
+                    lfun lmatch mhyps tl (hyps_acc@[hd])
+         | _ ->
+           apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt lfun
+             lmatch mhyps tl (hyps_acc@[hd]))
       | [] -> raise No_match in
   apply_hyps_context_rec evc env lfun_glob lmatch_glob goal mt [] lgmatch mhyps
     hyps []
@@ -503,7 +539,7 @@ and match_interp evc env lfun lmatch goalopt ast lmr =
         "No matching clauses for Match">] in
   let csr = constr_of_Constr (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
     (List.hd lmr)))
-  and ilr = read_match_rule evc env (List.tl lmr) in
+  and ilr = read_match_rule evc env (constr_list goalopt lfun) (List.tl lmr) in
   apply_match evc env lfun lmatch goalopt csr ilr
 
 (* Interprets tactic expressions *)
@@ -552,32 +588,29 @@ and com_interp (evc,env,lfun,lmatch,goalopt) = function
      let redexp = unredexp (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
        rtc)) in
      VArg (Constr ((reduction_of_redexp redexp) env evc (interp_constr1 evc env
-       (make_subs_list lfun) lmatch c)))
-  | c -> 
-      try
-	VArg (Constr (interp_constr1 evc env (make_subs_list lfun) lmatch c))
-      with e when Logic.catchable_exception e ->
-	VArg (Command c)
+       (constr_list goalopt lfun) lmatch c)))
+  | c ->
+    try
+      VArg (Constr (interp_constr1 evc env (constr_list goalopt lfun) lmatch
+        c))
+    with e when Logic.catchable_exception e -> VArg (Command c)
 
 (* Interprets a CASTEDCOMMAND expression *)
 and cast_com_interp (evc,env,lfun,lmatch,goalopt) com = match goalopt with
   | Some gl ->
       (match com with
          | Node(_,"EVAL",[c;rtc]) ->
-             let redexp = 
-	       unredexp (unvarg (val_interp
-				   (evc,env,lfun,lmatch,goalopt) rtc)) 
-	     in
+             let redexp = unredexp (unvarg (val_interp
+              (evc,env,lfun,lmatch,goalopt) rtc)) in
              VArg (Constr ((reduction_of_redexp redexp) env evc
-			     (interp_casted_constr1 evc env 
-				(make_subs_list lfun) lmatch c (pf_concl gl))))
-         | c ->
-	     try
-               VArg (Constr (interp_casted_constr1 evc env 
-			       (make_subs_list lfun) lmatch c (pf_concl gl)))
-	     with e when Logic.catchable_exception e ->
-	       VArg (Command c))
-  | None ->
+               (interp_casted_constr1 evc env (constr_list goalopt lfun) lmatch
+               c (pf_concl gl))))
+          | c ->
+            try
+              VArg (Constr (interp_casted_constr1 evc env (constr_list goalopt
+                lfun) lmatch c (pf_concl gl)))
+            with e when Logic.catchable_exception e -> VArg (Command c))
+    | None ->
       errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
 
 and cvt_pattern (evc,env,lfun,lmatch,goalopt) = function
@@ -708,14 +741,16 @@ let is_just_undef_macro ast =
       	(try let _ = Macros.lookup id in None with Not_found -> Some id)
     | _ -> None
 
-let vernac_interp =
+
+
+(*let vernac_interp =
   let gentac =
     hide_tactic "Interpret"
       (fun vargs gl -> match vargs with 
 	 | [Tacexp com] -> interp com gl
 	 | _ -> assert false) 
   in
-  fun com -> gentac [Tacexp com]
+  fun com -> gentac [Tacexp com]*)
 
 let vernac_interp_atomic =
   let gentac =

@@ -73,6 +73,9 @@ val tclTHENS         : tactic -> tactic list -> tactic
   subgoals is strictly less than [n] *)
 val tclTHENSI        : tactic -> tactic list -> tactic
 
+(* A special exception for levels for the Fail tactic *)
+exception FailError of int
+
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
@@ -81,7 +84,7 @@ val tclTRY           : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : tactic
+val tclFAIL          : int -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
