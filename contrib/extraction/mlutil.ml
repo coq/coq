@@ -148,6 +148,7 @@ let rec decomp_app = function
       assert false
 
 let anonymous = Names.id_of_string "x"
+let prop_name = Names.id_of_string "_"
 
 let rec n_lam n a =
   if n = 0 then a else MLlam (anonymous, n_lam (pred n) a)

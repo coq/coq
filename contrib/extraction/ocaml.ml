@@ -84,6 +84,10 @@ type env = identifier list * Idset.t
 let rec rename_vars avoid = function
   | [] -> 
       [], avoid
+  | id :: idl when id == prop_name ->
+      (* we don't rename propositions binders *)
+      let (idl', avoid') = rename_vars avoid idl in
+      (id :: idl', avoid')
   | id :: idl ->
       let id' = rename_id (lowercase_id id) avoid in
       let (idl', avoid') = rename_vars (Idset.add id' avoid) idl in

@@ -2,6 +2,7 @@
 open Miniml
 
 val anonymous : Names.identifier
+val prop_name : Names.identifier
 
 val occurs : int -> ml_ast -> bool
 

@@ -432,7 +432,6 @@ and extract_term_with_type env ctx c t =
     Rprop
   else match kind_of_term c with
     | IsLambda (n, t, d) ->
-	let id = id_of_name n in
 	let v = v_of_arity env t in 
 	let env' = push_rel (n,None,t) env in
 	let ctx' = (snd v = NotArity) :: ctx in
@@ -440,8 +439,10 @@ and extract_term_with_type env ctx c t =
 	(* If [d] was of type an arity, [c] too would be so *)
 	(match v with
 	   | _,Arity -> d'
-	   | _,NotArity -> match d' with
-	       | Rmlterm a -> Rmlterm (MLlam (id, a))
+	   | l,NotArity -> match d' with
+	       | Rmlterm a -> 
+		   let id = if l = Logic then prop_name else id_of_name n in
+		   Rmlterm (MLlam (id, a))
 	       | Rprop -> assert false (* Cf. rem. above *))
     | IsRel n ->
 	(* TODO : magic or not *) 
