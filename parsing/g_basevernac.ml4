@@ -312,9 +312,17 @@ GEXTEND Gram
 		let mv = Metasyntax.merge_modifiers a n modl in
 		let v8 = Util.option_app (function (op8,mv8) ->
 		  let op8 = match op8 with None -> op | Some op -> op in
-		  let mv8 = if mv8=[] then List.map map_modl mv else mv8 in
-		  let mv8 = if List.for_all (function SetLevel _ -> false | _ -> true) mv8 then SetLevel 10 :: mv8 else mv8 in
-		  let mv8 = if List.for_all (function SetAssoc _ -> false | _ -> true) mv8 then SetAssoc Gramext.LeftA :: mv8 else mv8 in
+		  let mv8 =
+		    if mv8=[] then
+		      let mv8 = List.map map_modl mv in
+		      let mv8 =	if List.for_all
+			(function SetLevel _ -> false | _ -> true) mv8
+		      then SetLevel 10 :: mv8 else mv8 in
+		      let mv8 = if List.for_all
+			(function SetAssoc _ -> false | _ -> true) mv8
+		      then SetAssoc Gramext.LeftA :: mv8 else mv8 in
+		      mv8
+		  else mv8 in
 		  (op8,mv8)) mv8 in
 		VernacInfix (local,(op,mv),p,v8,sc)
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
