@@ -202,7 +202,11 @@ let parse_args is_ide =
 
     | "-v7" :: rem -> Options.v7 := true; parse rem
 
-    | "-v8" :: rem -> Options.v7 := false; parse rem
+    | "-v8" :: rem ->
+       Options.v7 := false;
+       (* implicites stricts par défaut en v8 *)
+       Impargs.make_strict_implicit_args true;
+       parse rem
 
     | s :: rem -> 
 	if is_ide && Filename.check_suffix s ".v" then begin

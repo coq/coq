@@ -1258,7 +1258,7 @@ newcontrib:: $(CONTRIBVO:%.vo=new%.vo) $(CONTRIBCMO)
 COQTOPNEW=bin/coqtopnew.$(BEST)$(EXE)
 
 NEWCMX=$(HIGHPARSINGNEW:.cmo=.cmx)
-NEWOPTS=-boot $(GLOB) -R newtheories Coq -R newcontrib Coq
+NEWOPTS=-boot $(GLOB) -v8 -R newtheories Coq -R newcontrib Coq
 NEWCOQBARE=$(COQTOPNEW) $(NEWOPTS) -nois
 NEWCOQ=$(COQTOPNEW) $(NEWOPTS) -is states/initialnew.coq
 
