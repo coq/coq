@@ -69,8 +69,9 @@ let add_load_path_entry (phys_path,coq_path) =
   | _,[dir] ->
       if coq_path <> dir 
         (* If this is not the default -I . to coqtop *)
-        && phys_path <> canonical_path_name Filename.current_dir_name
-        && coq_path <>  Nametab.default_root_prefix 
+        && not
+        (phys_path = canonical_path_name Filename.current_dir_name
+         && coq_path <> Nametab.default_root_prefix)
       then
 	begin
           (* Assume the user is concerned by module naming *)
