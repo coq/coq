@@ -58,6 +58,7 @@ Section MapDefs.
     end.
 
   Definition newMap := M0.
+
   Definition MapSingleton := M1.
 
   Definition eqm := [g,g':ad->option] (a:ad) (g a)=(g' a).
@@ -78,14 +79,14 @@ Section MapDefs.
     Unfold MapGet. Intros. Rewrite (ad_eq_correct a). Reflexivity.
   Qed.
 
-  Lemma M1_semantics_2 
-    : (a,a':ad) (y:A) (ad_eq a a')=false -> (MapGet (M1 a y) a')=NONE.
+  Lemma M1_semantics_2 :
+      (a,a':ad) (y:A) (ad_eq a a')=false -> (MapGet (M1 a y) a')=NONE.
   Proof.
     Intros. Simpl. Rewrite H. Reflexivity.
   Qed.
 
-  Lemma Map2_semantics_1 
-    : (m,m':Map) (eqm (MapGet m) [a:ad] (MapGet (M2 m m') (ad_double a))).
+  Lemma Map2_semantics_1 :
+      (m,m':Map) (eqm (MapGet m) [a:ad] (MapGet (M2 m m') (ad_double a))).
   Proof.
     Unfold eqm. Induction a; Trivial.
   Qed.
@@ -99,8 +100,8 @@ Section MapDefs.
     Exact (Map2_semantics_1 m m' a).
   Qed.
 
-  Lemma Map2_semantics_2 
-    : (m,m':Map) (eqm (MapGet m') [a:ad] (MapGet (M2 m m') (ad_double_plus_un a))).
+  Lemma Map2_semantics_2 :
+      (m,m':Map) (eqm (MapGet m') [a:ad] (MapGet (M2 m m') (ad_double_plus_un a))).
   Proof.
     Unfold eqm. Induction a; Trivial.
   Qed.
@@ -205,7 +206,8 @@ Section MapDefs.
   Qed.
   i*)
 
-  Lemma MapGet_if_same : (m:Map) (b:bool) (a:ad) (MapGet (if b then m else m) a)=(MapGet m a).
+  Lemma MapGet_if_same : (m:Map) (b:bool) (a:ad) 
+      (MapGet (if b then m else m) a)=(MapGet m a).
   Proof.
     Induction b;Trivial.
   Qed.
@@ -240,7 +242,8 @@ Section MapDefs.
   Qed.
 
   Lemma MapGet_M2_both_NONE : (m,m':Map) (a:ad)
-      (MapGet m (ad_div_2 a))=NONE -> (MapGet m' (ad_div_2 a))=NONE -> (MapGet (M2 m m') a)=NONE.
+      (MapGet m (ad_div_2 a))=NONE -> (MapGet m' (ad_div_2 a))=NONE -> 
+        (MapGet (M2 m m') a)=NONE.
   Proof.
     Intros. Rewrite (Map2_semantics_3 m m' a). 
     Case (ad_bit_0 a); Assumption.
@@ -575,7 +578,8 @@ Section MapDefs.
       | (M2 m1 m2) => [m':Map] Cases m' of
       	                           M0 => m
 				 | (M1 a' y') => (MapPut m a' y')
-				 | (M2 m'1 m'2) => (M2 (MapMerge m1 m'1) (MapMerge m2 m'2))
+				 | (M2 m'1 m'2) => (M2 (MapMerge m1 m'1) 
+	                                               (MapMerge m2 m'2))
 			       end
     end.
 
@@ -659,7 +663,8 @@ Section MapDefs.
   Qed.
 
   Lemma MapDelta_semantics_1 : (m,m':Map) (a:ad)
-    (MapGet m a)=NONE -> (MapGet m' a)=NONE -> (MapGet (MapDelta m m') a)=NONE.
+    (MapGet m a)=NONE -> (MapGet m' a)=NONE -> 
+      (MapGet (MapDelta m m') a)=NONE.
   Proof.
     Induction m. Trivial.
     Exact MapDelta_semantics_1_1.

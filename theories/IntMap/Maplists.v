@@ -38,7 +38,7 @@ Section MapLists.
     end.
 
   Lemma ad_in_list_forms_circuit : (x:ad) (l:(list ad)) (ad_in_list x l)=true ->
-      	 {l1 : (list ad) & {l2 : (list ad) | l=(app l1 (cons x l2))}}.
+      {l1 : (list ad) & {l2 : (list ad) | l=(app l1 (cons x l2))}}.
   Proof.
     Induction l. Intro. Discriminate H.
     Intros. Elim (sumbool_of_bool (ad_eq x a)). Intro H1. Simpl in H0. Split with (nil ad).
@@ -48,8 +48,8 @@ Section MapLists.
   Qed.
 
   Lemma ad_list_stutters_has_circuit : (l:(list ad)) (ad_list_stutters l)=true ->
-      	  {x:ad & {l0 : (list ad) & {l1 : (list ad) & {l2 : (list ad) |
-	    l=(app l0 (cons x (app l1 (cons x l2))))}}}}.
+      {x:ad & {l0 : (list ad) & {l1 : (list ad) & {l2 : (list ad) |
+        l=(app l0 (cons x (app l1 (cons x l2))))}}}}.
   Proof.
     Induction l. Intro. Discriminate H.
     Intros. Simpl in H0. Elim (orb_true_elim ? ? H0). Intro H1. Split with a.
@@ -162,8 +162,8 @@ Section MapLists.
     Intro H1. Rewrite (H l' a0 H1). Apply orb_b_true.
   Qed.
 
-  Lemma ad_list_stutters_app_l : (l,l':(list ad)) (ad_list_stutters l)=true
-      	  -> (ad_list_stutters (app l l'))=true.
+  Lemma ad_list_stutters_app_l : (l,l':(list ad)) (ad_list_stutters l)=true ->
+      (ad_list_stutters (app l l'))=true.
   Proof.
     Induction l. Intros. Discriminate H.
     Intros. Simpl. Simpl in H0. Elim (orb_true_elim ? ? H0). Intro H1.
@@ -178,23 +178,23 @@ Section MapLists.
     Intros. Simpl. Rewrite (H l' a0 H0). Apply orb_b_true. 
   Qed.
 
-  Lemma ad_list_stutters_app_r : (l,l':(list ad)) (ad_list_stutters l')=true
-      	  -> (ad_list_stutters (app l l'))=true.
+  Lemma ad_list_stutters_app_r : (l,l':(list ad)) (ad_list_stutters l')=true ->
+      (ad_list_stutters (app l l'))=true.
   Proof.
     Induction l. Trivial.
     Intros. Simpl. Rewrite (H l' H0). Apply orb_b_true.
   Qed.
 
-  Lemma ad_list_stutters_app_conv_l : (l,l':(list ad)) (ad_list_stutters (app l l'))=false
-      	  -> (ad_list_stutters l)=false.
+  Lemma ad_list_stutters_app_conv_l : (l,l':(list ad)) (ad_list_stutters (app l l'))=false ->
+      (ad_list_stutters l)=false.
   Proof.
     Intros. Elim (sumbool_of_bool (ad_list_stutters l)). Intro H0.
     Rewrite (ad_list_stutters_app_l l l' H0) in H. Discriminate H.
     Trivial.
   Qed.
 
-  Lemma ad_list_stutters_app_conv_r : (l,l':(list ad)) (ad_list_stutters (app l l'))=false
-      	  -> (ad_list_stutters l')=false.
+  Lemma ad_list_stutters_app_conv_r : (l,l':(list ad)) (ad_list_stutters (app l l'))=false ->
+      (ad_list_stutters l')=false.
   Proof.
     Intros. Elim (sumbool_of_bool (ad_list_stutters l')). Intro H0.
     Rewrite (ad_list_stutters_app_r l l' H0) in H. Discriminate H.
@@ -208,14 +208,14 @@ Section MapLists.
   Qed.
 
   Lemma ad_in_list_app : (l,l':(list ad)) (x:ad)
-          (ad_in_list x (app l l'))=(orb (ad_in_list x l) (ad_in_list x l')).
+      (ad_in_list x (app l l'))=(orb (ad_in_list x l) (ad_in_list x l')).
   Proof.
     Induction l. Trivial.
     Intros. Simpl. Rewrite <- orb_assoc. Rewrite (H l' x). Reflexivity.
   Qed.
 
   Lemma ad_in_list_rev : (l:(list ad)) (x:ad)
-      	(ad_in_list x (rev l))=(ad_in_list x l).
+      (ad_in_list x (rev l))=(ad_in_list x l).
   Proof.
     Induction l. Trivial.
     Intros. Simpl. Rewrite ad_in_list_app. Rewrite (H x). Simpl. Rewrite orb_b_false.
@@ -230,14 +230,14 @@ Section MapLists.
   Qed.
 
   Lemma ad_list_stutters_prev_l : (l,l':(list ad)) (x:ad) (ad_in_list x l)=true ->
-          (ad_list_stutters (app l (cons x l')))=true.
+      (ad_list_stutters (app l (cons x l')))=true.
   Proof.
     Intros. Elim (ad_in_list_forms_circuit ? ? H). Intros l0 H0. Elim H0. Intros l1 H1.
     Rewrite H1. Rewrite app_ass. Simpl. Apply ad_list_has_circuit_stutters.
   Qed.
 
   Lemma ad_list_stutters_prev_conv_l : (l,l':(list ad)) (x:ad)
-      	  (ad_list_stutters (app l (cons x l')))=false -> (ad_in_list x l)=false.
+      (ad_list_stutters (app l (cons x l')))=false -> (ad_in_list x l)=false.
   Proof.
     Intros. Elim (sumbool_of_bool (ad_in_list x l)). Intro H0.
     Rewrite (ad_list_stutters_prev_l l l' x H0) in H. Discriminate H.
@@ -245,14 +245,14 @@ Section MapLists.
   Qed.
 
   Lemma ad_list_stutters_prev_r : (l,l':(list ad)) (x:ad) (ad_in_list x l')=true ->
-          (ad_list_stutters (app l (cons x l')))=true.
+      (ad_list_stutters (app l (cons x l')))=true.
   Proof.
     Intros. Elim (ad_in_list_forms_circuit ? ? H). Intros l0 H0. Elim H0. Intros l1 H1.
     Rewrite H1. Apply ad_list_has_circuit_stutters.
   Qed.
 
   Lemma ad_list_stutters_prev_conv_r : (l,l':(list ad)) (x:ad)
-      	  (ad_list_stutters (app l (cons x l')))=false -> (ad_in_list x l')=false.
+      (ad_list_stutters (app l (cons x l')))=false -> (ad_in_list x l')=false.
   Proof.
     Intros. Elim (sumbool_of_bool (ad_in_list x l')). Intro H0.
     Rewrite (ad_list_stutters_prev_r l l' x H0) in H. Discriminate H.
@@ -298,7 +298,7 @@ Section MapLists.
   Qed.
 
   Lemma ad_list_app_rev : (l,l':(list ad)) (x:ad)
-      	 (app (rev l) (cons x l'))=(app (rev (cons x l)) l').
+      (app (rev l) (cons x l'))=(app (rev (cons x l)) l').
   Proof.
     Induction l. Trivial.
     Intros. Simpl. Rewrite (app_ass (rev l0) (cons a (nil ad)) (cons x l')). Simpl.
@@ -334,7 +334,8 @@ Section MapLists.
     Exact (sym_eq ? ? ?).
   Qed.
 
-  Lemma Elems_of_list_of_dom : (m:(Map A)) (eqmap unit (Elems (ad_list_of_dom m)) (MapDom A m)).
+  Lemma Elems_of_list_of_dom : 
+      (m:(Map A)) (eqmap unit (Elems (ad_list_of_dom m)) (MapDom A m)).
   Proof.
     Unfold eqmap eqm. Intros. Elim (sumbool_of_bool (in_FSet a (Elems (ad_list_of_dom m)))).
     Intro H. Elim (in_dom_some ? ? ? H). Intro t. Elim t. Intro H0.
@@ -356,8 +357,8 @@ Section MapLists.
   Qed.
 
   Lemma ad_list_of_dom_card_1 : (m:(Map A)) (pf:ad->ad)
-      (length (MapFold1 A (list ad) (nil ad) (app 1!ad) [a:ad][_:A](cons a (nil ad)) pf m))
-      =(MapCard A m).
+      (length (MapFold1 A (list ad) (nil ad) (app 1!ad) [a:ad][_:A](cons a (nil ad)) pf m))=
+      (MapCard A m).
   Proof.
     Induction m; Try Trivial. Simpl. Intros. Rewrite ad_list_app_length.
     Rewrite (H [a0:ad](pf (ad_double a0))). Rewrite (H0 [a0:ad](pf (ad_double_plus_un a0))).
@@ -369,7 +370,8 @@ Section MapLists.
     Exact [m:(Map A)](ad_list_of_dom_card_1 m [a:ad]a).
   Qed.
 
-  Lemma ad_list_of_dom_not_stutters : (m:(Map A)) (ad_list_stutters (ad_list_of_dom m))=false.
+  Lemma ad_list_of_dom_not_stutters : 
+      (m:(Map A)) (ad_list_stutters (ad_list_of_dom m))=false.
   Proof.
     Intro. Apply ad_list_not_stutters_card_conv. Rewrite ad_list_of_dom_card. Apply sym_eq.
     Rewrite (MapCard_Dom A m). Apply MapCard_ext. Exact (Elems_of_list_of_dom m).
@@ -379,10 +381,10 @@ Section MapLists.
 
   Lemma ad_list_of_dom_Dom_1 : (A:Set)
     (m:(Map A)) (pf:ad->ad)
-     (MapFold1 A (list ad) (nil ad) (app 1!ad)
-       [a:ad][_:A](cons a (nil ad)) pf m)
-      =(MapFold1 unit (list ad) (nil ad) (app 1!ad)
-         [a:ad][_:unit](cons a (nil ad)) pf (MapDom A m)).
+      (MapFold1 A (list ad) (nil ad) (app 1!ad) 
+        [a:ad][_:A](cons a (nil ad)) pf m)=
+      (MapFold1 unit (list ad) (nil ad) (app 1!ad)
+        [a:ad][_:unit](cons a (nil ad)) pf (MapDom A m)).
   Proof.
     Induction m; Try Trivial. Simpl. Intros. Rewrite (H [a0:ad](pf (ad_double a0))).
     Rewrite (H0 [a0:ad](pf (ad_double_plus_un a0))). Reflexivity.

@@ -5,7 +5,7 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(*i 	$Id$	 i*)
+(*i   	  $Id$      i*)
 
 Require Bool.
 Require Sumbool.
@@ -97,7 +97,8 @@ Section MapFoldResults.
   Variable comm : (a,b:M) (op a b)=(op b a).
 
   Lemma MapFold_Put_disjoint_1 : (p:positive)
-        (f:ad->A->M) (pf:ad->ad) (a1,a2:ad) (y1,y2:A) (ad_xor a1 a2)=(ad_x p) ->
+        (f:ad->A->M) (pf:ad->ad) (a1,a2:ad) (y1,y2:A) 
+	  (ad_xor a1 a2)=(ad_x p) ->
       	    (MapFold1 A M neutral op f pf (MapPut1 A a1 y1 a2 y2 p))=
 	    (op (f (pf a1) y1) (f (pf a2) y2)).
   Proof.
@@ -175,7 +176,8 @@ Section MapFoldResults.
   Lemma MapFold_Put_disjoint : 
         (f:ad->A->M) (m:(Map A)) (a:ad) (y:A)
 	  (MapGet A m a)=(NONE A) ->
-      	    (MapFold A M neutral op f (MapPut A m a y))=(op (f a y) (MapFold A M neutral op f m)).
+      	    (MapFold A M neutral op f (MapPut A m a y))=
+	    (op (f a y) (MapFold A M neutral op f m)).
   Proof.
     Intros. Exact (MapFold_Put_disjoint_2 f m a y [a0:ad]a0 H).
   Qed.
@@ -368,7 +370,8 @@ Section DMergeDef.
   Qed.
 
   Lemma in_dom_DMerge_3 : (m:(Map (Map A))) (a,b:ad) (m0:(Map A))
-      (MapGet ? m a)=(SOME ? m0) -> (in_dom A b m0)=true -> (in_dom A b (DMerge m))=true.
+      (MapGet ? m a)=(SOME ? m0) -> (in_dom A b m0)=true -> 
+        (in_dom A b (DMerge m))=true.
   Proof.
     Intros m a b m0 H H0. Rewrite in_dom_DMerge_1.
     Elim (MapSweep_semantics_4 ? [_:ad][m'0:(Map A)](in_dom A b m'0) ? ? ? H H0).

@@ -68,9 +68,10 @@ Section MapC.
     Apply MapMerge_idempotent.
   Qed.
 
-  Lemma MapMerge_RestrTo_l_c : (m,m',m'':(Map A)) (mapcanon A m) -> (mapcanon A m'') ->
-      (MapMerge A (MapDomRestrTo A A m m') m'')
-      =(MapDomRestrTo A A (MapMerge A m m'') (MapMerge A m' m'')).
+  Lemma MapMerge_RestrTo_l_c : (m,m',m'':(Map A)) 
+      (mapcanon A m) -> (mapcanon A m'') -> 
+        (MapMerge A (MapDomRestrTo A A m m') m'')=
+        (MapDomRestrTo A A (MapMerge A m m'') (MapMerge A m' m'')).
   Proof.
     Intros. Apply mapcanon_unique. Apply MapMerge_canon. Apply MapDomRestrTo_canon; Assumption.
     Assumption.
@@ -97,7 +98,8 @@ Section MapC.
     Apply MapDomRestrTo_assoc.
   Qed.
 
-  Lemma MapDomRestrTo_idempotent_c : (m:(Map A)) (mapcanon A m) -> (MapDomRestrTo A A m m)=m.
+  Lemma MapDomRestrTo_idempotent_c : (m:(Map A)) (mapcanon A m) -> 
+      (MapDomRestrTo A A m m)=m.
   Proof.
     Intros. Apply mapcanon_unique. (Apply MapDomRestrTo_canon; Assumption).
     Assumption.
@@ -120,9 +122,10 @@ Section MapC.
     Apply MapDomRestrBy_Dom.
   Qed.
 
-  Lemma MapDomRestrBy_By_c : (m:(Map A)) (m':(Map B)) (m'':(Map B)) (mapcanon A m) ->
-      (MapDomRestrBy A B (MapDomRestrBy A B m m') m'')=
-      (MapDomRestrBy A B m (MapMerge B m' m'')).
+  Lemma MapDomRestrBy_By_c : (m:(Map A)) (m':(Map B)) (m'':(Map B)) 
+      (mapcanon A m) -> 
+        (MapDomRestrBy A B (MapDomRestrBy A B m m') m'')=
+        (MapDomRestrBy A B m (MapMerge B m' m'')).
   Proof.
     Intros. Apply mapcanon_unique. (Apply MapDomRestrBy_canon; Try Assumption).
     (Apply MapDomRestrBy_canon; Try Assumption).
@@ -130,9 +133,10 @@ Section MapC.
     Apply MapDomRestrBy_By.
   Qed.
 
-  Lemma MapDomRestrBy_By_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (mapcanon A m) ->
-      (MapDomRestrBy A C (MapDomRestrBy A B m m') m'')=
-      (MapDomRestrBy A B (MapDomRestrBy A C m m'') m').
+  Lemma MapDomRestrBy_By_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) 
+      (mapcanon A m) ->
+        (MapDomRestrBy A C (MapDomRestrBy A B m m') m'')=
+        (MapDomRestrBy A B (MapDomRestrBy A C m m'') m').
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrBy_canon.
     (Apply MapDomRestrBy_canon; Assumption).
@@ -140,9 +144,10 @@ Section MapC.
     Apply MapDomRestrBy_By_comm.
   Qed.
 
-  Lemma MapDomRestrBy_To_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (mapcanon A m) ->
-      (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')=
-      (MapDomRestrTo A B m (MapDomRestrBy B C m' m'')).
+  Lemma MapDomRestrBy_To_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) 
+      (mapcanon A m) ->
+        (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')=
+        (MapDomRestrTo A B m (MapDomRestrBy B C m' m'')).
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrBy_canon.
     (Apply MapDomRestrTo_canon; Assumption).
@@ -150,9 +155,10 @@ Section MapC.
     Apply MapDomRestrBy_To.
   Qed.
 
-  Lemma MapDomRestrBy_To_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (mapcanon A m) ->
-      (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')=
-      (MapDomRestrTo A B (MapDomRestrBy A C m m'') m').
+  Lemma MapDomRestrBy_To_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) 
+      (mapcanon A m) ->
+        (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')=
+        (MapDomRestrTo A B (MapDomRestrBy A C m m'') m').
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrBy_canon.
     Apply MapDomRestrTo_canon; Assumption.
@@ -160,9 +166,10 @@ Section MapC.
     Apply MapDomRestrBy_To_comm.
   Qed.
 
-  Lemma MapDomRestrTo_By_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (mapcanon A m) ->
-      (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')=
-      (MapDomRestrTo A C m (MapDomRestrBy C B m'' m')).
+  Lemma MapDomRestrTo_By_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) 
+      (mapcanon A m) ->
+        (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')=
+        (MapDomRestrTo A C m (MapDomRestrBy C B m'' m')).
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrTo_canon.
     Apply MapDomRestrBy_canon; Assumption.
@@ -170,9 +177,10 @@ Section MapC.
     Apply MapDomRestrTo_By.
   Qed.
 
-  Lemma MapDomRestrTo_By_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (mapcanon A m) ->
-      (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')=
-      (MapDomRestrBy A B (MapDomRestrTo A C m m'') m').
+  Lemma MapDomRestrTo_By_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) 
+      (mapcanon A m) ->
+        (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')=
+        (MapDomRestrBy A B (MapDomRestrTo A C m m'') m').
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrTo_canon.
     (Apply MapDomRestrBy_canon; Assumption).
@@ -180,9 +188,10 @@ Section MapC.
     Apply MapDomRestrTo_By_comm.
   Qed.
 
-  Lemma MapDomRestrTo_To_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (mapcanon A m) ->
-      (MapDomRestrTo A C (MapDomRestrTo A B m m') m'')=
-      (MapDomRestrTo A B (MapDomRestrTo A C m m'') m').
+  Lemma MapDomRestrTo_To_comm_c : (m:(Map A)) (m':(Map B)) (m'':(Map C)) 
+      (mapcanon A m) ->
+        (MapDomRestrTo A C (MapDomRestrTo A B m m') m'')=
+        (MapDomRestrTo A B (MapDomRestrTo A C m m'') m').
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrTo_canon.
     Apply MapDomRestrTo_canon; Assumption.
@@ -213,7 +222,8 @@ Section MapC.
     Apply MapMerge_DomRestrBy.
   Qed.
 
-  Lemma MapDelta_nilpotent_c : (m:(Map A)) (mapcanon A m) -> (MapDelta A m m)=(M0 A).
+  Lemma MapDelta_nilpotent_c : (m:(Map A)) (mapcanon A m) -> 
+      (MapDelta A m m)=(M0 A).
   Proof.
     Intros. Apply mapcanon_unique. (Apply MapDelta_canon; Assumption).
     Apply M0_canon.
@@ -222,7 +232,8 @@ Section MapC.
 
   Lemma MapDelta_as_Merge_c : (m,m':(Map A))
       (mapcanon A m) -> (mapcanon A m') ->
-        (MapDelta A m m')=(MapMerge A (MapDomRestrBy A A m m') (MapDomRestrBy A A m' m)).
+        (MapDelta A m m')=
+	(MapMerge A (MapDomRestrBy A A m m') (MapDomRestrBy A A m' m)).
   Proof.
     Intros. Apply mapcanon_unique. (Apply MapDelta_canon; Assumption).
     (Apply MapMerge_canon; Apply MapDomRestrBy_canon; Assumption).
@@ -231,7 +242,8 @@ Section MapC.
 
   Lemma MapDelta_as_DomRestrBy_c : (m,m':(Map A))
       (mapcanon A m) -> (mapcanon A m') ->
-        (MapDelta A m m')=(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m m')).
+        (MapDelta A m m')=
+	(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m m')).
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDelta_canon; Assumption.
     Apply MapDomRestrBy_canon. (Apply MapMerge_canon; Assumption).
@@ -240,7 +252,8 @@ Section MapC.
 
   Lemma MapDelta_as_DomRestrBy_2_c : (m,m':(Map A))
       (mapcanon A m) -> (mapcanon A m') ->
-        (MapDelta A m m')=(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m' m)).
+        (MapDelta A m m')=
+	(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m' m)).
   Proof.
     Intros. Apply mapcanon_unique. (Apply MapDelta_canon; Assumption).
     Apply MapDomRestrBy_canon. Apply MapMerge_canon; Assumption.
@@ -273,7 +286,8 @@ Section MapC.
   Qed.
 
   Lemma MapDom_Split_3_c : (m:(Map A)) (m':(Map B)) (mapcanon A m) ->
-      (MapDomRestrTo A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m'))=(M0 A).
+      (MapDomRestrTo A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m'))=
+      (M0 A).
   Proof.
     Intros. Apply mapcanon_unique. Apply MapDomRestrTo_canon.
     Apply MapDomRestrTo_canon; Assumption.

@@ -197,7 +197,7 @@ Section Dom.
   Qed.
 
   Lemma in_dom_delta : (m,m':(Map A)) (a:ad)
-    (in_dom a (MapDelta A m m'))=(xorb (in_dom a m) (in_dom a m')).
+      (in_dom a (MapDelta A m m'))=(xorb (in_dom a m) (in_dom a m')).
   Proof.
     Unfold in_dom. Intros. Rewrite (MapDelta_semantics A m m' a).
     Elim (option_sum A (MapGet A m' a)). Intro H. Elim H. Intros y H0. Rewrite H0.

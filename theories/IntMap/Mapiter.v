@@ -137,7 +137,8 @@ Section MapIter.
   Qed.
 
   Lemma MapSweep_semantics_3 : (m:(Map A))
-      (MapSweep m)=(NONE ?) -> (a:ad) (y:A) (MapGet A m a)=(SOME ? y) -> (f a y)=false.
+      (MapSweep m)=(NONE ?) -> (a:ad) (y:A) (MapGet A m a)=(SOME ? y) -> 
+        (f a y)=false.
   Proof.
     Intros.
     Exact (MapSweep_semantics_3_1 m [a0:ad]a0 H a y H0).
@@ -332,7 +333,8 @@ Section MapIter.
 
   Definition ad_inj := [pf:ad->ad] (a0,a1:ad) (pf a0)=(pf a1) -> a0=a1.
 
-  Lemma ad_comp_double_inj : (pf:ad->ad) (ad_inj pf) -> (ad_inj [a0:ad] (pf (ad_double a0))).
+  Lemma ad_comp_double_inj : 
+      (pf:ad->ad) (ad_inj pf) -> (ad_inj [a0:ad] (pf (ad_double a0))).
   Proof.
     Unfold ad_inj. Intros. Apply ad_double_inj. Exact (H ? ? H0).
   Qed.

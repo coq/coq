@@ -141,9 +141,9 @@ Qed.
 
 Lemma ad_faithful_3 :
     (a:ad) (p:positive)
-      ((p':positive) (eqf (ad_bit (ad_x p)) (ad_bit (ad_x p'))) -> p=p')
-      -> (eqf (ad_bit (ad_x (xO p))) (ad_bit a))
-        -> (ad_x (xO p))=a.
+      ((p':positive) (eqf (ad_bit (ad_x p)) (ad_bit (ad_x p'))) -> p=p') ->
+        (eqf (ad_bit (ad_x (xO p))) (ad_bit a)) ->
+          (ad_x (xO p))=a.
 Proof.
   Induction a. Intros. Cut (eqf (ad_bit ad_z) (ad_bit (ad_x (xO p)))).
   Intro. Rewrite (ad_faithful_1 (ad_x (xO p)) H1). Reflexivity.
@@ -157,9 +157,9 @@ Qed.
 
 Lemma ad_faithful_4 :
     (a:ad) (p:positive)
-      ((p':positive) (eqf (ad_bit (ad_x p)) (ad_bit (ad_x p'))) -> p=p')
-      -> (eqf (ad_bit (ad_x (xI p))) (ad_bit a))
-        -> (ad_x (xI p))=a.
+      ((p':positive) (eqf (ad_bit (ad_x p)) (ad_bit (ad_x p'))) -> p=p') ->
+        (eqf (ad_bit (ad_x (xI p))) (ad_bit a)) ->
+          (ad_x (xI p))=a.
 Proof.
   Induction a. Intros. Cut (eqf (ad_bit ad_z) (ad_bit (ad_x (xI p)))).
   Intro. Rewrite (ad_faithful_1 (ad_x (xI p)) H1). Reflexivity.
@@ -200,8 +200,8 @@ Proof.
   Case p; Trivial.
 Qed.
 
-Lemma ad_xor_sem_3 
-  : (p:positive) (a':ad) (ad_bit (ad_xor (ad_x (xO p)) a') O)=(ad_bit a' O).
+Lemma ad_xor_sem_3 :
+    (p:positive) (a':ad) (ad_bit (ad_xor (ad_x (xO p)) a') O)=(ad_bit a' O).
 Proof.
   Intros. Case a'. Trivial.
   Simpl. Intro. 
@@ -220,8 +220,8 @@ Proof.
   Case (p_xor p p1); Trivial.
 Qed.
 
-Lemma ad_xor_sem_5 
-  : (a,a':ad) (ad_bit (ad_xor a a') O)=(adf_xor (ad_bit a) (ad_bit a') O).
+Lemma ad_xor_sem_5 :
+    (a,a':ad) (ad_bit (ad_xor a a') O)=(adf_xor (ad_bit a) (ad_bit a') O).
 Proof.
   Induction a. Intro. Change (ad_bit a' O)=(xorb false (ad_bit a' O)). Rewrite false_xorb. Trivial.
   Intro. Case p. Exact ad_xor_sem_4.
@@ -230,8 +230,8 @@ Proof.
 Qed.
 
 Lemma ad_xor_sem_6 : (n:nat)
-    ((a,a':ad) (ad_bit (ad_xor a a') n)=(adf_xor (ad_bit a) (ad_bit a') n))
-    -> (a,a':ad) (ad_bit (ad_xor a a') (S n))=(adf_xor (ad_bit a) (ad_bit a') (S n)).
+    ((a,a':ad) (ad_bit (ad_xor a a') n)=(adf_xor (ad_bit a) (ad_bit a') n)) ->
+      (a,a':ad) (ad_bit (ad_xor a a') (S n))=(adf_xor (ad_bit a) (ad_bit a') (S n)).
 Proof.
   Intros. Case a. Unfold adf_xor. Unfold 2 ad_bit. Rewrite false_xorb. Reflexivity.
   Case a'. Unfold adf_xor. Unfold 3 ad_bit. Intro. Rewrite xorb_false. Reflexivity.
@@ -260,8 +260,8 @@ Proof.
   Unfold adf_xor. Unfold 2 ad_bit. Unfold ad_bit_1. Rewrite false_xorb. Simpl.   Case p; Trivial.
 Qed.
 
-Lemma ad_xor_semantics 
-  : (a,a':ad) (eqf (ad_bit (ad_xor a a')) (adf_xor (ad_bit a) (ad_bit a'))).
+Lemma ad_xor_semantics :
+    (a,a':ad) (eqf (ad_bit (ad_xor a a')) (adf_xor (ad_bit a) (ad_bit a'))).
 Proof.
   Unfold eqf. Intros. Generalize a a'. Elim n. Exact ad_xor_sem_5.
   Exact ad_xor_sem_6.
@@ -306,8 +306,8 @@ Proof.
   Unfold eqf. Intros. Unfold adf_xor. Rewrite H. Rewrite H0. Reflexivity.
 Qed.
 
-Lemma ad_xor_assoc 
-  : (a,a',a'':ad) (ad_xor (ad_xor a a') a'')=(ad_xor a (ad_xor a' a'')).
+Lemma ad_xor_assoc :
+    (a,a',a'':ad) (ad_xor (ad_xor a a') a'')=(ad_xor a (ad_xor a' a'')).
 Proof.
   Intros. Apply ad_faithful.
   Apply eqf_trans with f':=(adf_xor (adf_xor (ad_bit a) (ad_bit a')) (ad_bit a'')).
@@ -358,8 +358,8 @@ Proof.
   Intros. Rewrite <- (ad_double_div_2 a0). Rewrite H. Apply ad_double_div_2.
 Qed.
 
-Lemma ad_double_plus_un_inj 
-  : (a0,a1:ad) (ad_double_plus_un a0)=(ad_double_plus_un a1) -> a0=a1.
+Lemma ad_double_plus_un_inj :
+    (a0,a1:ad) (ad_double_plus_un a0)=(ad_double_plus_un a1) -> a0=a1.
 Proof.
   Intros. Rewrite <- (ad_double_plus_un_div_2 a0). Rewrite H. Apply ad_double_plus_un_div_2.
 Qed.
@@ -388,8 +388,8 @@ Proof.
   Intro. Discriminate H.
 Qed.
 
-Lemma ad_div_2_double_plus_un 
-  : (a:ad) (ad_bit_0 a)=true -> (ad_double_plus_un (ad_div_2 a))=a.
+Lemma ad_div_2_double_plus_un :
+    (a:ad) (ad_bit_0 a)=true -> (ad_double_plus_un (ad_div_2 a))=a.
 Proof.
   Induction a. Intro. Discriminate H.
   Induction p. Intros. Reflexivity.
@@ -409,15 +409,15 @@ Proof.
   Induction p; Trivial.
 Qed.
 
-Lemma ad_xor_bit_0 
-  : (a,a':ad) (ad_bit_0 (ad_xor a a'))=(xorb (ad_bit_0 a) (ad_bit_0 a')).
+Lemma ad_xor_bit_0 :
+    (a,a':ad) (ad_bit_0 (ad_xor a a'))=(xorb (ad_bit_0 a) (ad_bit_0 a')).
 Proof.
   Intros. Rewrite <- ad_bit_0_correct. Rewrite (ad_xor_semantics a a' O).
   Unfold adf_xor. Rewrite ad_bit_0_correct. Rewrite ad_bit_0_correct. Reflexivity.
 Qed.
 
-Lemma ad_xor_div_2 
-  : (a,a':ad) (ad_div_2 (ad_xor a a'))=(ad_xor (ad_div_2 a) (ad_div_2 a')).
+Lemma ad_xor_div_2 :
+    (a,a':ad) (ad_div_2 (ad_xor a a'))=(ad_xor (ad_div_2 a) (ad_div_2 a')).
 Proof.
   Intros. Apply ad_faithful. Unfold eqf. Intro.
   Rewrite (ad_xor_semantics (ad_div_2 a) (ad_div_2 a') n).
@@ -434,8 +434,8 @@ Proof.
   Rewrite xorb_assoc. Rewrite xorb_nilpotent. Rewrite xorb_false. Reflexivity.
 Qed.
 
-Lemma ad_neg_bit_0_1 
-  : (a,a':ad) (ad_xor a a')=(ad_x xH) -> (ad_bit_0 a)=(negb (ad_bit_0 a')).
+Lemma ad_neg_bit_0_1 :
+    (a,a':ad) (ad_xor a a')=(ad_x xH) -> (ad_bit_0 a)=(negb (ad_bit_0 a')).
 Proof.
   Intros. Apply ad_neg_bit_0. Rewrite H. Reflexivity.
 Qed.

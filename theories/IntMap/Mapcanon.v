@@ -33,7 +33,8 @@ Section MapCanon.
     | M2_canon : (m1,m2:(Map A)) (mapcanon m1) -> (mapcanon m2) ->
         (le (2) (MapCard A (M2 A m1 m2))) -> (mapcanon (M2 A m1 m2)).
 
-  Lemma mapcanon_M2 : (m1,m2:(Map A)) (mapcanon (M2 A m1 m2)) -> (le (2) (MapCard A (M2 A m1 m2))).
+  Lemma mapcanon_M2 : 
+      (m1,m2:(Map A)) (mapcanon (M2 A m1 m2)) -> (le (2) (MapCard A (M2 A m1 m2))).
   Proof.
     Intros. Inversion H. Assumption.
   Qed.
@@ -48,7 +49,8 @@ Section MapCanon.
     Intros. Inversion H. Assumption.
   Qed.
 
-  Lemma M2_eqmap_1 : (m0,m1,m2,m3:(Map A)) (eqmap A (M2 A m0 m1) (M2 A m2 m3)) -> (eqmap A m0 m2).
+  Lemma M2_eqmap_1 : (m0,m1,m2,m3:(Map A)) 
+      (eqmap A (M2 A m0 m1) (M2 A m2 m3)) -> (eqmap A m0 m2).
   Proof.
     Unfold eqmap eqm. Intros. Rewrite <- (ad_double_div_2 a).
     Rewrite <- (MapGet_M2_bit_0_0 A ? (ad_double_bit_0 a) m0 m1).
@@ -56,7 +58,8 @@ Section MapCanon.
     Exact (H (ad_double a)).
   Qed.
 
-  Lemma M2_eqmap_2 : (m0,m1,m2,m3:(Map A)) (eqmap A (M2 A m0 m1) (M2 A m2 m3)) -> (eqmap A m1 m3).
+  Lemma M2_eqmap_2 : (m0,m1,m2,m3:(Map A)) 
+      (eqmap A (M2 A m0 m1) (M2 A m2 m3)) -> (eqmap A m1 m3).
   Proof.
     Unfold eqmap eqm. Intros. Rewrite <- (ad_double_plus_un_div_2 a).
     Rewrite <- (MapGet_M2_bit_0_1 A ? (ad_double_plus_un_bit_0 a) m0 m1).
@@ -97,7 +100,8 @@ Section MapCanon.
     Exact (M2_eqmap_1 ? ? ? ? H5).
   Qed.
 
-  Lemma MapPut1_canon : (p:positive) (a,a':ad) (y,y':A) (mapcanon (MapPut1 A a y a' y' p)).
+  Lemma MapPut1_canon : 
+      (p:positive) (a,a':ad) (y,y':A) (mapcanon (MapPut1 A a y a' y' p)).
   Proof.
     Induction p. Simpl. Intros. Case (ad_bit_0 a). Apply M2_canon. Apply M1_canon.
     Apply M1_canon.
@@ -119,7 +123,8 @@ Section MapCanon.
     Simpl. Apply le_n.
   Qed.
 
-  Lemma MapPut_canon : (m:(Map A)) (mapcanon m) -> (a:ad) (y:A) (mapcanon (MapPut A m a y)).
+  Lemma MapPut_canon : 
+      (m:(Map A)) (mapcanon m) -> (a:ad) (y:A) (mapcanon (MapPut A m a y)).
   Proof.
     Induction m. Intros. Simpl. Apply M1_canon.
     Intros a0 y0 H a y. Simpl. Case (ad_xor a0 a). Apply M1_canon.
@@ -174,7 +179,8 @@ Section MapCanon.
     Apply le_reg_l. Rewrite MapCard_Put_behind_Put. Exact (MapCard_Put_lb A m1 ad_z y).
   Qed.
 
-  Lemma makeM2_canon : (m,m':(Map A)) (mapcanon m) -> (mapcanon m') -> (mapcanon (makeM2 A m m')).
+  Lemma makeM2_canon : 
+      (m,m':(Map A)) (mapcanon m) -> (mapcanon m') -> (mapcanon (makeM2 A m m')).
   Proof.
     Intro. Case m. Intro. Case m'. Intros. Exact M0_canon.
     Intros a y H H0. Exact (M1_canon (ad_double_plus_un a) y).
@@ -212,13 +218,15 @@ Section MapCanon.
     Intros. Simpl. (Apply makeM2_canon; Assumption).
   Qed.
 
-  Lemma mapcanon_exists : (m:(Map A)) {m':(Map A) | (eqmap A m m') /\ (mapcanon m')}.
+  Lemma mapcanon_exists : 
+      (m:(Map A)) {m':(Map A) | (eqmap A m m') /\ (mapcanon m')}.
   Proof.
     Intro. Split with (MapCanonicalize m). Split. Apply mapcanon_exists_1.
     Apply mapcanon_exists_2.
   Qed.
 
-  Lemma MapRemove_canon : (m:(Map A)) (mapcanon m) -> (a:ad) (mapcanon (MapRemove A m a)).
+  Lemma MapRemove_canon : 
+      (m:(Map A)) (mapcanon m) -> (a:ad) (mapcanon (MapRemove A m a)).
   Proof.
     Induction m. Intros. Exact M0_canon.
     Intros a y H a0. Simpl. Case (ad_eq a a0). Exact M0_canon.
@@ -356,7 +364,8 @@ Section MapFoldCanon.
     Intros. Exact (MapFold_canon_1 m0 H op H0 f H1 m [a:ad]a).
   Qed.
 
-  Lemma MapCollect_canon : (f : ad->A->(Map B)) ((a:ad) (y:A) (mapcanon B (f a y))) ->
+  Lemma MapCollect_canon : 
+      (f : ad->A->(Map B)) ((a:ad) (y:A) (mapcanon B (f a y))) ->
 	(m:(Map A)) (mapcanon B (MapCollect A B f m)).
   Proof.
     Intros. Rewrite MapCollect_as_Fold. Apply MapFold_canon. Apply M0_canon.

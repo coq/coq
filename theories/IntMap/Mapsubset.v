@@ -32,7 +32,8 @@ Section MapSubsetDef.
 	| _ => false
       end.
 
-  Definition MapSubset_2 := [m:(Map A)] [m':(Map B)] (eqmap A (MapDomRestrBy A B m m') (M0 A)).
+  Definition MapSubset_2 := [m:(Map A)] [m':(Map B)] 
+      (eqmap A (MapDomRestrBy A B m m') (M0 A)).
 
   Lemma MapSubset_imp_1 : (m:(Map A)) (m':(Map B))
       (MapSubset m m') -> (MapSubset_1 m m')=true.
@@ -61,12 +62,14 @@ Section MapSubsetDef.
     Intro H1. Rewrite H1 in H0. Discriminate H0.
   Qed.
 
-  Lemma map_dom_empty_1 : (m:(Map A)) (eqmap A m (M0 A)) -> (a:ad) (in_dom ? a m)=false.
+  Lemma map_dom_empty_1 : 
+      (m:(Map A)) (eqmap A m (M0 A)) -> (a:ad) (in_dom ? a m)=false.
   Proof.
     Unfold eqmap eqm in_dom. Intros. Rewrite (H a). Reflexivity.
   Qed.
 
-  Lemma map_dom_empty_2 : (m:(Map A)) ((a:ad) (in_dom ? a m)=false) -> (eqmap A m (M0 A)).
+  Lemma map_dom_empty_2 : 
+      (m:(Map A)) ((a:ad) (in_dom ? a m)=false) -> (eqmap A m (M0 A)).
   Proof.
     Unfold eqmap eqm in_dom. Intros.
     Cut (Cases (MapGet A m a) of NONE => false | (SOME _) => true end)=false.
@@ -75,14 +78,16 @@ Section MapSubsetDef.
     Exact (H a).
   Qed.
 
-  Lemma MapSubset_imp_2 : (m:(Map A)) (m':(Map B)) (MapSubset m m') -> (MapSubset_2 m m').
+  Lemma MapSubset_imp_2 : 
+      (m:(Map A)) (m':(Map B)) (MapSubset m m') -> (MapSubset_2 m m').
   Proof.
     Unfold MapSubset MapSubset_2. Intros. Apply map_dom_empty_2. Intro. Rewrite in_dom_restrby.
     Elim (sumbool_of_bool (in_dom A a m)). Intro H0. Rewrite H0. Rewrite (H a H0). Reflexivity.
     Intro H0. Rewrite H0. Reflexivity.
   Qed.
 
-  Lemma MapSubset_2_imp : (m:(Map A)) (m':(Map B)) (MapSubset_2 m m') -> (MapSubset m m').
+  Lemma MapSubset_2_imp : 
+      (m:(Map A)) (m':(Map B)) (MapSubset_2 m m') -> (MapSubset m m').
   Proof.
     Unfold MapSubset MapSubset_2. Intros. Cut (in_dom ? a (MapDomRestrBy A B m m'))=false.
     Rewrite in_dom_restrby. Intro. Elim (andb_false_elim ? ? H1). Rewrite H0.
@@ -103,7 +108,8 @@ Section MapSubsetOrder.
   Qed.
 
   Lemma MapSubset_antisym : (m:(Map A)) (m':(Map B))
-      (MapSubset A B m m') -> (MapSubset B A m' m) -> (eqmap unit (MapDom A m) (MapDom B m')).
+      (MapSubset A B m m') -> (MapSubset B A m' m) -> 
+        (eqmap unit (MapDom A m) (MapDom B m')).
   Proof.
     Unfold MapSubset eqmap eqm. Intros. Elim (option_sum ? (MapGet ? (MapDom A m) a)).
     Intro H1. Elim H1. Intro t. Elim t. Intro H2. Elim (option_sum ? (MapGet ? (MapDom B m') a)).
@@ -199,13 +205,15 @@ Section MapSubsetExtra.
     Intro H1. Rewrite (H ? H1). Apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_Put_behind : (m:(Map A)) (a:ad) (y:A) (MapSubset A A m (MapPut_behind A m a y)).
+  Lemma MapSubset_Put_behind : 
+      (m:(Map A)) (a:ad) (y:A) (MapSubset A A m (MapPut_behind A m a y)).
   Proof.
     Unfold MapSubset. Intros. Rewrite in_dom_put_behind. Rewrite H. Apply orb_b_true.
   Qed.
 
   Lemma MapSubset_Put_behind_mono : (m:(Map A)) (m':(Map B)) (a:ad) (y:A) (y':B)
-      (MapSubset A B m m') -> (MapSubset A B (MapPut_behind A m a y) (MapPut_behind B m' a y')).
+      (MapSubset A B m m') -> 
+        (MapSubset A B (MapPut_behind A m a y) (MapPut_behind B m' a y')).
   Proof.
     Unfold MapSubset. Intros. Rewrite in_dom_put_behind.
     Rewrite (in_dom_put_behind A m a y a0) in H0.
@@ -272,9 +280,10 @@ Section MapSubsetExtra.
 
   Variable C, D : Set.
 
-  Lemma MapSubset_DomRestrTo_mono : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
-      (MapSubset ? ? m m'') -> (MapSubset ? ?  m' m''') ->
-      	(MapSubset ? ? (MapDomRestrTo ? ? m m') (MapDomRestrTo ? ? m'' m''')).
+  Lemma MapSubset_DomRestrTo_mono : 
+      (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
+        (MapSubset ? ? m m'') -> (MapSubset ? ?  m' m''') ->
+      	  (MapSubset ? ? (MapDomRestrTo ? ? m m') (MapDomRestrTo ? ? m'' m''')).
   Proof.
     Unfold MapSubset. Intros. Rewrite in_dom_restrto. Rewrite (in_dom_restrto A B m m' a) in H1.
     Elim (andb_prop ? ? H1). Intros. Rewrite (H ? H2). Rewrite (H0 ? H3). Reflexivity.
@@ -287,9 +296,10 @@ Section MapSubsetExtra.
     Trivial.
   Qed.
 
-  Lemma MapSubset_DomRestrBy_mono : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
-      (MapSubset ? ? m m'') -> (MapSubset ? ?  m''' m') ->
-      	(MapSubset ? ? (MapDomRestrBy ? ? m m') (MapDomRestrBy ? ? m'' m''')).
+  Lemma MapSubset_DomRestrBy_mono : 
+      (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
+        (MapSubset ? ? m m'') -> (MapSubset ? ?  m''' m') ->
+      	  (MapSubset ? ? (MapDomRestrBy ? ? m m') (MapDomRestrBy ? ? m'' m''')).
   Proof.
     Unfold MapSubset. Intros. Rewrite in_dom_restrby. Rewrite (in_dom_restrby A B m m' a) in H1.
     Elim (andb_prop ? ? H1). Intros. Rewrite (H ? H2). Elim (sumbool_of_bool (in_dom D a m''')).
@@ -312,7 +322,8 @@ Section MapDisjointDef.
 	| _ => false
       end.
 
-  Definition MapDisjoint_2 := [m:(Map A)] [m':(Map B)] (eqmap A (MapDomRestrTo A B m m') (M0 A)).
+  Definition MapDisjoint_2 := [m:(Map A)] [m':(Map B)] 
+      (eqmap A (MapDomRestrTo A B m m') (M0 A)).
 
   Lemma MapDisjoint_imp_1 : (m:(Map A)) (m':(Map B))
       (MapDisjoint m m') -> (MapDisjoint_1 m m')=true.
@@ -337,7 +348,8 @@ Section MapDisjointDef.
     Intro H3. Rewrite H3 in H0. Discriminate H0.
   Qed.
 
-  Lemma MapDisjoint_imp_2 : (m:(Map A)) (m':(Map B)) (MapDisjoint m m') -> (MapDisjoint_2 m m').
+  Lemma MapDisjoint_imp_2 : (m:(Map A)) (m':(Map B)) (MapDisjoint m m') -> 
+      (MapDisjoint_2 m m').
   Proof.
     Unfold MapDisjoint MapDisjoint_2. Unfold eqmap eqm. Intros.
     Rewrite (MapDomRestrTo_semantics A B m m' a).
@@ -350,7 +362,8 @@ Section MapDisjointDef.
     Exact (H a).
   Qed.
 
-  Lemma MapDisjoint_2_imp : (m:(Map A)) (m':(Map B)) (MapDisjoint_2 m m') -> (MapDisjoint m m').
+  Lemma MapDisjoint_2_imp : (m:(Map A)) (m':(Map B)) (MapDisjoint_2 m m') -> 
+      (MapDisjoint m m').
   Proof.
     Unfold MapDisjoint MapDisjoint_2. Unfold eqmap eqm. Intros. Elim (in_dom_some ? ? ? H0).
     Intros y H2. Elim (in_dom_some ? ? ? H1). Intros y' H3.
@@ -377,7 +390,8 @@ Section MapDisjointExtra.
   Variable A, B : Set.
 
   Lemma MapDisjoint_ext : (m0,m1:(Map A)) (m2,m3:(Map B))
-      (eqmap A m0 m1) -> (eqmap B m2 m3) -> (MapDisjoint A B m0 m2) -> (MapDisjoint A B m1 m3).
+      (eqmap A m0 m1) -> (eqmap B m2 m3) -> 
+        (MapDisjoint A B m0 m2) -> (MapDisjoint A B m1 m3).
   Proof.
     Intros. Apply MapDisjoint_2_imp. Unfold MapDisjoint_2.
     Apply eqmap_trans with m':=(MapDomRestrTo A B m0 m2). Apply eqmap_sym. Apply MapDomRestrTo_ext.

@@ -33,7 +33,8 @@ Section LSort.
 				    | (ad_x p) => (ad_less_1 a a' p)
 				  end.
 
-  Lemma ad_bit_0_less : (a,a':ad) (ad_bit_0 a)=false -> (ad_bit_0 a')=true -> (ad_less a a')=true.
+  Lemma ad_bit_0_less : (a,a':ad) (ad_bit_0 a)=false -> (ad_bit_0 a')=true -> 
+      (ad_less a a')=true.
   Proof.
     Intros. Elim (ad_sum (ad_xor a a')). Intro H1. Elim H1. Intros p H2. Unfold ad_less.
     Rewrite H2. Generalize H2. Elim p. Intros. Simpl. Rewrite H. Rewrite H0. Reflexivity.
@@ -46,7 +47,8 @@ Section LSort.
     Rewrite H1. Reflexivity.
   Qed.
 
-  Lemma ad_bit_0_gt : (a,a':ad) (ad_bit_0 a)=true -> (ad_bit_0 a')=false -> (ad_less a a')=false.
+  Lemma ad_bit_0_gt : (a,a':ad) (ad_bit_0 a)=true -> (ad_bit_0 a')=false -> 
+      (ad_less a a')=false.
   Proof.
     Intros. Elim (ad_sum (ad_xor a a')). Intro H1. Elim H1. Intros p H2. Unfold ad_less.
     Rewrite H2. Generalize H2. Elim p. Intros. Simpl. Rewrite H. Rewrite H0. Reflexivity.

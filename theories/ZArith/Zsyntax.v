@@ -78,12 +78,12 @@ Grammar constr pattern :=
   to avoid printings like |``x` + `y`` < `45`| 
   for |x + y < 45|.
   So when a Z-expression is to be printed, its sub-expresssions are
-  enclosed into an ast (ZEXPR \$subexpr). (ZEXPR \$s) is printed like \$s
+  enclosed into an ast (ZEXPR \$subexpr), which is printed like \$subexpr
   but without symbols "`" "`" around. 
 
-   There is just one problem: NEG and Zopp have the same printing rules.
-   If Zopp is opaque, we may not be able to solve a goal like
-    ` -5 = -5 ` by reflexivity. (In fact, this precise Goal is solved
+  There is just one problem: NEG and Zopp have the same printing rules.
+  If Zopp is opaque, we may not be able to solve a goal like
+  ` -5 = -5 ` by reflexivity. (In fact, this precise Goal is solved
   by the Reflexivity tactic, but more complex problems may arise 
 
   SOLUTION : Print (Zopp 5) for constants and -x for variables *)

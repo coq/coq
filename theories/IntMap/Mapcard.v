@@ -37,7 +37,8 @@ Section MapCard.
     Trivial.
   Qed.
 
-  Lemma MapCard_is_O : (m:(Map A)) (MapCard A m)=O -> (a:ad) (MapGet A m a)=(NONE A).
+  Lemma MapCard_is_O : (m:(Map A)) (MapCard A m)=O -> 
+      (a:ad) (MapGet A m a)=(NONE A).
   Proof.
     Induction m. Trivial.
     Intros a y H. Discriminate H.
@@ -75,9 +76,9 @@ Section MapCard.
     Rewrite ad_double_div_2. Exact H5.
   Qed.
 
-  Lemma MapCard_is_one_unique : (m:(Map A)) (MapCard A m)=(1) ->
-    (a,a':ad) (y,y':A) (MapGet A m a)=(SOME A y) -> (MapGet A m a')=(SOME A y') ->
-      a=a' /\ y=y'.
+  Lemma MapCard_is_one_unique : (m:(Map A)) (MapCard A m)=(1) -> (a,a':ad) (y,y':A) 
+      (MapGet A m a)=(SOME A y) -> (MapGet A m a')=(SOME A y') ->
+        a=a' /\ y=y'.
   Proof.
     Induction m. Intro. Discriminate H.
     Intros. Elim (sumbool_of_bool (ad_eq a a1)). Intro H2. Rewrite (ad_eq_complete ? ? H2) in H0.
@@ -110,14 +111,15 @@ Section MapCard.
     Assumption.
   Qed.
 
-  Lemma length_as_fold : (C:Set) (l:(list C)) (length l)=(fold_right [_:C][n:nat](S n) O l).
+  Lemma length_as_fold : (C:Set) (l:(list C)) 
+      (length l)=(fold_right [_:C][n:nat](S n) O l).
   Proof.
     Induction l. Reflexivity.
     Intros. Simpl. Rewrite H. Reflexivity.
   Qed.
 
-  Lemma length_as_fold_2 : (l:(alist A)) (length l)=
-      (fold_right [r:ad*A][n:nat]let (a,y)=r in (plus (1) n) O l).
+  Lemma length_as_fold_2 : (l:(alist A)) 
+      (length l)=(fold_right [r:ad*A][n:nat]let (a,y)=r in (plus (1) n) O l).
   Proof.
     Induction l. Reflexivity.
     Intros. Simpl. Rewrite H. (Elim a; Reflexivity).
@@ -132,7 +134,8 @@ Section MapCard.
     Rewrite <- (H0 [a0:ad](pf (ad_double_plus_un a0))). Reflexivity.
   Qed.
 
-  Lemma MapCard_as_Fold : (m:(Map A)) (MapCard A m)=(MapFold A nat O plus [_:ad][_:A](1) m).
+  Lemma MapCard_as_Fold : 
+      (m:(Map A)) (MapCard A m)=(MapFold A nat O plus [_:ad][_:A](1) m).
   Proof.
     Intro. Exact (MapCard_as_Fold_1 m [a0:ad]a0).
   Qed.
@@ -209,7 +212,8 @@ Section MapCard.
   Qed.
 
   Lemma MapCard_Put_1 : (m:(Map A)) (a:ad) (y:A)
-      (MapCard A (MapPut A m a y))=(MapCard A m) -> {y:A | (MapGet A m a)=(SOME A y)}.
+      (MapCard A (MapPut A m a y))=(MapCard A m) -> 
+        {y:A | (MapGet A m a)=(SOME A y)}.
   Proof.
     Induction m. Intros. Discriminate H.
     Intros a y a0 y0 H. Simpl in H. Elim (ad_sum (ad_xor a a0)). Intro H0. Elim H0.
@@ -394,7 +398,8 @@ Section MapCard.
   Qed.
 
   Lemma MapCard_Remove_2 : (m:(Map A)) (a:ad)
-      (S (MapCard A (MapRemove A m a)))=(MapCard A m) -> {y:A | (MapGet A m a)=(SOME A y)}.
+      (S (MapCard A (MapRemove A m a)))=(MapCard A m) -> 
+        {y:A | (MapGet A m a)=(SOME A y)}.
   Proof.
     Induction m. Intros. Discriminate H.
     Intros a y a0 H. Simpl in H. Elim (sumbool_of_bool (ad_eq a a0)). Intro H0.
@@ -428,7 +433,8 @@ Section MapCard.
   Qed.
 
   Lemma MapCard_Remove_2_conv : (m:(Map A)) (a:ad) (y:A)
-      (MapGet A m a)=(SOME A y) -> (S (MapCard A (MapRemove A m a)))=(MapCard A m).
+      (MapGet A m a)=(SOME A y) -> 
+        (S (MapCard A (MapRemove A m a)))=(MapCard A m).
   Proof.
     Intros.
     Elim (MapCard_Remove_sum m (MapRemove A m a) a (MapCard A m)
@@ -543,7 +549,8 @@ Section MapCard.
     Unfold in_dom. Rewrite H7. Reflexivity.
   Qed.
 
-  Lemma MapCard_is_Sn : (m:(Map A)) (n:nat) (MapCard ? m)=(S n) -> {a:ad | (in_dom ? a m)=true}.
+  Lemma MapCard_is_Sn : (m:(Map A)) (n:nat) (MapCard ? m)=(S n) -> 
+      {a:ad | (in_dom ? a m)=true}.
   Proof.
     Induction m. Intros. Discriminate H.
     Intros a y n H. Split with a. Unfold in_dom. Rewrite (M1_semantics_1 ? a y). Reflexivity.

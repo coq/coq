@@ -1314,7 +1314,8 @@ Save.
 
 (**********)
 Lemma single_z_r_R1
-  : (r:R)(z,x:Z)``r<(IZR z)``->``(IZR z)<=r+1``->``r<(IZR x)``->``(IZR x)<=r+1``->z=x.
+  : (r:R)(z,x:Z)``r<(IZR z)``->``(IZR z)<=r+1``->``r<(IZR x)``->``(IZR x)<=r+1``
+    ->z=x.
 Intros; Apply one_IZR_r_R1 with r; Auto.
 Save.
 

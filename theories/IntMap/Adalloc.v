@@ -93,28 +93,32 @@ Section AdAlloc.
     Rewrite (le_antisym ? ? (nat_le_complete ? ? H) (nat_le_complete ? ? H0)). Reflexivity.
   Qed.
 
-  Lemma ad_le_trans : (a,b,c:ad) (ad_le a b)=true -> (ad_le b c)=true -> (ad_le a c)=true.
+  Lemma ad_le_trans : (a,b,c:ad) (ad_le a b)=true -> (ad_le b c)=true -> 
+      (ad_le a c)=true.
   Proof.
     Unfold ad_le. Intros. Apply nat_le_correct. Apply le_trans with m:=(nat_of_ad b).
     Apply nat_le_complete. Assumption.
     Apply nat_le_complete. Assumption.
   Qed.
 
-  Lemma ad_le_lt_trans : (a,b,c:ad) (ad_le a b)=true -> (ad_le c b)=false -> (ad_le c a)=false.
+  Lemma ad_le_lt_trans : (a,b,c:ad) (ad_le a b)=true -> (ad_le c b)=false -> 
+      (ad_le c a)=false.
   Proof.
     Unfold ad_le. Intros. Apply nat_le_correct_conv. Apply le_lt_trans with m:=(nat_of_ad b).
     Apply nat_le_complete. Assumption.
     Apply nat_le_complete_conv. Assumption.
   Qed.
 
-  Lemma ad_lt_le_trans : (a,b,c:ad) (ad_le b a)=false -> (ad_le b c)=true -> (ad_le c a)=false.
+  Lemma ad_lt_le_trans : (a,b,c:ad) (ad_le b a)=false -> (ad_le b c)=true -> 
+      (ad_le c a)=false.
   Proof.
     Unfold ad_le. Intros. Apply nat_le_correct_conv. Apply lt_le_trans with m:=(nat_of_ad b).
     Apply nat_le_complete_conv. Assumption.
     Apply nat_le_complete. Assumption.
   Qed.
 
-  Lemma ad_lt_trans : (a,b,c:ad) (ad_le b a)=false -> (ad_le c b)=false -> (ad_le c a)=false.
+  Lemma ad_lt_trans : (a,b,c:ad) (ad_le b a)=false -> (ad_le c b)=false -> 
+      (ad_le c a)=false.
   Proof.
     Unfold ad_le. Intros. Apply nat_le_correct_conv. Apply lt_trans with m:=(nat_of_ad b).
     Apply nat_le_complete_conv. Assumption.
@@ -277,7 +281,8 @@ Section AdAlloc.
     Exact convert_xI.
   Qed.
 
-  Lemma ad_le_double_mono : (a,b:ad) (ad_le a b)=true -> (ad_le (ad_double a) (ad_double b))=true.
+  Lemma ad_le_double_mono : (a,b:ad) (ad_le a b)=true -> 
+      (ad_le (ad_double a) (ad_double b))=true.
   Proof.
     Unfold ad_le. Intros. Rewrite nat_of_ad_double. Rewrite nat_of_ad_double. Apply nat_le_correct.
     Simpl. Apply le_plus_plus. Apply nat_le_complete. Assumption.

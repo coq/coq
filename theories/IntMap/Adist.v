@@ -5,7 +5,7 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(*i 	$Id$	 i*)
+(*i 	     $Id$	      i*)
 
 Require Bool.
 Require ZArith.
@@ -59,8 +59,8 @@ Proof.
 Qed.
 
 Lemma ad_plength_first_one : (a:ad) (n:nat)
-    ((k:nat) (lt k n) -> (ad_bit a k)=false) -> (ad_bit a n)=true 
-     -> (ad_plength a)=(ni n).
+    ((k:nat) (lt k n) -> (ad_bit a k)=false) -> (ad_bit a n)=true ->
+      (ad_plength a)=(ni n).
 Proof.
   Induction a. Intros. Simpl in H0. Discriminate H0.
   Induction p. Intros. Generalize H0. Case n. Intros. Reflexivity.
@@ -185,9 +185,9 @@ Proof.
   Unfold ni_le. Intros. Rewrite (ni_min_comm d' d). Apply ni_min_case.
 Qed.
 
-Lemma ni_le_min_induc : (d,d',dm:natinf) (ni_le dm d) -> (ni_le dm d')
-    -> ((d'':natinf) (ni_le d'' d) -> (ni_le d'' d') -> (ni_le d'' dm))
-      -> (ni_min d d')=dm.
+Lemma ni_le_min_induc : (d,d',dm:natinf) (ni_le dm d) -> (ni_le dm d') ->
+    ((d'':natinf) (ni_le d'' d) -> (ni_le d'' d') -> (ni_le d'' dm)) ->
+      (ni_min d d')=dm.
 Proof.
   Intros. Case (ni_min_case d d'). Intro. Rewrite H2.
   Apply ni_le_antisym. Apply H1. Apply ni_le_refl.
@@ -212,8 +212,8 @@ Proof.
   Unfold ni_le. Unfold ni_min. Intros. Inversion H. Apply le_min_r.
 Qed.
 
-Lemma ad_plength_lb : (a:ad) (n:nat) ((k:nat) (lt k n) -> (ad_bit a k)=false)
-    -> (ni_le (ni n) (ad_plength a)).
+Lemma ad_plength_lb : (a:ad) (n:nat) ((k:nat) (lt k n) -> (ad_bit a k)=false) ->
+    (ni_le (ni n) (ad_plength a)).
 Proof.
   Induction a. Intros. Exact (ni_min_inf_r (ni n)).
   Intros. Unfold ad_plength. Apply le_ni_le. Case (le_or_lt n (ad_plength_1 p)). Trivial.
@@ -224,8 +224,8 @@ Proof.
   Apply H. Exact H0.
 Qed.
 
-Lemma ad_plength_ub : (a:ad) (n:nat) (ad_bit a n)=true
-    -> (ni_le (ad_plength a) (ni n)).
+Lemma ad_plength_ub : (a:ad) (n:nat) (ad_bit a n)=true ->
+    (ni_le (ad_plength a) (ni n)).
 Proof.
   Induction a. Intros. Discriminate H.
   Intros. Unfold ad_plength. Apply le_ni_le. Case (le_or_lt (ad_plength_1 p) n). Trivial.
@@ -276,8 +276,8 @@ Qed.
 *)
 
 Lemma ad_plength_ultra_1 : (a,a':ad)
-    (ni_le (ad_plength a) (ad_plength a'))
-      -> (ni_le (ad_plength a) (ad_plength (ad_xor a a'))).
+    (ni_le (ad_plength a) (ad_plength a')) ->
+      (ni_le (ad_plength a) (ad_plength (ad_xor a a'))).
 Proof.
   Induction a. Intros. Unfold ni_le in H. Unfold 1 3 ad_plength in H.
   Rewrite (ni_min_inf_l (ad_plength a')) in H.

@@ -137,7 +137,8 @@ Section MapAxioms.
   Qed.
 
   Lemma MapMerge_ext : (m1,m2,m'1,m'2:(Map A))
-      (eqmap m1 m'1) -> (eqmap m2 m'2) -> (eqmap (MapMerge A m1 m2) (MapMerge A m'1 m'2)).
+      (eqmap m1 m'1) -> (eqmap m2 m'2) -> 
+        (eqmap (MapMerge A m1 m2) (MapMerge A m'1 m'2)).
   Proof.
     Unfold eqmap eqm. Intros. Rewrite (MapMerge_semantics A m1 m2 a).
     Rewrite (MapMerge_semantics A m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
@@ -186,22 +187,26 @@ Section MapAxioms.
     Case (ad_eq a a0); [ Reflexivity | Apply H ].
   Qed.
 
-  Lemma MapDomRestrTo_empty_m_1 : (m:(Map B)) (MapDomRestrTo A B (M0 A) m)=(M0 A).
+  Lemma MapDomRestrTo_empty_m_1 : 
+      (m:(Map B)) (MapDomRestrTo A B (M0 A) m)=(M0 A).
   Proof.
     Trivial.
   Qed.
 
-  Lemma MapDomRestrTo_empty_m : (m:(Map B)) (eqmap (MapDomRestrTo A B (M0 A) m) (M0 A)).
+  Lemma MapDomRestrTo_empty_m : 
+      (m:(Map B)) (eqmap (MapDomRestrTo A B (M0 A) m) (M0 A)).
   Proof.
     Unfold eqmap eqm. Trivial.
   Qed.
 
-  Lemma MapDomRestrTo_m_empty_1 : (m:(Map A)) (MapDomRestrTo A B m (M0 B))=(M0 A).
+  Lemma MapDomRestrTo_m_empty_1 : 
+      (m:(Map A)) (MapDomRestrTo A B m (M0 B))=(M0 A).
   Proof.
     Induction m;Trivial.
   Qed.
 
-  Lemma MapDomRestrTo_m_empty : (m:(Map A)) (eqmap (MapDomRestrTo A B m (M0 B)) (M0 A)).
+  Lemma MapDomRestrTo_m_empty : 
+      (m:(Map A)) (eqmap (MapDomRestrTo A B m (M0 B)) (M0 A)).
   Proof.
     Unfold eqmap eqm. Intros. Rewrite (MapDomRestrTo_m_empty_1 m). Reflexivity.
   Qed.
@@ -237,12 +242,14 @@ Section MapAxioms.
     Intros H0 H1. Discriminate H1.
   Qed.
 
-  Lemma MapDomRestrBy_empty_m_1 : (m:(Map B)) (MapDomRestrBy A B (M0 A) m)=(M0 A).
+  Lemma MapDomRestrBy_empty_m_1 : 
+      (m:(Map B)) (MapDomRestrBy A B (M0 A) m)=(M0 A).
   Proof.
     Trivial.
   Qed.
 
-  Lemma MapDomRestrBy_empty_m : (m:(Map B)) (eqmap (MapDomRestrBy A B (M0 A) m) (M0 A)).
+  Lemma MapDomRestrBy_empty_m : 
+      (m:(Map B)) (eqmap (MapDomRestrBy A B (M0 A) m) (M0 A)).
   Proof.
     Unfold eqmap eqm. Trivial.
   Qed.
@@ -450,7 +457,8 @@ Section MapAxioms.
   Qed.
 
   Lemma MapDelta_ext : (m1,m2,m'1,m'2:(Map A))
-      (eqmap m1 m'1) -> (eqmap m2 m'2) -> (eqmap (MapDelta A m1 m2) (MapDelta A m'1 m'2)).
+      (eqmap m1 m'1) -> (eqmap m2 m'2) -> 
+        (eqmap (MapDelta A m1 m2) (MapDelta A m'1 m'2)).
   Proof.
     Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics A m1 m2 a).
     Rewrite (MapDelta_semantics A m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
@@ -491,7 +499,8 @@ Section MapAxioms.
   Qed.
 
   Lemma MapDom_Split_3 : (m:(Map A)) (m':(Map B))
-      (eqmap (MapDomRestrTo A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m')) (M0 A)).
+      (eqmap (MapDomRestrTo A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m')) 
+	(M0 A)).
   Proof.
     Unfold eqmap eqm. Intros.
     Rewrite (MapDomRestrTo_semantics A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m') a).
@@ -502,9 +511,10 @@ Section MapAxioms.
 
 End MapAxioms.
 
-Lemma MapDomRestrTo_ext : (A,B:Set) (m1:(Map A)) (m2:(Map B)) (m'1:(Map A)) (m'2:(Map B))
-    (eqmap A m1 m'1) -> (eqmap B m2 m'2) ->
-      (eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m'2)).
+Lemma MapDomRestrTo_ext : (A,B:Set) 
+    (m1:(Map A)) (m2:(Map B)) (m'1:(Map A)) (m'2:(Map B))
+      (eqmap A m1 m'1) -> (eqmap B m2 m'2) ->
+        (eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m'2)).
 Proof.
   Unfold eqmap eqm. Intros. Rewrite (MapDomRestrTo_semantics A B m1 m2 a).
   Rewrite (MapDomRestrTo_semantics A B m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
@@ -524,9 +534,10 @@ Proof.
   Intros. Apply MapDomRestrTo_ext; [ Apply eqmap_refl | Assumption ].
 Qed.
 
-Lemma MapDomRestrBy_ext : (A,B:Set) (m1:(Map A)) (m2:(Map B)) (m'1:(Map A)) (m'2:(Map B))
-    (eqmap A m1 m'1) -> (eqmap B m2 m'2) ->
-      (eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m'2)).
+Lemma MapDomRestrBy_ext : (A,B:Set) 
+    (m1:(Map A)) (m2:(Map B)) (m'1:(Map A)) (m'2:(Map B))
+      (eqmap A m1 m'1) -> (eqmap B m2 m'2) ->
+        (eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m'2)).
 Proof.
   Unfold eqmap eqm. Intros. Rewrite (MapDomRestrBy_semantics A B m1 m2 a).
   Rewrite (MapDomRestrBy_semantics A B m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
