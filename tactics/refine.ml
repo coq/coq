@@ -159,8 +159,19 @@ let rec compute_metamap env c = match kind_of_term c with
 	    TH (mkLambda (Name v,c1,m), mm, sgp)
       end
 
-  | IsLetIn (name, c1, t1, c2) -> (* Adaptation to confirm *)
-      compute_metamap env (subst1 c1 c2)
+  | IsLetIn (name, c1, t1, c2) ->
+      if occur_meta c1 then 
+	error "Refine: body of let-in cannot contain existentials";
+      let v = fresh env name in
+      let env' = push_named_def (v,c1,t1) env in
+      begin match compute_metamap env' (subst1 (mkVar v) c2) with
+	(* terme de preuve complet *)
+	| TH (_,_,[]) -> TH (c,[],[])
+	(* terme de preuve incomplet *)    
+	| th ->
+	    let m,mm,sgp = replace_by_meta env' th in
+	    TH (mkLetIn (Name v,c1,t1,m), mm, sgp)
+      end
 
   (* 4. Application *)
   | IsApp (f,v) ->
@@ -255,17 +266,31 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	refine c gl
 	
     (* abstraction => intro *)
-    | IsLambda (Name id,_,m) , _ when isMeta (strip_outer_cast m) ->
+    | IsLambda (Name id,_,m), _ when isMeta (strip_outer_cast m) ->
 	begin match sgp with
 	  | [None] -> introduction id gl
-	  | [Some th] ->
-	      tclTHEN (introduction id) (tcc_aux th) gl
-	  | _ -> invalid_arg "Tcc.tcc_aux (bad length)"
+	  | [Some th] -> tclTHEN (introduction id) (tcc_aux th) gl
+	  | _ -> assert false
 	end
 	
-    | IsLambda (_,_,_) , _ ->
-	error "invalid abstraction passed to function tcc_aux !"
-      
+    | IsLambda _, _ ->
+	anomaly "invalid lambda passed to function tcc_aux"
+
+    (* let in *)
+    | IsLetIn (Name id,c1,t1,c2), _ when isMeta (strip_outer_cast c2) ->
+	let c = pf_concl gl in
+	let newc = mkNamedLetIn id c1 t1 c in
+	tclTHEN 
+	  (change_in_concl newc) 
+	  (match sgp with 
+	     | [None] -> introduction id
+	     | [Some th] -> tclTHEN (introduction id) (tcc_aux th)
+	     | _ -> assert false) 
+	  gl
+
+    | IsLetIn _, _ ->
+	anomaly "invalid let-in passed to function tcc_aux"
+
     (* fix => tactique Fix *)
     | IsFix ((ni,_),(fi,ai,_)) , _ ->
 	let ids =
