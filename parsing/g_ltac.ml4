@@ -16,39 +16,15 @@ open Rawterm
 open Tacexpr
 open Vernacexpr
 open Ast
-
-ifdef Quotify then
-open Qast
-else
 open Pcoq
-
 open Prim
 open Tactic
-
-ifdef Quotify then
-open Q
 
 type let_clause_kind =
   | LETTOPCLAUSE of Names.identifier * constr_expr
   | LETCLAUSE of
       (Names.identifier Util.located * raw_tactic_expr option * raw_tactic_arg)
 
-ifdef Quotify then
-module Prelude = struct
-let fail_default_value = Qast.Int "0"
-
-let out_letin_clause loc = function
-  | Qast.Node ("LETTOPCLAUSE", _) -> user_err_loc (loc, "", (str "Syntax Error"))
-  | Qast.Node ("LETCLAUSE", [id;c;d]) ->
-      Qast.Tuple [id;c;d]
-  | _ -> anomaly "out_letin_clause"
-
-let make_letin_clause _ = function
-  | Qast.List l -> Qast.List (List.map (out_letin_clause dummy_loc) l)
-  | _ -> anomaly "make_letin_clause"
-end
-else
-module Prelude = struct
 let fail_default_value = Genarg.ArgArg 0
 
 let out_letin_clause loc = function
@@ -56,9 +32,6 @@ let out_letin_clause loc = function
   | LETCLAUSE (id,c,d) -> (id,c,d)
 
 let make_letin_clause loc = List.map (out_letin_clause loc)
-end
-
-open Prelude
 
 let arg_of_expr = function
     TacArg a -> a
