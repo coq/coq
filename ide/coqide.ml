@@ -1159,6 +1159,7 @@ Please restart and report NOW.";
 	      if (input_buffer#insert_interactive "\n") then
 		begin
 		  let i= self#get_insert#backward_word_start in
+		  prerr_endline "active_kp_hf: Placing cursor";
 		  input_buffer#place_cursor i;
 		  self#process_until_insert_or_error
 		end);
@@ -1285,7 +1286,7 @@ Please restart and report NOW.";
 			   if (it#compare self#get_start_of_input)<0
 			   then GtkSignal.stop_emit ();
 			   if String.length s > 1 then 
-			     input_buffer#place_cursor it));
+			     (prerr_endline "insert_text: Placing cursor";input_buffer#place_cursor it)));
     ignore (input_buffer#connect#after#apply_tag
 	      ~callback:(fun tag ~start ~stop ->
 			   if (start#compare self#get_start_of_input)>=0
@@ -1334,12 +1335,14 @@ Please restart and report NOW.";
 			      "Line: %5d Char: %3d" (self#get_insert#line + 1)
 			      (self#get_insert#line_offset + 1));
 			   match GtkText.Mark.get_name m  with
-			     | Some "insert" -> 		 
+			     | Some "insert" ->		 
 				 input_buffer#remove_tag
 				 ~start:input_buffer#start_iter
 				 ~stop:input_buffer#end_iter
 				 paren_highlight_tag;
-			     | _ -> () )
+			     | Some s -> 
+				 prerr_endline (s^" moved")
+			     | None -> () )
 	   );
     ignore (input_buffer#connect#insert_text
 	   (fun it s -> 
@@ -1659,10 +1662,10 @@ let main files =
 	       (get_current_view()).view#buffer;
 	       (out_some (get_current_view()).analyzed_view)#recenter_insert));
 
-(*  (* File/Refresh Menu *)
-  let refresh_m = file_factory#add_item "Restart all" ~key:GdkKeysyms._R in
-  refresh_m#misc#set_state `INSENSITIVE;
-*)
+  (*  (* File/Refresh Menu *)
+      let refresh_m = file_factory#add_item "Restart all" ~key:GdkKeysyms._R in
+      refresh_m#misc#set_state `INSENSITIVE;
+  *)
   (* File/Quit Menu *)
   let quit_f () =
     if has_something_to_save () then 
@@ -1722,10 +1725,10 @@ let main files =
   in
   read_only_i#misc#set_state `INSENSITIVE;
   let search_if = edit_f#add_item "Search _forward"
-		   ~key:GdkKeysyms._F
+		    ~key:GdkKeysyms._greater
   in
   let search_ib = edit_f#add_item "Search _backward"
-		   ~key:GdkKeysyms._R
+		    ~key:GdkKeysyms._less
   in
   let complete_i = edit_f#add_item "_Complete"
 		     ~key:GdkKeysyms._comma
@@ -2098,8 +2101,8 @@ let main files =
   let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
   in
   let search_lbl = GMisc.label ~text:"Search:"
-		 ~show:true
-		 ~packing:(lower_hbox#pack ~expand:false) () 
+		     ~show:true
+		     ~packing:(lower_hbox#pack ~expand:false) () 
   in
   let search_history = ref [] in
   let search_input = GEdit.combo ~popdown_strings:!search_history
@@ -2111,86 +2114,127 @@ let main files =
   let ready_to_wrap_search = ref false in
   let start_of_search = ref None in
   let search_forward = ref true in
-  ignore (search_input#entry#connect#activate 
-	    ~callback:
-	    (fun () -> 
-	       if not (List.mem search_input#entry#text !search_history) then
-	       (search_history := 
-	       search_input#entry#text::!search_history;
-	       search_input#set_popdown_strings !search_history);
-	       let v = (get_current_view ()).view in
-	       v#coerce#misc#grab_focus ();
-	       v#buffer#move_mark `SEL_BOUND (v#buffer#get_iter_at_mark `INSERT);
-	       search_input#entry#set_text ""; 
-	       start_of_search := None;
-	       ready_to_wrap_search := false
-	    )) ;
+  let memo_search () = 
+    if not (List.mem search_input#entry#text !search_history) then
+      (search_history := 
+       search_input#entry#text::!search_history;
+       search_input#set_popdown_strings !search_history);
+    start_of_search := None;
+    ready_to_wrap_search := false
+  in
+  let end_search () = 
+    prerr_endline "End Search";
+    memo_search ();
+    let v = (get_current_view ()).view in
+    v#buffer#move_mark `SEL_BOUND (v#buffer#get_iter_at_mark `INSERT);
+    v#coerce#misc#grab_focus ();
+    search_input#entry#set_text ""; 
+  in
+
+  ignore (search_input#entry#connect#activate ~callback:end_search);
 
   to_do_on_page_switch := 
   (fun i -> 
      start_of_search := None;
      ready_to_wrap_search:=false)::!to_do_on_page_switch;
   let rec search_f () = 
+    prerr_endline "search_f called";
     if !start_of_search = None then 
       start_of_search := 
       Some ((get_current_view ()).view#buffer#create_mark 
 	      ((get_current_view ()).view#buffer#get_iter_at_mark `INSERT));
     let txt = search_input#entry#text in 
-	       let v = (get_current_view ()).view in 
-	       let iit = v#buffer#get_iter_at_mark `SEL_BOUND in
-	       (match 
-		  if !search_forward then iit#forward_search txt 
-		  else (find_word_end iit)#backward_search txt 
-		with 
-		 | None -> 
-		     if !ready_to_wrap_search then begin
-		       ready_to_wrap_search := false;
-		       !flash_info "Search wrapped";
-		       v#buffer#place_cursor 
-			 (if !search_forward then v#buffer#start_iter else
-			 v#buffer#end_iter);
-		       search_f ()
-		     end else begin
-		       if !search_forward then !flash_info "Search at end"
-		       else !flash_info "Search at start";
-		       ready_to_wrap_search := true
-		     end
-		 | Some (start,stop) -> 
-		     v#buffer#move_mark `SEL_BOUND start;
-		     v#buffer#move_mark `INSERT stop;
-		     v#scroll_to_mark `INSERT
-	       ) 
+    let v = (get_current_view ()).view in
+    let iit = v#buffer#get_iter_at_mark `SEL_BOUND in
+    prerr_endline ("SELBOUND="^(string_of_int iit#offset));
+    prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
+
+    (match
+       if !search_forward then iit#forward_search txt 
+       else let npi = iit#forward_chars (Glib.Utf8.length txt) in
+       match 
+	 (npi#offset = (v#buffer#get_iter_at_mark `INSERT)#offset),
+	 (let t = iit#get_text ~stop:npi in 
+	  !flash_info (t^"\n"^txt);
+	  t = txt)
+       with 
+	 | true,true -> 
+	     (!flash_info "T,T";iit#backward_search txt)
+	 | false,true -> !flash_info "F,T";Some (iit,npi)
+	 | _,false ->
+	     (iit#backward_search txt)
+
+     with 
+       | None -> 
+	   if !ready_to_wrap_search then begin
+	     ready_to_wrap_search := false;
+	     !flash_info "Search wrapped";
+	     v#buffer#place_cursor 
+	       (if !search_forward then v#buffer#start_iter else
+		  v#buffer#end_iter);
+	     search_f ()
+	   end else begin
+	     if !search_forward then !flash_info "Search at end"
+	     else !flash_info "Search at start";
+	     ready_to_wrap_search := true
+	   end
+       | Some (start,stop) -> 
+	   prerr_endline "search: before moving marks";
+	   prerr_endline ("SELBOUND="^(string_of_int (v#buffer#get_iter_at_mark `SEL_BOUND)#offset));
+	   prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
+
+	   v#buffer#move_mark `SEL_BOUND start;
+	   v#buffer#move_mark `INSERT stop;
+	   prerr_endline "search: after moving marks";
+	   prerr_endline ("SELBOUND="^(string_of_int (v#buffer#get_iter_at_mark `SEL_BOUND)#offset));
+	   prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
+	   v#scroll_to_mark `SEL_BOUND
+    ) 
   in  
   ignore (search_input#entry#event#connect#key_release 
 	    ~callback:
 	    (fun ev ->
 	       if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then begin
-		       let v = (get_current_view ()).view in
-		       (match !start_of_search with 
-			 | None -> 
-			     v#buffer#move_mark 
-			     `SEL_BOUND 
-			     (v#buffer#get_iter_at_mark `INSERT)
-			 | Some mk -> let it = v#buffer#get_iter_at_mark 
-						 (`MARK mk) in
-			   v#buffer#place_cursor it;
-			   start_of_search := None
-		       );
-		       search_input#entry#set_text ""; 
-		       v#coerce#misc#grab_focus ();
-	       end else search_f (); 
+		 let v = (get_current_view ()).view in
+		 (match !start_of_search with 
+		    | None -> 
+		      prerr_endline "search_key_rel: Placing sel_bound";
+			v#buffer#move_mark 
+			`SEL_BOUND 
+			(v#buffer#get_iter_at_mark `INSERT)
+		    | Some mk -> let it = v#buffer#get_iter_at_mark 
+					    (`MARK mk) in
+		      prerr_endline "search_key_rel: Placing cursor";
+		      v#buffer#place_cursor it;
+		      start_of_search := None
+		 );
+		 search_input#entry#set_text ""; 
+		 v#coerce#misc#grab_focus ();
+	       end; 
 	       false
 	    )) ;
+  ignore (search_input#entry#connect#changed search_f);
+
   ignore (search_if#connect#activate
-    ~callback:(fun b -> 
-		 search_forward:= true;
-		 search_input#entry#coerce#misc#grab_focus (); 
-	      ));
+	    ~callback:(fun b -> 
+			 search_forward:= true;
+			 search_input#entry#coerce#misc#grab_focus ();
+			 search_f ();
+		      )
+	 );
   ignore (search_ib#connect#activate
-    ~callback:(fun b ->
-		 search_forward:= false;
-		 search_input#entry#coerce#misc#grab_focus (); 
-	      ));
+	    ~callback:(fun b ->
+			 search_forward:= false;
+
+			 (* Must restore the SEL_BOUND mark after 
+			    grab_focus ! *)
+			 let v = (get_current_view ()).view in
+			 let old_sel = v#buffer#get_iter_at_mark `SEL_BOUND 
+			 in
+			 search_input#entry#coerce#misc#grab_focus ();
+			 v#buffer#move_mark `SEL_BOUND old_sel;
+			 search_f ();
+		      ));
   let status_context = status_bar#new_context "Messages" in
   let flash_context = status_bar#new_context "Flash" in
   ignore (status_context#push "Ready");
@@ -2201,8 +2245,8 @@ let main files =
 
   (* Location display *)
   let l = GMisc.label
-	     ~text:"Line:     1 Char:   1" 
-	     ~packing:lower_hbox#pack () in 
+	    ~text:"Line:     1 Char:   1" 
+	    ~packing:lower_hbox#pack () in 
   l#coerce#misc#set_name "location";
   set_location := l#set_text;
   load_pref current;
