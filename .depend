@@ -978,14 +978,12 @@ parsing/g_ltac.cmx: parsing/ast.cmx library/libnames.cmx kernel/names.cmx \
     lib/options.cmx pretyping/pattern.cmx parsing/pcoq.cmx lib/pp.cmx \
     pretyping/rawterm.cmx proofs/tacexpr.cmx interp/topconstr.cmx \
     lib/util.cmx toplevel/vernacexpr.cmx 
-parsing/g_ltacnew.cmo: parsing/ast.cmi library/libnames.cmi kernel/names.cmi \
-    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi pretyping/rawterm.cmi \
-    proofs/tacexpr.cmo interp/topconstr.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo 
-parsing/g_ltacnew.cmx: parsing/ast.cmx library/libnames.cmx kernel/names.cmx \
-    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx pretyping/rawterm.cmx \
-    proofs/tacexpr.cmx interp/topconstr.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx 
+parsing/g_ltacnew.cmo: parsing/ast.cmi kernel/names.cmi lib/options.cmi \
+    parsing/pcoq.cmi lib/pp.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo \
+    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo 
+parsing/g_ltacnew.cmx: parsing/ast.cmx kernel/names.cmx lib/options.cmx \
+    parsing/pcoq.cmx lib/pp.cmx pretyping/rawterm.cmx proofs/tacexpr.cmx \
+    interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx 
 parsing/g_minicoq.cmo: kernel/environ.cmi parsing/lexer.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
     parsing/g_minicoq.cmi 
