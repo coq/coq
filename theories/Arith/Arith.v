@@ -18,7 +18,7 @@ Grammar constr constr10 :=
   natural_nat [ nat:number($c) ] -> [$c].
 
 Grammar constr pattern :=
-  natural_pat [ nat:number($c) ] -> [$c].
+  natural_pat [ nat:pat_number($c) ] -> [$c].
 
 Syntax constr
   level  0:

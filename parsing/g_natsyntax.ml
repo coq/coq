@@ -10,25 +10,42 @@ open Util
 open Names
 open Coqast
 open Ast
+open Stdlib
+open Termast
 
 exception Non_closed_number
 
-let get_nat_sign loc =
-  let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
-  (ast_of_id "O", ast_of_id "S", ast_of_id "My_special_variable")
+let ast_O = ast_of_ref ast_of_rawconstr glob_O
+let ast_S = ast_of_ref ast_of_rawconstr glob_S
+let ast_myvar = ast_of_ref ast_of_rawconstr glob_My_special_variable_nat
   
 (* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
 let nat_of_int n dloc =
-  let (astO,astS,_) = get_nat_sign dloc in
+  let ast_O = set_loc dloc ast_O in
+  let ast_S = set_loc dloc ast_S in
   let rec mk_nat n =
     if n <= 0 then 
-      astO
+      ast_O
     else 
-      Node(dloc,"APPLIST", [astS; mk_nat (n-1)])
+      Node(dloc,"APPLIST", [ast_S; mk_nat (n-1)])
+  in 
+  mk_nat n
+
+let pat_nat_of_int n dloc =
+  let ast_O = set_loc dloc ast_O in
+  let ast_S = set_loc dloc ast_S in
+  let rec mk_nat n =
+    if n <= 0 then 
+      ast_O
+    else 
+      Node(dloc,"PATTCONSTRUCT", [ast_S; mk_nat (n-1)])
   in 
   mk_nat n
 
 let nat_of_string s dloc = 
+  nat_of_int (int_of_string s) dloc
+
+let pat_nat_of_string s dloc = 
   nat_of_int (int_of_string s) dloc
     
 let rec int_of_nat_rec astS astO p =
@@ -40,21 +57,19 @@ let rec int_of_nat_rec astS astO p =
     | _ -> raise Non_closed_number
 	  
 let int_of_nat p =
-  let (astO,astS,_) = get_nat_sign dummy_loc in
   try 
-    Some (int_of_nat_rec astS astO p)
+    Some (int_of_nat_rec ast_S ast_O p)
   with
     Non_closed_number -> None
 
 let replace_S p = 
-  let (_,astS,astmyvar) = get_nat_sign dummy_loc in
   let rec aux p =
     match p with
-      | Node (l,"APPLIST", [b; a]) when b = astS ->
-          Node (l, "APPLIST", [astmyvar; (aux a)])
+      | Node (l,"APPLIST", [b; a]) when b = ast_S ->
+          Node (l, "APPLIST", [ast_myvar; (aux a)])
       | _ -> p
   in 
-  ope("APPLIST", [astmyvar; (aux p)])  
+  ope("APPLIST", [ast_myvar; (aux p)])  
 
 
 (* Declare the primitive printer *)
@@ -73,9 +88,20 @@ let number =
   match create_entry (get_univ "nat") "number" ETast with
     | Ast n -> n
     | _ -> anomaly "G_natsyntax : create_entry number failed"
+
+let pat_number = 
+  match create_entry (get_univ "nat") "pat_number" ETast with
+    | Ast n -> n
+    | _ -> anomaly "G_natsyntax : create_entry number failed"
  
 let _ = 
   Gram.extend number None
     [None, None,
      [[Gramext.Stoken ("INT", "")],
       Gramext.action nat_of_string]]
+
+let _ = 
+  Gram.extend pat_number None
+    [None, None,
+     [[Gramext.Stoken ("INT", "")],
+      Gramext.action pat_nat_of_string]]
