@@ -603,7 +603,17 @@ let check_and_generalize (r0,l,c) =
   same function [f] applied to the term matched. It is a generalized version 
   of the identity case optimization. *)
 
+(* CAVEAT: this optimization breaks typing in some special case. example: 
+   [type 'x a = A]. Then [let f = function A -> A] has type ['x a -> 'y a],
+   which is incompatible with the type of [let f x = x].
+   We brutally disable this optim for all inductive types with variables. *)
+
+
 let check_generalizable_case br = 
+  (match br.(0) with 
+     | ConstructRef ((kn,i),_), _, _ ->
+	 if (lookup_ind kn).ind_packets.(i).ip_vars <> [] then raise Impossible
+     | _ -> assert false); 
   let f = check_and_generalize br.(0) in 
   for i = 1 to Array.length br - 1 do 
     if check_and_generalize br.(i) <> f then raise Impossible 
