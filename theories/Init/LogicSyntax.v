@@ -17,7 +17,9 @@ Notation "< P , Q > { p , q }" := (conj P Q p q) (P annot, at level 1).
 
 Notation "~ x" := (not x) (at level 5, right associativity)
   V8only (at level 55, right associativity).
+Notation "x = y  :> T" := (!eq T x y) (at level 5, y at next level, no associativity).
 Notation "x = y" := (eq ? x y) (at level 5, no associativity).
+Notation "x <> y  :> T" := (not (!eq T x y)) (at level 5, y at next level, no associativity).
 Notation "x <> y" := (not (eq ? x y)) (at level 5, no associativity).
 
 Infix RIGHTA 6 "/\\" and.
