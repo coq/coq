@@ -806,6 +806,10 @@ Applies the conversion tactic {\convtactic} to the
 hypotheses \ident$_1$, \ldots, \ident$_n$. The tactic {\convtactic} is
 any of the conversion tactics listed in this section. 
 
+If $\ident$_i$ is a local definition, then $\ident$_i$ can be replaced
+by $(Type of \ident$_i)$ to adress not the body but the type of the
+local definition. Example: {\tt Unfold not in (Type of H1) (Type of H3).}
+
 \begin{ErrMsgs}
 \item \errindex{No such hypothesis} : {\ident}.
 \end{ErrMsgs}
@@ -2429,6 +2433,3 @@ user-defined tactics.
 %%% TeX-master: "Reference-Manual"
 %%% TeX-master: "Reference-Manual"
 %%% End: 
-
-
-
