@@ -115,6 +115,7 @@ theories/Lists/Streams.vo: theories/Lists/Streams.v
 theories/Lists/ListSet.vo: theories/Lists/ListSet.v theories/Lists/PolyList.vo
 theories/Lists/PolyListSyntax.vo: theories/Lists/PolyListSyntax.v theories/Lists/PolyList.vo
 theories/Lists/List.vo: theories/Lists/List.v theories/Arith/Le.vo
+theories/ZArith/Zdiv.vo: theories/ZArith/Zdiv.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo contrib/ring/ZArithRing.vo
 theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
 theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
 theories/ZArith/Zlogarithm.vo: theories/ZArith/Zlogarithm.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zpower.vo

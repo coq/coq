@@ -63,13 +63,44 @@ Lemma NEG_add : (p,p':positive)`(NEG (add p p'))=(NEG p)+(NEG p')`.
 Induction p; Induction p'; Simpl; Auto with arith.
 Save.
 
-Definition Zle_bool := [x,y:Z]Case `x ?= y` of true true false end.
-Definition Zge_bool := [x,y:Z]Case `x ?= y` of true false true end.
-Definition Zlt_bool := [x,y:Z]Case `x ?= y` of false true false end.
-Definition Zgt_bool := [x,y:Z]Case ` x ?= y` of false false true end.
-Definition Zeq_bool := [x,y:Z]Cases `x ?= y` of EGAL => true | _ => false end.
-Definition Zneq_bool := [x,y:Z]Cases `x ?= y` of EGAL =>false | _ => true end.
+(** Boolean comparisons *)
 
+Definition Zle_bool := 
+  [x,y:Z]Cases `x ?= y` of SUPERIEUR => false | _ => true end.
+Definition Zge_bool := 
+  [x,y:Z]Cases `x ?= y` of INFERIEUR => false | _ => true end.
+Definition Zlt_bool := 
+  [x,y:Z]Cases `x ?= y` of INFERIEUR => true | _ => false end.
+Definition Zgt_bool := 
+  [x,y:Z]Cases ` x ?= y` of SUPERIEUR => true | _ => false end.
+Definition Zeq_bool := 
+  [x,y:Z]Cases `x ?= y` of EGAL => true | _ => false end.
+Definition Zneq_bool := 
+  [x,y:Z]Cases `x ?= y` of EGAL => false | _ => true end.
+
+Lemma Zle_cases : (x,y:Z)if (Zle_bool x y) then `x<=y` else `x>y`.
+Proof.
+Intros x y; Unfold Zle_bool Zle Zgt.
+Case (Zcompare x y); Auto; Discriminate.
+Save.
+
+Lemma Zlt_cases : (x,y:Z)if (Zlt_bool x y) then `x<y` else `x>=y`.
+Proof.
+Intros x y; Unfold Zlt_bool Zlt Zge.
+Case (Zcompare x y); Auto; Discriminate.
+Save.
+
+Lemma Zge_cases : (x,y:Z)if (Zge_bool x y) then `x>=y` else `x<y`.
+Proof.
+Intros x y; Unfold Zge_bool Zge Zlt.
+Case (Zcompare x y); Auto; Discriminate.
+Save.
+
+Lemma Zgt_cases : (x,y:Z)if (Zgt_bool x y) then `x>y` else `x<=y`.
+Proof.
+Intros x y; Unfold Zgt_bool Zgt Zle.
+Case (Zcompare x y); Auto; Discriminate.
+Save.
 
 End numbers.
 
@@ -158,12 +189,13 @@ End iterate.
 
 Section arith.
 
-Lemma ZERO_le_POS : (p:positive) `0 <= (POS p)`.
-Intro; Unfold Zle; Unfold Zcompare; Discriminate.
+Lemma POS_gt_ZERO : (p:positive) `(POS p) > 0`.
+Unfold Zgt; Trivial.
 Save.
 
-Lemma POS_gt_ZERO : (p:positive) `(POS p) > 0`.
-Intro; Unfold Zgt; Simpl; Trivial with arith.
+(* weaker but useful (in [Zpower] for instance) *)
+Lemma ZERO_le_POS : (p:positive) `0 <= (POS p)`.
+Intro; Unfold Zle; Unfold Zcompare; Discriminate.
 Save.
 
 Lemma Zlt_ZERO_pred_le_ZERO : (x:Z) `0 < x` -> `0 <= (Zpred x)`.
@@ -173,6 +205,11 @@ Apply Zgt_S_le.
 Apply Zlt_gt.
 Assumption.
 Save.
+
+Lemma NEG_lt_ZERO : (p:positive)`(NEG p) < 0`.
+Unfold Zlt; Trivial.
+Save.
+
 
 (** [Zeven], [Zodd], [Zdiv2] and their related properties *)
 
@@ -423,9 +460,8 @@ Save.
 
 Lemma Zle_bool_imp_le : (x,y:Z) (Zle_bool x y)=true -> (Zle x y).
 Proof.
-  Unfold Zle_bool Zle. Intros x y. Unfold not. Case (Zcompare x y). Intros. Discriminate H0.
-  Intros. Discriminate H0.
-  Intro. Discriminate H.
+  Unfold Zle_bool Zle. Intros x y. Unfold not. 
+  Case (Zcompare x y); Intros; Discriminate.
 Qed.
 
 Lemma Zle_imp_le_bool : (x,y:Z) (Zle x y) -> (Zle_bool x y)=true.
