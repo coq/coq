@@ -42,7 +42,7 @@ Syntax tactic
 
   level 2:
   | orelse [ $st Orelse $tc ] -> [ [<hov 0> $st:L " Orelse" [1 1] $tc:E] ]
-  | match_context [<<(MATCHCONTEXT ($LIST $lrul))>>] ->
+  | match_context [<<(MATCHCONTEXT "RL" ($LIST $lrul))>>] ->
     [ [ <hov 0> "Match Context With" (MATCHCONTEXTLIST ($LIST $lrul)) ] ]
   | match [<<(MATCH $t ($LIST $lrul))>>] ->
     [ [ <hov 0> "Match" [1 0] $t [1 0] "With" (MATCHLIST ($LIST $lrul)) ] ]
@@ -138,10 +138,13 @@ Syntax tactic
     ["First" [1 0] "[" [1 0] (TACTICSEQBODY ($LIST $l)) [1 0] "]"]
   | solve  [<<(TCLSOLVE ($LIST $l))>>] ->
     ["Solve" [1 0] "[" [1 0] (TACTICSEQBODY ($LIST $l)) [1 0] "]"]
-  | abstract_anon [<<(ABSTRACT (TACTIC $t))>>] 
-         -> ["Abstract " $t:E]
-  | abstract_name [<<(ABSTRACT ($VAR $id) (TACTIC $t))>>] 
-         -> ["Abstract " $t:E " using "  $id]
+  | abstract_anon [<<(ABSTRACT (TACTIC $t))>>] -> ["Abstract " $t:E]
+  | abstract_name [<<(ABSTRACT ($VAR $id) (TACTIC $t))>>] ->
+    ["Abstract " $t:E " using "  $id]
+  | eval  [<<(EVAL $c (REDEXP $rtc))>>] ->
+    ["Eval" [1 0] (REDEXP $rtc) [1 0] "in" [1 0] (COMMAND $c)]
+  | inst  [<<(CONTEXT $id $c)>>] -> ["Inst" [1 0] $id "[" (COMMAND $c) "]"]
+  | check [<<(CHECK $c)>>] -> ["Check" [1 0] (COMMAND $c)]
 
 (* =================================== *)
 (*     PP rules for simple tactics     *)
@@ -433,6 +436,12 @@ Syntax tactic
     tactic_to_constr [<<(COMMAND $c)>>] -> [ $c:"constr":9 ]
   | tactic_to_castedconstr [<<(CASTEDCOMMAND $c)>>] -> [ $c:"constr":9 ]
   | tactic_to_openconstr [<<(CASTEDOPENCOMMAND $c)>>] -> [ $c:"constr":9 ]
+
+  (* Some operations over constr to be pretty-printed here *)
+  | eval_command  [<<(COMMAND (EVAL $c (REDEXP $rtc)))>>] ->
+    [(EVAL $c (REDEXP $rtc))]
+  | inst_command  [<<(COMMAND (CONTEXT $id $c))>>] -> [(CONTEXT $id $c)]
+  | check_command [<<(COMMAND (CHECK $c))>>] -> [(CHECK $c)]
 
   (* This is produced bu UNFOLDLIST *)
   | tactic_qualidarg_constr [<<(COMMAND (QUALIDARG $p))>>] -> [(QUALIDARG $p)]

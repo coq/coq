@@ -33,6 +33,7 @@ open Term
 open Termops
 open Declare
 open Safe_typing
+open Typing
 
 let err_msg_tactic_not_found macro_loc macro =
   user_err_loc
@@ -345,13 +346,18 @@ let read_pattern evc env lfun = function
       "Not a pattern ast node: " ++ print_ast ast))
 
 (* Reads the hypotheses of a Match Context rule *)
-let rec read_match_context_hyps evc env lfun = function
+let rec read_match_context_hyps evc env lfun lidh = function
   | Node(_,"MATCHCONTEXTHYPS",[mp])::tl ->
-    (NoHypId (read_pattern evc env lfun mp))::(read_match_context_hyps evc env
-      lfun tl)
-  | Node(_,"MATCHCONTEXTHYPS",[Nvar(_,s);mp])::tl ->
-    (Hyp (s,read_pattern evc env lfun mp))::(read_match_context_hyps evc env
-      lfun tl)
+    (NoHypId (read_pattern evc env lfun mp))::
+      (read_match_context_hyps evc env lfun lidh tl)
+  | (Node(_,"MATCHCONTEXTHYPS",[Nvar(_,s);mp]) as ast)::tl ->
+    if List.mem s lidh then
+      user_err_loc (Ast.loc ast,"Tacinterp.read_match_context_hyps",
+      str ("Hypothesis pattern-matching variable "^(string_of_id s)^
+           " used twice in the same pattern"))
+    else
+      (Hyp (s,read_pattern evc env lfun mp))::
+        (read_match_context_hyps evc env lfun (s::lidh) tl)
   | ast::tl ->
     anomaly_loc (Ast.loc ast, "Tacinterp.read_match_context_hyp",(str
       "Not a MATCHCONTEXTHYP ast node: " ++ print_ast ast))
@@ -363,7 +369,7 @@ let rec read_match_context_rule evc env lfun = function
     (All tc)::(read_match_context_rule evc env lfun tl)
   | Node(_,"MATCHCONTEXTRULE",l)::tl ->
     let rl=List.rev l in
-      (Pat (read_match_context_hyps evc env lfun (List.rev (List.tl (List.tl
+      (Pat (read_match_context_hyps evc env lfun [] (List.rev (List.tl (List.tl
         rl))),read_pattern evc env lfun (List.nth rl 1),List.hd
         rl))::(read_match_context_rule evc env lfun tl)
   | ast::tl ->
@@ -490,7 +496,9 @@ let rec val_interp ist ast =
           | Some g -> match_context_interp ist ast lmr g)
     | Node(_,"MATCH",lmr) -> match_interp ist ast lmr
     (* Delayed evaluation *)
-    | Node(loc,("LETCUT"|"IDTAC"|"FAIL"|"PROGRESS"|"TACTICLIST"|"DO"|"TRY"|"INFO"|"REPEAT"|"ORELSE"|"FIRST"|"TCLSOLVE"),_) -> VTacticClos (ist,ast)
+    | Node(loc,("LETCUT"|"IDTAC"|"FAIL"|"PROGRESS"|"TACTICLIST"|"DO"|"TRY"
+               |"INFO"|"REPEAT"|"ORELSE"|"FIRST"|"TCLSOLVE"),_) ->
+      VTacticClos (ist,ast)
     (* Arguments and primitive tactics *)
     | Node(_,"VOID",[]) -> VVoid
     | Nvar(_,s) ->
@@ -863,8 +871,7 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
             eval_with_fail
               (val_interp {ist with lfun=lfun@lid@lc@ist.lfun;
                                     lmatch=lmatch@lm@ist.lmatch;
-                                    goalopt=Some goal})
-              mt goal
+                                    goalopt=Some goal}) mt goal
         else
           let nextlhyps =
             List.fold_left (fun l e -> if e = hyp_match then l else l@[e]) []
@@ -1032,6 +1039,8 @@ and com_interp ist com =
       | Not_found ->
         errorlabstrm "com_interp" (str "Unbound context identifier" ++
           print_ast ast))
+    | Node(_,"CHECK",[c]) ->
+      let csr = interp_constr ist c None in type_of ist.env ist.evc csr
     | c -> interp_constr ist c None in
   begin
     db_constr ist.debug ist.env csr;
@@ -1063,6 +1072,9 @@ and cast_com_interp ist com =
          | Not_found ->
            errorlabstrm "cast_com_interp" (str "Unbound context identifier" ++
              print_ast ast))
+      | Node(_,"CHECK",[c]) ->
+        let csr = interp_constr ist c (Some (pf_concl gl)) in
+        type_of ist.env ist.evc csr
       | c ->
         interp_constr ist c (Some (pf_concl gl)) in
     begin
@@ -1096,6 +1108,9 @@ and cast_opencom_interp ist com =
       |	Not_found ->
         errorlabstrm "cast_opencom_interp" (str "Unbound context identifier" ++
           print_ast ast))
+    | Node(_,"CHECK",[c]) ->
+      let csr = interp_constr ist c (Some (pf_concl gl)) in
+      VArg (Constr (type_of ist.env ist.evc csr))
     | c ->
         VArg
 	  (OpenConstr (interp_openconstr ist c (Some (pf_concl gl)))))
@@ -1123,7 +1138,7 @@ and cvt_pattern ist = function
       let occs = List.map num_of_ast nums
       and csr = constr_of_Constr (unvarg (val_interp
         ist (Node(loc,"COMMAND",[com])))) in
-      let jdt = Typing.unsafe_machine ist.env ist.evc csr in
+      let jdt = unsafe_machine ist.env ist.evc csr in
       (occs, jdt.Environ.uj_val, body_of_type jdt.Environ.uj_type)
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_pattern")
 

@@ -145,6 +145,7 @@ GEXTEND Gram
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
       | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
         <:ast< (COMMAND (CONTEXT $id $c)) >>
+      | IDENT "Check"; c = Constr.constr  -> <:ast<(COMMAND (CHECK $c))>>
       |	st = simple_tactic -> st
       | id = lqualid; la = LIST1 tactic_atom0 ->
         <:ast< (APP $id ($LIST $la)) >>
@@ -164,6 +165,7 @@ GEXTEND Gram
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
       | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
         <:ast< (COMMAND (CONTEXT $id $c)) >>
+      | IDENT "Check"; c = Constr.constr  -> <:ast<(COMMAND (CHECK $c))>>
       |	"'"; c = constrarg -> c ] ]
   ;
   lqualid:

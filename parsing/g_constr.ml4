@@ -56,9 +56,10 @@ GEXTEND Gram
   constr:
     [ [ c = constr8 -> c
       | IDENT "Inst"; id = ident; "["; c = constr8; "]" ->
-        <:ast< (CONTEXT $id $c) >>
+        <:ast<(CONTEXT $id $c)>>
       | IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = constr8 ->
-        <:ast< (EVAL $c (REDEXP $rtc)) >> ] ]
+        <:ast<(EVAL $c (REDEXP $rtc))>>
+      | IDENT "Check"; c = constr8 -> <:ast<(CHECK $c)>> ] ]
   ;
   lconstr:
     [ [ c = constr10 -> c ] ]
