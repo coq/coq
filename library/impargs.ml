@@ -101,21 +101,46 @@ let is_flexible_reference env bound depth f =
     | Ind _ | Construct _ -> false
     |  _ -> true
 
+(* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
+   subterms of [c]; it carries an extra data [acc] which is processed by [g] at
+   each binder traversal; it is not recursive and the order with which
+   subterms are processed is not specified *)
+
+let iter_constr_with_full_binders g f l c = match kind_of_term c with
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+    | Construct _) -> ()
+  | Cast (c,t) -> f l c; f l t
+  | Prod (na,t,c) -> f l t; f (g (na,None,t) l) c
+  | Lambda (na,t,c) -> f l t; f (g (na,None,t) l) c
+  | LetIn (na,b,t,c) -> f l b; f l t; f (g (na,Some b,t) l) c
+  | App (c,args) -> f l c; Array.iter (f l) args
+  | Evar (_,args) -> Array.iter (f l) args
+  | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
+  | Fix (_,(lna,tl,bl)) -> 
+      let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      Array.iter (f l) tl;
+      Array.iter (f l') bl
+  | CoFix (_,(lna,tl,bl)) ->
+      let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      Array.iter (f l) tl;
+      Array.iter (f l') bl
+
+let push_lift d (e,n) = (push_rel d e,n+1)
+
 (* Precondition: rels in env are for inductive types only *)
 let add_free_rels_until bound env m pos acc =
-  let rec frec rig depth c = match kind_of_term c with
+  let rec frec rig (env,depth as ed) c =
+    match kind_of_term (whd_betadeltaiota env c) with
     | Rel n when (n < bound+depth) & (n >= depth) ->
         acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
     | App (f,_) when rig & is_flexible_reference env bound depth f ->
-        iter_constr_with_binders succ (frec false) depth c
-    | Case _ ->
-        iter_constr_with_binders succ (frec false) depth c
-    | LetIn (_,b,_,c) ->
-        frec rig depth (subst1 b c)
+        iter_constr_with_full_binders push_lift (frec false) ed c
+    | Case _ when rig ->
+        iter_constr_with_full_binders push_lift (frec false) ed c
     | _ ->
-        iter_constr_with_binders succ (frec rig) depth c
+        iter_constr_with_full_binders push_lift (frec rig) ed c
   in 
-  frec true 1 m; acc
+  frec true (env,1) m; acc
 
 (* calcule la liste des arguments implicites *)
 
