@@ -11,7 +11,7 @@ open Reduction
 (*i*)
 
 (* This modules provides useful functions for unification algorithms.
- * Used in Trad and Progmach
+ * Used in Trad and Progmach.
  * This interface will have to be improved. *)
 
 val filter_unique : 'a list -> 'a list

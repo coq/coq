@@ -11,7 +11,7 @@ open Evd
 open Environ
 (*i*)
 
-(* This module declares the structure of proof trees, global and
+(* This module declares the structures of proof trees, global and
    readable constraints, and a few utilities on these types *)
 
 type bindOcc = 
