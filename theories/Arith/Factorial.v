@@ -8,14 +8,27 @@
 
 (*i $Id$ i*)
 
-Require Export Le.
-Require Export Lt.
-Require Export Plus.
-Require Export Gt.
-Require Export Minus.
-Require Export Mult.
-Require Export Between.
-Require Export Minus.
-Require Export Peano_dec.
-Require Export Compare_dec.
-Require Export Factorial.
+Require Plus.
+Require Lt.
+
+(** Factorial *)
+
+Fixpoint fact [n:nat]:nat:=
+  Cases n of
+     O     => (S O)
+    |(S n) => (mult (S n) (fact n))
+  end.
+
+Lemma lt_O_fact : (n:nat)(lt O (fact n)).
+Proof.
+Induction n; Unfold lt; Simpl; Auto with arith.
+Qed.
+
+Lemma fact_neq_0:(n:nat)~(fact n)=O.
+Proof.
+Intro.
+Apply sym_not_eq.
+Apply lt_O_neq.
+Apply lt_O_fact.
+Qed.
+
