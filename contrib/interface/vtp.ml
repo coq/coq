@@ -111,6 +111,19 @@ and fCOMMAND = function
    fFORMULA x2;
    fINT_LIST x3;
    fNODE "abstraction" 3
+| CT_add_field(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11) ->
+   fFORMULA x1;
+   fFORMULA x2;
+   fFORMULA x3;
+   fFORMULA x4;
+   fFORMULA x5;
+   fFORMULA x6;
+   fFORMULA x7;
+   fFORMULA x8;
+   fFORMULA x9;
+   fFORMULA x10;
+   fBINDING_LIST x11;
+   fNODE "add_field" 11
 | CT_add_natural_feature(x1, x2) ->
    fNATURAL_FEATURE x1;
    fID x2;
@@ -273,6 +286,9 @@ and fCOMMAND = function
    fMODIFIER_LIST x3;
    fID_OPT x4;
    fNODE "infix" 4
+| CT_inline(x1) ->
+   fID_NE_LIST x1;
+   fNODE "inline" 1
 | CT_inspect(x1) ->
    fINT x1;
    fNODE "inspect" 1
@@ -367,6 +383,9 @@ and fCOMMAND = function
    fMODULE_BINDER_LIST x2;
    fMODULE_TYPE_OPT x3;
    fNODE "module_type_decl" 3
+| CT_no_inline(x1) ->
+   fID_NE_LIST x1;
+   fNODE "no_inline" 1
 | CT_omega_flag(x1, x2) ->
    fOMEGA_MODE x1;
    fOMEGA_FEATURE x2;
@@ -443,6 +462,9 @@ and fCOMMAND = function
    fFORMULA x1;
    fNODE "proof" 1
 | CT_proof_no_op -> fNODE "proof_no_op" 0
+| CT_proof_with(x1) ->
+   fTACTIC_COM x1;
+   fNODE "proof_with" 1
 | CT_pwd -> fNODE "pwd" 0
 | CT_quit -> fNODE "quit" 0
 | CT_read_module(x1) ->
@@ -800,13 +822,12 @@ and fFORMULA = function
    fID x1;
    fFIX_BINDER_LIST x2;
    fNODE "fixc" 2
-| CT_if(x1, x2, x3, x4, x5) ->
+| CT_if(x1, x2, x3, x4) ->
    fFORMULA x1;
-   fID_OPT_OPT x2;
-   fFORMULA_OPT x3;
+   fRETURN_INFO x2;
+   fFORMULA x3;
    fFORMULA x4;
-   fFORMULA x5;
-   fNODE "if" 5
+   fNODE "if" 4
 | CT_inductive_let(x1, x2, x3, x4) ->
    fFORMULA_OPT x1;
    fID_OPT_NE_LIST x2;
@@ -821,13 +842,12 @@ and fFORMULA = function
    fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "lambdac" 2
-| CT_let_tuple(x1, x2, x3, x4, x5) ->
+| CT_let_tuple(x1, x2, x3, x4) ->
    fID_OPT_NE_LIST x1;
-   fID_OPT_OPT x2;
-   fFORMULA_OPT x3;
+   fRETURN_INFO x2;
+   fFORMULA x3;
    fFORMULA x4;
-   fFORMULA x5;
-   fNODE "let_tuple" 5
+   fNODE "let_tuple" 4
 | CT_letin(x1, x2) ->
    fDEF x1;
    fFORMULA x2;
@@ -925,12 +945,6 @@ and fID_OPT_NE_LIST = function
    fID_OPT x;
    (List.iter fID_OPT l);
    fNODE "id_opt_ne_list" (1 + (List.length l))
-and fID_OPT_OPT = function
-| CT_coerce_ID_to_ID_OPT_OPT x -> fID x
-| CT_coerce_ANONYMOUS_to_ID_OPT_OPT x ->
-    fNONE x;
-    fNODE "anonymous" 1
-| CT_coerce_NONE_to_ID_OPT_OPT x -> fNONE x
 and fID_OPT_OR_ALL = function
 | CT_coerce_ID_OPT_to_ID_OPT_OR_ALL x -> fID_OPT x
 | CT_all -> fNODE "all" 0
@@ -1268,6 +1282,15 @@ and fRED_COM = function
 | CT_unfold(x1) ->
    fUNFOLD_NE_LIST x1;
    fNODE "unfold" 1
+and fRETURN_INFO = function
+| CT_coerce_NONE_to_RETURN_INFO x -> fNONE x
+| CT_as_and_return(x1, x2) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fNODE "as_and_return" 2
+| CT_return(x1) ->
+   fFORMULA x1;
+   fNODE "return" 1
 and fRULE = function
 | CT_rule(x1, x2) ->
    fPREMISES_LIST x1;
@@ -1528,6 +1551,17 @@ and fTACTIC_COM = function
    fTACTIC_COM x;
    (List.iter fTACTIC_COM l);
    fNODE "first" (1 + (List.length l))
+| CT_firstorder(x1) ->
+   fTACTIC_OPT x1;
+   fNODE "firstorder" 1
+| CT_firstorder_using(x1, x2) ->
+   fTACTIC_OPT x1;
+   fID_NE_LIST x2;
+   fNODE "firstorder_using" 2
+| CT_firstorder_with(x1, x2) ->
+   fTACTIC_OPT x1;
+   fID_NE_LIST x2;
+   fNODE "firstorder_with" 2
 | CT_fixtactic(x1, x2, x3) ->
    fID_OPT x1;
    fINT x2;
@@ -1536,6 +1570,9 @@ and fTACTIC_COM = function
 | CT_formula_marker(x1) ->
    fFORMULA x1;
    fNODE "formula_marker" 1
+| CT_fresh(x1) ->
+   fSTRING_OPT x1;
+   fNODE "fresh" 1
 | CT_generalize(x1) ->
    fFORMULA_NE_LIST x1;
    fNODE "generalize" 1
@@ -1680,7 +1717,7 @@ and fTACTIC_COM = function
    fTACTIC_ARG_LIST x2;
    fNODE "simple_user_tac" 2
 | CT_simplify_eq(x1) ->
-   fID_OPT x1;
+   fID_OR_INT_OPT x1;
    fNODE "simplify_eq" 1
 | CT_specialize(x1, x2, x3) ->
    fINT_OPT x1;
