@@ -332,7 +332,8 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
   let env = pf_env gl in
   let rec aux ccl =
     match pf_lookup_hypothesis_as_renamed env ccl h with
-      | None when red -> aux (reduction_of_redexp (Red true) env Evd.empty ccl)
+      | None when red ->
+          aux (reduction_of_redexp (Red true) env (project gl) ccl)
       | x -> x
   in
   try aux (pf_concl gl)
