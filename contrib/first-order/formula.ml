@@ -97,21 +97,25 @@ let rec kind_of_formula gl term =
 	      match match_with_nodep_ind cciterm with
 		  Some (i,l,n)->
 		    let ind=destInd i in
-		    let has_realargs=(n>0) in
 		    let (mib,mip) = Global.lookup_inductive ind in
-		    let is_trivial=
-		      let is_constant c =
-			nb_prod c = mip.mind_nparams in  
-			array_exists is_constant mip.mind_nf_lc in 
-		      if Inductiveops.mis_is_recursive (ind,mib,mip) ||
-			(has_realargs && not is_trivial)
-		      then
-			Atom cciterm 
+		    let nconstr=Array.length mip.mind_consnames in
+		      if nconstr=0 then 
+			False(ind,l)
 		      else
-			(match Array.length mip.mind_consnames with
-			     0->False(ind,l)
-			   | 1->And(ind,l,is_trivial)
-			   | _->Or(ind,l,is_trivial)) 
+			let has_realargs=(n>0) in
+			let is_trivial=
+			  let is_constant c =
+			    nb_prod c = mip.mind_nparams in  
+			    array_exists is_constant mip.mind_nf_lc in 
+			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
+			    (has_realargs && not is_trivial)
+			  then
+			    Atom cciterm 
+			  else
+			    if nconstr=1 then
+			      And(ind,l,is_trivial)
+			    else 
+			      Or(ind,l,is_trivial) 
 		| _ ->  
 		    match match_with_sigma_type cciterm with
 			Some (i,l)-> Exists((destInd i),l)
