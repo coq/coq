@@ -127,7 +127,10 @@ let rec parse_one_command_group input_channel =
 				  output_results_nl
 				    (acknowledge_command
 				       !global_request_id rank (Some e1))
-			      | e -> raise e));
+			      | e -> 
+				  output_results_nl
+				    (acknowledge_command
+				       !global_request_id rank (Some e))));
 		    rearm_break();
 		    flush_until_end_of_stream stream_tail
 	      	end
