@@ -305,9 +305,9 @@ $$
 \text{Symbol} & \text{precedence} \\
 \hline
 \rightarrow, \leftrightarrow  & 80R \\
-\wedge           & 70R\\
-\vee             & 60R \\
-\tilde           & 55R \\
+\vee             & 70R \\
+\wedge           & 60R \\
+\tilde{}         & 55R \\
 =,\neq,<,>,\leq,\geq   & 50N \\
 +,-,\text{unary minus} & 40L \\
 *,/,\text{inverse}     & 30L \\
@@ -334,11 +334,12 @@ precedence 200), producing an iterated application to constant \TERM{Ex}.
 
 \subsection{Notations for records}
 
-These notations are not yet implemented.
+Of these notations, only the dot notation for field acces is implemented.
 
 \begin{rules}
 \EXTNT{constr}
-       \NT{constr}~\TERM{.(}~\NT{constr}~\KWD{)} &1L~~ & \RNAME{proj}
+       \NT{constr}~\TERM{.(}~\NT{constr}~\PLUS{\NT{appl-arg}}~\KWD{)} &10L~~ & \RNAME{proj}
+\nlsep \NT{constr}~\TERM{.(}~\KWD{@}~\NT{reference}~\STAR{\NT{constr}}~\KWD{)} &10L~~ & \RNAME{proj-expl}
 \nlsep \KWD{\{}~\NT{rfield}~\STARGR{\KWD{;}~\NT{rfield}}~\KWD{\}} &0
     &\RNAME{constructor}
 \SEPDEF
@@ -440,8 +441,8 @@ depending whether the $\NT{reference}$ is a module or not.
 \nlsep \TERM{change}~\NT{conversion}~\NT{clause}
 \SEPDEF
 \DEFNT{red-expr}
-       \TERM{red} ~\mid~ \TERM{hnf} ~\mid~ \TERM{simpl} ~\mid~
-       \TERM{compute}
+       \TERM{red} ~\mid~ \TERM{hnf} ~\mid~ \TERM{compute}
+\nlsep \TERM{simpl}~\OPT{\NT{pattern-occ}}
 \nlsep \TERM{cbv}~\PLUS{\NT{red-flag}}
 \nlsep \TERM{lazy}~\PLUS{\NT{red-flag}}
 \nlsep \TERM{unfold}~\NT{unfold-occ}~\STARGR{\KWD{,}~\NT{unfold-occ}}
@@ -551,7 +552,7 @@ $$ \TERM{orelse}
 $$
 
 Currently, there are conflicts with keyword \KWD{in}: in the following,
-the keyword must be associated to \KWD{let} or to tactic \TERM{simpl} ?
+has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \begin{center}
 \texttt{let x := simpl in ...}
 \end{center}
@@ -701,7 +702,7 @@ $$
 %% Extension: record
 \nlsep \NT{record-tok}~\OPT{\TERM{$>$}}~\NT{ident}~\STAR{\NT{binder}}
        ~\KWD{:}~\NT{constr}~\KWD{:=}
-       ~\OPT{\NT{ident}}~\KWD{\{}~\NT{assum-list}~\KWD{\}}
+       ~\OPT{\NT{ident}}~\KWD{\{}~\NT{field-list}~\KWD{\}}
 \end{rules}
 
 \begin{rules}
@@ -726,9 +727,9 @@ $$
 
 \begin{rules}
 \DEFNT{def-body}
-       \STAR{\NT{binder}}~\NT{type-cstr}~\KWD{:=}
+       \STAR{\NT{binder-let}}~\NT{type-cstr}~\KWD{:=}
        ~\OPT{\NT{reduce}}~\NT{constr}
-\nlsep \STAR{\NT{binder}}~\KWD{:}~\NT{constr}
+\nlsep \STAR{\NT{binder-let}}~\KWD{:}~\NT{constr}
 \SEPDEF
 \DEFNT{reduce}
        \TERM{Eval}~\NT{red-expr}~\KWD{in}
@@ -742,18 +743,27 @@ $$
        \NT{sbinder-coe}~\TERMbar~\NT{constructor-list}
 \nlsep \NT{sbinder-coe}
 \SEPDEF
+\DEFNT{constructor}
+       \NT{ident}~\STAR{\NT{binder-let}}\OPTGR{\NT{coerce-kwd}~\NT{constr}}
+\SEPDEF
 \DEFNT{sbinder-coe}
        \PLUS{\NT{ident}}~\OPTGR{\NT{coerce-kwd}~\NT{constr}}
 \SEPDEF
-\DEFNT{assum-list}
-       \NT{sbinder-let-coe}~\KWD{;}~\NT{assum-list}
-\nlsep \NT{sbinder-let-coe}
+\DEFNT{field-list}
+       \NT{field}~\KWD{;}~\NT{field-list}
+\nlsep \NT{field}
+\DEFNT{field}
+       \NT{ident}~\OPTGR{\NT{coerce-kwd}~\NT{constr}}
+\nlsep \NT{ident}~\NT{type-cstr-coe}~\KWD{:=}~\NT{constr}
 \SEPDEF
-\DEFNT{sbinder-let-coe}
-       \NT{sbinder-coe}
-\nlsep \NT{ident}~\NT{type-cstr}~\KWD{:=}~\NT{constr}
+\SEPDEF
+\DEFNT{assum-list}
+       \NT{sbinder-coe}~\KWD{;}~\NT{assum-list}
+\nlsep \NT{sbinder-coe}
 \SEPDEF
 \DEFNT{coerce-kwd} \TERM{:$>$} ~\mid~ \KWD{:}
+\SEPDEF
+\DEFNT{type-cstr-coe} \OPTGR{\NT{coerce-kwd}~\NT{constr}}
 \SEPDEF
 \DEFNT{rec-definitions}
        \NT{rec-definition}~\STARGR{\KWD{with}~\NT{rec-definition}}
@@ -829,8 +839,8 @@ $$
        ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
 \nlsep \TERM{Identity}~\TERM{Coercion}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:}
        ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
-\nlsep \TERM{Implicits}~\NT{reference}~\TERM{[}~\STAR{\NT{int}}~\TERM{]}
-\nlsep \TERM{Implicits}~\NT{reference}
+\nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}~\TERM{[}~\STAR{\NT{int}}~\TERM{]}
+\nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}
 \nlsep \TERM{Implicit}~\TERM{Variable}~\KWD{Type}~\PLUS{\NT{ident}}
        ~\KWD{:}~\NT{constr}
 \SEPDEF
@@ -887,7 +897,7 @@ $$
 \nlsep \TERM{Scope}~\NT{ident}
 \SEPDEF
 \DEFNT{class-rawexpr}
-       \TERM{FUNCLASS}~\mid~\TERM{SORTCLASS}~\mid~\NT{reference}
+       \TERM{Funclass}~\mid~\TERM{Sortclass}~\mid~\NT{reference}
 \SEPDEF
 \DEFNT{locatable}
        \NT{reference}
@@ -974,7 +984,7 @@ $$
 \nlsep \TERM{Focus}~\OPT{\NT{int}}
 \nlsep \TERM{Unfocus}
 \nlsep \TERM{Show}~\OPT{\NT{int}}
-\nlsep \TERM{Show}~\TERM{Implicits}~\OPT{\NT{int}}
+\nlsep \TERM{Show}~\TERM{Implicit}~\TERM{Arguments}~\OPT{\NT{int}}
 \nlsep \TERM{Show}~\TERM{Node}
 \nlsep \TERM{Show}~\TERM{Script}
 \nlsep \TERM{Show}~\TERM{Existentials}
@@ -1025,7 +1035,7 @@ $$
 \nlsep \TERM{Delimits}~\TERM{Scope}~\NT{ident}~\KWD{with}~\NT{ident}
 \nlsep \TERM{Arguments}~\TERM{Scope}~\NT{reference}
        ~\TERM{[}~\PLUS{\NT{name}}~\TERM{]}
-\nlsep \TERM{Infix}~\OPT{\TERM{Local}}~\NT{prec}~\OPT{\NT{int}}
+\nlsep \TERM{Infix}~\OPT{\TERM{Local}} %%% ~\NT{prec}~\OPT{\NT{int}}
        ~\NT{string}~\NT{reference}~\OPT{\NT{modifiers}}
        ~\OPT{\NT{in-scope}}
 \nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:=}~\NT{constr}
@@ -1055,9 +1065,9 @@ $$
 \SEPDEF
 \DEFNT{syntax-entry}
        \TERM{ident}~\mid~\TERM{reference}~\mid~\NT{ident}
-\SEPDEF
-\DEFNT{prec}
-       \TERM{LeftA}~\mid~\TERM{RightA}~\mid~\TERM{NonA}
+%%% \SEPDEF
+%%% \DEFNT{prec}
+%%%       \TERM{LeftA}~\mid~\TERM{RightA}~\mid~\TERM{NonA}
 \end{rules}
 
 \end{document}
