@@ -1,6 +1,0 @@
-#!/bin/sh
-../../../bin/coqtop.byte -batch -load-vernac-source ./bench.v
-ocamlc -c -i polylist.ml
-ocamlc -c -i zarith.ml
-ocamlc -c -i even.ml
-

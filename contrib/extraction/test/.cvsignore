@@ -1,1 +1,7 @@
 *.ml
+theories
+ml2v 
+v2ml
+.depend
+log
+
