@@ -122,7 +122,7 @@ let rec ml_subst v =
   in 
   subst 1 v
 
-(*s simplification of any [MLapp (MLapp (_,_),_)] *)
+(*s Simplification of any [MLapp (MLapp (_,_),_)] *)
 
 let rec merge_app a = match a with 
   | MLapp (f,l) -> 
@@ -155,17 +155,14 @@ let nb_occur a =
   count 1 a; !cpt
 
 
-(*s Beta-iota reduction + simplifications*)
+(*s Beta-iota reductions + simplifications*)
 
 let constructor_index = function
   | ConstructRef (_,j) -> pred j
   | _ -> assert false
 
 let is_atomic = function 
-  | MLrel _ 
-  | MLglob _ 
-  | MLexn _
-  | MLprop | MLarity -> true
+  | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> true
   | _ -> false
 
 let rec betaiota = function
@@ -210,6 +207,7 @@ let rec betaiota = function
 	 | e' -> 
 	     MLcase (e', Array.map (fun (n,l,t) -> (n,l,betaiota t)) br))
   | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
+      (* expansion of a letin in special cases *)
       betaiota (ml_subst c e)
   | a -> 
       ast_map betaiota a
@@ -220,7 +218,7 @@ let normalize_decl = function
  | Dglob (id, a) -> Dglob (id, normalize a)
  | d -> d
 
-(*s Optimization. *)
+(*s Extraction parameters *)
 
 module Refset = 
   Set.Make(struct type t = global_reference let compare = compare end)
@@ -232,18 +230,7 @@ type extraction_params = {
   to_expand : Refset.t; (* globals to expand *)
 }
 
-let subst_glob_ast r m = 
-  let rec substrec = function
-    | MLglob r' as t -> if r = r' then m else t
-    | t -> ast_map substrec t
-  in
-  substrec
-
-let subst_glob_decl r m = function
-  | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
-  | d -> d
-
-(* Utility functions used for the decision of expansion *)
+(*s Utility functions used for the decision of expansion *)
 
 let rec ml_size = function
   | MLapp(t,l) -> List.length l + ml_size t + ml_size_list l
@@ -267,11 +254,27 @@ let rec is_constr = function
   | _          -> false
 
 
+(*s Strictness *)
+
+(* A variable is strict if the evaluation of the whole term implies
+   the evaluation of this variable. Non-strict variables can be found 
+   behind Match, for example. Expanding a term [t] is a good idea when 
+   it begins by at least one non-strict lambda, since the corresponding 
+   argument to [t] might be unevaluated in the expanded code. *)
+
 exception Toplevel
 
 let lift n l = List.map ((+) n) l
 
 let pop n l = List.map (fun x -> if x-n<0 then raise Toplevel else x-n) l 
+
+(* This function returns a list of de Bruijn indices of non-strict variables,
+   or raises [Toplevel] if it has an internal non-strict variable. 
+   In fact, not all variables are checked for strictness, only the ones which 
+   de Bruijn index is in the candidates list [cand]. The flag [add] controls 
+   the behaviour when going through a lambda: should we add the corresponding 
+   variable to the candidates?  We use this flag to check only the external 
+   lambdas, those that will correspond to arguments. *)
 
 let rec non_stricts add cand = function 
   | MLlam (id,t) -> 
@@ -279,9 +282,10 @@ let rec non_stricts add cand = function
       let cand = if add then 1::cand else cand in
       pop 1 (non_stricts add cand t)
   | MLrel n -> 
-      List.filter (fun x -> x <> n) cand  
+      List.filter ((<>) n) cand  
   | MLapp (MLrel n, _) -> 
-      List.filter (fun x -> x <> n) cand
+      List.filter ((<>) n) cand  
+	(* In [(x y)] we say that only x is strict. (WHY?) *)
   | MLapp (t,l)-> 
       let cand = non_stricts false cand t in 
       List.fold_left (non_stricts false) cand l 
@@ -296,6 +300,9 @@ let rec non_stricts add cand = function
       let cand = List.fold_left (non_stricts false) cand f in 
       pop n cand
   | MLcase (t,v) -> 
+      (* The only interesting case: for a variable to be non-strict, 
+	 it is sufficient that it appears non-strict in at least one branch,
+	 so he make en union (in fact a merge). *)
       let cand = non_stricts false cand t in 
       Array.fold_left 
 	(fun c (_,i,t)-> 
@@ -311,12 +318,16 @@ let rec non_stricts add cand = function
   | _ -> 
       cand
 
+(* The real test: we are looking for internal non-strict variables, so we start with 
+   no candidates, and the only positive answer is via the [Toplevel] exception. *)
+
 let is_not_strict t = 
   try 
     let _ = non_stricts true [] t in false
   with 
     | Toplevel -> true
 
+(*s Expansion decision *)
 
 (* [expansion_test] answers the following question: 
    If we could expand [t] (the user said nothing special), 
@@ -347,6 +358,19 @@ let expand prm r t =
    || 
    (prm.optimization && expansion_test t)) 
 
+(*s Optimization *)
+
+let subst_glob_ast r m = 
+  let rec substrec = function
+    | MLglob r' as t -> if r = r' then m else t
+    | t -> ast_map substrec t
+  in
+  substrec
+
+let subst_glob_decl r m = function
+  | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
+  | d -> d
+
 let warning_expansion r = 
   wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
 		 Printer.pr_global r; 'sPC; 'sTR "is expanded." >])
@@ -362,19 +386,19 @@ let rec optimize prm = function
   | Dglob(id,(MLexn _ as t)) as d :: l ->
       let l' = List.map (expand (id,t)) l in optimize prm l'
   i*)	    
-  | [ Dglob (r,t) ] ->
-      let t' = normalize t in [ Dglob(r,t') ]
-  | Dglob (r,t) as d :: l ->
+  | Dglob (r,t) :: l ->
       let t' = normalize t in
-      if expand prm r t' then begin
-	if_verbose warning_expansion r;
-	let l' = List.map (subst_glob_decl r t') l in
-	if prm.modular then 
-	  (Dglob (r,t')) :: (optimize prm l')
-	else
-	  optimize prm l'
-      end else 
-	(Dglob (r,t')) :: (optimize prm l)
+      let l' = if expand prm r t' then 
+	begin
+	  if_verbose warning_expansion r;
+	  List.map (subst_glob_decl r t') l
+	end
+      else l in 
+      if prm.modular || l' = [] then 
+	Dglob (r,t') :: (optimize prm l')
+      else
+	optimize prm l'
+
 
 (*s Table for direct ML extractions. *)
 

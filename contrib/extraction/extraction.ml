@@ -24,10 +24,6 @@ open Summary
 
 (*s Extraction results. *)
 
-(* The [signature] type is used to know how many arguments a CIC
-   object expects, and what these arguments will become in the ML
-   object. *)
-   
 (* The flag [type_var] gives us information about an identifier
    coming from a Lambda or a Product:
    \begin{itemize}
@@ -54,10 +50,19 @@ let info_arity = (Info, Arity)
 let logic = (Logic, NotArity)
 let default = (Info, NotArity)
 
+(* The [signature] type is used to know how many arguments a CIC
+   object expects, and what these arguments will become in the ML
+   object. *)
+   
+(* Convention: outmost lambda/product gives the head of the list *)
+
 type signature = type_var list
 
 (* When dealing with CIC contexts, we maintain corresponding contexts 
-   telling whether a variable will be kept or will disappear *)
+   telling whether a variable will be kept or will disappear.
+   Cf. [renum_db]. *)
+
+(* Convention: innermost ([Rel 1]) is at the head of the list *)
 
 type extraction_context = bool list
 
@@ -142,35 +147,52 @@ let is_non_info_term env c =
     | _ -> false
 
 
-(* The next function transforms a type [t] into a [type_var] flag. *)
+(* [v_of_t] transforms a type [t] into a [type_var] flag. *)
 
-let v_of_arity env t = match get_arity env t with
+let v_of_t env t = match get_arity env t with
   | Some (Prop Null) -> logic_arity
   | Some _ -> info_arity
   | _ -> if is_non_info_type env t then logic else default
+
+
+(* Operations on binders *)
+
+type binders = (identifier * constr) list
+
+(* Convention: right binders give [Rel 1] at the head, like those answered by 
+   decompose_prod. Left binders are the converse. *)
+
+let rec lbinders_fold f acc env = function 
+  | [] -> acc
+  | (n,t) :: l -> 
+      f n t (v_of_t env t) (lbinders_fold f acc (push_rel (n,None,t) env) l)
+
+let rec rbinders_fold f init env = function 
+  | [] -> env, init 
+  | (n,t) :: l -> let env, res = rbinders_fold f init env l in 
+    (push_rel (n,None,t) env), (f n t (v_of_t env t) res)  
       
-let rec nb_params_to_keep env = function
-  | [] -> 0
-  | (n,t) :: l ->
-      let v = v_of_arity env t in
-      let env' = push_rel (n,None,t) env in
-      (nb_params_to_keep env' l) + (if snd v = NotArity then 1 else 0)
+let nb_notarity = 
+  lbinders_fold (fun _ _ v acc -> if snd v = NotArity then succ acc else acc) 0
+
 
 (* The next function transforms an arity into a signature. It is used 
    for example with the types of inductive definitions, which are known
    to be already in arity form. *)
 
+let sign_of_lbinders = lbinders_fold (fun _ _ v acc -> v::acc) [] 
+
 let rec signature_of_arity env c = match kind_of_term c with
   | IsProd (n, t, c') ->
       let env' = push_rel (n,None,t) env in
-      (v_of_arity env t) :: (signature_of_arity env' c')
+      (v_of_t env t) :: (signature_of_arity env' c')
   | IsSort _ -> []
   | _ -> assert false
 
 let rec vl_of_binders env vl b = match b with 
   | [] -> vl
   | (n,t) :: l 
-      when ((v_of_arity env t) = info_arity) -> 
+      when ((v_of_t env t) = info_arity) -> 
 	let id = next_ident_away (id_of_name n) vl in 
 	let env' = push_rel (Name id, None, t) env in 
 	vl_of_binders env' (id :: vl) l
@@ -205,7 +227,7 @@ let renum_db ctx n =
 
 let rec push_many_rels_ctx keep_prop env ctx = function
   | (fi,ti) :: l -> 
-      let v = v_of_arity env ti in
+      let v = v_of_t env ti in
       let keep = (v = default) || (keep_prop && v = logic) in
       push_many_rels_ctx keep_prop (push_rel (fi,None,ti) env) (keep :: ctx) l
   | [] ->
@@ -215,19 +237,11 @@ let fix_environment env ctx fl tl =
   let tl' = Array.mapi lift tl in
   push_many_rels_ctx true env ctx (List.combine fl (Array.to_list tl'))
 
-(* Decomposition of a type beginning with at least n products when reduced *)
-
-let decompose_prod_reduce n env c = 
-  let c = 
-    if nb_prod c >= n then 
-      c 
-    else 
-      whd_betadeltaiota env Evd.empty c 
-  in 
-  decompose_prod_n n c
-
 (* Decomposition of a function expecting n arguments at least. We eta-expanse
    if needed *)
+
+let force_n_prod n env c = 
+  if nb_prod c < n then whd_betadeltaiota env Evd.empty c else c
 
 let decompose_lam_eta n env c = 
   let dif = n - (nb_lam c) in 
@@ -235,7 +249,7 @@ let decompose_lam_eta n env c =
     decompose_lam_n n c
   else 
     let tyc = Typing.type_of env Evd.empty c in
-    let (type_binders,_) = decompose_prod_reduce n env tyc in
+    let (type_binders,_) = decompose_prod_n n (force_n_prod n env tyc) in
     let (binders, e) = decompose_lam c in 
     let binders = (list_firstn dif type_binders) @ binders in 
     let e = applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
@@ -318,12 +332,12 @@ let _ = declare_summary "Extraction tables"
 (* When calling [extract_type] we suppose that the type of [c] is an
    arity.  This is for example checked in [extract_constr]. 
 
-   Relation with [v_of_arity]: it is less precise, since we do not 
+   Relation with [v_of_t]: it is less precise, since we do not 
    delta-reduce in [extract_type] in general.
    \begin{itemize}
-   \item If [v_of_arity env t = NotArity,_], 
+   \item If [v_of_t env t = NotArity,_], 
    then [extract_type env t] is a [Tmltype].
-   \item If [extract_type env t = Tarity], then [v_of_arity env t = Arity,_]
+   \item If [extract_type env t = Tarity], then [v_of_t env t = Arity,_]
    \end{itemize} *)
 
 let rec extract_type env c =
@@ -401,7 +415,7 @@ and extract_type_rec_info env vl c args =
 (* Auxiliary function used to factor code in lambda and product cases *)
 
 and extract_prod_lam env vl (n,t,d) flag = 
-  let tag = v_of_arity env t in
+  let tag = v_of_t env t in
   let env' = push_rel (n, None, t) env in
   match tag,flag with
     | (Info, Arity), _ -> 
@@ -425,7 +439,7 @@ and extract_prod_lam env vl (n,t,d) flag =
 	       (match extract_type_rec_info env vl' t [] with
 		  | Tprop | Tarity -> 
 		      assert false 
-			(* Cf. relation between [extract_type] and [v_of_arity] *)
+			(* Cf. relation between [extract_type] and [v_of_t] *)
 		  | Tmltype (mlt,_,vl'') -> 
 		      Tmltype (Tarr(mlt,mld), tag::sign, vl''))
 	   | et -> et)
@@ -490,7 +504,7 @@ and extract_term_info env ctx c =
 and extract_term_info_with_type env ctx c t = 
    match kind_of_term c with
      | IsLambda (n, t, d) ->
-	 let v = v_of_arity env t in 
+	 let v = v_of_t env t in 
 	  let env' = push_rel (n,None,t) env in
 	  let ctx' = (snd v = NotArity) :: ctx in
 	  let d' = extract_term_info env' ctx' d in
@@ -533,7 +547,7 @@ and extract_term_info_with_type env ctx c t =
 	    let (binders,e) = decompose_lam_eta ni.(j) env b in
 	    let binders = List.rev binders in
 	    let (env',ctx') = push_many_rels_ctx false env ctx binders in
-	    (* Some patological cases need an [extract_constr] here 
+	    (* Some pathological cases need an [extract_constr] here 
 	       rather than an [extract_term]. See exemples in 
 	       [test_extraction.v] *)
 	    let e' = match extract_constr env' ctx' e with
@@ -585,7 +599,7 @@ and extract_term_info_with_type env ctx c t =
       | IsLetIn (n, c1, t1, c2) ->
 	  let id = id_of_name n in
 	  let env' = push_rel (n,Some c1,t1) env in
-	  let tag = v_of_arity env t1 in
+	  let tag = v_of_t env t1 in
 	  (match tag with
 	     | (Info, NotArity) -> 
 		 let c1' = extract_term_info_with_type env ctx c1 t1 in
@@ -623,12 +637,7 @@ and extract_app env ctx (f,tyf,sf) args =
 
 and signature_of_application env f t a =
   let nargs = Array.length a in	 	
-  let t = 
-    if nb_prod t >= nargs then 
-      t 
-    else 
-      whd_betadeltaiota env Evd.empty t 
-  in
+  let t = force_n_prod nargs env t  in
   let nbp = nb_prod t in
   let s = match extract_type env t with
     | Tmltype (_,s,_) -> s	
@@ -647,7 +656,7 @@ and signature_of_application env f t a =
 (*s Extraction of a constr. *)
 
 and extract_constr_with_type env ctx c t =
-    match v_of_arity env t with
+    match v_of_t env t with
       | (Logic, Arity) -> Emltype (Miniml.Tarity, [], [])
       | (Logic, NotArity) -> Emlterm MLprop
       | (Info, Arity) -> 
@@ -672,7 +681,7 @@ and extract_constant sp =
     let typ = cb.const_type in
     match cb.const_body with
       | None ->
-          (match v_of_arity env typ with
+          (match v_of_t env typ with
              | (Info,_) -> axiom_message sp
              | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[])
              | (Logic,NotArity) -> Emlterm MLprop)
@@ -731,7 +740,7 @@ and extract_mib sp =
     let params = mis_params_ctxt mis in 
     let env =  Environ.push_rels params genv in
     let params = List.rev_map (fun (n,s,t)->(n,t)) params in 
-    let nparams' = nb_params_to_keep genv params in
+    let nparams' = nb_notarity genv params in
     let vlparams = vl_of_binders genv [] params in 
     let vl = 
       array_fold_left_i 

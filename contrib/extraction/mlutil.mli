@@ -44,7 +44,7 @@ val subst_glob_ast : global_reference -> ml_ast -> ml_ast -> ml_ast
 val normalize : ml_ast -> ml_ast
 val normalize_decl : ml_decl -> ml_decl
 
-(*s Optimization. *)
+(*s Extraction parameters *)
 
 module Refset : Set.S with type elt = global_reference
 
@@ -54,6 +54,8 @@ type extraction_params = {
   to_keep : Refset.t;   (* globals to keep *)
   to_expand : Refset.t; (* globals to expand *)
 }
+
+(*s Optimization. *)
 
 val optimize : extraction_params -> ml_decl list -> ml_decl list
 
