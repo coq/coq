@@ -51,7 +51,8 @@ GEXTEND Gram
     [ [ id = Constr.ident -> id ] ]
   ;
   qualidarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >> ] ]
+    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >>
+      | "?"; n = Prim.number -> <:ast< (QUALIDMETA $n) >> ] ]
   ;
   qualidconstarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST l)) >> ] ]
@@ -227,7 +228,7 @@ GEXTEND Gram
       | "()" -> <:ast< (VOID) >> ] ]
   ;
   let_clause:
-    [ [ id = identarg; "="; te=tactic_expr -> <:ast< (LETCLAUSE $id $te) >>
+    [ [ id = identarg; "="; te=tactic_atom -> <:ast< (LETCLAUSE $id $te) >>
       | id = identarg; ":"; c = constrarg; ":="; "Proof" ->
         (match c with
         | Coqast.Node(_,"COMMAND",[csr]) ->
