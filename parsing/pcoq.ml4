@@ -104,13 +104,7 @@ let camlp4_state = ref []
    extensions. *)
 module Gram =
   struct
-    type te = Token.t
-    type parsable = G.parsable
-    let parsable = G.parsable
-    let tokens = G.tokens
-    module Entry = G.Entry
-    module Unsafe = G.Unsafe
-
+    include G
     let extend e pos rls =
       camlp4_state :=
       (ByGEXTEND ((fun () -> grammar_delete e rls),
