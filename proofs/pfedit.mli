@@ -6,7 +6,7 @@ open Pp
 open Sign
 open Declare
 open Proof_trees
-open Refiner
+open Tacmach
 (*i*)
 
 val proof_prompt : unit -> string
@@ -32,3 +32,8 @@ val list_proofs : unit -> string list
 val add_proof : string * pftreestate * proof_topstate -> unit
 val del_proof : string -> unit
 val init_proofs : unit -> unit
+
+val make_focus : int -> unit
+val focus : unit -> int
+val focused_goal : unit -> int
+

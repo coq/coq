@@ -222,3 +222,14 @@ val hide_cbindl_tactic  : (constr * (bindOcc * constr) list) hide_combinator
 val hide_cbindll_tactic : 
   ((constr * (bindOcc * constr) list) list) hide_combinator
 
+
+(*s Pretty-printing functions. *)
+
+(*i*)
+open Pp
+(*i*)
+
+val pr_com    : 'a Evd.evar_map -> goal -> Coqast.t -> std_ppcmds
+val pr_gls    : goal sigma -> std_ppcmds
+val pr_glls   : goal list sigma -> std_ppcmds
+val pr_tactic : tactic_expression -> std_ppcmds

@@ -428,3 +428,38 @@ let hide_cbindll_tactic s tac =
   add_tactic s tacfun;
   fun l -> vernac_tactic(s,putconstrbinds l)
 ***)
+
+
+(* Pretty-printers *)
+
+open Pp
+open Printer
+
+let pr_com sigma goal com =
+  prterm (rename_bound_var 
+            (ids_of_sign goal.hyps) 
+            (Trad.constr_of_com sigma goal.hyps com))
+
+let pr_one_binding sigma goal = function
+  | (Dep id,com)  -> [< print_id id ; 'sTR":=" ; pr_com sigma goal com >]
+  | (NoDep n,com) -> [< 'iNT n ; 'sTR":=" ; pr_com sigma goal com >]
+  | (Com,com)     -> [< pr_com sigma goal com >]
+
+let pr_bindings sigma goal lb =
+  let prf = pr_one_binding sigma goal in
+  match lb with 
+    | [] -> [< prlist_with_sep pr_spc prf lb >]
+    | _  -> [<'sTR"with";'sPC;prlist_with_sep pr_spc prf lb >]
+	  
+let rec pr_list f = function
+  | []   -> [<>] 
+  | a::l1 -> [< (f a) ; pr_list f l1>]
+
+let pr_gls gls =
+  hOV 0 [< pr_decls (sig_sig gls) ; 'fNL ; pr_seq (sig_it gls) >]
+
+let pr_glls glls =
+  hOV 0 [< pr_decls (sig_sig glls) ; 'fNL ;
+           prlist_with_sep pr_fnl pr_seq (sig_it glls) >]
+
+let pr_tactic = Refiner.pr_tactic

@@ -35,3 +35,8 @@ type refiner_error =
 exception RefinerError of refiner_error
 
 val error_cannot_unify : path_kind -> constr * constr -> 'a
+
+
+(*s Pretty-printer. *)
+
+val pr_prim_rule   : prim_rule -> Pp.std_ppcmds

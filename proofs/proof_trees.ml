@@ -138,15 +138,9 @@ let status_of_proof pf = pf.status
 
 let is_complete_proof pf = pf.status = Complete_proof
 
-let is_leaf_proof pf =
-  match pf.ref with
-    | None -> true
-    | Some _ -> false
+let is_leaf_proof pf = (pf.ref = None)
 
-let is_tactic_proof pf =
-  match pf.subproof with
-    | Some _ -> true
-    | None -> false
+let is_tactic_proof pf = (pf.subproof <> None)
 
 
 (*******************************************************************)
@@ -230,3 +224,214 @@ let rec accessible sigma sp loc =
 let ctxt_access sigma sp =
   lc_exists (fun sp' -> sp' = sp or mentions sigma sp sp') (ts_it sigma).focus
 
+
+(*********************************************************************)
+(*                  Pretty printing functions                        *)
+(*********************************************************************)
+
+open Pp
+open Printer
+
+(* Il faudrait parametrer toutes les pr_term, term0, etc. par la
+  strategie de renommage choisie pour Termast (en particulier, il
+  faudrait pouvoir etre sur que lookup_as_renamed qui est utilisé par
+  Intros Until fonctionne exactement comme on affiche le but avec
+  term0 *)
+
+let pf_lookup_name_as_renamed hyps ccl s =
+  Termast.lookup_name_as_renamed (gLOB hyps) ccl s
+
+let pf_lookup_index_as_renamed ccl n =
+  Termast.lookup_index_as_renamed ccl n
+
+let pr_idl idl = prlist_with_sep pr_spc print_id idl
+
+let pr_goal g =
+  let sign = context g.evar_env in
+  let penv = pr_env_opt sign in
+  let pc = term0_at_top sign g.evar_concl in
+  [< 'sTR"  "; hV 0 [< penv; 'fNL;
+		       'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
+                       'sTR "============================"; 'fNL ;
+                       'sTR" " ; pc>]; 'fNL>]
+
+let pr_concl n g =
+  let pc = term0_at_top (context g.evar_env) g.evar_concl in
+  [< 'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
+     'sTR "subgoal ";'iNT n;'sTR " is:";'cUT;'sTR" " ; pc >]
+
+(* print the subgoals but write Subtree proved! even in case some existential 
+   variables remain unsolved, pr_subgoals_existential is a safer version 
+   of pr_subgoals *)
+
+let pr_subgoals = function
+  | [] -> [< 'sTR"Subtree proved!" ; 'fNL >]
+  | [g] ->
+      let pg = pr_goal g in v 0 [< 'sTR ("1 "^"subgoal");'cUT; pg >]
+  | g1::rest ->
+      let rec pr_rec n = function
+        | [] -> [< >]
+        | g::rest ->
+            let pg = pr_concl n g in
+            let prest = pr_rec (n+1) rest in
+            [< 'cUT; pg; prest >] 
+      in
+      let pg1 = pr_goal g1 in
+      let pgr = pr_rec 2 rest in
+      v 0 [< 'iNT(List.length rest+1) ; 'sTR" subgoals" ;'cUT; pg1; pgr >]
+
+let pr_subgoal n =
+  let rec prrec p = function
+    | [] -> error "No such goal"
+    | g::rest ->
+       	if p = 1 then
+          let pg = pr_goal g in
+          v 0 [< 'sTR "subgoal ";'iNT n;'sTR " is:"; 'cUT; pg >]
+       	else 
+	  prrec (p-1) rest
+  in 
+  prrec n
+
+let pr_pgm ctxt = match ctxt.pgm with
+  | None -> [< >]
+  | Some pgm -> let ppgm = fprterm pgm in [< 'sTR"Realizer " ; ppgm >]
+					    
+let pr_ctxt ctxt =
+  let pc = pr_pgm ctxt in [< 'sTR"[" ; pc; 'sTR"]" >]
+
+let pr_seq {evar_env=env; evar_concl=cl; evar_info=info} =
+  let (x,y) as hyps = var_context env in
+  let sign = List.rev(List.combine x y) in
+  let pc = pr_ctxt info in
+  let pdcl =
+    prlist_with_sep pr_spc
+      (fun (id,ty) -> hOV 0 [< print_id id; 'sTR" : ";prterm ty.body >])
+      sign 
+  in
+  let pcl = term0_at_top (gLOB hyps) cl in
+  hOV 0 [< pc; pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
+
+let prgl gl =
+  let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
+  let pgl = pr_seq gl in
+  [< 'sTR"[[" ; plc; 'sTR"]" ; pgl ; 'sTR"]" ; 'sPC >]
+
+let pr_evgl gl =
+  let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
+  let phyps = pr_idl (ids_of_sign (var_context gl.evar_env)) in
+  let pc = prterm gl.evar_concl in
+  hOV 0 [< 'sTR"[[" ; plc; 'sTR"] " ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
+
+let pr_evgl_sign gl = 
+  let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
+  let ps = pr_sign (var_context gl.evar_env) in
+  let pc = prterm gl.evar_concl in
+  hOV 0 [< 'sTR"[[" ; plc ; 'sTR"] " ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
+
+(*  evd.evgoal.lc seems to be printed twice *)
+let pr_decl evd =
+  let pevgl = pr_evgl evd in
+  let pb =
+    match evd.evar_body with
+      | Evar_empty -> [< 'fNL >]
+      | Evar_defined c -> let pc = prterm c in [< 'sTR" => " ; pc;  'fNL  >]
+  in
+  h 0 [< pevgl; pb >]
+
+let pr_evd evd = 
+  prlist_with_sep pr_fnl
+    (fun (ev,evd) ->
+       let pe = pr_decl evd in 
+       h 0 [< print_id (id_of_existential ev) ; 'sTR"==" ; pe >])
+    (Evd.to_list evd)
+    
+let pr_decls decls = pr_evd (ts_it decls)
+		       
+let pr_focus accl = pr_idl (List.map id_of_existential (lc_toList accl))
+
+let pr_evc evc =
+  let stamp = ts_stamp evc in
+  let evc   = ts_it evc in
+  let pe = pr_evd evc.decls in
+  [< 'sTR"#" ; 'iNT stamp ; 'sTR"[" ; pr_focus evc.focus ; 'sTR"]=" ; pe >]
+
+let pr_evars = 
+  prlist_with_sep pr_fnl
+    (fun (ev,evd) ->
+       let pegl = pr_evgl_sign evd in 
+       [< print_id (id_of_existential ev); 'sTR " : "; pegl >])
+
+(* Print an enumerated list of existential variables *)
+let rec pr_evars_int i = function
+  | [] -> [< >]
+  | (ev,evd)::rest ->
+      let pegl = pr_evgl_sign evd in 
+      let pei = pr_evars_int (i+1) rest in
+      [< (hOV 0 [< 'sTR "Existential "; 'iNT i; 'sTR " ="; 'sPC;
+                   print_id (id_of_existential ev) ; 'sTR " : "; pegl >]); 
+	 'fNL ; pei >]
+
+let pr_subgoals_existential sigma = function 
+  | [] -> 
+      let exl = Evd.non_instantiated sigma in 
+      if exl = [] then 
+	[< 'sTR"Subtree proved!" ; 'fNL >]
+      else
+        let pei = pr_evars_int 1 exl in
+        [< 'sTR "No more subgoals but non-instantiated existential ";
+           'sTR "variables :" ;'fNL; (hOV 0 pei) >]
+  | [g] ->
+      let pg = pr_goal g in
+      v 0 [< 'sTR ("1 "^"subgoal");'cUT; pg >]
+  | g1::rest ->
+      let rec pr_rec n = function
+        | [] -> [< >]
+        | g::rest ->
+            let pc = pr_concl n g in
+            let prest = pr_rec (n+1) rest in
+            [< 'cUT; pc; prest >] 
+      in
+      let pg1 = pr_goal g1 in
+      let prest = pr_rec 2 rest in
+      v 0 [< 'iNT(List.length rest+1) ; 'sTR" subgoals" ;'cUT; pg1; prest;
+             'fNL >]
+
+open Ast
+open Termast
+open Pretty
+
+let ast_of_cvt_bind f = function
+  | (NoDep n,c) -> ope ("BINDING", [(num n); ope ("COMMAND",[(f c)])])
+  | (Dep  id,c) -> ope ("BINDING", [nvar (string_of_id id);
+                                      ope  ("COMMAND",[(f c)])]) 
+  | (Com,c)     -> ope ("BINDING", [ope ("COMMAND",[(f c)])])
+
+let rec ast_of_cvt_intro_pattern = function
+  | IdPat id  -> nvar (string_of_id id) 
+  | DisjPat l -> ope ("DISJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
+  | ConjPat l -> ope ("CONJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
+  | ListPat l -> ope ("LISTPATTERN",  (List.map ast_of_cvt_intro_pattern l))
+
+let ast_of_cvt_arg = function
+  | Identifier id   -> nvar (string_of_id id) 
+  | Quoted_string s -> str s
+  | Integer n       -> num n 
+  | Command c       -> ope ("COMMAND",[c])
+  | Constr  c       -> 
+      ope ("COMMAND",[bdize false (assumptions_for_print []) c])
+  | Clause idl      -> ope ("CLAUSE", List.map (compose nvar string_of_id) idl)
+  | Bindings bl     -> ope ("BINDINGS", 
+			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
+  | Cbindings bl    -> 
+      ope ("BINDINGS", 
+	   List.map 
+	     (ast_of_cvt_bind (bdize false (assumptions_for_print []))) bl)
+  | Tacexp ast      -> ope ("TACTIC",[ast]) 
+  | Redexp (s,args) -> ope ("REDEXP", [ope(s,args)])
+  | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
+                                      (num n); 
+                                      ope ("COMMAND",[c])]) 
+  | Cofixexp (id,c) -> ope ("COFIXEXP",[(nvar (string_of_id id)); 
+                                          (ope ("COMMAND",[c]))])
+  | Intropattern p ->  ast_of_cvt_intro_pattern p
+  | Letpatterns _ -> failwith "TODO: ast_of_cvt_arg: Letpatterns"

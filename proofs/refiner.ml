@@ -825,3 +825,106 @@ let prev_unproven pts =
 
 let rec top_of_tree pts = 
   if is_top_pftreestate pts then pts else top_of_tree(traverse 0 pts)
+
+
+(* Pretty-printers. *)
+
+open Pp
+open Printer
+
+let pr_tactic (s,l) =
+  gentacpr (Ast.ope (s,(List.map ast_of_cvt_arg l)))
+
+let pr_rule = function
+  | Prim r -> pr_prim_rule r
+  | Tactic texp -> hOV 0 (pr_tactic texp)
+  | Context ctxt -> pr_ctxt ctxt
+  | Local_constraints lc -> [< 'sTR"Local constraint change" >]
+
+let thin_sign osign (x,y) =
+  let com_nsign = List.combine x y in 
+  List.split
+    (map_succeed (fun (id,ty) ->
+                    if (not (mem_sign osign id))
+                      or (id,ty) <> (lookup_sign id osign) then
+                        (id,ty)
+                    else failwith "caught") com_nsign)
+
+let rec print_proof sigma osign pf =
+  let {evar_env=env; evar_concl=cl; 
+       evar_info=info; evar_body=body} = pf.goal in
+  let env' = change_hyps (fun sign -> thin_sign osign sign) env in
+  match pf.ref with
+    | None -> 
+	hOV 0 [< pr_seq {evar_env=env'; evar_concl=cl;
+			 evar_info=info; evar_body=body} >]
+    | Some(r,spfl) ->
+  	let sign = var_context env in
+    	hOV 0 [< hOV 0 (pr_seq {evar_env=env'; evar_concl=cl;
+				evar_info=info; evar_body=body});
+		 'sPC ; 'sTR" BY ";
+		 hOV 0 [< pr_rule r >]; 'fNL ;
+		 'sTR"  ";
+		 hOV 0 (prlist_with_sep pr_fnl (print_proof sigma sign) spfl)
+              >]
+	  
+let pr_change gl = [< 'sTR"Change " ; prterm gl.evar_concl ; 'sTR"." ; 'fNL>]
+		     
+let rec print_script nochange sigma osign pf =
+  let {evar_env=env; evar_concl=cl} = pf.goal in
+  let sign = var_context env in
+  match pf.ref with
+    | None ->
+        if nochange then 
+	  [< 'sTR"<Your Tactic Text here>" >] 
+	else 
+	  pr_change pf.goal
+    | Some(r,spfl) ->
+        [< (if nochange then [< >] else (pr_change pf.goal));
+           pr_rule r ; 'sTR"." ; 'fNL ;
+           prlist_with_sep pr_fnl
+             (print_script nochange sigma sign) spfl >]
+
+let rec print_treescript sigma osign pf =
+  let {evar_env=env; evar_concl=cl} = pf.goal in
+  let sign = var_context env in
+  match pf.ref with
+    | None -> [< >]
+    | Some(r,spfl) ->
+        [< pr_rule r ; 'sTR"." ; 'fNL ;
+           let prsub =
+             prlist_with_sep pr_fnl (print_treescript sigma sign) spfl
+           in
+           if List.length spfl > 1 then 
+	     [< 'sTR"  "; hOV 0 prsub >]
+           else 
+	     prsub 
+	>]
+
+let rec print_info_script sigma osign pf =
+  let {evar_env=env; evar_concl=cl} = pf.goal in
+  let sign = var_context env in
+  match pf.ref with
+    | None -> [< >]
+    | Some(r,spfl) ->
+        [< pr_rule r ; 
+           match spfl with
+             | [pf1] ->
+                 if pf1.ref = None then 
+		   [<'sTR "."; 'fNL >]
+                 else 
+		   [< 'sTR";" ; 'bRK(1,3) ;
+		      print_info_script sigma sign pf1 >]
+             | _ -> [< 'sTR"." ; 'fNL ;
+                       prlist_with_sep pr_fnl
+                         (print_info_script sigma sign) spfl >] >]
+
+let format_print_info_script sigma osign pf = 
+  hOV 0 (print_info_script sigma osign pf)
+    
+let print_subscript sigma sign pf = 
+  if is_tactic_proof pf then 
+    format_print_info_script sigma sign (subproof_of_proof pf)
+  else 
+    format_print_info_script sigma sign pf
+

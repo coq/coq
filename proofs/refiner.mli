@@ -118,3 +118,18 @@ val prev_unproven : pftreestate -> pftreestate
 val top_of_tree : pftreestate -> pftreestate
 val change_constraints_pftreestate 
   : global_constraints -> pftreestate -> pftreestate
+
+
+(*s Pretty-printers. *)
+
+(*i*)
+open Pp
+(*i*)
+
+val print_proof : evar_declarations -> var_context -> proof_tree -> std_ppcmds
+val pr_rule      : rule -> std_ppcmds
+val pr_tactic    : tactic_expression -> std_ppcmds
+val print_script :
+  bool -> evar_declarations -> var_context -> proof_tree -> std_ppcmds
+val print_treescript :
+  evar_declarations -> var_context -> proof_tree -> std_ppcmds
