@@ -76,9 +76,9 @@ Single
 4 0 0 50 -1 0 12 0.0000 4 180 1620 1500 3075 (if Set impredicative)\001
 4 0 0 50 -1 0 12 0.0000 4 135 1560 1500 4200 Not excluded-middle\001
 4 0 0 50 -1 0 12 0.0000 4 135 1080 3600 6000 Axiom K on A\001
-4 0 0 50 -1 0 12 0.0000 4 180 3390 3600 6300 Unicity of reflexivity proofs for equality on A\001
-4 0 0 50 -1 0 12 0.0000 4 180 2325 3600 6600 Unicity of equality proofs on A\001
-4 0 0 50 -1 0 12 0.0000 4 180 3210 3600 6900 Injectivity of equality on sigma-types on A\001
 4 0 0 50 -1 0 12 0.0000 4 180 4800 3600 7200 Invariance by substitution of reflexivity proofs for equality on A\001
 4 0 0 50 -1 0 12 0.0000 4 180 2100 6150 4200 Propositional extensionality\001
 4 0 0 50 -1 0 12 0.0000 4 180 5700 2100 1200 The dependency graph of axioms in the Calculus of Inductive Constructions\001
+4 0 0 50 -1 0 12 0.0000 4 180 3210 3600 6900 Injectivity of equality on sigma-types on A\001
+4 0 0 50 -1 0 12 0.0000 4 180 3735 3600 6300 Uniqueness of reflexivity proofs for equality on A\001
+4 0 0 50 -1 0 12 0.0000 4 180 2670 3600 6600 Uniqueness of equality proofs on A\001
