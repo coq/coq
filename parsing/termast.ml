@@ -110,7 +110,7 @@ let ast_of_ref = function
   | ConstRef sp -> ast_of_constant_ref sp
   | IndRef sp -> ast_of_inductive_ref sp
   | ConstructRef sp -> ast_of_constructor_ref sp
-  | VarRef id -> ast_of_qualid (make_qualid empty_dirpath id)
+  | VarRef id -> nvar id
 
 (**********************************************************************)
 (* conversion of patterns                                             *)
