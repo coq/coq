@@ -18,7 +18,7 @@ V7only [Import R_scope.]. Open Local Scope R_scope.
 
 Lemma CVN_R_cos : (fn:nat->R->R) (fn == [N:nat][x:R]``(pow (-1) N)/(INR (fact (mult (S (S O)) N)))*(pow x (mult (S (S O)) N))``) -> (CVN_R fn).
 Unfold CVN_R; Intros.
-Cut ``r<>0``.
+Cut (r::R)<>``0``.
 Intro hyp_r; Unfold CVN_r.
 Apply Specif.existT with [n:nat]``/(INR (fact (mult (S (S O)) n)))*(pow r (mult (S (S O)) n))``.
 Cut (SigT ? [l:R](Un_cv [n:nat](sum_f_R0 [k:nat](Rabsolu ``/(INR (fact (mult (S (S O)) k)))*(pow r (mult (S (S O)) k))``) n) l)).
@@ -169,7 +169,7 @@ Left; Apply H1.
 Rewrite <- Pow_Rabsolu; Apply pow_maj_Rabs.
 Rewrite Rabsolu_Rabsolu; Unfold Boule in H0; Rewrite minus_R0 in H0; Left; Apply H0.
 Apply Rlt_Rinv; Apply INR_fact_lt_0.
-Cut ``r<>0``.
+Cut (r::R)<>``0``.
 Intro; Apply Alembert_C2.
 Intro; Apply Rabsolu_no_R0.
 Apply prod_neq_R0.
