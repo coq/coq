@@ -58,7 +58,7 @@ let print_universes = ref false
 let print_no_symbol = ref false
 
 (* This governs printing of projections using the dot notation symbols *)
-let print_projections = ref false
+let print_projections = ref true
 
 let print_meta_as_hole = ref false
 
