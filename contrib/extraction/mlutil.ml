@@ -1068,7 +1068,7 @@ let is_not_strict t =
    variable (i.e. a variable that may not be evaluated). *)
 
 let inline_test t = 
-  not (is_fix t) && (is_constr t || (ml_size t < 12 && is_not_strict t))
+  not (is_fix t) && (ml_size t < 12 && is_not_strict t)
 
 let manual_inline_list = 
   let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in 
@@ -1087,11 +1087,16 @@ let manual_inline = function
    we are free to act (AutoInline is set)
    \end{itemize} *)
 
+let inline_test' r t = 
+  let b = inline_test t in 
+  if b then msgnl (Printer.pr_global r); 
+  b
+
 let inline r t = 
   not (to_keep r) (* The user DOES want to keep it *)
   && (to_inline r (* The user DOES want to inline it *) 
      || (auto_inline () && lang () <> Haskell 
-	 && (is_recursor r || manual_inline r || inline_test t)))
+	 && (is_recursor r || manual_inline r || inline_test' r t)))
 
 (*S Optimization. *)
 
