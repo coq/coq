@@ -136,7 +136,7 @@ let rec inh_conv_coerce1 env isevars c1 v t k =
                let env1 = push_rel (x,assv1) env in
                let h2 = inh_conv_coerce1 env1 isevars u2 v2 t2 
 			  (mkSort (get_sort_of env !isevars t2)) in
-               abs_rel env !isevars x assv1 h2
+               fst (abs_rel env !isevars x assv1 h2)
              else 
                (* let ju1 = exemeta_rec def_vty_con env isevars u1 in 
 		  let assu1 = assumption_of_judgement env !isevars ju1 in *)
@@ -148,12 +148,12 @@ let rec inh_conv_coerce1 env isevars c1 v t k =
                let h1 = 
 		 inh_conv_coerce1 env isevars t1 (Rel 1) u1 
 		   (mkSort (level_of_type assu1)) in
-               let h2 = inh_conv_coerce1 env isevars1 u2  
+               let h2 = inh_conv_coerce1 env isevars u2  
 			  (DOPN(AppL,[|(lift 1 v);h1.uj_val|])) 
                           (subst1 h1.uj_val t2) 
-			  (mkSort (sort_of env !isevars1 t2)) 
+			  (mkSort (get_sort_of env !isevars t2)) 
 	       in
-	       abs_rel !isevars name assu1 h2
+	       fst (abs_rel env !isevars name assu1 h2)
 	 | _ -> failwith "inh_coerce_to")
             
 let inh_conv_coerce env isevars c1 hj =
@@ -164,8 +164,9 @@ let inh_cast_rel env isevars cj tj =
     try 
       inh_conv_coerce env isevars tj.uj_val cj 
     with Not_found | Failure _ -> 
-      error_actual_type CCI env 
-	(j_nf_ise !isevars cj) (j_nf_ise !isevars tj) 
+      let rcj = j_nf_ise env !isevars cj in
+      let atj = j_nf_ise env !isevars tj in
+      error_actual_type CCI env rcj.uj_val rcj.uj_type atj.uj_type
   in
   { uj_val = mkCast cj'.uj_val tj.uj_val;
     uj_type = tj.uj_val;
@@ -195,13 +196,14 @@ let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
 		  (try 
 		     inh_conv_coerce env isevars c1 hj 
 		   with Failure _ | Not_found ->
-                     error_cant_apply "Type Error" CCI env
-		       (j_nf_ise !isevars funj) (jl_nf_ise !isevars argjl)) 
+                     error_cant_apply CCI env "Type Error" 
+		       (j_nf_ise env !isevars funj) 
+		       (jl_nf_ise env !isevars argjl)) 
 	      in
               apply_rec (hj'::acc) (subst1 hj'.uj_val c2) restjl
           | _ ->
-              error_cant_apply "Non-functional construction" CCI env
-	      	(j_nf_ise !isevars funj) (jl_nf_ise !isevars argjl)
+              error_cant_apply CCI env "Non-functional construction" 
+	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
   in 
   apply_rec [] funj.uj_type argjl
 
