@@ -401,7 +401,7 @@ let array_tl v =
 
 let array_last v =
   match Array.length v with
-    | 0 -> failwith "aray_last"
+    | 0 -> failwith "array_last"
     | n -> v.(pred n)
 
 let array_cons e v = Array.append [|e|] v
