@@ -140,9 +140,9 @@ Rewrite eq_eqT_bij.
 Elim (eq2eqT p) using K_dec.
 Intros.
 Case (H x0 y); Intros.
-Elim e; Left ; Reflexivity.
+Elim y0; Left ; Reflexivity.
 
-Right ; Red; Intro neq; Apply n; Elim neq; Reflexivity.
+Right ; Red; Intro neq; Apply y0; Elim neq; Reflexivity.
 
 Trivial.
 Save.
