@@ -77,18 +77,7 @@ Inductive prod (A B:Set) : Set :=
 Add Printing Let prod.
 
 Notation "x * y" := (prod x y) : type_scope.
-Notation "( x , y )" := (pair x y) : core_scope.
-
-(* Temporary hack *)
-Notation "( x1 , x2 , x3 )" := ((x1,x2),x3) : core_scope.
-Notation "( x1 , x2 , x3 , x4 )" := ((x1,x2),x3,x4) : core_scope.
-Notation "( x1 , x2 , x3 , x4 , x5 )" := ((x1,x2),x3,x4,x5) : core_scope.
-Notation "( x1 , x2 , x3 , x4 , x5 , x6 )"
-  := ((x1,x2),x3,x4,x5,x6) : core_scope.
-Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 )"
-  := ((x1,x2),x3,x4,x5,x6,x7) : core_scope.
-Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 , x8 )"
-  := ((x1,x2),x3,x4,x5,x6,x7,x8) : core_scope.
+Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 
 Section projections.
    Variables A B : Set.

@@ -51,15 +51,7 @@ Reserved Notation "x ^ y" (at level 30, right associativity).
 
 (** Notations for pairs *)
 
-(* Temporary hack *)
-Reserved Notation "( x , y )" (at level 0).
-Reserved Notation "( x , y , z )" (at level 0).
-Reserved Notation "( x1 , x2 , x3 )" (at level 0).
-Reserved Notation "( x1 , x2 , x3 , x4 )" (at level 0).
-Reserved Notation "( x1 , x2 , x3 , x4 , x5 )" (at level 0).
-Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 )" (at level 0).
-Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 )" (at level 0).
-Reserved Notation "( x1 , x2 , x3 , x4 , x5 , x6 , x7 , x8 )" (at level 0).
+Reserved Notation "( x , y , .. , z )" (at level 0).
 
 (** Notation "{ x }" is reserved and has a special status as component
     of other notations; it is at level 0 to factor with {x:A|P} etc *)
