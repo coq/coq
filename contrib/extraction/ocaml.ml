@@ -46,7 +46,58 @@ let space_if = function true -> [< 'sTR " " >] | false -> [< >]
 
 let sec_space_if = function true -> [< 'sPC >] | false -> [< >]
 
-(* collect_lambda MLlam(id1,...MLlam(idn,t)...) = [id1;...;idn],t *)
+(*s Ocaml renaming issues. *)
+
+let ocaml_keywords =     
+  List.fold_right (fun s -> Idset.add (id_of_string s))
+  [ "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
+    "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
+    "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
+    "inherit"; "initializer"; "lazy"; "let"; "match"; "method";
+    "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
+    "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
+    "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ] 
+  Idset.empty
+
+let current_ids = ref ocaml_keywords
+
+let rec rename_id id avoid = 
+  if Idset.mem id avoid then rename_id (lift_ident id) avoid else id
+
+let rename_global id = 
+  let id' = rename_id id !current_ids in
+  current_ids := Idset.add id' !current_ids; 
+  id'
+
+let lowercase_id id = id_of_string (String.uncapitalize (string_of_id id))
+let uppercase_id id = id_of_string (String.capitalize (string_of_id id))
+
+let rename_lower_global id = rename_global (lowercase_id id)
+let rename_upper_global id = rename_global (uppercase_id id)
+
+(*s de Bruijn environments for programs *)
+
+type env = identifier list * Idset.t
+
+let rec rename_vars avoid = function
+  | [] -> 
+      [], avoid
+  | id :: idl ->
+      let id' = rename_id (lowercase_id id) avoid in
+      let (idl', avoid') = rename_vars (Idset.add id' avoid) idl in
+      (id' :: idl', avoid')
+
+let push_vars ids (db,avoid) =
+  let ids',avoid' = rename_vars avoid ids in
+  ids', (ids' @ db, avoid')
+
+let empty_env () = ([], !current_ids)
+
+let get_db_name n (db,_) = List.nth db (pred n)
+
+(*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
+    the list [id1;...;idn] and the term [t]. *)
 
 let collect_lambda = 
   let rec collect acc = function
@@ -55,17 +106,11 @@ let collect_lambda =
   in 
   collect []
 
-let rec rename_bvars avoid = function
-  | [] -> []
-  | id :: idl ->
-      let v = next_ident_away id avoid in 
-      v :: (rename_bvars (v::avoid) idl)
-
 let abst = function
   | [] -> [< >]
-  | l  -> [< 'sTR "fun " ;
+  | l  -> [< 'sTR "fun ";
              prlist_with_sep (fun  ()-> [< 'sTR " " >]) pr_id l;
-             'sTR " ->" ; 'sPC >]
+             'sTR " ->"; 'sPC >]
 
 let pr_binding = function
   | [] -> [< >]
@@ -115,24 +160,24 @@ let rec pp_expr par env args =
   in
   function
     | MLrel n -> 
-	apply (pr_id (List.nth env (pred n)))
+	apply (pr_id (get_db_name n env))
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
     | MLlam _ as a -> 
       	let fl,a' = collect_lambda a in
-	let fl = rename_bvars env fl in
-	let st = [< abst (List.rev fl); pp_expr false (fl @ env) [] a' >] in
+	let fl,env' = push_vars fl env in
+	let st = [< abst (List.rev fl); pp_expr false env' [] a' >] in
 	if args = [] then
           [< open_par par; st; close_par par >]
         else
           apply [< 'sTR "("; st; 'sTR ")" >]
     | MLletin (id,a1,a2) ->
-	let id' = rename_bvars env [id] in
+	let id',env' = push_vars [id] env in
 	hOV 0 [< hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
 			  pp_expr false env [] a1; 'sPC; 'sTR "in" >];
 		 'sPC;
-		 pp_expr false (id' @ env) [] a2 >] 
+		 pp_expr false env' [] a2 >] 
     | MLglob r -> 
 	apply (P.pp_global r)
     | MLcons (r,_,[]) ->
@@ -149,8 +194,9 @@ let rec pp_expr par env args =
       	     v 0 [< 'sTR "match "; pp_expr false env [] t; 'sTR " with";
 		    'fNL; 'sTR "  "; pp_pat env pv >];
 	     if args <> [] then [< 'sTR ")" >] else close_par par >]
-    | MLfix (i,idl,al) ->
-      	pp_fix par env true (i,idl,al) args
+    | MLfix (i,ids,defs) ->
+	let ids',env' = push_vars ids env in
+      	pp_fix par env' (Some i) (ids',defs) args
     | MLexn id -> 
 	[< open_par par; 'sTR "failwith"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
@@ -167,7 +213,7 @@ let rec pp_expr par env args =
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =
-    let ids = rename_bvars env ids in
+    let ids,env' = push_vars (List.rev ids) env in
     let par = match t with
       | MLlam _  -> true
       | MLcase _ -> true
@@ -176,35 +222,39 @@ and pp_pat env pv =
     hOV 2 [< P.pp_global name;
 	     begin match ids with 
 	       | [] -> [< >]
-	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id ids >]
+	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id (List.rev ids) >]
 	     end;
-	     'sTR " ->"; 'sPC; pp_expr par (List.rev ids @ env) [] t >]
+	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
   in 
   [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
 
-and pp_fix par env in_p (j,fid,bl) args =
-  let env' = (List.rev fid) @ env in
+(*s names of the functions ([ids]) are already pushed in [env],
+    and passed here just for convenience. *)
+
+and pp_fix par env in_p (ids,bl) args =
   [< open_par par; 
      v 0 [< 'sTR "let rec " ;
 	    prlist_with_sep
       	      (fun () -> [< 'fNL; 'sTR "and " >])
-	      (fun (fi,ti) -> pp_function env' (pr_id fi) ti)
-	      (List.combine fid bl) ;
-	    'fNL ;
-	    if in_p then 
-      	      hOV 2 [< 'sTR "in "; pr_id (List.nth fid j);
-                       if args <> [] then
-			 [< 'sTR " "; prlist_with_sep (fun () -> [<'sTR " ">])
-                              (fun s -> s) args >]
-                       else [< >]
-      		    >]
-	    else 
-	      [< >] >];
+	      (fun (fi,ti) -> pp_function env (pr_id fi) ti)
+	      (List.combine ids bl);
+	    'fNL;
+	    match in_p with
+	      | Some j -> 
+      		  hOV 2 [< 'sTR "in "; pr_id (List.nth ids j);
+			   if args <> [] then
+			     [< 'sTR " "; 
+				prlist_with_sep (fun () -> [<'sTR " ">])
+				  (fun s -> s) args >]
+			   else
+			     [< >] >]
+	      | None -> 
+		  [< >] >];
      close_par par >]
 
 and pp_function env f t =
   let bl,t' = collect_lambda t in
-  let bl = rename_bvars env bl in
+  let bl,env' = push_vars bl env in
   let is_function pv =
     let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in
     not (List.exists (fun (k,t0) -> Mlutil.occurs (k+1) t0) ktl)
@@ -214,18 +264,18 @@ and pp_function env f t =
 	if is_function pv then
 	  [< f; pr_binding (List.rev (List.tl bl)) ;
        	     'sTR " = function"; 'fNL;
-	     v 0 [< 'sTR "  "; pp_pat (bl @ env) pv >] >]
+	     v 0 [< 'sTR "  "; pp_pat env' pv >] >]
 	else
           [< f; pr_binding (List.rev bl); 
              'sTR " = match ";
 	     pr_id (List.hd bl); 'sTR " with"; 'fNL;
-	     v 0 [< 'sTR "  "; pp_pat (bl @ env) pv >] >]
+	     v 0 [< 'sTR "  "; pp_pat env' pv >] >]
 	  
     | _ -> [< f; pr_binding (List.rev bl);
 	      'sTR " ="; 'fNL; 'sTR "  ";
-	      hOV 2 (pp_expr false (bl @ env) [] t') >]
+	      hOV 2 (pp_expr false env' [] t') >]
 	
-let pp_ast a = hOV 0 (pp_expr false [] [] a)
+let pp_ast a = hOV 0 (pp_expr false (empty_env ()) [] a)
 
 (*s Pretty-printing of inductive types declaration. *)
 
@@ -249,10 +299,12 @@ let pp_one_inductive (pl,name,cl) =
 let pp_inductive il =
   [< 'sTR "type " ;
      prlist_with_sep 
-       (fun () -> [< 'fNL ; 'sTR "and " >])
+       (fun () -> [< 'fNL; 'sTR "and " >])
        (fun i -> pp_one_inductive i)
        il;
      'fNL >]
+
+(*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
   | Dtype [] -> 
@@ -262,16 +314,19 @@ let pp_decl = function
   | Dabbrev (r, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
 	       P.pp_type_global r; 'sPC; 'sTR "="; 'sPC; pp_type t; 'fNL >]
-  | Dglob (r, MLfix (n,idl,l)) ->
-      let id' = List.nth idl n in
-      if true then (* TODO id = id' *)
-	[<  hOV 2 (pp_fix false [] false (n,idl,l) []) >]
-      else
-	[< 'sTR "let "; P.pp_global r; 'sTR " ="; 'fNL;
-	   v 0 [< 'sTR "  "; 
-		  hOV 2 (pp_fix false [] true (n,idl,l) []); 'fNL >] >]
+  | Dglob (r, MLfix (_,[_],[def])) ->
+      let id = P.rename_global r in
+      let env' = ([id], !current_ids) in
+      [<  hOV 2 (pp_fix false env' None ([id],[def]) []) >]
+  | Dglob (r, MLfix (n,ids,defs)) ->
+      let ids',env' = push_vars ids (empty_env ()) in
+      [< 'sTR "let "; P.pp_global r; 'sTR " ="; 'fNL;
+	 v 0 [< 'sTR "  "; 
+		hOV 2 (pp_fix false env' (Some n) (ids',defs) []); 
+		'fNL >] >]
   | Dglob (r, a) ->
-      hOV 0 [< 'sTR "let "; pp_function [] (P.pp_global r) a; 'fNL >]
+      hOV 0 [< 'sTR "let "; 
+	       pp_function (empty_env ()) (P.pp_global r) a; 'fNL >]
 
 end
 
@@ -279,12 +334,49 @@ end
 
 module OcamlParams = struct
 
-let pp_type_global r = failwith "todo" 
+let renamings = Hashtbl.create 97
 
-let pp_global r = failwith "todo"
+let cache r f = 
+  try Hashtbl.find renamings r 
+  with Not_found -> let id = f r in Hashtbl.add renamings r id; id
+
+let rename_type_global r =  
+  cache r
+    (fun r -> 
+       let id = Environ.id_of_global (Global.env()) r in
+       rename_lower_global id)
+
+let pp_type_global r = pr_id (rename_type_global r)
+
+let rename_global r = 
+  cache r
+    (fun r -> 
+       let id = Environ.id_of_global (Global.env()) r in
+       match r with
+	 | ConstructRef _ -> rename_upper_global id
+	 | _ -> rename_lower_global id)
+
+let pp_global r = pr_id (rename_global r)
 
 end
 
 (*s The ocaml pretty-printing module. *)
 
 module Pp = Make(OcamlParams)
+
+let ocaml_preamble () =
+  [< 'sTR "type prop = Prop"; 'fNL; 'fNL;
+     'sTR "type arity = Arity"; 'fNL; 'fNL >]
+
+let extract_to_file f decls =
+  let cout = open_out f in
+  let ft = Pp_control.with_output_to cout in
+  pP_with ft (hV 0 (ocaml_preamble ()));
+  begin 
+    try
+      List.iter (fun d -> mSGNL_with ft (Pp.pp_decl d)) decls
+    with e ->
+      pp_flush_with ft (); close_out cout; raise e
+  end;
+  pp_flush_with ft ();
+  close_out cout

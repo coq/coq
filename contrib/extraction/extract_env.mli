@@ -1,4 +1,3 @@
 
-open Term
+(*s This module declares the extraction commands. *)
 
-val extract_env : global_reference list -> global_reference list

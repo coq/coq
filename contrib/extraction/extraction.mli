@@ -15,11 +15,15 @@ open Environ
 
 (*s Result of an extraction. *)
 
-type type_var = Varity | Vprop | Vdefault
+type info = Logic | Info
+
+type arity = Arity | NotArity
+
+type type_var = info * arity
 
 type signature = (type_var * identifier) list
 
-type extraction_context = type_var list
+type extraction_context = bool list
 
 type extraction_result =
   | Emltype of ml_type * signature * identifier list

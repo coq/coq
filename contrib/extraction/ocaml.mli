@@ -16,5 +16,6 @@ open Miniml
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 
-module Pp : Mlpp
+val extract_to_file : string -> ml_decl list -> unit
+
 

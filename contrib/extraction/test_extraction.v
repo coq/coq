@@ -129,3 +129,9 @@ Extraction eq.
 Extraction eq_rec.
 
 (* mutual fixpoints on many sorts ? *)
+
+  (* TODO *)
+
+(* example with more arguments that given by the type *)
+
+Extraction (nat_rec [n:nat]nat->nat [n:nat]O [n:nat][f:nat->nat]f O O).

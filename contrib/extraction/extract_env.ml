@@ -127,6 +127,7 @@ let extract_env rl =
 (*s Registration of vernac commands for extraction. *)
 
 module ToplevelParams = struct
+  let rename_global r = Names.id_of_string (Global.string_of_global r)
   let pp_type_global = Printer.pr_global
   let pp_global = Printer.pr_global
 end
@@ -164,9 +165,19 @@ let reference_of_varg = function
   | VARG_QUALID q -> Nametab.locate q
   | _ -> assert false
 
+let decl_of_vargl vl =
+  let rl = List.map reference_of_varg vl in
+  List.map extract_declaration (extract_env rl)
+
 let _ = 
-  vinterp_add "ExtractionList"
+  vinterp_add "ExtractionRec"
     (fun vl () ->
-       let rl = List.map reference_of_varg vl in
-       let rl' = extract_env rl in
-       List.iter (fun r -> mSGNL (pp_decl (extract_declaration r))) rl')
+       let rl' = decl_of_vargl vl in
+       List.iter (fun d -> mSGNL (pp_decl d)) rl')
+
+let _ = 
+  vinterp_add "ExtractionFile"
+    (function 
+       | VARG_STRING f :: vl ->
+	   (fun () -> Ocaml.extract_to_file f (decl_of_vargl vl))
+       | _ -> assert false)
