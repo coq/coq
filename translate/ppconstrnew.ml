@@ -38,9 +38,10 @@ let lif = 200
 let lletin = 200
 let lfix = 200
 let larrow = 90
-let lnegint = 50
 let lcast = 100
 let lapp = 10
+let lposint = 11   (* above the argument of notations "- x" and "/ x" *)
+let lnegint = lapp (* above application *)
 let ltop = (200,E)
 let lproj = 1
 let lsimple = (1,E)
@@ -352,7 +353,7 @@ let pr_case_item pr (tm,(na,indnalopt)) =
     | Name id when not (is_var id tm) -> spc () ++ str "as " ++  pr_id id
     | Anonymous when tm_clash (tm,indnalopt) <> None ->
 	(* hide [tm] name to avoid conflicts *)
-	spc () ++ str "as _" ++ pr_id (out_some (tm_clash (tm,indnalopt)))
+	spc () ++ str "as _" (* ++ pr_id (out_some (tm_clash (tm,indnalopt)))*)
     | _ -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
@@ -512,7 +513,7 @@ let rec pr inherited a =
   | CCast (_,a,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str ":" ++ pr (-lcast,E) b), lcast
   | CNotation (_,s,env) -> pr_notation pr s env
-  | CNumeral (_,(Bignat.POS _ as p)) -> Bignat.pr_bigint p, latom
+  | CNumeral (_,(Bignat.POS _ as p)) -> Bignat.pr_bigint p, lposint
   | CNumeral (_,(Bignat.NEG _ as p)) -> Bignat.pr_bigint p, lnegint
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr (latom,E) a), latom
   | CDynamic _ -> str "<dynamic>", latom
