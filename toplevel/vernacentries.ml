@@ -488,7 +488,8 @@ let _ =
     (fun id_list () ->
        List.iter 
 	 (function 
-	    | VARG_CONSTANT sp -> Global.set_transparent sp
+(*	    | VARG_CONSTANT sp -> Global.set_transparent sp *)
+	    | VARG_QUALID sp -> Global.set_transparent sp
 	    |   _  -> bad_vernac_args "TRANSPARENT")
 	 id_list)
     

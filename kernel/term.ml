@@ -479,7 +479,7 @@ let args_of_mconstr c = match kind_of_term c with
   | _ -> anomaly "args_of_mconstr called with bad args"
 
 let isMutConstruct c = match kind_of_term c with
-    IsMutCase _ -> true | _ -> false
+    IsMutConstruct _ -> true | _ -> false
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 let destCase c = match kind_of_term c with

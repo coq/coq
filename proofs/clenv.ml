@@ -985,7 +985,7 @@ let clenv_so_resolver allow_K clause gl =
 
 let clenv_unique_resolver allow_K clenv gls =
   let pathd,_ = whd_stack (clenv_instance_template_type clenv) in
-  let glhd,_ = whd_stack (pf_concl gls)in
+  let glhd,_ = whd_stack (pf_concl gls) in
   match kind_of_term pathd, kind_of_term glhd with
     | IsMeta _, IsLambda _ ->
 	(try 

@@ -61,8 +61,8 @@ let rec prolog l n gl =
   let prol = (prolog l (n-1)) in
   (tclFIRST (List.map (fun t -> (tclTHEN t prol)) (one_step l gl))) gl
 
-let prolog_tac lcom n gl =
-  let l = List.map (pf_interp_constr gl) lcom in
+let prolog_tac l n gl =
+ (* let l = List.map (pf_interp_constr gl) lcom in *)
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" [< 'sTR "Prolog failed" >]
@@ -88,6 +88,8 @@ let instantiate n c gl =
 let instantiate_tac = function
   | [Integer n; Command com] ->
       (fun gl -> instantiate n (pf_interp_constr gl com) gl)
+  | [Integer n; Constr c] ->
+      (fun gl -> instantiate n c gl)
   | _ -> invalid_arg "Instantiate called with bad arguments"
 
 let whd_evar env sigma c = match kind_of_term c with
@@ -104,7 +106,7 @@ let normEvars gl =
 
 let vernac_prolog =
   let uncom = function
-    | Command com -> com
+    | Constr c -> c
     | _ -> assert false
   in
   let gentac = 
@@ -114,11 +116,10 @@ let vernac_prolog =
 	 | _ -> assert false)
   in 
   fun coms n -> 
-    gentac ((Integer n) :: (List.map (fun com -> (Command com)) coms))
+    gentac ((Integer n) :: (List.map (fun com -> (Constr com)) coms))
 
 let vernac_instantiate =
-  let gentac = hide_tactic "Instantiate" instantiate_tac in 
-  fun n com -> gentac [Integer n; Command com]
+  hide_tactic "Instantiate" instantiate_tac;;
 
 let vernac_normevars =
   hide_atomic_tactic "NormEvars" normEvars
