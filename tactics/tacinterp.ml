@@ -79,7 +79,7 @@ type value =
   | VRec of value ref
 
 (* Signature for interpretation: val_interp and interpretation functions *)
-and interp_sign =
+type interp_sign =
   { lfun : (identifier * value) list;
     lmatch : (int * constr) list;
     debug : debug_info }
@@ -834,6 +834,11 @@ let get_debug () = !debug
 let eval_ident ist id =
   try match List.assoc id ist.lfun with
   | VIdentifier id -> id
+  | VConstr c as v when isVar c ->
+      (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
+      (* c is then expected not to belong to the proof context *)
+      (* would be checkable if env were known from eval_ident *)
+      destVar c
   | _ -> user_err_loc(loc,"eval_ident",str "should be bound to an identifier")
   with Not_found -> id
 
@@ -1569,7 +1574,7 @@ let interp_tacarg sign ast = (*unvarg*) (val_interp sign ast)
 let tac_interp lfun lmatch debug t = 
   tactic_interp { lfun=lfun; lmatch=lmatch; debug=debug } t
 
-let interp = tac_interp [] [] (get_debug())
+let interp = fun t -> tac_interp [] [] (get_debug()) t (* Side-effect *)
 
 (* Hides interpretation for pretty-print *)
 let hide_interp t ot gl =
