@@ -59,3 +59,6 @@ type tried_tactic =
 
 val try_interptac: string -> tried_tactic
 
+(* Message to display in lower status bar. *)
+
+val current_status : unit -> string

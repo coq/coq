@@ -1996,7 +1996,9 @@ let main files =
       end
   in
 
-  let do_or_activate f = do_if_not_computing (do_or_activate f) in
+  let do_or_activate f = 
+    do_if_not_computing (do_or_activate (fun av -> f av ; !pop_info();!push_info (Coq.current_status())))
+  in
 
   let add_to_menu_toolbar text ~tooltip ~key ~callback icon = 
     ignore (navigation_factory#add_item text ~key ~callback);

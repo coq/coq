@@ -86,13 +86,14 @@ let interp s =
 	     Pcoq.main_entry 
 	     (Pcoq.Gram.parsable (Stream.of_string s)) 
   in match pe with 
-    | Some (loc,(VernacDefinition _  | VernacStartTheoremProof _ )) 
+    | Some (loc,(VernacDefinition _  | VernacStartTheoremProof _ | VernacBeginSection _ 
+		| VernacDefineModule _ | VernacDeclareModuleType _))
       when is_in_proof_mode () 
 	-> 
 	raise (Stdpp.Exc_located (loc, 
 			   Util.UserError
 			     ("CoqIde",
-			      (str "Proof imbrications are forbidden"))
+			      (str "cannot do that while in proof mode."))
 				 ))
     | _ -> 
 	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
@@ -407,3 +408,13 @@ let is_state_preserving = function
       prerr_endline "state preserving command found"; true
   | _ -> 
       false
+
+
+let current_status () = 
+  let path = msg (Libnames.pr_dirpath (Lib.cwd ())) in
+  let path = if path = "Top" then "Ready" else "Ready in " ^ String.sub path 4 (String.length path - 4) in
+  try
+    path ^ ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
+  with _ -> path
+
+  
