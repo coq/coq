@@ -31,7 +31,8 @@ allcmo: .names.cmo $(CMONAMES)
 .names.ml: Makefile v2ml 
 	rm -f .names.ml; \
 	echo "MLNAMES= \\" > .names.ml; \
-	find theories  -name \*.v -exec ./v2ml \{\} \; | \
+	V2ML=`pwd`/v2ml; \
+	(cd $(TOPDIR); find theories  -name \*.v -exec $$V2ML \{\} \;) | \
 	sed -e "s/\.ml/.ml \\\\/" >> .names.ml
 
 .names.cmo: .names.ml
@@ -39,9 +40,8 @@ allcmo: .names.cmo $(CMONAMES)
 	sed -e "1s/ML/CMO/" -e "s/\.ml/.cmo/" < .names.ml > .names.cmo
 
 tree:
-	for f in `cd $(TOPDIR); find theories -name \*.v`; do \
-		mkdir -p `dirname $$f`; \
-		cp $(TOPDIR)/$$f $$f; \
+	for f in `cd $(TOPDIR); find theories -type d ! -name CVS`; do \
+		mkdir -p $$f; \
 	done
 
 ml2v: ml2v.ml
