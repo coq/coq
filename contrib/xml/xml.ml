@@ -62,6 +62,7 @@ let pp strm fn =
  in
   match fn with
      Some filename ->
+      let filename = filename ^ ".xml" in
        channel := open_out filename ;
        pp_r 0 strm ;
        close_out !channel ;
