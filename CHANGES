@@ -5,9 +5,9 @@ Changes from V8.0 to V8.0 bugfix
 - Fixed anomaly bug about a sort not being a sort (#705)
 - Fixed bug Not_found with destruct (#742)
 - Improved error message "w_Unify" (#667)
-- Fixed omega bug about mult in nat (#743) [Rem: though this makes
-  omega conform to the reference manual, it may cause "auto with
-  zarith" to succeed more often and lead to incompatibilities]
+- Fixed pretty-printing removal of coercions to Funclass (#785)
+- Fixed erroneous interpretation of the quantified hypothesis in intro until
+- Improved pretty-printing of coercions to Funclass
 
 Changes from V8.0beta to V8.0
 =============================
