@@ -156,7 +156,7 @@ let rec get_lam_arity env c =
 let is_non_info_sort env s = is_Prop (whd_betadeltaiota env none s)
 
 let is_non_info_type env t = 
-  (is_non_info_sort env (type_of env t)) || (get_arity env t) = Some (Prop Null)
+  is_non_info_sort env (type_of env t) || (get_arity env t) = Some (Prop Null)
 
 (*i This one is not used, left only to precise what we call a non-informative 
    term.
@@ -545,7 +545,7 @@ and extract_term_info_with_type env ctx c t =
    The following code deals with those 3 questions: from constructor [C], it 
    produces: 
 
-   [fun ]$p_1 \ldots p_n ~ x_1 \ldots x_n $[-> C (]$x_{i_1}, \ldots, x_{i_k}$[)].
+   [fun ]$p_1 \ldots p_n ~ x_1 \ldots x_n $[-> C(]$x_{i_1},\ldots, x_{i_k}$[)].
    This ML term will be reduced later on when applied, see [mlutil.ml].
 
    In the special case of a informative singleton inductive, [C] is identity *)
@@ -651,7 +651,7 @@ and extract_app env ctx f args =
 	 | (_,Arity) -> args
 	 | (Logic,NotArity) -> MLprop :: args
 	 | (Info,NotArity) -> 
-	     (* We can't trust the tag [Vdefault], so we use [extract_constr] *)
+	     (* We can't trust tag [Vdefault], so we use [extract_constr]. *)
 	     (mlterm_of_constr (extract_constr env ctx a)) :: args)
       (List.combine (list_firstn nargs sf) args)
       []
@@ -730,8 +730,9 @@ and extract_constructor (((sp,_),_) as c) =
   extract_mib sp;
   lookup_constructor_extraction c
 
-(* Looking for informative singleton case, i.e. an inductive with one constructor
-   which has one informative argument. This dummy case will be simplified. *)
+(* Looking for informative singleton case, i.e. an inductive with one 
+   constructor which has one informative argument. This dummy case will 
+   be simplified. *)
 
 and is_singleton_inductive (sp,_) = 
   let mib = Global.lookup_mind sp in 
@@ -753,7 +754,8 @@ and extract_mib sp =
   if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
     let mib = Global.lookup_mind sp in
     let genv = Global.env () in 
-    (* Everything concerning parameters. We do it first, since they are common *)
+    (* Everything concerning parameters. 
+       We do that first, since they are common to all the [mib]. *)
     let mis = build_mis ((sp,0),[||]) mib in
     let nb = mis_nparams mis in
     let rb = mis_params_ctxt mis in 
@@ -797,20 +799,19 @@ and extract_mib sp =
 		    | Tarity | Tprop -> assert false
 		    | Tmltype (mlt, s, v) -> 
 			let l = list_of_ml_arrows mlt in
-			let cp = (ip,j) in
-			add_constructor_extraction cp (Cml (l,s,nbtokeep));
+			add_constructor_extraction (ip,j) (Cml (l,s,nbtokeep));
 			v)
 	       vl)
 	vl
     in
     (* Third pass: we update the type variables list in every tables *)
     for i = 0 to mib.mind_ntypes-1 do 
-      match lookup_inductive_extraction (sp,i) with 
+      let ip = (sp,i) in 
+      let mis = build_mis (ip,[||]) mib in
+      match lookup_inductive_extraction ip with 
 	| Iprop -> ()
 	| Iml (s,_) -> begin 
-	    add_inductive_extraction (sp,i) (Iml (s,vl));
-	    let ip = (sp,i) in 
-	    let mis = build_mis (ip,[||]) mib in 
+	    add_inductive_extraction ip (Iml (s,vl));
 	    for j = 1 to mis_nconstr mis do
 	      let cp = (ip,j) in 
 	      match lookup_constructor_extraction cp  with 
@@ -839,11 +840,13 @@ and extract_inductive_declaration sp =
     Dabbrev (IndRef ip,vl,t)
   else
     let mib = Global.lookup_mind sp in
-    let one_constructor ind j _ = 
-      let cp = (ind,succ j) in
-      match lookup_constructor_extraction cp with 
-	| Cprop -> assert false
-	| Cml (t,_,_) -> (ConstructRef cp, t)
+    let one_ind ip n = 
+      iterate_for 1 n
+	(fun j l -> 
+	   let cp = (ip,j) in 
+	   match lookup_constructor_extraction cp with 
+	     | Cprop -> assert false
+	     | Cml (t,_,_) -> (ConstructRef cp, t)::l) []
     in
     let l = 
       iterate_for 0 (mib.mind_ntypes - 1)
@@ -852,12 +855,8 @@ and extract_inductive_declaration sp =
 	   let mis = build_mis (ip,[||]) mib in 
 	   match lookup_inductive_extraction ip with
 	     | Iprop -> acc
-	     | Iml (s,vl) -> 
-		 (List.rev vl, 
-		  IndRef ip, 
-		  Array.to_list 
-		    (Array.mapi (one_constructor ip) (mis_consnames mis)))
-		 :: acc)
+	     | Iml (_,vl) -> 
+		 (List.rev vl, IndRef ip, one_ind ip (mis_nconstr mis)) :: acc)
 	[] 
     in
     Dtype (List.rev l, not (mind_type_finite mib 0))
