@@ -1,8 +1,6 @@
 Distribution:
 
 - faire une passe sur les options de coqtop et coqc
-- remercier les auteurs des contributions de la lib standard (p.ex. ZArith) FAIT
-- changer Zarith/ en ZArith/ FAIT CP
 
 Langage:
 
@@ -16,10 +14,8 @@ Noyau:
 
 Vernac:
 
-- Pb noms cachés (utilisation de noms absolus ?) 
 - Print / Print Proof en fait identiques ; Print ne devrait pas afficher
   les constantes opaques (devrait afficher qqchose comme <opaque>)
-- Print Section imprime-t-il les sections ouvertes ou bien fermees ??
 
 Grammaires:
 
@@ -27,24 +23,15 @@ Grammaires:
 
 Doc:
 
-- restriction de syntaxe pour Cbv Delta [- toto]. FAIT
-- documenter tactiques NewInduction, LetTac, NewDestruct, Assert FAIT
 - documenter AutoRewrite
 - Ajouter let dans les règles du CIC
   -> FAIT, mais reste a documenter le let dans les inductifs
   et les champs manifestes dans les Record   
-- changement syntaxe de AddPath
 - une passe sur le chapitre extensions de syntaxe
-- une passe sur le chapitre Cases
 - documenter le langage de tactique et Field
-- revoir le chapitre sur les tactiques utilisateur
-- clarifier la sémantique de Decompose (i.e. travaille pas sous les ->) FAIT
+- revoir le chapitre sur les tactiques utilisateur 
 - faut-il mieux spécifier la sémantique de Simpl (??)
-- vérifier si Print Table id est à jour
 - documenter @Definition and co
-- rectifier le paragraphe sur Coercions et pretty-printing
-  + Set Printing Coercions
-
 
 - Suggestions de la formation
 	Dans le Intros pattern on pourrait interpreter les _ 
