@@ -192,5 +192,7 @@ let unfreeze stk =
 let init () =
   lib_stk := [];
   add_frozen_state ();
-  path_prefix := []
+  path_prefix := [];
+  init_summaries()
+
 

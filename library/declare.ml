@@ -18,6 +18,10 @@ type strength =
   | DischargeAt of section_path 
   | NeverDischarge
 
+let make_strength = function
+  | [] -> NeverDischarge
+  | l  -> DischargeAt (sp_of_wd l)
+
 (* Variables. *)
 
 let cache_variable (_,obj) = 

@@ -32,6 +32,7 @@ val declare_eliminations : section_path -> unit
 
 val declare_syntax_constant : identifier -> constr -> unit
 
+val make_strength : string list -> strength
 
 (*s Corresponding test and access functions. *)
 
