@@ -2507,36 +2507,38 @@ contrib/correctness/prename.cmo: toplevel/himsg.cmi library/nameops.cmi \
 contrib/correctness/prename.cmx: toplevel/himsg.cmx library/nameops.cmx \
     kernel/names.cmx contrib/correctness/pmisc.cmx lib/pp.cmx lib/util.cmx \
     contrib/correctness/prename.cmi 
-contrib/correctness/psyntax.cmo: lib/bignat.cmi interp/constrextern.cmi \
-    interp/constrintern.cmi parsing/coqast.cmi library/decl_kinds.cmo \
-    library/declare.cmi kernel/entries.cmi pretyping/evd.cmi \
-    parsing/extend.cmi interp/genarg.cmi library/global.cmi \
-    toplevel/himsg.cmi library/libnames.cmi library/nameops.cmi \
-    kernel/names.cmi lib/options.cmi contrib/correctness/past.cmi \
-    contrib/correctness/pcicenv.cmi parsing/pcoq.cmi \
-    contrib/correctness/pdb.cmi contrib/correctness/peffect.cmi \
-    contrib/correctness/penv.cmi contrib/correctness/pmisc.cmi \
-    contrib/correctness/pmonad.cmi lib/pp.cmi contrib/correctness/prename.cmi \
-    contrib/correctness/ptactic.cmi contrib/correctness/ptype.cmi \
-    contrib/correctness/ptyping.cmi contrib/correctness/putil.cmi \
-    kernel/reduction.cmi tactics/tacinterp.cmi kernel/term.cmi \
-    interp/topconstr.cmi lib/util.cmi toplevel/vernac.cmi \
+contrib/correctness/psyntax.cmo: lib/bignat.cmi toplevel/cerrors.cmi \
+    interp/constrextern.cmi interp/constrintern.cmi parsing/coqast.cmi \
+    library/decl_kinds.cmo library/declare.cmi parsing/egrammar.cmi \
+    kernel/entries.cmi pretyping/evd.cmi parsing/extend.cmi interp/genarg.cmi \
+    library/global.cmi toplevel/himsg.cmi library/libnames.cmi \
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
+    contrib/correctness/past.cmi contrib/correctness/pcicenv.cmi \
+    parsing/pcoq.cmi contrib/correctness/pdb.cmi \
+    contrib/correctness/peffect.cmi contrib/correctness/penv.cmi \
+    contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi lib/pp.cmi \
+    parsing/ppconstr.cmi translate/ppconstrnew.cmi parsing/pptactic.cmi \
+    contrib/correctness/prename.cmi contrib/correctness/ptactic.cmi \
+    contrib/correctness/ptype.cmi contrib/correctness/ptyping.cmi \
+    contrib/correctness/putil.cmi kernel/reduction.cmi tactics/tacinterp.cmi \
+    kernel/term.cmi interp/topconstr.cmi lib/util.cmi \
     toplevel/vernacentries.cmi toplevel/vernacexpr.cmo \
     toplevel/vernacinterp.cmi contrib/correctness/psyntax.cmi 
-contrib/correctness/psyntax.cmx: lib/bignat.cmx interp/constrextern.cmx \
-    interp/constrintern.cmx parsing/coqast.cmx library/decl_kinds.cmx \
-    library/declare.cmx kernel/entries.cmx pretyping/evd.cmx \
-    parsing/extend.cmx interp/genarg.cmx library/global.cmx \
-    toplevel/himsg.cmx library/libnames.cmx library/nameops.cmx \
-    kernel/names.cmx lib/options.cmx contrib/correctness/past.cmi \
-    contrib/correctness/pcicenv.cmx parsing/pcoq.cmx \
-    contrib/correctness/pdb.cmx contrib/correctness/peffect.cmx \
-    contrib/correctness/penv.cmx contrib/correctness/pmisc.cmx \
-    contrib/correctness/pmonad.cmx lib/pp.cmx contrib/correctness/prename.cmx \
-    contrib/correctness/ptactic.cmx contrib/correctness/ptype.cmi \
-    contrib/correctness/ptyping.cmx contrib/correctness/putil.cmx \
-    kernel/reduction.cmx tactics/tacinterp.cmx kernel/term.cmx \
-    interp/topconstr.cmx lib/util.cmx toplevel/vernac.cmx \
+contrib/correctness/psyntax.cmx: lib/bignat.cmx toplevel/cerrors.cmx \
+    interp/constrextern.cmx interp/constrintern.cmx parsing/coqast.cmx \
+    library/decl_kinds.cmx library/declare.cmx parsing/egrammar.cmx \
+    kernel/entries.cmx pretyping/evd.cmx parsing/extend.cmx interp/genarg.cmx \
+    library/global.cmx toplevel/himsg.cmx library/libnames.cmx \
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
+    contrib/correctness/past.cmi contrib/correctness/pcicenv.cmx \
+    parsing/pcoq.cmx contrib/correctness/pdb.cmx \
+    contrib/correctness/peffect.cmx contrib/correctness/penv.cmx \
+    contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx lib/pp.cmx \
+    parsing/ppconstr.cmx translate/ppconstrnew.cmx parsing/pptactic.cmx \
+    contrib/correctness/prename.cmx contrib/correctness/ptactic.cmx \
+    contrib/correctness/ptype.cmi contrib/correctness/ptyping.cmx \
+    contrib/correctness/putil.cmx kernel/reduction.cmx tactics/tacinterp.cmx \
+    kernel/term.cmx interp/topconstr.cmx lib/util.cmx \
     toplevel/vernacentries.cmx toplevel/vernacexpr.cmx \
     toplevel/vernacinterp.cmx contrib/correctness/psyntax.cmi 
 contrib/correctness/ptactic.cmo: library/decl_kinds.cmo tactics/equality.cmi \
@@ -2676,13 +2678,13 @@ contrib/extraction/extraction.cmx: kernel/declarations.cmx kernel/environ.cmx \
 contrib/extraction/g_extraction.cmo: toplevel/cerrors.cmi \
     parsing/egrammar.cmi parsing/extend.cmi \
     contrib/extraction/extract_env.cmi interp/genarg.cmi parsing/pcoq.cmi \
-    lib/pp.cmi contrib/extraction/table.cmi toplevel/vernacexpr.cmo \
-    toplevel/vernacinterp.cmi 
+    lib/pp.cmi parsing/pptactic.cmi contrib/extraction/table.cmi \
+    tactics/tacinterp.cmi toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi 
 contrib/extraction/g_extraction.cmx: toplevel/cerrors.cmx \
     parsing/egrammar.cmx parsing/extend.cmx \
     contrib/extraction/extract_env.cmx interp/genarg.cmx parsing/pcoq.cmx \
-    lib/pp.cmx contrib/extraction/table.cmx toplevel/vernacexpr.cmx \
-    toplevel/vernacinterp.cmx 
+    lib/pp.cmx parsing/pptactic.cmx contrib/extraction/table.cmx \
+    tactics/tacinterp.cmx toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx 
 contrib/extraction/haskell.cmo: library/libnames.cmi \
     contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmi \
     library/nameops.cmi kernel/names.cmi contrib/extraction/ocaml.cmi \
