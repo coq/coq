@@ -33,7 +33,7 @@ let explain_logic_error = ref (fun e -> mt())
 
 (* Prints the goal *)
 let db_pr_goal g =
-  msgnl (str "Goal:" ++ fnl () ++ Proof_trees.db_pr_goal (Tacmach.sig_it g))
+  msgnl (str "Goal:" ++ fnl () ++ Proof_trees.db_pr_goal (Refiner.sig_it g))
 
 (* Prints the commands *)
 let help () =

@@ -19,7 +19,7 @@ open Entries
 open Environ
 open Evd
 open Typing
-open Tacmach
+open Refiner
 open Proof_trees
 open Tacexpr
 open Proof_type
@@ -273,11 +273,11 @@ let common_ancestor l1 l2 =
       
 let rec traverse_up = function
   | 0 -> (function pf -> pf)
-  | n -> (function pf -> Tacmach.traverse 0 (traverse_up (n - 1) pf))
+  | n -> (function pf -> Refiner.traverse 0 (traverse_up (n - 1) pf))
 
 let rec traverse_down = function
   | [] -> (function pf -> pf)
-  | n::l -> (function pf -> Tacmach.traverse n (traverse_down l pf))
+  | n::l -> (function pf -> Refiner.traverse n (traverse_down l pf))
 
 let traverse_to path =
   let up_and_down path pfs =
