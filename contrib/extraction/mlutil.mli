@@ -23,6 +23,12 @@ val prop_name : identifier
 
 val update_args : section_path -> ml_type list -> ml_type -> ml_type
 
+exception Found_sp
+
+val sp_of_r : global_reference -> section_path
+
+val parse_ml_type : section_path -> ml_type -> unit
+
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn
     lifting. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. *)

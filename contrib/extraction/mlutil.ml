@@ -35,6 +35,20 @@ let rec update_args sp vl = function
       Tarr (update_args sp vl a, update_args sp vl b)
   | a -> a
 
+exception Found_sp
+
+let sp_of_r r = match r with 
+    | ConstRef sp -> sp
+    | IndRef (sp,_) -> sp
+    | ConstructRef ((sp,_),_) -> sp
+    | _ -> assert false
+
+let rec parse_ml_type sp = function 
+  | Tglob r -> if (sp_of_r r)=sp then raise Found_sp
+  | Tapp l -> List.iter (parse_ml_type sp) l
+  | Tarr (a,b) -> (parse_ml_type sp a; parse_ml_type sp b)
+  | _ -> ()
+      
 (*s [occurs k t] returns true if [(Rel k)] occurs in [t]. *)
 
 let rec occurs k = function

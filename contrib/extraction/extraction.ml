@@ -754,7 +754,7 @@ and is_singleton_inductive (sp,_) =
   let mis = build_mis ((sp,0),[||]) mib in
   (mis_nconstr mis = 1) && 
   match extract_constructor ((sp,0),1) with 
-    | Cml ([_],_,_)-> true
+    | Cml ([mlt],_,_)-> (try parse_ml_type sp mlt; true with Found_sp -> false)
     | _ -> false
 	  
 and is_singleton_constructor ((sp,i),_) = 

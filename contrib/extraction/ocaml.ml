@@ -82,12 +82,6 @@ let rename_upper_global id = rename_global (uppercase_id id)
 
 (*s Modules considerations *)
 
-let sp_of_r r = match r with 
-    | ConstRef sp -> sp
-    | IndRef (sp,_) -> sp
-    | ConstructRef ((sp,_),_) -> sp
-    | _ -> assert false
-
 let module_of_r r = list_last (dirpath (sp_of_r r))
 
 let string_of_r r = string_of_id (basename (sp_of_r r))
