@@ -95,6 +95,7 @@ let subtract l1 l2 =
    Names.make_dirpath (List.rev (aux l1'))
 ;;
 
+(*CSC: Dead code to be removed
 let token_list_of_kernel_name ~keep_sections kn tag =
  let module N = Names in
   let (modpath,dirpath,label) = Names.repr_kn kn in
@@ -124,6 +125,7 @@ let token_list_of_kernel_name ~keep_sections kn tag =
     (if keep_sections then token_list_of_dirpath dirpath else []) @
     [N.string_of_label label ^ "." ^ (ext_of_tag tag)]
 ;;
+*)
 
 let token_list_of_path dir id tag =
  let module N = Names in
@@ -131,28 +133,23 @@ let token_list_of_path dir id tag =
    List.rev_map N.string_of_id (N.repr_dirpath dirpath) in
   token_list_of_dirpath dir @ [N.string_of_id id ^ "." ^ (ext_of_tag tag)]
 
-let token_list_of_kernel_name ~keep_sections kn tag =
+let token_list_of_kernel_name kn tag =
  let module N = Names in
  let module LN = Libnames in
  let dir = match tag with
    | Variable -> 
-       if keep_sections then Lib.cwd () else
-       LN.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
+       Lib.cwd ()
    | Constant -> 
-       let ref = LN.ConstRef kn in
-       if keep_sections then LN.dirpath (Nametab.sp_of_global ref)
-       else Lib.library_part ref
+       Lib.library_part (LN.ConstRef kn)
    | Inductive ->
-       let ref = LN.IndRef (kn,0) in
-      if keep_sections then LN.dirpath(Nametab.sp_of_global ref)
-      else Lib.library_part ref
+       Lib.library_part (LN.IndRef (kn,0))
  in
  let id = N.id_of_label (N.label kn) in
  token_list_of_path dir id tag
 ;;
 
-let uri_of_kernel_name ?(keep_sections=false) kn tag =
-  let tokens = token_list_of_kernel_name ~keep_sections kn tag in
+let uri_of_kernel_name kn tag =
+  let tokens = token_list_of_kernel_name kn tag in
    "cic:/" ^ String.concat "/" tokens
 
 let uri_of_declaration id tag =

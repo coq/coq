@@ -182,12 +182,12 @@ let rec join_dirs cwd =
       join_dirs newcwd tail
 ;;
 
-let filename_of_path ?(keep_sections=false) xml_library_root kn tag =
+let filename_of_path xml_library_root kn tag =
  let module N = Names in
   match xml_library_root with
      None -> None  (* stdout *)
    | Some xml_library_root' ->
-      let tokens = Cic2acic.token_list_of_kernel_name ~keep_sections kn tag in
+      let tokens = Cic2acic.token_list_of_kernel_name kn tag in
        Some (join_dirs xml_library_root' tokens)
 ;;
 
@@ -512,7 +512,7 @@ let print internal glob_ref kind xml_library_root =
  let module Ln = Libnames in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables () in
-  let keep_sections,kn,tag,obj =
+  let kn,tag,obj =
    match glob_ref with
       Ln.VarRef id ->
        let sp = Declare.find_section_variable id in
@@ -522,23 +522,23 @@ let print internal glob_ref kind xml_library_root =
         N.make_kn mod_path dir_path (N.label_of_id (Ln.basename sp))
        in
        let (_,body,typ) = G.lookup_named id in
-        true,kn,Cic2acic.Variable,mk_variable_obj id body typ
+        kn,Cic2acic.Variable,mk_variable_obj id body typ
     | Ln.ConstRef kn ->
        let id = N.id_of_label (N.label kn) in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
-        false,kn,Cic2acic.Constant,mk_constant_obj id val0 typ variables hyps
+        kn,Cic2acic.Constant,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->
        let {D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = G.lookup_mind kn in
-          false,kn,Cic2acic.Inductive,
+          kn,Cic2acic.Inductive,
            mk_inductive_obj kn packs variables hyps finite
     | Ln.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
-  let fn = filename_of_path ~keep_sections xml_library_root kn tag in
-  let uri = Cic2acic.uri_of_kernel_name ~keep_sections kn tag in
+  let fn = filename_of_path xml_library_root kn tag in
+  let uri = Cic2acic.uri_of_kernel_name kn tag in
    if not internal then print_object_kind uri kind;
    print_object uri obj Evd.empty None fn
 ;;
