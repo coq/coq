@@ -1022,8 +1022,10 @@ let vernac_show = function
       else (match nopt with
 	| None -> show_open_subgoals ()
 	| (Some n) -> show_nth_open_subgoal n)
-  | ShowGoalImplicitly None -> Impargs.implicitly show_open_subgoals ()
-  | ShowGoalImplicitly (Some n) -> Impargs.implicitly show_nth_open_subgoal n
+  | ShowGoalImplicitly None ->
+      Constrextern.with_implicits show_open_subgoals ()
+  | ShowGoalImplicitly (Some n) ->
+      Constrextern.with_implicits show_nth_open_subgoal n
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
   | ShowScript -> show_script ()

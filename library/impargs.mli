@@ -28,7 +28,6 @@ val is_strict_implicit_args : unit -> bool
 val is_contextual_implicit_args : unit -> bool
 
 type implicits_flags
-val implicitly : ('a -> 'b) -> 'a -> 'b
 val with_implicits : implicits_flags -> ('a -> 'b) -> 'a -> 'b
 
 (*s An [implicits_list] is a list of positions telling which arguments

@@ -81,8 +81,6 @@ let with_implicits ((a,b,c),(d,e,g)) f x =
     raise e
   end
 
-let implicitly f = with_implicits ((false,false,false),(false,false,false)) f
-
 (*s Computation of implicit arguments *)
 
 (* We remember various information about why an argument is (automatically)
