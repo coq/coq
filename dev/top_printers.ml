@@ -91,7 +91,7 @@ let pp_universes u = pp (str"[" ++ pr_universes u ++ str"]")
 
 let ppenv e = pp (pr_rel_context e (rel_context e))
 
-let pptac = (fun x -> pp(Pptactic.pr_raw_tactic x))
+let pptac = (fun x -> pp(Pptactic.pr_glob_tactic x))
 
 let pr_obj obj = Format.print_string (Libobject.object_tag obj)
 
@@ -258,14 +258,14 @@ let print_pure_constr csr =
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
   and sp_display sp = 
-    let dir,l = decode_kn sp in
+(*    let dir,l = decode_kn sp in
     let ls = 
       match List.rev (List.map string_of_id (repr_dirpath dir)) with 
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l 
 	| l             -> l
-    in  List.iter (fun x -> print_string x; print_string ".") ls;
-      print_string (string_of_id l)
+    in  List.iter (fun x -> print_string x; print_string ".") ls;*)
+      print_string (string_of_kn sp)
 
   in
      box_display csr; print_flush()
