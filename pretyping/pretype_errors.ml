@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+open Util
 open Names
 open Sign
 open Term
@@ -50,10 +51,32 @@ let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=type_app (nf_evar sigma) v;utj_type=t}
 
-
 let env_ise sigma env =
   map_context (nf_evar sigma) env
 
+(* This simplify the typing context of Cases clauses *)
+(* hope it does not disturb other typing contexts *)
+let contract env lc =
+  let l = ref [] in
+  let contract_context env (na,c,t) =
+    match c with
+      | Some c' when isRel c' ->
+	  l := (substl !l c') :: !l;
+	  env
+      | _ -> 
+	  let t' = substl !l t in
+	  let c' = option_app (substl !l) c in
+	  let na' = named_hd env t' na in
+	  l := (mkRel 1) :: List.map (lift 1) !l;
+	  push_rel (na',c',t') env in
+  let env = process_rel_context contract_context env in
+  (env, List.map (substl !l) lc)
+
+let contract2 env a b = match contract env [a;b] with
+  | env, [a;b] -> env,a,b | _ -> assert false
+
+let contract3 env a b c = match contract env [a;b;c] with
+  | env, [a;b;c] -> env,a,b,c | _ -> assert false
 
 let raise_pretype_error (loc,ctx,sigma,te) =
   Stdpp.raise_with_loc loc (PretypeError(env_ise sigma ctx,te))
@@ -63,6 +86,7 @@ let raise_located_type_error (loc,k,ctx,sigma,te) =
 
 
 let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty =
+  let env, c, actty, expty = contract3 env c actty expty in
   raise_located_type_error
     (loc, CCI, env, sigma,
      ActualType (c,nf_evar sigma actty, nf_evar sigma expty))
@@ -124,6 +148,7 @@ let error_ml_case_loc loc env sigma mes indt j =
 (*s Pretyping errors *)
 
 let error_unexpected_type_loc loc env sigma actty expty =
+  let env, actty, expty = contract2 env actty expty in
   raise_pretype_error
     (loc, env, sigma,
      UnexpectedType (nf_evar sigma actty, nf_evar sigma expty))
