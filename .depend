@@ -1,12 +1,36 @@
+kernel/environ.cmi: kernel/names.cmi kernel/term.cmi 
+kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
+kernel/generic.cmi: kernel/names.cmi lib/util.cmi 
 kernel/names.cmi: lib/pp.cmi 
+kernel/sign.cmi: kernel/generic.cmi kernel/names.cmi kernel/term.cmi 
+kernel/term.cmi: lib/coqast.cmi kernel/generic.cmi kernel/names.cmi \
+    kernel/univ.cmi 
+kernel/univ.cmi: kernel/names.cmi 
+lib/coqast.cmi: lib/dyn.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
+kernel/evd.cmo: kernel/names.cmi kernel/sign.cmi kernel/term.cmi lib/util.cmi \
+    kernel/evd.cmi 
+kernel/evd.cmx: kernel/names.cmx kernel/sign.cmx kernel/term.cmx lib/util.cmx \
+    kernel/evd.cmi 
+kernel/generic.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi \
+    kernel/generic.cmi 
+kernel/generic.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx \
+    kernel/generic.cmi 
 kernel/names.cmo: lib/hashcons.cmi lib/pp.cmi lib/util.cmi kernel/names.cmi 
 kernel/names.cmx: lib/hashcons.cmx lib/pp.cmx lib/util.cmx kernel/names.cmi 
-kernel/sign.cmo: kernel/sign.cmi 
-kernel/sign.cmx: kernel/sign.cmi 
+kernel/sign.cmo: kernel/generic.cmi kernel/names.cmi kernel/term.cmi \
+    lib/util.cmi kernel/sign.cmi 
+kernel/sign.cmx: kernel/generic.cmx kernel/names.cmx kernel/term.cmx \
+    lib/util.cmx kernel/sign.cmi 
+kernel/term.cmo: lib/coqast.cmi kernel/generic.cmi lib/hashcons.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/univ.cmi lib/util.cmi kernel/term.cmi 
+kernel/term.cmx: lib/coqast.cmi kernel/generic.cmx lib/hashcons.cmx \
+    kernel/names.cmx lib/pp.cmx kernel/univ.cmi lib/util.cmx kernel/term.cmi 
+lib/dyn.cmo: lib/util.cmi lib/dyn.cmi 
+lib/dyn.cmx: lib/util.cmx lib/dyn.cmi 
 lib/hashcons.cmo: lib/hashcons.cmi 
 lib/hashcons.cmx: lib/hashcons.cmi 
 lib/pp.cmo: lib/pp_control.cmi lib/pp.cmi 

@@ -22,9 +22,11 @@ INCLUDES=-I config -I lib -I kernel
 
 CONFIG=config/coq_config.cmo
 
-LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo
+LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo \
+    lib/dyn.cmo
 
-KERNEL=kernel/names.cmo kernel/sign.cmo
+KERNEL=kernel/names.cmo kernel/generic.cmo kernel/term.cmo \
+       kernel/sign.cmo kernel/evd.cmo
 
 OBJS=$(CONFIG) $(LIB) $(KERNEL)
 

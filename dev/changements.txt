@@ -1,5 +1,6 @@
 
-Voici les changements d'organisation / modules :
+Changements d'organisation / modules :
+--------------------------------------
 
   AVANT					APRÈS
   ================================	===============================
@@ -8,3 +9,26 @@ Voici les changements d'organisation / modules :
   Names					kernel/names.ml et kernel/sign.ml
     (les parties noms et signatures ont été séparées)
 
+
+
+Changements dans les types de données :
+---------------------------------------
+  dans Generic: free_rels : constr -> int Listset.t
+                  devient : constr -> Intset.t
+
+Changements dans les fonctions :
+--------------------------------
+
+	Vectops.
+	  it_vect          ->  Array.fold_left
+	  vect_it          ->  Array.fold_right
+	  exists_vect      ->  Util.array_exists
+	  for_all2eq_vect  ->  Util.array_for_all2
+	  tabulate_vect    ->  Array.init
+	  hd_vect          ->  Util.array_hd
+	  it_vect_from     ->  array_fold_left_from
+	  vect_it_from     ->  array_fold_right_from
+	  app_tl_vect	   ->  array_app_tl
+	  cons_vect	   ->  array_cons
+
+	Std.comp           ->  Util.compose
