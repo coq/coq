@@ -25,6 +25,10 @@ exception End_of_input
 val just_parsing : bool ref
 val raw_do_vernac : Pcoq.Gram.parsable -> unit
 
+(* Set XML hooks *)
+val set_xml_start_library : (unit -> unit) -> unit
+val set_xml_end_library   : (unit -> unit) -> unit
+
 (* Load a vernac file, verbosely or not. Errors are annotated with file
    and location *)
 

@@ -264,6 +264,13 @@ let raw_do_vernac po =
   vernac (States.with_heavy_rollback Vernacentries.interp) (po,None);
   Lib.mark_end_of_command()
 
+(* XML output hooks *)
+let xml_start_library = ref (fun _ -> ())
+let xml_end_library = ref (fun _ -> ())
+
+let set_xml_start_library f = xml_start_library := f
+let set_xml_end_library f = xml_end_library := f
+
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   chan_translate :=
@@ -277,23 +284,12 @@ let load_vernac verb file =
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
-(*
-    let s = Filename.basename f in
-    let m = Names.id_of_string s in
-    let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
-    let ldir0 = Library.find_logical_path (Filename.dirname longf) in
-    let ldir = Libnames.extend_dirpath ldir0 m in
-    Termops.set_module ldir; (* Just for universe naming *)
-    Lib.start_module ldir;
-    if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-    let _ = load_vernac verbosely longf in
-    let mid = Lib.end_module m in
-    assert (mid = ldir);
-    Library.save_module_to ldir (longf^"o")
-*)
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+  if !Options.xml_export then !xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
+  if !Options.xml_export then !xml_end_library ();
   Library.save_library_to ldir (long_f_dot_v ^ "o")
+
