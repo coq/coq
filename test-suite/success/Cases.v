@@ -1056,7 +1056,7 @@ Type    Cases (compare O O) of
 
 
 
-CoInductive SStream [A:Set]  : (nat->A->Prop)->Set :=
+CoInductive SStream [A:Set]  : (nat->A->Prop)->Type :=
 scons  : 
   (P:nat->A->Prop)(a:A)(P O a)->(SStream A [n:nat](P (S n)))->(SStream A P).
 Parameter B : Set.
