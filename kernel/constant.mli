@@ -3,6 +3,7 @@
 
 open Names
 open Term
+open Sign
 
 type discharge_recipe
 
@@ -13,7 +14,8 @@ type recipe =
 type constant_body = {
   const_kind : path_kind;
   const_body : recipe ref option;
-  const_type : type_judgment;
+  const_type : typed_type;
+  const_hyps : context;
   mutable const_eval : ((int * constr) list * int * bool) option option;
 }
 

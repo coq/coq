@@ -19,10 +19,10 @@ type evar_body =
   | EVAR_DEFINED of constr
 
 type 'a evar_info = {
-  concl : constr;
-  hyps  : context;
-  body  : evar_body;
-  info  : 'a option }
+  evar_concl : typed_type;
+  evar_hyps  : context;
+  evar_body  : evar_body;
+  evar_info  : 'a option }
 
 type 'a evar_map
 
@@ -36,7 +36,7 @@ val toList : 'a evar_map -> (section_path * 'a evar_info) list
 val mt_evd : 'a evar_map
 val add_with_info : 'a evar_map -> section_path -> 'a evar_info -> 'a evar_map
 val add_noinfo : 
-  'a evar_map -> section_path -> context -> constr -> 'a evar_map
+  'a evar_map -> section_path -> context -> typed_type -> 'a evar_map
 
 val define : 'a evar_map -> section_path -> constr -> 'a evar_map
 

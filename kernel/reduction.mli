@@ -146,10 +146,18 @@ type conversion_result =
   | Convertible of universes
   | NotConvertible
 
+type conversion_test = universes -> conversion_result
+
+val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
+
+val bool_and_convert : bool -> conversion_test -> conversion_test
+val convert_and : conversion_test -> conversion_test -> conversion_test
+val convert_or : conversion_test -> conversion_test -> conversion_test
+val convert_forall2 : 
+  ('a -> 'b -> conversion_test) -> 'a array -> 'b array -> conversion_test
+
 type 'a conversion_function = 
     'a unsafe_env -> constr -> constr -> conversion_result
-
-val sort_cmp : conv_pb -> sorts -> sorts -> universes -> conversion_result
 
 val fconv : conv_pb -> 'a conversion_function
 

@@ -745,6 +745,8 @@ let convert_of_constraint f u =
     | Consistent u' -> Convertible u'
     | Inconsistent -> NotConvertible
 
+type conversion_test = universes -> conversion_result
+
 let convert_of_bool b u =
   if b then Convertible u else NotConvertible
 
@@ -761,7 +763,7 @@ let convert_or f1 f2 u =
     | NotConvertible -> f2 u
     | c -> c
 
-let forall2_conv f v1 v2 u =
+let convert_forall2 f v1 v2 u =
   array_fold_left2 
     (fun a x y -> match a with
        | NotConvertible -> NotConvertible
@@ -802,16 +804,16 @@ and eqappr cv_pb infos appr1 appr2 =
 	  
     | (FVAR x1, FVAR x2) ->
 	bool_and_convert (x1=x2)
-	  (forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+	  (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
     | (FRel n, FRel m) ->
         bool_and_convert 
 	  (reloc_rel n el1 = reloc_rel m el2)
-          (forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+          (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
     | (FOP0(Meta(n)), FOP0(Meta(m))) ->
         bool_and_convert (n=m) 
-	  (forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+	  (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
     | (FOP0 Implicit, FOP0 Implicit) ->
         convert_of_bool (Array.length v1 = 0 & Array.length v2 = 0)
@@ -822,8 +824,8 @@ and eqappr cv_pb infos appr1 appr2 =
 	  (* try first intensional equality *)
 	  (bool_and_convert (sp1 == sp2 or sp1 = sp2)
 	     (convert_and
-		(forall2_conv (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
-		(forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)))
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (match search_frozen_cst infos (Const sp2) al2 with
              | Some def2 -> 
@@ -838,8 +840,8 @@ and eqappr cv_pb infos appr1 appr2 =
 	  (* try first intensional equality *)
           (bool_and_convert  (sp1 = sp2)
 	     (convert_and
-		(forall2_conv (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
-		(forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)))
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) al1 al2)
+		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (match search_frozen_cst infos (Abst sp2) al2 with
              | Some def2 -> 
@@ -885,14 +887,14 @@ and eqappr cv_pb infos appr1 appr2 =
 
     | (FOPN(MutCase _,cl1), FOPN(MutCase _,cl2)) ->
         convert_and
-	  (forall2_conv (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
-          (forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+	  (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
+          (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
      | (FOPN(op1,cl1), FOPN(op2,cl2)) ->
 	 bool_and_convert (op1 = op2)
 	   (convert_and
-              (forall2_conv (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
-              (forall2_conv (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
+              (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
+              (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
 
      (* binders *)
      | (FLAM(_,c1,_,_), FLAM(_,c2,_,_)) ->
@@ -903,7 +905,7 @@ and eqappr cv_pb infos appr1 appr2 =
      | (FLAMV(_,vc1,_,_), FLAMV(_,vc2,_,_)) ->
 	 bool_and_convert
            (Array.length v1 = 0 & Array.length v2 = 0)
-           (forall2_conv 
+           (convert_forall2 
 	      (ccnv cv_pb infos (el_lift el1) (el_lift el2)) vc1 vc2)
 
      | _ -> (fun _ -> NotConvertible)

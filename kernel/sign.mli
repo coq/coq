@@ -77,6 +77,6 @@ type ('b,'a) search_result =
 val lookup_id : identifier -> ('b,'a) env -> ('b,'a) search_result
 
 
-type 'b assumptions = (type_judgment,'b) env
-type environment = (type_judgment,type_judgment) env
-type context = type_judgment signature
+type 'b assumptions = (typed_type,'b) env
+type environment = (typed_type,typed_type) env
+type context = typed_type signature

@@ -53,8 +53,10 @@ type constr = sorts oper term
 
 type 'a judge = { body : constr; typ : 'a }
 
-type type_judgment = sorts judge
-type term_judgment = type_judgment judge
+type typed_type = sorts judge
+type typed_term = typed_type judge
+
+val typed_app : (constr -> constr) -> typed_type -> typed_type
 
 type conv_pb = CONV | CONV_LEQ | CONV_X | CONV_X_LEQ
 
@@ -186,11 +188,11 @@ val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
 
    where the lenght of the $j$th context is $ij$.
 *)
-val mkFix : int array -> int -> type_judgment array -> name list 
+val mkFix : int array -> int -> typed_type array -> name list 
   -> constr array -> constr
 
 (* Similarly, but we assume the body already constructed *)
-val mkFixDlam : int array -> int -> type_judgment array
+val mkFixDlam : int array -> int -> typed_type array
   -> constr array -> constr 
 
 (* If [typarray = [|t1,...tn|]]
@@ -207,11 +209,11 @@ val mkFixDlam : int array -> int -> type_judgment array
      ...
      with       fn = bn.]
  *)
-val mkCoFix : int -> type_judgment array -> name list 
+val mkCoFix : int -> typed_type array -> name list 
   -> constr array -> constr
 
 (* Similarly, but we assume the body already constructed *)
-val mkCoFixDlam : int -> type_judgment array -> constr array -> constr
+val mkCoFixDlam : int -> typed_type array -> constr array -> constr
 
 
 (*s Term destructors. 
@@ -303,10 +305,10 @@ val destCase : constr -> case_info * constr * constr * constr array
 val destGralFix : 
   constr array -> constr array * Names.name list * constr array
 val destFix : constr -> 
-  int array * int * type_judgment array * Names.name list * constr array
+  int array * int * typed_type array * Names.name list * constr array
 
 val destCoFix : 
-  constr -> int * type_judgment array * Names.name list * constr array
+  constr -> int * typed_type array * Names.name list * constr array
 
 (* Provisoire, le temps de maitriser les cast *)
 val destUntypedFix : 
@@ -524,6 +526,6 @@ val hcons_constr:
   ->
     (constr -> constr) *
     (constr -> constr) *
-    (type_judgment -> type_judgment)
+    (typed_type -> typed_type)
 
 val hcons1_constr : constr -> constr

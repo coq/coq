@@ -56,8 +56,10 @@ type constr = sorts oper term
 
 type 'a judge = { body : constr; typ : 'a }
 
-type type_judgment = sorts judge
-type term_judgment = type_judgment judge
+type typed_type = sorts judge
+type typed_term = typed_type judge
+
+let typed_app f tt = { body = f tt.body; typ = tt.typ }
 
 type conv_pb = CONV | CONV_LEQ | CONV_X | CONV_X_LEQ
 
@@ -1304,7 +1306,7 @@ let hcons_term (hast,hsorts,hsp,hname,hident,hstr) =
 module Htype =
   Hashcons.Make(
     struct
-      type t = type_judgment
+      type t = typed_type
       type u = (constr -> constr) * (sorts -> sorts)
       let hash_sub (hc,hs) j = {body=hc j.body; typ=hs j.typ}
       let equal j1 j2 = j1.body==j2.body & j1.typ==j2.typ

@@ -7,7 +7,8 @@ open Univ
 open Term
 
 type 'a unsafe_env = {
-  context : context;
+  context : environment;
+  inf_context : environment option;
   sigma : 'a evar_map;
   metamap : (int * constr) list;
   constraints : universes

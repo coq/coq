@@ -32,6 +32,7 @@ Changements dans les fonctions :
 	  vect_it_from     ->  array_fold_right_from
 	  app_tl_vect	   ->  array_app_tl
 	  cons_vect	   ->  array_cons
+	  map_i_vect	   ->  Array.mapi
 
 	Std 
 	  comp           ->  Util.compose

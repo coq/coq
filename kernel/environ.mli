@@ -14,17 +14,19 @@ val evar_map : 'a unsafe_env -> 'a evar_map
 val universes : 'a unsafe_env -> universes
 val metamap : 'a unsafe_env -> (int * constr) list
 
-val push_var : identifier * constr -> 'a unsafe_env -> 'a unsafe_env
-val push_rel : name * constr -> 'a unsafe_env -> 'a unsafe_env
+val push_var : identifier * typed_type -> 'a unsafe_env -> 'a unsafe_env
+val push_rel : name * typed_type -> 'a unsafe_env -> 'a unsafe_env
+val set_universes : universes -> 'a unsafe_env -> 'a unsafe_env
 
 val add_constant : constant_entry -> 'a unsafe_env -> 'a unsafe_env
 val add_mind : mind_entry -> 'a unsafe_env -> 'a unsafe_env
 
 val new_meta : unit -> int
 
-val lookup_var : identifier -> 'a unsafe_env -> constr
-val loopup_rel : int -> 'a unsafe_env -> name * constr
+val lookup_var : identifier -> 'a unsafe_env -> name * typed_type
+val lookup_rel : int -> 'a unsafe_env -> name * typed_type
 val lookup_constant : section_path -> 'a unsafe_env -> constant_entry
+val lookup_meta : int -> 'a unsafe_env -> constr
 
 val id_of_global : 'a unsafe_env -> sorts oper -> identifier
 val id_of_name_using_hdchar : 'a unsafe_env -> constr -> name -> identifier
