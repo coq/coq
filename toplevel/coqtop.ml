@@ -61,7 +61,7 @@ let add_load_vernacular s =
   load_vernacular_list := (make_suffix s ".v") :: !load_vernacular_list
 let load_vernacular () =
   List.iter
-    (fun s -> Vernac.load_vernac false s)
+    (fun s -> with_option translate_file (Vernac.load_vernac false) s)
     (List.rev !load_vernacular_list)
 
 let load_vernacular_obj = ref ([] : string list)

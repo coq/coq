@@ -218,9 +218,13 @@ let raw_do_vernac po =
 
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
+  chan_translate :=
+    if Options.do_translate () then open_out (file^"8") else stdout;
   try 
-    read_vernac_file verb file
+    read_vernac_file verb file;
+    if Options.do_translate () then close_out !chan_translate;
   with e -> 
+    if Options.do_translate () then close_out !chan_translate;
     raise_with_file file e
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
@@ -241,10 +245,7 @@ let compile verbosely f =
 *)
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  chan_translate :=
-    if Options.do_translate () then open_out (f^".v8") else stdout;
   let _ = load_vernac verbosely long_f_dot_v in
-  if Options.do_translate () then close_out !chan_translate;
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
   Library.save_library_to ldir (long_f_dot_v ^ "o")
