@@ -11,6 +11,7 @@ on version 7.0.
   - new rewriting tactic for types equipped with specific equalities
   - new tactic Field to decide equalities on commutative fields
   - new tactic Fourier to solve linear inequalities on reals numbers
+  - new tactics DiscrR, SplitRmult and SplitAbsolu dedicated to real numbers
   - new tactics for induction/case analysis in "natural" style
   - new extraction algorithm managing the Type level
   - export of theories to XML for publishing and rendering purposes
@@ -42,15 +43,16 @@ following versions
 
   package for sources
   rpm package for sources
-  rpm package for linux
+  rpm packages for linux
   binary package for Sun-Solaris
   binary version for Windows
-  binary version for MacOS X (without specific GUI)
+  binary version for MacOS X (Darwin)
 
   The documentation is available in postscript, pdf and html format.
 
-  Please refer to the accompanying document CHANGES for a full
-list of changes including sources of incompatibilities.
+  Please refer to the accompanying document CHANGES or the location
+ftp://ftp.inria.fr/INRIA/coq/V7.1/doc/Changes.html for a full list of
+changes including sources of incompatibilities.
 
   Users are kindly invited to report bugs to coq-bugs@pauillac.inria.fr
 and to mail Coq-Club@pauillac.inria.fr for general questions or
