@@ -15,6 +15,7 @@ open Nameops
 open Term
 open Termops
 open Sign
+open Environ
 open Inductive
 open Evd
 open Reduction
@@ -209,13 +210,13 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
              pat = Some pat;
-             code = ERes_pf(c,ce) })
+             code = ERes_pf(c,{ce with templenv=empty_env}) })
         end else 
 	  (hd,
            { hname = name;
 	     pri = nb_hyp cty;
              pat = Some pat;
-             code = Res_pf(c,ce) })
+             code = Res_pf(c,{ce with templenv=empty_env}) })
     | _ -> failwith "make_apply_entry"
  
 (* eap is (e,v) with e=true if eapply and v=true if verbose 
@@ -264,7 +265,7 @@ let make_trivial env sigma (name,c) =
   (hd, { hname = name;
 	       pri=1;
                pat = Some (Pattern.pattern_of_constr (clenv_type ce));
-               code=Res_pf_THEN_trivial_fail(c,ce) })
+               code=Res_pf_THEN_trivial_fail(c,{ce with templenv=empty_env}) })
 
 open Vernacexpr
 
