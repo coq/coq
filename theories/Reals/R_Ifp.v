@@ -132,6 +132,20 @@ Generalize (Rgt_plus_plus_r (Ropp R1) (IZR (up r)) r H);Intro;
 Save.
 
 (**********)
+Lemma Int_part_INR:(n : nat)  (Int_part (INR n)) = (inject_nat n).
+Intros n; Unfold Int_part.
+Cut (up (INR n)) = (Zplus (inject_nat n) (inject_nat (1))).
+Intros H'; Rewrite H'; Simpl; Ring.
+Apply sym_equal; Apply tech_up; Auto.
+Replace (Zplus (inject_nat n) (inject_nat (1))) with (INZ (S n)).
+Repeat Rewrite <- INR_IZR_INZ.
+Apply lt_INR; Auto.
+Rewrite Zplus_sym; Rewrite <- inj_plus; Simpl; Auto.
+Rewrite plus_IZR; Simpl; Auto with real.
+Repeat Rewrite <- INR_IZR_INZ; Auto with real.
+Save.
+
+(**********)
 Lemma fp_nat:(r:R)(frac_part r)==R0->(Ex [c:Z](r==(IZR c))).
 Unfold frac_part;Intros;Split with (Int_part r);Apply Rminus_eq; Auto with zarith real.
 Save.

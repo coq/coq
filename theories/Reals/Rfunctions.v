@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i Some properties about pow and sum have been made with John Harrison i*)
+(*i Some Lemmas (about pow and powerRZ) have been done by Laurent Thery i*)
 (*********************************************************)
 (*           Definition of the some functions            *)
 (*                                                       *)
@@ -16,6 +17,7 @@
 
 Require Export Rlimit.
 Require Omega.
+Require Import Zpower.
 
 (*******************************)
 (*      Factorial              *)
@@ -70,6 +72,81 @@ Fixpoint pow [r:R;n:nat]:R:=
     |(S n) => (Rmult r (pow r n))
   end.
 
+Theorem pow_O: (e : R)  (pow e O) == R1.
+Simpl; Auto with real.
+Qed.
+ 
+Theorem pow_1: (e : R)  (pow e (1)) == e.
+Simpl; Auto with real.
+Qed.
+ 
+Theorem pow_add:
+ (e : R) (n, m : nat)  (pow e (plus n m)) == (Rmult (pow e n) (pow e m)).
+Intros e n; Elim n; Simpl; Auto with real.
+Intros n0 H' m; Rewrite H'; Auto with real.
+Qed.
+
+Lemma pow_nonzero:
+  (x:R) (n:nat) ~(x==R0) -> ~((pow x n)==R0).
+Intro; Induction n; Simpl.
+Intro; Red;Intro;Apply R1_neq_R0;Assumption.
+Intros;Red; Intro;Elim (without_div_Od x (pow x n0) H1).
+Intro; Auto.
+Apply H;Assumption.
+Save.
+
+Hints Resolve pow_O pow_1 pow_add pow_nonzero:real.
+ 
+Theorem pow_RN_plus:
+ (e : R)
+ (n, m : nat)
+ ~ e == R0 ->  (pow e n) == (Rmult (pow e (plus n m)) (Rinv (pow e m))).
+Intros e n; Elim n; Simpl; Auto with real.
+Intros n0 H' m H'0.
+Rewrite Rmult_assoc; Rewrite <- H'; Auto.
+Qed.
+
+Theorem pow_lt: (e : R) (n : nat) (Rlt R0 e) ->  (Rlt R0 (pow e n)).
+Intros e n; Elim n; Simpl; Auto with real.
+Intros n0 H' H'0; Replace R0 with (Rmult e R0); Auto with real.
+Qed.
+Hints Resolve pow_lt :real.
+
+Theorem Rlt_pow_R1:
+ (e : R) (n : nat) (Rlt R1 e) -> (lt O n) ->  (Rlt R1 (pow e n)).
+Intros e n; Elim n; Simpl; Auto with real.
+Intros H' H'0; ElimType False; Omega.
+Intros n0; Case n0.
+Simpl; Rewrite Rmult_1r; Auto.
+Intros n1 H' H'0 H'1.
+Replace R1 with (Rmult R1 R1); Auto with real.
+Apply Rlt_trans with r2 := (Rmult e R1); Auto with real.
+Apply Rlt_monotony; Auto with real.
+Apply Rlt_trans with r2 := R1; Auto with real.
+Apply H'; Auto with arith.
+Qed.
+Hints Resolve Rlt_pow_R1 :real.
+
+Theorem Rlt_pow:
+ (e : R) (n, m : nat) (Rlt R1 e) -> (lt n m) ->  (Rlt (pow e n) (pow e m)).
+Intros e n m H' H'0; Replace m with (plus (minus m n) n).
+Rewrite pow_add.
+Pattern 1 (pow e n); Replace (pow e n) with (Rmult R1 (pow e n)); 
+ Auto with real.
+Apply Rminus_lt.
+Repeat Rewrite [x : R]  (Rmult_sym x (pow e n)); Rewrite <- Rminus_distr.
+Replace R0 with (Rmult (pow e n) R0); Auto with real.
+Apply Rlt_monotony; Auto with real.
+Apply pow_lt; Auto with real.
+Apply Rlt_trans with r2 := R1; Auto with real.
+Apply Rlt_minus; Auto with real.
+Apply Rlt_pow_R1; Auto with arith.
+Apply simpl_lt_plus_l with p := n; Auto with arith.
+Rewrite le_plus_minus_r; Auto with arith; Rewrite <- plus_n_O; Auto.
+Rewrite plus_sym; Auto with arith.
+Qed.
+Hints Resolve Rlt_pow :real.
+
 (*********)
 Lemma tech_pow_Rmult:(x:R)(n:nat)(Rmult x (pow x n))==(pow x (S n)).
 Induction n; Simpl; Trivial.
@@ -107,7 +184,7 @@ Intro;Rewrite H1;Pattern 1 (Rplus R1 (Rmult (INR (S n0)) e));
 Simpl;Rewrite Rmult_Ol;Unfold Rle;Right;Auto.
 Unfold Rle;Left;Generalize Rmult_gt;Unfold Rgt;Intro;
  Fold (Rsqr e);Apply (H3 (INR (S n1)) (Rsqr e) 
-        (INR_lt_0 (S n1) (lt_O_Sn n1)));Fold (Rgt e R0) in H;
+        (lt_INR_0 (S n1) (lt_O_Sn n1)));Fold (Rgt e R0) in H;
  Apply (pos_Rsqr1 e (imp_not_Req e R0 
   (or_intror (Rlt e R0) (Rgt e R0) H))).
 Rewrite (S_INR n0);Ring.
@@ -213,15 +290,6 @@ Intros;Elim H;Reflexivity.
 Intros; Simpl;Apply Rmult_Ol.
 Save.
 
-Lemma pow_nonzero:
-  (x:R) (n:nat) ~(x==R0) -> ~((pow x n)==R0).
-Intro; Induction n; Simpl.
-Intro; Red;Intro;Apply R1_neq_R0;Assumption.
-Intros;Red; Intro;Elim (without_div_Od x (pow x n0) H1).
-Intro; Auto.
-Apply H;Assumption.
-Save.
-
 Lemma Rinv_pow:
   (x:R) (n:nat) ~(x==R0) -> (Rinv (pow x n))==(pow (Rinv x) n).
 Intros; Elim n; Simpl.
@@ -285,6 +353,168 @@ Rewrite Rinv_R1; Assumption.
 Assumption.
 Red;Intro; Apply R1_neq_R0;Assumption.
 Save.
+
+Theorem pow_R1:
+ (r : R) (n : nat) (pow r n) == R1 ->  (Rabsolu r) == R1 \/ n = O.
+Intros r n H'.
+Case (Req_EM (Rabsolu r) R1); Auto; Intros H'1.
+Case (not_Req ? ? H'1); Intros H'2.
+Generalize H'; Case n; Auto.
+Intros n0 H'0.
+Cut ~ r == R0; [Intros Eq1 | Idtac].
+Cut ~ (Rabsolu r) == R0; [Intros Eq2 | Apply Rabsolu_no_R0]; Auto.
+Absurd (Rlt (pow (Rabsolu (Rinv r)) O) (pow (Rabsolu (Rinv r)) (S n0))); Auto.
+Replace (pow (Rabsolu (Rinv r)) (S n0)) with R1.
+Simpl; Apply Rlt_antirefl; Auto.
+Rewrite Rabsolu_Rinv; Auto.
+Rewrite <- Rinv_pow; Auto.
+Rewrite Power_Rabsolu; Auto.
+Rewrite H'0; Rewrite Rabsolu_right; Auto with real.
+Apply Rle_ge; Auto with real.
+Apply Rlt_pow; Auto with arith.
+Rewrite Rabsolu_Rinv; Auto.
+Apply Rlt_monotony_contra with z := (Rabsolu r).
+Case (Rabsolu_pos r); Auto.
+Intros H'3; Case Eq2; Auto.
+Rewrite Rmult_1r; Rewrite Rinv_r; Auto with real.
+Red;Intro;Absurd ``(pow r (S n0)) == 1``;Auto.
+Simpl; Rewrite H; Rewrite Rmult_Ol; Auto with real.
+Generalize H'; Case n; Auto.
+Intros n0 H'0.
+Cut ~ r == R0; [Intros Eq1 | Auto with real].
+Cut ~ (Rabsolu r) == R0; [Intros Eq2 | Apply Rabsolu_no_R0]; Auto.
+Absurd (Rlt (pow (Rabsolu r) O) (pow (Rabsolu r) (S n0))); 
+  Auto with real arith.
+Repeat Rewrite Power_Rabsolu; Rewrite H'0; Simpl; Auto with real.
+Red;Intro;Absurd ``(pow r (S n0)) == 1``;Auto.
+Simpl; Rewrite H; Rewrite Rmult_Ol; Auto with real.
+Qed.
+
+(*******************************)
+(*          PowerRZ            *)
+(*******************************)
+(*i Due to L.Thery i*)
+
+Tactic Definition CaseEqk name :=
+Generalize (refl_equal ? name); Pattern -1 name; Case name.
+
+Definition powerRZ :=
+   [e : R] [n : Z]  Cases n of
+                      ZERO => R1
+                     | (POS p) => (pow e (convert p))
+                     | (NEG p) => (Rinv (pow e (convert p)))
+                    end.
+
+Theorem Zpower_NR0:
+ (e : Z) (n : nat) (Zle ZERO e) ->  (Zle ZERO (Zpower_nat e n)).
+Intros e n; Elim n; Unfold Zpower_nat; Simpl; Auto with zarith.
+Qed.
+
+Theorem powerRZ_O: (e : R)  (powerRZ e ZERO) == R1.
+Simpl; Auto.
+Qed.
+ 
+Theorem powerRZ_1: (e : R)  (powerRZ e (Zs ZERO)) == e.
+Simpl; Auto with real.
+Qed.
+ 
+Theorem powerRZ_NOR: (e : R) (z : Z) ~ e == R0 ->  ~ (powerRZ e z) == R0.
+Intros e z; Case z; Simpl; Auto with real.
+Qed.
+Hints Resolve powerRZ_O powerRZ_1 powerRZ_NOR :real.
+ 
+Theorem powerRZ_add:
+ (e : R)
+ (n, m : Z)
+ ~ e == R0 ->  (powerRZ e (Zplus n m)) == (Rmult (powerRZ e n) (powerRZ e m)).
+Intros e n m; Case n; Case m; Simpl; Auto with real.
+Intros n1 m1; Rewrite convert_add; Auto with real.
+Intros n1 m1; (CaseEqk '(compare m1 n1 EGAL)); Simpl; Auto with real.
+Intros H' H'0; Rewrite compare_convert_EGAL with 1 := H'; Auto with real.
+Intros H' H'0; Rewrite (true_sub_convert n1 m1); Auto with real.
+Rewrite (pow_RN_plus e (minus (convert n1) (convert m1)) (convert m1));
+ Auto with real.
+Rewrite plus_sym; Rewrite le_plus_minus_r; Auto with real.
+Rewrite Rinv_Rmult; Auto with real.
+Rewrite Rinv_Rinv; Auto with real.
+Apply lt_le_weak.
+Apply compare_convert_INFERIEUR; Auto.
+Apply ZC2; Auto.
+Intros H' H'0; Rewrite (true_sub_convert m1 n1); Auto with real.
+Rewrite (pow_RN_plus e (minus (convert m1) (convert n1)) (convert n1));
+ Auto with real.
+Rewrite plus_sym; Rewrite le_plus_minus_r; Auto with real.
+Apply lt_le_weak.
+Change (gt (convert m1) (convert n1)).
+Apply compare_convert_SUPERIEUR; Auto.
+Intros n1 m1; (CaseEqk '(compare m1 n1 EGAL)); Simpl; Auto with real.
+Intros H' H'0; Rewrite compare_convert_EGAL with 1 := H'; Auto with real.
+Intros H' H'0; Rewrite (true_sub_convert n1 m1); Auto with real.
+Rewrite (pow_RN_plus e (minus (convert n1) (convert m1)) (convert m1));
+ Auto with real.
+Rewrite plus_sym; Rewrite le_plus_minus_r; Auto with real.
+Apply lt_le_weak.
+Apply compare_convert_INFERIEUR; Auto.
+Apply ZC2; Auto.
+Intros H' H'0; Rewrite (true_sub_convert m1 n1); Auto with real.
+Rewrite (pow_RN_plus e (minus (convert m1) (convert n1)) (convert n1));
+ Auto with real.
+Rewrite plus_sym; Rewrite le_plus_minus_r; Auto with real.
+Rewrite Rinv_Rmult; Auto with real.
+Apply lt_le_weak.
+Change (gt (convert m1) (convert n1)).
+Apply compare_convert_SUPERIEUR; Auto.
+Intros n1 m1; Rewrite convert_add; Auto with real.
+Intros H'; Rewrite pow_add; Auto with real.
+Apply Rinv_Rmult; Auto.
+Apply pow_nonzero; Auto.
+Apply pow_nonzero; Auto.
+Qed.
+Hints Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add :real.
+ 
+Theorem Zpower_nat_powerRZ:
+ (n, m : nat)
+  (IZR (Zpower_nat (inject_nat n) m)) == (powerRZ (INR n) (inject_nat m)).
+Intros n m; Elim m; Simpl; Auto with real.
+Intros m1 H'; Rewrite bij1; Simpl.
+Replace (Zpower_nat (inject_nat n) (S m1))
+     with (Zmult (inject_nat n) (Zpower_nat (inject_nat n) m1)).
+Rewrite mult_IZR; Auto with real.
+Repeat Rewrite <- INR_IZR_INZ; Simpl.
+Rewrite H'; Simpl.
+Case m1; Simpl; Auto with real.
+Intros m2; Rewrite bij1; Auto.
+Unfold Zpower_nat; Auto.
+Qed.
+ 
+Theorem powerRZ_lt: (e : R) (z : Z) (Rlt R0 e) ->  (Rlt R0 (powerRZ e z)).
+Intros e z; Case z; Simpl; Auto with real.
+Qed.
+Hints Resolve powerRZ_lt :real.
+ 
+Theorem powerRZ_le: (e : R) (z : Z) (Rlt R0 e) ->  (Rle R0 (powerRZ e z)).
+Intros e z H'; Apply Rlt_le; Auto with real.
+Qed.
+Hints Resolve powerRZ_le :real.
+ 
+Theorem Zpower_nat_powerRZ_absolu:
+ (n, m : Z)
+ (Zle ZERO m) ->  (IZR (Zpower_nat n (absolu m))) == (powerRZ (IZR n) m).
+Intros n m; Case m; Simpl; Auto with zarith.
+Intros p H'; Elim (convert p); Simpl; Auto with zarith.
+Intros n0 H'0; Rewrite <- H'0; Simpl; Auto with zarith.
+Rewrite <- mult_IZR; Auto.
+Intros p H'; Absurd `0 <= (NEG p)`;Auto with zarith.
+Qed.
+
+Theorem powerRZ_R1: (n : Z)  (powerRZ R1 n) == R1.
+Intros n; Case n; Simpl; Auto.
+Intros p; Elim (convert p); Simpl; Auto; Intros n0 H'; Rewrite H'; Ring.
+Intros p; Elim (convert p); Simpl.
+Exact Rinv_R1.
+Intros n1 H'; Rewrite Rinv_Rmult; Try Rewrite Rinv_R1; Try Rewrite H';
+ Auto with real.
+Qed.
 
 (*******************************)
 (*  Sum of n first naturals    *)

@@ -76,6 +76,35 @@ Generalize (not_Rle r1 r2 n);Clear n;Intro;Unfold Rgt in H0;
  Apply (Rlt_le r r1 (Rle_lt_trans r r2 r1 H H0)).
 Save.
 
+Lemma RmaxLess1: (r1, r2 : R)  (Rle r1 (Rmax r1 r2)).
+Intros r1 r2; Unfold Rmax; Case (total_order_Rle r1 r2); Auto with real.
+Save.
+ 
+Lemma RmaxLess2: (r1, r2 : R)  (Rle r2 (Rmax r1 r2)).
+Intros r1 r2; Unfold Rmax; Case (total_order_Rle r1 r2); Auto with real.
+Save.
+ 
+Lemma RmaxSym: (p, q : R)  (Rmax p q) == (Rmax q p).
+Intros p q; Unfold Rmax;
+ Case (total_order_Rle p q); Case (total_order_Rle q p); Auto; Intros H1 H2;
+ Apply Rle_antisym; Auto with real.
+Save.
+
+Lemma RmaxRmult:
+ (p, q, r : R)
+ (Rle R0 r) ->  (Rmax (Rmult r p) (Rmult r q)) == (Rmult r (Rmax p q)).
+Intros p q r H; Unfold Rmax.
+Case (total_order_Rle p q); Case (total_order_Rle (Rmult r p) (Rmult r q));
+ Auto; Intros H1 H2; Auto.
+Case H; Intros E1.
+Case H1; Auto with real.
+Rewrite <- E1; Repeat Rewrite Rmult_Ol; Auto.
+Case H; Intros E1.
+Case H2; Auto with real.
+Apply Rle_monotony_contra with z := r; Auto.
+Rewrite <- E1; Repeat Rewrite Rmult_Ol; Auto.
+Save.
+
 (*******************************)
 (*           Rabsolu           *)
 (*******************************)
@@ -125,6 +154,12 @@ Absurd (Rge r R0).
 Exact (Rlt_ge_not r R0 r0).
 Assumption.
 Trivial.
+Save.
+
+Lemma Rabsolu_left1: (a : R) (Rle a R0) ->  (Rabsolu a) == (Ropp a).
+Intros a H; Case H; Intros H1.
+Apply Rabsolu_left; Auto.
+Rewrite H1; Simpl; Rewrite Rabsolu_right; Auto with real.
 Save.
 
 (*********)
@@ -262,7 +297,6 @@ Intro;Generalize (Rle_not R1 R0 Rlt_R0_R1);Intro;
 Ring.
 Save.
 
-
 (*********)
 Lemma Rabsolu_triang:(a,b:R)(Rle (Rabsolu (Rplus a b)) 
                                 (Rplus (Rabsolu a) (Rabsolu b))).
@@ -366,3 +400,36 @@ Fold (Rgt a x) in H;Generalize (Rgt_ge_trans a x R0 H r);Intro;
  Assumption.
 Save.
 
+Lemma RmaxAbs:
+ (p, q, r : R)
+ (Rle p q) -> (Rle q r) ->  (Rle (Rabsolu q) (Rmax (Rabsolu p) (Rabsolu r))).
+Intros p q r H' H'0; Case (Rle_or_lt R0 p); Intros H'1.
+Repeat Rewrite Rabsolu_right; Auto with real.
+Apply Rle_trans with r; Auto with real.
+Apply RmaxLess2; Auto.
+Apply Rge_trans with p; Auto with real; Apply Rge_trans with q; Auto with real.
+Apply Rge_trans with p; Auto with real.
+Rewrite (Rabsolu_left p); Auto.
+Case (Rle_or_lt R0 q); Intros H'2.
+Repeat Rewrite Rabsolu_right; Auto with real.
+Apply Rle_trans with r; Auto.
+Apply RmaxLess2; Auto.
+Apply Rge_trans with q; Auto with real.
+Rewrite (Rabsolu_left q); Auto.
+Case (Rle_or_lt R0 r); Intros H'3.
+Repeat Rewrite Rabsolu_right; Auto with real.
+Apply Rle_trans with (Ropp p); Auto with real.
+Apply RmaxLess1; Auto.
+Rewrite (Rabsolu_left r); Auto.
+Apply Rle_trans with (Ropp p); Auto with real.
+Apply RmaxLess1; Auto.
+Save.
+
+Lemma Rabsolu_Zabs: (z : Z)  (Rabsolu (IZR z)) == (IZR (Zabs z)).
+Intros z; Case z; Simpl; Auto with real.
+Apply Rabsolu_right; Auto with real.
+Intros p0; Apply Rabsolu_right; Auto with real zarith.
+Intros p0; Rewrite Rabsolu_Ropp.
+Apply Rabsolu_right; Auto with real zarith.
+Save.
+ 

@@ -1208,18 +1208,18 @@ Save.
 Hints Resolve plus_INR minus_INR mult_INR : real.
 
 (*********)
-Lemma INR_lt_0:(n:nat)(lt O n)->``0 < (INR n)``.
+Lemma lt_INR_0:(n:nat)(lt O n)->``0 < (INR n)``.
 Induction 1; Intros; Auto with real.
 Rewrite S_INR; Auto with real.
 Save.
-Hints Resolve INR_lt_0: real.
+Hints Resolve lt_INR_0: real.
 
-Lemma INR_lt_nm:(n,m:nat)(lt n m)->``(INR n) < (INR m)``.
+Lemma lt_INR:(n,m:nat)(lt n m)->``(INR n) < (INR m)``.
 Induction 1; Intros; Auto with real.
 Rewrite S_INR; Auto with real.
 Rewrite S_INR; Apply Rlt_trans with (INR m0); Auto with real.
 Save.
-Hints Resolve INR_lt_nm: real.
+Hints Resolve lt_INR: real.
 
 Lemma INR_lt_1:(n:nat)(lt (S O) n)->``1 < (INR n)``.
 Intros;Replace ``1`` with (INR (S O));Auto with real.
@@ -1228,27 +1228,42 @@ Hints Resolve INR_lt_1: real.
 
 (**********)
 Lemma INR_pos : (p:positive)``0<(INR (convert p))``.
-Intro; Apply INR_lt_0.
+Intro; Apply lt_INR_0.
 Simpl; Auto with real.
 Apply compare_convert_O.
 Save.
 Hints Resolve INR_pos : real.
 
 (**********)
-Lemma INR_le:(n:nat)``0 <= (INR n)``.
+Lemma pos_INR:(n:nat)``0 <= (INR n)``.
 Intro n; Case n.
 Simpl; Auto with real.
 Auto with arith real.
 Save.
-Hints Resolve INR_le: real.
+Hints Resolve pos_INR: real.
+
+Lemma INR_lt:(n,m:nat)``(INR n) < (INR m)``->(lt n m).
+Double Induction 1 2;Intros.
+Simpl;ElimType False;Apply (Rlt_antirefl R0);Auto.
+Auto with arith.
+Generalize (pos_INR (S n0));Intro;Cut (INR O)==R0;
+  [Intro H2;Rewrite H2 in H0;Idtac|Simpl;Trivial]. 
+Generalize (Rle_lt_trans ``0`` (INR (S n0)) ``0`` H1 H0);Intro;
+  ElimType False;Apply (Rlt_antirefl R0);Auto.
+Do 2 Rewrite S_INR in H1;Cut ``(INR n1) < (INR n0)``.
+Intro H2;Generalize (H0 n0 H2);Intro;Auto with arith.
+Apply (Rlt_anti_compatibility ``1`` (INR n1) (INR n0)).
+Rewrite Rplus_sym;Rewrite (Rplus_sym ``1`` (INR n0));Trivial.
+Save.
+Hints Resolve INR_lt: real.
 
 (*********)
-Lemma INR_le_nm:(n,m:nat)(le n m)->``(INR n)<=(INR m)``.
+Lemma le_INR:(n,m:nat)(le n m)->``(INR n)<=(INR m)``.
 Induction 1; Intros; Auto with real.
 Rewrite S_INR.
 Apply Rle_trans with (INR m0); Auto with real.
 Save.
-Hints Resolve INR_le_nm: real.
+Hints Resolve le_INR: real.
 
 (**********)
 Lemma not_INR_O:(n:nat)``(INR n)<>0``->~n=O.
@@ -1276,6 +1291,27 @@ Apply sym_not_eqT; Apply imp_not_Req; Auto with real.
 Save.
 Hints Resolve not_nm_INR : real.
 
+Lemma INR_eq: (n,m:nat)(INR n)==(INR m)->n=m.
+Intros;Case (le_or_lt n m); Intros H1.
+Case (le_lt_or_eq ? ? H1); Intros H2;Auto.
+Cut ~n=m.
+Intro H3;Generalize (not_nm_INR n m H3);Intro H4;
+  ElimType False;Auto.
+Omega.
+Symmetry;Cut ~m=n.
+Intro H3;Generalize (not_nm_INR m n H3);Intro H4;
+  ElimType False;Auto.
+Omega.
+Save.
+Hints Resolve INR_eq : real.
+
+Lemma INR_le: (n, m : nat) (Rle (INR n) (INR m)) ->  (le n m).
+Intros;Elim H;Intro.
+Generalize (INR_lt n m H0);Intro;Auto with arith.
+Generalize (INR_eq n m H0);Intro;Rewrite H1;Auto.
+Save.
+Hints Resolve INR_le : real.
+
 Lemma not_1_INR:(n:nat)~n=(S O)->``(INR n)<>1``.
 Replace ``1``  with (INR (S O)); Auto with real.
 Save.
@@ -1299,8 +1335,8 @@ Induction n; Auto with real.
 Intros; Simpl; Rewrite bij1; Auto with real.
 Save.
 
-Lemma  plus_IZR_NEG_POS : 
-	(p,q:positive)(IZR `(POS p)+(NEG q)`)==``(IZR (POS p))+(IZR (NEG q))``.
+Lemma plus_IZR_NEG_POS : 
+  (p,q:positive)(IZR `(POS p)+(NEG q)`)==``(IZR (POS p))+(IZR (NEG q))``.
 Intros.
 Case (lt_eq_lt_dec (convert p) (convert q)).
 Intros [H | H]; Simpl.
@@ -1324,6 +1360,20 @@ Simpl; Intros; Rewrite convert_add; Auto with real.
 Apply plus_IZR_NEG_POS.
 Rewrite Zplus_sym; Rewrite Rplus_sym; Apply plus_IZR_NEG_POS.
 Simpl; Intros; Rewrite convert_add; Rewrite plus_INR; Auto with real.
+Save.
+
+(**********)
+Lemma mult_IZR:(z,t:Z)(IZR `z*t`)==``(IZR z)*(IZR t)``.
+Intros z t; Case z; Case t; Simpl; Auto with real.
+Intros t1 z1; Rewrite times_convert; Auto with real.
+Intros t1 z1; Rewrite times_convert; Auto with real.
+Rewrite Rmult_sym.
+Rewrite Ropp_mul1; Auto with real.
+Apply eq_Ropp; Rewrite mult_sym; Auto with real.
+Intros t1 z1; Rewrite times_convert; Auto with real.
+Rewrite Ropp_mul1; Auto with real.
+Intros t1 z1; Rewrite times_convert; Auto with real.
+Rewrite Ropp_mul2; Auto with real.
 Save.
 
 (**********)
@@ -1368,6 +1418,12 @@ Intros;Generalize (eq_Rminus (IZR z1) (IZR z2) H);
  Intro;Omega.
 Save.
 
+(**********)
+Lemma not_O_IZR:(z:Z)`z<>0`->``(IZR z)<>0``.
+Intros z H; Red; Intros H0; Case H.
+Apply eq_IZR; Auto.
+Save.
+
 (*********)
 Lemma le_O_IZR:(z:Z)``0<= (IZR z)``->`0<=z`.
 Unfold Rle; Intros z [H|H].
@@ -1395,6 +1451,17 @@ Intros;Apply Rlt_not_ge;Red;Intro.
 Generalize (lt_IZR m n H0); Intro; Omega.
 Save.
 
+Lemma IZR_le: (m,n:Z) `m<= n` -> ``(IZR m)<=(IZR n)``.
+Intros;Apply Rgt_not_le;Red;Intro.
+Unfold Rgt in H0;Generalize (lt_IZR n m H0); Intro; Omega.
+Save.
+
+Lemma IZR_lt: (m,n:Z) `m< n` -> ``(IZR m)<(IZR n)``.
+Intros;Cut `m<=n`.
+Intro H0;Elim (IZR_le m n H0);Intro;Auto.
+Generalize (eq_IZR m n H1);Intro;ElimType False;Omega.
+Omega.
+
 Lemma one_IZR_lt1 : (z:Z)``-1<(IZR z)<1``->`z=0`.
 Intros z (H1,H2).
 Apply Zle_antisym.
@@ -1419,9 +1486,9 @@ Save.
 
 
 (**********)
-Lemma single_z_r_R1
-  : (r:R)(z,x:Z)``r<(IZR z)``->``(IZR z)<=r+1``->``r<(IZR x)``->``(IZR x)<=r+1``
-    ->z=x.
+Lemma single_z_r_R1: 
+   (r:R)(z,x:Z)``r<(IZR z)``->``(IZR z)<=r+1``->``r<(IZR x)``->
+        ``(IZR x)<=r+1``->z=x.
 Intros; Apply one_IZR_r_R1 with r; Auto.
 Save.
 

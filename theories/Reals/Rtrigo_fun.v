@@ -31,7 +31,7 @@ Split with O;Intros;Rewrite (simpl_fact n);Unfold R_dist;
 Intro; Rewrite (Rabsolu_pos_eq (Rinv (INR (S n)))).
 Cut (Rlt (Rminus (Rinv eps) R1) R0).
 Intro;Generalize (Rlt_le_trans (Rminus (Rinv eps) R1) R0 (INR n) H2 
-   (INR_le n));Clear H2;Intro;
+   (pos_INR n));Clear H2;Intro;
  Unfold Rminus in H2;Generalize (Rlt_compatibility R1 
        (Rplus (Rinv eps) (Ropp R1)) (INR n) H2);
  Replace (Rplus R1 (Rplus (Rinv eps) (Ropp R1))) with (Rinv eps);
@@ -54,7 +54,7 @@ Apply Rlt_minus;Unfold Rgt in a;Rewrite <- Rinv_R1;
  Apply (Rinv_lt R1 eps);Auto;
  Rewrite (let (H1,H2)=(Rmult_ne eps) in H2);Unfold Rgt in H;Assumption.
 Unfold Rgt in H1;Apply Rlt_le;Assumption.
-Unfold Rgt;Apply Rlt_Rinv; Apply INR_lt_0;Apply lt_O_Sn.
+Unfold Rgt;Apply Rlt_Rinv; Apply lt_INR_0;Apply lt_O_Sn.
 (**)
 Cut `0<=(up (Rminus (Rinv eps) R1))`.
 Intro;Elim (IZN (up (Rminus (Rinv eps) R1)) H0);Intros;
@@ -65,7 +65,7 @@ Intro;Elim (IZN (up (Rminus (Rinv eps) R1)) H0);Intros;
 Intro; Rewrite (Rabsolu_pos_eq (Rinv (INR (S n)))).
 Cut (Rlt (Rminus (Rinv eps) R1) (INR x)).
 Intro;Generalize (Rlt_le_trans (Rminus (Rinv eps) R1) (INR x) (INR n) 
-      H4 (INR_le_nm x n ([n,m:nat; H:(ge m n)]H x n H2)));  
+      H4 (le_INR x n ([n,m:nat; H:(ge m n)]H x n H2)));  
  Clear H4;Intro;Unfold Rminus in H4;Generalize (Rlt_compatibility R1 
        (Rplus (Rinv eps) (Ropp R1)) (INR n) H4);
  Replace (Rplus R1 (Rplus (Rinv eps) (Ropp R1))) with (Rinv eps);
@@ -89,7 +89,7 @@ Cut (IZR (up (Rminus (Rinv eps) R1)))==(IZR (INZ x));
 Elim (archimed (Rminus (Rinv eps) R1));Intros;Clear H6;
  Unfold Rgt in H5;Rewrite H4 in H5;Rewrite INR_IZR_INZ;Assumption.
 Unfold Rgt in H1;Apply Rlt_le;Assumption.
-Unfold Rgt;Apply Rlt_Rinv; Apply INR_lt_0;Apply lt_O_Sn.
+Unfold Rgt;Apply Rlt_Rinv; Apply lt_INR_0;Apply lt_O_Sn.
 Apply (le_O_IZR (up (Rminus (Rinv eps) R1))); 
  Apply (Rle_trans R0 (Rminus (Rinv eps) R1) 
   (IZR (up (Rminus (Rinv eps) R1)))).
