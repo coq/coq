@@ -57,10 +57,8 @@ val val_interp : interp_sign -> Coqast.t -> value
 (* Interprets tactic arguments *)
 val interp_tacarg : interp_sign -> Coqast.t -> tactic_arg
 
+(* Initial call for interpretation *)
 val interp               : Coqast.t -> tactic
-(*i val vernac_interp        : Coqast.t -> tactic i*)
-val vernac_interp_atomic : identifier -> tactic_arg list -> tactic
 
-val is_just_undef_macro  : Coqast.t -> string option
-
+(* For bad tactic calls *)
 val bad_tactic_args : string -> 'a

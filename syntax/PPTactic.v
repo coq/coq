@@ -216,7 +216,8 @@ Syntax tactic
   | reduce_simpl [<<(REDEXP (Simpl))>>] -> ["Simpl"]
   | reduce_cbv [<<(REDEXP (Cbv ($LIST $lf)))>>] -> ["Cbv" (FLAGS ($LIST $lf))]
   | reduce_compute [<<(REDEXP (Cbv (Beta) (Delta) (Iota)))>>] -> [ "Compute" ]
-  | reduce_lazy [<<(REDEXP (Lazy ($LIST $lf)))>>] -> ["Lazy" (FLAGS ($LIST $lf))]
+  | reduce_lazy [<<(REDEXP (Lazy ($LIST $lf)))>>] ->
+    ["Lazy" (FLAGS ($LIST $lf))]
   | reduce_unfold [<<(REDEXP (Unfold ($LIST $unf)))>>] ->
        [ [<hv 3> "Unfold " (UNFOLDLIST ($LIST $unf))] ]
   | reduce_fold [<<(REDEXP (Fold ($LIST $cl)))>>] ->
@@ -231,10 +232,12 @@ Syntax tactic
         [ [1 0] "Delta" (FLAGS ($LIST $F))]
   | flags_iota [<<(FLAGS (Iota) ($LIST $F))>>] ->
         [ [1 0] "Iota" (FLAGS ($LIST $F))]
-  | delta_unf [<<(FLAGS (Unf ($LIST $idl)))>>]
-         -> [ [1 0] "[" [<hov 0> (LISTSPC ($LIST $idl)) ] "]" ]
-  | delta_unfbut [<<(FLAGS (UnfBut ($LIST $idl)))>>]
-         -> [ [1 0] "-[" [<hov 0> (LISTSPC ($LIST $idl)) ] "]" ]
+  | delta_unf [<<(FLAGS (Unf ($LIST $idl)) ($LIST $F))>>]
+         -> [ [1 0] "[" [<hov 0> (LISTSPC ($LIST $idl)) ] "]"
+              (FLAGS ($LIST $F))]
+  | delta_unfbut [<<(FLAGS (UnfBut ($LIST $idl)) ($LIST $F))>>]
+         -> [ [1 0] "-[" [<hov 0> (LISTSPC ($LIST $idl)) ] "]"
+              (FLAGS ($LIST $F))]
   | flags_nil [<<(FLAGS)>>] -> [ ]
 
 

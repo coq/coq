@@ -925,27 +925,12 @@ let interp_tacarg sign ast = unvarg (val_interp sign ast)
 (* Initial call for interpretation *)
 let interp = fun ast -> tac_interp [] [] !debug ast
 
-let is_just_undef_macro ast =
-  match ast with
-    | Node(_,"TACTICLIST",[Node(loc,"CALL",macro::_)]) ->
-        let id = nvar_of_ast macro in
-      	(try let _ = Macros.lookup id in None with Not_found -> Some id)
-    | _ -> None
-
-let vernac_interp_atomic =
-  let gentac =
-    hide_tactic "InterpretAtomic"
-      (fun argl gl -> match argl with 
-	 | (Identifier id)::args -> 
-	     interp_atomic dummy_loc (string_of_id id) args gl
-	 | _ -> assert false)
-  in 
-  fun opn args -> gentac ((Identifier opn)::args)
-
+(* For bad tactic calls *)
 let bad_tactic_args s =
   anomalylabstrm s
     [<'sTR "Tactic "; 'sTR s; 'sTR " called with bad arguments">]
 
+(* Declaration of the TACTIC-DEFINITION object *)
 let (inMD,outMD) =
   let add (na,td) = mactab := Gmap.add na td !mactab in
   let cache_md (_,(na,td)) =  

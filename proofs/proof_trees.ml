@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open Closure
 open Util
 open Names
 open Term
@@ -10,6 +11,7 @@ open Stamps
 open Environ
 open Evarutil
 open Proof_type
+open Tacred
 open Typing
 
 let is_bind = function
@@ -342,6 +344,37 @@ let rec ast_of_cvt_intro_pattern = function
   | ConjPat l -> ope ("CONJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
   | ListPat l -> ope ("LISTPATTERN",  (List.map ast_of_cvt_intro_pattern l))
 
+(* Gives the ast list corresponding to a reduction flag *)
+let last_of_cvt_flags (_,red) =
+  (if (red_set red BETA) then [ope("Beta",[])]
+   else [])@
+  (let (n_unf,lconst) = red_get_const red in
+   let lnvar = List.map (fun sp -> nvar (print_basename sp)) lconst in
+   if lnvar = [] then []
+   else if n_unf then [ope("Delta",[]);ope("UnfBut",lnvar)]
+   else [ope("Delta",[]);ope("Unf",lnvar)])@
+  (if (red_set red IOTA) then [ope("Iota",[])]
+   else [])
+
+(* Gives the ast corresponding to a reduction expression *)
+let ast_of_cvt_redexp = function
+  | Red _ -> ope ("Red",[])
+  | Hnf -> ope("Hnf",[])
+  | Simpl -> ope("Simpl",[])
+  | Cbv flg -> ope("Cbv",last_of_cvt_flags flg)
+  | Lazy flg -> ope("Lazy",last_of_cvt_flags flg)
+  | Unfold l ->
+    ope("Unfold",List.map (fun (locc,sp) -> ope("UNFOLD",
+      [nvar (print_basename sp)]@(List.map num locc))) l)
+  | Fold l ->
+    ope("Fold",List.map (fun c -> ope ("COMMAND",
+      [ast_of_constr false (Global.env ()) c])) l)
+  | Pattern l ->
+    ope("Pattern",List.map (fun (locc,csr,_) -> ope("PATTERN",
+      [ope ("COMMAND",[ast_of_constr false (Global.env ()) csr])]@
+      (List.map num locc))) l)
+
+(* Gives the ast corresponding to a tactic argument *)
 let ast_of_cvt_arg = function
   | Identifier id   -> nvar (string_of_id id) 
   | Quoted_string s -> str s
@@ -364,11 +397,7 @@ let ast_of_cvt_arg = function
 		(ast_of_constr false (Global.env ()))) bl)
   | Tacexp ast      -> ope ("TACTIC",[ast])
   | Tac tac -> failwith "TODO: ast_of_cvt_arg: Tac"
-  | Redexp red ->
-    begin
-      wARNING [<'sTR "TODO: ast_of_cvt_arg: Redexp">];
-      nvar "REDEXP"
-    end
+  | Redexp red -> ope("REDEXP",[ast_of_cvt_redexp red])
   | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
                                       (num n); 
                                       ope ("COMMAND",[c])]) 
