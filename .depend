@@ -3309,13 +3309,13 @@ contrib/romega/g_romega.cmx: lib/util.cmx tactics/tacinterp.cmx \
 contrib/romega/refl_omega.cmo: lib/util.cmi kernel/term.cmi \
     tactics/tactics.cmi tactics/tacticals.cmi proofs/tacmach.cmi \
     parsing/printer.cmi lib/pp.cmi lib/options.cmi contrib/omega/omega.cmo \
-    kernel/names.cmi proofs/logic.cmi contrib/romega/const_omega.cmo \
-    lib/bigint.cmi 
+    kernel/names.cmi proofs/logic.cmi interp/coqlib.cmi \
+    contrib/romega/const_omega.cmo lib/bigint.cmi 
 contrib/romega/refl_omega.cmx: lib/util.cmx kernel/term.cmx \
     tactics/tactics.cmx tactics/tacticals.cmx proofs/tacmach.cmx \
     parsing/printer.cmx lib/pp.cmx lib/options.cmx contrib/omega/omega.cmx \
-    kernel/names.cmx proofs/logic.cmx contrib/romega/const_omega.cmx \
-    lib/bigint.cmx 
+    kernel/names.cmx proofs/logic.cmx interp/coqlib.cmx \
+    contrib/romega/const_omega.cmx lib/bigint.cmx 
 contrib/xml/acic.cmo: kernel/term.cmi kernel/names.cmi 
 contrib/xml/acic.cmx: kernel/term.cmx kernel/names.cmx 
 contrib/xml/acic2Xml.cmo: contrib/xml/xml.cmi lib/util.cmi kernel/term.cmi \
