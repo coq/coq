@@ -508,7 +508,7 @@ Note the difference between the value of {\tt x'} inside section {\tt
 \item Most commands, like {\tt Hint \ident} or {\tt Syntactic
   Definition} which appear inside a section are cancelled when the
 section is closed.
-% See \ref{LongNames}
+% cf section \ref{LongNames}
 %\item Usually all identifiers must be distinct. 
 %However, a name already used in a closed section (see \ref{Section})
 %can be reused. In this case, the old name is no longer accessible.
@@ -520,7 +520,8 @@ section is closed.
 
 \section{Libraries and long names}
 \label{LongNames}
-
+\index{Qualified identifiers}
+\index{Absolute names}
 \paragraph{Libraries}
 
 The theories developed in {\Coq} are stored in {\em libraries}.  A
@@ -553,7 +554,7 @@ operating system using the command (see \ref{AddLoadPath})
 \end{quote}
 
 A library can inherit the tree structure of a physical directory by
-using the {\tt -R} option to {\tt coqtop} (see \ref{coqtop}) or the
+using the {\tt -R} option to {\tt coqtop} or the
 command (see \ref{AddRecLoadPath})
 
 \begin{quote}
@@ -643,7 +644,7 @@ physical file \verb!theories/Init/Datatypes.vo! in {\Coq} installation directory
 When requiring the file, the mapping between physical directories and logical library should be consistent with the mapping used to compile the file (for modules of the standard library, this is automatic -- check it by typing {\tt Print LoadPath}).
 
 The command {\tt Add Rec LoadPath} is also available from {\tt coqtop}
-and {\tt coqc} by using option~\verb=-R= (see section \ref{Tools}).
+and {\tt coqc} by using option~\verb=-R=.
 
 \section{Implicit arguments}\index{implicit arguments}
 
@@ -907,8 +908,8 @@ To skip the printing of coercions, use
 By default, coercions are not printed.
 
 \subsubsection{\tt Set Printing Coercion {\qualid}.}
-\comindex{Set Printing Coercions}
-\comindex{Unset Printing Coercions}
+\comindex{Set Printing Coercion}
+\comindex{Unset Printing Coercion}
 
 This command forces coercion denoted by {\qualid} to be printed.
 To skip the printing of coercion {\qualid}, use

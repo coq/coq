@@ -444,7 +444,9 @@ which can be any valid path.
   Is equivalent to {\tt Pwd.}
 \end{Variants}
 
-\subsection{\tt Add LoadPath {\str} as {\dirpath}.}\comindex{Add LoadPath}
+\subsection{\tt Add LoadPath {\str} as {\dirpath}.}
+\comindex{Add LoadPath}\label{AddLoadPath}
+
 This command adds the path {\str} to the current \Coq\ loadpath and
 maps it to the logical directory {\dirpath}, which means that every
 file {\tt M.v} physically lying in directory {\str} will be considered
@@ -455,7 +457,7 @@ as a module of logical name ``{\dirpath}{\tt{.M}}''.
 Performs as {\tt Add LoadPath {\str} as {\dirpath}.} but for an empty directory path.
 \end{Variants}
 
-\subsection{\tt Add Rec LoadPath {\str} as {\dirpath}.}\comindex{Add Rec LoadPath}
+\subsection{\tt Add Rec LoadPath {\str} as {\dirpath}.}\comindex{Add Rec LoadPath}\label{AddRecLoadPath}
 This command adds the directory {\str} and all its subdirectories 
 to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath}, any subdirectory {\textsl{pdir}} will be mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
 
