@@ -339,7 +339,7 @@ Fixpoint interp_hyps [env : (list Z); l: hyps] : Prop :=
    | (cons p' l') => (interp_proposition env p') /\ (interp_hyps env l')
   end.
 
-(* \paragraph{ous forme de but}
+(* \paragraph{Sous forme de but}
    C'est cette interpétation que l'on utilise sur le but (car on utilise
    [Generalize] et qu'une conjonction est forcément lourde (répétition des
    types dans les conjonctions intermédiaires) *)
@@ -394,7 +394,7 @@ Definition valid2 [f: proposition -> proposition -> proposition] :=
       (interp_proposition e (f p1 p2)).
 
 (* Dans cette notion de validité, la fonction prend directement une 
-   liste de propositions et rend une nouvelle liste de proposition. 
+   liste de propositions et rend une nouvelle liste de propositions. 
    On reste contravariant *)
 
 Definition valid_hyps [f: hyps -> hyps] :=
@@ -411,7 +411,7 @@ Intros; Apply goal_to_hyps; Intro H1; Apply (hyps_to_goal env (a l) H0);
 Apply H; Assumption.
 Save.
 
-(* \subsubsection{Généralisation a des listes de buts (disjonctions)} *)
+(* \subsubsection{Généralisation à des listes de buts (disjonctions)} *)
 
 Syntactic Definition lhyps := (list hyps).
 
@@ -1427,6 +1427,30 @@ Definition negate_contradict [i1,i2:nat; h:hyps]:=
   | _ => h
   end.
 
+Definition negate_contradict_inv [t:nat; i1,i2:nat; h:hyps]:=
+  Cases (nth_hyps i1 h) of
+    (EqTerm (Tint ZERO) b1) =>
+	Cases (nth_hyps i2 h) of
+           (NeqTerm (Tint ZERO) b2) =>
+              Cases (eq_term b1 (scalar_norm t (Tmult b2 (Tint `-1`)))) of
+	         true => absurd
+              |  false => h
+	    end
+        | _ => h
+        end
+  | (NeqTerm (Tint ZERO) b1) =>
+	Cases (nth_hyps i2 h) of
+           (EqTerm (Tint ZERO) b2) =>
+              Cases (eq_term b1 (scalar_norm t (Tmult b2 (Tint `-1`)))) of
+	         true => absurd
+              |  false => h
+	    end
+        | _ => h
+        end
+  | _ => h
+  end.
+
+
 Theorem negate_contradict_valid :
   (i,j:nat) (valid_hyps (negate_contradict i j)).
 
@@ -1440,6 +1464,31 @@ Auto; Simpl; Intros H1 H2; [
     [ Elim H2; Rewrite H3; Assumption | Assumption ]].
 
 Save.
+
+Theorem negate_contradict_inv_valid :
+  (t,i,j:nat) (valid_hyps (negate_contradict_inv t i j)).
+
+
+Unfold valid_hyps negate_contradict_inv; Intros t i j e l H;
+Generalize (nth_valid ? i ? H); Generalize (nth_valid ? j ? H);
+Case (nth_hyps i l); Auto; Intros t1 t2; Case t1; Auto; Intros z; Case z; Auto;
+Case (nth_hyps j l); Auto; Intros t3 t4; Case t3; Auto; Intros z'; Case z'; 
+Auto; Simpl; Intros H1 H2;
+(Pattern (eq_term t2 (scalar_norm t (Tmult t4 (Tint (NEG xH))))); Apply bool_ind2; Intro Aux; [
+  Generalize (eq_term_true t2 (scalar_norm t (Tmult t4 (Tint (NEG xH)))) Aux);
+  Clear Aux
+| Generalize (eq_term_false t2 (scalar_norm t (Tmult t4 (Tint (NEG xH)))) Aux);
+  Clear Aux ]); [
+   Intro H3; Elim H1; Generalize H2; Rewrite H3; 
+   Rewrite <- (scalar_norm_stable t e); Simpl; Elim (interp_term e t4) ; 
+   Simpl; Auto; Intros p H4; Discriminate H4
+ | Auto 
+ | Intro H3; Elim H2; Rewrite H3; Elim (scalar_norm_stable t e); Simpl;
+   Elim H1; Simpl; Trivial
+ | Auto ].
+
+Save.
+
 
 (* \subsubsection{Tactiques générant une nouvelle équation} *)
 (* \paragraph{[O_SUM]}
@@ -1726,6 +1775,7 @@ Inductive t_omega : Set :=
  | O_SPLIT_INEQ : nat -> nat -> t_omega -> t_omega -> t_omega
  | O_CONSTANT_NUL : nat -> t_omega 
  | O_NEGATE_CONTRADICT : nat -> nat -> t_omega
+ | O_NEGATE_CONTRADICT_INV : nat -> nat -> nat -> t_omega
  | O_STATE : Z -> step -> nat -> nat -> t_omega -> t_omega.
 
 Syntactic Definition singleton :=  [a: hyps] (cons a (nil hyps)).
@@ -1751,6 +1801,7 @@ Fixpoint execute_omega [t: t_omega] : hyps -> lhyps :=
        (split_ineq i t (execute_omega cont1) (execute_omega cont2) l)
    | (O_CONSTANT_NUL i) => (singleton (constant_nul i l))
    | (O_NEGATE_CONTRADICT i j) =>  (singleton (negate_contradict i j l))
+   | (O_NEGATE_CONTRADICT_INV t i j) => (singleton (negate_contradict_inv t i j l))
    | (O_STATE m s i1 i2 cont) =>
        (execute_omega cont (apply_oper_2 i1 i2 (state m s) l))
   end.
@@ -1789,6 +1840,8 @@ Induction t; Simpl; [
   Apply (constant_nul_valid i e lp H)
 | Unfold valid_list_hyps; Simpl; Intros i j e lp H; Left; 
   Apply (negate_contradict_valid i j e lp H)
+| Unfold valid_list_hyps; Simpl; Intros n i j e lp H; Left; 
+  Apply (negate_contradict_inv_valid n i j e lp H)
 | Unfold valid_list_hyps valid_hyps; Intros m s i1 i2 t' Ht' e lp H; Apply Ht';
   Apply (apply_oper_2_valid i1 i2 (state m s) (state_valid m s) e lp H)
 ].

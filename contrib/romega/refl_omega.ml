@@ -490,9 +490,16 @@ let replay_history env_hyp =
 	  mkApp (Lazy.force coq_s_constant_nul, 
 		 [|  mk_nat (get_hyp env_hyp e) |])
       |	Omega.NEGATE_CONTRADICT(e1,e2,b) :: l ->
+	  if b then
 	  mkApp (Lazy.force coq_s_negate_contradict, 
 		 [|  mk_nat (get_hyp env_hyp e1.Omega.id);
 		     mk_nat (get_hyp env_hyp e2.Omega.id) |])
+	  else
+	    mkApp (Lazy.force coq_s_negate_contradict_inv, 
+		   [|  mk_nat (List.length e1.Omega.body);
+                       mk_nat (get_hyp env_hyp e1.Omega.id);
+                       mk_nat (get_hyp env_hyp e2.Omega.id) |])
+
       | Omega.SPLIT_INEQ(e,(e1,l1),(e2,l2)) :: l ->
 	  let i =  get_hyp env_hyp e.Omega.id in
 	  let r1 = loop (e1 :: env_hyp) l1 in

@@ -106,7 +106,7 @@ let check_ident_suffix i l s =
     let c = String.get s i in
     if not (is_letter c or is_digit c or c = '\'' or c = '_' or c = '@') then
       error
-	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
+	("Character "^(String.sub s i 1)^" is not allowed in identifier "^s)
   done
 
 let check_ident s =

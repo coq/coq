@@ -184,6 +184,7 @@ let coq_s_merge_eq = lazy (constant module_refl_path "O_MERGE_EQ")
 let coq_s_split_ineq =lazy (constant module_refl_path "O_SPLIT_INEQ")
 let coq_s_constant_nul =lazy (constant module_refl_path "O_CONSTANT_NUL")
 let coq_s_negate_contradict =lazy (constant module_refl_path "O_NEGATE_CONTRADICT")
+let coq_s_negate_contradict_inv =lazy (constant module_refl_path "O_NEGATE_CONTRADICT_INV")
 
 (* \subsection{Construction d'expressions} *)
 
