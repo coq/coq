@@ -123,6 +123,9 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.survive_section = false }
 
 let cache_constant (sp,(cdt,stre)) =
+  (if Idmap.mem (basename sp) !vartab then
+    errorlabstrm "cache_constant" 
+      (pr_id (basename sp) ++ str " already exists"));
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
@@ -204,6 +207,9 @@ let inductive_names sp mie =
   in names
 
 let check_exists_inductive (sp,_) =
+  (if Idmap.mem (basename sp) !vartab then
+    errorlabstrm "cache_inductive" 
+      (pr_id (basename sp) ++ str " already exists"));
   if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_inductive" (pr_id id ++ str " already exists")
