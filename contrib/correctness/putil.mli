@@ -18,6 +18,9 @@ open Ptype
 open Past
 open Penv
 
+val is_mutable : 'a ml_type_v -> bool
+val is_pure : 'a ml_type_v -> bool
+
 val named_app : ('a -> 'b) -> 'a assertion -> 'b assertion
 val pre_app : ('a -> 'b) -> 'a precondition -> 'b precondition
 val post_app : ('a -> 'b) -> 'a postcondition -> 'b postcondition

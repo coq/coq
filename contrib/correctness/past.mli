@@ -10,30 +10,43 @@
 
 (* $Id$ *)
 
-(* Generated automatically by ocamlc -i *)
+(*s Abstract syntax of imperative programs. *)
 
-type termination = | RecArg of int | Wf of Coqast.t * Coqast.t
-type variable = Names.identifier
+open Names
+open Ptype
+
+type termination = 
+  | RecArg of int 
+  | Wf of Coqast.t * Coqast.t
+
+type variable = identifier
+
 type pattern =
-  | PatVar of Names.identifier
-  | PatConstruct of Names.identifier * ((Names.section_path * int) * int)
-  | PatAlias of pattern * Names.identifier
+  | PatVar of identifier
+  | PatConstruct of identifier * ((section_path * int) * int)
+  | PatAlias of pattern * identifier
   | PatPair of pattern * pattern
   | PatApp of pattern list
+
 type epattern =
-  | ExnConstant of Names.identifier
-  | ExnBind of Names.identifier * Names.identifier
+  | ExnConstant of identifier
+  | ExnBind of identifier * identifier
+
 type ('a, 'b) block_st =
   | Label of string
   | Assert of 'b Ptype.assertion
   | Statement of 'a
+
 type ('a, 'b) block = ('a, 'b) block_st list
-type ('a, 'b) t =
-  { desc: ('a, 'b) t_desc;
-    pre: 'b Ptype.precondition list;
-    post: 'b Ptype.postcondition option;
-    loc: Coqast.loc;
-    info: 'a }
+
+type ('a, 'b) t = { 
+  desc : ('a, 'b) t_desc;
+  pre  : 'b Ptype.precondition list;
+  post : 'b Ptype.postcondition option;
+  loc  : Coqast.loc;
+  info : 'a 
+}
+
 and ('a, 'b) t_desc =
   | Var of variable
   | Acc of variable
@@ -54,14 +67,24 @@ and ('a, 'b) t_desc =
   | PPoint of string * ('a, 'b) t_desc
   | Expression of Term.constr
   | Debug of string * ('a, 'b) t
+
 and ('a, 'b) arg =
   | Term of ('a, 'b) t
   | Refarg of variable
   | Type of 'b Ptype.ml_type_v
+
 type program = (unit, Coqast.t) t
+
+(*s Intermediate type for CC terms. *)
+
 type cc_type = Term.constr
-type cc_bind_type = | CC_typed_binder of cc_type | CC_untyped_binder
+
+type cc_bind_type = 
+  | CC_typed_binder of cc_type 
+  | CC_untyped_binder
+
 type cc_binder = variable * cc_bind_type
+
 type cc_term =
   | CC_var of variable
   | CC_letin of 

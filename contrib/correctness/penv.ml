@@ -116,6 +116,8 @@ let (inProg,outProg) =
                     open_function = (fun _ -> ());
 		    export_function = (fun x -> Some x) })
 
+let is_mutable = function Ref _ | Array _ -> true | _ -> false
+
 let add_global id v p =
   try
     let _ = Env.find id !env in

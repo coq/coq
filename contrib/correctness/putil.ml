@@ -21,6 +21,9 @@ open Past
 open Penv
 open Prename
 
+let is_mutable = function Ref _ | Array _ -> true | _ -> false
+let is_pure = function TypePure _ -> true | _ -> false
+
 let named_app f x = { a_name = x.a_name; a_value = (f x.a_value) }
 
 let pre_app f x = 
