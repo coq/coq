@@ -236,6 +236,11 @@ let pr_type_option pr_c = function
   | CHole loc -> mt()
   | _ as c -> str":" ++ pr_c c
 
+let pr_decl_notation =
+  pr_opt (fun (ntn,scopt) -> 
+    str "as " ++ str (quote ntn) ++ 
+    pr_opt (fun sc -> str " :" ++ str sc) scopt)
+
 let anonymize_binder na c =
   if Options.do_translate() then
     Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
@@ -487,7 +492,7 @@ let rec pr_vernac = function
         | Some ml -> ml in
       str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs s ++
       (match l with | [] -> mt() | _ as l -> 
-	str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
+	str" (" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
   (* Gallina *)
   | VernacDefinition (d,id,b,f,e) -> (* A verifier... *)
@@ -555,8 +560,9 @@ let rec pr_vernac = function
 	    (Termops.push_rel_assum (Name id,p) env,
 	    (Name id,None,p)::params))
 	  (env0,[]) lparams in
-      let impls = List.map
-	(fun (recname,_,_,arityc,_) ->
+      let lparnames = List.map (fun (na,_,_) -> na) params in
+      let impl_ntns = List.map
+	(fun (recname,ntnopt,_,arityc,_) ->
 	  let arity = Constrintern.interp_type sigma env_params arityc in
 	  let fullarity =
             Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params)
@@ -569,9 +575,16 @@ let rec pr_vernac = function
 	    if Impargs.is_implicit_args_out()
 	    then Impargs.compute_implicits true env_params fullarity
 	    else [] in
-	  (recname,impl_in,impl_out)) l in
-      let impls_in = List.map (fun (id,a,_) -> (id,a)) impls in
-      let impls_out = List.map (fun (id,_,a) -> (id,a)) impls in
+	  let notation =
+	    option_app (fun df ->
+	      (List.rev_append lparnames 
+		(List.rev (List.map fst (fst (Term.decompose_prod arity)))),
+	      df))
+	      ntnopt in
+	  (recname,impl_in,impl_out,notation)) l in
+      let impls_in = List.map (fun (id,a,_,_) -> (id,a)) impl_ntns in
+      let impls_out = List.map (fun (id,_,a,_) -> (id,a)) impl_ntns in
+      let notations = List.map (fun (id,_,_,n) -> (id,n)) impl_ntns in
       Constrintern.set_temporary_implicits_in impls_in;
       Constrextern.set_temporary_implicits_out impls_out;
       (* Fin calcul implicites *)
@@ -590,24 +603,13 @@ let rec pr_vernac = function
           str key ++ spc() ++
           pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
           pr_lconstr s ++ 
-          pr_opt (fun (ntn,scopt) -> 
-	    str "as " ++ str (quote ntn) ++ 
-            pr_opt (fun sc -> str " :" ++ str sc) scopt)
-          ntn ++ str" :=") ++ pr_constructor_list lc in
+	  pr_decl_notation ntn ++ str" :=") ++ pr_constructor_list lc in
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
-      let lparnames = List.map (fun (na,_,_) -> na) params in
-      let notations = 
-	List.map (fun (recname,ntnopt,_,arityc,_) ->
-          let arity = Constrintern.interp_type sigma env_params arityc in
-	  option_app (fun df ->
-            let larnames =
-	      List.rev_append lparnames 
-		(List.map fst (fst (Term.decompose_prod arity))) in
-	    (recname,larnames,df)) ntnopt) l in
-      List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
+      List.iter (fun (recname,no) ->
+	option_iter (fun (larnames,(df,scope)) ->
 	Metasyntax.add_notation_interpretation df
-	(AVar recname,larnames) scope)) notations;
+	(AVar recname,larnames) scope) no) notations;
 
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 
@@ -619,8 +621,8 @@ let rec pr_vernac = function
       (* Copie simplifiée de command.ml pour recalculer les implicites *)
       let sigma = Evd.empty
       and env0 = Global.env() in
-      let impls = List.map
-        (fun (recname,_,arityc,_) -> 
+      let impl_ntns = List.map
+        (fun ((recname,_,arityc,_),ntnopt) -> 
           let arity = Constrintern.interp_type sigma env0 arityc in
 	  let impl_in =
 	    if Impargs.is_implicit_args()
@@ -630,14 +632,25 @@ let rec pr_vernac = function
 	    if Impargs.is_implicit_args_out()
 	    then Impargs.compute_implicits true env0 arity
 	    else [] in
-	  (recname,impl_in,impl_out)) recs in
-      let impls_in = List.map (fun (id,a,_) -> (id,a)) impls in
-      let impls_out = List.map (fun (id,_,a) -> (id,a)) impls in
+	  let notations = 
+	    option_app (fun ntn ->
+              let larnames = List.map fst (fst (Term.decompose_prod arity)) in
+	      (List.rev larnames,ntn)) ntnopt in
+	  (recname,impl_in,impl_out,notations)) recs in
+      let impls_in = List.map (fun (id,a,_,_) -> (id,a)) impl_ntns in
+      let impls_out = List.map (fun (id,_,a,_) -> (id,a)) impl_ntns in
+      let notations = List.map (fun (id,_,_,n) -> (id,n)) impl_ntns in
       Constrintern.set_temporary_implicits_in impls_in;
       Constrextern.set_temporary_implicits_out impls_out;
 
+      (* Copie simplifiée de command.ml pour déclarer les notations locales *)
+      List.iter (fun (recname,no) ->
+	option_iter (fun (larnames,(df,scope)) ->
+	Metasyntax.add_notation_interpretation df
+	(AVar recname,larnames) scope) no) notations;
+
       let pr_onerec = function
-        | (id,n,type_0,def0) ->
+        | (id,n,type_0,def0),ntn ->
             let (bl,def,type_) = extract_def_binders def0 type_0 in
             let ids = List.flatten (List.map fst bl) in
             let (bl,def,type_) =
@@ -651,7 +664,8 @@ let rec pr_vernac = function
               else mt() in
             pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
-            ++ str" :=" ++ brk(1,1) ++ pr_lconstr def in
+            ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++ pr_lconstr def
+      in
       hov 1 (str"Fixpoint" ++ spc() ++
         prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
 

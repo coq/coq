@@ -140,6 +140,10 @@ GEXTEND Gram
   ident_comma_list_tail:
     [ [ ","; nal = LIST1 base_ident SEP "," -> nal | -> [] ] ]
   ;
+  decl_notation:
+    [ [ "as"; ntn = STRING; scopt = OPT [ ":"; sc = IDENT -> sc] -> 
+        (ntn,scopt) ] ]
+  ;
   type_option:
     [ [ ":"; c = constr -> c 
       | -> evar_constr loc ] ]
@@ -216,9 +220,9 @@ GEXTEND Gram
           (id,c,lc) ] ]
   ;
   oneind:
-    [ [ ntn = OPT [ ntn = STRING; ":=" -> (ntn,None) ];
-        id = base_ident; indpar = simple_binders_list; ":"; c = constr; ":=";
-	lc = constructor_list -> (id,ntn,indpar,c,lc) ] ]
+    [ [ id = base_ident; indpar = simple_binders_list; ":"; c = constr; 
+        ntn = OPT decl_notation ; ":="; lc = constructor_list ->
+	  (id,ntn,indpar,c,lc) ] ]
   ;
   simple_binders_list:
     [ [ bl = ne_simple_binders_list -> bl
@@ -241,12 +245,12 @@ GEXTEND Gram
   ;
   onerec:
     [ [ id = base_ident; bl = ne_fix_binders; ":"; type_ = constr;
-        ":="; def = constr ->
+        ntn = OPT decl_notation; ":="; def = constr ->
           let ni = List.length (List.flatten (List.map fst bl)) - 1 in
           let loc0 = fst (List.hd (fst (List.hd bl))) in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
-	  (id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)) ] ]
+	  ((id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)), ntn) ] ]
   ;
   specifrec:
     [ [ l = LIST1 onerec SEP "with" -> l ] ]

@@ -437,35 +437,6 @@ let rec find_symbols c_current c_next c_last = function
   | Terminal s :: sl -> find_symbols c_next c_next c_last sl
   | Break n :: sl -> find_symbols c_current c_next c_last sl
 
-(*
-let rec find_symbols c_current c_next c_last = function
-  | []    -> (vars, [])
-  | String x :: sl when Lexer.is_normal_token x ->
-      Lexer.check_ident x;
-      let id = Names.id_of_string x in
-      if List.mem_assoc id vars then
-	error ("Variable "^x^" occurs more than once");
-      let prec = if sl <> [] then c_current else c_last in
-      let (vars,l) = find_symbols c_next c_next c_last sl in
-      ((id,prec)::vars, NonTerminal id :: l)
-(*
-  | "_"::sl ->
-      warning "Found '_'";
-      let prec = if List.exists is_symbols sl then c_first else c_last in
-      let (vars,l) =
-        find_symbols c_next c_next c_last vars (new_var+1) varprecl sl in
-      let meta = create_meta new_var in
-      (vars, NonTerminal (prec, meta) :: l)
-*)
-  | String s :: sl ->
-      Lexer.check_special_token s;
-      let (vars,l) = find_symbols c_next c_next c_last sl in
-      (vars, Terminal (strip s) :: l)
-  | WhiteSpace n :: sl ->
-      let (vars,l) = find_symbols c_current c_next c_last sl in
-      (vars, Break n :: l)
-*)
-
 let make_grammar_rule n assoc typs symbols ntn =
   let prod = make_production typs symbols in
   (n,assoc,ntn,prod)
@@ -546,8 +517,7 @@ let interp_modifiers a n =
   let onlyparsing = ref false in
   let rec interp assoc level etyps = function
     | [] ->
-	let n = match level with None -> 1 | Some n -> n in
-	(assoc,n,etyps,!onlyparsing)
+	(assoc,level,etyps,!onlyparsing)
     | SetEntryType (s,typ) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
@@ -575,16 +545,18 @@ let interp_modifiers a n =
 
 (* Infix defaults to LEFTA (cf doc) *)
 let interp_infix_modifiers a n l =
-  let (assoc,n,t,b) = interp_modifiers a n l in
+  let (assoc,level,t,b) = interp_modifiers a n l in
   if t <> [] then
     error "explicit entry level or type unexpected in infix notation";
   let assoc = match assoc with None -> Some Gramext.LeftA | a -> a in
+  let n = match level with None -> 1 | Some n -> n in
   (assoc,n,b)
 
 (* Notation defaults to NONA *)
 let interp_notation_modifiers modl =
   let (assoc,n,t,b) = interp_modifiers None None modl in
   let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
+  let n = match n with None -> 1 | Some n -> n in
   (assoc,n,t,b)
 
 (* 2nd list of types has priority *)
@@ -761,54 +733,88 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,df))
 
-let add_notation local df a modifiers mv8 sc =
-  let toks = split df in
-  match toks with 
-    | [String x] when quote(strip x) = x
-	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
-        (* Means a Syntactic Definition *)
-        let ident = id_of_string (strip x) in
-	let c = snd (interp_aconstr [] a) in
-	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
-        Syntax_def.declare_syntactic_definition local ident onlyparse c
-    | _ ->
-        add_notation_in_scope local
-          df a (interp_notation_modifiers modifiers)
-          (option_app (fun (s8,ml8) ->
-            let toks8 = split s8 in 
-            let im8 = interp_notation_modifiers ml8 in
-            (toks8,im8)) mv8)
-          sc toks
-
-let check_occur l id =
-  if not (List.mem (Name id) l) then error ((string_of_id id)^"is unbound")
-
-let add_notation_interpretation df (c,l) sc =
+let add_notation_interpretation_core local vars symbs df (a,r) sc onlyparse =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
-  let (vars,symbs) = analyse_tokens (split df) in
   let notation = make_anon_notation symbs in
   let prec = 
     try Symbols.level_of_notation notation
     with Not_found ->
       error "Parsing rule for this notation has to be previously declared" in
-  List.iter (check_occur l) vars;
   let old_pp_rule =
+    let typs = List.map2 
+      (fun id n -> id,ETConstr (NumLevel n,InternalProd)) vars (snd prec) in
+    Some (make_old_pp_rule (fst prec) symbs typs r notation scope vars) in
+  Lib.add_anonymous_leaf
+    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,df))
+
+let check_occur l id =
+  if not (List.mem (Name id) l) then error ((string_of_id id)^"is unbound")
+
+let add_notation_interpretation df (c,l) sc =
+  let (vars,symbs) = analyse_tokens (split df) in
+  List.iter (check_occur l) vars;
+  let a_for_old =
     let c = match c with AVar id -> RVar (dummy_loc,id)
       | ARef c -> RRef (dummy_loc,c)
       | _ -> anomaly "add_notation_interpretation" in
-    let typs = List.map2 
-      (fun id n -> id,ETConstr (NumLevel n,InternalProd)) vars (snd prec) in
-    let r = RApp (dummy_loc, c,
-    List.map (function Name id when List.mem id vars -> RVar (dummy_loc,id)
-      | _ -> RHole (dummy_loc,QuestionMark)) l) in
-    Some (make_old_pp_rule (fst prec) symbs typs r notation scope vars) in
-  let a = AApp (c,List.map (function Name id when List.mem id vars -> AVar id | 
-_ -> AHole QuestionMark) l) in
+    RApp (dummy_loc, c,
+      List.map (function
+	| Name id when List.mem id vars -> RVar (dummy_loc,id)
+	| _ -> RHole (dummy_loc,QuestionMark)) l) in
+  let a = AApp (c,List.map (function 
+    | Name id when List.mem id vars -> AVar id
+    | _ -> AHole QuestionMark) l) in
   let la = List.map (fun id -> id,[]) vars in
   let onlyparse = false in
   let local = false in
-  Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,notation,scope,(la,a),onlyparse,df))
+  add_notation_interpretation_core local vars symbs df ((la,a),a_for_old) sc
+    onlyparse
+
+let add_notation local df c modifiers mv8 sc =
+  let toks = split df in
+  match toks with 
+    | [String x] when quote(strip x) = x
+	(* This is an ident that can be qualified: a syntactic definition *)
+	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
+        (* Means a Syntactic Definition *)
+        let ident = id_of_string (strip x) in
+	let c = snd (interp_aconstr [] c) in
+	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
+        Syntax_def.declare_syntactic_definition local ident onlyparse c
+    | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
+	(* This is a ident to be declared as a rule *)
+        add_notation_in_scope local df c (None,0,[],modifiers=[SetOnlyParsing])
+          (option_app (fun (s8,ml8) ->
+	    let toks8 = split s8 in 
+	    let im8 = interp_notation_modifiers ml8 in
+	    (toks8,im8)) mv8)
+        sc toks
+    | _ ->
+	let (assoc,lev,typs,onlyparse) = interp_modifiers None None modifiers
+	in
+	match lev with
+	  | None->
+	      if modifiers <> [] & modifiers <> [SetOnlyParsing] then
+		error "Parsing rule for this notation includes no level"
+	      else
+	        (* Declare only interpretation *)
+		let (vars,symbs) = analyse_tokens toks in
+		let onlyparse = modifiers = [SetOnlyParsing] in
+		let a = interp_aconstr vars c in
+		let a_for_old = interp_rawconstr_gen
+		  false Evd.empty (Global.env()) [] (Some []) (vars,[]) c in
+		add_notation_interpretation_core local vars symbs df
+		  (a,a_for_old) sc onlyparse
+	  | Some n ->
+	    (* Declare both syntax and interpretation *)
+	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
+	    let mods = (assoc,n,typs,onlyparse)	in
+            add_notation_in_scope local df c mods
+              (option_app (fun (s8,ml8) ->
+		let toks8 = split s8 in 
+		let im8 = interp_notation_modifiers ml8 in
+		(toks8,im8)) mv8)
+              sc toks
 
 (* TODO add boxes information in the expression *)
 

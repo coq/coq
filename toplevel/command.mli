@@ -43,7 +43,7 @@ val build_mutual : inductive_expr list -> bool -> unit
 val declare_mutual_with_eliminations :
   Entries.mutual_inductive_entry -> mutual_inductive
 
-val build_recursive : fixpoint_expr list -> unit
+val build_recursive : (fixpoint_expr * decl_notation) list -> unit
 
 val build_corecursive : cofixpoint_expr list -> unit
 

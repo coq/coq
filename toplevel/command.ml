@@ -219,7 +219,7 @@ let interp_mutual lparams lnamearconstrs finite =
       option_app (fun df ->
         let larnames =
 	  List.rev_append lparnames 
-	    (List.map fst (fst (decompose_prod ar))) in
+	    (List.rev (List.map fst (fst (decompose_prod ar)))) in
 	(recname,larnames,df)) ntnopt)
       lnamearconstrs arityl in
   let fs = States.freeze() in
@@ -227,7 +227,7 @@ let interp_mutual lparams lnamearconstrs finite =
   try
   List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
     Metasyntax.add_notation_interpretation df
-      (AVar recname,larnames) scope)) notations;
+      (AVar recname,larnames) (* no scope for tmp ntn *) scope)) notations;
   let ind_env_params = push_rel_context params ind_env in
   let mispecvec = 
     List.map2
@@ -332,33 +332,49 @@ let collect_non_rec env =
   searchrec [] 
 
 let build_recursive lnameargsardef =
-  let lrecnames = List.map (fun (f,_,_,_) -> f) lnameargsardef 
+  let lrecnames = List.map (fun ((f,_,_,_),_) -> f) lnameargsardef 
   and sigma = Evd.empty
   and env0 = Global.env()
-  and nv = Array.of_list (List.map (fun (_,n,_,_) -> n) lnameargsardef) in
+  and nv = Array.of_list (List.map (fun ((_,n,_,_),_) -> n) lnameargsardef) in
   let fs = States.freeze() in
+  (* Declare the notations for the inductive types pushed in local context*)
   let (rec_sign,arityl) = 
-    try 
-      List.fold_left 
-        (fun (env,arl) (recname,_,arityc,_) -> 
-           let arity = interp_type sigma env0 arityc in
-           let _ = declare_variable recname
-	     (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
-           (Environ.push_named (recname,None,arity) env, (arity::arl)))
-        (env0,[]) lnameargsardef
-    with e ->
-      States.unfreeze fs; raise e in
+    List.fold_left 
+      (fun (env,arl) ((recname,_,arityc,_),_) -> 
+        let arity = interp_type sigma env0 arityc in
+        (Environ.push_named (recname,None,arity) env, (arity::arl)))
+      (env0,[]) lnameargsardef in
   let arityl = List.rev arityl in
+  let notations = 
+    List.map2 (fun ((recname,_,_,_),ntnopt) arityl ->
+      option_app (fun ntn ->
+        let larnames = List.map fst (fst (decompose_prod arityl)) in
+	(recname,List.rev larnames,ntn)) ntnopt)
+      lnameargsardef arityl in
+
   let recdef =
-    try 
-      List.map2
-	(fun (_,_,_,def) arity ->
-          interp_casted_constr sigma rec_sign def arity)
-        lnameargsardef arityl
-    with e ->
-      States.unfreeze fs; raise e
+
+    (* Declare local context and local notations *)
+    let fs = States.freeze() in
+    let def = 
+      try
+	List.iter (option_iter (fun (recname,larnames,(df,scope)) ->
+	  Metasyntax.add_notation_interpretation df
+	  (AVar recname,larnames) (* no scope for tmp ntn *) None)) notations;
+	List.iter2
+	  (fun recname arity -> 
+            let _ = declare_variable recname
+	      (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
+	    ()) lrecnames arityl;
+	List.map2
+	  (fun ((_,_,_,def),_) arity ->
+            interp_casted_constr sigma rec_sign def arity)
+          lnameargsardef arityl
+      with e ->
+	States.unfreeze fs; raise e in
+    States.unfreeze fs; def 
   in
-  States.unfreeze fs;
+
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec env0 lrecnames recdef arityl (Array.to_list nv) in
   let recvec = 
@@ -389,7 +405,9 @@ let build_recursive lnameargsardef =
       (List.map var_subst (Array.to_list namerec))
       lnonrec 
   in
-  ()
+  List.iter (option_iter (fun (recname,names,(df,scope)) ->
+      Metasyntax.add_notation_interpretation df
+        (ARef (ConstRef (Lib.make_kn recname)),names) scope)) notations
 
 let build_corecursive lnameardef = 
   let lrecnames = List.map (fun (f,_,_) -> f) lnameardef

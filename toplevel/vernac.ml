@@ -140,13 +140,15 @@ let rec vernac_com interpfun (loc,com) =
              Options.v7_only := true;
              if !translate_file then msg (pr_comments !comments)
          | _ ->
+	     let fs = States.freeze () in
              if !translate_file then
                msgnl
 		 (pr_comments !comments ++ hov 0 (pr_vernac com) ++ sep_end())
              else
-	       msgnl
+	       (msgnl
                  (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++
-                         pr_vernac com ++ sep_end())));
+                         pr_vernac com ++ sep_end()));
+		 States.unfreeze fs));
        Constrintern.set_temporary_implicits_in [];
        Constrextern.set_temporary_implicits_out [];
        comments := None;

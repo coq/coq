@@ -171,11 +171,15 @@ GEXTEND Gram
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
       | -> None ] ]
   ;
+  decl_notation:
+    [ [ OPT [ "as"; ntn = STRING; scopt = OPT [ ":"; sc = IDENT -> sc]
+               -> (ntn,scopt) ] ] ]
+    ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ ntn = OPT [ ntn = STRING -> (ntn,None) ];
-        id = base_ident; indpar = LIST0 simple_binder; ":"; c = lconstr; ":=";
-	lc = constructor_list -> (id,ntn,indpar,c,lc) ] ]
+    [ [ id = base_ident; indpar = LIST0 simple_binder; ":"; c = lconstr; 
+        ntn = decl_notation; ":="; lc = constructor_list ->
+	  (id,ntn,indpar,c,lc) ] ]
   ;
   constructor_list:
     [ [ "|"; l = LIST1 constructor_binder SEP "|" -> l
@@ -194,7 +198,8 @@ GEXTEND Gram
   (* (co)-fixpoints *)
   rec_definition:
     [ [ id = base_ident; bl = LIST1 binder_nodef;
-        annot = OPT rec_annotation; type_ = type_cstr; ":="; def = lconstr ->
+        annot = OPT rec_annotation; type_ = type_cstr; 
+	ntn = decl_notation; ":="; def = lconstr ->
           let names = List.map snd (List.flatten (List.map fst bl)) in
           let ni =
             match annot with
@@ -212,7 +217,7 @@ GEXTEND Gram
           let loc0 = fst (List.hd (fst (List.hd bl))) in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
-	  (id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)) ] ]
+	  ((id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)),ntn) ] ]
   ;
   corec_definition:
     [ [ id = base_ident; bl = LIST0 binder_nodef; c = type_cstr; ":=";
