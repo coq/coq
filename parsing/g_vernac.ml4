@@ -108,20 +108,21 @@ GEXTEND Gram
     [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
       | IDENT "Fact" -> Fact
-      | IDENT "Remark" -> Remark
-      | IDENT "Conjecture" -> Conjecture ] ]
+      | IDENT "Remark" -> Remark ] ]
   ;
   def_token:
-    [ [ "Definition" -> (fun _ _ -> ()), Global, GDefinition
-      | IDENT "Local" -> (fun _ _ -> ()), Local, LDefinition
-      | IDENT "SubClass"  -> Class.add_subclass_hook, Global, GSubClass
-      | IDENT "Local"; IDENT "SubClass"  -> Class.add_subclass_hook, Local, LSubClass ] ] 
+    [ [ "Definition" -> (fun _ _ -> ()), (Global, Definition)
+      | IDENT "Local" -> (fun _ _ -> ()), (Local, Definition)
+      | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, SubClass)
+      | IDENT "Local"; IDENT "SubClass"  ->
+	  Class.add_subclass_hook, (Local, SubClass) ] ] 
   ;
   assumption_token:
     [ [ "Hypothesis" -> (Local, Logical)
       | "Variable" -> (Local, Definitional)
       | "Axiom" -> (Global, Logical)
-      | "Parameter" -> (Global, Definitional) ] ]
+      | "Parameter" -> (Global, Definitional)
+      | IDENT "Conjecture" -> (Global,Conjectural) ] ]
   ;
   assumptions_token:
     [ [ IDENT "Hypotheses" -> (Local, Logical)
@@ -192,8 +193,8 @@ GEXTEND Gram
     (* Definition, Theorem, Variable, Axiom, ... *)
     [ [ thm = thm_token; id = base_ident; ":"; c = constr ->
          VernacStartTheoremProof (thm, id, ([], c), false, (fun _ _ -> ()))
-      | (f,d,e) = def_token; id = base_ident; b = def_body -> 
-          VernacDefinition (d, id, b, f, e)
+      | (f,d) = def_token; id = base_ident; b = def_body -> 
+          VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = ne_params_list -> 
 	  VernacAssumption (stre, bl)
       | stre = assumptions_token; bl = ne_params_list ->
@@ -385,17 +386,18 @@ GEXTEND Gram
 	  VernacCanonical qid
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition (Global,s,d,Recordobj.add_object_hook,SCanonical)
+	  VernacDefinition 
+	    ((Global,CanonicalStructure),s,d,Recordobj.add_object_hook)
       (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
          (they were unused and undocumented) *)
 
 (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition (Global,s,d,Class.add_coercion_hook,GCoercion)
+	  VernacDefinition ((Global,Coercion),s,d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = Ast.coerce_global_to_id qid in
-	  VernacDefinition (Local,s,d,Class.add_coercion_hook,LCoercion)
+	  VernacDefinition ((Local,Coercion),s,d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = base_ident;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
 	   VernacIdentityCoercion (Local, f, s, t)
