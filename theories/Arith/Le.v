@@ -20,7 +20,7 @@ Theorem le_trans : (n,m,p:nat)(le n m)->(le m p)->(le n p).
 Proof.
   NewInduction 2; Auto.
 Qed.
-Hints Immediate le_trans : arith v62.
+Hints Resolve le_trans : arith v62.
 
 (** Order, successor and predecessor *)
 
