@@ -418,9 +418,11 @@ let make_pp_rule symbols typs =
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
 
 let cache_syntax_extension (_,(prec,ntn,gr,se)) =
-  Egrammar.extend_grammar (Egrammar.Notation gr);
-  if se<>None then
-    Symbols.declare_notation_printing_rule ntn (out_some se,fst prec)
+  if not (Symbols.exists_notation prec notation) then begin
+    Egrammar.extend_grammar (Egrammar.Notation gr);
+    if se<>None then
+      Symbols.declare_notation_printing_rule ntn (out_some se,fst prec)
+  end
 
 let subst_notation_grammar subst x = x
 
@@ -480,11 +482,29 @@ let set_entry_type etyps (x,typ) =
   let typ = try 
     match List.assoc x etyps, typ with
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
-          ETConstr (n,BorderProd (left,None))
+	  (* We set an associativity telling not to change the level *)
+	  let assoc = if left then Gramext.LeftA else Gramext.RightA in
+          ETConstr (n,BorderProd (left,Some assoc))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
       | (ETPattern | ETIdent | ETOther _ | ETReference as t), _ -> t
     with Not_found -> ETConstr typ
   in (x,typ)
+
+let collapse_assoc_left = function
+  | None | Some Gramext.LeftA -> Some Gramext.NonA
+  | a -> a
+
+let collapse_assoc_right = function
+  | Some Gramext.RightA -> Some Gramext.NonA
+  | a -> a
+
+let is_border = function
+  | (_,ETConstr(_,BorderProd _)) :: _ -> true
+  | _ -> false
+
+let adjust_associativity typs assoc =
+  let assoc = if is_border typs then assoc else collapse_assoc_left assoc in
+  if is_border (List.rev typs) then assoc else collapse_assoc_right assoc 
 
 let add_syntax_extension df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_syntax_modifiers modifiers in
@@ -493,11 +513,11 @@ let add_syntax_extension df modifiers =
       (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
       [] (split df) in
   let typs = List.map (set_entry_type etyps) typs in
+  let assoc = adjust_associativity typs assoc in
   let (prec,notation) = make_symbolic assoc n symbs typs in
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
   let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbs) in
-  if not (Symbols.exists_notation prec notation) then
-    Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule))
+  Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule))
 
 (**********************************************************************)
 (* Distfix, Infix, Notations *)
@@ -576,11 +596,11 @@ let add_notation_in_scope df a modifiers sc toks =
   let etyps = merge_entry_types etyps' etyps in
 *)
   let typs = List.map (set_entry_type etyps) typs in
+  let assoc = adjust_associativity typs assoc in
   (* Declare the parsing and printing rules if not already done *)
   let (prec,notation) = make_symbolic assoc n symbols typs in
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
   let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbols) in
-  if not (Symbols.exists_notation prec notation) then
   Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule));
   let old_pp_rule =
     if onlyparse then None
@@ -620,7 +640,9 @@ let add_distfix assoc n df r sc =
   let (vars,l) = rename "x" [] 1 (split df) in
   let df = String.concat " " l in
   let a = mkAppC (mkRefC r, vars) in
-  let assoc = match assoc with None -> [] | Some a -> [SetAssoc a] in
+  let assoc = match assoc with
+    | None -> [SetAssoc Gramext.LeftA]
+    | Some a -> [SetAssoc a] in
   add_notation df a (SetLevel n :: assoc) sc
 
 let add_infix assoc n inf pr sc =
@@ -636,7 +658,9 @@ let add_infix assoc n inf pr sc =
   *)
   let metas = [inject_var "x"; inject_var "y"] in
   let a = mkAppC (mkRefC pr,metas) in
-  let assoc = match assoc with None -> [] | Some a -> [SetAssoc a] in
+  let assoc = match assoc with
+    | None -> [SetAssoc Gramext.LeftA]
+    | Some a -> [SetAssoc a] in
   add_notation ("x "^(quote inf)^" y") a (SetLevel n :: assoc) sc
 
 (* Delimiters *)

@@ -50,6 +50,10 @@ let constr_level assoc = function
   | 8 -> assert (assoc <> Some Gramext.LeftA); "top"
   | n -> (string_of_int n)^(assoc_level (canonise_assoc assoc))
 
+let constr_prod_level = function
+  | 8 -> "top"
+  | n -> string_of_int n
+
 let numeric_levels =
   ref [8,Some Gramext.RightA; 1,Some Gramext.RightA; 0,Some Gramext.RightA]
 
@@ -67,7 +71,7 @@ let eq_assoc a b = match (canonise_assoc a, canonise_assoc b) with
 let find_position assoc = function
   | None -> None, Some (canonise_assoc assoc)
   | Some n ->
-      if n = 8 & assoc = Some Gramext.LeftA then 
+      if n = 8 & canonise_assoc assoc = Gramext.LeftA then 
 	error "Left associativity not allowed at level 8";
       let after = ref (8,Some Gramext.RightA) in
       let rec add_level q = function
@@ -176,7 +180,7 @@ let rec build_prod_item univ assoc = function
       match get_constr_production_entry assoc typ with
 	| (eobj,None) -> Gramext.Snterm (Gram.Entry.obj eobj)
 	| (eobj,Some lev) -> 
-	    Gramext.Snterml (Gram.Entry.obj eobj,constr_level assoc lev)
+	    Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level lev)
 
 let symbol_of_prod_item univ assoc = function
   | Term tok -> (Gramext.Stoken tok, None)

@@ -234,10 +234,25 @@ let gram_rule univ (name,pil,act) =
   let a = to_act_check_vars act_env act in
   { gr_name = name; gr_production = pilc; gr_action = a }
 
+let border = function
+  | NonTerm (ProdPrimitive (ETConstr(_,BorderProd (_,a))),_) :: _ -> a
+  | _ -> None
+
+let clever_assoc = function
+  | [g] when g.gr_production <> [] ->
+      (match border g.gr_production, border (List.rev g.gr_production) with
+	  Some RightA, Some LeftA -> Some NonA
+	| a, b when a=b -> a
+	| Some LeftA, Some RightA -> Some LeftA (* since LR *)
+	| _ -> None)
+  | _ -> None
+
 let gram_entry univ (nt, ass, rl) =
+  let l = List.map (gram_rule (univ,nt)) rl in
+  let ass = if ass = None then clever_assoc l else ass in
   { ge_name = nt;
     gl_assoc = ass;
-    gl_rules = List.map (gram_rule (univ,nt)) rl }
+    gl_rules = l }
 
 let interp_grammar_command univ ge entryl =
   { gc_univ = univ;
