@@ -398,9 +398,10 @@ let build_scheme lnamedepindsort =
   and sigma = Evd.empty
   and env0 = Global.env() in
   let lrecspec =
-    List.map (fun (_,dep,indid,sort) -> 
-                let s = destSort (interp_constr sigma env0 sort) in
-                (inductive_of_ident indid,dep,s)) lnamedepindsort
+    List.map
+      (fun (_,dep,indid,sort) -> 
+         (inductive_of_ident indid,dep,interp_elimination_sort sort)) 
+      lnamedepindsort
   in
   let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 

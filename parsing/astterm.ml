@@ -705,6 +705,12 @@ let interp_sort = function
   | Node(loc,"TYPE", _) -> new_Type_sort ()
   | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
 
+let interp_elimination_sort = function
+  | Node(loc,"PROP", []) -> Declarations.ElimOnProp
+  | Node(loc,"SET", [])  -> Declarations.ElimOnSet
+  | Node(loc,"TYPE", _) -> Declarations.ElimOnType
+  | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
+
 let judgment_of_rawconstr sigma env c =
   understand_judgment sigma env (interp_rawconstr sigma env c)
 

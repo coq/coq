@@ -26,6 +26,8 @@ val interp_casted_constr : 'a evar_map -> env -> Coqast.t -> constr -> constr
 val interp_type          : 'a evar_map -> env -> Coqast.t -> types
 val interp_sort          : Coqast.t -> sorts
 
+val interp_elimination_sort : Coqast.t -> Declarations.elimination_sorts
+
 val interp_openconstr    :
   'a evar_map -> env -> Coqast.t -> (existential * constr) list * constr
 val interp_casted_openconstr    :
