@@ -6,8 +6,8 @@ Debuggage
    Coq doit être configuré avec -debug et -local (./configure -debug -local)
 
    1. M-x camldebug
-   2. spécifier le binaire coqtop.byte
-   3. spécifier dev/ocamldebug-v7
+   2. spécifier le binaire bin/coqtop.byte
+   3. spécifier ../dev/ocamldebug-coq
    4. source db  (pour avoir les pretty-printers)
    5. poser ses points d'arrêts avec C-x C-a C-b (penser "add breakpoint")
       directement dans le source ocaml

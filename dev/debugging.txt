@@ -15,12 +15,13 @@ Debugging from Coq toplevel using Caml trace mechanism
 Debugging from Caml debugger
 ============================
 
+   Needs ocaml 3.06 (broken with ocaml 3.07 and 3.08)
    Needs tuareg mode in Emacs
    Coq must be configured with -debug and -local (./configure -debug -local)
 
    1. M-x camldebug
-   2. give the binary name coqtop.byte
-   3. give dev/ocamldebug-v7
+   2. give the binary name bin/coqtop.byte
+   3. give ../dev/ocamldebug-coq
    4. source db  (to get pretty-printers)
    5. add breakpoints with C-x C-a C-b from the buffer displaying the ocaml
       source
@@ -36,8 +37,9 @@ Debugging from Caml debugger
    7. some hints: 
 
    - To debug a failure/error/anomaly, add a breakpoint in
-     Vernacinterp.call just before "if !Options.debug" then go "back" to
-     find where the failure/error/anomaly has been raised
+     Vernac.vernac_com at the with clause of the "try ... interp com
+     with ..." block, then go "back" a few steps to find where the
+     failure/error/anomaly has been raised
    - If "source db" fails, first recompile top_printers.ml with
      "make dev/top_printers.cmo"
 
