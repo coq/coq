@@ -216,9 +216,8 @@ reducible.
 
 \begin{ErrMsgs}
 \item \errindex{No product even after head-reduction}
+\item \errindex{\texttt{{\ident} is already used}}
 \end{ErrMsgs}
-
-\Warning: \texttt{{\ident}$_1$ is already used; changed to {\ident}$_2$}
 
 \begin{Variants}
 \item {\tt Intros}\tacindex{Intros}\\
@@ -359,13 +358,15 @@ instantiations of the premises of the type of
 
 \subsection{\tt LetTac {\ident} {\tt :=} {\term}}\tacindex{LetTac}
 
-This replaces {\term} by {\ident} in the goal and add the
-equality {\ident {\tt =} \term} in the local context.
+This replaces {\term} by {\ident} in the conclusion and the hypotheses of
+the current goal and adds the
+new definition {\ident {\tt :=} \term} to the local context.
 
 \begin{Variants}
 \item {\tt LetTac {\ident} {\tt :=} {\term} {\tt in} {\tt Goal}}
 
-This is equivalent to the above form.
+This is equivalent to the above form but applies only to the
+conclusion of the goal.
 
 \item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\ident$_1$}}
 
@@ -390,11 +391,12 @@ This is the general form. It substitutes {\term} at occurrences
 of the {\ident}'s may be the word {\tt Goal}.
 \end{Variants}
 
-\subsection{\tt Cut {\form}}\tacindex{Cut}
-This tactic applies to any goal. It implements the
-``App''\index{Typing rules!App} rule given in section
-\ref{Typed-terms}. {\tt Cut U} transforms the current goal \texttt{T} 
-into the two following subgoals: {\tt U -> T} and \texttt{U}.
+\subsection{\tt Assert {\ident} : {\form}}\tacindex{Assert}
+This tactic applies to any goal. {\tt Assert H : U} adds a new
+hypothesis of name \texttt{H} asserting \texttt{U} to the current goal
+and opens a new subgoal \texttt{U}. (This corresponds to the cut rule of
+sequent calculus.) The subgoal {\texttt U} comes first in the list of
+subgoals remaining to prove.
 
 \begin{ErrMsgs}
 \item \errindex{Not a proposition or a type}\\
@@ -402,7 +404,21 @@ into the two following subgoals: {\tt U -> T} and \texttt{U}.
     Set} nor {\tt Type}.
 \end{ErrMsgs}
 
-%
+\begin{Variants}
+\item{\tt Assert {\form}}\\
+  This behaves as {\tt Assert {\ident} : {\form}} but automatically
+  generating a fresh name {\ident} to refer to the asserted hypothesis.
+
+\item {\tt Cut {\form}}\tacindex{Cut} \\
+  This tactic applies to any goal. It implements the non dependent
+  case of the ``App''\index{Typing rules!App} rule given in section
+  \ref{Typed-terms}. (This is Modus Ponens inference rule.)
+  {\tt Cut U} transforms the current goal \texttt{T} 
+  into the two following subgoals: {\tt U -> T} and \texttt{U}.
+  The subgoal {\tt U -> T} comes first in the list of remaining
+  subgoal to prove. 
+\end{Variants}
+
 % PAS CLAIR;
 % DEVRAIT AU MOINS FAIRE UN INTRO;
 % DEVRAIT ETRE REMPLACE PAR UN LET;
@@ -415,7 +431,7 @@ into the two following subgoals: {\tt U -> T} and \texttt{U}.
 %   term of type {\tt T}.  This tactics is to make a cut of a
 %   proposition when you have already the proof of this proposition
 %   (for example it is a theorem applied to variables of local
-%   context). It is equivalent to {\tt Cut T. 2:Exact t}.
+%   context). It is equivalent to {\tt Assert T. Exact t}.
 %
 %\item {\tt Specialize {\term} with \vref$_1$ := {\term$_1$} \dots
 %    \vref$_n$ := \term$_n$}
@@ -644,7 +660,7 @@ use {\tt Simpl} on {\tt (plus n O)=n} will change nothing.
 \subsection{\tt Unfold \ident}
 \tacindex{Unfold}\label{Unfold}
 This tactic applies to any goal. The argument {\ident} must be the
-name of a defined transparent constant (see section
+name of a defined transparent constant or local definition (see section
 \ref{Simpl-definitions} and \ref{Transparent}). 
 The tactic {\tt Unfold} applies the
 $\delta$ rule to each occurrence of {\ident} in the current goal and
@@ -786,27 +802,57 @@ of {\tt I}, then {\tt Constructor i} is equivalent to {\tt Intros;
 Elimination tactics are useful to prove statements by induction or
 case analysis.
 Indeed, they make use of the elimination (or induction) principles
-generated with inductive definitions (see section
-\ref{Cic-inductive-definitions}).
+generated with inductive definitions (see 
+section~\ref{Cic-inductive-definitions}).
 
-\subsection{\tt Elim \term}
-\tacindex{Elim}\label{Elim}
+\subsection{\tt NewInduction \term}
+\tacindex{NewInduction}
 This tactic applies to any goal. The type of the argument
-{\term} must be an inductive constant. Then according to the type of
-the goal, the tactic {\tt Elim} chooses the right destructor and
-applies it (as in the case of the {\tt Apply} tactic). For instance,
-assume that our proof context contains {\tt n:nat}, assume that our
-current goal is {\tt T} of type {\tt Prop}, then
-{\tt Elim n} is equivalent to {\tt Apply nat\_ind with n:=n}.
+{\term} must be an inductive constant. Then, the tactic {\tt
+NewInduction} generates subgoals, one for each possible form of
+{\term}, i.e. one for each constructor of the inductive type.
+
+The tactic {\tt NewInduction} automatically replaces every occurrences
+of {\term} in the conclusion and the hypotheses of the goal.
+It automatically adds induction hypotheses (using names of the form
+{\tt IHn1}) to the local context. If some hypothesis must not be taken into
+account in the induction hypothesis, then it needs to be removed first
+(you can also use the tactic {\tt Elim}, see below).
+
+{\tt NewInduction} works also when {\term} is an identifier denoting a
+  quantified variable of the conclusion of the goal. Then it behaves as
+  {\tt Intros until {\ident}; NewInduction {\ident}}.
+
+\begin{coq_example}
+Lemma induction_test : (n:nat) n=n -> (le n n).
+Intros n H.
+NewInduction n.
+\end{coq_example}
 
 \begin{ErrMsgs}
 \item \errindex{Not an inductive product}
 \item \errindex{Cannot refine to conclusions with meta-variables}\\ As {\tt
-    Elim} uses {\tt Apply}, see section \ref{Apply} and the variant
+    NewInduction} uses {\tt Apply}, see section \ref{Apply} and the variant
   {\tt Elim \dots\ with \dots} below.
 \end{ErrMsgs}
 
 \begin{Variants}
+
+\item {\tt NewInduction {\num}} is analogous to {\tt NewInduction
+  {\ident}} (when {\ident} a quantified variable of the goal) but for the {\num}-th non-dependent premise of the goal.
+
+\item{\tt Elim \term}\label{Elim}\\
+  This is a more basic induction tactic.
+  Again, the type of the argument {\term} must be an inductive
+  constant. Then according to the type of the goal, the tactic {\tt
+  Elim} chooses the right destructor and applies it (as in the case of
+  the {\tt Apply} tactic). For instance, assume that our proof context
+  contains {\tt n:nat}, assume that our current goal is {\tt T} of type
+  {\tt Prop}, then {\tt Elim n} is equivalent to {\tt Apply nat\_ind
+  with n:=n}.  The tactic {\tt Elim} does not affect the hypotheses of
+  the goal, neither introduces the induction loading into the context of
+  hypotheses.
+
 \item {\tt Elim \term} also works when the type of {\term} starts with
    products and the head symbol is an inductive definition. In that
   case the tactic tries both to find an object in the inductive
@@ -847,33 +893,47 @@ current goal is {\tt T} of type {\tt Prop}, then
   {\form} needs to be applied to parameters.
 
 \item {\tt Induction \ident}\tacindex{Induction}\\
-  When {\ident} is a quantified variable of the goal, this is
-    equivalent to {\tt Intros until {\ident}; Pattern {\ident}; Elim
-    {\ident}}
+  This is a deprecated tactic, which behaves as {\tt Intros until
+{\ident}; Elim {\tt {\ident}}} when {\ident} is a quantified variable
+of the goal, and similarly as {\tt NewInduction \ident}, when 
+{\ident} is an hypothesis (except in the way induction hypotheses are named).
 
-  Otherwise, it behaves as a ``user-friendly'' version of {\tt Elim
-  \ident}: it does not duplicate {\ident} after induction and it
-  automatically generalizes the hypotheses dependent on {\ident} or
-  dependent on some atomic arguments of the inductive type of {\ident}.
-
-\item {\tt Induction {\num}}\\ 
-  Is analogous to {\tt Induction {\ident}} but for the {\num}-th
-  non-dependent premise of the goal.
+\item {\tt Induction {\num}}\\
+  This is a deprecated tactic, which behaves as {\tt Intros until
+  {\num}; Elim {\tt {\ident}}} where {\ident} is the name given by
+  {\tt Intros until {\num}} to the {\num}-th non-dependent premise of the goal.
 \end{Variants}
 
-\subsection{\tt Case \term}\label{Case}\tacindex{Case}
-The tactic {\tt Case} is used to perform case
-analysis without recursion. The type of {\term} must be inductively defined. 
+\subsection{\tt NewDestruct \term}\tacindex{Destruct}\tacindex{NewDestruct}
+The tactic {\tt NewDestruct} is used to perform case analysis without
+recursion. It behaves as {\tt NewInduction \term} except that no
+induction hypotheses is generated.  It applies to any goal and the
+type of {\term} must be inductively defined.
+{\tt NewDestruct} works also when {\term} is an identifier denoting a
+  quantified variable of the conclusion of the goal. Then it behaves as
+  {\tt Intros until {\ident}; NewDestruct {\ident}}.
 
 \begin{Variants}
+\item {\tt NewDestruct {\num}}\\ Is analogous to {\tt NewDestruct
+{\ident}} (when {\ident} a quantified variable of the goal), but for
+the {\num}-th non-dependent premise of the goal.
+
+\item{\tt Case \term}\label{Case}\tacindex{Case}\\
+   The tactic {\tt Case} is a more basic tactic to perform case
+   analysis without recursion. It behaves as {\tt Elim \term} but
+   using a case-analysis elimination principle and not a recursive one.
+
 \item {\tt Case {\term} with \term$_1$ \dots\ \term$_n$}
   \tacindex{Case \dots\ with}\\ 
   Analogous to {\tt Elim \dots\ with} above.
 \item {\tt Destruct \ident}\tacindex{Destruct}\\
-  Is equivalent to the tactical {\tt Intros Until \ident; Case \ident}.
+  This is a deprecated tactic, which behaves as {\tt Intros until
+  {\ident}; Case {\tt {\ident}}} when {\ident} is a quantified variable
+  of the goal.
 \item {\tt Destruct {\num}}\\
-  Is equivalent to {\tt Destruct {\ident}} but for the {\num}-th non
-  dependent premises of the goal.
+  This is a deprecated tactic, which behaves as {\tt Intros until
+  {\num}; Case {\tt {\ident}}} where {\ident} is the name given by
+  {\tt Intros until {\num}} to the {\num}-th non-dependent premise of the goal.
 \end{Variants}
 
 \subsection{\tt Intros \pattern}\label{Intros-pattern}
@@ -1044,7 +1104,7 @@ This tactic acts like {\tt Replace {\term$_1$} with {\term$_2$}}
 This tactic applies to any goal. It replaces all free occurrences of
 {\term$_1$} in the current goal with {\term$_2$} and generates the
 equality {\term$_2$}{\tt =}{\term$_1$} as a subgoal. It is equivalent
-to {\tt Cut \term$_1$=\term$_2$; Intro H{\sl n}; Rewrite H{\sl n}; 
+to {\tt Cut \term$_2$=\term$_1$; Intro H{\sl n}; Rewrite <- H{\sl n}; 
   Clear H{\sl n}}.
 
 %N'existe pas...
