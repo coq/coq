@@ -25,7 +25,7 @@
 \newcommand{\part}[1]{%
 \@print{<!--CUT PART-->}
 \@open{H1}{ALIGN=center}
-\stepcounter{part}
+\refstepcounter{part}
 \partname:~\thepart\\
 #1
 \@close{H1}
@@ -40,7 +40,7 @@
 \newcommand{\chapter}[1]{%
 \@print{<!--CUT CHAPTER-->}
 \@open{H1}{}
-\stepcounter{chapter}
+\refstepcounter{chapter}
 \chaptername~\thechapter: #1
 \@close{H1}
 }
@@ -54,7 +54,7 @@
 \newcommand{\section}[1]{%
 \@print{<!--CUT SECTION-->}
 \@open{H2}{}
-\stepcounter{section}
+\refstepcounter{section}
 \thesection~#1
 \@close{H2}
 }
@@ -68,7 +68,7 @@
 
 \newcommand{\subsection}[1]{%
 \@open{H3}{}
-\stepcounter{subsection}
+\refstepcounter{subsection}
 \thesubsection~#1
 \@close{H3}
 }
@@ -81,7 +81,7 @@
 
 \newcommand{\subsubsection}[1]{%
 \@open{H4}{}
-%  \stepcounter{subsubsection}
+%  \refstepcounter{subsubsection}
 %  \thesubsubsection~
 #1
 \@close{H4}
@@ -94,7 +94,7 @@
 
 \newcommand{\paragraph}[1]{%
 \@open{H5}{}
-%  \stepcounter{paragraph}
+%  \refstepcounter{paragraph}
 %  \theparagraph~
 #1
 \@close{H5}
@@ -115,7 +115,7 @@
 \@close{DL}
 }
 \renewcommand{\bibitem}[1]{\item[{\purple[\@bibref{#1}]\label{#1}}]}
-\renewcommand{\index}[2][default]{\@index[#1]{#2}}
+% \renewcommand{\index}[2][default]{\@index[#1]{#2}}
 \renewcommand{\printindex}[1][default]{%
 \@print{
 <!--CUT INDEX-->

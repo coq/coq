@@ -15,14 +15,8 @@
 \lfoot[{\coqfooter}]{}
 \rfoot[]{{\coqfooter}}
 
-\newcommand{\setheaders}[1]{
-\rhead[\fancyplain{}{\textbf{#1}}]{\fancyplain{}{\thepage}}
-\lhead[\fancyplain{}{\thepage}]{\fancyplain{}{\textbf{#1}}}
-}
-\newcommand{\defaultheaders}{
-\rhead[\fancyplain{}{\leftmark}]{\fancyplain{}{\thepage}}
-\lhead[\fancyplain{}{\thepage}]{\fancyplain{}{\rightmark}}
-}
+\newcommand{\setheaders}[1]{\rhead[\fancyplain{}{\textbf{#1}}]{\fancyplain{}{\thepage}}\lhead[\fancyplain{}{\thepage}]{\fancyplain{}{\textbf{#1}}}}
+\newcommand{\defaultheaders}{\rhead[\fancyplain{}{\leftmark}]{\fancyplain{}{\thepage}}\lhead[\fancyplain{}{\thepage}]{\fancyplain{}{\rightmark}}}
 
 \renewcommand{\chaptermark}[1]{\markboth{{\bf \thechapter~#1}}{}}
 \renewcommand{\sectionmark}[1]{\markright{\thesection~#1}}
