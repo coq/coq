@@ -304,6 +304,7 @@ Reference-Manual.dvi: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind
 	$(MAKEINDEX) Reference-Manual.erridx -o Reference-Manual.errind
 	$(LATEX) Reference-Manual
+	$(LATEX) Reference-Manual
 
 Reference-Manual.pdf: Reference-Manual.dvi
 	#rm -f Reference-Manual.sh
