@@ -13,7 +13,12 @@ open Environ
 open Symbol
 open Names
 
-(* if d=Pos, say if [kn] occurs positively in [c] wrt precedence [prec]
-        Neg                     negatively
-        Nul              does not occur                                 *)
-val occur : env -> symbol -> delta -> constr -> bool
+(* if d=Pos, say if constant [kn] occurs positively in [c]
+        Neg                              negatively
+        Nul                       does not occur           *)
+val occur_const : env -> symbol -> delta -> constr -> bool
+
+(* if d=Pos, say if inductive [kn] occurs positively in [c]
+        Neg                               negatively
+        Nul                        does not occur           *)
+val occur_mind : env -> mutual_inductive -> delta -> constr -> bool

@@ -12,13 +12,16 @@
    [ELSHFT(l,n)] == lift of [n], then apply [lift l].
    [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
 type lift =
-  | ELID
+  | ELID of int
   | ELSHFT of lift * int
   | ELLFT of int * lift
+
+val prlft : lift -> unit
 
 val el_shft : int -> lift -> lift
 val el_liftn : int -> lift -> lift
 val el_lift : lift -> lift
+val el_dom : lift -> int
 val reloc_rel : int -> lift -> int
 val is_lift_id : lift -> bool
 
@@ -39,6 +42,6 @@ val subs_shft: int * 'a subs -> 'a subs
 val subs_lift: 'a subs -> 'a subs
 val subs_liftn: int -> 'a subs -> 'a subs
 val subs_shift_cons: int * 'a subs * 'a -> 'a subs
-val exp_rel: int -> int -> 'a subs -> (int * 'a, int * int option) Util.union
-val expand_rel: int -> 'a subs -> (int * 'a, int * int option) Util.union
+val exp_rel: ('a -> unit) -> int -> int -> 'a subs -> (int * 'a, int * int option) Util.union
+val expand_rel: ('a -> unit) -> int -> 'a subs -> (int * 'a, int * int option) Util.union
 val is_subs_id: 'a subs -> bool

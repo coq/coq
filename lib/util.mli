@@ -145,7 +145,9 @@ val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 
   ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
-val array_init_by_list_map : ('a -> 'b) -> 'b -> 'a list -> 'b array
+val array_update_by_list_map : 'b array -> ('a -> 'b) -> 'a list -> unit
+val array_init_by_list_map : int -> 'b -> ('a -> 'b) -> 'a list -> 'b array
+val array_make_by_list_map : 'b -> ('a -> 'b) -> 'a list -> 'b array
 val array_to_rev_list : 'a array -> 'a list
 
 (*s Matrices *)

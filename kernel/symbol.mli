@@ -32,4 +32,5 @@ type symbol_info = {
   symb_status : status;
   symb_mons : delta array;
   symb_termin : termin;
+  symb_acc : bool array;
 }

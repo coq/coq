@@ -226,7 +226,7 @@ GEXTEND Gram
     [ [ l = LIST1 base_ident SEP ","; ":"; c = constr -> join_binders (l,c) ] ]
   ;
   rew_rules_subs:
-    [ [ IDENT "let"; l = LIST1 rew_rules_simple_subs SEP ","; IDENT "in" -> l
+    [ [ IDENT "let"; l = LIST1 rew_rules_simple_subs SEP ","; "in" -> l
       | -> [] ] ]
   ;
   rew_rules_simple_subs:

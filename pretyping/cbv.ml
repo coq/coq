@@ -192,7 +192,7 @@ let rec norm_head info env t stack =
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
   | Rel i ->
-      (match expand_rel i env with
+      (match expand_rel (fun _ -> print_char '?') i env with
         | Inl (0,v)      -> strip_appl v stack
         | Inl (n,v)      -> strip_appl (shift_value n v) stack
         | Inr (n,None)   -> (VAL(0, mkRel n), stack)

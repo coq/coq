@@ -49,7 +49,7 @@ Hints Resolve tl_nth_tl : datatypes v62.
 Lemma Str_nth_tl_plus 
 : (n,m:nat)(s:Stream)(Str_nth_tl n (Str_nth_tl m s))=(Str_nth_tl (plus n m) s).
 Induction n; Simpl; Intros; Auto with datatypes.
-Rewrite <- H.
+Simpl_rew. Simpl. Rewrite <- H.
 Rewrite tl_nth_tl; Trivial with datatypes.
 Qed.
 

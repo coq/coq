@@ -20,6 +20,7 @@ open Entries
 open Names
 open Ordering
 open Precedence
+open Positivity
 
 (* check monotone arguments *)
 let check_mons arity mons antimons =
@@ -35,6 +36,48 @@ let check_mons arity mons antimons =
     )
   in Array.init arity f
 
+(* say if a type is compatible with commutativity alone *)
+let check_C t =
+  match kind_of_term t with
+    | Prod (Anonymous,u,v) ->
+	(match kind_of_term v with
+	   | Prod (Anonymous,u',v) -> eq_constr u u'
+	   | _ -> false)
+    | _ -> false
+
+(* say if a type is compatible with commutativity and associativity *)
+let check_AC t =
+  match kind_of_term t with
+    | Prod (Anonymous,u,v) ->
+	(match kind_of_term v with
+	   | Prod (Anonymous,u',u'') -> eq_constr u u' & eq_constr u u''
+	   | _ -> false)
+    | _ -> false
+
+(* say if a type is compatible with an equational theory *)
+let check_eqth = function
+  | C -> check_C
+  | AC -> check_AC
+  | _ -> fun _ -> true
+
+(* get head of an application *)
+let rec get_head t =
+  match kind_of_term t with
+    | App (f,_) -> get_head t
+    | _ -> t
+
+(* compute accessibility of arguments *)
+let check_access env ar t =
+  let l,u = decompose_prod_n ar t in
+    match kind_of_term (get_head u) with
+      | Ind (kn,_) ->
+	  let f (_,v) = occur_mind env kn Pos v in  
+	    array_init_by_list_map ar false f l
+      | Const kn ->
+	  let f (_,v) = occur_const env kn Pos v in  
+	    array_init_by_list_map ar false f l
+      | _ -> Array.make ar false
+
 (* check that a symbol declaration is correct *)
 let check_symbol env t se =
   let ar = se.symb_entry_arity
@@ -42,64 +85,70 @@ let check_symbol env t se =
   and st = se.symb_entry_status
   and mons = se.symb_entry_mons
   and antimons = se.symb_entry_mons in
-  let deltas = check_mons ar mons antimons in
     if nb_prod t < ar then error "Type not compatible with arity.";
-    if not (is_linear st) then error "Non-linear status.";
-    { symb_arity = se.symb_entry_arity;
-      symb_eqth = se.symb_entry_eqth;
-      symb_status = se.symb_entry_status;
-      symb_mons = deltas;
-      symb_termin = General_Schema; }
+    if not (check_eqth eq t) then
+      error "Type not compatible with equational theory";
+    let deltas = check_mons ar mons antimons in
+    let accs = check_access env ar t in
+      { symb_arity = ar;
+	symb_eqth = eq;
+	symb_status = st;
+	symb_mons = deltas;
+	symb_termin = General_Schema;
+	symb_acc = accs }
+
+(* flatten head applications leaving casts *)
+let collapse =
+  let rec collapse_rec f va =
+    match kind_of_term f with
+      | App (g,vb) -> collapse_rec g (Array.append vb va)
+      | _ -> if va = [||] then f else mkApp (f,va)
+  in
+    fun c ->
+      match kind_of_term c with
+	| App (f,va) -> collapse_rec f va
+	| _ -> c
 
 (* say if a constr is headed by a symbol *)
 let is_symbol_headed env c =
-  match kind_of_term c with
+  match kind_of_term (collapse c) with
     | App (f,_) ->
-        begin
-	  match kind_of_term f with
-	    | Const kn -> is_symbol (lookup_constant kn env)
-	    | _ -> false
-        end
+        (match kind_of_term f with
+	   | Const kn -> is_symbol (lookup_constant kn env)
+	   | _ -> false)
     | Const kn -> is_symbol (lookup_constant kn env)
     | _ -> false
 
 (* get head symbol of a symbol headed LHS *)
 let head_symbol c =
-  match kind_of_term c with
+  match kind_of_term (collapse c) with
     | App (f,_) ->
-        begin
-	  match kind_of_term f with
-	    | Const kn -> kn
-	    | _ -> error "Ill-formed rule."
-        end
+	(match kind_of_term f with
+	   | Const kn -> kn
+	   | _ -> error "Ill-formed rule.")
     | Const kn -> kn
     | _ -> error "Ill-formed rule."
 
 (* get head symbol and its arguments *)
-let head_symbol_and_args =
-  let empty = Array.make 0 mkProp in fun c ->
-    match kind_of_term c with
-      | App (f,va) ->
-          begin
-	    match kind_of_term f with
-	      | Const kn -> (kn,va)
-	      | _ -> error "Ill-formed rule."
-          end
-      | Const kn -> (kn, empty)
-      | _ -> error "Ill-formed rule."
+let head_symbol_and_args c =
+  match kind_of_term (collapse c) with
+    | App (f,va) ->
+	(match kind_of_term f with
+	   | Const kn -> (kn,va)
+	   | _ -> error "Ill-formed rule.")
+    | Const kn -> (kn,[||])
+    | _ -> error "Ill-formed rule."
 
 (* say if a constr is algebraic *)
 let is_algebraic env =
   let rec is_alg c =
-    match kind_of_term c with
-      |  App (f,va) ->
-           begin
-	     match kind_of_term f with
-	       | Const kn -> is_symbol (lookup_constant kn env)
-		   & array_for_all is_alg va
-               | Construct _ -> array_for_all is_alg va
-	       | _ -> false
-           end
+    match kind_of_term (collapse c) with
+      | App (f,va) ->
+	  (match kind_of_term f with
+	     | Const kn -> is_symbol (lookup_constant kn env)
+		 & array_for_all is_alg va
+             | Construct _ -> array_for_all is_alg va
+	     | _ -> false)
       | Construct _ | Rel _ -> true
       | Const kn -> is_symbol (lookup_constant kn env)
       | _ -> false
@@ -111,40 +160,28 @@ let is_linear =
   let rec is_lin c =
     match kind_of_term c with
       | Rel i -> if List.mem i !vars then false else (vars := i::!vars; true)
-      | App (f,va) -> array_for_all is_lin va
+      | App (f,va) -> is_lin f; array_for_all is_lin va
       | _ -> true
   in fun c -> vars := []; is_lin c
 
-(* insert an element in a sorted list *)
-let insert inf x =
-  let rec ins = function
-    | y::l' as l -> if inf x y then x::l else y::(ins l')
-    | _ -> [x]
-  in ins
-
-(* give the variables and the number of occurrences *)
-let var_occs =
-  let vars = ref [] and inf x y = (fst x) <= (fst y) in
-  let rec occs c =
-    match kind_of_term c with
-      | Rel i ->
-	  begin
-	    try incr (List.assoc i !vars)
-	    with Not_found -> vars := insert inf (i,ref 1) !vars
-	  end
-      | App (f,va) -> Array.iter occs va
-      | _ -> ()
-  in fun c -> vars := []; occs c; List.map (fun (x,r) -> (x,!r)) !vars
-
-(* say if a rule if non-duplicating *)
-let is_non_dupl (l,r) =
-  let rec is_greater = function
-    | ((x1,n1)::l1' as l1), ((x2,n2)::l2' as l2) ->
-	if x1=x2 then n1>=n2
-	else if x1<x2 then is_greater (l1',l2)
-	else is_greater (l1,l2')
-    | _ -> true
-  in is_greater (var_occs l, var_occs r)
+(* say if an algebraic rule if non-duplicating *)
+let is_non_dupl =
+  let vars = ref (Array.make 10 0) in
+  let init() = Array.fill !vars 0 (Array.length !vars) 0
+  and update func i =
+    let n = Array.length !vars in
+      if i >= n then vars := Array.append !vars (Array.make (i-n+10) 0);
+      !vars.(i) <- func !vars.(i)
+  in
+  let occs func =
+    let rec occs_rec c =
+      match kind_of_term c with
+	| Rel i -> update func i
+	| App (f,va) -> occs_rec f; Array.iter occs_rec va
+	| _ -> ()
+    in occs_rec
+  in fun (l,r) -> init(); occs succ l; occs pred r;
+    array_for_all (fun v -> v >= 0) !vars
 
 (* check subject reduction *)
 let is_welltyped env envl envr (l,r) =
@@ -155,10 +192,42 @@ let is_welltyped env envl envr (l,r) =
     try let _ = conv envl tl t and _ = conv envr tr t in true
     with NotConvertible -> false
 
+(* sets of integers *)
+module IntOrd = struct
+  type t = int
+  let compare = Pervasives.compare
+end
+module IntSet = Set.Make(IntOrd)
+
+(* compute the variables accessible in an array of algebraic terms *)
+let acc_vars env =
+  let rec accs c =
+    match kind_of_term (collapse_appl c) with
+      | App (f,va) ->
+	  (match kind_of_term f with
+	     | Const kn ->
+		 (match (lookup_constant kn env).const_symb with
+		    | Some si ->
+			let f i s c =
+			  if si.symb_acc.(i) then IntSet.union s (accs c)
+			  else s
+			and vb =
+			  if Array.length va <= si.symb_arity then va
+			  else Array.sub va 0 si.symb_arity
+			in array_fold_left_i f IntSet.empty vb
+		    | _ -> IntSet.empty)
+	     | Construct _ -> Array.fold_left add_accs IntSet.empty va
+	     | _ -> IntSet.empty)
+      | Rel i -> IntSet.singleton i
+      | _ -> IntSet.empty
+  and add_accs s c = IntSet.union s (accs c)
+  in Array.fold_left add_accs IntSet.empty
+
 (* say if symbols in [c] are smaller or equivalent to [kn]
-   and if symbols equivalent to [kn] are applied to arguments
-   smaller than [vl] *)
+          symbols equivalent to [kn] are applied to arguments smaller than [vl]
+          variables in [c] are accessible in [vl] *)
 let are_rec_calls_smaller env prec kn status vl =
+  let accs = acc_vars env vl in
   let rec are_rc_smaller c =
     match kind_of_term c with
       | App (f,va) ->
@@ -175,7 +244,8 @@ let are_rec_calls_smaller env prec kn status vl =
 	      | _ -> are_rc_smaller f & array_for_all are_rc_smaller va
 	  end
       | Const kn' -> compare prec kn' kn = Smaller
-      | Construct _ | Rel _ -> true
+      | Construct _ -> true
+      | Rel i -> IntSet.mem i accs
       | Lambda (_,t,b) | Prod (_,t,b) -> are_rc_smaller t & are_rc_smaller b
       | _ -> false
   in are_rc_smaller
@@ -199,13 +269,13 @@ let check_rules env re =
   (* check LHS *)
   let is_LHS_ok (l,r) = is_algebraic env l & is_symbol_headed env l in
     if not (List.for_all is_LHS_ok rules)
-    then error "There is an ill-formed rule.";
+    then error "Ill-formed rule.";
 
   (* check subject reduction *)
   if not (List.for_all (is_welltyped env envl envr) rules)
   then error "There is a rule not type-preserving.";
 
-  (* check confluence *)
+  (* check local confluence *)
   if not (is_confluent (cime env) rules)
   then error "Non-confluent rules";
 

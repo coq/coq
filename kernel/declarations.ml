@@ -15,6 +15,7 @@ open Univ
 open Term
 open Sign
 open Symbol
+open Debug
 (*i*)
 
 (* This module defines the types of global declarations. This includes
@@ -148,7 +149,51 @@ type mutual_inductive_body = {
   mind_equiv : kernel_name option
  }
 
+(* printing for debug *)
+
 type imap = mutual_inductive_body KNmap.t
+
+let pr_ind imap (kn,i) =
+  try let ind = (KNmap.find kn imap).mind_packets.(i) in
+    pr (string_of_id ind.mind_typename)
+  with Not_found -> prn kn
+
+let pr_construct imap ((kn,i),n) =
+  try let ind = (KNmap.find kn imap).mind_packets.(i) in
+    pr (string_of_id ind.mind_consnames.(n-1))
+  with Not_found -> pr "constr:"; prn kn; prch ':'; pri n
+
+let pr_fix ((_,i),(vn,_,_)) = pr_name vn.(i)
+
+let pr_cofix (i,(vn,_,_)) = pr_name vn.(i)
+
+let prc imap =
+  let rec prc_rec c =
+    match kind_of_term c with
+      | App (f,va) ->
+	  if Array.length va = 0 then prc_rec f
+	  else prch '('; prc_rec f; Array.iter pr_sep va; prch ')'
+      | Const kn -> pr (string_of_label (label kn))
+      | Construct c -> pr_construct imap c
+      | Rel i -> prch 'x'; pri i
+      | Prod (n,t,b) -> prch '('; pr_name n; prch ':';
+	  prc_rec t; prch ')'; prc_rec b
+      | Lambda (n,t,b) -> prch '['; pr_name n; prch ':';
+	  prc_rec t; prch ']'; prc_rec b
+      | Fix f -> pr_fix f
+      | CoFix cf -> pr_cofix cf
+      | Ind ind -> pr_ind imap ind
+      | Var id -> pr (string_of_id id)
+      | Case (_,t,c,va) -> pr "(case "; prc_rec c; pr " of"; Array.iter pr_bar va; prch ')'
+      | _ -> prch '?'
+  and pr_sep c = prch ' '; prc_rec c
+  and pr_bar c = pr " | "; prc_rec c
+  in prc_rec
+
+let prcv imap va =
+  let pr_elt i c = if i>0 then pr ", "; prc imap c in
+    if Array.length va = 0 then pr "<empty>"
+    else Array.iteri pr_elt va
 
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = 

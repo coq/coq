@@ -512,17 +512,19 @@ let array_map3 f v1 v2 v3 =
     res
   end
 
-let array_init_by_list_map f v l =
-  let n = List.length l in
-  let a = Array.make n v in
+let array_update_by_list_map a f l =
   let r = ref l in
-    for i = 0 to n-1 do
-      begin
-	match !r with
-	  | x::r' -> a.(i) <- f x; r := r'
-	  | _ -> anomaly "array_init_by_list_map"
-      end
-    done; a
+    for i = 0 to Array.length a - 1 do
+      match !r with
+	| x::r' -> a.(i) <- f x; r := r'
+	| _ -> anomaly "array_update_by_list_map"
+    done
+
+let array_init_by_list_map n v f l =
+  let a = Array.make n v in array_update_by_list_map a f l; a
+
+let array_make_by_list_map v f l =
+  array_init_by_list_map (List.length l) v f l
 
 let array_to_rev_list a = Array.fold_left (fun l x -> x::l) [] a
 

@@ -8,24 +8,14 @@
 
 (* $Id$ *)
 
-open Names
-open Term
-open Declarations
-
 val pr : string -> unit
 val pri : int -> unit
 val prch : char -> unit
 val pnl : unit -> unit
 val prl : string -> unit
-val pr_list : ('a -> unit) -> string -> 'a list -> unit
 
-val pr_ind : imap -> inductive -> unit
-val pr_construct : imap -> constructor -> unit
-val pr_fix : fixpoint -> unit
-val pr_cofix : cofixpoint -> unit
-
-val prc : imap -> constr -> unit
-val prv : imap -> constr array -> unit
+val propt : ('a -> unit) -> 'a option -> unit
+val prlist : ('a -> unit) -> string -> 'a list -> unit
 
 val init : unit -> unit
 

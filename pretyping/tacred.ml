@@ -561,10 +561,6 @@ let hnf_constr env sigma c =
   in 
   redrec (c, empty_stack)
 
-(* Simpl_rew reduction tactic *)
-
-let rew_nf env sigma = Cime.nf (cime env)
-
 (* Simpl reduction tactic: same as simplify, but also reduces
    elimination constants *)
 
@@ -626,6 +622,10 @@ let contextually (locs,c) f env sigma t =
   if locs <> [] & List.exists (fun o -> o >= !pos or o <= - !pos) locs then
     errorlabstrm "contextually" (str "Too few occurences");
   t'
+
+(* Simpl_rew reduction tactic *)
+
+let rew_nf env sigma = Cime.nf (cime env)
 
 (* linear substitution (following pretty-printer) of the value of name in c.
  * n is the number of the next occurence of name.

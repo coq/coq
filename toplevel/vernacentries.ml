@@ -32,7 +32,6 @@ open Vernacexpr
 open Decl_kinds
 open Topconstr
 open Pretyping
-open Print
 
 (* Pcoq hooks *)
 

@@ -92,9 +92,9 @@ LIBREP=\
   lib/predicate.cmo lib/rtree.cmo  # Rem: Cygwin already uses variable LIB 
 
 KERNEL=\
-  kernel/names.cmo kernel/univ.cmo \
+  lib/debug.cmo kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-  kernel/declarations.cmo kernel/print.cmo kernel/symbol.cmo kernel/cime.cmo \
+  kernel/declarations.cmo kernel/symbol.cmo kernel/cime.cmo \
   cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
   kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
   kernel/entries.cmo kernel/modops.cmo \
@@ -212,13 +212,13 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
 PARSERREQUIRES=\
-  config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
+  config/coq_config.cmo lib/debug.cmo lib/pp_control.cmo lib/pp.cmo \
   lib/util.cmo lib/bignat.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
   lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo lib/system.cmo \
   lib/bstack.cmo lib/edit.cmo lib/options.cmo lib/rtree.cmo lib/gset.cmo \
   lib/tlm.cmo kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
   kernel/term.cmo kernel/sign.cmo kernel/symbol.cmo library/decl_kinds.cmo \
-  kernel/declarations.cmo kernel/print.cmo kernel/cime.cmo \
+  kernel/declarations.cmo kernel/cime.cmo \
   cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
   kernel/closure.cmo kernel/conv_oracle.cmo \
   kernel/reduction.cmo kernel/modops.cmo kernel/type_errors.cmo \
@@ -1058,12 +1058,12 @@ ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARNEEDEDCMO=\
-  lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
+  lib/debug.cmo lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
   lib/dyn.cmo lib/options.cmo \
   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
   kernel/sign.cmo kernel/symbol.cmo library/decl_kinds.cmo \
-  kernel/declarations.cmo kernel/print.cmo kernel/cime.cmo \
+  kernel/declarations.cmo kernel/cime.cmo \
   cime/orderings/finite_ord.cmo kernel/precedence.cmo kernel/environ.cmo \
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \

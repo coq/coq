@@ -107,6 +107,14 @@ type mutual_inductive_body = {
 
 type imap = mutual_inductive_body KNmap.t
 
+val pr_ind : imap -> inductive -> unit
+val pr_construct : imap -> constructor -> unit
+val pr_fix : fixpoint -> unit
+val pr_cofix : cofixpoint -> unit
+
+val prc : imap -> constr -> unit
+val prcv : imap -> constr array -> unit
+
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
 
 

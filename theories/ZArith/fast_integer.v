@@ -228,41 +228,41 @@ Lemma ZL3: (x:nat) (add_un (anti_convert (plus x x))) =  (xO (anti_convert x)).
 Proof.
 Induction x; [
   Simpl; Auto with arith
-| Intros y H; Simpl; Rewrite  plus_sym; Simpl; Rewrite  H; Rewrite  ZL1;Auto with arith].
+| Intros y H; Simpl_rew; Rewrite plus_sym; Simpl_rew; Simpl; Rewrite  H; Rewrite  ZL1;Auto with arith].
 Qed.
 
 Lemma ZL4: (y:positive) (EX h:nat |(convert y)=(S h)).
 Proof.
 Induction y; [
   Intros p H;Elim H; Intros x H1; Exists (plus (S x) (S x));
-  Unfold convert ;Simpl; Rewrite ZL0; Rewrite ZL2; Unfold convert in H1;
+  Unfold convert; Simpl; Simpl_rew; Rewrite ZL0; Rewrite ZL2; Unfold convert in H1;
   Rewrite H1; Auto with arith
 | Intros p H1;Elim H1;Intros x H2; Exists (plus x (S x)); Unfold convert;
-  Simpl; Rewrite ZL0; Rewrite ZL2;Unfold convert in H2; Rewrite H2; Auto with arith
-| Exists O ;Auto with arith ].
+  Simpl; Simpl_rew; Rewrite ZL0; Rewrite ZL2; Unfold convert in H2; Rewrite H2; Auto with arith
+| Exists O; Auto with arith].
 Qed.
 
 Lemma ZL5: (x:nat) (anti_convert (plus (S x) (S x))) =  (xI (anti_convert x)).
 Proof.
-Induction x;Simpl; [
+Induction x; Simpl; [
   Auto with arith
-| Intros y H; Rewrite <- plus_n_Sm; Simpl; Rewrite H; Auto with arith].
+| Intros y H; Simpl_rew; Rewrite <- plus_n_Sm; Rewrite <- plus_Sn_m; Simpl; Rewrite H; Auto with arith].
 Qed.
 
 Lemma bij2 : (x:positive) (anti_convert (convert x)) = (add_un x).
 Proof.
-Induction x; [
-  Intros p H; Simpl; Rewrite <- H; Rewrite ZL0;Rewrite ZL2; Elim (ZL4 p); 
-  Unfold convert; Intros n H1;Rewrite H1; Rewrite ZL3; Auto with arith
+Induction x.
+Intros p H. Simpl. Rewrite <- H. Unfold convert. Simpl. Simpl_rew. Simpl. Rewrite ZL0. Rewrite ZL2. Rewrite ZL3. Auto.
 
-| Intros p H; Unfold convert ;Simpl; Rewrite ZL0; Rewrite ZL2;
+Intros p H. Unfold convert. Simpl. Rewrite ZL2.
   Rewrite <- (sub_add_one
                (anti_convert
-                 (plus (positive_to_nat p (S O)) (positive_to_nat p (S O)))));
-  Rewrite <- (sub_add_one (xI p));
-  Simpl;Rewrite <- H;Elim (ZL4 p); Unfold convert ;Intros n H1;Rewrite H1;
-  Rewrite ZL5; Simpl; Trivial with arith
-| Unfold convert; Simpl; Auto with arith ].
+                 (plus (positive_to_nat p (S O)) (positive_to_nat p (S O))))).
+  Rewrite <- (sub_add_one (xI p)).
+  Simpl. Rewrite <- H. Elim (ZL4 p). Intros n H1. Unfold convert in H1. Rewrite H1.
+  Rewrite ZL5. Simpl. Unfold convert. Rewrite H1. Auto.
+
+Unfold convert. Auto. 
 Qed.
 
 (** Comparison of positive *)
@@ -369,7 +369,7 @@ Theorem compare_convert_INFERIEUR :
     (lt (convert x) (convert y)).
 Proof.
 Induction x;Induction y; [
-  Intros z H1 H2; Unfold convert ;Simpl; Apply lt_n_S; 
+  Intros z H1 H2; Unfold convert; Simpl; Apply lt_n_S; 
   Do 2 Rewrite ZL6; Apply ZL7; Apply H; Simpl in H2; Assumption
 | Intros q H1 H2; Unfold convert ;Simpl; Do 2 Rewrite ZL6; 
   Apply ZL8; Apply H;Simpl in H2; Apply ZLSI;Assumption

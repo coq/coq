@@ -14,7 +14,7 @@ open Declarations
 open Decl_kinds
 open Util
 open Symbol
-open Print
+open Debug
 
 (* CiME *)
 open Signatures
@@ -40,66 +40,50 @@ let arity cmap imap f =
     | Sapp -> 2
     | Slambda | Sprod -> 3
     | Sconstr c ->
-	begin
-	  match kind_of_term c with
-	    | Const kn ->
-		begin
-		  match (KNmap.find kn cmap).const_symb with
-		    | Some si -> si.symb_arity
-		    | _ -> 0
-		end
-	    | Construct ((kn,i),n) ->
-		(KNmap.find kn imap).mind_packets.(i).mind_cons_arity.(n-1)
-	    | _ -> 0
-	end
+	(match kind_of_term c with
+	   | Const kn ->
+	       (match (KNmap.find kn cmap).const_symb with
+		  | Some si -> si.symb_arity
+		  | _ -> 0)
+	   | Construct ((kn,i),n) ->
+	       (KNmap.find kn imap).mind_packets.(i).mind_cons_arity.(n-1)
+	   | _ -> 0)
     | _ -> 0
 
 (* say if a symbol is AC *)
 let is_ac cmap f = 
   match f with
     | Sconstr c ->
-	begin
-	  match kind_of_term c with
-	    | Const kn ->
-		begin
-		  match (KNmap.find kn cmap).const_symb with
-		    | Some si -> si.symb_eqth = AC
-		    | _ -> false
-		end
-	    | _ -> false
-	end
+	(match kind_of_term c with
+	   | Const kn ->
+	       (match (KNmap.find kn cmap).const_symb with
+		  | Some si -> si.symb_eqth = AC
+		  | _ -> false)
+	   | _ -> false)
     | _ -> false
 
 (* say if a symbol is C *)
 let is_commutative cmap f =
   match f with
     | Sconstr c ->
-	begin
-	  match kind_of_term c with
-	    | Const kn ->
-		begin
-		  match (KNmap.find kn cmap).const_symb with
-		    | Some si -> si.symb_eqth = C
-		    | _ -> false
-		end
-	    | _ -> false
-	end
+	(match kind_of_term c with
+	   | Const kn ->
+	       (match (KNmap.find kn cmap).const_symb with
+		  | Some si -> si.symb_eqth = C
+		  | _ -> false)
+	   | _ -> false)
     | _ -> false
 
 (* say if a symbol is neither AC nor C *)
 let is_free cmap f =
   match f with
     | Sconstr c ->
-	begin
-	  match kind_of_term c with
-	    | Const kn ->
-		begin
-		  match (KNmap.find kn cmap).const_symb with
-		    | Some si -> si.symb_eqth = Free
-		    | _ -> true
-		end
-	    | _ -> true
-	end
+	(match kind_of_term c with
+	   | Const kn ->
+	       (match (KNmap.find kn cmap).const_symb with
+		  | Some si -> si.symb_eqth = Free
+		  | _ -> true)
+	   | _ -> true)
     | _ -> true
 
 (* string of a symbol *)
@@ -111,18 +95,16 @@ let string_of_symb imap f =
     | Sname n -> string_of_name n
     | Sshift n -> "^" ^ (string_of_int n)
     | Sconstr c ->
-	begin
-	  match kind_of_term c with
-	    | Const kn -> string_of_label (label kn)
-	    | Construct ((kn,i),n) -> string_of_id
-		(KNmap.find kn imap).mind_packets.(i).mind_consnames.(n-1)
-	    | Rel i -> "x" ^ (string_of_int i)
-	    | Fix ((_,i),(vn,_,_)) -> string_of_name vn.(i)
-	    | CoFix (i,(vn,_,_)) -> string_of_name vn.(i)
-	    | Ind (kn,i) -> string_of_id
-		(KNmap.find kn imap).mind_packets.(i).mind_typename
-	    | _ -> "?" (* TO DO ? *)
-	end
+	(match kind_of_term c with
+	   | Const kn -> string_of_label (label kn)
+	   | Construct ((kn,i),n) -> string_of_id
+	       (KNmap.find kn imap).mind_packets.(i).mind_consnames.(n-1)
+	   | Rel i -> "x" ^ (string_of_int i)
+	   | Fix ((_,i),(vn,_,_)) -> string_of_name vn.(i)
+	   | CoFix (i,(vn,_,_)) -> string_of_name vn.(i)
+	   | Ind (kn,i) -> string_of_id
+	       (KNmap.find kn imap).mind_packets.(i).mind_typename
+	   | _ -> "?" (* TO DO ? *))
     | _ -> "?" (* TO DO ? *)
 
 (* CiME signature from maps for constants and inductives *)
@@ -189,7 +171,7 @@ let prt sign =
   let rec prt_rec = function
     | Term (f,l) ->
 	pr (sign#string_of_symbol f);
-	if l <> [] then (prch '('; pr_list prt_rec "," l; prch ')')
+	if l <> [] then (prch '('; prlist prt_rec "," l; prch ')')
     | Var v -> pr (string_of_var_id v)
   in prt_rec
 
@@ -219,13 +201,11 @@ let cime_of_lhs_constr sign =
   let rec coc c =
     match kind_of_term c with
       | App (f,va) ->
-	  begin
-	    let g,l = decomp f (Array.fold_right coc_cons va []) in
-	      match kind_of_term g with
-		| Const kn -> flat sign g l
-		| Construct _ -> constr g l
-		| _ -> anomaly "cime_of_lhs_constr"
-	  end
+	  let g,l = decomp f (Array.fold_right coc_cons va []) in
+	    (match kind_of_term g with
+	       | Const kn -> flat sign g l
+	       | Construct _ -> constr g l
+	       | _ -> anomaly "cime_of_lhs_constr")
       | Rel i -> var i
       | Const _ | Construct _ -> constr c []
       | _ -> anomaly "cime_of_lhs_constr"
@@ -241,13 +221,11 @@ let cime_of_rhs_constr sign =
   let rec coc k c = (* k = number of lambda/prod's gone through *)
     match kind_of_term c with
       | App (f,va) ->
-	  begin
-	    let g,l = decomp k f (coc_array k va) in
-	      match kind_of_term g with
-		| Const _ -> flat sign g l
-		| Construct _ -> constr g l
-		| _ -> List.fold_right (fun c t -> app t c) l (coc k g)
-	  end
+	  let g,l = decomp k f (coc_array k va) in
+	    (match kind_of_term g with
+	       | Const _ -> flat sign g l
+	       | Construct _ -> constr g l
+	       | _ -> List.fold_right (fun c t -> app t c) l (coc k g))
       | Rel i ->
 	  let j = i - k in if j >= 0 then shift k (var j) else constr c []
       | Lambda (n,t,b) -> lambda n (coc k t) (coc (k+1) b)
@@ -267,12 +245,10 @@ let cime_of_constr sign =
   let rec coc c =
     match kind_of_term c with
       | App (f,va) ->
-	  begin
-	    let g,l = decomp f (Array.fold_right coc_cons va []) in
-	      match kind_of_term g with
-		| Const kn -> flat sign g l
-		| _ -> constr g l
-	  end
+	  let g,l = decomp f (Array.fold_right coc_cons va []) in
+	    (match kind_of_term g with
+	       | Const kn -> flat sign g l
+	       | _ -> constr g l)
       | Prod (n,t,b) -> prod n (coc t) (coc b)
       | Lambda (n,t,b) -> lambda n (coc t) (coc b)
       | _ -> constr c []
@@ -290,7 +266,7 @@ let app_form l =
       | Term (Sapp,[x';y']) -> app_form_rec x' (y'::acc)
       | _ -> (x,acc)
   in match l with
-    | [x;y] -> app_form_rec x [y]
+    | x::l' -> app_form_rec x l'
     | _ -> anomaly "Cime.app_form"
 
 (* get name *)
@@ -318,11 +294,9 @@ let unflat w f =
     match l with
       | [] -> anomaly "Cime.unflat"
       | x::l' ->
-	  begin
-	    match l' with
-	      | [] -> w x
-	      | _ -> mkApp (f, [|w x;unflat_rec l'|])
-	  end
+	  (match l' with
+	     | [] -> w x
+	     | _ -> mkApp (f, [|w x;unflat_rec l'|]))
   in unflat_rec
 
 (* from cime to constr *)
@@ -330,41 +304,31 @@ let constr_of_cime sign =
   let rec coc n t = (* n = number of shifts to do *)
     match t (* t.node *) with
       | Term (f,l) ->
-	  begin
-	    match f with
-	      | Sapp ->
-		  let (g,m) = app_form l in
-		    mkApp (coc n g,array_init_by_list_map (coc n) mkProp m)
-	      | Slambda ->
-		  begin
-		    match l with
-		      | [g;t;b] -> mkLambda (get_name g,coc n t,coc n b)
-		      | _ -> anomaly "constr_of_cime"
-		  end
-	      | Sprod ->
-		  begin
-		    match l with
-		      | [g;t;b] -> mkProd (get_name g,coc n t,coc n b)
-		      | _ -> anomaly "constr_of_cime"
-		  end
-	      | Sconstr c ->
-		  begin
-		    match l with
-		      | [] -> shift_constr n c
-		      | _ ->
-			  if sign#is_ac f then
-			    unflat (coc n) (shift_constr n c) l
-			  else mkApp (shift_constr n c,
-				      array_init_by_list_map (coc n) mkProp l)
-		  end
-	      | Sshift p ->
-		  begin
-		    match l with
-		      | [u] -> coc (n+p) u
-		      | _ -> anomaly "constr_of_cime"
-		  end
-	      | _ -> anomaly "constr_of_cime"
-	  end
+	  (match f with
+	     | Sapp ->
+		 let (g,m) = app_form l in
+		   mkApp (coc n g,array_make_by_list_map mkProp (coc n) m)
+	     | Slambda ->
+		 (match l with
+		    | g::t::b::_ -> mkLambda (get_name g,coc n t,coc n b)
+		    | _ -> anomaly "constr_of_cime")
+	     | Sprod ->
+		 (match l with
+		    | g::t::b::_ -> mkProd (get_name g,coc n t,coc n b)
+		    | _ -> anomaly "constr_of_cime")
+	     | Sconstr c ->
+		 (match l with
+		    | [] -> shift_constr n c
+		    | _ ->
+			if sign#is_ac f then
+			  unflat (coc n) (shift_constr n c) l
+			else mkApp (shift_constr n c,
+				    array_make_by_list_map mkProp (coc n) l))
+	     | Sshift p ->
+		 (match l with
+		    | u::_ -> coc (n+p) u
+		    | _ -> anomaly "constr_of_cime")
+	     | _ -> anomaly "constr_of_cime")
       | _ -> anomaly "constr_of_cime"
   in coc 0
 
@@ -433,7 +397,7 @@ let force_norm = force_normalize (* find memo *)
    return [Some t'] where [t'] is the normal form of [t] otherwise *)
 let normalize env t =
   try
-    let s = sign env in (* pr"rules: ";pr_list (prr s) "; " env.rules;pnl(); *)
+    let s = sign env in
     let t' = cime_of_constr s t in
     let nf = force_norm s default env.dnet t' in
     let nf' = constr_of_cime s nf in
@@ -465,13 +429,11 @@ let cap_and_aliens sign =
   let rec cap c =
     match kind_of_term c with
       | App (f,va) ->
-	  begin
-	    match kind_of_term f with
-	      | Const _ ->
-		  let (caps,aliens) = cap_array va in flat sign f caps, aliens
-	      | _ ->
-		  let (caps,aliens) = cap_array va in constr f caps, aliens
-	  end
+	  (match kind_of_term f with
+	     | Const _ ->
+		 let caps,aliens = cap_array va in flat sign f caps, aliens
+	     | _ ->
+		 let caps,aliens = cap_array va in constr f caps, aliens)
       | _ -> constr c [], [c]
   and cap_cons c (caps,aliens) =
     let (newcaps,newaliens) = cap c in newcaps::caps, newaliens @ aliens
@@ -490,11 +452,9 @@ let cime_of_eq_constr sign =
       | LetIn (_,b,t,c) -> make_term Sletin [coc b; coc t; coc c]
       | App (f,va) ->
 	  let g,l = decomp f (Array.fold_right coc_cons va []) in
-	  begin
-	    match kind_of_term g with
-	      | Const kn -> make_term (Sconstr g) l
-	      | _ -> make_term Sapp ((coc g)::l)
-	  end
+	    (match kind_of_term g with
+	       | Const kn -> make_term (Sconstr g) l
+	       | _ -> make_term Sapp ((coc g)::l))
       | Case (_,p,c,va) ->
 	  make_term Scase (Array.fold_right coc_cons va [coc p; coc c])
       | Fix (i,(_,va1,va2)) ->

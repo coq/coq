@@ -17,7 +17,7 @@ open Vernac_
 open Goptions
 open Constr
 open Prim
-open Print
+open Debug
 
 GEXTEND Gram
   GLOBAL: class_rawexpr;
