@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Term
 open Termops
+open Declarations
 open Inductive
 open Environ
 open Reductionops
@@ -23,6 +24,39 @@ open Cbv
 
 exception Elimconst
 exception Redelimination
+
+let set_opaque_const = Conv_oracle.set_opaque_const
+let set_transparent_const sp =
+  let cb = Global.lookup_constant sp in
+  if cb.const_body <> None & cb.const_opaque then
+    errorlabstrm "set_transparent_const"
+      [< 'sTR "Cannot make"; 'sPC; 
+         Nametab.pr_global_env (Global.env()) (Nametab.ConstRef sp);
+         'sPC; 'sTR "transparent because it was declared opaque." >];
+  Conv_oracle.set_transparent_const sp
+
+let set_opaque_var      = Conv_oracle.set_opaque_var
+let set_transparent_var = Conv_oracle.set_transparent_var
+
+let _ = 
+  Summary.declare_summary "Transparent constants and variables"
+    { Summary.freeze_function = Conv_oracle.freeze;
+      Summary.unfreeze_function = Conv_oracle.unfreeze;
+      Summary.init_function = Conv_oracle.init;
+      Summary.survive_section = false }
+
+let is_evaluable env ref =
+  match ref with
+      EvalConstRef sp ->
+        let (ids,sps) = Conv_oracle.freeze() in
+        Sppred.mem sp sps &
+        let cb = Environ.lookup_constant sp env in
+        cb.const_body <> None & not cb.const_opaque
+    | EvalVarRef id ->
+        let (ids,sps) = Conv_oracle.freeze() in
+        Idpred.mem id ids &
+        let (_,value,_) = Environ.lookup_named id env in
+        value <> None
 
 type evaluable_reference =
   | EvalConst of constant
@@ -37,8 +71,8 @@ let mkEvalRef = function
   | EvalEvar ev -> mkEvar ev
 
 let isEvalRef env c = match kind_of_term c with
-  | Const sp -> Opaque.is_evaluable env (EvalConstRef sp)
-  | Var id -> Opaque.is_evaluable env (EvalVarRef id)
+  | Const sp -> is_evaluable env (EvalConstRef sp)
+  | Var id -> is_evaluable env (EvalVarRef id)
   | Rel _ | Evar _ -> true
   | _ -> false
 
@@ -353,7 +387,7 @@ let special_red_case env whfun (ci, p, c, lf)  =
     let (constr, cargs) = whfun s in 
     match kind_of_term constr with 
       | Const cst -> 
-          (if not (Opaque.is_evaluable env (EvalConstRef cst)) then
+          (if not (is_evaluable env (EvalConstRef cst)) then
             raise Redelimination;
 	  let gvalue = constant_value env cst in
 	  if reducible_mind_case gvalue then
@@ -449,7 +483,7 @@ and construct_const env sigma =
 (* Red reduction tactic: reduction to a product *)
 
 let internal_red_product env sigma c = 
-  let simpfun = clos_norm_flags (UNIFORM,betaiotazeta_red) env sigma in
+  let simpfun = clos_norm_flags betaiotazeta env sigma in
   let rec redrec env x =
     match kind_of_term x with
       | App (f,l) -> 
@@ -660,8 +694,8 @@ let string_of_evaluable_ref = function
   | EvalConstRef sp -> string_of_path sp
 
 let unfold env sigma name =
-  if Opaque.is_evaluable env name then
-    clos_norm_flags (unfold_flags name) env sigma
+  if is_evaluable env name then
+    clos_norm_flags (unfold_red name) env sigma
   else
     error (string_of_evaluable_ref name^" is opaque")
 
@@ -728,8 +762,8 @@ type red_expr =
   | Red of bool
   | Hnf
   | Simpl
-  | Cbv of Closure.flags
-  | Lazy of Closure.flags
+  | Cbv of Closure.RedFlags.reds
+  | Lazy of Closure.RedFlags.reds
   | Unfold of (int list * evaluable_global_reference) list
   | Fold of constr list
   | Pattern of (int list * constr * constr) list
@@ -787,7 +821,7 @@ let one_step_reduce env sigma c =
 
 let reduce_to_ind_gen allow_product env sigma t = 
   let rec elimrec env t l = 
-    let c, _ = whd_stack t in
+    let c, _ = Reductionops.whd_stack t in
     match kind_of_term c with
       | Ind (mind,args) -> ((mind,args),it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->

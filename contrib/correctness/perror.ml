@@ -13,6 +13,7 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
 open Himsg
 

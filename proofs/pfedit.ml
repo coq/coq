@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Sign
 open Term
 open Declarations

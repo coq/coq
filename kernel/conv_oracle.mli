@@ -6,25 +6,27 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i $Id$ i*)
+(* $Id$ *)
 
-(*i*)
 open Names
 open Closure
-open Safe_typing
-open Environ
-(*i*)
 
-(* The current set of transparent constants and variables *)
-val state : unit -> transparent_state
+(* Order on section paths for unfolding.
+   If oracle_order sp1 sp2 is true, then unfold sp1 first.
+   Note: the oracle does not introduce incompleteness, it only
+   tries to postpone unfolding of "opaque" constants. *)
+val oracle_order : table_key -> table_key -> bool
 
-(* returns true if the global reference has a definition and that is
-   has not been set opaque *)
-val is_evaluable : env -> evaluable_global_reference -> bool
-
-(* Modifying this state *)
-val set_opaque_const : section_path -> unit
+(* Changing the oracle *)
+val set_opaque_const      : section_path -> unit
 val set_transparent_const : section_path -> unit
 
-val set_opaque_var : identifier -> unit
+val set_opaque_var      : identifier -> unit
 val set_transparent_var : identifier -> unit
+
+(*****************************)
+
+(* transparent state summary operations *)
+val init     : unit -> unit
+val freeze   : unit -> transparent_state
+val unfreeze : transparent_state -> unit

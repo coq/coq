@@ -11,6 +11,7 @@
 open Closure
 open Util
 open Names
+open Nameops
 open Term
 open Termops
 open Sign
@@ -262,7 +263,7 @@ let rec ast_of_cvt_intro_pattern = function
 (* Gives the ast list corresponding to a reduction flag *)
 open RedFlags
 
-let last_of_cvt_flags (_,red) =
+let last_of_cvt_flags red =
   (if (red_set red fBETA) then [ope("Beta",[])]
    else [])@
   (let (n_unf,lconst) = red_get_const red in

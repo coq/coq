@@ -11,6 +11,7 @@
 (* $Id$ *)
 
 open Names
+open Nameops
 open Pmisc
 
 (* The type of effects.

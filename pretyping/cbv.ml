@@ -91,6 +91,11 @@ let contract_cofixp env (i,(_,_,bds as bodies)) =
   in       
   subst_bodies_from_i 0 env, bds.(i)
 
+let make_constr_ref n = function
+  | FarRelKey p -> mkRel (n+p)
+  | VarKey id -> mkVar id
+  | ConstKey cst -> mkConst cst
+
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -119,27 +124,13 @@ let stack_app appl stack =
     | (_, APP(args,stk)) -> APP(appl@args,stk)
     | _                  -> APP(appl, stack)
 
-(* Tests if we are in a case (modulo some applications) *)
-let under_case_stack = function
-  | (CASE _ | APP(_,CASE _)) -> true
-  | _ -> false
-
-(* Tells if the reduction rk is allowed by flags under a given stack.
- * The stack is useful when flags is (SIMPL,r) because in that case,
- * we perform bdi-reduction under the Case, or r-reduction otherwise
- *)
-let red_allowed flags stack rk =
-  if under_case_stack stack then 
-    red_under flags rk
-  else 
-    red_top flags rk
 
 open RedFlags
 
-let red_allowed_ref flags stack = function
-  | FarRelKey _ -> red_allowed flags stack fDELTA
-  | VarKey id -> red_allowed flags stack (fVAR id)
-  | ConstKey sp -> red_allowed flags stack (fCONST sp)
+let red_set_ref flags = function
+  | FarRelKey _ -> red_set flags fDELTA
+  | VarKey id -> red_set flags (fVAR id)
+  | ConstKey sp -> red_set flags (fCONST sp)
 
 (* Transfer application lists from a value to the stack
  * useful because fixpoints may be totally applied in several times
@@ -152,44 +143,28 @@ let strip_appl head stack =
     | _ -> (head, stack)
 
 
-(* Invariant: if the result of norm_head is CONSTR or (CO)FIXP, its last
- * argument is [].
- * Because we must put all the applied terms in the stack.
- *)
-let reduce_const_body redfun v stk =
-  if under_case_stack stk then strip_appl (redfun v) stk else strip_appl v stk
- 
-
 (* Tests if fixpoint reduction is possible. A reduction function is given as
    argument *)
-let rec check_app_constr redfun = function
+let rec check_app_constr = function
   | ([], _) -> false
   | ((CONSTR _)::_, 0) -> true
-  | (t::_, 0) -> (* TODO: partager ce calcul *)
-      (match redfun t with
-         | CONSTR _ -> true
-         | _ -> false)
-  | (_::l, n) -> check_app_constr redfun (l,(pred n))
+  | (_::l, n) -> check_app_constr (l,(pred n))
 	
-let fixp_reducible redfun flgs ((reci,i),_) stk =
-  if red_allowed flgs stk fIOTA then
+let fixp_reducible flgs ((reci,i),_) stk =
+  if red_set flgs fIOTA then
     match stk with               (* !!! for Acc_rec: reci.(i) = -2 *)
-      | APP(appl,_) -> reci.(i) >=0 & check_app_constr redfun (appl, reci.(i))
+      | APP(appl,_) -> reci.(i) >=0 & check_app_constr (appl, reci.(i))
       | _ -> false
   else 
     false
 
-let cofixp_reducible redfun flgs _ stk =
-  if red_allowed flgs stk fIOTA then
+let cofixp_reducible flgs _ stk =
+  if red_set flgs fIOTA then
     match stk with
       | (CASE _ | APP(_,CASE _)) -> true
       | _ -> false
   else 
     false
-
-let mindsp_nparams env (sp,i) =
-  let mib = lookup_mind sp env in
-  mib.Declarations.mind_packets.(i).Declarations.mind_nparams
 
 (* The main recursive functions
  *
@@ -216,28 +191,23 @@ let rec norm_head info env t stack =
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
-  | Rel i -> (match expand_rel i env with
-                | Inl (0,v) ->
-                    reduce_const_body (cbv_norm_more info env) v stack
-                | Inl (n,v) ->
-                    reduce_const_body
-                      (cbv_norm_more info env) (shift_value n v) stack
-                | Inr (n,None) ->
-		    (VAL(0, mkRel n), stack)
-                | Inr (n,Some p) ->
-		    norm_head_ref (n-p) info env stack (FarRelKey p))
+  | Rel i ->
+      (match expand_rel i env with
+        | Inl (0,v)      -> strip_appl v stack
+        | Inl (n,v)      -> strip_appl (shift_value n v) stack
+        | Inr (n,None)   -> (VAL(0, mkRel n), stack)
+        | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (FarRelKey p))
 
   | Var id -> norm_head_ref 0 info env stack (VarKey id)
 
-  | Const sp ->
-      norm_head_ref 0 info env stack (ConstKey sp)
+  | Const sp -> norm_head_ref 0 info env stack (ConstKey sp)
 
   | LetIn (x, b, t, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow substitution but leave let's in place *)
-      let zeta = red_allowed (info_flags info) stack fZETA in
+      let zeta = red_set (info_flags info) fZETA in
       let env' =
-	if zeta or red_allowed (info_flags info) stack fDELTA then 
+	if zeta or red_set (info_flags info) fDELTA then 
 	  subs_cons (cbv_stack_term info TOP env b,env)
 	else
 	  subs_lift env in
@@ -264,17 +234,11 @@ let rec norm_head info env t stack =
 	     stack)
 
 and norm_head_ref k info env stack normt =
-  if red_allowed_ref (info_flags info) stack normt then
+  if red_set_ref (info_flags info) normt then
     match ref_value_cache info normt with
-      | Some body ->
-	  reduce_const_body (cbv_norm_more info env) (shift_value k body) stack
-      | None -> (VAL(0,make_constr_ref k info normt), stack)
-  else (VAL(0,make_constr_ref k info normt), stack)
-
-and make_constr_ref n info = function
-  | FarRelKey p -> mkRel (n+p)
-  | VarKey id -> mkVar id
-  | ConstKey cst -> mkConst cst
+      | Some body -> strip_appl (shift_value k body) stack
+      | None -> (VAL(0,make_constr_ref k normt), stack)
+  else (VAL(0,make_constr_ref k normt), stack)
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
@@ -286,32 +250,31 @@ and cbv_stack_term info stack env t =
   match norm_head info env t stack with
     (* a lambda meets an application -> BETA *)
     | (LAM (x,a,b,env), APP (arg::args, stk))
-      when red_allowed (info_flags info) stk fBETA ->
+      when red_set (info_flags info) fBETA ->
         let subs = subs_cons (arg,env) in
           cbv_stack_term info (stack_app args stk) subs b
 
     (* a Fix applied enough -> IOTA *)
     | (FIXP(fix,env,_), stk)
-        when fixp_reducible (cbv_norm_more info env) (info_flags info) fix stk ->
+        when fixp_reducible (info_flags info) fix stk ->
         let (envf,redfix) = contract_fixp env fix in
         cbv_stack_term info stk envf redfix
 
     (* constructor guard satisfied or Cofix in a Case -> IOTA *)
     | (COFIXP(cofix,env,_), stk)
-        when cofixp_reducible (cbv_norm_more info env) (info_flags info) cofix stk->
+        when cofixp_reducible (info_flags info) cofix stk->
         let (envf,redfix) = contract_cofixp env cofix in
         cbv_stack_term info stk envf redfix
 
-    (* constructor in a Case -> IOTA
-       (use red_under because we know there is a Case) *)
+    (* constructor in a Case -> IOTA *)
     | (CONSTR((sp,n),_), APP(args,CASE(_,br,ci,env,stk)))
-            when red_under (info_flags info) fIOTA ->
+            when red_set (info_flags info) fIOTA ->
 	let real_args = snd (list_chop ci.ci_npar args) in
         cbv_stack_term info (stack_app real_args stk) env br.(n-1)
          
-    (* constructor of arity 0 in a Case -> IOTA ( "   " )*)
+    (* constructor of arity 0 in a Case -> IOTA *)
     | (CONSTR((_,n),_), CASE(_,br,_,env,stk))
-                  when red_under (info_flags info) fIOTA ->
+            when red_set (info_flags info) fIOTA ->
                     cbv_stack_term info stk env br.(n-1)
 
     (* may be reduced later by application *)  
@@ -322,14 +285,6 @@ and cbv_stack_term info stack env t =
 
     (* definitely a value *)
     | (head,stk) -> VAL(0,apply_stack info (cbv_norm_value info head) stk)
-
-
-(* if we are in SIMPL mode, maybe v isn't reduced enough *)
-and cbv_norm_more info env v =
-  match (v, (info_flags info)) with
-    | (VAL(k,t), ((SIMPL|WITHBACK),_)) ->
-        cbv_stack_term (infos_under info) TOP (subs_shft (k,env)) t
-    | _ -> v
 
 
 (* When we are sure t will never produce a redex with its stack, we

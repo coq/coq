@@ -12,6 +12,7 @@ open Pp
 open Util
 open Options
 open Names
+open Nameops
 open Term
 open Termops
 open Inductive

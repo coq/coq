@@ -14,6 +14,7 @@
 
 open Options
 open Names
+open Nameops
 open Vernacentries
 open Reduction
 open Term

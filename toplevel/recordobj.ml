@@ -11,6 +11,7 @@
 open Util
 open Pp
 open Names
+open Nameops
 open Term
 open Instantiate
 open Lib

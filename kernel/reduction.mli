@@ -16,15 +16,11 @@ open Environ
 (***********************************************************************)
 (*s Reduction functions *)
 
+val whd_betaiotazeta        : env -> constr -> constr
 val whd_betadeltaiota       : env -> constr -> constr
 val whd_betadeltaiota_nolet : env -> constr -> constr
 
 val nf_betaiota      : constr -> constr
-val hnf_stack        : env -> constr -> constr * constr list
-val hnf_prod_applist : env -> types -> constr list -> types
-
-(* Builds an application node, reducing beta redexes it may produce. *) 
-val beta_appvect : constr -> constr array -> constr
 
 (***********************************************************************)
 (*s conversion functions *)
@@ -36,6 +32,15 @@ type 'a conversion_function = env -> 'a -> 'a -> Univ.constraints
 val conv           : types conversion_function
 val conv_leq       : types conversion_function
 val conv_leq_vecti : types array conversion_function
+
+(***********************************************************************)
+
+(* Builds an application node, reducing beta redexes it may produce. *) 
+val beta_appvect : constr -> constr array -> constr
+
+(* Pseudo-reduction rule  Prod(x,A,B) a --> B[x\a] *)
+val hnf_prod_applist : env -> types -> constr list -> types
+
 
 (***********************************************************************)
 (*s Recognizing products and arities modulo reduction *)

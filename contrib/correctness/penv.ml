@@ -14,6 +14,7 @@ open Pmisc
 open Past
 open Ptype
 open Names
+open Nameops
 open Libobject
 open Library
 open Term

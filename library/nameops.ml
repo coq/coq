@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Declarations
@@ -15,6 +16,8 @@ open Environ
 open Term
 
 (* Identifiers *)
+
+let pr_id id = [< 'sTR (string_of_id id) >]
 
 let wildcard = id_of_string "_"
 
@@ -141,6 +144,9 @@ let next_name_away name l =
     | Anonymous -> id_of_string "_"
 
 (**********************************************)
+
+let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
+
 (* Operations on dirpaths *)
 let empty_dirpath = make_dirpath []
 

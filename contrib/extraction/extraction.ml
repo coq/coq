@@ -108,7 +108,7 @@ let sort_of env c =
   Retyping.get_sort_family_of env Evd.empty (strip_outer_cast c)
 
 open RedFlags
-let whd_betaiotalet = clos_norm_flags (UNIFORM, mkflags [fBETA;fIOTA;fZETA])
+let whd_betaiotalet = clos_norm_flags (mkflags [fBETA;fIOTA;fZETA])
 
 let is_axiom sp = (Global.lookup_constant sp).const_body = None
 

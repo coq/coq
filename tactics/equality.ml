@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Univ
 open Term
 open Termops

@@ -321,24 +321,6 @@ let check_case_info env indsp ci =
 
 (* A powerful notion of subterm *)
 
-let find_sorted_assoc p = 
-  let rec findrec = function 
-    | (a,ta)::l -> 
-	if a < p then findrec l else if a = p then ta else raise Not_found
-    | _ -> raise Not_found
-  in 
-  findrec
-
-let map_lift_fst_n m = List.map (function (n,t)->(n+m,t))
-let map_lift_fst = map_lift_fst_n 1
-
-let rec instantiate_recarg sp lrc ra = 
-  match ra with 
-    | Mrec(j)        -> Imbr((sp,j),lrc)
-    | Imbr(ind_sp,l) -> Imbr(ind_sp, List.map (instantiate_recarg sp lrc) l)
-    | Norec          -> Norec
-    | Param(k)       -> List.nth lrc k
-
 (* To each inductive definition corresponds an array describing the
    structure of recursive arguments for each constructor, we call it
    the recursive spec of the type (it has type recargs vect).  For
@@ -349,6 +331,16 @@ let rec instantiate_recarg sp lrc ra =
    of type (int * recargs) list which is sorted with respect to the
    first argument.
 *)
+
+let map_lift_fst_n m = List.map (function (n,t)->(n+m,t))
+let map_lift_fst = map_lift_fst_n 1
+
+let rec instantiate_recarg sp lrc ra = 
+  match ra with 
+    | Mrec(j)        -> Imbr((sp,j),lrc)
+    | Imbr(ind_sp,l) -> Imbr(ind_sp, List.map (instantiate_recarg sp lrc) l)
+    | Norec          -> Norec
+    | Param(k)       -> List.nth lrc k
 
 (*
    f is a function of type
@@ -389,6 +381,14 @@ let is_inst_var k c =
   match kind_of_term (fst (decompose_app c)) with 
     | Rel n -> n=k
     | _ -> false
+
+let find_sorted_assoc p = 
+  let rec findrec = function 
+    | (a,ta)::l -> 
+	if a < p then findrec l else if a = p then ta else raise Not_found
+    | _ -> raise Not_found
+  in 
+  findrec
 
 (* 
    is_subterm_specif env lcx mind_recvec n lst c 
@@ -514,7 +514,8 @@ let rec check_subterm_rec_meta env vectn k def =
      (* n gives the index of the recursive variable *)
      (noccur_with_meta (n+k+1) nfi t) or 
      (* no recursive call in the term *)
-     (let f,l = hnf_stack env t in
+     (* Rq: why not try and expand some definitions ? *)
+     (let f,l = decompose_app (whd_betaiotazeta env t) in
       match kind_of_term f with
 	| Rel p -> 
 	    if n+k+1 <= p & p < n+k+nfi+1 then

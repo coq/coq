@@ -15,7 +15,6 @@ type name = Name of identifier | Anonymous
 (* Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier
-val pr_id : identifier -> Pp.std_ppcmds
 
 (* Identifiers sets and maps *)
 module Idset  : Set.S with type elt = identifier
@@ -24,17 +23,17 @@ module Idmap  : Map.S with type key = identifier
 
 (*s Directory paths = section names paths *)
 type module_ident = identifier
-type dir_path
-
 module ModIdmap : Map.S with type key = module_ident
 
-(* Inner modules idents on top of list *)
+type dir_path
+
+(* Inner modules idents on top of list (to improve sharing).
+   For instance: A.B.C is ["C";"B";"A"] *)
 val make_dirpath : module_ident list -> dir_path
 val repr_dirpath : dir_path -> module_ident list
 
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
-val pr_dirpath : dir_path -> Pp.std_ppcmds
 
 
 (*s Section paths are {\em absolute} names *)

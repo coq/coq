@@ -591,8 +591,8 @@ let _ =
 	 (function 
 	    | VARG_QUALID qid ->
                 (match Nametab.global dummy_loc qid with
-                  | ConstRef sp -> Opaque.set_transparent_const sp
-                  | VarRef id -> Opaque.set_transparent_var id
+                  | ConstRef sp -> Tacred.set_transparent_const sp
+                  | VarRef id -> Tacred.set_transparent_var id
                   | _ -> error
               "cannot set an inductive type or a constructor as transparent")
 	    |   _  -> bad_vernac_args "TRANSPARENT")
@@ -605,8 +605,8 @@ let _ =
 	 (function 
 	    | VARG_QUALID qid ->
                 (match Nametab.global dummy_loc qid with
-                  | ConstRef sp -> Opaque.set_opaque_const sp
-                  | VarRef id -> Opaque.set_opaque_var id
+                  | ConstRef sp -> Tacred.set_opaque_const sp
+                  | VarRef id -> Tacred.set_opaque_var id
                   | _ -> error
              "cannot set an inductive type or a constructor as opaque")
 	    |   _  -> bad_vernac_args "OPAQUE")

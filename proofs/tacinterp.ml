@@ -213,14 +213,10 @@ let glob_const_nvar loc env qid =
     (* We first look for a variable of the current proof *)
     match Nametab.repr_qualid qid with
       | d,id when repr_dirpath d = [] ->
-	  (* lookup_value may raise Not_found *)
-	  (match Environ.lookup_named id env with
-	     | (_,Some _,_) ->
-                 let v = EvalVarRef id in
-                 if Opaque.is_evaluable env v then v
-                 else error ("variable "^(string_of_id id)^" is opaque")
-	     | _ -> error ((string_of_id id)^
-			      " does not denote an evaluable constant"))
+          let v = EvalVarRef id in
+          if Tacred.is_evaluable env v then v
+          else error
+            ((string_of_id id^" does not denote an evaluable constant"))
       | _ -> raise Not_found
   with Not_found ->
   try
@@ -229,7 +225,7 @@ let glob_const_nvar loc env qid =
       | VarRef id -> EvalVarRef id
       | _ -> error ((Nametab.string_of_qualid qid) ^
 		    " does not denote an evaluable constant")) in
-    if Opaque.is_evaluable env ev then ev
+    if Tacred.is_evaluable env ev then ev
     else error ((Nametab.string_of_qualid qid) ^
 		    " does not denote an evaluable constant")
   with Not_found ->
@@ -1124,7 +1120,7 @@ and flag_of_ast ist lf =
 	in add_flag red lf
     | Node(_,"Delta",[])::Node(loc,"UnfBut",l)::lf ->
         let red = red_add red fDELTA in
-        let red = red_add_transparent red (Opaque.state()) in
+        let red = red_add_transparent red (Conv_oracle.freeze()) in
         let red =
 	  List.fold_right
 	    (fun v red -> 
@@ -1134,7 +1130,7 @@ and flag_of_ast ist lf =
 	in add_flag red lf
     | Node(_,"Delta",[])::lf ->
         let red = red_add red fDELTA in
-        let red = red_add_transparent red (Opaque.state()) in
+        let red = red_add_transparent red (Conv_oracle.freeze()) in
         add_flag red lf
     | Node(_,"Iota",[])::lf -> add_flag (red_add red fIOTA) lf
     | Node(_,"Zeta",[])::lf -> add_flag (red_add red fZETA) lf
@@ -1153,8 +1149,8 @@ and redexp_of_ast ist = function
   | ("Simpl", []) -> Simpl
   | ("Unfold", ul) -> Unfold (List.map (cvt_unfold ist) ul)
   | ("Fold", cl) -> Fold (List.map (cvt_fold ist) cl)
-  | ("Cbv",lf) -> Cbv(UNIFORM, flag_of_ast ist lf)
-  | ("Lazy",lf) -> Lazy(UNIFORM, flag_of_ast ist lf)
+  | ("Cbv",lf) -> Cbv(flag_of_ast ist lf)
+  | ("Lazy",lf) -> Lazy(flag_of_ast ist lf)
   | ("Pattern",lp) -> Pattern (List.map (cvt_pattern ist) lp)
   | (s,_) -> invalid_arg ("malformed reduction-expression: "^s)
 

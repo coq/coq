@@ -11,6 +11,7 @@
 (* $Id$ *)
 
 open Names
+open Nameops
 open Util
 open Pp
 open Himsg

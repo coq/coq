@@ -13,6 +13,7 @@ open Term
 open Environ
 
 (* Identifiers and names *)
+val pr_id : identifier -> Pp.std_ppcmds
 val wildcard : identifier
 
 val make_ident : string -> int option -> identifier
@@ -34,6 +35,7 @@ val next_name_away_with_default :
 val out_name : name -> identifier
 
 (* Section and module mechanism: dealinng with dir paths *)
+val pr_dirpath : dir_path -> Pp.std_ppcmds
 val empty_dirpath : dir_path
 val default_module : dir_path
 

@@ -12,6 +12,7 @@
 
 open Util
 open Names
+open Nameops
 open Term
 open Termops
 open Pattern

@@ -342,6 +342,16 @@ let array_fold_left_i f v a =
   let rec fold i v = if i = n then v else fold (succ i) (f i v a.(i)) in
   fold 0 v
 
+let array_fold_right2 f v1 v2 a =
+  let lv1 = Array.length v1 in
+  let rec fold a n =
+    if n=0 then a
+    else
+      let k = n-1 in
+      fold (f v1.(k) v2.(k) a) k in
+  if Array.length v2 <> lv1 then invalid_arg "array_fold_right2";
+  fold a lv1
+
 let array_fold_left2 f a v1 v2 =
   let lv1 = Array.length v1 in
   let rec fold a n = 

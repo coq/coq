@@ -167,11 +167,11 @@ end : RedFlagsSig)
 
 open RedFlags
 
-let betadeltaiota_red = mkflags [fBETA;fDELTA;fZETA;fIOTA]
-let betadeltaiotanolet_red = mkflags [fBETA;fDELTA;fIOTA]
-let betaiota_red = mkflags [fBETA;fIOTA]
-let beta_red = mkflags [fBETA]
-let betaiotazeta_red = mkflags [fBETA;fIOTA;fZETA]
+let betadeltaiota = mkflags [fBETA;fDELTA;fZETA;fIOTA]
+let betadeltaiotanolet = mkflags [fBETA;fDELTA;fIOTA]
+let betaiota = mkflags [fBETA;fIOTA]
+let beta = mkflags [fBETA]
+let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
 let unfold_red sp = 
   let flag = match sp with
     | EvalVarRef id -> fVAR id
@@ -309,48 +309,6 @@ let red_get_const red =
 fin obsolète **************)
 (* specification of the reduction function *)
 
-type red_mode = UNIFORM | SIMPL | WITHBACK
-
-type flags = red_mode * reds
-
-(* (UNIFORM,r)  == r-reduce in any context
- * (SIMPL,r)    == bdi-reduce under cases or fix, r otherwise (like hnf does)
- * (WITHBACK,r) == internal use: means we are under a case or in rec. arg. of
- *                 fix
- *)
-
-(* Examples *)
-let no_flag = (UNIFORM,no_red)
-let beta = (UNIFORM,beta_red)
-let betaiota = (UNIFORM,betaiota_red)
-let betadeltaiota = (UNIFORM,betadeltaiota_red)
-let betadeltaiotanolet = (UNIFORM,betadeltaiotanolet_red)
-
-let hnf_flags = (SIMPL,betaiotazeta_red)
-let unfold_flags sp = (UNIFORM, unfold_red sp)
-
-let flags_under = function
-  | (SIMPL,r) -> (WITHBACK,r)
-  | fl -> fl
-
-
-(* Reductions allowed in "normal" circumstances: reduce only what is
- * specified by r *)
-
-let red_top (_,r) rk = red_set r rk
-
-(* Sometimes, we may want to perform a bdi reduction, to generate new redexes.
- * Typically: in the Simpl reduction, terms in recursive position of a fixpoint
- * are bdi-reduced, even if r is weaker.
- *
- * It is important to keep in mind that when we talk of "normal" or
- * "head normal" forms, it always refer to the reduction specified by r,
- * whatever the term context. *)
-
-let red_under (md,r) rk =
-  match md with
-    | WITHBACK -> true
-    | _ -> red_set r rk
 
 (* Flags of reduction and cache of constants: 'a is a type that may be
  * mapped to constr. 'a infos implements a cache for constants and
@@ -379,7 +337,7 @@ type table_key =
    (* FarRel: index in the rel_context part of _initial_ environment *)
 
 type 'a infos = {
-  i_flags : flags;
+  i_flags : reds;
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
   i_rels : int * (int * constr) list;
@@ -437,9 +395,6 @@ let create mk_cl flgs env =
     i_tab = Hashtbl.create 17 }
 
 
-let infos_under infos = { infos with i_flags = flags_under infos.i_flags }
-
-
 (**********************************************************************)
 (* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *) 
 
@@ -471,14 +426,6 @@ let rec stack_args_size = function
   | Zshift(_)::s -> stack_args_size s
   | Zupdate(_)::s -> stack_args_size s
   | _ -> 0
-
-(* Parameterization: check the a given reduction is allowed in the
-   context of the stack *)
-let can_red info stk r =
-  red_top info.i_flags r ||
-  (fst info.i_flags = SIMPL &&
-    List.exists (function (Zcase _|Zfix _) -> true | _ -> false) stk)
-
 
 (* When used as an argument stack (only Zapp can appear) *)
 let rec decomp_stack = function
@@ -953,23 +900,23 @@ and knht e t stk =
 (* Computes a normal form from the result of knh. *)
 let rec knr info m stk =
   match m.term with
-  | FLambda(_,_,_,f,e) when can_red info stk fBETA ->
+  | FLambda(_,_,_,f,e) when red_set info.i_flags fBETA ->
       (match get_arg m stk with
           (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
         | (None,s) -> (m,s))
-  | FFlex(ConstKey sp) when can_red info stk (fCONST sp) ->
+  | FFlex(ConstKey sp) when red_set info.i_flags (fCONST sp) ->
       (match ref_value_cache info (ConstKey sp) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(VarKey id) when can_red info stk (fVAR id) ->
+  | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->
       (match ref_value_cache info (VarKey id) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(FarRelKey k) when can_red info stk fDELTA ->
+  | FFlex(FarRelKey k) when red_set info.i_flags fDELTA ->
       (match ref_value_cache info (FarRelKey k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct(ind,c) when can_red info stk fIOTA ->
+  | FConstruct(ind,c) when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (depth, args, Zcase(ci,_,br)::s) ->
             assert (ci.ci_npar>=0);
@@ -981,13 +928,13 @@ let rec knr info m stk =
             let efx = contract_fix_vect fx.term in
             kni info efx stk'
         | (_,args,s) -> (m,args@s))
-  | FCoFix _ when can_red info stk fIOTA ->
+  | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (_, args, ((Zcase _::_) as stk')) ->
             let efx = contract_fix_vect m.term in
             kni info efx (args@stk')
         | (_,args,s) -> (m,args@s))
-  | FLetIn (_,v,_,_,bd,e) when can_red info stk fZETA ->
+  | FLetIn (_,v,_,_,bd,e) when red_set info.i_flags fZETA ->
       knit info (subs_cons(v,e)) bd stk
   | _ -> (m,stk)
 
@@ -1048,6 +995,8 @@ let norm_val info v =
 
 let inject = mk_clos (ESID 0)
 
+let whd_stack = kni
+
 (* cache of constants: the body is computed only when needed. *)
 type clos_infos = fconstr infos
 
@@ -1055,24 +1004,3 @@ let create_clos_infos flgs env =
   create (fun _ -> inject) flgs env
 
 let unfold_reference = ref_value_cache
-
-(* Head normal form. *)
-
-(* TODO: optimise *)
-let rec strip_applstack k acc m =
-  match m.term with
-      FApp(a,b) ->
-        strip_applstack k (append_stack (lift_fconstr_vect k b) acc) a
-    | FLIFT(n,a) ->
-        strip_applstack (k+n) acc a
-    | FCLOS _ -> assert false
-    | _ -> (k,m,acc)
-
-
-let fhnf info v =
-  strip_applstack 0 [] (kh info v [])
-
-
-let fhnf_apply info k head appl =
-  let stk = zshift k appl in
-  strip_applstack 0 [] (kh info head stk)

@@ -40,31 +40,13 @@ module Idset = Set.Make(IdOrdered)
 module Idmap = Map.Make(IdOrdered)
 module Idpred = Predicate.Make(IdOrdered)
 
-let pr_id id = [< 'sTR (string_of_id id) >]
-
-let wildcard = id_of_string "_"
-
 (* Names *)
 
 type name = Name of identifier | Anonymous
 
-(*s Directory paths = section names paths *)
-let parse_fields s =
-  let len = String.length s in
-  let rec decoupe_dirs n =
-    try
-      let pos = String.index_from s n '.' in
-      let dir = String.sub s n (pos-n) in
-      let dirs,n' = decoupe_dirs (succ pos) in
-      (id_of_string dir)::dirs,n'
-    with
-      | Not_found -> [],n
-  in
-  if len = 0 then invalid_arg "parse_section_path";
-  let dirs,n = decoupe_dirs 0 in
-  let id = String.sub s n (len-n) in
-  dirs, (id_of_string id)
-
+(* Dirpaths are lists of module identifiers. The actual representation
+   is reversed to optimise sharing: Coq.A.B is ["B";"A";"Coq"] *)
+ 
 type module_ident = identifier
 type dir_path = module_ident list
 
@@ -83,8 +65,6 @@ let string_of_dirpath = function
   | [] -> "<empty>"
   | sl ->
       String.concat "." (List.map string_of_id (List.rev sl))
-
-let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
 
 (*s Section paths are absolute names *)
 

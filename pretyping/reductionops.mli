@@ -56,7 +56,7 @@ val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a
 
 (*s Generic Optimized Reduction Function using Closures *)
 
-val clos_norm_flags : Closure.flags -> reduction_function
+val clos_norm_flags : Closure.RedFlags.reds -> reduction_function
 (* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *) 
 val nf_beta : local_reduction_function
 val nf_betaiota : local_reduction_function

@@ -17,6 +17,58 @@ open Environ
 open Closure
 open Esubst
 
+let rec is_empty_stack = function
+    [] -> true
+  | Zupdate _::s -> is_empty_stack s
+  | Zshift _::s -> is_empty_stack s
+  | _ -> false
+
+(* Compute the lift to be performed on a term placed in a given stack *)
+let el_stack el stk =
+  let n =
+    List.fold_left
+      (fun i z ->
+        match z with
+            Zshift n -> i+n
+          | _ -> i)
+      0
+      stk in
+  el_shft n el
+
+let compare_stack_shape stk1 stk2 =
+  let rec compare_rec bal stk1 stk2 =
+  match (stk1,stk2) with
+      ([],[]) -> bal=0
+    | ((Zupdate _|Zshift _)::s1, _) -> compare_rec bal s1 stk2
+    | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
+    | (Zapp l1::s1, _) -> compare_rec (bal+List.length l1) s1 stk2
+    | (_, Zapp l2::s2) -> compare_rec (bal-List.length l2) stk1 s2
+    | (Zcase(c1,_,_)::s1, Zcase(c2,_,_)::s2) ->
+        bal=0 && c1.ci_ind = c2.ci_ind && compare_rec 0 s1 s2
+    | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
+        bal=0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
+    | (_,_) -> false in
+  compare_rec 0 stk1 stk2
+
+let pure_stack lfts stk =
+  let rec pure_rec lfts stk =
+    match stk with
+        [] -> (lfts,[])
+      | zi::s ->
+          (match (zi,pure_rec lfts s) with
+              (Zupdate _,lpstk)  -> lpstk
+            | (Zshift n,(l,pstk)) -> (el_shft n l, pstk)
+            | (Zapp a1,(l,Zapp a2::pstk)) ->
+                (l,Zapp (List.map (fun t -> (l,t)) a1 @ a2)::pstk)
+            | (Zapp a, (l,pstk)) ->
+                (l,Zapp (List.map (fun t -> (l,t)) a)::pstk)
+            | (Zfix(fx,a),(l,pstk)) ->
+                let (lfx,pa) = pure_rec l a in
+                (l, Zfix((lfx,fx),pa)::pstk)
+            | (Zcase(ci,p,br),(l,pstk)) ->
+                (l,Zcase(ci,(l,p),Array.map (fun t -> (l,t)) br)::pstk)) in
+  snd (pure_rec lfts stk)
+
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
@@ -24,9 +76,8 @@ open Esubst
 let nf_betaiota t =
   norm_val (create_clos_infos betaiota empty_env) (inject t)
 
-let hnf_stack env x =
-  decompose_app
-    (norm_val (create_clos_infos hnf_flags env) (inject x))
+let whd_betaiotazeta env x =
+  whd_val (create_clos_infos betaiotazeta env) (inject x)
 
 let whd_betadeltaiota env t = 
   whd_val (create_clos_infos betadeltaiota env) (inject t)
@@ -43,29 +94,34 @@ let beta_appvect c v =
       | _ -> app_stack (substl env t, stack) in
   stacklam [] c (append_stack v empty_stack)
 
-(* pseudo-reduction rule:
- * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
- * with an HNF on the first argument to produce a product.
- * if this does not work, then we use the string S as part of our
- * error message. *)
-
-let hnf_prod_app env t n =
-  match kind_of_term (whd_betadeltaiota env t) with
-    | Prod (_,_,b) -> subst1 n b
-    | _ -> anomaly "hnf_prod_app: Need a product"
-
-let hnf_prod_applist env t nl = 
-  List.fold_left (hnf_prod_app env) t nl
-
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
 
 (* Conversion utility functions *)
-type 'a conversion_function = env -> 'a -> 'a -> constraints
+type 'a conversion_function = env -> 'a -> 'a -> Univ.constraints
 
 exception NotConvertible
 exception NotConvertibleVect of int
+
+let compare_stacks f lft1 stk1 lft2 stk2 cuniv =
+  let rec cmp_rec pstk1 pstk2 cuniv =
+    match (pstk1,pstk2) with
+      | (z1::s1, z2::s2) ->
+          let c1 = cmp_rec s1 s2 cuniv in
+          (match (z1,z2) with
+            | (Zapp a1,Zapp a2) -> List.fold_right2 f a1 a2 c1
+            | (Zfix(fx1,a1),Zfix(fx2,a2)) ->
+                let c2 = f fx1 fx2 c1 in
+                cmp_rec a1 a2 c2
+            | (Zcase(ci1,p1,br1),Zcase(ci2,p2,br2)) ->
+                let c2 = f p1 p2 c1 in
+                array_fold_right2 f br1 br2 c2
+            | _ -> assert false)
+      | _ -> cuniv in
+  if compare_stack_shape stk1 stk2 then
+    cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
+  else raise NotConvertible
 
 (* Convertibility of sorts *)
 
@@ -86,24 +142,27 @@ let sort_cmp pb s0 s1 cuniv =
 	   | CUMUL -> enforce_geq u2 u1 cuniv)
     | (_, _) -> raise NotConvertible
 
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv = 
-  eqappr cv_pb infos (lft1, fhnf infos term1) (lft2, fhnf infos term2) cuniv
+  eqappr cv_pb infos
+    (lft1, whd_stack infos term1 [])
+    (lft2, whd_stack infos term2 [])
+    cuniv
 
-(* Conversion between [lft1]([^n1]hd1 v1) and [lft2]([^n2]hd2 v2) *)
+(* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb infos appr1 appr2 cuniv =
-  let (lft1,(n1,hd1,v1)) = appr1
-  and (lft2,(n2,hd2,v2)) = appr2 in
-  let el1 = el_shft n1 lft1
-  and el2 = el_shft n2 lft2 in
+  let (lft1,(hd1,v1)) = appr1 in
+  let (lft2,(hd2,v2)) = appr2 in
+  let el1 = el_stack lft1 v1 in
+  let el2 = el_stack lft2 v2 in
   match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
 	(match kind_of_term a1, kind_of_term a2 with
 	   | (Sort s1, Sort s2) -> 
-	       if stack_args_size v1 = 0 && stack_args_size v2 = 0
-	       then sort_cmp cv_pb s1 s2 cuniv
-               else raise NotConvertible
+	       assert (is_empty_stack v1 && is_empty_stack v2);
+	       sort_cmp cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
                if n=m
 	       then convert_stacks infos lft1 lft2 v1 v2 cuniv
@@ -111,8 +170,8 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
 	   | _ -> raise NotConvertible)
     | (FEvar (ev1,args1), FEvar (ev2,args2)) ->
         if ev1=ev2 then
-          let u1 = convert_vect infos el1 el2 args1 args2 cuniv in
-	  convert_stacks infos lft1 lft2 v1 v2 u1
+          let u1 = convert_stacks infos lft1 lft2 v1 v2 cuniv in
+          convert_vect infos el1 el2 args1 args2 u1
         else raise NotConvertible
 
     (* 2 index known to be bound to no constant *)
@@ -121,70 +180,65 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
         then convert_stacks infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
-    (* 2 constants, 2 existentials or 2 local defined vars or 2 defined rels *)
+    (* 2 constants, 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
 	(try (* try first intensional equality *)
 	  if fl1 = fl2
-          then
-	    convert_stacks infos lft1 lft2 v1 v2 cuniv
+          then convert_stacks infos lft1 lft2 v1 v2 cuniv
           else raise NotConvertible
         with NotConvertible ->
-          (* else expand the second occurrence (arbitrary heuristic) *)
-	  match unfold_reference infos fl2 with
-            | Some def2 -> 
-		eqappr cv_pb infos appr1
-                  (lft2, fhnf_apply infos n2 def2 v2) cuniv
-             | None ->
-                 (match unfold_reference infos fl1 with
-                   | Some def1 ->
-                       eqappr cv_pb infos
-			 (lft1, fhnf_apply infos n1 def1 v1) appr2 cuniv
-		   | None -> raise NotConvertible))
+          (* else the oracle tells which constant is to be expanded *)
+          let (app1,app2) =
+            if Conv_oracle.oracle_order fl1 fl2 then
+              match unfold_reference infos fl1 with
+                | Some def1 -> ((lft1, whd_stack infos def1 v1), appr2)
+                | None ->
+                    (match unfold_reference infos fl2 with
+                      | Some def2 -> (appr1, (lft2, whd_stack infos def2 v2))
+		      | None -> raise NotConvertible)
+            else
+	      match unfold_reference infos fl2 with
+                | Some def2 -> (appr1, (lft2, whd_stack infos def2 v2))
+                | None ->
+                    (match unfold_reference infos fl1 with
+                    | Some def1 -> ((lft1, whd_stack infos def1 v1), appr2)
+		    | None -> raise NotConvertible) in
+          eqappr cv_pb infos app1 app2 cuniv)
 
-    (* only one constant, existential, defined var or defined rel *)
+    (* only one constant, defined var or defined rel *)
     | (FFlex fl1, _)      ->
         (match unfold_reference infos fl1 with
            | Some def1 -> 
-	       eqappr cv_pb infos (lft1, fhnf_apply infos n1 def1 v1)
-                 appr2 cuniv
+	       eqappr cv_pb infos (lft1, whd_stack infos def1 v1) appr2 cuniv
            | None -> raise NotConvertible)
     | (_, FFlex fl2)      ->
         (match unfold_reference infos fl2 with
            | Some def2 -> 
-	       eqappr cv_pb infos appr1
-                 (lft2, fhnf_apply infos n2 def2 v2)
-                 cuniv
+	       eqappr cv_pb infos appr1 (lft2, whd_stack infos def2 v2) cuniv
            | None -> raise NotConvertible)
 	
     (* other constructors *)
     | (FLambda (_,c1,c2,_,_), FLambda (_,c'1,c'2,_,_)) ->
-        if stack_args_size v1 = 0 && stack_args_size v2 = 0
-        then
-          let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
-          ccnv CONV infos
-            (el_lift el1) (el_lift el2) c2 c'2 u1
-        else raise NotConvertible
-
-    | (FLetIn _, _) | (_, FLetIn _) ->
-        anomaly "LetIn normally removed by fhnf"
+        assert (is_empty_stack v1 && is_empty_stack v2);
+        let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
+        ccnv CONV infos (el_lift el1) (el_lift el2) c2 c'2 u1
 
     | (FProd (_,c1,c2,_,_), FProd (_,c'1,c'2,_,_)) ->
-	if stack_args_size v1 = 0 && stack_args_size v2 = 0
-	then (* Luo's system *)
-          let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
-          ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1
-        else raise NotConvertible
+        assert (is_empty_stack v1 && is_empty_stack v2);
+	(* Luo's system *)
+        let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
+        ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1
 
     (* Inductive types:  MutInd MutConstruct MutCase Fix Cofix *)
 
       (* Les annotations du MutCase ne servent qu'à l'affichage *)
-
+(*
     | (FCases (_,p1,c1,cl1), FCases (_,p2,c2,cl2)) ->
         let u1 = ccnv CONV infos el1 el2 p1 p2 cuniv in
         let u2 = ccnv CONV infos el1 el2 c1 c2 u1 in
         let u3 = convert_vect infos el1 el2 cl1 cl2 u2 in
 	convert_stacks infos lft1 lft2 v1 v2 u3
-
+*)
      | (FInd op1, FInd op2) ->
          if op1 = op2 then
            convert_stacks infos lft1 lft2 v1 v2 cuniv
@@ -218,15 +272,17 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 
+    | ( (FLetIn _, _) | (_, FLetIn _) | (FCases _,_) | (_,FCases _)
+      | (FApp _,_) | (_,FApp _) | (FCLOS _, _) | (_,FCLOS _)
+      | (FLIFT _, _) | (_,FLIFT _) | (FLOCKED,_) | (_,FLOCKED)) ->
+        anomaly "Unexpected term returned by fhnf"
+
      | _ -> raise NotConvertible
 
 and convert_stacks infos lft1 lft2 stk1 stk2 cuniv =
-  match (decomp_stack stk1, decomp_stack stk2) with
-      (Some(a1,s1), Some(a2,s2)) ->
-        let u1 = ccnv CONV infos lft1 lft2 a1 a2 cuniv in
-        convert_stacks infos lft1 lft2 s1 s2 u1
-    | (None, None) -> cuniv
-    | _ -> raise NotConvertible
+  compare_stacks
+    (fun (l1,t1) (l2,t2) c -> ccnv CONV infos l1 l2 t1 t2 c)
+    lft1 stk1 lft2 stk2 cuniv
 
 and convert_vect infos lft1 lft2 v1 v2 cuniv =
   let lv1 = Array.length v1 in
@@ -247,12 +303,12 @@ let fconv cv_pb env t1 t2 =
   if eq_constr t1 t2 then 
     Constraint.empty
   else
-    let infos = create_clos_infos hnf_flags env in
+    let infos = create_clos_infos betaiotazeta env in
     ccnv cv_pb infos ELID ELID (inject t1) (inject t2)
       Constraint.empty
 
-let conv env = fconv CONV env
-let conv_leq env = fconv CUMUL env
+let conv = fconv CONV
+let conv_leq = fconv CUMUL
 
 let conv_leq_vecti env v1 v2 =
   array_fold_left2_i 
@@ -278,6 +334,20 @@ let conv env t1 t2 =
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
+
+(* pseudo-reduction rule:
+ * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
+ * with an HNF on the first argument to produce a product.
+ * if this does not work, then we use the string S as part of our
+ * error message. *)
+
+let hnf_prod_app env t n =
+  match kind_of_term (whd_betadeltaiota env t) with
+    | Prod (_,_,b) -> subst1 n b
+    | _ -> anomaly "hnf_prod_app: Need a product"
+
+let hnf_prod_applist env t nl = 
+  List.fold_left (hnf_prod_app env) t nl
 
 (* Dealing with arities *)
 

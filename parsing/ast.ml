@@ -104,15 +104,16 @@ let rec print_ast ast =
   match ast with
     | Num(_,n) -> [< 'iNT n >]
     | Str(_,s) -> [< 'qS s >]
-    | Path(_,sl) -> [< pr_sp sl >]
+    | Path(_,sl) -> [< 'sTR(string_of_path sl) >]
     | Id (_,s) -> [< 'sTR"{" ; 'sTR s ; 'sTR"}" >]
-    | Nvar(_,s) -> [< pr_id s >]
+    | Nvar(_,s) -> [< 'sTR(string_of_id s) >]
     | Nmeta(_,s) -> [< 'sTR s >]
     | Node(_,op,l) ->
         hOV 3 [< 'sTR"(" ; 'sTR op ; 'sPC ; print_astl l; 'sTR")" >]
     | Slam(_,None,ast) -> hOV 1 [< 'sTR"[<>]"; print_ast ast >]
     | Slam(_,Some x,ast) ->
-        hOV 1 [< 'sTR"["; pr_id x; 'sTR"]"; 'cUT; print_ast ast >]
+        hOV 1
+          [< 'sTR"["; 'sTR(string_of_id x); 'sTR"]"; 'cUT; print_ast ast >]
     | Smetalam(_,id,ast) -> hOV 1 [< 'sTR id; print_ast ast >]
     | Dynamic(_,d) ->
 	hOV 0 [< 'sTR"<dynamic: "; 'sTR(Dyn.tag d); 'sTR">" >]
@@ -138,7 +139,8 @@ let rec print_astpat = function
       hOV 2 [< 'sTR"(" ; 'sTR op; 'sPC; print_astlpat al; 'sTR")" >]
   | Pslam(None,b) -> hOV 1 [< 'sTR"[<>]"; 'cUT; print_astpat b >]
   | Pslam(Some id,b) ->
-      hOV 1 [< 'sTR"["; pr_id id; 'sTR"]"; 'cUT; print_astpat b >]
+      hOV 1
+        [< 'sTR"["; 'sTR(string_of_id id); 'sTR"]"; 'cUT; print_astpat b >]
 
 and print_astlpat = function
   | Pnil -> [< >]

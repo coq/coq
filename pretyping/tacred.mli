@@ -19,6 +19,8 @@ open Closure
 
 (*s Reduction functions associated to tactics. \label{tacred} *)
 
+val is_evaluable : env -> evaluable_global_reference -> bool
+
 exception Redelimination
 
 (* Red (raise Redelimination if nothing reducible) *)
@@ -42,7 +44,7 @@ val pattern_occs : (int list * constr * constr) list ->  reduction_function
 (* Rem: Lazy strategies are defined in Reduction *)
 
 (* Call by value strategy (uses Closures) *)
-val cbv_norm_flags : Closure.flags ->  reduction_function
+val cbv_norm_flags : Closure.RedFlags.reds ->  reduction_function
   val cbv_beta : local_reduction_function
   val cbv_betaiota : local_reduction_function
   val cbv_betadeltaiota :  reduction_function
@@ -62,10 +64,17 @@ type red_expr =
   | Red of bool    (* raise Redelimination if true otherwise UserError *)
   | Hnf
   | Simpl
-  | Cbv of Closure.flags
-  | Lazy of Closure.flags
+  | Cbv of Closure.RedFlags.reds
+  | Lazy of Closure.RedFlags.reds
   | Unfold of (int list * evaluable_global_reference) list
   | Fold of constr list
   | Pattern of (int list * constr * constr) list
 
 val reduction_of_redexp : red_expr ->  reduction_function
+
+(* Opaque and Transparent commands. *)
+val set_opaque_const      : section_path -> unit
+val set_transparent_const : section_path -> unit
+
+val set_opaque_var      : identifier -> unit
+val set_transparent_var : identifier -> unit
