@@ -19,7 +19,6 @@ open Inductive
 open Instantiate
 open Miniml
 open Mlutil
-open Mlimport
 open Closure
 
 (*s Extraction results. *)
