@@ -263,11 +263,11 @@ let rec pretype tycon env isevars lvar = function
 	match fixkind with
 	  | RFix (vn,i as vni) ->
 	      let fix = (vni,(names,lara,Array.map j_val vdefj)) in
-	      check_fix env fix;
+	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkFix fix) lara.(i)
 	  | RCoFix i -> 
 	      let cofix = (i,(names,lara,Array.map j_val vdefj)) in
-	      check_cofix env cofix;
+	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkCoFix cofix) lara.(i) in
       inh_conv_coerce_to_tycon loc env isevars fixj tycon
 
