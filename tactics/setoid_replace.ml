@@ -144,6 +144,7 @@ let coq_setoid_rewrite = lazy(constant ["Setoid"] "setoid_rewrite")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let coq_unit = lazy(gen_constant ["Init"; "Datatypes"] "unit")
 let coq_tt = lazy(gen_constant ["Init"; "Datatypes"] "tt")
+let coq_eq = lazy(gen_constant ["Init"; "Logic"] "eq")
 
 let coq_morphism_theory_of_function =
  lazy(constant ["Setoid"] "morphism_theory_of_function")
@@ -502,20 +503,26 @@ let cic_precise_relation_class_of_relation_class =
     Relation
      {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=None}
     ->
-     mkApp ((Lazy.force coq_RAsymmetric), [| rel_a ; rel_aeq; refl |]), true
+     rel_aeq,
+      mkApp ((Lazy.force coq_RAsymmetric), [| rel_a ; rel_aeq; refl |]), true
   | Relation
      {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=Some refl; rel_sym=Some sym}
     ->
-     mkApp ((Lazy.force coq_RSymmetric), [| rel_a ; rel_aeq; sym ; refl |]),true
+     rel_aeq,
+      mkApp ((Lazy.force coq_RSymmetric), [| rel_a ; rel_aeq; sym ; refl |]),
+      true
   | Relation
      {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=None}
     ->
-     mkApp ((Lazy.force coq_AAsymmetric), [| rel_a ; rel_aeq |]), false
+     rel_aeq, mkApp ((Lazy.force coq_AAsymmetric), [| rel_a ; rel_aeq |]), false
   | Relation
      {rel_a=rel_a; rel_aeq=rel_aeq; rel_refl=None; rel_sym=Some sym}
     ->
-     mkApp ((Lazy.force coq_ASymmetric), [| rel_a ; rel_aeq; sym |]), false
-  | Leibniz t -> mkApp ((Lazy.force coq_RLeibniz), [| t |]), true
+     rel_aeq, mkApp ((Lazy.force coq_ASymmetric), [| rel_a ; rel_aeq; sym |]),
+      false
+  | Leibniz t ->
+     mkApp ((Lazy.force coq_eq), [| t |]),
+      mkApp ((Lazy.force coq_RLeibniz), [| t |]), true
 
 let cic_relation_class_of_relation_class =
  cic_relation_class_of_X_relation_class coq_unit coq_tt
@@ -538,7 +545,7 @@ let gen_compat_lemma_statement output args m =
    args, output,
     mkApp ((Lazy.force coq_make_compatibility_goal), [| args ; output ; m |])
 
-let new_morphism m id hook =
+let new_morphism m signature id hook =
   let env = Global.env() in
   let typeofm = (Typing.type_of env Evd.empty m) in
   let typ = (nf_betaiota typeofm) in
@@ -552,8 +559,22 @@ let new_morphism m id hook =
      (str "The term " ++ prterm m ++ str" should not be a dependent product")
     else
      begin
-      let args = List.map default_relation_for_carrier args_ty in
-      let output = default_relation_for_carrier output in
+      let args,output =
+       match signature with
+          None ->
+           List.map default_relation_for_carrier args_ty,
+           default_relation_for_carrier output
+        | Some (args,output) ->
+           let relation_table_find t =
+            try Relation (relation_table_find t)
+            with Not_found ->
+             errorlabstrm "Add Morphism"
+              (str "Not a valid signature: " ++ prterm t ++
+               str " is not a registered relation")
+           in
+            List.map relation_table_find args,
+            relation_table_find output
+      in
       let argsconstr,outputconstr,lem =
        gen_compat_lemma_statement output args m
       in
@@ -613,7 +634,14 @@ let morphism_hook stre ref =
     add_morphism (Some (pf_id,argsconstr,outputconstr)) mor_id
      (m,args,output); no_more_edited pf_id
 
-let new_named_morphism id m = new_morphism (constr_of m) id morphism_hook
+let new_named_morphism id m sign =
+ let sign =
+  match sign with
+     None -> None
+   | Some (args,out) ->
+      Some (List.map constr_of args, constr_of out)
+ in
+  new_morphism (constr_of m) sign id morphism_hook
 
 (************************ Add Setoid ******************************************)
 
@@ -806,32 +834,31 @@ let mark_occur t in_c =
  in aux in_c
 
 let cic_morphism_context_list_of_list hole_relation =
- let check out =
-  let (he,_) = destApplication out in
-   if eq_constr he (Lazy.force coq_Leibniz) ||
-       eq_constr he (Lazy.force coq_SymmetricReflexive)
-   then
-    mkApp ((Lazy.force coq_MSNone),
-     [| Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right |])
-   else
-    mkApp ((Lazy.force coq_MSCovariant), [| Lazy.force coq_Left2Right |]) in
+ let check =
+  function
+     Relation {rel_sym=None} ->
+      mkApp ((Lazy.force coq_MSCovariant), [| Lazy.force coq_Left2Right |])
+   | Relation {rel_sym=Some _}
+   | Leibniz _ ->
+      mkApp ((Lazy.force coq_MSNone),
+       [| Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right |]) in
  let rec aux =
   function
      [] -> assert false
-   | [out,value] ->
+   | [(outrel,out),value] ->
       mkApp ((Lazy.force coq_singl), [| Lazy.force coq_Argument_Class ; out |]),
       mkApp ((Lazy.force coq_fcl_singl),
        [| hole_relation; Lazy.force coq_Left2Right ; out ;
           Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right ;
-          check out ; value |])
-   | (out,value)::tl ->
+          check outrel ; value |])
+   | ((outrel,out),value)::tl ->
       let outtl, valuetl = aux tl in
        mkApp ((Lazy.force coq_cons),
         [| Lazy.force coq_Argument_Class ; out ; outtl |]),
        mkApp ((Lazy.force coq_fcl_cons),
         [| hole_relation ; Lazy.force coq_Left2Right ; out ; outtl ;
            Lazy.force coq_Left2Right ; Lazy.force coq_Left2Right ;
-           check out ; value ; valuetl |])
+           check outrel ; value ; valuetl |])
  in aux
 
 let rec cic_type_nelist_of_list =
@@ -843,8 +870,10 @@ let rec cic_type_nelist_of_list =
      mkApp ((Lazy.force coq_cons),
       [| mkType (Termops.new_univ ()); value; cic_type_nelist_of_list tl |])
 
+let meta_map = ref Evd.Metamap.empty;;
+
 let syntactic_but_representation_of_marked_but hole_relation =
- let rec aux out (precise_out,is_reflexive) =
+ let rec aux out (rel_out,precise_out,is_reflexive) =
   function
      MApp (f, m, args) ->
       let morphism_theory, relations =
@@ -869,11 +898,12 @@ let syntactic_but_representation_of_marked_but hole_relation =
           cic_precise_relation_class_of_relation_class r
         ) relations in
       let cic_arguments =
-       List.map cic_argument_class_of_argument_class relations in
+       List.map
+        (fun rel -> rel,cic_argument_class_of_argument_class rel) relations in
       let cic_args_relations,argst =
        cic_morphism_context_list_of_list hole_relation
         (List.combine cic_arguments
-          (List.map2 (fun (t,refl_t) v -> aux t refl_t v) cic_relations
+          (List.map2 (fun (t,precise_t) v -> aux t precise_t v) cic_relations
            (Array.to_list args)))
       in
        mkApp ((Lazy.force coq_App),
@@ -889,7 +919,12 @@ let syntactic_but_representation_of_marked_but hole_relation =
          [| hole_relation ; Lazy.force coq_Left2Right ; precise_out ;
             Lazy.force coq_Left2Right ; c |])
        else
-        let c_is_proper = assert false in (*CSC: unimplemented yet *)
+        let c_is_proper =
+         let typ = mkApp (rel_out, [| c ; c |]) in
+         let meta = Clenv.new_meta () in
+          meta_map := Evd.meta_declare meta typ !meta_map ;
+          mkCast (mkMeta meta,typ)
+        in
          mkApp ((Lazy.force coq_ProperElementToKeep),
           [| hole_relation ; Lazy.force coq_Left2Right; precise_out ;
              Lazy.force coq_Left2Right; c ; c_is_proper |])
@@ -924,11 +959,12 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
        prop_relation precise_prop_relation m ; hyp |])
 
 let relation_rewrite c1 c2 (lft2rgt,cl) gl =
+ meta_map := Evd.Metamap.empty ;
  let but = pf_concl gl in
  let (hyp,c1,c2) =
    let cl' =
      Clenv.clenv_wtactic
-       (fun evd -> fst (Unification.w_unify_to_subterm (pf_env gl) (c1,but) evd))
+       (fun evd-> fst (Unification.w_unify_to_subterm (pf_env gl) (c1,but) evd))
        cl in
    let c1 = Clenv.clenv_instance_term cl' c1 in
    let c2 = Clenv.clenv_instance_term cl' c2 in
@@ -936,36 +972,14 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
  in
   let input_relation = relation_of_hypothesis_and_term_to_rewrite gl hyp c1 in
   let marked_but = mark_occur c1 but in
-  let th =
-   apply_coq_setoid_rewrite input_relation c1 c2 hyp marked_but
-  in
-   let thty = pf_type_of gl th in
-   let simplified_thty =
-    pf_unfoldn [[], Lazy.force coq_iff] gl
-     (pf_unfoldn [[], Lazy.force coq_relation_of_relation_class] gl
-      (pf_unfoldn [[], Lazy.force coq_directed_relation_of_relation_class] gl
-        thty))
-   in
-    let ty1,ty2 =
-     match destApplication simplified_thty with
-        (_ (*and*),[|ty1;ty2|]) -> ty1,ty2
-      | _ -> assert false
-    in
-     let th' = mkApp ((Lazy.force coq_proj2), [|ty1; ty2; th|]) in
-     let hyp2 = Termops.replace_term c1 c2 but in
-     let simplified_thty' = mkProd (Anonymous, hyp2, lift 1  but) in
-      (*CSC: the next line does not work because simplified_thty' is not
-        used to generate the type of the new goals ;-(
-      Tactics.apply (mkCast (th',simplified_thty')) gl
-        Thus I am using the following longer (and less accurate) code *)
-       tclTHENS
-        (Tactics.apply (mkCast (th',simplified_thty')))
-        [Tactics.change_in_concl None hyp2] gl
-     (*CSC: this is another way to proceed, but the generated proof_term
-       would be much bigger than possible
-      Tactics.forward true Anonymous (mkCast (th',simplified_thty')) gl
-      (... followed by the application of the introduced hypothesis ...)
-     *)
+  let th = apply_coq_setoid_rewrite input_relation c1 c2 hyp marked_but in
+   let hyp1 = Termops.replace_term c1 c2 but in
+   let hyp2 = but in
+   let impl1 = mkProd (Anonymous, hyp2, lift 1 hyp1) in
+   let impl2 = mkProd (Anonymous, hyp1, lift 1 hyp2) in
+    let th' = mkApp ((Lazy.force coq_proj2), [|impl1; impl2; th|]) in
+     Tactics.refine
+      (mkApp (th', [| mkCast (mkMeta (Clenv.new_meta()), hyp1) |])) gl
 
 let general_s_rewrite lft2rgt c gl =
  let ctype = pf_type_of gl c in
