@@ -588,9 +588,9 @@ GEXTEND Gram
     [ [ IDENT "Term"; qid = global -> PrintName qid
       | IDENT "All" -> PrintFullContext
       | IDENT "Section"; s = global -> PrintSectionContext s
-      | IDENT "Grammar"; uni = IDENT; ent = IDENT ->
+      | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
-	  PrintGrammar (uni, ent)
+	  PrintGrammar ("", ent)
       | IDENT "LoadPath" -> PrintLoadPath
       | IDENT "Modules" -> PrintModules
 
