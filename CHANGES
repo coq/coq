@@ -8,7 +8,7 @@ A revision of the standard library and of concrete syntax of Coq, including
 - Notions of the standard library are declared with (strict) implicit arguments
 - eq merged with eqT: old eq disappear, new eq (written =) is old eqT
   and new eqT is syntactic sugar for new eq (notation == is an alias
-  for = and is written as it)
+  for = and is written as it, exceptional source of incompatibilities)
 - Similarly, ex, ex2 and all are merged with exT, exT2 and allT.
 - A additional elimination Acc_iter for Acc, simplier than Acc_rect. 
   This new elimination principle is used for definition well_founded_induction.
@@ -18,10 +18,10 @@ A revision of the standard library and of concrete syntax of Coq, including
 
 Logic
 
-- Set now predicate by default
-- New option -strongly-constructive to set Set impredicative
-- New option -strongly-classical to forbid Set to be set impredicative
-  in future development
+- Set now predicative by default
+- New option -impredicative-set to set Set impredicative
+- The standard library doesn't need impredicativity of Set and is
+  compatible with the classical axioms which contradict Set impredicativity
 
 Syntax translator
 
@@ -68,6 +68,8 @@ Gallina
 
 - New syntax of the form "Inductive bool : Set := true, false : bool." for
   enumerated types
+- Experimental syntax of the form p.(fst) for record projections
+  (activable with option "Set Printing Projections")
 
 Implicit arguments
 
@@ -90,15 +92,23 @@ Grammar extensions
 
 Library
 
-- New library NArith on binary natural numbers
-- "true_sub" used in Zplus now a definition, not a local one (source
-  of incompatibilities in proof referring to true_sub, may need extra Unfold)
-- Some lemmas about minus moved from fast_integer to Arith/Minus.v
-  (le_minus, lt_mult_left) (theoretical source of incompatibilities)
-- Several lemmas moved from auxiliary.v and zarith_aux.v to
-  fast_integer.v (theoretical source of incompatibilities)
 - New file about the factorial function in Arith
-- Variables names of iff_trans changed (source of incompatibilities)
+- New library NArith on binary natural numbers
+- Restructuration in ZArith library
+  - "true_sub" used in Zplus now a definition, not a local one (source
+  of incompatibilities in proof referring to true_sub, may need extra Unfold)
+  - Some lemmas about minus moved from fast_integer to Arith/Minus.v
+  (le_minus, lt_mult_left) (theoretical source of incompatibilities)
+  - Several lemmas moved from auxiliary.v and zarith_aux.v to
+  fast_integer.v (theoretical source of incompatibilities)
+  - Variables names of iff_trans changed (source of incompatibilities)
+  - ZArith lemmas named OMEGA something are now out of ZArith (except OMEGA2)
+  - Redundant ZArith lemmas have been renamed: for the following pairs,
+  use the second name (Zle_Zmult_right2, Zle_mult_simpl), (OMEGA2,
+  Zle_0_plus), (Zplus_assoc_l, Zplus_assoc), (Zmult_one, Zmult_1_n),
+  (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr,
+  Zmult_Zminus_distr_l) (source of incompatibilities) - New lemmas
+  provided by users added
 
 Tactic language
 
@@ -128,6 +138,9 @@ Tactics
   contradicts the type of c
 - Ring applies to new library NArith (require file NArithRing)
 - Field now works on types in Set
+- Auto with reals now try to replace ge/gt by le/lt (Rge_le is no
+  longer an immediate hint), resulting in shorter proofs and subgoals
+  proved more easily
 
 Bugs
 
@@ -149,6 +162,21 @@ Incompatibilities
 - NewInduction naming for inductive types with functional arguments
    (no incompatibility)
 - Contradiction now solve more goals (source of 1 incompatibility)
+- Merge of eq and eqT may exceptionally result in subgoals now
+  solved automatically
+- Redundant pairs of ZArith lemmas may have different names: it may
+  cause "Apply/Rewrite with" to fail if using the first name of a pair
+  of redundant lemmas (this is solved by renaming the variables bound by
+  "with"; 3 incompatibilities in Coq user contribs)
+
+Incompatibilities due to the translation to new Coq
+
+- Renaming in ZArith: incompatibilities in Coq user contribs due to
+  merging names INZ, from Reals, and inject_nat.
+- Implicit arguments must be explicited before translation: typically
+  for "length nil"
+- Grammar rules, Infix notations and V7.4 Notations must be updated wrt the
+  new scheme for syntactic extensions
 
 Changes from V7.3.1 to V7.4
 ===========================
