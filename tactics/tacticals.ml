@@ -137,32 +137,34 @@ let pf_matches gls pat n =
 let onCL cfind cltac gl = cltac (cfind gl) gl
 
 
+(* [OnHyps hypsfinder hypstac]
+ * idem [OnCL] but only for hypotheses, not for conclusion *)
+
+let onHyps find tac gl = tac (find gl) gl
+
+
 (* Create a clause list with all the hypotheses from the context *)
 
-let allHyps gl = List.map in_some (pf_ids_of_hyps gl)
+let allHyps gl = pf_ids_of_hyps gl
 
 
 (* Create a clause list with all the hypotheses from the context, occuring
    after id *)
 
 let afterHyp id gl =
-  List.map in_some
-    (fst (list_splitby (fun hyp -> hyp = id) (pf_ids_of_hyps gl)))
+  fst (list_splitby (fun hyp -> hyp = id) (pf_ids_of_hyps gl))
     
 
 (* Create a singleton clause list with the last hypothesis from then context *)
 
-let lastHyp gl = 
-  let id = List.hd (pf_ids_of_hyps gl) in [(Some id)]
+let lastHyp gl = List.hd (pf_ids_of_hyps gl)
+
 
 (* Create a clause list with the n last hypothesis from then context *)
 
 let nLastHyps n gl =
-  let ids =
-    try list_firstn n (pf_ids_of_hyps gl)
-    with Failure "firstn" -> error "Not enough hypotheses in the goal"
-  in 
-  List.map in_some ids
+  try list_firstn n (pf_ids_of_hyps gl)
+  with Failure "firstn" -> error "Not enough hypotheses in the goal"
 
 
 (* A clause list with the conclusion and all the hypotheses *)
@@ -172,13 +174,14 @@ let allClauses gl =
   (None::(List.map in_some ids))
 
 let onClause t cls gl  = t cls gl
-let tryAllHyps     tac = onCL allHyps (tryClauses tac)
 let tryAllClauses  tac = onCL allClauses (tryClauses tac)
 let onAllClauses   tac = onCL allClauses (tclMAP tac)
 let onAllClausesLR tac = onCL (compose List.rev allClauses) (tclMAP tac)
-let onLastHyp      tac = onCL lastHyp (tclMAP tac)
-let onNLastHyps n  tac = onCL (nLastHyps n) (tclMAP tac)
 let onNthLastHyp n tac gls = tac (nth_clause n gls) gls
+
+let tryAllHyps     tac gls = tryClauses tac (allHyps gls) gls
+let onNLastHyps n  tac     = onHyps (nLastHyps n) (tclMAP tac)
+let onLastHyp      tac gls = tac (lastHyp gls) gls
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un
@@ -215,6 +218,12 @@ let ifOnClause pred tac1 tac2 cls gl =
     tac1 cls gl
   else 
     tac2 cls gl
+
+let ifOnHyp pred tac1 tac2 id gl =
+  if pred (id,pf_get_hyp_typ gl id) then
+    tac1 id gl
+  else 
+    tac2 id gl
 
 (***************************************)
 (*         Elimination Tacticals       *)
