@@ -63,17 +63,28 @@ let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
 let rec constr_list goalopt = function
   | (str,VArg(Constr c))::tl -> (id_of_string str,c)::(constr_list goalopt tl)
   | (str,VArg(Identifier id))::tl ->
-    (try
-       (id_of_string str,Declare.global_reference CCI id)::(constr_list
-         goalopt tl)
-     with | Not_found ->
-       (match goalopt with
-       | None -> constr_list goalopt tl
-       | Some goal ->
-         if mem_named_context id (pf_hyps goal) then
-           (id_of_string str,mkVar id)::(constr_list goalopt tl)
-         else
-           constr_list goalopt tl))
+    (match goalopt with
+    | None -> constr_list goalopt tl
+    | Some goal ->
+      let hyps = pf_hyps goal in
+      (try
+         let csr = Declare.global_reference CCI id in
+         (match kind_of_term csr with
+         | IsVar idc ->
+           if mem_named_context idc hyps then
+             (id_of_string str,Declare.global_reference CCI id)::
+               (constr_list goalopt tl)
+           else
+             constr_list goalopt tl
+	 | _ ->
+           (id_of_string str,Declare.global_reference CCI id)::
+             (constr_list goalopt tl))
+       with
+      |	Not_found ->
+        if mem_named_context id (pf_hyps goal) then
+          (id_of_string str,mkVar id)::(constr_list goalopt tl)
+        else
+          constr_list goalopt tl))
   | _::tl -> constr_list goalopt tl
   | [] -> []
 
@@ -437,6 +448,13 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
        with | Not_found ->
          (try (lookup s)
           with | Not_found -> VArg (Identifier (id_of_string s))))
+
+    | Node(_,"QUALID",[Nvar(_,s)]) ->
+      (try (unrec (List.assoc s lfun))
+       with | Not_found ->
+         (try (lookup s)
+          with | Not_found -> VArg (Identifier (id_of_string s))))
+
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) ->
@@ -475,7 +493,6 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
            Not_found ->
              val_interp (evc,env,lfun,lmatch,goalopt,debug)
                (Node(dummy_loc,"APPTACTIC",[ast])))
-
     | Dynamic(_,t) -> 
       env_update (evc,env,lfun,lmatch,goalopt,debug);
       let f = (ocamlOut t) in
