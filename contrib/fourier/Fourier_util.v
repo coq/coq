@@ -136,14 +136,9 @@ replace 0 with (- -0).
 replace (- (n * / d)) with (- n * / d).
 replace (-0) with 0.
 red in |- *.
-try exact H0.
 apply Ropp_gt_lt_contravar.
-replace (- (n * / d)) with (- n * / d).
-replace (-0) with 0.
 red in |- *.
-try exact H0.
-ring.
-ring.
+exact H0.
 ring.
 ring.
 ring.
