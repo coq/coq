@@ -1900,8 +1900,8 @@ tactics/setoid_replace.cmo: pretyping/clenv.cmi kernel/closure.cmi \
     library/declare.cmi kernel/entries.cmi kernel/environ.cmi \
     pretyping/evarutil.cmi pretyping/evd.cmi library/global.cmi lib/gmap.cmi \
     library/lib.cmi library/libnames.cmi library/libobject.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
-    proofs/pfedit.cmi lib/pp.cmi translate/ppconstrnew.cmi \
+    proofs/logic.cmi library/nameops.cmi kernel/names.cmi library/nametab.cmi \
+    lib/options.cmi proofs/pfedit.cmi lib/pp.cmi translate/ppconstrnew.cmi \
     pretyping/pretype_errors.cmi parsing/printer.cmi proofs/proof_type.cmi \
     pretyping/rawterm.cmi kernel/reduction.cmi pretyping/reductionops.cmi \
     kernel/safe_typing.cmi kernel/sign.cmi library/summary.cmi \
@@ -1914,8 +1914,8 @@ tactics/setoid_replace.cmx: pretyping/clenv.cmx kernel/closure.cmx \
     library/declare.cmx kernel/entries.cmx kernel/environ.cmx \
     pretyping/evarutil.cmx pretyping/evd.cmx library/global.cmx lib/gmap.cmx \
     library/lib.cmx library/libnames.cmx library/libobject.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
-    proofs/pfedit.cmx lib/pp.cmx translate/ppconstrnew.cmx \
+    proofs/logic.cmx library/nameops.cmx kernel/names.cmx library/nametab.cmx \
+    lib/options.cmx proofs/pfedit.cmx lib/pp.cmx translate/ppconstrnew.cmx \
     pretyping/pretype_errors.cmx parsing/printer.cmx proofs/proof_type.cmx \
     pretyping/rawterm.cmx kernel/reduction.cmx pretyping/reductionops.cmx \
     kernel/safe_typing.cmx kernel/sign.cmx library/summary.cmx \
