@@ -15,10 +15,20 @@ Require Export Setoid.
    +8. test con occorrenze non lineari del pattern
    +9. test in cui setoid_replace fa direttamente fallback su replace
    10. sezioni
+   11. setoid_rewrite invocata su una Leibniz equality ritorna un errore
+       invece di provare rewrite. Provare rewrite divergerebbe ==> trovare
+       una soluzione.
+   12. goal con Imp
+  +13. testare *veramente* setoid_replace (ora testato solamente il caso
+       di fallback su replace)
+
+  Incompatibilita':
+    1. full_trivial in setoid_replace
+    2. ipotesi permutate in lemma di "Add Morphism"
+    3. iff invece di if in "Add Morphism" nel caso di predicati
+    4. setoid_replace poteva riscrivere sia c1 in c2 che c2 in c1
 
   Implementare:
-    ?. unificare nozione di ACFunction con ACSetoid quando gli argomenti
-       sono tutti Leibniz?
    -1. scelta dei cammini con backtracking.
        Nota: in effetti ogni morfismo puo' essere anche interpretato
        semplicemente come avente Leibniz in input e, quando ha Leibniz
@@ -35,14 +45,7 @@ Require Export Setoid.
     4. [setoid_]symmetry, [setoid_]reflexivity
 
   Sorgenti di inefficacia:
-    1. quando la tattica decide di fare replace e in testa c'e' un'uguaglianza
-       di Leibniz puo' capitare che venga generato lo stesso identico goal!
-       e.g.  E1 = t   tattica rewrite E1 with E2
-    2. quando ci sono cammini che contengono sequenze di ACFunction si
-       potrebbe fare un'unica replace sui sottoalberi che hanno come tipo
-       un setoide; invece attualmente vengono fatte tante replace, anche
-       per le ACFunction (i.e. per Leibniz)
-    3. scelta del setoide di default per un sostegno: per farlo velocemente
+    1. scelta del setoide di default per un sostegno: per farlo velocemente
        ci vorrebbe una tabella hash; attualmente viene fatta una ricerca
        lineare sul range della setoid_table
 
@@ -111,6 +114,13 @@ Theorem test1: forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
  apply (Seq_refl _ _ SetoidS2).
 Qed.
 
+Theorem test1': forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
+ intros.
+ setoid_replace x with y.
+ apply (Seq_refl _ _ SetoidS2).
+ assumption.
+Qed.
+
 Axiom g : S1 -> S2 -> nat.
 Add Morphism g : g_compat. Admitted.
 
@@ -130,7 +140,6 @@ Theorem test3:
  rewrite H.
  rewrite H0.
  assumption.
-Show.
 Qed.
 
 Theorem test4:
