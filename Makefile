@@ -1347,6 +1347,12 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 
 # beforedepend:: parsing/pcoq.ml parsing/extend.ml
 
+# File using pa_ifdef and only necessary for parsing ml files
+
+parsing/q_coqast.cmo: parsing/q_coqast.ml4
+	$(SHOW)'OCAMLC4  $<' 
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo -impl" -c -impl $<
+
 # toplevel/mltop.ml4 (ifdef Byte)
 
 toplevel/mltop.cmo: toplevel/mltop.byteml
