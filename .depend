@@ -3,7 +3,7 @@ kernel/closure.cmi: kernel/environ.cmi kernel/generic.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi 
 kernel/constant.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
-kernel/environ.cmi: kernel/abstraction.cmi kernel/constant.cmi \
+kernel/environ.cmi: kernel/abstraction.cmi kernel/constant.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
 kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
@@ -45,7 +45,8 @@ parsing/coqast.cmi: lib/dyn.cmi
 parsing/g_minicoq.cmi: kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi 
 parsing/pcoq.cmi: parsing/coqast.cmi 
-proofs/logic.cmi: kernel/evd.cmi lib/pp.cmi proofs/proof_trees.cmi 
+proofs/logic.cmi: kernel/evd.cmi lib/pp.cmi proofs/proof_trees.cmi \
+    kernel/sign.cmi kernel/term.cmi 
 proofs/pfedit.cmi: lib/pp.cmi 
 proofs/proof_trees.cmi: parsing/coqast.cmi kernel/evd.cmi kernel/names.cmi \
     kernel/term.cmi 
@@ -76,11 +77,11 @@ kernel/constant.cmo: kernel/generic.cmi kernel/names.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/univ.cmi kernel/constant.cmi 
 kernel/constant.cmx: kernel/generic.cmx kernel/names.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/univ.cmx kernel/constant.cmi 
-kernel/environ.cmo: kernel/abstraction.cmi kernel/constant.cmi \
+kernel/environ.cmo: kernel/abstraction.cmi kernel/constant.cmi kernel/evd.cmi \
     kernel/generic.cmi kernel/inductive.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi lib/system.cmi kernel/term.cmi kernel/univ.cmi \
     lib/util.cmi kernel/environ.cmi 
-kernel/environ.cmx: kernel/abstraction.cmx kernel/constant.cmx \
+kernel/environ.cmx: kernel/abstraction.cmx kernel/constant.cmx kernel/evd.cmx \
     kernel/generic.cmx kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
     kernel/sign.cmx lib/system.cmx kernel/term.cmx kernel/univ.cmx \
     lib/util.cmx kernel/environ.cmi 

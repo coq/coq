@@ -79,7 +79,7 @@ type proof_tree = {
   ref : (rule * proof_tree list) option; 
   subproof : proof_tree option }
 
-and goal =  ctxtty evar_info
+and goal = ctxtty evar_info
 
 and rule =
   | Prim of prim_rule

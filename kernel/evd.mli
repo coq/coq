@@ -8,41 +8,41 @@ open Sign
 (*i*)
 
 (* The type of mappings for existential variables.
-   The keys are section paths and the associated information is a record
+   The keys are integers and the associated information is a record
    containing the type of the evar ([concl]), the signature under which 
-   it was introduced ([hyps]), its definition ([body]) and any other 
-   possible information if necessary ([info]).
-*)
+   it was introduced ([hyps]) and its definition ([body]). *)
+
+type evar = int
+
+val new_evar : unit -> evar
 
 type evar_body =
   | Evar_empty 
   | Evar_defined of constr
 
-type 'a evar_info = {
+type evar_info = {
   evar_concl : typed_type;
   evar_hyps  : typed_type signature;
-  evar_body  : evar_body;
-  evar_info  : 'a option }
+  evar_body  : evar_body }
 
-type 'a evar_map
+type evar_map
 
-val dom    : 'a evar_map -> section_path list
-val map    : 'a evar_map -> section_path -> 'a evar_info
-val rmv    : 'a evar_map -> section_path -> 'a evar_map
-val remap  : 'a evar_map -> section_path -> 'a evar_info -> 'a evar_map
-val in_dom : 'a evar_map -> section_path -> bool
-val toList : 'a evar_map -> (section_path * 'a evar_info) list
+val dom : evar_map -> evar list
+val map : evar_map -> evar -> evar_info
+val rmv : evar_map -> evar -> evar_map
+val remap : evar_map -> evar -> evar_info -> evar_map
+val in_dom : evar_map -> evar -> bool
+val to_list : evar_map -> (evar * evar_info) list
 
-val mt_evd : 'a evar_map
-val add_with_info : 'a evar_map -> section_path -> 'a evar_info -> 'a evar_map
+val mt_evd : evar_map
+val add_with_info : evar_map -> evar -> evar_info -> evar_map
 val add_noinfo : 
-  'a evar_map -> section_path -> typed_type signature -> typed_type 
-    -> 'a evar_map
+  evar_map -> evar -> typed_type signature -> typed_type -> evar_map
 
-val define : 'a evar_map -> section_path -> constr -> 'a evar_map
+val define : evar_map -> evar -> constr -> evar_map
 
-val non_instantiated : 'a evar_map -> (section_path * 'a evar_info) list
-val is_evar : 'a evar_map -> section_path -> bool
+val non_instantiated : evar_map -> (evar * evar_info) list
+val is_evar : evar_map -> evar -> bool
 
-val is_defined : 'a evar_map -> section_path -> bool
+val is_defined : evar_map -> evar -> bool
 

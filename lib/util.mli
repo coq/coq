@@ -73,6 +73,7 @@ val repeat : int -> ('a -> unit) -> 'a -> unit
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
+module Intmap : Map.S with type key = int
 
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option

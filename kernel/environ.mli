@@ -4,6 +4,7 @@
 (*i*)
 open Names
 open Term
+open Evd
 open Constant
 open Inductive
 open Abstraction
@@ -22,6 +23,7 @@ val empty_env : unsafe_env
 
 val universes : unsafe_env -> universes
 val context : unsafe_env -> context
+val evar_map : unsafe_env -> evar_map
 
 val push_var : identifier * typed_type -> unsafe_env -> unsafe_env
 val push_rel : name * typed_type -> unsafe_env -> unsafe_env
