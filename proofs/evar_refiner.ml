@@ -133,12 +133,11 @@ let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_env wc) (w_Underlying wc) c
 let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
 
 
-let w_Declare sp (ty,s) (wc : walking_constraints) =
-  let c = mkCast (ty,s) in
-  let _ = w_type_of wc c in
+let w_Declare sp ty (wc : walking_constraints) =
+  let _ = w_type_of wc ty in (* Utile ?? *)
   let access  = get_focus (ids_it wc)
   and sign = get_hyps (ids_it wc) in
-  let newdecl = mk_goal (mt_ctxt access) sign c in 
+  let newdecl = mk_goal (mt_ctxt access) sign ty in 
   ((ids_mod (fun evc -> (rc_add evc (sp,newdecl))) wc): walking_constraints)
 
 let w_Declare_At sp sp' c = w_Focusing sp (w_Declare sp' c)

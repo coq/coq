@@ -67,12 +67,11 @@ let applyHead n c wc =
     else 
       match kind_of_term (w_whd_betadeltaiota wc cty) with
         | IsProd (_,c1,c2) ->
-            let c1ty = w_type_of wc c1 in
 	    let evar = Evarutil.new_evar_in_sign (w_env wc) in
             let (evar_n, _) = destEvar evar in
 	    (compose 
 	       (apprec (n-1) (applist(c,[evar])) (subst1 evar c2))
-	       (w_Declare evar_n (c1,c1ty)))
+	       (w_Declare evar_n c1))
 	    wc
 	| _ -> error "Apply_Head_Then"
   in 
@@ -946,9 +945,7 @@ let clenv_pose_dependent_evars clenv =
        let evar = Evarutil.new_evar_in_sign (w_env clenv.hook) in
        let (evar_n,_) = destEvar evar in
        let tY = clenv_instance_type clenv mv in
-       let tYty = w_type_of clenv.hook tY in
-       let clenv' = clenv_wtactic (w_Declare evar_n (tY,tYty))
-		      clenv in
+       let clenv' = clenv_wtactic (w_Declare evar_n tY) clenv in
        clenv_assign mv evar clenv')
     clenv
     dep_mvs

@@ -52,8 +52,8 @@ val walking         : w_tactic -> tactic
 val w_Focusing_THEN : 
   evar -> 'a result_w_tactic -> ('a -> w_tactic) -> w_tactic
 
-val w_Declare    : evar -> constr * constr -> w_tactic
-val w_Declare_At : evar -> evar -> constr * constr -> w_tactic
+val w_Declare    : evar -> types -> w_tactic
+val w_Declare_At : evar -> evar -> types -> w_tactic
 val w_Define     : evar -> constr -> w_tactic
 
 val w_Underlying : walking_constraints -> enamed_declarations
