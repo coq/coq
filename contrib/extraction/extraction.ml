@@ -102,7 +102,7 @@ let signature_of_arity =
   in
   sign_of []
 
-(* [list_of_ml_arrows] applied to the ML type [a->b->]\cdots[z->t]
+(* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
    returns the list [[a;b;...;z]]. *)
 let rec list_of_ml_arrows = function
   | Tarr (a, b) -> a :: list_of_ml_arrows b
@@ -226,7 +226,7 @@ let rec extract_type env sign c =
 	       | Tprop -> (Miniml.Tprop :: args, fl)
 	       | Tmltype (mla,_,fl') -> (mla :: args, fl'))
 	(List.combine (list_firstn nargs (List.rev sc)) args) 
-	  (* FIXME: List.rev before list_firstn? *)
+	  (* FIXME: [List.rev] before [list_firstn]? *)
 	([],fl)
     in
     let flc = List.map (fun i -> Tvar i) flc in
@@ -370,7 +370,9 @@ and extract_mib sp =
 		  | Tarity | Tprop -> assert false
 		  | Tmltype (mlt, s, f) -> 
 		      let l = list_of_ml_arrows mlt in
-		      (*let (l,s) = extract_params mib.mind_nparams (l,s) in*)
+		      (*i
+			let (l,s) = extract_params mib.mind_nparams (l,s) in
+		      i*)
 		      add_constructor_extraction ((sp,i),succ j) (l,s);
 		      f @ fl)
 	     ib.mind_nf_lc fl)
