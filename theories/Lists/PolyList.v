@@ -561,7 +561,7 @@ Save.
 Lemma in_prod : (A:Set)(B:Set)(l:(list A))(l':(list B))
   (x:A)(y:B)(In x l)->(In y l')->(In (x,y) (list_prod l l')).
 Induction l;
-[ Simpl; Tauto
+[ Tauto
 | Simpl; Intros; Apply in_or_app; Elim H0; Clear H0;
   [ Left; Rewrite H0; Apply in_prod_aux; Assumption
   | Right; Auto]
