@@ -85,8 +85,8 @@ expressions.
   \verb+$STR+~$|$~\verb+$PATH+~$|$~\verb+$ID+ & \\
 
 {\sl quotation}& ::= &
-        \verb+<<+ ~{\sl meta-command}~ \verb+>>+ & \\
-& $|$ & \verb+<:command:<+ ~{\sl meta-command}~ \verb+>>+ & \\
+        \verb+<<+ ~{\sl meta-constr}~ \verb+>>+ & \\
+& $|$ & \verb+<:constr:<+ ~{\sl meta-constr}~ \verb+>>+ & \\
 & $|$ & \verb+<:vernac:<+ ~{\sl meta-vernac}~ \verb+>>+ & \\
 & $|$ & \verb+<:tactic:<+ ~{\sl meta-tactic}~ \verb+>>+ & \\
 \hline
@@ -104,17 +104,18 @@ of an AST.
 \subsubsection{Metavariable}
 \index{Metavariable}
 
-As we will see later, metavariables may denote an AST or an AST list.
-So, we introduce two types of variables: \verb+Ast+ and
-\verb+List+. The type of variables is checked statically: an
-expression referring to undefined metavariables, or using metavariables
-with an inappropriate type, will be rejected.
-
 Metavariables are used to perform substitutions in constructive
 expressions: they are replaced by their value in a given
 environment. They are also involved in the pattern matching operation:
 metavariables in destructive patterns create new bindings in the
 environment.
+
+As we will see later, metavariables may denote an AST or an AST list
+(when used with the \verb+$LIST+ special token).
+So, we introduce two types of variables: \verb+Ast+ and
+\verb+List+. The type of variables is checked statically: an
+expression referring to undefined metavariables, or using metavariables
+with an inappropriate type, will be rejected.
 
 \subsubsection{Application node}
 
@@ -136,7 +137,8 @@ equal if only they are the same up to renaming of bound variables
 (thus, \verb+[x]x+ is equal to \verb+[y]y+). This makes the difference
 between variables and identifiers clear: the former may be bound by
 abstractions, whereas identifiers cannot be bound. To illustrate this,
-\verb+[x]{x}+ is equal to \verb+[y]{x}+, but not to \verb+[y]{y}+.
+\verb+[x]x+ and \verb+[y]y+ are equal and \verb+[x]{x}+ is equal to
+\verb+[y]{x}+, but not to \verb+[y]{y}+.
 
 The binding structure of AST is used to represent the binders in the
 terms of {\Coq}: the product \verb+(x:$A)$B+ is mapped to the AST
@@ -158,8 +160,8 @@ it cannot be substituted or considered as binding in patterns.
 \subsubsection{Quotations}
 \index{Quotations}
 
-The non terminal symbols {\sl meta-command}, {\sl meta-vernac} and
-{\sl meta-tactic} stand, respectively, for the syntax of commands,
+The non terminal symbols {\sl meta-constr}, {\sl meta-vernac} and
+{\sl meta-tactic} stand, respectively, for the syntax of CIC terms,
 vernacular phrases and tactics. The prefix {\sl meta-} is just to
 emphasize that the expression may refer to metavariables.
 
@@ -170,7 +172,7 @@ the application (in the sense of CIC) of the constant {\tt eq} to
 three arguments. It is coded as an AST node labelled {\tt APPLIST}
 with four arguments.
 
-This term is parsable by \verb+command command+ grammar. This grammar
+This term is parsable by \verb+constr:constr+ grammar. This grammar
 is invoked on this term to generate an AST by putting the term between
 ``\verb+<<+'' and ``\verb+>>+''.
 
@@ -179,14 +181,14 @@ entries (see section~\ref{predefined-grammars} for a description of
 these grammars).
 
 \begin{itemize}
-\item \verb|<< t >>| parses {\tt t} with {\tt command command} grammar
-(terms of CIC).
-\item \verb|<:command:< t >>| parses {\tt t} with {\tt command command}
-  grammar (same as \verb|<< t >>|).
-\item \verb|<:vernac:< t >>| parses {\tt t} with {\tt vernac vernac}
+\item \verb|<:constr:< t >>| parses {\tt t} with {\tt constr:constr}
+  grammar(terms of CIC).
+\item \verb|<:vernac:< t >>| parses {\tt t} with {\tt vernac:vernac}
   grammar (vernacular commands).
-\item \verb|<:tactic:< t >>| parses {\tt t} with {\tt tactic tactic}
+\item \verb|<:tactic:< t >>| parses {\tt t} with {\tt tactic:tactic}
   grammar (tactic expressions).
+\item \verb|<< t >>| parses {\tt t} with the default quotation (that
+  is, {\tt constr:constr}). It is the same as \verb|<:constr:< t >>|.
 \end{itemize}
 
 \Warning
@@ -252,8 +254,9 @@ in the AST variable {\tt\$id}. On the other hand, the latter pattern
 matches any AST node labelled {\tt Intros}, and it binds the
 \emph{list} of its arguments to the list variable {\tt\$idl}. The
 {\tt\$LIST} pattern must be the last item of a list pattern, because
-it would make the pattern matching operation more complicated. The
-pattern \verb+(Intros ($LIST $idl) $lastid)+ is not accepted.
+it would make the pattern matching operation more complicated and less
+efficient. The pattern \verb+(Intros ($LIST $idl) $lastid)+ is not
+accepted.
 
 The other special operators allows checking what kind of leaf we
 are destructing:
@@ -308,13 +311,13 @@ The components have the following meaning:
   {\sl rule-name}~\zeroone{{\tt :}~{\sl entry-type}}~\verb+:=+~%
 %  [{\sl assoc}]~
 \sequence{{\sl production}}{|} \\
-{\sl rule-name} & ::= & {\ident} \\
-{\sl entry-type} & ::= & \verb+Ast+~$|$~\verb+List+ \\
+{\sl entry-type} & ::= &
+      \verb+ast+~$|$~\verb+ast list+~$|$~\verb+constr+
+ ~$|$~\verb+tactic+~$|$~\verb+vernac+ \\
 %{\sl assoc} & ::= & \verb+LEFTA+~$|$~\verb+RIGHTA+~$|$~\verb+NONA+ \\
 % parler de l'associativite ?
 % Cela n'a pas vraiment de sens si toutes les re`gles sont dans un
-% meme
-% niveau.
+% meme niveau pour Camlp4.
 {\sl production} & ::= &
   {\sl rule-name}~\verb+[+~\sequence{{\sl prod-item}}{}~\verb+] ->+
   ~{\sl action}\\
@@ -323,7 +326,7 @@ The components have the following meaning:
 & | & \zeroone{{\sl entry}~{\tt :}}~{\sl entry-name}~%
       \zeroone{{\tt (}~{\sl meta}~{\tt )}} \\
 {\sl action} & ::= &
-      \verb+[+~\sequence{{\sl ast}}{}~\verb+]+ \\
+      \verb+[+~\sequence{{\sl ast-quote}}{}~\verb+]+ \\
 & | & \verb+let+~{\sl pattern}~\verb+=+~{\sl action}~%
       \verb+in+~{\sl action} \\
 & | & {\tt case}~{\sl action}~\zeroone{{\tt :}~{\sl entry-type}}~{\tt of}~%
@@ -338,7 +341,10 @@ The components have the following meaning:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The exact syntax of the {\tt Grammar} command is defined
-in Fig.~\ref{grammarsyntax}.
+in Fig.~\ref{grammarsyntax} where non terminal {\sl ast-quote} is one
+of {\tt ast}, {\tt constr}, {\tt tactic} or {\tt vernac}, depending on
+the entry type.
+
 It is possible to extend a grammar with several rules at once.
 $$
 \begin{array}{rcc}
@@ -399,12 +405,12 @@ builds an AST which is an identifier such as \verb+{x}+.
 The primitive grammars are used as the other grammars; for instance
 the variables of terms are parsed by \verb+prim:var($id)+.
 
-\item \verb+command+ : it is the term entry. It allows to have a
-  pretty syntax for terms. Its initial grammar is {\tt command
-  command}. This entry contains several non-terminals, among them {\tt
-  command0} to {\tt command10} which stratify the terms according to
-  priority levels (\verb+0+ to \verb+10+). These priority levels allow
-  us also to specify the order of associativity of operators.
+\item \verb+constr+ : it is the term entry. It allows to have a pretty
+syntax for terms. Its initial grammar is {\tt constr:constr}. This
+entry contains several non-terminals, among them {\tt constr0} to
+{\tt constr10} which stratify the terms according to priority levels
+(\verb+0+ to \verb+10+). These priority levels allow us also to
+specify the order of associativity of operators.
 
 % Ce serait bien si on etait capables de donner une table avec les
 % niveaux de priorite de chaque operateur...
@@ -415,10 +421,11 @@ the variables of terms are parsed by \verb+prim:var($id)+.
   users, they can change the syntax of the predefined vernacular
   commands.
 
-\item \verb+tactic+ : it is the tactic entry with {\tt tactics tactic}
+\item \verb+tactic+ : it is the tactic entry with {\tt tactics:tactic}
   as initial grammar. This entry allows to define the syntax of new
-  tactics. See chapter~\ref{WritingTactics} about user-defined tactics
-  for more details.
+  tactics or redefine the syntax of existing tactics.
+% See chapter~\ref{WritingTactics} about user-defined tactics
+%  for more details.
 
 \end{itemize}
 
@@ -428,25 +435,27 @@ defined. But the grammars in the left member of rules must all be
 defined, possibly by the current grammar command. It may be convenient
 to define an empty grammar, just so that it may be called by other
 grammars, and extend this empty grammar later.  Assume that the {\tt
-command command13} does not exist. The next command defines it with
+constr:constr13} does not exist. The next command defines it with
 zero productions.
 
 \begin{coq_example*}
-Grammar command command13 := .
+Grammar constr constr13 := .
 \end{coq_example*}
 
 The grammars of new entries do not have an initial grammar. To use
 them, they must be called (directly or indirectly) by grammars of
 predefined entries. We give an example of a (direct) call of the
-grammar {\tt newentry nonterm} by {\tt command command}.  This
-following rule allows to use the syntax \verb+a&b+ for the conjunction
-\verb+a/\b+.
+grammar {\tt newentry:nonterm} by {\tt constr:constr}.  This following
+rule allows to use the syntax \verb+a&b+ for the conjunction
+\verb+a/\b+. Note that since we extend a rule of universe
+\verb+constr+, the command quotation is used on the right-hand side of
+the second rule.
 
 \begin{coq_example}
 Grammar newentry nonterm := 
-  ampersand [ "&" command:command($c) ] -> [$c].
-Grammar command command := 
-  new_and [ command8($a) newentry:nonterm($b) ] -> [<<$a/\$b>>].
+  ampersand [ "&" constr:constr($c) ] -> [$c].
+Grammar constr constr := 
+  new_and [ constr8($a) newentry:nonterm($b) ] -> [$a/\$b].
 \end{coq_example}
 
 
@@ -504,27 +513,25 @@ The rule below allows us to use the syntax \verb+t1#t2+ for the term
 \verb+~t1=t2+. 
 
 \begin{coq_example}
-Grammar command command1 := 
-  not_eq [ command0($a) "#" command0($b) ] -> [<<~($a=$b)>>].
+Grammar constr constr1 := 
+  not_eq [ constr0($a) "#" constr0($b) ] -> [ ~$a=$b ].
 \end{coq_example}
 
 The level $1$ of the grammar of terms is extended with one rule named
 \texttt{not\_eq}. When this rule is selected, its LMP calls the
-grammar \verb+command+ \verb+command0+. This grammar recognizes a term
-that it binds to the metavariable \verb+$a+. Then it meets the token
-``\verb+#+'' and finally it calls the grammar \verb+command+
-\verb+command0+. This grammar returns the recognized term in
-\verb+$b+. The action constructs the term \verb+~($a=$b)+. Note that
-we use the command quotation on the right-hand side.
-
+grammar \verb+constr:constr0+. This grammar recognizes a term that it
+binds to the metavariable \verb+$a+. Then it meets the token
+``\verb+#+'' and finally it calls the grammar
+\verb+constr:constr0+. This grammar returns the recognized term in
+\verb+$b+. The action constructs the term \verb+~$a=$b+.
 \Warning
 Metavariables are identifiers preceded by the ``\verb+$+'' symbol.
 They cannot be replaced by identifiers. For instance, if we enter a
 rule with identifiers and not metavariables, an error occurs:
 
 \begin{coq_example}
-Grammar command command1 := 
-  not_eq [ command0(a) "#" command0(b) ] -> [<<~(a=b)>>].
+Grammar constr constr1 := 
+  not_eq [ command0(a) "#" command0(b) ] -> [~(a=b)].
 \end{coq_example}
 
 For instance, let us give the statement of the symmetry of \verb+#+:
@@ -533,26 +540,26 @@ For instance, let us give the statement of the symmetry of \verb+#+:
 Goal (A:Set)(a,b:A) a#b -> b#a.
 \end{coq_example}
 
+This shows that the system understood the grammar
+extension. Nonetheless, since no special printing command was given,
+the goal is displayed using the usual syntax for negation and
+equality. One can force \verb+~a=b+ to be printed \verb=a#b= by giving
+pretty-printing rules. This is explained in section~\ref{Syntax}.
+
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
 
-Conversely, one can force \verb+~a=b+ to be printed \verb=a#b= by
-giving pretty-printing rules. This is explained in section \ref{Syntax}.
 
 \example{Redefining vernac commands}
 
 Thanks to the following rule, ``{\tt |- term.}'' will have the same
 effect as ``{\tt Goal term.}''.
 
-\begin{coq_eval}
-Save State no_thesis.
-\end{coq_eval}
-
 \begin{coq_example}
 Grammar vernac vernac := 
-  thesis [ "|" "-" command:command($term) "." ]
-          -> [<:vernac:<Goal $term.>>].
+  thesis [ "|" "-" constr:constr($term) "." ]
+          -> [Goal $term.].
 \end{coq_example}
 
 \noindent This rule allows putting blanks between the bar and the
@@ -563,7 +570,7 @@ dash, as in
 \end{coq_example}
 
 \begin{coq_eval}
-Restore State no_thesis.
+Reset Initial.
 \end{coq_eval}
 
 \noindent Assuming the previous rule has not been entered, we can
@@ -573,7 +580,7 @@ token:
 \begin{coq_example}
 Grammar vernac vernac := 
   thesis [ "|-" command:command($term) "." ]
-          -> [<:vernac:<Goal $term.>>].
+          -> [Goal $term.].
 | - (A:Prop)A->A.
 \end{coq_example}
 
@@ -598,7 +605,7 @@ We can give names to repetitive tactic sequences. Thus in this example
 
 \begin{coq_example}
 Grammar tactic simple_tactic :=
-  intros_split [ "IntSp" ] -> [<:tactic:<Intros; Split>>].
+  intros_split [ "IntSp" ] -> [Intros; Split].
 \end{coq_example}
 
 Let us check that this works.
@@ -622,22 +629,22 @@ The disjunction has a higher priority than conjunction.  Thus
 \verb+A/\B\/C+ will be parsed as \verb+(A/\B)\/C+ and not as
 \verb+A/\(B\/C)+. The priority is done by putting the rule for the
 disjunction in a higher level than that of conjunction: conjunction is
-defined in the non-terminal {\tt command6} and disjunction in {\tt
-command7} (see file {\tt Logic.v} in the library). Notice that
+defined in the non-terminal {\tt constr6} and disjunction in {\tt
+constr7} (see file {\tt Logic.v} in the library). Notice that
 the character ``\verb+\+'' must be doubled (see lexical conventions
 for quoted strings on page~\pageref{lexical}).
 
 \begin{coq_example*}
-Grammar command command6 := 
-  and [ command5($c1) "/\\" command6($c2) ] -> [<<(and $c1 $c2)>>].
-Grammar command command7 :=
-  or  [ command6($c1) "\\/" command7($c2) ] -> [<<(or $c1 $c2)>>].
+Grammar constr constr6 := 
+  and [ constr5($c1) "/\\" constr6($c2) ] -> [(and $c1 $c2)].
+Grammar constr constr7 :=
+  or  [ constr6($c1) "\\/" constr7($c2) ] -> [(or $c1 $c2)].
 \end{coq_example*}
 
 Thus conjunction and disjunction associate to the right since in both
-cases the priority of the right term (resp. {\tt command6} and {\tt
-command7}) is higher than the priority of the left term (resp. {\tt
-command5} and {\tt command6}). The left member of a conjunction cannot
+cases the priority of the right term (resp. {\tt constr6} and {\tt
+constr7}) is higher than the priority of the left term (resp. {\tt
+constr5} and {\tt constr6}). The left member of a conjunction cannot
 be itself a conjunction, unless you enclose it inside parenthesis.
 
 The left associativity is done by calling recursively the
@@ -647,7 +654,7 @@ standard library, defining a syntax for the addition on integers:
 
 \begin{coq_example*}
 Grammar znatural expr :=
-  expr_plus [ expr($p) "+" expr($c) ] -> [<<(Zplus $p $c)>>].
+  expr_plus [ expr($p) "+" expr($c) ] -> [(Zplus $p $c)].
 \end{coq_example*}
 
 
@@ -686,11 +693,11 @@ in this new context.
 {\tt (plus (plus t1 t2) (mult t1 t2))}.
 
 \begin{coq_example}
-Grammar command command1 := 
-  mult_plus [ command0($a) "*" "+" command0($b) ]
-     -> let $p1=[<<(plus $a $b)>>] in
-        let $p2=[<<(mult $a $b)>>] in 
-          [<<(plus $p1 $p2)>>].
+Grammar constr constr1 := 
+  mult_plus [ constr0($a) "*" "+" constr0($b) ]
+     -> let $p1=[(plus $a $b)] in
+        let $p2=[(mult $a $b)] in 
+          [(plus $p1 $p2)].
 \end{coq_example}
 
 Let us give an example with this syntax:
@@ -737,20 +744,25 @@ The trick is to build a temporary AST: \verb/{A}/ generates the node
 SQUASH} in {\tt A} and {\tt B}:
 
 \begin{coq_example*}
-Grammar command command1 :=
-  squash [ "{" lcommand($lc) "}" ] -> [(SQUASH $lc)].
-Grammar command lassoc_command4 :=
+Grammar constr constr1: ast :=
+  squash [ "{" lconstr($lc) "}" ] -> [(SQUASH $lc)].
+Grammar constr lassoc_constr4 :=
   squash_sum
-  [ lassoc_command4($c1) "+" lassoc_command4($c2) ] ->
+  [ lassoc_constr4($c1) "+" lassoc_constr4($c2) ] ->
       case [$c2] of
         (SQUASH $T2) ->
             case [$c1] of
-              (SQUASH $T1) -> [<<(sumbool $T1 $T2)>>]
-            | $_           -> [<<(sumor $c1 $T2)>>]
+              (SQUASH $T1) -> [(sumbool $T1 $T2)]
+            | $_           -> [(sumor $c1 $T2)]
             esac
-      | $_           -> [<<(sum $c1 $c2)>>]
+      | $_           -> [(sum $c1 $c2)]
       esac.
 \end{coq_example*}
+
+The first rule is casted with type ast, because the produced term
+cannot be reached by the input syntax. On the other hand, the second
+command has (implicit) type \verb+constr+, so the right hand side is
+parsed with the term parser.
 
 \noindent The problem is that sometimes, the intermediate {\tt SQUASH}
 node cannot re-shaped, then we have a very specific error:
@@ -769,9 +781,9 @@ value. Note that this does not apply to the wildcard \verb+$_+. For
 example, we can compare two arguments:
 
 \begin{coq_example}
-Grammar command command10 := 
-  refl_equals [ command9($c1) "||" command9($c2) ] ->
-              case [$c1] of $c2 -> [<<(refl_equal ? $c2)>>] esac.
+Grammar constr constr10 := 
+  refl_equals [ constr9($c1) "||" constr9($c2) ] ->
+              case [$c1] of $c2 -> [(refl_equal ? $c2)] esac.
 Check ([x:nat]x || [y:nat]y).
 \end{coq_example}
 
@@ -785,14 +797,14 @@ Check ([x:nat]x || [z:bool]z).
 
 
 
-\subsection{Grammars of type {\tt List}}
+\subsection{Grammars of type {\tt ast list}}
 
 Assume we want to define an non-terminal {\tt ne\_identarg\_list} that
 parses an non-empty list of identifiers. If the grammars could only
 return AST's, we would have to define it this way:
 
 \begin{coq_example*}
-Grammar tactic my_ne_ident_list :=
+Grammar tactic my_ne_ident_list : ast :=
   ident_list_cons [ identarg($id) my_ne_ident_list($l) ] ->
     case [$l] of
       (IDENTS ($LIST $idl)) -> [(IDENTS $id ($LIST $idl))]
@@ -805,7 +817,7 @@ remove the ``boxing'' operator {\tt IDENTS}, and put it back once the
 identifier is inserted in the list.
 
 To avoid these awkward trick, we allow grammars to return AST
-lists. Hence grammars have a type ({\tt Ast} or {\tt List}), just like
+lists. Hence grammars have a type ({\tt ast} or {\tt ast list}), just like
 AST's do. Type-checking can be done statically.
 
 The simple actions can produce lists by putting a list of constructive
@@ -813,7 +825,7 @@ expressions one beside the other. As usual, the {\tt\$LIST} operator
 allows to inject AST list variables.
 
 \begin{coq_example*}
-Grammar tactic ne_identarg_list : List :=
+Grammar tactic ne_identarg_list : ast list :=
   ne_idl_cons [ identarg($id) ne_identarg_list($idl) ]
                   -> [ $id ($LIST $idl) ]
 | ne_idl_single [ identarg($id) ] -> [ $id ].
@@ -822,9 +834,9 @@ Grammar tactic ne_identarg_list : List :=
 Note that the grammar type must be recalled in every extension
 command, or else the system could not discriminate between a single
 AST and an AST list with only one item. If omitted, the default type
-is {\tt Ast}. The following command fails because {\tt
-ne\_identarg\_list} is already defined with type {\tt List} but the
-{\tt Grammar} command header assumes its type is {\tt Ast}.
+depends on the universe name. The following command fails because {\tt
+ne\_identarg\_list} is already defined with type {\tt ast list} but the
+{\tt Grammar} command header assumes its type is {\tt ast}.
 
 \begin{coq_example}           
 Grammar tactic ne_identarg_list :=
@@ -832,13 +844,13 @@ Grammar tactic ne_identarg_list :=
 \end{coq_example}
 
 All rules of a same grammar must have the same type. For instance, the
-following rule is refused because the \verb+command command1+ grammar
+following rule is refused because the \verb+constr:constr1+ grammar
 has been already defined with type {\tt Ast}, and cannot be extended
 with a rule returning AST lists.
 
 \begin{coq_example}           
-Grammar command command1 :=
-  carret_list [ command0($c1) "^" command0($c2)] -> [ $c1 $c2 ].
+Grammar constr constr1 :=
+  carret_list [ constr0($c1) "^" constr0($c2)] -> [ $c1 $c2 ].
 \end{coq_example}
 
 
@@ -874,7 +886,7 @@ why a factorization was not done as expected.\index{Print Grammar@{\tt
 Print Grammar}}
 
 \begin{coq_example}
-Print Grammar command command8.
+Print Grammar constr constr8.
 \end{coq_example}
 
 \subsubsection{Getting round the lack of factorization}
@@ -885,25 +897,25 @@ make {\camlpppp} factorize the rules for application and product. The
 natural grammar would be:
 
 \begin{coq_example}
-Grammar command command0 :=
-  parenthesis [ "(" command10($c) ")" ] -> [$c]
-| product [ "(" prim:var($id) ":" command($c1) ")" command0($c2) ] ->
+Grammar constr constr0 : ast :=
+  parenthesis [ "(" constr10($c) ")" ] -> [$c]
+| product [ "(" prim:var($id) ":" constr($c1) ")" constr0($c2) ] ->
             [(PROD $c1 [$id]$c2)]
-with command10 :=
-  application [ command91($c1) ne_command91_list($lc) ] ->
+with constr10 : ast :=
+  application [ constr91($c1) ne_constr_list($lc) ] ->
                [(APPLIST $c1 ($LIST $lc))]
-| inject_com91 [ command91($c) ] -> [$c].
+| inject_com91 [ constr91($c) ] -> [$c].
 Check (x:nat)nat.
 \end{coq_example}
 
 But the factorization does not work, thus the product rule is never
-selected since identifiers match the {\tt command10} grammar. The
-trick is to parse the ident as a {\tt command10} and check \emph{a
-posteriori} that the command is indeed an identifier:
+selected since identifiers match the {\tt constr10} grammar. The
+trick is to parse the ident as a {\tt constr10} and check \emph{a
+posteriori} that the term is indeed an identifier:
 
 \begin{coq_example}
-Grammar command command0 :=
-  product [ "(" command10($c) ":" command($c1) ")" command0($c2) ] ->
+Grammar constr constr0 : ast :=
+  product [ "(" constr10($c) ":" constr($c1) ")" constr0($c2) ] ->
             [(PROD $c1 [$c]$c2)].
 Check (x:nat)nat.
 \end{coq_example}
@@ -939,9 +951,9 @@ constants. The rules should be
 outside a section if the user wants them to be exported.
 
 The printing rules corresponding to the heart of the system (primitive
-tactics, commands and the vernacular language) are defined,
-respectively, in the files {\tt PPTactic.v} and {\tt PPCommand.v}
-(in the directory {\tt src/syntax}). These files are automatically
+tactics, terms and the vernacular language) are defined,
+respectively, in the files {\tt PPTactic.v} and {\tt PPConstr.v}
+(in the directory {\tt syntax}). These files are automatically
 loaded in the initial state. The user is not expected to modify these
 files unless he dislikes the way primitive things are printed, in
 which case he will have to compile the system after doing the
@@ -980,29 +992,18 @@ in~\ref{syntaxsyntax}. A simple printing rule is of the form:
 where :
 \begin{itemize}
 \item {\it universe} is an identifier denoting the universe of the AST to
-  be printed. There is a correspondence between the universe of the
-  grammar rule used to generate the AST and the one of the printing
-  rule:
-
-\begin{center}
-\begin{tabular}{|c|c|}\hline
-{\em Univ. Grammar}  & {\em Univ. Printing} \\ \hline 
-tactic   & tactic \\ \hline
-command  & constr \\ \hline 
-\end{tabular}
-\end{center}
-
+  be printed. They have the same meaning as grammar universes.
   The vernac universe has no equivalent in pretty-printing since
   vernac phrases are never printed by the system. Error messages are
-  reported by re-displaying what the user entered.
+  reported by re-displaying what the user typed in.
 
 \item {\it precedence} is positive integer indicating the precedence
   of the rule. In general the precedence for tactics is 0. The
-  universe of commands is implicitly stratified by the hierarchy of
-  the parsing rules. We have non terminals \textit{command0},
-  \textit{command1}, \ldots, \textit{command10}. 
+  universe of terms is implicitly stratified by the hierarchy of
+  the parsing rules. We have non terminals \textit{constr0},
+  \textit{constr1}, \ldots, \textit{constr10}. 
   The idea is that objects parsed with the non terminal
-  $command_i$ have precedence $i$. In most of the cases we fix the
+  $constr_i$ have precedence $i$. In most of the cases we fix the
   precedence of the printing rules for commands to be the same number
   of the non terminal with which it is parsed.
 
@@ -1057,13 +1058,16 @@ Given this definition, we want to use the syntax of \verb+A X B+
 to denote \verb+(Xor A B)+. To do that we give the grammar rule:
 
 \begin{coq_example}
-Grammar command  command7 :=
-  Xor [ command6($c1) "X" command7($c2) ] -> [<<(Xor $c1 $c2)>>].
+Grammar constr constr7 :=
+  Xor [ constr6($c1) "X" constr7($c2) ] -> [(Xor $c1 $c2)].
 \end{coq_example}
 
 Note that the operator is associative to the right.  
 Now \verb+True X False+ is well parsed:
 
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 \begin{coq_example}
 Goal True X False.
 \end{coq_example}
@@ -1072,7 +1076,7 @@ To have it well printed we extend the printer:
 
 \begin{coq_example}
 Syntax constr level 7:
-  Pxor  [<<(Xor  $t1  $t2)>>] -> [ $t1:L  " X "  $t2:E ].
+  Pxor  [(Xor  $t1  $t2)] -> [ $t1:L  " X "  $t2:E ].
 \end{coq_example}
 
 and now we have the desired syntax:
@@ -1086,15 +1090,14 @@ Let's comment the rule:
 \item \verb+constr+ is the universe of the printing rule.
 
 \item \verb+7+ is the rule's precedence and it is the same one than the
-  parsing production (command7).
+  parsing production (constr7).
 
 \item \verb+Pxor+ is the name of the printing rule.
 
-\item \verb+<<(Xor $t1 $t2)>>+ is the pattern of the AST to be
-  printed. Between \verb+<< >>+ we are allowed to use the syntax of
-  command instead of syntax of ASTs. 
-  Metavariables may occur in the pattern but preceded by
-  \verb+$+.
+\item \verb+(Xor $t1 $t2)+ is the pattern of the term to be
+printed. Between \verb+<< >>+ we are allowed to use the syntax of
+arbitrary AST instead of terms. Metavariables may occur in the pattern
+but preceded by \verb+$+.
 
 \item \verb+$t1:L " X " $t2:E+ are the printing
   orders, it tells to print the value of \verb+$t1+ then the symbol
@@ -1138,7 +1141,7 @@ notation would be:
 
 \begin{coq_example*}
 Syntax constr level 10:
-  ex_imp [<<(Xor $t1  $t2)>>] -> [ "X " $t1:L " " $t2:L ].
+  ex_imp [(Xor $t1  $t2)] -> [ "X " $t1:L " " $t2:L ].
 \end{coq_example*}
 
 No explicit parentheses are contained in the rule, nevertheless, when
@@ -1161,7 +1164,7 @@ tactic called \verb+MyIntros+ that receives a list of identifiers as
 argument as the primitive \verb+Intros+ tactic does:
 
 \begin{coq_example*}
-Grammar tactic simple_tactic := 
+Grammar tactic simple_tactic: ast := 
   my_intros [ "MyIntros" ne_identarg_list($idl) ] -> 
             [(MyIntrosWith ($LIST $idl))].
 \end{coq_example*}
@@ -1176,7 +1179,7 @@ rules is by adding structure to the patterns.
 
 \begin{coq_example}
 Syntax tactic level 0:
-  myintroswith [(MyIntrosWith ($LIST $L))] ->
+  myintroswith [<<(MyIntrosWith ($LIST $L))>>] ->
    [ "MyIntros " (NEIDENTARGLIST ($LIST $L)) ].
 \end{coq_example}
 
@@ -1186,9 +1189,9 @@ the value of \\
 
 \begin{coq_example}
 Syntax tactic level 0:
-  ne_identarg_list_cons [(NEIDENTARGLIST $id ($LIST $l))]
+  ne_identarg_list_cons [<<(NEIDENTARGLIST $id ($LIST $l))>>]
                             -> [ $id " " (NEIDENTARGLIST ($LIST $l)) ]
-| ne_identarg_list_single [(NEIDENTARGLIST $id)] -> [ $id ].
+| ne_identarg_list_single [<<(NEIDENTARGLIST $id)>>] -> [ $id ].
 \end{coq_example}
 
 
@@ -1208,7 +1211,7 @@ instead of the {\sl ne\_identarg\_list\_single} rule,
 
 \begin{coq_example}
 Syntax tactic level 0:
-  ne_identarg_list_nil [(NEIDENTARGLIST)] -> [ ].
+  ne_identarg_list_nil [<<(NEIDENTARGLIST)>>] -> [ ].
 \end{coq_example}
 
 This rule indicates to do nothing in case of the empty list.  In this
@@ -1225,9 +1228,9 @@ extends the parser:
 
 \begin{coq_example*}
 Definition explicit_comp := [A,B,C:Set][f:A->B][g:B->C][a:A](g (f a)).
-Grammar command command6 :=
-  expl_comp [command5($c1) "o" command6($c2) ] ->
-            [<<(explicit_comp ? ? ? $c1 $c2)>>].
+Grammar constr constr6 :=
+  expl_comp [constr5($c1) "o" constr6($c2) ] ->
+            [(explicit_comp ? ? ? $c1 $c2)].
 \end{coq_example*}
 
 Our first idea is to write the printing rule just by ``inverting'' the
@@ -1235,7 +1238,7 @@ production:
 
 \begin{coq_example} 
 Syntax constr level 6:
-  expl_comp [<<(explicit_comp ? ? ? $f $g)>>] -> [ $f:L "o" $g:L ].
+  expl_comp [(explicit_comp ? ? ? $f $g)] -> [ $f:L "o" $g:L ].
 \end{coq_example}
 
 This rule is not correct: \verb+?+ is an ordinary AST (indeed, it is
@@ -1245,7 +1248,7 @@ rule:
 
 \begin{coq_example*} 
 Syntax constr level 6:
-  expl_comp [<<(explicit_comp $_ $_ $_ $f $g)>>] -> [ $f:L "o" $g:L ].
+  expl_comp [(explicit_comp $_ $_ $_ $f $g)] -> [ $f:L "o" $g:L ].
 \end{coq_example*}
 
 Let's test the printing rule:
@@ -1274,10 +1277,10 @@ number of arguments by using list patterns. Let's see these rules:
 
 \begin{coq_example*}
 Syntax constr level 10:
-  app [(APPLIST $H ($LIST $T))] ->
+  app [<<(APPLIST $H ($LIST $T))>>] ->
       [ [<hov 0>  $H:E (APPTAIL ($LIST $T)):E ] ]
 
-| apptailcons [(APPTAIL $H ($LIST $T))] ->
+| apptailcons [<<(APPTAIL $H ($LIST $T))>>] ->
       [ [1 1] $H:L (APPTAIL ($LIST $T)):E ]
 | apptailnil [(APPTAIL)] -> [ ].
 \end{coq_example*}
@@ -1291,8 +1294,8 @@ least} five arguments:
 \begin{coq_example*}
 Syntax constr level 10:
   expl_comp 
-    [(APPLIST <<explicit_comp>> $_ $_ $_ $f $g ($LIST $l))]
-     -> [ [<hov 0> $f:L "o" $g:L (APPTAIL ($LIST $l)) ] ].
+    [<<(APPLIST explicit_comp $_ $_ $_ $f $g ($LIST $l))>>]
+     -> [ [<hov 0> $f:L "o" $g:L (APPTAIL ($LIST $l)):E ] ].
 \end{coq_example*}
 
 Now we can see that this rule works for any application of the
@@ -1316,10 +1319,10 @@ this is done automatically.  Primitive printing is done for
 identifiers, strings, paths, numbers. For example : 
 
 \begin{coq_example*}
-Grammar vernac vernac :=
+Grammar vernac vernac: ast :=
   mycd [ "MyCd" prim:string($dir) "." ] -> [(MYCD $dir)].
 Syntax vernac level 0:
-  mycd [(MYCD $dir)] -> [ "MyCd " $dir ].
+  mycd [<<(MYCD $dir)>>] -> [ "MyCd " $dir ].
 \end{coq_example*}
 
 There is no more need to encapsulate the \verb+$dir+ meta-variable
@@ -1337,7 +1340,7 @@ rule. Example:
 %    -> [ "Do " $num:"my_printer" [1 1] $tactic ].
 \begin{coq_example*}
 Syntax tactic level 0 :
-  do_pp [(DO ($NUM $num) $tactic)] 
+  do_pp [<<(DO ($NUM $num) $tactic)>>] 
     -> [ "Do " $num:"my_printer" [1 1] $tactic ].
 \end{coq_example*}
 
@@ -1369,7 +1372,7 @@ print, and the result is a stream of printing orders like :
 \end{itemize}
 
 There is also commands to make boxes (\verb+h+ or \verb+hv+, described
-in file {\tt src/lib/util/pp.mli}). Once the printer is written, it
+in file {\tt lib/pp.mli}). Once the printer is written, it
 must be registered by the command :
 \begin{verbatim}
      Esyntax.Ppprim.add ("name",my_printer);;
@@ -1412,10 +1415,14 @@ The grammar of printing rules is the following:
 {\sl box-type} & ::= & ~\verb+hov+~$|$~\verb+hv+~$|$~\verb+v+~$|$~\verb+h+\\
 {\sl paren-rel} & ::= & \verb+L+~$|$~\verb+E+ \\
 {\sl prim-printer} & ::= & {\sl string} \\
-{\sl pattern} & ::= & {\sl ast} \\ 
+{\sl pattern} & ::= & {\sl ast-quot} ~$|$~\verb+<<+ {\sl ast} \verb+>>+  \\ 
 \hline
 \end{tabular}
 \end{center}
+
+Non-terminal {\sl pattern} is the default quotation associated to the
+extended  universe. Patterns not belonging to the input syntax can be
+given directly as AST using \verb+<< >>+.
 
 As already stated, the order of rules in a given level is relevant
 (the last ones override the previous ones).
@@ -1527,7 +1534,7 @@ Definition B := True X True X True X True X True X True X True
 \end{coq_example*}
 \begin{coq_example*}
 Syntax constr level 6:
-  Pxor [<<(Xor $t1 $t2)>>] -> [ $t1:L " X " $t2:E ].
+  Pxor [(Xor $t1 $t2)] -> [ $t1:L " X " $t2:E ].
 \end{coq_example*}
 
 
@@ -1554,7 +1561,7 @@ line before the operator:
 
 \begin{coq_example*}
 Syntax constr level 6:
-  Pxor [<<(Xor $t1 $t2)>>] -> [ $t1:L [0 1] " X " $t2:E ].
+  Pxor [(Xor $t1 $t2)] -> [ $t1:L [0 1] " X " $t2:E ].
 \end{coq_example*}
 
 \begin{coq_example}
@@ -1566,7 +1573,7 @@ deal with indentation we use a printing box:
 
 \begin{coq_example*}
 Syntax constr level 6:
-  Pxor [<<(Xor $t1 $t2)>>] ->
+  Pxor [(Xor $t1 $t2)] ->
    [ [<hov 0> $t1:L [0 1] " X " $t2:E ] ].
 \end{coq_example*}
 
@@ -1581,7 +1588,7 @@ If we had chosen the mode \verb+v+ instead of \verb+hov+ :
 
 \begin{coq_example*}
 Syntax constr level 6:
-  Pxor [<<(Xor $t1 $t2)>>] -> [ [<v 0> $t1:L [0 1] " X " $t2:E ] ].
+  Pxor [(Xor $t1 $t2)] -> [ [<v 0> $t1:L [0 1] " X " $t2:E ] ].
 \end{coq_example*}
 
 We would have obtained a vertical presentation:
@@ -1597,7 +1604,7 @@ using an \verb+hv+ and a \verb+hov+ box type:
 
 \begin{coq_example*}
 Syntax constr level 6:
-  Pxor [<<(Xor $t1 $t2)>>] ->
+  Pxor [(Xor $t1 $t2)] ->
    [ [<hv 0> "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
        [0 0] "----------------------------------------"
        [0 0] "ZZZZZZZZZZZZZZZZ" ] ].
@@ -1607,7 +1614,7 @@ Print A.
 \end{coq_example}
 \begin{coq_example*}
 Syntax constr level 6:
-  Pxor [<<(Xor $t1 $t2)>>] ->
+  Pxor [(Xor $t1 $t2)] ->
    [ [<hov 0> "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
        [0 0]  "----------------------------------------"
        [0 0]  "ZZZZZZZZZZZZZZZZ" ] ].
@@ -1698,12 +1705,12 @@ printing is implemented.
 
 \begin{coq_example*}
 Syntax tactic level 8:
-  constr [(COMMAND $c)] -> [ (PPUNI$COMMAND $c):E ].
+    tactic_to_constr [<<(COMMAND $c)>>] -> [ $c:"constr":9 ]
 \end{coq_example*}
 
 As an AST of tactic may have subterms that are commands, these rules
-allow the printer of tactic to change the universe. The
-\verb+PPUNI$COMMAND+ is a special identifier used for this
+allow the printer of tactic to change the universe. The primitive printer
+{\tt command} is a special identifier used for this
 purpose. They are used in the code of the default printer that {\tt
 gentacpr} gives to {\tt genprint}.
 
