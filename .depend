@@ -2247,7 +2247,6 @@ toplevel/mltop.cmo:
 lib/pp.cmo: 
 contrib/xml/xml.cmo: 
 contrib/xml/xmlcommand.cmo: 
-contrib/interface/dad.cmo: 
 contrib/interface/line_parser.cmo: 
 tools/coq_makefile.cmo: 
 tools/coq-tex.cmo: 

@@ -795,12 +795,6 @@ library/nametab.cmx: library/nametab.ml
 #contrib/xml/xmlcommand.cmx: contrib/xml/xmlcommand.ml4
 #	$(OCAMLOPT_P4O) -c $<
 
-#contrib/interface/dad.cmo: contrib/interface/dad.ml4
-#	$(OCAMLC_P4O) -c $<
-
-#contrib/interface/dad.cmx: contrib/interface/dad.ml4
-#	$(OCAMLOPT_P4O) -c $<
-
 #contrib/interface/line_parser.cmo: contrib/interface/line_parser.ml4
 #	$(OCAMLC_P4O) -c $<
 
@@ -822,7 +816,6 @@ library/nametab.cmx: library/nametab.ml
 ML4FILES += lib/pp.ml4 			\
 	 contrib/xml/xml.ml4		\
 	 contrib/xml/xmlcommand.ml4	\
-	 contrib/interface/dad.ml4	\
 	 contrib/interface/line_parser.ml4	\
 	 tools/coq_makefile.ml4		\
 	 tools/coq-tex.ml4
