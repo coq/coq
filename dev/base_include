@@ -15,7 +15,7 @@ let src_dir =
     end 
   in
   let add_dir dl = 
-    Topdirs.dir_directory (List.fold_left Filename.concat "" dl) 
+    Topdirs.dir_directory (List.fold_left Filename.concat coqtop dl) 
   in
   List.iter add_dir
     [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
