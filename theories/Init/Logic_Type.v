@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* This module defines quantification on the world [Type] *)
 (* [Logic.v] was defining it on the world [Set] *)

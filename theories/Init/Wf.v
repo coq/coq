@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* This module proves the validity of
     - well-founded recursion (also called course of values)

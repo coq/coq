@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Natural numbers [nat] built from [O] and [S] are defined in Datatypes.v *)
 (* This module defines the following operations on natural numbers :
@@ -113,8 +113,8 @@ Hints Resolve mult_n_O : core v62.
 
 Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
 Proof.
-  Intros; Elim n; Simpl; Auto.
-  Intros p H; Case H; Elim plus_n_Sm; Apply (f_equal nat nat S).
+  Intros n m; NewInduction n; Simpl; Auto.
+  Rewrite <- IHn; Rewrite -> plus_n_Sm.
   Pattern 1 3 m; Elim m; Simpl; Auto.
 Qed.
 Hints Resolve mult_n_Sm : core v62.

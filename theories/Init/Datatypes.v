@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* [unit] is a singleton datatype with sole inhabitant [tt] *)
 
