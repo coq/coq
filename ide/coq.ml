@@ -75,7 +75,7 @@ let print_toplevel_error exc =
   let (loc,exc) =
     match exc with
       | Stdpp.Exc_located (loc, ie) -> (Some loc),ie
-      | Error_in_file (s, (fname, loc), ie) -> assert false
+      | Error_in_file (s, (fname, loc), ie) -> None, ie
       | _ -> dloc,exc
   in
   match exc with

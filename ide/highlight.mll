@@ -78,28 +78,42 @@ and comment = parse
   open Ideutils
 
   let highlight_slice (input_buffer:GText.buffer) (start:GText.iter) stop = 
-  let offset = start#offset in
-  let s = start#get_slice ~stop in
-  let convert_pos = byte_offset_to_char_offset s in
-  let lb = Lexing.from_string s in
-    try 
-      while true do
-	process_pending ();
-	let b,e,o=next_order lb in
-	let b,e = convert_pos b,convert_pos e in
-	let start = input_buffer#get_iter_at_char (offset + b) in
-	let stop = input_buffer#get_iter_at_char (offset + e) in
+    try begin
+      let offset = start#offset in
+      let s = start#get_slice ~stop in
+      let convert_pos = byte_offset_to_char_offset s in
+      let lb = Lexing.from_string s in
+      try 
+	while true do
+	  process_pending ();
+	  let b,e,o=next_order lb in
+	  let b,e = convert_pos b,convert_pos e in
+	  let start = input_buffer#get_iter_at_char (offset + b) in
+	  let stop = input_buffer#get_iter_at_char (offset + e) in
 	  input_buffer#apply_tag_by_name ~start ~stop o 
-      done
-    with End_of_file -> ()
-      | _ -> ()
-
+	done
+      with End_of_file -> ()
+    end
+    with _ -> ()
 
   let highlight_current_line input_buffer = 
-  let i = get_insert input_buffer in
-    highlight_slice input_buffer (i#set_line_offset 0) i
+    try 
+      let i = get_insert input_buffer in
+      highlight_slice input_buffer (i#set_line_offset 0) i
+    with _ -> ()
 
+  let highlight_around_current_line input_buffer = 
+    try 
+      let i = get_insert input_buffer in
+      highlight_slice input_buffer 
+	(i#backward_lines 3) 
+	(ignore (i#nocopy#forward_lines 3);i)
+
+    with _ -> ()
+      
   let highlight_all input_buffer = 
-  highlight_slice input_buffer input_buffer#start_iter input_buffer#end_iter
+  try 
+    highlight_slice input_buffer input_buffer#start_iter input_buffer#end_iter
+  with _ -> ()
 
 }

@@ -115,6 +115,9 @@ object('self)
     val proof_buffer : GText.buffer
     val proof_view : GText.view
     val mutable is_active : bool
+    val mutable read_only : bool
+    method read_only : bool
+    method set_read_only : bool -> unit
     method is_active : bool
     method activate : unit -> unit
     method active_keypress_handler : GdkEvent.Key.t -> bool
@@ -133,7 +136,7 @@ object('self)
     method insert_message : string -> unit
     method insert_this_phrase_on_success :
       bool -> bool -> bool -> string -> string -> bool
-    method process_next_phrase : bool -> bool
+    method process_next_phrase : bool -> bool -> bool
     method process_until_insert_or_error : unit
     method process_until_iter_or_error : GText.iter -> unit
     method process_until_end_or_error : unit
@@ -232,6 +235,22 @@ let pop () = try Stack.pop processed_stack with Stack.Empty -> raise (Size 0)
 let top () = try Stack.top processed_stack with Stack.Empty -> raise (Size 0)
 let is_empty () = Stack.is_empty processed_stack
 
+let coq_computing = ref false
+let id () = ()
+let do_if_not_computing f x = 
+  if not !coq_computing then 
+    begin
+      try
+	coq_computing := true;
+	f x;
+	coq_computing := false;
+      with e -> 
+	coq_computing := false; 
+	raise e
+    end
+  else 
+    id x
+  
 (* push a new Coq phrase *)
 
 let update_on_end_of_proof () =
@@ -339,6 +358,9 @@ object(self)
   val proof_buffer = proof_view_#buffer
   val message_buffer = message_view_#buffer 
   val mutable is_active = false
+  val mutable read_only = false
+  method set_read_only b = read_only<-b
+  method read_only = read_only
   method is_active = is_active
   method insert_message s =
     message_buffer#insert s;
@@ -351,7 +373,6 @@ object(self)
   method clear_message = message_buffer#set_text ""
   val mutable last_index = true
   val last_array = [|"";""|]
-
   method get_start_of_input =  input_buffer#get_iter_at_mark (`NAME "start_of_input") 
 
   method get_insert = get_insert input_buffer
@@ -450,24 +471,17 @@ object(self)
 	    )
 	    r;
 	  ignore (proof_view#scroll_to_mark my_mark) 
-
+	    
   method send_to_coq phrase show_output show_error localize =
-    try
-      !push_info "Coq is computing";
-      (out_some !status)#misc#draw None;
-      input_view#set_editable false;
+    try 
+      prerr_endline "Send_to_coq starting now";
       can_break ();
       let r = Some (Coq.interp phrase) in
       cant_break ();
-      input_view#set_editable true;
-      !pop_info ();
-      (out_some !status)#misc#draw None;
       let msg = read_stdout () in 
       self#insert_message (if show_output then msg else "");
       r
     with e ->
-      input_view#set_editable true;
-      !pop_info ();
       (if show_error then
 	 let (s,loc) = Coq.process_exn e in
 	 assert (Glib.Utf8.validate s);
@@ -489,6 +503,7 @@ object(self)
 	   ));
       None
   method find_phrase_starting_at (start:GText.iter) = 
+    prerr_endline "find_phrase_starting_at starting now";
     let trash_bytes = ref "" in
     let end_iter = start#copy in
     let lexbuf_function s count =
@@ -502,6 +517,7 @@ object(self)
 	  if c = 0 then raise (Stop !i);
 	  let c' = Glib.Utf8.from_unichar c in
 	  let n = String.length c' in
+	  if (n<=0) then exit (-2);
 	  if n > count - !i  then 
 	    begin
 	      let ri = count - !i in
@@ -516,24 +532,41 @@ object(self)
 	    raise (Stop !i)
 	done;
 	count
-      with Stop x -> x
+      with Stop x ->
+	x
     in
     try
-      Find_phrase.length := 0;
       trash_bytes := "";
-      let phrase = Find_phrase.next_phrase (Lexing.from_function lexbuf_function) in
+      let phrase = Find_phrase.get (Lexing.from_function lexbuf_function) 
+      in
       end_iter#nocopy#set_offset (start#offset + !Find_phrase.length);
       Some (start,end_iter)
     with _ -> None
 
-  method process_next_phrase display_goals = 
+  method process_next_phrase display_goals do_highlight = 
     self#clear_message;
+    prerr_endline "process_next_phrase starting now";
+    if do_highlight then begin
+      !push_info "Coq is computing";
+      input_view#set_editable false;
+    end;
     match (self#find_phrase_starting_at self#get_start_of_input)
-    with None -> false
+    with None -> 	  
+      if do_highlight then begin
+	input_view#set_editable true;
+	!pop_info ();
+      end; false
       | Some(start,stop) ->
+	  prerr_endline "process_next_phrase : to_process highlight";
 	  let b = input_buffer in
+	  if do_highlight then begin
+	    input_buffer#apply_tag_by_name ~start ~stop "to_process";
+	    process_pending ()
+	  end;
+	  prerr_endline "process_next_phrase : getting phrase";
 	  let phrase = start#get_slice ~stop in
-	  match self#send_to_coq phrase true true true with
+	  let r = 
+	    match self#send_to_coq phrase true true true with
 	    | Some ast ->
 		begin
 		  b#move_mark ~where:stop (`NAME "start_of_input");
@@ -549,9 +582,16 @@ object(self)
 		  if display_goals then
 		    (try self#show_goals with e -> 
 		       prerr_endline (Printexc.to_string e);());
-		  true;
+		  true
 		end
 	    | None -> false
+	  in
+	  if do_highlight then begin
+	    b#remove_tag_by_name ~start ~stop "to_process" ;
+	    input_view#set_editable true;
+	    !pop_info ();
+	  end;
+	  r
 
   method insert_this_phrase_on_success show_output show_msg localize coqphrase insertphrase = 
     match self#send_to_coq coqphrase show_output show_msg localize with
@@ -602,18 +642,25 @@ object(self)
       ~start
       ~stop
       "to_process";
-    while ((stop#compare self#get_start_of_input>=0) && self#process_next_phrase false)
+    input_view#set_editable false;
+    !flash_info "Coq is computing";
+    process_pending ();
+    while ((stop#compare self#get_start_of_input>=0) 
+	   && self#process_next_phrase false false)
     do () done;
     (try self#show_goals with _ -> ());
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
+    input_view#set_editable true;
+    !pop_info()
 
-  method process_until_end_or_error = self#process_until_iter_or_error input_buffer#end_iter
+  method process_until_end_or_error = 
+    self#process_until_iter_or_error input_buffer#end_iter
 
   method process_until_insert_or_error = 
     let stop = self#get_insert in
     self#process_until_iter_or_error stop
 
-  method reset_initial = 
+  method reset_initial =
     Stack.iter 
       (function inf -> 
 	 let start = input_buffer#get_iter_at_mark inf.start in
@@ -630,7 +677,7 @@ object(self)
 
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
-  method backtrack_to i = 
+  method backtrack_to i =
     (* re-synchronize Coq to the current state of the stack *)
     let rec synchro () =
       if is_empty () then
@@ -679,7 +726,8 @@ object(self)
 	self#clear_message
       end
       
-  method backtrack_to_insert = self#backtrack_to self#get_insert
+  method backtrack_to_insert = 
+    self#backtrack_to self#get_insert
 
   method undo_last_step = 
     try
@@ -729,34 +777,35 @@ object(self)
 		 self#insert_this_phrase_on_success true false false cp ip) l)
 
   method active_keypress_handler k = 
-    match GdkEvent.Key.state k with
-      | l when List.mem `MOD1 l ->
-	  let k = GdkEvent.Key.keyval k in
-	  if GdkKeysyms._Return=k
-	  then ignore(
-	    if (input_buffer#insert_interactive "\n") then
-	      begin
-		let i= self#get_insert#backward_word_start in
-		input_buffer#place_cursor i;
-		self#process_until_insert_or_error
-	      end);
-	  true
-      | l when List.mem `CONTROL l -> 
-	  let k = GdkEvent.Key.keyval k in
-	  if GdkKeysyms._c=k
-	  then break ();
-	  false
-      | l -> false
+    if !coq_computing then true else
+      match GdkEvent.Key.state k with
+	| l when List.mem `MOD1 l ->
+	    let k = GdkEvent.Key.keyval k in
+	    if GdkKeysyms._Return=k
+	    then ignore(
+	      if (input_buffer#insert_interactive "\n") then
+		begin
+		  let i= self#get_insert#backward_word_start in
+		  input_buffer#place_cursor i;
+		  self#process_until_insert_or_error
+		end);
+	    true
+	| l when List.mem `CONTROL l -> 
+	    let k = GdkEvent.Key.keyval k in
+	    if GdkKeysyms._c=k
+	    then break ();
+	    false
+	| l -> false
 
   method disconnected_keypress_handler k = 
-    match GdkEvent.Key.state k with
-      | l when List.mem `CONTROL l -> 
-	  let k = GdkEvent.Key.keyval k in
-	  if GdkKeysyms._c=k
-	  then break ();
-	  false
-      | l -> false
-	  
+      match GdkEvent.Key.state k with
+	| l when List.mem `CONTROL l -> 
+	    let k = GdkEvent.Key.keyval k in
+	    if GdkKeysyms._c=k
+	    then break ();
+	    false
+	| l -> false
+	    
 
   val mutable deact_id = None
   val mutable act_id = None
@@ -804,7 +853,7 @@ object(self)
 	   end
 	 with Found -> 
 	   begin
-	     ignore (self#process_next_phrase true)
+	     ignore (self#process_next_phrase true true)
 	   end;
 	 end;
 	 last_index <- not last_index;)
@@ -821,6 +870,11 @@ object(self)
 			   (message_view#scroll_to_mark
 			      ~within_margin:0.49
 			      `INSERT)));
+    ignore (input_buffer#connect#insert_text
+	      ~callback:(fun it s ->
+			   if String.length s > 1 then 
+			     input_buffer#place_cursor it));
+
     ignore (input_buffer#connect#modified_changed
 	      ~callback:(fun () ->
 			   if input_buffer#modified then 
@@ -833,11 +887,24 @@ object(self)
 			));
     ignore (input_buffer#connect#changed
 	      ~callback:(fun () -> 
+			   let r = input_view#visible_rect in
+			   let stop = 
+			     input_view#get_iter_at_location 
+			       ~x:(Gdk.Rectangle.x r + Gdk.Rectangle.width r)
+			       ~y:(Gdk.Rectangle.y r + Gdk.Rectangle.height r)
+			   in
 			   input_buffer#remove_tag_by_name 
 			   ~start:self#get_start_of_input
-			   ~stop:input_buffer#end_iter
+			   ~stop
 			   "error";
-			   Highlight.highlight_current_line input_buffer));
+			   input_buffer#remove_tag_by_name 
+			   ~start:self#get_start_of_input
+			   ~stop
+			   "processed";
+			   Highlight.highlight_around_current_line 
+			     input_buffer
+			)
+	   );
     ignore (input_buffer#add_selection_clipboard (cb()))
 end
 
@@ -858,7 +925,7 @@ let create_input_tab filename =
   let tv1 = GText.view ~buffer:b ~packing:(sw1#add) () in
   tv1#misc#set_name "ScriptWindow";
   let _ = tv1#set_editable true in
-  let _ = tv1#set_wrap_mode `CHAR in
+  let _ = tv1#set_wrap_mode `NONE in
   b#place_cursor ~where:(b#start_iter);
   ignore (tv1#event#connect#button_press ~callback:
 	    (fun ev -> GdkEvent.Button.button ev = 3));
@@ -933,14 +1000,15 @@ let main () =
 	    input_buffer#set_modified false
 	  with e -> !flash_info "Load failed"
   in
-  ignore (load_m#connect#activate load_f);
+  ignore (load_m#connect#activate (do_if_not_computing load_f));
 
   (* File/Save Menu *)
   let save_m = file_factory#add_item "_Save" ~key:GdkKeysyms._S in
   let save_f () = 
     let current = get_current_view () in
-    try (match current.filename with 
-	   | None -> 
+    try
+      (match current.filename with 
+	   | None ->
 	       begin match GToolbox.select_file ~title:"Save file" ()
 	       with
 		 | None -> ()
@@ -995,6 +1063,7 @@ let main () =
   (* File/Save All Menu *)
   let saveall_m = file_factory#add_item "Sa_ve All" in
   let saveall_f () = 
+
     Vector.iter 
       (fun {view = view ; filename = filename} -> 
 	 match filename with 
@@ -1113,22 +1182,29 @@ let main () =
 	       (get_current_view()).view#as_view 
 	       GtkText.View.Signals.copy_clipboard));
   ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
+	   (do_if_not_computing 
 	      (fun () -> GtkSignal.emit_unit
 		 (get_current_view()).view#as_view 
-		 GtkText.View.Signals.cut_clipboard));
+		 GtkText.View.Signals.cut_clipboard)));
   ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
-    (fun () -> GtkSignal.emit_unit
-       (get_current_view()).view#as_view GtkText.View.Signals.paste_clipboard));
+    (fun () -> 
+       try GtkSignal.emit_unit
+	 (get_current_view()).view#as_view 
+	 GtkText.View.Signals.paste_clipboard
+       with _ -> prerr_endline "EMIT PASTE FAILED"));
   ignore (edit_f#add_separator ());
   let read_only_i = edit_f#add_check_item "Read only" ~active:false
 		      ~callback:(fun b -> 
-				   (get_current_view()).view#set_editable 
-				   (not b)) 
+				   let v = get_current_view () in
+				   v.view#set_editable (not b);
+				   (out_some v.analyzed_view)#set_read_only b
+				) 
   in
   to_do_on_page_switch := 
   (fun i -> 
-     let v = (get_input_view i).view in
-     read_only_i#set_active (not v#editable)
+     prerr_endline ("Switching to tab "^(string_of_int i));
+     let v = out_some (get_input_view i).analyzed_view in
+     read_only_i#set_active v#read_only
   )::!to_do_on_page_switch;
   
   (* Navigation Menu *)
@@ -1142,9 +1218,11 @@ let main () =
     else
       activate_input (notebook ())#current_page
   in
+  let do_or_activate f = do_if_not_computing (do_or_activate f) in
   ignore (navigation_factory#add_item "Forward" 
 	    ~key:GdkKeysyms._Down 
-	    ~callback:(do_or_activate (fun a -> a#process_next_phrase true)));
+	    ~callback:(do_or_activate (fun a -> 
+					 a#process_next_phrase true true)));
   ignore (navigation_factory#add_item "Backward"
 	    ~key:GdkKeysyms._Up
 	    ~callback:(do_or_activate (fun a -> a#undo_last_step)));
@@ -1173,6 +1251,7 @@ let main () =
     let analyzed_view = out_some current.analyzed_view in
     if analyzed_view#is_active then ignore (f analyzed_view)
   in
+  let do_if_active f = do_if_not_computing (do_if_active f) in
   ignore (tactics_factory#add_item "Auto" 
 	    ~key:GdkKeysyms._a
 	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Auto.\n" "Auto.\n"))
@@ -1443,7 +1522,7 @@ let main () =
   w#show ();
   message_view := Some tv3;
   proof_view := Some tv2;
-  let view = create_input_tab "New File" in
+  let view = create_input_tab "*Unamed Buffer*" in
   let index = add_input_view {view = view;
 			      analyzed_view = None;
 			      filename = None}

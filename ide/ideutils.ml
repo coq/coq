@@ -1,6 +1,8 @@
 
 open Preferences
 
+exception Forbidden
+
 let lib_ide = Filename.concat Coq_config.coqlib "ide"
   
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
@@ -17,15 +19,15 @@ let byte_offset_to_char_offset s byte_offset =
   byte_offset - !count_delta
 
 
-let process_pending () = 
+let process_pending () =
   while Glib.Main.pending () do 
-    ignore (Glib.Main.iteration false) 
+    ignore (Glib.Main.iteration false)
   done
 
 let debug = ref true
 
 let prerr_endline s =
-  if !debug then  prerr_endline s else ()
+  if !debug then (prerr_endline s;flush stderr) else ()
 
 let print_id id =
   prerr_endline ("GOT sig id :"^(string_of_int (Obj.magic id)))
@@ -77,3 +79,4 @@ let browse_keyword text =
   try 
     let u = url_for_keyword text in browse (current.doc_url ^ u) 
   with _ -> ()
+
