@@ -214,3 +214,10 @@ VERNAC COMMAND EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END
+
+(* Subst *)
+
+TACTIC EXTEND Subst
+| [ "Subst" ident(x) ] -> [ subst x ]
+END
+
