@@ -197,6 +197,10 @@ let parse_args () =
 
     | "-xml" :: rem -> Options.xml_export := true; parse rem
 
+    | "-v7" :: rem -> Options.v7 := true; parse rem
+
+    | "-v8" :: rem -> Options.v7 := false; parse rem
+
     | s :: _ -> prerr_endline ("Don't know what to do with " ^ s); usage ()
 
   in

@@ -41,8 +41,16 @@ GEXTEND Gram
       | c = syntax; "." -> c
       | n = natural; ":"; v = goal_vernac; "." -> v n
       | "["; l = vernac_list_tail -> VernacList l
+
+      (* For translation from V7 to V8 *)
+      | IDENT "V7only"; v = vernac -> VernacV7only v
+      | IDENT "V8only"; v = vernac -> VernacV8only v
+
+(*
       (* This is for "Grammar vernac" rules *)
-      | id = METAIDENT -> VernacVar (Names.id_of_string id) ] ]
+      | id = METAIDENT -> VernacVar (Names.id_of_string id)
+*)
+    ] ]
   ;
   goal_vernac:
     [ [ tac = Tactic.tactic -> fun n -> VernacSolve (n,tac)

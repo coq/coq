@@ -24,6 +24,8 @@ let term_quality = ref false
 
 let xml_export = ref false
 
+let v7 = ref true
+
 (* Silent / Verbose *)
 let silent = ref false
 let make_silent flag = silent := flag; ()

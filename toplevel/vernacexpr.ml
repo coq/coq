@@ -260,6 +260,10 @@ type vernac_expr =
   (* Toplevel control *)
   | VernacToplevelControl of exn
 
+  (* For translation from V7 to V8 syntax *)
+  | VernacV8only of vernac_expr
+  | VernacV7only of vernac_expr
+
   (* For extension *)
   | VernacExtend of string * raw_generic_argument list
 

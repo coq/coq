@@ -112,6 +112,12 @@ let rec vernac interpfun input =
         msgnl (str"Finished transaction in " ++
                  System.fmt_time_difference tstart tend)
 
+    (* To be interpreted in v7 or translator input only *)
+    | VernacV7only v -> if !Options.v7 then interp v
+
+    (* To be interpreted in translator output only *)
+    | VernacV8only v -> if true (* !translate *) then interp v
+
     | v -> if not !just_parsing then interpfun v
 
   in 
