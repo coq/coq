@@ -251,7 +251,7 @@ let rec e_search_depth n db_list local_db lg =
 *) 
 type state = {depth : int; 
 	      tacres : goal list sigma * validation;
-              localhint :  (Pattern.constr_label * Auto.pri_auto_tactic) list}
+              localdb :  Auto.Hint_db.t}
 
 type state_queue = state list * state list
 
@@ -264,28 +264,29 @@ let decomp_states = function
   | (l1,a::l2)->(a,(l1,l2))
   | (l1,[])-> let l2 = List.rev l1 in (List.hd l2,([],List.tl l2))
 
-let add_state n tacr hintl sl = push_state {depth=n;tacres=tacr;localhint=hintl} sl
+let add_state n tacr db sl = push_state {depth=n;tacres=tacr;localdb=db} sl
 
 let e_search (n,p) db_list local_db gl =
-  let state0 = add_state n (tclIDTAC gl) [] empty_queue in
-  let rec process_state local_db stateq =
+  let state0 = add_state n (tclIDTAC gl) local_db empty_queue in
+  let rec process_state stateq =
     let (fstate,restq) = try decomp_states stateq 
     with Not_found -> error "BOUND 2" (* no more states *)
     in 
     let (glls,v) = fstate.tacres 
     and n = fstate.depth
-    and local_db'= Hint_db.add_list fstate.localhint local_db in 
+    and local_db = fstate.localdb 
+    in 
     let rec process_tacs tacl sq = 
       match tacl with 
 	  [] -> (* no more tactics for the goal *)
-	    process_state local_db' sq (* continue with next state *)
+	     process_state sq (* continue with next state *)
 	| (b,tac)::tacrest ->
             (try 
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
 	    let k = List.length (sig_it lgls) in
 	      if k = 0 then (lgls,v') (* success *)
-	      else let n' = if k < List.length (sig_it glls) or b then n else n-1 in
+	      else  let n' = if k < List.length (sig_it glls) or b then n else n-1 in
 		   let hintl = (* possible new hint list for assumptions *)
 		     if b then (* intro tactic *)
 		       let g' = first_goal lgls in 
@@ -297,16 +298,16 @@ let e_search (n,p) db_list local_db gl =
 		       let (lgls1,ptl1) = e_search_depth p db_list ldb lgls 
 		       in let v1 p = v' (ptl1 p) in (lgls1,v1)
 		     with e when Logic.catchable_exception e -> process_tacs tacrest sq
-		     else let sq' = add_state n' (lgls, v') hintl sq
+		     else let sq' = add_state n' (lgls, v') ldb sq
 		   in process_tacs tacrest sq'
 	     with e when Logic.catchable_exception e -> process_tacs tacrest sq)
     in let g = first_goal glls in 
     let tac1 = List.map (fun id -> (false, e_give_exact_constr (mkVar id))) (pf_ids_of_hyps g)
     and tac2 = (true,Tactics.intro)
     and tac3 = List.map (fun tac -> (false,tac)) 
-		 (e_possible_resolve db_list local_db' (pf_concl g))
+		 (e_possible_resolve db_list local_db (pf_concl g))
     in process_tacs (tac1@tac2::tac3) restq
- in process_state local_db state0
+ in process_state state0
 
 
 let e_search_auto (n,p) db_list gl = 
