@@ -37,7 +37,7 @@ val add_leaf : identifier -> obj -> section_path
 val add_absolutely_named_leaf : section_path -> obj -> unit
 val add_anonymous_leaf : obj -> unit
 val add_frozen_state : unit -> unit
-
+val mark_end_of_command : unit -> unit
 
 (*s The function [contents_after] returns the current library segment, 
     starting from a given section path. If not given, the entire segment
@@ -67,7 +67,7 @@ val export_module : dir_path -> library_segment
 
 val reset_to : section_path -> unit
 val reset_name : identifier -> unit
-
+val back : int -> unit
 
 (*s We can get and set the state of the operations (used in [States]). *)
 

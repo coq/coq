@@ -453,7 +453,9 @@ GEXTEND Gram
       | IDENT "Reset"; IDENT "Initial" -> <:ast< (ResetInitial) >>
       | IDENT "Reset"; IDENT "Section"; id = identarg ->
           <:ast< (ResetSection $id) >>
-      
+      | IDENT "Back" -> <:ast<(Back)>>
+      | IDENT "Back"; n = numarg -> <:ast<(Back $n)>>
+
 (* Tactic Debugger *)
       | IDENT "Debug"; IDENT "On" -> <:ast< (DebugOn) >>
       |	IDENT "Debug"; IDENT "Off" -> <:ast< (DebugOff) >>

@@ -140,10 +140,13 @@ and read_vernac_file verbosely s =
       | _ -> raise_with_file fname e
 
 (* raw_do_vernac : char Stream.t -> unit
- * parses and executes one command of the vernacular char stream *)
+ * parses and executes one command of the vernacular char stream.
+ * Marks the end of the command in the lib_stk to make vernac undoing
+ * easier. *)
 
 let raw_do_vernac po =
-  vernac (States.with_heavy_rollback Vernacinterp.interp) (po,None)
+  vernac (States.with_heavy_rollback Vernacinterp.interp) (po,None);
+  Lib.mark_end_of_command()
 
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =

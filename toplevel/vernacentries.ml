@@ -303,6 +303,15 @@ let _ =
        | [] -> (fun () -> abort_refine Lib.reset_initial ())
        | _  -> bad_vernac_args "ResetInitial")
 
+let _ =
+  add "Back"
+    (function
+      | [] -> (fun () -> Lib.back 1)
+      | [VARG_NUMBER n] ->
+          if n < 1 then error "argument of Back must be positive"
+          else (fun () -> Lib.back n)
+      | _ -> bad_vernac_args "Back")
+
 (***
 let _ =
   add "ResetSection"

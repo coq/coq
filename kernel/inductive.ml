@@ -348,62 +348,82 @@ exception FixGuardError of guard_error
 
    Below are functions to handle such environment.
  *)
+type size = Large | Strict
 type guard_env =
-  { env    : env;
-    lst    : (int * recarg list array) list;
-    recarg : int;
-    inds   : inductive array;
-    recvec : recarg list array array;
-    lcx    : recarg list array
+  { env     : env;
+    (* dB of last fixpoint *)
+    rel_min : int;
+    (* inductive of recarg of each fixpoint *)
+    inds    : inductive array;
+    (* the recarg information of inductive family *)
+    recvec  : recarg list array array;
+    (* dB of variables denoting subterms *)
+    lst     : (int * (size * recarg list array)) list;
   }
 
-let make_renv env minds (_,tyi as ind) =
+let make_renv env minds recarg (_,tyi as ind) =
   let mind_recvec = lookup_recargs env ind in 
   let lcx = mind_recvec.(tyi)  in
   { env = env;
-    lst = [];
-    recarg = 1;
+    rel_min = recarg+2;
     inds = minds;
     recvec = mind_recvec;
-    lcx = mind_recvec.(tyi) }
+    lst = [(1,(Large,mind_recvec.(tyi)))] }
 
 let map_lift_fst_n m = List.map (function (n,t)->(n+m,t))
 
 let push_var_renv renv (x,ty) =
   { renv with 
     env = push_rel (x,None,ty) renv.env;
-    lst = map_lift_fst_n 1 renv.lst;
-    recarg = renv.recarg+1 }
+    rel_min = renv.rel_min+1;
+    lst = map_lift_fst_n 1 renv.lst }
+
+let push_ctxt_renv renv ctxt =
+  let n = rel_context_length ctxt in
+  { renv with 
+    env = push_rel_context ctxt renv.env;
+    rel_min = renv.rel_min+n;
+    lst = map_lift_fst_n n renv.lst }
 
 let push_fix_renv renv (_,v,_ as recdef) =
   let n = Array.length v in
   { renv with
     env = push_rec_types recdef renv.env;
-    lst = map_lift_fst_n n renv.lst;
-    recarg = renv.recarg+n }
+    rel_min = renv.rel_min+n;
+    lst = map_lift_fst_n n renv.lst }
 
 (* Add a variable and mark it as strictly smaller with information [spec]. *)
 let add_recarg renv (x,a,spec) =
   let renv' = push_var_renv renv (x,a) in
-  { renv' with lst = (1,spec)::renv'.lst }
+  { renv' with lst = (1,(Strict,spec))::renv'.lst }
 
-(* c is supposed to be in beta-delta-iota head normal form *)
+
+let rec findrec p = function 
+  | (a,ta)::l -> 
+      if a < p then findrec p l else if a = p then ta else raise Not_found
+  | _ -> raise Not_found
 
 (* tells if term [c] is the variable corresponding to the recursive
    argument of the fixpoint. *)
-let is_inst_var renv c = 
+(* c is supposed to be in beta-delta-iota head normal form *)
+let subterm_var_large renv c = 
   match kind_of_term (fst (decompose_app c)) with 
-    | Rel n -> n=renv.recarg
-    | _ -> false
+    | Rel n ->
+        (try
+          match findrec n renv.lst with
+            (Large,s) -> Some s
+          | _ -> None
+        with Not_found -> None)
+    | _ -> None
 
 (* fetch the information associated to a variable *)
-let find_sorted_assoc p renv = 
-  let rec findrec = function 
-    | (a,ta)::l -> 
-	if a < p then findrec l else if a = p then ta else raise Not_found
-    | _ -> raise Not_found
-  in 
-  findrec renv.lst
+let subterm_var_spec p renv = 
+  try 
+    match findrec p renv.lst with
+      (Strict,s) -> Some s
+    | _ -> None
+  with Not_found -> None
+
 
 
 (******************************)
@@ -473,16 +493,14 @@ let inductive_of_fix env recarg body =
    the same size as the number of constructors of the type of c.
 
    Returns:
-   - [Some lc] if [c] is actually a strict subterm of the rec. arg. 
-   - [None or exception Not_found] otherwise 
-
-   TODO: understand the difference between None and Not_found results
+   - [Some lc] if [c] is a strict subterm of the rec. arg. (or a Meta) 
+   - [None] otherwise
 *)
 let subterm_specif renv c ind = 
   let rec crec renv c ind = 
     let f,l = decompose_app (whd_betadeltaiota renv.env c) in
     match kind_of_term f with 
-      | Rel k -> Some (find_sorted_assoc k renv)
+      | Rel k -> subterm_var_spec k renv
 
       | Case (ci,_,c,lbr) ->
           if Array.length lbr = 0
@@ -490,62 +508,63 @@ let subterm_specif renv c ind =
           then Some [||]
           else
             let def = Array.create (Array.length lbr) [] in
-            let lcv = 
-	      try 
-		if is_inst_var renv c then renv.lcx 
-		else
-                  match crec renv c ci.ci_ind with
-                      Some lr -> lr
-                    | None -> def
-              with Not_found -> def in 
+            let lcv =
+              match subterm_var_large renv c with
+                Some s -> s
+              | _ ->
+                  (match crec renv c ci.ci_ind with
+                    Some lr -> lr
+                  | None -> def) in 
             let lbr' = case_branches_specif renv lcv lbr in
             let stl  =
               Array.map (fun (renv',br') -> crec renv' br' ind) lbr' in
             let stl0 = stl.(0) in
 	    if array_for_all (fun st -> st=stl0) stl then stl0 
+            (* branches do not return objects with same spec *)
             else None
 	       
       | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-          let renv' = push_fix_renv renv recdef in
-          let nbfix   = Array.length typarray in
-          let decrArg = recindxs.(i) in 
-          let theBody = bodies.(i)   in
-          let nbOfAbst = decrArg+1 in
-          let sign,strippedBody = decompose_lam_n_assum nbOfAbst theBody in
-	  let env'' = push_rel_context sign renv'.env in
 (* when proving that the fixpoint f(x)=e is less than n, it is enough
    to prove that e is less than n assuming f is less than n
    furthermore when f is applied to a term which is strictly less than
    n, one may assume that x itself is strictly less than n
 *)
-          let lst'' = 
-            (* DANGER: c_0 is not necessarily in inductive type 
-               corresponding to lcx, not even of
-               the same family because of imbrication *)
-            let recargs = lookup_subterms renv'.env ind in
-            let lst' =
-              map_lift_fst_n nbOfAbst ((nbfix-i,recargs)::renv'.lst) in
-            if List.length l < nbOfAbst then lst' 
-            else
-              let decrarg_ind = inductive_of_fix renv'.env decrArg theBody in
-              let theDecrArg  = List.nth l decrArg in
-	      try 
-	        match crec renv theDecrArg decrarg_ind with 
-		    (Some recArgsDecrArg) -> (1,recArgsDecrArg) :: lst' 
-                  | None -> lst' 
-	      with Not_found -> lst' in
+          let nbfix = Array.length typarray in
+          let recargs = lookup_subterms renv.env ind in
+          (* pushing the fixpoints *)
+          let renv' = push_fix_renv renv recdef in
+          let renv' =
+            { renv' with lst=(nbfix-i,(Strict,recargs))::renv'.lst } in
+          let decrArg = recindxs.(i) in 
+          let theBody = bodies.(i)   in
+          let nbOfAbst = decrArg+1 in
+          let sign,strippedBody = decompose_lam_n_assum nbOfAbst theBody in
+          (* pushing the fix parameters *)
+          let renv'' = push_ctxt_renv renv' sign in
           let renv'' =
-            { renv' with
-              env=env''; lst=lst''; recarg=renv'.recarg+nbOfAbst } in
+            { renv'' with
+              lst =
+              if List.length l < nbOfAbst then renv''.lst
+              else
+                let decrarg_ind =
+                  inductive_of_fix renv''.env decrArg theBody in
+                let theDecrArg  = List.nth l decrArg in
+	        try 
+	          match crec renv theDecrArg decrarg_ind with 
+		    (Some recArgsDecrArg) ->
+                      (1,(Strict,recArgsDecrArg)) :: renv''.lst 
+                  | None -> renv''.lst
+	        with Not_found -> renv''.lst } in
 	  crec renv'' strippedBody ind
 	    
       | Lambda (x,a,b) -> 
           assert (l=[]);
           crec (push_var_renv renv (x,a)) b ind
 
-      (*** Experimental change *************************)
-      | Meta _ -> None
-      | _ -> raise Not_found
+      (* A term with metas is considered OK *)
+      | Meta _ -> Some (lookup_subterms renv.env ind)
+      (* Other terms are not subterms *)
+      | _ -> None
   in 
   crec renv c ind
 
@@ -553,40 +572,37 @@ let subterm_specif renv c ind =
    object is a recursive subterm then compute the information
    associated to its own subterms. *)
 let spec_subterm_large renv c ind = 
-  if is_inst_var renv c then renv.lcx 
-  else (* strict *)
-    let nb = Array.length (lookup_subterms renv.env ind) in
-    try match subterm_specif renv c ind 
-        with Some lr -> lr | None -> Array.create nb []
-    with Not_found -> Array.create nb []
+  match subterm_var_large renv c with
+    Some s -> s
+  | _ ->
+      (let nb = Array.length (lookup_subterms renv.env ind) in
+      match subterm_specif renv c ind 
+      with Some lr -> lr | None -> Array.create nb [])
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm renv c ind = 
-  try 
-    let _ = subterm_specif renv c ind in ()
-  with Not_found -> 
-    raise (FixGuardError RecursionOnIllegalTerm)
+  match subterm_specif renv c ind with
+    Some _ -> ()
+  |  _ -> raise (FixGuardError RecursionOnIllegalTerm)
 
 (***********************************************************************)
 
-(* Check if [def] is a guarded fixpoint body with decreasing arg. [k]
+(* Check if [def] is a guarded fixpoint body with decreasing arg.
    given [recpos], the decreasing arguments of each mutually defined
-   fixpoint (k is a member of recpos). *)
-let check_one_fix renv recpos k ind def =
+   fixpoint. *)
+let check_one_fix renv recpos def =
   let nfi = Array.length recpos in 
   let rec check_rec_call renv t = 
-    let fix_min = renv.recarg+k+1 in     (* index of last fixpoint *)
-    let fix_max = renv.recarg+k+nfi in   (* index of first fixpoint *)
     (* if [t] does not make recursive calls, it is guarded: *)
-    noccur_with_meta fix_min nfi t or 
+    noccur_with_meta renv.rel_min nfi t or 
     (* Rq: why not try and expand some definitions ? *)
     let f,l = decompose_app (whd_betaiotazeta renv.env t) in
     match kind_of_term f with
       | Rel p -> 
           (* Test if it is a recursive call: *) 
-	  if fix_min <= p & p <= fix_max then
+	  if renv.rel_min <= p & p < renv.rel_min+nfi then
             (* the position of the invoked fixpoint: *) 
-	    let glob = fix_max-p in
+	    let glob = renv.rel_min+nfi-1-p in
             (* the decreasing arg of the rec call: *)
 	    let np = recpos.(glob) in
 	    if List.length l > np then 
@@ -683,7 +699,8 @@ let check_one_fix renv recpos k ind def =
 
   and check_nested_fix_body renv decr recArgsDecrArg body =
     if decr = 0 then
-      check_rec_call { renv with lst=(1,recArgsDecrArg)::renv.lst } body
+      check_rec_call
+        { renv with lst=(1,(Strict,recArgsDecrArg))::renv.lst } body
     else
       match kind_of_term body with
 	| Lambda (x,a,b) ->
@@ -737,10 +754,9 @@ let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
   let (minds, rdef) = inductive_of_mutfix env fix in
   for i = 0 to Array.length bodies - 1 do
     let (fenv,body) = rdef.(i) in
-    let ind = minds.(i) in
-    let renv = make_renv fenv minds ind in
+    let renv = make_renv fenv minds nvect.(i) minds.(i) in
     try
-      let _ = check_one_fix renv nvect nvect.(i) ind body in ()
+      let _ = check_one_fix renv nvect body in ()
     with FixGuardError err ->
       let fixenv = push_rec_types recdef env in
       error_ill_formed_rec_body fixenv err names i bodies

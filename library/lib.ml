@@ -36,7 +36,7 @@ and library_segment = library_entry list
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *) 
 
-let lib_stk = ref ([] : (section_path * node) list)
+let lib_stk = ref ([] : library_segment)
 
 let module_name = ref None
 let path_prefix = ref (default_module : dir_path)
@@ -231,6 +231,30 @@ let reset_name id =
       error (string_of_id id ^ ": no such entry")
   in
   reset_to sp
+
+let point_obj =
+  let (f,_) =
+    declare_object
+      ("DOT",
+       {cache_function = (fun _ -> ());
+        load_function = (fun _ -> ());
+        open_function = (fun _ -> ());
+        export_function = (fun _ -> None) }) in
+  f()
+
+let mark_end_of_command () =
+  match !lib_stk with
+      (_,Leaf o)::_ when object_tag o = "DOT" -> ()
+    | _ -> add_anonymous_leaf point_obj
+
+let rec back_stk n stk =
+  match stk with
+      (sp,Leaf o)::tail when object_tag o = "DOT" ->
+        if n=0 then sp else back_stk (n-1) tail
+    | _::tail -> back_stk n tail
+    | [] -> error "Reached begin of command history"
+
+let back n = reset_to (back_stk n !lib_stk)
 
 (* [dir] is a section dir if [module] < [dir] <= [path_prefix] *)
 let is_section_p sp =

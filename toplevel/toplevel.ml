@@ -295,6 +295,9 @@ let do_vernac () =
 
 let rec coq_switch b =
   Sys.catch_break true;
+  (* ensure we have a command separator object (DOT) so that the first
+     command can be reseted. *)
+  Lib.mark_end_of_command();
   try
     if b then begin
       reset_input_buffer stdin top_buffer;
