@@ -19,8 +19,6 @@ type extraction_result =
 
 val extract_constr : constr -> extraction_result
 
-val extract_reference : global_reference -> extraction_result
-
 (*s ML declaration corresponding to a Coq reference. *)
 
 val extract_declaration : global_reference -> ml_decl
