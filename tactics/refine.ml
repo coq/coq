@@ -334,8 +334,9 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 (* Et finalement la tactique refine elle-même : *)
 
 let refine oc gl =
+  let sigma = project gl in
   let env = pf_env gl in
-  let (gmm,c) = Clenv.exist_to_meta oc in
+  let (gmm,c) = Clenv.exist_to_meta sigma oc in
   let th = compute_metamap env gmm c in
   tcc_aux th gl
 

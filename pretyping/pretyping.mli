@@ -22,7 +22,7 @@ type meta_map = (int * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list
 
 (* constr with holes *)
-type open_constr = (existential * types) list * constr
+type open_constr = evar_map * constr
 
 
 (* Generic call to the interpreter from rawconstr to constr, failing

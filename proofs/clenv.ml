@@ -53,17 +53,21 @@ let meta_ctr=ref 0;;
 let new_meta ()=incr meta_ctr;!meta_ctr;;
 
 (* replaces a mapping of existentials into a mapping of metas. *)
-let exist_to_meta (emap, c) =
+let exist_to_meta sigma (emap, c) =
   let subst = ref [] in
   let mmap = ref [] in
-  let add_binding (e,ty) =
-    let n = new_meta() in
-    subst := (e, mkMeta n) :: !subst;
-    mmap := (n, ty) :: !mmap in
-  List.iter add_binding emap;
+  let add_binding (e,ev_decl) =
+    if not (Evd.in_dom sigma e) then begin
+      let n = new_meta() in
+      subst := (e, mkMeta n) :: !subst;
+      mmap := (n, ev_decl.evar_concl) :: !mmap
+    end in
+  List.iter add_binding (Evd.to_list emap);
   let rec replace c =
     match kind_of_term c with
-        Evar k -> List.assoc k !subst
+        Evar (k,_) ->
+          (try List.assoc k !subst
+          with Not_found -> c)
       | _ -> map_constr replace c in
   (!mmap, replace c)
 

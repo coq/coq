@@ -472,7 +472,6 @@ let unsafe_infer_type valcon isevars env lvar lmeta constr =
 (* assumes the defined existentials have been replaced in c (should be
    done in unsafe_infer and unsafe_infer_type) *)
 let check_evars fail_evar initial_sigma sigma c =
-  let metamap = ref [] in
   let rec proc_rec c =
     match kind_of_term c with
       | Evar (ev,args as k) ->
@@ -480,14 +479,10 @@ let check_evars fail_evar initial_sigma sigma c =
 	  if not (Evd.in_dom initial_sigma ev) then
 	    (if fail_evar then
 	      errorlabstrm "whd_ise"
-		(str"There is an unknown subterm I cannot solve")
-	    else (* try to avoid duplication *)
-              (if not (List.exists (fun (k',_) -> k=k') !metamap) then
-	        metamap :=
-                (k, nf_evar sigma (existential_type sigma k)) :: !metamap))
+		(str"There is an unknown subterm I cannot solve"))
       | _ -> iter_constr proc_rec c      
   in
-  (proc_rec c; !metamap)
+  proc_rec c
 
 (* TODO: comment faire remonter l'information si le typage a resolu des
        variables du sigma original. il faudrait que la fonction de typage
@@ -495,15 +490,14 @@ let check_evars fail_evar initial_sigma sigma c =
 *)
 
 (* constr with holes *)
-type open_constr = (existential * types) list * constr
+type open_constr = evar_map * constr
 
 let ise_resolve_casted_gen fail_evar sigma env lvar lmeta typ c =
   let isevars = create_evar_defs sigma in
   let j = unsafe_infer (mk_tycon typ) isevars env lvar lmeta c in
-  let metamap =
-    check_evars fail_evar sigma (evars_of isevars)
-      (mkCast(j.uj_val,j.uj_type)) in
-  (metamap, j)
+  let new_sigma = evars_of isevars in
+  check_evars fail_evar sigma new_sigma (mkCast(j.uj_val,j.uj_type));
+  (new_sigma, j)
 
 let ise_resolve_casted sigma env typ c =
   ise_resolve_casted_gen true sigma env [] [] typ c
@@ -515,17 +509,16 @@ let ise_infer_gen fail_evar sigma env lvar lmeta exptyp c =
   let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
   let isevars = create_evar_defs sigma in
   let j = unsafe_infer tycon isevars env lvar lmeta c in
-  let metamap =
-    check_evars fail_evar sigma (evars_of isevars)
-      (mkCast(j.uj_val,j.uj_type)) in
-  (metamap, j)
+  let new_sigma = evars_of isevars in
+  check_evars fail_evar sigma new_sigma (mkCast(j.uj_val,j.uj_type));
+  (new_sigma, j)
 
 let ise_infer_type_gen fail_evar sigma env lvar lmeta c =
   let isevars = create_evar_defs sigma in
   let tj = unsafe_infer_type empty_valcon isevars env lvar lmeta c in
-  let metamap =
-    check_evars fail_evar sigma (evars_of isevars) tj.utj_val in
-  (metamap, tj)
+  let new_sigma = evars_of isevars in
+  check_evars fail_evar sigma new_sigma tj.utj_val;
+  (new_sigma, tj)
 
 type meta_map = (int * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list

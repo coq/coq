@@ -198,19 +198,23 @@ let (automatic : tactic) =
  * Vernac: Correctness <string> <program> [; <tactic>].
  *)
 
-let reduce_open_constr (em,c) =
+let reduce_open_constr (em0,c) =
   let existential_map_of_constr = 
     let rec collect em c = match kind_of_term c with
       | Cast (c',t) -> 
 	  (match kind_of_term c' with
-	     | Evar ev -> (ev,t) :: em
+	     | Evar (ev,_) ->
+                 if not (Evd.in_dom em ev) then
+                   Evd.add em ev (Evd.map em0 ev)
+                 else
+                   em
 	     | _ -> fold_constr collect em c)
       | Evar _ -> 
 	  assert false (* all existentials should be casted *)
       | _ -> 
 	  fold_constr collect em c
     in
-    collect []
+    collect Evd.empty
   in
   let c = Pred.red_cci c in
   let em = existential_map_of_constr c in
