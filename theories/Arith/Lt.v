@@ -8,169 +8,168 @@
 
 (*i $Id$ i*)
 
-Require Le.
-V7only [Import nat_scope.].
+Require Import Le.
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,p:nat.
+Implicit Types m n p : nat.
 
 (** Irreflexivity *)
 
-Theorem lt_n_n : (n:nat)~(lt n n).
+Theorem lt_irrefl : forall n, ~ n < n.
 Proof le_Sn_n.
-Hints Resolve lt_n_n : arith v62.
+Hint Resolve lt_irrefl: arith v62.
 
 (** Relationship between [le] and [lt] *) 
 
-Theorem lt_le_S : (n,p:nat)(lt n p)->(le (S n) p).
+Theorem lt_le_S : forall n m, n < m -> S n <= m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Immediate lt_le_S : arith v62.
+Hint Immediate lt_le_S: arith v62.
 
-Theorem lt_n_Sm_le : (n,m:nat)(lt n (S m))->(le n m).
+Theorem lt_n_Sm_le : forall n m, n < S m -> n <= m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Immediate lt_n_Sm_le : arith v62.
+Hint Immediate lt_n_Sm_le: arith v62.
 
-Theorem le_lt_n_Sm : (n,m:nat)(le n m)->(lt n (S m)).
+Theorem le_lt_n_Sm : forall n m, n <= m -> n < S m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Immediate le_lt_n_Sm : arith v62.
+Hint Immediate le_lt_n_Sm: arith v62.
 
-Theorem le_not_lt : (n,m:nat)(le n m) -> ~(lt m n).
+Theorem le_not_lt : forall n m, n <= m -> ~ m < n.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Theorem lt_not_le : (n,m:nat)(lt n m) -> ~(le m n).
+Theorem lt_not_le : forall n m, n < m -> ~ m <= n.
 Proof.
-Red; Intros n m Lt Le; Exact (le_not_lt m n Le Lt).
+red in |- *; intros n m Lt Le; exact (le_not_lt m n Le Lt).
 Qed.
-Hints Immediate le_not_lt lt_not_le : arith v62.
+Hint Immediate le_not_lt lt_not_le: arith v62.
 
 (** Asymmetry *)
 
-Theorem lt_not_sym : (n,m:nat)(lt n m) -> ~(lt m n).
+Theorem lt_asym : forall n m, n < m -> ~ m < n.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
 (** Order and successor *)
 
-Theorem lt_n_Sn : (n:nat)(lt n (S n)).
+Theorem lt_n_Sn : forall n, n < S n.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Resolve lt_n_Sn : arith v62.
+Hint Resolve lt_n_Sn: arith v62.
 
-Theorem lt_S : (n,m:nat)(lt n m)->(lt n (S m)).
+Theorem lt_S : forall n m, n < m -> n < S m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Resolve lt_S : arith v62.
+Hint Resolve lt_S: arith v62.
 
-Theorem lt_n_S : (n,m:nat)(lt n m)->(lt (S n) (S m)).
+Theorem lt_n_S : forall n m, n < m -> S n < S m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Resolve lt_n_S : arith v62.
+Hint Resolve lt_n_S: arith v62.
 
-Theorem lt_S_n : (n,m:nat)(lt (S n) (S m))->(lt n m).
+Theorem lt_S_n : forall n m, S n < S m -> n < m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Immediate lt_S_n : arith v62.
+Hint Immediate lt_S_n: arith v62.
 
-Theorem lt_O_Sn : (n:nat)(lt O (S n)).
+Theorem lt_O_Sn : forall n, 0 < S n.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Resolve lt_O_Sn : arith v62.
+Hint Resolve lt_O_Sn: arith v62.
 
-Theorem lt_n_O : (n:nat)~(lt n O).
+Theorem lt_n_O : forall n, ~ n < 0.
 Proof le_Sn_O.
-Hints Resolve lt_n_O : arith v62.
+Hint Resolve lt_n_O: arith v62.
 
 (** Predecessor *)
 
-Lemma S_pred : (n,m:nat)(lt m n)->n=(S (pred n)).
+Lemma S_pred : forall n m, m < n -> n = S (pred n).
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Lemma lt_pred : (n,p:nat)(lt (S n) p)->(lt n (pred p)).
+Lemma lt_pred : forall n m, S n < m -> n < pred m.
 Proof.
-NewInduction 1; Simpl; Auto with arith.
+induction 1; simpl in |- *; auto with arith.
 Qed.
-Hints Immediate lt_pred : arith v62.
+Hint Immediate lt_pred: arith v62.
 
-Lemma lt_pred_n_n : (n:nat)(lt O n)->(lt (pred n) n).
-NewDestruct 1; Simpl; Auto with arith.
+Lemma lt_pred_n_n : forall n, 0 < n -> pred n < n.
+destruct 1; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve lt_pred_n_n : arith v62.
+Hint Resolve lt_pred_n_n: arith v62.
 
 (** Transitivity properties *)
 
-Theorem lt_trans : (n,m,p:nat)(lt n m)->(lt m p)->(lt n p).
+Theorem lt_trans : forall n m p, n < m -> m < p -> n < p.
 Proof.
-NewInduction 2; Auto with arith.
+induction 2; auto with arith.
 Qed.
 
-Theorem lt_le_trans : (n,m,p:nat)(lt n m)->(le m p)->(lt n p).
+Theorem lt_le_trans : forall n m p, n < m -> m <= p -> n < p.
 Proof.
-NewInduction 2; Auto with arith.
+induction 2; auto with arith.
 Qed.
 
-Theorem le_lt_trans : (n,m,p:nat)(le n m)->(lt m p)->(lt n p).
+Theorem le_lt_trans : forall n m p, n <= m -> m < p -> n < p.
 Proof.
-NewInduction 2; Auto with arith.
+induction 2; auto with arith.
 Qed.
 
-Hints Resolve lt_trans lt_le_trans le_lt_trans : arith v62.
+Hint Resolve lt_trans lt_le_trans le_lt_trans: arith v62.
 
 (** Large = strict or equal *)
 
-Theorem le_lt_or_eq : (n,m:nat)(le n m)->((lt n m) \/ n=m).
+Theorem le_lt_or_eq : forall n m, n <= m -> n < m \/ n = m.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Theorem lt_le_weak : (n,m:nat)(lt n m)->(le n m).
+Theorem lt_le_weak : forall n m, n < m -> n <= m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Immediate lt_le_weak : arith v62.
+Hint Immediate lt_le_weak: arith v62.
 
 (** Dichotomy *)
 
-Theorem le_or_lt : (n,m:nat)((le n m)\/(lt m n)).
+Theorem le_or_lt : forall n m, n <= m \/ m < n.
 Proof.
-Intros n m; Pattern n m; Apply nat_double_ind; Auto with arith.
-NewInduction 1; Auto with arith.
+intros n m; pattern n, m in |- *; apply nat_double_ind; auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Theorem nat_total_order: (m,n: nat) ~ m = n -> (lt m n) \/ (lt n m).
+Theorem nat_total_order : forall n m, n <> m -> n < m \/ m < n.
 Proof.
-Intros m n diff.
-Elim (le_or_lt n m); [Intro H'0 | Auto with arith].
-Elim (le_lt_or_eq n m); Auto with arith.
-Intro H'; Elim diff; Auto with arith.
+intros m n diff.
+elim (le_or_lt n m); [ intro H'0 | auto with arith ].
+elim (le_lt_or_eq n m); auto with arith.
+intro H'; elim diff; auto with arith.
 Qed.
 
 (** Comparison to 0 *)
 
-Theorem neq_O_lt : (n:nat)(~O=n)->(lt O n).
+Theorem neq_O_lt : forall n, 0 <> n -> 0 < n.
 Proof.
-NewInduction n; Auto with arith.
-Intros; Absurd O=O; Trivial with arith.
+induction n; auto with arith.
+intros; absurd (0 = 0); trivial with arith.
 Qed.
-Hints Immediate neq_O_lt : arith v62.
+Hint Immediate neq_O_lt: arith v62.
 
-Theorem lt_O_neq : (n:nat)(lt O n)->(~O=n).
+Theorem lt_O_neq : forall n, 0 < n -> 0 <> n.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
-Hints Immediate lt_O_neq : arith v62.
+Hint Immediate lt_O_neq: arith v62.

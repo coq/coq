@@ -8,102 +8,100 @@
 
 (*i $Id$ i*)
 
-Require Le.
-Require Lt.
-Require Gt.
-Require Decidable.
+Require Import Le.
+Require Import Lt.
+Require Import Gt.
+Require Import Decidable.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,x,y:nat.
+Implicit Types m n x y : nat.
 
-Definition zerop : (n:nat){n=O}+{lt O n}.
-NewDestruct n; Auto with arith.
+Definition zerop : forall n, {n = 0} + {0 < n}.
+destruct n; auto with arith.
 Defined.
 
-Definition lt_eq_lt_dec : (n,m:nat){(lt n m)}+{n=m}+{(lt m n)}.
+Definition lt_eq_lt_dec : forall n m, {n < m} + {n = m} + {m < n}.
 Proof.
-NewInduction n; Destruct m; Auto with arith.
-Intros m0; Elim (IHn m0); Auto with arith.
-NewInduction 1; Auto with arith.
+induction n; simple destruct m; auto with arith.
+intros m0; elim (IHn m0); auto with arith.
+induction 1; auto with arith.
 Defined.
 
-Lemma gt_eq_gt_dec : (n,m:nat)({(gt m n)}+{n=m})+{(gt n m)}.
+Lemma gt_eq_gt_dec : forall n m, {m > n} + {n = m} + {n > m}.
 Proof lt_eq_lt_dec.
 
-Lemma le_lt_dec : (n,m:nat) {le n m} + {lt m n}.
+Lemma le_lt_dec : forall n m, {n <= m} + {m < n}.
 Proof.
-NewInduction n.
-Auto with arith.
-NewInduction m.
-Auto with arith.
-Elim (IHn m); Auto with arith.
+induction n.
+auto with arith.
+induction m.
+auto with arith.
+elim (IHn m); auto with arith.
 Defined.
 
-Definition le_le_S_dec : (n,m:nat) {le n m} + {le (S m) n}.
+Definition le_le_S_dec : forall n m, {n <= m} + {S m <= n}.
 Proof.
-Exact le_lt_dec.
+exact le_lt_dec.
 Defined.
 
-Definition le_ge_dec : (n,m:nat) {le n m} + {ge n m}.
+Definition le_ge_dec : forall n m, {n <= m} + {n >= m}.
 Proof.
-Intros; Elim (le_lt_dec n m); Auto with arith.
+intros; elim (le_lt_dec n m); auto with arith.
 Defined.
 
-Definition le_gt_dec : (n,m:nat){(le n m)}+{(gt n m)}.
+Definition le_gt_dec : forall n m, {n <= m} + {n > m}.
 Proof.
-Exact le_lt_dec.
+exact le_lt_dec.
 Defined.
 
-Definition le_lt_eq_dec : (n,m:nat)(le n m)->({(lt n m)}+{n=m}).
+Definition le_lt_eq_dec : forall n m, n <= m -> {n < m} + {n = m}.
 Proof.
-Intros; Elim (lt_eq_lt_dec n m); Auto with arith.
-Intros; Absurd (lt m n); Auto with arith.
+intros; elim (lt_eq_lt_dec n m); auto with arith.
+intros; absurd (m < n); auto with arith.
 Defined.
 
 (** Proofs of decidability *)
 
-Theorem dec_le:(x,y:nat)(decidable (le x y)).
-Intros x y; Unfold decidable ; Elim (le_gt_dec x y); [
-  Auto with arith
-| Intro; Right; Apply gt_not_le; Assumption].
+Theorem dec_le : forall n m, decidable (n <= m).
+intros x y; unfold decidable in |- *; elim (le_gt_dec x y);
+ [ auto with arith | intro; right; apply gt_not_le; assumption ].
 Qed.
 
-Theorem dec_lt:(x,y:nat)(decidable (lt x y)).
-Intros x y; Unfold lt; Apply dec_le.
+Theorem dec_lt : forall n m, decidable (n < m).
+intros x y; unfold lt in |- *; apply dec_le.
 Qed.
 
-Theorem dec_gt:(x,y:nat)(decidable (gt x y)).
-Intros x y; Unfold gt; Apply dec_lt.
+Theorem dec_gt : forall n m, decidable (n > m).
+intros x y; unfold gt in |- *; apply dec_lt.
 Qed.
 
-Theorem dec_ge:(x,y:nat)(decidable (ge x y)).
-Intros x y; Unfold ge; Apply dec_le.
+Theorem dec_ge : forall n m, decidable (n >= m).
+intros x y; unfold ge in |- *; apply dec_le.
 Qed.
 
-Theorem not_eq : (x,y:nat) ~ x=y -> (lt x y) \/ (lt y x).
-Intros x y H; Elim (lt_eq_lt_dec x y); [
-  Intros H1; Elim H1; [ Auto with arith | Intros H2; Absurd x=y; Assumption]
-| Auto with arith].
+Theorem not_eq : forall n m, n <> m -> n < m \/ m < n.
+intros x y H; elim (lt_eq_lt_dec x y);
+ [ intros H1; elim H1;
+    [ auto with arith | intros H2; absurd (x = y); assumption ]
+ | auto with arith ].
 Qed.
 
 
-Theorem not_le : (x,y:nat) ~(le x y) -> (gt x y).
-Intros x y H; Elim (le_gt_dec x y);
-  [ Intros H1; Absurd (le x y); Assumption | Trivial with arith ].
+Theorem not_le : forall n m, ~ n <= m -> n > m.
+intros x y H; elim (le_gt_dec x y);
+ [ intros H1; absurd (x <= y); assumption | trivial with arith ].
 Qed.
 
-Theorem not_gt : (x,y:nat) ~(gt x y) -> (le x y).
-Intros x y H; Elim (le_gt_dec x y);
-  [ Trivial with arith | Intros H1; Absurd (gt x y); Assumption].
+Theorem not_gt : forall n m, ~ n > m -> n <= m.
+intros x y H; elim (le_gt_dec x y);
+ [ trivial with arith | intros H1; absurd (x > y); assumption ].
 Qed.
 
-Theorem not_ge : (x,y:nat) ~(ge x y) -> (lt x y).
-Intros x y H; Exact (not_le y x H).
+Theorem not_ge : forall n m, ~ n >= m -> n < m.
+intros x y H; exact (not_le y x H).
 Qed.
 
-Theorem not_lt : (x,y:nat) ~(lt x y) -> (ge x y).
-Intros x y H; Exact (not_gt y x H). 
+Theorem not_lt : forall n m, ~ n < m -> n >= m.
+intros x y H; exact (not_gt y x H). 
 Qed.
-

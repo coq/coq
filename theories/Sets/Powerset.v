@@ -33,156 +33,158 @@ Require Export Partial_Order.
 Require Export Cpo.
 
 Section The_power_set_partial_order.
-Variable U: Type.
+Variable U : Type.
 
-Inductive Power_set [A:(Ensemble U)]: (Ensemble (Ensemble U)) :=
-    Definition_of_Power_set:
-     (X: (Ensemble U)) (Included U X A) -> (In (Ensemble U) (Power_set A) X).
-Hints Resolve Definition_of_Power_set.
+Inductive Power_set (A:Ensemble U) : Ensemble (Ensemble U) :=
+    Definition_of_Power_set :
+      forall X:Ensemble U, Included U X A -> In (Ensemble U) (Power_set A) X.
+Hint Resolve Definition_of_Power_set.
 
-Theorem Empty_set_minimal: (X: (Ensemble U)) (Included U (Empty_set U) X).
-Intro X; Red.
-Intros x H'; Elim H'.
+Theorem Empty_set_minimal : forall X:Ensemble U, Included U (Empty_set U) X.
+intro X; red in |- *.
+intros x H'; elim H'.
 Qed.
-Hints Resolve Empty_set_minimal.
+Hint Resolve Empty_set_minimal.
 
-Theorem Power_set_Inhabited:
-  (X: (Ensemble U)) (Inhabited (Ensemble U) (Power_set X)).
-Intro X.
-Apply Inhabited_intro with (Empty_set U); Auto with sets.
+Theorem Power_set_Inhabited :
+ forall X:Ensemble U, Inhabited (Ensemble U) (Power_set X).
+intro X.
+apply Inhabited_intro with (Empty_set U); auto with sets.
 Qed.
-Hints Resolve Power_set_Inhabited.
+Hint Resolve Power_set_Inhabited.
 
-Theorem Inclusion_is_an_order: (Order (Ensemble U) (Included U)).
-Auto 6 with sets.
+Theorem Inclusion_is_an_order : Order (Ensemble U) (Included U).
+auto 6 with sets.
 Qed.
-Hints Resolve Inclusion_is_an_order.
+Hint Resolve Inclusion_is_an_order.
 
-Theorem Inclusion_is_transitive: (Transitive (Ensemble U) (Included U)).
-Elim Inclusion_is_an_order; Auto with sets.
+Theorem Inclusion_is_transitive : Transitive (Ensemble U) (Included U).
+elim Inclusion_is_an_order; auto with sets.
 Qed.
-Hints Resolve Inclusion_is_transitive.
+Hint Resolve Inclusion_is_transitive.
 
-Definition Power_set_PO: (Ensemble U) -> (PO (Ensemble U)).
-Intro A; Try Assumption.
-Apply Definition_of_PO with (Power_set A) (Included U); Auto with sets.
+Definition Power_set_PO : Ensemble U -> PO (Ensemble U).
+intro A; try assumption.
+apply Definition_of_PO with (Power_set A) (Included U); auto with sets.
 Defined.
-Hints Unfold  Power_set_PO.
+Hint Unfold Power_set_PO.
 
-Theorem Strict_Rel_is_Strict_Included:
-  (same_relation
-     (Ensemble U) (Strict_Included U)
-     (Strict_Rel_of (Ensemble U) (Power_set_PO (Full_set U)))).
-Auto with sets.
+Theorem Strict_Rel_is_Strict_Included :
+ same_relation (Ensemble U) (Strict_Included U)
+   (Strict_Rel_of (Ensemble U) (Power_set_PO (Full_set U))).
+auto with sets.
 Qed.
-Hints Resolve Strict_Rel_Transitive Strict_Rel_is_Strict_Included.
+Hint Resolve Strict_Rel_Transitive Strict_Rel_is_Strict_Included.
 
-Lemma Strict_inclusion_is_transitive_with_inclusion:
-  (x, y, z:(Ensemble U)) (Strict_Included U x y) -> (Included U y z) ->
-  (Strict_Included U x z).
-Intros x y z H' H'0; Try Assumption.
-Elim Strict_Rel_is_Strict_Included.
-Unfold contains.
-Intros H'1 H'2; Try Assumption.
-Apply H'1.
-Apply Strict_Rel_Transitive_with_Rel with y := y; Auto with sets.
-Qed.
-
-Lemma Strict_inclusion_is_transitive_with_inclusion_left:
-  (x, y, z:(Ensemble U)) (Included U x y) -> (Strict_Included U y z) ->
-  (Strict_Included U x z).
-Intros x y z H' H'0; Try Assumption.
-Elim Strict_Rel_is_Strict_Included.
-Unfold contains.
-Intros H'1 H'2; Try Assumption.
-Apply H'1.
-Apply Strict_Rel_Transitive_with_Rel_left with y := y; Auto with sets.
+Lemma Strict_inclusion_is_transitive_with_inclusion :
+ forall x y z:Ensemble U,
+   Strict_Included U x y -> Included U y z -> Strict_Included U x z.
+intros x y z H' H'0; try assumption.
+elim Strict_Rel_is_Strict_Included.
+unfold contains in |- *.
+intros H'1 H'2; try assumption.
+apply H'1.
+apply Strict_Rel_Transitive_with_Rel with (y := y); auto with sets.
 Qed.
 
-Lemma Strict_inclusion_is_transitive:
-  (Transitive (Ensemble U) (Strict_Included U)).
-Apply cong_transitive_same_relation
-     with R := (Strict_Rel_of (Ensemble U) (Power_set_PO (Full_set U))); Auto with sets.
+Lemma Strict_inclusion_is_transitive_with_inclusion_left :
+ forall x y z:Ensemble U,
+   Included U x y -> Strict_Included U y z -> Strict_Included U x z.
+intros x y z H' H'0; try assumption.
+elim Strict_Rel_is_Strict_Included.
+unfold contains in |- *.
+intros H'1 H'2; try assumption.
+apply H'1.
+apply Strict_Rel_Transitive_with_Rel_left with (y := y); auto with sets.
 Qed.
 
-Theorem Empty_set_is_Bottom:
-  (A: (Ensemble U)) (Bottom (Ensemble U) (Power_set_PO A) (Empty_set U)).
-Intro A; Apply Bottom_definition; Simpl; Auto with sets.
-Qed.
-Hints Resolve Empty_set_is_Bottom.
-
-Theorem Union_minimal:
-  (a, b, X: (Ensemble U)) (Included U a X) -> (Included U b X) ->
-   (Included U (Union U a b) X).
-Intros a b X H' H'0; Red.
-Intros x H'1; Elim H'1; Auto with sets.
-Qed.
-Hints Resolve Union_minimal.
-
-Theorem Intersection_maximal:
-  (a, b, X: (Ensemble U)) (Included U X a) -> (Included U X b) ->
-   (Included U X (Intersection U a b)).
-Auto with sets.
+Lemma Strict_inclusion_is_transitive :
+ Transitive (Ensemble U) (Strict_Included U).
+apply cong_transitive_same_relation with
+ (R := Strict_Rel_of (Ensemble U) (Power_set_PO (Full_set U)));
+ auto with sets.
 Qed.
 
-Theorem Union_increases_l: (a, b: (Ensemble U)) (Included U a (Union U a b)).
-Auto with sets.
+Theorem Empty_set_is_Bottom :
+ forall A:Ensemble U, Bottom (Ensemble U) (Power_set_PO A) (Empty_set U).
+intro A; apply Bottom_definition; simpl in |- *; auto with sets.
+Qed.
+Hint Resolve Empty_set_is_Bottom.
+
+Theorem Union_minimal :
+ forall a b X:Ensemble U,
+   Included U a X -> Included U b X -> Included U (Union U a b) X.
+intros a b X H' H'0; red in |- *.
+intros x H'1; elim H'1; auto with sets.
+Qed.
+Hint Resolve Union_minimal.
+
+Theorem Intersection_maximal :
+ forall a b X:Ensemble U,
+   Included U X a -> Included U X b -> Included U X (Intersection U a b).
+auto with sets.
 Qed.
 
-Theorem Union_increases_r: (a, b: (Ensemble U)) (Included U b (Union U a b)).
-Auto with sets.
+Theorem Union_increases_l : forall a b:Ensemble U, Included U a (Union U a b).
+auto with sets.
 Qed.
 
-Theorem Intersection_decreases_l:
-  (a, b: (Ensemble U)) (Included U (Intersection U a b) a).
-Intros a b; Red.
-Intros x H'; Elim H'; Auto with sets.
+Theorem Union_increases_r : forall a b:Ensemble U, Included U b (Union U a b).
+auto with sets.
 Qed.
 
-Theorem Intersection_decreases_r:
-  (a, b: (Ensemble U)) (Included U (Intersection U a b) b).
-Intros a b; Red.
-Intros x H'; Elim H'; Auto with sets.
-Qed.
-Hints Resolve Union_increases_l Union_increases_r Intersection_decreases_l
-     Intersection_decreases_r.
-
-Theorem Union_is_Lub:
-  (A: (Ensemble U)) (a, b: (Ensemble U)) (Included U a A) -> (Included U b A) ->
-   (Lub (Ensemble U) (Power_set_PO A) (Couple (Ensemble U) a b) (Union U a b)).
-Intros A a b H' H'0.
-Apply Lub_definition; Simpl.
-Apply Upper_Bound_definition; Simpl; Auto with sets.
-Intros y H'1; Elim H'1; Auto with sets.
-Intros y H'1; Elim H'1; Simpl; Auto with sets.
+Theorem Intersection_decreases_l :
+ forall a b:Ensemble U, Included U (Intersection U a b) a.
+intros a b; red in |- *.
+intros x H'; elim H'; auto with sets.
 Qed.
 
-Theorem Intersection_is_Glb:
-  (A: (Ensemble U)) (a, b: (Ensemble U)) (Included U a A) -> (Included U b A) ->
-   (Glb
-      (Ensemble U)
-      (Power_set_PO A)
-      (Couple (Ensemble U) a b)
-      (Intersection U a b)).
-Intros A a b H' H'0.
-Apply Glb_definition; Simpl.
-Apply Lower_Bound_definition; Simpl; Auto with sets.
-Apply Definition_of_Power_set.
-Generalize Inclusion_is_transitive; Intro IT; Red in IT; Apply IT with a; Auto with sets.
-Intros y H'1; Elim H'1; Auto with sets.
-Intros y H'1; Elim H'1; Simpl; Auto with sets.
+Theorem Intersection_decreases_r :
+ forall a b:Ensemble U, Included U (Intersection U a b) b.
+intros a b; red in |- *.
+intros x H'; elim H'; auto with sets.
+Qed.
+Hint Resolve Union_increases_l Union_increases_r Intersection_decreases_l
+  Intersection_decreases_r.
+
+Theorem Union_is_Lub :
+ forall A a b:Ensemble U,
+   Included U a A ->
+   Included U b A ->
+   Lub (Ensemble U) (Power_set_PO A) (Couple (Ensemble U) a b) (Union U a b).
+intros A a b H' H'0.
+apply Lub_definition; simpl in |- *.
+apply Upper_Bound_definition; simpl in |- *; auto with sets.
+intros y H'1; elim H'1; auto with sets.
+intros y H'1; elim H'1; simpl in |- *; auto with sets.
+Qed.
+
+Theorem Intersection_is_Glb :
+ forall A a b:Ensemble U,
+   Included U a A ->
+   Included U b A ->
+   Glb (Ensemble U) (Power_set_PO A) (Couple (Ensemble U) a b)
+     (Intersection U a b).
+intros A a b H' H'0.
+apply Glb_definition; simpl in |- *.
+apply Lower_Bound_definition; simpl in |- *; auto with sets.
+apply Definition_of_Power_set.
+generalize Inclusion_is_transitive; intro IT; red in IT; apply IT with a;
+ auto with sets.
+intros y H'1; elim H'1; auto with sets.
+intros y H'1; elim H'1; simpl in |- *; auto with sets.
 Qed.
 
 End The_power_set_partial_order.
 
-Hints Resolve Empty_set_minimal : sets v62.
-Hints Resolve Power_set_Inhabited : sets v62.
-Hints Resolve Inclusion_is_an_order : sets v62.
-Hints Resolve Inclusion_is_transitive : sets v62.
-Hints Resolve Union_minimal : sets v62.
-Hints Resolve Union_increases_l : sets v62.
-Hints Resolve Union_increases_r : sets v62.
-Hints Resolve Intersection_decreases_l : sets v62.
-Hints Resolve Intersection_decreases_r : sets v62.
-Hints Resolve Empty_set_is_Bottom : sets v62.
-Hints Resolve Strict_inclusion_is_transitive : sets v62.
+Hint Resolve Empty_set_minimal: sets v62.
+Hint Resolve Power_set_Inhabited: sets v62.
+Hint Resolve Inclusion_is_an_order: sets v62.
+Hint Resolve Inclusion_is_transitive: sets v62.
+Hint Resolve Union_minimal: sets v62.
+Hint Resolve Union_increases_l: sets v62.
+Hint Resolve Union_increases_r: sets v62.
+Hint Resolve Intersection_decreases_l: sets v62.
+Hint Resolve Intersection_decreases_r: sets v62.
+Hint Resolve Empty_set_is_Bottom: sets v62.
+Hint Resolve Strict_inclusion_is_transitive: sets v62.

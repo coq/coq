@@ -9,171 +9,185 @@
 
 (** Equality on adresses *)
 
-Require Bool.
-Require Sumbool.
-Require ZArith.
-Require Addr.
+Require Import Bool.
+Require Import Sumbool.
+Require Import ZArith.
+Require Import Addr.
 
-Fixpoint ad_eq_1 [p1,p2:positive] : bool :=
-  Cases p1 p2 of
-      xH xH => true
-    | (xO p'1) (xO p'2) => (ad_eq_1 p'1 p'2)
-    | (xI p'1) (xI p'2) => (ad_eq_1 p'1 p'2)
-    | _ _ => false
+Fixpoint ad_eq_1 (p1 p2:positive) {struct p2} : bool :=
+  match p1, p2 with
+  | xH, xH => true
+  | xO p'1, xO p'2 => ad_eq_1 p'1 p'2
+  | xI p'1, xI p'2 => ad_eq_1 p'1 p'2
+  | _, _ => false
   end.
 
-Definition ad_eq := [a,a':ad]
-  Cases a a' of
-      ad_z ad_z => true
-    | (ad_x p) (ad_x p') => (ad_eq_1 p p')
-    | _ _ => false
+Definition ad_eq (a a':ad) :=
+  match a, a' with
+  | ad_z, ad_z => true
+  | ad_x p, ad_x p' => ad_eq_1 p p'
+  | _, _ => false
   end.
 
-Lemma ad_eq_correct : (a:ad) (ad_eq a a)=true.
+Lemma ad_eq_correct : forall a:ad, ad_eq a a = true.
 Proof.
-  NewDestruct a; Trivial.
-  NewInduction p; Trivial.
+  destruct a; trivial.
+  induction p; trivial.
 Qed.
 
-Lemma ad_eq_complete : (a,a':ad) (ad_eq a a')=true -> a=a'.
+Lemma ad_eq_complete : forall a a':ad, ad_eq a a' = true -> a = a'.
 Proof.
-  NewDestruct a. NewDestruct a'; Trivial. NewDestruct p.
-  Discriminate 1.
-  Discriminate 1.
-  Discriminate 1.
-  NewDestruct a'. Intros. Discriminate H.
-  Unfold ad_eq. Intros. Cut p=p0. Intros. Rewrite H0. Reflexivity.
-  Generalize Dependent p0.
-  NewInduction p as [p IHp|p IHp|]. NewDestruct p0; Intro H.
-  Rewrite (IHp p0). Reflexivity.
-  Exact H.
-  Discriminate H.
-  Discriminate H.
-  NewDestruct p0; Intro H. Discriminate H.
-  Rewrite (IHp p0 H). Reflexivity.
-  Discriminate H.
-  NewDestruct p0; Intro H. Discriminate H.
-  Discriminate H.
-  Trivial.
+  destruct a. destruct a'; trivial. destruct p.
+  discriminate 1.
+  discriminate 1.
+  discriminate 1.
+  destruct a'. intros. discriminate H.
+  unfold ad_eq in |- *. intros. cut (p = p0). intros. rewrite H0. reflexivity.
+  generalize dependent p0.
+  induction p as [p IHp| p IHp| ]. destruct p0; intro H.
+  rewrite (IHp p0). reflexivity.
+  exact H.
+  discriminate H.
+  discriminate H.
+  destruct p0; intro H. discriminate H.
+  rewrite (IHp p0 H). reflexivity.
+  discriminate H.
+  destruct p0 as [p| p| ]; intro H. discriminate H.
+  discriminate H.
+  trivial.
 Qed.
 
-Lemma ad_eq_comm : (a,a':ad) (ad_eq a a')=(ad_eq a' a).
+Lemma ad_eq_comm : forall a a':ad, ad_eq a a' = ad_eq a' a.
 Proof.
-  Intros. Cut (b,b':bool)(ad_eq a a')=b->(ad_eq a' a)=b'->b=b'.
-  Intros. Apply H. Reflexivity.
-  Reflexivity.
-  NewDestruct b. Intros. Cut a=a'.
-  Intro. Rewrite H1 in H0. Rewrite (ad_eq_correct a') in H0. Exact H0.
-  Apply ad_eq_complete. Exact H.
-  NewDestruct b'. Intros. Cut a'=a.
-  Intro. Rewrite H1 in H. Rewrite H1 in H0. Rewrite <- H. Exact H0.
-  Apply ad_eq_complete. Exact H0.
-  Trivial.
+  intros. cut (forall b b':bool, ad_eq a a' = b -> ad_eq a' a = b' -> b = b').
+  intros. apply H. reflexivity.
+  reflexivity.
+  destruct b. intros. cut (a = a').
+  intro. rewrite H1 in H0. rewrite (ad_eq_correct a') in H0. exact H0.
+  apply ad_eq_complete. exact H.
+  destruct b'. intros. cut (a' = a).
+  intro. rewrite H1 in H. rewrite H1 in H0. rewrite <- H. exact H0.
+  apply ad_eq_complete. exact H0.
+  trivial.
 Qed.
 
-Lemma ad_xor_eq_true : (a,a':ad) (ad_xor a a')=ad_z -> (ad_eq a a')=true.
+Lemma ad_xor_eq_true :
+ forall a a':ad, ad_xor a a' = ad_z -> ad_eq a a' = true.
 Proof.
-  Intros. Rewrite (ad_xor_eq a a' H). Apply ad_eq_correct.
+  intros. rewrite (ad_xor_eq a a' H). apply ad_eq_correct.
 Qed.
 
 Lemma ad_xor_eq_false :
-    (a,a':ad) (p:positive) (ad_xor a a')=(ad_x p) -> (ad_eq a a')=false.
+ forall (a a':ad) (p:positive), ad_xor a a' = ad_x p -> ad_eq a a' = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq a a')). Intro H0.
-  Rewrite (ad_eq_complete a a' H0) in H. Rewrite (ad_xor_nilpotent a') in H. Discriminate H.
-  Trivial.
+  intros. elim (sumbool_of_bool (ad_eq a a')). intro H0.
+  rewrite (ad_eq_complete a a' H0) in H. rewrite (ad_xor_nilpotent a') in H. discriminate H.
+  trivial.
 Qed.
 
-Lemma ad_bit_0_1_not_double : (a:ad) (ad_bit_0 a)=true ->
-      (a0:ad) (ad_eq (ad_double a0) a)=false.
+Lemma ad_bit_0_1_not_double :
+ forall a:ad,
+   ad_bit_0 a = true -> forall a0:ad, ad_eq (ad_double a0) a = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq (ad_double a0) a)). Intro H0.
-  Rewrite <- (ad_eq_complete ? ? H0) in H. Rewrite (ad_double_bit_0 a0) in H. Discriminate H.
-  Trivial.
+  intros. elim (sumbool_of_bool (ad_eq (ad_double a0) a)). intro H0.
+  rewrite <- (ad_eq_complete _ _ H0) in H. rewrite (ad_double_bit_0 a0) in H. discriminate H.
+  trivial.
 Qed.
 
-Lemma ad_not_div_2_not_double : (a,a0:ad) (ad_eq (ad_div_2 a) a0)=false ->
-      (ad_eq a (ad_double a0))=false.
+Lemma ad_not_div_2_not_double :
+ forall a a0:ad,
+   ad_eq (ad_div_2 a) a0 = false -> ad_eq a (ad_double a0) = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq (ad_double a0) a)). Intro H0.
-  Rewrite <- (ad_eq_complete ? ? H0) in H. Rewrite (ad_double_div_2 a0) in H.
-  Rewrite (ad_eq_correct a0) in H. Discriminate H.
-  Intro. Rewrite ad_eq_comm. Assumption.
+  intros. elim (sumbool_of_bool (ad_eq (ad_double a0) a)). intro H0.
+  rewrite <- (ad_eq_complete _ _ H0) in H. rewrite (ad_double_div_2 a0) in H.
+  rewrite (ad_eq_correct a0) in H. discriminate H.
+  intro. rewrite ad_eq_comm. assumption.
 Qed.
 
-Lemma ad_bit_0_0_not_double_plus_un : (a:ad) (ad_bit_0 a)=false ->
-      (a0:ad) (ad_eq (ad_double_plus_un a0) a)=false.
+Lemma ad_bit_0_0_not_double_plus_un :
+ forall a:ad,
+   ad_bit_0 a = false -> forall a0:ad, ad_eq (ad_double_plus_un a0) a = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq (ad_double_plus_un a0) a)). Intro H0.
-  Rewrite <- (ad_eq_complete ? ? H0) in H. Rewrite (ad_double_plus_un_bit_0 a0) in H.
-  Discriminate H.
-  Trivial.
+  intros. elim (sumbool_of_bool (ad_eq (ad_double_plus_un a0) a)). intro H0.
+  rewrite <- (ad_eq_complete _ _ H0) in H. rewrite (ad_double_plus_un_bit_0 a0) in H.
+  discriminate H.
+  trivial.
 Qed.
 
-Lemma ad_not_div_2_not_double_plus_un : (a,a0:ad) (ad_eq (ad_div_2 a) a0)=false ->
-      (ad_eq (ad_double_plus_un a0) a)=false.
+Lemma ad_not_div_2_not_double_plus_un :
+ forall a a0:ad,
+   ad_eq (ad_div_2 a) a0 = false -> ad_eq (ad_double_plus_un a0) a = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq a (ad_double_plus_un a0))). Intro H0.
-  Rewrite (ad_eq_complete ? ? H0) in H. Rewrite (ad_double_plus_un_div_2 a0) in H.
-  Rewrite (ad_eq_correct a0) in H. Discriminate H.
-  Intro H0. Rewrite ad_eq_comm. Assumption.
+  intros. elim (sumbool_of_bool (ad_eq a (ad_double_plus_un a0))). intro H0.
+  rewrite (ad_eq_complete _ _ H0) in H. rewrite (ad_double_plus_un_div_2 a0) in H.
+  rewrite (ad_eq_correct a0) in H. discriminate H.
+  intro H0. rewrite ad_eq_comm. assumption.
 Qed.
 
 Lemma ad_bit_0_neq :
-    (a,a':ad) (ad_bit_0 a)=false -> (ad_bit_0 a')=true -> (ad_eq a a')=false.
+ forall a a':ad,
+   ad_bit_0 a = false -> ad_bit_0 a' = true -> ad_eq a a' = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq a a')). Intro H1. Rewrite (ad_eq_complete ? ? H1) in H.
-  Rewrite H in H0. Discriminate H0.
-  Trivial.
+  intros. elim (sumbool_of_bool (ad_eq a a')). intro H1. rewrite (ad_eq_complete _ _ H1) in H.
+  rewrite H in H0. discriminate H0.
+  trivial.
 Qed.
 
 Lemma ad_div_eq :
-    (a,a':ad) (ad_eq a a')=true -> (ad_eq (ad_div_2 a) (ad_div_2 a'))=true.
+ forall a a':ad, ad_eq a a' = true -> ad_eq (ad_div_2 a) (ad_div_2 a') = true.
 Proof.
-  Intros. Cut a=a'. Intros. Rewrite H0. Apply ad_eq_correct.
-  Apply ad_eq_complete. Exact H.
+  intros. cut (a = a'). intros. rewrite H0. apply ad_eq_correct.
+  apply ad_eq_complete. exact H.
 Qed.
 
-Lemma ad_div_neq : (a,a':ad) (ad_eq (ad_div_2 a) (ad_div_2 a'))=false -> 
-    (ad_eq a a')=false.
+Lemma ad_div_neq :
+ forall a a':ad,
+   ad_eq (ad_div_2 a) (ad_div_2 a') = false -> ad_eq a a' = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq a a')). Intro H0.
-  Rewrite (ad_eq_complete ? ? H0) in H. Rewrite (ad_eq_correct (ad_div_2 a')) in H. Discriminate H.
-  Trivial.
+  intros. elim (sumbool_of_bool (ad_eq a a')). intro H0.
+  rewrite (ad_eq_complete _ _ H0) in H. rewrite (ad_eq_correct (ad_div_2 a')) in H. discriminate H.
+  trivial.
 Qed.
 
-Lemma ad_div_bit_eq : (a,a':ad) (ad_bit_0 a)=(ad_bit_0 a') ->
-    (ad_div_2 a)=(ad_div_2 a') -> a=a'.
+Lemma ad_div_bit_eq :
+ forall a a':ad,
+   ad_bit_0 a = ad_bit_0 a' -> ad_div_2 a = ad_div_2 a' -> a = a'.
 Proof.
-  Intros. Apply ad_faithful. Unfold eqf. NewDestruct n.
-  Rewrite ad_bit_0_correct. Rewrite ad_bit_0_correct. Assumption.
-  Rewrite <- ad_div_2_correct. Rewrite <- ad_div_2_correct.
-  Rewrite H0. Reflexivity.
+  intros. apply ad_faithful. unfold eqf in |- *. destruct n.
+  rewrite ad_bit_0_correct. rewrite ad_bit_0_correct. assumption.
+  rewrite <- ad_div_2_correct. rewrite <- ad_div_2_correct.
+  rewrite H0. reflexivity.
 Qed.
 
-Lemma ad_div_bit_neq : (a,a':ad) (ad_eq a a')=false -> (ad_bit_0 a)=(ad_bit_0 a') ->
-    (ad_eq (ad_div_2 a) (ad_div_2 a'))=false.
+Lemma ad_div_bit_neq :
+ forall a a':ad,
+   ad_eq a a' = false ->
+   ad_bit_0 a = ad_bit_0 a' -> ad_eq (ad_div_2 a) (ad_div_2 a') = false.
 Proof.
-  Intros. Elim (sumbool_of_bool (ad_eq (ad_div_2 a) (ad_div_2 a'))). Intro H1.
-  Rewrite (ad_div_bit_eq ? ? H0 (ad_eq_complete ? ? H1)) in H.
-  Rewrite (ad_eq_correct a') in H. Discriminate H.
-  Trivial.
+  intros. elim (sumbool_of_bool (ad_eq (ad_div_2 a) (ad_div_2 a'))). intro H1.
+  rewrite (ad_div_bit_eq _ _ H0 (ad_eq_complete _ _ H1)) in H.
+  rewrite (ad_eq_correct a') in H. discriminate H.
+  trivial.
 Qed.
 
-Lemma ad_neq : (a,a':ad) (ad_eq a a')=false ->
-    (ad_bit_0 a)=(negb (ad_bit_0 a')) \/ (ad_eq (ad_div_2 a) (ad_div_2 a'))=false.
+Lemma ad_neq :
+ forall a a':ad,
+   ad_eq a a' = false ->
+   ad_bit_0 a = negb (ad_bit_0 a') \/
+   ad_eq (ad_div_2 a) (ad_div_2 a') = false.
 Proof.
-  Intros. Cut (ad_bit_0 a)=(ad_bit_0 a')\/(ad_bit_0 a)=(negb (ad_bit_0 a')).
-  Intros. Elim H0. Intro. Right . Apply ad_div_bit_neq. Assumption.
-  Assumption.
-  Intro. Left . Assumption.
-  Case (ad_bit_0 a); Case (ad_bit_0 a'); Auto.
+  intros. cut (ad_bit_0 a = ad_bit_0 a' \/ ad_bit_0 a = negb (ad_bit_0 a')).
+  intros. elim H0. intro. right. apply ad_div_bit_neq. assumption.
+  assumption.
+  intro. left. assumption.
+  case (ad_bit_0 a); case (ad_bit_0 a'); auto.
 Qed.
 
-Lemma ad_double_or_double_plus_un : (a:ad)
-    {a0:ad | a=(ad_double a0)}+{a1:ad | a=(ad_double_plus_un a1)}.
+Lemma ad_double_or_double_plus_un :
+ forall a:ad,
+   {a0 : ad | a = ad_double a0} + {a1 : ad | a = ad_double_plus_un a1}.
 Proof.
-  Intro. Elim (sumbool_of_bool (ad_bit_0 a)). Intro H. Right . Split with (ad_div_2 a).
-  Rewrite (ad_div_2_double_plus_un a H). Reflexivity.
-  Intro H. Left . Split with (ad_div_2 a). Rewrite (ad_div_2_double a H). Reflexivity.
+  intro. elim (sumbool_of_bool (ad_bit_0 a)). intro H. right. split with (ad_div_2 a).
+  rewrite (ad_div_2_double_plus_un a H). reflexivity.
+  intro H. left. split with (ad_div_2 a). rewrite (ad_div_2_double a H). reflexivity.
 Qed.

@@ -15,77 +15,77 @@
 
 Section Axiomatisation.
 
-Variable U: Set.
+Variable U : Set.
 
-Variable op: U -> U -> U.
+Variable op : U -> U -> U.
 
 Variable cong : U -> U -> Prop.
 
-Hypothesis op_comm : (x,y:U)(cong (op x y) (op y x)).
-Hypothesis op_ass  : (x,y,z:U)(cong (op (op x y) z) (op x (op y z))).
+Hypothesis op_comm : forall x y:U, cong (op x y) (op y x).
+Hypothesis op_ass : forall x y z:U, cong (op (op x y) z) (op x (op y z)).
 
-Hypothesis cong_left :  (x,y,z:U)(cong x y)->(cong (op x z) (op y z)).
-Hypothesis cong_right : (x,y,z:U)(cong x y)->(cong (op z x) (op z y)).
-Hypothesis cong_trans : (x,y,z:U)(cong x y)->(cong y z)->(cong x z).
-Hypothesis cong_sym : (x,y:U)(cong x y)->(cong y x).
+Hypothesis cong_left : forall x y z:U, cong x y -> cong (op x z) (op y z).
+Hypothesis cong_right : forall x y z:U, cong x y -> cong (op z x) (op z y).
+Hypothesis cong_trans : forall x y z:U, cong x y -> cong y z -> cong x z.
+Hypothesis cong_sym : forall x y:U, cong x y -> cong y x.
 
 (** Remark. we do not need: [Hypothesis cong_refl : (x:U)(cong x x)]. *)
 
 Lemma cong_congr :
- (x,y,z,t:U)(cong x y)->(cong z t)->(cong (op x z) (op y t)).
+ forall x y z t:U, cong x y -> cong z t -> cong (op x z) (op y t).
 Proof.
-Intros; Apply cong_trans with (op y z).
-Apply cong_left; Trivial.
-Apply cong_right; Trivial.
+intros; apply cong_trans with (op y z).
+apply cong_left; trivial.
+apply cong_right; trivial.
 Qed.
 
-Lemma comm_right : (x,y,z:U)(cong (op x (op y z)) (op x (op z y))).
+Lemma comm_right : forall x y z:U, cong (op x (op y z)) (op x (op z y)).
 Proof.
-Intros; Apply cong_right; Apply op_comm.
+intros; apply cong_right; apply op_comm.
 Qed.
 
-Lemma comm_left : (x,y,z:U)(cong (op (op x y) z) (op (op y x) z)).
+Lemma comm_left : forall x y z:U, cong (op (op x y) z) (op (op y x) z).
 Proof.
-Intros; Apply cong_left; Apply op_comm.
+intros; apply cong_left; apply op_comm.
 Qed.
 
-Lemma perm_right : (x,y,z:U)(cong (op (op x y) z) (op (op x z) y)).
+Lemma perm_right : forall x y z:U, cong (op (op x y) z) (op (op x z) y).
 Proof.
-Intros.
-Apply cong_trans with (op x (op y z)).
-Apply op_ass.
-Apply cong_trans with (op x (op z y)). 
-Apply cong_right; Apply op_comm.
-Apply cong_sym; Apply op_ass.
+intros.
+apply cong_trans with (op x (op y z)).
+apply op_ass.
+apply cong_trans with (op x (op z y)). 
+apply cong_right; apply op_comm.
+apply cong_sym; apply op_ass.
 Qed.
 
-Lemma perm_left : (x,y,z:U)(cong (op x (op y z)) (op y (op x z))).
+Lemma perm_left : forall x y z:U, cong (op x (op y z)) (op y (op x z)).
 Proof.
-Intros.
-Apply cong_trans with (op (op x y) z).
-Apply cong_sym; Apply op_ass.
-Apply cong_trans with (op (op y x) z).
-Apply cong_left; Apply op_comm.
-Apply op_ass.
+intros.
+apply cong_trans with (op (op x y) z).
+apply cong_sym; apply op_ass.
+apply cong_trans with (op (op y x) z).
+apply cong_left; apply op_comm.
+apply op_ass.
 Qed.
 
-Lemma op_rotate : (x,y,z,t:U)(cong (op x (op y z)) (op z (op x y))).
+Lemma op_rotate : forall x y z t:U, cong (op x (op y z)) (op z (op x y)).
 Proof.
-Intros; Apply cong_trans with (op (op x y) z).
-Apply cong_sym; Apply op_ass.
-Apply op_comm.
+intros; apply cong_trans with (op (op x y) z).
+apply cong_sym; apply op_ass.
+apply op_comm.
 Qed.
 
 (* Needed for treesort ... *)
-Lemma twist : (x,y,z,t:U)
-   (cong (op x (op (op y z) t)) (op (op y (op x t)) z)).
+Lemma twist :
+ forall x y z t:U, cong (op x (op (op y z) t)) (op (op y (op x t)) z).
 Proof.
-Intros.
-Apply cong_trans with (op x (op (op y t) z)).
-Apply cong_right; Apply perm_right.
-Apply cong_trans with (op (op x (op y t)) z).
-Apply cong_sym; Apply op_ass.
-Apply cong_left; Apply perm_left.
+intros.
+apply cong_trans with (op x (op (op y t) z)).
+apply cong_right; apply perm_right.
+apply cong_trans with (op (op x (op y t)) z).
+apply cong_sym; apply op_ass.
+apply cong_left; apply perm_left.
 Qed.
 
 End Axiomatisation.

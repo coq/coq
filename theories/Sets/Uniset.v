@@ -13,7 +13,7 @@
 (* G. Huet 1-9-95 *)
 (* Updated Papageno 12/98 *)
 
-Require Bool.
+Require Import Bool.
 
 Set Implicit Arguments.
 
@@ -21,121 +21,118 @@ Section defs.
 
 Variable A : Set.
 Variable eqA : A -> A -> Prop.
-Hypothesis eqA_dec : (x,y:A){(eqA x y)}+{~(eqA x y)}.
+Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
-Inductive uniset : Set := 
-      Charac : (A->bool) -> uniset.
+Inductive uniset : Set :=
+    Charac : (A -> bool) -> uniset.
 
-Definition charac : uniset -> A -> bool :=
-  [s:uniset][a:A]Case s of [f:A->bool](f a) end.
+Definition charac (s:uniset) (a:A) : bool := let (f) := s in f a.
 
-Definition Emptyset := (Charac [a:A]false).
+Definition Emptyset := Charac (fun a:A => false).
 
-Definition Fullset  := (Charac [a:A]true).
+Definition Fullset := Charac (fun a:A => true).
 
-Definition Singleton := [a:A](Charac [a':A]
-              Case (eqA_dec a a') of 
-                   [h:(eqA a a')]  true
-                   [h: ~(eqA a a')] false end).
+Definition Singleton (a:A) :=
+  Charac
+    (fun a':A =>
+       match eqA_dec a a' with
+       | left h => true
+       | right h => false
+       end).
 
-Definition In : uniset -> A -> Prop :=
-     [s:uniset][a:A](charac s a)=true.
-Hints Unfold In.
+Definition In (s:uniset) (a:A) : Prop := charac s a = true.
+Hint Unfold In.
 
 (** uniset inclusion *)
-Definition incl := [s1,s2:uniset]
-    (a:A)(leb (charac s1 a) (charac s2 a)).
-Hints Unfold incl.
+Definition incl (s1 s2:uniset) := forall a:A, leb (charac s1 a) (charac s2 a).
+Hint Unfold incl.
 
 (** uniset equality *)
-Definition seq := [s1,s2:uniset]
-    (a:A)(charac s1 a) = (charac s2 a).
-Hints Unfold seq.
+Definition seq (s1 s2:uniset) := forall a:A, charac s1 a = charac s2 a.
+Hint Unfold seq.
 
-Lemma leb_refl : (b:bool)(leb b b).
+Lemma leb_refl : forall b:bool, leb b b.
 Proof.
-NewDestruct b; Simpl; Auto.
+destruct b; simpl in |- *; auto.
 Qed.
-Hints Resolve leb_refl.
+Hint Resolve leb_refl.
 
-Lemma incl_left : (s1,s2:uniset)(seq s1 s2)->(incl s1 s2).
+Lemma incl_left : forall s1 s2:uniset, seq s1 s2 -> incl s1 s2.
 Proof.
-Unfold incl; Intros s1 s2 E a; Elim (E a); Auto.
-Qed.
-
-Lemma incl_right : (s1,s2:uniset)(seq s1 s2)->(incl s2 s1).
-Proof.
-Unfold incl; Intros s1 s2 E a; Elim (E a); Auto.
+unfold incl in |- *; intros s1 s2 E a; elim (E a); auto.
 Qed.
 
-Lemma seq_refl : (x:uniset)(seq x x).
+Lemma incl_right : forall s1 s2:uniset, seq s1 s2 -> incl s2 s1.
 Proof.
-NewDestruct x; Unfold seq; Auto.
-Qed.
-Hints Resolve seq_refl.
-
-Lemma seq_trans : (x,y,z:uniset)(seq x y)->(seq y z)->(seq x z).
-Proof.
-Unfold seq.
-NewDestruct x; NewDestruct y; NewDestruct z; Simpl; Intros.
-Rewrite H; Auto.
+unfold incl in |- *; intros s1 s2 E a; elim (E a); auto.
 Qed.
 
-Lemma seq_sym : (x,y:uniset)(seq x y)->(seq y x).
+Lemma seq_refl : forall x:uniset, seq x x.
 Proof.
-Unfold seq.
-NewDestruct x; NewDestruct y; Simpl; Auto.
+destruct x; unfold seq in |- *; auto.
+Qed.
+Hint Resolve seq_refl.
+
+Lemma seq_trans : forall x y z:uniset, seq x y -> seq y z -> seq x z.
+Proof.
+unfold seq in |- *.
+destruct x; destruct y; destruct z; simpl in |- *; intros.
+rewrite H; auto.
+Qed.
+
+Lemma seq_sym : forall x y:uniset, seq x y -> seq y x.
+Proof.
+unfold seq in |- *.
+destruct x; destruct y; simpl in |- *; auto.
 Qed.
 
 (** uniset union *)
-Definition union := [m1,m2:uniset]
-    (Charac [a:A](orb (charac m1 a)(charac m2 a))).
+Definition union (m1 m2:uniset) :=
+  Charac (fun a:A => orb (charac m1 a) (charac m2 a)).
 
-Lemma union_empty_left :
-     (x:uniset)(seq x (union Emptyset x)).  
+Lemma union_empty_left : forall x:uniset, seq x (union Emptyset x).  
 Proof.  
-Unfold seq; Unfold union; Simpl; Auto.  
+unfold seq in |- *; unfold union in |- *; simpl in |- *; auto.  
 Qed. 
-Hints Resolve union_empty_left.
+Hint Resolve union_empty_left.
 
-Lemma union_empty_right :
-     (x:uniset)(seq x (union x Emptyset)).
+Lemma union_empty_right : forall x:uniset, seq x (union x Emptyset).
 Proof.
-Unfold seq; Unfold union; Simpl.
-Intros x a; Rewrite (orb_b_false (charac x a)); Auto.
+unfold seq in |- *; unfold union in |- *; simpl in |- *.
+intros x a; rewrite (orb_b_false (charac x a)); auto.
 Qed.
-Hints Resolve union_empty_right.
+Hint Resolve union_empty_right.
 
-Lemma union_comm : (x,y:uniset)(seq (union x y) (union y x)).
+Lemma union_comm : forall x y:uniset, seq (union x y) (union y x).
 Proof.
-Unfold seq; Unfold charac; Unfold union.
-NewDestruct x; NewDestruct y; Auto with bool.
+unfold seq in |- *; unfold charac in |- *; unfold union in |- *.
+destruct x; destruct y; auto with bool.
 Qed.
-Hints Resolve union_comm.
+Hint Resolve union_comm.
 
-Lemma union_ass : 
-      (x,y,z:uniset)(seq (union (union x y) z) (union x (union y z))).
+Lemma union_ass :
+ forall x y z:uniset, seq (union (union x y) z) (union x (union y z)).
 Proof.
-Unfold seq; Unfold union; Unfold charac.
-NewDestruct x; NewDestruct y; NewDestruct z; Auto with bool.
+unfold seq in |- *; unfold union in |- *; unfold charac in |- *.
+destruct x; destruct y; destruct z; auto with bool.
 Qed.
-Hints Resolve union_ass.
+Hint Resolve union_ass.
 
-Lemma seq_left :  (x,y,z:uniset)(seq x y)->(seq (union x z) (union y z)).
+Lemma seq_left : forall x y z:uniset, seq x y -> seq (union x z) (union y z).
 Proof.
-Unfold seq; Unfold union; Unfold charac.
-NewDestruct x; NewDestruct y; NewDestruct z.
-Intros; Elim H; Auto.
+unfold seq in |- *; unfold union in |- *; unfold charac in |- *.
+destruct x; destruct y; destruct z.
+intros; elim H; auto.
 Qed.
-Hints Resolve seq_left.
+Hint Resolve seq_left.
 
-Lemma seq_right : (x,y,z:uniset)(seq x y)->(seq (union z x) (union z y)).
+Lemma seq_right : forall x y z:uniset, seq x y -> seq (union z x) (union z y).
 Proof.
-Unfold seq; Unfold union; Unfold charac.
-NewDestruct x; NewDestruct y; NewDestruct z.
-Intros; Elim H; Auto.
+unfold seq in |- *; unfold union in |- *; unfold charac in |- *.
+destruct x; destruct y; destruct z.
+intros; elim H; auto.
 Qed.
-Hints Resolve seq_right.
+Hint Resolve seq_right.
 
 
 (** All the proofs that follow duplicate [Multiset_of_A] *)
@@ -143,60 +140,66 @@ Hints Resolve seq_right.
 (** Here we should make uniset an abstract datatype, by hiding [Charac],
     [union], [charac]; all further properties are proved abstractly *)
 
-Require Permut.
+Require Import Permut.
 
 Lemma union_rotate :
-   (x,y,z:uniset)(seq (union x (union y z)) (union z (union x y))).
+ forall x y z:uniset, seq (union x (union y z)) (union z (union x y)).
 Proof.
-Intros; Apply (op_rotate uniset union seq); Auto.
-Exact seq_trans.
+intros; apply (op_rotate uniset union seq); auto.
+exact seq_trans.
 Qed.
 
-Lemma seq_congr : (x,y,z,t:uniset)(seq x y)->(seq z t)->
-                  (seq (union x z) (union y t)).
+Lemma seq_congr :
+ forall x y z t:uniset, seq x y -> seq z t -> seq (union x z) (union y t).
 Proof.
-Intros; Apply (cong_congr uniset union seq); Auto.
-Exact seq_trans.
+intros; apply (cong_congr uniset union seq); auto.
+exact seq_trans.
 Qed.
 
 Lemma union_perm_left :
-   (x,y,z:uniset)(seq (union x (union y z)) (union y (union x z))).
+ forall x y z:uniset, seq (union x (union y z)) (union y (union x z)).
 Proof.
-Intros; Apply (perm_left uniset union seq); Auto.
-Exact seq_trans.
+intros; apply (perm_left uniset union seq); auto.
+exact seq_trans.
 Qed.
 
-Lemma uniset_twist1 : (x,y,z,t:uniset)
-   (seq (union x (union (union y z) t)) (union (union y (union x t)) z)).
+Lemma uniset_twist1 :
+ forall x y z t:uniset,
+   seq (union x (union (union y z) t)) (union (union y (union x t)) z).
 Proof.
-Intros; Apply (twist uniset union seq); Auto.
-Exact seq_trans.
+intros; apply (twist uniset union seq); auto.
+exact seq_trans.
 Qed.
 
-Lemma uniset_twist2 : (x,y,z,t:uniset)
-   (seq (union x (union (union y z) t)) (union (union y (union x z)) t)).
+Lemma uniset_twist2 :
+ forall x y z t:uniset,
+   seq (union x (union (union y z) t)) (union (union y (union x z)) t).
 Proof.
-Intros; Apply seq_trans with (union (union x (union y z)) t).
-Apply seq_sym; Apply union_ass.
-Apply seq_left; Apply union_perm_left.
+intros; apply seq_trans with (union (union x (union y z)) t).
+apply seq_sym; apply union_ass.
+apply seq_left; apply union_perm_left.
 Qed.
 
 (** specific for treesort *)
 
-Lemma treesort_twist1 : (x,y,z,t,u:uniset) (seq u (union y z)) ->
-   (seq (union x (union u t)) (union (union y (union x t)) z)).
+Lemma treesort_twist1 :
+ forall x y z t u:uniset,
+   seq u (union y z) ->
+   seq (union x (union u t)) (union (union y (union x t)) z).
 Proof.
-Intros; Apply seq_trans with (union x (union (union y z) t)).
-Apply seq_right; Apply seq_left; Trivial.
-Apply uniset_twist1.
+intros; apply seq_trans with (union x (union (union y z) t)).
+apply seq_right; apply seq_left; trivial.
+apply uniset_twist1.
 Qed.
 
-Lemma treesort_twist2 : (x,y,z,t,u:uniset) (seq u (union y z)) ->
-   (seq (union x (union u t)) (union (union y (union x z)) t)).
+Lemma treesort_twist2 :
+ forall x y z t u:uniset,
+   seq u (union y z) ->
+   seq (union x (union u t)) (union (union y (union x z)) t).
 Proof.
-Intros; Apply seq_trans with (union x (union (union y z) t)).
-Apply seq_right; Apply seq_left; Trivial.
-Apply uniset_twist2.
+intros; apply seq_trans with (union x (union (union y z) t)).
+apply seq_right; apply seq_left; trivial.
+apply uniset_twist2.
 Qed.
 
 

@@ -10,7 +10,7 @@
 
 (* G. Huet 1-9-95 *)
 
-Require Permut.
+Require Import Permut.
 
 Set Implicit Arguments.
 
@@ -18,155 +18,159 @@ Section multiset_defs.
 
 Variable A : Set.
 Variable eqA : A -> A -> Prop.
-Hypothesis Aeq_dec : (x,y:A){(eqA x y)}+{~(eqA x y)}.
+Hypothesis Aeq_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
-Inductive multiset : Set := 
-      Bag : (A->nat) -> multiset.
+Inductive multiset : Set :=
+    Bag : (A -> nat) -> multiset.
 
-Definition EmptyBag := (Bag [a:A]O).
-Definition SingletonBag := [a:A]
-	(Bag [a':A]Cases (Aeq_dec a a') of
-                      (left _) => (S O) 
-	           | (right _) => O 
-                   end
-	).
+Definition EmptyBag := Bag (fun a:A => 0).
+Definition SingletonBag (a:A) :=
+  Bag (fun a':A => match Aeq_dec a a' with
+                   | left _ => 1
+                   | right _ => 0
+                   end).
 
-Definition multiplicity : multiset -> A -> nat :=
-  [m:multiset][a:A]let (f) = m in (f a).
+Definition multiplicity (m:multiset) (a:A) : nat := let (f) := m in f a.
 
 (** multiset equality *)
-Definition meq := [m1,m2:multiset]
-    (a:A)(multiplicity m1 a)=(multiplicity m2 a).
+Definition meq (m1 m2:multiset) :=
+  forall a:A, multiplicity m1 a = multiplicity m2 a.
 
-Hints Unfold  meq multiplicity.
+Hint Unfold meq multiplicity.
 
-Lemma meq_refl : (x:multiset)(meq x x).
+Lemma meq_refl : forall x:multiset, meq x x.
 Proof.
-NewDestruct x; Auto.
+destruct x; auto.
 Qed.
-Hints Resolve meq_refl.
+Hint Resolve meq_refl.
 
-Lemma meq_trans : (x,y,z:multiset)(meq x y)->(meq y z)->(meq x z).
+Lemma meq_trans : forall x y z:multiset, meq x y -> meq y z -> meq x z.
 Proof.
-Unfold meq.
-NewDestruct x; NewDestruct y; NewDestruct z.
-Intros; Rewrite H; Auto.
+unfold meq in |- *.
+destruct x; destruct y; destruct z.
+intros; rewrite H; auto.
 Qed.
 
-Lemma meq_sym : (x,y:multiset)(meq x y)->(meq y x).
+Lemma meq_sym : forall x y:multiset, meq x y -> meq y x.
 Proof.
-Unfold meq.
-NewDestruct x; NewDestruct y; Auto.
+unfold meq in |- *.
+destruct x; destruct y; auto.
 Qed.
-Hints Immediate meq_sym.
+Hint Immediate meq_sym.
 
 (** multiset union *)
-Definition munion := [m1,m2:multiset]
-    (Bag [a:A](plus (multiplicity m1 a)(multiplicity m2 a))).
+Definition munion (m1 m2:multiset) :=
+  Bag (fun a:A => multiplicity m1 a + multiplicity m2 a).
 
-Lemma munion_empty_left :
-     (x:multiset)(meq x (munion EmptyBag x)).
+Lemma munion_empty_left : forall x:multiset, meq x (munion EmptyBag x).
 Proof.
-Unfold meq; Unfold munion; Simpl; Auto.
+unfold meq in |- *; unfold munion in |- *; simpl in |- *; auto.
 Qed.
-Hints Resolve munion_empty_left.
+Hint Resolve munion_empty_left.
 
-Lemma munion_empty_right :
-     (x:multiset)(meq x (munion x EmptyBag)).
+Lemma munion_empty_right : forall x:multiset, meq x (munion x EmptyBag).
 Proof.
-Unfold meq; Unfold munion; Simpl; Auto.
+unfold meq in |- *; unfold munion in |- *; simpl in |- *; auto.
 Qed.
 
 
-Require Plus. (* comm. and ass. of plus *)
+Require Import Plus. (* comm. and ass. of plus *)
 
-Lemma munion_comm : (x,y:multiset)(meq (munion x y) (munion y x)).
+Lemma munion_comm : forall x y:multiset, meq (munion x y) (munion y x).
 Proof.
-Unfold meq; Unfold multiplicity; Unfold munion.
-NewDestruct x; NewDestruct y; Auto with arith.
+unfold meq in |- *; unfold multiplicity in |- *; unfold munion in |- *.
+destruct x; destruct y; auto with arith.
 Qed.
-Hints Resolve munion_comm.
+Hint Resolve munion_comm.
 
-Lemma munion_ass : 
-      (x,y,z:multiset)(meq (munion (munion x y) z) (munion x (munion y z))).
+Lemma munion_ass :
+ forall x y z:multiset, meq (munion (munion x y) z) (munion x (munion y z)).
 Proof.
-Unfold meq; Unfold munion; Unfold multiplicity.
-NewDestruct x; NewDestruct y; NewDestruct z; Auto with arith.
+unfold meq in |- *; unfold munion in |- *; unfold multiplicity in |- *.
+destruct x; destruct y; destruct z; auto with arith.
 Qed.
-Hints Resolve munion_ass.
+Hint Resolve munion_ass.
 
-Lemma meq_left :  (x,y,z:multiset)(meq x y)->(meq (munion x z) (munion y z)).
+Lemma meq_left :
+ forall x y z:multiset, meq x y -> meq (munion x z) (munion y z).
 Proof.
-Unfold meq; Unfold munion; Unfold multiplicity.
-NewDestruct x; NewDestruct y; NewDestruct z.
-Intros; Elim H; Auto with arith.
+unfold meq in |- *; unfold munion in |- *; unfold multiplicity in |- *.
+destruct x; destruct y; destruct z.
+intros; elim H; auto with arith.
 Qed.
-Hints Resolve meq_left.
+Hint Resolve meq_left.
 
-Lemma meq_right : (x,y,z:multiset)(meq x y)->(meq (munion z x) (munion z y)).
+Lemma meq_right :
+ forall x y z:multiset, meq x y -> meq (munion z x) (munion z y).
 Proof.
-Unfold meq; Unfold munion; Unfold multiplicity.
-NewDestruct x; NewDestruct y; NewDestruct z.
-Intros; Elim H; Auto.
+unfold meq in |- *; unfold munion in |- *; unfold multiplicity in |- *.
+destruct x; destruct y; destruct z.
+intros; elim H; auto.
 Qed.
-Hints Resolve meq_right.
+Hint Resolve meq_right.
 
 
 (** Here we should make multiset an abstract datatype, by hiding [Bag],
     [munion], [multiplicity]; all further properties are proved abstractly *)
 
 Lemma munion_rotate :
-   (x,y,z:multiset)(meq (munion x (munion y z)) (munion z (munion x y))).
+ forall x y z:multiset, meq (munion x (munion y z)) (munion z (munion x y)).
 Proof.
-Intros; Apply (op_rotate multiset munion meq); Auto.
-Exact meq_trans.
+intros; apply (op_rotate multiset munion meq); auto.
+exact meq_trans.
 Qed.
 
-Lemma meq_congr : (x,y,z,t:multiset)(meq x y)->(meq z t)->
-                  (meq (munion x z) (munion y t)).
+Lemma meq_congr :
+ forall x y z t:multiset, meq x y -> meq z t -> meq (munion x z) (munion y t).
 Proof.
-Intros; Apply (cong_congr multiset munion meq); Auto.
-Exact meq_trans.
+intros; apply (cong_congr multiset munion meq); auto.
+exact meq_trans.
 Qed.
 
 Lemma munion_perm_left :
-   (x,y,z:multiset)(meq (munion x (munion y z)) (munion y (munion x z))).
+ forall x y z:multiset, meq (munion x (munion y z)) (munion y (munion x z)).
 Proof.
-Intros; Apply (perm_left multiset munion meq); Auto.
-Exact meq_trans.
+intros; apply (perm_left multiset munion meq); auto.
+exact meq_trans.
 Qed.
 
-Lemma multiset_twist1 : (x,y,z,t:multiset)
-   (meq (munion x (munion (munion y z) t)) (munion (munion y (munion x t)) z)).
+Lemma multiset_twist1 :
+ forall x y z t:multiset,
+   meq (munion x (munion (munion y z) t)) (munion (munion y (munion x t)) z).
 Proof.
-Intros; Apply (twist multiset munion meq); Auto.
-Exact meq_trans.
+intros; apply (twist multiset munion meq); auto.
+exact meq_trans.
 Qed.
 
-Lemma multiset_twist2 : (x,y,z,t:multiset)
-   (meq (munion x (munion (munion y z) t)) (munion (munion y (munion x z)) t)).
+Lemma multiset_twist2 :
+ forall x y z t:multiset,
+   meq (munion x (munion (munion y z) t)) (munion (munion y (munion x z)) t).
 Proof.
-Intros; Apply meq_trans with (munion (munion x (munion y z)) t).
-Apply meq_sym; Apply munion_ass.
-Apply meq_left; Apply munion_perm_left.
+intros; apply meq_trans with (munion (munion x (munion y z)) t).
+apply meq_sym; apply munion_ass.
+apply meq_left; apply munion_perm_left.
 Qed.
 
 (** specific for treesort *)
 
-Lemma treesort_twist1 : (x,y,z,t,u:multiset) (meq u (munion y z)) ->
-   (meq (munion x (munion u t)) (munion (munion y (munion x t)) z)).
+Lemma treesort_twist1 :
+ forall x y z t u:multiset,
+   meq u (munion y z) ->
+   meq (munion x (munion u t)) (munion (munion y (munion x t)) z).
 Proof.
-Intros; Apply meq_trans with (munion x (munion (munion y z) t)).
-Apply meq_right; Apply meq_left; Trivial.
-Apply multiset_twist1.
+intros; apply meq_trans with (munion x (munion (munion y z) t)).
+apply meq_right; apply meq_left; trivial.
+apply multiset_twist1.
 Qed.
 
-Lemma treesort_twist2 : (x,y,z,t,u:multiset) (meq u (munion y z)) ->
-   (meq (munion x (munion u t)) (munion (munion y (munion x z)) t)).
+Lemma treesort_twist2 :
+ forall x y z t u:multiset,
+   meq u (munion y z) ->
+   meq (munion x (munion u t)) (munion (munion y (munion x z)) t).
 Proof.
-Intros; Apply meq_trans with (munion x (munion (munion y z) t)).
-Apply meq_right; Apply meq_left; Trivial.
-Apply multiset_twist2.
+intros; apply meq_trans with (munion x (munion (munion y z) t)).
+apply meq_right; apply meq_left; trivial.
+apply multiset_twist2.
 Qed.
 
 
@@ -181,6 +185,7 @@ End multiset_defs.
 
 Unset Implicit Arguments.
 
-Hints Unfold meq multiplicity : v62 datatypes.
-Hints Resolve munion_empty_right munion_comm munion_ass meq_left meq_right munion_empty_left : v62 datatypes.
-Hints Immediate meq_sym : v62 datatypes.
+Hint Unfold meq multiplicity: v62 datatypes.
+Hint Resolve munion_empty_right munion_comm munion_ass meq_left meq_right
+  munion_empty_left: v62 datatypes.
+Hint Immediate meq_sym: v62 datatypes.

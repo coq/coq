@@ -8,306 +8,377 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require SeqSeries.
-Require Rtrigo.
-Require Ranalysis1.
-Require Ranalysis3.
-Require Exp_prop.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import SeqSeries.
+Require Import Rtrigo.
+Require Import Ranalysis1.
+Require Import Ranalysis3.
+Require Import Exp_prop. Open Local Scope R_scope.
 
 (**********)
-Lemma derivable_pt_inv : (f:R->R;x:R) ``(f x)<>0`` -> (derivable_pt f x) -> (derivable_pt (inv_fct f) x).
-Intros; Cut (derivable_pt (div_fct (fct_cte R1) f) x) -> (derivable_pt (inv_fct f) x).
-Intro; Apply X0.
-Apply derivable_pt_div.
-Apply derivable_pt_const.
-Assumption.
-Assumption.
-Unfold div_fct inv_fct fct_cte; Intro; Elim X0; Intros; Unfold derivable_pt; Apply Specif.existT with x0; Unfold derivable_pt_abs; Unfold derivable_pt_lim; Unfold derivable_pt_abs in p; Unfold derivable_pt_lim in p; Intros; Elim (p eps H0); Intros; Exists x1; Intros; Unfold Rdiv in H1; Unfold Rdiv; Rewrite <- (Rmult_1l ``/(f x)``); Rewrite <- (Rmult_1l ``/(f (x+h))``).
-Apply H1; Assumption.
+Lemma derivable_pt_inv :
+ forall (f:R -> R) (x:R),
+   f x <> 0 -> derivable_pt f x -> derivable_pt (/ f) x.
+intros; cut (derivable_pt (fct_cte 1 / f) x -> derivable_pt (/ f) x).
+intro; apply X0.
+apply derivable_pt_div.
+apply derivable_pt_const.
+assumption.
+assumption.
+unfold div_fct, inv_fct, fct_cte in |- *; intro; elim X0; intros;
+ unfold derivable_pt in |- *; apply existT with x0;
+ unfold derivable_pt_abs in |- *; unfold derivable_pt_lim in |- *;
+ unfold derivable_pt_abs in p; unfold derivable_pt_lim in p; 
+ intros; elim (p eps H0); intros; exists x1; intros; 
+ unfold Rdiv in H1; unfold Rdiv in |- *; rewrite <- (Rmult_1_l (/ f x));
+ rewrite <- (Rmult_1_l (/ f (x + h))).
+apply H1; assumption.
 Qed.
 
 (**********)
-Lemma pr_nu_var : (f,g:R->R;x:R;pr1:(derivable_pt f x);pr2:(derivable_pt g x)) f==g -> (derive_pt f x pr1) == (derive_pt g x pr2).
-Unfold derivable_pt derive_pt; Intros.
-Elim pr1; Intros.
-Elim pr2; Intros.
-Simpl.
-Rewrite H in p.
-Apply unicite_limite with g x; Assumption.
+Lemma pr_nu_var :
+ forall (f g:R -> R) (x:R) (pr1:derivable_pt f x) (pr2:derivable_pt g x),
+   f = g -> derive_pt f x pr1 = derive_pt g x pr2.
+unfold derivable_pt, derive_pt in |- *; intros.
+elim pr1; intros.
+elim pr2; intros.
+simpl in |- *.
+rewrite H in p.
+apply uniqueness_limite with g x; assumption.
 Qed.
 
 (**********)
-Lemma pr_nu_var2 : (f,g:R->R;x:R;pr1:(derivable_pt f x);pr2:(derivable_pt g x)) ((h:R)(f h)==(g h)) -> (derive_pt f x pr1) == (derive_pt g x pr2).
-Unfold derivable_pt derive_pt; Intros.
-Elim pr1; Intros.
-Elim pr2; Intros.
-Simpl.
-Assert H0 := (unicite_step2 ? ? ? p). 
-Assert H1 := (unicite_step2 ? ? ? p0). 
-Cut (limit1_in [h:R]``((f (x+h))-(f x))/h`` [h:R]``h <> 0`` x1 ``0``).
-Intro; Assert H3 := (unicite_step1 ? ? ? ? H0 H2). 
-Assumption.
-Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Unfold limit1_in in H1; Unfold limit_in in H1; Unfold dist in H1; Simpl in H1; Unfold R_dist in H1.
-Intros; Elim (H1 eps H2); Intros.
-Elim H3; Intros.
-Exists x2.
-Split.
-Assumption.
-Intros; Do 2 Rewrite H; Apply H5; Assumption.
+Lemma pr_nu_var2 :
+ forall (f g:R -> R) (x:R) (pr1:derivable_pt f x) (pr2:derivable_pt g x),
+   (forall h:R, f h = g h) -> derive_pt f x pr1 = derive_pt g x pr2.
+unfold derivable_pt, derive_pt in |- *; intros.
+elim pr1; intros.
+elim pr2; intros.
+simpl in |- *.
+assert (H0 := uniqueness_step2 _ _ _ p). 
+assert (H1 := uniqueness_step2 _ _ _ p0). 
+cut (limit1_in (fun h:R => (f (x + h) - f x) / h) (fun h:R => h <> 0) x1 0).
+intro; assert (H3 := uniqueness_step1 _ _ _ _ H0 H2). 
+assumption.
+unfold limit1_in in |- *; unfold limit_in in |- *; unfold dist in |- *;
+ simpl in |- *; unfold R_dist in |- *; unfold limit1_in in H1;
+ unfold limit_in in H1; unfold dist in H1; simpl in H1; 
+ unfold R_dist in H1.
+intros; elim (H1 eps H2); intros.
+elim H3; intros.
+exists x2.
+split.
+assumption.
+intros; do 2 rewrite H; apply H5; assumption.
 Qed.
 
 (**********)
-Lemma derivable_inv : (f:R->R) ((x:R)``(f x)<>0``)->(derivable f)->(derivable (inv_fct f)).
-Intros.
-Unfold derivable; Intro.
-Apply derivable_pt_inv.
-Apply (H x).
-Apply (X x).
+Lemma derivable_inv :
+ forall f:R -> R, (forall x:R, f x <> 0) -> derivable f -> derivable (/ f).
+intros.
+unfold derivable in |- *; intro.
+apply derivable_pt_inv.
+apply (H x).
+apply (X x).
 Qed.
 
-Lemma derive_pt_inv : (f:R->R;x:R;pr:(derivable_pt f x);na:``(f x)<>0``) (derive_pt (inv_fct f) x (derivable_pt_inv f x na pr)) == ``-(derive_pt f x pr)/(Rsqr (f x))``.
-Intros; Replace (derive_pt (inv_fct f) x (derivable_pt_inv f x na pr)) with (derive_pt (div_fct (fct_cte R1) f) x (derivable_pt_div (fct_cte R1) f x (derivable_pt_const R1 x) pr na)).
-Rewrite derive_pt_div; Rewrite derive_pt_const; Unfold fct_cte; Rewrite Rmult_Ol; Rewrite Rmult_1r; Unfold Rminus; Rewrite Rplus_Ol; Reflexivity.
-Apply pr_nu_var2.
-Intro; Unfold div_fct fct_cte inv_fct.
-Unfold Rdiv; Ring.
+Lemma derive_pt_inv :
+ forall (f:R -> R) (x:R) (pr:derivable_pt f x) (na:f x <> 0),
+   derive_pt (/ f) x (derivable_pt_inv f x na pr) =
+   - derive_pt f x pr / Rsqr (f x).
+intros;
+ replace (derive_pt (/ f) x (derivable_pt_inv f x na pr)) with
+  (derive_pt (fct_cte 1 / f) x
+     (derivable_pt_div (fct_cte 1) f x (derivable_pt_const 1 x) pr na)).
+rewrite derive_pt_div; rewrite derive_pt_const; unfold fct_cte in |- *;
+ rewrite Rmult_0_l; rewrite Rmult_1_r; unfold Rminus in |- *;
+ rewrite Rplus_0_l; reflexivity.
+apply pr_nu_var2.
+intro; unfold div_fct, fct_cte, inv_fct in |- *.
+unfold Rdiv in |- *; ring.
 Qed.
 
 (* Rabsolu *)
-Lemma Rabsolu_derive_1 : (x:R) ``0<x`` -> (derivable_pt_lim Rabsolu x ``1``).
-Intros.
-Unfold derivable_pt_lim; Intros.
-Exists (mkposreal x H); Intros.
-Rewrite (Rabsolu_right x).
-Rewrite (Rabsolu_right ``x+h``).
-Rewrite Rplus_sym.
-Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r.
-Rewrite Rplus_Or; Unfold Rdiv; Rewrite <- Rinv_r_sym.
-Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply H0.
-Apply H1.
-Apply Rle_sym1.
-Case (case_Rabsolu h); Intro.
-Rewrite (Rabsolu_left h r) in H2.
-Left; Rewrite Rplus_sym; Apply Rlt_anti_compatibility with ``-h``; Rewrite Rplus_Or; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Apply H2.
-Apply ge0_plus_ge0_is_ge0.
-Left; Apply H.
-Apply Rle_sym2; Apply r.
-Left; Apply H.
+Lemma Rabs_derive_1 : forall x:R, 0 < x -> derivable_pt_lim Rabs x 1.
+intros.
+unfold derivable_pt_lim in |- *; intros.
+exists (mkposreal x H); intros.
+rewrite (Rabs_right x).
+rewrite (Rabs_right (x + h)).
+rewrite Rplus_comm.
+unfold Rminus in |- *; rewrite Rplus_assoc; rewrite Rplus_opp_r.
+rewrite Rplus_0_r; unfold Rdiv in |- *; rewrite <- Rinv_r_sym.
+rewrite Rplus_opp_r; rewrite Rabs_R0; apply H0.
+apply H1.
+apply Rle_ge.
+case (Rcase_abs h); intro.
+rewrite (Rabs_left h r) in H2.
+left; rewrite Rplus_comm; apply Rplus_lt_reg_r with (- h); rewrite Rplus_0_r;
+ rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l; 
+ apply H2.
+apply Rplus_le_le_0_compat.
+left; apply H.
+apply Rge_le; apply r.
+left; apply H.
 Qed.
 
-Lemma Rabsolu_derive_2 : (x:R) ``x<0`` -> (derivable_pt_lim Rabsolu x ``-1``).
-Intros.
-Unfold derivable_pt_lim; Intros.
-Cut ``0< -x``.
-Intro; Exists (mkposreal ``-x`` H1); Intros.
-Rewrite (Rabsolu_left x).
-Rewrite (Rabsolu_left ``x+h``).
-Rewrite Rplus_sym.
-Rewrite Ropp_distr1.
-Unfold Rminus; Rewrite Ropp_Ropp; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l.
-Rewrite Rplus_Or; Unfold Rdiv.
-Rewrite Ropp_mul1.
-Rewrite <- Rinv_r_sym.
-Rewrite Ropp_Ropp; Rewrite Rplus_Ropp_l; Rewrite Rabsolu_R0; Apply H0.
-Apply H2.
-Case (case_Rabsolu h); Intro.
-Apply Ropp_Rlt.
-Rewrite Ropp_O; Rewrite Ropp_distr1; Apply gt0_plus_gt0_is_gt0.
-Apply H1.
-Apply Rgt_RO_Ropp; Apply r.
-Rewrite (Rabsolu_right h r) in H3.
-Apply Rlt_anti_compatibility with ``-x``; Rewrite Rplus_Or; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Apply H3.
-Apply H.
-Apply Rgt_RO_Ropp; Apply H.
+Lemma Rabs_derive_2 : forall x:R, x < 0 -> derivable_pt_lim Rabs x (-1).
+intros.
+unfold derivable_pt_lim in |- *; intros.
+cut (0 < - x).
+intro; exists (mkposreal (- x) H1); intros.
+rewrite (Rabs_left x).
+rewrite (Rabs_left (x + h)).
+rewrite Rplus_comm.
+rewrite Ropp_plus_distr.
+unfold Rminus in |- *; rewrite Ropp_involutive; rewrite Rplus_assoc;
+ rewrite Rplus_opp_l.
+rewrite Rplus_0_r; unfold Rdiv in |- *.
+rewrite Ropp_mult_distr_l_reverse.
+rewrite <- Rinv_r_sym.
+rewrite Ropp_involutive; rewrite Rplus_opp_l; rewrite Rabs_R0; apply H0.
+apply H2.
+case (Rcase_abs h); intro.
+apply Ropp_lt_cancel.
+rewrite Ropp_0; rewrite Ropp_plus_distr; apply Rplus_lt_0_compat.
+apply H1.
+apply Ropp_0_gt_lt_contravar; apply r.
+rewrite (Rabs_right h r) in H3.
+apply Rplus_lt_reg_r with (- x); rewrite Rplus_0_r; rewrite <- Rplus_assoc;
+ rewrite Rplus_opp_l; rewrite Rplus_0_l; apply H3.
+apply H.
+apply Ropp_0_gt_lt_contravar; apply H.
 Qed.
 
 (* Rabsolu is derivable for all x <> 0 *)
-Lemma derivable_pt_Rabsolu : (x:R) ``x<>0`` -> (derivable_pt Rabsolu x).
-Intros.
-Case (total_order_T x R0); Intro.
-Elim s; Intro.
-Unfold derivable_pt; Apply Specif.existT with ``-1``.
-Apply (Rabsolu_derive_2 x a).
-Elim H; Exact b.
-Unfold derivable_pt; Apply Specif.existT with ``1``.
-Apply (Rabsolu_derive_1 x r).
+Lemma Rderivable_pt_abs : forall x:R, x <> 0 -> derivable_pt Rabs x.
+intros.
+case (total_order_T x 0); intro.
+elim s; intro.
+unfold derivable_pt in |- *; apply existT with (-1).
+apply (Rabs_derive_2 x a).
+elim H; exact b.
+unfold derivable_pt in |- *; apply existT with 1.
+apply (Rabs_derive_1 x r).
 Qed.
 
 (* Rabsolu is continuous for all x *)
-Lemma continuity_Rabsolu : (continuity Rabsolu).
-Unfold continuity; Intro.
-Case (Req_EM x R0); Intro.
-Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Exists eps; Split.
-Apply H0.
-Intros; Rewrite H; Rewrite Rabsolu_R0; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Elim H1; Intros; Rewrite H in H3; Unfold Rminus in H3; Rewrite Ropp_O in H3; Rewrite Rplus_Or in H3; Apply H3.
-Apply derivable_continuous_pt; Apply (derivable_pt_Rabsolu x H).
+Lemma Rcontinuity_abs : continuity Rabs.
+unfold continuity in |- *; intro.
+case (Req_dec x 0); intro.
+unfold continuity_pt in |- *; unfold continue_in in |- *;
+ unfold limit1_in in |- *; unfold limit_in in |- *; 
+ simpl in |- *; unfold R_dist in |- *; intros; exists eps; 
+ split.
+apply H0.
+intros; rewrite H; rewrite Rabs_R0; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r; rewrite Rabs_Rabsolu; elim H1; 
+ intros; rewrite H in H3; unfold Rminus in H3; rewrite Ropp_0 in H3;
+ rewrite Rplus_0_r in H3; apply H3.
+apply derivable_continuous_pt; apply (Rderivable_pt_abs x H).
 Qed.
 
 (* Finite sums : Sum a_k x^k *)
-Lemma continuity_finite_sum : (An:nat->R;N:nat) (continuity [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N)).
-Intros; Unfold continuity; Intro.
-Induction N.
-Simpl.
-Apply continuity_pt_const.
-Unfold constant; Intros; Reflexivity.
-Replace [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` (S N)) with (plus_fct [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N) [y:R]``(An (S N))*(pow y (S N))``).
-Apply continuity_pt_plus.
-Apply HrecN.
-Replace [y:R]``(An (S N))*(pow y (S N))`` with (mult_real_fct (An (S N)) [y:R](pow y (S N))).
-Apply continuity_pt_scal.
-Apply derivable_continuous_pt.
-Apply derivable_pt_pow.
-Reflexivity.
-Reflexivity.
+Lemma continuity_finite_sum :
+ forall (An:nat -> R) (N:nat),
+   continuity (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N).
+intros; unfold continuity in |- *; intro.
+induction  N as [| N HrecN].
+simpl in |- *.
+apply continuity_pt_const.
+unfold constant in |- *; intros; reflexivity.
+replace (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) (S N)) with
+ ((fun y:R => sum_f_R0 (fun k:nat => (An k * y ^ k)%R) N) +
+  (fun y:R => (An (S N) * y ^ S N)%R))%F.
+apply continuity_pt_plus.
+apply HrecN.
+replace (fun y:R => An (S N) * y ^ S N) with
+ (mult_real_fct (An (S N)) (fun y:R => y ^ S N)).
+apply continuity_pt_scal.
+apply derivable_continuous_pt.
+apply derivable_pt_pow.
+reflexivity.
+reflexivity.
 Qed.
 
-Lemma derivable_pt_lim_fs : (An:nat->R;x:R;N:nat) (lt O N) -> (derivable_pt_lim [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N) x (sum_f_R0 [k:nat]``(INR (S k))*(An (S k))*(pow x k)`` (pred N))).
-Intros; Induction N.
-Elim (lt_n_n ? H).
-Cut N=O\/(lt O N).
-Intro; Elim H0; Intro.
-Rewrite H1.
-Simpl.
-Replace [y:R]``(An O)*1+(An (S O))*(y*1)`` with (plus_fct (fct_cte ``(An O)*1``) (mult_real_fct ``(An (S O))`` (mult_fct id (fct_cte R1)))).
-Replace ``1*(An (S O))*1`` with ``0+(An (S O))*(1*(fct_cte R1 x)+(id x)*0)``.
-Apply derivable_pt_lim_plus.
-Apply derivable_pt_lim_const.
-Apply derivable_pt_lim_scal.
-Apply derivable_pt_lim_mult.
-Apply derivable_pt_lim_id.
-Apply derivable_pt_lim_const.
-Unfold fct_cte id; Ring.
-Reflexivity.
-Replace [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` (S N)) with (plus_fct [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N) [y:R]``(An (S N))*(pow y (S N))``).
-Replace (sum_f_R0 [k:nat]``(INR (S k))*(An (S k))*(pow x k)`` (pred (S N))) with (Rplus (sum_f_R0 [k:nat]``(INR (S k))*(An (S k))*(pow x k)`` (pred N)) ``(An (S N))*((INR (S (pred (S N))))*(pow x (pred (S N))))``).
-Apply derivable_pt_lim_plus.
-Apply HrecN.
-Assumption.
-Replace [y:R]``(An (S N))*(pow y (S N))`` with (mult_real_fct (An (S N)) [y:R](pow y (S N))).
-Apply derivable_pt_lim_scal.
-Replace (pred (S N)) with N; [Idtac | Reflexivity].
-Pattern 3 N; Replace N with (pred (S N)).
-Apply derivable_pt_lim_pow.
-Reflexivity.
-Reflexivity.
-Cut (pred (S N)) = (S (pred N)).
-Intro; Rewrite H2.
-Rewrite tech5.
-Apply Rplus_plus_r.
-Rewrite <- H2.
-Replace (pred (S N)) with N; [Idtac | Reflexivity].
-Ring.
-Simpl.
-Apply S_pred with O; Assumption.
-Unfold plus_fct.
-Simpl; Reflexivity.
-Inversion H.
-Left; Reflexivity.
-Right; Apply lt_le_trans with (1); [Apply lt_O_Sn | Assumption].
+Lemma derivable_pt_lim_fs :
+ forall (An:nat -> R) (x:R) (N:nat),
+   (0 < N)%nat ->
+   derivable_pt_lim (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N) x
+     (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred N)).
+intros; induction  N as [| N HrecN].
+elim (lt_irrefl _ H).
+cut (N = 0%nat \/ (0 < N)%nat).
+intro; elim H0; intro.
+rewrite H1.
+simpl in |- *.
+replace (fun y:R => An 0%nat * 1 + An 1%nat * (y * 1)) with
+ (fct_cte (An 0%nat * 1) + mult_real_fct (An 1%nat) (id * fct_cte 1))%F.
+replace (1 * An 1%nat * 1) with (0 + An 1%nat * (1 * fct_cte 1 x + id x * 0)).
+apply derivable_pt_lim_plus.
+apply derivable_pt_lim_const.
+apply derivable_pt_lim_scal.
+apply derivable_pt_lim_mult.
+apply derivable_pt_lim_id.
+apply derivable_pt_lim_const.
+unfold fct_cte, id in |- *; ring.
+reflexivity.
+replace (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) (S N)) with
+ ((fun y:R => sum_f_R0 (fun k:nat => (An k * y ^ k)%R) N) +
+  (fun y:R => (An (S N) * y ^ S N)%R))%F.
+replace (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred (S N)))
+ with
+ (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred N) +
+  An (S N) * (INR (S (pred (S N))) * x ^ pred (S N))).
+apply derivable_pt_lim_plus.
+apply HrecN.
+assumption.
+replace (fun y:R => An (S N) * y ^ S N) with
+ (mult_real_fct (An (S N)) (fun y:R => y ^ S N)).
+apply derivable_pt_lim_scal.
+replace (pred (S N)) with N; [ idtac | reflexivity ].
+pattern N at 3 in |- *; replace N with (pred (S N)).
+apply derivable_pt_lim_pow.
+reflexivity.
+reflexivity.
+cut (pred (S N) = S (pred N)).
+intro; rewrite H2.
+rewrite tech5.
+apply Rplus_eq_compat_l.
+rewrite <- H2.
+replace (pred (S N)) with N; [ idtac | reflexivity ].
+ring.
+simpl in |- *.
+apply S_pred with 0%nat; assumption.
+unfold plus_fct in |- *.
+simpl in |- *; reflexivity.
+inversion H.
+left; reflexivity.
+right; apply lt_le_trans with 1%nat; [ apply lt_O_Sn | assumption ].
 Qed.
 
-Lemma derivable_pt_lim_finite_sum : (An:(nat->R); x:R; N:nat) (derivable_pt_lim [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N) x (Cases N of O => R0 | _ => (sum_f_R0 [k:nat]``(INR (S k))*(An (S k))*(pow x k)`` (pred N)) end)).
-Intros.
-Induction N.
-Simpl.
-Rewrite Rmult_1r.
-Replace [_:R]``(An O)`` with (fct_cte (An O)); [Apply derivable_pt_lim_const | Reflexivity].
-Apply derivable_pt_lim_fs; Apply lt_O_Sn.
+Lemma derivable_pt_lim_finite_sum :
+ forall (An:nat -> R) (x:R) (N:nat),
+   derivable_pt_lim (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N) x
+     match N with
+     | O => 0
+     | _ => sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred N)
+     end.
+intros.
+induction  N as [| N HrecN].
+simpl in |- *.
+rewrite Rmult_1_r.
+replace (fun _:R => An 0%nat) with (fct_cte (An 0%nat));
+ [ apply derivable_pt_lim_const | reflexivity ].
+apply derivable_pt_lim_fs; apply lt_O_Sn.
 Qed.
 
-Lemma derivable_pt_finite_sum : (An:nat->R;N:nat;x:R) (derivable_pt [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N) x).
-Intros.
-Unfold derivable_pt.
-Assert H := (derivable_pt_lim_finite_sum An x N).
-Induction N.
-Apply Specif.existT with R0; Apply H.
-Apply Specif.existT with (sum_f_R0 [k:nat]``(INR (S k))*(An (S k))*(pow x k)`` (pred (S N))); Apply H.
+Lemma derivable_pt_finite_sum :
+ forall (An:nat -> R) (N:nat) (x:R),
+   derivable_pt (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N) x.
+intros.
+unfold derivable_pt in |- *.
+assert (H := derivable_pt_lim_finite_sum An x N).
+induction  N as [| N HrecN].
+apply existT with 0; apply H.
+apply existT with
+ (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred (S N))); 
+ apply H.
 Qed.
 
-Lemma derivable_finite_sum : (An:nat->R;N:nat) (derivable [y:R](sum_f_R0 [k:nat]``(An k)*(pow y k)`` N)).
-Intros; Unfold derivable; Intro; Apply derivable_pt_finite_sum.
+Lemma derivable_finite_sum :
+ forall (An:nat -> R) (N:nat),
+   derivable (fun y:R => sum_f_R0 (fun k:nat => An k * y ^ k) N).
+intros; unfold derivable in |- *; intro; apply derivable_pt_finite_sum.
 Qed.
 
 (* Regularity of hyperbolic functions *)
-Lemma derivable_pt_lim_cosh : (x:R) (derivable_pt_lim cosh x ``(sinh x)``).
-Intro.
-Unfold cosh sinh; Unfold Rdiv.
-Replace [x0:R]``((exp x0)+(exp ( -x0)))*/2`` with (mult_fct (plus_fct exp (comp exp (opp_fct id))) (fct_cte ``/2``)); [Idtac | Reflexivity].
-Replace ``((exp x)-(exp ( -x)))*/2`` with ``((exp x)+((exp (-x))*-1))*((fct_cte (Rinv 2)) x)+((plus_fct exp (comp exp (opp_fct id))) x)*0``. 
-Apply derivable_pt_lim_mult.
-Apply derivable_pt_lim_plus.
-Apply derivable_pt_lim_exp.
-Apply derivable_pt_lim_comp.
-Apply derivable_pt_lim_opp.
-Apply derivable_pt_lim_id.
-Apply derivable_pt_lim_exp.
-Apply derivable_pt_lim_const.
-Unfold plus_fct mult_real_fct comp opp_fct id fct_cte; Ring.
+Lemma derivable_pt_lim_cosh : forall x:R, derivable_pt_lim cosh x (sinh x).
+intro.
+unfold cosh, sinh in |- *; unfold Rdiv in |- *.
+replace (fun x0:R => (exp x0 + exp (- x0)) * / 2) with
+ ((exp + comp exp (- id)) * fct_cte (/ 2))%F; [ idtac | reflexivity ].
+replace ((exp x - exp (- x)) * / 2) with
+ ((exp x + exp (- x) * -1) * fct_cte (/ 2) x +
+  (exp + comp exp (- id))%F x * 0). 
+apply derivable_pt_lim_mult.
+apply derivable_pt_lim_plus.
+apply derivable_pt_lim_exp.
+apply derivable_pt_lim_comp.
+apply derivable_pt_lim_opp.
+apply derivable_pt_lim_id.
+apply derivable_pt_lim_exp.
+apply derivable_pt_lim_const.
+unfold plus_fct, mult_real_fct, comp, opp_fct, id, fct_cte in |- *; ring.
 Qed.
 
-Lemma derivable_pt_lim_sinh : (x:R) (derivable_pt_lim sinh x ``(cosh x)``).
-Intro.
-Unfold cosh sinh; Unfold Rdiv.
-Replace [x0:R]``((exp x0)-(exp ( -x0)))*/2`` with (mult_fct (minus_fct exp (comp exp (opp_fct id))) (fct_cte ``/2``)); [Idtac | Reflexivity].
-Replace ``((exp x)+(exp ( -x)))*/2`` with ``((exp x)-((exp (-x))*-1))*((fct_cte (Rinv 2)) x)+((minus_fct exp (comp exp (opp_fct id))) x)*0``. 
-Apply derivable_pt_lim_mult.
-Apply derivable_pt_lim_minus.
-Apply derivable_pt_lim_exp.
-Apply derivable_pt_lim_comp.
-Apply derivable_pt_lim_opp.
-Apply derivable_pt_lim_id.
-Apply derivable_pt_lim_exp.
-Apply derivable_pt_lim_const.
-Unfold plus_fct mult_real_fct comp opp_fct id fct_cte; Ring.
+Lemma derivable_pt_lim_sinh : forall x:R, derivable_pt_lim sinh x (cosh x).
+intro.
+unfold cosh, sinh in |- *; unfold Rdiv in |- *.
+replace (fun x0:R => (exp x0 - exp (- x0)) * / 2) with
+ ((exp - comp exp (- id)) * fct_cte (/ 2))%F; [ idtac | reflexivity ].
+replace ((exp x + exp (- x)) * / 2) with
+ ((exp x - exp (- x) * -1) * fct_cte (/ 2) x +
+  (exp - comp exp (- id))%F x * 0). 
+apply derivable_pt_lim_mult.
+apply derivable_pt_lim_minus.
+apply derivable_pt_lim_exp.
+apply derivable_pt_lim_comp.
+apply derivable_pt_lim_opp.
+apply derivable_pt_lim_id.
+apply derivable_pt_lim_exp.
+apply derivable_pt_lim_const.
+unfold plus_fct, mult_real_fct, comp, opp_fct, id, fct_cte in |- *; ring.
 Qed.
 
-Lemma derivable_pt_exp : (x:R) (derivable_pt exp x).
-Intro.
-Unfold derivable_pt.
-Apply Specif.existT with (exp x).
-Apply derivable_pt_lim_exp.
+Lemma derivable_pt_exp : forall x:R, derivable_pt exp x.
+intro.
+unfold derivable_pt in |- *.
+apply existT with (exp x).
+apply derivable_pt_lim_exp.
 Qed.
 
-Lemma derivable_pt_cosh : (x:R) (derivable_pt cosh x).
-Intro.
-Unfold derivable_pt.
-Apply Specif.existT with (sinh x).
-Apply derivable_pt_lim_cosh.
+Lemma derivable_pt_cosh : forall x:R, derivable_pt cosh x.
+intro.
+unfold derivable_pt in |- *.
+apply existT with (sinh x).
+apply derivable_pt_lim_cosh.
 Qed.
 
-Lemma derivable_pt_sinh : (x:R) (derivable_pt sinh x).
-Intro.
-Unfold derivable_pt.
-Apply Specif.existT with (cosh x).
-Apply derivable_pt_lim_sinh.
+Lemma derivable_pt_sinh : forall x:R, derivable_pt sinh x.
+intro.
+unfold derivable_pt in |- *.
+apply existT with (cosh x).
+apply derivable_pt_lim_sinh.
 Qed.
 
-Lemma derivable_exp : (derivable exp).
-Unfold derivable; Apply derivable_pt_exp.
+Lemma derivable_exp : derivable exp.
+unfold derivable in |- *; apply derivable_pt_exp.
 Qed.
 
-Lemma derivable_cosh : (derivable cosh).
-Unfold derivable; Apply derivable_pt_cosh.
+Lemma derivable_cosh : derivable cosh.
+unfold derivable in |- *; apply derivable_pt_cosh.
 Qed.
 
-Lemma derivable_sinh : (derivable sinh).
-Unfold derivable; Apply derivable_pt_sinh.
+Lemma derivable_sinh : derivable sinh.
+unfold derivable in |- *; apply derivable_pt_sinh.
 Qed.
 
-Lemma derive_pt_exp : (x:R) (derive_pt exp x (derivable_pt_exp x))==(exp x).
-Intro; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_exp.
+Lemma derive_pt_exp :
+ forall x:R, derive_pt exp x (derivable_pt_exp x) = exp x.
+intro; apply derive_pt_eq_0.
+apply derivable_pt_lim_exp.
 Qed.
 
-Lemma derive_pt_cosh : (x:R) (derive_pt cosh x (derivable_pt_cosh x))==(sinh x).
-Intro; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_cosh.
+Lemma derive_pt_cosh :
+ forall x:R, derive_pt cosh x (derivable_pt_cosh x) = sinh x.
+intro; apply derive_pt_eq_0.
+apply derivable_pt_lim_cosh.
 Qed.
 
-Lemma derive_pt_sinh : (x:R) (derive_pt sinh x (derivable_pt_sinh x))==(cosh x).
-Intro; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_sinh.
+Lemma derive_pt_sinh :
+ forall x:R, derive_pt sinh x (derivable_pt_sinh x) = cosh x.
+intro; apply derive_pt_eq_0.
+apply derivable_pt_lim_sinh.
 Qed.

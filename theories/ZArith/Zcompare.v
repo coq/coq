@@ -10,11 +10,10 @@
 
 Require Export BinPos.
 Require Export BinInt.
-Require Zsyntax.
-Require Lt.
-Require Gt.
-Require Plus.
-Require Mult.
+Require Import Lt.
+Require Import Gt.
+Require Import Plus.
+Require Import Mult.
 
 Open Local Scope Z_scope.
 
@@ -25,456 +24,478 @@ Open Local Scope Z_scope.
 (**********************************************************************)
 (** Comparison on integers *)
 
-Lemma Zcompare_x_x : (x:Z) (Zcompare x x) = EGAL.
+Lemma Zcompare_refl : forall n:Z, (n ?= n) = Eq.
 Proof.
-Intro x; NewDestruct x as [|p|p]; Simpl; [ Reflexivity | Apply convert_compare_EGAL
-  | Rewrite convert_compare_EGAL; Reflexivity ].
+intro x; destruct x as [| p| p]; simpl in |- *;
+ [ reflexivity | apply Pcompare_refl | rewrite Pcompare_refl; reflexivity ].
 Qed.
 
-Lemma Zcompare_EGAL_eq : (x,y:Z) (Zcompare x y) = EGAL -> x = y.
+Lemma Zcompare_Eq_eq : forall n m:Z, (n ?= m) = Eq -> n = m.
 Proof.
-Intros x y; NewDestruct x as [|x'|x'];NewDestruct y as [|y'|y'];Simpl;Intro H; Reflexivity Orelse Try Discriminate H; [
-    Rewrite (compare_convert_EGAL x' y' H); Reflexivity
-  | Rewrite (compare_convert_EGAL x' y'); [
-      Reflexivity
-    | NewDestruct (compare x' y' EGAL);
-      Reflexivity Orelse Discriminate]].
+intros x y; destruct x as [| x'| x']; destruct y as [| y'| y']; simpl in |- *;
+ intro H; reflexivity || (try discriminate H);
+ [ rewrite (Pcompare_Eq_eq x' y' H); reflexivity
+ | rewrite (Pcompare_Eq_eq x' y');
+    [ reflexivity
+    | destruct ((x' ?= y')%positive Eq); reflexivity || discriminate ] ].
 Qed.
 
-Lemma Zcompare_EGAL : (x,y:Z) (Zcompare x y) = EGAL <-> x = y.
+Lemma Zcompare_Eq_iff_eq : forall n m:Z, (n ?= m) = Eq <-> n = m.
 Proof.
-Intros x y;Split; Intro E; [ Apply Zcompare_EGAL_eq; Assumption
-  | Rewrite E; Apply Zcompare_x_x ].
+intros x y; split; intro E;
+ [ apply Zcompare_Eq_eq; assumption | rewrite E; apply Zcompare_refl ].
 Qed.
 
-Lemma Zcompare_antisym :
-  (x,y:Z)(Op (Zcompare x y)) = (Zcompare y x).
+Lemma Zcompare_antisym : forall n m:Z, CompOpp (n ?= m) = (m ?= n).
 Proof.
-Intros x y; NewDestruct x; NewDestruct y; Simpl;
-  Reflexivity Orelse Discriminate H Orelse 
-  Rewrite Pcompare_antisym; Reflexivity.
+intros x y; destruct x; destruct y; simpl in |- *;
+ reflexivity || discriminate H || rewrite Pcompare_antisym; 
+ reflexivity.
 Qed.
 
-Lemma Zcompare_ANTISYM : 
-  (x,y:Z) (Zcompare x y) = SUPERIEUR <->  (Zcompare y x) = INFERIEUR.
+Lemma Zcompare_Gt_Lt_antisym : forall n m:Z, (n ?= m) = Gt <-> (m ?= n) = Lt.
 Proof.
-Intros x y; Split; Intro H; [ 
-  Change INFERIEUR with (Op SUPERIEUR); 
-  Rewrite <- Zcompare_antisym; Rewrite H; Reflexivity
-| Change SUPERIEUR with (Op INFERIEUR); 
-  Rewrite <- Zcompare_antisym; Rewrite H; Reflexivity ].
+intros x y; split; intro H;
+ [ change Lt with (CompOpp Gt) in |- *; rewrite <- Zcompare_antisym;
+    rewrite H; reflexivity
+ | change Gt with (CompOpp Lt) in |- *; rewrite <- Zcompare_antisym;
+    rewrite H; reflexivity ].
 Qed.
 
 (** Transitivity of comparison *)
 
-Lemma Zcompare_trans_SUPERIEUR : 
-  (x,y,z:Z) (Zcompare x y) = SUPERIEUR ->  
-            (Zcompare y z) = SUPERIEUR ->
-            (Zcompare x z) = SUPERIEUR.
+Lemma Zcompare_Gt_trans :
+ forall n m p:Z, (n ?= m) = Gt -> (m ?= p) = Gt -> (n ?= p) = Gt.
 Proof.
-Intros x y z;Case x;Case y;Case z; Simpl;
-Try (Intros; Discriminate H Orelse Discriminate H0);
-Auto with arith; [
-  Intros p q r H H0;Apply convert_compare_SUPERIEUR; Unfold gt;
-  Apply lt_trans with m:=(convert q);
-  Apply compare_convert_INFERIEUR;Apply ZC1;Assumption
-| Intros p q r; Do 3 Rewrite <- ZC4; Intros H H0;
-  Apply convert_compare_SUPERIEUR;Unfold gt;Apply lt_trans with m:=(convert q);
-  Apply compare_convert_INFERIEUR;Apply ZC1;Assumption ].
+intros x y z; case x; case y; case z; simpl in |- *;
+ try (intros; discriminate H || discriminate H0); auto with arith;
+ [ intros p q r H H0; apply nat_of_P_gt_Gt_compare_complement_morphism;
+    unfold gt in |- *; apply lt_trans with (m := nat_of_P q);
+    apply nat_of_P_lt_Lt_compare_morphism; apply ZC1; 
+    assumption
+ | intros p q r; do 3 rewrite <- ZC4; intros H H0;
+    apply nat_of_P_gt_Gt_compare_complement_morphism; 
+    unfold gt in |- *; apply lt_trans with (m := nat_of_P q);
+    apply nat_of_P_lt_Lt_compare_morphism; apply ZC1; 
+    assumption ].
 Qed.
 
 (** Comparison and opposite *)
 
-Lemma Zcompare_Zopp :
-  (x,y:Z) (Zcompare x y) = (Zcompare (Zopp y) (Zopp x)).
+Lemma Zcompare_opp : forall n m:Z, (n ?= m) = (- m ?= - n).
 Proof.
-(Intros x y;Case x;Case y;Simpl;Auto with arith);
-Intros;Rewrite <- ZC4;Trivial with arith.
+intros x y; case x; case y; simpl in |- *; auto with arith; intros;
+ rewrite <- ZC4; trivial with arith.
 Qed.
 
-Hints Local Resolve convert_compare_EGAL.
+Hint Local Resolve Pcompare_refl.
 
 (** Comparison first-order specification *)
 
-Lemma SUPERIEUR_POS :
-  (x,y:Z) (Zcompare x y) = SUPERIEUR ->
-  (EX h:positive |(Zplus x (Zopp y)) = (POS h)).
+Lemma Zcompare_Gt_spec :
+ forall n m:Z, (n ?= m) = Gt ->  exists h : positive | n + - m = Zpos h.
 Proof.
-Intros x y;Case x;Case y; [
-  Simpl; Intros H; Discriminate H
-| Simpl; Intros p H; Discriminate H
-| Intros p H; Exists p; Simpl; Auto with arith
-| Intros p H; Exists p; Simpl; Auto with arith
-| Intros q p H; Exists (true_sub p q); Unfold Zplus Zopp;
-  Unfold Zcompare in H; Rewrite H; Trivial with arith
-| Intros q p H; Exists (add p q); Simpl; Trivial with arith
-| Simpl; Intros p H; Discriminate H
-| Simpl; Intros q p H; Discriminate H
-| Unfold Zcompare; Intros q p; Rewrite <- ZC4; Intros H; Exists (true_sub q p);
-  Simpl; Rewrite (ZC1 q p H); Trivial with arith].
+intros x y; case x; case y;
+ [ simpl in |- *; intros H; discriminate H
+ | simpl in |- *; intros p H; discriminate H
+ | intros p H; exists p; simpl in |- *; auto with arith
+ | intros p H; exists p; simpl in |- *; auto with arith
+ | intros q p H; exists (p - q)%positive; unfold Zplus, Zopp in |- *;
+    unfold Zcompare in H; rewrite H; trivial with arith
+ | intros q p H; exists (p + q)%positive; simpl in |- *; trivial with arith
+ | simpl in |- *; intros p H; discriminate H
+ | simpl in |- *; intros q p H; discriminate H
+ | unfold Zcompare in |- *; intros q p; rewrite <- ZC4; intros H;
+    exists (q - p)%positive; simpl in |- *; rewrite (ZC1 q p H);
+    trivial with arith ].
 Qed.
 
 (** Comparison and addition *)
 
-Lemma weaken_Zcompare_Zplus_compatible : 
-  ((n,m:Z) (p:positive) 
-    (Zcompare (Zplus (POS p) n) (Zplus (POS p) m)) = (Zcompare n m)) ->
-   (x,y,z:Z) (Zcompare (Zplus z x) (Zplus z y)) = (Zcompare x y).
+Lemma weaken_Zcompare_Zplus_compatible :
+ (forall (n m:Z) (p:positive), (Zpos p + n ?= Zpos p + m) = (n ?= m)) ->
+ forall n m p:Z, (p + n ?= p + m) = (n ?= m).
 Proof.
-Intros H x y z; NewDestruct z; [
-  Reflexivity
-| Apply H
-| Rewrite (Zcompare_Zopp x y); Rewrite Zcompare_Zopp; 
-  Do 2 Rewrite Zopp_Zplus; Rewrite Zopp_NEG; Apply H ].
+intros H x y z; destruct z;
+ [ reflexivity
+ | apply H
+ | rewrite (Zcompare_opp x y); rewrite Zcompare_opp;
+    do 2 rewrite Zopp_plus_distr; rewrite Zopp_neg; 
+    apply H ].
 Qed.
 
-Hints Local Resolve ZC4.
+Hint Local Resolve ZC4.
 
-Lemma weak_Zcompare_Zplus_compatible : 
-  (x,y:Z) (z:positive) 
-    (Zcompare (Zplus (POS z) x) (Zplus (POS z) y)) = (Zcompare x y).
+Lemma weak_Zcompare_Zplus_compatible :
+ forall (n m:Z) (p:positive), (Zpos p + n ?= Zpos p + m) = (n ?= m).
 Proof.
-Intros x y z;Case x;Case y;Simpl;Auto with arith; [
-  Intros p;Apply convert_compare_INFERIEUR; Apply ZL17
-| Intros p;ElimPcompare z p;Intros E;Rewrite E;Auto with arith;
-  Apply convert_compare_SUPERIEUR; Rewrite true_sub_convert; [ Unfold gt ;
-  Apply ZL16 | Assumption ]
-| Intros p;ElimPcompare z p;
-  Intros E;Auto with arith; Apply convert_compare_SUPERIEUR;
-  Unfold gt;Apply ZL17
-| Intros p q;
-  ElimPcompare q p;
-  Intros E;Rewrite E;[
-    Rewrite (compare_convert_EGAL q p E); Apply convert_compare_EGAL
-  | Apply convert_compare_INFERIEUR;Do 2 Rewrite convert_add;Apply lt_reg_l;
-    Apply compare_convert_INFERIEUR with 1:=E
-  | Apply convert_compare_SUPERIEUR;Unfold gt ;Do 2 Rewrite convert_add;
-    Apply lt_reg_l;Exact (compare_convert_SUPERIEUR q p E) ]
-| Intros p q; 
-  ElimPcompare z p;
-  Intros E;Rewrite E;Auto with arith;
-  Apply convert_compare_SUPERIEUR; Rewrite true_sub_convert; [
-    Unfold gt; Apply lt_trans with m:=(convert z); [Apply ZL16 | Apply ZL17]
-  | Assumption ]
-| Intros p;ElimPcompare z p;Intros E;Rewrite E;Auto with arith; Simpl;
-  Apply convert_compare_INFERIEUR;Rewrite true_sub_convert;[Apply ZL16|
-  Assumption]
-| Intros p q;
-  ElimPcompare z q;
-  Intros E;Rewrite E;Auto with arith; Simpl;Apply convert_compare_INFERIEUR;
-  Rewrite true_sub_convert;[
-    Apply lt_trans with m:=(convert z) ;[Apply ZL16|Apply ZL17]
-  | Assumption]
-| Intros p q; ElimPcompare z q; Intros E0;Rewrite E0;
-  ElimPcompare z p; Intros E1;Rewrite E1; ElimPcompare q p;
-  Intros E2;Rewrite E2;Auto with arith; [
-    Absurd (compare q p EGAL)=INFERIEUR; [
-      Rewrite <- (compare_convert_EGAL z q E0);
-      Rewrite <- (compare_convert_EGAL z p E1); 
-      Rewrite (convert_compare_EGAL z); Discriminate
-    | Assumption ]
-  | Absurd (compare q p EGAL)=SUPERIEUR; [
-      Rewrite <- (compare_convert_EGAL z q E0);
-      Rewrite <- (compare_convert_EGAL z p E1);
-      Rewrite (convert_compare_EGAL z);Discriminate
-    | Assumption]
-  | Absurd (compare z p EGAL)=INFERIEUR; [
-      Rewrite (compare_convert_EGAL z q E0); 
-      Rewrite <- (compare_convert_EGAL q p E2);
-      Rewrite (convert_compare_EGAL q);Discriminate
-    | Assumption ]
-  | Absurd (compare z p EGAL)=INFERIEUR; [
-      Rewrite (compare_convert_EGAL z q E0); Rewrite E2;Discriminate
-    | Assumption]
-  | Absurd (compare z p EGAL)=SUPERIEUR;[
-      Rewrite (compare_convert_EGAL z q E0);
-      Rewrite <- (compare_convert_EGAL q p E2);
-      Rewrite (convert_compare_EGAL q);Discriminate
-    | Assumption]
-  | Absurd (compare z p EGAL)=SUPERIEUR;[
-      Rewrite (compare_convert_EGAL z q E0);Rewrite E2;Discriminate
-    | Assumption]
-  | Absurd (compare z q EGAL)=INFERIEUR;[
-      Rewrite (compare_convert_EGAL z p E1);
-      Rewrite (compare_convert_EGAL q p E2);
-      Rewrite (convert_compare_EGAL p); Discriminate
-    | Assumption]
-  | Absurd (compare p q EGAL)=SUPERIEUR; [
-      Rewrite <- (compare_convert_EGAL z p E1);
-      Rewrite E0; Discriminate
-    | Apply ZC2;Assumption ]
-  | Simpl; Rewrite (compare_convert_EGAL q p E2);
-    Rewrite (convert_compare_EGAL (true_sub p z)); Auto with arith
-  | Simpl; Rewrite <- ZC4; Apply convert_compare_SUPERIEUR;
-    Rewrite true_sub_convert; [
-      Rewrite true_sub_convert; [
-        Unfold gt; Apply simpl_lt_plus_l with p:=(convert z);
-        Rewrite le_plus_minus_r; [
-          Rewrite le_plus_minus_r; [
-            Apply compare_convert_INFERIEUR;Assumption
-          | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Assumption ]
-        | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Assumption ]
-      | Apply ZC2;Assumption ]
-    | Apply ZC2;Assumption ]
-  | Simpl; Rewrite <- ZC4; Apply convert_compare_INFERIEUR; 
-    Rewrite true_sub_convert; [
-      Rewrite true_sub_convert; [
-        Apply simpl_lt_plus_l with p:=(convert z);
-        Rewrite le_plus_minus_r; [
-          Rewrite le_plus_minus_r; [
-            Apply compare_convert_INFERIEUR;Apply ZC1;Assumption
-          | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Assumption ]
-        | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Assumption ]
-      | Apply ZC2;Assumption]
-    | Apply ZC2;Assumption ]
-  | Absurd (compare z q EGAL)=INFERIEUR; [
-      Rewrite (compare_convert_EGAL q p E2);Rewrite E1;Discriminate
-    | Assumption ]
-  | Absurd (compare q p EGAL)=INFERIEUR; [
-      Cut (compare q p EGAL)=SUPERIEUR; [
-        Intros E;Rewrite E;Discriminate
-      | Apply convert_compare_SUPERIEUR; Unfold gt;
-        Apply lt_trans with m:=(convert z); [
-          Apply compare_convert_INFERIEUR;Apply ZC1;Assumption
-        | Apply compare_convert_INFERIEUR;Assumption ]]
-    | Assumption ]
-  | Absurd (compare z q EGAL)=SUPERIEUR; [
-      Rewrite (compare_convert_EGAL z p E1);
-      Rewrite (compare_convert_EGAL q p E2);
-      Rewrite (convert_compare_EGAL p); Discriminate
-    | Assumption ]
-  | Absurd (compare z q EGAL)=SUPERIEUR; [
-      Rewrite (compare_convert_EGAL z p E1);
-      Rewrite ZC1; [Discriminate | Assumption ]
-    | Assumption ]
-  | Absurd (compare z q EGAL)=SUPERIEUR; [
-      Rewrite (compare_convert_EGAL q p E2); Rewrite E1; Discriminate
-    | Assumption ]
-  | Absurd (compare q p EGAL)=SUPERIEUR; [
-      Rewrite ZC1; [ 
-        Discriminate 
-      | Apply convert_compare_SUPERIEUR; Unfold gt; 
-        Apply lt_trans with m:=(convert z); [
-          Apply compare_convert_INFERIEUR;Apply ZC1;Assumption
-        | Apply compare_convert_INFERIEUR;Assumption ]]
-    | Assumption ]
-  | Simpl; Rewrite (compare_convert_EGAL q p E2); Apply convert_compare_EGAL
-  | Simpl; Apply convert_compare_SUPERIEUR; Unfold gt;
-    Rewrite true_sub_convert; [
-      Rewrite true_sub_convert; [
-        Apply simpl_lt_plus_l with p:=(convert p); Rewrite le_plus_minus_r; [
-          Rewrite plus_sym; Apply simpl_lt_plus_l with p:=(convert q);
-          Rewrite plus_assoc_l; Rewrite le_plus_minus_r; [
-            Rewrite (plus_sym (convert q)); Apply lt_reg_l;
-            Apply compare_convert_INFERIEUR;Assumption
-          | Apply lt_le_weak; Apply compare_convert_INFERIEUR;
-            Apply ZC1;Assumption ]
-        | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Apply ZC1; 
-          Assumption ]
-      | Assumption ]
-    | Assumption ]
-  | Simpl; Apply convert_compare_INFERIEUR; Rewrite true_sub_convert; [
-      Rewrite true_sub_convert; [
-        Apply simpl_lt_plus_l with p:=(convert q); Rewrite le_plus_minus_r; [
-          Rewrite plus_sym; Apply simpl_lt_plus_l with p:=(convert p);
-          Rewrite plus_assoc_l; Rewrite le_plus_minus_r; [
-            Rewrite (plus_sym (convert p)); Apply lt_reg_l;
-            Apply compare_convert_INFERIEUR;Apply ZC1;Assumption 
-          | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Apply ZC1;
-            Assumption ]
-        | Apply lt_le_weak;Apply compare_convert_INFERIEUR;Apply ZC1;Assumption]
-      | Assumption]
-    | Assumption]]].
+intros x y z; case x; case y; simpl in |- *; auto with arith;
+ [ intros p; apply nat_of_P_lt_Lt_compare_complement_morphism; apply ZL17
+ | intros p; ElimPcompare z p; intros E; rewrite E; auto with arith;
+    apply nat_of_P_gt_Gt_compare_complement_morphism;
+    rewrite nat_of_P_minus_morphism;
+    [ unfold gt in |- *; apply ZL16 | assumption ]
+ | intros p; ElimPcompare z p; intros E; auto with arith;
+    apply nat_of_P_gt_Gt_compare_complement_morphism; 
+    unfold gt in |- *; apply ZL17
+ | intros p q; ElimPcompare q p; intros E; rewrite E;
+    [ rewrite (Pcompare_Eq_eq q p E); apply Pcompare_refl
+    | apply nat_of_P_lt_Lt_compare_complement_morphism;
+       do 2 rewrite nat_of_P_plus_morphism; apply plus_lt_compat_l;
+       apply nat_of_P_lt_Lt_compare_morphism with (1 := E)
+    | apply nat_of_P_gt_Gt_compare_complement_morphism; unfold gt in |- *;
+       do 2 rewrite nat_of_P_plus_morphism; apply plus_lt_compat_l;
+       exact (nat_of_P_gt_Gt_compare_morphism q p E) ]
+ | intros p q; ElimPcompare z p; intros E; rewrite E; auto with arith;
+    apply nat_of_P_gt_Gt_compare_complement_morphism;
+    rewrite nat_of_P_minus_morphism;
+    [ unfold gt in |- *; apply lt_trans with (m := nat_of_P z);
+       [ apply ZL16 | apply ZL17 ]
+    | assumption ]
+ | intros p; ElimPcompare z p; intros E; rewrite E; auto with arith;
+    simpl in |- *; apply nat_of_P_lt_Lt_compare_complement_morphism;
+    rewrite nat_of_P_minus_morphism; [ apply ZL16 | assumption ]
+ | intros p q; ElimPcompare z q; intros E; rewrite E; auto with arith;
+    simpl in |- *; apply nat_of_P_lt_Lt_compare_complement_morphism;
+    rewrite nat_of_P_minus_morphism;
+    [ apply lt_trans with (m := nat_of_P z); [ apply ZL16 | apply ZL17 ]
+    | assumption ]
+ | intros p q; ElimPcompare z q; intros E0; rewrite E0; ElimPcompare z p;
+    intros E1; rewrite E1; ElimPcompare q p; intros E2; 
+    rewrite E2; auto with arith;
+    [ absurd ((q ?= p)%positive Eq = Lt);
+       [ rewrite <- (Pcompare_Eq_eq z q E0);
+          rewrite <- (Pcompare_Eq_eq z p E1); rewrite (Pcompare_refl z);
+          discriminate
+       | assumption ]
+    | absurd ((q ?= p)%positive Eq = Gt);
+       [ rewrite <- (Pcompare_Eq_eq z q E0);
+          rewrite <- (Pcompare_Eq_eq z p E1); rewrite (Pcompare_refl z);
+          discriminate
+       | assumption ]
+    | absurd ((z ?= p)%positive Eq = Lt);
+       [ rewrite (Pcompare_Eq_eq z q E0); rewrite <- (Pcompare_Eq_eq q p E2);
+          rewrite (Pcompare_refl q); discriminate
+       | assumption ]
+    | absurd ((z ?= p)%positive Eq = Lt);
+       [ rewrite (Pcompare_Eq_eq z q E0); rewrite E2; discriminate
+       | assumption ]
+    | absurd ((z ?= p)%positive Eq = Gt);
+       [ rewrite (Pcompare_Eq_eq z q E0); rewrite <- (Pcompare_Eq_eq q p E2);
+          rewrite (Pcompare_refl q); discriminate
+       | assumption ]
+    | absurd ((z ?= p)%positive Eq = Gt);
+       [ rewrite (Pcompare_Eq_eq z q E0); rewrite E2; discriminate
+       | assumption ]
+    | absurd ((z ?= q)%positive Eq = Lt);
+       [ rewrite (Pcompare_Eq_eq z p E1); rewrite (Pcompare_Eq_eq q p E2);
+          rewrite (Pcompare_refl p); discriminate
+       | assumption ]
+    | absurd ((p ?= q)%positive Eq = Gt);
+       [ rewrite <- (Pcompare_Eq_eq z p E1); rewrite E0; discriminate
+       | apply ZC2; assumption ]
+    | simpl in |- *; rewrite (Pcompare_Eq_eq q p E2);
+       rewrite (Pcompare_refl (p - z)); auto with arith
+    | simpl in |- *; rewrite <- ZC4;
+       apply nat_of_P_gt_Gt_compare_complement_morphism;
+       rewrite nat_of_P_minus_morphism;
+       [ rewrite nat_of_P_minus_morphism;
+          [ unfold gt in |- *; apply plus_lt_reg_l with (p := nat_of_P z);
+             rewrite le_plus_minus_r;
+             [ rewrite le_plus_minus_r;
+                [ apply nat_of_P_lt_Lt_compare_morphism; assumption
+                | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                   assumption ]
+             | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                assumption ]
+          | apply ZC2; assumption ]
+       | apply ZC2; assumption ]
+    | simpl in |- *; rewrite <- ZC4;
+       apply nat_of_P_lt_Lt_compare_complement_morphism;
+       rewrite nat_of_P_minus_morphism;
+       [ rewrite nat_of_P_minus_morphism;
+          [ apply plus_lt_reg_l with (p := nat_of_P z);
+             rewrite le_plus_minus_r;
+             [ rewrite le_plus_minus_r;
+                [ apply nat_of_P_lt_Lt_compare_morphism; apply ZC1;
+                   assumption
+                | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                   assumption ]
+             | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                assumption ]
+          | apply ZC2; assumption ]
+       | apply ZC2; assumption ]
+    | absurd ((z ?= q)%positive Eq = Lt);
+       [ rewrite (Pcompare_Eq_eq q p E2); rewrite E1; discriminate
+       | assumption ]
+    | absurd ((q ?= p)%positive Eq = Lt);
+       [ cut ((q ?= p)%positive Eq = Gt);
+          [ intros E; rewrite E; discriminate
+          | apply nat_of_P_gt_Gt_compare_complement_morphism;
+             unfold gt in |- *; apply lt_trans with (m := nat_of_P z);
+             [ apply nat_of_P_lt_Lt_compare_morphism; apply ZC1; assumption
+             | apply nat_of_P_lt_Lt_compare_morphism; assumption ] ]
+       | assumption ]
+    | absurd ((z ?= q)%positive Eq = Gt);
+       [ rewrite (Pcompare_Eq_eq z p E1); rewrite (Pcompare_Eq_eq q p E2);
+          rewrite (Pcompare_refl p); discriminate
+       | assumption ]
+    | absurd ((z ?= q)%positive Eq = Gt);
+       [ rewrite (Pcompare_Eq_eq z p E1); rewrite ZC1;
+          [ discriminate | assumption ]
+       | assumption ]
+    | absurd ((z ?= q)%positive Eq = Gt);
+       [ rewrite (Pcompare_Eq_eq q p E2); rewrite E1; discriminate
+       | assumption ]
+    | absurd ((q ?= p)%positive Eq = Gt);
+       [ rewrite ZC1;
+          [ discriminate
+          | apply nat_of_P_gt_Gt_compare_complement_morphism;
+             unfold gt in |- *; apply lt_trans with (m := nat_of_P z);
+             [ apply nat_of_P_lt_Lt_compare_morphism; apply ZC1; assumption
+             | apply nat_of_P_lt_Lt_compare_morphism; assumption ] ]
+       | assumption ]
+    | simpl in |- *; rewrite (Pcompare_Eq_eq q p E2); apply Pcompare_refl
+    | simpl in |- *; apply nat_of_P_gt_Gt_compare_complement_morphism;
+       unfold gt in |- *; rewrite nat_of_P_minus_morphism;
+       [ rewrite nat_of_P_minus_morphism;
+          [ apply plus_lt_reg_l with (p := nat_of_P p);
+             rewrite le_plus_minus_r;
+             [ rewrite plus_comm; apply plus_lt_reg_l with (p := nat_of_P q);
+                rewrite plus_assoc; rewrite le_plus_minus_r;
+                [ rewrite (plus_comm (nat_of_P q)); apply plus_lt_compat_l;
+                   apply nat_of_P_lt_Lt_compare_morphism; 
+                   assumption
+                | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                   apply ZC1; assumption ]
+             | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                apply ZC1; assumption ]
+          | assumption ]
+       | assumption ]
+    | simpl in |- *; apply nat_of_P_lt_Lt_compare_complement_morphism;
+       rewrite nat_of_P_minus_morphism;
+       [ rewrite nat_of_P_minus_morphism;
+          [ apply plus_lt_reg_l with (p := nat_of_P q);
+             rewrite le_plus_minus_r;
+             [ rewrite plus_comm; apply plus_lt_reg_l with (p := nat_of_P p);
+                rewrite plus_assoc; rewrite le_plus_minus_r;
+                [ rewrite (plus_comm (nat_of_P p)); apply plus_lt_compat_l;
+                   apply nat_of_P_lt_Lt_compare_morphism; 
+                   apply ZC1; assumption
+                | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                   apply ZC1; assumption ]
+             | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+                apply ZC1; assumption ]
+          | assumption ]
+       | assumption ] ] ].
 Qed.
 
-Lemma Zcompare_Zplus_compatible : 
-   (x,y,z:Z) (Zcompare (Zplus z x) (Zplus z y)) = (Zcompare x y).
+Lemma Zcompare_plus_compat : forall n m p:Z, (p + n ?= p + m) = (n ?= m).
 Proof.
-Exact (weaken_Zcompare_Zplus_compatible weak_Zcompare_Zplus_compatible).
+exact (weaken_Zcompare_Zplus_compatible weak_Zcompare_Zplus_compatible).
 Qed.
 
-Lemma Zcompare_Zplus_compatible2 :
-  (r:relation)(x,y,z,t:Z)
-    (Zcompare x y) = r -> (Zcompare z t) = r ->
-    (Zcompare (Zplus x z) (Zplus y t)) = r.
+Lemma Zplus_compare_compat :
+ forall (r:comparison) (n m p q:Z),
+   (n ?= m) = r -> (p ?= q) = r -> (n + p ?= m + q) = r.
 Proof.
-Intros r x y z t; Case r; [
-  Intros H1 H2; Elim (Zcompare_EGAL x y); Elim (Zcompare_EGAL z t);
-  Intros H3 H4 H5 H6; Rewrite H3; [ 
-    Rewrite H5; [ Elim (Zcompare_EGAL (Zplus y t) (Zplus y t)); Auto with arith | Auto with arith ]
-  | Auto with arith ]
-| Intros H1 H2; Elim (Zcompare_ANTISYM (Zplus y t) (Zplus x z));
-  Intros H3 H4; Apply H3;
-  Apply Zcompare_trans_SUPERIEUR with y:=(Zplus y z) ; [
-    Rewrite Zcompare_Zplus_compatible;
-    Elim (Zcompare_ANTISYM t z); Auto with arith
-  | Do 2 Rewrite <- (Zplus_sym z); 
-    Rewrite Zcompare_Zplus_compatible;
-    Elim (Zcompare_ANTISYM y x); Auto with arith]
-| Intros H1 H2;
-  Apply Zcompare_trans_SUPERIEUR with y:=(Zplus x t) ; [
-    Rewrite Zcompare_Zplus_compatible; Assumption
-  | Do 2 Rewrite <- (Zplus_sym t);
-    Rewrite Zcompare_Zplus_compatible; Assumption]].
+intros r x y z t; case r;
+ [ intros H1 H2; elim (Zcompare_Eq_iff_eq x y); elim (Zcompare_Eq_iff_eq z t);
+    intros H3 H4 H5 H6; rewrite H3;
+    [ rewrite H5;
+       [ elim (Zcompare_Eq_iff_eq (y + t) (y + t)); auto with arith
+       | auto with arith ]
+    | auto with arith ]
+ | intros H1 H2; elim (Zcompare_Gt_Lt_antisym (y + t) (x + z)); intros H3 H4;
+    apply H3; apply Zcompare_Gt_trans with (m := y + z);
+    [ rewrite Zcompare_plus_compat; elim (Zcompare_Gt_Lt_antisym t z);
+       auto with arith
+    | do 2 rewrite <- (Zplus_comm z); rewrite Zcompare_plus_compat;
+       elim (Zcompare_Gt_Lt_antisym y x); auto with arith ]
+ | intros H1 H2; apply Zcompare_Gt_trans with (m := x + t);
+    [ rewrite Zcompare_plus_compat; assumption
+    | do 2 rewrite <- (Zplus_comm t); rewrite Zcompare_plus_compat;
+       assumption ] ].
 Qed.
 
-Lemma Zcompare_Zs_SUPERIEUR : (x:Z)(Zcompare (Zs x) x)=SUPERIEUR.
+Lemma Zcompare_succ_Gt : forall n:Z, (Zsucc n ?= n) = Gt.
 Proof.
-Intro x; Unfold Zs; Pattern 2 x; Rewrite <- (Zero_right x); 
-Rewrite Zcompare_Zplus_compatible;Reflexivity.
+intro x; unfold Zsucc in |- *; pattern x at 2 in |- *;
+ rewrite <- (Zplus_0_r x); rewrite Zcompare_plus_compat; 
+ reflexivity.
 Qed.
 
-Lemma Zcompare_et_un: 
-  (x,y:Z) (Zcompare x y)=SUPERIEUR <-> 
-    ~(Zcompare x (Zplus y (POS xH)))=INFERIEUR.
+Lemma Zcompare_Gt_not_Lt : forall n m:Z, (n ?= m) = Gt <-> (n ?= m + 1) <> Lt.
 Proof.
-Intros x y; Split; [
-  Intro H; (ElimCompare 'x '(Zplus y (POS xH)));[
-    Intro H1; Rewrite H1; Discriminate
-  | Intros H1; Elim SUPERIEUR_POS with 1:=H; Intros h H2; 
-    Absurd (gt (convert h) O) /\ (lt (convert h) (S O)); [
-      Unfold not ;Intros H3;Elim H3;Intros H4 H5; Absurd (gt (convert h) O); [
-        Unfold gt ;Apply le_not_lt; Apply le_S_n; Exact H5
-      | Assumption]
-    | Split; [
-        Elim (ZL4 h); Intros i H3;Rewrite H3; Apply gt_Sn_O
-      | Change (lt (convert h) (convert xH)); 
-        Apply compare_convert_INFERIEUR;
-        Change (Zcompare (POS h) (POS xH))=INFERIEUR;
-        Rewrite <- H2; Rewrite <- [m,n:Z](Zcompare_Zplus_compatible m n y);
-        Rewrite (Zplus_sym x);Rewrite Zplus_assoc; Rewrite Zplus_inverse_r;
-        Simpl; Exact H1 ]]
-  | Intros H1;Rewrite -> H1;Discriminate ]
-| Intros H; (ElimCompare 'x '(Zplus y (POS xH))); [
-    Intros H1;Elim (Zcompare_EGAL x (Zplus y (POS xH))); Intros H2 H3;
-    Rewrite  (H2 H1); Exact (Zcompare_Zs_SUPERIEUR y)
-  | Intros H1;Absurd (Zcompare x (Zplus y (POS xH)))=INFERIEUR;Assumption
-  | Intros H1; Apply Zcompare_trans_SUPERIEUR with y:=(Zs y); 
-      [ Exact H1 | Exact (Zcompare_Zs_SUPERIEUR y)]]].
+intros x y; split;
+ [ intro H; elim_compare x (y + 1);
+    [ intro H1; rewrite H1; discriminate
+    | intros H1; elim Zcompare_Gt_spec with (1 := H); intros h H2;
+       absurd ((nat_of_P h > 0)%nat /\ (nat_of_P h < 1)%nat);
+       [ unfold not in |- *; intros H3; elim H3; intros H4 H5;
+          absurd (nat_of_P h > 0)%nat;
+          [ unfold gt in |- *; apply le_not_lt; apply le_S_n; exact H5
+          | assumption ]
+       | split;
+          [ elim (ZL4 h); intros i H3; rewrite H3; apply gt_Sn_O
+          | change (nat_of_P h < nat_of_P 1)%nat in |- *;
+             apply nat_of_P_lt_Lt_compare_morphism;
+             change ((Zpos h ?= 1) = Lt) in |- *; rewrite <- H2;
+             rewrite <- (fun m n:Z => Zcompare_plus_compat m n y);
+             rewrite (Zplus_comm x); rewrite Zplus_assoc; 
+             rewrite Zplus_opp_r; simpl in |- *; exact H1 ] ]
+    | intros H1; rewrite H1; discriminate ]
+ | intros H; elim_compare x (y + 1);
+    [ intros H1; elim (Zcompare_Eq_iff_eq x (y + 1)); intros H2 H3;
+       rewrite (H2 H1); exact (Zcompare_succ_Gt y)
+    | intros H1; absurd ((x ?= y + 1) = Lt); assumption
+    | intros H1; apply Zcompare_Gt_trans with (m := Zsucc y);
+       [ exact H1 | exact (Zcompare_succ_Gt y) ] ] ].
 Qed.
 
 (** Successor and comparison *)
 
-Lemma Zcompare_n_S : (n,m:Z)(Zcompare (Zs n) (Zs m)) = (Zcompare n m).
+Lemma Zcompare_succ_compat : forall n m:Z, (Zsucc n ?= Zsucc m) = (n ?= m).
 Proof.
-Intros n m;Unfold Zs ;Do 2 Rewrite -> [t:Z](Zplus_sym t (POS xH));
-Rewrite -> Zcompare_Zplus_compatible;Auto with arith.
+intros n m; unfold Zsucc in |- *; do 2 rewrite (fun t:Z => Zplus_comm t 1);
+ rewrite Zcompare_plus_compat; auto with arith.
 Qed.
  
 (** Multiplication and comparison *)
 
-Lemma Zcompare_Zmult_compatible : 
-   (x:positive)(y,z:Z)
-      (Zcompare (Zmult (POS x) y) (Zmult (POS x) z)) = (Zcompare y z).
+Lemma Zcompare_mult_compat :
+ forall (p:positive) (n m:Z), (Zpos p * n ?= Zpos p * m) = (n ?= m).
 Proof.
-Intros x; NewInduction x as [p H|p H|]; [
-  Intros y z;
-  Cut (POS (xI p))=(Zplus (Zplus (POS p) (POS p)) (POS xH)); [
-    Intros E; Rewrite E; Do 4 Rewrite Zmult_plus_distr_l; 
-    Do 2 Rewrite Zmult_one;
-    Apply Zcompare_Zplus_compatible2; [
-      Apply Zcompare_Zplus_compatible2; Apply H
-    | Trivial with arith]
-  | Simpl; Rewrite (add_x_x p); Trivial with arith]
-| Intros y z; Cut (POS (xO p))=(Zplus (POS p) (POS p)); [
-    Intros E; Rewrite E; Do 2 Rewrite Zmult_plus_distr_l;
-      Apply Zcompare_Zplus_compatible2; Apply H
-    | Simpl; Rewrite (add_x_x p); Trivial with arith]
-  | Intros y z; Do 2 Rewrite Zmult_one; Trivial with arith].
+intros x; induction x as [p H| p H| ];
+ [ intros y z; cut (Zpos (xI p) = Zpos p + Zpos p + 1);
+    [ intros E; rewrite E; do 4 rewrite Zmult_plus_distr_l;
+       do 2 rewrite Zmult_1_l; apply Zplus_compare_compat;
+       [ apply Zplus_compare_compat; apply H | trivial with arith ]
+    | simpl in |- *; rewrite (Pplus_diag p); trivial with arith ]
+ | intros y z; cut (Zpos (xO p) = Zpos p + Zpos p);
+    [ intros E; rewrite E; do 2 rewrite Zmult_plus_distr_l;
+       apply Zplus_compare_compat; apply H
+    | simpl in |- *; rewrite (Pplus_diag p); trivial with arith ]
+ | intros y z; do 2 rewrite Zmult_1_l; trivial with arith ].
 Qed.
 
 
 (** Reverting [x ?= y] to trichotomy *)
 
-Lemma rename : (A:Set)(P:A->Prop)(x:A) ((y:A)(x=y)->(P y)) -> (P x).
+Lemma rename :
+ forall (A:Set) (P:A -> Prop) (x:A), (forall y:A, x = y -> P y) -> P x.
 Proof.
-Auto with arith. 
+auto with arith. 
 Qed.
 
 Lemma Zcompare_elim :
-  (c1,c2,c3:Prop)(x,y:Z)
-    ((x=y) -> c1) ->(`x<y` -> c2) ->(`x>y`-> c3)
-     -> Cases (Zcompare x y) of EGAL => c1 | INFERIEUR => c2 | SUPERIEUR => c3 end.
+ forall (c1 c2 c3:Prop) (n m:Z),
+   (n = m -> c1) ->
+   (n < m -> c2) ->
+   (n > m -> c3) -> match n ?= m with
+                    | Eq => c1
+                    | Lt => c2
+                    | Gt => c3
+                    end.
 Proof.
-Intros c1 c2 c3 x y; Intros.
-Apply rename with x:=(Zcompare x y); Intro r; Elim r;
-[ Intro; Apply H; Apply (Zcompare_EGAL_eq x y); Assumption
-| Unfold Zlt in H0; Assumption
-| Unfold Zgt in H1; Assumption ].
+intros c1 c2 c3 x y; intros.
+apply rename with (x := x ?= y); intro r; elim r;
+ [ intro; apply H; apply (Zcompare_Eq_eq x y); assumption
+ | unfold Zlt in H0; assumption
+ | unfold Zgt in H1; assumption ].
 Qed.
 
-Lemma Zcompare_eq_case : 
-  (c1,c2,c3:Prop)(x,y:Z) c1 -> x=y ->
-  Cases (Zcompare x y) of EGAL => c1 | INFERIEUR => c2 | SUPERIEUR => c3 end.
+Lemma Zcompare_eq_case :
+ forall (c1 c2 c3:Prop) (n m:Z),
+   c1 -> n = m -> match n ?= m with
+                  | Eq => c1
+                  | Lt => c2
+                  | Gt => c3
+                  end.
 Proof.
-Intros c1 c2 c3 x y; Intros.
-Rewrite H0; Rewrite (Zcompare_x_x).
-Assumption.
+intros c1 c2 c3 x y; intros.
+rewrite H0; rewrite Zcompare_refl.
+assumption.
 Qed.
 
 (** Decompose an egality between two [?=] relations into 3 implications *)
 
 Lemma Zcompare_egal_dec :
-   (x1,y1,x2,y2:Z)
-    (`x1<y1`->`x2<y2`)
-     ->((Zcompare x1 y1)=EGAL -> (Zcompare x2 y2)=EGAL)
-        ->(`x1>y1`->`x2>y2`)->(Zcompare x1 y1)=(Zcompare x2 y2).
+ forall n m p q:Z,
+   (n < m -> p < q) ->
+   ((n ?= m) = Eq -> (p ?= q) = Eq) ->
+   (n > m -> p > q) -> (n ?= m) = (p ?= q).
 Proof.
-Intros x1 y1 x2 y2.
-Unfold Zgt; Unfold Zlt;
-Case (Zcompare x1 y1); Case (Zcompare x2 y2); Auto with arith; Symmetry; Auto with arith.
+intros x1 y1 x2 y2.
+unfold Zgt in |- *; unfold Zlt in |- *; case (x1 ?= y1); case (x2 ?= y2);
+ auto with arith; symmetry  in |- *; auto with arith.
 Qed.
 
 (** Relating [x ?= y] to [Zle], [Zlt], [Zge] or [Zgt] *)
 
-Lemma Zle_Zcompare :
-  (x,y:Z)`x<=y` ->
-  Cases (Zcompare x y) of EGAL => True | INFERIEUR => True | SUPERIEUR => False end.
+Lemma Zle_compare :
+ forall n m:Z,
+   n <= m -> match n ?= m with
+             | Eq => True
+             | Lt => True
+             | Gt => False
+             end.
 Proof.
-Intros x y; Unfold Zle; Elim (Zcompare x y); Auto with arith.
+intros x y; unfold Zle in |- *; elim (x ?= y); auto with arith.
 Qed.
 
-Lemma Zlt_Zcompare :
-  (x,y:Z)`x<y`  ->
-  Cases (Zcompare x y) of EGAL => False | INFERIEUR => True | SUPERIEUR => False end.
+Lemma Zlt_compare :
+ forall n m:Z,
+   n < m -> match n ?= m with
+            | Eq => False
+            | Lt => True
+            | Gt => False
+            end.
 Proof.
-Intros x y; Unfold Zlt; Elim (Zcompare x y); Intros; Discriminate Orelse Trivial with arith.
+intros x y; unfold Zlt in |- *; elim (x ?= y); intros;
+ discriminate || trivial with arith.
 Qed.
 
-Lemma Zge_Zcompare :
-  (x,y:Z)`x>=y`->
-  Cases (Zcompare x y) of EGAL => True | INFERIEUR => False | SUPERIEUR => True end.
+Lemma Zge_compare :
+ forall n m:Z,
+   n >= m -> match n ?= m with
+             | Eq => True
+             | Lt => False
+             | Gt => True
+             end.
 Proof.
-Intros x y; Unfold Zge; Elim (Zcompare x y); Auto with arith. 
+intros x y; unfold Zge in |- *; elim (x ?= y); auto with arith. 
 Qed.
 
-Lemma Zgt_Zcompare :
-  (x,y:Z)`x>y` ->
-  Cases (Zcompare x y) of EGAL => False | INFERIEUR => False | SUPERIEUR => True end.
+Lemma Zgt_compare :
+ forall n m:Z,
+   n > m -> match n ?= m with
+            | Eq => False
+            | Lt => False
+            | Gt => True
+            end.
 Proof.
-Intros x y; Unfold Zgt; Elim (Zcompare x y); Intros; Discriminate Orelse Trivial with arith.
+intros x y; unfold Zgt in |- *; elim (x ?= y); intros;
+ discriminate || trivial with arith.
 Qed.
 
 (**********************************************************************)
 (* Other properties *)
 
-V7only [Set Implicit Arguments.].
 
-Lemma  Zcompare_Zmult_left : (x,y,z:Z)`z>0` -> `x ?= y`=`z*x ?= z*y`.
+Lemma Zmult_compare_compat_l :
+ forall n m p:Z, p > 0 -> (n ?= m) = (p * n ?= p * m).
 Proof.
-Intros x y z H; NewDestruct z.
-  Discriminate H.
-  Rewrite Zcompare_Zmult_compatible; Reflexivity.
-  Discriminate H.
+intros x y z H; destruct z.
+  discriminate H.
+  rewrite Zcompare_mult_compat; reflexivity.
+  discriminate H.
 Qed.
 
-Lemma Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
+Lemma Zmult_compare_compat_r :
+ forall n m p:Z, p > 0 -> (n ?= m) = (n * p ?= m * p).
 Proof.
-Intros x y z H;
-Rewrite (Zmult_sym x z);
-Rewrite (Zmult_sym y z);
-Apply Zcompare_Zmult_left; Assumption.
+intros x y z H; rewrite (Zmult_comm x z); rewrite (Zmult_comm y z);
+ apply Zmult_compare_compat_l; assumption.
 Qed.
-
-V7only [Unset Implicit Arguments.].
 

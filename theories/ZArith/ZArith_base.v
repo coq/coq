@@ -12,10 +12,6 @@
     These are the basic modules, required by [Omega] and [Ring] for instance. 
     The full library is [ZArith]. *)
 
-V7only [
-Require Export fast_integer.
-Require Export zarith_aux.
-].
 Require Export BinPos.
 Require Export BinNat.
 Require Export BinInt.
@@ -26,14 +22,13 @@ Require Export Zmin.
 Require Export Zabs.
 Require Export Znat.
 Require Export auxiliary.
-Require Export Zsyntax.
 Require Export ZArith_dec.
 Require Export Zbool.
 Require Export Zmisc.
 Require Export Wf_Z.
 
-Hints Resolve Zle_n Zplus_sym Zplus_assoc Zmult_sym Zmult_assoc
-  Zero_left Zero_right Zmult_one Zplus_inverse_l Zplus_inverse_r 
-  Zmult_plus_distr_l Zmult_plus_distr_r : zarith.
+Hint Resolve Zle_refl Zplus_comm Zplus_assoc Zmult_comm Zmult_assoc Zplus_0_l
+  Zplus_0_r Zmult_1_l Zplus_opp_l Zplus_opp_r Zmult_plus_distr_l
+  Zmult_plus_distr_r: zarith.
 
 Require Export Zhints.

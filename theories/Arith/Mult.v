@@ -13,178 +13,166 @@ Require Export Minus.
 Require Export Lt.
 Require Export Le.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,p:nat.
+Implicit Types m n p : nat.
 
 (** Zero property *)
 
-Lemma mult_0_r : (n:nat) (mult n O)=O.
+Lemma mult_0_r : forall n, n * 0 = 0.
 Proof.
-Intro; Symmetry; Apply mult_n_O.
+intro; symmetry  in |- *; apply mult_n_O.
 Qed.
 
-Lemma mult_0_l : (n:nat) (mult O n)=O.
+Lemma mult_0_l : forall n, 0 * n = 0.
 Proof.
-Reflexivity.
+reflexivity.
 Qed.
 
 (** Distributivity *)
 
-Lemma mult_plus_distr : 
-      (n,m,p:nat)((mult (plus n m) p)=(plus (mult n p) (mult m p))).
+Lemma mult_plus_distr_r : forall n m p, (n + m) * p = n * p + m * p.
 Proof.
-Intros; Elim n; Simpl; Intros; Auto with arith.
-Elim plus_assoc_l; Elim H; Auto with arith.
+intros; elim n; simpl in |- *; intros; auto with arith.
+elim plus_assoc; elim H; auto with arith.
 Qed.
-Hints Resolve mult_plus_distr : arith v62.
+Hint Resolve mult_plus_distr_r: arith v62.
 
-Lemma mult_plus_distr_r : (n,m,p:nat) (mult n (plus m p))=(plus (mult n m) (mult n p)).
+Lemma mult_plus_distr_l : forall n m p, n * (m + p) = n * m + n * p.
 Proof.
-  NewInduction n. Trivial.
-  Intros. Simpl. Rewrite (IHn m p). Apply sym_eq. Apply plus_permute_2_in_4.
+  induction n. trivial.
+  intros. simpl in |- *. rewrite (IHn m p). apply sym_eq. apply plus_permute_2_in_4.
 Qed.
 
-Lemma mult_minus_distr : (n,m,p:nat)((mult (minus n m) p)=(minus (mult n p) (mult m p))).
+Lemma mult_minus_distr_r : forall n m p, (n - m) * p = n * p - m * p.
 Proof.
-Intros; Pattern n m; Apply nat_double_ind; Simpl; Intros; Auto with arith.
-Elim minus_plus_simpl; Auto with arith.
+intros; pattern n, m in |- *; apply nat_double_ind; simpl in |- *; intros;
+ auto with arith.
+elim minus_plus_simpl_l_reverse; auto with arith.
 Qed.
-Hints Resolve mult_minus_distr : arith v62.
+Hint Resolve mult_minus_distr_r: arith v62.
 
 (** Associativity *)
 
-Lemma mult_assoc_r : (n,m,p:nat)((mult (mult n m) p) = (mult n (mult m p))).
+Lemma mult_assoc_reverse : forall n m p, n * m * p = n * (m * p).
 Proof.
-Intros; Elim n; Intros; Simpl; Auto with arith.
-Rewrite mult_plus_distr.
-Elim H; Auto with arith.
+intros; elim n; intros; simpl in |- *; auto with arith.
+rewrite mult_plus_distr_r.
+elim H; auto with arith.
 Qed.
-Hints Resolve mult_assoc_r : arith v62.
+Hint Resolve mult_assoc_reverse: arith v62.
 
-Lemma mult_assoc_l : (n,m,p:nat)(mult n (mult m p)) = (mult (mult n m) p).
+Lemma mult_assoc : forall n m p, n * (m * p) = n * m * p.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
-Hints Resolve mult_assoc_l : arith v62.
+Hint Resolve mult_assoc: arith v62.
 
 (** Commutativity *)
 
-Lemma mult_sym : (n,m:nat)(mult n m)=(mult m n).
+Lemma mult_comm : forall n m, n * m = m * n.
 Proof.
-Intros; Elim n; Intros; Simpl; Auto with arith.
-Elim mult_n_Sm.
-Elim H; Apply plus_sym.
+intros; elim n; intros; simpl in |- *; auto with arith.
+elim mult_n_Sm.
+elim H; apply plus_comm.
 Qed.
-Hints Resolve mult_sym : arith v62.
+Hint Resolve mult_comm: arith v62.
 
 (** 1 is neutral *)
 
-Lemma mult_1_n : (n:nat)(mult (S O) n)=n.
+Lemma mult_1_l : forall n, 1 * n = n.
 Proof.
-Simpl; Auto with arith.
+simpl in |- *; auto with arith.
 Qed.
-Hints Resolve mult_1_n : arith v62.
+Hint Resolve mult_1_l: arith v62.
 
-Lemma mult_n_1 : (n:nat)(mult n (S O))=n.
+Lemma mult_1_r : forall n, n * 1 = n.
 Proof.
-Intro; Elim mult_sym; Auto with arith.
+intro; elim mult_comm; auto with arith.
 Qed.
-Hints Resolve mult_n_1 : arith v62.
+Hint Resolve mult_1_r: arith v62.
 
 (** Compatibility with orders *)
 
-Lemma mult_O_le : (n,m:nat)(m=O)\/(le n (mult m n)).
+Lemma mult_O_le : forall n m, m = 0 \/ n <= m * n.
 Proof.
-NewInduction m; Simpl; Auto with arith.
+induction m; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve mult_O_le : arith v62.
+Hint Resolve mult_O_le: arith v62.
 
-Lemma mult_le_compat_l : (n,m,p:nat) (le n m) -> (le (mult p n) (mult p m)).
+Lemma mult_le_compat_l : forall n m p, n <= m -> p * n <= p * m.
 Proof.
-  NewInduction p as [|p IHp]. Intros. Simpl. Apply le_n.
-  Intros. Simpl. Apply le_plus_plus. Assumption.
-  Apply IHp. Assumption.
+  induction p as [| p IHp]. intros. simpl in |- *. apply le_n.
+  intros. simpl in |- *. apply plus_le_compat. assumption.
+  apply IHp. assumption.
 Qed.
-Hints Resolve mult_le_compat_l : arith.
-V7only [
-Notation mult_le := [m,n,p:nat](mult_le_compat_l p n m).
-].
+Hint Resolve mult_le_compat_l: arith.
 
 
-Lemma le_mult_right : (m,n,p:nat)(le m n)->(le (mult m p) (mult n p)).
-Intros m n p H.
-Rewrite mult_sym. Rewrite (mult_sym n).
-Auto with arith.
+Lemma mult_le_compat_r : forall n m p, n <= m -> n * p <= m * p.
+intros m n p H.
+rewrite mult_comm. rewrite (mult_comm n).
+auto with arith.
 Qed.
 
-Lemma le_mult_mult :
-  (m,n,p,q:nat)(le m n)->(le p q)->(le (mult m p) (mult n q)).
+Lemma mult_le_compat :
+ forall n m p (q:nat), n <= m -> p <= q -> n * p <= m * q.
 Proof.
-Intros m n p q Hmn Hpq; NewInduction Hmn.
-NewInduction Hpq.
+intros m n p q Hmn Hpq; induction Hmn.
+induction Hpq.
 (* m*p<=m*p *)
-Apply le_n.
+apply le_n.
 (* m*p<=m*m0 -> m*p<=m*(S m0) *)
-Rewrite <- mult_n_Sm; Apply le_trans with (mult m m0).
-Assumption.
-Apply le_plus_l.
+rewrite <- mult_n_Sm; apply le_trans with (m * m0).
+assumption.
+apply le_plus_l.
 (* m*p<=m0*q -> m*p<=(S m0)*q *)
-Simpl; Apply le_trans with (mult m0 q).
-Assumption.
-Apply le_plus_r.
+simpl in |- *; apply le_trans with (m0 * q).
+assumption.
+apply le_plus_r.
 Qed.
 
-Lemma mult_lt : (m,n,p:nat) (lt n p) -> (lt (mult (S m) n) (mult (S m) p)).
+Lemma mult_S_lt_compat_l : forall n m p, m < p -> S n * m < S n * p.
 Proof.
-  Intro m; NewInduction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
-  Intros. Exact (lt_plus_plus ? ? ? ? H (IHm ? ? H)).
+  intro m; induction m. intros. simpl in |- *. rewrite <- plus_n_O. rewrite <- plus_n_O. assumption.
+  intros. exact (plus_lt_compat _ _ _ _ H (IHm _ _ H)).
 Qed.
 
-Hints Resolve mult_lt : arith.
-V7only [
-Notation lt_mult_left := mult_lt.
-(* Theorem lt_mult_left :
-   (x,y,z:nat) (lt x y) -> (lt (mult (S z) x) (mult (S z) y)).
-*)
-].
+Hint Resolve mult_S_lt_compat_l: arith.
 
-Lemma lt_mult_right :
-  (m,n,p:nat) (lt m n) -> (lt (0) p) -> (lt (mult m p) (mult n p)).
-Intros m n p H H0.
-NewInduction p.
-Elim (lt_n_n ? H0).
-Rewrite mult_sym.
-Replace (mult n (S p)) with (mult (S p) n); Auto with arith.
+Lemma mult_lt_compat_r : forall n m p, n < m -> 0 < p -> n * p < m * p.
+intros m n p H H0.
+induction p.
+elim (lt_irrefl _ H0).
+rewrite mult_comm.
+replace (n * S p) with (S p * n); auto with arith.
 Qed.
 
-Lemma mult_le_conv_1 : (m,n,p:nat) (le (mult (S m) n) (mult (S m) p)) -> (le n p).
+Lemma mult_S_le_reg_l : forall n m p, S n * m <= S n * p -> m <= p.
 Proof.
-  Intros m n p H. Elim (le_or_lt n p). Trivial.
-  Intro H0. Cut (lt (mult (S m) n) (mult (S m) n)). Intro. Elim (lt_n_n ? H1).
-  Apply le_lt_trans with m:=(mult (S m) p). Assumption.
-  Apply mult_lt. Assumption.
+  intros m n p H. elim (le_or_lt n p). trivial.
+  intro H0. cut (S m * n < S m * n). intro. elim (lt_irrefl _ H1).
+  apply le_lt_trans with (m := S m * p). assumption.
+  apply mult_S_lt_compat_l. assumption.
 Qed.
 
 (** n|->2*n and n|->2n+1 have disjoint image *)
 
-V7only [ (* From Zdivides *) ].
-Theorem odd_even_lem:
-  (p, q : ?)  ~ (plus (mult (2) p) (1)) = (mult (2) q).
-Intros p; Elim p; Auto.
-Intros q; Case q; Simpl.
-Red; Intros; Discriminate.
-Intros q'; Rewrite [x, y : ?]  (plus_sym x (S y)); Simpl; Red; Intros;
- Discriminate.
-Intros p' H q; Case q.
-Simpl; Red; Intros; Discriminate.
-Intros q'; Red; Intros H0; Case (H q').
-Replace (mult (S (S O)) q') with (minus (mult (S (S O)) (S q')) (2)).
-Rewrite <- H0; Simpl; Auto.
-Repeat Rewrite [x, y : ?]  (plus_sym x (S y)); Simpl; Auto.
-Simpl; Repeat Rewrite [x, y : ?]  (plus_sym x (S y)); Simpl; Auto.
-Case q'; Simpl; Auto.
+Theorem odd_even_lem : forall p q, 2 * p + 1 <> 2 * q.
+intros p; elim p; auto.
+intros q; case q; simpl in |- *.
+red in |- *; intros; discriminate.
+intros q'; rewrite (fun x y => plus_comm x (S y)); simpl in |- *; red in |- *;
+ intros; discriminate.
+intros p' H q; case q.
+simpl in |- *; red in |- *; intros; discriminate.
+intros q'; red in |- *; intros H0; case (H q').
+replace (2 * q') with (2 * S q' - 2).
+rewrite <- H0; simpl in |- *; auto.
+repeat rewrite (fun x y => plus_comm x (S y)); simpl in |- *; auto.
+simpl in |- *; repeat rewrite (fun x y => plus_comm x (S y)); simpl in |- *;
+ auto.
+case q'; simpl in |- *; auto.
 Qed.
 
 
@@ -194,31 +182,30 @@ Qed.
     tail-recursive, whereas [mult] is not. This can be useful 
     when extracting programs. *)
 
-Fixpoint mult_acc [s,m,n:nat] : nat := 
-   Cases n of 
-      O => s
-      | (S p) => (mult_acc (tail_plus m s) m p)
-    end.
+Fixpoint mult_acc (s:nat) m n {struct n} : nat :=
+  match n with
+  | O => s
+  | S p => mult_acc (tail_plus m s) m p
+  end.
 
-Lemma mult_acc_aux : (n,s,m:nat)(plus s (mult n m))= (mult_acc s m n).
+Lemma mult_acc_aux : forall n m p, m + n * p = mult_acc m p n.
 Proof.
-NewInduction n as [|p IHp]; Simpl;Auto.
-Intros s m; Rewrite <- plus_tail_plus; Rewrite <- IHp.
-Rewrite <- plus_assoc_r; Apply (f_equal2 nat nat);Auto.
-Rewrite plus_sym;Auto.
+induction n as [| p IHp]; simpl in |- *; auto.
+intros s m; rewrite <- plus_tail_plus; rewrite <- IHp.
+rewrite <- plus_assoc_reverse; apply (f_equal2 (A1:=nat) (A2:=nat)); auto.
+rewrite plus_comm; auto.
 Qed.
 
-Definition tail_mult := [n,m:nat](mult_acc O m n).
+Definition tail_mult n m := mult_acc 0 m n.
 
-Lemma mult_tail_mult : (n,m:nat)(mult n m)=(tail_mult n m).
+Lemma mult_tail_mult : forall n m, n * m = tail_mult n m.
 Proof.
-Intros; Unfold tail_mult; Rewrite <- mult_acc_aux;Auto.
+intros; unfold tail_mult in |- *; rewrite <- mult_acc_aux; auto.
 Qed.
 
 (** [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus] 
     and [mult] and simplify *)
 
-Tactic Definition TailSimpl := 
-   Repeat Rewrite <- plus_tail_plus; 
-   Repeat Rewrite <- mult_tail_mult; 
-   Simpl. 
+Ltac tail_simpl :=
+  repeat rewrite <- plus_tail_plus; repeat rewrite <- mult_tail_mult;
+   simpl in |- *. 

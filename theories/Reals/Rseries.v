@@ -8,14 +8,13 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require Classical.
-Require Compare.
-V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import Classical.
+Require Import Compare.
 Open Local Scope R_scope.
 
-Implicit Variable Type r:R.
+Implicit Type r : R.
 
 (* classical is needed for [Un_cv_crit] *)
 (*********************************************************)
@@ -26,144 +25,153 @@ Implicit Variable Type r:R.
 Section sequence.
 
 (*********)
-Variable Un:nat->R.
+Variable Un : nat -> R.
 
 (*********)
-Fixpoint Rmax_N [N:nat]:R:=
-   Cases N of
-     O     => (Un O)
-    |(S n) => (Rmax (Un (S n)) (Rmax_N n))
-   end.
+Fixpoint Rmax_N (N:nat) : R :=
+  match N with
+  | O => Un 0
+  | S n => Rmax (Un (S n)) (Rmax_N n)
+  end.
 
 (*********)
-Definition EUn:R->Prop:=[r:R](Ex [i:nat] (r==(Un i))).
+Definition EUn r : Prop :=  exists i : nat | r = Un i.
 
 (*********)
-Definition Un_cv:R->Prop:=[l:R]
-  (eps:R)(Rgt eps R0)->(Ex[N:nat](n:nat)(ge n N)->
-             (Rlt (R_dist (Un n) l) eps)).
+Definition Un_cv (l:R) : Prop :=
+  forall eps:R,
+    eps > 0 ->
+     exists N : nat | (forall n:nat, (n >= N)%nat -> R_dist (Un n) l < eps).
 
 (*********)
-Definition Cauchy_crit:Prop:=(eps:R)(Rgt eps R0)->
-       (Ex[N:nat] (n,m:nat)(ge n N)->(ge m N)->
-                  (Rlt (R_dist (Un n) (Un m)) eps)).
+Definition Cauchy_crit : Prop :=
+  forall eps:R,
+    eps > 0 ->
+     exists N : nat
+    | (forall n m:nat,
+         (n >= N)%nat -> (m >= N)%nat -> R_dist (Un n) (Un m) < eps).
 
 (*********)
-Definition Un_growing:Prop:=(n:nat)(Rle (Un n) (Un (S n))).
+Definition Un_growing : Prop := forall n:nat, Un n <= Un (S n).
 
 (*********)
-Lemma EUn_noempty:(ExT [r:R] (EUn r)).
-Unfold EUn;Split with (Un O);Split with O;Trivial.
+Lemma EUn_noempty :  exists r : R | EUn r.
+unfold EUn in |- *; split with (Un 0); split with 0%nat; trivial.
 Qed.
 
 (*********)
-Lemma Un_in_EUn:(n:nat)(EUn (Un n)).
-Intro;Unfold EUn;Split with n;Trivial.
+Lemma Un_in_EUn : forall n:nat, EUn (Un n).
+intro; unfold EUn in |- *; split with n; trivial.
 Qed.
 
 (*********)
-Lemma Un_bound_imp:(x:R)((n:nat)(Rle (Un n) x))->(is_upper_bound EUn x).
-Intros;Unfold is_upper_bound;Intros;Unfold EUn in H0;Elim H0;Clear H0;
- Intros;Generalize (H x1);Intro;Rewrite <- H0 in H1;Trivial.
+Lemma Un_bound_imp :
+ forall x:R, (forall n:nat, Un n <= x) -> is_upper_bound EUn x.
+intros; unfold is_upper_bound in |- *; intros; unfold EUn in H0; elim H0;
+ clear H0; intros; generalize (H x1); intro; rewrite <- H0 in H1; 
+ trivial.
 Qed.
 
 (*********)
-Lemma growing_prop:(n,m:nat)Un_growing->(ge n m)->(Rge (Un n) (Un m)).
-Double Induction n m;Intros.
-Unfold Rge;Right;Trivial.
-ElimType False;Unfold ge in H1;Generalize (le_Sn_O n0);Intro;Auto.
-Cut (ge n0 (0)).
-Generalize H0;Intros;Unfold Un_growing in H0;
- Apply (Rge_trans (Un (S n0)) (Un n0) (Un (0)) 
-                  (Rle_sym1 (Un n0) (Un (S n0)) (H0 n0)) (H O H2 H3)).
-Elim n0;Auto.
-Elim (lt_eq_lt_dec n1 n0);Intro y.
-Elim y;Clear y;Intro y.
-Unfold ge in H2;Generalize (le_not_lt n0 n1 (le_S_n n0 n1 H2));Intro;
- ElimType False;Auto.
-Rewrite y;Unfold Rge;Right;Trivial.
-Unfold ge in H0;Generalize (H0 (S n0) H1 (lt_le_S n0 n1 y));Intro;
- Unfold Un_growing in H1;
- Apply (Rge_trans (Un (S n1)) (Un n1) (Un (S n0)) 
-                  (Rle_sym1 (Un n1) (Un (S n1)) (H1 n1)) H3).
+Lemma growing_prop :
+ forall n m:nat, Un_growing -> (n >= m)%nat -> Un n >= Un m.
+double induction n m; intros.
+unfold Rge in |- *; right; trivial.
+elimtype False; unfold ge in H1; generalize (le_Sn_O n0); intro; auto.
+cut (n0 >= 0)%nat.
+generalize H0; intros; unfold Un_growing in H0;
+ apply
+  (Rge_trans (Un (S n0)) (Un n0) (Un 0) (Rle_ge (Un n0) (Un (S n0)) (H0 n0))
+     (H 0%nat H2 H3)).
+elim n0; auto.
+elim (lt_eq_lt_dec n1 n0); intro y.
+elim y; clear y; intro y.
+unfold ge in H2; generalize (le_not_lt n0 n1 (le_S_n n0 n1 H2)); intro;
+ elimtype False; auto.
+rewrite y; unfold Rge in |- *; right; trivial.
+unfold ge in H0; generalize (H0 (S n0) H1 (lt_le_S n0 n1 y)); intro;
+ unfold Un_growing in H1;
+ apply
+  (Rge_trans (Un (S n1)) (Un n1) (Un (S n0))
+     (Rle_ge (Un n1) (Un (S n1)) (H1 n1)) H3).
 Qed.
 
 
 (* classical is needed: [not_all_not_ex] *)
 (*********)
-Lemma Un_cv_crit:Un_growing->(bound EUn)->(ExT [l:R] (Un_cv l)).
-Unfold Un_growing Un_cv;Intros;
- Generalize (complet_weak EUn H0 EUn_noempty);Intro;
- Elim H1;Clear H1;Intros;Split with x;Intros;
- Unfold is_lub in H1;Unfold bound in H0;Unfold is_upper_bound in H0 H1;
- Elim H0;Clear H0;Intros;Elim H1;Clear H1;Intros;
- Generalize (H3 x0 H0);Intro;Cut (n:nat)(Rle (Un n) x);Intro.
-Cut (Ex [N:nat] (Rlt (Rminus x eps) (Un N))).
-Intro;Elim H6;Clear H6;Intros;Split with x1.
-Intros;Unfold R_dist;Apply (Rabsolu_def1 (Rminus (Un n) x) eps).
-Unfold Rgt in H2;
- Apply (Rle_lt_trans (Rminus (Un n) x) R0 eps 
-                     (Rle_minus (Un n) x (H5 n)) H2).
-Fold Un_growing in H;Generalize (growing_prop n x1 H H7);Intro;
- Generalize (Rlt_le_trans (Rminus x eps) (Un x1) (Un n) H6
-                          (Rle_sym2 (Un x1) (Un n) H8));Intro;
- Generalize (Rlt_compatibility (Ropp x) (Rminus x eps) (Un n) H9);
- Unfold Rminus;Rewrite <-(Rplus_assoc (Ropp x) x (Ropp eps));
- Rewrite (Rplus_sym (Ropp x) (Un n));Fold (Rminus (Un n) x);
- Rewrite Rplus_Ropp_l;Rewrite (let (H1,H2)=(Rplus_ne (Ropp eps)) in H2);
- Trivial.
-Cut ~((N:nat)(Rge (Rminus x eps) (Un N))).
-Intro;Apply (not_all_not_ex nat ([N:nat](Rlt (Rminus x eps) (Un N))));
- Red;Intro;Red in H6;Elim H6;Clear H6;Intro;
- Apply (Rlt_not_ge (Rminus x eps) (Un N) (H7 N)).
-Red;Intro;Cut (N:nat)(Rle (Un N) (Rminus x eps)).
-Intro;Generalize (Un_bound_imp (Rminus x eps) H7);Intro;
- Unfold is_upper_bound in H8;Generalize (H3 (Rminus x eps) H8);Intro;
- Generalize (Rle_minus x (Rminus x eps) H9);Unfold Rminus;
- Rewrite Ropp_distr1;Rewrite <- Rplus_assoc;Rewrite Rplus_Ropp_r;
- Rewrite (let (H1,H2)=(Rplus_ne (Ropp (Ropp eps))) in H2);
- Rewrite Ropp_Ropp;Intro;Unfold Rgt in H2;
- Generalize (Rle_not eps R0 H2);Intro;Auto.
-Intro;Elim (H6 N);Intro;Unfold Rle.
-Left;Unfold Rgt in H7;Assumption.
-Right;Auto.
-Apply (H1 (Un n) (Un_in_EUn n)).
+Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R | Un_cv l.
+unfold Un_growing, Un_cv in |- *; intros;
+ generalize (completeness_weak EUn H0 EUn_noempty); 
+ intro; elim H1; clear H1; intros; split with x; intros; 
+ unfold is_lub in H1; unfold bound in H0; unfold is_upper_bound in H0, H1;
+ elim H0; clear H0; intros; elim H1; clear H1; intros; 
+ generalize (H3 x0 H0); intro; cut (forall n:nat, Un n <= x); 
+ intro.
+cut ( exists N : nat | x - eps < Un N).
+intro; elim H6; clear H6; intros; split with x1.
+intros; unfold R_dist in |- *; apply (Rabs_def1 (Un n - x) eps).
+unfold Rgt in H2;
+ apply (Rle_lt_trans (Un n - x) 0 eps (Rle_minus (Un n) x (H5 n)) H2).
+fold Un_growing in H; generalize (growing_prop n x1 H H7); intro;
+ generalize
+  (Rlt_le_trans (x - eps) (Un x1) (Un n) H6 (Rge_le (Un n) (Un x1) H8));
+ intro; generalize (Rplus_lt_compat_l (- x) (x - eps) (Un n) H9);
+ unfold Rminus in |- *; rewrite <- (Rplus_assoc (- x) x (- eps));
+ rewrite (Rplus_comm (- x) (Un n)); fold (Un n - x) in |- *;
+ rewrite Rplus_opp_l; rewrite (let (H1, H2) := Rplus_ne (- eps) in H2);
+ trivial.
+cut (~ (forall N:nat, x - eps >= Un N)).
+intro; apply (not_all_not_ex nat (fun N:nat => x - eps < Un N)); red in |- *;
+ intro; red in H6; elim H6; clear H6; intro;
+ apply (Rnot_lt_ge (x - eps) (Un N) (H7 N)).
+red in |- *; intro; cut (forall N:nat, Un N <= x - eps).
+intro; generalize (Un_bound_imp (x - eps) H7); intro;
+ unfold is_upper_bound in H8; generalize (H3 (x - eps) H8); 
+ intro; generalize (Rle_minus x (x - eps) H9); unfold Rminus in |- *;
+ rewrite Ropp_plus_distr; rewrite <- Rplus_assoc; rewrite Rplus_opp_r;
+ rewrite (let (H1, H2) := Rplus_ne (- - eps) in H2); 
+ rewrite Ropp_involutive; intro; unfold Rgt in H2;
+ generalize (Rgt_not_le eps 0 H2); intro; auto.
+intro; elim (H6 N); intro; unfold Rle in |- *.
+left; unfold Rgt in H7; assumption.
+right; auto.
+apply (H1 (Un n) (Un_in_EUn n)).
 Qed.
 
 (*********)
-Lemma finite_greater:(N:nat)(ExT [M:R] (n:nat)(le n N)->(Rle (Un n) M)).
-Intro;Induction N.
-Split with (Un O);Intros;Rewrite (le_n_O_eq n H); 
- Apply (eq_Rle (Un (n)) (Un (n)) (refl_eqT R (Un (n)))).
-Elim HrecN;Clear HrecN;Intros;Split with (Rmax (Un (S N)) x);Intros;
- Elim (Rmax_Rle (Un (S N)) x (Un n));Intros;Clear H1;Inversion H0.
-Rewrite <-H1;Rewrite <-H1 in H2;
- Apply (H2 (or_introl (Rle (Un n) (Un n)) (Rle (Un n) x) 
-    (eq_Rle (Un n) (Un n) (refl_eqT R (Un n))))).
-Apply (H2 (or_intror (Rle (Un n) (Un (S N))) (Rle (Un n) x) 
-    (H n H3))).
+Lemma finite_greater :
+ forall N:nat,  exists M : R | (forall n:nat, (n <= N)%nat -> Un n <= M).
+intro; induction  N as [| N HrecN].
+split with (Un 0); intros; rewrite (le_n_O_eq n H);
+ apply (Req_le (Un n) (Un n) (refl_equal (Un n))).
+elim HrecN; clear HrecN; intros; split with (Rmax (Un (S N)) x); intros;
+ elim (Rmax_Rle (Un (S N)) x (Un n)); intros; clear H1; 
+ inversion H0.
+rewrite <- H1; rewrite <- H1 in H2;
+ apply
+  (H2 (or_introl (Un n <= x) (Req_le (Un n) (Un n) (refl_equal (Un n))))).
+apply (H2 (or_intror (Un n <= Un (S N)) (H n H3))).
 Qed.
 
 (*********)
-Lemma cauchy_bound:Cauchy_crit->(bound EUn).
-Unfold Cauchy_crit bound;Intros;Unfold is_upper_bound;
- Unfold Rgt in H;Elim (H R1 Rlt_R0_R1);Clear H;Intros;
- Generalize (H x);Intro;Generalize (le_dec x);Intro;
- Elim (finite_greater x);Intros;Split with (Rmax x0 (Rplus (Un x) R1));
- Clear H;Intros;Unfold EUn in H;Elim H;Clear H;Intros;Elim (H1 x2);
- Clear H1;Intro y.
-Unfold ge in H0;Generalize (H0 x2 (le_n x) y);Clear H0;Intro;
- Rewrite <- H in H0;Unfold R_dist in H0;
- Elim (Rabsolu_def2 (Rminus (Un x) x1) R1 H0);Clear H0;Intros;
- Elim (Rmax_Rle x0 (Rplus (Un x) R1) x1);Intros;Apply H4;Clear H3 H4;
- Right;Clear H H0 y;Apply (Rlt_le x1 (Rplus (Un x) R1));
- Generalize (Rlt_minus (Ropp R1) (Rminus (Un x) x1) H1);Clear H1;
- Intro;Apply (Rminus_lt x1 (Rplus (Un x) R1));
- Cut (Rminus (Ropp R1) (Rminus (Un x) x1))==
-  (Rminus x1 (Rplus (Un x) R1));[Intro;Rewrite H0 in H;Assumption|Ring].
-Generalize (H2 x2 y);Clear H2 H0;Intro;Rewrite<-H in H0;
- Elim (Rmax_Rle x0 (Rplus (Un x) R1) x1);Intros;Clear H1;Apply H2;
- Left;Assumption.
+Lemma cauchy_bound : Cauchy_crit -> bound EUn.
+unfold Cauchy_crit, bound in |- *; intros; unfold is_upper_bound in |- *;
+ unfold Rgt in H; elim (H 1 Rlt_0_1); clear H; intros; 
+ generalize (H x); intro; generalize (le_dec x); intro;
+ elim (finite_greater x); intros; split with (Rmax x0 (Un x + 1)); 
+ clear H; intros; unfold EUn in H; elim H; clear H; 
+ intros; elim (H1 x2); clear H1; intro y.
+unfold ge in H0; generalize (H0 x2 (le_n x) y); clear H0; intro;
+ rewrite <- H in H0; unfold R_dist in H0; elim (Rabs_def2 (Un x - x1) 1 H0);
+ clear H0; intros; elim (Rmax_Rle x0 (Un x + 1) x1); 
+ intros; apply H4; clear H3 H4; right; clear H H0 y;
+ apply (Rlt_le x1 (Un x + 1)); generalize (Rlt_minus (-1) (Un x - x1) H1);
+ clear H1; intro; apply (Rminus_lt x1 (Un x + 1));
+ cut (-1 - (Un x - x1) = x1 - (Un x + 1));
+ [ intro; rewrite H0 in H; assumption | ring ].
+generalize (H2 x2 y); clear H2 H0; intro; rewrite <- H in H0;
+ elim (Rmax_Rle x0 (Un x + 1) x1); intros; clear H1; 
+ apply H2; left; assumption.
 Qed.
 
 End sequence.
@@ -176,104 +184,92 @@ End sequence.
 Section Isequence.
 
 (*********)
-Variable An:nat->R.
+Variable An : nat -> R.
 
 (*********)
-Definition Pser:R->R->Prop:=[x,l:R]
-   (infinit_sum [n:nat](Rmult (An n) (pow x n)) l).
+Definition Pser (x l:R) : Prop := infinit_sum (fun n:nat => An n * x ^ n) l.
 
 End Isequence.
 
-Lemma GP_infinite:
- (x:R) (Rlt (Rabsolu x) R1) 
-       -> (Pser ([n:nat] R1) x (Rinv(Rminus R1 x))).
-Intros;Unfold Pser; Unfold infinit_sum;Intros;Elim (Req_EM x R0).
-Intros;Exists O; Intros;Rewrite H1;Rewrite minus_R0;Rewrite Rinv_R1;
-  Cut (sum_f_R0 [n0:nat](Rmult R1 (pow R0 n0)) n)==R1.
-Intros; Rewrite H3;Rewrite R_dist_eq;Auto.
-Elim n; Simpl.
-Ring.
-Intros;Rewrite H3;Ring.
-Intro;Cut (Rlt R0
-      (Rmult eps (Rmult (Rabsolu (Rminus R1 x)) 
-                        (Rabsolu (Rinv x))))).
-Intro;Elim (pow_lt_1_zero x H
-                    (Rmult eps (Rmult (Rabsolu (Rminus R1 x))
-                                 (Rabsolu (Rinv x))))
-                    H2);Intro N; Intros;Exists N; Intros;
-  Cut (sum_f_R0 [n0:nat](Rmult R1 (pow x n0)) n)==
-    (sum_f_R0 [n0:nat](pow x n0) n).
-Intros; Rewrite H5;Apply (Rlt_monotony_rev
-         (Rabsolu (Rminus R1 x))
-         (R_dist (sum_f_R0 [n0:nat](pow x n0) n) 
-                 (Rinv (Rminus R1 x))) 
-         eps).
-Apply Rabsolu_pos_lt.
-Apply Rminus_eq_contra.
-Apply imp_not_Req.
-Right; Unfold Rgt.
-Apply (Rle_lt_trans x (Rabsolu x) R1).
-Apply Rle_Rabsolu.
-Assumption.
-Unfold R_dist; Rewrite <- Rabsolu_mult.
-Rewrite Rminus_distr.
-Cut (Rmult (Rminus R1 x) (sum_f_R0 [n0:nat](pow x n0) n))==
-    (Ropp (Rmult(sum_f_R0 [n0:nat](pow x n0) n) 
-          (Rminus x R1))).
-Intro; Rewrite H6.
-Rewrite GP_finite.
-Rewrite Rinv_r.
-Cut (Rminus (Ropp (Rminus (pow x (plus n (1))) R1)) R1)==
-    (Ropp (pow x (plus n (1)))).
-Intro; Rewrite H7.
-Rewrite Rabsolu_Ropp;Cut (plus n (S O))=(S n);Auto.
-Intro H8;Rewrite H8;Simpl;Rewrite Rabsolu_mult;
-  Apply (Rlt_le_trans (Rmult (Rabsolu x) (Rabsolu (pow x n)))
-                    (Rmult (Rabsolu x)
-                           (Rmult eps
-                              (Rmult (Rabsolu (Rminus R1 x)) 
-                                      (Rabsolu (Rinv x)))))
-                 (Rmult (Rabsolu (Rminus R1 x)) eps)).
-Apply Rlt_monotony.
-Apply Rabsolu_pos_lt.
-Assumption.
-Auto.
-Cut (Rmult (Rabsolu x)
-           (Rmult eps (Rmult (Rabsolu (Rminus R1 x)) 
-                             (Rabsolu (Rinv x)))))==
-    (Rmult (Rmult (Rabsolu x) (Rabsolu (Rinv x))) 
-           (Rmult eps (Rabsolu (Rminus R1 x)))).
-Clear H8;Intros; Rewrite H8;Rewrite <- Rabsolu_mult;Rewrite Rinv_r.  
-Rewrite Rabsolu_R1;Cut (Rmult R1 (Rmult eps (Rabsolu (Rminus R1 x))))==
-    (Rmult (Rabsolu (Rminus R1 x)) eps).
-Intros; Rewrite H9;Unfold Rle; Right; Reflexivity.
-Ring.
-Assumption.
-Ring.
-Ring.
-Ring.
-Apply Rminus_eq_contra.
-Apply imp_not_Req.
-Right; Unfold Rgt.
-Apply (Rle_lt_trans x (Rabsolu x) R1).
-Apply Rle_Rabsolu.
-Assumption.
-Ring; Ring.
-Elim n; Simpl.
-Ring.
-Intros; Rewrite H5.
-Ring.
-Apply Rmult_lt_pos.
-Auto.
-Apply Rmult_lt_pos.
-Apply Rabsolu_pos_lt.
-Apply Rminus_eq_contra.
-Apply imp_not_Req.
-Right; Unfold Rgt.
-Apply (Rle_lt_trans x (Rabsolu x) R1).
-Apply Rle_Rabsolu.
-Assumption.
-Apply Rabsolu_pos_lt.
-Apply Rinv_neq_R0.
-Assumption.
+Lemma GP_infinite :
+ forall x:R, Rabs x < 1 -> Pser (fun n:nat => 1) x (/ (1 - x)).
+intros; unfold Pser in |- *; unfold infinit_sum in |- *; intros;
+ elim (Req_dec x 0).
+intros; exists 0%nat; intros; rewrite H1; rewrite Rminus_0_r; rewrite Rinv_1;
+ cut (sum_f_R0 (fun n0:nat => 1 * 0 ^ n0) n = 1).
+intros; rewrite H3; rewrite R_dist_eq; auto.
+elim n; simpl in |- *.
+ring.
+intros; rewrite H3; ring.
+intro; cut (0 < eps * (Rabs (1 - x) * Rabs (/ x))).
+intro; elim (pow_lt_1_zero x H (eps * (Rabs (1 - x) * Rabs (/ x))) H2);
+ intro N; intros; exists N; intros;
+ cut
+  (sum_f_R0 (fun n0:nat => 1 * x ^ n0) n = sum_f_R0 (fun n0:nat => x ^ n0) n).
+intros; rewrite H5;
+ apply
+  (Rmult_lt_reg_l (Rabs (1 - x))
+     (R_dist (sum_f_R0 (fun n0:nat => x ^ n0) n) (/ (1 - x))) eps).
+apply Rabs_pos_lt.
+apply Rminus_eq_contra.
+apply Rlt_dichotomy_converse.
+right; unfold Rgt in |- *.
+apply (Rle_lt_trans x (Rabs x) 1).
+apply RRle_abs.
+assumption.
+unfold R_dist in |- *; rewrite <- Rabs_mult.
+rewrite Rmult_minus_distr_l.
+cut
+ ((1 - x) * sum_f_R0 (fun n0:nat => x ^ n0) n =
+  - (sum_f_R0 (fun n0:nat => x ^ n0) n * (x - 1))).
+intro; rewrite H6.
+rewrite GP_finite.
+rewrite Rinv_r.
+cut (- (x ^ (n + 1) - 1) - 1 = - x ^ (n + 1)).
+intro; rewrite H7.
+rewrite Rabs_Ropp; cut ((n + 1)%nat = S n); auto.
+intro H8; rewrite H8; simpl in |- *; rewrite Rabs_mult;
+ apply
+  (Rlt_le_trans (Rabs x * Rabs (x ^ n))
+     (Rabs x * (eps * (Rabs (1 - x) * Rabs (/ x)))) (
+     Rabs (1 - x) * eps)).
+apply Rmult_lt_compat_l.
+apply Rabs_pos_lt.
+assumption.
+auto.
+cut
+ (Rabs x * (eps * (Rabs (1 - x) * Rabs (/ x))) =
+  Rabs x * Rabs (/ x) * (eps * Rabs (1 - x))).
+clear H8; intros; rewrite H8; rewrite <- Rabs_mult; rewrite Rinv_r.  
+rewrite Rabs_R1; cut (1 * (eps * Rabs (1 - x)) = Rabs (1 - x) * eps).
+intros; rewrite H9; unfold Rle in |- *; right; reflexivity.
+ring.
+assumption.
+ring.
+ring.
+ring.
+apply Rminus_eq_contra.
+apply Rlt_dichotomy_converse.
+right; unfold Rgt in |- *.
+apply (Rle_lt_trans x (Rabs x) 1).
+apply RRle_abs.
+assumption.
+ring; ring.
+elim n; simpl in |- *.
+ring.
+intros; rewrite H5.
+ring.
+apply Rmult_lt_0_compat.
+auto.
+apply Rmult_lt_0_compat.
+apply Rabs_pos_lt.
+apply Rminus_eq_contra.
+apply Rlt_dichotomy_converse.
+right; unfold Rgt in |- *.
+apply (Rle_lt_trans x (Rabs x) 1).
+apply RRle_abs.
+assumption.
+apply Rabs_pos_lt.
+apply Rinv_neq_0_compat.
+assumption.
 Qed.

@@ -26,49 +26,56 @@
 
 (*i $Id$ i*)
 
-Require Ensembles.
+Require Import Ensembles.
 
 Section Ensembles_finis.
-Variable U: Type.
+Variable U : Type.
 
-Inductive Finite : (Ensemble U) -> Prop :=
-      Empty_is_finite: (Finite (Empty_set U))
-   |  Union_is_finite:
-      (A: (Ensemble U)) (Finite A) -> 
-      (x: U) ~ (In U A x) -> (Finite (Add U A x)).
+Inductive Finite : Ensemble U -> Prop :=
+  | Empty_is_finite : Finite (Empty_set U)
+  | Union_is_finite :
+      forall A:Ensemble U,
+        Finite A -> forall x:U, ~ In U A x -> Finite (Add U A x).
 
-Inductive cardinal : (Ensemble U) -> nat -> Prop :=
-      card_empty: (cardinal (Empty_set U) O)
-   |  card_add:
-       (A: (Ensemble U)) (n: nat) (cardinal A n) ->
-        (x: U) ~ (In U A x) -> (cardinal (Add U A x) (S n)).
+Inductive cardinal : Ensemble U -> nat -> Prop :=
+  | card_empty : cardinal (Empty_set U) 0
+  | card_add :
+      forall (A:Ensemble U) (n:nat),
+        cardinal A n -> forall x:U, ~ In U A x -> cardinal (Add U A x) (S n).
 
 End Ensembles_finis.
 
-Hints Resolve Empty_is_finite Union_is_finite : sets v62.
-Hints Resolve card_empty card_add : sets v62.
+Hint Resolve Empty_is_finite Union_is_finite: sets v62.
+Hint Resolve card_empty card_add: sets v62.
 
-Require Constructive_sets.
+Require Import Constructive_sets.
 
 Section Ensembles_finis_facts.
-Variable U: Type.
+Variable U : Type.
 
 Lemma cardinal_invert :
- (X: (Ensemble U)) (p:nat)(cardinal U X p) -> Case p of
-           X == (Empty_set U)
-   [n:nat] (EXT A | (EXT x | 
-           X == (Add U A x) /\ ~ (In U A x) /\ (cardinal U A n))) end.
+ forall (X:Ensemble U) (p:nat),
+   cardinal U X p ->
+   match p with
+   | O => X = Empty_set U
+   | S n =>
+        exists A : _
+       | ( exists x : _ | X = Add U A x /\ ~ In U A x /\ cardinal U A n)
+   end.
 Proof.
-NewInduction 1; Simpl; Auto.
-Exists A; Exists x; Auto.
+induction 1; simpl in |- *; auto.
+exists A; exists x; auto.
 Qed.
 
 Lemma cardinal_elim :
- (X: (Ensemble U)) (p:nat)(cardinal U X p) -> Case p of
-                              X == (Empty_set U)
-                             [n:nat](Inhabited U X) end.
+ forall (X:Ensemble U) (p:nat),
+   cardinal U X p ->
+   match p with
+   | O => X = Empty_set U
+   | S n => Inhabited U X
+   end.
 Proof.
-Intros X p C; Elim C; Simpl; Trivial with sets.
+intros X p C; elim C; simpl in |- *; trivial with sets.
 Qed.
 
 End Ensembles_finis_facts.

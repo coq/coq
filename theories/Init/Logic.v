@@ -9,30 +9,27 @@
 (*i $Id$ i*)
 
 Set Implicit Arguments.
-V7only [Unset Implicit Arguments.].
 
-Require Notations.
+Require Import Notations.
 
 (** [True] is the always true proposition *)
-Inductive True : Prop := I : True. 
+Inductive True : Prop :=
+    I : True. 
 
 (** [False] is the always false proposition *)
-Inductive False : Prop := . 
+Inductive False : Prop :=. 
 
 (** [not A], written [~A], is the negation of [A] *)
-Definition not := [A:Prop]A->False.
+Definition not (A:Prop) := A -> False.
 
 Notation "~ x" := (not x) : type_scope.
 
-Hints Unfold not : core.
+Hint Unfold not: core.
 
-Inductive and [A,B:Prop] : Prop := conj : A -> B -> A /\ B
+Inductive and (A B:Prop) : Prop :=
+    conj : A -> B -> A /\ B 
+ where "A /\ B" := (and A B) : type_scope.
 
-where "A /\ B" := (and A B) : type_scope.
-
-V7only[
-Notation "< P , Q > { p , q }" := (conj P Q p q) (P annot, at level 1).
-].
 
 Section Conjunction.
 
@@ -43,61 +40,58 @@ Section Conjunction.
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
 
-  Variables A,B : Prop.
+  Variables A B : Prop.
 
-  Theorem proj1 : (and A B) -> A.
+  Theorem proj1 : A /\ B -> A.
   Proof.
-  NewDestruct 1; Trivial.
+  destruct 1; trivial.
   Qed.
 
-  Theorem proj2 : (and A B) -> B.
+  Theorem proj2 : A /\ B -> B.
   Proof.
-  NewDestruct 1; Trivial.
+  destruct 1; trivial.
   Qed.
 
 End Conjunction.
 
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
-Inductive or [A,B:Prop] : Prop :=
-     or_introl : A -> A \/ B 
-   | or_intror : B -> A \/ B
-
-where "A \/ B" := (or A B) : type_scope.
+Inductive or (A B:Prop) : Prop :=
+  | or_introl : A -> A \/ B
+  | or_intror : B -> A \/ B 
+ where "A \/ B" := (or A B) : type_scope.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
-Definition iff := [A,B:Prop] (and (A->B) (B->A)).
+Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
 
 Notation "A <-> B" := (iff A B) : type_scope.
 
 Section Equivalence.
 
-Theorem iff_refl : (A:Prop) (iff A A).
+Theorem iff_refl : forall A:Prop, A <-> A.
   Proof.
-    Split; Auto.
+    split; auto.
   Qed.
 
-Theorem iff_trans : (a,b,c:Prop) (iff a b) -> (iff b c) -> (iff a c).
+Theorem iff_trans : forall A B C:Prop, (A <-> B) -> (B <-> C) -> (A <-> C).
   Proof.
-    Intros A B C (H1,H2) (H3,H4); Split; Auto.
+    intros A B C [H1 H2] [H3 H4]; split; auto.
   Qed.
 
-Theorem iff_sym : (A,B:Prop) (iff A B) -> (iff B A).
+Theorem iff_sym : forall A B:Prop, (A <-> B) -> (B <-> A).
   Proof.
-    Intros A B (H1,H2); Split; Auto.
+    intros A B [H1 H2]; split; auto.
   Qed.
 
 End Equivalence.
 
 (** [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
     denotes either [P] and [Q], or [~P] and [Q] *)
-Definition IF_then_else := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
-V7only [Notation IF:=IF_then_else.].
+Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 
-Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
-  (at level 1, c1, c2, c3 at level 8) : type_scope
-  V8only (at level 200).
+Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
+  (at level 200) : type_scope.
 
 (** First-order quantifiers *)
 
@@ -114,57 +108,42 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
       construction [(all A P)], or simply [(All P)], is provided as an 
       abbreviation of [(x:A)(P x)] *) 
 
-Inductive ex [A:Type;P:A->Prop] : Prop 
-    := ex_intro : (x:A)(P x)->(ex A P).
+Inductive ex (A:Type) (P:A -> Prop) : Prop :=
+    ex_intro : forall x:A, P x -> ex (A:=A) P.
 
-Inductive ex2 [A:Type;P,Q:A->Prop] : Prop
-    := ex_intro2 : (x:A)(P x)->(Q x)->(ex2 A P Q).
+Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
+    ex_intro2 : forall x:A, P x -> Q x -> ex2 (A:=A) P Q.
 
-Definition all := [A:Type][P:A->Prop](x:A)(P x). 
+Definition all (A:Type) (P:A -> Prop) := forall x:A, P x. 
 
 (*Rule order is important to give printing priority to fully typed ALL and EX*)
 
-V7only [ Notation Ex  := (ex ?). ].
-Notation "'EX' x | p"      := (ex ? [x]p)
-  (at level 10, p at level 8) : type_scope
-  V8only "'exists' x | p" (at level 200, x ident, p at level 99).
-Notation "'EX' x : t | p"  := (ex ? [x:t]p)
-  (at level 10, p at level 8) : type_scope
-  V8only "'exists' x : t | p" (at level 200, x ident, p at level 99).
+Notation "'exists' x | p" := (ex (fun x => p))
+  (at level 200, x ident, p at level 99) : type_scope.
+Notation "'exists' x : t | p" := (ex (fun x:t => p))
+  (at level 200, x ident, p at level 99) : type_scope.
 
-V7only [ Notation Ex2 := (ex2 ?). ].
-Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
-  (at level 10, p, q at level 8) : type_scope
-  V8only "'exists2' x | p & q" (at level 200, x ident, p, q at level 99).
-Notation "'EX' x : t | p & q"   := (ex2 ? [x:t]p [x:t]q)
-  (at level 10, p, q at level 8) : type_scope
-  V8only "'exists2' x : t | p & q"
-    (at level 200, x ident, t at level 200, p, q at level 99).
+Notation "'exists2' x | p & q" := (ex2 (fun x => p) (fun x => q))
+  (at level 200, x ident, p, q at level 99) : type_scope.
+Notation "'exists2' x : t | p & q" := (ex2 (fun x:t => p) (fun x:t => q))
+  (at level 200, x ident, t at level 200, p, q at level 99) : type_scope.
 
-V7only [Notation All := (all ?).
-Notation "'ALL' x | p"     := (all ? [x]p)
-  (at level 10, p at level 8) : type_scope
-  V8only (at level 200, x ident, p at level 200).
-Notation "'ALL' x : t | p" := (all ? [x:t]p)
-  (at level 10, p at level 8) : type_scope
-  V8only (at level 200, x ident, t, p at level 200).
-].
 
 (** Universal quantification *)
 
 Section universal_quantification.
 
   Variable A : Type.
-  Variable P : A->Prop.
+  Variable P : A -> Prop.
 
-  Theorem inst : (x:A)(all ? [x](P x))->(P x).
+  Theorem inst : forall x:A, all (fun x => P x) -> P x.
   Proof.
-  Unfold all; Auto.
+  unfold all in |- *; auto.
   Qed.
 
-  Theorem gen : (B:Prop)(f:(y:A)B->(P y))B->(all A P).
+  Theorem gen : forall (B:Prop) (f:forall y:A, B -> P y), B -> all P.
   Proof.
-  Red; Auto.
+  red in |- *; auto.
   Qed.
 
   End universal_quantification.
@@ -177,66 +156,60 @@ Section universal_quantification.
     The others properties (symmetry, transitivity, replacement of 
     equals) are proved below *)
 
-Inductive eq [A:Type;x:A] : A->Prop
-       := refl_equal : x = x :> A
+Inductive eq (A:Type) (x:A) : A -> Prop :=
+    refl_equal : x = x :>A 
+ where "x = y :> A" := (@eq A x y) : type_scope.
 
-where "x = y :> A" := (!eq A x y) : type_scope.
+Notation "x = y" := (x = y :>_) : type_scope.
+Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.
+Notation "x <> y" := (x <> y :>_) : type_scope.
 
-Notation "x = y" := (eq ? x y) : type_scope.
-Notation "x <> y  :> T" := ~ (!eq T x y) : type_scope.
-Notation "x <> y" := ~ x=y : type_scope.
+Implicit Arguments eq_ind [A].
+Implicit Arguments eq_rec [A].
+Implicit Arguments eq_rect [A].
 
-Implicits eq_ind [1].
-Implicits eq_rec [1].
-Implicits eq_rect [1].
-V7only [
-Implicits eq_ind [].
-Implicits eq_rec [].
-Implicits eq_rect [].
-].
-
-Hints Resolve I conj or_introl or_intror refl_equal : core v62.
-Hints Resolve ex_intro ex_intro2 : core v62.
+Hint Resolve I conj or_introl or_intror refl_equal: core v62.
+Hint Resolve ex_intro ex_intro2: core v62.
 
 Section Logic_lemmas.
 
-  Theorem absurd : (A:Prop)(C:Prop) A -> (not A) -> C.
+  Theorem absurd : forall A C:Prop, A -> ~ A -> C.
   Proof.
-    Unfold not; Intros A C h1 h2.
-    NewDestruct (h2 h1).
+    unfold not in |- *; intros A C h1 h2.
+    destruct (h2 h1).
   Qed.
 
   Section equality.
-    Variable A,B : Type.
-    Variable f   : A->B.
-    Variable x,y,z : A.
+    Variables A B : Type.
+    Variable f : A -> B.
+    Variables x y z : A.
 
-    Theorem sym_eq : (eq ? x y) -> (eq ? y x).
+    Theorem sym_eq : x = y -> y = x.
     Proof.
-     NewDestruct 1; Trivial.
+     destruct 1; trivial.
     Defined.
     Opaque sym_eq.
 
-    Theorem trans_eq : (eq ? x y) -> (eq ? y z) -> (eq ? x z).
+    Theorem trans_eq : x = y -> y = z -> x = z.
     Proof.
-     NewDestruct 2; Trivial.
+     destruct 2; trivial.
     Defined.
     Opaque trans_eq.
 
-    Theorem f_equal : (eq ? x y) -> (eq ? (f x) (f y)).
+    Theorem f_equal : x = y -> f x = f y.
     Proof.
-     NewDestruct 1; Trivial.
+     destruct 1; trivial.
     Defined.
     Opaque f_equal.
 
-    Theorem sym_not_eq : (not (eq ? x y)) -> (not (eq ? y x)).
+    Theorem sym_not_eq : x <> y -> y <> x.
     Proof.
-     Red; Intros h1 h2; Apply h1; NewDestruct h2; Trivial.
+     red in |- *; intros h1 h2; apply h1; destruct h2; trivial.
     Qed.
 
-    Definition sym_equal     := sym_eq.
+    Definition sym_equal := sym_eq.
     Definition sym_not_equal := sym_not_eq.
-    Definition trans_equal   := trans_eq.
+    Definition trans_equal := trans_eq.
 
   End equality.
 
@@ -250,56 +223,53 @@ Section Logic_lemmas.
   Qed.
 *)
 
-  Definition eq_ind_r : (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)(eq ? y x)->(P y).
-   Intros A x P H y H0; Elim sym_eq with 1:= H0; Assumption.
+  Definition eq_ind_r :
+    forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
+   intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
   Defined.
 
-  Definition eq_rec_r : (A:Type)(x:A)(P:A->Set)(P x)->(y:A)(eq ? y x)->(P y).
-    Intros A x P H y H0; Elim sym_eq with 1:= H0; Assumption.
+  Definition eq_rec_r :
+    forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
+    intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
   Defined.
 
-  Definition eq_rect_r : (A:Type)(x:A)(P:A->Type)(P x)->(y:A)(eq ? y x)->(P y).
-    Intros A x P H y H0; Elim sym_eq with 1:= H0; Assumption.
+  Definition eq_rect_r :
+    forall (A:Type) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
+    intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
   Defined.
 End Logic_lemmas.
 
-Theorem f_equal2 : (A1,A2,B:Type)(f:A1->A2->B)(x1,y1:A1)(x2,y2:A2)
-  (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? (f x1 x2) (f y1 y2)).
+Theorem f_equal2 :
+ forall (A1 A2 B:Type) (f:A1 -> A2 -> B) (x1 y1:A1) 
+   (x2 y2:A2), x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2.
 Proof.
-  NewDestruct 1; NewDestruct 1; Reflexivity.
+  destruct 1; destruct 1; reflexivity.
 Qed.
 
-Theorem f_equal3 : (A1,A2,A3,B:Type)(f:A1->A2->A3->B)(x1,y1:A1)(x2,y2:A2)
-  (x3,y3:A3)(eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) 
-   -> (eq ? (f x1 x2 x3) (f y1 y2 y3)).
+Theorem f_equal3 :
+ forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1) 
+   (x2 y2:A2) (x3 y3:A3),
+   x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
 Proof.
-  NewDestruct 1; NewDestruct 1; NewDestruct 1; Reflexivity.
+  destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Theorem f_equal4 : (A1,A2,A3,A4,B:Type)(f:A1->A2->A3->A4->B)
-  (x1,y1:A1)(x2,y2:A2)(x3,y3:A3)(x4,y4:A4)
-  (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) -> (eq ? x4 y4)
-   -> (eq ? (f x1 x2 x3 x4) (f y1 y2 y3 y4)).
+Theorem f_equal4 :
+ forall (A1 A2 A3 A4 B:Type) (f:A1 -> A2 -> A3 -> A4 -> B) 
+   (x1 y1:A1) (x2 y2:A2) (x3 y3:A3) (x4 y4:A4),
+   x1 = y1 -> x2 = y2 -> x3 = y3 -> x4 = y4 -> f x1 x2 x3 x4 = f y1 y2 y3 y4.
 Proof.
-  NewDestruct 1; NewDestruct 1; NewDestruct 1; NewDestruct 1; Reflexivity.
+  destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Theorem f_equal5 : (A1,A2,A3,A4,A5,B:Type)(f:A1->A2->A3->A4->A5->B)
-  (x1,y1:A1)(x2,y2:A2)(x3,y3:A3)(x4,y4:A4)(x5,y5:A5)
-  (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) -> (eq ? x4 y4) -> (eq ? x5 y5)
-    -> (eq ? (f x1 x2 x3 x4 x5) (f y1 y2 y3 y4 y5)).
+Theorem f_equal5 :
+ forall (A1 A2 A3 A4 A5 B:Type) (f:A1 -> A2 -> A3 -> A4 -> A5 -> B)
+   (x1 y1:A1) (x2 y2:A2) (x3 y3:A3) (x4 y4:A4) (x5 y5:A5),
+   x1 = y1 ->
+   x2 = y2 ->
+   x3 = y3 -> x4 = y4 -> x5 = y5 -> f x1 x2 x3 x4 x5 = f y1 y2 y3 y4 y5.
 Proof.
-  NewDestruct 1; NewDestruct 1; NewDestruct 1; NewDestruct 1; NewDestruct 1;
-  Reflexivity.
+  destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Hints Immediate sym_eq sym_not_eq : core v62.
-
-V7only[
-(** Parsing only of things in [Logic.v] *)
-Notation "< A > 'All' ( P )" :=(all A P) (A annot, at level 1, only parsing).
-Notation "< A > x = y" := (eq A x y)
- (A annot, at level 1, x at level 0, only parsing).
-Notation "< A > x <> y" := ~(eq A x y)
-  (A annot, at level 1, x at level 0, only parsing).
-].
+Hint Immediate sym_eq sym_not_eq: core v62.

@@ -10,24 +10,23 @@
 
 (** Author: Bruno Barras *)
 
-Require Relation_Definitions.
+Require Import Relation_Definitions.
 
 Section WfInclusion.
-  Variable A:Set.
-  Variable R1,R2:A->A->Prop.
+  Variable A : Set.
+  Variables R1 R2 : A -> A -> Prop.
 
-  Lemma Acc_incl: (inclusion A R1 R2)->(z:A)(Acc A R2 z)->(Acc A R1 z).
+  Lemma Acc_incl : inclusion A R1 R2 -> forall z:A, Acc R2 z -> Acc R1 z.
   Proof.
-    NewInduction 2.
-    Apply Acc_intro;Auto with sets.
+    induction 2.
+    apply Acc_intro; auto with sets.
   Qed.
 
-  Hints Resolve Acc_incl.
+  Hint Resolve Acc_incl.
 
-  Theorem wf_incl: 
-         (inclusion A R1 R2)->(well_founded A R2)->(well_founded A R1).
+  Theorem wf_incl : inclusion A R1 R2 -> well_founded R2 -> well_founded R1.
   Proof.
-    Unfold well_founded ;Auto with sets.
+    unfold well_founded in |- *; auto with sets.
   Qed.
 
 End WfInclusion.

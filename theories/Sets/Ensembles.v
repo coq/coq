@@ -27,20 +27,18 @@
 (*i $Id$ i*)
 
 Section Ensembles.
-Variable U: Type.
+Variable U : Type.
 
-Definition Ensemble :=  U -> Prop. 
+Definition Ensemble := U -> Prop. 
 
-Definition In : Ensemble -> U -> Prop :=  [A: Ensemble] [x: U] (A x).
+Definition In (A:Ensemble) (x:U) : Prop := A x.
 
-Definition Included : Ensemble -> Ensemble -> Prop :=
-   [B, C: Ensemble] (x: U) (In B x) -> (In C x).
+Definition Included (B C:Ensemble) : Prop := forall x:U, In B x -> In C x.
 
-Inductive Empty_set : Ensemble :=
-   .
+Inductive Empty_set : Ensemble :=.
 
 Inductive Full_set : Ensemble :=
-     Full_intro: (x: U) (In Full_set x).
+    Full_intro : forall x:U, In Full_set x.
 
 (** NB: The following definition builds-in equality of elements in [U] as 
    Leibniz equality. 
@@ -49,60 +47,55 @@ Inductive Full_set : Ensemble :=
    with its own equality [eqs], with  
    [In_singleton: (y: U)(eqs x y) -> (In (Singleton x) y)]. *)
 
-Inductive Singleton [x:U] : Ensemble :=
-      In_singleton: (In (Singleton x) x).
+Inductive Singleton (x:U) : Ensemble :=
+    In_singleton : In (Singleton x) x.
 
-Inductive Union [B, C: Ensemble] : Ensemble :=
-     Union_introl: (x: U) (In B x) -> (In (Union B C) x)
-   | Union_intror: (x: U) (In C x) -> (In (Union B C) x).
+Inductive Union (B C:Ensemble) : Ensemble :=
+  | Union_introl : forall x:U, In B x -> In (Union B C) x
+  | Union_intror : forall x:U, In C x -> In (Union B C) x.
 
-Definition Add : Ensemble -> U -> Ensemble :=
-   [B: Ensemble] [x: U] (Union B (Singleton x)).
+Definition Add (B:Ensemble) (x:U) : Ensemble := Union B (Singleton x).
 
-Inductive Intersection [B, C:Ensemble] : Ensemble :=
-      Intersection_intro:
-        (x: U) (In B x) -> (In C x) -> (In (Intersection B C) x).
+Inductive Intersection (B C:Ensemble) : Ensemble :=
+    Intersection_intro :
+      forall x:U, In B x -> In C x -> In (Intersection B C) x.
 
-Inductive Couple [x,y:U] : Ensemble :=
-     Couple_l: (In (Couple x y) x)
-   | Couple_r: (In (Couple x y) y).
+Inductive Couple (x y:U) : Ensemble :=
+  | Couple_l : In (Couple x y) x
+  | Couple_r : In (Couple x y) y.
 
-Inductive Triple[x, y, z:U] : Ensemble :=
-    Triple_l: (In (Triple x y z) x)
-  | Triple_m: (In (Triple x y z) y)
-  | Triple_r: (In (Triple x y z) z).
+Inductive Triple (x y z:U) : Ensemble :=
+  | Triple_l : In (Triple x y z) x
+  | Triple_m : In (Triple x y z) y
+  | Triple_r : In (Triple x y z) z.
 
-Definition Complement : Ensemble -> Ensemble :=
-   [A: Ensemble] [x: U] ~ (In A x).
+Definition Complement (A:Ensemble) : Ensemble := fun x:U => ~ In A x.
 
-Definition Setminus : Ensemble -> Ensemble -> Ensemble :=
-   [B: Ensemble] [C: Ensemble] [x: U] (In B x) /\ ~ (In C x).
+Definition Setminus (B C:Ensemble) : Ensemble :=
+  fun x:U => In B x /\ ~ In C x.
 
-Definition Subtract : Ensemble -> U -> Ensemble :=
-   [B: Ensemble] [x: U] (Setminus B (Singleton x)).
+Definition Subtract (B:Ensemble) (x:U) : Ensemble := Setminus B (Singleton x).
 
-Inductive Disjoint [B, C:Ensemble] : Prop :=
-      Disjoint_intro: ((x: U) ~ (In (Intersection B C) x)) -> (Disjoint B C).
+Inductive Disjoint (B C:Ensemble) : Prop :=
+    Disjoint_intro : (forall x:U, ~ In (Intersection B C) x) -> Disjoint B C.
 
-Inductive Inhabited [B:Ensemble] : Prop :=
-      Inhabited_intro: (x: U) (In B x) -> (Inhabited B).
+Inductive Inhabited (B:Ensemble) : Prop :=
+    Inhabited_intro : forall x:U, In B x -> Inhabited B.
 
-Definition Strict_Included : Ensemble -> Ensemble -> Prop :=
-   [B, C: Ensemble] (Included B C) /\ ~ B == C.
+Definition Strict_Included (B C:Ensemble) : Prop := Included B C /\ B <> C.
 
-Definition Same_set : Ensemble -> Ensemble -> Prop :=
-   [B, C: Ensemble] (Included B C) /\ (Included C B).
+Definition Same_set (B C:Ensemble) : Prop := Included B C /\ Included C B.
 
 (** Extensionality Axiom *)
 
-Axiom Extensionality_Ensembles:
-   (A,B: Ensemble) (Same_set A B) -> A == B.
-Hints Resolve Extensionality_Ensembles.
+Axiom Extensionality_Ensembles : forall A B:Ensemble, Same_set A B -> A = B.
+Hint Resolve Extensionality_Ensembles.
 
 End Ensembles.
 
-Hints Unfold In Included Same_set Strict_Included Add Setminus Subtract : sets v62.
+Hint Unfold In Included Same_set Strict_Included Add Setminus Subtract: sets
+  v62.
 
-Hints Resolve Union_introl Union_intror Intersection_intro In_singleton Couple_l
-	Couple_r Triple_l Triple_m Triple_r Disjoint_intro 
-	Extensionality_Ensembles : sets v62.
+Hint Resolve Union_introl Union_intror Intersection_intro In_singleton
+  Couple_l Couple_r Triple_l Triple_m Triple_r Disjoint_intro
+  Extensionality_Ensembles: sets v62.

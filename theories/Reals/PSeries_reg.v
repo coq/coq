@@ -8,187 +8,252 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require SeqSeries.
-Require Ranalysis1.
-Require Max.
-Require Even.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import SeqSeries.
+Require Import Ranalysis1.
+Require Import Max.
+Require Import Even. Open Local Scope R_scope.
 
-Definition Boule [x:R;r:posreal] : R -> Prop := [y:R]``(Rabsolu (y-x))<r``.
+Definition Boule (x:R) (r:posreal) (y:R) : Prop := Rabs (y - x) < r.
 
 (* Uniform convergence *)
-Definition CVU [fn:nat->R->R;f:R->R;x:R;r:posreal] : Prop := (eps:R)``0<eps``->(EX N:nat | (n:nat;y:R) (le N n)->(Boule x r y)->``(Rabsolu ((f y)-(fn n y)))<eps``). 
+Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R) 
+  (r:posreal) : Prop :=
+  forall eps:R,
+    0 < eps ->
+     exists N : nat
+    | (forall (n:nat) (y:R),
+         (N <= n)%nat -> Boule x r y -> Rabs (f y - fn n y) < eps). 
 
 (* Normal convergence *)
-Definition CVN_r [fn:nat->R->R;r:posreal] : Type := (SigT ? [An:nat->R](sigTT R [l:R]((Un_cv [n:nat](sum_f_R0 [k:nat](Rabsolu (An k)) n) l)/\((n:nat)(y:R)(Boule R0 r y)->(Rle (Rabsolu (fn n y)) (An n)))))).
+Definition CVN_r (fn:nat -> R -> R) (r:posreal) : Type :=
+  sigT
+    (fun An:nat -> R =>
+       sigT
+         (fun l:R =>
+            Un_cv (fun n:nat => sum_f_R0 (fun k:nat => Rabs (An k)) n) l /\
+            (forall (n:nat) (y:R), Boule 0 r y -> Rabs (fn n y) <= An n))).
 
-Definition CVN_R [fn:nat->R->R] : Type := (r:posreal) (CVN_r fn r).
+Definition CVN_R (fn:nat -> R -> R) : Type := forall r:posreal, CVN_r fn r.
 
-Definition SFL [fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l))] : R-> R := [y:R](Cases (cv y) of (existTT a b) => a end).
+Definition SFL (fn:nat -> R -> R)
+  (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)) 
+  (y:R) : R := match cv y with
+               | existT a b => a
+               end.
 
 (* In a complete space, normal convergence implies uniform convergence *)
-Lemma CVN_CVU : (fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l));r:posreal) (CVN_r fn r) -> (CVU [n:nat](SP fn n) (SFL fn cv) ``0`` r).
-Intros; Unfold CVU; Intros.
-Unfold CVN_r in X.
-Elim X; Intros An X0.
-Elim X0; Intros s H0.
-Elim H0; Intros.
-Cut (Un_cv [n:nat](Rminus (sum_f_R0 [k:nat]``(Rabsolu (An k))`` n) s) R0).
-Intro; Unfold Un_cv in H3.
-Elim (H3 eps H); Intros N0 H4.
-Exists N0; Intros.
-Apply Rle_lt_trans with (Rabsolu (Rminus (sum_f_R0 [k:nat]``(Rabsolu (An k))`` n) s)).
-Rewrite <- (Rabsolu_Ropp (Rminus (sum_f_R0 [k:nat]``(Rabsolu (An k))`` n) s)); Rewrite Ropp_distr3; Rewrite (Rabsolu_right (Rminus s (sum_f_R0 [k:nat]``(Rabsolu (An k))`` n))).
-EApply sum_maj1.
-Unfold SFL; Case (cv y); Intro.
-Trivial.
-Apply H1.
-Intro; Elim H0; Intros.
-Rewrite (Rabsolu_right (An n0)).
-Apply H8; Apply H6.
-Apply Rle_sym1; Apply Rle_trans with (Rabsolu (fn n0 y)).
-Apply Rabsolu_pos.
-Apply H8; Apply H6.
-Apply Rle_sym1; Apply Rle_anti_compatibility with (sum_f_R0 [k:nat](Rabsolu (An k)) n).
-Rewrite Rplus_Or; Unfold Rminus; Rewrite (Rplus_sym s); Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Ol; Apply sum_incr.
-Apply H1.
-Intro; Apply Rabsolu_pos.
-Unfold R_dist in H4; Unfold Rminus in H4; Rewrite Ropp_O in H4.
-Assert H7 := (H4 n H5).
-Rewrite Rplus_Or in H7; Apply H7.
-Unfold Un_cv in H1; Unfold Un_cv; Intros.
-Elim (H1? H3); Intros.
-Exists x; Intros.
-Unfold R_dist; Unfold R_dist in H4.
-Rewrite minus_R0; Apply H4; Assumption.
+Lemma CVN_CVU :
+ forall (fn:nat -> R -> R)
+   (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l))
+   (r:posreal), CVN_r fn r -> CVU (fun n:nat => SP fn n) (SFL fn cv) 0 r.
+intros; unfold CVU in |- *; intros.
+unfold CVN_r in X.
+elim X; intros An X0.
+elim X0; intros s H0.
+elim H0; intros.
+cut (Un_cv (fun n:nat => sum_f_R0 (fun k:nat => Rabs (An k)) n - s) 0).
+intro; unfold Un_cv in H3.
+elim (H3 eps H); intros N0 H4.
+exists N0; intros.
+apply Rle_lt_trans with (Rabs (sum_f_R0 (fun k:nat => Rabs (An k)) n - s)).
+rewrite <- (Rabs_Ropp (sum_f_R0 (fun k:nat => Rabs (An k)) n - s));
+ rewrite Ropp_minus_distr';
+ rewrite (Rabs_right (s - sum_f_R0 (fun k:nat => Rabs (An k)) n)).
+eapply sum_maj1.
+unfold SFL in |- *; case (cv y); intro.
+trivial.
+apply H1.
+intro; elim H0; intros.
+rewrite (Rabs_right (An n0)).
+apply H8; apply H6.
+apply Rle_ge; apply Rle_trans with (Rabs (fn n0 y)).
+apply Rabs_pos.
+apply H8; apply H6.
+apply Rle_ge;
+ apply Rplus_le_reg_l with (sum_f_R0 (fun k:nat => Rabs (An k)) n).
+rewrite Rplus_0_r; unfold Rminus in |- *; rewrite (Rplus_comm s);
+ rewrite <- Rplus_assoc; rewrite Rplus_opp_r; rewrite Rplus_0_l;
+ apply sum_incr.
+apply H1.
+intro; apply Rabs_pos.
+unfold R_dist in H4; unfold Rminus in H4; rewrite Ropp_0 in H4.
+assert (H7 := H4 n H5).
+rewrite Rplus_0_r in H7; apply H7.
+unfold Un_cv in H1; unfold Un_cv in |- *; intros.
+elim (H1 _ H3); intros.
+exists x; intros.
+unfold R_dist in |- *; unfold R_dist in H4.
+rewrite Rminus_0_r; apply H4; assumption.
 Qed.
 
 (* Each limit of a sequence of functions which converges uniformly is continue *)
-Lemma CVU_continuity : (fn:nat->R->R;f:R->R;x:R;r:posreal) (CVU fn f x r) -> ((n:nat)(y:R) (Boule x r y)->(continuity_pt (fn n) y)) -> ((y:R) (Boule x r y) -> (continuity_pt f y)).
-Intros; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros.
-Unfold CVU in H.
-Cut ``0<eps/3``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0]].
-Elim (H ? H3); Intros N0 H4.
-Assert H5 := (H0 N0 y H1).
-Cut (EXT del : posreal | (h:R) ``(Rabsolu h)<del`` -> (Boule x r ``y+h``) ).
-Intro.
-Elim H6; Intros del1 H7.
-Unfold continuity_pt in H5; Unfold continue_in in H5; Unfold limit1_in in H5; Unfold limit_in in H5; Simpl in H5; Unfold R_dist in H5.
-Elim (H5 ? H3); Intros del2 H8.
-Pose del := (Rmin del1 del2).
-Exists del; Intros.
-Split.
-Unfold del; Unfold Rmin; Case (total_order_Rle del1 del2); Intro.
-Apply (cond_pos del1).
-Elim H8; Intros; Assumption.
-Intros; Apply Rle_lt_trans with ``(Rabsolu ((f x0)-(fn N0 x0)))+(Rabsolu ((fn N0 x0)-(f y)))``.
-Replace ``(f x0)-(f y)`` with ``((f x0)-(fn N0 x0))+((fn N0 x0)-(f y))``; [Apply Rabsolu_triang | Ring].
-Apply Rle_lt_trans with ``(Rabsolu ((f x0)-(fn N0 x0)))+(Rabsolu ((fn N0 x0)-(fn N0 y)))+(Rabsolu ((fn N0 y)-(f y)))``.
-Rewrite Rplus_assoc; Apply Rle_compatibility.
-Replace ``(fn N0 x0)-(f y)`` with ``((fn N0 x0)-(fn N0 y))+((fn N0 y)-(f y))``; [Apply Rabsolu_triang | Ring].
-Replace ``eps`` with ``eps/3+eps/3+eps/3``.
-Repeat Apply Rplus_lt.
-Apply H4.
-Apply le_n.
-Replace x0 with ``y+(x0-y)``; [Idtac | Ring]; Apply H7.
-Elim H9; Intros.
-Apply Rlt_le_trans with del.
-Assumption.
-Unfold del; Apply Rmin_l.
-Elim H8; Intros.
-Apply H11.
-Split.
-Elim H9; Intros; Assumption.
-Elim H9; Intros; Apply Rlt_le_trans with del.
-Assumption.
-Unfold del; Apply Rmin_r.
-Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr3; Apply H4.
-Apply le_n.
-Assumption.
-Apply r_Rmult_mult with ``3``.
-Do 2 Rewrite Rmult_Rplus_distr; Unfold Rdiv; Rewrite <- Rmult_assoc; Rewrite Rinv_r_simpl_m.
-Ring.
-DiscrR.
-DiscrR.
-Cut ``0<r-(Rabsolu (x-y))``.
-Intro; Exists (mkposreal ? H6).
-Simpl; Intros.
-Unfold Boule; Replace ``y+h-x`` with ``h+(y-x)``; [Idtac | Ring]; Apply Rle_lt_trans with ``(Rabsolu h)+(Rabsolu (y-x))``.
-Apply Rabsolu_triang.
-Apply Rlt_anti_compatibility with ``-(Rabsolu (x-y))``.
-Rewrite <- (Rabsolu_Ropp ``y-x``); Rewrite Ropp_distr3.
-Replace ``-(Rabsolu (x-y))+r`` with ``r-(Rabsolu (x-y))``.
-Replace ``-(Rabsolu (x-y))+((Rabsolu h)+(Rabsolu (x-y)))`` with (Rabsolu h).
-Apply H7.
-Ring.
-Ring.
-Unfold Boule in H1; Rewrite <- (Rabsolu_Ropp ``x-y``); Rewrite Ropp_distr3; Apply Rlt_anti_compatibility with ``(Rabsolu (y-x))``.
-Rewrite Rplus_Or; Replace ``(Rabsolu (y-x))+(r-(Rabsolu (y-x)))`` with ``(pos r)``; [Apply H1 | Ring].
+Lemma CVU_continuity :
+ forall (fn:nat -> R -> R) (f:R -> R) (x:R) (r:posreal),
+   CVU fn f x r ->
+   (forall (n:nat) (y:R), Boule x r y -> continuity_pt (fn n) y) ->
+   forall y:R, Boule x r y -> continuity_pt f y.
+intros; unfold continuity_pt in |- *; unfold continue_in in |- *;
+ unfold limit1_in in |- *; unfold limit_in in |- *; 
+ simpl in |- *; unfold R_dist in |- *; intros.
+unfold CVU in H.
+cut (0 < eps / 3);
+ [ intro
+ | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+    [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
+elim (H _ H3); intros N0 H4.
+assert (H5 := H0 N0 y H1).
+cut ( exists del : posreal | (forall h:R, Rabs h < del -> Boule x r (y + h))).
+intro.
+elim H6; intros del1 H7.
+unfold continuity_pt in H5; unfold continue_in in H5; unfold limit1_in in H5;
+ unfold limit_in in H5; simpl in H5; unfold R_dist in H5.
+elim (H5 _ H3); intros del2 H8.
+pose (del := Rmin del1 del2).
+exists del; intros.
+split.
+unfold del in |- *; unfold Rmin in |- *; case (Rle_dec del1 del2); intro.
+apply (cond_pos del1).
+elim H8; intros; assumption.
+intros;
+ apply Rle_lt_trans with (Rabs (f x0 - fn N0 x0) + Rabs (fn N0 x0 - f y)).
+replace (f x0 - f y) with (f x0 - fn N0 x0 + (fn N0 x0 - f y));
+ [ apply Rabs_triang | ring ].
+apply Rle_lt_trans with
+ (Rabs (f x0 - fn N0 x0) + Rabs (fn N0 x0 - fn N0 y) + Rabs (fn N0 y - f y)).
+rewrite Rplus_assoc; apply Rplus_le_compat_l.
+replace (fn N0 x0 - f y) with (fn N0 x0 - fn N0 y + (fn N0 y - f y));
+ [ apply Rabs_triang | ring ].
+replace eps with (eps / 3 + eps / 3 + eps / 3).
+repeat apply Rplus_lt_compat.
+apply H4.
+apply le_n.
+replace x0 with (y + (x0 - y)); [ idtac | ring ]; apply H7.
+elim H9; intros.
+apply Rlt_le_trans with del.
+assumption.
+unfold del in |- *; apply Rmin_l.
+elim H8; intros.
+apply H11.
+split.
+elim H9; intros; assumption.
+elim H9; intros; apply Rlt_le_trans with del.
+assumption.
+unfold del in |- *; apply Rmin_r.
+rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply H4.
+apply le_n.
+assumption.
+apply Rmult_eq_reg_l with 3.
+do 2 rewrite Rmult_plus_distr_l; unfold Rdiv in |- *; rewrite <- Rmult_assoc;
+ rewrite Rinv_r_simpl_m.
+ring.
+discrR.
+discrR.
+cut (0 < r - Rabs (x - y)).
+intro; exists (mkposreal _ H6).
+simpl in |- *; intros.
+unfold Boule in |- *; replace (y + h - x) with (h + (y - x));
+ [ idtac | ring ]; apply Rle_lt_trans with (Rabs h + Rabs (y - x)).
+apply Rabs_triang.
+apply Rplus_lt_reg_r with (- Rabs (x - y)).
+rewrite <- (Rabs_Ropp (y - x)); rewrite Ropp_minus_distr'.
+replace (- Rabs (x - y) + r) with (r - Rabs (x - y)).
+replace (- Rabs (x - y) + (Rabs h + Rabs (x - y))) with (Rabs h).
+apply H7.
+ring.
+ring.
+unfold Boule in H1; rewrite <- (Rabs_Ropp (x - y)); rewrite Ropp_minus_distr';
+ apply Rplus_lt_reg_r with (Rabs (y - x)).
+rewrite Rplus_0_r; replace (Rabs (y - x) + (r - Rabs (y - x))) with (pos r);
+ [ apply H1 | ring ].
 Qed.
 
 (**********)
-Lemma continuity_pt_finite_SF : (fn:nat->R->R;N:nat;x:R) ((n:nat)(le n N)->(continuity_pt (fn n) x)) -> (continuity_pt [y:R](sum_f_R0 [k:nat]``(fn k y)`` N) x).
-Intros; Induction N.
-Simpl; Apply (H O); Apply le_n.
-Simpl; Replace [y:R](Rplus (sum_f_R0 [k:nat](fn k y) N) (fn (S N) y)) with (plus_fct [y:R](sum_f_R0 [k:nat](fn k y) N) [y:R](fn (S N) y)); [Idtac | Reflexivity].
-Apply continuity_pt_plus.
-Apply HrecN.
-Intros; Apply H.
-Apply le_trans with N; [Assumption | Apply le_n_Sn].
-Apply (H (S N)); Apply le_n.
+Lemma continuity_pt_finite_SF :
+ forall (fn:nat -> R -> R) (N:nat) (x:R),
+   (forall n:nat, (n <= N)%nat -> continuity_pt (fn n) x) ->
+   continuity_pt (fun y:R => sum_f_R0 (fun k:nat => fn k y) N) x.
+intros; induction  N as [| N HrecN].
+simpl in |- *; apply (H 0%nat); apply le_n.
+simpl in |- *;
+ replace (fun y:R => sum_f_R0 (fun k:nat => fn k y) N + fn (S N) y) with
+  ((fun y:R => sum_f_R0 (fun k:nat => fn k y) N) + (fun y:R => fn (S N) y))%F;
+ [ idtac | reflexivity ].
+apply continuity_pt_plus.
+apply HrecN.
+intros; apply H.
+apply le_trans with N; [ assumption | apply le_n_Sn ].
+apply (H (S N)); apply le_n.
 Qed.
 
 (* Continuity and normal convergence *)
-Lemma SFL_continuity_pt : (fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l));r:posreal) (CVN_r fn r) -> ((n:nat)(y:R) (Boule ``0`` r y) -> (continuity_pt (fn n) y)) -> ((y:R) (Boule ``0`` r y) -> (continuity_pt (SFL fn cv) y)).
-Intros; EApply CVU_continuity.
-Apply CVN_CVU.
-Apply X.
-Intros; Unfold SP; Apply continuity_pt_finite_SF.
-Intros; Apply H.
-Apply H1.
-Apply H0.
+Lemma SFL_continuity_pt :
+ forall (fn:nat -> R -> R)
+   (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l))
+   (r:posreal),
+   CVN_r fn r ->
+   (forall (n:nat) (y:R), Boule 0 r y -> continuity_pt (fn n) y) ->
+   forall y:R, Boule 0 r y -> continuity_pt (SFL fn cv) y.
+intros; eapply CVU_continuity.
+apply CVN_CVU.
+apply X.
+intros; unfold SP in |- *; apply continuity_pt_finite_SF.
+intros; apply H.
+apply H1.
+apply H0.
 Qed.
 
-Lemma SFL_continuity : (fn:nat->R->R;cv:(x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l))) (CVN_R fn) -> ((n:nat)(continuity (fn n))) -> (continuity (SFL fn cv)).
-Intros; Unfold continuity; Intro.
-Cut ``0<(Rabsolu x)+1``; [Intro | Apply ge0_plus_gt0_is_gt0; [Apply Rabsolu_pos | Apply Rlt_R0_R1]].
-Cut (Boule ``0`` (mkposreal ? H0) x).
-Intro; EApply SFL_continuity_pt with (mkposreal ? H0).
-Apply X.
-Intros; Apply (H n y).
-Apply H1.
-Unfold Boule; Simpl; Rewrite minus_R0; Pattern 1 (Rabsolu x); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rlt_R0_R1.
+Lemma SFL_continuity :
+ forall (fn:nat -> R -> R)
+   (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)),
+   CVN_R fn -> (forall n:nat, continuity (fn n)) -> continuity (SFL fn cv).
+intros; unfold continuity in |- *; intro.
+cut (0 < Rabs x + 1);
+ [ intro | apply Rplus_le_lt_0_compat; [ apply Rabs_pos | apply Rlt_0_1 ] ].
+cut (Boule 0 (mkposreal _ H0) x).
+intro; eapply SFL_continuity_pt with (mkposreal _ H0).
+apply X.
+intros; apply (H n y).
+apply H1.
+unfold Boule in |- *; simpl in |- *; rewrite Rminus_0_r;
+ pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r; 
+ apply Rplus_lt_compat_l; apply Rlt_0_1.
 Qed.
 
 (* As R is complete, normal convergence implies that (fn) is simply-uniformly convergent *) 
-Lemma CVN_R_CVS : (fn:nat->R->R) (CVN_R fn) -> ((x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l))).
-Intros; Apply R_complete.
-Unfold SP; Pose An := [N:nat](fn N x).
-Change (Cauchy_crit_series An).
-Apply cauchy_abs.
-Unfold Cauchy_crit_series; Apply CV_Cauchy.
-Unfold CVN_R in X; Cut ``0<(Rabsolu x)+1``.
-Intro; Assert H0 := (X (mkposreal ? H)).
-Unfold CVN_r in H0; Elim H0; Intros Bn H1.
-Elim H1; Intros l H2.
-Elim H2; Intros.
-Apply Rseries_CV_comp with Bn.
-Intro; Split.
-Apply Rabsolu_pos.
-Unfold An; Apply H4; Unfold Boule; Simpl; Rewrite minus_R0.
-Pattern 1 (Rabsolu x); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rlt_R0_R1.
-Apply existTT with l.
-Cut (n:nat)``0<=(Bn n)``.
-Intro; Unfold Un_cv in H3; Unfold Un_cv; Intros.
-Elim (H3 ? H6); Intros.
-Exists x0; Intros.
-Replace (sum_f_R0 Bn n) with (sum_f_R0 [k:nat](Rabsolu (Bn k)) n).
-Apply H7; Assumption.
-Apply sum_eq; Intros; Apply Rabsolu_right; Apply Rle_sym1; Apply H5.
-Intro; Apply Rle_trans with (Rabsolu (An n)).
-Apply Rabsolu_pos.
-Unfold An; Apply H4; Unfold Boule; Simpl; Rewrite minus_R0; Pattern 1 (Rabsolu x); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rlt_R0_R1.
-Apply ge0_plus_gt0_is_gt0; [Apply Rabsolu_pos | Apply Rlt_R0_R1].
+Lemma CVN_R_CVS :
+ forall fn:nat -> R -> R,
+   CVN_R fn -> forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l).
+intros; apply R_complete.
+unfold SP in |- *; pose (An := fun N:nat => fn N x).
+change (Cauchy_crit_series An) in |- *.
+apply cauchy_abs.
+unfold Cauchy_crit_series in |- *; apply CV_Cauchy.
+unfold CVN_R in X; cut (0 < Rabs x + 1).
+intro; assert (H0 := X (mkposreal _ H)).
+unfold CVN_r in H0; elim H0; intros Bn H1.
+elim H1; intros l H2.
+elim H2; intros.
+apply Rseries_CV_comp with Bn.
+intro; split.
+apply Rabs_pos.
+unfold An in |- *; apply H4; unfold Boule in |- *; simpl in |- *;
+ rewrite Rminus_0_r.
+pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
+ apply Rlt_0_1.
+apply existT with l.
+cut (forall n:nat, 0 <= Bn n).
+intro; unfold Un_cv in H3; unfold Un_cv in |- *; intros.
+elim (H3 _ H6); intros.
+exists x0; intros.
+replace (sum_f_R0 Bn n) with (sum_f_R0 (fun k:nat => Rabs (Bn k)) n).
+apply H7; assumption.
+apply sum_eq; intros; apply Rabs_right; apply Rle_ge; apply H5.
+intro; apply Rle_trans with (Rabs (An n)).
+apply Rabs_pos.
+unfold An in |- *; apply H4; unfold Boule in |- *; simpl in |- *;
+ rewrite Rminus_0_r; pattern (Rabs x) at 1 in |- *; 
+ rewrite <- Rplus_0_r; apply Rplus_lt_compat_l; apply Rlt_0_1.
+apply Rplus_le_lt_0_compat; [ apply Rabs_pos | apply Rlt_0_1 ].
 Qed.

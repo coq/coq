@@ -11,10 +11,10 @@
 (** Bit vectors interpreted as integers. 
     Contribution by Jean Duprat (ENS Lyon). *)
 
-Require Bvector.
-Require ZArith.
+Require Import Bvector.
+Require Import ZArith.
 Require Export Zpower.
-Require Omega.
+Require Import Omega.
 
 (*
 L'évaluation des vecteurs de booléens se font à la fois en binaire et
@@ -41,29 +41,29 @@ Le complément à deux n'a de sens que sur les vecteurs de taille
 supérieure ou égale à un, le bit de signe étant évalué négativement.
 *)
 
-Definition bit_value [b:bool] : Z :=
-Cases b of
-	| true => `1`
-	| false => `0`
-end.
+Definition bit_value (b:bool) : Z :=
+  match b with
+  | true => 1%Z
+  | false => 0%Z
+  end.
 
-Lemma binary_value  : (n:nat) (Bvector n) -> Z.
+Lemma binary_value : forall n:nat, Bvector n -> Z.
 Proof.
-	Induction n; Intros.
-	Exact `0`.
+	simple induction n; intros.
+	exact 0%Z.
 
-	Inversion H0.
-	Exact (Zplus (bit_value a) (Zmult `2` (H H2))).
+	inversion H0.
+	exact (bit_value a + 2 * H H2)%Z.
 Defined.
 
-Lemma two_compl_value : (n:nat) (Bvector (S n)) -> Z.
+Lemma two_compl_value : forall n:nat, Bvector (S n) -> Z.
 Proof.
-	Induction n; Intros.
-	Inversion H.
-	Exact (Zopp (bit_value a)).
+	simple induction n; intros.
+	inversion H.
+	exact (- bit_value a)%Z.
 
-	Inversion H0.
-	Exact (Zplus (bit_value a) (Zmult `2` (H H2))).
+	inversion H0.
+	exact (bit_value a + 2 * H H2)%Z.
 Defined.
 
 (*
@@ -91,52 +91,50 @@ La valeur en complément à deux est calculée selon un schema de Horner
 avec Zmod2, le paramètre est la taille moins un.
 *)
 
-Definition Zmod2 := [z:Z] Cases z of
-  	|  ZERO => `0`
- 	| ((POS p)) => Cases p of
-      		| (xI q) => (POS q)
-    		| (xO q) => (POS q)
-    		| xH => `0`
-    		end
- 	| ((NEG p)) => Cases p of
-      		| (xI q) => `(NEG q) - 1`
-    		| (xO q) => (NEG q)
-    		| xH => `-1`
-    		end
- 	end.
+Definition Zmod2 (z:Z) :=
+  match z with
+  | Z0 => 0%Z
+  | Zpos p => match p with
+              | xI q => Zpos q
+              | xO q => Zpos q
+              | xH => 0%Z
+              end
+  | Zneg p =>
+      match p with
+      | xI q => (Zneg q - 1)%Z
+      | xO q => Zneg q
+      | xH => (-1)%Z
+      end
+  end.
 
-V7only [
-Notation double_moins_un_add_un :=
-  [p](sym_eq ? ? ? (double_moins_un_add_un_xI p)).
-].
 
-Lemma Zmod2_twice : (z:Z)
-	`z = (2*(Zmod2 z) + (bit_value (Zodd_bool z)))`.
+Lemma Zmod2_twice :
+ forall z:Z, z = (2 * Zmod2 z + bit_value (Zeven.Zodd_bool z))%Z.
 Proof.
-	NewDestruct z; Simpl.
-	Trivial.
+	destruct z; simpl in |- *.
+	trivial.
 
-	NewDestruct p; Simpl; Trivial.
+	destruct p; simpl in |- *; trivial.
 
-	NewDestruct p; Simpl.
-	NewDestruct p as [p|p|]; Simpl.
-	Rewrite <- (double_moins_un_add_un_xI p); Trivial.
+	destruct p; simpl in |- *.
+	destruct p as [p| p| ]; simpl in |- *.
+	rewrite <- (Pdouble_minus_one_o_succ_eq_xI p); trivial.
 
-	Trivial.
+	trivial.
 
-	Trivial.
+	trivial.
 
-	Trivial.
+	trivial.
 
-	Trivial.
-Save.
+	trivial.
+Qed.
 
-Lemma Z_to_binary : (n:nat) Z -> (Bvector n).
+Lemma Z_to_binary : forall n:nat, Z -> Bvector n.
 Proof.
-	Induction n; Intros.
-	Exact Bnil.
+	simple induction n; intros.
+	exact Bnil.
 
-	Exact (Bcons (Zodd_bool H0) n0 (H (Zdiv2 H0))).
+	exact (Bcons (Zeven.Zodd_bool H0) n0 (H (Zeven.Zdiv2 H0))).
 Defined.
 
 (*
@@ -148,12 +146,12 @@ Eval Compute in (Z_to_binary (5) `5`).
      :  (Bvector (5))
 *)
 
-Lemma Z_to_two_compl : (n:nat) Z -> (Bvector (S n)).
+Lemma Z_to_two_compl : forall n:nat, Z -> Bvector (S n).
 Proof.
-	Induction n; Intros.
-	Exact (Bcons (Zodd_bool H) (0) Bnil).
+	simple induction n; intros.
+	exact (Bcons (Zeven.Zodd_bool H) 0 Bnil).
 
-	Exact (Bcons (Zodd_bool H0) (S n0) (H (Zmod2 H0))).
+	exact (Bcons (Zeven.Zodd_bool H0) (S n0) (H (Zmod2 H0))).
 Defined.
 
 (*
@@ -186,93 +184,97 @@ Utilise largement ZArith.
 Meriterait d'etre reecrite.
 *)
 
-Lemma binary_value_Sn : (n:nat) (b:bool) (bv : (Bvector n))
-	(binary_value (S n) (Vcons bool b n bv))=`(bit_value b) + 2*(binary_value n bv)`.
+Lemma binary_value_Sn :
+ forall (n:nat) (b:bool) (bv:Bvector n),
+   binary_value (S n) (Vcons bool b n bv) =
+   (bit_value b + 2 * binary_value n bv)%Z.
 Proof.
-	Intros; Auto.
-Save.
+	intros; auto.
+Qed.
 
-Lemma Z_to_binary_Sn : (n:nat) (b:bool) (z:Z)
-	`z>=0`->
-	(Z_to_binary (S n) `(bit_value b) + 2*z`)=(Bcons b n (Z_to_binary n z)).
+Lemma Z_to_binary_Sn :
+ forall (n:nat) (b:bool) (z:Z),
+   (z >= 0)%Z ->
+   Z_to_binary (S n) (bit_value b + 2 * z) = Bcons b n (Z_to_binary n z).
 Proof.
-	NewDestruct b; NewDestruct z; Simpl; Auto.
-	Intro H; Elim H; Trivial.
-Save.
+	destruct b; destruct z; simpl in |- *; auto.
+	intro H; elim H; trivial.
+Qed.
 
-Lemma binary_value_pos : (n:nat) (bv:(Bvector n))
-	`(binary_value n bv) >= 0`.
+Lemma binary_value_pos :
+ forall (n:nat) (bv:Bvector n), (binary_value n bv >= 0)%Z.
 Proof.
-	NewInduction bv as [|a n v IHbv]; Simpl.
-	Omega.
+	induction bv as [| a n v IHbv]; simpl in |- *.
+	omega.
 
-	NewDestruct a; NewDestruct (binary_value n v); Simpl; Auto.
-	Auto with zarith.
-Save.
+	destruct a; destruct (binary_value n v); simpl in |- *; auto.
+	auto with zarith.
+Qed.
 
-V7only [Notation add_un_double_moins_un_xO := is_double_moins_un.].
 
-Lemma two_compl_value_Sn : (n:nat) (bv : (Bvector (S n))) (b:bool)
-	(two_compl_value (S n) (Bcons b (S n) bv)) =
-		`(bit_value b) + 2*(two_compl_value n bv)`.
+Lemma two_compl_value_Sn :
+ forall (n:nat) (bv:Bvector (S n)) (b:bool),
+   two_compl_value (S n) (Bcons b (S n) bv) =
+   (bit_value b + 2 * two_compl_value n bv)%Z.
 Proof.
-	Intros; Auto.
-Save.
+	intros; auto.
+Qed.
 
-Lemma Z_to_two_compl_Sn : (n:nat) (b:bool) (z:Z) 
-	(Z_to_two_compl (S n) `(bit_value b) + 2*z`) =
-		(Bcons b (S n) (Z_to_two_compl n z)).
+Lemma Z_to_two_compl_Sn :
+ forall (n:nat) (b:bool) (z:Z),
+   Z_to_two_compl (S n) (bit_value b + 2 * z) =
+   Bcons b (S n) (Z_to_two_compl n z).
 Proof.
-	NewDestruct b; NewDestruct z as [|p|p]; Auto.
-	NewDestruct p as [p|p|]; Auto.
-	NewDestruct p as [p|p|]; Simpl; Auto.
-	Intros; Rewrite (add_un_double_moins_un_xO p); Trivial.
-Save.
+	destruct b; destruct z as [| p| p]; auto.
+	destruct p as [p| p| ]; auto.
+	destruct p as [p| p| ]; simpl in |- *; auto.
+	intros; rewrite (Psucc_o_double_minus_one_eq_xO p); trivial.
+Qed.
 
-Lemma Z_to_binary_Sn_z : (n:nat) (z:Z)
-	(Z_to_binary (S n) z)=(Bcons (Zodd_bool z) n (Z_to_binary n (Zdiv2 z))).
+Lemma Z_to_binary_Sn_z :
+ forall (n:nat) (z:Z),
+   Z_to_binary (S n) z =
+   Bcons (Zeven.Zodd_bool z) n (Z_to_binary n (Zeven.Zdiv2 z)).
 Proof.
-	Intros; Auto.
-Save.
+	intros; auto.
+Qed.
 
-Lemma Z_div2_value : (z:Z)
-	` z>=0 `->
-	 `(bit_value (Zodd_bool z))+2*(Zdiv2 z) = z`.
+Lemma Z_div2_value :
+ forall z:Z,
+   (z >= 0)%Z -> (bit_value (Zeven.Zodd_bool z) + 2 * Zeven.Zdiv2 z)%Z = z.
 Proof.
-	NewDestruct z as [|p|p]; Auto.
-	NewDestruct p; Auto.
-  Intro H; Elim H; Trivial.
-Save.
+	destruct z as [| p| p]; auto.
+	destruct p; auto.
+  intro H; elim H; trivial.
+Qed.
 
-Lemma Zdiv2_pos : (z:Z)
-	` z >= 0 ` ->
-	`(Zdiv2 z) >= 0 `.
+Lemma Pdiv2 : forall z:Z, (z >= 0)%Z -> (Zeven.Zdiv2 z >= 0)%Z.
 Proof.
-	NewDestruct z as [|p|p].
-	Auto.
+	destruct z as [| p| p].
+	auto.
 
-	NewDestruct p; Auto.
-	Simpl; Intros; Omega.
+	destruct p; auto.
+	simpl in |- *; intros; omega.
 
-  Intro H; Elim H; Trivial.
+  intro H; elim H; trivial.
 
-Save.
+Qed.
 
-Lemma Zdiv2_two_power_nat : (z:Z) (n:nat)
-	` z >= 0 ` ->
-	` z < (two_power_nat (S n)) ` ->
-	`(Zdiv2 z) < (two_power_nat n) `.
+Lemma Zdiv2_two_power_nat :
+ forall (z:Z) (n:nat),
+   (z >= 0)%Z ->
+   (z < two_power_nat (S n))%Z -> (Zeven.Zdiv2 z < two_power_nat n)%Z.
 Proof.
-	Intros.
-	Cut (Zlt (Zmult `2` (Zdiv2 z)) (Zmult `2` (two_power_nat n))); Intros.
-	Omega.
+	intros.
+	cut (2 * Zeven.Zdiv2 z < 2 * two_power_nat n)%Z; intros.
+	omega.
 
-	Rewrite <- two_power_nat_S.
-	NewDestruct (Zeven_odd_dec z); Intros.
-	Rewrite <- Zeven_div2; Auto.
+	rewrite <- two_power_nat_S.
+	destruct (Zeven.Zeven_odd_dec z); intros.
+	rewrite <- Zeven.Zeven_div2; auto.
 
-	Generalize (Zodd_div2 z H z0); Omega.
-Save.
+	generalize (Zeven.Zodd_div2 z H z0); omega.
+Qed.
 
 (*
 
@@ -299,54 +301,54 @@ Proof.
 Save.
 *)
 
-Lemma Z_to_two_compl_Sn_z : (n:nat) (z:Z)
-	(Z_to_two_compl (S n) z)=(Bcons (Zodd_bool z) (S n) (Z_to_two_compl n (Zmod2 z))).
+Lemma Z_to_two_compl_Sn_z :
+ forall (n:nat) (z:Z),
+   Z_to_two_compl (S n) z =
+   Bcons (Zeven.Zodd_bool z) (S n) (Z_to_two_compl n (Zmod2 z)).
 Proof.
-	Intros; Auto.
-Save.
+	intros; auto.
+Qed.
 
-Lemma Zeven_bit_value : (z:Z)
-	(Zeven z) ->
-	`(bit_value (Zodd_bool z))=0`.
+Lemma Zeven_bit_value :
+ forall z:Z, Zeven.Zeven z -> bit_value (Zeven.Zodd_bool z) = 0%Z.
 Proof.
-	NewDestruct z; Unfold bit_value; Auto.
-	NewDestruct p; Tauto Orelse (Intro H; Elim H).
- 	NewDestruct p; Tauto Orelse (Intro H; Elim H).
-Save.
+	destruct z; unfold bit_value in |- *; auto.
+	destruct p; tauto || (intro H; elim H).
+ 	destruct p; tauto || (intro H; elim H).
+Qed.
 
-Lemma Zodd_bit_value : (z:Z)
-	(Zodd z) ->
-	`(bit_value (Zodd_bool z))=1`.
+Lemma Zodd_bit_value :
+ forall z:Z, Zeven.Zodd z -> bit_value (Zeven.Zodd_bool z) = 1%Z.
 Proof.
-	NewDestruct z; Unfold bit_value; Auto.
-  Intros; Elim H.
-  NewDestruct p; Tauto Orelse (Intros; Elim H).
-  NewDestruct p; Tauto Orelse (Intros; Elim H).
-Save.
+	destruct z; unfold bit_value in |- *; auto.
+  intros; elim H.
+  destruct p; tauto || (intros; elim H).
+  destruct p; tauto || (intros; elim H).
+Qed.
 
-Lemma Zge_minus_two_power_nat_S : (n:nat) (z:Z)
-	`z >= (-(two_power_nat (S n)))`->
-	`(Zmod2 z) >= (-(two_power_nat n))`.
+Lemma Zge_minus_two_power_nat_S :
+ forall (n:nat) (z:Z),
+   (z >= - two_power_nat (S n))%Z -> (Zmod2 z >= - two_power_nat n)%Z.
 Proof.
-	Intros n z; Rewrite (two_power_nat_S n).
-	Generalize (Zmod2_twice z).
-	NewDestruct (Zeven_odd_dec z) as [H|H].
-	Rewrite (Zeven_bit_value z H); Intros; Omega.
+	intros n z; rewrite (two_power_nat_S n).
+	generalize (Zmod2_twice z).
+	destruct (Zeven.Zeven_odd_dec z) as [H| H].
+	rewrite (Zeven_bit_value z H); intros; omega.
 
-        Rewrite (Zodd_bit_value z H); Intros; Omega.
-Save.
+        rewrite (Zodd_bit_value z H); intros; omega.
+Qed.
 
-Lemma Zlt_two_power_nat_S : (n:nat) (z:Z)
-	`z < (two_power_nat (S n))`->
-	`(Zmod2 z) < (two_power_nat n)`.
+Lemma Zlt_two_power_nat_S :
+ forall (n:nat) (z:Z),
+   (z < two_power_nat (S n))%Z -> (Zmod2 z < two_power_nat n)%Z.
 Proof.
-	Intros n z; Rewrite (two_power_nat_S n).
-	Generalize (Zmod2_twice z).
-	NewDestruct (Zeven_odd_dec z) as [H|H].
-	Rewrite (Zeven_bit_value z H); Intros; Omega.
+	intros n z; rewrite (two_power_nat_S n).
+	generalize (Zmod2_twice z).
+	destruct (Zeven.Zeven_odd_dec z) as [H| H].
+	rewrite (Zeven_bit_value z H); intros; omega.
 
-	Rewrite (Zodd_bit_value z H); Intros; Omega.
-Save.
+	rewrite (Zodd_bit_value z H); intros; omega.
+Qed.
 
 End Z_BRIC_A_BRAC.
 
@@ -358,68 +360,67 @@ réciproques l'une de l'autre.
 Elles utilisent les lemmes du bric-a-brac.
 *)
 
-Lemma binary_to_Z_to_binary : (n:nat) (bv : (Bvector n))
-	(Z_to_binary n (binary_value n bv))=bv.
+Lemma binary_to_Z_to_binary :
+ forall (n:nat) (bv:Bvector n), Z_to_binary n (binary_value n bv) = bv.
 Proof.
-	NewInduction bv as [|a n bv IHbv].
-	Auto.
+	induction bv as [| a n bv IHbv].
+	auto.
 
-	Rewrite binary_value_Sn.
-	Rewrite Z_to_binary_Sn.
-	Rewrite IHbv; Trivial.
+	rewrite binary_value_Sn.
+	rewrite Z_to_binary_Sn.
+	rewrite IHbv; trivial.
 
-	Apply binary_value_pos.
-Save.
+	apply binary_value_pos.
+Qed.
 		
-Lemma two_compl_to_Z_to_two_compl : (n:nat) (bv : (Bvector n)) (b:bool)
-	(Z_to_two_compl n (two_compl_value n (Bcons b n bv)))=
-		(Bcons b n bv).
+Lemma two_compl_to_Z_to_two_compl :
+ forall (n:nat) (bv:Bvector n) (b:bool),
+   Z_to_two_compl n (two_compl_value n (Bcons b n bv)) = Bcons b n bv.
 Proof.
-	NewInduction bv as [|a n bv IHbv]; Intro b.
-	NewDestruct b; Auto.
+	induction bv as [| a n bv IHbv]; intro b.
+	destruct b; auto.
 
-	Rewrite two_compl_value_Sn.
-	Rewrite Z_to_two_compl_Sn.
-	Rewrite IHbv; Trivial.
-Save.
+	rewrite two_compl_value_Sn.
+	rewrite Z_to_two_compl_Sn.
+	rewrite IHbv; trivial.
+Qed.
 
-Lemma Z_to_binary_to_Z : (n:nat) (z : Z)
-	`z >= 0 `->
-	`z < (two_power_nat n) `->
-	 (binary_value n (Z_to_binary n z))=z.
+Lemma Z_to_binary_to_Z :
+ forall (n:nat) (z:Z),
+   (z >= 0)%Z ->
+   (z < two_power_nat n)%Z -> binary_value n (Z_to_binary n z) = z.
 Proof.
-	NewInduction n as [|n IHn].
-	Unfold two_power_nat shift_nat; Simpl; Intros; Omega.
+	induction n as [| n IHn].
+	unfold two_power_nat, shift_nat in |- *; simpl in |- *; intros; omega.
 
-	Intros; Rewrite Z_to_binary_Sn_z.
-	Rewrite binary_value_Sn.
-	Rewrite IHn.
-	Apply Z_div2_value; Auto.
+	intros; rewrite Z_to_binary_Sn_z.
+	rewrite binary_value_Sn.
+	rewrite IHn.
+	apply Z_div2_value; auto.
 
-	Apply Zdiv2_pos; Trivial.
+	apply Pdiv2; trivial.
 
-	Apply Zdiv2_two_power_nat; Trivial.
-Save.
+	apply Zdiv2_two_power_nat; trivial.
+Qed.
 
-Lemma Z_to_two_compl_to_Z : (n:nat) (z : Z)
-	`z >= -(two_power_nat n) `->
-	`z < (two_power_nat n) `->
-	(two_compl_value n (Z_to_two_compl n  z))=z.
+Lemma Z_to_two_compl_to_Z :
+ forall (n:nat) (z:Z),
+   (z >= - two_power_nat n)%Z ->
+   (z < two_power_nat n)%Z -> two_compl_value n (Z_to_two_compl n z) = z.
 Proof.
-	NewInduction n as [|n IHn].
-	Unfold two_power_nat shift_nat; Simpl; Intros.
-	Assert `z=-1`\/`z=0`. Omega.
-Intuition; Subst z; Trivial.
+	induction n as [| n IHn].
+	unfold two_power_nat, shift_nat in |- *; simpl in |- *; intros.
+	assert (z = (-1)%Z \/ z = 0%Z). omega.
+intuition; subst z; trivial.
 
-	Intros; Rewrite Z_to_two_compl_Sn_z.
-	Rewrite two_compl_value_Sn.
-	Rewrite IHn.
-	Generalize (Zmod2_twice z); Omega.
+	intros; rewrite Z_to_two_compl_Sn_z.
+	rewrite two_compl_value_Sn.
+	rewrite IHn.
+	generalize (Zmod2_twice z); omega.
 
-	Apply Zge_minus_two_power_nat_S; Auto.
+	apply Zge_minus_two_power_nat_S; auto.
 
-	Apply Zlt_two_power_nat_S; Auto.
-Save.
+	apply Zlt_two_power_nat_S; auto.
+Qed.
 
 End COHERENT_VALUE.
-

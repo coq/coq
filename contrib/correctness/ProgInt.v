@@ -13,7 +13,7 @@
 Require Export ZArith.
 Require Export ZArith_dec.
 
-Theorem Znotzero : (x:Z){`x<>0`}+{`x=0`}.
+Theorem Znotzero : forall x:Z, {x <> 0%Z} + {x = 0%Z}.
 Proof.
-Intro x. Elim (Z_eq_dec x `0`) ; Auto.
-Save.
+intro x. elim (Z_eq_dec x 0); auto.
+Qed.

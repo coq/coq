@@ -15,21 +15,23 @@
 
 (** A boolean is either [true] or [false], and this is decidable *)
 
-Definition sumbool_of_bool : (b:bool) {b=true}+{b=false}.
+Definition sumbool_of_bool : forall b:bool, {b = true} + {b = false}.
 Proof.
-  NewDestruct b; Auto.
+  destruct b; auto.
 Defined.
 
-Hints Resolve sumbool_of_bool : bool.
+Hint Resolve sumbool_of_bool: bool.
 
-Definition bool_eq_rec : (b:bool)(P:bool->Set)
-                    ((b=true)->(P true))->((b=false)->(P false))->(P b).
-NewDestruct b; Auto.
+Definition bool_eq_rec :
+  forall (b:bool) (P:bool -> Set),
+    (b = true -> P true) -> (b = false -> P false) -> P b.
+destruct b; auto.
 Defined.
 
-Definition bool_eq_ind : (b:bool)(P:bool->Prop)
-                    ((b=true)->(P true))->((b=false)->(P false))->(P b).
-NewDestruct b; Auto.
+Definition bool_eq_ind :
+  forall (b:bool) (P:bool -> Prop),
+    (b = true -> P true) -> (b = false -> P false) -> P b.
+destruct b; auto.
 Defined.
 
 
@@ -39,39 +41,38 @@ Defined.
 
 Section connectives.
 
-Variables A,B,C,D : Prop.
+Variables A B C D : Prop.
 
-Hypothesis H1 : {A}+{B}.
-Hypothesis H2 : {C}+{D}.
+Hypothesis H1 : {A} + {B}.
+Hypothesis H2 : {C} + {D}.
 
-Definition sumbool_and : {A/\C}+{B\/D}.
+Definition sumbool_and : {A /\ C} + {B \/ D}.
 Proof.
-Case H1; Case H2; Auto.
+case H1; case H2; auto.
 Defined.
 
-Definition sumbool_or : {A\/C}+{B/\D}.
+Definition sumbool_or : {A \/ C} + {B /\ D}.
 Proof.
-Case H1; Case H2; Auto.
+case H1; case H2; auto.
 Defined.
 
-Definition sumbool_not : {B}+{A}.
+Definition sumbool_not : {B} + {A}.
 Proof.
-Case H1; Auto.
+case H1; auto.
 Defined.
 
 End connectives.
 
-Hints Resolve sumbool_and sumbool_or sumbool_not : core.
+Hint Resolve sumbool_and sumbool_or sumbool_not: core.
 
 
 (** Any decidability function in type [sumbool] can be turned into a function
     returning a boolean with the corresponding specification: *)
 
-Definition bool_of_sumbool : 
-  (A,B:Prop) {A}+{B} -> { b:bool | if b then A else B }.
+Definition bool_of_sumbool :
+  forall A B:Prop, {A} + {B} -> {b : bool | if b then A else B}.
 Proof.
-Intros A B H.
-Elim H; [ Intro; Exists true; Assumption
-        | Intro; Exists false; Assumption ].
+intros A B H.
+elim H; [ intro; exists true; assumption | intro; exists false; assumption ].
 Defined.
-Implicits bool_of_sumbool.
+Implicit Arguments bool_of_sumbool.

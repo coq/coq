@@ -7,531 +7,622 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-Require Bool.
-Require Sumbool.
-Require Arith.
-Require ZArith.
-Require Addr.
-Require Adist.
-Require Addec.
-Require Map.
-Require PolyList.
-Require Mapiter.
+Require Import Bool.
+Require Import Sumbool.
+Require Import Arith.
+Require Import ZArith.
+Require Import Addr.
+Require Import Adist.
+Require Import Addec.
+Require Import Map.
+Require Import List.
+Require Import Mapiter.
 
 Section LSort.
 
   Variable A : Set.
 
-  Fixpoint ad_less_1 [a,a':ad; p:positive] : bool :=
-    Cases p of
-        (xO p') => (ad_less_1 (ad_div_2 a) (ad_div_2 a') p')
-      | _ => (andb (negb (ad_bit_0 a)) (ad_bit_0 a'))
+  Fixpoint ad_less_1 (a a':ad) (p:positive) {struct p} : bool :=
+    match p with
+    | xO p' => ad_less_1 (ad_div_2 a) (ad_div_2 a') p'
+    | _ => andb (negb (ad_bit_0 a)) (ad_bit_0 a')
     end.
 
-  Definition ad_less := [a,a':ad] Cases (ad_xor a a') of
-      	                              ad_z => false
-				    | (ad_x p) => (ad_less_1 a a' p)
-				  end.
-
-  Lemma ad_bit_0_less : (a,a':ad) (ad_bit_0 a)=false -> (ad_bit_0 a')=true -> 
-      (ad_less a a')=true.
-  Proof.
-    Intros. Elim (ad_sum (ad_xor a a')). Intro H1. Elim H1. Intros p H2. Unfold ad_less.
-    Rewrite H2. Generalize H2. Elim p. Intros. Simpl. Rewrite H. Rewrite H0. Reflexivity.
-    Intros. Cut (ad_bit_0 (ad_xor a a'))=false. Intro. Rewrite (ad_xor_bit_0 a a') in H5.
-    Rewrite H in H5. Rewrite H0 in H5. Discriminate H5.
-    Rewrite H4. Reflexivity.
-    Intro. Simpl. Rewrite H. Rewrite H0. Reflexivity.
-    Intro H1. Cut (ad_bit_0 (ad_xor a a'))=false. Intro. Rewrite (ad_xor_bit_0 a a') in H2.
-    Rewrite H in H2. Rewrite H0 in H2. Discriminate H2.
-    Rewrite H1. Reflexivity.
-  Qed.
-
-  Lemma ad_bit_0_gt : (a,a':ad) (ad_bit_0 a)=true -> (ad_bit_0 a')=false -> 
-      (ad_less a a')=false.
-  Proof.
-    Intros. Elim (ad_sum (ad_xor a a')). Intro H1. Elim H1. Intros p H2. Unfold ad_less.
-    Rewrite H2. Generalize H2. Elim p. Intros. Simpl. Rewrite H. Rewrite H0. Reflexivity.
-    Intros. Cut (ad_bit_0 (ad_xor a a'))=false. Intro. Rewrite (ad_xor_bit_0 a a') in H5.
-    Rewrite H in H5. Rewrite H0 in H5. Discriminate H5.
-    Rewrite H4. Reflexivity.
-    Intro. Simpl. Rewrite H. Rewrite H0. Reflexivity.
-    Intro H1. Unfold ad_less. Rewrite H1. Reflexivity.
-  Qed.
-
-  Lemma ad_less_not_refl : (a:ad) (ad_less a a)=false.
-  Proof.
-    Intro. Unfold ad_less. Rewrite (ad_xor_nilpotent a). Reflexivity.
-  Qed.
-
-  Lemma ad_ind_double : 
-      (a:ad)(P:ad->Prop) (P ad_z) ->
-      	((a:ad) (P a) -> (P (ad_double a))) ->
-      	((a:ad) (P a) -> (P (ad_double_plus_un a))) -> (P a).
-  Proof.
-    Intros; Elim a. Trivial.
-    Induction p. Intros. 
-    Apply (H1 (ad_x p0)); Trivial.
-    Intros; Apply (H0 (ad_x p0)); Trivial.
-    Intros; Apply (H1 ad_z); Assumption.
-  Qed.
-
-  Lemma ad_rec_double : 
-      (a:ad)(P:ad->Set) (P ad_z) ->
-      	((a:ad) (P a) -> (P (ad_double a))) ->
-      	((a:ad) (P a) -> (P (ad_double_plus_un a))) -> (P a).
-  Proof.
-    Intros; Elim a. Trivial.
-    Induction p. Intros. 
-    Apply (H1 (ad_x p0)); Trivial.
-    Intros; Apply (H0 (ad_x p0)); Trivial.
-    Intros; Apply (H1 ad_z); Assumption.
-  Qed.
-
-  Lemma ad_less_def_1 : (a,a':ad) (ad_less (ad_double a) (ad_double a'))=(ad_less a a').
-  Proof.
-    Induction a. Induction a'. Reflexivity.
-    Trivial.
-    Induction a'. Unfold ad_less. Simpl. (Elim p; Trivial).
-    Unfold ad_less. Simpl. Intro. Case (p_xor p p0). Reflexivity.
-    Trivial.
-  Qed.
-
-  Lemma ad_less_def_2 : (a,a':ad)
-      (ad_less (ad_double_plus_un a) (ad_double_plus_un a'))=(ad_less a a').
-  Proof.
-    Induction a. Induction a'. Reflexivity.
-    Trivial.
-    Induction a'. Unfold ad_less. Simpl. (Elim p; Trivial).
-    Unfold ad_less. Simpl. Intro. Case (p_xor p p0). Reflexivity.
-    Trivial.
-  Qed.
-
-  Lemma ad_less_def_3 : (a,a':ad) (ad_less (ad_double a) (ad_double_plus_un a'))=true.
-  Proof.
-    Intros. Apply ad_bit_0_less. Apply ad_double_bit_0.
-    Apply ad_double_plus_un_bit_0.
-  Qed.
-
-  Lemma ad_less_def_4 : (a,a':ad) (ad_less (ad_double_plus_un a) (ad_double a'))=false.
-  Proof.
-    Intros. Apply ad_bit_0_gt. Apply ad_double_plus_un_bit_0.
-    Apply ad_double_bit_0.
-  Qed.
-
-  Lemma ad_less_z : (a:ad) (ad_less a ad_z)=false.
-  Proof.
-    Induction a. Reflexivity.
-    Unfold ad_less. Intro. Rewrite (ad_xor_neutral_right (ad_x p)). (Elim p; Trivial).
-  Qed.
-
-  Lemma ad_z_less_1 : (a:ad) (ad_less ad_z a)=true -> {p:positive | a=(ad_x p)}.
-  Proof.
-    Induction a. Intro. Discriminate H.
-    Intros. Split with p. Reflexivity.
-  Qed.
-
-  Lemma ad_z_less_2 : (a:ad) (ad_less ad_z a)=false -> a=ad_z.
-  Proof.
-    Induction a. Trivial.
-    Unfold ad_less. Simpl. Cut (p:positive)(ad_less_1 ad_z (ad_x p) p)=false->False.
-    Intros. Elim (H p H0).
-    Induction p. Intros. Discriminate H0.
-    Intros. Exact (H H0).
-    Intro. Discriminate H.
-  Qed.
-
-  Lemma ad_less_trans : (a,a',a'':ad)
-      (ad_less a a')=true -> (ad_less a' a'')=true -> (ad_less a a'')=true.
-  Proof.
-    Intro a. Apply ad_ind_double with P:=[a:ad]
-          (a',a'':ad)
-           (ad_less a a')=true
-            ->(ad_less a' a'')=true->(ad_less a a'')=true.
-    Intros. Elim (sumbool_of_bool (ad_less ad_z a'')). Trivial.
-    Intro H1. Rewrite (ad_z_less_2 a'' H1) in H0. Rewrite (ad_less_z a') in H0. Discriminate H0.
-    Intros a0 H a'. Apply ad_ind_double with P:=[a':ad]
-          (a'':ad)
-           (ad_less (ad_double a0) a')=true
-            ->(ad_less a' a'')=true->(ad_less (ad_double a0) a'')=true.
-    Intros. Rewrite (ad_less_z (ad_double a0)) in H0. Discriminate H0.
-    Intros a1 H0 a'' H1. Rewrite (ad_less_def_1 a0 a1) in H1.
-    Apply ad_ind_double with P:=[a'':ad]
-          (ad_less (ad_double a1) a'')=true
-           ->(ad_less (ad_double a0) a'')=true.
-    Intro. Rewrite (ad_less_z (ad_double a1)) in H2. Discriminate H2.
-    Intros. Rewrite (ad_less_def_1 a1 a2) in H3. Rewrite (ad_less_def_1 a0 a2).
-    Exact (H a1 a2 H1 H3).
-    Intros. Apply ad_less_def_3.
-    Intros a1 H0 a'' H1. Apply ad_ind_double with P:=[a'':ad]
-          (ad_less (ad_double_plus_un a1) a'')=true
-           ->(ad_less (ad_double a0) a'')=true.
-    Intro. Rewrite (ad_less_z (ad_double_plus_un a1)) in H2. Discriminate H2.
-    Intros. Rewrite (ad_less_def_4 a1 a2) in H3. Discriminate H3.
-    Intros. Apply ad_less_def_3.
-    Intros a0 H a'. Apply ad_ind_double with P:=[a':ad]
-          (a'':ad)
-           (ad_less (ad_double_plus_un a0) a')=true
-            ->(ad_less a' a'')=true
-               ->(ad_less (ad_double_plus_un a0) a'')=true.
-    Intros. Rewrite (ad_less_z (ad_double_plus_un a0)) in H0. Discriminate H0.
-    Intros. Rewrite (ad_less_def_4 a0 a1) in H1. Discriminate H1.
-    Intros a1 H0 a'' H1. Apply ad_ind_double with P:=[a'':ad]
-          (ad_less (ad_double_plus_un a1) a'')=true
-           ->(ad_less (ad_double_plus_un a0) a'')=true.
-    Intro. Rewrite (ad_less_z (ad_double_plus_un a1)) in H2. Discriminate H2.
-    Intros. Rewrite (ad_less_def_4 a1 a2) in H3. Discriminate H3.
-    Rewrite (ad_less_def_2 a0 a1) in H1. Intros. Rewrite (ad_less_def_2 a1 a2) in H3.
-    Rewrite (ad_less_def_2 a0 a2). Exact (H a1 a2 H1 H3).
-  Qed.
-
-  Fixpoint alist_sorted [l:(alist A)] : bool :=
-    Cases l of
-      	nil => true
-      | (cons (a, _) l') => Cases l' of
-                                nil => true
-			      | (cons (a', y') l'') => (andb (ad_less a a')
-			                                     (alist_sorted l'))
-			    end
+  Definition ad_less (a a':ad) :=
+    match ad_xor a a' with
+    | ad_z => false
+    | ad_x p => ad_less_1 a a' p
     end.
 
-  Fixpoint alist_nth_ad [n:nat; l:(alist A)] : ad :=
-    Cases l of
-      	nil => ad_z (* dummy *)
-      | (cons (a, y) l') => Cases n of
-                                O => a
-			      | (S n') => (alist_nth_ad n' l')
-			    end
+  Lemma ad_bit_0_less :
+   forall a a':ad,
+     ad_bit_0 a = false -> ad_bit_0 a' = true -> ad_less a a' = true.
+  Proof.
+    intros. elim (ad_sum (ad_xor a a')). intro H1. elim H1. intros p H2. unfold ad_less in |- *.
+    rewrite H2. generalize H2. elim p. intros. simpl in |- *. rewrite H. rewrite H0. reflexivity.
+    intros. cut (ad_bit_0 (ad_xor a a') = false). intro. rewrite (ad_xor_bit_0 a a') in H5.
+    rewrite H in H5. rewrite H0 in H5. discriminate H5.
+    rewrite H4. reflexivity.
+    intro. simpl in |- *. rewrite H. rewrite H0. reflexivity.
+    intro H1. cut (ad_bit_0 (ad_xor a a') = false). intro. rewrite (ad_xor_bit_0 a a') in H2.
+    rewrite H in H2. rewrite H0 in H2. discriminate H2.
+    rewrite H1. reflexivity.
+  Qed.
+
+  Lemma ad_bit_0_gt :
+   forall a a':ad,
+     ad_bit_0 a = true -> ad_bit_0 a' = false -> ad_less a a' = false.
+  Proof.
+    intros. elim (ad_sum (ad_xor a a')). intro H1. elim H1. intros p H2. unfold ad_less in |- *.
+    rewrite H2. generalize H2. elim p. intros. simpl in |- *. rewrite H. rewrite H0. reflexivity.
+    intros. cut (ad_bit_0 (ad_xor a a') = false). intro. rewrite (ad_xor_bit_0 a a') in H5.
+    rewrite H in H5. rewrite H0 in H5. discriminate H5.
+    rewrite H4. reflexivity.
+    intro. simpl in |- *. rewrite H. rewrite H0. reflexivity.
+    intro H1. unfold ad_less in |- *. rewrite H1. reflexivity.
+  Qed.
+
+  Lemma ad_less_not_refl : forall a:ad, ad_less a a = false.
+  Proof.
+    intro. unfold ad_less in |- *. rewrite (ad_xor_nilpotent a). reflexivity.
+  Qed.
+
+  Lemma ad_ind_double :
+   forall (a:ad) (P:ad -> Prop),
+     P ad_z ->
+     (forall a:ad, P a -> P (ad_double a)) ->
+     (forall a:ad, P a -> P (ad_double_plus_un a)) -> P a.
+  Proof.
+    intros; elim a. trivial.
+    simple induction p. intros. 
+    apply (H1 (ad_x p0)); trivial.
+    intros; apply (H0 (ad_x p0)); trivial.
+    intros; apply (H1 ad_z); assumption.
+  Qed.
+
+  Lemma ad_rec_double :
+   forall (a:ad) (P:ad -> Set),
+     P ad_z ->
+     (forall a:ad, P a -> P (ad_double a)) ->
+     (forall a:ad, P a -> P (ad_double_plus_un a)) -> P a.
+  Proof.
+    intros; elim a. trivial.
+    simple induction p. intros. 
+    apply (H1 (ad_x p0)); trivial.
+    intros; apply (H0 (ad_x p0)); trivial.
+    intros; apply (H1 ad_z); assumption.
+  Qed.
+
+  Lemma ad_less_def_1 :
+   forall a a':ad, ad_less (ad_double a) (ad_double a') = ad_less a a'.
+  Proof.
+    simple induction a. simple induction a'. reflexivity.
+    trivial.
+    simple induction a'. unfold ad_less in |- *. simpl in |- *. elim p; trivial.
+    unfold ad_less in |- *. simpl in |- *. intro. case (p_xor p p0). reflexivity.
+    trivial.
+  Qed.
+
+  Lemma ad_less_def_2 :
+   forall a a':ad,
+     ad_less (ad_double_plus_un a) (ad_double_plus_un a') = ad_less a a'.
+  Proof.
+    simple induction a. simple induction a'. reflexivity.
+    trivial.
+    simple induction a'. unfold ad_less in |- *. simpl in |- *. elim p; trivial.
+    unfold ad_less in |- *. simpl in |- *. intro. case (p_xor p p0). reflexivity.
+    trivial.
+  Qed.
+
+  Lemma ad_less_def_3 :
+   forall a a':ad, ad_less (ad_double a) (ad_double_plus_un a') = true.
+  Proof.
+    intros. apply ad_bit_0_less. apply ad_double_bit_0.
+    apply ad_double_plus_un_bit_0.
+  Qed.
+
+  Lemma ad_less_def_4 :
+   forall a a':ad, ad_less (ad_double_plus_un a) (ad_double a') = false.
+  Proof.
+    intros. apply ad_bit_0_gt. apply ad_double_plus_un_bit_0.
+    apply ad_double_bit_0.
+  Qed.
+
+  Lemma ad_less_z : forall a:ad, ad_less a ad_z = false.
+  Proof.
+    simple induction a. reflexivity.
+    unfold ad_less in |- *. intro. rewrite (ad_xor_neutral_right (ad_x p)). elim p; trivial.
+  Qed.
+
+  Lemma ad_z_less_1 :
+   forall a:ad, ad_less ad_z a = true -> {p : positive | a = ad_x p}.
+  Proof.
+    simple induction a. intro. discriminate H.
+    intros. split with p. reflexivity.
+  Qed.
+
+  Lemma ad_z_less_2 : forall a:ad, ad_less ad_z a = false -> a = ad_z.
+  Proof.
+    simple induction a. trivial.
+    unfold ad_less in |- *. simpl in |- *. cut (forall p:positive, ad_less_1 ad_z (ad_x p) p = false -> False).
+    intros. elim (H p H0).
+    simple induction p. intros. discriminate H0.
+    intros. exact (H H0).
+    intro. discriminate H.
+  Qed.
+
+  Lemma ad_less_trans :
+   forall a a' a'':ad,
+     ad_less a a' = true -> ad_less a' a'' = true -> ad_less a a'' = true.
+  Proof.
+    intro a. apply ad_ind_double with
+  (P := fun a:ad =>
+          forall a' a'':ad,
+            ad_less a a' = true ->
+            ad_less a' a'' = true -> ad_less a a'' = true).
+    intros. elim (sumbool_of_bool (ad_less ad_z a'')). trivial.
+    intro H1. rewrite (ad_z_less_2 a'' H1) in H0. rewrite (ad_less_z a') in H0. discriminate H0.
+    intros a0 H a'. apply ad_ind_double with
+  (P := fun a':ad =>
+          forall a'':ad,
+            ad_less (ad_double a0) a' = true ->
+            ad_less a' a'' = true -> ad_less (ad_double a0) a'' = true).
+    intros. rewrite (ad_less_z (ad_double a0)) in H0. discriminate H0.
+    intros a1 H0 a'' H1. rewrite (ad_less_def_1 a0 a1) in H1.
+    apply ad_ind_double with
+     (P := fun a'':ad =>
+             ad_less (ad_double a1) a'' = true ->
+             ad_less (ad_double a0) a'' = true).
+    intro. rewrite (ad_less_z (ad_double a1)) in H2. discriminate H2.
+    intros. rewrite (ad_less_def_1 a1 a2) in H3. rewrite (ad_less_def_1 a0 a2).
+    exact (H a1 a2 H1 H3).
+    intros. apply ad_less_def_3.
+    intros a1 H0 a'' H1. apply ad_ind_double with
+  (P := fun a'':ad =>
+          ad_less (ad_double_plus_un a1) a'' = true ->
+          ad_less (ad_double a0) a'' = true).
+    intro. rewrite (ad_less_z (ad_double_plus_un a1)) in H2. discriminate H2.
+    intros. rewrite (ad_less_def_4 a1 a2) in H3. discriminate H3.
+    intros. apply ad_less_def_3.
+    intros a0 H a'. apply ad_ind_double with
+  (P := fun a':ad =>
+          forall a'':ad,
+            ad_less (ad_double_plus_un a0) a' = true ->
+            ad_less a' a'' = true ->
+            ad_less (ad_double_plus_un a0) a'' = true).
+    intros. rewrite (ad_less_z (ad_double_plus_un a0)) in H0. discriminate H0.
+    intros. rewrite (ad_less_def_4 a0 a1) in H1. discriminate H1.
+    intros a1 H0 a'' H1. apply ad_ind_double with
+  (P := fun a'':ad =>
+          ad_less (ad_double_plus_un a1) a'' = true ->
+          ad_less (ad_double_plus_un a0) a'' = true).
+    intro. rewrite (ad_less_z (ad_double_plus_un a1)) in H2. discriminate H2.
+    intros. rewrite (ad_less_def_4 a1 a2) in H3. discriminate H3.
+    rewrite (ad_less_def_2 a0 a1) in H1. intros. rewrite (ad_less_def_2 a1 a2) in H3.
+    rewrite (ad_less_def_2 a0 a2). exact (H a1 a2 H1 H3).
+  Qed.
+
+  Fixpoint alist_sorted (l:alist A) : bool :=
+    match l with
+    | nil => true
+    | (a, _) :: l' =>
+        match l' with
+        | nil => true
+        | (a', y') :: l'' => andb (ad_less a a') (alist_sorted l')
+        end
     end.
 
-  Definition alist_sorted_1 := [l:(alist A)]
-      (n:nat) (le (S (S n)) (length l)) ->
-      	(ad_less (alist_nth_ad n l) (alist_nth_ad (S n) l))=true.
+  Fixpoint alist_nth_ad (n:nat) (l:alist A) {struct l} : ad :=
+    match l with
+    | nil => ad_z (* dummy *)
+    | (a, y) :: l' => match n with
+                      | O => a
+                      | S n' => alist_nth_ad n' l'
+                      end
+    end.
 
-  Lemma alist_sorted_imp_1 : (l:(alist A)) (alist_sorted l)=true -> (alist_sorted_1 l).
+  Definition alist_sorted_1 (l:alist A) :=
+    forall n:nat,
+      S (S n) <= length l ->
+      ad_less (alist_nth_ad n l) (alist_nth_ad (S n) l) = true.
+
+  Lemma alist_sorted_imp_1 :
+   forall l:alist A, alist_sorted l = true -> alist_sorted_1 l.
   Proof.
-    Unfold alist_sorted_1. Induction l. Intros. Elim (le_Sn_O (S n) H0).
-    Intro r. Elim r. Intros a y. Induction l0. Intros. Simpl in H1.
-    Elim (le_Sn_O n (le_S_n (S n) O H1)).
-    Intro r0. Elim r0. Intros a0 y0. Induction n. Intros. Simpl. Simpl in H1.
-    Exact (proj1 ? ? (andb_prop ? ? H1)).
-    Intros. Change (ad_less (alist_nth_ad n0 (cons (a0,y0) l1))
-      	                    (alist_nth_ad (S n0) (cons (a0,y0) l1)))=true.
-    Apply H0. Exact (proj2 ? ? (andb_prop ? ? H1)).
-    Apply le_S_n. Exact H3.
+    unfold alist_sorted_1 in |- *. simple induction l. intros. elim (le_Sn_O (S n) H0).
+    intro r. elim r. intros a y. simple induction l0. intros. simpl in H1.
+    elim (le_Sn_O n (le_S_n (S n) 0 H1)).
+    intro r0. elim r0. intros a0 y0. simple induction n. intros. simpl in |- *. simpl in H1.
+    exact (proj1 (andb_prop _ _ H1)).
+    intros. change
+   (ad_less (alist_nth_ad n0 ((a0, y0) :: l1))
+      (alist_nth_ad (S n0) ((a0, y0) :: l1)) = true) 
+  in |- *.
+    apply H0. exact (proj2 (andb_prop _ _ H1)).
+    apply le_S_n. exact H3.
   Qed.
 
-  Definition alist_sorted_2 := [l:(alist A)]
-    (m,n:nat) (lt m n) -> (le (S n) (length l)) ->
-      	(ad_less (alist_nth_ad m l) (alist_nth_ad n l))=true.
+  Definition alist_sorted_2 (l:alist A) :=
+    forall m n:nat,
+      m < n ->
+      S n <= length l -> ad_less (alist_nth_ad m l) (alist_nth_ad n l) = true.
 
-  Lemma alist_sorted_1_imp_2 : (l:(alist A)) (alist_sorted_1 l) -> (alist_sorted_2 l).
+  Lemma alist_sorted_1_imp_2 :
+   forall l:alist A, alist_sorted_1 l -> alist_sorted_2 l.
   Proof.
-    Unfold alist_sorted_1 alist_sorted_2 lt. Intros l H m n H0. Elim H0. Exact (H m).
-    Intros. Apply ad_less_trans with a':=(alist_nth_ad m0 l). Apply H2. Apply le_trans_S.
-    Assumption.
-    Apply H. Assumption.
+    unfold alist_sorted_1, alist_sorted_2, lt in |- *. intros l H m n H0. elim H0. exact (H m).
+    intros. apply ad_less_trans with (a' := alist_nth_ad m0 l). apply H2. apply le_Sn_le.
+    assumption.
+    apply H. assumption.
   Qed.
 
-  Lemma alist_sorted_2_imp : (l:(alist A)) (alist_sorted_2 l) -> (alist_sorted l)=true.
+  Lemma alist_sorted_2_imp :
+   forall l:alist A, alist_sorted_2 l -> alist_sorted l = true.
   Proof.
-    Unfold alist_sorted_2 lt. Induction l. Trivial.
-    Intro r. Elim r. Intros a y. Induction l0. Trivial.
-    Intro r0. Elim r0. Intros a0 y0. Intros.
-    Change (andb (ad_less a a0) (alist_sorted (cons (a0,y0) l1)))=true.
-    Apply andb_true_intro. Split. Apply (H1 (0) (1)). Apply le_n.
-    Simpl. Apply le_n_S. Apply le_n_S. Apply le_O_n.
-    Apply H0. Intros. Apply (H1 (S m) (S n)). Apply le_n_S. Assumption.
-    Exact (le_n_S ? ? H3).
+    unfold alist_sorted_2, lt in |- *. simple induction l. trivial.
+    intro r. elim r. intros a y. simple induction l0. trivial.
+    intro r0. elim r0. intros a0 y0. intros.
+    change (andb (ad_less a a0) (alist_sorted ((a0, y0) :: l1)) = true)
+     in |- *.
+    apply andb_true_intro. split. apply (H1 0 1). apply le_n.
+    simpl in |- *. apply le_n_S. apply le_n_S. apply le_O_n.
+    apply H0. intros. apply (H1 (S m) (S n)). apply le_n_S. assumption.
+    exact (le_n_S _ _ H3).
   Qed.
 
-  Lemma app_length : (C:Set) (l,l':(list C)) (length (app l l'))=(plus (length l) (length l')).
+  Lemma app_length :
+   forall (C:Set) (l l':list C), length (l ++ l') = length l + length l'.
   Proof.
-    Induction l. Trivial.
-    Intros. Simpl. Rewrite (H l'). Reflexivity.
+    simple induction l. trivial.
+    intros. simpl in |- *. rewrite (H l'). reflexivity.
   Qed.
 
-  Lemma aapp_length : (l,l':(alist A)) (length (aapp A l l'))=(plus (length l) (length l')).
+  Lemma aapp_length :
+   forall l l':alist A, length (aapp A l l') = length l + length l'.
   Proof.
-    Exact (app_length ad*A).
+    exact (app_length (ad * A)).
   Qed.
 
-  Lemma alist_nth_ad_aapp_1 : (l,l':(alist A)) (n:nat)
-      (le (S n) (length l)) -> (alist_nth_ad n (aapp A l l'))=(alist_nth_ad n l).
+  Lemma alist_nth_ad_aapp_1 :
+   forall (l l':alist A) (n:nat),
+     S n <= length l -> alist_nth_ad n (aapp A l l') = alist_nth_ad n l.
   Proof.
-    Induction l. Intros. Elim (le_Sn_O n H).
-    Intro r. Elim r. Intros a y l' H l''. Induction n. Trivial.
-    Intros. Simpl. Apply H. Apply le_S_n. Exact H1.
+    simple induction l. intros. elim (le_Sn_O n H).
+    intro r. elim r. intros a y l' H l''. simple induction n. trivial.
+    intros. simpl in |- *. apply H. apply le_S_n. exact H1.
   Qed.
 
-  Lemma alist_nth_ad_aapp_2 : (l,l':(alist A)) (n:nat)
-      (le (S n) (length l')) ->
-      	(alist_nth_ad (plus (length l) n) (aapp A l l'))=(alist_nth_ad n l').
+  Lemma alist_nth_ad_aapp_2 :
+   forall (l l':alist A) (n:nat),
+     S n <= length l' ->
+     alist_nth_ad (length l + n) (aapp A l l') = alist_nth_ad n l'.
   Proof.
-    Induction l. Trivial.
-    Intro r. Elim r. Intros a y l' H l'' n H0. Simpl. Apply H. Exact H0.
+    simple induction l. trivial.
+    intro r. elim r. intros a y l' H l'' n H0. simpl in |- *. apply H. exact H0.
   Qed.
 
-  Lemma interval_split : (p,q,n:nat) (le (S n) (plus p q)) ->
-      {n' : nat | (le (S n') q) /\ n=(plus p n')}+{(le (S n) p)}.
+  Lemma interval_split :
+   forall p q n:nat,
+     S n <= p + q -> {n' : nat | S n' <= q /\ n = p + n'} + {S n <= p}.
   Proof.
-    Induction p. Simpl. Intros. Left . Split with n. (Split; [ Assumption | Reflexivity ]).
-    Intros p' H q. Induction n. Intros. Right . Apply le_n_S. Apply le_O_n.
-    Intros. Elim (H ? ? (le_S_n ? ? H1)). Intro H2. Left . Elim H2. Intros n' H3.
-    Elim H3. Intros H4 H5. Split with n'. (Split; [ Assumption | Rewrite H5; Reflexivity ]).
-    Intro H2. Right . Apply le_n_S. Assumption.
+    simple induction p. simpl in |- *. intros. left. split with n. split; [ assumption | reflexivity ].
+    intros p' H q. simple induction n. intros. right. apply le_n_S. apply le_O_n.
+    intros. elim (H _ _ (le_S_n _ _ H1)). intro H2. left. elim H2. intros n' H3.
+    elim H3. intros H4 H5. split with n'. split; [ assumption | rewrite H5; reflexivity ].
+    intro H2. right. apply le_n_S. assumption.
   Qed.
 
-  Lemma alist_conc_sorted : (l,l':(alist A)) (alist_sorted_2 l) -> (alist_sorted_2 l') ->
-      ((n,n':nat) (le (S n) (length l)) -> (le (S n') (length l')) ->
-      	  (ad_less (alist_nth_ad n l) (alist_nth_ad n' l'))=true) ->
-      	(alist_sorted_2 (aapp A l l')).
+  Lemma alist_conc_sorted :
+   forall l l':alist A,
+     alist_sorted_2 l ->
+     alist_sorted_2 l' ->
+     (forall n n':nat,
+        S n <= length l ->
+        S n' <= length l' ->
+        ad_less (alist_nth_ad n l) (alist_nth_ad n' l') = true) ->
+     alist_sorted_2 (aapp A l l').
   Proof.
-    Unfold alist_sorted_2 lt. Intros. Rewrite (aapp_length l l') in H3.
-    Elim (interval_split (length l) (length l') m
-            (le_trans ? ? ? (le_n_S ? ? (lt_le_weak m n H2)) H3)).
-    Intro H4. Elim H4. Intros m' H5. Elim H5. Intros. Rewrite H7.
-    Rewrite (alist_nth_ad_aapp_2 l l' m' H6). Elim (interval_split (length l) (length l') n H3).
-    Intro H8. Elim H8. Intros n' H9. Elim H9. Intros. Rewrite H11.
-    Rewrite (alist_nth_ad_aapp_2 l l' n' H10). Apply H0. Rewrite H7 in H2. Rewrite H11 in H2.
-    Change (le (plus (S (length l)) m') (plus (length l) n')) in H2.
-    Rewrite (plus_Snm_nSm (length l) m') in H2. Exact (simpl_le_plus_l (length l) (S m') n' H2).
-    Exact H10.
-    Intro H8. Rewrite H7 in H2. Cut (le (S (length l)) (length l)). Intros. Elim (le_Sn_n ? H9).
-    Apply le_trans with m:=(S n). Apply le_n_S. Apply le_trans with m:=(S (plus (length l) m')).
-    Apply le_trans with m:=(plus (length l) m'). Apply le_plus_l.
-    Apply le_n_Sn.
-    Exact H2.
-    Exact H8.
-    Intro H4. Rewrite (alist_nth_ad_aapp_1 l l' m H4).
-    Elim (interval_split (length l) (length l') n H3). Intro H5. Elim H5. Intros n' H6. Elim H6.
-    Intros. Rewrite H8. Rewrite (alist_nth_ad_aapp_2 l l' n' H7). Exact (H1 m n' H4 H7).
-    Intro H5. Rewrite (alist_nth_ad_aapp_1 l l' n H5). Exact (H m n H2 H5).
+    unfold alist_sorted_2, lt in |- *. intros. rewrite (aapp_length l l') in H3.
+    elim
+     (interval_split (length l) (length l') m
+        (le_trans _ _ _ (le_n_S _ _ (lt_le_weak m n H2)) H3)).
+    intro H4. elim H4. intros m' H5. elim H5. intros. rewrite H7.
+    rewrite (alist_nth_ad_aapp_2 l l' m' H6). elim (interval_split (length l) (length l') n H3).
+    intro H8. elim H8. intros n' H9. elim H9. intros. rewrite H11.
+    rewrite (alist_nth_ad_aapp_2 l l' n' H10). apply H0. rewrite H7 in H2. rewrite H11 in H2.
+    change (S (length l) + m' <= length l + n') in H2.
+    rewrite (plus_Snm_nSm (length l) m') in H2. exact ((fun p n m:nat => plus_le_reg_l n m p) (length l) (S m') n' H2).
+    exact H10.
+    intro H8. rewrite H7 in H2. cut (S (length l) <= length l). intros. elim (le_Sn_n _ H9).
+    apply le_trans with (m := S n). apply le_n_S. apply le_trans with (m := S (length l + m')).
+    apply le_trans with (m := length l + m'). apply le_plus_l.
+    apply le_n_Sn.
+    exact H2.
+    exact H8.
+    intro H4. rewrite (alist_nth_ad_aapp_1 l l' m H4).
+    elim (interval_split (length l) (length l') n H3). intro H5. elim H5. intros n' H6. elim H6.
+    intros. rewrite H8. rewrite (alist_nth_ad_aapp_2 l l' n' H7). exact (H1 m n' H4 H7).
+    intro H5. rewrite (alist_nth_ad_aapp_1 l l' n H5). exact (H m n H2 H5).
   Qed.
 
-  Lemma alist_nth_ad_semantics : (l:(alist A)) (n:nat) (le (S n) (length l)) ->
-      {y:A | (alist_semantics A l (alist_nth_ad n l))=(SOME A y)}.
+  Lemma alist_nth_ad_semantics :
+   forall (l:alist A) (n:nat),
+     S n <= length l ->
+     {y : A | alist_semantics A l (alist_nth_ad n l) = SOME A y}.
   Proof.
-    Induction l. Intros. Elim (le_Sn_O ? H).
-    Intro r. Elim r. Intros a y l0 H. Induction n. Simpl. Intro. Split with y.
-    Rewrite (ad_eq_correct a). Reflexivity.
-    Intros. Elim (H ? (le_S_n ? ? H1)). Intros y0 H2.
-    Elim (sumbool_of_bool (ad_eq a (alist_nth_ad n0 l0))). Intro H3. Split with y.
-    Rewrite (ad_eq_complete ? ? H3). Simpl. Rewrite (ad_eq_correct (alist_nth_ad n0 l0)).
-    Reflexivity.
-    Intro H3. Split with y0. Simpl. Rewrite H3. Assumption.
+    simple induction l. intros. elim (le_Sn_O _ H).
+    intro r. elim r. intros a y l0 H. simple induction n. simpl in |- *. intro. split with y.
+    rewrite (ad_eq_correct a). reflexivity.
+    intros. elim (H _ (le_S_n _ _ H1)). intros y0 H2.
+    elim (sumbool_of_bool (ad_eq a (alist_nth_ad n0 l0))). intro H3. split with y.
+    rewrite (ad_eq_complete _ _ H3). simpl in |- *. rewrite (ad_eq_correct (alist_nth_ad n0 l0)).
+    reflexivity.
+    intro H3. split with y0. simpl in |- *. rewrite H3. assumption.
   Qed.
 
-  Lemma alist_of_Map_nth_ad : (m:(Map A)) (pf:ad->ad)
-      (l:(alist A)) l=(MapFold1 A (alist A) (anil A) (aapp A)
-                                [a0:ad][y:A](acons A (a0,y) (anil A)) pf m) ->
-      	(n:nat) (le (S n) (length l)) -> {a':ad | (alist_nth_ad n l)=(pf a')}.
+  Lemma alist_of_Map_nth_ad :
+   forall (m:Map A) (pf:ad -> ad) (l:alist A),
+     l =
+     MapFold1 A (alist A) (anil A) (aapp A)
+       (fun (a0:ad) (y:A) => acons A (a0, y) (anil A)) pf m ->
+     forall n:nat, S n <= length l -> {a' : ad | alist_nth_ad n l = pf a'}.
   Proof.
-    Intros. Elim (alist_nth_ad_semantics l n H0). Intros y H1.
-    Apply (alist_of_Map_semantics_1_1 A m pf (alist_nth_ad n l) y).
-    Rewrite <- H. Assumption.
+    intros. elim (alist_nth_ad_semantics l n H0). intros y H1.
+    apply (alist_of_Map_semantics_1_1 A m pf (alist_nth_ad n l) y).
+    rewrite <- H. assumption.
   Qed.
 
-  Definition ad_monotonic := [pf:ad->ad] (a,a':ad)
-      (ad_less a a')=true -> (ad_less (pf a) (pf a'))=true.
+  Definition ad_monotonic (pf:ad -> ad) :=
+    forall a a':ad, ad_less a a' = true -> ad_less (pf a) (pf a') = true.
 
-  Lemma ad_double_monotonic : (ad_monotonic ad_double).
+  Lemma ad_double_monotonic : ad_monotonic ad_double.
   Proof.
-    Unfold ad_monotonic. Intros. Rewrite ad_less_def_1. Assumption.
+    unfold ad_monotonic in |- *. intros. rewrite ad_less_def_1. assumption.
   Qed.
 
-  Lemma ad_double_plus_un_monotonic : (ad_monotonic ad_double_plus_un).
+  Lemma ad_double_plus_un_monotonic : ad_monotonic ad_double_plus_un.
   Proof.
-    Unfold ad_monotonic. Intros. Rewrite ad_less_def_2. Assumption.
+    unfold ad_monotonic in |- *. intros. rewrite ad_less_def_2. assumption.
   Qed.
 
-  Lemma ad_comp_monotonic : (pf,pf':ad->ad) (ad_monotonic pf) -> (ad_monotonic pf') ->
-      (ad_monotonic [a0:ad] (pf (pf' a0))).
+  Lemma ad_comp_monotonic :
+   forall pf pf':ad -> ad,
+     ad_monotonic pf ->
+     ad_monotonic pf' -> ad_monotonic (fun a0:ad => pf (pf' a0)).
   Proof.
-    Unfold ad_monotonic. Intros. Apply H. Apply H0. Exact H1.
+    unfold ad_monotonic in |- *. intros. apply H. apply H0. exact H1.
   Qed.
 
-  Lemma ad_comp_double_monotonic : (pf:ad->ad) (ad_monotonic pf) ->
-      (ad_monotonic [a0:ad] (pf (ad_double a0))).
+  Lemma ad_comp_double_monotonic :
+   forall pf:ad -> ad,
+     ad_monotonic pf -> ad_monotonic (fun a0:ad => pf (ad_double a0)).
   Proof.
-    Intros. Apply ad_comp_monotonic. Assumption.
-    Exact ad_double_monotonic.
+    intros. apply ad_comp_monotonic. assumption.
+    exact ad_double_monotonic.
   Qed.
 
-  Lemma ad_comp_double_plus_un_monotonic : (pf:ad->ad) (ad_monotonic pf) ->
-      (ad_monotonic [a0:ad] (pf (ad_double_plus_un a0))).
+  Lemma ad_comp_double_plus_un_monotonic :
+   forall pf:ad -> ad,
+     ad_monotonic pf -> ad_monotonic (fun a0:ad => pf (ad_double_plus_un a0)).
   Proof.
-    Intros. Apply ad_comp_monotonic. Assumption.
-    Exact ad_double_plus_un_monotonic.
+    intros. apply ad_comp_monotonic. assumption.
+    exact ad_double_plus_un_monotonic.
   Qed.
 
-  Lemma alist_of_Map_sorts_1 : (m:(Map A)) (pf:ad->ad) (ad_monotonic pf) ->
-      (alist_sorted_2 (MapFold1 A (alist A) (anil A) (aapp A)
-                                [a:ad][y:A](acons A (a,y) (anil A)) pf m)).
-  Proof.
-    Induction m. Simpl. Intros. Apply alist_sorted_1_imp_2. Apply alist_sorted_imp_1. Reflexivity.
-    Intros. Simpl. Apply alist_sorted_1_imp_2. Apply alist_sorted_imp_1. Reflexivity.
-    Intros. Simpl. Apply alist_conc_sorted.
-    Exact (H [a0:ad](pf (ad_double a0)) (ad_comp_double_monotonic pf H1)).
-    Exact (H0 [a0:ad](pf (ad_double_plus_un a0)) (ad_comp_double_plus_un_monotonic pf H1)).
-    Intros. Elim (alist_of_Map_nth_ad m0 [a0:ad](pf (ad_double a0))
+  Lemma alist_of_Map_sorts_1 :
+   forall (m:Map A) (pf:ad -> ad),
+     ad_monotonic pf ->
+     alist_sorted_2
        (MapFold1 A (alist A) (anil A) (aapp A)
-         [a0:ad][y:A](acons A (a0,y) (anil A))
-         [a0:ad](pf (ad_double a0)) m0) (refl_equal ? ?) n H2).
-    Intros a H4. Rewrite H4. Elim (alist_of_Map_nth_ad m1 [a0:ad](pf (ad_double_plus_un a0))
-       (MapFold1 A (alist A) (anil A) (aapp A)
-         [a0:ad][y:A](acons A (a0,y) (anil A))
-         [a0:ad](pf (ad_double_plus_un a0)) m1) (refl_equal ? ?) n' H3).
-    Intros a' H5. Rewrite H5. Unfold ad_monotonic in H1. Apply H1. Apply ad_less_def_3.
+          (fun (a:ad) (y:A) => acons A (a, y) (anil A)) pf m).
+  Proof.
+    simple induction m. simpl in |- *. intros. apply alist_sorted_1_imp_2. apply alist_sorted_imp_1. reflexivity.
+    intros. simpl in |- *. apply alist_sorted_1_imp_2. apply alist_sorted_imp_1. reflexivity.
+    intros. simpl in |- *. apply alist_conc_sorted.
+    exact
+     (H (fun a0:ad => pf (ad_double a0)) (ad_comp_double_monotonic pf H1)).
+    exact
+     (H0 (fun a0:ad => pf (ad_double_plus_un a0))
+        (ad_comp_double_plus_un_monotonic pf H1)).
+    intros. elim
+  (alist_of_Map_nth_ad m0 (fun a0:ad => pf (ad_double a0))
+     (MapFold1 A (alist A) (anil A) (aapp A)
+        (fun (a0:ad) (y:A) => acons A (a0, y) (anil A))
+        (fun a0:ad => pf (ad_double a0)) m0) (refl_equal _) n H2).
+    intros a H4. rewrite H4. elim
+  (alist_of_Map_nth_ad m1 (fun a0:ad => pf (ad_double_plus_un a0))
+     (MapFold1 A (alist A) (anil A) (aapp A)
+        (fun (a0:ad) (y:A) => acons A (a0, y) (anil A))
+        (fun a0:ad => pf (ad_double_plus_un a0)) m1) (
+     refl_equal _) n' H3).
+    intros a' H5. rewrite H5. unfold ad_monotonic in H1. apply H1. apply ad_less_def_3.
   Qed.
 
-  Lemma alist_of_Map_sorts : (m:(Map A)) (alist_sorted (alist_of_Map A m))=true.
+  Lemma alist_of_Map_sorts :
+   forall m:Map A, alist_sorted (alist_of_Map A m) = true.
   Proof.
-    Intro. Apply alist_sorted_2_imp.
-    Exact (alist_of_Map_sorts_1 m [a0:ad]a0 [a,a':ad][p:(ad_less a a')=true]p).
+    intro. apply alist_sorted_2_imp.
+    exact
+     (alist_of_Map_sorts_1 m (fun a0:ad => a0)
+        (fun (a a':ad) (p:ad_less a a' = true) => p)).
   Qed.
 
-  Lemma alist_of_Map_sorts1 : (m:(Map A)) (alist_sorted_1 (alist_of_Map A m)).
+  Lemma alist_of_Map_sorts1 :
+   forall m:Map A, alist_sorted_1 (alist_of_Map A m).
   Proof.
-    Intro. Apply alist_sorted_imp_1. Apply alist_of_Map_sorts.
+    intro. apply alist_sorted_imp_1. apply alist_of_Map_sorts.
   Qed.
  
-  Lemma alist_of_Map_sorts2 : (m:(Map A)) (alist_sorted_2 (alist_of_Map A m)).
+  Lemma alist_of_Map_sorts2 :
+   forall m:Map A, alist_sorted_2 (alist_of_Map A m).
   Proof.
-    Intro. Apply alist_sorted_1_imp_2. Apply alist_of_Map_sorts1.
+    intro. apply alist_sorted_1_imp_2. apply alist_of_Map_sorts1.
   Qed.
  
-  Lemma ad_less_total : (a,a':ad) {(ad_less a a')=true}+{(ad_less a' a)=true}+{a=a'}.
+  Lemma ad_less_total :
+   forall a a':ad, {ad_less a a' = true} + {ad_less a' a = true} + {a = a'}.
   Proof.
-    Intro a. Refine (ad_rec_double a [a:ad] (a':ad){(ad_less a a')=true}+{(ad_less a' a)=true}+{a=a'}
-                            ? ? ?).
-    Intro. Elim (sumbool_of_bool (ad_less ad_z a')). Intro H. Left . Left . Assumption.
-    Intro H. Right . Rewrite (ad_z_less_2 a' H). Reflexivity.
-    Intros a0 H a'. Refine (ad_rec_double a' [a':ad] {(ad_less (ad_double a0) a')=true}
-                                 +{(ad_less a' (ad_double a0))=true}+{(ad_double a0)=a'} ? ? ?).
-    Elim (sumbool_of_bool (ad_less ad_z (ad_double a0))). Intro H0. Left . Right . Assumption.
-    Intro H0. Right . Exact (ad_z_less_2 ? H0).
-    Intros a1 H0. Rewrite ad_less_def_1. Rewrite ad_less_def_1. Elim (H a1). Intro H1.
-    Left . Assumption.
-    Intro H1. Right . Rewrite H1. Reflexivity.
-    Intros a1 H0. Left . Left . Apply ad_less_def_3.
-    Intros a0 H a'. Refine (ad_rec_double a' [a':ad] {(ad_less (ad_double_plus_un a0) a')=true}
-                                 +{(ad_less a' (ad_double_plus_un a0))=true}
-                                 +{(ad_double_plus_un a0)=a'} ? ? ?).
-    Left . Right . (Case a0; Reflexivity).
-    Intros a1 H0. Left . Right . Apply ad_less_def_3.
-    Intros a1 H0. Rewrite ad_less_def_2. Rewrite ad_less_def_2. Elim (H a1). Intro H1.
-    Left . Assumption.
-    Intro H1. Right . Rewrite H1. Reflexivity.
+    intro a. refine
+  (ad_rec_double a
+     (fun a:ad =>
+        forall a':ad,
+          {ad_less a a' = true} + {ad_less a' a = true} + {a = a'}) _ _ _).
+    intro. elim (sumbool_of_bool (ad_less ad_z a')). intro H. left. left. assumption.
+    intro H. right. rewrite (ad_z_less_2 a' H). reflexivity.
+    intros a0 H a'. refine
+  (ad_rec_double a'
+     (fun a':ad =>
+        {ad_less (ad_double a0) a' = true} +
+        {ad_less a' (ad_double a0) = true} + {ad_double a0 = a'}) _ _ _).
+    elim (sumbool_of_bool (ad_less ad_z (ad_double a0))). intro H0. left. right. assumption.
+    intro H0. right. exact (ad_z_less_2 _ H0).
+    intros a1 H0. rewrite ad_less_def_1. rewrite ad_less_def_1. elim (H a1). intro H1.
+    left. assumption.
+    intro H1. right. rewrite H1. reflexivity.
+    intros a1 H0. left. left. apply ad_less_def_3.
+    intros a0 H a'. refine
+  (ad_rec_double a'
+     (fun a':ad =>
+        {ad_less (ad_double_plus_un a0) a' = true} +
+        {ad_less a' (ad_double_plus_un a0) = true} +
+        {ad_double_plus_un a0 = a'}) _ _ _).
+    left. right. case a0; reflexivity.
+    intros a1 H0. left. right. apply ad_less_def_3.
+    intros a1 H0. rewrite ad_less_def_2. rewrite ad_less_def_2. elim (H a1). intro H1.
+    left. assumption.
+    intro H1. right. rewrite H1. reflexivity.
   Qed.
 
-  Lemma alist_too_low : (l:(alist A)) (a,a':ad) (y:A)
-      (ad_less a a')=true -> (alist_sorted_2 (cons (a',y) l)) ->
-      	(alist_semantics A (cons (a',y) l) a)=(NONE A).
+  Lemma alist_too_low :
+   forall (l:alist A) (a a':ad) (y:A),
+     ad_less a a' = true ->
+     alist_sorted_2 ((a', y) :: l) ->
+     alist_semantics A ((a', y) :: l) a = NONE A.
   Proof.
-    Induction l. Intros. Simpl. Elim (sumbool_of_bool (ad_eq a' a)). Intro H1.
-    Rewrite (ad_eq_complete ? ? H1) in H. Rewrite (ad_less_not_refl a) in H. Discriminate H.
-    Intro H1. Rewrite H1. Reflexivity.
-    Intro r. Elim r. Intros a y l0 H a0 a1 y0 H0 H1.
-    Change (Case (ad_eq a1 a0) of
-               (SOME A y0)
-               (alist_semantics A (cons (a,y) l0) a0)
-               end)=(NONE A).
-    Elim (sumbool_of_bool (ad_eq a1 a0)). Intro H2. Rewrite (ad_eq_complete ? ? H2) in H0.
-    Rewrite (ad_less_not_refl a0) in H0. Discriminate H0.
-    Intro H2. Rewrite H2. Apply H. Apply ad_less_trans with a':=a1. Assumption.
-    Unfold alist_sorted_2 in H1. Apply (H1 (0) (1)). Apply lt_n_Sn.
-    Simpl. Apply le_n_S. Apply le_n_S. Apply le_O_n.
-    Apply alist_sorted_1_imp_2. Apply alist_sorted_imp_1.
-    Cut (alist_sorted (cons (a1,y0) (cons (a,y) l0)))=true. Intro H3.
-    Exact (proj2 ? ? (andb_prop ? ? H3)).
-    Apply alist_sorted_2_imp. Assumption.
+    simple induction l. intros. simpl in |- *. elim (sumbool_of_bool (ad_eq a' a)). intro H1.
+    rewrite (ad_eq_complete _ _ H1) in H. rewrite (ad_less_not_refl a) in H. discriminate H.
+    intro H1. rewrite H1. reflexivity.
+    intro r. elim r. intros a y l0 H a0 a1 y0 H0 H1.
+    change
+      (match ad_eq a1 a0 with
+       | true => SOME A y0
+       | false => alist_semantics A ((a, y) :: l0) a0
+       end = NONE A) in |- *.
+    elim (sumbool_of_bool (ad_eq a1 a0)). intro H2. rewrite (ad_eq_complete _ _ H2) in H0.
+    rewrite (ad_less_not_refl a0) in H0. discriminate H0.
+    intro H2. rewrite H2. apply H. apply ad_less_trans with (a' := a1). assumption.
+    unfold alist_sorted_2 in H1. apply (H1 0 1). apply lt_n_Sn.
+    simpl in |- *. apply le_n_S. apply le_n_S. apply le_O_n.
+    apply alist_sorted_1_imp_2. apply alist_sorted_imp_1.
+    cut (alist_sorted ((a1, y0) :: (a, y) :: l0) = true). intro H3.
+    exact (proj2 (andb_prop _ _ H3)).
+    apply alist_sorted_2_imp. assumption.
   Qed.
 
-  Lemma alist_semantics_nth_ad : (l:(alist A)) (a:ad) (y:A)
-      (alist_semantics A l a)=(SOME A y) ->
-      	{n:nat | (le (S n) (length l)) /\ (alist_nth_ad n l)=a}.
+  Lemma alist_semantics_nth_ad :
+   forall (l:alist A) (a:ad) (y:A),
+     alist_semantics A l a = SOME A y ->
+     {n : nat | S n <= length l /\ alist_nth_ad n l = a}.
   Proof.
-    Induction l. Intros. Discriminate H.
-    Intro r. Elim r. Intros a y l0 H a0 y0 H0. Simpl in H0. Elim (sumbool_of_bool (ad_eq a a0)).
-    Intro H1. Rewrite H1 in H0. Split with O. Split. Simpl. Apply le_n_S. Apply le_O_n.
-    Simpl. Exact (ad_eq_complete ? ? H1).
-    Intro H1. Rewrite H1 in H0. Elim (H a0 y0 H0). Intros n' H2. Split with (S n'). Split.
-    Simpl. Apply le_n_S. Exact (proj1 ? ? H2).
-    Exact (proj2 ? ? H2).
+    simple induction l. intros. discriminate H.
+    intro r. elim r. intros a y l0 H a0 y0 H0. simpl in H0. elim (sumbool_of_bool (ad_eq a a0)).
+    intro H1. rewrite H1 in H0. split with 0. split. simpl in |- *. apply le_n_S. apply le_O_n.
+    simpl in |- *. exact (ad_eq_complete _ _ H1).
+    intro H1. rewrite H1 in H0. elim (H a0 y0 H0). intros n' H2. split with (S n'). split.
+    simpl in |- *. apply le_n_S. exact (proj1 H2).
+    exact (proj2 H2).
   Qed.
 
-  Lemma alist_semantics_tail : (l:(alist A)) (a:ad) (y:A)
-      (alist_sorted_2 (cons (a,y) l)) ->
-      	(eqm A (alist_semantics A l) [a0:ad] if (ad_eq a a0)
-                                             then (NONE A)
-					     else (alist_semantics A (cons (a,y) l) a0)).
+  Lemma alist_semantics_tail :
+   forall (l:alist A) (a:ad) (y:A),
+     alist_sorted_2 ((a, y) :: l) ->
+     eqm A (alist_semantics A l)
+       (fun a0:ad =>
+          if ad_eq a a0 then NONE A else alist_semantics A ((a, y) :: l) a0).
   Proof.
-    Unfold eqm. Intros. Elim (sumbool_of_bool (ad_eq a a0)). Intro H0. Rewrite H0.
-    Rewrite <- (ad_eq_complete ? ? H0). Unfold alist_sorted_2 in H.
-    Elim (option_sum A (alist_semantics A l a)). Intro H1. Elim H1. Intros y0 H2.
-    Elim (alist_semantics_nth_ad l a y0 H2). Intros n H3. Elim H3. Intros.
-    Cut (ad_less (alist_nth_ad (0) (cons (a,y) l)) (alist_nth_ad (S n) (cons (a,y) l)))=true.
-    Intro. Simpl in H6. Rewrite H5 in H6. Rewrite (ad_less_not_refl a) in H6. Discriminate H6.
-    Apply H. Apply lt_O_Sn.
-    Simpl. Apply le_n_S. Assumption.
-    Trivial.
-    Intro H0. Simpl. Rewrite H0. Reflexivity.
+    unfold eqm in |- *. intros. elim (sumbool_of_bool (ad_eq a a0)). intro H0. rewrite H0.
+    rewrite <- (ad_eq_complete _ _ H0). unfold alist_sorted_2 in H.
+    elim (option_sum A (alist_semantics A l a)). intro H1. elim H1. intros y0 H2.
+    elim (alist_semantics_nth_ad l a y0 H2). intros n H3. elim H3. intros.
+    cut
+     (ad_less (alist_nth_ad 0 ((a, y) :: l))
+        (alist_nth_ad (S n) ((a, y) :: l)) = true).
+    intro. simpl in H6. rewrite H5 in H6. rewrite (ad_less_not_refl a) in H6. discriminate H6.
+    apply H. apply lt_O_Sn.
+    simpl in |- *. apply le_n_S. assumption.
+    trivial.
+    intro H0. simpl in |- *. rewrite H0. reflexivity.
   Qed.
 
-  Lemma alist_semantics_same_tail : (l,l':(alist A)) (a:ad) (y:A)
-      (alist_sorted_2 (cons (a,y) l)) -> (alist_sorted_2 (cons (a,y) l')) ->
-      	(eqm A (alist_semantics A (cons (a,y) l)) (alist_semantics A (cons (a,y) l'))) ->
-	  (eqm A (alist_semantics A l) (alist_semantics A l')).
+  Lemma alist_semantics_same_tail :
+   forall (l l':alist A) (a:ad) (y:A),
+     alist_sorted_2 ((a, y) :: l) ->
+     alist_sorted_2 ((a, y) :: l') ->
+     eqm A (alist_semantics A ((a, y) :: l))
+       (alist_semantics A ((a, y) :: l')) ->
+     eqm A (alist_semantics A l) (alist_semantics A l').
   Proof.
-    Unfold eqm. Intros. Rewrite (alist_semantics_tail ? ? ? H a0).
-    Rewrite (alist_semantics_tail ? ? ? H0 a0). Case (ad_eq a a0). Reflexivity.
-    Exact (H1 a0).
+    unfold eqm in |- *. intros. rewrite (alist_semantics_tail _ _ _ H a0).
+    rewrite (alist_semantics_tail _ _ _ H0 a0). case (ad_eq a a0). reflexivity.
+    exact (H1 a0).
   Qed.
 
-  Lemma alist_sorted_tail : (l:(alist A)) (a:ad) (y:A)
-      (alist_sorted_2 (cons (a,y) l)) -> (alist_sorted_2 l).
+  Lemma alist_sorted_tail :
+   forall (l:alist A) (a:ad) (y:A),
+     alist_sorted_2 ((a, y) :: l) -> alist_sorted_2 l.
   Proof.
-    Unfold alist_sorted_2. Intros. Apply (H (S m) (S n)). Apply lt_n_S. Assumption.
-    Simpl. Apply le_n_S. Assumption.
+    unfold alist_sorted_2 in |- *. intros. apply (H (S m) (S n)). apply lt_n_S. assumption.
+    simpl in |- *. apply le_n_S. assumption.
   Qed.
 
-  Lemma alist_canonical : (l,l':(alist A))
-      (eqm A (alist_semantics A l) (alist_semantics A l')) ->
-      	(alist_sorted_2 l) -> (alist_sorted_2 l') -> l=l'.
+  Lemma alist_canonical :
+   forall l l':alist A,
+     eqm A (alist_semantics A l) (alist_semantics A l') ->
+     alist_sorted_2 l -> alist_sorted_2 l' -> l = l'.
   Proof.
-    Unfold eqm. Induction l. Induction l'. Trivial.
-    Intro r. Elim r. Intros a y l0 H H0 H1 H2. Simpl in H0.
-    Cut (NONE A)=(Case (ad_eq a a) of (SOME A y)
-                           (alist_semantics A l0 a)
-                           end).
-    Rewrite (ad_eq_correct a). Intro. Discriminate H3.
-    Exact (H0 a).
-    Intro r. Elim r. Intros a y l0 H. Induction l'. Intros. Simpl in H0.
-    Cut (Case (ad_eq a a) of (SOME A y)
-                         (alist_semantics A l0 a)
-                         end)=(NONE A).
-    Rewrite (ad_eq_correct a). Intro. Discriminate H3.
-    Exact (H0 a).
-    Intro r'. Elim r'. Intros a' y' l'0 H0 H1 H2 H3. Elim (ad_less_total a a'). Intro H4.
-    Elim H4. Intro H5.
-    Cut (alist_semantics A (cons (a,y) l0) a)=(alist_semantics A (cons (a',y') l'0) a).
-    Intro. Rewrite (alist_too_low l'0 a a' y' H5 H3) in H6. Simpl in H6.
-    Rewrite (ad_eq_correct a) in H6. Discriminate H6.
-    Exact (H1 a).
-    Intro H5. Cut (alist_semantics A (cons (a,y) l0) a')=(alist_semantics A (cons (a',y') l'0) a').
-    Intro. Rewrite (alist_too_low l0 a' a y H5 H2) in H6. Simpl in H6.
-    Rewrite (ad_eq_correct a') in H6. Discriminate H6.
-    Exact (H1 a').
-    Intro H4. Rewrite H4.
-    Cut (alist_semantics A (cons (a,y) l0) a)=(alist_semantics A (cons (a',y') l'0) a).
-    Intro. Simpl in H5. Rewrite H4 in H5. Rewrite (ad_eq_correct a') in H5. Inversion H5.
-    Rewrite H4 in H1. Rewrite H7 in H1. Cut l0=l'0. Intro. Rewrite H6. Reflexivity.
-    Apply H. Rewrite H4 in H2. Rewrite H7 in H2.
-    Exact (alist_semantics_same_tail l0 l'0 a' y' H2 H3 H1).
-    Exact (alist_sorted_tail ? ? ? H2).
-    Exact (alist_sorted_tail ? ? ? H3).
-    Exact (H1 a).
+    unfold eqm in |- *. simple induction l. simple induction l'. trivial.
+    intro r. elim r. intros a y l0 H H0 H1 H2. simpl in H0.
+    cut
+     (NONE A =
+      match ad_eq a a with
+      | true => SOME A y
+      | false => alist_semantics A l0 a
+      end).
+    rewrite (ad_eq_correct a). intro. discriminate H3.
+    exact (H0 a).
+    intro r. elim r. intros a y l0 H. simple induction l'. intros. simpl in H0.
+    cut
+     (match ad_eq a a with
+      | true => SOME A y
+      | false => alist_semantics A l0 a
+      end = NONE A).
+    rewrite (ad_eq_correct a). intro. discriminate H3.
+    exact (H0 a).
+    intro r'. elim r'. intros a' y' l'0 H0 H1 H2 H3. elim (ad_less_total a a'). intro H4.
+    elim H4. intro H5.
+    cut
+     (alist_semantics A ((a, y) :: l0) a =
+      alist_semantics A ((a', y') :: l'0) a).
+    intro. rewrite (alist_too_low l'0 a a' y' H5 H3) in H6. simpl in H6.
+    rewrite (ad_eq_correct a) in H6. discriminate H6.
+    exact (H1 a).
+    intro H5. cut
+  (alist_semantics A ((a, y) :: l0) a' =
+   alist_semantics A ((a', y') :: l'0) a').
+    intro. rewrite (alist_too_low l0 a' a y H5 H2) in H6. simpl in H6.
+    rewrite (ad_eq_correct a') in H6. discriminate H6.
+    exact (H1 a').
+    intro H4. rewrite H4.
+    cut
+     (alist_semantics A ((a, y) :: l0) a =
+      alist_semantics A ((a', y') :: l'0) a).
+    intro. simpl in H5. rewrite H4 in H5. rewrite (ad_eq_correct a') in H5. inversion H5.
+    rewrite H4 in H1. rewrite H7 in H1. cut (l0 = l'0). intro. rewrite H6. reflexivity.
+    apply H. rewrite H4 in H2. rewrite H7 in H2.
+    exact (alist_semantics_same_tail l0 l'0 a' y' H2 H3 H1).
+    exact (alist_sorted_tail _ _ _ H2).
+    exact (alist_sorted_tail _ _ _ H3).
+    exact (H1 a).
   Qed.
 
 End LSort.

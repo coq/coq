@@ -9,961 +9,957 @@
 
 (** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
 
-Require BinPos.
-Require BinInt.
-Require Arith.
-Require Decidable.
-Require Zsyntax.
-Require Zcompare.
+Require Import BinPos.
+Require Import BinInt.
+Require Import Arith.
+Require Import Decidable.
+Require Import Zcompare.
 
-V7only [Import nat_scope.].
 Open Local Scope Z_scope.
 
-Implicit Variable Type x,y,z:Z.
+Implicit Types x y z : Z.
 
 (**********************************************************************)
 (** Properties of the order relations on binary integers *)
 
 (** Trichotomy *)
 
-Theorem Ztrichotomy_inf : (m,n:Z) {`m<n`} + {m=n} + {`m>n`}.
+Theorem Ztrichotomy_inf : forall n m:Z, {n < m} + {n = m} + {n > m}.
 Proof.
-Unfold Zgt Zlt; Intros m n; Assert H:=(refl_equal ? (Zcompare m n)).
-  LetTac x := (Zcompare m n) in 2 H Goal.
-  NewDestruct x; 
-    [Left; Right;Rewrite Zcompare_EGAL_eq with 1:=H 
-    | Left; Left
-    | Right ]; Reflexivity.
+unfold Zgt, Zlt in |- *; intros m n; assert (H := refl_equal (m ?= n)).
+  set (x := m ?= n) in H at 2 |- *.
+  destruct x;
+   [ left; right; rewrite Zcompare_Eq_eq with (1 := H) | left; left | right ];
+   reflexivity.
 Qed.
 
-Theorem Ztrichotomy : (m,n:Z) `m<n` \/ m=n \/ `m>n`.
+Theorem Ztrichotomy : forall n m:Z, n < m \/ n = m \/ n > m.
 Proof.
-  Intros m n; NewDestruct (Ztrichotomy_inf m n) as [[Hlt|Heq]|Hgt];
-    [Left | Right; Left |Right; Right]; Assumption.
+  intros m n; destruct (Ztrichotomy_inf m n) as [[Hlt| Heq]| Hgt];
+   [ left | right; left | right; right ]; assumption.
 Qed.
 
 (**********************************************************************)
 (** Decidability of equality and order on Z *)
 
-Theorem dec_eq: (x,y:Z) (decidable (x=y)).
+Theorem dec_eq : forall n m:Z, decidable (n = m).
 Proof.
-Intros x y; Unfold decidable ; Elim (Zcompare_EGAL x y);
-Intros H1 H2; Elim (Dcompare (Zcompare x y)); [
-    Tauto
-  | Intros H3; Right; Unfold not ; Intros H4;
-    Elim H3; Rewrite (H2 H4); Intros H5; Discriminate H5].
+intros x y; unfold decidable in |- *; elim (Zcompare_Eq_iff_eq x y);
+ intros H1 H2; elim (Dcompare (x ?= y));
+ [ tauto
+ | intros H3; right; unfold not in |- *; intros H4; elim H3; rewrite (H2 H4);
+    intros H5; discriminate H5 ].
 Qed. 
 
-Theorem dec_Zne: (x,y:Z) (decidable (Zne x y)).
+Theorem dec_Zne : forall n m:Z, decidable (Zne n m).
 Proof.
-Intros x y; Unfold decidable Zne ; Elim (Zcompare_EGAL x y).
-Intros H1 H2; Elim (Dcompare (Zcompare x y)); 
-  [ Right; Rewrite H1; Auto
-  | Left; Unfold not; Intro; Absurd (Zcompare x y)=EGAL; 
-    [ Elim H; Intros HR; Rewrite HR; Discriminate 
-    | Auto]].
+intros x y; unfold decidable, Zne in |- *; elim (Zcompare_Eq_iff_eq x y).
+intros H1 H2; elim (Dcompare (x ?= y));
+ [ right; rewrite H1; auto
+ | left; unfold not in |- *; intro; absurd ((x ?= y) = Eq);
+    [ elim H; intros HR; rewrite HR; discriminate | auto ] ].
 Qed.
 
-Theorem dec_Zle: (x,y:Z) (decidable `x<=y`).
+Theorem dec_Zle : forall n m:Z, decidable (n <= m).
 Proof.
-Intros x y; Unfold decidable Zle ; Elim (Zcompare x y); [
-    Left; Discriminate
-  | Left; Discriminate
-  | Right; Unfold not ; Intros H; Apply H; Trivial with arith].
+intros x y; unfold decidable, Zle in |- *; elim (x ?= y);
+ [ left; discriminate
+ | left; discriminate
+ | right; unfold not in |- *; intros H; apply H; trivial with arith ].
 Qed.
 
-Theorem dec_Zgt: (x,y:Z) (decidable `x>y`).
+Theorem dec_Zgt : forall n m:Z, decidable (n > m).
 Proof.
-Intros x y; Unfold decidable Zgt ; Elim (Zcompare x y);
-  [ Right; Discriminate | Right; Discriminate | Auto with arith].
+intros x y; unfold decidable, Zgt in |- *; elim (x ?= y);
+ [ right; discriminate | right; discriminate | auto with arith ].
 Qed.
 
-Theorem dec_Zge: (x,y:Z) (decidable `x>=y`).
+Theorem dec_Zge : forall n m:Z, decidable (n >= m).
 Proof.
-Intros x y; Unfold decidable Zge ; Elim (Zcompare x y); [
-  Left; Discriminate
-| Right; Unfold not ; Intros H; Apply H; Trivial with arith
-| Left; Discriminate]. 
+intros x y; unfold decidable, Zge in |- *; elim (x ?= y);
+ [ left; discriminate
+ | right; unfold not in |- *; intros H; apply H; trivial with arith
+ | left; discriminate ]. 
 Qed.
 
-Theorem dec_Zlt: (x,y:Z) (decidable `x<y`).
+Theorem dec_Zlt : forall n m:Z, decidable (n < m).
 Proof.
-Intros x y; Unfold decidable Zlt ; Elim (Zcompare x y);
-  [ Right; Discriminate | Auto with arith | Right; Discriminate].
+intros x y; unfold decidable, Zlt in |- *; elim (x ?= y);
+ [ right; discriminate | auto with arith | right; discriminate ].
 Qed.
 
-Theorem not_Zeq : (x,y:Z) ~ x=y -> `x<y` \/ `y<x`.
+Theorem not_Zeq : forall n m:Z, n <> m -> n < m \/ m < n.
 Proof.
-Intros x y; Elim (Dcompare (Zcompare x y)); [
-  Intros H1 H2; Absurd x=y; [ Assumption | Elim (Zcompare_EGAL x y); Auto with arith]
-| Unfold Zlt ; Intros H; Elim H; Intros H1; 
-    [Auto with arith | Right; Elim (Zcompare_ANTISYM x y); Auto with arith]].
+intros x y; elim (Dcompare (x ?= y));
+ [ intros H1 H2; absurd (x = y);
+    [ assumption | elim (Zcompare_Eq_iff_eq x y); auto with arith ]
+ | unfold Zlt in |- *; intros H; elim H; intros H1;
+    [ auto with arith
+    | right; elim (Zcompare_Gt_Lt_antisym x y); auto with arith ] ].
 Qed. 
 
 (** Relating strict and large orders *)
 
-Lemma Zgt_lt : (m,n:Z) `m>n` -> `n<m`.
+Lemma Zgt_lt : forall n m:Z, n > m -> m < n.
 Proof.
-Unfold Zgt Zlt ;Intros m n H; Elim (Zcompare_ANTISYM m n); Auto with arith.
+unfold Zgt, Zlt in |- *; intros m n H; elim (Zcompare_Gt_Lt_antisym m n);
+ auto with arith.
 Qed.
 
-Lemma Zlt_gt : (m,n:Z) `m<n` -> `n>m`.
+Lemma Zlt_gt : forall n m:Z, n < m -> m > n.
 Proof.
-Unfold Zgt Zlt ;Intros m n H; Elim (Zcompare_ANTISYM n m); Auto with arith.
+unfold Zgt, Zlt in |- *; intros m n H; elim (Zcompare_Gt_Lt_antisym n m);
+ auto with arith.
 Qed.
 
-Lemma Zge_le : (m,n:Z) `m>=n` -> `n<=m`.
+Lemma Zge_le : forall n m:Z, n >= m -> m <= n.
 Proof.
-Intros m n; Change ~`m<n`-> ~`n>m`;
-Unfold not; Intros H1 H2; Apply H1; Apply Zgt_lt; Assumption.
+intros m n; change (~ m < n -> ~ n > m) in |- *; unfold not in |- *;
+ intros H1 H2; apply H1; apply Zgt_lt; assumption.
 Qed.
 
-Lemma Zle_ge : (m,n:Z) `m<=n` -> `n>=m`.
+Lemma Zle_ge : forall n m:Z, n <= m -> m >= n.
 Proof.
-Intros m n; Change ~`m>n`-> ~`n<m`;
-Unfold not; Intros H1 H2; Apply H1; Apply Zlt_gt; Assumption.
+intros m n; change (~ m > n -> ~ n < m) in |- *; unfold not in |- *;
+ intros H1 H2; apply H1; apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zle_not_gt     : (n,m:Z)`n<=m` -> ~`n>m`.
+Lemma Zle_not_gt : forall n m:Z, n <= m -> ~ n > m.
 Proof.
-Trivial.
+trivial.
 Qed.
 
-Lemma Zgt_not_le     : (n,m:Z)`n>m` -> ~`n<=m`.
+Lemma Zgt_not_le : forall n m:Z, n > m -> ~ n <= m.
 Proof.
-Intros n m H1 H2; Apply H2; Assumption.
+intros n m H1 H2; apply H2; assumption.
 Qed.
 
-Lemma Zle_not_lt : (n,m:Z)`n<=m` -> ~`m<n`.
+Lemma Zle_not_lt : forall n m:Z, n <= m -> ~ m < n.
 Proof.
-Intros n m H1 H2.
-Assert H3:=(Zlt_gt ? ? H2).
-Apply Zle_not_gt with n m; Assumption.
+intros n m H1 H2.
+assert (H3 := Zlt_gt _ _ H2).
+apply Zle_not_gt with n m; assumption.
 Qed.
 
-Lemma Zlt_not_le : (n,m:Z)`n<m` -> ~`m<=n`.
+Lemma Zlt_not_le : forall n m:Z, n < m -> ~ m <= n.
 Proof.
-Intros n m H1 H2.
-Apply Zle_not_lt with m n; Assumption.
+intros n m H1 H2.
+apply Zle_not_lt with m n; assumption.
 Qed.
 
-Lemma not_Zge : (x,y:Z) ~`x>=y` -> `x<y`.
+Lemma Znot_ge_lt : forall n m:Z, ~ n >= m -> n < m.
 Proof.
-Unfold Zge Zlt ; Intros x y H; Apply dec_not_not;
-  [ Exact (dec_Zlt x y) | Assumption].
+unfold Zge, Zlt in |- *; intros x y H; apply dec_not_not;
+ [ exact (dec_Zlt x y) | assumption ].
 Qed.
  
-Lemma not_Zlt : (x,y:Z) ~`x<y` -> `x>=y`.
+Lemma Znot_lt_ge : forall n m:Z, ~ n < m -> n >= m.
 Proof.
-Unfold Zlt Zge; Auto with arith.
+unfold Zlt, Zge in |- *; auto with arith.
 Qed.
 
-Lemma not_Zgt : (x,y:Z)~`x>y` -> `x<=y`.
+Lemma Znot_gt_le : forall n m:Z, ~ n > m -> n <= m.
 Proof.
-Trivial.
+trivial.
 Qed.
 
-Lemma not_Zle : (x,y:Z) ~`x<=y` -> `x>y`.
+Lemma Znot_le_gt : forall n m:Z, ~ n <= m -> n > m.
 Proof.
-Unfold Zle Zgt ; Intros x y H; Apply dec_not_not;
-  [ Exact (dec_Zgt x y) | Assumption].
+unfold Zle, Zgt in |- *; intros x y H; apply dec_not_not;
+ [ exact (dec_Zgt x y) | assumption ].
 Qed.
 
-Lemma Zge_iff_le : (x,y:Z) `x>=y` <-> `y<=x`.
+Lemma Zge_iff_le : forall n m:Z, n >= m <-> m <= n.
 Proof.
-    Intros x y; Intros. Split. Intro. Apply Zge_le. Assumption.
-    Intro. Apply Zle_ge. Assumption.
+    intros x y; intros. split. intro. apply Zge_le. assumption.
+    intro. apply Zle_ge. assumption.
 Qed.
 
-Lemma Zgt_iff_lt : (x,y:Z) `x>y` <-> `y<x`.
+Lemma Zgt_iff_lt : forall n m:Z, n > m <-> m < n.
 Proof.
-    Intros x y. Split. Intro. Apply Zgt_lt. Assumption.
-    Intro. Apply Zlt_gt. Assumption.
+    intros x y. split. intro. apply Zgt_lt. assumption.
+    intro. apply Zlt_gt. assumption.
 Qed.
  
 (** Reflexivity *)
 
-Lemma Zle_n : (n:Z) (Zle n n).
+Lemma Zle_refl : forall n:Z, n <= n.
 Proof.
-Intros n; Unfold Zle; Rewrite (Zcompare_x_x n); Discriminate.
+intros n; unfold Zle in |- *; rewrite (Zcompare_refl n); discriminate.
 Qed. 
 
-Lemma Zle_refl : (n,m:Z) n=m -> `n<=m`.
+Lemma Zeq_le : forall n m:Z, n = m -> n <= m.
 Proof.
-Intros; Rewrite H; Apply Zle_n.
+intros; rewrite H; apply Zle_refl.
 Qed.
 
-Hints Resolve Zle_n : zarith.
+Hint Resolve Zle_refl: zarith.
 
 (** Antisymmetry *)
 
-Lemma Zle_antisym : (n,m:Z)`n<=m`->`m<=n`->n=m.
+Lemma Zle_antisym : forall n m:Z, n <= m -> m <= n -> n = m.
 Proof.
-Intros n m H1 H2; NewDestruct (Ztrichotomy n m) as [Hlt|[Heq|Hgt]]. 
-  Absurd `m>n`; [ Apply Zle_not_gt | Apply Zlt_gt]; Assumption.
-  Assumption.
-  Absurd `n>m`; [ Apply Zle_not_gt | Idtac]; Assumption.
+intros n m H1 H2; destruct (Ztrichotomy n m) as [Hlt| [Heq| Hgt]]. 
+  absurd (m > n); [ apply Zle_not_gt | apply Zlt_gt ]; assumption.
+  assumption.
+  absurd (n > m); [ apply Zle_not_gt | idtac ]; assumption.
 Qed.
 
 (** Asymmetry *)
 
-Lemma Zgt_not_sym    : (n,m:Z)`n>m` -> ~`m>n`.
+Lemma Zgt_asym : forall n m:Z, n > m -> ~ m > n.
 Proof.
-Unfold Zgt ;Intros n m H; Elim (Zcompare_ANTISYM n m); Intros H1 H2;
-Rewrite -> H1; [ Discriminate | Assumption ].
+unfold Zgt in |- *; intros n m H; elim (Zcompare_Gt_Lt_antisym n m);
+ intros H1 H2; rewrite H1; [ discriminate | assumption ].
 Qed.
 
-Lemma Zlt_not_sym : (n,m:Z)`n<m` -> ~`m<n`.
+Lemma Zlt_asym : forall n m:Z, n < m -> ~ m < n.
 Proof.
-Intros n m H H1;
-Assert H2:`m>n`. Apply Zlt_gt; Assumption.
-Assert H3: `n>m`. Apply Zlt_gt; Assumption.
-Apply Zgt_not_sym with m n; Assumption.
+intros n m H H1; assert (H2 : m > n). apply Zlt_gt; assumption.
+assert (H3 : n > m). apply Zlt_gt; assumption.
+apply Zgt_asym with m n; assumption.
 Qed.
 
 (** Irreflexivity *)
 
-Lemma Zgt_antirefl   : (n:Z)~`n>n`.
+Lemma Zgt_irrefl : forall n:Z, ~ n > n.
 Proof.
-Intros n H; Apply (Zgt_not_sym n n H H).
+intros n H; apply (Zgt_asym n n H H).
 Qed.
 
-Lemma Zlt_n_n : (n:Z)~`n<n`.
+Lemma Zlt_irrefl : forall n:Z, ~ n < n.
 Proof.
-Intros n H; Apply (Zlt_not_sym n n H H).
+intros n H; apply (Zlt_asym n n H H).
 Qed.
 
-Lemma Zlt_not_eq : (x,y:Z)`x<y` -> ~x=y.
+Lemma Zlt_not_eq : forall n m:Z, n < m -> n <> m.
 Proof.
-Unfold not; Intros x y H H0.
-Rewrite H0 in H.
-Apply (Zlt_n_n ? H).
+unfold not in |- *; intros x y H H0.
+rewrite H0 in H.
+apply (Zlt_irrefl _ H).
 Qed.
 
 (** Large = strict or equal *)
 
-Lemma Zlt_le_weak : (n,m:Z)`n<m`->`n<=m`.
+Lemma Zlt_le_weak : forall n m:Z, n < m -> n <= m.
 Proof.
-Intros n m Hlt; Apply not_Zgt; Apply Zgt_not_sym; Apply Zlt_gt; Assumption.
+intros n m Hlt; apply Znot_gt_le; apply Zgt_asym; apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zle_lt_or_eq : (n,m:Z)`n<=m`->(`n<m` \/ n=m).
+Lemma Zle_lt_or_eq : forall n m:Z, n <= m -> n < m \/ n = m.
 Proof.
-Intros n m H; NewDestruct (Ztrichotomy n m) as [Hlt|[Heq|Hgt]]; [
-  Left; Assumption
-| Right; Assumption
-| Absurd `n>m`; [Apply Zle_not_gt|Idtac]; Assumption ].
+intros n m H; destruct (Ztrichotomy n m) as [Hlt| [Heq| Hgt]];
+ [ left; assumption
+ | right; assumption
+ | absurd (n > m); [ apply Zle_not_gt | idtac ]; assumption ].
 Qed.
 
 (** Dichotomy *)
 
-Lemma Zle_or_lt : (n,m:Z)`n<=m`\/`m<n`.
+Lemma Zle_or_lt : forall n m:Z, n <= m \/ m < n.
 Proof.
-Intros n m; NewDestruct (Ztrichotomy n m) as [Hlt|[Heq|Hgt]]; [
-  Left; Apply not_Zgt; Intro Hgt; Assert Hgt':=(Zlt_gt ? ? Hlt);
-     Apply Zgt_not_sym with m n; Assumption
-| Left; Rewrite Heq; Apply Zle_n
-| Right; Apply Zgt_lt; Assumption ].
+intros n m; destruct (Ztrichotomy n m) as [Hlt| [Heq| Hgt]];
+ [ left; apply Znot_gt_le; intro Hgt; assert (Hgt' := Zlt_gt _ _ Hlt);
+    apply Zgt_asym with m n; assumption
+ | left; rewrite Heq; apply Zle_refl
+ | right; apply Zgt_lt; assumption ].
 Qed.
 
 (** Transitivity of strict orders *)
 
-Lemma Zgt_trans      : (n,m,p:Z)`n>m`->`m>p`->`n>p`.
+Lemma Zgt_trans : forall n m p:Z, n > m -> m > p -> n > p.
 Proof.
-Exact Zcompare_trans_SUPERIEUR.
+exact Zcompare_Gt_trans.
 Qed.
 
-Lemma Zlt_trans : (n,m,p:Z)`n<m`->`m<p`->`n<p`.
+Lemma Zlt_trans : forall n m p:Z, n < m -> m < p -> n < p.
 Proof.
-Intros n m p H1 H2; Apply Zgt_lt; Apply Zgt_trans with m:= m; 
-Apply Zlt_gt; Assumption.
+intros n m p H1 H2; apply Zgt_lt; apply Zgt_trans with (m := m); apply Zlt_gt;
+ assumption.
 Qed.
 
 (** Mixed transitivity *)
 
-Lemma Zle_gt_trans : (n,m,p:Z)`m<=n`->`m>p`->`n>p`.
+Lemma Zle_gt_trans : forall n m p:Z, m <= n -> m > p -> n > p.
 Proof.
-Intros n m p H1 H2; NewDestruct (Zle_lt_or_eq m n H1) as [Hlt|Heq]; [
-  Apply Zgt_trans with m; [Apply Zlt_gt; Assumption | Assumption ]
-| Rewrite <- Heq; Assumption ].
+intros n m p H1 H2; destruct (Zle_lt_or_eq m n H1) as [Hlt| Heq];
+ [ apply Zgt_trans with m; [ apply Zlt_gt; assumption | assumption ]
+ | rewrite <- Heq; assumption ].
 Qed.
 
-Lemma Zgt_le_trans : (n,m,p:Z)`n>m`->`p<=m`->`n>p`.
+Lemma Zgt_le_trans : forall n m p:Z, n > m -> p <= m -> n > p.
 Proof.
-Intros n m p H1 H2; NewDestruct (Zle_lt_or_eq p m H2) as [Hlt|Heq]; [
-  Apply Zgt_trans with m; [Assumption|Apply Zlt_gt; Assumption]
-| Rewrite Heq; Assumption ].
+intros n m p H1 H2; destruct (Zle_lt_or_eq p m H2) as [Hlt| Heq];
+ [ apply Zgt_trans with m; [ assumption | apply Zlt_gt; assumption ]
+ | rewrite Heq; assumption ].
 Qed.
 
-Lemma Zlt_le_trans : (n,m,p:Z)`n<m`->`m<=p`->`n<p`.
-Intros n m p H1 H2;Apply Zgt_lt;Apply Zle_gt_trans with m:=m;
-  [ Assumption | Apply Zlt_gt;Assumption ].
+Lemma Zlt_le_trans : forall n m p:Z, n < m -> m <= p -> n < p.
+intros n m p H1 H2; apply Zgt_lt; apply Zle_gt_trans with (m := m);
+ [ assumption | apply Zlt_gt; assumption ].
 Qed.
 
-Lemma Zle_lt_trans : (n,m,p:Z)`n<=m`->`m<p`->`n<p`.
+Lemma Zle_lt_trans : forall n m p:Z, n <= m -> m < p -> n < p.
 Proof.
-Intros n m p H1 H2;Apply Zgt_lt;Apply Zgt_le_trans with m:=m; 
-  [ Apply Zlt_gt;Assumption | Assumption ].
+intros n m p H1 H2; apply Zgt_lt; apply Zgt_le_trans with (m := m);
+ [ apply Zlt_gt; assumption | assumption ].
 Qed.
 
 (** Transitivity of large orders *)
 
-Lemma Zle_trans : (n,m,p:Z)`n<=m`->`m<=p`->`n<=p`.
+Lemma Zle_trans : forall n m p:Z, n <= m -> m <= p -> n <= p.
 Proof.
-Intros n m p H1 H2; Apply not_Zgt.
-Intro Hgt; Apply Zle_not_gt with n m. Assumption.
-Exact (Zgt_le_trans n p m Hgt H2).
+intros n m p H1 H2; apply Znot_gt_le.
+intro Hgt; apply Zle_not_gt with n m. assumption.
+exact (Zgt_le_trans n p m Hgt H2).
 Qed.
 
-Lemma Zge_trans : (n, m, p : Z) `n>=m` -> `m>=p` -> `n>=p`.
+Lemma Zge_trans : forall n m p:Z, n >= m -> m >= p -> n >= p.
 Proof.
-Intros n m p H1 H2.
-Apply Zle_ge.
-Apply Zle_trans with m; Apply Zge_le; Trivial.
+intros n m p H1 H2.
+apply Zle_ge.
+apply Zle_trans with m; apply Zge_le; trivial.
 Qed.
 
-Hints Resolve Zle_trans : zarith.
+Hint Resolve Zle_trans: zarith.
 
 (** Compatibility of successor wrt to order *)
 
-Lemma Zle_n_S : (n,m:Z) `m<=n` -> `(Zs m)<=(Zs n)`.
+Lemma Zsucc_le_compat : forall n m:Z, m <= n -> Zsucc m <= Zsucc n.
 Proof.
-Unfold Zle not ;Intros m n H1 H2; Apply H1; 
-Rewrite <- (Zcompare_Zplus_compatible n m (POS xH));
-Do 2 Rewrite (Zplus_sym (POS xH)); Exact H2.
+unfold Zle, not in |- *; intros m n H1 H2; apply H1;
+ rewrite <- (Zcompare_plus_compat n m 1); do 2 rewrite (Zplus_comm 1);
+ exact H2.
 Qed.
 
-Lemma Zgt_n_S : (n,m:Z)`m>n` -> `(Zs m)>(Zs n)`.
+Lemma Zsucc_gt_compat : forall n m:Z, m > n -> Zsucc m > Zsucc n.
 Proof.
-Unfold Zgt; Intros n m H; Rewrite Zcompare_n_S; Auto with arith.
+unfold Zgt in |- *; intros n m H; rewrite Zcompare_succ_compat;
+ auto with arith.
 Qed.
 
-Lemma Zlt_n_S : (n,m:Z)`n<m`->`(Zs n)<(Zs m)`.
+Lemma Zsucc_lt_compat : forall n m:Z, n < m -> Zsucc n < Zsucc m.
 Proof.
-Intros n m H;Apply Zgt_lt;Apply Zgt_n_S;Apply Zlt_gt; Assumption.
+intros n m H; apply Zgt_lt; apply Zsucc_gt_compat; apply Zlt_gt; assumption.
 Qed.
 
-Hints Resolve Zle_n_S : zarith.
+Hint Resolve Zsucc_le_compat: zarith.
 
 (** Simplification of successor wrt to order *)
 
-Lemma Zgt_S_n        : (n,p:Z)`(Zs p)>(Zs n)`->`p>n`.
+Lemma Zsucc_gt_reg : forall n m:Z, Zsucc m > Zsucc n -> m > n.
 Proof.
-Unfold Zs Zgt;Intros n p;Do 2 Rewrite -> [m:Z](Zplus_sym m (POS xH));
-Rewrite -> (Zcompare_Zplus_compatible p n (POS xH));Trivial with arith.
+unfold Zsucc, Zgt in |- *; intros n p;
+ do 2 rewrite (fun m:Z => Zplus_comm m 1);
+ rewrite (Zcompare_plus_compat p n 1); trivial with arith.
 Qed.
 
-Lemma Zle_S_n     : (n,m:Z) `(Zs m)<=(Zs n)` -> `m<=n`.
+Lemma Zsucc_le_reg : forall n m:Z, Zsucc m <= Zsucc n -> m <= n.
 Proof.
-Unfold Zle not ;Intros m n H1 H2;Apply H1;
-Unfold Zs ;Do 2 Rewrite <- (Zplus_sym (POS xH));
-Rewrite -> (Zcompare_Zplus_compatible n m (POS xH));Assumption.
+unfold Zle, not in |- *; intros m n H1 H2; apply H1; unfold Zsucc in |- *;
+ do 2 rewrite <- (Zplus_comm 1); rewrite (Zcompare_plus_compat n m 1);
+ assumption.
 Qed.
 
-Lemma Zlt_S_n : (n,m:Z)`(Zs n)<(Zs m)`->`n<m`.
+Lemma Zsucc_lt_reg : forall n m:Z, Zsucc n < Zsucc m -> n < m.
 Proof.
-Intros n m H;Apply Zgt_lt;Apply Zgt_S_n;Apply Zlt_gt; Assumption.
+intros n m H; apply Zgt_lt; apply Zsucc_gt_reg; apply Zlt_gt; assumption.
 Qed.
 
 (** Compatibility of addition wrt to order *)
 
-Lemma Zgt_reg_l   : (n,m,p:Z)`n>m`->`p+n>p+m`.
+Lemma Zplus_gt_compat_l : forall n m p:Z, n > m -> p + n > p + m.
 Proof.
-Unfold Zgt; Intros n m p H; Rewrite (Zcompare_Zplus_compatible n m p); 
-Assumption.
+unfold Zgt in |- *; intros n m p H; rewrite (Zcompare_plus_compat n m p);
+ assumption.
 Qed.
 
-Lemma Zgt_reg_r : (n,m,p:Z)`n>m`->`n+p>m+p`.
+Lemma Zplus_gt_compat_r : forall n m p:Z, n > m -> n + p > m + p.
 Proof.
-Intros n m p H; Rewrite (Zplus_sym n p); Rewrite (Zplus_sym m p); Apply Zgt_reg_l; Trivial.
+intros n m p H; rewrite (Zplus_comm n p); rewrite (Zplus_comm m p);
+ apply Zplus_gt_compat_l; trivial.
 Qed.
 
-Lemma Zle_reg_l : (n,m,p:Z)`n<=m`->`p+n<=p+m`.
+Lemma Zplus_le_compat_l : forall n m p:Z, n <= m -> p + n <= p + m.
 Proof.
-Intros n m p; Unfold Zle not ;Intros H1 H2;Apply H1; 
-Rewrite <- (Zcompare_Zplus_compatible n m p); Assumption.
+intros n m p; unfold Zle, not in |- *; intros H1 H2; apply H1;
+ rewrite <- (Zcompare_plus_compat n m p); assumption.
 Qed.
 
-Lemma Zle_reg_r : (n,m,p:Z) `n<=m`->`n+p<=m+p`.
+Lemma Zplus_le_compat_r : forall n m p:Z, n <= m -> n + p <= m + p.
 Proof.
-Intros a b c;Do 2 Rewrite [n:Z](Zplus_sym n c); Exact (Zle_reg_l a b c).
+intros a b c; do 2 rewrite (fun n:Z => Zplus_comm n c);
+ exact (Zplus_le_compat_l a b c).
 Qed.
 
-Lemma Zlt_reg_l : (n,m,p:Z)`n<m`->`p+n<p+m`.
+Lemma Zplus_lt_compat_l : forall n m p:Z, n < m -> p + n < p + m.
 Proof.
-Unfold Zlt ;Intros n m p; Rewrite Zcompare_Zplus_compatible;Trivial with arith.
+unfold Zlt in |- *; intros n m p; rewrite Zcompare_plus_compat;
+ trivial with arith.
 Qed.
 
-Lemma Zlt_reg_r : (n,m,p:Z)`n<m`->`n+p<m+p`.
+Lemma Zplus_lt_compat_r : forall n m p:Z, n < m -> n + p < m + p.
 Proof.
-Intros n m p H; Rewrite (Zplus_sym n p); Rewrite (Zplus_sym m p); Apply Zlt_reg_l; Trivial.
+intros n m p H; rewrite (Zplus_comm n p); rewrite (Zplus_comm m p);
+ apply Zplus_lt_compat_l; trivial.
 Qed.
 
-Lemma Zlt_le_reg : (a,b,c,d:Z) `a<b`->`c<=d`->`a+c<b+d`.
+Lemma Zplus_lt_le_compat : forall n m p q:Z, n < m -> p <= q -> n + p < m + q.
 Proof.
-Intros a b c d H0 H1.
-Apply Zlt_le_trans with (Zplus b c).
-Apply  Zlt_reg_r; Trivial.
-Apply  Zle_reg_l; Trivial.
+intros a b c d H0 H1.
+apply Zlt_le_trans with (b + c).
+apply Zplus_lt_compat_r; trivial.
+apply Zplus_le_compat_l; trivial.
 Qed.
 
-Lemma Zle_lt_reg : (a,b,c,d:Z) `a<=b`->`c<d`->`a+c<b+d`.
+Lemma Zplus_le_lt_compat : forall n m p q:Z, n <= m -> p < q -> n + p < m + q.
 Proof.
-Intros a b c d H0 H1.
-Apply Zle_lt_trans with (Zplus b c).
-Apply  Zle_reg_r; Trivial.
-Apply  Zlt_reg_l; Trivial.
+intros a b c d H0 H1.
+apply Zle_lt_trans with (b + c).
+apply Zplus_le_compat_r; trivial.
+apply Zplus_lt_compat_l; trivial.
 Qed.
 
-Lemma Zle_plus_plus : (n,m,p,q:Z) `n<=m`->(Zle p q)->`n+p<=m+q`.
+Lemma Zplus_le_compat : forall n m p q:Z, n <= m -> p <= q -> n + p <= m + q.
 Proof.
-Intros n m p q; Intros H1 H2;Apply Zle_trans with m:=(Zplus n q); [
-  Apply Zle_reg_l;Assumption | Apply Zle_reg_r;Assumption ].
+intros n m p q; intros H1 H2; apply Zle_trans with (m := n + q);
+ [ apply Zplus_le_compat_l; assumption
+ | apply Zplus_le_compat_r; assumption ].
 Qed.
 
-V7only [Set Implicit Arguments.].
 
-Lemma Zlt_Zplus : (x1,x2,y1,y2:Z)`x1 < x2` -> `y1 < y2` -> `x1 + y1 < x2 + y2`.
-Intros; Apply Zle_lt_reg. Apply Zlt_le_weak; Assumption. Assumption.
+Lemma Zplus_lt_compat : forall n m p q:Z, n < m -> p < q -> n + p < m + q.
+intros; apply Zplus_le_lt_compat. apply Zlt_le_weak; assumption. assumption.
 Qed.
 
-V7only [Unset Implicit Arguments.].
 
 (** Compatibility of addition wrt to being positive *)
 
-Lemma Zle_0_plus : (x,y:Z) `0<=x` -> `0<=y` -> `0<=x+y`.
+Lemma Zplus_le_0_compat : forall n m:Z, 0 <= n -> 0 <= m -> 0 <= n + m.
 Proof.
-Intros x y H1 H2;Rewrite <- (Zero_left ZERO); Apply Zle_plus_plus; Assumption.
+intros x y H1 H2; rewrite <- (Zplus_0_l 0); apply Zplus_le_compat; assumption.
 Qed.
 
 (** Simplification of addition wrt to order *)
 
-Lemma Zsimpl_gt_plus_l : (n,m,p:Z)`p+n>p+m`->`n>m`.
+Lemma Zplus_gt_reg_l : forall n m p:Z, p + n > p + m -> n > m.
 Proof.
-Unfold Zgt; Intros n m p H; 
-	Rewrite <- (Zcompare_Zplus_compatible n m p); Assumption.
+unfold Zgt in |- *; intros n m p H; rewrite <- (Zcompare_plus_compat n m p);
+ assumption.
 Qed.
 
-Lemma Zsimpl_gt_plus_r : (n,m,p:Z)`n+p>m+p`->`n>m`.
+Lemma Zplus_gt_reg_r : forall n m p:Z, n + p > m + p -> n > m.
 Proof.
-Intros n m p H; Apply Zsimpl_gt_plus_l with p.
-Rewrite (Zplus_sym p n); Rewrite (Zplus_sym p m); Trivial.
+intros n m p H; apply Zplus_gt_reg_l with p.
+rewrite (Zplus_comm p n); rewrite (Zplus_comm p m); trivial.
 Qed.
 
-Lemma Zsimpl_le_plus_l : (n,m,p:Z)`p+n<=p+m`->`n<=m`.
+Lemma Zplus_le_reg_l : forall n m p:Z, p + n <= p + m -> n <= m.
 Proof.
-Intros n m p; Unfold Zle not ;Intros H1 H2;Apply H1; 
-Rewrite (Zcompare_Zplus_compatible n m p); Assumption.
+intros n m p; unfold Zle, not in |- *; intros H1 H2; apply H1;
+ rewrite (Zcompare_plus_compat n m p); assumption.
 Qed.
  
-Lemma Zsimpl_le_plus_r : (n,m,p:Z)`n+p<=m+p`->`n<=m`.
+Lemma Zplus_le_reg_r : forall n m p:Z, n + p <= m + p -> n <= m.
 Proof.
-Intros n m p H; Apply Zsimpl_le_plus_l with p.
-Rewrite (Zplus_sym p n); Rewrite (Zplus_sym p m); Trivial.
+intros n m p H; apply Zplus_le_reg_l with p.
+rewrite (Zplus_comm p n); rewrite (Zplus_comm p m); trivial.
 Qed.
 
-Lemma Zsimpl_lt_plus_l : (n,m,p:Z)`p+n<p+m`->`n<m`.
+Lemma Zplus_lt_reg_l : forall n m p:Z, p + n < p + m -> n < m.
 Proof.
-Unfold Zlt ;Intros n m p; 
-	Rewrite Zcompare_Zplus_compatible;Trivial with arith.
+unfold Zlt in |- *; intros n m p; rewrite Zcompare_plus_compat;
+ trivial with arith.
 Qed.
  
-Lemma Zsimpl_lt_plus_r : (n,m,p:Z)`n+p<m+p`->`n<m`.
+Lemma Zplus_lt_reg_r : forall n m p:Z, n + p < m + p -> n < m.
 Proof.
-Intros n m p H; Apply Zsimpl_lt_plus_l with p.
-Rewrite (Zplus_sym p n); Rewrite (Zplus_sym p m); Trivial.
+intros n m p H; apply Zplus_lt_reg_l with p.
+rewrite (Zplus_comm p n); rewrite (Zplus_comm p m); trivial.
 Qed.
  
 (** Special base instances of order *)
 
-Lemma Zgt_Sn_n : (n:Z)`(Zs n)>n`.
+Lemma Zgt_succ : forall n:Z, Zsucc n > n.
 Proof.
-Exact Zcompare_Zs_SUPERIEUR.
+exact Zcompare_succ_Gt.
 Qed.
 
-Lemma Zle_Sn_n : (n:Z)~`(Zs n)<=n`.
+Lemma Znot_le_succ : forall n:Z, ~ Zsucc n <= n.
 Proof.
-Intros n; Apply Zgt_not_le; Apply Zgt_Sn_n.
+intros n; apply Zgt_not_le; apply Zgt_succ.
 Qed.
 
-Lemma Zlt_n_Sn : (n:Z)`n<(Zs n)`.
+Lemma Zlt_succ : forall n:Z, n < Zsucc n.
 Proof.
-Intro n; Apply Zgt_lt; Apply Zgt_Sn_n.
+intro n; apply Zgt_lt; apply Zgt_succ.
 Qed.
 
-Lemma Zlt_pred_n_n : (n:Z)`(Zpred n)<n`.
+Lemma Zlt_pred : forall n:Z, Zpred n < n.
 Proof.
-Intros n; Apply Zlt_S_n; Rewrite <- Zs_pred; Apply Zlt_n_Sn.
+intros n; apply Zsucc_lt_reg; rewrite <- Zsucc_pred; apply Zlt_succ.
 Qed.
 
 (** Relating strict and large order using successor or predecessor *)
 
-Lemma Zgt_le_S       : (n,p:Z)`p>n`->`(Zs n)<=p`.
+Lemma Zgt_le_succ : forall n m:Z, m > n -> Zsucc n <= m.
 Proof.
-Unfold Zgt Zle; Intros n p H; Elim (Zcompare_et_un p n); Intros H1 H2;
-Unfold not ;Intros H3; Unfold not in H1; Apply H1; [
-  Assumption
-| Elim (Zcompare_ANTISYM (Zplus n (POS xH)) p);Intros H4 H5;Apply H4;Exact H3].
+unfold Zgt, Zle in |- *; intros n p H; elim (Zcompare_Gt_not_Lt p n);
+ intros H1 H2; unfold not in |- *; intros H3; unfold not in H1; 
+ apply H1;
+ [ assumption
+ | elim (Zcompare_Gt_Lt_antisym (n + 1) p); intros H4 H5; apply H4; exact H3 ].
 Qed.
 
-Lemma Zle_gt_S       : (n,p:Z)`n<=p`->`(Zs p)>n`.
+Lemma Zlt_gt_succ : forall n m:Z, n <= m -> Zsucc m > n.
 Proof.
-Intros n p H; Apply Zgt_le_trans with p.
-  Apply Zgt_Sn_n.
-  Assumption.
+intros n p H; apply Zgt_le_trans with p.
+  apply Zgt_succ.
+  assumption.
 Qed.
 
-Lemma Zle_lt_n_Sm : (n,m:Z)`n<=m`->`n<(Zs m)`.
+Lemma Zle_lt_succ : forall n m:Z, n <= m -> n < Zsucc m.
 Proof.
-Intros n m H; Apply Zgt_lt; Apply Zle_gt_S; Assumption.
+intros n m H; apply Zgt_lt; apply Zlt_gt_succ; assumption.
 Qed.
 
-Lemma Zlt_le_S : (n,p:Z)`n<p`->`(Zs n)<=p`.
+Lemma Zlt_le_succ : forall n m:Z, n < m -> Zsucc n <= m.
 Proof.
-Intros n p H; Apply Zgt_le_S; Apply Zlt_gt; Assumption.
+intros n p H; apply Zgt_le_succ; apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zgt_S_le       : (n,p:Z)`(Zs p)>n`->`n<=p`.
+Lemma Zgt_succ_le : forall n m:Z, Zsucc m > n -> n <= m.
 Proof.
-Intros n p H;Apply Zle_S_n; Apply Zgt_le_S; Assumption.
+intros n p H; apply Zsucc_le_reg; apply Zgt_le_succ; assumption.
 Qed.
 
-Lemma Zlt_n_Sm_le : (n,m:Z)`n<(Zs m)`->`n<=m`.
+Lemma Zlt_succ_le : forall n m:Z, n < Zsucc m -> n <= m.
 Proof.
-Intros n m H; Apply Zgt_S_le; Apply Zlt_gt; Assumption.
+intros n m H; apply Zgt_succ_le; apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zle_S_gt : (n,m:Z) `(Zs n)<=m` -> `m>n`.
+Lemma Zlt_succ_gt : forall n m:Z, Zsucc n <= m -> m > n.
 Proof.
-Intros n m H;Apply Zle_gt_trans with m:=(Zs n);
-  [ Assumption | Apply Zgt_Sn_n ].
+intros n m H; apply Zle_gt_trans with (m := Zsucc n);
+ [ assumption | apply Zgt_succ ].
 Qed.
 
 (** Weakening order *)
 
-Lemma Zle_n_Sn : (n:Z)`n<=(Zs n)`.
+Lemma Zle_succ : forall n:Z, n <= Zsucc n.
 Proof.
-Intros n; Apply Zgt_S_le;Apply Zgt_trans with m:=(Zs n) ;Apply Zgt_Sn_n.
+intros n; apply Zgt_succ_le; apply Zgt_trans with (m := Zsucc n);
+ apply Zgt_succ.
 Qed.
 
-Hints Resolve Zle_n_Sn : zarith.
+Hint Resolve Zle_succ: zarith.
 
-Lemma Zle_pred_n : (n:Z)`(Zpred n)<=n`.
+Lemma Zle_pred : forall n:Z, Zpred n <= n.
 Proof.
-Intros n;Pattern 2 n ;Rewrite Zs_pred; Apply Zle_n_Sn.
+intros n; pattern n at 2 in |- *; rewrite Zsucc_pred; apply Zle_succ.
 Qed.
 
-Lemma Zlt_S : (n,m:Z)`n<m`->`n<(Zs m)`.
-Intros n m H;Apply Zgt_lt; Apply Zgt_trans with m:=m; [
-  Apply Zgt_Sn_n
-| Apply Zlt_gt; Assumption ].
+Lemma Zlt_lt_succ : forall n m:Z, n < m -> n < Zsucc m.
+intros n m H; apply Zgt_lt; apply Zgt_trans with (m := m);
+ [ apply Zgt_succ | apply Zlt_gt; assumption ].
 Qed.
 
-Lemma Zle_le_S : (x,y:Z)`x<=y`->`x<=(Zs y)`.
+Lemma Zle_le_succ : forall n m:Z, n <= m -> n <= Zsucc m.
 Proof.
-Intros x y H.
-Apply Zle_trans with y; Trivial with zarith.
+intros x y H.
+apply Zle_trans with y; trivial with zarith.
 Qed.
 
-Lemma Zle_trans_S : (n,m:Z)`(Zs n)<=m`->`n<=m`.
+Lemma Zle_succ_le : forall n m:Z, Zsucc n <= m -> n <= m.
 Proof.
-Intros n m H;Apply Zle_trans with m:=(Zs n); [ Apply Zle_n_Sn | Assumption ].
+intros n m H; apply Zle_trans with (m := Zsucc n);
+ [ apply Zle_succ | assumption ].
 Qed.
 
-Hints Resolve Zle_le_S : zarith.
+Hint Resolve Zle_le_succ: zarith.
 
 (** Relating order wrt successor and order wrt predecessor *)
 
-Lemma Zgt_pred : (n,p:Z)`p>(Zs n)`->`(Zpred p)>n`.
+Lemma Zgt_succ_pred : forall n m:Z, m > Zsucc n -> Zpred m > n.
 Proof.
-Unfold Zgt Zs Zpred ;Intros n p H; 
-Rewrite <- [x,y:Z](Zcompare_Zplus_compatible x y (POS xH));
-Rewrite (Zplus_sym p); Rewrite Zplus_assoc; Rewrite [x:Z](Zplus_sym x n);
-Simpl; Assumption.
+unfold Zgt, Zsucc, Zpred in |- *; intros n p H;
+ rewrite <- (fun x y => Zcompare_plus_compat x y 1); 
+ rewrite (Zplus_comm p); rewrite Zplus_assoc;
+ rewrite (fun x => Zplus_comm x n); simpl in |- *; 
+ assumption.
 Qed.
 
-Lemma Zlt_pred : (n,p:Z)`(Zs n)<p`->`n<(Zpred p)`.
+Lemma Zlt_succ_pred : forall n m:Z, Zsucc n < m -> n < Zpred m.
 Proof.
-Intros n p H;Apply Zlt_S_n; Rewrite <- Zs_pred; Assumption.
+intros n p H; apply Zsucc_lt_reg; rewrite <- Zsucc_pred; assumption.
 Qed.
 
 (** Relating strict order and large order on positive *)
 
-Lemma Zlt_ZERO_pred_le_ZERO : (n:Z) `0<n` -> `0<=(Zpred n)`.
-Intros x H.
-Rewrite (Zs_pred x) in H.
-Apply Zgt_S_le.
-Apply Zlt_gt.
-Assumption.
+Lemma Zlt_0_le_0_pred : forall n:Z, 0 < n -> 0 <= Zpred n.
+intros x H.
+rewrite (Zsucc_pred x) in H.
+apply Zgt_succ_le.
+apply Zlt_gt.
+assumption.
 Qed.
 
-V7only [Set Implicit Arguments.].
 
-Lemma Zgt0_le_pred : (y:Z) `y > 0` -> `0 <= (Zpred y)`.
-Intros; Apply Zlt_ZERO_pred_le_ZERO; Apply Zgt_lt. Assumption.
+Lemma Zgt_0_le_0_pred : forall n:Z, n > 0 -> 0 <= Zpred n.
+intros; apply Zlt_0_le_0_pred; apply Zgt_lt. assumption.
 Qed.
 
-V7only [Unset Implicit Arguments.].
 
 (** Special cases of ordered integers *)
 
-V7only [ (* Relevance confirmed from Zdivides *) ].
-Lemma Z_O_1: `0<1`.
+Lemma Zlt_0_1 : 0 < 1.
 Proof.
-Change `0<(Zs 0)`. Apply Zlt_n_Sn.
+change (0 < Zsucc 0) in |- *. apply Zlt_succ.
 Qed.
 
-Lemma Zle_0_1: `0<=1`.
+Lemma Zle_0_1 : 0 <= 1.
 Proof.
-Change `0<=(Zs 0)`. Apply Zle_n_Sn.
+change (0 <= Zsucc 0) in |- *. apply Zle_succ.
 Qed.
 
-V7only [ (* Relevance confirmed from Zdivides *) ].
-Lemma Zle_NEG_POS: (p,q:positive) `(NEG p)<=(POS q)`.
+Lemma Zle_neg_pos : forall p q:positive, Zneg p <= Zpos q.
 Proof.
-Intros p; Red; Simpl; Red; Intros H; Discriminate.
+intros p; red in |- *; simpl in |- *; red in |- *; intros H; discriminate.
 Qed.
 
-Lemma POS_gt_ZERO : (p:positive) `(POS p)>0`.
-Unfold Zgt; Trivial.
+Lemma Zgt_pos_0 : forall p:positive, Zpos p > 0.
+unfold Zgt in |- *; trivial.
 Qed.
 
   (* weaker but useful (in [Zpower] for instance) *)
-Lemma ZERO_le_POS : (p:positive) `0<=(POS p)`.
-Intro; Unfold Zle; Discriminate.
+Lemma Zle_0_pos : forall p:positive, 0 <= Zpos p.
+intro; unfold Zle in |- *; discriminate.
 Qed.
 
-Lemma NEG_lt_ZERO : (p:positive)`(NEG p)<0`.
-Unfold Zlt; Trivial.
+Lemma Zlt_neg_0 : forall p:positive, Zneg p < 0.
+unfold Zlt in |- *; trivial.
 Qed.
 
-Lemma ZERO_le_inj :
-  (n:nat) `0 <= (inject_nat n)`.
-Induction n; Simpl; Intros;
-[ Apply Zle_n
-| Unfold Zle; Simpl; Discriminate].
+Lemma Zle_0_nat : forall n:nat, 0 <= Z_of_nat n.
+simple induction n; simpl in |- *; intros;
+ [ apply Zle_refl | unfold Zle in |- *; simpl in |- *; discriminate ].
 Qed.
 
-Hints Immediate Zle_refl : zarith.
+Hint Immediate Zeq_le: zarith.
 
 (** Transitivity using successor *)
 
-Lemma Zgt_trans_S  : (n,m,p:Z)`(Zs n)>m`->`m>p`->`n>p`.
+Lemma Zge_trans_succ : forall n m p:Z, Zsucc n > m -> m > p -> n > p.
 Proof.
-Intros n m p H1 H2;Apply Zle_gt_trans with m:=m;
-  [ Apply Zgt_S_le; Assumption | Assumption ].
+intros n m p H1 H2; apply Zle_gt_trans with (m := m);
+ [ apply Zgt_succ_le; assumption | assumption ].
 Qed.
 
 (** Derived lemma *)
 
-Lemma Zgt_S        : (n,m:Z)`(Zs n)>m`->(`n>m`\/(m=n)).
+Lemma Zgt_succ_gt_or_eq : forall n m:Z, Zsucc n > m -> n > m \/ m = n.
 Proof.
-Intros n m H.
-Assert Hle : `m<=n`.
-  Apply Zgt_S_le; Assumption.
-NewDestruct (Zle_lt_or_eq ? ? Hle) as [Hlt|Heq].
-  Left; Apply Zlt_gt; Assumption.  
-  Right; Assumption.
+intros n m H.
+assert (Hle : m <= n).
+  apply Zgt_succ_le; assumption.
+destruct (Zle_lt_or_eq _ _ Hle) as [Hlt| Heq].
+  left; apply Zlt_gt; assumption.  
+  right; assumption.
 Qed.
 
 (** Compatibility of multiplication by a positive wrt to order *)
 
-V7only [Set Implicit Arguments.].
 
-Lemma Zle_Zmult_pos_right : (a,b,c : Z) `a<=b` -> `0<=c` -> `a*c<=b*c`.
+Lemma Zmult_le_compat_r : forall n m p:Z, n <= m -> 0 <= p -> n * p <= m * p.
 Proof.
-Intros a b c H H0; NewDestruct c.
-  Do 2 Rewrite Zero_mult_right; Assumption.
-  Rewrite (Zmult_sym a); Rewrite (Zmult_sym b).
-    Unfold Zle; Rewrite Zcompare_Zmult_compatible; Assumption.
-  Unfold Zle in H0; Contradiction H0; Reflexivity.
+intros a b c H H0; destruct c.
+  do 2 rewrite Zmult_0_r; assumption.
+  rewrite (Zmult_comm a); rewrite (Zmult_comm b).
+    unfold Zle in |- *; rewrite Zcompare_mult_compat; assumption.
+  unfold Zle in H0; contradiction H0; reflexivity.
 Qed.
 
-Lemma Zle_Zmult_pos_left : (a,b,c : Z) `a<=b` -> `0<=c` -> `c*a<=c*b`.
+Lemma Zmult_le_compat_l : forall n m p:Z, n <= m -> 0 <= p -> p * n <= p * m.
 Proof.
-Intros a b c H1 H2; Rewrite (Zmult_sym c a);Rewrite (Zmult_sym c b).
-Apply  Zle_Zmult_pos_right; Trivial.
+intros a b c H1 H2; rewrite (Zmult_comm c a); rewrite (Zmult_comm c b).
+apply Zmult_le_compat_r; trivial.
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_compat_r : (x,y,z:Z)`0<z` -> `x < y` -> `x*z < y*z`.
+Lemma Zmult_lt_compat_r : forall n m p:Z, 0 < p -> n < m -> n * p < m * p.
 Proof.
-Intros x y z H H0; NewDestruct z.
-  Contradiction (Zlt_n_n `0`).
-  Rewrite (Zmult_sym x); Rewrite (Zmult_sym y).
-    Unfold Zlt; Rewrite Zcompare_Zmult_compatible; Assumption.
-  Discriminate H.
-Save.
-
-Lemma Zgt_Zmult_right : (x,y,z:Z)`z>0` -> `x > y` -> `x*z > y*z`.
-Proof.
-Intros x y z; Intros; Apply Zlt_gt; Apply Zmult_lt_compat_r; 
-  Apply Zgt_lt; Assumption.
+intros x y z H H0; destruct z.
+  contradiction (Zlt_irrefl 0).
+  rewrite (Zmult_comm x); rewrite (Zmult_comm y).
+    unfold Zlt in |- *; rewrite Zcompare_mult_compat; assumption.
+  discriminate H.
 Qed.
 
-Lemma Zlt_Zmult_right : (x,y,z:Z)`z>0` -> `x < y` -> `x*z < y*z`.
+Lemma Zmult_gt_compat_r : forall n m p:Z, p > 0 -> n > m -> n * p > m * p.
 Proof.
-Intros x y z; Intros; Apply Zmult_lt_compat_r; 
-  [Apply Zgt_lt; Assumption | Assumption].
+intros x y z; intros; apply Zlt_gt; apply Zmult_lt_compat_r; apply Zgt_lt;
+ assumption.
 Qed.
 
-Lemma Zle_Zmult_right : (x,y,z:Z)`z>0` -> `x <= y` -> `x*z <= y*z`.
+Lemma Zmult_gt_0_lt_compat_r :
+ forall n m p:Z, p > 0 -> n < m -> n * p < m * p.
 Proof.
-Intros x y z Hz Hxy.
-Elim (Zle_lt_or_eq x y Hxy).
-Intros; Apply Zlt_le_weak.
-Apply Zlt_Zmult_right; Trivial.
-Intros; Apply Zle_refl.
-Rewrite H; Trivial.
+intros x y z; intros; apply Zmult_lt_compat_r;
+ [ apply Zgt_lt; assumption | assumption ].
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_0_le_compat_r : (x,y,z:Z)`0 < z`->`x <= y`->`x*z <= y*z`.
+Lemma Zmult_gt_0_le_compat_r :
+ forall n m p:Z, p > 0 -> n <= m -> n * p <= m * p.
 Proof.
-Intros x y z; Intros; Apply Zle_Zmult_right; Try Apply Zlt_gt; Assumption.
+intros x y z Hz Hxy.
+elim (Zle_lt_or_eq x y Hxy).
+intros; apply Zlt_le_weak.
+apply Zmult_gt_0_lt_compat_r; trivial.
+intros; apply Zeq_le.
+rewrite H; trivial.
 Qed.
 
-Lemma Zlt_Zmult_left : (x,y,z:Z)`z>0` -> `x < y` -> `z*x < z*y`.
+Lemma Zmult_lt_0_le_compat_r :
+ forall n m p:Z, 0 < p -> n <= m -> n * p <= m * p.
 Proof.
-Intros x y z; Intros.
-Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
-Apply Zlt_Zmult_right; Assumption.
+intros x y z; intros; apply Zmult_gt_0_le_compat_r; try apply Zlt_gt;
+ assumption.
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_compat_l : (x,y,z:Z)`0<z` -> `x < y` -> `z*x < z*y`.
+Lemma Zmult_gt_0_lt_compat_l :
+ forall n m p:Z, p > 0 -> n < m -> p * n < p * m.
 Proof.
-Intros x y z; Intros.
-Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
-Apply Zlt_Zmult_right; Try Apply Zlt_gt; Assumption.
-Save.
-
-Lemma Zgt_Zmult_left : (x,y,z:Z)`z>0` -> `x > y` -> `z*x > z*y`.
-Proof.
-Intros x y z; Intros;
-Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
-Apply Zgt_Zmult_right; Assumption.
+intros x y z; intros.
+rewrite (Zmult_comm z x); rewrite (Zmult_comm z y);
+ apply Zmult_gt_0_lt_compat_r; assumption.
 Qed.
 
-Lemma Zge_Zmult_pos_right : (a,b,c : Z) `a>=b` -> `c>=0` -> `a*c>=b*c`.
+Lemma Zmult_lt_compat_l : forall n m p:Z, 0 < p -> n < m -> p * n < p * m.
 Proof.
-Intros a b c H1 H2; Apply Zle_ge.
-Apply Zle_Zmult_pos_right; Apply Zge_le; Trivial.
+intros x y z; intros.
+rewrite (Zmult_comm z x); rewrite (Zmult_comm z y);
+ apply Zmult_gt_0_lt_compat_r; try apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zge_Zmult_pos_left : (a,b,c : Z) 	`a>=b` -> `c>=0` -> `c*a>=c*b`.
+Lemma Zmult_gt_compat_l : forall n m p:Z, p > 0 -> n > m -> p * n > p * m.
 Proof.
-Intros a b c H1 H2; Apply Zle_ge.
-Apply Zle_Zmult_pos_left; Apply Zge_le; Trivial.
+intros x y z; intros; rewrite (Zmult_comm z x); rewrite (Zmult_comm z y);
+ apply Zmult_gt_compat_r; assumption.
 Qed.
 
-Lemma Zge_Zmult_pos_compat : 
-  (a,b,c,d : Z) `a>=c` -> `b>=d` -> `c>=0` -> `d>=0` -> `a*b>=c*d`.
+Lemma Zmult_ge_compat_r : forall n m p:Z, n >= m -> p >= 0 -> n * p >= m * p.
 Proof.
-Intros a b c d H0 H1 H2 H3.
-Apply Zge_trans with (Zmult a d).
-Apply Zge_Zmult_pos_left; Trivial.
-Apply Zge_trans with c; Trivial. 
-Apply Zge_Zmult_pos_right; Trivial.
+intros a b c H1 H2; apply Zle_ge.
+apply Zmult_le_compat_r; apply Zge_le; trivial.
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_le_compat: (a, b, c, d : Z)
- `a<=c` -> `b<=d` -> `0<=a` -> `0<=b` -> `a*b<=c*d`.
+Lemma Zmult_ge_compat_l : forall n m p:Z, n >= m -> p >= 0 -> p * n >= p * m.
 Proof.
-Intros a b c d H0 H1 H2 H3.
-Apply Zle_trans with (Zmult c b).
-Apply Zle_Zmult_pos_right; Assumption.
-Apply Zle_Zmult_pos_left.
-Assumption.
-Apply Zle_trans with a; Assumption.
+intros a b c H1 H2; apply Zle_ge.
+apply Zmult_le_compat_l; apply Zge_le; trivial.
+Qed.
+
+Lemma Zmult_ge_compat :
+ forall n m p q:Z, n >= p -> m >= q -> p >= 0 -> q >= 0 -> n * m >= p * q.
+Proof.
+intros a b c d H0 H1 H2 H3.
+apply Zge_trans with (a * d).
+apply Zmult_ge_compat_l; trivial.
+apply Zge_trans with c; trivial. 
+apply Zmult_ge_compat_r; trivial.
+Qed.
+
+Lemma Zmult_le_compat :
+ forall n m p q:Z, n <= p -> m <= q -> 0 <= n -> 0 <= m -> n * m <= p * q.
+Proof.
+intros a b c d H0 H1 H2 H3.
+apply Zle_trans with (c * b).
+apply Zmult_le_compat_r; assumption.
+apply Zmult_le_compat_l.
+assumption.
+apply Zle_trans with a; assumption.
 Qed.
 
 (** Simplification of multiplication by a positive wrt to being positive *)
 
-Lemma Zlt_Zmult_right2 : (x,y,z:Z)`z>0`  -> `x*z < y*z` -> `x < y`.
+Lemma Zmult_gt_0_lt_reg_r : forall n m p:Z, p > 0 -> n * p < m * p -> n < m.
 Proof.
-Intros x y z; Intros; NewDestruct z.
-  Contradiction (Zgt_antirefl `0`).
-  Rewrite (Zmult_sym x) in H0; Rewrite (Zmult_sym y) in H0.
-    Unfold Zlt in H0; Rewrite Zcompare_Zmult_compatible in H0; Assumption.
-  Discriminate H.
+intros x y z; intros; destruct z.
+  contradiction (Zgt_irrefl 0).
+  rewrite (Zmult_comm x) in H0; rewrite (Zmult_comm y) in H0.
+    unfold Zlt in H0; rewrite Zcompare_mult_compat in H0; assumption.
+  discriminate H.
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_reg_r : (a, b, c : Z) `0<c` -> `a*c<b*c` -> `a<b`.
+Lemma Zmult_lt_reg_r : forall n m p:Z, 0 < p -> n * p < m * p -> n < m.
 Proof.
-Intros a b c H0 H1.
-Apply Zlt_Zmult_right2 with c; Try Apply Zlt_gt; Assumption.
+intros a b c H0 H1.
+apply Zmult_gt_0_lt_reg_r with c; try apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zle_mult_simpl : (a,b,c:Z)`c>0`->`a*c<=b*c`->`a<=b`.
+Lemma Zmult_le_reg_r : forall n m p:Z, p > 0 -> n * p <= m * p -> n <= m.
 Proof.
-Intros x y z Hz Hxy.
-Elim (Zle_lt_or_eq `x*z` `y*z` Hxy).
-Intros; Apply Zlt_le_weak.
-Apply Zlt_Zmult_right2 with z; Trivial.
-Intros; Apply Zle_refl.
-Apply Zmult_reg_right with z.
-  Intro. Rewrite H0 in Hz. Contradiction (Zgt_antirefl `0`).
-Assumption.
-Qed.
-V7only [Notation Zle_Zmult_right2 := Zle_mult_simpl.
-(* Zle_Zmult_right2 :  (x,y,z:Z)`z>0` -> `x*z <= y*z` -> `x <= y`. *)
-].
-
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_0_le_reg_r: (x,y,z:Z)`0 <z`->`x*z <= y*z`->`x <= y`.
-Intros x y z; Intros ; Apply Zle_mult_simpl with z.
-Try Apply Zlt_gt; Assumption.
-Assumption.
+intros x y z Hz Hxy.
+elim (Zle_lt_or_eq (x * z) (y * z) Hxy).
+intros; apply Zlt_le_weak.
+apply Zmult_gt_0_lt_reg_r with z; trivial.
+intros; apply Zeq_le.
+apply Zmult_reg_r with z.
+  intro. rewrite H0 in Hz. contradiction (Zgt_irrefl 0).
+assumption.
 Qed.
 
-V7only [Unset Implicit Arguments.].
-
-Lemma Zge_mult_simpl : (a,b,c:Z) `c>0`->`a*c>=b*c`->`a>=b`.
-Intros a b c H1 H2; Apply Zle_ge; Apply Zle_mult_simpl with c; Trivial.
-Apply Zge_le; Trivial.
+Lemma Zmult_lt_0_le_reg_r : forall n m p:Z, 0 < p -> n * p <= m * p -> n <= m.
+intros x y z; intros; apply Zmult_le_reg_r with z.
+try apply Zlt_gt; assumption.
+assumption.
 Qed.
 
-Lemma Zgt_mult_simpl : (a,b,c:Z) `c>0`->`a*c>b*c`->`a>b`.
-Intros a b c H1 H2; Apply Zlt_gt; Apply Zlt_Zmult_right2 with c; Trivial.
-Apply Zgt_lt; Trivial.
+
+Lemma Zmult_ge_reg_r : forall n m p:Z, p > 0 -> n * p >= m * p -> n >= m.
+intros a b c H1 H2; apply Zle_ge; apply Zmult_le_reg_r with c; trivial.
+apply Zge_le; trivial.
+Qed.
+
+Lemma Zmult_gt_reg_r : forall n m p:Z, p > 0 -> n * p > m * p -> n > m.
+intros a b c H1 H2; apply Zlt_gt; apply Zmult_gt_0_lt_reg_r with c; trivial.
+apply Zgt_lt; trivial.
 Qed.
 
 
 (** Compatibility of multiplication by a positive wrt to being positive *)
 
-Lemma Zle_ZERO_mult : (x,y:Z) `0<=x` -> `0<=y` -> `0<=x*y`.
+Lemma Zmult_le_0_compat : forall n m:Z, 0 <= n -> 0 <= m -> 0 <= n * m.
 Proof.
-Intros x y; Case x.
-Intros; Rewrite Zero_mult_left; Trivial.
-Intros p H1; Unfold Zle.
-  Pattern 2 ZERO ; Rewrite <- (Zero_mult_right (POS p)).
-  Rewrite  Zcompare_Zmult_compatible; Trivial.
-Intros p H1 H2; Absurd (Zgt ZERO (NEG p)); Trivial.
-Unfold Zgt; Simpl; Auto with zarith.
+intros x y; case x.
+intros; rewrite Zmult_0_l; trivial.
+intros p H1; unfold Zle in |- *.
+  pattern 0 at 2 in |- *; rewrite <- (Zmult_0_r (Zpos p)).
+  rewrite Zcompare_mult_compat; trivial.
+intros p H1 H2; absurd (0 > Zneg p); trivial.
+unfold Zgt in |- *; simpl in |- *; auto with zarith.
 Qed.
 
-Lemma Zgt_ZERO_mult: (a,b:Z) `a>0`->`b>0`->`a*b>0`.
+Lemma Zmult_gt_0_compat : forall n m:Z, n > 0 -> m > 0 -> n * m > 0.
 Proof.
-Intros x y; Case x.
-Intros H; Discriminate H.
-Intros p H1; Unfold Zgt; 
-Pattern 2 ZERO ; Rewrite <- (Zero_mult_right (POS p)).
-  Rewrite  Zcompare_Zmult_compatible; Trivial.
-Intros p H; Discriminate H.
+intros x y; case x.
+intros H; discriminate H.
+intros p H1; unfold Zgt in |- *; pattern 0 at 2 in |- *;
+ rewrite <- (Zmult_0_r (Zpos p)).
+  rewrite Zcompare_mult_compat; trivial.
+intros p H; discriminate H.
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_O_compat : (a, b : Z) `0<a` -> `0<b` -> `0<a*b`.
-Intros a b apos bpos.
-Apply Zgt_lt.
-Apply Zgt_ZERO_mult; Try Apply Zlt_gt; Assumption.
+Lemma Zmult_lt_O_compat : forall n m:Z, 0 < n -> 0 < m -> 0 < n * m.
+intros a b apos bpos.
+apply Zgt_lt.
+apply Zmult_gt_0_compat; try apply Zlt_gt; assumption.
 Qed.
 
-Lemma Zle_mult: (x,y:Z) `x>0` -> `0<=y` -> `0<=(Zmult y x)`.
+Lemma Zmult_gt_0_le_0_compat : forall n m:Z, n > 0 -> 0 <= m -> 0 <= m * n.
 Proof.
-Intros x y H1 H2; Apply Zle_ZERO_mult; Trivial.
-Apply Zlt_le_weak; Apply Zgt_lt; Trivial.
+intros x y H1 H2; apply Zmult_le_0_compat; trivial.
+apply Zlt_le_weak; apply Zgt_lt; trivial.
 Qed.
 
 (** Simplification of multiplication by a positive wrt to being positive *)
 
-Lemma Zmult_le: (x,y:Z) `x>0` -> `0<=(Zmult y x)` -> `0<=y`.
+Lemma Zmult_le_0_reg_r : forall n m:Z, n > 0 -> 0 <= m * n -> 0 <= m.
 Proof.
-Intros x y; Case x; [
-  Simpl; Unfold Zgt ; Simpl; Intros H; Discriminate H
-| Intros p H1; Unfold Zle; Rewrite -> Zmult_sym;
-  Pattern 1 ZERO ; Rewrite <- (Zero_mult_right (POS p));
-  Rewrite  Zcompare_Zmult_compatible; Auto with arith
-| Intros p; Unfold Zgt ; Simpl; Intros H; Discriminate H].
+intros x y; case x;
+ [ simpl in |- *; unfold Zgt in |- *; simpl in |- *; intros H; discriminate H
+ | intros p H1; unfold Zle in |- *; rewrite Zmult_comm;
+    pattern 0 at 1 in |- *; rewrite <- (Zmult_0_r (Zpos p));
+    rewrite Zcompare_mult_compat; auto with arith
+ | intros p; unfold Zgt in |- *; simpl in |- *; intros H; discriminate H ].
 Qed.
 
-Lemma Zmult_lt: (x,y:Z) `x>0` -> `0<y*x` -> `0<y`.
+Lemma Zmult_gt_0_lt_0_reg_r : forall n m:Z, n > 0 -> 0 < m * n -> 0 < m.
 Proof.
-Intros x y; Case x; [
-  Simpl; Unfold Zgt ; Simpl; Intros H; Discriminate H
-| Intros p H1; Unfold Zlt; Rewrite -> Zmult_sym;
-  Pattern 1 ZERO ; Rewrite <- (Zero_mult_right (POS p));
-  Rewrite  Zcompare_Zmult_compatible; Auto with arith
-| Intros p; Unfold Zgt ; Simpl; Intros H; Discriminate H].
+intros x y; case x;
+ [ simpl in |- *; unfold Zgt in |- *; simpl in |- *; intros H; discriminate H
+ | intros p H1; unfold Zlt in |- *; rewrite Zmult_comm;
+    pattern 0 at 1 in |- *; rewrite <- (Zmult_0_r (Zpos p));
+    rewrite Zcompare_mult_compat; auto with arith
+ | intros p; unfold Zgt in |- *; simpl in |- *; intros H; discriminate H ].
 Qed.
 
-V7only [ (* Relevance confirmed from Zextensions *) ].
-Lemma Zmult_lt_0_reg_r : (x,y:Z)`0 < x`->`0 < y*x`->`0 < y`.
+Lemma Zmult_lt_0_reg_r : forall n m:Z, 0 < n -> 0 < m * n -> 0 < m.
 Proof.
-Intros x y; Intros; EApply Zmult_lt with x ; Try Apply Zlt_gt; Assumption.
+intros x y; intros; eapply Zmult_gt_0_lt_0_reg_r with x; try apply Zlt_gt;
+ assumption.
 Qed.
 
-Lemma Zmult_gt: (x,y:Z) `x>0` -> `x*y>0` -> `y>0`.
+Lemma Zmult_gt_0_reg_l : forall n m:Z, n > 0 -> n * m > 0 -> m > 0.
 Proof.
-Intros x y; Case x.
- Intros H; Discriminate H.
- Intros p H1; Unfold Zgt.
- Pattern 1 ZERO ; Rewrite <- (Zero_mult_right (POS p)).
- Rewrite  Zcompare_Zmult_compatible; Trivial.
-Intros p H; Discriminate H.
+intros x y; case x.
+ intros H; discriminate H.
+ intros p H1; unfold Zgt in |- *.
+ pattern 0 at 1 in |- *; rewrite <- (Zmult_0_r (Zpos p)).
+ rewrite Zcompare_mult_compat; trivial.
+intros p H; discriminate H.
 Qed.
 
 (** Simplification of square wrt order *)
 
-Lemma Zgt_square_simpl: (x, y : Z) `x>=0` -> `y>=0` -> `x*x>y*y` -> `x>y`.
+Lemma Zgt_square_simpl :
+ forall n m:Z, n >= 0 -> m >= 0 -> n * n > m * m -> n > m.
 Proof.
-Intros x y H0 H1 H2.
-Case (dec_Zlt y x).
-Intro; Apply Zlt_gt; Trivial.
-Intros H3; Cut (Zge y x).
-Intros H.
-Elim Zgt_not_le with 1 := H2.
-Apply Zge_le.
-Apply Zge_Zmult_pos_compat; Auto.
-Apply not_Zlt; Trivial.
+intros x y H0 H1 H2.
+case (dec_Zlt y x).
+intro; apply Zlt_gt; trivial.
+intros H3; cut (y >= x).
+intros H.
+elim Zgt_not_le with (1 := H2).
+apply Zge_le.
+apply Zmult_ge_compat; auto.
+apply Znot_lt_ge; trivial.
 Qed.
 
-Lemma Zlt_square_simpl: (x,y:Z) `0<=x` -> `0<=y` -> `y*y<x*x` -> `y<x`.
+Lemma Zlt_square_simpl :
+ forall n m:Z, 0 <= n -> 0 <= m -> m * m < n * n -> m < n.
 Proof.
-Intros x y H0 H1 H2.
-Apply Zgt_lt.
-Apply Zgt_square_simpl; Try Apply Zle_ge; Try Apply Zlt_gt; Assumption.
+intros x y H0 H1 H2.
+apply Zgt_lt.
+apply Zgt_square_simpl; try apply Zle_ge; try apply Zlt_gt; assumption.
 Qed.
 
 (** Equivalence between inequalities *)
 
-Lemma Zle_plus_swap : (x,y,z:Z) `x+z<=y` <-> `x<=y-z`.
+Lemma Zle_plus_swap : forall n m p:Z, n + p <= m <-> n <= m - p.
 Proof.
-    Intros x y z; Intros. Split. Intro. Rewrite <- (Zero_right x). Rewrite <- (Zplus_inverse_r z).
-    Rewrite Zplus_assoc_l. Exact (Zle_reg_r ? ? ? H).
-    Intro. Rewrite <- (Zero_right y). Rewrite <- (Zplus_inverse_l z). Rewrite Zplus_assoc_l.
-    Apply Zle_reg_r. Assumption.
+    intros x y z; intros. split. intro. rewrite <- (Zplus_0_r x). rewrite <- (Zplus_opp_r z).
+    rewrite Zplus_assoc. exact (Zplus_le_compat_r _ _ _ H).
+    intro. rewrite <- (Zplus_0_r y). rewrite <- (Zplus_opp_l z). rewrite Zplus_assoc.
+    apply Zplus_le_compat_r. assumption.
 Qed.
 
-Lemma Zlt_plus_swap : (x,y,z:Z) `x+z<y` <-> `x<y-z`.
+Lemma Zlt_plus_swap : forall n m p:Z, n + p < m <-> n < m - p.
 Proof.
-    Intros x y z; Intros. Split. Intro. Unfold Zminus. Rewrite Zplus_sym. Rewrite <- (Zero_left x).
-    Rewrite <- (Zplus_inverse_l z). Rewrite Zplus_assoc_r. Apply Zlt_reg_l. Rewrite Zplus_sym.
-    Assumption.
-    Intro. Rewrite Zplus_sym. Rewrite <- (Zero_left y). Rewrite <- (Zplus_inverse_r z).
-    Rewrite Zplus_assoc_r. Apply Zlt_reg_l. Rewrite Zplus_sym. Assumption.
+    intros x y z; intros. split. intro. unfold Zminus in |- *. rewrite Zplus_comm. rewrite <- (Zplus_0_l x).
+    rewrite <- (Zplus_opp_l z). rewrite Zplus_assoc_reverse. apply Zplus_lt_compat_l. rewrite Zplus_comm.
+    assumption.
+    intro. rewrite Zplus_comm. rewrite <- (Zplus_0_l y). rewrite <- (Zplus_opp_r z).
+    rewrite Zplus_assoc_reverse. apply Zplus_lt_compat_l. rewrite Zplus_comm. assumption.
 Qed.
 
-Lemma Zeq_plus_swap : (x,y,z:Z)`x+z=y` <-> `x=y-z`.
+Lemma Zeq_plus_swap : forall n m p:Z, n + p = m <-> n = m - p.
 Proof.
-Intros x y z; Intros. Split. Intro. Apply Zplus_minus. Symmetry. Rewrite Zplus_sym. 
-  Assumption.
-Intro. Rewrite H. Unfold Zminus. Rewrite Zplus_assoc_r. 
-  Rewrite Zplus_inverse_l. Apply Zero_right.
+intros x y z; intros. split. intro. apply Zplus_minus_eq. symmetry  in |- *. rewrite Zplus_comm. 
+  assumption.
+intro. rewrite H. unfold Zminus in |- *. rewrite Zplus_assoc_reverse. 
+  rewrite Zplus_opp_l. apply Zplus_0_r.
 Qed.
 
-Lemma Zlt_minus : (n,m:Z)`0<m`->`n-m<n`.
+Lemma Zlt_minus_simpl_swap : forall n m:Z, 0 < m -> n - m < n.
 Proof.
-Intros n m H; Apply Zsimpl_lt_plus_l with p:=m; Rewrite Zle_plus_minus;
-Pattern 1 n ;Rewrite <- (Zero_right n); Rewrite (Zplus_sym m n);
-Apply Zlt_reg_l; Assumption.
+intros n m H; apply Zplus_lt_reg_l with (p := m); rewrite Zplus_minus;
+ pattern n at 1 in |- *; rewrite <- (Zplus_0_r n); 
+ rewrite (Zplus_comm m n); apply Zplus_lt_compat_l; 
+ assumption.
 Qed.
 
-Lemma Zlt_O_minus_lt : (n,m:Z)`0<n-m`->`m<n`.
+Lemma Zlt_O_minus_lt : forall n m:Z, 0 < n - m -> m < n.
 Proof.
-Intros n m H; Apply Zsimpl_lt_plus_l with p:=(Zopp m); Rewrite Zplus_inverse_l;
-Rewrite Zplus_sym;Exact H.
+intros n m H; apply Zplus_lt_reg_l with (p := - m); rewrite Zplus_opp_l;
+ rewrite Zplus_comm; exact H.
 Qed.

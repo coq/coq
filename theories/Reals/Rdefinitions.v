@@ -15,55 +15,55 @@
 
 Require Export ZArith_base.
 
-Parameter R:Set.
+Parameter R : Set.
 
 (* Declare Scope positive_scope with Key R *)
-Delimits Scope R_scope with R.
+Delimit Scope R_scope with R.
 
 (* Automatically open scope R_scope for arguments of type R *)
 Bind Scope R_scope with R.
 
-Parameter R0:R.
-Parameter R1:R.
-Parameter Rplus:R->R->R.
-Parameter Rmult:R->R->R.
-Parameter Ropp:R->R.
-Parameter Rinv:R->R. 
-Parameter Rlt:R->R->Prop.    
-Parameter up:R->Z.
+Parameter R0 : R.
+Parameter R1 : R.
+Parameter Rplus : R -> R -> R.
+Parameter Rmult : R -> R -> R.
+Parameter Ropp : R -> R.
+Parameter Rinv : R -> R. 
+Parameter Rlt : R -> R -> Prop.    
+Parameter up : R -> Z.
 
-V8Infix "+" Rplus : R_scope.
-V8Infix "*" Rmult : R_scope.
-V8Notation "- x" := (Ropp x) : R_scope.
-V8Notation "/ x" := (Rinv x) : R_scope.
+Infix "+" := Rplus : R_scope.
+Infix "*" := Rmult : R_scope.
+Notation "- x" := (Ropp x) : R_scope.
+Notation "/ x" := (Rinv x) : R_scope.
 
-V8Infix "<"  Rlt : R_scope.
+Infix "<" := Rlt : R_scope.
 
 (*i*******************************************************i*)
 
 (**********)
-Definition Rgt:R->R->Prop:=[r1,r2:R](Rlt r2 r1).
+Definition Rgt (r1 r2:R) : Prop := (r2 < r1)%R.
 
 (**********)
-Definition Rle:R->R->Prop:=[r1,r2:R]((Rlt r1 r2)\/(r1==r2)).
+Definition Rle (r1 r2:R) : Prop := (r1 < r2)%R \/ r1 = r2.
 
 (**********)
-Definition Rge:R->R->Prop:=[r1,r2:R]((Rgt r1 r2)\/(r1==r2)).
+Definition Rge (r1 r2:R) : Prop := Rgt r1 r2 \/ r1 = r2.
 
 (**********)
-Definition Rminus:R->R->R:=[r1,r2:R](Rplus r1 (Ropp r2)).
+Definition Rminus (r1 r2:R) : R := (r1 + - r2)%R.
 
 (**********)
-Definition Rdiv:R->R->R:=[r1,r2:R](Rmult r1 (Rinv r2)).
+Definition Rdiv (r1 r2:R) : R := (r1 * / r2)%R.
 
-V8Infix "-" Rminus : R_scope.
-V8Infix "/" Rdiv : R_scope.
+Infix "-" := Rminus : R_scope.
+Infix "/" := Rdiv : R_scope.
 
-V8Infix "<=" Rle : R_scope.
-V8Infix ">=" Rge : R_scope.
-V8Infix ">" Rgt : R_scope.
+Infix "<=" := Rle : R_scope.
+Infix ">=" := Rge : R_scope.
+Infix ">" := Rgt : R_scope.
 
-V8Notation "x <= y <= z" := (Rle x y)/\(Rle y z) : R_scope.
-V8Notation "x <= y < z" := (Rle x y)/\(Rlt y z) : R_scope.
-V8Notation "x < y < z" := (Rlt x y)/\(Rlt y z) : R_scope.
-V8Notation "x < y <= z" := (Rlt x y)/\(Rle y z) : R_scope.
+Notation "x <= y <= z" := ((x <= y)%R /\ (y <= z)%R) : R_scope.
+Notation "x <= y < z" := ((x <= y)%R /\ (y < z)%R) : R_scope.
+Notation "x < y < z" := ((x < y)%R /\ (y < z)%R) : R_scope.
+Notation "x < y <= z" := ((x < y)%R /\ (y <= z)%R) : R_scope.

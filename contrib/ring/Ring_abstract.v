@@ -8,76 +8,75 @@
 
 (* $Id$ *)
 
-Require Ring_theory.
-Require Quote.
-Require Ring_normalize.
+Require Import Ring_theory.
+Require Import Quote.
+Require Import Ring_normalize.
 
 Section abstract_semi_rings.
 
-Inductive Type aspolynomial :=
-  ASPvar : index -> aspolynomial
-| ASP0 : aspolynomial
-| ASP1 : aspolynomial
-| ASPplus : aspolynomial -> aspolynomial -> aspolynomial
-| ASPmult : aspolynomial -> aspolynomial -> aspolynomial
-.
+Inductive aspolynomial : Type :=
+  | ASPvar : index -> aspolynomial
+  | ASP0 : aspolynomial
+  | ASP1 : aspolynomial
+  | ASPplus : aspolynomial -> aspolynomial -> aspolynomial
+  | ASPmult : aspolynomial -> aspolynomial -> aspolynomial.
 
-Inductive abstract_sum : Type := 
-| Nil_acs : abstract_sum
-| Cons_acs : varlist -> abstract_sum -> abstract_sum
-.
+Inductive abstract_sum : Type :=
+  | Nil_acs : abstract_sum
+  | Cons_acs : varlist -> abstract_sum -> abstract_sum.
 
-Fixpoint abstract_sum_merge [s1:abstract_sum] 
-      	 : abstract_sum -> abstract_sum :=
-Cases s1 of
-| (Cons_acs l1 t1) =>      
-     Fix asm_aux{asm_aux[s2:abstract_sum] : abstract_sum :=
-           Cases s2 of
-      	   | (Cons_acs l2 t2) =>
-	       if (varlist_lt l1 l2)
-	       then (Cons_acs l1 (abstract_sum_merge t1 s2))
-	       else (Cons_acs l2 (asm_aux t2))
-	   | Nil_acs => s1
-	   end}
-| Nil_acs => [s2]s2
-end.
-
-Fixpoint abstract_varlist_insert [l1:varlist; s2:abstract_sum] 
-      : abstract_sum :=
-  Cases s2 of
-  | (Cons_acs l2 t2) =>
-       if (varlist_lt l1 l2)
-       then (Cons_acs l1 s2)
-       else (Cons_acs l2 (abstract_varlist_insert l1 t2))
-  | Nil_acs => (Cons_acs l1 Nil_acs)
+Fixpoint abstract_sum_merge (s1:abstract_sum) :
+ abstract_sum -> abstract_sum :=
+  match s1 with
+  | Cons_acs l1 t1 =>
+      (fix asm_aux (s2:abstract_sum) : abstract_sum :=
+         match s2 with
+         | Cons_acs l2 t2 =>
+             if varlist_lt l1 l2
+             then Cons_acs l1 (abstract_sum_merge t1 s2)
+             else Cons_acs l2 (asm_aux t2)
+         | Nil_acs => s1
+         end)
+  | Nil_acs => fun s2 => s2
   end.
 
-Fixpoint abstract_sum_scalar [l1:varlist; s2:abstract_sum] 
-      : abstract_sum :=
-  Cases s2 of
-  | (Cons_acs l2 t2) => (abstract_varlist_insert (varlist_merge l1 l2) 
-                                (abstract_sum_scalar l1 t2))
+Fixpoint abstract_varlist_insert (l1:varlist) (s2:abstract_sum) {struct s2} :
+ abstract_sum :=
+  match s2 with
+  | Cons_acs l2 t2 =>
+      if varlist_lt l1 l2
+      then Cons_acs l1 s2
+      else Cons_acs l2 (abstract_varlist_insert l1 t2)
+  | Nil_acs => Cons_acs l1 Nil_acs
+  end.
+
+Fixpoint abstract_sum_scalar (l1:varlist) (s2:abstract_sum) {struct s2} :
+ abstract_sum :=
+  match s2 with
+  | Cons_acs l2 t2 =>
+      abstract_varlist_insert (varlist_merge l1 l2)
+        (abstract_sum_scalar l1 t2)
   | Nil_acs => Nil_acs
   end.
 
-Fixpoint abstract_sum_prod [s1:abstract_sum] 
-      	 : abstract_sum -> abstract_sum := 
-    [s2]Cases s1 of
-    | (Cons_acs l1 t1) =>
-	(abstract_sum_merge (abstract_sum_scalar l1 s2) 
-			     (abstract_sum_prod t1 s2))
-    | Nil_acs => Nil_acs
-    end.
+Fixpoint abstract_sum_prod (s1 s2:abstract_sum) {struct s1} : abstract_sum :=
+  match s1 with
+  | Cons_acs l1 t1 =>
+      abstract_sum_merge (abstract_sum_scalar l1 s2)
+        (abstract_sum_prod t1 s2)
+  | Nil_acs => Nil_acs
+  end.
 
-Fixpoint aspolynomial_normalize[p:aspolynomial] : abstract_sum :=
-  Cases p of
-  | (ASPvar i) => (Cons_acs (Cons_var i Nil_var) Nil_acs)
-  | ASP1 => (Cons_acs Nil_var Nil_acs)
+Fixpoint aspolynomial_normalize (p:aspolynomial) : abstract_sum :=
+  match p with
+  | ASPvar i => Cons_acs (Cons_var i Nil_var) Nil_acs
+  | ASP1 => Cons_acs Nil_var Nil_acs
   | ASP0 => Nil_acs
-  | (ASPplus l r) => (abstract_sum_merge (aspolynomial_normalize l) 
-      	       	       	       	       	 (aspolynomial_normalize r))
-  | (ASPmult l r) => (abstract_sum_prod (aspolynomial_normalize l) 
-      	       	       	       	        (aspolynomial_normalize r))
+  | ASPplus l r =>
+      abstract_sum_merge (aspolynomial_normalize l)
+        (aspolynomial_normalize r)
+  | ASPmult l r =>
+      abstract_sum_prod (aspolynomial_normalize l) (aspolynomial_normalize r)
   end.
 
 
@@ -88,147 +87,151 @@ Variable Amult : A -> A -> A.
 Variable Aone : A.
 Variable Azero : A.
 Variable Aeq : A -> A -> bool.
-Variable vm : (varmap A).
-Variable T : (Semi_Ring_Theory Aplus Amult Aone Azero Aeq).
+Variable vm : varmap A.
+Variable T : Semi_Ring_Theory Aplus Amult Aone Azero Aeq.
 
-Fixpoint interp_asp [p:aspolynomial] : A :=
-  Cases p of
-  | (ASPvar i) => (interp_var Azero vm i)
+Fixpoint interp_asp (p:aspolynomial) : A :=
+  match p with
+  | ASPvar i => interp_var Azero vm i
   | ASP0 => Azero
   | ASP1 => Aone
-  | (ASPplus l r) => (Aplus (interp_asp l) (interp_asp r))
-  | (ASPmult l r) => (Amult (interp_asp l) (interp_asp r))
+  | ASPplus l r => Aplus (interp_asp l) (interp_asp r)
+  | ASPmult l r => Amult (interp_asp l) (interp_asp r)
   end.
 
-(* Local *) Definition iacs_aux := Fix iacs_aux{iacs_aux [a:A; s:abstract_sum] : A :=  
-  Cases s of
-  | Nil_acs => a
-  | (Cons_acs l t) => (Aplus a (iacs_aux (interp_vl Amult Aone Azero vm l) t))
-  end}.
+(* Local *) Definition iacs_aux :=
+              (fix iacs_aux (a:A) (s:abstract_sum) {struct s} : A :=
+                 match s with
+                 | Nil_acs => a
+                 | Cons_acs l t =>
+                     Aplus a (iacs_aux (interp_vl Amult Aone Azero vm l) t)
+                 end).
 
-Definition interp_acs [s:abstract_sum] : A :=
-  Cases s of
-  | (Cons_acs l t) => (iacs_aux (interp_vl Amult Aone Azero vm l) t)
+Definition interp_acs (s:abstract_sum) : A :=
+  match s with
+  | Cons_acs l t => iacs_aux (interp_vl Amult Aone Azero vm l) t
   | Nil_acs => Azero
   end.
 
-Hint SR_plus_sym_T := Resolve (SR_plus_sym T).
-Hint SR_plus_assoc_T := Resolve (SR_plus_assoc T).
-Hint SR_plus_assoc2_T := Resolve (SR_plus_assoc2 T).
-Hint SR_mult_sym_T := Resolve (SR_mult_sym T).
-Hint SR_mult_assoc_T := Resolve (SR_mult_assoc T).
-Hint SR_mult_assoc2_T := Resolve (SR_mult_assoc2 T).
-Hint SR_plus_zero_left_T := Resolve (SR_plus_zero_left T).
-Hint SR_plus_zero_left2_T := Resolve (SR_plus_zero_left2 T).
-Hint SR_mult_one_left_T := Resolve (SR_mult_one_left T).
-Hint SR_mult_one_left2_T := Resolve (SR_mult_one_left2 T).
-Hint SR_mult_zero_left_T := Resolve (SR_mult_zero_left T).
-Hint SR_mult_zero_left2_T := Resolve (SR_mult_zero_left2 T).
-Hint SR_distr_left_T := Resolve (SR_distr_left T).
-Hint SR_distr_left2_T := Resolve (SR_distr_left2 T).
-Hint SR_plus_reg_left_T := Resolve (SR_plus_reg_left T).
-Hint SR_plus_permute_T := Resolve (SR_plus_permute T).
-Hint SR_mult_permute_T := Resolve (SR_mult_permute T).
-Hint SR_distr_right_T := Resolve (SR_distr_right T).
-Hint SR_distr_right2_T := Resolve (SR_distr_right2 T).
-Hint SR_mult_zero_right_T := Resolve (SR_mult_zero_right T).
-Hint SR_mult_zero_right2_T := Resolve (SR_mult_zero_right2 T).
-Hint SR_plus_zero_right_T := Resolve (SR_plus_zero_right T).
-Hint SR_plus_zero_right2_T := Resolve (SR_plus_zero_right2 T).
-Hint SR_mult_one_right_T := Resolve (SR_mult_one_right T).
-Hint SR_mult_one_right2_T := Resolve (SR_mult_one_right2 T).
-Hint SR_plus_reg_right_T := Resolve (SR_plus_reg_right T).
-Hints Resolve refl_equal sym_equal trans_equal.
+Hint Resolve (SR_plus_comm T).
+Hint Resolve (SR_plus_assoc T).
+Hint Resolve (SR_plus_assoc2 T).
+Hint Resolve (SR_mult_comm T).
+Hint Resolve (SR_mult_assoc T).
+Hint Resolve (SR_mult_assoc2 T).
+Hint Resolve (SR_plus_zero_left T).
+Hint Resolve (SR_plus_zero_left2 T).
+Hint Resolve (SR_mult_one_left T).
+Hint Resolve (SR_mult_one_left2 T).
+Hint Resolve (SR_mult_zero_left T).
+Hint Resolve (SR_mult_zero_left2 T).
+Hint Resolve (SR_distr_left T).
+Hint Resolve (SR_distr_left2 T).
+Hint Resolve (SR_plus_reg_left T).
+Hint Resolve (SR_plus_permute T).
+Hint Resolve (SR_mult_permute T).
+Hint Resolve (SR_distr_right T).
+Hint Resolve (SR_distr_right2 T).
+Hint Resolve (SR_mult_zero_right T).
+Hint Resolve (SR_mult_zero_right2 T).
+Hint Resolve (SR_plus_zero_right T).
+Hint Resolve (SR_plus_zero_right2 T).
+Hint Resolve (SR_mult_one_right T).
+Hint Resolve (SR_mult_one_right2 T).
+Hint Resolve (SR_plus_reg_right T).
+Hint Resolve refl_equal sym_equal trans_equal.
 (*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
-Hints Immediate T.
+Hint Immediate T.
 
-Remark iacs_aux_ok : (x:A)(s:abstract_sum)
-  (iacs_aux x s)==(Aplus x (interp_acs s)).
+Remark iacs_aux_ok :
+ forall (x:A) (s:abstract_sum), iacs_aux x s = Aplus x (interp_acs s).
 Proof.
-  Induction s; Simpl; Intros.
-  Trivial.
-  Reflexivity.
-Save.
+  simple induction s; simpl in |- *; intros.
+  trivial.
+  reflexivity.
+Qed.
 
-Hint rew_iacs_aux : core := Extern 10 (eqT A ? ?) Rewrite iacs_aux_ok.
+Hint Extern 10 (_ = _ :>A) => rewrite iacs_aux_ok: core.
 
-Lemma abstract_varlist_insert_ok : (l:varlist)(s:abstract_sum)
-  (interp_acs (abstract_varlist_insert l s)) 
-   ==(Aplus (interp_vl Amult Aone Azero vm l) (interp_acs s)).
+Lemma abstract_varlist_insert_ok :
+ forall (l:varlist) (s:abstract_sum),
+   interp_acs (abstract_varlist_insert l s) =
+   Aplus (interp_vl Amult Aone Azero vm l) (interp_acs s).
 
-  Induction s.
-  Trivial.
+  simple induction s.
+  trivial.
 
-  Simpl; Intros.
-  Elim (varlist_lt l v); Simpl.  	
-  EAuto.
-  Rewrite iacs_aux_ok.
-  Rewrite H; Auto.
+  simpl in |- *; intros.
+  elim (varlist_lt l v); simpl in |- *.  	
+  eauto.
+  rewrite iacs_aux_ok.
+  rewrite H; auto.
 
-Save.
+Qed.
 
-Lemma abstract_sum_merge_ok : (x,y:abstract_sum)
-  (interp_acs (abstract_sum_merge x y))
-  ==(Aplus (interp_acs x) (interp_acs y)).
+Lemma abstract_sum_merge_ok :
+ forall x y:abstract_sum,
+   interp_acs (abstract_sum_merge x y) = Aplus (interp_acs x) (interp_acs y).
 
 Proof.  
-  Induction x.
-  Trivial.
-  Induction y; Intros.
+  simple induction x.
+  trivial.
+  simple induction y; intros.
 
-  Auto.
+  auto.
 
-  Simpl; Elim (varlist_lt v v0); Simpl.
-  Repeat Rewrite iacs_aux_ok.
-  Rewrite H;  Simpl; Auto.
+  simpl in |- *; elim (varlist_lt v v0); simpl in |- *.
+  repeat rewrite iacs_aux_ok.
+  rewrite H; simpl in |- *; auto.
 
-  Simpl in H0.
-  Repeat Rewrite iacs_aux_ok.
-  Rewrite H0. Simpl; Auto.
-Save.
+  simpl in H0.
+  repeat rewrite iacs_aux_ok.
+  rewrite H0. simpl in |- *; auto.
+Qed.
 
-Lemma abstract_sum_scalar_ok : (l:varlist)(s:abstract_sum)
-  (interp_acs (abstract_sum_scalar l s)) 
-   == (Amult (interp_vl Amult Aone Azero vm l) (interp_acs s)).
+Lemma abstract_sum_scalar_ok :
+ forall (l:varlist) (s:abstract_sum),
+   interp_acs (abstract_sum_scalar l s) =
+   Amult (interp_vl Amult Aone Azero vm l) (interp_acs s).
 Proof.
-  Induction s.
-  Simpl; EAuto.
+  simple induction s.
+  simpl in |- *; eauto.
 
-  Simpl; Intros.
-  Rewrite iacs_aux_ok.
-  Rewrite abstract_varlist_insert_ok.
-  Rewrite H.
-  Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
-  Auto.
-Save.
+  simpl in |- *; intros.
+  rewrite iacs_aux_ok.
+  rewrite abstract_varlist_insert_ok.
+  rewrite H.
+  rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
+  auto.
+Qed.
 
-Lemma abstract_sum_prod_ok : (x,y:abstract_sum)
-  (interp_acs (abstract_sum_prod x y)) 
-   == (Amult (interp_acs x) (interp_acs y)).
+Lemma abstract_sum_prod_ok :
+ forall x y:abstract_sum,
+   interp_acs (abstract_sum_prod x y) = Amult (interp_acs x) (interp_acs y).
 
 Proof.
-  Induction x.
-  Intros; Simpl; EAuto.
+  simple induction x.
+  intros; simpl in |- *; eauto.
 
-  NewDestruct y; Intros.
+  destruct y as [| v0 a0]; intros.
 
-  Simpl; Rewrite H; EAuto.
+  simpl in |- *; rewrite H; eauto.
 
-  Unfold abstract_sum_prod; Fold abstract_sum_prod.
-  Rewrite abstract_sum_merge_ok.
-  Rewrite abstract_sum_scalar_ok.
-  Rewrite H; Simpl; Auto.
-Save.
+  unfold abstract_sum_prod in |- *; fold abstract_sum_prod in |- *.
+  rewrite abstract_sum_merge_ok.
+  rewrite abstract_sum_scalar_ok.
+  rewrite H; simpl in |- *; auto.
+Qed.
 
-Theorem aspolynomial_normalize_ok : (x:aspolynomial)
-	(interp_asp x)==(interp_acs (aspolynomial_normalize x)).
+Theorem aspolynomial_normalize_ok :
+ forall x:aspolynomial, interp_asp x = interp_acs (aspolynomial_normalize x).
 Proof.
-  Induction x; Simpl; Intros; Trivial.
-  Rewrite abstract_sum_merge_ok.
-  Rewrite H; Rewrite H0; EAuto.
-  Rewrite abstract_sum_prod_ok.
-  Rewrite H; Rewrite H0; EAuto.
-Save.
+  simple induction x; simpl in |- *; intros; trivial.
+  rewrite abstract_sum_merge_ok.
+  rewrite H; rewrite H0; eauto.
+  rewrite abstract_sum_prod_ok.
+  rewrite H; rewrite H0; eauto.
+Qed.
 
 End abstract_semi_rings.
 
@@ -244,143 +247,141 @@ Section abstract_rings.
    Nevertheless, they are two different types for semi-rings and rings 
    and there will be 2 correction theorems *)
 
-Inductive Type apolynomial :=
-  APvar : index -> apolynomial
-| AP0 : apolynomial
-| AP1 : apolynomial
-| APplus : apolynomial -> apolynomial -> apolynomial
-| APmult : apolynomial -> apolynomial -> apolynomial
-| APopp : apolynomial -> apolynomial
-.
+Inductive apolynomial : Type :=
+  | APvar : index -> apolynomial
+  | AP0 : apolynomial
+  | AP1 : apolynomial
+  | APplus : apolynomial -> apolynomial -> apolynomial
+  | APmult : apolynomial -> apolynomial -> apolynomial
+  | APopp : apolynomial -> apolynomial.
 
 (* A canonical "abstract" sum is a list of varlist with the sign "+" or "-".
    Invariant : the list is sorted and there is no varlist is present
    with both signs. +x +x +x -x is forbidden => the canonical form is +x+x *)
 
-Inductive signed_sum : Type := 
-| Nil_varlist : signed_sum
-| Plus_varlist : varlist -> signed_sum -> signed_sum
-| Minus_varlist : varlist -> signed_sum -> signed_sum
-.
+Inductive signed_sum : Type :=
+  | Nil_varlist : signed_sum
+  | Plus_varlist : varlist -> signed_sum -> signed_sum
+  | Minus_varlist : varlist -> signed_sum -> signed_sum.
 
-Fixpoint signed_sum_merge [s1:signed_sum] 
-      	 : signed_sum -> signed_sum :=
-Cases s1 of
-| (Plus_varlist l1 t1) =>      
-     Fix ssm_aux{ssm_aux[s2:signed_sum] : signed_sum :=
-           Cases s2 of
-      	   | (Plus_varlist l2 t2) =>
-	       if (varlist_lt l1 l2)
-	       then (Plus_varlist l1 (signed_sum_merge t1 s2))
-	       else (Plus_varlist l2 (ssm_aux t2))
-      	   | (Minus_varlist l2 t2) =>
-      	       if (varlist_eq l1 l2)
-	       then (signed_sum_merge t1 t2)
-	       else if (varlist_lt l1 l2)
-	       then (Plus_varlist l1 (signed_sum_merge t1 s2))
-	       else (Minus_varlist l2 (ssm_aux t2))
-	   | Nil_varlist => s1
-	   end}
-| (Minus_varlist l1 t1) =>
-     Fix ssm_aux2{ssm_aux2[s2:signed_sum] : signed_sum :=
-           Cases s2 of
-      	   | (Plus_varlist l2 t2) =>
-      	       if (varlist_eq l1 l2)
-	       then (signed_sum_merge t1 t2)
-	       else if (varlist_lt l1 l2)
-	       then (Minus_varlist l1 (signed_sum_merge t1 s2))
-	       else (Plus_varlist l2 (ssm_aux2 t2))
-      	   | (Minus_varlist l2 t2) =>
-	       if (varlist_lt l1 l2)
-	       then (Minus_varlist l1 (signed_sum_merge t1 s2))
-	       else (Minus_varlist l2 (ssm_aux2 t2))
-	   | Nil_varlist => s1
-	   end}
-| Nil_varlist => [s2]s2
-end.
-
-Fixpoint plus_varlist_insert [l1:varlist; s2:signed_sum] 
-      : signed_sum :=
-  Cases s2 of
-  | (Plus_varlist l2 t2) =>
-       if (varlist_lt l1 l2)
-       then (Plus_varlist l1 s2)
-       else (Plus_varlist l2 (plus_varlist_insert l1 t2))
-  | (Minus_varlist l2 t2) =>
-       if (varlist_eq l1 l2)
-       then t2
-       else if (varlist_lt l1 l2)
-       then (Plus_varlist l1 s2)
-       else (Minus_varlist l2 (plus_varlist_insert l1 t2))
-  | Nil_varlist => (Plus_varlist l1 Nil_varlist)
+Fixpoint signed_sum_merge (s1:signed_sum) : signed_sum -> signed_sum :=
+  match s1 with
+  | Plus_varlist l1 t1 =>
+      (fix ssm_aux (s2:signed_sum) : signed_sum :=
+         match s2 with
+         | Plus_varlist l2 t2 =>
+             if varlist_lt l1 l2
+             then Plus_varlist l1 (signed_sum_merge t1 s2)
+             else Plus_varlist l2 (ssm_aux t2)
+         | Minus_varlist l2 t2 =>
+             if varlist_eq l1 l2
+             then signed_sum_merge t1 t2
+             else
+              if varlist_lt l1 l2
+              then Plus_varlist l1 (signed_sum_merge t1 s2)
+              else Minus_varlist l2 (ssm_aux t2)
+         | Nil_varlist => s1
+         end)
+  | Minus_varlist l1 t1 =>
+      (fix ssm_aux2 (s2:signed_sum) : signed_sum :=
+         match s2 with
+         | Plus_varlist l2 t2 =>
+             if varlist_eq l1 l2
+             then signed_sum_merge t1 t2
+             else
+              if varlist_lt l1 l2
+              then Minus_varlist l1 (signed_sum_merge t1 s2)
+              else Plus_varlist l2 (ssm_aux2 t2)
+         | Minus_varlist l2 t2 =>
+             if varlist_lt l1 l2
+             then Minus_varlist l1 (signed_sum_merge t1 s2)
+             else Minus_varlist l2 (ssm_aux2 t2)
+         | Nil_varlist => s1
+         end)
+  | Nil_varlist => fun s2 => s2
   end.
 
-Fixpoint minus_varlist_insert [l1:varlist; s2:signed_sum] 
-      : signed_sum :=
-  Cases s2 of
-  | (Plus_varlist l2 t2) =>
-       if (varlist_eq l1 l2)
-       then t2
-       else if (varlist_lt l1 l2)
-       then (Minus_varlist l1 s2)
-       else (Plus_varlist l2 (minus_varlist_insert l1 t2))
-  | (Minus_varlist l2 t2) =>
-       if (varlist_lt l1 l2)
-       then (Minus_varlist l1 s2)
-       else (Minus_varlist l2 (minus_varlist_insert l1 t2))
-  | Nil_varlist => (Minus_varlist l1 Nil_varlist)
+Fixpoint plus_varlist_insert (l1:varlist) (s2:signed_sum) {struct s2} :
+ signed_sum :=
+  match s2 with
+  | Plus_varlist l2 t2 =>
+      if varlist_lt l1 l2
+      then Plus_varlist l1 s2
+      else Plus_varlist l2 (plus_varlist_insert l1 t2)
+  | Minus_varlist l2 t2 =>
+      if varlist_eq l1 l2
+      then t2
+      else
+       if varlist_lt l1 l2
+       then Plus_varlist l1 s2
+       else Minus_varlist l2 (plus_varlist_insert l1 t2)
+  | Nil_varlist => Plus_varlist l1 Nil_varlist
   end.
 
-Fixpoint signed_sum_opp [s:signed_sum] : signed_sum :=
-  Cases s of
-  | (Plus_varlist l2 t2) => (Minus_varlist l2 (signed_sum_opp t2))
-  | (Minus_varlist l2 t2) => (Plus_varlist l2 (signed_sum_opp t2))
+Fixpoint minus_varlist_insert (l1:varlist) (s2:signed_sum) {struct s2} :
+ signed_sum :=
+  match s2 with
+  | Plus_varlist l2 t2 =>
+      if varlist_eq l1 l2
+      then t2
+      else
+       if varlist_lt l1 l2
+       then Minus_varlist l1 s2
+       else Plus_varlist l2 (minus_varlist_insert l1 t2)
+  | Minus_varlist l2 t2 =>
+      if varlist_lt l1 l2
+      then Minus_varlist l1 s2
+      else Minus_varlist l2 (minus_varlist_insert l1 t2)
+  | Nil_varlist => Minus_varlist l1 Nil_varlist
+  end.
+
+Fixpoint signed_sum_opp (s:signed_sum) : signed_sum :=
+  match s with
+  | Plus_varlist l2 t2 => Minus_varlist l2 (signed_sum_opp t2)
+  | Minus_varlist l2 t2 => Plus_varlist l2 (signed_sum_opp t2)
   | Nil_varlist => Nil_varlist
   end.
 
 
-Fixpoint plus_sum_scalar [l1:varlist; s2:signed_sum] 
-      : signed_sum :=
-  Cases s2 of
-  | (Plus_varlist l2 t2) => (plus_varlist_insert (varlist_merge l1 l2) 
-                                (plus_sum_scalar l1 t2))
-  | (Minus_varlist l2 t2) => (minus_varlist_insert (varlist_merge l1 l2) 
-                                (plus_sum_scalar l1 t2))
+Fixpoint plus_sum_scalar (l1:varlist) (s2:signed_sum) {struct s2} :
+ signed_sum :=
+  match s2 with
+  | Plus_varlist l2 t2 =>
+      plus_varlist_insert (varlist_merge l1 l2) (plus_sum_scalar l1 t2)
+  | Minus_varlist l2 t2 =>
+      minus_varlist_insert (varlist_merge l1 l2) (plus_sum_scalar l1 t2)
   | Nil_varlist => Nil_varlist
   end.
 
-Fixpoint minus_sum_scalar [l1:varlist; s2:signed_sum] 
-      : signed_sum :=
-  Cases s2 of
-  | (Plus_varlist l2 t2) => (minus_varlist_insert (varlist_merge l1 l2) 
-                                (minus_sum_scalar l1 t2))
-  | (Minus_varlist l2 t2) => (plus_varlist_insert (varlist_merge l1 l2) 
-                                (minus_sum_scalar l1 t2))
+Fixpoint minus_sum_scalar (l1:varlist) (s2:signed_sum) {struct s2} :
+ signed_sum :=
+  match s2 with
+  | Plus_varlist l2 t2 =>
+      minus_varlist_insert (varlist_merge l1 l2) (minus_sum_scalar l1 t2)
+  | Minus_varlist l2 t2 =>
+      plus_varlist_insert (varlist_merge l1 l2) (minus_sum_scalar l1 t2)
   | Nil_varlist => Nil_varlist
   end.
 
-Fixpoint signed_sum_prod [s1:signed_sum] 
-      	 : signed_sum -> signed_sum := 
-    [s2]Cases s1 of
-    | (Plus_varlist l1 t1) =>
-	(signed_sum_merge (plus_sum_scalar l1 s2) 
-			     (signed_sum_prod t1 s2))
-    | (Minus_varlist l1 t1) =>
-	(signed_sum_merge (minus_sum_scalar l1 s2) 
-			     (signed_sum_prod t1 s2))
-    | Nil_varlist => Nil_varlist
-    end.
+Fixpoint signed_sum_prod (s1 s2:signed_sum) {struct s1} : signed_sum :=
+  match s1 with
+  | Plus_varlist l1 t1 =>
+      signed_sum_merge (plus_sum_scalar l1 s2) (signed_sum_prod t1 s2)
+  | Minus_varlist l1 t1 =>
+      signed_sum_merge (minus_sum_scalar l1 s2) (signed_sum_prod t1 s2)
+  | Nil_varlist => Nil_varlist
+  end.
 
-Fixpoint apolynomial_normalize[p:apolynomial] : signed_sum :=
-  Cases p of
-  | (APvar i) => (Plus_varlist (Cons_var i Nil_var) Nil_varlist)
-  | AP1 => (Plus_varlist Nil_var Nil_varlist)
+Fixpoint apolynomial_normalize (p:apolynomial) : signed_sum :=
+  match p with
+  | APvar i => Plus_varlist (Cons_var i Nil_var) Nil_varlist
+  | AP1 => Plus_varlist Nil_var Nil_varlist
   | AP0 => Nil_varlist
-  | (APplus l r) => (signed_sum_merge (apolynomial_normalize l) 
-      	       	       	       	       	 (apolynomial_normalize r))
-  | (APmult l r) => (signed_sum_prod (apolynomial_normalize l) 
-      	       	       	       	        (apolynomial_normalize r))
-  | (APopp q) => (signed_sum_opp (apolynomial_normalize q))
+  | APplus l r =>
+      signed_sum_merge (apolynomial_normalize l) (apolynomial_normalize r)
+  | APmult l r =>
+      signed_sum_prod (apolynomial_normalize l) (apolynomial_normalize r)
+  | APopp q => signed_sum_opp (apolynomial_normalize q)
   end.
 
 
@@ -389,311 +390,315 @@ Variable Aplus : A -> A -> A.
 Variable Amult : A -> A -> A.
 Variable Aone : A.
 Variable Azero : A.
-Variable Aopp :A -> A.
+Variable Aopp : A -> A.
 Variable Aeq : A -> A -> bool.
-Variable vm : (varmap A).
-Variable T : (Ring_Theory Aplus Amult Aone Azero Aopp Aeq).
+Variable vm : varmap A.
+Variable T : Ring_Theory Aplus Amult Aone Azero Aopp Aeq.
 
-(* Local *) Definition isacs_aux := Fix isacs_aux{isacs_aux [a:A; s:signed_sum] : A :=  
-  Cases s of
-  | Nil_varlist => a
-  | (Plus_varlist l t) => 
-	(Aplus a (isacs_aux (interp_vl Amult Aone Azero vm l) t))
-  | (Minus_varlist l t) => 
-	(Aplus a (isacs_aux (Aopp (interp_vl Amult Aone Azero vm l)) t))
-  end}.
+(* Local *) Definition isacs_aux :=
+              (fix isacs_aux (a:A) (s:signed_sum) {struct s} : A :=
+                 match s with
+                 | Nil_varlist => a
+                 | Plus_varlist l t =>
+                     Aplus a (isacs_aux (interp_vl Amult Aone Azero vm l) t)
+                 | Minus_varlist l t =>
+                     Aplus a
+                       (isacs_aux (Aopp (interp_vl Amult Aone Azero vm l)) t)
+                 end).
 
-Definition interp_sacs [s:signed_sum] : A :=
-  Cases s of
-  | (Plus_varlist l t) => (isacs_aux (interp_vl Amult Aone Azero vm l) t)
-  | (Minus_varlist l t) => 
-	(isacs_aux (Aopp (interp_vl Amult Aone Azero vm l)) t)
+Definition interp_sacs (s:signed_sum) : A :=
+  match s with
+  | Plus_varlist l t => isacs_aux (interp_vl Amult Aone Azero vm l) t
+  | Minus_varlist l t => isacs_aux (Aopp (interp_vl Amult Aone Azero vm l)) t
   | Nil_varlist => Azero
   end.
 
-Fixpoint interp_ap [p:apolynomial] : A :=
-  Cases p of
-  | (APvar i) => (interp_var Azero vm i)
+Fixpoint interp_ap (p:apolynomial) : A :=
+  match p with
+  | APvar i => interp_var Azero vm i
   | AP0 => Azero
   | AP1 => Aone
-  | (APplus l r) => (Aplus (interp_ap l) (interp_ap r))
-  | (APmult l r) => (Amult (interp_ap l) (interp_ap r))
-  | (APopp q) => (Aopp (interp_ap q))
+  | APplus l r => Aplus (interp_ap l) (interp_ap r)
+  | APmult l r => Amult (interp_ap l) (interp_ap r)
+  | APopp q => Aopp (interp_ap q)
   end.
 
-Hint Th_plus_sym_T := Resolve (Th_plus_sym T).
-Hint Th_plus_assoc_T := Resolve (Th_plus_assoc T).
-Hint Th_plus_assoc2_T := Resolve (Th_plus_assoc2 T).
-Hint Th_mult_sym_T := Resolve (Th_mult_sym T).
-Hint Th_mult_assoc_T := Resolve (Th_mult_assoc T).
-Hint Th_mult_assoc2_T := Resolve (Th_mult_assoc2 T).
-Hint Th_plus_zero_left_T := Resolve (Th_plus_zero_left T).
-Hint Th_plus_zero_left2_T := Resolve (Th_plus_zero_left2 T).
-Hint Th_mult_one_left_T := Resolve (Th_mult_one_left T).
-Hint Th_mult_one_left2_T := Resolve (Th_mult_one_left2 T).
-Hint Th_mult_zero_left_T := Resolve (Th_mult_zero_left T).
-Hint Th_mult_zero_left2_T := Resolve (Th_mult_zero_left2 T).
-Hint Th_distr_left_T := Resolve (Th_distr_left T).
-Hint Th_distr_left2_T := Resolve (Th_distr_left2 T).
-Hint Th_plus_reg_left_T := Resolve (Th_plus_reg_left T).
-Hint Th_plus_permute_T := Resolve (Th_plus_permute T).
-Hint Th_mult_permute_T := Resolve (Th_mult_permute T).
-Hint Th_distr_right_T := Resolve (Th_distr_right T).
-Hint Th_distr_right2_T := Resolve (Th_distr_right2 T).
-Hint Th_mult_zero_right2_T := Resolve (Th_mult_zero_right2 T).
-Hint Th_plus_zero_right_T := Resolve (Th_plus_zero_right T).
-Hint Th_plus_zero_right2_T := Resolve (Th_plus_zero_right2 T).
-Hint Th_mult_one_right_T := Resolve (Th_mult_one_right T).
-Hint Th_mult_one_right2_T := Resolve (Th_mult_one_right2 T).
-Hint Th_plus_reg_right_T := Resolve (Th_plus_reg_right T).
-Hints Resolve refl_equal sym_equal trans_equal.
+Hint Resolve (Th_plus_comm T).
+Hint Resolve (Th_plus_assoc T).
+Hint Resolve (Th_plus_assoc2 T).
+Hint Resolve (Th_mult_sym T).
+Hint Resolve (Th_mult_assoc T).
+Hint Resolve (Th_mult_assoc2 T).
+Hint Resolve (Th_plus_zero_left T).
+Hint Resolve (Th_plus_zero_left2 T).
+Hint Resolve (Th_mult_one_left T).
+Hint Resolve (Th_mult_one_left2 T).
+Hint Resolve (Th_mult_zero_left T).
+Hint Resolve (Th_mult_zero_left2 T).
+Hint Resolve (Th_distr_left T).
+Hint Resolve (Th_distr_left2 T).
+Hint Resolve (Th_plus_reg_left T).
+Hint Resolve (Th_plus_permute T).
+Hint Resolve (Th_mult_permute T).
+Hint Resolve (Th_distr_right T).
+Hint Resolve (Th_distr_right2 T).
+Hint Resolve (Th_mult_zero_right2 T).
+Hint Resolve (Th_plus_zero_right T).
+Hint Resolve (Th_plus_zero_right2 T).
+Hint Resolve (Th_mult_one_right T).
+Hint Resolve (Th_mult_one_right2 T).
+Hint Resolve (Th_plus_reg_right T).
+Hint Resolve refl_equal sym_equal trans_equal.
 (*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
-Hints Immediate T.
+Hint Immediate T.
 
-Lemma isacs_aux_ok : (x:A)(s:signed_sum)
-  (isacs_aux x s)==(Aplus x (interp_sacs s)).
+Lemma isacs_aux_ok :
+ forall (x:A) (s:signed_sum), isacs_aux x s = Aplus x (interp_sacs s).
 Proof.
-  Induction s; Simpl; Intros.
-  Trivial.
-  Reflexivity.
-  Reflexivity.
-Save.
+  simple induction s; simpl in |- *; intros.
+  trivial.
+  reflexivity.
+  reflexivity.
+Qed.
 
-Hint rew_isacs_aux : core := Extern 10 (eqT A ? ?) Rewrite isacs_aux_ok.
+Hint Extern 10 (_ = _ :>A) => rewrite isacs_aux_ok: core.
 
-Tactic Definition Solve1 v v0 H H0 := 
-  Simpl; Elim (varlist_lt v v0); Simpl; Rewrite isacs_aux_ok;
-    [Rewrite H; Simpl; Auto
-    |Simpl in H0; Rewrite H0; Auto ].
+Ltac solve1 v v0 H H0 :=
+  simpl in |- *; elim (varlist_lt v v0); simpl in |- *; rewrite isacs_aux_ok;
+   [ rewrite H; simpl in |- *; auto | simpl in H0; rewrite H0; auto ].
 
-Lemma signed_sum_merge_ok : (x,y:signed_sum)
-  (interp_sacs (signed_sum_merge x y))
-  ==(Aplus (interp_sacs x) (interp_sacs y)).
+Lemma signed_sum_merge_ok :
+ forall x y:signed_sum,
+   interp_sacs (signed_sum_merge x y) = Aplus (interp_sacs x) (interp_sacs y).
 
-  Induction x.
-  Intro; Simpl; Auto.
+  simple induction x.
+  intro; simpl in |- *; auto.
 
-  Induction y; Intros.
+  simple induction y; intros.
 
-  Auto.
+  auto.
 
-  Solve1 v v0 H H0.
+  solve1 v v0 H H0.
 
-  Simpl; Generalize (varlist_eq_prop v v0).
-  Elim (varlist_eq v v0); Simpl.
+  simpl in |- *; generalize (varlist_eq_prop v v0).
+  elim (varlist_eq v v0); simpl in |- *.
 
-  Intro Heq; Rewrite (Heq I).
-  Rewrite H.
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite (Th_plus_permute T). 
-  Repeat Rewrite (Th_plus_assoc T).
-  Rewrite (Th_plus_sym T (Aopp (interp_vl Amult Aone Azero vm v0))
-                         (interp_vl Amult Aone Azero vm v0)).
-  Rewrite (Th_opp_def T).
-  Rewrite (Th_plus_zero_left T).
-  Reflexivity.
+  intro Heq; rewrite (Heq I).
+  rewrite H.
+  repeat rewrite isacs_aux_ok.
+  rewrite (Th_plus_permute T). 
+  repeat rewrite (Th_plus_assoc T).
+  rewrite
+   (Th_plus_comm T (Aopp (interp_vl Amult Aone Azero vm v0))
+      (interp_vl Amult Aone Azero vm v0)).
+  rewrite (Th_opp_def T).
+  rewrite (Th_plus_zero_left T).
+  reflexivity.
 
-  Solve1 v v0 H H0.
+  solve1 v v0 H H0.
 
-  Induction y; Intros.
+  simple induction y; intros.
 
-  Auto.
+  auto.
 
-  Simpl; Generalize (varlist_eq_prop v v0).
-  Elim (varlist_eq v v0); Simpl.
+  simpl in |- *; generalize (varlist_eq_prop v v0).
+  elim (varlist_eq v v0); simpl in |- *.
 
-  Intro Heq; Rewrite (Heq I).
-  Rewrite H.
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite (Th_plus_permute T). 
-  Repeat Rewrite (Th_plus_assoc T).
-  Rewrite (Th_opp_def T).
-  Rewrite (Th_plus_zero_left T).
-  Reflexivity.
+  intro Heq; rewrite (Heq I).
+  rewrite H.
+  repeat rewrite isacs_aux_ok.
+  rewrite (Th_plus_permute T). 
+  repeat rewrite (Th_plus_assoc T).
+  rewrite (Th_opp_def T).
+  rewrite (Th_plus_zero_left T).
+  reflexivity.
 
-  Solve1 v v0 H H0.
+  solve1 v v0 H H0.
 
-  Solve1 v v0 H H0.
+  solve1 v v0 H H0.
 
-Save.
+Qed.
 
-Tactic Definition Solve2 l v H :=
- 	Elim (varlist_lt l v); Simpl; Rewrite isacs_aux_ok;
-  	[ Auto
-  	| Rewrite H; Auto ].
+Ltac solve2 l v H :=
+  elim (varlist_lt l v); simpl in |- *; rewrite isacs_aux_ok;
+   [ auto | rewrite H; auto ].
 
-Lemma plus_varlist_insert_ok : (l:varlist)(s:signed_sum)
-	(interp_sacs (plus_varlist_insert l s)) 
-	== (Aplus (interp_vl  Amult Aone Azero vm l) (interp_sacs s)).
-Proof.
-
-  Induction s.
-  Trivial.
-
-  Simpl; Intros.
-  Solve2 l v H.
-
-  Simpl; Intros.
-  Generalize (varlist_eq_prop l v).
-  Elim (varlist_eq l v); Simpl.
-
-  Intro Heq; Rewrite (Heq I).
-  Repeat Rewrite isacs_aux_ok.
-  Repeat Rewrite (Th_plus_assoc T).
-  Rewrite (Th_opp_def T).
-  Rewrite (Th_plus_zero_left T).
-  Reflexivity.
-
-  Solve2 l v H.
-
-Save.
-
-Lemma minus_varlist_insert_ok : (l:varlist)(s:signed_sum)
-	(interp_sacs (minus_varlist_insert l s)) 
-	== (Aplus (Aopp (interp_vl  Amult Aone Azero vm l)) (interp_sacs s)).
+Lemma plus_varlist_insert_ok :
+ forall (l:varlist) (s:signed_sum),
+   interp_sacs (plus_varlist_insert l s) =
+   Aplus (interp_vl Amult Aone Azero vm l) (interp_sacs s).
 Proof.
 
-  Induction s.
-  Trivial.
+  simple induction s.
+  trivial.
 
-  Simpl; Intros.
-  Generalize (varlist_eq_prop l v).
-  Elim (varlist_eq l v); Simpl.
+  simpl in |- *; intros.
+  solve2 l v H.
 
-  Intro Heq; Rewrite (Heq I).
-  Repeat Rewrite isacs_aux_ok.
-  Repeat Rewrite (Th_plus_assoc T).
-  Rewrite (Th_plus_sym T (Aopp (interp_vl Amult Aone Azero vm v))
-         (interp_vl Amult Aone Azero vm v)).
-  Rewrite (Th_opp_def T).
-  Auto.
+  simpl in |- *; intros.
+  generalize (varlist_eq_prop l v).
+  elim (varlist_eq l v); simpl in |- *.
 
-  Simpl; Intros.
-  Solve2 l v H.
+  intro Heq; rewrite (Heq I).
+  repeat rewrite isacs_aux_ok.
+  repeat rewrite (Th_plus_assoc T).
+  rewrite (Th_opp_def T).
+  rewrite (Th_plus_zero_left T).
+  reflexivity.
 
-  Simpl; Intros; Solve2 l v H.
+  solve2 l v H.
 
-Save.
+Qed.
 
-Lemma signed_sum_opp_ok : (s:signed_sum)
-	(interp_sacs (signed_sum_opp s)) 
-	== (Aopp (interp_sacs s)).
+Lemma minus_varlist_insert_ok :
+ forall (l:varlist) (s:signed_sum),
+   interp_sacs (minus_varlist_insert l s) =
+   Aplus (Aopp (interp_vl Amult Aone Azero vm l)) (interp_sacs s).
 Proof.
 
-  Induction s; Simpl; Intros.
+  simple induction s.
+  trivial.
 
-  Symmetry; Apply (Th_opp_zero T).
+  simpl in |- *; intros.
+  generalize (varlist_eq_prop l v).
+  elim (varlist_eq l v); simpl in |- *.
 
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite H.
-  Rewrite (Th_plus_opp_opp T).
-  Reflexivity.
+  intro Heq; rewrite (Heq I).
+  repeat rewrite isacs_aux_ok.
+  repeat rewrite (Th_plus_assoc T).
+  rewrite
+   (Th_plus_comm T (Aopp (interp_vl Amult Aone Azero vm v))
+      (interp_vl Amult Aone Azero vm v)).
+  rewrite (Th_opp_def T).
+  auto.
 
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite H.
-  Rewrite <- (Th_plus_opp_opp T).
-  Rewrite (Th_opp_opp T).
-  Reflexivity.
+  simpl in |- *; intros.
+  solve2 l v H.
 
-Save.
+  simpl in |- *; intros; solve2 l v H.
 
-Lemma plus_sum_scalar_ok : (l:varlist)(s:signed_sum)
-	(interp_sacs (plus_sum_scalar l s)) 
-	== (Amult (interp_vl  Amult Aone Azero vm l) (interp_sacs s)).
+Qed.
+
+Lemma signed_sum_opp_ok :
+ forall s:signed_sum, interp_sacs (signed_sum_opp s) = Aopp (interp_sacs s).
 Proof.
 
-  Induction s.
-  Trivial.
+  simple induction s; simpl in |- *; intros.
 
-  Simpl; Intros.
-  Rewrite plus_varlist_insert_ok.
-  Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite H.
-  Auto.
+  symmetry  in |- *; apply (Th_opp_zero T).
 
-  Simpl; Intros.
-  Rewrite minus_varlist_insert_ok.
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
-  Rewrite H.
-  Rewrite (Th_distr_right T).
-  Rewrite <- (Th_opp_mult_right T).
-  Reflexivity.
+  repeat rewrite isacs_aux_ok.
+  rewrite H.
+  rewrite (Th_plus_opp_opp T).
+  reflexivity.
 
-Save.
+  repeat rewrite isacs_aux_ok.
+  rewrite H.
+  rewrite <- (Th_plus_opp_opp T).
+  rewrite (Th_opp_opp T).
+  reflexivity.
 
-Lemma minus_sum_scalar_ok : (l:varlist)(s:signed_sum)
-	(interp_sacs (minus_sum_scalar l s)) 
-	== (Aopp (Amult (interp_vl  Amult Aone Azero vm l) (interp_sacs s))).
+Qed.
+
+Lemma plus_sum_scalar_ok :
+ forall (l:varlist) (s:signed_sum),
+   interp_sacs (plus_sum_scalar l s) =
+   Amult (interp_vl Amult Aone Azero vm l) (interp_sacs s).
 Proof.
 
-  Induction s; Simpl; Intros.
+  simple induction s.
+  trivial.
 
-  Rewrite (Th_mult_zero_right T); Symmetry; Apply (Th_opp_zero T).
+  simpl in |- *; intros.
+  rewrite plus_varlist_insert_ok.
+  rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
+  repeat rewrite isacs_aux_ok.
+  rewrite H.
+  auto.
 
-  Simpl; Intros.
-  Rewrite minus_varlist_insert_ok.
-  Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite H.
-  Rewrite (Th_distr_right T).
-  Rewrite (Th_plus_opp_opp T).
-  Reflexivity.
+  simpl in |- *; intros.
+  rewrite minus_varlist_insert_ok.
+  repeat rewrite isacs_aux_ok.
+  rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
+  rewrite H.
+  rewrite (Th_distr_right T).
+  rewrite <- (Th_opp_mult_right T).
+  reflexivity.
 
-  Simpl; Intros.
-  Rewrite plus_varlist_insert_ok.
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
-  Rewrite H.
-  Rewrite (Th_distr_right T).
-  Rewrite <- (Th_opp_mult_right T).
-  Rewrite <- (Th_plus_opp_opp T).
-  Rewrite (Th_opp_opp T).
-  Reflexivity.
+Qed.
 
-Save.
-
-Lemma signed_sum_prod_ok : (x,y:signed_sum)
-	(interp_sacs (signed_sum_prod x y)) ==
-		(Amult (interp_sacs x) (interp_sacs y)).
+Lemma minus_sum_scalar_ok :
+ forall (l:varlist) (s:signed_sum),
+   interp_sacs (minus_sum_scalar l s) =
+   Aopp (Amult (interp_vl Amult Aone Azero vm l) (interp_sacs s)).
 Proof.
 
-  Induction x.
+  simple induction s; simpl in |- *; intros.
 
-  Simpl; EAuto 1.
+  rewrite (Th_mult_zero_right T); symmetry  in |- *; apply (Th_opp_zero T).
 
-  Intros; Simpl.
-  Rewrite signed_sum_merge_ok.
-  Rewrite plus_sum_scalar_ok.
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite H.
-  Auto.
+  simpl in |- *; intros.
+  rewrite minus_varlist_insert_ok.
+  rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
+  repeat rewrite isacs_aux_ok.
+  rewrite H.
+  rewrite (Th_distr_right T).
+  rewrite (Th_plus_opp_opp T).
+  reflexivity.
 
-  Intros; Simpl.
-  Repeat Rewrite isacs_aux_ok.
-  Rewrite signed_sum_merge_ok.
-  Rewrite minus_sum_scalar_ok.
-  Rewrite H.
-  Rewrite (Th_distr_left T).
-  Rewrite (Th_opp_mult_left T).
-  Reflexivity.
+  simpl in |- *; intros.
+  rewrite plus_varlist_insert_ok.
+  repeat rewrite isacs_aux_ok.
+  rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
+  rewrite H.
+  rewrite (Th_distr_right T).
+  rewrite <- (Th_opp_mult_right T).
+  rewrite <- (Th_plus_opp_opp T).
+  rewrite (Th_opp_opp T).
+  reflexivity.
 
-Save.
+Qed.
 
-Theorem apolynomial_normalize_ok : (p:apolynomial)
-	(interp_sacs (apolynomial_normalize p))==(interp_ap p).
+Lemma signed_sum_prod_ok :
+ forall x y:signed_sum,
+   interp_sacs (signed_sum_prod x y) = Amult (interp_sacs x) (interp_sacs y).
 Proof.
-  Induction p; Simpl; Auto 1.
-  Intros.
-    Rewrite signed_sum_merge_ok.
-    Rewrite H; Rewrite H0; Reflexivity.
-  Intros.
-    Rewrite signed_sum_prod_ok.
-    Rewrite H; Rewrite H0; Reflexivity.
-  Intros.
-    Rewrite signed_sum_opp_ok.
-    Rewrite H; Reflexivity.
-Save.  
+
+  simple induction x.
+
+  simpl in |- *; eauto 1.
+
+  intros; simpl in |- *.
+  rewrite signed_sum_merge_ok.
+  rewrite plus_sum_scalar_ok.
+  repeat rewrite isacs_aux_ok.
+  rewrite H.
+  auto.
+
+  intros; simpl in |- *.
+  repeat rewrite isacs_aux_ok.
+  rewrite signed_sum_merge_ok.
+  rewrite minus_sum_scalar_ok.
+  rewrite H.
+  rewrite (Th_distr_left T).
+  rewrite (Th_opp_mult_left T).
+  reflexivity.
+
+Qed.
+
+Theorem apolynomial_normalize_ok :
+ forall p:apolynomial, interp_sacs (apolynomial_normalize p) = interp_ap p.
+Proof.
+  simple induction p; simpl in |- *; auto 1.
+  intros.
+    rewrite signed_sum_merge_ok.
+    rewrite H; rewrite H0; reflexivity.
+  intros.
+    rewrite signed_sum_prod_ok.
+    rewrite H; rewrite H0; reflexivity.
+  intros.
+    rewrite signed_sum_opp_ok.
+    rewrite H; reflexivity.
+Qed.  
 
 End abstract_rings.

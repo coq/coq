@@ -17,4 +17,3 @@ Require Export Transitive_Closure.
 Require Export Union.
 Require Export Well_Ordering.
 
-

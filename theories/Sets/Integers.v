@@ -46,120 +46,121 @@ Require Export Cpo.
 
 Section Integers_sect.
 
-Inductive Integers : (Ensemble nat) :=
-      Integers_defn: (x: nat) (In nat Integers x).
-Hints Resolve Integers_defn.
+Inductive Integers : Ensemble nat :=
+    Integers_defn : forall x:nat, In nat Integers x.
+Hint Resolve Integers_defn.
 
-Lemma le_reflexive: (Reflexive nat le).
+Lemma le_reflexive : Reflexive nat le.
 Proof.
-Red; Auto with arith.
+red in |- *; auto with arith.
 Qed.
 
-Lemma le_antisym: (Antisymmetric nat le).
+Lemma le_antisym : Antisymmetric nat le.
 Proof.
-Red; Intros x y H H';Rewrite (le_antisym x y);Auto.
+red in |- *; intros x y H H'; rewrite (le_antisym x y); auto.
 Qed.
 
-Lemma le_trans: (Transitive nat le).
+Lemma le_trans : Transitive nat le.
 Proof.
-Red; Intros; Apply le_trans with y;Auto.
+red in |- *; intros; apply le_trans with y; auto.
 Qed.
-Hints Resolve le_reflexive le_antisym le_trans.
+Hint Resolve le_reflexive le_antisym le_trans.
 
-Lemma le_Order: (Order nat le).
+Lemma le_Order : Order nat le.
 Proof.
-Auto with sets arith.
+auto with sets arith.
 Qed.
-Hints Resolve le_Order.
+Hint Resolve le_Order.
 
-Lemma triv_nat: (n: nat) (In nat Integers n).
+Lemma triv_nat : forall n:nat, In nat Integers n.
 Proof.
-Auto with sets arith.
+auto with sets arith.
 Qed.
-Hints Resolve triv_nat.
+Hint Resolve triv_nat.
 
-Definition nat_po: (PO nat).
-Apply Definition_of_PO with Carrier_of := Integers Rel_of := le; Auto with sets arith.
-Apply Inhabited_intro with x := O; Auto with sets arith.
+Definition nat_po : PO nat.
+apply Definition_of_PO with (Carrier_of := Integers) (Rel_of := le);
+ auto with sets arith.
+apply Inhabited_intro with (x := 0); auto with sets arith.
 Defined.
-Hints Unfold nat_po.
+Hint Unfold nat_po.
 
-Lemma le_total_order: (Totally_ordered nat nat_po Integers).
+Lemma le_total_order : Totally_ordered nat nat_po Integers.
 Proof.
-Apply Totally_ordered_definition.
-Simpl.
-Intros H' x y H'0.
-Specialize 2 le_or_lt with n := x m := y; Intro H'2; Elim H'2.
-Intro H'1; Left; Auto with sets arith.
-Intro H'1; Right.
-Cut (le y x); Auto with sets arith.
+apply Totally_ordered_definition.
+simpl in |- *.
+intros H' x y H'0.
+specialize  2le_or_lt with (n := x) (m := y); intro H'2; elim H'2.
+intro H'1; left; auto with sets arith.
+intro H'1; right.
+cut (y <= x); auto with sets arith.
 Qed.
-Hints Resolve le_total_order.
+Hint Resolve le_total_order.
 
-Lemma Finite_subset_has_lub:
-  (X: (Ensemble nat)) (Finite nat X) ->
-   (EXT m: nat | (Upper_Bound nat nat_po X m)).
+Lemma Finite_subset_has_lub :
+ forall X:Ensemble nat,
+   Finite nat X ->  exists m : nat | Upper_Bound nat nat_po X m.
 Proof.
-Intros X H'; Elim H'.
-Exists O.
-Apply Upper_Bound_definition; Auto with sets arith.
-Intros y H'0; Elim H'0; Auto with sets arith.
-Intros A H'0 H'1 x H'2; Try Assumption.
-Elim H'1; Intros x0 H'3; Clear H'1.
-Elim le_total_order.
-Simpl.
-Intro H'1; Try Assumption.
-LApply H'1; [Intro H'4; Idtac | Try Assumption]; Auto with sets arith.
-Generalize (H'4 x0 x).
-Clear H'4.
-Clear H'1.
-Intro H'1; LApply H'1;
- [Intro H'4; Elim H'4;
-   [Intro H'5; Try Exact H'5; Clear H'4 H'1 | Intro H'5; Clear H'4 H'1] |
-   Clear H'1].
-Exists x.
-Apply Upper_Bound_definition; Auto with sets arith; Simpl.
-Intros y H'1; Elim H'1.
-Generalize le_trans.
-Intro H'4; Red in H'4.
-Intros x1 H'6; Try Assumption.
-Apply H'4 with y := x0; Auto with sets arith.
-Elim H'3; Simpl; Auto with sets arith.
-Intros x1 H'4; Elim H'4; Auto with sets arith.
-Exists x0.
-Apply Upper_Bound_definition; Auto with sets arith; Simpl.
-Intros y H'1; Elim H'1.
-Intros x1 H'4; Try Assumption.
-Elim H'3; Simpl; Auto with sets arith.
-Intros x1 H'4; Elim H'4; Auto with sets arith.
-Red.
-Intros x1 H'1; Elim H'1; Auto with sets arith.
-Qed.
-
-Lemma Integers_has_no_ub: ~ (EXT m:nat | (Upper_Bound nat nat_po Integers m)).
-Proof.
-Red; Intro H'; Elim H'.
-Intros x H'0.
-Elim H'0; Intros H'1 H'2.
-Cut (In nat Integers (S x)).
-Intro H'3.
-Specialize 1 H'2 with y := (S x); Intro H'4; LApply H'4;
- [Intro H'5; Clear H'4 | Try Assumption; Clear H'4].
-Simpl in H'5.
-Absurd (le (S x) x); Auto with arith.
-Auto with sets arith.
+intros X H'; elim H'.
+exists 0.
+apply Upper_Bound_definition; auto with sets arith.
+intros y H'0; elim H'0; auto with sets arith.
+intros A H'0 H'1 x H'2; try assumption.
+elim H'1; intros x0 H'3; clear H'1.
+elim le_total_order.
+simpl in |- *.
+intro H'1; try assumption.
+lapply H'1; [ intro H'4; idtac | try assumption ]; auto with sets arith.
+generalize (H'4 x0 x).
+clear H'4.
+clear H'1.
+intro H'1; lapply H'1;
+ [ intro H'4; elim H'4;
+    [ intro H'5; try exact H'5; clear H'4 H'1 | intro H'5; clear H'4 H'1 ]
+ | clear H'1 ].
+exists x.
+apply Upper_Bound_definition; auto with sets arith; simpl in |- *.
+intros y H'1; elim H'1.
+generalize le_trans.
+intro H'4; red in H'4.
+intros x1 H'6; try assumption.
+apply H'4 with (y := x0); auto with sets arith.
+elim H'3; simpl in |- *; auto with sets arith.
+intros x1 H'4; elim H'4; auto with sets arith.
+exists x0.
+apply Upper_Bound_definition; auto with sets arith; simpl in |- *.
+intros y H'1; elim H'1.
+intros x1 H'4; try assumption.
+elim H'3; simpl in |- *; auto with sets arith.
+intros x1 H'4; elim H'4; auto with sets arith.
+red in |- *.
+intros x1 H'1; elim H'1; auto with sets arith.
 Qed.
 
-Lemma Integers_infinite: ~ (Finite nat Integers).
+Lemma Integers_has_no_ub :
+ ~ ( exists m : nat | Upper_Bound nat nat_po Integers m).
 Proof.
-Generalize Integers_has_no_ub.
-Intro H'; Red; Intro H'0; Try Exact H'0.
-Apply H'.
-Apply Finite_subset_has_lub; Auto with sets arith.
+red in |- *; intro H'; elim H'.
+intros x H'0.
+elim H'0; intros H'1 H'2.
+cut (In nat Integers (S x)).
+intro H'3.
+specialize  1H'2 with (y := S x); intro H'4; lapply H'4;
+ [ intro H'5; clear H'4 | try assumption; clear H'4 ].
+simpl in H'5.
+absurd (S x <= x); auto with arith.
+auto with sets arith.
+Qed.
+
+Lemma Integers_infinite : ~ Finite nat Integers.
+Proof.
+generalize Integers_has_no_ub.
+intro H'; red in |- *; intro H'0; try exact H'0.
+apply H'.
+apply Finite_subset_has_lub; auto with sets arith.
 Qed.
 
 End Integers_sect.
-
 
 
 

@@ -8,12 +8,12 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require Rseries.
-Require SeqProp.
-Require PartSum.
-Require Max.
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import Rseries.
+Require Import SeqProp.
+Require Import PartSum.
+Require Import Max.
 
 Open Local Scope R_scope.
 
@@ -21,529 +21,706 @@ Open Local Scope R_scope.
 (* Various versions of the criterion of D'Alembert *)
 (***************************************************)
 
-Lemma Alembert_C1 : (An:nat->R) ((n:nat)``0<(An n)``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) R0) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intros An H H0.
-Cut (sigTT R [l:R](is_lub (EUn [N:nat](sum_f_R0 An N)) l)) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intro; Apply X.
-Apply complet.
-Unfold Un_cv in H0; Unfold bound; Cut ``0</2``; [Intro | Apply Rlt_Rinv; Sup0].
-Elim (H0 ``/2`` H1); Intros.
-Exists ``(sum_f_R0 An x)+2*(An (S x))``.
-Unfold is_upper_bound; Intros; Unfold EUn in H3; Elim H3; Intros.
-Rewrite H4; Assert H5 := (lt_eq_lt_dec x1 x).
-Elim H5; Intros.
-Elim a; Intro.
-Replace (sum_f_R0 An x) with (Rplus (sum_f_R0 An x1) (sum_f_R0 [i:nat](An (plus (S x1) i)) (minus x (S x1)))).
-Pattern 1 (sum_f_R0 An x1); Rewrite <- Rplus_Or; Rewrite Rplus_assoc; Apply Rle_compatibility.
-Left; Apply gt0_plus_gt0_is_gt0.
-Apply tech1; Intros; Apply H.
-Apply Rmult_lt_pos; [Sup0 | Apply H].
-Symmetry; Apply tech2; Assumption.
-Rewrite b; Pattern 1 (sum_f_R0 An x); Rewrite <- Rplus_Or; Apply Rle_compatibility.
-Left; Apply Rmult_lt_pos; [Sup0 | Apply H].
-Replace (sum_f_R0 An x1) with (Rplus (sum_f_R0 An x) (sum_f_R0 [i:nat](An (plus (S x) i)) (minus x1 (S x)))).
-Apply Rle_compatibility.
-Cut (Rle (sum_f_R0 [i:nat](An (plus (S x) i)) (minus x1 (S x))) (Rmult (An (S x)) (sum_f_R0 [i:nat](pow ``/2`` i) (minus x1 (S x))))).
-Intro; Apply Rle_trans with (Rmult (An (S x)) (sum_f_R0 [i:nat](pow ``/2`` i) (minus x1 (S x)))).
-Assumption.
-Rewrite <- (Rmult_sym (An (S x))); Apply Rle_monotony.
-Left; Apply H.
-Rewrite tech3.
-Replace ``1-/2`` with ``/2``.
-Unfold Rdiv; Rewrite Rinv_Rinv.
-Pattern 3 ``2``; Rewrite <- Rmult_1r; Rewrite <- (Rmult_sym ``2``); Apply Rle_monotony.
-Left; Sup0.
-Left; Apply Rlt_anti_compatibility with ``(pow (/2) (S (minus x1 (S x))))``.
-Replace ``(pow (/2) (S (minus x1 (S x))))+(1-(pow (/2) (S (minus x1 (S x)))))`` with R1; [Idtac | Ring].
-Rewrite <- (Rplus_sym ``1``); Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility.
-Apply pow_lt; Apply Rlt_Rinv; Sup0.
-DiscrR.
-Apply r_Rmult_mult with ``2``.
-Rewrite Rminus_distr; Rewrite <- Rinv_r_sym.
-Ring.
-DiscrR.
-DiscrR.
-Pattern 3 R1; Replace R1 with ``/1``; [Apply tech7; DiscrR | Apply Rinv_R1].
-Replace (An (S x)) with (An (plus (S x) O)).
-Apply (tech6 [i:nat](An (plus (S x) i)) ``/2``).
-Left; Apply Rlt_Rinv; Sup0.
-Intro; Cut (n:nat)(ge n x)->``(An (S n))</2*(An n)``.
-Intro; Replace (plus (S x) (S i)) with (S (plus (S x) i)).
-Apply H6; Unfold ge; Apply tech8.
-Apply INR_eq; Rewrite S_INR; Do 2 Rewrite plus_INR; Do 2 Rewrite S_INR; Ring.
-Intros; Unfold R_dist in H2; Apply Rlt_monotony_contra with ``/(An n)``.
-Apply Rlt_Rinv; Apply H.
-Do 2 Rewrite (Rmult_sym ``/(An n)``); Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1r; Replace ``(An (S n))*/(An n)`` with ``(Rabsolu ((Rabsolu ((An (S n))/(An n)))-0))``.
-Apply H2; Assumption.
-Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Rewrite Rabsolu_right.
-Unfold Rdiv; Reflexivity.
-Left; Unfold Rdiv; Change ``0<(An (S n))*/(An n)``; Apply Rmult_lt_pos; [Apply H | Apply Rlt_Rinv; Apply H].
-Red; Intro; Assert H8 := (H n); Rewrite H7 in H8; Elim (Rlt_antirefl ? H8).
-Replace (plus (S x) O) with (S x); [Reflexivity | Ring].
-Symmetry; Apply tech2; Assumption.
-Exists (sum_f_R0 An O); Unfold EUn; Exists O; Reflexivity.
-Intro; Elim X; Intros.
-Apply Specif.existT with x; Apply tech10; [Unfold Un_growing; Intro; Rewrite tech5; Pattern 1 (sum_f_R0 An n); Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Apply H | Apply p].
+Lemma Alembert_C1 :
+ forall An:nat -> R,
+   (forall n:nat, 0 < An n) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
+   sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+intros An H H0.
+cut
+ (sigT (fun l:R => is_lub (EUn (fun N:nat => sum_f_R0 An N)) l) ->
+  sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
+intro; apply X.
+apply completeness.
+unfold Un_cv in H0; unfold bound in |- *; cut (0 < / 2);
+ [ intro | apply Rinv_0_lt_compat; prove_sup0 ].
+elim (H0 (/ 2) H1); intros.
+exists (sum_f_R0 An x + 2 * An (S x)).
+unfold is_upper_bound in |- *; intros; unfold EUn in H3; elim H3; intros.
+rewrite H4; assert (H5 := lt_eq_lt_dec x1 x).
+elim H5; intros.
+elim a; intro.
+replace (sum_f_R0 An x) with
+ (sum_f_R0 An x1 + sum_f_R0 (fun i:nat => An (S x1 + i)%nat) (x - S x1)).
+pattern (sum_f_R0 An x1) at 1 in |- *; rewrite <- Rplus_0_r;
+ rewrite Rplus_assoc; apply Rplus_le_compat_l.
+left; apply Rplus_lt_0_compat.
+apply tech1; intros; apply H.
+apply Rmult_lt_0_compat; [ prove_sup0 | apply H ].
+symmetry  in |- *; apply tech2; assumption.
+rewrite b; pattern (sum_f_R0 An x) at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_le_compat_l.
+left; apply Rmult_lt_0_compat; [ prove_sup0 | apply H ].
+replace (sum_f_R0 An x1) with
+ (sum_f_R0 An x + sum_f_R0 (fun i:nat => An (S x + i)%nat) (x1 - S x)).
+apply Rplus_le_compat_l.
+cut
+ (sum_f_R0 (fun i:nat => An (S x + i)%nat) (x1 - S x) <=
+  An (S x) * sum_f_R0 (fun i:nat => (/ 2) ^ i) (x1 - S x)).
+intro;
+ apply Rle_trans with
+  (An (S x) * sum_f_R0 (fun i:nat => (/ 2) ^ i) (x1 - S x)).
+assumption.
+rewrite <- (Rmult_comm (An (S x))); apply Rmult_le_compat_l.
+left; apply H.
+rewrite tech3.
+replace (1 - / 2) with (/ 2).
+unfold Rdiv in |- *; rewrite Rinv_involutive.
+pattern 2 at 3 in |- *; rewrite <- Rmult_1_r; rewrite <- (Rmult_comm 2);
+ apply Rmult_le_compat_l.
+left; prove_sup0.
+left; apply Rplus_lt_reg_r with ((/ 2) ^ S (x1 - S x)).
+replace ((/ 2) ^ S (x1 - S x) + (1 - (/ 2) ^ S (x1 - S x))) with 1;
+ [ idtac | ring ].
+rewrite <- (Rplus_comm 1); pattern 1 at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_lt_compat_l.
+apply pow_lt; apply Rinv_0_lt_compat; prove_sup0.
+discrR.
+apply Rmult_eq_reg_l with 2.
+rewrite Rmult_minus_distr_l; rewrite <- Rinv_r_sym.
+ring.
+discrR.
+discrR.
+pattern 1 at 3 in |- *; replace 1 with (/ 1);
+ [ apply tech7; discrR | apply Rinv_1 ].
+replace (An (S x)) with (An (S x + 0)%nat).
+apply (tech6 (fun i:nat => An (S x + i)%nat) (/ 2)).
+left; apply Rinv_0_lt_compat; prove_sup0.
+intro; cut (forall n:nat, (n >= x)%nat -> An (S n) < / 2 * An n).
+intro; replace (S x + S i)%nat with (S (S x + i)).
+apply H6; unfold ge in |- *; apply tech8.
+apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
+intros; unfold R_dist in H2; apply Rmult_lt_reg_l with (/ An n).
+apply Rinv_0_lt_compat; apply H.
+do 2 rewrite (Rmult_comm (/ An n)); rewrite Rmult_assoc;
+ rewrite <- Rinv_r_sym.
+rewrite Rmult_1_r;
+ replace (An (S n) * / An n) with (Rabs (Rabs (An (S n) / An n) - 0)).
+apply H2; assumption.
+unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r;
+ rewrite Rabs_Rabsolu; rewrite Rabs_right.
+unfold Rdiv in |- *; reflexivity.
+left; unfold Rdiv in |- *; change (0 < An (S n) * / An n) in |- *;
+ apply Rmult_lt_0_compat; [ apply H | apply Rinv_0_lt_compat; apply H ].
+red in |- *; intro; assert (H8 := H n); rewrite H7 in H8;
+ elim (Rlt_irrefl _ H8).
+replace (S x + 0)%nat with (S x); [ reflexivity | ring ].
+symmetry  in |- *; apply tech2; assumption.
+exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
+intro; elim X; intros.
+apply existT with x; apply tech10;
+ [ unfold Un_growing in |- *; intro; rewrite tech5;
+    pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
+    apply Rplus_le_compat_l; left; apply H
+ | apply p ].
 Qed.
 
-Lemma Alembert_C2 : (An:nat->R) ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) R0) -> (SigT R  [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intros.
-Pose Vn := [i:nat]``(2*(Rabsolu (An i))+(An i))/2``.
-Pose Wn := [i:nat]``(2*(Rabsolu (An i))-(An i))/2``.
-Cut (n:nat)``0<(Vn n)``.
-Intro; Cut (n:nat)``0<(Wn n)``.
-Intro; Cut (Un_cv [n:nat](Rabsolu ``(Vn (S n))/(Vn n)``) ``0``).
-Intro; Cut (Un_cv [n:nat](Rabsolu ``(Wn (S n))/(Wn n)``) ``0``).
-Intro; Assert H5 := (Alembert_C1 Vn H1 H3).
-Assert H6 := (Alembert_C1 Wn H2 H4).
-Elim H5; Intros.
-Elim H6; Intros.
-Apply Specif.existT with ``x-x0``; Unfold Un_cv; Unfold Un_cv in p; Unfold Un_cv in p0; Intros; Cut ``0<eps/2``.
-Intro; Elim (p ``eps/2`` H8); Clear p; Intros.
-Elim (p0 ``eps/2`` H8); Clear p0; Intros.
-Pose N := (max x1 x2).
-Exists N; Intros; Replace (sum_f_R0 An n) with (Rminus (sum_f_R0 Vn n) (sum_f_R0 Wn n)).
-Unfold R_dist; Replace (Rminus (Rminus (sum_f_R0 Vn n) (sum_f_R0 Wn n)) (Rminus x x0)) with (Rplus (Rminus (sum_f_R0 Vn n) x) (Ropp (Rminus (sum_f_R0 Wn n) x0))); [Idtac | Ring]; Apply Rle_lt_trans with (Rplus (Rabsolu (Rminus (sum_f_R0 Vn n) x)) (Rabsolu (Ropp (Rminus (sum_f_R0 Wn n) x0)))).
-Apply Rabsolu_triang.
-Rewrite Rabsolu_Ropp; Apply Rlt_le_trans with ``eps/2+eps/2``.
-Apply Rplus_lt.
-Unfold R_dist in H9; Apply H9; Unfold ge; Apply le_trans with N; [Unfold N; Apply le_max_l | Assumption].
-Unfold R_dist in H10; Apply H10; Unfold ge; Apply le_trans with N; [Unfold N; Apply le_max_r | Assumption].
-Right; Symmetry; Apply double_var.
-Symmetry; Apply tech11; Intro; Unfold Vn Wn; Unfold Rdiv; Do 2 Rewrite <- (Rmult_sym ``/2``); Apply r_Rmult_mult with ``2``.
-Rewrite Rminus_distr; Repeat Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Ring.
-DiscrR.
-DiscrR.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
-Cut (n:nat)``/2*(Rabsolu (An n))<=(Wn n)<=(3*/2)*(Rabsolu (An n))``.
-Intro; Cut (n:nat)``/(Wn n)<=2*/(Rabsolu (An n))``.
-Intro; Cut (n:nat)``(Wn (S n))/(Wn n)<=3*(Rabsolu (An (S n))/(An n))``.
-Intro; Unfold Un_cv; Intros; Unfold Un_cv in H0; Cut ``0<eps/3``.
-Intro; Elim (H0 ``eps/3`` H8); Intros.
-Exists x; Intros.
-Assert H11 := (H9 n H10).
-Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Unfold R_dist in H11; Unfold Rminus in H11; Rewrite Ropp_O in H11; Rewrite Rplus_Or in H11; Rewrite Rabsolu_Rabsolu in H11; Rewrite Rabsolu_right.
-Apply Rle_lt_trans with ``3*(Rabsolu ((An (S n))/(An n)))``.
-Apply H6.
-Apply Rlt_monotony_contra with ``/3``.
-Apply Rlt_Rinv; Sup0.
-Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR]; Rewrite Rmult_1l; Rewrite <- (Rmult_sym eps); Unfold Rdiv in H11; Exact H11.
-Left; Change ``0<(Wn (S n))/(Wn n)``; Unfold Rdiv; Apply Rmult_lt_pos.
-Apply H2.
-Apply Rlt_Rinv; Apply H2.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
-Intro; Unfold Rdiv; Rewrite Rabsolu_mult; Rewrite <- Rmult_assoc; Replace ``3`` with ``2*(3*/2)``; [Idtac | Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m; DiscrR]; Apply Rle_trans with ``(Wn (S n))*2*/(Rabsolu (An n))``.
-Rewrite Rmult_assoc; Apply Rle_monotony.
-Left; Apply H2.
-Apply H5.
-Rewrite Rabsolu_Rinv.
-Replace ``(Wn (S n))*2*/(Rabsolu (An n))`` with ``(2*/(Rabsolu (An n)))*(Wn (S n))``; [Idtac | Ring]; Replace ``2*(3*/2)*(Rabsolu (An (S n)))*/(Rabsolu (An n))`` with ``(2*/(Rabsolu (An n)))*((3*/2)*(Rabsolu (An (S n))))``; [Idtac | Ring]; Apply Rle_monotony.
-Left; Apply Rmult_lt_pos.
-Sup0.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Apply H.
-Elim (H4 (S n)); Intros; Assumption.
-Apply H.
-Intro; Apply Rle_monotony_contra with (Wn n).
-Apply H2.
-Rewrite <- Rinv_r_sym.
-Apply Rle_monotony_contra with (Rabsolu (An n)).
-Apply Rabsolu_pos_lt; Apply H.
-Rewrite Rmult_1r; Replace ``(Rabsolu (An n))*((Wn n)*(2*/(Rabsolu (An n))))`` with ``2*(Wn n)*((Rabsolu (An n))*/(Rabsolu (An n)))``; [Idtac | Ring]; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1r; Apply Rle_monotony_contra with ``/2``.
-Apply Rlt_Rinv; Sup0.
-Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Elim (H4 n); Intros; Assumption.
-DiscrR.
-Apply Rabsolu_no_R0; Apply H.
-Red; Intro; Assert H6 := (H2 n); Rewrite H5 in H6; Elim (Rlt_antirefl ? H6).
-Intro; Split.
-Unfold Wn; Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Apply Rle_monotony.
-Left; Apply Rlt_Rinv; Sup0.
-Pattern 1 (Rabsolu (An n)); Rewrite <- Rplus_Or; Rewrite double; Unfold Rminus; Rewrite Rplus_assoc; Apply Rle_compatibility.
-Apply Rle_anti_compatibility with (An n).
-Rewrite Rplus_Or; Rewrite (Rplus_sym (An n)); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Apply Rle_Rabsolu.
-Unfold Wn; Unfold Rdiv; Repeat Rewrite <- (Rmult_sym ``/2``); Repeat Rewrite Rmult_assoc; Apply Rle_monotony.
-Left; Apply Rlt_Rinv; Sup0.
-Unfold Rminus; Rewrite double; Replace ``3*(Rabsolu (An n))`` with ``(Rabsolu (An n))+(Rabsolu (An n))+(Rabsolu (An n))``; [Idtac | Ring]; Repeat Rewrite Rplus_assoc; Repeat Apply Rle_compatibility.
-Rewrite <- Rabsolu_Ropp; Apply Rle_Rabsolu.
-Cut (n:nat)``/2*(Rabsolu (An n))<=(Vn n)<=(3*/2)*(Rabsolu (An n))``.
-Intro; Cut (n:nat)``/(Vn n)<=2*/(Rabsolu (An n))``.
-Intro; Cut (n:nat)``(Vn (S n))/(Vn n)<=3*(Rabsolu (An (S n))/(An n))``.
-Intro; Unfold Un_cv; Intros; Unfold Un_cv in H1; Cut ``0<eps/3``.
-Intro; Elim (H0 ``eps/3`` H7); Intros.
-Exists x; Intros.
-Assert H10 := (H8 n H9).
-Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Unfold R_dist in H10; Unfold Rminus in H10; Rewrite Ropp_O in H10; Rewrite Rplus_Or in H10; Rewrite Rabsolu_Rabsolu in H10; Rewrite Rabsolu_right.
-Apply Rle_lt_trans with ``3*(Rabsolu ((An (S n))/(An n)))``.
-Apply H5.
-Apply Rlt_monotony_contra with ``/3``.
-Apply Rlt_Rinv; Sup0.
-Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR]; Rewrite Rmult_1l; Rewrite <- (Rmult_sym eps); Unfold Rdiv in H10; Exact H10.
-Left; Change ``0<(Vn (S n))/(Vn n)``; Unfold Rdiv; Apply Rmult_lt_pos.
-Apply H1.
-Apply Rlt_Rinv; Apply H1.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
-Intro; Unfold Rdiv; Rewrite Rabsolu_mult; Rewrite <- Rmult_assoc; Replace ``3`` with ``2*(3*/2)``; [Idtac | Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m; DiscrR]; Apply Rle_trans with ``(Vn (S n))*2*/(Rabsolu (An n))``.
-Rewrite Rmult_assoc; Apply Rle_monotony.
-Left; Apply H1.
-Apply H4.
-Rewrite Rabsolu_Rinv.
-Replace ``(Vn (S n))*2*/(Rabsolu (An n))`` with ``(2*/(Rabsolu (An n)))*(Vn (S n))``; [Idtac | Ring]; Replace ``2*(3*/2)*(Rabsolu (An (S n)))*/(Rabsolu (An n))`` with ``(2*/(Rabsolu (An n)))*((3*/2)*(Rabsolu (An (S n))))``; [Idtac | Ring]; Apply Rle_monotony.
-Left; Apply Rmult_lt_pos.
-Sup0.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Apply H.
-Elim (H3 (S n)); Intros; Assumption.
-Apply H.
-Intro; Apply Rle_monotony_contra with (Vn n).
-Apply H1.
-Rewrite <- Rinv_r_sym.
-Apply Rle_monotony_contra with (Rabsolu (An n)).
-Apply Rabsolu_pos_lt; Apply H.
-Rewrite Rmult_1r; Replace ``(Rabsolu (An n))*((Vn n)*(2*/(Rabsolu (An n))))`` with ``2*(Vn n)*((Rabsolu (An n))*/(Rabsolu (An n)))``; [Idtac | Ring]; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1r; Apply Rle_monotony_contra with ``/2``.
-Apply Rlt_Rinv; Sup0.
-Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Elim (H3 n); Intros; Assumption.
-DiscrR.
-Apply Rabsolu_no_R0; Apply H.
-Red; Intro; Assert H5 := (H1 n); Rewrite H4 in H5; Elim (Rlt_antirefl ? H5).
-Intro; Split.
-Unfold Vn; Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Apply Rle_monotony.
-Left; Apply Rlt_Rinv; Sup0.
-Pattern 1 (Rabsolu (An n)); Rewrite <- Rplus_Or; Rewrite double; Rewrite Rplus_assoc; Apply Rle_compatibility.
-Apply Rle_anti_compatibility with ``-(An n)``; Rewrite Rplus_Or; Rewrite <- (Rplus_sym (An n)); Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Rewrite <- Rabsolu_Ropp; Apply Rle_Rabsolu.
-Unfold Vn; Unfold Rdiv; Repeat Rewrite <- (Rmult_sym ``/2``); Repeat Rewrite Rmult_assoc; Apply Rle_monotony.
-Left; Apply Rlt_Rinv; Sup0.
-Unfold Rminus; Rewrite double; Replace ``3*(Rabsolu (An n))`` with ``(Rabsolu (An n))+(Rabsolu (An n))+(Rabsolu (An n))``; [Idtac | Ring]; Repeat Rewrite Rplus_assoc; Repeat Apply Rle_compatibility; Apply Rle_Rabsolu.
-Intro; Unfold Wn; Unfold Rdiv; Rewrite <- (Rmult_Or ``/2``); Rewrite <- (Rmult_sym ``/2``); Apply Rlt_monotony.
-Apply Rlt_Rinv; Sup0.
-Apply Rlt_anti_compatibility with (An n); Rewrite Rplus_Or; Unfold Rminus; Rewrite (Rplus_sym (An n)); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Apply Rle_lt_trans with (Rabsolu (An n)).
-Apply Rle_Rabsolu.
-Rewrite double; Pattern 1 (Rabsolu (An n)); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rabsolu_pos_lt; Apply H.
-Intro; Unfold Vn; Unfold Rdiv; Rewrite <- (Rmult_Or ``/2``); Rewrite <- (Rmult_sym ``/2``); Apply Rlt_monotony.
-Apply Rlt_Rinv; Sup0.
-Apply Rlt_anti_compatibility with ``-(An n)``; Rewrite Rplus_Or; Unfold Rminus; Rewrite (Rplus_sym ``-(An n)``); Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Apply Rle_lt_trans with (Rabsolu (An n)).
-Rewrite <- Rabsolu_Ropp; Apply Rle_Rabsolu.
-Rewrite double; Pattern 1 (Rabsolu (An n)); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rabsolu_pos_lt; Apply H.
+Lemma Alembert_C2 :
+ forall An:nat -> R,
+   (forall n:nat, An n <> 0) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
+   sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+intros.
+pose (Vn := fun i:nat => (2 * Rabs (An i) + An i) / 2).
+pose (Wn := fun i:nat => (2 * Rabs (An i) - An i) / 2).
+cut (forall n:nat, 0 < Vn n).
+intro; cut (forall n:nat, 0 < Wn n).
+intro; cut (Un_cv (fun n:nat => Rabs (Vn (S n) / Vn n)) 0).
+intro; cut (Un_cv (fun n:nat => Rabs (Wn (S n) / Wn n)) 0).
+intro; assert (H5 := Alembert_C1 Vn H1 H3).
+assert (H6 := Alembert_C1 Wn H2 H4).
+elim H5; intros.
+elim H6; intros.
+apply existT with (x - x0); unfold Un_cv in |- *; unfold Un_cv in p;
+ unfold Un_cv in p0; intros; cut (0 < eps / 2).
+intro; elim (p (eps / 2) H8); clear p; intros.
+elim (p0 (eps / 2) H8); clear p0; intros.
+pose (N := max x1 x2).
+exists N; intros;
+ replace (sum_f_R0 An n) with (sum_f_R0 Vn n - sum_f_R0 Wn n).
+unfold R_dist in |- *;
+ replace (sum_f_R0 Vn n - sum_f_R0 Wn n - (x - x0)) with
+  (sum_f_R0 Vn n - x + - (sum_f_R0 Wn n - x0)); [ idtac | ring ];
+ apply Rle_lt_trans with
+  (Rabs (sum_f_R0 Vn n - x) + Rabs (- (sum_f_R0 Wn n - x0))).
+apply Rabs_triang.
+rewrite Rabs_Ropp; apply Rlt_le_trans with (eps / 2 + eps / 2).
+apply Rplus_lt_compat.
+unfold R_dist in H9; apply H9; unfold ge in |- *; apply le_trans with N;
+ [ unfold N in |- *; apply le_max_l | assumption ].
+unfold R_dist in H10; apply H10; unfold ge in |- *; apply le_trans with N;
+ [ unfold N in |- *; apply le_max_r | assumption ].
+right; symmetry  in |- *; apply double_var.
+symmetry  in |- *; apply tech11; intro; unfold Vn, Wn in |- *;
+ unfold Rdiv in |- *; do 2 rewrite <- (Rmult_comm (/ 2));
+ apply Rmult_eq_reg_l with 2.
+rewrite Rmult_minus_distr_l; repeat rewrite <- Rmult_assoc;
+ rewrite <- Rinv_r_sym.
+ring.
+discrR.
+discrR.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
+cut (forall n:nat, / 2 * Rabs (An n) <= Wn n <= 3 * / 2 * Rabs (An n)).
+intro; cut (forall n:nat, / Wn n <= 2 * / Rabs (An n)).
+intro; cut (forall n:nat, Wn (S n) / Wn n <= 3 * Rabs (An (S n) / An n)).
+intro; unfold Un_cv in |- *; intros; unfold Un_cv in H0; cut (0 < eps / 3).
+intro; elim (H0 (eps / 3) H8); intros.
+exists x; intros.
+assert (H11 := H9 n H10).
+unfold R_dist in |- *; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold R_dist in H11;
+ unfold Rminus in H11; rewrite Ropp_0 in H11; rewrite Rplus_0_r in H11;
+ rewrite Rabs_Rabsolu in H11; rewrite Rabs_right.
+apply Rle_lt_trans with (3 * Rabs (An (S n) / An n)).
+apply H6.
+apply Rmult_lt_reg_l with (/ 3).
+apply Rinv_0_lt_compat; prove_sup0.
+rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ];
+ rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H11;
+ exact H11.
+left; change (0 < Wn (S n) / Wn n) in |- *; unfold Rdiv in |- *;
+ apply Rmult_lt_0_compat.
+apply H2.
+apply Rinv_0_lt_compat; apply H2.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
+intro; unfold Rdiv in |- *; rewrite Rabs_mult; rewrite <- Rmult_assoc;
+ replace 3 with (2 * (3 * / 2));
+ [ idtac | rewrite <- Rmult_assoc; apply Rinv_r_simpl_m; discrR ];
+ apply Rle_trans with (Wn (S n) * 2 * / Rabs (An n)).
+rewrite Rmult_assoc; apply Rmult_le_compat_l.
+left; apply H2.
+apply H5.
+rewrite Rabs_Rinv.
+replace (Wn (S n) * 2 * / Rabs (An n)) with (2 * / Rabs (An n) * Wn (S n));
+ [ idtac | ring ];
+ replace (2 * (3 * / 2) * Rabs (An (S n)) * / Rabs (An n)) with
+  (2 * / Rabs (An n) * (3 * / 2 * Rabs (An (S n)))); 
+ [ idtac | ring ]; apply Rmult_le_compat_l.
+left; apply Rmult_lt_0_compat.
+prove_sup0.
+apply Rinv_0_lt_compat; apply Rabs_pos_lt; apply H.
+elim (H4 (S n)); intros; assumption.
+apply H.
+intro; apply Rmult_le_reg_l with (Wn n).
+apply H2.
+rewrite <- Rinv_r_sym.
+apply Rmult_le_reg_l with (Rabs (An n)).
+apply Rabs_pos_lt; apply H.
+rewrite Rmult_1_r;
+ replace (Rabs (An n) * (Wn n * (2 * / Rabs (An n)))) with
+  (2 * Wn n * (Rabs (An n) * / Rabs (An n))); [ idtac | ring ];
+ rewrite <- Rinv_r_sym.
+rewrite Rmult_1_r; apply Rmult_le_reg_l with (/ 2).
+apply Rinv_0_lt_compat; prove_sup0.
+rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l; elim (H4 n); intros; assumption.
+discrR.
+apply Rabs_no_R0; apply H.
+red in |- *; intro; assert (H6 := H2 n); rewrite H5 in H6;
+ elim (Rlt_irrefl _ H6).
+intro; split.
+unfold Wn in |- *; unfold Rdiv in |- *; rewrite <- (Rmult_comm (/ 2));
+ apply Rmult_le_compat_l.
+left; apply Rinv_0_lt_compat; prove_sup0.
+pattern (Rabs (An n)) at 1 in |- *; rewrite <- Rplus_0_r; rewrite double;
+ unfold Rminus in |- *; rewrite Rplus_assoc; apply Rplus_le_compat_l.
+apply Rplus_le_reg_l with (An n).
+rewrite Rplus_0_r; rewrite (Rplus_comm (An n)); rewrite Rplus_assoc;
+ rewrite Rplus_opp_l; rewrite Rplus_0_r; apply RRle_abs.
+unfold Wn in |- *; unfold Rdiv in |- *; repeat rewrite <- (Rmult_comm (/ 2));
+ repeat rewrite Rmult_assoc; apply Rmult_le_compat_l.
+left; apply Rinv_0_lt_compat; prove_sup0.
+unfold Rminus in |- *; rewrite double;
+ replace (3 * Rabs (An n)) with (Rabs (An n) + Rabs (An n) + Rabs (An n));
+ [ idtac | ring ]; repeat rewrite Rplus_assoc; repeat apply Rplus_le_compat_l.
+rewrite <- Rabs_Ropp; apply RRle_abs.
+cut (forall n:nat, / 2 * Rabs (An n) <= Vn n <= 3 * / 2 * Rabs (An n)).
+intro; cut (forall n:nat, / Vn n <= 2 * / Rabs (An n)).
+intro; cut (forall n:nat, Vn (S n) / Vn n <= 3 * Rabs (An (S n) / An n)).
+intro; unfold Un_cv in |- *; intros; unfold Un_cv in H1; cut (0 < eps / 3).
+intro; elim (H0 (eps / 3) H7); intros.
+exists x; intros.
+assert (H10 := H8 n H9).
+unfold R_dist in |- *; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold R_dist in H10;
+ unfold Rminus in H10; rewrite Ropp_0 in H10; rewrite Rplus_0_r in H10;
+ rewrite Rabs_Rabsolu in H10; rewrite Rabs_right.
+apply Rle_lt_trans with (3 * Rabs (An (S n) / An n)).
+apply H5.
+apply Rmult_lt_reg_l with (/ 3).
+apply Rinv_0_lt_compat; prove_sup0.
+rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ];
+ rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H10;
+ exact H10.
+left; change (0 < Vn (S n) / Vn n) in |- *; unfold Rdiv in |- *;
+ apply Rmult_lt_0_compat.
+apply H1.
+apply Rinv_0_lt_compat; apply H1.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
+intro; unfold Rdiv in |- *; rewrite Rabs_mult; rewrite <- Rmult_assoc;
+ replace 3 with (2 * (3 * / 2));
+ [ idtac | rewrite <- Rmult_assoc; apply Rinv_r_simpl_m; discrR ];
+ apply Rle_trans with (Vn (S n) * 2 * / Rabs (An n)).
+rewrite Rmult_assoc; apply Rmult_le_compat_l.
+left; apply H1.
+apply H4.
+rewrite Rabs_Rinv.
+replace (Vn (S n) * 2 * / Rabs (An n)) with (2 * / Rabs (An n) * Vn (S n));
+ [ idtac | ring ];
+ replace (2 * (3 * / 2) * Rabs (An (S n)) * / Rabs (An n)) with
+  (2 * / Rabs (An n) * (3 * / 2 * Rabs (An (S n)))); 
+ [ idtac | ring ]; apply Rmult_le_compat_l.
+left; apply Rmult_lt_0_compat.
+prove_sup0.
+apply Rinv_0_lt_compat; apply Rabs_pos_lt; apply H.
+elim (H3 (S n)); intros; assumption.
+apply H.
+intro; apply Rmult_le_reg_l with (Vn n).
+apply H1.
+rewrite <- Rinv_r_sym.
+apply Rmult_le_reg_l with (Rabs (An n)).
+apply Rabs_pos_lt; apply H.
+rewrite Rmult_1_r;
+ replace (Rabs (An n) * (Vn n * (2 * / Rabs (An n)))) with
+  (2 * Vn n * (Rabs (An n) * / Rabs (An n))); [ idtac | ring ];
+ rewrite <- Rinv_r_sym.
+rewrite Rmult_1_r; apply Rmult_le_reg_l with (/ 2).
+apply Rinv_0_lt_compat; prove_sup0.
+rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l; elim (H3 n); intros; assumption.
+discrR.
+apply Rabs_no_R0; apply H.
+red in |- *; intro; assert (H5 := H1 n); rewrite H4 in H5;
+ elim (Rlt_irrefl _ H5).
+intro; split.
+unfold Vn in |- *; unfold Rdiv in |- *; rewrite <- (Rmult_comm (/ 2));
+ apply Rmult_le_compat_l.
+left; apply Rinv_0_lt_compat; prove_sup0.
+pattern (Rabs (An n)) at 1 in |- *; rewrite <- Rplus_0_r; rewrite double;
+ rewrite Rplus_assoc; apply Rplus_le_compat_l.
+apply Rplus_le_reg_l with (- An n); rewrite Rplus_0_r;
+ rewrite <- (Rplus_comm (An n)); rewrite <- Rplus_assoc; 
+ rewrite Rplus_opp_l; rewrite Rplus_0_l; rewrite <- Rabs_Ropp; 
+ apply RRle_abs.
+unfold Vn in |- *; unfold Rdiv in |- *; repeat rewrite <- (Rmult_comm (/ 2));
+ repeat rewrite Rmult_assoc; apply Rmult_le_compat_l.
+left; apply Rinv_0_lt_compat; prove_sup0.
+unfold Rminus in |- *; rewrite double;
+ replace (3 * Rabs (An n)) with (Rabs (An n) + Rabs (An n) + Rabs (An n));
+ [ idtac | ring ]; repeat rewrite Rplus_assoc; repeat apply Rplus_le_compat_l;
+ apply RRle_abs.
+intro; unfold Wn in |- *; unfold Rdiv in |- *; rewrite <- (Rmult_0_r (/ 2));
+ rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
+apply Rinv_0_lt_compat; prove_sup0.
+apply Rplus_lt_reg_r with (An n); rewrite Rplus_0_r; unfold Rminus in |- *;
+ rewrite (Rplus_comm (An n)); rewrite Rplus_assoc; 
+ rewrite Rplus_opp_l; rewrite Rplus_0_r;
+ apply Rle_lt_trans with (Rabs (An n)).
+apply RRle_abs.
+rewrite double; pattern (Rabs (An n)) at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
+intro; unfold Vn in |- *; unfold Rdiv in |- *; rewrite <- (Rmult_0_r (/ 2));
+ rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
+apply Rinv_0_lt_compat; prove_sup0.
+apply Rplus_lt_reg_r with (- An n); rewrite Rplus_0_r; unfold Rminus in |- *;
+ rewrite (Rplus_comm (- An n)); rewrite Rplus_assoc; 
+ rewrite Rplus_opp_r; rewrite Rplus_0_r;
+ apply Rle_lt_trans with (Rabs (An n)).
+rewrite <- Rabs_Ropp; apply RRle_abs.
+rewrite double; pattern (Rabs (An n)) at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
 Qed.
 
-Lemma AlembertC3_step1 : (An:nat->R;x:R) ``x<>0`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) ``0``) -> (SigT R [l:R](Pser An x l)).
-Intros; Pose Bn := [i:nat]``(An i)*(pow x i)``.
-Cut (n:nat)``(Bn n)<>0``.
-Intro; Cut (Un_cv [n:nat](Rabsolu ``(Bn (S n))/(Bn n)``) ``0``).
-Intro; Assert H4 := (Alembert_C2 Bn H2 H3).
-Elim H4; Intros.
-Apply Specif.existT with x0; Unfold Bn in p; Apply tech12; Assumption.
-Unfold Un_cv; Intros; Unfold Un_cv in H1; Cut ``0<eps/(Rabsolu x)``.
-Intro; Elim (H1 ``eps/(Rabsolu x)`` H4); Intros.
-Exists x0; Intros; Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Unfold Bn; Replace ``((An (S n))*(pow x (S n)))/((An n)*(pow x n))`` with ``(An (S n))/(An n)*x``.
-Rewrite Rabsolu_mult; Apply Rlt_monotony_contra with ``/(Rabsolu x)``.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Assumption.
-Rewrite <- (Rmult_sym (Rabsolu x)); Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Rewrite <- (Rmult_sym eps); Unfold Rdiv in H5; Replace ``(Rabsolu ((An (S n))/(An n)))`` with ``(R_dist (Rabsolu ((An (S n))*/(An n))) 0)``.
-Apply H5; Assumption.
-Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Unfold Rdiv; Reflexivity.
-Apply Rabsolu_no_R0; Assumption.
-Replace (S n) with (plus n (1)); [Idtac | Ring]; Rewrite pow_add; Unfold Rdiv; Rewrite Rinv_Rmult.
-Replace ``(An (plus n (S O)))*((pow x n)*(pow x (S O)))*(/(An n)*/(pow x n))`` with ``(An (plus n (S O)))*(pow x (S O))*/(An n)*((pow x n)*/(pow x n))``; [Idtac | Ring]; Rewrite <- Rinv_r_sym.
-Simpl; Ring.
-Apply pow_nonzero; Assumption.
-Apply H0.
-Apply pow_nonzero; Assumption.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Assumption].
-Intro; Unfold Bn; Apply prod_neq_R0; [Apply H0 | Apply pow_nonzero; Assumption].
+Lemma AlembertC3_step1 :
+ forall (An:nat -> R) (x:R),
+   x <> 0 ->
+   (forall n:nat, An n <> 0) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
+   sigT (fun l:R => Pser An x l).
+intros; pose (Bn := fun i:nat => An i * x ^ i).
+cut (forall n:nat, Bn n <> 0).
+intro; cut (Un_cv (fun n:nat => Rabs (Bn (S n) / Bn n)) 0).
+intro; assert (H4 := Alembert_C2 Bn H2 H3).
+elim H4; intros.
+apply existT with x0; unfold Bn in p; apply tech12; assumption.
+unfold Un_cv in |- *; intros; unfold Un_cv in H1; cut (0 < eps / Rabs x).
+intro; elim (H1 (eps / Rabs x) H4); intros.
+exists x0; intros; unfold R_dist in |- *; unfold Rminus in |- *;
+ rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu; 
+ unfold Bn in |- *;
+ replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
+rewrite Rabs_mult; apply Rmult_lt_reg_l with (/ Rabs x).
+apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
+rewrite <- (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc;
+ rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H5;
+ replace (Rabs (An (S n) / An n)) with (R_dist (Rabs (An (S n) * / An n)) 0).
+apply H5; assumption.
+unfold R_dist in |- *; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold Rdiv in |- *; 
+ reflexivity.
+apply Rabs_no_R0; assumption.
+replace (S n) with (n + 1)%nat; [ idtac | ring ]; rewrite pow_add;
+ unfold Rdiv in |- *; rewrite Rinv_mult_distr.
+replace (An (n + 1)%nat * (x ^ n * x ^ 1) * (/ An n * / x ^ n)) with
+ (An (n + 1)%nat * x ^ 1 * / An n * (x ^ n * / x ^ n)); 
+ [ idtac | ring ]; rewrite <- Rinv_r_sym.
+simpl in |- *; ring.
+apply pow_nonzero; assumption.
+apply H0.
+apply pow_nonzero; assumption.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ assumption | apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption ].
+intro; unfold Bn in |- *; apply prod_neq_R0;
+ [ apply H0 | apply pow_nonzero; assumption ].
 Qed.
 
-Lemma AlembertC3_step2 : (An:nat->R;x:R) ``x==0`` -> (SigT R [l:R](Pser An x l)).
-Intros; Apply Specif.existT with (An O).
-Unfold Pser; Unfold infinit_sum; Intros; Exists O; Intros; Replace (sum_f_R0 [n0:nat]``(An n0)*(pow x n0)`` n) with (An O).
-Unfold R_dist; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
-Induction n.
-Simpl; Ring.
-Rewrite tech5; Rewrite Hrecn; [Rewrite H; Simpl; Ring | Unfold ge; Apply le_O_n].
+Lemma AlembertC3_step2 :
+ forall (An:nat -> R) (x:R), x = 0 -> sigT (fun l:R => Pser An x l).
+intros; apply existT with (An 0%nat).
+unfold Pser in |- *; unfold infinit_sum in |- *; intros; exists 0%nat; intros;
+ replace (sum_f_R0 (fun n0:nat => An n0 * x ^ n0) n) with (An 0%nat).
+unfold R_dist in |- *; unfold Rminus in |- *; rewrite Rplus_opp_r;
+ rewrite Rabs_R0; assumption.
+induction  n as [| n Hrecn].
+simpl in |- *; ring.
+rewrite tech5; rewrite Hrecn;
+ [ rewrite H; simpl in |- *; ring | unfold ge in |- *; apply le_O_n ].
 Qed.
 
 (* An useful criterion of convergence for power series *)
-Theorem Alembert_C3 : (An:nat->R;x:R) ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) ``0``) -> (SigT R [l:R](Pser An x l)).
-Intros; Case (total_order_T x R0); Intro.
-Elim s; Intro.
-Cut ``x<>0``.
-Intro; Apply AlembertC3_step1; Assumption.
-Red; Intro; Rewrite H1 in a; Elim (Rlt_antirefl ? a).
-Apply AlembertC3_step2; Assumption.
-Cut ``x<>0``.
-Intro; Apply AlembertC3_step1; Assumption.
-Red; Intro; Rewrite H1 in r; Elim (Rlt_antirefl ? r).
+Theorem Alembert_C3 :
+ forall (An:nat -> R) (x:R),
+   (forall n:nat, An n <> 0) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
+   sigT (fun l:R => Pser An x l).
+intros; case (total_order_T x 0); intro.
+elim s; intro.
+cut (x <> 0).
+intro; apply AlembertC3_step1; assumption.
+red in |- *; intro; rewrite H1 in a; elim (Rlt_irrefl _ a).
+apply AlembertC3_step2; assumption.
+cut (x <> 0).
+intro; apply AlembertC3_step1; assumption.
+red in |- *; intro; rewrite H1 in r; elim (Rlt_irrefl _ r).
 Qed.
 
-Lemma Alembert_C4 : (An:nat->R;k:R) ``0<=k<1`` -> ((n:nat)``0<(An n)``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intros An k Hyp H H0.
-Cut (sigTT R [l:R](is_lub (EUn [N:nat](sum_f_R0 An N)) l)) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intro; Apply X.
-Apply complet.
-Assert H1 := (tech13 ? ? Hyp H0).
-Elim H1; Intros.
-Elim H2; Intros.
-Elim H4; Intros.
-Unfold bound; Exists ``(sum_f_R0 An x0)+/(1-x)*(An (S x0))``.
-Unfold is_upper_bound; Intros; Unfold EUn in H6.
-Elim H6; Intros.
-Rewrite H7.
-Assert H8 := (lt_eq_lt_dec x2 x0).
-Elim H8; Intros.
-Elim a; Intro.
-Replace (sum_f_R0 An x0) with (Rplus (sum_f_R0 An x2) (sum_f_R0 [i:nat](An (plus (S x2) i)) (minus x0 (S x2)))).
-Pattern 1 (sum_f_R0 An x2); Rewrite <- Rplus_Or.
-Rewrite Rplus_assoc; Apply Rle_compatibility.
-Left; Apply gt0_plus_gt0_is_gt0.
-Apply tech1.
-Intros; Apply H.
-Apply Rmult_lt_pos.
-Apply Rlt_Rinv; Apply Rlt_anti_compatibility with x; Rewrite Rplus_Or; Replace ``x+(1-x)`` with R1; [Elim H3; Intros; Assumption | Ring].
-Apply H.
-Symmetry; Apply tech2; Assumption.
-Rewrite b; Pattern 1 (sum_f_R0 An x0); Rewrite <- Rplus_Or; Apply Rle_compatibility.
-Left; Apply Rmult_lt_pos.
-Apply Rlt_Rinv; Apply Rlt_anti_compatibility with x; Rewrite Rplus_Or; Replace ``x+(1-x)`` with R1; [Elim H3; Intros; Assumption | Ring].
-Apply H.
-Replace (sum_f_R0 An x2) with (Rplus (sum_f_R0 An x0) (sum_f_R0 [i:nat](An (plus (S x0) i)) (minus x2 (S x0)))).
-Apply Rle_compatibility.
-Cut (Rle (sum_f_R0 [i:nat](An (plus (S x0) i)) (minus x2 (S x0))) (Rmult (An (S x0)) (sum_f_R0 [i:nat](pow x i) (minus x2 (S x0))))).
-Intro; Apply Rle_trans with (Rmult (An (S x0)) (sum_f_R0 [i:nat](pow x i) (minus x2 (S x0)))).
-Assumption.
-Rewrite <- (Rmult_sym (An (S x0))); Apply Rle_monotony.
-Left; Apply H.
-Rewrite tech3.
-Unfold Rdiv; Apply Rle_monotony_contra with ``1-x``.
-Apply Rlt_anti_compatibility with x; Rewrite Rplus_Or.
-Replace ``x+(1-x)`` with R1; [Elim H3; Intros; Assumption | Ring].
-Do 2 Rewrite (Rmult_sym ``1-x``).
-Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Apply Rle_anti_compatibility with ``(pow x (S (minus x2 (S x0))))``.
-Replace ``(pow x (S (minus x2 (S x0))))+(1-(pow x (S (minus x2 (S x0)))))`` with R1; [Idtac | Ring].
-Rewrite <- (Rplus_sym R1); Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rle_compatibility.
-Left; Apply pow_lt.
-Apply Rle_lt_trans with k.
-Elim Hyp; Intros; Assumption.
-Elim H3; Intros; Assumption.
-Apply Rminus_eq_contra.
-Red; Intro.
-Elim H3; Intros.
-Rewrite H10 in H12; Elim (Rlt_antirefl ? H12).
-Red; Intro.
-Elim H3; Intros.
-Rewrite H10 in H12; Elim (Rlt_antirefl ? H12).
-Replace (An (S x0)) with (An (plus (S x0) O)).
-Apply (tech6 [i:nat](An (plus (S x0) i)) x).
-Left; Apply Rle_lt_trans with k.
-Elim Hyp; Intros; Assumption.
-Elim H3; Intros; Assumption.
-Intro.
-Cut (n:nat)(ge n x0)->``(An (S n))<x*(An n)``.
-Intro.
-Replace (plus (S x0) (S i)) with (S (plus (S x0) i)).
-Apply H9.
-Unfold ge.
-Apply tech8.
-  Apply INR_eq; Rewrite S_INR; Do 2 Rewrite plus_INR; Do 2 Rewrite S_INR; Ring.
-Intros.
-Apply Rlt_monotony_contra with ``/(An n)``.
-Apply Rlt_Rinv; Apply H.
-Do 2 Rewrite (Rmult_sym ``/(An n)``).
-Rewrite Rmult_assoc.
-Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1r.
-Replace ``(An (S n))*/(An n)`` with ``(Rabsolu ((An (S n))/(An n)))``.
-Apply H5; Assumption.
-Rewrite Rabsolu_right.
-Unfold Rdiv; Reflexivity.
-Left; Unfold Rdiv; Change ``0<(An (S n))*/(An n)``; Apply Rmult_lt_pos.
-Apply H.
-Apply Rlt_Rinv; Apply H.
-Red; Intro.
-Assert H11 := (H n).
-Rewrite H10 in H11; Elim (Rlt_antirefl ? H11).
-Replace (plus (S x0) O) with (S x0); [Reflexivity | Ring].
-Symmetry; Apply tech2; Assumption.
-Exists (sum_f_R0 An O); Unfold EUn; Exists O; Reflexivity.
-Intro; Elim X; Intros.
-Apply Specif.existT with x; Apply tech10; [Unfold Un_growing; Intro; Rewrite tech5; Pattern 1 (sum_f_R0 An n); Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Apply H | Apply p].
+Lemma Alembert_C4 :
+ forall (An:nat -> R) (k:R),
+   0 <= k < 1 ->
+   (forall n:nat, 0 < An n) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
+   sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+intros An k Hyp H H0.
+cut
+ (sigT (fun l:R => is_lub (EUn (fun N:nat => sum_f_R0 An N)) l) ->
+  sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
+intro; apply X.
+apply completeness.
+assert (H1 := tech13 _ _ Hyp H0).
+elim H1; intros.
+elim H2; intros.
+elim H4; intros.
+unfold bound in |- *; exists (sum_f_R0 An x0 + / (1 - x) * An (S x0)).
+unfold is_upper_bound in |- *; intros; unfold EUn in H6.
+elim H6; intros.
+rewrite H7.
+assert (H8 := lt_eq_lt_dec x2 x0).
+elim H8; intros.
+elim a; intro.
+replace (sum_f_R0 An x0) with
+ (sum_f_R0 An x2 + sum_f_R0 (fun i:nat => An (S x2 + i)%nat) (x0 - S x2)).
+pattern (sum_f_R0 An x2) at 1 in |- *; rewrite <- Rplus_0_r.
+rewrite Rplus_assoc; apply Rplus_le_compat_l.
+left; apply Rplus_lt_0_compat.
+apply tech1.
+intros; apply H.
+apply Rmult_lt_0_compat.
+apply Rinv_0_lt_compat; apply Rplus_lt_reg_r with x; rewrite Rplus_0_r;
+ replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
+apply H.
+symmetry  in |- *; apply tech2; assumption.
+rewrite b; pattern (sum_f_R0 An x0) at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_le_compat_l.
+left; apply Rmult_lt_0_compat.
+apply Rinv_0_lt_compat; apply Rplus_lt_reg_r with x; rewrite Rplus_0_r;
+ replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
+apply H.
+replace (sum_f_R0 An x2) with
+ (sum_f_R0 An x0 + sum_f_R0 (fun i:nat => An (S x0 + i)%nat) (x2 - S x0)).
+apply Rplus_le_compat_l.
+cut
+ (sum_f_R0 (fun i:nat => An (S x0 + i)%nat) (x2 - S x0) <=
+  An (S x0) * sum_f_R0 (fun i:nat => x ^ i) (x2 - S x0)).
+intro;
+ apply Rle_trans with (An (S x0) * sum_f_R0 (fun i:nat => x ^ i) (x2 - S x0)).
+assumption.
+rewrite <- (Rmult_comm (An (S x0))); apply Rmult_le_compat_l.
+left; apply H.
+rewrite tech3.
+unfold Rdiv in |- *; apply Rmult_le_reg_l with (1 - x).
+apply Rplus_lt_reg_r with x; rewrite Rplus_0_r.
+replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
+do 2 rewrite (Rmult_comm (1 - x)).
+rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+rewrite Rmult_1_r; apply Rplus_le_reg_l with (x ^ S (x2 - S x0)).
+replace (x ^ S (x2 - S x0) + (1 - x ^ S (x2 - S x0))) with 1;
+ [ idtac | ring ].
+rewrite <- (Rplus_comm 1); pattern 1 at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_le_compat_l.
+left; apply pow_lt.
+apply Rle_lt_trans with k.
+elim Hyp; intros; assumption.
+elim H3; intros; assumption.
+apply Rminus_eq_contra.
+red in |- *; intro.
+elim H3; intros.
+rewrite H10 in H12; elim (Rlt_irrefl _ H12).
+red in |- *; intro.
+elim H3; intros.
+rewrite H10 in H12; elim (Rlt_irrefl _ H12).
+replace (An (S x0)) with (An (S x0 + 0)%nat).
+apply (tech6 (fun i:nat => An (S x0 + i)%nat) x).
+left; apply Rle_lt_trans with k.
+elim Hyp; intros; assumption.
+elim H3; intros; assumption.
+intro.
+cut (forall n:nat, (n >= x0)%nat -> An (S n) < x * An n).
+intro.
+replace (S x0 + S i)%nat with (S (S x0 + i)).
+apply H9.
+unfold ge in |- *.
+apply tech8.
+  apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR;
+   ring.
+intros.
+apply Rmult_lt_reg_l with (/ An n).
+apply Rinv_0_lt_compat; apply H.
+do 2 rewrite (Rmult_comm (/ An n)).
+rewrite Rmult_assoc.
+rewrite <- Rinv_r_sym.
+rewrite Rmult_1_r.
+replace (An (S n) * / An n) with (Rabs (An (S n) / An n)).
+apply H5; assumption.
+rewrite Rabs_right.
+unfold Rdiv in |- *; reflexivity.
+left; unfold Rdiv in |- *; change (0 < An (S n) * / An n) in |- *;
+ apply Rmult_lt_0_compat.
+apply H.
+apply Rinv_0_lt_compat; apply H.
+red in |- *; intro.
+assert (H11 := H n).
+rewrite H10 in H11; elim (Rlt_irrefl _ H11).
+replace (S x0 + 0)%nat with (S x0); [ reflexivity | ring ].
+symmetry  in |- *; apply tech2; assumption.
+exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
+intro; elim X; intros.
+apply existT with x; apply tech10;
+ [ unfold Un_growing in |- *; intro; rewrite tech5;
+    pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
+    apply Rplus_le_compat_l; left; apply H
+ | apply p ].
 Qed.
 
-Lemma Alembert_C5 : (An:nat->R;k:R) ``0<=k<1`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intros.
-Cut (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)) -> (SigT R [l:R](Un_cv [N:nat](sum_f_R0 An N) l)).
-Intro Hyp0; Apply Hyp0.
-Apply cv_cauchy_2.
-Apply cauchy_abs.
-Apply cv_cauchy_1.
-Cut (SigT R [l:R](Un_cv [N:nat](sum_f_R0 [i:nat](Rabsolu (An i)) N) l)) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 [i:nat](Rabsolu (An i)) N) l)).
-Intro Hyp; Apply Hyp.
-Apply (Alembert_C4 [i:nat](Rabsolu (An i)) k).
-Assumption.
-Intro; Apply Rabsolu_pos_lt; Apply H0.
-Unfold Un_cv.
-Unfold Un_cv in H1.
-Unfold Rdiv.
-Intros.
-Elim (H1 eps H2); Intros.
-Exists x; Intros.
-Rewrite <- Rabsolu_Rinv.
-Rewrite <- Rabsolu_mult.
-Rewrite Rabsolu_Rabsolu.
-Unfold Rdiv in H3; Apply H3; Assumption.
-Apply H0.
-Intro.
-Elim X; Intros.
-Apply existTT with x.
-Assumption.
-Intro.
-Elim X; Intros.
-Apply Specif.existT with x.
-Assumption.
+Lemma Alembert_C5 :
+ forall (An:nat -> R) (k:R),
+   0 <= k < 1 ->
+   (forall n:nat, An n <> 0) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
+   sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+intros.
+cut
+ (sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l) ->
+  sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
+intro Hyp0; apply Hyp0.
+apply cv_cauchy_2.
+apply cauchy_abs.
+apply cv_cauchy_1.
+cut
+ (sigT
+    (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => Rabs (An i)) N) l) ->
+  sigT
+    (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => Rabs (An i)) N) l)).
+intro Hyp; apply Hyp.
+apply (Alembert_C4 (fun i:nat => Rabs (An i)) k).
+assumption.
+intro; apply Rabs_pos_lt; apply H0.
+unfold Un_cv in |- *.
+unfold Un_cv in H1.
+unfold Rdiv in |- *.
+intros.
+elim (H1 eps H2); intros.
+exists x; intros.
+rewrite <- Rabs_Rinv.
+rewrite <- Rabs_mult.
+rewrite Rabs_Rabsolu.
+unfold Rdiv in H3; apply H3; assumption.
+apply H0.
+intro.
+elim X; intros.
+apply existT with x.
+assumption.
+intro.
+elim X; intros.
+apply existT with x.
+assumption.
 Qed.
 
 (* Convergence of power series in D(O,1/k) *)
 (*     k=0 is described in Alembert_C3     *)
-Lemma Alembert_C6 : (An:nat->R;x,k:R) ``0<k`` -> ((n:nat)``(An n)<>0``) -> (Un_cv [n:nat](Rabsolu ``(An (S n))/(An n)``) k) -> ``(Rabsolu x)</k`` -> (SigT R [l:R](Pser An x l)).
-Intros.
-Cut (SigT R [l:R](Un_cv [N:nat](sum_f_R0 [i:nat]``(An i)*(pow x i)`` N) l)).
-Intro.
-Elim X; Intros.
-Apply Specif.existT with x0.
-Apply tech12; Assumption.
-Case (total_order_T x R0); Intro.
-Elim s; Intro.
-EApply Alembert_C5 with ``k*(Rabsolu x)``.
-Split.
-Unfold Rdiv; Apply Rmult_le_pos.
-Left; Assumption.
-Left; Apply Rabsolu_pos_lt.
-Red; Intro; Rewrite H3 in a; Elim (Rlt_antirefl ? a).
-Apply Rlt_monotony_contra with ``/k``.
-Apply Rlt_Rinv; Assumption.
-Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l.
-Rewrite Rmult_1r; Assumption.
-Red; Intro; Rewrite H3 in H; Elim (Rlt_antirefl ? H).
-Intro; Apply prod_neq_R0.
-Apply H0.
-Apply pow_nonzero.
-Red; Intro; Rewrite H3 in a; Elim (Rlt_antirefl ? a).
-Unfold Un_cv; Unfold Un_cv in H1.
-Intros.
-Cut ``0<eps/(Rabsolu x)``.
-Intro.
-Elim (H1 ``eps/(Rabsolu x)`` H4); Intros.
-Exists x0.
-Intros.
-Replace ``((An (S n))*(pow x (S n)))/((An n)*(pow x n))`` with ``(An (S n))/(An n)*x``.
-Unfold R_dist.
-Rewrite Rabsolu_mult.
-Replace ``(Rabsolu ((An (S n))/(An n)))*(Rabsolu x)-k*(Rabsolu x)`` with ``(Rabsolu x)*((Rabsolu ((An (S n))/(An n)))-k)``; [Idtac | Ring].
-Rewrite Rabsolu_mult.
-Rewrite Rabsolu_Rabsolu.
-Apply Rlt_monotony_contra with ``/(Rabsolu x)``.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt.
-Red; Intro; Rewrite H7 in a; Elim (Rlt_antirefl ? a).
-Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l.
-Rewrite <- (Rmult_sym eps).
-Unfold R_dist in H5.
-Unfold Rdiv; Unfold Rdiv in H5; Apply H5; Assumption.
-Apply Rabsolu_no_R0.
-Red; Intro; Rewrite H7 in a; Elim (Rlt_antirefl ? a).
-Unfold Rdiv; Replace (S n) with (plus n (1)); [Idtac | Ring].
-Rewrite pow_add.
-Simpl.
-Rewrite Rmult_1r.
-Rewrite Rinv_Rmult.
-Replace ``(An (plus n (S O)))*((pow x n)*x)*(/(An n)*/(pow x n))`` with ``(An (plus n (S O)))*/(An n)*x*((pow x n)*/(pow x n))``; [Idtac | Ring].
-Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1r; Reflexivity.
-Apply pow_nonzero.
-Red; Intro; Rewrite H7 in a; Elim (Rlt_antirefl ? a).
-Apply H0.
-Apply pow_nonzero.
-Red; Intro; Rewrite H7 in a; Elim (Rlt_antirefl ? a).
-Unfold Rdiv; Apply Rmult_lt_pos.
-Assumption.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt.
-Red; Intro H7; Rewrite H7 in a; Elim (Rlt_antirefl ? a).
-Apply Specif.existT with (An O).
-Unfold Un_cv.
-Intros.
-Exists O.
-Intros.
-Unfold R_dist.
-Replace (sum_f_R0 [i:nat]``(An i)*(pow x i)`` n) with (An O).
-Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
-Induction n.
-Simpl; Ring.
-Rewrite tech5.
-Rewrite <- Hrecn.
-Rewrite b; Simpl; Ring.
-Unfold ge; Apply le_O_n.
-EApply Alembert_C5 with ``k*(Rabsolu x)``.
-Split.
-Unfold Rdiv; Apply Rmult_le_pos.
-Left; Assumption.
-Left; Apply Rabsolu_pos_lt.
-Red; Intro; Rewrite H3 in r; Elim (Rlt_antirefl ? r).
-Apply Rlt_monotony_contra with ``/k``.
-Apply Rlt_Rinv; Assumption.
-Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l.
-Rewrite Rmult_1r; Assumption.
-Red; Intro; Rewrite H3 in H; Elim (Rlt_antirefl ? H).
-Intro; Apply prod_neq_R0.
-Apply H0.
-Apply pow_nonzero.
-Red; Intro; Rewrite H3 in r; Elim (Rlt_antirefl ? r).
-Unfold Un_cv; Unfold Un_cv in H1.
-Intros.
-Cut ``0<eps/(Rabsolu x)``.
-Intro.
-Elim (H1 ``eps/(Rabsolu x)`` H4); Intros.
-Exists x0.
-Intros.
-Replace ``((An (S n))*(pow x (S n)))/((An n)*(pow x n))`` with ``(An (S n))/(An n)*x``.
-Unfold R_dist.
-Rewrite Rabsolu_mult.
-Replace ``(Rabsolu ((An (S n))/(An n)))*(Rabsolu x)-k*(Rabsolu x)`` with ``(Rabsolu x)*((Rabsolu ((An (S n))/(An n)))-k)``; [Idtac | Ring].
-Rewrite Rabsolu_mult.
-Rewrite Rabsolu_Rabsolu.
-Apply Rlt_monotony_contra with ``/(Rabsolu x)``.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt.
-Red; Intro; Rewrite H7 in r; Elim (Rlt_antirefl ? r).
-Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l.
-Rewrite <- (Rmult_sym eps).
-Unfold R_dist in H5.
-Unfold Rdiv; Unfold Rdiv in H5; Apply H5; Assumption.
-Apply Rabsolu_no_R0.
-Red; Intro; Rewrite H7 in r; Elim (Rlt_antirefl ? r).
-Unfold Rdiv; Replace (S n) with (plus n (1)); [Idtac | Ring].
-Rewrite pow_add.
-Simpl.
-Rewrite Rmult_1r.
-Rewrite Rinv_Rmult.
-Replace ``(An (plus n (S O)))*((pow x n)*x)*(/(An n)*/(pow x n))`` with ``(An (plus n (S O)))*/(An n)*x*((pow x n)*/(pow x n))``; [Idtac | Ring].
-Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1r; Reflexivity.
-Apply pow_nonzero.
-Red; Intro; Rewrite H7 in r; Elim (Rlt_antirefl ? r).
-Apply H0.
-Apply pow_nonzero.
-Red; Intro; Rewrite H7 in r; Elim (Rlt_antirefl ? r).
-Unfold Rdiv; Apply Rmult_lt_pos.
-Assumption.
-Apply Rlt_Rinv; Apply Rabsolu_pos_lt.
-Red; Intro H7; Rewrite H7 in r; Elim (Rlt_antirefl ? r).
+Lemma Alembert_C6 :
+ forall (An:nat -> R) (x k:R),
+   0 < k ->
+   (forall n:nat, An n <> 0) ->
+   Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
+   Rabs x < / k -> sigT (fun l:R => Pser An x l).
+intros.
+cut
+ (sigT
+    (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => An i * x ^ i) N) l)).
+intro.
+elim X; intros.
+apply existT with x0.
+apply tech12; assumption.
+case (total_order_T x 0); intro.
+elim s; intro.
+eapply Alembert_C5 with (k * Rabs x).
+split.
+unfold Rdiv in |- *; apply Rmult_le_pos.
+left; assumption.
+left; apply Rabs_pos_lt.
+red in |- *; intro; rewrite H3 in a; elim (Rlt_irrefl _ a).
+apply Rmult_lt_reg_l with (/ k).
+apply Rinv_0_lt_compat; assumption.
+rewrite <- Rmult_assoc.
+rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l.
+rewrite Rmult_1_r; assumption.
+red in |- *; intro; rewrite H3 in H; elim (Rlt_irrefl _ H).
+intro; apply prod_neq_R0.
+apply H0.
+apply pow_nonzero.
+red in |- *; intro; rewrite H3 in a; elim (Rlt_irrefl _ a).
+unfold Un_cv in |- *; unfold Un_cv in H1.
+intros.
+cut (0 < eps / Rabs x).
+intro.
+elim (H1 (eps / Rabs x) H4); intros.
+exists x0.
+intros.
+replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
+unfold R_dist in |- *.
+rewrite Rabs_mult.
+replace (Rabs (An (S n) / An n) * Rabs x - k * Rabs x) with
+ (Rabs x * (Rabs (An (S n) / An n) - k)); [ idtac | ring ].
+rewrite Rabs_mult.
+rewrite Rabs_Rabsolu.
+apply Rmult_lt_reg_l with (/ Rabs x).
+apply Rinv_0_lt_compat; apply Rabs_pos_lt.
+red in |- *; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+rewrite <- Rmult_assoc.
+rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l.
+rewrite <- (Rmult_comm eps).
+unfold R_dist in H5.
+unfold Rdiv in |- *; unfold Rdiv in H5; apply H5; assumption.
+apply Rabs_no_R0.
+red in |- *; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+unfold Rdiv in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
+rewrite pow_add.
+simpl in |- *.
+rewrite Rmult_1_r.
+rewrite Rinv_mult_distr.
+replace (An (n + 1)%nat * (x ^ n * x) * (/ An n * / x ^ n)) with
+ (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n)); 
+ [ idtac | ring ].
+rewrite <- Rinv_r_sym.
+rewrite Rmult_1_r; reflexivity.
+apply pow_nonzero.
+red in |- *; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+apply H0.
+apply pow_nonzero.
+red in |- *; intro; rewrite H7 in a; elim (Rlt_irrefl _ a).
+unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+assumption.
+apply Rinv_0_lt_compat; apply Rabs_pos_lt.
+red in |- *; intro H7; rewrite H7 in a; elim (Rlt_irrefl _ a).
+apply existT with (An 0%nat).
+unfold Un_cv in |- *.
+intros.
+exists 0%nat.
+intros.
+unfold R_dist in |- *.
+replace (sum_f_R0 (fun i:nat => An i * x ^ i) n) with (An 0%nat).
+unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption.
+induction  n as [| n Hrecn].
+simpl in |- *; ring.
+rewrite tech5.
+rewrite <- Hrecn.
+rewrite b; simpl in |- *; ring.
+unfold ge in |- *; apply le_O_n.
+eapply Alembert_C5 with (k * Rabs x).
+split.
+unfold Rdiv in |- *; apply Rmult_le_pos.
+left; assumption.
+left; apply Rabs_pos_lt.
+red in |- *; intro; rewrite H3 in r; elim (Rlt_irrefl _ r).
+apply Rmult_lt_reg_l with (/ k).
+apply Rinv_0_lt_compat; assumption.
+rewrite <- Rmult_assoc.
+rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l.
+rewrite Rmult_1_r; assumption.
+red in |- *; intro; rewrite H3 in H; elim (Rlt_irrefl _ H).
+intro; apply prod_neq_R0.
+apply H0.
+apply pow_nonzero.
+red in |- *; intro; rewrite H3 in r; elim (Rlt_irrefl _ r).
+unfold Un_cv in |- *; unfold Un_cv in H1.
+intros.
+cut (0 < eps / Rabs x).
+intro.
+elim (H1 (eps / Rabs x) H4); intros.
+exists x0.
+intros.
+replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
+unfold R_dist in |- *.
+rewrite Rabs_mult.
+replace (Rabs (An (S n) / An n) * Rabs x - k * Rabs x) with
+ (Rabs x * (Rabs (An (S n) / An n) - k)); [ idtac | ring ].
+rewrite Rabs_mult.
+rewrite Rabs_Rabsolu.
+apply Rmult_lt_reg_l with (/ Rabs x).
+apply Rinv_0_lt_compat; apply Rabs_pos_lt.
+red in |- *; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+rewrite <- Rmult_assoc.
+rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l.
+rewrite <- (Rmult_comm eps).
+unfold R_dist in H5.
+unfold Rdiv in |- *; unfold Rdiv in H5; apply H5; assumption.
+apply Rabs_no_R0.
+red in |- *; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+unfold Rdiv in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
+rewrite pow_add.
+simpl in |- *.
+rewrite Rmult_1_r.
+rewrite Rinv_mult_distr.
+replace (An (n + 1)%nat * (x ^ n * x) * (/ An n * / x ^ n)) with
+ (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n)); 
+ [ idtac | ring ].
+rewrite <- Rinv_r_sym.
+rewrite Rmult_1_r; reflexivity.
+apply pow_nonzero.
+red in |- *; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+apply H0.
+apply pow_nonzero.
+red in |- *; intro; rewrite H7 in r; elim (Rlt_irrefl _ r).
+unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+assumption.
+apply Rinv_0_lt_compat; apply Rabs_pos_lt.
+red in |- *; intro H7; rewrite H7 in r; elim (Rlt_irrefl _ r).
 Qed.

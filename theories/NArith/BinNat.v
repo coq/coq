@@ -8,198 +8,205 @@
 
 (*i $Id$ i*)
 
-Require BinPos.
+Require Import BinPos.
 
 (**********************************************************************)
 (** Binary natural numbers *)
 
-Inductive entier: Set := Nul : entier | Pos : positive -> entier.
+Inductive N : Set :=
+  | N0 : N
+  | Npos : positive -> N.
 
 (** Declare binding key for scope positive_scope *)
 
-Delimits Scope N_scope with N.
+Delimit Scope N_scope with N.
 
 (** Automatically open scope N_scope for the constructors of N *)
 
-Bind Scope N_scope with entier.
-Arguments Scope Pos [ N_scope ].
+Bind Scope N_scope with N.
+Arguments Scope Npos [N_scope].
 
 Open Local Scope N_scope.
 
 (** Operation x -> 2*x+1 *)
 
-Definition Un_suivi_de := [x]
-  Cases x of Nul => (Pos xH) | (Pos p) => (Pos (xI p)) end.
+Definition Ndouble_plus_one x :=
+  match x with
+  | N0 => Npos 1%positive
+  | Npos p => Npos (xI p)
+  end.
 
 (** Operation x -> 2*x *)
 
-Definition Zero_suivi_de :=
-  [n] Cases n of Nul => Nul | (Pos p) => (Pos (xO p)) end.
+Definition Ndouble n := match n with
+                        | N0 => N0
+                        | Npos p => Npos (xO p)
+                        end.
 
 (** Successor *)
 
-Definition Nsucc :=
-  [n] Cases n of Nul => (Pos xH) | (Pos p) => (Pos (add_un p)) end.
+Definition Nsucc n :=
+  match n with
+  | N0 => Npos 1%positive
+  | Npos p => Npos (Psucc p)
+  end.
 
 (** Addition *)
 
-Definition Nplus := [n,m]
-  Cases n m of
-  | Nul     _       => m
-  | _       Nul     => n
-  | (Pos p) (Pos q) => (Pos (add p q))
+Definition Nplus n m :=
+  match n, m with
+  | N0, _ => m
+  | _, N0 => n
+  | Npos p, Npos q => Npos (p + q)%positive
   end.
 
-V8Infix "+" Nplus : N_scope.
+Infix "+" := Nplus : N_scope.
 
 (** Multiplication *)
 
-Definition Nmult := [n,m]
-  Cases n m of
-  | Nul     _       => Nul
-  | _       Nul     => Nul
-  | (Pos p) (Pos q) => (Pos (times p q))
+Definition Nmult n m :=
+  match n, m with
+  | N0, _ => N0
+  | _, N0 => N0
+  | Npos p, Npos q => Npos (p * q)%positive
   end.
 
-V8Infix "*" Nmult : N_scope.
+Infix "*" := Nmult : N_scope.
 
 (** Order *)
 
-Definition Ncompare := [n,m]
-  Cases n m of
-  | Nul      Nul      => EGAL
-  | Nul      (Pos m') => INFERIEUR
-  | (Pos n') Nul      => SUPERIEUR
-  | (Pos n') (Pos m') => (compare n' m' EGAL)
+Definition Ncompare n m :=
+  match n, m with
+  | N0, N0 => Eq
+  | N0, Npos m' => Lt
+  | Npos n', N0 => Gt
+  | Npos n', Npos m' => (n' ?= m')%positive Eq
   end.
 
-V8Infix "?=" Ncompare (at level 70, no associativity) : N_scope.
+Infix "?=" := Ncompare (at level 70, no associativity) : N_scope.
 
 (** Peano induction on binary natural numbers *)
 
-Theorem Nind : (P:(entier ->Prop))
-  (P Nul) ->((n:entier)(P n) ->(P (Nsucc n))) ->(n:entier)(P n).
+Theorem Nind :
+ forall P:N -> Prop,
+   P N0 -> (forall n:N, P n -> P (Nsucc n)) -> forall n:N, P n.
 Proof.
-NewDestruct n.
-  Assumption.
-  Apply Pind with P := [p](P (Pos p)).
-Exact (H0 Nul H).
-Intro p'; Exact (H0 (Pos p')).
+destruct n.
+  assumption.
+  apply Pind with (P := fun p => P (Npos p)).
+exact (H0 N0 H).
+intro p'; exact (H0 (Npos p')).
 Qed.
 
 (** Properties of addition *)
 
-Theorem Nplus_0_l : (n:entier)(Nplus Nul n)=n.
+Theorem Nplus_0_l : forall n:N, N0 + n = n.
 Proof.
-Reflexivity.
+reflexivity.
 Qed.
 
-Theorem Nplus_0_r : (n:entier)(Nplus n Nul)=n.
+Theorem Nplus_0_r : forall n:N, n + N0 = n.
 Proof.
-NewDestruct n; Reflexivity.
+destruct n; reflexivity.
 Qed.
 
-Theorem Nplus_comm : (n,m:entier)(Nplus n m)=(Nplus m n).
+Theorem Nplus_comm : forall n m:N, n + m = m + n.
 Proof.
-Intros.
-NewDestruct n; NewDestruct m; Simpl; Try Reflexivity.
-Rewrite add_sym; Reflexivity.
+intros.
+destruct n; destruct m; simpl in |- *; try reflexivity.
+rewrite Pplus_comm; reflexivity.
 Qed.
 
-Theorem Nplus_assoc : 
-  (n,m,p:entier)(Nplus n (Nplus m p))=(Nplus (Nplus n m) p).
+Theorem Nplus_assoc : forall n m p:N, n + (m + p) = n + m + p.
 Proof.
-Intros.
-NewDestruct n; Try Reflexivity.
-NewDestruct m; Try Reflexivity.
-NewDestruct p; Try Reflexivity.
-Simpl; Rewrite add_assoc; Reflexivity.
+intros.
+destruct n; try reflexivity.
+destruct m; try reflexivity.
+destruct p; try reflexivity.
+simpl in |- *; rewrite Pplus_assoc; reflexivity.
 Qed.
 
-Theorem Nplus_succ : (n,m:entier)(Nplus (Nsucc n) m)=(Nsucc (Nplus n m)).
+Theorem Nplus_succ : forall n m:N, Nsucc n + m = Nsucc (n + m).
 Proof.
-NewDestruct n; NewDestruct m.
-  Simpl; Reflexivity.
-  Unfold Nsucc Nplus; Rewrite <- ZL12bis; Reflexivity.
-  Simpl; Reflexivity.
-  Simpl; Rewrite ZL14bis; Reflexivity.
+destruct n; destruct m.
+  simpl in |- *; reflexivity.
+  unfold Nsucc, Nplus in |- *; rewrite <- Pplus_one_succ_l; reflexivity.
+  simpl in |- *; reflexivity.
+  simpl in |- *; rewrite Pplus_succ_permute_l; reflexivity.
 Qed.
 
-Theorem Nsucc_inj : (n,m:entier)(Nsucc n)=(Nsucc m)->n=m.
+Theorem Nsucc_inj : forall n m:N, Nsucc n = Nsucc m -> n = m.
 Proof.
-NewDestruct n; NewDestruct m; Simpl; Intro H; 
-  Reflexivity Orelse Injection H; Clear H; Intro H.
-  Symmetry in H; Contradiction add_un_not_un with p.
-  Contradiction add_un_not_un with p.
-  Rewrite add_un_inj with 1:=H; Reflexivity.
+destruct n; destruct m; simpl in |- *; intro H; reflexivity || injection H;
+ clear H; intro H.
+  symmetry  in H; contradiction Psucc_not_one with p.
+  contradiction Psucc_not_one with p.
+  rewrite Psucc_inj with (1 := H); reflexivity.
 Qed.
 
-Theorem Nplus_reg_l : (n,m,p:entier)(Nplus n m)=(Nplus n p)->m=p.
+Theorem Nplus_reg_l : forall n m p:N, n + m = n + p -> m = p.
 Proof.
-Intro n; Pattern n; Apply Nind; Clear n; Simpl.
-  Trivial.
-  Intros n IHn m p H0; Do 2 Rewrite Nplus_succ in H0.
-  Apply IHn; Apply Nsucc_inj; Assumption.
+intro n; pattern n in |- *; apply Nind; clear n; simpl in |- *.
+  trivial.
+  intros n IHn m p H0; do 2 rewrite Nplus_succ in H0.
+  apply IHn; apply Nsucc_inj; assumption.
 Qed.
 
 (** Properties of multiplication *)
 
-Theorem Nmult_1_l : (n:entier)(Nmult (Pos xH) n)=n.
+Theorem Nmult_1_l : forall n:N, Npos 1%positive * n = n.
 Proof.
-NewDestruct n; Reflexivity.
+destruct n; reflexivity.
 Qed.
 
-Theorem Nmult_1_r : (n:entier)(Nmult n (Pos xH))=n.
+Theorem Nmult_1_r : forall n:N, n * Npos 1%positive = n.
 Proof.
-NewDestruct n; Simpl; Try Reflexivity.
-Rewrite times_x_1; Reflexivity.
+destruct n; simpl in |- *; try reflexivity.
+rewrite Pmult_1_r; reflexivity.
 Qed.
 
-Theorem Nmult_comm : (n,m:entier)(Nmult n m)=(Nmult m n).
+Theorem Nmult_comm : forall n m:N, n * m = m * n.
 Proof.
-Intros.
-NewDestruct n; NewDestruct m; Simpl; Try Reflexivity.
-Rewrite times_sym; Reflexivity.
+intros.
+destruct n; destruct m; simpl in |- *; try reflexivity.
+rewrite Pmult_comm; reflexivity.
 Qed.
 
-Theorem Nmult_assoc : 
-  (n,m,p:entier)(Nmult n (Nmult m p))=(Nmult (Nmult n m) p).
+Theorem Nmult_assoc : forall n m p:N, n * (m * p) = n * m * p.
 Proof.
-Intros.
-NewDestruct n; Try Reflexivity.
-NewDestruct m; Try Reflexivity.
-NewDestruct p; Try Reflexivity.
-Simpl; Rewrite times_assoc; Reflexivity.
+intros.
+destruct n; try reflexivity.
+destruct m; try reflexivity.
+destruct p; try reflexivity.
+simpl in |- *; rewrite Pmult_assoc; reflexivity.
 Qed.
 
-Theorem Nmult_plus_distr_r :
-  (n,m,p:entier)(Nmult (Nplus n m) p)=(Nplus (Nmult n p) (Nmult m p)).
+Theorem Nmult_plus_distr_r : forall n m p:N, (n + m) * p = n * p + m * p.
 Proof.
-Intros.
-NewDestruct n; Try Reflexivity.
-NewDestruct m; NewDestruct p; Try Reflexivity.
-Simpl; Rewrite times_add_distr_l; Reflexivity.
+intros.
+destruct n; try reflexivity.
+destruct m; destruct p; try reflexivity.
+simpl in |- *; rewrite Pmult_plus_distr_r; reflexivity.
 Qed.
 
-Theorem Nmult_reg_r : (n,m,p:entier) ~p=Nul->(Nmult n p)=(Nmult m p) -> n=m.
+Theorem Nmult_reg_r : forall n m p:N, p <> N0 -> n * p = m * p -> n = m.
 Proof.
-NewDestruct p; Intros Hp H.
-Contradiction Hp; Reflexivity.
-NewDestruct n; NewDestruct m; Reflexivity Orelse Try Discriminate H.
-Injection H; Clear H; Intro H; Rewrite simpl_times_r with 1:=H; Reflexivity.
+destruct p; intros Hp H.
+contradiction Hp; reflexivity.
+destruct n; destruct m; reflexivity || (try discriminate H).
+injection H; clear H; intro H; rewrite Pmult_reg_r with (1 := H); reflexivity.
 Qed. 
 
-Theorem Nmult_0_l : (n:entier) (Nmult Nul n) = Nul.
+Theorem Nmult_0_l : forall n:N, N0 * n = N0.
 Proof.
-Reflexivity.
+reflexivity.
 Qed.
 
 (** Properties of comparison *)
 
-Theorem Ncompare_Eq_eq : (n,m:entier) (Ncompare n m) = EGAL -> n = m.
+Theorem Ncompare_Eq_eq : forall n m:N, (n ?= m) = Eq -> n = m.
 Proof.
-NewDestruct n as [|n]; NewDestruct m as [|m]; Simpl; Intro H;
-  Reflexivity Orelse Try Discriminate H.
-  Rewrite (compare_convert_EGAL n m H); Reflexivity.
+destruct n as [| n]; destruct m as [| m]; simpl in |- *; intro H;
+ reflexivity || (try discriminate H).
+  rewrite (Pcompare_Eq_eq n m H); reflexivity.
 Qed.
-

@@ -10,76 +10,76 @@
 
 (** Classical Propositional Logic *)
 
-Require ProofIrrelevance.
+Require Import ProofIrrelevance.
 
-Hints Unfold not : core.
+Hint Unfold not: core.
 
-Axiom classic: (P:Prop)(P \/ ~(P)).
+Axiom classic : forall P:Prop, P \/ ~ P.
 
-Lemma NNPP : (p:Prop)~(~(p))->p.
+Lemma NNPP : forall p:Prop, ~ ~ p -> p.
 Proof.
-Unfold not; Intros; Elim (classic p); Auto.
-Intro NP; Elim (H NP).
+unfold not in |- *; intros; elim (classic p); auto.
+intro NP; elim (H NP).
 Qed.
 
-Lemma not_imply_elim : (P,Q:Prop)~(P->Q)->P.
+Lemma not_imply_elim : forall P Q:Prop, ~ (P -> Q) -> P.
 Proof.
-Intros; Apply NNPP; Red.
-Intro; Apply H; Intro; Absurd P; Trivial.
+intros; apply NNPP; red in |- *.
+intro; apply H; intro; absurd P; trivial.
 Qed.
 
-Lemma not_imply_elim2 : (P,Q:Prop)~(P->Q) -> ~Q.
+Lemma not_imply_elim2 : forall P Q:Prop, ~ (P -> Q) -> ~ Q.
 Proof.
-Intros; Elim (classic Q); Auto.
+intros; elim (classic Q); auto.
 Qed.
 
-Lemma imply_to_or : (P,Q:Prop)(P->Q) -> ~P \/ Q.
+Lemma imply_to_or : forall P Q:Prop, (P -> Q) -> ~ P \/ Q.
 Proof.
-Intros; Elim (classic P); Auto.
+intros; elim (classic P); auto.
 Qed.
 
-Lemma imply_to_and : (P,Q:Prop)~(P->Q) -> P /\ ~Q.
+Lemma imply_to_and : forall P Q:Prop, ~ (P -> Q) -> P /\ ~ Q.
 Proof.
-Intros; Split.
-Apply not_imply_elim with Q;  Trivial.
-Apply not_imply_elim2 with P; Trivial.
+intros; split.
+apply not_imply_elim with Q; trivial.
+apply not_imply_elim2 with P; trivial.
 Qed.
 
-Lemma or_to_imply : (P,Q:Prop)(~P \/ Q) -> P->Q.
+Lemma or_to_imply : forall P Q:Prop, ~ P \/ Q -> P -> Q.
 Proof.
-Induction 1; Auto.
-Intros H1 H2; Elim (H1 H2).
+simple induction 1; auto.
+intros H1 H2; elim (H1 H2).
 Qed.
 
-Lemma not_and_or : (P,Q:Prop)~(P/\Q)-> ~P \/ ~Q.
+Lemma not_and_or : forall P Q:Prop, ~ (P /\ Q) -> ~ P \/ ~ Q.
 Proof.
-Intros; Elim (classic P); Auto.
+intros; elim (classic P); auto.
 Qed.
 
-Lemma or_not_and : (P,Q:Prop)(~P \/ ~Q) -> ~(P/\Q).
+Lemma or_not_and : forall P Q:Prop, ~ P \/ ~ Q -> ~ (P /\ Q).
 Proof.
-Induction 1; Red; Induction 2; Auto.
+simple induction 1; red in |- *; simple induction 2; auto.
 Qed.
 
-Lemma not_or_and : (P,Q:Prop)~(P\/Q)-> ~P /\ ~Q.
+Lemma not_or_and : forall P Q:Prop, ~ (P \/ Q) -> ~ P /\ ~ Q.
 Proof.
-Intros; Elim (classic P); Auto.
+intros; elim (classic P); auto.
 Qed.
 
-Lemma and_not_or : (P,Q:Prop)(~P /\ ~Q) -> ~(P\/Q).
+Lemma and_not_or : forall P Q:Prop, ~ P /\ ~ Q -> ~ (P \/ Q).
 Proof.
-Induction 1; Red; Induction 3; Trivial.
+simple induction 1; red in |- *; simple induction 3; trivial.
 Qed.
 
-Lemma imply_and_or: (P,Q:Prop)(P->Q) -> P \/ Q -> Q.
+Lemma imply_and_or : forall P Q:Prop, (P -> Q) -> P \/ Q -> Q.
 Proof.
-Induction 2; Trivial.
+simple induction 2; trivial.
 Qed.
 
-Lemma imply_and_or2: (P,Q,R:Prop)(P->Q) -> P \/ R -> Q \/ R.
+Lemma imply_and_or2 : forall P Q R:Prop, (P -> Q) -> P \/ R -> Q \/ R.
 Proof.
-Induction 2; Auto.
+simple induction 2; auto.
 Qed.
 
-Lemma proof_irrelevance: (P:Prop)(p1,p2:P)p1==p2.
-Proof (proof_irrelevance_cci classic).
+Lemma proof_irrelevance : forall (P:Prop) (p1 p2:P), p1 = p2.
+Proof proof_irrelevance_cci classic.

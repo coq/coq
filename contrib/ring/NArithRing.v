@@ -12,33 +12,33 @@
 
 Require Export Ring.
 Require Export ZArith_base.
-Require NArith.
-Require Eqdep_dec.
+Require Import NArith.
+Require Import Eqdep_dec.
 
-Definition Neq := [n,m:entier]
-  Cases (Ncompare n m) of
-    EGAL => true
+Definition Neq (n m:N) :=
+  match (n ?= m)%N with
+  | Datatypes.Eq => true
   | _ => false
   end.
 
-Lemma Neq_prop : (n,m:entier)(Is_true (Neq n m)) -> n=m.
-  Intros n m H; Unfold Neq in H.
-  Apply Ncompare_Eq_eq.
-  NewDestruct (Ncompare n m); [Reflexivity | Contradiction | Contradiction ].
-Save.
+Lemma Neq_prop : forall n m:N, Is_true (Neq n m) -> n = m.
+  intros n m H; unfold Neq in H.
+  apply Ncompare_Eq_eq.
+  destruct (n ?= m)%N; [ reflexivity | contradiction | contradiction ].
+Qed.
 
-Definition NTheory : (Semi_Ring_Theory Nplus Nmult (Pos xH) Nul Neq).
-  Split.
-    Apply Nplus_comm.
-    Apply Nplus_assoc.
-    Apply Nmult_comm.
-    Apply Nmult_assoc.
-    Apply Nplus_0_l.
-    Apply Nmult_1_l.
-    Apply Nmult_0_l.
-    Apply Nmult_plus_distr_r.
-    Apply Nplus_reg_l.
-    Apply Neq_prop.
-Save.
+Definition NTheory : Semi_Ring_Theory Nplus Nmult 1%N 0%N Neq.
+  split.
+    apply Nplus_comm.
+    apply Nplus_assoc.
+    apply Nmult_comm.
+    apply Nmult_assoc.
+    apply Nplus_0_l.
+    apply Nmult_1_l.
+    apply Nmult_0_l.
+    apply Nmult_plus_distr_r.
+    apply Nplus_reg_l.
+    apply Neq_prop.
+Qed.
 
-Add Semi Ring entier Nplus Nmult (Pos xH) Nul Neq NTheory [Pos Nul xO xI xH].
+Add Semi Ring N Nplus Nmult 1%N 0%N Neq NTheory [ Npos 0%N xO xI 1%positive ].

@@ -30,122 +30,124 @@ Require Export Relations_1.
 Require Export Relations_1_facts.
 Require Export Relations_2.
 
-Theorem Rstar_reflexive : 
-  (U: Type) (R: (Relation U)) (Reflexive U (Rstar U R)).
+Theorem Rstar_reflexive :
+ forall (U:Type) (R:Relation U), Reflexive U (Rstar U R).
 Proof.
-Auto with sets.
+auto with sets.
 Qed.
 
 Theorem Rplus_contains_R :
-  (U: Type) (R: (Relation U)) (contains U (Rplus U R) R).
+ forall (U:Type) (R:Relation U), contains U (Rplus U R) R.
 Proof.
-Auto with sets.
+auto with sets.
 Qed.
 
 Theorem Rstar_contains_R :
-  (U: Type) (R: (Relation U)) (contains U (Rstar U R) R).
+ forall (U:Type) (R:Relation U), contains U (Rstar U R) R.
 Proof.
-Intros U R; Red; Intros x y H'; Apply Rstar_n with y; Auto with sets.
+intros U R; red in |- *; intros x y H'; apply Rstar_n with y; auto with sets.
 Qed.
 
 Theorem Rstar_contains_Rplus :
-  (U: Type) (R: (Relation U)) (contains U (Rstar U R) (Rplus U R)).
+ forall (U:Type) (R:Relation U), contains U (Rstar U R) (Rplus U R).
 Proof.
-Intros U R; Red.
-Intros x y H'; Elim H'.
-Generalize Rstar_contains_R; Intro T; Red in T; Auto with sets.
-Intros x0 y0 z H'0 H'1 H'2; Apply Rstar_n with y0; Auto with sets.
+intros U R; red in |- *.
+intros x y H'; elim H'.
+generalize Rstar_contains_R; intro T; red in T; auto with sets.
+intros x0 y0 z H'0 H'1 H'2; apply Rstar_n with y0; auto with sets.
 Qed.
 
 Theorem Rstar_transitive :
-  (U: Type) (R: (Relation U)) (Transitive U (Rstar U R)).
+ forall (U:Type) (R:Relation U), Transitive U (Rstar U R).
 Proof.
-Intros U R; Red.
-Intros x y z H'; Elim H'; Auto with sets.
-Intros x0 y0 z0 H'0 H'1 H'2 H'3; Apply Rstar_n with y0; Auto with sets.
+intros U R; red in |- *.
+intros x y z H'; elim H'; auto with sets.
+intros x0 y0 z0 H'0 H'1 H'2 H'3; apply Rstar_n with y0; auto with sets.
 Qed.
 
 Theorem Rstar_cases :
-  (U: Type) (R: (Relation U)) (x, y: U) (Rstar U R x y) ->
-    x == y \/ (EXT u | (R x u) /\ (Rstar U R u y)).
+ forall (U:Type) (R:Relation U) (x y:U),
+   Rstar U R x y -> x = y \/ ( exists u : _ | R x u /\ Rstar U R u y).
 Proof.
-Intros U R x y H'; Elim H'; Auto with sets.
-Intros x0 y0 z H'0 H'1 H'2; Right; Exists y0; Auto with sets.
+intros U R x y H'; elim H'; auto with sets.
+intros x0 y0 z H'0 H'1 H'2; right; exists y0; auto with sets.
 Qed.
 
 Theorem Rstar_equiv_Rstar1 :
-  (U: Type) (R: (Relation U)) (same_relation U (Rstar U R) (Rstar1 U R)).
+ forall (U:Type) (R:Relation U), same_relation U (Rstar U R) (Rstar1 U R).
 Proof.
-Generalize Rstar_contains_R; Intro T; Red in T.
-Intros U R; Unfold same_relation contains.
-Split; Intros x y H'; Elim H'; Auto with sets.
-Generalize Rstar_transitive; Intro T1; Red in T1.
-Intros x0 y0 z H'0 H'1 H'2 H'3; Apply T1 with y0; Auto with sets.
-Intros x0 y0 z H'0 H'1 H'2; Apply Rstar1_n with y0; Auto with sets.
+generalize Rstar_contains_R; intro T; red in T.
+intros U R; unfold same_relation, contains in |- *.
+split; intros x y H'; elim H'; auto with sets.
+generalize Rstar_transitive; intro T1; red in T1.
+intros x0 y0 z H'0 H'1 H'2 H'3; apply T1 with y0; auto with sets.
+intros x0 y0 z H'0 H'1 H'2; apply Rstar1_n with y0; auto with sets.
 Qed.
 
 Theorem Rsym_imp_Rstarsym :
-  (U: Type) (R: (Relation U)) (Symmetric U R) -> (Symmetric U (Rstar U R)).
+ forall (U:Type) (R:Relation U), Symmetric U R -> Symmetric U (Rstar U R).
 Proof.
-Intros U R H'; Red.
-Intros x y H'0; Elim H'0; Auto with sets.
-Intros x0 y0 z H'1 H'2 H'3.
-Generalize Rstar_transitive; Intro T1; Red in T1.
-Apply T1 with y0; Auto with sets.
-Apply Rstar_n with x0; Auto with sets.
+intros U R H'; red in |- *.
+intros x y H'0; elim H'0; auto with sets.
+intros x0 y0 z H'1 H'2 H'3.
+generalize Rstar_transitive; intro T1; red in T1.
+apply T1 with y0; auto with sets.
+apply Rstar_n with x0; auto with sets.
 Qed.
 
 Theorem Sstar_contains_Rstar :
-  (U: Type) (R, S: (Relation U)) (contains U (Rstar U S) R) ->
-   (contains U (Rstar U S) (Rstar U R)).
+ forall (U:Type) (R S:Relation U),
+   contains U (Rstar U S) R -> contains U (Rstar U S) (Rstar U R).
 Proof.
-Unfold contains.
-Intros U R S H' x y H'0; Elim H'0; Auto with sets.
-Generalize Rstar_transitive; Intro T1; Red in T1.
-Intros x0 y0 z H'1 H'2 H'3; Apply T1 with y0; Auto with sets.
+unfold contains in |- *.
+intros U R S H' x y H'0; elim H'0; auto with sets.
+generalize Rstar_transitive; intro T1; red in T1.
+intros x0 y0 z H'1 H'2 H'3; apply T1 with y0; auto with sets.
 Qed.
 
 Theorem star_monotone :
-  (U: Type) (R, S: (Relation U)) (contains U S R) ->
-   (contains U (Rstar U S) (Rstar U R)).
+ forall (U:Type) (R S:Relation U),
+   contains U S R -> contains U (Rstar U S) (Rstar U R).
 Proof.
-Intros U R S H'.
-Apply Sstar_contains_Rstar; Auto with sets.
-Generalize (Rstar_contains_R U S); Auto with sets.
+intros U R S H'.
+apply Sstar_contains_Rstar; auto with sets.
+generalize (Rstar_contains_R U S); auto with sets.
 Qed.
 
 Theorem RstarRplus_RRstar :
-  (U: Type) (R: (Relation U)) (x, y, z: U) 
-    (Rstar U R x y) -> (Rplus U R y z) ->
-    (EXT u | (R x u) /\ (Rstar U R u z)).
+ forall (U:Type) (R:Relation U) (x y z:U),
+   Rstar U R x y -> Rplus U R y z ->  exists u : _ | R x u /\ Rstar U R u z.
 Proof.
-Generalize Rstar_contains_Rplus; Intro T; Red in T.
-Generalize Rstar_transitive; Intro T1; Red in T1.
-Intros U R x y z H'; Elim H'.
-Intros x0 H'0; Elim H'0.
-Intros x1 y0 H'1; Exists y0; Auto with sets.
-Intros x1 y0 z0 H'1 H'2 H'3; Exists y0; Auto with sets.
-Intros x0 y0 z0 H'0 H'1 H'2 H'3; Exists y0.
-Split; [Try Assumption | Idtac].
-Apply T1 with z0; Auto with sets.
+generalize Rstar_contains_Rplus; intro T; red in T.
+generalize Rstar_transitive; intro T1; red in T1.
+intros U R x y z H'; elim H'.
+intros x0 H'0; elim H'0.
+intros x1 y0 H'1; exists y0; auto with sets.
+intros x1 y0 z0 H'1 H'2 H'3; exists y0; auto with sets.
+intros x0 y0 z0 H'0 H'1 H'2 H'3; exists y0.
+split; [ try assumption | idtac ].
+apply T1 with z0; auto with sets.
 Qed.
 
-Theorem Lemma1 : 
-  (U: Type) (R: (Relation U)) (Strongly_confluent U R) ->
-   (x, b: U) (Rstar U R x b) ->
-    (a: U) (R x a) -> (EXT z | (Rstar U R a z) /\ (R b z)).
+Theorem Lemma1 :
+ forall (U:Type) (R:Relation U),
+   Strongly_confluent U R ->
+   forall x b:U,
+     Rstar U R x b ->
+     forall a:U, R x a ->  exists z : _ | Rstar U R a z /\ R b z.
 Proof.
-Intros U R H' x b H'0; Elim H'0.
-Intros x0 a H'1; Exists a; Auto with sets.
-Intros x0 y z H'1 H'2 H'3 a H'4.
-Red in H'.
-Specialize 3 H' with x := x0 a := a b := y; Intro H'7; LApply H'7;
- [Intro H'8; LApply H'8;
-   [Intro H'9; Try Exact H'9; Clear H'8 H'7 | Clear H'8 H'7] | Clear H'7]; Auto with sets.
-Elim H'9.
-Intros t H'5; Elim H'5; Intros H'6 H'7; Try Exact H'6; Clear H'5.
-Elim (H'3 t); Auto with sets.
-Intros z1 H'5; Elim H'5; Intros H'8 H'10; Try Exact H'8; Clear H'5.
-Exists z1; Split; [Idtac | Assumption].
-Apply Rstar_n with t; Auto with sets.
+intros U R H' x b H'0; elim H'0.
+intros x0 a H'1; exists a; auto with sets.
+intros x0 y z H'1 H'2 H'3 a H'4.
+red in H'.
+specialize  3H' with (x := x0) (a := a) (b := y); intro H'7; lapply H'7;
+ [ intro H'8; lapply H'8;
+    [ intro H'9; try exact H'9; clear H'8 H'7 | clear H'8 H'7 ]
+ | clear H'7 ]; auto with sets.
+elim H'9.
+intros t H'5; elim H'5; intros H'6 H'7; try exact H'6; clear H'5.
+elim (H'3 t); auto with sets.
+intros z1 H'5; elim H'5; intros H'8 H'10; try exact H'8; clear H'5.
+exists z1; split; [ idtac | assumption ].
+apply Rstar_n with t; auto with sets.
 Qed.

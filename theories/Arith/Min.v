@@ -8,77 +8,76 @@
 
 (*i $Id$ i*)
 
-Require Arith.
+Require Import Arith.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n:nat.
+Implicit Types m n : nat.
 
 (** minimum of two natural numbers *)
 
-Fixpoint min [n:nat] : nat -> nat :=  
-[m:nat]Cases n m of
-          O      _     => O
-       | (S n')  O     => O
-       | (S n') (S m') => (S (min n' m'))
-       end.
+Fixpoint min n m {struct n} : nat :=
+  match n, m with
+  | O, _ => 0
+  | S n', O => 0
+  | S n', S m' => S (min n' m')
+  end.
 
 (** Simplifications of [min] *)
 
-Lemma min_SS : (n,m:nat)((S (min n m))=(min (S n) (S m))).
+Lemma min_SS : forall n m, S (min n m) = min (S n) (S m).
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
 
-Lemma min_sym : (n,m:nat)(min n m)=(min m n).
+Lemma min_comm : forall n m, min n m = min m n.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
+induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
 (** [min] and [le] *)
 
-Lemma min_l : (n,m:nat)(le n m)->(min n m)=n.
+Lemma min_l : forall n m, n <= m -> min n m = n.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
+induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
-Lemma min_r : (n,m:nat)(le m n)->(min n m)=m.
+Lemma min_r : forall n m, m <= n -> min n m = m.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
+induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
-Lemma le_min_l : (n,m:nat)(le (min n m) n).
+Lemma le_min_l : forall n m, min n m <= n.
 Proof.
-NewInduction n; Intros; Simpl; Auto with arith.
-Elim m; Intros; Simpl; Auto with arith.
+induction n; intros; simpl in |- *; auto with arith.
+elim m; intros; simpl in |- *; auto with arith.
 Qed.
 
-Lemma le_min_r : (n,m:nat)(le (min n m) m).
+Lemma le_min_r : forall n m, min n m <= m.
 Proof.
-NewInduction n; Simpl; Auto with arith.
-NewInduction m; Simpl; Auto with arith.
+induction n; simpl in |- *; auto with arith.
+induction m; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve min_l min_r le_min_l le_min_r : arith v62.
+Hint Resolve min_l min_r le_min_l le_min_r: arith v62.
 
 (** [min n m] is equal to [n] or [m] *)
 
-Lemma min_dec : (n,m:nat){(min n m)=n}+{(min n m)=m}.
+Lemma min_dec : forall n m, {min n m = n} + {min n m = m}.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
-Elim (IHn m);Intro H;Elim H;Auto.
+induction n; induction m; simpl in |- *; auto with arith.
+elim (IHn m); intro H; elim H; auto.
 Qed.
 
-Lemma min_case : (n,m:nat)(P:nat->Set)(P n)->(P m)->(P (min n m)).
+Lemma min_case : forall n m (P:nat -> Set), P n -> P m -> P (min n m).
 Proof.
-NewInduction n; Simpl; Auto with arith.
-NewInduction m; Intros; Simpl; Auto with arith.
-Pattern (min n m); Apply IHn ; Auto with arith.
+induction n; simpl in |- *; auto with arith.
+induction m; intros; simpl in |- *; auto with arith.
+pattern (min n m) in |- *; apply IHn; auto with arith.
 Qed.
 
-Lemma min_case2 : (n,m:nat)(P:nat->Prop)(P n)->(P m)->(P (min n m)).
+Lemma min_case2 : forall n m (P:nat -> Prop), P n -> P m -> P (min n m).
 Proof.
-NewInduction n; Simpl; Auto with arith.
-NewInduction m; Intros; Simpl; Auto with arith.
-Pattern (min n m); Apply IHn ; Auto with arith.
+induction n; simpl in |- *; auto with arith.
+induction m; intros; simpl in |- *; auto with arith.
+pattern (min n m) in |- *; apply IHn; auto with arith.
 Qed.

@@ -8,178 +8,182 @@
 
 (*i $Id$ i*)
 
-Require Le.
-Require Lt.
+Require Import Le.
+Require Import Lt.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type k,l,p,q,r:nat.
+Implicit Types k l p q r : nat.
 
 Section Between.
-Variables P,Q : nat -> Prop.
+Variables P Q : nat -> Prop.
 
-Inductive between [k:nat] : nat -> Prop
- := bet_emp : (between k k)
- | bet_S : (l:nat)(between k l)->(P l)->(between k (S l)).
+Inductive between k : nat -> Prop :=
+  | bet_emp : between k k
+  | bet_S : forall l, between k l -> P l -> between k (S l).
 
-Hint constr_between : arith v62 := Constructors between.
+Hint Constructors between: arith v62.
 
-Lemma bet_eq : (k,l:nat)(l=k)->(between k l).
+Lemma bet_eq : forall k l, l = k -> between k l.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Hints Resolve bet_eq : arith v62.
+Hint Resolve bet_eq: arith v62.
 
-Lemma between_le : (k,l:nat)(between k l)->(le k l).
+Lemma between_le : forall k l, between k l -> k <= l.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
-Hints Immediate between_le : arith v62.
+Hint Immediate between_le: arith v62.
 
-Lemma between_Sk_l : (k,l:nat)(between k l)->(le (S k) l)->(between (S k) l).
+Lemma between_Sk_l : forall k l, between k l -> S k <= l -> between (S k) l.
 Proof.
-NewInduction 1.
-Intros; Absurd (le (S k) k); Auto with arith.
-NewDestruct H; Auto with arith.
+induction 1.
+intros; absurd (S k <= k); auto with arith.
+destruct H; auto with arith.
 Qed.
-Hints Resolve between_Sk_l : arith v62.
+Hint Resolve between_Sk_l: arith v62.
 
-Lemma between_restr : 
-  (k,l,m:nat)(le k l)->(le l m)->(between k m)->(between l m).
+Lemma between_restr :
+ forall k l (m:nat), k <= l -> l <= m -> between k m -> between l m.
 Proof.
-NewInduction 1; Auto with arith.
-Qed.
-
-Inductive exists [k:nat] : nat -> Prop
- := exists_S : (l:nat)(exists k l)->(exists k (S l))
- | exists_le: (l:nat)(le k l)->(Q l)->(exists k (S l)).
-
-Hint constr_exists : arith v62 := Constructors exists.
-
-Lemma exists_le_S : (k,l:nat)(exists k l)->(le (S k) l).
-Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Lemma exists_lt : (k,l:nat)(exists k l)->(lt k l).
+Inductive exists_between k : nat -> Prop :=
+  | exists_S : forall l, exists_between k l -> exists_between k (S l)
+  | exists_le : forall l, k <= l -> Q l -> exists_between k (S l).
+
+Hint Constructors exists_between: arith v62.
+
+Lemma exists_le_S : forall k l, exists_between k l -> S k <= l.
+Proof.
+induction 1; auto with arith.
+Qed.
+
+Lemma exists_lt : forall k l, exists_between k l -> k < l.
 Proof exists_le_S.
-Hints Immediate exists_le_S exists_lt : arith v62.
+Hint Immediate exists_le_S exists_lt: arith v62.
 
-Lemma exists_S_le : (k,l:nat)(exists k (S l))->(le k l).
+Lemma exists_S_le : forall k l, exists_between k (S l) -> k <= l.
 Proof.
-Intros; Apply le_S_n; Auto with arith.
+intros; apply le_S_n; auto with arith.
 Qed.
-Hints Immediate exists_S_le : arith v62.
+Hint Immediate exists_S_le: arith v62.
 
-Definition in_int := [p,q,r:nat](le p r)/\(lt r q).
+Definition in_int p q r := p <= r /\ r < q.
 
-Lemma in_int_intro : (p,q,r:nat)(le p r)->(lt r q)->(in_int p q r).
+Lemma in_int_intro : forall p q r, p <= r -> r < q -> in_int p q r.
 Proof.
-Red; Auto with arith.
+red in |- *; auto with arith.
 Qed.
-Hints Resolve in_int_intro : arith v62.
+Hint Resolve in_int_intro: arith v62.
 
-Lemma in_int_lt : (p,q,r:nat)(in_int p q r)->(lt p q).
+Lemma in_int_lt : forall p q r, in_int p q r -> p < q.
 Proof.
-NewInduction 1; Intros.
-Apply le_lt_trans with r; Auto with arith.
-Qed.
-
-Lemma in_int_p_Sq : 
-  (p,q,r:nat)(in_int p (S q) r)->((in_int p q r) \/ <nat>r=q).
-Proof.
-NewInduction 1; Intros.
-Elim (le_lt_or_eq r q); Auto with arith.
+induction 1; intros.
+apply le_lt_trans with r; auto with arith.
 Qed.
 
-Lemma in_int_S : (p,q,r:nat)(in_int p q r)->(in_int p (S q) r).
+Lemma in_int_p_Sq :
+ forall p q r, in_int p (S q) r -> in_int p q r \/ r = q :>nat.
 Proof.
-NewInduction 1;Auto with arith.
-Qed.
-Hints Resolve in_int_S : arith v62.
-
-Lemma in_int_Sp_q : (p,q,r:nat)(in_int (S p) q r)->(in_int p q r).
-Proof.
-NewInduction 1; Auto with arith.
-Qed.
-Hints Immediate in_int_Sp_q : arith v62.
-
-Lemma between_in_int : (k,l:nat)(between k l)->(r:nat)(in_int k l r)->(P r).
-Proof.
-NewInduction 1; Intros.
-Absurd (lt k k); Auto with arith.
-Apply in_int_lt with r; Auto with arith.
-Elim (in_int_p_Sq k l r); Intros; Auto with arith.
-Rewrite H2; Trivial with arith.
+induction 1; intros.
+elim (le_lt_or_eq r q); auto with arith.
 Qed.
 
-Lemma in_int_between : 
-  (k,l:nat)(le k l)->((r:nat)(in_int k l r)->(P r))->(between k l).
+Lemma in_int_S : forall p q r, in_int p q r -> in_int p (S q) r.
 Proof.
-NewInduction 1; Auto with arith.
+induction 1; auto with arith.
+Qed.
+Hint Resolve in_int_S: arith v62.
+
+Lemma in_int_Sp_q : forall p q r, in_int (S p) q r -> in_int p q r.
+Proof.
+induction 1; auto with arith.
+Qed.
+Hint Immediate in_int_Sp_q: arith v62.
+
+Lemma between_in_int :
+ forall k l, between k l -> forall r, in_int k l r -> P r.
+Proof.
+induction 1; intros.
+absurd (k < k); auto with arith.
+apply in_int_lt with r; auto with arith.
+elim (in_int_p_Sq k l r); intros; auto with arith.
+rewrite H2; trivial with arith.
 Qed.
 
-Lemma exists_in_int : 
-  (k,l:nat)(exists k l)->(EX m:nat | (in_int k l m) & (Q m)).
+Lemma in_int_between :
+ forall k l, k <= l -> (forall r, in_int k l r -> P r) -> between k l.
 Proof.
-NewInduction 1.
-Case IHexists; Intros p inp Qp; Exists p; Auto with arith.
-Exists l; Auto with arith.
+induction 1; auto with arith.
 Qed.
 
-Lemma in_int_exists : (k,l,r:nat)(in_int k l r)->(Q r)->(exists k l).
+Lemma exists_in_int :
+ forall k l, exists_between k l ->  exists2 m : nat | in_int k l m & Q m.
 Proof.
-NewDestruct 1; Intros.
-Elim H0; Auto with arith.
+induction 1.
+case IHexists_between; intros p inp Qp; exists p; auto with arith.
+exists l; auto with arith.
 Qed.
 
-Lemma between_or_exists : 
-  (k,l:nat)(le k l)->((n:nat)(in_int k l n)->((P n)\/(Q n)))
-     ->((between k l)\/(exists k l)).
+Lemma in_int_exists : forall k l r, in_int k l r -> Q r -> exists_between k l.
 Proof.
-NewInduction 1; Intros; Auto with arith.
-Elim IHle; Intro; Auto with arith.
-Elim (H0 m); Auto with arith.
+destruct 1; intros.
+elim H0; auto with arith.
 Qed.
 
-Lemma between_not_exists : (k,l:nat)(between k l)->
-     ((n:nat)(in_int k l n) -> (P n) -> ~(Q n))
-     -> ~(exists k l).
+Lemma between_or_exists :
+ forall k l,
+   k <= l ->
+   (forall n:nat, in_int k l n -> P n \/ Q n) ->
+   between k l \/ exists_between k l.
 Proof.
-NewInduction 1; Red; Intros.
-Absurd (lt k k); Auto with arith.
-Absurd (Q l); Auto with arith.
-Elim (exists_in_int k (S l)); Auto with arith; Intros l' inl' Ql'.
-Replace l with l'; Auto with arith.
-Elim inl'; Intros.
-Elim (le_lt_or_eq l' l); Auto with arith; Intros.
-Absurd (exists k l); Auto with arith.
-Apply in_int_exists with l'; Auto with arith.
+induction 1; intros; auto with arith.
+elim IHle; intro; auto with arith.
+elim (H0 m); auto with arith.
 Qed.
 
-Inductive P_nth [init:nat] : nat->nat->Prop
-  := nth_O : (P_nth init init O)
-  | nth_S : (k,l:nat)(n:nat)(P_nth init k n)->(between (S k) l)
-                        ->(Q l)->(P_nth init l (S n)).
-
-Lemma nth_le : (init,l,n:nat)(P_nth init l n)->(le init l).
+Lemma between_not_exists :
+ forall k l,
+   between k l ->
+   (forall n:nat, in_int k l n -> P n -> ~ Q n) -> ~ exists_between k l.
 Proof.
-NewInduction 1; Intros; Auto with arith.
-Apply le_trans with (S k); Auto with arith.
+induction 1; red in |- *; intros.
+absurd (k < k); auto with arith.
+absurd (Q l); auto with arith.
+elim (exists_in_int k (S l)); auto with arith; intros l' inl' Ql'.
+replace l with l'; auto with arith.
+elim inl'; intros.
+elim (le_lt_or_eq l' l); auto with arith; intros.
+absurd (exists_between k l); auto with arith.
+apply in_int_exists with l'; auto with arith.
 Qed.
 
-Definition eventually := [n:nat](EX k:nat | (le k n) & (Q k)).
+Inductive P_nth (init:nat) : nat -> nat -> Prop :=
+  | nth_O : P_nth init init 0
+  | nth_S :
+      forall k l (n:nat),
+        P_nth init k n -> between (S k) l -> Q l -> P_nth init l (S n).
 
-Lemma event_O : (eventually O)->(Q O).
+Lemma nth_le : forall (init:nat) l (n:nat), P_nth init l n -> init <= l.
 Proof.
-NewInduction 1; Intros.
-Replace O with x; Auto with arith.
+induction 1; intros; auto with arith.
+apply le_trans with (S k); auto with arith.
+Qed.
+
+Definition eventually (n:nat) :=  exists2 k : nat | k <= n & Q k.
+
+Lemma event_O : eventually 0 -> Q 0.
+Proof.
+induction 1; intros.
+replace 0 with x; auto with arith.
 Qed.
 
 End Between.
 
-Hints Resolve nth_O bet_S bet_emp bet_eq between_Sk_l exists_S exists_le 
- in_int_S in_int_intro : arith v62. 
-Hints Immediate in_int_Sp_q exists_le_S exists_S_le : arith v62.
+Hint Resolve nth_O bet_S bet_emp bet_eq between_Sk_l exists_S exists_le
+  in_int_S in_int_intro: arith v62. 
+Hint Immediate in_int_Sp_q exists_le_S exists_S_le: arith v62.

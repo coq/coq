@@ -9,130 +9,120 @@
 
 (** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
 
-Require Arith.
-Require BinPos.
-Require BinInt.
-Require Zorder.
-Require Zsyntax.
-Require ZArith_dec.
+Require Import Arith.
+Require Import BinPos.
+Require Import BinInt.
+Require Import Zorder.
+Require Import ZArith_dec.
 
-V7only [Import nat_scope.].
 Open Local Scope Z_scope.
 
 (**********************************************************************)
 (** Properties of absolute value *)
 
-Lemma Zabs_eq : (x:Z) (Zle ZERO x) -> (Zabs x)=x.
-Intro x; NewDestruct x; Auto with arith.
-Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
+Lemma Zabs_eq : forall n:Z, 0 <= n -> Zabs n = n.
+intro x; destruct x; auto with arith.
+compute in |- *; intros; absurd (Gt = Gt); trivial with arith.
 Qed.
 
-Lemma Zabs_non_eq : (x:Z) (Zle x ZERO) -> (Zabs x)=(Zopp x).
+Lemma Zabs_non_eq : forall n:Z, n <= 0 -> Zabs n = - n.
 Proof.
-Intro x; NewDestruct x; Auto with arith.
-Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
+intro x; destruct x; auto with arith.
+compute in |- *; intros; absurd (Gt = Gt); trivial with arith.
 Qed.
 
-V7only [ (* From Zdivides *) ].
-Theorem Zabs_Zopp: (z : Z)  (Zabs (Zopp z)) = (Zabs z).
+Theorem Zabs_Zopp : forall n:Z, Zabs (- n) = Zabs n.
 Proof.
-Intros z; Case z; Simpl; Auto.
+intros z; case z; simpl in |- *; auto.
 Qed.
 
 (** Proving a property of the absolute value by cases *)
 
-Lemma Zabs_ind : 
-  (P:Z->Prop)(x:Z)(`x >= 0` -> (P x)) -> (`x <= 0` -> (P `-x`)) ->
-  (P `|x|`).
+Lemma Zabs_ind :
+ forall (P:Z -> Prop) (n:Z),
+   (n >= 0 -> P n) -> (n <= 0 -> P (- n)) -> P (Zabs n).
 Proof.
-Intros P x H H0; Elim (Z_lt_ge_dec x `0`); Intro.
-Assert `x<=0`. Apply Zlt_le_weak; Assumption.
-Rewrite Zabs_non_eq. Apply H0. Assumption. Assumption.
-Rewrite Zabs_eq. Apply H; Assumption. Apply Zge_le. Assumption.
-Save.
-
-V7only [ (* From Zdivides *) ].
-Theorem Zabs_intro: (P : ?) (z : Z) (P (Zopp z)) -> (P z) ->  (P (Zabs z)).
-Intros P z; Case z; Simpl; Auto.
+intros P x H H0; elim (Z_lt_ge_dec x 0); intro.
+assert (x <= 0). apply Zlt_le_weak; assumption.
+rewrite Zabs_non_eq. apply H0. assumption. assumption.
+rewrite Zabs_eq. apply H; assumption. apply Zge_le. assumption.
 Qed.
 
-Definition Zabs_dec : (x:Z){x=(Zabs x)}+{x=(Zopp (Zabs x))}.
+Theorem Zabs_intro : forall P (n:Z), P (- n) -> P n -> P (Zabs n).
+intros P z; case z; simpl in |- *; auto.
+Qed.
+
+Definition Zabs_dec : forall x:Z, {x = Zabs x} + {x = - Zabs x}.
 Proof.
-Intro x; NewDestruct x;Auto with arith.
+intro x; destruct x; auto with arith.
 Defined.
 
-Lemma Zabs_pos : (x:Z)(Zle ZERO (Zabs x)).
-Intro x; NewDestruct x;Auto with arith; Compute; Intros H;Inversion H.
+Lemma Zabs_pos : forall n:Z, 0 <= Zabs n.
+intro x; destruct x; auto with arith; compute in |- *; intros H; inversion H.
 Qed.
 
-V7only [ (* From Zdivides *) ].
-Theorem Zabs_eq_case:
- (z1, z2 : Z) (Zabs z1) = (Zabs z2) ->  z1 = z2 \/ z1 = (Zopp z2).
+Theorem Zabs_eq_case : forall n m:Z, Zabs n = Zabs m -> n = m \/ n = - m.
 Proof.
-Intros z1 z2; Case z1; Case z2; Simpl; Auto; Try (Intros; Discriminate);
- Intros p1 p2 H1; Injection H1; (Intros H2; Rewrite H2); Auto.
+intros z1 z2; case z1; case z2; simpl in |- *; auto;
+ try (intros; discriminate); intros p1 p2 H1; injection H1;
+ (intros H2; rewrite H2); auto.
 Qed.
 
 (** Triangular inequality *)
 
-Hints Local Resolve Zle_NEG_POS :zarith.
+Hint Local Resolve Zle_neg_pos: zarith.
 
-V7only [ (* From Zdivides *) ].
-Theorem Zabs_triangle:
- (z1, z2 : Z)  (Zle (Zabs (Zplus z1 z2)) (Zplus (Zabs z1) (Zabs z2))).
+Theorem Zabs_triangle : forall n m:Z, Zabs (n + m) <= Zabs n + Zabs m.
 Proof.
-Intros z1 z2; Case z1; Case z2; Try (Simpl; Auto with zarith; Fail).
-Intros p1 p2;
- Apply Zabs_intro
-      with P := [x : ?]  (Zle x (Zplus (Zabs (POS p2)) (Zabs (NEG p1))));
- Try Rewrite Zopp_Zplus; Auto with zarith.
-Apply Zle_plus_plus; Simpl; Auto with zarith.
-Apply Zle_plus_plus; Simpl; Auto with zarith.
-Intros p1 p2;
- Apply Zabs_intro
-      with P := [x : ?]  (Zle x (Zplus (Zabs (POS p2)) (Zabs (NEG p1))));
- Try Rewrite Zopp_Zplus; Auto with zarith.
-Apply Zle_plus_plus; Simpl; Auto with zarith.
-Apply Zle_plus_plus; Simpl; Auto with zarith.
+intros z1 z2; case z1; case z2; try (simpl in |- *; auto with zarith; fail).
+intros p1 p2;
+ apply Zabs_intro with (P := fun x => x <= Zabs (Zpos p2) + Zabs (Zneg p1));
+ try rewrite Zopp_plus_distr; auto with zarith.
+apply Zplus_le_compat; simpl in |- *; auto with zarith.
+apply Zplus_le_compat; simpl in |- *; auto with zarith.
+intros p1 p2;
+ apply Zabs_intro with (P := fun x => x <= Zabs (Zpos p2) + Zabs (Zneg p1));
+ try rewrite Zopp_plus_distr; auto with zarith.
+apply Zplus_le_compat; simpl in |- *; auto with zarith.
+apply Zplus_le_compat; simpl in |- *; auto with zarith.
 Qed.
 
 (** Absolute value and multiplication *)
 
-Lemma Zsgn_Zabs: (x:Z)(Zmult x (Zsgn x))=(Zabs x).
+Lemma Zsgn_Zabs : forall n:Z, n * Zsgn n = Zabs n.
 Proof.
-Intro x; NewDestruct x; Rewrite Zmult_sym; Auto with arith.
+intro x; destruct x; rewrite Zmult_comm; auto with arith.
 Qed.
 
-Lemma Zabs_Zsgn: (x:Z)(Zmult (Zabs x) (Zsgn x))=x.
+Lemma Zabs_Zsgn : forall n:Z, Zabs n * Zsgn n = n.
 Proof.
-Intro x; NewDestruct x; Rewrite Zmult_sym; Auto with arith.
+intro x; destruct x; rewrite Zmult_comm; auto with arith.
 Qed.
 
-V7only [ (* From Zdivides *) ].
-Theorem Zabs_Zmult:
- (z1, z2 : Z)  (Zabs (Zmult z1 z2)) = (Zmult (Zabs z1) (Zabs z2)).
+Theorem Zabs_Zmult : forall n m:Z, Zabs (n * m) = Zabs n * Zabs m.
 Proof.
-Intros z1 z2; Case z1; Case z2; Simpl; Auto.
+intros z1 z2; case z1; case z2; simpl in |- *; auto.
 Qed.
 
 (** absolute value in nat is compatible with order *)
 
-Lemma absolu_lt : (x,y:Z) (Zle ZERO x)/\(Zlt x  y) -> (lt (absolu x) (absolu y)).
+Lemma Zabs_nat_lt :
+ forall n m:Z, 0 <= n /\ n < m -> (Zabs_nat n < Zabs_nat m)%nat.
 Proof.
-Intros x y. Case x; Simpl. Case y; Simpl.
+intros x y. case x; simpl in |- *. case y; simpl in |- *.
 
-Intro. Absurd (Zlt ZERO ZERO). Compute. Intro H0. Discriminate H0. Intuition.
-Intros. Elim (ZL4 p). Intros. Rewrite H0. Auto with arith.
-Intros. Elim (ZL4 p). Intros. Rewrite H0. Auto with arith.
+intro. absurd (0 < 0). compute in |- *. intro H0. discriminate H0. intuition.
+intros. elim (ZL4 p). intros. rewrite H0. auto with arith.
+intros. elim (ZL4 p). intros. rewrite H0. auto with arith.
 
-Case y; Simpl.
-Intros. Absurd (Zlt (POS p) ZERO). Compute. Intro H0. Discriminate H0. Intuition.
-Intros. Change (gt (convert p) (convert p0)).
-Apply compare_convert_SUPERIEUR.
-Elim H; Auto with arith. Intro. Exact (ZC2 p0 p).
+case y; simpl in |- *.
+intros. absurd (Zpos p < 0). compute in |- *. intro H0. discriminate H0. intuition.
+intros. change (nat_of_P p > nat_of_P p0)%nat in |- *.
+apply nat_of_P_gt_Gt_compare_morphism.
+elim H; auto with arith. intro. exact (ZC2 p0 p).
 
-Intros. Absurd (Zlt (POS p0) (NEG p)).
-Compute. Intro H0. Discriminate H0. Intuition.
+intros. absurd (Zpos p0 < Zneg p).
+compute in |- *. intro H0. discriminate H0. intuition.
 
-Intros. Absurd (Zle ZERO (NEG p)). Compute. Auto with arith. Intuition.
+intros. absurd (0 <= Zneg p). compute in |- *. auto with arith. intuition.
 Qed.

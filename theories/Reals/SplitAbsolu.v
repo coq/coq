@@ -8,15 +8,18 @@
 
 (*i      $Id$       i*)
 
-Require Rbasic_fun.
+Require Import Rbasic_fun.
 
-Recursive Tactic Definition SplitAbs :=
-  Match Context With
-    | [ |- [(case_Rabsolu ?1)] ] -> 
-         Case (case_Rabsolu ?1); Try SplitAbs.
+Ltac split_case_Rabs :=
+  match goal with
+  |  |- context [(Rcase_abs ?X1)] =>
+      case (Rcase_abs X1); try split_case_Rabs
+  end.
 
 
-Recursive Tactic Definition SplitAbsolu :=
-  Match Context With
-    | [ id:[(Rabsolu ?)] |- ? ] -> Generalize id; Clear id;Try SplitAbsolu
-    | [ |- [(Rabsolu ?1)] ] ->  Unfold Rabsolu; Try SplitAbs;Intros.
+Ltac split_Rabs :=
+  match goal with
+  | id:context [(Rabs _)] |- _ => generalize id; clear id; try split_Rabs
+  |  |- context [(Rabs ?X1)] =>
+      unfold Rabs in |- *; try split_case_Rabs; intros
+  end.

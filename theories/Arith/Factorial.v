@@ -8,44 +8,43 @@
 
 (*i $Id$ i*)
 
-Require Plus.
-Require Mult.
-Require Lt.
-V7only [Import nat_scope.].
+Require Import Plus.
+Require Import Mult.
+Require Import Lt.
 Open Local Scope nat_scope.
 
 (** Factorial *)
 
-Fixpoint fact [n:nat]:nat:=
-  Cases n of
-     O     => (S O)
-    |(S n) => (mult (S n) (fact n))
+Fixpoint fact (n:nat) : nat :=
+  match n with
+  | O => 1
+  | S n => S n * fact n
   end.
 
-Arguments Scope fact [ nat_scope ].
+Arguments Scope fact [nat_scope].
 
-Lemma lt_O_fact : (n:nat)(lt O (fact n)).
+Lemma lt_O_fact : forall n:nat, 0 < fact n.
 Proof.
-Induction n; Unfold lt; Simpl; Auto with arith.
+simple induction n; unfold lt in |- *; simpl in |- *; auto with arith.
 Qed.
 
-Lemma fact_neq_0:(n:nat)~(fact n)=O.
+Lemma fact_neq_0 : forall n:nat, fact n <> 0.
 Proof.
-Intro.
-Apply sym_not_eq.
-Apply lt_O_neq.
-Apply lt_O_fact.
+intro.
+apply sym_not_eq.
+apply lt_O_neq.
+apply lt_O_fact.
 Qed.
 
-Lemma fact_growing : (n,m:nat) (le n m) -> (le (fact n) (fact m)).
+Lemma fact_le : forall n m:nat, n <= m -> fact n <= fact m.
 Proof.
-NewInduction 1.
-Apply le_n.
-Assert (le (mult (S O) (fact n)) (mult (S m) (fact m))).
-Apply le_mult_mult.
-Apply lt_le_S; Apply lt_O_Sn.
-Assumption.
-Simpl (mult (S O) (fact n)) in H0.
-Rewrite <- plus_n_O in H0.
-Assumption.
+induction 1.
+apply le_n.
+assert (1 * fact n <= S m * fact m).
+apply mult_le_compat.
+apply lt_le_S; apply lt_O_Sn.
+assumption.
+simpl (1 * fact n) in H0.
+rewrite <- plus_n_O in H0.
+assumption.
 Qed.

@@ -8,58 +8,61 @@
 
 (*i $Id$ i*)
 
-Require Mult.
-Require Compare_dec.
-Require Wf_nat.
+Require Import Mult.
+Require Import Compare_dec.
+Require Import Wf_nat.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type a,b,n,q,r:nat.
+Implicit Types a b n q r : nat.
 
-Inductive diveucl [a,b:nat] : Set 
-      := divex : (q,r:nat)(gt b r)->(a=(plus (mult q b) r))->(diveucl a b).
+Inductive diveucl a b : Set :=
+    divex : forall q r, b > r -> a = q * b + r -> diveucl a b.
 
 
-Lemma eucl_dev : (b:nat)(gt b O)->(a:nat)(diveucl a b).
-Intros b H a; Pattern a; Apply gt_wf_rec; Intros n H0.
-Elim (le_gt_dec b n).
-Intro lebn.
-Elim (H0 (minus n b)); Auto with arith.
-Intros q r g e.
-Apply divex with (S q) r; Simpl; Auto with arith.
-Elim plus_assoc_l.
-Elim e; Auto with arith.
-Intros gtbn.
-Apply divex with O n; Simpl; Auto with arith.
+Lemma eucl_dev : forall n, n > 0 -> forall m:nat, diveucl m n.
+intros b H a; pattern a in |- *; apply gt_wf_rec; intros n H0.
+elim (le_gt_dec b n).
+intro lebn.
+elim (H0 (n - b)); auto with arith.
+intros q r g e.
+apply divex with (S q) r; simpl in |- *; auto with arith.
+elim plus_assoc.
+elim e; auto with arith.
+intros gtbn.
+apply divex with 0 n; simpl in |- *; auto with arith.
 Qed.
 
-Lemma quotient : (b:nat)(gt b O)->
-     (a:nat){q:nat|(EX r:nat | (a=(plus (mult q b) r))/\(gt b r))}.
-Intros b H a; Pattern a; Apply gt_wf_rec; Intros n H0.
-Elim (le_gt_dec b n).
-Intro lebn.
-Elim (H0 (minus n b)); Auto with arith.
-Intros q Hq; Exists (S q).
-Elim Hq; Intros r Hr.
-Exists r; Simpl; Elim Hr; Intros.
-Elim plus_assoc_l.
-Elim H1; Auto with arith.
-Intros gtbn.
-Exists O; Exists n; Simpl; Auto with arith.
+Lemma quotient :
+ forall n,
+   n > 0 ->
+   forall m:nat, {q : nat |  exists r : nat | m = q * n + r /\ n > r}.
+intros b H a; pattern a in |- *; apply gt_wf_rec; intros n H0.
+elim (le_gt_dec b n).
+intro lebn.
+elim (H0 (n - b)); auto with arith.
+intros q Hq; exists (S q).
+elim Hq; intros r Hr.
+exists r; simpl in |- *; elim Hr; intros.
+elim plus_assoc.
+elim H1; auto with arith.
+intros gtbn.
+exists 0; exists n; simpl in |- *; auto with arith.
 Qed.
 
-Lemma modulo : (b:nat)(gt b O)->
-     (a:nat){r:nat|(EX q:nat | (a=(plus (mult q b) r))/\(gt b r))}.
-Intros b H a; Pattern a; Apply gt_wf_rec; Intros n H0.
-Elim (le_gt_dec b n).
-Intro lebn.
-Elim (H0 (minus n b)); Auto with arith.
-Intros r Hr; Exists r.
-Elim Hr; Intros q Hq.
-Elim Hq; Intros; Exists (S q); Simpl.
-Elim plus_assoc_l.
-Elim H1; Auto with arith.
-Intros gtbn.
-Exists n; Exists O; Simpl; Auto with arith.
+Lemma modulo :
+ forall n,
+   n > 0 ->
+   forall m:nat, {r : nat |  exists q : nat | m = q * n + r /\ n > r}.
+intros b H a; pattern a in |- *; apply gt_wf_rec; intros n H0.
+elim (le_gt_dec b n).
+intro lebn.
+elim (H0 (n - b)); auto with arith.
+intros r Hr; exists r.
+elim Hr; intros q Hq.
+elim Hq; intros; exists (S q); simpl in |- *.
+elim plus_assoc.
+elim H1; auto with arith.
+intros gtbn.
+exists n; exists 0; simpl in |- *; auto with arith.
 Qed.

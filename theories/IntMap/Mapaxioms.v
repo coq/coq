@@ -7,664 +7,757 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-Require Bool.
-Require Sumbool.
-Require ZArith.
-Require Addr.
-Require Adist.
-Require Addec.
-Require Map.
-Require Fset.
+Require Import Bool.
+Require Import Sumbool.
+Require Import ZArith.
+Require Import Addr.
+Require Import Adist.
+Require Import Addec.
+Require Import Map.
+Require Import Fset.
 
 Section MapAxioms.
 
-  Variable A, B, C : Set.
+  Variables A B C : Set.
 
-  Lemma eqm_sym : (f,f':ad->(option A)) (eqm A f f') -> (eqm A f' f).
+  Lemma eqm_sym : forall f f':ad -> option A, eqm A f f' -> eqm A f' f.
   Proof.
-    Unfold eqm. Intros. Rewrite H. Reflexivity.
+    unfold eqm in |- *. intros. rewrite H. reflexivity.
   Qed.
 
-  Lemma eqm_refl :  (f:ad->(option A)) (eqm A f f).
+  Lemma eqm_refl : forall f:ad -> option A, eqm A f f.
   Proof.
-    Unfold eqm. Trivial.
+    unfold eqm in |- *. trivial.
   Qed.
 
-  Lemma eqm_trans : (f,f',f'':ad->(option A)) (eqm A f f') -> (eqm A f' f'') -> (eqm A f f'').
+  Lemma eqm_trans :
+   forall f f' f'':ad -> option A, eqm A f f' -> eqm A f' f'' -> eqm A f f''.
   Proof.
-    Unfold eqm. Intros. Rewrite H. Exact (H0 a).
+    unfold eqm in |- *. intros. rewrite H. exact (H0 a).
   Qed.
 
-  Definition eqmap := [m,m':(Map A)] (eqm A (MapGet A m) (MapGet A m')).
+  Definition eqmap (m m':Map A) := eqm A (MapGet A m) (MapGet A m').
 
-  Lemma eqmap_sym : (m,m':(Map A)) (eqmap m m') -> (eqmap m' m).
+  Lemma eqmap_sym : forall m m':Map A, eqmap m m' -> eqmap m' m.
   Proof.
-    Intros. Unfold eqmap. Apply eqm_sym. Assumption.
+    intros. unfold eqmap in |- *. apply eqm_sym. assumption.
   Qed.
 
-  Lemma eqmap_refl :  (m:(Map A)) (eqmap m m).
+  Lemma eqmap_refl : forall m:Map A, eqmap m m.
   Proof.
-    Intros. Unfold eqmap. Apply eqm_refl.
+    intros. unfold eqmap in |- *. apply eqm_refl.
   Qed.
 
-  Lemma eqmap_trans : (m,m',m'':(Map A)) (eqmap m m') -> (eqmap m' m'') -> (eqmap m m'').
+  Lemma eqmap_trans :
+   forall m m' m'':Map A, eqmap m m' -> eqmap m' m'' -> eqmap m m''.
   Proof.
-    Intros. Exact (eqm_trans (MapGet A m) (MapGet A m') (MapGet A m'') H H0).
+    intros. exact (eqm_trans (MapGet A m) (MapGet A m') (MapGet A m'') H H0).
   Qed.
 
-  Lemma MapPut_as_Merge : (m:(Map A)) (a:ad) (y:A)
-      (eqmap (MapPut A m a y) (MapMerge A m (M1 A a y))).
+  Lemma MapPut_as_Merge :
+   forall (m:Map A) (a:ad) (y:A),
+     eqmap (MapPut A m a y) (MapMerge A m (M1 A a y)).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapPut_semantics A m a y a0).
-    Rewrite (MapMerge_semantics A m (M1 A a y) a0). Unfold 2 MapGet.
-    Elim (sumbool_of_bool (ad_eq a a0)); Intro H; Rewrite H; Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapPut_semantics A m a y a0).
+    rewrite (MapMerge_semantics A m (M1 A a y) a0). unfold MapGet at 2 in |- *.
+    elim (sumbool_of_bool (ad_eq a a0)); intro H; rewrite H; reflexivity.
   Qed.
 
-  Lemma MapPut_ext : (m,m':(Map A)) (eqmap m m') ->
-      (a:ad) (y:A) (eqmap (MapPut A m a y) (MapPut A m' a y)).
+  Lemma MapPut_ext :
+   forall m m':Map A,
+     eqmap m m' ->
+     forall (a:ad) (y:A), eqmap (MapPut A m a y) (MapPut A m' a y).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapPut_semantics A m' a y a0).
-    Rewrite (MapPut_semantics A m a y a0). 
-    Case (ad_eq a a0); [ Reflexivity | Apply H ].
+    unfold eqmap, eqm in |- *. intros. rewrite (MapPut_semantics A m' a y a0).
+    rewrite (MapPut_semantics A m a y a0). 
+    case (ad_eq a a0); [ reflexivity | apply H ].
   Qed.
 
-  Lemma MapPut_behind_as_Merge : (m:(Map A)) (a:ad) (y:A)
-      (eqmap (MapPut_behind A m a y) (MapMerge A (M1 A a y) m)).
+  Lemma MapPut_behind_as_Merge :
+   forall (m:Map A) (a:ad) (y:A),
+     eqmap (MapPut_behind A m a y) (MapMerge A (M1 A a y) m).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapPut_behind_semantics A m a y a0).
-    Rewrite (MapMerge_semantics A (M1 A a y) m a0). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapPut_behind_semantics A m a y a0).
+    rewrite (MapMerge_semantics A (M1 A a y) m a0). reflexivity.
   Qed.
 
-  Lemma MapPut_behind_ext : (m,m':(Map A)) (eqmap m m') ->
-      (a:ad) (y:A) (eqmap (MapPut_behind A m a y) (MapPut_behind A m' a y)).
+  Lemma MapPut_behind_ext :
+   forall m m':Map A,
+     eqmap m m' ->
+     forall (a:ad) (y:A),
+       eqmap (MapPut_behind A m a y) (MapPut_behind A m' a y).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapPut_behind_semantics A m' a y a0).
-    Rewrite (MapPut_behind_semantics A m a y a0). Rewrite (H a0). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapPut_behind_semantics A m' a y a0).
+    rewrite (MapPut_behind_semantics A m a y a0). rewrite (H a0). reflexivity.
   Qed.
 
-  Lemma MapMerge_empty_m_1 : (m:(Map A)) (MapMerge A (M0 A) m)=m.
+  Lemma MapMerge_empty_m_1 : forall m:Map A, MapMerge A (M0 A) m = m.
   Proof.
-    Trivial.
+    trivial.
   Qed.
 
-  Lemma MapMerge_empty_m : (m:(Map A)) (eqmap (MapMerge A (M0 A) m) m).
+  Lemma MapMerge_empty_m : forall m:Map A, eqmap (MapMerge A (M0 A) m) m.
   Proof.
-    Unfold eqmap eqm. Trivial.
+    unfold eqmap, eqm in |- *. trivial.
   Qed.
 
-  Lemma MapMerge_m_empty_1 : (m:(Map A)) (MapMerge A m (M0 A))=m.
+  Lemma MapMerge_m_empty_1 : forall m:Map A, MapMerge A m (M0 A) = m.
   Proof.
-    Induction m;Trivial.
+    simple induction m; trivial.
   Qed.
 
-  Lemma MapMerge_m_empty : (m:(Map A)) (eqmap (MapMerge A m (M0 A)) m).
+  Lemma MapMerge_m_empty : forall m:Map A, eqmap (MapMerge A m (M0 A)) m.
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite MapMerge_m_empty_1. Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite MapMerge_m_empty_1. reflexivity.
   Qed.
 
-  Lemma MapMerge_empty_l : (m,m':(Map A)) (eqmap (MapMerge A m m') (M0 A)) ->
-      (eqmap m (M0 A)).
+  Lemma MapMerge_empty_l :
+   forall m m':Map A, eqmap (MapMerge A m m') (M0 A) -> eqmap m (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros. Cut (MapGet A (MapMerge A m m') a)=(MapGet A (M0 A) a).
-    Rewrite (MapMerge_semantics A m m' a). Case (MapGet A m' a). Trivial.
-    Intros. Discriminate H0.
-    Exact (H a).
+    unfold eqmap, eqm in |- *. intros. cut (MapGet A (MapMerge A m m') a = MapGet A (M0 A) a).
+    rewrite (MapMerge_semantics A m m' a). case (MapGet A m' a). trivial.
+    intros. discriminate H0.
+    exact (H a).
   Qed.
 
-  Lemma MapMerge_empty_r : (m,m':(Map A)) (eqmap (MapMerge A m m') (M0 A)) ->
-      (eqmap m' (M0 A)).
+  Lemma MapMerge_empty_r :
+   forall m m':Map A, eqmap (MapMerge A m m') (M0 A) -> eqmap m' (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros. Cut (MapGet A (MapMerge A m m') a)=(MapGet A (M0 A) a).
-    Rewrite (MapMerge_semantics A m m' a). Case (MapGet A m' a). Trivial.
-    Intros. Discriminate H0.
-    Exact (H a).
+    unfold eqmap, eqm in |- *. intros. cut (MapGet A (MapMerge A m m') a = MapGet A (M0 A) a).
+    rewrite (MapMerge_semantics A m m' a). case (MapGet A m' a). trivial.
+    intros. discriminate H0.
+    exact (H a).
   Qed.
 
-  Lemma MapMerge_assoc : (m,m',m'':(Map A)) (eqmap
-      (MapMerge A (MapMerge A m m') m'')
-      (MapMerge A m (MapMerge A m' m''))).
+  Lemma MapMerge_assoc :
+   forall m m' m'':Map A,
+     eqmap (MapMerge A (MapMerge A m m') m'')
+       (MapMerge A m (MapMerge A m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapMerge_semantics A (MapMerge A m m') m'' a).
-    Rewrite (MapMerge_semantics A m (MapMerge A m' m'') a). Rewrite (MapMerge_semantics A m m' a).
-    Rewrite (MapMerge_semantics A m' m'' a).
-    Case (MapGet A m'' a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapMerge_semantics A (MapMerge A m m') m'' a).
+    rewrite (MapMerge_semantics A m (MapMerge A m' m'') a). rewrite (MapMerge_semantics A m m' a).
+    rewrite (MapMerge_semantics A m' m'' a).
+    case (MapGet A m'' a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapMerge_idempotent : (m:(Map A)) (eqmap (MapMerge A m m) m).
+  Lemma MapMerge_idempotent : forall m:Map A, eqmap (MapMerge A m m) m.
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapMerge_semantics A m m a).
-    Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapMerge_semantics A m m a).
+    case (MapGet A m a); trivial.
   Qed.
 
-  Lemma MapMerge_ext : (m1,m2,m'1,m'2:(Map A))
-      (eqmap m1 m'1) -> (eqmap m2 m'2) -> 
-        (eqmap (MapMerge A m1 m2) (MapMerge A m'1 m'2)).
+  Lemma MapMerge_ext :
+   forall m1 m2 m'1 m'2:Map A,
+     eqmap m1 m'1 ->
+     eqmap m2 m'2 -> eqmap (MapMerge A m1 m2) (MapMerge A m'1 m'2).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapMerge_semantics A m1 m2 a).
-    Rewrite (MapMerge_semantics A m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapMerge_semantics A m1 m2 a).
+    rewrite (MapMerge_semantics A m'1 m'2 a). rewrite (H a). rewrite (H0 a). reflexivity.
   Qed.
 
-  Lemma MapMerge_ext_l : (m1,m'1,m2:(Map A))
-      (eqmap m1 m'1) -> (eqmap (MapMerge A m1 m2) (MapMerge A m'1 m2)).
+  Lemma MapMerge_ext_l :
+   forall m1 m'1 m2:Map A,
+     eqmap m1 m'1 -> eqmap (MapMerge A m1 m2) (MapMerge A m'1 m2).
   Proof.
-    Intros. Apply MapMerge_ext. Assumption.
-    Apply eqmap_refl.
+    intros. apply MapMerge_ext. assumption.
+    apply eqmap_refl.
   Qed.
 
-  Lemma MapMerge_ext_r : (m1,m2,m'2:(Map A))
-      (eqmap m2 m'2) -> (eqmap (MapMerge A m1 m2) (MapMerge A m1 m'2)).
+  Lemma MapMerge_ext_r :
+   forall m1 m2 m'2:Map A,
+     eqmap m2 m'2 -> eqmap (MapMerge A m1 m2) (MapMerge A m1 m'2).
   Proof.
-    Intros. Apply MapMerge_ext. Apply eqmap_refl.
-    Assumption.
+    intros. apply MapMerge_ext. apply eqmap_refl.
+    assumption.
   Qed.
 
-  Lemma MapMerge_RestrTo_l : (m,m',m'':(Map A))
-      (eqmap (MapMerge A (MapDomRestrTo A A m m') m'')
-             (MapDomRestrTo A A (MapMerge A m m'') (MapMerge A m' m''))).
+  Lemma MapMerge_RestrTo_l :
+   forall m m' m'':Map A,
+     eqmap (MapMerge A (MapDomRestrTo A A m m') m'')
+       (MapDomRestrTo A A (MapMerge A m m'') (MapMerge A m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapMerge_semantics A (MapDomRestrTo A A m m') m'' a).
-    Rewrite (MapDomRestrTo_semantics A A m m' a).
-    Rewrite (MapDomRestrTo_semantics A A (MapMerge A m m'') (MapMerge A m' m'') a).
-    Rewrite (MapMerge_semantics A m' m'' a). Rewrite (MapMerge_semantics A m m'' a).
-    Case (MapGet A m'' a); Case (MapGet A m' a); Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapMerge_semantics A (MapDomRestrTo A A m m') m'' a).
+    rewrite (MapDomRestrTo_semantics A A m m' a).
+    rewrite
+     (MapDomRestrTo_semantics A A (MapMerge A m m'') (MapMerge A m' m'') a)
+     .
+    rewrite (MapMerge_semantics A m' m'' a). rewrite (MapMerge_semantics A m m'' a).
+    case (MapGet A m'' a); case (MapGet A m' a); reflexivity.
   Qed.
 
-  Lemma MapRemove_as_RestrBy : (m:(Map A)) (a:ad) (y:B)
-      (eqmap (MapRemove A m a) (MapDomRestrBy A B m (M1 B a y))).
+  Lemma MapRemove_as_RestrBy :
+   forall (m:Map A) (a:ad) (y:B),
+     eqmap (MapRemove A m a) (MapDomRestrBy A B m (M1 B a y)).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapRemove_semantics A m a a0).
-    Rewrite (MapDomRestrBy_semantics A B m (M1 B a y) a0). Elim (sumbool_of_bool (ad_eq a a0)).
-    Intro H. Rewrite H. Rewrite (ad_eq_complete a a0 H). Rewrite (M1_semantics_1 B a0 y).
-    Reflexivity.
-    Intro H. Rewrite H. Rewrite (M1_semantics_2 B a a0 y H). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapRemove_semantics A m a a0).
+    rewrite (MapDomRestrBy_semantics A B m (M1 B a y) a0). elim (sumbool_of_bool (ad_eq a a0)).
+    intro H. rewrite H. rewrite (ad_eq_complete a a0 H). rewrite (M1_semantics_1 B a0 y).
+    reflexivity.
+    intro H. rewrite H. rewrite (M1_semantics_2 B a a0 y H). reflexivity.
   Qed.
 
-  Lemma MapRemove_ext : (m,m':(Map A)) (eqmap m m') ->
-      (a:ad) (eqmap (MapRemove A m a) (MapRemove A m' a)).
+  Lemma MapRemove_ext :
+   forall m m':Map A,
+     eqmap m m' -> forall a:ad, eqmap (MapRemove A m a) (MapRemove A m' a).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapRemove_semantics A m' a a0).
-    Rewrite (MapRemove_semantics A m a a0). 
-    Case (ad_eq a a0); [ Reflexivity | Apply H ].
+    unfold eqmap, eqm in |- *. intros. rewrite (MapRemove_semantics A m' a a0).
+    rewrite (MapRemove_semantics A m a a0). 
+    case (ad_eq a a0); [ reflexivity | apply H ].
   Qed.
 
-  Lemma MapDomRestrTo_empty_m_1 : 
-      (m:(Map B)) (MapDomRestrTo A B (M0 A) m)=(M0 A).
+  Lemma MapDomRestrTo_empty_m_1 :
+   forall m:Map B, MapDomRestrTo A B (M0 A) m = M0 A.
   Proof.
-    Trivial.
+    trivial.
   Qed.
 
-  Lemma MapDomRestrTo_empty_m : 
-      (m:(Map B)) (eqmap (MapDomRestrTo A B (M0 A) m) (M0 A)).
+  Lemma MapDomRestrTo_empty_m :
+   forall m:Map B, eqmap (MapDomRestrTo A B (M0 A) m) (M0 A).
   Proof.
-    Unfold eqmap eqm. Trivial.
+    unfold eqmap, eqm in |- *. trivial.
   Qed.
 
-  Lemma MapDomRestrTo_m_empty_1 : 
-      (m:(Map A)) (MapDomRestrTo A B m (M0 B))=(M0 A).
+  Lemma MapDomRestrTo_m_empty_1 :
+   forall m:Map A, MapDomRestrTo A B m (M0 B) = M0 A.
   Proof.
-    Induction m;Trivial.
+    simple induction m; trivial.
   Qed.
 
-  Lemma MapDomRestrTo_m_empty : 
-      (m:(Map A)) (eqmap (MapDomRestrTo A B m (M0 B)) (M0 A)).
+  Lemma MapDomRestrTo_m_empty :
+   forall m:Map A, eqmap (MapDomRestrTo A B m (M0 B)) (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDomRestrTo_m_empty_1 m). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrTo_m_empty_1 m). reflexivity.
   Qed.
 
-  Lemma MapDomRestrTo_assoc : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrTo A C (MapDomRestrTo A B m m') m'')
-             (MapDomRestrTo A B m (MapDomRestrTo B C m' m''))).
+  Lemma MapDomRestrTo_assoc :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrTo A C (MapDomRestrTo A B m m') m'')
+       (MapDomRestrTo A B m (MapDomRestrTo B C m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A C (MapDomRestrTo A B m m') m'' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B m (MapDomRestrTo B C m' m'') a).
-    Rewrite (MapDomRestrTo_semantics B C m' m'' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrTo_semantics A C (MapDomRestrTo A B m m') m'' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B m (MapDomRestrTo B C m' m'') a).
+    rewrite (MapDomRestrTo_semantics B C m' m'' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrTo_idempotent : (m:(Map A)) (eqmap (MapDomRestrTo A A m m) m).
+  Lemma MapDomRestrTo_idempotent :
+   forall m:Map A, eqmap (MapDomRestrTo A A m m) m.
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDomRestrTo_semantics A A m m a).
-    Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrTo_semantics A A m m a).
+    case (MapGet A m a); trivial.
   Qed.
 
-  Lemma MapDomRestrTo_Dom : (m:(Map A)) (m':(Map B))
-      (eqmap (MapDomRestrTo A B m m') (MapDomRestrTo A unit m (MapDom B m'))).
+  Lemma MapDomRestrTo_Dom :
+   forall (m:Map A) (m':Map B),
+     eqmap (MapDomRestrTo A B m m') (MapDomRestrTo A unit m (MapDom B m')).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A unit m (MapDom B m') a).
-    Elim (sumbool_of_bool (in_FSet a (MapDom B m'))). Intro H.
-    Elim (MapDom_semantics_2 B m' a H). Intros y H0. Rewrite H0. Unfold in_FSet in_dom in H.
-    Generalize H. Case (MapGet unit (MapDom B m') a); Trivial. Intro H1. Discriminate H1.
-    Intro H. Rewrite (MapDom_semantics_4 B m' a H). Unfold in_FSet in_dom in H.
-    Generalize H. Case (MapGet unit (MapDom B m') a). Trivial.
-    Intros H0 H1. Discriminate H1.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrTo_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A unit m (MapDom B m') a).
+    elim (sumbool_of_bool (in_FSet a (MapDom B m'))). intro H.
+    elim (MapDom_semantics_2 B m' a H). intros y H0. rewrite H0. unfold in_FSet, in_dom in H.
+    generalize H. case (MapGet unit (MapDom B m') a); trivial. intro H1. discriminate H1.
+    intro H. rewrite (MapDom_semantics_4 B m' a H). unfold in_FSet, in_dom in H.
+    generalize H. case (MapGet unit (MapDom B m') a). trivial.
+    intros H0 H1. discriminate H1.
   Qed.
 
-  Lemma MapDomRestrBy_empty_m_1 : 
-      (m:(Map B)) (MapDomRestrBy A B (M0 A) m)=(M0 A).
+  Lemma MapDomRestrBy_empty_m_1 :
+   forall m:Map B, MapDomRestrBy A B (M0 A) m = M0 A.
   Proof.
-    Trivial.
+    trivial.
   Qed.
 
-  Lemma MapDomRestrBy_empty_m : 
-      (m:(Map B)) (eqmap (MapDomRestrBy A B (M0 A) m) (M0 A)).
+  Lemma MapDomRestrBy_empty_m :
+   forall m:Map B, eqmap (MapDomRestrBy A B (M0 A) m) (M0 A).
   Proof.
-    Unfold eqmap eqm. Trivial.
+    unfold eqmap, eqm in |- *. trivial.
   Qed.
 
-  Lemma MapDomRestrBy_m_empty_1 : (m:(Map A)) (MapDomRestrBy A B m (M0 B))=m.
+  Lemma MapDomRestrBy_m_empty_1 :
+   forall m:Map A, MapDomRestrBy A B m (M0 B) = m.
   Proof.
-    Induction m;Trivial.
+    simple induction m; trivial.
   Qed.
 
-  Lemma MapDomRestrBy_m_empty : (m:(Map A)) (eqmap (MapDomRestrBy A B m (M0 B)) m).
+  Lemma MapDomRestrBy_m_empty :
+   forall m:Map A, eqmap (MapDomRestrBy A B m (M0 B)) m.
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDomRestrBy_m_empty_1 m). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrBy_m_empty_1 m). reflexivity.
   Qed.
 
-  Lemma MapDomRestrBy_Dom : (m:(Map A)) (m':(Map B))
-      (eqmap (MapDomRestrBy A B m m') (MapDomRestrBy A unit m (MapDom B m'))).
+  Lemma MapDomRestrBy_Dom :
+   forall (m:Map A) (m':Map B),
+     eqmap (MapDomRestrBy A B m m') (MapDomRestrBy A unit m (MapDom B m')).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrBy_semantics A unit m (MapDom B m') a).
-    Elim (sumbool_of_bool (in_FSet a (MapDom B m'))). Intro H.
-    Elim (MapDom_semantics_2 B m' a H). Intros y H0. Rewrite H0.
-    Unfold in_FSet in_dom in H. Generalize H. Case (MapGet unit (MapDom B m') a); Trivial.
-    Intro H1. Discriminate H1.
-    Intro H. Rewrite (MapDom_semantics_4 B m' a H). Unfold in_FSet in_dom in H.
-    Generalize H. Case (MapGet unit (MapDom B m') a). Trivial.
-    Intros H0 H1. Discriminate H1.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrBy_semantics A unit m (MapDom B m') a).
+    elim (sumbool_of_bool (in_FSet a (MapDom B m'))). intro H.
+    elim (MapDom_semantics_2 B m' a H). intros y H0. rewrite H0.
+    unfold in_FSet, in_dom in H. generalize H. case (MapGet unit (MapDom B m') a); trivial.
+    intro H1. discriminate H1.
+    intro H. rewrite (MapDom_semantics_4 B m' a H). unfold in_FSet, in_dom in H.
+    generalize H. case (MapGet unit (MapDom B m') a). trivial.
+    intros H0 H1. discriminate H1.
   Qed.
 
-  Lemma MapDomRestrBy_m_m_1 : (m:(Map A)) (eqmap (MapDomRestrBy A A m m) (M0 A)).
+  Lemma MapDomRestrBy_m_m_1 :
+   forall m:Map A, eqmap (MapDomRestrBy A A m m) (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDomRestrBy_semantics A A m m a).
-    Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrBy_semantics A A m m a).
+    case (MapGet A m a); trivial.
   Qed.
 
-  Lemma MapDomRestrBy_By : (m:(Map A)) (m':(Map B)) (m'':(Map B))
-      (eqmap (MapDomRestrBy A B (MapDomRestrBy A B m m') m'')
-             (MapDomRestrBy A B m (MapMerge B m' m''))).
+  Lemma MapDomRestrBy_By :
+   forall (m:Map A) (m' m'':Map B),
+     eqmap (MapDomRestrBy A B (MapDomRestrBy A B m m') m'')
+       (MapDomRestrBy A B m (MapMerge B m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrBy_semantics A B (MapDomRestrBy A B m m') m'' a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrBy_semantics A B m (MapMerge B m' m'') a).
-    Rewrite (MapMerge_semantics B m' m'' a).
-    Case (MapGet B m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrBy_semantics A B (MapDomRestrBy A B m m') m'' a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrBy_semantics A B m (MapMerge B m' m'') a).
+    rewrite (MapMerge_semantics B m' m'' a).
+    case (MapGet B m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrBy_By_comm : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrBy A C (MapDomRestrBy A B m m') m'')
-             (MapDomRestrBy A B (MapDomRestrBy A C m m'') m')).
+  Lemma MapDomRestrBy_By_comm :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrBy A C (MapDomRestrBy A B m m') m'')
+       (MapDomRestrBy A B (MapDomRestrBy A C m m'') m').
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrBy_semantics A C (MapDomRestrBy A B m m') m'' a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrBy_semantics A B (MapDomRestrBy A C m m'') m' a).
-    Rewrite (MapDomRestrBy_semantics A C m m'' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrBy_semantics A C (MapDomRestrBy A B m m') m'' a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrBy_semantics A B (MapDomRestrBy A C m m'') m' a).
+    rewrite (MapDomRestrBy_semantics A C m m'' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrBy_To : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')
-             (MapDomRestrTo A B m (MapDomRestrBy B C m' m''))).
+  Lemma MapDomRestrBy_To :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')
+       (MapDomRestrTo A B m (MapDomRestrBy B C m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrBy_semantics A C (MapDomRestrTo A B m m') m'' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B m (MapDomRestrBy B C m' m'') a).
-    Rewrite (MapDomRestrBy_semantics B C m' m'' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrBy_semantics A C (MapDomRestrTo A B m m') m'' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B m (MapDomRestrBy B C m' m'') a).
+    rewrite (MapDomRestrBy_semantics B C m' m'' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrBy_To_comm : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')
-             (MapDomRestrTo A B (MapDomRestrBy A C m m'') m')).
+  Lemma MapDomRestrBy_To_comm :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrBy A C (MapDomRestrTo A B m m') m'')
+       (MapDomRestrTo A B (MapDomRestrBy A C m m'') m').
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrBy_semantics A C (MapDomRestrTo A B m m') m'' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B (MapDomRestrBy A C m m'') m' a).
-    Rewrite (MapDomRestrBy_semantics A C m m'' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrBy_semantics A C (MapDomRestrTo A B m m') m'' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B (MapDomRestrBy A C m m'') m' a).
+    rewrite (MapDomRestrBy_semantics A C m m'' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrTo_By : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')
-             (MapDomRestrTo A C m (MapDomRestrBy C B m'' m'))).
+  Lemma MapDomRestrTo_By :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')
+       (MapDomRestrTo A C m (MapDomRestrBy C B m'' m')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A C (MapDomRestrBy A B m m') m'' a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A C m (MapDomRestrBy C B m'' m') a).
-    Rewrite (MapDomRestrBy_semantics C B m'' m' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrTo_semantics A C (MapDomRestrBy A B m m') m'' a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A C m (MapDomRestrBy C B m'' m') a).
+    rewrite (MapDomRestrBy_semantics C B m'' m' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrTo_By_comm : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')
-             (MapDomRestrBy A B (MapDomRestrTo A C m m'') m')).
+  Lemma MapDomRestrTo_By_comm :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrTo A C (MapDomRestrBy A B m m') m'')
+       (MapDomRestrBy A B (MapDomRestrTo A C m m'') m').
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A C (MapDomRestrBy A B m m') m'' a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrBy_semantics A B (MapDomRestrTo A C m m'') m' a).
-    Rewrite (MapDomRestrTo_semantics A C m m'' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrTo_semantics A C (MapDomRestrBy A B m m') m'' a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrBy_semantics A B (MapDomRestrTo A C m m'') m' a).
+    rewrite (MapDomRestrTo_semantics A C m m'' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapDomRestrTo_To_comm : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (eqmap (MapDomRestrTo A C (MapDomRestrTo A B m m') m'')
-             (MapDomRestrTo A B (MapDomRestrTo A C m m'') m')).
+  Lemma MapDomRestrTo_To_comm :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     eqmap (MapDomRestrTo A C (MapDomRestrTo A B m m') m'')
+       (MapDomRestrTo A B (MapDomRestrTo A C m m'') m').
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A C (MapDomRestrTo A B m m') m'' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B (MapDomRestrTo A C m m'') m' a).
-    Rewrite (MapDomRestrTo_semantics A C m m'' a).
-    Case (MapGet C m'' a); Case (MapGet B m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrTo_semantics A C (MapDomRestrTo A B m m') m'' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B (MapDomRestrTo A C m m'') m' a).
+    rewrite (MapDomRestrTo_semantics A C m m'' a).
+    case (MapGet C m'' a); case (MapGet B m' a); trivial.
   Qed.
 
-  Lemma MapMerge_DomRestrTo : (m,m':(Map A)) (m'':(Map B))
-      (eqmap (MapDomRestrTo A B (MapMerge A m m') m'')
-             (MapMerge A (MapDomRestrTo A B m m'') (MapDomRestrTo A B m' m''))).
+  Lemma MapMerge_DomRestrTo :
+   forall (m m':Map A) (m'':Map B),
+     eqmap (MapDomRestrTo A B (MapMerge A m m') m'')
+       (MapMerge A (MapDomRestrTo A B m m'') (MapDomRestrTo A B m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A B (MapMerge A m m') m'' a).
-    Rewrite (MapMerge_semantics A m m' a).
-    Rewrite (MapMerge_semantics A (MapDomRestrTo A B m m'') (MapDomRestrTo A B m' m'') a).
-    Rewrite (MapDomRestrTo_semantics A B m' m'' a).
-    Rewrite (MapDomRestrTo_semantics A B m m'' a).
-    Case (MapGet B m'' a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrTo_semantics A B (MapMerge A m m') m'' a).
+    rewrite (MapMerge_semantics A m m' a).
+    rewrite
+     (MapMerge_semantics A (MapDomRestrTo A B m m'')
+        (MapDomRestrTo A B m' m'') a).
+    rewrite (MapDomRestrTo_semantics A B m' m'' a).
+    rewrite (MapDomRestrTo_semantics A B m m'' a).
+    case (MapGet B m'' a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapMerge_DomRestrBy : (m,m':(Map A)) (m'':(Map B))
-      (eqmap (MapDomRestrBy A B (MapMerge A m m') m'')
-             (MapMerge A (MapDomRestrBy A B m m'') (MapDomRestrBy A B m' m''))).
+  Lemma MapMerge_DomRestrBy :
+   forall (m m':Map A) (m'':Map B),
+     eqmap (MapDomRestrBy A B (MapMerge A m m') m'')
+       (MapMerge A (MapDomRestrBy A B m m'') (MapDomRestrBy A B m' m'')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrBy_semantics A B (MapMerge A m m') m'' a).
-    Rewrite (MapMerge_semantics A m m' a).
-    Rewrite (MapMerge_semantics A (MapDomRestrBy A B m m'') (MapDomRestrBy A B m' m'') a).
-    Rewrite (MapDomRestrBy_semantics A B m' m'' a).
-    Rewrite (MapDomRestrBy_semantics A B m m'' a).
-    Case (MapGet B m'' a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrBy_semantics A B (MapMerge A m m') m'' a).
+    rewrite (MapMerge_semantics A m m' a).
+    rewrite
+     (MapMerge_semantics A (MapDomRestrBy A B m m'')
+        (MapDomRestrBy A B m' m'') a).
+    rewrite (MapDomRestrBy_semantics A B m' m'' a).
+    rewrite (MapDomRestrBy_semantics A B m m'' a).
+    case (MapGet B m'' a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapDelta_empty_m_1 : (m:(Map A)) (MapDelta A (M0 A) m)=m.
+  Lemma MapDelta_empty_m_1 : forall m:Map A, MapDelta A (M0 A) m = m.
   Proof.
-    Trivial.
+    trivial.
   Qed.
 
-  Lemma MapDelta_empty_m : (m:(Map A)) (eqmap (MapDelta A (M0 A) m) m).
+  Lemma MapDelta_empty_m : forall m:Map A, eqmap (MapDelta A (M0 A) m) m.
   Proof.
-    Unfold eqmap eqm. Trivial.
+    unfold eqmap, eqm in |- *. trivial.
   Qed.
 
-  Lemma MapDelta_m_empty_1 : (m:(Map A)) (MapDelta A m (M0 A))=m.
+  Lemma MapDelta_m_empty_1 : forall m:Map A, MapDelta A m (M0 A) = m.
   Proof.
-    Induction m;Trivial.
+    simple induction m; trivial.
   Qed.
 
-  Lemma MapDelta_m_empty : (m:(Map A)) (eqmap (MapDelta A m (M0 A)) m).
+  Lemma MapDelta_m_empty : forall m:Map A, eqmap (MapDelta A m (M0 A)) m.
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite MapDelta_m_empty_1. Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite MapDelta_m_empty_1. reflexivity.
   Qed.
 
-  Lemma MapDelta_nilpotent : (m:(Map A)) (eqmap (MapDelta A m m) (M0 A)).
+  Lemma MapDelta_nilpotent : forall m:Map A, eqmap (MapDelta A m m) (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics A m m a).
-    Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDelta_semantics A m m a).
+    case (MapGet A m a); trivial.
   Qed.
 
-  Lemma MapDelta_as_Merge : (m,m':(Map A)) (eqmap (MapDelta A m m')
-      	(MapMerge A (MapDomRestrBy A A m m') (MapDomRestrBy A A m' m))).
+  Lemma MapDelta_as_Merge :
+   forall m m':Map A,
+     eqmap (MapDelta A m m')
+       (MapMerge A (MapDomRestrBy A A m m') (MapDomRestrBy A A m' m)).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDelta_semantics A m m' a).
-    Rewrite (MapMerge_semantics A (MapDomRestrBy A A m m') (MapDomRestrBy A A m' m) a).
-    Rewrite (MapDomRestrBy_semantics A A m' m a).
-    Rewrite (MapDomRestrBy_semantics A A m m' a).
-    Case (MapGet A m a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDelta_semantics A m m' a).
+    rewrite
+     (MapMerge_semantics A (MapDomRestrBy A A m m') (
+        MapDomRestrBy A A m' m) a).
+    rewrite (MapDomRestrBy_semantics A A m' m a).
+    rewrite (MapDomRestrBy_semantics A A m m' a).
+    case (MapGet A m a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapDelta_as_DomRestrBy : (m,m':(Map A)) (eqmap (MapDelta A m m')
-      	(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m m'))).
+  Lemma MapDelta_as_DomRestrBy :
+   forall m m':Map A,
+     eqmap (MapDelta A m m')
+       (MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m m')).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics A m m' a).
-    Rewrite (MapDomRestrBy_semantics A A (MapMerge A m m') (MapDomRestrTo A A m m') a).
-    Rewrite (MapDomRestrTo_semantics A A m m' a). Rewrite (MapMerge_semantics A m m' a).
-    Case (MapGet A m a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDelta_semantics A m m' a).
+    rewrite
+     (MapDomRestrBy_semantics A A (MapMerge A m m') (
+        MapDomRestrTo A A m m') a).
+    rewrite (MapDomRestrTo_semantics A A m m' a). rewrite (MapMerge_semantics A m m' a).
+    case (MapGet A m a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapDelta_as_DomRestrBy_2 : (m,m':(Map A)) (eqmap (MapDelta A m m')
-      	(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m' m))).
+  Lemma MapDelta_as_DomRestrBy_2 :
+   forall m m':Map A,
+     eqmap (MapDelta A m m')
+       (MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m' m)).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics A m m' a).
-    Rewrite (MapDomRestrBy_semantics A A (MapMerge A m m') (MapDomRestrTo A A m' m) a).
-    Rewrite (MapDomRestrTo_semantics A A m' m a). Rewrite (MapMerge_semantics A m m' a).
-    Case (MapGet A m a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDelta_semantics A m m' a).
+    rewrite
+     (MapDomRestrBy_semantics A A (MapMerge A m m') (
+        MapDomRestrTo A A m' m) a).
+    rewrite (MapDomRestrTo_semantics A A m' m a). rewrite (MapMerge_semantics A m m' a).
+    case (MapGet A m a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapDelta_sym : (m,m':(Map A)) (eqmap (MapDelta A m m') (MapDelta A m' m)).
+  Lemma MapDelta_sym :
+   forall m m':Map A, eqmap (MapDelta A m m') (MapDelta A m' m).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics A m m' a).
-    Rewrite (MapDelta_semantics A m' m a). 
-    Case (MapGet A m a); Case (MapGet A m' a); Trivial.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDelta_semantics A m m' a).
+    rewrite (MapDelta_semantics A m' m a). 
+    case (MapGet A m a); case (MapGet A m' a); trivial.
   Qed.
 
-  Lemma MapDelta_ext : (m1,m2,m'1,m'2:(Map A))
-      (eqmap m1 m'1) -> (eqmap m2 m'2) -> 
-        (eqmap (MapDelta A m1 m2) (MapDelta A m'1 m'2)).
+  Lemma MapDelta_ext :
+   forall m1 m2 m'1 m'2:Map A,
+     eqmap m1 m'1 ->
+     eqmap m2 m'2 -> eqmap (MapDelta A m1 m2) (MapDelta A m'1 m'2).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics A m1 m2 a).
-    Rewrite (MapDelta_semantics A m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
+    unfold eqmap, eqm in |- *. intros. rewrite (MapDelta_semantics A m1 m2 a).
+    rewrite (MapDelta_semantics A m'1 m'2 a). rewrite (H a). rewrite (H0 a). reflexivity.
   Qed.
 
-  Lemma MapDelta_ext_l : (m1,m'1,m2:(Map A))
-      (eqmap m1 m'1) -> (eqmap (MapDelta A m1 m2) (MapDelta A m'1 m2)).
+  Lemma MapDelta_ext_l :
+   forall m1 m'1 m2:Map A,
+     eqmap m1 m'1 -> eqmap (MapDelta A m1 m2) (MapDelta A m'1 m2).
   Proof.
-    Intros. Apply MapDelta_ext. Assumption.
-    Apply eqmap_refl.
+    intros. apply MapDelta_ext. assumption.
+    apply eqmap_refl.
   Qed.
 
-  Lemma MapDelta_ext_r : (m1,m2,m'2:(Map A))
-      (eqmap m2 m'2) -> (eqmap (MapDelta A m1 m2) (MapDelta A m1 m'2)).
+  Lemma MapDelta_ext_r :
+   forall m1 m2 m'2:Map A,
+     eqmap m2 m'2 -> eqmap (MapDelta A m1 m2) (MapDelta A m1 m'2).
   Proof.
-    Intros. Apply MapDelta_ext. Apply eqmap_refl.
-    Assumption.
+    intros. apply MapDelta_ext. apply eqmap_refl.
+    assumption.
   Qed.
 
-  Lemma MapDom_Split_1 : (m:(Map A)) (m':(Map B))
-      (eqmap m (MapMerge A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m'))).
+  Lemma MapDom_Split_1 :
+   forall (m:Map A) (m':Map B),
+     eqmap m (MapMerge A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapMerge_semantics A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m') a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Case (MapGet B m' a); Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite
+     (MapMerge_semantics A (MapDomRestrTo A B m m') (
+        MapDomRestrBy A B m m') a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    case (MapGet B m' a); case (MapGet A m a); trivial.
   Qed.
  
-  Lemma MapDom_Split_2 : (m:(Map A)) (m':(Map B))
-      (eqmap m (MapMerge A (MapDomRestrBy A B m m') (MapDomRestrTo A B m m'))).
+  Lemma MapDom_Split_2 :
+   forall (m:Map A) (m':Map B),
+     eqmap m (MapMerge A (MapDomRestrBy A B m m') (MapDomRestrTo A B m m')).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapMerge_semantics A (MapDomRestrBy A B m m') (MapDomRestrTo A B m m') a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Case (MapGet B m' a); Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite
+     (MapMerge_semantics A (MapDomRestrBy A B m m') (
+        MapDomRestrTo A B m m') a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    case (MapGet B m' a); case (MapGet A m a); trivial.
   Qed.
 
-  Lemma MapDom_Split_3 : (m:(Map A)) (m':(Map B))
-      (eqmap (MapDomRestrTo A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m')) 
-	(M0 A)).
+  Lemma MapDom_Split_3 :
+   forall (m:Map A) (m':Map B),
+     eqmap
+       (MapDomRestrTo A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m'))
+       (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A A (MapDomRestrTo A B m m') (MapDomRestrBy A B m m') a).
-    Rewrite (MapDomRestrBy_semantics A B m m' a).
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Case (MapGet B m' a); Case (MapGet A m a); Trivial.
+    unfold eqmap, eqm in |- *. intros.
+    rewrite
+     (MapDomRestrTo_semantics A A (MapDomRestrTo A B m m')
+        (MapDomRestrBy A B m m') a).
+    rewrite (MapDomRestrBy_semantics A B m m' a).
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    case (MapGet B m' a); case (MapGet A m a); trivial.
   Qed.
 
 End MapAxioms.
 
-Lemma MapDomRestrTo_ext : (A,B:Set) 
-    (m1:(Map A)) (m2:(Map B)) (m'1:(Map A)) (m'2:(Map B))
-      (eqmap A m1 m'1) -> (eqmap B m2 m'2) ->
-        (eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m'2)).
+Lemma MapDomRestrTo_ext :
+ forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A) 
+   (m'2:Map B),
+   eqmap A m1 m'1 ->
+   eqmap B m2 m'2 ->
+   eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m'2).
 Proof.
-  Unfold eqmap eqm. Intros. Rewrite (MapDomRestrTo_semantics A B m1 m2 a).
-  Rewrite (MapDomRestrTo_semantics A B m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
+  unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrTo_semantics A B m1 m2 a).
+  rewrite (MapDomRestrTo_semantics A B m'1 m'2 a). rewrite (H a). rewrite (H0 a). reflexivity.
 Qed.
 
-Lemma MapDomRestrTo_ext_l : (A,B:Set) (m1:(Map A)) (m2:(Map B)) (m'1:(Map A))
-    (eqmap A m1 m'1) ->
-      (eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m2)).
+Lemma MapDomRestrTo_ext_l :
+ forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A),
+   eqmap A m1 m'1 ->
+   eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m2).
 Proof.
-  Intros. Apply MapDomRestrTo_ext; [ Assumption | Apply eqmap_refl ].
+  intros. apply MapDomRestrTo_ext; [ assumption | apply eqmap_refl ].
 Qed.
 
-Lemma MapDomRestrTo_ext_r : (A,B:Set) (m1:(Map A)) (m2:(Map B)) (m'2:(Map B))
-    (eqmap B m2 m'2) ->
-      (eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m1 m'2)).
+Lemma MapDomRestrTo_ext_r :
+ forall (A B:Set) (m1:Map A) (m2 m'2:Map B),
+   eqmap B m2 m'2 ->
+   eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m1 m'2).
 Proof.
-  Intros. Apply MapDomRestrTo_ext; [ Apply eqmap_refl | Assumption ].
+  intros. apply MapDomRestrTo_ext; [ apply eqmap_refl | assumption ].
 Qed.
 
-Lemma MapDomRestrBy_ext : (A,B:Set) 
-    (m1:(Map A)) (m2:(Map B)) (m'1:(Map A)) (m'2:(Map B))
-      (eqmap A m1 m'1) -> (eqmap B m2 m'2) ->
-        (eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m'2)).
+Lemma MapDomRestrBy_ext :
+ forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A) 
+   (m'2:Map B),
+   eqmap A m1 m'1 ->
+   eqmap B m2 m'2 ->
+   eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m'2).
 Proof.
-  Unfold eqmap eqm. Intros. Rewrite (MapDomRestrBy_semantics A B m1 m2 a).
-  Rewrite (MapDomRestrBy_semantics A B m'1 m'2 a). Rewrite (H a). Rewrite (H0 a). Reflexivity.
+  unfold eqmap, eqm in |- *. intros. rewrite (MapDomRestrBy_semantics A B m1 m2 a).
+  rewrite (MapDomRestrBy_semantics A B m'1 m'2 a). rewrite (H a). rewrite (H0 a). reflexivity.
 Qed.
 
-Lemma MapDomRestrBy_ext_l : (A,B:Set) (m1:(Map A)) (m2:(Map B)) (m'1:(Map A))
-    (eqmap A m1 m'1) ->
-      (eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m2)).
+Lemma MapDomRestrBy_ext_l :
+ forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A),
+   eqmap A m1 m'1 ->
+   eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m2).
 Proof.
-  Intros. Apply MapDomRestrBy_ext; [ Assumption | Apply eqmap_refl ].
+  intros. apply MapDomRestrBy_ext; [ assumption | apply eqmap_refl ].
 Qed.
 
-Lemma MapDomRestrBy_ext_r : (A,B:Set) (m1:(Map A)) (m2:(Map B)) (m'2:(Map B))
-    (eqmap B m2 m'2) ->
-      (eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m1 m'2)).
+Lemma MapDomRestrBy_ext_r :
+ forall (A B:Set) (m1:Map A) (m2 m'2:Map B),
+   eqmap B m2 m'2 ->
+   eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m1 m'2).
 Proof.
-  Intros. Apply MapDomRestrBy_ext; [ Apply eqmap_refl | Assumption ].
+  intros. apply MapDomRestrBy_ext; [ apply eqmap_refl | assumption ].
 Qed.
 
-Lemma MapDomRestrBy_m_m : (A:Set) (m:(Map A))
-    (eqmap A (MapDomRestrBy A unit m (MapDom A m)) (M0 A)).
+Lemma MapDomRestrBy_m_m :
+ forall (A:Set) (m:Map A),
+   eqmap A (MapDomRestrBy A unit m (MapDom A m)) (M0 A).
 Proof.
-  Intros. Apply eqmap_trans with m':=(MapDomRestrBy A A m m). Apply eqmap_sym.
-  Apply MapDomRestrBy_Dom.
-  Apply MapDomRestrBy_m_m_1.
+  intros. apply eqmap_trans with (m' := MapDomRestrBy A A m m). apply eqmap_sym.
+  apply MapDomRestrBy_Dom.
+  apply MapDomRestrBy_m_m_1.
 Qed.
 
-Lemma FSetDelta_assoc : (s,s',s'':FSet)
-    (eqmap unit (MapDelta ? (MapDelta ? s s') s'') (MapDelta ? s (MapDelta ? s' s''))).
+Lemma FSetDelta_assoc :
+ forall s s' s'':FSet,
+   eqmap unit (MapDelta _ (MapDelta _ s s') s'')
+     (MapDelta _ s (MapDelta _ s' s'')).
 Proof.
-  Unfold eqmap eqm. Intros. Rewrite (MapDelta_semantics unit (MapDelta unit s s') s'' a).
-  Rewrite (MapDelta_semantics unit s s' a).
-  Rewrite (MapDelta_semantics unit s (MapDelta unit s' s'') a).
-  Rewrite (MapDelta_semantics unit s' s'' a).
-  Case (MapGet ? s a); Case (MapGet ? s' a); Case (MapGet ? s'' a); Trivial.
-  Intros. Elim u. Elim u1. Reflexivity.
+  unfold eqmap, eqm in |- *. intros. rewrite (MapDelta_semantics unit (MapDelta unit s s') s'' a).
+  rewrite (MapDelta_semantics unit s s' a).
+  rewrite (MapDelta_semantics unit s (MapDelta unit s' s'') a).
+  rewrite (MapDelta_semantics unit s' s'' a).
+  case (MapGet _ s a); case (MapGet _ s' a); case (MapGet _ s'' a); trivial.
+  intros. elim u. elim u1. reflexivity.
 Qed.
 
-Lemma FSet_ext : (s,s':FSet) ((a:ad) (in_FSet a s)=(in_FSet a s')) -> (eqmap unit s s').
+Lemma FSet_ext :
+ forall s s':FSet,
+   (forall a:ad, in_FSet a s = in_FSet a s') -> eqmap unit s s'.
 Proof.
-  Unfold in_FSet eqmap eqm. Intros. Elim (sumbool_of_bool (in_dom ? a s)). Intro H0.
-  Elim (in_dom_some ? s a H0). Intros y H1. Rewrite (H a) in H0. Elim (in_dom_some ? s' a H0).
-  Intros y' H2. Rewrite H1. Rewrite H2. Elim y. Elim y'. Reflexivity.
-  Intro H0. Rewrite (in_dom_none ? s a H0). Rewrite (H a) in H0. Rewrite (in_dom_none ? s' a H0).
-  Reflexivity.
+  unfold in_FSet, eqmap, eqm in |- *. intros. elim (sumbool_of_bool (in_dom _ a s)). intro H0.
+  elim (in_dom_some _ s a H0). intros y H1. rewrite (H a) in H0. elim (in_dom_some _ s' a H0).
+  intros y' H2. rewrite H1. rewrite H2. elim y. elim y'. reflexivity.
+  intro H0. rewrite (in_dom_none _ s a H0). rewrite (H a) in H0. rewrite (in_dom_none _ s' a H0).
+  reflexivity.
 Qed.
 
-Lemma FSetUnion_comm : (s,s':FSet) (eqmap unit (FSetUnion s s') (FSetUnion s' s)).
+Lemma FSetUnion_comm :
+ forall s s':FSet, eqmap unit (FSetUnion s s') (FSetUnion s' s).
 Proof.
-  Intros. Apply FSet_ext. Intro. Rewrite in_FSet_union. Rewrite in_FSet_union. Apply orb_sym.
+  intros. apply FSet_ext. intro. rewrite in_FSet_union. rewrite in_FSet_union. apply orb_comm.
 Qed.
 
-Lemma FSetUnion_assoc : (s,s',s'':FSet) (eqmap unit
-      (FSetUnion (FSetUnion s s') s'') (FSetUnion s (FSetUnion s' s''))).
+Lemma FSetUnion_assoc :
+ forall s s' s'':FSet,
+   eqmap unit (FSetUnion (FSetUnion s s') s'')
+     (FSetUnion s (FSetUnion s' s'')).
 Proof.
-  Exact (MapMerge_assoc unit).
+  exact (MapMerge_assoc unit).
 Qed.
 
-Lemma FSetUnion_M0_s : (s:FSet) (eqmap unit (FSetUnion (M0 unit) s) s).
+Lemma FSetUnion_M0_s : forall s:FSet, eqmap unit (FSetUnion (M0 unit) s) s.
 Proof.
-  Exact (MapMerge_empty_m unit).
+  exact (MapMerge_empty_m unit).
 Qed.
 
-Lemma FSetUnion_s_M0 : (s:FSet) (eqmap unit (FSetUnion s (M0 unit)) s).
+Lemma FSetUnion_s_M0 : forall s:FSet, eqmap unit (FSetUnion s (M0 unit)) s.
 Proof.
-  Exact (MapMerge_m_empty unit).
+  exact (MapMerge_m_empty unit).
 Qed.
 
-Lemma FSetUnion_idempotent : (s:FSet) (eqmap unit (FSetUnion s s) s).
+Lemma FSetUnion_idempotent : forall s:FSet, eqmap unit (FSetUnion s s) s.
 Proof.
-  Exact (MapMerge_idempotent unit).
+  exact (MapMerge_idempotent unit).
 Qed.
 
-Lemma FSetInter_comm : (s,s':FSet) (eqmap unit (FSetInter s s') (FSetInter s' s)).
+Lemma FSetInter_comm :
+ forall s s':FSet, eqmap unit (FSetInter s s') (FSetInter s' s).
 Proof.
-  Intros. Apply FSet_ext. Intro. Rewrite in_FSet_inter. Rewrite in_FSet_inter. Apply andb_sym.
+  intros. apply FSet_ext. intro. rewrite in_FSet_inter. rewrite in_FSet_inter. apply andb_comm.
 Qed.
 
-Lemma FSetInter_assoc : (s,s',s'':FSet) (eqmap unit
-      (FSetInter (FSetInter s s') s'') (FSetInter s (FSetInter s' s''))).
+Lemma FSetInter_assoc :
+ forall s s' s'':FSet,
+   eqmap unit (FSetInter (FSetInter s s') s'')
+     (FSetInter s (FSetInter s' s'')).
 Proof.
-  Exact (MapDomRestrTo_assoc unit unit unit).
+  exact (MapDomRestrTo_assoc unit unit unit).
 Qed.
 
-Lemma FSetInter_M0_s : (s:FSet) (eqmap unit (FSetInter (M0 unit) s) (M0 unit)).
+Lemma FSetInter_M0_s :
+ forall s:FSet, eqmap unit (FSetInter (M0 unit) s) (M0 unit).
 Proof.
-  Exact (MapDomRestrTo_empty_m unit unit).
+  exact (MapDomRestrTo_empty_m unit unit).
 Qed.
 
-Lemma FSetInter_s_M0 : (s:FSet) (eqmap unit (FSetInter s (M0 unit)) (M0 unit)).
+Lemma FSetInter_s_M0 :
+ forall s:FSet, eqmap unit (FSetInter s (M0 unit)) (M0 unit).
 Proof.
-  Exact (MapDomRestrTo_m_empty unit unit).
+  exact (MapDomRestrTo_m_empty unit unit).
 Qed.
 
-Lemma FSetInter_idempotent : (s:FSet) (eqmap unit (FSetInter s s) s).
+Lemma FSetInter_idempotent : forall s:FSet, eqmap unit (FSetInter s s) s.
 Proof.
-  Exact (MapDomRestrTo_idempotent unit).
+  exact (MapDomRestrTo_idempotent unit).
 Qed.
 
-Lemma FSetUnion_Inter_l : (s,s',s'':FSet) (eqmap unit
-      (FSetUnion (FSetInter s s') s'') (FSetInter (FSetUnion s s'') (FSetUnion s' s''))).
+Lemma FSetUnion_Inter_l :
+ forall s s' s'':FSet,
+   eqmap unit (FSetUnion (FSetInter s s') s'')
+     (FSetInter (FSetUnion s s'') (FSetUnion s' s'')).
 Proof.
-  Intros. Apply FSet_ext. Intro. Rewrite in_FSet_union. Rewrite in_FSet_inter.
-  Rewrite in_FSet_inter. Rewrite in_FSet_union. Rewrite in_FSet_union.
-  Case (in_FSet a s); Case (in_FSet a s'); Case (in_FSet a s''); Reflexivity.
+  intros. apply FSet_ext. intro. rewrite in_FSet_union. rewrite in_FSet_inter.
+  rewrite in_FSet_inter. rewrite in_FSet_union. rewrite in_FSet_union.
+  case (in_FSet a s); case (in_FSet a s'); case (in_FSet a s''); reflexivity.
 Qed.
 
-Lemma FSetUnion_Inter_r : (s,s',s'':FSet) (eqmap unit
-      (FSetUnion s (FSetInter s' s'')) (FSetInter (FSetUnion s s') (FSetUnion s s''))).
+Lemma FSetUnion_Inter_r :
+ forall s s' s'':FSet,
+   eqmap unit (FSetUnion s (FSetInter s' s''))
+     (FSetInter (FSetUnion s s') (FSetUnion s s'')).
 Proof.
-  Intros. Apply FSet_ext. Intro. Rewrite in_FSet_union. Rewrite in_FSet_inter.
-  Rewrite in_FSet_inter. Rewrite in_FSet_union. Rewrite in_FSet_union.
-  Case (in_FSet a s); Case (in_FSet a s'); Case (in_FSet a s''); Reflexivity.
+  intros. apply FSet_ext. intro. rewrite in_FSet_union. rewrite in_FSet_inter.
+  rewrite in_FSet_inter. rewrite in_FSet_union. rewrite in_FSet_union.
+  case (in_FSet a s); case (in_FSet a s'); case (in_FSet a s''); reflexivity.
 Qed.
 
-Lemma FSetInter_Union_l : (s,s',s'':FSet) (eqmap unit
-      (FSetInter (FSetUnion s s') s'') (FSetUnion (FSetInter s s'') (FSetInter s' s''))).
+Lemma FSetInter_Union_l :
+ forall s s' s'':FSet,
+   eqmap unit (FSetInter (FSetUnion s s') s'')
+     (FSetUnion (FSetInter s s'') (FSetInter s' s'')).
 Proof.
-  Intros. Apply FSet_ext. Intro. Rewrite in_FSet_inter. Rewrite in_FSet_union.
-  Rewrite in_FSet_union. Rewrite in_FSet_inter. Rewrite in_FSet_inter.
-  Case (in_FSet a s); Case (in_FSet a s'); Case (in_FSet a s''); Reflexivity.
+  intros. apply FSet_ext. intro. rewrite in_FSet_inter. rewrite in_FSet_union.
+  rewrite in_FSet_union. rewrite in_FSet_inter. rewrite in_FSet_inter.
+  case (in_FSet a s); case (in_FSet a s'); case (in_FSet a s''); reflexivity.
 Qed.
 
-Lemma FSetInter_Union_r : (s,s',s'':FSet) (eqmap unit
-      (FSetInter s (FSetUnion s' s'')) (FSetUnion (FSetInter s s') (FSetInter s s''))).
+Lemma FSetInter_Union_r :
+ forall s s' s'':FSet,
+   eqmap unit (FSetInter s (FSetUnion s' s''))
+     (FSetUnion (FSetInter s s') (FSetInter s s'')).
 Proof.
-  Intros. Apply FSet_ext. Intro. Rewrite in_FSet_inter. Rewrite in_FSet_union.
-  Rewrite in_FSet_union. Rewrite in_FSet_inter. Rewrite in_FSet_inter.
-  Case (in_FSet a s); Case (in_FSet a s'); Case (in_FSet a s''); Reflexivity.
+  intros. apply FSet_ext. intro. rewrite in_FSet_inter. rewrite in_FSet_union.
+  rewrite in_FSet_union. rewrite in_FSet_inter. rewrite in_FSet_inter.
+  case (in_FSet a s); case (in_FSet a s'); case (in_FSet a s''); reflexivity.
 Qed.

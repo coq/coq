@@ -10,38 +10,38 @@
 
 (** Author: Bruno Barras *)
 
-Require Relation_Definitions.
-Require Relation_Operators.
+Require Import Relation_Definitions.
+Require Import Relation_Operators.
 
 Section Wf_Transitive_Closure.
-  Variable A: Set.
-  Variable R: (relation A).
+  Variable A : Set.
+  Variable R : relation A.
 
   Notation trans_clos := (clos_trans A R).
  
-  Lemma incl_clos_trans: (inclusion A R trans_clos).
-    Red;Auto with sets.
+  Lemma incl_clos_trans : inclusion A R trans_clos.
+    red in |- *; auto with sets.
   Qed.
 
-  Lemma Acc_clos_trans: (x:A)(Acc A R x)->(Acc A trans_clos x).
-    NewInduction 1 as [x0 _ H1].
-    Apply Acc_intro.
-    Intros y H2.
-    NewInduction H2;Auto with sets.
-    Apply Acc_inv with y ;Auto with sets.
+  Lemma Acc_clos_trans : forall x:A, Acc R x -> Acc trans_clos x.
+    induction 1 as [x0 _ H1].
+    apply Acc_intro.
+    intros y H2.
+    induction H2; auto with sets.
+    apply Acc_inv with y; auto with sets.
   Qed.
 
-  Hints Resolve Acc_clos_trans.
+  Hint Resolve Acc_clos_trans.
 
-  Lemma Acc_inv_trans: (x,y:A)(trans_clos y x)->(Acc A R x)->(Acc A R y).
+  Lemma Acc_inv_trans : forall x y:A, trans_clos y x -> Acc R x -> Acc R y.
   Proof.
-    NewInduction 1 as [|x y];Auto with sets.
-    Intro; Apply Acc_inv with y; Assumption.
+    induction 1 as [| x y]; auto with sets.
+    intro; apply Acc_inv with y; assumption.
   Qed.
 
-  Theorem wf_clos_trans: (well_founded A R)  ->(well_founded A trans_clos).
+  Theorem wf_clos_trans : well_founded R -> well_founded trans_clos.
   Proof.
-    Unfold well_founded;Auto with sets.
+    unfold well_founded in |- *; auto with sets.
   Qed.
 
 End Wf_Transitive_Closure.

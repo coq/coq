@@ -19,13 +19,14 @@
 
 Require Export ClassicalDescription.
 Require Export RelationalChoice.
-Require ChoiceFacts.
+Require Import ChoiceFacts.
 
-Theorem choice : 
- (A:Type;B:Type;R: A->B->Prop)
-  ((x:A)(EX y:B|(R x y))) -> (EX f:A->B | (x:A)(R x (f x))).
+Theorem choice :
+ forall (A B:Type) (R:A -> B -> Prop),
+   (forall x:A,  exists y : B | R x y) ->
+    exists f : A -> B | (forall x:A, R x (f x)).
 Proof.
-Apply description_rel_choice_imp_funct_choice.
-Exact description.
-Exact relational_choice.
+apply description_rel_choice_imp_funct_choice.
+exact description.
+exact relational_choice.
 Qed.

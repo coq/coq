@@ -10,69 +10,68 @@
 
 (** Equality on natural numbers *)
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,x,y:nat.
+Implicit Types m n x y : nat.
 
-Fixpoint  eq_nat [n:nat] : nat -> Prop :=
-  [m:nat]Cases n m of 
-                O      O     => True
-             |  O     (S _)  => False
-             | (S _)   O     => False
-             | (S n1) (S m1) => (eq_nat n1 m1)
-          end.
+Fixpoint eq_nat n m {struct n} : Prop :=
+  match n, m with
+  | O, O => True
+  | O, S _ => False
+  | S _, O => False
+  | S n1, S m1 => eq_nat n1 m1
+  end.
 
-Theorem eq_nat_refl : (n:nat)(eq_nat n n).
-NewInduction n; Simpl; Auto.
+Theorem eq_nat_refl : forall n, eq_nat n n.
+induction n; simpl in |- *; auto.
 Qed.
-Hints Resolve eq_nat_refl : arith v62.
+Hint Resolve eq_nat_refl: arith v62.
 
-Theorem eq_eq_nat : (n,m:nat)(n=m)->(eq_nat n m).
-NewInduction 1; Trivial with arith.
+Theorem eq_eq_nat : forall n m, n = m -> eq_nat n m.
+induction 1; trivial with arith.
 Qed.
-Hints Immediate eq_eq_nat : arith v62.
+Hint Immediate eq_eq_nat: arith v62.
 
-Theorem eq_nat_eq : (n,m:nat)(eq_nat n m)->(n=m).
-NewInduction n; NewInduction m; Simpl; Contradiction Orelse Auto with arith.
+Theorem eq_nat_eq : forall n m, eq_nat n m -> n = m.
+induction n; induction m; simpl in |- *; contradiction || auto with arith.
 Qed.
-Hints Immediate eq_nat_eq : arith v62.
+Hint Immediate eq_nat_eq: arith v62.
 
-Theorem eq_nat_elim : (n:nat)(P:nat->Prop)(P n)->(m:nat)(eq_nat n m)->(P m).
-Intros; Replace m with n; Auto with arith.
+Theorem eq_nat_elim :
+ forall n (P:nat -> Prop), P n -> forall m, eq_nat n m -> P m.
+intros; replace m with n; auto with arith.
 Qed.
 
-Theorem eq_nat_decide : (n,m:nat){(eq_nat n m)}+{~(eq_nat n m)}.
-NewInduction n.
-NewDestruct m.
-Auto with arith.
-Intros; Right; Red; Trivial with arith.
-NewDestruct m.
-Right; Red; Auto with arith.
-Intros.
-Simpl.
-Apply IHn.
+Theorem eq_nat_decide : forall n m, {eq_nat n m} + {~ eq_nat n m}.
+induction n.
+destruct m as [| n].
+auto with arith.
+intros; right; red in |- *; trivial with arith.
+destruct m as [| n0].
+right; red in |- *; auto with arith.
+intros.
+simpl in |- *.
+apply IHn.
 Defined.
 
-Fixpoint  beq_nat [n:nat] : nat -> bool :=
-  [m:nat]Cases n m of 
-                O      O     => true
-             |  O     (S _)  => false
-             | (S _)   O     => false
-             | (S n1) (S m1) => (beq_nat n1 m1)
-          end.
+Fixpoint beq_nat n m {struct n} : bool :=
+  match n, m with
+  | O, O => true
+  | O, S _ => false
+  | S _, O => false
+  | S n1, S m1 => beq_nat n1 m1
+  end.
 
-Lemma beq_nat_refl : (x:nat)true=(beq_nat x x).
+Lemma beq_nat_refl : forall n, true = beq_nat n n.
 Proof.
-  Intro x; NewInduction x; Simpl; Auto.
+  intro x; induction x; simpl in |- *; auto.
 Qed.
 
-Definition beq_nat_eq : (x,y:nat)true=(beq_nat x y)->x=y.
+Definition beq_nat_eq : forall x y, true = beq_nat x y -> x = y.
 Proof.
-  Double Induction x y; Simpl.
-    Reflexivity.
-    Intros; Discriminate H0.
-    Intros; Discriminate H0.
-    Intros; Case (H0 ? H1); Reflexivity.
+  double induction x y; simpl in |- *.
+    reflexivity.
+    intros; discriminate H0.
+    intros; discriminate H0.
+    intros; case (H0 _ H1); reflexivity.
 Defined.
-

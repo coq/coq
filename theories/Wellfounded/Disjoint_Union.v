@@ -12,45 +12,44 @@
     From : Constructing Recursion Operators in Type Theory                 
            L. Paulson  JSC (1986) 2, 325-355 *) 
 
-Require Relation_Operators.
+Require Import Relation_Operators.
 
 Section Wf_Disjoint_Union.
-Variable A,B:Set.
-Variable leA: A->A->Prop.
-Variable leB: B->B->Prop.
+Variables A B : Set.
+Variable leA : A -> A -> Prop.
+Variable leB : B -> B -> Prop.
 
 Notation Le_AsB := (le_AsB A B leA leB).
 
-Lemma acc_A_sum: (x:A)(Acc A leA x)->(Acc A+B Le_AsB (inl A B x)).
+Lemma acc_A_sum : forall x:A, Acc leA x -> Acc Le_AsB (inl B x).
 Proof.
- NewInduction 1.
- Apply Acc_intro;Intros y H2.
- Inversion_clear H2.
- Auto with sets.
+ induction 1.
+ apply Acc_intro; intros y H2.
+ inversion_clear H2.
+ auto with sets.
 Qed.
 
-Lemma acc_B_sum: (well_founded A leA) ->(x:B)(Acc B leB x)
-                        ->(Acc A+B Le_AsB (inr A B x)).
+Lemma acc_B_sum :
+ well_founded leA -> forall x:B, Acc leB x -> Acc Le_AsB (inr A x).
 Proof.
- NewInduction 2.
- Apply Acc_intro;Intros y H3.
- Inversion_clear H3;Auto with sets.
- Apply acc_A_sum;Auto with sets.
+ induction 2.
+ apply Acc_intro; intros y H3.
+ inversion_clear H3; auto with sets.
+ apply acc_A_sum; auto with sets.
 Qed.
 
 
-Lemma wf_disjoint_sum:
- (well_founded A leA) 
-    -> (well_founded B leB) -> (well_founded A+B Le_AsB).
+Lemma wf_disjoint_sum :
+ well_founded leA -> well_founded leB -> well_founded Le_AsB.
 Proof.
- Intros.
- Unfold well_founded .
- NewDestruct a as [a|b].
- Apply (acc_A_sum a).
- Apply (H a).
+ intros.
+ unfold well_founded in |- *.
+ destruct a as [a| b].
+ apply (acc_A_sum a).
+ apply (H a).
 
- Apply (acc_B_sum H b).
- Apply (H0 b).
+ apply (acc_B_sum H b).
+ apply (H0 b).
 Qed.
 
 End Wf_Disjoint_Union.

@@ -8,490 +8,601 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require SeqSeries.
-Require Rtrigo.
-Require Ranalysis1.
-Require PSeries_reg.
-V7only [Import nat_scope. Import Z_scope. Import R_scope.].
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import SeqSeries.
+Require Import Rtrigo.
+Require Import Ranalysis1.
+Require Import PSeries_reg.
 Open Local Scope nat_scope.
 Open Local Scope R_scope.
 
-Lemma CVN_R_cos : (fn:nat->R->R) (fn == [N:nat][x:R]``(pow (-1) N)/(INR (fact (mult (S (S O)) N)))*(pow x (mult (S (S O)) N))``) -> (CVN_R fn).
-Unfold CVN_R; Intros.
-Cut (r::R)<>``0``.
-Intro hyp_r; Unfold CVN_r.
-Apply Specif.existT with [n:nat]``/(INR (fact (mult (S (S O)) n)))*(pow r (mult (S (S O)) n))``.
-Cut (SigT ? [l:R](Un_cv [n:nat](sum_f_R0 [k:nat](Rabsolu ``/(INR (fact (mult (S (S O)) k)))*(pow r (mult (S (S O)) k))``) n) l)).
-Intro; Elim X; Intros.
-Apply existTT with x.
-Split.
-Apply p.
-Intros; Rewrite H; Unfold Rdiv; Do 2 Rewrite Rabsolu_mult.
-Rewrite pow_1_abs; Rewrite Rmult_1l.
-Cut ``0</(INR (fact (mult (S (S O)) n)))``.
-Intro; Rewrite (Rabsolu_right  ? (Rle_sym1 ? ? (Rlt_le ? ? H1))).
-Apply Rle_monotony.
-Left; Apply H1.
-Rewrite <- Pow_Rabsolu; Apply pow_maj_Rabs.
-Rewrite Rabsolu_Rabsolu.
-Unfold Boule in H0; Rewrite minus_R0 in H0.
-Left; Apply H0.
-Apply Rlt_Rinv; Apply INR_fact_lt_0.
-Apply Alembert_C2.
-Intro; Apply Rabsolu_no_R0.
-Apply prod_neq_R0.
-Apply Rinv_neq_R0.
-Apply INR_fact_neq_0.
-Apply pow_nonzero; Assumption.
-Assert H0 := Alembert_cos.
-Unfold cos_n in H0; Unfold Un_cv in H0; Unfold Un_cv; Intros.
-Cut ``0<eps/(Rsqr r)``.
-Intro; Elim (H0 ? H2); Intros N0 H3.
-Exists N0; Intros.
-Unfold R_dist; Assert H5 := (H3 ? H4).
-Unfold R_dist in H5; Replace ``(Rabsolu ((Rabsolu (/(INR (fact (mult (S (S O)) (S n))))*(pow r (mult (S (S O)) (S n)))))/(Rabsolu (/(INR (fact (mult (S (S O)) n)))*(pow r (mult (S (S O)) n))))))`` with ``(Rsqr r)*(Rabsolu ((pow ( -1) (S n))/(INR (fact (mult (S (S O)) (S n))))/((pow ( -1) n)/(INR (fact (mult (S (S O)) n))))))``.
-Apply Rlt_monotony_contra with ``/(Rsqr r)``.
-Apply Rlt_Rinv; Apply Rsqr_pos_lt; Assumption.
-Pattern 1 ``/(Rsqr r)``; Replace ``/(Rsqr r)`` with ``(Rabsolu (/(Rsqr r)))``.
-Rewrite <- Rabsolu_mult; Rewrite Rminus_distr; Rewrite Rmult_Or; Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Rewrite <- (Rmult_sym eps); Apply H5.
-Unfold Rsqr; Apply prod_neq_R0; Assumption.
-Rewrite Rabsolu_Rinv.
-Rewrite Rabsolu_right.
-Reflexivity.
-Apply Rle_sym1; Apply pos_Rsqr.
-Unfold Rsqr; Apply prod_neq_R0; Assumption.
-Rewrite (Rmult_sym (Rsqr r)); Unfold Rdiv; Repeat Rewrite Rabsolu_mult; Rewrite Rabsolu_Rabsolu; Rewrite pow_1_abs; Rewrite Rmult_1l; Repeat Rewrite Rmult_assoc; Apply Rmult_mult_r.
-Rewrite Rabsolu_Rinv.
-Rewrite Rabsolu_mult; Rewrite (pow_1_abs n); Rewrite Rmult_1l; Rewrite <- Rabsolu_Rinv.
-Rewrite Rinv_Rinv.
-Rewrite Rinv_Rmult.
-Rewrite Rabsolu_Rinv.
-Rewrite Rinv_Rinv.
-Rewrite (Rmult_sym ``(Rabsolu (Rabsolu (pow r (mult (S (S O)) (S n)))))``); Rewrite Rabsolu_mult; Rewrite Rabsolu_Rabsolu; Rewrite Rmult_assoc; Apply Rmult_mult_r.
-Rewrite Rabsolu_Rinv.
-Do 2 Rewrite Rabsolu_Rabsolu; Repeat Rewrite Rabsolu_right.
-Replace ``(pow r (mult (S (S O)) (S n)))`` with ``(pow r (mult (S (S O)) n))*r*r``.
-Repeat Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Unfold Rsqr; Ring.
-Apply pow_nonzero; Assumption.
-Replace (mult (2) (S n)) with (S (S (mult (2) n))).
-Simpl; Ring.
-Apply INR_eq; Do 2 Rewrite S_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
-Apply Rle_sym1; Apply pow_le; Left; Apply (cond_pos r).
-Apply Rle_sym1; Apply pow_le; Left; Apply (cond_pos r).
-Apply Rabsolu_no_R0; Apply pow_nonzero; Assumption.
-Apply Rabsolu_no_R0; Apply INR_fact_neq_0.
-Apply INR_fact_neq_0.
-Apply Rabsolu_no_R0; Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Apply Rabsolu_no_R0; Apply pow_nonzero; Assumption.
-Apply INR_fact_neq_0.
-Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Apply prod_neq_R0.
-Apply pow_nonzero; DiscrR.
-Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Unfold Rdiv; Apply Rmult_lt_pos.
-Apply H1.
-Apply Rlt_Rinv; Apply Rsqr_pos_lt; Assumption.
-Assert H0 := (cond_pos r); Red; Intro; Rewrite H1 in H0; Elim (Rlt_antirefl ? H0).
+Lemma CVN_R_cos :
+ forall fn:nat -> R -> R,
+   fn = (fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)) ->
+   CVN_R fn.
+unfold CVN_R in |- *; intros.
+cut ((r:R) <> 0).
+intro hyp_r; unfold CVN_r in |- *.
+apply existT with (fun n:nat => / INR (fact (2 * n)) * r ^ (2 * n)).
+cut
+ (sigT
+    (fun l:R =>
+       Un_cv
+         (fun n:nat =>
+            sum_f_R0 (fun k:nat => Rabs (/ INR (fact (2 * k)) * r ^ (2 * k)))
+              n) l)).
+intro; elim X; intros.
+apply existT with x.
+split.
+apply p.
+intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult.
+rewrite pow_1_abs; rewrite Rmult_1_l.
+cut (0 < / INR (fact (2 * n))).
+intro; rewrite (Rabs_right _ (Rle_ge _ _ (Rlt_le _ _ H1))).
+apply Rmult_le_compat_l.
+left; apply H1.
+rewrite <- RPow_abs; apply pow_maj_Rabs.
+rewrite Rabs_Rabsolu.
+unfold Boule in H0; rewrite Rminus_0_r in H0.
+left; apply H0.
+apply Rinv_0_lt_compat; apply INR_fact_lt_0.
+apply Alembert_C2.
+intro; apply Rabs_no_R0.
+apply prod_neq_R0.
+apply Rinv_neq_0_compat.
+apply INR_fact_neq_0.
+apply pow_nonzero; assumption.
+assert (H0 := Alembert_cos).
+unfold cos_n in H0; unfold Un_cv in H0; unfold Un_cv in |- *; intros.
+cut (0 < eps / Rsqr r).
+intro; elim (H0 _ H2); intros N0 H3.
+exists N0; intros.
+unfold R_dist in |- *; assert (H5 := H3 _ H4).
+unfold R_dist in H5;
+ replace
+  (Rabs
+     (Rabs (/ INR (fact (2 * S n)) * r ^ (2 * S n)) /
+      Rabs (/ INR (fact (2 * n)) * r ^ (2 * n)))) with
+  (Rsqr r *
+   Rabs ((-1) ^ S n / INR (fact (2 * S n)) / ((-1) ^ n / INR (fact (2 * n))))).
+apply Rmult_lt_reg_l with (/ Rsqr r).
+apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+pattern (/ Rsqr r) at 1 in |- *; replace (/ Rsqr r) with (Rabs (/ Rsqr r)).
+rewrite <- Rabs_mult; rewrite Rmult_minus_distr_l; rewrite Rmult_0_r;
+ rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); apply H5.
+unfold Rsqr in |- *; apply prod_neq_R0; assumption.
+rewrite Rabs_Rinv.
+rewrite Rabs_right.
+reflexivity.
+apply Rle_ge; apply Rle_0_sqr.
+unfold Rsqr in |- *; apply prod_neq_R0; assumption.
+rewrite (Rmult_comm (Rsqr r)); unfold Rdiv in |- *; repeat rewrite Rabs_mult;
+ rewrite Rabs_Rabsolu; rewrite pow_1_abs; rewrite Rmult_1_l;
+ repeat rewrite Rmult_assoc; apply Rmult_eq_compat_l.
+rewrite Rabs_Rinv.
+rewrite Rabs_mult; rewrite (pow_1_abs n); rewrite Rmult_1_l;
+ rewrite <- Rabs_Rinv.
+rewrite Rinv_involutive.
+rewrite Rinv_mult_distr.
+rewrite Rabs_Rinv.
+rewrite Rinv_involutive.
+rewrite (Rmult_comm (Rabs (Rabs (r ^ (2 * S n))))); rewrite Rabs_mult;
+ rewrite Rabs_Rabsolu; rewrite Rmult_assoc; apply Rmult_eq_compat_l.
+rewrite Rabs_Rinv.
+do 2 rewrite Rabs_Rabsolu; repeat rewrite Rabs_right.
+replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
+repeat rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+unfold Rsqr in |- *; ring.
+apply pow_nonzero; assumption.
+replace (2 * S n)%nat with (S (S (2 * n))).
+simpl in |- *; ring.
+apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
+ ring.
+apply Rle_ge; apply pow_le; left; apply (cond_pos r).
+apply Rle_ge; apply pow_le; left; apply (cond_pos r).
+apply Rabs_no_R0; apply pow_nonzero; assumption.
+apply Rabs_no_R0; apply INR_fact_neq_0.
+apply INR_fact_neq_0.
+apply Rabs_no_R0; apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+apply Rabs_no_R0; apply pow_nonzero; assumption.
+apply INR_fact_neq_0.
+apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+apply prod_neq_R0.
+apply pow_nonzero; discrR.
+apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+apply H1.
+apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+assert (H0 := cond_pos r); red in |- *; intro; rewrite H1 in H0;
+ elim (Rlt_irrefl _ H0).
 Qed.
 
 (**********)
-Lemma continuity_cos : (continuity cos).
-Pose fn := [N:nat][x:R]``(pow (-1) N)/(INR (fact (mult (S (S O)) N)))*(pow x (mult (S (S O)) N))``.
-Cut (CVN_R fn).
-Intro; Cut (x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l)).
-Intro cv; Cut ((n:nat)(continuity (fn n))).
-Intro; Cut (x:R)(cos x)==(SFL fn cv x).
-Intro; Cut (continuity (SFL fn cv))->(continuity cos).
-Intro; Apply H1.
-Apply SFL_continuity; Assumption.
-Unfold continuity; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros.
-Elim (H1 x ? H2); Intros.
-Exists x0; Intros.
-Elim H3; Intros.
-Split.
-Apply H4.
-Intros; Rewrite (H0 x); Rewrite (H0 x1); Apply H5; Apply H6.
-Intro; Unfold cos SFL.
-Case (cv x); Case (exist_cos (Rsqr x)); Intros.
-Symmetry; EApply UL_sequence.
-Apply u.
-Unfold cos_in in c; Unfold infinit_sum in c; Unfold Un_cv; Intros.
-Elim (c ? H0); Intros N0 H1.
-Exists N0; Intros.
-Unfold R_dist in H1; Unfold R_dist SP.
-Replace (sum_f_R0 [k:nat](fn k x) n) with (sum_f_R0 [i:nat]``(cos_n i)*(pow (Rsqr x) i)`` n).
-Apply H1; Assumption.
-Apply sum_eq; Intros.
-Unfold cos_n fn; Apply Rmult_mult_r.
-Unfold Rsqr; Rewrite pow_sqr; Reflexivity.
-Intro; Unfold fn; Replace [x:R]``(pow ( -1) n)/(INR (fact (mult (S (S O)) n)))*(pow x (mult (S (S O)) n))`` with (mult_fct (fct_cte ``(pow ( -1) n)/(INR (fact (mult (S (S O)) n)))``) (pow_fct (mult (S (S O)) n))); [Idtac | Reflexivity].
-Apply continuity_mult.
-Apply derivable_continuous; Apply derivable_const.
-Apply derivable_continuous; Apply (derivable_pow (mult (2) n)).
-Apply CVN_R_CVS; Apply X.
-Apply CVN_R_cos; Unfold fn; Reflexivity.
+Lemma continuity_cos : continuity cos.
+pose (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)).
+cut (CVN_R fn).
+intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
+intro cv; cut (forall n:nat, continuity (fn n)).
+intro; cut (forall x:R, cos x = SFL fn cv x).
+intro; cut (continuity (SFL fn cv) -> continuity cos).
+intro; apply H1.
+apply SFL_continuity; assumption.
+unfold continuity in |- *; unfold continuity_pt in |- *;
+ unfold continue_in in |- *; unfold limit1_in in |- *;
+ unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *; 
+ intros.
+elim (H1 x _ H2); intros.
+exists x0; intros.
+elim H3; intros.
+split.
+apply H4.
+intros; rewrite (H0 x); rewrite (H0 x1); apply H5; apply H6.
+intro; unfold cos, SFL in |- *.
+case (cv x); case (exist_cos (Rsqr x)); intros.
+symmetry  in |- *; eapply UL_sequence.
+apply u.
+unfold cos_in in c; unfold infinit_sum in c; unfold Un_cv in |- *; intros.
+elim (c _ H0); intros N0 H1.
+exists N0; intros.
+unfold R_dist in H1; unfold R_dist, SP in |- *.
+replace (sum_f_R0 (fun k:nat => fn k x) n) with
+ (sum_f_R0 (fun i:nat => cos_n i * Rsqr x ^ i) n).
+apply H1; assumption.
+apply sum_eq; intros.
+unfold cos_n, fn in |- *; apply Rmult_eq_compat_l.
+unfold Rsqr in |- *; rewrite pow_sqr; reflexivity.
+intro; unfold fn in |- *;
+ replace (fun x:R => (-1) ^ n / INR (fact (2 * n)) * x ^ (2 * n)) with
+  (fct_cte ((-1) ^ n / INR (fact (2 * n))) * pow_fct (2 * n))%F;
+ [ idtac | reflexivity ].
+apply continuity_mult.
+apply derivable_continuous; apply derivable_const.
+apply derivable_continuous; apply (derivable_pow (2 * n)).
+apply CVN_R_CVS; apply X.
+apply CVN_R_cos; unfold fn in |- *; reflexivity.
 Qed.
 
 (**********)
-Lemma continuity_sin : (continuity sin).
-Unfold continuity; Intro.
-Assert H0 := (continuity_cos ``PI/2-x``).
-Unfold continuity_pt in H0; Unfold continue_in in H0; Unfold limit1_in in H0; Unfold limit_in in H0; Simpl in H0; Unfold R_dist in H0; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros.
-Elim (H0 ? H); Intros.
-Exists x0; Intros.
-Elim H1; Intros.
-Split.
-Assumption.
-Intros; Rewrite <- (cos_shift x); Rewrite <- (cos_shift x1); Apply H3.
-Elim H4; Intros.
-Split.
-Unfold D_x no_cond; Split.
-Trivial.
-Red; Intro; Unfold D_x no_cond in H5; Elim H5; Intros _ H8; Elim H8; Rewrite <- (Ropp_Ropp x); Rewrite <- (Ropp_Ropp x1); Apply eq_Ropp; Apply r_Rplus_plus with ``PI/2``; Apply H7.
-Replace ``PI/2-x1-(PI/2-x)`` with ``x-x1``; [Idtac | Ring]; Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr3; Apply H6.
+Lemma continuity_sin : continuity sin.
+unfold continuity in |- *; intro.
+assert (H0 := continuity_cos (PI / 2 - x)).
+unfold continuity_pt in H0; unfold continue_in in H0; unfold limit1_in in H0;
+ unfold limit_in in H0; simpl in H0; unfold R_dist in H0;
+ unfold continuity_pt in |- *; unfold continue_in in |- *;
+ unfold limit1_in in |- *; unfold limit_in in |- *; 
+ simpl in |- *; unfold R_dist in |- *; intros.
+elim (H0 _ H); intros.
+exists x0; intros.
+elim H1; intros.
+split.
+assumption.
+intros; rewrite <- (cos_shift x); rewrite <- (cos_shift x1); apply H3.
+elim H4; intros.
+split.
+unfold D_x, no_cond in |- *; split.
+trivial.
+red in |- *; intro; unfold D_x, no_cond in H5; elim H5; intros _ H8; elim H8;
+ rewrite <- (Ropp_involutive x); rewrite <- (Ropp_involutive x1);
+ apply Ropp_eq_compat; apply Rplus_eq_reg_l with (PI / 2); 
+ apply H7.
+replace (PI / 2 - x1 - (PI / 2 - x)) with (x - x1); [ idtac | ring ];
+ rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply H6.
 Qed.
 
-Lemma CVN_R_sin : (fn:nat->R->R) (fn == [N:nat][x:R]``(pow ( -1) N)/(INR (fact (plus (mult (S (S O)) N) (S O))))*(pow x (mult (S (S O)) N))``) -> (CVN_R fn).
-Unfold CVN_R; Unfold CVN_r; Intros fn H r.
-Apply Specif.existT with [n:nat]``/(INR (fact (plus (mult (S (S O)) n) (S O))))*(pow r (mult (S (S O)) n))``.
-Cut (SigT ? [l:R](Un_cv [n:nat](sum_f_R0 [k:nat](Rabsolu ``/(INR (fact (plus (mult (S (S O)) k) (S O))))*(pow r (mult (S (S O)) k))``) n) l)).
-Intro; Elim X; Intros.
-Apply existTT with x.
-Split.
-Apply p.
-Intros; Rewrite H; Unfold Rdiv; Do 2 Rewrite Rabsolu_mult; Rewrite pow_1_abs; Rewrite Rmult_1l.
-Cut ``0</(INR (fact (plus (mult (S (S O)) n) (S O))))``.
-Intro; Rewrite (Rabsolu_right  ? (Rle_sym1 ? ? (Rlt_le ? ? H1))).
-Apply Rle_monotony.
-Left; Apply H1.
-Rewrite <- Pow_Rabsolu; Apply pow_maj_Rabs.
-Rewrite Rabsolu_Rabsolu; Unfold Boule in H0; Rewrite minus_R0 in H0; Left; Apply H0.
-Apply Rlt_Rinv; Apply INR_fact_lt_0.
-Cut (r::R)<>``0``.
-Intro; Apply Alembert_C2.
-Intro; Apply Rabsolu_no_R0.
-Apply prod_neq_R0.
-Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Apply pow_nonzero; Assumption.
-Assert H1 := Alembert_sin.
-Unfold sin_n in H1; Unfold Un_cv in H1; Unfold Un_cv; Intros.
-Cut ``0<eps/(Rsqr r)``.
-Intro; Elim (H1 ? H3); Intros N0 H4.
-Exists N0; Intros.
-Unfold R_dist; Assert H6 := (H4 ? H5).
-Unfold R_dist in H5; Replace ``(Rabsolu ((Rabsolu (/(INR (fact (plus (mult (S (S O)) (S n)) (S O))))*(pow r (mult (S (S O)) (S n)))))/(Rabsolu (/(INR (fact (plus (mult (S (S O)) n) (S O))))*(pow r (mult (S (S O)) n))))))`` with ``(Rsqr r)*(Rabsolu ((pow ( -1) (S n))/(INR (fact (plus (mult (S (S O)) (S n)) (S O))))/((pow ( -1) n)/(INR (fact (plus (mult (S (S O)) n) (S O)))))))``.
-Apply Rlt_monotony_contra with ``/(Rsqr r)``.
-Apply Rlt_Rinv; Apply Rsqr_pos_lt; Assumption.
-Pattern 1 ``/(Rsqr r)``; Rewrite <- (Rabsolu_right ``/(Rsqr r)``).
-Rewrite <- Rabsolu_mult.
-Rewrite Rminus_distr.
-Rewrite Rmult_Or; Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Rewrite <- (Rmult_sym eps).
-Apply H6.
-Unfold Rsqr; Apply prod_neq_R0; Assumption.
-Apply Rle_sym1; Left; Apply Rlt_Rinv; Apply Rsqr_pos_lt; Assumption.
-Unfold Rdiv; Rewrite (Rmult_sym (Rsqr r)); Repeat Rewrite Rabsolu_mult; Rewrite Rabsolu_Rabsolu; Rewrite pow_1_abs.
-Rewrite Rmult_1l.
-Repeat Rewrite Rmult_assoc; Apply Rmult_mult_r.
-Rewrite Rinv_Rmult.
-Rewrite Rinv_Rinv.
-Rewrite Rabsolu_mult.
-Rewrite Rabsolu_Rinv.
-Rewrite pow_1_abs; Rewrite Rinv_R1; Rewrite Rmult_1l.
-Rewrite Rinv_Rmult.
-Rewrite <- Rabsolu_Rinv.
-Rewrite Rinv_Rinv.
-Rewrite Rabsolu_mult.
-Do 2 Rewrite Rabsolu_Rabsolu.
-Rewrite (Rmult_sym ``(Rabsolu (pow r (mult (S (S O)) (S n))))``).
-Rewrite Rmult_assoc; Apply Rmult_mult_r.
-Rewrite Rabsolu_Rinv.
-Rewrite Rabsolu_Rabsolu.
-Repeat Rewrite Rabsolu_right.
-Replace ``(pow r (mult (S (S O)) (S n)))`` with ``(pow r (mult (S (S O)) n))*r*r``.
-Do 2 Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Unfold Rsqr; Ring.
-Apply pow_nonzero; Assumption.
-Replace (mult (2) (S n)) with (S (S (mult (2) n))).
-Simpl; Ring.
-Apply INR_eq; Do 2 Rewrite S_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
-Apply Rle_sym1; Apply pow_le; Left; Apply (cond_pos r).
-Apply Rle_sym1; Apply pow_le; Left; Apply (cond_pos r).
-Apply Rabsolu_no_R0; Apply pow_nonzero; Assumption.
-Apply INR_fact_neq_0.
-Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Apply Rabsolu_no_R0; Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Apply Rabsolu_no_R0; Apply pow_nonzero; Assumption.
-Apply pow_nonzero; DiscrR.
-Apply INR_fact_neq_0.
-Apply pow_nonzero; DiscrR.
-Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rsqr_pos_lt; Assumption].
-Assert H0 := (cond_pos r); Red; Intro; Rewrite H1 in H0; Elim (Rlt_antirefl ? H0).
+Lemma CVN_R_sin :
+ forall fn:nat -> R -> R,
+   fn =
+   (fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N + 1)) * x ^ (2 * N)) ->
+   CVN_R fn.
+unfold CVN_R in |- *; unfold CVN_r in |- *; intros fn H r.
+apply existT with (fun n:nat => / INR (fact (2 * n + 1)) * r ^ (2 * n)).
+cut
+ (sigT
+    (fun l:R =>
+       Un_cv
+         (fun n:nat =>
+            sum_f_R0
+              (fun k:nat => Rabs (/ INR (fact (2 * k + 1)) * r ^ (2 * k))) n)
+         l)).
+intro; elim X; intros.
+apply existT with x.
+split.
+apply p.
+intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult;
+ rewrite pow_1_abs; rewrite Rmult_1_l.
+cut (0 < / INR (fact (2 * n + 1))).
+intro; rewrite (Rabs_right _ (Rle_ge _ _ (Rlt_le _ _ H1))).
+apply Rmult_le_compat_l.
+left; apply H1.
+rewrite <- RPow_abs; apply pow_maj_Rabs.
+rewrite Rabs_Rabsolu; unfold Boule in H0; rewrite Rminus_0_r in H0; left;
+ apply H0.
+apply Rinv_0_lt_compat; apply INR_fact_lt_0.
+cut ((r:R) <> 0).
+intro; apply Alembert_C2.
+intro; apply Rabs_no_R0.
+apply prod_neq_R0.
+apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+apply pow_nonzero; assumption.
+assert (H1 := Alembert_sin).
+unfold sin_n in H1; unfold Un_cv in H1; unfold Un_cv in |- *; intros.
+cut (0 < eps / Rsqr r).
+intro; elim (H1 _ H3); intros N0 H4.
+exists N0; intros.
+unfold R_dist in |- *; assert (H6 := H4 _ H5).
+unfold R_dist in H5;
+ replace
+  (Rabs
+     (Rabs (/ INR (fact (2 * S n + 1)) * r ^ (2 * S n)) /
+      Rabs (/ INR (fact (2 * n + 1)) * r ^ (2 * n)))) with
+  (Rsqr r *
+   Rabs
+     ((-1) ^ S n / INR (fact (2 * S n + 1)) /
+      ((-1) ^ n / INR (fact (2 * n + 1))))).
+apply Rmult_lt_reg_l with (/ Rsqr r).
+apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+pattern (/ Rsqr r) at 1 in |- *; rewrite <- (Rabs_right (/ Rsqr r)).
+rewrite <- Rabs_mult.
+rewrite Rmult_minus_distr_l.
+rewrite Rmult_0_r; rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l; rewrite <- (Rmult_comm eps).
+apply H6.
+unfold Rsqr in |- *; apply prod_neq_R0; assumption.
+apply Rle_ge; left; apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+unfold Rdiv in |- *; rewrite (Rmult_comm (Rsqr r)); repeat rewrite Rabs_mult;
+ rewrite Rabs_Rabsolu; rewrite pow_1_abs.
+rewrite Rmult_1_l.
+repeat rewrite Rmult_assoc; apply Rmult_eq_compat_l.
+rewrite Rinv_mult_distr.
+rewrite Rinv_involutive.
+rewrite Rabs_mult.
+rewrite Rabs_Rinv.
+rewrite pow_1_abs; rewrite Rinv_1; rewrite Rmult_1_l.
+rewrite Rinv_mult_distr.
+rewrite <- Rabs_Rinv.
+rewrite Rinv_involutive.
+rewrite Rabs_mult.
+do 2 rewrite Rabs_Rabsolu.
+rewrite (Rmult_comm (Rabs (r ^ (2 * S n)))).
+rewrite Rmult_assoc; apply Rmult_eq_compat_l.
+rewrite Rabs_Rinv.
+rewrite Rabs_Rabsolu.
+repeat rewrite Rabs_right.
+replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
+do 2 rewrite <- Rmult_assoc.
+rewrite <- Rinv_l_sym.
+unfold Rsqr in |- *; ring.
+apply pow_nonzero; assumption.
+replace (2 * S n)%nat with (S (S (2 * n))).
+simpl in |- *; ring.
+apply INR_eq; do 2 rewrite S_INR; do 2 rewrite mult_INR; repeat rewrite S_INR;
+ ring.
+apply Rle_ge; apply pow_le; left; apply (cond_pos r).
+apply Rle_ge; apply pow_le; left; apply (cond_pos r).
+apply Rabs_no_R0; apply pow_nonzero; assumption.
+apply INR_fact_neq_0.
+apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+apply Rabs_no_R0; apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+apply Rabs_no_R0; apply pow_nonzero; assumption.
+apply pow_nonzero; discrR.
+apply INR_fact_neq_0.
+apply pow_nonzero; discrR.
+apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ assumption | apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption ].
+assert (H0 := cond_pos r); red in |- *; intro; rewrite H1 in H0;
+ elim (Rlt_irrefl _ H0).
 Qed.
 
 (* (sin h)/h -> 1 when h -> 0 *)
-Lemma derivable_pt_lim_sin_0 : (derivable_pt_lim sin R0 R1).
-Unfold derivable_pt_lim; Intros.
-Pose fn := [N:nat][x:R]``(pow ( -1) N)/(INR (fact (plus (mult (S (S O)) N) (S O))))*(pow x (mult (S (S O)) N))``.
-Cut (CVN_R fn).
-Intro; Cut (x:R)(sigTT ? [l:R](Un_cv [N:nat](SP fn N x) l)).
-Intro cv.
-Pose r := (mkposreal ? Rlt_R0_R1).
-Cut (CVN_r fn r).
-Intro; Cut ((n:nat; y:R)(Boule ``0`` r y)->(continuity_pt (fn n) y)).
-Intro; Cut (Boule R0 r R0).
-Intro; Assert H2 := (SFL_continuity_pt ? cv ? X0 H0 ? H1).
-Unfold continuity_pt in H2; Unfold continue_in in H2; Unfold limit1_in in H2; Unfold limit_in in H2; Simpl in H2; Unfold R_dist in H2.
-Elim (H2 ? H); Intros alp H3.
-Elim H3; Intros.
-Exists (mkposreal ? H4).
-Simpl; Intros.
-Rewrite sin_0; Rewrite Rplus_Ol; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or.
-Cut ``(Rabsolu ((SFL fn cv h)-(SFL fn cv 0))) < eps``.
-Intro; Cut (SFL fn cv R0)==R1.
-Intro; Cut (SFL fn cv h)==``(sin h)/h``.
-Intro; Rewrite H9 in H8; Rewrite H10 in H8.
-Apply H8.
-Unfold SFL sin.
-Case (cv h); Intros.
-Case (exist_sin (Rsqr h)); Intros.
-Unfold Rdiv; Rewrite (Rinv_r_simpl_m h x0 H6).
-EApply UL_sequence.
-Apply u.
-Unfold sin_in in s; Unfold sin_n infinit_sum in s; Unfold SP fn Un_cv; Intros.
-Elim (s ? H10); Intros N0 H11.
-Exists N0; Intros.
-Unfold R_dist; Unfold R_dist in H11.
-Replace (sum_f_R0 [k:nat]``(pow ( -1) k)/(INR (fact (plus (mult (S (S O)) k) (S O))))*(pow h (mult (S (S O)) k))`` n) with (sum_f_R0 [i:nat]``(pow ( -1) i)/(INR (fact (plus (mult (S (S O)) i) (S O))))*(pow (Rsqr h) i)`` n).
-Apply H11; Assumption.
-Apply sum_eq; Intros; Apply Rmult_mult_r; Unfold Rsqr; Rewrite pow_sqr; Reflexivity.
-Unfold SFL sin.
-Case (cv R0); Intros.
-EApply UL_sequence.
-Apply u.
-Unfold SP fn; Unfold Un_cv; Intros; Exists (S O); Intros.
-Unfold R_dist; Replace (sum_f_R0 [k:nat]``(pow ( -1) k)/(INR (fact (plus (mult (S (S O)) k) (S O))))*(pow 0 (mult (S (S O)) k))`` n) with R1.
-Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
-Rewrite decomp_sum.
-Simpl; Rewrite Rmult_1r; Unfold Rdiv; Rewrite Rinv_R1; Rewrite Rmult_1r; Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rplus_plus_r.
-Symmetry; Apply sum_eq_R0; Intros.
-Rewrite Rmult_Ol; Rewrite Rmult_Or; Reflexivity.
-Unfold ge in H10; Apply lt_le_trans with (1); [Apply lt_n_Sn | Apply H10].
-Apply H5.
-Split.
-Unfold D_x no_cond; Split.
-Trivial.
-Apply not_sym; Apply H6.
-Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Apply H7.
-Unfold Boule; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_R0; Apply (cond_pos r).
-Intros; Unfold fn; Replace [x:R]``(pow ( -1) n)/(INR (fact (plus (mult (S (S O)) n) (S O))))*(pow x (mult (S (S O)) n))`` with (mult_fct (fct_cte ``(pow ( -1) n)/(INR (fact (plus (mult (S (S O)) n) (S O))))``) (pow_fct (mult (S (S O)) n))); [Idtac | Reflexivity].
-Apply continuity_pt_mult.
-Apply derivable_continuous_pt.
-Apply derivable_pt_const.
-Apply derivable_continuous_pt.
-Apply (derivable_pt_pow (mult (2) n) y).
-Apply (X r).
-Apply (CVN_R_CVS ? X).
-Apply CVN_R_sin; Unfold fn; Reflexivity.
+Lemma derivable_pt_lim_sin_0 : derivable_pt_lim sin 0 1.
+unfold derivable_pt_lim in |- *; intros.
+pose
+ (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N + 1)) * x ^ (2 * N)).
+cut (CVN_R fn).
+intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
+intro cv.
+pose (r := mkposreal _ Rlt_0_1).
+cut (CVN_r fn r).
+intro; cut (forall (n:nat) (y:R), Boule 0 r y -> continuity_pt (fn n) y).
+intro; cut (Boule 0 r 0).
+intro; assert (H2 := SFL_continuity_pt _ cv _ X0 H0 _ H1).
+unfold continuity_pt in H2; unfold continue_in in H2; unfold limit1_in in H2;
+ unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
+elim (H2 _ H); intros alp H3.
+elim H3; intros.
+exists (mkposreal _ H4).
+simpl in |- *; intros.
+rewrite sin_0; rewrite Rplus_0_l; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r.
+cut (Rabs (SFL fn cv h - SFL fn cv 0) < eps).
+intro; cut (SFL fn cv 0 = 1).
+intro; cut (SFL fn cv h = sin h / h).
+intro; rewrite H9 in H8; rewrite H10 in H8.
+apply H8.
+unfold SFL, sin in |- *.
+case (cv h); intros.
+case (exist_sin (Rsqr h)); intros.
+unfold Rdiv in |- *; rewrite (Rinv_r_simpl_m h x0 H6).
+eapply UL_sequence.
+apply u.
+unfold sin_in in s; unfold sin_n, infinit_sum in s;
+ unfold SP, fn, Un_cv in |- *; intros.
+elim (s _ H10); intros N0 H11.
+exists N0; intros.
+unfold R_dist in |- *; unfold R_dist in H11.
+replace
+ (sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k + 1)) * h ^ (2 * k)) n)
+ with
+ (sum_f_R0 (fun i:nat => (-1) ^ i / INR (fact (2 * i + 1)) * Rsqr h ^ i) n).
+apply H11; assumption.
+apply sum_eq; intros; apply Rmult_eq_compat_l; unfold Rsqr in |- *;
+ rewrite pow_sqr; reflexivity.
+unfold SFL, sin in |- *.
+case (cv 0); intros.
+eapply UL_sequence.
+apply u.
+unfold SP, fn in |- *; unfold Un_cv in |- *; intros; exists 1%nat; intros.
+unfold R_dist in |- *;
+ replace
+  (sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k + 1)) * 0 ^ (2 * k)) n)
+  with 1.
+unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption.
+rewrite decomp_sum.
+simpl in |- *; rewrite Rmult_1_r; unfold Rdiv in |- *; rewrite Rinv_1;
+ rewrite Rmult_1_r; pattern 1 at 1 in |- *; rewrite <- Rplus_0_r;
+ apply Rplus_eq_compat_l.
+symmetry  in |- *; apply sum_eq_R0; intros.
+rewrite Rmult_0_l; rewrite Rmult_0_r; reflexivity.
+unfold ge in H10; apply lt_le_trans with 1%nat; [ apply lt_n_Sn | apply H10 ].
+apply H5.
+split.
+unfold D_x, no_cond in |- *; split.
+trivial.
+apply (sym_not_eq (A:=R)); apply H6.
+unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r; apply H7.
+unfold Boule in |- *; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r; rewrite Rabs_R0; apply (cond_pos r).
+intros; unfold fn in |- *;
+ replace (fun x:R => (-1) ^ n / INR (fact (2 * n + 1)) * x ^ (2 * n)) with
+  (fct_cte ((-1) ^ n / INR (fact (2 * n + 1))) * pow_fct (2 * n))%F;
+ [ idtac | reflexivity ].
+apply continuity_pt_mult.
+apply derivable_continuous_pt.
+apply derivable_pt_const.
+apply derivable_continuous_pt.
+apply (derivable_pt_pow (2 * n) y).
+apply (X r).
+apply (CVN_R_CVS _ X).
+apply CVN_R_sin; unfold fn in |- *; reflexivity.
 Qed.
 
 (* ((cos h)-1)/h -> 0 when h -> 0 *)
-Lemma derivable_pt_lim_cos_0 : (derivable_pt_lim cos ``0`` ``0``).
-Unfold derivable_pt_lim; Intros.
-Assert H0 := derivable_pt_lim_sin_0.
-Unfold derivable_pt_lim in H0.
-Cut ``0<eps/2``.
-Intro; Elim (H0 ? H1); Intros del H2.
-Cut (continuity_pt sin ``0``).
-Intro; Unfold continuity_pt in H3; Unfold continue_in in H3; Unfold limit1_in in H3; Unfold limit_in in H3; Simpl in H3; Unfold R_dist in H3.
-Cut ``0<eps/2``; [Intro | Assumption].
-Elim (H3 ? H4); Intros del_c H5.
-Cut ``0<(Rmin del del_c)``.
-Intro; Pose delta := (mkposreal ? H6).
-Exists delta; Intros.
-Rewrite Rplus_Ol; Replace ``((cos h)-(cos 0))`` with ``-2*(Rsqr (sin (h/2)))``.
-Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or.
-Unfold Rdiv; Do 2 Rewrite Ropp_mul1.
-Rewrite Rabsolu_Ropp.
-Replace ``2*(Rsqr (sin (h*/2)))*/h`` with ``(sin (h/2))*((sin (h/2))/(h/2)-1)+(sin (h/2))``.
-Apply Rle_lt_trans with ``(Rabsolu ((sin (h/2))*((sin (h/2))/(h/2)-1)))+(Rabsolu ((sin (h/2))))``.
-Apply Rabsolu_triang.
-Rewrite (double_var eps); Apply Rplus_lt.
-Apply Rle_lt_trans with ``(Rabsolu ((sin (h/2))/(h/2)-1))``.
-Rewrite Rabsolu_mult; Rewrite Rmult_sym; Pattern 2 ``(Rabsolu ((sin (h/2))/(h/2)-1))``; Rewrite <- Rmult_1r; Apply Rle_monotony.
-Apply Rabsolu_pos.
-Assert H9 := (SIN_bound ``h/2``).
-Unfold Rabsolu; Case (case_Rabsolu ``(sin (h/2))``); Intro.
-Pattern 3 R1; Rewrite <- (Ropp_Ropp ``1``).
-Apply Rle_Ropp1.
-Elim H9; Intros; Assumption.
-Elim H9; Intros; Assumption.
-Cut ``(Rabsolu (h/2))<del``.
-Intro; Cut ``h/2<>0``.
-Intro; Assert H11 := (H2 ? H10 H9). 
-Rewrite Rplus_Ol in H11; Rewrite sin_0 in H11.
-Rewrite minus_R0 in H11; Apply H11.
-Unfold Rdiv; Apply prod_neq_R0.
-Apply H7.
-Apply Rinv_neq_R0; DiscrR.
-Apply Rlt_trans with ``del/2``.
-Unfold Rdiv; Rewrite Rabsolu_mult.
-Rewrite (Rabsolu_right ``/2``).
-Do 2 Rewrite <- (Rmult_sym ``/2``); Apply Rlt_monotony.
-Apply Rlt_Rinv; Sup0.
-Apply Rlt_le_trans with (pos delta).
-Apply H8.
-Unfold delta; Simpl; Apply Rmin_l.
-Apply Rle_sym1; Left; Apply Rlt_Rinv; Sup0.
-Rewrite <- (Rplus_Or ``del/2``); Pattern 1 del; Rewrite (double_var del); Apply Rlt_compatibility; Unfold Rdiv; Apply Rmult_lt_pos.
-Apply (cond_pos del).
-Apply Rlt_Rinv; Sup0.
-Elim H5; Intros; Assert H11 := (H10 ``h/2``).
-Rewrite sin_0 in H11; Do 2 Rewrite minus_R0 in H11.
-Apply H11.
-Split.
-Unfold D_x no_cond; Split.
-Trivial.
-Apply not_sym; Unfold Rdiv; Apply prod_neq_R0.
-Apply H7.
-Apply Rinv_neq_R0; DiscrR.
-Apply Rlt_trans with ``del_c/2``.
-Unfold Rdiv; Rewrite Rabsolu_mult.
-Rewrite (Rabsolu_right ``/2``).
-Do 2 Rewrite <- (Rmult_sym ``/2``).
-Apply Rlt_monotony.
-Apply Rlt_Rinv; Sup0.
-Apply Rlt_le_trans with (pos delta).
-Apply H8.
-Unfold delta; Simpl; Apply Rmin_r.
-Apply Rle_sym1; Left; Apply Rlt_Rinv; Sup0.
-Rewrite <- (Rplus_Or ``del_c/2``); Pattern 2 del_c; Rewrite (double_var del_c); Apply Rlt_compatibility.
-Unfold Rdiv; Apply Rmult_lt_pos.
-Apply H9.
-Apply Rlt_Rinv; Sup0.
-Rewrite Rminus_distr; Rewrite Rmult_1r; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Rewrite (Rmult_sym ``2``); Unfold Rdiv Rsqr.
-Repeat Rewrite Rmult_assoc.
-Repeat Apply Rmult_mult_r.
-Rewrite Rinv_Rmult.
-Rewrite Rinv_Rinv.
-Apply Rmult_sym.
-DiscrR.
-Apply H7.
-Apply Rinv_neq_R0; DiscrR.
-Pattern 2 h; Replace h with ``2*(h/2)``.
-Rewrite (cos_2a_sin ``h/2``).
-Rewrite cos_0; Unfold Rsqr; Ring.
-Unfold Rdiv; Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m.
-DiscrR.
-Unfold Rmin; Case (total_order_Rle del del_c); Intro.
-Apply (cond_pos del).
-Elim H5; Intros; Assumption.
-Apply continuity_sin.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
+Lemma derivable_pt_lim_cos_0 : derivable_pt_lim cos 0 0.
+unfold derivable_pt_lim in |- *; intros.
+assert (H0 := derivable_pt_lim_sin_0).
+unfold derivable_pt_lim in H0.
+cut (0 < eps / 2).
+intro; elim (H0 _ H1); intros del H2.
+cut (continuity_pt sin 0).
+intro; unfold continuity_pt in H3; unfold continue_in in H3;
+ unfold limit1_in in H3; unfold limit_in in H3; simpl in H3;
+ unfold R_dist in H3.
+cut (0 < eps / 2); [ intro | assumption ].
+elim (H3 _ H4); intros del_c H5.
+cut (0 < Rmin del del_c).
+intro; pose (delta := mkposreal _ H6).
+exists delta; intros.
+rewrite Rplus_0_l; replace (cos h - cos 0) with (-2 * Rsqr (sin (h / 2))).
+unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r.
+unfold Rdiv in |- *; do 2 rewrite Ropp_mult_distr_l_reverse.
+rewrite Rabs_Ropp.
+replace (2 * Rsqr (sin (h * / 2)) * / h) with
+ (sin (h / 2) * (sin (h / 2) / (h / 2) - 1) + sin (h / 2)).
+apply Rle_lt_trans with
+ (Rabs (sin (h / 2) * (sin (h / 2) / (h / 2) - 1)) + Rabs (sin (h / 2))).
+apply Rabs_triang.
+rewrite (double_var eps); apply Rplus_lt_compat.
+apply Rle_lt_trans with (Rabs (sin (h / 2) / (h / 2) - 1)).
+rewrite Rabs_mult; rewrite Rmult_comm;
+ pattern (Rabs (sin (h / 2) / (h / 2) - 1)) at 2 in |- *;
+ rewrite <- Rmult_1_r; apply Rmult_le_compat_l.
+apply Rabs_pos.
+assert (H9 := SIN_bound (h / 2)).
+unfold Rabs in |- *; case (Rcase_abs (sin (h / 2))); intro.
+pattern 1 at 3 in |- *; rewrite <- (Ropp_involutive 1).
+apply Ropp_le_contravar.
+elim H9; intros; assumption.
+elim H9; intros; assumption.
+cut (Rabs (h / 2) < del).
+intro; cut (h / 2 <> 0).
+intro; assert (H11 := H2 _ H10 H9). 
+rewrite Rplus_0_l in H11; rewrite sin_0 in H11.
+rewrite Rminus_0_r in H11; apply H11.
+unfold Rdiv in |- *; apply prod_neq_R0.
+apply H7.
+apply Rinv_neq_0_compat; discrR.
+apply Rlt_trans with (del / 2).
+unfold Rdiv in |- *; rewrite Rabs_mult.
+rewrite (Rabs_right (/ 2)).
+do 2 rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
+apply Rinv_0_lt_compat; prove_sup0.
+apply Rlt_le_trans with (pos delta).
+apply H8.
+unfold delta in |- *; simpl in |- *; apply Rmin_l.
+apply Rle_ge; left; apply Rinv_0_lt_compat; prove_sup0.
+rewrite <- (Rplus_0_r (del / 2)); pattern del at 1 in |- *;
+ rewrite (double_var del); apply Rplus_lt_compat_l; 
+ unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+apply (cond_pos del).
+apply Rinv_0_lt_compat; prove_sup0.
+elim H5; intros; assert (H11 := H10 (h / 2)).
+rewrite sin_0 in H11; do 2 rewrite Rminus_0_r in H11.
+apply H11.
+split.
+unfold D_x, no_cond in |- *; split.
+trivial.
+apply (sym_not_eq (A:=R)); unfold Rdiv in |- *; apply prod_neq_R0.
+apply H7.
+apply Rinv_neq_0_compat; discrR.
+apply Rlt_trans with (del_c / 2).
+unfold Rdiv in |- *; rewrite Rabs_mult.
+rewrite (Rabs_right (/ 2)).
+do 2 rewrite <- (Rmult_comm (/ 2)).
+apply Rmult_lt_compat_l.
+apply Rinv_0_lt_compat; prove_sup0.
+apply Rlt_le_trans with (pos delta).
+apply H8.
+unfold delta in |- *; simpl in |- *; apply Rmin_r.
+apply Rle_ge; left; apply Rinv_0_lt_compat; prove_sup0.
+rewrite <- (Rplus_0_r (del_c / 2)); pattern del_c at 2 in |- *;
+ rewrite (double_var del_c); apply Rplus_lt_compat_l.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+apply H9.
+apply Rinv_0_lt_compat; prove_sup0.
+rewrite Rmult_minus_distr_l; rewrite Rmult_1_r; unfold Rminus in |- *;
+ rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
+ rewrite (Rmult_comm 2); unfold Rdiv, Rsqr in |- *.
+repeat rewrite Rmult_assoc.
+repeat apply Rmult_eq_compat_l.
+rewrite Rinv_mult_distr.
+rewrite Rinv_involutive.
+apply Rmult_comm.
+discrR.
+apply H7.
+apply Rinv_neq_0_compat; discrR.
+pattern h at 2 in |- *; replace h with (2 * (h / 2)).
+rewrite (cos_2a_sin (h / 2)).
+rewrite cos_0; unfold Rsqr in |- *; ring.
+unfold Rdiv in |- *; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
+discrR.
+unfold Rmin in |- *; case (Rle_dec del del_c); intro.
+apply (cond_pos del).
+elim H5; intros; assumption.
+apply continuity_sin.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 Qed.
 
 (**********)
-Theorem derivable_pt_lim_sin : (x:R)(derivable_pt_lim sin x (cos x)).
-Intro; Assert H0 := derivable_pt_lim_sin_0.
-Assert H := derivable_pt_lim_cos_0.
-Unfold derivable_pt_lim in H0 H.
-Unfold derivable_pt_lim; Intros.
-Cut ``0<eps/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Apply H1 | Apply Rlt_Rinv; Sup0]].
-Elim (H0 ? H2); Intros alp1 H3.
-Elim (H ? H2); Intros alp2 H4.
-Pose alp := (Rmin alp1 alp2).
-Cut ``0<alp``.
-Intro; Exists (mkposreal ? H5); Intros.
-Replace ``((sin (x+h))-(sin x))/h-(cos x)`` with ``(sin x)*((cos h)-1)/h+(cos x)*((sin h)/h-1)``.
-Apply Rle_lt_trans with ``(Rabsolu ((sin x)*((cos h)-1)/h))+(Rabsolu ((cos x)*((sin h)/h-1)))``.
-Apply Rabsolu_triang.
-Rewrite (double_var eps); Apply Rplus_lt.
-Apply Rle_lt_trans with ``(Rabsolu ((cos h)-1)/h)``.
-Rewrite Rabsolu_mult; Rewrite Rmult_sym; Pattern 2 ``(Rabsolu (((cos h)-1)/h))``; Rewrite <- Rmult_1r; Apply Rle_monotony.
-Apply Rabsolu_pos.
-Assert H8 := (SIN_bound x); Elim H8; Intros.
-Unfold Rabsolu; Case (case_Rabsolu (sin x)); Intro.
-Rewrite <- (Ropp_Ropp R1).
-Apply Rle_Ropp1; Assumption.
-Assumption.
-Cut ``(Rabsolu h)<alp2``.
-Intro; Assert H9 := (H4 ? H6 H8).
-Rewrite cos_0 in H9; Rewrite Rplus_Ol in H9; Rewrite minus_R0 in H9; Apply H9.
-Apply Rlt_le_trans with alp.
-Apply H7.
-Unfold alp; Apply Rmin_r.
-Apply Rle_lt_trans with ``(Rabsolu ((sin h)/h-1))``.
-Rewrite Rabsolu_mult; Rewrite Rmult_sym; Pattern 2 ``(Rabsolu ((sin h)/h-1))``; Rewrite <- Rmult_1r; Apply Rle_monotony.
-Apply Rabsolu_pos.
-Assert H8 := (COS_bound x); Elim H8; Intros.
-Unfold Rabsolu; Case (case_Rabsolu (cos x)); Intro.
-Rewrite <- (Ropp_Ropp R1); Apply Rle_Ropp1; Assumption.
-Assumption.
-Cut ``(Rabsolu h)<alp1``.
-Intro; Assert H9 := (H3 ? H6 H8).
-Rewrite sin_0 in H9; Rewrite Rplus_Ol in H9; Rewrite minus_R0 in H9; Apply H9.
-Apply Rlt_le_trans with alp.
-Apply H7.
-Unfold alp; Apply Rmin_l.
-Rewrite sin_plus; Unfold Rminus Rdiv; Repeat Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_Rplus_distr; Repeat Rewrite Rmult_assoc; Repeat Rewrite Rplus_assoc; Apply Rplus_plus_r.
-Rewrite (Rplus_sym ``(sin x)*( -1*/h)``); Repeat Rewrite Rplus_assoc; Apply Rplus_plus_r.
-Rewrite Ropp_mul3; Rewrite Ropp_mul1; Rewrite Rmult_1r; Rewrite Rmult_1l; Rewrite Ropp_mul3; Rewrite <- Ropp_mul1; Apply Rplus_sym.
-Unfold alp; Unfold Rmin; Case (total_order_Rle alp1 alp2); Intro.
-Apply (cond_pos alp1).
-Apply (cond_pos alp2).
+Theorem derivable_pt_lim_sin : forall x:R, derivable_pt_lim sin x (cos x).
+intro; assert (H0 := derivable_pt_lim_sin_0).
+assert (H := derivable_pt_lim_cos_0).
+unfold derivable_pt_lim in H0, H.
+unfold derivable_pt_lim in |- *; intros.
+cut (0 < eps / 2);
+ [ intro
+ | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+    [ apply H1 | apply Rinv_0_lt_compat; prove_sup0 ] ].
+elim (H0 _ H2); intros alp1 H3.
+elim (H _ H2); intros alp2 H4.
+pose (alp := Rmin alp1 alp2).
+cut (0 < alp).
+intro; exists (mkposreal _ H5); intros.
+replace ((sin (x + h) - sin x) / h - cos x) with
+ (sin x * ((cos h - 1) / h) + cos x * (sin h / h - 1)).
+apply Rle_lt_trans with
+ (Rabs (sin x * ((cos h - 1) / h)) + Rabs (cos x * (sin h / h - 1))).
+apply Rabs_triang.
+rewrite (double_var eps); apply Rplus_lt_compat.
+apply Rle_lt_trans with (Rabs ((cos h - 1) / h)).
+rewrite Rabs_mult; rewrite Rmult_comm;
+ pattern (Rabs ((cos h - 1) / h)) at 2 in |- *; rewrite <- Rmult_1_r;
+ apply Rmult_le_compat_l.
+apply Rabs_pos.
+assert (H8 := SIN_bound x); elim H8; intros.
+unfold Rabs in |- *; case (Rcase_abs (sin x)); intro.
+rewrite <- (Ropp_involutive 1).
+apply Ropp_le_contravar; assumption.
+assumption.
+cut (Rabs h < alp2).
+intro; assert (H9 := H4 _ H6 H8).
+rewrite cos_0 in H9; rewrite Rplus_0_l in H9; rewrite Rminus_0_r in H9;
+ apply H9.
+apply Rlt_le_trans with alp.
+apply H7.
+unfold alp in |- *; apply Rmin_r.
+apply Rle_lt_trans with (Rabs (sin h / h - 1)).
+rewrite Rabs_mult; rewrite Rmult_comm;
+ pattern (Rabs (sin h / h - 1)) at 2 in |- *; rewrite <- Rmult_1_r;
+ apply Rmult_le_compat_l.
+apply Rabs_pos.
+assert (H8 := COS_bound x); elim H8; intros.
+unfold Rabs in |- *; case (Rcase_abs (cos x)); intro.
+rewrite <- (Ropp_involutive 1); apply Ropp_le_contravar; assumption.
+assumption.
+cut (Rabs h < alp1).
+intro; assert (H9 := H3 _ H6 H8).
+rewrite sin_0 in H9; rewrite Rplus_0_l in H9; rewrite Rminus_0_r in H9;
+ apply H9.
+apply Rlt_le_trans with alp.
+apply H7.
+unfold alp in |- *; apply Rmin_l.
+rewrite sin_plus; unfold Rminus, Rdiv in |- *;
+ repeat rewrite Rmult_plus_distr_r; repeat rewrite Rmult_plus_distr_l;
+ repeat rewrite Rmult_assoc; repeat rewrite Rplus_assoc;
+ apply Rplus_eq_compat_l.
+rewrite (Rplus_comm (sin x * (-1 * / h))); repeat rewrite Rplus_assoc;
+ apply Rplus_eq_compat_l.
+rewrite Ropp_mult_distr_r_reverse; rewrite Ropp_mult_distr_l_reverse;
+ rewrite Rmult_1_r; rewrite Rmult_1_l; rewrite Ropp_mult_distr_r_reverse;
+ rewrite <- Ropp_mult_distr_l_reverse; apply Rplus_comm.
+unfold alp in |- *; unfold Rmin in |- *; case (Rle_dec alp1 alp2); intro.
+apply (cond_pos alp1).
+apply (cond_pos alp2).
 Qed.
 
-Lemma derivable_pt_lim_cos : (x:R) (derivable_pt_lim cos x ``-(sin x)``).
-Intro; Cut (h:R)``(sin (h+PI/2))``==(cos h).
-Intro; Replace ``-(sin x)`` with (Rmult (cos ``x+PI/2``) (Rplus R1 R0)).
-Generalize (derivable_pt_lim_comp (plus_fct id (fct_cte ``PI/2``)) sin); Intros.
-Cut (derivable_pt_lim (plus_fct id (fct_cte ``PI/2``)) x ``1+0``).
-Cut (derivable_pt_lim sin (plus_fct id (fct_cte ``PI/2``) x) ``(cos (x+PI/2))``).
-Intros; Generalize (H0 ? ? ? H2 H1); Replace (comp sin (plus_fct id (fct_cte ``PI/2``))) with [x:R]``(sin (x+PI/2))``; [Idtac | Reflexivity].
-Unfold derivable_pt_lim; Intros.
-Elim (H3 eps H4); Intros.
-Exists x0.
-Intros; Rewrite <- (H ``x+h``); Rewrite <- (H x); Apply H5; Assumption.
-Apply derivable_pt_lim_sin.
-Apply derivable_pt_lim_plus.
-Apply derivable_pt_lim_id.
-Apply derivable_pt_lim_const.
-Rewrite sin_cos; Rewrite <- (Rplus_sym x); Ring.
-Intro; Rewrite cos_sin; Rewrite Rplus_sym; Reflexivity.
+Lemma derivable_pt_lim_cos : forall x:R, derivable_pt_lim cos x (- sin x).
+intro; cut (forall h:R, sin (h + PI / 2) = cos h).
+intro; replace (- sin x) with (cos (x + PI / 2) * (1 + 0)).
+generalize (derivable_pt_lim_comp (id + fct_cte (PI / 2))%F sin); intros.
+cut (derivable_pt_lim (id + fct_cte (PI / 2)) x (1 + 0)).
+cut (derivable_pt_lim sin ((id + fct_cte (PI / 2))%F x) (cos (x + PI / 2))).
+intros; generalize (H0 _ _ _ H2 H1);
+ replace (comp sin (id + fct_cte (PI / 2))%F) with
+  (fun x:R => sin (x + PI / 2)); [ idtac | reflexivity ].
+unfold derivable_pt_lim in |- *; intros.
+elim (H3 eps H4); intros.
+exists x0.
+intros; rewrite <- (H (x + h)); rewrite <- (H x); apply H5; assumption.
+apply derivable_pt_lim_sin.
+apply derivable_pt_lim_plus.
+apply derivable_pt_lim_id.
+apply derivable_pt_lim_const.
+rewrite sin_cos; rewrite <- (Rplus_comm x); ring.
+intro; rewrite cos_sin; rewrite Rplus_comm; reflexivity.
 Qed.
 
-Lemma derivable_pt_sin : (x:R) (derivable_pt sin x).
-Unfold derivable_pt; Intro.
-Apply Specif.existT with (cos x).
-Apply derivable_pt_lim_sin.
+Lemma derivable_pt_sin : forall x:R, derivable_pt sin x.
+unfold derivable_pt in |- *; intro.
+apply existT with (cos x).
+apply derivable_pt_lim_sin.
 Qed.
 
-Lemma derivable_pt_cos : (x:R) (derivable_pt cos x).
-Unfold derivable_pt; Intro.
-Apply Specif.existT with ``-(sin x)``.
-Apply derivable_pt_lim_cos.
+Lemma derivable_pt_cos : forall x:R, derivable_pt cos x.
+unfold derivable_pt in |- *; intro.
+apply existT with (- sin x).
+apply derivable_pt_lim_cos.
 Qed.
 
-Lemma derivable_sin : (derivable sin).
-Unfold derivable; Intro; Apply derivable_pt_sin.
+Lemma derivable_sin : derivable sin.
+unfold derivable in |- *; intro; apply derivable_pt_sin.
 Qed.
 
-Lemma derivable_cos : (derivable cos).
-Unfold derivable; Intro; Apply derivable_pt_cos.
+Lemma derivable_cos : derivable cos.
+unfold derivable in |- *; intro; apply derivable_pt_cos.
 Qed.
 
-Lemma derive_pt_sin : (x:R) ``(derive_pt sin x (derivable_pt_sin ?))==(cos x)``.
-Intros; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_sin.
+Lemma derive_pt_sin :
+ forall x:R, derive_pt sin x (derivable_pt_sin _) = cos x.
+intros; apply derive_pt_eq_0.
+apply derivable_pt_lim_sin.
 Qed.
 
-Lemma derive_pt_cos : (x:R) ``(derive_pt cos x (derivable_pt_cos ?))==-(sin x)``.
-Intros; Apply derive_pt_eq_0.
-Apply derivable_pt_lim_cos.
+Lemma derive_pt_cos :
+ forall x:R, derive_pt cos x (derivable_pt_cos _) = - sin x.
+intros; apply derive_pt_eq_0.
+apply derivable_pt_lim_cos.
 Qed.

@@ -18,17 +18,19 @@ Require Export Ring_abstract.
 (* Other instatiations are given in ArithRing and ZArithRing in the
    same directory *)
 
-Definition BoolTheory : (Ring_Theory xorb andb true false [b:bool]b eqb).
-Split; Simpl.
-NewDestruct n; NewDestruct m; Reflexivity.
-NewDestruct n; NewDestruct m; NewDestruct p; Reflexivity.
-NewDestruct n; NewDestruct m; Reflexivity.
-NewDestruct n; NewDestruct m; NewDestruct p; Reflexivity.
-NewDestruct n; Reflexivity.
-NewDestruct n; Reflexivity.
-NewDestruct n; Reflexivity.
-NewDestruct n; NewDestruct m; NewDestruct p; Reflexivity.
-NewDestruct x; NewDestruct y; Reflexivity Orelse Simpl; Tauto.
+Definition BoolTheory :
+  Ring_Theory xorb andb true false (fun b:bool => b) eqb.
+split; simpl in |- *.
+destruct n; destruct m; reflexivity.
+destruct n; destruct m; destruct p; reflexivity.
+destruct n; destruct m; reflexivity.
+destruct n; destruct m; destruct p; reflexivity.
+destruct n; reflexivity.
+destruct n; reflexivity.
+destruct n; reflexivity.
+destruct n; destruct m; destruct p; reflexivity.
+destruct x; destruct y; reflexivity || simpl in |- *; tauto.
 Defined.
 
-Add Ring bool xorb andb true false [b:bool]b eqb BoolTheory [ true false ].
+Add Ring bool xorb andb true false (fun b:bool => b) eqb BoolTheory
+ [ true false ].

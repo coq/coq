@@ -8,13 +8,15 @@
 
 (* $Id$ *)
 
-Tactic Definition CCsolve :=
- Repeat (Match Context With
- [ H: ?1 |- ?2] -> 
-  Let Heq = FreshId "Heq" In
- (Assert Heq:(?2==?1);[Congruence|(Rewrite Heq;Exact H)])
- |[ H: ?1; G: ?2 -> ?3 |- ?] ->                        
-  Let Heq = FreshId "Heq" In
- (Assert Heq:(?2==?1) ;[Congruence|                              
-     (Rewrite Heq in G;Generalize (G H);Clear G;Intro G)])).  
-
+Ltac CCsolve :=
+  repeat
+   match goal with
+   | H:?X1 |- ?X2 =>
+       let Heq := fresh "Heq" in
+       (assert (Heq : X2 = X1); [ congruence | rewrite Heq; exact H ])
+   | H:?X1,G:(?X2 -> ?X3) |- _ =>
+       let Heq := fresh "Heq" in
+       (assert (Heq : X2 = X1);
+         [ congruence
+         | rewrite Heq in G; generalize (G H); clear G; intro G ])
+   end.  

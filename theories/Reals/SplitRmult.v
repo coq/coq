@@ -11,9 +11,10 @@
 (*i Lemma mult_non_zero :(r1,r2:R)``r1<>0`` /\ ``r2<>0`` -> ``r1*r2<>0``. i*)
 
 
-Require Rbase.
+Require Import Rbase.
 
-Recursive Tactic Definition SplitRmult :=
-  Match Context With
-  | [ |- ~(Rmult ?1 ?2)==R0 ] -> Apply mult_non_zero; Split;Try SplitRmult.
-
+Ltac split_Rmult :=
+  match goal with
+  |  |- ((?X1 * ?X2)%R <> 0%R) =>
+      apply Rmult_integral_contrapositive; split; try split_Rmult
+  end.

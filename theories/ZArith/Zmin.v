@@ -9,94 +9,98 @@
 
 (** Binary Integers (Pierre Crégut (CNET, Lannion, France) *)
 
-Require Arith.
-Require BinInt.
-Require Zcompare.
-Require Zorder.
+Require Import Arith.
+Require Import BinInt.
+Require Import Zcompare.
+Require Import Zorder.
 
 Open Local Scope Z_scope.
 
 (**********************************************************************)
 (** Minimum on binary integer numbers *)
 
-Definition Zmin := [n,m:Z]
- <Z>Cases (Zcompare n m) of
-      EGAL      => n
-    | INFERIEUR => n
-    | SUPERIEUR => m
-    end.
+Definition Zmin (n m:Z) :=
+  match n ?= m return Z with
+  | Eq => n
+  | Lt => n
+  | Gt => m
+  end.
 
 (** Properties of minimum on binary integer numbers *)
 
-Lemma Zmin_SS : (n,m:Z)((Zs (Zmin n m))=(Zmin (Zs n) (Zs m))).
+Lemma Zmin_SS : forall n m:Z, Zsucc (Zmin n m) = Zmin (Zsucc n) (Zsucc m).
 Proof.
-Intros n m;Unfold Zmin; Rewrite (Zcompare_n_S n m);
-(ElimCompare 'n 'm);Intros E;Rewrite E;Auto with arith.
+intros n m; unfold Zmin in |- *; rewrite (Zcompare_succ_compat n m);
+ elim_compare n m; intros E; rewrite E; auto with arith.
 Qed.
 
-Lemma Zle_min_l : (n,m:Z)(Zle (Zmin n m) n).
+Lemma Zle_min_l : forall n m:Z, Zmin n m <= n.
 Proof.
-Intros n m;Unfold Zmin ; (ElimCompare 'n 'm);Intros E;Rewrite -> E;
-  [ Apply Zle_n | Apply Zle_n | Apply Zlt_le_weak; Apply Zgt_lt;Exact E ].
+intros n m; unfold Zmin in |- *; elim_compare n m; intros E; rewrite E;
+ [ apply Zle_refl
+ | apply Zle_refl
+ | apply Zlt_le_weak; apply Zgt_lt; exact E ].
 Qed.
 
-Lemma Zle_min_r : (n,m:Z)(Zle (Zmin n m) m).
+Lemma Zle_min_r : forall n m:Z, Zmin n m <= m.
 Proof.
-Intros n m;Unfold Zmin ; (ElimCompare 'n 'm);Intros E;Rewrite -> E;[
-  Unfold Zle ;Rewrite -> E;Discriminate
-| Unfold Zle ;Rewrite -> E;Discriminate
-| Apply Zle_n ].
+intros n m; unfold Zmin in |- *; elim_compare n m; intros E; rewrite E;
+ [ unfold Zle in |- *; rewrite E; discriminate
+ | unfold Zle in |- *; rewrite E; discriminate
+ | apply Zle_refl ].
 Qed.
 
-Lemma Zmin_case : (n,m:Z)(P:Z->Set)(P n)->(P m)->(P (Zmin n m)).
+Lemma Zmin_case : forall (n m:Z) (P:Z -> Set), P n -> P m -> P (Zmin n m).
 Proof.
-Intros n m P H1 H2; Unfold Zmin; Case (Zcompare n m);Auto with arith.
+intros n m P H1 H2; unfold Zmin in |- *; case (n ?= m); auto with arith.
 Qed.
 
-Lemma Zmin_or : (n,m:Z)(Zmin n m)=n \/ (Zmin n m)=m.
+Lemma Zmin_or : forall n m:Z, Zmin n m = n \/ Zmin n m = m.
 Proof.
-Unfold Zmin; Intros; Elim (Zcompare n m); Auto.
+unfold Zmin in |- *; intros; elim (n ?= m); auto.
 Qed.
 
-Lemma Zmin_n_n : (n:Z) (Zmin n n)=n.
+Lemma Zmin_n_n : forall n:Z, Zmin n n = n.
 Proof.
-Unfold Zmin; Intros; Elim (Zcompare n n); Auto.
+unfold Zmin in |- *; intros; elim (n ?= n); auto.
 Qed.
 
-Lemma Zmin_plus :
- (x,y,n:Z)(Zmin (Zplus x n) (Zplus y n))=(Zplus (Zmin x y) n).
+Lemma Zmin_plus : forall n m p:Z, Zmin (n + p) (m + p) = Zmin n m + p.
 Proof.
-Intros x y n; Unfold Zmin.
-Rewrite (Zplus_sym x n);
-Rewrite (Zplus_sym y n);
-Rewrite (Zcompare_Zplus_compatible x y n).
-Case (Zcompare x y); Apply Zplus_sym.
+intros x y n; unfold Zmin in |- *.
+rewrite (Zplus_comm x n); rewrite (Zplus_comm y n);
+ rewrite (Zcompare_plus_compat x y n).
+case (x ?= y); apply Zplus_comm.
 Qed.
 
 (**********************************************************************)
 (** Maximum of two binary integer numbers *)
-V7only [ (* From Zdivides *) ].
 
-Definition Zmax :=
-   [a, b : ?]  Cases (Zcompare a b) of INFERIEUR => b | _ => a end.
+Definition Zmax a b := match a ?= b with
+                       | Lt => b
+                       | _ => a
+                       end.
 
 (** Properties of maximum on binary integer numbers *)
 
-Tactic Definition CaseEq name :=
-Generalize (refl_equal ? name); Pattern -1 name; Case name.
+Ltac CaseEq name :=
+  generalize (refl_equal name); pattern name at -1 in |- *; case name.
 
-Theorem Zmax1: (a, b : ?)  (Zle a (Zmax a b)).
+Theorem Zmax1 : forall a b, a <= Zmax a b.
 Proof.
-Intros a b; Unfold Zmax; (CaseEq '(Zcompare a b)); Simpl; Auto with zarith.
-Unfold Zle; Intros H; Rewrite H; Red; Intros; Discriminate.
+intros a b; unfold Zmax in |- *; CaseEq (a ?= b); simpl in |- *;
+ auto with zarith.
+unfold Zle in |- *; intros H; rewrite H; red in |- *; intros; discriminate.
 Qed.
 
-Theorem Zmax2: (a, b : ?)  (Zle b (Zmax a b)).
+Theorem Zmax2 : forall a b, b <= Zmax a b.
 Proof.
-Intros a b; Unfold Zmax; (CaseEq '(Zcompare a b)); Simpl; Auto with zarith.
-Intros H;
- (Case (Zle_or_lt b a); Auto; Unfold Zlt; Rewrite H; Intros; Discriminate).
-Intros H;
- (Case (Zle_or_lt b a); Auto; Unfold Zlt; Rewrite H; Intros; Discriminate).
+intros a b; unfold Zmax in |- *; CaseEq (a ?= b); simpl in |- *;
+ auto with zarith.
+intros H;
+ (case (Zle_or_lt b a); auto; unfold Zlt in |- *; rewrite H; intros;
+   discriminate).
+intros H;
+ (case (Zle_or_lt b a); auto; unfold Zlt in |- *; rewrite H; intros;
+   discriminate).
 Qed.
-

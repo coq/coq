@@ -8,29 +8,27 @@
 
 (*i $Id$ i*)
 
-Require Decidable.
+Require Import Decidable.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,x,y:nat.
+Implicit Types m n x y : nat.
 
-Theorem O_or_S : (n:nat)({m:nat|(S m)=n})+{O=n}.
+Theorem O_or_S : forall n, {m : nat | S m = n} + {0 = n}.
 Proof.
-NewInduction n.
-Auto.
-Left; Exists n; Auto.
+induction n.
+auto.
+left; exists n; auto.
 Defined.
 
-Theorem eq_nat_dec : (n,m:nat){n=m}+{~(n=m)}.
+Theorem eq_nat_dec : forall n m, {n = m} + {n <> m}.
 Proof.
-NewInduction n; NewInduction m; Auto.
-Elim (IHn m); Auto.
+induction n; induction m; auto.
+elim (IHn m); auto.
 Defined.
 
-Hints Resolve O_or_S eq_nat_dec : arith.
+Hint Resolve O_or_S eq_nat_dec: arith.
 
-Theorem dec_eq_nat:(x,y:nat)(decidable (x=y)).
-Intros x y; Unfold decidable; Elim (eq_nat_dec x y); Auto with arith.
+Theorem dec_eq_nat : forall n m, decidable (n = m).
+intros x y; unfold decidable in |- *; elim (eq_nat_dec x y); auto with arith.
 Defined.
-

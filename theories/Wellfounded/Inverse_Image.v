@@ -12,47 +12,44 @@
 
 Section Inverse_Image.
 
-  Variables A,B:Set.
-  Variable R : B->B->Prop.
-  Variable f:A->B.
+  Variables A B : Set.
+  Variable R : B -> B -> Prop.
+  Variable f : A -> B.
 
-  Local Rof : A->A->Prop := [x,y:A](R (f x) (f y)).
+  Let Rof (x y:A) : Prop := R (f x) (f y).
 
-  Remark Acc_lemma : (y:B)(Acc B R y)->(x:A)(y=(f x))->(Acc A Rof x).
-    NewInduction 1 as [y _ IHAcc]; Intros x H.
-    Apply Acc_intro; Intros y0 H1.
-    Apply (IHAcc (f y0)); Try Trivial.
-    Rewrite H; Trivial.
+  Remark Acc_lemma : forall y:B, Acc R y -> forall x:A, y = f x -> Acc Rof x.
+    induction 1 as [y _ IHAcc]; intros x H.
+    apply Acc_intro; intros y0 H1.
+    apply (IHAcc (f y0)); try trivial.
+    rewrite H; trivial.
   Qed.
 
-  Lemma Acc_inverse_image : (x:A)(Acc B R (f x)) -> (Acc A Rof x).
-    Intros; Apply (Acc_lemma (f x)); Trivial.
+  Lemma Acc_inverse_image : forall x:A, Acc R (f x) -> Acc Rof x.
+    intros; apply (Acc_lemma (f x)); trivial.
   Qed.
 
-  Theorem wf_inverse_image: (well_founded B R)->(well_founded A Rof).
-    Red; Intros; Apply Acc_inverse_image; Auto.
+  Theorem wf_inverse_image : well_founded R -> well_founded Rof.
+    red in |- *; intros; apply Acc_inverse_image; auto.
   Qed.
 
   Variable F : A -> B -> Prop.
-  Local RoF : A -> A -> Prop := [x,y]
-    (EX b : B | (F x b) & (c:B)(F y c)->(R b c)).
+  Let RoF (x y:A) : Prop :=
+     exists2 b : B | F x b & (forall c:B, F y c -> R b c).
 
-Lemma Acc_inverse_rel :
-   (b:B)(Acc B R b)->(x:A)(F x b)->(Acc A RoF x).
-NewInduction 1 as [x _ IHAcc]; Intros x0 H2.
-Constructor; Intros y H3.
-NewDestruct H3.
-Apply (IHAcc x1); Auto.
-Save.
+Lemma Acc_inverse_rel : forall b:B, Acc R b -> forall x:A, F x b -> Acc RoF x.
+induction 1 as [x _ IHAcc]; intros x0 H2.
+constructor; intros y H3.
+destruct H3.
+apply (IHAcc x1); auto.
+Qed.
 
 
-Theorem wf_inverse_rel : 
-   (well_founded B R)->(well_founded A RoF).
-    Red; Constructor; Intros.
-    Case H0; Intros.
-    Apply (Acc_inverse_rel x); Auto.
-Save.
+Theorem wf_inverse_rel : well_founded R -> well_founded RoF.
+    red in |- *; constructor; intros.
+    case H0; intros.
+    apply (Acc_inverse_rel x); auto.
+Qed.
 
 End Inverse_Image.
-
 

@@ -14,202 +14,212 @@
 (** Original development by Pierre Crégut, CNET, Lannion, France *)
 
 Inductive positive : Set :=
-  xI : positive -> positive
-| xO : positive -> positive
-| xH : positive.
+  | xI : positive -> positive
+  | xO : positive -> positive
+  | xH : positive.
 
 (** Declare binding key for scope positive_scope *)
 
-Delimits Scope positive_scope with positive.
+Delimit Scope positive_scope with positive.
 
 (** Automatically open scope positive_scope for type positive, xO and xI *)
 
 Bind Scope positive_scope with positive.
-Arguments Scope xO [ positive_scope ].
-Arguments Scope xI [ positive_scope ].
+Arguments Scope xO [positive_scope].
+Arguments Scope xI [positive_scope].
 
 (** Successor *)
 
-Fixpoint add_un [x:positive]:positive :=
-  Cases x of
-    (xI x') => (xO (add_un x'))
-  | (xO x') => (xI x')
-  | xH => (xO xH)
+Fixpoint Psucc (x:positive) : positive :=
+  match x with
+  | xI x' => xO (Psucc x')
+  | xO x' => xI x'
+  | xH => xO xH
   end.
 
 (** Addition *)
 
-Fixpoint add [x:positive]:positive -> positive := [y:positive]
-  Cases x y of
-  | (xI x') (xI y') => (xO (add_carry x' y'))
-  | (xI x') (xO y') => (xI (add x' y'))
-  | (xI x') xH      => (xO (add_un x'))
-  | (xO x') (xI y') => (xI (add x' y'))
-  | (xO x') (xO y') => (xO (add x' y'))
-  | (xO x') xH      => (xI x')
-  | xH      (xI y') => (xO (add_un y'))
-  | xH      (xO y') => (xI y')
-  | xH      xH      => (xO xH)
+Fixpoint Pplus (x y:positive) {struct x} : positive :=
+  match x, y with
+  | xI x', xI y' => xO (Pplus_carry x' y')
+  | xI x', xO y' => xI (Pplus x' y')
+  | xI x', xH => xO (Psucc x')
+  | xO x', xI y' => xI (Pplus x' y')
+  | xO x', xO y' => xO (Pplus x' y')
+  | xO x', xH => xI x'
+  | xH, xI y' => xO (Psucc y')
+  | xH, xO y' => xI y'
+  | xH, xH => xO xH
   end
-with add_carry [x:positive]:positive -> positive := [y:positive]
-  Cases x y of
-  | (xI x') (xI y') => (xI (add_carry x' y'))
-  | (xI x') (xO y') => (xO (add_carry x' y'))
-  | (xI x') xH      => (xI (add_un x'))
-  | (xO x') (xI y') => (xO (add_carry x' y'))
-  | (xO x') (xO y') => (xI (add x' y'))
-  | (xO x') xH      => (xO (add_un x'))
-  | xH      (xI y') => (xI (add_un y'))
-  | xH      (xO y') => (xO (add_un y'))
-  | xH      xH      => (xI xH)
+ 
+ with Pplus_carry (x y:positive) {struct x} : positive :=
+  match x, y with
+  | xI x', xI y' => xI (Pplus_carry x' y')
+  | xI x', xO y' => xO (Pplus_carry x' y')
+  | xI x', xH => xI (Psucc x')
+  | xO x', xI y' => xO (Pplus_carry x' y')
+  | xO x', xO y' => xI (Pplus x' y')
+  | xO x', xH => xO (Psucc x')
+  | xH, xI y' => xI (Psucc y')
+  | xH, xO y' => xO (Psucc y')
+  | xH, xH => xI xH
   end.
 
-V7only [Notation "x + y" := (add x y) : positive_scope.].
-V8Infix "+" add : positive_scope.
+Infix "+" := Pplus : positive_scope.
 
 Open Local Scope positive_scope.
 
 (** From binary positive numbers to Peano natural numbers *)
 
-Fixpoint positive_to_nat [x:positive]:nat -> nat :=
-  [pow2:nat]
-   Cases x of
-     (xI x') => (plus pow2 (positive_to_nat x' (plus pow2 pow2)))
-   | (xO x') => (positive_to_nat x' (plus pow2 pow2))
-   | xH      => pow2
-   end.
+Fixpoint Pmult_nat (x:positive) (pow2:nat) {struct x} : nat :=
+  match x with
+  | xI x' => (pow2 + Pmult_nat x' (pow2 + pow2))%nat
+  | xO x' => Pmult_nat x' (pow2 + pow2)%nat
+  | xH => pow2
+  end.
 
-Definition convert := [x:positive] (positive_to_nat x (S O)).
+Definition nat_of_P (x:positive) := Pmult_nat x 1.
 
 (** From Peano natural numbers to binary positive numbers *)
 
-Fixpoint anti_convert [n:nat]: positive :=
-   Cases n of
-                O => xH
-             | (S x') => (add_un (anti_convert x'))
-             end.
+Fixpoint P_of_succ_nat (n:nat) : positive :=
+  match n with
+  | O => xH
+  | S x' => Psucc (P_of_succ_nat x')
+  end.
 
 (** Operation x -> 2*x-1 *)
 
-Fixpoint double_moins_un [x:positive]:positive :=
-  Cases x of
-      (xI x') => (xI (xO x'))
-    | (xO x') => (xI (double_moins_un x'))
-    | xH => xH
-    end.
+Fixpoint Pdouble_minus_one (x:positive) : positive :=
+  match x with
+  | xI x' => xI (xO x')
+  | xO x' => xI (Pdouble_minus_one x')
+  | xH => xH
+  end.
 
 (** Predecessor *)
 
-Definition sub_un := [x:positive]
-   Cases x of
-             (xI x') => (xO x')
-           | (xO x') => (double_moins_un x')
-           | xH => xH
-           end.
+Definition Ppred (x:positive) :=
+  match x with
+  | xI x' => xO x'
+  | xO x' => Pdouble_minus_one x'
+  | xH => xH
+  end.
 
 (** An auxiliary type for subtraction *)
 
-Inductive positive_mask: Set :=
-   IsNul : positive_mask
- | IsPos : positive -> positive_mask
- | IsNeg : positive_mask.
+Inductive positive_mask : Set :=
+  | IsNul : positive_mask
+  | IsPos : positive -> positive_mask
+  | IsNeg : positive_mask.
 
 (** Operation x -> 2*x+1 *)
 
-Definition Un_suivi_de_mask := [x:positive_mask]
-  Cases x of IsNul => (IsPos xH) | IsNeg => IsNeg | (IsPos p) => (IsPos (xI p)) end.
+Definition Pdouble_plus_one_mask (x:positive_mask) :=
+  match x with
+  | IsNul => IsPos xH
+  | IsNeg => IsNeg
+  | IsPos p => IsPos (xI p)
+  end.
 
 (** Operation x -> 2*x *)
 
-Definition Zero_suivi_de_mask := [x:positive_mask]
-  Cases x of IsNul => IsNul | IsNeg => IsNeg | (IsPos p) => (IsPos (xO p)) end.
+Definition Pdouble_mask (x:positive_mask) :=
+  match x with
+  | IsNul => IsNul
+  | IsNeg => IsNeg
+  | IsPos p => IsPos (xO p)
+  end.
 
 (** Operation x -> 2*x-2 *)
 
-Definition double_moins_deux :=
-  [x:positive] Cases x of
-           (xI x') => (IsPos (xO (xO x')))
-         | (xO x') => (IsPos (xO (double_moins_un x')))
-         | xH => IsNul
-         end.
+Definition Pdouble_minus_two (x:positive) :=
+  match x with
+  | xI x' => IsPos (xO (xO x'))
+  | xO x' => IsPos (xO (Pdouble_minus_one x'))
+  | xH => IsNul
+  end.
 
 (** Subtraction of binary positive numbers into a positive numbers mask *)
 
-Fixpoint sub_pos[x,y:positive]:positive_mask :=
-  Cases x y of
-  | (xI x') (xI y') => (Zero_suivi_de_mask (sub_pos x' y'))
-  | (xI x') (xO y') => (Un_suivi_de_mask (sub_pos x' y'))
-  | (xI x') xH      => (IsPos (xO x'))
-  | (xO x') (xI y') => (Un_suivi_de_mask (sub_neg x' y'))
-  | (xO x') (xO y') => (Zero_suivi_de_mask (sub_pos x' y'))
-  | (xO x') xH      => (IsPos (double_moins_un x'))
-  | xH      xH      => IsNul
-  | xH      _       => IsNeg
+Fixpoint Pminus_mask (x y:positive) {struct y} : positive_mask :=
+  match x, y with
+  | xI x', xI y' => Pdouble_mask (Pminus_mask x' y')
+  | xI x', xO y' => Pdouble_plus_one_mask (Pminus_mask x' y')
+  | xI x', xH => IsPos (xO x')
+  | xO x', xI y' => Pdouble_plus_one_mask (Pminus_mask_carry x' y')
+  | xO x', xO y' => Pdouble_mask (Pminus_mask x' y')
+  | xO x', xH => IsPos (Pdouble_minus_one x')
+  | xH, xH => IsNul
+  | xH, _ => IsNeg
   end
-with sub_neg [x,y:positive]:positive_mask :=
-  Cases x y of
-    (xI x') (xI y') => (Un_suivi_de_mask (sub_neg x' y'))
-  | (xI x') (xO y') => (Zero_suivi_de_mask (sub_pos x' y'))
-  | (xI x') xH      => (IsPos (double_moins_un x'))
-  | (xO x') (xI y') => (Zero_suivi_de_mask (sub_neg x' y'))
-  | (xO x') (xO y') => (Un_suivi_de_mask (sub_neg x' y'))
-  | (xO x') xH      => (double_moins_deux x')
-  | xH      _       => IsNeg
+ 
+ with Pminus_mask_carry (x y:positive) {struct y} : positive_mask :=
+  match x, y with
+  | xI x', xI y' => Pdouble_plus_one_mask (Pminus_mask_carry x' y')
+  | xI x', xO y' => Pdouble_mask (Pminus_mask x' y')
+  | xI x', xH => IsPos (Pdouble_minus_one x')
+  | xO x', xI y' => Pdouble_mask (Pminus_mask_carry x' y')
+  | xO x', xO y' => Pdouble_plus_one_mask (Pminus_mask_carry x' y')
+  | xO x', xH => Pdouble_minus_two x'
+  | xH, _ => IsNeg
   end.
 
 (** Subtraction of binary positive numbers x and y, returns 1 if x<=y *)
 
-Definition true_sub := [x,y:positive] 
-  Cases (sub_pos x y) of (IsPos z) => z | _ => xH  end.
+Definition Pminus (x y:positive) :=
+  match Pminus_mask x y with
+  | IsPos z => z
+  | _ => xH
+  end.
 
-V8Infix "-" true_sub : positive_scope.
+Infix "-" := Pminus : positive_scope.
 
 (** Multiplication on binary positive numbers *)
 
-Fixpoint times [x:positive] : positive -> positive:=
-  [y:positive]
-  Cases x of
-    (xI x') => (add y (xO (times x' y)))
-  | (xO x') => (xO (times x' y))
+Fixpoint Pmult (x y:positive) {struct x} : positive :=
+  match x with
+  | xI x' => y + xO (Pmult x' y)
+  | xO x' => xO (Pmult x' y)
   | xH => y
   end.
 
-V8Infix "*" times : positive_scope.
+Infix "*" := Pmult : positive_scope.
 
 (** Division by 2 rounded below but for 1 *)
 
-Definition Zdiv2_pos :=
-  [z:positive]Cases z of xH => xH
-                       | (xO p) => p
-		       | (xI p) => p
-		      end.
+Definition Pdiv2 (z:positive) :=
+  match z with
+  | xH => xH
+  | xO p => p
+  | xI p => p
+  end.
 
-V8Infix "/" Zdiv2_pos : positive_scope.
+Infix "/" := Pdiv2 : positive_scope.
 
 (** Comparison on binary positive numbers *)
 
-Fixpoint compare [x,y:positive]: relation -> relation :=
-  [r:relation] 
-  Cases x y of
-  | (xI x') (xI y') => (compare x' y' r)
-  | (xI x') (xO y') => (compare x' y' SUPERIEUR)
-  | (xI x')  xH     => SUPERIEUR
-  | (xO x') (xI y') => (compare x' y' INFERIEUR)
-  | (xO x') (xO y') => (compare x' y' r)
-  | (xO x')  xH     => SUPERIEUR
-  | xH      (xI y') => INFERIEUR
-  | xH      (xO y') => INFERIEUR
-  | xH       xH     => r
+Fixpoint Pcompare (x y:positive) (r:comparison) {struct y} : comparison :=
+  match x, y with
+  | xI x', xI y' => Pcompare x' y' r
+  | xI x', xO y' => Pcompare x' y' Gt
+  | xI x', xH => Gt
+  | xO x', xI y' => Pcompare x' y' Lt
+  | xO x', xO y' => Pcompare x' y' r
+  | xO x', xH => Gt
+  | xH, xI y' => Lt
+  | xH, xO y' => Lt
+  | xH, xH => r
   end.
 
-V8Infix "?=" compare (at level 70, no associativity) : positive_scope.
+Infix "?=" := Pcompare (at level 70, no associativity) : positive_scope.
 
 (**********************************************************************)
 (** Miscellaneous properties of binary positive numbers *)
 
-Lemma ZL11: (x:positive) (x=xH) \/ ~(x=xH).
+Lemma ZL11 : forall p:positive, p = xH \/ p <> xH.
 Proof.
-Intros x;Case x;Intros; (Left;Reflexivity) Orelse (Right;Discriminate).
+intros x; case x; intros; (left; reflexivity) || (right; discriminate).
 Qed.
 
 (**********************************************************************)
@@ -217,72 +227,78 @@ Qed.
 
 (** Specification of [xI] in term of [Psucc] and [xO] *)
 
-Lemma xI_add_un_xO : (x:positive)(xI x) = (add_un (xO x)).
+Lemma xI_succ_xO : forall p:positive, xI p = Psucc (xO p).
 Proof.
-Reflexivity.
+reflexivity.
 Qed.
 
-Lemma add_un_discr : (x:positive)x<>(add_un x).
+Lemma Psucc_discr : forall p:positive, p <> Psucc p.
 Proof.
-Intro x; NewDestruct x; Discriminate.
+intro x; destruct x as [p| p| ]; discriminate.
 Qed.
 
 (** Successor and double *)
 
-Lemma is_double_moins_un : (x:positive) (add_un (double_moins_un x)) = (xO x).
+Lemma Psucc_o_double_minus_one_eq_xO :
+ forall p:positive, Psucc (Pdouble_minus_one p) = xO p.
 Proof.
-Intro x; NewInduction x as [x IHx|x|]; Simpl; Try Rewrite IHx; Reflexivity.
+intro x; induction x as [x IHx| x| ]; simpl in |- *; try rewrite IHx;
+ reflexivity.
 Qed.
 
-Lemma double_moins_un_add_un_xI : 
- (x:positive)(double_moins_un (add_un x))=(xI x).
+Lemma Pdouble_minus_one_o_succ_eq_xI :
+ forall p:positive, Pdouble_minus_one (Psucc p) = xI p.
 Proof.
-Intro x;NewInduction x as [x IHx|x|]; Simpl; Try Rewrite IHx; Reflexivity.
+intro x; induction x as [x IHx| x| ]; simpl in |- *; try rewrite IHx;
+ reflexivity.
 Qed.
 
-Lemma ZL1: (y:positive)(xO (add_un y)) = (add_un (add_un (xO y))).
+Lemma xO_succ_permute :
+ forall p:positive, xO (Psucc p) = Psucc (Psucc (xO p)).
 Proof.
-Intro y; Induction y; Simpl; Auto.
+intro y; induction  y as [y Hrecy| y Hrecy| ]; simpl in |- *; auto.
 Qed.
 
-Lemma double_moins_un_xO_discr : (x:positive)(double_moins_un x)<>(xO x).
+Lemma double_moins_un_xO_discr :
+ forall p:positive, Pdouble_minus_one p <> xO p.
 Proof.
-Intro x; NewDestruct x; Discriminate.
+intro x; destruct x as [p| p| ]; discriminate.
 Qed.
 
 (** Successor and predecessor *)
 
-Lemma add_un_not_un : (x:positive) (add_un x) <> xH.
+Lemma Psucc_not_one : forall p:positive, Psucc p <> xH.
 Proof.
-Intro x; NewDestruct x as [x|x|]; Discriminate.
+intro x; destruct x as [x| x| ]; discriminate.
 Qed.
 
-Lemma sub_add_one : (x:positive) (sub_un (add_un x)) = x.
+Lemma Ppred_succ : forall p:positive, Ppred (Psucc p) = p.
 Proof.
-(Intro x; NewDestruct x as [p|p|]; [Idtac | Idtac | Simpl;Auto]);
-(NewInduction p as [p IHp||]; [Idtac | Reflexivity | Reflexivity ]);
-Simpl; Simpl in IHp; Try Rewrite <- IHp; Reflexivity.
+intro x; destruct x as [p| p| ]; [ idtac | idtac | simpl in |- *; auto ];
+ (induction p as [p IHp| | ]; [ idtac | reflexivity | reflexivity ]);
+ simpl in |- *; simpl in IHp; try rewrite <- IHp; reflexivity.
 Qed.
 
-Lemma add_sub_one : (x:positive) (x=xH) \/ (add_un (sub_un x)) = x.
+Lemma Psucc_pred : forall p:positive, p = xH \/ Psucc (Ppred p) = p.
 Proof.
-Intro x; Induction x; [
-  Simpl; Auto
-| Simpl; Intros;Right;Apply is_double_moins_un
-| Auto ].
+intro x; induction  x as [x Hrecx| x Hrecx| ];
+ [ simpl in |- *; auto
+ | simpl in |- *; intros; right; apply Psucc_o_double_minus_one_eq_xO
+ | auto ].
 Qed.
 
 (** Injectivity of successor *)
 
-Lemma add_un_inj : (x,y:positive) (add_un x)=(add_un y) -> x=y.
+Lemma Psucc_inj : forall p q:positive, Psucc p = Psucc q -> p = q.
 Proof.
-Intro x;NewInduction x; Intro y; NewDestruct y as [y|y|]; Simpl; 
-  Intro H; Discriminate H Orelse Try (Injection H; Clear H; Intro H).
-Rewrite (IHx y H); Reflexivity.
-Absurd (add_un x)=xH; [ Apply add_un_not_un | Assumption ].
-Apply f_equal with 1:=H; Assumption.
-Absurd (add_un y)=xH; [ Apply add_un_not_un | Symmetry; Assumption ].
-Reflexivity.
+intro x; induction x; intro y; destruct y as [y| y| ]; simpl in |- *; intro H;
+ discriminate H || (try (injection H; clear H; intro H)).
+rewrite (IHx y H); reflexivity.
+absurd (Psucc x = xH); [ apply Psucc_not_one | assumption ].
+apply f_equal with (1 := H); assumption.
+absurd (Psucc y = xH);
+ [ apply Psucc_not_one | symmetry  in |- *; assumption ].
+reflexivity.
 Qed.
 
 (**********************************************************************)
@@ -290,605 +306,656 @@ Qed.
 
 (** Specification of [Psucc] in term of [Pplus] *)
 
-Lemma ZL12: (q:positive) (add_un q) = (add q xH).
+Lemma Pplus_one_succ_r : forall p:positive, Psucc p = p + xH.
 Proof.
-Intro q; NewDestruct q; Reflexivity.
+intro q; destruct q as [p| p| ]; reflexivity.
 Qed.
 
-Lemma ZL12bis: (q:positive) (add_un q) = (add xH q).
+Lemma Pplus_one_succ_l : forall p:positive, Psucc p = xH + p.
 Proof.
-Intro q; NewDestruct q; Reflexivity.
+intro q; destruct q as [p| p| ]; reflexivity.
 Qed.
 
 (** Specification of [Pplus_carry] *)
 
-Theorem ZL13: (x,y:positive)(add_carry x y) = (add_un (add x y)).
+Theorem Pplus_carry_spec :
+ forall p q:positive, Pplus_carry p q = Psucc (p + q).
 Proof.
-(Intro x; NewInduction x as [p IHp|p IHp|];Intro y; NewDestruct y;Simpl;Auto);
-  Rewrite IHp; Auto.
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; simpl in |- *; auto; rewrite IHp; 
+ auto.
 Qed.
 
 (** Commutativity *)
 
-Theorem add_sym : (x,y:positive) (add x y) = (add y x).
+Theorem Pplus_comm : forall p q:positive, p + q = q + p.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|];Intro y; NewDestruct y;Simpl;Auto;
-  Try Do 2 Rewrite ZL13; Rewrite IHp;Auto.
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; simpl in |- *; auto;
+ try do 2 rewrite Pplus_carry_spec; rewrite IHp; auto.
 Qed. 
 
 (** Permutation of [Pplus] and [Psucc] *)
 
-Theorem ZL14: (x,y:positive)(add x (add_un y)) = (add_un (add x y)).
+Theorem Pplus_succ_permute_r :
+ forall p q:positive, p + Psucc q = Psucc (p + q).
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|];Intro y; NewDestruct y;Simpl;Auto; [
-  Rewrite ZL13; Rewrite IHp; Auto
-| Rewrite ZL13; Auto
-| NewDestruct p;Simpl;Auto
-| Rewrite IHp;Auto
-| NewDestruct p;Simpl;Auto ].
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; simpl in |- *; auto;
+ [ rewrite Pplus_carry_spec; rewrite IHp; auto
+ | rewrite Pplus_carry_spec; auto
+ | destruct p; simpl in |- *; auto
+ | rewrite IHp; auto
+ | destruct p; simpl in |- *; auto ].
 Qed.
 
-Theorem ZL14bis: (x,y:positive)(add (add_un x) y) = (add_un (add x y)).
+Theorem Pplus_succ_permute_l :
+ forall p q:positive, Psucc p + q = Psucc (p + q).
 Proof.
-Intros x y; Rewrite add_sym; Rewrite add_sym with x:=x; Apply ZL14.
+intros x y; rewrite Pplus_comm; rewrite Pplus_comm with (p := x);
+ apply Pplus_succ_permute_r.
 Qed.
 
-Theorem ZL15: (q,z:positive) ~z=xH -> (add_carry q (sub_un z)) = (add q z).
+Theorem Pplus_carry_pred_eq_plus :
+ forall p q:positive, q <> xH -> Pplus_carry p (Ppred q) = p + q.
 Proof.
-Intros q z H; Elim (add_sub_one z); [
-  Intro;Absurd z=xH;Auto
-| Intros E;Pattern 2 z ;Rewrite <- E; Rewrite ZL14; Rewrite ZL13; Trivial ].
+intros q z H; elim (Psucc_pred z);
+ [ intro; absurd (z = xH); auto
+ | intros E; pattern z at 2 in |- *; rewrite <- E;
+    rewrite Pplus_succ_permute_r; rewrite Pplus_carry_spec; 
+    trivial ].
 Qed. 
 
 (** No neutral for addition on strictly positive numbers *)
 
-Lemma add_no_neutral : (x,y:positive) ~(add y x)=x.
+Lemma Pplus_no_neutral : forall p q:positive, q + p <> p.
 Proof.
-Intro x;NewInduction x; Intro y; NewDestruct y as [y|y|]; Simpl; Intro H;
-  Discriminate H Orelse Injection H; Clear H; Intro H; Apply (IHx y H).
+intro x; induction x; intro y; destruct y as [y| y| ]; simpl in |- *; intro H;
+ discriminate H || injection H; clear H; intro H; apply (IHx y H).
 Qed.
 
-Lemma add_carry_not_add_un : (x,y:positive) ~(add_carry y x)=(add_un x).
+Lemma Pplus_carry_no_neutral :
+ forall p q:positive, Pplus_carry q p <> Psucc p.
 Proof.
-Intros x y H; Absurd (add y x)=x; 
-      [ Apply add_no_neutral
-      | Apply add_un_inj; Rewrite <- ZL13; Assumption ].
+intros x y H; absurd (y + x = x);
+ [ apply Pplus_no_neutral
+ | apply Psucc_inj; rewrite <- Pplus_carry_spec; assumption ].
 Qed.
 
 (** Simplification *)
 
-Lemma add_carry_add :
-  (x,y,z,t:positive) (add_carry x z)=(add_carry y t) -> (add x z)=(add y t).
+Lemma Pplus_carry_plus :
+ forall p q r s:positive, Pplus_carry p r = Pplus_carry q s -> p + r = q + s.
 Proof.
-Intros x y z t H; Apply add_un_inj; Do 2 Rewrite <- ZL13; Assumption.
+intros x y z t H; apply Psucc_inj; do 2 rewrite <- Pplus_carry_spec;
+ assumption.
 Qed.
 
-Lemma simpl_add_r : (x,y,z:positive) (add x z)=(add y z) -> x=y.
+Lemma Pplus_reg_r : forall p q r:positive, p + r = q + r -> p = q.
 Proof.
-Intros x y z; Generalize x y; Clear x y.
-NewInduction z as [z|z|].
-  NewDestruct x as [x|x|]; Intro y; NewDestruct y as [y|y|]; Simpl; Intro H; 
-  Discriminate H Orelse Try (Injection H; Clear H; Intro H).
-    Rewrite IHz with 1:=(add_carry_add ? ? ? ? H); Reflexivity.
-    Absurd (add_carry x z)=(add_un z);
-      [ Apply add_carry_not_add_un | Assumption ].
-    Rewrite IHz with 1:=H; Reflexivity.
-    Symmetry in H; Absurd (add_carry y z)=(add_un z);
-      [ Apply add_carry_not_add_un | Assumption ].
-    Reflexivity.
-  NewDestruct x as [x|x|]; Intro y; NewDestruct y as [y|y|]; Simpl; Intro H; 
-  Discriminate H Orelse Try (Injection H; Clear H; Intro H).
-    Rewrite IHz with 1:=H; Reflexivity.
-    Absurd (add x z)=z; [ Apply add_no_neutral | Assumption ].
-    Rewrite IHz with 1:=H; Reflexivity.
-    Symmetry in H; Absurd y+z=z; [ Apply add_no_neutral | Assumption ].
-    Reflexivity.
-  Intros H x y; Apply add_un_inj; Do 2 Rewrite ZL12; Assumption.
+intros x y z; generalize x y; clear x y.
+induction z as [z| z| ].
+  destruct x as [x| x| ]; intro y; destruct y as [y| y| ]; simpl in |- *;
+   intro H; discriminate H || (try (injection H; clear H; intro H)).
+    rewrite IHz with (1 := Pplus_carry_plus _ _ _ _ H); reflexivity.
+    absurd (Pplus_carry x z = Psucc z);
+     [ apply Pplus_carry_no_neutral | assumption ].
+    rewrite IHz with (1 := H); reflexivity.
+    symmetry  in H; absurd (Pplus_carry y z = Psucc z);
+     [ apply Pplus_carry_no_neutral | assumption ].
+    reflexivity.
+  destruct x as [x| x| ]; intro y; destruct y as [y| y| ]; simpl in |- *;
+   intro H; discriminate H || (try (injection H; clear H; intro H)).
+    rewrite IHz with (1 := H); reflexivity.
+    absurd (x + z = z); [ apply Pplus_no_neutral | assumption ].
+    rewrite IHz with (1 := H); reflexivity.
+    symmetry  in H; absurd (y + z = z);
+     [ apply Pplus_no_neutral | assumption ].
+    reflexivity.
+  intros H x y; apply Psucc_inj; do 2 rewrite Pplus_one_succ_r; assumption.
 Qed.
 
-Lemma simpl_add_l : (x,y,z:positive) (add x y)=(add x z) -> y=z.
+Lemma Pplus_reg_l : forall p q r:positive, p + q = p + r -> q = r.
 Proof.
-Intros x y z H;Apply simpl_add_r with z:=x; 
-  Rewrite add_sym with x:=z; Rewrite add_sym with x:=y; Assumption.
+intros x y z H; apply Pplus_reg_r with (r := x);
+ rewrite Pplus_comm with (p := z); rewrite Pplus_comm with (p := y);
+ assumption.
 Qed.
 
-Lemma simpl_add_carry_r :
- (x,y,z:positive) (add_carry x z)=(add_carry y z) -> x=y.
+Lemma Pplus_carry_reg_r :
+ forall p q r:positive, Pplus_carry p r = Pplus_carry q r -> p = q.
 Proof.
-Intros x y z H; Apply simpl_add_r with z:=z; Apply add_carry_add; Assumption.
+intros x y z H; apply Pplus_reg_r with (r := z); apply Pplus_carry_plus;
+ assumption.
 Qed.
 
-Lemma simpl_add_carry_l :
-  (x,y,z:positive) (add_carry x y)=(add_carry x z) -> y=z.
+Lemma Pplus_carry_reg_l :
+ forall p q r:positive, Pplus_carry p q = Pplus_carry p r -> q = r.
 Proof.
-Intros x y z H;Apply simpl_add_r with z:=x; 
-Rewrite add_sym with x:=z; Rewrite add_sym with x:=y; Apply add_carry_add; 
-Assumption.
+intros x y z H; apply Pplus_reg_r with (r := x);
+ rewrite Pplus_comm with (p := z); rewrite Pplus_comm with (p := y);
+ apply Pplus_carry_plus; assumption.
 Qed.
 
 (** Addition on positive is associative *)
 
-Theorem add_assoc: (x,y,z:positive)(add x (add y z)) = (add (add x y) z).
+Theorem Pplus_assoc : forall p q r:positive, p + (q + r) = p + q + r.
 Proof.
-Intros x y; Generalize x; Clear x.
-NewInduction y as [y|y|]; Intro x.
-  NewDestruct x as [x|x|]; 
-    Intro z; NewDestruct z as [z|z|]; Simpl; Repeat Rewrite ZL13;
-    Repeat Rewrite ZL14; Repeat Rewrite ZL14bis; Reflexivity Orelse
-    Repeat Apply f_equal with A:=positive; Apply IHy.
-  NewDestruct x as [x|x|]; 
-    Intro z; NewDestruct z as [z|z|]; Simpl; Repeat Rewrite ZL13;
-    Repeat Rewrite ZL14; Repeat Rewrite ZL14bis; Reflexivity Orelse
-    Repeat Apply f_equal with A:=positive; Apply IHy.
-  Intro z; Rewrite add_sym with x:=xH; Do 2 Rewrite <- ZL12; Rewrite ZL14bis; Rewrite ZL14; Reflexivity.
+intros x y; generalize x; clear x.
+induction y as [y| y| ]; intro x.
+  destruct x as [x| x| ]; intro z; destruct z as [z| z| ]; simpl in |- *;
+   repeat rewrite Pplus_carry_spec; repeat rewrite Pplus_succ_permute_r;
+   repeat rewrite Pplus_succ_permute_l;
+   reflexivity || (repeat apply f_equal with (A := positive)); 
+   apply IHy.
+  destruct x as [x| x| ]; intro z; destruct z as [z| z| ]; simpl in |- *;
+   repeat rewrite Pplus_carry_spec; repeat rewrite Pplus_succ_permute_r;
+   repeat rewrite Pplus_succ_permute_l;
+   reflexivity || (repeat apply f_equal with (A := positive)); 
+   apply IHy.
+  intro z; rewrite Pplus_comm with (p := xH);
+   do 2 rewrite <- Pplus_one_succ_r; rewrite Pplus_succ_permute_l;
+   rewrite Pplus_succ_permute_r; reflexivity.
 Qed.
 
 (** Commutation of addition with the double of a positive number *)
 
-Lemma add_xI_double_moins_un :
-  (p,q:positive)(xO (add p q)) = (add (xI p) (double_moins_un q)).
+Lemma Pplus_xI_double_minus_one :
+ forall p q:positive, xO (p + q) = xI p + Pdouble_minus_one q.
 Proof.
-Intros; Change (xI p) with (add (xO p) xH).
-Rewrite <- add_assoc; Rewrite <- ZL12bis; Rewrite is_double_moins_un.
-Reflexivity.
+intros; change (xI p) with (xO p + xH) in |- *.
+rewrite <- Pplus_assoc; rewrite <- Pplus_one_succ_l;
+ rewrite Psucc_o_double_minus_one_eq_xO.
+reflexivity.
 Qed.
 
-Lemma add_xO_double_moins_un :
- (p,q:positive) (double_moins_un (add p q)) = (add (xO p) (double_moins_un q)).
+Lemma Pplus_xO_double_minus_one :
+ forall p q:positive, Pdouble_minus_one (p + q) = xO p + Pdouble_minus_one q.
 Proof.
-NewInduction p as [p IHp|p IHp|]; NewDestruct q as [q|q|];
- Simpl; Try Rewrite ZL13; Try Rewrite double_moins_un_add_un_xI;
- Try Rewrite IHp; Try Rewrite add_xI_double_moins_un; Try Reflexivity.
- Rewrite <- is_double_moins_un; Rewrite ZL12bis; Reflexivity. 
+induction p as [p IHp| p IHp| ]; destruct q as [q| q| ]; simpl in |- *;
+ try rewrite Pplus_carry_spec; try rewrite Pdouble_minus_one_o_succ_eq_xI;
+ try rewrite IHp; try rewrite Pplus_xI_double_minus_one; 
+ try reflexivity.
+ rewrite <- Psucc_o_double_minus_one_eq_xO; rewrite Pplus_one_succ_l;
+  reflexivity. 
 Qed.
 
 (** Misc *)
 
-Lemma add_x_x : (x:positive) (add x x) = (xO x).
+Lemma Pplus_diag : forall p:positive, p + p = xO p.
 Proof.
-Intro x;NewInduction x; Simpl; Try Rewrite ZL13; Try Rewrite IHx; Reflexivity.
+intro x; induction x; simpl in |- *; try rewrite Pplus_carry_spec;
+ try rewrite IHx; reflexivity.
 Qed.
 
 (**********************************************************************)
 (** Peano induction on binary positive positive numbers *)
 
-Fixpoint plus_iter [x:positive] : positive -> positive := 
-  [y]Cases x of 
-  | xH => (add_un y)
-  | (xO x) => (plus_iter x (plus_iter x y))
-  | (xI x) => (plus_iter x (plus_iter x (add_un y)))
+Fixpoint plus_iter (x y:positive) {struct x} : positive :=
+  match x with
+  | xH => Psucc y
+  | xO x => plus_iter x (plus_iter x y)
+  | xI x => plus_iter x (plus_iter x (Psucc y))
   end.
 
-Lemma plus_iter_add : (x,y:positive)(plus_iter x y)=(add x y).
+Lemma plus_iter_eq_plus : forall p q:positive, plus_iter p q = p + q.
 Proof.
-Intro x;NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y; Simpl;
-  Reflexivity Orelse Do 2 Rewrite IHp; Rewrite add_assoc; Rewrite add_x_x;
-  Try Reflexivity.
-Rewrite ZL13; Rewrite <- ZL14; Reflexivity.
-Rewrite ZL12; Reflexivity.
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; simpl in |- *; reflexivity || (do 2 rewrite IHp);
+ rewrite Pplus_assoc; rewrite Pplus_diag; try reflexivity.
+rewrite Pplus_carry_spec; rewrite <- Pplus_succ_permute_r; reflexivity.
+rewrite Pplus_one_succ_r; reflexivity.
 Qed.
 
-Lemma plus_iter_xO : (x:positive)(plus_iter x x)=(xO x).
+Lemma plus_iter_xO : forall p:positive, plus_iter p p = xO p.
 Proof.
-Intro; Rewrite <- add_x_x; Apply plus_iter_add.
+intro; rewrite <- Pplus_diag; apply plus_iter_eq_plus.
 Qed.
 
-Lemma plus_iter_xI : (x:positive)(add_un (plus_iter x x))=(xI x).
+Lemma plus_iter_xI : forall p:positive, Psucc (plus_iter p p) = xI p.
 Proof.
-Intro; Rewrite xI_add_un_xO; Rewrite <- add_x_x; 
-  Apply (f_equal positive); Apply plus_iter_add.
+intro; rewrite xI_succ_xO; rewrite <- Pplus_diag;
+ apply (f_equal (A:=positive)); apply plus_iter_eq_plus.
 Qed.
 
-Lemma iterate_add : (P:(positive->Type))
-  ((n:positive)(P n) ->(P (add_un n)))->(p,n:positive)(P n) ->
-  (P (plus_iter p n)).
+Lemma iterate_add :
+ forall P:positive -> Type,
+   (forall n:positive, P n -> P (Psucc n)) ->
+   forall p q:positive, P q -> P (plus_iter p q).
 Proof.
-Intros P H; NewInduction p; Simpl; Intros.
-Apply IHp; Apply IHp; Apply H; Assumption.
-Apply IHp; Apply IHp; Assumption.
-Apply H; Assumption.
+intros P H; induction p; simpl in |- *; intros.
+apply IHp; apply IHp; apply H; assumption.
+apply IHp; apply IHp; assumption.
+apply H; assumption.
 Defined.
 
 (** Peano induction *)
 
-Theorem Pind : (P:(positive->Prop))
-  (P xH) ->((n:positive)(P n) ->(P (add_un n))) ->(n:positive)(P n).
+Theorem Pind :
+ forall P:positive -> Prop,
+   P xH -> (forall n:positive, P n -> P (Psucc n)) -> forall p:positive, P p.
 Proof.
-Intros P H1 Hsucc n; NewInduction n.
-Rewrite <- plus_iter_xI; Apply Hsucc; Apply iterate_add; Assumption.
-Rewrite <- plus_iter_xO; Apply iterate_add; Assumption.
-Assumption.
+intros P H1 Hsucc n; induction n.
+rewrite <- plus_iter_xI; apply Hsucc; apply iterate_add; assumption.
+rewrite <- plus_iter_xO; apply iterate_add; assumption.
+assumption.
 Qed.
 
 (** Peano recursion *)
 
-Definition Prec : (A:Set)A->(positive->A->A)->positive->A :=
-  [A;a;f]Fix Prec { Prec [p:positive] : A :=
-  Cases p of
-  | xH => a
-  | (xO p) => (iterate_add [_]A f p p (Prec p))
-  | (xI p) => (f (plus_iter p p) (iterate_add [_]A f p p (Prec p)))
-  end}.
+Definition Prec (A:Set) (a:A) (f:positive -> A -> A) : 
+  positive -> A :=
+  (fix Prec (p:positive) : A :=
+     match p with
+     | xH => a
+     | xO p => iterate_add (fun _ => A) f p p (Prec p)
+     | xI p => f (plus_iter p p) (iterate_add (fun _ => A) f p p (Prec p))
+     end).
 
 (** Peano case analysis *)
 
-Theorem Pcase : (P:(positive->Prop))
-  (P xH) ->((n:positive)(P (add_un n))) ->(n:positive)(P n).
+Theorem Pcase :
+ forall P:positive -> Prop,
+   P xH -> (forall n:positive, P (Psucc n)) -> forall p:positive, P p.
 Proof.
-Intros; Apply Pind; Auto.
+intros; apply Pind; auto.
 Qed.
 
+(*
 Check
- let fact = (Prec positive xH [p;r](times (add_un p) r)) in
- let seven = (xI (xI xH)) in
- let five_thousand_forty= (xO(xO(xO(xO(xI(xI(xO(xI(xI(xI(xO(xO xH))))))))))))
- in ((refl_equal ? ?) :: (fact seven) = five_thousand_forty).
+  (let fact := Prec positive xH (fun p r => Psucc p * r) in
+   let seven := xI (xI xH) in
+   let five_thousand_forty :=
+     xO (xO (xO (xO (xI (xI (xO (xI (xI (xI (xO (xO xH))))))))))) in
+   refl_equal _:fact seven = five_thousand_forty).
+*)
 
 (**********************************************************************)
 (** Properties of multiplication on binary positive numbers *)
 
 (** One is right neutral for multiplication *)
 
-Lemma times_x_1 : (x:positive) (times x xH) = x.
+Lemma Pmult_1_r : forall p:positive, p * xH = p.
 Proof.
-Intro x;NewInduction x; Simpl.
-  Rewrite IHx; Reflexivity.
-  Rewrite IHx; Reflexivity.
-  Reflexivity.
+intro x; induction x; simpl in |- *.
+  rewrite IHx; reflexivity.
+  rewrite IHx; reflexivity.
+  reflexivity.
 Qed.
 
 (** Right reduction properties for multiplication *)
 
-Lemma times_x_double : (x,y:positive) (times x (xO y)) = (xO (times x y)).
+Lemma Pmult_xO_permute_r : forall p q:positive, p * xO q = xO (p * q).
 Proof.
-Intros x y; NewInduction x; Simpl.
-  Rewrite IHx; Reflexivity.
-  Rewrite IHx; Reflexivity.
-  Reflexivity.
+intros x y; induction x; simpl in |- *.
+  rewrite IHx; reflexivity.
+  rewrite IHx; reflexivity.
+  reflexivity.
 Qed.
 
-Lemma times_x_double_plus_one :
- (x,y:positive) (times x (xI y)) = (add x (xO (times x y))).
+Lemma Pmult_xI_permute_r : forall p q:positive, p * xI q = p + xO (p * q).
 Proof.
-Intros x y; NewInduction x; Simpl.
-  Rewrite IHx; Do 2 Rewrite add_assoc; Rewrite add_sym with x:=y; Reflexivity.
-  Rewrite IHx; Reflexivity.
-  Reflexivity.
+intros x y; induction x; simpl in |- *.
+  rewrite IHx; do 2 rewrite Pplus_assoc; rewrite Pplus_comm with (p := y);
+   reflexivity.
+  rewrite IHx; reflexivity.
+  reflexivity.
 Qed.
 
 (** Commutativity of multiplication *)
 
-Theorem times_sym : (x,y:positive) (times x y) = (times y x).
+Theorem Pmult_comm : forall p q:positive, p * q = q * p.
 Proof.
-Intros x y; NewInduction y; Simpl.
-  Rewrite <- IHy; Apply times_x_double_plus_one.
-  Rewrite <- IHy; Apply times_x_double.
-  Apply times_x_1.
+intros x y; induction y; simpl in |- *.
+  rewrite <- IHy; apply Pmult_xI_permute_r.
+  rewrite <- IHy; apply Pmult_xO_permute_r.
+  apply Pmult_1_r.
 Qed.
 
 (** Distributivity of multiplication over addition *)
 
-Theorem times_add_distr:
-  (x,y,z:positive) (times x (add y z)) = (add (times x y) (times x z)).
+Theorem Pmult_plus_distr_l :
+ forall p q r:positive, p * (q + r) = p * q + p * r.
 Proof.
-Intros x y z; NewInduction x; Simpl.
-  Rewrite IHx; Rewrite <- add_assoc with y := (xO (times x y));
-    Rewrite -> add_assoc with x := (xO (times x y));
-    Rewrite -> add_sym with x := (xO (times x y));
-    Rewrite <- add_assoc with y := (xO (times x y));
-    Rewrite -> add_assoc with y := z; Reflexivity.
-  Rewrite IHx; Reflexivity.
-  Reflexivity.
+intros x y z; induction x; simpl in |- *.
+  rewrite IHx; rewrite <- Pplus_assoc with (q := xO (x * y));
+   rewrite Pplus_assoc with (p := xO (x * y));
+   rewrite Pplus_comm with (p := xO (x * y));
+   rewrite <- Pplus_assoc with (q := xO (x * y));
+   rewrite Pplus_assoc with (q := z); reflexivity.
+  rewrite IHx; reflexivity.
+  reflexivity.
 Qed.
 
-Theorem times_add_distr_l:
-  (x,y,z:positive) (times (add x y) z) = (add (times x z) (times y z)).
+Theorem Pmult_plus_distr_r :
+ forall p q r:positive, (p + q) * r = p * r + q * r.
 Proof.
-Intros x y z; Do 3 Rewrite times_sym with y:=z; Apply times_add_distr.
+intros x y z; do 3 rewrite Pmult_comm with (q := z); apply Pmult_plus_distr_l.
 Qed.
 
 (** Associativity of multiplication *)
 
-Theorem times_assoc :
-  ((x,y,z:positive) (times x (times y z))= (times (times x y) z)).
+Theorem Pmult_assoc : forall p q r:positive, p * (q * r) = p * q * r.
 Proof.
-Intro x;NewInduction x as [x|x|]; Simpl; Intros y z.
-  Rewrite IHx; Rewrite times_add_distr_l; Reflexivity.
-  Rewrite IHx; Reflexivity.
-  Reflexivity.
+intro x; induction x as [x| x| ]; simpl in |- *; intros y z.
+  rewrite IHx; rewrite Pmult_plus_distr_r; reflexivity.
+  rewrite IHx; reflexivity.
+  reflexivity.
 Qed.
 
 (** Parity properties of multiplication *)
 
-Lemma times_discr_xO_xI : 
-  (x,y,z:positive)(times (xI x) z)<>(times (xO y) z).
+Lemma Pmult_xI_mult_xO_discr : forall p q r:positive, xI p * r <> xO q * r.
 Proof.
-Intros x y z; NewInduction z as [|z IHz|]; Try Discriminate.
-Intro H; Apply IHz; Clear IHz.
-Do 2 Rewrite times_x_double in H.
-Injection H; Clear H; Intro H; Exact H.
+intros x y z; induction z as [| z IHz| ]; try discriminate.
+intro H; apply IHz; clear IHz.
+do 2 rewrite Pmult_xO_permute_r in H.
+injection H; clear H; intro H; exact H.
 Qed.
 
-Lemma times_discr_xO : (x,y:positive)(times (xO x) y)<>y.
+Lemma Pmult_xO_discr : forall p q:positive, xO p * q <> q.
 Proof.
-Intros x y; NewInduction y; Try Discriminate.
-Rewrite times_x_double; Injection; Assumption.
+intros x y; induction y; try discriminate.
+rewrite Pmult_xO_permute_r; injection; assumption.
 Qed.
 
 (** Simplification properties of multiplication *)
 
-Theorem simpl_times_r : (x,y,z:positive) (times x z)=(times y z) -> x=y.
+Theorem Pmult_reg_r : forall p q r:positive, p * r = q * r -> p = q.
 Proof.
-Intro x;NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y as [q|q|]; Intros z H;
-    Reflexivity Orelse Apply (f_equal positive) Orelse Apply False_ind.
-  Simpl in H; Apply IHp with (xO z); Simpl; Do 2 Rewrite times_x_double;
-    Apply simpl_add_l with 1 := H.
-  Apply times_discr_xO_xI with 1 := H.
-  Simpl in H; Rewrite add_sym in H; Apply add_no_neutral with 1 := H.
-  Symmetry in H; Apply times_discr_xO_xI with 1 := H.
-  Apply IHp with (xO z); Simpl; Do 2 Rewrite times_x_double; Assumption.
-  Apply times_discr_xO with 1:=H.
-  Simpl in H; Symmetry in H; Rewrite add_sym in H; 
-    Apply add_no_neutral with 1 := H.
-  Symmetry in H; Apply times_discr_xO with 1:=H.
+intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
+ intros z H; reflexivity || apply (f_equal (A:=positive)) || apply False_ind.
+  simpl in H; apply IHp with (xO z); simpl in |- *;
+   do 2 rewrite Pmult_xO_permute_r; apply Pplus_reg_l with (1 := H).
+  apply Pmult_xI_mult_xO_discr with (1 := H).
+  simpl in H; rewrite Pplus_comm in H; apply Pplus_no_neutral with (1 := H).
+  symmetry  in H; apply Pmult_xI_mult_xO_discr with (1 := H).
+  apply IHp with (xO z); simpl in |- *; do 2 rewrite Pmult_xO_permute_r;
+   assumption.
+  apply Pmult_xO_discr with (1 := H).
+  simpl in H; symmetry  in H; rewrite Pplus_comm in H;
+   apply Pplus_no_neutral with (1 := H).
+  symmetry  in H; apply Pmult_xO_discr with (1 := H).
 Qed.
 
-Theorem simpl_times_l : (x,y,z:positive) (times z x)=(times z y) -> x=y.
+Theorem Pmult_reg_l : forall p q r:positive, r * p = r * q -> p = q.
 Proof.
-Intros x y z H; Apply simpl_times_r with z:=z.
-Rewrite times_sym with x:=x; Rewrite times_sym with x:=y; Assumption.
+intros x y z H; apply Pmult_reg_r with (r := z).
+rewrite Pmult_comm with (p := x); rewrite Pmult_comm with (p := y);
+ assumption.
 Qed.
 
 (** Inversion of multiplication *)
 
-Lemma times_one_inversion_l : (x,y:positive) (times x y)=xH -> x=xH.
+Lemma Pmult_1_inversion_l : forall p q:positive, p * q = xH -> p = xH.
 Proof.
-Intros x y; NewDestruct x; Simpl.
- NewDestruct y; Intro; Discriminate.
- Intro; Discriminate.
- Reflexivity.
+intros x y; destruct x as [p| p| ]; simpl in |- *.
+ destruct y as [p0| p0| ]; intro; discriminate.
+ intro; discriminate.
+ reflexivity.
 Qed.
 
 (**********************************************************************)
 (** Properties of comparison on binary positive numbers *)
 
-Theorem compare_convert1 : 
- (x,y:positive) 
-  ~(compare x y SUPERIEUR) = EGAL /\ ~(compare x y INFERIEUR) = EGAL.
+Theorem Pcompare_not_Eq :
+ forall p q:positive, (p ?= q) Gt <> Eq /\ (p ?= q) Lt <> Eq.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y as [q|q|];
-  Split;Simpl;Auto;
-  Discriminate Orelse (Elim (IHp q); Auto).
+intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
+ split; simpl in |- *; auto; discriminate || (elim (IHp q); auto).
 Qed.
 
-Theorem compare_convert_EGAL : (x,y:positive) (compare x y EGAL) = EGAL -> x=y.
+Theorem Pcompare_Eq_eq : forall p q:positive, (p ?= q) Eq = Eq -> p = q.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|]; 
-  Intro y; NewDestruct y as [q|q|];Simpl;Auto; Intro H; [
-  Rewrite (IHp q); Trivial
-| Absurd (compare p q SUPERIEUR)=EGAL ;
-   [ Elim (compare_convert1 p q);Auto | Assumption ]
-| Discriminate H
-| Absurd (compare p q INFERIEUR) = EGAL; 
-    [ Elim (compare_convert1 p q);Auto | Assumption ]
-| Rewrite (IHp q);Auto 
-| Discriminate H
-| Discriminate H
-| Discriminate H ].
+intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
+ simpl in |- *; auto; intro H;
+ [ rewrite (IHp q); trivial
+ | absurd ((p ?= q) Gt = Eq);
+    [ elim (Pcompare_not_Eq p q); auto | assumption ]
+ | discriminate H
+ | absurd ((p ?= q) Lt = Eq);
+    [ elim (Pcompare_not_Eq p q); auto | assumption ]
+ | rewrite (IHp q); auto
+ | discriminate H
+ | discriminate H
+ | discriminate H ].
 Qed.
 
-Lemma ZLSI:
- (x,y:positive) (compare x y SUPERIEUR) = INFERIEUR -> 
-                (compare x y EGAL) = INFERIEUR.
+Lemma Pcompare_Gt_Lt :
+ forall p q:positive, (p ?= q) Gt = Lt -> (p ?= q) Eq = Lt.
 Proof.
-Intro x; Induction x;Intro y; Induction y;Simpl;Auto; 
-  Discriminate Orelse Intros H;Discriminate H.
+intro x; induction  x as [x Hrecx| x Hrecx| ]; intro y;
+ [ induction  y as [y Hrecy| y Hrecy| ]
+ | induction  y as [y Hrecy| y Hrecy| ]
+ | induction  y as [y Hrecy| y Hrecy| ] ]; simpl in |- *; 
+ auto; discriminate || intros H; discriminate H.
 Qed.
 
-Lemma ZLIS:
- (x,y:positive) (compare x y INFERIEUR) = SUPERIEUR -> 
-                (compare x y EGAL) = SUPERIEUR.
+Lemma Pcompare_Lt_Gt :
+ forall p q:positive, (p ?= q) Lt = Gt -> (p ?= q) Eq = Gt.
 Proof.
-Intro x; Induction x;Intro y; Induction y;Simpl;Auto; 
-  Discriminate Orelse Intros H;Discriminate H.
+intro x; induction  x as [x Hrecx| x Hrecx| ]; intro y;
+ [ induction  y as [y Hrecy| y Hrecy| ]
+ | induction  y as [y Hrecy| y Hrecy| ]
+ | induction  y as [y Hrecy| y Hrecy| ] ]; simpl in |- *; 
+ auto; discriminate || intros H; discriminate H.
 Qed.
 
-Lemma ZLII:
- (x,y:positive) (compare x y INFERIEUR) = INFERIEUR ->
-                (compare x y EGAL) = INFERIEUR \/ x = y.
+Lemma Pcompare_Lt_Lt :
+ forall p q:positive, (p ?= q) Lt = Lt -> (p ?= q) Eq = Lt \/ p = q.
 Proof.
-(Intro x; NewInduction x as [p IHp|p IHp|];
- Intro y; NewDestruct y as [q|q|];Simpl;Auto;Try Discriminate);
- Intro H2; Elim (IHp q H2);Auto; Intros E;Rewrite E;
- Auto.
+intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
+ simpl in |- *; auto; try discriminate; intro H2; elim (IHp q H2); 
+ auto; intros E; rewrite E; auto.
 Qed.
 
-Lemma ZLSS:
- (x,y:positive) (compare x y SUPERIEUR) = SUPERIEUR ->
-                (compare x y EGAL) = SUPERIEUR \/ x = y.
+Lemma Pcompare_Gt_Gt :
+ forall p q:positive, (p ?= q) Gt = Gt -> (p ?= q) Eq = Gt \/ p = q.
 Proof.
-(Intro x; NewInduction x as [p IHp|p IHp|];
- Intro y; NewDestruct y as [q|q|];Simpl;Auto;Try Discriminate);
- Intro H2; Elim (IHp q H2);Auto; Intros E;Rewrite E;
- Auto.
+intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
+ simpl in |- *; auto; try discriminate; intro H2; elim (IHp q H2); 
+ auto; intros E; rewrite E; auto.
 Qed.
 
-Lemma Dcompare : (r:relation) r=EGAL \/ r = INFERIEUR \/ r = SUPERIEUR.
+Lemma Dcompare : forall r:comparison, r = Eq \/ r = Lt \/ r = Gt.
 Proof.
-Induction r; Auto. 
+simple induction r; auto. 
 Qed.
 
-Tactic Definition ElimPcompare c1 c2:=
-  Elim (Dcompare (compare c1 c2 EGAL)); [ Idtac | 
-     Let x = FreshId "H" In Intro x; Case x; Clear x ].
+Ltac ElimPcompare c1 c2 :=
+  elim (Dcompare ((c1 ?= c2) Eq));
+   [ idtac | let x := fresh "H" in
+             (intro x; case x; clear x) ].
 
-Theorem convert_compare_EGAL: (x:positive)(compare x x EGAL)=EGAL.
-Intro x; Induction x; Auto.
+Theorem Pcompare_refl : forall p:positive, (p ?= p) Eq = Eq.
+intro x; induction  x as [x Hrecx| x Hrecx| ]; auto.
 Qed.
 
 Lemma Pcompare_antisym :
-  (x,y:positive)(r:relation) (Op (compare x y r)) = (compare y x (Op r)).
+ forall (p q:positive) (r:comparison),
+   CompOpp ((p ?= q) r) = (q ?= p) (CompOpp r).
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y; 
-Intro r; Reflexivity Orelse (Symmetry; Assumption) Orelse Discriminate H
-Orelse Simpl; Apply IHp Orelse Try Rewrite IHp; Try Reflexivity.
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; intro r;
+ reflexivity ||
+   (symmetry  in |- *; assumption) || discriminate H || simpl in |- *;
+ apply IHp || (try rewrite IHp); try reflexivity.
 Qed.
 
-Lemma ZC1:
-  (x,y:positive)(compare x y EGAL)=SUPERIEUR -> (compare y x EGAL)=INFERIEUR.
+Lemma ZC1 : forall p q:positive, (p ?= q) Eq = Gt -> (q ?= p) Eq = Lt.
 Proof.
-Intros; Change EGAL with (Op EGAL).
-Rewrite <- Pcompare_antisym; Rewrite H; Reflexivity.
+intros; change Eq with (CompOpp Eq) in |- *.
+rewrite <- Pcompare_antisym; rewrite H; reflexivity.
 Qed.
 
-Lemma ZC2:
-  (x,y:positive)(compare x y EGAL)=INFERIEUR -> (compare y x EGAL)=SUPERIEUR.
+Lemma ZC2 : forall p q:positive, (p ?= q) Eq = Lt -> (q ?= p) Eq = Gt.
 Proof.
-Intros; Change EGAL with (Op EGAL).
-Rewrite <- Pcompare_antisym; Rewrite H; Reflexivity.
+intros; change Eq with (CompOpp Eq) in |- *.
+rewrite <- Pcompare_antisym; rewrite H; reflexivity.
 Qed.
 
-Lemma ZC3: (x,y:positive)(compare x y EGAL)=EGAL -> (compare y x EGAL)=EGAL.
+Lemma ZC3 : forall p q:positive, (p ?= q) Eq = Eq -> (q ?= p) Eq = Eq.
 Proof.
-Intros; Change EGAL with (Op EGAL).
-Rewrite <- Pcompare_antisym; Rewrite H; Reflexivity.
+intros; change Eq with (CompOpp Eq) in |- *.
+rewrite <- Pcompare_antisym; rewrite H; reflexivity.
 Qed.
 
-Lemma ZC4: (x,y:positive) (compare x y EGAL) = (Op (compare y x EGAL)).
+Lemma ZC4 : forall p q:positive, (p ?= q) Eq = CompOpp ((q ?= p) Eq).
 Proof.
-Intros; Change 1 EGAL with (Op EGAL).
-Symmetry; Apply Pcompare_antisym.
+intros; change Eq at 1 with (CompOpp Eq) in |- *.
+symmetry  in |- *; apply Pcompare_antisym.
 Qed.
 
 (**********************************************************************)
 (** Properties of subtraction on binary positive numbers *)
 
-Lemma ZS: (p:positive_mask) (Zero_suivi_de_mask p) = IsNul -> p = IsNul.
+Lemma double_eq_zero_inversion :
+ forall p:positive_mask, Pdouble_mask p = IsNul -> p = IsNul.
 Proof.
-NewDestruct p; Simpl; [ Trivial | Discriminate 1 | Discriminate 1 ].
+destruct p; simpl in |- *; [ trivial | discriminate 1 | discriminate 1 ].
 Qed.
 
-Lemma US: (p:positive_mask) ~(Un_suivi_de_mask p)=IsNul.
+Lemma double_plus_one_zero_discr :
+ forall p:positive_mask, Pdouble_plus_one_mask p <> IsNul.
 Proof.
-Induction p; Intros; Discriminate.
+simple induction p; intros; discriminate.
 Qed.
 
-Lemma USH: (p:positive_mask) (Un_suivi_de_mask p) = (IsPos xH) -> p = IsNul.
+Lemma double_plus_one_eq_one_inversion :
+ forall p:positive_mask, Pdouble_plus_one_mask p = IsPos xH -> p = IsNul.
 Proof.
-NewDestruct p; Simpl; [ Trivial | Discriminate 1 | Discriminate 1 ].
+destruct p; simpl in |- *; [ trivial | discriminate 1 | discriminate 1 ].
 Qed.
 
-Lemma ZSH: (p:positive_mask) ~(Zero_suivi_de_mask p)= (IsPos xH).
+Lemma double_eq_one_discr :
+ forall p:positive_mask, Pdouble_mask p <> IsPos xH.
 Proof.
-Induction p; Intros; Discriminate.
+simple induction p; intros; discriminate.
 Qed.
 
-Theorem sub_pos_x_x : (x:positive) (sub_pos x x) = IsNul.
+Theorem Pminus_mask_diag : forall p:positive, Pminus_mask p p = IsNul.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|]; [
-  Simpl; Rewrite IHp;Simpl; Trivial
-| Simpl; Rewrite IHp;Auto
-| Auto ].
+intro x; induction x as [p IHp| p IHp| ];
+ [ simpl in |- *; rewrite IHp; simpl in |- *; trivial
+ | simpl in |- *; rewrite IHp; auto
+ | auto ].
 Qed.
 
-Lemma ZL10: (x,y:positive)
- (sub_pos x y) = (IsPos xH) -> (sub_neg x y) = IsNul.
+Lemma ZL10 :
+ forall p q:positive,
+   Pminus_mask p q = IsPos xH -> Pminus_mask_carry p q = IsNul.
 Proof.
-Intro x; NewInduction x as [p|p|]; Intro y; NewDestruct y as [q|q|]; Simpl; 
-  Intro H; Try Discriminate H; [
-  Absurd (Zero_suivi_de_mask (sub_pos p q))=(IsPos xH);
-   [ Apply ZSH | Assumption ]
-| Assert Heq : (sub_pos p q)=IsNul;
-   [ Apply USH;Assumption | Rewrite Heq; Reflexivity ]
-| Assert Heq : (sub_neg p q)=IsNul;
-   [ Apply USH;Assumption | Rewrite Heq; Reflexivity ]
-| Absurd (Zero_suivi_de_mask (sub_pos p q))=(IsPos xH); 
-   [ Apply ZSH | Assumption ]
-| NewDestruct p; Simpl; [ Discriminate H | Discriminate H | Reflexivity ] ].
+intro x; induction x as [p| p| ]; intro y; destruct y as [q| q| ];
+ simpl in |- *; intro H; try discriminate H;
+ [ absurd (Pdouble_mask (Pminus_mask p q) = IsPos xH);
+    [ apply double_eq_one_discr | assumption ]
+ | assert (Heq : Pminus_mask p q = IsNul);
+    [ apply double_plus_one_eq_one_inversion; assumption
+    | rewrite Heq; reflexivity ]
+ | assert (Heq : Pminus_mask_carry p q = IsNul);
+    [ apply double_plus_one_eq_one_inversion; assumption
+    | rewrite Heq; reflexivity ]
+ | absurd (Pdouble_mask (Pminus_mask p q) = IsPos xH);
+    [ apply double_eq_one_discr | assumption ]
+ | destruct p; simpl in |- *;
+    [ discriminate H | discriminate H | reflexivity ] ].
 Qed.
 
 (** Properties of subtraction valid only for x>y *)
 
-Lemma sub_pos_SUPERIEUR:
-  (x,y:positive)(compare x y EGAL)=SUPERIEUR -> 
-    (EX h:positive | (sub_pos x y) = (IsPos h) /\ (add y h) = x /\
-                     (h = xH \/ (sub_neg x y) = (IsPos (sub_un h)))).
+Lemma Pminus_mask_Gt :
+ forall p q:positive,
+   (p ?= q) Eq = Gt ->
+    exists h : positive
+   | Pminus_mask p q = IsPos h /\
+     q + h = p /\ (h = xH \/ Pminus_mask_carry p q = IsPos (Ppred h)).
 Proof.
-Intro x;NewInduction x as [p|p|];Intro y; NewDestruct y as [q|q|]; Simpl; Intro H;
-  Try Discriminate H.
-  NewDestruct (IHp q H) as [z [H4 [H6 H7]]]; Exists (xO z); Split.
-    Rewrite H4; Reflexivity.
-    Split.
-      Simpl; Rewrite H6; Reflexivity.
-      Right; Clear H6; NewDestruct (ZL11 z) as [H8|H8]; [
-        Rewrite H8; Rewrite H8 in H4;
-        Rewrite ZL10; [ Reflexivity | Assumption ]
-      | Clear H4; NewDestruct H7 as [H9|H9]; [
-          Absurd z=xH; Assumption
-        | Rewrite H9; Clear H9; NewDestruct z; 
-            [ Reflexivity | Reflexivity | Absurd xH=xH; Trivial ]]].
-  Case ZLSS with 1:=H; [
-    Intros H3;Elim (IHp q H3); Intros z H4; Exists (xI z);
-    Elim H4;Intros H5 H6;Elim H6;Intros H7 H8; Split; [
-      Simpl;Rewrite H5;Auto
-    | Split; [
-        Simpl; Rewrite H7; Trivial
-      | Right;
-        Change (Zero_suivi_de_mask (sub_pos p q))=(IsPos (sub_un (xI z)));
-        Rewrite H5; Auto ]]
-  | Intros H3; Exists xH; Rewrite H3; Split; [
-      Simpl; Rewrite sub_pos_x_x; Auto
-    | Split; Auto ]].
-  Exists (xO p); Auto.
-  NewDestruct (IHp q) as [z [H4 [H6 H7]]].
-    Apply ZLIS; Assumption.
-    NewDestruct (ZL11 z) as [vZ|]; [
-      Exists xH; Split; [
-        Rewrite ZL10; [ Reflexivity | Rewrite vZ in H4;Assumption ]
-      | Split; [
-          Simpl; Rewrite ZL12; Rewrite <- vZ; Rewrite H6; Trivial
-        | Auto ]]
-    | Exists (xI (sub_un z)); NewDestruct H7 as [|H8];[
-        Absurd z=xH;Assumption
-      | Split; [
-          Rewrite H8; Trivial
-        | Split; [ Simpl; Rewrite ZL15; [
-              Rewrite H6;Trivial
-            | Assumption ]
-          | Right; Rewrite H8; Reflexivity]]]].
-  NewDestruct (IHp q H) as [z [H4 [H6 H7]]].
-  Exists (xO z); Split; [
-    Rewrite H4;Auto
-  | Split; [
-      Simpl;Rewrite H6;Reflexivity
-    | Right; 
-      Change (Un_suivi_de_mask (sub_neg p q))=(IsPos (double_moins_un z));
-      NewDestruct (ZL11 z) as [H8|H8]; [
-        Rewrite H8; Simpl;
-        Assert H9:(sub_neg p q)=IsNul;[
-          Apply ZL10;Rewrite <- H8;Assumption
-        | Rewrite H9;Reflexivity ]
-      | NewDestruct H7 as [H9|H9]; [
-          Absurd z=xH;Auto
-        | Rewrite H9; NewDestruct z; Simpl; 
-            [ Reflexivity
-            | Reflexivity
-            | Absurd xH=xH; [Assumption | Reflexivity]]]]]].
-  Exists (double_moins_un p); Split; [
-    Reflexivity
-  | Clear IHp; Split; [
-      NewDestruct p; Simpl; [
-        Reflexivity
-      | Rewrite is_double_moins_un; Reflexivity
-      | Reflexivity ]
-    | NewDestruct p; [Right|Right|Left]; Reflexivity ]].
+intro x; induction x as [p| p| ]; intro y; destruct y as [q| q| ];
+ simpl in |- *; intro H; try discriminate H.
+  destruct (IHp q H) as [z [H4 [H6 H7]]]; exists (xO z); split.
+    rewrite H4; reflexivity.
+    split.
+      simpl in |- *; rewrite H6; reflexivity.
+      right; clear H6; destruct (ZL11 z) as [H8| H8];
+       [ rewrite H8; rewrite H8 in H4; rewrite ZL10;
+          [ reflexivity | assumption ]
+       | clear H4; destruct H7 as [H9| H9];
+          [ absurd (z = xH); assumption
+          | rewrite H9; clear H9; destruct z as [p0| p0| ];
+             [ reflexivity | reflexivity | absurd (xH = xH); trivial ] ] ].
+  case Pcompare_Gt_Gt with (1 := H);
+   [ intros H3; elim (IHp q H3); intros z H4; exists (xI z); elim H4;
+      intros H5 H6; elim H6; intros H7 H8; split;
+      [ simpl in |- *; rewrite H5; auto
+      | split;
+         [ simpl in |- *; rewrite H7; trivial
+         | right;
+            change (Pdouble_mask (Pminus_mask p q) = IsPos (Ppred (xI z)))
+             in |- *; rewrite H5; auto ] ]
+   | intros H3; exists xH; rewrite H3; split;
+      [ simpl in |- *; rewrite Pminus_mask_diag; auto | split; auto ] ].
+  exists (xO p); auto.
+  destruct (IHp q) as [z [H4 [H6 H7]]].
+    apply Pcompare_Lt_Gt; assumption.
+    destruct (ZL11 z) as [vZ| ];
+     [ exists xH; split;
+        [ rewrite ZL10; [ reflexivity | rewrite vZ in H4; assumption ]
+        | split;
+           [ simpl in |- *; rewrite Pplus_one_succ_r; rewrite <- vZ;
+              rewrite H6; trivial
+           | auto ] ]
+     | exists (xI (Ppred z)); destruct H7 as [| H8];
+        [ absurd (z = xH); assumption
+        | split;
+           [ rewrite H8; trivial
+           | split;
+              [ simpl in |- *; rewrite Pplus_carry_pred_eq_plus;
+                 [ rewrite H6; trivial | assumption ]
+              | right; rewrite H8; reflexivity ] ] ] ].
+  destruct (IHp q H) as [z [H4 [H6 H7]]].
+  exists (xO z); split;
+   [ rewrite H4; auto
+   | split;
+      [ simpl in |- *; rewrite H6; reflexivity
+      | right;
+         change
+           (Pdouble_plus_one_mask (Pminus_mask_carry p q) =
+            IsPos (Pdouble_minus_one z)) in |- *;
+         destruct (ZL11 z) as [H8| H8];
+         [ rewrite H8; simpl in |- *;
+            assert (H9 : Pminus_mask_carry p q = IsNul);
+            [ apply ZL10; rewrite <- H8; assumption
+            | rewrite H9; reflexivity ]
+         | destruct H7 as [H9| H9];
+            [ absurd (z = xH); auto
+            | rewrite H9; destruct z as [p0| p0| ]; simpl in |- *;
+               [ reflexivity
+               | reflexivity
+               | absurd (xH = xH); [ assumption | reflexivity ] ] ] ] ] ].
+  exists (Pdouble_minus_one p); split;
+   [ reflexivity
+   | clear IHp; split;
+      [ destruct p; simpl in |- *;
+         [ reflexivity
+         | rewrite Psucc_o_double_minus_one_eq_xO; reflexivity
+         | reflexivity ]
+      | destruct p; [ right | right | left ]; reflexivity ] ].
 Qed.
 
-Theorem sub_add: 
-(x,y:positive) (compare x y EGAL) = SUPERIEUR -> (add y (true_sub x y)) = x.
+Theorem Pplus_minus :
+ forall p q:positive, (p ?= q) Eq = Gt -> q + (p - q) = p.
 Proof.
-Intros x y H;Elim sub_pos_SUPERIEUR with 1:=H;
-Intros z H1;Elim H1;Intros H2 H3; Elim H3;Intros H4 H5; 
-Unfold true_sub ;Rewrite H2; Exact H4.
+intros x y H; elim Pminus_mask_Gt with (1 := H); intros z H1; elim H1;
+ intros H2 H3; elim H3; intros H4 H5; unfold Pminus in |- *; 
+ rewrite H2; exact H4.
 Qed.
-

@@ -6,5 +6,5 @@
 
  *************************************************************************)
 
-Require Omega.
-Require ReflOmegaCore.
+Require Import Omega.
+Require Import ReflOmegaCore.

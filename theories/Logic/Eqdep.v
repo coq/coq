@@ -32,67 +32,68 @@
 Section Dependent_Equality.
 
 Variable U : Type.
-Variable P : U->Type.
+Variable P : U -> Type.
 
 (** Dependent equality *)
 
-Inductive eq_dep [p:U;x:(P p)] : (q:U)(P q)->Prop :=
-   eq_dep_intro : (eq_dep p x p x).
-Hint constr_eq_dep : core v62 := Constructors eq_dep.
+Inductive eq_dep (p:U) (x:P p) : forall q:U, P q -> Prop :=
+    eq_dep_intro : eq_dep p x p x.
+Hint Constructors eq_dep: core v62.
 
-Lemma eq_dep_sym : (p,q:U)(x:(P p))(y:(P q))(eq_dep p x q y)->(eq_dep q y p x).
+Lemma eq_dep_sym :
+ forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep q y p x.
 Proof.
-Induction 1; Auto.
+simple induction 1; auto.
 Qed.
-Hints Immediate eq_dep_sym : core v62.
+Hint Immediate eq_dep_sym: core v62.
 
-Lemma eq_dep_trans : (p,q,r:U)(x:(P p))(y:(P q))(z:(P r))
-     (eq_dep p x q y)->(eq_dep q y r z)->(eq_dep p x r z).
+Lemma eq_dep_trans :
+ forall (p q r:U) (x:P p) (y:P q) (z:P r),
+   eq_dep p x q y -> eq_dep q y r z -> eq_dep p x r z.
 Proof.
-Induction 1; Auto.
+simple induction 1; auto.
 Qed.
 
-Inductive eq_dep1 [p:U;x:(P p);q:U;y:(P q)] : Prop :=
-   eq_dep1_intro : (h:q=p)
-                  (x=(eq_rect U q P y p h))->(eq_dep1 p x q y).
+Inductive eq_dep1 (p:U) (x:P p) (q:U) (y:P q) : Prop :=
+    eq_dep1_intro : forall h:q = p, x = eq_rect q P y p h -> eq_dep1 p x q y.
 
 (** Invariance by Substitution of Reflexive Equality Proofs *)
 
-Axiom eq_rect_eq : (p:U)(Q:U->Type)(x:(Q p))(h:p=p)
-                  x=(eq_rect U p Q x p h).
+Axiom
+  eq_rect_eq :
+    forall (p:U) (Q:U -> Type) (x:Q p) (h:p = p), x = eq_rect p Q x p h.
 
 Lemma eq_dep1_dep :
-      (p:U)(x:(P p))(q:U)(y:(P q))(eq_dep1 p x q y)->(eq_dep p x q y).
+ forall (p:U) (x:P p) (q:U) (y:P q), eq_dep1 p x q y -> eq_dep p x q y.
 Proof.
-Induction 1; Intros eq_qp.
-Cut (h:q=p)(y0:(P q))
-    (x=(eq_rect U q P y0 p h))->(eq_dep p x q y0).
-Intros; Apply H0 with eq_qp; Auto.
-Rewrite eq_qp; Intros h y0.
-Elim eq_rect_eq.
-Induction 1; Auto.
+simple induction 1; intros eq_qp.
+cut (forall (h:q = p) (y0:P q), x = eq_rect q P y0 p h -> eq_dep p x q y0).
+intros; apply H0 with eq_qp; auto.
+rewrite eq_qp; intros h y0.
+elim eq_rect_eq.
+simple induction 1; auto.
 Qed.
 
-Lemma eq_dep_dep1 : 
-  (p,q:U)(x:(P p))(y:(P q))(eq_dep p x q y)->(eq_dep1 p x q y).
+Lemma eq_dep_dep1 :
+ forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep1 p x q y.
 Proof.
-Induction 1; Intros.
-Apply eq_dep1_intro with (refl_equal U p).
-Simpl; Trivial.
+simple induction 1; intros.
+apply eq_dep1_intro with (refl_equal p).
+simpl in |- *; trivial.
 Qed.
 
-Lemma eq_dep1_eq : (p:U)(x,y:(P p))(eq_dep1 p x p y)->x=y.
+Lemma eq_dep1_eq : forall (p:U) (x y:P p), eq_dep1 p x p y -> x = y.
 Proof.
-Induction 1; Intro.
-Elim eq_rect_eq; Auto.
+simple induction 1; intro.
+elim eq_rect_eq; auto.
 Qed.
 
 (** Injectivity of Dependent Equality is a consequence of *)
 (** Invariance by Substitution of Reflexive Equality Proof *)
 
-Lemma eq_dep_eq : (p:U)(x,y:(P p))(eq_dep p x p y)->x=y.
+Lemma eq_dep_eq : forall (p:U) (x y:P p), eq_dep p x p y -> x = y.
 Proof.
-Intros; Apply eq_dep1_eq; Apply eq_dep_dep1; Trivial.
+intros; apply eq_dep1_eq; apply eq_dep_dep1; trivial.
 Qed.
 
 End Dependent_Equality.
@@ -102,84 +103,88 @@ End Dependent_Equality.
 
 Scheme eq_indd := Induction for eq Sort Prop.
 
-Lemma UIP : (U:Type)(x,y:U)(p1,p2:x=y)p1=p2.
+Lemma UIP : forall (U:Type) (x y:U) (p1 p2:x = y), p1 = p2.
 Proof.
-Intros; Apply eq_dep_eq with P:=[y]x=y.
-Elim p2 using eq_indd.
-Elim p1 using eq_indd.
-Apply eq_dep_intro.
+intros; apply eq_dep_eq with (P := fun y => x = y).
+elim p2 using eq_indd.
+elim p1 using eq_indd.
+apply eq_dep_intro.
 Qed.
 
 (** Uniqueness of Reflexive Identity Proofs is a direct instance of UIP *)
 
-Lemma UIP_refl : (U:Type)(x:U)(p:x=x)p=(refl_equal U x).
+Lemma UIP_refl : forall (U:Type) (x:U) (p:x = x), p = refl_equal x.
 Proof.
-Intros; Apply UIP.
+intros; apply UIP.
 Qed.
 
 (** Streicher axiom K is a direct consequence of Uniqueness of
     Reflexive Identity Proofs *)
 
-Lemma Streicher_K : (U:Type)(x:U)(P:x=x->Prop)
-  (P (refl_equal ? x))->(p:x=x)(P p).
+Lemma Streicher_K :
+ forall (U:Type) (x:U) (P:x = x -> Prop),
+   P (refl_equal x) -> forall p:x = x, P p.
 Proof.
-Intros; Rewrite UIP_refl; Assumption.
+intros; rewrite UIP_refl; assumption.
 Qed.
 
 (** We finally recover eq_rec_eq (alternatively eq_rect_eq) from K *)
 
-Lemma eq_rec_eq : (U:Type)(P:U->Set)(p:U)(x:(P p))(h:p=p)
-  x=(eq_rec U p P x p h).
+Lemma eq_rec_eq :
+ forall (U:Type) (P:U -> Set) (p:U) (x:P p) (h:p = p), x = eq_rec p P x p h.
 Proof.
-Intros.
-Apply Streicher_K with p:=h.
-Reflexivity.
+intros.
+apply Streicher_K with (p := h).
+reflexivity.
 Qed.
 
 (** Dependent equality is equivalent to equality on dependent pairs *)
 
-Lemma equiv_eqex_eqdep : (U:Set)(P:U->Set)(p,q:U)(x:(P p))(y:(P q)) 
-    (existS U P p x)=(existS U P q y) <-> (eq_dep U P p x q y).
+Lemma equiv_eqex_eqdep :
+ forall (U:Set) (P:U -> Set) (p q:U) (x:P p) (y:P q),
+   existS P p x = existS P q y <-> eq_dep U P p x q y.
 Proof.
-Split. 
+split. 
 (* -> *)
-Intro H.
-Change p with   (projS1 U P (existS U P p x)).
-Change 2 x with (projS2 U P (existS U P p x)).
-Rewrite H.
-Apply eq_dep_intro.
+intro H.
+change p with (projS1 (existS P p x)) in |- *.
+change x at 2 with (projS2 (existS P p x)) in |- *.
+rewrite H.
+apply eq_dep_intro.
 (* <- *)
-NewDestruct 1; Reflexivity.
+destruct 1; reflexivity.
 Qed.
 
 (** UIP implies the injectivity of equality on dependent pairs *)
 
-Lemma inj_pair2: (U:Set)(P:U->Set)(p:U)(x,y:(P p))
-    (existS U P p x)=(existS U P p y)-> x=y.
+Lemma inj_pair2 :
+ forall (U:Set) (P:U -> Set) (p:U) (x y:P p),
+   existS P p x = existS P p y -> x = y.
 Proof.
-Intros.
-Apply (eq_dep_eq U P).
-Generalize (equiv_eqex_eqdep U P p p x y) .
-Induction 1.
-Intros.
-Auto.
+intros.
+apply (eq_dep_eq U P).
+generalize (equiv_eqex_eqdep U P p p x y).
+simple induction 1.
+intros.
+auto.
 Qed.
 
 (** UIP implies the injectivity of equality on dependent pairs *)
 
-Lemma inj_pairT2: (U:Type)(P:U->Type)(p:U)(x,y:(P p))
-    (existT U P p x)=(existT U P p y)-> x=y.
+Lemma inj_pairT2 :
+ forall (U:Type) (P:U -> Type) (p:U) (x y:P p),
+   existT P p x = existT P p y -> x = y.
 Proof.
-Intros.
-Apply (eq_dep_eq U P).
-Change 1 p with (projT1 U P (existT U P p x)).
-Change 2 x with (projT2 U P (existT U P p x)).
-Rewrite H.
-Apply eq_dep_intro.
+intros.
+apply (eq_dep_eq U P).
+change p at 1 with (projT1 (existT P p x)) in |- *.
+change x at 2 with (projT2 (existT P p x)) in |- *.
+rewrite H.
+apply eq_dep_intro.
 Qed.
 
 (** The main results to be exported *)
 
-Hints Resolve eq_dep_intro eq_dep_eq : core v62.
-Hints Immediate eq_dep_sym : core v62.
-Hints Resolve inj_pair2 inj_pairT2 : core.
+Hint Resolve eq_dep_intro eq_dep_eq: core v62.
+Hint Immediate eq_dep_sym: core v62.
+Hint Resolve inj_pair2 inj_pairT2: core.

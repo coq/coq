@@ -8,142 +8,141 @@
 
 (*i $Id$ i*)
 
-Require Le.
-Require Lt.
-Require Plus.
-V7only [Import nat_scope.].
+Require Import Le.
+Require Import Lt.
+Require Import Plus.
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,p:nat.
+Implicit Types m n p : nat.
 
 (** Order and successor *)
 
-Theorem gt_Sn_O : (n:nat)(gt (S n) O).
+Theorem gt_Sn_O : forall n, S n > 0.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Resolve gt_Sn_O : arith v62.
+Hint Resolve gt_Sn_O: arith v62.
 
-Theorem gt_Sn_n : (n:nat)(gt (S n) n).
+Theorem gt_Sn_n : forall n, S n > n.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Resolve gt_Sn_n : arith v62.
+Hint Resolve gt_Sn_n: arith v62.
 
-Theorem gt_n_S : (n,m:nat)(gt n m)->(gt (S n) (S m)).
+Theorem gt_n_S : forall n m, n > m -> S n > S m.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Resolve gt_n_S : arith v62.
+Hint Resolve gt_n_S: arith v62.
 
-Lemma gt_S_n : (n,p:nat)(gt (S p) (S n))->(gt p n).
+Lemma gt_S_n : forall n m, S m > S n -> m > n.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Immediate gt_S_n : arith v62.
+Hint Immediate gt_S_n: arith v62.
 
-Theorem gt_S : (n,m:nat)(gt (S n) m)->((gt n m)\/(m=n)).
+Theorem gt_S : forall n m, S n > m -> n > m \/ m = n.
 Proof.
-  Intros n m H; Unfold gt; Apply le_lt_or_eq; Auto with arith.
+  intros n m H; unfold gt in |- *; apply le_lt_or_eq; auto with arith.
 Qed.
 
-Lemma gt_pred : (n,p:nat)(gt p (S n))->(gt (pred p) n).
+Lemma gt_pred : forall n m, m > S n -> pred m > n.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Immediate gt_pred : arith v62.
+Hint Immediate gt_pred: arith v62.
 
 (** Irreflexivity *)
 
-Lemma gt_antirefl : (n:nat)~(gt n n).
-Proof lt_n_n.
-Hints Resolve gt_antirefl : arith v62.
+Lemma gt_irrefl : forall n, ~ n > n.
+Proof lt_irrefl.
+Hint Resolve gt_irrefl: arith v62.
 
 (** Asymmetry *)
 
-Lemma gt_not_sym : (n,m:nat)(gt n m) -> ~(gt m n).
-Proof [n,m:nat](lt_not_sym m n).
+Lemma gt_asym : forall n m, n > m -> ~ m > n.
+Proof fun n m => lt_asym m n.
 
-Hints Resolve gt_not_sym : arith v62.
+Hint Resolve gt_asym: arith v62.
 
 (** Relating strict and large orders *)
 
-Lemma le_not_gt : (n,m:nat)(le n m) -> ~(gt n m).
+Lemma le_not_gt : forall n m, n <= m -> ~ n > m.
 Proof le_not_lt.
-Hints Resolve le_not_gt : arith v62.
+Hint Resolve le_not_gt: arith v62.
 
-Lemma gt_not_le : (n,m:nat)(gt n m) -> ~(le n m).
+Lemma gt_not_le : forall n m, n > m -> ~ n <= m.
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
 
-Hints Resolve gt_not_le : arith v62.
+Hint Resolve gt_not_le: arith v62.
 
-Theorem le_S_gt : (n,m:nat)(le (S n) m)->(gt m n).
+Theorem le_S_gt : forall n m, S n <= m -> m > n.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Immediate le_S_gt : arith v62.
+Hint Immediate le_S_gt: arith v62.
 
-Lemma gt_S_le : (n,p:nat)(gt (S p) n)->(le n p).
+Lemma gt_S_le : forall n m, S m > n -> n <= m.
 Proof.
-  Intros n p; Exact (lt_n_Sm_le n p).
+  intros n p; exact (lt_n_Sm_le n p).
 Qed.
-Hints Immediate gt_S_le : arith v62.
+Hint Immediate gt_S_le: arith v62.
 
-Lemma gt_le_S : (n,p:nat)(gt p n)->(le (S n) p).
+Lemma gt_le_S : forall n m, m > n -> S n <= m.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Resolve gt_le_S : arith v62.
+Hint Resolve gt_le_S: arith v62.
 
-Lemma le_gt_S : (n,p:nat)(le n p)->(gt (S p) n).
+Lemma le_gt_S : forall n m, n <= m -> S m > n.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Resolve le_gt_S : arith v62.
+Hint Resolve le_gt_S: arith v62.
 
 (** Transitivity *)
 
-Theorem le_gt_trans : (n,m,p:nat)(le m n)->(gt m p)->(gt n p).
+Theorem le_gt_trans : forall n m p, m <= n -> m > p -> n > p.
 Proof.
-  Red; Intros; Apply lt_le_trans with m; Auto with arith.
+  red in |- *; intros; apply lt_le_trans with m; auto with arith.
 Qed.
 
-Theorem gt_le_trans : (n,m,p:nat)(gt n m)->(le p m)->(gt n p).
+Theorem gt_le_trans : forall n m p, n > m -> p <= m -> n > p.
 Proof.
-  Red; Intros; Apply le_lt_trans with m; Auto with arith.
+  red in |- *; intros; apply le_lt_trans with m; auto with arith.
 Qed.
 
-Lemma gt_trans : (n,m,p:nat)(gt n m)->(gt m p)->(gt n p).
+Lemma gt_trans : forall n m p, n > m -> m > p -> n > p.
 Proof.
-  Red; Intros n m p H1 H2.
-  Apply lt_trans with m; Auto with arith.
+  red in |- *; intros n m p H1 H2.
+  apply lt_trans with m; auto with arith.
 Qed.
 
-Theorem gt_trans_S : (n,m,p:nat)(gt (S n) m)->(gt m p)->(gt n p).
+Theorem gt_trans_S : forall n m p, S n > m -> m > p -> n > p.
 Proof.
-  Red; Intros; Apply lt_le_trans with m; Auto with arith.
+  red in |- *; intros; apply lt_le_trans with m; auto with arith.
 Qed.
 
-Hints Resolve gt_trans_S le_gt_trans gt_le_trans : arith v62.
+Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith v62.
 
 (** Comparison to 0 *)
 
-Theorem gt_O_eq : (n:nat)((gt n O)\/(O=n)).
+Theorem gt_O_eq : forall n, n > 0 \/ 0 = n.
 Proof.
-  Intro n ; Apply gt_S ; Auto with arith.
+  intro n; apply gt_S; auto with arith.
 Qed.
 
 (** Simplification and compatibility *)
 
-Lemma simpl_gt_plus_l : (n,m,p:nat)(gt (plus p n) (plus p m))->(gt n m).
+Lemma plus_gt_reg_l : forall n m p, p + n > p + m -> n > m.
 Proof.
-  Red; Intros n m p H; Apply simpl_lt_plus_l with p; Auto with arith.
+  red in |- *; intros n m p H; apply plus_lt_reg_l with p; auto with arith.
 Qed.
 
-Lemma gt_reg_l : (n,m,p:nat)(gt n m)->(gt (plus p n) (plus p m)).
+Lemma plus_gt_compat_l : forall n m p, n > m -> p + n > p + m.
 Proof.
-  Auto with arith.
+  auto with arith.
 Qed.
-Hints Resolve gt_reg_l : arith v62.
+Hint Resolve plus_gt_compat_l: arith v62.

@@ -7,19 +7,19 @@
 (***********************************************************************)
 (*i   	  $Id$      i*)
 
-Require Bool.
-Require Sumbool.
-Require ZArith.
-Require Addr.
-Require Adist.
-Require Addec.
-Require Map.
-Require Fset.
-Require Mapaxioms.
-Require Mapiter.
-Require Lsort.
-Require Mapsubset.
-Require PolyList.
+Require Import Bool.
+Require Import Sumbool.
+Require Import ZArith.
+Require Import Addr.
+Require Import Adist.
+Require Import Addec.
+Require Import Map.
+Require Import Fset.
+Require Import Mapaxioms.
+Require Import Mapiter.
+Require Import Lsort.
+Require Import Mapsubset.
+Require Import List.
 
 Section MapFoldResults.
 
@@ -29,218 +29,238 @@ Section MapFoldResults.
   Variable neutral : M.
   Variable op : M -> M -> M.
 
-  Variable nleft : (a:M) (op neutral a)=a.
-  Variable nright : (a:M) (op a neutral)=a.
-  Variable assoc : (a,b,c:M) (op (op a b) c)=(op a (op b c)).
+  Variable nleft : forall a:M, op neutral a = a.
+  Variable nright : forall a:M, op a neutral = a.
+  Variable assoc : forall a b c:M, op (op a b) c = op a (op b c).
 
-  Lemma MapFold_ext : (f:ad->A->M) (m,m':(Map A)) (eqmap A m m') ->
-      (MapFold ? ? neutral op f m)=(MapFold ? ? neutral op f m').
+  Lemma MapFold_ext :
+   forall (f:ad -> A -> M) (m m':Map A),
+     eqmap A m m' -> MapFold _ _ neutral op f m = MapFold _ _ neutral op f m'.
   Proof.
-    Intros. Rewrite (MapFold_as_fold A M neutral op assoc nleft nright f m).
-    Rewrite (MapFold_as_fold A M neutral op assoc nleft nright f m').
-    Cut (alist_of_Map A m)=(alist_of_Map A m'). Intro. Rewrite H0. Reflexivity.
-    Apply alist_canonical. Unfold eqmap in H. Apply eqm_trans with f':=(MapGet A m).
-    Apply eqm_sym. Apply alist_of_Map_semantics.
-    Apply eqm_trans with f':=(MapGet A m'). Assumption.
-    Apply alist_of_Map_semantics.
-    Apply alist_of_Map_sorts2.
-    Apply alist_of_Map_sorts2.
+    intros. rewrite (MapFold_as_fold A M neutral op assoc nleft nright f m).
+    rewrite (MapFold_as_fold A M neutral op assoc nleft nright f m').
+    cut (alist_of_Map A m = alist_of_Map A m'). intro. rewrite H0. reflexivity.
+    apply alist_canonical. unfold eqmap in H. apply eqm_trans with (f' := MapGet A m).
+    apply eqm_sym. apply alist_of_Map_semantics.
+    apply eqm_trans with (f' := MapGet A m'). assumption.
+    apply alist_of_Map_semantics.
+    apply alist_of_Map_sorts2.
+    apply alist_of_Map_sorts2.
   Qed.
 
-  Lemma MapFold_ext_f_1 : (m:(Map A)) (f,g:ad->A->M) (pf:ad->ad)
-      ((a:ad) (y:A) (MapGet ? m a)=(SOME ? y) -> (f (pf a) y)=(g (pf a) y)) ->
-        (MapFold1 ? ? neutral op f pf m)=(MapFold1 ? ? neutral op g pf m).
+  Lemma MapFold_ext_f_1 :
+   forall (m:Map A) (f g:ad -> A -> M) (pf:ad -> ad),
+     (forall (a:ad) (y:A), MapGet _ m a = SOME _ y -> f (pf a) y = g (pf a) y) ->
+     MapFold1 _ _ neutral op f pf m = MapFold1 _ _ neutral op g pf m.
   Proof.
-    Induction m. Trivial.
-    Simpl. Intros. Apply H. Rewrite (ad_eq_correct a). Reflexivity.
-    Intros. Simpl. Rewrite (H f g [a0:ad](pf (ad_double a0))).
-    Rewrite (H0 f g [a0:ad](pf (ad_double_plus_un a0))). Reflexivity.
-    Intros. Apply H1. Rewrite MapGet_M2_bit_0_1. Rewrite ad_double_plus_un_div_2. Assumption.
-    Apply ad_double_plus_un_bit_0.
-    Intros. Apply H1. Rewrite MapGet_M2_bit_0_0. Rewrite ad_double_div_2. Assumption.
-    Apply ad_double_bit_0.
+    simple induction m. trivial.
+    simpl in |- *. intros. apply H. rewrite (ad_eq_correct a). reflexivity.
+    intros. simpl in |- *. rewrite (H f g (fun a0:ad => pf (ad_double a0))).
+    rewrite (H0 f g (fun a0:ad => pf (ad_double_plus_un a0))). reflexivity.
+    intros. apply H1. rewrite MapGet_M2_bit_0_1. rewrite ad_double_plus_un_div_2. assumption.
+    apply ad_double_plus_un_bit_0.
+    intros. apply H1. rewrite MapGet_M2_bit_0_0. rewrite ad_double_div_2. assumption.
+    apply ad_double_bit_0.
   Qed.
 
-  Lemma MapFold_ext_f : (f,g:ad->A->M) (m:(Map A))
-      ((a:ad) (y:A) (MapGet ? m a)=(SOME ? y) -> (f a y)=(g a y)) ->
-        (MapFold ? ? neutral op f m)=(MapFold ? ? neutral op g m).
+  Lemma MapFold_ext_f :
+   forall (f g:ad -> A -> M) (m:Map A),
+     (forall (a:ad) (y:A), MapGet _ m a = SOME _ y -> f a y = g a y) ->
+     MapFold _ _ neutral op f m = MapFold _ _ neutral op g m.
   Proof.
-    Intros. Exact (MapFold_ext_f_1 m f g [a0:ad]a0 H).
+    intros. exact (MapFold_ext_f_1 m f g (fun a0:ad => a0) H).
   Qed.
 
-  Lemma MapFold1_as_Fold_1 : (m:(Map A)) (f,f':ad->A->M) (pf, pf':ad->ad)
-      ((a:ad) (y:A) (f (pf a) y)=(f' (pf' a) y)) ->
-        (MapFold1 ? ? neutral op f pf m)=(MapFold1 ? ? neutral op f' pf' m).
+  Lemma MapFold1_as_Fold_1 :
+   forall (m:Map A) (f f':ad -> A -> M) (pf pf':ad -> ad),
+     (forall (a:ad) (y:A), f (pf a) y = f' (pf' a) y) ->
+     MapFold1 _ _ neutral op f pf m = MapFold1 _ _ neutral op f' pf' m.
   Proof.
-    Induction m. Trivial.
-    Intros. Simpl. Apply H.
-    Intros. Simpl.
-    Rewrite (H f f' [a0:ad](pf (ad_double a0)) [a0:ad](pf' (ad_double a0))).
-    Rewrite (H0 f f' [a0:ad](pf (ad_double_plus_un a0)) [a0:ad](pf' (ad_double_plus_un a0))).
-    Reflexivity.
-    Intros. Apply H1.
-    Intros. Apply H1.
+    simple induction m. trivial.
+    intros. simpl in |- *. apply H.
+    intros. simpl in |- *.
+    rewrite
+     (H f f' (fun a0:ad => pf (ad_double a0))
+        (fun a0:ad => pf' (ad_double a0))).
+    rewrite
+     (H0 f f' (fun a0:ad => pf (ad_double_plus_un a0))
+        (fun a0:ad => pf' (ad_double_plus_un a0))).
+    reflexivity.
+    intros. apply H1.
+    intros. apply H1.
   Qed.
 
-  Lemma MapFold1_as_Fold : (f:ad->A->M) (pf:ad->ad) (m:(Map A))
-      (MapFold1 ? ? neutral op f pf m)=(MapFold ? ? neutral op [a:ad][y:A] (f (pf a) y) m).
+  Lemma MapFold1_as_Fold :
+   forall (f:ad -> A -> M) (pf:ad -> ad) (m:Map A),
+     MapFold1 _ _ neutral op f pf m =
+     MapFold _ _ neutral op (fun (a:ad) (y:A) => f (pf a) y) m.
   Proof.
-    Intros. Unfold MapFold. Apply MapFold1_as_Fold_1. Trivial.
+    intros. unfold MapFold in |- *. apply MapFold1_as_Fold_1. trivial.
   Qed.
 
-  Lemma MapFold1_ext : (f:ad->A->M) (m,m':(Map A)) (eqmap A m m') -> (pf:ad->ad)
-      (MapFold1 ? ? neutral op f pf m)=(MapFold1 ? ? neutral op f pf m').
+  Lemma MapFold1_ext :
+   forall (f:ad -> A -> M) (m m':Map A),
+     eqmap A m m' ->
+     forall pf:ad -> ad,
+       MapFold1 _ _ neutral op f pf m = MapFold1 _ _ neutral op f pf m'.
   Proof.
-    Intros. Rewrite MapFold1_as_Fold. Rewrite MapFold1_as_Fold. Apply MapFold_ext. Assumption.
+    intros. rewrite MapFold1_as_Fold. rewrite MapFold1_as_Fold. apply MapFold_ext. assumption.
   Qed.
 
-  Variable comm : (a,b:M) (op a b)=(op b a).
+  Variable comm : forall a b:M, op a b = op b a.
 
-  Lemma MapFold_Put_disjoint_1 : (p:positive)
-        (f:ad->A->M) (pf:ad->ad) (a1,a2:ad) (y1,y2:A) 
-	  (ad_xor a1 a2)=(ad_x p) ->
-      	    (MapFold1 A M neutral op f pf (MapPut1 A a1 y1 a2 y2 p))=
-	    (op (f (pf a1) y1) (f (pf a2) y2)).
+  Lemma MapFold_Put_disjoint_1 :
+   forall (p:positive) (f:ad -> A -> M) (pf:ad -> ad) 
+     (a1 a2:ad) (y1 y2:A),
+     ad_xor a1 a2 = ad_x p ->
+     MapFold1 A M neutral op f pf (MapPut1 A a1 y1 a2 y2 p) =
+     op (f (pf a1) y1) (f (pf a2) y2).
   Proof.
-    Induction p. Intros. Simpl. Elim (sumbool_of_bool (ad_bit_0 a1)). Intro H1. Rewrite H1.
-    Simpl. Rewrite ad_div_2_double_plus_un. Rewrite ad_div_2_double. Apply comm.
-    Change (ad_bit_0 a2)=(negb true). Rewrite <- H1. Rewrite (ad_neg_bit_0_2 ? ? ? H0).
-    Rewrite negb_elim. Reflexivity.
-    Assumption.
-    Intro H1. Rewrite H1. Simpl. Rewrite ad_div_2_double. Rewrite ad_div_2_double_plus_un.
-    Reflexivity.
-    Change (ad_bit_0 a2)=(negb false). Rewrite <- H1. Rewrite (ad_neg_bit_0_2 ? ? ? H0).
-    Rewrite negb_elim. Reflexivity.
-    Assumption.
-    Simpl. Intros. Elim (sumbool_of_bool (ad_bit_0 a1)). Intro H1. Rewrite H1. Simpl.
-    Rewrite nleft.
-    Rewrite (H f [a0:ad](pf (ad_double_plus_un a0)) (ad_div_2 a1) (ad_div_2 a2) y1 y2).
-    Rewrite ad_div_2_double_plus_un. Rewrite ad_div_2_double_plus_un. Reflexivity.
-    Rewrite <- (ad_same_bit_0 ? ? ? H0). Assumption.
-    Assumption.
-    Rewrite <- ad_xor_div_2. Rewrite H0. Reflexivity.
-    Intro H1. Rewrite H1. Simpl. Rewrite nright.
-    Rewrite (H f [a0:ad](pf (ad_double a0)) (ad_div_2 a1) (ad_div_2 a2) y1 y2).
-    Rewrite ad_div_2_double. Rewrite ad_div_2_double. Reflexivity.
-    Rewrite <- (ad_same_bit_0 ? ? ? H0). Assumption.
-    Assumption.
-    Rewrite <- ad_xor_div_2. Rewrite H0. Reflexivity.
-    Intros. Simpl. Elim (sumbool_of_bool (ad_bit_0 a1)). Intro H0. Rewrite H0. Simpl.
-    Rewrite ad_div_2_double. Rewrite ad_div_2_double_plus_un. Apply comm.
-    Assumption.
-    Change (ad_bit_0 a2)=(negb true). Rewrite <- H0. Rewrite (ad_neg_bit_0_1 ? ? H).
-    Rewrite negb_elim. Reflexivity.
-    Intro H0. Rewrite H0. Simpl. Rewrite ad_div_2_double. Rewrite ad_div_2_double_plus_un.
-    Reflexivity.
-    Change (ad_bit_0 a2)=(negb false). Rewrite <- H0. Rewrite (ad_neg_bit_0_1 ? ? H).
-    Rewrite negb_elim. Reflexivity.
-    Assumption.
+    simple induction p. intros. simpl in |- *. elim (sumbool_of_bool (ad_bit_0 a1)). intro H1. rewrite H1.
+    simpl in |- *. rewrite ad_div_2_double_plus_un. rewrite ad_div_2_double. apply comm.
+    change (ad_bit_0 a2 = negb true) in |- *. rewrite <- H1. rewrite (ad_neg_bit_0_2 _ _ _ H0).
+    rewrite negb_elim. reflexivity.
+    assumption.
+    intro H1. rewrite H1. simpl in |- *. rewrite ad_div_2_double. rewrite ad_div_2_double_plus_un.
+    reflexivity.
+    change (ad_bit_0 a2 = negb false) in |- *. rewrite <- H1. rewrite (ad_neg_bit_0_2 _ _ _ H0).
+    rewrite negb_elim. reflexivity.
+    assumption.
+    simpl in |- *. intros. elim (sumbool_of_bool (ad_bit_0 a1)). intro H1. rewrite H1. simpl in |- *.
+    rewrite nleft.
+    rewrite
+     (H f (fun a0:ad => pf (ad_double_plus_un a0)) (
+        ad_div_2 a1) (ad_div_2 a2) y1 y2).
+    rewrite ad_div_2_double_plus_un. rewrite ad_div_2_double_plus_un. reflexivity.
+    rewrite <- (ad_same_bit_0 _ _ _ H0). assumption.
+    assumption.
+    rewrite <- ad_xor_div_2. rewrite H0. reflexivity.
+    intro H1. rewrite H1. simpl in |- *. rewrite nright.
+    rewrite
+     (H f (fun a0:ad => pf (ad_double a0)) (ad_div_2 a1) (ad_div_2 a2) y1 y2)
+     .
+    rewrite ad_div_2_double. rewrite ad_div_2_double. reflexivity.
+    rewrite <- (ad_same_bit_0 _ _ _ H0). assumption.
+    assumption.
+    rewrite <- ad_xor_div_2. rewrite H0. reflexivity.
+    intros. simpl in |- *. elim (sumbool_of_bool (ad_bit_0 a1)). intro H0. rewrite H0. simpl in |- *.
+    rewrite ad_div_2_double. rewrite ad_div_2_double_plus_un. apply comm.
+    assumption.
+    change (ad_bit_0 a2 = negb true) in |- *. rewrite <- H0. rewrite (ad_neg_bit_0_1 _ _ H).
+    rewrite negb_elim. reflexivity.
+    intro H0. rewrite H0. simpl in |- *. rewrite ad_div_2_double. rewrite ad_div_2_double_plus_un.
+    reflexivity.
+    change (ad_bit_0 a2 = negb false) in |- *. rewrite <- H0. rewrite (ad_neg_bit_0_1 _ _ H).
+    rewrite negb_elim. reflexivity.
+    assumption.
   Qed.
 
-  Lemma MapFold_Put_disjoint_2 : 
-        (f:ad->A->M) (m:(Map A)) (a:ad) (y:A) (pf:ad->ad)
-	  (MapGet A m a)=(NONE A) ->
-      	    (MapFold1 A M neutral op f pf (MapPut A m a y))=
-	    (op (f (pf a) y) (MapFold1 A M neutral op f pf m)).
+  Lemma MapFold_Put_disjoint_2 :
+   forall (f:ad -> A -> M) (m:Map A) (a:ad) (y:A) (pf:ad -> ad),
+     MapGet A m a = NONE A ->
+     MapFold1 A M neutral op f pf (MapPut A m a y) =
+     op (f (pf a) y) (MapFold1 A M neutral op f pf m).
   Proof.
-    Induction m. Intros. Simpl. Rewrite (nright (f (pf a) y)). Reflexivity.
-    Intros a1 y1 a2 y2 pf H. Simpl. Elim (ad_sum (ad_xor a1 a2)). Intro H0. Elim H0.
-    Intros p H1. Rewrite H1. Rewrite comm. Exact (MapFold_Put_disjoint_1 p f pf a1 a2 y1 y2 H1).
-    Intro H0. Rewrite (ad_eq_complete ? ? (ad_xor_eq_true ? ? H0)) in H.
-    Rewrite (M1_semantics_1 A a2 y1) in H. Discriminate H.
-    Intros. Elim (sumbool_of_bool (ad_bit_0 a)). Intro H2.
-    Cut (MapPut A (M2 A m0 m1) a y)=(M2 A m0 (MapPut A m1 (ad_div_2 a) y)). Intro.
-    Rewrite H3. Simpl. Rewrite (H0 (ad_div_2 a) y [a0:ad](pf (ad_double_plus_un a0))).
-    Rewrite ad_div_2_double_plus_un. Rewrite <- assoc.
-    Rewrite (comm (MapFold1 A M neutral op f [a0:ad](pf (ad_double a0)) m0) (f (pf a) y)).
-    Rewrite assoc. Reflexivity.
-    Assumption.
-    Rewrite (MapGet_M2_bit_0_1 A a H2 m0 m1) in H1. Assumption.
-    Simpl. Elim (ad_sum a). Intro H3. Elim H3. Intro p. Elim p. Intros p0 H4 H5. Rewrite H5.
-    Reflexivity.
-    Intros p0 H4 H5. Rewrite H5 in H2. Discriminate H2.
-    Intro H4. Rewrite H4. Reflexivity.
-    Intro H3. Rewrite H3 in H2. Discriminate H2.
-    Intro H2. Cut (MapPut A (M2 A m0 m1) a y)=(M2 A (MapPut A m0 (ad_div_2 a) y) m1).
-    Intro. Rewrite H3. Simpl. Rewrite (H (ad_div_2 a) y [a0:ad](pf (ad_double a0))).
-    Rewrite ad_div_2_double. Rewrite <- assoc. Reflexivity.
-    Assumption.
-    Rewrite (MapGet_M2_bit_0_0 A a H2 m0 m1) in H1. Assumption.
-    Simpl. Elim (ad_sum a). Intro H3. Elim H3. Intro p. Elim p. Intros p0 H4 H5. Rewrite H5 in H2.
-    Discriminate H2.
-    Intros p0 H4 H5. Rewrite H5. Reflexivity.
-    Intro H4. Rewrite H4 in H2. Discriminate H2.
-    Intro H3. Rewrite H3. Reflexivity.
+    simple induction m. intros. simpl in |- *. rewrite (nright (f (pf a) y)). reflexivity.
+    intros a1 y1 a2 y2 pf H. simpl in |- *. elim (ad_sum (ad_xor a1 a2)). intro H0. elim H0.
+    intros p H1. rewrite H1. rewrite comm. exact (MapFold_Put_disjoint_1 p f pf a1 a2 y1 y2 H1).
+    intro H0. rewrite (ad_eq_complete _ _ (ad_xor_eq_true _ _ H0)) in H.
+    rewrite (M1_semantics_1 A a2 y1) in H. discriminate H.
+    intros. elim (sumbool_of_bool (ad_bit_0 a)). intro H2.
+    cut (MapPut A (M2 A m0 m1) a y = M2 A m0 (MapPut A m1 (ad_div_2 a) y)). intro.
+    rewrite H3. simpl in |- *. rewrite (H0 (ad_div_2 a) y (fun a0:ad => pf (ad_double_plus_un a0))).
+    rewrite ad_div_2_double_plus_un. rewrite <- assoc.
+    rewrite
+     (comm (MapFold1 A M neutral op f (fun a0:ad => pf (ad_double a0)) m0)
+        (f (pf a) y)).
+    rewrite assoc. reflexivity.
+    assumption.
+    rewrite (MapGet_M2_bit_0_1 A a H2 m0 m1) in H1. assumption.
+    simpl in |- *. elim (ad_sum a). intro H3. elim H3. intro p. elim p. intros p0 H4 H5. rewrite H5.
+    reflexivity.
+    intros p0 H4 H5. rewrite H5 in H2. discriminate H2.
+    intro H4. rewrite H4. reflexivity.
+    intro H3. rewrite H3 in H2. discriminate H2.
+    intro H2. cut (MapPut A (M2 A m0 m1) a y = M2 A (MapPut A m0 (ad_div_2 a) y) m1).
+    intro. rewrite H3. simpl in |- *. rewrite (H (ad_div_2 a) y (fun a0:ad => pf (ad_double a0))).
+    rewrite ad_div_2_double. rewrite <- assoc. reflexivity.
+    assumption.
+    rewrite (MapGet_M2_bit_0_0 A a H2 m0 m1) in H1. assumption.
+    simpl in |- *. elim (ad_sum a). intro H3. elim H3. intro p. elim p. intros p0 H4 H5. rewrite H5 in H2.
+    discriminate H2.
+    intros p0 H4 H5. rewrite H5. reflexivity.
+    intro H4. rewrite H4 in H2. discriminate H2.
+    intro H3. rewrite H3. reflexivity.
   Qed.
 
-  Lemma MapFold_Put_disjoint : 
-        (f:ad->A->M) (m:(Map A)) (a:ad) (y:A)
-	  (MapGet A m a)=(NONE A) ->
-      	    (MapFold A M neutral op f (MapPut A m a y))=
-	    (op (f a y) (MapFold A M neutral op f m)).
+  Lemma MapFold_Put_disjoint :
+   forall (f:ad -> A -> M) (m:Map A) (a:ad) (y:A),
+     MapGet A m a = NONE A ->
+     MapFold A M neutral op f (MapPut A m a y) =
+     op (f a y) (MapFold A M neutral op f m).
   Proof.
-    Intros. Exact (MapFold_Put_disjoint_2 f m a y [a0:ad]a0 H).
+    intros. exact (MapFold_Put_disjoint_2 f m a y (fun a0:ad => a0) H).
   Qed.
 
-  Lemma MapFold_Put_behind_disjoint_2 : 
-        (f:ad->A->M) (m:(Map A)) (a:ad) (y:A) (pf:ad->ad)
-	  (MapGet A m a)=(NONE A) ->
-      	    (MapFold1 A M neutral op f pf (MapPut_behind A m a y))=
-	    (op (f (pf a) y) (MapFold1 A M neutral op f pf m)).
+  Lemma MapFold_Put_behind_disjoint_2 :
+   forall (f:ad -> A -> M) (m:Map A) (a:ad) (y:A) (pf:ad -> ad),
+     MapGet A m a = NONE A ->
+     MapFold1 A M neutral op f pf (MapPut_behind A m a y) =
+     op (f (pf a) y) (MapFold1 A M neutral op f pf m).
   Proof.
-    Intros. Cut (eqmap A (MapPut_behind A m a y) (MapPut A m a y)). Intro.
-    Rewrite (MapFold1_ext f ? ? H0 pf). Apply MapFold_Put_disjoint_2. Assumption.
-    Apply eqmap_trans with m':=(MapMerge A (M1 A a y) m). Apply MapPut_behind_as_Merge.
-    Apply eqmap_trans with m':=(MapMerge A m (M1 A a y)).
-    Apply eqmap_trans with m':=(MapDelta A (M1 A a y) m). Apply eqmap_sym. Apply MapDelta_disjoint.
-    Unfold MapDisjoint. Unfold in_dom. Simpl. Intros. Elim (sumbool_of_bool (ad_eq a a0)).
-    Intro H2. Rewrite (ad_eq_complete ? ? H2) in H. Rewrite H in H1. Discriminate H1.
-    Intro H2. Rewrite H2 in H0. Discriminate H0.
-    Apply eqmap_trans with m':=(MapDelta A m (M1 A a y)). Apply MapDelta_sym.
-    Apply MapDelta_disjoint. Unfold MapDisjoint. Unfold in_dom. Simpl. Intros.
-    Elim (sumbool_of_bool (ad_eq a a0)). Intro H2. Rewrite (ad_eq_complete ? ? H2) in H.
-    Rewrite H in H0. Discriminate H0.
-    Intro H2. Rewrite H2 in H1. Discriminate H1.
-    Apply eqmap_sym. Apply MapPut_as_Merge.
+    intros. cut (eqmap A (MapPut_behind A m a y) (MapPut A m a y)). intro.
+    rewrite (MapFold1_ext f _ _ H0 pf). apply MapFold_Put_disjoint_2. assumption.
+    apply eqmap_trans with (m' := MapMerge A (M1 A a y) m). apply MapPut_behind_as_Merge.
+    apply eqmap_trans with (m' := MapMerge A m (M1 A a y)).
+    apply eqmap_trans with (m' := MapDelta A (M1 A a y) m). apply eqmap_sym. apply MapDelta_disjoint.
+    unfold MapDisjoint in |- *. unfold in_dom in |- *. simpl in |- *. intros. elim (sumbool_of_bool (ad_eq a a0)).
+    intro H2. rewrite (ad_eq_complete _ _ H2) in H. rewrite H in H1. discriminate H1.
+    intro H2. rewrite H2 in H0. discriminate H0.
+    apply eqmap_trans with (m' := MapDelta A m (M1 A a y)). apply MapDelta_sym.
+    apply MapDelta_disjoint. unfold MapDisjoint in |- *. unfold in_dom in |- *. simpl in |- *. intros.
+    elim (sumbool_of_bool (ad_eq a a0)). intro H2. rewrite (ad_eq_complete _ _ H2) in H.
+    rewrite H in H0. discriminate H0.
+    intro H2. rewrite H2 in H1. discriminate H1.
+    apply eqmap_sym. apply MapPut_as_Merge.
   Qed.
 
-  Lemma MapFold_Put_behind_disjoint : 
-        (f:ad->A->M) (m:(Map A)) (a:ad) (y:A)
-	  (MapGet A m a)=(NONE A) ->
-      	    (MapFold A M neutral op f (MapPut_behind A m a y))
-            =(op (f a y) (MapFold A M neutral op f m)).
+  Lemma MapFold_Put_behind_disjoint :
+   forall (f:ad -> A -> M) (m:Map A) (a:ad) (y:A),
+     MapGet A m a = NONE A ->
+     MapFold A M neutral op f (MapPut_behind A m a y) =
+     op (f a y) (MapFold A M neutral op f m).
   Proof.
-    Intros. Exact (MapFold_Put_behind_disjoint_2 f m a y [a0:ad]a0 H).
+    intros. exact (MapFold_Put_behind_disjoint_2 f m a y (fun a0:ad => a0) H).
   Qed.
 
   Lemma MapFold_Merge_disjoint_1 :
-        (f:ad->A->M) (m1,m2:(Map A)) (pf:ad->ad)
-	  (MapDisjoint A A m1 m2) ->
-      	    (MapFold1 A M neutral op f pf (MapMerge A m1 m2))=
-	    (op (MapFold1 A M neutral op f pf m1) (MapFold1 A M neutral op f pf m2)).
+   forall (f:ad -> A -> M) (m1 m2:Map A) (pf:ad -> ad),
+     MapDisjoint A A m1 m2 ->
+     MapFold1 A M neutral op f pf (MapMerge A m1 m2) =
+     op (MapFold1 A M neutral op f pf m1) (MapFold1 A M neutral op f pf m2).
   Proof.
-    Induction m1. Simpl. Intros. Rewrite nleft. Reflexivity.
-    Intros. Unfold MapMerge. Apply (MapFold_Put_behind_disjoint_2 f m2 a a0 pf).
-    Apply in_dom_none. Exact (MapDisjoint_M1_l ? ? m2 a a0 H).
-    Induction m2. Intros. Simpl. Rewrite nright. Reflexivity.
-    Intros. Unfold MapMerge. Rewrite (MapFold_Put_disjoint_2 f (M2 A m m0) a a0 pf). Apply comm.
-    Apply in_dom_none. Exact (MapDisjoint_M1_r ? ? (M2 A m m0) a a0 H1).
-    Intros. Simpl. Rewrite (H m3 [a0:ad](pf (ad_double a0))).
-    Rewrite (H0 m4 [a0:ad](pf (ad_double_plus_un a0))).
-    Cut (a,b,c,d:M)(op (op a b) (op c d))=(op (op a c) (op b d)). Intro. Apply H4.
-    Intros. Rewrite assoc. Rewrite <- (assoc b c d). Rewrite (comm b c). Rewrite (assoc c b d).
-    Rewrite assoc. Reflexivity.
-    Exact (MapDisjoint_M2_r ? ? ? ? ? ? H3).
-    Exact (MapDisjoint_M2_l ? ? ? ? ? ? H3).
+    simple induction m1. simpl in |- *. intros. rewrite nleft. reflexivity.
+    intros. unfold MapMerge in |- *. apply (MapFold_Put_behind_disjoint_2 f m2 a a0 pf).
+    apply in_dom_none. exact (MapDisjoint_M1_l _ _ m2 a a0 H).
+    simple induction m2. intros. simpl in |- *. rewrite nright. reflexivity.
+    intros. unfold MapMerge in |- *. rewrite (MapFold_Put_disjoint_2 f (M2 A m m0) a a0 pf). apply comm.
+    apply in_dom_none. exact (MapDisjoint_M1_r _ _ (M2 A m m0) a a0 H1).
+    intros. simpl in |- *. rewrite (H m3 (fun a0:ad => pf (ad_double a0))).
+    rewrite (H0 m4 (fun a0:ad => pf (ad_double_plus_un a0))).
+    cut (forall a b c d:M, op (op a b) (op c d) = op (op a c) (op b d)). intro. apply H4.
+    intros. rewrite assoc. rewrite <- (assoc b c d). rewrite (comm b c). rewrite (assoc c b d).
+    rewrite assoc. reflexivity.
+    exact (MapDisjoint_M2_r _ _ _ _ _ _ H3).
+    exact (MapDisjoint_M2_l _ _ _ _ _ _ H3).
   Qed.
 
   Lemma MapFold_Merge_disjoint :
-        (f:ad->A->M) (m1,m2:(Map A))
-	  (MapDisjoint A A m1 m2) ->
-      	    (MapFold A M neutral op f (MapMerge A m1 m2))=
-	    (op (MapFold A M neutral op f m1) (MapFold A M neutral op f m2)).
+   forall (f:ad -> A -> M) (m1 m2:Map A),
+     MapDisjoint A A m1 m2 ->
+     MapFold A M neutral op f (MapMerge A m1 m2) =
+     op (MapFold A M neutral op f m1) (MapFold A M neutral op f m2).
   Proof.
-    Intros. Exact (MapFold_Merge_disjoint_1 f m1 m2 [a0:ad]a0 H).
+    intros. exact (MapFold_Merge_disjoint_1 f m1 m2 (fun a0:ad => a0) H).
   Qed.
  
 End MapFoldResults.
@@ -261,23 +281,27 @@ Section MapFoldDistr.
 
   Variable times : M -> N -> M'.
 
-  Variable absorb : (c:N)(times neutral c)=neutral'.
-  Variable distr : (a,b:M) (c:N) (times (op a b) c) = (op' (times a c) (times b c)).
+  Variable absorb : forall c:N, times neutral c = neutral'.
+  Variable
+    distr :
+      forall (a b:M) (c:N), times (op a b) c = op' (times a c) (times b c).
 
-  Lemma MapFold_distr_r_1 : (f:ad->A->M) (m:(Map A)) (c:N) (pf:ad->ad)
-      (times (MapFold1 A M neutral op f pf m) c)=
-      (MapFold1 A M' neutral' op' [a:ad][y:A] (times (f a y) c) pf m).
+  Lemma MapFold_distr_r_1 :
+   forall (f:ad -> A -> M) (m:Map A) (c:N) (pf:ad -> ad),
+     times (MapFold1 A M neutral op f pf m) c =
+     MapFold1 A M' neutral' op' (fun (a:ad) (y:A) => times (f a y) c) pf m.
   Proof.
-    Induction m. Intros. Exact (absorb c).
-    Trivial.
-    Intros. Simpl. Rewrite distr. Rewrite H. Rewrite H0. Reflexivity.
+    simple induction m. intros. exact (absorb c).
+    trivial.
+    intros. simpl in |- *. rewrite distr. rewrite H. rewrite H0. reflexivity.
   Qed.
 
-  Lemma MapFold_distr_r : (f:ad->A->M) (m:(Map A)) (c:N)
-      (times (MapFold A M neutral op f m) c)=
-      (MapFold A M' neutral' op' [a:ad][y:A] (times (f a y) c) m).
+  Lemma MapFold_distr_r :
+   forall (f:ad -> A -> M) (m:Map A) (c:N),
+     times (MapFold A M neutral op f m) c =
+     MapFold A M' neutral' op' (fun (a:ad) (y:A) => times (f a y) c) m.
   Proof.
-    Intros. Exact (MapFold_distr_r_1 f m c [a:ad]a).
+    intros. exact (MapFold_distr_r_1 f m c (fun a:ad => a)).
   Qed.
 
 End MapFoldDistr.
@@ -298,14 +322,18 @@ Section MapFoldDistrL.
 
   Variable times : N -> M -> M'.
 
-  Variable absorb : (c:N)(times c neutral)=neutral'.
-  Variable distr : (a,b:M) (c:N) (times c (op a b)) = (op' (times c a) (times c b)).
+  Variable absorb : forall c:N, times c neutral = neutral'.
+  Variable
+    distr :
+      forall (a b:M) (c:N), times c (op a b) = op' (times c a) (times c b).
 
-  Lemma MapFold_distr_l : (f:ad->A->M) (m:(Map A)) (c:N)
-      (times c (MapFold A M neutral op f m))=
-      (MapFold A M' neutral' op' [a:ad][y:A] (times c (f a y)) m).
+  Lemma MapFold_distr_l :
+   forall (f:ad -> A -> M) (m:Map A) (c:N),
+     times c (MapFold A M neutral op f m) =
+     MapFold A M' neutral' op' (fun (a:ad) (y:A) => times c (f a y)) m.
   Proof.
-    Intros. Apply MapFold_distr_r with times:=[a:M][b:N](times b a); Assumption.
+    intros. apply MapFold_distr_r with (times := fun (a:M) (b:N) => times b a);
+  assumption.
   Qed.
 
 End MapFoldDistrL.
@@ -314,27 +342,30 @@ Section MapFoldExists.
 
   Variable A : Set.
 
-  Lemma MapFold_orb_1 : (f:ad->A->bool) (m:(Map A)) (pf:ad->ad)
-      	       	      (MapFold1 A bool false orb f pf m)=
-                      (Cases (MapSweep1 A f pf m) of
-		           (SOME _) => true
-			 | _ => false
-	               end).
+  Lemma MapFold_orb_1 :
+   forall (f:ad -> A -> bool) (m:Map A) (pf:ad -> ad),
+     MapFold1 A bool false orb f pf m =
+     match MapSweep1 A f pf m with
+     | SOME _ => true
+     | _ => false
+     end.
   Proof.
-    Induction m. Trivial.
-    Intros a y pf. Simpl. Unfold MapSweep2. (Case (f (pf a) y); Reflexivity).
-    Intros. Simpl. Rewrite (H [a0:ad](pf (ad_double a0))).
-    Rewrite (H0 [a0:ad](pf (ad_double_plus_un a0))).
-    Case (MapSweep1 A f [a0:ad](pf (ad_double a0)) m0); Reflexivity.
+    simple induction m. trivial.
+    intros a y pf. simpl in |- *. unfold MapSweep2 in |- *. case (f (pf a) y); reflexivity.
+    intros. simpl in |- *. rewrite (H (fun a0:ad => pf (ad_double a0))).
+    rewrite (H0 (fun a0:ad => pf (ad_double_plus_un a0))).
+    case (MapSweep1 A f (fun a0:ad => pf (ad_double a0)) m0); reflexivity.
   Qed.
 
-  Lemma MapFold_orb : (f:ad->A->bool) (m:(Map A)) (MapFold A bool false orb f m)=
-                      (Cases (MapSweep A f m) of
-		           (SOME _) => true
-			 | _ => false
-	               end).
+  Lemma MapFold_orb :
+   forall (f:ad -> A -> bool) (m:Map A),
+     MapFold A bool false orb f m =
+     match MapSweep A f m with
+     | SOME _ => true
+     | _ => false
+     end.
   Proof.
-    Intros. Exact (MapFold_orb_1 f m [a:ad]a).
+    intros. exact (MapFold_orb_1 f m (fun a:ad => a)).
   Qed.
 
 End MapFoldExists.
@@ -343,39 +374,51 @@ Section DMergeDef.
 
   Variable A : Set.
 
-  Definition DMerge := (MapFold (Map A) (Map A) (M0 A) (MapMerge A) [_:ad][m:(Map A)] m).
+  Definition DMerge :=
+    MapFold (Map A) (Map A) (M0 A) (MapMerge A) (fun (_:ad) (m:Map A) => m).
 
-  Lemma in_dom_DMerge_1 : (m:(Map (Map A))) (a:ad) (in_dom A a (DMerge m))=
-                              (Cases (MapSweep ? [_:ad][m0:(Map A)] (in_dom A a m0) m) of
-			           (SOME _) => true
-				 | _ => false
-		               end).
+  Lemma in_dom_DMerge_1 :
+   forall (m:Map (Map A)) (a:ad),
+     in_dom A a (DMerge m) =
+     match MapSweep _ (fun (_:ad) (m0:Map A) => in_dom A a m0) m with
+     | SOME _ => true
+     | _ => false
+     end.
   Proof.
-    Unfold DMerge. Intros.
-    Rewrite (MapFold_distr_l (Map A) (Map A) (M0 A) (MapMerge A) bool false
-               orb ad (in_dom A) [c:ad](refl_equal ? ?) (in_dom_merge A)).
-    Apply MapFold_orb.
+    unfold DMerge in |- *. intros.
+    rewrite
+     (MapFold_distr_l (Map A) (Map A) (M0 A) (MapMerge A) bool false orb ad
+        (in_dom A) (fun c:ad => refl_equal _) (in_dom_merge A))
+     .
+    apply MapFold_orb.
   Qed.
 
-  Lemma in_dom_DMerge_2 : (m:(Map (Map A))) (a:ad) (in_dom A a (DMerge m))=true ->
-                               {b:ad & {m0:(Map A) | (MapGet ? m b)=(SOME ? m0) /\
-			                             (in_dom A a m0)=true}}.
+  Lemma in_dom_DMerge_2 :
+   forall (m:Map (Map A)) (a:ad),
+     in_dom A a (DMerge m) = true ->
+     {b : ad & 
+     {m0 : Map A | MapGet _ m b = SOME _ m0 /\ in_dom A a m0 = true}}.
   Proof.
-    Intros m a. Rewrite in_dom_DMerge_1.
-    Elim (option_sum ? (MapSweep (Map A) [_:ad][m0:(Map A)](in_dom A a m0) m)).
-    Intro H. Elim H. Intro r. Elim r. Intros b m0 H0. Intro. Split with b. Split with m0.
-    Split. Exact (MapSweep_semantics_2 ? ? ? ? ? H0).
-    Exact (MapSweep_semantics_1 ? ? ? ? ? H0).
-    Intro H. Rewrite H. Intro. Discriminate H0.
+    intros m a. rewrite in_dom_DMerge_1.
+    elim
+     (option_sum _
+        (MapSweep (Map A) (fun (_:ad) (m0:Map A) => in_dom A a m0) m)).
+    intro H. elim H. intro r. elim r. intros b m0 H0. intro. split with b. split with m0.
+    split. exact (MapSweep_semantics_2 _ _ _ _ _ H0).
+    exact (MapSweep_semantics_1 _ _ _ _ _ H0).
+    intro H. rewrite H. intro. discriminate H0.
   Qed.
 
-  Lemma in_dom_DMerge_3 : (m:(Map (Map A))) (a,b:ad) (m0:(Map A))
-      (MapGet ? m a)=(SOME ? m0) -> (in_dom A b m0)=true -> 
-        (in_dom A b (DMerge m))=true.
+  Lemma in_dom_DMerge_3 :
+   forall (m:Map (Map A)) (a b:ad) (m0:Map A),
+     MapGet _ m a = SOME _ m0 ->
+     in_dom A b m0 = true -> in_dom A b (DMerge m) = true.
   Proof.
-    Intros m a b m0 H H0. Rewrite in_dom_DMerge_1.
-    Elim (MapSweep_semantics_4 ? [_:ad][m'0:(Map A)](in_dom A b m'0) ? ? ? H H0).
-    Intros a' H1. Elim H1. Intros m'0 H2. Rewrite H2. Reflexivity.
+    intros m a b m0 H H0. rewrite in_dom_DMerge_1.
+    elim
+     (MapSweep_semantics_4 _ (fun (_:ad) (m'0:Map A) => in_dom A b m'0) _ _ _
+        H H0).
+    intros a' H1. elim H1. intros m'0 H2. rewrite H2. reflexivity.
   Qed.
 
 End DMergeDef.

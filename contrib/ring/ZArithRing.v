@@ -12,24 +12,25 @@
 
 Require Export ArithRing.
 Require Export ZArith_base.
-Require Eqdep_dec.
+Require Import Eqdep_dec.
 
-Definition Zeq := [x,y:Z]
-  Cases `x ?= y ` of
-    EGAL => true
+Definition Zeq (x y:Z) :=
+  match (x ?= y)%Z with
+  | Datatypes.Eq => true
   | _ => false
   end.
 
-Lemma Zeq_prop : (x,y:Z)(Is_true (Zeq x y)) -> x==y.
-  Intros x y H; Unfold Zeq in H.
-  Apply Zcompare_EGAL_eq.
-  NewDestruct (Zcompare x y); [Reflexivity | Contradiction | Contradiction ].
-Save.
+Lemma Zeq_prop : forall x y:Z, Is_true (Zeq x y) -> x = y.
+  intros x y H; unfold Zeq in H.
+  apply Zcompare_Eq_eq.
+  destruct (x ?= y)%Z; [ reflexivity | contradiction | contradiction ].
+Qed.
 
-Definition ZTheory : (Ring_Theory Zplus Zmult `1` `0` Zopp Zeq).
-  Split; Intros; Apply eq2eqT; EAuto with zarith.
-  Apply eqT2eq; Apply Zeq_prop; Assumption.
-Save.
+Definition ZTheory : Ring_Theory Zplus Zmult 1%Z 0%Z Zopp Zeq.
+  split; intros; apply eq2eqT; eauto with zarith.
+  apply eqT2eq; apply Zeq_prop; assumption.
+Qed.
 
 (* NatConstants and NatTheory are defined in Ring_theory.v *)
-Add Ring Z Zplus Zmult `1` `0` Zopp Zeq ZTheory [POS NEG ZERO xO xI xH].
+Add Ring Z Zplus Zmult 1%Z 0%Z Zopp Zeq ZTheory
+ [ Zpos Zneg 0%Z xO xI 1%positive ].

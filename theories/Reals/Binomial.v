@@ -8,174 +8,197 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require PartSum.
-V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import PartSum.
 Open Local Scope R_scope.
 
-Definition C [n,p:nat] : R := ``(INR (fact n))/((INR (fact p))*(INR (fact (minus n p))))``.
+Definition C (n p:nat) : R :=
+  INR (fact n) / (INR (fact p) * INR (fact (n - p))).
 
-Lemma pascal_step1 : (n,i:nat) (le i n) -> (C n i) == (C n (minus n i)).
-Intros; Unfold C; Replace (minus n (minus n i)) with i.
-Rewrite Rmult_sym.
-Reflexivity.
-Apply plus_minus; Rewrite plus_sym; Apply le_plus_minus; Assumption.
+Lemma pascal_step1 : forall n i:nat, (i <= n)%nat -> C n i = C n (n - i).
+intros; unfold C in |- *; replace (n - (n - i))%nat with i.
+rewrite Rmult_comm.
+reflexivity.
+apply plus_minus; rewrite plus_comm; apply le_plus_minus; assumption.
 Qed.
 
-Lemma pascal_step2 : (n,i:nat) (le i n) -> (C (S n) i) == ``(INR (S n))/(INR (minus (S n) i))*(C n i)``.
-Intros; Unfold C; Replace (minus (S n) i) with (S (minus n i)).
-Cut (n:nat) (fact (S n))=(mult (S n) (fact n)).
-Intro; Repeat Rewrite H0.
-Unfold Rdiv; Repeat Rewrite mult_INR; Repeat Rewrite Rinv_Rmult.
-Ring.
-Apply INR_fact_neq_0.
-Apply INR_fact_neq_0.
-Apply not_O_INR; Discriminate.
-Apply INR_fact_neq_0.
-Apply INR_fact_neq_0.
-Apply prod_neq_R0.
-Apply not_O_INR; Discriminate.
-Apply INR_fact_neq_0.
-Intro; Reflexivity.
-Apply minus_Sn_m; Assumption.
+Lemma pascal_step2 :
+ forall n i:nat,
+   (i <= n)%nat -> C (S n) i = INR (S n) / INR (S n - i) * C n i.
+intros; unfold C in |- *; replace (S n - i)%nat with (S (n - i)).
+cut (forall n:nat, fact (S n) = (S n * fact n)%nat).
+intro; repeat rewrite H0.
+unfold Rdiv in |- *; repeat rewrite mult_INR; repeat rewrite Rinv_mult_distr.
+ring.
+apply INR_fact_neq_0.
+apply INR_fact_neq_0.
+apply not_O_INR; discriminate.
+apply INR_fact_neq_0.
+apply INR_fact_neq_0.
+apply prod_neq_R0.
+apply not_O_INR; discriminate.
+apply INR_fact_neq_0.
+intro; reflexivity.
+apply minus_Sn_m; assumption.
 Qed.
 
-Lemma pascal_step3 : (n,i:nat) (lt i n) -> (C n (S i)) == ``(INR (minus n i))/(INR (S i))*(C n i)``.
-Intros; Unfold C.
-Cut (n:nat) (fact (S n))=(mult (S n) (fact n)).
-Intro.
-Cut (minus n i) = (S (minus n (S i))).
-Intro.
-Pattern 2 (minus n i); Rewrite H1.
-Repeat Rewrite H0; Unfold Rdiv; Repeat Rewrite mult_INR; Repeat Rewrite Rinv_Rmult.
-Rewrite <- H1; Rewrite (Rmult_sym ``/(INR (minus n i))``); Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym (INR (minus n i))); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Ring.
-Apply not_O_INR; Apply minus_neq_O; Assumption.
-Apply not_O_INR; Discriminate.
-Apply INR_fact_neq_0.
-Apply INR_fact_neq_0.
-Apply prod_neq_R0; [Apply not_O_INR; Discriminate | Apply INR_fact_neq_0].
-Apply not_O_INR; Discriminate.
-Apply INR_fact_neq_0.
-Apply prod_neq_R0; [Apply not_O_INR; Discriminate | Apply INR_fact_neq_0].
-Apply INR_fact_neq_0.
-Rewrite minus_Sn_m.
-Simpl; Reflexivity.
-Apply lt_le_S; Assumption.
-Intro; Reflexivity.
+Lemma pascal_step3 :
+ forall n i:nat, (i < n)%nat -> C n (S i) = INR (n - i) / INR (S i) * C n i.
+intros; unfold C in |- *.
+cut (forall n:nat, fact (S n) = (S n * fact n)%nat).
+intro.
+cut ((n - i)%nat = S (n - S i)).
+intro.
+pattern (n - i)%nat at 2 in |- *; rewrite H1.
+repeat rewrite H0; unfold Rdiv in |- *; repeat rewrite mult_INR;
+ repeat rewrite Rinv_mult_distr.
+rewrite <- H1; rewrite (Rmult_comm (/ INR (n - i)));
+ repeat rewrite Rmult_assoc; rewrite (Rmult_comm (INR (n - i)));
+ repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+ring.
+apply not_O_INR; apply minus_neq_O; assumption.
+apply not_O_INR; discriminate.
+apply INR_fact_neq_0.
+apply INR_fact_neq_0.
+apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
+apply not_O_INR; discriminate.
+apply INR_fact_neq_0.
+apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
+apply INR_fact_neq_0.
+rewrite minus_Sn_m.
+simpl in |- *; reflexivity.
+apply lt_le_S; assumption.
+intro; reflexivity.
 Qed.
 
 (**********)
-Lemma pascal : (n,i:nat) (lt i n) -> ``(C n i)+(C n (S i))==(C (S n) (S i))``.
-Intros.
-Rewrite pascal_step3; [Idtac | Assumption].
-Replace ``(C n i)+(INR (minus n i))/(INR (S i))*(C n i)`` with ``(C n i)*(1+(INR (minus n i))/(INR (S i)))``; [Idtac | Ring].
-Replace ``1+(INR (minus n i))/(INR (S i))`` with ``(INR (S n))/(INR (S i))``.
-Rewrite pascal_step1.
-Rewrite Rmult_sym; Replace (S i) with (minus (S n) (minus n i)).
-Rewrite <- pascal_step2.
-Apply pascal_step1.
-Apply le_trans with n.
-Apply le_minusni_n.
-Apply lt_le_weak; Assumption.
-Apply le_n_Sn.
-Apply le_minusni_n.
-Apply lt_le_weak; Assumption.
-Rewrite <- minus_Sn_m.
-Cut (minus n (minus n i))=i.
-Intro; Rewrite H0; Reflexivity.
-Symmetry; Apply plus_minus.
-Rewrite plus_sym; Rewrite le_plus_minus_r.
-Reflexivity.
-Apply lt_le_weak; Assumption.
-Apply le_minusni_n; Apply lt_le_weak; Assumption.
-Apply lt_le_weak; Assumption.
-Unfold Rdiv.
-Repeat Rewrite S_INR.
-Rewrite minus_INR.
-Cut ``((INR i)+1)<>0``.
-Intro.
-Apply r_Rmult_mult with ``(INR i)+1``; [Idtac | Assumption].
-Rewrite Rmult_Rplus_distr.
-Rewrite Rmult_1r.
-Do 2 Rewrite (Rmult_sym ``(INR i)+1``).
-Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_l_sym; [Idtac | Assumption].
-Ring.
-Rewrite <- S_INR.
-Apply not_O_INR; Discriminate.
-Apply lt_le_weak; Assumption.
+Lemma pascal :
+ forall n i:nat, (i < n)%nat -> C n i + C n (S i) = C (S n) (S i).
+intros.
+rewrite pascal_step3; [ idtac | assumption ].
+replace (C n i + INR (n - i) / INR (S i) * C n i) with
+ (C n i * (1 + INR (n - i) / INR (S i))); [ idtac | ring ].
+replace (1 + INR (n - i) / INR (S i)) with (INR (S n) / INR (S i)).
+rewrite pascal_step1.
+rewrite Rmult_comm; replace (S i) with (S n - (n - i))%nat.
+rewrite <- pascal_step2.
+apply pascal_step1.
+apply le_trans with n.
+apply le_minusni_n.
+apply lt_le_weak; assumption.
+apply le_n_Sn.
+apply le_minusni_n.
+apply lt_le_weak; assumption.
+rewrite <- minus_Sn_m.
+cut ((n - (n - i))%nat = i).
+intro; rewrite H0; reflexivity.
+symmetry  in |- *; apply plus_minus.
+rewrite plus_comm; rewrite le_plus_minus_r.
+reflexivity.
+apply lt_le_weak; assumption.
+apply le_minusni_n; apply lt_le_weak; assumption.
+apply lt_le_weak; assumption.
+unfold Rdiv in |- *.
+repeat rewrite S_INR.
+rewrite minus_INR.
+cut (INR i + 1 <> 0).
+intro.
+apply Rmult_eq_reg_l with (INR i + 1); [ idtac | assumption ].
+rewrite Rmult_plus_distr_l.
+rewrite Rmult_1_r.
+do 2 rewrite (Rmult_comm (INR i + 1)).
+repeat rewrite Rmult_assoc.
+rewrite <- Rinv_l_sym; [ idtac | assumption ].
+ring.
+rewrite <- S_INR.
+apply not_O_INR; discriminate.
+apply lt_le_weak; assumption.
 Qed.
 
 (*********************)
 (*********************)
-Lemma binomial : (x,y:R;n:nat) ``(pow (x+y) n)``==(sum_f_R0 [i:nat]``(C n i)*(pow x i)*(pow y (minus n i))`` n).
-Intros; Induction n.
-Unfold C; Simpl; Unfold Rdiv; Repeat Rewrite Rmult_1r; Rewrite Rinv_R1; Ring.
-Pattern 1 (S n); Replace (S n) with (plus n (1)); [Idtac | Ring].
-Rewrite pow_add; Rewrite Hrecn.
-Replace ``(pow (x+y) (S O))`` with ``x+y``; [Idtac | Simpl; Ring].
-Rewrite tech5.
-Cut (p:nat)(C p p)==R1.
-Cut (p:nat)(C p O)==R1.
-Intros; Rewrite H0; Rewrite <- minus_n_n; Rewrite Rmult_1l.
-Replace (pow y O) with R1; [Rewrite Rmult_1r | Simpl; Reflexivity].
-Induction n.
-Simpl; Do 2 Rewrite H; Ring.
+Lemma binomial :
+ forall (x y:R) (n:nat),
+   (x + y) ^ n = sum_f_R0 (fun i:nat => C n i * x ^ i * y ^ (n - i)) n.
+intros; induction  n as [| n Hrecn].
+unfold C in |- *; simpl in |- *; unfold Rdiv in |- *;
+ repeat rewrite Rmult_1_r; rewrite Rinv_1; ring.
+pattern (S n) at 1 in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
+rewrite pow_add; rewrite Hrecn.
+replace ((x + y) ^ 1) with (x + y); [ idtac | simpl in |- *; ring ].
+rewrite tech5.
+cut (forall p:nat, C p p = 1).
+cut (forall p:nat, C p 0 = 1).
+intros; rewrite H0; rewrite <- minus_n_n; rewrite Rmult_1_l.
+replace (y ^ 0) with 1; [ rewrite Rmult_1_r | simpl in |- *; reflexivity ].
+induction  n as [| n Hrecn0].
+simpl in |- *; do 2 rewrite H; ring.
 (* N >= 1 *)
-Pose N := (S n).
-Rewrite Rmult_Rplus_distr.
-Replace (Rmult (sum_f_R0 ([i:nat]``(C N i)*(pow x i)*(pow y (minus N i))``) N) x) with (sum_f_R0 [i:nat]``(C N i)*(pow x (S i))*(pow y (minus N i))`` N).
-Replace (Rmult (sum_f_R0 ([i:nat]``(C N i)*(pow x i)*(pow y (minus N i))``) N) y) with (sum_f_R0 [i:nat]``(C N i)*(pow x i)*(pow y (minus (S N) i))`` N).
-Rewrite (decomp_sum [i:nat]``(C (S N) i)*(pow x i)*(pow y (minus (S N) i))`` N).
-Rewrite H; Replace (pow x O) with R1; [Idtac | Reflexivity].
-Do 2 Rewrite Rmult_1l.
-Replace (minus (S N) O) with (S N); [Idtac | Reflexivity].
-Pose An := [i:nat]``(C N i)*(pow x (S i))*(pow y (minus N i))``.
-Pose Bn := [i:nat]``(C N (S i))*(pow x (S i))*(pow y (minus N i))``.
-Replace (pred N) with n.
-Replace (sum_f_R0 ([i:nat]``(C (S N) (S i))*(pow x (S i))*(pow y (minus (S N) (S i)))``) n) with (sum_f_R0 [i:nat]``(An i)+(Bn i)`` n).
-Rewrite plus_sum.
-Replace (pow x (S N)) with (An (S n)).
-Rewrite (Rplus_sym (sum_f_R0 An n)).
-Repeat Rewrite Rplus_assoc.
-Rewrite <- tech5.
-Fold N.
-Pose Cn := [i:nat]``(C N i)*(pow x i)*(pow y (minus (S N) i))``.
-Cut (i:nat) (lt i N)-> (Cn (S i))==(Bn i).
-Intro; Replace (sum_f_R0 Bn n) with (sum_f_R0 [i:nat](Cn (S i)) n).
-Replace (pow y (S N)) with (Cn O).
-Rewrite <- Rplus_assoc; Rewrite (decomp_sum Cn N).
-Replace (pred N) with n.
-Ring.
-Unfold N; Simpl; Reflexivity.
-Unfold N; Apply lt_O_Sn.
-Unfold Cn; Rewrite H; Simpl; Ring.
-Apply sum_eq.
-Intros; Apply H1.
-Unfold N; Apply le_lt_trans with n; [Assumption | Apply lt_n_Sn].
-Intros; Unfold Bn Cn.
-Replace (minus (S N) (S i)) with (minus N i); Reflexivity.
-Unfold An; Fold N; Rewrite <- minus_n_n; Rewrite H0; Simpl; Ring.
-Apply sum_eq.
-Intros; Unfold An Bn; Replace (minus (S N) (S i)) with (minus N i); [Idtac | Reflexivity].
-Rewrite <- pascal; [Ring | Apply le_lt_trans with n; [Assumption | Unfold N; Apply lt_n_Sn]].
-Unfold N; Reflexivity.
-Unfold N; Apply lt_O_Sn.
-Rewrite <- (Rmult_sym y); Rewrite scal_sum; Apply sum_eq.
-Intros; Replace (minus (S N) i) with (S (minus N i)).
-Replace (S (minus N i)) with (plus (minus N i) (1)); [Idtac | Ring].
-Rewrite pow_add; Replace (pow y (S O)) with y; [Idtac | Simpl; Ring]; Ring.
-Apply minus_Sn_m; Assumption.
-Rewrite <- (Rmult_sym x); Rewrite scal_sum; Apply sum_eq.
-Intros; Replace (S i) with (plus i (1)); [Idtac | Ring]; Rewrite pow_add; Replace (pow x (S O)) with x; [Idtac | Simpl; Ring]; Ring.
-Intro; Unfold C.
-Replace (INR (fact O)) with R1; [Idtac | Reflexivity].
-Replace (minus p O) with p; [Idtac | Apply minus_n_O].
-Rewrite Rmult_1l; Unfold Rdiv; Rewrite <- Rinv_r_sym; [Reflexivity | Apply INR_fact_neq_0].
-Intro; Unfold C.
-Replace (minus p p) with O; [Idtac | Apply minus_n_n].
-Replace (INR (fact O)) with R1; [Idtac | Reflexivity].
-Rewrite Rmult_1r; Unfold Rdiv; Rewrite <- Rinv_r_sym; [Reflexivity | Apply INR_fact_neq_0].
+pose (N := S n).
+rewrite Rmult_plus_distr_l.
+replace (sum_f_R0 (fun i:nat => C N i * x ^ i * y ^ (N - i)) N * x) with
+ (sum_f_R0 (fun i:nat => C N i * x ^ S i * y ^ (N - i)) N).
+replace (sum_f_R0 (fun i:nat => C N i * x ^ i * y ^ (N - i)) N * y) with
+ (sum_f_R0 (fun i:nat => C N i * x ^ i * y ^ (S N - i)) N).
+rewrite (decomp_sum (fun i:nat => C (S N) i * x ^ i * y ^ (S N - i)) N).
+rewrite H; replace (x ^ 0) with 1; [ idtac | reflexivity ].
+do 2 rewrite Rmult_1_l.
+replace (S N - 0)%nat with (S N); [ idtac | reflexivity ].
+pose (An := fun i:nat => C N i * x ^ S i * y ^ (N - i)).
+pose (Bn := fun i:nat => C N (S i) * x ^ S i * y ^ (N - i)).
+replace (pred N) with n.
+replace (sum_f_R0 (fun i:nat => C (S N) (S i) * x ^ S i * y ^ (S N - S i)) n)
+ with (sum_f_R0 (fun i:nat => An i + Bn i) n).
+rewrite plus_sum.
+replace (x ^ S N) with (An (S n)).
+rewrite (Rplus_comm (sum_f_R0 An n)).
+repeat rewrite Rplus_assoc.
+rewrite <- tech5.
+fold N in |- *.
+pose (Cn := fun i:nat => C N i * x ^ i * y ^ (S N - i)).
+cut (forall i:nat, (i < N)%nat -> Cn (S i) = Bn i).
+intro; replace (sum_f_R0 Bn n) with (sum_f_R0 (fun i:nat => Cn (S i)) n).
+replace (y ^ S N) with (Cn 0%nat).
+rewrite <- Rplus_assoc; rewrite (decomp_sum Cn N).
+replace (pred N) with n.
+ring.
+unfold N in |- *; simpl in |- *; reflexivity.
+unfold N in |- *; apply lt_O_Sn.
+unfold Cn in |- *; rewrite H; simpl in |- *; ring.
+apply sum_eq.
+intros; apply H1.
+unfold N in |- *; apply le_lt_trans with n; [ assumption | apply lt_n_Sn ].
+intros; unfold Bn, Cn in |- *.
+replace (S N - S i)%nat with (N - i)%nat; reflexivity.
+unfold An in |- *; fold N in |- *; rewrite <- minus_n_n; rewrite H0;
+ simpl in |- *; ring.
+apply sum_eq.
+intros; unfold An, Bn in |- *; replace (S N - S i)%nat with (N - i)%nat;
+ [ idtac | reflexivity ].
+rewrite <- pascal;
+ [ ring
+ | apply le_lt_trans with n; [ assumption | unfold N in |- *; apply lt_n_Sn ] ].
+unfold N in |- *; reflexivity.
+unfold N in |- *; apply lt_O_Sn.
+rewrite <- (Rmult_comm y); rewrite scal_sum; apply sum_eq.
+intros; replace (S N - i)%nat with (S (N - i)).
+replace (S (N - i)) with (N - i + 1)%nat; [ idtac | ring ].
+rewrite pow_add; replace (y ^ 1) with y; [ idtac | simpl in |- *; ring ];
+ ring.
+apply minus_Sn_m; assumption.
+rewrite <- (Rmult_comm x); rewrite scal_sum; apply sum_eq.
+intros; replace (S i) with (i + 1)%nat; [ idtac | ring ]; rewrite pow_add;
+ replace (x ^ 1) with x; [ idtac | simpl in |- *; ring ]; 
+ ring.
+intro; unfold C in |- *.
+replace (INR (fact 0)) with 1; [ idtac | reflexivity ].
+replace (p - 0)%nat with p; [ idtac | apply minus_n_O ].
+rewrite Rmult_1_l; unfold Rdiv in |- *; rewrite <- Rinv_r_sym;
+ [ reflexivity | apply INR_fact_neq_0 ].
+intro; unfold C in |- *.
+replace (p - p)%nat with 0%nat; [ idtac | apply minus_n_n ].
+replace (INR (fact 0)) with 1; [ idtac | reflexivity ].
+rewrite Rmult_1_r; unfold Rdiv in |- *; rewrite <- Rinv_r_sym;
+ [ reflexivity | apply INR_fact_neq_0 ].
 Qed.

@@ -31,53 +31,55 @@ Section Paradox.
 Variable bool : Prop.
 Variable p2b : Prop -> bool.
 Variable b2p : bool -> Prop.
-Hypothesis p2p1 : (A:Prop)(b2p (p2b A))->A.
-Hypothesis p2p2 : (A:Prop)A->(b2p (p2b A)).
-Variable B:Prop.
+Hypothesis p2p1 : forall A:Prop, b2p (p2b A) -> A.
+Hypothesis p2p2 : forall A:Prop, A -> b2p (p2b A).
+Variable B : Prop.
 
-Definition V := (A:Prop)((A->bool)->(A->bool))->(A->bool).
-Definition U := V->bool.
-Definition sb : V -> V := [z][A;r;a](r (z A r) a).
-Definition le : (U->bool)->(U->bool) := [i][x](x [A;r;a](i [v](sb v A r a))).
-Definition induct : (U->bool)->Prop := [i](x:U)(b2p (le i x))->(b2p (i x)).
-Definition WF : U := [z](p2b (induct (z U le))).
-Definition I : U->Prop :=
-  [x]((i:U->bool)(b2p (le i x))->(b2p (i [v](sb v U le x))))->B.
+Definition V := forall A:Prop, ((A -> bool) -> A -> bool) -> A -> bool.
+Definition U := V -> bool.
+Definition sb (z:V) : V := fun A r a => r (z A r) a.
+Definition le (i:U -> bool) (x:U) : bool :=
+  x (fun A r a => i (fun v => sb v A r a)).
+Definition induct (i:U -> bool) : Prop :=
+  forall x:U, b2p (le i x) -> b2p (i x).
+Definition WF : U := fun z => p2b (induct (z U le)).
+Definition I (x:U) : Prop :=
+  (forall i:U -> bool, b2p (le i x) -> b2p (i (fun v => sb v U le x))) -> B.
 
-Lemma Omega : (i:U->bool)(induct i)->(b2p (i WF)).
+Lemma Omega : forall i:U -> bool, induct i -> b2p (i WF).
 Proof.
-Intros i y.
-Apply y.
-Unfold le WF induct.
-Apply p2p2.
-Intros x H0.
-Apply y.
-Exact H0.
+intros i y.
+apply y.
+unfold le, WF, induct in |- *.
+apply p2p2.
+intros x H0.
+apply y.
+exact H0.
 Qed.
 
-Lemma lemma1 : (induct [u](p2b (I u))).
+Lemma lemma1 : induct (fun u => p2b (I u)).
 Proof.
-Unfold induct.
-Intros x p.
-Apply (p2p2 (I x)).
-Intro q.
-Apply (p2p1 (I [v:V](sb v U le x)) (q [u](p2b (I u)) p)).
-Intro i.
-Apply q with i:=[y:?](i [v:V](sb v U le y)).
+unfold induct in |- *.
+intros x p.
+apply (p2p2 (I x)).
+intro q.
+apply (p2p1 (I (fun v:V => sb v U le x)) (q (fun u => p2b (I u)) p)).
+intro i.
+apply q with (i := fun y => i (fun v:V => sb v U le y)).
 Qed.
 
-Lemma lemma2 : ((i:U->bool)(induct i)->(b2p (i WF)))->B.
+Lemma lemma2 : (forall i:U -> bool, induct i -> b2p (i WF)) -> B.
 Proof.
-Intro x.
-Apply (p2p1 (I WF) (x [u](p2b (I u)) lemma1)).
-Intros i H0.
-Apply (x [y](i [v](sb v U le y))).
-Apply (p2p1 ? H0).
+intro x.
+apply (p2p1 (I WF) (x (fun u => p2b (I u)) lemma1)).
+intros i H0.
+apply (x (fun y => i (fun v => sb v U le y))).
+apply (p2p1 _ H0).
 Qed.
 
 Theorem paradox : B.
 Proof.
-Exact (lemma2 Omega).
+exact (lemma2 Omega).
 Qed.
 
 End Paradox.

@@ -8,80 +8,78 @@
 
 (*i $Id$ i*)
 
-Require Arith.
+Require Import Arith.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n:nat.
+Implicit Types m n : nat.
 
 (** maximum of two natural numbers *)
 
-Fixpoint max [n:nat] : nat -> nat :=  
-[m:nat]Cases n m of
-          O      _     => m
-       | (S n')  O     => n
-       | (S n') (S m') => (S (max n' m'))
-       end.
+Fixpoint max n m {struct n} : nat :=
+  match n, m with
+  | O, _ => m
+  | S n', O => n
+  | S n', S m' => S (max n' m')
+  end.
 
 (** Simplifications of [max] *)
 
-Lemma max_SS : (n,m:nat)((S (max n m))=(max (S n) (S m))).
+Lemma max_SS : forall n m, S (max n m) = max (S n) (S m).
 Proof.
-Auto with arith.
+auto with arith.
 Qed.
 
-Lemma max_sym : (n,m:nat)(max n m)=(max m n).
+Lemma max_comm : forall n m, max n m = max m n.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
+induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
 (** [max] and [le] *)
 
-Lemma max_l : (n,m:nat)(le m n)->(max n m)=n.
+Lemma max_l : forall n m, m <= n -> max n m = n.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
+induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
-Lemma max_r : (n,m:nat)(le n m)->(max n m)=m.
+Lemma max_r : forall n m, n <= m -> max n m = m.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
+induction n; induction m; simpl in |- *; auto with arith.
 Qed.
 
-Lemma le_max_l : (n,m:nat)(le n (max n m)).
+Lemma le_max_l : forall n m, n <= max n m.
 Proof.
-NewInduction n; Intros; Simpl; Auto with arith.
-Elim m; Intros; Simpl; Auto with arith.
+induction n; intros; simpl in |- *; auto with arith.
+elim m; intros; simpl in |- *; auto with arith.
 Qed.
 
-Lemma le_max_r : (n,m:nat)(le m (max n m)).
+Lemma le_max_r : forall n m, m <= max n m.
 Proof.
-NewInduction n; Simpl; Auto with arith.
-NewInduction m; Simpl; Auto with arith.
+induction n; simpl in |- *; auto with arith.
+induction m; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve max_r max_l le_max_l le_max_r: arith v62.
+Hint Resolve max_r max_l le_max_l le_max_r: arith v62.
 
 
 (** [max n m] is equal to [n] or [m] *)
 
-Lemma max_dec : (n,m:nat){(max n m)=n}+{(max n m)=m}.
+Lemma max_dec : forall n m, {max n m = n} + {max n m = m}.
 Proof.
-NewInduction n;NewInduction m;Simpl;Auto with arith.
-Elim (IHn m);Intro H;Elim H;Auto.
+induction n; induction m; simpl in |- *; auto with arith.
+elim (IHn m); intro H; elim H; auto.
 Qed.
 
-Lemma max_case : (n,m:nat)(P:nat->Set)(P n)->(P m)->(P (max n m)).
+Lemma max_case : forall n m (P:nat -> Set), P n -> P m -> P (max n m).
 Proof.
-NewInduction n; Simpl; Auto with arith.
-NewInduction m; Intros; Simpl; Auto with arith.
-Pattern (max n m); Apply IHn ; Auto with arith.
+induction n; simpl in |- *; auto with arith.
+induction m; intros; simpl in |- *; auto with arith.
+pattern (max n m) in |- *; apply IHn; auto with arith.
 Qed.
 
-Lemma max_case2 : (n,m:nat)(P:nat->Prop)(P n)->(P m)->(P (max n m)).
+Lemma max_case2 : forall n m (P:nat -> Prop), P n -> P m -> P (max n m).
 Proof.
-NewInduction n; Simpl; Auto with arith.
-NewInduction m; Intros; Simpl; Auto with arith.
-Pattern (max n m); Apply IHn ; Auto with arith.
+induction n; simpl in |- *; auto with arith.
+induction m; intros; simpl in |- *; auto with arith.
+pattern (max n m) in |- *; apply IHn; auto with arith.
 Qed.
-
 

@@ -13,61 +13,59 @@ Section Setoid.
 Variable A : Type.
 Variable Aeq : A -> A -> Prop.
 
-Record Setoid_Theory : Prop :=
-{ Seq_refl : (x:A) (Aeq x x);
-  Seq_sym : (x,y:A) (Aeq x y) -> (Aeq y x);
-  Seq_trans : (x,y,z:A) (Aeq x y) -> (Aeq y z) -> (Aeq x z)
-}.
+Record Setoid_Theory : Prop := 
+  {Seq_refl : forall x:A, Aeq x x;
+   Seq_sym : forall x y:A, Aeq x y -> Aeq y x;
+   Seq_trans : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z}.
 
 End Setoid.
 
-Definition Prop_S : (Setoid_Theory Prop iff).
-Split; [Exact iff_refl | Exact iff_sym | Exact iff_trans].
+Definition Prop_S : Setoid_Theory Prop iff.
+split; [ exact iff_refl | exact iff_sym | exact iff_trans ].
 Qed.
 
 Add Setoid Prop iff Prop_S.
 
-Hint prop_set : setoid := Resolve (Seq_refl Prop iff Prop_S).
-Hint prop_set : setoid := Resolve (Seq_sym Prop iff Prop_S).
-Hint prop_set : setoid := Resolve (Seq_trans Prop iff Prop_S).
+Hint Resolve (Seq_refl Prop iff Prop_S): setoid.
+Hint Resolve (Seq_sym Prop iff Prop_S): setoid.
+Hint Resolve (Seq_trans Prop iff Prop_S): setoid.
 
 Add Morphism or : or_ext.
-Intros.
-Inversion H1.
-Left.
-Inversion H.
-Apply (H3 H2).
+intros.
+inversion H1.
+left.
+inversion H.
+apply (H3 H2).
 
-Right.
-Inversion H0.
-Apply (H3 H2).
+right.
+inversion H0.
+apply (H3 H2).
 Qed.
 
 Add Morphism and : and_ext.
-Intros.
-Inversion H1.
-Split.
-Inversion H.
-Apply (H4 H2).
+intros.
+inversion H1.
+split.
+inversion H.
+apply (H4 H2).
 
-Inversion H0.
-Apply (H4 H3).
+inversion H0.
+apply (H4 H3).
 Qed.
 
 Add Morphism not : not_ext.
-Red ; Intros.
-Apply H0.
-Inversion H.
-Apply (H3 H1).
+red in |- *; intros.
+apply H0.
+inversion H.
+apply (H3 H1).
 Qed.
 
-Definition fleche [A,B:Prop] := A -> B.
+Definition fleche (A B:Prop) := A -> B.
 
 Add Morphism fleche : fleche_ext.
-Unfold fleche.
-Intros.
-Inversion H0.
-Inversion H.
-Apply (H3 (H1 (H6 H2))).
+unfold fleche in |- *.
+intros.
+inversion H0.
+inversion H.
+apply (H3 (H1 (H6 H2))).
 Qed.
-

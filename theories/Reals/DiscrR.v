@@ -8,51 +8,90 @@
 
 (*i        $Id$       i*)
 
-Require RIneq.
-Require Omega.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Require Import RIneq.
+Require Import Omega. Open Local Scope R_scope.
 
-Lemma Rlt_R0_R2 : ``0<2``.
-Replace ``2`` with (INR (2)); [Apply lt_INR_0; Apply lt_O_Sn | Reflexivity].
+Lemma Rlt_R0_R2 : 0 < 2.
+replace 2 with (INR 2); [ apply lt_INR_0; apply lt_O_Sn | reflexivity ].
 Qed.
 
-Lemma Rplus_lt_pos : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x+y``.
-Intros.
-Apply Rlt_trans with x.
-Assumption. 
-Pattern 1 x; Rewrite <- Rplus_Or.
-Apply Rlt_compatibility.
-Assumption.
+Lemma Rplus_lt_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x + y.
+intros.
+apply Rlt_trans with x.
+assumption. 
+pattern x at 1 in |- *; rewrite <- Rplus_0_r.
+apply Rplus_lt_compat_l.
+assumption.
 Qed.
 
-Lemma IZR_eq : (z1,z2:Z) z1=z2 -> (IZR z1)==(IZR z2).
-Intros; Rewrite H; Reflexivity.
+Lemma IZR_eq : forall z1 z2:Z, z1 = z2 -> IZR z1 = IZR z2.
+intros; rewrite H; reflexivity.
 Qed.
 
-Lemma IZR_neq : (z1,z2:Z) `z1<>z2` -> ``(IZR z1)<>(IZR z2)``.
-Intros; Red; Intro; Elim H; Apply eq_IZR; Assumption.
+Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 <> IZR z2.
+intros; red in |- *; intro; elim H; apply eq_IZR; assumption.
 Qed.
 
-Tactic Definition DiscrR :=
-  Try Match Context With
-  | [ |- ~(?1==?2) ] -> Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_neq; Try Discriminate | Reflexivity] | Reflexivity] | Reflexivity].
+Ltac discrR :=
+  try
+   match goal with
+   |  |- (?X1 <> ?X2) =>
+       replace 2 with (IZR 2);
+        [ replace 1 with (IZR 1);
+           [ replace 0 with (IZR 0);
+              [ repeat
+                 rewrite <- plus_IZR ||
+                   rewrite <- mult_IZR ||
+                     rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
+                 apply IZR_neq; try discriminate
+              | reflexivity ]
+           | reflexivity ]
+        | reflexivity ]
+   end.
 
-Recursive Tactic Definition Sup0 :=
-  Match Context With
-  | [ |- ``0<1`` ] -> Apply Rlt_R0_R1
-  | [ |- ``0<?1`` ] -> Repeat (Apply Rmult_lt_pos Orelse Apply Rplus_lt_pos; Try Apply Rlt_R0_R1 Orelse Apply Rlt_R0_R2)
-  | [ |- ``?1>0`` ] -> Change ``0<?1``; Sup0.
+Ltac prove_sup0 :=
+  match goal with
+  |  |- (0 < 1) => apply Rlt_0_1
+  |  |- (0 < ?X1) =>
+      repeat
+       (apply Rmult_lt_0_compat || apply Rplus_lt_pos;
+         try apply Rlt_0_1 || apply Rlt_R0_R2)
+  |  |- (?X1 > 0) => change (0 < X1) in |- *; prove_sup0
+  end.
 
-Tactic Definition SupOmega := Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_lt; Omega | Reflexivity] | Reflexivity] | Reflexivity].
+Ltac omega_sup :=
+  replace 2 with (IZR 2);
+   [ replace 1 with (IZR 1);
+      [ replace 0 with (IZR 0);
+         [ repeat
+            rewrite <- plus_IZR ||
+              rewrite <- mult_IZR ||
+                rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
+            apply IZR_lt; omega
+         | reflexivity ]
+      | reflexivity ]
+   | reflexivity ].
   
-Recursive Tactic Definition Sup :=
-  Match Context With
-  | [ |- (Rgt ?1 ?2) ] -> Change ``?2<?1``; Sup
-  | [ |- ``0<?1`` ] -> Sup0
-  | [ |- (Rlt (Ropp ?1) R0) ] -> Rewrite <- Ropp_O; Sup
-  | [ |- (Rlt (Ropp ?1) (Ropp ?2)) ] -> Apply Rlt_Ropp; Sup
-  | [ |- (Rlt (Ropp ?1) ?2) ] -> Apply Rlt_trans with ``0``; Sup
-  | [ |- (Rlt ?1 ?2) ] -> SupOmega
-  | _ -> Idtac.
+Ltac prove_sup :=
+  match goal with
+  |  |- (?X1 > ?X2) => change (X2 < X1) in |- *; prove_sup
+  |  |- (0 < ?X1) => prove_sup0
+  |  |- (- ?X1 < 0) => rewrite <- Ropp_0; prove_sup
+  |  |- (- ?X1 < - ?X2) => apply Ropp_lt_gt_contravar; prove_sup
+  |  |- (- ?X1 < ?X2) => apply Rlt_trans with 0; prove_sup
+  |  |- (?X1 < ?X2) => omega_sup
+  | _ => idtac
+  end.
 
-Tactic Definition RCompute := Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_eq; Try Reflexivity | Reflexivity] | Reflexivity] | Reflexivity].
+Ltac Rcompute :=
+  replace 2 with (IZR 2);
+   [ replace 1 with (IZR 1);
+      [ replace 0 with (IZR 0);
+         [ repeat
+            rewrite <- plus_IZR ||
+              rewrite <- mult_IZR ||
+                rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus; 
+            apply IZR_eq; try reflexivity
+         | reflexivity ]
+      | reflexivity ]
+   | reflexivity ].

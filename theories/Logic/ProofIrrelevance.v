@@ -30,57 +30,62 @@
     paradox of system U- (e.g. Hurkens' paradox).
 *)
 
-Require Hurkens.
+Require Import Hurkens.
 
 Section Proof_irrelevance_CC.
 
 Variable or : Prop -> Prop -> Prop.
-Variable or_introl : (A,B:Prop)A->(or A B).
-Variable or_intror : (A,B:Prop)B->(or A B).
-Hypothesis or_elim : (A,B:Prop)(C:Prop)(A->C)->(B->C)->(or A B)->C.
-Hypothesis or_elim_redl :
-  (A,B:Prop)(C:Prop)(f:A->C)(g:B->C)(a:A)
-  (f a)==(or_elim A B C f g (or_introl A B a)).
-Hypothesis or_elim_redr :
-  (A,B:Prop)(C:Prop)(f:A->C)(g:B->C)(b:B)
-  (g b)==(or_elim A B C f g (or_intror A B b)).
-Hypothesis or_dep_elim :
- (A,B:Prop)(P:(or A B)->Prop)
- ((a:A)(P (or_introl A B a))) ->
- ((b:B)(P (or_intror A B b))) -> (b:(or A B))(P b).
+Variable or_introl : forall A B:Prop, A -> or A B.
+Variable or_intror : forall A B:Prop, B -> or A B.
+Hypothesis or_elim : forall A B C:Prop, (A -> C) -> (B -> C) -> or A B -> C.
+Hypothesis
+  or_elim_redl :
+    forall (A B C:Prop) (f:A -> C) (g:B -> C) (a:A),
+      f a = or_elim A B C f g (or_introl A B a).
+Hypothesis
+  or_elim_redr :
+    forall (A B C:Prop) (f:A -> C) (g:B -> C) (b:B),
+      g b = or_elim A B C f g (or_intror A B b).
+Hypothesis
+  or_dep_elim :
+    forall (A B:Prop) (P:or A B -> Prop),
+      (forall a:A, P (or_introl A B a)) ->
+      (forall b:B, P (or_intror A B b)) -> forall b:or A B, P b.
 
-Hypothesis em : (A:Prop)(or A ~A).
+Hypothesis em : forall A:Prop, or A (~ A).
 Variable B : Prop.
-Variable b1,b2 : B.
+Variables b1 b2 : B.
 
 (** [p2b] and [b2p] form a retract if [~b1==b2] *)
 
-Definition p2b [A] := (or_elim A ~A B [_]b1 [_]b2 (em A)).
-Definition b2p [b] := b1==b.
+Definition p2b A := or_elim A (~ A) B (fun _ => b1) (fun _ => b2) (em A).
+Definition b2p b := b1 = b.
 
-Lemma p2p1 : (A:Prop) A -> (b2p (p2b A)).
+Lemma p2p1 : forall A:Prop, A -> b2p (p2b A).
 Proof.
-  Unfold p2b; Intro A; Apply or_dep_elim with b:=(em A); Unfold b2p; Intros.
-  Apply (or_elim_redl A ~A B [_]b1 [_]b2).
-  NewDestruct (b H).
+  unfold p2b in |- *; intro A; apply or_dep_elim with (b := em A);
+   unfold b2p in |- *; intros.
+  apply (or_elim_redl A (~ A) B (fun _ => b1) (fun _ => b2)).
+  destruct (b H).
 Qed.
-Lemma p2p2 :  ~b1==b2->(A:Prop) (b2p (p2b A)) -> A.
+Lemma p2p2 : b1 <> b2 -> forall A:Prop, b2p (p2b A) -> A.
 Proof.
-  Intro not_eq_b1_b2.
-  Unfold p2b; Intro A; Apply or_dep_elim with b:=(em A); Unfold b2p; Intros.
-  Assumption.
-  NewDestruct not_eq_b1_b2.
-  Rewrite <- (or_elim_redr A ~A B [_]b1 [_]b2) in H.
-  Assumption.
+  intro not_eq_b1_b2.
+  unfold p2b in |- *; intro A; apply or_dep_elim with (b := em A);
+   unfold b2p in |- *; intros.
+  assumption.
+  destruct not_eq_b1_b2.
+  rewrite <- (or_elim_redr A (~ A) B (fun _ => b1) (fun _ => b2)) in H.
+  assumption.
 Qed.
 
 (** Using excluded-middle a second time, we get proof-irrelevance *)
 
-Theorem proof_irrelevance_cc : b1==b2.
+Theorem proof_irrelevance_cc : b1 = b2.
 Proof.
-  Refine (or_elim ? ? ? ? ? (em b1==b2));Intro H.
-    Trivial.
-  Apply (paradox B p2b b2p (p2p2 H) p2p1).
+  refine (or_elim _ _ _ _ _ (em (b1 = b2))); intro H.
+    trivial.
+  apply (paradox B p2b b2p (p2p2 H) p2p1).
 Qed.
 
 End Proof_irrelevance_CC.
@@ -92,22 +97,18 @@ End Proof_irrelevance_CC.
 
 Section Proof_irrelevance_CCI.
 
-Hypothesis em : (A:Prop) A \/ ~A.
+Hypothesis em : forall A:Prop, A \/ ~ A.
 
-Definition or_elim_redl :
-  (A,B:Prop)(C:Prop)(f:A->C)(g:B->C)(a:A)
-  (f a)==(or_ind A B C f g (or_introl A B a))
-  := [A,B,C;f;g;a](refl_eqT C (f a)).
-Definition or_elim_redr :
-  (A,B:Prop)(C:Prop)(f:A->C)(g:B->C)(b:B)
-  (g b)==(or_ind A B C f g (or_intror A B b))
-  := [A,B,C;f;g;b](refl_eqT C (g b)).
+Definition or_elim_redl (A B C:Prop) (f:A -> C) (g:B -> C) 
+  (a:A) : f a = or_ind f g (or_introl B a) := refl_equal (f a).
+Definition or_elim_redr (A B C:Prop) (f:A -> C) (g:B -> C) 
+  (b:B) : g b = or_ind f g (or_intror A b) := refl_equal (g b).
 Scheme or_indd := Induction for or Sort Prop.
 
-Theorem proof_irrelevance_cci : (B:Prop)(b1,b2:B)b1==b2.
+Theorem proof_irrelevance_cci : forall (B:Prop) (b1 b2:B), b1 = b2.
 Proof
-  (proof_irrelevance_cc or or_introl or_intror or_ind
-     or_elim_redl or_elim_redr or_indd em).
+  proof_irrelevance_cc or or_introl or_intror or_ind or_elim_redl
+    or_elim_redr or_indd em.
 
 End Proof_irrelevance_CCI.
 

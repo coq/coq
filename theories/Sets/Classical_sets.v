@@ -33,101 +33,100 @@ Require Export Classical_Type.
 (* Hints Unfold  not . *)
 
 Section Ensembles_classical.
-Variable U: Type.
+Variable U : Type.
 
-Lemma not_included_empty_Inhabited: 
-  (A: (Ensemble  U)) ~ (Included U A (Empty_set U)) -> (Inhabited U A).
+Lemma not_included_empty_Inhabited :
+ forall A:Ensemble U, ~ Included U A (Empty_set U) -> Inhabited U A.
 Proof.
-Intros A NI.
-Elim (not_all_ex_not U [x:U]~(In U A x)).
-Intros x H; Apply Inhabited_intro with x.
-Apply NNPP; Auto with sets.
-Red; Intro.
-Apply NI; Red.
-Intros x H'; Elim (H x); Trivial with sets.
+intros A NI.
+elim (not_all_ex_not U (fun x:U => ~ In U A x)).
+intros x H; apply Inhabited_intro with x.
+apply NNPP; auto with sets.
+red in |- *; intro.
+apply NI; red in |- *.
+intros x H'; elim (H x); trivial with sets.
 Qed.
-Hints Resolve not_included_empty_Inhabited.
+Hint Resolve not_included_empty_Inhabited.
 
-Lemma not_empty_Inhabited: 
-  (A: (Ensemble  U)) ~ A == (Empty_set U) -> (Inhabited U A).
+Lemma not_empty_Inhabited :
+ forall A:Ensemble U, A <> Empty_set U -> Inhabited U A.
 Proof.
-Intros; Apply not_included_empty_Inhabited.
-Red; Auto with sets.
+intros; apply not_included_empty_Inhabited.
+red in |- *; auto with sets.
 Qed.
 
 Lemma Inhabited_Setminus :
-(X, Y: (Ensemble U)) (Included U X Y) -> ~ (Included U Y X) ->
-       (Inhabited U (Setminus U Y X)).
+ forall X Y:Ensemble U,
+   Included U X Y -> ~ Included U Y X -> Inhabited U (Setminus U Y X).
 Proof.
-Intros X Y I NI. 
-Elim (not_all_ex_not U [x:U](In U Y x)->(In U X x) NI).
-Intros x YX.
-Apply Inhabited_intro with x.
-Apply Setminus_intro.
-Apply not_imply_elim with (In U X x); Trivial with sets.
-Auto with sets.
+intros X Y I NI. 
+elim (not_all_ex_not U (fun x:U => In U Y x -> In U X x) NI).
+intros x YX.
+apply Inhabited_intro with x.
+apply Setminus_intro.
+apply not_imply_elim with (In U X x); trivial with sets.
+auto with sets.
 Qed.
-Hints Resolve Inhabited_Setminus.
+Hint Resolve Inhabited_Setminus.
 
-Lemma Strict_super_set_contains_new_element:
-  (X, Y: (Ensemble U)) (Included U X Y) -> ~ X == Y ->
-   (Inhabited U (Setminus U Y X)).
+Lemma Strict_super_set_contains_new_element :
+ forall X Y:Ensemble U,
+   Included U X Y -> X <> Y -> Inhabited U (Setminus U Y X).
 Proof.
-Auto 7 with sets.
+auto 7 with sets.
 Qed.
-Hints Resolve Strict_super_set_contains_new_element.
+Hint Resolve Strict_super_set_contains_new_element.
 
-Lemma Subtract_intro:
-  (A: (Ensemble U)) (x, y: U) (In U A y) -> ~ x == y ->
-   (In U (Subtract U A x) y).
+Lemma Subtract_intro :
+ forall (A:Ensemble U) (x y:U), In U A y -> x <> y -> In U (Subtract U A x) y.
 Proof.
-Unfold 1 Subtract; Auto with sets.
+unfold Subtract at 1 in |- *; auto with sets.
 Qed.
-Hints Resolve Subtract_intro.
+Hint Resolve Subtract_intro.
 
-Lemma Subtract_inv:
-  (A: (Ensemble U)) (x, y: U) (In U (Subtract U A x) y) ->
-   (In U A y) /\ ~ x == y.
+Lemma Subtract_inv :
+ forall (A:Ensemble U) (x y:U), In U (Subtract U A x) y -> In U A y /\ x <> y.
 Proof.
-Intros A x y H'; Elim H'; Auto with sets.
+intros A x y H'; elim H'; auto with sets.
 Qed.
 
-Lemma Included_Strict_Included:
-  (X, Y: (Ensemble U)) (Included U X Y) -> (Strict_Included U X Y) \/ X == Y.
+Lemma Included_Strict_Included :
+ forall X Y:Ensemble U, Included U X Y -> Strict_Included U X Y \/ X = Y.
 Proof.
-Intros X Y H'; Try Assumption.
-Elim (classic X == Y); Auto with sets.
+intros X Y H'; try assumption.
+elim (classic (X = Y)); auto with sets.
 Qed.
 
-Lemma Strict_Included_inv:
-  (X, Y: (Ensemble U)) (Strict_Included U X Y) ->
-   (Included U X Y) /\ (Inhabited U (Setminus U Y X)).
+Lemma Strict_Included_inv :
+ forall X Y:Ensemble U,
+   Strict_Included U X Y -> Included U X Y /\ Inhabited U (Setminus U Y X).
 Proof.
-Intros X Y H'; Red in H'.
-Split; [Tauto | Idtac].
-Elim H'; Intros H'0 H'1; Try Exact H'1; Clear H'.
-Apply Strict_super_set_contains_new_element; Auto with sets.
+intros X Y H'; red in H'.
+split; [ tauto | idtac ].
+elim H'; intros H'0 H'1; try exact H'1; clear H'.
+apply Strict_super_set_contains_new_element; auto with sets.
 Qed.
 
-Lemma not_SIncl_empty: 
-    (X: (Ensemble U)) ~ (Strict_Included U X (Empty_set U)).
+Lemma not_SIncl_empty :
+ forall X:Ensemble U, ~ Strict_Included U X (Empty_set U).
 Proof.
-Intro X; Red; Intro H'; Try Exact H'.
-LApply (Strict_Included_inv X (Empty_set U)); Auto with sets.
-Intro H'0; Elim H'0; Intros H'1 H'2; Elim H'2; Clear H'0.
-Intros x H'0; Elim H'0.
-Intro H'3; Elim H'3.
+intro X; red in |- *; intro H'; try exact H'.
+lapply (Strict_Included_inv X (Empty_set U)); auto with sets.
+intro H'0; elim H'0; intros H'1 H'2; elim H'2; clear H'0.
+intros x H'0; elim H'0.
+intro H'3; elim H'3.
 Qed.
 
 Lemma Complement_Complement :
-  (A: (Ensemble U)) (Complement U (Complement U A)) == A.
+ forall A:Ensemble U, Complement U (Complement U A) = A.
 Proof.
-Unfold Complement; Intros; Apply Extensionality_Ensembles; Auto with sets.
-Red; Split; Auto with sets.
-Red; Intros; Apply NNPP; Auto with sets.
+unfold Complement in |- *; intros; apply Extensionality_Ensembles;
+ auto with sets.
+red in |- *; split; auto with sets.
+red in |- *; intros; apply NNPP; auto with sets.
 Qed.
 
 End Ensembles_classical.
 
-Hints Resolve Strict_super_set_contains_new_element Subtract_intro 
-	not_SIncl_empty : sets v62.
+Hint Resolve Strict_super_set_contains_new_element Subtract_intro
+  not_SIncl_empty: sets v62.

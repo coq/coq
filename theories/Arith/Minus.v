@@ -10,111 +10,114 @@
 
 (** Subtraction (difference between two natural numbers) *)
 
-Require Lt.
-Require Le.
+Require Import Lt.
+Require Import Le.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,p:nat.
+Implicit Types m n p : nat.
 
 (** 0 is right neutral *)
 
-Lemma minus_n_O : (n:nat)(n=(minus n O)).
+Lemma minus_n_O : forall n, n = n - 0.
 Proof.
-NewInduction n; Simpl; Auto with arith.
+induction n; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve minus_n_O : arith v62.
+Hint Resolve minus_n_O: arith v62.
 
 (** Permutation with successor *)
 
-Lemma minus_Sn_m : (n,m:nat)(le m n)->((S (minus n m))=(minus (S n) m)).
+Lemma minus_Sn_m : forall n m, m <= n -> S (n - m) = S n - m.
 Proof.
-Intros n m Le; Pattern m n; Apply le_elim_rel; Simpl; Auto with arith.
+intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
+ auto with arith.
 Qed.
-Hints Resolve minus_Sn_m : arith v62.
+Hint Resolve minus_Sn_m: arith v62.
 
-Theorem pred_of_minus : (x:nat)(pred x)=(minus x (S O)).
-Intro x; NewInduction x; Simpl; Auto with arith.
+Theorem pred_of_minus : forall n, pred n = n - 1.
+intro x; induction x; simpl in |- *; auto with arith.
 Qed.
 
 (** Diagonal *)
 
-Lemma minus_n_n : (n:nat)(O=(minus n n)).
+Lemma minus_n_n : forall n, 0 = n - n.
 Proof.
-NewInduction n; Simpl; Auto with arith.
+induction n; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve minus_n_n : arith v62.
+Hint Resolve minus_n_n: arith v62.
 
 (** Simplification *)
 
-Lemma minus_plus_simpl : 
-	(n,m,p:nat)((minus n m)=(minus (plus p n) (plus p m))).
+Lemma minus_plus_simpl_l_reverse : forall n m p, n - m = p + n - (p + m).
 Proof.
-  NewInduction p; Simpl; Auto with arith.
+  induction p; simpl in |- *; auto with arith.
 Qed.
-Hints Resolve minus_plus_simpl : arith v62.
+Hint Resolve minus_plus_simpl_l_reverse: arith v62.
 
 (** Relation with plus *)
 
-Lemma plus_minus : (n,m,p:nat)(n=(plus m p))->(p=(minus n m)).
+Lemma plus_minus : forall n m p, n = m + p -> p = n - m.
 Proof.
-Intros n m p; Pattern m n; Apply nat_double_ind; Simpl; Intros.
-Replace (minus n0 O) with n0; Auto with arith.
-Absurd O=(S (plus n0 p)); Auto with arith.
-Auto with arith.
+intros n m p; pattern m, n in |- *; apply nat_double_ind; simpl in |- *;
+ intros.
+replace (n0 - 0) with n0; auto with arith.
+absurd (0 = S (n0 + p)); auto with arith.
+auto with arith.
 Qed.
-Hints Immediate plus_minus : arith v62.
+Hint Immediate plus_minus: arith v62.
 
-Lemma minus_plus : (n,m:nat)(minus (plus n m) n)=m.
-Symmetry; Auto with arith.
+Lemma minus_plus : forall n m, n + m - n = m.
+symmetry  in |- *; auto with arith.
 Qed.
-Hints Resolve minus_plus : arith v62.
+Hint Resolve minus_plus: arith v62.
 
-Lemma le_plus_minus : (n,m:nat)(le n m)->(m=(plus n (minus m n))).
+Lemma le_plus_minus : forall n m, n <= m -> m = n + (m - n).
 Proof.
-Intros n m Le; Pattern n m; Apply le_elim_rel; Simpl; Auto with arith.
+intros n m Le; pattern n, m in |- *; apply le_elim_rel; simpl in |- *;
+ auto with arith.
 Qed.
-Hints Resolve le_plus_minus : arith v62.
+Hint Resolve le_plus_minus: arith v62.
 
-Lemma le_plus_minus_r : (n,m:nat)(le n m)->(plus n (minus m n))=m.
+Lemma le_plus_minus_r : forall n m, n <= m -> n + (m - n) = m.
 Proof.
-Symmetry; Auto with arith.
+symmetry  in |- *; auto with arith.
 Qed.
-Hints Resolve le_plus_minus_r : arith v62.
+Hint Resolve le_plus_minus_r: arith v62.
 
 (** Relation with order *)
 
-Theorem le_minus: (i,h:nat) (le (minus i h) i).
+Theorem le_minus : forall n m, n - m <= n.
 Proof.
-Intros i h;Pattern i h; Apply nat_double_ind; [
-  Auto
-| Auto
-| Intros m n H; Simpl; Apply le_trans with m:=m; Auto ].
+intros i h; pattern i, h in |- *; apply nat_double_ind;
+ [ auto
+ | auto
+ | intros m n H; simpl in |- *; apply le_trans with (m := m); auto ].
 Qed.
 
-Lemma lt_minus : (n,m:nat)(le m n)->(lt O m)->(lt (minus n m) n).
+Lemma lt_minus : forall n m, m <= n -> 0 < m -> n - m < n.
 Proof.
-Intros n m Le; Pattern m n; Apply le_elim_rel; Simpl; Auto with arith.
-Intros; Absurd (lt O O); Auto with arith.
-Intros p q lepq Hp gtp.
-Elim (le_lt_or_eq O p); Auto with arith.
-Auto with arith.
-NewInduction 1; Elim minus_n_O; Auto with arith.
+intros n m Le; pattern m, n in |- *; apply le_elim_rel; simpl in |- *;
+ auto with arith.
+intros; absurd (0 < 0); auto with arith.
+intros p q lepq Hp gtp.
+elim (le_lt_or_eq 0 p); auto with arith.
+auto with arith.
+induction 1; elim minus_n_O; auto with arith.
 Qed.
-Hints Resolve lt_minus : arith v62.
+Hint Resolve lt_minus: arith v62.
 
-Lemma lt_O_minus_lt : (n,m:nat)(lt O (minus n m))->(lt m n).
+Lemma lt_O_minus_lt : forall n m, 0 < n - m -> m < n.
 Proof.
-Intros n m; Pattern n m; Apply nat_double_ind; Simpl; Auto with arith.
-Intros; Absurd (lt O O); Trivial with arith.
+intros n m; pattern n, m in |- *; apply nat_double_ind; simpl in |- *;
+ auto with arith.
+intros; absurd (0 < 0); trivial with arith.
 Qed.
-Hints Immediate lt_O_minus_lt : arith v62.
+Hint Immediate lt_O_minus_lt: arith v62.
 
-Theorem inj_minus_aux: (x,y:nat) ~(le y x) -> (minus x y) = O.
-Intros y x; Pattern y x ; Apply nat_double_ind; [
-  Simpl; Trivial with arith
-| Intros n H; Absurd (le O (S n)); [ Assumption | Apply le_O_n]
-| Simpl; Intros n m H1 H2; Apply H1;
-  Unfold not ; Intros H3; Apply H2; Apply le_n_S; Assumption].
+Theorem not_le_minus_0 : forall n m, ~ m <= n -> n - m = 0.
+intros y x; pattern y, x in |- *; apply nat_double_ind;
+ [ simpl in |- *; trivial with arith
+ | intros n H; absurd (0 <= S n); [ assumption | apply le_O_n ]
+ | simpl in |- *; intros n m H1 H2; apply H1; unfold not in |- *; intros H3;
+    apply H2; apply le_n_S; assumption ].
 Qed.

@@ -30,34 +30,33 @@ Require Export Relations_1.
 Require Export Relations_2.
 
 Section Relations_3.
-   Variable U: Type.
-   Variable R: (Relation U).
+   Variable U : Type.
+   Variable R : Relation U.
    
-   Definition coherent : U -> U -> Prop :=
-      [x,y: U]  (EXT z | (Rstar U R x z) /\ (Rstar U R y z)).
+   Definition coherent (x y:U) : Prop :=
+      exists z : _ | Rstar U R x z /\ Rstar U R y z.
    
-   Definition locally_confluent : U -> Prop :=
-      [x: U] (y,z: U) (R x y) -> (R x z) -> (coherent y z).
+   Definition locally_confluent (x:U) : Prop :=
+     forall y z:U, R x y -> R x z -> coherent y z.
    
-   Definition Locally_confluent : Prop :=  (x: U) (locally_confluent x).
+   Definition Locally_confluent : Prop := forall x:U, locally_confluent x.
    
-   Definition confluent : U -> Prop :=
-      [x: U] (y,z: U) (Rstar U R x y) -> (Rstar U R x z) -> (coherent y z).
+   Definition confluent (x:U) : Prop :=
+     forall y z:U, Rstar U R x y -> Rstar U R x z -> coherent y z.
    
-   Definition Confluent : Prop :=  (x: U) (confluent x).
+   Definition Confluent : Prop := forall x:U, confluent x.
    
-   Inductive  noetherian : U -> Prop :=
-         definition_of_noetherian:
-           (x: U) ((y: U) (R x y) -> (noetherian y)) -> (noetherian x).
+   Inductive noetherian : U -> Prop :=
+       definition_of_noetherian :
+         forall x:U, (forall y:U, R x y -> noetherian y) -> noetherian x.
    
-   Definition Noetherian : Prop :=  (x: U) (noetherian x).
+   Definition Noetherian : Prop := forall x:U, noetherian x.
    
 End Relations_3.
-Hints Unfold  coherent : sets v62.
-Hints Unfold  locally_confluent : sets v62.
-Hints Unfold  confluent : sets v62.
-Hints Unfold  Confluent : sets v62.
-Hints Resolve definition_of_noetherian : sets v62.
-Hints Unfold  Noetherian : sets v62.
-
+Hint Unfold coherent: sets v62.
+Hint Unfold locally_confluent: sets v62.
+Hint Unfold confluent: sets v62.
+Hint Unfold Confluent: sets v62.
+Hint Resolve definition_of_noetherian: sets v62.
+Hint Unfold Noetherian: sets v62.
 

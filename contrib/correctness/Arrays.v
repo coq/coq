@@ -39,37 +39,40 @@ Parameter array : Z -> Set -> Set.
 
 (* Functions to create, access and modify arrays *)
 
-Parameter new : (n:Z)(T:Set) T -> (array n T).
+Parameter new : forall (n:Z) (T:Set), T -> array n T.
 
-Parameter access : (n:Z)(T:Set) (array n T) -> Z -> T.
+Parameter access : forall (n:Z) (T:Set), array n T -> Z -> T.
 
-Parameter store : (n:Z)(T:Set) (array n T) -> Z -> T -> (array n T).
+Parameter store : forall (n:Z) (T:Set), array n T -> Z -> T -> array n T.
 
 
 (* Axioms *)
 
-Axiom new_def : (n:Z)(T:Set)(v0:T)
-                (i:Z) `0<=i<n` -> (access (new n v0) i) = v0.
+Axiom
+  new_def :
+    forall (n:Z) (T:Set) (v0:T) (i:Z),
+      (0 <= i < n)%Z -> access (new n v0) i = v0.
 
-Axiom store_def_1 : (n:Z)(T:Set)(t:(array n T))(v:T)
-                    (i:Z) `0<=i<n` ->
-                    (access (store t i v) i) = v.
+Axiom
+  store_def_1 :
+    forall (n:Z) (T:Set) (t:array n T) (v:T) (i:Z),
+      (0 <= i < n)%Z -> access (store t i v) i = v.
 
-Axiom store_def_2 : (n:Z)(T:Set)(t:(array n T))(v:T)
-                    (i:Z)(j:Z) `0<=i<n` -> `0<=j<n` ->
-		    `i <> j` ->
-                    (access (store t i v) j) = (access t j).
+Axiom
+  store_def_2 :
+    forall (n:Z) (T:Set) (t:array n T) (v:T) (i j:Z),
+      (0 <= i < n)%Z ->
+      (0 <= j < n)%Z -> i <> j -> access (store t i v) j = access t j.
 
-Hints Resolve new_def store_def_1 store_def_2 : datatypes v62.
+Hint Resolve new_def store_def_1 store_def_2: datatypes v62.
 
 (* A tactic to simplify access in arrays *)
 
-Tactic Definition ArrayAccess i j H :=
-    Elim (Z_eq_dec i j); [ 
-      Intro H; Rewrite H; Rewrite store_def_1
-    | Intro H; Rewrite store_def_2; [ Idtac | Idtac | Idtac | Exact H ] ].
+Ltac array_access i j H :=
+  elim (Z_eq_dec i j);
+   [ intro H; rewrite H; rewrite store_def_1
+   | intro H; rewrite store_def_2; [ idtac | idtac | idtac | exact H ] ].
 
 (* Symbolic notation for access *)
 
-Notation "# t [ c ]" := (access t c) (at level 0, t ident)
-  V8only (at level 0, t at level 0).
+Notation "# t [ c ]" := (access t c) (at level 0, t at level 0).

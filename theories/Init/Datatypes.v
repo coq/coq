@@ -8,117 +8,114 @@
 
 (*i $Id$ i*)
 
-Require Notations.
-Require Logic.
+Require Import Notations.
+Require Import Logic.
 
 Set Implicit Arguments.
-V7only [Unset Implicit Arguments.].
 
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 
-Inductive unit : Set := tt : unit.
+Inductive unit : Set :=
+    tt : unit.
 
 (** [bool] is the datatype of the booleans values [true] and [false] *)
 
-Inductive bool : Set := true : bool 
-                      | false : bool.
+Inductive bool : Set :=
+  | true : bool
+  | false : bool.
 
 Add Printing If bool.
 
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
     note that zero is the letter O, not the numeral 0 *)
 
-Inductive nat : Set := O : nat 
-                     | S : nat->nat.
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
 
-Delimits Scope nat_scope with nat.
+Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
-Arguments Scope S [ nat_scope ].
+Arguments Scope S [nat_scope].
 
 (** [Empty_set] has no inhabitant *)
 
-Inductive Empty_set:Set :=.
+Inductive Empty_set : Set :=.
 
 (** [identity A a] is the family of datatypes on [A] whose sole non-empty
     member is the singleton datatype [identity A a a] whose
     sole inhabitant is denoted [refl_identity A a] *)
 
-Inductive identity [A:Type; a:A] : A->Set :=
-     refl_identity: (identity A a a).
-Hints Resolve refl_identity : core v62.
+Inductive identity (A:Type) (a:A) : A -> Set :=
+    refl_identity : identity (A:=A) a a.
+Hint Resolve refl_identity: core v62.
 
-Implicits identity_ind [1].
-Implicits identity_rec [1].
-Implicits identity_rect [1].
-V7only [
-Implicits identity_ind [].
-Implicits identity_rec [].
-Implicits identity_rect [].
-].
+Implicit Arguments identity_ind [A].
+Implicit Arguments identity_rec [A].
+Implicit Arguments identity_rect [A].
 
 (** [option A] is the extension of A with a dummy element None *)
 
-Inductive option [A:Set] : Set := Some : A -> (option A) | None : (option A).
+Inductive option (A:Set) : Set :=
+  | Some : A -> option A
+  | None : option A.
 
-Implicits None [1].
-V7only [Implicits None [].].
+Implicit Arguments None [A].
 
 (** [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
-Inductive sum [A,B:Set] : Set
-    := inl : A -> (sum A B)
-     | inr : B -> (sum A B).
+Inductive sum (A B:Set) : Set :=
+  | inl : A -> sum A B
+  | inr : B -> sum A B.
 
 Notation "x + y" := (sum x y) : type_scope.
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
-Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
+Inductive prod (A B:Set) : Set :=
+    pair : A -> B -> prod A B.
 Add Printing Let prod.
 
 Notation "x * y" := (prod x y) : type_scope.
-Notation "( x , y )" := (pair ? ? x y) : core_scope V8only "x , y".
+Notation "x , y" := (pair x y) : core_scope.
 
 Section projections.
-   Variables A,B:Set.
-   Definition fst := [p:(prod A B)]Cases p of (pair x y) => x end.
-   Definition snd := [p:(prod A B)]Cases p of (pair x y) => y end.
+   Variables A B : Set.
+   Definition fst (p:A * B) := match p with
+                               | (x, y) => x
+                               end.
+   Definition snd (p:A * B) := match p with
+                               | (x, y) => y
+                               end.
 End projections. 
 
-V7only [
-Notation Fst := (fst ? ?).
-Notation Snd := (snd ? ?).
-].
-Hints Resolve pair inl inr : core v62.
+Hint Resolve pair inl inr: core v62.
 
-Lemma surjective_pairing : (A,B:Set;p:A*B)p=(pair A B (Fst p) (Snd p)).
+Lemma surjective_pairing :
+ forall (A B:Set) (p:A * B), p = pair (fst p) (snd p).
 Proof.
-NewDestruct p; Reflexivity.
+destruct p; reflexivity.
 Qed.
 
-Lemma injective_projections : 
- (A,B:Set;p1,p2:A*B)(Fst p1)=(Fst p2)->(Snd p1)=(Snd p2)->p1=p2.
+Lemma injective_projections :
+ forall (A B:Set) (p1 p2:A * B),
+   fst p1 = fst p2 -> snd p1 = snd p2 -> p1 = p2.
 Proof.
-NewDestruct p1; NewDestruct p2; Simpl; Intros Hfst Hsnd.
-Rewrite Hfst; Rewrite Hsnd; Reflexivity. 
+destruct p1; destruct p2; simpl in |- *; intros Hfst Hsnd.
+rewrite Hfst; rewrite Hsnd; reflexivity. 
 Qed.
 
-V7only[
-(** Parsing only of things in [Datatypes.v] *)
-Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing, A annot).
-Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing, A annot).
-Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing, A annot).
-].
 
 (** Comparison *)
 
-Inductive relation : Set := 
-  EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
+Inductive comparison : Set :=
+  | Eq : comparison
+  | Lt : comparison
+  | Gt : comparison.
 
-Definition Op := [r:relation]
-  Cases r of
-    EGAL => EGAL
-  | INFERIEUR => SUPERIEUR
-  | SUPERIEUR => INFERIEUR
+Definition CompOpp (r:comparison) :=
+  match r with
+  | Eq => Eq
+  | Lt => Gt
+  | Gt => Lt
   end.

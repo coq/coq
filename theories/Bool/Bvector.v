@@ -12,9 +12,8 @@
 
 Require Export Bool.
 Require Export Sumbool.
-Require Arith.
+Require Import Arith.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
 (*  
@@ -82,64 +81,64 @@ de taille n dans les vecteurs de taille n en appliquant f terme à terme.
 
 Variable A : Set.
 
-Inductive vector: nat -> Set :=
-	| Vnil : (vector O)
-	| Vcons  : (a:A) (n:nat) (vector n) -> (vector (S n)).
+Inductive vector : nat -> Set :=
+  | Vnil : vector 0
+  | Vcons : forall (a:A) (n:nat), vector n -> vector (S n).
 
-Definition Vhead : (n:nat) (vector (S n)) -> A.
+Definition Vhead : forall n:nat, vector (S n) -> A.
 Proof.
-	Intros n v; Inversion v; Exact a.
+	intros n v; inversion v; exact a.
 Defined.
 
-Definition Vtail : (n:nat) (vector (S n)) -> (vector n).
+Definition Vtail : forall n:nat, vector (S n) -> vector n.
 Proof.
-	Intros n v; Inversion v; Exact H0.
+	intros n v; inversion v; exact H0.
 Defined.
 
-Definition Vlast : (n:nat) (vector (S n)) -> A.
+Definition Vlast : forall n:nat, vector (S n) -> A.
 Proof.
-	NewInduction n as [|n f]; Intro v.
-	Inversion v.
-	Exact a.
+	induction n as [| n f]; intro v.
+	inversion v.
+	exact a.
 
-	Inversion v.
-	Exact (f H0).
+	inversion v.
+	exact (f H0).
 Defined.
 
-Definition Vconst : (a:A) (n:nat) (vector n).
+Definition Vconst : forall (a:A) (n:nat), vector n.
 Proof.
-	NewInduction n as [|n v].
-	Exact Vnil.
+	induction n as [| n v].
+	exact Vnil.
 
-	Exact (Vcons a n v).
+	exact (Vcons a n v).
 Defined.
 
-Lemma Vshiftout : (n:nat) (vector (S n)) -> (vector n).
+Lemma Vshiftout : forall n:nat, vector (S n) -> vector n.
 Proof.
-	NewInduction n as [|n f]; Intro v.
-	Exact Vnil.
+	induction n as [| n f]; intro v.
+	exact Vnil.
 
-	Inversion v.
-	Exact (Vcons a n (f H0)).
+	inversion v.
+	exact (Vcons a n (f H0)).
 Defined.
 
-Lemma Vshiftin : (n:nat) A -> (vector n) -> (vector (S n)).
+Lemma Vshiftin : forall n:nat, A -> vector n -> vector (S n).
 Proof.
-	NewInduction n as [|n f]; Intros a v.
-	Exact (Vcons a O v).
+	induction n as [| n f]; intros a v.
+	exact (Vcons a 0 v).
 
-	Inversion v.
-	Exact (Vcons a (S n) (f a H0)).
+	inversion v.
+	exact (Vcons a (S n) (f a H0)).
 Defined.
 
-Lemma Vshiftrepeat : (n:nat) (vector (S n)) -> (vector (S (S n))).
+Lemma Vshiftrepeat : forall n:nat, vector (S n) -> vector (S (S n)).
 Proof.
-	NewInduction n as [|n f]; Intro v.
-	Inversion v.
-	Exact (Vcons a (1) v).
+	induction n as [| n f]; intro v.
+	inversion v.
+	exact (Vcons a 1 v).
 
-	Inversion v.
-	Exact (Vcons a (S (S n)) (f H0)).
+	inversion v.
+	exact (Vcons a (S (S n)) (f H0)).
 Defined.
 
 (*
@@ -149,50 +148,50 @@ Proof.
 Save.
 *)
 
-Lemma Vtrunc : (n,p:nat) (gt n p) ->  (vector n) -> (vector (minus n p)).
+Lemma Vtrunc : forall n p:nat, n > p -> vector n -> vector (n - p).
 Proof.
-	NewInduction p as [|p f]; Intros H v.
-	Rewrite <- minus_n_O.
-	Exact v.
+	induction p as [| p f]; intros H v.
+	rewrite <- minus_n_O.
+	exact v.
 
-	Apply (Vshiftout (minus n (S p))).
+	apply (Vshiftout (n - S p)).
 
-Rewrite minus_Sn_m.
-Apply f.
-Auto with *.
-Exact v.
-Auto with *.
+rewrite minus_Sn_m.
+apply f.
+auto with *.
+exact v.
+auto with *.
 Defined.
 
-Lemma Vextend : (n,p:nat) (vector n) ->  (vector p) -> (vector (plus n p)).
+Lemma Vextend : forall n p:nat, vector n -> vector p -> vector (n + p).
 Proof.
-	NewInduction n as [|n f]; Intros p v v0.
-	Simpl; Exact v0.
+	induction n as [| n f]; intros p v v0.
+	simpl in |- *; exact v0.
 
-	Inversion v.
-	Simpl; Exact (Vcons a (plus n p) (f p H0 v0)).
+	inversion v.
+	simpl in |- *; exact (Vcons a (n + p) (f p H0 v0)).
 Defined.
 
 Variable f : A -> A.
 
-Lemma Vunary : (n:nat)(vector n)->(vector n).
+Lemma Vunary : forall n:nat, vector n -> vector n.
 Proof.
-	NewInduction n as [|n g]; Intro v.
-	Exact Vnil.
+	induction n as [| n g]; intro v.
+	exact Vnil.
 
-	Inversion v.
-	Exact (Vcons (f a) n (g H0)).
+	inversion v.
+	exact (Vcons (f a) n (g H0)).
 Defined.
 
 Variable g : A -> A -> A.
 
-Lemma Vbinary : (n:nat)(vector n)->(vector n)->(vector n).
+Lemma Vbinary : forall n:nat, vector n -> vector n -> vector n.
 Proof.
-	NewInduction n as [|n h]; Intros v v0.
-	Exact Vnil.
+	induction n as [| n h]; intros v v0.
+	exact Vnil.
 
-	Inversion v; Inversion v0.
-	Exact (Vcons (g a a0) n (h H0 H2)).
+	inversion v; inversion v0.
+	exact (Vcons (g a a0) n (h H0 H2)).
 Defined.
 
 End VECTORS.
@@ -211,56 +210,58 @@ ATTENTION : Tous les décalages prennent la taille moins un comme paramètre
 (ils ne travaillent que sur des vecteurs au moins de longueur un).
 *)
 
-Definition Bvector := (vector bool).
+Definition Bvector := vector bool.
 
-Definition Bnil := (Vnil bool).
+Definition Bnil := Vnil bool.
 
-Definition Bcons := (Vcons bool).
+Definition Bcons := Vcons bool.
 
-Definition Bvect_true := (Vconst bool true).
+Definition Bvect_true := Vconst bool true.
 
-Definition Bvect_false := (Vconst bool false).
+Definition Bvect_false := Vconst bool false.
 
-Definition Blow := (Vhead bool).
+Definition Blow := Vhead bool.
 
-Definition Bhigh := (Vtail bool).
+Definition Bhigh := Vtail bool.
 
-Definition Bsign := (Vlast bool).
+Definition Bsign := Vlast bool.
 
-Definition Bneg := (Vunary bool negb).
+Definition Bneg := Vunary bool negb.
 
-Definition BVand := (Vbinary bool andb).
+Definition BVand := Vbinary bool andb.
 
-Definition BVor := (Vbinary bool orb).
+Definition BVor := Vbinary bool orb.
 
-Definition BVxor := (Vbinary bool xorb).
+Definition BVxor := Vbinary bool xorb.
 
-Definition BshiftL := [n:nat; bv : (Bvector (S n)); carry:bool] 
-	(Bcons carry n (Vshiftout bool n bv)).
+Definition BshiftL (n:nat) (bv:Bvector (S n)) (carry:bool) :=
+  Bcons carry n (Vshiftout bool n bv).
 
-Definition BshiftRl := [n:nat; bv : (Bvector (S n)); carry:bool] 
-	(Bhigh (S n) (Vshiftin bool (S n) carry bv)).
+Definition BshiftRl (n:nat) (bv:Bvector (S n)) (carry:bool) :=
+  Bhigh (S n) (Vshiftin bool (S n) carry bv).
 
-Definition BshiftRa := [n:nat; bv : (Bvector (S n))] 
-	(Bhigh (S n) (Vshiftrepeat bool n bv)).
+Definition BshiftRa (n:nat) (bv:Bvector (S n)) :=
+  Bhigh (S n) (Vshiftrepeat bool n bv).
 
-Fixpoint BshiftL_iter [n:nat; bv:(Bvector (S n)); p:nat]:(Bvector (S n)) :=
-Cases p of
-	| O => bv
-	| (S p') => (BshiftL n (BshiftL_iter n bv p') false)
-end.
+Fixpoint BshiftL_iter (n:nat) (bv:Bvector (S n)) (p:nat) {struct p} :
+ Bvector (S n) :=
+  match p with
+  | O => bv
+  | S p' => BshiftL n (BshiftL_iter n bv p') false
+  end.
 
-Fixpoint BshiftRl_iter [n:nat; bv:(Bvector (S n)); p:nat]:(Bvector (S n)) :=
-Cases p of
-	| O => bv
-	| (S p') => (BshiftRl n (BshiftRl_iter n bv p') false)
-end.
+Fixpoint BshiftRl_iter (n:nat) (bv:Bvector (S n)) (p:nat) {struct p} :
+ Bvector (S n) :=
+  match p with
+  | O => bv
+  | S p' => BshiftRl n (BshiftRl_iter n bv p') false
+  end.
 
-Fixpoint BshiftRa_iter [n:nat; bv:(Bvector (S n)); p:nat]:(Bvector (S n)) :=
-Cases p of
-	| O => bv
-	| (S p') => (BshiftRa n (BshiftRa_iter n bv p'))
-end.
+Fixpoint BshiftRa_iter (n:nat) (bv:Bvector (S n)) (p:nat) {struct p} :
+ Bvector (S n) :=
+  match p with
+  | O => bv
+  | S p' => BshiftRa n (BshiftRa_iter n bv p')
+  end.
 
 End BOOLEAN_VECTORS.
-

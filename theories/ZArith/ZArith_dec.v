@@ -8,236 +8,219 @@
 
 (*i $Id$ i*)
 
-Require Sumbool.
+Require Import Sumbool.
 
-Require BinInt.
-Require Zorder.
-Require Zcompare.
-Require Zsyntax.
-V7only [Import Z_scope.].
+Require Import BinInt.
+Require Import Zorder.
+Require Import Zcompare.
 Open Local Scope Z_scope.
 
-Lemma Dcompare_inf : (r:relation) {r=EGAL} + {r=INFERIEUR} + {r=SUPERIEUR}.
+Lemma Dcompare_inf : forall r:comparison, {r = Eq} + {r = Lt} + {r = Gt}.
 Proof.
-Induction r; Auto with arith. 
+simple induction r; auto with arith. 
 Defined.
 
 Lemma Zcompare_rec :
-  (P:Set)(x,y:Z)
-    ((Zcompare x y)=EGAL -> P) ->
-    ((Zcompare x y)=INFERIEUR -> P) ->
-    ((Zcompare x y)=SUPERIEUR -> P) ->
-    P.
+ forall (P:Set) (n m:Z),
+   ((n ?= m) = Eq -> P) -> ((n ?= m) = Lt -> P) -> ((n ?= m) = Gt -> P) -> P.
 Proof.
-Intros P x y H1 H2 H3.
-Elim (Dcompare_inf (Zcompare x y)).
-Intro H. Elim H; Auto with arith. Auto with arith.
+intros P x y H1 H2 H3.
+elim (Dcompare_inf (x ?= y)).
+intro H. elim H; auto with arith. auto with arith.
 Defined.
 
 Section decidability.
 
-Variables x,y : Z.
+Variables x y : Z.
 
 (** Decidability of equality on binary integers *)
 
-Definition Z_eq_dec : {x=y}+{~x=y}.
+Definition Z_eq_dec : {x = y} + {x <> y}.
 Proof.
-Apply Zcompare_rec with x:=x y:=y.
-Intro. Left. Elim (Zcompare_EGAL x y); Auto with arith.
-Intro H3. Right. Elim (Zcompare_EGAL x y). Intros H1 H2. Unfold not. Intro H4.
-  Rewrite (H2 H4) in H3. Discriminate H3.
-Intro H3. Right. Elim (Zcompare_EGAL x y). Intros H1 H2. Unfold not. Intro H4.
-  Rewrite (H2 H4) in H3. Discriminate H3.
+apply Zcompare_rec with (n := x) (m := y).
+intro. left. elim (Zcompare_Eq_iff_eq x y); auto with arith.
+intro H3. right. elim (Zcompare_Eq_iff_eq x y). intros H1 H2. unfold not in |- *. intro H4.
+  rewrite (H2 H4) in H3. discriminate H3.
+intro H3. right. elim (Zcompare_Eq_iff_eq x y). intros H1 H2. unfold not in |- *. intro H4.
+  rewrite (H2 H4) in H3. discriminate H3.
 Defined. 
 
 (** Decidability of order on binary integers *)
 
-Definition Z_lt_dec : {(Zlt x y)}+{~(Zlt x y)}.
+Definition Z_lt_dec : {x < y} + {~ x < y}.
 Proof.
-Unfold Zlt.
-Apply Zcompare_rec with x:=x y:=y; Intro H.
-Right. Rewrite H. Discriminate.
-Left; Assumption.
-Right. Rewrite H. Discriminate.
+unfold Zlt in |- *.
+apply Zcompare_rec with (n := x) (m := y); intro H.
+right. rewrite H. discriminate.
+left; assumption.
+right. rewrite H. discriminate.
 Defined.
 
-Definition Z_le_dec : {(Zle x y)}+{~(Zle x y)}.
+Definition Z_le_dec : {x <= y} + {~ x <= y}.
 Proof.
-Unfold Zle.
-Apply Zcompare_rec with x:=x y:=y; Intro H.
-Left. Rewrite H. Discriminate.
-Left. Rewrite H. Discriminate.
-Right. Tauto.
+unfold Zle in |- *.
+apply Zcompare_rec with (n := x) (m := y); intro H.
+left. rewrite H. discriminate.
+left. rewrite H. discriminate.
+right. tauto.
 Defined.
 
-Definition Z_gt_dec : {(Zgt x y)}+{~(Zgt x y)}.
+Definition Z_gt_dec : {x > y} + {~ x > y}.
 Proof.
-Unfold Zgt.
-Apply Zcompare_rec with x:=x y:=y; Intro H.
-Right. Rewrite H. Discriminate.
-Right. Rewrite H. Discriminate.
-Left; Assumption.
+unfold Zgt in |- *.
+apply Zcompare_rec with (n := x) (m := y); intro H.
+right. rewrite H. discriminate.
+right. rewrite H. discriminate.
+left; assumption.
 Defined.
 
-Definition Z_ge_dec : {(Zge x y)}+{~(Zge x y)}.
+Definition Z_ge_dec : {x >= y} + {~ x >= y}.
 Proof.
-Unfold Zge.
-Apply Zcompare_rec with x:=x y:=y; Intro H.
-Left. Rewrite H. Discriminate.
-Right. Tauto.
-Left. Rewrite H. Discriminate.
+unfold Zge in |- *.
+apply Zcompare_rec with (n := x) (m := y); intro H.
+left. rewrite H. discriminate.
+right. tauto.
+left. rewrite H. discriminate.
 Defined.
 
-Definition Z_lt_ge_dec : {`x < y`}+{`x >= y`}.
+Definition Z_lt_ge_dec : {x < y} + {x >= y}.
 Proof.
-Exact Z_lt_dec.
+exact Z_lt_dec.
 Defined.
 
-V7only [ (* From Zextensions *) ].
-Lemma Z_lt_le_dec: {`x < y`}+{`y <= x`}.
+Lemma Z_lt_le_dec : {x < y} + {y <= x}.
 Proof.
-Intros.
-Elim Z_lt_ge_dec.
-Intros; Left; Assumption.
-Intros; Right; Apply Zge_le; Assumption.
+intros.
+elim Z_lt_ge_dec.
+intros; left; assumption.
+intros; right; apply Zge_le; assumption.
 Qed.
 
-Definition Z_le_gt_dec : {`x <= y`}+{`x > y`}.
+Definition Z_le_gt_dec : {x <= y} + {x > y}.
 Proof.
-Elim Z_le_dec; Auto with arith.
-Intro. Right. Apply not_Zle; Auto with arith.
+elim Z_le_dec; auto with arith.
+intro. right. apply Znot_le_gt; auto with arith.
 Defined.
 
-Definition Z_gt_le_dec : {`x > y`}+{`x <= y`}.
+Definition Z_gt_le_dec : {x > y} + {x <= y}.
 Proof.
-Exact Z_gt_dec.
+exact Z_gt_dec.
 Defined.
 
-Definition Z_ge_lt_dec : {`x >= y`}+{`x < y`}.
+Definition Z_ge_lt_dec : {x >= y} + {x < y}.
 Proof.
-Elim Z_ge_dec; Auto with arith.
-Intro. Right. Apply not_Zge; Auto with arith.
+elim Z_ge_dec; auto with arith.
+intro. right. apply Znot_ge_lt; auto with arith.
 Defined.
 
-Definition Z_le_lt_eq_dec : `x <= y` -> {`x < y`}+{x=y}.
+Definition Z_le_lt_eq_dec : x <= y -> {x < y} + {x = y}.
 Proof.
-Intro H.
-Apply Zcompare_rec with x:=x y:=y.
-Intro. Right. Elim (Zcompare_EGAL x y); Auto with arith.
-Intro. Left. Elim (Zcompare_EGAL x y); Auto with arith.
-Intro H1. Absurd `x > y`; Auto with arith.
+intro H.
+apply Zcompare_rec with (n := x) (m := y).
+intro. right. elim (Zcompare_Eq_iff_eq x y); auto with arith.
+intro. left. elim (Zcompare_Eq_iff_eq x y); auto with arith.
+intro H1. absurd (x > y); auto with arith.
 Defined.
 
 End decidability.
 
 (** Cotransitivity of order on binary integers *)
 
-Lemma Zlt_cotrans:(n,m:Z)`n<m`->(p:Z){`n<p`}+{`p<m`}.
+Lemma Zlt_cotrans : forall n m:Z, n < m -> forall p:Z, {n < p} + {p < m}.
 Proof.
- Intros x y H z.
- Case (Z_lt_ge_dec x z).
- Intro.
- Left.
- Assumption.
- Intro.
- Right.
- Apply Zle_lt_trans with m:=x.
- Apply Zge_le.
- Assumption.
- Assumption.
+ intros x y H z.
+ case (Z_lt_ge_dec x z).
+ intro.
+ left.
+ assumption.
+ intro.
+ right.
+ apply Zle_lt_trans with (m := x).
+ apply Zge_le.
+ assumption.
+ assumption.
 Defined.
 
-Lemma Zlt_cotrans_pos:(x,y:Z)`0<x+y`->{`0<x`}+{`0<y`}.
+Lemma Zlt_cotrans_pos : forall n m:Z, 0 < n + m -> {0 < n} + {0 < m}.
 Proof.
- Intros x y H.
- Case (Zlt_cotrans `0` `x+y` H x).
- Intro.
- Left.
- Assumption.
- Intro.
- Right.
- Apply Zsimpl_lt_plus_l with p:=`x`.
- Rewrite Zero_right.
- Assumption.
+ intros x y H.
+ case (Zlt_cotrans 0 (x + y) H x).
+ intro.
+ left.
+ assumption.
+ intro.
+ right.
+ apply Zplus_lt_reg_l with (p := x).
+ rewrite Zplus_0_r.
+ assumption.
 Defined.
 
-Lemma Zlt_cotrans_neg:(x,y:Z)`x+y<0`->{`x<0`}+{`y<0`}.
+Lemma Zlt_cotrans_neg : forall n m:Z, n + m < 0 -> {n < 0} + {m < 0}.
 Proof.
- Intros x y H;
- Case (Zlt_cotrans `x+y` `0` H x);
- Intro Hxy;
- [ Right;
-   Apply Zsimpl_lt_plus_l with p:=`x`;
-   Rewrite Zero_right
- | Left
- ];
- Assumption.
+ intros x y H; case (Zlt_cotrans (x + y) 0 H x); intro Hxy;
+  [ right; apply Zplus_lt_reg_l with (p := x); rewrite Zplus_0_r | left ];
+  assumption.
 Defined.
 
-Lemma not_Zeq_inf:(x,y:Z)`x<>y`->{`x<y`}+{`y<x`}.
+Lemma not_Zeq_inf : forall n m:Z, n <> m -> {n < m} + {m < n}.
 Proof.
- Intros x y H.
- Case Z_lt_ge_dec with x y.
- Intro.
- Left.
- Assumption.
- Intro H0.
- Generalize (Zge_le ? ? H0).
- Intro.
- Case (Z_le_lt_eq_dec ? ? H1).
- Intro.
- Right.
- Assumption.
- Intro.
- Apply False_rec.
- Apply H.
- Symmetry.
- Assumption.
+ intros x y H.
+ case Z_lt_ge_dec with x y.
+ intro.
+ left.
+ assumption.
+ intro H0.
+ generalize (Zge_le _ _ H0).
+ intro.
+ case (Z_le_lt_eq_dec _ _ H1).
+ intro.
+ right.
+ assumption.
+ intro.
+ apply False_rec.
+ apply H.
+ symmetry  in |- *.
+ assumption.
 Defined.
 
-Lemma Z_dec:(x,y:Z){`x<y`}+{`x>y`}+{`x=y`}.
+Lemma Z_dec : forall n m:Z, {n < m} + {n > m} + {n = m}.
 Proof.
- Intros x y.
- Case (Z_lt_ge_dec x y).
- Intro H.
- Left.
- Left.
- Assumption.
- Intro H.
- Generalize (Zge_le ? ? H).
- Intro H0.
- Case (Z_le_lt_eq_dec y x H0).
- Intro H1.
- Left.
- Right.
- Apply Zlt_gt.
- Assumption.
- Intro.
- Right.
- Symmetry.
- Assumption.
+ intros x y.
+ case (Z_lt_ge_dec x y).
+ intro H.
+ left.
+ left.
+ assumption.
+ intro H.
+ generalize (Zge_le _ _ H).
+ intro H0.
+ case (Z_le_lt_eq_dec y x H0).
+ intro H1.
+ left.
+ right.
+ apply Zlt_gt.
+ assumption.
+ intro.
+ right.
+ symmetry  in |- *.
+ assumption.
 Defined.
 
 
-Lemma Z_dec':(x,y:Z){`x<y`}+{`y<x`}+{`x=y`}.
+Lemma Z_dec' : forall n m:Z, {n < m} + {m < n} + {n = m}.
 Proof.
- Intros x y.
- Case (Z_eq_dec x y);
- Intro H;
- [ Right;
-   Assumption
- | Left;
-   Apply (not_Zeq_inf ?? H)
- ].
+ intros x y.
+ case (Z_eq_dec x y); intro H;
+  [ right; assumption | left; apply (not_Zeq_inf _ _ H) ].
 Defined.
 
 
 
-Definition Z_zerop : (x:Z){(`x = 0`)}+{(`x <> 0`)}.
+Definition Z_zerop : forall x:Z, {x = 0} + {x <> 0}.
 Proof.
-Exact [x:Z](Z_eq_dec x ZERO).
+exact (fun x:Z => Z_eq_dec x 0).
 Defined.
 
-Definition Z_notzerop := [x:Z](sumbool_not ? ? (Z_zerop x)).
+Definition Z_notzerop (x:Z) := sumbool_not _ _ (Z_zerop x).
 
-Definition Z_noteq_dec := [x,y:Z](sumbool_not ? ? (Z_eq_dec x y)).
+Definition Z_noteq_dec (x y:Z) := sumbool_not _ _ (Z_eq_dec x y).

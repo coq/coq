@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require BinPos.
+Require Import BinPos.
 
 (**********************************************************************)
 (** Properties of the injection from binary positive numbers to Peano 
@@ -16,144 +16,142 @@ Require BinPos.
 
 (** Original development by Pierre Crégut, CNET, Lannion, France *)
 
-Require Le.
-Require Lt.
-Require Gt.
-Require Plus.
-Require Mult.
-Require Minus.
+Require Import Le.
+Require Import Lt.
+Require Import Gt.
+Require Import Plus.
+Require Import Mult.
+Require Import Minus.
 
 (** [nat_of_P] is a morphism for addition *)
 
-Lemma convert_add_un :
-  (x:positive)(m:nat)
-    (positive_to_nat (add_un x) m) = (plus m (positive_to_nat x m)).
+Lemma Pmult_nat_succ_morphism :
+ forall (p:positive) (n:nat), Pmult_nat (Psucc p) n = n + Pmult_nat p n.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|]; Simpl; Auto; Intro m; Rewrite IHp;
-Rewrite plus_assoc_l; Trivial.
+intro x; induction x as [p IHp| p IHp| ]; simpl in |- *; auto; intro m;
+ rewrite IHp; rewrite plus_assoc; trivial.
 Qed.
 
-Lemma cvt_add_un :
-  (p:positive) (convert (add_un p)) = (S (convert p)).
+Lemma nat_of_P_succ_morphism :
+ forall p:positive, nat_of_P (Psucc p) = S (nat_of_P p).
 Proof.
-  Intro; Change (S (convert p)) with (plus (S O) (convert p));
-  Unfold convert; Apply convert_add_un.
+  intro; change (S (nat_of_P p)) with (1 + nat_of_P p) in |- *;
+   unfold nat_of_P in |- *; apply Pmult_nat_succ_morphism.
 Qed.
 
-Theorem convert_add_carry :
-  (x,y:positive)(m:nat)
-    (positive_to_nat (add_carry x y) m) =
-    (plus m (positive_to_nat (add x y) m)).
+Theorem Pmult_nat_plus_carry_morphism :
+ forall (p q:positive) (n:nat),
+   Pmult_nat (Pplus_carry p q) n = n + Pmult_nat (p + q) n.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|];
-  Intro y; NewDestruct y; Simpl; Auto with arith; Intro m; [
-  Rewrite IHp; Rewrite plus_assoc_l; Trivial with arith
-| Rewrite IHp; Rewrite plus_assoc_l; Trivial with arith
-| Rewrite convert_add_un; Rewrite plus_assoc_l; Trivial with arith
-| Rewrite convert_add_un; Apply plus_assoc_r ].
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; simpl in |- *; auto with arith; 
+ intro m;
+ [ rewrite IHp; rewrite plus_assoc; trivial with arith
+ | rewrite IHp; rewrite plus_assoc; trivial with arith
+ | rewrite Pmult_nat_succ_morphism; rewrite plus_assoc; trivial with arith
+ | rewrite Pmult_nat_succ_morphism; apply plus_assoc_reverse ].
 Qed.
 
-Theorem cvt_carry :
-  (x,y:positive)(convert (add_carry x y)) = (S (convert (add x y))).
+Theorem nat_of_P_plus_carry_morphism :
+ forall p q:positive, nat_of_P (Pplus_carry p q) = S (nat_of_P (p + q)).
 Proof.
-Intros;Unfold convert; Rewrite convert_add_carry; Simpl; Trivial with arith.
+intros; unfold nat_of_P in |- *; rewrite Pmult_nat_plus_carry_morphism;
+ simpl in |- *; trivial with arith.
 Qed.
 
-Theorem add_verif :
-  (x,y:positive)(m:nat)
-    (positive_to_nat (add x y) m) = 
-    (plus (positive_to_nat x m) (positive_to_nat y m)).
+Theorem Pmult_nat_l_plus_morphism :
+ forall (p q:positive) (n:nat),
+   Pmult_nat (p + q) n = Pmult_nat p n + Pmult_nat q n.
 Proof.
-Intro x; NewInduction x as [p IHp|p IHp|];
-  Intro y; NewDestruct y;Simpl;Auto with arith; [
-  Intros m;Rewrite convert_add_carry; Rewrite IHp; 
-  Rewrite plus_assoc_r; Rewrite plus_assoc_r; 
-  Rewrite (plus_permute m (positive_to_nat p (plus m m))); Trivial with arith
-| Intros m; Rewrite IHp; Apply plus_assoc_l
-| Intros m; Rewrite convert_add_un; 
-  Rewrite (plus_sym (plus m (positive_to_nat p (plus m m))));
-  Apply plus_assoc_r
-| Intros m; Rewrite IHp; Apply plus_permute
-| Intros m; Rewrite convert_add_un; Apply plus_assoc_r ].
+intro x; induction x as [p IHp| p IHp| ]; intro y;
+ [ destruct y as [p0| p0| ]
+ | destruct y as [p0| p0| ]
+ | destruct y as [p| p| ] ]; simpl in |- *; auto with arith;
+ [ intros m; rewrite Pmult_nat_plus_carry_morphism; rewrite IHp;
+    rewrite plus_assoc_reverse; rewrite plus_assoc_reverse;
+    rewrite (plus_permute m (Pmult_nat p (m + m))); 
+    trivial with arith
+ | intros m; rewrite IHp; apply plus_assoc
+ | intros m; rewrite Pmult_nat_succ_morphism;
+    rewrite (plus_comm (m + Pmult_nat p (m + m))); 
+    apply plus_assoc_reverse
+ | intros m; rewrite IHp; apply plus_permute
+ | intros m; rewrite Pmult_nat_succ_morphism; apply plus_assoc_reverse ].
 Qed.
 
-Theorem convert_add:
-  (x,y:positive) (convert (add x y)) = (plus (convert x) (convert y)).
+Theorem nat_of_P_plus_morphism :
+ forall p q:positive, nat_of_P (p + q) = nat_of_P p + nat_of_P q.
 Proof.
-Intros x y; Exact (add_verif x y (S O)).
+intros x y; exact (Pmult_nat_l_plus_morphism x y 1).
 Qed.
 
 (** [Pmult_nat] is a morphism for addition *)
 
-Lemma ZL2:
-  (y:positive)(m:nat)
-    (positive_to_nat y (plus m m)) =
-              (plus (positive_to_nat y m) (positive_to_nat y m)).
+Lemma Pmult_nat_r_plus_morphism :
+ forall (p:positive) (n:nat),
+   Pmult_nat p (n + n) = Pmult_nat p n + Pmult_nat p n.
 Proof.
-Intro y; NewInduction y as [p H|p H|]; Intro m; [
-  Simpl; Rewrite H; Rewrite plus_assoc_r; 
-  Rewrite (plus_permute m (positive_to_nat p (plus m m)));
-  Rewrite plus_assoc_r; Auto with arith
-| Simpl; Rewrite H; Auto with arith
-| Simpl; Trivial with arith ].
+intro y; induction y as [p H| p H| ]; intro m;
+ [ simpl in |- *; rewrite H; rewrite plus_assoc_reverse;
+    rewrite (plus_permute m (Pmult_nat p (m + m)));
+    rewrite plus_assoc_reverse; auto with arith
+ | simpl in |- *; rewrite H; auto with arith
+ | simpl in |- *; trivial with arith ].
 Qed.
 
-Lemma ZL6:
-  (p:positive) (positive_to_nat p (S (S O))) = (plus (convert p) (convert p)).
+Lemma ZL6 : forall p:positive, Pmult_nat p 2 = nat_of_P p + nat_of_P p.
 Proof.
-Intro p;Change (2) with (plus (S O) (S O)); Rewrite ZL2; Trivial.
+intro p; change 2 with (1 + 1) in |- *; rewrite Pmult_nat_r_plus_morphism;
+ trivial.
 Qed.
  
 (** [nat_of_P] is a morphism for multiplication *)
 
-Theorem times_convert :
-  (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
+Theorem nat_of_P_mult_morphism :
+ forall p q:positive, nat_of_P (p * q) = nat_of_P p * nat_of_P q.
 Proof.
-Intros x y; NewInduction x as [ x' H | x' H | ]; [
-  Change (times (xI x') y) with (add y (xO (times x' y))); Rewrite convert_add;
-  Unfold 2 3 convert; Simpl; Do 2 Rewrite ZL6; Rewrite H;
-  Rewrite -> mult_plus_distr; Reflexivity
-| Unfold 1 2 convert; Simpl; Do 2 Rewrite ZL6;
-  Rewrite H; Rewrite mult_plus_distr; Reflexivity
-| Simpl; Rewrite <- plus_n_O; Reflexivity ].
+intros x y; induction x as [x' H| x' H| ];
+ [ change (xI x' * y)%positive with (y + xO (x' * y))%positive in |- *;
+    rewrite nat_of_P_plus_morphism; unfold nat_of_P at 2 3 in |- *;
+    simpl in |- *; do 2 rewrite ZL6; rewrite H; rewrite mult_plus_distr_r;
+    reflexivity
+ | unfold nat_of_P at 1 2 in |- *; simpl in |- *; do 2 rewrite ZL6; rewrite H;
+    rewrite mult_plus_distr_r; reflexivity
+ | simpl in |- *; rewrite <- plus_n_O; reflexivity ].
 Qed.
-V7only [
-  Comments "Compatibility with the old version of times and times_convert".
-  Syntactic Definition times1 :=
-    [x:positive;_:positive->positive;y:positive](times x y).
-  Syntactic Definition times1_convert :=
-    [x,y:positive;_:positive->positive](times_convert x y).
-].
 
 (** [nat_of_P] maps to the strictly positive subset of [nat] *)
 
-Lemma ZL4: (y:positive) (EX h:nat |(convert y)=(S h)).
+Lemma ZL4 : forall p:positive,  exists h : nat | nat_of_P p = S h.
 Proof.
-Intro y; NewInduction y as [p H|p H|]; [
-  NewDestruct H as [x H1]; Exists (plus (S x) (S x));
-  Unfold convert ;Simpl; Change (2) with (plus (1) (1)); Rewrite ZL2; Unfold convert in H1;
-  Rewrite H1; Auto with arith
-| NewDestruct H as [x H2]; Exists (plus x (S x)); Unfold convert;
-  Simpl; Change (2) with (plus (1) (1)); Rewrite ZL2;Unfold convert in H2; Rewrite H2; Auto with arith
-| Exists O ;Auto with arith ].
+intro y; induction y as [p H| p H| ];
+ [ destruct H as [x H1]; exists (S x + S x); unfold nat_of_P in |- *;
+    simpl in |- *; change 2 with (1 + 1) in |- *;
+    rewrite Pmult_nat_r_plus_morphism; unfold nat_of_P in H1; 
+    rewrite H1; auto with arith
+ | destruct H as [x H2]; exists (x + S x); unfold nat_of_P in |- *;
+    simpl in |- *; change 2 with (1 + 1) in |- *;
+    rewrite Pmult_nat_r_plus_morphism; unfold nat_of_P in H2; 
+    rewrite H2; auto with arith
+ | exists 0; auto with arith ].
 Qed.
 
 (** Extra lemmas on [lt] on Peano natural numbers *)
 
-Lemma ZL7:
-  (m,n:nat) (lt m n) -> (lt (plus m m) (plus n n)).
+Lemma ZL7 : forall n m:nat, n < m -> n + n < m + m.
 Proof.
-Intros m n H; Apply lt_trans with m:=(plus m n); [
-  Apply lt_reg_l with 1:=H
-| Rewrite (plus_sym m n); Apply lt_reg_l with 1:=H ].
+intros m n H; apply lt_trans with (m := m + n);
+ [ apply plus_lt_compat_l with (1 := H)
+ | rewrite (plus_comm m n); apply plus_lt_compat_l with (1 := H) ].
 Qed.
 
-Lemma ZL8:
-  (m,n:nat) (lt m n) -> (lt (S (plus m m)) (plus n n)).
+Lemma ZL8 : forall n m:nat, n < m -> S (n + n) < m + m.
 Proof.
-Intros m n H; Apply le_lt_trans with m:=(plus m n); [
-  Change (lt (plus m m) (plus m n)) ; Apply lt_reg_l with 1:=H
-| Rewrite (plus_sym m n); Apply lt_reg_l with 1:=H ].
+intros m n H; apply le_lt_trans with (m := m + n);
+ [ change (m + m < m + n) in |- *; apply plus_lt_compat_l with (1 := H)
+ | rewrite (plus_comm m n); apply plus_lt_compat_l with (1 := H) ].
 Qed.
 
 (** [nat_of_P] is a morphism from [positive] to [nat] for [lt] (expressed
@@ -162,29 +160,30 @@ Qed.
     Part 1: [lt] on [positive] is finer than [lt] on [nat]
 *)
 
-Lemma compare_convert_INFERIEUR : 
-  (x,y:positive) (compare x y EGAL) = INFERIEUR -> 
-    (lt (convert x) (convert y)).
+Lemma nat_of_P_lt_Lt_compare_morphism :
+ forall p q:positive, (p ?= q)%positive Eq = Lt -> nat_of_P p < nat_of_P q.
 Proof.
-Intro x; NewInduction x as [p H|p H|];Intro y; NewDestruct y as [q|q|];
-  Intro H2; [
-  Unfold convert ;Simpl; Apply lt_n_S; 
-  Do 2 Rewrite ZL6; Apply ZL7; Apply H; Simpl in H2; Assumption
-| Unfold convert ;Simpl; Do 2 Rewrite ZL6; 
-  Apply ZL8; Apply H;Simpl in H2; Apply ZLSI;Assumption
-| Simpl; Discriminate H2
-| Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
-  Elim (ZLII p q H2); [
-    Intros H3;Apply lt_S;Apply ZL7; Apply H;Apply H3
-  | Intros E;Rewrite E;Apply lt_n_Sn]
-| Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
-  Apply ZL7;Apply H;Assumption
-| Simpl; Discriminate H2
-| Unfold convert ;Simpl; Apply lt_n_S; Rewrite ZL6;
-  Elim (ZL4 q);Intros h H3; Rewrite H3;Simpl; Apply lt_O_Sn
-| Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 q);Intros h H3;
-  Rewrite H3; Simpl; Rewrite <- plus_n_Sm; Apply lt_n_S; Apply lt_O_Sn
-| Simpl; Discriminate H2 ].
+intro x; induction x as [p H| p H| ]; intro y; destruct y as [q| q| ];
+ intro H2;
+ [ unfold nat_of_P in |- *; simpl in |- *; apply lt_n_S; do 2 rewrite ZL6;
+    apply ZL7; apply H; simpl in H2; assumption
+ | unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6; apply ZL8;
+    apply H; simpl in H2; apply Pcompare_Gt_Lt; assumption
+ | simpl in |- *; discriminate H2
+ | simpl in |- *; unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6;
+    elim (Pcompare_Lt_Lt p q H2);
+    [ intros H3; apply lt_S; apply ZL7; apply H; apply H3
+    | intros E; rewrite E; apply lt_n_Sn ]
+ | simpl in |- *; unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6;
+    apply ZL7; apply H; assumption
+ | simpl in |- *; discriminate H2
+ | unfold nat_of_P in |- *; simpl in |- *; apply lt_n_S; rewrite ZL6;
+    elim (ZL4 q); intros h H3; rewrite H3; simpl in |- *; 
+    apply lt_O_Sn
+ | unfold nat_of_P in |- *; simpl in |- *; rewrite ZL6; elim (ZL4 q);
+    intros h H3; rewrite H3; simpl in |- *; rewrite <- plus_n_Sm;
+    apply lt_n_S; apply lt_O_Sn
+ | simpl in |- *; discriminate H2 ].
 Qed.
 
 (** [nat_of_P] is a morphism from [positive] to [nat] for [gt] (expressed
@@ -193,29 +192,30 @@ Qed.
     Part 1: [gt] on [positive] is finer than [gt] on [nat]
 *)
 
-Lemma compare_convert_SUPERIEUR : 
-  (x,y:positive) (compare x y EGAL)=SUPERIEUR -> (gt (convert x) (convert y)).
+Lemma nat_of_P_gt_Gt_compare_morphism :
+ forall p q:positive, (p ?= q)%positive Eq = Gt -> nat_of_P p > nat_of_P q.
 Proof.
-Unfold gt; Intro x; NewInduction x as [p H|p H|];
-  Intro y; NewDestruct y as [q|q|]; Intro H2; [
-  Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
-  Apply lt_n_S; Apply ZL7; Apply H;Assumption
-| Simpl; Unfold convert ;Simpl; Do 2 Rewrite ZL6;
-  Elim (ZLSS p q H2); [
-    Intros H3;Apply lt_S;Apply ZL7;Apply H;Assumption
-  | Intros E;Rewrite E;Apply lt_n_Sn]
-| Unfold convert ;Simpl; Rewrite ZL6;Elim (ZL4 p);
-  Intros h H3;Rewrite H3;Simpl; Apply lt_n_S; Apply lt_O_Sn
-| Simpl;Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
-  Apply ZL8; Apply H; Apply ZLIS; Assumption
-| Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
-  Apply ZL7;Apply H;Assumption
-| Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 p);
-  Intros h H3;Rewrite H3;Simpl; Rewrite <- plus_n_Sm;Apply lt_n_S;
-  Apply lt_O_Sn
-| Simpl; Discriminate H2
-| Simpl; Discriminate H2
-| Simpl; Discriminate H2 ].
+unfold gt in |- *; intro x; induction x as [p H| p H| ]; intro y;
+ destruct y as [q| q| ]; intro H2;
+ [ simpl in |- *; unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6;
+    apply lt_n_S; apply ZL7; apply H; assumption
+ | simpl in |- *; unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6;
+    elim (Pcompare_Gt_Gt p q H2);
+    [ intros H3; apply lt_S; apply ZL7; apply H; assumption
+    | intros E; rewrite E; apply lt_n_Sn ]
+ | unfold nat_of_P in |- *; simpl in |- *; rewrite ZL6; elim (ZL4 p);
+    intros h H3; rewrite H3; simpl in |- *; apply lt_n_S; 
+    apply lt_O_Sn
+ | simpl in |- *; unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6;
+    apply ZL8; apply H; apply Pcompare_Lt_Gt; assumption
+ | simpl in |- *; unfold nat_of_P in |- *; simpl in |- *; do 2 rewrite ZL6;
+    apply ZL7; apply H; assumption
+ | unfold nat_of_P in |- *; simpl in |- *; rewrite ZL6; elim (ZL4 p);
+    intros h H3; rewrite H3; simpl in |- *; rewrite <- plus_n_Sm;
+    apply lt_n_S; apply lt_O_Sn
+ | simpl in |- *; discriminate H2
+ | simpl in |- *; discriminate H2
+ | simpl in |- *; discriminate H2 ].
 Qed.
 
 (** [nat_of_P] is a morphism from [positive] to [nat] for [lt] (expressed
@@ -224,18 +224,18 @@ Qed.
     Part 2: [lt] on [nat] is finer than [lt] on [positive]
 *)
 
-Lemma convert_compare_INFERIEUR : 
-  (x,y:positive)(lt (convert x) (convert y)) -> (compare x y EGAL) = INFERIEUR.
+Lemma nat_of_P_lt_Lt_compare_complement_morphism :
+ forall p q:positive, nat_of_P p < nat_of_P q -> (p ?= q)%positive Eq = Lt.
 Proof.
-Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
-  Intros E; Rewrite (compare_convert_EGAL x y E); 
-  Intros H;Absurd (lt (convert y) (convert y)); [ Apply lt_n_n | Assumption ]
-| Intros H;Elim H; [
-    Auto
-  | Intros H1 H2; Absurd (lt (convert x) (convert y)); [
-      Apply lt_not_sym; Change (gt (convert x) (convert y)); 
-      Apply compare_convert_SUPERIEUR; Assumption
-    | Assumption ]]].
+intros x y; unfold gt in |- *; elim (Dcompare ((x ?= y)%positive Eq));
+ [ intros E; rewrite (Pcompare_Eq_eq x y E); intros H;
+    absurd (nat_of_P y < nat_of_P y); [ apply lt_irrefl | assumption ]
+ | intros H; elim H;
+    [ auto
+    | intros H1 H2; absurd (nat_of_P x < nat_of_P y);
+       [ apply lt_asym; change (nat_of_P x > nat_of_P y) in |- *;
+          apply nat_of_P_gt_Gt_compare_morphism; assumption
+       | assumption ] ] ].
 Qed.
 
 (** [nat_of_P] is a morphism from [positive] to [nat] for [gt] (expressed
@@ -244,78 +244,78 @@ Qed.
     Part 2: [gt] on [nat] is finer than [gt] on [positive]
 *)
 
-Lemma convert_compare_SUPERIEUR : 
-  (x,y:positive)(gt (convert x) (convert y)) -> (compare x y EGAL) = SUPERIEUR.
+Lemma nat_of_P_gt_Gt_compare_complement_morphism :
+ forall p q:positive, nat_of_P p > nat_of_P q -> (p ?= q)%positive Eq = Gt.
 Proof.
-Intros x y; Unfold gt; Elim (Dcompare (compare x y EGAL)); [
-  Intros E; Rewrite (compare_convert_EGAL x y E); 
-  Intros H;Absurd (lt (convert y) (convert y)); [ Apply lt_n_n | Assumption ]
-| Intros H;Elim H; [
-    Intros H1 H2; Absurd (lt (convert y) (convert x)); [
-      Apply lt_not_sym; Apply compare_convert_INFERIEUR; Assumption
-    | Assumption ]
-  | Auto]].
+intros x y; unfold gt in |- *; elim (Dcompare ((x ?= y)%positive Eq));
+ [ intros E; rewrite (Pcompare_Eq_eq x y E); intros H;
+    absurd (nat_of_P y < nat_of_P y); [ apply lt_irrefl | assumption ]
+ | intros H; elim H;
+    [ intros H1 H2; absurd (nat_of_P y < nat_of_P x);
+       [ apply lt_asym; apply nat_of_P_lt_Lt_compare_morphism; assumption
+       | assumption ]
+    | auto ] ].
 Qed.
 
 (** [nat_of_P] is strictly positive *)
 
-Lemma compare_positive_to_nat_O : 
-	(p:positive)(m:nat)(le m (positive_to_nat p m)).
-NewInduction p; Simpl; Auto with arith.
-Intro m; Apply le_trans with (plus m m);  Auto with arith.
+Lemma le_Pmult_nat : forall (p:positive) (n:nat), n <= Pmult_nat p n.
+induction p; simpl in |- *; auto with arith.
+intro m; apply le_trans with (m + m); auto with arith.
 Qed.
 
-Lemma compare_convert_O : (p:positive)(lt O (convert p)).
-Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
-Apply compare_positive_to_nat_O.
+Lemma lt_O_nat_of_P : forall p:positive, 0 < nat_of_P p.
+intro; unfold nat_of_P in |- *; apply lt_le_trans with 1; auto with arith.
+apply le_Pmult_nat.
 Qed.
 
 (** Pmult_nat permutes with multiplication *)
 
-Lemma positive_to_nat_mult : (p:positive) (n,m:nat)
-    (positive_to_nat p (mult m n))=(mult m (positive_to_nat p n)).
+Lemma Pmult_nat_mult_permute :
+ forall (p:positive) (n m:nat), Pmult_nat p (m * n) = m * Pmult_nat p n.
 Proof.
-  Induction p. Intros. Simpl. Rewrite mult_plus_distr_r. Rewrite <- (mult_plus_distr_r m n n).
-  Rewrite (H (plus n n) m). Reflexivity.
-  Intros. Simpl. Rewrite <- (mult_plus_distr_r m n n). Apply H.
-  Trivial.
+  simple induction p. intros. simpl in |- *. rewrite mult_plus_distr_l. rewrite <- (mult_plus_distr_l m n n).
+  rewrite (H (n + n) m). reflexivity.
+  intros. simpl in |- *. rewrite <- (mult_plus_distr_l m n n). apply H.
+  trivial.
 Qed.
 
-Lemma positive_to_nat_2 : (p:positive)
-    (positive_to_nat p (2))=(mult (2) (positive_to_nat p (1))).
+Lemma Pmult_nat_2_mult_2_permute :
+ forall p:positive, Pmult_nat p 2 = 2 * Pmult_nat p 1.
 Proof.
-  Intros. Rewrite <- positive_to_nat_mult. Reflexivity.
+  intros. rewrite <- Pmult_nat_mult_permute. reflexivity.
 Qed.
 
-Lemma positive_to_nat_4 : (p:positive)
-    (positive_to_nat p (4))=(mult (2) (positive_to_nat p (2))).
+Lemma Pmult_nat_4_mult_2_permute :
+ forall p:positive, Pmult_nat p 4 = 2 * Pmult_nat p 2.
 Proof.
-  Intros. Rewrite <- positive_to_nat_mult. Reflexivity.
+  intros. rewrite <- Pmult_nat_mult_permute. reflexivity.
 Qed.
 
 (** Mapping of xH, xO and xI through [nat_of_P] *)
 
-Lemma convert_xH : (convert xH)=(1).
+Lemma nat_of_P_xH : nat_of_P 1 = 1.
 Proof.
-  Reflexivity.
+  reflexivity.
 Qed.
 
-Lemma convert_xO : (p:positive) (convert (xO p))=(mult (2) (convert p)).
+Lemma nat_of_P_xO : forall p:positive, nat_of_P (xO p) = 2 * nat_of_P p.
 Proof.
-  Induction p. Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2.
-  Rewrite positive_to_nat_4. Rewrite H. Simpl. Rewrite <- plus_Snm_nSm. Reflexivity.
-  Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2. Rewrite positive_to_nat_4.
-  Rewrite H. Reflexivity.
-  Reflexivity.
+  simple induction p. unfold nat_of_P in |- *. simpl in |- *. intros. rewrite Pmult_nat_2_mult_2_permute.
+  rewrite Pmult_nat_4_mult_2_permute. rewrite H. simpl in |- *. rewrite <- plus_Snm_nSm. reflexivity.
+  unfold nat_of_P in |- *. simpl in |- *. intros. rewrite Pmult_nat_2_mult_2_permute. rewrite Pmult_nat_4_mult_2_permute.
+  rewrite H. reflexivity.
+  reflexivity.
 Qed.
 
-Lemma convert_xI : (p:positive) (convert (xI p))=(S (mult (2) (convert p))).
+Lemma nat_of_P_xI : forall p:positive, nat_of_P (xI p) = S (2 * nat_of_P p).
 Proof.
-  Induction p. Unfold convert. Simpl. Intro p0. Intro. Rewrite positive_to_nat_2.
-  Rewrite positive_to_nat_4; Injection H; Intro H1; Rewrite H1; Rewrite <- plus_Snm_nSm; Reflexivity.
-  Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2. Rewrite positive_to_nat_4.
-  Injection H; Intro H1; Rewrite H1; Reflexivity.
-  Reflexivity.
+  simple induction p. unfold nat_of_P in |- *. simpl in |- *. intro p0. intro. rewrite Pmult_nat_2_mult_2_permute.
+  rewrite Pmult_nat_4_mult_2_permute; injection H; intro H1; rewrite H1;
+   rewrite <- plus_Snm_nSm; reflexivity.
+  unfold nat_of_P in |- *. simpl in |- *. intros. rewrite Pmult_nat_2_mult_2_permute. rewrite Pmult_nat_4_mult_2_permute.
+  injection H; intro H1; rewrite H1; reflexivity.
+  reflexivity.
 Qed.
 
 (**********************************************************************)
@@ -324,54 +324,61 @@ Qed.
 
 (** Composition of [P_of_succ_nat] and [nat_of_P] is successor on [nat] *)
 
-Theorem bij1 : (m:nat) (convert (anti_convert m)) = (S m).
+Theorem nat_of_P_o_P_of_succ_nat_eq_succ :
+ forall n:nat, nat_of_P (P_of_succ_nat n) = S n.
 Proof.
-Intro m; NewInduction m as [|n H]; [
-  Reflexivity
-| Simpl; Rewrite cvt_add_un; Rewrite H; Auto ].
+intro m; induction m as [| n H];
+ [ reflexivity
+ | simpl in |- *; rewrite nat_of_P_succ_morphism; rewrite H; auto ].
 Qed.
 
 (** Miscellaneous lemmas on [P_of_succ_nat] *)
 
-Lemma ZL3: (x:nat) (add_un (anti_convert (plus x x))) =  (xO (anti_convert x)).
+Lemma ZL3 :
+ forall n:nat, Psucc (P_of_succ_nat (n + n)) = xO (P_of_succ_nat n).
 Proof.
-Intro x; NewInduction x as [|n H]; [
-  Simpl; Auto with arith
-| Simpl; Rewrite  plus_sym; Simpl; Rewrite  H; Rewrite  ZL1;Auto with arith].
+intro x; induction x as [| n H];
+ [ simpl in |- *; auto with arith
+ | simpl in |- *; rewrite plus_comm; simpl in |- *; rewrite H;
+    rewrite xO_succ_permute; auto with arith ].
 Qed.
 
-Lemma ZL5: (x:nat) (anti_convert (plus (S x) (S x))) =  (xI (anti_convert x)).
+Lemma ZL5 : forall n:nat, P_of_succ_nat (S n + S n) = xI (P_of_succ_nat n).
 Proof.
-Intro x; NewInduction x as [|n H];Simpl; [
-  Auto with arith
-| Rewrite <- plus_n_Sm; Simpl; Simpl in H; Rewrite H; Auto with arith].
+intro x; induction x as [| n H]; simpl in |- *;
+ [ auto with arith
+ | rewrite <- plus_n_Sm; simpl in |- *; simpl in H; rewrite H;
+    auto with arith ].
 Qed.
 
 (** Composition of [nat_of_P] and [P_of_succ_nat] is successor on [positive] *)
 
-Theorem bij2 : (x:positive) (anti_convert (convert x)) = (add_un x).
+Theorem P_of_succ_nat_o_nat_of_P_eq_succ :
+ forall p:positive, P_of_succ_nat (nat_of_P p) = Psucc p.
 Proof.
-Intro x; NewInduction x as [p H|p H|]; [
-  Simpl; Rewrite <- H; Change (2) with (plus (1) (1));
-  Rewrite ZL2; Elim (ZL4 p); 
-  Unfold convert; Intros n H1;Rewrite H1; Rewrite ZL3; Auto with arith
-| Unfold convert ;Simpl; Change (2) with (plus (1) (1));
-  Rewrite ZL2;
-  Rewrite <- (sub_add_one
-               (anti_convert
-                 (plus (positive_to_nat p (S O)) (positive_to_nat p (S O)))));
-  Rewrite <- (sub_add_one (xI p));
-  Simpl;Rewrite <- H;Elim (ZL4 p); Unfold convert ;Intros n H1;Rewrite H1;
-  Rewrite ZL5; Simpl; Trivial with arith
-| Unfold convert; Simpl; Auto with arith ].
+intro x; induction x as [p H| p H| ];
+ [ simpl in |- *; rewrite <- H; change 2 with (1 + 1) in |- *;
+    rewrite Pmult_nat_r_plus_morphism; elim (ZL4 p); 
+    unfold nat_of_P in |- *; intros n H1; rewrite H1; 
+    rewrite ZL3; auto with arith
+ | unfold nat_of_P in |- *; simpl in |- *; change 2 with (1 + 1) in |- *;
+    rewrite Pmult_nat_r_plus_morphism;
+    rewrite <- (Ppred_succ (P_of_succ_nat (Pmult_nat p 1 + Pmult_nat p 1)));
+    rewrite <- (Ppred_succ (xI p)); simpl in |- *; 
+    rewrite <- H; elim (ZL4 p); unfold nat_of_P in |- *; 
+    intros n H1; rewrite H1; rewrite ZL5; simpl in |- *; 
+    trivial with arith
+ | unfold nat_of_P in |- *; simpl in |- *; auto with arith ].
 Qed.
 
 (** Composition of [nat_of_P], [P_of_succ_nat] and [Ppred] is identity
     on [positive] *)
 
-Theorem bij3: (x:positive)(sub_un (anti_convert (convert x))) = x.
+Theorem pred_o_P_of_succ_nat_o_nat_of_P_eq_id :
+ forall p:positive, Ppred (P_of_succ_nat (nat_of_P p)) = p.
 Proof.
-Intros x; Rewrite bij2; Rewrite sub_add_one; Trivial with arith.
+intros x; rewrite P_of_succ_nat_o_nat_of_P_eq_succ; rewrite Ppred_succ;
+ trivial with arith.
 Qed.
 
 (**********************************************************************)
@@ -380,93 +387,99 @@ Qed.
 
 (** [nat_of_P] is a morphism for subtraction on positive numbers *)
 
-Theorem true_sub_convert:
-  (x,y:positive) (compare x y EGAL) = SUPERIEUR -> 
-     (convert (true_sub x y)) = (minus (convert x) (convert y)).
+Theorem nat_of_P_minus_morphism :
+ forall p q:positive,
+   (p ?= q)%positive Eq = Gt -> nat_of_P (p - q) = nat_of_P p - nat_of_P q.
 Proof.
-Intros x y H; Apply plus_reg_l with (convert y);
-Rewrite le_plus_minus_r; [
-  Rewrite <- convert_add; Rewrite sub_add; Auto with arith
-| Apply lt_le_weak; Exact (compare_convert_SUPERIEUR x y H)].
+intros x y H; apply plus_reg_l with (nat_of_P y); rewrite le_plus_minus_r;
+ [ rewrite <- nat_of_P_plus_morphism; rewrite Pplus_minus; auto with arith
+ | apply lt_le_weak; exact (nat_of_P_gt_Gt_compare_morphism x y H) ].
 Qed.
 
 (** [nat_of_P] is injective *)
 
-Lemma convert_intro : (x,y:positive)(convert x)=(convert y) -> x=y.
+Lemma nat_of_P_inj : forall p q:positive, nat_of_P p = nat_of_P q -> p = q.
 Proof.
-Intros x y H;Rewrite <- (bij3 x);Rewrite <- (bij3 y); Rewrite H; Trivial with arith.
+intros x y H; rewrite <- (pred_o_P_of_succ_nat_o_nat_of_P_eq_id x);
+ rewrite <- (pred_o_P_of_succ_nat_o_nat_of_P_eq_id y); 
+ rewrite H; trivial with arith.
 Qed.
 
-Lemma ZL16: (p,q:positive)(lt (minus (convert p) (convert q)) (convert p)).
+Lemma ZL16 : forall p q:positive, nat_of_P p - nat_of_P q < nat_of_P p.
 Proof.
-Intros p q; Elim (ZL4 p);Elim (ZL4 q); Intros h H1 i H2; 
-Rewrite H1;Rewrite H2; Simpl;Unfold lt; Apply le_n_S; Apply le_minus.
+intros p q; elim (ZL4 p); elim (ZL4 q); intros h H1 i H2; rewrite H1;
+ rewrite H2; simpl in |- *; unfold lt in |- *; apply le_n_S; 
+ apply le_minus.
 Qed.
 
-Lemma ZL17: (p,q:positive)(lt (convert p) (convert (add p q))).
+Lemma ZL17 : forall p q:positive, nat_of_P p < nat_of_P (p + q).
 Proof.
-Intros p q; Rewrite convert_add;Unfold lt;Elim (ZL4 q); Intros k H;Rewrite H;
-Rewrite plus_sym;Simpl; Apply le_n_S; Apply le_plus_r.
+intros p q; rewrite nat_of_P_plus_morphism; unfold lt in |- *; elim (ZL4 q);
+ intros k H; rewrite H; rewrite plus_comm; simpl in |- *; 
+ apply le_n_S; apply le_plus_r.
 Qed.
 
 (** Comparison and subtraction *)
 
-Lemma compare_true_sub_right :
-  (p,q,z:positive)
-  (compare q p EGAL)=INFERIEUR->
-  (compare z p EGAL)=SUPERIEUR->
-  (compare z q EGAL)=SUPERIEUR->
-  (compare (true_sub z p) (true_sub z q) EGAL)=INFERIEUR.
+Lemma Pcompare_minus_r :
+ forall p q r:positive,
+   (q ?= p)%positive Eq = Lt ->
+   (r ?= p)%positive Eq = Gt ->
+   (r ?= q)%positive Eq = Gt -> (r - p ?= r - q)%positive Eq = Lt.
 Proof.
-Intros; Apply convert_compare_INFERIEUR; Rewrite true_sub_convert; [
-  Rewrite true_sub_convert; [
-    Apply simpl_lt_plus_l with p:=(convert q); Rewrite le_plus_minus_r; [
-      Rewrite plus_sym; Apply simpl_lt_plus_l with p:=(convert p);
-        Rewrite plus_assoc_l; Rewrite le_plus_minus_r; [
-          Rewrite (plus_sym (convert p)); Apply lt_reg_l;
-          Apply compare_convert_INFERIEUR; Assumption 
-        | Apply lt_le_weak; Apply compare_convert_INFERIEUR;
-          Apply ZC1; Assumption ]
-      | Apply lt_le_weak;Apply compare_convert_INFERIEUR;
-        Apply ZC1; Assumption ]
-    | Assumption ]
-  | Assumption ].
+intros; apply nat_of_P_lt_Lt_compare_complement_morphism;
+ rewrite nat_of_P_minus_morphism;
+ [ rewrite nat_of_P_minus_morphism;
+    [ apply plus_lt_reg_l with (p := nat_of_P q); rewrite le_plus_minus_r;
+       [ rewrite plus_comm; apply plus_lt_reg_l with (p := nat_of_P p);
+          rewrite plus_assoc; rewrite le_plus_minus_r;
+          [ rewrite (plus_comm (nat_of_P p)); apply plus_lt_compat_l;
+             apply nat_of_P_lt_Lt_compare_morphism; 
+             assumption
+          | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+             apply ZC1; assumption ]
+       | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism; apply ZC1;
+          assumption ]
+    | assumption ]
+ | assumption ].
 Qed.
 
-Lemma compare_true_sub_left :
-  (p,q,z:positive)
-  (compare q p EGAL)=INFERIEUR->
-  (compare p z EGAL)=SUPERIEUR->
-  (compare q z EGAL)=SUPERIEUR->
-  (compare (true_sub q z) (true_sub p z) EGAL)=INFERIEUR.
+Lemma Pcompare_minus_l :
+ forall p q r:positive,
+   (q ?= p)%positive Eq = Lt ->
+   (p ?= r)%positive Eq = Gt ->
+   (q ?= r)%positive Eq = Gt -> (q - r ?= p - r)%positive Eq = Lt.
 Proof.
-Intros p q z; Intros; 
-  Apply convert_compare_INFERIEUR; Rewrite true_sub_convert; [
-  Rewrite true_sub_convert; [
-    Unfold gt; Apply simpl_lt_plus_l with p:=(convert z);
-    Rewrite le_plus_minus_r; [
-      Rewrite le_plus_minus_r; [
-        Apply compare_convert_INFERIEUR;Assumption
-      | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Apply ZC1;Assumption]
-    | Apply lt_le_weak; Apply compare_convert_INFERIEUR;Apply ZC1; Assumption]
-  | Assumption]
-| Assumption].
+intros p q z; intros; apply nat_of_P_lt_Lt_compare_complement_morphism;
+ rewrite nat_of_P_minus_morphism;
+ [ rewrite nat_of_P_minus_morphism;
+    [ unfold gt in |- *; apply plus_lt_reg_l with (p := nat_of_P z);
+       rewrite le_plus_minus_r;
+       [ rewrite le_plus_minus_r;
+          [ apply nat_of_P_lt_Lt_compare_morphism; assumption
+          | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism;
+             apply ZC1; assumption ]
+       | apply lt_le_weak; apply nat_of_P_lt_Lt_compare_morphism; apply ZC1;
+          assumption ]
+    | assumption ]
+ | assumption ].
 Qed.
 
 (** Distributivity of multiplication over subtraction *)
 
-Theorem times_true_sub_distr:
-  (x,y,z:positive) (compare y z EGAL) = SUPERIEUR -> 
-      (times x (true_sub y z)) = (true_sub (times x y) (times x z)).
+Theorem Pmult_minus_distr_l :
+ forall p q r:positive,
+   (q ?= r)%positive Eq = Gt ->
+   (p * (q - r))%positive = (p * q - p * r)%positive.
 Proof.
-Intros x y z H; Apply convert_intro;
-Rewrite times_convert; Rewrite true_sub_convert; [
-  Rewrite true_sub_convert; [
-    Do 2 Rewrite times_convert;
-    Do 3 Rewrite (mult_sym (convert x));Apply mult_minus_distr
-  | Apply convert_compare_SUPERIEUR; Do 2 Rewrite times_convert; 
-    Unfold gt; Elim (ZL4 x);Intros h H1;Rewrite H1; Apply lt_mult_left;
-    Exact (compare_convert_SUPERIEUR y z H) ]
-| Assumption ].
+intros x y z H; apply nat_of_P_inj; rewrite nat_of_P_mult_morphism;
+ rewrite nat_of_P_minus_morphism;
+ [ rewrite nat_of_P_minus_morphism;
+    [ do 2 rewrite nat_of_P_mult_morphism;
+       do 3 rewrite (mult_comm (nat_of_P x)); apply mult_minus_distr_r
+    | apply nat_of_P_gt_Gt_compare_complement_morphism;
+       do 2 rewrite nat_of_P_mult_morphism; unfold gt in |- *; 
+       elim (ZL4 x); intros h H1; rewrite H1; apply mult_S_lt_compat_l;
+       exact (nat_of_P_gt_Gt_compare_morphism y z H) ]
+ | assumption ].
 Qed.
-

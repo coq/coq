@@ -7,548 +7,600 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-Require Bool.
-Require Sumbool.
-Require Arith.
-Require ZArith.
-Require Addr.
-Require Adist.
-Require Addec.
-Require Map.
-Require Fset.
-Require Mapaxioms.
-Require Mapiter.
+Require Import Bool.
+Require Import Sumbool.
+Require Import Arith.
+Require Import ZArith.
+Require Import Addr.
+Require Import Adist.
+Require Import Addec.
+Require Import Map.
+Require Import Fset.
+Require Import Mapaxioms.
+Require Import Mapiter.
 
 Section MapSubsetDef.
 
-  Variable A, B : Set.
+  Variables A B : Set.
 
-  Definition MapSubset := [m:(Map A)] [m':(Map B)]
-      (a:ad) (in_dom A a m)=true -> (in_dom B a m')=true.
+  Definition MapSubset (m:Map A) (m':Map B) :=
+    forall a:ad, in_dom A a m = true -> in_dom B a m' = true.
 
-  Definition MapSubset_1 := [m:(Map A)] [m':(Map B)]
-      Cases (MapSweep A [a:ad][_:A] (negb (in_dom B a m')) m) of
-          NONE => true
-	| _ => false
-      end.
+  Definition MapSubset_1 (m:Map A) (m':Map B) :=
+    match MapSweep A (fun (a:ad) (_:A) => negb (in_dom B a m')) m with
+    | NONE => true
+    | _ => false
+    end.
 
-  Definition MapSubset_2 := [m:(Map A)] [m':(Map B)] 
-      (eqmap A (MapDomRestrBy A B m m') (M0 A)).
+  Definition MapSubset_2 (m:Map A) (m':Map B) :=
+    eqmap A (MapDomRestrBy A B m m') (M0 A).
 
-  Lemma MapSubset_imp_1 : (m:(Map A)) (m':(Map B))
-      (MapSubset m m') -> (MapSubset_1 m m')=true.
+  Lemma MapSubset_imp_1 :
+   forall (m:Map A) (m':Map B), MapSubset m m' -> MapSubset_1 m m' = true.
   Proof.
-    Unfold MapSubset MapSubset_1. Intros.
-    Elim (option_sum ? (MapSweep A [a:ad][_:A](negb (in_dom B a m')) m)).
-    Intro H0. Elim H0. Intro r. Elim r. Intros a y H1. Cut (negb (in_dom B a m'))=true.
-    Intro. Cut (in_dom A a m)=false. Intro. Unfold in_dom in H3.
-    Rewrite (MapSweep_semantics_2 ? ? m a y H1) in H3. Discriminate H3.
-    Elim (sumbool_of_bool (in_dom A a m)). Intro H3. Rewrite (H a H3) in H2. Discriminate H2.
-    Trivial.
-    Exact (MapSweep_semantics_1 ? ? m a y H1).
-    Intro H0. Rewrite H0. Reflexivity.
+    unfold MapSubset, MapSubset_1 in |- *. intros.
+    elim
+     (option_sum _ (MapSweep A (fun (a:ad) (_:A) => negb (in_dom B a m')) m)).
+    intro H0. elim H0. intro r. elim r. intros a y H1. cut (negb (in_dom B a m') = true).
+    intro. cut (in_dom A a m = false). intro. unfold in_dom in H3.
+    rewrite (MapSweep_semantics_2 _ _ m a y H1) in H3. discriminate H3.
+    elim (sumbool_of_bool (in_dom A a m)). intro H3. rewrite (H a H3) in H2. discriminate H2.
+    trivial.
+    exact (MapSweep_semantics_1 _ _ m a y H1).
+    intro H0. rewrite H0. reflexivity.
   Qed.
 
-  Lemma MapSubset_1_imp : (m:(Map A)) (m':(Map B))
-      (MapSubset_1 m m')=true -> (MapSubset m m').
+  Lemma MapSubset_1_imp :
+   forall (m:Map A) (m':Map B), MapSubset_1 m m' = true -> MapSubset m m'.
   Proof.
-    Unfold MapSubset MapSubset_1. Unfold 2 in_dom. Intros. Elim (option_sum ? (MapGet A m a)).
-    Intro H1. Elim H1. Intros y H2.
-    Elim (option_sum ? (MapSweep A [a:ad][_:A](negb (in_dom B a m')) m)). Intro H3.
-    Elim H3. Intro r. Elim r. Intros a' y' H4. Rewrite H4 in H. Discriminate H.
-    Intro H3. Cut (negb (in_dom B a m'))=false. Intro. Rewrite (negb_intro (in_dom B a m')).
-    Rewrite H4. Reflexivity.
-    Exact (MapSweep_semantics_3 ? ? m H3 a y H2).
-    Intro H1. Rewrite H1 in H0. Discriminate H0.
+    unfold MapSubset, MapSubset_1 in |- *. unfold in_dom at 2 in |- *. intros. elim (option_sum _ (MapGet A m a)).
+    intro H1. elim H1. intros y H2.
+    elim
+     (option_sum _ (MapSweep A (fun (a:ad) (_:A) => negb (in_dom B a m')) m)). intro H3.
+    elim H3. intro r. elim r. intros a' y' H4. rewrite H4 in H. discriminate H.
+    intro H3. cut (negb (in_dom B a m') = false). intro. rewrite (negb_intro (in_dom B a m')).
+    rewrite H4. reflexivity.
+    exact (MapSweep_semantics_3 _ _ m H3 a y H2).
+    intro H1. rewrite H1 in H0. discriminate H0.
   Qed.
 
-  Lemma map_dom_empty_1 : 
-      (m:(Map A)) (eqmap A m (M0 A)) -> (a:ad) (in_dom ? a m)=false.
+  Lemma map_dom_empty_1 :
+   forall m:Map A, eqmap A m (M0 A) -> forall a:ad, in_dom _ a m = false.
   Proof.
-    Unfold eqmap eqm in_dom. Intros. Rewrite (H a). Reflexivity.
+    unfold eqmap, eqm, in_dom in |- *. intros. rewrite (H a). reflexivity.
   Qed.
 
-  Lemma map_dom_empty_2 : 
-      (m:(Map A)) ((a:ad) (in_dom ? a m)=false) -> (eqmap A m (M0 A)).
+  Lemma map_dom_empty_2 :
+   forall m:Map A, (forall a:ad, in_dom _ a m = false) -> eqmap A m (M0 A).
   Proof.
-    Unfold eqmap eqm in_dom. Intros.
-    Cut (Cases (MapGet A m a) of NONE => false | (SOME _) => true end)=false.
-    Case (MapGet A m a). Trivial.
-    Intros. Discriminate H0.
-    Exact (H a).
+    unfold eqmap, eqm, in_dom in |- *. intros.
+    cut
+     (match MapGet A m a with
+      | NONE => false
+      | SOME _ => true
+      end = false).
+    case (MapGet A m a). trivial.
+    intros. discriminate H0.
+    exact (H a).
   Qed.
 
-  Lemma MapSubset_imp_2 : 
-      (m:(Map A)) (m':(Map B)) (MapSubset m m') -> (MapSubset_2 m m').
+  Lemma MapSubset_imp_2 :
+   forall (m:Map A) (m':Map B), MapSubset m m' -> MapSubset_2 m m'.
   Proof.
-    Unfold MapSubset MapSubset_2. Intros. Apply map_dom_empty_2. Intro. Rewrite in_dom_restrby.
-    Elim (sumbool_of_bool (in_dom A a m)). Intro H0. Rewrite H0. Rewrite (H a H0). Reflexivity.
-    Intro H0. Rewrite H0. Reflexivity.
+    unfold MapSubset, MapSubset_2 in |- *. intros. apply map_dom_empty_2. intro. rewrite in_dom_restrby.
+    elim (sumbool_of_bool (in_dom A a m)). intro H0. rewrite H0. rewrite (H a H0). reflexivity.
+    intro H0. rewrite H0. reflexivity.
   Qed.
 
-  Lemma MapSubset_2_imp : 
-      (m:(Map A)) (m':(Map B)) (MapSubset_2 m m') -> (MapSubset m m').
+  Lemma MapSubset_2_imp :
+   forall (m:Map A) (m':Map B), MapSubset_2 m m' -> MapSubset m m'.
   Proof.
-    Unfold MapSubset MapSubset_2. Intros. Cut (in_dom ? a (MapDomRestrBy A B m m'))=false.
-    Rewrite in_dom_restrby. Intro. Elim (andb_false_elim ? ? H1). Rewrite H0.
-    Intro H2. Discriminate H2.
-    Intro H2. Rewrite (negb_intro (in_dom B a m')). Rewrite H2. Reflexivity.
-    Exact (map_dom_empty_1 ? H a).
+    unfold MapSubset, MapSubset_2 in |- *. intros. cut (in_dom _ a (MapDomRestrBy A B m m') = false).
+    rewrite in_dom_restrby. intro. elim (andb_false_elim _ _ H1). rewrite H0.
+    intro H2. discriminate H2.
+    intro H2. rewrite (negb_intro (in_dom B a m')). rewrite H2. reflexivity.
+    exact (map_dom_empty_1 _ H a).
   Qed.
 
 End MapSubsetDef.
 
 Section MapSubsetOrder.
 
-  Variable A, B, C : Set.
+  Variables A B C : Set.
 
-  Lemma MapSubset_refl : (m:(Map A)) (MapSubset A A m m).
+  Lemma MapSubset_refl : forall m:Map A, MapSubset A A m m.
   Proof.
-      Unfold MapSubset. Trivial.
+      unfold MapSubset in |- *. trivial.
   Qed.
 
-  Lemma MapSubset_antisym : (m:(Map A)) (m':(Map B))
-      (MapSubset A B m m') -> (MapSubset B A m' m) -> 
-        (eqmap unit (MapDom A m) (MapDom B m')).
+  Lemma MapSubset_antisym :
+   forall (m:Map A) (m':Map B),
+     MapSubset A B m m' ->
+     MapSubset B A m' m -> eqmap unit (MapDom A m) (MapDom B m').
   Proof.
-    Unfold MapSubset eqmap eqm. Intros. Elim (option_sum ? (MapGet ? (MapDom A m) a)).
-    Intro H1. Elim H1. Intro t. Elim t. Intro H2. Elim (option_sum ? (MapGet ? (MapDom B m') a)).
-    Intro H3. Elim H3. Intro t'. Elim t'. Intro H4. Rewrite H4. Exact H2. 
-    Intro H3. Cut (in_dom B a m')=true. Intro. Rewrite (MapDom_Dom B m' a) in H4.
-    Unfold in_FSet in_dom in H4. Rewrite H3 in H4. Discriminate H4.
-    Apply H. Rewrite (MapDom_Dom A m a). Unfold in_FSet in_dom. Rewrite H2. Reflexivity.
-    Intro H1. Elim (option_sum ? (MapGet ? (MapDom B m') a)). Intro H2. Elim H2. Intros t H3.
-    Cut (in_dom A a m)=true. Intro. Rewrite (MapDom_Dom A m a) in H4. Unfold in_FSet in_dom in H4.
-    Rewrite H1 in H4. Discriminate H4.
-    Apply H0. Rewrite (MapDom_Dom B m' a). Unfold in_FSet in_dom. Rewrite H3. Reflexivity.
-    Intro H2. Rewrite H2. Exact H1.
+    unfold MapSubset, eqmap, eqm in |- *. intros. elim (option_sum _ (MapGet _ (MapDom A m) a)).
+    intro H1. elim H1. intro t. elim t. intro H2. elim (option_sum _ (MapGet _ (MapDom B m') a)).
+    intro H3. elim H3. intro t'. elim t'. intro H4. rewrite H4. exact H2. 
+    intro H3. cut (in_dom B a m' = true). intro. rewrite (MapDom_Dom B m' a) in H4.
+    unfold in_FSet, in_dom in H4. rewrite H3 in H4. discriminate H4.
+    apply H. rewrite (MapDom_Dom A m a). unfold in_FSet, in_dom in |- *. rewrite H2. reflexivity.
+    intro H1. elim (option_sum _ (MapGet _ (MapDom B m') a)). intro H2. elim H2. intros t H3.
+    cut (in_dom A a m = true). intro. rewrite (MapDom_Dom A m a) in H4. unfold in_FSet, in_dom in H4.
+    rewrite H1 in H4. discriminate H4.
+    apply H0. rewrite (MapDom_Dom B m' a). unfold in_FSet, in_dom in |- *. rewrite H3. reflexivity.
+    intro H2. rewrite H2. exact H1.
   Qed.
 
-  Lemma MapSubset_trans : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (MapSubset A B m m') -> (MapSubset B C m' m'') -> (MapSubset A C m m'').
+  Lemma MapSubset_trans :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     MapSubset A B m m' -> MapSubset B C m' m'' -> MapSubset A C m m''.
   Proof.
-    Unfold MapSubset. Intros. Apply H0. Apply H. Assumption.
+    unfold MapSubset in |- *. intros. apply H0. apply H. assumption.
   Qed.
 
 End MapSubsetOrder.
 
 Section FSubsetOrder.
 
-  Lemma FSubset_refl : (s:FSet) (MapSubset ? ? s s).
+  Lemma FSubset_refl : forall s:FSet, MapSubset _ _ s s.
   Proof.
-    Exact (MapSubset_refl unit).
+    exact (MapSubset_refl unit).
   Qed.
 
-  Lemma FSubset_antisym : (s,s':FSet)
-      (MapSubset ? ? s s') -> (MapSubset ? ? s' s) -> (eqmap unit s s').
+  Lemma FSubset_antisym :
+   forall s s':FSet,
+     MapSubset _ _ s s' -> MapSubset _ _ s' s -> eqmap unit s s'.
   Proof.
-    Intros. Rewrite <- (FSet_Dom s). Rewrite <- (FSet_Dom s').
-    Exact (MapSubset_antisym ? ? s s' H H0).
+    intros. rewrite <- (FSet_Dom s). rewrite <- (FSet_Dom s').
+    exact (MapSubset_antisym _ _ s s' H H0).
   Qed.
 
-  Lemma FSubset_trans : (s,s',s'':FSet)
-      (MapSubset ? ? s s') -> (MapSubset ? ? s' s'') -> (MapSubset ? ? s s'').
+  Lemma FSubset_trans :
+   forall s s' s'':FSet,
+     MapSubset _ _ s s' -> MapSubset _ _ s' s'' -> MapSubset _ _ s s''.
   Proof.
-    Exact (MapSubset_trans unit unit unit).
+    exact (MapSubset_trans unit unit unit).
   Qed.
 
 End FSubsetOrder.
 
 Section MapSubsetExtra.
 
-  Variable A, B : Set.
+  Variables A B : Set.
 
-  Lemma MapSubset_Dom_1 : (m:(Map A)) (m':(Map B))
-      (MapSubset A B m m') -> (MapSubset unit unit (MapDom A m) (MapDom B m')).
+  Lemma MapSubset_Dom_1 :
+   forall (m:Map A) (m':Map B),
+     MapSubset A B m m' -> MapSubset unit unit (MapDom A m) (MapDom B m').
   Proof.
-    Unfold MapSubset. Intros. Elim (MapDom_semantics_2 ? m a H0). Intros y H1.
-    Cut (in_dom A a m)=true->(in_dom B a m')=true. Intro. Unfold in_dom in H2.
-    Rewrite H1 in H2. Elim (option_sum ? (MapGet B m' a)). Intro H3. Elim H3.
-    Intros y' H4. Exact (MapDom_semantics_1 ? m' a y' H4).
-    Intro H3. Rewrite H3 in H2. Cut false=true. Intro. Discriminate H4.
-    Apply H2. Reflexivity.
-    Exact (H a).
+    unfold MapSubset in |- *. intros. elim (MapDom_semantics_2 _ m a H0). intros y H1.
+    cut (in_dom A a m = true -> in_dom B a m' = true). intro. unfold in_dom in H2.
+    rewrite H1 in H2. elim (option_sum _ (MapGet B m' a)). intro H3. elim H3.
+    intros y' H4. exact (MapDom_semantics_1 _ m' a y' H4).
+    intro H3. rewrite H3 in H2. cut (false = true). intro. discriminate H4.
+    apply H2. reflexivity.
+    exact (H a).
   Qed.
 
-  Lemma MapSubset_Dom_2 : (m:(Map A)) (m':(Map B))
-      (MapSubset unit unit (MapDom A m) (MapDom B m')) -> (MapSubset A B m m').
+  Lemma MapSubset_Dom_2 :
+   forall (m:Map A) (m':Map B),
+     MapSubset unit unit (MapDom A m) (MapDom B m') -> MapSubset A B m m'.
   Proof.
-    Unfold MapSubset. Intros. Unfold in_dom in H0. Elim (option_sum ? (MapGet A m a)).
-    Intro H1. Elim H1. Intros y H2.
-    Elim (MapDom_semantics_2 ? ? ? (H a (MapDom_semantics_1 ? ? ? ? H2))). Intros y' H3.
-    Unfold in_dom. Rewrite H3. Reflexivity.
-    Intro H1. Rewrite H1 in H0. Discriminate H0.
+    unfold MapSubset in |- *. intros. unfold in_dom in H0. elim (option_sum _ (MapGet A m a)).
+    intro H1. elim H1. intros y H2.
+    elim (MapDom_semantics_2 _ _ _ (H a (MapDom_semantics_1 _ _ _ _ H2))). intros y' H3.
+    unfold in_dom in |- *. rewrite H3. reflexivity.
+    intro H1. rewrite H1 in H0. discriminate H0.
   Qed.
 
-  Lemma MapSubset_1_Dom : (m:(Map A)) (m':(Map B))
-      (MapSubset_1 A B m m')=(MapSubset_1 unit unit (MapDom A m) (MapDom B m')).
+  Lemma MapSubset_1_Dom :
+   forall (m:Map A) (m':Map B),
+     MapSubset_1 A B m m' = MapSubset_1 unit unit (MapDom A m) (MapDom B m').
   Proof.
-    Intros. Elim (sumbool_of_bool (MapSubset_1 A B m m')). Intro H. Rewrite H.
-    Apply sym_eq. Apply MapSubset_imp_1. Apply MapSubset_Dom_1. Exact (MapSubset_1_imp ? ? ? ? H).
-    Intro H. Rewrite H. Elim (sumbool_of_bool (MapSubset_1 unit unit (MapDom A m) (MapDom B m'))).
-    Intro H0.
-    Rewrite (MapSubset_imp_1 ? ? ? ? (MapSubset_Dom_2 ? ? (MapSubset_1_imp ? ? ? ? H0))) in H.
-    Discriminate H.
-    Intro. Apply sym_eq. Assumption.
+    intros. elim (sumbool_of_bool (MapSubset_1 A B m m')). intro H. rewrite H.
+    apply sym_eq. apply MapSubset_imp_1. apply MapSubset_Dom_1. exact (MapSubset_1_imp _ _ _ _ H).
+    intro H. rewrite H. elim (sumbool_of_bool (MapSubset_1 unit unit (MapDom A m) (MapDom B m'))).
+    intro H0.
+    rewrite
+     (MapSubset_imp_1 _ _ _ _
+        (MapSubset_Dom_2 _ _ (MapSubset_1_imp _ _ _ _ H0)))
+      in H.
+    discriminate H.
+    intro. apply sym_eq. assumption.
   Qed.
 
-  Lemma MapSubset_Put : (m:(Map A)) (a:ad) (y:A) (MapSubset A A m (MapPut A m a y)).
+  Lemma MapSubset_Put :
+   forall (m:Map A) (a:ad) (y:A), MapSubset A A m (MapPut A m a y).
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_put. Rewrite H. Apply orb_b_true.
+    unfold MapSubset in |- *. intros. rewrite in_dom_put. rewrite H. apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_Put_mono : (m:(Map A)) (m':(Map B)) (a:ad) (y:A) (y':B)
-      (MapSubset A B m m') -> (MapSubset A B (MapPut A m a y) (MapPut B m' a y')).
+  Lemma MapSubset_Put_mono :
+   forall (m:Map A) (m':Map B) (a:ad) (y:A) (y':B),
+     MapSubset A B m m' -> MapSubset A B (MapPut A m a y) (MapPut B m' a y').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_put. Rewrite (in_dom_put A m a y a0) in H0.
-    Elim (orb_true_elim ? ? H0). Intro H1. Rewrite H1. Reflexivity.
-    Intro H1. Rewrite (H ? H1). Apply orb_b_true.
+    unfold MapSubset in |- *. intros. rewrite in_dom_put. rewrite (in_dom_put A m a y a0) in H0.
+    elim (orb_true_elim _ _ H0). intro H1. rewrite H1. reflexivity.
+    intro H1. rewrite (H _ H1). apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_Put_behind : 
-      (m:(Map A)) (a:ad) (y:A) (MapSubset A A m (MapPut_behind A m a y)).
+  Lemma MapSubset_Put_behind :
+   forall (m:Map A) (a:ad) (y:A), MapSubset A A m (MapPut_behind A m a y).
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_put_behind. Rewrite H. Apply orb_b_true.
+    unfold MapSubset in |- *. intros. rewrite in_dom_put_behind. rewrite H. apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_Put_behind_mono : (m:(Map A)) (m':(Map B)) (a:ad) (y:A) (y':B)
-      (MapSubset A B m m') -> 
-        (MapSubset A B (MapPut_behind A m a y) (MapPut_behind B m' a y')).
+  Lemma MapSubset_Put_behind_mono :
+   forall (m:Map A) (m':Map B) (a:ad) (y:A) (y':B),
+     MapSubset A B m m' ->
+     MapSubset A B (MapPut_behind A m a y) (MapPut_behind B m' a y').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_put_behind.
-    Rewrite (in_dom_put_behind A m a y a0) in H0.
-    Elim (orb_true_elim ? ? H0). Intro H1. Rewrite H1. Reflexivity.
-    Intro H1. Rewrite (H ? H1). Apply orb_b_true.
+    unfold MapSubset in |- *. intros. rewrite in_dom_put_behind.
+    rewrite (in_dom_put_behind A m a y a0) in H0.
+    elim (orb_true_elim _ _ H0). intro H1. rewrite H1. reflexivity.
+    intro H1. rewrite (H _ H1). apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_Remove : (m:(Map A)) (a:ad) (MapSubset A A (MapRemove A m a) m).
+  Lemma MapSubset_Remove :
+   forall (m:Map A) (a:ad), MapSubset A A (MapRemove A m a) m.
   Proof.
-    Unfold MapSubset. Intros. Unfold MapSubset. Intros. Rewrite (in_dom_remove ? m a a0) in H.
-    Elim (andb_prop ? ? H). Trivial.
+    unfold MapSubset in |- *. intros. unfold MapSubset in |- *. intros. rewrite (in_dom_remove _ m a a0) in H.
+    elim (andb_prop _ _ H). trivial.
   Qed.
 
-  Lemma MapSubset_Remove_mono : (m:(Map A)) (m':(Map B)) (a:ad)
-      (MapSubset A B m m') -> (MapSubset A B (MapRemove A m a) (MapRemove B m' a)).
+  Lemma MapSubset_Remove_mono :
+   forall (m:Map A) (m':Map B) (a:ad),
+     MapSubset A B m m' -> MapSubset A B (MapRemove A m a) (MapRemove B m' a).
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_remove. Rewrite (in_dom_remove A m a a0) in H0.
-    Elim (andb_prop ? ? H0). Intros. Rewrite H1. Rewrite (H ? H2). Reflexivity.
+    unfold MapSubset in |- *. intros. rewrite in_dom_remove. rewrite (in_dom_remove A m a a0) in H0.
+    elim (andb_prop _ _ H0). intros. rewrite H1. rewrite (H _ H2). reflexivity.
   Qed.
 
-  Lemma MapSubset_Merge_l : (m,m':(Map A)) (MapSubset A A m (MapMerge A m m')).
+  Lemma MapSubset_Merge_l :
+   forall m m':Map A, MapSubset A A m (MapMerge A m m').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_merge. Rewrite H. Reflexivity.
+    unfold MapSubset in |- *. intros. rewrite in_dom_merge. rewrite H. reflexivity.
   Qed.
 
-  Lemma MapSubset_Merge_r : (m,m':(Map A)) (MapSubset A A m' (MapMerge A m m')).
+  Lemma MapSubset_Merge_r :
+   forall m m':Map A, MapSubset A A m' (MapMerge A m m').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_merge. Rewrite H. Apply orb_b_true.
+    unfold MapSubset in |- *. intros. rewrite in_dom_merge. rewrite H. apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_Merge_mono : (m,m':(Map A)) (m'',m''':(Map B))
-      (MapSubset A B m m'') -> (MapSubset A B m' m''') ->
-      	(MapSubset A B (MapMerge A m m') (MapMerge B m'' m''')).
+  Lemma MapSubset_Merge_mono :
+   forall (m m':Map A) (m'' m''':Map B),
+     MapSubset A B m m'' ->
+     MapSubset A B m' m''' ->
+     MapSubset A B (MapMerge A m m') (MapMerge B m'' m''').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_merge. Rewrite (in_dom_merge A m m' a) in H1.
-    Elim (orb_true_elim ? ? H1). Intro H2. Rewrite (H ? H2). Reflexivity.
-    Intro H2. Rewrite (H0 ? H2). Apply orb_b_true.
+    unfold MapSubset in |- *. intros. rewrite in_dom_merge. rewrite (in_dom_merge A m m' a) in H1.
+    elim (orb_true_elim _ _ H1). intro H2. rewrite (H _ H2). reflexivity.
+    intro H2. rewrite (H0 _ H2). apply orb_b_true.
   Qed.
 
-  Lemma MapSubset_DomRestrTo_l : (m:(Map A)) (m':(Map B))
-      (MapSubset A A (MapDomRestrTo A B m m') m).
+  Lemma MapSubset_DomRestrTo_l :
+   forall (m:Map A) (m':Map B), MapSubset A A (MapDomRestrTo A B m m') m.
   Proof.
-    Unfold MapSubset. Intros. Rewrite (in_dom_restrto ? ? m m' a) in H. Elim (andb_prop ? ? H).
-    Trivial.
+    unfold MapSubset in |- *. intros. rewrite (in_dom_restrto _ _ m m' a) in H. elim (andb_prop _ _ H).
+    trivial.
   Qed.
 
-  Lemma MapSubset_DomRestrTo_r: (m:(Map A)) (m':(Map B))
-      (MapSubset A B (MapDomRestrTo A B m m') m').
+  Lemma MapSubset_DomRestrTo_r :
+   forall (m:Map A) (m':Map B), MapSubset A B (MapDomRestrTo A B m m') m'.
   Proof.
-    Unfold MapSubset. Intros. Rewrite (in_dom_restrto ? ? m m' a) in H. Elim (andb_prop ? ? H).
-    Trivial.
+    unfold MapSubset in |- *. intros. rewrite (in_dom_restrto _ _ m m' a) in H. elim (andb_prop _ _ H).
+    trivial.
   Qed.
 
-  Lemma MapSubset_ext : (m0,m1:(Map A)) (m2,m3:(Map B))
-      (eqmap A m0 m1) -> (eqmap B m2 m3) ->
-        (MapSubset A B m0 m2) -> (MapSubset A B m1 m3).
+  Lemma MapSubset_ext :
+   forall (m0 m1:Map A) (m2 m3:Map B),
+     eqmap A m0 m1 ->
+     eqmap B m2 m3 -> MapSubset A B m0 m2 -> MapSubset A B m1 m3.
   Proof.
-    Intros. Apply MapSubset_2_imp. Unfold MapSubset_2.
-    Apply eqmap_trans with m':=(MapDomRestrBy A B m0 m2). Apply MapDomRestrBy_ext. Apply eqmap_sym.
-    Assumption.
-    Apply eqmap_sym. Assumption.
-    Exact (MapSubset_imp_2 ? ? ? ? H1).
+    intros. apply MapSubset_2_imp. unfold MapSubset_2 in |- *.
+    apply eqmap_trans with (m' := MapDomRestrBy A B m0 m2). apply MapDomRestrBy_ext. apply eqmap_sym.
+    assumption.
+    apply eqmap_sym. assumption.
+    exact (MapSubset_imp_2 _ _ _ _ H1).
   Qed.
 
-  Variable C, D : Set.
+  Variables C D : Set.
 
-  Lemma MapSubset_DomRestrTo_mono : 
-      (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
-        (MapSubset ? ? m m'') -> (MapSubset ? ?  m' m''') ->
-      	  (MapSubset ? ? (MapDomRestrTo ? ? m m') (MapDomRestrTo ? ? m'' m''')).
+  Lemma MapSubset_DomRestrTo_mono :
+   forall (m:Map A) (m':Map B) (m'':Map C) (m''':Map D),
+     MapSubset _ _ m m'' ->
+     MapSubset _ _ m' m''' ->
+     MapSubset _ _ (MapDomRestrTo _ _ m m') (MapDomRestrTo _ _ m'' m''').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_restrto. Rewrite (in_dom_restrto A B m m' a) in H1.
-    Elim (andb_prop ? ? H1). Intros. Rewrite (H ? H2). Rewrite (H0 ? H3). Reflexivity.
+    unfold MapSubset in |- *. intros. rewrite in_dom_restrto. rewrite (in_dom_restrto A B m m' a) in H1.
+    elim (andb_prop _ _ H1). intros. rewrite (H _ H2). rewrite (H0 _ H3). reflexivity.
   Qed.
 
-  Lemma MapSubset_DomRestrBy_l : (m:(Map A)) (m':(Map B))
-      (MapSubset A A (MapDomRestrBy A B m m') m).
+  Lemma MapSubset_DomRestrBy_l :
+   forall (m:Map A) (m':Map B), MapSubset A A (MapDomRestrBy A B m m') m.
   Proof.
-    Unfold MapSubset. Intros. Rewrite (in_dom_restrby ? ? m m' a) in H. Elim (andb_prop ? ? H).
-    Trivial.
+    unfold MapSubset in |- *. intros. rewrite (in_dom_restrby _ _ m m' a) in H. elim (andb_prop _ _ H).
+    trivial.
   Qed.
 
-  Lemma MapSubset_DomRestrBy_mono : 
-      (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
-        (MapSubset ? ? m m'') -> (MapSubset ? ?  m''' m') ->
-      	  (MapSubset ? ? (MapDomRestrBy ? ? m m') (MapDomRestrBy ? ? m'' m''')).
+  Lemma MapSubset_DomRestrBy_mono :
+   forall (m:Map A) (m':Map B) (m'':Map C) (m''':Map D),
+     MapSubset _ _ m m'' ->
+     MapSubset _ _ m''' m' ->
+     MapSubset _ _ (MapDomRestrBy _ _ m m') (MapDomRestrBy _ _ m'' m''').
   Proof.
-    Unfold MapSubset. Intros. Rewrite in_dom_restrby. Rewrite (in_dom_restrby A B m m' a) in H1.
-    Elim (andb_prop ? ? H1). Intros. Rewrite (H ? H2). Elim (sumbool_of_bool (in_dom D a m''')).
-    Intro H4. Rewrite (H0 ? H4) in H3. Discriminate H3.
-    Intro H4. Rewrite H4. Reflexivity.
+    unfold MapSubset in |- *. intros. rewrite in_dom_restrby. rewrite (in_dom_restrby A B m m' a) in H1.
+    elim (andb_prop _ _ H1). intros. rewrite (H _ H2). elim (sumbool_of_bool (in_dom D a m''')).
+    intro H4. rewrite (H0 _ H4) in H3. discriminate H3.
+    intro H4. rewrite H4. reflexivity.
   Qed.
   
 End MapSubsetExtra.
 
 Section MapDisjointDef.
 
-  Variable A, B : Set.
+  Variables A B : Set.
 
-  Definition MapDisjoint := [m:(Map A)] [m':(Map B)]
-      (a:ad) (in_dom A a m)=true -> (in_dom B a m')=true -> False.
+  Definition MapDisjoint (m:Map A) (m':Map B) :=
+    forall a:ad, in_dom A a m = true -> in_dom B a m' = true -> False.
 
-  Definition MapDisjoint_1 := [m:(Map A)] [m':(Map B)]
-      Cases (MapSweep A [a:ad][_:A] (in_dom B a m') m) of
-          NONE => true
-	| _ => false
-      end.
+  Definition MapDisjoint_1 (m:Map A) (m':Map B) :=
+    match MapSweep A (fun (a:ad) (_:A) => in_dom B a m') m with
+    | NONE => true
+    | _ => false
+    end.
 
-  Definition MapDisjoint_2 := [m:(Map A)] [m':(Map B)] 
-      (eqmap A (MapDomRestrTo A B m m') (M0 A)).
+  Definition MapDisjoint_2 (m:Map A) (m':Map B) :=
+    eqmap A (MapDomRestrTo A B m m') (M0 A).
 
-  Lemma MapDisjoint_imp_1 : (m:(Map A)) (m':(Map B))
-      (MapDisjoint m m') -> (MapDisjoint_1 m m')=true.
+  Lemma MapDisjoint_imp_1 :
+   forall (m:Map A) (m':Map B), MapDisjoint m m' -> MapDisjoint_1 m m' = true.
   Proof.
-    Unfold MapDisjoint MapDisjoint_1. Intros.
-    Elim (option_sum ? (MapSweep A [a:ad][_:A](in_dom B a m') m)). Intro H0. Elim H0.
-    Intro r. Elim r. Intros a y H1. Cut (in_dom A a m)=true->(in_dom B a m')=true->False.
-    Intro. Unfold 1 in_dom in H2. Rewrite (MapSweep_semantics_2 ? ? ? ? ? H1) in H2.
-    Rewrite (MapSweep_semantics_1 ? ? ? ? ? H1) in H2. Elim (H2 (refl_equal ? ?) (refl_equal ? ?)).
-    Exact (H a).
-    Intro H0. Rewrite H0. Reflexivity.
+    unfold MapDisjoint, MapDisjoint_1 in |- *. intros.
+    elim (option_sum _ (MapSweep A (fun (a:ad) (_:A) => in_dom B a m') m)). intro H0. elim H0.
+    intro r. elim r. intros a y H1. cut (in_dom A a m = true -> in_dom B a m' = true -> False).
+    intro. unfold in_dom at 1 in H2. rewrite (MapSweep_semantics_2 _ _ _ _ _ H1) in H2.
+    rewrite (MapSweep_semantics_1 _ _ _ _ _ H1) in H2. elim (H2 (refl_equal _) (refl_equal _)).
+    exact (H a).
+    intro H0. rewrite H0. reflexivity.
   Qed.
 
-  Lemma MapDisjoint_1_imp : (m:(Map A)) (m':(Map B))
-      (MapDisjoint_1 m m')=true -> (MapDisjoint m m').
+  Lemma MapDisjoint_1_imp :
+   forall (m:Map A) (m':Map B), MapDisjoint_1 m m' = true -> MapDisjoint m m'.
   Proof.
-    Unfold MapDisjoint MapDisjoint_1. Intros.
-    Elim (option_sum ? (MapSweep A [a:ad][_:A](in_dom B a m') m)). Intro H2. Elim H2.
-    Intro r. Elim r. Intros a' y' H3. Rewrite H3 in H. Discriminate H.
-    Intro H2. Unfold in_dom in H0. Elim (option_sum ? (MapGet A m a)). Intro H3. Elim H3.
-    Intros y H4. Rewrite (MapSweep_semantics_3 ? ? ? H2 a y H4) in H1. Discriminate H1.
-    Intro H3. Rewrite H3 in H0. Discriminate H0.
+    unfold MapDisjoint, MapDisjoint_1 in |- *. intros.
+    elim (option_sum _ (MapSweep A (fun (a:ad) (_:A) => in_dom B a m') m)). intro H2. elim H2.
+    intro r. elim r. intros a' y' H3. rewrite H3 in H. discriminate H.
+    intro H2. unfold in_dom in H0. elim (option_sum _ (MapGet A m a)). intro H3. elim H3.
+    intros y H4. rewrite (MapSweep_semantics_3 _ _ _ H2 a y H4) in H1. discriminate H1.
+    intro H3. rewrite H3 in H0. discriminate H0.
   Qed.
 
-  Lemma MapDisjoint_imp_2 : (m:(Map A)) (m':(Map B)) (MapDisjoint m m') -> 
-      (MapDisjoint_2 m m').
+  Lemma MapDisjoint_imp_2 :
+   forall (m:Map A) (m':Map B), MapDisjoint m m' -> MapDisjoint_2 m m'.
   Proof.
-    Unfold MapDisjoint MapDisjoint_2. Unfold eqmap eqm. Intros.
-    Rewrite (MapDomRestrTo_semantics A B m m' a).
-    Cut (in_dom A a m)=true->(in_dom B a m')=true->False. Intro.
-    Elim (option_sum ? (MapGet A m a)). Intro H1. Elim H1. Intros y H2. Unfold 1 in_dom in H0.
-    Elim (option_sum ? (MapGet B m' a)). Intro H3. Elim H3. Intros y' H4. Unfold 1 in_dom in H0.
-    Rewrite H4 in H0. Rewrite H2 in H0. Elim (H0 (refl_equal ? ?) (refl_equal ? ?)).
-    Intro H3. Rewrite H3. Reflexivity.
-    Intro H1. Rewrite H1. Case (MapGet B m' a); Reflexivity.
-    Exact (H a).
+    unfold MapDisjoint, MapDisjoint_2 in |- *. unfold eqmap, eqm in |- *. intros.
+    rewrite (MapDomRestrTo_semantics A B m m' a).
+    cut (in_dom A a m = true -> in_dom B a m' = true -> False). intro.
+    elim (option_sum _ (MapGet A m a)). intro H1. elim H1. intros y H2. unfold in_dom at 1 in H0.
+    elim (option_sum _ (MapGet B m' a)). intro H3. elim H3. intros y' H4. unfold in_dom at 1 in H0.
+    rewrite H4 in H0. rewrite H2 in H0. elim (H0 (refl_equal _) (refl_equal _)).
+    intro H3. rewrite H3. reflexivity.
+    intro H1. rewrite H1. case (MapGet B m' a); reflexivity.
+    exact (H a).
   Qed.
 
-  Lemma MapDisjoint_2_imp : (m:(Map A)) (m':(Map B)) (MapDisjoint_2 m m') -> 
-      (MapDisjoint m m').
+  Lemma MapDisjoint_2_imp :
+   forall (m:Map A) (m':Map B), MapDisjoint_2 m m' -> MapDisjoint m m'.
   Proof.
-    Unfold MapDisjoint MapDisjoint_2. Unfold eqmap eqm. Intros. Elim (in_dom_some ? ? ? H0).
-    Intros y H2. Elim (in_dom_some ? ? ? H1). Intros y' H3.
-    Cut (MapGet A (MapDomRestrTo A B m m') a)=(NONE A). Intro.
-    Rewrite (MapDomRestrTo_semantics ? ? m m' a) in H4. Rewrite H3 in H4. Rewrite H2 in H4.
-    Discriminate H4.
-    Exact (H a).
+    unfold MapDisjoint, MapDisjoint_2 in |- *. unfold eqmap, eqm in |- *. intros. elim (in_dom_some _ _ _ H0).
+    intros y H2. elim (in_dom_some _ _ _ H1). intros y' H3.
+    cut (MapGet A (MapDomRestrTo A B m m') a = NONE A). intro.
+    rewrite (MapDomRestrTo_semantics _ _ m m' a) in H4. rewrite H3 in H4. rewrite H2 in H4.
+    discriminate H4.
+    exact (H a).
   Qed.
 
-  Lemma Map_M0_disjoint : (m:(Map B)) (MapDisjoint (M0 A) m).
+  Lemma Map_M0_disjoint : forall m:Map B, MapDisjoint (M0 A) m.
   Proof.
-    Unfold MapDisjoint in_dom. Intros. Discriminate H.
+    unfold MapDisjoint, in_dom in |- *. intros. discriminate H.
   Qed.
 
-  Lemma Map_disjoint_M0 : (m:(Map A)) (MapDisjoint m (M0 B)).
+  Lemma Map_disjoint_M0 : forall m:Map A, MapDisjoint m (M0 B).
   Proof.
-    Unfold MapDisjoint in_dom. Intros. Discriminate H0.
+    unfold MapDisjoint, in_dom in |- *. intros. discriminate H0.
   Qed.
 
 End MapDisjointDef.
 
 Section MapDisjointExtra.
 
-  Variable A, B : Set.
+  Variables A B : Set.
 
-  Lemma MapDisjoint_ext : (m0,m1:(Map A)) (m2,m3:(Map B))
-      (eqmap A m0 m1) -> (eqmap B m2 m3) -> 
-        (MapDisjoint A B m0 m2) -> (MapDisjoint A B m1 m3).
+  Lemma MapDisjoint_ext :
+   forall (m0 m1:Map A) (m2 m3:Map B),
+     eqmap A m0 m1 ->
+     eqmap B m2 m3 -> MapDisjoint A B m0 m2 -> MapDisjoint A B m1 m3.
   Proof.
-    Intros. Apply MapDisjoint_2_imp. Unfold MapDisjoint_2.
-    Apply eqmap_trans with m':=(MapDomRestrTo A B m0 m2). Apply eqmap_sym. Apply MapDomRestrTo_ext.
-    Assumption.
-    Assumption.
-    Exact (MapDisjoint_imp_2 ? ? ? ? H1).
+    intros. apply MapDisjoint_2_imp. unfold MapDisjoint_2 in |- *.
+    apply eqmap_trans with (m' := MapDomRestrTo A B m0 m2). apply eqmap_sym. apply MapDomRestrTo_ext.
+    assumption.
+    assumption.
+    exact (MapDisjoint_imp_2 _ _ _ _ H1).
   Qed.
 
-  Lemma MapMerge_disjoint : (m,m':(Map A)) (MapDisjoint A A m m') ->
-      	(a:ad) (in_dom A a (MapMerge A m m'))=
-	       (orb (andb (in_dom A a m) (negb (in_dom A a m')))
-	            (andb (in_dom A a m') (negb (in_dom A a m)))).
+  Lemma MapMerge_disjoint :
+   forall m m':Map A,
+     MapDisjoint A A m m' ->
+     forall a:ad,
+       in_dom A a (MapMerge A m m') =
+       orb (andb (in_dom A a m) (negb (in_dom A a m')))
+         (andb (in_dom A a m') (negb (in_dom A a m))).
   Proof.
-    Unfold MapDisjoint. Intros. Rewrite in_dom_merge. Elim (sumbool_of_bool (in_dom A a m)).
-    Intro H0. Rewrite H0. Elim (sumbool_of_bool (in_dom A a m')). Intro H1. Elim (H a H0 H1).
-    Intro H1. Rewrite H1. Reflexivity.
-    Intro H0. Rewrite H0. Simpl. Rewrite andb_b_true. Reflexivity.
+    unfold MapDisjoint in |- *. intros. rewrite in_dom_merge. elim (sumbool_of_bool (in_dom A a m)).
+    intro H0. rewrite H0. elim (sumbool_of_bool (in_dom A a m')). intro H1. elim (H a H0 H1).
+    intro H1. rewrite H1. reflexivity.
+    intro H0. rewrite H0. simpl in |- *. rewrite andb_b_true. reflexivity.
   Qed.
 
-  Lemma MapDisjoint_M2_l : (m0,m1:(Map A)) (m2,m3:(Map B))
-      (MapDisjoint A B (M2 A m0 m1) (M2 B m2 m3)) -> (MapDisjoint A B m0 m2).
+  Lemma MapDisjoint_M2_l :
+   forall (m0 m1:Map A) (m2 m3:Map B),
+     MapDisjoint A B (M2 A m0 m1) (M2 B m2 m3) -> MapDisjoint A B m0 m2.
   Proof.
-    Unfold MapDisjoint in_dom. Intros. Elim (option_sum ? (MapGet A m0 a)). Intro H2.
-    Elim H2. Intros y H3. Elim (option_sum ? (MapGet B m2 a)). Intro H4. Elim H4.
-    Intros y' H5. Apply (H (ad_double a)).
-    Rewrite (MapGet_M2_bit_0_0 ? (ad_double a) (ad_double_bit_0 a) m0 m1).
-    Rewrite (ad_double_div_2 a). Rewrite H3. Reflexivity.
-    Rewrite (MapGet_M2_bit_0_0 ? (ad_double a) (ad_double_bit_0 a) m2 m3).
-    Rewrite (ad_double_div_2 a). Rewrite H5. Reflexivity.
-    Intro H4. Rewrite H4 in H1. Discriminate H1.
-    Intro H2. Rewrite H2 in H0. Discriminate H0.
+    unfold MapDisjoint, in_dom in |- *. intros. elim (option_sum _ (MapGet A m0 a)). intro H2.
+    elim H2. intros y H3. elim (option_sum _ (MapGet B m2 a)). intro H4. elim H4.
+    intros y' H5. apply (H (ad_double a)).
+    rewrite (MapGet_M2_bit_0_0 _ (ad_double a) (ad_double_bit_0 a) m0 m1).
+    rewrite (ad_double_div_2 a). rewrite H3. reflexivity.
+    rewrite (MapGet_M2_bit_0_0 _ (ad_double a) (ad_double_bit_0 a) m2 m3).
+    rewrite (ad_double_div_2 a). rewrite H5. reflexivity.
+    intro H4. rewrite H4 in H1. discriminate H1.
+    intro H2. rewrite H2 in H0. discriminate H0.
   Qed.
 
-  Lemma MapDisjoint_M2_r : (m0,m1:(Map A)) (m2,m3:(Map B))
-      (MapDisjoint A B (M2 A m0 m1) (M2 B m2 m3)) -> (MapDisjoint A B m1 m3).
+  Lemma MapDisjoint_M2_r :
+   forall (m0 m1:Map A) (m2 m3:Map B),
+     MapDisjoint A B (M2 A m0 m1) (M2 B m2 m3) -> MapDisjoint A B m1 m3.
   Proof.
-    Unfold MapDisjoint in_dom. Intros. Elim (option_sum ? (MapGet A m1 a)). Intro H2.
-    Elim H2. Intros y H3. Elim (option_sum ? (MapGet B m3 a)). Intro H4. Elim H4.
-    Intros y' H5. Apply (H (ad_double_plus_un a)).
-    Rewrite (MapGet_M2_bit_0_1 ? (ad_double_plus_un a) (ad_double_plus_un_bit_0 a) m0 m1).
-    Rewrite (ad_double_plus_un_div_2 a). Rewrite H3. Reflexivity.
-    Rewrite (MapGet_M2_bit_0_1 ? (ad_double_plus_un a) (ad_double_plus_un_bit_0 a) m2 m3).
-    Rewrite (ad_double_plus_un_div_2 a). Rewrite H5. Reflexivity.
-    Intro H4. Rewrite H4 in H1. Discriminate H1.
-    Intro H2. Rewrite H2 in H0. Discriminate H0.
+    unfold MapDisjoint, in_dom in |- *. intros. elim (option_sum _ (MapGet A m1 a)). intro H2.
+    elim H2. intros y H3. elim (option_sum _ (MapGet B m3 a)). intro H4. elim H4.
+    intros y' H5. apply (H (ad_double_plus_un a)).
+    rewrite
+     (MapGet_M2_bit_0_1 _ (ad_double_plus_un a) (ad_double_plus_un_bit_0 a)
+        m0 m1).
+    rewrite (ad_double_plus_un_div_2 a). rewrite H3. reflexivity.
+    rewrite
+     (MapGet_M2_bit_0_1 _ (ad_double_plus_un a) (ad_double_plus_un_bit_0 a)
+        m2 m3).
+    rewrite (ad_double_plus_un_div_2 a). rewrite H5. reflexivity.
+    intro H4. rewrite H4 in H1. discriminate H1.
+    intro H2. rewrite H2 in H0. discriminate H0.
   Qed.
 
-  Lemma MapDisjoint_M2 : (m0,m1:(Map A)) (m2,m3:(Map B))
-      (MapDisjoint A B m0 m2) -> (MapDisjoint A B m1 m3) ->
-      	(MapDisjoint A B (M2 A m0 m1) (M2 B m2 m3)).
+  Lemma MapDisjoint_M2 :
+   forall (m0 m1:Map A) (m2 m3:Map B),
+     MapDisjoint A B m0 m2 ->
+     MapDisjoint A B m1 m3 -> MapDisjoint A B (M2 A m0 m1) (M2 B m2 m3).
   Proof.
-    Unfold MapDisjoint in_dom. Intros. Elim (sumbool_of_bool (ad_bit_0 a)). Intro H3.
-    Rewrite (MapGet_M2_bit_0_1 A a H3 m0 m1) in H1.
-    Rewrite (MapGet_M2_bit_0_1 B a H3 m2 m3) in H2. Exact (H0 (ad_div_2 a) H1 H2).
-    Intro H3. Rewrite (MapGet_M2_bit_0_0 A a H3 m0 m1) in H1.
-    Rewrite (MapGet_M2_bit_0_0 B a H3 m2 m3) in H2. Exact (H (ad_div_2 a) H1 H2).
+    unfold MapDisjoint, in_dom in |- *. intros. elim (sumbool_of_bool (ad_bit_0 a)). intro H3.
+    rewrite (MapGet_M2_bit_0_1 A a H3 m0 m1) in H1.
+    rewrite (MapGet_M2_bit_0_1 B a H3 m2 m3) in H2. exact (H0 (ad_div_2 a) H1 H2).
+    intro H3. rewrite (MapGet_M2_bit_0_0 A a H3 m0 m1) in H1.
+    rewrite (MapGet_M2_bit_0_0 B a H3 m2 m3) in H2. exact (H (ad_div_2 a) H1 H2).
   Qed.
 
-  Lemma MapDisjoint_M1_l : (m:(Map A)) (a:ad) (y:B)
-      (MapDisjoint B A (M1 B a y) m) -> (in_dom A a m)=false.
+  Lemma MapDisjoint_M1_l :
+   forall (m:Map A) (a:ad) (y:B),
+     MapDisjoint B A (M1 B a y) m -> in_dom A a m = false.
   Proof.
-    Unfold MapDisjoint. Intros. Elim (sumbool_of_bool (in_dom A a m)). Intro H0.
-    Elim (H a (in_dom_M1_1 B a y) H0).
-    Trivial.
+    unfold MapDisjoint in |- *. intros. elim (sumbool_of_bool (in_dom A a m)). intro H0.
+    elim (H a (in_dom_M1_1 B a y) H0).
+    trivial.
   Qed.
 
-  Lemma MapDisjoint_M1_r : (m:(Map A)) (a:ad) (y:B)
-      (MapDisjoint A B m (M1 B a y)) -> (in_dom A a m)=false.
+  Lemma MapDisjoint_M1_r :
+   forall (m:Map A) (a:ad) (y:B),
+     MapDisjoint A B m (M1 B a y) -> in_dom A a m = false.
   Proof.
-    Unfold MapDisjoint. Intros. Elim (sumbool_of_bool (in_dom A a m)). Intro H0.
-    Elim (H a H0 (in_dom_M1_1 B a y)).
-    Trivial.
+    unfold MapDisjoint in |- *. intros. elim (sumbool_of_bool (in_dom A a m)). intro H0.
+    elim (H a H0 (in_dom_M1_1 B a y)).
+    trivial.
   Qed.
 
-  Lemma MapDisjoint_M1_conv_l : (m:(Map A)) (a:ad) (y:B)
-      (in_dom A a m)=false -> (MapDisjoint B A (M1 B a y) m).
+  Lemma MapDisjoint_M1_conv_l :
+   forall (m:Map A) (a:ad) (y:B),
+     in_dom A a m = false -> MapDisjoint B A (M1 B a y) m.
   Proof.
-    Unfold MapDisjoint. Intros. Rewrite (in_dom_M1_2 B a a0 y H0) in H. Rewrite H1 in H.
-    Discriminate H.
+    unfold MapDisjoint in |- *. intros. rewrite (in_dom_M1_2 B a a0 y H0) in H. rewrite H1 in H.
+    discriminate H.
   Qed.
 
-  Lemma MapDisjoint_M1_conv_r : (m:(Map A)) (a:ad) (y:B)
-      (in_dom A a m)=false -> (MapDisjoint A B m (M1 B a y)).
+  Lemma MapDisjoint_M1_conv_r :
+   forall (m:Map A) (a:ad) (y:B),
+     in_dom A a m = false -> MapDisjoint A B m (M1 B a y).
   Proof.
-    Unfold MapDisjoint. Intros. Rewrite (in_dom_M1_2 B a a0 y H1) in H. Rewrite H0 in H.
-    Discriminate H.
+    unfold MapDisjoint in |- *. intros. rewrite (in_dom_M1_2 B a a0 y H1) in H. rewrite H0 in H.
+    discriminate H.
   Qed.
  
-  Lemma MapDisjoint_sym : (m:(Map A)) (m':(Map B))
-      (MapDisjoint A B m m') -> (MapDisjoint B A m' m).
+  Lemma MapDisjoint_sym :
+   forall (m:Map A) (m':Map B), MapDisjoint A B m m' -> MapDisjoint B A m' m.
   Proof.
-    Unfold MapDisjoint. Intros. Exact (H ? H1 H0).
+    unfold MapDisjoint in |- *. intros. exact (H _ H1 H0).
   Qed.
 
-  Lemma MapDisjoint_empty : (m:(Map A)) (MapDisjoint A A m m) -> (eqmap A m (M0 A)).
+  Lemma MapDisjoint_empty :
+   forall m:Map A, MapDisjoint A A m m -> eqmap A m (M0 A).
   Proof.
-    Unfold eqmap eqm. Intros. Rewrite <- (MapDomRestrTo_idempotent A m a).
-    Exact (MapDisjoint_imp_2 A A m m H a).
+    unfold eqmap, eqm in |- *. intros. rewrite <- (MapDomRestrTo_idempotent A m a).
+    exact (MapDisjoint_imp_2 A A m m H a).
   Qed.
 
-  Lemma MapDelta_disjoint : (m,m':(Map A)) (MapDisjoint A A m m') ->
-      (eqmap A (MapDelta A m m') (MapMerge A m m')).
+  Lemma MapDelta_disjoint :
+   forall m m':Map A,
+     MapDisjoint A A m m' -> eqmap A (MapDelta A m m') (MapMerge A m m').
   Proof.
-    Intros.
-    Apply eqmap_trans with m':=(MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m m')).
-    Apply MapDelta_as_DomRestrBy.
-    Apply eqmap_trans with m':=(MapDomRestrBy A A (MapMerge A m m') (M0 A)).
-    Apply MapDomRestrBy_ext. Apply eqmap_refl.
-    Exact (MapDisjoint_imp_2 A A m m' H).
-    Apply MapDomRestrBy_m_empty.
+    intros.
+    apply eqmap_trans with
+     (m' := MapDomRestrBy A A (MapMerge A m m') (MapDomRestrTo A A m m')).
+    apply MapDelta_as_DomRestrBy.
+    apply eqmap_trans with (m' := MapDomRestrBy A A (MapMerge A m m') (M0 A)).
+    apply MapDomRestrBy_ext. apply eqmap_refl.
+    exact (MapDisjoint_imp_2 A A m m' H).
+    apply MapDomRestrBy_m_empty.
   Qed.
 
   Variable C : Set.
 
-  Lemma MapDomRestr_disjoint : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (MapDisjoint A B (MapDomRestrTo A C m m'') (MapDomRestrBy B C m' m'')).
+  Lemma MapDomRestr_disjoint :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     MapDisjoint A B (MapDomRestrTo A C m m'') (MapDomRestrBy B C m' m'').
   Proof.
-    Unfold MapDisjoint. Intros m m' m'' a. Rewrite in_dom_restrto. Rewrite in_dom_restrby.
-    Intros. Elim (andb_prop ? ? H). Elim (andb_prop ? ? H0). Intros. Rewrite H4 in H2.
-    Discriminate H2.
+    unfold MapDisjoint in |- *. intros m m' m'' a. rewrite in_dom_restrto. rewrite in_dom_restrby.
+    intros. elim (andb_prop _ _ H). elim (andb_prop _ _ H0). intros. rewrite H4 in H2.
+    discriminate H2.
   Qed.
 
-  Lemma MapDelta_RestrTo_disjoint : (m,m':(Map A))
-      (MapDisjoint A A (MapDelta A m m') (MapDomRestrTo A A m m')).
+  Lemma MapDelta_RestrTo_disjoint :
+   forall m m':Map A,
+     MapDisjoint A A (MapDelta A m m') (MapDomRestrTo A A m m').
   Proof.
-    Unfold MapDisjoint. Intros m m' a. Rewrite in_dom_delta. Rewrite in_dom_restrto.
-    Intros. Elim (andb_prop ? ? H0). Intros. Rewrite H1 in H. Rewrite H2 in H. Discriminate H.
+    unfold MapDisjoint in |- *. intros m m' a. rewrite in_dom_delta. rewrite in_dom_restrto.
+    intros. elim (andb_prop _ _ H0). intros. rewrite H1 in H. rewrite H2 in H. discriminate H.
   Qed.
 
-  Lemma MapDelta_RestrTo_disjoint_2 : (m,m':(Map A))
-      (MapDisjoint A A (MapDelta A m m') (MapDomRestrTo A A m' m)).
+  Lemma MapDelta_RestrTo_disjoint_2 :
+   forall m m':Map A,
+     MapDisjoint A A (MapDelta A m m') (MapDomRestrTo A A m' m).
   Proof.
-    Unfold MapDisjoint. Intros m m' a. Rewrite in_dom_delta. Rewrite in_dom_restrto.
-    Intros. Elim (andb_prop ? ? H0). Intros. Rewrite H1 in H. Rewrite H2 in H. Discriminate H.
+    unfold MapDisjoint in |- *. intros m m' a. rewrite in_dom_delta. rewrite in_dom_restrto.
+    intros. elim (andb_prop _ _ H0). intros. rewrite H1 in H. rewrite H2 in H. discriminate H.
   Qed.
 
   Variable D : Set.
 
-  Lemma MapSubset_Disjoint : (m:(Map A)) (m':(Map B)) (m'':(Map C)) (m''':(Map D))
-      (MapSubset ? ? m m') -> (MapSubset ? ? m'' m''') -> (MapDisjoint ? ? m' m''') ->
-        (MapDisjoint ? ? m m'').
+  Lemma MapSubset_Disjoint :
+   forall (m:Map A) (m':Map B) (m'':Map C) (m''':Map D),
+     MapSubset _ _ m m' ->
+     MapSubset _ _ m'' m''' ->
+     MapDisjoint _ _ m' m''' -> MapDisjoint _ _ m m''.
   Proof.
-    Unfold MapSubset MapDisjoint. Intros. Exact (H1 ? (H ? H2) (H0 ? H3)).
+    unfold MapSubset, MapDisjoint in |- *. intros. exact (H1 _ (H _ H2) (H0 _ H3)).
   Qed.
 
-  Lemma MapSubset_Disjoint_l : (m:(Map A)) (m':(Map B)) (m'':(Map C))
-      (MapSubset ? ? m m') -> (MapDisjoint ? ? m' m'') ->
-        (MapDisjoint ? ? m m'').
+  Lemma MapSubset_Disjoint_l :
+   forall (m:Map A) (m':Map B) (m'':Map C),
+     MapSubset _ _ m m' -> MapDisjoint _ _ m' m'' -> MapDisjoint _ _ m m''.
   Proof.
-    Unfold MapSubset MapDisjoint. Intros. Exact (H0 ? (H ? H1) H2).
+    unfold MapSubset, MapDisjoint in |- *. intros. exact (H0 _ (H _ H1) H2).
   Qed.
 
-  Lemma MapSubset_Disjoint_r : (m:(Map A)) (m'':(Map C)) (m''':(Map D))
-      (MapSubset ? ? m'' m''') -> (MapDisjoint ? ? m m''') ->
-        (MapDisjoint ? ? m m'').
+  Lemma MapSubset_Disjoint_r :
+   forall (m:Map A) (m'':Map C) (m''':Map D),
+     MapSubset _ _ m'' m''' ->
+     MapDisjoint _ _ m m''' -> MapDisjoint _ _ m m''.
   Proof.
-    Unfold MapSubset MapDisjoint. Intros. Exact (H0 ? H1 (H ? H2)).
+    unfold MapSubset, MapDisjoint in |- *. intros. exact (H0 _ H1 (H _ H2)).
   Qed.
 
 End MapDisjointExtra.

@@ -13,69 +13,68 @@
 (*                                                       *)
 (*********************************************************)
 
-Require Rbase.
-Require R_Ifp.
-Require Fourier.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Require Import Rbase.
+Require Import R_Ifp.
+Require Import Fourier. Open Local Scope R_scope.
 
-Implicit Variable Type r:R.
+Implicit Type r : R.
 
 (*******************************)
 (**          Rmin              *)
 (*******************************)
 
 (*********)
-Definition Rmin :R->R->R:=[x,y:R]
-  Cases (total_order_Rle x y) of 
-    (leftT _)  => x
-  | (rightT _) => y
+Definition Rmin (x y:R) : R :=
+  match Rle_dec x y with
+  | left _ => x
+  | right _ => y
   end.
 
 (*********)
-Lemma Rmin_Rgt_l:(r1,r2,r:R)(Rgt (Rmin r1 r2) r) ->
-    ((Rgt r1 r)/\(Rgt r2 r)).
-Intros r1 r2 r;Unfold Rmin;Case (total_order_Rle r1 r2);Intros.
-Split.
-Assumption.
-Unfold Rgt;Unfold Rgt in H;Exact (Rlt_le_trans r r1 r2 H r0).
-Split.
-Generalize (not_Rle r1 r2 n);Intro;Exact (Rgt_trans r1 r2 r H0 H).
-Assumption.
+Lemma Rmin_Rgt_l : forall r1 r2 r, Rmin r1 r2 > r -> r1 > r /\ r2 > r.
+intros r1 r2 r; unfold Rmin in |- *; case (Rle_dec r1 r2); intros.
+split.
+assumption.
+unfold Rgt in |- *; unfold Rgt in H; exact (Rlt_le_trans r r1 r2 H r0).
+split.
+generalize (Rnot_le_lt r1 r2 n); intro; exact (Rgt_trans r1 r2 r H0 H).
+assumption.
 Qed.
 
 (*********)
-Lemma Rmin_Rgt_r:(r1,r2,r:R)(((Rgt r1 r)/\(Rgt r2 r)) -> 
-         (Rgt (Rmin r1 r2) r)).
-Intros;Unfold Rmin;Case (total_order_Rle r1 r2);Elim H;Clear H;Intros;
- Assumption.
+Lemma Rmin_Rgt_r : forall r1 r2 r, r1 > r /\ r2 > r -> Rmin r1 r2 > r.
+intros; unfold Rmin in |- *; case (Rle_dec r1 r2); elim H; clear H; intros;
+ assumption.
 Qed.
 
 (*********)
-Lemma Rmin_Rgt:(r1,r2,r:R)(Rgt (Rmin r1 r2) r)<->
-    ((Rgt r1 r)/\(Rgt r2 r)).
-Intros; Split.
-Exact (Rmin_Rgt_l r1 r2 r).
-Exact (Rmin_Rgt_r r1 r2 r).
+Lemma Rmin_Rgt : forall r1 r2 r, Rmin r1 r2 > r <-> r1 > r /\ r2 > r.
+intros; split.
+exact (Rmin_Rgt_l r1 r2 r).
+exact (Rmin_Rgt_r r1 r2 r).
 Qed.
 
 (*********)
-Lemma Rmin_l : (x,y:R) ``(Rmin x y)<=x``.
-Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Right; Reflexivity | Auto with real].
+Lemma Rmin_l : forall x y:R, Rmin x y <= x.
+intros; unfold Rmin in |- *; case (Rle_dec x y); intro H1;
+ [ right; reflexivity | auto with real ].
 Qed.
  
 (*********)
-Lemma Rmin_r : (x,y:R) ``(Rmin x y)<=y``.
-Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Assumption | Auto with real].
+Lemma Rmin_r : forall x y:R, Rmin x y <= y.
+intros; unfold Rmin in |- *; case (Rle_dec x y); intro H1;
+ [ assumption | auto with real ].
 Qed.
 
 (*********)
-Lemma Rmin_sym : (a,b:R) (Rmin a b)==(Rmin b a).
-Intros; Unfold Rmin; Case (total_order_Rle a b); Case (total_order_Rle b a); Intros; Try Reflexivity Orelse (Apply Rle_antisym; Assumption Orelse Auto with real).
+Lemma Rmin_comm : forall a b:R, Rmin a b = Rmin b a.
+intros; unfold Rmin in |- *; case (Rle_dec a b); case (Rle_dec b a); intros;
+ try reflexivity || (apply Rle_antisym; assumption || auto with real).
 Qed.
 
 (*********)
-Lemma Rmin_stable_in_posreal : (x,y:posreal) ``0<(Rmin x y)``.
-Intros; Apply Rmin_Rgt_r; Split; [Apply (cond_pos x) | Apply (cond_pos y)].
+Lemma Rmin_stable_in_posreal : forall x y:posreal, 0 < Rmin x y.
+intros; apply Rmin_Rgt_r; split; [ apply (cond_pos x) | apply (cond_pos y) ].
 Qed.
 
 (*******************************)
@@ -83,54 +82,52 @@ Qed.
 (*******************************)
 
 (*********)
-Definition Rmax :R->R->R:=[x,y:R]
-  Cases (total_order_Rle x y) of 
-    (leftT _)  => y
-  | (rightT _) => x
+Definition Rmax (x y:R) : R :=
+  match Rle_dec x y with
+  | left _ => y
+  | right _ => x
   end.
 
 (*********)
-Lemma Rmax_Rle:(r1,r2,r:R)(Rle r (Rmax r1 r2))<->
-    ((Rle r r1)\/(Rle r r2)).
-Intros;Split.
-Unfold Rmax;Case (total_order_Rle r1 r2);Intros;Auto.
-Intro;Unfold Rmax;Case (total_order_Rle r1 r2);Elim H;Clear H;Intros;Auto.
-Apply (Rle_trans r r1 r2);Auto.
-Generalize (not_Rle r1 r2 n);Clear n;Intro;Unfold Rgt in H0;
- Apply (Rlt_le r r1 (Rle_lt_trans r r2 r1 H H0)).
+Lemma Rmax_Rle : forall r1 r2 r, r <= Rmax r1 r2 <-> r <= r1 \/ r <= r2.
+intros; split.
+unfold Rmax in |- *; case (Rle_dec r1 r2); intros; auto.
+intro; unfold Rmax in |- *; case (Rle_dec r1 r2); elim H; clear H; intros;
+ auto.
+apply (Rle_trans r r1 r2); auto.
+generalize (Rnot_le_lt r1 r2 n); clear n; intro; unfold Rgt in H0;
+ apply (Rlt_le r r1 (Rle_lt_trans r r2 r1 H H0)).
 Qed.
 
-Lemma RmaxLess1: (r1, r2 : R)  (Rle r1 (Rmax r1 r2)).
-Intros r1 r2; Unfold Rmax; Case (total_order_Rle r1 r2); Auto with real.
+Lemma RmaxLess1 : forall r1 r2, r1 <= Rmax r1 r2.
+intros r1 r2; unfold Rmax in |- *; case (Rle_dec r1 r2); auto with real.
 Qed.
  
-Lemma RmaxLess2: (r1, r2 : R)  (Rle r2 (Rmax r1 r2)).
-Intros r1 r2; Unfold Rmax; Case (total_order_Rle r1 r2); Auto with real.
+Lemma RmaxLess2 : forall r1 r2, r2 <= Rmax r1 r2.
+intros r1 r2; unfold Rmax in |- *; case (Rle_dec r1 r2); auto with real.
 Qed.
  
-Lemma RmaxSym: (p, q : R)  (Rmax p q) == (Rmax q p).
-Intros p q; Unfold Rmax;
- Case (total_order_Rle p q); Case (total_order_Rle q p); Auto; Intros H1 H2;
- Apply Rle_antisym; Auto with real.
+Lemma RmaxSym : forall p q:R, Rmax p q = Rmax q p.
+intros p q; unfold Rmax in |- *; case (Rle_dec p q); case (Rle_dec q p); auto;
+ intros H1 H2; apply Rle_antisym; auto with real.
 Qed.
 
-Lemma RmaxRmult:
- (p, q, r : R)
- (Rle R0 r) ->  (Rmax (Rmult r p) (Rmult r q)) == (Rmult r (Rmax p q)).
-Intros p q r H; Unfold Rmax.
-Case (total_order_Rle p q); Case (total_order_Rle (Rmult r p) (Rmult r q));
- Auto; Intros H1 H2; Auto.
-Case H; Intros E1.
-Case H1; Auto with real.
-Rewrite <- E1; Repeat Rewrite Rmult_Ol; Auto.
-Case H; Intros E1.
-Case H2; Auto with real.
-Apply Rle_monotony_contra with z := r; Auto.
-Rewrite <- E1; Repeat Rewrite Rmult_Ol; Auto.
+Lemma RmaxRmult :
+ forall (p q:R) r, 0 <= r -> Rmax (r * p) (r * q) = r * Rmax p q.
+intros p q r H; unfold Rmax in |- *.
+case (Rle_dec p q); case (Rle_dec (r * p) (r * q)); auto; intros H1 H2; auto.
+case H; intros E1.
+case H1; auto with real.
+rewrite <- E1; repeat rewrite Rmult_0_l; auto.
+case H; intros E1.
+case H2; auto with real.
+apply Rmult_le_reg_l with (r := r); auto.
+rewrite <- E1; repeat rewrite Rmult_0_l; auto.
 Qed.
 
-Lemma Rmax_stable_in_negreal : (x,y:negreal) ``(Rmax x y)<0``.
-Intros; Unfold Rmax; Case (total_order_Rle x y); Intro; [Apply (cond_neg y) | Apply (cond_neg x)].
+Lemma Rmax_stable_in_negreal : forall x y:negreal, Rmax x y < 0.
+intros; unfold Rmax in |- *; case (Rle_dec x y); intro;
+ [ apply (cond_neg y) | apply (cond_neg x) ].
 Qed.
 
 (*******************************)
@@ -138,339 +135,336 @@ Qed.
 (*******************************)
 
 (*********)
-Lemma case_Rabsolu:(r:R)(sumboolT (Rlt r R0) (Rge r R0)). 
-Intro;Generalize (total_order_Rle R0 r);Intro X;Elim X;Intro;Clear X.
-Right;Apply (Rle_sym1 R0 r a).
-Left;Fold (Rgt R0 r);Apply (not_Rle R0 r b).
+Lemma Rcase_abs : forall r, {r < 0} + {r >= 0}. 
+intro; generalize (Rle_dec 0 r); intro X; elim X; intro; clear X.
+right; apply (Rle_ge 0 r a).
+left; fold (0 > r) in |- *; apply (Rnot_le_lt 0 r b).
 Qed.
 
 (*********)
-Definition Rabsolu:R->R:=
-      [r:R](Cases (case_Rabsolu r) of
-              (leftT  _) => (Ropp r)
-             |(rightT _) => r
-            end).
+Definition Rabs r : R :=
+  match Rcase_abs r with
+  | left _ => - r
+  | right _ => r
+  end.
 
 (*********)
-Lemma Rabsolu_R0:(Rabsolu R0)==R0.
-Unfold Rabsolu;Case (case_Rabsolu R0);Auto;Intro.
-Generalize (Rlt_antirefl R0);Intro;ElimType False;Auto.
+Lemma Rabs_R0 : Rabs 0 = 0.
+unfold Rabs in |- *; case (Rcase_abs 0); auto; intro.
+generalize (Rlt_irrefl 0); intro; elimtype False; auto.
 Qed.
 
-Lemma Rabsolu_R1: (Rabsolu R1)==R1.
-Unfold Rabsolu; Case (case_Rabsolu R1); Auto with real.
-Intros H; Absurd ``1 < 0``;Auto with real.
-Qed.
-
-(*********)
-Lemma Rabsolu_no_R0:(r:R)~r==R0->~(Rabsolu r)==R0.
-Intros;Unfold Rabsolu;Case (case_Rabsolu r);Intro;Auto.
-Apply Ropp_neq;Auto.
+Lemma Rabs_R1 : Rabs 1 = 1.
+unfold Rabs in |- *; case (Rcase_abs 1); auto with real.
+intros H; absurd (1 < 0); auto with real.
 Qed.
 
 (*********)
-Lemma Rabsolu_left: (r:R)(Rlt r R0)->((Rabsolu r) == (Ropp r)).
-Intros;Unfold Rabsolu;Case (case_Rabsolu r);Trivial;Intro;Absurd (Rge r R0).
-Exact (Rlt_ge_not r R0 H).
-Assumption.
+Lemma Rabs_no_R0 : forall r, r <> 0 -> Rabs r <> 0.
+intros; unfold Rabs in |- *; case (Rcase_abs r); intro; auto.
+apply Ropp_neq_0_compat; auto.
 Qed.
 
 (*********)
-Lemma Rabsolu_right: (r:R)(Rge r R0)->((Rabsolu r) == r).
-Intros;Unfold Rabsolu;Case (case_Rabsolu r);Intro.
-Absurd (Rge r R0).
-Exact (Rlt_ge_not r R0 r0).
-Assumption.
-Trivial.
-Qed.
-
-Lemma Rabsolu_left1: (a : R) (Rle a R0) ->  (Rabsolu a) == (Ropp a).
-Intros a H; Case H; Intros H1.
-Apply Rabsolu_left; Auto.
-Rewrite H1; Simpl; Rewrite Rabsolu_right; Auto with real.
+Lemma Rabs_left : forall r, r < 0 -> Rabs r = - r.
+intros; unfold Rabs in |- *; case (Rcase_abs r); trivial; intro;
+ absurd (r >= 0).
+exact (Rlt_not_ge r 0 H).
+assumption.
 Qed.
 
 (*********)
-Lemma Rabsolu_pos:(x:R)(Rle R0 (Rabsolu x)).
-Intros;Unfold Rabsolu;Case (case_Rabsolu x);Intro.
-Generalize (Rlt_Ropp x R0 r);Intro;Unfold Rgt in H;
- Rewrite Ropp_O in H;Unfold Rle;Left;Assumption.
-Apply Rle_sym2;Assumption.
+Lemma Rabs_right : forall r, r >= 0 -> Rabs r = r.
+intros; unfold Rabs in |- *; case (Rcase_abs r); intro.
+absurd (r >= 0).
+exact (Rlt_not_ge r 0 r0).
+assumption.
+trivial.
 Qed.
 
-Lemma Rle_Rabsolu:
- (x:R) (Rle x (Rabsolu x)).
-Intro; Unfold Rabsolu;Case (case_Rabsolu x);Intros;Fourier.
-Qed.
-
-(*********)
-Lemma Rabsolu_pos_eq:(x:R)(Rle R0 x)->(Rabsolu x)==x.
-Intros;Unfold Rabsolu;Case (case_Rabsolu x);Intro;
- [Generalize (Rle_not R0 x r);Intro;ElimType False;Auto|Trivial].
+Lemma Rabs_left1 : forall a:R, a <= 0 -> Rabs a = - a.
+intros a H; case H; intros H1.
+apply Rabs_left; auto.
+rewrite H1; simpl in |- *; rewrite Rabs_right; auto with real.
 Qed.
 
 (*********)
-Lemma Rabsolu_Rabsolu:(x:R)(Rabsolu (Rabsolu x))==(Rabsolu x).
-Intro;Apply (Rabsolu_pos_eq (Rabsolu x) (Rabsolu_pos x)).
+Lemma Rabs_pos : forall x:R, 0 <= Rabs x.
+intros; unfold Rabs in |- *; case (Rcase_abs x); intro.
+generalize (Ropp_lt_gt_contravar x 0 r); intro; unfold Rgt in H;
+ rewrite Ropp_0 in H; unfold Rle in |- *; left; assumption.
+apply Rge_le; assumption.
+Qed.
+
+Lemma RRle_abs : forall x:R, x <= Rabs x.
+intro; unfold Rabs in |- *; case (Rcase_abs x); intros; fourier.
 Qed.
 
 (*********)
-Lemma Rabsolu_pos_lt:(x:R)(~x==R0)->(Rlt R0 (Rabsolu x)).
-Intros;Generalize (Rabsolu_pos x);Intro;Unfold Rle in H0;
- Elim H0;Intro;Auto.
-ElimType False;Clear H0;Elim H;Clear H;Generalize H1;
- Unfold Rabsolu;Case (case_Rabsolu x);Intros;Auto.
-Clear r H1; Generalize (Rplus_plus_r x R0 (Ropp x) H0);
- Rewrite (let (H1,H2)=(Rplus_ne x) in H1);Rewrite (Rplus_Ropp_r x);Trivial.
+Lemma Rabs_pos_eq : forall x:R, 0 <= x -> Rabs x = x.
+intros; unfold Rabs in |- *; case (Rcase_abs x); intro;
+ [ generalize (Rgt_not_le 0 x r); intro; elimtype False; auto | trivial ].
 Qed.
 
 (*********)
-Lemma Rabsolu_minus_sym:(x,y:R)
- (Rabsolu (Rminus x y))==(Rabsolu (Rminus y x)).
-Intros;Unfold Rabsolu;Case (case_Rabsolu (Rminus x y)); 
- Case (case_Rabsolu (Rminus y x));Intros.
- Generalize (Rminus_lt y x r);Generalize (Rminus_lt x y r0);Intros;
- Generalize (Rlt_antisym x y H);Intro;ElimType False;Auto.
-Rewrite (Ropp_distr2 x y);Trivial.
-Rewrite (Ropp_distr2 y x);Trivial.
-Unfold Rge in r r0;Elim r;Elim r0;Intros;Clear r r0.
-Generalize (Rgt_RoppO (Rminus x y) H);Rewrite (Ropp_distr2 x y);
- Intro;Unfold Rgt in H0;Generalize (Rlt_antisym R0 (Rminus y x) H0);
- Intro;ElimType False;Auto.
-Rewrite (Rminus_eq x y H);Trivial.
-Rewrite (Rminus_eq y x H0);Trivial.
-Rewrite (Rminus_eq y x H0);Trivial.
+Lemma Rabs_Rabsolu : forall x:R, Rabs (Rabs x) = Rabs x.
+intro; apply (Rabs_pos_eq (Rabs x) (Rabs_pos x)).
 Qed.
 
 (*********)
-Lemma Rabsolu_mult:(x,y:R)
- (Rabsolu (Rmult x y))==(Rmult (Rabsolu x) (Rabsolu y)).
-Intros;Unfold Rabsolu;Case (case_Rabsolu (Rmult x y));
- Case (case_Rabsolu x);Case (case_Rabsolu y);Intros;Auto.
-Generalize (Rlt_anti_monotony y x R0 r r0);Intro;
- Rewrite (Rmult_Or y) in H;Generalize (Rlt_antisym (Rmult x y) R0 r1);
- Intro;Unfold Rgt in H;ElimType False;Rewrite (Rmult_sym y x) in H;
- Auto.
-Rewrite (Ropp_mul1 x y);Trivial. 
-Rewrite (Rmult_sym x (Ropp y));Rewrite (Ropp_mul1 y x);
- Rewrite (Rmult_sym  x y);Trivial.
-Unfold Rge in r r0;Elim r;Elim r0;Clear r r0;Intros;Unfold Rgt in H H0.
-Generalize (Rlt_monotony x R0 y H H0);Intro;Rewrite (Rmult_Or x) in H1;
- Generalize (Rlt_antisym (Rmult x y) R0 r1);Intro;ElimType False;Auto.
-Rewrite H in r1;Rewrite (Rmult_Ol y) in r1;Generalize (Rlt_antirefl R0);
- Intro;ElimType False;Auto.
-Rewrite H0 in r1;Rewrite (Rmult_Or x) in r1;Generalize (Rlt_antirefl R0);
- Intro;ElimType False;Auto.
-Rewrite H0 in r1;Rewrite (Rmult_Or x) in r1;Generalize (Rlt_antirefl R0);
- Intro;ElimType False;Auto.
-Rewrite (Ropp_mul2 x y);Trivial.
-Unfold Rge in r r1;Elim r;Elim r1;Clear r r1;Intros;Unfold Rgt in H0 H.
-Generalize (Rlt_monotony y x R0 H0 r0);Intro;Rewrite (Rmult_Or y) in H1;
- Rewrite (Rmult_sym y x) in H1; 
- Generalize (Rlt_antisym (Rmult x y) R0 H1);Intro;ElimType False;Auto.
-Generalize (imp_not_Req x R0 (or_introl (Rlt x R0) (Rgt x R0) r0));
- Generalize (imp_not_Req y R0 (or_intror (Rlt y R0) (Rgt y R0) H0));Intros;
- Generalize (without_div_Od x y H);Intro;Elim H3;Intro;ElimType False;
- Auto.  
-Rewrite H0 in H;Rewrite (Rmult_Or x) in H;Unfold Rgt in H;
- Generalize (Rlt_antirefl R0);Intro;ElimType False;Auto.
-Rewrite H0;Rewrite (Rmult_Or x);Rewrite (Rmult_Or (Ropp x));Trivial.
-Unfold Rge in r0 r1;Elim r0;Elim r1;Clear r0 r1;Intros;Unfold Rgt in H0 H.
-Generalize (Rlt_monotony x y R0 H0 r);Intro;Rewrite (Rmult_Or x) in H1;
- Generalize (Rlt_antisym (Rmult x y) R0 H1);Intro;ElimType False;Auto.
-Generalize (imp_not_Req y R0 (or_introl (Rlt y R0) (Rgt y R0) r));
- Generalize (imp_not_Req R0 x (or_introl (Rlt R0 x) (Rgt R0 x) H0));Intros;
- Generalize (without_div_Od x y H);Intro;Elim H3;Intro;ElimType False;
- Auto.  
-Rewrite H0 in H;Rewrite (Rmult_Ol y) in H;Unfold Rgt in H;
- Generalize (Rlt_antirefl R0);Intro;ElimType False;Auto.
-Rewrite H0;Rewrite (Rmult_Ol y);Rewrite (Rmult_Ol (Ropp y));Trivial.
+Lemma Rabs_pos_lt : forall x:R, x <> 0 -> 0 < Rabs x.
+intros; generalize (Rabs_pos x); intro; unfold Rle in H0; elim H0; intro;
+ auto.
+elimtype False; clear H0; elim H; clear H; generalize H1; unfold Rabs in |- *;
+ case (Rcase_abs x); intros; auto.
+clear r H1; generalize (Rplus_eq_compat_l x 0 (- x) H0);
+ rewrite (let (H1, H2) := Rplus_ne x in H1); rewrite (Rplus_opp_r x); 
+ trivial.
 Qed.
 
 (*********)
-Lemma Rabsolu_Rinv:(r:R)(~r==R0)->(Rabsolu (Rinv r))==
-                                  (Rinv (Rabsolu r)).
-Intro;Unfold Rabsolu;Case (case_Rabsolu r);
- Case (case_Rabsolu (Rinv r));Auto;Intros.
-Apply Ropp_Rinv;Auto.
-Generalize (Rlt_Rinv2 r r1);Intro;Unfold Rge in r0;Elim r0;Intros.
-Unfold Rgt in H1;Generalize (Rlt_antisym R0 (Rinv r) H1);Intro; 
- ElimType False;Auto.
-Generalize 
-  (imp_not_Req (Rinv r) R0 
-   (or_introl (Rlt (Rinv r) R0) (Rgt (Rinv r) R0) H0));Intro;
- ElimType False;Auto.
-Unfold Rge in r1;Elim r1;Clear r1;Intro.
-Unfold Rgt in H0;Generalize (Rlt_antisym R0 (Rinv r)  
-     (Rlt_Rinv r H0));Intro;ElimType False;Auto.
-ElimType False;Auto.
+Lemma Rabs_minus_sym : forall x y:R, Rabs (x - y) = Rabs (y - x).
+intros; unfold Rabs in |- *; case (Rcase_abs (x - y));
+ case (Rcase_abs (y - x)); intros.
+ generalize (Rminus_lt y x r); generalize (Rminus_lt x y r0); intros;
+  generalize (Rlt_asym x y H); intro; elimtype False; 
+  auto.
+rewrite (Ropp_minus_distr x y); trivial.
+rewrite (Ropp_minus_distr y x); trivial.
+unfold Rge in r, r0; elim r; elim r0; intros; clear r r0.
+generalize (Ropp_lt_gt_0_contravar (x - y) H); rewrite (Ropp_minus_distr x y);
+ intro; unfold Rgt in H0; generalize (Rlt_asym 0 (y - x) H0); 
+ intro; elimtype False; auto.
+rewrite (Rminus_diag_uniq x y H); trivial.
+rewrite (Rminus_diag_uniq y x H0); trivial.
+rewrite (Rminus_diag_uniq y x H0); trivial.
+Qed.
+
+(*********)
+Lemma Rabs_mult : forall x y:R, Rabs (x * y) = Rabs x * Rabs y.
+intros; unfold Rabs in |- *; case (Rcase_abs (x * y)); case (Rcase_abs x);
+ case (Rcase_abs y); intros; auto.
+generalize (Rmult_lt_gt_compat_neg_l y x 0 r r0); intro;
+ rewrite (Rmult_0_r y) in H; generalize (Rlt_asym (x * y) 0 r1); 
+ intro; unfold Rgt in H; elimtype False; rewrite (Rmult_comm y x) in H; 
+ auto.
+rewrite (Ropp_mult_distr_l_reverse x y); trivial. 
+rewrite (Rmult_comm x (- y)); rewrite (Ropp_mult_distr_l_reverse y x);
+ rewrite (Rmult_comm x y); trivial.
+unfold Rge in r, r0; elim r; elim r0; clear r r0; intros; unfold Rgt in H, H0.
+generalize (Rmult_lt_compat_l x 0 y H H0); intro; rewrite (Rmult_0_r x) in H1;
+ generalize (Rlt_asym (x * y) 0 r1); intro; elimtype False; 
+ auto.
+rewrite H in r1; rewrite (Rmult_0_l y) in r1; generalize (Rlt_irrefl 0);
+ intro; elimtype False; auto.
+rewrite H0 in r1; rewrite (Rmult_0_r x) in r1; generalize (Rlt_irrefl 0);
+ intro; elimtype False; auto.
+rewrite H0 in r1; rewrite (Rmult_0_r x) in r1; generalize (Rlt_irrefl 0);
+ intro; elimtype False; auto.
+rewrite (Rmult_opp_opp x y); trivial.
+unfold Rge in r, r1; elim r; elim r1; clear r r1; intros; unfold Rgt in H0, H.
+generalize (Rmult_lt_compat_l y x 0 H0 r0); intro;
+ rewrite (Rmult_0_r y) in H1; rewrite (Rmult_comm y x) in H1;
+ generalize (Rlt_asym (x * y) 0 H1); intro; elimtype False; 
+ auto.
+generalize (Rlt_dichotomy_converse x 0 (or_introl (x > 0) r0));
+ generalize (Rlt_dichotomy_converse y 0 (or_intror (y < 0) H0)); 
+ intros; generalize (Rmult_integral x y H); intro; 
+ elim H3; intro; elimtype False; auto.  
+rewrite H0 in H; rewrite (Rmult_0_r x) in H; unfold Rgt in H;
+ generalize (Rlt_irrefl 0); intro; elimtype False; 
+ auto.
+rewrite H0; rewrite (Rmult_0_r x); rewrite (Rmult_0_r (- x)); trivial.
+unfold Rge in r0, r1; elim r0; elim r1; clear r0 r1; intros;
+ unfold Rgt in H0, H.
+generalize (Rmult_lt_compat_l x y 0 H0 r); intro; rewrite (Rmult_0_r x) in H1;
+ generalize (Rlt_asym (x * y) 0 H1); intro; elimtype False; 
+ auto.
+generalize (Rlt_dichotomy_converse y 0 (or_introl (y > 0) r));
+ generalize (Rlt_dichotomy_converse 0 x (or_introl (0 > x) H0)); 
+ intros; generalize (Rmult_integral x y H); intro; 
+ elim H3; intro; elimtype False; auto.  
+rewrite H0 in H; rewrite (Rmult_0_l y) in H; unfold Rgt in H;
+ generalize (Rlt_irrefl 0); intro; elimtype False; 
+ auto.
+rewrite H0; rewrite (Rmult_0_l y); rewrite (Rmult_0_l (- y)); trivial.
+Qed.
+
+(*********)
+Lemma Rabs_Rinv : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
+intro; unfold Rabs in |- *; case (Rcase_abs r); case (Rcase_abs (/ r)); auto;
+ intros.
+apply Ropp_inv_permute; auto.
+generalize (Rinv_lt_0_compat r r1); intro; unfold Rge in r0; elim r0; intros.
+unfold Rgt in H1; generalize (Rlt_asym 0 (/ r) H1); intro; elimtype False;
+ auto.
+generalize (Rlt_dichotomy_converse (/ r) 0 (or_introl (/ r > 0) H0)); intro;
+ elimtype False; auto.
+unfold Rge in r1; elim r1; clear r1; intro.
+unfold Rgt in H0; generalize (Rlt_asym 0 (/ r) (Rinv_0_lt_compat r H0));
+ intro; elimtype False; auto.
+elimtype False; auto.
 Qed. 
 
-Lemma Rabsolu_Ropp:
-  (x:R) (Rabsolu (Ropp x))==(Rabsolu x).
-Intro;Cut (Ropp x)==(Rmult (Ropp R1) x).
-Intros; Rewrite H.
-Rewrite Rabsolu_mult.
-Cut (Rabsolu (Ropp R1))==R1.
-Intros; Rewrite H0.
-Ring.
-Unfold Rabsolu; Case (case_Rabsolu (Ropp R1)).
-Intro; Ring.
-Intro H0;Generalize (Rle_sym2 R0 (Ropp R1) H0);Intros.
-Generalize (Rle_Ropp R0 (Ropp R1) H1).
-Rewrite Ropp_Ropp; Rewrite Ropp_O.
-Intro;Generalize (Rle_not R1 R0 Rlt_R0_R1);Intro;
- Generalize (Rle_sym2 R1 R0 H2);Intro;
- ElimType False;Auto.  
-Ring.
+Lemma Rabs_Ropp : forall x:R, Rabs (- x) = Rabs x.
+intro; cut (- x = -1 * x).
+intros; rewrite H.
+rewrite Rabs_mult.
+cut (Rabs (-1) = 1).
+intros; rewrite H0.
+ring.
+unfold Rabs in |- *; case (Rcase_abs (-1)).
+intro; ring.
+intro H0; generalize (Rge_le (-1) 0 H0); intros.
+generalize (Ropp_le_ge_contravar 0 (-1) H1).
+rewrite Ropp_involutive; rewrite Ropp_0.
+intro; generalize (Rgt_not_le 1 0 Rlt_0_1); intro; generalize (Rge_le 0 1 H2);
+ intro; elimtype False; auto.  
+ring.
 Qed.
 
 (*********)
-Lemma Rabsolu_triang:(a,b:R)(Rle (Rabsolu (Rplus a b)) 
-                                (Rplus (Rabsolu a) (Rabsolu b))).
-Intros a b;Unfold Rabsolu;Case (case_Rabsolu (Rplus a b));
- Case (case_Rabsolu a);Case (case_Rabsolu b);Intros.
-Apply (eq_Rle (Ropp (Rplus a b)) (Rplus (Ropp a) (Ropp b)));
- Rewrite (Ropp_distr1 a b);Reflexivity.
+Lemma Rabs_triang : forall a b:R, Rabs (a + b) <= Rabs a + Rabs b.
+intros a b; unfold Rabs in |- *; case (Rcase_abs (a + b)); case (Rcase_abs a);
+ case (Rcase_abs b); intros.
+apply (Req_le (- (a + b)) (- a + - b)); rewrite (Ropp_plus_distr a b);
+ reflexivity.
 (**)
-Rewrite (Ropp_distr1 a b);
- Apply (Rle_compatibility (Ropp a) (Ropp b) b);
- Unfold Rle;Unfold Rge in r;Elim r;Intro.
-Left;Unfold Rgt in H;Generalize (Rlt_compatibility (Ropp b) R0 b H);
- Intro;Elim (Rplus_ne (Ropp b));Intros v w;Rewrite v in H0;Clear v w;
- Rewrite (Rplus_Ropp_l b) in H0;Apply (Rlt_trans (Ropp b) R0 b H0 H).
-Right;Rewrite H;Apply Ropp_O.
+rewrite (Ropp_plus_distr a b); apply (Rplus_le_compat_l (- a) (- b) b);
+ unfold Rle in |- *; unfold Rge in r; elim r; intro.
+left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- b) 0 b H); intro;
+ elim (Rplus_ne (- b)); intros v w; rewrite v in H0; 
+ clear v w; rewrite (Rplus_opp_l b) in H0; apply (Rlt_trans (- b) 0 b H0 H).
+right; rewrite H; apply Ropp_0.
 (**)
-Rewrite (Ropp_distr1 a b);
- Rewrite (Rplus_sym (Ropp a) (Ropp b));
- Rewrite (Rplus_sym a (Ropp b));
- Apply (Rle_compatibility (Ropp b) (Ropp a) a);
- Unfold Rle;Unfold Rge in r0;Elim r0;Intro.
-Left;Unfold Rgt in H;Generalize (Rlt_compatibility (Ropp a) R0 a H);
- Intro;Elim (Rplus_ne (Ropp a));Intros v w;Rewrite v in H0;Clear v w;
- Rewrite (Rplus_Ropp_l a) in H0;Apply (Rlt_trans (Ropp a) R0 a H0 H).
-Right;Rewrite H;Apply Ropp_O.
+rewrite (Ropp_plus_distr a b); rewrite (Rplus_comm (- a) (- b));
+ rewrite (Rplus_comm a (- b)); apply (Rplus_le_compat_l (- b) (- a) a);
+ unfold Rle in |- *; unfold Rge in r0; elim r0; intro.
+left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- a) 0 a H); intro;
+ elim (Rplus_ne (- a)); intros v w; rewrite v in H0; 
+ clear v w; rewrite (Rplus_opp_l a) in H0; apply (Rlt_trans (- a) 0 a H0 H).
+right; rewrite H; apply Ropp_0.
 (**)
-ElimType False;Generalize (Rge_plus_plus_r a b R0 r);Intro;
- Elim (Rplus_ne a);Intros v w;Rewrite v in H;Clear v w; 
- Generalize (Rge_trans (Rplus a b) a R0 H r0);Intro;Clear H;
- Unfold Rge in H0;Elim H0;Intro;Clear H0.
-Unfold Rgt in H;Generalize (Rlt_antisym (Rplus a b) R0 r1);Intro;Auto.
-Absurd (Rplus a b)==R0;Auto.
-Apply (imp_not_Req (Rplus a b) R0);Left;Assumption.
+elimtype False; generalize (Rplus_ge_compat_l a b 0 r); intro;
+ elim (Rplus_ne a); intros v w; rewrite v in H; clear v w;
+ generalize (Rge_trans (a + b) a 0 H r0); intro; clear H; 
+ unfold Rge in H0; elim H0; intro; clear H0.
+unfold Rgt in H; generalize (Rlt_asym (a + b) 0 r1); intro; auto.
+absurd (a + b = 0); auto.
+apply (Rlt_dichotomy_converse (a + b) 0); left; assumption.
 (**)
-ElimType False;Generalize (Rlt_compatibility a b R0 r);Intro;
- Elim (Rplus_ne a);Intros v w;Rewrite v in H;Clear v w;
- Generalize (Rlt_trans (Rplus a b) a R0 H r0);Intro;Clear H;
- Unfold Rge in r1;Elim r1;Clear r1;Intro.
-Unfold Rgt in H;
- Generalize (Rlt_trans (Rplus a b) R0 (Rplus a b) H0 H);Intro;
- Apply (Rlt_antirefl (Rplus a b));Assumption.
-Rewrite H in H0;Apply (Rlt_antirefl R0);Assumption.
+elimtype False; generalize (Rplus_lt_compat_l a b 0 r); intro;
+ elim (Rplus_ne a); intros v w; rewrite v in H; clear v w;
+ generalize (Rlt_trans (a + b) a 0 H r0); intro; clear H; 
+ unfold Rge in r1; elim r1; clear r1; intro.
+unfold Rgt in H; generalize (Rlt_trans (a + b) 0 (a + b) H0 H); intro;
+ apply (Rlt_irrefl (a + b)); assumption.
+rewrite H in H0; apply (Rlt_irrefl 0); assumption.
 (**)
-Rewrite (Rplus_sym a b);Rewrite (Rplus_sym (Ropp a) b);
- Apply (Rle_compatibility b a (Ropp a));
- Apply (Rminus_le a (Ropp a));Unfold Rminus;Rewrite (Ropp_Ropp a);
- Generalize (Rlt_compatibility a a R0 r0);Clear r r1;Intro;
- Elim (Rplus_ne a);Intros v w;Rewrite v in H;Clear v w;
- Generalize (Rlt_trans (Rplus a a) a R0 H r0);Intro;
- Apply (Rlt_le (Rplus a a) R0 H0).
+rewrite (Rplus_comm a b); rewrite (Rplus_comm (- a) b);
+ apply (Rplus_le_compat_l b a (- a)); apply (Rminus_le a (- a));
+ unfold Rminus in |- *; rewrite (Ropp_involutive a);
+ generalize (Rplus_lt_compat_l a a 0 r0); clear r r1; 
+ intro; elim (Rplus_ne a); intros v w; rewrite v in H; 
+ clear v w; generalize (Rlt_trans (a + a) a 0 H r0); 
+ intro; apply (Rlt_le (a + a) 0 H0).
 (**)
-Apply (Rle_compatibility a b (Ropp b));
- Apply (Rminus_le b (Ropp b));Unfold Rminus;Rewrite (Ropp_Ropp b);
- Generalize (Rlt_compatibility b b R0 r);Clear r0 r1;Intro;
- Elim (Rplus_ne b);Intros v w;Rewrite v in H;Clear v w;
- Generalize (Rlt_trans (Rplus b b) b R0 H r);Intro;
- Apply (Rlt_le (Rplus b b) R0 H0).
+apply (Rplus_le_compat_l a b (- b)); apply (Rminus_le b (- b));
+ unfold Rminus in |- *; rewrite (Ropp_involutive b);
+ generalize (Rplus_lt_compat_l b b 0 r); clear r0 r1; 
+ intro; elim (Rplus_ne b); intros v w; rewrite v in H; 
+ clear v w; generalize (Rlt_trans (b + b) b 0 H r); 
+ intro; apply (Rlt_le (b + b) 0 H0).
 (**)
-Unfold Rle;Right;Reflexivity.
+unfold Rle in |- *; right; reflexivity.
 Qed.
 
 (*********)
-Lemma Rabsolu_triang_inv:(a,b:R)(Rle (Rminus (Rabsolu a) (Rabsolu b))
-                                     (Rabsolu (Rminus a b))).
-Intros;
- Apply (Rle_anti_compatibility (Rabsolu b)
-        (Rminus (Rabsolu a) (Rabsolu b)) (Rabsolu (Rminus a b)));
- Unfold Rminus;
- Rewrite <- (Rplus_assoc (Rabsolu b) (Rabsolu a) (Ropp (Rabsolu b)));
- Rewrite (Rplus_sym (Rabsolu b) (Rabsolu a));
- Rewrite (Rplus_assoc (Rabsolu a) (Rabsolu b) (Ropp (Rabsolu b)));
- Rewrite (Rplus_Ropp_r (Rabsolu b));
- Rewrite (proj1 ? ? (Rplus_ne (Rabsolu a)));
- Replace (Rabsolu a) with (Rabsolu (Rplus a R0)).
- Rewrite <- (Rplus_Ropp_r b);
- Rewrite <- (Rplus_assoc a b (Ropp b)); 
- Rewrite (Rplus_sym a b);
- Rewrite (Rplus_assoc b a (Ropp b)).
- Exact (Rabsolu_triang b (Rplus a (Ropp b))).
- Rewrite (proj1 ? ? (Rplus_ne a));Trivial.
+Lemma Rabs_triang_inv : forall a b:R, Rabs a - Rabs b <= Rabs (a - b).
+intros; apply (Rplus_le_reg_l (Rabs b) (Rabs a - Rabs b) (Rabs (a - b)));
+ unfold Rminus in |- *; rewrite <- (Rplus_assoc (Rabs b) (Rabs a) (- Rabs b));
+ rewrite (Rplus_comm (Rabs b) (Rabs a));
+ rewrite (Rplus_assoc (Rabs a) (Rabs b) (- Rabs b));
+ rewrite (Rplus_opp_r (Rabs b)); rewrite (proj1 (Rplus_ne (Rabs a)));
+ replace (Rabs a) with (Rabs (a + 0)).
+ rewrite <- (Rplus_opp_r b); rewrite <- (Rplus_assoc a b (- b));
+  rewrite (Rplus_comm a b); rewrite (Rplus_assoc b a (- b)).
+ exact (Rabs_triang b (a + - b)).
+ rewrite (proj1 (Rplus_ne a)); trivial.
 Qed.
 
 (* ||a|-|b||<=|a-b| *)
-Lemma Rabsolu_triang_inv2 : (a,b:R) ``(Rabsolu ((Rabsolu a)-(Rabsolu b)))<=(Rabsolu (a-b))``. 
-Cut (a,b:R) ``(Rabsolu b)<=(Rabsolu a)``->``(Rabsolu ((Rabsolu a)-(Rabsolu b))) <= (Rabsolu (a-b))``. 
-Intros; NewDestruct (total_order (Rabsolu a) (Rabsolu b)) as [Hlt|[Heq|Hgt]].
-Rewrite <- (Rabsolu_Ropp ``(Rabsolu a)-(Rabsolu b)``); Rewrite <- (Rabsolu_Ropp ``a-b``); Do 2 Rewrite Ropp_distr2. 
-Apply H; Left; Assumption. 
-Rewrite Heq; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply Rabsolu_pos. 
-Apply H; Left; Assumption. 
-Intros; Replace ``(Rabsolu ((Rabsolu a)-(Rabsolu b)))`` with ``(Rabsolu a)-(Rabsolu b)``. 
-Apply Rabsolu_triang_inv. 
-Rewrite (Rabsolu_right ``(Rabsolu a)-(Rabsolu b)``); [Reflexivity | Apply Rle_sym1; Apply Rle_anti_compatibility with (Rabsolu b); Rewrite Rplus_Or; Replace ``(Rabsolu b)+((Rabsolu a)-(Rabsolu b))`` with (Rabsolu a); [Assumption | Ring]]. 
+Lemma Rabs_triang_inv2 : forall a b:R, Rabs (Rabs a - Rabs b) <= Rabs (a - b). 
+cut
+ (forall a b:R, Rabs b <= Rabs a -> Rabs (Rabs a - Rabs b) <= Rabs (a - b)). 
+intros; destruct (Rtotal_order (Rabs a) (Rabs b)) as [Hlt| [Heq| Hgt]].
+rewrite <- (Rabs_Ropp (Rabs a - Rabs b)); rewrite <- (Rabs_Ropp (a - b));
+ do 2 rewrite Ropp_minus_distr. 
+apply H; left; assumption. 
+rewrite Heq; unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0;
+ apply Rabs_pos. 
+apply H; left; assumption. 
+intros; replace (Rabs (Rabs a - Rabs b)) with (Rabs a - Rabs b). 
+apply Rabs_triang_inv. 
+rewrite (Rabs_right (Rabs a - Rabs b));
+ [ reflexivity
+ | apply Rle_ge; apply Rplus_le_reg_l with (Rabs b); rewrite Rplus_0_r;
+    replace (Rabs b + (Rabs a - Rabs b)) with (Rabs a); 
+    [ assumption | ring ] ]. 
 Qed. 
 
 (*********)
-Lemma Rabsolu_def1:(x,a:R)(Rlt x a)->(Rlt (Ropp a) x)->(Rlt (Rabsolu x) a).
-Unfold Rabsolu;Intros;Case (case_Rabsolu x);Intro.
-Generalize (Rlt_Ropp (Ropp a) x H0);Unfold Rgt;Rewrite Ropp_Ropp;Intro;
- Assumption.
-Assumption.
+Lemma Rabs_def1 : forall x a:R, x < a -> - a < x -> Rabs x < a.
+unfold Rabs in |- *; intros; case (Rcase_abs x); intro.
+generalize (Ropp_lt_gt_contravar (- a) x H0); unfold Rgt in |- *;
+ rewrite Ropp_involutive; intro; assumption.
+assumption.
 Qed.
 
 (*********)
-Lemma Rabsolu_def2:(x,a:R)(Rlt (Rabsolu x) a)->(Rlt x a)/\(Rlt (Ropp a) x).
-Unfold Rabsolu;Intro x;Case (case_Rabsolu x);Intros.
-Generalize (Rlt_RoppO x r);Unfold Rgt;Intro;
- Generalize (Rlt_trans R0 (Ropp x) a H0 H);Intro;Split. 
-Apply (Rlt_trans x R0 a r H1).
-Generalize (Rlt_Ropp (Ropp x) a H);Rewrite (Ropp_Ropp x);Unfold Rgt;Trivial.
-Fold (Rgt a x) in H;Generalize (Rgt_ge_trans a x R0 H r);Intro;
- Generalize (Rgt_RoppO a H0);Intro;Fold (Rgt R0 (Ropp a));
- Generalize (Rge_gt_trans x R0 (Ropp a) r H1);Unfold Rgt;Intro;Split;
- Assumption.
+Lemma Rabs_def2 : forall x a:R, Rabs x < a -> x < a /\ - a < x.
+unfold Rabs in |- *; intro x; case (Rcase_abs x); intros.
+generalize (Ropp_gt_lt_0_contravar x r); unfold Rgt in |- *; intro;
+ generalize (Rlt_trans 0 (- x) a H0 H); intro; split. 
+apply (Rlt_trans x 0 a r H1).
+generalize (Ropp_lt_gt_contravar (- x) a H); rewrite (Ropp_involutive x);
+ unfold Rgt in |- *; trivial.
+fold (a > x) in H; generalize (Rgt_ge_trans a x 0 H r); intro;
+ generalize (Ropp_lt_gt_0_contravar a H0); intro; fold (0 > - a) in |- *;
+ generalize (Rge_gt_trans x 0 (- a) r H1); unfold Rgt in |- *; 
+ intro; split; assumption.
 Qed.
 
-Lemma RmaxAbs:
- (p, q, r : R)
- (Rle p q) -> (Rle q r) ->  (Rle (Rabsolu q) (Rmax (Rabsolu p) (Rabsolu r))).
-Intros p q r H' H'0; Case (Rle_or_lt R0 p); Intros H'1.
-Repeat Rewrite Rabsolu_right; Auto with real.
-Apply Rle_trans with r; Auto with real.
-Apply RmaxLess2; Auto.
-Apply Rge_trans with p; Auto with real; Apply Rge_trans with q; Auto with real.
-Apply Rge_trans with p; Auto with real.
-Rewrite (Rabsolu_left p); Auto.
-Case (Rle_or_lt R0 q); Intros H'2.
-Repeat Rewrite Rabsolu_right; Auto with real.
-Apply Rle_trans with r; Auto.
-Apply RmaxLess2; Auto.
-Apply Rge_trans with q; Auto with real.
-Rewrite (Rabsolu_left q); Auto.
-Case (Rle_or_lt R0 r); Intros H'3.
-Repeat Rewrite Rabsolu_right; Auto with real.
-Apply Rle_trans with (Ropp p); Auto with real.
-Apply RmaxLess1; Auto.
-Rewrite (Rabsolu_left r); Auto.
-Apply Rle_trans with (Ropp p); Auto with real.
-Apply RmaxLess1; Auto.
+Lemma RmaxAbs :
+ forall (p q:R) r, p <= q -> q <= r -> Rabs q <= Rmax (Rabs p) (Rabs r).
+intros p q r H' H'0; case (Rle_or_lt 0 p); intros H'1.
+repeat rewrite Rabs_right; auto with real.
+apply Rle_trans with r; auto with real.
+apply RmaxLess2; auto.
+apply Rge_trans with p; auto with real; apply Rge_trans with q;
+ auto with real.
+apply Rge_trans with p; auto with real.
+rewrite (Rabs_left p); auto.
+case (Rle_or_lt 0 q); intros H'2.
+repeat rewrite Rabs_right; auto with real.
+apply Rle_trans with r; auto.
+apply RmaxLess2; auto.
+apply Rge_trans with q; auto with real.
+rewrite (Rabs_left q); auto.
+case (Rle_or_lt 0 r); intros H'3.
+repeat rewrite Rabs_right; auto with real.
+apply Rle_trans with (- p); auto with real.
+apply RmaxLess1; auto.
+rewrite (Rabs_left r); auto.
+apply Rle_trans with (- p); auto with real.
+apply RmaxLess1; auto.
 Qed.
 
-Lemma Rabsolu_Zabs: (z : Z)  (Rabsolu (IZR z)) == (IZR (Zabs z)).
-Intros z; Case z; Simpl; Auto with real.
-Apply Rabsolu_right; Auto with real.
-Intros p0; Apply Rabsolu_right; Auto with real zarith.
-Intros p0; Rewrite Rabsolu_Ropp.
-Apply Rabsolu_right; Auto with real zarith.
+Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Zabs z).
+intros z; case z; simpl in |- *; auto with real.
+apply Rabs_right; auto with real.
+intros p0; apply Rabs_right; auto with real zarith.
+intros p0; rewrite Rabs_Ropp.
+apply Rabs_right; auto with real zarith.
 Qed.
  

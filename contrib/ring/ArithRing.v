@@ -12,70 +12,78 @@
 
 Require Export Ring.
 Require Export Arith.
-Require Eqdep_dec.
+Require Import Eqdep_dec.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Fixpoint nateq [n,m:nat] : bool :=
-  Cases n m of
-  | O O => true
-  | (S n') (S m') => (nateq n' m')
-  | _ _ => false
+Fixpoint nateq (n m:nat) {struct m} : bool :=
+  match n, m with
+  | O, O => true
+  | S n', S m' => nateq n' m'
+  | _, _ => false
   end.
 
-Lemma nateq_prop : (n,m:nat)(Is_true (nateq n m))->n==m.
+Lemma nateq_prop : forall n m:nat, Is_true (nateq n m) -> n = m.
 Proof.
-  Induction n; Induction m; Intros; Try Contradiction.
-  Trivial.
-  Unfold Is_true in H1.
-  Rewrite (H n1 H1).
-  Trivial.
-Save.
+  simple induction n; simple induction m; intros; try contradiction.
+  trivial.
+  unfold Is_true in H1.
+  rewrite (H n1 H1).
+  trivial.
+Qed.
 
-Hints Resolve nateq_prop eq2eqT : arithring.
+Hint Resolve nateq_prop eq2eqT: arithring.
 
-Definition NatTheory : (Semi_Ring_Theory plus mult (1) (0) nateq).
-  Split; Intros; Auto with arith arithring.
-  Apply eq2eqT; Apply simpl_plus_l with n:=n.
-  Apply eqT2eq; Trivial.
+Definition NatTheory : Semi_Ring_Theory plus mult 1 0 nateq.
+  split; intros; auto with arith arithring.
+  apply eq2eqT; apply (fun n m p:nat => plus_reg_l m p n) with (n := n).
+  apply eqT2eq; trivial.
 Defined.
 
 
-Add Semi Ring nat plus mult (1) (0) nateq NatTheory [O S].
+Add Semi Ring nat plus mult 1 0 nateq NatTheory [ 0 S ].
 
-Goal (n:nat)(S n)=(plus (S O) n).
-Intro; Reflexivity.
+Goal forall n:nat, S n = 1 + n.
+intro; reflexivity.
 Save S_to_plus_one.
 
 (* Replace all occurrences of (S exp) by (plus (S O) exp), except when
    exp is already O and only for those occurrences than can be reached by going
    down plus and mult operations  *)
-Recursive Meta Definition S_to_plus t :=
-   Match t With 
-   | [(S O)] -> '(S O)
-   | [(S ?1)] -> Let t1 = (S_to_plus ?1) In
-                 '(plus (S O) t1)
-   | [(plus ?1 ?2)] -> Let t1 = (S_to_plus ?1) 
-                     And t2 = (S_to_plus ?2) In
-                     '(plus t1 t2)
-   | [(mult ?1 ?2)] -> Let t1 = (S_to_plus ?1)
-                     And t2 = (S_to_plus ?2) In
-                     '(mult t1 t2)
-   | [?] -> 't.
+Ltac rewrite_S_to_plus_term t :=
+  match constr:t with
+  | 1 => constr:1
+  | (S ?X1) =>
+      let t1 := rewrite_S_to_plus_term X1 in
+      constr:(1 + t1)
+  | (?X1 + ?X2) =>
+      let t1 := rewrite_S_to_plus_term X1
+      with t2 := rewrite_S_to_plus_term X2 in
+      constr:(t1 + t2)
+  | (?X1 * ?X2) =>
+      let t1 := rewrite_S_to_plus_term X1
+      with t2 := rewrite_S_to_plus_term X2 in
+      constr:(t1 * t2)
+  | _ => constr:t
+  end.
 
 (* Apply S_to_plus on both sides of an equality *)
-Tactic Definition S_to_plus_eq :=
-   Match Context With
-   | [ |- ?1 = ?2 ] -> 
-      (**) Try (**)
-      Let t1 = (S_to_plus ?1)
-      And t2 = (S_to_plus ?2) In
-        Change t1=t2
-   | [ |- ?1 == ?2 ] ->
-      (**) Try (**)
-      Let t1 = (S_to_plus ?1)
-      And t2 = (S_to_plus ?2) In
-        Change (t1==t2).
+Ltac rewrite_S_to_plus :=
+  match goal with
+  |  |- (?X1 = ?X2) =>
+      try
+       let t1 :=  
+       (**)  (**)
+       rewrite_S_to_plus_term X1
+       with t2 := rewrite_S_to_plus_term X2 in
+       change (t1 = t2) in |- *
+  |  |- (?X1 = ?X2) =>
+      try
+       let t1 := 
+       (**)  (**)
+       rewrite_S_to_plus_term X1
+       with t2 := rewrite_S_to_plus_term X2 in
+       change (t1 = t2) in |- *
+  end.
 
-Tactic Definition NatRing := S_to_plus_eq;Ring.
+Ltac ring_nat := rewrite_S_to_plus; ring.

@@ -27,81 +27,80 @@
 
 (* Lemmas involving positive and compare are not taken into account *)
 
-Require BinInt.
-Require Zorder.
-Require Zmin.
-Require Zabs.
-Require Zcompare.
-Require Znat.
-Require auxiliary.
-Require Zsyntax.
-Require Zmisc.
-Require Wf_Z.
+Require Import BinInt.
+Require Import Zorder.
+Require Import Zmin.
+Require Import Zabs.
+Require Import Zcompare.
+Require Import Znat.
+Require Import auxiliary.
+Require Import Zmisc.
+Require Import Wf_Z.
 
 (**********************************************************************)
 (*                  Simplification lemmas                             *)
 (* No subgoal or smaller subgoals                                     *)
 
-Hints Resolve
+Hint Resolve 
   (* A) Reversible simplification lemmas (no loss of information)      *)
   (* Should clearly declared as hints                                  *)
   
   (* Lemmas ending by eq *)
-  Zeq_S (* :(n,m:Z)`n = m`->`(Zs n) = (Zs m)` *)
+  Zsucc_eq_compat (* :(n,m:Z)`n = m`->`(Zs n) = (Zs m)` *)
   
   (* Lemmas ending by Zgt *)
-  Zgt_n_S (* :(n,m:Z)`m > n`->`(Zs m) > (Zs n)` *)
-  Zgt_Sn_n (* :(n:Z)`(Zs n) > n` *)
-  POS_gt_ZERO (* :(p:positive)`(POS p) > 0` *)
-  Zgt_reg_l (* :(n,m,p:Z)`n > m`->`p+n > p+m` *)
-  Zgt_reg_r (* :(n,m,p:Z)`n > m`->`n+p > m+p` *)
+  Zsucc_gt_compat (* :(n,m:Z)`m > n`->`(Zs m) > (Zs n)` *)
+  Zgt_succ (* :(n:Z)`(Zs n) > n` *)
+  Zorder.Zgt_pos_0 (* :(p:positive)`(POS p) > 0` *)
+  Zplus_gt_compat_l (* :(n,m,p:Z)`n > m`->`p+n > p+m` *)
+  Zplus_gt_compat_r (* :(n,m,p:Z)`n > m`->`n+p > m+p` *)
   
   (* Lemmas ending by Zlt *)
-  Zlt_n_Sn (* :(n:Z)`n < (Zs n)` *)
-  Zlt_n_S (* :(n,m:Z)`n < m`->`(Zs n) < (Zs m)` *)
-  Zlt_pred_n_n (* :(n:Z)`(Zpred n) < n` *)
-  Zlt_reg_l (* :(n,m,p:Z)`n < m`->`p+n < p+m` *)
-  Zlt_reg_r (* :(n,m,p:Z)`n < m`->`n+p < m+p` *)
+  Zlt_succ (* :(n:Z)`n < (Zs n)` *)
+  Zsucc_lt_compat (* :(n,m:Z)`n < m`->`(Zs n) < (Zs m)` *)
+  Zlt_pred (* :(n:Z)`(Zpred n) < n` *)
+  Zplus_lt_compat_l (* :(n,m,p:Z)`n < m`->`p+n < p+m` *)
+  Zplus_lt_compat_r (* :(n,m,p:Z)`n < m`->`n+p < m+p` *)
   
   (* Lemmas ending by Zle *)
-  ZERO_le_inj (* :(n:nat)`0 <= (inject_nat n)` *)
-  ZERO_le_POS (* :(p:positive)`0 <= (POS p)` *)
-  Zle_n (* :(n:Z)`n <= n` *)
-  Zle_n_Sn (* :(n:Z)`n <= (Zs n)` *)
-  Zle_n_S (* :(n,m:Z)`m <= n`->`(Zs m) <= (Zs n)` *)
-  Zle_pred_n (* :(n:Z)`(Zpred n) <= n` *)
+  Zle_0_nat (* :(n:nat)`0 <= (inject_nat n)` *)
+  Zorder.Zle_0_pos (* :(p:positive)`0 <= (POS p)` *)
+  Zle_refl (* :(n:Z)`n <= n` *)
+  Zle_succ (* :(n:Z)`n <= (Zs n)` *)
+  Zsucc_le_compat (* :(n,m:Z)`m <= n`->`(Zs m) <= (Zs n)` *)
+  Zle_pred (* :(n:Z)`(Zpred n) <= n` *)
   Zle_min_l (* :(n,m:Z)`(Zmin n m) <= n` *)
   Zle_min_r (* :(n,m:Z)`(Zmin n m) <= m` *)
-  Zle_reg_l (* :(n,m,p:Z)`n <= m`->`p+n <= p+m` *)
-  Zle_reg_r (* :(a,b,c:Z)`a <= b`->`a+c <= b+c` *)
+  Zplus_le_compat_l (* :(n,m,p:Z)`n <= m`->`p+n <= p+m` *)
+  Zplus_le_compat_r (* :(a,b,c:Z)`a <= b`->`a+c <= b+c` *)
   Zabs_pos (* :(x:Z)`0 <= |x|` *)
   
   (* B) Irreversible simplification lemmas : Probably to be declared as *)
   (* hints, when no other simplification is possible *)
   
   (* Lemmas ending by eq *)
-  Z_eq_mult (* :(x,y:Z)`y = 0`->`y*x = 0` *)
-  Zplus_simpl (* :(n,m,p,q:Z)`n = m`->`p = q`->`n+p = m+q` *)
+  BinInt.Z_eq_mult (* :(x,y:Z)`y = 0`->`y*x = 0` *)
+  Zplus_eq_compat (* :(n,m,p,q:Z)`n = m`->`p = q`->`n+p = m+q` *)
   
   (* Lemmas ending by Zge *)
-  Zge_Zmult_pos_right (* :(a,b,c:Z)`a >= b`->`c >= 0`->`a*c >= b*c` *)
-  Zge_Zmult_pos_left (* :(a,b,c:Z)`a >= b`->`c >= 0`->`c*a >= c*b` *)
-  Zge_Zmult_pos_compat (* :
-    (a,b,c,d:Z)`a >= c`->`b >= d`->`c >= 0`->`d >= 0`->`a*b >= c*d` *)
+  Zorder.Zmult_ge_compat_r (* :(a,b,c:Z)`a >= b`->`c >= 0`->`a*c >= b*c` *)
+  Zorder.Zmult_ge_compat_l (* :(a,b,c:Z)`a >= b`->`c >= 0`->`c*a >= c*b` *)
+  Zorder.Zmult_ge_compat (* :
+      (a,b,c,d:Z)`a >= c`->`b >= d`->`c >= 0`->`d >= 0`->`a*b >= c*d` *)
   
   (* Lemmas ending by Zlt *)
-  Zgt_ZERO_mult (* :(a,b:Z)`a > 0`->`b > 0`->`a*b > 0` *)
-  Zlt_S (* :(n,m:Z)`n < m`->`n < (Zs m)` *)
+  Zorder.Zmult_gt_0_compat (* :(a,b:Z)`a > 0`->`b > 0`->`a*b > 0` *)
+  Zlt_lt_succ (* :(n,m:Z)`n < m`->`n < (Zs m)` *)
   
   (* Lemmas ending by Zle *)
-  Zle_ZERO_mult (* :(x,y:Z)`0 <= x`->`0 <= y`->`0 <= x*y` *)
-  Zle_Zmult_pos_right (* :(a,b,c:Z)`a <= b`->`0 <= c`->`a*c <= b*c` *)
-  Zle_Zmult_pos_left (* :(a,b,c:Z)`a <= b`->`0 <= c`->`c*a <= c*b` *)
-  OMEGA2 (* :(x,y:Z)`0 <= x`->`0 <= y`->`0 <= x+y` *)
-  Zle_le_S (* :(x,y:Z)`x <= y`->`x <= (Zs y)` *)
-  Zle_plus_plus (* :(n,m,p,q:Z)`n <= m`->`p <= q`->`n+p <= m+q` *)
-
-: zarith.
+  Zorder.Zmult_le_0_compat (* :(x,y:Z)`0 <= x`->`0 <= y`->`0 <= x*y` *)
+  Zorder.Zmult_le_compat_r (* :(a,b,c:Z)`a <= b`->`0 <= c`->`a*c <= b*c` *)
+  Zorder.Zmult_le_compat_l (* :(a,b,c:Z)`a <= b`->`0 <= c`->`c*a <= c*b` *)
+  Zplus_le_0_compat (* :(x,y:Z)`0 <= x`->`0 <= y`->`0 <= x+y` *)
+  Zle_le_succ (* :(x,y:Z)`x <= y`->`x <= (Zs y)` *)
+  Zplus_le_compat (* :(n,m,p,q:Z)`n <= m`->`p <= q`->`n+p <= m+q` *)
+  
+  : zarith.
   
 (**********************************************************************)
 (*         Reversible lemmas relating operators                       *)

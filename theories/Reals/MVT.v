@@ -8,510 +8,692 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require Ranalysis1.
-Require Rtopology.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import Ranalysis1.
+Require Import Rtopology. Open Local Scope R_scope.
 
 (* The Mean Value Theorem *)
-Theorem MVT : (f,g:R->R;a,b:R;pr1:(c:R)``a<c<b``->(derivable_pt f c);pr2:(c:R)``a<c<b``->(derivable_pt g c)) ``a<b`` -> ((c:R)``a<=c<=b``->(continuity_pt f c)) -> ((c:R)``a<=c<=b``->(continuity_pt g c)) -> (EXT c : R | (EXT P : ``a<c<b`` | ``((g b)-(g a))*(derive_pt f c (pr1 c P))==((f b)-(f a))*(derive_pt g c (pr2 c P))``)).
-Intros; Assert H2 := (Rlt_le ? ? H).
-Pose h := [y:R]``((g b)-(g a))*(f y)-((f b)-(f a))*(g y)``.
-Cut (c:R)``a<c<b``->(derivable_pt h c).
-Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt h c)).
-Intro; Assert H4 := (continuity_ab_maj h a b H2 H3).
-Assert H5 := (continuity_ab_min h a b H2 H3).
-Elim H4; Intros Mx H6.
-Elim H5; Intros mx H7.
-Cut (h a)==(h b).
-Intro; Pose M := (h Mx); Pose m := (h mx).
-Cut (c:R;P:``a<c<b``) (derive_pt h c (X c P))==``((g b)-(g a))*(derive_pt f c (pr1 c P))-((f b)-(f a))*(derive_pt g c (pr2 c P))``.
-Intro; Case (Req_EM (h a) M); Intro.
-Case (Req_EM (h a) m); Intro.
-Cut ((c:R)``a<=c<=b``->(h c)==M).
-Intro; Cut ``a<(a+b)/2<b``.
+Theorem MVT :
+ forall (f g:R -> R) (a b:R) (pr1:forall c:R, a < c < b -> derivable_pt f c)
+   (pr2:forall c:R, a < c < b -> derivable_pt g c),
+   a < b ->
+   (forall c:R, a <= c <= b -> continuity_pt f c) ->
+   (forall c:R, a <= c <= b -> continuity_pt g c) ->
+    exists c : R
+   | ( exists P : a < c < b
+      | (g b - g a) * derive_pt f c (pr1 c P) =
+        (f b - f a) * derive_pt g c (pr2 c P)).
+intros; assert (H2 := Rlt_le _ _ H).
+pose (h := fun y:R => (g b - g a) * f y - (f b - f a) * g y).
+cut (forall c:R, a < c < b -> derivable_pt h c).
+intro; cut (forall c:R, a <= c <= b -> continuity_pt h c).
+intro; assert (H4 := continuity_ab_maj h a b H2 H3).
+assert (H5 := continuity_ab_min h a b H2 H3).
+elim H4; intros Mx H6.
+elim H5; intros mx H7.
+cut (h a = h b).
+intro; pose (M := h Mx); pose (m := h mx).
+cut
+ (forall (c:R) (P:a < c < b),
+    derive_pt h c (X c P) =
+    (g b - g a) * derive_pt f c (pr1 c P) -
+    (f b - f a) * derive_pt g c (pr2 c P)).
+intro; case (Req_dec (h a) M); intro.
+case (Req_dec (h a) m); intro.
+cut (forall c:R, a <= c <= b -> h c = M).
+intro; cut (a < (a + b) / 2 < b).
 (*** h constant ***)
-Intro; Exists ``(a+b)/2``.
-Exists H13.
-Apply Rminus_eq; Rewrite <- H9; Apply deriv_constant2 with a b.
-Elim H13; Intros; Assumption.
-Elim H13; Intros; Assumption.
-Intros; Rewrite (H12 ``(a+b)/2``).
-Apply H12; Split; Left; Assumption.
-Elim H13; Intros; Split; Left; Assumption.
-Split.
-Apply Rlt_monotony_contra with ``2``.
-Sup0.
-Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1l; Rewrite double; Apply Rlt_compatibility; Apply H.
-DiscrR.
-Apply Rlt_monotony_contra with ``2``.
-Sup0.
-Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1l; Rewrite Rplus_sym; Rewrite double; Apply Rlt_compatibility; Apply H.
-DiscrR.
-Intros; Elim H6; Intros H13 _.
-Elim H7; Intros H14 _.
-Apply Rle_antisym.
-Apply H13; Apply H12.
-Rewrite H10 in H11; Rewrite H11; Apply H14; Apply H12.
-Cut ``a<mx<b``.
+intro; exists ((a + b) / 2).
+exists H13.
+apply Rminus_diag_uniq; rewrite <- H9; apply deriv_constant2 with a b.
+elim H13; intros; assumption.
+elim H13; intros; assumption.
+intros; rewrite (H12 ((a + b) / 2)).
+apply H12; split; left; assumption.
+elim H13; intros; split; left; assumption.
+split.
+apply Rmult_lt_reg_l with 2.
+prove_sup0.
+unfold Rdiv in |- *; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
+ rewrite <- Rinv_r_sym.
+rewrite Rmult_1_l; rewrite double; apply Rplus_lt_compat_l; apply H.
+discrR.
+apply Rmult_lt_reg_l with 2.
+prove_sup0.
+unfold Rdiv in |- *; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
+ rewrite <- Rinv_r_sym.
+rewrite Rmult_1_l; rewrite Rplus_comm; rewrite double;
+ apply Rplus_lt_compat_l; apply H.
+discrR.
+intros; elim H6; intros H13 _.
+elim H7; intros H14 _.
+apply Rle_antisym.
+apply H13; apply H12.
+rewrite H10 in H11; rewrite H11; apply H14; apply H12.
+cut (a < mx < b).
 (*** h admet un minimum global sur [a,b] ***)
-Intro; Exists mx.
-Exists H12.
-Apply Rminus_eq; Rewrite <- H9; Apply deriv_minimum with a b.
-Elim H12; Intros; Assumption.
-Elim H12; Intros; Assumption.
-Intros; Elim H7; Intros.
-Apply H15; Split; Left; Assumption.
-Elim H7; Intros _ H12; Elim H12; Intros; Split.
-Inversion H13.
-Apply H15.
-Rewrite H15 in H11; Elim H11; Reflexivity.
-Inversion H14.
-Apply H15.
-Rewrite H8 in H11; Rewrite <- H15 in H11; Elim H11; Reflexivity.
-Cut ``a<Mx<b``.
+intro; exists mx.
+exists H12.
+apply Rminus_diag_uniq; rewrite <- H9; apply deriv_minimum with a b.
+elim H12; intros; assumption.
+elim H12; intros; assumption.
+intros; elim H7; intros.
+apply H15; split; left; assumption.
+elim H7; intros _ H12; elim H12; intros; split.
+inversion H13.
+apply H15.
+rewrite H15 in H11; elim H11; reflexivity.
+inversion H14.
+apply H15.
+rewrite H8 in H11; rewrite <- H15 in H11; elim H11; reflexivity.
+cut (a < Mx < b).
 (*** h admet un maximum global sur [a,b] ***)
-Intro; Exists Mx.
-Exists H11.
-Apply Rminus_eq; Rewrite <- H9; Apply deriv_maximum with a b.
-Elim H11; Intros; Assumption.
-Elim H11; Intros; Assumption.
-Intros; Elim H6; Intros; Apply H14.
-Split; Left; Assumption.
-Elim H6; Intros _ H11; Elim H11; Intros; Split.
-Inversion H12.
-Apply H14.
-Rewrite H14 in H10; Elim H10; Reflexivity.
-Inversion H13.
-Apply H14.
-Rewrite H8 in H10; Rewrite <- H14 in H10; Elim H10; Reflexivity.
-Intros; Unfold h; Replace (derive_pt [y:R]``((g b)-(g a))*(f y)-((f b)-(f a))*(g y)`` c (X c P)) with (derive_pt (minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g)) c (derivable_pt_minus ? ? ? (derivable_pt_mult ? ? ? (derivable_pt_const ``(g b)-(g a)`` c) (pr1 c P)) (derivable_pt_mult ? ? ? (derivable_pt_const ``(f b)-(f a)`` c) (pr2 c P)))); [Idtac | Apply pr_nu].
-Rewrite derive_pt_minus; Do 2 Rewrite derive_pt_mult; Do 2 Rewrite derive_pt_const; Do 2 Rewrite Rmult_Ol; Do 2 Rewrite Rplus_Ol; Reflexivity.
-Unfold h; Ring.
-Intros; Unfold h; Change (continuity_pt (minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g)) c).
-Apply continuity_pt_minus; Apply continuity_pt_mult.
-Apply derivable_continuous_pt; Apply derivable_const.
-Apply H0; Apply H3.
-Apply derivable_continuous_pt; Apply derivable_const.
-Apply H1; Apply H3.
-Intros; Change (derivable_pt (minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g)) c).
-Apply derivable_pt_minus; Apply derivable_pt_mult.
-Apply derivable_pt_const.
-Apply (pr1 ? H3).
-Apply derivable_pt_const.
-Apply (pr2 ? H3).
+intro; exists Mx.
+exists H11.
+apply Rminus_diag_uniq; rewrite <- H9; apply deriv_maximum with a b.
+elim H11; intros; assumption.
+elim H11; intros; assumption.
+intros; elim H6; intros; apply H14.
+split; left; assumption.
+elim H6; intros _ H11; elim H11; intros; split.
+inversion H12.
+apply H14.
+rewrite H14 in H10; elim H10; reflexivity.
+inversion H13.
+apply H14.
+rewrite H8 in H10; rewrite <- H14 in H10; elim H10; reflexivity.
+intros; unfold h in |- *;
+ replace
+  (derive_pt (fun y:R => (g b - g a) * f y - (f b - f a) * g y) c (X c P))
+  with
+  (derive_pt ((fct_cte (g b - g a) * f)%F - (fct_cte (f b - f a) * g)%F) c
+     (derivable_pt_minus _ _ _
+        (derivable_pt_mult _ _ _ (derivable_pt_const (g b - g a) c) (pr1 c P))
+        (derivable_pt_mult _ _ _ (derivable_pt_const (f b - f a) c) (pr2 c P))));
+ [ idtac | apply pr_nu ].
+rewrite derive_pt_minus; do 2 rewrite derive_pt_mult;
+ do 2 rewrite derive_pt_const; do 2 rewrite Rmult_0_l; 
+ do 2 rewrite Rplus_0_l; reflexivity.
+unfold h in |- *; ring.
+intros; unfold h in |- *;
+ change
+   (continuity_pt ((fct_cte (g b - g a) * f)%F - (fct_cte (f b - f a) * g)%F)
+      c) in |- *.
+apply continuity_pt_minus; apply continuity_pt_mult.
+apply derivable_continuous_pt; apply derivable_const.
+apply H0; apply H3.
+apply derivable_continuous_pt; apply derivable_const.
+apply H1; apply H3.
+intros;
+ change
+   (derivable_pt ((fct_cte (g b - g a) * f)%F - (fct_cte (f b - f a) * g)%F)
+      c) in |- *.
+apply derivable_pt_minus; apply derivable_pt_mult.
+apply derivable_pt_const.
+apply (pr1 _ H3).
+apply derivable_pt_const.
+apply (pr2 _ H3).
 Qed.
 
 (* Corollaries ... *)
-Lemma MVT_cor1 : (f:(R->R); a,b:R; pr:(derivable f)) ``a < b``->(EXT c:R | ``(f b)-(f a) == (derive_pt f c (pr c))*(b-a)``/\``a < c < b``).
-Intros f a b pr H; Cut (c:R)``a<c<b``->(derivable_pt f c); [Intro | Intros; Apply pr].
-Cut (c:R)``a<c<b``->(derivable_pt id c); [Intro | Intros; Apply derivable_pt_id].
-Cut ((c:R)``a<=c<=b``->(continuity_pt f c)); [Intro | Intros; Apply derivable_continuous_pt; Apply pr].
-Cut ((c:R)``a<=c<=b``->(continuity_pt id c)); [Intro | Intros; Apply derivable_continuous_pt; Apply derivable_id].
-Assert H2 := (MVT f id a b X X0 H H0 H1).
-Elim H2; Intros c H3; Elim H3; Intros.
-Exists c; Split.
-Cut (derive_pt id c (X0 c x)) == (derive_pt id c (derivable_pt_id c)); [Intro | Apply pr_nu].
-Rewrite H5 in H4; Rewrite (derive_pt_id c) in H4; Rewrite Rmult_1r in H4; Rewrite <- H4; Replace (derive_pt f c (X c x)) with (derive_pt f c (pr c)); [Idtac | Apply pr_nu]; Apply Rmult_sym.
-Apply x.
+Lemma MVT_cor1 :
+ forall (f:R -> R) (a b:R) (pr:derivable f),
+   a < b ->
+    exists c : R | f b - f a = derive_pt f c (pr c) * (b - a) /\ a < c < b.
+intros f a b pr H; cut (forall c:R, a < c < b -> derivable_pt f c);
+ [ intro | intros; apply pr ].
+cut (forall c:R, a < c < b -> derivable_pt id c);
+ [ intro | intros; apply derivable_pt_id ].
+cut (forall c:R, a <= c <= b -> continuity_pt f c);
+ [ intro | intros; apply derivable_continuous_pt; apply pr ].
+cut (forall c:R, a <= c <= b -> continuity_pt id c);
+ [ intro | intros; apply derivable_continuous_pt; apply derivable_id ].
+assert (H2 := MVT f id a b X X0 H H0 H1).
+elim H2; intros c H3; elim H3; intros.
+exists c; split.
+cut (derive_pt id c (X0 c x) = derive_pt id c (derivable_pt_id c));
+ [ intro | apply pr_nu ].
+rewrite H5 in H4; rewrite (derive_pt_id c) in H4; rewrite Rmult_1_r in H4;
+ rewrite <- H4; replace (derive_pt f c (X c x)) with (derive_pt f c (pr c));
+ [ idtac | apply pr_nu ]; apply Rmult_comm.
+apply x.
 Qed.
 
-Theorem MVT_cor2 : (f,f':R->R;a,b:R) ``a<b`` -> ((c:R)``a<=c<=b``->(derivable_pt_lim f c (f' c))) -> (EXT c:R | ``(f b)-(f a)==(f' c)*(b-a)``/\``a<c<b``).
-Intros f f' a b H H0; Cut ((c:R)``a<=c<=b``->(derivable_pt f c)).
-Intro; Cut ((c:R)``a<c<b``->(derivable_pt f c)).
-Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt f c)).
-Intro; Cut ((c:R)``a<=c<=b``->(derivable_pt id c)).
-Intro; Cut ((c:R)``a<c<b``->(derivable_pt id c)).
-Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt id c)).
-Intro; Elim (MVT f id a b X0 X2 H H1 H2); Intros; Elim H3; Clear H3; Intros; Exists x; Split.
-Cut (derive_pt id x (X2 x x0))==R1.
-Cut (derive_pt f x (X0 x x0))==(f' x).
-Intros; Rewrite H4 in H3; Rewrite H5 in H3; Unfold id in H3; Rewrite Rmult_1r in H3; Rewrite Rmult_sym; Symmetry; Assumption.
-Apply derive_pt_eq_0; Apply H0; Elim x0; Intros; Split; Left; Assumption.
-Apply derive_pt_eq_0; Apply derivable_pt_lim_id.
-Assumption.
-Intros; Apply derivable_continuous_pt; Apply X1; Assumption.
-Intros; Apply derivable_pt_id.
-Intros; Apply derivable_pt_id.
-Intros; Apply derivable_continuous_pt; Apply X; Assumption.
-Intros; Elim H1; Intros; Apply X; Split; Left; Assumption.
-Intros; Unfold derivable_pt; Apply Specif.existT with (f' c); Apply H0; Apply H1.
+Theorem MVT_cor2 :
+ forall (f f':R -> R) (a b:R),
+   a < b ->
+   (forall c:R, a <= c <= b -> derivable_pt_lim f c (f' c)) ->
+    exists c : R | f b - f a = f' c * (b - a) /\ a < c < b.
+intros f f' a b H H0; cut (forall c:R, a <= c <= b -> derivable_pt f c).
+intro; cut (forall c:R, a < c < b -> derivable_pt f c).
+intro; cut (forall c:R, a <= c <= b -> continuity_pt f c).
+intro; cut (forall c:R, a <= c <= b -> derivable_pt id c).
+intro; cut (forall c:R, a < c < b -> derivable_pt id c).
+intro; cut (forall c:R, a <= c <= b -> continuity_pt id c).
+intro; elim (MVT f id a b X0 X2 H H1 H2); intros; elim H3; clear H3; intros;
+ exists x; split.
+cut (derive_pt id x (X2 x x0) = 1).
+cut (derive_pt f x (X0 x x0) = f' x).
+intros; rewrite H4 in H3; rewrite H5 in H3; unfold id in H3;
+ rewrite Rmult_1_r in H3; rewrite Rmult_comm; symmetry  in |- *; 
+ assumption.
+apply derive_pt_eq_0; apply H0; elim x0; intros; split; left; assumption.
+apply derive_pt_eq_0; apply derivable_pt_lim_id.
+assumption.
+intros; apply derivable_continuous_pt; apply X1; assumption.
+intros; apply derivable_pt_id.
+intros; apply derivable_pt_id.
+intros; apply derivable_continuous_pt; apply X; assumption.
+intros; elim H1; intros; apply X; split; left; assumption.
+intros; unfold derivable_pt in |- *; apply existT with (f' c); apply H0;
+ apply H1.
 Qed.
 
-Lemma MVT_cor3 : (f,f':(R->R); a,b:R) ``a < b``  -> ((x:R)``a <= x`` ->  ``x <= b``->(derivable_pt_lim f x (f' x))) -> (EXT c:R | ``a<=c``/\``c<=b``/\``(f b)==(f a) + (f' c)*(b-a)``).
-Intros f f' a b H H0; Assert H1 : (EXT c:R | ``(f b) -(f a) == (f' c)*(b-a)``/\``a<c<b``); [Apply MVT_cor2; [Apply H | Intros; Elim H1; Intros; Apply (H0 ? H2 H3)] | Elim H1; Intros; Exists x; Elim H2; Intros; Elim H4; Intros; Split; [Left; Assumption | Split; [Left; Assumption | Rewrite <- H3; Ring]]].
+Lemma MVT_cor3 :
+ forall (f f':R -> R) (a b:R),
+   a < b ->
+   (forall x:R, a <= x -> x <= b -> derivable_pt_lim f x (f' x)) ->
+    exists c : R | a <= c /\ c <= b /\ f b = f a + f' c * (b - a).
+intros f f' a b H H0;
+ assert (H1 :  exists c : R | f b - f a = f' c * (b - a) /\ a < c < b);
+ [ apply MVT_cor2; [ apply H | intros; elim H1; intros; apply (H0 _ H2 H3) ]
+ | elim H1; intros; exists x; elim H2; intros; elim H4; intros; split;
+    [ left; assumption | split; [ left; assumption | rewrite <- H3; ring ] ] ].
 Qed.
 
-Lemma Rolle : (f:R->R;a,b:R;pr:(x:R)``a<x<b``->(derivable_pt f x)) ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ``a<b`` -> (f a)==(f b) -> (EXT c:R | (EXT P: ``a<c<b`` | ``(derive_pt f c (pr c P))==0``)).
-Intros; Assert H2 : (x:R)``a<x<b``->(derivable_pt id x).
-Intros; Apply derivable_pt_id.
-Assert H3 := (MVT f id a b pr H2 H0 H); Assert H4 : (x:R)``a<=x<=b``->(continuity_pt id x).
-Intros; Apply derivable_continuous; Apply derivable_id.
-Elim (H3 H4); Intros; Elim H5; Intros; Exists x; Exists x0; Rewrite H1 in H6; Unfold id in H6; Unfold Rminus in H6; Rewrite Rplus_Ropp_r in H6; Rewrite Rmult_Ol in H6; Apply r_Rmult_mult with ``b-a``; [Rewrite Rmult_Or; Apply H6 | Apply Rminus_eq_contra; Red; Intro; Rewrite H7 in H0; Elim (Rlt_antirefl ? H0)].
+Lemma Rolle :
+ forall (f:R -> R) (a b:R) (pr:forall x:R, a < x < b -> derivable_pt f x),
+   (forall x:R, a <= x <= b -> continuity_pt f x) ->
+   a < b ->
+   f a = f b ->
+    exists c : R | ( exists P : a < c < b | derive_pt f c (pr c P) = 0).
+intros; assert (H2 : forall x:R, a < x < b -> derivable_pt id x).
+intros; apply derivable_pt_id.
+assert (H3 := MVT f id a b pr H2 H0 H);
+ assert (H4 : forall x:R, a <= x <= b -> continuity_pt id x).
+intros; apply derivable_continuous; apply derivable_id.
+elim (H3 H4); intros; elim H5; intros; exists x; exists x0; rewrite H1 in H6;
+ unfold id in H6; unfold Rminus in H6; rewrite Rplus_opp_r in H6;
+ rewrite Rmult_0_l in H6; apply Rmult_eq_reg_l with (b - a);
+ [ rewrite Rmult_0_r; apply H6
+ | apply Rminus_eq_contra; red in |- *; intro; rewrite H7 in H0;
+    elim (Rlt_irrefl _ H0) ].
 Qed.
 
 (**********)
-Lemma nonneg_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``0<=(derive_pt f x (pr x))``) -> (increasing f).
-Intros.
-Unfold increasing.
-Intros.
-Case (total_order_T x y); Intro.
-Elim s; Intro.
-Apply Rle_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H1 := (MVT_cor1 f ? ? pr a).
-Elim H1; Intros.
-Elim H2; Intros.
-Unfold Rminus in H3.
-Rewrite H3.
-Apply Rmult_le_pos.
-Apply H.
-Apply Rle_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
-Rewrite b; Right; Reflexivity.
-Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H0 r)).
+Lemma nonneg_derivative_1 :
+ forall (f:R -> R) (pr:derivable f),
+   (forall x:R, 0 <= derive_pt f x (pr x)) -> increasing f.
+intros.
+unfold increasing in |- *.
+intros.
+case (total_order_T x y); intro.
+elim s; intro.
+apply Rplus_le_reg_l with (- f x).
+rewrite Rplus_opp_l; rewrite Rplus_comm.
+assert (H1 := MVT_cor1 f _ _ pr a).
+elim H1; intros.
+elim H2; intros.
+unfold Rminus in H3.
+rewrite H3.
+apply Rmult_le_pos.
+apply H.
+apply Rplus_le_reg_l with x.
+rewrite Rplus_0_r; replace (x + (y + - x)) with y; [ assumption | ring ].
+rewrite b; right; reflexivity.
+elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 r)).
 Qed.
  
 (**********)
-Lemma nonpos_derivative_0 : (f:R->R;pr:(derivable f)) (decreasing f) -> ((x:R) ``(derive_pt f x (pr x))<=0``).
-Intros f pr H x; Assert H0 :=H; Unfold decreasing in H0; Generalize (derivable_derive f x (pr x)); Intro; Elim H1; Intros l H2.
-Rewrite H2; Case (total_order l R0); Intro.
-Left; Assumption.
-Elim H3; Intro.
-Right; Assumption.
-Generalize (derive_pt_eq_1 f x l (pr x) H2); Intros; Cut ``0< (l/2)``.
-Intro; Elim (H5 ``(l/2)`` H6); Intros delta H7; Cut ``delta/2<>0``/\``0<delta/2``/\``(Rabsolu delta/2)<delta``.
-Intro; Decompose [and] H8; Intros; Generalize (H7 ``delta/2`` H9 H12); Cut ``((f (x+delta/2))-(f x))/(delta/2)<=0``.
-Intro; Cut ``0< -(((f (x+delta/2))-(f x))/(delta/2)-l)``.
-Intro; Unfold Rabsolu; Case (case_Rabsolu ``((f (x+delta/2))-(f x))/(delta/2)-l``).
-Intros; Generalize (Rlt_compatibility_r ``-l`` ``-(((f (x+delta/2))-(f x))/(delta/2)-l)`` ``(l/2)`` H14); Unfold Rminus.
-Replace ``(l/2)+ -l`` with ``-(l/2)``.
-Replace `` -(((f (x+delta/2))+ -(f x))/(delta/2)+ -l)+ -l`` with ``-(((f (x+delta/2))+ -(f x))/(delta/2))``.
-Intro.
-Generalize (Rlt_Ropp ``-(((f (x+delta/2))+ -(f x))/(delta/2))`` ``-(l/2)`` H15). 
-Repeat Rewrite Ropp_Ropp.
-Intro.
-Generalize (Rlt_trans ``0`` ``l/2`` ``((f (x+delta/2))-(f x))/(delta/2)`` H6 H16); Intro.
-Elim (Rlt_antirefl ``0`` (Rlt_le_trans ``0`` ``((f (x+delta/2))-(f x))/(delta/2)`` ``0`` H17 H10)).
-Ring.
-Pattern 3 l; Rewrite double_var.
-Ring.
-Intros.
-Generalize (Rge_Ropp ``((f (x+delta/2))-(f x))/(delta/2)-l`` ``0`` r).
-Rewrite Ropp_O.
-Intro.
-Elim (Rlt_antirefl ``0`` (Rlt_le_trans ``0`` ``-(((f (x+delta/2))-(f x))/(delta/2)-l)`` ``0`` H13 H15)).
-Replace ``-(((f (x+delta/2))-(f x))/(delta/2)-l)`` with ``(((f (x))-(f (x+delta/2)))/(delta/2)) +l``.
-Unfold Rminus.
-Apply ge0_plus_gt0_is_gt0.
-Unfold Rdiv; Apply Rmult_le_pos.
-Cut ``x<=(x+(delta*/2))``.
-Intro; Generalize (H0 x ``x+(delta*/2)`` H13); Intro; Generalize (Rle_compatibility ``-(f (x+delta/2))`` ``(f (x+delta/2))`` ``(f x)`` H14); Rewrite Rplus_Ropp_l; Rewrite Rplus_sym; Intro; Assumption.
-Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Left; Assumption.
-Left; Apply Rlt_Rinv; Assumption.
-Assumption.
-Rewrite Ropp_distr2.
-Unfold Rminus.
-Rewrite (Rplus_sym l).
-Unfold Rdiv.
-Rewrite <- Ropp_mul1.
-Rewrite Ropp_distr1.
-Rewrite Ropp_Ropp.
-Rewrite (Rplus_sym (f x)).
-Reflexivity.
-Replace ``((f (x+delta/2))-(f x))/(delta/2)`` with ``-(((f x)-(f (x+delta/2)))/(delta/2))``.
-Rewrite <- Ropp_O.
-Apply Rge_Ropp.
-Apply Rle_sym1.
-Unfold Rdiv; Apply Rmult_le_pos.
-Cut ``x<=(x+(delta*/2))``.
-Intro; Generalize (H0 x ``x+(delta*/2)`` H10); Intro.
-Generalize (Rle_compatibility ``-(f (x+delta/2))`` ``(f (x+delta/2))`` ``(f x)`` H13); Rewrite Rplus_Ropp_l; Rewrite Rplus_sym; Intro; Assumption.
-Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Left; Assumption.
-Left; Apply Rlt_Rinv; Assumption.
-Unfold Rdiv; Rewrite <- Ropp_mul1.
-Rewrite Ropp_distr2.
-Reflexivity.
-Split.
-Unfold Rdiv; Apply prod_neq_R0.
-Generalize (cond_pos delta); Intro; Red; Intro H9; Rewrite H9 in H8; Elim (Rlt_antirefl ``0`` H8).
-Apply Rinv_neq_R0; DiscrR.
-Split.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Sup0].
-Rewrite Rabsolu_right.
-Unfold Rdiv; Apply Rlt_monotony_contra with ``2``.
-Sup0.
-Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1l; Rewrite double; Pattern 1 (pos delta); Rewrite <- Rplus_Or.
-Apply Rlt_compatibility; Apply (cond_pos delta).
-DiscrR.
-Apply Rle_sym1; Unfold Rdiv; Left; Apply Rmult_lt_pos.
-Apply (cond_pos delta).
-Apply Rlt_Rinv; Sup0.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply H4 | Apply Rlt_Rinv; Sup0].
+Lemma nonpos_derivative_0 :
+ forall (f:R -> R) (pr:derivable f),
+   decreasing f -> forall x:R, derive_pt f x (pr x) <= 0.
+intros f pr H x; assert (H0 := H); unfold decreasing in H0;
+ generalize (derivable_derive f x (pr x)); intro; elim H1; 
+ intros l H2.
+rewrite H2; case (Rtotal_order l 0); intro.
+left; assumption.
+elim H3; intro.
+right; assumption.
+generalize (derive_pt_eq_1 f x l (pr x) H2); intros; cut (0 < l / 2).
+intro; elim (H5 (l / 2) H6); intros delta H7;
+ cut (delta / 2 <> 0 /\ 0 < delta / 2 /\ Rabs (delta / 2) < delta).
+intro; decompose [and] H8; intros; generalize (H7 (delta / 2) H9 H12);
+ cut ((f (x + delta / 2) - f x) / (delta / 2) <= 0).
+intro; cut (0 < - ((f (x + delta / 2) - f x) / (delta / 2) - l)).
+intro; unfold Rabs in |- *;
+ case (Rcase_abs ((f (x + delta / 2) - f x) / (delta / 2) - l)).
+intros;
+ generalize
+  (Rplus_lt_compat_r (- l) (- ((f (x + delta / 2) - f x) / (delta / 2) - l))
+     (l / 2) H14); unfold Rminus in |- *.
+replace (l / 2 + - l) with (- (l / 2)).
+replace (- ((f (x + delta / 2) + - f x) / (delta / 2) + - l) + - l) with
+ (- ((f (x + delta / 2) + - f x) / (delta / 2))).
+intro.
+generalize
+ (Ropp_lt_gt_contravar (- ((f (x + delta / 2) + - f x) / (delta / 2)))
+    (- (l / 2)) H15). 
+repeat rewrite Ropp_involutive.
+intro.
+generalize
+ (Rlt_trans 0 (l / 2) ((f (x + delta / 2) - f x) / (delta / 2)) H6 H16);
+ intro.
+elim
+ (Rlt_irrefl 0
+    (Rlt_le_trans 0 ((f (x + delta / 2) - f x) / (delta / 2)) 0 H17 H10)).
+ring.
+pattern l at 3 in |- *; rewrite double_var.
+ring.
+intros.
+generalize
+ (Ropp_ge_le_contravar ((f (x + delta / 2) - f x) / (delta / 2) - l) 0 r).
+rewrite Ropp_0.
+intro.
+elim
+ (Rlt_irrefl 0
+    (Rlt_le_trans 0 (- ((f (x + delta / 2) - f x) / (delta / 2) - l)) 0 H13
+       H15)).
+replace (- ((f (x + delta / 2) - f x) / (delta / 2) - l)) with
+ ((f x - f (x + delta / 2)) / (delta / 2) + l).
+unfold Rminus in |- *.
+apply Rplus_le_lt_0_compat.
+unfold Rdiv in |- *; apply Rmult_le_pos.
+cut (x <= x + delta * / 2).
+intro; generalize (H0 x (x + delta * / 2) H13); intro;
+ generalize
+  (Rplus_le_compat_l (- f (x + delta / 2)) (f (x + delta / 2)) (f x) H14);
+ rewrite Rplus_opp_l; rewrite Rplus_comm; intro; assumption.
+pattern x at 1 in |- *; rewrite <- (Rplus_0_r x); apply Rplus_le_compat_l;
+ left; assumption.
+left; apply Rinv_0_lt_compat; assumption.
+assumption.
+rewrite Ropp_minus_distr.
+unfold Rminus in |- *.
+rewrite (Rplus_comm l).
+unfold Rdiv in |- *.
+rewrite <- Ropp_mult_distr_l_reverse.
+rewrite Ropp_plus_distr.
+rewrite Ropp_involutive.
+rewrite (Rplus_comm (f x)).
+reflexivity.
+replace ((f (x + delta / 2) - f x) / (delta / 2)) with
+ (- ((f x - f (x + delta / 2)) / (delta / 2))).
+rewrite <- Ropp_0.
+apply Ropp_ge_le_contravar.
+apply Rle_ge.
+unfold Rdiv in |- *; apply Rmult_le_pos.
+cut (x <= x + delta * / 2).
+intro; generalize (H0 x (x + delta * / 2) H10); intro.
+generalize
+ (Rplus_le_compat_l (- f (x + delta / 2)) (f (x + delta / 2)) (f x) H13);
+ rewrite Rplus_opp_l; rewrite Rplus_comm; intro; assumption.
+pattern x at 1 in |- *; rewrite <- (Rplus_0_r x); apply Rplus_le_compat_l;
+ left; assumption.
+left; apply Rinv_0_lt_compat; assumption.
+unfold Rdiv in |- *; rewrite <- Ropp_mult_distr_l_reverse.
+rewrite Ropp_minus_distr.
+reflexivity.
+split.
+unfold Rdiv in |- *; apply prod_neq_R0.
+generalize (cond_pos delta); intro; red in |- *; intro H9; rewrite H9 in H8;
+ elim (Rlt_irrefl 0 H8).
+apply Rinv_neq_0_compat; discrR.
+split.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ apply (cond_pos delta) | apply Rinv_0_lt_compat; prove_sup0 ].
+rewrite Rabs_right.
+unfold Rdiv in |- *; apply Rmult_lt_reg_l with 2.
+prove_sup0.
+rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+rewrite Rmult_1_l; rewrite double; pattern (pos delta) at 1 in |- *;
+ rewrite <- Rplus_0_r.
+apply Rplus_lt_compat_l; apply (cond_pos delta).
+discrR.
+apply Rle_ge; unfold Rdiv in |- *; left; apply Rmult_lt_0_compat.
+apply (cond_pos delta).
+apply Rinv_0_lt_compat; prove_sup0.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ apply H4 | apply Rinv_0_lt_compat; prove_sup0 ].
 Qed.
 
 (**********)
-Lemma increasing_decreasing_opp : (f:R->R) (increasing f) -> (decreasing (opp_fct f)).
-Unfold increasing decreasing opp_fct; Intros; Generalize (H x y H0); Intro; Apply Rge_Ropp; Apply Rle_sym1; Assumption.
+Lemma increasing_decreasing_opp :
+ forall f:R -> R, increasing f -> decreasing (- f)%F.
+unfold increasing, decreasing, opp_fct in |- *; intros; generalize (H x y H0);
+ intro; apply Ropp_ge_le_contravar; apply Rle_ge; assumption.
 Qed.
 
 (**********)
-Lemma nonpos_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``(derive_pt f x (pr x))<=0``) -> (decreasing f).
-Intros.
-Cut (h:R)``-(-(f h))==(f h)``.
-Intro.
-Generalize (increasing_decreasing_opp (opp_fct f)).
-Unfold decreasing.
-Unfold opp_fct.
-Intros.
-Rewrite <- (H0 x); Rewrite <- (H0 y).
-Apply H1.
-Cut (x:R)``0<=(derive_pt (opp_fct f) x ((derivable_opp f pr) x))``.
-Intros.
-Replace [x:R]``-(f x)`` with (opp_fct f); [Idtac | Reflexivity].
-Apply (nonneg_derivative_1 (opp_fct f) (derivable_opp f pr) H3).
-Intro.
-Assert H3 := (derive_pt_opp f x0 (pr x0)).
-Cut ``(derive_pt (opp_fct f) x0 (derivable_pt_opp f x0 (pr x0)))==(derive_pt (opp_fct f) x0 (derivable_opp f pr x0))``.
-Intro.
-Rewrite <- H4.
-Rewrite H3.
-Rewrite <- Ropp_O; Apply Rge_Ropp; Apply Rle_sym1; Apply (H x0).
-Apply pr_nu.
-Assumption.
-Intro; Ring.
+Lemma nonpos_derivative_1 :
+ forall (f:R -> R) (pr:derivable f),
+   (forall x:R, derive_pt f x (pr x) <= 0) -> decreasing f.
+intros.
+cut (forall h:R, - - f h = f h).
+intro.
+generalize (increasing_decreasing_opp (- f)%F).
+unfold decreasing in |- *.
+unfold opp_fct in |- *.
+intros.
+rewrite <- (H0 x); rewrite <- (H0 y).
+apply H1.
+cut (forall x:R, 0 <= derive_pt (- f) x (derivable_opp f pr x)).
+intros.
+replace (fun x:R => - f x) with (- f)%F; [ idtac | reflexivity ].
+apply (nonneg_derivative_1 (- f)%F (derivable_opp f pr) H3).
+intro.
+assert (H3 := derive_pt_opp f x0 (pr x0)).
+cut
+ (derive_pt (- f) x0 (derivable_pt_opp f x0 (pr x0)) =
+  derive_pt (- f) x0 (derivable_opp f pr x0)).
+intro.
+rewrite <- H4.
+rewrite H3.
+rewrite <- Ropp_0; apply Ropp_ge_le_contravar; apply Rle_ge; apply (H x0).
+apply pr_nu.
+assumption.
+intro; ring.
 Qed.
  
 (**********)
-Lemma positive_derivative : (f:R->R;pr:(derivable f)) ((x:R) ``0<(derive_pt f x (pr x))``)->(strict_increasing f).
-Intros.
-Unfold strict_increasing.
-Intros.
-Apply Rlt_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H1 := (MVT_cor1 f ? ? pr H0).
-Elim H1; Intros.
-Elim H2; Intros.
-Unfold Rminus in H3.
-Rewrite H3.
-Apply Rmult_lt_pos.
-Apply H.
-Apply Rlt_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
+Lemma positive_derivative :
+ forall (f:R -> R) (pr:derivable f),
+   (forall x:R, 0 < derive_pt f x (pr x)) -> strict_increasing f.
+intros.
+unfold strict_increasing in |- *.
+intros.
+apply Rplus_lt_reg_r with (- f x).
+rewrite Rplus_opp_l; rewrite Rplus_comm.
+assert (H1 := MVT_cor1 f _ _ pr H0).
+elim H1; intros.
+elim H2; intros.
+unfold Rminus in H3.
+rewrite H3.
+apply Rmult_lt_0_compat.
+apply H.
+apply Rplus_lt_reg_r with x.
+rewrite Rplus_0_r; replace (x + (y + - x)) with y; [ assumption | ring ].
 Qed.
 
 (**********)
-Lemma strictincreasing_strictdecreasing_opp : (f:R->R) (strict_increasing f) ->
-(strict_decreasing (opp_fct f)).
-Unfold strict_increasing strict_decreasing opp_fct; Intros; Generalize (H x y H0); Intro; Apply Rlt_Ropp; Assumption.
+Lemma strictincreasing_strictdecreasing_opp :
+ forall f:R -> R, strict_increasing f -> strict_decreasing (- f)%F.
+unfold strict_increasing, strict_decreasing, opp_fct in |- *; intros;
+ generalize (H x y H0); intro; apply Ropp_lt_gt_contravar; 
+ assumption.
 Qed.
  
 (**********)
-Lemma negative_derivative : (f:R->R;pr:(derivable f)) ((x:R) ``(derive_pt f x (pr x))<0``)->(strict_decreasing f).
-Intros.
-Cut (h:R)``- (-(f h))==(f h)``.
-Intros.
-Generalize (strictincreasing_strictdecreasing_opp (opp_fct f)).
-Unfold strict_decreasing opp_fct.
-Intros.
-Rewrite <- (H0 x).
-Rewrite <- (H0 y).
-Apply H1; [Idtac | Assumption].
-Cut (x:R)``0<(derive_pt (opp_fct f) x (derivable_opp f pr x))``.
-Intros; EApply positive_derivative; Apply H3.
-Intro.
-Assert H3 := (derive_pt_opp f x0 (pr x0)).
-Cut ``(derive_pt (opp_fct f) x0 (derivable_pt_opp f x0 (pr x0)))==(derive_pt (opp_fct f) x0 (derivable_opp f pr x0))``.
-Intro.
-Rewrite <- H4; Rewrite H3.
-Rewrite <- Ropp_O; Apply Rlt_Ropp; Apply (H x0).
-Apply pr_nu.
-Intro; Ring.
+Lemma negative_derivative :
+ forall (f:R -> R) (pr:derivable f),
+   (forall x:R, derive_pt f x (pr x) < 0) -> strict_decreasing f.
+intros.
+cut (forall h:R, - - f h = f h).
+intros.
+generalize (strictincreasing_strictdecreasing_opp (- f)%F).
+unfold strict_decreasing, opp_fct in |- *.
+intros.
+rewrite <- (H0 x).
+rewrite <- (H0 y).
+apply H1; [ idtac | assumption ].
+cut (forall x:R, 0 < derive_pt (- f) x (derivable_opp f pr x)).
+intros; eapply positive_derivative; apply H3.
+intro.
+assert (H3 := derive_pt_opp f x0 (pr x0)).
+cut
+ (derive_pt (- f) x0 (derivable_pt_opp f x0 (pr x0)) =
+  derive_pt (- f) x0 (derivable_opp f pr x0)).
+intro.
+rewrite <- H4; rewrite H3.
+rewrite <- Ropp_0; apply Ropp_lt_gt_contravar; apply (H x0).
+apply pr_nu.
+intro; ring.
 Qed.
  
 (**********)
-Lemma null_derivative_0 : (f:R->R;pr:(derivable f)) (constant f)->((x:R) ``(derive_pt f x (pr x))==0``). 
-Intros.
-Unfold constant in H.
-Apply derive_pt_eq_0.
-Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Simpl; Intros.
-Rewrite (H x ``x+h``); Unfold Rminus; Unfold Rdiv; Rewrite Rplus_Ropp_r; Rewrite Rmult_Ol; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Lemma null_derivative_0 :
+ forall (f:R -> R) (pr:derivable f),
+   constant f -> forall x:R, derive_pt f x (pr x) = 0. 
+intros.
+unfold constant in H.
+apply derive_pt_eq_0.
+intros; exists (mkposreal 1 Rlt_0_1); simpl in |- *; intros.
+rewrite (H x (x + h)); unfold Rminus in |- *; unfold Rdiv in |- *;
+ rewrite Rplus_opp_r; rewrite Rmult_0_l; rewrite Rplus_opp_r; 
+ rewrite Rabs_R0; assumption.
 Qed.
 
 (**********)
-Lemma increasing_decreasing : (f:R->R) (increasing f) -> (decreasing f) -> (constant f).
-Unfold increasing decreasing constant; Intros; Case (total_order x y); Intro.
-Generalize (Rlt_le x y H1); Intro; Apply (Rle_antisym (f x) (f y) (H x y H2) (H0 x y H2)).
-Elim H1; Intro.
-Rewrite H2; Reflexivity.
-Generalize (Rlt_le y x H2); Intro; Symmetry; Apply (Rle_antisym (f y) (f x) (H y x H3) (H0 y x H3)).
+Lemma increasing_decreasing :
+ forall f:R -> R, increasing f -> decreasing f -> constant f.
+unfold increasing, decreasing, constant in |- *; intros;
+ case (Rtotal_order x y); intro.
+generalize (Rlt_le x y H1); intro;
+ apply (Rle_antisym (f x) (f y) (H x y H2) (H0 x y H2)).
+elim H1; intro.
+rewrite H2; reflexivity.
+generalize (Rlt_le y x H2); intro; symmetry  in |- *;
+ apply (Rle_antisym (f y) (f x) (H y x H3) (H0 y x H3)).
 Qed.
 
 (**********)
-Lemma null_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``(derive_pt f x (pr x))==0``)->(constant f).
-Intros.
-Cut (x:R)``(derive_pt f x (pr x)) <= 0``.
-Cut (x:R)``0 <= (derive_pt f x (pr x))``.
-Intros.
-Assert H2 := (nonneg_derivative_1 f pr H0).
-Assert H3 := (nonpos_derivative_1 f  pr H1).
-Apply increasing_decreasing; Assumption.
-Intro; Right; Symmetry; Apply (H x).
-Intro; Right; Apply (H x).
+Lemma null_derivative_1 :
+ forall (f:R -> R) (pr:derivable f),
+   (forall x:R, derive_pt f x (pr x) = 0) -> constant f.
+intros.
+cut (forall x:R, derive_pt f x (pr x) <= 0).
+cut (forall x:R, 0 <= derive_pt f x (pr x)).
+intros.
+assert (H2 := nonneg_derivative_1 f pr H0).
+assert (H3 := nonpos_derivative_1 f pr H1).
+apply increasing_decreasing; assumption.
+intro; right; symmetry  in |- *; apply (H x).
+intro; right; apply (H x).
 Qed.
 
 (**********)
-Lemma derive_increasing_interv_ax : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> (((t:R) ``a<t<b`` -> ``0<(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``)) /\ (((t:R) ``a<t<b`` -> ``0<=(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``)).
-Intros.
-Split; Intros.
-Apply Rlt_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H4 := (MVT_cor1 f ? ? pr H3).
-Elim H4; Intros.
-Elim H5; Intros.
-Unfold Rminus in H6.
-Rewrite H6.
-Apply Rmult_lt_pos.
-Apply H0.
-Elim H7; Intros.
-Split.
-Elim H1; Intros.
-Apply Rle_lt_trans with x; Assumption.
-Elim H2; Intros.
-Apply Rlt_le_trans with y; Assumption.
-Apply Rlt_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
-Apply Rle_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H4 := (MVT_cor1 f ? ? pr H3).
-Elim H4; Intros.
-Elim H5; Intros.
-Unfold Rminus in H6.
-Rewrite H6.
-Apply Rmult_le_pos.
-Apply H0.
-Elim H7; Intros.
-Split.
-Elim H1; Intros.
-Apply Rle_lt_trans with x; Assumption.
-Elim H2; Intros.
-Apply Rlt_le_trans with y; Assumption.
-Apply Rle_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Left; Assumption | Ring].
+Lemma derive_increasing_interv_ax :
+ forall (a b:R) (f:R -> R) (pr:derivable f),
+   a < b ->
+   ((forall t:R, a < t < b -> 0 < derive_pt f t (pr t)) ->
+    forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y) /\
+   ((forall t:R, a < t < b -> 0 <= derive_pt f t (pr t)) ->
+    forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x <= f y).
+intros.
+split; intros.
+apply Rplus_lt_reg_r with (- f x).
+rewrite Rplus_opp_l; rewrite Rplus_comm.
+assert (H4 := MVT_cor1 f _ _ pr H3).
+elim H4; intros.
+elim H5; intros.
+unfold Rminus in H6.
+rewrite H6.
+apply Rmult_lt_0_compat.
+apply H0.
+elim H7; intros.
+split.
+elim H1; intros.
+apply Rle_lt_trans with x; assumption.
+elim H2; intros.
+apply Rlt_le_trans with y; assumption.
+apply Rplus_lt_reg_r with x.
+rewrite Rplus_0_r; replace (x + (y + - x)) with y; [ assumption | ring ].
+apply Rplus_le_reg_l with (- f x).
+rewrite Rplus_opp_l; rewrite Rplus_comm.
+assert (H4 := MVT_cor1 f _ _ pr H3).
+elim H4; intros.
+elim H5; intros.
+unfold Rminus in H6.
+rewrite H6.
+apply Rmult_le_pos.
+apply H0.
+elim H7; intros.
+split.
+elim H1; intros.
+apply Rle_lt_trans with x; assumption.
+elim H2; intros.
+apply Rlt_le_trans with y; assumption.
+apply Rplus_le_reg_l with x.
+rewrite Rplus_0_r; replace (x + (y + - x)) with y;
+ [ left; assumption | ring ].
 Qed.
 
 (**********)
-Lemma derive_increasing_interv : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``).
-Intros.
-Generalize (derive_increasing_interv_ax a b f pr H); Intro.
-Elim H4; Intros H5 _; Apply (H5 H0 x y H1 H2 H3).
+Lemma derive_increasing_interv :
+ forall (a b:R) (f:R -> R) (pr:derivable f),
+   a < b ->
+   (forall t:R, a < t < b -> 0 < derive_pt f t (pr t)) ->
+   forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x < f y.
+intros.
+generalize (derive_increasing_interv_ax a b f pr H); intro.
+elim H4; intros H5 _; apply (H5 H0 x y H1 H2 H3).
 Qed.
 
 (**********)
-Lemma derive_increasing_interv_var : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<=(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``).
-Intros a b f pr H H0 x y H1 H2 H3; Generalize (derive_increasing_interv_ax a b f pr H); Intro; Elim H4; Intros _ H5; Apply (H5 H0 x y H1 H2 H3).
+Lemma derive_increasing_interv_var :
+ forall (a b:R) (f:R -> R) (pr:derivable f),
+   a < b ->
+   (forall t:R, a < t < b -> 0 <= derive_pt f t (pr t)) ->
+   forall x y:R, a <= x <= b -> a <= y <= b -> x < y -> f x <= f y.
+intros a b f pr H H0 x y H1 H2 H3;
+ generalize (derive_increasing_interv_ax a b f pr H); 
+ intro; elim H4; intros _ H5; apply (H5 H0 x y H1 H2 H3).
 Qed.
 
 (**********)
 (**********)
-Theorem IAF : (f:R->R;a,b,k:R;pr:(derivable f)) ``a<=b`` -> ((c:R) ``a<=c<=b`` -> ``(derive_pt f c (pr c))<=k``) -> ``(f b)-(f a)<=k*(b-a)``.
-Intros.
-Case (total_order_T a b); Intro.
-Elim s; Intro.
-Assert H1 := (MVT_cor1 f ? ? pr a0).
-Elim H1; Intros.
-Elim H2; Intros.
-Rewrite H3.
-Do 2 Rewrite <- (Rmult_sym ``(b-a)``).
-Apply Rle_monotony.
-Apply Rle_anti_compatibility with ``a``; Rewrite Rplus_Or.
-Replace ``a+(b-a)`` with b; [Assumption | Ring].
-Apply H0.
-Elim H4; Intros.
-Split; Left; Assumption.
-Rewrite b0.
-Unfold Rminus; Do 2 Rewrite Rplus_Ropp_r.
-Rewrite Rmult_Or; Right; Reflexivity.
-Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H r)).
+Theorem IAF :
+ forall (f:R -> R) (a b k:R) (pr:derivable f),
+   a <= b ->
+   (forall c:R, a <= c <= b -> derive_pt f c (pr c) <= k) ->
+   f b - f a <= k * (b - a).
+intros.
+case (total_order_T a b); intro.
+elim s; intro.
+assert (H1 := MVT_cor1 f _ _ pr a0).
+elim H1; intros.
+elim H2; intros.
+rewrite H3.
+do 2 rewrite <- (Rmult_comm (b - a)).
+apply Rmult_le_compat_l.
+apply Rplus_le_reg_l with a; rewrite Rplus_0_r.
+replace (a + (b - a)) with b; [ assumption | ring ].
+apply H0.
+elim H4; intros.
+split; left; assumption.
+rewrite b0.
+unfold Rminus in |- *; do 2 rewrite Rplus_opp_r.
+rewrite Rmult_0_r; right; reflexivity.
+elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
 Qed.
 
-Lemma IAF_var : (f,g:R->R;a,b:R;pr1:(derivable f);pr2:(derivable g)) ``a<=b`` -> ((c:R) ``a<=c<=b`` -> ``(derive_pt g c (pr2 c))<=(derive_pt f c (pr1 c))``) -> ``(g b)-(g a)<=(f b)-(f a)``.
-Intros.
-Cut (derivable (minus_fct g f)).
-Intro.
-Cut (c:R)``a<=c<=b``->``(derive_pt (minus_fct g f) c (X c))<=0``.
-Intro. 
-Assert H2 := (IAF (minus_fct g f) a b R0 X H H1).
-Rewrite Rmult_Ol in H2; Unfold minus_fct in H2.
-Apply Rle_anti_compatibility with ``-(f b)+(f a)``.
-Replace ``-(f b)+(f a)+((f b)-(f a))`` with R0; [Idtac | Ring].
-Replace ``-(f b)+(f a)+((g b)-(g a))`` with ``(g b)-(f b)-((g a)-(f a))``; [Apply H2 | Ring].
-Intros.
-Cut (derive_pt (minus_fct g f) c (X c))==(derive_pt (minus_fct g f) c (derivable_pt_minus ? ? ? (pr2 c) (pr1 c))).
-Intro.
-Rewrite H2.
-Rewrite derive_pt_minus.
-Apply Rle_anti_compatibility with (derive_pt f c (pr1 c)).
-Rewrite Rplus_Or.
-Replace ``(derive_pt f c (pr1 c))+((derive_pt g c (pr2 c))-(derive_pt f c (pr1 c)))`` with ``(derive_pt g c (pr2 c))``; [Idtac | Ring].
-Apply H0; Assumption.
-Apply pr_nu.
-Apply derivable_minus; Assumption.
+Lemma IAF_var :
+ forall (f g:R -> R) (a b:R) (pr1:derivable f) (pr2:derivable g),
+   a <= b ->
+   (forall c:R, a <= c <= b -> derive_pt g c (pr2 c) <= derive_pt f c (pr1 c)) ->
+   g b - g a <= f b - f a.
+intros.
+cut (derivable (g - f)).
+intro.
+cut (forall c:R, a <= c <= b -> derive_pt (g - f) c (X c) <= 0).
+intro. 
+assert (H2 := IAF (g - f)%F a b 0 X H H1).
+rewrite Rmult_0_l in H2; unfold minus_fct in H2.
+apply Rplus_le_reg_l with (- f b + f a).
+replace (- f b + f a + (f b - f a)) with 0; [ idtac | ring ].
+replace (- f b + f a + (g b - g a)) with (g b - f b - (g a - f a));
+ [ apply H2 | ring ].
+intros.
+cut
+ (derive_pt (g - f) c (X c) =
+  derive_pt (g - f) c (derivable_pt_minus _ _ _ (pr2 c) (pr1 c))).
+intro.
+rewrite H2.
+rewrite derive_pt_minus.
+apply Rplus_le_reg_l with (derive_pt f c (pr1 c)).
+rewrite Rplus_0_r.
+replace
+ (derive_pt f c (pr1 c) + (derive_pt g c (pr2 c) - derive_pt f c (pr1 c)))
+ with (derive_pt g c (pr2 c)); [ idtac | ring ].
+apply H0; assumption.
+apply pr_nu.
+apply derivable_minus; assumption.
 Qed.
 
 (* If f has a null derivative in ]a,b[ and is continue in [a,b], *)
 (* then f is constant on [a,b] *)
-Lemma null_derivative_loc : (f:R->R;a,b:R;pr:(x:R)``a<x<b``->(derivable_pt f x)) ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ((x:R;P:``a<x<b``)(derive_pt f x (pr x P))==R0) -> (constant_D_eq f [x:R]``a<=x<=b`` (f a)).
-Intros; Unfold constant_D_eq; Intros; Case (total_order_T a b); Intro.
-Elim s; Intro.
-Assert H2 : (y:R)``a<y<x``->(derivable_pt id y).
-Intros; Apply derivable_pt_id.
-Assert H3 : (y:R)``a<=y<=x``->(continuity_pt id y).
-Intros; Apply derivable_continuous; Apply derivable_id.
-Assert H4 : (y:R)``a<y<x``->(derivable_pt f y).
-Intros; Apply pr; Elim H4; Intros; Split.
-Assumption.
-Elim H1; Intros; Apply Rlt_le_trans with x; Assumption.
-Assert H5 : (y:R)``a<=y<=x``->(continuity_pt f y).
-Intros; Apply H; Elim H5; Intros; Split.
-Assumption.
-Elim H1; Intros; Apply Rle_trans with x; Assumption.
-Elim H1; Clear H1; Intros; Elim H1; Clear H1; Intro.
-Assert H7 := (MVT f id a x H4 H2 H1 H5 H3).
-Elim H7; Intros; Elim H8; Intros; Assert H10 : ``a<x0<b``.
-Elim x1; Intros; Split.
-Assumption.
-Apply Rlt_le_trans with x; Assumption.
-Assert H11 : ``(derive_pt f x0 (H4 x0 x1))==0``.
-Replace (derive_pt f x0 (H4 x0 x1)) with (derive_pt f x0 (pr x0 H10)); [Apply H0 | Apply pr_nu].
-Assert H12 : ``(derive_pt id x0 (H2 x0 x1))==1``.
-Apply derive_pt_eq_0; Apply derivable_pt_lim_id.
-Rewrite H11 in H9; Rewrite H12 in H9; Rewrite Rmult_Or in H9; Rewrite Rmult_1r in H9; Apply Rminus_eq; Symmetry; Assumption.
-Rewrite H1; Reflexivity.
-Assert H2 : x==a.
-Rewrite <- b0 in H1; Elim H1; Intros; Apply Rle_antisym; Assumption.
-Rewrite H2; Reflexivity.
-Elim H1; Intros; Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? (Rle_trans ? ? ? H2 H3) r)).
+Lemma null_derivative_loc :
+ forall (f:R -> R) (a b:R) (pr:forall x:R, a < x < b -> derivable_pt f x),
+   (forall x:R, a <= x <= b -> continuity_pt f x) ->
+   (forall (x:R) (P:a < x < b), derive_pt f x (pr x P) = 0) ->
+   constant_D_eq f (fun x:R => a <= x <= b) (f a).
+intros; unfold constant_D_eq in |- *; intros; case (total_order_T a b); intro.
+elim s; intro.
+assert (H2 : forall y:R, a < y < x -> derivable_pt id y).
+intros; apply derivable_pt_id.
+assert (H3 : forall y:R, a <= y <= x -> continuity_pt id y).
+intros; apply derivable_continuous; apply derivable_id.
+assert (H4 : forall y:R, a < y < x -> derivable_pt f y).
+intros; apply pr; elim H4; intros; split.
+assumption.
+elim H1; intros; apply Rlt_le_trans with x; assumption.
+assert (H5 : forall y:R, a <= y <= x -> continuity_pt f y).
+intros; apply H; elim H5; intros; split.
+assumption.
+elim H1; intros; apply Rle_trans with x; assumption.
+elim H1; clear H1; intros; elim H1; clear H1; intro.
+assert (H7 := MVT f id a x H4 H2 H1 H5 H3).
+elim H7; intros; elim H8; intros; assert (H10 : a < x0 < b).
+elim x1; intros; split.
+assumption.
+apply Rlt_le_trans with x; assumption.
+assert (H11 : derive_pt f x0 (H4 x0 x1) = 0).
+replace (derive_pt f x0 (H4 x0 x1)) with (derive_pt f x0 (pr x0 H10));
+ [ apply H0 | apply pr_nu ].
+assert (H12 : derive_pt id x0 (H2 x0 x1) = 1).
+apply derive_pt_eq_0; apply derivable_pt_lim_id.
+rewrite H11 in H9; rewrite H12 in H9; rewrite Rmult_0_r in H9;
+ rewrite Rmult_1_r in H9; apply Rminus_diag_uniq; symmetry  in |- *;
+ assumption.
+rewrite H1; reflexivity.
+assert (H2 : x = a).
+rewrite <- b0 in H1; elim H1; intros; apply Rle_antisym; assumption.
+rewrite H2; reflexivity.
+elim H1; intros;
+ elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ (Rle_trans _ _ _ H2 H3) r)).
 Qed.
 
 (* Unicity of the antiderivative *)
-Lemma antiderivative_Ucte : (f,g1,g2:R->R;a,b:R) (antiderivative f g1 a b) -> (antiderivative f g2 a b) -> (EXT c:R | (x:R)``a<=x<=b``->``(g1 x)==(g2 x)+c``).
-Unfold antiderivative; Intros; Elim H; Clear H; Intros; Elim H0; Clear H0; Intros H0 _; Exists ``(g1 a)-(g2 a)``; Intros; Assert H3 : (x:R)``a<=x<=b``->(derivable_pt g1 x).
-Intros; Unfold derivable_pt; Apply Specif.existT with (f x0); Elim (H x0 H3); Intros; EApply derive_pt_eq_1; Symmetry; Apply H4.
-Assert H4 : (x:R)``a<=x<=b``->(derivable_pt g2 x).
-Intros; Unfold derivable_pt; Apply Specif.existT with (f x0); Elim (H0 x0 H4); Intros; EApply derive_pt_eq_1; Symmetry; Apply H5.
-Assert H5 : (x:R)``a<x<b``->(derivable_pt (minus_fct g1 g2) x).
-Intros; Elim H5; Intros; Apply derivable_pt_minus; [Apply H3; Split; Left; Assumption | Apply H4; Split; Left; Assumption].
-Assert H6 : (x:R)``a<=x<=b``->(continuity_pt (minus_fct g1 g2) x).
-Intros; Apply derivable_continuous_pt; Apply derivable_pt_minus; [Apply H3 | Apply H4]; Assumption.
-Assert H7 : (x:R;P:``a<x<b``)(derive_pt (minus_fct g1 g2) x (H5 x P))==``0``.
-Intros; Elim P; Intros; Apply derive_pt_eq_0; Replace R0 with ``(f x0)-(f x0)``; [Idtac | Ring].
-Assert H9 : ``a<=x0<=b``.
-Split; Left; Assumption.
-Apply derivable_pt_lim_minus; [Elim (H ? H9) | Elim (H0 ? H9)]; Intros; EApply derive_pt_eq_1; Symmetry; Apply H10.
-Assert H8 := (null_derivative_loc (minus_fct g1 g2) a b H5 H6 H7); Unfold constant_D_eq in H8; Assert H9 := (H8 ? H2); Unfold minus_fct in H9; Rewrite <- H9; Ring.
+Lemma antiderivative_Ucte :
+ forall (f g1 g2:R -> R) (a b:R),
+   antiderivative f g1 a b ->
+   antiderivative f g2 a b ->
+    exists c : R | (forall x:R, a <= x <= b -> g1 x = g2 x + c).
+unfold antiderivative in |- *; intros; elim H; clear H; intros; elim H0;
+ clear H0; intros H0 _; exists (g1 a - g2 a); intros;
+ assert (H3 : forall x:R, a <= x <= b -> derivable_pt g1 x).
+intros; unfold derivable_pt in |- *; apply existT with (f x0); elim (H x0 H3);
+ intros; eapply derive_pt_eq_1; symmetry  in |- *; 
+ apply H4.
+assert (H4 : forall x:R, a <= x <= b -> derivable_pt g2 x).
+intros; unfold derivable_pt in |- *; apply existT with (f x0);
+ elim (H0 x0 H4); intros; eapply derive_pt_eq_1; symmetry  in |- *; 
+ apply H5.
+assert (H5 : forall x:R, a < x < b -> derivable_pt (g1 - g2) x).
+intros; elim H5; intros; apply derivable_pt_minus;
+ [ apply H3; split; left; assumption | apply H4; split; left; assumption ].
+assert (H6 : forall x:R, a <= x <= b -> continuity_pt (g1 - g2) x).
+intros; apply derivable_continuous_pt; apply derivable_pt_minus;
+ [ apply H3 | apply H4 ]; assumption.
+assert (H7 : forall (x:R) (P:a < x < b), derive_pt (g1 - g2) x (H5 x P) = 0).
+intros; elim P; intros; apply derive_pt_eq_0; replace 0 with (f x0 - f x0);
+ [ idtac | ring ].
+assert (H9 : a <= x0 <= b).
+split; left; assumption.
+apply derivable_pt_lim_minus; [ elim (H _ H9) | elim (H0 _ H9) ]; intros;
+ eapply derive_pt_eq_1; symmetry  in |- *; apply H10.
+assert (H8 := null_derivative_loc (g1 - g2)%F a b H5 H6 H7);
+ unfold constant_D_eq in H8; assert (H9 := H8 _ H2); 
+ unfold minus_fct in H9; rewrite <- H9; ring.
 Qed.

@@ -8,127 +8,171 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rbasic_fun.
-Require Even.
-Require Div2.
-V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Require Import Rbase.
+Require Import Rbasic_fun.
+Require Import Even.
+Require Import Div2.
 Open Local Scope Z_scope.
 Open Local Scope R_scope.
 
-Lemma minus_neq_O : (n,i:nat) (lt i n) -> ~(minus n i)=O.
-Intros; Red; Intro.
-Cut (n,m:nat) (le m n) -> (minus n m)=O -> n=m.
-Intro; Assert H2 := (H1 ? ? (lt_le_weak ? ? H) H0); Rewrite H2 in H; Elim (lt_n_n ? H).
-Pose R := [n,m:nat](le m n)->(minus n m)=(0)->n=m.
-Cut ((n,m:nat)(R n m)) -> ((n0,m:nat)(le m n0)->(minus n0 m)=(0)->n0=m).
-Intro; Apply H1.
-Apply nat_double_ind.
-Unfold R; Intros; Inversion H2; Reflexivity.
-Unfold R; Intros; Simpl in H3; Assumption.
-Unfold R; Intros; Simpl in H4; Assert H5 := (le_S_n ? ? H3); Assert H6 := (H2 H5 H4); Rewrite H6; Reflexivity.
-Unfold R; Intros; Apply H1; Assumption.
+Lemma minus_neq_O : forall n i:nat, (i < n)%nat -> (n - i)%nat <> 0%nat.
+intros; red in |- *; intro.
+cut (forall n m:nat, (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
+intro; assert (H2 := H1 _ _ (lt_le_weak _ _ H) H0); rewrite H2 in H;
+ elim (lt_irrefl _ H).
+pose (R := fun n m:nat => (m <= n)%nat -> (n - m)%nat = 0%nat -> n = m).
+cut
+ ((forall n m:nat, R n m) ->
+  forall n0 m:nat, (m <= n0)%nat -> (n0 - m)%nat = 0%nat -> n0 = m).
+intro; apply H1.
+apply nat_double_ind.
+unfold R in |- *; intros; inversion H2; reflexivity.
+unfold R in |- *; intros; simpl in H3; assumption.
+unfold R in |- *; intros; simpl in H4; assert (H5 := le_S_n _ _ H3);
+ assert (H6 := H2 H5 H4); rewrite H6; reflexivity.
+unfold R in |- *; intros; apply H1; assumption.
 Qed.
 
-Lemma le_minusni_n : (n,i:nat) (le i n)->(le (minus n i) n).
-Pose R := [m,n:nat] (le n m) -> (le (minus m n) m).
-Cut ((m,n:nat)(R m n)) -> ((n,i:nat)(le i n)->(le (minus n i) n)).
-Intro; Apply H.
-Apply nat_double_ind.
-Unfold R; Intros; Simpl; Apply le_n.
-Unfold R; Intros; Simpl; Apply le_n.
-Unfold R; Intros; Simpl; Apply le_trans with n.
-Apply H0; Apply le_S_n; Assumption.
-Apply le_n_Sn.
-Unfold R; Intros; Apply H; Assumption.
+Lemma le_minusni_n : forall n i:nat, (i <= n)%nat -> (n - i <= n)%nat.
+pose (R := fun m n:nat => (n <= m)%nat -> (m - n <= m)%nat).
+cut
+ ((forall m n:nat, R m n) -> forall n i:nat, (i <= n)%nat -> (n - i <= n)%nat).
+intro; apply H.
+apply nat_double_ind.
+unfold R in |- *; intros; simpl in |- *; apply le_n.
+unfold R in |- *; intros; simpl in |- *; apply le_n.
+unfold R in |- *; intros; simpl in |- *; apply le_trans with n.
+apply H0; apply le_S_n; assumption.
+apply le_n_Sn.
+unfold R in |- *; intros; apply H; assumption.
 Qed.
 
-Lemma lt_minus_O_lt : (m,n:nat) (lt m n) -> (lt O (minus n m)).
-Intros n m; Pattern n m; Apply nat_double_ind; [
-  Intros; Rewrite <- minus_n_O; Assumption
-| Intros; Elim (lt_n_O ? H)
-| Intros; Simpl; Apply H; Apply lt_S_n; Assumption].
+Lemma lt_minus_O_lt : forall m n:nat, (m < n)%nat -> (0 < n - m)%nat.
+intros n m; pattern n, m in |- *; apply nat_double_ind;
+ [ intros; rewrite <- minus_n_O; assumption
+ | intros; elim (lt_n_O _ H)
+ | intros; simpl in |- *; apply H; apply lt_S_n; assumption ].
 Qed.
 
-Lemma even_odd_cor : (n:nat) (EX p : nat | n=(mult (2) p)\/n=(S (mult (2) p))).
-Intro.
-Assert H := (even_or_odd n).
-Exists (div2 n).
-Assert H0 := (even_odd_double n).
-Elim H0; Intros.
-Elim H1; Intros H3 _.
-Elim H2; Intros H4 _.
-Replace (mult (2) (div2 n)) with (Div2.double (div2 n)).
-Elim H; Intro.
-Left.
-Apply H3; Assumption.
-Right.
-Apply H4; Assumption.
-Unfold Div2.double; Ring.
+Lemma even_odd_cor :
+ forall n:nat,  exists p : nat | n = (2 * p)%nat \/ n = S (2 * p).
+intro.
+assert (H := even_or_odd n).
+exists (div2 n).
+assert (H0 := even_odd_double n).
+elim H0; intros.
+elim H1; intros H3 _.
+elim H2; intros H4 _.
+replace (2 * div2 n)%nat with (double (div2 n)).
+elim H; intro.
+left.
+apply H3; assumption.
+right.
+apply H4; assumption.
+unfold double in |- *; ring.
 Qed.
 
 (* 2m <= 2n => m<=n *)
-Lemma le_double : (m,n:nat) (le (mult (2) m) (mult (2) n)) -> (le m n).
-Intros; Apply INR_le.
-Assert H1 := (le_INR ? ? H).
-Do 2 Rewrite mult_INR in H1.
-Apply Rle_monotony_contra with ``(INR (S (S O)))``.
-Replace (INR (S (S O))) with ``2``; [Sup0 | Reflexivity].
-Assumption.
+Lemma le_double : forall m n:nat, (2 * m <= 2 * n)%nat -> (m <= n)%nat.
+intros; apply INR_le.
+assert (H1 := le_INR _ _ H).
+do 2 rewrite mult_INR in H1.
+apply Rmult_le_reg_l with (INR 2).
+replace (INR 2) with 2; [ prove_sup0 | reflexivity ].
+assumption.
 Qed.
 
 (* Here, we have the euclidian division *)
 (* This lemma is used in the proof of sin_eq_0 : (sin x)=0<->x=kPI *)
-Lemma euclidian_division : (x,y:R) ``y<>0`` -> (EXT k:Z | (EXT r : R | ``x==(IZR k)*y+r``/\``0<=r<(Rabsolu y)``)).
-Intros.
-Pose k0 := Cases (case_Rabsolu y) of
-     (leftT _) => (Zminus `1` (up ``x/-y``))
-   | (rightT _) => (Zminus (up ``x/y``) `1`) end.
-Exists k0.
-Exists ``x-(IZR k0)*y``.
-Split.
-Ring.
-Unfold k0; Case (case_Rabsolu y); Intro.
-Assert H0 := (archimed ``x/-y``); Rewrite <- Z_R_minus; Simpl; Unfold Rminus.
-Replace ``-((1+ -(IZR (up (x/( -y)))))*y)`` with ``((IZR (up (x/-y)))-1)*y``; [Idtac | Ring].
-Split.
-Apply Rle_monotony_contra with ``/-y``.
-Apply Rlt_Rinv; Apply Rgt_RO_Ropp; Exact r.
-Rewrite Rmult_Or; Rewrite (Rmult_sym ``/-y``); Rewrite Rmult_Rplus_distrl; Rewrite <- Ropp_Rinv; [Idtac | Assumption].
-Rewrite Rmult_assoc; Repeat Rewrite Ropp_mul3; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption].
-Apply Rle_anti_compatibility with ``(IZR (up (x/( -y))))-x/( -y)``.
-Rewrite Rplus_Or; Unfold Rdiv; Pattern 4 ``/-y``; Rewrite <- Ropp_Rinv; [Idtac | Assumption].
-Replace ``(IZR (up (x*/ -y)))-x* -/y+( -(x*/y)+ -((IZR (up (x*/ -y)))-1))`` with R1; [Idtac | Ring].
-Elim H0; Intros _ H1; Unfold Rdiv in H1; Exact H1.
-Rewrite (Rabsolu_left ? r); Apply Rlt_monotony_contra with ``/-y``.
-Apply Rlt_Rinv; Apply Rgt_RO_Ropp; Exact r.
-Rewrite <- Rinv_l_sym.
-Rewrite (Rmult_sym ``/-y``); Rewrite Rmult_Rplus_distrl; Rewrite <- Ropp_Rinv; [Idtac | Assumption].
-Rewrite Rmult_assoc; Repeat Rewrite Ropp_mul3; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption]; Apply Rlt_anti_compatibility with ``((IZR (up (x/( -y))))-1)``.
-Replace ``(IZR (up (x/( -y))))-1+1`` with ``(IZR (up (x/( -y))))``; [Idtac | Ring].
-Replace ``(IZR (up (x/( -y))))-1+( -(x*/y)+ -((IZR (up (x/( -y))))-1))`` with ``-(x*/y)``; [Idtac | Ring].
-Rewrite <- Ropp_mul3; Rewrite (Ropp_Rinv ? H); Elim H0; Unfold Rdiv; Intros H1 _; Exact H1.
-Apply Ropp_neq; Assumption.
-Assert H0 := (archimed ``x/y``); Rewrite <- Z_R_minus; Simpl; Cut ``0<y``.
-Intro; Unfold Rminus; Replace ``-(((IZR (up (x/y)))+ -1)*y)`` with ``(1-(IZR (up (x/y))))*y``; [Idtac | Ring].
-Split.
-Apply Rle_monotony_contra with ``/y``.
-Apply Rlt_Rinv; Assumption.
-Rewrite Rmult_Or; Rewrite (Rmult_sym ``/y``); Rewrite Rmult_Rplus_distrl; Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption]; Apply Rle_anti_compatibility with ``(IZR (up (x/y)))-x/y``; Rewrite Rplus_Or; Unfold Rdiv; Replace ``(IZR (up (x*/y)))-x*/y+(x*/y+(1-(IZR (up (x*/y)))))`` with R1; [Idtac | Ring]; Elim H0; Intros _ H2; Unfold Rdiv in H2; Exact H2.
-Rewrite (Rabsolu_right ? r); Apply Rlt_monotony_contra with ``/y``.
-Apply Rlt_Rinv; Assumption.
-Rewrite <- (Rinv_l_sym ? H); Rewrite (Rmult_sym ``/y``); Rewrite Rmult_Rplus_distrl; Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption]; Apply Rlt_anti_compatibility with ``((IZR (up (x/y)))-1)``; Replace ``(IZR (up (x/y)))-1+1`` with ``(IZR (up (x/y)))``; [Idtac | Ring]; Replace ``(IZR (up (x/y)))-1+(x*/y+(1-(IZR (up (x/y)))))`` with ``x*/y``; [Idtac | Ring]; Elim H0; Unfold Rdiv; Intros H2 _; Exact H2.
-Case (total_order_T R0 y); Intro.
-Elim s; Intro.
-Assumption.
-Elim H; Symmetry; Exact b.
-Assert H1 := (Rle_sym2 ? ? r); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H1 r0)).
+Lemma euclidian_division :
+ forall x y:R,
+   y <> 0 ->
+    exists k : Z | ( exists r : R | x = IZR k * y + r /\ 0 <= r < Rabs y).
+intros.
+pose
+ (k0 :=
+  match Rcase_abs y with
+  | left _ => (1 - up (x / - y))%Z
+  | right _ => (up (x / y) - 1)%Z
+  end).
+exists k0.
+exists (x - IZR k0 * y).
+split.
+ring.
+unfold k0 in |- *; case (Rcase_abs y); intro.
+assert (H0 := archimed (x / - y)); rewrite <- Z_R_minus; simpl in |- *;
+ unfold Rminus in |- *.
+replace (- ((1 + - IZR (up (x / - y))) * y)) with
+ ((IZR (up (x / - y)) - 1) * y); [ idtac | ring ].
+split.
+apply Rmult_le_reg_l with (/ - y).
+apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact r.
+rewrite Rmult_0_r; rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
+ rewrite <- Ropp_inv_permute; [ idtac | assumption ].
+rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
+ rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ].
+apply Rplus_le_reg_l with (IZR (up (x / - y)) - x / - y).
+rewrite Rplus_0_r; unfold Rdiv in |- *; pattern (/ - y) at 4 in |- *;
+ rewrite <- Ropp_inv_permute; [ idtac | assumption ].
+replace
+ (IZR (up (x * / - y)) - x * - / y +
+  (- (x * / y) + - (IZR (up (x * / - y)) - 1))) with 1; 
+ [ idtac | ring ].
+elim H0; intros _ H1; unfold Rdiv in H1; exact H1.
+rewrite (Rabs_left _ r); apply Rmult_lt_reg_l with (/ - y).
+apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact r.
+rewrite <- Rinv_l_sym.
+rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
+ rewrite <- Ropp_inv_permute; [ idtac | assumption ].
+rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
+ rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ];
+ apply Rplus_lt_reg_r with (IZR (up (x / - y)) - 1).
+replace (IZR (up (x / - y)) - 1 + 1) with (IZR (up (x / - y)));
+ [ idtac | ring ].
+replace (IZR (up (x / - y)) - 1 + (- (x * / y) + - (IZR (up (x / - y)) - 1)))
+ with (- (x * / y)); [ idtac | ring ].
+rewrite <- Ropp_mult_distr_r_reverse; rewrite (Ropp_inv_permute _ H); elim H0;
+ unfold Rdiv in |- *; intros H1 _; exact H1.
+apply Ropp_neq_0_compat; assumption.
+assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; simpl in |- *;
+ cut (0 < y).
+intro; unfold Rminus in |- *;
+ replace (- ((IZR (up (x / y)) + -1) * y)) with ((1 - IZR (up (x / y))) * y);
+ [ idtac | ring ].
+split.
+apply Rmult_le_reg_l with (/ y).
+apply Rinv_0_lt_compat; assumption.
+rewrite Rmult_0_r; rewrite (Rmult_comm (/ y)); rewrite Rmult_plus_distr_r;
+ rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
+ [ rewrite Rmult_1_r | assumption ];
+ apply Rplus_le_reg_l with (IZR (up (x / y)) - x / y); 
+ rewrite Rplus_0_r; unfold Rdiv in |- *;
+ replace
+  (IZR (up (x * / y)) - x * / y + (x * / y + (1 - IZR (up (x * / y))))) with
+  1; [ idtac | ring ]; elim H0; intros _ H2; unfold Rdiv in H2; 
+ exact H2.
+rewrite (Rabs_right _ r); apply Rmult_lt_reg_l with (/ y).
+apply Rinv_0_lt_compat; assumption.
+rewrite <- (Rinv_l_sym _ H); rewrite (Rmult_comm (/ y));
+ rewrite Rmult_plus_distr_r; rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
+ [ rewrite Rmult_1_r | assumption ];
+ apply Rplus_lt_reg_r with (IZR (up (x / y)) - 1);
+ replace (IZR (up (x / y)) - 1 + 1) with (IZR (up (x / y))); 
+ [ idtac | ring ];
+ replace (IZR (up (x / y)) - 1 + (x * / y + (1 - IZR (up (x / y))))) with
+  (x * / y); [ idtac | ring ]; elim H0; unfold Rdiv in |- *; 
+ intros H2 _; exact H2.
+case (total_order_T 0 y); intro.
+elim s; intro.
+assumption.
+elim H; symmetry  in |- *; exact b.
+assert (H1 := Rge_le _ _ r); elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H1 r0)).
 Qed.
 
-Lemma tech8 : (n,i:nat) (le n (plus (S n) i)).
-Intros; Induction i.
-Replace (plus (S n) O) with (S n); [Apply le_n_Sn | Ring].
-Replace (plus (S n) (S i)) with (S (plus (S n) i)).
-Apply le_S; Assumption.
-Apply INR_eq; Rewrite S_INR; Do 2 Rewrite plus_INR; Do 2 Rewrite S_INR; Ring.
+Lemma tech8 : forall n i:nat, (n <= S n + i)%nat.
+intros; induction  i as [| i Hreci].
+replace (S n + 0)%nat with (S n); [ apply le_n_Sn | ring ].
+replace (S n + S i)%nat with (S (S n + i)).
+apply le_S; assumption.
+apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
 Qed.

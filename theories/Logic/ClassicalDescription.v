@@ -22,55 +22,57 @@
 
 Require Export Classical.
 
-Axiom dependent_description :
-  (A:Type;B:A->Type;R: (x:A)(B x)->Prop)
-  ((x:A)(EX y:(B x)|(R x y)/\ ((y':(B x))(R x y') -> y=y')))
-   -> (EX f:(x:A)(B x) | (x:A)(R x (f x))).
+Axiom
+  dependent_description :
+    forall (A:Type) (B:A -> Type) (R:forall x:A, B x -> Prop),
+      (forall x:A,
+          exists y : B x | R x y /\ (forall y':B x, R x y' -> y = y')) ->
+       exists f : forall x:A, B x | (forall x:A, R x (f x)).
 
 (** Principle of definite description (aka axiom of unique choice) *)
 
 Theorem description :
-  (A:Type;B:Type;R: A->B->Prop)
-  ((x:A)(EX y:B|(R x y)/\ ((y':B)(R x y') -> y=y')))
-   -> (EX f:A->B | (x:A)(R x (f x))).
+ forall (A B:Type) (R:A -> B -> Prop),
+   (forall x:A,  exists y : B | R x y /\ (forall y':B, R x y' -> y = y')) ->
+    exists f : A -> B | (forall x:A, R x (f x)).
 Proof.
-Intros A B.
-Apply (dependent_description A [_]B).
+intros A B.
+apply (dependent_description A (fun _ => B)).
 Qed.
 
 (** The followig proof comes from [1] *)
 
-Theorem classic_set : (((P:Prop){P}+{~P}) -> False) -> False.
+Theorem classic_set : ((forall P:Prop, {P} + {~ P}) -> False) -> False.
 Proof.
-Intro HnotEM.
-Pose R:=[A,b]A/\true=b \/ ~A/\false=b.
-Assert H:(EX f:Prop->bool|(A:Prop)(R A (f A))).
-Apply description.
-Intro A.
-NewDestruct (classic A) as [Ha|Hnota].
-  Exists true; Split.
-    Left; Split; [Assumption|Reflexivity].
-    Intros y [[_ Hy]|[Hna _]].
-      Assumption.
-      Contradiction.
-  Exists false; Split.
-    Right; Split; [Assumption|Reflexivity].
-    Intros y [[Ha _]|[_ Hy]].
-      Contradiction.
-      Assumption.
-NewDestruct H as [f Hf].
-Apply HnotEM.
-Intro P.
-Assert HfP := (Hf P).
+intro HnotEM.
+pose (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
+assert (H :  exists f : Prop -> bool | (forall A:Prop, R A (f A))).
+apply description.
+intro A.
+destruct (classic A) as [Ha| Hnota].
+  exists true; split.
+    left; split; [ assumption | reflexivity ].
+    intros y [[_ Hy]| [Hna _]].
+      assumption.
+      contradiction.
+  exists false; split.
+    right; split; [ assumption | reflexivity ].
+    intros y [[Ha _]| [_ Hy]].
+      contradiction.
+      assumption.
+destruct H as [f Hf].
+apply HnotEM.
+intro P.
+assert (HfP := Hf P).
 (* Elimination from Hf to Set is not allowed but from f to Set yes ! *)
-NewDestruct (f P).
-  Left.
-  NewDestruct HfP as [[Ha _]|[_ Hfalse]].
-    Assumption.
-    Discriminate.
-  Right.
-  NewDestruct HfP as [[_ Hfalse]|[Hna _]].
-    Discriminate.
-    Assumption.
+destruct (f P).
+  left.
+  destruct HfP as [[Ha _]| [_ Hfalse]].
+    assumption.
+    discriminate.
+  right.
+  destruct HfP as [[_ Hfalse]| [Hna _]].
+    discriminate.
+    assumption.
 Qed.
  

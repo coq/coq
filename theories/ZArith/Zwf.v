@@ -8,10 +8,9 @@
 
 (* $Id$ *)
 
-Require ZArith_base.
+Require Import ZArith_base.
 Require Export Wf_nat.
-Require Omega.
-V7only [Import Z_scope.].
+Require Import Omega.
 Open Local Scope Z_scope.
 
 (** Well-founded relations on Z. *)
@@ -21,7 +20,7 @@ Open Local Scope Z_scope.
     [x (Zwf c) y]   iff   [x < y & c <= y]
  *)
 
-Definition Zwf := [c:Z][x,y:Z] `c <= y` /\ `x < y`.
+Definition Zwf (c x y:Z) := c <= y /\ x < y.
 
 (** and we prove that [(Zwf c)] is well founded *)
 
@@ -32,34 +31,34 @@ Variable c : Z.
 (** The proof of well-foundness is classic: we do the proof by induction
     on a measure in nat, which is here [|x-c|] *)
 
-Local f := [z:Z](absolu (Zminus z c)).
+Let f (z:Z) := Zabs_nat (z - c).
 
-Lemma Zwf_well_founded : (well_founded Z (Zwf c)).
-Red; Intros.
-Assert (n:nat)(a:Z)(lt (f a) n)\/(`a<c`) -> (Acc Z (Zwf c) a).
-Clear a; Induction n; Intros.
+Lemma Zwf_well_founded : well_founded (Zwf c).
+red in |- *; intros.
+assert (forall (n:nat) (a:Z), (f a < n)%nat \/ a < c -> Acc (Zwf c) a).
+clear a; simple induction n; intros.
 (** n= 0 *)
-Case H; Intros.
-Case (lt_n_O (f a)); Auto.
-Apply Acc_intro; Unfold Zwf; Intros.
-Assert False;Omega Orelse Contradiction.
+case H; intros.
+case (lt_n_O (f a)); auto.
+apply Acc_intro; unfold Zwf in |- *; intros.
+assert False; omega || contradiction.
 (** inductive case *)
-Case H0; Clear H0; Intro; Auto.
-Apply Acc_intro; Intros.
-Apply H.
-Unfold Zwf in H1.
-Case (Zle_or_lt c y); Intro; Auto with zarith.
-Left.
-Red in H0.
-Apply lt_le_trans with (f a); Auto with arith.
-Unfold f.
-Apply absolu_lt; Omega.
-Apply (H (S (f a))); Auto.
-Save.
+case H0; clear H0; intro; auto.
+apply Acc_intro; intros.
+apply H.
+unfold Zwf in H1.
+case (Zle_or_lt c y); intro; auto with zarith.
+left.
+red in H0.
+apply lt_le_trans with (f a); auto with arith.
+unfold f in |- *.
+apply Zabs.Zabs_nat_lt; omega.
+apply (H (S (f a))); auto.
+Qed.
 
 End wf_proof.
 
-Hints Resolve Zwf_well_founded : datatypes v62.
+Hint Resolve Zwf_well_founded: datatypes v62.
 
 
 (** We also define the other family of relations:
@@ -67,7 +66,7 @@ Hints Resolve Zwf_well_founded : datatypes v62.
     [x (Zwf_up c) y]   iff   [y < x <= c]
  *)
 
-Definition Zwf_up := [c:Z][x,y:Z] `y < x <= c`.
+Definition Zwf_up (c x y:Z) := y < x <= c.
 
 (** and we prove that [(Zwf_up c)] is well founded *)
 
@@ -78,19 +77,20 @@ Variable c : Z.
 (** The proof of well-foundness is classic: we do the proof by induction
     on a measure in nat, which is here [|c-x|] *)
 
-Local f := [z:Z](absolu (Zminus c z)).
+Let f (z:Z) := Zabs_nat (c - z).
 
-Lemma Zwf_up_well_founded : (well_founded Z (Zwf_up c)).
+Lemma Zwf_up_well_founded : well_founded (Zwf_up c).
 Proof.
-Apply well_founded_lt_compat with f:=f.
-Unfold Zwf_up f.
-Intros.
-Apply absolu_lt.
-Unfold Zminus. Split.
-Apply Zle_left; Intuition.
-Apply Zlt_reg_l; Unfold Zlt; Rewrite <- Zcompare_Zopp; Intuition.
-Save.
+apply well_founded_lt_compat with (f := f).
+unfold Zwf_up, f in |- *.
+intros.
+apply Zabs.Zabs_nat_lt.
+unfold Zminus in |- *. split.
+apply Zle_left; intuition.
+apply Zplus_lt_compat_l; unfold Zlt in |- *; rewrite <- Zcompare_opp;
+ intuition.
+Qed.
 
 End wf_proof_up.
 
-Hints Resolve Zwf_up_well_founded : datatypes v62.
+Hint Resolve Zwf_up_well_founded: datatypes v62.

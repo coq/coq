@@ -16,374 +16,383 @@
     This allow to "hide" the definitions, functions and theorems of PolyList
     and to see only the ones of ListSet *)
 
-Require PolyList.
+Require Import List.
 
 Set Implicit Arguments.
-V7only [Implicits nil [1].].
 
 Section first_definitions.
 
   Variable A : Set.
-  Hypothesis Aeq_dec : (x,y:A){x=y}+{~x=y}.
+  Hypothesis Aeq_dec : forall x y:A, {x = y} + {x <> y}.
 
-  Definition set := (list A).
+  Definition set := list A.
 
-  Definition empty_set := (!nil ?) : set.
+  Definition empty_set : set := nil.
 
-  Fixpoint set_add [a:A; x:set] : set :=
-    Cases x of
-    | nil => (cons a nil)
-    | (cons a1 x1) => Cases (Aeq_dec a a1) of 
-                    | (left _) => (cons a1 x1) 
-                    | (right _) => (cons a1 (set_add a x1))
-                   end
+  Fixpoint set_add (a:A) (x:set) {struct x} : set :=
+    match x with
+    | nil => a :: nil
+    | a1 :: x1 =>
+        match Aeq_dec a a1 with
+        | left _ => a1 :: x1
+        | right _ => a1 :: set_add a x1
+        end
     end.
 
 
-  Fixpoint set_mem [a:A; x:set] : bool :=
-    Cases x of
+  Fixpoint set_mem (a:A) (x:set) {struct x} : bool :=
+    match x with
     | nil => false
-    | (cons a1 x1) => Cases (Aeq_dec a a1) of 
-                    | (left _) => true 
-                    | (right _) => (set_mem a x1)
-                   end
+    | a1 :: x1 =>
+        match Aeq_dec a a1 with
+        | left _ => true
+        | right _ => set_mem a x1
+        end
     end.
  
   (** If [a] belongs to [x], removes [a] from [x]. If not, does nothing *)
-  Fixpoint set_remove [a:A; x:set] : set :=
-    Cases x of
+  Fixpoint set_remove (a:A) (x:set) {struct x} : set :=
+    match x with
     | nil => empty_set
-    | (cons a1 x1) => Cases (Aeq_dec a a1) of 
-                    | (left _) => x1 
-                    | (right _) => (cons a1 (set_remove a x1))
-                   end
+    | a1 :: x1 =>
+        match Aeq_dec a a1 with
+        | left _ => x1
+        | right _ => a1 :: set_remove a x1
+        end
     end.
 
-  Fixpoint set_inter [x:set] : set -> set :=
-    Cases x of
-    | nil => [y]nil
-    | (cons a1 x1) => [y]if (set_mem a1 y) 
-                      then (cons a1 (set_inter x1 y))
-		      else (set_inter x1 y)
+  Fixpoint set_inter (x:set) : set -> set :=
+    match x with
+    | nil => fun y => nil
+    | a1 :: x1 =>
+        fun y =>
+          if set_mem a1 y then a1 :: set_inter x1 y else set_inter x1 y
     end.
 
-  Fixpoint set_union [x,y:set] : set :=
-    Cases y of
+  Fixpoint set_union (x y:set) {struct y} : set :=
+    match y with
     | nil => x
-    | (cons a1 y1) => (set_add a1 (set_union x y1))
+    | a1 :: y1 => set_add a1 (set_union x y1)
     end.
         
   (** returns the set of all els of [x] that does not belong to [y] *)
-  Fixpoint set_diff [x:set] : set -> set :=
-    [y]Cases x of
+  Fixpoint set_diff (x y:set) {struct x} : set :=
+    match x with
     | nil => nil
-    | (cons a1 x1) => if (set_mem a1 y) 
-                      then (set_diff x1 y)
-		      else (set_add a1 (set_diff x1 y))
+    | a1 :: x1 =>
+        if set_mem a1 y then set_diff x1 y else set_add a1 (set_diff x1 y)
     end.
    
 
-  Definition set_In : A -> set -> Prop := (In 1!A).
+  Definition set_In : A -> set -> Prop := In (A:=A).
 
-  Lemma set_In_dec : (a:A; x:set){(set_In a x)}+{~(set_In a x)}.
+  Lemma set_In_dec : forall (a:A) (x:set), {set_In a x} + {~ set_In a x}.
 
   Proof.
-    Unfold set_In.
+    unfold set_In in |- *.
     (*** Realizer set_mem. Program_all. ***)
-    Induction x.
-    Auto.
-    Intros a0 x0 Ha0. Case (Aeq_dec a a0); Intro eq.
-    Rewrite eq; Simpl; Auto with datatypes.
-    Elim Ha0.
-    Auto with datatypes.
-    Right; Simpl; Unfold not; Intros [Hc1 | Hc2 ]; Auto with datatypes.
+    simple induction x.
+    auto.
+    intros a0 x0 Ha0. case (Aeq_dec a a0); intro eq.
+    rewrite eq; simpl in |- *; auto with datatypes.
+    elim Ha0.
+    auto with datatypes.
+    right; simpl in |- *; unfold not in |- *; intros [Hc1| Hc2];
+     auto with datatypes.
   Qed.
 
-  Lemma set_mem_ind : 
-    (B:Set)(P:B->Prop)(y,z:B)(a:A)(x:set)
-      ((set_In a x) -> (P y))
-       ->(P z)
-       ->(P (if (set_mem a x) then y else z)).
+  Lemma set_mem_ind :
+   forall (B:Set) (P:B -> Prop) (y z:B) (a:A) (x:set),
+     (set_In a x -> P y) -> P z -> P (if set_mem a x then y else z).
 
   Proof.
-    Induction x; Simpl; Intros.
-    Assumption.
-    Elim (Aeq_dec a a0); Auto with datatypes.
+    simple induction x; simpl in |- *; intros.
+    assumption.
+    elim (Aeq_dec a a0); auto with datatypes.
   Qed.
 
-  Lemma set_mem_ind2 : 
-    (B:Set)(P:B->Prop)(y,z:B)(a:A)(x:set)
-      ((set_In a x) -> (P y))
-       ->(~(set_In a x) -> (P z))
-       ->(P (if (set_mem a x) then y else z)).
+  Lemma set_mem_ind2 :
+   forall (B:Set) (P:B -> Prop) (y z:B) (a:A) (x:set),
+     (set_In a x -> P y) ->
+     (~ set_In a x -> P z) -> P (if set_mem a x then y else z).
 
   Proof.
-    Induction x; Simpl; Intros.
-    Apply H0; Red; Trivial.
-    Case (Aeq_dec a a0); Auto with datatypes.
-    Intro; Apply H; Intros; Auto.
-    Apply H1; Red; Intro.
-    Case H3; Auto.
+    simple induction x; simpl in |- *; intros.
+    apply H0; red in |- *; trivial.
+    case (Aeq_dec a a0); auto with datatypes.
+    intro; apply H; intros; auto.
+    apply H1; red in |- *; intro.
+    case H3; auto.
   Qed.
 
  
   Lemma set_mem_correct1 :
-    (a:A)(x:set)(set_mem a x)=true -> (set_In a x).
+   forall (a:A) (x:set), set_mem a x = true -> set_In a x.
   Proof.
-    Induction x; Simpl.
-    Discriminate.
-    Intros a0 l; Elim (Aeq_dec a a0); Auto with datatypes.
+    simple induction x; simpl in |- *.
+    discriminate.
+    intros a0 l; elim (Aeq_dec a a0); auto with datatypes.
   Qed.
 
   Lemma set_mem_correct2 :
-    (a:A)(x:set)(set_In a x) -> (set_mem a x)=true.
+   forall (a:A) (x:set), set_In a x -> set_mem a x = true.
   Proof.
-    Induction x; Simpl.
-    Intro Ha; Elim Ha.
-    Intros a0 l; Elim (Aeq_dec a a0); Auto with datatypes.
-    Intros H1 H2 [H3 | H4].
-    Absurd a0=a; Auto with datatypes.
-    Auto with datatypes.
+    simple induction x; simpl in |- *.
+    intro Ha; elim Ha.
+    intros a0 l; elim (Aeq_dec a a0); auto with datatypes.
+    intros H1 H2 [H3| H4].
+    absurd (a0 = a); auto with datatypes.
+    auto with datatypes.
   Qed.
 
   Lemma set_mem_complete1 :
-    (a:A)(x:set)(set_mem a x)=false -> ~(set_In a x).
+   forall (a:A) (x:set), set_mem a x = false -> ~ set_In a x.
   Proof.
-    Induction x; Simpl.
-    Tauto.
-    Intros a0 l; Elim (Aeq_dec a a0).
-    Intros; Discriminate H0.
-    Unfold not; Intros; Elim H1; Auto with datatypes.
+    simple induction x; simpl in |- *.
+    tauto.
+    intros a0 l; elim (Aeq_dec a a0).
+    intros; discriminate H0.
+    unfold not in |- *; intros; elim H1; auto with datatypes.
   Qed.
 
   Lemma set_mem_complete2 :
-    (a:A)(x:set)~(set_In a x) -> (set_mem a x)=false.
+   forall (a:A) (x:set), ~ set_In a x -> set_mem a x = false.
   Proof.
-    Induction x; Simpl.
-    Tauto.
-    Intros a0 l; Elim (Aeq_dec a a0).
-    Intros; Elim H0; Auto with datatypes.
-    Tauto.
+    simple induction x; simpl in |- *.
+    tauto.
+    intros a0 l; elim (Aeq_dec a a0).
+    intros; elim H0; auto with datatypes.
+    tauto.
   Qed.
 
-  Lemma set_add_intro1 : (a,b:A)(x:set) 
-    (set_In a x) -> (set_In a (set_add b x)).
+  Lemma set_add_intro1 :
+   forall (a b:A) (x:set), set_In a x -> set_In a (set_add b x).
 
   Proof.
-    Unfold set_In; Induction x; Simpl.
-    Auto with datatypes.
-    Intros a0 l H [ Ha0a | Hal ].
-    Elim (Aeq_dec b a0); Left; Assumption.
-    Elim (Aeq_dec b a0); Right; [ Assumption | Auto with datatypes ].
+    unfold set_In in |- *; simple induction x; simpl in |- *.
+    auto with datatypes.
+    intros a0 l H [Ha0a| Hal].
+    elim (Aeq_dec b a0); left; assumption.
+    elim (Aeq_dec b a0); right; [ assumption | auto with datatypes ].
   Qed.
 
-  Lemma set_add_intro2 : (a,b:A)(x:set) 
-    a=b -> (set_In a (set_add b x)).
+  Lemma set_add_intro2 :
+   forall (a b:A) (x:set), a = b -> set_In a (set_add b x).
 
   Proof.
-    Unfold set_In; Induction x; Simpl.
-    Auto with datatypes.
-    Intros a0 l H Hab.
-    Elim (Aeq_dec b a0); 
-    [ Rewrite Hab; Intro Hba0; Rewrite Hba0; Simpl; Auto with datatypes
-    | Auto with datatypes ].
+    unfold set_In in |- *; simple induction x; simpl in |- *.
+    auto with datatypes.
+    intros a0 l H Hab.
+    elim (Aeq_dec b a0);
+     [ rewrite Hab; intro Hba0; rewrite Hba0; simpl in |- *;
+        auto with datatypes
+     | auto with datatypes ].
   Qed.
 
-  Hints Resolve set_add_intro1 set_add_intro2.
+  Hint Resolve set_add_intro1 set_add_intro2.
 
-  Lemma set_add_intro : (a,b:A)(x:set) 
-    a=b\/(set_In a x) -> (set_In a (set_add b x)).
+  Lemma set_add_intro :
+   forall (a b:A) (x:set), a = b \/ set_In a x -> set_In a (set_add b x).
   
   Proof.
-    Intros a b x [H1 | H2] ; Auto with datatypes.
+    intros a b x [H1| H2]; auto with datatypes.
   Qed.
  
-  Lemma set_add_elim : (a,b:A)(x:set) 
-    (set_In a (set_add b x)) -> a=b\/(set_In a x).
+  Lemma set_add_elim :
+   forall (a b:A) (x:set), set_In a (set_add b x) -> a = b \/ set_In a x.
 
   Proof.
-    Unfold set_In.
-    Induction x.
-    Simpl; Intros [H1|H2]; Auto with datatypes.
-    Simpl; Do 3 Intro.
-    Elim (Aeq_dec b a0).
-    Simpl; Tauto.
-    Simpl; Intros; Elim H0.
-    Trivial with datatypes.
-    Tauto.
-    Tauto.
+    unfold set_In in |- *.
+    simple induction x.
+    simpl in |- *; intros [H1| H2]; auto with datatypes.
+    simpl in |- *; do 3 intro.
+    elim (Aeq_dec b a0).
+    simpl in |- *; tauto.
+    simpl in |- *; intros; elim H0.
+    trivial with datatypes.
+    tauto.
+    tauto.
   Qed.
 
-  Lemma set_add_elim2 :  (a,b:A)(x:set) 
-    (set_In a (set_add b x)) -> ~(a=b) -> (set_In a x).
-   Intros a b x H; Case (set_add_elim H); Intros; Trivial.
-   Case H1; Trivial.
+  Lemma set_add_elim2 :
+   forall (a b:A) (x:set), set_In a (set_add b x) -> a <> b -> set_In a x.
+   intros a b x H; case (set_add_elim _ _ _ H); intros; trivial.
+   case H1; trivial.
    Qed.
 
-  Hints Resolve set_add_intro set_add_elim set_add_elim2.
+  Hint Resolve set_add_intro set_add_elim set_add_elim2.
 
-  Lemma set_add_not_empty : (a:A)(x:set)~(set_add a x)=empty_set.
+  Lemma set_add_not_empty : forall (a:A) (x:set), set_add a x <> empty_set.
   Proof.
-    Induction x; Simpl.
-    Discriminate.
-    Intros; Elim  (Aeq_dec a a0); Intros; Discriminate.
+    simple induction x; simpl in |- *.
+    discriminate.
+    intros; elim (Aeq_dec a a0); intros; discriminate.
   Qed.   
 
 
-  Lemma set_union_intro1 : (a:A)(x,y:set)
-    (set_In a x) -> (set_In a (set_union x y)).
+  Lemma set_union_intro1 :
+   forall (a:A) (x y:set), set_In a x -> set_In a (set_union x y).
   Proof.
-    Induction y; Simpl; Auto with datatypes.
+    simple induction y; simpl in |- *; auto with datatypes.
   Qed.
 
-  Lemma set_union_intro2 : (a:A)(x,y:set)
-    (set_In a y) -> (set_In a (set_union x y)).
+  Lemma set_union_intro2 :
+   forall (a:A) (x y:set), set_In a y -> set_In a (set_union x y).
   Proof.
-    Induction y; Simpl.
-    Tauto.
-    Intros; Elim H0; Auto with datatypes.
+    simple induction y; simpl in |- *.
+    tauto.
+    intros; elim H0; auto with datatypes.
   Qed.
 
-  Hints Resolve set_union_intro2 set_union_intro1.
+  Hint Resolve set_union_intro2 set_union_intro1.
 
-  Lemma set_union_intro : (a:A)(x,y:set)
-    (set_In a x)\/(set_In a y) -> (set_In a (set_union x y)).
+  Lemma set_union_intro :
+   forall (a:A) (x y:set),
+     set_In a x \/ set_In a y -> set_In a (set_union x y).
   Proof.
-    Intros; Elim H; Auto with datatypes.
+    intros; elim H; auto with datatypes.
   Qed.
 
-  Lemma set_union_elim : (a:A)(x,y:set)
-    (set_In a (set_union x y)) -> (set_In a x)\/(set_In a y).
+  Lemma set_union_elim :
+   forall (a:A) (x y:set),
+     set_In a (set_union x y) -> set_In a x \/ set_In a y.
   Proof.
-    Induction y; Simpl.
-    Auto with datatypes.
-    Intros.
-    Generalize (set_add_elim H0).
-    Intros [H1 | H1].
-    Auto with datatypes.
-    Tauto.
+    simple induction y; simpl in |- *.
+    auto with datatypes.
+    intros.
+    generalize (set_add_elim _ _ _ H0).
+    intros [H1| H1].
+    auto with datatypes.
+    tauto.
   Qed.
 
-  Lemma set_union_emptyL : (a:A)(x:set)(set_In a (set_union empty_set x)) -> (set_In a x).
-    Intros a x H; Case (set_union_elim H); Auto Orelse Contradiction.
-  Qed.
-
-
-  Lemma set_union_emptyR : (a:A)(x:set)(set_In a (set_union x empty_set)) -> (set_In a x).
-    Intros a x H; Case (set_union_elim H); Auto Orelse Contradiction.
+  Lemma set_union_emptyL :
+   forall (a:A) (x:set), set_In a (set_union empty_set x) -> set_In a x.
+    intros a x H; case (set_union_elim _ _ _ H); auto || contradiction.
   Qed.
 
 
-  Lemma set_inter_intro :  (a:A)(x,y:set)
-    (set_In a x) -> (set_In a y) -> (set_In a (set_inter x y)).
+  Lemma set_union_emptyR :
+   forall (a:A) (x:set), set_In a (set_union x empty_set) -> set_In a x.
+    intros a x H; case (set_union_elim _ _ _ H); auto || contradiction.
+  Qed.
+
+
+  Lemma set_inter_intro :
+   forall (a:A) (x y:set),
+     set_In a x -> set_In a y -> set_In a (set_inter x y).
   Proof.
-    Induction x.
-    Auto with datatypes.
-    Simpl; Intros a0 l Hrec y [Ha0a | Hal] Hy.
-    Simpl; Rewrite Ha0a.
-    Generalize (!set_mem_correct1 a y).
-    Generalize (!set_mem_complete1 a y).
-    Elim (set_mem a y); Simpl; Intros.
-    Auto with datatypes.
-    Absurd (set_In a y); Auto with datatypes.
-    Elim (set_mem a0 y); [ Right; Auto with datatypes | Auto with datatypes].     
+    simple induction x.
+    auto with datatypes.
+    simpl in |- *; intros a0 l Hrec y [Ha0a| Hal] Hy.
+    simpl in |- *; rewrite Ha0a.
+    generalize (set_mem_correct1 a y).
+    generalize (set_mem_complete1 a y).
+    elim (set_mem a y); simpl in |- *; intros.
+    auto with datatypes.
+    absurd (set_In a y); auto with datatypes.
+    elim (set_mem a0 y); [ right; auto with datatypes | auto with datatypes ].     
   Qed.
 
-  Lemma set_inter_elim1 : (a:A)(x,y:set)
-    (set_In a (set_inter x y)) -> (set_In a x).
+  Lemma set_inter_elim1 :
+   forall (a:A) (x y:set), set_In a (set_inter x y) -> set_In a x.
   Proof.
-    Induction x.
-    Auto with datatypes.
-    Simpl; Intros a0 l Hrec y.
-    Generalize (!set_mem_correct1 a0 y).
-    Elim (set_mem a0 y); Simpl; Intros.
-    Elim H0; EAuto with datatypes.
-    EAuto with datatypes.
+    simple induction x.
+    auto with datatypes.
+    simpl in |- *; intros a0 l Hrec y.
+    generalize (set_mem_correct1 a0 y).
+    elim (set_mem a0 y); simpl in |- *; intros.
+    elim H0; eauto with datatypes.
+    eauto with datatypes.
   Qed.
 
-  Lemma set_inter_elim2 : (a:A)(x,y:set)
-    (set_In a (set_inter x y)) -> (set_In a y).
+  Lemma set_inter_elim2 :
+   forall (a:A) (x y:set), set_In a (set_inter x y) -> set_In a y.
   Proof.
-    Induction x.
-    Simpl; Tauto.
-    Simpl; Intros a0 l Hrec y.
-    Generalize (!set_mem_correct1 a0 y).
-    Elim (set_mem a0 y); Simpl; Intros.
-    Elim H0; [ Intro Hr; Rewrite <- Hr; EAuto with datatypes  | EAuto with datatypes ] .
-    EAuto with datatypes.
+    simple induction x.
+    simpl in |- *; tauto.
+    simpl in |- *; intros a0 l Hrec y.
+    generalize (set_mem_correct1 a0 y).
+    elim (set_mem a0 y); simpl in |- *; intros.
+    elim H0;
+     [ intro Hr; rewrite <- Hr; eauto with datatypes | eauto with datatypes ].
+    eauto with datatypes.
   Qed.
 
-  Hints Resolve set_inter_elim1 set_inter_elim2.
+  Hint Resolve set_inter_elim1 set_inter_elim2.
 
-  Lemma set_inter_elim : (a:A)(x,y:set)
-    (set_In a (set_inter x y)) -> (set_In a x)/\(set_In a y).
+  Lemma set_inter_elim :
+   forall (a:A) (x y:set),
+     set_In a (set_inter x y) -> set_In a x /\ set_In a y.
   Proof.
-    EAuto with datatypes.
+    eauto with datatypes.
   Qed. 
 
-  Lemma set_diff_intro : (a:A)(x,y:set)
-    (set_In a x) -> ~(set_In a y) -> (set_In a (set_diff x y)).
+  Lemma set_diff_intro :
+   forall (a:A) (x y:set),
+     set_In a x -> ~ set_In a y -> set_In a (set_diff x y).
   Proof.
-    Induction x.
-    Simpl; Tauto.
-    Simpl; Intros a0 l Hrec y [Ha0a | Hal] Hay.
-    Rewrite Ha0a; Generalize (set_mem_complete2 Hay).
-    Elim (set_mem a y); [ Intro Habs; Discriminate Habs | Auto with datatypes ].
-    Elim (set_mem a0 y); Auto with datatypes.
+    simple induction x.
+    simpl in |- *; tauto.
+    simpl in |- *; intros a0 l Hrec y [Ha0a| Hal] Hay.
+    rewrite Ha0a; generalize (set_mem_complete2 _ _ Hay).
+    elim (set_mem a y);
+     [ intro Habs; discriminate Habs | auto with datatypes ].
+    elim (set_mem a0 y); auto with datatypes.
   Qed.
 
-  Lemma set_diff_elim1 : (a:A)(x,y:set)
-    (set_In a (set_diff x y)) -> (set_In a x).
+  Lemma set_diff_elim1 :
+   forall (a:A) (x y:set), set_In a (set_diff x y) -> set_In a x.
   Proof.
-    Induction x.
-    Simpl; Tauto.
-    Simpl; Intros a0 l Hrec y; Elim (set_mem a0 y).
-    EAuto with datatypes.
-    Intro; Generalize (set_add_elim  H).
-    Intros [H1 | H2]; EAuto with datatypes.
+    simple induction x.
+    simpl in |- *; tauto.
+    simpl in |- *; intros a0 l Hrec y; elim (set_mem a0 y).
+    eauto with datatypes.
+    intro; generalize (set_add_elim _ _ _ H).
+    intros [H1| H2]; eauto with datatypes.
   Qed.
 
-  Lemma set_diff_elim2 : (a:A)(x,y:set)
-    (set_In a (set_diff x y)) -> ~(set_In a y).
-  Intros a x y; Elim x; Simpl.
-  Intros; Contradiction.
-  Intros a0 l Hrec. 
-  Apply set_mem_ind2; Auto.
-  Intros H1 H2; Case (set_add_elim H2); Intros; Auto.
-  Rewrite H; Trivial.
+  Lemma set_diff_elim2 :
+   forall (a:A) (x y:set), set_In a (set_diff x y) -> ~ set_In a y.
+  intros a x y; elim x; simpl in |- *.
+  intros; contradiction.
+  intros a0 l Hrec. 
+  apply set_mem_ind2; auto.
+  intros H1 H2; case (set_add_elim _ _ _ H2); intros; auto.
+  rewrite H; trivial.
   Qed.
 
-  Lemma set_diff_trivial : (a:A)(x:set)~(set_In a (set_diff x x)).
-  Red; Intros a x H.
-  Apply (set_diff_elim2 H).
-  Apply (set_diff_elim1 H).
+  Lemma set_diff_trivial : forall (a:A) (x:set), ~ set_In a (set_diff x x).
+  red in |- *; intros a x H.
+  apply (set_diff_elim2 _ _ _ H).
+  apply (set_diff_elim1 _ _ _ H).
   Qed.
 
-Hints Resolve set_diff_intro set_diff_trivial.
+Hint Resolve set_diff_intro set_diff_trivial.
 
 
 End first_definitions.
 
 Section other_definitions.
 
-  Variables A,B : Set.
+  Variables A B : Set.
 
-  Definition set_prod : (set A) -> (set B) -> (set A*B) := (list_prod 1!A 2!B).
+  Definition set_prod : set A -> set B -> set (A * B) :=
+    list_prod (A:=A) (B:=B).
 
   (** [B^A], set of applications from [A] to [B] *)
-  Definition set_power : (set A) -> (set B) -> (set (set A*B)) := 
-    (list_power 1!A 2!B).
+  Definition set_power : set A -> set B -> set (set (A * B)) :=
+    list_power (A:=A) (B:=B).
 
-  Definition set_map : (A->B) -> (set A) ->  (set B) := (map 1!A 2!B).
+  Definition set_map : (A -> B) -> set A -> set B := map (A:=A) (B:=B).
 
-  Definition set_fold_left : (B -> A -> B) -> (set A) -> B -> B := 
-     (fold_left 1!B 2!A).
+  Definition set_fold_left : (B -> A -> B) -> set A -> B -> B :=
+    fold_left (A:=B) (B:=A).
 
-  Definition set_fold_right : (A -> B -> B) -> (set A) -> B -> B  := 
-     [f][x][b](fold_right f b x).
+  Definition set_fold_right (f:A -> B -> B) (x:set A) 
+    (b:B) : B := fold_right f b x.
 
  
 End other_definitions.
 
-V7only [Implicits nil [].].
 Unset Implicit Arguments.

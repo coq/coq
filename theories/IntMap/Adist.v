@@ -7,233 +7,244 @@
 (***********************************************************************)
 (*i 	     $Id$	      i*)
 
-Require Bool.
-Require ZArith.
-Require Arith.
-Require Min.
-Require Addr.
+Require Import Bool.
+Require Import ZArith.
+Require Import Arith.
+Require Import Min.
+Require Import Addr.
 
-Fixpoint ad_plength_1 [p:positive] : nat :=
-  Cases p of
-      xH => O
-    | (xI _) => O
-    | (xO p') => (S (ad_plength_1 p'))
+Fixpoint ad_plength_1 (p:positive) : nat :=
+  match p with
+  | xH => 0
+  | xI _ => 0
+  | xO p' => S (ad_plength_1 p')
   end.
 
 Inductive natinf : Set :=
-    infty : natinf
+  | infty : natinf
   | ni : nat -> natinf.
 
-Definition ad_plength := [a:ad]
-  Cases a of
-      ad_z => infty
-    | (ad_x p) => (ni (ad_plength_1 p))
+Definition ad_plength (a:ad) :=
+  match a with
+  | ad_z => infty
+  | ad_x p => ni (ad_plength_1 p)
   end.
 
-Lemma ad_plength_infty : (a:ad) (ad_plength a)=infty -> a=ad_z.
+Lemma ad_plength_infty : forall a:ad, ad_plength a = infty -> a = ad_z.
 Proof.
-  Induction a; Trivial. 
-  Unfold ad_plength; Intros; Discriminate H.
+  simple induction a; trivial. 
+  unfold ad_plength in |- *; intros; discriminate H.
 Qed.
 
-Lemma ad_plength_zeros : (a:ad) (n:nat) (ad_plength a)=(ni n) ->
-    (k:nat) (lt k n) -> (ad_bit a k)=false.
+Lemma ad_plength_zeros :
+ forall (a:ad) (n:nat),
+   ad_plength a = ni n -> forall k:nat, k < n -> ad_bit a k = false.
 Proof.
-  Induction a; Trivial. 
-  Induction p. Induction n. Intros. Inversion H1.
-  Induction k. Simpl in H1. Discriminate H1.
-  Intros. Simpl in H1. Discriminate H1.
-  Induction k. Trivial.
-  Generalize H0. Case n. Intros. Inversion H3.
-  Intros. Simpl. Unfold ad_bit in H. Apply (H n0). Simpl in H1. Inversion H1. Reflexivity.
-  Exact (lt_S_n n1 n0 H3).
-  Simpl. Intros n H. Inversion H. Intros. Inversion H0.
+  simple induction a; trivial. 
+  simple induction p. simple induction n. intros. inversion H1.
+  simple induction k. simpl in H1. discriminate H1.
+  intros. simpl in H1. discriminate H1.
+  simple induction k. trivial.
+  generalize H0. case n. intros. inversion H3.
+  intros. simpl in |- *. unfold ad_bit in H. apply (H n0). simpl in H1. inversion H1. reflexivity.
+  exact (lt_S_n n1 n0 H3).
+  simpl in |- *. intros n H. inversion H. intros. inversion H0.
 Qed.
 
-Lemma ad_plength_one : (a:ad) (n:nat) (ad_plength a)=(ni n) -> (ad_bit a n)=true.
+Lemma ad_plength_one :
+ forall (a:ad) (n:nat), ad_plength a = ni n -> ad_bit a n = true.
 Proof.
-  Induction a. Intros. Inversion H.
-  Induction p. Intros. Simpl in H0. Inversion H0. Reflexivity.
-  Intros. Simpl in H0. Inversion H0. Simpl. Unfold ad_bit in H. Apply H. Reflexivity.
-  Intros. Simpl in H. Inversion H. Reflexivity.
+  simple induction a. intros. inversion H.
+  simple induction p. intros. simpl in H0. inversion H0. reflexivity.
+  intros. simpl in H0. inversion H0. simpl in |- *. unfold ad_bit in H. apply H. reflexivity.
+  intros. simpl in H. inversion H. reflexivity.
 Qed.
 
-Lemma ad_plength_first_one : (a:ad) (n:nat)
-    ((k:nat) (lt k n) -> (ad_bit a k)=false) -> (ad_bit a n)=true ->
-      (ad_plength a)=(ni n).
+Lemma ad_plength_first_one :
+ forall (a:ad) (n:nat),
+   (forall k:nat, k < n -> ad_bit a k = false) ->
+   ad_bit a n = true -> ad_plength a = ni n.
 Proof.
-  Induction a. Intros. Simpl in H0. Discriminate H0.
-  Induction p. Intros. Generalize H0. Case n. Intros. Reflexivity.
-  Intros. Absurd (ad_bit (ad_x (xI p0)) O)=false. Trivial with bool.
-  Auto with bool arith.
-  Intros. Generalize H0 H1. Case n. Intros. Simpl in H3. Discriminate H3.
-  Intros. Simpl. Unfold ad_plength in H.
-  Cut (ni (ad_plength_1 p0))=(ni n0). Intro. Inversion H4. Reflexivity.
-  Apply H. Intros. Change (ad_bit (ad_x (xO p0)) (S k))=false. Apply H2. Apply lt_n_S. Exact H4.
-  Exact H3.
-  Intro. Case n. Trivial.
-  Intros. Simpl in H0. Discriminate H0.
+  simple induction a. intros. simpl in H0. discriminate H0.
+  simple induction p. intros. generalize H0. case n. intros. reflexivity.
+  intros. absurd (ad_bit (ad_x (xI p0)) 0 = false). trivial with bool.
+  auto with bool arith.
+  intros. generalize H0 H1. case n. intros. simpl in H3. discriminate H3.
+  intros. simpl in |- *. unfold ad_plength in H.
+  cut (ni (ad_plength_1 p0) = ni n0). intro. inversion H4. reflexivity.
+  apply H. intros. change (ad_bit (ad_x (xO p0)) (S k) = false) in |- *. apply H2. apply lt_n_S. exact H4.
+  exact H3.
+  intro. case n. trivial.
+  intros. simpl in H0. discriminate H0.
 Qed.
 
-Definition ni_min := [d,d':natinf]
-  Cases d of
-      infty => d'
-    | (ni n) => Cases d' of
-                    infty => d
-		  | (ni n') => (ni (min n n'))
-		end
+Definition ni_min (d d':natinf) :=
+  match d with
+  | infty => d'
+  | ni n => match d' with
+            | infty => d
+            | ni n' => ni (min n n')
+            end
   end.
 
-Lemma ni_min_idemp : (d:natinf) (ni_min d d)=d.
+Lemma ni_min_idemp : forall d:natinf, ni_min d d = d.
 Proof.
-  Induction d; Trivial.
-  Unfold ni_min.
-  Induction n; Trivial.
-  Intros.
-  Simpl.
-  Inversion H.
-  Rewrite H1.
-  Rewrite H1.
-  Reflexivity.
+  simple induction d; trivial.
+  unfold ni_min in |- *.
+  simple induction n; trivial.
+  intros.
+  simpl in |- *.
+  inversion H.
+  rewrite H1.
+  rewrite H1.
+  reflexivity.
 Qed.
 
-Lemma ni_min_comm : (d,d':natinf) (ni_min d d')=(ni_min d' d).
+Lemma ni_min_comm : forall d d':natinf, ni_min d d' = ni_min d' d.
 Proof.
-  Induction d. Induction d'; Trivial.
-  Induction d'; Trivial. Elim n. Induction n0; Trivial.
-  Intros. Elim n1; Trivial. Intros. Unfold ni_min in H. Cut (min n0 n2)=(min n2 n0).
-  Intro. Unfold ni_min. Simpl. Rewrite H1. Reflexivity.
-  Cut (ni (min n0 n2))=(ni (min n2 n0)). Intros.
-  Inversion H1; Trivial.
-  Exact (H n2).
+  simple induction d. simple induction d'; trivial.
+  simple induction d'; trivial. elim n. simple induction n0; trivial.
+  intros. elim n1; trivial. intros. unfold ni_min in H. cut (min n0 n2 = min n2 n0).
+  intro. unfold ni_min in |- *. simpl in |- *. rewrite H1. reflexivity.
+  cut (ni (min n0 n2) = ni (min n2 n0)). intros.
+  inversion H1; trivial.
+  exact (H n2).
 Qed.
 
-Lemma ni_min_assoc : (d,d',d'':natinf) (ni_min (ni_min d d') d'')=(ni_min d (ni_min d' d'')).
+Lemma ni_min_assoc :
+ forall d d' d'':natinf, ni_min (ni_min d d') d'' = ni_min d (ni_min d' d'').
 Proof.
-  Induction d; Trivial. Induction d'; Trivial. 
-  Induction d''; Trivial.
-  Unfold ni_min. Intro. Cut (min (min n n0) n1)=(min n (min n0 n1)).
-  Intro. Rewrite H. Reflexivity.
-  Generalize n0 n1. Elim n; Trivial. 
-  Induction n3; Trivial. Induction n5; Trivial.
-  Intros. Simpl. Auto.
+  simple induction d; trivial. simple induction d'; trivial. 
+  simple induction d''; trivial.
+  unfold ni_min in |- *. intro. cut (min (min n n0) n1 = min n (min n0 n1)).
+  intro. rewrite H. reflexivity.
+  generalize n0 n1. elim n; trivial. 
+  simple induction n3; trivial. simple induction n5; trivial.
+  intros. simpl in |- *. auto.
 Qed.
 
-Lemma ni_min_O_l : (d:natinf) (ni_min (ni O) d)=(ni O).
+Lemma ni_min_O_l : forall d:natinf, ni_min (ni 0) d = ni 0.
 Proof.
-  Induction d; Trivial.
+  simple induction d; trivial.
 Qed.
 
-Lemma ni_min_O_r : (d:natinf) (ni_min d (ni O))=(ni O).
+Lemma ni_min_O_r : forall d:natinf, ni_min d (ni 0) = ni 0.
 Proof.
-  Intros. Rewrite ni_min_comm. Apply ni_min_O_l.
+  intros. rewrite ni_min_comm. apply ni_min_O_l.
 Qed.
 
-Lemma ni_min_inf_l : (d:natinf) (ni_min infty d)=d.
+Lemma ni_min_inf_l : forall d:natinf, ni_min infty d = d.
 Proof.
-  Trivial.
+  trivial.
 Qed.
 
-Lemma ni_min_inf_r : (d:natinf) (ni_min d infty)=d.
+Lemma ni_min_inf_r : forall d:natinf, ni_min d infty = d.
 Proof.
-  Induction d; Trivial.
+  simple induction d; trivial.
 Qed.
 
-Definition ni_le := [d,d':natinf] (ni_min d d')=d.
+Definition ni_le (d d':natinf) := ni_min d d' = d.
 
-Lemma ni_le_refl : (d:natinf) (ni_le d d).
+Lemma ni_le_refl : forall d:natinf, ni_le d d.
 Proof.
-  Exact ni_min_idemp.
+  exact ni_min_idemp.
 Qed.
 
-Lemma ni_le_antisym : (d,d':natinf) (ni_le d d') -> (ni_le d' d) -> d=d'.
+Lemma ni_le_antisym : forall d d':natinf, ni_le d d' -> ni_le d' d -> d = d'.
 Proof.
-  Unfold ni_le. Intros d d'. Rewrite ni_min_comm. Intro H. Rewrite H. Trivial.
+  unfold ni_le in |- *. intros d d'. rewrite ni_min_comm. intro H. rewrite H. trivial.
 Qed.
 
-Lemma ni_le_trans : (d,d',d'':natinf) (ni_le d d') -> (ni_le d' d'') -> (ni_le d d'').
+Lemma ni_le_trans :
+ forall d d' d'':natinf, ni_le d d' -> ni_le d' d'' -> ni_le d d''.
 Proof.
-  Unfold ni_le. Intros. Rewrite <- H. Rewrite ni_min_assoc. Rewrite H0. Reflexivity.
+  unfold ni_le in |- *. intros. rewrite <- H. rewrite ni_min_assoc. rewrite H0. reflexivity.
 Qed.
 
-Lemma ni_le_min_1 : (d,d':natinf) (ni_le (ni_min d d') d).
+Lemma ni_le_min_1 : forall d d':natinf, ni_le (ni_min d d') d.
 Proof.
-  Unfold ni_le. Intros. Rewrite (ni_min_comm d d'). Rewrite ni_min_assoc.
-  Rewrite ni_min_idemp. Reflexivity.
+  unfold ni_le in |- *. intros. rewrite (ni_min_comm d d'). rewrite ni_min_assoc.
+  rewrite ni_min_idemp. reflexivity.
 Qed.
 
-Lemma ni_le_min_2 : (d,d':natinf) (ni_le (ni_min d d') d').
+Lemma ni_le_min_2 : forall d d':natinf, ni_le (ni_min d d') d'.
 Proof.
-  Unfold ni_le. Intros. Rewrite ni_min_assoc. Rewrite ni_min_idemp. Reflexivity.
+  unfold ni_le in |- *. intros. rewrite ni_min_assoc. rewrite ni_min_idemp. reflexivity.
 Qed.
 
-Lemma ni_min_case : (d,d':natinf) (ni_min d d')=d \/ (ni_min d d')=d'.
+Lemma ni_min_case : forall d d':natinf, ni_min d d' = d \/ ni_min d d' = d'.
 Proof.
-  Induction d. Intro. Right . Exact (ni_min_inf_l d').
-  Induction d'. Left . Exact (ni_min_inf_r (ni n)).
-  Unfold ni_min. Cut (n0:nat)(min n n0)=n\/(min n n0)=n0.
-  Intros. Case (H n0). Intro. Left . Rewrite H0. Reflexivity.
-  Intro. Right . Rewrite H0. Reflexivity.
-  Elim n. Intro. Left . Reflexivity.
-  Induction n1. Right . Reflexivity.
-  Intros. Case (H n2). Intro. Left . Simpl. Rewrite H1. Reflexivity.
-  Intro. Right . Simpl. Rewrite H1. Reflexivity.
+  simple induction d. intro. right. exact (ni_min_inf_l d').
+  simple induction d'. left. exact (ni_min_inf_r (ni n)).
+  unfold ni_min in |- *. cut (forall n0:nat, min n n0 = n \/ min n n0 = n0).
+  intros. case (H n0). intro. left. rewrite H0. reflexivity.
+  intro. right. rewrite H0. reflexivity.
+  elim n. intro. left. reflexivity.
+  simple induction n1. right. reflexivity.
+  intros. case (H n2). intro. left. simpl in |- *. rewrite H1. reflexivity.
+  intro. right. simpl in |- *. rewrite H1. reflexivity.
 Qed.
 
-Lemma ni_le_total : (d,d':natinf) (ni_le d d') \/ (ni_le d' d).
+Lemma ni_le_total : forall d d':natinf, ni_le d d' \/ ni_le d' d.
 Proof.
-  Unfold ni_le. Intros. Rewrite (ni_min_comm d' d). Apply ni_min_case.
+  unfold ni_le in |- *. intros. rewrite (ni_min_comm d' d). apply ni_min_case.
 Qed.
 
-Lemma ni_le_min_induc : (d,d',dm:natinf) (ni_le dm d) -> (ni_le dm d') ->
-    ((d'':natinf) (ni_le d'' d) -> (ni_le d'' d') -> (ni_le d'' dm)) ->
-      (ni_min d d')=dm.
+Lemma ni_le_min_induc :
+ forall d d' dm:natinf,
+   ni_le dm d ->
+   ni_le dm d' ->
+   (forall d'':natinf, ni_le d'' d -> ni_le d'' d' -> ni_le d'' dm) ->
+   ni_min d d' = dm.
 Proof.
-  Intros. Case (ni_min_case d d'). Intro. Rewrite H2.
-  Apply ni_le_antisym. Apply H1. Apply ni_le_refl.
-  Exact H2.
-  Exact H.
-  Intro. Rewrite H2. Apply ni_le_antisym. Apply H1. Unfold ni_le. Rewrite ni_min_comm. Exact H2.
-  Apply ni_le_refl.
-  Exact H0.
+  intros. case (ni_min_case d d'). intro. rewrite H2.
+  apply ni_le_antisym. apply H1. apply ni_le_refl.
+  exact H2.
+  exact H.
+  intro. rewrite H2. apply ni_le_antisym. apply H1. unfold ni_le in |- *. rewrite ni_min_comm. exact H2.
+  apply ni_le_refl.
+  exact H0.
 Qed.
 
-Lemma le_ni_le : (m,n:nat) (le m n) -> (ni_le (ni m) (ni n)).
+Lemma le_ni_le : forall m n:nat, m <= n -> ni_le (ni m) (ni n).
 Proof.
-  Cut (m,n:nat)(le m n)->(min m n)=m.
-  Intros. Unfold ni_le ni_min. Rewrite (H m n H0). Reflexivity.
-  Induction m. Trivial.
-  Induction n0. Intro. Inversion H0.
-  Intros. Simpl. Rewrite (H n1 (le_S_n n n1 H1)). Reflexivity.
+  cut (forall m n:nat, m <= n -> min m n = m).
+  intros. unfold ni_le, ni_min in |- *. rewrite (H m n H0). reflexivity.
+  simple induction m. trivial.
+  simple induction n0. intro. inversion H0.
+  intros. simpl in |- *. rewrite (H n1 (le_S_n n n1 H1)). reflexivity.
 Qed.
 
-Lemma ni_le_le : (m,n:nat) (ni_le (ni m) (ni n)) -> (le m n).
+Lemma ni_le_le : forall m n:nat, ni_le (ni m) (ni n) -> m <= n.
 Proof.
-  Unfold ni_le. Unfold ni_min. Intros. Inversion H. Apply le_min_r.
+  unfold ni_le in |- *. unfold ni_min in |- *. intros. inversion H. apply le_min_r.
 Qed.
 
-Lemma ad_plength_lb : (a:ad) (n:nat) ((k:nat) (lt k n) -> (ad_bit a k)=false) ->
-    (ni_le (ni n) (ad_plength a)).
+Lemma ad_plength_lb :
+ forall (a:ad) (n:nat),
+   (forall k:nat, k < n -> ad_bit a k = false) -> ni_le (ni n) (ad_plength a).
 Proof.
-  Induction a. Intros. Exact (ni_min_inf_r (ni n)).
-  Intros. Unfold ad_plength. Apply le_ni_le. Case (le_or_lt n (ad_plength_1 p)). Trivial.
-  Intro. Absurd (ad_bit (ad_x p) (ad_plength_1 p))=false.
-  Rewrite (ad_plength_one (ad_x p) (ad_plength_1 p)
-          (refl_equal natinf (ad_plength (ad_x p)))).
-  Discriminate.
-  Apply H. Exact H0.
+  simple induction a. intros. exact (ni_min_inf_r (ni n)).
+  intros. unfold ad_plength in |- *. apply le_ni_le. case (le_or_lt n (ad_plength_1 p)). trivial.
+  intro. absurd (ad_bit (ad_x p) (ad_plength_1 p) = false).
+  rewrite
+   (ad_plength_one (ad_x p) (ad_plength_1 p)
+      (refl_equal (ad_plength (ad_x p)))).
+  discriminate.
+  apply H. exact H0.
 Qed.
 
-Lemma ad_plength_ub : (a:ad) (n:nat) (ad_bit a n)=true ->
-    (ni_le (ad_plength a) (ni n)).
+Lemma ad_plength_ub :
+ forall (a:ad) (n:nat), ad_bit a n = true -> ni_le (ad_plength a) (ni n).
 Proof.
-  Induction a. Intros. Discriminate H.
-  Intros. Unfold ad_plength. Apply le_ni_le. Case (le_or_lt (ad_plength_1 p) n). Trivial.
-  Intro. Absurd (ad_bit (ad_x p) n)=true.
-  Rewrite (ad_plength_zeros (ad_x p) (ad_plength_1 p)
-          (refl_equal natinf (ad_plength (ad_x p))) n H0).
-  Discriminate.
-  Exact H.
+  simple induction a. intros. discriminate H.
+  intros. unfold ad_plength in |- *. apply le_ni_le. case (le_or_lt (ad_plength_1 p) n). trivial.
+  intro. absurd (ad_bit (ad_x p) n = true).
+  rewrite
+   (ad_plength_zeros (ad_x p) (ad_plength_1 p)
+      (refl_equal (ad_plength (ad_x p))) n H0).
+  discriminate.
+  exact H.
 Qed.
 
 
@@ -244,26 +255,26 @@ Qed.
     Instead of working with $d$, we work with $pd$, namely
     [ad_pdist]: *)
 
-Definition ad_pdist := [a,a':ad] (ad_plength (ad_xor a a')).
+Definition ad_pdist (a a':ad) := ad_plength (ad_xor a a').
 
 (** d is a distance, so $d(a,a')=0$ iff $a=a'$; this means that
     $pd(a,a')=infty$ iff $a=a'$: *)
 
-Lemma ad_pdist_eq_1 : (a:ad) (ad_pdist a a)=infty.
+Lemma ad_pdist_eq_1 : forall a:ad, ad_pdist a a = infty.
 Proof.
-  Intros. Unfold ad_pdist. Rewrite ad_xor_nilpotent. Reflexivity.
+  intros. unfold ad_pdist in |- *. rewrite ad_xor_nilpotent. reflexivity.
 Qed.
 
-Lemma ad_pdist_eq_2 : (a,a':ad) (ad_pdist a a')=infty -> a=a'.
+Lemma ad_pdist_eq_2 : forall a a':ad, ad_pdist a a' = infty -> a = a'.
 Proof.
-  Intros. Apply ad_xor_eq. Apply ad_plength_infty. Exact H.
+  intros. apply ad_xor_eq. apply ad_plength_infty. exact H.
 Qed.
 
 (** $d$ is a distance, so $d(a,a')=d(a',a)$: *)
 
-Lemma ad_pdist_comm : (a,a':ad) (ad_pdist a a')=(ad_pdist a' a).
+Lemma ad_pdist_comm : forall a a':ad, ad_pdist a a' = ad_pdist a' a.
 Proof.
-  Unfold ad_pdist. Intros. Rewrite ad_xor_comm. Reflexivity.
+  unfold ad_pdist in |- *. intros. rewrite ad_xor_comm. reflexivity.
 Qed.
 
 (** $d$ is an ultrametric distance, that is, not only $d(a,a')\leq
@@ -278,44 +289,48 @@ Qed.
   (lemma [ad_plength_ultra]).
 *)
 
-Lemma ad_plength_ultra_1 : (a,a':ad)
-    (ni_le (ad_plength a) (ad_plength a')) ->
-      (ni_le (ad_plength a) (ad_plength (ad_xor a a'))).
+Lemma ad_plength_ultra_1 :
+ forall a a':ad,
+   ni_le (ad_plength a) (ad_plength a') ->
+   ni_le (ad_plength a) (ad_plength (ad_xor a a')).
 Proof.
-  Induction a. Intros. Unfold ni_le in H. Unfold 1 3 ad_plength in H.
-  Rewrite (ni_min_inf_l (ad_plength a')) in H.
-  Rewrite (ad_plength_infty a' H). Simpl. Apply ni_le_refl.
-  Intros. Unfold 1 ad_plength. Apply ad_plength_lb. Intros.
-  Cut (a'':ad)(ad_xor (ad_x p) a')=a''->(ad_bit a'' k)=false.
-  Intros. Apply H1. Reflexivity.
-  Intro a''. Case a''. Intro. Reflexivity.
-  Intros. Rewrite <- H1. Rewrite (ad_xor_semantics (ad_x p) a' k). Unfold adf_xor.
-  Rewrite (ad_plength_zeros (ad_x p) (ad_plength_1 p)
-          (refl_equal natinf (ad_plength (ad_x p))) k H0).
-  Generalize H. Case a'. Trivial.
-  Intros. Cut (ad_bit (ad_x p1) k)=false. Intros. Rewrite H3. Reflexivity.
-  Apply ad_plength_zeros with n:=(ad_plength_1 p1). Reflexivity.
-  Apply (lt_le_trans k (ad_plength_1 p) (ad_plength_1 p1)). Exact H0.
-  Apply ni_le_le. Exact H2.
+  simple induction a. intros. unfold ni_le in H. unfold ad_plength at 1 3 in H.
+  rewrite (ni_min_inf_l (ad_plength a')) in H.
+  rewrite (ad_plength_infty a' H). simpl in |- *. apply ni_le_refl.
+  intros. unfold ad_plength at 1 in |- *. apply ad_plength_lb. intros.
+  cut (forall a'':ad, ad_xor (ad_x p) a' = a'' -> ad_bit a'' k = false).
+  intros. apply H1. reflexivity.
+  intro a''. case a''. intro. reflexivity.
+  intros. rewrite <- H1. rewrite (ad_xor_semantics (ad_x p) a' k). unfold adf_xor in |- *.
+  rewrite
+   (ad_plength_zeros (ad_x p) (ad_plength_1 p)
+      (refl_equal (ad_plength (ad_x p))) k H0).
+  generalize H. case a'. trivial.
+  intros. cut (ad_bit (ad_x p1) k = false). intros. rewrite H3. reflexivity.
+  apply ad_plength_zeros with (n := ad_plength_1 p1). reflexivity.
+  apply (lt_le_trans k (ad_plength_1 p) (ad_plength_1 p1)). exact H0.
+  apply ni_le_le. exact H2.
 Qed.
 
-Lemma ad_plength_ultra : (a,a':ad)
-    (ni_le (ni_min (ad_plength a) (ad_plength a')) (ad_plength (ad_xor a a'))).
+Lemma ad_plength_ultra :
+ forall a a':ad,
+   ni_le (ni_min (ad_plength a) (ad_plength a')) (ad_plength (ad_xor a a')).
 Proof.
-  Intros. Case (ni_le_total (ad_plength a) (ad_plength a')). Intro.
-  Cut (ni_min (ad_plength a) (ad_plength a'))=(ad_plength a).
-  Intro. Rewrite H0. Apply ad_plength_ultra_1. Exact H.
-  Exact H.
-  Intro. Cut (ni_min (ad_plength a) (ad_plength a'))=(ad_plength a').
-  Intro. Rewrite H0. Rewrite ad_xor_comm. Apply ad_plength_ultra_1. Exact H.
-  Rewrite ni_min_comm. Exact H.
+  intros. case (ni_le_total (ad_plength a) (ad_plength a')). intro.
+  cut (ni_min (ad_plength a) (ad_plength a') = ad_plength a).
+  intro. rewrite H0. apply ad_plength_ultra_1. exact H.
+  exact H.
+  intro. cut (ni_min (ad_plength a) (ad_plength a') = ad_plength a').
+  intro. rewrite H0. rewrite ad_xor_comm. apply ad_plength_ultra_1. exact H.
+  rewrite ni_min_comm. exact H.
 Qed.
 
-Lemma ad_pdist_ultra : (a,a',a'':ad)
-    (ni_le (ni_min (ad_pdist a a'') (ad_pdist a'' a')) (ad_pdist a a')).
+Lemma ad_pdist_ultra :
+ forall a a' a'':ad,
+   ni_le (ni_min (ad_pdist a a'') (ad_pdist a'' a')) (ad_pdist a a').
 Proof.
-  Intros. Unfold ad_pdist. Cut (ad_xor (ad_xor a a'') (ad_xor a'' a'))=(ad_xor a a').
-  Intro. Rewrite <- H. Apply ad_plength_ultra.
-  Rewrite ad_xor_assoc. Rewrite <- (ad_xor_assoc a'' a'' a'). Rewrite ad_xor_nilpotent.
-  Rewrite ad_xor_neutral_left. Reflexivity.
+  intros. unfold ad_pdist in |- *. cut (ad_xor (ad_xor a a'') (ad_xor a'' a') = ad_xor a a').
+  intro. rewrite <- H. apply ad_plength_ultra.
+  rewrite ad_xor_assoc. rewrite <- (ad_xor_assoc a'' a'' a'). rewrite ad_xor_nilpotent.
+  rewrite ad_xor_neutral_left. reflexivity.
 Qed.

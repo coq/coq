@@ -20,9 +20,6 @@ Require Export Fourier_util.
 Require Export Field.
 Require Export DiscrR.
 
-Tactic Definition Fourier  :=
-  Abstract (FourierZ;Field;DiscrR).
+Ltac fourier := abstract (fourierz; field; discrR).
 
-Tactic Definition FourierEq  :=
-  Apply Rge_ge_eq ; Fourier.
-
+Ltac fourier_eq := apply Rge_antisym; fourier.

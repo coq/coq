@@ -8,290 +8,344 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require Ranalysis1.
-Require R_sqrt.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import Ranalysis1.
+Require Import R_sqrt. Open Local Scope R_scope.
 
 (**********)
-Lemma sqrt_var_maj : (h:R) ``(Rabsolu h) <= 1`` -> ``(Rabsolu ((sqrt (1+h))-1))<=(Rabsolu h)``.
-Intros; Cut ``0<=1+h``.
-Intro; Apply Rle_trans with ``(Rabsolu ((sqrt (Rsqr (1+h)))-1))``.
-Case (total_order_T h R0); Intro.
-Elim s; Intro.
-Repeat Rewrite Rabsolu_left.
-Unfold Rminus; Do 2 Rewrite <- (Rplus_sym ``-1``).
-Do 2 Rewrite Ropp_distr1;Rewrite Ropp_Ropp; Apply Rle_compatibility.
-Apply Rle_Ropp1; Apply sqrt_le_1.
-Apply pos_Rsqr.
-Apply H0.
-Pattern 2 ``1+h``; Rewrite <- Rmult_1r; Unfold Rsqr; Apply Rle_monotony.
-Apply H0.
-Pattern 2 R1; Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Assumption.
-Apply Rlt_anti_compatibility with R1; Rewrite Rplus_Or; Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or.
-Pattern 2 R1; Rewrite <- sqrt_1; Apply sqrt_lt_1.
-Apply pos_Rsqr.
-Left; Apply Rlt_R0_R1.
-Pattern 2 R1; Rewrite <- Rsqr_1; Apply Rsqr_incrst_1.
-Pattern 2 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility; Assumption.
-Apply H0.
-Left; Apply Rlt_R0_R1.
-Apply Rlt_anti_compatibility with R1; Rewrite Rplus_Or; Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or.
-Pattern 2 R1; Rewrite <- sqrt_1; Apply sqrt_lt_1.
-Apply H0.
-Left; Apply Rlt_R0_R1.
-Pattern 2 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility; Assumption.
-Rewrite b; Rewrite Rplus_Or; Rewrite Rsqr_1; Rewrite sqrt_1; Right; Reflexivity.
-Repeat Rewrite Rabsolu_right.
-Unfold Rminus; Do 2 Rewrite <- (Rplus_sym ``-1``); Apply Rle_compatibility.
-Apply sqrt_le_1.
-Apply H0.
-Apply pos_Rsqr.
-Pattern 1 ``1+h``; Rewrite <- Rmult_1r; Unfold Rsqr; Apply Rle_monotony.
-Apply H0.
-Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Assumption.
-Apply Rle_sym1; Apply Rle_anti_compatibility with R1.
-Rewrite Rplus_Or; Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or.
-Pattern 1 R1; Rewrite <- sqrt_1; Apply sqrt_le_1.
-Left; Apply Rlt_R0_R1.
-Apply pos_Rsqr.
-Pattern 1 R1; Rewrite <- Rsqr_1; Apply Rsqr_incr_1.
-Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Assumption.
-Left; Apply Rlt_R0_R1.
-Apply H0.
-Apply Rle_sym1; Left; Apply Rlt_anti_compatibility with R1.
-Rewrite Rplus_Or; Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or.
-Pattern 1 R1; Rewrite <- sqrt_1; Apply sqrt_lt_1.
-Left; Apply Rlt_R0_R1.
-Apply H0.
-Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility; Assumption.
-Rewrite sqrt_Rsqr.
-Replace ``(1+h)-1`` with h; [Right; Reflexivity | Ring].
-Apply H0.
-Case (total_order_T h R0); Intro.
-Elim s; Intro.
-Rewrite (Rabsolu_left h a) in H.
-Apply Rle_anti_compatibility with ``-h``.
-Rewrite Rplus_Or; Rewrite Rplus_sym; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Exact H.
-Left; Rewrite b; Rewrite Rplus_Or; Apply Rlt_R0_R1.
-Left; Apply gt0_plus_gt0_is_gt0.
-Apply Rlt_R0_R1.
-Apply r.
+Lemma sqrt_var_maj :
+ forall h:R, Rabs h <= 1 -> Rabs (sqrt (1 + h) - 1) <= Rabs h.
+intros; cut (0 <= 1 + h).
+intro; apply Rle_trans with (Rabs (sqrt (Rsqr (1 + h)) - 1)).
+case (total_order_T h 0); intro.
+elim s; intro.
+repeat rewrite Rabs_left.
+unfold Rminus in |- *; do 2 rewrite <- (Rplus_comm (-1)).
+do 2 rewrite Ropp_plus_distr; rewrite Ropp_involutive;
+ apply Rplus_le_compat_l.
+apply Ropp_le_contravar; apply sqrt_le_1.
+apply Rle_0_sqr.
+apply H0.
+pattern (1 + h) at 2 in |- *; rewrite <- Rmult_1_r; unfold Rsqr in |- *;
+ apply Rmult_le_compat_l.
+apply H0.
+pattern 1 at 2 in |- *; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
+ assumption.
+apply Rplus_lt_reg_r with 1; rewrite Rplus_0_r; rewrite Rplus_comm;
+ unfold Rminus in |- *; rewrite Rplus_assoc; rewrite Rplus_opp_l;
+ rewrite Rplus_0_r.
+pattern 1 at 2 in |- *; rewrite <- sqrt_1; apply sqrt_lt_1.
+apply Rle_0_sqr.
+left; apply Rlt_0_1.
+pattern 1 at 2 in |- *; rewrite <- Rsqr_1; apply Rsqr_incrst_1.
+pattern 1 at 2 in |- *; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
+ assumption.
+apply H0.
+left; apply Rlt_0_1.
+apply Rplus_lt_reg_r with 1; rewrite Rplus_0_r; rewrite Rplus_comm;
+ unfold Rminus in |- *; rewrite Rplus_assoc; rewrite Rplus_opp_l;
+ rewrite Rplus_0_r.
+pattern 1 at 2 in |- *; rewrite <- sqrt_1; apply sqrt_lt_1.
+apply H0.
+left; apply Rlt_0_1.
+pattern 1 at 2 in |- *; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
+ assumption.
+rewrite b; rewrite Rplus_0_r; rewrite Rsqr_1; rewrite sqrt_1; right;
+ reflexivity.
+repeat rewrite Rabs_right.
+unfold Rminus in |- *; do 2 rewrite <- (Rplus_comm (-1));
+ apply Rplus_le_compat_l.
+apply sqrt_le_1.
+apply H0.
+apply Rle_0_sqr.
+pattern (1 + h) at 1 in |- *; rewrite <- Rmult_1_r; unfold Rsqr in |- *;
+ apply Rmult_le_compat_l.
+apply H0.
+pattern 1 at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
+ assumption.
+apply Rle_ge; apply Rplus_le_reg_l with 1.
+rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus in |- *;
+ rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
+pattern 1 at 1 in |- *; rewrite <- sqrt_1; apply sqrt_le_1.
+left; apply Rlt_0_1.
+apply Rle_0_sqr.
+pattern 1 at 1 in |- *; rewrite <- Rsqr_1; apply Rsqr_incr_1.
+pattern 1 at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
+ assumption.
+left; apply Rlt_0_1.
+apply H0.
+apply Rle_ge; left; apply Rplus_lt_reg_r with 1.
+rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus in |- *;
+ rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
+pattern 1 at 1 in |- *; rewrite <- sqrt_1; apply sqrt_lt_1.
+left; apply Rlt_0_1.
+apply H0.
+pattern 1 at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
+ assumption.
+rewrite sqrt_Rsqr.
+replace (1 + h - 1) with h; [ right; reflexivity | ring ].
+apply H0.
+case (total_order_T h 0); intro.
+elim s; intro.
+rewrite (Rabs_left h a) in H.
+apply Rplus_le_reg_l with (- h).
+rewrite Rplus_0_r; rewrite Rplus_comm; rewrite Rplus_assoc;
+ rewrite Rplus_opp_r; rewrite Rplus_0_r; exact H.
+left; rewrite b; rewrite Rplus_0_r; apply Rlt_0_1.
+left; apply Rplus_lt_0_compat.
+apply Rlt_0_1.
+apply r.
 Qed.
 
 (* sqrt is continuous in 1 *)
-Lemma sqrt_continuity_pt_R1 : (continuity_pt sqrt R1).
-Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Intros.
-Pose alpha := (Rmin eps R1).
-Exists alpha; Intros.
-Split.
-Unfold alpha; Unfold Rmin; Case (total_order_Rle eps R1); Intro.
-Assumption.
-Apply Rlt_R0_R1.
-Intros; Elim H0; Intros.
-Rewrite sqrt_1; Replace x with ``1+(x-1)``; [Idtac | Ring]; Apply Rle_lt_trans with ``(Rabsolu (x-1))``.
-Apply sqrt_var_maj.
-Apply Rle_trans with alpha.
-Left; Apply H2.
-Unfold alpha; Apply Rmin_r.
-Apply Rlt_le_trans with alpha; [Apply H2 | Unfold alpha; Apply Rmin_l].
+Lemma sqrt_continuity_pt_R1 : continuity_pt sqrt 1.
+unfold continuity_pt in |- *; unfold continue_in in |- *;
+ unfold limit1_in in |- *; unfold limit_in in |- *; 
+ unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
+ intros.
+pose (alpha := Rmin eps 1).
+exists alpha; intros.
+split.
+unfold alpha in |- *; unfold Rmin in |- *; case (Rle_dec eps 1); intro.
+assumption.
+apply Rlt_0_1.
+intros; elim H0; intros.
+rewrite sqrt_1; replace x with (1 + (x - 1)); [ idtac | ring ];
+ apply Rle_lt_trans with (Rabs (x - 1)).
+apply sqrt_var_maj.
+apply Rle_trans with alpha.
+left; apply H2.
+unfold alpha in |- *; apply Rmin_r.
+apply Rlt_le_trans with alpha;
+ [ apply H2 | unfold alpha in |- *; apply Rmin_l ].
 Qed.
 
 (* sqrt is continuous forall x>0 *)
-Lemma sqrt_continuity_pt : (x:R) ``0<x`` -> (continuity_pt sqrt x).
-Intros; Generalize sqrt_continuity_pt_R1.
-Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Intros.
-Cut ``0<eps/(sqrt x)``.
-Intro; Elim (H0 ? H2); Intros alp_1 H3.
-Elim H3; Intros.
-Pose alpha := ``alp_1*x``.
-Exists (Rmin alpha x); Intros.
-Split.
-Change ``0<(Rmin alpha x)``; Unfold Rmin; Case (total_order_Rle alpha x); Intro.
-Unfold alpha; Apply Rmult_lt_pos; Assumption.
-Apply H.
-Intros; Replace x0 with ``x+(x0-x)``; [Idtac | Ring]; Replace ``(sqrt (x+(x0-x)))-(sqrt x)`` with ``(sqrt x)*((sqrt (1+(x0-x)/x))-(sqrt 1))``.
-Rewrite Rabsolu_mult; Rewrite (Rabsolu_right (sqrt x)).
-Apply Rlt_monotony_contra with ``/(sqrt x)``.
-Apply Rlt_Rinv; Apply sqrt_lt_R0; Assumption.
-Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Rewrite Rmult_sym.
-Unfold Rdiv in H5.
-Case (Req_EM x x0); Intro.
-Rewrite H7; Unfold Rminus Rdiv; Rewrite Rplus_Ropp_r; Rewrite Rmult_Ol; Rewrite Rplus_Or; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0.
-Apply Rmult_lt_pos.
-Assumption.
-Apply Rlt_Rinv; Rewrite <- H7; Apply sqrt_lt_R0; Assumption.
-Apply H5.
-Split.
-Unfold D_x no_cond.
-Split.
-Trivial.
-Red; Intro.
-Cut ``(x0-x)*/x==0``.
-Intro.
-Elim (without_div_Od ? ? H9); Intro.
-Elim H7.
-Apply (Rminus_eq_right ? ? H10).
-Assert H11 := (without_div_Oi1 ? x H10).
-Rewrite <- Rinv_l_sym in H11.
-Elim R1_neq_R0; Exact H11.
-Red; Intro; Rewrite H12 in H; Elim (Rlt_antirefl ? H).
-Symmetry; Apply r_Rplus_plus with R1; Rewrite Rplus_Or; Unfold Rdiv in H8; Exact H8.
-Unfold Rminus; Rewrite Rplus_sym; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Elim H6; Intros.
-Unfold Rdiv; Rewrite Rabsolu_mult.
-Rewrite Rabsolu_Rinv.
-Rewrite (Rabsolu_right x).
-Rewrite Rmult_sym; Apply Rlt_monotony_contra with x.
-Apply H.
-Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1l; Rewrite Rmult_sym; Fold alpha.
-Apply Rlt_le_trans with (Rmin alpha x).
-Apply H9.
-Apply Rmin_l.
-Red; Intro; Rewrite H10 in H; Elim (Rlt_antirefl ? H).
-Apply Rle_sym1; Left; Apply H.
-Red; Intro; Rewrite H10 in H; Elim (Rlt_antirefl ? H).
-Assert H7 := (sqrt_lt_R0 x H).
-Red; Intro; Rewrite H8 in H7; Elim (Rlt_antirefl ? H7).
-Apply Rle_sym1; Apply sqrt_positivity.
-Left; Apply H.
-Unfold Rminus; Rewrite Rmult_Rplus_distr; Rewrite Ropp_mul3; Repeat Rewrite <- sqrt_times.
-Rewrite Rmult_1r; Rewrite Rmult_Rplus_distr; Rewrite Rmult_1r; Unfold Rdiv; Rewrite Rmult_sym; Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Reflexivity.
-Red; Intro; Rewrite H7 in H; Elim (Rlt_antirefl ? H).
-Left; Apply H.
-Left; Apply Rlt_R0_R1.
-Left; Apply H.
-Elim H6; Intros.
-Case (case_Rabsolu ``x0-x``); Intro.
-Rewrite (Rabsolu_left ``x0-x`` r) in H8.
-Rewrite Rplus_sym.
-Apply Rle_anti_compatibility with ``-((x0-x)/x)``.
-Rewrite Rplus_Or; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Unfold Rdiv; Rewrite <- Ropp_mul1.
-Apply Rle_monotony_contra with x.
-Apply H.
-Rewrite Rmult_1r; Rewrite Rmult_sym; Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Left; Apply Rlt_le_trans with (Rmin alpha x).
-Apply H8.
-Apply Rmin_r.
-Red; Intro; Rewrite H9 in H; Elim (Rlt_antirefl ? H).
-Apply ge0_plus_ge0_is_ge0.
-Left; Apply Rlt_R0_R1.
-Unfold Rdiv; Apply Rmult_le_pos.
-Apply Rle_sym2; Exact r.
-Left; Apply Rlt_Rinv; Apply H.
-Unfold Rdiv; Apply Rmult_lt_pos.
-Apply H1.
-Apply Rlt_Rinv; Apply sqrt_lt_R0; Apply H.
+Lemma sqrt_continuity_pt : forall x:R, 0 < x -> continuity_pt sqrt x.
+intros; generalize sqrt_continuity_pt_R1.
+unfold continuity_pt in |- *; unfold continue_in in |- *;
+ unfold limit1_in in |- *; unfold limit_in in |- *; 
+ unfold dist in |- *; simpl in |- *; unfold R_dist in |- *; 
+ intros.
+cut (0 < eps / sqrt x).
+intro; elim (H0 _ H2); intros alp_1 H3.
+elim H3; intros.
+pose (alpha := alp_1 * x).
+exists (Rmin alpha x); intros.
+split.
+change (0 < Rmin alpha x) in |- *; unfold Rmin in |- *;
+ case (Rle_dec alpha x); intro.
+unfold alpha in |- *; apply Rmult_lt_0_compat; assumption.
+apply H.
+intros; replace x0 with (x + (x0 - x)); [ idtac | ring ];
+ replace (sqrt (x + (x0 - x)) - sqrt x) with
+  (sqrt x * (sqrt (1 + (x0 - x) / x) - sqrt 1)).
+rewrite Rabs_mult; rewrite (Rabs_right (sqrt x)).
+apply Rmult_lt_reg_l with (/ sqrt x).
+apply Rinv_0_lt_compat; apply sqrt_lt_R0; assumption.
+rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+rewrite Rmult_1_l; rewrite Rmult_comm.
+unfold Rdiv in H5.
+case (Req_dec x x0); intro.
+rewrite H7; unfold Rminus, Rdiv in |- *; rewrite Rplus_opp_r;
+ rewrite Rmult_0_l; rewrite Rplus_0_r; rewrite Rplus_opp_r; 
+ rewrite Rabs_R0.
+apply Rmult_lt_0_compat.
+assumption.
+apply Rinv_0_lt_compat; rewrite <- H7; apply sqrt_lt_R0; assumption.
+apply H5.
+split.
+unfold D_x, no_cond in |- *.
+split.
+trivial.
+red in |- *; intro.
+cut ((x0 - x) * / x = 0).
+intro.
+elim (Rmult_integral _ _ H9); intro.
+elim H7.
+apply (Rminus_diag_uniq_sym _ _ H10).
+assert (H11 := Rmult_eq_0_compat_r _ x H10).
+rewrite <- Rinv_l_sym in H11.
+elim R1_neq_R0; exact H11.
+red in |- *; intro; rewrite H12 in H; elim (Rlt_irrefl _ H).
+symmetry  in |- *; apply Rplus_eq_reg_l with 1; rewrite Rplus_0_r;
+ unfold Rdiv in H8; exact H8.
+unfold Rminus in |- *; rewrite Rplus_comm; rewrite <- Rplus_assoc;
+ rewrite Rplus_opp_l; rewrite Rplus_0_l; elim H6; intros.
+unfold Rdiv in |- *; rewrite Rabs_mult.
+rewrite Rabs_Rinv.
+rewrite (Rabs_right x).
+rewrite Rmult_comm; apply Rmult_lt_reg_l with x.
+apply H.
+rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+rewrite Rmult_1_l; rewrite Rmult_comm; fold alpha in |- *.
+apply Rlt_le_trans with (Rmin alpha x).
+apply H9.
+apply Rmin_l.
+red in |- *; intro; rewrite H10 in H; elim (Rlt_irrefl _ H).
+apply Rle_ge; left; apply H.
+red in |- *; intro; rewrite H10 in H; elim (Rlt_irrefl _ H).
+assert (H7 := sqrt_lt_R0 x H).
+red in |- *; intro; rewrite H8 in H7; elim (Rlt_irrefl _ H7).
+apply Rle_ge; apply sqrt_positivity.
+left; apply H.
+unfold Rminus in |- *; rewrite Rmult_plus_distr_l;
+ rewrite Ropp_mult_distr_r_reverse; repeat rewrite <- sqrt_mult.
+rewrite Rmult_1_r; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
+ unfold Rdiv in |- *; rewrite Rmult_comm; rewrite Rmult_assoc;
+ rewrite <- Rinv_l_sym.
+rewrite Rmult_1_r; reflexivity.
+red in |- *; intro; rewrite H7 in H; elim (Rlt_irrefl _ H).
+left; apply H.
+left; apply Rlt_0_1.
+left; apply H.
+elim H6; intros.
+case (Rcase_abs (x0 - x)); intro.
+rewrite (Rabs_left (x0 - x) r) in H8.
+rewrite Rplus_comm.
+apply Rplus_le_reg_l with (- ((x0 - x) / x)).
+rewrite Rplus_0_r; rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
+ rewrite Rplus_0_l; unfold Rdiv in |- *; rewrite <- Ropp_mult_distr_l_reverse.
+apply Rmult_le_reg_l with x.
+apply H.
+rewrite Rmult_1_r; rewrite Rmult_comm; rewrite Rmult_assoc;
+ rewrite <- Rinv_l_sym.
+rewrite Rmult_1_r; left; apply Rlt_le_trans with (Rmin alpha x).
+apply H8.
+apply Rmin_r.
+red in |- *; intro; rewrite H9 in H; elim (Rlt_irrefl _ H).
+apply Rplus_le_le_0_compat.
+left; apply Rlt_0_1.
+unfold Rdiv in |- *; apply Rmult_le_pos.
+apply Rge_le; exact r.
+left; apply Rinv_0_lt_compat; apply H.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+apply H1.
+apply Rinv_0_lt_compat; apply sqrt_lt_R0; apply H.
 Qed.
 
 (* sqrt is derivable for all x>0 *)
-Lemma derivable_pt_lim_sqrt : (x:R) ``0<x`` -> (derivable_pt_lim sqrt x ``/(2*(sqrt x))``).
-Intros; Pose g := [h:R]``(sqrt x)+(sqrt (x+h))``.
-Cut (continuity_pt g R0).
-Intro; Cut ``(g 0)<>0``.
-Intro; Assert H2 := (continuity_pt_inv g R0 H0 H1).
-Unfold derivable_pt_lim; Intros; Unfold continuity_pt in H2; Unfold continue_in in H2; Unfold limit1_in in H2; Unfold limit_in in H2; Simpl in H2; Unfold R_dist in H2.
-Elim (H2 eps H3); Intros alpha H4.
-Elim H4; Intros.
-Pose alpha1 := (Rmin alpha x).
-Cut ``0<alpha1``.
-Intro; Exists (mkposreal alpha1 H7); Intros.
-Replace ``((sqrt (x+h))-(sqrt x))/h`` with ``/((sqrt x)+(sqrt (x+h)))``.
-Unfold inv_fct g in H6; Replace ``2*(sqrt x)`` with ``(sqrt x)+(sqrt (x+0))``.
-Apply H6.
-Split.
-Unfold D_x no_cond.
-Split.
-Trivial.
-Apply not_sym; Exact H8.
-Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Apply Rlt_le_trans with alpha1.
-Exact H9.
-Unfold alpha1; Apply Rmin_l.
-Rewrite Rplus_Or; Ring.
-Cut ``0<=x+h``.
-Intro; Cut ``0<(sqrt x)+(sqrt (x+h))``.
-Intro; Apply r_Rmult_mult with ``((sqrt x)+(sqrt (x+h)))``.
-Rewrite <- Rinv_r_sym.
-Rewrite Rplus_sym; Unfold Rdiv; Rewrite <- Rmult_assoc; Rewrite Rsqr_plus_minus; Repeat Rewrite Rsqr_sqrt.
-Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Rewrite <- Rinv_r_sym.
-Reflexivity.
-Apply H8.
-Left; Apply H.
-Assumption.
-Red; Intro; Rewrite H12 in H11; Elim (Rlt_antirefl ? H11).
-Red; Intro; Rewrite H12 in H11; Elim (Rlt_antirefl ? H11).
-Apply gt0_plus_ge0_is_gt0.
-Apply sqrt_lt_R0; Apply H.
-Apply sqrt_positivity; Apply H10.
-Case (case_Rabsolu h); Intro.
-Rewrite (Rabsolu_left h r) in H9.
-Apply Rle_anti_compatibility with ``-h``.
-Rewrite Rplus_Or; Rewrite Rplus_sym; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Left; Apply Rlt_le_trans with alpha1.
-Apply H9.
-Unfold alpha1; Apply Rmin_r.
-Apply ge0_plus_ge0_is_ge0.
-Left; Assumption.
-Apply Rle_sym2; Apply r.
-Unfold alpha1; Unfold Rmin; Case (total_order_Rle alpha x); Intro.
-Apply H5.
-Apply H.
-Unfold g; Rewrite Rplus_Or.
-Cut ``0<(sqrt x)+(sqrt x)``.
-Intro; Red; Intro; Rewrite H2 in H1; Elim (Rlt_antirefl ? H1).
-Apply gt0_plus_gt0_is_gt0; Apply sqrt_lt_R0; Apply H.
-Replace g with (plus_fct (fct_cte (sqrt x)) (comp sqrt (plus_fct (fct_cte x) id))); [Idtac | Reflexivity].
-Apply continuity_pt_plus.
-Apply continuity_pt_const; Unfold constant fct_cte; Intro; Reflexivity.
-Apply continuity_pt_comp.
-Apply continuity_pt_plus.
-Apply continuity_pt_const; Unfold constant fct_cte; Intro; Reflexivity.
-Apply derivable_continuous_pt; Apply derivable_pt_id.
-Apply sqrt_continuity_pt.
-Unfold plus_fct fct_cte id; Rewrite Rplus_Or; Apply H.
+Lemma derivable_pt_lim_sqrt :
+ forall x:R, 0 < x -> derivable_pt_lim sqrt x (/ (2 * sqrt x)).
+intros; pose (g := fun h:R => sqrt x + sqrt (x + h)).
+cut (continuity_pt g 0).
+intro; cut (g 0 <> 0).
+intro; assert (H2 := continuity_pt_inv g 0 H0 H1).
+unfold derivable_pt_lim in |- *; intros; unfold continuity_pt in H2;
+ unfold continue_in in H2; unfold limit1_in in H2; 
+ unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
+elim (H2 eps H3); intros alpha H4.
+elim H4; intros.
+pose (alpha1 := Rmin alpha x).
+cut (0 < alpha1).
+intro; exists (mkposreal alpha1 H7); intros.
+replace ((sqrt (x + h) - sqrt x) / h) with (/ (sqrt x + sqrt (x + h))).
+unfold inv_fct, g in H6; replace (2 * sqrt x) with (sqrt x + sqrt (x + 0)).
+apply H6.
+split.
+unfold D_x, no_cond in |- *.
+split.
+trivial.
+apply (sym_not_eq (A:=R)); exact H8.
+unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r;
+ apply Rlt_le_trans with alpha1.
+exact H9.
+unfold alpha1 in |- *; apply Rmin_l.
+rewrite Rplus_0_r; ring.
+cut (0 <= x + h).
+intro; cut (0 < sqrt x + sqrt (x + h)).
+intro; apply Rmult_eq_reg_l with (sqrt x + sqrt (x + h)).
+rewrite <- Rinv_r_sym.
+rewrite Rplus_comm; unfold Rdiv in |- *; rewrite <- Rmult_assoc;
+ rewrite Rsqr_plus_minus; repeat rewrite Rsqr_sqrt.
+rewrite Rplus_comm; unfold Rminus in |- *; rewrite Rplus_assoc;
+ rewrite Rplus_opp_r; rewrite Rplus_0_r; rewrite <- Rinv_r_sym.
+reflexivity.
+apply H8.
+left; apply H.
+assumption.
+red in |- *; intro; rewrite H12 in H11; elim (Rlt_irrefl _ H11).
+red in |- *; intro; rewrite H12 in H11; elim (Rlt_irrefl _ H11).
+apply Rplus_lt_le_0_compat.
+apply sqrt_lt_R0; apply H.
+apply sqrt_positivity; apply H10.
+case (Rcase_abs h); intro.
+rewrite (Rabs_left h r) in H9.
+apply Rplus_le_reg_l with (- h).
+rewrite Rplus_0_r; rewrite Rplus_comm; rewrite Rplus_assoc;
+ rewrite Rplus_opp_r; rewrite Rplus_0_r; left; apply Rlt_le_trans with alpha1.
+apply H9.
+unfold alpha1 in |- *; apply Rmin_r.
+apply Rplus_le_le_0_compat.
+left; assumption.
+apply Rge_le; apply r.
+unfold alpha1 in |- *; unfold Rmin in |- *; case (Rle_dec alpha x); intro.
+apply H5.
+apply H.
+unfold g in |- *; rewrite Rplus_0_r.
+cut (0 < sqrt x + sqrt x).
+intro; red in |- *; intro; rewrite H2 in H1; elim (Rlt_irrefl _ H1).
+apply Rplus_lt_0_compat; apply sqrt_lt_R0; apply H.
+replace g with (fct_cte (sqrt x) + comp sqrt (fct_cte x + id))%F;
+ [ idtac | reflexivity ].
+apply continuity_pt_plus.
+apply continuity_pt_const; unfold constant, fct_cte in |- *; intro;
+ reflexivity.
+apply continuity_pt_comp.
+apply continuity_pt_plus.
+apply continuity_pt_const; unfold constant, fct_cte in |- *; intro;
+ reflexivity.
+apply derivable_continuous_pt; apply derivable_pt_id.
+apply sqrt_continuity_pt.
+unfold plus_fct, fct_cte, id in |- *; rewrite Rplus_0_r; apply H.
 Qed.
 
 (**********)
-Lemma derivable_pt_sqrt : (x:R) ``0<x`` -> (derivable_pt sqrt x).
-Unfold derivable_pt; Intros.
-Apply Specif.existT with ``/(2*(sqrt x))``.
-Apply derivable_pt_lim_sqrt; Assumption.
+Lemma derivable_pt_sqrt : forall x:R, 0 < x -> derivable_pt sqrt x.
+unfold derivable_pt in |- *; intros.
+apply existT with (/ (2 * sqrt x)).
+apply derivable_pt_lim_sqrt; assumption.
 Qed.
 
 (**********)
-Lemma derive_pt_sqrt : (x:R;pr:``0<x``) ``(derive_pt sqrt x (derivable_pt_sqrt ? pr)) == /(2*(sqrt x))``.
-Intros.
-Apply derive_pt_eq_0.
-Apply derivable_pt_lim_sqrt; Assumption.
+Lemma derive_pt_sqrt :
+ forall (x:R) (pr:0 < x),
+   derive_pt sqrt x (derivable_pt_sqrt _ pr) = / (2 * sqrt x).
+intros.
+apply derive_pt_eq_0.
+apply derivable_pt_lim_sqrt; assumption.
 Qed.
 
 (* We show that sqrt is continuous for all x>=0 *)
 (* Remark : by definition of sqrt (as extension of Rsqrt on |R), *)
 (*          we could also show that sqrt is continuous for all x *)
-Lemma continuity_pt_sqrt : (x:R) ``0<=x`` -> (continuity_pt sqrt x).
-Intros; Case (total_order R0 x); Intro.
-Apply (sqrt_continuity_pt x H0).
-Elim H0; Intro.
-Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros.
-Exists (Rsqr eps); Intros.
-Split.
-Change ``0<(Rsqr eps)``; Apply Rsqr_pos_lt.
-Red; Intro; Rewrite H3 in H2; Elim (Rlt_antirefl ? H2).
-Intros; Elim H3; Intros.
-Rewrite <- H1; Rewrite sqrt_0; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite <- H1 in H5; Unfold Rminus in H5; Rewrite Ropp_O in H5; Rewrite Rplus_Or in H5.
-Case (case_Rabsolu x0); Intro.
-Unfold sqrt; Case (case_Rabsolu x0); Intro.
-Rewrite Rabsolu_R0; Apply H2.
-Assert H6 := (Rle_sym2 ? ? r0); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H6 r)).
-Rewrite Rabsolu_right.
-Apply Rsqr_incrst_0.
-Rewrite Rsqr_sqrt.
-Rewrite (Rabsolu_right x0 r) in H5; Apply H5.
-Apply Rle_sym2; Exact r.
-Apply sqrt_positivity; Apply Rle_sym2; Exact r.
-Left; Exact H2.
-Apply Rle_sym1; Apply sqrt_positivity; Apply Rle_sym2; Exact r.
-Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? H1 H)).
+Lemma continuity_pt_sqrt : forall x:R, 0 <= x -> continuity_pt sqrt x.
+intros; case (Rtotal_order 0 x); intro.
+apply (sqrt_continuity_pt x H0).
+elim H0; intro.
+unfold continuity_pt in |- *; unfold continue_in in |- *;
+ unfold limit1_in in |- *; unfold limit_in in |- *; 
+ simpl in |- *; unfold R_dist in |- *; intros.
+exists (Rsqr eps); intros.
+split.
+change (0 < Rsqr eps) in |- *; apply Rsqr_pos_lt.
+red in |- *; intro; rewrite H3 in H2; elim (Rlt_irrefl _ H2).
+intros; elim H3; intros.
+rewrite <- H1; rewrite sqrt_0; unfold Rminus in |- *; rewrite Ropp_0;
+ rewrite Rplus_0_r; rewrite <- H1 in H5; unfold Rminus in H5;
+ rewrite Ropp_0 in H5; rewrite Rplus_0_r in H5.
+case (Rcase_abs x0); intro.
+unfold sqrt in |- *; case (Rcase_abs x0); intro.
+rewrite Rabs_R0; apply H2.
+assert (H6 := Rge_le _ _ r0); elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H6 r)).
+rewrite Rabs_right.
+apply Rsqr_incrst_0.
+rewrite Rsqr_sqrt.
+rewrite (Rabs_right x0 r) in H5; apply H5.
+apply Rge_le; exact r.
+apply sqrt_positivity; apply Rge_le; exact r.
+left; exact H2.
+apply Rle_ge; apply sqrt_positivity; apply Rge_le; exact r.
+elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H1 H)).
 Qed.

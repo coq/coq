@@ -10,36 +10,35 @@
 
 (** Well-founded relations and natural numbers *)
 
-Require Lt.
+Require Import Lt.
 
-V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
-Implicit Variables Type m,n,p:nat.
+Implicit Types m n p : nat.
 
-Chapter  Well_founded_Nat.
+Section Well_founded_Nat.
 
 Variable A : Set.
 
 Variable f : A -> nat.
-Definition ltof := [a,b:A](lt (f a) (f b)).
-Definition gtof := [a,b:A](gt (f b) (f a)).
+Definition ltof (a b:A) := f a < f b.
+Definition gtof (a b:A) := f b > f a.
 
-Theorem well_founded_ltof : (well_founded A ltof).
+Theorem well_founded_ltof : well_founded ltof.
 Proof.
-Red.
-Cut (n:nat)(a:A)(lt (f a) n)->(Acc A ltof a).
-Intros H a;  Apply (H (S (f a))); Auto with arith.
-NewInduction n.
-Intros; Absurd (lt (f a) O); Auto with arith.
-Intros a ltSma.
-Apply Acc_intro.
-Unfold ltof; Intros b ltfafb.
-Apply IHn.
-Apply lt_le_trans with (f a); Auto with arith.
+red in |- *.
+cut (forall n (a:A), f a < n -> Acc ltof a).
+intros H a; apply (H (S (f a))); auto with arith.
+induction n.
+intros; absurd (f a < 0); auto with arith.
+intros a ltSma.
+apply Acc_intro.
+unfold ltof in |- *; intros b ltfafb.
+apply IHn.
+apply lt_le_trans with (f a); auto with arith.
 Qed.
 
-Theorem  well_founded_gtof : (well_founded A gtof).
+Theorem well_founded_gtof : well_founded gtof.
 Proof well_founded_ltof.
 
 (** It is possible to directly prove the induction principle going
@@ -59,142 +58,149 @@ the ML-like program for [induction_ltof2] is : [[
    where rec indrec a = F a indrec;;
 ]] *)
 
-Theorem induction_ltof1 
-  : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_ltof1 :
+ forall P:A -> Set,
+   (forall x:A, (forall y:A, ltof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
-Intros P F; Cut (n:nat)(a:A)(lt (f a) n)->(P a).
-Intros H a;  Apply (H (S (f a))); Auto with arith.
-NewInduction n.
-Intros; Absurd (lt (f a) O); Auto with arith.
-Intros a ltSma.
-Apply F.
-Unfold ltof; Intros b ltfafb.
-Apply IHn.
-Apply lt_le_trans with (f a); Auto with arith.
+intros P F; cut (forall n (a:A), f a < n -> P a).
+intros H a; apply (H (S (f a))); auto with arith.
+induction n.
+intros; absurd (f a < 0); auto with arith.
+intros a ltSma.
+apply F.
+unfold ltof in |- *; intros b ltfafb.
+apply IHn.
+apply lt_le_trans with (f a); auto with arith.
 Defined. 
 
-Theorem induction_gtof1 
-  : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_gtof1 :
+ forall P:A -> Set,
+   (forall x:A, (forall y:A, gtof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
-Exact induction_ltof1.
+exact induction_ltof1.
 Defined.
 
-Theorem induction_ltof2 
-  : (P:A->Set)((x:A)((y:A)(ltof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_ltof2 :
+ forall P:A -> Set,
+   (forall x:A, (forall y:A, ltof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
-Exact (well_founded_induction A ltof well_founded_ltof).
+exact (well_founded_induction well_founded_ltof).
 Defined.
 
-Theorem induction_gtof2 
-  : (P:A->Set)((x:A)((y:A)(gtof y x)->(P y))->(P x))->(a:A)(P a).
+Theorem induction_gtof2 :
+ forall P:A -> Set,
+   (forall x:A, (forall y:A, gtof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
-Exact induction_ltof2.
+exact induction_ltof2.
 Defined.
 
 (** If a relation [R] is compatible with [lt] i.e. if [x R y => f(x) < f(y)]
     then [R] is well-founded. *)
 
-Variable R : A->A->Prop.
+Variable R : A -> A -> Prop.
 
-Hypothesis H_compat : (x,y:A) (R x y) -> (lt (f x) (f y)).
+Hypothesis H_compat : forall x y:A, R x y -> f x < f y.
 
-Theorem well_founded_lt_compat : (well_founded A R).
+Theorem well_founded_lt_compat : well_founded R.
 Proof.
-Red.
-Cut (n:nat)(a:A)(lt (f a) n)->(Acc A R a).
-Intros H a; Apply (H (S (f a))); Auto with arith.
-NewInduction n.
-Intros; Absurd (lt (f a) O); Auto with arith.
-Intros a ltSma.
-Apply Acc_intro.
-Intros b ltfafb.
-Apply IHn.
-Apply lt_le_trans with (f a); Auto with arith.
+red in |- *.
+cut (forall n (a:A), f a < n -> Acc R a).
+intros H a; apply (H (S (f a))); auto with arith.
+induction n.
+intros; absurd (f a < 0); auto with arith.
+intros a ltSma.
+apply Acc_intro.
+intros b ltfafb.
+apply IHn.
+apply lt_le_trans with (f a); auto with arith.
 Qed.
 
 End Well_founded_Nat.
 
-Lemma lt_wf : (well_founded nat lt).
-Proof (well_founded_ltof nat [m:nat]m).
+Lemma lt_wf : well_founded lt.
+Proof well_founded_ltof nat (fun m => m).
 
-Lemma lt_wf_rec1 : (p:nat)(P:nat->Set)
-              ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
+Lemma lt_wf_rec1 :
+ forall n (P:nat -> Set), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
 Proof.
-Exact [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
-     (induction_ltof1 nat [m:nat]m P F p).
+exact
+ (fun p (P:nat -> Set) (F:forall n, (forall m, m < n -> P m) -> P n) =>
+    induction_ltof1 nat (fun m => m) P F p).
 Defined.
 
-Lemma lt_wf_rec : (p:nat)(P:nat->Set)
-              ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
+Lemma lt_wf_rec :
+ forall n (P:nat -> Set), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
 Proof.
-Exact [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
-     (induction_ltof2 nat [m:nat]m P F p).
+exact
+ (fun p (P:nat -> Set) (F:forall n, (forall m, m < n -> P m) -> P n) =>
+    induction_ltof2 nat (fun m => m) P F p).
 Defined.
 
-Lemma lt_wf_ind : (p:nat)(P:nat->Prop)
-              ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
-Intro p; Intros; Elim (lt_wf p); Auto with arith.
+Lemma lt_wf_ind :
+ forall n (P:nat -> Prop), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
+intro p; intros; elim (lt_wf p); auto with arith.
 Qed.
 
-Lemma gt_wf_rec : (p:nat)(P:nat->Set)
-              ((n:nat)((m:nat)(gt n m)->(P m))->(P n)) -> (P p).
+Lemma gt_wf_rec :
+ forall n (P:nat -> Set), (forall n, (forall m, n > m -> P m) -> P n) -> P n.
 Proof.
-Exact lt_wf_rec.
+exact lt_wf_rec.
 Defined.
 
-Lemma gt_wf_ind : (p:nat)(P:nat->Prop)
-              ((n:nat)((m:nat)(gt n m)->(P m))->(P n)) -> (P p).
+Lemma gt_wf_ind :
+ forall n (P:nat -> Prop), (forall n, (forall m, n > m -> P m) -> P n) -> P n.
 Proof lt_wf_ind.
 
-Lemma lt_wf_double_rec : 
-  (P:nat->nat->Set)
-  ((n,m:nat)((p,q:nat)(lt p n)->(P p q))->((p:nat)(lt p m)->(P n p))->(P n m))
-   -> (p,q:nat)(P p q).
-Intros P Hrec p; Pattern p; Apply lt_wf_rec.
-Intros n H q; Pattern q; Apply lt_wf_rec; Auto with arith.
+Lemma lt_wf_double_rec :
+ forall P:nat -> nat -> Set,
+   (forall n m,
+      (forall p (q:nat), p < n -> P p q) ->
+      (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
+intros P Hrec p; pattern p in |- *; apply lt_wf_rec.
+intros n H q; pattern q in |- *; apply lt_wf_rec; auto with arith.
 Defined.
 
-Lemma lt_wf_double_ind : 
-  (P:nat->nat->Prop)
-  ((n,m:nat)((p,q:nat)(lt p n)->(P p q))->((p:nat)(lt p m)->(P n p))->(P n m))
-   -> (p,q:nat)(P p q).
-Intros P Hrec p; Pattern p; Apply lt_wf_ind.
-Intros n H q; Pattern q; Apply lt_wf_ind; Auto with arith.
+Lemma lt_wf_double_ind :
+ forall P:nat -> nat -> Prop,
+   (forall n m,
+      (forall p (q:nat), p < n -> P p q) ->
+      (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
+intros P Hrec p; pattern p in |- *; apply lt_wf_ind.
+intros n H q; pattern q in |- *; apply lt_wf_ind; auto with arith.
 Qed.
 
-Hints Resolve lt_wf : arith.
-Hints Resolve well_founded_lt_compat : arith.
+Hint Resolve lt_wf: arith.
+Hint Resolve well_founded_lt_compat: arith.
 
 Section LT_WF_REL.
-Variable A :Set.
-Variable R:A->A->Prop.
+Variable A : Set.
+Variable R : A -> A -> Prop.
 
 (* Relational form of inversion *)
 Variable F : A -> nat -> Prop.
-Definition inv_lt_rel 
- [x,y]:=(EX n | (F x n) & (m:nat)(F y m)->(lt n m)).
+Definition inv_lt_rel x y :=
+   exists2 n : _ | F x n & (forall m, F y m -> n < m).
 
-Hypothesis F_compat : (x,y:A) (R x y) -> (inv_lt_rel x y).
-Remark acc_lt_rel : 
-  (x:A)(EX n | (F x n))->(Acc A R x).
-Intros x (n,fxn); Generalize x fxn; Clear x fxn.
-Pattern n; Apply lt_wf_ind; Intros.
-Constructor; Intros.
-Case (F_compat y x); Trivial; Intros.
-Apply (H x0); Auto.
-Save.
+Hypothesis F_compat : forall x y:A, R x y -> inv_lt_rel x y.
+Remark acc_lt_rel : forall x:A, ( exists n : _ | F x n) -> Acc R x.
+intros x [n fxn]; generalize x fxn; clear x fxn.
+pattern n in |- *; apply lt_wf_ind; intros.
+constructor; intros.
+case (F_compat y x); trivial; intros.
+apply (H x0); auto.
+Qed.
 
-Theorem well_founded_inv_lt_rel_compat : (well_founded A R).
-Constructor; Intros.
-Case (F_compat y a); Trivial; Intros.
-Apply acc_lt_rel; Trivial.
-Exists x; Trivial.
-Save.
+Theorem well_founded_inv_lt_rel_compat : well_founded R.
+constructor; intros.
+case (F_compat y a); trivial; intros.
+apply acc_lt_rel; trivial.
+exists x; trivial.
+Qed.
 
 
 End LT_WF_REL.
 
-Lemma well_founded_inv_rel_inv_lt_rel 
-  : (A:Set)(F:A->nat->Prop)(well_founded A (inv_lt_rel A F)).
-Intros; Apply (well_founded_inv_lt_rel_compat A (inv_lt_rel A F) F); Trivial.
-Save.
+Lemma well_founded_inv_rel_inv_lt_rel :
+ forall (A:Set) (F:A -> nat -> Prop), well_founded (inv_lt_rel A F).
+intros; apply (well_founded_inv_lt_rel_compat A (inv_lt_rel A F) F); trivial.
+Qed.

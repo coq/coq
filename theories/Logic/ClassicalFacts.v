@@ -12,49 +12,50 @@
 
 (** [prop_degeneracy] asserts (up to consistency) that there are only *)
 (*  two distinct formulas *)
-Definition prop_degeneracy := (A:Prop) A==True \/ A==False.
+Definition prop_degeneracy := forall A:Prop, A = True \/ A = False.
 
 (** [prop_extensionality] asserts equivalent formulas are equal *)
-Definition prop_extensionality := (A,B:Prop) (A<->B) -> A==B.
+Definition prop_extensionality := forall A B:Prop, (A <-> B) -> A = B.
 
 (** [excluded_middle] asserts we can reason by case on the truth *)
 (*  or falsity of any formula *)
-Definition excluded_middle := (A:Prop) A \/ ~A.
+Definition excluded_middle := forall A:Prop, A \/ ~ A.
 
 (** [proof_irrelevance] asserts equality of all proofs of a given formula *)
-Definition proof_irrelevance := (A:Prop)(a1,a2:A) a1==a2.
+Definition proof_irrelevance := forall (A:Prop) (a1 a2:A), a1 = a2.
 
 (** We show [prop_degeneracy <-> (prop_extensionality /\ excluded_middle)] *)
 
 Lemma prop_degen_ext : prop_degeneracy -> prop_extensionality.
 Proof.
-Intros H A B (Hab,Hba).
-NewDestruct (H A); NewDestruct (H B).
-  Rewrite H1; Exact H0.
-  Absurd B.
-    Rewrite H1; Exact [H]H.
-    Apply Hab; Rewrite H0; Exact I.
-  Absurd A.
-    Rewrite H0; Exact [H]H.
-    Apply Hba; Rewrite H1; Exact I.
-  Rewrite H1; Exact H0.
+intros H A B [Hab Hba].
+destruct (H A); destruct (H B).
+  rewrite H1; exact H0.
+  absurd B.
+    rewrite H1; exact (fun H => H).
+    apply Hab; rewrite H0; exact I.
+  absurd A.
+    rewrite H0; exact (fun H => H).
+    apply Hba; rewrite H1; exact I.
+  rewrite H1; exact H0.
 Qed.
 
 Lemma prop_degen_em : prop_degeneracy -> excluded_middle.
 Proof.
-Intros H A.
-NewDestruct (H A).
-  Left; Rewrite H0; Exact I.
-  Right; Rewrite H0; Exact [x]x.
+intros H A.
+destruct (H A).
+  left; rewrite H0; exact I.
+  right; rewrite H0; exact (fun x => x).
 Qed.
 
 Lemma prop_ext_em_degen :
-   prop_extensionality -> excluded_middle -> prop_degeneracy.
+ prop_extensionality -> excluded_middle -> prop_degeneracy.
 Proof.
-Intros Ext EM A.
-NewDestruct (EM A).
-  Left; Apply (Ext A True); Split; [Exact [_]I | Exact [_]H].
-  Right; Apply (Ext A False); Split; [Exact H | Apply False_ind].
+intros Ext EM A.
+destruct (EM A).
+  left; apply (Ext A True); split;
+   [ exact (fun _ => I) | exact (fun _ => H) ].
+  right; apply (Ext A False); split; [ exact H | apply False_ind ].
 Qed.
 
 (** We successively show that:
@@ -67,45 +68,40 @@ Qed.
         (e.g. take the Y combinator of lambda-calculus)
 *)
 
-Definition inhabited [A:Prop] := A.
+Definition inhabited (A:Prop) := A.
 
 Lemma prop_ext_A_eq_A_imp_A :
-  prop_extensionality->(A:Prop)(inhabited A)->(A->A)==A.
+ prop_extensionality -> forall A:Prop, inhabited A -> (A -> A) = A.
 Proof.
-Intros Ext A a.
-Apply (Ext A->A A); Split; [ Exact [_]a | Exact [_;_]a ].
+intros Ext A a.
+apply (Ext (A -> A) A); split; [ exact (fun _ => a) | exact (fun _ _ => a) ].
 Qed.
 
-Record retract [A,B:Prop] : Prop := {
-  f1: A->B;
-  f2: B->A;
-  f1_o_f2: (x:B)(f1 (f2 x))==x
-}.
+Record retract (A B:Prop) : Prop := 
+  {f1 : A -> B; f2 : B -> A; f1_o_f2 : forall x:B, f1 (f2 x) = x}.
 
 Lemma prop_ext_retract_A_A_imp_A :
-  prop_extensionality->(A:Prop)(inhabited A)->(retract A A->A).
+ prop_extensionality -> forall A:Prop, inhabited A -> retract A (A -> A).
 Proof.
-Intros Ext A a.
-Rewrite -> (prop_ext_A_eq_A_imp_A Ext A a).
-Exists [x:A]x [x:A]x.
-Reflexivity.
+intros Ext A a.
+rewrite (prop_ext_A_eq_A_imp_A Ext A a).
+exists (fun x:A => x) (fun x:A => x).
+reflexivity.
 Qed.
 
-Record has_fixpoint [A:Prop] : Prop := {
-  F : (A->A)->A;
-  fix : (f:A->A)(F f)==(f (F f))
-}.
+Record has_fixpoint (A:Prop) : Prop := 
+  {F : (A -> A) -> A; Fix : forall f:A -> A, F f = f (F f)}.
 
 Lemma ext_prop_fixpoint :
-  prop_extensionality->(A:Prop)(inhabited A)->(has_fixpoint A).
+ prop_extensionality -> forall A:Prop, inhabited A -> has_fixpoint A.
 Proof.
-Intros Ext A a.
-Case (prop_ext_retract_A_A_imp_A Ext A a); Intros g1 g2 g1_o_g2.
-Exists [f]([x:A](f (g1 x x)) (g2 [x](f (g1 x x)))).
-Intro f.
-Pattern 1 (g1 (g2 [x:A](f (g1 x x)))).
-Rewrite (g1_o_g2 [x:A](f (g1 x x))).
-Reflexivity.
+intros Ext A a.
+case (prop_ext_retract_A_A_imp_A Ext A a); intros g1 g2 g1_o_g2.
+exists (fun f => (fun x:A => f (g1 x x)) (g2 (fun x => f (g1 x x)))).
+intro f.
+pattern (g1 (g2 (fun x:A => f (g1 x x)))) at 1 in |- *.
+rewrite (g1_o_g2 (fun x:A => f (g1 x x))).
+reflexivity.
 Qed.
 
 (** Assume we have booleans with the property that there is at most 2
@@ -122,36 +118,40 @@ Section Proof_irrelevance_gen.
 Variable bool : Prop.
 Variable true : bool.
 Variable false : bool.
-Hypothesis bool_elim : (C:Prop)C->C->bool->C.
-Hypothesis bool_elim_redl : (C:Prop)(c1,c2:C)c1==(bool_elim C c1 c2 true).
-Hypothesis bool_elim_redr : (C:Prop)(c1,c2:C)c2==(bool_elim C c1 c2 false).
-Local bool_dep_induction := (P:bool->Prop)(P true)->(P false)->(b:bool)(P b).
+Hypothesis bool_elim : forall C:Prop, C -> C -> bool -> C.
+Hypothesis
+  bool_elim_redl : forall (C:Prop) (c1 c2:C), c1 = bool_elim C c1 c2 true.
+Hypothesis
+  bool_elim_redr : forall (C:Prop) (c1 c2:C), c2 = bool_elim C c1 c2 false.
+Let bool_dep_induction :=
+  forall P:bool -> Prop, P true -> P false -> forall b:bool, P b.
 
-Lemma aux : prop_extensionality -> bool_dep_induction -> true==false.
+Lemma aux : prop_extensionality -> bool_dep_induction -> true = false.
 Proof.
-Intros Ext Ind.
-Case (ext_prop_fixpoint Ext bool true); Intros G Gfix.
-Pose neg := [b:bool](bool_elim bool false true b).
-Generalize (refl_eqT ? (G neg)).
-Pattern 1 (G neg).
-Apply Ind with b:=(G neg); Intro Heq.
-Rewrite (bool_elim_redl bool false true).
-Change true==(neg true); Rewrite -> Heq; Apply Gfix.
-Rewrite (bool_elim_redr bool false true).
-Change (neg false)==false; Rewrite -> Heq; Symmetry; Apply Gfix.
+intros Ext Ind.
+case (ext_prop_fixpoint Ext bool true); intros G Gfix.
+pose (neg := fun b:bool => bool_elim bool false true b).
+generalize (refl_equal (G neg)).
+pattern (G neg) at 1 in |- *.
+apply Ind with (b := G neg); intro Heq.
+rewrite (bool_elim_redl bool false true).
+change (true = neg true) in |- *; rewrite Heq; apply Gfix.
+rewrite (bool_elim_redr bool false true).
+change (neg false = false) in |- *; rewrite Heq; symmetry  in |- *;
+ apply Gfix.
 Qed.
 
 Lemma ext_prop_dep_proof_irrel_gen :
-  prop_extensionality -> bool_dep_induction -> proof_irrelevance.
+ prop_extensionality -> bool_dep_induction -> proof_irrelevance.
 Proof.
-Intros Ext Ind A a1 a2.
-Pose f := [b:bool](bool_elim A a1 a2 b).
-Rewrite (bool_elim_redl A a1 a2).
-Change (f true)==a2.
-Rewrite (bool_elim_redr A a1 a2).
-Change (f true)==(f false).
-Rewrite (aux Ext Ind).
-Reflexivity.
+intros Ext Ind A a1 a2.
+pose (f := fun b:bool => bool_elim A a1 a2 b).
+rewrite (bool_elim_redl A a1 a2).
+change (f true = a2) in |- *.
+rewrite (bool_elim_redr A a1 a2).
+change (f true = f false) in |- *.
+rewrite (aux Ext Ind).
+reflexivity.
 Qed.
 
 End Proof_irrelevance_gen.
@@ -163,22 +163,23 @@ End Proof_irrelevance_gen.
 
 Section Proof_irrelevance_CC.
 
-Definition BoolP  := (C:Prop)C->C->C.
-Definition TrueP  := [C][c1,c2]c1 : BoolP.
-Definition FalseP := [C][c1,c2]c2 : BoolP.
-Definition BoolP_elim := [C][c1,c2][b:BoolP](b C c1 c2).
-Definition BoolP_elim_redl : (C:Prop)(c1,c2:C)c1==(BoolP_elim C c1 c2 TrueP)
-  := [C;c1,c2](refl_eqT C c1).
-Definition BoolP_elim_redr : (C:Prop)(c1,c2:C)c2==(BoolP_elim C c1 c2 FalseP)
-  := [C;c1,c2](refl_eqT C c2).
+Definition BoolP := forall C:Prop, C -> C -> C.
+Definition TrueP : BoolP := fun C c1 c2 => c1.
+Definition FalseP : BoolP := fun C c1 c2 => c2.
+Definition BoolP_elim C c1 c2 (b:BoolP) := b C c1 c2.
+Definition BoolP_elim_redl (C:Prop) (c1 c2:C) :
+  c1 = BoolP_elim C c1 c2 TrueP := refl_equal c1.
+Definition BoolP_elim_redr (C:Prop) (c1 c2:C) :
+  c2 = BoolP_elim C c1 c2 FalseP := refl_equal c2.
 
-Definition BoolP_dep_induction := 
- (P:BoolP->Prop)(P TrueP)->(P FalseP)->(b:BoolP)(P b).
+Definition BoolP_dep_induction :=
+  forall P:BoolP -> Prop, P TrueP -> P FalseP -> forall b:BoolP, P b.
 
 Lemma ext_prop_dep_proof_irrel_cc :
-  prop_extensionality -> BoolP_dep_induction -> proof_irrelevance.
-Proof (ext_prop_dep_proof_irrel_gen BoolP TrueP FalseP BoolP_elim
-         BoolP_elim_redl BoolP_elim_redr).
+ prop_extensionality -> BoolP_dep_induction -> proof_irrelevance.
+Proof
+  ext_prop_dep_proof_irrel_gen BoolP TrueP FalseP BoolP_elim BoolP_elim_redl
+    BoolP_elim_redr.
 
 End Proof_irrelevance_CC.
 
@@ -189,16 +190,20 @@ End Proof_irrelevance_CC.
 
 Section Proof_irrelevance_CIC.
 
-Inductive boolP : Prop := trueP : boolP | falseP : boolP.
-Definition boolP_elim_redl : (C:Prop)(c1,c2:C)c1==(boolP_ind C c1 c2 trueP)
-  := [C;c1,c2](refl_eqT C c1).
-Definition boolP_elim_redr : (C:Prop)(c1,c2:C)c2==(boolP_ind C c1 c2 falseP)
-  := [C;c1,c2](refl_eqT C c2).
+Inductive boolP : Prop :=
+  | trueP : boolP
+  | falseP : boolP.
+Definition boolP_elim_redl (C:Prop) (c1 c2:C) :
+  c1 = boolP_ind C c1 c2 trueP := refl_equal c1.
+Definition boolP_elim_redr (C:Prop) (c1 c2:C) :
+  c2 = boolP_ind C c1 c2 falseP := refl_equal c2.
 Scheme boolP_indd := Induction for boolP Sort Prop.
 
 Lemma ext_prop_dep_proof_irrel_cic : prop_extensionality -> proof_irrelevance.
-Proof [pe](ext_prop_dep_proof_irrel_gen boolP trueP falseP boolP_ind
-         boolP_elim_redl boolP_elim_redr pe boolP_indd).
+Proof
+  fun pe =>
+    ext_prop_dep_proof_irrel_gen boolP trueP falseP boolP_ind boolP_elim_redl
+      boolP_elim_redr pe boolP_indd.
 
 End Proof_irrelevance_CIC.
 

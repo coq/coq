@@ -8,343 +8,427 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rfunctions.
-Require SeqSeries.
-Require Rtrigo.
-Require R_sqrt.
-V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Require Import Rbase.
+Require Import Rfunctions.
+Require Import SeqSeries.
+Require Import Rtrigo.
+Require Import R_sqrt.
 Open Local Scope R_scope.
 
-Lemma tan_PI : ``(tan PI)==0``.
-Unfold tan; Rewrite sin_PI; Rewrite cos_PI; Unfold Rdiv; Apply Rmult_Ol. 
+Lemma tan_PI : tan PI = 0.
+unfold tan in |- *; rewrite sin_PI; rewrite cos_PI; unfold Rdiv in |- *;
+ apply Rmult_0_l. 
 Qed.
 
-Lemma sin_3PI2 : ``(sin (3*(PI/2)))==(-1)``.
-Replace ``3*(PI/2)`` with ``PI+(PI/2)``.
-Rewrite sin_plus; Rewrite sin_PI; Rewrite cos_PI; Rewrite sin_PI2; Ring.
-Pattern 1 PI; Rewrite (double_var PI); Ring.
+Lemma sin_3PI2 : sin (3 * (PI / 2)) = -1.
+replace (3 * (PI / 2)) with (PI + PI / 2).
+rewrite sin_plus; rewrite sin_PI; rewrite cos_PI; rewrite sin_PI2; ring.
+pattern PI at 1 in |- *; rewrite (double_var PI); ring.
 Qed.
 
-Lemma tan_2PI : ``(tan (2*PI))==0``.
-Unfold tan; Rewrite sin_2PI; Unfold Rdiv; Apply Rmult_Ol.
+Lemma tan_2PI : tan (2 * PI) = 0.
+unfold tan in |- *; rewrite sin_2PI; unfold Rdiv in |- *; apply Rmult_0_l.
 Qed.
 
-Lemma sin_cos_PI4 : ``(sin (PI/4)) == (cos (PI/4))``.
-Proof with Trivial.
-Rewrite cos_sin.
-Replace ``PI/2+PI/4`` with ``-(PI/4)+PI``.
-Rewrite neg_sin; Rewrite sin_neg; Ring.
-Cut ``PI==PI/2+PI/2``; [Intro | Apply double_var].
-Pattern 2 3 PI; Rewrite H; Pattern 2 3 PI; Rewrite H.
-Assert H0 : ``2<>0``; [DiscrR | Unfold Rdiv; Rewrite Rinv_Rmult; Try Ring].
+Lemma sin_cos_PI4 : sin (PI / 4) = cos (PI / 4).
+Proof with trivial.
+rewrite cos_sin...
+replace (PI / 2 + PI / 4) with (- (PI / 4) + PI)...
+rewrite neg_sin; rewrite sin_neg; ring...
+cut (PI = PI / 2 + PI / 2); [ intro | apply double_var ]...
+pattern PI at 2 3 in |- *; rewrite H; pattern PI at 2 3 in |- *; rewrite H...
+assert (H0 : 2 <> 0);
+ [ discrR | unfold Rdiv in |- *; rewrite Rinv_mult_distr; try ring ]...
 Qed.
 
-Lemma sin_PI3_cos_PI6 : ``(sin (PI/3))==(cos (PI/6))``.
-Proof with Trivial.
-Replace ``PI/6`` with ``(PI/2)-(PI/3)``.
-Rewrite cos_shift.
-Assert H0 : ``6<>0``; [DiscrR | Idtac].
-Assert H1 : ``3<>0``; [DiscrR | Idtac].
-Assert H2 : ``2<>0``; [DiscrR | Idtac].
-Apply r_Rmult_mult with ``6``.
-Rewrite Rminus_distr; Repeat Rewrite (Rmult_sym ``6``).
-Unfold Rdiv; Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite (Rmult_sym ``/3``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym.
-Pattern 2 PI; Rewrite (Rmult_sym PI); Repeat Rewrite Rmult_1r; Repeat Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Ring.
+Lemma sin_PI3_cos_PI6 : sin (PI / 3) = cos (PI / 6).
+Proof with trivial.
+replace (PI / 6) with (PI / 2 - PI / 3)...
+rewrite cos_shift...
+assert (H0 : 6 <> 0); [ discrR | idtac ]...
+assert (H1 : 3 <> 0); [ discrR | idtac ]...
+assert (H2 : 2 <> 0); [ discrR | idtac ]...
+apply Rmult_eq_reg_l with 6...
+rewrite Rmult_minus_distr_l; repeat rewrite (Rmult_comm 6)...
+unfold Rdiv in |- *; repeat rewrite Rmult_assoc...
+rewrite <- Rinv_l_sym...
+rewrite (Rmult_comm (/ 3)); repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym...
+pattern PI at 2 in |- *; rewrite (Rmult_comm PI); repeat rewrite Rmult_1_r;
+ repeat rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym...
+ring...
 Qed.
 
-Lemma sin_PI6_cos_PI3 : ``(cos (PI/3))==(sin (PI/6))``.
-Proof with Trivial.
-Replace ``PI/6`` with ``(PI/2)-(PI/3)``.
-Rewrite sin_shift.
-Assert H0 : ``6<>0``; [DiscrR | Idtac].
-Assert H1 : ``3<>0``; [DiscrR | Idtac].
-Assert H2 : ``2<>0``; [DiscrR | Idtac].
-Apply r_Rmult_mult with ``6``.
-Rewrite Rminus_distr; Repeat Rewrite (Rmult_sym ``6``).
-Unfold Rdiv; Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite (Rmult_sym ``/3``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym.
-Pattern 2 PI; Rewrite (Rmult_sym PI); Repeat Rewrite Rmult_1r; Repeat Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
-Ring.
+Lemma sin_PI6_cos_PI3 : cos (PI / 3) = sin (PI / 6).
+Proof with trivial.
+replace (PI / 6) with (PI / 2 - PI / 3)...
+rewrite sin_shift...
+assert (H0 : 6 <> 0); [ discrR | idtac ]...
+assert (H1 : 3 <> 0); [ discrR | idtac ]...
+assert (H2 : 2 <> 0); [ discrR | idtac ]...
+apply Rmult_eq_reg_l with 6...
+rewrite Rmult_minus_distr_l; repeat rewrite (Rmult_comm 6)...
+unfold Rdiv in |- *; repeat rewrite Rmult_assoc...
+rewrite <- Rinv_l_sym...
+rewrite (Rmult_comm (/ 3)); repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym...
+pattern PI at 2 in |- *; rewrite (Rmult_comm PI); repeat rewrite Rmult_1_r;
+ repeat rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym...
+ring...
 Qed.
 
-Lemma PI6_RGT_0 : ``0<PI/6``.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0].
+Lemma PI6_RGT_0 : 0 < PI / 6.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ apply PI_RGT_0 | apply Rinv_0_lt_compat; prove_sup0 ].
 Qed.
 
-Lemma PI6_RLT_PI2 : ``PI/6<PI/2``.
-Unfold Rdiv; Apply Rlt_monotony.
-Apply PI_RGT_0.
-Apply Rinv_lt; Sup.
+Lemma PI6_RLT_PI2 : PI / 6 < PI / 2.
+unfold Rdiv in |- *; apply Rmult_lt_compat_l.
+apply PI_RGT_0.
+apply Rinv_lt_contravar; prove_sup.
 Qed.
 
-Lemma sin_PI6 : ``(sin (PI/6))==1/2``.
-Proof with Trivial.
-Assert H : ``2<>0``; [DiscrR | Idtac].
-Apply r_Rmult_mult with ``2*(cos (PI/6))``.
-Replace ``2*(cos (PI/6))*(sin (PI/6))`` with ``2*(sin (PI/6))*(cos (PI/6))``.
-Rewrite <- sin_2a; Replace ``2*(PI/6)`` with ``PI/3``.
-Rewrite sin_PI3_cos_PI6.
-Unfold Rdiv; Rewrite Rmult_1l; Rewrite Rmult_assoc; Pattern 2 ``2``; Rewrite (Rmult_sym ``2``); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r.
-Unfold Rdiv; Rewrite Rinv_Rmult.
-Rewrite (Rmult_sym ``/2``); Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r.
-DiscrR.
-Ring.
-Apply prod_neq_R0.
-Cut ``0<(cos (PI/6))``; [Intro H1; Auto with real | Apply cos_gt_0; [Apply (Rlt_trans ``-(PI/2)`` ``0`` ``PI/6`` _PI2_RLT_0 PI6_RGT_0) | Apply PI6_RLT_PI2]].
+Lemma sin_PI6 : sin (PI / 6) = 1 / 2.
+Proof with trivial.
+assert (H : 2 <> 0); [ discrR | idtac ]...
+apply Rmult_eq_reg_l with (2 * cos (PI / 6))...
+replace (2 * cos (PI / 6) * sin (PI / 6)) with
+ (2 * sin (PI / 6) * cos (PI / 6))...
+rewrite <- sin_2a; replace (2 * (PI / 6)) with (PI / 3)...
+rewrite sin_PI3_cos_PI6...
+unfold Rdiv in |- *; rewrite Rmult_1_l; rewrite Rmult_assoc;
+ pattern 2 at 2 in |- *; rewrite (Rmult_comm 2); rewrite Rmult_assoc;
+ rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r...
+unfold Rdiv in |- *; rewrite Rinv_mult_distr...
+rewrite (Rmult_comm (/ 2)); rewrite (Rmult_comm 2);
+ repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r...
+discrR...
+ring...
+apply prod_neq_R0...
+cut (0 < cos (PI / 6));
+ [ intro H1; auto with real
+ | apply cos_gt_0;
+    [ apply (Rlt_trans (- (PI / 2)) 0 (PI / 6) _PI2_RLT_0 PI6_RGT_0)
+    | apply PI6_RLT_PI2 ] ]...
 Qed.
 
-Lemma sqrt2_neq_0 : ~``(sqrt 2)==0``.
-Assert Hyp:``0<2``; [Sup0 | Generalize (Rlt_le ``0`` ``2`` Hyp); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``2`` H1 H2); Intro H; Absurd ``2==0``; [ DiscrR | Assumption]].
+Lemma sqrt2_neq_0 : sqrt 2 <> 0.
+assert (Hyp : 0 < 2);
+ [ prove_sup0
+ | generalize (Rlt_le 0 2 Hyp); intro H1; red in |- *; intro H2;
+    generalize (sqrt_eq_0 2 H1 H2); intro H; absurd (2 = 0);
+    [ discrR | assumption ] ].
 Qed.
 
-Lemma R1_sqrt2_neq_0 : ~``1/(sqrt 2)==0``.
-Generalize (Rinv_neq_R0 ``(sqrt 2)`` sqrt2_neq_0); Intro H; Generalize (prod_neq_R0 ``1`` ``(Rinv (sqrt 2))`` R1_neq_R0 H); Intro H0; Assumption.
+Lemma R1_sqrt2_neq_0 : 1 / sqrt 2 <> 0.
+generalize (Rinv_neq_0_compat (sqrt 2) sqrt2_neq_0); intro H;
+ generalize (prod_neq_R0 1 (/ sqrt 2) R1_neq_R0 H); 
+ intro H0; assumption.
 Qed.
 
-Lemma sqrt3_2_neq_0 : ~``2*(sqrt 3)==0``.
-Apply prod_neq_R0; [DiscrR | Assert Hyp:``0<3``; [Sup0 | Generalize (Rlt_le ``0`` ``3`` Hyp); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``3`` H1 H2); Intro H; Absurd ``3==0``; [ DiscrR | Assumption]]].
+Lemma sqrt3_2_neq_0 : 2 * sqrt 3 <> 0.
+apply prod_neq_R0;
+ [ discrR
+ | assert (Hyp : 0 < 3);
+    [ prove_sup0
+    | generalize (Rlt_le 0 3 Hyp); intro H1; red in |- *; intro H2;
+       generalize (sqrt_eq_0 3 H1 H2); intro H; absurd (3 = 0);
+       [ discrR | assumption ] ] ].
 Qed.
 
-Lemma Rlt_sqrt2_0 : ``0<(sqrt 2)``.
-Assert Hyp:``0<2``; [Sup0 | Generalize (sqrt_positivity ``2`` (Rlt_le ``0`` ``2`` Hyp)); Intro H1; Elim H1; Intro H2; [Assumption | Absurd ``0 == (sqrt 2)``; [Apply not_sym; Apply sqrt2_neq_0 | Assumption]]].
+Lemma Rlt_sqrt2_0 : 0 < sqrt 2.
+assert (Hyp : 0 < 2);
+ [ prove_sup0
+ | generalize (sqrt_positivity 2 (Rlt_le 0 2 Hyp)); intro H1; elim H1;
+    intro H2;
+    [ assumption
+    | absurd (0 = sqrt 2);
+       [ apply (sym_not_eq (A:=R)); apply sqrt2_neq_0 | assumption ] ] ].
 Qed.
 
-Lemma Rlt_sqrt3_0 : ``0<(sqrt 3)``.
-Cut ~(O=(1)); [Intro H0; Assert Hyp:``0<2``; [Sup0 | Generalize (Rlt_le ``0`` ``2`` Hyp); Intro H1; Assert Hyp2:``0<3``; [Sup0 | Generalize (Rlt_le ``0`` ``3`` Hyp2); Intro H2; Generalize (lt_INR_0 (1) (neq_O_lt (1) H0)); Unfold INR; Intro H3; Generalize (Rlt_compatibility ``2`` ``0`` ``1`` H3); Rewrite Rplus_sym; Rewrite Rplus_Ol; Replace ``2+1`` with ``3``; [Intro H4; Generalize (sqrt_lt_1 ``2`` ``3`` H1 H2 H4); Clear H3; Intro H3; Apply (Rlt_trans ``0`` ``(sqrt 2)`` ``(sqrt 3)`` Rlt_sqrt2_0 H3) | Ring]]] | Discriminate].
+Lemma Rlt_sqrt3_0 : 0 < sqrt 3.
+cut (0%nat <> 1%nat);
+ [ intro H0; assert (Hyp : 0 < 2);
+    [ prove_sup0
+    | generalize (Rlt_le 0 2 Hyp); intro H1; assert (Hyp2 : 0 < 3);
+       [ prove_sup0
+       | generalize (Rlt_le 0 3 Hyp2); intro H2;
+          generalize (lt_INR_0 1 (neq_O_lt 1 H0)); 
+          unfold INR in |- *; intro H3;
+          generalize (Rplus_lt_compat_l 2 0 1 H3); 
+          rewrite Rplus_comm; rewrite Rplus_0_l; replace (2 + 1) with 3;
+          [ intro H4; generalize (sqrt_lt_1 2 3 H1 H2 H4); clear H3; intro H3;
+             apply (Rlt_trans 0 (sqrt 2) (sqrt 3) Rlt_sqrt2_0 H3)
+          | ring ] ] ]
+ | discriminate ].
 Qed.
 
-Lemma PI4_RGT_0 : ``0<PI/4``.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0].
+Lemma PI4_RGT_0 : 0 < PI / 4.
+unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+ [ apply PI_RGT_0 | apply Rinv_0_lt_compat; prove_sup0 ].
 Qed.
 
-Lemma cos_PI4 : ``(cos (PI/4))==1/(sqrt 2)``.
-Proof with Trivial.
-Apply Rsqr_inj.
-Apply cos_ge_0.
-Left; Apply (Rlt_trans ``-(PI/2)`` R0 ``PI/4`` _PI2_RLT_0 PI4_RGT_0).
-Left; Apply PI4_RLT_PI2.
-Left; Apply (Rmult_lt_pos R1 ``(Rinv (sqrt 2))``).
-Sup.
-Apply Rlt_Rinv; Apply Rlt_sqrt2_0.
-Rewrite Rsqr_div.
-Rewrite Rsqr_1; Rewrite Rsqr_sqrt.
-Assert H : ``2<>0``; [DiscrR | Idtac].
-Unfold Rsqr; Pattern 1 ``(cos (PI/4))``; Rewrite <- sin_cos_PI4; Replace ``(sin (PI/4))*(cos (PI/4))`` with ``(1/2)*(2*(sin (PI/4))*(cos (PI/4)))``.
-Rewrite <- sin_2a; Replace ``2*(PI/4)`` with ``PI/2``.
-Rewrite sin_PI2.
-Apply Rmult_1r.
-Unfold Rdiv; Rewrite (Rmult_sym ``2``); Rewrite Rinv_Rmult.
-Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r.
-Unfold Rdiv; Rewrite Rmult_1l; Repeat Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l.
-Left; Sup.
-Apply sqrt2_neq_0.
+Lemma cos_PI4 : cos (PI / 4) = 1 / sqrt 2.
+Proof with trivial.
+apply Rsqr_inj...
+apply cos_ge_0...
+left; apply (Rlt_trans (- (PI / 2)) 0 (PI / 4) _PI2_RLT_0 PI4_RGT_0)...
+left; apply PI4_RLT_PI2...
+left; apply (Rmult_lt_0_compat 1 (/ sqrt 2))...
+prove_sup...
+apply Rinv_0_lt_compat; apply Rlt_sqrt2_0...
+rewrite Rsqr_div...
+rewrite Rsqr_1; rewrite Rsqr_sqrt...
+assert (H : 2 <> 0); [ discrR | idtac ]...
+unfold Rsqr in |- *; pattern (cos (PI / 4)) at 1 in |- *;
+ rewrite <- sin_cos_PI4;
+ replace (sin (PI / 4) * cos (PI / 4)) with
+  (1 / 2 * (2 * sin (PI / 4) * cos (PI / 4)))...
+rewrite <- sin_2a; replace (2 * (PI / 4)) with (PI / 2)...
+rewrite sin_PI2...
+apply Rmult_1_r...
+unfold Rdiv in |- *; rewrite (Rmult_comm 2); rewrite Rinv_mult_distr...
+repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r...
+unfold Rdiv in |- *; rewrite Rmult_1_l; repeat rewrite <- Rmult_assoc...
+rewrite <- Rinv_l_sym...
+rewrite Rmult_1_l...
+left; prove_sup...
+apply sqrt2_neq_0...
 Qed.
 
-Lemma sin_PI4 : ``(sin (PI/4))==1/(sqrt 2)``.
-Rewrite sin_cos_PI4; Apply cos_PI4.
+Lemma sin_PI4 : sin (PI / 4) = 1 / sqrt 2.
+rewrite sin_cos_PI4; apply cos_PI4.
 Qed.
 
-Lemma tan_PI4 : ``(tan (PI/4))==1``.
-Unfold tan; Rewrite sin_cos_PI4.
-Unfold Rdiv; Apply Rinv_r.
-Change ``(cos (PI/4))<>0``; Rewrite cos_PI4; Apply R1_sqrt2_neq_0.
+Lemma tan_PI4 : tan (PI / 4) = 1.
+unfold tan in |- *; rewrite sin_cos_PI4.
+unfold Rdiv in |- *; apply Rinv_r.
+change (cos (PI / 4) <> 0) in |- *; rewrite cos_PI4; apply R1_sqrt2_neq_0.
 Qed.
 
-Lemma cos3PI4 : ``(cos (3*(PI/4)))==-1/(sqrt 2)``.
-Proof with Trivial.
-Replace ``3*(PI/4)`` with ``(PI/2)-(-(PI/4))``.
-Rewrite cos_shift; Rewrite sin_neg; Rewrite sin_PI4.
-Unfold Rdiv; Rewrite Ropp_mul1.
-Unfold Rminus; Rewrite Ropp_Ropp; Pattern 1 PI; Rewrite double_var; Unfold Rdiv; Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_Rmult; [Ring | DiscrR | DiscrR].
+Lemma cos3PI4 : cos (3 * (PI / 4)) = -1 / sqrt 2.
+Proof with trivial.
+replace (3 * (PI / 4)) with (PI / 2 - - (PI / 4))...
+rewrite cos_shift; rewrite sin_neg; rewrite sin_PI4...
+unfold Rdiv in |- *; rewrite Ropp_mult_distr_l_reverse...
+unfold Rminus in |- *; rewrite Ropp_involutive; pattern PI at 1 in |- *;
+ rewrite double_var; unfold Rdiv in |- *; rewrite Rmult_plus_distr_r;
+ repeat rewrite Rmult_assoc; rewrite <- Rinv_mult_distr;
+ [ ring | discrR | discrR ]...
 Qed.
 
-Lemma sin3PI4 : ``(sin (3*(PI/4)))==1/(sqrt 2)``.
-Proof with Trivial.
-Replace ``3*(PI/4)`` with ``(PI/2)-(-(PI/4))``.
-Rewrite sin_shift; Rewrite cos_neg; Rewrite cos_PI4.
-Unfold Rminus; Rewrite Ropp_Ropp; Pattern 1 PI; Rewrite double_var; Unfold Rdiv; Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_Rmult; [Ring | DiscrR | DiscrR].
+Lemma sin3PI4 : sin (3 * (PI / 4)) = 1 / sqrt 2.
+Proof with trivial.
+replace (3 * (PI / 4)) with (PI / 2 - - (PI / 4))...
+rewrite sin_shift; rewrite cos_neg; rewrite cos_PI4...
+unfold Rminus in |- *; rewrite Ropp_involutive; pattern PI at 1 in |- *;
+ rewrite double_var; unfold Rdiv in |- *; rewrite Rmult_plus_distr_r;
+ repeat rewrite Rmult_assoc; rewrite <- Rinv_mult_distr;
+ [ ring | discrR | discrR ]...
 Qed.
 
-Lemma cos_PI6 : ``(cos (PI/6))==(sqrt 3)/2``.
-Proof with Trivial.
-Apply Rsqr_inj.
-Apply cos_ge_0.
-Left; Apply (Rlt_trans ``-(PI/2)`` R0 ``PI/6`` _PI2_RLT_0 PI6_RGT_0).
-Left; Apply PI6_RLT_PI2.
-Left; Apply (Rmult_lt_pos ``(sqrt 3)`` ``(Rinv 2)``).
-Apply Rlt_sqrt3_0.
-Apply Rlt_Rinv; Sup0.
-Assert H : ``2<>0``; [DiscrR | Idtac].
-Assert H1 : ``4<>0``; [Apply prod_neq_R0 | Idtac].
-Rewrite Rsqr_div.
-Rewrite cos2; Unfold Rsqr; Rewrite sin_PI6; Rewrite sqrt_def.
-Unfold Rdiv; Rewrite Rmult_1l; Apply r_Rmult_mult with ``4``.
-Rewrite Rminus_distr; Rewrite (Rmult_sym ``3``); Repeat Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
-Rewrite Rmult_1l; Rewrite Rmult_1r.
-Rewrite <- (Rmult_sym ``/2``); Repeat Rewrite <- Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1l; Rewrite <- Rinv_r_sym.
-Ring.
-Left; Sup0.
+Lemma cos_PI6 : cos (PI / 6) = sqrt 3 / 2.
+Proof with trivial.
+apply Rsqr_inj...
+apply cos_ge_0...
+left; apply (Rlt_trans (- (PI / 2)) 0 (PI / 6) _PI2_RLT_0 PI6_RGT_0)...
+left; apply PI6_RLT_PI2...
+left; apply (Rmult_lt_0_compat (sqrt 3) (/ 2))...
+apply Rlt_sqrt3_0...
+apply Rinv_0_lt_compat; prove_sup0...
+assert (H : 2 <> 0); [ discrR | idtac ]...
+assert (H1 : 4 <> 0); [ apply prod_neq_R0 | idtac ]...
+rewrite Rsqr_div...
+rewrite cos2; unfold Rsqr in |- *; rewrite sin_PI6; rewrite sqrt_def...
+unfold Rdiv in |- *; rewrite Rmult_1_l; apply Rmult_eq_reg_l with 4...
+rewrite Rmult_minus_distr_l; rewrite (Rmult_comm 3);
+ repeat rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym...
+rewrite Rmult_1_l; rewrite Rmult_1_r...
+rewrite <- (Rmult_comm (/ 2)); repeat rewrite <- Rmult_assoc...
+rewrite <- Rinv_l_sym...
+rewrite Rmult_1_l; rewrite <- Rinv_r_sym...
+ring...
+left; prove_sup0...
 Qed.
 
-Lemma tan_PI6 : ``(tan (PI/6))==1/(sqrt 3)``.
-Unfold tan; Rewrite sin_PI6; Rewrite cos_PI6; Unfold Rdiv; Repeat Rewrite Rmult_1l; Rewrite Rinv_Rmult.
-Rewrite Rinv_Rinv.
-Rewrite (Rmult_sym ``/2``); Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym.
-Apply Rmult_1r.
-DiscrR.
-DiscrR.
-Red; Intro; Assert H1 := Rlt_sqrt3_0; Rewrite H in H1; Elim (Rlt_antirefl ``0`` H1).
-Apply Rinv_neq_R0; DiscrR.
+Lemma tan_PI6 : tan (PI / 6) = 1 / sqrt 3.
+unfold tan in |- *; rewrite sin_PI6; rewrite cos_PI6; unfold Rdiv in |- *;
+ repeat rewrite Rmult_1_l; rewrite Rinv_mult_distr.
+rewrite Rinv_involutive.
+rewrite (Rmult_comm (/ 2)); rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+apply Rmult_1_r.
+discrR.
+discrR.
+red in |- *; intro; assert (H1 := Rlt_sqrt3_0); rewrite H in H1;
+ elim (Rlt_irrefl 0 H1).
+apply Rinv_neq_0_compat; discrR.
 Qed.
 
-Lemma sin_PI3 : ``(sin (PI/3))==(sqrt 3)/2``.
-Rewrite sin_PI3_cos_PI6; Apply cos_PI6.
+Lemma sin_PI3 : sin (PI / 3) = sqrt 3 / 2.
+rewrite sin_PI3_cos_PI6; apply cos_PI6.
 Qed.
 
-Lemma cos_PI3 : ``(cos (PI/3))==1/2``.
-Rewrite sin_PI6_cos_PI3; Apply sin_PI6.
+Lemma cos_PI3 : cos (PI / 3) = 1 / 2.
+rewrite sin_PI6_cos_PI3; apply sin_PI6.
 Qed.
 
-Lemma tan_PI3 : ``(tan (PI/3))==(sqrt 3)``.
-Unfold tan; Rewrite sin_PI3; Rewrite cos_PI3; Unfold Rdiv; Rewrite Rmult_1l; Rewrite Rinv_Rinv.
-Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Apply Rmult_1r.
-DiscrR.
-DiscrR.
+Lemma tan_PI3 : tan (PI / 3) = sqrt 3.
+unfold tan in |- *; rewrite sin_PI3; rewrite cos_PI3; unfold Rdiv in |- *;
+ rewrite Rmult_1_l; rewrite Rinv_involutive.
+rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+apply Rmult_1_r.
+discrR.
+discrR.
 Qed.
 
-Lemma sin_2PI3 : ``(sin (2*(PI/3)))==(sqrt 3)/2``.
-Rewrite double; Rewrite sin_plus; Rewrite sin_PI3; Rewrite cos_PI3; Unfold Rdiv; Repeat Rewrite Rmult_1l; Rewrite (Rmult_sym ``/2``); Repeat Rewrite <- Rmult_assoc; Rewrite double_var; Reflexivity.
+Lemma sin_2PI3 : sin (2 * (PI / 3)) = sqrt 3 / 2.
+rewrite double; rewrite sin_plus; rewrite sin_PI3; rewrite cos_PI3;
+ unfold Rdiv in |- *; repeat rewrite Rmult_1_l; rewrite (Rmult_comm (/ 2));
+ repeat rewrite <- Rmult_assoc; rewrite double_var; 
+ reflexivity.
 Qed.
 
-Lemma cos_2PI3 : ``(cos (2*(PI/3)))==-1/2``.
-Proof with Trivial.
-Assert H : ``2<>0``; [DiscrR | Idtac].
-Assert H0 : ``4<>0``; [Apply prod_neq_R0 | Idtac].
-Rewrite double; Rewrite cos_plus; Rewrite sin_PI3; Rewrite cos_PI3; Unfold Rdiv; Rewrite Rmult_1l; Apply r_Rmult_mult with ``4``.
-Rewrite Rminus_distr; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
-Repeat Rewrite Rmult_assoc; Rewrite <- (Rinv_l_sym).
-Rewrite Rmult_1r; Rewrite <- Rinv_r_sym.
-Pattern 4 ``2``; Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Rewrite Ropp_mul3; Rewrite Rmult_1r.
-Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Rewrite (Rmult_sym ``2``); Rewrite (Rmult_sym ``/2``).
-Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Rewrite sqrt_def.
-Ring.
-Left; Sup.
+Lemma cos_2PI3 : cos (2 * (PI / 3)) = -1 / 2.
+Proof with trivial.
+assert (H : 2 <> 0); [ discrR | idtac ]...
+assert (H0 : 4 <> 0); [ apply prod_neq_R0 | idtac ]...
+rewrite double; rewrite cos_plus; rewrite sin_PI3; rewrite cos_PI3;
+ unfold Rdiv in |- *; rewrite Rmult_1_l; apply Rmult_eq_reg_l with 4...
+rewrite Rmult_minus_distr_l; repeat rewrite Rmult_assoc;
+ rewrite (Rmult_comm 2)...
+repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r; rewrite <- Rinv_r_sym...
+pattern 2 at 4 in |- *; rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc;
+ rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r; rewrite Ropp_mult_distr_r_reverse; rewrite Rmult_1_r...
+rewrite (Rmult_comm 2); repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r; rewrite (Rmult_comm 2); rewrite (Rmult_comm (/ 2))...
+repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym...
+rewrite Rmult_1_r; rewrite sqrt_def...
+ring...
+left; prove_sup...
 Qed.
 
-Lemma tan_2PI3 : ``(tan (2*(PI/3)))==-(sqrt 3)``.
-Proof with Trivial.
-Assert H : ``2<>0``; [DiscrR | Idtac].
-Unfold tan; Rewrite sin_2PI3; Rewrite cos_2PI3; Unfold Rdiv; Rewrite Ropp_mul1; Rewrite Rmult_1l; Rewrite <- Ropp_Rinv.
-Rewrite Rinv_Rinv.
-Rewrite Rmult_assoc; Rewrite Ropp_mul3; Rewrite <- Rinv_l_sym.
-Ring.
-Apply Rinv_neq_R0.
+Lemma tan_2PI3 : tan (2 * (PI / 3)) = - sqrt 3.
+Proof with trivial.
+assert (H : 2 <> 0); [ discrR | idtac ]...
+unfold tan in |- *; rewrite sin_2PI3; rewrite cos_2PI3; unfold Rdiv in |- *;
+ rewrite Ropp_mult_distr_l_reverse; rewrite Rmult_1_l;
+ rewrite <- Ropp_inv_permute...
+rewrite Rinv_involutive...
+rewrite Rmult_assoc; rewrite Ropp_mult_distr_r_reverse; rewrite <- Rinv_l_sym...
+ring...
+apply Rinv_neq_0_compat...
 Qed.
 
-Lemma cos_5PI4 : ``(cos (5*(PI/4)))==-1/(sqrt 2)``.
-Proof with Trivial.
-Replace ``5*(PI/4)`` with ``(PI/4)+(PI)``.
-Rewrite neg_cos; Rewrite cos_PI4; Unfold Rdiv; Rewrite Ropp_mul1.
-Pattern 2 PI; Rewrite double_var; Pattern 2 3 PI; Rewrite double_var; Assert H : ``2<>0``; [DiscrR | Unfold Rdiv; Repeat Rewrite Rinv_Rmult; Try Ring].
+Lemma cos_5PI4 : cos (5 * (PI / 4)) = -1 / sqrt 2.
+Proof with trivial.
+replace (5 * (PI / 4)) with (PI / 4 + PI)...
+rewrite neg_cos; rewrite cos_PI4; unfold Rdiv in |- *;
+ rewrite Ropp_mult_distr_l_reverse...
+pattern PI at 2 in |- *; rewrite double_var; pattern PI at 2 3 in |- *;
+ rewrite double_var; assert (H : 2 <> 0);
+ [ discrR | unfold Rdiv in |- *; repeat rewrite Rinv_mult_distr; try ring ]...
 Qed.
 
-Lemma sin_5PI4 : ``(sin (5*(PI/4)))==-1/(sqrt 2)``.
-Proof with Trivial.
-Replace ``5*(PI/4)`` with ``(PI/4)+(PI)``.
-Rewrite neg_sin; Rewrite sin_PI4; Unfold Rdiv; Rewrite Ropp_mul1.
-Pattern 2 PI; Rewrite double_var; Pattern 2 3 PI; Rewrite double_var; Assert H : ``2<>0``; [DiscrR | Unfold Rdiv; Repeat Rewrite Rinv_Rmult; Try Ring].
+Lemma sin_5PI4 : sin (5 * (PI / 4)) = -1 / sqrt 2.
+Proof with trivial.
+replace (5 * (PI / 4)) with (PI / 4 + PI)...
+rewrite neg_sin; rewrite sin_PI4; unfold Rdiv in |- *;
+ rewrite Ropp_mult_distr_l_reverse...
+pattern PI at 2 in |- *; rewrite double_var; pattern PI at 2 3 in |- *;
+ rewrite double_var; assert (H : 2 <> 0);
+ [ discrR | unfold Rdiv in |- *; repeat rewrite Rinv_mult_distr; try ring ]...
 Qed.
 
-Lemma sin_cos5PI4 : ``(cos (5*(PI/4)))==(sin (5*(PI/4)))``.
-Rewrite cos_5PI4; Rewrite sin_5PI4; Reflexivity.
+Lemma sin_cos5PI4 : cos (5 * (PI / 4)) = sin (5 * (PI / 4)).
+rewrite cos_5PI4; rewrite sin_5PI4; reflexivity.
 Qed.
 
-Lemma Rgt_3PI2_0 : ``0<3*(PI/2)``.
-Apply Rmult_lt_pos; [Sup0 | Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0]].
+Lemma Rgt_3PI2_0 : 0 < 3 * (PI / 2).
+apply Rmult_lt_0_compat;
+ [ prove_sup0
+ | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+    [ apply PI_RGT_0 | apply Rinv_0_lt_compat; prove_sup0 ] ].
 Qed.
 
-Lemma Rgt_2PI_0 : ``0<2*PI``.
-Apply Rmult_lt_pos; [Sup0 | Apply PI_RGT_0].
+Lemma Rgt_2PI_0 : 0 < 2 * PI.
+apply Rmult_lt_0_compat; [ prove_sup0 | apply PI_RGT_0 ].
 Qed.
 
-Lemma Rlt_PI_3PI2 : ``PI<3*(PI/2)``.
-Generalize PI2_RGT_0; Intro H1; Generalize (Rlt_compatibility PI ``0`` ``PI/2`` H1); Replace ``PI+(PI/2)`` with ``3*(PI/2)``.
-Rewrite Rplus_Or; Intro H2; Assumption.
-Pattern 2 PI; Rewrite double_var; Ring.
+Lemma Rlt_PI_3PI2 : PI < 3 * (PI / 2).
+generalize PI2_RGT_0; intro H1;
+ generalize (Rplus_lt_compat_l PI 0 (PI / 2) H1);
+ replace (PI + PI / 2) with (3 * (PI / 2)).
+rewrite Rplus_0_r; intro H2; assumption.
+pattern PI at 2 in |- *; rewrite double_var; ring.
 Qed. 
  
-Lemma Rlt_3PI2_2PI : ``3*(PI/2)<2*PI``.
-Generalize PI2_RGT_0; Intro H1; Generalize (Rlt_compatibility ``3*(PI/2)`` ``0`` ``PI/2`` H1); Replace ``3*(PI/2)+(PI/2)`` with ``2*PI``.
-Rewrite Rplus_Or; Intro H2; Assumption.
-Rewrite double; Pattern 1 2 PI; Rewrite double_var; Ring.
+Lemma Rlt_3PI2_2PI : 3 * (PI / 2) < 2 * PI.
+generalize PI2_RGT_0; intro H1;
+ generalize (Rplus_lt_compat_l (3 * (PI / 2)) 0 (PI / 2) H1);
+ replace (3 * (PI / 2) + PI / 2) with (2 * PI).
+rewrite Rplus_0_r; intro H2; assumption.
+rewrite double; pattern PI at 1 2 in |- *; rewrite double_var; ring.
 Qed.
 
 (***************************************************************)
 (* Radian -> Degree | Degree -> Radian                         *)
 (***************************************************************)
 
-Definition plat : R := ``180``.
-Definition toRad [x:R] : R := ``x*PI*/plat``.
-Definition toDeg [x:R] : R := ``x*plat*/PI``.
+Definition plat : R := 180.
+Definition toRad (x:R) : R := x * PI * / plat.
+Definition toDeg (x:R) : R := x * plat * / PI.
 
-Lemma rad_deg : (x:R) (toRad (toDeg x))==x.
-Intro; Unfold toRad toDeg; Replace ``x*plat*/PI*PI*/plat`` with ``x*(plat*/plat)*(PI*/PI)``; [Idtac | Ring].
-Repeat Rewrite <- Rinv_r_sym.
-Ring.
-Apply PI_neq0.
-Unfold plat; DiscrR.
+Lemma rad_deg : forall x:R, toRad (toDeg x) = x.
+intro; unfold toRad, toDeg in |- *;
+ replace (x * plat * / PI * PI * / plat) with
+  (x * (plat * / plat) * (PI * / PI)); [ idtac | ring ].
+repeat rewrite <- Rinv_r_sym.
+ring.
+apply PI_neq0.
+unfold plat in |- *; discrR.
 Qed.
 
-Lemma toRad_inj : (x,y:R) (toRad x)==(toRad y) -> x==y.
-Intros; Unfold toRad in H; Apply r_Rmult_mult with PI.
-Rewrite <- (Rmult_sym x); Rewrite <- (Rmult_sym y).
-Apply r_Rmult_mult with ``/plat``.
-Rewrite <- (Rmult_sym ``x*PI``); Rewrite <- (Rmult_sym ``y*PI``); Assumption.
-Apply Rinv_neq_R0; Unfold plat; DiscrR.
-Apply PI_neq0.
+Lemma toRad_inj : forall x y:R, toRad x = toRad y -> x = y.
+intros; unfold toRad in H; apply Rmult_eq_reg_l with PI.
+rewrite <- (Rmult_comm x); rewrite <- (Rmult_comm y).
+apply Rmult_eq_reg_l with (/ plat).
+rewrite <- (Rmult_comm (x * PI)); rewrite <- (Rmult_comm (y * PI));
+ assumption.
+apply Rinv_neq_0_compat; unfold plat in |- *; discrR.
+apply PI_neq0.
 Qed.
 
-Lemma deg_rad : (x:R) (toDeg (toRad x))==x.
-Intro x; Apply toRad_inj; Rewrite -> (rad_deg (toRad x)); Reflexivity.
+Lemma deg_rad : forall x:R, toDeg (toRad x) = x.
+intro x; apply toRad_inj; rewrite (rad_deg (toRad x)); reflexivity.
 Qed.
 
-Definition sind [x:R] : R := (sin (toRad x)).
-Definition cosd [x:R] : R := (cos (toRad x)).
-Definition tand [x:R] : R := (tan (toRad x)).
+Definition sind (x:R) : R := sin (toRad x).
+Definition cosd (x:R) : R := cos (toRad x).
+Definition tand (x:R) : R := tan (toRad x).
 
-Lemma Rsqr_sin_cos_d_one : (x:R) ``(Rsqr (sind x))+(Rsqr (cosd x))==1``.
-Intro x; Unfold sind; Unfold cosd; Apply sin2_cos2.
+Lemma Rsqr_sin_cos_d_one : forall x:R, Rsqr (sind x) + Rsqr (cosd x) = 1.
+intro x; unfold sind in |- *; unfold cosd in |- *; apply sin2_cos2.
 Qed.
 
 (***************************************************)
 (*                Other properties                 *)
 (***************************************************)
 
-Lemma sin_lb_ge_0 : (a:R) ``0<=a``->``a<=PI/2``->``0<=(sin_lb a)``.
-Intros; Case (total_order R0 a); Intro.
-Left; Apply sin_lb_gt_0; Assumption.
-Elim H1; Intro.
-Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sum_f_R0; Unfold sin_term; Repeat Rewrite pow_ne_zero.
-Unfold Rdiv; Repeat Rewrite Rmult_Ol; Repeat Rewrite Rmult_Or; Repeat Rewrite Rplus_Or; Right; Reflexivity.
-Discriminate.
-Discriminate.
-Discriminate.
-Discriminate.
-Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` a ``0`` H H2)).
+Lemma sin_lb_ge_0 : forall a:R, 0 <= a -> a <= PI / 2 -> 0 <= sin_lb a.
+intros; case (Rtotal_order 0 a); intro.
+left; apply sin_lb_gt_0; assumption.
+elim H1; intro.
+rewrite <- H2; unfold sin_lb in |- *; unfold sin_approx in |- *;
+ unfold sum_f_R0 in |- *; unfold sin_term in |- *; 
+ repeat rewrite pow_ne_zero.
+unfold Rdiv in |- *; repeat rewrite Rmult_0_l; repeat rewrite Rmult_0_r;
+ repeat rewrite Rplus_0_r; right; reflexivity.
+discriminate.
+discriminate.
+discriminate.
+discriminate.
+elim (Rlt_irrefl 0 (Rle_lt_trans 0 a 0 H H2)).
 Qed.

@@ -12,53 +12,57 @@
 
 Set Implicit Arguments.
 
-Inductive JMeq [A:Set;x:A] : (B:Set)B->Prop := 
-	JMeq_refl : (JMeq x x).
+Inductive JMeq (A:Set) (x:A) : forall B:Set, B -> Prop :=
+    JMeq_refl : JMeq x x.
 Reset JMeq_ind.
 
-Hints Resolve JMeq_refl.
+Hint Resolve JMeq_refl.
 
-Lemma sym_JMeq : (A,B:Set)(x:A)(y:B)(JMeq x y)->(JMeq y x).
-NewDestruct 1; Trivial.
+Lemma sym_JMeq : forall (A B:Set) (x:A) (y:B), JMeq x y -> JMeq y x.
+destruct 1; trivial.
 Qed.
 
-Hints Immediate sym_JMeq.
+Hint Immediate sym_JMeq.
 
-Lemma trans_JMeq : (A,B,C:Set)(x:A)(y:B)(z:C)
-	(JMeq x y)->(JMeq y z)->(JMeq x z).
-NewDestruct 1; Trivial.
+Lemma trans_JMeq :
+ forall (A B C:Set) (x:A) (y:B) (z:C), JMeq x y -> JMeq y z -> JMeq x z.
+destruct 1; trivial.
 Qed.
 
-Axiom JMeq_eq : (A:Set)(x,y:A)(JMeq x y)->(x=y).
+Axiom JMeq_eq : forall (A:Set) (x y:A), JMeq x y -> x = y.
 
-Lemma JMeq_ind : (A:Set)(x,y:A)(P:A->Prop)(P x)->(JMeq x y)->(P y).
-Intros A x y P H H'; Case JMeq_eq with 1:=H'; Trivial.
+Lemma JMeq_ind : forall (A:Set) (x y:A) (P:A -> Prop), P x -> JMeq x y -> P y.
+intros A x y P H H'; case JMeq_eq with (1 := H'); trivial.
 Qed.
 
-Lemma JMeq_rec : (A:Set)(x,y:A)(P:A->Set)(P x)->(JMeq x y)->(P y).
-Intros A x y P H H'; Case JMeq_eq with 1:=H'; Trivial.
+Lemma JMeq_rec : forall (A:Set) (x y:A) (P:A -> Set), P x -> JMeq x y -> P y.
+intros A x y P H H'; case JMeq_eq with (1 := H'); trivial.
 Qed.
 
-Lemma JMeq_ind_r : (A:Set)(x,y:A)(P:A->Prop)(P y)->(JMeq x y)->(P x).
-Intros A x y P H H'; Case JMeq_eq with 1:=(sym_JMeq H'); Trivial.
+Lemma JMeq_ind_r :
+ forall (A:Set) (x y:A) (P:A -> Prop), P y -> JMeq x y -> P x.
+intros A x y P H H'; case JMeq_eq with (1 := sym_JMeq H'); trivial.
 Qed.
 
-Lemma JMeq_rec_r : (A:Set)(x,y:A)(P:A->Set)(P y)->(JMeq x y)->(P x).
-Intros A x y P H H'; Case JMeq_eq with 1:=(sym_JMeq H'); Trivial.
+Lemma JMeq_rec_r :
+ forall (A:Set) (x y:A) (P:A -> Set), P y -> JMeq x y -> P x.
+intros A x y P H H'; case JMeq_eq with (1 := sym_JMeq H'); trivial.
 Qed.
 
 (** [JMeq] is equivalent to [(eq_dep Set [X]X)] *)
 
-Require Eqdep.
+Require Import Eqdep.
 
-Lemma JMeq_eq_dep : (A,B:Set)(x:A)(y:B)(JMeq x y)->(eq_dep Set [X]X A x B y).
+Lemma JMeq_eq_dep :
+ forall (A B:Set) (x:A) (y:B), JMeq x y -> eq_dep Set (fun X => X) A x B y.
 Proof.
-NewDestruct 1.
-Apply eq_dep_intro.
+destruct 1.
+apply eq_dep_intro.
 Qed.
 
-Lemma eq_dep_JMeq : (A,B:Set)(x:A)(y:B)(eq_dep Set [X]X A x B y)->(JMeq x y).
+Lemma eq_dep_JMeq :
+ forall (A B:Set) (x:A) (y:B), eq_dep Set (fun X => X) A x B y -> JMeq x y.
 Proof.
-NewDestruct 1.
-Apply JMeq_refl. 
+destruct 1.
+apply JMeq_refl. 
 Qed.
