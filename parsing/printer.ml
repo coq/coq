@@ -30,18 +30,31 @@ let pr_qualified_path sp id =
   if Nametab.sp_of_id (kind_of_path sp) id = sp then [<'sTR(string_of_id id)>]
   else [<'sTR(string_of_path (make_path (dirpath sp) id (kind_of_path sp)))>]
 
+let global_const_name sp =
+  try pr_qualified_path sp (basename sp)
+  with _ -> (* May happen in debug *)
+    [< 'sTR ("CONST("^(string_of_path sp)^")") >]
+
+let global_ind_name (sp,tyi) =
+  try pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
+  with _ -> (* May happen in debug *)
+    [< 'sTR ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")") >]
+
+let global_constr_name ((sp,tyi),i) =
+  try pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
+  with _ -> (* May happen in debug *)
+    [< 'sTR ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
+		  ^","^(string_of_int i)^")") >]
+
 let globpr gt = match gt with
   | Nvar(_,s) -> [< 'sTR s >]
   | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
   | Node(_,"CONST",[Path(_,sl,s)]) ->
-      let sp = section_path sl s in
-      pr_qualified_path sp (basename (section_path sl s))
+      global_const_name (section_path sl s)
   | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
-      let sp = section_path sl s in
-      pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
+      global_ind_name (section_path sl s, tyi)
   | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
-      let sp = section_path sl s in
-      pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
+      global_constr_name ((section_path sl s, tyi), i)
   | gt -> dfltpr gt
 
 let wrap_exception = function
