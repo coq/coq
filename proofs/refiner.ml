@@ -302,7 +302,7 @@ let extract_open_proof sigma pf =
 	open_obligations := (meta,abs_concl):: !open_obligations;
 	applist (mkMeta meta, List.map (fun (n,_) -> mkRel n) inst) 
 	  
-    | _ -> anomaly "Bug : a case has been forgotten in proof_extractor"
+    | _ -> anomaly "Bug: a case has been forgotten in proof_extractor"
   in
   let pfterm = proof_extractor [] pf in
   (pfterm, List.rev !open_obligations)
