@@ -1526,16 +1526,6 @@ let _ =
 	 |  _  -> invalid_arg "SOLVE"
        in
        (fun () -> 
-	  (match Tacinterp.is_just_undef_macro tcom with
-             | Some id -> 
-		 let msg =
- 	     	   if Pfedit.refining () then 
-		     "undefined command or tactic"
-	     	   else 
-		     "undefined command"
-		 in 
-		 error msg
-	     | None -> ());
 	  solve_nth n (Tacinterp.interp tcom);
 	  print_subgoals();
           (* in case a strict subtree was completed, 
