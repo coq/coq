@@ -86,7 +86,7 @@ let need_expansion impl ref =
   let typ = Global.type_of_global ref in
   let ctx = fst (decompose_prod_assum typ) in
   let nprods = List.length (List.filter (fun (_,b,_) -> b=None) ctx) in
-  let _,lastimpl = list_chop nprods impl in
+  impl <> [] & let _,lastimpl = list_chop nprods impl in
   List.filter is_status_implicit lastimpl <> []
 
 let print_name_infos ref =
