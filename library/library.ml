@@ -448,7 +448,6 @@ let rec_intern_qualified_library qid =
   | LibNotFound ->
       errorlabstrm "rec_intern_qualified_library"
       (str"Cannot find module " ++ pr_qualid qid ++ str" in loadpath")
-  | _ -> assert false
 
 let rec_intern_module_from_file qid f =
   (* A name is specified, we have to check it contains module id *)
