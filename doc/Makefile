@@ -48,7 +48,7 @@ REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
 
 REFMAN=Reference-Manual
 
-#VERSION=V6.3.1
+#VERSION=V7.1
 VERSION=POSITIONNEZ-CETTE-VARIABLE
 FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
@@ -325,7 +325,7 @@ doc-ftp-www-install: doc-ftp-install doc-www-install
 
 doc-ftp-install: 
 	- mkdir $(FTPDOCDIR)
-	cp $(ALLFTPDOCS) $(FTPHTMLDOCS) $(FTPDOCDIR)
+	cp $(FTPDOCS) $(FTPHTMLDOCS) $(FTPDOCDIR)
 	chmod g+w $(FTPDOCDIR)/*
 
 doc-www-install: 
