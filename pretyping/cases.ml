@@ -805,7 +805,7 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let predpred = it_mkLambda_or_LetIn (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
-      let predbody = mkMutCase (caseinfo, predpred, mkRel 1, brs) in
+      let predbody = mkMutCase (caseinfo, (nf_betaiota predpred), mkRel 1, brs) in
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (* "TODO4-2" *)
       error ("Unable to infer a Cases predicate\n"^
@@ -1131,7 +1131,7 @@ and match_current pb (n,tm) =
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info mis None tags in
 	  pattern_status tags,
-	  { uj_val = mkMutCase (ci, (*eta_reduce_if_rel*)pred,current,brvals);
+	  { uj_val = mkMutCase (ci, (*eta_reduce_if_rel*)(nf_betaiota pred),current,brvals);
 	    uj_type = typ }
 
 and compile_further pb firstnext rest =
