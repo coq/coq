@@ -26,10 +26,10 @@ let add_in_buff,get_buff =
          succ i),
      (fun len -> String.sub !buff 0 len);;
 
-(* Identifiers are [a-zA-Z_][a-zA-Z0-9_]*.  When arriving here the first
+(* Identifiers are [a-zA-Z_][.a-zA-Z0-9_]*.  When arriving here the first
    character has already been recognized. *)
 let rec ident len = parser
-  [<''_' | 'a'..'z' | 'A'..'Z' | '0'..'9' as c; s >] ->
+  [<''_' | '.' | 'a'..'z' | 'A'..'Z' | '0'..'9' as c; s >] ->
     ident (add_in_buff len c) s
 | [< >] -> let str = get_buff len in Tid(str);;
 
@@ -176,6 +176,8 @@ type parser_request =
       (* parse_file <int> <string> *)
   | ADD_PATH of string
       (* add_path <int> <string> *)
+  | ADD_REC_PATH of string * string
+      (* add_rec_path <int> <string> <ident> *)
   | LOAD_SYNTAX of string
       (* load_syntax_file <int> <ident> *)
   | GARBAGE
@@ -190,6 +192,7 @@ let parser_loop functions input_channel =
       quiet_parse_string_action,
       parse_file_action,
       add_path_action,
+      add_rec_path_action,
       load_syntax_action = functions in
   let rec parser_loop_rec input_channel =
   (let line = input_line input_channel in
@@ -206,6 +209,8 @@ let parser_loop functions input_channel =
                      0,QUIET_PARSE_STRING
         | [< 'Tid "parse_file" ; 'Tint reqid ; 'Tstring fname >] ->
                      reqid, PARSE_FILE fname
+        | [< 'Tid "add_rec_path"; 'Tint reqid ; 'Tstring directory ;  'Tid alias >]
+            -> reqid, ADD_REC_PATH(directory, alias)
         | [< 'Tid "add_path"; 'Tint reqid ; 'Tstring directory >]
             -> reqid, ADD_PATH directory
         | [< 'Tid "load_syntax_file"; 'Tint reqid; 'Tid module_name >] ->
@@ -229,6 +234,7 @@ let parser_loop functions input_channel =
    | PARSE_FILE file_name ->
         parse_file_action reqid file_name
    | ADD_PATH path -> add_path_action reqid path
+   | ADD_REC_PATH(path, alias) -> add_rec_path_action reqid path alias
    | LOAD_SYNTAX syn -> load_syntax_action reqid syn
    | GARBAGE -> ());
    parser_loop_rec input_channel in

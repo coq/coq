@@ -1,24 +1,15 @@
 open Util;;
-
 open System;;
-
 open Pp;;
-
 open Libnames;;
-
 open Library;;
-
 open Ascent;;
-
 open Vtp;;
-
 open Xlate;;
-
 open Line_parser;;
-
 open Pcoq;;
-
 open Vernacexpr;;
+open Mltop;;
 
 type parsed_tree =
   | P_cl of ct_COMMAND_LIST
@@ -389,39 +380,17 @@ let parse_file_action reqid file_name =
 		  (str "Error with file" ++ spc () ++ str file_name ++
 		   fnl () ++ Cerrors.explain_exn e));;
 
-(* This function is taken from Mltop.add_path *)
-
-let add_path dir coq_dirpath =
-  if exists_dir dir then
+let add_rec_path_action reqid string_arg ident_arg =
+  let directory_name = glob string_arg in
     begin
-      Library.add_load_path_entry (dir,coq_dirpath)
-    end
-  else
-    msg_warning (str ("Cannot open " ^ dir))
-
-let convert_string d =
-  try Names.id_of_string d
-  with _ -> failwith ("could not convert " ^ d)
-
-let add_rec_path dir coq_dirpath =
-  let dirs = all_subdirs dir in
-  let prefix = Names.repr_dirpath coq_dirpath in
-  if dirs <> [] then
-    let convert_dirs (lp,cp) =
-      (lp,
-       Names.make_dirpath ((List.map convert_string (List.rev cp))@prefix)) in
-    let dirs = map_succeed convert_dirs dirs in
-    begin
-      List.iter Library.add_load_path_entry dirs
-    end
-    else
-      msg_warning (str ("Cannot open " ^ dir));;
+      add_rec_path directory_name (Libnames.dirpath_of_string ident_arg)
+    end;;
+	
 
 let add_path_action reqid string_arg =
   let directory_name = glob string_arg in
-  let alias = Filename.basename directory_name in
     begin
-      add_path directory_name (Names.make_dirpath [Names.id_of_string alias])
+      add_path directory_name Names.empty_dirpath
     end;;
 
 let print_version_action () =
@@ -455,10 +424,10 @@ let coqparser_loop inchan =
  (parser_loop : (unit -> unit) *
                 (int -> string -> char Stream.t -> string list -> unit) *
                 (char Stream.t -> unit) * (int -> string -> unit) *
-                (int -> string -> unit) * (int -> string -> unit) ->
-                in_channel -> unit)
+                (int -> string -> unit) * (int -> string -> string -> unit) *
+                (int -> string -> unit) -> in_channel -> unit)
  (print_version_action, parse_string_action, quiet_parse_string_action, parse_file_action,
- add_path_action, load_syntax_action) inchan;;
+ add_path_action, add_rec_path_action, load_syntax_action) inchan;;
 
 if !Sys.interactive then ()
  else 
@@ -477,8 +446,7 @@ Libobject.relax true;
        add_path (Filename.concat coqdir "tactics")
 	 	 (Names.make_dirpath [Nameops.coq_root]);
        add_rec_path (Filename.concat coqdir "contrib")
-	 (Names.make_dirpath [Nameops.coq_root]);
-       List.iter (fun a -> msgnl (str a)) (get_load_path())
+	 (Names.make_dirpath [Nameops.coq_root])
      end;
 (let vernacrc =
    try
