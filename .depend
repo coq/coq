@@ -35,6 +35,8 @@ parsing/g_minicoq.cmi: /usr/local/lib/camlp4/grammar.cmi kernel/names.cmi \
     lib/pp.cmi kernel/term.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
+dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
+dev/db_printers.cmx: kernel/names.cmx lib/pp.cmx 
 kernel/abstraction.cmo: kernel/generic.cmi kernel/names.cmi kernel/sosub.cmi \
     kernel/term.cmi lib/util.cmi kernel/abstraction.cmi 
 kernel/abstraction.cmx: kernel/generic.cmx kernel/names.cmx kernel/sosub.cmx \
@@ -151,11 +153,13 @@ parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi
 parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
 toplevel/minicoq.cmo: kernel/constant.cmi parsing/g_minicoq.cmi \
     kernel/generic.cmi /usr/local/lib/camlp4/grammar.cmi kernel/inductive.cmi \
-    kernel/names.cmi lib/pp.cmi /usr/local/lib/camlp4/stdpp.cmi \
-    kernel/term.cmi kernel/typing.cmi lib/util.cmi 
+    kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
+    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmi kernel/typing.cmi \
+    lib/util.cmi 
 toplevel/minicoq.cmx: kernel/constant.cmx parsing/g_minicoq.cmi \
     kernel/generic.cmx /usr/local/lib/camlp4/grammar.cmi kernel/inductive.cmx \
-    kernel/names.cmx lib/pp.cmx /usr/local/lib/camlp4/stdpp.cmi \
-    kernel/term.cmx kernel/typing.cmx lib/util.cmx 
+    kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
+    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/typing.cmx \
+    lib/util.cmx 
 parsing/g_minicoq.cmo: parsing/g_minicoq.cmi 
 parsing/g_minicoq.cmx: parsing/g_minicoq.cmi 
