@@ -517,7 +517,7 @@ and pr_atom1 = function
   | TacDecompose (l,c) ->
       hov 1 (str "Decompose" ++ spc () ++
         hov 0 (str "[" ++ prlist_with_sep spc pr_ind l
-	  ++ str "]"))
+	  ++ str "]" ++ pr_arg pr_constr c))
   | TacSpecialize (n,c) ->
       hov 1 (str "Specialize" ++ pr_opt int n ++ pr_with_bindings c)
   | TacLApply c -> 
