@@ -601,7 +601,6 @@ let is_reference c =
   try let r = reference_of_constr c in true with _ -> false
 
 let is_head c t =
-  (is_reference c) &
   match kind_of_term t with
     | App (f,_) -> f = c
     | _ -> false
@@ -852,7 +851,7 @@ let declare_red_expr s f =
 let reduction_of_redexp = function
   | Red internal -> if internal then internal_red_product else red_product
   | Hnf -> hnf_constr
-  | Simpl (Some lp) -> contextually true lp nf
+  | Simpl (Some (_,c as lp)) -> contextually (is_reference c) lp nf
   | Simpl None -> nf
   | Cbv f -> cbv_norm_flags (make_flag f)
   | Lazy f -> clos_norm_flags (make_flag f)
