@@ -33,6 +33,7 @@ open Vernacexpr
 open Decl_kinds
 open Topconstr
 open Pretyping
+open Redexpr
 
 (* Pcoq hooks *)
 
@@ -247,10 +248,10 @@ let vernac_delimiters = Metasyntax.add_delimiters
 let vernac_bind_scope sc cll = 
   List.iter (fun cl -> Metasyntax.add_class_scope sc (cl_of_qualid cl)) cll
 
-let vernac_open_close_scope = Symbols.open_close_scope
+let vernac_open_close_scope = Notation.open_close_scope
 
 let vernac_arguments_scope qid scl =
-  Symbols.declare_arguments_scope (global qid) scl
+  Notation.declare_arguments_scope (global qid) scl
 
 let vernac_infix = Metasyntax.add_infix
 
@@ -830,11 +831,11 @@ let _ =
 let vernac_set_opacity opaq locqid =
   match Nametab.global locqid with
     | ConstRef sp ->
-	if opaq then Tacred.set_opaque_const sp
-	else Tacred.set_transparent_const sp
+	if opaq then set_opaque_const sp
+	else set_transparent_const sp
     | VarRef id ->
-	if opaq then Tacred.set_opaque_var id
-	else Tacred.set_transparent_var id
+	if opaq then set_opaque_var id
+	else set_transparent_var id
     | _ -> error "cannot set an inductive type or a constructor as transparent"
 
 let vernac_set_option key = function
@@ -889,7 +890,7 @@ let vernac_check_may_eval redexp glopt rc =
 	if !pcoq <> None then (out_some !pcoq).print_check j
 	else msg (print_judgment env j)
     | Some r ->
-	let redfun = Tacred.reduction_of_redexp (interp_redexp env evmap r) in
+	let redfun = reduction_of_red_expr (interp_redexp env evmap r) in
 	if !pcoq <> None
 	then (out_some !pcoq).print_eval (redfun env evmap) env rc j
 	else msg (print_eval redfun env j)
@@ -934,11 +935,11 @@ let vernac_print = function
   | PrintHintDb -> Auto.print_searchtable ()
   | PrintSetoids -> Setoid_replace.print_setoids()
   | PrintScopes ->
-      pp (Symbols.pr_scopes (Constrextern.without_symbols pr_rawterm))
+      pp (Notation.pr_scopes (Constrextern.without_symbols pr_rawterm))
   | PrintScope s ->
-      pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
+      pp (Notation.pr_scope (Constrextern.without_symbols pr_rawterm) s)
   | PrintVisibility s ->
-      pp (Symbols.pr_visibility (Constrextern.without_symbols pr_rawterm) s)
+      pp (Notation.pr_visibility (Constrextern.without_symbols pr_rawterm) s)
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 
@@ -980,7 +981,7 @@ let vernac_locate = function
   | LocateModule qid -> print_located_module qid
   | LocateFile f -> locate_file f
   | LocateNotation ntn ->
-      ppnl (Symbols.locate_notation (Constrextern.without_symbols pr_rawterm)
+      ppnl (Notation.locate_notation (Constrextern.without_symbols pr_rawterm)
 	(Metasyntax.standardise_locatable_notation ntn))
 
 (********************)

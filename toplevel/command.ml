@@ -18,7 +18,7 @@ open Entries
 open Inductive
 open Environ
 open Reduction
-open Tacred
+open Redexpr
 open Declare
 open Nametab
 open Names
@@ -37,7 +37,7 @@ open Indtypes
 open Vernacexpr
 open Decl_kinds
 open Pretyping
-open Symbols
+open Notation
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
@@ -124,7 +124,7 @@ let red_constant_entry bl ce = function
   | Some red ->
       let body = ce.const_entry_body in
       { ce with const_entry_body = 
-	under_binders (Global.env()) (reduction_of_redexp red)
+	under_binders (Global.env()) (reduction_of_red_expr red)
 	  (length_of_raw_binders bl)
 	  body }
 
