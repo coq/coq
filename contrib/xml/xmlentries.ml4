@@ -39,8 +39,10 @@ END
 
 (* Print XML and Show XML *)
 
+let print_global r fn = Xmlcommand.print (Nametab.global r) fn
+
 VERNAC COMMAND EXTEND Xml
-| [ "Print" "XML" filename(fn) global(id) ] -> [ Xmlcommand.print id fn ]
+| [ "Print" "XML" filename(fn) global(qid) ] -> [ print_global qid fn ]
 
 | [ "Show" "XML" filename(fn) "Proof" ] -> [ Xmlcommand.show fn ]
 END

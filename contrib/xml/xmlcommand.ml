@@ -180,6 +180,28 @@ let search_variables () =
 
 (* FUNCTIONS TO PRINT A SINGLE OBJECT OF COQ *)
 
+let rec join_dirs cwd =
+ function
+    []  -> assert false
+  | [he] -> cwd ^ "/" ^ he
+  | he::tail ->
+     let newcwd = cwd ^ "/" ^ he in
+      (try
+        Unix.mkdir newcwd 0o775
+       with _ -> () (* Let's ignore the errors on mkdir *)
+      ) ;
+      join_dirs newcwd tail
+;;
+
+let filename_of_path ?(keep_sections=false) xml_library_root kn tag =
+ let module N = Names in
+  match xml_library_root with
+     None -> None  (* stdout *)
+   | Some xml_library_root' ->
+      let tokens = Cic2acic.token_list_of_kernel_name ~keep_sections kn tag in
+       Some (join_dirs xml_library_root' tokens)
+;;
+
 let body_filename_of_filename =
  function
     Some f -> Some (f ^ ".body")
@@ -198,9 +220,20 @@ let prooftree_filename_of_filename =
   | None   -> None
 ;;
 
+let theory_filename xml_library_root =
+ let module N = Names in
+  match xml_library_root with
+    None -> None  (* stdout *)
+  | Some xml_library_root' ->
+     let toks = List.map N.string_of_id (N.repr_dirpath (Lib.library_dp ())) in
+     let hd = List.hd toks in
+     (* theory from A/B/C/F.v goes into A/B/C/F/F.theory *)
+     let alltoks = List.rev (hd :: toks) in
+       Some (join_dirs xml_library_root' alltoks ^ ".theory")
+
 let print_object uri obj sigma proof_tree_infos filename =
  (* function to pretty print and compress an XML file *)
-(*CSC: Unix.system "gzip ..." is an orrible non-portable solution. *)
+(*CSC: Unix.system "gzip ..." is an horrible non-portable solution. *)
  let pp xml filename =
   Xml.pp xml filename ;
   match filename with
@@ -400,6 +433,58 @@ let mk_inductive_obj sp packs variables hyps finite =
     Acic.InductiveDefinition (tys,params,nparams)
 ;;
 
+(* The current channel for .theory files *)
+let theory_channel = ref None;;
+
+let theory_output_string s = 
+  (* prepare for coqdoc post-processing *)
+  let s = "(** #"^s^"\n#*)\n" in
+  match !theory_channel with
+     Some ch -> output_string ch s;
+   | None -> print_string s; flush stdout
+;;
+
+let kind_of_object r =
+  let module Ln = Libnames in
+  let module DK = Decl_kinds in
+  match r with
+    Ln.IndRef kn -> "DEFINITION",
+      if (fst (Global.lookup_inductive kn)).Declarations.mind_finite then
+        try let _ = Recordops.find_structure kn in "Record"
+        with Not_found -> "Inductive"
+      else "CoInductive"
+  | Ln.VarRef id ->
+      (match Declare.variable_kind id with
+      | DK.IsAssumption DK.Definitional -> "VARIABLE","Assumption"
+      | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
+      | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
+      | DK.IsDefinition -> "VARIABLE","LocalDefinition"
+      | DK.IsConjecture -> "VARIABLE","Conjecture"
+      | DK.IsProof DK.LocalStatement -> "VARIABLE","Hypothesis")
+  | Ln.ConstRef sp ->
+      (match Declare.constant_kind (Nametab.sp_of_global r) with
+      | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
+      | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
+      | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
+      | DK.IsDefinition -> "DEFINITION","Definition"
+      | DK.IsConjecture -> "THEOREM","Conjecture"
+      | DK.IsProof thm -> "THEOREM",
+          match thm with
+          | DK.Theorem -> "Theorem"
+          | DK.Lemma -> "Lemma"
+          | DK.Fact -> "Fact"
+          | DK.Remark -> "Remark")
+  | Ln.ConstructRef _ -> 
+       Util.anomaly ("print: this should not happen")
+;;
+
+let print_object_kind uri (xmltag,variation) =
+  let s =
+    Printf.sprintf "<ht:%s uri=\"%s\" as=\"%s\"/>\n" xmltag uri variation
+  in
+  theory_output_string s
+;;
+
 (* print id dest                                                          *)
 (*  where sp   is the qualified identifier (section path) of a            *)
 (*             definition/theorem, variable or inductive definition       *)
@@ -408,7 +493,7 @@ let mk_inductive_obj sp packs variables hyps finite =
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print r fn =
+let print glob_ref xml_library_root =
  let module D = Declarations in
  let module De = Declare in
  let module G = Global in
@@ -417,17 +502,6 @@ let print r fn =
  let module T = Term in
  let module X = Xml in
  let module Ln = Libnames in
-  let (_,id) = Ln.repr_qualid (snd (Ln.qualid_of_reference r)) in
-  let glob_ref =
-(*CSC: ask Hugo why Nametab.global does not work with variables and *)
-(*CSC: we have to do this hugly try ... with                        *)
-   try
-    Nt.global r
-   with
-    _ ->
-      let (_,id) = Ln.repr_qualid (snd (Ln.qualid_of_reference r)) in
-      Ln.VarRef id
-  in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables () in
   let keep_sections,kn,tag,obj =
@@ -442,6 +516,7 @@ let print r fn =
        let (_,body,typ) = G.lookup_named id in
         true,kn,Cic2acic.Variable,mk_variable_obj id body typ
     | Ln.ConstRef kn ->
+       let id = N.id_of_label (N.label kn) in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
         false,kn,Cic2acic.Constant,mk_constant_obj id val0 typ variables hyps
@@ -454,8 +529,10 @@ let print r fn =
     | Ln.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
-   print_object (Cic2acic.uri_of_kernel_name ~keep_sections kn tag) obj
-    Evd.empty None fn
+  let fn = filename_of_path ~keep_sections xml_library_root kn tag in
+  let uri = Cic2acic.uri_of_kernel_name ~keep_sections kn tag in
+   print_object_kind uri (kind_of_object glob_ref);
+   print_object uri obj Evd.empty None fn
 ;;
 
 (* show dest                                                  *)
@@ -472,9 +549,11 @@ let show_pftreestate fn pftst id =
  let kn = Lib.make_kn id in
  let env = Global.env () in
  let obj = mk_current_proof_obj id val0 typ evar_map env in
-  print_object (Cic2acic.uri_of_kernel_name kn Cic2acic.Constant) obj evar_map
+ let uri = Cic2acic.uri_of_kernel_name kn Cic2acic.Constant in
+  print_object_kind uri  (kind_of_object (Libnames.ConstRef kn));
+  print_object uri obj evar_map
    (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
-    proof_tree_to_flattened_proof_tree)) fn 
+    proof_tree_to_flattened_proof_tree)) fn
 ;;
 
 let show fn =
@@ -506,18 +585,6 @@ let mkfilename dn sp ext =
   in
    aux 0
  in
- let rec join_dirs cwd =
-   function
-      []  -> assert false
-    | [he] -> "/" ^ he
-    | he::tail ->
-       let newcwd = cwd ^ "/" ^ he in
-        (try
-          Unix.mkdir newcwd 0o775
-         with _ -> () (* Let's ignore the errors on mkdir *)
-        ) ;
-        "/" ^ he ^ join_dirs newcwd tail
- in
   let module L = Library in
   let module S = System in
   let module N = Names in
@@ -527,7 +594,7 @@ let mkfilename dn sp ext =
     | Some basedir ->
 	let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
 	let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
-       Some (basedir ^ join_dirs basedir dir ^ "." ^ ext)
+       Some (join_dirs basedir dir ^ "." ^ ext)
 *) match dn with None -> None | Some _ -> Some "/tmp/nonloso"
 ;;
 
@@ -754,27 +821,18 @@ let printAll () =
 *)
 
 
-let rec join_dirs cwd =
- function
-    []  -> assert false
-  | [he] -> cwd ^ "/" ^ he
-  | he::tail ->
-     let newcwd = cwd ^ "/" ^ he in
-      (try
-        Unix.mkdir newcwd 0o775
-       with _ -> () (* Let's ignore the errors on mkdir *)
-      ) ;
-      join_dirs newcwd tail
-;;
-
-let filename_of_path ?(keep_sections=false) xml_library_root kn tag =
+(*CSC: Ask Hugo for a better solution *)
+(*
+let ref_of_kernel_name kn =
  let module N = Names in
-  match xml_library_root with
-     None -> None  (* stdout *)
-   | Some xml_library_root' ->
-      let tokens = Cic2acic.token_list_of_kernel_name ~keep_sections kn tag in
-       Some (join_dirs xml_library_root' tokens)
+ let module Ln = Libnames in
+  let (modpath,_,label) = N.repr_kn kn in
+   match modpath with
+      N.MPself _ -> Ln.Qualid (Ln.qualid_of_sp (Nametab.sp_of_global None kn))
+    | _ ->
+      Util.anomaly ("ref_of_kernel_name: the module path is not MPself")
 ;;
+*)
 
 (* Let's register the callbacks *)
 let xml_library_root =
@@ -794,27 +852,20 @@ let _ =
 let _ =
   Declare.set_xml_declare_variable
    (function (sp,kn) ->
-     let filename =
-      filename_of_path ~keep_sections:true xml_library_root kn
-       Cic2acic.Variable in
-     let dummy_location = -1,-1 in
-     let ref = Libnames.Qualid (dummy_location,Libnames.qualid_of_sp sp) in
-      print ref filename)
+      print (Libnames.VarRef (Libnames.basename sp)) xml_library_root)
 ;;
 
 let _ =
   Declare.set_xml_declare_constant
    (function (sp,kn) ->
-     let filename = filename_of_path xml_library_root kn Cic2acic.Constant in
-     let dummy_location = -1,-1 in
-     let ref = Libnames.Qualid (dummy_location,Libnames.qualid_of_sp sp) in
      match !proof_to_export with
         None ->
-          print ref filename
+          print (Libnames.ConstRef kn) xml_library_root
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
-         show_pftreestate filename pftreestate 
+        let fn = filename_of_path xml_library_root kn Cic2acic.Constant in
+         show_pftreestate fn pftreestate 
 	  (Names.id_of_label (Names.label kn)) ;
          proof_to_export := None)
 ;;
@@ -822,8 +873,38 @@ let _ =
 let _ =
   Declare.set_xml_declare_inductive
    (function (sp,kn) ->
-     let filename = filename_of_path xml_library_root kn Cic2acic.Inductive in
-     let dummy_location = -1,-1 in
-     let ref = Libnames.Qualid (dummy_location,Libnames.qualid_of_sp sp) in
-      print ref filename)
+      print (Libnames.IndRef (kn,0)) xml_library_root)
+;;
+
+let _ =
+  Vernac.set_xml_start_library
+   (function () ->
+     theory_channel :=
+       Util.option_app (fun fn -> open_out (fn^".v"))
+	 (theory_filename xml_library_root);
+     theory_output_string "<?xml version=\"1.0\"?>\n";
+     theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n")
+;;
+
+let _ =
+  Vernac.set_xml_end_library
+   (function () ->
+      theory_output_string "</html>\n";
+      Util.option_iter close_out !theory_channel;
+      Util.option_iter 
+	(fun fn ->
+	  let coqdoc = Coq_config.bindir^"/coqdoc" in
+	  let options = " --html -s --body-only --no-index -utf8 --raw-comments" in
+	  let dir = Util.out_some xml_library_root in
+          ignore (Sys.command (coqdoc^options^" -d "^dir^" "^fn^".v"));
+          ignore (Sys.command ("mv "^dir^"/*.html "^fn^".xml "));
+          ignore (Sys.command ("rm "^fn^".v"));
+          print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
+       (theory_filename xml_library_root))
+;;
+
+let _ =
+  Lexer.set_xml_output_comment
+    (fun s ->
+      output_string (match !theory_channel with Some ch -> ch | _ -> stdout) s)
 ;;
