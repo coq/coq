@@ -108,7 +108,8 @@ Proof
 
 End Proof_irrelevance_CCI.
 
-(** Remark: in CCI, [bool] can be taken in [Set] as well in the
-    paradox and since [~true=false] for [true] and [false] in
-    [bool], we get the inconsistency of [em : forall A:Prop, {A}+{~A}] in CCI
+(** Remark: in the Set-impredicative CCI, Hurkens' paradox still holds with
+    [bool] in [Set] and since [~true=false] for [true] and [false]
+    in [bool] from [Set], we get the inconsistency of
+    [em : forall A:Prop, {A}+{~A}] in the Set-impredicative CCI.
 *)
