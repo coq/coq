@@ -756,15 +756,15 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 You can use the \discriminate tactic.
 
 
-%\begin{coq_example}
-%Inductive toto : Set := 
-%	C1 : toto
-%      | C2 : toto.
+\begin{coq_example}
+Inductive toto : Set := 
+	C1 : toto
+      | C2 : toto.
 
-%Goal C1 <> C2.
-%discriminate.
-%Qed.
-%\end{coq_example}
+Goal C1 <> C2.
+discriminate.
+Qed.
+\end{coq_example}
 
 
 \Question[coqccoqtop]{What is the difference between coqc et coqtop ?}
