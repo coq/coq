@@ -967,6 +967,7 @@ $$
 \nlsep \TERM{SearchPattern}~\NT{constr-pattern}~\OPT{\NT{in-out-modules}}
 \nlsep \TERM{SearchRewrite}~\NT{constr-pattern}~\OPT{\NT{in-out-modules}}
 \nlsep \TERM{SearchAbout}~\NT{reference}~\OPT{\NT{in-out-modules}}
+\nlsep \TERM{SearchAbout}~\TERM{[}~\NT{ref-or-string}~\TERM{]}\OPT{\NT{in-out-modules}}
 \nlsep \KWD{Set}~\NT{ident}~\OPT{\NT{opt-value}}
 \nlsep \TERM{Unset}~\NT{ident}
 \nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\OPT{\NT{opt-value}}
@@ -984,6 +985,10 @@ $$
 \DEFNT{check-command}
        \TERM{Eval}~\NT{red-expr}~\KWD{in}~\NT{constr}
 \nlsep \TERM{Check}~\NT{constr}
+\SEPDEF
+\DEFNT{ref-or-string}
+       \NT{reference}
+\nlsep \NT{string}
 \end{rules}
 
 \begin{rules}
@@ -991,7 +996,7 @@ $$
        \TERM{Term}~\NT{reference}
 \nlsep \TERM{All}
 \nlsep \TERM{Section}~\NT{reference}
-\nlsep \TERM{Grammar}~\NT{ident}~\NT{ident}
+\nlsep \TERM{Grammar}~\NT{ident}
 \nlsep \TERM{LoadPath}
 \nlsep \TERM{Module}~\OPT{\KWD{Type}}~\NT{reference}
 \nlsep \TERM{Modules}
@@ -1150,7 +1155,7 @@ $$
 %%\nlsep \TERM{Show}~\TERM{Programs}
 \nlsep \TERM{Explain}~\TERM{Proof}~\OPT{\TERM{Tree}}~\STAR{\NT{int}}
 %% Go not documented
-\nlsep \TERM{Hint}~\NT{hint}~\OPT{\NT{inbases}}
+\nlsep \TERM{Hint}~\OPT{\TERM{Local}}~\NT{hint}~\OPT{\NT{inbases}}
 %% PrintConstr not documented
 \end{rules}
 
