@@ -63,6 +63,19 @@ let rec destSubCast c = match kind_of_term c with
   | Cast (b,u) -> (b,u)
   | _ -> assert false
 
+let rec adjust_conclusion a cs = function
+  | CProdN (loc,bl,c) -> CProdN (loc,bl,adjust_conclusion a cs c)
+  | CLetIn (loc,b,t,c) -> CLetIn (loc,b,t,adjust_conclusion a cs c)
+  | CHole loc ->
+      let (nar,name,params) = a in
+      if nar <> 0 then
+	user_err_loc (loc,"",
+	  str "Cannot infer the non constant arguments of the conclusion of "
+	  ++ pr_id cs);
+      let args = List.map (fun (id,_) -> CRef(Ident(loc,id))) params in
+      CAppExpl (loc,(None,Ident(loc,name)),List.rev args)
+  | c -> c
+
 (* Commands of the interface *)
 
 (* 1| Constant definitions *)
@@ -232,14 +245,28 @@ let interp_mutual lparams lnamearconstrs finite =
     Metasyntax.add_notation_interpretation df
       (AVar recname,larnames) (* no scope for tmp ntn *) scope)) notations;
   let ind_env_params = push_rel_context params ind_env in
+
   let mispecvec = 
     List.map2
       (fun ar (name,_,_,lname_constr) ->
 	 let constrnames, bodies = List.split lname_constr in
+
+         (* Compute the conclusions of constructor types *)
+	 (* for inductive given in ML syntax *)
+	 let nar = 
+	   List.length (fst (Reductionops.splay_arity env_params Evd.empty ar))
+	 in
+	 let bodies =
+	   List.map2 (adjust_conclusion (nar,name,params')) constrnames bodies
+	 in
+
+         (* Interpret the constructor types *)
          let constrs =
 	   List.map 
 	     (interp_type_with_implicits sigma ind_env_params ind_impls) bodies
 	 in
+
+         (* Build the inductive entry *)
 	 { mind_entry_params = params';
 	   mind_entry_typename = name;
 	   mind_entry_arity = ar;
@@ -288,7 +315,7 @@ let extract_coe_la_lc = function
 
 let build_mutual lind finite =
   let (coes,lparams,lnamearconstructs) = extract_coe_la_lc lind in
-  let notations,mie = interp_mutual lparams lnamearconstructs finite in
+  let notations,mie  =interp_mutual lparams lnamearconstructs finite in
   let kn = declare_mutual_with_eliminations mie in
   (* Declare the notations now bound to the inductive types *)
   list_iter_i (fun i ->
