@@ -92,11 +92,11 @@ pretty:	depend.ps
 # this is not perfect bot mostly WORKS! It just calls the main makefile
 
 %.cmi:	*.mli
-	make -C $(TOPDIR) $(BASEDIR)/$@
+	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@
 
 SOURCES=$(wildcard *.mli) $(wildcard *.ml) $(wildcard *.ml4)
 %.cmo:	$(SOURCES)
-	make -C $(TOPDIR) $(BASEDIR)/$@
+	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@
 
 coqtop:	
-	make -C $(TOPDIR) bin/coqtop.byte
+	$(MAKE) -C $(TOPDIR) bin/coqtop.byte

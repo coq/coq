@@ -182,17 +182,23 @@ let add_modtype l mte senv =
 	loads = senv.loads }
 
 
+
+(* full_add_module adds module with universes and constraints *)
+let full_add_module mp mb env =
+  let env = add_module_constraints env mb in
+  let env = Modops.add_module mp mb env in
+    env
+
 (* Insertion of modules *)
 
 let add_module l me senv = 
   check_label l senv.labset; 
   let mb = translate_module senv.env me in
   let mspec = module_spec_of_body mb in
-  let env' = add_module_constraints senv.env mb in
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let env'' = Modops.add_module mp mb env' in
+  let env' = full_add_module mp mb senv.env in
   mp, { old = senv.old;
-	env = env'';
+	env = env';
 	modinfo = senv.modinfo;
 	labset = Labset.add l senv.labset;
 	revsign = (l,SPBmodule mspec)::senv.revsign;
@@ -210,7 +216,7 @@ let start_module dir l params result senv =
     | (mbid,mte)::rest -> 
 	let mtb = translate_modtype env mte in
 	let env = 
-	  Modops.add_module (MPbound mbid) (module_body_of_type mtb) env 
+	  full_add_module (MPbound mbid) (module_body_of_type mtb) env 
 	in
 	let env,transrest = trans_params env rest in
 	env, (mbid,mtb)::transrest
@@ -281,12 +287,12 @@ let end_module l senv =
   let newenv = oldsenv.env in
   let newenv = 
     List.fold_left
-      (fun env (mp,mb) -> Modops.add_module mp mb env) 
+      (fun env (mp,mb) -> full_add_module mp mb env) 
       newenv
       senv.loads
   in
   let newenv = 
-    Modops.add_module mp mb newenv
+    full_add_module mp mb newenv
   in 
   mp, { old = oldsenv.old;
 	env = newenv;
@@ -307,7 +313,7 @@ let start_modtype dir l params senv =
     | (mbid,mte)::rest -> 
 	let mtb = translate_modtype env mte in
 	let env = 
-	  Modops.add_module (MPbound mbid) (module_body_of_type mtb) env 
+	  full_add_module (MPbound mbid) (module_body_of_type mtb) env 
 	in
 	let env,transrest = trans_params env rest in
 	env, (mbid,mtb)::transrest
@@ -349,9 +355,12 @@ let end_modtype l senv =
   let newenv = oldsenv.env in
   let newenv = 
     List.fold_left
-      (fun env (mp,mb) -> Modops.add_module mp mb env) 
+      (fun env (mp,mb) -> full_add_module mp mb env) 
       newenv
       senv.loads
+  in
+  let newenv = 
+    add_modtype_constraints newenv mtb 
   in
   let newenv = 
     Environ.add_modtype kn mtb newenv
@@ -461,7 +470,6 @@ calculated many times. Thic could be avoided in several ways:
 1 - for each file create a dummy environment containing only this
 file's components, merge this environment with the global
 environment, and store for the future (instead of just its type)
-The function Modops.add_module could be used unchanged.
 
 2 - create "persistent modules" environment table in Environ add put
 loaded by side-effect once and for all (like it is done in OCaml).
@@ -472,20 +480,8 @@ let import (dp,mb,depends) digest senv =
   check_imports senv depends;
   let mp = MPfile dp in
   let env = senv.env in
-(* <HACK> temporary -- only for libraries without module components *)
-  let add_constraints env = function
-    | _,SPBconst {const_constraints=constraints}  
-    | _,SPBmind {mind_constraints=constraints} ->
-	Environ.add_constraints constraints env
-    | _ -> todo "We are not ready for module components yet!"; env
-  in
-  let env = match mb.mod_type with
-    | MTBsig (_,sign) -> List.fold_left add_constraints env sign
-    | _ -> todo "We are not ready for non-structure libraries"; env
-  in
-(* </HACK> *)
   mp, { senv with 
-	  env = Modops.add_module mp mb env; 
+	  env = full_add_module mp mb env; 
 	  imports = (dp,digest)::senv.imports;
 	  loads = (mp,mb)::senv.loads }
 
@@ -499,4 +495,3 @@ let j_type j = j.uj_type
 let safe_infer senv = infer (env_of_senv senv)
     
 let typing senv = Typeops.typing (env_of_senv senv)
-

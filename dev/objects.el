@@ -62,10 +62,18 @@ let (inThing,outThing) =
       )
     )
   (mapcar 'f '(("constr"."subst_mps subst") 
+	       ("Coqast.t"."subst_ast subst") 
+	       ("Coqast.t list"."list_smartmap (subst_ast subst)") 
+	       ("'pat"."subst_pat subst") 
+	       ("'pat unparsing_hunk"."subst_hunk subst_pat subst")
+	       ("'pat unparsing_hunk list"."list_smartmap (subst_hunk subst_pat subst)") 
+	       ("'pat syntax_entry"."subst_syntax_entry subst_pat subst")
+	       ("'pat syntax_entry list"."list_smartmap (subst_syntax_entry subst_pat subst)") 
 	       ("constr option"."option_smartmap (subst_mps subst)")
 	       ("constr list"."list_smartmap (subst_mps subst)")
 	       ("constr array"."array_smartmap (subst_mps subst)")
 	       ("global_reference"."subst_global subst")
+	       ("extended_global_reference"."subst_ext subst")
 	       ("obj_typ"."subst_obj subst")
 	       )
 	  )
@@ -78,7 +86,7 @@ let (inThing,outThing) =
   (interactive "s")
   (save-excursion
     (query-replace-regexp
-     "\\([a-zA-z_0-9]*\\)[ 	]*:[ 	]*[a-zA-z_. ]*\\(;\\|[ 	
+     "\\([a-zA-z_0-9]*\\)[ 	]*:[ 	]*['a-zA-z_. ]*\\(;\\|[ 	
 ]*\}\\)"
      (concat "&& \\1\' == " name "\\1")
      )
@@ -91,7 +99,7 @@ let (inThing,outThing) =
   (interactive)
   (save-excursion 
     (query-replace-regexp
-     "\\([a-zA-z_0-9]*\\)[ 	]*:[ 	]*[a-zA-z_. ]*\\(;\\|[ 	
+     "\\([a-zA-z_0-9]*\\)[ 	]*:[ 	]*['a-zA-z_. ]*\\(;\\|[ 	
 ]*\}\\)"
      (concat "\\1 = \\1\' ;")
      )
