@@ -19,13 +19,13 @@ Grammar constr constr1 :=
         lconstr($l) "}" ] -> [ (proj1 $l1 $c2 $l) ]
 | proj2 [ "<" lconstr($l1) "," lconstr($c2) ">" "Snd" "{"
         lconstr($l) "}" ] -> [ (proj2 $l1 $c2 $l) ]
-| IF [ "either" constr($c) "and_then" constr($t) "or_else" constr($e) ] ->
-       [ (IF $c $t $e) ]
 | all [ "<" lconstr($l1) ">" "All" "(" lconstr($l2) ")" ] ->
-       [ (all $l1 $l2) ]
+      [ (all $l1 $l2) ]
 | eq_expl [ "<" lconstr($l1) ">" constr0($c1) "=" constr0($c2) ] ->
-            [ (eq $l1 $c1 $c2) ]
+          [ (eq $l1 $c1 $c2) ]
 | eq_impl [ constr0($c) "=" constr0($c2) ] -> [ (eq ? $c $c2) ]
+| IF [ "IF"   command($c1) "then" command($c2) "else" command($c3)] ->
+     [ (IF $c1 $c2 $c3) ]
 
 with constr2 :=
   not [ "~" constr2($c) ] -> [ (not $c) ]
@@ -62,10 +62,10 @@ Syntax constr
   | conj [ (conj $t1 $t2 $t3 $t4) ]
       -> [ [<hov 1> [<hov 1> "<" $t1:L "," [0 0] $t2:L ">" ] [0 0]
                     [<hov 1> "{" $t3:L "," [0 0] $t4:L "}"] ] ]
-  | IF [ either $c and_then $t or_else $e ]
-      -> [ [<hov 0> "either" [1 1] $c:E
-                [<hov 0> [1 1] "and_then" [1 1] $t:E ]
-                [<hov 0> [1 1] "or_else" [1 1] $e:E ]] ]
+  | IF [(IF $c1 then $c2 else $c3)] ->
+       [ [<hov 0> "IF " $c1:E [1 0]
+                  "then " $c2:E [1 0]
+                  "else " $c3:E ] ]
   ;
 
   level 2:

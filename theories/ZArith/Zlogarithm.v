@@ -87,9 +87,9 @@ Save.
   either [(log_sup p)=(log_inf p)+1] *)
 
 Theorem log_sup_log_inf : (p:positive)
-  either (POS p)=(two_p (log_inf p)) 
-  and_then (POS p)=(two_p (log_sup p))
-  or_else ` (log_sup p)=(Zs (log_inf p))`.
+  IF (POS p)=(two_p (log_inf p)) 
+  then (POS p)=(two_p (log_sup p))
+  else ` (log_sup p)=(Zs (log_inf p))`.
 
 Induction p; Intros;
 [ Elim H; Right; Simpl;
