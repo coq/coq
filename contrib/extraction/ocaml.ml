@@ -547,7 +547,7 @@ and pp_module_expr = function
 
 and pp_module_type = function 
   | MTident kn -> 
-      let mp,_,l = repr_kn kn in P.pp_long_module (MPdot (ong_mp mp,l)) 
+      let mp,_,l = repr_kn kn in P.pp_long_module (MPdot (long_mp mp,l)) 
   | MTfunsig (mbid, mt, mt') -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
