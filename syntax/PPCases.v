@@ -40,13 +40,13 @@ Syntax constr
   | tomatch [ << (TOMATCH ($LIST $lc)) >> ] -> [(NECOMMANDLIST2 ($LIST $lc)):E]
   ;
 
-  level 10: 
+  level 10:
     pattconstruct [ << (PATTCONSTRUCT $C $D ($LIST $T)) >> ] ->
 	 [(APPLIST $C $D ($LIST $T))]
   ;
 
   level 0:
-    pattconstructatomic [ << (PATTCONSTRUCT $C) >> ] -> [ $C ]
+    pattconstructatomic [ << (PATTCONSTRUCT $C) >> ] -> [ $C:E ]
   ;
 
   level 8:
