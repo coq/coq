@@ -7,8 +7,7 @@
 
 type load_path_entry = {
   directory : string;
-  root_dir : string;
-  relative_subdir : string list }
+  coq_dirpath : string list }
 
 type load_path = load_path_entry list
 

@@ -10,8 +10,7 @@ open Unix
 
 type load_path_entry = {
   directory : string;
-  root_dir : string;
-  relative_subdir : string list }
+  coq_dirpath : string list }
 
 type load_path = load_path_entry list
 
@@ -21,7 +20,7 @@ let exists_dir dir =
 let all_subdirs root alias =
   let l = ref [] in
   let add f rel = 
-    l := { directory = f; root_dir = root; relative_subdir = rel } :: !l 
+    l := { directory = f; coq_dirpath = rel } :: !l 
   in
   let rec traverse dir rel =
     let dirh = opendir dir in
@@ -78,7 +77,7 @@ let find_file_in_path paths name =
   let globname = glob name in
   if not (Filename.is_relative globname) then
     let root = Filename.dirname globname in
-    { directory = root; root_dir = root; relative_subdir = [] }, globname
+    { directory = root; coq_dirpath = [] }, globname
   else 
     try 
       search_in_path paths name
