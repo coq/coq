@@ -839,3 +839,145 @@ Intros; Rewrite <- (Ropp_Ropp (f0 x0)); Rewrite <- (Ropp_Ropp (f0 c)); Apply Rle
 Elim H3; Intros; Assumption.
 Apply (continuity_opp ? H0).
 Qed.
+
+
+(********************************************************)
+(*         Proof of Bolzano-Weierstrass theorem         *)
+(********************************************************)
+
+Definition ValAdh [un:nat->R;x:R] : Prop := (V:R->Prop;N:nat) (voisinage V x) -> (EX p:nat | (le N p)/\(V (un p))).
+
+Definition intersection_famille [f:famille] : R->Prop := [x:R](y:R)(ind f y)->(f y x).
+
+Lemma ValAdh_un_exists : (un:nat->R) let D=[x:R](EX n:nat | x==(INR n)) in let f=[x:R](adherence [y:R](EX p:nat | y==(un p)/\``x<=(INR p)``)/\(D x)) in ((x:R)(EXT y:R | (f x y))->(D x)).
+Intros; Elim H; Intros; Unfold f in H0; Unfold adherence in H0; Unfold point_adherent in H0; Assert H1 : (voisinage (Disque x0 (mkposreal ? Rlt_R0_R1)) x0).
+Unfold voisinage Disque; Exists (mkposreal ? Rlt_R0_R1); Unfold inclus; Trivial.
+Elim (H0 ? H1); Intros; Unfold intersection_domaine in H2; Elim H2; Intros; Elim H4; Intros; Apply H6.
+Qed.
+
+(* Ensemble des valeurs d'adhérence de (un) *)
+Definition ValAdh_un [un:nat->R] : R->Prop := let D=[x:R](EX n:nat | x==(INR n)) in let f=[x:R](adherence [y:R](EX p:nat | y==(un p)/\``x<=(INR p)``)/\(D x)) in (intersection_famille (mkfamille D f (ValAdh_un_exists un))).
+
+(* x est valeur d'adhérence de (un) ssi x appartient a (ValAdh_un un) *)
+Lemma ValAdh_un_prop : (un:nat->R;x:R) (ValAdh un x) <-> (ValAdh_un un x).
+Intros; Split; Intro.
+Unfold ValAdh in H; Unfold ValAdh_un; Unfold intersection_famille; Simpl; Intros; Elim H0; Intros N H1; Unfold adherence; Unfold point_adherent; Intros; Elim (H V N H2); Intros; Exists (un x0); Unfold intersection_domaine; Elim H3; Clear H3; Intros; Split.
+Assumption.
+Split.
+Exists x0; Split; [Reflexivity | Rewrite H1; Apply (le_INR ? ? H3)].
+Exists N; Assumption.
+Unfold ValAdh; Intros; Unfold ValAdh_un in H; Unfold intersection_famille in H; Simpl in H; Assert H1 : (adherence [y0:R](EX p:nat | ``y0 == (un p)``/\``(INR N) <= (INR p)``)/\(EX n:nat | ``(INR N) == (INR n)``) x).
+Apply H; Exists N; Reflexivity.
+Unfold adherence in H1; Unfold point_adherent in H1; Assert H2 := (H1 ? H0); Elim H2; Intros; Unfold intersection_domaine in H3; Elim H3; Clear H3; Intros; Elim H4; Clear H4; Intros; Elim H4; Clear H4; Intros; Elim H4; Clear H4; Intros; Exists x1; Split.
+Apply (INR_le ? ? H6).
+Rewrite H4 in H3; Apply H3.
+Qed.
+
+Lemma adherence_P4 : (F,G:R->Prop) (inclus F G) -> (inclus (adherence F) (adherence G)).
+Unfold adherence inclus; Unfold point_adherent; Intros; Elim (H0 ? H1); Unfold intersection_domaine; Intros; Elim H2; Clear H2; Intros; Exists x0; Split; [Assumption | Apply (H ? H3)].
+Qed.
+
+Definition famille_ferme [f:famille] : Prop := (x:R) (ferme (f x)).
+
+Definition intersection_vide_in [D:R->Prop;f:famille] : Prop := ((x:R)((ind f x)->(inclus (f x) D))/\~(EXT y:R | (intersection_famille f y))).
+
+Definition intersection_vide_finie_in [D:R->Prop;f:famille] : Prop := (intersection_vide_in D f)/\(famille_finie f).
+
+(* Propriété des compacts pour les intersections vides de fermés *)
+Lemma compact_P6 : (X:R->Prop) (compact X) -> (EXT z:R | (X z)) -> ((g:famille) (famille_ferme g) -> (intersection_vide_in X g) -> (EXT D:R->Prop | (intersection_vide_finie_in X (famille_restreinte g D)))).
+Intros X H Hyp g H0 H1.
+Pose D' := (ind g).
+Pose f' := [x:R][y:R](complementaire (g x) y)/\(D' x).
+Assert H2 : (x:R)(EXT y:R|(f' x y))->(D' x).
+Intros; Elim H2; Intros; Unfold f' in H3; Elim H3; Intros; Assumption.
+Pose f0 := (mkfamille D' f' H2).
+Unfold compact in H; Assert H3 : (recouvrement_ouvert X f0).
+Unfold recouvrement_ouvert; Split.
+Unfold recouvrement; Intros; Unfold intersection_vide_in in H1; Elim (H1 x); Intros; Unfold intersection_famille in H5; Assert H6 := (not_ex_all_not ? [y:R](y0:R)(ind g y0)->(g y0 y) H5 x); Assert H7 := (not_all_ex_not ? [y0:R](ind g y0)->(g y0 x) H6); Elim H7; Intros; Exists x0; Elim (imply_to_and ? ? H8); Intros; Unfold f0; Simpl; Unfold f'; Split; [Apply H10 | Apply H9].
+Unfold famille_ouvert; Intro; Elim (classic (D' x)); Intro.
+Apply ouvert_P6 with (complementaire (g x)).
+Unfold famille_ferme in H0; Unfold ferme in H0; Apply H0.
+Unfold f0; Simpl; Unfold f'; Unfold eq_Dom; Split.
+Unfold inclus; Intros; Split; [Apply H4 | Apply H3].
+Unfold inclus; Intros; Elim H4; Intros; Assumption.
+Apply ouvert_P6 with [_:R]False.
+Apply ouvert_P4.
+Unfold eq_Dom; Unfold inclus; Split; Intros; [Elim H4 | Simpl in H4; Unfold f' in H4; Elim H4; Intros; Elim H3; Assumption].
+Elim (H ? H3); Intros SF H4; Exists SF; Unfold intersection_vide_finie_in; Split.
+Unfold intersection_vide_in; Simpl; Intros; Split.
+Intros; Unfold inclus; Intros; Unfold intersection_vide_in in H1; Elim (H1 x); Intros; Elim H6; Intros; Apply H7.
+Unfold intersection_domaine in H5; Elim H5; Intros; Assumption.
+Assumption.
+Elim (classic (EXT y:R | (intersection_domaine (ind g) SF y))); Intro Hyp'.
+Red; Intro; Elim H5; Intros; Unfold intersection_famille in H6; Simpl in H6.
+Cut (X x0).
+Intro; Unfold recouvrement_fini in H4; Elim H4; Clear H4; Intros H4 _; Unfold recouvrement in H4; Elim (H4 x0 H7); Intros; Simpl in H8; Unfold intersection_domaine in H6; Cut (ind g x1)/\(SF x1).
+Intro; Assert H10 := (H6 x1 H9); Elim H10; Clear H10; Intros H10 _; Elim H8; Clear H8; Intros H8 _; Unfold f' in H8; Unfold complementaire in H8; Elim H8; Clear H8; Intros H8 _; Elim H8; Assumption.
+Split.
+Apply (cond_fam f0).
+Exists x0; Elim H8; Intros; Assumption.
+Elim H8; Intros; Assumption.
+Unfold intersection_vide_in in H1; Elim Hyp'; Intros; Assert H8 := (H6 ? H7); Elim H8; Intros; Cut (ind g x1).
+Intro; Elim (H1 x1); Intros; Apply H12.
+Apply H11.
+Apply H9.
+Apply (cond_fam g); Exists x0; Assumption.
+Unfold recouvrement_fini in H4; Elim H4; Clear H4; Intros H4 _; Cut (EXT z:R | (X z)).
+Intro; Elim H5; Clear H5; Intros; Unfold recouvrement in H4; Elim (H4 x0 H5); Intros; Simpl in H6; Elim Hyp'; Exists x1; Elim H6; Intros; Unfold intersection_domaine; Split.
+Apply (cond_fam f0); Exists x0; Apply H7.
+Apply H8.
+Apply Hyp.
+Unfold recouvrement_fini in H4; Elim H4; Clear H4; Intros; Unfold famille_finie in H5; Unfold domaine_fini in H5; Unfold famille_finie; Unfold domaine_fini; Elim H5; Clear H5; Intros l H5; Exists l; Intro; Elim (H5 x); Intros; Split; Intro; [Apply H6; Simpl; Simpl in H8; Apply H8 | Apply (H7 H8)].
+Qed.
+
+Lemma MaxRlist_P2 : (l:Rlist) (EXT y:R | (In y l)) -> (In (MaxRlist l) l).
+Intros; Induction l.
+Simpl in H; Elim H; Trivial.
+Induction l.
+Simpl; Left; Reflexivity.
+Change (In (Rmax r (MaxRlist (cons r0 l))) (cons r (cons r0 l))); Unfold Rmax; Case (total_order_Rle r (MaxRlist (cons r0 l))); Intro.
+Right; Apply Hrecl; Exists r0; Left; Reflexivity.
+Left; Reflexivity.
+Qed.
+
+Theorem Bolzano_Weierstrass : (un:nat->R;X:R->Prop) (compact X) -> ((n:nat)(X (un n))) -> (EXT l:R | (ValAdh un l)).
+Intros; Cut (EXT l:R | (ValAdh_un un l)).
+Intro; Elim H1; Intros; Exists x; Elim (ValAdh_un_prop un x); Intros; Apply (H4 H2).
+Assert H1 : (EXT z:R | (X z)).
+Exists (un O); Apply H0.
+Pose D:=[x:R](EX n:nat | x==(INR n)).
+Pose g:=[x:R](adherence [y:R](EX p:nat | y==(un p)/\``x<=(INR p)``)/\(D x)).
+Assert H2 : (x:R)(EXT y:R | (g x y))->(D x).
+Intros; Elim H2; Intros; Unfold g in H3; Unfold adherence in H3; Unfold point_adherent in H3.
+Assert H4 : (voisinage (Disque x0 (mkposreal ? Rlt_R0_R1)) x0).
+Unfold voisinage; Exists (mkposreal ? Rlt_R0_R1); Unfold inclus; Trivial.
+Elim (H3 ? H4); Intros; Unfold intersection_domaine in H5; Decompose [and] H5; Assumption.
+Pose f0 := (mkfamille D g H2).
+Assert H3 := (compact_P6 X H H1 f0).
+Elim (classic (EXT l:R | (ValAdh_un un l))); Intro.
+Assumption.
+Cut (famille_ferme f0).
+Intro; Cut (intersection_vide_in X f0).
+Intro; Assert H7 := (H3 H5 H6).
+Elim H7; Intros SF H8; Unfold intersection_vide_finie_in in H8; Elim H8; Clear H8; Intros; Unfold intersection_vide_in in H8; Elim (H8 R0); Intros _ H10; Elim H10; Unfold famille_finie in H9; Unfold domaine_fini in H9; Elim H9; Clear H9; Intros l H9; Pose r := (MaxRlist l); Cut (D r).
+Intro; Unfold D in H11; Elim H11; Intros; Exists (un x); Unfold intersection_famille; Simpl; Unfold intersection_domaine; Intros; Split.
+Unfold g; Apply adherence_P1; Split.
+Exists x; Split; [Reflexivity | Rewrite <- H12; Unfold r; Apply MaxRlist_P1; Elim (H9 y); Intros; Apply H14; Simpl; Apply H13].
+Elim H13; Intros; Assumption.
+Elim H13; Intros; Assumption.
+Elim (H9 r); Intros.
+Simpl in H12; Unfold intersection_domaine in H12; Cut (In r l).
+Intro; Elim (H12 H13); Intros; Assumption.
+Unfold r; Apply MaxRlist_P2; Cut (EXT z:R | (intersection_domaine (ind f0) SF z)).
+Intro; Elim H13; Intros; Elim (H9 x); Intros; Simpl in H15; Assert H17 := (H15 H14); Exists x; Apply H17.
+Elim (classic (EXT z:R | (intersection_domaine (ind f0) SF z))); Intro.
+Assumption.
+Elim (H8 R0); Intros _ H14; Elim H1; Intros; Assert H16 := (not_ex_all_not ? [y:R](intersection_famille (famille_restreinte f0 SF) y) H14); Assert H17 := (not_ex_all_not ? [z:R](intersection_domaine (ind f0) SF z) H13); Assert H18 := (H16 x); Unfold intersection_famille in H18; Simpl in H18; Assert H19 := (not_all_ex_not ? [y:R](intersection_domaine D SF y)->(g y x)/\(SF y) H18); Elim H19; Intros; Assert H21 := (imply_to_and ? ? H20); Elim (H17 x0); Elim H21; Intros; Assumption.
+Unfold intersection_vide_in; Intros; Split.
+Intro; Simpl in H6; Unfold f0; Simpl; Unfold g; Apply inclus_trans with (adherence X).
+Apply adherence_P4.
+Unfold inclus; Intros; Elim H7; Intros; Elim H8; Intros; Elim H10; Intros; Rewrite H11; Apply H0.
+Apply adherence_P2; Apply compact_P2; Assumption.
+Apply H4.
+Unfold famille_ferme; Unfold f0; Simpl; Unfold g; Intro; Apply adherence_P3.
+Qed.
