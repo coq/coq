@@ -286,30 +286,6 @@ let overwriting_tactic = Refiner.overwriting_add_tactic
 
 type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
 
-(* Inutile ?! réécrit plus loin 
-let tactic_com tac t x = tac (pf_interp_constr x t) x
-      
-let tactic_com_sort tac t x = tac (pf_interp_type x t) x
-      
-let tactic_com_list tac tl x =
-  let translate = pf_interp_constr x in 
-  tac (List.map translate tl) x
-    
-let tactic_bind_list tac tl x =
-  let translate = pf_interp_constr x in 
-  tac (List.map (fun (b,c)->(b,translate c)) tl) x
-
-let tactic_com_bind_list tac (c,tl) x =
-  let translate = pf_interp_constr x in 
-  tac (translate c,List.map (fun (b,c')->(b,translate c')) tl) x
-
-let tactic_com_bind_list_list tac args gl =
-  let translate (c,tl) = 
-    (pf_interp_constr gl c,
-     List.map (fun (b,c')->(b,pf_interp_constr gl c')) tl) in 
-  tac (List.map translate args) gl
-*)
-
 (********************************************************)
 (* Functions for hiding the implementation of a tactic. *)
 (********************************************************)
@@ -328,7 +304,6 @@ let overwrite_hidden_tactic s tac  =
   (fun args -> vernac_tactic(s,args))
 
 let tactic_com = 
-
   fun tac t x -> tac (pf_interp_constr x t) x
 
 let tactic_opencom = 
