@@ -165,7 +165,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
 (try
         Typeops.judge_of_type u
  with _ -> (* Successor of a non universe-variable universe anomaly *)
- (*(Pp.ppnl (Pp.str "Warning: universe refresh performed!!!") ; flush stdout ) ;*)
+ (Pp.ppnl (Pp.str "Warning: universe refresh performed!!!") ; flush stdout ) ;
   Typeops.judge_of_type (Termops.new_univ ())
 )
 
@@ -238,7 +238,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
 	 j
     in
      let synthesized = E.j_type judgement in
-     let synthesized' = Unshare.unshare (Reductionops.nf_beta synthesized) in
+     let synthesized' = Reductionops.nf_beta synthesized in
       let types,res =
        match expectedty with
           None ->
@@ -251,26 +251,14 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
            (* the synthesized type. Let's forget it.       *)
            {synthesized = synthesized' ; expected = None}, synthesized
         | Some expectedty' ->
-           {synthesized = synthesized' ; expected = Some (Unshare.unshare expectedty')},
+           {synthesized = synthesized' ; expected = Some expectedty'},
            expectedty'
       in
 (*CSC: debugging stuff to be removed *)
 if Acic.CicHash.mem subterms_to_types cstr then
  (Pp.ppnl (Pp.(++) (Pp.str "DUPLICATE INSERTION: ") (Printer.prterm cstr)) ; flush stdout ) ;
        Acic.CicHash.add subterms_to_types cstr types ;
-       let recur_on_type ty =
-        match Term.kind_of_term ty with
-           Term.Sort _ -> ()
-         | _ ->
-           ignore (execute env sigma ty None)
-       in
-        recur_on_type types.synthesized ;
-        begin
-         match types.expected with
-            None -> ()
-          | Some ty -> recur_on_type ty
-        end ;
-        E.make_judge cstr res
+       E.make_judge cstr res
 
 
  and execute_recdef env sigma (names,lar,vdef) =
