@@ -27,7 +27,7 @@ Axiom dependent_description :
   ((x:A)(EX y:(B x)|(R x y)/\ ((y':(B x))(R x y') -> y=y')))
    -> (EX f:(x:A)(B x) | (x:A)(R x (f x))).
 
-(** Principle of definite description (aka axiom of unique choice) *)
+(** Principle of definite descriptions (aka axiom of unique choice) *)
 
 Theorem description :
   (A:Type;B:Type;R: A->B->Prop)

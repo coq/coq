@@ -10,8 +10,8 @@
 
 (** Some facts and definitions about classical logic *)
 
-(** [prop_degeneracy] asserts (up to consistency) that there are only *)
-(*  two distinct formulas *)
+(** [prop_degeneracy] (also referred as propositional completeness) *)
+(*  asserts (up to consistency) that there are only two distinct formulas *)
 Definition prop_degeneracy := forall A:Prop, A = True \/ A = False.
 
 (** [prop_extensionality] asserts equivalent formulas are equal *)

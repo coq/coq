@@ -29,7 +29,7 @@ Axiom
           exists y : B x, R x y /\ (forall y':B x, R x y' -> y = y')) ->
        exists f : forall x:A, B x, (forall x:A, R x (f x)).
 
-(** Principle of definite description (aka axiom of unique choice) *)
+(** Principle of definite descriptions (aka axiom of unique choice) *)
 
 Theorem description :
  forall (A B:Type) (R:A -> B -> Prop),
