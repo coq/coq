@@ -145,19 +145,24 @@ let ast_to_rawconstr_ctxt =
        | RRef (_, RVar id) -> mkVar id
        | _ -> anomaly "Bad ast for local ctxt of a global reference")
 *)
-let ast_to_global loc = function
-  | ("CONST", [sp]) ->
-      RRef (loc,ConstRef (ast_to_sp sp))
-  | ("EVAR", [(Num (_,ev))]) ->
-      RRef (loc,EvarRef ev)
-  | ("MUTIND", [sp;Num(_,tyi)]) -> 
-      RRef (loc,IndRef ((ast_to_sp sp, tyi)))
-  | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
-      RRef (loc,ConstructRef (((ast_to_sp sp,ti),n)))
-  | ("SYNCONST", [sp]) ->
-      Syntax_def.search_syntactic_definition (ast_to_sp sp)
-  | _ -> anomaly_loc (loc,"ast_to_global",
-		      [< 'sTR "Bad ast for this global a reference">])
+let ast_to_global loc c =
+  match c with
+    | ("CONST", [sp]) ->
+	let ref = ConstRef (ast_to_sp sp) in
+	RRef (loc, ref), implicits_of_global ref
+    | ("EVAR", [(Num (_,ev))]) ->
+	let ref = EvarRef ev in
+	RRef (loc, ref), implicits_of_global ref
+    | ("MUTIND", [sp;Num(_,tyi)]) -> 
+	let ref = IndRef (ast_to_sp sp, tyi) in
+	RRef (loc, ref), implicits_of_global ref
+    | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
+	let ref = ConstructRef ((ast_to_sp sp,ti),n) in
+	RRef (loc, ref), implicits_of_global ref
+    | ("SYNCONST", [sp]) ->
+	Syntax_def.search_syntactic_definition (ast_to_sp sp), []
+    | _ -> anomaly_loc (loc,"ast_to_global",
+			[< 'sTR "Bad ast for this global a reference">])
 
 (*
 let ref_from_constr c = match kind_of_term c with
@@ -387,14 +392,26 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let (c, impargs) = rawconstr_of_var env lvar locs (ident_of_nvar s)
         in
 	  RApp (loc, c, ast_to_impargs env impargs args)
-*)
     | Node(loc,"APPLIST", Node(locs,"QUALID",p)::args) ->
 	let (c, impargs) = rawconstr_of_qualid env lvar locs (interp_qualid p)
         in
 	  RApp (loc, c, ast_to_impargs env impargs args)
     | Node(loc,"APPLIST", f::args) ->	   
 	RApp (loc,dbrec env f,ast_to_args env args)
-	  
+*)
+    | Node(loc,"APPLIST", f::args) ->
+	let (c, impargs) =
+	  match f with
+	    | Node(locs,"QUALID",p) ->
+		rawconstr_of_qualid env lvar locs (interp_qualid p)
+	    | Node(loc,
+		   ("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),
+		   l) ->
+		ast_to_global loc (key,l)
+	    | _ -> (dbrec env f, [])
+        in
+	  RApp (loc, c, ast_to_impargs env impargs args)
+
     | Node(loc,"CASES", p:: Node(_,"TOMATCH",tms):: eqns) ->
 	let po = match p with 
 	  | Str(_,"SYNTH") -> None 
@@ -423,7 +440,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	  
     (* This case mainly parses things build in a quotation *)
     | Node(loc,("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
-	ast_to_global loc (key,l)
+	fst (ast_to_global loc (key,l))
 
     | Node(loc,"CAST", [c1;c2]) ->	   
 	RCast (loc,dbrec env c1,dbrec env c2)
