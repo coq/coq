@@ -350,5 +350,11 @@ Syntax tactic
   level 8:
     tactic_to_constr [<<(COMMAND $c)>>] -> [ $c:"constr":9 ]
   | tactic_to_castedconstr [<<(CASTEDCOMMAND $c)>>] -> [ $c:"constr":9 ]
-  | tactic_to_openconstr [<<(CASTEDOPENCOMMAND $c)>>] -> [ $c:"constr":9 ].
+  | tactic_to_openconstr [<<(CASTEDOPENCOMMAND $c)>>] -> [ $c:"constr":9 ]
+
+  (* This is produced bu UNFOLDLIST *)
+  | tactic_qualidarg_constr [<<(COMMAND (QUALIDARG $p))>>] -> [(QUALIDARG $p)]
+  | tactic_qualidarg_nil [<<(QUALIDARG $id)>>] -> [ $id ]
+  | tactic_qualidarg_cons [<<(QUALIDARG $id $p)>>] ->
+	 [ $id [1 0] "." (QUALID $p) ].
 
