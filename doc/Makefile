@@ -30,7 +30,7 @@ TEST=test
 
 TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):$(HEVEALIB):.:
 
-INPUTS=./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
+INPUTS=./version.tex ./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
 
 LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
          library/Wf.tex library/Specif.tex
@@ -51,10 +51,10 @@ REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
 
 REFMAN=Reference-Manual
 
-VERSION=V7.4
+VERSION=8.0
 #VERSION=POSITIONNEZ-CETTE-VARIABLE
 
-FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
+FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/V$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
 
 FTPDOCS=Reference-Manual-base.ps.gz Reference-Manual-base.dvi.gz \
@@ -89,6 +89,9 @@ all-ps: Tutorial.v.ps Reference-Manual.ps # Library.ps Changes.v.ps
 
 all-html: Tutorial.v.html Reference-Manual.html # Library.html Changes.v.html
 
+#version
+version.tex: Makefile
+	echo "\newcommand{\coqversion}{$(VERSION)}" > version.tex
 
 #image coqide
 coqide.eps: coqide.png

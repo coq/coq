@@ -34,3 +34,4 @@ library.files.ls
 library.files.ls.tmp
 library.coqweb.tex
 tradv8
+coqide.eps

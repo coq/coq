@@ -1,7 +1,7 @@
 You can get the whole documentation of Coq in the tar file all-ps-docs.tar.
 
 You can also get separately each document. The documentation of Coq
-V7.3 is divided into the following documents :
+V8.0 is divided into the following documents :
 
      * Tutorial.ps: An introduction to the use of the Coq Proof Assistant;
 
@@ -31,7 +31,7 @@ V7.3 is divided into the following documents :
 
      * Library.ps: A description of the Coq standard library;
 
-     * CHANGES: A description of the differences between version 7.3
+     * CHANGES: A description of the differences between version 8.0
        and previous versions
 
      * rectypes.ps : A tutorial on recursive types by Eduardo Gimenez

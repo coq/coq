@@ -1,8 +1,9 @@
 \documentclass[11pt]{book}
 \usepackage[T1]{fontenc}
 \usepackage[latin1]{inputenc}
-\usepackage{palatino}
+\usepackage{pslatex}
 
+\input{./version.tex}
 \input{./macros.tex}
 \input{./title.tex}
 
@@ -31,8 +32,8 @@ that he calls \Coq~ from a standard teletype-like shell window, and that
 he does not use any special interface such as Emacs or Centaur. 
 Instructions on installation procedures, as well as more comprehensive
 documentation, may be found in the standard distribution of \Coq,
-which may be obtained by anonymous FTP from site \verb:ftp.inria.fr:,
-directory \verb:INRIA/coq/V7.4:. 
+which may be obtained by anonymous FTP from site \texttt{ftp.inria.fr},
+directory \texttt{INRIA/coq/V\coqversion}:. 
 
 In the following, all examples preceded by the prompting sequence
 \verb:Coq < : represent user input, terminated by a period. The
@@ -46,7 +47,7 @@ The standard invocation of \Coq\ delivers a message such as:
 \begin{flushleft}
 \begin{verbatim}
 unix:~> coqtop
-Welcome to Coq 7.4 (Feb 2003)
+Welcome to Coq 8.0 (Dec 2003)
 
 Coq < 
 \end{verbatim}
