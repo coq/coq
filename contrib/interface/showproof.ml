@@ -1676,7 +1676,7 @@ and natural_induction ig lh g gs ge arg2 ltree with_intros=
                     ])
                   ltree))
         ]
-(***********************************************************************)
+(************************************************************************)
 (* Points fixes *)
 
 and natural_fix ig lh g gs narg ltree =

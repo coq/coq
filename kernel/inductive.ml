@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -45,7 +45,7 @@ let find_coinductive env c =
         when not (fst (lookup_mind_specif env ind)).mind_finite -> (ind, l)
     | _ -> raise Not_found
 
-(***********************************************************************)
+(************************************************************************)
 
 (* Build the substitution that replaces Rels by the appropriate *)
 (* inductives *)
@@ -86,8 +86,8 @@ let full_constructor_instantiate (((mind,_),mib,mip),params) =
   (fun t ->
     instantiate_params (inst_ind t) params mip.mind_params_ctxt)
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 
 (* Functions to build standard types related to inductive *)
 
@@ -97,7 +97,7 @@ let type_of_inductive env i =
   let (_,mip) = lookup_mind_specif env i in
   mip.mind_user_arity
 
-(***********************************************************************)
+(************************************************************************)
 (* Type of a constructor *)
 
 let type_of_constructor env cstr =
@@ -118,7 +118,7 @@ let arities_of_constructors env ind =
 
 
 
-(***********************************************************************)
+(************************************************************************)
 
 let is_info_arity env c =
   match dest_arity env c with
@@ -214,7 +214,7 @@ let is_correct_arity env c pj ind mip params =
     error_elim_arity env ind listarity c pj kinds
 
 
-(***********************************************************************)
+(************************************************************************)
 (* Type of case branches *)
 
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
@@ -254,7 +254,7 @@ let type_case_branches env (ind,largs) pj c =
   (lc, ty, univ)
 
 
-(***********************************************************************)
+(************************************************************************)
 (* Checking the case annotation is relevent *)
 
 let check_case_info env indsp ci =
@@ -264,8 +264,8 @@ let check_case_info env indsp ci =
     (mip.mind_nparams <> ci.ci_npar)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 
 (* Guard conditions for fix and cofix-points *)
 
@@ -510,7 +510,7 @@ let check_is_subterm renv c ind =
     Subterm (Strict,_) | Dead_code -> true
   |  _ -> false
 
-(***********************************************************************)
+(************************************************************************)
 
 exception FixGuardError of env * guard_error
 
@@ -711,7 +711,7 @@ let cfkey = Profile.declare_profile "check_fix";;
 let check_fix env fix = Profile.profile3 cfkey check_fix env fix;;
 *)
 
-(***********************************************************************)
+(************************************************************************)
 (* Scrape *)
 
 let rec scrape_mind env kn = 
@@ -719,7 +719,7 @@ let rec scrape_mind env kn =
     | None -> kn
     | Some kn' -> scrape_mind env kn'
 
-(***********************************************************************)
+(************************************************************************)
 (* Co-fixpoints. *)
 
 exception CoFixGuardError of env * guard_error

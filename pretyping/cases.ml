@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -1479,7 +1479,7 @@ let matx_of_eqns env tomatchl eqns =
       rhs = rhs }
   in List.map build_eqn eqns
 
-(***********************************************************************)
+(************************************************************************)
 (* preparing the elimination predicate if any                          *)
 
 let build_expected_arity env isevars isdep tomatchl =

@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -156,7 +156,7 @@ let pat_nat_of_int dloc n name =
       user_err_loc (dloc, "pat_nat_of_int",
         str "Unable to interpret a negative number in type nat")
 
-(***********************************************************************)
+(************************************************************************)
 (* Printing via scopes *)
 
 exception Non_closed_number
@@ -184,7 +184,7 @@ let uninterp_nat_pattern p =
   with
     Non_closed_number -> None
 
-(***********************************************************************)
+(************************************************************************)
 (* Declare the primitive parsers and printers *)
 
 let _ =
@@ -193,7 +193,7 @@ let _ =
     (nat_of_int,Some pat_nat_of_int)
     ([RRef (dummy_loc,glob_S); RRef (dummy_loc,glob_O)], uninterp_nat, None)
 
-(***********************************************************************)
+(************************************************************************)
 (* Old ast printing *)
 
 open Coqast

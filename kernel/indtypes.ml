@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -25,7 +25,7 @@ open Entries
    of names. The name [id] is the name of the current inductive type, used
    when reporting the error. *)
 
-(***********************************************************************)
+(************************************************************************)
 (* Various well-formedness check for inductive declarations            *)
 
 type inductive_error =
@@ -87,8 +87,8 @@ let mind_check_arities env mie =
     (fun {mind_entry_typename=id; mind_entry_arity=ar} -> check_arity id ar)
     mie.mind_entry_inds
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 
 (* Typing the arities and constructor types *)
 
@@ -233,8 +233,8 @@ let typecheck_inductive env mie =
       ([],cst) in
   (env_arities, Array.of_list inds, cst)
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 (* Positivity *)
 
 type ill_formed_ind =
@@ -446,8 +446,8 @@ let check_positivity env_ar inds =
   Rtree.mk_rec (Array.mapi check_one inds)
 
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 (* Build the inductive packet *)
     
 (* Elimination sorts *)
@@ -535,8 +535,8 @@ let build_inductive env env_ar finite inds recargs cst =
     mind_equiv = None;
   }
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 
 let check_inductive env mie =
   (* First type-check the inductive definition *)

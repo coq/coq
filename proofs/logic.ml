@@ -1,10 +1,10 @@
-(***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
-(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
-(*   \VV/  *************************************************************)
-(*    //   *      This file is distributed under the terms of the      *)
-(*         *       GNU Lesser General Public License Version 2.1       *)
-(***********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (* $Id$ *)
 
@@ -78,8 +78,8 @@ let with_check tac gl =
   check := c;
   r
    
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 (* Implementation of the structural rules (moving and deleting
    hypotheses around) *)
 
@@ -278,8 +278,8 @@ let insert_after_hyp sign id d =
        if !check then check_backward_dependencies sign d;
        add_named_decl d (add_named_decl d' sign))
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 (* Implementation of the logical rules *)
 
 (* Will only be used on terms given to the Refine rule which have meta 
@@ -411,8 +411,8 @@ let convert_hyp sign sigma (id,b,bt as d) =
        add_named_decl d sign)
 
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
@@ -563,8 +563,8 @@ let prim_refiner r sigma goal =
         let cl' = replace_vars [id1,mkVar id2] cl in
         [mk_goal sign' cl']
 
-(***********************************************************************)
-(***********************************************************************)
+(************************************************************************)
+(************************************************************************)
 (* Extracting a proof term from the proof tree *)
 
 (* Util *)
