@@ -244,7 +244,7 @@ let rec print_list print fmt = function
 
 let run_command f c =
   let result = Buffer.create 127 in
-  let cin,cout,cerr = Unix.open_process_full c [||] in
+  let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
   let buff = String.make 127 ' ' in
   let buffe = String.make 127 ' ' in
   let n = ref 0 in
@@ -253,10 +253,10 @@ let run_command f c =
   while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; 
     !n+ !ne <> 0
   do 
-    let r = String.sub buff 0 !n in 
+    let r = try_convert (String.sub buff 0 !n) in 
     f r;
     Buffer.add_string result r;
-    let r = String.sub buffe 0 !ne in 
+    let r = try_convert (String.sub buffe 0 !ne) in 
     f r;
     Buffer.add_string result r 
   done;

@@ -186,7 +186,9 @@ object('self)
     method undo_last_step : unit
     method help_for_keyword : unit -> unit
     method complete_at_offset : int -> unit
-  end
+
+    method blaster : unit -> unit
+end
 
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
@@ -309,29 +311,29 @@ let remove_current_view_page () =
   ((notebook ())#get_nth_page c)#misc#hide ()
 
 let underscore = Glib.Utf8.to_unichar "_" (ref 0)
+let bn = Glib.Utf8.to_unichar "\n" (ref 0)
+
+let starts_word it = it#starts_word && it#backward_char#char <> underscore
+let ends_word it = it#ends_line || (it#ends_word && it#char <> underscore)
+let inside_word it = it#inside_word || it#char = underscore || it#backward_char#char = underscore
+let is_on_word_limit it = inside_word it || ends_word it 
+
+let rec find_word_start it =
+  prerr_endline "Find word start";
+  if starts_word it
+  then it
+  else find_word_start it#backward_char
 
 let rec find_word_end it =
   prerr_endline "Find word end";
-  if 
-    (it#ends_word && 
-    it#char <> underscore)
-    || it#forward_char#is_end
-  then it 
-  else find_word_end it#forward_word_end
-      
-let rec find_word_start it =
-  prerr_endline "Find word start";
-  if 
-    (it#starts_word && 
-    it#backward_char#char <> underscore)
-    || it#backward_char#is_start
-  then it 
-  else find_word_start it#backward_word_start
+  if ends_word it
+  then it
+  else find_word_end it#forward_char
 
-let get_last_word_limits it = 
+let get_word_around it = 
   let start = find_word_start it in
-  let nw = start#backward_word_start in
-  (find_word_start nw,find_word_end nw)
+  let stop =  find_word_end it in
+  start,stop
 
 
 let rec complete_backward w (it:GText.iter) = 
@@ -339,21 +341,24 @@ let rec complete_backward w (it:GText.iter) =
 	  match it#backward_search w with 
 	    | None -> None
 	    | Some (start,stop) -> 
-		let ne = find_word_end stop in
-		if ((find_word_start start)#compare start <> 0) ||
-		  (ne#compare stop = 0)
-		then complete_backward w start
-		else Some (stop,ne)
+		if starts_word start then 
+		  let ne = find_word_end stop in
+		  if ne#compare stop = 0
+		  then complete_backward w start
+		  else Some (start,stop,ne)
+		else complete_backward w start
 		  
 let rec complete_forward w (it:GText.iter) = 
   prerr_endline "Complete forward...";
   match it#forward_search w with 
     | None -> None
-    | Some (start,stop) -> let ne = find_word_end stop in
-      if ((find_word_start start)#compare start <> 0) || 
-	ne#compare stop = 0 then complete_forward w stop
-      else Some (stop,ne)
-
+    | Some (start,stop) -> 
+	if starts_word start then 	
+	  let ne = find_word_end stop in
+	  if ne#compare stop = 0 then 
+	    complete_forward w stop
+	  else Some (stop,stop,ne)
+	else complete_forward w stop
 
 (* Reset this to None on page change ! *)
 let (last_completion:(string*int*int*bool) option ref) = ref None
@@ -361,7 +366,7 @@ let (last_completion:(string*int*int*bool) option ref) = ref None
 let () = to_do_on_page_switch := 
 	 (fun i -> last_completion := None)::!to_do_on_page_switch
 
-let complete input_buffer w (offset:int) =
+let rec complete input_buffer w (offset:int) =
   match !last_completion with 
     | Some (lw,loffset,lpos,backward)
 	when lw=w && loffset=offset ->
@@ -372,30 +377,31 @@ let complete input_buffer w (offset:int) =
 	      | None -> 
 		  last_completion := 
 		Some (lw,loffset,
-		      
-		      (input_buffer#get_iter (`OFFSET loffset))#
-		      forward_word_end#offset ,
+		      (find_word_end (input_buffer#get_iter (`OFFSET loffset)))#offset ,
 		      false); 
 		  None
-	      | Some (start,stop) as result -> 
+	      | Some (ss,start,stop) as result -> 
 		  last_completion := 
-		Some (w,offset,start#backward_char#offset,true);
+		Some (w,offset,ss#offset,true);
 		  result
 	  else
 	    match complete_forward w iter with
 	      | None -> 
 		  last_completion := None;
 		  None
-	      | Some (start,stop) as result -> 
+	      | Some (ss,start,stop) as result -> 
 		  last_completion := 
-		Some (w,offset,start#forward_char#offset,false);
+		Some (w,offset,ss#offset,false);
 		  result
 	end
     | _ -> begin
 	match complete_backward w (input_buffer#get_iter (`OFFSET offset)) with
-	  | None -> last_completion := None; None
-	  | Some (start,stop) as result -> 
-	      last_completion := Some (w,offset,start#offset,true);
+	  | None -> 
+	      last_completion := 
+	    Some (w,offset,(find_word_end (input_buffer#get_iter (`OFFSET offset)))#offset,false);
+	      complete input_buffer w offset
+	  | Some (ss,start,stop) as result -> 
+	      last_completion := Some (w,offset,ss#offset,true);
 	      result
       end
 	  
@@ -921,20 +927,21 @@ object(self)
     prerr_endline ("Completion at offset : " ^ string_of_int offset);
     let it () = input_buffer#get_iter (`OFFSET offset) in
     let iit = it () in
-    if (iit#ends_word || iit#inside_word) then 
+    let start = find_word_start iit in
+    if is_on_word_limit iit then 
       let w = input_buffer#get_text 
-		~start:(find_word_start iit)
+		~start
 		~stop:iit
 		()
       in
       prerr_endline ("Completion of prefix : " ^ w);
-      match complete input_buffer w offset with 
+      match complete input_buffer w start#offset with 
       | None -> () 
-      | Some (start,stop) -> 
+      | Some (ss,start,stop) -> 
 	  let completion = input_buffer#get_text ~start ~stop () in
 	  ignore (input_buffer#delete_selection ());
 	  ignore (input_buffer#insert_interactive completion);
-	  input_buffer#move_mark `INSERT (it());
+	  input_buffer#move_mark `SEL_BOUND (it())#backward_char;
 	  ()
 	  
   method process_next_phrase display_goals do_highlight = 
@@ -1218,6 +1225,29 @@ Please restart and report NOW.";
        Mutex.unlock coq_may_stop)
     else prerr_endline "undo_last_step discarded"
 
+      
+  method blaster () = 
+    prerr_endline "Blaster called";
+    let c = Blaster_window.blaster_window () in
+    let set i s = 
+      c#set i
+	s 
+	(fun () -> try_interptac (s ^ ". "))
+	(fun () -> prerr_endline "Clicked")
+    in
+    set 0 "Assumption" ;
+    set 1 "Reflexivity" ;
+    set 2 "Trivial";
+    set 3 "Auto" ;
+    set 4 "EAuto";
+    set 5 "Auto with *" ;
+    set 6 "EAuto with *" ;
+    set 7 "Intuition";
+    set 8 "Ground";
+    let _ = Thread.create c#blaster () in
+    ()
+    
+    
   method insert_command cp ip = 
     self#clear_message;
     ignore (self#insert_this_phrase_on_success true false false cp ip)
@@ -1719,8 +1749,8 @@ let main files =
 	  !current.cmd_coqdoc ^ " -ps " ^ Filename.basename f ^ 
 	  " | " ^ !current.cmd_print
 	in
-	let c = Sys.command cmd in
-	!flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
+	let s,_ = run_command av#insert_message cmd in
+	!flash_info (cmd ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
   let print_m = file_factory#add_item "_Print" ~callback:print_f in
 
@@ -1744,8 +1774,11 @@ let main files =
 	  "cd " ^ Filename.dirname f ^ "; " ^
 	  !current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ output ^ " " ^ basef
 	in
-	let c = Sys.command cmd in
-	!flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
+	let s,_ = run_command av#insert_message cmd in
+	!flash_info (cmd ^ 
+		     if s = Unix.WEXITED 0 
+		     then " succeeded" 
+		     else " failed")
   in
   let file_export_m =  file_factory#add_submenu "E_xport to" in
 
@@ -1827,13 +1860,11 @@ let main files =
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
   let read_only_i = edit_f#add_check_item "Expert" ~active:false
-		      (* ~key:GdkKeysyms._Z *)
-		      ~callback:(fun b -> 
-				   (* GtkData.AccelMap.save "test.accel" *) 
-				   ()
-				) 
+		      ~key:GdkKeysyms._B
+		      ~callback:(fun b -> ()
+				)
   in
-  read_only_i#misc#set_state `INSENSITIVE;
+(*  read_only_i#misc#set_state `INSENSITIVE;*)
 
   let search_if = edit_f#add_item "Search _forward"
 		    ~key:GdkKeysyms._greater
@@ -1846,8 +1877,9 @@ let main files =
 		     ~callback:
 		     (do_if_not_computing 
 			(fun b -> 
-			   let v =out_some (get_current_view ()).analyzed_view 
-			   in v#complete_at_offset (v#get_insert#offset)
+			   let v = out_some (get_current_view ()).analyzed_view 
+				    
+			   in v#complete_at_offset ((v#view#buffer#get_iter `SEL_BOUND)#offset)
 			))
   in
 
@@ -1945,6 +1977,12 @@ let main files =
     if analyzed_view#is_active then ignore (f analyzed_view)
   in
   let do_if_active f = do_if_not_computing (do_if_active f) in
+  ignore (tactics_factory#add_item "_Blaster" 
+	    ~key:GdkKeysyms._b
+	    ~callback:(do_if_active (fun a -> a#blaster ()))
+	 )
+	 ;
+
   ignore (tactics_factory#add_item "_Auto" 
 	    ~key:GdkKeysyms._a
 	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Auto.\n" "Auto.\n"))
@@ -2204,9 +2242,11 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   
   (* Command/CoqMakefile Menu*)
   let coq_makefile_f () =
-    let c = Sys.command !current.cmd_coqmakefile in
+    let v = get_active_view () in
+    let av = out_some v.analyzed_view in
+    let s,res = run_command av#insert_message !current.cmd_coqmakefile in
     !flash_info 
-      (!current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
+      (!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
   let _ = externals_factory#add_item "_Make Makefile" ~callback:coq_makefile_f 
   in
@@ -2650,6 +2690,7 @@ let start () =
 						      `WARNING;`CRITICAL]
     (fun ~level msg -> failwith ("Coqide internal error: " ^ msg));
   Command_windows.main ();
+  Blaster_window.main 9;
   main files;
   while true do 
     try 

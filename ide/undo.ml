@@ -1,3 +1,4 @@
+
 (***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
@@ -27,7 +28,7 @@ object(self)
   val nredo = (Stack.create () : action Stack.t)
 
   method private dump_debug =
-    if !debug then begin
+    if false (* !debug *) then begin
       prerr_endline "==========Stack top=============";
       Stack.iter 
 	(fun e -> match e with

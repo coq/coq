@@ -48,3 +48,11 @@ val is_in_coq_lib : string -> bool
 
 val make_cases : string -> string list list
 
+
+type tried_tactic = 
+  | Interrupted
+  | Success of int (* nb of goals after *)
+  | Failed
+
+val try_interptac: string -> tried_tactic
+

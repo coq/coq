@@ -476,6 +476,8 @@ dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
+ide/blaster_window.cmo: ide/coq.cmi 
+ide/blaster_window.cmx: ide/coq.cmx 
 ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmi \
     ide/command_windows.cmi 
 ide/command_windows.cmx: ide/coq.cmx ide/coq_commands.cmx ide/ideutils.cmx \
@@ -491,9 +493,9 @@ ide/coq.cmo: toplevel/cerrors.cmi config/coq_config.cmi toplevel/coqtop.cmi \
     library/nametab.cmi lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi \
     lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
     pretyping/reductionops.cmi proofs/refiner.cmi library/states.cmi \
-    proofs/tacmach.cmi tactics/tactics.cmi kernel/term.cmi lib/util.cmi \
-    toplevel/vernac.cmi toplevel/vernacentries.cmi toplevel/vernacexpr.cmo \
-    ide/coq.cmi 
+    tactics/tacinterp.cmi proofs/tacmach.cmi tactics/tactics.cmi \
+    kernel/term.cmi lib/util.cmi toplevel/vernac.cmi \
+    toplevel/vernacentries.cmi toplevel/vernacexpr.cmo ide/coq.cmi 
 ide/coq.cmx: toplevel/cerrors.cmx config/coq_config.cmx toplevel/coqtop.cmx \
     kernel/declarations.cmx kernel/environ.cmx pretyping/evarutil.cmx \
     pretyping/evd.cmx library/global.cmx tactics/hipattern.cmx \
@@ -501,19 +503,19 @@ ide/coq.cmx: toplevel/cerrors.cmx config/coq_config.cmx toplevel/coqtop.cmx \
     library/nametab.cmx lib/options.cmx parsing/pcoq.cmx proofs/pfedit.cmx \
     lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
     pretyping/reductionops.cmx proofs/refiner.cmx library/states.cmx \
-    proofs/tacmach.cmx tactics/tactics.cmx kernel/term.cmx lib/util.cmx \
-    toplevel/vernac.cmx toplevel/vernacentries.cmx toplevel/vernacexpr.cmx \
-    ide/coq.cmi 
+    tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tactics.cmx \
+    kernel/term.cmx lib/util.cmx toplevel/vernac.cmx \
+    toplevel/vernacentries.cmx toplevel/vernacexpr.cmx ide/coq.cmi 
 ide/coq_tactics.cmo: ide/coq_tactics.cmi 
 ide/coq_tactics.cmx: ide/coq_tactics.cmi 
-ide/coqide.cmo: ide/command_windows.cmi ide/coq.cmi ide/coq_commands.cmo \
-    ide/find_phrase.cmo ide/highlight.cmo ide/ideutils.cmi proofs/pfedit.cmi \
-    ide/preferences.cmi ide/undo.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    ide/coqide.cmi 
-ide/coqide.cmx: ide/command_windows.cmx ide/coq.cmx ide/coq_commands.cmx \
-    ide/find_phrase.cmx ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx \
-    ide/preferences.cmx ide/undo.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    ide/coqide.cmi 
+ide/coqide.cmo: ide/blaster_window.cmo ide/command_windows.cmi ide/coq.cmi \
+    ide/coq_commands.cmo ide/find_phrase.cmo ide/highlight.cmo \
+    ide/ideutils.cmi proofs/pfedit.cmi ide/preferences.cmi ide/undo.cmi \
+    lib/util.cmi toplevel/vernacexpr.cmo ide/coqide.cmi 
+ide/coqide.cmx: ide/blaster_window.cmx ide/command_windows.cmx ide/coq.cmx \
+    ide/coq_commands.cmx ide/find_phrase.cmx ide/highlight.cmx \
+    ide/ideutils.cmx proofs/pfedit.cmx ide/preferences.cmx ide/undo.cmx \
+    lib/util.cmx toplevel/vernacexpr.cmx ide/coqide.cmi 
 ide/find_phrase.cmo: ide/ideutils.cmi 
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmi 

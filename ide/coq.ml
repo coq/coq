@@ -96,6 +96,35 @@ let interp s =
 	      last
 	  | None -> assert false
 
+let nb_subgoals pf =
+  List.length (fst (Refiner.frontier (Tacmach.proof_of_pftreestate pf)))
+
+type tried_tactic = 
+  | Interrupted
+  | Success of int (* nb of goals after *)
+  | Failed
+
+let try_interptac s = 
+  try
+    prerr_endline ("Starting try_interptac: "^s);
+    let pf = get_pftreestate () in
+    let pe = Pcoq.Gram.Entry.parse 
+	       Pcoq.main_entry 
+	       (Pcoq.Gram.parsable (Stream.of_string s)) 
+    in match pe with 
+    | Some (loc,(VernacSolve (n, tac, _))) ->
+	let tac = Tacinterp.interp tac in
+	let pf' = solve_nth_pftreestate n tac pf in
+	prerr_endline "Success";
+	let nb_goals = nb_subgoals pf' - nb_subgoals pf in
+	Success nb_goals
+    | _ ->
+	prerr_endline "try_interptac: not a tactic"; Failed
+  with 
+  | Sys.Break -> prerr_endline "try_interp: interrupted"; Interrupted
+  | _ -> prerr_endline "try_interp: failed"; Failed
+	  
+
 let is_tactic = function
   | VernacSolve _ -> true
   | _ -> false
