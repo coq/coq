@@ -29,7 +29,7 @@ val assumption_of_type_judgment : unsafe_type_judgment -> typed_type
 val type_judgment : 
   env -> 'a evar_map -> unsafe_judgment -> unsafe_type_judgment
 
-val relative : env -> int -> unsafe_judgment
+val relative : env -> 'a evar_map -> int -> unsafe_judgment
 
 val type_of_constant : env -> 'a evar_map -> constant -> typed_type
 
