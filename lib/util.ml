@@ -504,6 +504,10 @@ let rec prlist_with_sep sep elem l = match l with
   | h::t ->
       let e = elem h and s = sep() and r = prlist_with_sep sep elem t in
       [< e; s; r >]
+
+let pr_vertical_list pr = function
+  | [] -> [< 'sTR "none"; 'fNL >]
+  | l -> [< 'fNL; 'sTR "  "; hOV 0 (prlist_with_sep pr_fnl pr l); 'fNL >]
       
 let prvecti elem v =
   let n = Array.length v in

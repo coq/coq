@@ -172,6 +172,7 @@ val prlist_with_sep :
    (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b list -> 'a Stream.t
 val prvect_with_sep :
    (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b array -> 'a Stream.t
+val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (*s Size of an ocaml value (in words, bytes and kilobytes). *)
 
