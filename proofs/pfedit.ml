@@ -51,7 +51,7 @@ let msg_proofs use_resume =
               	else (mt ()))
 )
 
-let undo_default = 12
+let undo_default = 50
 let undo_limit = ref undo_default
 
 (*********************************************************************)
