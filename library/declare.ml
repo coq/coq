@@ -194,11 +194,14 @@ let declare_constant_common id discharged_hyps (cd,kind) =
   Dischargedhypsmap.set_discharged_hyps sp discharged_hyps;
   oname
 
-let declare_constant id (cd,kind) =
+let declare_constant_gen internal id (cd,kind) =
   let cd = hcons_constant_declaration cd in
   let oname = declare_constant_common id [] (ConstantEntry cd,kind) in
-  !xml_declare_constant oname;
+  !xml_declare_constant (internal,oname);
   oname
+
+let declare_internal_constant = declare_constant_gen true
+let declare_constant = declare_constant_gen false
 
 (* when coming from discharge *)
 let redeclare_constant id discharged_hyps (cd,kind) =

@@ -488,7 +488,7 @@ let print_object_kind uri (xmltag,variation) =
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print glob_ref xml_library_root =
+let print internal glob_ref xml_library_root =
  let module D = Declarations in
  let module De = Declare in
  let module G = Global in
@@ -526,7 +526,7 @@ let print glob_ref xml_library_root =
   in
   let fn = filename_of_path ~keep_sections xml_library_root kn tag in
   let uri = Cic2acic.uri_of_kernel_name ~keep_sections kn tag in
-   print_object_kind uri (kind_of_object glob_ref);
+   if not internal then print_object_kind uri (kind_of_object glob_ref);
    print_object uri obj Evd.empty None fn
 ;;
 
@@ -847,15 +847,15 @@ let _ =
 let _ =
   Declare.set_xml_declare_variable
    (function (sp,kn) ->
-      print (Libnames.VarRef (Libnames.basename sp)) xml_library_root)
+      print false (Libnames.VarRef (Libnames.basename sp)) xml_library_root)
 ;;
 
 let _ =
   Declare.set_xml_declare_constant
-   (function (sp,kn) ->
+   (function (internal,(sp,kn)) ->
      match !proof_to_export with
         None ->
-          print (Libnames.ConstRef kn) xml_library_root
+          print internal (Libnames.ConstRef kn) xml_library_root
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
@@ -868,7 +868,7 @@ let _ =
 let _ =
   Declare.set_xml_declare_inductive
    (function (sp,kn) ->
-      print (Libnames.IndRef (kn,0)) xml_library_root)
+      print false (Libnames.IndRef (kn,0)) xml_library_root)
 ;;
 
 let _ =

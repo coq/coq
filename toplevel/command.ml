@@ -185,7 +185,7 @@ let declare_one_elimination ind =
   let mindstr = string_of_id mip.mind_typename in
   let declare s c t =
     let id = id_of_string s in
-    let kn = Declare.declare_constant id
+    let kn = Declare.declare_internal_constant id
       (DefinitionEntry
         { const_entry_body = c;
           const_entry_type = t;

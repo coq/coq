@@ -28,7 +28,7 @@
 (* Note: it is printed only (and directly) the most discharged available  *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-val print : Libnames.global_reference -> string option -> unit
+val print : bool -> Libnames.global_reference -> string option -> unit
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)

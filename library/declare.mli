@@ -54,6 +54,9 @@ type constant_declaration = constant_entry * global_kind
    the full path of the declaration *)
 val declare_constant : identifier -> constant_declaration -> object_name
 
+val declare_internal_constant :
+  identifier -> constant_declaration -> object_name
+
 val redeclare_constant :
  identifier -> Dischargedhypsmap.discharged_hyps -> 
       Cooking.recipe * global_kind -> unit
@@ -95,5 +98,5 @@ val strength_of_global : global_reference -> strength
 
 (* hooks for XML output *)
 val set_xml_declare_variable : (object_name -> unit) -> unit
-val set_xml_declare_constant : (object_name -> unit) -> unit
+val set_xml_declare_constant : (bool * object_name -> unit) -> unit
 val set_xml_declare_inductive : (object_name -> unit) -> unit
