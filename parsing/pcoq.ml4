@@ -426,7 +426,13 @@ let reset_all_grammars () =
   f Vernac_.vernac;
   Lexer.init()
 
-
+let reinit_levels () =
+  if not !Options.v7 then begin
+  (* Ensure that primitive levels exist even if emptied by rule deletion *)
+    G.extend Constr.pattern (Some(Gramext.Before "0")) [(Some "1",None,[])];
+    G.extend Constr.operconstr (Some(Gramext.After "10")) [(Some "9",None,[])];
+    G.extend Constr.pattern (Some(Gramext.After "10")) [(Some "9",None,[])]
+  end
 
 let main_entry = Gram.Entry.create "vernac"
 

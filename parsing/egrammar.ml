@@ -425,6 +425,7 @@ let unfreeze (grams, lex) =
   let n,l = number_of_entries undo in
   remove_grammars n;
   remove_levels l;
+  reinit_levels ();
   grammar_state := common;
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev redo)
