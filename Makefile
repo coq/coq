@@ -44,7 +44,7 @@ OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
-COQINCLUDES=-I states
+COQINCLUDES=-I states -R theories -R contrib
 #           -I contrib/omega -I contrib/ring -I contrib/xml \
 #	    -I theories/Init -I theories/Logic -I theories/Arith \
 #	    -I theories/Bool -I theories/Zarith -I theories/Lists \
