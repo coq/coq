@@ -9,8 +9,3 @@
 (*i $Id$ i*)
 
 (* Nice syntax for integers. *)
-
-open Util
-open Topconstr
-
-val z_of_string : bool -> string -> loc -> constr_expr
