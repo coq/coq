@@ -9,8 +9,8 @@
 (*i $Id$ i*)
 
 Require Export Notations.
-Require Export Datatypes.
 Require Export Logic.
+Require Export Datatypes.
 Require Export Specif.
 Require Export Peano.
 Require Export Wf.
