@@ -378,8 +378,12 @@ clean::
 # tests
 ###########################################################################
 
-check:: $(BESTCOQTOP)
-	cd test-suite; ./check -$(BEST)
+check.log: world
+	cd test-suite; ./check -$(BEST) > check.log
+
+check:: check.log
+	cat check.log
+	grep -F 'Error!' check.log
 
 ###########################################################################
 # theories and states

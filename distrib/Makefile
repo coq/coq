@@ -86,15 +86,15 @@ arch-rpm: ${COQRPMPACKAGE}.${ARCH}.rpm
 test:
 	cp ${COQPACKAGE}.tar.gz tmp.tar.gz
 	gunzip tmp.tar.gz
-	@echo Trying "make world"
+	@echo Trying "make world check"
 	- rm -rf ${COQPACKAGE}
 	tar xf tmp.tar
 	(cd ${COQPACKAGE};\
 	configure -local -opt -emacs emacs;\
-	make world >& log.world;\
+	make world check >& log.world;\
 	if [ $$? = 0 ];\
-	then echo make world succeeded;\
-	else echo make world failed; exit 1;\
+	then echo '"make world check" succeeded';\
+	else echo '"make world check" failed'; exit 1;\
 	fi)
 	rm tmp.tar
 	@echo "Compilation succeeded"
@@ -127,7 +127,7 @@ arch-tar-gz: ${COQPACKAGE}.tar.gz
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
 	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt;\
-	make world;\
+	make world check;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install)
 	$(MAKE) arch-tar-gz-final
@@ -141,7 +141,7 @@ win: ${COQPACKAGE}.tar.gz
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
 	./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs;\
-	make world;\
+	make world check;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install;\
 	cd ${ARCHBUILDROOT}/buildroot;\
@@ -318,8 +318,8 @@ prep-deb: ${COQDEBORIG}.tar.gz ${COQPACKAGE}.tar.gz
 
 deb: prep-deb
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us 2>&1 | tee ../../deb.log
-	lintian deb_build/${COQDEBCHANGES} || true
+	(lintian deb_build/${COQDEBCHANGES} | tee lintian.log) || true
 
 deb-sign: prep-deb
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot 2>&1 | tee ../../deb.log
-	lintian deb_build/${COQDEBCHANGES} || true
+	(lintian deb_build/${COQDEBCHANGES} | tee lintian.log) || true

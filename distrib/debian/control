@@ -14,3 +14,5 @@ Description: a proof assistant for higher-order logic.
  Coq is a proof assistant for higher-order logic, which allows the
  development of computer programs consistent with their formal
  specification. It is developed using Objective Caml and Camlp4.
+ For more information, see <http://coq.inria.fr/>.
+
