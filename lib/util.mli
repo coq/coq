@@ -113,6 +113,7 @@ val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
    where [(e_i,k_i)=f e_{i-1} l_i] *)
 val list_fold_map : 
   ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list 
+val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
 
 (*s Arrays. *)
 

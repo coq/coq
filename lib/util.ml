@@ -329,6 +329,8 @@ let list_fold_map f e l =
     (e',List.rev lrev)
 *)
 
+let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
+
 (* Arrays *)
 
 let array_exists f v = 
