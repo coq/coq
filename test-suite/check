@@ -85,6 +85,7 @@ test_output() {
         else 
 	    echo "Error! (unexpected output)"
         fi 
+        rm $tmpoutput
     done
     for f in $1/*.v8; do 
 	nbtests=`expr $nbtests + 1`
@@ -100,6 +101,7 @@ test_output() {
             echo "V8 Error! (unexpected output)"
         fi
         rm tmp8.v
+        rm $tmpoutput
     done
 }
 
@@ -121,6 +123,7 @@ test_parser() {
             echo "Ok"
             nbtestsok=`expr $nbtestsok + 1`
         fi
+        rm $tmpoutput
     done
     fi
 }
