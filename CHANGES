@@ -27,3 +27,7 @@ l'ast, il faut typer explicitement la grammaire avec Ast ou List
   Print LoadPath -> Print Path;
   DelPath -> Remove Path;
   Print Path -> Print Coercion Paths.
+
+- Ajout d'un Let primitif
+
+- Ajout (officiel) d'une tactique LetTac et d'un Induction "convivial"
