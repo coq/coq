@@ -963,7 +963,7 @@ Reset Initial.
 \begin{Variants}
 \item
 \begin{coq_example*}
-Inductive list (A:Set) : Set := nil | cons (_:X) (_:list X).
+Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 \end{coq_example*}
 This is an alternative definition of lists where we specify the
 arguments of the constructors rather than their full type.
@@ -1036,6 +1036,9 @@ The typical example of a mutual inductive data type is the one for
 trees and forests. We assume given two types $A$ and $B$ as variables.
 It can be declared the following way.
 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 \begin{coq_example*}
 Variables A B : Set.
 Inductive tree : Set :=
