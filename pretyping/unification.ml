@@ -67,9 +67,9 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
-let unify_0 env sigma cv_pb m n =
+let unify_0 env sigma cv_pb mod_delta m n =
   let trivial_unify pb substn m n =
-    if (not(occur_meta m)) & is_fconv pb env sigma m n then substn
+    if (not(occur_meta m)) && (if mod_delta then is_fconv pb env sigma m n else eq_constr m n) then substn
     else error_cannot_unify env sigma (m,n) in
   let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
     let cM = Evarutil.whd_castappevar sigma m
@@ -114,7 +114,9 @@ let unify_0 env sigma cv_pb m n =
       | _ -> trivial_unify pb substn cM cN
 
   in
-  if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
+  if (not(occur_meta m)) &&
+   (if mod_delta then is_fconv cv_pb env sigma m n else eq_constr m n)
+  then 
     ([],[])
   else 
     let (mc,ec) = unirec_rec cv_pb ([],[]) m n in
@@ -192,7 +194,7 @@ let is_mimick_head f =
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
 
-let w_merge env with_types metas evars evd =
+let w_merge env with_types mod_delta metas evars evd =
   let ty_metas = ref [] in
   let ty_evars = ref [] in
   let rec w_merge_rec evd metas evars =
@@ -210,7 +212,7 @@ let w_merge env with_types metas evars evd =
 	  | Evar (evn,_ as ev) ->
     	      if is_defined_evar evd ev then
 		let (metas',evars') =
-                  unify_0 env (evars_of evd) CONV rhs lhs in
+                  unify_0 env (evars_of evd) CONV mod_delta rhs lhs in
 		w_merge_rec evd (metas'@metas) (evars'@t)
     	      else begin
 		let rhs' = 
@@ -224,7 +226,7 @@ let w_merge env with_types metas evars evd =
 		        w_merge_rec (w_Define evn rhs' evd) metas t
 		      with ex when precatchable_exception ex ->
                         let evd' =
-                          mimick_evar evd f (Array.length cl) evn in
+                          mimick_evar evd mod_delta f (Array.length cl) evn in
 			w_merge_rec evd' metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
@@ -236,7 +238,8 @@ let w_merge env with_types metas evars evd =
       | ([], (mv,n)::t) ->
     	  if meta_defined evd mv then
             let (metas',evars') =
-              unify_0 env (evars_of evd) CONV (meta_fvalue evd mv).rebus n in
+              unify_0 env (evars_of evd) CONV mod_delta
+               (meta_fvalue evd mv).rebus n in
             w_merge_rec evd (metas'@t) evars'
     	  else
             begin
@@ -246,7 +249,7 @@ let w_merge env with_types metas evars evd =
                   let sigma = evars_of evd in
                   (* why not typing with the metamap ? *)
 		  let nty = Typing.type_of env sigma (nf_meta evd n) in
-		  let (mc,ec) = unify_0 env sigma CUMUL nty mvty in
+		  let (mc,ec) = unify_0 env sigma CUMUL mod_delta nty mvty in
                   ty_metas := mc @ !ty_metas;
                   ty_evars := ec @ !ty_evars
 		with e when precatchable_exception e -> ());
@@ -254,12 +257,12 @@ let w_merge env with_types metas evars evd =
 	      w_merge_rec evd' t []
             end
 
-  and mimick_evar evd hdc nargs sp =
+  and mimick_evar evd mod_delta hdc nargs sp =
     let ev = Evd.map (evars_of evd) sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =
-      unify_0 sp_env (evars_of evd') CUMUL
+      unify_0 sp_env (evars_of evd') CUMUL mod_delta
         (Retyping.get_type_of sp_env (evars_of evd') c) ev.evar_concl in
     let evd'' = w_merge_rec evd' mc ec in
     if (evars_of evd') == (evars_of evd'')
@@ -285,9 +288,9 @@ let w_merge env with_types metas evars evd =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
-let w_unify_core_0 env with_types cv_pb m n evd =
-  let (mc,ec) = unify_0 env (evars_of evd) cv_pb m n in 
-  w_merge env with_types mc ec evd
+let w_unify_core_0 env with_types cv_pb mod_delta m n evd =
+  let (mc,ec) = unify_0 env (evars_of evd) cv_pb mod_delta m n in 
+  w_merge env with_types mod_delta mc ec evd
 
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true
@@ -309,12 +312,12 @@ let iter_fail f a =
 (* Tries to find an instance of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] until it finds a match.
    Fails if no match is found *)
-let w_unify_to_subterm env (op,cl) evd =
+let w_unify_to_subterm env ?(mod_delta=true) (op,cl) evd =
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then w_unify_0 env CONV op cl evd,cl
+       then w_unify_0 env CONV mod_delta op cl evd,cl
        else error "Bound 1"
      with ex when precatchable_exception ex ->
        (match kind_of_term cl with 
@@ -366,7 +369,7 @@ let w_unify_to_subterm env (op,cl) evd =
   with ex when precatchable_exception ex ->
     raise (PretypeError (env,NoOccurrenceFound op))
 
-let w_unify_to_subterm_list env allow_K oplist t evd = 
+let w_unify_to_subterm_list env mod_delta allow_K oplist t evd = 
   List.fold_right 
     (fun op (evd,l) ->
       if isMeta op then
@@ -376,7 +379,7 @@ let w_unify_to_subterm_list env allow_K oplist t evd =
         let (evd',cl) =
           try 
 	    (* This is up to delta for subterms w/o metas ... *)
-	    w_unify_to_subterm env (strip_outer_cast op,t) evd
+	    w_unify_to_subterm env ~mod_delta (strip_outer_cast op,t) evd
           with PretypeError (env,NoOccurrenceFound _) when allow_K -> (evd,op)
         in 
 	(evd',cl::l)
@@ -388,30 +391,30 @@ let w_unify_to_subterm_list env allow_K oplist t evd =
     oplist 
     (evd,[])
 
-let secondOrderAbstraction env allow_K typ (p, oplist) evd =
+let secondOrderAbstraction env mod_delta allow_K typ (p, oplist) evd =
   let sigma = evars_of evd in
   let (evd',cllist) =
-    w_unify_to_subterm_list env allow_K oplist typ evd in
+    w_unify_to_subterm_list env mod_delta allow_K oplist typ evd in
   let typp = Typing.meta_type evd' p in
   let pred = abstract_list_all env sigma typp typ cllist in
-  w_unify_0 env CONV (mkMeta p) pred evd'
+  w_unify_0 env CONV mod_delta (mkMeta p) pred evd'
 
-let w_unify2 env allow_K cv_pb ty1 ty2 evd =
+let w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd =
   let c1, oplist1 = whd_stack ty1 in
   let c2, oplist2 = whd_stack ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
 	let evd' =
-          secondOrderAbstraction env allow_K ty2 (p1,oplist1) evd in 
+          secondOrderAbstraction env mod_delta allow_K ty2 (p1,oplist1) evd in 
         (* Resume first order unification *)
-	w_unify_0 env cv_pb (nf_meta evd' ty1) ty2 evd'
+	w_unify_0 env cv_pb mod_delta (nf_meta evd' ty1) ty2 evd'
     | _, Meta p2 ->
         (* Find the predicate *)
 	let evd' =
-          secondOrderAbstraction env allow_K ty1 (p2, oplist2) evd in 
+          secondOrderAbstraction env mod_delta allow_K ty1 (p2, oplist2) evd in 
         (* Resume first order unification *)
-	w_unify_0 env cv_pb ty1 (nf_meta evd' ty2) evd'
+	w_unify_0 env cv_pb mod_delta ty1 (nf_meta evd' ty2) evd'
     | _ -> error "w_unify2"
 
 
@@ -435,7 +438,7 @@ let w_unify2 env allow_K cv_pb ty1 ty2 evd =
    Before, second-order was used if the type of Meta(1) and [x:A]t was
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
-let w_unify allow_K env cv_pb ty1 ty2 evd =
+let w_unify allow_K env cv_pb ?(mod_delta=true) ty1 ty2 evd =
   let hd1,l1 = whd_stack ty1 in
   let hd2,l2 = whd_stack ty2 in
   match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
@@ -443,10 +446,10 @@ let w_unify allow_K env cv_pb ty1 ty2 evd =
     | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
       when List.length l1 = List.length l2 ->
 	(try 
-	   w_typed_unify env cv_pb ty1 ty2 evd
+	   w_typed_unify env cv_pb mod_delta ty1 ty2 evd
 	 with ex when precatchable_exception ex -> 
 	   try 
-	     w_unify2 env allow_K cv_pb ty1 ty2 evd
+	     w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd
 	   with PretypeError (env,NoOccurrenceFound c) as e -> raise e
 	     | ex when precatchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
@@ -454,14 +457,14 @@ let w_unify allow_K env cv_pb ty1 ty2 evd =
      (* Second order case *)
      | (Meta _, true, _, _ | _, _, Meta _, true) -> 
 	(try 
-	   w_unify2 env allow_K cv_pb ty1 ty2 evd
+	   w_unify2 env mod_delta allow_K cv_pb ty1 ty2 evd
 	with PretypeError (env,NoOccurrenceFound c) as e -> raise e
 	  | ex when precatchable_exception ex -> 
           try 
-	     w_typed_unify env cv_pb ty1 ty2 evd
+	     w_typed_unify env cv_pb mod_delta ty1 ty2 evd
           with ex when precatchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
      (* General case: try first order *)
-     | _ -> w_unify_0 env cv_pb ty1 ty2 evd
+     | _ -> w_unify_0 env cv_pb mod_delta ty1 ty2 evd
 

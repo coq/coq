@@ -16,13 +16,13 @@ open Evd
 
 (* The "unique" unification fonction *)
 val w_unify :
-  bool -> env -> conv_pb -> constr -> constr -> evar_defs -> evar_defs
+  bool -> env -> conv_pb -> ?mod_delta:bool -> constr -> constr -> evar_defs -> evar_defs
 
 (* [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
-  env -> constr * constr -> evar_defs -> evar_defs * constr
+  env -> ?mod_delta:bool -> constr * constr -> evar_defs -> evar_defs * constr
 
 (*i This should be in another module i*)
 
