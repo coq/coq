@@ -18,16 +18,20 @@ open Instantiate
 exception Elimconst
 exception Redelimination
 
-type constant_evaluation = 
+type constant_evaluation_style = 
   | EliminationFix of (int * constr) list * int
-  | EliminationCases of int
+  | EliminationCases
+  | EliminationConst of constant_evaluation_style
+
+type constant_evaluation =
+  | IsElimination of (int * constant_evaluation_style)
   | NotAnElimination
 
 (* We use a cache registered as a global table *)
 
 let eval_table = ref Spmap.empty
 
-type frozen = constant_evaluation Spmap.t
+type frozen = (int * constant_evaluation) Spmap.t
 
 let init () =
   eval_table := Spmap.empty
@@ -56,12 +60,17 @@ let _ =
    == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel 1)..(Rel p))
    with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1] *)
 
-let compute_consteval c = 
+let rec compute_consteval c = 
   let rec srec n labs c =
-    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c in
+    let c',l = whd_betaetalet_stack c in
+    let nargs = List.length l in
     match kind_of_term c' with
+      | IsConst cst ->
+	  (match constant_eval cst with
+	     | NotAnElimination -> raise Elimconst
+	     | IsElimination (p,e) -> (p+n-nargs, EliminationConst e))
       | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
-      | IsFix ((nv,i),(tys,_,bds)) -> 
+      | IsFix ((lv,i),(tys,_,bds)) -> 
           if (List.length l) > n then raise Elimconst;
 	  let nbfix = Array.length bds in
           let li = 
@@ -79,24 +88,23 @@ let compute_consteval c =
 		     raise Elimconst) l
           in 
 	  if list_distinct (List.map fst li) then 
-	    EliminationFix (li,n) 
+	    (n-nargs+lv.(i), EliminationFix (li,n))
           else 
 	    raise Elimconst
-      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
+      | IsMutCase (_,_,d,_) when isRel d -> (n, EliminationCases)
       | _ -> raise Elimconst
   in
-  try srec 0 [] c
+  try IsElimination (srec 0 [] c)
   with Elimconst -> NotAnElimination
 
-let constant_eval sp =
+and constant_eval (sp,_ as cst) =
   try
     Spmap.find sp !eval_table
   with Not_found -> begin
-    let v = 
-      let cb = Global.lookup_constant sp in
-      match cb.Declarations.const_body with
+    let v =
+      match constant_opt_value (Global.env ()) cst with
 	| None -> NotAnElimination
-	| Some v -> let c = Declarations.cook_constant v in compute_consteval c
+	| Some c -> compute_consteval c
     in
     eval_table := Spmap.add sp v !eval_table;
     v
@@ -121,8 +129,7 @@ let rev_firstn_liftn fn ln =
    where a1...an are the n first arguments of largs and Tik' is Tik[yil=al]
    To check ... *)
 
-let make_elim_fun f lv n largs =
-  let (sp,args) = destConst f in
+let make_elim_fun (sp,args) lv n largs =
   let labs,_ = list_chop n (list_of_stack largs) in
   let p = List.length lv in
   let ylv = List.map fst lv in
@@ -181,7 +188,7 @@ let reduce_mind_case_use_function env f mia =
 	mkMutCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
-let special_red_case env whfun p c ci lf  =
+let special_red_case env whfun (ci, p, c, lf)  =
   let rec redrec s = 
     let (constr, cargs) = whfun s in 
     match kind_of_term constr with 
@@ -207,40 +214,38 @@ let special_red_case env whfun p c ci lf  =
   in 
   redrec (c, empty_stack)
 
-let rec red_elim_const env sigma k largs =
-  if not (evaluable_constant env k) then raise Redelimination;
-  let (sp, args as cst) = destConst k in
-  let elim_style = constant_eval sp in
-  match elim_style with
-    | EliminationCases n when stack_args_size largs >= n -> begin
+let rec red_elim_const env sigma cst largs =
+  if not (evaluable_constant env cst) then raise Redelimination;
+  let rec descend cst args = function
+    | EliminationConst e ->
 	let c = constant_value env cst in
-	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
-	match kind_of_term c' with
-	  | IsMutCase (ci,p,c,lf) ->
-              (special_red_case env (construct_const env sigma) p c ci lf,
-	       lrest)
-	  | _ -> assert false
-      end
-    | EliminationFix (lv,n) when stack_args_size largs >= n -> begin
+	let c', lrest = whd_betaetalet_state (c,args) in
+	descend (destConst c') lrest e
+    | EliminationCases ->
 	let c = constant_value env cst in
-	let d, lrest = whd_betadeltaeta_state env sigma (c, largs) in
-	match kind_of_term d with
-	  | IsFix fix -> 
-	      let f id = make_elim_fun k lv n largs id in
-	      let co = construct_const env sigma in
-	      (match reduce_fix_use_function f co fix lrest with
-		| NotReducible -> raise Redelimination
-		| Reduced (c,rest) -> (nf_beta env sigma c, rest))
-	  | _ -> assert false
-      end
+	let c', lrest = whd_betaetalet_state (c,args) in
+        (special_red_case env (construct_const env sigma) (destCase c'),
+	 lrest)
+    | EliminationFix (lv,n) ->
+	let c = constant_value env cst in
+	let d, lrest = whd_betaetalet_state (c, args) in
+	let f id = make_elim_fun cst lv n args id in
+	let co = construct_const env sigma in
+	(match reduce_fix_use_function f co (destFix d) lrest with
+	   | NotReducible -> raise Redelimination
+	   | Reduced (c,rest) -> (nf_beta env sigma c, rest))
+  in match constant_eval cst with
+    | IsElimination (n,e) when stack_args_size largs >= n ->
+	descend cst largs e
     | _ -> raise Redelimination
+
 
 and construct_const env sigma = 
   let rec hnfstack (x, stack as s) =
     match kind_of_term x with
       | IsConst cst  ->
           (try
-	     hnfstack (red_elim_const env sigma x stack)
+	     hnfstack (red_elim_const env sigma cst stack)
            with Redelimination ->
 	     (match constant_opt_value env cst with
 		| Some cval ->
@@ -257,7 +262,7 @@ and construct_const env sigma =
              | Some (c',rest) -> stacklam hnfstack [c'] c rest)
       | IsMutCase (ci,p,c,lf) ->
           hnfstack 
-	    (special_red_case env (construct_const env sigma) p c ci lf, stack)
+	    (special_red_case env (construct_const env sigma) (ci,p,c,lf), stack)
       | IsMutConstruct _ -> s
       | IsCoFix _ -> s
       | IsFix fix -> 
@@ -305,7 +310,7 @@ let hnf_constr env sigma c =
       | IsApp (f,cl)   -> redrec (f, append_stack cl largs)
       | IsConst cst ->
           (try
-             let (c',lrest) = red_elim_const env sigma x largs in 
+             let (c',lrest) = red_elim_const env sigma cst largs in 
 	     redrec (c', lrest)
            with Redelimination ->
              match constant_opt_value env cst with
@@ -319,7 +324,7 @@ let hnf_constr env sigma c =
           (try
              redrec 
 	       (special_red_case env (whd_betadeltaiota_state env sigma) 
-		  p c ci lf, largs)
+		  (ci, p, c, lf), largs)
            with Redelimination -> 
 	     app_stack s)
       | IsFix fix ->
@@ -343,14 +348,14 @@ let whd_nf env sigma c =
       | IsLetIn (n,b,_,c) -> stacklam nf_app [b] c stack
       | IsApp (f,cl) -> nf_app (f, append_stack cl stack)
       | IsCast (c,_) -> nf_app (c, stack)
-      | IsConst _ ->
+      | IsConst cst ->
           (try
-	     nf_app (red_elim_const env sigma c stack)
+	     nf_app (red_elim_const env sigma cst stack)
            with Redelimination -> 
 	     s)
       | IsMutCase (ci,p,d,lf) ->
           (try
-             nf_app (special_red_case env nf_app p d ci lf, stack)
+             nf_app (special_red_case env nf_app (ci,p,d,lf), stack)
            with Redelimination -> 
 	     s)
       | IsFix fix ->
@@ -550,7 +555,7 @@ let one_step_reduce env sigma c =
       | IsApp (f,cl) -> redrec (f, append_stack cl largs)
       | IsConst cst ->
           (try
-             red_elim_const env sigma x largs
+             red_elim_const env sigma cst largs
            with Redelimination ->
 	     try
                constant_value env cst, largs
@@ -559,7 +564,7 @@ let one_step_reduce env sigma c =
       | IsMutCase (ci,p,c,lf) ->
           (try
 	     (special_red_case env (whd_betadeltaiota_state env sigma)
-	       p c ci lf, largs)
+	       (ci,p,c,lf), largs)
            with Redelimination -> error "Not reducible 2")
       | IsFix fix ->
 	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
