@@ -195,10 +195,60 @@ let uncurrify_decl = function
  | d -> d
 
 
-(*s Table for direct ML extractions. *)
+(*s Optimization. *)
 
 module Refset = 
   Set.Make(struct type t = global_reference let compare = compare end)
+
+type extraction_params = {
+  modular : bool;       (* modular extraction *)
+  no_opt : bool;        (* no optimization at all *)
+  to_keep : Refset.t;   (* globals to keep *)
+  to_expand : Refset.t; (* globals to expand *)
+}
+
+let ml_subst_glob r m = 
+  let rec substrec = function
+    | MLglob r' as t -> if r = r' then m else t
+    | t -> ast_map substrec t
+  in
+  substrec
+
+let expand r m = function
+  | Dglob(r',t') -> Dglob(r', ml_subst_glob r m t')
+  | d -> d
+
+let normalize = betared_ast
+
+let keep prm r t' = true
+  (* prm.no_opt || Refset.mem r prm.to_keep *)
+
+let warning_expansion r = 
+  wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
+		 Printer.pr_global r; 'sPC; 'sTR "is expanded." >])
+
+let rec optimize prm = function
+  | [] -> 
+      []
+  | (Dtype _ | Dabbrev _) as d :: l -> 
+      d :: (optimize prm l)
+  (*i
+  | Dglob(id,(MLexn _ as t)) as d :: l ->
+      let l' = List.map (expand (id,t)) l in optimize prm l'
+  i*)	    
+  | [ Dglob(r,t) ] ->
+      let t' = normalize t in [ Dglob(r,t') ]
+  | Dglob(r,t) as d :: l ->
+      let t' = normalize t in
+      if keep prm r t' then
+	(Dglob(r,t')) :: (optimize prm l)
+      else begin
+	warning_expansion r;
+	let l' = List.map (expand r t') l in
+        optimize prm l'
+      end
+
+(*s Table for direct ML extractions. *)
 
 module Refmap = 
   Map.Make(struct type t = global_reference let compare = compare end)

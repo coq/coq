@@ -105,16 +105,16 @@ let eq = IndRef (coq_constant ["Init";"Logic"] "eq", 0)
 (* ["(well_founded nat lt)"] *)
 let wf_nat_pattern = 
   PApp (PRef well_founded, [| PRef nat; PRef lt |])
-(* ["((well_founded Z (Zwf ?))"] *)
+(* ["((well_founded Z (Zwf ?1))"] *)
 let wf_z_pattern = 
   let zwf = ConstRef (coq_constant ["correctness";"Zwf"] "Zwf") in
-  PApp (PRef well_founded, [| PRef z; PApp (PRef zwf, [| PMeta None |]) |])
-(* ["(and ? ?)"] *)
+  PApp (PRef well_founded, [| PRef z; PApp (PRef zwf, [| PMeta (Some 1) |]) |])
+(* ["(and ?1 ?2)"] *)
 let and_pattern = 
-  PApp (PRef and_, [| PMeta None; PMeta None |])
-(* ["(eq ? ? ?)"] *)
+  PApp (PRef and_, [| PMeta (Some 1); PMeta (Some 2) |])
+(* ["(eq ?1 ?2 ?3)"] *)
 let eq_pattern = 
-  PApp (PRef eq, [| PMeta None; PMeta None; PMeta None |])
+  PApp (PRef eq, [| PMeta (Some 1); PMeta (Some 2); PMeta (Some 3) |])
 
 (* loop_ids: remove loop<i> hypotheses from the context, and rewrite
  * using Variant<i> hypotheses when needed. *)

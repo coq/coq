@@ -438,8 +438,9 @@ let ocaml_preamble () =
      'sTR "type arity = unit"; 'fNL;
      'sTR "let arity = ()"; 'fNL; 'fNL >]
 
-let extract_to_file f modular decls =
-  let pp_decl = if modular then ModularPp.pp_decl else MonoPp.pp_decl in
+let extract_to_file f prm decls =
+  let decls = optimize prm decls in
+  let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
   pP_with ft (hV 0 (ocaml_preamble ()));

@@ -200,8 +200,8 @@ ML4FILES += contrib/correctness/psyntax.ml4
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
 	contrib/xml/xml.cmo \
-	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
-#	$(CORRECTNESSCMO)
+	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
+	$(EXTRACTIONCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -279,9 +279,6 @@ toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
 
-bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
-	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(EXTRACTIONCMO)
-
 bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
@@ -322,11 +319,16 @@ theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 
 init: $(INITVO)
 
+EXTRACTIONVO=contrib/extraction/Extraction.vo
+
 TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
           tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo \
-	  tactics/EqDecide.vo
+	  tactics/EqDecide.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
+	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
+
+contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
@@ -436,10 +438,6 @@ clean::
 # contribs
 ###########################################################################
 
-EXTRACTIONVO=contrib/extraction/Extraction.vo
-contrib/extraction/%.vo: contrib/extraction/%.v
-	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
-
 CORRECTNESSVO=contrib/correctness/Arrays.vo				\
 	contrib/correctness/Correctness.vo				\
 	contrib/correctness/Exchange.vo					\
@@ -470,7 +468,7 @@ contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE)
 	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(EXTRACTIONVO)
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -570,8 +568,7 @@ install-binaries:
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(FULLBINDIR)
 
-LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO) \
-         $(EXTRACTIONCMO)
+LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)

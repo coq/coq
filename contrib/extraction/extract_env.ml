@@ -144,15 +144,34 @@ let reference_of_varg = function
       (try Nametab.locate q with Not_found -> no_such_reference q)
   | _ -> assert false
 
-let decl_of_vargl vl =
-  let rl = List.map reference_of_varg vl in
-  List.map extract_declaration (extract_env rl)
+let refs_of_vargl = List.map reference_of_varg
+
+let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
+
+let decl_of_refs refs =
+  List.map extract_declaration (extract_env refs)
 
 let _ = 
   vinterp_add "ExtractionRec"
     (fun vl () ->
-       let rl' = decl_of_vargl vl in
+       let rl' = decl_of_refs (refs_of_vargl vl) in
        List.iter (fun d -> mSGNL (Pp.pp_decl d)) rl')
+
+(*s Extraction parameters. *)
+
+let interp_options keep modular = function
+  | [VARG_STRING "noopt"] ->
+      { no_opt = true; modular = modular; 
+	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
+  | [VARG_STRING "nooption"] ->
+      { no_opt = false; modular = modular;
+	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
+  | VARG_STRING "expand" :: l ->
+      { no_opt = false; modular = modular;
+	to_keep = refs_set_of_list keep; 
+	to_expand = refs_set_of_list (refs_of_vargl l) }
+  | _ -> 
+      assert false
 
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
@@ -161,8 +180,10 @@ let _ =
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
-       | VARG_STRING f :: vl ->
-	   (fun () -> Ocaml.extract_to_file f false (decl_of_vargl vl))
+       | VARG_VARGLIST o :: VARG_STRING f :: vl ->
+	   let refs = refs_of_vargl vl in
+	   let prm = interp_options refs false o in
+	   (fun () -> Ocaml.extract_to_file f prm (decl_of_refs refs))
        | _ -> assert false)
 
 (*s Extraction of a module. The vernacular command is \verb!Extraction Module!
@@ -190,10 +211,11 @@ let extract_module m =
 let _ = 
   vinterp_add "ExtractionModule"
     (function 
-       | [VARG_IDENTIFIER m] ->
+       | [VARG_VARGLIST o; VARG_IDENTIFIER m] ->
 	   (fun () -> 
 	      let m = Names.string_of_id m in
 	      Ocaml.current_module := m;
 	      let f = (String.uncapitalize m) ^ ".ml" in
-	      Ocaml.extract_to_file f true (extract_module m))
+	      let prm = interp_options [] true o in
+	      Ocaml.extract_to_file f prm (extract_module m))
        | _ -> assert false)

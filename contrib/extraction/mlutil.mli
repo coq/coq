@@ -39,9 +39,20 @@ val betared_decl : ml_decl -> ml_decl
 val uncurrify_ast : ml_ast -> ml_ast
 val uncurrify_decl : ml_decl -> ml_decl
 
-(*s Table for direct extractions to ML values. *)
+(*s Optimization. *)
 
 module Refset : Set.S with type elt = global_reference
+
+type extraction_params = {
+  modular : bool;       (* modular extraction *)
+  no_opt : bool;        (* no optimization at all *)
+  to_keep : Refset.t;   (* globals to keep *)
+  to_expand : Refset.t; (* globals to expand *)
+}
+
+val optimize : extraction_params -> ml_decl list -> ml_decl list
+
+(*s Table for direct extractions to ML values. *)
 
 val is_ml_extraction : global_reference -> bool
 val find_ml_extraction : global_reference -> string

@@ -100,7 +100,7 @@ GEXTEND Gram
           <:ast< (PrintHintGoal) >>
       | IDENT "Print"; IDENT "HintDb"; s = identarg  ->
 	  <:ast< (PrintHintDb $s) >>
-      | IDENT "Print"; IDENT "Section"; s = identarg ->
+      | IDENT "Print"; IDENT "Section"; s = qualidarg ->
           <:ast< (PrintSec $s) >>
       | IDENT "Print"; IDENT "States" -> <:ast< (PrintStates) >>
       (* This should be in "syntax" section but is here for factorization *)

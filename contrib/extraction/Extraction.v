@@ -6,17 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Declare ML Module "mlutil" "ocaml" "extraction" "extract_env".
-
 Grammar vernac vernac : ast :=
   extr_constr [ "Extraction" constrarg($c) "." ] -> 
               [ (Extraction $c) ]
 | extr_list   [ "Recursive" "Extraction" ne_qualidarg_list($l) "." ] ->
               [ (ExtractionRec ($LIST $l)) ]
-| extr_list   [ "Extraction" stringarg($f) ne_qualidarg_list($l) "." ] ->
-              [ (ExtractionFile $f ($LIST $l)) ]
-| extr_module [ "Extraction" "Module" identarg($m) "." ] ->
-              [ (ExtractionModule $m) ]
+| extr_list   
+     [ "Extraction" options($o) stringarg($f) ne_qualidarg_list($l) "." ] 
+  -> [ (ExtractionFile $o $f ($LIST $l)) ]
+| extr_module 
+     [ "Extraction" options($o) "Module" identarg($m) "." ]
+  -> [ (ExtractionModule $o $m) ]
 
 | extract_constant 
      [ "Extract" "Constant" qualidarg($x) "=>" idorstring($y) "." ]
@@ -36,4 +36,10 @@ with idorstring_list: List :=
 
 with idorstring : ast :=
   ids_ident  [ identarg($id) ] -> [ $id ]
-| ids_string [ stringarg($s) ] -> [ $s ].
+| ids_string [ stringarg($s) ] -> [ $s ]
+
+with options : ast :=
+| ext_opt_noopt [ "noopt" ] -> [ (VERNACARGLIST "noopt") ]
+| ext_op_expand [ "expand" "[" ne_qualidarg_list($l) "]" ] -> 
+                [ (VERNACARGLIST "expand" ($LIST $l)) ]
+| ext_opt_none  [ ] -> [ (VERNACARGLIST "nooption") ].

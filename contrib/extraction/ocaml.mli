@@ -13,12 +13,11 @@
     declarations to a file. *)
 
 open Miniml
+open Mlutil
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 
-(* The boolean indicates if the extraction is modular. *)
-
 val current_module : string ref
-val extract_to_file : string -> bool -> ml_decl list -> unit
+val extract_to_file : string -> extraction_params -> ml_decl list -> unit
 
 

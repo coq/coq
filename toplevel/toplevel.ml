@@ -165,15 +165,19 @@ let valid_loc dloc (b,e) =
 	  
 let valid_buffer_loc ib dloc (b,e) =
   valid_loc dloc (b,e) & b-ib.start >= 0 & e-ib.start < ib.len & b<=e 
-    
+
+(*s The Coq prompt is the name of the focused proof, if any, and "Coq"
+    otherwise. We trap all exceptions to prevent the error message printing
+    from cycling. *)
+let make_prompt () =
+  try
+    (Names.string_of_id (Pfedit.get_current_proof_name ())) ^ " < "
+  with _ -> 
+    "Coq < "
+
 (* A buffer to store the current command read on stdin. It is
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
-let make_prompt () =
-  if Pfedit.refining () then
-    (Names.string_of_id (Pfedit.get_current_proof_name ()))^" < "
-  else "Coq < "
-
 let top_buffer =
   let pr() = (make_prompt())^(emacs_str (String.make 1 (Char.chr 249)))
   in

@@ -29,9 +29,9 @@ let is_eta_redex bl al =
       Invalid_argument("List.for_all2") -> false
 
 let rec red = function
-    CC_letin (dep, ty, bl, e1, e2) ->
+  | CC_letin (dep, ty, bl, e1, e2) ->
       begin match red e2 with
-	  CC_tuple (false,tl,al) ->
+	| CC_tuple (false,tl,al) ->
 	    if is_eta_redex bl al then
 	      red e1
 	    else

@@ -15,3 +15,4 @@ Require Export EAuto.
 Require Export AutoRewrite.
 Require Export Refine.
 Require Export EqDecide.
+Require Export Extraction.

@@ -89,8 +89,8 @@ let sig_n n =
 	    mind_entry_consnames = [ cname ];
 	    mind_entry_lc = [ lc ] } ] }
 	
-let pair = ConstructRef ((coq_constant ["Init"; "Datatypes"] "pair",0),1)
-let exist = ConstructRef ((coq_constant ["Init"; "Specif"] "exist",0),1)
+let pair = ConstructRef ((coq_constant ["Init"; "Datatypes"] "prod",0),1)
+let exist = ConstructRef ((coq_constant ["Init"; "Specif"] "sig",0),1)
 
 let tuple_ref dep n =
   if n = 2 & not dep then
