@@ -59,8 +59,12 @@ let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
+let check_coq_overwriting p = 
+  if string_of_id (List.hd (repr_dirpath p)) = "Coq" then
+    error "The \"Coq\" logical root directory is reserved for the Coq library"
+
 let set_include d p = push_include (d,p)
-let set_rec_include d p = push_rec_include (d,p)
+let set_rec_include d p = check_coq_overwriting p; push_rec_include (d,p)
 let set_default_include d = set_include d Nameops.default_root_prefix
 let set_default_rec_include d = set_rec_include d Nameops.default_root_prefix
  
