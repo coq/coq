@@ -248,7 +248,7 @@ let prrelation_class =
        (*CSC: still "setoid" in the error message *)
        str "[[ Error: setoid on equality " ++ prterm eq ++ str " not found! ]]")
   | Leibniz (Some ty) -> prterm ty
-  | Leibniz None -> str "?"
+  | Leibniz None -> str "_"
 
 let prmorphism_argument_gen prrelation (variance,rel) =
  prrelation rel ++
@@ -677,7 +677,12 @@ let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
         List.map
          (fun (v,rel) ->
            match rel with
-              Leibniz t -> v, Leibniz t
+              Leibniz (Some t) ->
+               assert (subst=[||]);
+               v, Leibniz (Some t)
+            | Leibniz None ->
+               assert (Array.length subst = 1);
+               v, Leibniz (Some (subst.(0)))
             | Relation rel -> v, Relation (apply_to_relation subst rel)) args
       in
        compose_lam quantifiers_rev
