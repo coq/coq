@@ -329,19 +329,6 @@ let vernac_import export refl =
   List.iter import refl;
   Lib.add_frozen_state ()
 
-(*  else
-    let import (loc,qid) = 
-      try
-	let mp = Nametab.locate_module qid in
-	  Declaremods.import_module mp
-      with Not_found ->
-	user_err_loc
-        (loc,"vernac_import",
-	 str ((string_of_qualid qid)^" is not a module"))
-    in
-      List.iter import qidl;
-*)
-
 let vernac_declare_module export id binders_ast mty_ast_o = 
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
@@ -463,7 +450,6 @@ let vernac_record struc binders sort nameopt cfs =
   (* Sections *)
 
 let vernac_begin_section = Lib.open_section
-
 let vernac_end_section = Lib.close_section
 
 let vernac_end_segment id =

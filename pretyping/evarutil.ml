@@ -140,12 +140,6 @@ let meta_instance env b =
 
 let nf_meta env c = meta_instance env (mk_freelisted c)
 
-let meta_type env mv =
-  let ty =
-    try meta_ftype env mv
-    with Not_found -> error ("unknown meta ?"^string_of_int mv) in
-  meta_instance env ty
-
 (**********************)
 (* Creating new evars *)
 (**********************)
@@ -283,6 +277,7 @@ let real_clean env isevars ev args rhs =
  	 if i<=k then t
  	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
       | Evar (ev,args) ->
+
 	  let args' = Array.map (subs k) args in
 	  if need_restriction !evd args' then
             if Evd.is_defined_evar !evd (ev,args) then 
