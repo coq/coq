@@ -1347,7 +1347,7 @@ Please restart and report NOW.";
 	      ~callback:(fun it (m:Gtk.textmark) ->
 			   !set_location 
 			   (Printf.sprintf 
-			      "Line: %4d Char: %3d" (self#get_insert#line + 1)
+			      "Line: %5d Char: %3d" (self#get_insert#line + 1)
 			      (self#get_insert#line_offset + 1));
 			   match GtkText.Mark.get_name m  with
 			     | Some "insert" -> 		 
@@ -1462,7 +1462,7 @@ let main files =
       let b = Buffer.create 1024 in
       with_file f ~f:(input_channel b);
       let s = do_convert (Buffer.contents b) in
-      let view = create_input_tab (Filename.basename f) in
+      let view = create_input_tab (Glib.Convert.filename_to_utf8 (Filename.basename f)) in
       (match !manual_monospace_font with
 	 | None -> ()
 	 | Some n -> view#misc#modify_font n);
@@ -2130,14 +2130,14 @@ let main files =
 
   (* Location display *)
   let l = GMisc.label 
-	     ~text:"Line: xxxx Column: xxx" 
+	     ~text:"Line:     1 Char:   1" 
 	     ~packing:lower_hbox#pack () in 
   l#coerce#misc#set_name "location";
   set_location := l#set_text;
   load_pref current;
   (* Progress Bar *)
   pulse := 
-  (GRange.progress_bar ~text:"CoqIde started" ~pulse_step:0.1 ~packing:lower_hbox#pack ())#pulse;
+  (GRange.progress_bar ~text:"CoqIde started" ~pulse_step:0.2 ~packing:lower_hbox#pack ())#pulse;
   let tv2 = GText.view ~packing:(sw2#add) () in
   tv2#misc#set_name "GoalWindow";
   let _ = tv2#set_editable false in

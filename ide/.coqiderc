@@ -22,10 +22,15 @@ widget "*.*.*.*.GoalWindow" style "views"
 widget "*.*.*.*.MessageWindow" style "views"
 
 style "menu" {
-font_name = "Serif 10"
+font_name = "Sans 12"
 }
-
-
 class "GtkLabel" style "menu"
+
+
+style "location" {
+font_name = "Monospace 10"
+}
+widget "*.*.*.location" style "location"
+
 
 gtk-key-theme-name = "Emacs"
