@@ -13,5 +13,5 @@ Grammar tactic simple_tactic : ast :=
   romega [ "ROmega" ] -> [(ReflOmega)].
 
 Syntax tactic level 0:
-  romega [ << (ReflOmega) >> ] -> ["ROmega"].   
+  romega [ (ReflOmega) ] -> ["ROmega"].   
      

@@ -1,19 +1,6 @@
 This work was done for the RNRT Project Calife. 
 As such it is distributed under the LGPL licence.
 
-Change the COQTOP variable in the Makefile and type make. 
-The caml compiler should be in your path.
-
-WARNING : there is a bug in the 7.0 production release that prevents
-the compilation of the core ReflOmegaCore.v module. This development
-will only work with the beta release and (hopefully) subsequent version
-of Coq.
-
-A patch (patch-v7) contributed by D. Delahaye is included to correct the bug in
-regular 7.0 versions. It must be applied in the 'parsing' directory.
-Using it with a 7.0beta requires a few changes in const_omega.ml due to
-some changes in the paths of modules.
-
 Report bugs to :
   pierre.cregut@francetelecom.com
 
