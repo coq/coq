@@ -497,11 +497,11 @@ let jp limits gls =
             let (il,tr) = build_jptree p in
                if (il = []) then
                begin
-                  print_string "Proof is built.\n";
+                  Pp.msgnl (Pp.str "Proof is built.");
                   do_coq_proof tr gls
                end
                else UT.error "Cannot reconstruct proof tree from JProver."
-        with e -> print_string "JProver fails to prove this:\n";
+        with e -> Pp.msgnl (Pp.str "JProver fails to prove this:");
                   JT.print_error_msg e;
                   UT.error "JProver terminated."
 

@@ -4391,13 +4391,16 @@ let rec try_multiplicity mult_limit ftree ordering pos_n mult logic =
        | _ ->
             let new_mult = mult+1 in
             begin
+            Pp.msgnl (Pp.(++) (Pp.str "Multiplicity Fail: Trying new multiplicity ")
+            (Pp.int new_mult));
+(*
                Format.open_box 0;
                Format.force_newline ();
                Format.print_string "Multiplicity Fail: ";
                Format.print_string ("Try new multiplicity "^(string_of_int new_mult));
                Format.force_newline ();
                Format.print_flush ();
-
+*)
                let (new_ftree,new_ordering,new_pos_n) =
                   add_multiplicity ftree pos_n new_mult logic in
                if (new_ftree = ftree) then
