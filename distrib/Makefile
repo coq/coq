@@ -13,7 +13,10 @@ RPMTMPPATHDIR=$(DISTRIBDIR)/redhat/admin
 #RPMBUILDROOTOPT=
 RPMBUILDROOT=$(DISTRIBDIR)/rpmbuildroot
 RPMBUILDROOTOPT=--buildroot ${RPMBUILDROOT}
-RAWRPM=rpm
+
+# rpm versions 2 and 3: replace rpmbuild by rpm 
+RAWRPM=rpmbuild
+
 RPMVERSION=`${RAWRPM} --version | sed -e "s/RPM version \(.\).*/\1/"`
 RPM=${RAWRPM} ${RPMBUILDROOTOPT} --rcfile rpmrc
 
@@ -70,6 +73,7 @@ tar-gz:
 	@rm -rf ${COQPACKAGE}/KNOWN-BUGS
 	@rm -rf ${COQPACKAGE}/{TODO,ANNONCE,PROBLEMES}
 	@rm -rf ${COQPACKAGE}/theories/Num
+	@rm -rf ${COQPACKAGE}/contrib/graphs
 	@rm -rf ${COQPACKAGE}/doc/newsyntax.tex 
 	@rm -f ${COQPACKAGE}/make.result
 	@rm -rf ${COQPACKAGE}/test-suite/parser   # tests pcoq
@@ -93,7 +97,7 @@ test:
 	- rm -rf ${COQPACKAGE}
 	tar xf tmp.tar
 	(cd ${COQPACKAGE};\
-	configure -local -opt -emacs emacs;\
+	./configure -local -opt -emacs emacs;\
 	make world check >& log.world;\
 	if [ $$? = 0 ];\
 	then echo '"make world check" succeeded';\
@@ -167,7 +171,7 @@ rpm-dirs:
 
 rpm-config: rpm-dirs
 	- rm rpmrc rpmmacros
-	(if [ "${RPMVERSION}" = "3" ];\
+	(if [ "${RPMVERSION}" != "2" ];\
 	then\
 	echo %_topdir ${RPMTOPDIR} > rpmmacros;\
 	echo %_tmppath ${RPMTMPPATHDIR} >> rpmmacros;\
