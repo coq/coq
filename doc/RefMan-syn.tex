@@ -5,7 +5,7 @@ In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
 concrete and internal representations of terms and commands. The main
 commands are {\tt Notation} and {\tt Infix} which are described in
-section \label{Notation}.  It also happens that the same symbolic
+section \ref{Notation}.  It also happens that the same symbolic
 notation is expected in different contexts. To achieve this form of
 overloading, {\Coq} offers a notion of interpretation scope. This is
 described in section \ref{scopes}.
@@ -114,7 +114,8 @@ By default, a notation is considered non associative, but the
 precedence level is mandatory (except for special cases whose level is
 canonical). The level is either a number or the mention {\tt next
 level} whose meaning is obvious. The list of levels already assigned
-is on figure~\ref{coq-symbols}.
+is on figure~\ref{coq-symbols}. Notice that notations at level 250 are
+necessarily parsed surrounded by parentheses.
 
 \begin{figure}
 \label{coq-symbols}
@@ -301,6 +302,10 @@ Thus, for the previous example, we get
 %the notation "'IF' A 'then' B 'else' C" which is defined in {\Coq}
 %initial state}:
 
+Notations do not survive the end of sections. No typing of the denoted
+expression is performed at definition time. Type-checking is done only
+at the time of use of the notation.
+
 \begin{coq_example}
 Check 
  (IF_then_else (IF_then_else True False True) 
@@ -323,7 +328,7 @@ infix symbols. Its syntax is
 
 \medskip
 
-\noindent\texttt{Infix} "{\em symbol}" {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
+\noindent\texttt{Infix} "{\em symbolentry}" {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
 
 \medskip
 
@@ -331,7 +336,7 @@ and it is equivalent to
 
 \medskip
 
-\noindent\texttt{Notation "x {\em symbol} y" := {\qualid} x y  ( \nelist{\em modifier}{,} )}.
+\noindent\texttt{Notation "x {\em symbolentry} y" := {\qualid} x y  ( \nelist{\em modifier}{,} )}.
 
 \medskip
 
@@ -343,12 +348,51 @@ Infix "/\\" and (at level 6, right associativity).
 
 \subsection{Reserving notations}
 
+A given notation may be used in different contexts. {\Coq} expects all
+uses of the notation to be defined at the same precedence and with the
+same associativity. To avoid giving the precedence and associativity
+every time, it is possible to declare a parsing rule in advance
+without giving its interpretation. Here is an example from the initial
+state of {\Coq}.
+
+\begin{coq_example}
+Reserved Notation "x = y" (at level 70, no associativity).
+\end{coq_example}
+
+Reserving a notation is also useful for simultaneously defined an
+inductive type or a recursive constant and a notation for it.
+
+\Rem The notations mentionned on table~\ref{coq-symbols} are
+reserved. Hence their precedence and associativity cannot be changed.
+
 \subsection{Simultaneous definition of terms and notations}
 
 \subsection{Displaying informations about notations}
 
 % Set/Unset Printing Notation
-% Locate Notation
+
+\subsection{Locating notations}
+\comindex{Locate}
+\label{LocateSymbol}
+
+To know to which notations a given symbol belongs to, use the command
+
+\bigskip
+{\tt Locate {\symbolentry}}
+\bigskip
+
+where symbol is any (composite) symbol surrounded by quotes. To locate
+a particular notation, use a string where the variables of the
+notation are replaced by ``\_''.
+
+\Example
+
+\begin{coq_example}
+Locate "exists".
+Locate "'exists' _ | _".
+\end{coq_example}
+
+\SeeAlso Section \ref{Locate}.
 
 \section{Interpretation scopes}
 \label{scopes}
@@ -462,6 +506,10 @@ associativity}, \texttt{ left associativity},
 
 \Rem No typing of the denoted expression is performed at definition
 time. Type-checking is done only at the time of use of the notation.
+
+\Rem Many examples of {\tt Notation} may be found in the files
+composing the initial state of {\Coq} (see directory {\tt
+\$COQLIB/theories/Init}).
 
 %\section{Symbolic interpretation scopes}
 %
