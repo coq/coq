@@ -137,20 +137,6 @@ GEXTEND Gram
   pattern_occ:
     [ [ nl = LIST0 integer; c = constr -> (nl,c) ] ]
   ;
-  pattern_occ_hyp_tail_list:
-    [ [ pl = pattern_occ_hyp_list -> pl | -> (None,[]) ] ]
-  ;
-  pattern_occ_hyp_list:
-    [ [ nl = LIST1 natural; IDENT "Goal" -> (Some nl,[])
-      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list
-        -> (g,(id,nl)::l)
-      | IDENT "Goal" -> (Some [],[])
-      | id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list -> (g,(id,[])::l)
-    ] ]
-  ;
-  clause_pattern:
-    [ [ "in"; p = pattern_occ_hyp_list -> p | -> None, [] ] ]
-  ;
   intropatterns:
     [ [ l = LIST0 simple_intropattern -> l ]]
   ;
@@ -217,17 +203,40 @@ GEXTEND Gram
       | s = IDENT; c = constr -> ExtraRedExpr (s,c) ] ]
   ;
   hypident:
-    [ [ id = id_or_meta -> id,(InHyp,ref None)
-      | "("; "Type"; "of"; id = id_or_meta; ")" -> id,(InHypTypeOnly,ref None)
+    [ [ id = id_or_meta -> id,[],(InHyp,ref None)
+      | "("; "Type"; "of"; id = id_or_meta; ")" ->
+          id,[],(InHypTypeOnly,ref None)
     ] ]
   ;
   clause:
-    [ [ "in"; idl = LIST1 hypident -> idl
-      | -> [] ] ]
+    [ [ "in"; idl = LIST1 hypident ->
+        {onhyps=Some idl;onconcl=false; concl_occs=[]}
+      | -> {onhyps=Some[];onconcl=true;concl_occs=[]} ] ]
   ;
   simple_clause:
     [ [ "in"; idl = LIST1 id_or_meta -> idl
       | -> [] ] ]
+  ;
+  pattern_occ_hyp_tail_list:
+    [ [ pl = pattern_occ_hyp_list -> pl
+      | -> {onhyps=Some[];onconcl=false; concl_occs=[]} ] ]
+  ;
+  pattern_occ_hyp_list:
+    [ [ nl = LIST1 natural; IDENT "Goal" ->
+          {onhyps=Some[];onconcl=true;concl_occs=nl}
+      | nl = LIST1 natural; id = id_or_meta; cls = pattern_occ_hyp_tail_list
+        -> {cls with
+            onhyps=option_app(fun l -> (id,nl,(InHyp,ref None))::l)
+              cls.onhyps} 
+      | IDENT "Goal" -> {onhyps=Some[];onconcl=true;concl_occs=[]}
+      | id = id_or_meta; cls = pattern_occ_hyp_tail_list ->
+         {cls with
+          onhyps=option_app(fun l -> (id,[],(InHyp,ref None))::l)
+            cls.onhyps} ] ]
+  ;
+  clause_pattern:
+    [ [ "in"; p = pattern_occ_hyp_list -> p 
+      | -> {onhyps=None; onconcl=true; concl_occs=[] } ] ]
   ;
   fixdecl:
     [ [ id = base_ident; "/"; n = natural; ":"; c = constr -> (id,n,c) ] ]
@@ -293,9 +302,8 @@ GEXTEND Gram
       | IDENT "Generalize"; IDENT "Dependent"; c = constr -> TacGeneralizeDep c
       | IDENT "LetTac"; id = base_ident; ":="; c = constr; p = clause_pattern
         -> TacLetTac (id,c,p)
-      | IDENT "Instantiate"; n = natural; c = constr; 
-	  ido = OPT [ "in"; id = id_or_ltac_ref -> id ] -> 
-	    TacInstantiate (n,c,ido)
+      | IDENT "Instantiate"; n = natural; c = constr; cls = clause -> 
+	    TacInstantiate (n,c,cls)
       | IDENT "Specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
       | IDENT "LApply"; c = constr -> TacLApply c
@@ -346,8 +354,7 @@ GEXTEND Gram
 
       (* Equivalence relations *)
       | IDENT "Reflexivity" -> TacReflexivity
-      | IDENT "Symmetry"; ido = OPT [ "in"; id = id_or_ltac_ref -> id ] -> 
-	  TacSymmetry ido
+      | IDENT "Symmetry"; cls = clause -> TacSymmetry cls
       | IDENT "Transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)

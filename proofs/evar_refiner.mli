@@ -50,7 +50,7 @@ val w_conv_x            : wc -> constr -> constr -> bool
 val w_const_value       : wc -> constant -> constr
 val w_defined_evar      : wc -> existential_key -> bool
 
-val instantiate : int -> constr -> identifier option -> tactic
+val instantiate : int -> constr -> identifier Tacexpr.gsimple_clause -> tactic
 (*
 val instantiate_tac : tactic_arg list -> tactic
 *)

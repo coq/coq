@@ -132,10 +132,6 @@ let mlexpr_of_reference = function
   | Libnames.Qualid (loc,qid) -> <:expr< Libnames.Qualid $dloc$ $mlexpr_of_qualid qid$ >>
   | Libnames.Ident (loc,id) -> <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
 
-let mlexpr_of_bool = function
-  | true -> <:expr< True >>
-  | false -> <:expr< False >>
-
 let mlexpr_of_intro_pattern = function
   | Tacexpr.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
   | Tacexpr.IntroWildcard -> <:expr< Tacexpr.IntroWildcard >>
@@ -158,10 +154,22 @@ let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
 let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
 
+let mlexpr_of_occs = mlexpr_of_list mlexpr_of_int
+
 let mlexpr_of_hyp_location = function
-  | id, (Tacexpr.InHyp,_) -> <:expr< ($mlexpr_of_hyp id$, (Tacexpr.InHyp, ref None)) >>
-  | id, (Tacexpr.InHypTypeOnly,_) -> <:expr< ($mlexpr_of_hyp id$, (Tacexpr.InHypTypeOnly, ref None)) >>
-  | id, (Tacexpr.InHypValueOnly,_) -> <:expr< ($mlexpr_of_hyp id$, (Tacexpr.InHypValueOnly,ref None)) >>
+  | id, occs, (Tacexpr.InHyp,_) ->
+      <:expr< ($mlexpr_of_hyp id$, $mlexpr_of_occs occs$, (Tacexpr.InHyp, ref None)) >>
+  | id, occs, (Tacexpr.InHypTypeOnly,_) ->
+      <:expr< ($mlexpr_of_hyp id$, $mlexpr_of_occs occs$, (Tacexpr.InHypTypeOnly, ref None)) >>
+  | id, occs, (Tacexpr.InHypValueOnly,_) ->
+      <:expr< ($mlexpr_of_hyp id$, $mlexpr_of_occs occs$, (Tacexpr.InHypValueOnly,ref None)) >>
+
+let mlexpr_of_clause cl =
+  <:expr< {Tacexpr.onhyps=
+             $mlexpr_of_option (mlexpr_of_list mlexpr_of_hyp_location)
+               cl.Tacexpr.onhyps$;
+           Tacexpr.onconcl= $mlexpr_of_bool cl.Tacexpr.onconcl$;
+           Tacexpr.concl_occs= $mlexpr_of_occs cl.Tacexpr.concl_occs$} >>
 
 (*
 let mlexpr_of_red_mode = function
@@ -418,16 +426,16 @@ let rec mlexpr_of_atomic_tactic = function
 
   (* Conversion *)
   | Tacexpr.TacReduce (r,cl) ->
-      let l = mlexpr_of_list mlexpr_of_hyp_location cl in
+      let l = mlexpr_of_clause cl in
       <:expr< Tacexpr.TacReduce $mlexpr_of_red_expr r$ $l$ >>
   | Tacexpr.TacChange (occl,c,cl) ->
-      let l = mlexpr_of_list mlexpr_of_hyp_location cl in
+      let l = mlexpr_of_clause cl in
       let g = mlexpr_of_option mlexpr_of_occ_constr in
       <:expr< Tacexpr.TacChange $g occl$ $mlexpr_of_constr c$ $l$ >>
 
   (* Equivalence relations *)
   | Tacexpr.TacReflexivity -> <:expr< Tacexpr.TacReflexivity >>
-  | Tacexpr.TacSymmetry ido -> <:expr< Tacexpr.TacSymmetry $mlexpr_of_option mlexpr_of_hyp ido$ >>
+  | Tacexpr.TacSymmetry ido -> <:expr< Tacexpr.TacSymmetry $mlexpr_of_clause ido$ >>
   | Tacexpr.TacTransitivity c -> <:expr< Tacexpr.TacTransitivity $mlexpr_of_constr c$ >>
 
   (* Automation tactics *)

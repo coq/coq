@@ -307,8 +307,8 @@ let projectAndApply thin id eqname names depids gls =
   let env = pf_env gls in
   let clearer id =
     if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC) in
-  let subst_hyp_LR id = tclTHEN (tclTRY(hypSubst_LR id None)) (clearer id) in
-  let subst_hyp_RL id = tclTHEN (tclTRY(hypSubst_RL id None)) (clearer id) in
+  let subst_hyp_LR id = tclTHEN (tclTRY(hypSubst_LR id onConcl)) (clearer id) in
+  let subst_hyp_RL id = tclTHEN (tclTRY(hypSubst_RL id onConcl)) (clearer id) in
   let substHypIfVariable tac id gls =
     let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id) in
     match (kind_of_term t1, kind_of_term t2) with

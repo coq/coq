@@ -143,7 +143,7 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 let reduct_in_concl redfun gl = 
   convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) gl
 
-let reduct_in_hyp redfun (id,(where,where')) gl =
+let reduct_in_hyp redfun (id,_,(where,where')) gl =
   let (_,c, ty) = pf_get_hyp gl id in
   let redfun' = (*under_casts*) (pf_reduce redfun gl) in
   match c with
@@ -168,10 +168,8 @@ let reduct_option redfun = function
    function has to be applied to the conclusion or
    to the hypotheses. *) 
 
-let redin_combinator redfun = function 
-  | [] ->  reduct_in_concl redfun 
-  | x  -> (tclMAP (reduct_in_hyp redfun) x)
-
+let redin_combinator redfun =
+  onClauses (reduct_option redfun)
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
@@ -188,12 +186,17 @@ let change_on_subterm cv_pb t = function
 let change_in_concl occl t = reduct_in_concl (change_on_subterm CUMUL t occl) 
 let change_in_hyp occl t   = reduct_in_hyp (change_on_subterm CONV t occl)
 
-let change occl c = function
-  | [] -> change_in_concl occl c
-  | l  -> 
-      if List.tl l <> [] & occl <> None then
-	error "No occurrences expected when changing several hypotheses";
-      tclMAP (change_in_hyp occl c) l
+let change_option occl t = function
+    Some id -> change_in_hyp occl t id
+  | None -> change_in_concl occl t
+
+let change occl c cls =
+  (match cls, occl with
+      ({onhyps=(Some(_::_::_)|None)}|{onhyps=Some(_::_);onconcl=true}),
+      Some _ ->
+	error "No occurrences expected when changing several hypotheses"
+    | _ -> ());
+  onClauses (change_option occl c) cls
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl red_product
@@ -277,7 +280,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
 	if not force_flag then raise (RefinerError IntroNeedsProduct);
 	try
 	  tclTHEN
-	    (reduce (Red true) [])
+	    (reduce (Red true) onConcl)
 	    (intro_gen name_flag move_flag force_flag) gl
 	with Redelimination ->
 	  errorlabstrm "Intro" (str "No product even after head-reduction")
@@ -634,16 +637,21 @@ let quantify lconstr =
    the left of each x1, ...).
 *)
 
-let occurrences_of_hyp id = function
-  | None, [] -> (* Everywhere *) Some []
-  | _, occ_hyps -> try Some (List.assoc id occ_hyps) with Not_found -> None
 
-let occurrences_of_goal = function
-  | None, [] -> (* Everywhere *) Some []
-  | Some gocc as x, _ -> x
-  | None, _ -> None
 
-let everywhere (occ_ccl,occ_hyps) = (occ_ccl = None) & (occ_hyps = [])
+let occurrences_of_hyp id cls =
+  let rec hyp_occ = function
+      [] -> None
+    | (id',occs,hl)::_ when id=id' -> Some occs
+    | _::l -> hyp_occ l in
+  match cls.onhyps with
+      None -> Some []
+    | Some l -> hyp_occ l
+
+let occurrences_of_goal cls =
+  if cls.onconcl then Some cls.concl_occs else None
+
+let everywhere cls = (cls=allClauses)
 
 (*
 (* Implementation with generalisation then re-intro: introduces noise *)
@@ -749,9 +757,11 @@ let check_hypotheses_occurrences_list env (_,occl) =
     | [] -> ()
   in check [] occl
 
-let nowhere = (Some [],[])
+let nowhere = {onhyps=Some[]; onconcl=false; concl_occs=[]}
 
-let forward b na c = letin_tac b na c nowhere
+(* Tactic Pose should not perform any replacement (as specified in
+   the doc), but it does in the conclusion! *) 
+let forward b na c = letin_tac b na c onConcl
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -1154,14 +1164,14 @@ let atomize_param_of_ind (indref,nparams) hyp0 gl =
 	| Var id ->
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac true (Name x) (mkVar id) (None,[]))
+	      (letin_tac true (Name x) (mkVar id) allClauses)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
 	| _ ->
 	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
 		       Anonymous in
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac true (Name x) c (None,[]))
+	      (letin_tac true (Name x) c allClauses)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
     else 
       tclIDTAC gl
@@ -1513,7 +1523,7 @@ let new_induct_gen isrec elim names c gl =
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	tclTHEN
-	  (letin_tac true (Name id) c (None,[]))
+	  (letin_tac true (Name id) c allClauses)
 	  (induction_with_atomization_of_ind_arg isrec elim names id) gl
 
 let new_induct_destruct isrec c elim names = match c with
@@ -1613,10 +1623,12 @@ let andE id gl =
     errorlabstrm "andE" 
       (str("Tactic andE expects "^(string_of_id id)^" is a conjunction."))
 
-let dAnd cls gl =
-  match cls with
-    | None    -> simplest_split gl
-    | Some id -> andE id  gl
+let dAnd cls =
+  onClauses
+    (function
+      | None    -> simplest_split
+      | Some (id,_,_) -> andE id)
+    cls
 
 let orE id gl =
   let t = pf_get_hyp_typ gl id in
@@ -1626,10 +1638,12 @@ let orE id gl =
     errorlabstrm "orE" 
       (str("Tactic orE expects "^(string_of_id id)^" is a disjunction."))
 
-let dorE b cls gl =
-  match cls with 
-    | (Some id) -> orE id gl 
-    |  None     -> (if b then right else left) NoBindings gl
+let dorE b cls =
+  onClauses
+    (function
+      | (Some (id,_,_)) -> orE id
+      |  None     -> (if b then right else left) NoBindings)
+    cls
 
 let impE id gl =
   let t = pf_get_hyp_typ gl id in
@@ -1643,10 +1657,12 @@ let impE id gl =
       (str("Tactic impE expects "^(string_of_id id)^
 	      " is a an implication."))
                         
-let dImp cls gl =
-  match cls with
-    | None    -> intro gl
-    | Some id -> impE id gl
+let dImp cls =
+  onClauses
+    (function
+      | None    -> intro
+      | Some (id,_,_) -> impE id)
+    cls
 
 (************************************************)
 (*  Tactics related with logic connectives      *)
@@ -1708,9 +1724,11 @@ let symmetry_in id gl =
             tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
 	  gl
 
-let intros_symmetry = function
-  | None -> tclTHEN intros symmetry
-  | Some id -> symmetry_in id
+let intros_symmetry =
+  onClauses
+    (function
+      | None -> tclTHEN intros symmetry
+      | Some (id,_,_) -> symmetry_in id)
 
 (* Transitivity tactics *)
 

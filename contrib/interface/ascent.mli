@@ -29,6 +29,8 @@ and ct_BOOL =
   | CT_true
 and ct_CASE =
     CT_case of string
+and ct_CLAUSE =
+    CT_clause of ct_HYP_LOCATION_LIST_OPT * ct_BOOL
 and ct_COERCION_OPT =
     CT_coerce_NONE_to_COERCION_OPT of ct_NONE
   | CT_coercion_atm
@@ -260,6 +262,14 @@ and ct_HINT_EXPRESSION =
   | CT_immediate of ct_FORMULA
   | CT_resolve of ct_FORMULA
   | CT_unfold_hint of ct_ID
+and ct_HYP_LOCATION =
+    CT_coerce_ID_to_HYP_LOCATION of ct_ID
+  | CT_intype of ct_ID
+  | CT_invalue of ct_ID
+and ct_HYP_LOCATION_LIST =
+    CT_hyp_location_list of ct_HYP_LOCATION list
+and ct_HYP_LOCATION_LIST_OPT =
+    CT_hyp_location_list_opt of ct_HYP_LOCATION_LIST option
 and ct_ID =
     CT_ident of string
   | CT_metac of ct_INT
@@ -287,11 +297,6 @@ and ct_ID_OPT_OR_ALL =
 and ct_ID_OR_INT =
     CT_coerce_ID_to_ID_OR_INT of ct_ID
   | CT_coerce_INT_to_ID_OR_INT of ct_INT
-and ct_ID_OR_INTYPE =
-    CT_coerce_ID_to_ID_OR_INTYPE of ct_ID
-  | CT_intype of ct_ID
-and ct_ID_OR_INTYPE_LIST =
-    CT_id_or_intype_list of ct_ID_OR_INTYPE list
 and ct_ID_OR_INT_OPT =
     CT_coerce_ID_OPT_to_ID_OR_INT_OPT of ct_ID_OPT
   | CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT of ct_ID_OR_INT
@@ -473,8 +478,8 @@ and ct_TACTIC_COM =
   | CT_case_type of ct_FORMULA
   | CT_casetac of ct_FORMULA * ct_SPEC_LIST
   | CT_cdhyp of ct_ID
-  | CT_change of ct_FORMULA * ct_ID_OR_INTYPE_LIST
-  | CT_change_local of ct_PATTERN * ct_FORMULA * ct_ID_OR_INTYPE_LIST
+  | CT_change of ct_FORMULA * ct_CLAUSE
+  | CT_change_local of ct_PATTERN * ct_FORMULA * ct_CLAUSE
   | CT_clear of ct_ID_NE_LIST
   | CT_clear_body of ct_ID_NE_LIST
   | CT_cofixtactic of ct_ID_OPT * ct_COFIX_TAC_LIST
@@ -521,7 +526,7 @@ and ct_TACTIC_COM =
   | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_ID_LIST
   | CT_left of ct_SPEC_LIST
   | CT_let_ltac of ct_LET_CLAUSES * ct_LET_VALUE
-  | CT_lettac of ct_ID * ct_FORMULA * ct_UNFOLD_LIST
+  | CT_lettac of ct_ID * ct_FORMULA * ct_CLAUSE
   | CT_match_context of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
@@ -535,7 +540,7 @@ and ct_TACTIC_COM =
   | CT_progress of ct_TACTIC_COM
   | CT_prolog of ct_FORMULA_LIST * ct_INT
   | CT_rec_tactic_in of ct_REC_TACTIC_FUN_LIST * ct_TACTIC_COM
-  | CT_reduce of ct_RED_COM * ct_ID_OR_INTYPE_LIST
+  | CT_reduce of ct_RED_COM * ct_CLAUSE
   | CT_reflexivity
   | CT_rename of ct_ID * ct_ID
   | CT_repeat of ct_TACTIC_COM

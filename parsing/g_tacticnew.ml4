@@ -181,27 +181,15 @@ GEXTEND Gram
       | c1 = constr; "at"; nl = LIST1 integer; "with"; c2 = constr ->
 	  (Some (nl,c1), c2) ] ]
   ;
+  occurrences:
+    [ [ "at"; nl = LIST1 integer -> nl
+      | -> [] ] ]
+  ;
   pattern_occ:
-    [ [ c = constr; "at"; nl = LIST0 integer -> (nl,c)
-      | c = constr -> ([],c) ] ]
+    [ [ c = constr; nl = occurrences -> (nl,c) ] ]
   ;
   unfold_occ:
-    [ [ c = global; "at"; nl = LIST0 integer -> (nl,c)
-      | c = global -> ([],c) ] ]
-  ;
-  pattern_occ_hyp_tail_list:
-    [ [ pl = pattern_occ_hyp_list -> pl | -> (None,[]) ] ]
-  ;
-  pattern_occ_hyp_list:
-    [ [ nl = LIST1 natural; IDENT "Goal" -> (Some nl,[])
-      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list
-	  -> (g,(id,nl)::l)
-      | IDENT "Goal" -> (Some [],[])
-      | id = id_or_meta; (g,l) = pattern_occ_hyp_tail_list -> (g,(id,[])::l)
-    ] ]
-  ;
-  clause_pattern:
-    [ [ "in"; p = pattern_occ_hyp_list -> p | -> None, [] ] ]
+    [ [ c = global; nl = occurrences -> (nl,c) ] ]
   ;
   intropatterns:
     [ [ l = LIST0 simple_intropattern -> l ]]
@@ -267,9 +255,23 @@ GEXTEND Gram
       | "("; IDENT "value"; "of"; id = id_or_meta; ")" -> id,(InHypValueOnly,ref None)
     ] ]
   ;
+  hypident_occ:
+    [ [ (id,l)=hypident; occs=occurrences -> (id,occs,l) ] ]
+  ;
   clause:
-    [ [ "in"; idl = LIST1 hypident -> idl
-      | -> [] ] ]
+    [ [ "in"; "*"; occs=occurrences ->
+        {onhyps=None;onconcl=true;concl_occs=occs}
+      | "in"; "*"; "|-"; (b,occs)=concl_occ ->
+          {onhyps=None; onconcl=b; concl_occs=occs}
+      | "in"; hl=LIST0 hypident_occ SEP","; "|-"; (b,occs)=concl_occ ->
+          {onhyps=Some hl; onconcl=b; concl_occs=occs}
+      | "in"; hl=LIST0 hypident_occ SEP"," ->
+          {onhyps=Some hl; onconcl=false; concl_occs=[]}
+      | -> {onhyps=Some[];onconcl=true; concl_occs=[]} ] ]
+  ;
+  concl_occ:
+    [ [ "*"; occs = occurrences -> (true,occs)
+      | -> (false, []) ] ]
   ;
   simple_clause:
     [ [ "in"; idl = LIST1 id_or_meta -> idl
@@ -339,10 +341,10 @@ GEXTEND Gram
       | IDENT "generalize"; IDENT "dependent"; c = constr ->
           TacGeneralizeDep c
       | IDENT "set"; "("; id = base_ident; ":="; c = lconstr; ")";
-          p = clause_pattern -> TacLetTac (id,c,p)
+          p = clause -> TacLetTac (id,c,p)
       | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")";
-	  ido = OPT [ "in"; id = id_or_meta -> id ] ->
-            TacInstantiate (n,c,ido)
+	  cls = clause ->
+            TacInstantiate (n,c,cls)
 	    
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
@@ -396,8 +398,7 @@ GEXTEND Gram
 
       (* Equivalence relations *)
       | IDENT "reflexivity" -> TacReflexivity
-      | IDENT "symmetry"; ido = OPT [ "in"; id = id_or_meta -> id ] -> 
-	  TacSymmetry ido
+      | IDENT "symmetry"; cls = clause -> TacSymmetry cls
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)

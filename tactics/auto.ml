@@ -881,8 +881,8 @@ let compileAutoArg contac = function
       (tclTHEN  
          (Tacticals.tryAllClauses 
             (function 
-               | Some id -> Dhyp.h_destructHyp false id
-               | None    -> Dhyp.h_destructConcl))
+               | Some (id,_,_) -> Dhyp.h_destructHyp false id
+               | None          -> Dhyp.h_destructConcl))
          contac)
 
 let compileAutoArgList contac = List.map (compileAutoArg contac)

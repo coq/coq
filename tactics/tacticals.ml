@@ -98,15 +98,6 @@ let tclTRY_sign (tac : constr->tactic) sign gl =
 let tclTRY_HYPS (tac : constr->tactic) gl = 
   tclTRY_sign tac (pf_hyps gl) gl
 
-(* OR-branch *)
-let tryClauses tac = 
-  let rec firstrec = function
-    | []      -> tclFAIL 0 "no applicable hypothesis"
-    | [cls]   -> tac cls (* added in order to get a useful error message *)
-    | cls::tl -> (tclORELSE (tac cls) (firstrec tl))
-  in 
-  firstrec
-
 (***************************************)
 (*           Clause Tacticals          *)
 (***************************************)
@@ -121,26 +112,62 @@ let tryClauses tac =
 
 (* The type of clauses *)
 
-type clause = identifier option
+type simple_clause = identifier gsimple_clause
+type clause = identifier gclause
+
+let allClauses = { onhyps=None; onconcl=true; concl_occs=[] }
+let allHyps = { onhyps=None; onconcl=false; concl_occs=[] }
+let onHyp id =
+  { onhyps=Some[(id,[],(InHyp, ref None))]; onconcl=false; concl_occs=[] }
+let onConcl = { onhyps=Some[]; onconcl=true; concl_occs=[] }
+
+let simple_clause_list_of cl gls =
+  let hyps =
+    match cl.onhyps with 
+        None ->
+          List.map (fun id -> Some(id,[],(InHyp,ref None))) (pf_ids_of_hyps gls)
+      | Some l -> List.map (fun h -> Some h) l in
+  if cl.onconcl then None::hyps else hyps
+
+
+(* OR-branch *)
+let tryClauses tac cl gls = 
+  let rec firstrec = function
+    | []      -> tclFAIL 0 "no applicable hypothesis"
+    | [cls]   -> tac cls (* added in order to get a useful error message *)
+    | cls::tl -> (tclORELSE (tac cls) (firstrec tl))
+  in
+  let hyps = simple_clause_list_of cl gls in
+  firstrec hyps gls
+
+(* AND-branch *)
+let onClauses tac cl gls = 
+  let hyps = simple_clause_list_of cl gls in
+  tclMAP tac hyps gls
+
+(* AND-branch reverse order*)
+let onClausesLR tac cl gls = 
+  let hyps = simple_clause_list_of cl gls in
+  tclMAP tac (List.rev hyps) gls
 
 (* A clause corresponding to the |n|-th hypothesis or None *)
 
 let nth_clause n gl =
   if n = 0 then 
-    None
+    onConcl
   else if n < 0 then 
-    let id = List.nth (pf_ids_of_hyps gl) (-n-1) in 
-    Some id
+    let id = List.nth (List.rev (pf_ids_of_hyps gl)) (-n-1) in 
+    onHyp id
   else 
     let id = List.nth (pf_ids_of_hyps gl) (n-1) in 
-    Some id
+    onHyp id
 
 (* Gets the conclusion or the type of a given hypothesis *)
 
 let clause_type cls gl =
-  match cls with
+  match simple_clause_of cls with
     | None    -> pf_concl gl
-    | Some id -> pf_get_hyp_typ gl id
+    | Some (id,_,_) -> pf_get_hyp_typ gl id
 
 (* Functions concerning matching of clausal environments *)
 
@@ -153,7 +180,7 @@ let pf_matches gls pat n =
 
 (* [OnCL clausefinder clausetac]
  * executes the clausefinder to find the clauses, and then executes the
- * clausetac on the list so obtained. *)
+ * clausetac on the clause so obtained. *)
 
 let onCL cfind cltac gl = cltac (cfind gl) gl
 
@@ -163,10 +190,6 @@ let onCL cfind cltac gl = cltac (cfind gl) gl
 
 let onHyps find tac gl = tac (find gl) gl
 
-
-(* Create a clause list with all the hypotheses from the context *)
-
-let allHyps gl = pf_ids_of_hyps gl
 
 
 (* Create a clause list with all the hypotheses from the context, occuring
@@ -188,19 +211,14 @@ let nLastHyps n gl =
   with Failure "firstn" -> error "Not enough hypotheses in the goal"
 
 
-(* A clause list with the conclusion and all the hypotheses *)
-
-let allClauses gl = 
-  let ids = pf_ids_of_hyps gl in  
-  (None::(List.map in_some ids))
-
 let onClause t cls gl  = t cls gl
-let tryAllClauses  tac = onCL allClauses (tryClauses tac)
-let onAllClauses   tac = onCL allClauses (tclMAP tac)
-let onAllClausesLR tac = onCL (compose List.rev allClauses) (tclMAP tac)
+let tryAllClauses  tac = tryClauses tac allClauses
+let onAllClauses   tac = onClauses tac allClauses
+let onAllClausesLR tac = onClausesLR tac allClauses
 let onNthLastHyp n tac gls = tac (nth_clause n gls) gls
 
-let tryAllHyps     tac gls = tryClauses tac (allHyps gls) gls
+let tryAllHyps     tac =
+  tryClauses (function Some(id,_,_) -> tac id | _ -> assert false) allHyps
 let onNLastHyps n  tac     = onHyps (nLastHyps n) (tclMAP tac)
 let onLastHyp      tac gls = tac (lastHyp gls) gls
 

@@ -138,7 +138,7 @@ let instantiate n c ido gl =
   let evl = 
     match ido with
 	None -> evars_of wc.sigma gl.it.evar_concl 
-      | Some id -> 
+      | Some (id,_,_) -> 
 	  let (_,_,typ)=Sign.lookup_named id gl.it.evar_hyps in
 	    evars_of wc.sigma typ in
     if List.length evl < n then error "not enough evars";

@@ -262,16 +262,30 @@ let add_destructor_hint local na loc pat pri code =
     (inDD (local,na,{ d_pat = pat; d_pri=pri; d_code=code }))
 
 let match_dpat dp cls gls =
-  let cltyp = clause_type cls gls in
   match (cls,dp) with
-    | (Some id,HypLocation(_,hypd,concld)) ->
-        (is_matching hypd.d_typ cltyp) &
-        (is_matching hypd.d_sort (pf_type_of gls cltyp)) &
-        (is_matching concld.d_typ (pf_concl gls)) &
-        (is_matching concld.d_sort (pf_type_of gls (pf_concl gls)))
-    | (None,ConclLocation concld) ->
-        (is_matching concld.d_typ (pf_concl gls)) &
-        (is_matching concld.d_sort (pf_type_of gls (pf_concl gls)))
+    | ({onhyps=lo;onconcl=false},HypLocation(_,hypd,concld)) ->
+        let hl = match lo with
+            Some l -> l
+          | None -> List.map (fun id -> (id,[],(InHyp,ref None)))
+                     (pf_ids_of_hyps gls) in
+        if not
+          (List.for_all
+            (fun (id,_,(hl,_)) ->
+              let cltyp = pf_get_hyp_typ gls id in
+              let cl = pf_concl gls in
+              (hl=InHyp) &
+              (is_matching hypd.d_typ cltyp) &
+              (is_matching hypd.d_sort (pf_type_of gls cltyp)) &
+              (is_matching concld.d_typ cl) &
+              (is_matching concld.d_sort (pf_type_of gls cl)))
+            hl)
+        then error "No match"
+    | ({onhyps=Some[];onconcl=true},ConclLocation concld) ->
+        let cl = pf_concl gls in
+        if not
+          ((is_matching concld.d_typ cl) &
+           (is_matching concld.d_sort (pf_type_of gls cl)))
+        then error "No match"
     | _ -> error "ApplyDestructor"
 
 let forward_interp_tactic = 
@@ -280,22 +294,27 @@ let forward_interp_tactic =
 let set_extern_interp f = forward_interp_tactic := f
 
 let applyDestructor cls discard dd gls =
-  if not (match_dpat dd.d_pat cls gls) then error "No match" else
-  let tac = match cls, dd.d_code with
-    | Some id, (Some x, tac) -> 
-	let arg = ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
-        TacLetIn ([(dummy_loc, x), None, arg], tac)
-    | None, (None, tac) -> tac
-    | _, (Some _,_) -> error "Destructor expects an hypothesis"
-    | _, (None,_) -> error "Destructor is for conclusion" in
+  match_dpat dd.d_pat cls gls;
+  let cll = simple_clause_list_of cls gls in
+  let tacl =
+    List.map (fun cl ->
+      match cl, dd.d_code with
+        | Some (id,_,_), (Some x, tac) -> 
+	    let arg =
+              ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
+            TacLetIn ([(dummy_loc, x), None, arg], tac)
+        | None, (None, tac) -> tac
+        | _, (Some _,_) -> error "Destructor expects an hypothesis"
+        | _, (None,_) -> error "Destructor is for conclusion")
+      cll in
   let discard_0 =
-    match (cls,dd.d_pat) with
-      | (Some id,HypLocation(discardable,_,_)) ->
-          if discard & discardable then thin [id] else tclIDTAC
-      | (None,ConclLocation _) -> tclIDTAC
-       | _ -> error "ApplyDestructor" 
-  in
-  tclTHEN (!forward_interp_tactic tac) discard_0 gls
+    List.map (fun cl ->
+      match (cl,dd.d_pat) with
+        | (Some (id,_,_),HypLocation(discardable,_,_)) ->
+            if discard & discardable then thin [id] else tclIDTAC
+        | (None,ConclLocation _) -> tclIDTAC
+        | _ -> error "ApplyDestructor" ) cll in
+  tclTHEN (tclMAP !forward_interp_tactic tacl) (tclTHENLIST discard_0) gls
 
 
 (* [DHyp id gls]
@@ -305,10 +324,10 @@ let applyDestructor cls discard dd gls =
    them in order of priority. *)
 
 let destructHyp discard id gls =
-  let hyptyp = clause_type (Some id) gls in
+  let hyptyp = pf_get_hyp_typ gls id in
   let ddl = List.map snd (lookup hyptyp) in
   let sorted_ddl = Sort.list (fun dd1 dd2 -> dd1.d_pri > dd2.d_pri) ddl in
-  tclFIRST (List.map (applyDestructor (Some id) discard) sorted_ddl) gls
+  tclFIRST (List.map (applyDestructor (onHyp id) discard) sorted_ddl) gls
 
 let cDHyp id gls = destructHyp true id gls
 let dHyp id gls = destructHyp false id gls
@@ -325,7 +344,7 @@ let h_destructHyp b id =
 let dConcl gls =
   let ddl = List.map snd (lookup (pf_concl gls)) in
   let sorted_ddl = Sort.list (fun dd1 dd2 -> dd1.d_pri > dd2.d_pri) ddl in
-  tclFIRST (List.map (applyDestructor None false) sorted_ddl) gls
+  tclFIRST (List.map (applyDestructor onConcl false) sorted_ddl) gls
 
 let h_destructConcl = abstract_tactic TacDestructConcl dConcl
 
@@ -339,7 +358,7 @@ let rec search n =
      (tclTHEN  
         (Tacticals.tryAllClauses 
            (function 
-              | Some id -> (dHyp id)
+              | Some (id,_,_) -> (dHyp id)
               | None    ->  dConcl ))
         (search (n-1)))]
     

@@ -141,27 +141,35 @@ let pr_with_names = function
   | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
 
 let pr_hyp_location pr_id = function
-  | id, (InHyp,_) -> spc () ++ pr_id id
-  | id, (InHypTypeOnly,_) -> spc () ++ str "(Type of " ++ pr_id id ++ str ")"
-  | id, _ -> error "Unsupported hyp location in v7"
+  | id, _, (InHyp,_) -> spc () ++ pr_id id
+  | id, _, (InHypTypeOnly,_) ->
+      spc () ++ str "(Type of " ++ pr_id id ++ str ")"
+  | id, _, _ -> error "Unsupported hyp location in v7"
 
 let pr_clause pr_id = function
   | [] -> mt ()
   | l -> spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
+
+
+let pr_clauses pr_id cls =
+  match cls with
+      { onhyps = Some l; onconcl = false } ->
+        spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
+    | { onhyps = Some []; onconcl = true } -> mt()
+    | _ -> error "this clause has both hypothesis and conclusion"
 
 let pr_simple_clause pr_id = function
   | [] -> mt ()
   | l -> spc () ++
       hov 0 (str "in" ++ spc () ++ prlist_with_sep spc pr_id l)
 
-let pr_clause_pattern pr_id = function
-  | (None, []) -> mt ()
-  | (glopt,l) ->
-      str " in" ++
-      prlist
-        (fun (id,nl) -> prlist (pr_arg int) nl 
-	  ++ spc () ++ pr_id id) l ++
-        pr_opt (fun nl -> prlist_with_sep spc int nl ++ str " Goal") glopt
+let pr_clause_pattern pr_id cls =
+  pr_opt
+    (prlist (fun (id,occs,_) ->
+      prlist (pr_arg int) occs ++ spc () ++ pr_id id)) cls.onhyps ++
+  if cls.onconcl then
+    prlist (pr_arg int) cls.concl_occs ++ spc() ++ str"Goal"
+  else mt()
 
 let pr_subterms pr occl =
   hov 0 (pr_occurrences pr occl ++ spc () ++ str "with")
@@ -400,7 +408,6 @@ let rec pr_atom0 = function
   | TacAutoTDB None -> str "AutoTDB"
   | TacDestructConcl -> str "DConcl"
   | TacReflexivity -> str "Reflexivity"
-  | TacSymmetry None -> str "Symmetry"
   | t -> str "(" ++ pr_atom1 t ++ str ")"
 
   (* Main tactic printer *)
@@ -459,12 +466,10 @@ and pr_atom1 = function
       pr_constr c)
   | TacLetTac (id,c,cl) ->
       hov 1 (str "LetTac" ++ spc () ++ pr_id id ++ str ":=" ++
-        pr_constr c ++ pr_clause_pattern pr_ident cl)
-  | TacInstantiate (n,c,None) ->
-      hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c)
-  | TacInstantiate (n,c,Some id) ->
+        pr_constr c ++ pr_clauses pr_ident cl)
+  | TacInstantiate (n,c,cls) ->
       hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++ 
-	     spc () ++ str "in" ++ pr_arg pr_ident id)
+	     pr_clauses pr_ident cls)
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)
@@ -538,14 +543,14 @@ and pr_atom1 = function
 
   (* Conversion *)  
   | TacReduce (r,h) ->
-      hov 1 (pr_red_expr (pr_constr,pr_cst) r ++ pr_clause pr_ident h)
+      hov 1 (pr_red_expr (pr_constr,pr_cst) r ++ pr_clauses pr_ident h)
   | TacChange (occl,c,h) ->
       hov 1 (str "Change" ++ pr_opt (pr_subterms pr_constr) occl ++ 
-        brk (1,1) ++ pr_constr c ++ pr_clause pr_ident h)
+        brk (1,1) ++ pr_constr c ++ pr_clauses pr_ident h)
 
   (* Equivalence relations *)
-  | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 x
-  | TacSymmetry (Some id) -> str "Symmetry " ++ pr_ident id
+  | TacReflexivity as x -> pr_atom0 x
+  | TacSymmetry cls -> str "Symmetry " ++ pr_clauses pr_ident cls
   | TacTransitivity c -> str "Transitivity" ++ pr_arg pr_constr c
 
   (* Equality and inversion *)

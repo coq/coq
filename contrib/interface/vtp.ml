@@ -73,6 +73,11 @@ and fCASE = function
    print_string "\n"and fCOERCION_OPT = function
 | CT_coerce_NONE_to_COERCION_OPT x -> fNONE x
 | CT_coercion_atm -> fNODE "coercion_atm" 0
+and fCLAUSE = function
+| CT_clause(x1,x2) ->
+   fHYP_LOCATION_LIST_OPT x1;
+   fBOOL x2;
+   fNODE "clause" 2
 and fCOFIXTAC = function
 | CT_cofixtac(x1, x2) ->
    fID x1;
@@ -671,6 +676,24 @@ and fHINT_EXPRESSION = function
 | CT_unfold_hint(x1) ->
    fID x1;
    fNODE "unfold_hint" 1
+and fHYP_LOCATION = function
+| CT_coerce_ID_to_HYP_LOCATION x -> fID x
+| CT_intype(x1) ->
+   fID x1;
+   fNODE "intype" 1
+| CT_invalue(x1) ->
+   fID x1;
+   fNODE "invalue" 1
+and fHYP_LOCATION_LIST = function
+| CT_hyp_location_list l ->
+   (List.iter fHYP_LOCATION l);
+   fNODE "hyp_location_list" (List.length l)
+and fHYP_LOCATION_LIST_OPT = function
+| CT_hyp_location_list_opt (Some l) ->
+   fHYP_LOCATION_LIST l;
+   fNODE "hyp_location_list_opt_some" 1
+| CT_hyp_location_list_opt None ->
+   fNODE "hyp_location_list_opt_none" 0
 and fID = function
 | CT_ident x -> fATOM "ident";
    (f_atom_string x);
@@ -712,15 +735,6 @@ and fID_OPT_OR_ALL = function
 and fID_OR_INT = function
 | CT_coerce_ID_to_ID_OR_INT x -> fID x
 | CT_coerce_INT_to_ID_OR_INT x -> fINT x
-and fID_OR_INTYPE = function
-| CT_coerce_ID_to_ID_OR_INTYPE x -> fID x
-| CT_intype(x1) ->
-   fID x1;
-   fNODE "intype" 1
-and fID_OR_INTYPE_LIST = function
-| CT_id_or_intype_list l ->
-   (List.iter fID_OR_INTYPE l);
-   fNODE "id_or_intype_list" (List.length l)
 and fID_OR_INT_OPT = function
 | CT_coerce_ID_OPT_to_ID_OR_INT_OPT x -> fID_OPT x
 | CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT x -> fID_OR_INT x
@@ -1061,12 +1075,12 @@ and fTACTIC_COM = function
    fNODE "cdhyp" 1
 | CT_change(x1, x2) ->
    fFORMULA x1;
-   fID_OR_INTYPE_LIST x2;
+   fCLAUSE x2;
    fNODE "change" 2
 | CT_change_local(x1, x2, x3) ->
    fPATTERN x1;
    fFORMULA x2;
-   fID_OR_INTYPE_LIST x3;
+   fCLAUSE x3;
    fNODE "change_local" 3
 | CT_clear(x1) ->
    fID_NE_LIST x1;
@@ -1232,7 +1246,7 @@ and fTACTIC_COM = function
 | CT_lettac(x1, x2, x3) ->
    fID x1;
    fFORMULA x2;
-   fUNFOLD_LIST x3;
+   fCLAUSE x3;
    fNODE "lettac" 3
 | CT_match_context(x,l) ->
    fCONTEXT_RULE x;
@@ -1286,7 +1300,7 @@ and fTACTIC_COM = function
    fNODE "rec_tactic_in" 2
 | CT_reduce(x1, x2) ->
    fRED_COM x1;
-   fID_OR_INTYPE_LIST x2;
+   fCLAUSE x2;
    fNODE "reduce" 2
 | CT_reflexivity -> fNODE "reflexivity" 0
 | CT_rename(x1, x2) ->

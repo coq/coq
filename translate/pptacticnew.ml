@@ -23,6 +23,8 @@ open Genarg
 open Libnames
 open Pptactic
 
+let sep_v = fun _ -> str"," ++ spc()
+
 let strip_prod_binders_expr n ty =
   let rec strip_ty acc n ty =
     match ty with
@@ -211,26 +213,40 @@ let pr_with_names = function
   | [] -> mt ()
   | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
 
-let pr_hyp_location pr_id = function
-  | id, InHyp -> spc () ++ pr_id id
-  | id, InHypTypeOnly -> spc () ++ str "(type of " ++ pr_id id ++ str ")"
-  | id, InHypValueOnly -> spc () ++ str "(value of " ++ pr_id id ++ str ")"
+let pr_occs pp = function
+    [] -> pp
+  | nl -> hov 1 (pp ++ spc() ++ str"at " ++
+                 hov 0 (prlist_with_sep spc int nl))
 
-let pr_hyp_location pr_id (id,(hl,hl')) =
-  if !hl' <> None then pr_hyp_location pr_id (id,out_some !hl')
+let pr_hyp_location pr_id = function
+  | id, occs, InHyp -> spc () ++ pr_occs (pr_id id) occs
+  | id, occs, InHypTypeOnly ->
+      spc () ++ pr_occs (str "(type of " ++ pr_id id ++ str ")") occs
+  | id, occs, InHypValueOnly ->
+      spc () ++ pr_occs (str "(value of " ++ pr_id id ++ str ")") occs
+
+let pr_hyp_location pr_id (id,occs,(hl,hl')) =
+  if !hl' <> None then pr_hyp_location pr_id (id,occs,out_some !hl')
   else
     (if hl = InHyp && Options.do_translate () then 
       msgerrnl (str "Translator warning: Unable to detect if " ++ pr_id id ++ str " denotes a local definition");
-    pr_hyp_location pr_id (id,hl))
+    pr_hyp_location pr_id (id,occs,hl))
 
-let pr_clause pr_id = function
-  | [] -> mt ()
-  | l ->
-      spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
+let pr_in pp = spc () ++ hov 0 (str "in" ++ pp)
 
 let pr_simple_clause pr_id = function
   | [] -> mt ()
-  | l -> spc () ++ hov 0 (str "in" ++ spc () ++ prlist_with_sep spc pr_id l)
+  | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
+
+let pr_clauses pr_id = function
+    { onhyps=None; onconcl=true; concl_occs=nl } ->
+      pr_in (pr_occs (str " *") nl)
+  | { onhyps=None; onconcl=false } -> pr_in (str " * |-")
+  | { onhyps=Some l; onconcl=true; concl_occs=nl } -> 
+      pr_in (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l
+             ++ pr_occs (str" |- *") nl)
+  | { onhyps=Some l; onconcl=false } ->
+      pr_in (prlist_with_sep (fun()->str",") (pr_hyp_location pr_id) l)
 
 let pr_clause_pattern pr_id = function
   | (None, []) -> mt ()
@@ -400,7 +416,6 @@ let rec pr_atom0 env = function
   | TacAutoTDB None -> str "autotdb"
   | TacDestructConcl -> str "dconcl"
   | TacReflexivity -> str "reflexivity"
-  | TacSymmetry None -> str "symmetry"
   | t -> str "(" ++ pr_atom1 env t ++ str ")"
 
   (* Main tactic printer *)
@@ -469,16 +484,12 @@ and pr_atom1 env = function
       hov 1 (str "set" ++ spc () ++
              hov 1 (str"(" ++ pr_id id ++ str " :=" ++
                     pr_lconstrarg env c ++ str")") ++
-             pr_clause_pattern pr_ident cl)
-  | TacInstantiate (n,c,None) ->
-      hov 1 (str "instantiate" ++ spc() ++
-             hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
-                    pr_lconstrarg env c ++ str ")"))
- | TacInstantiate (n,c,Some id) ->
+             pr_clauses pr_ident cl)
+  | TacInstantiate (n,c,cls) ->
       hov 1 (str "instantiate" ++ spc() ++
              hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
                     pr_lconstrarg env c ++ str ")" ++ 
-		    spc () ++ str "in" ++ pr_arg pr_ident id))
+		    pr_clauses pr_ident cls))
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       hov 1 (str "simple_induction" ++ pr_arg pr_quantified_hypothesis h)
@@ -560,7 +571,7 @@ and pr_atom1 env = function
   (* Conversion *)  
   | TacReduce (r,h) ->
       hov 1 (pr_red_expr (pr_constr env,pr_lconstr env,pr_cst env) r ++
-             pr_clause pr_ident h)
+             pr_clauses pr_ident h)
   | TacChange (occ,c,h) ->
       hov 1 (str "change" ++ brk (1,1) ++
       (match occ with
@@ -571,11 +582,11 @@ and pr_atom1 env = function
             hov 1 (pr_constr env c1 ++ spc() ++
 	           str "at " ++ prlist_with_sep spc int ocl) ++ spc() ++
 	           str "with ") ++
-      pr_constr env c ++ pr_clause pr_ident h)
+      pr_constr env c ++ pr_clauses pr_ident h)
 
   (* Equivalence relations *)
-  | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 env x
-  | TacSymmetry (Some id) -> str "symmetry in " ++ pr_ident id
+  | TacReflexivity as x -> pr_atom0 env x
+  | TacSymmetry cls -> str "symmetry " ++ pr_clauses pr_ident cls
   | TacTransitivity c -> str "transitivity" ++ pr_constrarg env c
 
   (* Equality and inversion *)

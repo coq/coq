@@ -1699,7 +1699,7 @@ and natural_fix ig lh g gs narg ltree =
    | _ -> assert false
 and natural_reduce ig lh g gs ge mode la ltree =
   match la with
-    [] -> 
+    {onhyps=Some[];onconcl=true} -> 
       spv
         [  (natural_lhyp lh ig.ihsg);
           (show_goal2 lh ig g gs ""); 
@@ -1707,7 +1707,7 @@ and natural_reduce ig lh g gs ge mode la ltree =
 		  {ihsg=All_subgoals_hyp;isgintro="simpl"})
              ltree)
         ]
-  | [hyp] ->
+  | {onhyps=Some[hyp]; onconcl=false} ->
       spv
         [  (natural_lhyp lh ig.ihsg);
           (show_goal2 lh ig g gs ""); 

@@ -48,7 +48,7 @@ val h_true_cut        : identifier option -> constr -> tactic
 val h_generalize      : constr list -> tactic 
 val h_generalize_dep  : constr -> tactic 
 val h_forward         : bool -> name -> constr -> tactic 
-val h_let_tac         : identifier -> constr -> identifier clause_pattern -> tactic
+val h_let_tac         : identifier -> constr -> Tacticals.clause -> tactic
 val h_instantiate     : int -> constr -> Tacticals.clause -> tactic
 
 (* Derived basic tactics *)
@@ -89,9 +89,9 @@ val h_simplest_right  : tactic
 
 
 (* Conversion *)
-val h_reduce          : Tacred.red_expr -> hyp_location list -> tactic
-val h_change          : 
-  constr occurrences option -> constr -> hyp_location list -> tactic
+val h_reduce          : Tacred.red_expr -> Tacticals.clause -> tactic
+val h_change          :
+  constr occurrences option -> constr -> Tacticals.clause -> tactic
 
 (* Equivalence relations *)
 val h_reflexivity     : tactic

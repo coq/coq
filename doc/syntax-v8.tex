@@ -413,9 +413,9 @@ $$
 \nlsep \TERM{generalize}~\PLUS{\tacconstr}
 \nlsep \TERM{generalize}~\TERM{dependent}~\tacconstr
 \nlsep \TERM{set}~
-  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\NT{clause-pattern}
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
 \nlsep \TERM{instantiate}~
-  \TERM{(}~\NT{int}~\TERM{:=}~\taclconstr~\TERM{)}
+  \TERM{(}~\NT{int}~\TERM{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
 %%
 \nlsep \TERM{specialize}~\OPT{\NT{int}}~\NT{constr-with-bindings}
 \nlsep \TERM{lapply}~\tacconstr
@@ -533,12 +533,6 @@ Conflicts exists between integers and constrs.
 \DEFNT{simple-binding}
        \KWD{(}~\NT{quantified-hyp}~\KWD{:=}~\taclconstr~\KWD{)}
 \SEPDEF
-\DEFNT{pattern-occ}
-       \tacconstr ~\OPTGR{\KWD{at}~\PLUS{\NT{int}}}
-\SEPDEF
-\DEFNT{unfold-occ}
-       \NT{reference}~\OPTGR{\KWD{at}~\PLUS{\NT{int}}}
-\SEPDEF
 \DEFNT{red-flag}
        \TERM{beta} ~\mid~ \TERM{iota} ~\mid~ \TERM{zeta}
        ~\mid~ \TERM{delta} ~\mid~
@@ -546,7 +540,9 @@ Conflicts exists between integers and constrs.
 \SEPDEF
 \DEFNT{clause}
        \KWD{in}~\TERM{*}
-\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-list}} \KWD{\vdash} \OPT{\TERM{*}}
+\nlsep \KWD{in}~\TERM{*}~\KWD{\vdash}~\OPT{\NT{concl-occ}}
+\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-list}} ~\KWD{\vdash} ~\OPT{\NT{concl-occ}}
+\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-list}}
 \SEPDEF
 \DEFNT{hyp-ident-list}
        \NT{hyp-ident}
@@ -557,17 +553,17 @@ Conflicts exists between integers and constrs.
 \nlsep \KWD{(}~\TERM{type}~\TERM{of}~\NT{ident}~\KWD{)}
 \nlsep \KWD{(}~\TERM{value}~\TERM{of}~\NT{ident}~\KWD{)}
 \SEPDEF
-\DEFNT{clause-pattern}
-       \KWD{in}~\TERM{*}
-\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-occ-list}} \KWD{\vdash} \OPT{\TERM{*}}
+\DEFNT{concl-occ}
+       \TERM{*} ~\NT{occurrences}
 \SEPDEF
-\DEFNT{hyp-ident-occ-list}
-       \NT{hyp-ident-occ}
-\nlsep \NT{hyp-ident-occ}~\KWD{,}~\NT{hyp-ident-occ-list}
+\DEFNT{pattern-occ}
+       \tacconstr ~\NT{occurrences}
 \SEPDEF
-\DEFNT{hyp-ident-occ}
-       \NT{hyp-ident}
-\nlsep \NT{hyp-ident}~\KWD{at}~\PLUS{\NT{int}}
+\DEFNT{unfold-occ}
+       \NT{reference}~\NT{occurrences}
+\SEPDEF
+\DEFNT{occurrences}
+       ~\OPTGR{\KWD{at}~\PLUS{\NT{int}}}
 \SEPDEF
 \DEFNT{hint-bases}
        \KWD{with}~\TERM{*}
@@ -914,7 +910,7 @@ $$
 \nlsep \TERM{Export}~\PLUS{\NT{reference}}
 \SEPDEF
 \DEFNT{export-token}
-       \TERM{Import} ~\mid~ \TERM{Export} ~\mid~ \TERM{Closed}
+       \TERM{Import} ~\mid~ \TERM{Export}
 \SEPDEF
 \DEFNT{specif-token}
        \TERM{Implementation} ~\mid~ \TERM{Specification}

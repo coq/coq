@@ -169,7 +169,7 @@ let make_pbp_atomic_tactic = function
       TacAtom (zz, TacGeneralize [make_app (make_var h) l])
   | PbpLeft -> TacAtom (zz, TacLeft NoBindings)
   | PbpRight -> TacAtom (zz, TacRight NoBindings)
-  | PbpReduce -> TacAtom (zz, TacReduce (Red false, []))
+  | PbpReduce -> TacAtom (zz, TacReduce (Red false, onConcl))
   | PbpIntros l -> 
       let l = List.map (fun id -> IntroIdentifier id) l in
       TacAtom (zz, TacIntroPattern l)

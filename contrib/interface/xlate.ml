@@ -401,15 +401,21 @@ let xlate_hyp = function
 
 let xlate_hyp_location =
  function
-  | AI (_,id), (InHypTypeOnly,_) -> CT_intype(xlate_ident id)
-  | AI (_,id), (InHyp,_) when !Options.v7 ->
-      CT_coerce_ID_to_ID_OR_INTYPE (xlate_ident id)
-  | AI (_,id), ((InHypValueOnly|InHyp),_) ->
+  | AI (_,id), _, (InHypTypeOnly,_) -> CT_intype(xlate_ident id)
+  | AI (_,id), _, (InHyp,_) when !Options.v7 ->
+      CT_coerce_ID_to_HYP_LOCATION (xlate_ident id)
+  | AI (_,id), _, ((InHypValueOnly|InHyp),_) ->
       xlate_error "TODO in v8: InHyp now means InHyp if variable but InHypValueOnly if a local definition"
-  | MetaId _, _ -> 
+  | MetaId _, _,_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
-let xlate_clause l = CT_id_or_intype_list (List.map xlate_hyp_location l)
+let xlate_clause cls =
+  CT_clause
+    (CT_hyp_location_list_opt
+      (option_app
+        (fun l -> CT_hyp_location_list(List.map xlate_hyp_location l))
+        cls.onhyps),
+      if cls.onconcl then CT_true else CT_false)
 
 (** Tactics
    *)
@@ -889,8 +895,7 @@ and xlate_tac =
       if b then CT_cutrewrite_lr (c, ctf_ID_OPT_SOME id)
       else CT_cutrewrite_lr (c, ctf_ID_OPT_SOME id)
     | TacReflexivity -> CT_reflexivity
-    | TacSymmetry None -> CT_symmetry
-    | TacSymmetry (Some _) -> xlate_error "TODO: Symmetry in"
+    | TacSymmetry _ -> xlate_error "TODO: Symmetry <clause>"
     | TacTransitivity c -> CT_transitivity (xlate_formula c)
     | TacAssumption -> CT_assumption
     | TacExact c -> CT_exact (xlate_formula c)
@@ -1014,16 +1019,14 @@ and xlate_tac =
 	  (xlate_int_or_constr a, xlate_using b, 
 	   CT_id_list_list
 	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
-    | TacInstantiate (a, b, None) -> 
-	CT_instantiate(CT_int a, xlate_formula b)
     | TacInstantiate (a, b, _) -> 
-	xlate_error "TODO: Instantiate ... in"
+	xlate_error "TODO: Instantiate ... <clause>"
 
     | TacLetTac (id, c, cl) ->
         CT_lettac(xlate_ident id, xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
 		     but the structures are different *)
-		  xlate_lettac_clauses cl)
+		  xlate_clause cl)
     | TacForward (true, name, c) -> 
 (* TODO LATER : avoid adding a location that will be ignored *)
                CT_pose(xlate_id_opt ((0,0), name), xlate_formula c)

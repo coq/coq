@@ -516,7 +516,8 @@ let intern_inversion_strength lf ist = function
       InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
 
 (* Interprets an hypothesis name *)
-let intern_hyp_location ist (id,hl) = (intern_hyp ist (skip_metaid id), hl)
+let intern_hyp_location ist (id,occs,hl) =
+  (intern_hyp ist (skip_metaid id), occs, hl)
 
 (* Reads a pattern *)
 let intern_pattern evc env lfun = function
@@ -566,6 +567,13 @@ let extract_let_names lrc =
       name::l)
     lrc []
 
+
+let clause_app f = function
+    { onhyps=None; onconcl=b;concl_occs=nl } ->
+      { onhyps=None; onconcl=b; concl_occs=nl }
+  | { onhyps=Some l; onconcl=b;concl_occs=nl } ->
+      { onhyps=Some(List.map f l); onconcl=b;concl_occs=nl}
+
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
 let rec intern_atomic lf ist x =
   match (x:raw_atomic_tactic_expr) with 
@@ -599,12 +607,13 @@ let rec intern_atomic lf ist x =
   | TacForward (b,na,c) -> TacForward (b,intern_name lf ist na,intern_constr ist c)
   | TacGeneralize cl -> TacGeneralize (List.map (intern_constr ist) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (intern_constr ist c)
-  | TacLetTac (id,c,clp) ->
+  | TacLetTac (id,c,cls) ->
       let id = intern_ident lf ist id in
-      TacLetTac (id,intern_constr ist c,intern_clause_pattern ist clp)
-  | TacInstantiate (n,c,ido) -> 
+      TacLetTac (id,intern_constr ist c,
+                 (clause_app (intern_hyp_location ist) cls))
+  | TacInstantiate (n,c,cls) -> 
       TacInstantiate (n,intern_constr ist c,
-		      (option_app (intern_hyp_or_metaid ist) ido))
+		      (clause_app (intern_hyp_location ist) cls))
 
   (* Automation tactics *)
   | TacTrivial l -> TacTrivial l
@@ -655,15 +664,15 @@ let rec intern_atomic lf ist x =
 
   (* Conversion *)
   | TacReduce (r,cl) ->
-      TacReduce (intern_redexp ist r, List.map (intern_hyp_location ist) cl)
+      TacReduce (intern_redexp ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (occl,c,cl) ->
       TacChange (option_app (intern_constr_occurrence ist) occl,
-        intern_constr ist c, List.map (intern_hyp_location ist) cl)
+        intern_constr ist c, clause_app (intern_hyp_location ist) cl)
 
   (* Equivalence relations *)
   | TacReflexivity -> TacReflexivity
   | TacSymmetry idopt -> 
-      TacSymmetry (option_app (intern_hyp_or_metaid ist) idopt)
+      TacSymmetry (clause_app (intern_hyp_location ist) idopt)
   | TacTransitivity c -> TacTransitivity (intern_constr ist c)
 
   (* Equality and inversion *)
@@ -1066,7 +1075,12 @@ let interp_evaluable ist env = function
       coerce_to_evaluable_ref env (unrec (List.assoc id ist.lfun))
 
 (* Interprets an hypothesis name *)
-let interp_hyp_location ist gl (id,hl) = (interp_hyp ist gl id,hl)
+let interp_hyp_location ist gl (id,occs,hl) = (interp_hyp ist gl id,occs,hl)
+
+let interp_clause ist gl { onhyps=ol; onconcl=b; concl_occs=occs } =
+  { onhyps=option_app(List.map (interp_hyp_location ist gl)) ol;
+    onconcl=b;
+    concl_occs=occs }
 
 let eval_opt_ident ist = option_app (eval_ident ist)
 
@@ -1598,10 +1612,10 @@ and interp_atomic ist gl = function
   | TacGeneralize cl -> h_generalize (List.map (pf_interp_constr ist gl) cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (id,c,clp) ->
-      let clp = interp_clause_pattern ist gl clp in
+      let clp = interp_clause ist gl clp in
       h_let_tac (eval_ident ist id) (pf_interp_constr ist gl c) clp
   | TacInstantiate (n,c,ido) -> h_instantiate n (pf_interp_constr ist gl c)
-      (option_app (interp_hyp ist gl) ido)
+      (clause_app (interp_hyp_location ist gl) ido)
 
   (* Automation tactics *)
   | TacTrivial l -> Auto.h_trivial l
@@ -1658,15 +1672,14 @@ and interp_atomic ist gl = function
 
   (* Conversion *)
   | TacReduce (r,cl) ->
-      h_reduce (pf_redexp_interp ist gl r) (List.map
-               (interp_hyp_location ist gl) cl)
+      h_reduce (pf_redexp_interp ist gl r) (interp_clause ist gl cl)
   | TacChange (occl,c,cl) ->
       h_change (option_app (pf_interp_pattern ist gl) occl)
-        (pf_interp_constr ist gl c) (List.map (interp_hyp_location ist gl) cl)
+        (pf_interp_constr ist gl c) (interp_clause ist gl cl)
 
   (* Equivalence relations *)
   | TacReflexivity -> h_reflexivity
-  | TacSymmetry c -> h_symmetry (option_app (interp_hyp ist gl) c)
+  | TacSymmetry c -> h_symmetry (interp_clause ist gl c)
   | TacTransitivity c -> h_transitivity (pf_interp_constr ist gl c)
 
   (* Equality and inversion *)

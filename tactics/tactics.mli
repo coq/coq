@@ -108,35 +108,35 @@ val exact_proof      : Topconstr.constr_expr -> tactic
 type tactic_reduction = env -> evar_map -> constr -> constr
 
 val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
-val reduct_option     : tactic_reduction -> hyp_location option -> tactic
+val reduct_option     : tactic_reduction -> simple_clause -> tactic
 val reduct_in_concl   : tactic_reduction -> tactic
 val change_in_concl   : constr occurrences option -> constr -> tactic
 val change_in_hyp     : constr occurrences option -> constr -> hyp_location ->
   tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location        -> tactic
-val red_option        : hyp_location option -> tactic
+val red_option        : simple_clause -> tactic
 val hnf_in_concl      : tactic
 val hnf_in_hyp        : hyp_location        -> tactic
-val hnf_option        : hyp_location option -> tactic
+val hnf_option        : simple_clause -> tactic
 val simpl_in_concl    : tactic
 val simpl_in_hyp      : hyp_location        -> tactic
-val simpl_option      : hyp_location option -> tactic
+val simpl_option      : simple_clause -> tactic
 val normalise_in_concl: tactic
 val normalise_in_hyp  : hyp_location        -> tactic
-val normalise_option  : hyp_location option -> tactic
+val normalise_option  : simple_clause -> tactic
 val unfold_in_concl   : (int list * evaluable_global_reference) list -> tactic
 val unfold_in_hyp     : 
   (int list * evaluable_global_reference) list -> hyp_location -> tactic
 val unfold_option     : 
-  (int list * evaluable_global_reference) list -> hyp_location option
+  (int list * evaluable_global_reference) list -> simple_clause
     -> tactic
-val reduce            : red_expr -> hyp_location list -> tactic
+val reduce            : red_expr -> clause -> tactic
 val change            :
-  constr occurrences option -> constr -> hyp_location list -> tactic
+  constr occurrences option -> constr -> clause -> tactic
 
 val unfold_constr     : global_reference -> tactic
-val pattern_option  : (int list * constr) list -> hyp_location option -> tactic
+val pattern_option  : (int list * constr) list -> simple_clause -> tactic
 
 (*s Modification of the local context. *)
 
@@ -233,8 +233,7 @@ val cut_replacing               : identifier -> constr -> tactic
 val cut_in_parallel             : constr list -> tactic
 
 val true_cut                    : identifier option -> constr -> tactic
-val letin_tac                   : bool -> name -> constr -> 
-                                  identifier clause_pattern -> tactic
+val letin_tac                   : bool -> name -> constr -> clause -> tactic
 val forward                     : bool -> name -> constr -> tactic
 val generalize                  : constr list -> tactic
 val generalize_dep              : constr  -> tactic

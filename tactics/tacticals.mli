@@ -68,27 +68,32 @@ val unTAC            : tactic -> goal sigma -> proof_tree sigma
 
 (*s Clause tacticals. *)
 
-type clause = identifier option
+type simple_clause = identifier gsimple_clause
+type clause = identifier gclause
+
+val allClauses : 'a gclause
+val allHyps : clause
+val onHyp : identifier -> clause
+val onConcl : 'a gclause
 
 val nth_clause  : int -> goal sigma -> clause
 val clause_type : clause -> goal sigma -> constr
+val simple_clause_list_of : clause -> goal sigma -> simple_clause list
 
 val pf_matches : goal sigma -> constr_pattern -> constr -> patvar_map
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
-val allHyps    : goal sigma -> identifier list
 val afterHyp   : identifier -> goal sigma -> named_context
 val lastHyp    : goal sigma -> identifier
 val nLastHyps  : int -> goal sigma -> named_context
 
-val allClauses : goal sigma -> clause list
-
-val onCL           : (goal sigma -> clause list) -> 
-                     (clause list -> tactic) -> tactic
-val tryAllClauses  : (clause -> tactic) -> tactic
-val onAllClauses   : (clause -> tactic) -> tactic
+val onCL           : (goal sigma -> clause) -> 
+                     (clause -> tactic) -> tactic
+val tryAllClauses  : (simple_clause -> tactic) -> tactic
+val onAllClauses   : (simple_clause -> tactic) -> tactic
 val onClause       : (clause -> tactic) -> clause -> tactic
-val onAllClausesLR : (clause -> tactic) -> tactic
+val onClauses      : (simple_clause -> tactic) -> clause -> tactic
+val onAllClausesLR : (simple_clause -> tactic) -> tactic
 val onNthLastHyp   : int -> (clause -> tactic) -> tactic
 val clauseTacThen  : (clause -> tactic) -> tactic -> clause -> tactic
 val if_tac         : (goal sigma -> bool) -> tactic -> (tactic) -> tactic

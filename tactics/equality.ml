@@ -420,7 +420,7 @@ let rec build_discriminator sigma env dirn c sort = function
 	 | _ -> kont subval (build_coq_False (),mkSort (Prop Null)))
 
 let gen_absurdity id gl =
-  if is_empty_type (clause_type (Some id) gl)
+  if is_empty_type (clause_type (onHyp id) gl)
   then
     simplest_elim (mkVar id) gl
   else
@@ -468,7 +468,7 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
 exception NotDiscriminable
 
 let discr id gls =
-  let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
+  let eqn = pf_whd_betadeltaiota gls (pf_get_hyp_typ gls id) in
   let sort = pf_type_of gls (pf_concl gls) in 
   let (lbeq,(t,t1,t2)) =
     try find_eq_data_decompose eqn
@@ -507,13 +507,16 @@ let onNegatedEquality tac gls =
     errorlabstrm "extract_negated_equality_then"
       (str"The goal should negate an equality")
 
-let discrClause = function
+
+let discrSimpleClause = function
   | None -> onNegatedEquality discr
-  | Some id -> discr id
+  | Some (id,_,_) -> discr id
+
+let discrClause = onClauses discrSimpleClause
 
 let discrEverywhere = 
   tclORELSE
-    (Tacticals.tryAllClauses discrClause)
+    (Tacticals.tryAllClauses discrSimpleClause)
     (fun gls -> 
        errorlabstrm "DiscrEverywhere" (str" No discriminable equalities"))
 
@@ -521,8 +524,8 @@ let discr_tac = function
   | None -> discrEverywhere
   | Some id -> try_intros_until discr id
 
-let discrConcl gls  = discrClause None gls
-let discrHyp id gls = discrClause (Some id) gls
+let discrConcl gls  = discrClause onConcl gls
+let discrHyp id gls = discrClause (onHyp id) gls
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
@@ -778,7 +781,7 @@ let try_delta_expand env sigma t =
    in hd position, otherwise delta expansion is not done *)
 
 let inj id gls =
-  let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
+  let eqn = pf_whd_betadeltaiota gls (pf_get_hyp_typ gls id) in
   let (eq,(t,t1,t2))= 
     try find_eq_data_decompose eqn
     with PatternMatchingFailure ->
@@ -840,7 +843,7 @@ let injConcl gls  = injClause None gls
 let injHyp id gls = injClause (Some id) gls
 
 let decompEqThen ntac id gls =
-  let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
+  let eqn = pf_whd_betadeltaiota gls (pf_get_hyp_typ gls id) in
   let (lbeq,(t,t1,t2))= find_eq_data_decompose eqn in
   let sort = pf_type_of gls (pf_concl gls) in 
   let sigma = project gls in
@@ -913,7 +916,7 @@ let swapEquandsInConcl gls =
   refine (applist(sym_equal,[t;e2;e1;mkMeta (Clenv.new_meta())])) gls
 
 let swapEquandsInHyp id gls =
-  ((tclTHENS (cut_replacing id (swap_equands gls (clause_type (Some id) gls)))
+  ((tclTHENS (cut_replacing id (swap_equands gls (pf_get_hyp_typ gls id)))
       ([tclIDTAC;
       	(tclTHEN (swapEquandsInConcl) (exact_no_check (mkVar id)))]))) gls
 
@@ -1048,7 +1051,7 @@ let substInConcl l2r = if l2r then substInConcl_LR else substInConcl_RL
 
 let substInHyp_LR eqn id gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
-  let body = subst_term e1 (clause_type (Some id) gls) in
+  let body = subst_term e1 (pf_get_hyp_typ gls id) in
   if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" (mt ());
   (tclTHENS (cut_replacing id (subst1 e2 body))
      ([tclIDTAC;
@@ -1094,13 +1097,14 @@ let substConcl_LR = substConcl true
 *)
 
 let hypSubst l2r id cls gls =
-  match cls with
+  onClauses (function
     | None -> 
-	(tclTHENS (substInConcl l2r (clause_type (Some id) gls))
-	   ([tclIDTAC; exact_no_check (mkVar id)])) gls
-    | Some hypid -> 
-	(tclTHENS (substInHyp l2r (clause_type (Some id) gls) hypid)
-	   ([tclIDTAC;exact_no_check (mkVar id)])) gls
+	(tclTHENS (substInConcl l2r (pf_get_hyp_typ gls id))
+	   ([tclIDTAC; exact_no_check (mkVar id)]))
+    | Some (hypid,_,_) -> 
+	(tclTHENS (substInHyp l2r (pf_get_hyp_typ gls id) hypid)
+	   ([tclIDTAC;exact_no_check (mkVar id)])))
+    cls gls
 
 let hypSubst_LR = hypSubst true
 
@@ -1108,7 +1112,7 @@ let hypSubst_LR = hypSubst true
  * HypSubst id.
  *  id:a=b |- (P b)
  *)
-let substHypInConcl l2r id gls = try_rewrite (hypSubst l2r id None) gls
+let substHypInConcl l2r id gls = try_rewrite (hypSubst l2r id onConcl) gls
 let substHypInConcl_LR = substHypInConcl true
 
 (* id:a=b H:(P a) |- G
@@ -1154,7 +1158,7 @@ let unfold_body x gl =
           (pr_id x ++ str" is not a defined hypothesis") in
   let aft = afterHyp x gl in
   let hl = List.fold_right
-    (fun (y,yval,_) cl -> (y,(InHyp,ref None)) :: cl) aft [] in
+    (fun (y,yval,_) cl -> (y,[],(InHyp,ref None)) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST

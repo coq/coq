@@ -52,8 +52,8 @@ type elimination_types =
 val necessary_elimination : sorts -> sorts -> elimination_types 
 
 val discr        : identifier -> tactic
-val discrClause  : clause -> tactic
 val discrConcl   : tactic
+val discrClause  : clause -> tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere     : tactic
 val discr_tac    : quantified_hypothesis option -> tactic

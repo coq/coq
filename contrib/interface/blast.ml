@@ -516,7 +516,7 @@ let blast_auto = (free_try default_full_auto)
 			  (free_try (my_full_eauto 2)))
 *)
 ;;
-let blast_simpl = (free_try (reduce (Simpl None) []))
+let blast_simpl = (free_try (reduce (Simpl None) onConcl))
 ;;
 let blast_induction1 = 
     (free_try (tclTHEN (tclTRY intro)

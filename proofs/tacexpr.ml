@@ -56,7 +56,7 @@ type hyp_location_flag = (* To distinguish body and type of local defs *)
   | InHypValueOnly
 
 type 'a raw_hyp_location = 
-    'a * (hyp_location_flag * hyp_location_flag option ref)
+    'a * int list * (hyp_location_flag * hyp_location_flag option ref)
 
 type 'a induction_arg =
   | ElimOnConstr of 'a
@@ -70,8 +70,6 @@ type intro_pattern_expr =
 
 and case_intro_pattern_expr = intro_pattern_expr list list
 
-type 'id clause_pattern = int list option * ('id * int list) list
-
 type inversion_kind =
   | SimpleInversion
   | FullInversion
@@ -83,6 +81,20 @@ type ('c,'id) inversion_strength =
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
+
+type 'id gsimple_clause = ('id raw_hyp_location) option
+(* onhyps:
+     [None] means *on every hypothesis*
+     [Some l] means on hypothesis belonging to l *)
+type 'id gclause =
+  { onhyps : 'id raw_hyp_location list option;
+    onconcl : bool;
+    concl_occs :int list }
+
+let simple_clause_of = function
+    { onhyps = Some[scl]; onconcl = false } -> Some scl
+  | { onhyps = Some []; onconcl = true; concl_occs=[] } -> None
+  | _ -> error "not a simple clause (one hypothesis or conclusion)"
 
 type pattern_expr = constr_expr
 
@@ -121,8 +133,8 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacForward of bool * name * 'constr
   | TacGeneralize of 'constr list
   | TacGeneralizeDep of 'constr
-  | TacLetTac of identifier * 'constr * 'id clause_pattern
-  | TacInstantiate of int * 'constr * 'id option
+  | TacLetTac of identifier * 'constr * 'id gclause
+  | TacInstantiate of int * 'constr * 'id gclause
 
   (* Derived basic tactics *)
   | TacSimpleInduction of quantified_hypothesis
@@ -162,13 +174,13 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacConstructor of int or_metaid * 'constr bindings
 
   (* Conversion *)
-  | TacReduce of ('constr,'cst) red_expr_gen * 'id raw_hyp_location list
+  | TacReduce of ('constr,'cst) red_expr_gen * 'id gclause
   | TacChange of
-      'constr occurrences option * 'constr * 'id raw_hyp_location list
+      'constr occurrences option * 'constr * 'id gclause
 
   (* Equivalence relations *)
   | TacReflexivity
-  | TacSymmetry of 'id option
+  | TacSymmetry of 'id gclause
   | TacTransitivity of 'constr 
 
   (* Equality and inversion *)

@@ -54,6 +54,11 @@ let mlexpr_of_triple m1 m2 m3 (a1,a2,a3)=
 (* We don't give location for tactic quotation! *)
 let loc = dummy_loc
 
+
+let mlexpr_of_bool = function
+  | true -> <:expr< True >>
+  | false -> <:expr< False >>
+
 let mlexpr_of_int n = <:expr< $int:string_of_int n$ >>
 
 let mlexpr_of_string s = <:expr< $str:s$ >>
