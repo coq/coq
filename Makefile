@@ -231,8 +231,8 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
   parsing/pcoq.cmo parsing/ast.cmo \
   parsing/extend.cmo pretyping/detyping.cmo \
   parsing/termast.cmo interp/modintern.cmo interp/constrextern.cmo\
-  parsing/g_prim.cmo parsing/g_basevernac.cmo \
   parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
+  parsing/g_prim.cmo parsing/g_basevernac.cmo \
   parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
   lib/stamps.cmo pretyping/typing.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
