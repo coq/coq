@@ -96,26 +96,21 @@ This is any logic which does not assume that ``A or not A''.
 \Question[theory]{Where can I find information about the theory behind \Coq ?}
 
 \begin{description}
-\item[Type theory]
-Proof and Types~\cite{ProofsTypes}
-Cours de Gilles~\cite{Types:Dowek}
-Manuel de Coq~\cite{Coq:manual}
-
-\item[Inductives]
-
-Habilitation Christine~\cite{Pau96b}
-
-\item[Co-Inductives]
-Thèse Eduardo Giménez~\cite{EGThese}
-
-\item[Extraction]
-Pierre Letouzey
+\item[Type theory] A book~\cite{ProofsTypes}, some lecture
+notes~\cite{Types:Dowek} and the \Coq manual~\cite{Coq:manual}
+\item[Inductive types]
+Christine Paulin-Mohring's habilitation thesis~\cite{Pau96b}
+\item[Co-Inductive types]
+Eduardo Giménez' thesis~\cite{EGThese}
 \end{description}
 
 
 \Question[provingprograms]{How can I use \Coq to prove programs ?}
 
-You can either extract a program from a proof use the extraction mechanism or use dedicated tools to prove annotated programs writen in another langage such as \Why and \Krakatoa.
+You can either extract a program from a proof use the extraction
+mechanism or use dedicated tools, such as \Why and \Krakatoa, to prove
+annotated programs written in other langages.
+
 \Question[nbusers]{How many \Coq users are there ?}
 
 That's a good question.
@@ -158,8 +153,8 @@ This faq is available online at \url{http://coq.inria.fr/faq.html}.
 
 \Question[faqimprov]{How can I submit suggestions / improvements / additions for this FAQ?}
 
-This FAQ is unfinished (in the sense that there are some obvious sections it needs, some included below). Please send contributions to the authors. 
-
+This FAQ is unfinished (in the sense that there are some obvious
+sections that are missing). Please send contributions to the authors.
 
 \Question[coqmailinglist]{Is there any mailing list about \Coq ?} 
 The main \Coq mailing list is \url{coq-club@pauillac.inria.fr}, which
@@ -169,6 +164,8 @@ logical formalism or proof developments. See
 subsription. Bugs reports should be sent at the \url{coq-bugs@pauillac.inria.fr} mailing-list.
 
 \Question[coqmailinglistarchive]{Where can I find an archive of the list?}
+The archives of the \Coq mailing list are abvailable at
+\url{http://pauillac.inria.fr/pipermail/coq-club}.
 
 \Question[coqbook]{Is there any book about \Coq ?}
 The first book on \Coq, Yves Bertot and Pierre Castéran's Coq'Art will
@@ -181,10 +178,12 @@ students, and engineers interested in formal methods and the
 development of zero-default software.''
 \end{quote}
 
-
 \Question[coqexamples]{Where can I find some \Coq examples ?} 
 
-There are examples in the manual~\cite{Coq:manual} and in the Coq'Art~\cite{Coq:coqart}. You can also find large developments using \Coq in the \Coq user contributions : \url{http://coq.inria.fr/distrib-eng.html}
+There are examples in the manual~\cite{Coq:manual} and in the
+Coq'Art~\cite{Coq:coqart}. You can also find large developments using
+\Coq in the \Coq user contributions :
+\url{http://coq.inria.fr/distrib-eng.html}.
 
 \Question[coqbug]{How can I report a bug ?}
 
@@ -212,7 +211,6 @@ Windows. The sources can be easily adapted to all platforms supporting Objective
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Talkin' with the Rooster}
-
 
 
 %%%%%%%
@@ -246,7 +244,10 @@ Qed.
 
 \Question[disjonction]{My goal is a disjonction, how can I prove it ?}
 
-You can prove the left part or the right part of the disjunction using {\tt left} or {\tt right} tactics. If you want to do a classical reasoning step, use {\tt }  to prove the right part with the assumption that the left part of the disjunction is false.
+You can prove the left part or the right part of the disjunction using
+{\tt left} or {\tt right} tactics. If you want to do a classical
+reasoning step, use {\tt } to prove the right part with the assumption
+that the left part of the disjunction is false.
 
 \begin{coq_example*}
 Goal forall A B:Prop, A-> A\/B.
@@ -257,9 +258,14 @@ Qed.
 \end{coq_example*}
 
 
+
 \Question[forall]{My goal is an universally quantified statement, how can I prove it ?}
 
-Use some theorem or assumption or introduce the quantified variable in the context using the {\tt intro} tactic. If there are several variables you can use the {\tt intros} tactic. 
+Use some theorem or assumption or introduce the quantified variable in
+the context using the {\tt intro} tactic. If there are several
+variables you can use the {\tt intros} tactic. A good habit is to
+provide names for these variables: \Coq will do it anyway, but such
+automatic naming decreases readability and robustness.
 
 \Question[exist]{My goal is an existential, how can I prove it ?}
 
@@ -427,27 +433,57 @@ Sometime you can use the {\tt abstract} tactic, which makes as if you had stated
 
 \Question[ltac]{What is \Ltac ?}
 
-\Ltac is the tactic language for \Coq.
+\Ltac is the tactic language for \Coq. It provides the user with a
+high-level ``toolbox'' for tactic creation.
 
 \Question[ltacerror]{Why do I always get the same error message ?}
 
 
 \Question[ltacprint]{Is there any printing command in \Ltac ?}
 
-You can use the {\tt Idtac} tactic with a string argument. This string
-will be printed out.
-The same applies to the {\tt fail} tactic
+You can use the {\tt idtac} tactic with a string argument. This string
+will be printed out. The same applies to the {\tt fail} tactic
 
 \Question[letltac]{What is the syntax for let in \Ltac ?}
 
+If $x_i$ are identifiers and $e_i$ and $expr$ are tactic expressions, then let reads:
+\begin{center}
+{\tt let $x_1$:=$e_1$ with $x_2$:=$e_2$\ldots with $x_n$:=$e_n$ in
+$expr$}.
+\end{center}
+Beware that if $expr$ is complex (i.e. features at least a sequence) parenthesis
+should be added around it. For example: 
+\begin{coq_example}
+Ltac twoIntro := let x:=intro in (x;x).
+\end{coq_example}
+
 \Question[matchltac]{What is the syntax for pattern matching in \Ltac ?}
 
-\Question[matchsem]{What is the semantic for match context ?}
+Pattern matching on a term $expr$ (non-linear first order unification)
+with patterns $p_i$ and tactic expressions $e_i$ reads:
+\begin{center}
+\hspace{10ex}
+{\tt match $expr$ with
+\hspace*{2ex}$p_1$ => $e_1$
+\hspace*{1ex}\textbar$p_2$ => $e_2$
+\hspace*{1ex}\ldots
+\hspace*{1ex}\textbar$p_n$ => $e_n$
+\hspace*{1ex}\textbar\ \textunderscore\ => $e_{n+1}$
+end.
+}
+\end{center}
+Underscore matches all terms.
+
+\Question[matchsem]{What is the semantic for match goal ?}
 
 \Question[fresh]{How can I generate a new name ?}
 
 You can use the following syntax :
-{\tt Let id:=fresh in }
+{\tt Let id:=fresh in \ldots}\\
+For example :
+\begin{coq_example}
+Ltac introIdGen := let id:=fresh in intro id.
+\end{coq_example}
 
 \Question[statdyn]{How can I define static and dynamic code ?}
 
@@ -460,6 +496,9 @@ The goal is the statement to be proved.
 
 \Question[metavariable]{What is a meta variable ?}
 
+A meta variable in \Coq represents a ``hole'', i.e. a part of a proof
+that is still unknown. 
+
 \Question[type]{What is Type(i) ?}
 
 \Question[dependanttype]{What is a dependent type ?}
@@ -467,10 +506,15 @@ The goal is the statement to be proved.
 
 \Question[reflection]{What is a proof by reflection ?}
 
-This is a proof generated by some computation which is done using the internal reduction of Coq (not using the tactic language of \Coq (\Ltac) nor the implementation language for \Coq).
-An example of tactic using the reflection mechanism is the {\tt ring} tactic. 
-The reflection method consist in reflecting a subset of Coq language (for example the arithmetical expressions) into an object of the Coq language itself (in our case an inductive type denoting arithmetical expressions).
-For more information see~\cite{howe,harrison,boutin} and the last chapter of the Coq'Art.
+This is a proof generated by some computation which is done using the
+internal reduction of Coq (not using the tactic language of \Coq
+(\Ltac) nor the implementation language for \Coq).  An example of
+tactic using the reflection mechanism is the {\tt ring} tactic. The
+reflection method consist in reflecting a subset of Coq language (for
+example the arithmetical expressions) into an object of the Coq
+language itself (in this case an inductive type denoting arithmetical
+expressions).  For more information see~\cite{howe,harrison,boutin}
+and the last chapter of the Coq'Art.
 
 
 \section{Conclusion and Farewell.}
