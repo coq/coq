@@ -47,7 +47,6 @@ Intros n m; Pattern n m; Apply nat_double_ind; [
 | Intros; Simpl; Apply H; Apply lt_S_n; Assumption].
 Qed.
 
-(* Tout entier s'ecrit sous la forme 2p ou 2p+1 *)
 Lemma even_odd_cor : (n:nat) (EX p : nat | n=(mult (2) p)\/n=(S (mult (2) p))).
 Intro.
 Assert H := (even_or_odd n).
