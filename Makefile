@@ -72,7 +72,7 @@ CAMLP4OBJS=gramlib.cma
 
 CONFIG=config/coq_config.cmo
 
-LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
+LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
     lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
@@ -106,8 +106,8 @@ PRETYPING=pretyping/termops.cmo \
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo \
         parsing/genarg.cmo proofs/tacexpr.cmo parsing/ast.cmo \
-        parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
-	parsing/extend.cmo parsing/esyntax.cmo \
+        parsing/termast.cmo parsing/symbols.cmo parsing/astterm.cmo \
+        parsing/astmod.cmo parsing/extend.cmo parsing/esyntax.cmo \
         parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
 	parsing/coqlib.cmo parsing/printmod.cmo parsing/prettyp.cmo \
 	parsing/search.cmo
@@ -178,7 +178,7 @@ INTERFACE=contrib/interface/vtp.cmo \
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
 PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
-	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
+	lib/util.cmo lib/bignat.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
 	lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
@@ -210,7 +210,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
 	parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
-	parsing/extend.cmo \
+	parsing/extend.cmo parsing/symbols.cmo \
 	parsing/coqlib.cmo pretyping/detyping.cmo \
 	parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
@@ -409,12 +409,13 @@ states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 #       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
 #       theories/Init/Logic_TypeHints.vo \
 
-INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
-       theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
+INITVO=theories/Init/Datatypes.vo         theories/Init/DatatypesSyntax.vo \
+       theories/Init/Peano.vo             theories/Init/PeanoSyntax.vo   \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-       theories/Init/Logic_TypeSyntax.vo
+       theories/Init/Logic_TypeSyntax.vo  theories/Init/Prelude.vo
+
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
@@ -445,8 +446,7 @@ LOGICVO=theories/Logic/Hurkens.vo          theories/Logic/ProofIrrelevance.vo\
       theories/Logic/Berardi.vo       	     theories/Logic/Eqdep_dec.vo \
       theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
 
-ARITHVO=theories/Arith/ArithSyntax.vo \
-	theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
+ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Between.vo       theories/Arith/Le.vo          \
 	theories/Arith/Compare.vo       theories/Arith/Lt.vo          \
 	theories/Arith/Compare_dec.vo   theories/Arith/Min.vo         \
@@ -841,7 +841,7 @@ ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
 CAMLP4EXTENSIONS= parsing/argextend.cmo parsing/tacextend.cmo \
 	   parsing/vernacextend.cmo 
 
-GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
+GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
 	   lib/dyn.cmo lib/options.cmo \
 	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
 	   $(KERNEL) \
@@ -853,6 +853,7 @@ GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
            parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
+           parsing/symbols.cmo \
            toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
            parsing/egrammar.cmo parsing/g_prim.cmo $(CAMLP4EXTENSIONS)
 
