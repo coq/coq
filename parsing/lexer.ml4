@@ -222,18 +222,20 @@ let set_xml_output_comment f = xml_output_comment := f
 let comment_begin = ref None
 let comm_loc bp = if !comment_begin=None then comment_begin := Some bp
 
-let current = ref ""
+let current = Buffer.create 8192
 let between_com = ref true
 
 type com_state = int option * string * bool
 let restore_com_state (o,s,b) =
-  comment_begin := o; current := s; between_com := b
+  comment_begin := o; 
+  Buffer.clear current; Buffer.add_string current s; 
+  between_com := b
 let dflt_com = (None,"",true)
 let com_state () =
-  let s = (!comment_begin, !current, !between_com) in
+  let s = (!comment_begin, Buffer.contents current, !between_com) in
   restore_com_state dflt_com; s
 
-let real_push_char c = current := !current ^ String.make 1 c
+let real_push_char c = Buffer.add_char current c
 
 (* Add a char if it is between two commands, if it is a newline or
    if the last char is not a space itself. *)
@@ -241,13 +243,13 @@ let push_char c =
   if
     !between_com || List.mem c ['\n';'\r'] ||
     (List.mem c [' ';'\t']&&
-     (String.length !current=0 ||
-      not (List.mem !current.[String.length !current - 1]
-        [' ';'\t';'\n';'\r'])))
+     (Buffer.length current = 0 ||
+      not (let s = Buffer.contents current in
+	   List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
   then
     real_push_char c
 
-let push_string s = current := !current ^ s
+let push_string s = Buffer.add_string current s
 
 let null_comment s =
   let rec null i =
@@ -255,18 +257,19 @@ let null_comment s =
   null (String.length s - 1)
 
 let comment_stop ep =
-  if !Options.xml_export && !current <> "" &&
-    (!between_com || not(null_comment !current)) then
-      !xml_output_comment !current;
-  (if Options.do_translate() && !current <> "" &&
-    (!between_com || not(null_comment !current)) then
+  let current_s = Buffer.contents current in
+  if !Options.xml_export && Buffer.length current > 0 &&
+    (!between_com || not(null_comment current_s)) then
+      !xml_output_comment current_s;
+  (if Options.do_translate() && Buffer.length current > 0 &&
+    (!between_com || not(null_comment current_s)) then
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
-          msgerrnl(str"No begin location for comment '"++str !current++str"' ending at  "++int ep);
+          msgerrnl(str"No begin location for comment '"++str current_s ++str"' ending at  "++int ep);
           ep-1 in
-    Pp.comments := ((bp,ep),!current) :: !Pp.comments);
-  current := "";
+    Pp.comments := ((bp,ep),current_s) :: !Pp.comments);
+  Buffer.clear current;
   comment_begin := None;
   between_com := false
 
