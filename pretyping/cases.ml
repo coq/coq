@@ -641,7 +641,7 @@ let rec find_dependency_list k n = function
   | (used,tdeps,d)::rest -> 
       let deps = find_dependency_list k (n+1) rest in
       if used && dependent_decl (mkRel n) d
-      then list_add_set (k+1-n) (list_union deps tdeps)
+      then list_add_set (List.length rest + 1) (list_union deps tdeps)
       else deps
 
 let find_dependencies is_dep_or_cstr_in_rhs d (k,nextlist) =
@@ -776,12 +776,12 @@ let get_names env sign eqns =
 let recover_alias_names get_name = List.map2 (fun x (_,c,t) ->(get_name x,c,t))
 
 let push_rels_eqn sign eqn =
+  {eqn with rhs = {eqn.rhs with rhs_env = push_rels sign eqn.rhs.rhs_env} }
+
+let push_rels_eqn_with_names sign eqn =
   let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
   let sign = recover_alias_names alias_of_pat pats sign in
-  {eqn with
-     rhs =
-     {eqn.rhs with
-	rhs_env = push_rels sign eqn.rhs.rhs_env} }
+  push_rels_eqn sign eqn
 
 let build_aliases_context env sigma names allpats pats =
   (* pats is the list of bodies to push as an alias *)
@@ -1314,7 +1314,7 @@ let build_branch current deps pb eqns const_info =
       tomatch = List.rev_append currents tomatch;
       pred = option_app (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred;
       history = history;
-      mat = List.map (push_rels_eqn sign) submat }
+      mat = List.map (push_rels_eqn_with_names sign) submat }
 
 (**********************************************************************
  INVARIANT:
