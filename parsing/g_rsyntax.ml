@@ -164,29 +164,26 @@ let glob_Rplus = ConstRef (make_path rdefinitions "Rplus")
 let glob_Rmult = ConstRef (make_path rdefinitions "Rmult")
 
 let r_of_posint dloc n =
-  if is_nonzero n then begin
-    if Options.is_verbose () & less_than (of_string "5000") n then begin
-	warning ("You may experiment stack overflow and segmentation fault\
-                  \nwhile parsing numbers in R the absolute value of which is\
-                  \ngreater than 5000");
-	flush_all ()
-      end;
-    let ref_R1 = RRef (dloc, glob_R1) in
-    let ref_Rplus = RRef (dloc, glob_Rplus) in
-    let rec r_of_strictly_pos n =
-      if is_one n then
-        ref_R1
-      else
-        RApp(dloc, ref_Rplus, [ref_R1; r_of_strictly_pos (sub_1 n)])
-    in r_of_strictly_pos n
-  end
-  else
-    RRef (dloc, glob_R0)
+  let ref_R0 = RRef (dloc, glob_R0) in
+  let ref_R1 = RRef (dloc, glob_R1) in
+  let ref_Rplus = RRef (dloc, glob_Rplus) in
+  let ref_Rmult = RRef (dloc, glob_Rmult) in
+  let a2 = RApp(dloc, ref_Rplus, [ref_R1; ref_R1]) in
+  let list_ch = int_decomp n in
+  let rec mk_r l =
+    match l with
+    | [] -> failwith "Error r_of_posint"
+    | [a] -> if a=1 then ref_R1 else ref_R0
+    | a::[b] -> if a==1 then RApp (dloc, ref_Rplus, [ref_R1; a2]) else a2
+    | a::l' -> if a=1 then RApp (dloc, ref_Rplus, [ref_R1; RApp (dloc, ref_Rmult, [a2; mk_r l'])]) else RApp (dloc, ref_Rmult, [a2; mk_r l'])
+  in mk_r list_ch
 
+(* int_of_string o bigint_to_string : temporary hack ... *)
+(* utiliser les bigint de caml ? *)
 let r_of_int2 dloc z =
   match z with
-  | NEG n -> RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc n]) 
-  | POS n -> r_of_posint dloc n
+  | NEG n -> RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc (int_of_string (bigint_to_string (POS n)))]) 
+  | POS n -> r_of_posint dloc (int_of_string (bigint_to_string z))
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
