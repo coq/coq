@@ -12,10 +12,13 @@
 
 (** Notations for logical connectives *)
 
-Uninterpreted Notation "x /\ y" (at level 6, right associativity).
-Uninterpreted Notation "x \/ y" (at level 7, right associativity).
+Uninterpreted Notation "x /\ y" (at level 6, right associativity) 
+  V8only (at level 80, right associativity).
+Uninterpreted Notation "x \/ y" (at level 7, right associativity)
+  V8only (at level 85, right associativity).
 
-Uninterpreted Notation "x <-> y" (at level 8, right associativity).
+Uninterpreted Notation "x <-> y" (at level 8, right associativity)
+  V8only (at level 90, right associativity).
 
 Uninterpreted Notation "~ x" (at level 5, right associativity)
   V8only (at level 75, right associativity).
@@ -103,3 +106,7 @@ Uninterpreted Notation "{ x : A  &  P  &  Q }" (at level 1)
   V8only (at level 0, x at level 99).
 
 Delimits Scope type_scope with T.
+Delimits Scope core_scope with core.
+
+Open Scope core_scope.
+Open Scope type_scope.
