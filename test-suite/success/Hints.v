@@ -17,9 +17,9 @@ Hints Unfold Coq.Init.Datatypes.fst Coq.Init.Logic.sym_equal.
 Hints Unfold Coq.Init.Datatypes.fst Coq.Init.Logic.sym_equal : foo.
 
 (* What's this stranged syntax ? *)
-HintDestruct Conclusion h6 (le ? ?) 4 [ (Apply $0) ].
-HintDestruct Discardable Hypothesis h7 (le ? ?) 4 [ (Apply $0) ].
-HintDestruct Hypothesis h8 (le ? ?) 4 [ (Apply $0) ].
+HintDestruct Conclusion h6 (le ? ?) 4 [ Fun H -> Apply H ].
+HintDestruct Discardable Hypothesis h7 (le ? ?) 4 [ Fun H -> Apply H ].
+HintDestruct Hypothesis h8 (le ? ?) 4 [ Fun H -> Apply H ].
 
 (* Checks that local names are accepted *)
 Section A.
