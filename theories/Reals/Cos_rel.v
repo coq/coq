@@ -99,7 +99,7 @@ Unfold Rdiv; Rewrite Rmult_1r; Rewrite Rinv_R1; Ring.
 Unfold sin_nnn.
 Rewrite <- Rmult_Rplus_distr.
 Apply Rmult_mult_r.
-Rewrite binome.
+Rewrite binomial.
 Pose Wn := [i0:nat]``(C (mult (S (S O)) (S i)) i0)*(pow x i0)*
          (pow y (minus (mult (S (S O)) (S i)) i0))``.
 Replace (sum_f_R0

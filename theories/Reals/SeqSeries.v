@@ -15,7 +15,7 @@ Require Export SeqProp.
 Require Export Rcomplet.
 Require Export PartSum.
 Require Export AltSeries.
-Require Export Binome.
+Require Export Binomial.
 Require Export Rsigma.
 Require Export Rprod.
 Require Export Cauchy_prod.

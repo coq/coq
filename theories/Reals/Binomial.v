@@ -107,9 +107,8 @@ Apply lt_le_weak; Assumption.
 Qed.
 
 (*********************)
-(* Formule du binôme *)
 (*********************)
-Lemma binome : (x,y:R;n:nat) ``(pow (x+y) n)``==(sum_f_R0 [i:nat]``(C n i)*(pow x i)*(pow y (minus n i))`` n).
+Lemma binomial : (x,y:R;n:nat) ``(pow (x+y) n)``==(sum_f_R0 [i:nat]``(C n i)*(pow x i)*(pow y (minus n i))`` n).
 Intros; Induction n.
 Unfold C; Simpl; Unfold Rdiv; Repeat Rewrite Rmult_1r; Rewrite Rinv_R1; Ring.
 Pattern 1 (S n); Replace (S n) with (plus n (1)); [Idtac | Ring].

@@ -33,7 +33,7 @@ Lemma exp_form : (x,y:R;n:nat) (lt O n) -> ``(E1 x n)*(E1 y n)-(Reste_E x y n)==
 Intros; Unfold E1.
 Rewrite cauchy_finite.
 Unfold Reste_E; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Apply sum_eq; Intros.
-Rewrite binome.
+Rewrite binomial.
 Rewrite scal_sum; Apply sum_eq; Intros.
 Unfold C; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym (INR (fact i))); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Rewrite Rinv_Rmult.

@@ -218,8 +218,8 @@ Apply Rlt_R0_R1.
 Unfold C; Apply RmaxLess1.
 Replace ``/(INR
       (mult (fact (mult (S (S O)) (S (plus n0 n))))
-      (fact (mult (S (S O)) (minus N n0)))))`` with ``(Binome.C (mult (S (S O)) (S (plus N n))) (mult (S (S O)) (S (plus n0 n))))/(INR (fact (mult (S (S O)) (S (plus N n)))))``.
-Apply Rle_trans with ``(Binome.C (mult (S (S O)) (S (plus N n))) (S (plus N n)))/(INR (fact (mult (S (S O)) (S (plus N n)))))``.
+      (fact (mult (S (S O)) (minus N n0)))))`` with ``(Binomial.C (mult (S (S O)) (S (plus N n))) (mult (S (S O)) (S (plus n0 n))))/(INR (fact (mult (S (S O)) (S (plus N n)))))``.
+Apply Rle_trans with ``(Binomial.C (mult (S (S O)) (S (plus N n))) (S (plus N n)))/(INR (fact (mult (S (S O)) (S (plus N n)))))``.
 Unfold Rdiv; Do 2 Rewrite <- (Rmult_sym ``/(INR (fact (mult (S (S O)) (S (plus N n)))))``).
 Apply Rle_monotony.
 Left; Apply Rlt_Rinv; Apply INR_fact_lt_0.
@@ -251,7 +251,7 @@ Assumption.
 Apply le_pred_n.
 Right.
 Unfold Rdiv; Rewrite Rmult_sym.
-Unfold Binome.C.
+Unfold Binomial.C.
 Unfold Rdiv; Repeat Rewrite <- Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1l.
@@ -265,7 +265,7 @@ Rewrite mult_INR; Repeat Rewrite S_INR; Rewrite plus_INR; Ring.
 Apply le_n_2n.
 Apply INR_fact_neq_0.
 Unfold Rdiv; Rewrite Rmult_sym.
-Unfold Binome.C.
+Unfold Binomial.C.
 Unfold Rdiv; Repeat Rewrite <- Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1l.
@@ -598,8 +598,8 @@ Apply Rlt_R0_R1.
 Unfold C; Apply RmaxLess1.
 Replace ``/(INR
       (mult (fact (plus (mult (S (S O)) (S (plus n0 n))) (S O)))
-      (fact (plus (mult (S (S O)) (minus N n0)) (S O)))))`` with ``(Binome.C (mult (S (S O)) (S (S (plus N n)))) (plus (mult (S (S O)) (S (plus n0 n))) (S O)))/(INR (fact (mult (S (S O)) (S (S (plus N n))))))``.
-Apply Rle_trans with ``(Binome.C (mult (S (S O)) (S (S (plus N n)))) (S (S (plus N n))))/(INR (fact (mult (S (S O)) (S (S (plus N n))))))``.
+      (fact (plus (mult (S (S O)) (minus N n0)) (S O)))))`` with ``(Binomial.C (mult (S (S O)) (S (S (plus N n)))) (plus (mult (S (S O)) (S (plus n0 n))) (S O)))/(INR (fact (mult (S (S O)) (S (S (plus N n))))))``.
+Apply Rle_trans with ``(Binomial.C (mult (S (S O)) (S (S (plus N n)))) (S (S (plus N n))))/(INR (fact (mult (S (S O)) (S (S (plus N n))))))``.
 Unfold Rdiv; Do 2 Rewrite <- (Rmult_sym ``/(INR (fact (mult (S (S O)) (S (S (plus N n))))))``).
 Apply Rle_monotony.
 Left; Apply Rlt_Rinv; Apply INR_fact_lt_0.
@@ -635,7 +635,7 @@ Assumption.
 Apply le_pred_n.
 Right.
 Unfold Rdiv; Rewrite Rmult_sym.
-Unfold Binome.C.
+Unfold Binomial.C.
 Unfold Rdiv; Repeat Rewrite <- Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1l.
@@ -649,7 +649,7 @@ Rewrite mult_INR; Repeat Rewrite S_INR; Rewrite plus_INR; Ring.
 Apply le_n_2n.
 Apply INR_fact_neq_0.
 Unfold Rdiv; Rewrite Rmult_sym.
-Unfold Binome.C.
+Unfold Binomial.C.
 Unfold Rdiv; Repeat Rewrite <- Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1l.
