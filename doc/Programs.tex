@@ -11,17 +11,13 @@
 This chapter describes a new tactic
 to prove the correctness and termination of imperative
 programs annotated in a Floyd-Hoare logic style.
-This tactic is provided in the \Coq\ module \texttt{Programs},
+The theoretical fundations of this tactic are described 
+in~\cite{Filliatre99,Filliatre00a}.
+This tactic is provided in the \Coq\ module \texttt{Correctness},
 which does not belong to the initial state of \Coq. So you must import
 it when necessary, with the following command:
 $$
-\mbox{\texttt{Require Programs.}}
-$$
-If you want to use this tactic with the native-code version of \Coq,
-you will have to run the version of \Coq\ with all the tactics, through
-the command
-$$
-\mbox{\texttt{coqtop -full}}
+\mbox{\texttt{Require Correctness.}}
 $$
 \emph{Be aware that this tactic is still very experimental}.
 
@@ -70,7 +66,7 @@ vernacular command (which creates the goal from the annotated program)
 and a tactic (which partially solves it, leaving some proof
 obligations to the user).
 
-Whereas \texttt{Correctness} is not a tactic, the following syntax is
+Although \texttt{Correctness} is not a tactic, the following syntax is
 available:  
 $$
 \mbox{\tt Correctness} ~~ ident ~~ annotated\_program ~ ; ~ tactic.
@@ -484,7 +480,7 @@ $\forall x,y:\texttt{Z}. \exists b:\texttt{bool}.
  (\myifthenelse{b}{x<y}{x\ge y})$
 i.e. of a program returning a boolean with the expected post-condition.
 But you can use any other functional expression of such a type.
-In particular, the Programs standard library comes
+In particular, the \texttt{Correctness} standard library comes
 with a bunch of decidability theorems on type \texttt{nat}:
 $$
 \begin{array}{ll}
@@ -624,7 +620,7 @@ Regarding the post-condition of $f$, there are different possible cases:
 The tactic comes with some libraries, useful to write programs and
 specifications.
 The first set of libraries is automatically loaded with the module
-\texttt{Programs}. Among them, you can find the modules:
+\texttt{Correctness}. Among them, you can find the modules:
 \begin{description}
   \item[ProgWf]: this module defines a family of relations $Zwf$ on type
     \texttt{Z} by
@@ -784,9 +780,9 @@ Require Ring.
 \paragraph{Correctness part.}
 
 Then we come to the correctness proof. We first import the \Coq\
-module \texttt{Programs}:
+module \texttt{Correctness}:
 \begin{coq_example*}
-Require Programs.
+Require Correctness.
 \end{coq_example*}
 \begin{coq_eval}
 Definition Zsquare := [n:Z](Zmult n n).
@@ -890,7 +886,7 @@ so the user has to add it by himself).
 \asubsection{Other examples}
 
 You will find some other examples with the distribution of the system
-\Coq, in the sub-directory \verb!tactics/programs/EXAMPLES! of the
+\Coq, in the sub-directory \verb!contrib/correctness! of the
 \Coq\ standard library. Those examples are mostly programs to compute
 the factorial and the exponentiation in various ways (on types \texttt{nat}
 or \texttt{Z}, in imperative way or recursively, with global
@@ -902,8 +898,10 @@ There are also some bigger correctness developments in the
 for the moment, you can find:
 \begin{itemize}
   \item A proof of \emph{insertion sort} by Nicolas Magaud, ENS Lyon;
-  \item A proof of \emph{quicksort} and \emph{find} by the author.
+  \item Proofs of \emph{quicksort}, \emph{heapsort} and \emph{find} by
+    the author.
 \end{itemize}
+These examples are fully detailed in~\cite{FilliatreMagaud99,Filliatre99c}.
 
 
 %%%%%%%%%%%%%%%
