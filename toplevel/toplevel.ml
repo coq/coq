@@ -292,7 +292,9 @@ let rec coq_switch b =
       protected_loop stdin
   with
     | Vernacinterp.Drop -> ()
-    | Vernacinterp.ProtectedLoop -> coq_switch false
+    | Vernacinterp.ProtectedLoop -> 
+	Lib.declare_initial_state();
+	coq_switch false
     | End_of_input -> mSGERRNL [<>]; pp_flush(); exit 0
     | Vernacinterp.Quit -> exit 0
     | e ->
