@@ -606,11 +606,6 @@ let rec xlate_intro_pattern =
   | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
 
-let xlate_newind_names = 
-  function
-    | IntroIdentifier id -> xlate_ident id
-    | _ -> xlate_error "TODO: intro_patterns for NewDestruct/NewInduction"
-
 let compute_INV_TYPE = function
    FullInversionClear -> CT_inv_clear
  | SimpleInversion -> CT_inv_simple
@@ -853,10 +848,10 @@ and xlate_tactic =
 		   (xlate_local_rec_tac f1, List.map xlate_local_rec_tac l) in
        CT_rec_tactic_in(tl, xlate_tactic t)
    | TacAtom (_, t) -> xlate_tac t 
-   | TacFail (n,"") -> CT_fail (CT_int n)
-   | TacFail (n,s) -> xlate_error "TODO: Fail n message"
-   | TacId "" -> CT_idtac
-   | TacId _ -> xlate_error "TODO: Idtac with argument"
+   | TacFail (n,"") -> CT_fail(CT_int n, ctf_STRING_OPT_NONE)
+   | TacFail (n,s) -> CT_fail(CT_int n, ctf_STRING_OPT_SOME (CT_string s))
+   | TacId "" -> CT_idtac ctf_STRING_OPT_NONE
+   | TacId s -> CT_idtac(ctf_STRING_OPT_SOME (CT_string s))
    | TacInfo t -> CT_info(xlate_tactic t)
    | TacArg a -> xlate_call_or_tacarg a
 
@@ -1095,8 +1090,11 @@ and xlate_tac =
     | TacNewDestruct(a,b,(c,_)) ->
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
-	   CT_id_list_list
-	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
+	   (CT_intro_patt_list
+	      (List.map (fun l -> 
+			   CT_conj_pattern
+			     (CT_intro_patt_list
+				(List.map xlate_intro_pattern l))) c)))
     | TacNewInduction(a,b,(c,_)) ->
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b,
@@ -1391,6 +1389,15 @@ let xlate_comment = function
       CT_coerce_FORMULA_to_SCOMMENT_CONTENT
 	(CT_coerce_NUM_to_FORMULA(CT_int_encapsulator (string_of_int n)));;
 
+let translate_opt_notation_decl = function
+    None -> CT_coerce_NONE_to_DECL_NOTATION_OPT(CT_none)
+  |  Some(s, f, sc) ->
+       let tr_sc = 
+	 match sc with 
+	     None -> ctv_ID_OPT_NONE
+	   | Some id -> CT_coerce_ID_to_ID_OPT (CT_ident id) in
+       CT_decl_notation(CT_string s, xlate_formula f, tr_sc);;
+
 let xlate_vernac =
  function
    | VernacDeclareTacticDefinition (false,[(_,id),TacFun (largs,tac)]) ->
@@ -1650,11 +1657,10 @@ let xlate_vernac =
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
       let strip_mutind ((_,s), notopt, parameters, c, constructors) =
-        if notopt = None then
-           CT_ind_spec
+          CT_ind_spec
             (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
-             build_constructors constructors)
-        else xlate_error "TODO: Notation in Inductive" in
+             build_constructors constructors,
+	     translate_opt_notation_decl notopt) in
         CT_mind_decl
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint [] -> xlate_error "mutual recursive"

@@ -500,7 +500,14 @@ and fCONV_SET = function
 and fCO_IND = function
 | CT_co_ind x -> fATOM "co_ind";
    (f_atom_string x);
-   print_string "\n"and fDEF = function
+   print_string "\n"and fDECL_NOTATION_OPT = function
+| CT_coerce_NONE_to_DECL_NOTATION_OPT x -> fNONE x
+| CT_decl_notation(x1, x2, x3) ->
+   fSTRING x1;
+   fFORMULA x2;
+   fID_OPT x3;
+   fNODE "decl_notation" 3
+and fDEF = function
 | CT_def(x1, x2) ->
    fID_OPT x1;
    fFORMULA x2;
@@ -772,12 +779,13 @@ and fIMPEXP = function
 | CT_export -> fNODE "export" 0
 | CT_import -> fNODE "import" 0
 and fIND_SPEC = function
-| CT_ind_spec(x1, x2, x3, x4) ->
+| CT_ind_spec(x1, x2, x3, x4, x5) ->
    fID x1;
    fBINDER_LIST x2;
    fFORMULA x3;
    fCONSTR_LIST x4;
-   fNODE "ind_spec" 4
+   fDECL_NOTATION_OPT x5;
+   fNODE "ind_spec" 5
 and fIND_SPEC_LIST = function
 | CT_ind_spec_list l ->
    (List.iter fIND_SPEC l);
@@ -1248,9 +1256,10 @@ and fTACTIC_COM = function
 | CT_exists(x1) ->
    fSPEC_LIST x1;
    fNODE "exists" 1
-| CT_fail(x1) ->
+| CT_fail(x1, x2) ->
    fINT x1;
-   fNODE "fail" 1
+   fSTRING_OPT x2;
+   fNODE "fail" 2
 | CT_first(x,l) ->
    fTACTIC_COM x;
    (List.iter fTACTIC_COM l);
@@ -1266,7 +1275,9 @@ and fTACTIC_COM = function
 | CT_generalize_dependent(x1) ->
    fFORMULA x1;
    fNODE "generalize_dependent" 1
-| CT_idtac -> fNODE "idtac" 0
+| CT_idtac(x1) ->
+   fSTRING_OPT x1;
+   fNODE "idtac" 1
 | CT_induction(x1) ->
    fID_OR_INT x1;
    fNODE "induction" 1
@@ -1330,7 +1341,7 @@ and fTACTIC_COM = function
 | CT_new_destruct(x1, x2, x3) ->
    fFORMULA_OR_INT x1;
    fUSING x2;
-   fID_LIST_LIST x3;
+   fINTRO_PATT_LIST x3;
    fNODE "new_destruct" 3
 | CT_new_induction(x1, x2, x3) ->
    fFORMULA_OR_INT x1;

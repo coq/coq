@@ -187,6 +187,9 @@ and ct_CONV_SET =
   | CT_unfbut of ct_ID list
 and ct_CO_IND =
     CT_co_ind of string
+and ct_DECL_NOTATION_OPT =
+    CT_coerce_NONE_to_DECL_NOTATION_OPT of ct_NONE
+  | CT_decl_notation of ct_STRING * ct_FORMULA * ct_ID_OPT
 and ct_DEF =
     CT_def of ct_ID_OPT * ct_FORMULA
 and ct_DEFN =
@@ -317,7 +320,7 @@ and ct_IMPEXP =
     CT_export
   | CT_import
 and ct_IND_SPEC =
-    CT_ind_spec of ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_CONSTR_LIST
+    CT_ind_spec of ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_CONSTR_LIST * ct_DECL_NOTATION_OPT
 and ct_IND_SPEC_LIST =
     CT_ind_spec_list of ct_IND_SPEC list
 and ct_INT =
@@ -532,12 +535,12 @@ and ct_TACTIC_COM =
   | CT_elim_type of ct_FORMULA
   | CT_exact of ct_FORMULA
   | CT_exists of ct_SPEC_LIST
-  | CT_fail of ct_INT
+  | CT_fail of ct_INT * ct_STRING_OPT
   | CT_first of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_fixtactic of ct_ID_OPT * ct_INT * ct_FIX_TAC_LIST
   | CT_generalize of ct_FORMULA_NE_LIST
   | CT_generalize_dependent of ct_FORMULA
-  | CT_idtac
+  | CT_idtac of ct_STRING_OPT
   | CT_induction of ct_ID_OR_INT
   | CT_info of ct_TACTIC_COM
   | CT_injection_eq of ct_ID_OR_INT_OPT
@@ -554,7 +557,7 @@ and ct_TACTIC_COM =
   | CT_match_context_reverse of ct_CONTEXT_RULE * ct_CONTEXT_RULE list
   | CT_match_tac of ct_TACTIC_COM * ct_MATCH_TAC_RULES
   | CT_move_after of ct_ID * ct_ID
-  | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_ID_LIST_LIST
+  | CT_new_destruct of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_LIST
   | CT_new_induction of ct_FORMULA_OR_INT * ct_USING * ct_INTRO_PATT_LIST
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
