@@ -102,8 +102,8 @@ let value i t=
     vaux t
 	  
 type instance=
-    Real of (int*constr)*int (* nb trous*terme*valeur heuristique *)
-  | Phantom of constr (* domaine de quantification *)
+    Real of (int*constr)*int 
+  | Phantom of constr 
 
 let mk_rel_inst t=
   let new_rel=ref 1 in
@@ -131,4 +131,16 @@ let unif_atoms i dom t1 t2=
     with
 	UFAIL(_,_) ->None
       | Not_found ->Some (Phantom dom)
-	  
+	   	  
+let renum_metas_from k n t= (* requires n = max (free_rels t) *)
+  let l=list_tabulate (fun i->mkMeta (k+i)) n in
+    substl l t
+
+let more_general (m1,t1) (m2,t2)=
+  let mt1=renum_metas_from 0 m1 t1
+  and mt2=renum_metas_from m1 m2 t2 in
+    try 
+      let sigma=unif mt1 mt2 in
+      let p (n,t)= n<m1 || is_head_meta t in
+	List.for_all p sigma
+    with UFAIL(_,_)->false

@@ -19,3 +19,5 @@ type instance=
   | Phantom of constr        (* domaine de quantification *)
 
 val unif_atoms : metavariable -> constr -> constr -> constr -> instance option
+
+val more_general : (int*constr) -> (int*constr) -> bool

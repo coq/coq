@@ -169,7 +169,16 @@ let deepen seq={seq with depth=seq.depth-1}
  
 let record item seq={seq with history=History.add item seq.history}
 
-let lookup item seq=History.mem item seq.history
+let lookup item seq=
+  History.mem item seq.history ||
+  match item with
+      (_,None)->false
+    | (id,Some ((m,t) as c))->
+	let p (id2,o)=
+	  match o with
+	      None -> false
+	    | Some ((m2,t2) as c2)->id=id2 && m2>m && more_general c2 c in
+	  History.exists p seq.history
 
 let add_left (nam,t) seq internal gl=
   match build_left_entry nam t internal gl seq.cnt with

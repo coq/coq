@@ -27,10 +27,6 @@ open Libnames
 let rev_rels n t= (* requires n = max (free_rels t) *) 
   let l=list_tabulate (fun i->mkRel (n-i)) n in
     substl l t
- 	  
-let renum_metas_from k n t=(* requires n = max (free_rels t) *)
-  let l=list_tabulate (fun i->mkMeta (k+i)) n in
-    substl l t
 
 (* ordre lexico:
    nombre de metas dans terme;

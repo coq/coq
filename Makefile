@@ -277,8 +277,8 @@ FUNINDCMO=\
   contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo 
 
 FOCMO=\
-  contrib/first-order/formula.cmo contrib/first-order/sequent.cmo \
-  contrib/first-order/unify.cmo contrib/first-order/rules.cmo \
+  contrib/first-order/formula.cmo contrib/first-order/unify.cmo \
+  contrib/first-order/sequent.cmo contrib/first-order/rules.cmo \
   contrib/first-order/instances.cmo contrib/first-order/ground.cmo
 
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
