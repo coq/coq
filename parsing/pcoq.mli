@@ -159,6 +159,8 @@ module Vernac :
   sig
     val identarg : Coqast.t Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
+    val qualidarg : Coqast.t Gram.Entry.e
+    val qualidconstarg : Coqast.t Gram.Entry.e
     val numarg : Coqast.t Gram.Entry.e
     val numarg_list : Coqast.t list Gram.Entry.e
     val ne_numarg_list : Coqast.t list Gram.Entry.e

@@ -10,13 +10,20 @@ open Vernac
 
 GEXTEND Gram
   GLOBAL: identarg ne_identarg_list numarg ne_numarg_list numarg_list
-          stringarg ne_stringarg_list constrarg sortarg tacarg;
+          stringarg ne_stringarg_list constrarg sortarg tacarg 
+          qualidarg qualidconstarg;
 
   identarg:
-    [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
+    [ [ id = Constr.ident -> id ] ]
   ;
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]
+  ;
+  qualidarg:
+    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >> ] ]
+  ;
+  qualidconstarg:
+    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST l)) >> ] ]
   ;
   numarg:
     [ [ n = Prim.number -> n 
@@ -81,7 +88,7 @@ GEXTEND Gram
 	  <:ast< (LocateFile $f) >>
       | IDENT "Locate"; IDENT "Library"; id = identarg; "." ->
 	  <:ast< (LocateLibrary $id) >>
-      | IDENT "Locate"; id = Tactic.qualidarg; "." ->
+      | IDENT "Locate"; id = qualidarg; "." ->
 	  <:ast< (Locate $id) >>
 
        (* For compatibility (now turned into a table) *)
@@ -94,8 +101,8 @@ GEXTEND Gram
       | IDENT "Print"; "Proof"; id = identarg; "." ->
           <:ast< (PrintOpaqueId $id) >>
 (* Pris en compte dans PrintOption ci-dessous (CADUC) *)
-      | IDENT "Print"; id = identarg; "." -> <:ast< (PrintId $id) >>
-      | IDENT "Search"; id = Tactic.qualidarg; "." -> <:ast< (SEARCH $id) >>
+      | IDENT "Print"; id = qualidarg; "." -> <:ast< (PrintId $id) >>
+      | IDENT "Search"; id = qualidarg; "." -> <:ast< (SEARCH $id) >>
       | IDENT "Inspect"; n = numarg; "." -> <:ast< (INSPECT $n) >>
       | IDENT "SearchPattern"; c = constrarg; l = in_or_out_modules; "." ->
 	  <:ast< (SearchPattern $c ($LIST $l)) >>
@@ -218,9 +225,9 @@ GEXTEND Gram
 
      (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
      | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
-       p = Tactic.qualidarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
+       p = qualidarg; "." -> <:ast< (INFIX (AST $as_) $n $op $p) >>
      | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;
-       p = Tactic.qualidarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
+       p = qualidarg; "." -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
