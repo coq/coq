@@ -9,7 +9,6 @@
 (*i $Id$ i*)
 
 Require Export fast_integer.
-Require Export zarith_aux.
 
 V7only[
 
@@ -64,6 +63,16 @@ with expr0 : constr :=
 | expr_num [ number($s) ] -> [$s ]
 | expr_negnum [ "-" negnumber($n) ] -> [ $n ]
 | expr_inv [ "-" expr0($c) ] -> [ (Zopp $c) ] 
+| expr_meta [ zmeta($m) ] -> [ $m ]
+
+with zmeta :=
+| rimpl [ "?" ] -> [ ? ]
+| rmeta0 [ "?" "0" ] -> [ ?0 ]
+| rmeta1 [ "?" "1" ] -> [ ?1 ]
+| rmeta2 [ "?" "2" ] -> [ ?2 ]
+| rmeta3 [ "?" "3" ] -> [ ?3 ]
+| rmeta4 [ "?" "4" ] -> [ ?4 ]
+| rmeta5 [ "?" "5" ] -> [ ?5 ]
 
 with application : constr :=
   apply [ application($p) expr($c1) ] -> [ ($p $c1) ]

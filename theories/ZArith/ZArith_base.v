@@ -14,6 +14,10 @@
 
 Require Export fast_integer.
 Require Export zarith_aux.
+Require Export Zorder.
+Require Export Zeven.
+Require Export Zmin.
+Require Export Zabs.
 Require Export auxiliary.
 Require Export Zsyntax.
 Require Export ZArith_dec.

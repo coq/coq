@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require fast_integer.
+Require Zorder.
 Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.

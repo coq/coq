@@ -15,80 +15,8 @@ Require Wf_nat.
 V7only [Import Z_scope.].
 Open Local Scope Z_scope.
 
-(** Multiplication by a number >0 preserves [Zcompare]. It also perserves
-    [Zle], [Zlt], [Zge], [Zgt] *)
-
-Set Implicit Arguments.
-
-Implicit Variable Type x,y,z:Z.
-
-Lemma Zgt0_le_pred : (y:Z) `y > 0` -> `0 <= (Zpred y)`.
-Intro; Unfold Zpred; Omega.
-Qed.
-
-Lemma Zlt_Zplus : 
-  (x1,x2,y1,y2:Z)`x1 < x2` -> `y1 < y2` -> `x1 + y1 < x2 + y2`.
-Intros; Omega.
-Qed.
-
-Lemma Zlt_Zmult_right : (x,y,z:Z)`z>0` -> `x < y` -> `x*z < y*z`.
-
-Intros; Rewrite (Zs_pred z); Generalize (Zgt0_le_pred H); Intro;
-Apply natlike_ind with P:=[z:Z]`x*(Zs z) < y*(Zs z)`;
-[ Simpl; Do 2 (Rewrite Zmult_n_1); Assumption
-| Unfold Zs; Intros x0 Hx0; Do 6 (Rewrite Zmult_plus_distr_r);
-  Repeat Rewrite Zmult_n_1;
-  Intro; Apply Zlt_Zplus; Assumption
-| Assumption ].
-Qed.
-
-Lemma Zlt_Zmult_right2 : (x,y,z:Z)`z>0`  -> `x*z < y*z` -> `x < y`.
-Intros x y z H; Rewrite (Zs_pred z).
-Apply natlike_ind with P:=[z:Z]`x*(Zs z) < y*(Zs z)`->`x < y`.
-Simpl; Do 2 Rewrite Zmult_n_1; Auto 1.
-Unfold Zs.
-Intros x0 Hx0; Repeat Rewrite Zmult_plus_distr_r.
-Repeat Rewrite Zmult_n_1.
-Omega. (* Auto with zarith. *)
-Unfold Zpred; Omega.
-Qed.
-
-Lemma Zle_Zmult_right : (x,y,z:Z)`z>0` -> `x <= y` -> `x*z <= y*z`.
-Intros x y z Hz Hxy.
-Elim (Zle_lt_or_eq x y Hxy).
-Intros; Apply Zlt_le_weak.
-Apply Zlt_Zmult_right; Trivial.
-Intros; Apply Zle_refl.
-Rewrite H; Trivial.
-Qed.
-
-Lemma Zle_Zmult_right2 :  (x,y,z:Z)`z>0` -> `x*z <= y*z` -> `x <= y`.
-Intros x y z Hz Hxy.
-Elim (Zle_lt_or_eq `x*z` `y*z` Hxy).
-Intros; Apply Zlt_le_weak.
-Apply Zlt_Zmult_right2 with z; Trivial.
-Intros; Apply Zle_refl.
-Apply Zmult_reg_right with z; Omega.
-Qed.
-
-Lemma Zgt_Zmult_right : (x,y,z:Z)`z>0` -> `x > y` -> `x*z > y*z`.
-
-Intros; Apply Zlt_gt; Apply Zlt_Zmult_right; 
-[ Assumption | Apply Zgt_lt ; Assumption ].
-Qed.
-
-Lemma Zlt_Zmult_left : (x,y,z:Z)`z>0` -> `x < y` -> `z*x < z*y`.
-
-Intros;
-Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
-Apply Zlt_Zmult_right; Assumption.
-Qed.
-
-Lemma Zgt_Zmult_left : (x,y,z:Z)`z>0` -> `x > y` -> `z*x > z*y`.
-Intros;
-Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
-Apply Zgt_Zmult_right; Assumption.
-Qed.
+(**********************************************************************)
+(* Properties of comparison on Z *)
 
 Theorem Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
 

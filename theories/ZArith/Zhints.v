@@ -27,6 +27,10 @@
 
 (* Lemmas involving positive and compare are not taken into account *)
 
+Require fast_integer.
+Require Zorder.
+Require Zmin.
+Require Zabs.
 Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.

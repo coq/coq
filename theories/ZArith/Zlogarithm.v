@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+(**********************************************************************)
 (** The integer logarithms with base 2. 
 
     There are three logarithms,
