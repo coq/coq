@@ -20,53 +20,8 @@ Open Local Scope Z_scope.
 
 Set Implicit Arguments.
 
-Lemma Zmult_zero : (x,y:Z)`x*y=0` -> `x=0` \/ `y=0`.
-NewDestruct x; NewDestruct y; Auto.
-Simpl; Intros; Discriminate H.
-Simpl; Intros; Discriminate H.
-Simpl; Intros; Discriminate H.
-Simpl; Intros; Discriminate H.
-Qed.
+Implicit Variable Type x,y,z:Z.
 
-Lemma Zeq_Zminus : (x,y:Z)x=y -> `x-y = 0`.
-Intros; Omega.
-Qed.
-
-Lemma Zminus_Zeq : (x,y:Z)`x-y=0` -> x=y.
-Intros; Omega.
-Qed.
-
-Lemma Zmult_Zminus_distr_l : (x,y,z:Z)`(x-y)*z = x*z - y*z`.
-Intros; Unfold Zminus.
-Rewrite <- Zopp_Zmult.
-Apply Zmult_plus_distr_l.
-Qed.
-
-Lemma  Zmult_Zminus_distr_r : (x,y,z:Z)`z*(x-y) = z*x - z*y`.
-Intros; Rewrite (Zmult_sym z `x-y`).
-Rewrite (Zmult_sym  z x).
-Rewrite (Zmult_sym z y).
-Apply Zmult_Zminus_distr_l.
-Qed.
-
-Lemma Zmult_reg_left : (x,y,z:Z)`z<>0` -> `z*x=z*y` -> x=y.
-Intros.
-Generalize (Zeq_Zminus H0).
-Intro.
-Apply Zminus_Zeq.
-Rewrite <- Zmult_Zminus_distr_r in H1.
-Elim (Zmult_zero H1).
-Omega.
-Trivial.
-Qed.
-
-Lemma Zmult_reg_right : (x,y,z:Z)`z<>0` -> `x*z=y*z` -> x=y.
-Intros x y z Hz.
-Rewrite (Zmult_sym x z).
-Rewrite (Zmult_sym y z).
-Intro; Apply Zmult_reg_left with z; Assumption.
-Qed.
-    
 Lemma Zgt0_le_pred : (y:Z) `y > 0` -> `0 <= (Zpred y)`.
 Intro; Unfold Zpred; Omega.
 Qed.
@@ -175,6 +130,8 @@ Left ; Split with (NEG p); Reflexivity.
 Right ; Split with `-1`; Reflexivity.
 Qed.
 
+
+(**********************************************************************)
 (** The biggest power of 2 that is stricly less than [a]
 
     Easy to compute: replace all "1" of the binary representation by
@@ -217,6 +174,7 @@ Simpl; Omega.
 Qed.
 
 
+(**********************************************************************)
 (** Two more induction principles over [Z]. *)
 
 Theorem Z_lt_abs_rec : (P: Z -> Set)
@@ -284,10 +242,12 @@ Ring.
 Omega.
 Save.
 
+(**********************************************************************)
 (** A list length in Z, tail recursive.  *)
+
 Require PolyList.
 
-Fixpoint Zlength_aux [acc: Z; A: Set; l:(list A)] : Z := Cases l of 
+Fixpoint Zlength_aux [acc: Z; A:Set; l:(list A)] : Z := Cases l of 
     nil => acc
   | (cons _ l) => (Zlength_aux (Zs acc) A l)
 end. 
@@ -295,35 +255,46 @@ end.
 Definition Zlength := (Zlength_aux 0).
 Implicits Zlength [1].
 
-Lemma Zlength_correct : (A:Set)(l:(list A))(Zlength l)=(inject_nat (length l)).
+Section Zlength_properties.
+
+Variable A:Set.
+
+Implicit Variable Type l:(list A).
+
+Lemma Zlength_correct : (l:(list A))(Zlength l)=(inject_nat (length l)).
 Proof.
-Assert (A:Set)(l:(list A))(acc:Z)(Zlength_aux acc A l)=acc+(inject_nat (length l)). 
+Assert (l:(list A))(acc:Z)(Zlength_aux acc A l)=acc+(inject_nat (length l)). 
 Induction l.
 Simpl; Auto with zarith.
 Intros; Simpl (length (cons a l0)); Rewrite inj_S.
 Simpl; Rewrite H; Auto with zarith.
 Unfold Zlength; Intros; Rewrite H; Auto.
 Qed.
-Implicits Zlength_correct [1].
 
-Lemma Zlength_nil : (A:Set)(Zlength 1!A (nil A))=0.
+Lemma Zlength_nil : (Zlength 1!A (nil A))=0.
 Proof.
 Auto.
 Qed.
 
-Lemma Zlength_cons : (A:Set)(x:A)(l:(list A))(Zlength (cons x l))=(Zs (Zlength l)).
+Lemma Zlength_cons : (x:A)(l:(list A))(Zlength (cons x l))=(Zs (Zlength l)).
 Proof.
 Intros; Do 2 Rewrite Zlength_correct.
 Simpl (length (cons x l)); Rewrite inj_S; Auto.
 Qed.
-Implicits Zlength_cons [1].
 
-Lemma Zlength_nil_inv : (A:Set)(l:(list A))(Zlength l)=0 -> l=(nil ?).
+Lemma Zlength_nil_inv : (l:(list A))(Zlength l)=0 -> l=(nil ?).
 Proof.
-Intros A l; Rewrite Zlength_correct.
+Intro l; Rewrite Zlength_correct.
 Case l; Auto.
 Intros x l'; Simpl (length (cons x l')).
 Rewrite inj_S.
 Intros; ElimType False; Generalize (ZERO_le_inj (length l')); Omega.
 Qed.
+
+End Zlength_properties.
+
+Implicits Zlength_correct [1].
+Implicits Zlength_cons [1].
 Implicits Zlength_nil_inv [1].
+
+(**********************************************************************)

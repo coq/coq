@@ -17,12 +17,10 @@ Require Decidable.
 Require Peano_dec.
 Require Export Compare_dec.
 
+Open Local Scope Z_scope.
 
 Definition neq := [x,y:nat] ~(x=y).
 Definition Zne := [x,y:Z] ~(x=y).
-Theorem add_un_Zs : (x:positive) (POS (add_un x)) = (Zs (POS x)).
-Intro; Rewrite -> ZL12; Unfold Zs; Simpl; Trivial with arith.
-Qed.
 
 Theorem inj_S : (y:nat) (inject_nat (S y)) = (Zs (inject_nat y)).
 Induction y; [
@@ -32,11 +30,6 @@ Induction y; [
   Rewrite add_un_Zs; Trivial with arith].
 Qed.
  
-Theorem Zplus_S_n: (x,y:Z) (Zplus (Zs x) y) = (Zs (Zplus x y)).
-Intros x y; Unfold Zs; Rewrite (Zplus_sym (Zplus x y)); Rewrite Zplus_assoc;
-Rewrite (Zplus_sym (POS xH)); Trivial with arith.
-Qed.
-
 Theorem inj_plus : 
   (x,y:nat) (inject_nat (plus x y)) = (Zplus (inject_nat x) (inject_nat y)).
 
@@ -254,29 +247,16 @@ Intros x y H; Apply Zsimpl_gt_plus_r with (Zopp y).
 Rewrite Zplus_inverse_r; Trivial.
 Qed.
 
-Theorem Zopp_one : (x:Z)(Zopp x)=(Zmult x (NEG xH)).
-Induction x; Intros; Rewrite Zmult_sym; Auto with arith.
-Qed.
-
-Theorem Zopp_Zmult_r : (x,y:Z)(Zopp (Zmult x y)) = (Zmult x (Zopp y)).
-Intros x y; Rewrite Zmult_sym; Rewrite <- Zopp_Zmult; Apply Zmult_sym.
-Qed.
-
-Theorem Zmult_Zopp_left :  (x,y:Z)(Zmult (Zopp x) y) = (Zmult x (Zopp y)).
-Intros; Rewrite Zopp_Zmult; Rewrite Zopp_Zmult_r; Trivial with arith.
-Qed.
-
-Theorem Zopp_Zmult_l : (x,y:Z)(Zopp (Zmult x y)) = (Zmult (Zopp x) y).
-Intros x y; Symmetry; Apply Zopp_Zmult.
-Qed.
+(**********************************************************************)
+(** Omega lemmas *)
 
 Theorem Zred_factor0 : (x:Z) x = (Zmult x (POS xH)).
-Intro x; Rewrite (Zmult_n_1 x); Trivial with arith.
+Intro x; Rewrite (Zmult_n_1 x); Reflexivity.
 Qed.
 
 Theorem Zred_factor1 : (x:Z) (Zplus x x) = (Zmult x (POS (xO xH))).
-Intros x; Pattern 1 2 x ; Rewrite <- (Zmult_n_1 x);
-Rewrite <- Zmult_plus_distr_r; Auto with arith.
+Proof.
+Exact Zplus_Zmult_2.
 Qed.
 
 Theorem Zred_factor2 :
@@ -305,73 +285,6 @@ Qed.
 Theorem Zred_factor6 : (x:Z) x = (Zplus x ZERO).
 
 Intro; Rewrite Zero_right; Trivial with arith.
-Qed.
-
-Theorem Zcompare_Zplus_compatible2 :
-  (r:relation)(x,y,z,t:Z)
-    (Zcompare x y) = r -> (Zcompare z t) = r ->
-    (Zcompare (Zplus x z) (Zplus y t)) = r.
-
-Intros r x y z t; Case r; [
-  Intros H1 H2; Elim (Zcompare_EGAL x y); Elim (Zcompare_EGAL z t);
-  Intros H3 H4 H5 H6; Rewrite H3; [ 
-    Rewrite H5; [ Elim (Zcompare_EGAL (Zplus y t) (Zplus y t)); Auto with arith | Auto with arith ]
-  | Auto with arith ]
-| Intros H1 H2; Elim (Zcompare_ANTISYM (Zplus y t) (Zplus x z));
-  Intros H3 H4; Apply H3;
-  Apply Zcompare_trans_SUPERIEUR with y:=(Zplus y z) ; [
-    Rewrite Zcompare_Zplus_compatible;
-    Elim (Zcompare_ANTISYM t z); Auto with arith
-  | Do 2 Rewrite <- (Zplus_sym z); 
-    Rewrite Zcompare_Zplus_compatible;
-    Elim (Zcompare_ANTISYM y x); Auto with arith]
-| Intros H1 H2;
-  Apply Zcompare_trans_SUPERIEUR with y:=(Zplus x t) ; [
-    Rewrite Zcompare_Zplus_compatible; Assumption
-  | Do 2 Rewrite <- (Zplus_sym t);
-    Rewrite Zcompare_Zplus_compatible; Assumption]].
-Qed.
-
-Theorem Zcompare_Zmult_compatible : 
-   (x:positive)(y,z:Z)
-      (Zcompare (Zmult (POS x) y) (Zmult (POS x) z)) = (Zcompare y z).
-
-Induction x; [
-  Intros p H y z;
-  Cut (POS (xI p))=(Zplus (Zplus (POS p) (POS p)) (POS xH)); [
-    Intros E; Rewrite E; Do 4 Rewrite Zmult_plus_distr_l; 
-    Do 2 Rewrite Zmult_one;
-    Apply Zcompare_Zplus_compatible2; [
-      Apply Zcompare_Zplus_compatible2; Apply H
-    | Trivial with arith]
-  | Simpl; Rewrite (add_x_x p); Trivial with arith]
-| Intros p H y z; Cut (POS (xO p))=(Zplus (POS p) (POS p)); [
-    Intros E; Rewrite E; Do 2 Rewrite Zmult_plus_distr_l;
-      Apply Zcompare_Zplus_compatible2; Apply H
-    | Simpl; Rewrite (add_x_x p); Trivial with arith]
-  | Intros y z; Do 2 Rewrite Zmult_one; Trivial with arith].
-Qed.
-
-Theorem Zmult_eq:
-  (x,y:Z) ~(x=ZERO) -> (Zmult y x) = ZERO -> y = ZERO.
-
-Intros x y; Case x; [
-  Intro; Absurd ZERO=ZERO; Auto with arith
-| Intros p H1 H2; Elim (Zcompare_EGAL y ZERO);
-  Intros H3 H4; Apply H3; Rewrite <- (Zcompare_Zmult_compatible p);
-  Rewrite -> Zero_mult_right; Rewrite -> Zmult_sym;
-  Elim (Zcompare_EGAL (Zmult y (POS p)) ZERO); Auto with arith
-| Intros p H1 H2; Apply Zopp_intro; Simpl;
-  Elim (Zcompare_EGAL (Zopp y) ZERO); Intros H3 H4; Apply H3;
-  Rewrite <- (Zcompare_Zmult_compatible p);
-  Rewrite -> Zero_mult_right; Rewrite -> Zmult_sym;
-  Rewrite -> Zmult_Zopp_left; Simpl;
-  Elim (Zcompare_EGAL (Zmult y (NEG p)) ZERO); Auto with arith].
-Qed.
-
-Theorem Z_eq_mult:
-  (x,y:Z)  y = ZERO -> (Zmult y x) = ZERO.
-Intros x y H; Rewrite H; Auto with arith.
 Qed.
 
 Theorem Zmult_le:
