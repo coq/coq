@@ -481,7 +481,7 @@ and apply_constant env sp args =
     else if la > ls then 
       let s' = s @ (iterate (fun l -> true :: l) (la-ls) []) in
       MLapp (head, extract_real_args env args s')
-    else (* la < ls *)
+    else (* [la < ls] *)
       let n1 = la 
       and n2 = ls-la in 
       let s1,s2 = list_chop n1 s in 
@@ -492,7 +492,7 @@ and apply_constant env sp args =
     if la >= ls then 
       let s' = iterate (fun l -> true :: l) (la-ls) [] in 
       MLapp(head, MLdummy :: (extract_real_args env args s'))
-    else (* la < ls *)
+    else (* [la < ls] *)
       anonym_lams head (ls-la-1)
 
 (*s Application of an inductive constructor.
@@ -524,7 +524,7 @@ and apply_constructor env cp args =
 	  let mla1 = List.map (ml_lift n2) (extract_real_args env args s1) in
 	  let mla2 = extract_eta_args n2 s2 in 
 	  anonym_lams (head (mla1 @ mla2)) n2
-	else (* la < params_nb *)
+	else (* [la < params_nb] *)
 	  anonym_lams (head (extract_eta_args ls s)) (ls + params_nb - la)
 	    
 (*S Extraction of a term. *)
