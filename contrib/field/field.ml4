@@ -141,20 +141,13 @@ let field g =
   Library.check_required_library ["Coq";"field";"Field"];
   let ist = { lfun=[]; lmatch=[]; debug=get_debug () } in
   let typ = constr_of_VConstr (pf_env g) (val_interp ist g
-    <:tactic<
-      Match Context With
-      | [|- (eq ?1 ? ?)] -> ?1
-      | [|- (eqT ?1 ? ?)] -> ?1>>) in
+    <:tactic< Match Context With [|- (eq ?1 ? ?)] -> ?1>>) in
   let th = VConstr (lookup typ) in
   (tac_interp [(id_of_string "FT",th)] [] (get_debug ())
     <:tactic<
       Match Context With
-      | [|- (eq ?1 ?2 ?3)] ->
-        Let t = '(eqT ?1 ?2 ?3) In
-        Cut t;[Intro;
-          (Match Context With
-          | [id:t |- ?] -> Rewrite id;Reflexivity)|Field_Gen FT]
-      | [|- (eqT ? ? ?)] -> Field_Gen FT>>) g
+      | [|- (eq ?1 ?2 ?3)] -> Field_Gen FT
+      | _ -> Fail "Field: not an equality">>) g
 
 (* Verifies that all the terms have the same type and gives the right theory *)
 let guess_theory env evc = function
