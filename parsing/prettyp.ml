@@ -109,8 +109,8 @@ let print_opacity ref =
     | Some s -> pr_global ref ++ str " is " ++ 
         str (match s with
           | FullyOpaque -> "opaque"
-          | TransparentMaybeOpacified true -> "basically transparent (but considered opaque for reduction)"
-          | TransparentMaybeOpacified false -> "transparent")
+          | TransparentMaybeOpacified true -> "basically transparent but considered opaque for reduction"
+          | TransparentMaybeOpacified false -> "transparent") ++ fnl()
     
 let print_name_infos ref =
   let impl = implicits_of_global ref in
@@ -127,7 +127,6 @@ let print_name_infos ref =
   else mt())
   ++ type_for_implicit 
   ++ print_impl_args impl ++ print_argument_scopes scopes
-  ++ print_opacity ref
 
 let print_id_args_data test pr id l =
   if List.exists test l then
@@ -519,9 +518,12 @@ let print_about ref =
   let sigma = Evd.empty in
   let k = locate_any_name ref in
   begin match k with
-  | Term ref -> print_ref false ref ++ print_name_infos ref
-  | Syntactic kn -> print_syntactic_def " := " kn
-  | Dir _ | ModuleType _ | Undefined _ -> mt () end
+  | Term ref -> 
+      print_ref false ref ++ print_name_infos ref ++ print_opacity ref
+  | Syntactic kn ->
+      print_syntactic_def " := " kn
+  | Dir _ | ModuleType _ | Undefined _ ->
+      mt () end
   ++
   hov 0 (str "Expands to: " ++ pr_located_qualid k)
 
