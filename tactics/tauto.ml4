@@ -51,10 +51,6 @@ let not_dep_intros ist =
       Match Context With
       | [|- ?1 -> ?2 ] -> Intro>>
 
-let init_intros =
-  (tclORELSE (tclTHEN (intros_until_n_wored 1)
-                      (interp (tacticIn not_dep_intros))) intros)
-
 let axioms ist =
   let t_is_unit = tacticIn is_unit
   and t_is_empty = tacticIn is_empty in
@@ -89,11 +85,11 @@ let simplif t_reduce ist =
         | [|- (?1 ? ?)] -> $t_is_conj;Split;$t_reduce);
        $t_not_dep_intros)>>
 
-let rec tauto_main t_reduce ist =
+let rec tauto_intuit t_reduce t_solver ist =
   let t_axioms = tacticIn axioms
   and t_simplif = tacticIn (simplif t_reduce)
   and t_is_disj = tacticIn is_disj
-  and t_tauto_main = tacticIn (tauto_main t_reduce) in
+  and t_tauto_intuit = tacticIn (tauto_intuit t_reduce t_solver) in
   <:tactic<
    $t_reduce;
    ($t_simplif;$t_axioms
@@ -102,20 +98,20 @@ let rec tauto_main t_reduce ist =
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
-          Assumption];$t_tauto_main
+          Assumption]; Solve [ $t_tauto_intuit ]
       | [|- (?1 ? ?)] ->
-        $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main))
+        $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
+      )
     Orelse
-      (Intro;$t_tauto_main))>>
+      (Intro;$t_tauto_intuit)
+    Orelse
+      $t_solver
+   ) >>
 
-let rec intuition_main t_reduce ist =
-  let t_axioms = tacticIn axioms
-  and t_simplif = tacticIn (simplif t_reduce)
-  and t_intuition_main = tacticIn (intuition_main t_reduce) in
-  <:tactic<
-   $t_reduce;
-   ($t_simplif;$t_axioms
-    Orelse Try (Solve [Auto with *|Intro;$t_intuition_main]))>>
+let tauto_main t_reduce ist =
+  tauto_intuit t_reduce <:tactic< Failtac >> ist
+let intuition_main t_reduce ist =
+  tauto_intuit t_reduce <:tactic< Auto with * >> ist
 
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
@@ -149,14 +145,16 @@ let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
 
 let tauto g =
   try
-    (tclTHEN init_intros
+    (* (tclTHEN init_intros *)
       (tclORELSE
         (interp (tacticIn (tauto_main t_reduction_not_iff)))
-        (interp (tacticIn (tauto_main t_reduction))))) g
+        (interp (tacticIn (tauto_main t_reduction))))
+    (* ) *)
+    g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let intuition =
-  tclTHEN init_intros
+  (*  tclTHEN init_intros*)
     (tclORELSE
       (interp (tacticIn (intuition_main t_reduction_not_iff)))
       (interp (tacticIn (intuition_main t_reduction))))
