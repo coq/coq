@@ -13,6 +13,7 @@
 
 Require Export FSetInterface.
 Set Implicit Arguments.
+Set Ground Depth 2.
 
 (** * From non-dependent signature [S] to dependent signature [Sdep]. *)
 

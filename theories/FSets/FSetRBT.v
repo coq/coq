@@ -23,6 +23,8 @@ Open Scope Z_scope.
 Notation "[]" := (nil ?) (at level 1).
 Notation "a :: l" := (cons a l) (at level 1, l at next level).
 
+Set Ground Depth 3.
+
 Module Make [X : OrderedType] <: Sdep with Module E := X.
 
   Module E := X.
@@ -1800,6 +1802,8 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
   Defined.
 
   (** * Equality test *)
+
+Set Ground Depth 5.
 
   Lemma equal : (s,s':t){ Equal s s' } + { ~(Equal s s') }.
   Proof. 
