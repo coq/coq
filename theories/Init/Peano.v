@@ -28,6 +28,8 @@ Require Logic.
 Require LogicSyntax.
 Require Datatypes.
 
+Open Local Scope nat_scope.
+
 Definition eq_S := (f_equal nat nat S).
 
 Hint eq_S : v62 := Resolve (f_equal nat nat S).
@@ -171,6 +173,11 @@ Definition gt := [n,m:nat](lt m n).
 Hints Unfold gt : core v62.
 
 V8Infix ">" gt : nat_scope.
+
+V8Notation "x <= y <= z" := (le x y)/\(le y z) : nat_scope.
+V8Notation "x <= y < z"  := (le x y)/\(lt y z) : nat_scope.
+V8Notation "x < y < z"   := (lt x y)/\(lt y z) : nat_scope.
+V8Notation "x < y <= z"  := (lt x y)/\(le y z) : nat_scope.
 
 (** Pattern-Matching on natural numbers *)
 
