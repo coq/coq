@@ -40,7 +40,7 @@ open Ppextend
 (* Scope of symbols *)
 
 type level = precedence * precedence list
-type delimiters = string * string
+type delimiters = string
 type scope = {
   notations: (aconstr * (level * string)) Stringmap.t;
   delimiters: delimiters option
@@ -86,19 +86,35 @@ let check_scope sc = let _ = find_scope sc in ()
 (**********************************************************************)
 (* Delimiters *)
 
-let declare_delimiters scope dlm =
-  let sc = find_scope scope in
-  if sc.delimiters <> None && Options.is_verbose () then
-    warning ("Overwriting previous delimiters in "^scope);
-  let sc = { sc with delimiters = Some dlm } in
-  scope_map := Stringmap.add scope sc !scope_map   
+let delimiters_map = ref Stringmap.empty
 
-let find_delimiters scope = (find_scope scope).delimiters
+let declare_delimiters scope key =
+  let sc = find_scope scope in
+  if sc.delimiters <> None && Options.is_verbose () then begin
+    let old = out_some sc.delimiters in
+    Options.if_verbose 
+      warning ("Overwritting previous delimiter key "^old^" in scope "^scope)
+  end;
+  let sc = { sc with delimiters = Some key } in
+  scope_map := Stringmap.add scope sc !scope_map;
+  if Stringmap.mem key !delimiters_map then begin
+    let oldsc = Stringmap.find key !delimiters_map in
+    Options.if_verbose warning ("Hidding binding of key "^key^" to "^oldsc)
+  end;
+  delimiters_map := Stringmap.add key scope !delimiters_map
+
+let find_delimiters_scope loc key = 
+  try Stringmap.find key !delimiters_map
+  with Not_found -> 
+    user_err_loc 
+    (loc, "find_delimiters", str ("Unknown scope delimiting key "^key))
 
 (* Uninterpretation tables *)
 
 type interpretation = identifier list * aconstr
-type interp_rule = scope_name * notation * interpretation * int option
+type interp_rule =
+  | NotationRule of scope_name * notation
+  | SynDefRule of kernel_name
 
 (* We define keys for rawterm and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
@@ -191,21 +207,17 @@ let rec find_without_delimiters find ntn_scope = function
 
 (* The mapping between notations and their interpretation *)
 
-let declare_interpretation ntn scope pat =
+let declare_notation_interpretation ntn scope (_,pat) prec df =
   let sc = find_scope scope in
   if Stringmap.mem ntn sc.notations && Options.is_verbose () then
     warning ("Notation "^ntn^" is already used in scope "^scope);
-  let sc = { sc with notations = Stringmap.add ntn pat sc.notations } in
+  let sc =
+    { sc with notations = Stringmap.add ntn (pat,(prec,df)) sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map
 
-let declare_uninterpretation ntn scope metas c =
+let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = aconstr_key c in
-  notations_key_table :=
-    Gmapl.add key (scope,ntn,(metas,c),n) !notations_key_table
-
-let declare_notation ntn scope (metas,c) prec df onlyparse =
-  declare_interpretation ntn scope (c,(prec,df));
-  if not onlyparse then declare_uninterpretation ntn scope metas c
+  notations_key_table := Gmapl.add key (rule,pat,n) !notations_key_table
 
 let rec find_interpretation f = function
   | scope::scopes ->
@@ -340,7 +352,7 @@ let find_arguments_scope r =
 
 let pr_delimiters_info = function
   | None -> str "No delimiters"
-  | Some (l,r) -> str "Delimiters are " ++ str l ++ str " and " ++ str r
+  | Some key -> str "Delimiting key is " ++ str key
 
 let rec rawconstr_of_aconstr () x =
   map_aconstr_with_binders_loc dummy_loc (fun id () -> (id,())) 
@@ -383,12 +395,13 @@ let find_notation_printing_rule ntn =
 (* Synchronisation with reset *)
 
 let freeze () =
- (!scope_map, !scope_stack, !arguments_scope,
+ (!scope_map, !scope_stack, !arguments_scope, !delimiters_map,
   !notations_key_table, !printing_rules)
 
-let unfreeze (scm,scs,asc,fkm,pprules) =
+let unfreeze (scm,scs,asc,dlm,fkm,pprules) =
   scope_map := scm;
   scope_stack := scs;
+  delimiters_map := dlm;
   arguments_scope := asc;
   notations_key_table := fkm;
   printing_rules := pprules
@@ -399,6 +412,7 @@ let init () =
   scope_stack := Stringmap.empty
   arguments_scope := Refmap.empty
 *)
+  delimiters_map := Stringmap.empty;
   notations_key_table := Gmapl.empty;
   printing_rules := Stringmap.empty
 

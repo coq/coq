@@ -17,6 +17,7 @@ open Topconstr
 open Ast
 open Genarg
 open Tacexpr
+open Ppextend
 open Extend
 
 (* The lexer of Coq *)
@@ -492,16 +493,45 @@ let default_action_parser =
   Gram.Entry.of_parser "default_action_parser" 
     (fun strm -> Gram.Entry.parse_token (get_default_action_parser ()) strm)
 
-let entry_of_type allow_create = function
-  | ETConstr (_,Some 10) -> weaken_entry Constr.lconstr, None
-  | ETConstr (_,Some 9) -> weaken_entry Constr.constr9, None
-  | ETConstr (_,lev) -> weaken_entry Constr.constr, lev
+(* This determines if a reference to constr_n is a reference to the level
+   below wrt associativity (to be translated in camlp4 into "constr" without 
+   level) or to another level (to be translated into "constr LEVEL n") *)
+
+(* Camlp4 levels do not treat NonA *)
+let camlp4_assoc = function
+  | Some Gramext.NonA | None -> Gramext.LeftA
+  | Some a -> a
+
+(* Official Coq convention *)
+let coq_assoc = function
+  | None -> Gramext.LeftA
+  | Some a -> a
+
+let adjust_level assoc = function
+  (* If no associativity constraints, adopt the current one *)
+  | (n,BorderProd (_,Some Gramext.NonA)) -> None
+  (* Otherwise, deal with the current one *)
+  | (n,BorderProd (_,a)) when coq_assoc a = camlp4_assoc assoc -> None
+  | (n,BorderProd (left,a)) ->
+      let a = coq_assoc a in
+      if (left & a = Gramext.LeftA) or ((not left) & a = Gramext.RightA)
+      then Some n else Some (n-1)
+  | (8,InternalProd) -> None
+  | (n,InternalProd) -> Some n
+
+let compute_entry allow_create adjust = function
+  | ETConstr (10,_) -> weaken_entry Constr.lconstr, None
+  | ETConstr (9,_) -> weaken_entry Constr.constr9, None
+  | ETConstr (n,q) -> weaken_entry Constr.constr, adjust (n,q)
   | ETIdent -> weaken_entry Constr.ident, None
   | ETReference -> weaken_entry Constr.global, None
+  | ETPattern -> weaken_entry Constr.pattern, None
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =
         try get_entry u n
         with e when allow_create -> create_entry u n ConstrArgType in
       object_of_typed_entry e, None
-  | ETPattern -> weaken_entry Constr.pattern, None
+
+let get_constr_entry = compute_entry true (fun (n,()) -> Some n)
+let get_constr_production_entry ass = compute_entry false (adjust_level ass)

@@ -28,7 +28,7 @@ open Ppextend
    interpreter and printers for integers + optional delimiters *)
 
 type level = precedence * precedence list
-type delimiters = string * string
+type delimiters = string
 type scope
 type scopes = scope_name list
 
@@ -43,7 +43,7 @@ val open_scope : scope_name -> unit
 (* Declare delimiters for printing *)
 
 val declare_delimiters : scope_name -> delimiters -> unit
-val find_delimiters : scope_name -> delimiters option
+val find_delimiters_scope : loc -> delimiters -> scope_name
 
 (*s Declare and uses back and forth a numeral interpretation *)
 
@@ -80,15 +80,20 @@ val availability_of_numeral : scope_name -> scopes -> scope_name option option
 type interpretation = identifier list * aconstr
 
 (* Binds a notation in a given scope to an interpretation *)
-type interp_rule = scope_name * notation * interpretation * int option
-val declare_notation : notation -> scope_name -> interpretation -> level ->
-  string -> bool -> unit
+type interp_rule =
+  | NotationRule of scope_name * notation
+  | SynDefRule of kernel_name
+val declare_notation_interpretation : notation -> scope_name ->
+      interpretation -> level -> string -> unit
+
+val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (* Returns the interpretation bound to a notation *)
 val interp_notation : notation -> scopes -> aconstr
 
 (* Returns the possible notations for a given term *)
-val uninterp_notations : rawconstr -> interp_rule list
+val uninterp_notations : rawconstr ->
+      (interp_rule * interpretation * int option) list
 
 (* Test if a notation is available in the scopes *)
 (* context [scopes] if available, the result is not None; the first *)

@@ -119,8 +119,7 @@ let declare_definition ident local bl red_option c typopt =
         declare_global_definition ident ce' local
 
 let syntax_definition ident c =
-  let c = 
-interp_aconstr c in 
+  let c = interp_aconstr c in 
   Syntax_def.declare_syntactic_definition ident c;
   if_verbose message ((string_of_id ident) ^ " is now a syntax macro")
 

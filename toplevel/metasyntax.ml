@@ -76,14 +76,13 @@ allowed in abbreviatable expressions"
   let a = aux a in
   let find_type x =
     if List.mem x !bound_binders then (x,ETIdent) else
-    if List.mem x !bound_vars then (x,ETConstr ((10,E),None)) else
+    if List.mem x !bound_vars then (x,ETConstr (10,())) else
       error ((string_of_id x)^" is unbound in the right-hand-side") in
   let typs = List.map find_type vars in
   (a, typs)
 
 let _ = set_ast_to_rawconstr
-  (fun etyps a ->
-    let vl = List.map fst etyps in 
+  (fun vl a ->
     let r =
       for_grammar (interp_rawconstr_gen Evd.empty (Global.env()) [] false vl) a
     in
@@ -188,7 +187,7 @@ let add_tactic_grammar g =
 let print_grammar univ entry =
   let u = get_univ univ in
   let typ = explicitize_entry (fst u) entry in
-  let te,_ = entry_of_type false typ in
+  let te,_ = get_constr_entry typ in
   Gram.Entry.print te
 
 (* Infix, distfix, notations *)
@@ -234,21 +233,15 @@ type symbol =
 let prec_assoc = function
   | Some(Gramext.RightA) -> (L,E)
   | Some(Gramext.LeftA) -> (E,L)
+(*
   | Some(Gramext.NonA) -> (L,L)
   | None -> (L,L)   (* NONA by default *)
+*)
+  (* Camlp4 levels do not treat NonA *)
+  | Some(Gramext.NonA) -> (E,L)
+  | None -> (E,L)   (* NONA by default *)
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
-
-(* Find the digit code of the main entry of a sub-level and its associativity
-   (i.e. [9] means "constr9", [10] means "lconstr", [11] means "pattern",
-   otherwise "constr") *)
-
-let constr_rule = function
-  | (9|10 as n,E) -> Some n
-  | (9,L) -> None
-  | (10,L) -> Some 9
-  | (11,E) -> Some 11
-  | _ -> None
 
 (* For old ast printer *)
 let meta_pattern m = Pmeta(m,Tany)
@@ -262,7 +255,9 @@ let add_break l = function
   | _ -> l
 
 let precedence_of_entry_type = function
-  | ETConstr (prec,_) -> prec
+  | ETConstr (n,BorderProd (left,a)) ->
+      (n, let (lp,rp) = prec_assoc a in if left then lp else rp)
+  | ETConstr (n,InternalProd) -> (n,E)
   | _ -> 0,E
 
 (* For old ast printer *)
@@ -325,9 +320,7 @@ let string_of_symbol = function
   | Terminal s -> [s]
   | Break _ -> []
 
-let assoc_of_type = function
-  | (_,ETConstr (lp,_)) -> level_rule lp
-  | _ -> 0
+let assoc_of_type (_,typ) = level_rule (precedence_of_entry_type typ)
 
 let string_of_assoc = function
   | Some(Gramext.RightA) -> "RIGHTA"
@@ -366,14 +359,15 @@ let quote x =
 
 let is_symbol = function String s -> not (is_letter s.[0]) | _ -> false
 
-let rec find_symbols c_first c_last vars = function
+let rec find_symbols c_current c_next c_last vars = function
   | []    -> (vars, [])
   | String x :: sl when is_letter x.[0] ->
       let id = Names.id_of_string x in
       if List.mem_assoc id vars then
 	error ("Variable "^x^" occurs more than once");
-      let prec = if List.exists is_symbol sl then c_first else c_last in
-      let (vars,l) = find_symbols None c_last vars sl in
+(*      let prec = if List.exists is_symbol sl then c_current else c_last in*)
+      let prec = if sl <> [] then c_current else c_last in
+      let (vars,l) = find_symbols c_next c_next c_last vars sl in
       ((id,prec)::vars, NonTerminal id :: l)
 (*
   | "_"::sl ->
@@ -385,10 +379,10 @@ let rec find_symbols c_first c_last vars = function
       (vars, NonTerminal (prec, meta) :: l)
 *)
   | String s :: sl ->
-      let (vars,l) = find_symbols None c_last vars sl in
+      let (vars,l) = find_symbols c_next c_next c_last vars sl in
       (vars, Terminal (strip s) :: l)
   | WhiteSpace n :: sl ->
-      let (vars,l) = find_symbols c_first c_last vars sl in
+      let (vars,l) = find_symbols c_current c_next c_last vars sl in
       (vars, Break n :: l)
 
 let make_grammar_rule n assoc typs symbols ntn =
@@ -463,7 +457,7 @@ let interp_syntax_modifiers =
 	if List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level")
 	else
-	  let typ = ETConstr ((n,E), Some n) in
+	  let typ = ETConstr (n,()) in
 	  interp assoc level ((id,typ)::etyps) (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
 	if level <> None then error "A level is mentioned more than twice"
@@ -483,20 +477,21 @@ let rec merge_entry_types etyps' = function
       e :: merge_entry_types (List.remove_assoc x etyps') etyps
 
 let set_entry_type etyps (x,typ) =
-  let typ = match typ with
-  | None -> 
-      (try List.assoc x etyps
-      with Not_found -> ETConstr ((10,E), Some 10))
-  | Some typ ->
-      let typ = ETConstr (typ,constr_rule typ) in
-      try List.assoc x etyps
-      with Not_found -> typ in
-  (x,typ)
+  let typ = try 
+    match List.assoc x etyps, typ with
+      | ETConstr (n,()), (_,BorderProd (left,_)) ->
+          ETConstr (n,BorderProd (left,None))
+      | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
+      | (ETPattern | ETIdent | ETOther _ | ETReference as t), _ -> t
+    with Not_found -> ETConstr typ
+  in (x,typ)
 
 let add_syntax_extension df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_syntax_modifiers modifiers in
-  let (lp,rp) = prec_assoc assoc in
-  let (typs,symbs) = find_symbols (Some (n,lp)) (Some (n,rp)) [] (split df) in
+  let (typs,symbs) =
+    find_symbols
+      (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
+      [] (split df) in
   let typs = List.map (set_entry_type etyps) typs in
   let (prec,notation) = make_symbolic assoc n symbs typs in
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
@@ -520,7 +515,9 @@ let open_notation i (_,(oldse,prec,ntn,scope,metas,pat,onlyparse,df)) =
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
     if not b then
-      Symbols.declare_notation ntn scope (metas,pat) prec df onlyparse;
+      Symbols.declare_notation_interpretation ntn scope (metas,pat) prec df;
+    if not b & not onlyparse then
+      Symbols.declare_uninterpretation (NotationRule (ntn,scope)) (metas,pat)
   end
 
 let cache_notation o =
@@ -563,20 +560,13 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   let rule_name = ntn^"_"^scope^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
-let add_notation df a modifiers sc =
-  let toks = split df in
-  let (assoc,n,etyps,onlyparse) =
-    if modifiers = [] &
-      match toks with [String x] when quote(strip x) = x -> true | _ -> false
-    then
-      (* Means a Syntactic Definition *)
-      (None,0,[],false)
-    else
-      interp_syntax_modifiers modifiers
-  in
+let add_notation_in_scope df a modifiers sc toks =
+  let (assoc,n,etyps,onlyparse) = interp_syntax_modifiers modifiers in
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
-  let (lp,rp) = prec_assoc assoc in
-  let (typs,symbols) = find_symbols (Some (n,lp)) (Some (n,rp)) [] toks in
+  let (typs,symbols) =
+    find_symbols
+      (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
+      [] toks in
   let vars = List.map fst typs in
   (* To globalize... *)
   let r = interp_rawconstr_gen Evd.empty (Global.env()) [] false vars a in
@@ -598,6 +588,16 @@ let add_notation df a modifiers sc =
   (* Declare the interpretation *)
   Lib.add_anonymous_leaf
     (inNotation(old_pp_rule,prec,notation,scope,vars,a,onlyparse,df))
+
+let add_notation df a modifiers sc =
+  let toks = split df in
+  match toks with 
+    | [String x] when quote(strip x) = x & modifiers = [] ->
+        (* Means a Syntactic Definition *)
+        let ident = id_of_string (strip x) in
+        Syntax_def.declare_syntactic_definition ident (interp_aconstr a)
+    | _ ->
+        add_notation_in_scope df a modifiers sc toks
 
 (* TODO add boxes information in the expression *)
 
@@ -640,16 +640,11 @@ let add_infix assoc n inf pr sc =
   add_notation ("x "^(quote inf)^" y") a (SetLevel n :: assoc) sc
 
 (* Delimiters *)
-let load_delimiters _ (_,(_,_,scope,dlm)) =
+let load_delimiters _ (_,(scope,dlm)) =
   Symbols.declare_scope scope
 
-let open_delimiters i (_,(gram_rule,pat_gram_rule,scope,dlm)) =
-  if i=1 then begin
-    (* For parsing *)
-    Egrammar.extend_grammar (Egrammar.Delimiters (scope,gram_rule,pat_gram_rule));
-    (* For printing *)
-    Symbols.declare_delimiters scope dlm
-  end
+let open_delimiters i (_,(scope,dlm)) =
+  if i=1 then Symbols.declare_delimiters scope dlm
 
 let cache_delimiters o =
   load_delimiters 1 o;
@@ -662,13 +657,5 @@ let (inDelim,outDelim) =
       load_function = load_delimiters;
       export_function = (fun x -> Some x) }
 
-let make_delimiter_rule key typ =
-  let e = Nameops.make_ident "e" None in
-  let symbols = [Terminal ("'"^key^":"); NonTerminal e; Terminal "'"] in
-  make_production [e,typ] symbols
-
 let add_delimiters scope key =
-  let gram_rule = make_delimiter_rule key (ETConstr ((0,E),Some 0)) in
-  let pat_gram_rule = make_delimiter_rule key ETPattern in
-  let dlms = ("'"^key^":", "'") in
-  Lib.add_anonymous_leaf (inDelim(gram_rule,pat_gram_rule,scope,dlms))
+  Lib.add_anonymous_leaf (inDelim(scope,key))

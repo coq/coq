@@ -26,6 +26,7 @@ open Topconstr
 open Rawterm
 open Pattern
 open Nametab
+open Symbols
 (*i*)
 
 (* Translation from rawconstr to front constr *)
@@ -285,7 +286,7 @@ and extern_numeral scopes t (sc,n) =
 
 and extern_symbol scopes t = function
   | [] -> raise No_match
-  | (sc,ntn,pat,n as rule)::rules ->
+  | (keyrule,pat,n as rule)::rules ->
       try
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args) = match t,n with
@@ -296,16 +297,21 @@ and extern_symbol scopes t = function
 	(* Try matching ... *)
 	let subst = match_aconstr t pat in
 	(* Try availability of interpretation ... *)
-	(match Symbols.availability_of_notation (sc,ntn) scopes with
-          (* Uninterpretation is not allowed in current context *)
-	  | None -> raise No_match
-          (* Uninterpretation is allowed in current context *)
-	  | Some scopt ->
-	      let scopes = option_cons scopt scopes in
-	      let l = List.map (fun (id,c) -> (id,extern scopes c)) subst in
-	      let e = insert_delimiters (CNotation (loc,ntn,l)) scopt in
-	      if args = [] then e 
-	      else explicitize [] e (List.map (extern scopes) args))
+        let e =
+          match keyrule with
+          | NotationRule (sc,ntn) ->
+	      (match Symbols.availability_of_notation (sc,ntn) scopes with
+                  (* Uninterpretation is not allowed in current context *)
+              | None -> raise No_match
+                  (* Uninterpretation is allowed in current context *)
+	      | Some scopt ->
+	          let scopes = option_cons scopt scopes in
+	          let l = list_map_assoc (extern scopes) subst in
+	          insert_delimiters (CNotation (loc,ntn,l)) scopt)
+          | SynDefRule kn ->
+              CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
+ 	if args = [] then e 
+	else explicitize [] e (List.map (extern scopes) args)
       with
 	  No_match -> extern_symbol scopes t rules
 

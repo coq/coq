@@ -240,7 +240,7 @@ type cases_pattern_expr =
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatNumeral of loc * Bignat.bigint
-  | CPatDelimiters of loc * scope_name * cases_pattern_expr
+  | CPatDelimiters of loc * string * cases_pattern_expr
 
 type constr_expr =
   | CRef of reference
@@ -263,7 +263,7 @@ type constr_expr =
   | CNotation of loc * notation * (identifier * constr_expr) list
   | CGrammar of loc * aconstr * (identifier * constr_expr) list
   | CNumeral of loc * Bignat.bigint
-  | CDelimiters of loc * scope_name * constr_expr
+  | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
 and fixpoint_expr = identifier * int * constr_expr * constr_expr

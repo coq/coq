@@ -20,21 +20,30 @@ open Genarg
 (*i*)
 
 type entry_type = argument_type
-type constr_entry_type =
+
+type production_position =
+  | BorderProd of bool * Gramext.g_assoc option  (* true=left; false=right *)
+  | InternalProd
+
+type 'pos constr_entry_key =
   | ETIdent | ETReference
-  | ETConstr of (int * parenRelation) * int option
+  | ETConstr of (int * 'pos)
   | ETPattern
   | ETOther of string * string
+
+type constr_production_entry = production_position constr_entry_key
+type constr_entry = unit constr_entry_key
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
   | ProdList1 of nonterm_prod
   | ProdOpt of nonterm_prod
-  | ProdPrimitive of constr_entry_type
+  | ProdPrimitive of constr_production_entry
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of nonterm_prod * (Names.identifier * constr_entry_type) option
+  | NonTerm of
+      nonterm_prod * (Names.identifier * constr_production_entry) option
 
 type grammar_rule = {
   gr_name : string; 
@@ -53,7 +62,7 @@ type grammar_command = {
 type grammar_associativity = Gramext.g_assoc option
 
 (* Globalisation and type-checking of Grammar actions *)
-type entry_context = (identifier * constr_entry_type) list
+type entry_context = identifier list
 val to_act_check_vars : entry_context -> grammar_action -> aconstr
 val set_ast_to_rawconstr : (entry_context -> constr_expr -> aconstr) -> unit
 
@@ -61,7 +70,7 @@ type syntax_modifier =
   | SetItemLevel of string list * int
   | SetLevel of int
   | SetAssoc of Gramext.g_assoc
-  | SetEntryType of string * constr_entry_type
+  | SetEntryType of string * constr_entry
   | SetOnlyParsing
 
 type nonterm =
@@ -77,7 +86,7 @@ val terminal : string -> string * string
 
 val rename_command : string -> string
 
-val explicitize_entry : string -> string -> constr_entry_type
+val explicitize_entry : string -> string -> constr_entry
 
 val subst_grammar_command : 
   Names.substitution -> grammar_command -> grammar_command

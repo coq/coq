@@ -65,6 +65,18 @@ let test_int_bang =
             end
         | _ -> raise Stream.Failure)
 
+(* Hack to parse "`id:...`" at level 0 without conflicting with
+   "`...`" from ZArith *)
+let test_ident_colon =
+  Gram.Entry.of_parser "test_int_bang"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+        | [("IDENT", _)] ->
+            begin match Stream.npeek 2 strm with
+              | [_; ("", ":")] -> ()
+              | _ -> raise Stream.Failure
+            end
+        | _ -> raise Stream.Failure)
 
 GEXTEND Gram
   GLOBAL: constr9 lconstr constr sort global constr_pattern Constr.ident
@@ -95,7 +107,7 @@ GEXTEND Gram
   constr:
     [ "top" RIGHTA
       [ c1 = constr; "->"; c2 = constr -> CArrow (loc, c1, c2) ]
-    | "1"
+    | "1" RIGHTA
       [ "<"; p = lconstr; ">"; IDENT "Match"; c = constr; "with";
         cl = LIST0 constr; "end" ->
 	  COrderedCase (loc, MatchStyle, Some p, c, cl)
@@ -129,14 +141,14 @@ GEXTEND Gram
         IDENT "then"; c2 = constr; 
         IDENT "else"; c3 = constr LEVEL "top" ->
 	  COrderedCase (loc, IfStyle, Some p, c1, [c2; c3]) ]
-    | "0"
+    | "0" RIGHTA
       [ "?" -> CHole loc
       | "?"; n = Prim.natural -> CMeta (loc, n)
       | bll = binders; c = constr LEVEL "top" -> abstract_constr loc c bll
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; test_int_rparen; n = INT; ")" ->
 	  let n = CNumeral (loc,Bignat.POS (Bignat.of_string n)) in
-          CDelimiters (loc,"nat_scope",n)
+          CDelimiters (loc,"N",n)
       | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_tail ->
           let id = coerce_to_name lc1 in
 	  CProdN (loc, ([id], c)::bl, body)
@@ -166,7 +178,9 @@ GEXTEND Gram
       | v = global -> CRef v
       | n = INT -> CNumeral (loc,Bignat.POS (Bignat.of_string n))
       | "-"; n = INT -> CNumeral (loc,Bignat.NEG (Bignat.of_string n))
-      | "!"; f = global -> CAppExpl (loc,f,[]) ] ]
+      | "!"; f = global -> CAppExpl (loc,f,[])
+      | "`"; test_ident_colon; key = string; ":"; c = constr; "`" -> 
+          CDelimiters (loc,key,c) ] ]
   ;
   lconstr:
     [ "10"

@@ -274,8 +274,8 @@ let rec intern_cases_pattern scopes aliases = function
   | CPatNumeral (loc, n) ->
       ([aliases],
       Symbols.interp_numeral_as_pattern loc n (alias_of aliases) scopes)
-  | CPatDelimiters (_, sc, e) ->
-      intern_cases_pattern (sc::scopes) aliases e
+  | CPatDelimiters (loc, key, e) ->
+      intern_cases_pattern (find_delimiters_scope loc key::scopes) aliases e
   | CPatAtom (loc, Some head) ->
       (match maybe_constructor head with
 	 | ConstrPat c ->
@@ -396,8 +396,8 @@ let internalise sigma env allow_soapp lvar c =
 	  (Symbols.interp_notation ntn scopes)
     | CNumeral (loc, n) ->
 	Symbols.interp_numeral loc n scopes
-    | CDelimiters (loc, sc, e) ->
-	intern (ids,impls,sc::scopes) e
+    | CDelimiters (loc, key, e) ->
+	intern (ids,impls,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, ref, args) ->
         let (f,_,args_scopes) = intern_reference env lvar ref in
 	RApp (loc, f, intern_args env args_scopes args)

@@ -32,8 +32,11 @@ val type_of_typed_entry : typed_entry -> Extend.entry_type
 val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
 
-val entry_of_type :
-  bool -> constr_entry_type -> grammar_object Gram.Entry.e * int option
+val get_constr_entry :
+  constr_entry -> grammar_object Gram.Entry.e * int option
+
+val get_constr_production_entry : Gramext.g_assoc option -> 
+  constr_production_entry -> grammar_object Gram.Entry.e * int option
 
 val grammar_extend :
   'a Gram.Entry.e -> Gramext.position option ->

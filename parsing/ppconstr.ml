@@ -103,11 +103,8 @@ let pr_notation pr s env =
   let unpl, level = find_notation_printing_rule s in
   prlist (print_hunk pr env) unpl, level
 
-let pr_delimiters sc strm =
-  match find_delimiters sc with
-  | None -> anomaly "Delimiters without concrete syntax"
-  | Some (left,right) ->
-  assert (left <> "" && right <> "");
+let pr_delimiters key strm =
+  let left = "`"^key^":" and right = "`" in
   let lspace =
     if is_letter (left.[String.length left -1]) then str " " else mt () in
   let rspace =

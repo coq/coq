@@ -298,13 +298,16 @@ let print_inductive sp = (print_mutual sp)
 let print_syntactic_def sep kn =
   let l = label kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
-  (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ pr_rawterm c ++ fnl ())
+  (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ 
+  Constrextern.without_symbols pr_rawterm c ++ fnl ())
+
 (*let print_module with_values kn = 
   str "Module " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
 
 let print_modtype kn =
   str "Module Type " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
 *)
+
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
   match (oname,tag) with

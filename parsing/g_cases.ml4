@@ -28,10 +28,12 @@ GEXTEND Gram
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; G_constr.test_int_rparen; n = INT; ")" ->
 	  let n = CPatNumeral (loc,Bignat.POS (Bignat.of_string n)) in
-          CPatDelimiters (loc,"nat_scope",n)
+          CPatDelimiters (loc,"N",n)
       | "("; p = compound_pattern; ")" -> p
       | n = INT -> CPatNumeral (loc,Bignat.POS (Bignat.of_string n))
       | "-"; n = INT -> CPatNumeral (loc,Bignat.NEG (Bignat.of_string n))
+      | "`"; G_constr.test_ident_colon; key = string; ":"; c = pattern; "`" -> 
+          CPatDelimiters (loc,key,c)
     ] ]
   ;
   compound_pattern:

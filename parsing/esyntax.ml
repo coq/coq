@@ -186,9 +186,8 @@ let pr_parenthesis inherited se strm =
     
 let print_delimiters inh se strm = function
   | None -> pr_parenthesis inh se strm
-  | Some sc ->
-      let (left,right) = out_some (find_delimiters sc) in
-      assert (left <> "" && right <> "");
+  | Some key ->
+      let left = "`"^key^":" and right = "`" in
       let lspace =
 	if is_letter (left.[String.length left -1]) then str " " else mt () in
       let rspace =

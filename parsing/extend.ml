@@ -19,21 +19,30 @@ open Topconstr
 open Genarg
 
 type entry_type = argument_type
-type constr_entry_type =
+
+type production_position =
+  | BorderProd of bool * Gramext.g_assoc option  (* true=left; false=right *)
+  | InternalProd
+
+type 'pos constr_entry_key =
   | ETIdent | ETReference
-  | ETConstr of (int * parenRelation) * int option
+  | ETConstr of (int * 'pos)
   | ETPattern
   | ETOther of string * string
+
+type constr_production_entry = production_position constr_entry_key
+type constr_entry = unit constr_entry_key
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
   | ProdList1 of nonterm_prod
   | ProdOpt of nonterm_prod
-  | ProdPrimitive of constr_entry_type
+  | ProdPrimitive of constr_production_entry
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of nonterm_prod * (Names.identifier * constr_entry_type) option
+  | NonTerm of
+      nonterm_prod * (Names.identifier * constr_production_entry) option
 
 type grammar_rule = {
   gr_name : string; 
@@ -54,13 +63,13 @@ type grammar_associativity = Gramext.g_assoc option
 (**********************************************************************)
 (* Globalisation and type-checking of Grammar actions *)
 
-type entry_context = (identifier * constr_entry_type) list
+type entry_context = identifier list
 
 let ast_to_rawconstr = ref (fun _ _ -> AVar (id_of_string "Z"))
 let set_ast_to_rawconstr f = ast_to_rawconstr := f
 
-let act_of_ast env = function
-  | SimpleAction (loc,ConstrNode a) -> !ast_to_rawconstr env a
+let act_of_ast vars = function
+  | SimpleAction (loc,ConstrNode a) -> !ast_to_rawconstr vars a
   | SimpleAction (loc,CasesPatternNode a) -> 
       failwith "TODO:act_of_ast: cases_pattern"
   | CaseAction _ -> failwith "case/let not supported"
@@ -71,7 +80,7 @@ type syntax_modifier =
   | SetItemLevel of string list * int
   | SetLevel of int
   | SetAssoc of Gramext.g_assoc
-  | SetEntryType of string * constr_entry_type
+  | SetEntryType of string * constr_entry
   | SetOnlyParsing
 
 type nonterm =
@@ -147,53 +156,40 @@ let rename_command nt =
 
 (* This translates constr0, constr1, ... level into camlp4 levels of constr *)
 
-let explicitize_entry univ nt =
+let explicitize_prod_entry pos univ nt =
   if univ = "prim" & nt = "var" then ETIdent else
   if univ <> "constr" then ETOther (univ,nt) else
   match nt with
-  | "constr0" -> ETConstr ((0,E),Some 0)
-  | "constr1" -> ETConstr ((1,E),Some 1)
-  | "constr2" -> ETConstr ((2,E),Some 2)
-  | "constr3" -> ETConstr ((3,E),Some 3)
-  | "lassoc_constr4" -> ETConstr ((4,E),Some 4)
-  | "constr5" -> ETConstr ((5,E),Some 5)
-  | "constr6" -> ETConstr ((6,E),Some 6)
-  | "constr7" -> ETConstr ((7,E),Some 7)
-  | "constr8" | "constr" -> ETConstr ((8,E),Some 8)
-  | "constr9" -> ETConstr ((9,E),Some 9)
-  | "constr10" | "lconstr" -> ETConstr ((10,E),Some 10)
+  | "constr0" -> ETConstr (0,pos)
+  | "constr1" -> ETConstr (1,pos)
+  | "constr2" -> ETConstr (2,pos)
+  | "constr3" -> ETConstr (3,pos)
+  | "lassoc_constr4" -> ETConstr (4,pos)
+  | "constr5" -> ETConstr (5,pos)
+  | "constr6" -> ETConstr (6,pos)
+  | "constr7" -> ETConstr (7,pos)
+  | "constr8" | "constr" -> ETConstr (8,pos)
+  | "constr9" -> ETConstr (9,pos)
+  | "constr10" | "lconstr" -> ETConstr (10,pos)
   | "pattern" -> ETPattern
   | "ident" -> ETIdent
   | "global" -> ETReference
   | _ -> ETOther (univ,nt)
 
-(* This determines if a reference to constr_n is a reference to the level
-   below wrt associativity (to be translated in camlp4 into "constr" without 
-   level) or to another level (to be translated into "constr LEVEL n") *)
+let explicitize_entry = explicitize_prod_entry ()
 
-let clever_explicitize_entry univ name from assoc pos =
-  match explicitize_entry univ name, explicitize_entry "" from, pos with
-    | ETConstr ((n,_ as s),_),ETConstr ((lev,_),_),Some start
-	when n = lev - 1 & assoc <> Some Gramext.LeftA & start
-	  or n = lev & assoc = Some Gramext.LeftA & start
-	  or n = lev & assoc = Some Gramext.RightA & not start
-	  or n = lev - 1 & assoc <> Some Gramext.RightA & not start
-	-> ETConstr (s, None)
-    | x,_,_ -> x
-
-let qualified_nterm current_univ from ass pos = function
+let qualified_nterm current_univ pos = function
   | NtQual (univ, en) ->
-      let univ = rename_command univ in
-      clever_explicitize_entry univ (rename_command en) from ass pos
+      explicitize_prod_entry pos (rename_command univ) (rename_command en)
   | NtShort en ->
-      clever_explicitize_entry current_univ (rename_command en) from ass pos
+      explicitize_prod_entry pos current_univ (rename_command en)
 
 let check_entry check_entry_type = function
   | ETOther (u,n) -> check_entry_type (u,n)
   | _ -> ()
 
-let nterm loc (((check_entry_type,univ),lev,ass),pos) nont =
-  let typ = qualified_nterm univ lev ass pos nont in
+let nterm loc ((check_entry_type,univ),pos) nont =
+  let typ = qualified_nterm univ pos nont in
   check_entry check_entry_type typ;
   typ
 
@@ -201,22 +197,22 @@ let prod_item univ env = function
   | VTerm s -> env, Term (terminal s)
   | VNonTerm (loc, nt, Some p) ->
      let typ = nterm loc univ nt in
-      ((p, typ) :: env, NonTerm (ProdPrimitive typ, Some (p,typ)))
+      (p :: env, NonTerm (ProdPrimitive typ, Some (p,typ)))
   | VNonTerm (loc, nt, None) ->
       let typ = nterm loc univ nt in 
       env, NonTerm (ProdPrimitive typ, None)
 
-let rec prod_item_list univ penv pil start =
+let rec prod_item_list univ penv pil current_pos =
   match pil with
     | [] -> [], penv
     | pi :: pitl ->
-	let pos = if pitl=[] then Some false else start in
+	let pos = if pitl=[] then (BorderProd (true,None)) else current_pos in
 	let (env, pic) = prod_item (univ,pos) penv pi in
-	let (pictl, act_env) = prod_item_list univ env pitl None in
+	let (pictl, act_env) = prod_item_list univ env pitl InternalProd in
         (pic :: pictl, act_env)
 
 let gram_rule univ (name,pil,act) =
-  let (pilc, act_env) = prod_item_list univ [] pil (Some true) in
+  let (pilc, act_env) = prod_item_list univ [] pil (BorderProd (false,None)) in
   let a = to_act_check_vars act_env act in
   { gr_name = name; gr_production = pilc; gr_action = a }
 
@@ -224,7 +220,7 @@ let gram_entry univ (nt, ass, rl) =
   let name = rename_command nt in
   { ge_name = name;
     gl_assoc = ass;
-    gl_rules = List.map (gram_rule (univ,name,ass)) rl }
+    gl_rules = List.map (gram_rule univ) rl }
 
 let interp_grammar_command univ ge entryl =
   let univ = rename_command univ in
@@ -266,21 +262,12 @@ let rec subst_hunk subst_pat subst hunk = match hunk with
    highest precedence), and the child's one, follow the given
    relation. *)
 
-(*
-let compare_prec (a1,b1,c1) (a2,b2,c2) =
-  match (a1=a2),(b1=b2),(c1=c2) with
-    | true,true,true -> 0
-    | true,true,false -> c1-c2
-    | true,false,_ -> b1-b2
-    | false,_,_ -> a1-a2
-*)
 let compare_prec a1 a2 = a1-a2
 
 let tolerable_prec oparent_prec_reln child_prec =
   match oparent_prec_reln with
     | Some (pprec, L) -> (compare_prec child_prec pprec) < 0
     | Some (pprec, E) -> (compare_prec child_prec pprec) <= 0
-    | Some (_, Prec level) -> (compare_prec child_prec level) <= 0
     | _ -> true
 
 type 'pat syntax_entry = {

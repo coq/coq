@@ -31,22 +31,19 @@ let _ = Summary.declare_summary
 let add_syntax_constant kn c =
   syntax_table := KNmap.add kn c !syntax_table
 
-let cache_syntax_constant ((sp,kn),c) =
-  if Nametab.exists_cci sp then
-    errorlabstrm "cache_syntax_constant"
-      (pr_id (basename sp) ++ str " already exists");
-  add_syntax_constant kn c;
-  Nametab.push_syntactic_definition (Nametab.Until 1) sp kn
-
 let load_syntax_constant i ((sp,kn),c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
       (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant kn c;
-  Nametab.push_syntactic_definition (Nametab.Until i) sp kn
+  Nametab.push_syntactic_definition (Nametab.Until i) sp kn;
+  Symbols.declare_uninterpretation (Symbols.SynDefRule kn) ([],c)
 
 let open_syntax_constant i ((sp,kn),c) =
   Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn
+
+let cache_syntax_constant d =
+  load_syntax_constant 1 d
 
 let subst_syntax_constant ((sp,kn),subst,c) =
   subst_aconstr subst c
