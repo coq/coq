@@ -167,18 +167,25 @@ let add_to_pvars x =
 (* The computation is very inefficient, but we can't do anything *)
 (* better unless this function is reimplemented in the Declare   *)
 (* module.                                                       *)
-let rec search_variables =
+let search_variables () =
  let module N = Names in
-  function
-     [] -> []
-   | he::tl as modules ->
-      let one_section_variables =
-       let dirpath = N.make_dirpath modules in
-        match List.map N.string_of_id (Declare.last_section_hyps dirpath) with
-          [] -> []
-        | t -> [he,t]
-       in
-        one_section_variables @ search_variables tl
+  let cwd = Lib.cwd () in
+  let cwdsp = Names.make_path cwd (Names.id_of_string "dummy") in
+  let modulepath = Cic2acic.get_module_path_of_section_path cwdsp in
+   let rec aux =
+    function
+       [] -> []
+     | he::tl as modules ->
+        let one_section_variables =
+         let dirpath = N.make_dirpath (modules @ N.repr_dirpath modulepath) in
+          let t = List.map N.string_of_id (Declare.last_section_hyps dirpath) in
+           [he,t]
+        in
+         one_section_variables @ aux tl
+   in
+    aux
+     (Cic2acic.remove_module_dirpath_from_dirpath
+       ~basedir:modulepath cwd)
 ;;
 
 (* FUNCTIONS TO PRINT A SINGLE OBJECT OF COQ *)
@@ -301,7 +308,7 @@ let mk_current_proof_obj id bo ty evar_map env =
     let hyps0 = Environ.keep_hyps env ids in
     let hyps = string_list_of_named_context_list hyps0 in
     (* Variables are the identifiers of the variables in scope *)
-    let variables = search_variables (Names.repr_dirpath (Lib.cwd ())) in
+    let variables = search_variables () in
     let params = filter_params variables hyps in
      Acic.Constant (id',Some bo,unshared_ty,params)
    else
@@ -371,7 +378,7 @@ let print (_,qid as locqid) fn =
     _ -> let (_,id) = Nt.repr_qualid qid in Nt.VarRef id
   in
   (* Variables are the identifiers of the variables in scope *)
-  let variables = search_variables (Names.repr_dirpath (Lib.cwd ())) in
+  let variables = search_variables () in
   let keep_sections,sp,tag,obj =
    match glob_ref with
       Nt.VarRef id ->

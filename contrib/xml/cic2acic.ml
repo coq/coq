@@ -11,29 +11,38 @@ let remove_sections_from_dirpath dir =
    else dir
 ;;
 
+exception TwoModulesWhoseDirPathIsOneAPrefixOfTheOther;;
+let get_module_path_of_section_path path =
+ let dirpath = fst (Names.repr_path path) in
+ let modules = Lib.module_sp () :: (Library.loaded_modules ()) in
+  match
+   List.filter
+    (function modul -> Nameops.is_dirpath_prefix_of modul dirpath) modules
+  with
+     [modul] -> modul
+   | _ -> raise TwoModulesWhoseDirPathIsOneAPrefixOfTheOther
+;;
+
 (*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
 (*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
 let remove_module_dirpath_from_dirpath ~basedir dir =
  let module No = Nameops in
-  let path =
-   if No.is_dirpath_prefix_of basedir dir then
-    let ids = Names.repr_dirpath dir in
-    let rec remove_firsts n l =
-     match n,l with
-        (0,l) -> l
-      | (n,he::tl) -> remove_firsts (n-1) tl
-      | _ -> assert false
+  if No.is_dirpath_prefix_of basedir dir then
+   let ids = Names.repr_dirpath dir in
+   let rec remove_firsts n l =
+    match n,l with
+       (0,l) -> l
+     | (n,he::tl) -> remove_firsts (n-1) tl
+     | _ -> assert false
+   in
+    let ids' =
+     List.rev
+      (remove_firsts
+        (List.length (Names.repr_dirpath basedir))
+        (List.rev ids))
     in
-     let ids' =
-      List.rev
-       (remove_firsts
-         (List.length (Names.repr_dirpath basedir))
-         (List.rev ids))
-     in
-      ids'
-   else Names.repr_dirpath dir
-  in
-   String.concat "/" (List.map Names.string_of_id (List.rev path))
+     ids'
+  else Names.repr_dirpath dir
 ;;
 
 
@@ -221,11 +230,11 @@ print_endline "PASSATO" ; flush stdout ;
              | T.Ind (sp,_)
              | T.Construct ((sp,_),_) ->
                 Dischargedhypsmap.get_discharged_hyps sp,
-                 fst (Names.repr_path sp)
+                 get_module_path_of_section_path sp
              | T.Var id ->
                 let sp = Declare.find_section_variable id in
                  Dischargedhypsmap.get_discharged_hyps sp,
-                  fst (Names.repr_path sp)
+                  get_module_path_of_section_path sp
              | _ ->
                 (* no explicit substitution *)
                 [], Nameops.dirpath_of_string "dummy"
@@ -243,11 +252,13 @@ print_endline "PASSATO" ; flush stdout ;
              | he1::tl1,he2::tl2 ->
                 let subst,extra_args,uninst = get_explicit_subst tl1 tl2 in
                 let (he1_sp, he1_id) = Names.repr_path he1 in
-                let he1' =
-                 remove_module_dirpath_from_dirpath ~basedir he1_sp ^ "/" ^
-                  (Names.string_of_id he1_id) ^ ".var"
+                let he1' = remove_module_dirpath_from_dirpath ~basedir he1_sp in
+                let he1'' =
+                 String.concat "/"
+                  (List.map Names.string_of_id (List.rev he1')) ^ "/"
+                 ^ (Names.string_of_id he1_id) ^ ".var" 
                 in
-                 (he1',he2)::subst, extra_args, uninst
+                 (he1'',he2)::subst, extra_args, uninst
            in
             get_explicit_subst variables t'
           in
