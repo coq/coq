@@ -404,6 +404,7 @@ let dyn_intros_until = function
   | [Integer n]     -> intros_until_n n
   | l -> bad_tactic_args "Intros until" l
 
+(* Obsolete, remplace par intros_unitl_n ?
 let intros_do n g = 
   let depth = 
     let rec lookup all nodep c = match kind_of_term c with
@@ -424,7 +425,7 @@ let intros_do n g =
     lookup 1 1 (pf_concl g)
   in 
   tclDO depth intro g
-
+*)
 let rec intros_move = function
   | [] -> tclIDTAC
   | (hyp,destopt) :: rest ->
@@ -1429,7 +1430,7 @@ let dyn_elim = function
 
 (* This was Induction before 6.3 (induction only in quantified premisses) *)
 let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
-let raw_induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
+let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
 let old_induct s = tclORELSE (raw_induct s) (induction_from_context true s)
@@ -1481,7 +1482,7 @@ let dyn_case =function
 (* Destruction tactics *)
 
 let destruct s       = (tclTHEN (intros_until s) (tclLAST_HYP simplest_case))
-let destruct_nodep n = (tclTHEN (intros_do n)    (tclLAST_HYP simplest_case))
+let destruct_nodep n = (tclTHEN (intros_until_n n)    (tclLAST_HYP simplest_case))
 
 let dyn_destruct = function  
   | [Identifier x] -> destruct x
