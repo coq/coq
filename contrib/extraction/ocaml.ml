@@ -515,46 +515,47 @@ let rec pp_structure_elem mp = function
 	(str "module " ++ P.pp_short_module (id_of_label l) ++ 
 	 (match m.ml_mod_equiv with 
 	    | None -> 
-		str ":" ++ fnl () ++ 
-		pp_module_type m.ml_mod_type ++ fnl () ++
+		str " :" ++ fnl () ++ 
+		pp_module_type mp m.ml_mod_type ++ fnl () ++
 		str "= " ++ fnl () ++ 
 		(match m.ml_mod_expr with 
 		   | None -> assert false (* see Jacek *)
-		   | Some me -> pp_module_expr me)
-	    | Some mp -> 
-		str " = " ++ P.pp_long_module mp))
+		   | Some me -> pp_module_expr mp me)
+	    | Some mp' -> 
+		str " = " ++ P.pp_long_module mp mp'))
   | (l,SEmodtype m) -> 
       hov 1 
 	(str "module type " ++ P.pp_short_module (id_of_label l) ++
-	 str " = " ++ fnl () ++ pp_module_type m)
+	 str " = " ++ fnl () ++ pp_module_type mp m)
 
-and pp_module_expr = function 
-  | MEident mp -> P.pp_long_module (long_mp mp)
+and pp_module_expr mp = function 
+  | MEident mp' -> P.pp_long_module mp mp'
   | MEfunctor (mbid, mt, me) -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
       str ":" ++
-      pp_module_type mt ++
+      pp_module_type mp mt ++
       str ") ->" ++ fnl () ++
-      pp_module_expr me
+      pp_module_expr mp me
   | MEapply (me, me') -> 
-      str "(" ++ pp_module_expr me ++ spc () ++ pp_module_expr me' ++ str ")"
+      str "(" ++ pp_module_expr mp me ++ spc () ++ pp_module_expr mp me' ++ 
+      str ")"
   | MEstruct (msid, sel) -> 
       let l = map_succeed (pp_structure_elem (MPself msid)) sel in 
       str "struct " ++ fnl () ++
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++ 
       fnl () ++ str "end" 
 
-and pp_module_type = function 
+and pp_module_type mp = function 
   | MTident kn -> 
-      let mp,_,l = repr_kn kn in P.pp_long_module (MPdot (long_mp mp,l)) 
+      let mp',_,l = repr_kn kn in P.pp_long_module mp (MPdot (mp,l)) 
   | MTfunsig (mbid, mt, mt') -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
       str ":" ++
-      pp_module_type mt ++
+      pp_module_type mp mt ++
       str ") ->" ++ fnl () ++
-      pp_module_type mt'
+      pp_module_type mp mt'
   | MTsig (msid, sign) -> 
       let l = map_succeed (pp_specif (MPself msid)) sign in 
       str "sig " ++ fnl () ++ 
@@ -567,12 +568,12 @@ and pp_specif mp = function
       hov 1 
 	(str "module " ++ 
 	 P.pp_short_module (id_of_label l) ++
-	 str " : " ++ fnl () ++ pp_module_type mt)
+	 str " : " ++ fnl () ++ pp_module_type mp mt)
   | (l,Smodtype mt) -> 
       hov 1
 	(str "module type " ++
 	 P.pp_short_module (id_of_label l) ++
-	 str " : " ++ fnl () ++ pp_module_type mt)
+	 str " = " ++ fnl () ++ pp_module_type mp mt)
 
 let pp_struct s =
   let l mp sel = map_succeed (pp_structure_elem mp) sel in 
