@@ -1,12 +1,15 @@
 
-(* $:Id$ *)
+(* $Id$ *)
 
+(*i*)
 open Evd
 open Term
 open Sign
 open Environ
 open Evarutil
+(*i*)
 
+(* Coercions. *)
 
 val inh_app_fun :
   unsafe_env -> 'a evar_defs -> unsafe_judgment -> unsafe_judgment

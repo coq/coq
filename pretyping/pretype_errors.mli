@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+(*i*)
 open Pp
 open Names
 open Term
@@ -8,6 +9,7 @@ open Sign
 open Environ
 open Type_errors
 open Rawterm
+(*i*)
 
 (* The type of errors raised by the pretyper *)
 
