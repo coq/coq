@@ -203,10 +203,12 @@ Proof.
   Apply (h2 h1).
 Qed.
 
+(*i is now generated 
 Theorem and_rec : (A,B:Prop)(C:Set)(A->B->C)->(A/\B)->C.
 Proof.
   Intros A B C F AB; Apply F; Elim AB; Auto.
-Qed.
+Qed. 
+i*)
 
 (*i is now a theorem
 Axiom eq_rec : (A:Set)(a:A)(P:A->Set)(P a)->(b:A) a=b -> (P b).
