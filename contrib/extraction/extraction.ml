@@ -263,7 +263,7 @@ let prop_abstract f  =
 (*s Abstraction of an constant. *)
 
 let abstract_constant sp s = 
-  if s = [] then MLglob (ConstRef sp) 
+  if List.for_all ((=) default) s then MLglob (ConstRef sp) 
   else 
     let f a = 
       if List.mem default s then MLapp (MLglob (ConstRef sp), a)
