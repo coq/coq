@@ -155,7 +155,7 @@ Notation "- 0" := (Aopp Azero) (at level 3)
 Notation "- 1" := (Aopp Aone) (at level 3)
   V8only (at level 40, left associativity).
 Notation "- x" := (Aopp x) (at level 3)
-  V8only (at level 40, left associativity).
+  V8only (at level 0, left associativity).
 
 Record Ring_Theory : Prop :=
 { Th_plus_sym  : (n,m:A) n + m == m + n;
