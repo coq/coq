@@ -60,8 +60,8 @@ Intro H.  Absurd (div2 (S O))=(div2 (S (S O))).
 Simpl. Discriminate. Assumption.
 Split; Auto with arith.
 (* n = (S (S n')) *)
-Intros. Decompose [and] H. Unfold iff in H1 H2.
-Decompose [and] H1. Decompose [and] H2. Clear H H1 H2.
+Intros. Decompose [and] H. Unfold iff in H0 H1.
+Decompose [and] H0. Decompose [and] H1. Clear H H0 H1.
 Split; Split; Auto with arith.
 Intro H. Inversion H. Inversion H1.
 Change (S (div2 n0))=(S (div2 (S n0))). Auto with arith.
@@ -109,8 +109,8 @@ Intro H. Inversion H.
 Split; Split; Auto with arith.
 Intro H. Inversion H. Inversion H1.
 (* n = (S (S n')) *)
-Intros. Decompose [and] H. Unfold iff in H1 H2.
-Decompose [and] H1. Decompose [and] H2. Clear H H1 H2.
+Intros. Decompose [and] H. Unfold iff in H0 H1.
+Decompose [and] H0. Decompose [and] H1. Clear H H0 H1.
 Split; Split.
 Intro H. Inversion H. Inversion H1.
 Simpl. Rewrite (double_S (div2 n0)). Auto with arith.
