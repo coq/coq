@@ -3,7 +3,7 @@
 
 (* Maps from ['a] to lists of ['b]. *)
 
-type ('a,'b) t = ('a,'b list) Gmap.t
+type ('a,'b) t
 
 val empty : ('a,'b) t
 val mem :  'a -> ('a,'b) t -> bool
