@@ -16,25 +16,10 @@ open Vernacexpr
 open Topconstr
 (*i*)
 
-(* Vernacular entries. This module registers almost all the vernacular entries,
-   by side-effects using [Vernacinterp.vinterp_add]. *)
-
-(* Moved to g_vernac.ml4
-val join_binders : ('a list * 'b) list -> ('a * 'b) list
-*)
-
-(* Synonym for Vernacinterp.vinterp_add
-val add : string -> (Vernacexpr.vernac_arg list -> unit -> unit) -> unit
-*)
+(* Vernacular entries *)
 
 val show_script : unit -> unit
 val show_prooftree : unit -> unit
-val show_open_subgoals : unit -> unit
-val show_nth_open_subgoal : int -> unit
-
-(* Merged with show_open_subgoals !
-val show_open_subgoals_focused : unit -> unit
-*)
 
 val show_node : unit -> unit
 
