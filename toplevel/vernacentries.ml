@@ -981,7 +981,7 @@ let vernac_undo n =
 
   (* Est-ce normal que "Focus" ne semble pas se comporter comme "Focus 1" ? *)
 let vernac_focus = function
-  | None -> make_focus 1; print_subgoals ()
+  | None -> traverse_nth_goal 1; print_subgoals ()
   | Some n -> traverse_nth_goal n; print_subgoals ()
 
   (* Reset the focus to the top of the tree *)
