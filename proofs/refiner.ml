@@ -61,10 +61,11 @@ let rec norm_evar_pf sigma p =
           ref = Some(r, List.map (norm_evar_pf sigma) pfl)}
 
 
-(* mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]
+(* [mapshape [ l1 ; ... ; lk ] [ v1 ; ... ; vk ] [ p_1 ; .... ; p_(l1+...+lk) ]]
    gives
    [ (v1 [p_1 ... p_l1]) ; (v2 [ p_(l1+1) ... p_(l1+l2) ]) ; ... ;
-   (vk [ p_(l1+...+l(k-1)+1) ... p_(l1+...lk) ]) ] *)
+   (vk [ p_(l1+...+l(k-1)+1) ... p_(l1+...lk) ]) ]
+ *)
 
 let rec mapshape nl (fl : (proof_tree list -> proof_tree) list) 
                     (l : proof_tree list) =
@@ -74,9 +75,10 @@ let rec mapshape nl (fl : (proof_tree list -> proof_tree) list)
 	let m,l = list_chop h l in 
 	(List.hd fl m) :: (mapshape t (List.tl fl) l)
 
-(* frontier : proof_tree -> goal list * validation
-   given a proof p, frontier p gives (l,v) where l is the list of goals
-   to be solved to complete the proof, and v is the corresponding validation *)
+(* [frontier : proof_tree -> goal list * validation]
+   given a proof [p], [frontier p] gives [(l,v)] where [l] is the list of goals
+   to be solved to complete the proof, and [v] is the corresponding 
+   validation *)
    
 let rec frontier p =
   match p.ref with
@@ -99,8 +101,8 @@ let rec frontier p =
               goal = p.goal;
               ref = Some(r,pfl')}))
 
-(* list_pf p is the lists of goals to be solved in order to complete the
-   proof p *)
+(* [list_pf p] is the lists of goals to be solved in order to complete the
+   proof [p] *)
 
 let list_pf p = fst (frontier p)
 
@@ -212,16 +214,16 @@ let refiner = function
 let context ctxt = refiner (Context ctxt)
 let vernac_tactic texp = refiner (Tactic texp)
 
-(* rc_of_pfsigma : proof sigma -> readable_constraints *)
+(* [rc_of_pfsigma : proof sigma -> readable_constraints] *)
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
 
-(* rc_of_glsigma : proof sigma -> readable_constraints *)
+(* [rc_of_glsigma : proof sigma -> readable_constraints] *)
 let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
 
-(* extract_open_proof : proof_tree -> constr * (int * constr) list
+(* [extract_open_proof : proof_tree -> constr * (int * constr) list]
   takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
   where pfterm is the constr corresponding to the proof
-  and obl is an int*constr list [ (m1,c1) ; ... ; (mn,cn)]
+  and [obl] is an [int*constr list] [ (m1,c1) ; ... ; (mn,cn)]
   where the mi are metavariables numbers, and ci are their types.
   Their proof should be completed in order to complete the initial proof *)
 
@@ -288,7 +290,7 @@ let idtac_valid = function
   | _ -> anomaly "Refiner.idtac_valid"
 ;;
 
-(* goal_goal_list : goal sigma -> goal list sigma *)
+(* [goal_goal_list : goal sigma -> goal list sigma] *)
 let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma};;
 
 (* the identity tactic *)

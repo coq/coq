@@ -225,6 +225,8 @@ let unfold_constr c =
   match kind_of_term (strip_outer_cast c) with 
     | IsConst(sp,_) -> 
 	unfold_in_concl [[],sp]
+    | IsVar(id) -> let sp = Lib.make_path id CCI in
+	unfold_in_concl [[],sp]
     | _ -> 
 	errorlabstrm "unfold_constr"
 	  [< 'sTR "Cannot unfold a non-constant." >]

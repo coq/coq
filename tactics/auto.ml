@@ -242,7 +242,7 @@ let make_resolves env sigma name eap (c,cty) =
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma (hname,_,htyp) = 
   try
-    [make_apply_entry env sigma (true, Options.is_verbose()) hname
+    [make_apply_entry env sigma (true, false) hname
        (mkVar hname, body_of_type htyp)]
   with 
     | Failure _ -> []
@@ -746,7 +746,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	 let hintl = 
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
-		(true,Options.is_verbose()) 
+		(true,false) 
 		hid (mkVar hid,body_of_type htyp)]
 	   with Failure _ -> [] 
 	 in

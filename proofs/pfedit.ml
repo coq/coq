@@ -58,7 +58,7 @@ let get_state () =
 let get_topstate ()    = snd(get_state())
 let get_pftreestate () = fst(get_state())
 
-(*
+(*i
 let get_evmap_sign og =
   let og = match og with
     | Some n ->
@@ -74,7 +74,7 @@ let get_evmap_sign og =
   match og with
     | Some goal -> (project goal, pf_env goal)
     | _ -> (Evd.empty, Global.env())
-*)
+i*)
 
 let get_goal_context n =
   let pftree = get_pftreestate () in
