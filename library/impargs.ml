@@ -272,7 +272,7 @@ let auto_implicits env ty =
   if Options.do_translate () then
     impl, 
     if !implicit_args_out then 
-      (let l = compute_implicits false env ty in
+      (let l = compute_implicits true env ty in
       Impl_auto (!strict_implicit_args_out,!contextual_implicit_args_out,l))
     else No_impl
   else 
@@ -483,11 +483,6 @@ let is_implicit_var id =
 
 (*s Registration as global tables *)
 
-type frozen_t = implicits KNmap.t 
-              * implicits Indmap.t 
-	      * implicits Constrmap.t
-              * implicits Idmap.t
-
 let init () =
   constants_table := KNmap.empty;
   inductives_table := Indmap.empty;
@@ -495,10 +490,18 @@ let init () =
   var_table := Idmap.empty
 
 let freeze () =
-  (!constants_table, !inductives_table, 
+  (!implicit_args,!strict_implicit_args,!contextual_implicit_args,
+   !implicit_args_out,!strict_implicit_args_out,!contextual_implicit_args_out,
+   !constants_table, !inductives_table, 
    !constructors_table, !var_table)
 
-let unfreeze (ct,it,const,vt) =
+let unfreeze (a,b,c,d,e,f,ct,it,const,vt) =
+  implicit_args := a;
+  strict_implicit_args := b;
+  contextual_implicit_args := c;
+  implicit_args_out := d;
+  strict_implicit_args_out := e;
+  contextual_implicit_args_out := f;
   constants_table := ct;
   inductives_table := it;
   constructors_table := const;
