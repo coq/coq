@@ -32,7 +32,9 @@ let contextual_implicit_args_out = ref false
 
 let make_implicit_args flag =
   implicit_args := flag;
-  if not !Options.v7_only then implicit_args_out := flag
+  if not !Options.v7_only then implicit_args_out := flag;
+  if !Options.translate_strict_impargs then
+    strict_implicit_args_out := not flag
 
 let make_strict_implicit_args flag =
   strict_implicit_args := flag;
