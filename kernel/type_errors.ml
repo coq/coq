@@ -33,6 +33,7 @@ type type_error =
   | OccurCheck of int * constr
   | NotClean of int * constr
   | VarNotFound of identifier
+  | UnexpectedType of constr * constr
   | NotProduct of constr
   (* Pattern-matching errors *)
   | BadConstructor of constructor * inductive
@@ -92,6 +93,9 @@ let error_not_inductive k env c =
 
 let error_ml_case k env mes c ct br brt =
   raise (TypeError (k, env, MLCase (mes,c,ct,br,brt)))
+
+let error_unexpected_type env actual expected =
+  raise (TypeError (CCI, env, UnexpectedType (actual, expected)))
 
 let error_not_product env c =
   raise (TypeError (CCI, env, NotProduct c))
