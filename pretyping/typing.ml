@@ -35,7 +35,10 @@ let rec execute mf env sigma cstr =
 	relative env n
 
     | IsVar id -> 
-	make_judge cstr (snd (lookup_var id env))
+      (try
+         make_judge cstr (snd (lookup_var id env))
+       with Not_found ->
+         error ("execute: variable " ^ (string_of_id id) ^ " not defined"))
 	  
     | IsAbst _ ->
         if evaluable_abst env cstr then 
