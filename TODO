@@ -7,9 +7,11 @@ Environnement:
 - Faire fonctionner Search
 - Faire fonctionner Abstract
 - Faire fonctionner Reset
+- Faire fonctionner Transparent/Opaque
+- Ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
+
 - Que les Infix soit chargés lors d'un Require (DONE)
 - Problème de compatibilité du mode implicite au discharge (DONE)
-- ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
 
 Tactiques
 
