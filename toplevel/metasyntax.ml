@@ -106,16 +106,17 @@ let split str =
 
 (* An infix or a distfix is a pair of a grammar rule and a pretty-printing rule
  *)
+let cache_infix (_,(gr,se)) =
+  Egrammar.extend_grammar gr;
+  Esyntax.add_ppobject {sc_univ="constr";sc_entries=se}
+
 let (inInfix, outInfix) =
   declare_object
     ("INFIX",
-     { load_function = (fun _ -> ());
+     { load_function = cache_infix;
        open_function = (fun _ -> ());
-       cache_function =
-	 (fun (_,(gr,se)) ->
-            Egrammar.extend_grammar gr;
-            Esyntax.add_ppobject {sc_univ="constr";sc_entries=se});
-     specification_function = (fun x -> x)})
+       cache_function = cache_infix;
+       specification_function = (fun x -> x)})
 
 let prec_assoc = function
   | Some(Gramext.RightA) -> (":L",":E")
