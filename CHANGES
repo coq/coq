@@ -134,10 +134,8 @@ Tactiques
   - Correction de bugs (quand le type ne commence pas par un inductif)
     et refus d'agir sous les ->.
 
-- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. En
-  revanche, si une constante n'est qu'indirectement un Fix, on ne garde
-  en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
-  source d'incompatibilité.
+- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. 
+  Rem: c'est une source d'incompatibilité.
 
 - Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
 
@@ -148,8 +146,9 @@ Tactiques
 - AutoRewrite ne s'occupe maintenant que du but principal et c'est les
   Hint Rewrite qui gèrent les sous-buts générés
 
-- Redondant or incompatible instantiations in Apply ... with now
-  correctly trapped
+- Les instantiations redondantes ou incompatibles de Apply ... with ...
+  sont maintenant correctement traitées.
+
 
 Outils
 
