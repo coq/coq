@@ -701,26 +701,6 @@ GEXTEND Gram
 	 pil = LIST0 production_item; ":="; t = Tactic.tactic -> 
 	   VernacTacticGrammar ["",(s,pil),t]
 
-(*
-     | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
-        (* OPT [ ":"; IDENT "tactic" ]; *) ":=";
-        OPT "|"; tl = LIST0 grammar_tactic_rule SEP "|" -> 
-	  VernacTacticGrammar tl
-*)
-
-     | IDENT "Grammar"; u = univ;
-         tl = LIST1 grammar_entry SEP "with" -> 
-	   failwith "Grammar for constr not supported in v8; use Notation"
-(*
-	   VernacGrammar (rename_command_entry u,tl)
-*)
-
-     | IDENT "Syntax"; u = univ; el = LIST1 syntax_entry SEP "," ->
-	   failwith "Syntax not supported in v8; use Notation"
-(*
-         VernacSyntax (u,el)
-*)
-
      | IDENT "Reserved"; IDENT "Notation"; local = locality; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (local,Some(s,l),None)
@@ -731,10 +711,6 @@ GEXTEND Gram
   ;
   locality:
     [ [ IDENT "Local" -> true | -> false ] ]
-  ;
-  univ:
-  [ [ univ = IDENT ->
-        set_default_action_parser (parser_type_from_name univ); univ ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> NumLevel n
@@ -761,31 +737,6 @@ GEXTEND Gram
   opt_scope:
     [ [ "_" -> None | sc = IDENT -> Some sc ] ]
   ;
-  (* Syntax entries for Grammar. Only grammar_entry is exported *)
-  grammar_entry:
-    [[ nont = IDENT; set_entry_type; ":=";
-       ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
-	 (rename_command_entry nont,ep,rl) ]]
-  ;
-  entry_prec:
-    [[ IDENT "LEFTA" -> Some Gramext.LeftA
-     | IDENT "RIGHTA" -> Some Gramext.RightA
-     | IDENT "NONA" -> Some Gramext.NonA
-     | -> None ]]
-  ;
-(*
-  grammar_tactic_rule:
-    [[ (* name = rule_name; *) "["; s = STRING; pil = LIST0 production_item; "]";
-       "->"; "["; t = Tactic.tactic; "]"  -> let name="" in (name,(s,pil),t) ]]
-  ;
-*)
-  grammar_rule:
-    [[ name = rule_name; "["; pil = LIST0 production_item; "]"; "->";
-       a = action -> (name, pil, a) ]]
-  ;
-  rule_name:
-    [[ name = IDENT -> name ]]
-  ;
   production_item:
     [[ s = STRING -> VTerm s
      | nt = non_terminal; po = OPT [ "("; p = ident; ")" -> p ] ->
@@ -795,92 +746,6 @@ GEXTEND Gram
     [[ u = IDENT; ":"; nt = IDENT ->
         NtQual(rename_command_entry u, rename_command_entry nt)
      | nt = IDENT -> NtShort (rename_command_entry nt) ]]
-  ;
-
-
-  (* Syntax entries for Syntax. Only syntax_entry is exported *)
-  syntax_entry:
-    [ [ IDENT "level"; p = precedence; ":";
-	OPT "|"; rl = LIST1 syntax_rule SEP "|" -> (p,rl) ] ]
-  ;
-  syntax_rule:
-    [ [ nm = IDENT; "["; s = astpat; "]"; "->"; u = unparsing -> (nm,s,u) ] ]
-  ;
-  precedence:
-    [ [ a = natural -> a
-(*      | "["; a1 = natural; a2 = natural; a3 = natural; "]" -> (a1,a2,a3)*)
-    ] ]
-  ;
-  unparsing:
-    [ [ "["; ll = LIST0 next_hunks; "]" -> ll ] ]
-  ;
-  next_hunks:
-    [ [ IDENT "FNL" -> UNP_FNL
-      | IDENT "TAB" -> UNP_TAB
-      | c = STRING -> RO c
-      | "[";
-        x =
-          [ b = box; ll = LIST0 next_hunks -> UNP_BOX (b,ll)
-          | n = natural; m = natural -> UNP_BRK (n, m)
-          | IDENT "TBRK"; n = natural; m = natural -> UNP_TBRK (n, m) ];
-        "]" -> x
-      | e = Prim.ast; oprec = OPT [ ":"; pr = paren_reln_or_extern -> pr ] ->
-          match oprec with
-	    | Some (ext,pr) -> PH (e,ext,pr)
-            | None -> PH (e,None,Any)
- ]]
-  ;
-  box:
-    [ [ "<"; bk = box_kind; ">" -> bk ] ]
-  ;
-  box_kind:
-    [ [ IDENT "h"; n = natural -> PpHB n
-      | IDENT "v"; n = natural -> PpVB n
-      | IDENT "hv"; n = natural -> PpHVB n
-      | IDENT "hov"; n = natural -> PpHOVB n
-      | IDENT "t" -> PpTB ] ]
-  ;
-  paren_reln_or_extern:
-    [ [ IDENT "L" -> None, L
-      | IDENT "E" -> None, E
-      | pprim = STRING; precrec = OPT [ ":"; p = precedence -> p ] ->
-	  match precrec with
-	    | Some p -> Some pprim, Prec p
-            | None -> Some pprim, Any ] ]
-  ;
-  (* meta-syntax entries *)
-  astpat:
-    [ [ "<<" ; a = Prim.ast; ">>" -> a 
-      | a = Constr.lconstr -> 
-	  Termast.ast_of_rawconstr 
-	  (Constrintern.interp_rawconstr Evd.empty (Global.env()) a)
-    ] ]
-  ; 
-  action:
-    [ [ IDENT "let"; p = Prim.astlist; et = set_internal_entry_type;
-        "="; e1 = action; "in"; e = action -> Ast.CaseAction (loc,e1,et,[p,e])
-      | IDENT "case"; a = action; et = set_internal_entry_type; "of";
-        cl = LIST1 case SEP "|"; IDENT "esac" -> Ast.CaseAction (loc,a,et,cl)
-      | "["; a = default_action_parser; "]" -> Ast.SimpleAction (loc,a) ] ]
-  ;
-  case:
-    [[ p = Prim.astlist; "->"; a = action -> (p,a) ]]
-  ;
-  set_internal_entry_type:
-    [[ ":"; IDENT "ast"; IDENT "list" -> Ast.ETastl
-     | [ ":"; IDENT "ast" -> () | -> () ] -> Ast.ETast ]]
-  ;
-  set_entry_type:
-    [[ ":"; et = entry_type -> set_default_action_parser et
-     | -> () ]]
-  ;
-  entry_type:
-    [[ IDENT "ast"; IDENT "list" -> Util.error "type ast list no longer supported"
-     | IDENT "ast" -> Util.error "type ast no longer supported"
-     | IDENT "constr" -> ConstrParser
-     | IDENT "pattern" -> CasesPatternParser
-     | IDENT "tactic" -> assert false
-     | IDENT "vernac" -> Util.error "vernac extensions no longer supported" ] ]
   ;
 END
 
