@@ -275,8 +275,7 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
   | sp,ClosedSection (export,_,seg,contents) ->
       let id = string_of_id (basename sp) in
       (ccitab, objtab, Stringmap.add id contents modtab)
-  | _,(OpenedSection _ | FrozenState _ | Module _) -> 
-      anomaly "Should not occur in a closed section"
+  | _,(OpenedSection _ | FrozenState _ | Module _) ->  tabs
 
 and module_contents seg =
   let ccitab, objtab, modtab =

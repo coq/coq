@@ -150,7 +150,7 @@ let close_section export f s =
   lib_stk := before;
   let after' = export_segment after in
   pop_path_prefix ();
-  let contents = f sp after' in
+  let contents = f sp after in
   add_entry (make_path (id_of_string s) OBJ)
     (ClosedSection (export, s,after',contents));
   Nametab.push_module s contents;
