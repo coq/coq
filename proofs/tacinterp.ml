@@ -213,12 +213,6 @@ let glob_const_nvar loc env qid =
   with Not_found ->
     Nametab.error_global_not_found_loc loc qid
 
-let qid_interp = function
-  | Node (loc, "QUALIDARG", p) -> interp_qualid p
-  | ast -> 
-      anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",[<'sTR
-        "Unrecognizable qualid ast: "; print_ast ast>])
-
 (* Summary and Object declaration *)
 let mactab = ref Gmap.empty
 
@@ -1028,6 +1022,15 @@ and cast_opencom_interp (evc,env,lfun,lmatch,goalopt,debug) com =
   | None ->
     errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
 
+(* Interprets a qualified name. This can be a metavariable to be injected *)
+and qid_interp (evc,env,lfun,lmatch,goalopt,debug) = function
+  | Node(loc,"QUALIDARG",p) -> interp_qualid p
+  | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
+    Nametab.qualid_of_sp (path_of_const (List.assoc n lmatch))
+  | ast -> 
+      anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",[<'sTR
+        "Unrecognizable qualid ast: "; print_ast ast>])
+
 and cvt_pattern (evc,env,lfun,lmatch,goalopt,debug) = function
   | Node(_,"PATTERN", Node(loc,"COMMAND",[com])::nums) ->
       let occs = List.map num_of_ast nums
@@ -1044,8 +1047,8 @@ and cvt_unfold (evc,env,lfun,lmatch,goalopt,debug) = function
      glob_const_nvar loc (id_of_Identifier (unvarg (val_interp
        (evc,env,lfun,lmatch,goalopt,debug) com))))
 *)
-      let qid = qid_interp com in
-      (List.map num_of_ast nums, glob_const_nvar loc env qid)
+      let qid = qid_interp (evc,env,lfun,lmatch,goalopt,debug) com in
+      (List.map num_of_ast nums,glob_const_nvar loc env qid)
 
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
 
@@ -1067,7 +1070,8 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
                let idl=
 		 List.fold_right
 		   (fun v red -> 
-		      match glob_const_nvar loc env (qid_interp v) with
+		      match glob_const_nvar loc env
+                        (qid_interp (evc,env,lfun,lmatch,goalopt,debug) v) with
 			| EvalVarRef id -> red_add red (VAR id)
 			| EvalConstRef sp -> red_add red (CONST [sp])) l red
 	       in add_flag idl lf
@@ -1080,7 +1084,8 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
                let idl=
 		 List.fold_right
 		   (fun v red -> 
-		      match glob_const_nvar loc env (qid_interp v) with
+		      match glob_const_nvar loc env
+                        (qid_interp (evc,env,lfun,lmatch,goalopt,debug)v) with
 			| EvalVarRef id -> red_add red (VARBUT id)
 			| EvalConstRef sp -> red_add red (CONSTBUT [sp])) l red
 	       in add_flag idl lf
@@ -1173,7 +1178,7 @@ let bad_tactic_args s =
 let (inMD,outMD) =
   let add (na,td) = mactab := Gmap.add na td !mactab in
   let cache_md (_,(na,td)) =  
-    let ve=val_interp (Evd.empty,Environ.empty_env,[],[],None,get_debug ()) td 
+    let ve=val_interp (Evd.empty,Global.env (),[],[],None,get_debug ()) td 
     in add (na,ve) in 
     declare_object ("TAC-DEFINITION",
        {cache_function  = cache_md;

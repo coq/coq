@@ -432,7 +432,6 @@ let tclORELSE0 t1 t2 g =
     t1 g
   with
   | e when catchable_exception e -> t2 g
-  | _ -> failwith "ICI!"
   | FailError lvl ->
     if lvl = 0 then
       t2 g

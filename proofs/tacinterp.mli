@@ -65,6 +65,10 @@ val val_interp : interp_sign -> Coqast.t -> value
 (* Interprets tactic arguments *)
 val interp_tacarg : interp_sign -> Coqast.t -> tactic_arg
 
+(* Interprets tactic expressions *)
+val tac_interp : (string * value) list -> (int * constr) list -> debug_info ->
+                 Coqast.t -> tactic
+
 (* Initial call for interpretation *)
 val interp : Coqast.t -> tactic
 
