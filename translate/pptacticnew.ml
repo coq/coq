@@ -260,13 +260,13 @@ and pr_atom1 env = function
       hov 1 (str "assert" ++ pr_lconstrarg env c)
   | TacTrueCut (Some id,c) -> 
       hov 1 (str "assert" ++ spc () ++ pr_id id ++ str ":" ++
-             pr_lconstr env c)
+             pr_lconstrarg env c)
   | TacForward (false,na,c) ->
-      hov 1 (str "assert" ++ pr_arg pr_name na ++ str ":=" ++
-             pr_lconstr env c)
+      hov 1 (str "assert" ++ pr_arg pr_name na ++ str " :=" ++
+             pr_lconstrarg env c)
   | TacForward (true,na,c) ->
-      hov 1 (str "pose" ++ pr_arg pr_name na ++ str ":=" ++
-             pr_lconstr env c)
+      hov 1 (str "pose" ++ pr_arg pr_name na ++ str " :=" ++
+             pr_lconstrarg env c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
              prlist_with_sep spc (pr_constr env) l)
@@ -274,8 +274,8 @@ and pr_atom1 env = function
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_lconstrarg env c)
   | TacLetTac (id,c,cl) ->
-      hov 1 (str "lettac" ++ spc () ++ pr_id id ++ str ":=" ++
-        pr_constr env c ++ pr_clause_pattern pr_ident cl)
+      hov 1 (str "lettac" ++ spc () ++ pr_id id ++ str " :=" ++
+        pr_constrarg env c ++ pr_clause_pattern pr_ident cl)
   | TacInstantiate (n,c) ->
       hov 1 (str "instantiate" ++ pr_arg int n ++ pr_lconstrarg env c)
 
