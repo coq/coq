@@ -1,0 +1,109 @@
+
+Status of Extraction in Coq V7.0 final.
+======================================
+
+J.C. Filliâtre
+P. Letouzey
+
+
+
+Extraction code has been completely rewritten since version V6.3. 
+This work is still not finished, but most parts of it are already usable. 
+In consequence it is included in the Coq V7.0 final release. 
+But don't be mistaken: 
+
+	THIS WORK IS STILL EXPERIMENTAL !
+
+1) Principles 
+
+The main goal of the new extraction is to handle any Coq term, even 
+those upon sort Type, and to produce code that always compile. 
+Thus it will never answer something like "Not an ML type", but rather
+a dummy term like the ML unit. 
+
+Traduction between Coq and ML is based upon the following principles: 
+
+- Terms of sort Prop don't have any computational meaning, so they are
+merged in one ML term "prop", which is for the moment the ML constant ().
+
+- Terms that are arity (i.e. something of shape ( : )( : )...s with 
+s a sort ) don't have any ML counterpart, since they are types of 
+types transformers. We have also a special constant "arity" to 
+represent them if needed.
+
+- A Coq term gives a ML term or a ML type depending of its type: 
+a term of type an arity will give a ML type, and otherwise a ML term.
+
+And the rest of the traduction is (almost) straightforward: an inductive
+gives an inductive, etc...
+
+This gives ML code that have no special reason to typecheck, due 
+to the incompatibilities between Coq and ML typing systems. In fact
+most of the time everything goes right. For exemple, it is sufficient 
+to extract and compile everything in the "theories" directory 
+(cf test subdirectory).
+The last feature (not yet implemented) is to ensure that the extracted
+code will typecheck. This will be done soon by adding some "Obj.magic"
+calls in the code. 
+
+2) Differences with previous extraction
+
+2.a) The pros 
+
+The ability to extract every Coq term, as explain in the previous 
+paragraph. 
+
+The ability to extract modularly (cf Extraction Module in the 
+documentation)
+
+You can have a taste of extraction directly at the toplevel by 
+using the "Extraction <ident>" or the "Recursive Extraction <ident>".
+This toplevel extraction was already there in V6.3, but was printing 
+Fw terms. It now prints in an Ocaml-like syntax.
+
+The optimization done on extracted code has been mostly ported between 
+V6.3 and V7, and in particular the mechanism of atomatic expansion. 
+
+2.b) The cons 
+
+The only language currently available is Ocaml. Haskell extraction 
+will be added as soon as possible. At the opposite, Caml Light is 
+definitely dead.
+
+The presence of some parasite "unit" or "prop" as dummy arguments
+in functions. This denotes the rests of a proof part. The previous 
+extraction was able to remove them totally, but this is no more possible
+due to extraction upon Type.
+For exemple, let's take this pathological term: 
+	(if b then Set else Prop)  : Type
+The only way to know if this is an Set (to keep) or a Prop (to remove) 
+is to compute the boolean b, and we do not want to do that during 
+extraction. 
+
+There is no more "ML import" feature. You can compensate by using 
+Axioms, and then "Extract Constant ..." 
+
+Still no assurance of typechecking, since there is still no "Obj.magic"
+yet. Coming real soon ...
+
+Absolutely no benchmarking nor profiling nor optimizing has been 
+done on the new extraction code. 
+
+
+3) Exemples 
+
+The file "test-extraction.v" is made of some exemples used while debugging.
+
+In the subdirectory "test", you can test extraction on the Coq theories.
+Go there.
+"make tree" to make a local copy of the "theories" tree
+"make" to extract & compile most of the theories file 
+"make reals" to extract & compile a realization of the Reals axioms
+
+
+
+
+Any feedback is welcome: 
+Pierre.Letouzey@lri.fr
+Jean.Christophe.Filliatre@lri.fr
+coq@pauillac.inria.fr
