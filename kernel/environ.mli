@@ -51,10 +51,25 @@ val lookup_mind_specif : inductive -> env -> mind_specif
 val id_of_global : env -> sorts oper -> identifier
 
 val id_of_name_using_hdchar : env -> constr -> name -> identifier
+
+(* [named_hd env t na] just returns [na] is it defined, otherwise it
+   creates a name built from [t] (e.g. ["n"] if [t] is [nat]) *)
+
 val named_hd : env -> constr -> name -> name
-val prod_name : env -> name * constr * constr -> constr
-val lambda_create : env -> constr * constr -> constr
+
+(* The following functions build product or abstraction and create
+   names using [named_hd] for unnamed binders *)
+
 val lambda_name : env -> name * constr * constr -> constr
+val prod_name : env -> name * constr * constr -> constr
+val it_lambda_name : env -> constr -> (name * constr) list -> constr
+val it_prod_name : env -> constr -> (name * constr) list -> constr
+
+(* [lambda_create env (t,c)] builds [[x:t]c] where [x] is a name built
+   from [t] *)
+
+val lambda_create : env -> constr * constr -> constr
+
 
 val translucent_abst : env -> constr -> bool
 val evaluable_abst : env -> constr -> bool

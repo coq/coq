@@ -194,10 +194,12 @@ let named_hd env a = function
   | x         -> x
 
 let prod_name env (n,a,b) = mkProd (named_hd env a n) a b
+let lambda_name env (n,a,b) = mkLambda (named_hd env a n) a b
+
+let it_prod_name env = List.fold_left (fun c (n,t) ->prod_name env (n,t,c)) 
+let it_lambda_name env = List.fold_left (fun c (n,t) ->lambda_name env (n,t,c))
 
 let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous) a b
-
-let lambda_name env (n,a,b) = mkLambda (named_hd env a n) a b
 
 (* Abstractions. *)
 
