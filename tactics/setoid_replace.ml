@@ -1669,22 +1669,23 @@ let analyse_hypothesis gl c =
  let ctype = pf_type_of gl c in
  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
- let rec get_last_two = function
-   | [c1;c2] -> (c1, c2)
-   | x::y::z -> get_last_two (y::z)
+ let rec split_last_two = function
+   | [c1;c2] -> [],(c1, c2)
+   | x::y::z ->
+      let l,res = split_last_two (y::z) in x::l, res
    | _ -> error "The term provided is not an equivalence" in
- let c1,c2 = get_last_two args in
-  eqclause,c1,c2
+ let others,(c1,c2) = split_last_two args in
+  eqclause,mkApp (equiv, Array.of_list others),c1,c2
 
 let general_s_rewrite lft2rgt c ~new_goals gl =
  let direction = if lft2rgt then Left2Right else Right2Left in
- let eqclause,c1,c2 = analyse_hypothesis gl c in
+ let eqclause,_,c1,c2 = analyse_hypothesis gl c in
   match direction with
      Left2Right -> relation_rewrite c1 c2 (direction,eqclause) ~new_goals gl
    | Right2Left -> relation_rewrite c2 c1 (direction,eqclause) ~new_goals gl
 
 let general_s_rewrite_in id lft2rgt c ~new_goals gl =
- let _,c1,c2 = analyse_hypothesis gl c in
+ let _,_,c1,c2 = analyse_hypothesis gl c in
  let hyp = pf_type_of gl (mkVar id) in
  let new_hyp =
   if lft2rgt then
@@ -1787,7 +1788,17 @@ let setoid_symmetry gl =
  with
   Use_symmetry -> symmetry gl
 
-let setoid_symmetry_in = symmetry_in
+let setoid_symmetry_in id gl =
+ let new_hyp =
+  let _,he,c1,c2 = analyse_hypothesis gl (mkVar id) in
+   mkApp (he, [| c2 ; c1 |])
+ in
+  tclTHENS
+   (cut new_hyp)
+   [ (* Try to insert the new hyp at the same place *)
+     tclORELSE (intro_replacing id)
+       (tclTHEN (clear [id]) (introduction id));
+     tclTHENS setoid_symmetry [ exact_check (mkVar id) ] ] gl
 
 exception Use_transitivity
 
