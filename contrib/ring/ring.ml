@@ -27,7 +27,7 @@ let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
 let constant dir s =
   Declare.global_absolute_reference
-    (make_path ("ring"::dir) (id_of_string s) CCI)
+    (make_path ("Coq"::"ring"::dir) (id_of_string s) CCI)
 
 (* Ring_theory *)
 
@@ -87,7 +87,7 @@ let coq_apolynomial_normalize_ok =
 
 let logic_constant dir s =
   Declare.global_absolute_reference
-    (make_path ("Init"::dir) (id_of_string s) CCI)
+    (make_path ("Coq"::"Init"::dir) (id_of_string s) CCI)
 
 (* Logic *)
 let coq_f_equal2 = lazy (logic_constant ["Logic"] "f_equal2")
