@@ -418,7 +418,7 @@ let nb_occur_match =
     | MLcase(a,v) -> 
         Array.fold_left 
 	  (fun r (_,ids,a) -> max r (nb (k+(List.length ids)) a)) (nb k a) v
-    | MLletin (_,a,b) -> (nb k a) + (nb (k+1) a) 
+    | MLletin (_,a,b) -> (nb k a) + (nb (k+1) b) 
     | MLfix (_,ids,v) -> let k = k+(Array.length ids) in 
       Array.fold_left (fun r a -> r+(nb k a)) 0 v
     | MLlam (_,a) -> nb (k+1) a
