@@ -94,7 +94,9 @@ let acic_of_cic_context' seed ids_to_terms constr_to_ids ids_to_father_ids
          if computeinnertypes then
 try
           Acic.CicHash.find terms_to_types tt
-with _ -> assert false (* buco nella double-type-inference *)
+with _ ->
+(*CSC: Warning: it really happens, for example in Ring_theory!!! *)
+Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-type-inference: ") (Printer.prterm tt)) ; assert false (* buco nella double-type-inference *) ; {D.synthesized = Reductionops.nf_beta (Retyping.get_type_of env evar_map (Evarutil.refresh_universes tt)) ; D.expected = None}
          else
           (* We are already in an inner-type and Coscoy's double *)
           (* type inference algorithm has not been applied.      *)

@@ -9,6 +9,41 @@ module S =
  end
 ;;
 
+(* evar reduction that preserves some terms *)
+let nf_evar sigma ~preserve =
+ let module T = Term in
+  let rec aux t =
+   if preserve t then t else
+    match T.kind_of_term t with
+     | T.Rel _ | T.Meta _ | T.Var _ | T.Sort _ | T.Const _ | T.Ind _
+     | T.Construct _ -> t
+     | T.Cast (c1,c2) -> T.mkCast (aux c1, aux c2)
+     | T.Prod (na,c1,c2) -> T.mkProd (na, aux c1, aux c2)
+     | T.Lambda (na,t,c) -> T.mkLambda (na, aux t, aux c)
+     | T.LetIn (na,b,t,c) -> T.mkLetIn (na, aux b, aux t, aux c)
+     | T.App (c,l) ->
+        let c' = aux c in
+        let l' = Array.map aux l in
+         (match T.kind_of_term c' with
+             T.App (c'',l'') -> T.mkApp (c'', Array.append l'' l')
+           | T.Cast (he,_) ->
+              (match T.kind_of_term he with
+                  T.App (c'',l'') -> T.mkApp (c'', Array.append l'' l')
+                | _ -> T.mkApp (c', l')
+              )
+           | _ -> T.mkApp (c', l'))
+     | T.Evar (e,l) when Evd.in_dom sigma e & Evd.is_defined sigma e ->
+	aux (Instantiate.existential_value sigma (e,l))
+     | T.Evar (e,l) -> T.mkEvar (e, Array.map aux l)
+     | T.Case (ci,p,c,bl) -> T.mkCase (ci, aux p, aux c, Array.map aux bl)
+     | T.Fix (ln,(lna,tl,bl)) ->
+         T.mkFix (ln,(lna,Array.map aux tl,Array.map aux bl))
+     | T.CoFix(ln,(lna,tl,bl)) ->
+         T.mkCoFix (ln,(lna,Array.map aux tl,Array.map aux bl))
+   in
+    aux
+;;
+
 let extract_open_proof sigma pf =
  let module PT = Proof_type in
  let module L = Logic in
@@ -60,9 +95,16 @@ let extract_open_proof sigma pf =
      | _ -> Util.anomaly "Bug : a case has been forgotten in proof_extractor"
    in
     let unsharedconstr =
-     Term.unshare
-      ~already_unshared:(function e -> S.mem e !unshared_constrs) constr
+     let evar_nf_constr =
+      nf_evar !sigma ~preserve:(function e -> S.mem e !unshared_constrs) constr
+     in
+      Term.unshare
+       ~already_unshared:(function e -> S.mem e !unshared_constrs)
+       evar_nf_constr
     in
+(*CSC:
+Pp.ppnl (Pp.(++) (Pp.str "Registro tattica che ha creato:") (Printer.prterm unsharedconstr)) ;
+*)
      Hashtbl.add proof_tree_to_constr node unsharedconstr ;
      unshared_constrs := S.add unsharedconstr !unshared_constrs ;
      unsharedconstr
