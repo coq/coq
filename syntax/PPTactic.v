@@ -7,7 +7,7 @@
 
 Syntax tactic
   level 3:
-    interpret [<<(Interpret (TACTIC $t))>>] -> [ $t:E ]
+    interpret [<<(Interp (TACTIC $t))>>] -> [ $t:E ]
   ;
 
   (* Put parenthesis when there is more than one tactic *)
@@ -24,10 +24,30 @@ Syntax tactic
 
   | tactic_seq [<<(TACLIST ($LIST $l))>>]
              -> [ [<hv 0> "[ " (TACTICSEQBODY ($LIST $l)) " ]" ] ]
-
   | tacticseqbody_cons [<<(TACTICSEQBODY $t ($LIST $l))>>]
       -> [ [<hov 0> $t] [1 0] "| " (TACTICSEQBODY ($LIST $l)) ]
   | tacticseqbody_one  [<<(TACTICSEQBODY $t)>>] -> [ [<hov 0> $t] ]
+
+  | term [<<(TERM $t)>>] -> [ $t ]
+  | subterm [<<(SUBTERM ($VAR $id) $t)>>] -> [ $id "[" $t "]" ]
+  | match_context_hyps_id [<<(MATCHCONTEXTHYPS ($VAR $id) $t)>>] ->
+    [ $id [1 0] ":" [1 0] $t]
+  | match_context_hyps_ano [<<(MATCHCONTEXTHYPS $t)>>] ->
+    [ "_" [1 0] ":" [1 0] $t]
+  
+  | hyps_cons [<<(HYPS $hyp0 $hyp1 ($LIST $hyps))>>] ->
+    [ $hyp0 ";" [1 0] (HYPS $hyp1 ($LIST $hyps)) ]
+  | hyps_three [<<(HYPS $hyp $concl $tac)>>] ->
+    [ $hyp [1 0] "|-" [1 0] $concl [1 0] "]" [1 0] "->" [1 2] $tac ]
+  | hyps_two [<<(HYPS $concl $tac)>>] ->
+    [ "|-" [1 0] $concl [1 0] "]" [1 0] "->" [1 2] $tac ]
+  | match_context_rule [<<(MATCHCONTEXTRULE ($LIST $hyps))>>] ->
+    [ "[" [1 0] (HYPS ($LIST $hyps)) ]
+
+  | match_context_rule_cons [<<(MATCHCONTEXTLIST $rul ($LIST $lrul))>>] ->
+    [FNL "|" [1 0] $rul (MATCHCONTEXTLIST ($LIST $lrul))]
+  | match_context_rule_one [<<(MATCHCONTEXTLIST $rul)>>] ->
+    [FNL "|" [1 0] $rul]
   ;
 
   level 1:
@@ -37,6 +57,11 @@ Syntax tactic
   ;
 
   level 0:
+
+(* ============================= *)
+(*       PP rules for LTAC       *)
+(* ============================= *)
+
     do     [<<(DO ($NUM $n) $tc)>>] -> ["Do " $n " " $tc:E]
   | try    [<<(TRY $t)>>]           -> ["Try " $t:E]
   | info   [<<(INFO $t)>>]          -> ["Info " $t:E]
@@ -45,13 +70,12 @@ Syntax tactic
     ["First" [1 0] "[" [1 0] (TACTICSEQBODY ($LIST $l)) [1 0] "]"]
   | solve  [<<(TCLSOLVE ($LIST $l))>>] ->
     ["Solve" [1 0] "[" [1 0] (TACTICSEQBODY ($LIST $l)) [1 0] "]"]
-
-  | call [<<(CALL $macro ($LIST $args))>>]
-         -> [ [<hv 3> $macro " " (LISTSPC ($LIST $args)) ] ] 
   | abstract_anon [<<(ABSTRACT (TACTIC $t))>>] 
          -> ["Abstract " $t:E]
   | abstract_name [<<(ABSTRACT ($VAR $id) (TACTIC $t))>>] 
          -> ["Abstract " $t:E " using "  $id]
+  | match_context [<<(MATCHCONTEXT ($LIST $lrul))>>] ->
+    [ [0 0] "Match Context With" (MATCHCONTEXTLIST ($LIST $lrul))]
 
 (* ========================================== *)
 (*       PP rules for simple tactics          *)
