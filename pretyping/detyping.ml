@@ -231,11 +231,11 @@ let detype_case computable detype detype_eqn testdep
         | Some p ->
             let decompose_lam k c =
               let rec lamdec_rec l avoid k c =
-                if k = 0 then l,c else match c with
+                if k = 0 then List.rev l,c else match c with
                   | RLambda (_,x,t,c) -> 
                       lamdec_rec (x::l) (name_cons x avoid) (k-1) c
                   | c -> 
-                      let x = next_ident_away (id_of_string "xx") avoid in
+                      let x = next_ident_away (id_of_string "x") avoid in
                       lamdec_rec ((Name x)::l) (x::avoid) (k-1)
                         (let a = RVar (dummy_loc,x) in
                           match c with
@@ -246,7 +246,16 @@ let detype_case computable detype detype_eqn testdep
             let nl,typ = decompose_lam k p in
 	    let n,typ = match typ with 
               | RLambda (_,x,t,c) -> x, c
-	      | _ -> Anonymous, typ in
+	      | _ -> 
+		  let id = match tomatch with
+		    | RVar (_,id) -> id
+		    | _ -> id_of_string "x" in
+                  let x = next_ident_away id avoid in
+		  let a = RVar (dummy_loc,x) in
+		  let typ = match typ with
+                    | RApp (loc,p,l) -> RApp (loc,p,l@[a])
+                    | _ -> (RApp (dummy_loc,typ,[a])) in
+		  Name x, typ in
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
 	      else 
