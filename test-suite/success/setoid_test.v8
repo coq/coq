@@ -30,7 +30,7 @@ elim (H a); elim (H0 a).
 split; auto.
 Qed.
 
-Add Setoid set same setoid_set.
+Add Setoid set same setoid_set as setsetoid.
 
 Add Morphism In : In_ext.
 unfold same in |- *; intros a s t H; elim (H a); auto.
