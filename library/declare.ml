@@ -63,7 +63,7 @@ let cache_variable (sp,(id,(d,_,_) as vd)) =
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
-  Nametab.push sp (VarRef sp);
+  Nametab.push_local sp (VarRef sp);
   vartab := Spmap.add sp vd !vartab
 
 let (in_variable, out_variable) =
@@ -91,7 +91,6 @@ let cache_parameter (sp,c) =
 let load_parameter _ = ()
 
 let open_parameter (sp,_) = ()
-(*  Nametab.push sp (ConstRef sp)*)
 
 let export_parameter x = Some x
 
@@ -142,7 +141,6 @@ let load_constant (sp,(ce,stre,op)) =
   csttab := Spmap.add sp stre !csttab
 
 let open_constant (sp,_) = ()
-(*  Nametab.push sp (ConstRef sp)*)
 
 let export_constant x = Some x
 
@@ -209,7 +207,6 @@ let cache_inductive (sp,mie) =
 let load_inductive _ = ()
 
 let open_inductive (sp,mie) = ()
-(*  push_inductive_names sp mie *)
 
 let export_inductive x = Some x
 
