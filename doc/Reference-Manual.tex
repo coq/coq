@@ -25,6 +25,8 @@
 \input{./headers.tex}% extension .tex pour htmlgen
 
 \begin{document}
+\sloppy\hbadness=3500
+
 \tophtml{}
 \coverpage{Reference Manual}{The Coq Development Team}
 
@@ -71,16 +73,19 @@
 \include{Extraction.v}%
 \include{Polynom.v}%  = Ring
 \include{Setoid.v}% Tactique pour les setoides
+%BEGIN LATEX
 \RefManCutCommand{ENDADDENDUM=\thepage}
-
+%END LATEX
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{biblio}
+%BEGIN LATEX
 \RefManCutCommand{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
 \RefManCutCommand{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
 \RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
 \RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
 \RefManCutClose
+%END LATEX
 
 \printindex
 

@@ -23,7 +23,7 @@ COQWEBSTY=/usr/share/texmf/tex/latex/misc/
 HEVEALIB=/usr/local/lib/hevea
 
 LATEX=latex
-BIBTEX=bibtex
+BIBTEX=bibtex -min-crossref=10
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 

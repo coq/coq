@@ -1,6 +1,8 @@
 
-@STRING{toappear="To appear"}
+@string{jfp = "Journal of Functional Programming"}
 @STRING{lncs="Lecture Notes in Computer Science"}
+@STRING{lnai="Lecture Notes in Artificial Intelligence"}
+@string{SV = "{Sprin\-ger-Verlag}"}
 
 @INPROCEEDINGS{Aud91,
         AUTHOR             = {Ph. Audebaud},
@@ -59,13 +61,6 @@ Computer Architecture},
         YEAR               = {1991}
 }
 
-@BOOK{Bastad92,
-        EDITOR             = {B. Nordstr\"om and K. Petersson and G. Plotkin},
-        PUBLISHER          = {Available by ftp at site ftp.inria.fr},
-        TITLE              = {Proceedings of the 1992 Workshop on Types for Proofs and Programs},
-        YEAR               = {1992}
-}
-
 @ARTICLE{BeKe92,
         AUTHOR             = {G. Bellin and J. Ketonen},
         JOURNAL            = {Theoretical Computer Science},
@@ -77,7 +72,7 @@ Computer Architecture},
 
 @BOOK{Bee85,
         AUTHOR             = {M.J. Beeson},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         TITLE              = {Foundations of Constructive Mathematics, Metamathematical Studies},
         YEAR               = {1985}
 }
@@ -112,7 +107,8 @@ s},
    author = {S. Boutin},
    booktitle = {TACS'97},
    editor = {Martin Abadi and Takahashi Ito},
-   publisher = {LNCS, Springer-Verlag},
+   publisher = SV,
+   series = lncs,
    volume=1281, 
    PS={http://pauillac.inria.fr/~boutin/public_w/submitTACS97.ps.gz}, 
    year = {1997}
@@ -183,8 +179,8 @@ s},
   ADDRESS   = {Berg en Dal, The Netherlands},
   TITLE     = {Mathematical Quotients and Quotient Types in Coq},
   BOOKTITLE = {TYPES'02},
-  PUBLISHER = {Springer-Verlag},
-  SERIES    = {LNCS},
+  PUBLISHER = SV,
+  SERIES    = LNCS,
   VOLUME    = {2646},
   YEAR      = {2003}
 }
@@ -201,8 +197,8 @@ s},
         AUTHOR             = {Th. Coquand and G. Huet},
         ADDRESS            = {Linz},
         BOOKTITLE          = {EUROCAL'85},
-        PUBLISHER          = {Springer-Verlag},
-        SERIES             = {LNCS},
+        PUBLISHER          = SV,
+        SERIES             = LNCS,
         TITLE              = {{Constructions : A Higher Order Proof System for Mechanizing Mathematics}},
         VOLUME             = {203},
         YEAR               = {1985}
@@ -230,8 +226,8 @@ s},
         AUTHOR             = {Th. Coquand and C. Paulin-Mohring},
         BOOKTITLE          = {Proceedings of Colog'88},
         EDITOR             = {P. Martin-L\"of and G. Mints},
-        PUBLISHER          = {Springer-Verlag},
-        SERIES             = {LNCS},
+        PUBLISHER          = SV,
+        SERIES             = LNCS,
         TITLE              = {Inductively defined types},
         VOLUME             = {417},
         YEAR               = {1990}
@@ -281,7 +277,6 @@ s},
 
 @INPROCEEDINGS{Coq92,
         AUTHOR             = {Th. Coquand},
-        BOOKTITLE          = {in \cite{Bastad92}},
         TITLE              = {{Pattern Matching with Dependent Types}},
         YEAR               = {1992},
         crossref = {Bastad92}
@@ -289,7 +284,6 @@ s},
 
 @INPROCEEDINGS{Coquand93,
         AUTHOR             = {Th. Coquand},
-        BOOKTITLE          = {in \cite{Nijmegen93}},
         TITLE              = {{Infinite Objects in Type Theory}},
         YEAR               = {1993},
         crossref = {Nijmegen93}
@@ -308,7 +302,8 @@ s},
   title     = "Information Retrieval in a Coq Proof Library using
                Type Isomorphisms",
   booktitle = {Proceedings of TYPES'99, L\"okeberg},
-  publisher = "Springer-Verlag LNCS",
+  publisher = SV,
+  series = lncs,
   year      = "1999",
   url      =
     "\\{\sf ftp://ftp.inria.fr/INRIA/Projects/coq/David.Delahaye/papers/}"#
@@ -320,7 +315,8 @@ s},
   title     = "A {T}actic {L}anguage for the {S}ystem {{\sf Coq}}",
   booktitle = "Proceedings of Logic for Programming and Automated Reasoning
                (LPAR), Reunion Island",
-  publisher = "Springer-Verlag LNCS/LNAI",
+  publisher = SV,
+  series =  LNCS,
   volume    = "1955",
   pages     = "85--95",
   month     = "November",
@@ -332,8 +328,8 @@ s},
 
 @INPROCEEDINGS{DelMay01,
   author    = "Delahaye, D. and Mayero, M.",
-  title     = "{\tt Field}: une proc\'edure de d\'ecision pour les nombres r\'eels
-               en {{\sf Coq}}",
+  title     = {{\tt Field}: une proc\'edure de d\'ecision pour les nombres r\'eels
+               en {\Coq}},
   booktitle = "Journ\'ees Francophones des Langages Applicatifs, Pontarlier",
   publisher = "INRIA",
   month     = "Janvier",
@@ -347,18 +343,18 @@ s},
         AUTHOR             = {G. Dowek},
         INSTITUTION        = {INRIA},
         NUMBER             = {1283},
-        TITLE              = {{Naming and Scoping in a Mathematical Vernacular}},
+        TITLE              = {Naming and Scoping in a Mathematical Vernacular},
         TYPE               = {Research Report},
         YEAR               = {1990}
 }
 
 @ARTICLE{Dow91a,
         AUTHOR             = {G. Dowek},
-        JOURNAL            = {{Compte Rendu de l'Acad\'emie des Sciences}},
-        NOTE               = {(The undecidability of Third Order Pattern Matching in Calculi with Dependent Types or Type Constructors)},
+        JOURNAL            = {Compte-Rendus de l'Acad\'emie des Sciences},
+        NOTE               = {The undecidability of Third Order Pattern Matching in Calculi with Dependent Types or Type Constructors},
         NUMBER             = {12},
         PAGES              = {951--956},
-        TITLE              = {{L'Ind\'ecidabilit\'e du Filtrage du Troisi\`eme Ordre dans les Calculs avec Types D\'ependants ou Constructeurs de Types}},
+        TITLE              = {L'Ind\'ecidabilit\'e du Filtrage du Troisi\`eme Ordre dans les Calculs avec Types D\'ependants ou Constructeurs de Types}, 
         VOLUME             = {I, 312},
         YEAR               = {1991}
 }		  
@@ -368,9 +364,9 @@ s},
         BOOKTITLE          = {Proceedings of Mathematical Foundation of Computer Science},
         NOTE               = {Also INRIA Research Report},
         PAGES              = {151--160},
-        PUBLISHER          = {Springer-Verlag},
-        SERIES             = {LNCS},
-        TITLE              = {{A Second Order Pattern Matching Algorithm in the Cube of Typed {$\lambda$}-calculi}},
+        PUBLISHER          = SV,
+        SERIES             = LNCS,
+        TITLE              = {A Second Order Pattern Matching Algorithm in the Cube of Typed $\lambda$-calculi},
         VOLUME             = {520},
         YEAR               = {1991}
 }
@@ -378,17 +374,21 @@ s},
 @PHDTHESIS{Dow91c,
         AUTHOR             = {G. Dowek},
         MONTH              = dec,
-        SCHOOL             = {{Universit\'e Paris 7}},
-        TITLE              = {{D\'emonstration automatique dans le Calcul des Constructions}},
+        SCHOOL             = {Universit\'e Paris 7},
+        TITLE              = {D\'emonstration automatique dans le Calcul des Constructions},
         YEAR               = {1991}
 }
 
-@UNPUBLISHED{Dow92a,
+@article{Dow92a,
         AUTHOR             = {G. Dowek},
-        NOTE               = {To appear in Theoretical Computer Science},
-        TITLE              = {{The Undecidability of Pattern Matching in Calculi where Primitive Recursive Functions are Representable}},
-        YEAR               = {1992}
+        TITLE              = {The Undecidability of Pattern Matching in Calculi where Primitive Recursive Functions are Representable},
+        YEAR               = 1993,
+        journal = tcs,
+        volume = 107,
+        number = 2,
+        pages = {349-356}
 }
+
 
 @ARTICLE{Dow94a,
         AUTHOR             = {G. Dowek},
@@ -402,7 +402,7 @@ s},
 @INPROCEEDINGS{Dow94b,
         AUTHOR             = {G. Dowek},
         BOOKTITLE          = {Proceedings of the second international conference on typed lambda calculus and applications},
-        TITLE              = {{Lambda-calculus, Combinators and the Comprehension Schema}},
+        TITLE              = {Lambda-calculus, Combinators and the Comprehension Schema},
         YEAR               = {1995}
 }
 
@@ -412,7 +412,8 @@ s},
         EDITOR             = {G. Huet and G. Plotkin},
         PAGES              = {59--79},
         PUBLISHER          = {Cambridge University Press},
-        TITLE              = {{Inductive sets and families in {Martin-L{\"o}f's Type Theory} and their set-theoretic semantics : An inversion principle for {Martin-L\"of's} type theory}},
+        TITLE              = {Inductive sets and families in {Martin-L{\"o}f's}
+ Type Theory and their set-theoretic semantics: An inversion principle for {Martin-L\"of's} type theory}, 
         VOLUME             = {14},
         YEAR               = {1991}
 }
@@ -431,33 +432,39 @@ s},
         AUTHOR             = {J.-C. Filli\^atre},
         MONTH              = sep,
         SCHOOL             = {DEA d'Informatique, ENS Lyon},
-        TITLE              = {Une proc\'edure de d\'ecision pour le {C}alcul des {P}r\'edicats {D}irect. {E}tude et impl\'ementation dans le syst\`eme {C}oq},
+        TITLE              = {Une proc\'edure de d\'ecision pour le Calcul des Pr\'edicats Direct. {\'E}tude et impl\'ementation dans le syst\`eme {\Coq}},
         YEAR               = {1994}
 }
 
 @TECHREPORT{Filliatre95,
         AUTHOR             = {J.-C. Filli\^atre},
         INSTITUTION        = {LIP-ENS-Lyon},
-        TITLE              = {{A decision procedure for Direct Predicate Calculus}},
+        TITLE              = {A decision procedure for Direct Predicate Calculus},
         TYPE               = {Research report},
         NUMBER             = {96--25},
         YEAR               = {1995}
 }
 
-@Unpublished{Filliatre00a,
-  author = 	 {J.-C. Filli\^atre},
-  title = 	 {{Verification of Non-Functional Programs 
-                   using Interpretations in Type Theory}},
-  month =	 {February},
-  year =	 2000,
-  note = 	 {To appear in the Journal of Functional Programming.  
-                  [English translation of \cite{Filliatre99}]},
-  url =         {\url{http://www.lri.fr/~filliatr/ftp/publis/jphd.ps.gz}}
+@Article{Filliatre03jfp,
+  author = 	 {J.-C. Filli{\^a}tre},
+  title = 	 {Verification of Non-Functional Programs 
+                   using Interpretations in Type Theory},
+  journal =      jfp,
+  volume =       13,
+  number =       4,
+  pages =        {709--745},
+  month =	 jul,
+  year =	 2003,
+  note = 	 {[English translation of \cite{Filliatre99}]},
+  url =          {http://www.lri.fr/~filliatr/ftp/publis/jphd.ps.gz},
+  topics =       "team, lri",
+  type_publi =   "irevcomlec"
 }
+
 
 @PhdThesis{Filliatre99,
   author = 	 {J.-C. Filli\^atre},
-  title = 	 {{Preuve de programmes imp\'eratifs en th\'eorie des types}},
+  title = 	 {Preuve de programmes imp\'eratifs en th\'eorie des types},
   type =         {Th{\`e}se de Doctorat},
   school = 	 {Universit\'e Paris-Sud},
   year = 	 1999,
@@ -476,7 +483,7 @@ s},
 
 @InProceedings{FilliatreMagaud99,
   author = 	 {J.-C. Filli\^atre and N. Magaud},
-  title = 	 {{Certification of sorting algorithms in the system Coq}},
+  title = 	 {Certification of sorting algorithms in the system {\Coq}},
   booktitle =    {Theorem Proving in Higher Order Logics: 
                   Emerging Trends},
   year =	 1999,
@@ -503,9 +510,9 @@ s},
         AUTHOR             = {E. Gim\'enez},
         BOOKTITLE          = {Types'94 : Types for Proofs and Programs},
         NOTE               = {Extended version in LIP research report 95-07, ENS Lyon},
-        PUBLISHER          = {Springer-Verlag},
-        SERIES             = {LNCS},
-        TITLE              = {{Codifying guarded definitions with recursive schemes}},
+        PUBLISHER          = SV,
+        SERIES             = LNCS,
+        TITLE              = {Codifying guarded definitions with recursive schemes},
         VOLUME             = {996},
         YEAR               = {1994}
 }
@@ -521,13 +528,13 @@ s},
 @INPROCEEDINGS{Gimenez95b,
         AUTHOR             = {E. Gim\'enez},
         BOOKTITLE          = {Workshop on Types for Proofs and Programs},
-        SERIES             = {LNCS},
+        SERIES             = LNCS,
         NUMBER             = {1158},
         PAGES              = {135-152},
         TITLE              = {An application of co-Inductive types in Coq: 
 		               verification of the Alternating Bit Protocol},
         EDITORS            = {S. Berardi and M. Coppo},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         YEAR               = {1995}
 }
 
@@ -570,7 +577,7 @@ s},
         AUTHOR             = {D. Hirschkoff},
         MONTH              = sep,
         SCHOOL             = {DEA IARFA, Ecole des Ponts et Chauss\'ees, Paris},
-        TITLE              = {{Ecriture d'une tactique arithm\'etique pour le syst\`eme Coq}},
+        TITLE              = {{\'E}criture d'une tactique arithm\'etique pour le syst\`eme {\Coq}},
         YEAR               = {1994}
 }
 
@@ -594,15 +601,28 @@ s},
 
 
 
+@InProceedings{Hue87tapsoft,
+  author = 	 {G. Huet},
+  title = 	 {Programming of Future Generation Computers},
+  booktitle = 	 {Proceedings of TAPSOFT87},
+       series = LNCS,
+        volume = 249,
+  pages =	 {276--286},
+  year =	 1987,
+  publisher =	 SV
+}
+
 @INPROCEEDINGS{Hue87,
         AUTHOR             = {G. Huet},
         BOOKTITLE          = {Programming of Future Generation Computers},
         EDITOR             = {K. Fuchi and M. Nivat},
-        NOTE               = {Also in Proceedings of TAPSOFT87, LNCS 249, Springer-Verlag, 1987, pp 276--286},
+        NOTE               = {Also in \cite{Hue87tapsoft}},
         PUBLISHER          = {Elsevier Science},
         TITLE              = {Induction Principles Formalized in the {Calculus of Constructions}},
         YEAR               = {1988}
 }
+
+
 
 @INPROCEEDINGS{Hue88,
         AUTHOR             = {G. Huet},
@@ -626,9 +646,9 @@ s},
         AUTHOR             = {G. Huet},
         BOOKTITLE          = {Proceedings of 12th FST/TCS Conference, New Delhi},
         PAGES              = {229--240},
-        PUBLISHER          = {Springer Verlag},
-        SERIES             = {LNCS},
-        TITLE              = {{The Gallina Specification Language : A case study}},
+        PUBLISHER          = SV,
+        SERIES             = LNCS,
+        TITLE              = {The Gallina Specification Language : A case study},
         VOLUME             = {652},
         YEAR               = {1992}
 }
@@ -718,7 +738,7 @@ Matching and Term Rewriting},
         AUTHOR             = {F. Leclerc and C. Paulin-Mohring},
         BOOKTITLE          = {{Types for Proofs and Programs, Types' 93}},
         EDITOR             = {H. Barendregt and T. Nipkow},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         SERIES             = {LNCS},
         TITLE              = {{Programming with Streams in Coq. A case study : The Sieve of Eratosthenes}},
         VOLUME             = {806},
@@ -782,7 +802,7 @@ of the {ML} language},
         EDITOR             = {M. Bezem and J.-F. Groote},
         NOTE               = {Also LIP research report 92-49, ENS Lyon},
         NUMBER             = {664},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         SERIES             = {LNCS},
         TITLE              = {{Inductive Definitions in the System Coq - Rules and Properties}},
         YEAR               = {1993}
@@ -813,15 +833,6 @@ of the {ML} language},
         Note = {Version en anglais disponible comme rapport de 
                 recherche INRIA RR-3309},        
         Type = {Th\`ese de Doctorat}
-}
-
-@BOOK{Nijmegen93,
-        EDITOR             = {H. Barendregt and T. Nipkow},
-        PUBLISHER          = {Springer-Verlag},
-        SERIES             = {LNCS},
-        TITLE              = {Types for Proofs and Programs},
-        VOLUME             = {806},
-        YEAR               = {1994}
 }
 
 @BOOK{NoPS90,
@@ -855,7 +866,7 @@ of the {ML} language},
         EDITOR             = {A. Voronkov},
         MONTH              = jul,
         NUMBER             = {624},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         SERIES             = {LNCS},
         TITLE              = {{ProPre : A Programming language with proofs}},
         YEAR               = {1992}
@@ -883,7 +894,7 @@ of the {ML} language},
 @INPROCEEDINGS{Parent95b,
         AUTHOR             = {C. Parent},
         BOOKTITLE          = {{Mathematics of Program Construction'95}},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         SERIES             = {LNCS},
         TITLE              = {{Synthesizing proofs from programs in
 the Calculus of Inductive Constructions}},
@@ -894,7 +905,7 @@ the Calculus of Inductive Constructions}},
 @INPROCEEDINGS{Prasad93,
         AUTHOR             = {K.V. Prasad},
         BOOKTITLE          = {{Proceedings of CONCUR'93}},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         SERIES             = {LNCS},
         TITLE              = {{Programming with broadcasts}},
         VOLUME             = {715},
@@ -937,8 +948,8 @@ into Interactive Proof Assistants},
         BOOKTITLE          = {Proceedings of International Joint Conference on 
 Automated Reasoning},
         EDITOR             = {R. Gore and A. Leitsch and T. Nipkow},
-        PUBLISHER          = {Springer},
-        SERIES             = {LNAI},
+        PUBLISHER          = SV,
+        SERIES             = LNAI,
         VOLUME             = {2083},
         PAGES              = {421--426},
         YEAR               = {2001}
@@ -1020,7 +1031,7 @@ Recursive Functions as Typed $\lambda-$Terms}},
         AUTHOR             = {L.Puel and A. Su\'arez},
         BOOKTITLE          = {{Conference Lisp and Functional Programming}},
         SERIES             = {ACM},
-        PUBLISHER          = {Springer-Verlag},
+        PUBLISHER          = SV,
         TITLE              = {{Compiling Pattern Matching by Term
 Decomposition}},
         YEAR               = {1990}
@@ -1050,3 +1061,23 @@ Languages},
         PUBLISHER          = {Prentice-Hall},
         YEAR               = {1987}
 }
+
+
+@COMMENT{cross-references, must be at end}
+
+@BOOK{Bastad92,
+        EDITOR             = {B. Nordstr\"om and K. Petersson and G. Plotkin},
+        PUBLISHER          = {Available by ftp at site ftp.inria.fr},
+        TITLE              = {Proceedings of the 1992 Workshop on Types for Proofs and Programs},
+        YEAR               = {1992}
+}
+
+@BOOK{Nijmegen93,
+        EDITOR             = {H. Barendregt and T. Nipkow},
+        PUBLISHER          = SV,
+        SERIES             = LNCS,
+        TITLE              = {Types for Proofs and Programs},
+        VOLUME             = {806},
+        YEAR               = {1994}
+}
+
