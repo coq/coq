@@ -561,7 +561,7 @@ open Vernac
 GEXTEND Gram
   Pcoq.Vernac_.vernac:
   [ [ IDENT "Global"; "Variable"; 
-      l = LIST1 IDENT SEP ","; ":"; t = type_v; "." ->
+      l = LIST1 ident SEP ","; ":"; t = type_v; "." ->
 	let idl = List.map Ast.nvar l in
 	let d = Ast.dynamic (in_typev t) in
 	  <:ast< (PROGVARIABLE (VERNACARGLIST ($LIST $idl)) (VERNACDYN $d)) >>

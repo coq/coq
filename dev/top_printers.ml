@@ -36,23 +36,20 @@ let pprawterm = (fun x -> pP(pr_rawterm x))
 let pppattern = (fun x -> pP(pr_pattern x))
 let pptype = (fun x -> pP(prtype x))
 
-let prid id = pP [< 'sTR(string_of_id id) >]
+let prid id = pP [< pr_id id >]
 
 let prconst (sp,j) =
-    pP [< 'sTR"#"; 'sTR(string_of_path sp); 
-	  'sTR"="; prterm j.uj_val >]
+    pP [< 'sTR"#"; pr_sp sp; 'sTR"="; prterm j.uj_val >]
 
 let prvar ((id,a)) =
-    pP [< 'sTR"#" ; 'sTR(string_of_id id) ; 'sTR":" ; 
-	  prterm a >]
+    pP [< 'sTR"#" ; pr_id id ; 'sTR":" ; prterm a >]
 
 let genprj f j =
   let (c,t) = Termast.with_casts f j in [< c; 'sTR " : "; t >]
 
 let prj j = pP (genprj prjudge j)
 
-
-let prsp sp = pP[< 'sTR(string_of_path sp) >]
+let prsp sp = pP[< pr_sp sp >]
 
 let prqualid qid = pP[< Nametab.pr_qualid qid >]
 
@@ -251,7 +248,7 @@ let print_pure_constr csr =
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
   and sp_display sp = let ls = 
-    match (dirpath sp) with 
+    match List.map string_of_id (dirpath sp) with 
         ("Scratch"::l)-> l
       | ("Coq"::_::l) -> l 
       | l             -> l

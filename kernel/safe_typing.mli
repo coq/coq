@@ -63,7 +63,7 @@ val lookup_mind_specif : inductive -> safe_environment -> inductive_instance
 val set_opaque : safe_environment -> section_path -> unit
 val set_transparent : safe_environment -> section_path -> unit
 
-val export : safe_environment -> string -> compiled_env
+val export : safe_environment -> dir_path -> compiled_env
 val import : compiled_env -> safe_environment -> safe_environment
 
 val env_of_safe_env : safe_environment -> env

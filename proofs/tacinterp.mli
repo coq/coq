@@ -25,13 +25,13 @@ type value =
   | VRTactic of (goal list sigma * validation)
   | VContext of (goal sigma -> value)
   | VArg of tactic_arg
-  | VFun of (string * value) list * string option list * Coqast.t
+  | VFun of (identifier * value) list * identifier option list * Coqast.t
   | VVoid
   | VRec of value ref
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
-  enamed_declarations * Environ.env * (string * value) list *
+  enamed_declarations * Environ.env * (identifier * value) list *
     (int * constr) list * goal sigma option * debug_info
 
 (* Gives the constr corresponding to a CONSTR [tactic_arg] *)
@@ -45,7 +45,7 @@ val tacticIn : (unit -> Coqast.t) -> Coqast.t
    initialized with dummy values *)
 val r_evc     : enamed_declarations ref
 val r_env     : Environ.env ref
-val r_lfun    : (string * value) list ref
+val r_lfun    : (identifier * value) list ref
 val r_lmatch  : (int * constr) list ref
 val r_goalopt : goal sigma option ref
 val r_debug   : debug_info ref
@@ -57,7 +57,7 @@ val set_debug : debug_info -> unit
 val get_debug : unit -> debug_info
 
 (* Adds a definition for tactics in the table *)
-val add_tacdef : string -> Coqast.t -> unit
+val add_tacdef : identifier -> Coqast.t -> unit
 
 (* Interprets any expression *)
 val val_interp : interp_sign -> Coqast.t -> value
@@ -66,8 +66,8 @@ val val_interp : interp_sign -> Coqast.t -> value
 val interp_tacarg : interp_sign -> Coqast.t -> tactic_arg
 
 (* Interprets tactic expressions *)
-val tac_interp : (string * value) list -> (int * constr) list -> debug_info ->
-                 Coqast.t -> tactic
+val tac_interp : (identifier * value) list -> (int * constr) list ->
+                 debug_info -> Coqast.t -> tactic
 
 (* Initial call for interpretation *)
 val interp : Coqast.t -> tactic

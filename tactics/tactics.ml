@@ -1823,7 +1823,7 @@ let abstract_subproof name tac gls =
   in
   if occur_existential concl then error "Abstract cannot handle existentials";
   let lemme =
-    start_proof na Declare.NeverDischarge current_sign concl;
+    start_proof na NeverDischarge current_sign concl;
     let _,(const,strength) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 

@@ -100,7 +100,8 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 let uri_of_path sp tag =
  let module N = Names in
   let ext_of_sp sp = ext_of_tag tag in
-   "cic:/" ^ (String.concat "/" (N.wd_of_sp sp)) ^ "." ^ (ext_of_sp sp)
+  let dir = List.map N.string_of_id (N.wd_of_sp sp) in
+   "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_sp sp)
 ;;
 
 let string_of_sort =
@@ -795,8 +796,8 @@ let mkfilename dn sp ext =
    match dn with
       None         -> None
     | Some basedir ->
-       Some (basedir ^ join_dirs basedir (N.wd_of_sp sp) ^
-        "." ^ ext)
+	let dir = List.map N.string_of_id (N.wd_of_sp sp) in
+       Some (basedir ^ join_dirs basedir dir ^ "." ^ ext)
 ;;
 
 (* print_object leaf_object id section_path directory_name formal_vars      *)
@@ -914,9 +915,10 @@ and print_node n id sp bprintleaf dn =
            print_if_verbose ("Suppongo gia' stampato " ^ Names.string_of_id id ^ "\n")
           end
        end
-   | L.OpenedSection (s,_) -> print_if_verbose ("OpenDir " ^ s ^ "\n")
-   | L.ClosedSection (_,s,state) ->
-      print_if_verbose("ClosedDir " ^ s ^ "\n") ;
+   | L.OpenedSection (id,_) ->
+       print_if_verbose ("OpenDir " ^ Names.string_of_id id ^ "\n")
+   | L.ClosedSection (_,id,state) ->
+      print_if_verbose("ClosedDir " ^ Names.string_of_id id ^ "\n") ;
       if bprintleaf then
        begin
         (* open a new scope *)
@@ -963,12 +965,12 @@ let printModule id dn =
  let module X = Xml in
   let str = N.string_of_id id in 
   let sp = Lib.make_path id N.OBJ in
-  let ls = L.module_segment (Some str) in
+  let ls = L.module_segment (Some [id]) in
    print_if_verbose ("MODULE_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
-    (snd (L.module_filename str)) ^ "\n") ;
+    (L.module_full_filename [id]) ^ "\n") ;
    print_closed_section str (List.rev ls) dn ;
    print_if_verbose ("MODULE_END " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
-    (snd (L.module_filename str)) ^ "\n")
+    (L.module_full_filename [id]) ^ "\n")
 ;;
 
 (* printSection identifier directory_name                                    *)
@@ -982,18 +984,18 @@ let printSection id dn =
  let module L = Library in
  let module N = Names in
  let module X = Xml in
-  let str = N.string_of_id id in 
   let sp = Lib.make_path id N.OBJ in
   let ls =
    let rec find_closed_section =
     function
        [] -> raise Not_found
-     | (_,Lib.ClosedSection (_,str',ls))::_ when str' = str -> ls
+     | (_,Lib.ClosedSection (_,id',ls))::_ when id' = id -> ls
      | _::t -> find_closed_section t
    in
     print_string ("Searching " ^ Names.string_of_path sp ^ "\n") ;
     find_closed_section (Lib.contents_after None)
   in
+  let str = N.string_of_id id in 
    print_if_verbose ("SECTION_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ "\n");
    print_closed_section str ls dn ;
    print_if_verbose ("SECTION_END " ^ str ^ " " ^ N.string_of_path sp ^ "\n")

@@ -108,15 +108,17 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
     let sp = sp_of_global env ref in
     let sl = dirpath sp in
     let rec filter_aux = function
-      | m :: tl -> (not (dirpath_prefix_of m sl)) && (filter_aux tl)
+      | m :: tl -> (not (is_dirpath_prefix_of m sl)) && (filter_aux tl)
       | [] -> true 
     in
     xor accept (filter_aux module_list)
   with No_section_path -> 
     false
 
-let gref_eq = IndRef (make_path ["Coq";"Init";"Logic"] (id_of_string "eq") CCI, 0)
-let gref_eqT = IndRef (make_path ["Coq";"Init";"Logic_Type"] (id_of_string "eqT") CCI, 0)
+let gref_eq =
+  IndRef (make_path Coqlib.logic_module (id_of_string "eq") CCI, 0)
+let gref_eqT =
+  IndRef (make_path Coqlib.logic_type_module (id_of_string "eqT") CCI, 0)
 
 let mk_rewrite_pattern1 eq pattern =
   PApp (PRef eq, [| PMeta None; pattern; PMeta None |])

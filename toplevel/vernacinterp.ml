@@ -82,10 +82,8 @@ let rec cvt_varg ast =
 	VARG_VARGLIST (List.map cvt_varg l)
     | Node(_,"VERNACCALL",(Str (_,na))::l) ->
         VCALL (na,List.map cvt_varg l)
-    | Node(_,"VERNACCALL",(Id (_,na))::l) ->
-        VCALL (na,List.map cvt_varg l)
 
-    | Nvar(_,s) -> VARG_IDENTIFIER (id_of_string s)
+    | Nvar(_,id) -> VARG_IDENTIFIER id
     | Node(loc,"QUALIDARG",p) -> VARG_QUALID (Astterm.interp_qualid p)
     | Node(loc,"QUALIDCONSTARG",p) ->
 	let q = Astterm.interp_qualid p in
@@ -94,13 +92,14 @@ let rec cvt_varg ast =
 	  with Not_found -> Nametab.error_global_not_found_loc loc q
 	in VARG_CONSTANT sp
     | Str(_,s) -> VARG_STRING s
+    | Id(_,s) -> VARG_STRING s
     | Num(_,n) -> VARG_NUMBER n
     | Node(_,"NONE",[]) -> VARG_UNIT
     | Node(_,"CONSTR",[c]) -> VARG_CONSTR c
     | Node(_,"CONSTRLIST",l) -> VARG_CONSTRLIST l
     | Node(_,"TACTIC",[c]) -> VARG_TACTIC c
     | Node(_,"BINDER",c::idl) ->
-        VARG_BINDER(List.map (compose id_of_string nvar_of_ast) idl, c)
+        VARG_BINDER(List.map nvar_of_ast idl, c)
     | Node(_,"BINDERLIST",l) ->
         VARG_BINDERLIST
           (List.map (compose (function 

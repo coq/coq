@@ -26,6 +26,7 @@ open Impargs
 open Classops
 open Class
 open Recordops
+open Library
 
 let recalc_sp dir sp =
   let (_,spid,k) = repr_path sp in Names.make_path dir spid k
@@ -169,6 +170,7 @@ type discharge_operation =
   | Struc of inductive_path * (unit -> struc_typ)
   | Objdef of constant_path
   | Coercion of coercion_entry
+  | Require of module_reference
 
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
@@ -179,8 +181,13 @@ let process_object oldenv dir sec_sp
   match tag with
     | "VARIABLE" ->
 	let ((id,c,t),stre,sticky) = get_variable sp in
-	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
+	(* VARIABLE means local (entry Variable/Hypothesis/Local and are *)
+	(* always discharged *)
+(*
+ 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
+*)
 	  (ops,id::ids_to_discard,work_alist)
+(*
 	else
 	  let imp = is_implicit_var sp in
 	  let newdecl =
@@ -194,13 +201,19 @@ let process_object oldenv dir sec_sp
 	  in
 	  (Variable (id,newdecl,stre,sticky,imp) :: ops,
 	   ids_to_discard,work_alist)
+*)
 
     | "CONSTANT" | "PARAMETER" ->
-	let stre = constant_or_parameter_strength sp in
+	(* CONSTANT/PARAMETER means never discharge (though visibility *)
+	(* may vary) *)
+ 	let stre = constant_or_parameter_strength sp in
+(*
 	if stre = (DischargeAt sec_sp) then
-	  let constl = (sp, DO_REPLACE)::constl in
+	  let cb = Environ.lookup_constant sp oldenv in
+	  let constl = (sp, DO_REPLACE cb)::constl in
 	  (ops, ids_to_discard, (constl,indl,cstrl))
 	else
+*)
 	  let cb = Environ.lookup_constant sp oldenv in
 	  let spid = basename sp in
 	  let imp = is_implicit_constant sp in
@@ -209,7 +222,7 @@ let process_object oldenv dir sec_sp
 	    let modl = build_abstract_list cb.const_hyps ids_to_discard in
 	    [ (sp, DO_ABSTRACT(newsp,modl)) ]
 	  in
-	  let r = { d_from = sp;
+	  let r = { d_from = cb;
 		    d_modlist = work_alist;
 		    d_abstract = ids_to_discard } in
 	  let op = Constant (spid,r,stre,cb.const_opaque,imp) in
@@ -255,6 +268,10 @@ let process_object oldenv dir sec_sp
 	let new_sp = recalc_sp dir sp in
         ((Objdef new_sp)::ops, ids_to_discard, work_alist)
 
+    | "REQUIRE" -> 
+	let c = out_require lobj in
+	((Require c)::ops, ids_to_discard, work_alist)
+
     | _ -> (ops,ids_to_discard,work_alist)
 
 let process_item oldenv dir sec_sp acc = function
@@ -284,79 +301,18 @@ let process_operation = function
   | Objdef newsp ->
       begin try Recordobj.objdef_declare (ConstRef newsp) with _ -> () end
   | Coercion y -> add_new_coercion y
+  | Require y -> reload_module y
 
-let push_inductive_names ccitab sp mie =
-  let _,ccitab =
-    List.fold_left
-      (fun (n,ccitab) ind ->
-	 let id = ind.mind_entry_typename in
-	 let indsp = (sp,n) in
-	 let _,ccitab =
-	   List.fold_left
-	     (fun (p,ccitab) x ->
-		(p+1, Idmap.add x (ConstructRef (indsp,p)) ccitab))
-	     (1,Idmap.add id (IndRef indsp) ccitab)
-	     ind.mind_entry_consnames in
-	 (n+1,ccitab))
-      (0,ccitab)
-      mie.mind_entry_inds
-  in ccitab
-
-(*s Operations performed at section closing. *)
-
-let cache_end_section (_,(sp,mc)) =
-  Nametab.push_section sp mc;
-  Nametab.open_section_contents (Nametab.qualid_of_sp sp)
-
-let load_end_section (_,(sp,mc)) =
-  Nametab.push_module sp mc
-
-let open_end_section (_,(sp,_)) =
-  Nametab.rec_open_module_contents (Nametab.qualid_of_sp sp)
-
-let (in_end_section, out_end_section) =
-  declare_object
-    ("END-SECTION",
-     { cache_function = cache_end_section;
-       load_function = load_end_section;
-       open_function = open_end_section;
-       export_function = (fun x -> Some x) })
-
-let rec process_object (ccitab, objtab, modtab as tabs) = function
-  | sp,Leaf obj -> 
-      begin match object_tag obj with
-	| "CONSTANT" | "PARAMETER" ->
-            (Idmap.add (basename sp) (ConstRef sp) ccitab,objtab,modtab)
-	| "INDUCTIVE" ->
-	    let mie = out_inductive obj in
-	    (push_inductive_names ccitab sp mie, objtab, modtab)
-        (* Variables are never visible *)
-	| "VARIABLE" -> tabs
-	| "END-SECTION" ->
-	    let (sp,mc) = out_end_section obj in
-	    let id = string_of_id (basename sp) in
-	    (ccitab, objtab, Stringmap.add id (sp,mc) modtab)
-        (* All the rest is visible only at toplevel ??? *)
-        (* Actually it is unsafe, it should be visible only in empty context *)
-        (* ou quelque chose comme cela *)
-	| "CLASS" | "COERCION" | "STRUCTURE" | "OBJDEF1" | "SYNTAXCONSTANT"
-	| _ ->
-	    (ccitab, Idmap.add (basename sp) (sp,obj) objtab, modtab)
-      end 
-  | _,(ClosedSection _ | OpenedSection _ | FrozenState _ | Module _) ->  tabs
-
-and segment_contents seg =
-  let ccitab, objtab, modtab =
-    List.fold_left process_object
-      (Idmap.empty, Idmap.empty, Stringmap.empty)
-      seg
-  in 
-  Nametab.Closed (ccitab, objtab, modtab)
+let catch_not_found f x =
+  try f x
+  with Not_found ->
+    error ("Something is missing; perhaps a reference to a"^
+    " module required inside the section")
 
 let close_section _ s = 
   let oldenv = Global.env() in
   let sec_sp,decls,fs = close_section false s in
-  let newdir = dirpath (* Trick for HELM *) sec_sp in
+  let newdir = dirpath sec_sp in
   let olddir = wd_of_sp sec_sp in
   let (ops,ids,_) = 
     if Options.immediate_discharge then ([],[],([],[],[]))
@@ -367,14 +323,8 @@ let close_section _ s =
   let ids = last_section_hyps olddir in
   Global.pop_named_decls ids;
   Summary.unfreeze_lost_summaries fs;
-  let mc = segment_contents decls in
-  add_anonymous_leaf (in_end_section (sec_sp,mc));
   add_frozen_state ();
   if Options.immediate_discharge then ()
   else
-    List.iter process_operation (List.rev ops)
-
-let save_module_to s f =
-  Library.save_module_to segment_contents s f
-
-
+    catch_not_found (List.iter process_operation) (List.rev ops);
+  Nametab.push_section olddir

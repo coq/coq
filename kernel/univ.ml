@@ -40,9 +40,12 @@ let string_of_univ u =
 let pr_uni u =
   [< 'sTR (Names.string_of_dirpath u.u_mod) ; 'sTR"." ; 'iNT u.u_num >]
 
-
-let dummy_univ = { u_mod = ["dummy univ"]; u_num = 0 } (* for prover terms *)
-let implicit_univ = { u_mod = ["implicit univ"]; u_num = 0 }
+let dummy_univ =  (* for prover terms *)
+  { u_mod = Names.make_dirpath [Names.id_of_string "dummy_univ"];
+    u_num = 0 }
+let implicit_univ =
+  { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
+    u_num = 0 }
 
 let current_module = ref []
 
@@ -83,7 +86,7 @@ let declare_univ u g =
 (* The universes of Prop and Set: Type_0, Type_1 and the
    resulting graph. *)
 let (initial_universes,prop_univ,prop_univ_univ) =
-  let prop_sp = ["prop_univ"] in
+  let prop_sp = Names.make_dirpath [Names.id_of_string "prop_univ"] in
   let u = { u_mod = prop_sp; u_num = 0 } in
   let su = { u_mod = prop_sp; u_num = 1 } in
   let g = enter_arc (terminal u) UniverseMap.empty in
@@ -430,7 +433,7 @@ module Huniv =
   Hashcons.Make(
     struct
       type t = universe
-      type u = string -> string
+      type u = Names.identifier -> Names.identifier
       let hash_sub hstr {u_mod=sp; u_num=n} = 
 	{u_mod=List.map hstr sp; u_num=n}
       let equal {u_mod=sp1; u_num=n1} {u_mod=sp2; u_num=n2} =
@@ -441,5 +444,6 @@ module Huniv =
 
 
 let hcons1_univ u =
-  let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
-  Hashcons.simple_hcons Huniv.f hstring u
+  let _,_,_,hid,_ = Names.hcons_names () in
+  Hashcons.simple_hcons Huniv.f hid u
+

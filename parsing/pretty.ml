@@ -18,6 +18,7 @@ open Sign
 open Reduction
 open Environ
 open Instantiate
+open Library
 open Declare
 open Impargs
 open Libobject
@@ -340,12 +341,13 @@ let rec print_library_entry with_values ent =
   match ent with
     | (sp,Lib.Leaf lobj) -> 
 	[< print_leaf_entry with_values sep (sp,lobj) >]
-    | (_,Lib.OpenedSection (id,_)) -> 
-        [< 'sTR " >>>>>>> Section "; pr_id id; 'fNL >]
+    | (_,Lib.OpenedSection (str,_)) -> 
+        [< 'sTR(" >>>>>>> Section "^(string_of_id str)); 'fNL >]
     | (sp,Lib.ClosedSection _) -> 
-        [< 'sTR " >>>>>>> Closed Section "; pr_id (basename sp); 'fNL >]
+        [< 'sTR" >>>>>>> Closed Section "; pr_id (basename sp);
+	   'fNL >]
     | (_,Lib.Module dir) ->
-	[< 'sTR " >>>>>>> Module "; pr_dirpath dir; 'fNL >]
+	[< 'sTR(" >>>>>>> Module " ^ (string_of_dirpath dir)); 'fNL >]
     | (_,Lib.FrozenState _) ->
 	[< >]
 	
@@ -376,9 +378,7 @@ let list_filter_vec f vec =
   frec (Array.length vec -1) []
 
 let read_sec_context qid =
-  let dir =
-    try Nametab.locate_section qid
-    with Not_found -> error "Unknown section" in
+  let dir = Nametab.locate_section qid in
   let rec get_cxt in_cxt = function
     | ((sp,Lib.OpenedSection (_,_)) as hd)::rest ->
 	let dir' = make_dirpath (wd_of_sp sp) in

@@ -17,9 +17,14 @@ open Ast
 
 let get_z_sign loc =
   let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
-  ((ast_of_id "xI", ast_of_id "xO", ast_of_id "xH"),
-   (ast_of_id "ZERO", ast_of_id "POS", ast_of_id "NEG"),
-   (ast_of_id "My_special_variable0", ast_of_id "My_special_variable1"))
+  ((ast_of_id (id_of_string "xI"),
+    ast_of_id (id_of_string "xO"),
+    ast_of_id (id_of_string "xH")),
+   (ast_of_id (id_of_string "ZERO"), 
+    ast_of_id (id_of_string "POS"),
+    ast_of_id (id_of_string "NEG")),
+   (ast_of_id (id_of_string "My_special_variable0"), 
+    ast_of_id (id_of_string "My_special_variable1")))
   
 let int_array_of_string s =
   let a = Array.create (String.length s) 0 in

@@ -120,23 +120,19 @@ let subst_in_constr alist =
   replace_vars alist'
 
 let subst_in_ast alist ast =
-  let alist' = 
-    List.map (fun (id,id') -> (string_of_id id,string_of_id id')) alist in
   let rec subst = function
-      Nvar(l,s) -> Nvar(l,try List.assoc s alist' with Not_found -> s)
+      Nvar(l,s) -> Nvar(l,try List.assoc s alist with Not_found -> s)
     | Node(l,s,args) -> Node(l,s,List.map subst args)
-    | Slam(l,so,a) -> Slam(l,so,subst a) (* TODO:enlever so de alist' ? *)
+    | Slam(l,so,a) -> Slam(l,so,subst a) (* TODO:enlever so de alist ? *)
     | x -> x
   in
     subst ast
 
 let subst_ast_in_ast alist ast =
-  let alist' = 
-    List.map (fun (id,a) -> (string_of_id id,a)) alist in
   let rec subst = function
-      Nvar(l,s) as x -> (try List.assoc s alist' with Not_found -> x)
+      Nvar(l,s) as x -> (try List.assoc s alist with Not_found -> x)
     | Node(l,s,args) -> Node(l,s,List.map subst args)
-    | Slam(l,so,a) -> Slam(l,so,subst a) (* TODO:enlever so de alist' ? *)
+    | Slam(l,so,a) -> Slam(l,so,subst a) (* TODO:enlever so de alist ? *)
     | x -> x
   in
     subst ast
@@ -146,7 +142,8 @@ let real_subst_in_constr = replace_vars
 
 (* Coq constants *)
 
-let coq_constant d s = make_path ("Coq" :: d) (id_of_string s) CCI
+let coq_constant d s =
+  make_path (List.map id_of_string ("Coq" :: d)) (id_of_string s) CCI
 
 let bool_sp = coq_constant ["Init"; "Datatypes"] "bool"
 let coq_true = mkMutConstruct (((bool_sp,0),1), [||])

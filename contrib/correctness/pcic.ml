@@ -48,7 +48,7 @@ let tuple_n n =
       (fun i -> 
 	 let id = id_of_string 
 		    ("proj_" ^ string_of_int n ^ "_" ^ string_of_int i) in
-	 (false, (id, true, Ast.nvar ("T" ^ string_of_int i))))
+	 (false, (id, true, Ast.nvar (id_of_string ("T" ^ string_of_int i)))))
       l1n 
   in
   let cons = id_of_string ("Build_tuple_" ^ string_of_int n) in

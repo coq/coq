@@ -220,7 +220,7 @@ let recognize_number t =
  This is the right way to access to Coq constants in tactics ML code *)
 
 let constant dir s =
-  let dir = "Coq"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::dir)) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id
@@ -384,7 +384,7 @@ let coq_imp_simp = lazy (logic_constant ["Decidable"] "imp_simp")
 (* Section paths for unfold *)
 open Closure
 let make_coq_path dir s =
-  let dir = "Coq"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::dir)) in
   let id = id_of_string s in
   let ref = 
     try Nametab.locate_in_absolute_module dir id 

@@ -223,6 +223,13 @@ let rec list_distinct = function
   | h::t -> (not (List.mem h t)) && list_distinct t
   | _ -> true
 
+let rec list_filter2 f = function
+  | [], [] as p -> p
+  | d::dp, l::lp ->
+     let (dp',lp' as p) = list_filter2 f (dp,lp) in
+      if f d l then d::dp', l::lp' else p
+  | _ -> invalid_arg "list_filter2"
+
 let list_subset l1 l2 =
   let t2 = Hashtbl.create 151 in
   List.iter (fun x -> Hashtbl.add t2 x ()) l2;

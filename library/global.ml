@@ -31,7 +31,7 @@ let _ =
     { freeze_function = (fun () -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
       init_function = (fun () -> global_env := empty_environment);
-      survive_section = true }
+      survive_section = false }
 
 (* Then we export the functions of [Typing] on that environment. *)
 

@@ -10,17 +10,18 @@
 
 open Coqast
 open Pcoq
-
+open Names
 open Prim
 
 GEXTEND Gram
-  GLOBAL: var ident metaident number string path ast astpat astact entry_type;
+  GLOBAL: var ident metaident number string (*path*) ast astpat
+  astact entry_type;
 
-  var:
-    [ [ s = IDENT -> Nvar(loc,s) ] ]
-  ;
   metaident:
-    [ [ s = METAIDENT -> Nvar(loc,s) ] ]
+    [ [ s = METAIDENT -> Nmeta(loc,s) ] ]
+  ;
+  var:
+    [ [ s = IDENT -> Nvar(loc, id_of_string s) ] ]
   ;
   ident:
     [ [ s = IDENT -> Id(loc,s) ] ]
@@ -32,31 +33,54 @@ GEXTEND Gram
     [ [ s = STRING -> Str(loc,s) ] ]
   ;
   astpath:
-    [ [ (l,pk) = astqualid -> Path(loc,l,pk) ] ]
+    [ [ id = IDENT; (l,a) = astfields -> 
+          Path(loc, make_path (make_dirpath (id_of_string id :: l)) a CCI)
+      | id = IDENT ->
+	  Path(loc, make_path (make_dirpath [])  (id_of_string id) Names.CCI)
+      ] ]
   ;
-  astqualid:
-    [ [ "#"; l = LIST1 IDENT SEP "#"; "."; pk = IDENT -> (l, pk) ] ]
+  astfields:
+    [ [ id = FIELD; (l,a) = astfields -> id_of_string id :: l, a
+      | id = FIELD -> [], id_of_string id
+      ] ]
   ;
   astident:
-    [ [ s = IDENT -> s 
-      | s = METAIDENT -> s ] ]
+    [ [ s = IDENT -> s ] ]
   ;
   (* ast *)
   ast:
-    [ [ id = astident -> Nvar(loc,id)
-      | s = INT -> Num(loc, int_of_string s)
-      | s = STRING -> Str(loc,s)
+    [ [ id = metaident -> id
       | p = astpath -> p
-      | "{"; s = IDENT; "}" -> Id(loc,s)
+      | s = INT -> Num(loc, int_of_string s)
+      | s = STRING -> Str(loc, s)
+      | "{"; s = METAIDENT; "}" -> Id(loc,s)
       | "("; nname = astident; l = LIST0 ast; ")" -> Node(loc,nname,l)
+      | "("; METAIDENT "$LIST"; id = metaident; ")" -> Node(loc,"$LIST",[id])
+      | "("; METAIDENT "$STR"; id = metaident; ")" -> Node(loc,"$STR",[id])
+      | "("; METAIDENT "$VAR"; id = metaident; ")" -> Node(loc,"$VAR",[id])
+      | "("; METAIDENT "$ID"; id = metaident; ")" -> Node(loc,"$ID",[id])
+      | "("; METAIDENT "$ABSTRACT"; l = LIST0 ast;")"->Node(loc,"$ABSTRACT",l)
+      | "("; METAIDENT "$PATH"; id = metaident; ")" -> Node(loc,"$PATH",[id])
+      | "("; METAIDENT "$NUM"; id = metaident; ")" -> Node(loc,"$NUM",[id])
+      | "["; "<>"; "]"; b = ast -> Slam(loc,None,b)
+      | "["; a = ast; "]"; b = ast ->
+	  (match a with
+	    | Nvar (_,id) -> Slam(loc,Some id,b)
+	    | Nmeta (_,s) -> Smetalam(loc,s,b)
+	    | _ -> failwith "Slam expects a var or a metavar")
+
+(*
       | "["; ido = astidoption; "]"; b = ast -> Slam(loc,ido,b)
+      | "["; id = METAIDENT; "]"; b = ast -> Smetalam(loc,id,b)
+*)
       | "'"; a = ast -> Node(loc,"$QUOTE",[a]) ] ]
   ;
+(*
   astidoption:
     [ [ "<>" -> None
-      | id = astident -> Some id ] ]
+      | id = IDENT -> Some (id_of_string id) ] ]
   ;
-
+*)
   (* meta-syntax entries *)
   astpat:
     [ [ "<<" ; a = ast; ">>" -> Node loc "ASTPAT" [a]

@@ -14,6 +14,7 @@ open Options
 open Names
 open Environ
 open Libobject
+open Library
 open Declare
 open Term
 open Rawterm
@@ -30,7 +31,7 @@ let cte_of_constr c = match kind_of_term c with
   | IsConst (sp,_) -> ConstRef sp
   | IsMutInd (ind_sp,_) -> IndRef ind_sp
   | IsMutConstruct (cstr_cp,_) -> ConstructRef cstr_cp
-  | IsVar id -> VarRef (find_section_variable id)
+  | IsVar id -> VarRef (Declare.find_section_variable id)
   |  _ -> raise Not_found
 
 type cl_typ = 

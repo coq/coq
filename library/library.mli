@@ -20,14 +20,15 @@ open Libobject
    provides a high level function [require] which corresponds to the 
    vernacular command [Require]. *)
 
-val load_module : string -> string option -> unit
-val import_module : string -> unit
+val read_module : Nametab.qualid -> unit
+val read_module_from_file : System.physical_path -> unit
+val import_module : dir_path -> unit
 
-val module_is_loaded : string -> bool
+val module_is_loaded : dir_path -> bool
 val module_is_opened : string -> bool
 
-val loaded_modules : unit -> string list
-val opened_modules : unit -> string list
+val loaded_modules : unit -> dir_path list
+val opened_modules : unit -> dir_path list
 
 val fmt_modules_state : unit -> Pp.std_ppcmds
 
@@ -37,21 +38,21 @@ val fmt_modules_state : unit -> Pp.std_ppcmds
   ([false]), if not [None]. And [export] specifies if the module must be 
   exported. *)
 
-val require_module : bool option -> string -> string option -> bool -> unit
+val require_module :
+  bool option -> Nametab.qualid -> string option -> bool -> unit
 
 (*s [save_module_to s f] saves the current environment as a module [s]
   in the file [f]. *)
 
-val save_module_to : (Lib.library_segment -> Nametab.module_contents) -> 
-  string -> string -> unit
+val save_module_to : dir_path -> string -> unit
 
 (*s [module_segment m] returns the segment of the loaded module
     [m]; if not given, the segment of the current module is returned
     (which is then the same as [Lib.contents_after None]). 
-    [module_filename] returns the full filename of a loaded module. *)
+    [module_full_filename] returns the full filename of a loaded module. *)
 
-val module_segment : string option -> Lib.library_segment
-val module_filename : string -> System.load_path_entry * string
+val module_segment : dir_path option -> Lib.library_segment
+val module_full_filename : dir_path -> string
 
 (*s [fold_all_segments] and [iter_all_segments] iterate over all
     segments, the modules' segments first and then the current
@@ -63,10 +64,28 @@ val fold_all_segments : bool -> ('a -> section_path -> obj -> 'a) -> 'a -> 'a
 val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
 
 (*s Global load path *)
-val get_load_path : unit -> System.load_path
-val add_load_path_entry : System.load_path_entry -> unit
-val remove_path : string -> unit
+type logical_path = dir_path
+
+val get_load_path : unit -> System.physical_path list
+val get_full_load_path : unit -> (System.physical_path * logical_path) list
+val add_load_path_entry : System.physical_path * logical_path -> unit
+val remove_path : System.physical_path -> unit
+val find_logical_path : System.physical_path -> logical_path
+val load_path_of_logical_path : dir_path -> System.physical_path list
+
+exception LibUnmappedDir
+exception LibNotFound
+type library_location = LibLoaded | LibInPath
+
+val locate_qualified_library :
+  Nametab.qualid -> library_location * dir_path * System.physical_path
 
 (*s Displays the memory use of a module. *)
 
-val mem : string -> Pp.std_ppcmds
+val mem : dir_path -> Pp.std_ppcmds
+
+(* For discharge *)
+type module_reference
+
+val out_require : Libobject.obj -> module_reference
+val reload_module : module_reference -> unit

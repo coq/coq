@@ -49,7 +49,7 @@ Grammar tactic simple_tactic: ast :=
 
 | inv_using [ inversion_com($ic) identarg($id) "using" constrarg($c) ]
      -> case [$ic] of
-          Inversion -> [(UseInversionLemma $id $c)]
+          "Inversion" -> [(UseInversionLemma $id $c)]
         esac
 
 | inv_num_using [ inversion_com($ic) pure_numarg($n) "using" constrarg($c) ]
@@ -61,13 +61,13 @@ Grammar tactic simple_tactic: ast :=
    [ inversion_com($ic) identarg($id) "using" constrarg($c)
      "in" ne_identarg_list($l) ]
      -> case [$ic] of
-          Inversion -> [(UseInversionLemmaIn $id $c ($LIST $l))]
+          "Inversion" -> [(UseInversionLemmaIn $id $c ($LIST $l))]
         esac
 
 with inversion_com: ast :=
-  simple_inv    [ "Simple" "Inversion" ] -> [ HalfInversion ]
-| inversion_com [ "Inversion" ] -> [ Inversion ]
-| inv_clear     [ "Inversion_clear" ] -> [ InversionClear ].
+  simple_inv    [ "Simple" "Inversion" ] -> [ "HalfInversion" ]
+| inversion_com [ "Inversion" ] -> [ "Inversion" ]
+| inv_clear     [ "Inversion_clear" ] -> [ "InversionClear" ].
 
 
 Grammar vernac vernac: ast :=

@@ -143,11 +143,11 @@ let print_located_qualid qid =
   with Not_found ->
     error ((Nametab.string_of_qualid qid) ^ " not a defined object")
 
-let print_path_entry s =
-  [< 'sTR s.directory; 'tBRK (0,2); 'sTR (string_of_dirpath s.coq_dirpath) >]
+let print_path_entry (s,l) =
+  [< 'sTR s; 'tBRK (0,2); 'sTR (string_of_dirpath l) >]
 
 let print_loadpath () =
-  let l = Library.get_load_path () in
+  let l = Library.get_full_load_path () in
   mSGNL (Pp.t [< 'sTR "Physical path:                                 ";
 		 'tAB; 'sTR "Logical Path:"; 'fNL; 
 		 prlist_with_sep pr_fnl print_path_entry l >])
@@ -169,11 +169,29 @@ let _ =
        | [VARG_STRING f] -> (fun () -> locate_file f)
        | _ -> bad_vernac_args "LocateFile")
 
+let msg_found_library = function
+  | Library.LibLoaded, fulldir, file ->
+      mSG [< pr_dirpath fulldir; 'sTR " has been loaded from file"; 'fNL;
+      'sTR file; 'fNL >]
+  | Library.LibInPath, fulldir, file ->
+      mSG [< pr_dirpath fulldir; 'sTR " is bound to file "; 'sTR file; 'fNL >]
+
+let msg_notfound_library qid = function
+  | Library.LibUnmappedDir ->
+      let dir = fst (Nametab.repr_qualid qid) in
+      mSG [< 'sTR "No physical path is bound to "; pr_dirpath dir; 'fNL >]
+  | Library.LibNotFound ->
+      mSG (hOV 0 
+	[< 'sTR"Unable to locate library"; 'sPC; Nametab.pr_qualid qid; 'fNL >])
+  | _ -> assert false
+
 let _ = 
   add "LocateLibrary"
     (function 
-       | [VARG_IDENTIFIER id] ->
-	   (fun () -> locate_file ((string_of_id id)^".vo"))
+       | [VARG_QUALID qid] ->
+	   (fun () ->
+	     try msg_found_library (Library.locate_qualified_library qid)
+	     with e -> msg_notfound_library qid e)
        | _ -> bad_vernac_args "LocateLibrary")
 
 let _ = 
@@ -187,10 +205,10 @@ let _ =
   add "ADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   (fun () -> Mltop.add_path dir [Nametab.default_root])
+	   (fun () -> Mltop.add_path dir Nametab.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
-	    (fun () -> Mltop.add_path dir (aliasdir@[string_of_id aliasname]))
+	   (fun () -> Mltop.add_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "ADDPATH")
 
 (* For compatibility *)
@@ -204,13 +222,10 @@ let _ =
   add "RECADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   (fun () -> Mltop.add_rec_path dir [Nametab.default_root])
+	   (fun () -> Mltop.add_rec_path dir Nametab.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
-	    (fun () ->
-	       let alias = aliasdir@[string_of_id aliasname] in
-	       Mltop.add_rec_path dir alias;
-	       Nametab.push_library_root (List.hd alias))
+	    (fun () -> Mltop.add_rec_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "RECADDPATH")
 
 (* For compatibility *)
@@ -316,34 +331,37 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] ->
 	   let s = string_of_id id in
-	   let lpe,_ = 
-	     System.find_file_in_path (Library.get_load_path ()) (s^".v") in
-	   fun () -> Lib.start_module (lpe.coq_dirpath @ [s])
+	   let lpe,_ = System.find_file_in_path (Library.get_load_path ()) (s^".v") in
+	   let dir = (Library.find_logical_path lpe) @ [id] in
+	   fun () ->
+	     Lib.start_module dir
        | _ -> bad_vernac_args "BeginModule")
 
 let _ =
   add "WriteModule"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   fun () -> let m = string_of_id id in Discharge.save_module_to m m
+	   let mid = Lib.end_module id in
+	   fun () -> let m = string_of_id id in Library.save_module_to mid m
        | [VARG_IDENTIFIER id; VARG_STRING f] ->
-	   fun () -> Discharge.save_module_to (string_of_id id) f
+	   let mid = Lib.end_module id in
+	   fun () -> Library.save_module_to mid f
        | _ -> bad_vernac_args "WriteModule")
 
 let _ =
   add "ReadModule"
     (function 
-       | [VARG_IDENTIFIER id] ->
-	   fun () -> 
-	     without_mes_ambig Library.load_module (string_of_id id) None
+       | [VARG_QUALID qid] ->
+	   fun () -> without_mes_ambig Library.read_module qid
        | _ -> bad_vernac_args "ReadModule")
 
 let _ =
   add "ImportModule"
     (function 
-       | [VARG_IDENTIFIER id] ->
-	   fun () -> 
-	     without_mes_ambig Library.import_module (string_of_id id)
+       | [VARG_QUALID qid] ->
+	   fun () ->
+	     let fullname = Nametab.locate_loaded_library qid in 
+	     without_mes_ambig Library.import_module fullname
        | _ -> bad_vernac_args "ImportModule")
 
 let _ =
@@ -354,12 +372,10 @@ let _ =
               let opened = Library.opened_modules ()
 	      and loaded = Library.loaded_modules () in
               mSG [< 'sTR"Loaded Modules: ";
-		     hOV 0 (prlist_with_sep pr_fnl 
-			      (fun s -> [< 'sTR s >]) loaded);
+		     hOV 0 (prlist_with_sep pr_fnl pr_dirpath loaded);
 		     'fNL;
 		     'sTR"Imported (open) Modules: ";
-		     hOV 0 (prlist_with_sep pr_fnl
-			      (fun s -> [< 'sTR s >]) opened); 
+		     hOV 0 (prlist_with_sep pr_fnl pr_dirpath opened); 
 		     'fNL >])
        | _ -> bad_vernac_args "PrintModules")
 
@@ -369,7 +385,7 @@ let _ =
   add "BeginSection"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   (fun () -> let _ = Lib.open_section (string_of_id id) in ())
+	   (fun () -> let _ = Lib.open_section id in ())
        | _ -> bad_vernac_args "BeginSection")
 
 let _ =
@@ -378,7 +394,7 @@ let _ =
        | [VARG_IDENTIFIER id] ->
 	   (fun () ->
 	      check_no_pending_proofs ();
-              Discharge.close_section (is_verbose ()) (string_of_id id))
+              Discharge.close_section (is_verbose ()) id)
        | _ -> bad_vernac_args "EndSection")
 
 (* Proof switching *)
@@ -602,7 +618,7 @@ let _ =
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
 	      if_verbose show_script ();
-              save_anonymous false (string_of_id id))
+              save_anonymous false id)
        | _ -> bad_vernac_args "DefinedAnonymous")
 
 let _ =
@@ -612,11 +628,11 @@ let _ =
 	   (fun () -> 
 	      let (strength, opacity) = interp_definition_kind kind in
 	      if_verbose show_script ();
-              save_anonymous_with_strength strength opacity (string_of_id id))
+              save_anonymous_with_strength strength opacity id)
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
 	      if_verbose show_script ();
-              save_anonymous true (string_of_id id))
+              save_anonymous true id)
        | _ -> bad_vernac_args "SaveAnonymous")
 
 let _ =
@@ -859,7 +875,7 @@ let _ =
 let _ =
   add "TheoremProof"
     (function 
-       | [VARG_STRING kind; VARG_IDENTIFIER s; 
+       | [VARG_STRING kind; VARG_IDENTIFIER id;
 	  VARG_CONSTR com; VARG_VARGLIST coml] ->
 	   let calls = List.map
 			 (function 
@@ -872,7 +888,7 @@ let _ =
               try
             	States.with_heavy_rollback
 		  (fun () ->
-                     start_proof_com (Some s) stre com;
+                     start_proof_com (Some id) stre com;
                      if_verbose show_open_subgoals ();
                      List.iter Vernacinterp.call calls;
                      if_verbose show_script ();
@@ -884,19 +900,19 @@ let _ =
                                 const_entry_type = _},_)) = cook_proof () in
                        let cutt = vernac_tactic ("Cut",[Constr csr])
                        and exat = vernac_tactic ("Exact",[Constr pft]) in
-                       delete_proof s;
-                       by (tclTHENS cutt [introduction s;exat]))
+                       delete_proof id;
+                       by (tclTHENS cutt [introduction id;exat]))
 		  ()
               with e ->
             	if (is_unsafe "proof") && not (kind = "LETTOP") then begin
-                  mSGNL [< 'sTR "Warning: checking of theorem "; pr_id s;
+                  mSGNL [< 'sTR "Warning: checking of theorem "; pr_id id;
                            'sPC; 'sTR "failed";
                            'sTR "... converting to Axiom" >];
-                  delete_proof s;
-                  let _ = parameter_def_var (string_of_id s) com in ()
+                  delete_proof id;
+                  let _ = parameter_def_var id com in ()
            	end else 
 		  errorlabstrm "Vernacentries.TheoremProof"
-                    [< 'sTR "checking of theorem "; pr_id s; 'sPC;
+                    [< 'sTR "checking of theorem "; pr_id id; 'sPC;
                        'sTR "failed... aborting" >])
        | _ -> bad_vernac_args "TheoremProof")
 
@@ -961,12 +977,9 @@ let _ =
 	     List.iter 
 	       (fun (sl,c) -> 
 		  List.iter 
-		    (fun s ->
-                       let ref = 
-			 hypothesis_def_var 
-			   (refining()) (string_of_id s) stre c in
-                       if coe then
-			 Class.try_add_new_coercion ref stre)
+		    (fun id ->
+                       let ref = hypothesis_def_var (refining()) id stre c in
+                       if coe then Class.try_add_new_coercion ref stre)
                     sl)
 	       slcl
        | _ -> bad_vernac_args "VARIABLE")
@@ -982,7 +995,7 @@ let _ =
 	       (fun (sl,c) ->
 		  List.iter 
 		    (fun s -> 
-		       let _ = parameter_def_var (string_of_id s) c in ())
+		       let _ = parameter_def_var s c in ())
 		    sl)
                slcl
        | _ -> bad_vernac_args "PARAMETER")
@@ -1018,7 +1031,7 @@ let _ =
 
 let extract_qualid = function 
   | VARG_QUALID qid ->
-      (try wd_of_sp (fst (Nametab.locate_module qid))
+      (try Nametab.locate_loaded_library qid
        with Not_found -> 
 	 error ("Module/section "^(Nametab.string_of_qualid qid)^" not found"))
   | _ -> bad_vernac_args "extract_qualid"
@@ -1196,7 +1209,7 @@ let _ =
 		  | _ -> bad_vernac_args "RECORD")
                cfs in
            let const = match namec with 
-             | [] -> (id_of_string ("Build_"^(string_of_id struc)))
+             | [] -> add_prefix "Build_" struc
              | [VARG_IDENTIFIER id] -> id 
              | _ -> bad_vernac_args "RECORD" in
            let iscoe = (coe = "COERCION") in
@@ -1276,27 +1289,10 @@ let _ =
 	      syntax_definition id (aux com n))
        | _ -> bad_vernac_args "SyntaxMacro")
 
-(***
-let _ =
-  add "ABSTRACTION"
-    (function 
-       | (VARG_IDENTIFIER id) :: (VARG_CONSTR com) :: l ->
-	   (fun () ->
-              let arity = 
-		Array.of_list
-		  (List.map (function | (VARG_NUMBER n) -> n
-                               | _ -> bad_vernac_args "") l)
-              in 
-	      abstraction_definition id arity com;
-              if_verbose
-                message ((string_of_id id)^" is now an abstraction"))
-       | _ -> bad_vernac_args "ABSTRACTION")
-***)
-
 let _ =
   add "Require"
     (function 
-       | [VARG_STRING import; VARG_STRING specif; VARG_IDENTIFIER id] ->
+       | [VARG_STRING import; VARG_STRING specif; VARG_QUALID qid] ->
 	   fun () -> 
 	     without_mes_ambig 
 	       (Library.require_module 
@@ -1304,7 +1300,7 @@ let _ =
 		     None 
 		   else 
 		     Some (specif="SPECIFICATION"))
-		  (string_of_id id) None)
+		  qid None)
       	       (import="EXPORT") 
        | _ -> bad_vernac_args "Require")
 
@@ -1312,7 +1308,7 @@ let _ =
   add "RequireFrom"
     (function 
        | [VARG_STRING import; VARG_STRING specif;
-      	  VARG_IDENTIFIER id; VARG_STRING filename] ->
+      	  VARG_QUALID qid; VARG_STRING filename] ->
 	   (fun () -> 
 	      without_mes_ambig 
 		(Library.require_module 
@@ -1320,7 +1316,7 @@ let _ =
 		      None 
 		    else 
 		      Some (specif="SPECIFICATION"))
-		   (string_of_id id) (Some filename))
+		   qid (Some filename))
 		(import="EXPORT"))
        | _ -> bad_vernac_args "RequireFrom")
 
@@ -1416,22 +1412,22 @@ let _ =
 let _ =
   add "GRAMMAR"
     (function
-       | [VARG_IDENTIFIER univ; VARG_ASTLIST al] ->
-           (fun () -> Metasyntax.add_grammar_obj (string_of_id univ) al)
+       | [VARG_STRING univ; VARG_ASTLIST al] ->
+           (fun () -> Metasyntax.add_grammar_obj univ al)
        | _ -> bad_vernac_args "GRAMMAR")
 
 let _ =
   add "SYNTAX"
     (function
-       | [VARG_IDENTIFIER whatfor; VARG_ASTLIST sel] ->
-           (fun () -> Metasyntax.add_syntax_obj (string_of_id whatfor) sel)
+       | [VARG_STRING whatfor; VARG_ASTLIST sel] ->
+           (fun () -> Metasyntax.add_syntax_obj whatfor sel)
        | _ -> bad_vernac_args "SYNTAX")
     
 let _ =
   add "TACDEF"
     (let rec tacdef_fun lacc=function
         (VARG_IDENTIFIER name)::(VARG_AST tacexp)::tl ->
-          tacdef_fun ((string_of_id name,tacexp)::lacc) tl
+          tacdef_fun ((name,tacexp)::lacc) tl
        |[] ->
          fun () ->
            List.iter (fun (name,ve) -> Tacinterp.add_tacdef name ve) lacc

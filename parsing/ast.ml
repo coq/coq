@@ -21,11 +21,13 @@ let dummy_loc = (0,0)
 let loc = function
   | Node (loc,_,_) -> loc
   | Nvar (loc,_) -> loc
+  | Nmeta (loc,_) -> loc
   | Slam (loc,_,_) -> loc
+  | Smetalam (loc,_,_) -> loc
   | Num (loc,_) -> loc
   | Id (loc,_) -> loc
   | Str (loc,_) -> loc
-  | Path (loc,_,_) -> loc
+  | Path (loc,_) -> loc
   | Dynamic (loc,_) -> loc
 
 (* building a node with dummy location *)
@@ -36,27 +38,24 @@ let ide s = Id(dummy_loc,s)
 let nvar s = Nvar(dummy_loc,s)
 let num n = Num(dummy_loc,n)
 let str s = Str(dummy_loc,s)
-let path sl s = Path(dummy_loc,sl,s)
+let path sl = Path(dummy_loc,sl)
 let dynamic d = Dynamic(dummy_loc,d)
 
 let rec set_loc loc = function
   | Node(_,op,al) -> Node(loc, op, List.map (set_loc loc) al)
   | Slam(_,idl,b) -> Slam(loc,idl, set_loc loc b)
+  | Smetalam(_,idl,b) -> Smetalam(loc,idl, set_loc loc b)
   | Nvar(_,s) -> Nvar(loc,s)
+  | Nmeta(_,s) -> Nmeta(loc,s)
   | Id(_,s) -> Id(loc,s)
   | Str(_,s) -> Str(loc,s)
   | Num(_,s) -> Num(loc,s)
-  | Path(_,sl,s) -> Path(loc,sl,s)
+  | Path(_,sl) -> Path(loc,sl)
   | Dynamic(_,d) -> Dynamic(loc,d)
 
-let path_section loc sp =
-  let (sl,bn,pk) = repr_path sp in
-  Coqast.Path(loc, sl @ [string_of_id bn], string_of_kind pk)
+let path_section loc sp = Coqast.Path(loc, sp)
 
-let section_path sl k =
-  match List.rev sl with
-    | s::pa -> make_path (List.rev pa) (id_of_string s) (kind_of_string k)
-    | [] -> invalid_arg "section_path"
+let section_path sp = sp
 
 (* ast destructors *)
 let num_of_ast = function
@@ -76,7 +75,7 @@ type pat =
   | Pquote of t
   | Pmeta of string * tok_kind
   | Pnode of string * patlist
-  | Pslam of string option * pat
+  | Pslam of identifier option * pat
   | Pmeta_slam of string * pat
 
 and patlist =
@@ -105,15 +104,16 @@ let rec print_ast ast =
   match ast with
     | Num(_,n) -> [< 'iNT n >]
     | Str(_,s) -> [< 'qS s >]
-    | Path(_,sl,u) -> 
-	[< prlist (fun s -> [< 'sTR"#"; 'sTR s >]) sl; 'sTR"."; 'sTR u >]
+    | Path(_,sl) -> [< pr_sp sl >]
     | Id (_,s) -> [< 'sTR"{" ; 'sTR s ; 'sTR"}" >]
-    | Nvar(_,s) -> [< 'sTR s >]
+    | Nvar(_,s) -> [< pr_id s >]
+    | Nmeta(_,s) -> [< 'sTR s >]
     | Node(_,op,l) ->
         hOV 3 [< 'sTR"(" ; 'sTR op ; 'sPC ; print_astl l; 'sTR")" >]
     | Slam(_,None,ast) -> hOV 1 [< 'sTR"[<>]"; print_ast ast >]
     | Slam(_,Some x,ast) ->
-        hOV 1 [< 'sTR"["; 'sTR x; 'sTR"]"; 'cUT; print_ast ast >]
+        hOV 1 [< 'sTR"["; pr_id x; 'sTR"]"; 'cUT; print_ast ast >]
+    | Smetalam(_,id,ast) -> hOV 1 [< 'sTR id; print_ast ast >]
     | Dynamic(_,d) ->
 	hOV 0 [< 'sTR"<dynamic: "; 'sTR(Dyn.tag d); 'sTR">" >]
 
@@ -137,8 +137,8 @@ let rec print_astpat = function
   | Pnode(op,al) ->
       hOV 2 [< 'sTR"(" ; 'sTR op; 'sPC; print_astlpat al; 'sTR")" >]
   | Pslam(None,b) -> hOV 1 [< 'sTR"[<>]"; 'cUT; print_astpat b >]
-  | Pslam(Some s,b) ->
-      hOV 1 [< 'sTR"["; 'sTR s; 'sTR"]"; 'cUT; print_astpat b >]
+  | Pslam(Some id,b) ->
+      hOV 1 [< 'sTR"["; pr_id id; 'sTR"]"; 'cUT; print_astpat b >]
 
 and print_astlpat = function
   | Pnil -> [< >]
@@ -172,13 +172,19 @@ let check_cast loc a k =
     | _ -> user_err_loc (loc,"Ast.cast_val",
                          [< 'sTR"cast _"; print_ast_cast k; 'sTR"failed" >])
 
-let rec coerce_to_var v = function
-  | Nvar(_,id) -> id
-  | Node(_,"QUALID",[Nvar(_,id)]) -> id
-  | Node(_,"QUALIDARG",[Nvar(_,id)]) -> id
+let rec coerce_to_var = function
+  | Nvar(_,id) as var -> var
+  | Nmeta(_,id) as var -> var
+  | Node(_,"QUALID",[Nvar(_,id) as var]) -> var
+  | Node(_,"QUALIDARG",[Nvar(_,id) as var]) -> var
   | ast -> user_err_loc
         (loc ast,"Ast.coerce_to_var",
          [< 'sTR"This expression should be a simple identifier" >])
+
+let coerce_to_id a = match coerce_to_var a with
+  | Nvar (_,id) -> id
+(*  | Nmeta(_,id) -> id_of_string id*)
+  | ast -> invalid_arg "coerce_to_id"
 
 let env_assoc_value loc v env =
   try 
@@ -200,8 +206,8 @@ let env_assoc sigma k (loc,v) =
 
 let env_assoc_nvars sigma (dloc,v) =
   match env_assoc_value dloc v sigma with
-    | Vastlist al -> List.map (coerce_to_var v) al
-    | Vast ast -> [coerce_to_var v ast]
+    | Vastlist al -> List.map coerce_to_id al
+    | Vast ast -> [coerce_to_id ast]
 
 let build_lams dloc idl ast =
   List.fold_right (fun id lam -> Slam(dloc,Some id,lam)) idl ast
@@ -253,14 +259,16 @@ let check_ast_meta env loc pv =
 
 let rec val_of_ast env ast =
   match ast with
-    | Nvar(loc,pv) when isMeta pv ->
+    | Nmeta(loc,pv) ->
         check_ast_meta env loc pv;
         Pmeta(pv,Tany)
+(*
     | Id(loc,pv) when isMeta pv ->
         check_ast_meta env loc pv;
         Pmeta(pv,Tid)
+*)
     | Node(_,"$QUOTE",[qast]) -> Pquote (set_loc dummy_loc qast)
-    | Slam(loc,Some s,a) when isMeta s ->
+    | Smetalam(loc,s,a) ->
         let _ = type_of_meta env loc s in (* ids are coerced to id lists *)
         Pmeta_slam(s, val_of_ast env a)
     | (Path _|Num _|Id _|Str _|Nvar _) -> Pquote (set_loc dummy_loc ast)
@@ -274,7 +282,7 @@ let rec val_of_ast env ast =
 	  
 and vall_of_astl env astl =
   match astl with 
-    | (Node(loc,"$LIST",[Nvar(locv,pv)]))::asttl when isMeta pv ->
+    | (Node(loc,"$LIST",[Nmeta(locv,pv)]))::asttl ->
         if type_of_meta env locv pv = ETastl then
           if asttl = [] then 
 	    Plmeta pv
@@ -309,7 +317,9 @@ let rec alpha alp a1 a2 =
     | (Id(_,s1),Id(_,s2)) -> s1=s2
     | (Str(_,s1),Str(_,s2)) -> s1=s2
     | (Num(_,n1),Num(_,n2)) -> n1=n2
-    | (Path(_,sl1,s1),Path(_,sl2,s2)) -> sl1=sl2 & s1=s2
+    | (Path(_,sl1),Path(_,sl2)) -> sl1=sl2
+    | ((Smetalam _ | Nmeta _ | Dynamic _), _) -> false
+    | (_, (Smetalam _ | Nmeta _ | Dynamic _)) -> false
     | _ -> false
 
 let alpha_eq (a1,a2)= alpha [] a1 a2
@@ -324,6 +334,7 @@ let alpha_eq_val = function
 let rec occur_var_ast s = function
   | Node(loc,op,args) -> List.exists (occur_var_ast s) args
   | Nvar(_,s2) -> s = s2
+  | Smetalam _ | Nmeta _ -> anomaly "occur_var: metas should not occur here"
   | Slam(_,sopt,body) -> (Some s <> sopt) & occur_var_ast s body
   | Id _ | Str _ | Num _ | Path _ -> false
   | Dynamic _ -> (* Hum... what to do here *) false
@@ -331,6 +342,7 @@ let rec occur_var_ast s = function
 let rec replace_vars_ast l = function
   | Node(loc,op,args) -> Node (loc,op, List.map (replace_vars_ast l) args)
   | Nvar(loc,s) as a -> (try Nvar (loc, List.assoc s l) with Not_found -> a)
+  | Smetalam _ | Nmeta _ -> anomaly "replace_var: metas should not occur here"
   | Slam(loc,None,body) -> Slam(loc,None,replace_vars_ast l body)
   | Slam(loc,Some s,body) as a -> 
       if List.mem_assoc s l then a else
@@ -342,7 +354,7 @@ exception No_match of string
 
 let no_match_loc (loc,s) = Stdpp.raise_with_loc loc (No_match s)
 
-(* Binds value v to variable var. If var is already bound, checks if the
+(* Binds value v to variable var. If var is already bound, checks if
    its value is alpha convertible with v. This allows non-linear patterns.
 
    Important note: The Metavariable $_ is a special case; it cannot be
@@ -390,6 +402,8 @@ let rec amatch alp sigma spat ast =
     | (Pmeta(pv,Tlist),_) -> grammar_type_error (loc ast,"Ast.amatch")
     | (Pmeta_slam(pv,pb), Slam(loc, Some s, b)) ->
         amatch alp (bind_env_ast sigma pv (Nvar(loc,s))) pb b
+    | (Pmeta_slam(pv,pb), Smetalam(loc, s, b)) ->
+	anomaly "amatch: match a pattern with an open ast"
     | (Pnode(nodp,argp), Node(loc,op,args)) when nodp = op ->
         (try amatchl alp sigma argp args
          with e -> Stdpp.raise_with_loc loc e)
@@ -443,26 +457,35 @@ let make_astvar env loc v cast =
   (Pmeta(v,cast), env')
 
 (* Note: no metavar in operator position. necessary ? *)
-(* TODO: $SLAM pour recuperer tous les Slam d'un coup dans une liste *)
 let rec pat_of_ast env ast =
   match ast with
-    | Nvar(loc,pv) when isMeta pv -> make_astvar env loc pv Tany
+    | Nmeta(loc,pv) -> make_astvar env loc pv Tany
+(* Obsolète
     | Id(loc,pv) when isMeta pv -> make_astvar env loc pv Tid
-    | Slam(loc,Some s,a) when isMeta s ->
+*)
+    | Smetalam(loc,s,a) ->
         let senv = bind_patvar env loc s ETast in
         let (pa,env') = pat_of_ast senv a in
         (Pmeta_slam(s, pa), env')
-    | Node(_,"$VAR",[Nvar(loc,pv)]) when isMeta pv ->
+    | Node(_,"$VAR",[Nmeta(loc,pv)]) ->
         make_astvar env loc pv Tvar
-    | Node(_,"$ID",[Nvar(loc,pv)]) when isMeta pv ->
+    | Node(_,"$ID",[Nmeta(loc,pv)]) ->
         make_astvar env loc pv Tid
-    | Node(_,"$NUM",[Nvar(loc,pv)]) when isMeta pv ->
+    | Node(_,"$NUM",[Nmeta(loc,pv)]) ->
         make_astvar env loc pv Tnum
-    | Node(_,"$STR",[Nvar(loc,pv)]) when isMeta pv ->
+    | Node(_,"$STR",[Nmeta(loc,pv)]) ->
         make_astvar env loc pv Tstr
-    | Node(_,"$PATH",[Nvar(loc,pv)]) when isMeta pv ->
+    | Node(_,"$PATH",[Nmeta(loc,pv)]) ->
         make_astvar env loc pv Tpath
     | Node(_,"$QUOTE",[qast]) -> (Pquote (set_loc dummy_loc qast), env)
+
+   (* This may occur when the meta is not textual but bound by coerce_to_id*)
+    | Slam(loc,Some id,b) when isMeta (string_of_id id) ->
+	let s = string_of_id id in
+        let senv = bind_patvar env loc s ETast in
+        let (pb,env') = pat_of_ast senv b in
+        (Pmeta_slam(s, pb), env')
+
     | Slam(_,os,b) ->
         let (pb,env') = pat_of_ast env b in
         (Pslam(os,pb), env')
@@ -478,7 +501,7 @@ let rec pat_of_ast env ast =
 	  
 and patl_of_astl env astl =
   match astl with
-    | [Node(_,"$LIST",[Nvar(loc,pv)])] when isMeta pv ->
+    | [Node(_,"$LIST",[Nmeta(loc,pv)])] ->
         let penv = bind_patvar env loc pv ETastl in
         (Plmeta pv, penv)
     | [] -> (Pnil,env)
@@ -583,51 +606,3 @@ let to_act_check_vars env etyp ast =
   match ast with
     | Node(_,"ASTACT",[a]) -> act_of_ast env etyp a
     | _ -> invalid_arg_loc (loc ast,"Ast.to_act_env")
-
-
-(* Hash-consing *)
-module Hloc = Hashcons.Make(
-  struct
-    type t = Coqast.loc
-    type u = unit
-    let equal (b1,e1) (b2,e2) = b1=b2 & e1=e2
-    let hash_sub () x = x
-    let hash = Hashtbl.hash
-  end)
-
-module Hast = Hashcons.Make(
-  struct
-    type t = Coqast.t
-    type u = (Coqast.t -> Coqast.t) * ((loc -> loc) * (string -> string))
-    let hash_sub (hast,(hloc,hstr)) = function
-      | Node(l,s,al) -> Node(hloc l, hstr s, List.map hast al)
-      | Nvar(l,s) -> Nvar(hloc l, hstr s)
-      | Slam(l,None,t) -> Slam(hloc l, None, hast t)
-      | Slam(l,Some s,t) -> Slam(hloc l, Some (hstr s), hast t)
-      | Num(l,n) -> Num(hloc l, n)
-      | Id(l,s) -> Id(hloc l, hstr s)
-      | Str(l,s) -> Str(hloc l, hstr s)
-      | Path(l,d,k) -> Path(hloc l, List.map hstr d, hstr k)
-      | Dynamic(l,d) -> Dynamic(hloc l, d)
-    let equal a1 a2 =
-      match (a1,a2) with
-        | (Node(l1,s1,al1), Node(l2,s2,al2)) ->
-            (l1==l2 & s1==s2 & List.length al1 = List.length al2)
-            & List.for_all2 (==) al1 al2
-        | (Nvar(l1,s1), Nvar(l2,s2)) -> l1==l2 & s1==s2
-        | (Slam(l1,None,t1), Slam(l2,None,t2)) -> l1==l2 & t1==t2
-        | (Slam(l1,Some s1,t1), Slam(l2,Some s2,t2)) -> l1==l2 & t1==t2
-        | (Num(l1,n1), Num(l2,n2)) -> l1==l2 & n1=n2
-        | (Id(l1,s1), Id(l2,s2)) -> l1==l2 & s1==s2
-        | (Str(l1,s1),Str(l2,s2)) -> l1==l2 & s1==s2
-        | (Path(l1,d1,k1), Path(l2,d2,k2)) ->
-            (l1==l2 & k1==k2 & List.length d1 = List.length d2)
-            & List.for_all2 (==) d1 d2
-        | _ -> false
-    let hash = Hashtbl.hash
-  end)
-
-let hcons_ast hstr =
-  let hloc = Hashcons.simple_hcons Hloc.f () in
-  let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr) in
-  (hast,hloc)

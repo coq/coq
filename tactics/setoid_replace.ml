@@ -39,7 +39,7 @@ type morphism =
 let constr_of c = Astterm.interp_constr Evd.empty (Global.env()) c
 
 let constant dir s =
-  let dir = "Coq"::"Setoid"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::"Setoid"::dir)) in
   let id = id_of_string s in
     try 
       Declare.global_reference_in_absolute_module dir id
@@ -47,7 +47,7 @@ let constant dir s =
     anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
 let global_constant dir s =
-  let dir = "Coq"::"Init"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::"Init"::dir)) in
   let id = id_of_string s in
     try 
       Declare.global_reference_in_absolute_module dir id
@@ -206,7 +206,7 @@ let gen_eq_lem_name =
   let i = ref 0 in
     function () -> 
       incr i;
-      id_of_string ("setoid_eq_ext"^(string_of_int !i))
+      make_ident "setoid_eq_ext" (Some !i)
 
 let add_setoid a aeq th =
   if setoid_table_mem a 
@@ -289,11 +289,11 @@ let check_is_dependent t n =
   in aux t 0 n
 
 let gen_lem_name m = match kind_of_term m with 
-  | IsVar id -> id_of_string ((string_of_id id)^"_ext")
-  | IsConst (sp, _) -> id_of_string ((string_of_id(basename sp))^"_ext")
-  | IsMutInd ((sp, i), _) -> id_of_string ((string_of_id(basename sp))^(string_of_int i)^"_ext")
-  | IsMutConstruct (((sp,i),j), _) -> id_of_string 
-      ((string_of_id(basename sp))^(string_of_int i)^(string_of_int i)^"_ext")
+  | IsVar id -> add_suffix id "_ext"
+  | IsConst (sp, _) -> add_suffix (basename sp) "_ext"
+  | IsMutInd ((sp, i), _) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
+  | IsMutConstruct (((sp,i),j), _) -> add_suffix
+      (basename sp) ((string_of_int i)^(string_of_int i)^"_ext")
   | _ -> errorlabstrm "New Morphism" [< 'sTR "The term "; prterm m; 'sTR "is not a known name">]
 
 let gen_lemma_tail m lisset body n =
@@ -449,7 +449,7 @@ let add_morphism lem_name (m,profil) =
       (if (eq_constr body mkProp)
        then
 	 (let lem_2 = gen_lem_iff env m mext args_t poss in
-	  let lem2_name = (id_of_string ((string_of_id lem_name)^"2")) in
+	  let lem2_name = add_suffix lem_name "2" in
 	  let _ = Declare.declare_constant lem2_name
 		    ((Declare.ConstantEntry {Declarations.const_entry_body = lem_2; 
 					     Declarations.const_entry_type = None}),

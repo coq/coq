@@ -28,9 +28,9 @@ open Proof_type
 open Tacmach
 
 let mkCastC(c,t) = ope("CAST",[c;t])
-let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
+let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
-let mkProdC (x,a,b) = ope("PROD",[a;slam(Some (string_of_id x),b)])
+let mkProdC (x,a,b) = ope("PROD",[a;slam(Some x,b)])
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
 (* Commands of the interface *)
@@ -102,13 +102,13 @@ let syntax_definition ident com =
 
 let parameter_def_var ident c =
   let c = interp_type Evd.empty (Global.env()) c in
-  let sp = declare_parameter (id_of_string ident) c in
-  if_verbose message (ident ^ " is assumed");
+  let sp = declare_parameter ident c in
+  if_verbose message ((string_of_id ident) ^ " is assumed");
   sp
 
 let declare_global_assumption ident c =
   let sp = parameter_def_var ident c in
-  wARNING [< 'sTR ident; 'sTR" is declared as a parameter";
+  wARNING [< pr_id ident; 'sTR" is declared as a parameter";
              'sTR" because it is at a global level" >];
   ConstRef sp
 
@@ -118,11 +118,10 @@ let hypothesis_def_var is_refining ident n c =
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
-          let sp = declare_variable (id_of_string ident)
-		     (SectionLocalAssum t,n,false) in
-	  if_verbose message (ident ^ " is assumed");
+          let sp = declare_variable ident (SectionLocalAssum t,n,false) in
+	  if_verbose message ((string_of_id ident) ^ " is assumed");
           if is_refining then 
-            mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
+            mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
                         'sTR" is not visible from current goals" >];
 	  VarRef sp
         end
@@ -437,7 +436,7 @@ let apply_tac_not_declare id pft = function
 let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
   strength =
   begin match strength with
-    | DischargeAt disch_sp when Lib.is_section_p disch_sp ->
+    | DischargeAt disch_sp when Lib.is_section_p disch_sp (*&& not opacity*) ->
 	let c = constr_of_constr_entry const in
 	let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
     | NeverDischarge | DischargeAt _ ->
@@ -464,12 +463,12 @@ let check_anonymity id save_ident =
 let save_anonymous opacity save_ident =
   let id,(const,strength) = Pfedit.cook_proof () in
   check_anonymity id save_ident;
-  save opacity (id_of_string save_ident) const strength
+  save opacity save_ident const strength
 
 let save_anonymous_with_strength strength opacity save_ident =
   let id,(const,_) = Pfedit.cook_proof () in
   check_anonymity id save_ident;
-  save opacity (id_of_string save_ident) const strength
+  save opacity save_ident const strength
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

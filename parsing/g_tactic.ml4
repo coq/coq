@@ -58,11 +58,11 @@ GEXTEND Gram
     [ [ id = idmeta_arg -> <:ast< (INHYP $id) >> ] ]
   ;
   qualidarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >>
+    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST $l)) >>
       | "?"; n = Prim.number -> <:ast< (QUALIDMETA $n) >> ] ]
   ;
   qualidconstarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST l)) >> ] ]
+    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST $l)) >> ] ]
   ;
   pure_numarg:
      [ [ n = Prim.number -> n
@@ -94,8 +94,8 @@ GEXTEND Gram
   ident_or_constrarg:
     [ [ c = Constr.constr ->
 	  match c with
-            | Coqast.Nvar(_,s) -> <:ast<($VAR $s)>>
-	    | Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
+            | Coqast.Nvar(_,s) -> c
+	    | Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s) as c]) -> c
 	    | _ -> <:ast< (COMMAND $c) >> ] ]
   ;
   ne_identarg_list:
@@ -167,9 +167,9 @@ GEXTEND Gram
   binding_list:
     [ [ c1 = constrarg; ":="; c2 = constrarg; bl = simple_binding_list ->
           let id = match c1 with 
-            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var "c1" c
+            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
             | _ -> assert false
-          in <:ast<(BINDINGS (BINDING ($VAR $id) $c2) ($LIST $bl))>>
+          in <:ast<(BINDINGS (BINDING $id $c2) ($LIST $bl))>>
       | n = pure_numarg; ":="; c = constrarg; bl = simple_binding_list ->
           <:ast<(BINDINGS (BINDING $n $c) ($LIST $bl))>>
       | c1 = constrarg; bl = com_binding_list ->
@@ -203,20 +203,20 @@ GEXTEND Gram
       | IDENT "Iota" -> <:ast< (Iota) >>
       | IDENT "Zeta" -> <:ast< (Zeta) >>
       | IDENT "Evar" -> <:ast< (Evar) >>
-      | "["; idl = ne_qualidarg_list; "]" -> <:ast< (Unf ($LIST idl)) >>
+      | "["; idl = ne_qualidarg_list; "]" -> <:ast< (Unf ($LIST $idl)) >>
       | "-"; "["; idl = ne_qualidarg_list; "]" ->
-          <:ast< (UnfBut ($LIST idl)) >> ] ]
+          <:ast< (UnfBut ($LIST $idl)) >> ] ]
   ;
   red_tactic:
     [ [ IDENT "Red" -> <:ast< (Red) >>
       | IDENT "Hnf" -> <:ast< (Hnf) >>
       | IDENT "Simpl" -> <:ast< (Simpl) >>
-      | IDENT "Cbv"; s = LIST1 red_flag -> <:ast< (Cbv ($LIST s)) >>
-      | IDENT "Lazy"; s = LIST1 red_flag -> <:ast< (Lazy ($LIST s)) >>
+      | IDENT "Cbv"; s = LIST1 red_flag -> <:ast< (Cbv ($LIST $s)) >>
+      | IDENT "Lazy"; s = LIST1 red_flag -> <:ast< (Lazy ($LIST $s)) >>
       | IDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Evar) (Iota) (Zeta)) >>
       | IDENT "Unfold"; ul = ne_unfold_occ_list ->
-          <:ast< (Unfold ($LIST ul)) >>
-      | IDENT "Fold"; cl = constrarg_list -> <:ast< (Fold ($LIST cl)) >>
+          <:ast< (Unfold ($LIST $ul)) >>
+      | IDENT "Fold"; cl = constrarg_list -> <:ast< (Fold ($LIST $cl)) >>
       | IDENT "Pattern"; pl = ne_pattern_list ->
           <:ast< (Pattern ($LIST $pl)) >> ] ]
   ;
@@ -228,7 +228,7 @@ GEXTEND Gram
     [ [ l = LIST1 hypident -> l ] ]
   ;
   clausearg:
-    [ [ "in"; idl = ne_hyp_list -> <:ast< (CLAUSE ($LIST idl)) >>
+    [ [ "in"; idl = ne_hyp_list -> <:ast< (CLAUSE ($LIST $idl)) >>
       | -> <:ast< (CLAUSE) >> ] ]
   ;
   fixdecl:

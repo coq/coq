@@ -28,14 +28,14 @@ GEXTEND Gram
     [ [ l = LIST1 identarg -> l ] ]
   ;
   qualidarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >> ] ]
+    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST $l)) >> ] ]
   ;
   ne_qualidarg_list:
     [ [ q = qualidarg; l = ne_qualidarg_list -> q::l
       | q = qualidarg -> [q] ] ]
   ;
   qualidconstarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST l)) >> ] ]
+    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST $l)) >> ] ]
   ;
   numarg:
     [ [ n = Prim.number -> n 
@@ -81,7 +81,7 @@ GEXTEND Gram
 
   command:
     [ [ IDENT "Comments"; args = commentarg_list ->
-	  <:ast< (Comments ($LIST args)) >>
+	  <:ast< (Comments ($LIST $args)) >>
       | IDENT "Pwd" -> <:ast< (PWD) >>
       | IDENT "Cd" -> <:ast< (CD) >>
       | IDENT "Cd"; dir = stringarg -> <:ast< (CD $dir) >>
@@ -114,7 +114,7 @@ GEXTEND Gram
 
       | IDENT "Locate"; IDENT "File"; f = stringarg ->
 	  <:ast< (LocateFile $f) >>
-      | IDENT "Locate"; IDENT "Library"; id = identarg ->
+      | IDENT "Locate"; IDENT "Library"; id = qualidarg ->
 	  <:ast< (LocateLibrary $id) >>
       | IDENT "Locate"; id = qualidarg ->
 	  <:ast< (Locate $id) >>
@@ -199,17 +199,17 @@ GEXTEND Gram
       (* Set printing of coercions *)
       | "Set"; IDENT "Printing"; IDENT "Coercion"; 
 	qidl = ne_qualidarg_list ->
-	  <:ast< (PRINTING_COERCIONS_ON ($LIST qidl)) >>
+	  <:ast< (PRINTING_COERCIONS_ON ($LIST $qidl)) >>
       | "Set"; IDENT "Printing"; IDENT "Coercions" ->
           <:ast< (PRINTING_COERCIONS_ON) >>
       | IDENT "Unset"; IDENT "Printing"; IDENT "Coercion"; 
 	qidl = ne_qualidarg_list ->
-          <:ast< (PRINTING_COERCIONS_OFF ($LIST qidl)) >>
+          <:ast< (PRINTING_COERCIONS_OFF ($LIST $qidl)) >>
       | IDENT "Unset"; IDENT "Printing"; IDENT "Coercions" ->
           <:ast< (PRINTING_COERCIONS_OFF) >>
       | IDENT "Test"; IDENT "Printing"; IDENT "Coercion";
 	qidl = ne_qualidarg_list ->
-          <:ast< (TEST_PRINTING_COERCIONS ($LIST qidl)) >>
+          <:ast< (TEST_PRINTING_COERCIONS ($LIST $qidl)) >>
       | IDENT "Test"; IDENT "Printing"; IDENT "Coercions" ->
           <:ast< (TEST_PRINTING_COERCIONS) >>
 
@@ -289,10 +289,10 @@ GEXTEND Gram
 
      | "Grammar"; univ = univ;
        tl = LIST1 Prim.grammar_entry SEP "with" ->
-         <:ast< (GRAMMAR ($VAR univ) (ASTLIST ($LIST tl))) >>
+         <:ast< (GRAMMAR { $univ } (ASTLIST ($LIST $tl))) >>
 
      | "Syntax"; univ = univ; el=LIST1 Prim.syntax_entry SEP ";" ->
-         <:ast< (SYNTAX ($VAR univ) (ASTLIST ($LIST el))) >>
+         <:ast< (SYNTAX { $univ } (ASTLIST ($LIST $el))) >>
 
      (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
      | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
@@ -308,18 +308,18 @@ GEXTEND Gram
   Prim.grammar_entry:
     [[ nont = Prim.ident; etyp = Prim.entry_type; ":=";
        ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
-         <:ast< (GRAMMARENTRY $nont $etyp $ep ($LIST rl)) >> ]]
+         <:ast< (GRAMMARENTRY $nont $etyp $ep ($LIST $rl)) >> ]]
   ;
   entry_prec:
-    [[ IDENT "LEFTA" -> <:ast< {LEFTA} >>
-     | IDENT "RIGHTA" -> <:ast< {RIGHTA} >>
-     | IDENT "NONA" -> <:ast< {NONA} >>
-     | ->  <:ast< {NONE} >> ] ]
+    [[ IDENT "LEFTA" -> <:ast< (LEFTA) >>
+     | IDENT "RIGHTA" -> <:ast< (RIGHTA) >>
+     | IDENT "NONA" -> <:ast< (NONA) >>
+     | ->  <:ast< (NONE) >> ] ]
   ;
   grammar_rule:
     [[ name = rule_name; "["; pil = LIST0 production_item; "]"; "->";
        a = Prim.astact ->
-        <:ast< (GRAMMARRULE ($ID name) $a ($LIST pil)) >> ]]
+        <:ast< (GRAMMARRULE ($ID $name) $a ($LIST $pil)) >> ]]
   ;
   rule_name:
     [[ name = IDENT -> name ]]
@@ -369,7 +369,7 @@ GEXTEND Gram
       | e = Prim.ast; oprec = OPT [ ":"; pr = paren_reln_or_extern -> pr ] ->
           match oprec with
 	    | Some pr -> <:ast< (PH $e $pr) >>
-            | None -> <:ast< (PH $e {Any}) >> ]]
+            | None -> <:ast< (PH $e (Any)) >> ]]
   ;
   box:
     [ [ "<"; bk = box_kind; ">" -> bk ] ]
@@ -382,8 +382,8 @@ GEXTEND Gram
       | IDENT "t" -> <:ast< (PpTB) >> ] ]
   ;
   paren_reln_or_extern:
-    [ [ IDENT "L" -> <:ast< {L} >>
-      | IDENT "E" -> <:ast< {E} >>
+    [ [ IDENT "L" -> <:ast< (L) >>
+      | IDENT "E" -> <:ast< (E) >>
       | pprim = STRING; precrec = OPT [ ":"; p = precedence -> p ] ->
 	  match precrec with
 	    | Some p -> <:ast< (EXTERN ($STR $pprim) $p) >>

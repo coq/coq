@@ -43,10 +43,10 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier
 
-INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
+MLINCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
-BYTEFLAGS=-rectypes $(INCLUDES) $(CAMLDEBUG)
-OPTFLAGS=-rectypes $(INCLUDES) $(CAMLTIMEPROF)
+BYTEFLAGS=-rectypes $(MLINCLUDES) $(CAMLDEBUG)
+OPTFLAGS=-rectypes $(MLINCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
@@ -72,10 +72,10 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo
 
-KERNEL=kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
-       kernel/sign.cmo kernel/declarations.cmo \
-       kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
-       kernel/closure.cmo kernel/reduction.cmo \
+KERNEL=kernel/names.cmo kernel/univ.cmo \
+       kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
+       kernel/declarations.cmo kernel/environ.cmo kernel/evd.cmo \
+       kernel/instantiate.cmo kernel/closure.cmo kernel/reduction.cmo \
        kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
        kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
 
@@ -149,7 +149,8 @@ CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
 	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
 	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
 
-INTERFACE=contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
+INTERFACE=contrib/interface/vtp.cmo \
+	contrib/interface/ctast.cmo contrib/interface/xlate.cmo \
 	contrib/interface/paths.cmo contrib/interface/translate.cmo \
 	contrib/interface/pbp.cmo \
 	contrib/interface/dad.cmo \
@@ -228,7 +229,7 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
 world: $(COQBINARIES) states theories contrib tools
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
-	$(COQMKTOP) -opt $(INCLUDES) -o $@
+	$(COQMKTOP) -opt $(MLINCLUDES) -o $@
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
@@ -287,12 +288,12 @@ toplevel: $(TOPLEVEL)
 # special binaries for debugging
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
-	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
+	$(COQMKTOP) -top $(MLINCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
-bin/parser$(EXE): contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
-	$(OCAMLC) -cclib -lunix -custom $(INCLUDES) -o $@ $(CMA) \
+bin/parser$(EXE): contrib/interface/ctast.cmo contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
+	$(OCAMLC) -cclib -lunix -custom $(MLINCLUDES) -o $@ $(CMA) \
 	$(PARSERREQUIRES) \
-	line_parser.cmo vtp.cmo xlate.cmo parse.cmo
+	ctast.cmo line_parser.cmo vtp.cmo xlate.cmo parse.cmo
 
 clean::
 	rm -f bin/parser$(EXE) bin/coq-interface$(EXE)
@@ -335,13 +336,13 @@ TACTICSVO=tactics/Equality.vo \
 	  tactics/EqDecide.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQC) -boot -$(BEST) $(INCLUDES) -is states/barestate.coq $<
+	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	$(BESTCOQTOP) -boot -batch -silent -is states/barestate.coq $(COQINCLUDES) $(INCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BESTCOQTOP) -boot -batch -silent -is states/barestate.coq $(COQINCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*.coq
@@ -568,7 +569,7 @@ MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
-	$(OCAMLC) $(CAMLDEBUG) $(INCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(OCAMLC) $(CAMLDEBUG) $(MLINCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 archclean::
 	rm -f $(MINICOQ)
@@ -670,13 +671,14 @@ clean::
 
 tags:
 	find . -name "*.ml*" | sort -r | xargs \
-	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	etags "--regex='/let[ \t]+\([^ \t]+\)/\1/'" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
               "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
+
 
 ###########################################################################
 ### Special rules
@@ -688,7 +690,8 @@ ML4FILES += parsing/lexer.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
-	   lib/hashcons.cmo parsing/coqast.cmo parsing/lexer.cmo \
+	   lib/hashcons.cmo kernel/names.cmo \
+	   parsing/coqast.cmo parsing/lexer.cmo \
 	   parsing/pcoq.cmo parsing/q_coqast.cmo parsing/g_prim.cmo
 
 parsing/grammar.cma: $(GRAMMARCMO)

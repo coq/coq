@@ -21,8 +21,8 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of dir_path
-  | OpenedSection of string * Summary.frozen
-  | ClosedSection of bool * string * library_segment
+  | OpenedSection of module_ident * Summary.frozen
+  | ClosedSection of bool * module_ident * library_segment
   | FrozenState of Summary.frozen
 
 and library_entry = section_path * node
@@ -47,9 +47,9 @@ val contents_after : section_path option -> library_segment
 
 (*s Opening and closing a section. *)
 
-val open_section : string -> section_path
+val open_section : identifier -> section_path
 val close_section : 
-  export:bool -> string -> section_path * library_segment * Summary.frozen
+  export:bool -> identifier -> section_path * library_segment * Summary.frozen
 val sections_are_opened : unit -> bool
 
 val make_path : identifier -> path_kind -> section_path
@@ -57,7 +57,8 @@ val cwd : unit -> dir_path
 val is_section_p : dir_path -> bool
 
 val start_module : dir_path -> unit
-val export_module : unit -> library_segment
+val end_module : module_ident -> dir_path
+val export_module : dir_path -> library_segment
 
 
 (*s Backtracking (undo). *)

@@ -23,7 +23,7 @@ let constr_of com = Astterm.interp_constr Evd.empty (Global.env()) com
 
 (* Construction of constants *)
 let constant dir s =
-  let dir = "Coq"::"field"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::"field"::dir)) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id
@@ -115,7 +115,7 @@ let field g =
       | [|-(eq ?1 ? ?)] -> ?1
       |	[|-(eqT ?1 ? ?)] -> ?1>>) in
   let th = VArg (Constr (lookup typ)) in
-  (tac_interp [("FT",th)] [] (get_debug ()) <:tactic<Field_Gen FT>>) g
+  (tac_interp [(id_of_string "FT",th)] [] (get_debug ()) <:tactic<Field_Gen FT>>) g
 
 (* Declaration of Field *)
 let _ = hide_tactic "Field" (function _ -> field)

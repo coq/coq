@@ -10,9 +10,22 @@ Modifications depuis la V7.0
 - Correction bugs Cases en cas de prédicat dépendant
 - Le flag Delta n'inclut plus Zeta et Evar, nouveaux flags Zeta et Evar inclus
   dans Compute (à documenter)
-- Nouvelle tactique TrueCut qui fait la coupure du calcul des séquents
+- Prise en compte des noms longs dans Require et Import, et gestion de
+  modules de même noms situés dans des répertoires différents
+- Nouvelle stratégie de référenciation par nom court basée sur le nom de
+  base et plus sur les noms de module (avant un module pouvait en
+  cacher un autre, maintenant seul un nom de base peut en cacher un
+  autre -- c'est le mode de PATH sous unix)
+- Plus de typage dans les quotations (les macros $LIST, ... doivent
+  être suivies d'une métavariable, idem pour { })
+- Développeur: les var des ast sont maintenant des identifiers
+- Les identificateurs ne sont plus mutables
+- Nouvelle tactique Assert qui fait la coupure du calcul des séquents
   (et dans le sens attendu)
+- Inversion peut faire des Intros until avant
 - Amélioration de l'efficacité de l'ancien Cut
+- En cas de Require en milieu de section, les noms courts importes par le module disparaissent a la fermeture de la section,
+  et les Require ultérieurs ne les réintroduisent pas.
 
 Différences oubliées dans la V7.0beta :
 

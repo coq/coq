@@ -19,17 +19,28 @@ GEXTEND Gram
           ne_ident_comma_list ne_constr_list sort ne_binders_list qualid
           global;
   ident:
-    [ [ id = IDENT -> <:ast< ($VAR $id) >> 
+    [ [ id = Prim.var -> id
 
       (* This is used in quotations *)
-      | id = METAIDENT -> <:ast< ($VAR $id) >> ] ]
+      | id = Prim.metaident -> id ] ]
   ;
   global:
-    [ [ l = qualid -> <:ast< (QUALID ($LIST l)) >>
+    [ [ l = qualid -> <:ast< (QUALID ($LIST $l)) >>
 
       (* This is used in quotations *)
-      | id = METAIDENT -> <:ast< ($VAR $id) >> ] ]
+      | id = Prim.metaident -> id ] ]
   ;
+  qualid:
+    [ [ id = Prim.var; l = fields -> id :: l
+      | id = Prim.var -> [ id ]
+      ] ]
+  ;
+  fields:
+    [ [ id = FIELD; l = fields -> <:ast< ($VAR $id) >> :: l
+      | id = FIELD -> [ <:ast< ($VAR $id) >> ]
+      ] ]
+  ;
+(*
   qualid:
     [ [ id = IDENT; l = fields -> <:ast< ($VAR $id) >> :: l ] ]
   ;
@@ -38,6 +49,7 @@ GEXTEND Gram
       | -> []
       ] ]
   ;
+*)
   raw_constr:
     [ [ c = Prim.ast -> c ] ]
   ;
@@ -65,18 +77,19 @@ GEXTEND Gram
       | "?"; n = Prim.number -> <:ast< (META $n) >>
       | bl = binders; c = constr -> <:ast< ($ABSTRACT "LAMBDALIST" $bl $c) >>
       | "("; lc1 = lconstr; ":"; c = constr; body = product_tail ->
-          let id = Ast.coerce_to_var "lc1" lc1 in
+          let id = Ast.coerce_to_var lc1 in
             <:ast< (PROD $c [$id]$body) >>
       | "("; lc1 = lconstr; ","; lc2 = lconstr; ":"; c = constr; 
         body = product_tail ->
-          let id1 = Ast.coerce_to_var "lc1" lc1 in
-          let id2 = Ast.coerce_to_var "lc2" lc2 in
-            <:ast< (PRODLIST $c [$id1][$id2]$body) >>
+          let id1 = Ast.coerce_to_var lc1 in
+          let id2 = Ast.coerce_to_var lc2 in
+          <:ast< (PRODLIST $c [$id1][$id2]$body) >>
       | "("; lc1 = lconstr; ","; lc2 = lconstr; ",";
         idl = ne_ident_comma_list; ":"; c = constr; body = product_tail ->
-          let id1 = Ast.coerce_to_var "lc1" lc1 in
-          let id2 = Ast.coerce_to_var "lc2" lc2 in
-            <:ast< (PRODLIST $c [$id1][$id2]($SLAM $idl $body)) >>
+          let id1 = Ast.coerce_to_var lc1 in
+          let id2 = Ast.coerce_to_var lc2 in
+(*            <:ast< (PRODLIST $c [$id1][$id2]($SLAM $idl $body)) >>*)
+            <:ast< ($ABSTRACT "PRODLIST" (BINDERS (BINDER $c $id1 $id2 ($LIST $idl))) $body) >>
       | "("; lc1 = lconstr; ")" -> lc1
       | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
           <:ast< (SOAPP $lc1 ($LIST $cl)) >>
@@ -109,9 +122,15 @@ GEXTEND Gram
           <:ast< (MATCH "SYNTH" $c ($LIST $cl)) >>
       | IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = constr; "in"; c1 = constr ->
-          <:ast< (LET "SYNTH" $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>
-      | IDENT "let"; id1 = IDENT ; "="; c = constr; "in"; c1 = constr -> 
+          <:ast< (LET "SYNTH" $c ($ABSTRACT "LAMBDALIST"
+	    (BINDERS (BINDER (ISEVAR) ($LIST $b))) $c1)) >>
+      | IDENT "let"; id1 = ident ; "="; c = constr; "in"; c1 = constr -> 
 	  <:ast< (LETIN $c [$id1]$c1) >>
+(*
+      | IDENT "let"; id1 = IDENT ; "="; c = constr; "in"; c1 = constr -> 
+	  let id1 = Names.id_of_string id1 in
+	  <:ast< (LETIN $c [$id1]$c1) >>
+*)
       | IDENT "if"; c1 = constr; IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr ->
         <:ast< ( IF "SYNTH" $c1 $c2 $c3) >>
@@ -119,7 +138,9 @@ GEXTEND Gram
       | "<"; l1 = lconstr; ">";
         IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
         c = constr; "in"; c1 = constr ->
-         <:ast< (LET $l1 $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>
+(*      <:ast< (CASE "NOREC" $l1 $c (LAMBDALIST (ISEVAR) ($SLAM $b $c1))) >>*)
+          <:ast< (LET $l1 $c ($ABSTRACT "LAMBDALIST" (BINDERS
+	    (BINDER (ISEVAR) ($LIST $b))) $c1)) >>
       | "<"; l1 = lconstr; ">";
         IDENT "if"; c1 = constr; IDENT "then";
         c2 = constr; IDENT "else"; c3 = constr ->
@@ -180,11 +201,14 @@ GEXTEND Gram
       | id = vardecls -> [id] ] ]
   ;
   binders:
+    [ [ "["; bl = ne_vardecls_list; "]" -> <:ast< (BINDERS ($LIST $bl)) >> ] ]
+  ;
+  rawbinders:
     [ [ "["; bl = ne_vardecls_list; "]" -> bl ] ]
   ;
   ne_binders_list:
-    [ [ bl = binders; bll = ne_binders_list -> bl @ bll
-      | bl = binders -> bl ] ]
+    [ [ bl = rawbinders; bll = ne_binders_list -> bl @ bll
+      | bl = rawbinders -> bl ] ]
   ;
   type_option:
     [ [ ":"; c = constr -> c 
@@ -206,9 +230,9 @@ GEXTEND Gram
   fixbinder:
     [ [ id = ident; "/"; recarg = Prim.number; ":"; type_ = constr;
         ":="; def = constr -> <:ast< (NUMFDECL $id $recarg $type_ $def) >>
-      | id = ident; idl = ne_binders_list; ":"; type_ = constr;
+      | id = ident; bl = ne_binders_list; ":"; type_ = constr;
         ":="; def = constr ->
-          <:ast< (FDECL $id (BINDERS ($LIST $idl)) $type_ $def) >> ] ]
+          <:ast< (FDECL $id (BINDERS ($LIST $bl)) $type_ $def) >> ] ]
   ;
   fixbinders:
     [ [ fb = fixbinder; "with"; fbs = fixbinders -> fb::fbs
@@ -225,9 +249,9 @@ GEXTEND Gram
   product_tail:
     [ [ ";"; idl = ne_ident_comma_list;
         ":"; c = constr; c2 = product_tail ->
-          <:ast< (PRODLIST $c ($SLAM $idl $c2)) >>
+          <:ast< ($ABSTRACT "PRODLIST" (BINDERS (BINDER $c ($LIST $idl))) $c2) >>
       | ";"; idl = ne_ident_comma_list; c2 = product_tail ->
-          <:ast< (PRODLIST (ISEVAR) ($SLAM $idl $c2)) >>
+          <:ast< ($ABSTRACT "PRODLIST" (BINDERS (BINDER (ISEVAR) ($LIST $idl))) $c2) >>
       | ")"; c = constr -> c ] ]
   ;
 END;;

@@ -215,6 +215,7 @@ let _ =
     those having an ML extraction. *)
 
 let extract_module m =
+  let m = Nametab.locate_loaded_library (Nametab.make_qualid [] m) in
   let seg = Library.module_segment (Some m) in
   let get_reference = function
     | sp, Leaf o ->
@@ -242,10 +243,10 @@ let _ =
     (function 
        | [VARG_STRING lang; VARG_VARGLIST o; VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      let m = Names.string_of_id m in
-	      Ocaml.current_module := m;
-	      let f = (String.uncapitalize m) ^ (file_suffix lang) in
-	      let prm = interp_options lang [] true m o in
+	      Ocaml.current_module := Some m;
+	      let ms = Names.string_of_id m in
+	      let f = (String.uncapitalize ms) ^ (file_suffix lang) in
+	      let prm = interp_options lang [] true ms o in
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in
 	      let decls = List.filter (decl_mem rl) decls in

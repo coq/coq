@@ -24,20 +24,17 @@ open Command
 let make_constructor idstruc idps fields  =
   let app_constructor = 
     Ast.ope("APPLISTEXPL",
-        (Ast.nvar (string_of_id idstruc))::
-        List.map (fun id -> Ast.nvar(string_of_id id)) idps) in
+        (Ast.nvar idstruc):: List.map (fun id -> Ast.nvar id) idps) in
   let rec aux fields =
     match fields with
       | [] -> app_constructor
-      | (id,true,ty)::l ->
-	  Ast.ope("PROD",[ty; Ast.slam(Some (string_of_id id), aux l)])
-      | (id,false,c)::l ->
-	  Ast.ope("LETIN",[c; Ast.slam(Some (string_of_id id), aux l)])
+      | (id,true,ty)::l -> Ast.ope("PROD",[ty; Ast.slam(Some id, aux l)])
+      | (id,false,c)::l -> Ast.ope("LETIN",[c; Ast.slam(Some id, aux l)])
   in 
   aux fields
 
 let occur_fields id fs =
-  List.exists (fun (_,_,a) -> Ast.occur_var_ast (string_of_id id) a) fs
+  List.exists (fun (_,_,a) -> Ast.occur_var_ast id a) fs
 
 let interp_decl sigma env (id,assum,t) =
   if assum then

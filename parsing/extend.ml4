@@ -114,14 +114,9 @@ let nterm univ ast =
 let prod_item univ env ast =
   match ast with
     | Str (_, s) -> env, Term (terminal s)
-    | Node (_, "NT", [nt; Nvar (locp, p)]) ->
+    | Node (_, "NT", [nt; Nmeta (locp, p)]) ->
 	let (nont, etyp) = nterm univ nt in
-        if isMeta p then 
-	  ((p, etyp) :: env, NonTerm (nont, etyp, Some p))
-        else 
-	  user_err_loc
-            (locp,"Extend.prod_item",
-             [< 'sTR"This ident is not a metavariable." >])
+	((p, etyp) :: env, NonTerm (nont, etyp, Some p))
     | Node (_, "NT", [nt]) ->
 	let (nont, etyp) = nterm univ nt in 
 	env, NonTerm (nont, etyp, None)
@@ -150,10 +145,10 @@ let gram_entry univ (nt, etyp, ass, rl) =
     gl_rules = List.map (gram_rule univ etyp) rl }
 
 let gram_assoc = function
-  | Id (_, "LEFTA") -> Some LeftA
-  | Id (_, "RIGHTA") -> Some RightA
-  | Id (_, "NONA") -> Some NonA
-  | Id (_, "NONE") -> None
+  | Node (_, "LEFTA", []) -> Some LeftA
+  | Node (_, "RIGHTA", []) -> Some RightA
+  | Node (_, "NONA", []) -> Some NonA
+  | Node (_, "NONE", []) -> None
   | ast -> invalid_arg_loc (Ast.loc ast, "Egrammar.assoc")
 
 let gram_define_entry univ = function
@@ -168,10 +163,10 @@ let gram_define_entry univ = function
         try 
 	  create_entry univ nt etyp
         with Failure s ->
-          user_err_loc (ntl,"Extend.gram_define_entry",[< 'sTR s >])
+          user_err_loc (ntl,"gram_define_entry",[< 'sTR s >])
       in 
       (nt, etyp, assoc, rl)
-  | ast -> invalid_arg_loc (Ast.loc ast, "Egrammar.gram_define_entry")
+  | ast -> invalid_arg_loc (Ast.loc ast, "gram_define_entry")
 
 let interp_grammar_command univ astl =
 
@@ -252,7 +247,7 @@ let rec unparsing_hunk_of_ast vars = function
   | Node(_, "PH", [e; Node (loc,"EXTERN", ext_args)]) ->
       let (ppex, rel) = extern_of_ast loc ext_args in
       PH (Ast.val_of_ast vars e, Some ppex, rel)
-  | Node(loc, "PH", [e; Id(_,pr)]) ->
+  | Node(loc, "PH", [e; Node(_,pr, [])]) ->
       let reln =
         (match pr with
            | "L" -> L

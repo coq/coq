@@ -115,7 +115,7 @@ let rec intuition_main () =
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
   | Some id ->
-    let ast_id = nvar (string_of_id id) in
+    let ast_id = nvar id in
     interp <:tactic<Unfold not iff in $ast_id>>
 
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
@@ -123,7 +123,7 @@ let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 let compute = function
   | None -> interp <:tactic<Compute>>
   | Some id ->
-    let ast_id = nvar (string_of_id id) in
+    let ast_id = nvar id in
     interp <:tactic<Compute in $ast_id>>
 
 let reduction = Tacticals.onAllClauses (fun ido -> compute ido)

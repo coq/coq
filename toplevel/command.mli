@@ -12,6 +12,7 @@
 open Names
 open Term
 open Declare
+open Library
 (*i*)
 
 (*s Declaration functions. The following functions take ASTs,
@@ -31,10 +32,10 @@ val syntax_definition : identifier -> Coqast.t -> unit
 val abstraction_definition : identifier -> int array -> Coqast.t -> unit
 i*)
 
-val hypothesis_def_var : bool -> string -> strength -> Coqast.t
+val hypothesis_def_var : bool -> identifier -> strength -> Coqast.t
   -> global_reference
 
-val parameter_def_var : string -> Coqast.t -> constant_path
+val parameter_def_var : identifier -> Coqast.t -> constant_path
 
 val build_mutual : 
   (identifier * Coqast.t) list -> 
@@ -61,13 +62,13 @@ val save_named : bool -> unit
 (* [save_anonymous b name] behaves as [save_named] but declares the theorem
 under the name [name] and respects the strength of the declaration *)
 
-val save_anonymous : bool -> string -> unit
+val save_anonymous : bool -> identifier -> unit
 
 (* [save_anonymous_with_strength s b name] behaves as [save_anonymous] but
    declares the theorem under the name [name] and gives it the
    strength [strength] *)
 
-val save_anonymous_with_strength : strength -> bool -> string -> unit
+val save_anonymous_with_strength : strength -> bool -> identifier -> unit
 
 (* [get_current_context ()] returns the evar context and env of the
    current open proof if any, otherwise returns the empty evar context

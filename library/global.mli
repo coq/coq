@@ -50,7 +50,7 @@ val lookup_mind_specif : inductive -> inductive_instance
 val set_opaque : section_path -> unit
 val set_transparent : section_path -> unit
 
-val export : string -> compiled_env
+val export : dir_path -> compiled_env
 val import : compiled_env -> unit
 
 (*s Some functions of [Environ] instanciated on the global environment. *)

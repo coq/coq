@@ -48,8 +48,8 @@ GEXTEND Gram
     [ [ id = constrarg; "["; pc = constrarg; "]" ->
         (match id with
         | Coqast.Node(_,"COMMAND",
-            [Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s)])]) ->
-          <:ast< (SUBTERM ($VAR $s) $pc) >>
+            [Coqast.Node(_,"QUALID",[Coqast.Nvar(_,_) as s])]) ->
+          <:ast< (SUBTERM $s $pc) >>
         | _ ->
           errorlabstrm "Gram.match_pattern" [<'sTR "Not a correct SUBTERM">])
       | "["; pc = constrarg; "]" -> <:ast< (SUBTERM $pc) >>
@@ -124,7 +124,7 @@ GEXTEND Gram
         <:ast< (MATCH $com ($LIST $mrl)) >>
       |	"("; te = tactic_expr; ")" -> te
       |	"("; te = tactic_expr; tel=LIST1 tactic_expr; ")" ->
-        <:ast< (APP $te ($LIST tel)) >>
+        <:ast< (APP $te ($LIST $tel)) >>
       | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
           <:ast<(FIRST ($LIST $l))>>
       | IDENT "Info"; tc = tactic_expr -> <:ast< (INFO $tc) >>
@@ -152,8 +152,8 @@ GEXTEND Gram
       | l = Constr.qualid ->
         (match l with
 	| [id] -> id
-        | _ -> <:ast< (QUALIDARG ($LIST l)) >>)
-      | id = METAIDENT -> <:ast< ($VAR $id) >>
+        | _ -> <:ast< (QUALIDARG ($LIST $l)) >>)
+      | id = Prim.metaident -> id
       |	"?" -> <:ast< (COMMAND (ISEVAR)) >>
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
       |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->

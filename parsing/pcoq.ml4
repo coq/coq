@@ -133,6 +133,7 @@ let parse_string f x =
 let slam_ast (_,fin) id ast =
   match id with
     | Coqast.Nvar ((deb,_), s) -> Coqast.Slam ((deb,fin), Some s, ast)
+    | Coqast.Nmeta ((deb,_), s) -> Coqast.Smetalam ((deb,fin), s, ast)
     | _ -> invalid_arg "Ast.slam_ast"
 
 (* This is to interpret the macro $ABSTRACT used in binders        *)
@@ -149,9 +150,11 @@ let abstract_binder_ast (_,fin as loc) name a b =
 	Coqast.Node((deb,fin),s', [d; List.fold_right (slam_ast loc) l b])
     | _ -> invalid_arg "Bad usage of $ABSTRACT macro"
 
-let abstract_binders_ast loc name =
-  List.fold_right (abstract_binder_ast loc name)
-
+let abstract_binders_ast loc name a b =
+  match a with
+    | Coqast.Node(_,"BINDERS",l) ->
+	List.fold_right (abstract_binder_ast loc name) l b
+    | _ -> invalid_arg "Bad usage of $ABSTRACT macro"
 
 type entry_type = ETast | ETastl
     

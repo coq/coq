@@ -20,7 +20,7 @@ type modification_action = ABSTRACT | ERASE
 type 'a modification =
   | NOT_OCCUR
   | DO_ABSTRACT of 'a * modification_action list
-  | DO_REPLACE
+  | DO_REPLACE of constant_body
 
 type work_list =
     (section_path * section_path modification) list
@@ -28,7 +28,7 @@ type work_list =
     * (constructor_path * constructor_path modification) list
 
 type recipe = {
-  d_from : section_path;
+  d_from : constant_body;
   d_abstract : identifier list;
   d_modlist : work_list }
 

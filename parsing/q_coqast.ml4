@@ -36,51 +36,62 @@ let anti loc x =
 (* which will bind their actual ast value *)
 
 let rec expr_of_ast = function
-  | Coqast.Nvar loc id when is_meta id -> anti loc id
-  | Coqast.Id loc id when is_meta id -> anti loc id
-  | Coqast.Node _ "$VAR" [Coqast.Nvar loc x] ->
-      <:expr< Coqast.Nvar loc $anti loc x$ >>
-  | Coqast.Node loc "$PATH" l ->
-      let extract_var = function
-	| Coqast.Nvar loc id -> id
-	| Coqast.Id loc id -> failwith ("Id"^id)
-	| Coqast.Node _ s _ -> failwith ("Node"^s)
-	| _ -> failwith "Path is not built from ast variables" in
-      let l = List.map extract_var l in
-      let l = expr_list_of_var_list l in
-      <:expr< Coqast.Path loc $l$ Names.CCI >>
-  | Coqast.Node _ "$ID" [Coqast.Nvar loc x] ->
+  | Coqast.Nmeta loc id -> anti loc id
+  | Coqast.Id loc id when is_meta id -> <:expr< Coqast.Id loc $anti loc id$ >>
+  | Coqast.Node _ "$VAR" [Coqast.Nmeta loc x] ->
+      <:expr< let s = $anti loc x$ in
+      if String.length s > 0 && s.[0] = '$' then
+	failwith "Wrong ast: $VAR should not be bound to a meta variable"
+      else
+	Coqast.Nvar loc (Names.id_of_string s) >>
+  | Coqast.Node _ "$PATH" [Coqast.Nmeta loc x] ->
+      <:expr< Coqast.Path loc $anti loc x$ >>
+  | Coqast.Node _ "$ID" [Coqast.Nmeta loc x] ->
       <:expr< Coqast.Id loc $anti loc x$ >>
-  | Coqast.Node _ "$STR" [Coqast.Nvar loc x] ->
+  | Coqast.Node _ "$STR" [Coqast.Nmeta loc x] ->
       <:expr< Coqast.Str loc $anti loc x$ >>
-  | Coqast.Node _ "$SLAM" [Coqast.Nvar loc idl; y] ->
+(* Obsolète
+  | Coqast.Node _ "$SLAM" [Coqast.Nmeta loc idl; y] ->
       <:expr<
       List.fold_right (Pcoq.slam_ast loc) $anti loc idl$ $expr_of_ast y$ >>
-  | Coqast.Node _ "$ABSTRACT" [Coqast.Str _ s;Coqast.Nvar loc idl; y] ->
+*)
+  | Coqast.Node loc "$ABSTRACT" [Coqast.Str _ s; x; y] ->
       <:expr<
-      Pcoq.abstract_binders_ast loc $str:s$ $anti loc idl$ $expr_of_ast y$ >>
+      Pcoq.abstract_binders_ast loc $str:s$ $expr_of_ast x$ $expr_of_ast y$ >>
   | Coqast.Node loc nn al ->
       let e = expr_list_of_ast_list al in
       <:expr< Coqast.Node loc $str:nn$ $e$ >>
-  | Coqast.Nvar loc id -> <:expr< Coqast.Nvar loc $str:id$ >>
+  | Coqast.Nvar loc id ->
+      <:expr< Coqast.Nvar loc (Names.id_of_string $str:Names.string_of_id id$) >>
   | Coqast.Slam loc None a ->
       <:expr< Coqast.Slam loc None $expr_of_ast a$ >>
+  | Coqast.Smetalam loc s a ->
+      <:expr< 
+      match $anti loc s$ with
+	[ Coqast.Nvar _ id -> Coqast.Slam loc (Some id) $expr_of_ast a$
+	| Coqast.Nmeta _ s -> Coqast.Smetalam loc s $expr_of_ast a$
+	| _ -> failwith "Slam expects a var or a metavar" ] >>
   | Coqast.Slam loc (Some s) a ->
-      let se = if is_meta s then anti loc s else <:expr< $str:s$ >> in
+      let se = <:expr< Names.id_of_string $str:Names.string_of_id s$ >> in
       <:expr< Coqast.Slam loc (Some $se$) $expr_of_ast a$ >>
   | Coqast.Num loc i -> <:expr< Coqast.Num loc $int:string_of_int i$ >>
   | Coqast.Id loc id -> <:expr< Coqast.Id loc $str:id$ >>
   | Coqast.Str loc str -> <:expr< Coqast.Str loc $str:str$ >>
-  | Coqast.Path loc sl s ->
-      let e = expr_list_of_var_list sl in
-      <:expr< Coqast.Path loc $e$ $str:s$ >> 
+  | Coqast.Path loc qid ->
+      let l,a,_ = Names.repr_path qid in
+      let expr_of_modid id =
+	<:expr< Names.id_of_string $str:Names.string_of_id id$ >> in
+      let e = List.map expr_of_modid (Names.repr_dirpath l) in
+      let e = expr_list_of_var_list e in
+      <:expr< Coqast.Path loc (Names.make_path (Names.make_dirpath
+      $e$) (Names.id_of_string $str:Names.string_of_id a$) Names.CCI) >> 
   | Coqast.Dynamic _ _ ->
       failwith "Q_Coqast: dynamic: not implemented"
 
 and expr_list_of_ast_list al =
   List.fold_right
     (fun a e2 -> match a with
-       | (Coqast.Node _ "$LIST" [Coqast.Nvar locv pv]) ->
+       | (Coqast.Node _ "$LIST" [Coqast.Nmeta locv pv]) ->
            let e1 = anti locv pv in
            let loc = (fst(MLast.loc_of_expr e1), snd(MLast.loc_of_expr e2)) in
 	     if e2 = (let loc = dummy_loc in <:expr< [] >>)
@@ -95,8 +106,7 @@ and expr_list_of_ast_list al =
 and expr_list_of_var_list sl =
   let loc = dummy_loc in
   List.fold_right
-    (fun s e2 ->
-       let e1 = if is_meta s then anti loc s else <:expr< $str:s$ >> in
+    (fun e1 e2 ->
        let loc = (fst (MLast.loc_of_expr e1), snd (MLast.loc_of_expr e2)) in
        <:expr< [$e1$ :: $e2$] >>)
     sl <:expr< [] >>

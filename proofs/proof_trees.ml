@@ -342,13 +342,12 @@ open Termast
 
 let ast_of_cvt_bind f = function
   | (NoDep n,c) -> ope ("BINDING", [(num n); ope ("COMMAND",[(f c)])])
-  | (Dep  id,c) -> ope ("BINDING", [nvar (string_of_id id);
-                                      ope  ("COMMAND",[(f c)])]) 
+  | (Dep  id,c) -> ope ("BINDING", [nvar id; ope  ("COMMAND",[(f c)])]) 
   | (Com,c)     -> ope ("BINDING", [ope ("COMMAND",[(f c)])])
 
 let rec ast_of_cvt_intro_pattern = function
   | WildPat   -> ope ("WILDCAR",[])
-  | IdPat id  -> nvar (string_of_id id) 
+  | IdPat id  -> nvar id
   | DisjPat l -> ope ("DISJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
   | ConjPat l -> ope ("CONJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
   | ListPat l -> ope ("LISTPATTERN",  (List.map ast_of_cvt_intro_pattern l))
@@ -363,7 +362,7 @@ let last_of_cvt_flags (_,red) =
    let lqid =
      List.map
        (function
-	  | EvalVarRef id -> nvar (string_of_id id)
+	  | EvalVarRef id -> nvar id
 	  | EvalConstRef sp ->
 	      ast_of_qualid (Global.qualid_of_global (ConstRef sp)))
        lconst in
@@ -383,7 +382,7 @@ let ast_of_cvt_redexp = function
   | Unfold l ->
     ope("Unfold",List.map (fun (locc,sp) -> ope("UNFOLD",
       [match sp with
-	| EvalVarRef id -> nvar (string_of_id id)
+	| EvalVarRef id -> nvar id
 	| EvalConstRef sp -> 					
 	    ast_of_qualid (Global.qualid_of_global (ConstRef sp))]
       @(List.map num locc))) l)
@@ -397,8 +396,8 @@ let ast_of_cvt_redexp = function
 
 (* Gives the ast corresponding to a tactic argument *)
 let ast_of_cvt_arg = function
-  | Identifier id   -> nvar (string_of_id id) 
-  | Qualid qid      -> nvar (Nametab.string_of_qualid qid) 
+  | Identifier id   -> nvar id
+  | Qualid qid      -> ast_of_qualid qid
   | Quoted_string s -> str s
   | Integer n       -> num n 
   | Command c       -> ope ("COMMAND",[c])
@@ -411,8 +410,8 @@ let ast_of_cvt_arg = function
       "Constr_context argument could not be used">]
   | Clause idl      -> 
       let transl = function
-	| InHyp id -> ope ("INHYP", [nvar (string_of_id id)])
-	| InHypType id -> ope ("INHYPTYPE", [nvar (string_of_id id)]) in
+	| InHyp id -> ope ("INHYP", [nvar id])
+	| InHypType id -> ope ("INHYPTYPE", [nvar id]) in
       ope ("CLAUSE", List.map transl idl)
   | Bindings bl     -> ope ("BINDINGS", 
 			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
@@ -424,17 +423,14 @@ let ast_of_cvt_arg = function
   | Tacexp ast      -> ope ("TACTIC",[ast])
   | Tac (tac,ast) -> ast
   | Redexp red -> ope("REDEXP",[ast_of_cvt_redexp red])
-  | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
-                                      (num n); 
-                                      ope ("COMMAND",[c])]) 
-  | Cofixexp (id,c) -> ope ("COFIXEXP",[(nvar (string_of_id id)); 
-                                          (ope ("COMMAND",[c]))])
+  | Fixexp (id,n,c) -> ope ("FIXEXP",[nvar id; num n; ope ("COMMAND",[c])])
+  | Cofixexp (id,c) -> ope ("COFIXEXP",[nvar id; ope ("COMMAND",[c])])
   | Intropattern p ->  ast_of_cvt_intro_pattern p
   | Letpatterns (gl_occ_opt,hyp_occ_list) ->
      let hyps_pats =
        List.map
 	 (fun (id,l) ->
-	    ope ("HYPPATTERN", nvar (string_of_id id) :: (List.map num l)))
+	    ope ("HYPPATTERN", nvar id :: (List.map num l)))
 	 hyp_occ_list in
      let all_pats =
        match gl_occ_opt with

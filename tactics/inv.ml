@@ -413,9 +413,9 @@ let inv gene com status id =
   in 
   fun gls -> try tac gls with e -> wrap_inv_error id e
 
-let hinv_kind = Identifier (id_of_string "HalfInversion")
-let inv_kind = Identifier (id_of_string "Inversion")
-let invclr_kind = Identifier (id_of_string "InversionClear")
+let hinv_kind = Quoted_string "HalfInversion"
+let inv_kind = Quoted_string "Inversion"
+let invclr_kind = Quoted_string "InversionClear"
 
 let com_of_id id =
   if id = hinv_kind then None
@@ -519,6 +519,6 @@ let invIn_tac =
   in 
   fun com id hl ->
     gentac
-      ((Identifier (id_of_string com))
+      ((Identifier com)
        ::(Identifier id)
        ::(List.map (fun id -> (Identifier id)) hl))

@@ -8,18 +8,24 @@
 
 (*i $Id$ i*)
 
+(*i*)
+open Names
+(*i*)
+
 (* Abstract syntax trees. *)
 
 type loc = int * int
 
 type t =
   | Node of loc * string * t list
-  | Nvar of loc * string
-  | Slam of loc * string option * t
+  | Nmeta of loc * string
+  | Nvar of loc * identifier
+  | Slam of loc * identifier option * t
+  | Smetalam of loc * string * t
   | Num of loc * int
-  | Id of loc * string
   | Str of loc * string
-  | Path of loc * string list* string
+  | Id of loc * string
+  | Path of loc * section_path
   | Dynamic of loc * Dyn.t
 
 (* returns the list of metas occuring in the ast *)
@@ -30,5 +36,7 @@ val collect_metas : t -> int list
 val subst_meta : (int * t) list -> t -> t
 
 (* hash-consing function *)
-val hcons_ast: (string -> string) -> (t -> t) * (loc -> loc)
-
+val hcons_ast: 
+  (string -> string) * (Names.identifier -> Names.identifier)
+  * (section_path -> section_path)
+  -> (t -> t) * (loc -> loc)

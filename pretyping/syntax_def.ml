@@ -8,6 +8,8 @@
 
 (* $Id$ *)
 
+open Util
+open Pp
 open Names
 open Rawterm
 open Libobject
@@ -27,31 +29,39 @@ let _ = Summary.declare_summary
 let add_syntax_constant sp c =
   syntax_table := Spmap.add sp c !syntax_table
 
-(* Impossible de rendre récursive la définition de in_syntax_constant
-   et cache_syntax_constant, alors on triche ... *)
-let cache_syntax_constant = ref (fun c -> failwith "Undefined function")
+let cache_syntax_constant (sp,c) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_syntax_constant"
+      [< pr_id (basename sp); 'sTR " already exists" >];
+  add_syntax_constant sp c;
+  Nametab.push_syntactic_definition sp;
+  Nametab.push_short_name_syntactic_definition sp
+
+let load_syntax_constant (sp,c) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_syntax_constant"
+      [< pr_id (basename sp); 'sTR " already exists" >];
+  add_syntax_constant sp c;
+  Nametab.push_syntactic_definition sp
+
+let open_syntax_constant (sp,c) =
+  Nametab.push_short_name_syntactic_definition sp
 
 let (in_syntax_constant, out_syntax_constant) =
   let od = {
-    cache_function = (fun c -> !cache_syntax_constant c);
-    load_function = (fun _ -> ());
-    open_function = (fun c -> !cache_syntax_constant c);
+    cache_function = cache_syntax_constant;
+    load_function = load_syntax_constant;
+    open_function = open_syntax_constant;
     export_function = (fun x -> Some x) } 
   in
   declare_object ("SYNTAXCONSTANT", od)
-
-let _ =
-  cache_syntax_constant := fun (sp,c) ->
-    add_syntax_constant sp c;
-    Nametab.push_object sp (in_syntax_constant c)
 
 let declare_syntactic_definition id c =
   let _ = add_leaf id CCI (in_syntax_constant c) in ()
 
 let search_syntactic_definition sp = Spmap.find sp !syntax_table
 
-let locate_syntactic_definition sp =
-  let (sp,obj) = Nametab.locate_obj sp in
-  if object_tag obj = "SYNTAXCONSTANT" then sp else raise Not_found
-  
-
+let locate_syntactic_definition qid =
+  match Nametab.extended_locate qid with
+    | Nametab.SyntacticDef sp -> sp
+    | _ -> raise Not_found

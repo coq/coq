@@ -253,8 +253,8 @@ let match_dpat dp cls gls =
 let applyDestructor cls discard dd gls =
   let mvb = match_dpat dd.d_pat cls gls in
   let astb = match cls with
-    | Some id -> ["$0", Vast (nvar (string_of_id id))]
-    | None -> ["$0", Vast (nvar "$0")] in
+    | Some id -> ["$0", Vast (nvar id)]
+    | None -> ["$0", Vast (nvar (id_of_string "$0"))] in
   (* TODO: find the real location *)
   let tcom = match Ast.eval_act dummy_loc astb dd.d_code with
     | Vast tcom -> tcom

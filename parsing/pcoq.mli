@@ -34,7 +34,7 @@ val map_entry : ('a -> 'b) -> 'a Gram.Entry.e -> 'b Gram.Entry.e
 
 val slam_ast : Coqast.loc -> Coqast.t -> Coqast.t -> Coqast.t
 val abstract_binders_ast :
-  Coqast.loc -> string -> Coqast.t list -> Coqast.t -> Coqast.t
+  Coqast.loc -> string -> Coqast.t -> Coqast.t -> Coqast.t
 
 (* Entry types *)
 

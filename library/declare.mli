@@ -14,6 +14,7 @@ open Term
 open Sign
 open Declarations
 open Inductive
+open Library
 (*i*)
 
 (* This module provides the official functions to declare new variables, 
@@ -23,7 +24,7 @@ open Inductive
    reset works properly --- and will fill some global tables such as 
    [Nametab] and [Impargs]. *)
 
-type strength =
+type strength = 
   | NotDeclare
   | DischargeAt of dir_path
   | NeverDischarge
@@ -64,7 +65,7 @@ val declare_eliminations : mutual_inductive_path -> unit
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
-val make_strength : string list -> strength
+val make_strength : dir_path -> strength
 val make_strength_0 : unit -> strength
 val make_strength_1 : unit -> strength
 val make_strength_2 : unit -> strength

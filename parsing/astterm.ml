@@ -27,10 +27,6 @@ open Ast
 open Coqast
 open Nametab
 
-type extended_global_reference =
-  | TrueGlobal of global_reference
-  | SyntacticDef of section_path
-
 (*Takes a list of variables which must not be globalized*)
 let from_list l = List.fold_right Idset.add l Idset.empty
 
@@ -40,7 +36,7 @@ let rec adjust_implicits n = function
 
 (* when an head ident is not a constructor in pattern *)
 let mssg_hd_is_not_constructor s =
-  [< 'sTR ("The symbol "^s^" should be a constructor") >]
+  [< 'sTR "The symbol "; pr_id s; 'sTR " should be a constructor" >]
 
 (* checking linearity of a list of ids in patterns *)
 let non_linearl_mssg id =
@@ -50,7 +46,7 @@ let non_linearl_mssg id =
 let error_capture_loc loc s =
   user_err_loc
     (loc,"ast_to_rawconstr", 
-     [< 'sTR ("The variable "^s^" occurs in its type") >])
+     [< 'sTR "The variable "; pr_id s; 'sTR " occurs in its type" >])
 
 let error_expl_impl_loc loc =
   user_err_loc
@@ -116,34 +112,34 @@ let check_number_of_pattern loc n l =
 (* Translation of references *)
 
 let ast_to_sp = function
-  | Path(loc,sl,s) ->
+  | Path(loc,sp) ->
       (try 
-	 section_path sl s
+	 section_path sp
        with Invalid_argument _ | Failure _ ->
          anomaly_loc(loc,"Astterm.ast_to_sp",
-                     [< 'sTR"malformed section-path" >]))
+                     [< 'sTR"ill-formed section-path" >]))
   | ast -> anomaly_loc(Ast.loc ast,"Astterm.ast_to_sp",
                      [< 'sTR"not a section-path" >])
 
-let is_underscore id = (id = "_")
+let is_underscore id = (id = wildcard)
 
 let name_of_nvar s =
-  if is_underscore s then Anonymous else Name (id_of_string s)
+  if is_underscore s then Anonymous else Name s
 
 let ident_of_nvar loc s =
   if is_underscore s then
     user_err_loc (loc,"ident_of_nvar", [< 'sTR "Unexpected wildcard" >])
-  else (id_of_string s)
+  else s
 
 let interp_qualid p =
   let outnvar = function
     | Nvar (loc,s) -> s
-    | _ -> anomaly "interp_qualid: bad-formed qualified identifier" in
+    | _ -> anomaly "interp_qualid: ill-formed qualified identifier" in
   match p with
     | [] -> anomaly "interp_qualid: empty qualified identifier"
     | l -> 
 	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
-	make_qualid p (id_of_string (List.hd r))
+	make_qualid p (List.hd r)
 
 let maybe_variable = function
   | [Nvar (_,s)] -> Some s
@@ -161,7 +157,7 @@ let ids_of_ctxt ctxt =
 
 type pattern_qualid_kind =
   | IsConstrPat of loc * (constructor_path * identifier list)
-  | IsVarPat of loc * string
+  | IsVarPat of loc * identifier
 
 let maybe_constructor env = function
   | Node(loc,"QUALID",l) ->
@@ -188,7 +184,13 @@ let maybe_constructor env = function
   | Node(loc,"MUTCONSTRUCT",[sp;Num(_,ti);Num(_,n)]) ->
       (* Buggy: needs to compute the context *)
       IsConstrPat (loc,(((ast_to_sp sp,ti),n),[]))
-     
+
+  | Path(loc,sp) ->
+      (match absolute_reference sp with 
+	| ConstructRef (spi,j) -> 
+	    IsConstrPat (loc,((spi,j),[]))
+	| _ -> error ("Unknown absolute constructor name: "^(string_of_path sp)))
+
   | Node(loc,("CONST"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
       user_err_loc (loc,"ast_to_pattern",
    [< 'sTR "Found a pattern involving global references which are not constructors"
@@ -237,10 +239,9 @@ let ref_from_constr c = match kind_of_term c with
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let ast_to_var (env,impls) (vars1,vars2) loc s =
-  let id = id_of_string s in
+let ast_to_var (env,impls) (vars1,vars2) loc id =
   let imps =
-    if Idset.mem id env or List.mem s vars1
+    if Idset.mem id env or List.mem id vars1
     then
       try List.assoc id impls
       with Not_found -> []
@@ -248,7 +249,7 @@ let ast_to_var (env,impls) (vars1,vars2) loc s =
       let _ = lookup_id id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
       try
-	let ref = Nametab.locate (make_qualid [] (id_of_string s)) in
+	let ref = Nametab.locate (make_qualid [] id) in
 	implicits_of_global ref
       with _ -> []
   in RVar (loc, id), [], imps
@@ -262,6 +263,10 @@ type 'a globalization_action = {
   fail : qualid -> 'a * int list;
 }
 
+let implicits_of_extended_reference = function
+  | TrueGlobal ref -> implicits_of_global ref
+  | SyntacticDef _ -> []
+
 let translate_qualid act qid =
   (* Is it a bound variable? *)
   try
@@ -269,56 +274,47 @@ let translate_qualid act qid =
       | [],id -> act.parse_var id, []
       | _ -> raise Not_found
   with Not_found ->
-  (* Is it a global reference? *)
+  (* Is it a global reference or a syntactic definition? *)
   try
-    let ref = Nametab.locate qid in
-    act.parse_ref (TrueGlobal ref), implicits_of_global ref
-  with Not_found ->
-  (* Is it a reference to a syntactic definition? *)
-  try
-    let sp = Syntax_def.locate_syntactic_definition qid in
-    act.parse_ref (SyntacticDef sp), []
+    let ref = Nametab.extended_locate qid in
+    act.parse_ref ref, implicits_of_extended_reference ref
   with Not_found ->
     act.fail qid
 
 (**********************************************************************)
 
-let rawconstr_of_var env vars loc s =
+let rawconstr_of_var env vars loc id =
   try
-    ast_to_var env vars loc s
+    ast_to_var env vars loc id
   with Not_found ->
-    Pretype_errors.error_var_not_found_loc loc (id_of_string s)
+    Pretype_errors.error_var_not_found_loc loc id
 
 let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | [],s -> ast_to_var env vars loc (string_of_id s)
+      | [],s -> ast_to_var env vars loc s
       | _ -> raise Not_found
   with Not_found ->
-  (* Is it a global reference? *)
-  try
-    let ref = Nametab.locate qid in
+  (* Is it a global reference or a syntactic definition? *)
+  try match Nametab.extended_locate qid with
+  | TrueGlobal ref ->
     let hyps = implicit_section_args ref in
     let section_args = List.map (fun id -> RRef (loc, VarRef id)) hyps in
     let imps = implicits_of_global ref in
     RRef (loc, ref), section_args, adjust_implicits (List.length hyps) imps
-  with Not_found ->
-  (* Is it a reference to a syntactic definition? *)
-  try
-    let sp = Syntax_def.locate_syntactic_definition qid in
+  | SyntacticDef sp ->
     set_loc_of_rawconstr loc (Syntax_def.search_syntactic_definition sp),[],[]
   with Not_found ->
     error_global_not_found_loc loc qid
 
-let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
+let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
-let mkProdC (x,a,b) = ope("PROD",[a;slam(Some (string_of_id x),b)])
+let mkProdC (x,a,b) = ope("PROD",[a;slam(Some x,b)])
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
 let destruct_binder = function
-  | Node(_,"BINDER",c::idl) ->
-      List.map (fun id -> (id_of_string (nvar_of_ast id),c)) idl
+  | Node(_,"BINDER",c::idl) -> List.map (fun id -> (nvar_of_ast id,c)) idl
   | _ -> anomaly "BINDER is expected"
 
 (* [merge_aliases] returns the sets of all aliases encountered at this
@@ -328,14 +324,15 @@ let merge_aliases (ids,subst as aliases) = function
   | Name id   ->
       ids@[id],
       if ids=[] then subst 
-      else (string_of_id id,string_of_id (List.hd ids))::subst
+      else (id, List.hd ids)::subst
 
 let alias_of = function
   | ([],_) -> Anonymous
   | (id::_,_) -> Name id
 
-let message_redondant_alias (s1,s2) =
-  warning ("Alias variable "^s1^" is merged with "^s2)
+let message_redundant_alias (s1,s2) =
+  warning ("Alias variable "^(string_of_id s1)
+	   ^" is merged with "^(string_of_id s2))
 
 let rec ast_to_pattern env aliases = function
   | Node(_,"PATTAS",[Nvar (loc,s); p]) ->
@@ -363,12 +360,12 @@ let rec ast_to_fix = function
   | [] -> ([],[],[],[])
   | Node(_,"NUMFDECL", [Nvar(_,fi); Num(_,ni); astA; astT])::rest ->
       let (lf,ln,lA,lt) = ast_to_fix rest in
-      ((id_of_string fi)::lf, (ni-1)::ln, astA::lA, astT::lt)
-  | Node(_,"FDECL", [Nvar(_,fi); Node(_,"BINDERS",bl); astA; astT])::rest ->
+      (fi::lf, (ni-1)::ln, astA::lA, astT::lt)
+  | Node(_,"FDECL", [Nvar(_,fi); Node(_,"BINDERS",bl); astA; astT])::rest->
       let binders = List.flatten (List.map destruct_binder bl) in
       let ni = List.length binders - 1 in
       let (lf,ln,lA,lt) = ast_to_fix rest in
-      ((id_of_string fi)::lf, ni::ln, (mkProdCit binders astA)::lA,
+      (fi::lf, ni::ln, (mkProdCit binders astA)::lA,
        (mkLambdaCit binders astT)::lt)
   | _ -> anomaly "FDECL or NUMFDECL is expected"
 
@@ -376,13 +373,13 @@ let rec ast_to_cofix = function
   | [] -> ([],[],[])
   | Node(_,"CFDECL", [Nvar(_,fi); astA; astT])::rest -> 
       let (lf,lA,lt) = ast_to_cofix rest in
-      ((id_of_string fi)::lf, astA::lA, astT::lt)
+      (fi::lf, astA::lA, astT::lt)
   | _ -> anomaly "CFDECL is expected"
 
 let error_fixname_unbound str is_cofix loc name = 
   user_err_loc 
     (loc,"ast_to (COFIX)",
-       [< 'sTR "The name"; 'sPC ; 'sTR name ; 
+       [< 'sTR "The name"; 'sPC ; pr_id name ; 
 	  'sPC ; 'sTR "is not bound in the corresponding"; 'sPC ;
 	  'sTR ((if is_cofix then "co" else "")^"fixpoint definition") >])
 (*
@@ -431,7 +428,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	  
     | Node(loc,("PROD"|"LAMBDA"|"LETIN" as k), [c1;Slam(_,ona,c2)]) ->
 	let na,ids' = match ona with
-	  | Some s -> let id = id_of_string s in Name id, Idset.add id ids
+	  | Some id -> Name id, Idset.add id ids
 	  | _ -> Anonymous, ids in
 	let c1' = dbrec env c1 and c2' = dbrec (ids',impls) c2 in
 	(match k with
@@ -522,17 +519,17 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	check_uppercase loc eqn_ids;
 	check_number_of_pattern loc n pl;
 	let rhs = replace_vars_ast subst rhs in
-	List.iter message_redondant_alias subst;
+	List.iter message_redundant_alias subst;
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
 	(loc, eqn_ids,pl,dbrec (env_ids,impls) rhs)
-    | _ -> anomaly "ast_to_rawconstr: badly-formed ast for Cases equation"
+    | _ -> anomaly "ast_to_rawconstr: ill-formed ast for Cases equation"
 
   and iterated_binder oper n ty (ids,impls as env) = function
     | Slam(loc,ona,body) ->
 	let na,ids' = match ona with 
-	  | Some s ->
-	      if n>0 then check_capture loc s ty body;
-	      let id = id_of_string s in Name id, Idset.add id ids
+	  | Some id ->
+	      if n>0 then check_capture loc id ty body;
+	      Name id, Idset.add id ids
 	  | _ -> Anonymous, ids
 	in
 	let r = iterated_binder oper (n+1) ty (ids',impls) body in
@@ -614,16 +611,15 @@ let ast_adjust_consts sigma =
     | Node(loc, ("APPLIST" as key), (Node(locs,"QUALID",p) as ast)::args) ->
 	let f = adjust_qualid env loc ast (interp_qualid p) in
 	Node(loc, key, f :: List.map (dbrec env) args)
-    | Nvar (loc, s) as ast ->
-        let id = id_of_string s in
-        if isMeta s then ast
-        else if Idset.mem id env then ast
-        else adjust_qualid env loc ast (make_qualid [] (id_of_string s))
+    | Nmeta (loc, s) as ast -> ast
+    | Nvar (loc, id) as ast ->
+        if Idset.mem id env then ast
+        else adjust_qualid env loc ast (make_qualid [] id)
     | Node (loc, "QUALID", p) as ast ->
 	adjust_qualid env loc ast (interp_qualid p)
     | Slam (loc, None, t) -> Slam (loc, None, dbrec env t)
     | Slam (loc, Some na, t) ->
-        let env' = Idset.add (id_of_string na) env in
+        let env' = Idset.add na env in
         Slam (loc, Some na, dbrec env' t)
     | Node (loc, opn, tl) -> Node (loc, opn, List.map (dbrec env) tl)
     | x -> x
@@ -653,7 +649,7 @@ let rec glob_ast sigma env =
       Node (loc, "CONSTRLIST", List.map (ast_adjust_consts sigma env) l)
   | Slam (loc, None, t) -> Slam (loc, None, glob_ast sigma env t)
   | Slam (loc, Some na, t) ->
-      let env' = Idset.add (id_of_string na) env in
+      let env' = Idset.add na env in
       Slam (loc, Some na, glob_ast sigma env' t)
   | Node (loc, opn, tl) -> Node (loc, opn, List.map (glob_ast sigma env) tl)
   | x -> x
@@ -727,20 +723,14 @@ let retype_list sigma env lst =
 (* of instantiations (variables and metas)    *)
 (* Note: typ is retyped *)
 let interp_constr_gen sigma env lvar lmeta com exptyp =
-  let c =
-    interp_rawconstr_gen sigma env [] false
-      (List.map (fun x -> string_of_id (fst x)) lvar)
-      com
+  let c = interp_rawconstr_gen sigma env [] false (List.map fst lvar) com
   and rtype lst = retype_list sigma env lst in
   understand_gen sigma env (rtype lvar) (rtype lmeta) exptyp c;;
 
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
 let interp_openconstr_gen sigma env lvar lmeta com exptyp =
-  let c =
-    interp_rawconstr_gen sigma env [] false
-      (List.map (fun x -> string_of_id (fst x)) lvar)
-      com
+  let c = interp_rawconstr_gen sigma env [] false (List.map fst lvar) com
   and rtype lst = retype_list sigma env lst in
   understand_gen_tcc sigma env (rtype lvar) (rtype lmeta) exptyp c;;
 
@@ -807,9 +797,7 @@ let interp_constrpattern_gen sigma env lvar com =
   let c =
     ast_to_rawconstr sigma
       (from_list (ids_of_rel_context (rel_context env)), [])
-      true (List.map
-	      (fun x ->
-		 string_of_id (fst x)) lvar,named_context env) com
+      true (List.map fst lvar,named_context env) com
   and nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
   try 
     pattern_of_rawconstr nlvar c

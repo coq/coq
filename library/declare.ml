@@ -23,6 +23,7 @@ open Lib
 open Impargs
 open Indrec
 open Nametab
+open Library
 
 type strength = 
   | NotDeclare
@@ -81,7 +82,7 @@ let cache_variable (sp,(id,(d,_,_) as vd)) =
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
-  Nametab.push_local sp (VarRef sp);
+  Nametab.push_short_name id (VarRef sp);
   vartab := let (m,l) = !vartab in (Spmap.add sp vd m, sp::l)
 
 let (in_variable, out_variable) =
@@ -105,11 +106,17 @@ let cache_parameter (sp,c) =
     errorlabstrm "cache_parameter"
       [< pr_id (basename sp); 'sTR " already exists" >];
   Global.add_parameter sp c (current_section_context ());
+  Nametab.push sp (ConstRef sp);
+  Nametab.push_short_name (basename sp) (ConstRef sp)
+
+let load_parameter (sp,_) =
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_parameter"
+      [< pr_id (basename sp); 'sTR " already exists" >];
   Nametab.push sp (ConstRef sp)
 
-let load_parameter _ = ()
-
-let open_parameter (sp,_) = ()
+let open_parameter (sp,_) =
+  Nametab.push_short_name (basename sp) (ConstRef sp)
 
 let export_parameter x = Some x
 
@@ -155,13 +162,19 @@ let cache_constant (sp,(cdt,stre,op)) =
     | ConstantRecipe r -> Global.add_discharged_constant sp r sc
   end;
   Nametab.push sp (ConstRef sp);
+  Nametab.push_short_name (basename sp) (ConstRef sp);
   if op then Global.set_opaque sp;
   csttab := Spmap.add sp stre !csttab
 
 let load_constant (sp,(ce,stre,op)) =
-  csttab := Spmap.add sp stre !csttab
+  if Nametab.exists_cci sp then
+    errorlabstrm "cache_constant"
+      [< pr_id (basename sp); 'sTR " already exists" >] ;
+  csttab := Spmap.add sp stre !csttab;
+  Nametab.push sp (ConstRef sp)
 
-let open_constant (sp,_) = ()
+let open_constant (sp,_) =
+  Nametab.push_short_name (basename sp) (ConstRef sp)
 
 let export_constant x = Some x
 
@@ -216,11 +229,17 @@ let cache_inductive (sp,mie) =
   let names = inductive_names sp mie in
   List.iter check_exists_inductive names;
   Global.add_mind sp mie (current_section_context ());
+  List.iter (fun (sp, ref) -> Nametab.push sp ref; Nametab.push_short_name
+  (basename sp) ref) names
+
+let load_inductive (sp,mie) =
+  let names = inductive_names sp mie in
+  List.iter check_exists_inductive names;
   List.iter (fun (sp, ref) -> Nametab.push sp ref) names
 
-let load_inductive _ = ()
-
-let open_inductive (sp,mie) = ()
+let open_inductive (sp,mie) =
+  let names = inductive_names sp mie in
+  List.iter (fun (sp, ref) -> Nametab.push_short_name (basename sp) ref) names
 
 let export_inductive x = Some x
 
@@ -481,8 +500,7 @@ let elimination_suffix = function
   | Prop Null -> "_ind"
   | Prop Pos  -> "_rec"
 
-let make_elimination_ident id s = 
-  id_of_string ((string_of_id id) ^ (elimination_suffix s))
+let make_elimination_ident id s = add_suffix id (elimination_suffix s)
   
 let declare_one_elimination mispec =
   let mindstr = string_of_id (mis_typename mispec) in
@@ -524,7 +542,7 @@ let declare_eliminations sp =
 
 let lookup_eliminator env path s =
   let dir, base,k = repr_path path in
-  let id = id_of_string ((string_of_id base)^(elimination_suffix s)) in
+  let id = add_suffix base (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
   try construct_absolute_reference env (Names.make_path dir id k)

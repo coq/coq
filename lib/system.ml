@@ -13,22 +13,18 @@ open Util
 open Unix
 
 (* Files and load path. *)
+
+type physical_path = string
+type load_path = physical_path list
+
 (* All subdirectories, recursively *)
-
-type load_path_entry = {
-  directory : string;
-  coq_dirpath : string list }
-
-type load_path = load_path_entry list
 
 let exists_dir dir =
   try let _ = opendir dir in true with Unix_error _ -> false
 
-let all_subdirs root alias =
+let all_subdirs root =
   let l = ref [] in
-  let add f rel = 
-    l := { directory = f; coq_dirpath = rel } :: !l 
-  in
+  let add f rel = l := (f, rel) :: !l in
   let rec traverse dir rel =
     let dirh = opendir dir in
     try
@@ -49,12 +45,8 @@ let all_subdirs root alias =
   in
   if exists_dir root then
    begin
-     let alias = match alias with 
-       | Some a -> a
-       | None -> [Filename.basename root]
-     in
-     add root alias;
-     traverse root alias
+     add root [];
+     traverse root []
    end ;
   List.rev !l
 
@@ -73,7 +65,7 @@ let glob s = s
 let search_in_path path filename =
   let rec search = function
     | lpe :: rem ->
-	let f = glob (Filename.concat lpe.directory filename) in
+	let f = glob (Filename.concat lpe filename) in
 	if Sys.file_exists f then (lpe,f) else search rem
     | [] ->
 	raise Not_found
@@ -86,7 +78,7 @@ let find_file_in_path paths name =
   let globname = glob name in
   if not (Filename.is_relative globname) then
     let root = Filename.dirname globname in
-    { directory = root; coq_dirpath = [] }, globname
+    root, globname
   else 
     try 
       search_in_path paths name
@@ -129,12 +121,11 @@ let raw_extern_intern magic suffix =
       open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
     output_binary_int channel magic;
     filec
-  and intern_state paths name = 
-    let lpe,fname = find_file_in_path paths (make_suffix name suffix) in
+  and intern_state fname = 
     let channel = open_in_bin fname in
     if input_binary_int channel <> magic then
       raise (Bad_magic_number fname);
-    (lpe,fname,channel)
+    channel
   in 
   (extern_state,intern_state)
 
@@ -151,7 +142,8 @@ let extern_intern magic suffix =
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name = 
     try
-      let (_,fname,channel) = raw_intern paths name in
+      let _,fname = find_file_in_path paths (make_suffix name suffix) in
+      let channel = raw_intern fname in
       let v = marshal_in channel in
       close_in channel; 
       v

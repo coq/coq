@@ -173,7 +173,7 @@ val set_transparent : env -> constant_path -> unit
 
 type compiled_env
 
-val export : env -> string -> compiled_env
+val export : env -> dir_path -> compiled_env
 val import : compiled_env -> env -> env
 
 (*s Unsafe judgments. We introduce here the pre-type of judgments, which is

@@ -395,7 +395,7 @@ module MonoPp = Make(MonoParams)
 
 (*s Renaming issues in a modular extraction. *)
 
-let current_module = ref ""
+let current_module = ref None
 
 module ModularParams = struct
 
@@ -424,7 +424,8 @@ module ModularParams = struct
     in
     let m = list_last (dirpath sp) in
     id_of_string 
-      (if m = !current_module then s else (String.capitalize m) ^ "." ^ s)
+      (if Some m = !current_module then s 
+       else (String.capitalize (string_of_id m)) ^ "." ^ s)
 
   let rename_type_global r = 
     let id = Environ.id_of_global (Global.env()) r in 

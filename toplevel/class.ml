@@ -37,7 +37,8 @@ let stre_gt = function
   | (_,NeverDischarge) -> true
   | (_,NotDeclare) -> true
   | (DischargeAt sp1,DischargeAt sp2) ->
-      dirpath_prefix_of sp1 sp2 (* was sp_gt but don't understand why - HH *)
+      is_dirpath_prefix_of sp1 sp2
+	(* was sp_gt but don't understand why - HH *)
 
 let stre_max (stre1,stre2) =
   if stre_gt (stre1,stre2) then stre1 else stre2

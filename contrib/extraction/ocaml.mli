@@ -22,7 +22,7 @@ val collect_lambda : ml_ast -> identifier list * ml_ast
 val push_vars : identifier list -> identifier list * Idset.t ->
   identifier list * (identifier list * Idset.t)
 
-val current_module : string ref
+val current_module : identifier option ref
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 
@@ -32,7 +32,7 @@ open Mlutil
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 
-val current_module : string ref
+val current_module : Names.identifier option ref
 val extract_to_file : string -> extraction_params -> ml_decl list -> unit
 
 

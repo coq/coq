@@ -11,101 +11,16 @@
 open Pp
 open Util
 
+(*s Identifiers *)
+
 (* Utilities *)
 
 let code_of_0 = Char.code '0'
 let code_of_9 = Char.code '9'
 
-(* This checks that a string is acceptable as an ident, i.e. starts
-   with a letter and contains only letters, digits or "'" *)
-
-let check_ident_suffix i l s =
-  for i=1 to l-1 do
-    let c = String.get s i in
-    if not (is_letter c or is_digit c or c = '\'') then
-      error
-	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
-  done
-
-let check_ident s =
-  let l = String.length s in
-  if l = 0 then error "The empty string is not an identifier"; 
-  let c = String.get s 0 in
-  if not (is_letter c) then error "An identifier starts with a letter";
-  check_ident_suffix 1 l s
-
-let check_suffix s = check_ident_suffix 0 (String.length s) s
-
-let is_ident s = try check_ident s; true with _ -> false
-
 (* Identifiers *)
-(*
-module Ident = struct
 
-type t = {
-  atom : string ; 
-  index : int }
-
-let repr_ident { atom = sa; index = n } =
-  if n = -1 then (sa,None) else (sa,Some n)
-
-let make_ident sa = function
-  | Some n ->
-      let c = Char.code (String.get sa (String.length sa -1)) in
-      if c < code_of_0 or c > code_of_9 then { atom = sa; index = n }
-      else { atom = sa^"_"; index = n }
-  | None -> { atom = sa; index = -1 }
-
-let string_of_id id = match repr_ident id with
-  | (s,None) -> s
-  | (s,Some n) -> s ^ (string_of_int n)
-
-let id_of_string s =
-  let slen = String.length s in
-  (* [n'] is the position of the first non nullary digit *)
-  let rec numpart n n' =
-    if n = 0 then 
-      failwith
-	("The string " ^ s ^ " is not an identifier: it contains only digits")
-    else 
-      let c = Char.code (String.get s (n-1)) in
-      if c = code_of_0 && n <> slen then 
-	numpart (n-1) n' 
-      else if code_of_0 <= c && c <= code_of_9 then 
-	numpart (n-1) (n-1)
-      else 
-	n'
-  in
-  let numstart = numpart slen slen in
-  if numstart = slen then 
-    { atom = s; index = -1 } 
-  else
-    { atom = String.sub s 0 numstart;
-      index = int_of_string (String.sub s numstart (slen - numstart)) }
-
-let first_char id =
-  assert (id.atom <> "");
-  String.make 1 id.atom.[0]
-
-let id_ord { atom = s1; index = n1 } { atom = s2; index = n2 } = 
-  let s_bit = Pervasives.compare s1 s2 in
-  if s_bit = 0 then n1 - n2 else s_bit
-
-(* Rem : if an ident starts with toto00 then after successive
-   renamings it comes to toto09, then it goes on with toto010 *)
-let lift_ident { atom = str; index = i } = { atom = str; index = i+1 }
-let restart_ident id = { id with index = 0 }
-let has_index id = (id.index <> -1)
-
-let hash_sub hstr id = { atom = hstr id.atom; index = id.index }
-let equal id1 id2 = id1.atom == id2.atom && id1.index = id2.index
-
-end (* End of module Ident *)
-*)
-(* Second implementation *)
-module Ident = struct
-
-type t = string
+type identifier = string
 
 let cut_ident s =
   let slen = String.length s in
@@ -139,13 +54,7 @@ let make_ident sa = function
       let c = Char.code (String.get sa (String.length sa -1)) in
       if c < code_of_0 or c > code_of_9 then sa ^ (string_of_int n)
       else sa ^ "_" ^ (string_of_int n)
-  | None -> sa
-
-let add_suffix id s = check_suffix s; id^s
-let add_prefix s id = check_ident s; s^id
-
-let string_of_id id = id
-let id_of_string s = s
+  | None -> String.copy sa
 
 let first_char id =
   assert (id <> "");
@@ -155,7 +64,7 @@ let id_ord = Pervasives.compare
 
 (* Rem: semantics is a bit different, if an ident starts with toto00 then
   after successive renamings it comes to toto09, then it goes on with toto10 *)
-let lift_ident id =
+let lift_subscript id =
   let len = String.length id in
   let rec add carrypos =
     let c = id.[carrypos] in
@@ -180,28 +89,52 @@ let lift_ident id =
     end
   in add (len-1)
 
-let has_index id = is_digit (id.[String.length id - 1])
+let has_subscript id = is_digit (id.[String.length id - 1])
 
-let restart_ident id =
+let forget_subscript id =
   let len = String.length id in
   let numstart = cut_ident id in
   let newid = String.make (numstart+1) '0' in
   String.blit id 0 newid 0 numstart;
   newid
 
-let hash_sub hstr id = hstr id
-let equal id1 id2 = id1 == id2
+(* This checks that a string is acceptable as an ident, i.e. starts
+   with a letter and contains only letters, digits or "'" *)
 
-end (* End of module Ident *)
+let check_ident_suffix i l s =
+  for i=1 to l-1 do
+    let c = String.get s i in
+    if not (is_letter c or is_digit c or c = '\'' or c = '_' or c = '@') then
+      error
+	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
+  done
 
-type identifier = Ident.t
-let repr_ident = Ident.repr_ident
-let make_ident = Ident.make_ident
+let check_ident s =
+  let l = String.length s in
+  if l = 0 then error "The empty string is not an identifier";
+  let c = String.get s 0 in
+  if (is_letter c) or c = '_' or c = '$' then check_ident_suffix 1 l s
+  else error (s^": an identifier starts with a letter")
+
+let is_ident s = try check_ident s; true with _ -> false
+
+let check_suffix s = check_ident_suffix 0 (String.length s) s
+
 let add_suffix id s = check_suffix s; id^s
 let add_prefix s id = check_ident s; s^id
-let string_of_id = Ident.string_of_id
-let id_of_string = Ident.id_of_string
-let id_ord = Ident.id_ord
+
+let string_of_id id = String.copy id
+let id_of_string s = check_ident s; String.copy s
+
+(* Hash-consing of identifier *)
+module Hident = Hashcons.Make(
+  struct 
+    type t = string
+    type u = string -> string
+    let hash_sub hstr id = hstr id
+    let equal id1 id2 = id1 == id2
+    let hash = Hashtbl.hash
+  end)
 
 module IdOrdered = 
   struct
@@ -216,18 +149,18 @@ let atompart_of_id id = fst (repr_ident id)
 let index_of_id id = snd (repr_ident id)
 let pr_id id = [< 'sTR (string_of_id id) >]
 
-let first_char = Ident.first_char
+let wildcard = id_of_string "_"
 
 (* Fresh names *)
 
-let lift_ident = Ident.lift_ident
+let lift_ident = lift_subscript
 
 let next_ident_away id avoid = 
   if List.mem id avoid then
-    let id0 = if not (Ident.has_index id) then id else 
+    let id0 = if not (has_subscript id) then id else 
     (* Ce serait sans doute mieux avec quelque chose inspiré de 
        *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
-    Ident.restart_ident id in
+    forget_subscript id in
     let rec name_rec id =
       if List.mem id avoid then name_rec (lift_ident id) else id in 
     name_rec id0
@@ -272,7 +205,52 @@ let kind_of_string = function
   | _ -> invalid_arg "kind_of_string"
 
 (*s Directory paths = section names paths *)
-type dir_path = string list
+type module_ident = identifier
+type dir_path = module_ident list
+
+module ModIdOrdered = 
+  struct
+    type t = identifier
+    let compare = Pervasives.compare
+  end
+
+module ModIdmap = Map.Make(ModIdOrdered)
+
+let make_dirpath x = x
+let repr_dirpath x = x
+
+let dirpath_prefix = function 
+  | [] -> anomaly "dirpath_prefix: empty dirpath"
+  | l -> snd (list_sep_last l)
+
+let split_dirpath d = let (b,d) = list_sep_last d in (d,b)
+
+let parse_sp s =
+  let len = String.length s in
+  let rec decoupe_dirs n =
+    try
+      let pos = String.index_from s n '.' in
+      let dir = String.sub s n (pos-n) in
+      let dirs,n' = decoupe_dirs (succ pos) in
+      (id_of_string dir)::dirs,n'
+    with
+      | Not_found -> [],n
+  in
+  if len = 0 then invalid_arg "parse_section_path";
+  let dirs,n = decoupe_dirs 0 in
+  let id = String.sub s n (len-n) in
+  dirs, (id_of_string id)
+
+let dirpath_of_string s =
+  try
+    let sl,s = parse_sp s in
+    sl @ [s]
+  with
+    | Invalid_argument _ -> invalid_arg "dirpath_of_string"
+
+let string_of_dirpath sl = String.concat "." (List.map string_of_id sl)
+
+let pr_dirpath sl = [< 'sTR (string_of_dirpath sl) >]
 
 (*s Section paths are absolute names *)
 
@@ -289,52 +267,25 @@ let basename sp = sp.basename
 let dirpath sp = sp.dirpath
 
 (* parsing and printing of section paths *)
-let string_of_dirpath sl = String.concat "." sl
-
 let string_of_path sp =
   let (sl,id,k) = repr_path sp in
-  String.concat ""
-    (List.flatten (List.map (fun s -> [s;"."]) sl)
-     @ [ string_of_id id ])
-
-let parse_sp s =
-  let len = String.length s in
-  let rec decoupe_dirs n =
-    try
-      let pos = String.index_from s n '.' in
-      let dir = String.sub s n (pos-n) in
-      let dirs,n' = decoupe_dirs (succ pos) in
-      dir::dirs,n'
-    with
-      | Not_found -> [],n
-  in
-  if len = 0 then invalid_arg "parse_section_path";
-  let dirs,n = decoupe_dirs 0 in
-  let id = String.sub s n (len-n) in
-  dirs,id
+  (string_of_dirpath sl) ^ "." ^ (string_of_id id)
 
 let path_of_string s =
   try
     let sl,s = parse_sp s in
-    make_path sl (id_of_string s) CCI
+    make_path sl s CCI
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
-
-let dirpath_of_string s =
-  try
-    let sl,s = parse_sp s in
-    sl @ [s]
-  with
-    | Invalid_argument _ -> invalid_arg "dirpath_of_string"
 
 let pr_sp sp = [< 'sTR (string_of_path sp) >]
 
 let sp_of_wd = function
   | [] -> invalid_arg "Names.sp_of_wd"
-  | l -> let (bn,dp) = list_sep_last l in make_path dp (id_of_string bn) OBJ
+  | l -> let (bn,dp) = list_sep_last l in make_path dp bn OBJ
 
 let wd_of_sp sp = 
-  let (sp,id,_) = repr_path sp in sp @ [string_of_id id]
+  let (sp,id,_) = repr_path sp in sp @ [id]
 
 let sp_ord sp1 sp2 =
   let (p1,id1,k) = repr_path sp1
@@ -346,7 +297,7 @@ let sp_ord sp1 sp2 =
   else
     ck
 
-let dirpath_prefix_of = list_prefix_of
+let is_dirpath_prefix_of = list_prefix_of
 
 module SpOrdered =
   struct
@@ -365,16 +316,6 @@ type constant_path = section_path
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int
 type mutual_inductive_path = section_path
-
-(* Hash-consing of identifier *)
-module Hident = Hashcons.Make(
-  struct 
-    type t = Ident.t
-    type u = string -> string
-    let hash_sub = Ident.hash_sub
-    let equal = Ident.equal
-    let hash = Hashtbl.hash
-  end)
 
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
@@ -395,9 +336,9 @@ module Hname = Hashcons.Make(
 module Hsp = Hashcons.Make(
   struct 
     type t = section_path
-    type u = (identifier -> identifier) * (string -> string)
-    let hash_sub (hident,hstr) sp =
-      { dirpath = List.map hstr sp.dirpath;
+    type u = identifier -> identifier
+    let hash_sub hident sp =
+      { dirpath = List.map hident sp.dirpath;
         basename = hident sp.basename;
         kind = sp.kind }
     let equal sp1 sp2 =
@@ -411,6 +352,6 @@ let hcons_names () =
   let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
   let hident = Hashcons.simple_hcons Hident.f hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
-  let hspcci = Hashcons.simple_hcons Hsp.f (hident,hstring) in
-  let hspfw = Hashcons.simple_hcons Hsp.f (hident,hstring) in
+  let hspcci = Hashcons.simple_hcons Hsp.f hident in
+  let hspfw = Hashcons.simple_hcons Hsp.f hident in
   (hspcci,hspfw,hname,hident,hstring)

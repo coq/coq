@@ -20,7 +20,7 @@ open Declarations
 
 type checksum = int
 
-type import = string * checksum
+type compilation_unit_name = dir_path * checksum
 
 type global = Constant | Inductive
 
@@ -28,7 +28,7 @@ type globals = {
   env_constants : constant_body Spmap.t;
   env_inductives : mutual_inductive_body Spmap.t;
   env_locals : (global * section_path) list;
-  env_imports : import list }
+  env_imports : compilation_unit_name list }
 
 type context = {
   env_named_context : named_context;
@@ -366,9 +366,8 @@ let set_transparent env sp =
 (*s Modules (i.e. compiled environments). *)
 
 type compiled_env = {
-  cenv_id : string;
-  cenv_stamp : checksum;
-  cenv_needed : import list;
+  cenv_stamped_id : compilation_unit_name;
+  cenv_needed : compilation_unit_name list;
   cenv_constants : (section_path * constant_body) list;
   cenv_inductives : (section_path * mutual_inductive_body) list }
 
@@ -382,8 +381,7 @@ let exported_objects env =
 
 let export env id = 
   let (cst,ind) = exported_objects env in
-  { cenv_id = id;
-    cenv_stamp = 0;
+  { cenv_stamped_id = (id,0);
     cenv_needed = env.env_globals.env_imports;
     cenv_constants = cst;
     cenv_inductives = ind }
@@ -394,9 +392,9 @@ let check_imports env needed =
     try
       let actual_stamp = List.assoc id imports in
       if stamp <> actual_stamp then
-	error ("Inconsistent assumptions over module " ^ id)
+	error ("Inconsistent assumptions over module " ^(string_of_dirpath id))
     with Not_found -> 
-      error ("Reference to unknown module " ^ id)
+      error ("Reference to unknown module " ^ (string_of_dirpath id))
   in
   List.iter check needed
 
@@ -415,7 +413,7 @@ let import cenv env =
     { env_constants = add_list gl.env_constants cenv.cenv_constants;
       env_inductives = add_list gl.env_inductives cenv.cenv_inductives;
       env_locals = gl.env_locals;
-      env_imports = (cenv.cenv_id,cenv.cenv_stamp) :: gl.env_imports }
+      env_imports = cenv.cenv_stamped_id :: gl.env_imports }
   in
   let g = universes env in
   let g = List.fold_left 

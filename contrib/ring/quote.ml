@@ -120,7 +120,7 @@ open Proof_type
   the constants are loaded in the environment *)
 
 let constant dir s =
-  let dir = "Coq"::"ring"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::"ring"::dir)) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id

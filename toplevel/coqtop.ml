@@ -12,6 +12,7 @@ open Pp
 open Util
 open System
 open Options
+open Names
 open States
 open Toplevel
 open Coqinit
@@ -44,10 +45,10 @@ let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
-let set_include d p = push_include (d,Names.dirpath_of_string p)
-let set_rec_include d p = push_rec_include (d,Names.dirpath_of_string p)
-let set_default_include d = set_include d Nametab.default_root
-let set_default_rec_include d = set_rec_include d Nametab.default_root
+let set_include d p = push_include (d,p)
+let set_rec_include d p = push_rec_include (d,p)
+let set_default_include d = set_include d Nametab.default_root_prefix
+let set_default_rec_include d = set_rec_include d Nametab.default_root_prefix
  
 let load_vernacular_list = ref ([] : string list)
 let add_load_vernacular s =
@@ -60,15 +61,15 @@ let load_vernacular () =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () = 
-  List.iter
-    (fun s -> Library.load_module (Filename.basename s) (Some s))
-    (List.rev !load_vernacular_obj)
+  List.iter Library.read_module_from_file (List.rev !load_vernacular_obj)
 
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
   List.iter
-    (fun s -> Library.require_module None (Filename.basename s) (Some s) false)
+    (fun s -> 
+      let qid = Nametab.make_qualid [] (id_of_string (Filename.basename s)) in
+      Library.require_module None qid  (Some s) false)
     (List.rev !require_list)
 
 (* Re-exec Coq in bytecode or native code if necessary. [s] is either
@@ -110,7 +111,7 @@ let parse_args () =
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: p :: rem -> set_rec_include d p; parse rem
+    | "-R" :: d :: p :: rem ->set_rec_include d (dirpath_of_string p);parse rem
     | "-R" :: ([] | [_]) -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem

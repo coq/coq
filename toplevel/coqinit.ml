@@ -80,16 +80,19 @@ let init_load_path () =
   List.iter (fun s -> coq_add_rec_path (Filename.concat coqlib s)) dirs;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;
-  Mltop.add_path "." [Nametab.default_root];
+  Mltop.add_path "." Nametab.default_root_prefix;
   (* additional loadpath, given with -I -include -R options *)
   List.iter 
     (fun (s,alias,reci) ->
        if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
     (List.rev !includes)
 
+(* Must be done after restoring initial state! *)
 let init_library_roots () =
   List.iter
-    (fun (_,alias,_) -> Nametab.push_library_root (List.hd alias)) !includes;
+    (fun (_,alias,_) ->
+      if alias <> [] then Nametab.push_library_root (List.hd alias))
+    !includes;
   includes := []
 
 (* Initialises the Ocaml toplevel before launching it, so that it can

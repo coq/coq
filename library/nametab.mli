@@ -18,6 +18,10 @@ open Term
 (*s This module contains the table for globalization, which associates global
    names (section paths) to qualified names. *)
 
+type extended_global_reference =
+  | TrueGlobal of global_reference
+  | SyntacticDef of section_path
+
 (*s A [qualid] is a partially qualified ident; it includes fully
     qualified names (= absolute names) and all intermediate partial
     qualifications of absolute names, including single identifiers *)
@@ -38,19 +42,17 @@ exception GlobalizationError of qualid
 val error_global_not_found_loc : loc -> qualid -> 'a
 val error_global_not_found     : qualid -> 'a
 
-(*s Names tables *)
-type cci_table = global_reference Idmap.t
-type obj_table = (section_path * Libobject.obj) Idmap.t
-type mod_table = (section_path * module_contents) Stringmap.t
-and module_contents = Closed of cci_table * obj_table * mod_table
-
-(*s Registers absolute paths *)
+(*s Register visibility of absolute paths by qualified names *)
 val push : section_path -> global_reference -> unit
-val push_object : section_path -> Libobject.obj -> unit
-val push_module : section_path -> module_contents -> unit
+val push_syntactic_definition : section_path -> unit
 
-val push_local : section_path -> global_reference -> unit
-val push_local_object : section_path -> Libobject.obj -> unit
+(*s Register visibility of absolute paths by short names *)
+val push_short_name : identifier -> global_reference -> unit
+val push_short_name_syntactic_definition : section_path -> unit
+val push_short_name_object : section_path -> unit
+
+(*s Register visibility by all qualifications *)
+val push_section : dir_path -> unit
 
 (* This should eventually disappear *)
 val sp_of_id : path_kind -> identifier -> global_reference
@@ -61,37 +63,47 @@ val sp_of_id : path_kind -> identifier -> global_reference
 val constant_sp_of_id : identifier -> section_path
 
 val locate : qualid -> global_reference
-val locate_obj : qualid -> (section_path * Libobject.obj)
+
+(* This locates also syntactic definitions *)
+val extended_locate : qualid -> extended_global_reference
+
+val locate_obj : qualid -> section_path
+
 val locate_constant : qualid -> constant_path
-val locate_module : qualid -> section_path * module_contents
+val locate_section : qualid -> dir_path
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool
-val exists_module : section_path -> bool
-
+val exists_section : dir_path -> bool
+(*
 val open_module_contents : qualid -> unit
 val rec_open_module_contents : qualid -> unit
 
 (*s Entry points for sections *)
 val open_section_contents : qualid -> unit
 val push_section : section_path -> module_contents -> unit
-
+*)
 (*s Roots of the space of absolute names *)
 
 (* This is the root of the standard library of Coq *)
-val coq_root : string
+val coq_root : module_ident
 
-(* This is the default root for developments which doesn't mention a root *)
-val default_root : string
+(* This is the default root prefix for developments which doesn't mention a root *)
+val default_root_prefix : dir_path
 
 (* This is to declare a new root *)
-val push_library_root : string -> unit
+val push_library_root : module_ident -> unit
 
 (* This turns a "user" absolute name into a global reference;
    especially, constructor/inductive names are turned into internal
    references inside a block of mutual inductive *)
 val absolute_reference : section_path -> global_reference
 
+val is_absolute_dirpath : dir_path -> bool
+
 (* [locate_in_absolute_module dir id] finds [id] in module [dir] or in
    one of its section/subsection *)
 val locate_in_absolute_module : dir_path -> identifier -> global_reference
+
+val push_loaded_library : dir_path -> unit
+val locate_loaded_library : qualid -> dir_path

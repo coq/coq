@@ -312,12 +312,6 @@ let last_arg c = match kind_of_term c with
 let general_elim_then_using 
   elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
   let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
-  let name_elim =
-    (match kind_of_term elim with
-       | IsConst (sp,_) -> id_of_string (string_of_path sp)
-       | IsVar id -> id
-       | _ -> id_of_string " ") 
-  in
   (* applying elimination_scheme just a little modified *)
   let (wc,kONT)  = startWalk gl in
   let indclause  = mk_clenv_from wc (c,t) in
@@ -332,8 +326,14 @@ let general_elim_then_using
     let p, _ = decomp_app (clenv_template_type elimclause).rebus in
     match kind_of_term p with
       | IsMeta p -> p
-      | _ -> error ("The elimination combinator " ^
-                    (string_of_id name_elim) ^ " is not known") 
+      | _ ->
+	  let name_elim =
+	    match kind_of_term elim with
+	      | IsConst (sp,_) -> string_of_path sp
+	      | IsVar id -> string_of_id id
+	      | _ -> "\b"
+	  in
+	  error ("The elimination combinator " ^ name_elim ^ " is not known") 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause' in
   let elimclause' = clenv_constrain_with_bindings elimbindings elimclause' in

@@ -24,4 +24,4 @@ val half_dinv_with : identifier -> constr -> tactic
 val dinv_with : identifier -> constr -> tactic
 val dinv_clear_with : identifier -> constr -> tactic
 
-val invIn_tac : string -> identifier -> identifier list -> tactic
+val invIn_tac : identifier -> identifier -> identifier list -> tactic

@@ -456,6 +456,8 @@ Proof.
   NewDestruct l;Trivial.
 Save.
 
+(* Hints Resolve ivl_aux_ok ics_aux_ok interp_m_ok. *)
+
 Lemma canonical_sum_merge_ok : (x,y:canonical_sum)
   (Aequiv (interp_cs (canonical_sum_merge x y))
   (Aplus (interp_cs x) (interp_cs y))).

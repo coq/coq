@@ -34,7 +34,7 @@ let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
 let constant dir s =
-  let dir = "Coq"::dir in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::dir)) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id

@@ -17,9 +17,9 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of dir_path
-  | OpenedSection of string * Summary.frozen
+  | OpenedSection of module_ident * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
-  | ClosedSection of bool * string * library_segment
+  | ClosedSection of bool * module_ident * library_segment
   | FrozenState of Summary.frozen
 
 and library_entry = section_path * node
@@ -36,16 +36,16 @@ and library_segment = library_entry list
 
 let lib_stk = ref ([] : (section_path * node) list)
 
+let default_module = make_dirpath [id_of_string "Scratch"]
 let module_name = ref None
-let path_prefix = ref ([Nametab.default_root] : dir_path)
+let path_prefix = ref (default_module : dir_path)
 
 let module_sp () =
-  match !module_name with Some m -> m | None -> [Nametab.default_root]
+  match !module_name with Some m -> m | None -> default_module
 
 let recalc_path_prefix () =
   let rec recalc = function
-    | (sp, OpenedSection _) :: _ ->
-	let (pl,id,_) = repr_path sp in pl@[string_of_id id]
+    | (sp, OpenedSection (modid,_)) :: _ -> (dirpath sp)@[modid]
     | _::l -> recalc l
     | [] -> module_sp ()
   in
@@ -112,12 +112,13 @@ let contents_after = function
 
 (* Sections. *)
 
-let open_section s =
-  let sp = make_path (id_of_string s) OBJ in
-  if Nametab.exists_module sp then
-    errorlabstrm "open_section" [< 'sTR (s^" already exists") >];
-  add_entry sp (OpenedSection (s, freeze_summaries()));
-  path_prefix := !path_prefix @ [s];
+let open_section id =
+  let dir = !path_prefix @ [id] in
+  let sp = make_path id OBJ in
+  if Nametab.exists_section dir then
+    errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
+  add_entry sp (OpenedSection (id, freeze_summaries()));
+  path_prefix := dir;
   sp
 
 let check_for_module () =
@@ -130,12 +131,22 @@ let check_for_module () =
 let start_module s =
   if !module_name <> None then
     error "a module is already started";
-  if !path_prefix <> [Nametab.default_root] then
+  if !path_prefix <> default_module then
     error "some sections are already opened";
   module_name := Some s;
+  (match split_dirpath s with [],id -> Nametab.push_library_root id | _ -> ());
   Univ.set_module s;
   let _ = add_anonymous_entry (Module s) in
   path_prefix := s
+
+let end_module s =
+  match !module_name with
+    | None -> error "no module declared"
+    | Some m ->
+	let bm = snd (split_dirpath m) in
+	if bm <> s then
+	  error ("The current open module has basename "^(string_of_id bm));
+	m
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
@@ -156,11 +167,11 @@ let export_segment seg =
   in
   clean [] seg
 
-let close_section export s =
+let close_section export id =
   let sp,fs = 
     try match find_entry_p is_opened_section with
-      | sp,OpenedSection (s',fs) -> 
-	  if s <> s' then error "this is not the last opened section"; (sp,fs)
+      | sp,OpenedSection (id',fs) -> 
+	  if id<>id' then error "this is not the last opened section"; (sp,fs)
       | _ -> assert false
     with Not_found ->
       error "no opened section"
@@ -169,16 +180,14 @@ let close_section export s =
   lib_stk := before;
   let after' = export_segment after in
   pop_path_prefix ();
-  add_entry 
-    (make_path (id_of_string s) OBJ) (ClosedSection (export, s,after'));
+  add_entry (make_path id OBJ) (ClosedSection (export, id, after'));
   (sp,after,fs)
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
    frozen states are removed. *)
 
-let export_module f =
-  if !module_name = None then error "no module declared";
+let export_module s =
   export_segment !lib_stk
 
 (* Backtracking. *)
@@ -214,8 +223,8 @@ let reset_name id =
 
 (* [dir] is a section dir if [module] < [dir] <= [path_prefix] *)
 let is_section_p sp =
-  not (dirpath_prefix_of sp (module_sp ()))
-  & (dirpath_prefix_of sp !path_prefix)
+  not (is_dirpath_prefix_of sp (module_sp ()))
+  & (is_dirpath_prefix_of sp !path_prefix)
 
 (* State and initialization. *)
 

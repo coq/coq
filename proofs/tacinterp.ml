@@ -29,6 +29,7 @@ open Tactic_debug
 open Coqast
 open Ast
 open Term
+open Declare
 
 let err_msg_tactic_not_found macro_loc macro =
   user_err_loc
@@ -42,13 +43,13 @@ type value =
   | VRTactic of (goal list sigma * validation)
   | VContext of (goal sigma -> value)
   | VArg of tactic_arg
-  | VFun of (string * value) list * string option list * Coqast.t
+  | VFun of (identifier * value) list * identifier option list * Coqast.t
   | VVoid
   | VRec of value ref
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 and interp_sign =
-  enamed_declarations * Environ.env * (string * value) list *
+  enamed_declarations * Environ.env * (identifier * value) list *
     (int * constr) list * goal sigma option * debug_info
 
 (* For tactic_of_value *)
@@ -124,9 +125,9 @@ let constr_of_id id = function
 
 (* Extracted the constr list from lfun *)
 let rec constr_list goalopt = function
-  | (str,VArg(Constr c))::tl -> (id_of_string str,c)::(constr_list goalopt tl)
-  | (str,VArg(Identifier id))::tl ->
-    (try (id_of_string str,(constr_of_id id goalopt))::(constr_list goalopt tl)
+  | (id,VArg(Constr c))::tl -> (id,c)::(constr_list goalopt tl)
+  | (id0,VArg(Identifier id))::tl ->
+    (try (id0,(constr_of_id id goalopt))::(constr_list goalopt tl)
      with | Not_found -> (constr_list goalopt tl))
   | _::tl -> constr_list goalopt tl
   | [] -> []
@@ -278,12 +279,12 @@ let head_with_value (lvar,lval) =
 (* Type of patterns *)
 type match_pattern =
   | Term of constr_pattern
-  | Subterm of string option * constr_pattern
+  | Subterm of identifier option * constr_pattern
 
 (* Type of hypotheses for a Match Context rule *)
 type match_context_hyps =
   | NoHypId of match_pattern
-  | Hyp of string * match_pattern
+  | Hyp of identifier * match_pattern
 
 (* Type of a Match rule for Match Context and Match *)
 type match_rule=
@@ -503,7 +504,7 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
          (try (vcontext_interp goalopt (lookup s))
-          with | Not_found -> VArg (Identifier (id_of_string s))))
+          with | Not_found -> VArg (Identifier s)))
     | Node(_,"QUALIDARG",[Nvar(_,s)]) ->
       (try (make_qid (unrec (List.assoc s lfun)))
        with | Not_found ->
@@ -531,9 +532,9 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       VArg (Tac ((tac_interp lfun lmatch debug ast),ast))
 (*Remains to treat*)
     | Node(_,"FIXEXP", [Nvar(_,s); Num(_,n);Node(_,"COMMAND",[c])]) ->
-      VArg ((Fixexp (id_of_string s,n,c)))
+      VArg ((Fixexp (s,n,c)))
     | Node(_,"COFIXEXP", [Nvar(_,s); Node(_,"COMMAND",[c])]) ->
-      VArg ((Cofixexp (id_of_string s,c)))
+      VArg ((Cofixexp (s,c)))
 (*End of Remains to treat*)
     | Node(_,"INTROPATTERN", [ast]) ->
       VArg ((Intropattern (cvt_intro_pattern
@@ -621,19 +622,18 @@ and letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
   | Node(_,"LETCLAUSE",[Nvar(_,id);t])::tl ->
     (id,val_interp (evc,env,lfun,lmatch,goalopt,debug) t)::
       (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
-  | Node(_,"LETCUTCLAUSE",[Nvar(_,s);com;tce])::tl ->
-    let id = id_of_string s
-    and typ =
+  | Node(_,"LETCUTCLAUSE",[Nvar(_,id);com;tce])::tl ->
+    let typ =
       constr_of_Constr (unvarg
       (val_interp (evc,env,lfun,lmatch,goalopt,debug) com))
     and tac = val_interp (evc,env,lfun,lmatch,goalopt,debug) tce in
     (match tac with
     | VArg (Constr csr) ->
-      (s,VArg (Constr (mkCast (csr,typ))))::
+      (id,VArg (Constr (mkCast (csr,typ))))::
       (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
     | VArg (Identifier id) ->
       (try
-         (s,VArg (Constr (mkCast (constr_of_id id goalopt,typ))))::
+         (id,VArg (Constr (mkCast (constr_of_id id goalopt,typ))))::
          (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
        with | Not_found ->
          errorlabstrm "Tacinterp.letin_interp"
@@ -645,12 +645,12 @@ and letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
            (match goalopt with
            | None -> Global.named_context ()
            | Some g -> pf_hyps g) in
-         start_proof id Declare.NeverDischarge ndc typ;
+         start_proof id NeverDischarge ndc typ;
          by t;
          let (_,({const_entry_body = pft; const_entry_type = _},_)) =
            cook_proof () in
          delete_proof id;
-         (s,VArg (Constr (mkCast (pft,typ))))::
+         (id,VArg (Constr (mkCast (pft,typ))))::
          (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
        with | NotTactic ->
          delete_proof id;
@@ -663,9 +663,8 @@ and letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
 (* Interprets the clauses of a LetCut *)
 and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
   | [] -> tclIDTAC
-  | Node(_,"LETCUTCLAUSE",[Nvar(_,s);com;tce])::tl ->
-    let id = id_of_string s
-    and typ =
+  | Node(_,"LETCUTCLAUSE",[Nvar(_,id);com;tce])::tl ->
+    let typ =
       constr_of_Constr (unvarg
       (val_interp (evc,env,lfun,lmatch,goalopt,debug) com))
     and tac = val_interp (evc,env,lfun,lmatch,goalopt,debug) tce
@@ -699,7 +698,7 @@ and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
     | _ ->
       (try
          let t = tactic_of_value tac in
-         start_proof id Declare.NeverDischarge ndc typ;
+         start_proof id NeverDischarge ndc typ;
          by t;
          let (_,({const_entry_body = pft; const_entry_type = _},_)) =
            cook_proof () in
@@ -1216,7 +1215,7 @@ let add_tacdef na vbody =
       errorlabstrm "Tacinterp.add_tacdef" 
       [< 'sTR
          "There is already a Meta Definition or a Tactic Definition named ";
-         'sTR na>];
-    let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
-    Options.if_verbose mSGNL [< 'sTR (na ^ " is defined") >]
+         pr_id na>];
+    let _ = Lib.add_leaf na OBJ (inMD (na,vbody)) in
+    Options.if_verbose mSGNL [< pr_id na; 'sTR " is defined" >]
   end

@@ -55,8 +55,8 @@ GEXTEND Gram
 
   theorem_body_line:
     [ [ n = numarg; ":"; tac = tacarg; "." ->
-          <:ast< (VERNACCALL {SOLVE} $n (TACTIC $tac)) >>
-      | tac = tacarg; "." -> <:ast< (VERNACCALL {SOLVE} 1 (TACTIC $tac)) >>
+          <:ast< (VERNACCALL "SOLVE" $n (TACTIC $tac)) >>
+      | tac = tacarg; "." -> <:ast< (VERNACCALL "SOLVE" 1 (TACTIC $tac)) >>
       ] ]
   ;
   theorem_body_line_list:
@@ -113,8 +113,8 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   binders_list:
-    [ [ idl = Constr.ne_binders_list -> idl
-      | -> [] ] ]
+    [ [ idl = Constr.ne_binders_list -> <:ast< (BINDERS ($LIST $idl)) >>
+      | -> <:ast< (BINDERS) >> ] ]
   ;
   gallina:
     (* Definition, Goal *)
@@ -170,8 +170,8 @@ GEXTEND Gram
       | IDENT "Structure" -> <:ast< "Structure" >> ] ]
   ;
   constructor:
-    [ [ id = IDENT; ":"; c = Constr.constr ->
-          <:ast< (BINDER $c ($VAR $id)) >> ] ]
+    [ [ id = identarg; ":"; c = Constr.constr ->
+          <:ast< (BINDER $c $id) >> ] ]
   ;
   ne_constructor_list:
     [ [ idc = constructor; "|"; l = ne_constructor_list -> idc :: l
@@ -346,16 +346,16 @@ GEXTEND Gram
 
 (* Coercions *)
       | IDENT "Coercion"; qid = qualidarg; ":="; c = def_body ->
-          let s = Ast.coerce_to_var "qid" qid in
-          <:ast< (DEFINITION "COERCION" ($VAR $s) $c) >>
+          let s = Ast.coerce_to_var qid in
+          <:ast< (DEFINITION "COERCION" $s $c) >>
       | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":="; 
 	 c = constrarg ->
-          let s = Ast.coerce_to_var "qid" qid in
-	    <:ast< (DEFINITION "LCOERCION" ($VAR $s) $c) >>
+           let s = Ast.coerce_to_var qid in
+	    <:ast< (DEFINITION "LCOERCION" $s $c) >>
       | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":="; 
 	 c1 = Constr.constr; ":"; c2 = Constr.constr ->
-          let s = Ast.coerce_to_var "qid" qid in
-          <:ast< (DEFINITION "LCOERCION" ($VAR $s) (CONSTR (CAST $c1 $c2))) >>
+          let s = Ast.coerce_to_var qid in
+          <:ast< (DEFINITION "LCOERCION" $s (CONSTR (CAST $c1 $c2))) >>
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = qualidarg;
          ":"; c = qualidarg; ">->"; d = qualidarg ->
           <:ast< (COERCION "LOCAL" "IDENTITY" $f $c $d) >>
@@ -420,20 +420,20 @@ GEXTEND Gram
             <:ast< (CompileFile ($STR $verbosely) ($STR $only_spec)
                       ($STR $mname) ($STR $fname))>>
 *)
-      | IDENT "Read"; IDENT "Module"; id = identarg ->
-          <:ast< (ReadModule $id) >>
+      | IDENT "Read"; IDENT "Module"; qid = qualidarg ->
+          <:ast< (ReadModule $qid) >>
       | IDENT "Require"; import = import_tok; specif = specif_tok;
-        id = identarg -> <:ast< (Require $import $specif $id) >>
+        qid = qualidarg -> <:ast< (Require $import $specif $qid) >>
       | IDENT "Require"; import = import_tok; specif = specif_tok;
-        id = identarg; filename = stringarg ->
-          <:ast< (RequireFrom $import $specif $id $filename) >>
+        qid = qualidarg; filename = stringarg ->
+          <:ast< (RequireFrom $import $specif $qid $filename) >>
       | IDENT "Write"; IDENT "Module"; id = identarg -> 
 	  <:ast< (WriteModule $id) >>
       | IDENT "Write"; IDENT "Module"; id = identarg; s = stringarg -> 
 	  <:ast< (WriteModule $id $s) >>
       | IDENT "Declare"; IDENT "ML"; IDENT "Module";
         l = ne_stringarg_list -> <:ast< (DeclareMLModule ($LIST $l)) >>
-      | IDENT "Import"; id = identarg -> <:ast< (ImportModule $id) >>
+      | IDENT "Import"; qid = qualidarg -> <:ast< (ImportModule $qid) >>
 
   ] 
 ]

@@ -16,8 +16,10 @@ exception Non_closed_number
 
 let get_r_sign loc =
   let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
-  ((ast_of_id "R0", ast_of_id "R1", ast_of_id "Rplus", 
-    ast_of_id "NRplus"))
+  ((ast_of_id (id_of_string "R0"),
+    ast_of_id (id_of_string "R1"),
+    ast_of_id (id_of_string "Rplus"), 
+    ast_of_id (id_of_string "NRplus")))
 
 let r_of_int n dloc =
   let (ast0,ast1,astp,_) = get_r_sign dloc in

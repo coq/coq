@@ -12,15 +12,13 @@
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
 
-type load_path_entry = {
-  directory : string;
-  coq_dirpath : string list }
 
-type load_path = load_path_entry list
+type physical_path = string
+type load_path = physical_path list
 
-val all_subdirs : unix_path:string -> string list option -> load_path
+val all_subdirs : unix_path:string -> (physical_path * string list) list
 val is_in_path : load_path -> string -> bool
-val where_in_path : load_path -> string -> load_path_entry * string
+val where_in_path : load_path -> string -> physical_path * string
 
 val make_suffix : string -> string -> string
 val file_readable_p : string -> bool
@@ -31,7 +29,7 @@ val home : string
 
 val exists_dir : string -> bool
 
-val find_file_in_path : load_path -> string -> load_path_entry * string
+val find_file_in_path : load_path -> string -> physical_path * string
 
 (*s Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
@@ -43,8 +41,7 @@ val marshal_in : in_channel -> 'a
 exception Bad_magic_number of string
 
 val raw_extern_intern : int -> string -> 
-  (string -> string * out_channel) *
-  (load_path -> string -> load_path_entry * string * in_channel)
+  (string -> string * out_channel) * (string -> in_channel)
 
 val extern_intern : 
   int -> string -> (string -> 'a -> unit) * (load_path -> string -> 'a)

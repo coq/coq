@@ -48,14 +48,14 @@ let global_constr_name ((sp,tyi),i) =
 		  ^","^(string_of_int i)^")") >]
 
 let globpr gt = match gt with
-  | Nvar(_,s) -> [< 'sTR s >]
+  | Nvar(_,s) -> [< pr_id s >]
   | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
-  | Node(_,"CONST",[Path(_,sl,s)]) ->
-      global_const_name (section_path sl s)
-  | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
-      global_ind_name (section_path sl s, tyi)
-  | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
-      global_constr_name ((section_path sl s, tyi), i)
+  | Node(_,"CONST",[Path(_,sl)]) ->
+      global_const_name (section_path sl)
+  | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
+      global_ind_name (section_path sl, tyi)
+  | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
+      global_constr_name ((section_path sl, tyi), i)
   | gt -> dfltpr gt
 
 let wrap_exception = function
@@ -135,18 +135,18 @@ let rec gentacpr gt =
   Esyntax.genprint default_tacpr tactic_syntax_universe tactic_initial_prec gt
 
 and default_tacpr = function
-    | Nvar(_,s) -> [< 'sTR s >]
+    | Nvar(_,s) -> [< pr_id s >]
 
     (* constr's may occur inside tac expressions ! *)
     | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
-    | Node(_,"CONST",[Path(_,sl,s)]) ->
-	let sp = section_path sl s in
-	pr_global (ConstRef (section_path sl s))
-    | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
-	let sp = section_path sl s in
+    | Node(_,"CONST",[Path(_,sl)]) ->
+	let sp = section_path sl in
+	pr_global (ConstRef sp)
+    | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
+	let sp = section_path sl in
 	pr_global (IndRef (sp,tyi))
-    | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
-	let sp = section_path sl s in
+    | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
+	let sp = section_path sl in
 	pr_global (ConstructRef ((sp,tyi),i))
 
     (* This should be tactics *)

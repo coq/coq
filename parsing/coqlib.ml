@@ -15,9 +15,20 @@ open Declare
 open Pattern
 open Nametab
 
-let nat_path = make_path ["Coq";"Init";"Datatypes"] (id_of_string "nat") CCI
+let make_dir l = make_dirpath (List.map id_of_string l)
+let coq_id = id_of_string "Coq"
+let init_id = id_of_string "Init"
+let arith_id = id_of_string "Arith"
+let datatypes_id = id_of_string "Datatypes"
+
+let logic_module = make_dir ["Coq";"Init";"Logic"]
+let logic_type_module = make_dir ["Coq";"Init";"Logic_Type"]
+let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
+let arith_module = make_dir ["Coq";"Arith";"Arith"]
+
+let nat_path = make_path datatypes_module (id_of_string "nat") CCI
 let myvar_path =
-  make_path ["Coq";"Arith";"Arith"] (id_of_string "My_special_variable") CCI
+  make_path arith_module (id_of_string "My_special_variable") CCI
 
 let glob_nat = IndRef (nat_path,0)
 
@@ -26,14 +37,14 @@ let glob_S = ConstructRef ((nat_path,0),2)
 
 let glob_My_special_variable_nat = ConstRef myvar_path
 
-let eq_path = make_path ["Coq";"Init";"Logic"] (id_of_string "eq") CCI
-let eqT_path = make_path ["Coq";"Init";"Logic_Type"] (id_of_string "eqT") CCI
+let eq_path = make_path logic_module (id_of_string "eq") CCI
+let eqT_path = make_path logic_type_module (id_of_string "eqT") CCI
 
 let glob_eq = IndRef (eq_path,0)
 let glob_eqT = IndRef (eqT_path,0)
 
 let reference dir s =
-  let dir = "Coq"::"Init"::[dir] in
+  let dir = make_dir ("Coq"::"Init"::[dir]) in
   let id = id_of_string s in
   try 
     Nametab.locate_in_absolute_module dir id

@@ -8,16 +8,22 @@
 
 (* $Id$ *)
 
+(*i*)
+open Names
+(*i*)
+
 type loc = int * int
 
 type t =
   | Node of loc * string * t list
-  | Nvar of loc * string
-  | Slam of loc * string option * t
+  | Nmeta of loc * string
+  | Nvar of loc * identifier
+  | Slam of loc * identifier option * t
+  | Smetalam of loc * string * t
   | Num of loc * int
-  | Id of loc * string
   | Str of loc * string
-  | Path of loc * string list* string
+  | Id of loc * string
+  | Path of loc * section_path
   | Dynamic of loc * Dyn.t
 
 type the_coq_ast = t
@@ -28,6 +34,7 @@ let subst_meta bl ast =
     | Node(loc, node_name, args) -> 
 	Node(loc, node_name, List.map aux args)
     | Slam(loc, var, arg) -> Slam(loc, var, aux arg)
+    | Smetalam(loc, var, arg) -> Smetalam(loc, var, aux arg)
     | other -> other
   in 
   aux ast
@@ -36,6 +43,7 @@ let rec collect_metas = function
   | Node (_,"META", [Num(_, n)]) -> [n]
   | Node(_, _, args) -> List.concat (List.map collect_metas args)
   | Slam(loc, var, arg) -> collect_metas arg
+  | Smetalam(loc, var, arg) -> collect_metas arg
   | _ -> []
 
 (* Hash-consing *)
@@ -51,38 +59,41 @@ module Hloc = Hashcons.Make(
 module Hast = Hashcons.Make(
   struct
     type t = the_coq_ast
-    type u = (the_coq_ast -> the_coq_ast) * ((loc -> loc) * (string -> string))
-    let hash_sub (hast,(hloc,hstr)) = function
+    type u = 
+	(the_coq_ast -> the_coq_ast) *
+	((loc -> loc) * (string -> string)
+	 * (identifier -> identifier) * (section_path -> section_path))
+    let hash_sub (hast,(hloc,hstr,hid,hsp)) = function
       | Node(l,s,al) -> Node(hloc l, hstr s, List.map hast al)
-      | Nvar(l,s) -> Nvar(hloc l, hstr s)
+      | Nmeta(l,s) -> Nmeta(hloc l, hstr s)
+      | Nvar(l,s) -> Nvar(hloc l, hid s)
       | Slam(l,None,t) -> Slam(hloc l, None, hast t)
-      | Slam(l,Some s,t) -> Slam(hloc l, Some (hstr s), hast t)
+      | Slam(l,Some s,t) -> Slam(hloc l, Some (hid s), hast t)
+      | Smetalam(l,s,t) -> Smetalam(hloc l, hstr s, hast t)
       | Num(l,n) -> Num(hloc l, n)
       | Id(l,s) -> Id(hloc l, hstr s)
       | Str(l,s) -> Str(hloc l, hstr s)
-      | Path(l,d,k) -> Path(hloc l, List.map hstr d, hstr k)
+      | Path(l,d) -> Path(hloc l, hsp d)
       | Dynamic(l,d) -> Dynamic(hloc l, d)
     let equal a1 a2 =
       match (a1,a2) with
         | (Node(l1,s1,al1), Node(l2,s2,al2)) ->
             (l1==l2 & s1==s2 & List.length al1 = List.length al2)
             & List.for_all2 (==) al1 al2
+        | (Nmeta(l1,s1), Nmeta(l2,s2)) -> l1==l2 & s1==s2
         | (Nvar(l1,s1), Nvar(l2,s2)) -> l1==l2 & s1==s2
         | (Slam(l1,None,t1), Slam(l2,None,t2)) -> l1==l2 & t1==t2
-        | (Slam(l1,Some s1,t1), Slam(l2,Some s2,t2)) -> l1==l2 & t1==t2
+        | (Slam(l1,Some s1,t1), Slam(l2,Some s2,t2)) ->l1==l2 & s1==s2 & t1==t2
+        | (Smetalam(l1,s1,t1), Smetalam(l2,s2,t2)) -> l1==l2 & s1==s2 & t1==t2
         | (Num(l1,n1), Num(l2,n2)) -> l1==l2 & n1=n2
         | (Id(l1,s1), Id(l2,s2)) -> l1==l2 & s1==s2
         | (Str(l1,s1),Str(l2,s2)) -> l1==l2 & s1==s2
-        | (Path(l1,d1,k1), Path(l2,d2,k2)) ->
-            (l1==l2 & k1==k2 & List.length d1 = List.length d2)
-            & List.for_all2 (==) d1 d2
+        | (Path(l1,d1), Path(l2,d2)) -> (l1==l2 & d1==d2)
         | _ -> false
     let hash = Hashtbl.hash
   end)
 
-let hcons_ast hstr =
+let hcons_ast (hstr,hid,hpath) =
   let hloc = Hashcons.simple_hcons Hloc.f () in
-  let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr) in
+  let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr,hid,hpath) in
   (hast,hloc)
-
-

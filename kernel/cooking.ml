@@ -25,7 +25,7 @@ type modification_action = ABSTRACT | ERASE
 type 'a modification =
   | NOT_OCCUR
   | DO_ABSTRACT of 'a * modification_action list
-  | DO_REPLACE
+  | DO_REPLACE of constant_body
 
 type work_list =
     (section_path * section_path modification) list
@@ -33,7 +33,7 @@ type work_list =
     * (constructor_path * constructor_path modification) list
 
 type recipe = {
-  d_from : section_path;
+  d_from : constant_body;
   d_abstract : identifier list;
   d_modlist : work_list }
 
@@ -83,7 +83,7 @@ let modify_opers replfun absfun (constl,indl,cstrl) =
 		| DO_ABSTRACT (oper',modif) ->
 		    assert (List.length modif <= Array.length cl);
 		    interp_modif absfun mkMutInd (oper',modif) cl'
-		| DO_REPLACE -> assert false)
+		| DO_REPLACE _ -> assert false)
 	   with 
 	     | Not_found -> mkMutInd (spi,cl'))
 
@@ -94,7 +94,7 @@ let modify_opers replfun absfun (constl,indl,cstrl) =
 		| DO_ABSTRACT (oper',modif) ->
 		    assert (List.length modif <= Array.length cl);
 		    interp_modif absfun mkMutConstruct (oper',modif) cl'
-		| DO_REPLACE -> assert false)
+		| DO_REPLACE _ -> assert false)
 	   with 
 	     | Not_found -> mkMutConstruct (spi,cl'))
 
@@ -105,7 +105,7 @@ let modify_opers replfun absfun (constl,indl,cstrl) =
 		| DO_ABSTRACT (oper',modif) ->
 		    assert (List.length modif <= Array.length cl);
 		    interp_modif absfun mkConst (oper',modif) cl'
-		| DO_REPLACE -> substrec (replfun (sp,cl')))
+		| DO_REPLACE cb -> substrec (replfun sp cb cl'))
 	   with 
 	     | Not_found -> mkConst (sp,cl'))
   
@@ -117,17 +117,18 @@ let expmod_constr oldenv modlist c =
   let sigma = Evd.empty in
   let simpfun = 
     if modlist = ([],[],[]) then fun x -> x else nf_betaiota in
-  let expfun cst = 
-    try 
-      constant_value oldenv cst
-    with NotEvaluableConst Opaque ->
-      let (sp,_) = cst in
+  let expfun sp cb args = 
+    if cb.const_opaque then
       errorlabstrm "expmod_constr"
 	[< 'sTR"Cannot unfold the value of ";
-           'sTR(string_of_path sp); 'sPC;
-           'sTR"You cannot declare local lemmas as being opaque"; 'sPC;
-           'sTR"and then require that theorems which use them"; 'sPC;
-           'sTR"be transparent" >];
+        'sTR(string_of_path sp); 'sPC;
+        'sTR"You cannot declare local lemmas as being opaque"; 'sPC;
+        'sTR"and then require that theorems which use them"; 'sPC;
+        'sTR"be transparent" >];
+    match cb.const_body with
+      | Some body -> 
+          instantiate_constr cb.const_hyps body (Array.to_list args)
+      | None -> assert false
   in
   let c' = modify_opers expfun (fun a b -> mkApp (a, [|b|])) modlist c in
   match kind_of_term c' with
@@ -155,7 +156,7 @@ let abstract_constant ids_to_abs hyps (body,typ) =
   (body',typ')
 
 let cook_constant env r =
-  let cb = lookup_constant r.d_from env in
+  let cb = r.d_from in
   let typ = expmod_type env r.d_modlist cb.const_type in
   let body = option_app (expmod_constr env r.d_modlist) cb.const_body in
   let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) cb.const_hyps in

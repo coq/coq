@@ -35,7 +35,7 @@ open Vernacinterp
    Finally, we can create an object which is an ML module, and require
    that the "caching" of the ML module cause the loading of the
    associated ML file, if that file has not been yet loaded.  Of
-   course, the problem is how to record dependences between ML
+   course, the problem is how to record dependencies between ML
    modules.
    (I do not know of a solution to this problem, other than to
    put all the needed names into the ML Module object.) *)
@@ -44,8 +44,7 @@ open Vernacinterp
 let coq_mlpath_copy = ref []
 let keep_copy_mlpath s = 
   let dir = glob s in
-  let lpe = { directory = dir; coq_dirpath = [] } in
-  coq_mlpath_copy := lpe :: !coq_mlpath_copy
+  coq_mlpath_copy := dir :: !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = { 
@@ -144,33 +143,33 @@ let add_ml_dir s =
 
 (* For Rec Add ML Path *)
 let add_rec_ml_dir dir = 
-  List.iter (fun lpe -> add_ml_dir lpe.directory) (all_subdirs dir None)
+  List.iter (fun (lp,_) -> add_ml_dir lp) (all_subdirs dir)
 
 (* Adding files to Coq and ML loadpath *)
 
 let add_path dir coq_dirpath =
-  if coq_dirpath = [] then anomaly "add_path: empty path in library";
   if exists_dir dir then
     begin
       add_ml_dir dir;
-      Library.add_load_path_entry
-	{ directory = dir; coq_dirpath = coq_dirpath };
-      Nametab.push_library_root (List.hd coq_dirpath)
+      Library.add_load_path_entry (dir,coq_dirpath);
+      if coq_dirpath <> [] then Nametab.push_library_root (List.hd coq_dirpath)
     end
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]
 
 let add_rec_path dir coq_dirpath =
-  if coq_dirpath = [] then anomaly "add_path: empty path in library";
-  let dirs = all_subdirs dir (Some coq_dirpath) in
+  let dirs = all_subdirs dir in
   if dirs <> [] then
+    let convert = List.map Names.id_of_string in
+    let dirs = List.map (fun (lp,cp) -> (lp,coq_dirpath@(convert cp))) dirs in
     begin
-      List.iter (fun lpe -> add_ml_dir lpe.directory) dirs;
+      List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
       List.iter Library.add_load_path_entry dirs;
-      Nametab.push_library_root (List.hd coq_dirpath)
+      if coq_dirpath <> [] then Nametab.push_library_root (List.hd coq_dirpath)
+      else List.iter (fun (_, cp) -> Nametab.push_library_root (List.hd cp)) dirs
     end
-    else
-      wARNING [< 'sTR ("Cannot open " ^ dir) >]
+  else
+    wARNING [< 'sTR ("Cannot open " ^ dir) >]
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =
@@ -284,11 +283,11 @@ let declare_ml_modules l =
 let print_ml_path () =
   let l = !coq_mlpath_copy in
   pPNL [< 'sTR"ML Load Path:"; 'fNL; 'sTR"  ";
-          hV 0 (prlist_with_sep pr_fnl (fun e -> [< 'sTR e.directory >]) l) >]
+          hV 0 (prlist_with_sep pr_fnl pr_str l) >]
 
 	  (* Printing of loaded ML modules *)
 	  
 let print_ml_modules () =
   let l = get_loaded_modules () in
   pP [< 'sTR"Loaded ML Modules : " ;
-        hOV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l); 'fNL >]
+        hOV 0 (prlist_with_sep pr_fnl pr_str l); 'fNL >]

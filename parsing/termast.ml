@@ -77,14 +77,14 @@ let ids_of_ctxt ctxt =
        "Termast: arbitrary substitution of references not yet implemented")
      ctxt)
 
-let ast_of_ident id = nvar (string_of_id id)
+let ast_of_ident id = nvar id
 
 let ast_of_name = function 
-  | Name id -> nvar (string_of_id id)
-  | Anonymous -> nvar "_"
+  | Name id -> nvar id
+  | Anonymous -> nvar wildcard
 
-let stringopt_of_name = function 
-  | Name id -> Some (string_of_id id)
+let idopt_of_name = function 
+  | Name id -> Some id
   | Anonymous -> None
 
 let ast_of_constant_ref sp =
@@ -107,19 +107,19 @@ let ast_of_ref = function
 
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
-  let args = List.map nvar (dir@[string_of_id s]) in
+  let args = List.map nvar (dir@[s]) in
   ope ("QUALID", args)
 
 (**********************************************************************)
 (* conversion of patterns                                             *)
 
 let rec ast_of_cases_pattern = function   (* loc is thrown away for printing *)
-  | PatVar (loc,Name id) -> nvar (string_of_id id)
-  | PatVar (loc,Anonymous) -> nvar "_"
+  | PatVar (loc,Name id) -> nvar id
+  | PatVar (loc,Anonymous) -> nvar wildcard
   | PatCstr(loc,(cstrsp,_),args,Name id) ->
       let args = List.map ast_of_cases_pattern args in
       ope("PATTAS",
-	  [nvar (string_of_id id);
+	  [nvar id;
 	   ope("PATTCONSTRUCT", (ast_of_constructor_ref cstrsp)::args)])
   | PatCstr(loc,(cstrsp,_),args,Anonymous) ->
       ope("PATTCONSTRUCT",
@@ -128,7 +128,7 @@ let rec ast_of_cases_pattern = function   (* loc is thrown away for printing *)
 	
 let ast_dependent na aty =
   match na with
-    | Name id -> occur_var_ast (string_of_id id) aty
+    | Name id -> occur_var_ast id aty
     | Anonymous -> false
 
 let decompose_binder = function
@@ -196,7 +196,7 @@ let rec ast_of_raw = function
       ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
 
   | RLetIn (_,na,t,c) ->
-      ope("LETIN",[ast_of_raw t; slam(stringopt_of_name na,ast_of_raw c)])
+      ope("LETIN",[ast_of_raw t; slam(idopt_of_name na,ast_of_raw c)])
 
   | RProd (_,na,t,c) ->
       let (n,a) = factorize_binder 1 BProd na (ast_of_raw t) c in
@@ -287,7 +287,7 @@ and factorize_binder n oper na aty c =
 	  -> factorize_binder (n+1) oper na' aty c'
     | _ -> (n,ast_of_raw c)
   in
-  (p,slam(stringopt_of_name na, body))
+  (p,slam(idopt_of_name na, body))
 
 let ast_of_rawconstr = ast_of_raw
 
@@ -345,8 +345,7 @@ let rec ast_of_pattern env = function
 	 | Anonymous ->
 	     anomaly "ast_of_pattern: index to an anonymous variable"
        with Not_found ->
-	 let s = "[REL "^(string_of_int n)^"]"
-	 in nvar s)
+	 nvar (id_of_string ("[REL "^(string_of_int n)^"]")))
 
   | PApp (f,args) ->
       let (f,args) = 
@@ -364,7 +363,7 @@ let rec ast_of_pattern env = function
 
   | PLetIn (na,b,c) ->
       let c' = ast_of_pattern (add_name na env) c in
-      ope("LETIN",[ast_of_pattern env b;slam(stringopt_of_name na,c')])
+      ope("LETIN",[ast_of_pattern env b;slam(idopt_of_name na,c')])
 		
   | PProd (Anonymous,t,c) ->
       ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])
@@ -415,4 +414,4 @@ and factorize_binder_pattern env n oper na aty c =
 	factorize_binder_pattern (add_name na' env) (n+1) oper na' aty c'
     | _ -> (n,ast_of_pattern env c)
   in
-  (p,slam(stringopt_of_name na, body))
+  (p,slam(idopt_of_name na, body))

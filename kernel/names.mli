@@ -32,10 +32,8 @@ val string_of_id : identifier -> string
 val id_of_string : string -> identifier
 val pr_id : identifier -> std_ppcmds
 
-(* These checks the validity of an identifier; [check_ident] fails
-   with error if invalid *)
-val check_ident : string -> unit
-val is_ident : string -> bool
+(* This is the identifier ["_"] *)
+val wildcard : identifier
 
 (* Deriving ident from other idents *)
 val add_suffix : identifier -> string -> identifier
@@ -63,10 +61,24 @@ val string_of_kind : path_kind -> string
 val kind_of_string : string -> path_kind
 
 (*s Directory paths = section names paths *)
-type dir_path = string list
+type module_ident = identifier
+type dir_path = module_ident list
+
+module ModIdmap : Map.S with type key = module_ident
+
+val make_dirpath : module_ident list -> dir_path
+val repr_dirpath : dir_path -> module_ident list
+
+(* Give the immediate prefix of a dir_path *)
+val dirpath_prefix : dir_path -> dir_path 
+
+(* Give the immediate prefix and basename of a dir_path *)
+val split_dirpath : dir_path -> dir_path * identifier
 
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
+val pr_dirpath : dir_path -> std_ppcmds
+
 
 (*s Section paths are {\em absolute} names *)
 type section_path
@@ -80,8 +92,8 @@ val dirpath : section_path -> dir_path
 val basename : section_path -> identifier
 val kind_of_path : section_path -> path_kind
 
-val sp_of_wd : string list -> section_path
-val wd_of_sp : section_path -> string list
+val sp_of_wd : module_ident list -> section_path
+val wd_of_sp : section_path -> module_ident list
 
 (* Parsing and printing of section path as ["coq_root.module.id"] *)
 val path_of_string : string -> section_path
@@ -89,25 +101,11 @@ val string_of_path : section_path -> string
 val pr_sp : section_path -> std_ppcmds
 val dirpath_of_string : string -> dir_path
 
-(*i
-val string_of_path_mind : section_path -> identifier -> string
-val coerce_path : path_kind -> section_path -> section_path
-val fwsp_of : section_path -> section_path
-val ccisp_of : section_path -> section_path
-val objsp_of : section_path -> section_path
-val fwsp_of_ccisp : section_path -> section_path
-val ccisp_of_fwsp : section_path -> section_path
-val append_to_path : section_path -> string -> section_path
-
-val sp_gt : section_path * section_path -> bool
-i*)
 val sp_ord : section_path -> section_path -> int
 
 (* [is_dirpath_prefix p1 p2=true] if [p1] is a prefix of or is equal to [p2] *)
-val dirpath_prefix_of : dir_path -> dir_path -> bool
-(*i
-module Spset : Set.S with type elt = section_path
-i*)
+val is_dirpath_prefix_of : dir_path -> dir_path -> bool
+
 module Spmap : Map.S with type key = section_path
 
 (*s Specific paths for declarations *)
@@ -121,4 +119,3 @@ type mutual_inductive_path = section_path
 val hcons_names : unit ->
   (section_path -> section_path) * (section_path -> section_path) *
   (name -> name) * (identifier -> identifier) * (string -> string)
-

@@ -116,7 +116,8 @@ let add_token (con, str) = match con with
 	  true
       in
       if normal_token then add_keyword str else add_special_token str
-  | "METAIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI" -> ()
+  | "METAIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
+      -> ()
   | _ ->
       raise (Token.Error ("\
 the constructor \"" ^ con ^ "\" is not recognized by Lexer"))

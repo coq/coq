@@ -21,24 +21,23 @@ val loc : Coqast.t -> Coqast.loc
 
 (* ast constructors with dummy location *)
 val ope : string * Coqast.t list -> Coqast.t
-val slam : string option * Coqast.t -> Coqast.t
-val nvar : string -> Coqast.t
+val slam : identifier option * Coqast.t -> Coqast.t
+val nvar : identifier -> Coqast.t
 val ide : string -> Coqast.t
 val num : int -> Coqast.t
 val str : string -> Coqast.t
-val path : string list -> string -> Coqast.t
+val path : section_path -> Coqast.t
 val dynamic : Dyn.t -> Coqast.t
 
 val set_loc : Coqast.loc -> Coqast.t -> Coqast.t
 
 val path_section : Coqast.loc -> section_path -> Coqast.t
-val section_path : string list -> string -> section_path
-
+val section_path : section_path -> section_path
 
 (* ast destructors *)
 val num_of_ast : Coqast.t -> int
 val id_of_ast : Coqast.t -> string
-val nvar_of_ast : Coqast.t -> string
+val nvar_of_ast : Coqast.t -> identifier
 
 (* ast processing datatypes *)
 
@@ -47,7 +46,7 @@ type pat =
   | Pquote of Coqast.t
   | Pmeta of string * tok_kind
   | Pnode of string * patlist
-  | Pslam of string option * pat
+  | Pslam of identifier option * pat
   | Pmeta_slam of string * pat
 
 and patlist =
@@ -71,7 +70,11 @@ type v =
 
 type env = (string * v) list
 
-val coerce_to_var : string -> Coqast.t -> string
+val coerce_to_var : Coqast.t -> Coqast.t 
+
+(*
+val coerce_to_id : Coqast.t -> identifier
+*)
 
 exception No_match of string
 
@@ -96,8 +99,8 @@ val vall_of_astl : entry_env -> Coqast.t list -> patlist
 val alpha_eq : Coqast.t * Coqast.t -> bool
 val alpha_eq_val : v * v -> bool
 
-val occur_var_ast : string -> Coqast.t -> bool
-val replace_vars_ast : (string * string) list -> Coqast.t -> Coqast.t
+val occur_var_ast : identifier -> Coqast.t -> bool
+val replace_vars_ast : (identifier * identifier) list -> Coqast.t -> Coqast.t
 
 val bind_env : env -> string -> v -> env
 val ast_match : env -> pat -> Coqast.t -> env
@@ -111,8 +114,3 @@ val to_pat : entry_env -> Coqast.t -> (pat * entry_env)
 
 val eval_act : Coqast.loc -> env -> act -> v
 val to_act_check_vars : entry_env -> entry_type -> Coqast.t -> act
-
-(* Hash-consing *)
-val hcons_ast: (string -> string) ->
-  (Coqast.t -> Coqast.t) * (Coqast.loc -> Coqast.loc)
-
