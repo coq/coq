@@ -442,9 +442,9 @@ Definition sin_term [a:R] : nat->R := [i:nat] ``(pow (-1) i)*(pow a (plus (mult 
 
 Definition cos_term [a:R] : nat->R := [i:nat] ``(pow (-1) i)*(pow a (mult (S (S O)) i))/(INR (fact (mult (S (S O)) i)))``.
 
-Definition sin_approx [a:R;n:nat] : R := (sigma_aux (sin_term a) O n n).
+Definition sin_approx [a:R;n:nat] : R := (sum_f_R0 (sin_term a) n).
 
-Definition cos_approx [a:R;n:nat] : R := (sigma_aux (cos_term a) O n n).
+Definition cos_approx [a:R;n:nat] : R := (sum_f_R0 (cos_term a) n).
 
 Axiom sin_bound : (a:R)(n:nat) ``0<=a``->``a<=PI``->``(sin_approx a (plus (mult (S (S O)) n) (S O)))<=(sin a)<=(sin_approx a (mult (S (S O)) (plus n (S O))))``.
 
@@ -1485,7 +1485,7 @@ Lemma sin_lb_ge_0 : (a:R) ``0<=a``->``a<=PI/2``->``0<=(sin_lb a)``.
 Intros; Case (total_order R0 a); Intro.
 Left; Apply sin_lb_gt_0; Assumption.
 Elim H1; Intro.
-Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sigma_aux; Unfold sin_term; Repeat Rewrite pow_ne_zero.
+Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sum_f_R0; Unfold sin_term; Repeat Rewrite pow_ne_zero.
 Unfold Rdiv; Repeat Rewrite Rmult_Ol; Repeat Rewrite Rmult_Or; Repeat Rewrite Rplus_Or; Right; Reflexivity.
 Simpl; Discriminate.
 Simpl; Discriminate.
