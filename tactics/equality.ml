@@ -577,7 +577,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
   let isevars = Evarutil.create_evar_defs sigma in
   let rec sigrec_clausal_form siglen p_i =
     if siglen = 0 then
-      if Evarconv.the_conv_x env isevars p_i dFLTty then
+      if Evarconv.the_conv_x_leq env isevars dFLTty p_i then
 	(* the_conv_x had a side-effect on isevars *)
 	dFLT
       else
