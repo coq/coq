@@ -617,7 +617,7 @@ let _ =
     (function [] ->
        (fun () ->
 	  let l = Pfedit.get_all_proof_names() in 
-	  mSGNL (print_idl l))
+	  mSGNL (prlist_with_sep pr_spc print_id l))
        | _  -> bad_vernac_args "ShowProofs")
 
 let _ =
