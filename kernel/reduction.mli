@@ -151,30 +151,22 @@ val reduce_fix : local_state_reduction_function -> fixpoint
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
 
-type conv_pb = 
-  | CONV 
-  | CONV_LEQ
-
-val pb_is_equal : conv_pb -> bool
-val pb_equal : conv_pb -> conv_pb
-
 type conversion_test = constraints -> constraints
 
 exception NotConvertible
 
+type conv_pb = 
+  | CONV 
+  | CUMUL
+
+val pb_is_equal : conv_pb -> bool
+val pb_equal : conv_pb -> conv_pb
+
 val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
 val base_sort_cmp : conv_pb -> sorts -> sorts -> bool
 
-val bool_and_convert : bool -> conversion_test -> conversion_test
-val convert_and : conversion_test -> conversion_test -> conversion_test
-val convert_or : conversion_test -> conversion_test -> conversion_test
-val convert_forall2 : 
-  ('a -> 'b -> conversion_test) -> 'a array -> 'b array -> conversion_test
-
 type 'a conversion_function = 
     env -> 'a evar_map -> constr -> constr -> constraints
-
-val fconv : conv_pb -> 'a conversion_function
 
 (* [fconv] has 2 instances: [conv = fconv CONV] i.e. conversion test, and
    [conv_leq = fconv CONV_LEQ] i.e. cumulativity test. *)
@@ -193,7 +185,6 @@ val conv_forall2_i :
 val is_conv : env -> 'a evar_map -> constr -> constr -> bool
 val is_conv_leq : env -> 'a evar_map -> constr -> constr -> bool
 val is_fconv : conv_pb -> env -> 'a evar_map -> constr -> constr -> bool
-
 
 (*s Special-Purpose Reduction Functions *)
 

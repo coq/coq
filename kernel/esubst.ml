@@ -22,18 +22,19 @@ type lift =
                          (*                 i.e under n binders *)
 
 (* compose a relocation of magnitude n *)
-let rec el_shft n = function
-  | ELSHFT(el,k) -> el_shft (k+n) el
-  | el -> if n = 0 then el else ELSHFT(el,n)
-
+let rec el_shft_rec n = function
+  | ELSHFT(el,k) -> el_shft_rec (k+n) el
+  | el           -> ELSHFT(el,n)
+let el_shft n el = if n = 0 then el else el_shft_rec n el
 
 (* cross n binders *)
-let rec el_liftn n = function
-  | ELID -> ELID
-  | ELLFT(k,el) -> el_liftn (n+k) el
-  | el -> if n=0 then el else ELLFT(n, el)
+let rec el_liftn_rec n = function
+  | ELID        -> ELID
+  | ELLFT(k,el) -> el_liftn_rec (n+k) el
+  | el          -> ELLFT(n, el)
+let el_liftn n el = if n = 0 then el else el_liftn_rec n el
 
-let el_lift el = el_liftn 1 el
+let el_lift el = el_liftn_rec 1 el
 
 (* relocation of de Bruijn n in an explicit lift *)
 let rec reloc_rel n = function

@@ -21,15 +21,19 @@ open G_minicoq
 
 let (env : safe_environment ref) = ref empty_environment
 
+let locals () =
+  List.map (fun (id,b,t) -> (id, make_path [] id CCI))
+    (named_context !env)
+
 let lookup_named id =
   let rec look n = function
     | [] -> mkVar id
-    | (Name id')::_ when id = id' -> Rel n
+    | (Name id')::_ when id = id' -> mkRel n
     | _::r -> look (succ n) r
   in
   look 1
 
-let args sign = Array.of_list (List.map mkVar (ids_of_named_context sign))
+let args sign = Array.of_list (instance_from_section_context sign)
 
 let rec globalize bv c = match kind_of_term c with
   | IsVar id -> lookup_named id bv
@@ -51,15 +55,15 @@ let check c =
 let definition id ty c =
   let c = globalize [] c in
   let ty = option_app (globalize []) ty in
-  let ce = { const_entry_body = Cooked c; const_entry_type = ty } in
+  let ce = { const_entry_body = c; const_entry_type = ty } in
   let sp = make_path [] id CCI in
-  env := add_constant sp ce !env;
+  env := add_constant sp ce (locals()) !env;
   mSGNL (hOV 0 [< pr_id id; 'sPC; 'sTR"is defined"; 'fNL >])
 
 let parameter id t =
   let t = globalize [] t in
   let sp = make_path [] id CCI in
-  env := add_parameter sp t !env;
+  env := add_parameter sp t (locals()) !env;
   mSGNL (hOV 0 [< 'sTR"parameter"; 'sPC; pr_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 
@@ -69,31 +73,30 @@ let variable id t =
   mSGNL (hOV 0 [< 'sTR"variable"; 'sPC; pr_id id; 
 		  'sPC; 'sTR"is declared"; 'fNL >])
 
-let put_DLAMSV lna lc = 
-  match lna with 
-    | [] -> anomaly "put_DLAM"
-    | na::lrest -> List.fold_left (fun c na -> DLAM(na,c)) (DLAMV(na,lc)) lrest
-
 let inductive par inds =
   let nparams = List.length par in
   let bvpar = List.rev (List.map (fun (id,_) -> Name id) par) in
   let name_inds = List.map (fun (id,_,_) -> Name id) inds in
   let bv = bvpar @  List.rev name_inds in
-  let par = List.map (fun (id,c) -> (Name id, globalize [] c)) par in
+  let npar = List.map (fun (id,c) -> (Name id, globalize [] c)) par in
   let one_inductive (id,ar,cl) =
-    let cv = Array.of_list (List.map snd cl) in
-    let cv = Array.map (fun c -> prod_it (globalize bv c) par) cv in
-    let c = put_DLAMSV name_inds cv in
-    (id, prod_it (globalize bvpar ar) par, List.map fst cl, [c])
+    let cv = List.map (fun (_,c) -> prod_it (globalize bv c) npar) cl in
+    { mind_entry_nparams = nparams;
+      mind_entry_params = List.map (fun (id,c) -> (id, LocalAssum c)) par;
+      mind_entry_typename = id;
+      mind_entry_arity = prod_it (globalize bvpar ar) npar;
+      mind_entry_consnames = List.map fst cl;
+      mind_entry_lc = cv }
   in
   let inds = List.map one_inductive inds in
   let mie = { 
-    mind_entry_nparams = nparams;
     mind_entry_finite = true;
     mind_entry_inds = inds }
   in
-  let sp = let (id,_,_,_) = List.hd inds in make_path [] id CCI in
-  env := add_mind sp mie !env;
+  let sp =
+    let mi1 = List.hd inds in
+    make_path [] mi1.mind_entry_typename CCI in
+  env := add_mind sp mie (locals()) !env;
   mSGNL (hOV 0 [< 'sTR"inductive type(s) are declared"; 'fNL >])
 
 

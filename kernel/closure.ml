@@ -958,6 +958,7 @@ let rec strip_applstack k acc m =
 let fhnf info v =
   strip_applstack 0 [] (kh info v [])
 
+
 let fhnf_apply info k head appl =
   let stk = zshift k appl in
   strip_applstack 0 [] (kh info head stk)

@@ -314,10 +314,12 @@ let explain_type_error k ctx = function
       explain_ill_formed_rec_body k ctx i lna vdefj vargs
   | IllTypedRecBody (i, lna, vdefj, vargs) ->
       explain_ill_typed_rec_body k ctx i lna vdefj vargs
+(*
   | NotInductive c ->
       explain_not_inductive k ctx c
   | MLCase (mes,c,ct,br,brt) ->
       explain_ml_case k ctx mes c ct br brt
+*)
   | _ -> 
       [< 'sTR "Unknown type error (TODO)" >]
 
@@ -348,7 +350,7 @@ let explain_occur_check k ctx ev rhs =
       'sTR" with term"; 'bRK(1,1); pt >]
 
 let explain_not_clean k ctx sp t =
-  let c = Rel (Intset.choose (free_rels t)) in
+  let c = mkRel (Intset.choose (free_rels t)) in
   let id = string_of_id (Names.basename sp) in
   let var = P.pr_term k ctx c in
   errorlabstrm "Trad.not_clean"

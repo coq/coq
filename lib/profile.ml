@@ -26,9 +26,9 @@ let get_alloc () = Gc.allocated_bytes ()
 let get_alloc_overhead =
   let now = get_alloc () in
   let after = get_alloc () in
-  after -. now                    (* Rem: overhead is 16 bytes in ocaml 3.00 *)
+  after -. now           (* Rem: overhead is 16 bytes in ocaml 3.00 *)
 
-let last_alloc = ref 0.0
+let last_alloc = ref (get_alloc())
 
 (* spent_alloc returns a integer in Z/31Z (or Z/63Z) *)
 (* remark: it cannot detect allocations steps more than 2^31 (or 2^63) *)
@@ -122,7 +122,7 @@ let ajoute_to_list ((name,n) as e) l =
   with Not_found -> e::l
 
 let magic = 1249
-
+  
 let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
   let (old_table, old_outside, old_total) =
     try 

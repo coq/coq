@@ -20,7 +20,6 @@ open Classops
 open Recordops 
 open Evarutil
 
-
 type flexible_term = FConst of constant | FRel of int | FVar of identifier 
 type flex_kind_of_term =
   | Rigid of constr 
@@ -314,6 +313,6 @@ and check_conv_record (t1,l1) (t2,l2) =
   with _ -> 
     raise Not_found
 
-let the_conv_x     env isevars t1 t2 = evar_conv_x env isevars CONV     t1 t2
-let the_conv_x_leq env isevars t1 t2 = evar_conv_x env isevars CONV_LEQ t1 t2
+let the_conv_x     env isevars t1 t2 = evar_conv_x env isevars CONV  t1 t2
+let the_conv_x_leq env isevars t1 t2 = evar_conv_x env isevars CUMUL t1 t2
  

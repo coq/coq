@@ -106,7 +106,15 @@ val create:
    [append_stack] one array at a time but popped with [decomp_stack]
    one by one *)
 
-type 'a stack
+type 'a stack_member =
+  | Zapp of 'a array * int
+  | Zcase of case_info * 'a * 'a array
+  | Zfix of 'a * 'a stack
+  | Zshift of int
+  | Zupdate of 'a
+
+and 'a stack = 'a stack_member list
+
 val empty_stack : 'a stack
 val append_stack : 'a array -> 'a stack -> 'a stack
 
