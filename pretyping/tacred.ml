@@ -715,17 +715,14 @@ let reduce_to_mind env sigma t =
     let c, _ = whd_stack t in
     match kind_of_term c with
       | IsMutInd (mind,args) -> ((mind,args),t,it_mkProd_or_LetIn t l)
-      | IsConst _ | IsMutCase _ | IsEvar _ | IsRel _ | IsVar _ ->
+      | IsProd (n,ty,t') ->
+	  elimrec (push_rel_assum (n,t) env) t' ((n,None,ty)::l)
+      | _ -> 
           (try 
 	     let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in 
 	     elimrec env t' l
            with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
                [< 'sTR"Not an inductive product." >])
-      | IsProd (n,ty,t') ->
-	  elimrec (push_rel_assum (n,t) env) t' ((n,None,ty)::l)
-      | IsLetIn (n,b,ty,t') ->
-	  elimrec (push_rel_def (n,b,t) env) t' ((n,Some b,ty)::l)
-      | _ -> error "Not an inductive product"
  in
  elimrec env t []
 
