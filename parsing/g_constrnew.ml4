@@ -194,7 +194,7 @@ GEXTEND Gram
     | "0"
       [ c=atomic_constr -> c
       | c=match_constr -> c
-      | "("; c = operconstr; ")" ->
+      | "("; c = operconstr LEVEL "200"; ")" ->
           (match c with
               CNumeral(_,Bignat.POS _) -> CNotation(loc,"( _ )",[c])
             | _ -> c) ] ]
@@ -303,7 +303,7 @@ GEXTEND Gram
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
-      | "("; p = pattern; ")" ->
+      | "("; p = pattern LEVEL "200"; ")" ->
           CPatNotation(loc,"( _ )",[p])
       | n = INT -> CPatNumeral (loc,Bignat.POS(Bignat.of_string n)) ] ]
   ;
