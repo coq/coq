@@ -1,8 +1,10 @@
 
-type typ =  
+type typ = string
+(***
   | Base of string
   | Arrow of typ * typ
   | Tuple of typ list
+***)
 
 type term =   
   | Cst of int
@@ -36,8 +38,8 @@ and form =
 
 type hyp =
   | Assert of string * form
-  | DeclVar of string * typ
-  | DeclProp of string
+  | DeclVar of string * typ list * typ
+  | DeclPred of string * typ list
   | DeclType of string
 
 type query = hyp list * form

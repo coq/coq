@@ -76,7 +76,7 @@ let rec print_predicate fmt p =
 
 let print_query fmt (decls,concl) =
   let print_decl = function
-    | DeclVar _ | DeclProp _ | DeclType _ -> 
+    | DeclVar _ | DeclPred _ | DeclType _ -> 
 	()
     | Assert (id, f)  -> 
 	fprintf fmt "@[(BG_PUSH ;; %s@\n %a)@]@\n" id print_predicate f

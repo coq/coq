@@ -31,6 +31,12 @@ let coq_Zgt = lazy (constant "Zgt")
 let coq_Zle = lazy (constant "Zle")
 let coq_Zge = lazy (constant "Zge")
 let coq_Zlt = lazy (constant "Zlt")
+let coq_Z0 = lazy (constant "Z0")
+let coq_Zpos = lazy (constant "Zpos")
+let coq_Zneg = lazy (constant "Zneg")
+let coq_xH = lazy (constant "xH")
+let coq_xI = lazy (constant "xI")
+let coq_xO = lazy (constant "xO")
 
 (* not Prop typed expressions *)
 exception NotProp
@@ -40,120 +46,179 @@ exception NotFO
 
 (* assumption: t:Set *)
 let rec tr_type env t =
-  if t = Lazy.force coq_Z then Base "INT"
-  else if is_Prop t then Base "BOOLEAN"
-  else if is_Set t then Base "TYPE"
+  if t = Lazy.force coq_Z then [], "INT"
+  else if is_Prop t then [], "BOOLEAN"
+  else if is_Set t then [], "TYPE"
   else if is_imp_term t then 
     begin match match_with_imp_term t with
-      | Some (t1, t2) -> Arrow (tr_type env t1, tr_type env t2)
+      | Some (t1, t2) -> begin match tr_type env t1, tr_type env t2 with
+	  | ([], t1), (l2, t2) -> t1 :: l2, t2
+	  | _ -> raise NotFO
+	end
       | _ -> assert false
     end
   (* else if then *)
   else raise NotFO
 
+(* assumption : p:Z *)
+let rec fol_term_of_positive p =
+  match kind_of_term p with
+    | Term.Construct _ when p = Lazy.force coq_xH ->
+	Cst 1
+    | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
+	Plus (Mult (Cst 2, (fol_term_of_positive a)), Cst 1)
+    | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
+	Mult (Cst 2, (fol_term_of_positive a))
+    | Var id ->
+	Tvar (string_of_id id)
+    | _ -> 
+	assert false
+
+(* Coq global references *)
+
+type global = Gnot_fo | Gfo of Fol.hyp
+
+let globals = Hashtbl.create 97
+let globals_stack = ref []
+let locals = Hashtbl.create 97
+
+let lookup t r =  match Hashtbl.find t r with
+  | Gnot_fo -> raise NotFO
+  | Gfo d -> d
+
+let rec tr_global_type gl id ty =
+  let id = string_of_id id in
+  if is_Prop ty then
+    DeclPred (id, [])
+  else if is_Set ty then
+    DeclType id
+  else 
+    let s = pf_type_of gl ty in
+    if is_Prop s then
+      Assert (id, tr_formula gl ty)
+    else if is_Set s then
+      let l,t = tr_type (pf_env gl) ty in DeclVar (id, l, t)
+    else
+      (* TODO: traiter les symboles de predicats *)
+      raise NotFO
+
+and tr_global gl = function
+  | Libnames.VarRef id ->
+      lookup locals id
+  | r ->
+      try
+	lookup globals r
+      with Not_found ->
+	try
+	  let ty = Global.type_of_global r in
+	  let id = Nametab.id_of_global r in
+	  let d = tr_global_type gl id ty in
+	  Hashtbl.add globals r (Gfo d);
+	  globals_stack := d :: !globals_stack;
+	  d
+	with NotFO ->
+	  Hashtbl.add globals r Gnot_fo;
+	  raise NotFO
+
+  
+
 (* assumption: t:T:Set *)
-let rec tr_term env t =
+and tr_term gl t =
   match kind_of_term t with
     | Var id -> 
 	Tvar (string_of_id id)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zplus -> 
-	Plus (tr_term env a, tr_term env b)
+	Plus (tr_term gl a, tr_term gl b)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zminus -> 
-	Moins (tr_term env a, tr_term env b)
+	Moins (tr_term gl a, tr_term gl b)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zmult -> 
-	Mult (tr_term env a, tr_term env b)
+	Mult (tr_term gl a, tr_term gl b)
     | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
-	Div (tr_term env a, tr_term env b)
-    | Term.App (f, cl) -> 
+	Div (tr_term gl a, tr_term gl b)
+    | Term.App (f, [|a;b|]) when f = Lazy.force coq_Zdiv -> 
+	Div (tr_term gl a, tr_term gl b)
+    | Term.Construct _ when t = Lazy.force coq_Z0 ->
+	Cst 0
+    | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
+	fol_term_of_positive a
+    | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
+	Moins (Cst 0, (fol_term_of_positive a))
+    | _ ->
+	let f, cl = decompose_app t in
 	begin try
 	  let r = Libnames.reference_of_constr f in
-	  let s = string_of_id (Nametab.id_of_global r) in
-	  App (s, List.map (tr_term env) (Array.to_list cl))
+	  match tr_global gl r with
+	    | DeclVar (s, _, _) -> App (s, List.map (tr_term gl) cl)
+	    | _ -> raise NotFO
 	with Not_found ->
 	  raise NotFO
 	end
-    | _ -> 
-	raise NotFO
 
 (* assumption: f is of type Prop *)
-let rec tr_formula env f =
+and tr_formula gl f =
   let c, args = decompose_app f in
   match kind_of_term c, args with
     | Var id, [] -> 
 	Fvar (string_of_id id)
     | _, [t;a;b] when c = build_coq_eq () -> 
 	(* TODO: verifier type t *)
-	Fatom (Eq (tr_term env a, tr_term env b))
+	Fatom (Eq (tr_term gl a, tr_term gl b))
     | _, [a;b] when c = Lazy.force coq_Zle ->
-	Fatom (Le (tr_term env a, tr_term env b))
+	Fatom (Le (tr_term gl a, tr_term gl b))
+    | _, [a;b] when c = Lazy.force coq_Zlt ->
+	Fatom (Lt (tr_term gl a, tr_term gl b))
+    | _, [a;b] when c = Lazy.force coq_Zge ->
+	Fatom (Ge (tr_term gl a, tr_term gl b))
+    | _, [a;b] when c = Lazy.force coq_Zgt ->
+	Fatom (Gt (tr_term gl a, tr_term gl b))
     | _, [] when c = build_coq_False () ->
 	False
     | _, [] when c = build_coq_True () ->
 	True
     | _, [a] when c = build_coq_not () ->
-	Not (tr_formula env a)
+	Not (tr_formula gl a)
     | _, [a;b] when c = build_coq_and () ->
-	And (tr_formula env a, tr_formula env b)
+	And (tr_formula gl a, tr_formula gl b)
     | _, [a;b] when c = build_coq_or () ->
-	Or (tr_formula env a, tr_formula env b)
+	Or (tr_formula gl a, tr_formula gl b)
     | Prod (_, a, b), _ ->
 	if is_imp_term f then
-	  Imp (tr_formula env a, tr_formula env b)
+	  Imp (tr_formula gl a, tr_formula gl b)
 	else
 	  assert false (*TODO Forall *)
     | _, [a] when c = build_coq_ex () ->
-	assert false (*TODO*) (*Exists (tr_formula env a)*)
+	assert false (*TODO Exists (tr_formula gl a)*)
     | _ ->
-	raise NotFO
+	begin try
+	  let r = Libnames.reference_of_constr c in
+	  match tr_global gl r with
+	    | DeclPred (s, _) -> Fatom (Pred (s, List.map (tr_term gl) args))
+	    | _ -> raise NotFO
+	with Not_found ->
+	  raise NotFO
+	end
 
 
 let tr_goal gl =
-  let tr_one_hyp (id, ty) =
-    let id = string_of_id id in
-    if is_Prop ty then
-      DeclProp id
-    else if is_Set ty then
-      DeclType id
-    else 
-      let s = pf_type_of gl ty in
-      if is_Prop s then
-	Assert (id, tr_formula (pf_env gl) ty)
-      else if is_Set s then
-	DeclVar (id, tr_type (pf_env gl) ty)
-      else
-	raise NotFO
+  Hashtbl.clear locals;
+  let env = pf_env gl in
+  let tr_one_hyp (id, ty) = 
+    try
+      let d = tr_global_type gl id ty in
+      Hashtbl.add locals id (Gfo d);
+      d
+    with NotFO ->
+      Hashtbl.add locals id Gnot_fo;
+      raise NotFO
   in
-  let c = tr_formula (pf_env gl) (pf_concl gl) in
   let hyps =
-    List.fold_left 
-      (fun acc h -> try tr_one_hyp h :: acc with NotFO -> acc)
-      [] (pf_hyps_types gl)
+    List.fold_right 
+      (fun h acc -> try tr_one_hyp h :: acc with NotFO -> acc)
+      (pf_hyps_types gl) []
   in
+  let c = tr_formula gl (pf_concl gl) in
+  let hyps = List.rev_append !globals_stack hyps in
   hyps, c
-
-
-let rec isGoodType gl t = 
-  (is_Prop t) || 
-  (is_Set t) || 
-  (is_Prop (pf_type_of gl (body_of_type t))) || 
-  (is_Set (pf_type_of gl (body_of_type t)))
-
-
-let rec allGoodTypeHyps gl hyps_types = match hyps_types with
-  | [] -> 
-      Tacticals.tclIDTAC gl
-  | (id, t)::l' -> 
-      if not (isGoodType gl t) then 
-	errorlabstrm "allGoodTypeHyps"
-	  (pr_id id ++ str " must be Prop, Set or " ++ pr_id id ++ 
-	   str "'s type must be Prop or Set");
-      allGoodTypeHyps gl l'
-
-let allGoodType gl =
-  let concl_type = pf_type_of gl (pf_concl gl) in
-  if not (is_Prop concl_type) then error "Goal is not a Prop";
-  let hyps_types = pf_hyps_types gl in 
-  allGoodTypeHyps gl hyps_types
 
 
 type prover = Simplify | CVCLite | Harvey
