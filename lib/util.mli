@@ -60,6 +60,8 @@ val list_distinct : 'a list -> bool
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_map2_i : 
   (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
+val list_map3 :
+  ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
 val list_index : 'a -> 'a list -> int
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
