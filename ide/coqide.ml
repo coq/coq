@@ -1237,7 +1237,7 @@ Please restart and report NOW.";
 	    self#clear_message
 	  in
 	  begin match last_command with 
-	  | {ast=_,VernacSolve _} -> 
+	  | {ast=_, (VernacSolve _ | VernacTime (VernacSolve _))} -> 
 	      begin 
 		try Pfedit.undo 1; ignore (pop ()); update_input () 
 		with _ -> self#backtrack_to_no_lock start
