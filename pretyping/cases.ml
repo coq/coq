@@ -1498,7 +1498,8 @@ let prepare_predicate_from_tycon dep env isevars tomatchs c =
   let allargs =
     List.map (fun c -> lift n (nf_betadeltaiota env (evars_of isevars) c)) allargs in
   let rec build_skeleton env c =
-    let c = whd_betadeltaiota env (evars_of isevars) c in
+    (* Don't put into normal form, it has effects on the synthesis of evars *)
+ (* let c = whd_betadeltaiota env (evars_of isevars) c in *)
     (* We turn all subterms possibly dependent into an evar with maximum ctxt*)
     if isEvar c or List.exists (eq_constr c) allargs then
       mkExistential isevars env
