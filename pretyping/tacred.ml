@@ -808,6 +808,7 @@ let abstract_scheme env sigma (locc,a) t =
 
 let pattern_occs loccs_trm env sigma c =
   let abstr_trm = List.fold_right (abstract_scheme env sigma) loccs_trm c in
+  let _ = Typing.type_of env sigma abstr_trm in
   applist(abstr_trm, List.map snd loccs_trm)
 
 (* Generic reduction: reduction functions used in reduction tactics *)
