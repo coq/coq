@@ -86,42 +86,43 @@ let decl_get_modules ld =
 				  List.iter (mltype_get_modules m) l) l) l
     | Dabbrev (_,_,t) -> mltype_get_modules m t 
     | Dglob (_,a) -> ast_get_modules m a
+    | Dfix(_,c) -> Array.iter (ast_get_modules m) c  
     | _ -> ()
   in 
   List.iter one_decl ld; 
   !m
 
-(*s Does [prop] or [arity] occur ? *)
+(*s Does [Tdummy] or [MLdummy] occur ? *)
 
-exception Print_prop
+exception Found
 
-let ast_print_prop a = 
+let ast_mem_dummy a = 
   let rec get_rec = function 
-    | MLprop | MLarity -> raise Print_prop
+    | MLdummy -> raise Found
     | a -> ast_iter get_rec a
   in get_rec a
 
-let mltype_print_prop t = 
+let type_mem_dummy t = 
   let rec get_rec = function 
-    | Tprop | Tarity -> raise Print_prop
+    | Tdummy -> raise Found
     | Tapp l -> List.iter get_rec l
     | Tarr (a,b) -> get_rec a; get_rec b 
     | _ -> () 
   in get_rec t
 
-let decl_print_prop ld = 
+let decl_mem_dummy ld = 
   let one_decl = function 
     | Dtype (l,_) -> 
 	List.iter (fun (_,_,l) -> 
-		     List.iter (fun (_,l) -> 
-				  List.iter mltype_print_prop l) l) l
-    | Dabbrev (_,_,t) -> mltype_print_prop t 
-    | Dglob (_,a) -> ast_print_prop a
+		     List.iter (fun (_,l) -> List.iter type_mem_dummy l) l) l
+    | Dabbrev (_,_,t) -> type_mem_dummy t 
+    | Dglob (_,a) -> ast_mem_dummy a
+    | Dfix(_,c) -> Array.iter ast_mem_dummy c
     | _ -> ()
   in 
   try 
     List.iter one_decl ld; false 
-  with Print_prop -> true
+  with Found -> true
 
 (*s Tables of global renamings *)
 
@@ -262,7 +263,7 @@ let extract_to_file f prm decls =
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
       (List.filter decl_is_singleton prm.to_appear); 
-  pp_with ft (preamble prm used_modules (decl_print_prop decls));
+  pp_with ft (preamble prm used_modules (decl_mem_dummy decls));
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

@@ -84,8 +84,8 @@ type env = identifier list * Idset.t
 let rec rename_vars avoid = function
   | [] -> 
       [], avoid
-  | id :: idl when id == prop_name ->
-      (* we don't rename propositions binders *)
+  | id :: idl when id == dummy_name ->
+      (* we don't rename dummy binders *)
       let (idl', avoid') = rename_vars avoid idl in
       (id :: idl', avoid')
   | id :: idl ->
@@ -114,15 +114,13 @@ let keywords =
     "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
     "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "prop" ; "arity" ] 
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "dummy" ] 
   Idset.empty
 
-let preamble _ used_modules used_prop = 
-  (if used_prop then 
-    str "type prop = unit" ++ fnl () ++
-    str "let prop = ()" ++ fnl () ++ fnl () ++
-    str "type arity = unit" ++ fnl () ++
-    str "let arity = ()" ++ fnl () ++ fnl ()
+let preamble _ used_modules used_dummy = 
+  (if used_dummy then 
+    str "type dummy = unit" ++ fnl () ++
+    str "let dummy = ()" ++ fnl () ++ fnl ()
   else mt ())
   ++
   Idset.fold (fun m s -> s ++ str "open " ++ pr_id (uppercase_id m) ++ fnl())
@@ -158,8 +156,7 @@ let rec pp_type par ren t =
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Tprop -> str "prop"
-    | Tarity -> str "arity"
+    | Tdummy -> str "dummy"
   in 
   hov 0 (pp_rec par t)
 
@@ -254,10 +251,8 @@ let rec pp_expr par env args =
 	(* An [MLexn] may be applied, but I don't really care. *)
 	(open_par par ++ str "assert false" ++ spc () ++ 
 	 str ("(* "^s^" *)") ++ close_par par)
-    | MLprop ->
-	str "prop" (* An [MLprop] may be applied, but I don't really care. *)
-    | MLarity ->
-	str "arity" (* idem for [MLarity]. *)
+    | MLdummy ->
+	str "dummy" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) ->
 	let tvars = get_tvars t in 
 	let _,ren = rename_tvars keywords tvars in 
@@ -346,7 +341,6 @@ let pp_one_ind prefix (pl,name,cl) =
 		      (fun () -> (spc () ++ str "* ")) (pp_type true ren) l))
   in
   (pp_parameters pl ++ str prefix ++ pp_type_global name ++ str " =" ++ 
-   (* TODO: possible clash with Coq unit *)
    if cl = [] then str " unit (* empty inductive *)" 
    else (fnl () ++
 	 v 0 (str "    " ++
@@ -388,10 +382,10 @@ let pp_decl = function
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
 	       pp_type_global r ++ spc () ++ str "=" ++ spc () ++ 
 	       pp_type false ren t ++ fnl ())
-  | Dglob (r, MLfix (_,[|_|],[|def|])) ->
-      let id = rename_global r in
-      let env' = [id], P.globals() in
-      (hov 2 (pp_fix false env' None ([|id|],[|def|]) []))
+  | Dfix (rv, defs) ->
+      let ids = Array.map rename_global rv in 
+      let env = List.rev (Array.to_list ids), P.globals() in
+      (hov 2 (pp_fix false env None (ids,defs) []))
   | Dglob (r, a) ->
       hov 0 (str "let " ++ 
 	       pp_function (empty_env ()) (pp_global' r) a ++ fnl ())

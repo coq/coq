@@ -55,14 +55,16 @@ let check_decl m sm = function
   | Dtype ((_,r,_)::_, _) -> check_r m sm r 
   | Dtype ([],_) -> ()
   | Dcustom (r,_) ->  check_r m sm r
+  | Dfix(rv,_) -> Array.iter (check_r m sm) rv 
 
-(* [check_one_module m l] checks that no module names in [l] clashes with [m]. *)
+(* [check_one_module] checks that no module names in [l] clashes with [m]. *)
 
 let check_one_module m l = 
   let sm = String.capitalize (string_of_id (snd (split_dirpath m))) in 
   List.iter (check_decl m sm) l
 
-(* [check_modules m] checks if there are conflicts within the set [m] of modules dirpath. *) 
+(* [check_modules] checks if there are conflicts within the set [m] 
+   of modules dirpath. *) 
 
 let check_modules m = 
   let map = ref Idmap.empty in 
@@ -138,7 +140,7 @@ and visit_type m eenv t =
     | Tglob r -> visit_reference m eenv r
     | Tapp l -> List.iter visit l
     | Tarr (t1,t2) -> visit t1; visit t2
-    | Tvar _ | Tprop | Tarity -> ()
+    | Tvar _ | Tdummy -> ()
   in
   visit t
     
@@ -155,7 +157,7 @@ and visit_ast m eenv a =
     | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
-    | MLrel _ | MLprop | MLarity | MLexn _ -> ()
+    | MLrel _ | MLdummy | MLexn _ -> ()
   in
   visit a
 
@@ -169,6 +171,7 @@ and visit_decl m eenv = function
   | Dabbrev (_,_,t) -> visit_type m eenv t
   | Dglob (_,a) -> visit_ast m eenv a
   | Dcustom _ -> ()
+  | Dfix (_,c) -> Array.iter (visit_ast m eenv) c
 	
 (*s Recursive extracted environment for a list of reference: we just
     iterate [visit_reference] on the list, starting with an empty
@@ -204,6 +207,7 @@ let decl_in_r r0 = function
   | Dtype ((_,r,_)::_, _) -> sp_of_r r = sp_of_r r0
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  r = r0 
+  | Dfix (rv,_) -> array_exists ((=) r0) rv
 
 let pp_decl d = match lang () with 
   | Ocaml -> OcamlMonoPp.pp_decl d
@@ -309,6 +313,7 @@ let decl_in_m m = function
   | Dtype ((_,r,_)::_, _) -> is_long_module m r 
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  is_long_module m r
+  | Dfix (rv,_) -> is_long_module m rv.(0)
 
 let module_file_name m = match lang () with 
   | Ocaml -> (String.uncapitalize (string_of_id m)) ^ ".ml"

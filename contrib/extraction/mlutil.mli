@@ -13,11 +13,11 @@ open Term
 open Miniml
 open Nametab
 
-(*s Special identifiers. [prop_name] is to be used for propositions
+(*s Special identifiers. [dummy_name] is to be used for dead code
     and will be printed as [_] in concrete (Caml) code. *)
 
 val anonymous : identifier
-val prop_name : identifier
+val dummy_name : identifier
 val flex_name : identifier
 val id_of_name : name -> identifier
 
@@ -34,7 +34,7 @@ val nb_lams : ml_ast -> int
 
 val anonym_lams : ml_ast -> int -> ml_ast
 
-val prop_lams : ml_ast -> int -> ml_ast
+val dummy_lams : ml_ast -> int -> ml_ast
 
 val named_lams : identifier list -> ml_ast -> ml_ast
 
