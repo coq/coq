@@ -19,6 +19,7 @@ contrib/jprover/jprover.ml: parsing/grammar.cma
 contrib/cc/cctac.ml: parsing/grammar.cma
 contrib/linear/ccidpc.ml: parsing/grammar.cma
 contrib/linear/dpc.ml: parsing/grammar.cma
+contrib/funind/tacinv.ml: 
 parsing/lexer.ml: 
 parsing/q_util.ml: 
 parsing/q_coqast.ml: 

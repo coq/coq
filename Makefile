@@ -44,7 +44,8 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier \
-	      -I contrib/jprover -I contrib/cc -I contrib/linear
+	      -I contrib/jprover -I contrib/cc -I contrib/linear \
+	      -I contrib/funind
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -281,7 +282,8 @@ PARSERREQUIRES=\
   contrib/correctness/ptyping.cmo contrib/correctness/pwp.cmo \
   contrib/correctness/pmlize.cmo contrib/correctness/ptactic.cmo \
   contrib/correctness/psyntax.cmo contrib/cc/ccalgo.cmo \
-  contrib/cc/ccproof.cmo contrib/cc/cctac.cmo 
+  contrib/cc/ccproof.cmo contrib/cc/cctac.cmo contrib/funind/tacinvutils.cmo \
+  contrib/funind/tacinv.cmo
 
 PARSERREQUIRESCMX=$(PARSERREQUIRES:.cmo=.cmx)
 
@@ -345,6 +347,9 @@ JPROVERCMO=\
   contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
   contrib/jprover/jprover.cmo
 
+FUNINDCMO=\
+  contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo 
+
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
 LINEARCMO=\
@@ -360,11 +365,11 @@ LINEARCMO=\
   contrib/linear/dpc.cmo
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
-  contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4
+  contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4 contrib/funind/tacinv.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CORRECTNESSCMO) $(CCCMO) $(LINEARCMO) $(USERCMO)
+	$(CORRECTNESSCMO) $(CCCMO) $(LINEARCMO) $(FUNINDCMO) $(USERCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -765,6 +770,8 @@ INTERFACERC = contrib/interface/vernacrc
 
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
+FUNINDVO = 
+
 JPROVERVO = 
 
 CCVO = contrib/cc/CC.vo
@@ -777,7 +784,7 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
-	    $(JPROVERVO) $(INTERFACEV0) $(CCVO)
+	    $(JPROVERVO) $(INTERFACEV0) $(CCVO) $(FUNINDVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -791,6 +798,7 @@ correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
 jprover: $(JPROVERVO) $(JPROVERCMO)
+funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 
 ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
