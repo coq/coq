@@ -654,6 +654,25 @@ let rec is_constr = function
   | MLlam(_,t) -> is_constr t
   | _          -> false
 
+let is_ind = function 
+  | IndRef _ -> true 
+  | _ -> false 
+
+let is_rec_principle = function 
+  | ConstRef sp -> 
+      let d,i = repr_path sp in 
+      let s = string_of_id i in 
+      if Filename.check_suffix s "_rec" then 
+	let i' = id_of_string (Filename.chop_suffix s "_rec") in 
+	(try is_ind (locate (make_qualid d i'))
+	 with Not_found -> false)
+      else if Filename.check_suffix s "_rect" then 
+	let i' = id_of_string (Filename.chop_suffix s "_rect") in 
+	(try is_ind (locate (make_qualid d i'))
+	 with Not_found -> false)
+      else false
+  | _ -> false 
+
 (*s Strictness *)
 
 (* A variable is strict if the evaluation of the whole term implies
@@ -739,15 +758,11 @@ let is_not_strict t =
    variable (i.e. a variable that may not be evaluated). *)
 
 let inline_test t = 
-  not (is_fix t) 
-  && (is_constr t || ml_size t < 3 || (ml_size t < 12 && is_not_strict t))
+  not (is_fix t) && (is_constr t || (ml_size t < 12 && is_not_strict t))
 
 let manual_inline_list = 
   List.map (fun s -> path_of_string ("Coq.Init."^s))
-    [ "Specif.sigS_rect" ; "Specif.sigS_rec" ; 
-      "Logic.and_rect"; "Logic.and_rec";
-      "Datatypes.prod_rect" ; "Datatypes.prod_rec"; 
-      "Wf.Acc_rec" ; "Wf.Acc_rect" ; 
+    [ "Wf.Acc_rec" ; "Wf.Acc_rect" ; 
       "Wf.well_founded_induction" ; "Wf.well_founded_induction_type" ]
 
 let manual_inline = function 
@@ -765,7 +780,7 @@ let inline r t =
   not (to_keep r) (* The user DOES want to keep it *)
   && (to_inline r (* The user DOES want to inline it *) 
      || (auto_inline () && lang () <> Haskell 
-	 && (manual_inline r || inline_test t)))
+	 && (is_rec_principle r || manual_inline r || inline_test t)))
 
 (*S Optimization. *)
 
