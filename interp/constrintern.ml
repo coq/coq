@@ -524,6 +524,11 @@ let internalise sigma env allow_soapp lvar c =
 	check_projection isproj (List.length args) f;
 	RApp (loc, f, intern_args env args_scopes args)
     | CApp (loc, (isproj,f), args) ->
+        let isproj,f,args = match f with
+          (* Compact notations like "t.(f args') args" *)
+          | CApp (_,(Some _,f), args') when isproj=None -> isproj,f,args'@args
+          (* Don't compact "(f args') args" to resolve implicits separately *)
+          | _ -> isproj,f,args in
 	let (c, impargs, args_scopes) =
 	  match f with
 	    | CRef ref -> intern_reference env lvar ref
@@ -532,6 +537,7 @@ let internalise sigma env allow_soapp lvar c =
 	let args = intern_impargs c env impargs args_scopes args in
 	check_projection isproj (List.length args) c;
 	(match c with 
+          (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
     | CCases (loc, (po,rtnpo), tms, eqns) ->
