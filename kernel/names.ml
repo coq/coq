@@ -4,13 +4,7 @@
 open Pp
 open Util
 
-(* Identifiers *)
-
-type identifier = {
-  atom : string ; 
-  index : int }
-
-type name = Name of identifier | Anonymous
+(* Utilities *)
 
 let is_letter c =
   (c >= Char.code 'a' && c <= Char.code 'z') or
@@ -19,8 +13,14 @@ let is_letter c =
   (c >= Char.code '\192' && c <= Char.code '\214') or
   (c >= Char.code '\216' && c <= Char.code '\246')
 
-let is_digit c = 
-  (c >= Char.code '0' && c <= Char.code '9')
+let code_of_0 = Char.code '0'
+let code_of_9 = Char.code '9'
+
+let is_digit c = (c >= code_of_0 && c <= code_of_9)
+
+
+(* This checks that a string is acceptable as an ident, i.e. starts
+   with a letter and contains only letters, digits or "'" *)
 
 let check_ident s =
   let l = String.length s in
@@ -36,8 +36,13 @@ let check_ident s =
 
 let is_ident s = try check_ident s; true with _ -> false
 
-let code_of_0 = Char.code '0'
-let code_of_9 = Char.code '9'
+(* Identifiers *)
+
+module Ident = struct
+
+type t = {
+  atom : string ; 
+  index : int }
 
 let repr_ident { atom = sa; index = n } =
   if n = -1 then (sa,None) else (sa,Some n)
@@ -76,25 +81,120 @@ let id_of_string s =
     { atom = String.sub s 0 numstart;
       index = int_of_string (String.sub s numstart (slen - numstart)) }
 
-let atompart_of_id id = id.atom
-let index_of_id id = snd (repr_ident id)
-
-let pr_id id =
-  match repr_ident id with
-    | ("",None)   -> [< 'sTR"[]" >]
-    | ("",Some n) -> [< 'sTR"[" ; 'iNT n ; 'sTR"]" >]
-    | (s,None)   -> [< 'sTR s >]
-    | (s,Some n) -> [< 'sTR s ; 'iNT n >]
+let first_char id =
+  assert (id.atom <> "");
+  String.make 1 id.atom.[0]
 
 let id_ord { atom = s1; index = n1 } { atom = s2; index = n2 } = 
   let s_bit = Pervasives.compare s1 s2 in
   if s_bit = 0 then n1 - n2 else s_bit
 
-let first_char id =
-  if id.atom = "" then
-    failwith "lowercase_first_char"
+(* Rem : if an ident starts with toto00 then after successive
+   renamings it comes to toto09, then it goes on with toto010 *)
+let lift_ident { atom = str; index = i } = { atom = str; index = i+1 }
+let restart_ident id = { id with index = 0 }
+let has_index id = (id.index <> -1)
+
+let hash_sub hstr id = { atom = hstr id.atom; index = id.index }
+let equal id1 id2 = id1.atom == id2.atom && id1.index = id2.index
+
+end (* End of module Ident *)
+(*
+(* Second implementation *)
+module Ident = struct
+
+type t = string
+
+let cut_ident s =
+  let slen = String.length s in
+  (* [n'] is the position of the first non nullary digit *)
+  let rec numpart n n' =
+    if n = 0 then 
+      failwith
+	("The string " ^ s ^ " is not an identifier: it contains only digits")
+    else 
+      let c = Char.code (String.get s (n-1)) in
+      if c = code_of_0 && n <> slen then 
+	numpart (n-1) n' 
+      else if code_of_0 <= c && c <= code_of_9 then 
+	numpart (n-1) (n-1)
+      else 
+	n'
+  in
+  numpart slen slen
+
+let repr_ident s =
+  let slen = String.length s in
+  let numstart = cut_ident s in
+  if numstart = slen then 
+    (s, None)
   else
-    String.make 1 id.atom.[0]
+    (String.sub s 0 numstart,
+     Some (int_of_string (String.sub s numstart (slen - numstart))))
+
+let make_ident sa = function
+  | Some n -> 
+      let c = Char.code (String.get sa (String.length sa -1)) in
+      if c < code_of_0 or c > code_of_9 then sa ^ (string_of_int n)
+      else sa ^ "_" ^ (string_of_int n)
+  | None -> sa
+
+let string_of_id id = id
+let id_of_string s = s
+
+let first_char id =
+  assert (id <> "");
+  String.make 1 id.[0]
+
+let id_ord = Pervasives.compare
+
+(* Rem: semantics is a bit different, if an ident starts with toto00 then
+  after successive renamings it comes to toto09, then it goes on with toto10 *)
+let lift_ident id =
+  let len = String.length id in
+  let rec add carrypos =
+    let c = Char.code (id.[carrypos]) in
+    if is_digit c then
+      if c = code_of_9 then begin
+	assert (carrypos>0);
+	add (carrypos-1)
+      end
+      else begin
+	let newid = String.copy id in
+	String.fill newid (carrypos+1) (len-1-carrypos) '0';
+	newid.[carrypos] <- Char.chr (c + 1);
+	newid
+      end
+    else begin
+      let newid = id^"0" in
+      if carrypos < len-1 then begin
+	String.fill newid (carrypos+1) (len-1-carrypos) '0';
+	newid.[carrypos+1] <- '1'
+      end;
+      newid
+    end
+  in add (len-1)
+
+let has_index id = is_digit (Char.code (id.[String.length id - 1]))
+
+let restart_ident id =
+  let len = String.length id in
+  let numstart = cut_ident id in
+  let newid = String.make (numstart+1) '0' in
+  String.blit id 0 newid 0 numstart;
+  newid
+
+let hash_sub hstr id = hstr id
+let equal id1 id2 = id1 == id2
+
+end (* End of module Ident *)
+*)
+type identifier = Ident.t
+let repr_ident = Ident.repr_ident
+let make_ident = Ident.make_ident
+let string_of_id = Ident.string_of_id
+let id_of_string = Ident.id_of_string
+let id_ord = Ident.id_ord
 
 module IdOrdered = 
   struct
@@ -105,16 +205,22 @@ module IdOrdered =
 module Idset = Set.Make(IdOrdered)
 module Idmap = Map.Make(IdOrdered)
 
+let atompart_of_id id = fst (repr_ident id)
+let index_of_id id = snd (repr_ident id)
+let pr_id id = [< 'sTR (string_of_id id) >]
+
+let first_char = Ident.first_char
 
 (* Fresh names *)
-let lift_ident { atom = str; index = i } = { atom = str; index = i+1 }
+
+let lift_ident = Ident.lift_ident
 
 let next_ident_away id avoid = 
   if List.mem id avoid then
-    let id0 = if id.index = -1 then id else 
+    let id0 = if not (Ident.has_index id) then id else 
     (* Ce serait sans doute mieux avec quelque chose inspiré de 
        *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
-    { id with index = 0 } in
+    Ident.restart_ident id in
     let rec name_rec id =
       if List.mem id avoid then name_rec (lift_ident id) else id in 
     name_rec id0
@@ -124,6 +230,10 @@ let next_ident_away_from id avoid =
   let rec name_rec id =
     if List.mem id avoid then name_rec (lift_ident id) else id in 
   name_rec id 
+
+(* Names *)
+
+type name = Name of identifier | Anonymous
 
 let next_name_away_with_default default name l = 
   match name with
@@ -256,17 +366,17 @@ type constant_path = section_path
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int
 
-(* Hash-consing of name objects *)
+(* Hash-consing of identifier *)
 module Hident = Hashcons.Make(
   struct 
-    type t = identifier
+    type t = Ident.t
     type u = string -> string
-    let hash_sub hstr id =
-      { atom = hstr id.atom; index = id.index }
-    let equal id1 id2 = id1.atom == id2.atom && id1.index = id2.index
+    let hash_sub = Ident.hash_sub
+    let equal = Ident.equal
     let hash = Hashtbl.hash
   end)
 
+(* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
   struct 
     type t = name
