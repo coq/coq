@@ -110,6 +110,13 @@ module Pp = Ocaml.Make(ToplevelParams)
 
 open Vernacinterp
 
+let extract_reference r =
+  mSGNL 
+    (if is_ml_extraction r then
+       [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) >]
+     else
+       Pp.pp_decl (extract_declaration r))
+
 let _ = 
   vinterp_add "Extraction"
     (function 
@@ -118,12 +125,9 @@ let _ =
 	      let c = Astterm.interp_constr Evd.empty (Global.env()) ast in
 	      match kind_of_term c with
 		(* If it is a global reference, then output the declaration *)
-		| IsConst (sp,_) -> 
-		    mSGNL (Pp.pp_decl (extract_declaration (ConstRef sp)))
-		| IsMutInd (ind,_) ->
-		    mSGNL (Pp.pp_decl (extract_declaration (IndRef ind)))
-		| IsMutConstruct (cs,_) ->
-		    mSGNL (Pp.pp_decl (extract_declaration (ConstructRef cs)))
+		| IsConst (sp,_) -> extract_reference (ConstRef sp)
+		| IsMutInd (ind,_) -> extract_reference (IndRef ind)
+		| IsMutConstruct (cs,_) -> extract_reference (ConstructRef cs)
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
@@ -196,7 +200,7 @@ let extract_module m =
   let get_reference = function
     | sp, Leaf o ->
 	(match Libobject.object_tag o with
-	   | "CONSTANT" -> ConstRef sp
+	   | "CONSTANT" | "PARAMETER" -> ConstRef sp
 	   | "INDUCTIVE" -> IndRef (sp,0)
 	   | _ -> failwith "caught")
     | _ -> failwith "caught"

@@ -244,6 +244,23 @@ let decompose_lam_eta n env c =
 let rec abstract_n n a = 
   if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
 
+let dest_fix_cofix = function
+  | IsFix ((_,i),(ti,fi,ci)) -> (false,i,ti,fi,ci)
+  | IsCoFix (i,(ti,fi,ci)) -> (true,i,ti,fi,ci)
+  | _ -> assert false
+
+(*s Eta-expansion to bypass ML type inference limitations (due to possible
+    polymorphic references, the ML type system does not generalize all
+    type variables that could be generalized). *)
+
+let eta_expanse ec = function 
+  | Tmltype (Tarr _, _, _) ->
+      (match ec with
+	 | Emlterm (MLlam _) -> ec
+	 | Emlterm a -> Emlterm (MLlam (anonymous, MLapp (a, [MLrel 1])))
+	 | _ -> ec)
+  | _ -> ec
+
 (*s Error message when extraction ends on an axiom. *)
 
 let axiom_message sp =
@@ -371,7 +388,7 @@ and extract_type_rec_info env vl c args =
 	   |Iprop -> assert false
 		 (* Cf. initial tests *))
     | IsMutCase _ 
-    | IsFix _ ->
+    | IsFix _ | IsCoFix _ ->
 	let id = next_ident_away flexible_name vl in
 	Tmltype (Tvar id, [], id :: vl)
 	  (* CIC type without counterpart in ML: we generate a 
@@ -554,7 +571,8 @@ and extract_term_info_with_type env ctx c t =
 	     | Rprop -> (* Logical singleton elimination *)
 		 assert (Array.length br = 1);
 		 snd (extract_branch_aux 0 br.(0)))
-      | IsFix ((_,i),(ti,fi,ci)) ->
+      | IsFix _ | IsCoFix _ as c ->
+          let (cofix,i,ti,fi,ci) = dest_fix_cofix c in
 	  let n = Array.length ti in
 	  let (env', ctx') = fix_environment env ctx fi ti in
 	  let extract_fix_body c t =
@@ -578,8 +596,7 @@ and extract_term_info_with_type env ctx c t =
 		 extract_term_info env' (false :: ctx) c2)
       | IsCast (c, _) ->
 	  extract_term_info_with_type env ctx c t
-      | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
-      | IsMeta _ | IsEvar _ | IsCoFix _ ->
+      | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ | IsMeta _ | IsEvar _ ->
 	  assert false 
 	    
 and extract_app env ctx (f,tyf,sf) args =
@@ -656,7 +673,9 @@ and extract_constant sp =
       | Some c -> c 
       | None -> axiom_message sp
     in
-    let e = extract_constr_with_type (Global.env()) [] body typ in
+    let env = Global.env() in
+    let e = extract_constr_with_type env [] body typ in
+    let e = eta_expanse e (extract_type env typ) in
     constant_table := Gmap.add sp e !constant_table;
     e
     
