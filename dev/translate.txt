@@ -34,6 +34,28 @@ II) Notations
   Grammar (on constr) and Syntax are no longer supported. Replace them by
 Notation before translation.
 
+  Precedence levels are now from 0 to 250. Typical level are:
+
+  /\ : 60
+  \/ : 70
+  <-> : 80
+  ~ : 50
+  =, <=, >=, <> : 50
+  +, - : 40
+  *, / : 30
+
+  The new scale can induce incompatibilities. To set the level an
+operator should have after translation, use the V8only modifier of
+Infix or Notation in the v7 file, as e.g.:
+
+   Infix 6 "<=" le  V8only 50.
+   Notation "( x , y )" := (pair ? ? x y)  V8only "x , y" (at level 0).
+   Infix 3 "*" mult : nat_scope  V8only (left associativity).
+
+  The default for precedence is to multiply the level by 10. Notice
+that you can change not only the precedence but also the
+associativity and the syntax itself.
+
 III) Main examples for new syntax
      ----------------------------
 
