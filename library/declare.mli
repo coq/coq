@@ -36,4 +36,6 @@ val declare_mind : mutual_inductive_entry -> unit
 
 val global_reference : path_kind -> identifier -> constr
 
+val is_global : identifier -> bool
+
 val mind_path : constr -> section_path

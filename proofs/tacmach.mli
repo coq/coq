@@ -45,8 +45,7 @@ val pf_get_hyp             : goal sigma -> identifier -> constr
 
 val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
-val pf_reduce : (evar_declarations -> constr -> constr) 
-                -> goal sigma -> constr -> constr
+val pf_reduce : 'a reduction_function -> goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
 val pf_whd_betadeltaiota_stack : goal sigma -> 'a stack_reduction_function

@@ -271,14 +271,14 @@ let overwrite_hidden_tactic s tac  =
   overwriting_add_tactic s tac;
   (fun args -> vernac_tactic(s,args))
 
-
+(*** 
 let tactic_com = 
   fun tac t x -> tac (pf_constr_of_com x t) x
       
 let tactic_com_sort = 
   fun tac t x -> tac (pf_constr_of_com_sort x t) x
       
-let tactic_com_list =
+let tactic_com_list =    
   fun tac tl x -> 
     let translate = pf_constr_of_com x in 
     tac (List.map translate tl) x
@@ -301,7 +301,6 @@ let tactic_com_bind_list_list =
     in 
     tac (List.map translate args) gl
 
-
 (* Some useful combinators for hiding tactic implementations *)
 
 type 'a hide_combinator = string -> ('a -> tactic) -> ('a -> tactic)
@@ -317,106 +316,107 @@ let overwrite_hidden_atomic_tactic s tac =
 
 let hide_constr_comarg_tactic s tac =
   let tacfun = function 
-    | [CONSTR c]    -> tac c
-    | [COMMAND com] -> tactic_com tac com
+    | [Constr c]    -> tac c
+    | [Command com] -> tactic_com tac com
     | _ -> anomaly "hide_constr_comarg_tactic : neither CONSTR nor COMMAND"
   in 
   add_tactic s tacfun;
-  (fun c   -> vernac_tactic(s,[(CONSTR c)])), 
-  fun com -> vernac_tactic(s,[(COMMAND com)])
+  (fun c -> vernac_tactic(s,[Constr c]),
+   fun com -> vernac_tactic(s,[Command com]))
  
 let overwrite_hidden_constr_comarg_tactic s tac =
   let tacfun = function 
-    | [CONSTR c] -> tac c
-    | [COMMAND com] -> 
+    | [Constr c] -> tac c
+    | [Command com] -> 
         (fun gls -> tac (pf_constr_of_com gls com) gls)
     | _ -> 
 	anomaly 
 	  "overwrite_hidden_constr_comarg_tactic : neither CONSTR nor COMMAND"
   in 
   overwriting_tactic s tacfun;
-  (fun c -> vernac_tactic(s,[(CONSTR c)]), 
-   fun c -> vernac_tactic(s,[(COMMAND c)]))
+  (fun c -> vernac_tactic(s,[(Constr c)]), 
+   fun c -> vernac_tactic(s,[(Command c)]))
 
 let hide_constr_tactic s tac =
   let tacfun = function 
-    | [CONSTR c]    -> tac c
-    | [COMMAND com] -> tactic_com tac com
+    | [Constr c]    -> tac c
+    | [Command com] -> tactic_com tac com
     | _ -> anomaly "hide_constr_tactic : neither CONSTR nor COMMAND"
   in 
   add_tactic s tacfun;
-  (fun c  -> vernac_tactic(s,[(CONSTR c)]))
+  (fun c  -> vernac_tactic(s,[(Constr c)]))
 
 let hide_numarg_tactic s tac =
-  let tacfun = (function [INTEGER n] -> tac n | _ -> assert false) in 
+  let tacfun = (function [Integer n] -> tac n | _ -> assert false) in 
   add_tactic s tacfun;
-  fun n -> vernac_tactic(s,[INTEGER n])
+  fun n -> vernac_tactic(s,[Integer n])
 
 let hide_ident_tactic s tac =
-  let tacfun = (function [IDENTIFIER id] -> tac id | _ -> assert false) in
+  let tacfun = (function [Identifier id] -> tac id | _ -> assert false) in
   add_tactic s tacfun;
-  fun id -> vernac_tactic(s,[IDENTIFIER id])
+  fun id -> vernac_tactic(s,[Identifier id])
       
 let hide_string_tactic s tac =
-  let tacfun = (function [QUOTED_STRING str] -> tac str | _ -> assert false) in
+  let tacfun = (function [Quoted_string str] -> tac str | _ -> assert false) in
   add_tactic s tacfun;
-  fun str -> vernac_tactic(s,[QUOTED_STRING str])
+  fun str -> vernac_tactic(s,[Quoted_string str])
 
 let hide_identl_tactic s tac =
-  let tacfun = (function [CLAUSE idl] -> tac idl | _ -> assert false) in 
+  let tacfun = (function [Clause idl] -> tac idl | _ -> assert false) in 
   add_tactic s tacfun;
-  fun idl -> vernac_tactic(s,[CLAUSE idl])
+  fun idl -> vernac_tactic(s,[Clause idl])
 
 let hide_constrl_tactic s tac = 
   let tacfun = function 
-    | ((COMMAND com)::_) as al -> 
+    | ((Command com)::_) as al -> 
       	tactic_com_list tac 
-          (List.map (function (COMMAND com) -> com | _ -> assert false) al)
-    | ((CONSTR com)::_) as al ->
-      	tac (List.map (function (CONSTR c) -> c | _ -> assert false) al)
+          (List.map (function (Command com) -> com | _ -> assert false) al)
+    | ((Constr com)::_) as al ->
+      	tac (List.map (function (Constr c) -> c | _ -> assert false) al)
     | _ -> anomaly "hide_constrl_tactic : neither CONSTR nor COMMAND"
   in 
   add_tactic s tacfun;
-  fun ids -> vernac_tactic(s,(List.map (fun id -> CONSTR id) ids))
+  fun ids -> vernac_tactic(s,(List.map (fun id -> Constr id) ids))
 
 let hide_bindl_tactic s tac = 
   let tacfun = function  
-    | [(BINDINGS  al)] -> tactic_bind_list tac al
-    | [(CBINDINGS al)] -> tac al
+    | [Bindings  al] -> tactic_bind_list tac al
+    | [Cbindings al] -> tac al
     | _ -> anomaly "hide_bindl_tactic : neither BINDINGS nor CBINDINGS"
   in 
   add_tactic s tacfun;
-  fun bindl -> vernac_tactic(s,[(CBINDINGS bindl)])
+  fun bindl -> vernac_tactic(s,[Cbindings bindl])
       
 let hide_cbindl_tactic s tac = 
   let tacfun = function 
-    | [(COMMAND com);(BINDINGS al)] -> tactic_com_bind_list tac (com,al)
-    | [(CONSTR  c);(CBINDINGS al)]  -> tac (c,al)
+    | [Command com; Bindings al] -> tactic_com_bind_list tac (com,al)
+    | [Constr c; Cbindings al]  -> tac (c,al)
     | _ -> anomaly "hide_cbindl_tactic : neither CONSTR nor COMMAND"
   in 
   add_tactic s tacfun;
-  fun (c,bindl) -> vernac_tactic(s,[(CONSTR c);(CBINDINGS bindl)])
+  fun (c,bindl) -> vernac_tactic(s,[Constr c; Cbindings bindl])
       
 let hide_cbindll_tactic s tac = 
   let rec getcombinds = function 
-    | ((COMMAND com)::(BINDINGS al)::l) -> (com,al)::(getcombinds l)
+    | ((Command com)::(Bindings al)::l) -> (com,al)::(getcombinds l)
     | []                                ->  [] 
     | _ -> anomaly "hide_cbindll_tactic : not the expected form" 
   in  
   let rec getconstrbinds = function
-    | ((CONSTR c)::(CBINDINGS al)::l) -> (c,al)::(getconstrbinds l)
-    |  []                             ->  [] 
+    | ((Constr c)::(Cbindings al)::l) -> (c,al)::(getconstrbinds l)
+    | []                              ->  [] 
     | _ -> anomaly "hide_cbindll_tactic : not the expected form" 
   in  
   let rec putconstrbinds = function 
-    | (c,binds)::l -> (CONSTR c)::(CBINDINGS binds)::(putconstrbinds l)
+    | (c,binds)::l -> (Constr c)::(Cbindings binds)::(putconstrbinds l)
     |  []          -> [] 
   in
   let tacfun = function 
-    | ((COMMAND com)::_) as args -> 
+    | ((Command com)::_) as args -> 
       	tactic_com_bind_list_list tac (getcombinds args)
-    | ((CONSTR com)::_) as args -> tac (getconstrbinds args)
+    | ((Constr com)::_) as args -> tac (getconstrbinds args)
     | _ -> anomaly "hide_cbindll_tactic : neither CONSTR nor COMMAND"
   in 
   add_tactic s tacfun;
   fun l -> vernac_tactic(s,putconstrbinds l)
+***)

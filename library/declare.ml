@@ -172,6 +172,13 @@ let global_reference kind id =
   let ids =  ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
 
+let is_global id =
+  try 
+    let osp = Nametab.sp_of_id CCI id in
+    prefix_of (dirpath osp) (Lib.cwd())
+  with Not_found -> 
+    false
+
 let mind_path = function
   | DOPN(MutInd (sp,0),_) -> sp
   | DOPN(MutInd (sp,tyi),_) -> 

@@ -28,5 +28,8 @@ type refiner_error =
   | OccurMeta of constr
   | CannotApply of constr * constr
   | CannotUnify of constr * constr
+  | BadTacticArgs of string * tactic_arg list
+
+exception RefinerError of refiner_error
 
 val error_cannot_unify : path_kind -> constr * constr -> 'a
