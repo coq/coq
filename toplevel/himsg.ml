@@ -163,7 +163,7 @@ let explain_unexpected_type k ctx actual_type expected_type =
 let explain_not_product k ctx c =
   let ctx = make_all_name_different ctx in
   let pr = prterm_env ctx c in
-  [< 'sTR"This type of this term is expected to be a product but it is";
+  [< 'sTR"The type of this term is expected to be a product but it is";
      'bRK(1,1); pr; 'fNL >]
 
 (* (co)fixpoints *)
