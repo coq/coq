@@ -31,6 +31,9 @@ val arith_modules : string list list
 val zarith_base_modules : string list list
 val init_modules : string list list
 
+(* For tactics/commands requiring vernacular libraries *)
+val check_required_library : string list -> unit
+
 (*s Global references *)
 
 (* Modules *)

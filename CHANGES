@@ -12,11 +12,12 @@ Gallina
 
 Ltac
 
+- New primitive "external" for communication with tool external to Coq
 - Semantics of "match t with" changed: if a clause returns a
   tactic, it is now applied to the current goal. If it fails, the next
   clause or next matching subterm is tried (i.e. it behaves as "match
   goal with").
-- New modifier "lazy" for "match t with" and "match goal with" telling
+- New modifier "lazy" (TODO) for "match t with" and "match goal with" telling
   to delay the evaluation of tactic expression.
 
 Tactics

@@ -143,7 +143,7 @@ let print_path_entry (s,l) =
   (str s ++ str " " ++ tbrk (0,2) ++ str (string_of_dirpath l))
 
 let print_loadpath () =
-  let l = Library.get_full_load_path () in
+  let l = Library.get_full_load_paths () in
   msgnl (Pp.t (str "Physical path:                                 " ++
 		 tab () ++ str "Logical Path:" ++ fnl () ++ 
 		 prlist_with_sep pr_fnl print_path_entry l))
@@ -192,8 +192,7 @@ let dump_universes s =
 
 let locate_file f =
   try
-    let _,file =
-      System.where_in_path (Library.get_load_path()) f in
+    let _,file = System.where_in_path (Library.get_load_paths ()) f in
     msgnl (str file)
   with Not_found -> 
     msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
@@ -326,12 +325,9 @@ let vernac_scheme = build_scheme
 (* Modules            *)
 
 let vernac_import export refl =
-  let import_one ref = 
-    let qid = qualid_of_reference ref in
-      Library.import_library export qid
-  in
-    List.iter import_one refl;
-    Lib.add_frozen_state ()
+  let import ref = Library.import_module export (qualid_of_reference ref) in
+  List.iter import refl;
+  Lib.add_frozen_state ()
 
 (*  else
     let import (loc,qid) = 
@@ -508,9 +504,7 @@ let test_renamed_module (_,qid) =
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
   try
-    match import with
-      | None -> List.iter Library.read_library qidl
-      | Some b -> Library.require_library None qidl b
+    Library.require_library qidl import
   with e ->
   (* Compatibility message *)
     let qidl' = List.filter is_obsolete_module qidl in
@@ -590,10 +584,7 @@ let vernac_set_end_tac tac =
 (* Auxiliary file management *)
 
 let vernac_require_from export spec filename =
-  match export with
-      Some exp ->
-        Library.require_library_from_file spec None filename exp
-    | None -> Library.read_library_from_file filename
+  Library.require_library_from_file None filename export
 
 let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
@@ -601,7 +592,7 @@ let vernac_add_loadpath isrec pdir ldiropt =
     | Some ldir -> ldir in
   (if isrec then Mltop.add_rec_path else Mltop.add_path) pdir alias
 
-let vernac_remove_loadpath = Library.remove_path
+let vernac_remove_loadpath = Library.remove_load_path
 
   (* Coq syntax for ML or system commands *)
 
@@ -1075,81 +1066,6 @@ let vernac_check_guard () =
 
 let vernac_debug b =
   set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
-
-
-(**************************)
-(* Not supported commands *)
-(***
-let _ =
-  add "ResetSection"
-    (function 
-       | [VARG_IDENTIFIER id] ->
-	   (fun () -> reset_section (string_of_id id))
-       | _ -> bad_vernac_args "ResetSection")
-
-(* Modules *)
-
-let _ =
-  vinterp_add "BeginModule"
-    (function 
-       | [VARG_IDENTIFIER id] ->
-	   let s = string_of_id id in
-	   let lpe,_ = System.find_file_in_path (Library.get_load_path ()) (s^".v") in
-	   let dir = extend_dirpath (Library.find_logical_path lpe) id in
-	   fun () ->
-	     Lib.start_module dir
-       | _ -> bad_vernac_args "BeginModule")
-
-let _ =
-  vinterp_add "WriteModule"
-    (function 
-       | [VARG_IDENTIFIER id] ->
-	   let mid = Lib.end_module id in
-	   fun () -> let m = string_of_id id in Library.save_module_to mid m
-       | [VARG_IDENTIFIER id; VARG_STRING f] ->
-	   let mid = Lib.end_module id in
-	   fun () -> Library.save_module_to mid f
-       | _ -> bad_vernac_args "WriteModule")
-
-let _ =
-  vinterp_add "CLASS"
-    (function 
-       | [VARG_STRING kind; VARG_QUALID qid] -> 
-	   let stre = 
-	     if kind = "LOCAL" then 
-	       make_strength_0()
-             else 
-	       Nametab.NeverDischarge 
-	   in
-	   fun () -> 
-	     let ref = Nametab.global (dummy_loc, qid) in
-	     Class.try_add_new_class ref stre;
-             if_verbose message
-               ((string_of_qualid qid) ^ " is now a class")
-       | _ -> bad_vernac_args "CLASS")
-
-(* Meta-syntax commands *)
-let _ =
-  add "TOKEN"
-    (function
-       | [VARG_STRING s] -> (fun () -> Metasyntax.add_token_obj s)
-       | _ -> bad_vernac_args "TOKEN")
-***)
-
-(* Search commands *)
-
-(***
-let _ =
-  add "Searchisos"
-  (function
-     | [VARG_CONSTR com] -> 
-	 (fun () ->
-	    let env = Global.env() in
-	    let c = constr_of_com Evd.empty env com in
-	    let cc = nf_betaiota env Evd.empty c in
-            Searchisos.type_search cc)
-     | _ -> bad_vernac_args "Searchisos")
-***)
 
 let interp c = match c with
   (* Control (done in vernac) *)

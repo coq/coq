@@ -458,7 +458,7 @@ let mkAppL a =
 
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier gl=
-    Library.check_required_library ["Coq";"fourier";"Fourier"];
+    Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
     let goal = strip_outer_cast (pf_concl gl) in
     let fhyp=id_of_string "new_hyp_for_fourier" in
     (* si le but est une inéquation, on introduit son contraire,

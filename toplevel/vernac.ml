@@ -57,7 +57,7 @@ let real_error = function
    the file we parse seems a bit risky to me.  B.B.  *)
 
 let open_file_twice_if verbosely fname =
-  let _,longfname = find_file_in_path (Library.get_load_path ()) fname in
+  let _,longfname = find_file_in_path (Library.get_load_paths ()) fname in
   let in_chan = open_in longfname in
   let verb_ch = if verbosely then Some (open_in longfname) else None in
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
@@ -174,7 +174,7 @@ let rec vernac_com interpfun (loc,com) =
         (* coqdoc state *)
         let cds = Constrintern.coqdoc_freeze() in
         if !Options.translate_file then begin
-          let _,f = find_file_in_path (Library.get_load_path ())
+          let _,f = find_file_in_path (Library.get_load_paths ())
             (make_suffix fname ".v") in
           chan_translate := open_out (f^"8");
           Pp.comments := []

@@ -232,7 +232,7 @@ let discriminate_tac axioms cstr p gls =
 (* wrap everything *)
 	
 let cc_tactic gls=
-  Library.check_required_library ["Coq";"Init";"Logic"];
+  Coqlib.check_required_library ["Coq";"Init";"Logic"];
   let (axioms,disaxioms,glo)=make_prb gls in
     match (cc_proof axioms disaxioms glo) with
         `Prove_goal p -> proof_tac axioms p gls

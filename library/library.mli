@@ -15,65 +15,58 @@ open Libnames
 open Libobject
 (*i*)
 
-(*s This module is the heart of the library. It provides low level
-  functions to load, open and save libraries. Libraries are saved
-  onto the disk with checksums (obtained with the [Digest] module),
-  which are checked at loading time to prevent inconsistencies
-  between files written at various dates. It also provides a high
-  level function [require] which corresponds to the vernacular
-  command [Require]. *)
+(*s This module provides functions to load, open and save
+  libraries. Libraries correspond to the subclass of modules that
+  coincide with a file on disk (the ".vo" files). Libraries on the
+  disk comes with checksums (obtained with the [Digest] module), which
+  are checked at loading time to prevent inconsistencies between files
+  written at various dates.
+*)
 
-val read_library : qualid located -> unit
+(*s Require = load in the environment + open (if the optional boolean
+    is not [None]); mark also for export if the boolean is [Some true] *)
+val require_library : qualid located list -> bool option -> unit
+val require_library_from_file :
+  identifier option -> System.physical_path -> bool option -> unit
 
-val read_library_from_file : System.physical_path -> unit
+(*s Open a module (or a library); if the boolean is true then it's also
+   an export otherwise just a simple import *)
+val import_module : bool -> qualid located -> unit
 
-(* [import_library true qid] = [export qid] *)
- 
-val import_library : bool -> qualid located -> unit
+(*s Start the compilation of a library *)
+val start_library : string -> dir_path * string
 
+(*s End the compilation of a library and save it to a ".vo" file *)
+val save_library_to : dir_path -> string -> unit
+
+(*s Interrogate the status of libraries *)
+
+  (* - Tell if a library is loaded or opened *)
 val library_is_loaded : dir_path -> bool
 val library_is_opened : dir_path -> bool
 
+  (* - Tell which libraries are loaded or imported *)
 val loaded_libraries : unit -> dir_path list
 val opened_libraries : unit -> dir_path list
 
-val fmt_libraries_state : unit -> Pp.std_ppcmds
-
-(*s Require. The command [require_library spec m file export] loads and opens
-  a library [m]. [file] specifies the filename, if not [None]. [spec]
-  specifies to look for a specification ([true]) or for an implementation
-  ([false]), if not [None]. And [export] specifies if the library must be 
-  exported. *)
-
-val require_library :
-  bool option -> qualid located list -> bool -> unit
-
-val require_library_from_file :
-  bool option -> identifier option -> System.physical_path -> bool -> unit
-
-val set_xml_require : (dir_path -> unit) -> unit
-
-(*s [save_library_to s f] saves the current environment as a library [s]
-  in the file [f]. *)
-
-val start_library : string -> dir_path * string
-val save_library_to : dir_path -> string -> unit
-
-(* [library_full_filename] returns the full filename of a loaded library. *)
-
+  (* - Return the full filename of a loaded library. *)
 val library_full_filename : dir_path -> string
 
+(*s Hook for the xml exportation of libraries *)
+val set_xml_require : (dir_path -> unit) -> unit
 
-(*s Global load path *)
-type logical_path = dir_path
+(*s Global load paths: a load path is a physical path in the file
+    system; to each load path is associated a Coq [dir_path] (the "logical"
+    path of the physical path) *)
 
-val get_load_path : unit -> System.physical_path list
-val get_full_load_path : unit -> (System.physical_path * logical_path) list
-val add_load_path_entry : System.physical_path * logical_path -> unit
-val remove_path : System.physical_path -> unit
-val find_logical_path : System.physical_path -> logical_path
-val load_path_of_logical_path : dir_path -> System.physical_path list
+val get_load_paths : unit -> System.physical_path list
+val get_full_load_paths : unit -> (System.physical_path * dir_path) list
+val add_load_path : System.physical_path * dir_path -> unit
+val remove_load_path : System.physical_path -> unit
+val find_logical_path : System.physical_path -> dir_path
+val load_paths_of_dir_path : dir_path -> System.physical_path list
 
+(*s Locate a library in the load paths *)
 exception LibUnmappedDir
 exception LibNotFound
 type library_location = LibLoaded | LibInPath
@@ -81,13 +74,10 @@ type library_location = LibLoaded | LibInPath
 val locate_qualified_library :
   qualid -> library_location * dir_path * System.physical_path
 
-
-val check_required_library : string list -> unit
-
-(*s Displays the memory use of a library. *)
+(*s Statistics: display the memory use of a library. *)
 val mem : dir_path -> Pp.std_ppcmds
 
-(* For discharge *)
+(*s For discharge *)
 type library_reference
 
 val out_require : Libobject.obj -> library_reference

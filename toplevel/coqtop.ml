@@ -91,12 +91,13 @@ let load_vernacular () =
 let load_vernacular_obj = ref ([] : string list)
 let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () = 
-  List.iter Library.read_library_from_file (List.rev !load_vernacular_obj)
+  List.iter (fun f -> Library.require_library_from_file None f None)
+    (List.rev !load_vernacular_obj)
 
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
-  List.iter (fun s -> Library.require_library_from_file None None s false)
+  List.iter (fun s -> Library.require_library_from_file None s (Some false))
     (List.rev !require_list)
 
 let compile_list = ref ([] : (bool * string) list)

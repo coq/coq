@@ -16,6 +16,9 @@ open Libnames
 open Pattern
 open Nametab
 
+(************************************************************************)
+(* Generic functions to find Coq objects *)
+
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
 let gen_reference locstr dir s =
@@ -57,6 +60,24 @@ let gen_constant_in_modules locstr dirs s =
 	(str (locstr^": found more than once object of name "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
 	prlist_with_sep pr_coma pr_dirpath dirs)
+
+
+(* For tactics/commands requiring vernacular libraries *)
+
+let check_required_library d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+  if not (Library.library_is_loaded dir) then
+(* Loading silently ...
+    let m, prefix = list_sep_last d' in
+    read_library 
+     (dummy_loc,make_qualid (make_dirpath (List.rev prefix)) m)
+*)
+(* or failing ...*)
+    error ("Library "^(list_last d)^" has to be required first")
+
+(************************************************************************)
+(* Specific Coq objects *)
 
 let init_reference dir s=gen_reference "Coqlib" ("Init"::dir) s
 

@@ -401,7 +401,7 @@ let load_syntax_action reqid module_name =
  msg (str "loading " ++ str module_name ++ str "... ");
  try
       (let qid = Libnames.make_short_qualid (Names.id_of_string module_name) in
-      read_library (dummy_loc,qid);
+      require_library [dummy_loc,qid] None;
       msg (str "opening... ");
       Declaremods.import_module false (Nametab.locate_module qid); 
       msgnl (str "done" ++ fnl ());
