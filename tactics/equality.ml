@@ -669,19 +669,22 @@ let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
 let existS_pattern = put_pat mmk "(existS ? ? ? ?)"
 let existT_pattern = put_pat mmk "(existT ? ? ? ?)"
 
+let constant dir id = 
+  Declare.global_qualified_reference (make_path dir (id_of_string id) CCI)
+
 let build_sigma_set () =
-  { proj1 = get_reference ["Specif"] "projS1";
-    proj2 = get_reference ["Specif"] "projS2";
-    elim = get_reference ["Specif"] "sigS_rec";
-    intro = get_reference ["Specif"] "existS";
-    ex = get_reference ["Specif"] "sigS" }
+  { proj1 = constant ["Specif"] "projS1";
+    proj2 = constant ["Specif"] "projS2";
+    elim = constant ["Specif"] "sigS_rec";
+    intro = constant ["Specif"] "existS";
+    ex = constant ["Specif"] "sigS" }
 
 let build_sigma_type () =
-  { proj1 = get_reference ["Specif"] "projT1";
-    proj2 = get_reference ["Specif"] "projT2";
-    elim = get_reference ["Specif"] "sigT_rec";
-    intro = get_reference ["Specif"] "existT";
-    ex = get_reference ["Specif"] "sigT" }
+  { proj1 = constant ["Specif"] "projT1";
+    proj2 = constant ["Specif"] "projT2";
+    elim = constant ["Specif"] "sigT_rec";
+    intro = constant ["Specif"] "existT";
+    ex = constant ["Specif"] "sigT" }
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)

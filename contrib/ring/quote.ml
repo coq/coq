@@ -113,8 +113,11 @@ open Proof_type
   the constants are loaded in the environment *)
 
 let constant sp id = 
+  Declare.global_qualified_reference
+    (make_path (dirpath (path_of_string sp)) (id_of_string id) CCI)
+(*
   Declare.global_sp_reference (path_of_string sp) (id_of_string id)
-
+*)
 let coq_Empty_vm = lazy (constant "#Quote#varmap.cci" "Empty_vm")
 let coq_Node_vm = lazy (constant "#Quote#varmap.cci" "Node_vm")
 let coq_varmap_find = lazy (constant "#Quote#varmap_find.cci" "varmap_find")

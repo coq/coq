@@ -3,101 +3,91 @@
 
 (* ML part of the Ring tactic *)
 
-open Pp
-open Util
-open Term
-open Names
-open Reduction
-open Tacmach
-open Proof_type
-open Proof_trees
-open Printer
-open Equality
-open Vernacinterp
-open Libobject
-open Closure
-open Tacred
-open Tactics
-open Pattern 
-open Hiddentac
-open Quote
+open Pp;;
+open Util;;
+open Term;;
+open Names;;
+open Reduction;;
+open Tacmach;;
+open Proof_type;;
+open Proof_trees;;
+open Printer;;
+open Equality;;
+open Vernacinterp;;
+open Libobject;;
+open Closure;;
+open Tacred;;
+open Tactics;;
+open Pattern ;;
+open Hiddentac;;
+open Quote;;
 
 let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
-let constant sp id = 
-  Declare.global_sp_reference (path_of_string sp) (id_of_string id)
+let constant dir id = 
+  Declare.global_qualified_reference (make_path dir (id_of_string id) CCI)
 
 (* Ring_theory *)
 
-let coq_Ring_Theory = 
-  lazy (constant "#Ring_theory#Ring_Theory.cci" "Ring_Theory")
-let coq_Semi_Ring_Theory = 
-  lazy (constant "#Ring_theory#Semi_Ring_Theory.cci" "Semi_Ring_Theory")
+let coq_Ring_Theory = lazy (constant ["Ring_theory"] "Ring_Theory")
+let coq_Semi_Ring_Theory = lazy (constant ["Ring_theory"] "Semi_Ring_Theory")
 
 (* Ring_normalize *)
-let coq_SPplus = lazy (constant "#Ring_normalize#spolynomial.cci" "SPplus")
-let coq_SPmult = lazy (constant "#Ring_normalize#spolynomial.cci" "SPmult")
-let coq_SPvar = lazy (constant "#Ring_normalize#spolynomial.cci" "SPvar")
-let coq_SPconst = lazy (constant "#Ring_normalize#spolynomial.cci" "SPconst")
-let coq_Pplus = lazy (constant "#Ring_normalize#polynomial.cci" "Pplus")
-let coq_Pmult = lazy (constant "#Ring_normalize#polynomial.cci" "Pmult")
-let coq_Pvar = lazy (constant "#Ring_normalize#polynomial.cci" "Pvar")
-let coq_Pconst = lazy (constant "#Ring_normalize#polynomial.cci" "Pconst")
-let coq_Popp = lazy (constant "#Ring_normalize#polynomial.cci" "Popp")
-let coq_interp_sp = lazy (constant "#Ring_normalize#interp_sp.cci" "interp_sp")
-let coq_interp_p = lazy (constant "#Ring_normalize#interp_p.cci" "interp_p")
-let coq_interp_cs = lazy (constant "#Ring_normalize#interp_cs.cci" "interp_cs")
+let coq_SPplus = lazy (constant ["Ring_normalize"] "SPplus")
+let coq_SPmult = lazy (constant ["Ring_normalize"] "SPmult")
+let coq_SPvar = lazy (constant ["Ring_normalize"] "SPvar")
+let coq_SPconst = lazy (constant ["Ring_normalize"] "SPconst")
+let coq_Pplus = lazy (constant ["Ring_normalize"] "Pplus")
+let coq_Pmult = lazy (constant ["Ring_normalize"] "Pmult")
+let coq_Pvar = lazy (constant ["Ring_normalize"] "Pvar")
+let coq_Pconst = lazy (constant ["Ring_normalize"] "Pconst")
+let coq_Popp = lazy (constant ["Ring_normalize"] "Popp")
+let coq_interp_sp = lazy (constant ["Ring_normalize"] "interp_sp")
+let coq_interp_p = lazy (constant ["Ring_normalize"] "interp_p")
+let coq_interp_cs = lazy (constant ["Ring_normalize"] "interp_cs")
 let coq_spolynomial_simplify = 
-  lazy (constant "#Ring_normalize#spolynomial_simplify.cci" 
-	  "spolynomial_simplify")
+  lazy (constant ["Ring_normalize"] "spolynomial_simplify")
 let coq_polynomial_simplify = 
-  lazy (constant "#Ring_normalize#polynomial_simplify.cci"
-	  "polynomial_simplify")
+  lazy (constant ["Ring_normalize"] "polynomial_simplify")
 let coq_spolynomial_simplify_ok = 
-  lazy (constant "#Ring_normalize#spolynomial_simplify_ok.cci"
-	  "spolynomial_simplify_ok")
+  lazy (constant ["Ring_normalize"] "spolynomial_simplify_ok")
 let coq_polynomial_simplify_ok = 
-  lazy (constant "#Ring_normalize#polynomial_simplify_ok.cci"
-	  "polynomial_simplify_ok")
+  lazy (constant ["Ring_normalize"] "polynomial_simplify_ok")
 
 (* Ring_abstract *)
-let coq_ASPplus = lazy (constant "#Ring_abstract#aspolynomial.cci" "ASPplus")
-let coq_ASPmult = lazy (constant "#Ring_abstract#aspolynomial.cci" "ASPmult")
-let coq_ASPvar = lazy (constant "#Ring_abstract#aspolynomial.cci" "ASPvar")
-let coq_ASP0 = lazy (constant "#Ring_abstract#aspolynomial.cci" "ASP0")
-let coq_ASP1 = lazy (constant "#Ring_abstract#aspolynomial.cci" "ASP1")
-let coq_APplus = lazy (constant "#Ring_abstract#apolynomial.cci" "APplus")
-let coq_APmult = lazy (constant "#Ring_abstract#apolynomial.cci" "APmult")
-let coq_APvar = lazy (constant "#Ring_abstract#apolynomial.cci" "APvar")
-let coq_AP0 = lazy (constant "#Ring_abstract#apolynomial.cci" "AP0")
-let coq_AP1 = lazy (constant "#Ring_abstract#apolynomial.cci" "AP1")
-let coq_APopp = lazy (constant "#Ring_abstract#apolynomial.cci" "APopp")
+let coq_ASPplus = lazy (constant ["Ring_abstract"] "ASPplus")
+let coq_ASPmult = lazy (constant ["Ring_abstract"] "ASPmult")
+let coq_ASPvar = lazy (constant ["Ring_abstract"] "ASPvar")
+let coq_ASP0 = lazy (constant ["Ring_abstract"] "ASP0")
+let coq_ASP1 = lazy (constant ["Ring_abstract"] "ASP1")
+let coq_APplus = lazy (constant ["Ring_abstract"] "APplus")
+let coq_APmult = lazy (constant ["Ring_abstract"] "APmult")
+let coq_APvar = lazy (constant ["Ring_abstract"] "APvar")
+let coq_AP0 = lazy (constant ["Ring_abstract"] "AP0")
+let coq_AP1 = lazy (constant ["Ring_abstract"] "AP1")
+let coq_APopp = lazy (constant ["Ring_abstract"] "APopp")
 let coq_interp_asp = 
-  lazy (constant "#Ring_abstract#interp_asp.cci" "interp_asp")
+  lazy (constant ["Ring_abstract"] "interp_asp")
 let coq_interp_ap = 
-  lazy (constant "#Ring_abstract#interp_ap.cci" "interp_ap")
+  lazy (constant ["Ring_abstract"] "interp_ap")
  let coq_interp_acs = 
-  lazy (constant "#Ring_abstract#interp_acs.cci" "interp_acs")
+  lazy (constant ["Ring_abstract"] "interp_acs")
 let coq_interp_sacs = 
-  lazy (constant "#Ring_abstract#interp_sacs.cci" "interp_sacs")
+  lazy (constant ["Ring_abstract"] "interp_sacs")
 let coq_aspolynomial_normalize = 
-  lazy (constant "#Ring_abstract#aspolynomial_normalize.cci"
-	  "aspolynomial_normalize")
+  lazy (constant ["Ring_abstract"] "aspolynomial_normalize")
 let coq_apolynomial_normalize = 
-  lazy (constant "#Ring_abstract#apolynomial_normalize.cci"
-	  "apolynomial_normalize")
+  lazy (constant ["Ring_abstract"] "apolynomial_normalize")
 let coq_aspolynomial_normalize_ok = 
-  lazy (constant "#Ring_abstract#aspolynomial_normalize_ok.cci" 
-	  "aspolynomial_normalize_ok")
+  lazy (constant ["Ring_abstract"] "aspolynomial_normalize_ok")
 let coq_apolynomial_normalize_ok = 
-  lazy (constant "#Ring_abstract#apolynomial_normalize_ok.cci"
-	  "apolynomial_simplify_ok")
+  lazy (constant ["Ring_abstract"] "apolynomial_normalize_ok")
 
 (* Logic *)
-let coq_f_equal2 = lazy (constant "#Logic#f_equal2.cci" "f_equal2")
-let coq_eq = lazy (constant "#Logic#eq.cci" "eq")
-let coq_eqT = lazy (constant "#Logic_Type#eqT.cci" "eqT")
+let coq_f_equal2 = lazy (constant ["Logic"] "f_equal2")
+let coq_eq = lazy (constant ["Logic"] "eq")
+let coq_eqT = lazy (constant ["Logic_Type"] "eqT")
 
 (*********** Useful types and functions ************)
 
