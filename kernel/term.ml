@@ -666,9 +666,8 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    time being almost those of the ML representation (except for
    (co-)fixpoint) *)
 
-(* Ocaml does not guarantee Array.map is LR (even if so), then we rewrite it *)
-let array_map_left f a =
-  let l = Array.length a in
+let array_map_left f a = (* Ocaml does not guarantee Array.map is LR *)
+  let l = Array.length a in (* (even if so), then we rewrite it *)
   if l = 0 then [||] else begin
     let r = Array.create l (f a.(0)) in
     for i = 1 to l - 1 do
@@ -713,6 +712,28 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       let l' = iterate g (Array.length tl) l in
       let tl', bl' = array_map_left_pair (f l) tl (f l') bl in
       mkCoFix (ln,(tl',lna,bl'))
+
+(* strong *)
+let map_constr_with_full_binders g f l c = match kind_of_term c with
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsCast (c,t) -> mkCast (f l c, f l t)
+  | IsProd (na,t,c) -> mkProd (na, f l t, f (g (na,None,t) l) c)
+  | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g (na,None,t) l) c)
+  | IsLetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g (na,Some b,t) l) c)
+  | IsApp (c,al) -> mkApp (f l c, Array.map (f l) al)
+  | IsEvar (e,al) -> mkEvar (e, Array.map (f l) al)
+  | IsConst (c,al) -> mkConst (c, Array.map (f l) al)
+  | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
+  | IsMutConstruct (c,al) -> mkMutConstruct (c, Array.map (f l) al)
+  | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f l p, f l c, Array.map (f l) bl)
+  | IsFix (ln,(tl,lna,bl)) ->
+      let tll = Array.to_list tl in
+      let l' = List.fold_right2 (fun na t l -> g (na,None,t) l) lna tll l in
+      mkFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
+  | IsCoFix(ln,(tl,lna,bl)) ->
+      let tll = Array.to_list tl in
+      let l' = List.fold_right2 (fun na t l -> g (na,None,t) l) lna tll l in
+      mkCoFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
 
 (* [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's, binders

@@ -108,10 +108,10 @@ let stack_reduction_of_reduction red_fun env sigma s =
   let t = red_fun env sigma (app_stack s) in
   whd_stack t
 
-(* BUGGE : NE PREND PAS EN COMPTE LES DEFS LOCALES *)
-let strong whdfun env sigma = 
-  let rec strongrec t = map_constr strongrec (whdfun env sigma t) in
-  strongrec
+let strong whdfun env sigma t = 
+  let rec strongrec env t =
+    map_constr_with_full_binders push_rel strongrec env (whdfun env sigma t) in
+  strongrec env t
 
 let local_strong whdfun = 
   let rec strongrec t = map_constr strongrec (whdfun t) in
@@ -270,7 +270,6 @@ let reduce_fix whdfun fix stack =
 let whd_state_gen flags env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-(*
       | IsRel n when red_delta flags ->
 	  (match lookup_rel_value n env with
 	     | Some body -> whrec (lift n body, stack)
@@ -279,7 +278,6 @@ let whd_state_gen flags env sigma =
 	  (match lookup_named_value id env with
 	     | Some body -> whrec (body, stack)
 	     | None -> s)
-*)
       | IsEvar ev when red_evar flags ->
 	  (match existential_opt_value sigma ev with
 	     | Some body -> whrec (body, stack)
@@ -331,7 +329,7 @@ let whd_state_gen flags env sigma =
 let local_whd_state_gen flags = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | IsLetIn (_,b,_,c) when red_delta flags -> stacklam whrec [b] c stack
+      | IsLetIn (_,b,_,c) when red_letin flags -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
       | IsApp (f,cl)  -> whrec (f, append_stack cl stack)
       | IsLambda (_,_,c) ->

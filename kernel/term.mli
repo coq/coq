@@ -631,6 +631,16 @@ val map_constr_with_named_binders :
 val map_constr_with_binders_left_to_right :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 
+(* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
+   subterms of [c]; it carries an extra data [l] (typically a name
+   list) which is processed by [g na] (which typically cons [na] to
+   [l]) at each binder traversal (with name [na]); it is not recursive
+   and the order with which subterms are processed is not specified *)
+
+val map_constr_with_full_binders :
+  (rel_declaration -> 'a -> 'a) -> ('a -> constr -> constr) ->
+      'a -> constr -> constr
+
 (* [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's, binders
    name and Cases annotations are not taken into account *)
