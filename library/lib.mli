@@ -88,7 +88,8 @@ val sections_are_opened : unit -> bool
 val sections_depth : unit -> int
 
 (* Are we inside an opened module type *)
-val is_specification : unit -> bool
+val is_modtype : unit -> bool
+
 
 (* Returns the most recent OpenedThing node *)
 val what_is_opened : unit -> object_name * node

@@ -160,7 +160,6 @@ val shortest_qualid_of_module : module_path -> qualid
 val shortest_qualid_of_modtype : kernel_name -> qualid
 
 
-
 (*
 type frozen
 

@@ -107,6 +107,17 @@ and print_modexpr locals mexpr = match mexpr with
 
 
 
+let rec printable_body dir =     
+  let dir = dirpath_prefix dir in
+    try 
+      match Nametab.locate_dir (qualid_of_dirpath dir) with
+	  DirOpenModtype _ -> false
+	| DirModule _ | DirOpenModule _ -> printable_body dir
+	| _ -> true
+    with 
+	Not_found -> true
+
+
 let print_module with_body mp = 
   let name = print_modpath [] mp in
     print_module name [] with_body (Global.lookup_module mp) ++ fnl ()

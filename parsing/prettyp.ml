@@ -301,13 +301,6 @@ let print_syntactic_def sep kn =
   (str" Syntactic Definition " ++ pr_qualid qid ++ str sep ++ 
   Constrextern.without_symbols pr_rawterm c ++ fnl ())
 
-(*let print_module with_values kn = 
-  str "Module " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
-
-let print_modtype kn =
-  str "Module Type " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
-*)
-
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
   match (oname,tag) with
@@ -465,7 +458,12 @@ let print_name r =
     let kn = Nametab.locate_syntactic_definition qid in
     print_syntactic_def " = " kn
   with Not_found ->
-  try print_module true (Nametab.locate_module qid)
+  try 
+    let globdir = Nametab.locate_dir qid in
+      match globdir with
+	  DirModule (dirpath,(mp,_)) ->
+	    print_module (printable_body dirpath) mp
+	| _ -> raise Not_found
   with Not_found -> 
   try print_modtype (Nametab.locate_modtype qid)
   with Not_found ->

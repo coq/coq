@@ -346,7 +346,7 @@ let end_compilation dir =
   !path_prefix,after
 
 (* Returns true if we are inside an opened module type *)
-let is_specification () = 
+let is_modtype () = 
   let opened_p = function
     | _, OpenedModtype _ -> true 
     | _ -> false

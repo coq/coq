@@ -205,7 +205,7 @@ let refining () = [] <> (Edit.dom proof_edits)
 let check_no_pending_proofs () =
   if refining () then 
     errorlabstrm "check_no_pending_proofs"
-      (str"Proof editing in progress" ++ (msg_proofs false) ++
+      (str"Proof editing in progress" ++ (msg_proofs false) ++ fnl() ++
          str"Use \"Abort All\" first or complete proof(s).")
 
 let delete_current_proof () = delete_proof_gen (get_current_proof_name ())

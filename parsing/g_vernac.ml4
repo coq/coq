@@ -355,13 +355,19 @@ GEXTEND Gram
   gallina_ext:
     [ [ 
 	  (* Interactive module declaration *)
-	IDENT "Module"; id = base_ident; bl = module_binders_list;
-	mty_o = OPT of_module_type; mexpr_o = OPT is_module_expr ->
-	  VernacDeclareModule (id, bl, mty_o, mexpr_o)
+	IDENT "Module"; id = base_ident; 
+	bl = module_binders_list; mty_o = OPT of_module_type; 
+	mexpr_o = OPT is_module_expr ->
+	  VernacDefineModule (id, bl, mty_o, mexpr_o)
 	  
       | IDENT "Module"; "Type"; id = base_ident; 
 	bl = module_binders_list; mty_o = OPT is_module_type ->
 	  VernacDeclareModuleType (id, bl, mty_o)
+	  
+      | IDENT "Declare"; IDENT "Module"; id = base_ident; 
+	bl = module_binders_list; mty_o = OPT of_module_type; 
+	mexpr_o = OPT is_module_expr ->
+	  VernacDeclareModule (id, bl, mty_o, mexpr_o)
 
 	  (* This end a Section a Module or a Module Type *)
 

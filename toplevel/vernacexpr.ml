@@ -197,6 +197,8 @@ type vernac_expr =
   (* Modules and Module Types *)
   | VernacDeclareModule of identifier * 
       module_binder list * (module_type_ast * bool) option * module_ast option
+  | VernacDefineModule of identifier * 
+      module_binder list * (module_type_ast * bool) option * module_ast option
   | VernacDeclareModuleType of identifier * 
       module_binder list * module_type_ast option
 

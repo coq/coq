@@ -171,17 +171,20 @@ let print_modules () =
   and loaded = Library.loaded_libraries () in
   let loaded_opened = list_intersect loaded opened
   and only_loaded = list_subtract loaded opened in
-  str"Loaded and imported modules: " ++ 
+  str"Loaded and imported library files: " ++ 
   pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
-  str"Loaded and not imported modules: " ++
+  str"Loaded and not imported library files: " ++
   pr_vertical_list pr_dirpath only_loaded
 
 
 let print_module r =
   let (loc,qid) = qualid_of_reference r in
   try
-    let mp = Nametab.locate_module qid in
-      msgnl (Printmod.print_module true mp)
+    let globdir = Nametab.locate_dir qid in
+      match globdir with
+	  DirModule (dirpath,(mp,_)) ->
+	    msgnl (Printmod.print_module (Printmod.printable_body dirpath) mp)
+	| _ -> raise Not_found
   with
       Not_found -> msgnl (str"Unknown Module " ++ pr_qualid qid)
 
@@ -318,13 +321,13 @@ let start_proof_and_print idopt k t hook =
 let vernac_definition local id def hook =
   match def with
   | ProveBody (bl,t) ->   (* local binders, typ *)
-      if Lib.is_specification () then
-	let ref = declare_assumption id (local,Definitional) bl t in
-	hook local ref
+      if Lib.is_modtype () then
+	errorlabstrm "Vernacentries.VernacDefinition"
+	  (str "Proof editing mode not supported in module types")
       else
 	let hook _ _ = () in
         let kind = if local=Local then IsLocal else IsGlobal DefinitionBody in
-	start_proof_and_print (Some id) kind (bl,t) hook
+	  start_proof_and_print (Some id) kind (bl,t) hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -339,15 +342,10 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode");
-  match Lib.is_specification (), sopt with
-    | true, Some id ->
-        let t = generalize_rawconstr t bl in
-	let ref = declare_assumption id (Global,Logical) [] t in
-	hook Global ref
-    | _ -> 
-	(* an explicit Goal command starts the refining mode 
-	   even in a specification *)
-	start_proof_and_print sopt (IsGlobal (Proof kind)) (bl,t) hook
+  if Lib.is_modtype () then
+    errorlabstrm "Vernacentries.StartProof"
+      (str "Proof editing mode not supported in module types");
+  start_proof_and_print sopt (IsGlobal (Proof kind)) (bl,t) hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
@@ -385,32 +383,102 @@ let vernac_declare_module id binders_ast mty_ast_o mexpr_ast_o =
      and what module information is supplied *)
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections";
-  
-  match Lib.is_specification (), mty_ast_o, mexpr_ast_o with
-    | _, None, None 
-    | false, _, None ->
+
+  if not (Lib.is_modtype ()) then
+    error "Declare Module allowed in module types only";
+
+  let constrain_mty = match mty_ast_o with
+      Some (_,true) -> true
+    | _ -> false
+  in
+
+  match mty_ast_o, constrain_mty, mexpr_ast_o with
+    | _, false, None ->  (* no ident, no/soft type *)
+	Declaremods.start_module Modintern.interp_modtype
+	  id binders_ast mty_ast_o;
+	if_verbose message 
+	  ("Interactive Declaration of Module "^ string_of_id id ^" started")
+	  
+    | Some _, true, None           (* no ident, hard type *)
+    | _, false, Some (CMEident _) ->  (* ident, no/soft type *)
+	Declaremods.declare_module 
+	  Modintern.interp_modtype Modintern.interp_modexpr
+	  id binders_ast mty_ast_o mexpr_ast_o;
+	if_verbose message 
+	  ("Module "^ string_of_id id ^" is declared")
+
+    | _, true, Some (CMEident _) -> (* ident, hard type *)
+	error "You cannot declare an equality and a type in module declaration"
+
+    | _, _, Some _ ->    (* not ident *)
+	error "Only simple modules allowed in module declarations"
+
+    | None,true,None -> assert false  (* 1st None ==> false *)
+
+let vernac_define_module id binders_ast mty_ast_o mexpr_ast_o = 
+  (* We check the state of the system (in section, in module type)
+     and what module information is supplied *)
+  if Lib.sections_are_opened () then
+    error "Modules and Module Types are not allowed inside sections";
+ 
+  if Lib.is_modtype () then
+    error "Module definitions not allowed in module types. Use Declare Module instead";
+
+  match mexpr_ast_o with
+    | None ->
 	Declaremods.start_module Modintern.interp_modtype
 	  id binders_ast mty_ast_o;
 	if_verbose message 
 	  ("Interactive Module "^ string_of_id id ^" started")
 	  
-    | true, Some _, None
-    | true, _, Some (CMEident _)
-    | false, _, Some _ ->
+    | Some _ ->
 	Declaremods.declare_module 
 	  Modintern.interp_modtype Modintern.interp_modexpr
 	  id binders_ast mty_ast_o mexpr_ast_o;
 	if_verbose message 
 	  ("Module "^ string_of_id id ^" is defined")
 
-    | true, _, _ ->
-	error "Module definition not allowed in a Module Type"
+(* let vernac_declare_module id binders_ast mty_ast_o mexpr_ast_o =  *)
+(*   (\* We check the state of the system (in section, in module type) *)
+(*      and what module information is supplied *\) *)
+(*   if Lib.sections_are_opened () then *)
+(*     error "Modules and Module Types are not allowed inside sections"; *)
+ 
+(*   let constrain_mty = match mty_ast_o with *)
+(*       Some (_,true) -> true *)
+(*     | _ -> false *)
+(*   in *)
+
+(*   match Lib.is_modtype (), mty_ast_o, constrain_mty, mexpr_ast_o with *)
+(*     | _, None, _, None  *)
+(*     | true, Some _, false, None *)
+(*     | false, _, _, None -> *)
+(* 	Declaremods.start_module Modintern.interp_modtype *)
+(* 	  id binders_ast mty_ast_o; *)
+(* 	if_verbose message  *)
+(* 	  ("Interactive Module "^ string_of_id id ^" started") *)
+	  
+(*     | true, Some _, true, None *)
+(*     | true, _, false, Some (CMEident _) *)
+(*     | false, _, _, Some _ -> *)
+(* 	Declaremods.declare_module  *)
+(* 	  Modintern.interp_modtype Modintern.interp_modexpr *)
+(* 	  id binders_ast mty_ast_o mexpr_ast_o; *)
+(* 	if_verbose message  *)
+(* 	  ("Module "^ string_of_id id ^" is defined") *)
+
+(*     | true, _, _, _ -> *)
+(* 	error "Module definition not allowed in a Module Type" *)
 
 
 let vernac_end_module id =
   Declaremods.end_module id;
   if_verbose message 
-    ("Module "^ string_of_id id ^" is defined")
+    (if Lib.is_modtype () then 
+       "Module "^ string_of_id id ^" is declared"
+     else
+       "Module "^ string_of_id id ^" is defined")
+
   
 
 
@@ -1077,6 +1145,8 @@ let interp c = match c with
   (* Modules *)
   | VernacDeclareModule (id,bl,mtyo,mexpro) -> 
       vernac_declare_module id bl mtyo mexpro
+  | VernacDefineModule (id,bl,mtyo,mexpro) -> 
+      vernac_define_module id bl mtyo mexpro
   | VernacDeclareModuleType (id,bl,mtyo) -> 
       vernac_declare_module_type id bl mtyo
 
