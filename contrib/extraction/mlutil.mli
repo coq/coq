@@ -52,12 +52,6 @@ val normalize_decl : ml_decl -> ml_decl
 
 (*s Optimization. *)
 
-type extraction_params =  
-  { strict : bool; 
-    modular : bool; 
-    module_name : string; 
-    to_appear : global_reference list }
-
 val add_ml_decls : 
   extraction_params -> ml_decl list -> ml_decl list
 

@@ -8,12 +8,12 @@
 
 (*i $Id$ i*)
 
-open Pp
-open Names
 open Miniml
+open Mlutil
+open Names
 
-val keywords : Idset.t
+module ToplevelPp : Mlpp
 
-val preamble : extraction_params -> std_ppcmds
+val extract_to_file : 
+  string -> extraction_params -> ml_decl list -> unit
 
-module Make : functor(P : Mlpp_param) -> Mlpp

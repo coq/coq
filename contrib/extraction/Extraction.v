@@ -39,6 +39,15 @@ Grammar vernac vernac : ast :=
      [ "Extraction" "NoInline" ne_qualidarg_list($l) "." ] 
   -> [ (ExtractionNoInline ($LIST $l)) ]
 
+| print_inline_constant 
+     [ "Print" "Extraction" "Inline" "."]
+  -> [ (PrintExtractionInline) ]
+
+| reset_inline_constant 
+     [ "Reset" "Extraction" "Inline" "."]
+  -> [ (ResetExtractionInline) ]
+
+
 (* Overriding of a Coq object by an ML one *)
 | extract_constant 
      [ "Extract" "Constant" qualidarg($x) "=>" idorstring($y) "." ]

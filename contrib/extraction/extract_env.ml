@@ -18,6 +18,7 @@ open Miniml
 open Table
 open Mlutil
 open Vernacinterp
+open Common
 
 (*s Recursive computation of the global references to extract. 
     We use a set of functions visiting the extracted objects in
@@ -104,15 +105,6 @@ let extract_env rl =
     vernacular command is \verb!Extraction! [term]. Whenever [term] is
     a global, its definition is displayed. *)
 
-module ToplevelParams = struct
-  let rename_global r = Names.id_of_string (Global.string_of_global r)
-  let pp_type_global = Printer.pr_global
-  let pp_global = Printer.pr_global
-  let cofix_warning = false
-end
-
-module Pp = Ocaml.Make(ToplevelParams)
-
 let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
 
 let decl_of_refs refs =
@@ -120,7 +112,7 @@ let decl_of_refs refs =
 
 let local_optimize refs = 
   let prm = 
-    { strict = true ; modular = false ; 
+    { lang = "ocaml" ; modular = false ; 
       module_name = "" ; to_appear = refs} in
   optimize prm (decl_of_refs refs)
 
@@ -131,7 +123,7 @@ let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
   else
-    mSGNL (Pp.pp_decl (list_last (local_optimize [r])))
+    mSGNL (ToplevelPp.pp_decl (list_last (local_optimize [r])))
 
 let _ = 
   vinterp_add "Extraction"
@@ -147,8 +139,8 @@ let _ =
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
-		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (Pp.pp_ast (normalize a)))
+		      | Emltype (t,_,_) -> mSGNL (ToplevelPp.pp_type t)
+		      | Emlterm a -> mSGNL (ToplevelPp.pp_ast (normalize a)))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
@@ -163,23 +155,11 @@ let _ =
        let rl = List.filter (fun x -> not (is_ml_extraction x)) rl in 
        let dl = decl_of_refs rl in
        List.iter print_user_extract ml_rl ;
-       List.iter (fun d -> mSGNL (Pp.pp_decl d)) dl)
-
-(*s Extraction parameters. *)
-
-let strict_language = function
-  | "ocaml" -> true
-  | "haskell" -> false
-  | _ -> assert false
+       List.iter (fun d -> mSGNL (ToplevelPp.pp_decl d)) dl)
 
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
     We just call [extract_to_file] on the saturated environment. *)
-
-let extract_to_file = function
-  | "ocaml" -> Ocaml.extract_to_file 
-  | "haskell" -> Haskell.extract_to_file
-  | _ -> assert false
 
 let _ = 
   vinterp_add "ExtractionFile"
@@ -187,14 +167,14 @@ let _ =
        | VARG_STRING lang :: VARG_STRING f :: vl ->
 	   (fun () -> 
 	      let refs = refs_of_vargl vl in
-	      let prm = {strict=strict_language lang;
+	      let prm = {lang=lang;
 			 modular=false;
 			 module_name="";
 			 to_appear= refs} in 
 	      let decls = decl_of_refs refs in 
 	      let decls = add_ml_decls prm decls in 
 	      let decls = optimize prm decls in
-	      extract_to_file lang f prm decls)
+	      extract_to_file f prm decls)
        | _ -> assert false)
 
 (*s Extraction of a module. The vernacular command is \verb!Extraction Module!
@@ -232,16 +212,15 @@ let _ =
     (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      Ocaml.current_module := Some m;
 	      let ms = Names.string_of_id m in
 	      let f = (String.uncapitalize ms) ^ (file_suffix lang) in
-	      let prm = {strict=strict_language lang;
+	      let prm = {lang=lang;
 			 modular=true;
-			 module_name= Names.string_of_id m;
+			 module_name= ms;
 			 to_appear= []} in 
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in
 	      let decls = add_ml_decls prm decls in 
 	      let decls = List.filter (decl_mem rl) decls in
-	      extract_to_file lang f prm decls)
+	      extract_to_file f prm decls)
        | _ -> assert false)

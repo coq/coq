@@ -19,17 +19,9 @@ open Mlutil
 open Options
 open Ocaml
 
-let rec collapse_type_app = function
-  | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
-  | l -> l
-
-let space_if = function true -> [< 'sTR " " >] | false -> [< >]
-
-let sec_space_if = function true -> [< 'sPC >] | false -> [< >]
-
 (*s Haskell renaming issues. *)
 
-let haskell_keywords =     
+let keywords =     
   List.fold_right (fun s -> Idset.add (id_of_string s))
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance"; 
@@ -37,67 +29,13 @@ let haskell_keywords =
     "as"; "qualified"; "hiding" ]
   Idset.empty
 
-let current_ids = ref haskell_keywords
-
-let rec rename_id id avoid = 
-  if Idset.mem id avoid then rename_id (lift_ident id) avoid else id
-
-let rename_global id = 
-  let id' = rename_id id !current_ids in
-  current_ids := Idset.add id' !current_ids; 
-  id'
-
-let lowercase_id id = id_of_string (String.uncapitalize (string_of_id id))
-let uppercase_id id = id_of_string (String.capitalize (string_of_id id))
-
-let rename_lower_global id = rename_global (lowercase_id id)
-let rename_upper_global id = rename_global (uppercase_id id)
-
-let pr_lower_id id = pr_id (lowercase_id id)
-
-(*s de Bruijn environments for programs *)
-
-type env = identifier list * Idset.t
-
-let rec rename_vars avoid = function
-  | [] -> 
-      [], avoid
-  | id :: idl when id == prop_name ->
-      (* we don't rename propositions binders *)
-      let (idl', avoid') = rename_vars avoid idl in
-      (id :: idl', avoid')
-  | id :: idl ->
-      let id' = rename_id (lowercase_id id) avoid in
-      let (idl', avoid') = rename_vars (Idset.add id' avoid) idl in
-      (id' :: idl', avoid')
-
-let push_vars ids (db,avoid) =
-  let ids',avoid' = rename_vars avoid ids in
-  ids', (ids' @ db, avoid')
-
-let empty_env () = ([], !current_ids)
-
-let get_db_name n (db,_) = List.nth db (pred n)
-
-(*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
-    the list [id1;...;idn] and the term [t]. *)
-
-let collect_lambda = 
-  let rec collect acc = function
-    | MLlam(id,t) -> collect (id::acc) t
-    | x           -> acc,x
-  in 
-  collect []
-
-let abst = function
-  | [] -> [< >]
-  | l  -> [< 'sTR "\\ ";
-             prlist_with_sep (fun  ()-> [< 'sTR " " >]) pr_id l;
-             'sTR " ->"; 'sPC >]
-
-let pr_binding = function
-  | [] -> [< >]
-  | l  -> [< 'sTR " "; prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l >]
+let preamble prm =
+  let m = if prm.modular then String.capitalize prm.module_name else "Main" in
+  [< 'sTR "module "; 'sTR m; 'sTR " where"; 'fNL; 'fNL;
+     'sTR "type Prop = ()"; 'fNL;
+     'sTR "prop = ()"; 'fNL; 'fNL;
+     'sTR "type Arity = ()"; 'fNL;
+     'sTR "arity = ()"; 'fNL; 'fNL >]
 
 (*s The pretty-printing functor. *)
 
@@ -105,14 +43,18 @@ module Make = functor(P : Mlpp_param) -> struct
 
 let pp_type_global = P.pp_type_global
 let pp_global = P.pp_global
+let rename_global = P.rename_global
+
+let pr_lower_id id = pr_id (lowercase_id id)
+
+let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
 let rec pp_type par t =
   let rec pp_rec par = function
-    | Tvar id -> 
-	pr_id (lowercase_id id) (* TODO: possible clash with Haskell kw *)
+    | Tvar id -> pr_lower_id id (* TODO: possible clash with Haskell kw *)
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
@@ -160,7 +102,7 @@ let rec pp_expr par env args =
     | MLlam _ as a -> 
       	let fl,a' = collect_lambda a in
 	let fl,env' = push_vars fl env in
-	let st = [< abst (List.rev fl); pp_expr false env' [] a' >] in
+	let st = [< pp_abst (List.rev fl); pp_expr false env' [] a' >] in
 	if args = [] then
           [< open_par par; st; close_par par >]
         else
@@ -301,7 +243,7 @@ let pp_decl = function
 	   (fun (fi,ti) -> pp_function env' (pr_id fi) ti)
 	   (List.combine (List.rev ids') (Array.to_list defs));
 	 'fNL;
-	 let id = P.rename_global r in
+	 let id = rename_global r in
 	 let idi = List.nth (List.rev ids') i in
 	 if id <> idi then
 	   [< 'fNL; pr_id id; 'sTR " = "; pr_id idi; 'fNL >]
@@ -310,112 +252,10 @@ let pp_decl = function
   | Dglob (r, a) ->
       hOV 0 [< pp_function (empty_env ()) (pp_global r) a; 'fNL >]
   | Dcustom (r,s) -> 
-      hOV 0  [< 'sTR (string_of_r r); 'sTR " ="; 
+      hOV 0  [< pp_global r; 'sTR " ="; 
 		'sPC; 'sTR s; 'fNL  >]
 
 let pp_type = pp_type false
 
 end
 
-(*s Renaming issues for a monolithic extraction. *)
-
-module MonoParams = struct
-
-let renamings = Hashtbl.create 97
-
-let cache r f = 
-  try Hashtbl.find renamings r 
-  with Not_found -> let id = f r in Hashtbl.add renamings r id; id
-
-let rename_type_global r =  
-  cache r
-    (fun r -> 
-       let id = Environ.id_of_global (Global.env()) r in
-       rename_upper_global id)
-
-let rename_global r = 
-  cache r
-    (fun r -> 
-       let id = Environ.id_of_global (Global.env()) r in
-       match r with
-	 | ConstructRef _ -> rename_upper_global id
-	 | _ -> rename_lower_global id)
-
-let pp_type_global r = 
-  string (check_ml r (string_of_id (rename_type_global r)))
-
-let pp_global r = 
-  string (check_ml r (string_of_id (rename_global r)))
-
-let cofix_warning = true
-
-end
-
-module MonoPp = Make(MonoParams)
-
-(*s Renaming issues in a modular extraction. *)
-
-module ModularParams = struct
-
-  let avoid = 
-    Idset.add (id_of_string "prop")
-      (Idset.add (id_of_string "arity") haskell_keywords)
-
-  let rename_lower id = 
-    if Idset.mem id avoid || id <> lowercase_id id then 
-      "coq_" ^ string_of_id id 
-    else 
-      string_of_id id
-
-  let rename_upper id = 
-    if Idset.mem id avoid || id <> uppercase_id id then 
-      "Coq_" ^ string_of_id id 
-    else 
-      string_of_id id
-
- let rename_type_global r = 
-    let id = Environ.id_of_global (Global.env()) r in 
-    rename_lower id
-
-  let rename_global_aux r = 
-    let id = Environ.id_of_global (Global.env()) r in 
-    match r with
-      | ConstructRef _ -> rename_upper id
-      | _ -> rename_lower id
-
-  let rename_global r = id_of_string (rename_global_aux r)
-
-  let pp_type_global r = 
-    string ((module_option r)^(check_ml r (rename_type_global r)))
-
-  let pp_global r = 
-    string ((module_option r)^(check_ml r (rename_global_aux r)))
-
-  let cofix_warning = true
-end
-
-module ModularPp = Make(ModularParams)
-
-(*s Extraction to a file. *)
-
-let haskell_preamble prm =
-  let m = if prm.modular then String.capitalize prm.module_name else "Main" in
-  [< 'sTR "module "; 'sTR m; 'sTR " where"; 'fNL; 'fNL;
-     'sTR "type Prop = ()"; 'fNL;
-     'sTR "prop = ()"; 'fNL; 'fNL;
-     'sTR "type Arity = ()"; 'fNL;
-     'sTR "arity = ()"; 'fNL; 'fNL >]
-
-let extract_to_file f prm decls=
-  let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
-  let cout = open_out f in
-  let ft = Pp_control.with_output_to cout in
-  pP_with ft (hV 0 (haskell_preamble prm));
-  begin 
-    try
-      List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls
-    with e ->
-      pp_flush_with ft (); close_out cout; raise e
-  end;
-  pp_flush_with ft ();
-  close_out cout

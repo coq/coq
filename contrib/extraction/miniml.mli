@@ -59,8 +59,15 @@ type ml_decl =
     The resulting pretty-printer is a module of type [Mlpp] providing
     functions to print types, terms and declarations. *)
 
+type extraction_params =  
+  { lang : string; 
+    modular : bool; 
+    module_name : string; 
+    to_appear : global_reference list }
+
 module type Mlpp_param = sig
   val cofix_warning : bool
+  val globals : unit -> Idset.t
   val rename_global : global_reference -> identifier
   val pp_type_global : global_reference -> std_ppcmds
   val pp_global : global_reference -> std_ppcmds

@@ -256,17 +256,18 @@ contrib/correctness/putil.cmi: kernel/names.cmi contrib/correctness/past.cmi \
 contrib/correctness/pwp.cmi: contrib/correctness/peffect.cmi \
     contrib/correctness/penv.cmi contrib/correctness/prename.cmi \
     kernel/term.cmi 
+contrib/extraction/common.cmi: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmi kernel/names.cmi 
 contrib/extraction/extraction.cmi: kernel/environ.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
 contrib/extraction/haskell.cmi: contrib/extraction/miniml.cmi \
-    contrib/extraction/mlutil.cmi kernel/names.cmi 
+    kernel/names.cmi lib/pp.cmi 
 contrib/extraction/miniml.cmi: kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 contrib/extraction/mlutil.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     kernel/term.cmi 
-contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi \
-    contrib/extraction/mlutil.cmi kernel/names.cmi lib/pp.cmi kernel/term.cmi 
-contrib/extraction/table.cmi: library/goptions.cmi kernel/names.cmi \
-    library/summary.cmi toplevel/vernacinterp.cmi 
+contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
+    lib/pp.cmi kernel/term.cmi 
+contrib/extraction/table.cmi: kernel/names.cmi toplevel/vernacinterp.cmi 
 contrib/interface/dad.cmi: contrib/interface/ctast.cmo proofs/proof_type.cmi \
     proofs/tacmach.cmi 
 contrib/interface/debug_tac.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
@@ -1646,21 +1647,31 @@ contrib/correctness/pwp.cmx: kernel/environ.cmx kernel/evd.cmx \
     contrib/correctness/ptype.cmi contrib/correctness/ptyping.cmx \
     contrib/correctness/putil.cmx kernel/reduction.cmx kernel/term.cmx \
     lib/util.cmx contrib/correctness/pwp.cmi 
-contrib/extraction/extract_env.cmo: parsing/astterm.cmi kernel/evd.cmi \
-    contrib/extraction/extraction.cmi library/global.cmi \
-    contrib/extraction/haskell.cmi library/lib.cmi library/libobject.cmi \
-    library/library.cmi contrib/extraction/miniml.cmi \
+contrib/extraction/common.cmo: kernel/environ.cmi library/global.cmi \
+    contrib/extraction/haskell.cmi contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmi kernel/names.cmi \
+    contrib/extraction/ocaml.cmi lib/pp.cmi lib/pp_control.cmi \
+    parsing/printer.cmi contrib/extraction/table.cmi \
+    contrib/extraction/common.cmi 
+contrib/extraction/common.cmx: kernel/environ.cmx library/global.cmx \
+    contrib/extraction/haskell.cmx contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmx kernel/names.cmx \
+    contrib/extraction/ocaml.cmx lib/pp.cmx lib/pp_control.cmx \
+    parsing/printer.cmx contrib/extraction/table.cmx \
+    contrib/extraction/common.cmi 
+contrib/extraction/extract_env.cmo: parsing/astterm.cmi \
+    contrib/extraction/common.cmi kernel/evd.cmi \
+    contrib/extraction/extraction.cmi library/global.cmi library/lib.cmi \
+    library/libobject.cmi library/library.cmi contrib/extraction/miniml.cmi \
     contrib/extraction/mlutil.cmi kernel/names.cmi library/nametab.cmi \
-    contrib/extraction/ocaml.cmi lib/pp.cmi parsing/printer.cmi \
-    contrib/extraction/table.cmi kernel/term.cmi lib/util.cmi \
+    lib/pp.cmi contrib/extraction/table.cmi kernel/term.cmi lib/util.cmi \
     toplevel/vernacinterp.cmi contrib/extraction/extract_env.cmi 
-contrib/extraction/extract_env.cmx: parsing/astterm.cmx kernel/evd.cmx \
-    contrib/extraction/extraction.cmx library/global.cmx \
-    contrib/extraction/haskell.cmx library/lib.cmx library/libobject.cmx \
-    library/library.cmx contrib/extraction/miniml.cmi \
+contrib/extraction/extract_env.cmx: parsing/astterm.cmx \
+    contrib/extraction/common.cmx kernel/evd.cmx \
+    contrib/extraction/extraction.cmx library/global.cmx library/lib.cmx \
+    library/libobject.cmx library/library.cmx contrib/extraction/miniml.cmi \
     contrib/extraction/mlutil.cmx kernel/names.cmx library/nametab.cmx \
-    contrib/extraction/ocaml.cmx lib/pp.cmx parsing/printer.cmx \
-    contrib/extraction/table.cmx kernel/term.cmx lib/util.cmx \
+    lib/pp.cmx contrib/extraction/table.cmx kernel/term.cmx lib/util.cmx \
     toplevel/vernacinterp.cmx contrib/extraction/extract_env.cmi 
 contrib/extraction/extraction.cmo: kernel/closure.cmi kernel/declarations.cmi \
     kernel/environ.cmi kernel/evd.cmi library/global.cmi lib/gmap.cmi \
@@ -1676,32 +1687,28 @@ contrib/extraction/extraction.cmx: kernel/closure.cmx kernel/declarations.cmx \
     kernel/reduction.cmx pretyping/retyping.cmx library/summary.cmx \
     contrib/extraction/table.cmx kernel/term.cmx lib/util.cmx \
     contrib/extraction/extraction.cmi 
-contrib/extraction/haskell.cmo: kernel/environ.cmi library/global.cmi \
-    contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmi \
-    kernel/names.cmi contrib/extraction/ocaml.cmi lib/options.cmi lib/pp.cmi \
-    lib/pp_control.cmi kernel/term.cmi lib/util.cmi \
-    contrib/extraction/haskell.cmi 
-contrib/extraction/haskell.cmx: kernel/environ.cmx library/global.cmx \
-    contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmx \
-    kernel/names.cmx contrib/extraction/ocaml.cmx lib/options.cmx lib/pp.cmx \
-    lib/pp_control.cmx kernel/term.cmx lib/util.cmx \
-    contrib/extraction/haskell.cmi 
+contrib/extraction/haskell.cmo: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmi kernel/names.cmi \
+    contrib/extraction/ocaml.cmi lib/options.cmi lib/pp.cmi kernel/term.cmi \
+    lib/util.cmi contrib/extraction/haskell.cmi 
+contrib/extraction/haskell.cmx: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmx kernel/names.cmx \
+    contrib/extraction/ocaml.cmx lib/options.cmx lib/pp.cmx kernel/term.cmx \
+    lib/util.cmx contrib/extraction/haskell.cmi 
 contrib/extraction/mlutil.cmo: kernel/declarations.cmi \
-    contrib/extraction/miniml.cmi kernel/names.cmi lib/pp.cmi \
+    contrib/extraction/miniml.cmi kernel/names.cmi lib/options.cmi lib/pp.cmi \
     parsing/printer.cmi contrib/extraction/table.cmi kernel/term.cmi \
     lib/util.cmi contrib/extraction/mlutil.cmi 
 contrib/extraction/mlutil.cmx: kernel/declarations.cmx \
-    contrib/extraction/miniml.cmi kernel/names.cmx lib/pp.cmx \
+    contrib/extraction/miniml.cmi kernel/names.cmx lib/options.cmx lib/pp.cmx \
     parsing/printer.cmx contrib/extraction/table.cmx kernel/term.cmx \
     lib/util.cmx contrib/extraction/mlutil.cmi 
-contrib/extraction/ocaml.cmo: kernel/environ.cmi library/global.cmi \
-    contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmi \
-    kernel/names.cmi lib/options.cmi lib/pp.cmi lib/pp_control.cmi \
+contrib/extraction/ocaml.cmo: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmi kernel/names.cmi lib/options.cmi lib/pp.cmi \
     parsing/printer.cmi contrib/extraction/table.cmi kernel/term.cmi \
     lib/util.cmi contrib/extraction/ocaml.cmi 
-contrib/extraction/ocaml.cmx: kernel/environ.cmx library/global.cmx \
-    contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmx \
-    kernel/names.cmx lib/options.cmx lib/pp.cmx lib/pp_control.cmx \
+contrib/extraction/ocaml.cmx: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmx kernel/names.cmx lib/options.cmx lib/pp.cmx \
     parsing/printer.cmx contrib/extraction/table.cmx kernel/term.cmx \
     lib/util.cmx contrib/extraction/ocaml.cmi 
 contrib/extraction/table.cmo: kernel/declarations.cmi library/global.cmi \

@@ -23,15 +23,15 @@ let current_module = ref None
 
 (*s Some utility functions. *)
 
+let rec collapse_type_app = function
+  | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
+  | l -> l
+
 let string s = [< 'sTR s >]
 
 let open_par = function true -> string "(" | false -> [< >]
 
 let close_par = function true -> string ")" | false -> [< >]
-
-let rec collapse_type_app = function
-  | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
-  | l -> l
 
 let pp_tuple f = function
   | [] -> [< >]
@@ -47,57 +47,27 @@ let pp_boxed_tuple f = function
       	    hOV 0 [< prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
 		     'sTR ")" >] >]
 
+let pp_abst = function
+  | [] -> [< >]
+  | l  -> [< 'sTR "fun ";
+             prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l;
+             'sTR " ->"; 'sPC >]
+
+let pr_binding = function
+  | [] -> [< >]
+  | l  -> [< 'sTR " "; prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l >]
+
 let space_if = function true -> [< 'sTR " " >] | false -> [< >]
 
 let sec_space_if = function true -> [< 'sPC >] | false -> [< >]
 
-(*s Ocaml renaming issues. *)
-
-let ocaml_keywords =     
-  List.fold_right (fun s -> Idset.add (id_of_string s))
-  [ "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
-    "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
-    "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
-    "inherit"; "initializer"; "lazy"; "let"; "match"; "method";
-    "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
-    "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
-    "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ] 
-  Idset.empty
-
-let current_ids = ref ocaml_keywords
+(*s Generic renaming issues. *)
 
 let rec rename_id id avoid = 
   if Idset.mem id avoid then rename_id (lift_ident id) avoid else id
 
-let rename_global id = 
-  let id' = rename_id id !current_ids in
-  current_ids := Idset.add id' !current_ids; 
-  id'
-
 let lowercase_id id = id_of_string (String.uncapitalize (string_of_id id))
 let uppercase_id id = id_of_string (String.capitalize (string_of_id id))
-
-let rename_lower_global id = rename_global (lowercase_id id)
-let rename_upper_global id = rename_global (uppercase_id id)
-
-(*s Modules considerations *)
-
-let module_of_r r = snd (split_dirpath (dirpath (sp_of_r r)))
-
-let string_of_r r = string_of_id (basename (sp_of_r r))
-
-let module_option r = 
-  let m = module_of_r r in
-  if Some m = !current_module then ""
-  else (String.capitalize (string_of_id m)) ^ "."
-
-let check_ml r d = 
-  if to_inline r then 
-    try 
-      find_ml_extraction r 
-    with Not_found -> d
-  else d
 
 (*s de Bruijn environments for programs *)
 
@@ -119,8 +89,6 @@ let push_vars ids (db,avoid) =
   let ids',avoid' = rename_vars avoid ids in
   ids', (ids' @ db, avoid')
 
-let empty_env () = ([], !current_ids)
-
 let get_db_name n (db,_) = List.nth db (pred n)
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
@@ -133,22 +101,35 @@ let collect_lambda =
   in 
   collect []
 
-let abst = function
-  | [] -> [< >]
-  | l  -> [< 'sTR "fun ";
-             prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l;
-             'sTR " ->"; 'sPC >]
+(*s Ocaml renaming issues. *)
 
-let pr_binding = function
-  | [] -> [< >]
-  | l  -> [< 'sTR " "; prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l >]
+let keywords =     
+  List.fold_right (fun s -> Idset.add (id_of_string s))
+  [ "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
+    "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
+    "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
+    "inherit"; "initializer"; "lazy"; "let"; "match"; "method";
+    "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
+    "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
+    "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ] 
+  Idset.empty
+
+let preamble _ =
+  [< 'sTR "type prop = unit"; 'fNL;
+     'sTR "let prop = ()"; 'fNL; 'fNL;
+     'sTR "type arity = unit"; 'fNL;
+     'sTR "let arity = ()"; 'fNL; 'fNL >]
 
 (*s The pretty-printing functor. *)
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_type_global = P.pp_type_global
+let pp_type_global = P.pp_type_global 
 let pp_global = P.pp_global
+let rename_global = P.rename_global
+
+let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
@@ -202,7 +183,7 @@ let rec pp_expr par env args =
     | MLlam _ as a -> 
       	let fl,a' = collect_lambda a in
 	let fl,env' = push_vars fl env in
-	let st = [< abst (List.rev fl); pp_expr false env' [] a' >] in
+	let st = [< pp_abst (List.rev fl); pp_expr false env' [] a' >] in
 	if args = [] then
           [< open_par par; st; close_par par >]
         else
@@ -362,119 +343,17 @@ let pp_decl = function
 	       pp_type_global r; 'sPC; 'sTR "="; 'sPC; 
 	       pp_type false  t; 'fNL >]
   | Dglob (r, MLfix (_,[|_|],[|def|])) ->
-      let id = P.rename_global r in
-      let env' = ([id], !current_ids) in
+      let id = rename_global r in
+      let env' = [id], P.globals() in
       [<  hOV 2 (pp_fix false env' None ([|id|],[|def|]) []) >]
   | Dglob (r, a) ->
       hOV 0 [< 'sTR "let "; 
 	       pp_function (empty_env ()) (pp_global r) a; 'fNL >]
   | Dcustom (r,s) -> 
-      hOV 0 [< 'sTR "let "; 'sTR (string_of_r r); 
+      hOV 0 [< 'sTR "let "; pp_global r; 
 	       'sTR " ="; 'sPC; 'sTR s; 'fNL >]
 
 let pp_type = pp_type false
 
 end
 
-(*s Renaming issues for a monolithic extraction. *)
-
-module MonoParams = struct
-
-let renamings = Hashtbl.create 97
-
-let cache r f = 
-  try Hashtbl.find renamings r 
-  with Not_found -> let id = f r in Hashtbl.add renamings r id; id
-
-let rename_type_global r =  
-  cache r
-    (fun r -> 
-       let id = Environ.id_of_global (Global.env()) r in
-       rename_lower_global id)
-
-let rename_global r = 
-  cache r
-    (fun r -> 
-       let id = Environ.id_of_global (Global.env()) r in
-       match r with
-	 | ConstructRef _ -> rename_upper_global id
-	 | _ -> rename_lower_global id)
-
-let pp_type_global r = 
-  string (check_ml r (string_of_id (rename_type_global r)))
-
-let pp_global r = 
-  string (check_ml r (string_of_id (rename_global r)))
-
-let cofix_warning = true
-
-end
-
-module MonoPp = Make(MonoParams)
-
-(*s Renaming issues in a modular extraction. *)
-
-
-
-module ModularParams = struct
-
-  let avoid = 
-    Idset.add (id_of_string "prop")
-      (Idset.add (id_of_string "arity") ocaml_keywords)
-
-  let rename_lower id = 
-    if Idset.mem id avoid || id <> lowercase_id id then 
-      "coq_" ^ string_of_id id 
-    else 
-      string_of_id id
-
-  let rename_upper id = 
-    if Idset.mem id avoid || id <> uppercase_id id then 
-      "Coq_" ^ string_of_id id 
-    else 
-      string_of_id id
-
-  let rename_type_global r = 
-    let id = Environ.id_of_global (Global.env()) r in 
-    rename_lower id
-
-  let rename_global_aux r = 
-    let id = Environ.id_of_global (Global.env()) r in 
-    match r with
-      | ConstructRef _ -> rename_upper id
-      | _ -> rename_lower id
-
-  let rename_global r = id_of_string (rename_global_aux r)
-
-  let pp_type_global r = 
-    string (check_ml r ((module_option r)^(rename_type_global r)))
-
-  let pp_global r = 
-    string (check_ml r ((module_option r)^(rename_global_aux r)))
-
-  let cofix_warning = true
-end
-
-module ModularPp = Make(ModularParams)
-
-(*s Extraction to a file. *)
-
-let ocaml_preamble () =
-  [< 'sTR "type prop = unit"; 'fNL;
-     'sTR "let prop = ()"; 'fNL; 'fNL;
-     'sTR "type arity = unit"; 'fNL;
-     'sTR "let arity = ()"; 'fNL; 'fNL >]
-
-let extract_to_file f prm decls =
-  let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
-  let cout = open_out f in
-  let ft = Pp_control.with_output_to cout in
-  pP_with ft (hV 0 (ocaml_preamble ()));
-  begin 
-    try
-      List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls
-    with e ->
-      pp_flush_with ft (); close_out cout; raise e
-  end;
-  pp_flush_with ft ();
-  close_out cout

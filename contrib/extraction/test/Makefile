@@ -31,7 +31,9 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 #	General rules 
 #
 
-all: $(ML) $(CMO) v2ml
+all: ml $(CMO) v2ml
+
+ml: $(ML)
 
 depend: $(ML)
 	rm -f .depend; ocamldep $(INCL) theories/*/*.ml > .depend

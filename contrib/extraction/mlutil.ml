@@ -197,7 +197,7 @@ let nb_occur a =
   count 1 a; !cpt
 
 
-(*s Beta-iota reductions + simplifications*)
+(*s Some Beta-iota reductions + simplifications*)
 
 let constructor_index = function
   | ConstructRef (_,j) -> pred j
@@ -251,72 +251,74 @@ let all_constr br =
   with Impossible -> false
   
 
-let rec betaiota = function
-  | MLapp (f, []) ->
-      betaiota f
-  | MLapp (f, a) ->
-      let f' = betaiota f 
-      and a' = List.map betaiota a in
-      (match f' with
-	 (* beta redex *)
-	 | MLlam (id,t) -> 
-	     (match nb_occur t with
-		| 0 -> betaiota (MLapp (ml_pop t, List.tl a'))
-		| 1 -> betaiota (MLapp (ml_subst (List.hd a') t, List.tl a'))
-		| _ -> 
-		    let a'' = List.map (ml_lift 1) (List.tl a') in
-		    betaiota (MLletin (id, List.hd a', MLapp (t, a''))))
-	 (* application of a let in: we push arguments inside *)
-	 | MLletin (id,e1,e2) ->
-	     MLletin (id, e1, betaiota (MLapp (e2, List.map (ml_lift 1) a')))
-	 (* application of a case: we push arguments inside *)
-	 | MLcase (e,br) ->
-	     let br' = 
-	       Array.map 
+let normalize a = 
+  let o = optim() in 
+  let rec simplify = function
+    | MLapp (f, []) ->
+	simplify f
+    | MLapp (f, a) ->
+	let f' = simplify f 
+	and a' = List.map simplify a in
+	(match f' with
+	     (* beta redex *)
+	   | MLlam (id,t) -> 
+	       (match nb_occur t with
+		  | 0 -> simplify (MLapp (ml_pop t, List.tl a'))
+		  | 1 when o -> 
+		      simplify (MLapp (ml_subst (List.hd a') t, List.tl a'))
+		  | _ -> 
+		      let a'' = List.map (ml_lift 1) (List.tl a') in
+		      simplify (MLletin (id, List.hd a', MLapp (t, a''))))
+	       (* application of a let in: we push arguments inside *)
+	   | MLletin (id,e1,e2) ->
+	       MLletin (id, e1, simplify (MLapp (e2, List.map (ml_lift 1) a')))
+		 (* application of a case: we push arguments inside *)
+	   | MLcase (e,br) ->
+	       let br' = 
+		 Array.map 
       	       	 (fun (n,l,t) -> 
 		    let k = List.length l in
 		    let a'' = List.map (ml_lift k) a' in
-      	       	      (n, l, betaiota (MLapp (t,a'')))) 
-		 br 
-	     in betaiota (MLcase (e,br'))
-	 | _ ->
-	     MLapp (f',a'))
-  | MLcase (e,[||]) ->
-      MLexn "Empty inductive"
-  | MLcase (e,br) ->
-      (match betaiota e with
-	   (* iota redex *)
-	 | MLcons (r,a) ->  
-	     let (_,ids,c) = br.(constructor_index r) in
-	     let c' = List.fold_right (fun id t -> MLlam (id,t)) ids c in
-	     betaiota (MLapp (c',a))
-	 | MLcase(e',br') when (all_constr br') ->
-	     let new_br= 
-	       Array.map 
-		 (function 
-		    | (n, i, MLcons (r,a))-> 
-			let (_,ids,c) = br.(constructor_index r) in
-			let c = List.fold_right 
-				   (fun id t -> MLlam (id,t)) ids c in
-			let c = ml_lift (List.length i) c in 
-			(n,i,betaiota (MLapp (c,a)))
-		    | _ -> assert false) br'
-	     in MLcase(e', new_br)
-	 | e' -> 
-	     let br' = Array.map (fun (n,l,t) -> (n,l,betaiota t)) br in 
+      	       	    (n, l, simplify (MLapp (t,a'')))) 
+		   br 
+	       in simplify (MLcase (e,br'))
+	   | _ ->
+	       MLapp (f',a'))
+    | MLcase (e,[||]) ->
+	MLexn "Empty inductive"
+    | MLcase (e,br) ->
+	(match simplify e with
+	     (* iota redex *)
+	   | MLcons (r,a) ->  
+	       let (_,ids,c) = br.(constructor_index r) in
+	       let c = List.fold_right (fun id t -> MLlam (id,t)) ids c in
+	       simplify (MLapp (c,a))
+	   | MLcase(e',br') when o && (all_constr br') ->
+	       let new_br= 
+		 Array.map 
+		   (function 
+		      | (n, i, MLcons (r,a))-> 
+			  let (_,ids,c) = br.(constructor_index r) in
+			  let c = List.fold_right 
+				    (fun id t -> MLlam (id,t)) ids c in
+			  let c = ml_lift (List.length i) c in 
+			  (n,i,simplify (MLapp (c,a)))
+		      | _ -> assert false) br'
+	       in MLcase(e', new_br)
+	   | e' -> 
+	       let br' = Array.map (fun (n,l,t) -> (n,l,simplify t)) br in 
+	       if o then
 		 try check_identity_case br'; e' 
 		 with Impossible -> 
 		   try check_constant_case br' 
-		   with Impossible -> MLcase (e', br'))
-  | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
-      (* expansion of a letin in special cases *)
-      betaiota (ml_subst c e)
-  | a -> 
-      ast_map betaiota a
-    
-let normalize a = betaiota (merge_app a)
-
-let optional_normalize a = a (* TODO *)
+		   with Impossible -> MLcase (e', br')
+	       else MLcase (e', br'))
+    | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
+	(* expansion of a letin in special cases *)
+	simplify (ml_subst c e)
+    | a -> 
+	ast_map simplify a 
+  in simplify (merge_app a)
 
 let normalize_decl = function
  | Dglob (id, a) -> Dglob (id, normalize a)
@@ -475,12 +477,6 @@ let warning_expansion r =
 (*    'sTR (" of size "^ (string_of_int (ml_size t))); *)
     'sPC; 'sTR "is expanded." >])
 
-type extraction_params =  
-  { strict : bool ; 
-    modular : bool ; 
-    module_name : string ; 
-    to_appear : global_reference list }
-
 let print_ml_decl prm (r,_) = 
   not (to_inline r) || List.mem r prm.to_appear
 
@@ -489,6 +485,11 @@ let add_ml_decls prm decls =
   let l = List.filter (print_ml_decl prm) l in 
   let l = List.map (fun (r,s)-> Dcustom (r,s)) l in 
   (List.rev l @ decls)
+
+let strict_language = function
+  | "ocaml" -> true
+  | "haskell" -> false
+  | _ -> assert false
 
 let rec optimize prm = function
   | [] -> 
@@ -501,8 +502,7 @@ let rec optimize prm = function
       else optimize prm l
   | Dglob (r,t) :: l ->
       let t = normalize t in
-      let t = if optim() then optional_normalize t else t in 
-      let b = expand prm.strict r t in
+      let b = expand (strict_language prm.lang) r t in
       let l = if b then 
 	begin
 	  if_verbose warning_expansion r;

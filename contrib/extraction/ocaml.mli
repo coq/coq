@@ -15,34 +15,39 @@ open Miniml
 open Names
 open Term
 
+val current_module : identifier option ref
+
+val collapse_type_app : ml_type list -> ml_type list
+
 val string : string -> std_ppcmds
 val open_par : bool -> std_ppcmds
 val close_par : bool -> std_ppcmds
+val pp_abst : identifier list -> std_ppcmds
+val pr_binding : identifier list -> std_ppcmds
 
+val rename_id : identifier -> Idset.t -> identifier
+
+val lowercase_id : identifier -> identifier
+val uppercase_id : identifier -> identifier
+
+type env = identifier list * Idset.t
+
+val rename_vars: Idset.t -> identifier list -> env
+val push_vars : identifier list -> env -> identifier list * env
+val get_db_name : int -> env -> identifier
 val collect_lambda : ml_ast -> identifier list * ml_ast
-val push_vars : identifier list -> identifier list * Idset.t ->
-  identifier list * (identifier list * Idset.t)
 
-val current_module : identifier option ref
+val keywords : Idset.t
 
-val module_of_r : global_reference -> module_ident
-
-val string_of_r : global_reference -> string
-
-val check_ml : global_reference -> string -> string
-
-val module_option : global_reference -> string
+val preamble : extraction_params -> std_ppcmds
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 
     declarations to a file. *)
 
-open Mlutil
-
 module Make : functor(P : Mlpp_param) -> Mlpp
 
-val current_module : Names.identifier option ref
-val extract_to_file : 
-  string -> extraction_params -> ml_decl list -> unit
+
+
 
 

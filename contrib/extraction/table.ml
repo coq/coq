@@ -9,15 +9,35 @@
 (*i $Id$ i*)
 
 open Summary
+open Lib
+open Libobject
 open Goptions
 open Vernacinterp
 open Names
 open Util
 open Pp
-open Libobject
-open Term
+open Term 
 open Declarations
-open Lib
+
+
+(*s AutoInline parameter *)
+
+let auto_inline_params = 
+  {optsyncname = "Extraction AutoInline";
+   optsynckey = SecondaryTable ("Extraction", "AutoInline");
+   optsyncdefault = true }
+
+let auto_inline = declare_sync_bool_option auto_inline_params
+
+(*s Optimize parameter *)
+
+let optim_params = 
+  {optsyncname = "Extraction Optimize";
+   optsynckey = SecondaryTable ("Extraction", "Optimize");
+   optsyncdefault = true }
+
+let optim = declare_sync_bool_option optim_params
+
 
 (*s Set and Map over global reference *)
 
@@ -54,24 +74,6 @@ let reference_of_varg = function
 
 let refs_of_vargl = List.map reference_of_varg
 
-
-(*s AutoInline parameter *)
-
-let auto_inline_params = 
-  {optsyncname = "Extraction AutoInline";
-   optsynckey = SecondaryTable ("Extraction", "AutoInline");
-   optsyncdefault = true }
-
-let auto_inline = declare_sync_bool_option auto_inline_params
-
-(*s Optimize parameter *)
-
-let optim_params = 
-  {optsyncname = "Extraction Optimize";
-   optsynckey = SecondaryTable ("Extraction", "Optimize");
-   optsyncdefault = true }
-
-let optim = declare_sync_bool_option optim_params
 
 (*s Table for custom inlining *)
 
@@ -120,6 +122,36 @@ let _ =
        let refs = List.map check_constant (refs_of_vargl vl) in 
        add_anonymous_leaf (inline_extraction (false,refs)))
 
+(*s Printing part *)
+
+let print_inline () = 
+  let (i,n)= !inline_table in 
+  let i'= Refset.filter is_constant i in 
+  mSG 
+    [< 'sTR "Extraction Inline:"; 'fNL; 
+       Refset.fold
+	 (fun r p -> [< p; 'sTR  "   " ; Printer.pr_global r ; 'fNL >]) i' [<>];
+       'sTR "Extraction NoInline:"; 'fNL; 
+       Refset.fold
+	 (fun r p -> [< p; 'sTR  "   " ; Printer.pr_global r ; 'fNL >]) n [<>]
+    >]
+
+let _ = vinterp_add "PrintExtractionInline" (fun _ -> print_inline)
+
+
+(*s Reset part *)
+
+let (reset_inline,_) = 
+  declare_object
+    ("Reset Extraction Inline", 
+     {  cache_function = (fun (_,_)-> inline_table :=  empty_inline_table);
+	load_function = (fun (_,_)-> inline_table :=  empty_inline_table); 
+	open_function = (fun _ -> ());
+	export_function = (fun x -> Some x) })
+	
+let _ = vinterp_add "ResetExtractionInline" 
+	  (fun _ () -> add_anonymous_leaf (reset_inline ()))
+	  
 
 (*s Table for direct ML extractions. *)
 
@@ -167,6 +199,7 @@ let _ =
 	   (fun () -> 
 	      let r = check_constant (reference_of_varg id) in 
 	      let s = string_of_varg vs in 
+	      add_anonymous_leaf (inline_extraction (false,[r]));
 	      add_anonymous_leaf (in_ml_extraction (r,s)))
        | _ -> assert false)
 
@@ -206,3 +239,4 @@ let _ =
 	      extract_inductive (reference_of_varg q1) 
 		(string_of_varg id2, List.map string_of_varg l2))
        | _ -> assert false)
+

@@ -8,10 +8,16 @@
 
 (*i $Id$ i*)
 
-open Summary
-open Goptions
 open Vernacinterp
 open Names
+
+(*s AutoInline parameter *) 
+
+val auto_inline : unit -> bool
+
+(*s Optimize parameter *) 
+
+val optim :  unit -> bool
 
 (*s Set and Map over global reference *) 
 
@@ -23,15 +29,7 @@ val check_constant : global_reference -> global_reference
 
 val refs_of_vargl : vernac_arg list -> global_reference list
 
-(*s AutoInline parameter *) 
-
-val auto_inline : unit -> bool
-
-(*s Optimize parameter *) 
-
-val optim :  unit -> bool
-
-(* Table for custom inlining *) 
+(*s Table for custom inlining *) 
 
 val to_inline : global_reference -> bool
 

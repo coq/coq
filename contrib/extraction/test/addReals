@@ -1,25 +1,21 @@
+open TypeSyntax
+open Fast_integer
+
+
 let total_order_T x y = 
-if x = y then
-        TypeSyntax.Coq_inleftT TypeSyntax.Coq_rightT
-else if x < y then
-        TypeSyntax.Coq_inleftT TypeSyntax.Coq_leftT
-else    TypeSyntax.Coq_inrightT 
+if x = y then InleftT RightT
+else if x < y then InleftT LeftT
+else InrightT 
 
 let rec int_to_positive i = 
-	if i = 1 then 
-	  Fast_integer.Coq_xH
+	if i = 1 then XH
 	else
-	  if (i mod 2) = 0 then 
-	      Fast_integer.Coq_xO (int_to_positive (i/2))
-	  else 
-	      Fast_integer.Coq_xI (int_to_positive (i/2))
+	  if (i mod 2) = 0 then XO (int_to_positive (i/2))
+	  else XI (int_to_positive (i/2))
 
 let rec int_to_Z i = 
-	if i = 0 then 
-	  Fast_integer.ZERO
-	else if i > 0 then 
-	  Fast_integer.POS (int_to_positive i)
-	else 
-	  Fast_integer.NEG (int_to_positive (-i))
+	if i = 0 then ZERO
+	else if i > 0 then POS (int_to_positive i)
+	else NEG (int_to_positive (-i))
 
 let my_ceil x = int_to_Z (succ (int_of_float (floor x)))
