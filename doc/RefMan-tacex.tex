@@ -17,11 +17,10 @@ either synthesized by the system or declared by an
 explicit cast like \verb|(?::nat->Prop)|. This low-level
 tactic can be useful to advanced users.
 
-\firstexample
-\example{}
+%\firstexample
+\Example
 
 \begin{coq_example*}
-Require Refine.
 Inductive Option: Set := Fail : Option | Ok : bool->Option.
 \end{coq_example}
 \begin{coq_example}
@@ -36,67 +35,67 @@ Intros;Absurd Fail=Fail;Trivial.
 Defined.
 \end{coq_example*}
 
-\example{Using Refine to build a poor-man's ``Cases'' tactic}
-\texttt{Refine} is actually the only way for the user to do
-a proof with the same structure as a {\tt Cases} definition. Actually,
-the tactics \texttt{Case} (see \ref{Case}) and \texttt{Elim} (see
-\ref{Elim}) only allow one step of elementary induction. 
+% \example{Using Refine to build a poor-man's ``Cases'' tactic}
 
-\begin{coq_example*}
-Require Bool.
-Require Arith.
-\end{coq_example*}
-%\begin{coq_eval}
-%Abort.
-%\end{coq_eval}
-\begin{coq_example}
-Definition one_two_or_five := [x:nat]
-  Cases x of
-    (1) => true
-  | (2) => true
-  | (5) => true
-  | _ => false
-  end.
-Goal (x:nat)(Is_true (one_two_or_five x)) -> x=(1)\/x=(2)\/x=(5).
-\end{coq_example}
+% \texttt{Refine} is actually the only way for the user to do
+% a proof with the same structure as a {\tt Cases} definition. Actually,
+% the tactics \texttt{Case} (see \ref{Case}) and \texttt{Elim} (see
+% \ref{Elim}) only allow one step of elementary induction. 
 
-A traditional script would be the following:
+% \begin{coq_example*}
+% Require Bool.
+% Require Arith.
+% \end{coq_example*}
+% %\begin{coq_eval}
+% %Abort.
+% %\end{coq_eval}
+% \begin{coq_example}
+% Definition one_two_or_five := [x:nat]
+%   Cases x of
+%     (1) => true
+%   | (2) => true
+%   | (5) => true
+%   | _ => false
+%   end.
+% Goal (x:nat)(Is_true (one_two_or_five x)) -> x=(1)\/x=(2)\/x=(5).
+% \end{coq_example}
 
-\begin{coq_example*}
-Destruct x.
-Tauto.
-Destruct n.
-Auto.
-Destruct n0.
-Auto.
-Destruct n1.
-Tauto.
-Destruct n2.
-Tauto.
-Destruct n3.
-Auto.
-Intros; Inversion H.
-\end{coq_example*}
+% A traditional script would be the following:
 
-With the tactic \texttt{Refine}, it becomes quite shorter:
+% \begin{coq_example*}
+% Destruct x.
+% Tauto.
+% Destruct n.
+% Auto.
+% Destruct n0.
+% Auto.
+% Destruct n1.
+% Tauto.
+% Destruct n2.
+% Tauto.
+% Destruct n3.
+% Auto.
+% Intros; Inversion H.
+% \end{coq_example*}
 
-\begin{coq_example*}
-Restart.
-Require Refine.
-\end{coq_example*}
-\begin{coq_example}
-Refine [x:nat]
-  <[y:nat](Is_true (one_two_or_five y))->(y=(1)\/y=(2)\/y=(5))>
-  Cases x of
-    (1) => [H]?
-  | (2) => [H]?
-  | (5) => [H]?
-  | _ => [H](False_ind ? H)
-  end; Auto.
-\end{coq_example}
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
+% With the tactic \texttt{Refine}, it becomes quite shorter:
+
+% \begin{coq_example*}
+% Restart.
+% \end{coq_example*}
+% \begin{coq_example}
+% Refine [x:nat]
+%   <[y:nat](Is_true (one_two_or_five y))->(y=(1)\/y=(2)\/y=(5))>
+%   Cases x of
+%     (1) => [H]?
+%   | (2) => [H]?
+%   | (5) => [H]?
+%   | n => [H](False_ind ? H)
+%   end; Auto.
+% \end{coq_example}
+% \begin{coq_eval}
+% Abort.
+% \end{coq_eval}
 
 \section{\tt EApply}
 \tacindex{EApply}
@@ -431,12 +430,10 @@ Axiom Ack2:(n,m:nat)(Ack (S n) (S m))=(Ack n (Ack (S n) m)).
 \end{coq_example*}
 
 \begin{coq_example}
-HintRewrite base0 [ Ack0 LR 
-                Ack1 LR
-                Ack2 LR].
+Hint Rewrite -> [ Ack0 Ack1 Ack2 ] in base0.
 
 Lemma ResAck0:(Ack (2) (1))=(5).
-AutoRewrite [base0] Step=[Reflexivity].
+AutoRewrite [base0] using Trivial.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -460,8 +457,8 @@ Axiom g2:
 \end{coq_example*}
 
 \begin{coq_example}
-HintRewrite base1 [ g0 LR g1 LR].
-HintRewrite base2 [g2 LR].
+Hint Rewrite -> [ g0 g1 ] in base1.
+Hint Rewrite -> [ g2 ] in base2.
 
 Lemma Resg0:(g (1) (90))=(91).
 AutoRewrite [base1 base2] 

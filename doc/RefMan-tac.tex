@@ -90,7 +90,7 @@ binds more than ``\dots\ {\tt ;} \dots''.
 \noindent For instance
 
 \noindent {\tt Try Repeat \tac$_1$ Orelse
-  \tac$_2$;\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$);\tac$_4$)}
+  \tac$_2$;\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$];\tac$_4$.}
 
 \noindent is understood as 
 
@@ -120,9 +120,6 @@ convertible (see section \ref{conv-rules}).
 \label{Refine}
 \index{?@{\texttt{?}}}
 
-\Rem You need first to require the module {\tt Refine} to use this tactic.
-
-\noindent
 This tactic allows to give an exact proof but still with some
 holes. The holes are noted ``\texttt{?}''.
 
@@ -165,7 +162,7 @@ of the current goal. Then {\ident} is no more displayed and no more
 usable in the proof development.
 
 \begin{ErrMsgs}
-\item {\ident} \errindex{is not among the assumptions.}
+\item \errindex{No such assumption}
 \end{ErrMsgs}
 
 \subsection{\tt Move {\ident$_1$} after {\ident$_2$}.}\tacindex{Move}
@@ -178,13 +175,15 @@ then all hypotheses between {\ident$_1$} and {\ident$_2$} which
 
 If {\ident$_1$} comes after {\ident$_2$} in the order of dependences,
 then all hypotheses between {\ident$_1$} and {\ident$_2$} which 
-(possibly indirectly)) occur in {\ident$_1$} are moved also.
+(possibly indirectly) occur in {\ident$_1$} are moved also.
 
 \begin{ErrMsgs}
+\item \errindex{No such assumption: {\ident$_i$}}
+
 \item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
-		   it occurs in {\ident$_2$}}
+                   it occurs in {\ident$_2$}}
 \item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
-		   it depends on {\ident$_2$}}
+                   it depends on {\ident$_2$}}
 \end{ErrMsgs}
 
 \subsection{\tt Intro}
@@ -356,19 +355,22 @@ instantiations of the premises of the type of
 
 \end{Variants}
 
-\subsection{\tt Let {\ident} {\tt :=} {\term} {\tt in}
-  {\tt Goal}}\tacindex{Let}
+\subsection{\tt LetTac {\ident} {\tt :=} {\term}}\tacindex{LetTac}
 
 This replaces {\term} by {\ident} in the goal and add the
 equality {\ident {\tt =} \term} in the local context.
 
 \begin{Variants}
-\item {\tt Let {\ident$_0$} {\tt :=} {\term} {\tt in} {\ident$_1$}}
+\item {\tt LetTac {\ident} {\tt :=} {\term} {\tt in} {\tt Goal}}
+
+This is equivalent to the above form.
+
+\item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\ident$_1$}}
 
 This behaves the same but substitutes {\term} not in the goal but in
 the hypothesis named {\ident$_1$}.
 
-\item {\tt Let {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1$} \dots\
+\item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1$} \dots\
 {\num$_n$} {\ident$_1$}}
 
 This notation allows to specify which occurrences of the hypothesis
@@ -377,7 +379,7 @@ the word {\tt Goal}) should be substituted. The occurrences are numbered
 from left to right. A negative occurrence number means an occurrence
 which should not be substituted. 
 
-\item {\tt Let {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1^1$} \dots\
+\item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1^1$} \dots\
 {\num$_{n_1}^1$} {\ident$_1$} \dots {\num$_1^m$} \dots\
 {\num$_{n_m}^m$} {\ident$_m$}}
 
@@ -454,7 +456,7 @@ Abort.
 If the goal is $G$ and $t$ is a subterm of type $T$
 in the goal, then {\tt Generalize} \textit{t} replaces the goal by {\tt
 (x:$T$)$G'$} where $G'$ is obtained from $G$ by replacing all
-occurrences of $t$ by {\tt x}. The name of the variable (here {\tt x})
+occurrences of $t$ by {\tt x}. The name of the variable (here {\tt n})
 is chosen accordingly to $T$.
 
 \begin{Variants}
@@ -610,7 +612,7 @@ then it replaces {\tt c} with its definition (say {\tt t}) and then
 reduces {\tt (t t1 \dots\ tn)} according to $\beta\iota$-reduction rules.
 
 \begin{ErrMsgs}
-\item \errindex{Term not reducible}
+\item \errindex{Not reducible}
 \end{ErrMsgs}
 
 \subsection{{\tt Hnf}}
@@ -648,8 +650,9 @@ then replaces it with its $\beta\iota$-normal form.
 
 \Warning If the constant is opaque, nothing will happen and no warning
 is printed.
+
 \begin{ErrMsgs}
-\item {\ident} \errindex{does not occur}
+\item \errindex{{\ident} does not denote an evaluable constant}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -746,7 +749,8 @@ of {\tt I}, then {\tt Constructor i} is equivalent to {\tt Intros;
 \end{ErrMsgs}
 
 \begin{Variants}
-\item \texttt{Constructor} This tries \texttt{Constructor 1} then
+\item \texttt{Constructor} \\
+  This tries \texttt{Constructor 1} then
   \texttt{Constructor 2}, \dots\ , then \texttt{Constructor} \textit{n}
   where \textit{n} if the number of constructors of the head of the
   goal.
@@ -933,7 +937,7 @@ inductive hypothesis. In particular the case for
 \verb+(P (S n) (S m))+
 with the inductive hypothesis about both \verb+n+ and \verb+m+.
 
-\subsection{\tt Decompose [ {\ident} \dots\ {\idents} ] \term}
+\subsection{\tt Decompose [ {\ident$_1$} \dots\ {\ident$_n$} ] \term}
 \label{Decompose}
 \tacindex{Decompose}
 This tactic allows to recursively decompose a
@@ -991,8 +995,9 @@ which matches this term in order to find a closed instance \term$'_1$
 of \term$_1$, and then all instances of \term$'_1$ will be replaced.
 
 \begin{ErrMsgs}
-\item \errindex{No equality here}
-\item \errindex{Failed to progress}\\
+\item \errindex{The term provided does not end with an equation}
+
+\item \errindex{Tactic generated a subgoal identical to the original goal}\\
 This happens if \term$_1$ does not occur in the goal.
 \end{ErrMsgs}
 
@@ -1052,11 +1057,11 @@ to {\tt Cut \term$_1$=\term$_2$; Intro H{\sl n}; Rewrite H{\sl n};
 This tactic applies to a goal which has the form {\tt t=u}. It checks
 that {\tt t} and {\tt u} are convertible and then solves the goal.
 It is equivalent to {\tt Apply refl\_equal} (or {\tt Apply
-  refl\_equalT} for an equality in the \Type universe).
+  refl\_equalT} for an equality in the \Type\ universe).
 
 \begin{ErrMsgs}
-\item \errindex{Not a predefined equality}
-\item \errindex{Impossible to unify \dots\ With ..}
+\item \errindex{The conclusion is not a substitutive equation}
+\item \errindex{Impossible to unify \dots\ with ..}
 \end{ErrMsgs}
 
 \subsection{\tt Symmetry}\tacindex{Symmetry}
@@ -1123,12 +1128,8 @@ exists, then the proof of the current goal is completed,
 otherwise the tactic fails.
 
 \begin{ErrMsgs}
-\item {\ident} \errindex{Not a discriminable equality} 
-  occurs when the type of
-  the specified hypothesis is an equation but does not verify the
-  expected preconditions.
-\item {\ident }\errindex{Not an equation} occurs when the type of the specified
-  hypothesis is not an equation.
+\item {\ident} \errindex{Not a discriminable equality} \\
+  occurs when the type of the specified hypothesis is not an equation.
 \end{ErrMsgs}  
 
 
@@ -1140,24 +1141,9 @@ otherwise the tactic fails.
     {\ident}}.
 
   \begin{ErrMsgs}
-  \item \errindex{goal does not satisfy the expected preconditions}.
-  \item \errindex{Not a discriminable equality}
+  \item \errindex{No discriminable equalities} \\
+  occurs when the goal does not verify the expected preconditions.
   \end{ErrMsgs}
-
-\item {\tt Simple Discriminate}
-  \tacindex{Simple Discriminate} \\
-  This tactic applies to a goal which has the form
-  \verb=~=\term$_1$=\term$_2$ where  {\term$_1$} and {\term$_2$} 
-  belong to an inductive set and $=$ denotes the equality \texttt{eq}.
-  This tactic  proves trivial disequalities such as
-  {\verb.~O=(S n).} It checks that the head symbols of the head normal
-  forms of {\term$_1$} and {\term$_2$} are not the same constructor.
-  When this is the case, the current goal is solved. 
-
-  \begin{ErrMsgs}
-  \item \errindex{Not a discriminable equality}
-  \end{ErrMsgs}
-
 \end{Variants}
 
 \subsection{\tt Injection {\ident}}
@@ -1505,60 +1491,62 @@ internally replaces it by the equivalent one:
 \end{verbatim}
 and then uses {\tt Auto with *} which completes the proof.
 
-\subsection{\tt Linear}\tacindex{Linear}\label{Linear}
-The tactic \texttt{Linear}, due to Jean-Christophe Filliâatre
-\cite{Fil94}, implements a decision procedure for {\em Direct
-  Predicate Calculus}, that is first-order Gentzen's Sequent Calculus
-without contraction rules \cite{KeWe84,BeKe92}.  Intuitively, a
-first-order goal is provable in Direct Predicate Calculus if it can be
-proved using each hypothesis at most once.
 
-Unlike the previous tactics, the \texttt{Linear} tactic does not belong
-to the initial state of the system, and it must be loaded explicitly
-with the command
+% \subsection{\tt Linear}\tacindex{Linear}\label{Linear}
+% The tactic \texttt{Linear}, due to Jean-Christophe Filliâatre
+% \cite{Fil94}, implements a decision procedure for {\em Direct
+%   Predicate Calculus}, that is first-order Gentzen's Sequent Calculus
+% without contraction rules \cite{KeWe84,BeKe92}.  Intuitively, a
+% first-order goal is provable in Direct Predicate Calculus if it can be
+% proved using each hypothesis at most once.
 
-\begin{coq_example*}
-Require Linear.
-\end{coq_example*}
+% Unlike the previous tactics, the \texttt{Linear} tactic does not belong
+% to the initial state of the system, and it must be loaded explicitly
+% with the command
 
-For instance, assuming that \texttt{even} and \texttt{odd} are two
-predicates on natural numbers, and \texttt{a} of type \texttt{nat}, the
-tactic \texttt{Linear} solves the following goal
+% \begin{coq_example*}
+% Require Linear.
+% \end{coq_example*}
 
-\begin{coq_eval}
-Variables even,odd : nat -> Prop.
-Variable a:nat.
-\end{coq_eval}
+% For instance, assuming that \texttt{even} and \texttt{odd} are two
+% predicates on natural numbers, and \texttt{a} of type \texttt{nat}, the
+% tactic \texttt{Linear} solves the following goal
 
-\begin{coq_example*}
-Lemma example : (even a) 
-              -> ((x:nat)((even x)->(odd (S x))))
-              -> (EX y | (odd y)).
-\end{coq_example*}
+% \begin{coq_eval}
+% Variables even,odd : nat -> Prop.
+% Variable a:nat.
+% \end{coq_eval}
 
-You can find examples of the use of \texttt{Linear} in
-\texttt{theories/DEMOS/DemoLinear.v}.
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
+% \begin{coq_example*}
+% Lemma example : (even a) 
+%               -> ((x:nat)((even x)->(odd (S x))))
+%               -> (EX y | (odd y)).
+% \end{coq_example*}
 
-\begin{Variants}
-\item {\tt Linear with \ident$_1$ \dots\ \ident$_n$}\\
-  \tacindex{Linear with} 
-  Is equivalent to apply first {\tt Generalize \ident$_1$ \dots
-    \ident$_n$} (see section \ref{Generalize}) then the \texttt{Linear}
-  tactic.  So one can use axioms, lemmas or hypotheses of the local
-  context with \texttt{Linear} in this way.
-\end{Variants}
+% You can find examples of the use of \texttt{Linear} in
+% \texttt{theories/DEMOS/DemoLinear.v}.
+% \begin{coq_eval}
+% Abort.
+% \end{coq_eval}
 
-\begin{ErrMsgs}
-\item \errindex{Not provable in Direct Predicate Calculus}
-\item \errindex{Found $n$ classical proof(s) but no intuitionistic one}\\ 
-  The decision procedure looks actually for classical proofs of the
-  goals, and then checks that they are intuitionistic.  In that case,
-  classical proofs have been found, which do not correspond to
-  intuitionistic ones.
-\end{ErrMsgs}
+% \begin{Variants}
+% \item {\tt Linear with \ident$_1$ \dots\ \ident$_n$}\\
+%   \tacindex{Linear with} 
+%   Is equivalent to apply first {\tt Generalize \ident$_1$ \dots
+%     \ident$_n$} (see section \ref{Generalize}) then the \texttt{Linear}
+%   tactic.  So one can use axioms, lemmas or hypotheses of the local
+%   context with \texttt{Linear} in this way.
+% \end{Variants}
+
+% \begin{ErrMsgs}
+% \item \errindex{Not provable in Direct Predicate Calculus}
+% \item \errindex{Found $n$ classical proof(s) but no intuitionistic one}\\ 
+%   The decision procedure looks actually for classical proofs of the
+%   goals, and then checks that they are intuitionistic.  In that case,
+%   classical proofs have been found, which do not correspond to
+%   intuitionistic ones.
+% \end{ErrMsgs}
+
 
 \subsection{\tt Omega}
 \tacindex{Omega}
@@ -1571,7 +1559,8 @@ formulae build with \verb|~|, \verb|\/|, \verb|/\|,
 \verb|->| on top of equations and inequations on
 both the type \texttt{nat} of natural numbers and \texttt{Z} of binary
 integers. This tactic must be loaded by the command \texttt{Require
-  Omega}. See the additional documentation about \texttt{Omega}.
+  Omega}. See the additional documentation about \texttt{Omega}
+(chapter~\ref{OmegaChapter}).
 
 \subsection{\tt Ring \term$_1$ \dots\ \term$_n$}
 \tacindex{Ring}
@@ -1620,7 +1609,7 @@ You can have a look at the files \texttt{Ring.v},
 \texttt{ArithRing.v}, \texttt{ZarithRing.v} to see examples of the
 \texttt{Add Ring} command.
 
-\SeeAlso \ref{Ring} for more detailed explanations about this tactic
+\SeeAlso Chapter~\ref{Ring} for more detailed explanations about this tactic.
 
 \subsection{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]}
 \tacindex{AutoRewrite}
@@ -1704,34 +1693,6 @@ this tactic.
 
 \SeeAlso file \texttt{theories/DEMOS/DemoAutoRewrite.v}
 
-\section{Developing certified programs}
-\label{program}
-This section is devoted to powerful tools that \Coq~ provides to
-develop certified programs. We just mention below the main features of
-those tools and refer the reader to chapter \ref{Addoc-program} and
-references \cite{CPar93,CPar95} for more details and examples.
-
-\subsection{\tt Realizer \term}\tacindex{Realizer}
-This command associates the term {\term} to the current goal. The
-{\term}'s syntax is described in the chapter \ref{Addoc-program}.
-It is an extension of the basic syntax for \Coq's terms. The {\tt
-  Realizer} is used as a hint by the {\tt Program} tactic described
-below. The term {\term} intends to be the program extracted from the
-proof we want to develop.
-
-\SeeAlso chapter \ref{Addoc-program}, section \ref{Extraction}
-
-\subsection{\tt Program}\tacindex{Program}
-This tactic tries to make a one step inference according to the
-structure of the {\tt Realizer} associated to the current goal.
-
-\begin{Variants}
-\item {\tt Program\_all}\tacindex{Program\_all}\\
-  Is equivalent to {\tt Repeat (Program Orelse Auto with *)} (see section
-  \ref{Tacticals}).
-\end{Variants}
-
-\SeeAlso chapter \ref{Addoc-program}
 
 \section{The hints databases for Auto and EAuto}
 \index{Hints databases}\label{Hints-databases}
@@ -2133,20 +2094,12 @@ of mutual induction for objects in type {\term$_i$}.
 
 A simple example has more value than a long explanation: 
 
-\begin{coq_example*}
-Tactic Definition Solve := [<:tactic:<Simpl; Intros; Auto>>].
-Tactic Definition ElimBoolRewrite [$b $H1 $H2] := 
-  [<:tactic:<Elim $b; 
-     [Intros; Rewrite $H1; EAuto | Intros; Rewrite $H2; EAuto ]>>].
-\end{coq_example*}
-
-Those tactic definitions are just macros, they behave like the
-syntactic definitions in the tactic world. The right side of the
-definition is an AST (see page~\pageref{astsyntax}), 
-but you can type a command if you
-enclose it between \verb|<< >>| or \verb|<:command:< >>|, and you can
-type a tactic script (the most frequent case) if you enclose it
-between \verb|<:tactic:< >>|.
+\begin{coq_example}
+Tactic Definition Solve := Simpl; Intros; Auto.
+Tactic Definition ElimBoolRewrite b H1 H2 := 
+  Elim b; 
+  [Intros; Rewrite H1; EAuto | Intros; Rewrite H2; EAuto ].
+\end{coq_example}
 
 The tactics macros are synchronous with the \Coq\ section mechanism:
 a \texttt{Tactic Definition} is deleted from the current environment
@@ -2155,9 +2108,8 @@ where it was defined. If you want that a
 tactic macro defined in a module is usable in the modules that
 require it, you should put it outside of any section.
 
-This command is designed to be simple, so the user who wants to do
-complicate things with it should better read the chapter
-\ref{WritingTactics} about the user-defined tactics.
+The chapter~\ref{TacticLanguage} gives examples of more complex
+user-defined tactics.
 
 
 % $Id$ 
