@@ -171,8 +171,7 @@ GEXTEND Gram
     [ [ c = operconstr LEVEL "9" -> c ] ]
   ;
   operconstr:
-    [ "250" LEFTA [ ]
-    | "200" RIGHTA
+    [ "200" RIGHTA
       [ c = binder_constr -> c ]
     | "100" RIGHTA
       [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,c2)
@@ -195,7 +194,7 @@ GEXTEND Gram
     | "0"
       [ c=atomic_constr -> c
       | c=match_constr -> c
-      | "("; c = operconstr LEVEL "250"; ")" ->
+      | "("; c = operconstr; ")" ->
           CNotation(loc,"( _ )",[c]) ] ]
   ;
   binder_constr:
@@ -288,8 +287,7 @@ GEXTEND Gram
     [ [ pl = LIST1 pattern LEVEL "200" SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
   ;
   pattern:
-    [ "250" LEFTA [ ]
-    | "10" LEFTA
+    [ "10" LEFTA
       [ p = pattern ; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
@@ -303,16 +301,10 @@ GEXTEND Gram
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
-      | "("; p = pattern LEVEL "250"; ")" ->
+      | "("; p = pattern; ")" ->
           CPatNotation(loc,"( _ )",[p])
       | n = INT -> CPatNumeral (loc,Bignat.POS(Bignat.of_string n)) ] ]
   ;
-(*
-  lpattern:
-    [ [ c = pattern -> c
-      | p1=pattern; ","; p2=lpattern ->  CPatCstr (loc, pair loc, [p1;p2]) ] ]
-  ;
-*)
   binder_list:
     [ [ idl=LIST1 name; bl=LIST0 binder_let -> 
           LocalRawAssum (idl,CHole loc)::bl

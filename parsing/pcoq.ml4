@@ -545,8 +545,7 @@ let default_levels_v7 =
    0,Gramext.RightA]
 
 let default_levels_v8 =
-  [250,Gramext.LeftA;
-   200,Gramext.RightA;
+  [200,Gramext.RightA;
    100,Gramext.RightA;
    99,Gramext.RightA;
    90,Gramext.RightA;
@@ -556,8 +555,7 @@ let default_levels_v8 =
    0,Gramext.RightA]
 
 let default_pattern_levels_v8 =
-  [250,Gramext.LeftA;
-   10,Gramext.LeftA;
+  [10,Gramext.LeftA;
    0,Gramext.RightA]
 
 let level_stack = 
@@ -592,8 +590,7 @@ let error_level_assoc p current expected =
      pr_assoc expected ++ str " associative")
 
 let find_position forpat other assoc lev =
-  let default =
-    if !Options.v7 then (10,Gramext.RightA) else (200,Gramext.RightA) in
+  let default = if !Options.v7 then Some (10,Gramext.RightA) else None in
   let ccurrent,pcurrent as current = List.hd !level_stack in 
   match lev with
   | None ->
@@ -604,7 +601,7 @@ let find_position forpat other assoc lev =
 	error "Left associativity not allowed at level 8";
       let after = ref default in
       let rec add_level q = function
-        | (p,_ as pa)::l when p > n -> pa :: add_level pa l
+        | (p,_ as pa)::l when p > n -> pa :: add_level (Some pa) l
         | (p,a as pa)::l as l' when p = n ->
 	    if admissible_assoc (a,assoc) then raise (Found a);
 	    (* No duplication of levels in v8 *)
@@ -613,7 +610,7 @@ let find_position forpat other assoc lev =
 	    if a = Gramext.LeftA then
 	      match l with
 		| (p,a)::_ as l' when p = n -> raise (Found a)
-		| _ -> after := pa; pa::(n,create_assoc assoc)::l
+		| _ -> after := Some pa; pa::(n,create_assoc assoc)::l
 	    else
 	      (* This was not (p,LeftA) hence assoc is RightA *)
 	      (after := q; (n,create_assoc assoc)::l')
@@ -627,7 +624,8 @@ let find_position forpat other assoc lev =
 	  else (add_level default ccurrent, pcurrent) in
         level_stack := updated:: !level_stack;
 	let assoc = create_assoc assoc in
-        Some (Gramext.After (constr_level2 !after)),
+	(if !after = None then Some Gramext.First
+	else Some (Gramext.After (constr_level2 (out_some !after)))),
 	Some assoc, Some (constr_level2 (n,assoc))
       with
           Found a ->
