@@ -121,5 +121,5 @@ Syntax constr
     Except_imp [<<(except $1 $t2)>>] -> [ [<hov 0> "Except " $t2 ] ]
 
 (* Pretty-printing of [error] and [value] *)
-  | Error_imp [<<(error $1 $t2)>>] -> [ [<hov 0> "Error " $t2 ] ]
-  | Value_imp [<<(value $1 $t2)>>] -> [ [<hov 0> "Value " $t2 ] ].
+  | Error_imp [<<(error $t1)>>]     -> [ [<hov 0> "Error" ] ]
+  | Value_imp [<<(value $t1 $t2)>>] -> [ [<hov 0> "(Value " $t2 ")" ] ].
