@@ -295,6 +295,7 @@ GEXTEND Gram
   ;
   with_names:
     [ [ "as"; "["; ids = LIST1 (LIST0 simple_intropattern) SEP "|"; "]" -> ids
+      | "as"; "("; ids = LIST1 simple_intropattern SEP ","; ")" -> [ids]
       | -> [] ] ]
   ;
   simple_tactic:
