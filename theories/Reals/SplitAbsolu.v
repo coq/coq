@@ -10,13 +10,13 @@
 
 Require Rbasic_fun.
 
-Tactic Definition SplitAbs :=
+Recursive Tactic Definition SplitAbs :=
   Match Context With
     | [ |- [(case_Rabsolu ?1)] ] -> 
          Case (case_Rabsolu ?1); Try SplitAbs.
 
 
-Tactic Definition SplitAbsolu :=
+Recursive Tactic Definition SplitAbsolu :=
   Match Context With
     | [ id:[(Rabsolu ?)] |- ? ] -> Generalize id; Clear id;Try SplitAbsolu
     | [ |- [(Rabsolu ?1)] ] ->  Unfold Rabsolu; Try SplitAbs;Intros.

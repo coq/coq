@@ -214,7 +214,7 @@ Tactic Definition ApplyInverse mul FT lvar trm :=
 
 Tactic Definition StrongFail tac := First [tac|Fail 2].
 
-Tactic Definition InverseTestAux FT trm :=
+Recursive Tactic Definition InverseTestAux FT trm :=
   Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
   And AmultT = Eval Cbv Beta Delta [Amult] Iota in (Amult FT)
   And AoppT  = Eval Cbv Beta Delta [Aopp] Iota in (Aopp FT)
@@ -261,7 +261,7 @@ Tactic Definition Reduce FT :=
   Cbv Beta Delta -[AzeroT AoneT AplusT AmultT AoppT AinvT] Zeta Iota
   Orelse Compute.
 
-Tactic Definition Field_Gen_Aux FT :=
+Recursive Tactic Definition Field_Gen_Aux FT :=
   Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT) In
   Match Context With
   | [|- ?1==?2] ->
