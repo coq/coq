@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Libobject
@@ -106,6 +107,8 @@ let contents_after = function
 
 let open_section s =
   let sp = make_path (id_of_string s) OBJ in
+  if Nametab.exists_module sp then
+    errorlabstrm "open_section" [< 'sTR (s^" already exists") >];
   add_entry sp (OpenedSection (s, freeze_summaries()));
   path_prefix := !path_prefix @ [s];
   sp

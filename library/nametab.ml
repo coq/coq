@@ -164,6 +164,9 @@ let rec rec_open_module_contents qid =
 let exists_cci sp =
   try let _ = locate (qualid_of_sp sp) in true with Not_found -> false
 
+let exists_module sp =
+  try let _ = locate_module (qualid_of_sp sp) in true with Not_found -> false
+
 (********************************************************************)
 (* Registration of persistent tables as a global table and rollback *)
 

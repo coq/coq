@@ -35,6 +35,7 @@ val locate_module : qualid -> section_path * module_contents
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool
+val exists_module : section_path -> bool
 
 val open_module_contents : qualid -> unit
 val rec_open_module_contents : qualid -> unit
