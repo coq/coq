@@ -210,12 +210,13 @@ let save_module_to process s f =
     md_nametab = process seg;
     md_deps = current_imports () } in
   let (f',ch) = raw_extern_module f in
-  System.marshal_out ch md;
-  flush ch;
-  let di = Digest.file f' in
-  System.marshal_out ch di;
-  close_out ch
-
+  try
+    System.marshal_out ch md;
+    flush ch;
+    let di = Digest.file f' in
+    System.marshal_out ch di;
+    close_out ch
+  with e -> (warning ("Removed file "^f');close_out ch; Sys.remove f'; raise e)
 (*s Iterators. *)
 
 let fold_all_segments insec f x =

@@ -224,11 +224,10 @@ let add_infix assoc n inf pr =
     errorlabstrm "Vernacentries.infix_grammar_entry"
       [< 'sTR"Associativity Precedence must be 6,7,8 or 9." >];
   (* check the grammar entry *)
-  let prefast = Termast.ast_of_ref pr in
-  let prefname = (Names.string_of_path (Global.sp_of_global pr))^"_infix" in
-  let gram_rule = gram_infix assoc n (split inf) prefname prefast in
+  let prefname = inf^"_infix" in
+  let gram_rule = gram_infix assoc n (split inf) prefname pr in
   (* check the syntax entry *)
-  let syntax_rule = infix_syntax_entry assoc n inf prefname prefast in
+  let syntax_rule = infix_syntax_entry assoc n inf prefname pr in
   Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule))
 
 (* Distfix *)
@@ -272,8 +271,7 @@ let distfix assoc n sl fname astf  =
       ]
   }
 
-let add_distfix a n df f =
-  let fname = (Names.string_of_path (Global.sp_of_global f))^"_distfix" in
-  let astf = Termast.ast_of_ref f in
+let add_distfix a n df astf =
+  let fname = df^"_distfix" in
   Lib.add_anonymous_leaf (inInfix(distfix a n (split df) fname astf, []))
 

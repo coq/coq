@@ -110,7 +110,9 @@ let try_remove f =
                      'sTR f ; 'sTR" which is corrupted!" >]
 
 let marshal_out ch v = Marshal.to_channel ch v []
-let marshal_in ch = Marshal.from_channel ch
+let marshal_in ch =
+  try Marshal.from_channel ch
+  with End_of_file -> error "corrupted file: reached end of file"
 
 exception Bad_magic_number of string
 
