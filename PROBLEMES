@@ -1,0 +1,30 @@
+Declaration de Local a l'interieur d'un but ...
+add_entry etait fait avant cache_object qui peut echouer en laissant 
+la lib_stk dans un etat incoherent ....
+
+
+CONTRIBS
+---------
+BellLabs/lazyPCF/OpSem/
+File "./utils.v", line 231, characters 14-18
+Syntax error: [Tactic.constrarg_binding_list] expected after [Tactic.numarg] (in [Tactic.simple_tactic])
+Specialize A2 with ...
+
+Bordeaux/TREES :
+File "./ABR.v", line 131, characters 0-88
+Anomaly: Unrecognizable ast node of vernac arg:
+ (COMMAND (PROP {Null})). Please report.
+
+Derive Inversion_clear HAS_INV with 
+    (n,p:nat)(t1,t2:bintree)(has (bin n t1 t2) p).
+
+Bordeaux/Additions : 
+	echecs sur Realizer
+
+Bordeaux/GROUPS : OK
+
+Rocq/GRAPHS
+File "./lsort.v", line 82, characters 4-17
+Error: Impossible to unify ad with
+ (a:ad)(?334 a)->(?334 (ad_double_plus_un a))
+Induction a.
