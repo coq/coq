@@ -34,7 +34,7 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 all: $(ML) depend $(CMO) v2ml
 
 depend: $(ML)
-	rm -f .depend; ocamldep $(INCL) $(ML) > .depend
+	rm -f .depend; ocamldep $(INCL) theories/*/*.ml > .depend
 
 tree:
 	mkdir -p $(DIRS)
@@ -58,7 +58,7 @@ REALSVO:=$(filter-out theories/Reals/Rsyntax.vo,$(REALSALLVO))
 REALSML:=$(shell test -x v2ml && ./v2ml $(REALSVO))
 REALSCMO:= $(patsubst %.ml,%.cmo,$(REALSML))
 
-reals: all $(REALSML) addReals.cmo $(REALSCMO)
+reals: all $(REALSML) theories/Reals/addReals.cmo $(REALSCMO)
 
 realsml: 
 	./extract_reals $(REALSVO)
