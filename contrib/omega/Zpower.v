@@ -78,7 +78,7 @@ Hints Unfold  Zpower_nat : zarith.
 
 Lemma Zpower_exp : (x:Z)(n,m:Z)
   `n >= 0` -> `m >= 0` -> `(Zpower x (n+m))=(Zpower x n)*(Zpower x m)`.
-Destruct n; Destruct m; Auto with zarith.
+NewDestruct n; NewDestruct m; Auto with zarith.
 Simpl; Intros; Apply Zred_factor0.
 Simpl; Auto with zarith.
 Intros; Compute in H0; Absurd INFERIEUR=INFERIEUR; Auto with zarith.
@@ -313,7 +313,7 @@ Elim (convert p); Simpl;
 | Intro n; Rewrite (two_power_nat_S n);
   Unfold 2 Zdiv_rest_aux;
   Elim (iter_nat n (Z*Z)*Z Zdiv_rest_aux ((x,`0`),`1`));
-  Destruct a; Intros; Apply f_equal with f:=[z:Z]`2*z`; Assumption ]. 
+  NewDestruct a; Intros; Apply f_equal with f:=[z:Z]`2*z`; Assumption ]. 
 Save.
 
 Lemma Zdiv_rest_correct2 :
@@ -330,33 +330,33 @@ Intros; Apply iter_pos_invariant with
   Intros q r d; Unfold Zdiv_rest_aux; 
   Elim q;
   [ Omega
-  | Destruct p0; 
-    [ Intro; Rewrite POS_xI; Intro; Elim H; Intros; Split; 
+  | NewDestruct p0; 
+    [ Rewrite POS_xI; Intro; Elim H; Intros; Split; 
       [ Rewrite H0; Rewrite Zplus_assoc;
       	Rewrite Zmult_plus_distr_l;
       	Rewrite Zmult_1_n; Rewrite Zmult_assoc;
-      	Rewrite (Zmult_sym (POS p1) `2`); Apply refl_equal
+      	Rewrite (Zmult_sym (POS p0) `2`); Apply refl_equal
       | Omega ]
-    | Intro; Rewrite POS_xO; Intro; Elim H; Intros; Split;
+    | Rewrite POS_xO; Intro; Elim H; Intros; Split;
       [ Rewrite H0;
-      	Rewrite Zmult_assoc; Rewrite (Zmult_sym (POS p1) `2`);
+      	Rewrite Zmult_assoc; Rewrite (Zmult_sym (POS p0) `2`);
       	Apply refl_equal  
       | Omega ]
     | Omega ]
-  | Destruct p0; 
-    [ Intro; Rewrite NEG_xI; Unfold Zminus; Intro; Elim H; Intros; Split; 
+  | NewDestruct p0; 
+    [ Rewrite NEG_xI; Unfold Zminus; Intro; Elim H; Intros; Split; 
       [ Rewrite H0; Rewrite Zplus_assoc;
       	Apply f_equal with f:=[z:Z]`z+r`;
       	Do 2 (Rewrite Zmult_plus_distr_l);
        	Rewrite Zmult_assoc; 
-      	Rewrite (Zmult_sym (NEG p1) `2`);
+      	Rewrite (Zmult_sym (NEG p0) `2`);
       	Rewrite <- Zplus_assoc;
-	Apply f_equal with f:=[z:Z]`2 * (NEG p1) * d + z`; 
+	Apply f_equal with f:=[z:Z]`2 * (NEG p0) * d + z`; 
       	Omega
       | Omega ]
-    | Intro; Rewrite NEG_xO; Unfold Zminus; Intro; Elim H; Intros; Split;
+    | Rewrite NEG_xO; Unfold Zminus; Intro; Elim H; Intros; Split;
       [ Rewrite H0;
-      	Rewrite Zmult_assoc; Rewrite (Zmult_sym (NEG p1) `2`);
+      	Rewrite Zmult_assoc; Rewrite (Zmult_sym (NEG p0) `2`);
       	Apply refl_equal  
       | Omega ]
     | Omega ] ]

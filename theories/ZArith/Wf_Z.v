@@ -35,11 +35,11 @@ Require Zsyntax.
 
 Lemma inject_nat_complete :
   (x:Z)`0 <= x` -> (EX n:nat | x=(inject_nat n)).
-Destruct x; Intros;
+NewDestruct x; Intros;
 [ Exists  O; Auto with arith
 | Specialize (ZL4 p); Intros Hp; Elim Hp; Intros;
-  Exists (S x0); Intros; Simpl;
-  Specialize (bij1 x0); Intro Hx0;
+  Exists (S x); Intros; Simpl;
+  Specialize (bij1 x); Intro Hx0;
   Rewrite <- H0 in Hx0;
   Apply f_equal with f:=POS;
   Apply convert_intro; Auto with arith
@@ -61,7 +61,7 @@ Save.
 
 Lemma inject_nat_complete_inf :
   (x:Z)`0 <= x` -> { n:nat | (x=(inject_nat n)) }.
-Destruct x; Intros;
+NewDestruct x; Intros;
 [ Exists  O; Auto with arith
 | Specialize (ZL4_inf p); Intros Hp; Elim Hp; Intros x0 H0;
   Exists (S x0); Intros; Simpl;

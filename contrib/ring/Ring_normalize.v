@@ -427,7 +427,7 @@ Save.
 Remark interp_m_ok : (x:A)(l:varlist)
   (interp_m x l)==(Amult x (interp_vl l)).
 Proof.
-  Destruct l.
+  NewDestruct l.
   Simpl; Trivial.
   Reflexivity.
 Save.

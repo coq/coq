@@ -29,7 +29,7 @@ Chapter Well_founded.
     := Acc_intro : (x:A)((y:A)(R y x)->(Acc y))->(Acc x).
 
  Lemma Acc_inv : (x:A)(Acc x) -> (y:A)(R y x) -> (Acc y).
-  Destruct 1; Trivial.
+  NewDestruct 1; Trivial.
  Defined.
 
   (* the informative elimination :

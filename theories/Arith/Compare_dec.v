@@ -14,14 +14,14 @@ Require Gt.
 Require Decidable.
 
 Theorem zerop : (n:nat){n=O}+{lt O n}.
-Destruct n; Auto with arith.
+NewDestruct n; Auto with arith.
 Save.
 
 Theorem lt_eq_lt_dec : (n,m:nat){(lt n m)}+{n=m}+{(lt m n)}.
 Proof.
-Induction n; Induction m; Auto with arith.
-Intros q H'; Elim (H q).
-Induction 1; Auto with arith.
+NewInduction n; NewInduction m; Auto with arith.
+Elim (IHn m).
+NewInduction 1; Auto with arith.
 Auto with arith.
 Qed.
 
@@ -30,11 +30,11 @@ Proof lt_eq_lt_dec.
 
 Lemma le_lt_dec : (n,m:nat) {le n m} + {lt m n}.
 Proof.
-Induction n.
+NewInduction n.
 Auto with arith.
-Induction m.
+NewInduction m.
 Auto with arith.
-Intros q H'; Elim (H q); Auto with arith.
+Elim (IHn m); Auto with arith.
 Qed.
 
 Lemma le_le_S_dec : (n,m:nat) {le n m} + {le (S m) n}.

@@ -24,22 +24,22 @@ Hint constr_odd : arith := Constructors odd.
 
 Lemma even_or_odd : (n:nat) (even n)\/(odd n).
 Proof.
-Induction n.
+NewInduction n.
 Auto with arith.
-Intros n' H. Elim H; Auto with arith.
+Elim IHn; Auto with arith.
 Save.
 
 Lemma even_odd_dec : (n:nat) { (even n) }+{ (odd n) }.
 Proof.
-Induction n.
+NewInduction n.
 Auto with arith.
-Intros n' H. Elim H; Auto with arith.
+Elim IHn; Auto with arith.
 Save.
 
 Lemma not_even_and_odd : (n:nat) (even n) -> (odd n) -> False.
 Proof.
-Induction n.
+NewInduction n.
 Intros. Inversion H0.
-Intros. Inversion H0. Inversion H1. Auto with arith.
+Intros. Inversion H. Inversion H0. Auto with arith.
 Save.
 

@@ -43,7 +43,7 @@ Proof.
 Intros m n H.
 LApply (lt_le_S m n); Auto with arith.
 Intro H'; LApply (le_lt_or_eq (S m) n); Auto with arith.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Right; Exists (minus n (S (S m))); Simpl.
 Rewrite (plus_sym m (minus n (S (S m)))).
 Rewrite (plus_n_Sm (minus n (S (S m))) m).

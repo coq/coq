@@ -18,7 +18,7 @@ Inductive ad : Set :=
 
 Lemma ad_sum : (a:ad) {p:positive | a=(ad_x p)}+{a=ad_z}.
 Proof.
-  Destruct a; Auto.
+  NewDestruct a; Auto.
   Left; Exists p; Trivial.
 Qed.
 
@@ -74,15 +74,15 @@ Qed.
 
 Lemma ad_xor_comm : (a,a':ad) (ad_xor a a')=(ad_xor a' a).
 Proof.
-  Destruct a; Destruct a'; Simpl; Auto.
-  Induction p; Simpl; Auto.
-  Destruct p0; Simpl; Trivial; Intros.
+  NewDestruct a; NewDestruct a'; Simpl; Auto.
+  Generalize p0; Clear p0; Induction p; Simpl; Auto.
+  NewDestruct p0; Simpl; Trivial; Intros.
   Rewrite Hrecp; Trivial.
   Rewrite Hrecp; Trivial.
-  Destruct p0; Simpl; Trivial; Intros.
+  NewDestruct p0; Simpl; Trivial; Intros.
   Rewrite Hrecp; Trivial.
   Rewrite Hrecp; Trivial.
-  Induction p; Simpl; Auto.
+  Induction p0; Simpl; Auto.
 Qed.
 
 Lemma ad_xor_nilpotent : (a:ad) (ad_xor a a)=ad_z.

@@ -14,12 +14,12 @@
 
 Theorem le_n_S : (n,m:nat)(le n m)->(le (S n) (S m)).
 Proof.
-  Induction 1; Auto.
+  NewInduction 1; Auto.
 Qed.
 
 Theorem le_trans : (n,m,p:nat)(le n m)->(le m p)->(le n p).
 Proof.
-  Induction 2; Auto.
+  NewInduction 2; Auto.
 Qed.
 
 Theorem le_n_Sn : (n:nat)(le n (S n)).
@@ -29,14 +29,14 @@ Qed.
 
 Theorem le_O_n : (n:nat)(le O n).
 Proof.
-  Induction n ; Auto.
+  NewInduction n ; Auto.
 Qed.
 
 Hints Resolve le_n_S le_n_Sn le_O_n le_n_S le_trans : arith v62.
 
 Theorem le_pred_n : (n:nat)(le (pred n) n).
 Proof.
-Induction n ; Auto with arith.
+NewInduction n ; Auto with arith.
 Qed.
 Hints Resolve le_pred_n : arith v62.
 
@@ -73,7 +73,7 @@ Hints Resolve le_Sn_O : arith v62.
 
 Theorem le_Sn_n : (n:nat)~(le (S n) n).
 Proof.
-Induction n; Auto with arith.
+NewInduction n; Auto with arith.
 Qed.
 Hints Resolve le_Sn_n : arith v62.
 
@@ -110,7 +110,7 @@ Lemma le_elim_rel : (P:nat->nat->Prop)
      ((p,q:nat)(le p q)->(P p q)->(P (S p) (S q)))->
      (n,m:nat)(le n m)->(P n m).
 Proof.
-Induction n; Auto with arith.
-Intros n' HRec m Le.
+NewInduction n; Auto with arith.
+Intros m Le.
 Elim Le; Auto with arith.
 Qed.

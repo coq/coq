@@ -17,14 +17,14 @@ Inductive JMeq [A:Set;x:A] : (B:Set)B->Prop :=
 Hints Resolve JMeq_refl.
 
 Lemma JMeq_sym : (A,B:Set)(x:A)(y:B)(JMeq x y)->(JMeq y x).
-Destruct 1; Trivial.
+NewDestruct 1; Trivial.
 Save.
 
 Hints Immediate JMeq_sym.
 
 Lemma JMeq_trans : (A,B,C:Set)(x:A)(y:B)(z:C)
 	(JMeq x y)->(JMeq y z)->(JMeq x z).
-Destruct 1; Trivial.
+NewDestruct 1; Trivial.
 Save.
 
 Axiom JMeq_eq : (A:Set)(x,y:A)(JMeq x y)->(x=y).

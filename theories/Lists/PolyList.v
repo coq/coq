@@ -84,9 +84,9 @@ Qed.
 
 Lemma app_eq_nil: (x,y:list) (x^y)=nil -> x=nil /\ y=nil.
 Proof.
- Destruct x;Destruct y;Simpl;Auto.
+ NewDestruct x;NewDestruct y;Simpl;Auto.
  Intros H;Discriminate H.
- Intros a0 l0 H;Discriminate H.
+ Intros;Discriminate H.
 Qed.
 
 Lemma app_cons_not_nil: (x,y:list)(a:A)~nil=(x^(cons a y)).
@@ -101,7 +101,7 @@ Lemma app_eq_unit:(x,y:list)(a:A)
      (x^y)=(cons a nil)-> (x=nil)/\ y=(cons a nil) \/ x=(cons a nil)/\ y=nil.
 
 Proof.
- Destruct x;Destruct y;Simpl.
+ NewDestruct x;NewDestruct y;Simpl.
  Intros a H;Discriminate H.
  Left;Split;Auto.
  Right;Split;Auto.
@@ -442,7 +442,7 @@ i*)
 
 Lemma list_eq_dec : ((x,y:A){x=y}+{~x=y})->(x,y:list){x=y}+{~x=y}.
 Proof.
-  Induction x; Destruct y; Intros; Auto.
+  Induction x; NewDestruct y; Intros; Auto.
   Case (H a a0); Intro e.
   Case (H0 l0); Intro e'.
   Left; Rewrite e; Rewrite e'; Trivial.

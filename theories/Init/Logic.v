@@ -150,7 +150,7 @@ Section Logic_lemmas.
   Proof.
    Intros.
    Cut (identity A x y).
-   Destruct 1; Auto.
+   NewDestruct 1; Auto.
    Elim H; Auto.
   Qed.
 

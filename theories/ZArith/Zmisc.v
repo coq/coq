@@ -261,12 +261,12 @@ Save.
 
 Lemma Zeven_not_Zodd : (z:Z)(Zeven z) -> ~(Zodd z).
 Proof.
-  Destruct z; [ Idtac | Destruct p | Destruct p  ]; Compute; Trivial.
+  NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
 Save.
 
 Lemma Zodd_not_Zeven : (z:Z)(Zodd z) -> ~(Zeven z).
 Proof.
-  Destruct z; [ Idtac | Destruct p | Destruct p  ]; Compute; Trivial.
+  NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
 Save.
 
 Hints Unfold Zeven Zodd : zarith.
@@ -291,22 +291,22 @@ Definition Zdiv2 :=
 
 Lemma Zeven_div2 : (x:Z) (Zeven x) -> `x = 2*(Zdiv2 x)`.
 Proof.
-Destruct x.
+NewDestruct x.
 Auto with arith.
-Destruct p; Auto with arith.
-Intros. Absurd (Zeven (POS (xI p0))); Red; Auto with arith.
+NewDestruct p; Auto with arith.
+Intros. Absurd (Zeven (POS (xI p))); Red; Auto with arith.
 Intros. Absurd (Zeven `1`); Red; Auto with arith.
-Destruct p; Auto with arith.
-Intros. Absurd (Zeven (NEG (xI p0))); Red; Auto with arith.
+NewDestruct p; Auto with arith.
+Intros. Absurd (Zeven (NEG (xI p))); Red; Auto with arith.
 Intros. Absurd (Zeven `-1`); Red; Auto with arith.
 Save.
 
 Lemma Zodd_div2 : (x:Z) `x >= 0` -> (Zodd x) -> `x = 2*(Zdiv2 x)+1`.
 Proof.
-Destruct x.
+NewDestruct x.
 Intros. Absurd (Zodd `0`); Red; Auto with arith.
-Destruct p; Auto with arith.
-Intros. Absurd (Zodd (POS (xO p0))); Red; Auto with arith.
+NewDestruct p; Auto with arith.
+Intros. Absurd (Zodd (POS (xO p))); Red; Auto with arith.
 Intros. Absurd `(NEG p) >= 0`; Red; Auto with arith.
 Save.
 

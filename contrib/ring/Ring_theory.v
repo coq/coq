@@ -386,7 +386,7 @@ Definition Semi_Ring_Theory_of :
   (Azero : A)(Aopp : A -> A)(Aeq : A -> A -> bool)
   (Ring_Theory Aplus Amult Aone Azero Aopp Aeq)
     ->(Semi_Ring_Theory Aplus Amult Aone Azero Aeq).
-Destruct 1.
+Intros until 1; Case H.
 Split; Intros; Simpl; EAuto.
 Defined.
 

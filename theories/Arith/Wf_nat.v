@@ -25,12 +25,12 @@ Proof.
 Red.
 Cut (n:nat)(a:A)(lt (f a) n)->(Acc A ltof a).
 Intros H a;  Apply (H (S (f a))); Auto with arith.
-Induction n.
+NewInduction n.
 Intros; Absurd (lt (f a) O); Auto with arith.
-Intros m Hm a ltSma.
+Intros a ltSma.
 Apply Acc_intro.
 Unfold ltof; Intros b ltfafb.
-Apply Hm.
+Apply IHn.
 Apply lt_le_trans with (f a); Auto with arith.
 Qed.
 
@@ -60,12 +60,12 @@ Theorem induction_ltof1
 Proof.
 Intros P F; Cut (n:nat)(a:A)(lt (f a) n)->(P a).
 Intros H a;  Apply (H (S (f a))); Auto with arith.
-Induction n.
+NewInduction n.
 Intros; Absurd (lt (f a) O); Auto with arith.
-Intros m Hm a ltSma.
+Intros a ltSma.
 Apply F.
 Unfold ltof; Intros b ltfafb.
-Apply Hm.
+Apply IHn.
 Apply lt_le_trans with (f a); Auto with arith.
 Qed. 
 
@@ -94,12 +94,12 @@ Proof.
 Red.
 Cut (n:nat)(a:A)(lt (f a) n)->(Acc A R a).
 Intros H a; Apply (H (S (f a))); Auto with arith.
-Induction n.
+NewInduction n.
 Intros; Absurd (lt (f a) O); Auto with arith.
-Intros m Hm a ltSma.
+Intros a ltSma.
 Apply Acc_intro.
 Intros b ltfafb.
-Apply Hm.
+Apply IHn.
 Apply lt_le_trans with (f a); Auto with arith.
 Save.
 

@@ -208,7 +208,7 @@ Proof.
   Induction x.
   Intros; Simpl; EAuto.
 
-  Destruct y; Intros.
+  NewDestruct y; Intros.
 
   Simpl; Rewrite H; EAuto.
 

@@ -28,15 +28,15 @@ Qed.
 
 Lemma le_min_l : (n,m:nat)(le (min n m) n).
 Proof.
-Induction n; Intros; Simpl; Auto with arith.
+NewInduction n; Intros; Simpl; Auto with arith.
 Elim m; Intros; Simpl; Auto with arith.
 Qed.
 Hints Resolve le_min_l : arith v62.
 
 Lemma le_min_r : (n,m:nat)(le (min n m) m).
 Proof.
-Induction n; Simpl; Auto with arith.
-Induction m; Simpl; Auto with arith.
+NewInduction n; Simpl; Auto with arith.
+NewInduction m; Simpl; Auto with arith.
 Qed.
 Hints Resolve le_min_r : arith v62.
 
@@ -44,7 +44,7 @@ Hints Resolve le_min_r : arith v62.
 
 Lemma min_case : (n,m:nat)(P:nat->Set)(P n)->(P m)->(P (min n m)).
 Proof.
-Induction n; Simpl; Auto with arith.
-Induction m; Intros; Simpl; Auto with arith.
-Pattern (min n0 n1); Apply H ; Auto with arith.
+NewInduction n; Simpl; Auto with arith.
+NewInduction m; Intros; Simpl; Auto with arith.
+Pattern (min n m); Apply IHn ; Auto with arith.
 Qed.

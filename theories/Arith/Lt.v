@@ -50,17 +50,17 @@ Hints Resolve lt_n_n : arith v62.
 
 Lemma S_pred : (n,m:nat)(lt m n)->(n=(S (pred n))).
 Proof.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Qed.
 
 Lemma lt_pred : (n,p:nat)(lt (S n) p)->(lt n (pred p)).
 Proof.
-Induction 1; Simpl; Auto with arith.
+NewInduction 1; Simpl; Auto with arith.
 Qed.
 Hints Immediate lt_pred : arith v62.
 
 Lemma lt_pred_n_n : (n:nat)(lt O n)->(lt (pred n) n).
-Destruct 1; Simpl; Auto with arith.
+NewDestruct 1; Simpl; Auto with arith.
 Save.
 Hints Resolve lt_pred_n_n : arith v62.
 
@@ -92,14 +92,14 @@ Hints Immediate lt_le_weak : arith v62.
 
 Theorem neq_O_lt : (n:nat)(~O=n)->(lt O n).
 Proof.
-Induction n; Auto with arith.
+NewInduction n; Auto with arith.
 Intros; Absurd O=O; Trivial with arith.
 Qed.
 Hints Immediate neq_O_lt : arith v62.
 
 Theorem lt_O_neq : (n:nat)(lt O n)->(~O=n).
 Proof.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Qed.
 Hints Immediate lt_O_neq : arith v62.
 
@@ -107,35 +107,35 @@ Hints Immediate lt_O_neq : arith v62.
 
 Theorem lt_trans : (n,m,p:nat)(lt n m)->(lt m p)->(lt n p).
 Proof.
-Induction 2; Auto with arith.
+NewInduction 2; Auto with arith.
 Qed.
 
 Theorem lt_le_trans : (n,m,p:nat)(lt n m)->(le m p)->(lt n p).
 Proof.
-Induction 2; Auto with arith.
+NewInduction 2; Auto with arith.
 Qed.
 
 Theorem le_lt_trans : (n,m,p:nat)(le n m)->(lt m p)->(lt n p).
 Proof.
-Induction 2; Auto with arith.
+NewInduction 2; Auto with arith.
 Qed.
 
 Hints Resolve lt_trans lt_le_trans le_lt_trans : arith v62.
 
 Theorem le_lt_or_eq : (n,m:nat)(le n m)->((lt n m) \/ n=m).
 Proof.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Qed.
 
 Theorem le_or_lt : (n,m:nat)((le n m)\/(lt m n)).
 Proof.
 Intros n m; Pattern n m; Apply nat_double_ind; Auto with arith.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Qed.
 
 Theorem le_not_lt : (n,m:nat)(le n m) -> ~(lt m n).
 Proof.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Qed.
 
 Theorem lt_not_le : (n,m:nat)(lt n m) -> ~(le m n).
@@ -146,7 +146,7 @@ Hints Immediate le_not_lt lt_not_le : arith v62.
 
 Theorem lt_not_sym : (n,m:nat)(lt n m) -> ~(lt m n).
 Proof.
-Induction 1; Auto with arith.
+NewInduction 1; Auto with arith.
 Qed.
 
 Theorem nat_total_order: (m,n: nat) ~ m = n -> (lt m n) \/ (lt n m).

@@ -434,7 +434,7 @@ Implicit Arguments Off.
 
 Definition Semi_Setoid_Ring_Theory_of :
   Setoid_Ring_Theory -> Semi_Setoid_Ring_Theory.
-Destruct 1.
+NewDestruct 1.
 Split; Intros; Simpl; EAuto.
 Defined.
 

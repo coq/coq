@@ -27,19 +27,19 @@ Fixpoint minus [n:nat] : nat -> nat :=
 Lemma minus_plus_simpl : 
 	(n,m,p:nat)((minus n m)=(minus (plus p n) (plus p m))).
 Proof.
-  Induction p; Simpl; Auto with arith.
+  NewInduction p; Simpl; Auto with arith.
 Qed.
 Hints Resolve minus_plus_simpl : arith v62.
 
 Lemma minus_n_O : (n:nat)(n=(minus n O)).
 Proof.
-Induction n; Simpl; Auto with arith.
+NewInduction n; Simpl; Auto with arith.
 Qed.
 Hints Resolve minus_n_O : arith v62.
 
 Lemma minus_n_n : (n:nat)(O=(minus n n)).
 Proof.
-Induction n; Simpl; Auto with arith.
+NewInduction n; Simpl; Auto with arith.
 Qed.
 Hints Resolve minus_n_n : arith v62.
 
@@ -84,7 +84,7 @@ Intros; Absurd (lt O O); Auto with arith.
 Intros p q lepq Hp gtp.
 Elim (le_lt_or_eq O p); Auto with arith.
 Auto with arith.
-Induction 1; Elim minus_n_O; Auto with arith.
+NewInduction 1; Elim minus_n_O; Auto with arith.
 Qed.
 Hints Resolve lt_minus : arith v62.
 
@@ -96,7 +96,7 @@ Qed.
 Hints Immediate lt_O_minus_lt : arith v62.
 
 Theorem pred_of_minus : (x:nat)(pred x)=(minus x (S O)).
-Induction x; Auto with arith.
+NewInduction x; Auto with arith.
 Save.
 
 

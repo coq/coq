@@ -26,8 +26,8 @@ Hints Resolve mult_plus_distr : arith v62.
 
 Lemma mult_plus_distr_r : (n,m,p:nat) (mult n (plus m p))=(plus (mult n m) (mult n p)).
 Proof.
-  Induction n. Trivial.
-  Intros. Simpl. Rewrite (H m p). Apply sym_eq. Apply plus_permute_2_in_4.
+  NewInduction n. Trivial.
+  Intros. Simpl. Rewrite (IHn m p). Apply sym_eq. Apply plus_permute_2_in_4.
 Qed.
 
 Lemma mult_minus_distr : (n,m,p:nat)((mult (minus n m) p)=(minus (mult n p) (mult m p))).
@@ -39,7 +39,7 @@ Hints Resolve mult_minus_distr : arith v62.
 
 Lemma mult_O_le : (n,m:nat)(m=O)\/(le n (mult m n)).
 Proof.
-Induction m; Simpl; Auto with arith.
+NewInduction m; Simpl; Auto with arith.
 Qed.
 Hints Resolve mult_O_le : arith v62.
 
@@ -76,16 +76,16 @@ Hints Resolve mult_n_1 : arith v62.
 
 Lemma mult_le : (m,n,p:nat) (le n p) -> (le (mult m n) (mult m p)).
 Proof.
-  Induction m. Intros. Simpl. Apply le_n.
+  NewInduction m. Intros. Simpl. Apply le_n.
   Intros. Simpl. Apply le_plus_plus. Assumption.
-  Apply H. Assumption.
+  Apply IHm. Assumption.
 Qed.
 Hints Resolve mult_le : arith.
 
 Lemma mult_lt : (m,n,p:nat) (lt n p) -> (lt (mult (S m) n) (mult (S m) p)).
 Proof.
-  Induction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
-  Intros. Exact (lt_plus_plus ? ? ? ? H0 (H ? ? H0)).
+  NewInduction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
+  Intros. Exact (lt_plus_plus ? ? ? ? H (IHm ? ? H)).
 Qed.
 
 Hints Resolve mult_lt : arith.

@@ -69,15 +69,15 @@ Grammar vernac vernac : ast :=
 
 Definition BoolTheory : (Ring_Theory xorb andb true false [b:bool]b eqb).
 Split; Simpl.
-Destruct n; Destruct m; Reflexivity.
-Destruct n; Destruct m; Destruct p; Reflexivity.
-Destruct n; Destruct m; Reflexivity.
-Destruct n; Destruct m; Destruct p; Reflexivity.
-Destruct n; Reflexivity.
-Destruct n; Reflexivity.
-Destruct n; Reflexivity.
-Destruct n; Destruct m; Destruct p; Reflexivity.
-Destruct x; Destruct y; Reflexivity Orelse Simpl; Tauto.
+NewDestruct n; NewDestruct m; Reflexivity.
+NewDestruct n; NewDestruct m; NewDestruct p; Reflexivity.
+NewDestruct n; NewDestruct m; Reflexivity.
+NewDestruct n; NewDestruct m; NewDestruct p; Reflexivity.
+NewDestruct n; Reflexivity.
+NewDestruct n; Reflexivity.
+NewDestruct n; Reflexivity.
+NewDestruct n; NewDestruct m; NewDestruct p; Reflexivity.
+NewDestruct x; NewDestruct y; Reflexivity Orelse Simpl; Tauto.
 Defined.
 
 Add Ring bool xorb andb true false [b:bool]b eqb BoolTheory [ true false ].

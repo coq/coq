@@ -105,12 +105,12 @@ Hints Resolve Rlt_le : real.
 
 (**********)
 Lemma Rle_ge : (r1,r2:R)``r1<=r2`` -> ``r2>=r1``.
-Destruct 1; Red; Auto with real.
+NewDestruct 1; Red; Auto with real.
 Save.
 
 (**********)
 Lemma Rge_le : (r1,r2:R)``r1>=r2`` -> ``r2<=r1``.
-Destruct 1; Red; Auto with real.
+NewDestruct 1; Red; Auto with real.
 Save.
 
 (**********)
@@ -1355,7 +1355,7 @@ Save.
 
 (**********)
 Lemma plus_IZR:(z,t:Z)(IZR `z+t`)==``(IZR z)+(IZR t)``.
-Destruct z; Destruct t; Intros; Auto with real.
+NewDestruct z; NewDestruct t; Intros; Auto with real.
 Simpl; Intros; Rewrite convert_add; Auto with real.
 Apply plus_IZR_NEG_POS.
 Rewrite Zplus_sym; Rewrite Rplus_sym; Apply plus_IZR_NEG_POS.
@@ -1406,7 +1406,7 @@ Save.
 
 (**********)
 Lemma eq_IZR_R0:(z:Z)``(IZR z)==0``->`z=0`.
-Destruct z; Simpl; Intros; Auto with zarith.
+NewDestruct z; Simpl; Intros; Auto with zarith.
 Case (Rlt_not_eq ``0`` (INR (convert p))); Auto with real.
 Case (Rlt_not_eq ``-(INR (convert p))`` ``0`` ); Auto with real.
 Save.

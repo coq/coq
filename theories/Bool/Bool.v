@@ -57,7 +57,7 @@ Save.
 Hints Resolve eq_true_false_abs : bool.
 
 Lemma not_true_is_false : (b:bool)~b=true->b=false.
-Destruct b.
+NewDestruct b.
 Intros.
 Red in H; Elim H.
 Reflexivity.
@@ -66,7 +66,7 @@ Reflexivity.
 Save.
 
 Lemma not_false_is_true : (b:bool)~b=false->b=true.
-Destruct b.
+NewDestruct b.
 Intros.
 Reflexivity.
 Intro H; Red in H; Elim H.
@@ -98,19 +98,19 @@ Definition eqb : bool->bool->bool :=
     end.
 
 Lemma eqb_refl : (x:bool)(Is_true (eqb x x)).
-Destruct x; Simpl; Auto with bool.
+NewDestruct x; Simpl; Auto with bool.
 Save.
 
 Lemma eqb_eq : (x,y:bool)(Is_true (eqb x y))->x=y.
-Destruct x; Destruct y; Simpl; Tauto.
+NewDestruct x; NewDestruct y; Simpl; Tauto.
 Save.
 
 Lemma Is_true_eq_true : (x:bool) (Is_true x) -> x=true.
-Destruct x; Simpl; Tauto.
+NewDestruct x; Simpl; Tauto.
 Save.
  
 Lemma Is_true_eq_true2 : (x:bool)  x=true -> (Is_true x).
-Destruct x; Simpl; Auto with bool.
+NewDestruct x; Simpl; Auto with bool.
 Save.
 
 Lemma eqb_subst : 
@@ -137,7 +137,7 @@ Trivial with bool.
 Save.
 
 Lemma eqb_prop : (a,b:bool)(eqb a b)=true -> a=b.
-Destruct a; Destruct b; Simpl; Intro;
+NewDestruct a; NewDestruct b; Simpl; Intro;
   Discriminate H Orelse Reflexivity.
 Save.
 
@@ -190,13 +190,13 @@ Save.
 Lemma negb_orb : (b1,b2:bool)
   (negb (orb b1 b2)) = (andb (negb b1) (negb b2)).
 Proof.
-  Destruct b1; Destruct b2; Simpl; Reflexivity.
+  NewDestruct b1; NewDestruct b2; Simpl; Reflexivity.
 Qed.
 
 Lemma negb_andb : (b1,b2:bool)
   (negb (andb b1 b2)) = (orb (negb b1) (negb b2)).
 Proof.
-  Destruct b1; Destruct b2; Simpl; Reflexivity.
+  NewDestruct b1; NewDestruct b2; Simpl; Reflexivity.
 Qed.
 
 Lemma negb_sym : (b,b':bool)(b'=(negb b))->(b=(negb b')).
@@ -210,13 +210,13 @@ Induction b; Simpl; Unfold not; Intro; Apply diff_true_false; Auto with bool.
 Save.
 
 Lemma eqb_negb1 : (b:bool)(eqb (negb b) b)=false.
-Destruct b.
+NewDestruct b.
 Trivial with bool.
 Trivial with bool.
 Save.
  
 Lemma eqb_negb2 : (b:bool)(eqb b (negb b))=false.
-Destruct b.
+NewDestruct b.
 Trivial with bool.
 Trivial with bool.
 Save.
@@ -244,10 +244,10 @@ Save.
 
 Lemma orb_true_intro 
     : (b1,b2:bool)(b1=true)\/(b2=true)->(orb b1 b2)=true.
-Destruct b1; Auto with bool.
-Destruct 1; Intros.
+NewDestruct b1; Auto with bool.
+NewDestruct 1; Intros.
 Elim diff_true_false; Auto with bool.
-Rewrite H0; Trivial with bool.
+Rewrite H; Trivial with bool.
 Save.
 Hints Resolve orb_true_intro : bool v62.
 
@@ -261,7 +261,7 @@ Trivial with bool.
 Save.
 
 Lemma orb_true_elim : (b1,b2:bool)(orb b1 b2)=true -> {b1=true}+{b2=true}.
-Destruct b1; [Auto with bool | Destruct b2; Auto with bool].
+NewDestruct b1; [Auto with bool | NewDestruct b2; Auto with bool].
 Save.
 Lemma orb_false_intro 
     : (b1,b2:bool)(b1=false)->(b2=false)->(orb b1 b2)=false.
@@ -271,22 +271,22 @@ Hints Resolve orb_false_intro : bool v62.
 
 Lemma orb_b_false : (b:bool)(orb b false)=b.
 Proof.
-  Destruct b; Trivial with bool.
+  NewDestruct b; Trivial with bool.
 Save.
 Hints Resolve orb_b_false : bool v62.
 
 Lemma orb_false_b : (b:bool)(orb false b)=b.
 Proof.
-  Destruct b; Trivial with bool.
+  NewDestruct b; Trivial with bool.
 Save.
 Hints Resolve orb_false_b : bool v62.
 
 Lemma orb_false_elim : 
     (b1,b2:bool)(orb b1 b2)=false -> (b1=false)/\(b2=false).
 Proof.
-  Destruct b1.
+  NewDestruct b1.
   Intros; Elim diff_true_false; Auto with bool.
-  Destruct b2.
+  NewDestruct b2.
   Intros; Elim diff_true_false; Auto with bool.
   Auto with bool.
 Save.
@@ -294,17 +294,17 @@ Save.
 Lemma orb_neg_b :
   (b:bool)(orb b (negb b))=true.
 Proof.
-  Destruct b; Reflexivity.
+  NewDestruct b; Reflexivity.
 Save.
 Hints Resolve orb_neg_b : bool v62.
 
 Lemma orb_sym : (b1,b2:bool)(orb b1 b2)=(orb b2 b1).
-Destruct b1; Destruct b2; Reflexivity.
+NewDestruct b1; NewDestruct b2; Reflexivity.
 Save.
 
 Lemma orb_assoc : (b1,b2,b3:bool)(orb b1 (orb b2 b3))=(orb (orb b1 b2) b3).
 Proof.
-  Destruct b1; Destruct b2; Destruct b3; Reflexivity.
+  NewDestruct b1; NewDestruct b2; NewDestruct b3; Reflexivity.
 Save.
 
 Hints Resolve orb_sym orb_assoc orb_b_false orb_false_b : bool v62.
@@ -332,29 +332,29 @@ Hints Resolve andb_prop2 : bool v62.
 
 Lemma andb_true_intro : (b1,b2:bool)(b1=true)/\(b2=true)->(andb b1 b2)=true.
 Proof.
-  Destruct b1; Destruct b2; Simpl; Tauto Orelse Auto with bool.
+  NewDestruct b1; NewDestruct b2; Simpl; Tauto Orelse Auto with bool.
 Save.
 Hints Resolve andb_true_intro : bool v62.
 
 Lemma andb_true_intro2 : 
   (b1,b2:bool)(Is_true b1)->(Is_true b2)->(Is_true (andb b1 b2)).
 Proof.
-  Destruct b1; Destruct b2; Simpl; Tauto.
+  NewDestruct b1; NewDestruct b2; Simpl; Tauto.
 Save.
 Hints Resolve andb_true_intro2 : bool v62.
 
 Lemma andb_false_intro1 
     : (b1,b2:bool)(b1=false)->(andb b1 b2)=false.
-Destruct b1; Destruct b2; Simpl; Tauto Orelse Auto with bool.
+NewDestruct b1; NewDestruct b2; Simpl; Tauto Orelse Auto with bool.
 Save.
 
 Lemma andb_false_intro2 
     : (b1,b2:bool)(b2=false)->(andb b1 b2)=false.
-Destruct b1; Destruct b2; Simpl; Tauto Orelse Auto with bool.
+NewDestruct b1; NewDestruct b2; Simpl; Tauto Orelse Auto with bool.
 Save.
 
 Lemma andb_b_false : (b:bool)(andb b false)=false.
-Destruct b; Auto with bool.
+NewDestruct b; Auto with bool.
 Save.
 
 Lemma andb_false_b : (b:bool)(andb false b)=false.
@@ -362,7 +362,7 @@ Trivial with bool.
 Save.
 
 Lemma andb_b_true : (b:bool)(andb b true)=b.
-Destruct b; Auto with bool.
+NewDestruct b; Auto with bool.
 Save.
 
 Lemma andb_true_b : (b:bool)(andb true b)=b.
@@ -371,22 +371,22 @@ Save.
 
 Lemma andb_false_elim : 
     (b1,b2:bool)(andb b1 b2)=false -> {b1=false}+{b2=false}.
-Destruct b1; Destruct b2; Simpl; Auto with bool.
+NewDestruct b1; NewDestruct b2; Simpl; Auto with bool.
 Save.
 Hints Resolve andb_false_elim : bool v62.
 
 Lemma andb_neg_b :
    (b:bool)(andb b (negb b))=false.
-Destruct b; Reflexivity.
+NewDestruct b; Reflexivity.
 Save.   
 Hints Resolve andb_neg_b : bool v62.
 
 Lemma andb_sym : (b1,b2:bool)(andb b1 b2)=(andb b2 b1).
-Destruct b1; Destruct b2; Reflexivity.
+NewDestruct b1; NewDestruct b2; Reflexivity.
 Save.
 
 Lemma andb_assoc : (b1,b2,b3:bool)(andb b1 (andb b2 b3))=(andb (andb b1 b2) b3).
-Destruct b1; Destruct b2; Destruct b3; Reflexivity.
+NewDestruct b1; NewDestruct b2; NewDestruct b3; Reflexivity.
 Save.
 
 Hints Resolve andb_sym andb_assoc : bool v62.
@@ -463,32 +463,32 @@ Qed.
 
 Lemma demorgan1 : (b1,b2,b3:bool)
   (andb b1 (orb b2 b3)) = (orb (andb b1 b2) (andb b1 b3)).
-Destruct b1; Destruct b2; Destruct b3; Reflexivity.
+NewDestruct b1; NewDestruct b2; NewDestruct b3; Reflexivity.
 Save.
 
 Lemma demorgan2 : (b1,b2,b3:bool)
   (andb (orb b1 b2) b3) = (orb (andb b1 b3) (andb b2 b3)).
-Destruct b1; Destruct b2; Destruct b3; Reflexivity.
+NewDestruct b1; NewDestruct b2; NewDestruct b3; Reflexivity.
 Save.
 
 Lemma demorgan3 : (b1,b2,b3:bool)
   (orb b1 (andb b2 b3)) = (andb (orb b1 b2) (orb b1 b3)).
-Destruct b1; Destruct b2; Destruct b3; Reflexivity.
+NewDestruct b1; NewDestruct b2; NewDestruct b3; Reflexivity.
 Save.
 
 Lemma demorgan4 : (b1,b2,b3:bool)
   (orb (andb b1 b2) b3) = (andb (orb b1 b3) (orb b2 b3)).
-Destruct b1; Destruct b2; Destruct b3; Reflexivity.
+NewDestruct b1; NewDestruct b2; NewDestruct b3; Reflexivity.
 Save.
 
 Lemma absoption_andb : (b1,b2:bool)
   (andb b1 (orb b1 b2)) = b1.
 Proof.
-  Destruct b1; Destruct b2; Simpl; Reflexivity.
+  NewDestruct b1; NewDestruct b2; Simpl; Reflexivity.
 Qed.
 
 Lemma absoption_orb : (b1,b2:bool)
   (orb b1 (andb b1 b2)) = b1.
 Proof.
-  Destruct b1; Destruct b2; Simpl; Reflexivity.
+  NewDestruct b1; NewDestruct b2; Simpl; Reflexivity.
 Qed.

@@ -18,7 +18,7 @@ Require Wf_nat.
 Implicit Arguments On.
 
 Lemma Zmult_zero : (x,y:Z)`x*y=0` -> `x=0` \/ `y=0`.
-Destruct x; Destruct y; Auto.
+NewDestruct x; NewDestruct y; Auto.
 Simpl; Intros; Discriminate H.
 Simpl; Intros; Discriminate H.
 Simpl; Intros; Discriminate H.
@@ -153,23 +153,23 @@ Save.
 Section diveucl.
 
 Lemma two_or_two_plus_one : (x:Z) { y:Z | `x = 2*y`}+{ y:Z | `x = 2*y+1`}. 
-Destruct x.
+NewDestruct x.
 Left ; Split with ZERO; Reflexivity.
 
-Destruct p.
-Right ; Split with (POS p0); Reflexivity.
+NewDestruct p.
+Right ; Split with (POS p); Reflexivity.
 
-Left ; Split with (POS p0); Reflexivity.
+Left ; Split with (POS p); Reflexivity.
 
 Right ; Split with ZERO; Reflexivity.
 
-Destruct p.
-Right ; Split with (NEG (add xH p0)).
+NewDestruct p.
+Right ; Split with (NEG (add xH p)).
 Rewrite NEG_xI.
 Rewrite NEG_add.
 Omega.
 
-Left ; Split with (NEG p0); Reflexivity.
+Left ; Split with (NEG p); Reflexivity.
 
 Right ; Split with `-1`; Reflexivity.
 Save.
@@ -273,7 +273,7 @@ Save.
 
 Theorem Zdiv_eucl : (b:Z)`b > 0` -> (a:Z)
   { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < b` }.
-Destruct a;
+NewDestruct a;
 
 [ (* a=0 *) Exists `(0,0)`; Omega
 | (* a = (POS p) *) Intros; Apply Zdiv_eucl_POS; Auto

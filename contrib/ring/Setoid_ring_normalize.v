@@ -453,7 +453,7 @@ Save.
 Remark interp_m_ok : (x:A)(l:varlist)
   (Aequiv (interp_m x l) (Amult x (interp_vl l))).
 Proof.
-  Destruct l;Trivial.
+  NewDestruct l;Trivial.
 Save.
 
 Lemma canonical_sum_merge_ok : (x,y:canonical_sum)

@@ -146,7 +146,7 @@ Proof.
  Intros.
  Inversion_clear H.
  Apply Acc_intro.
- Destruct y0;Intros.
+ NewDestruct y0;Intros.
  Inversion_clear H;Inversion_clear H1;Apply H0.
  Apply sp_swap.
  Apply right_sym;Auto with sets.

@@ -46,7 +46,7 @@ Definition Zabs [z:Z] : Z :=
 (*s Properties of absolu function *)
 
 Lemma Zabs_eq : (x:Z) (Zle ZERO x) -> (Zabs x)=x.
-Destruct x; Auto with arith.
+NewDestruct x; Auto with arith.
 Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
 Save.
 

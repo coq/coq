@@ -1147,7 +1147,7 @@ Save.
 Theorem Zmult_Zopp_Zopp:
   (x,y:Z) (Zmult (Zopp x) (Zopp y)) = (Zmult x y).
 Proof.
-Destruct x; Destruct y; Reflexivity.
+NewDestruct x; NewDestruct y; Reflexivity.
 Save.
 
 Theorem weak_Zmult_plus_distr_r:

@@ -189,7 +189,7 @@ Lemma False_rect: (C:Type)False->C.
 Proof.
   Intros.
   Cut Empty_set.
-  Destruct 1.
+  NewDestruct 1.
   Elim H.
 Qed.
 

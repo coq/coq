@@ -32,7 +32,7 @@ Qed.
 
 Lemma simpl_plus_l : (n,m,p:nat)((plus n m)=(plus n p))->(m=p).
 Proof.
-Induction n ; Simpl ; Auto with arith.
+NewInduction n ; Simpl ; Auto with arith.
 Qed.
 
 Lemma plus_assoc_l : (n,m,p:nat)((plus n (plus m p))=(plus (plus n m) p)).
@@ -54,18 +54,18 @@ Hints Resolve plus_assoc_r : arith v62.
 
 Lemma simpl_le_plus_l : (p,n,m:nat)(le (plus p n) (plus p m))->(le n m).
 Proof.
-Induction p; Simpl; Auto with arith.
+NewInduction p; Simpl; Auto with arith.
 Qed.
 
 Lemma le_reg_l : (n,m,p:nat)(le n m)->(le (plus p n) (plus p m)).
 Proof.
-Induction p; Simpl; Auto with arith.
+NewInduction p; Simpl; Auto with arith.
 Qed.
 Hints Resolve le_reg_l : arith v62.
 
 Lemma le_reg_r : (a,b,c:nat) (le a b)->(le (plus a c) (plus b c)).
 Proof.
-Induction 1 ; Simpl; Auto with arith.
+NewInduction 1 ; Simpl; Auto with arith.
 Qed.
 Hints Resolve le_reg_r : arith v62.
 
@@ -78,7 +78,7 @@ Qed.
 
 Lemma le_plus_l : (n,m:nat)(le n (plus n m)).
 Proof.
-Induction n; Simpl; Auto with arith.
+NewInduction n; Simpl; Auto with arith.
 Qed.
 Hints Resolve le_plus_l : arith v62.
 
@@ -96,12 +96,12 @@ Hints Resolve le_plus_trans : arith v62.
 
 Lemma simpl_lt_plus_l : (n,m,p:nat)(lt (plus p n) (plus p m))->(lt n m).
 Proof.
-Induction p; Simpl; Auto with arith.
+NewInduction p; Simpl; Auto with arith.
 Qed.
 
 Lemma lt_reg_l : (n,m,p:nat)(lt n m)->(lt (plus p n) (plus p m)).
 Proof.
-Induction p; Simpl; Auto with arith.
+NewInduction p; Simpl; Auto with arith.
 Qed.
 Hints Resolve lt_reg_l : arith v62.
 
@@ -138,15 +138,15 @@ Qed.
 
 Lemma plus_is_O : (m,n:nat) (plus m n)=O -> m=O /\ n=O.
 Proof.
-  Destruct m; Auto.
+  NewDestruct m; Auto.
   Intros. Discriminate H.
 Qed.
 
 Lemma plus_is_one : 
       (m,n:nat) (plus m n)=(S O) -> {m=O /\ n=(S O)}+{m=(S O) /\ n=O}.
 Proof.
-  Destruct m; Auto.
-  Destruct n; Auto.
+  NewDestruct m; Auto.
+  NewDestruct n; Auto.
   Intros. 
   Simpl in H. Discriminate H.
 Qed.

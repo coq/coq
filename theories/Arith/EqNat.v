@@ -21,17 +21,17 @@ Fixpoint  eq_nat [n:nat] : nat -> Prop :=
           end.
 
 Theorem eq_nat_refl : (n:nat)(eq_nat n n).
-Induction n; Simpl; Auto.
+NewInduction n; Simpl; Auto.
 Qed.
 Hints Resolve eq_nat_refl : arith v62.
 
 Theorem eq_eq_nat : (n,m:nat)(n=m)->(eq_nat n m).
-Induction 1; Trivial with arith.
+NewInduction 1; Trivial with arith.
 Qed.
 Hints Immediate eq_eq_nat : arith v62.
 
 Theorem eq_nat_eq : (n,m:nat)(eq_nat n m)->(n=m).
-Induction n; Induction m; Simpl; Contradiction Orelse Auto with arith.
+NewInduction n; NewInduction m; Simpl; Contradiction Orelse Auto with arith.
 Qed.
 Hints Immediate eq_nat_eq : arith v62.
 
@@ -40,15 +40,15 @@ Intros; Replace m with n; Auto with arith.
 Qed.
 
 Theorem eq_nat_decide : (n,m:nat){(eq_nat n m)}+{~(eq_nat n m)}.
-Induction n.
-Destruct m.
+NewInduction n.
+NewDestruct m.
 Auto with arith.
-Intro; Right; Red; Trivial with arith.
-Destruct m.
+Intros; Right; Red; Trivial with arith.
+NewDestruct m.
 Right; Red; Auto with arith.
 Intros.
 Simpl.
-Apply H.
+Apply IHn.
 Defined.
 
 Fixpoint  beq_nat [n:nat] : nat -> bool :=
@@ -61,7 +61,7 @@ Fixpoint  beq_nat [n:nat] : nat -> bool :=
 
 Lemma beq_nat_refl : (x:nat)true=(beq_nat x x).
 Proof.
-  Induction x; Simpl; Auto.
+  NewInduction x; Simpl; Auto.
 Qed.
 
 Definition beq_nat_eq : (x,y:nat)true=(beq_nat x y)->x=y.
