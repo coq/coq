@@ -11,6 +11,7 @@
 Require Export Plus.
 Require Export Minus.
 Require Export Lt.
+Require Export Le.
 
 V7only [Import nat_scope.].
 Open Local Scope nat_scope.
@@ -80,7 +81,6 @@ Intro; Elim mult_sym; Auto with arith.
 Qed.
 Hints Resolve mult_n_1 : arith v62.
 
-
 Lemma mult_le : (m,n,p:nat) (le n p) -> (le (mult m n) (mult m p)).
 Proof.
   NewInduction m. Intros. Simpl. Apply le_n.
@@ -93,6 +93,23 @@ Lemma le_mult_right : (m,n,p:nat)(le m n)->(le (mult m p) (mult n p)).
 Intros m n p H.
 Rewrite mult_sym. Rewrite (mult_sym n).
 Auto with arith.
+Qed.
+
+Lemma le_mult_mult :
+  (m,n,p,q:nat)(le m n)->(le p q)->(le (mult m p) (mult n q)).
+Proof.
+Intros m n p q Hmn Hpq; NewInduction Hmn.
+NewInduction Hpq.
+(* m*p<=m*p *)
+Apply le_n.
+(* m*p<=m*m0 -> m*p<=m*(S m0) *)
+Rewrite <- mult_n_Sm; Apply le_trans with (mult m m0).
+Assumption.
+Apply le_plus_l.
+(* m*p<=m0*q -> m*p<=(S m0)*q *)
+Simpl; Apply le_trans with (mult m0 q).
+Assumption.
+Apply le_plus_r.
 Qed.
 
 Lemma mult_lt : (m,n,p:nat) (lt n p) -> (lt (mult (S m) n) (mult (S m) p)).
