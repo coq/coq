@@ -1,12 +1,9 @@
 
 (* $Id$ *)
 
-(* Ici, on trie la ligne de commande pour en extraire les options spécifiques
-   à coqmktop, puis on appelle "ocamlc" (ou "ocamlopt")
-   avec les autres options et la liste des fichiers à linker.
-
-   On essaye au maximum d'utiliser les modules Sys et Filename pour que la
-   portabilité soit maximale. *)
+(* coqmktop is a script to link Coq, analogous to ocamlmktop.
+   The command line contains options specific to coqmktop, options for the
+   Ocaml linker and files to link (in addition to the default Coq files). *)
 
 open Unix
 
@@ -99,8 +96,8 @@ let files_to_link userfiles =
   let modules = List.map module_of_file tolink in
   (modules, tolink)
 
-(*Gives the list of all the directories under dir*)
-(*Uses Unix, sorry... But you can try to do the same thing without it.*)
+(* Gives the list of all the directories under [dir].
+   Uses [Unix] (it is hard to do without it). *)
 let all_subdirs dir =
   let l = ref [] in
   let add f = l := f :: !l in
@@ -189,7 +186,7 @@ let clean file =
     rm (basename ^ ".cmx")
   end
 
-(*Gives all modules in dir. Uses .cmi. Unix again sorry again*)
+(* Gives all modules in [dir]. Uses [.cmi] suffixes. Uses [Unix]. *)
 let all_modules_in_dir dir =
   try
     let lst = ref []
@@ -207,16 +204,16 @@ let all_modules_in_dir dir =
   with Unix.Unix_error (_,"opendir",_) ->
     failwith ("all_modules_in_dir: directory "^dir^" not found")
 
-(*Gives a part of command line (corresponding to dir) for extract_crc*)
+(* Gives a part of command line (corresponding to dir) for [extract_crc] *)
 let crc_cmd dir =
   " -I "^dir^(List.fold_right (fun x y -> " "^x^y) (all_modules_in_dir dir)
   "")
 
-(*Same as crc_cmd but recursively*)
+(* Same as [crc_cmd] but recursively *)
 let rec_crc_cmd dir =
   List.fold_right (fun x y -> x^y) (List.map crc_cmd (all_subdirs dir)) ""
 
-(*Creates another temporary file for Dynlink if needed*)
+(* Creates another temporary file for Dynlink if needed *)
 let tmp_dynlink()=
   let tmp = Filename.temp_file "coqdynlink" ".ml" in
   let _ = Sys.command ("echo \"Dynlink.init();;\" > "^tmp) in
@@ -230,7 +227,7 @@ let tmp_dynlink()=
   in
   tmp
 
-(*Initializes the kind of loading in the main program*)
+(* Initializes the kind of loading in the main program *)
 let declare_loading_string () =
   if !opt then
     "Mltop.set Mltop.Native;;\n"
@@ -251,7 +248,7 @@ let create_tmp_main_file modules =
     output_string oc "List.iter Mltop.add_known_module [\"";
     output_string oc (String.concat "\";\"" modules);
     output_string oc "\"];;\n";
-    (*Initializes the kind of loading*)
+    (* Initializes the kind of loading *)
     output_string oc (declare_loading_string());
     (* Start the right toplevel loop: Coq or Coq_searchisos *)
     if !searchisos then 

@@ -160,7 +160,6 @@ let close_section export s =
   pop_path_prefix ();
   add_entry 
     (make_path (id_of_string s) OBJ) (ClosedSection (export, s,after'));
-  add_frozen_state ();
   (sp,after,fs)
 
 (* The following function exports the whole library segment, that will be 

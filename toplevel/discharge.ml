@@ -363,6 +363,7 @@ let close_section _ s =
   Summary.unfreeze_lost_summaries fs;
   let mc = segment_contents decls in
   add_anonymous_leaf (in_end_section (sec_sp,mc));
+  add_frozen_state ();
   if Options.immediate_discharge then ()
   else
     List.iter process_operation (List.rev ops)

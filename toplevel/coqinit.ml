@@ -7,9 +7,9 @@ open Toplevel
 
 let set_debug () = Options.debug := true
 
-(* Load of rcfile.
- * rcfile is either $HOME/.coqrc.VERSION, or $HOME/.coqrc if the first one
- * does not exist. *)
+(* Loading of the ressource file.
+   rcfile is either $HOME/.coqrc.VERSION, or $HOME/.coqrc if the first one
+  does not exist. *)
 
 let rcfile = ref (Filename.concat home ".coqrc")
 let rcfile_specified = ref false
@@ -31,11 +31,11 @@ let load_rcfile() =
       else if file_readable_p !rcfile then
         Vernac.load_vernac false !rcfile
       else ()
-(*
+	(*
 	if Options.is_verbose() then 
 	  mSGNL [< 'sTR ("No .coqrc or .coqrc."^Coq_config.version^
 			 " found. Skipping rcfile loading.") >]
-*)
+	*)
     with e ->
       (mSGNL [< 'sTR"Load of rcfile failed." >];
        raise e)

@@ -642,6 +642,9 @@ dependcoq: beforedepend
 
 ML4FILESML = $(ML4FILES:.ml4=.ml)
 
+ml4filesml:
+	$(MAKE) -f Makefile.dep $(ML4FILESML)
+
 depend: beforedepend
 # 1. We express dependencies of the .ml files w.r.t their grammars
 	rm -f .depend.camlp4

@@ -17,7 +17,7 @@ let memory_stat = ref false
 
 let print_memory_stat () = 
   if !memory_stat then
-    Format.printf "memory use = %d kbytes\n" (heap_size_kb ())
+    Format.printf "total heap size = %d kbytes\n" (heap_size_kb ())
 
 let _ = at_exit print_memory_stat
 
@@ -82,10 +82,9 @@ let re_exec s =
     Unix.execvp newprog Sys.argv
   end
 
-(* Parsing of the command line.
- *
- * We no longer use Arg.parse, in order to use share Usage.print_usage 
- * between coqtop and coqc. *)
+(*s Parsing of the command line.
+    We no longer use [Arg.parse], in order to use share [Usage.print_usage]
+    between coqtop and coqc. *)
 
 let usage () =
   if !batch_mode then
@@ -105,7 +104,7 @@ let parse_args () =
     | ("-I"|"-include") :: []       -> usage ()
 
     | "-R" :: d :: p :: rem -> set_rec_include d p; parse rem
-    | "-R" :: ([] | _ :: _) -> usage ()
+    | "-R" :: ([] | [_]) -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem
 
@@ -209,4 +208,4 @@ let start () =
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
   Toplevel.loop()
 
-(* Coqtop.start will be called by the code produced by coqmktop *)
+(* [Coqtop.start] will be called by the code produced by coqmktop *)
