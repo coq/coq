@@ -1042,6 +1042,9 @@ Qed.
 Axiom times_convert :
   (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
 
+Syntactic Definition times1 := times.
+Syntactic Definition times1_convert := times_convert.
+
 (** Multiplication on integers *)
 Definition Zmult := [x,y:Z]
   <Z>Cases x of
