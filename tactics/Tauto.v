@@ -1,7 +1,7 @@
 
 (* $Id$ *)
 
-Declare ML Module "Tauto".
+Declare ML Module "tauto".
 
 Grammar tactic simple_tactic: Ast :=
   tauto [ "Tauto" ] -> [(Tauto)]
