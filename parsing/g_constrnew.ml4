@@ -195,7 +195,9 @@ GEXTEND Gram
       [ c=atomic_constr -> c
       | c=match_constr -> c
       | "("; c = operconstr; ")" ->
-          CNotation(loc,"( _ )",[c]) ] ]
+          (match c with
+              CNumeral(_,Bignat.POS _) -> CNotation(loc,"( _ )",[c])
+            | _ -> c) ] ]
   ;
   binder_constr:
     [ [ "forall"; bl = binder_list; ","; c = operconstr LEVEL "200" ->
