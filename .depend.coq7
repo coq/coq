@@ -145,7 +145,6 @@ theories7/Wellfounded/Wellfounded.vo: theories7/Wellfounded/Wellfounded.v theori
 theories7/Wellfounded/Well_Ordering.vo: theories7/Wellfounded/Well_Ordering.v theories7/Logic/Eqdep.vo
 theories7/Wellfounded/Lexicographic_Product.vo: theories7/Wellfounded/Lexicographic_Product.v theories7/Logic/Eqdep.vo theories7/Relations/Relation_Operators.vo theories7/Wellfounded/Transitive_Closure.vo
 theories7/Reals/Rdefinitions.vo: theories7/Reals/Rdefinitions.v theories7/ZArith/ZArith_base.vo
-theories7/Reals/Rsyntax.vo: theories7/Reals/Rsyntax.v theories7/Reals/Rdefinitions.vo
 theories7/Reals/Raxioms.vo: theories7/Reals/Raxioms.v theories7/ZArith/ZArith_base.vo theories7/Reals/Rsyntax.vo
 theories7/Reals/RIneq.vo: theories7/Reals/RIneq.v theories7/Reals/Raxioms.vo contrib7/ring/ZArithRing.vo contrib7/omega/Omega.vo contrib7/field/Field.vo
 theories7/Reals/DiscrR.vo: theories7/Reals/DiscrR.v theories7/Reals/RIneq.vo contrib7/omega/Omega.vo
@@ -207,9 +206,10 @@ theories7/Lists/PolyListSyntax.vo: theories7/Lists/PolyListSyntax.v
 theories7/ZArith/Zsyntax.vo: theories7/ZArith/Zsyntax.v theories7/ZArith/BinInt.vo
 theories7/ZArith/zarith_aux.vo: theories7/ZArith/zarith_aux.v theories7/ZArith/BinInt.vo theories7/ZArith/Zcompare.vo theories7/ZArith/Zorder.vo theories7/ZArith/Zmin.vo theories7/ZArith/Zabs.vo
 theories7/ZArith/fast_integer.vo: theories7/ZArith/fast_integer.v theories7/NArith/BinPos.vo theories7/NArith/BinNat.vo theories7/ZArith/BinInt.vo theories7/ZArith/Zcompare.vo theories7/Arith/Mult.vo
+theories7/Reals/Rsyntax.vo: theories7/Reals/Rsyntax.v theories7/Reals/Rdefinitions.vo
 contrib7/omega/OmegaLemmas.vo: contrib7/omega/OmegaLemmas.v theories7/ZArith/ZArith_base.vo
 contrib7/omega/Omega.vo: contrib7/omega/Omega.v theories7/ZArith/ZArith_base.vo contrib7/omega/OmegaLemmas.vo theories7/ZArith/Zhints.vo
-contrib7/romega/ReflOmegaCore.vo: contrib7/romega/ReflOmegaCore.v theories7/Arith/Arith.vo theories7/Lists/PolyList.vo theories7/Bool/Bool.vo theories7/ZArith/ZArith_base.vo contrib7/omega/OmegaLemmas.vo
+contrib7/romega/ReflOmegaCore.vo: contrib7/romega/ReflOmegaCore.v theories7/Arith/Arith.vo theories7/Lists/PolyList.vo theories7/Bool/Bool.vo theories7/ZArith/ZArith.vo contrib7/omega/OmegaLemmas.vo theories7/Logic/Decidable.vo
 contrib7/romega/ROmega.vo: contrib7/romega/ROmega.v contrib7/omega/Omega.vo contrib7/romega/ReflOmegaCore.vo
 contrib7/ring/ArithRing.vo: contrib7/ring/ArithRing.v contrib7/ring/Ring.vo theories7/Arith/Arith.vo theories7/Logic/Eqdep_dec.vo
 contrib7/ring/Ring_normalize.vo: contrib7/ring/Ring_normalize.v contrib7/ring/Ring_theory.vo contrib7/ring/Quote.vo
@@ -226,14 +226,6 @@ contrib7/field/Field_Compl.vo: contrib7/field/Field_Compl.v
 contrib7/field/Field_Theory.vo: contrib7/field/Field_Theory.v theories7/Arith/Peano_dec.vo contrib7/ring/Ring.vo contrib7/field/Field_Compl.vo
 contrib7/field/Field_Tactic.vo: contrib7/field/Field_Tactic.v contrib7/ring/Ring.vo contrib7/field/Field_Compl.vo contrib7/field/Field_Theory.vo
 contrib7/field/Field.vo: contrib7/field/Field.v contrib7/field/Field_Compl.vo contrib7/field/Field_Theory.vo contrib7/field/Field_Tactic.vo
-contrib7/correctness/Arrays.vo: contrib7/correctness/Arrays.v contrib7/correctness/ProgInt.vo
-contrib7/correctness/Correctness.vo: contrib7/correctness/Correctness.v contrib7/correctness/Tuples.vo contrib7/correctness/ProgInt.vo contrib7/correctness/ProgBool.vo theories7/ZArith/Zwf.vo contrib7/correctness/Arrays.vo
-contrib7/correctness/Exchange.vo: contrib7/correctness/Exchange.v contrib7/correctness/ProgInt.vo contrib7/correctness/Arrays.vo
-contrib7/correctness/ArrayPermut.vo: contrib7/correctness/ArrayPermut.v contrib7/correctness/ProgInt.vo contrib7/correctness/Arrays.vo contrib7/correctness/Exchange.vo contrib7/omega/Omega.vo
-contrib7/correctness/ProgBool.vo: contrib7/correctness/ProgBool.v theories7/ZArith/ZArith.vo theories7/Arith/Bool_nat.vo theories7/Bool/Sumbool.vo
-contrib7/correctness/ProgInt.vo: contrib7/correctness/ProgInt.v theories7/ZArith/ZArith.vo theories7/ZArith/ZArith_dec.vo
-contrib7/correctness/Sorted.vo: contrib7/correctness/Sorted.v contrib7/correctness/Arrays.vo contrib7/correctness/ArrayPermut.vo contrib7/ring/ZArithRing.vo contrib7/omega/Omega.vo
-contrib7/correctness/Tuples.vo: contrib7/correctness/Tuples.v
 contrib7/fourier/Fourier_util.vo: contrib7/fourier/Fourier_util.v theories7/Reals/Rbase.vo
 contrib7/fourier/Fourier.vo: contrib7/fourier/Fourier.v contrib7/fourier/Fourier_util.vo contrib7/field/Field.vo theories7/Reals/DiscrR.vo
 contrib7/cc/CCSolve.vo: contrib7/cc/CCSolve.v
