@@ -189,7 +189,7 @@ let make_arity_signature env dep indf =
     (* We need names everywhere *)
     name_context env
       ((Anonymous,None,build_dependent_inductive env indf)::arsign)
-      (* Costly: would be better to name one for all at definition time *)
+      (* Costly: would be better to name once for all at definition time *)
   else
     (* No need to enforce names *)
     arsign
