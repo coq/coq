@@ -112,7 +112,7 @@ let pr_bar () = str "|"
 let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
-    | None -> [< >]
+    | None -> (mt ())
     | Some(r,spfl) ->
         pr_rule r ++
            match spfl with
@@ -321,7 +321,7 @@ module MySearch = Explore.Make(MySearchProblem)
 let make_initial_state n gl dblist localdb =
   { MySearchProblem.depth = n;
     MySearchProblem.tacres = tclIDTAC gl;
-    MySearchProblem.last_tactic = [< >];
+    MySearchProblem.last_tactic = (mt ());
     MySearchProblem.dblist = dblist;
     MySearchProblem.localdb = [localdb] }
 
