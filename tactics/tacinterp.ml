@@ -1107,7 +1107,7 @@ and eval_tactic ist = function
   | TacArg a -> assert false
 
 and interp_ltac_qualid is_applied ist gl (loc,qid as lqid) =
-  try val_interp ist gl (lookup qid)
+  try val_interp {lfun=[];lmatch=[];debug=ist.debug} gl (lookup qid)
   with Not_found -> interp_pure_qualid is_applied (pf_env gl) lqid
 
 and interp_ltac_reference isapplied ist gl = function
