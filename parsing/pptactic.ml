@@ -101,7 +101,7 @@ let pr_with_bindings prc (c,bl) = prc c ++ hv 0 (pr_bindings prc bl)
 let rec pr_intro_pattern = function
   | IntroOrAndPattern pll ->
       str "[" ++
-      hv 0 (prlist_with_sep pr_coma (prlist_with_sep spc pr_intro_pattern) pll)
+      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
       ++ str "]"
 (*
   | IntroAndPattern pl ->
@@ -229,7 +229,7 @@ let rec pr_rawgen prtac x =
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
 
 let rec pr_raw_tacarg_using_rule pr_gen = function
-  | Egrammar.TacTerm s :: l, al -> str s ++ pr_raw_tacarg_using_rule pr_gen (l,al)
+  | Egrammar.TacTerm s :: l, al -> spc () ++ str s ++ pr_raw_tacarg_using_rule pr_gen (l,al)
   | Egrammar.TacNonTerm _ :: l, a :: al -> pr_gen a ++ pr_raw_tacarg_using_rule  pr_gen (l,al)
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
@@ -286,7 +286,7 @@ let rec pr_generic prtac x =
       with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
 let rec pr_tacarg_using_rule prt = function
-  | Egrammar.TacTerm s :: l, al -> str s ++ pr_tacarg_using_rule prt (l,al)
+  | Egrammar.TacTerm s :: l, al -> spc () ++ str s ++ pr_tacarg_using_rule prt (l,al)
   | Egrammar.TacNonTerm _ :: l, a :: al -> pr_generic prt a ++ pr_tacarg_using_rule prt (l,al)
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
@@ -327,7 +327,7 @@ and pr_atom1 = function
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 t
   | TacIntroPattern (_::_ as p) -> 
-      hov 1 (str "Intro" ++ spc () ++ prlist_with_sep spc pr_intro_pattern p)
+      hov 1 (str "Intros" ++ spc () ++ prlist_with_sep spc pr_intro_pattern p)
   | TacIntrosUntil h ->
       hv 1 (str "Intros until" ++ pr_arg pr_quantified_hypothesis h)
   | TacIntroMove (None,None) as t -> pr_atom0 t
