@@ -80,6 +80,10 @@ let locate_tactic_call loc = function
   | VTactic (_,t) -> VTactic (loc,t)
   | v -> v
 
+let locate_error_in_file dir = function
+  | Stdpp.Exc_located (loc,e) -> Error_in_file ("",(true,dir,loc),e)
+  | e -> Error_in_file ("",(true,dir,dummy_loc),e)
+
 let catch_error loc tac g =
   try tac g
   with e when loc <> dummy_loc ->
@@ -691,12 +695,12 @@ let rec intern_atomic lf ist x =
   | TacExtend (loc,opn,l) ->
       let _ = lookup_tactic opn in
       TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
-  | TacAlias (loc,s,l,body) ->
+  | TacAlias (loc,s,l,(dir,body)) ->
       let (l1,l2) = ist.ltacvars in
       let ist' = { ist with ltacvars = ((List.map fst l)@l1,l2) } in
-      TacAlias
-	(loc,s,List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l,
-	intern_tactic ist' body)
+      let l = List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l in
+      try TacAlias (loc,s,l,(dir,intern_tactic ist' body))
+      with e -> raise (locate_error_in_file (string_of_dirpath dir) e)
 
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
 
@@ -1717,12 +1721,13 @@ and interp_atomic ist gl = function
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
       fun gl -> vernac_tactic (opn,List.map (interp_genarg ist gl) l) gl
-  | TacAlias (loc,_,l,body) -> fun gl ->
+  | TacAlias (loc,_,l,(_,body)) -> fun gl ->
     let rec f x = match genarg_tag x with
     | IntArgType -> VInteger (out_gen globwit_int x)
-    | StringArgType | BoolArgType | PreIdentArgType
     | IntOrVarArgType -> 
 	VInteger (interp_int_or_var ist (out_gen globwit_int_or_var x))
+    | PreIdentArgType ->
+        VIdentifier (id_of_string (out_gen globwit_pre_ident x))
     | IdentArgType -> 
 	VConstr 
 	  (mkVar (interp_hyp ist gl (dummy_loc,out_gen globwit_ident x)))
@@ -1736,6 +1741,7 @@ and interp_atomic ist gl = function
     | ConstrMayEvalArgType ->
 	VConstr
           (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
+    | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
     | TacticArgType -> 
 	val_interp ist gl (out_gen globwit_tactic x)
@@ -1938,8 +1944,9 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* For extensions *)
   | TacExtend (_loc,opn,l) ->
       TacExtend (loc,opn,List.map (subst_genarg subst) l)
-  | TacAlias (_,s,l,body) ->
-      TacAlias (loc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l,subst_tactic subst body)
+  | TacAlias (_,s,l,(dir,body)) ->
+      TacAlias (loc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l,
+        (dir,subst_tactic subst body))
 
 and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacAtom (_loc,t) -> TacAtom (loc, subst_atomic subst t)
