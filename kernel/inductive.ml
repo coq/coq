@@ -51,16 +51,27 @@ let mis_recarg mis = mis.mis_mip.mind_listrec
 let mis_typename mis = mis.mis_mip.mind_typename
 let mis_consnames mis = mis.mis_mip.mind_consnames
 
+type constructor_summary = {
+  cs_cstr : constructor;
+  cs_params : constr list;
+  cs_nargs : int;
+  cs_args : (name * constr) list;
+  cs_concl_realargs : constr array
+}
+
 (* A light version of mind_specif_of_mind with pre-splitted args *)
-type inductive_summary =
-    {fullmind : constr;
-     mind : inductive;
-     nparams : int;
-     nrealargs : int;
-     nconstr : int;
-     params : constr list;
-     realargs : constr list;
-     arity : constr}
+(* and a receipt to build a summary of constructors *)
+type inductive_summary = {
+  fullmind : constr;
+  mind : inductive;
+  params : constr list;
+  realargs : constr list;
+  nparams : int;
+  nrealargs : int;
+  nconstr : int;
+  make_arity : inductive -> constr list -> (name * constr) list * sorts;
+  make_constrs : inductive -> constr list -> constructor_summary array
+}
 
 let is_recursive listind = 
   let rec one_is_rec rvec = 
@@ -174,3 +185,13 @@ let ith_constructor_path_of_inductive_path ind_sp i = (ind_sp,i)
 
 let inductive_of_constructor ((ind_sp,i),args) = (ind_sp,args)
 let ith_constructor_of_inductive (ind_sp,args) i = ((ind_sp,i),args)
+
+let build_dependent_constructor cs =
+  applist
+    (mkMutConstruct cs.cs_cstr,
+     (List.map (lift cs.cs_nargs) cs.cs_params)@(rel_list 0 cs.cs_nargs))
+
+let build_dependent_inductive is =
+  applist 
+    (mkMutInd is.mind,
+     (List.map (lift is.nparams) is.params)@(rel_list 0 is.nrealargs))

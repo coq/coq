@@ -63,20 +63,53 @@ val mis_consnames : mind_specif -> identifier array
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet
 
-(*s A light version of [mind_specif_of_mind] with pre-splitted args
+(*s This type gathers useful informations about some instance of a constructor
+    relatively to some implicit context (the current one)
+
+    If [cs_cstr] is a constructor in [(I p1...pm a1...an)] then
+    [cs_params] is [p1...pm] and the type of [MutConstruct(cs_cstr)
+    p1...pn] is [(cs_args)(I p1...pm cs_concl_realargs)] where [cs_args]
+    and [cs_params] are relative to the current env and [cs_concl_realargs]
+    is relative to the current env enriched by [cs_args]
+*)
+
+type constructor_summary = {
+  cs_cstr : constructor;
+  cs_params : constr list;
+  cs_nargs : int;
+  cs_args : (name * constr) list;
+  cs_concl_realargs : constr array
+}
+
+(*s A variant of [mind_specif_of_mind] with pre-splitted args
+
    Invariant: We have \par
    [Hnf (fullmind)] = [DOPN(AppL,[|MutInd mind;..params..;..realargs..|])] \par
    with [mind]  = [((sp,i),localvars)] for some [sp, i, localvars].
+
+   [make_constrs] is a receipt to build constructor instantiated by
+   local vars and params; it is a closure which does not need to be
+   lifted; it must be applied to [mind] and [params] to get the constructors
+   correctly lifted and instantiated
+
+   [make_arity] is a receipt to build the arity instantiated by local
+   vars and by params; it is a closure which does not need to be
+   lifted. Arity is pre-decomposed into its real parameters and its
+   sort; it must be applied to [mind] and [params] to get the arity
+   correctly lifted and instantiated
  *)
+
 type inductive_summary = {
   fullmind : constr;
   mind : inductive;
+  params : constr list;
+  realargs : constr list;
   nparams : int;
   nrealargs : int;
   nconstr : int;
-  params : constr list;
-  realargs : constr list;
-  arity : constr }
+  make_arity : inductive -> constr list -> (name * constr) list * sorts;
+  make_constrs : inductive -> constr list -> constructor_summary array
+}
 
 (*s Declaration of inductive types. *)
 
@@ -129,3 +162,11 @@ val inductive_path_of_constructor_path : constructor_path -> inductive_path
 
 val ith_constructor_path_of_inductive_path :
   inductive_path -> int -> constructor_path
+
+(* This builds [(ci params (Rel 1)...(Rel ci_nargs))] which is the argument
+   of predicate in a cases branch *)
+val build_dependent_constructor : constructor_summary -> constr
+
+(* This builds [(I params (Rel 1)...(Rel nrealargs))] which is the argument
+   of predicate in a cases branch *)
+val build_dependent_inductive : inductive_summary -> constr
