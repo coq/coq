@@ -928,6 +928,8 @@ let whd_meta metamap c = match kind_of_term c with
 let plain_instance s c = 
   let rec irec u = match kind_of_term u with
     | IsMeta p -> (try List.assoc p s with Not_found -> u)
+    | IsCast (m,_) when isMeta m ->
+	(try List.assoc (destMeta m) s with Not_found -> u)
     | _ -> map_constr irec u
   in 
   if s = [] then c else irec c
@@ -1148,8 +1150,6 @@ let rec whd_ise sigma c =
 	if Evd.is_defined sigma ev then
           whd_ise sigma (existential_value sigma (ev,args))
 	else raise (Uninstantiated_evar ev)
-  | IsCast (c,_) -> whd_ise sigma c
-(*  | IsSort (Type _) -> mkSort (Type dummy_univ)*)
   | _ -> c
 
 
@@ -1158,10 +1158,6 @@ let rec whd_ise1 sigma c =
   match kind_of_term c with
     | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
 	whd_ise1 sigma (existential_value sigma (ev,args))
-    | IsCast (c,_) -> whd_ise1 sigma c
-    (* A quoi servait cette ligne ???
-    | IsSort (Type _) -> mkSort (Type dummy_univ)
-    *)
     | _ -> c
 
 let nf_ise1 sigma = local_strong (whd_ise1 sigma)
