@@ -1521,7 +1521,8 @@ let xlate_vernac =
        (CT_ident s, CT_varg_list (List.map coerce_genarg_to_VARG l))
   | VernacDebug b -> xlate_error "TODO: Debug On/Off"
 
-  | VernacList l -> xlate_error "Not treated here"
+  | (VernacList _ | VernacV7only _ | VernacV8only _) ->
+      xlate_error "Not treated here"
   | VernacNop -> CT_proof_no_op
   | VernacComments l -> 
       CT_scomments(CT_scomment_content_list (List.map xlate_comment l))
@@ -1547,10 +1548,13 @@ let xlate_vernac =
   | VernacDeclareModule _ -> xlate_error "TODO: vernac"
   | VernacDeclareModuleType _ -> xlate_error "TODO: vernac"
 
-let xlate_vernac_list =
+let rec xlate_vernac_list =
  function
    | VernacList (v::l) ->
        CT_command_list
          (xlate_vernac (snd v), List.map (fun (_,x) -> xlate_vernac x) l)
+   | VernacV7only v -> 
+       if !Options.v7 then xlate_vernac_list v
+       else xlate_error "Unknown command"
    | VernacList [] -> xlate_error "xlate_command_list"
    | _ -> xlate_error "Not a list of commands";;

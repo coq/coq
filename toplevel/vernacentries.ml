@@ -1029,6 +1029,7 @@ let _ =
 let interp c = match c with
   (* Control (done in vernac) *)
   | (VernacTime _ | VernacVar _ | VernacList _ | VernacLoad _) -> assert false
+  | (VernacV7only _ | VernacV8only _) -> assert false
 
   (* Syntax *)
   | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
