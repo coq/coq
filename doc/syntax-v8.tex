@@ -590,11 +590,12 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \NT{tactic} ~\KWD{;}~\TERM{[} ~\OPT{\NT{tactic-seq}} ~\TERM{]}
          &5 &\RNAME{Then-seq}
 %%
-\nlsep \TERM{try} ~\NT{tactic}     &3 &\RNAME{Try}
+\nlsep \TERM{try} ~\NT{tactic}     &3R &\RNAME{Try}
 \nlsep \TERM{do} ~\NT{tactic}
 \nlsep \TERM{repeat} ~\NT{tactic}
 \nlsep \TERM{progress} ~\NT{tactic}
 \nlsep \TERM{info} ~\NT{tactic}
+\nlsep \TERM{abstract}~\NTL{tactic}{2}~\OPTGR{\TERM{using}~\NT{ident}}
 %%
 \nlsep \NT{tactic} ~\TERMbarbar ~\NT{tactic} &2R &\RNAME{Orelse}
 %%
@@ -606,7 +607,6 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
        ~\OPT{\TERMbar}~\OPT{\NT{match-goal-rules}} ~\KWD{end}
 \nlsep \KWD{match} ~\NT{tactic} ~\KWD{with}
        ~\OPT{\TERMbar}~\OPT{\NT{match-rules}} ~\KWD{end}
-\nlsep \TERM{abstract}~\NT{tactic}~\OPTGR{\TERM{using}~\NT{ident}}
 \nlsep \TERM{first}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
 \nlsep \TERM{solve}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
 \nlsep \TERM{idtac}
