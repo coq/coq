@@ -415,7 +415,8 @@ let new_morphism m id hook =
 	let lem = (gen_compat_lemma env m body args_t poss) in
 	let lemast = (ast_of_constr true env lem) in
 	new_edited id m poss;
-	start_proof_com (Some id) (false,Libnames.NeverDischarge) lemast hook;
+	start_proof_com (Some id) (false,Libnames.NeverDischarge)
+          ([],lemast) hook;
 	(Options.if_verbose Vernacentries.show_open_subgoals ()))
 
 let rec sub_bool l1 n = function
