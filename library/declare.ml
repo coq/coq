@@ -43,10 +43,6 @@ let cache_parameter (sp,c) =
   Global.add_parameter sp c;
   Nametab.push (basename sp) sp
 
-let load_parameter (sp,_) =
-  let cb = Global.lookup_constant sp in
-  Global.add_constraints cb.const_constraints
-  
 let open_parameter (sp,_) =
   Nametab.push (basename sp) sp
 
@@ -55,7 +51,7 @@ let specification_parameter obj = obj
 let (in_parameter, out_parameter) =
   let od = {
     cache_function = cache_parameter;
-    load_function = load_parameter;
+    load_function = (fun _ -> ());
     open_function = open_parameter;
     specification_function = specification_parameter } in
   declare_object ("Parameter", od)
@@ -72,10 +68,6 @@ let cache_constant (sp,ce) =
   Nametab.push (basename sp) sp;
   declare_constant_implicits sp
 
-let load_constant (sp,_) =
-  let cb = Global.lookup_constant sp in
-  Global.add_constraints cb.const_constraints
-  
 let open_constant (sp,_) =
   Nametab.push (basename sp) sp;
   declare_constant_implicits sp
@@ -85,7 +77,7 @@ let specification_constant obj = obj
 let (in_constant, out_constant) =
   let od = {
     cache_function = cache_constant;
-    load_function = load_constant;
+    load_function = (fun _ -> ());
     open_function = open_constant;
     specification_function = specification_constant } in
   declare_object ("Constant", od)
@@ -110,10 +102,6 @@ let cache_inductive (sp,mie) =
   push_inductive_names sp mie;
   declare_inductive_implicits sp
 
-let load_inductive (sp,_) =
-  let mib = Global.lookup_mind sp in
-  Global.add_constraints mib.mind_constraints
-  
 let open_inductive (sp,mie) =
   push_inductive_names sp mie;
   declare_inductive_implicits sp
@@ -123,7 +111,7 @@ let specification_inductive obj = obj
 let (in_inductive, out_inductive) =
   let od = {
     cache_function = cache_inductive;
-    load_function = load_inductive;
+    load_function = (fun _ -> ());
     open_function = open_inductive;
     specification_function = specification_inductive } in
   declare_object ("Inductive", od)
