@@ -45,41 +45,13 @@ Save.
 (*********)
 Lemma Rlt_eps2_eps:(eps:R)(Rgt eps R0)->
         (Rlt (Rmult eps (Rinv (Rplus R1 R1))) eps).
-Intros;Unfold Rgt in H;Pattern 2 eps;Rewrite <- Rmult_1r;
- Apply (Rlt_monotony eps (Rinv (Rplus R1 R1)) R1 H);
- Apply (Rlt_anti_compatibility (Rinv (Rplus R1 R1)) (Rinv (Rplus R1 R1))
-      R1);Pattern 1 2 (Rinv (Rplus R1 R1));Rewrite <-Rmult_1l;
- Rewrite (eps2 R1);
- Pattern 1 R1;Rewrite <-Rplus_Or;
- Rewrite (Rplus_sym (Rinv (Rplus R1 R1)) R1);
- Apply (Rlt_compatibility R1 R0 (Rinv (Rplus R1 R1)) 
-   (Rlt_Rinv (Rplus R1 R1) (Rlt_r_plus_R1 R1 (Rlt_le R0 R1 Rlt_R0_R1)))). 
+Intros;Fourier.
 Save.
 
 (*********)
 Lemma Rlt_eps4_eps:(eps:R)(Rgt eps R0)->
         (Rlt (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))) eps).
-Intros;Pattern 2 eps;Rewrite <-(let (H1,H2)=(Rmult_ne eps) in H1);
- Unfold Rgt in H;Apply Rlt_monotony;Auto.
- Generalize Rlt_R0_R1;Intro;
- Generalize (Rlt_compatibility R1 R0 R1 H0);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H1;
- Generalize (Rlt_compatibility R1 R1 (Rplus R1 R1) H1);Intro;
- Generalize (Rlt_compatibility (Rplus R1 R1) R1 (Rplus R1 R1) H1);Intro;
- Generalize (Rlt_trans R1 (Rplus R1 R1) (Rplus R1 (Rplus R1 R1))
-    H1 H2);Intro;
- Rewrite (Rplus_sym (Rplus R1 R1) R1) in H3;
- Generalize (Rlt_trans R1 (Rplus R1 (Rplus R1 R1)) 
-       (Rplus (Rplus R1 R1) (Rplus R1 R1)) H4 H3);Clear H H0 H1 H2 H3 H4;
- Intro;Rewrite <-(let (H1,H2)=(Rmult_ne 
-   (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))) in H1);Pattern 6 R1;
- Rewrite <-(Rinv_l (Rplus (Rplus R1 R1) (Rplus R1 R1))).
- Apply (Rlt_monotony (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))
-       R1 (Rplus (Rplus R1 R1) (Rplus R1 R1)));Auto.
-Apply (Rlt_Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)));
- Apply (Rlt_trans R0 R1 (Rplus (Rplus R1 R1) (Rplus R1 R1)) Rlt_R0_R1 H).
-Apply (imp_not_Req (Rplus (Rplus R1 R1) (Rplus R1 R1)) R0);Right;Unfold Rgt;
- Apply (Rlt_trans R0 R1 (Rplus (Rplus R1 R1) (Rplus R1 R1)) Rlt_R0_R1 H).
+Intros;Fourier.
 Save. 
 
 (*********)
