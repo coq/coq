@@ -92,15 +92,13 @@ let explain_coercion_error g = function
 
 (* Verifications pour l'ajout d'une classe *)
 
-let rec arity_sort a = match kind_of_term a with
-  | Sort (Prop _ | Type _) -> 0
-  | Prod (_,_,c) -> (arity_sort c) +1
-  | LetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
-  | Cast (c,_) -> arity_sort c
+let rec arity_sort (ctx,a) = match kind_of_term a with
+  | Sort (Prop _ | Type _) -> List.length ctx
   | _ -> raise Not_found
 
 let check_reference_arity ref =
-  try arity_sort (Global.type_of_global ref)
+  let t = Global.type_of_global ref in
+  try arity_sort (Reductionops.splay_prod (Global.env()) Evd.empty t)
   with Not_found -> raise (CoercionError (NotAClass ref))
 
 let check_arity = function
