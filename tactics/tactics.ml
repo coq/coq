@@ -929,11 +929,10 @@ let rec intros_clearing = function
 
 (* Adding new hypotheses  *)
 
-let new_hyp mopt c blist g =
+let new_hyp mopt c lbind g =
   let (wc,kONT) = startWalk g in
-  let clause  = mk_clenv_printable_type_of wc c in
-  let clause' = clenv_match_args blist clause in
-  let (thd,tstack) = whd_stack (clenv_instance_template clause') in
+  let clause  = make_clenv_binding wc (c,w_type_of wc c) lbind in
+  let (thd,tstack) = whd_stack (clenv_instance_template clause) in
   let nargs = List.length tstack in
   let cut_pf = 
     applist(thd, 
@@ -983,7 +982,7 @@ let dyn_rename = function
 (* Introduction tactics *)
 (************************)
 
-let constructor_checking_bound  boundopt i lbind gl =
+let constructor_tac boundopt i lbind gl =
   let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
   let nconstr =
@@ -1001,7 +1000,7 @@ let constructor_checking_bound  boundopt i lbind gl =
   let apply_tac = apply_with_bindings (cons,lbind) in
   (tclTHENLIST [convert_concl redcl; intros; apply_tac]) gl
 
-let one_constructor i = (constructor_checking_bound None i)
+let one_constructor i = constructor_tac None i
 
 let any_constructor gl = 
   let cl = pf_concl gl in 
@@ -1036,7 +1035,7 @@ let dyn_constructor = function
   | l                            -> bad_tactic_args "constructor" l
 
 
-let left           = (constructor_checking_bound (Some 2) 1)
+let left           = constructor_tac (Some 2) 1
 let simplest_left  = left  []
 
 let dyn_left = function 
@@ -1044,7 +1043,7 @@ let dyn_left = function
   | [Bindings binds]  -> tactic_bind_list left binds 
   | l                 -> bad_tactic_args "left" l
 
-let right          = (constructor_checking_bound (Some 2) 2)
+let right          = constructor_tac (Some 2) 2
 let simplest_right = right []
 
 let dyn_right  = function 
@@ -1053,7 +1052,7 @@ let dyn_right  = function
   | l                  -> bad_tactic_args "right" l
 
 
-let split          = (constructor_checking_bound (Some 1) 1)
+let split          = constructor_tac (Some 1) 1
 let simplest_split = split []
 
 let dyn_split  = function 
@@ -1137,7 +1136,7 @@ let elimination_in_clause_scheme kONT id elimclause indclause =
   let hyp = mkVar id in
   let hyp_typ = clenv_type_of elimclause' hyp in
   let hypclause =
-    mk_clenv_from_n elimclause'.hook 0 (hyp, hyp_typ) in
+    mk_clenv_from_n elimclause'.hook (Some 0) (hyp, hyp_typ) in
   let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
   let new_hyp_prf  = clenv_instance_template elimclause'' in
   let new_hyp_typ  = clenv_instance_template_type elimclause'' in

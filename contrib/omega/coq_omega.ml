@@ -70,91 +70,12 @@ let new_identifier_var =
 let rec mk_then = 
   function [t] -> t | (t::l) -> (tclTHEN (t) (mk_then l)) | [] -> tclIDTAC
 
-let collect_com lbind = 
-  map_succeed (function (Com,c)->c | _ -> failwith "Com") lbind
-
-(*** EST-CE QUE CES FONCTIONS NE SONT PAS AILLEURS DANS LE CODE ?? *)
-
-let make_clenv_binding_apply wc (c,t) lbind = 
-  let largs = collect_com lbind in 
-  let lcomargs = List.length largs in 
-  if lcomargs = List.length lbind then 
-    let clause = mk_clenv_from wc (c,t) in
-    clenv_constrain_missing_args largs clause
-  else if lcomargs = 0 then 
-    let clause = mk_clenv_rename_from wc (c,t) in
-    clenv_match_args lbind clause
-  else 
-    errorlabstrm "make_clenv_bindings"
-      (str "Cannot mix bindings and free associations")
-
-let resolve_with_bindings_tac  (c,lbind) gl = 
-  let (wc,kONT) = startWalk gl in
-  let t = w_hnf_constr wc (w_type_of wc c) in 
-  let clause = make_clenv_binding_apply wc (c,t) lbind in 
-  res_pf kONT clause gl
-
-(*
-let pf_one_step_reduce = pf_reduce Tacred.one_step_reduce
-
-let reduce_to_mind gl t = 
-  let rec elimrec t l =
-    let c, args = whd_stack t in
-    match kind_of_term c, args with
-    | (Ind ind,_) -> (ind,Environ.it_mkProd_or_LetIn t l)
-    | (Const _,_) -> 
-	(try 
-	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
-         with e when catchable_exception e -> 
-	   errorlabstrm "tactics__reduce_to_mind"
-             (str"Not an inductive product"))
-    | (Case _,_) ->
-	(try 
-	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
-         with e when catchable_exception e -> 
-	   errorlabstrm "tactics__reduce_to_mind"
-             (str"Not an inductive product"))
-    | (Cast (c,_),[]) -> elimrec c l
-    | (Prod (n,ty,t'),[]) -> 
-	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
-	elimrec t' ((n,None,ty')::l)
-    | (LetIn (n,b,ty,t'),[]) ->
-	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
-	elimrec t' ((n,Some b,ty')::l)
-    | _ -> error "Not an inductive product"
-  in 
-  elimrec t []
-*)
-
-let reduce_to_mind = pf_reduce_to_quantified_ind
-
-let constructor_tac nconstropt i lbind gl = 
-  let cl = pf_concl gl in
-  let (mind, redcl) = reduce_to_mind gl cl in
-  let (mib,mip) = Global.lookup_inductive mind in
-  let nconstr = Array.length mip.mind_consnames
-  and sigma = project gl in
-  (match nconstropt with 
-     | Some expnconstr -> 
-	 if expnconstr <> nconstr then
-           error "Not the expected number of constructors"
-     | _ -> ());
-  if i > nconstr then error "Not enough Constructors";
-  let c = mkConstruct (ith_constructor_of_inductive mind i) in 
-  let resolve_tac = resolve_with_bindings_tac (c,lbind) in
-  (tclTHEN (tclTHEN (change_in_concl redcl) intros) resolve_tac) gl
-
-let exists_tac c= constructor_tac (Some 1) 1 [Com,c]
-		    
+let exists_tac c = constructor_tac (Some 1) 1 [Com,c]
 let generalize_tac t = generalize_time (generalize t)
 let elim t = elim_time (simplest_elim t)
 let exact t = exact_time (Tactics.refine t)
-
 let unfold s = Tactics.unfold_in_concl [[], Lazy.force s]
  
-(*** fin de EST-CE QUE CES FONCTIONS NE SONT PAS AILLEURS DANS LE CODE ?? *)
-(****************************************************************)
-
 let rev_assoc k =
   let rec loop = function
     | [] -> raise Not_found | (v,k')::_ when k = k' -> v | _ :: l -> loop l 

@@ -336,7 +336,7 @@ let mk_clenv wc cty =
 let clenv_environments bound c =
   let rec clrec (ne,e,metas) n c =
     match n, kind_of_term c with
-      | (0, _) -> (ne, e, List.rev metas, c)
+      | (Some 0, _) -> (ne, e, List.rev metas, c)
       | (n, Cast (c,_)) -> clrec (ne,e,metas) n c
       | (n, Prod (na,c1,c2)) ->
 	  let mv = new_meta () in
@@ -356,9 +356,10 @@ let clenv_environments bound c =
 	      ne 
 	  in
 	  let e' = Intmap.add mv (Cltyp (mk_freelisted c1)) e in 
-	  clrec (ne',e', (mkMeta mv)::metas) (n-1)
+	  clrec (ne',e', (mkMeta mv)::metas) (option_app ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) c2) else c2)
-      | (n, LetIn (na,b,_,c)) -> clrec (ne,e,metas) (n-1) (subst1 b c)
+      | (n, LetIn (na,b,_,c)) ->
+	  clrec (ne,e,metas) (option_app ((+) (-1)) n) (subst1 b c)
       | (n, _) -> (ne, e, List.rev metas, c)
   in 
   clrec (Intmap.empty,Intmap.empty,[]) bound c
@@ -371,13 +372,7 @@ let mk_clenv_from_n wc n (c,cty) =
     env = env;
     hook = wc }
 
-let mk_clenv_from wc (c,cty) =
-  let (namenv,env,args,concl) = clenv_environments (-1) cty in
-  { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
-    templtyp = mk_freelisted concl;
-    namenv = namenv;
-    env = env;
-    hook = wc }
+let mk_clenv_from wc = mk_clenv_from_n wc None
 
 let connect_clenv wc clenv =
   { templval = clenv.templval;
@@ -412,8 +407,6 @@ let mk_clenv_rename_hnf_constr_type_of wc t =
 
 let mk_clenv_type_of wc t = mk_clenv_from wc (t,w_type_of wc t)
 			      
-let mk_clenv_printable_type_of = mk_clenv_type_of
-				   
 let clenv_assign mv rhs clenv =
   let rhs_fls = mk_freelisted rhs in 
   if intset_exists (mentions clenv mv) rhs_fls.freemetas then
@@ -891,12 +884,13 @@ let clenv_metavars clenv mv =
 
 let clenv_template_metavars clenv = clenv.templval.freemetas
 
-(* [clenv_dependent clenv cval ctyp]
- * returns a list of the metavariables which appear in the term cval,
+(* [clenv_dependent hyps_only clenv]
+ * returns a list of the metavars which appear in the template of clenv,
  * and which are dependent, This is computed by taking the metavars in cval,
  * in right-to-left order, and collecting the metavars which appear
- * in their types, and adding in all the metavars appearing in ctyp, the
- * type of cval. *)
+ * in their types, and adding in all the metavars appearing in the
+ * type of clenv.
+ * If [hyps_only] then metavariables occurring in the type are _excluded_ *)
 
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
@@ -904,12 +898,15 @@ let dependent_metas clenv mvs conclmetas =
        Intset.union deps (clenv_metavars clenv mv))
     mvs conclmetas
 
-let clenv_dependent clenv =
+let clenv_dependent hyps_only clenv =
   let mvs = collect_metas (clenv_instance_template clenv) in
   let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
-  List.filter (fun mv -> Intset.mem mv deps) mvs
+  List.filter
+    (fun mv -> Intset.mem mv deps && not (hyps_only && Intset.mem mv ctyp_mvs))
+    mvs
 
+let clenv_missing c = clenv_dependent true c
 
 (* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
@@ -923,57 +920,17 @@ let clenv_independent clenv =
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> not (Intset.mem mv deps)) mvs
 
-
-(* [clenv_missing clenv]
- * returns a list of the metavariables which appear in the term cval,
- * and which are dependent, and do NOT appear in ctyp. *)
-
-let clenv_missing clenv =
-  let mvs = collect_metas (clenv_instance_template clenv) in
-  let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
-  let deps = dependent_metas clenv mvs ctyp_mvs in
-  List.filter 
-    (fun n -> Intset.mem n deps && not (Intset.mem n ctyp_mvs))
-    mvs
-
-let clenv_constrain_missing_args mlist clause =
-  if mlist = [] then 
-    clause 
-  else
-    let occlist = clenv_missing clause in
-    if List.length occlist = List.length mlist then
-      List.fold_left2
-        (fun clenv occ m -> clenv_unify true CONV (mkMeta occ) m clenv)
-        clause occlist mlist
-    else 
-      error ("Not the right number of missing arguments (expected "
-	     ^(string_of_int (List.length occlist))^")")
-
-let clenv_constrain_dep_args mlist clause =
-  if mlist = [] then 
-    clause 
-  else
-    let occlist = clenv_dependent clause in
-    if List.length occlist = List.length mlist then
-      List.fold_left2
-        (fun clenv occ m -> clenv_unify true CONV (mkMeta occ) m clenv)
-        clause occlist mlist
-    else 
-      error ("Not the right number of missing arguments (expected "
-	     ^(string_of_int (List.length occlist))^")")
-
-let clenv_constrain_dep_args_of mv mlist clause =
-  if mlist = [] then 
-    clause 
-  else
-    let occlist = clenv_dependent clause in
-    if List.length occlist = List.length mlist then
-      List.fold_left2
-        (fun clenv occ m -> clenv_unify true CONV (mkMeta occ) m clenv)
-        clause occlist mlist
-    else 
-      error ("clenv_constrain_dep_args_of: Not the right number " ^ 
-	     "of dependent arguments")
+let clenv_constrain_dep_args hyps_only clause = function
+  | [] -> clause 
+  | mlist ->
+      let occlist = clenv_dependent hyps_only clause in
+      if List.length occlist = List.length mlist then
+	List.fold_left2
+          (fun clenv k c -> clenv_unify true CONV (mkMeta k) c clenv)
+          clause occlist mlist
+      else 
+	error ("Not the right number of missing arguments (expected "
+	       ^(string_of_int (List.length occlist))^")")
 
 let clenv_lookup_name clenv id =
   match intmap_inv clenv.namenv id with
@@ -1011,8 +968,8 @@ let clenv_match_args s clause =
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
 	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
-	matchrec
-          (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
+        matchrec 
+       	    (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
   in 
   matchrec clause s
 
@@ -1024,7 +981,7 @@ let clenv_match_args s clause =
  * metas. *)
 
 let clenv_pose_dependent_evars clenv =
-  let dep_mvs = clenv_dependent clenv in
+  let dep_mvs = clenv_dependent false clenv in
   List.fold_left
     (fun clenv mv ->
        let evar = Evarutil.new_evar_in_sign (w_env clenv.hook) in
@@ -1066,12 +1023,12 @@ let e_res_pf kONT clenv gls =
 let collect_com lbind = 
   map_succeed (function (Com,c)->c | _ -> failwith "Com") lbind
 
-let make_clenv_binding_apply wc n (c,t) lbind = 
+let make_clenv_binding_gen n wc (c,t) lbind = 
   let largs = collect_com lbind in
   let lcomargs = List.length largs in
   if lcomargs = List.length lbind then 
     let clause = mk_clenv_from_n wc n (c,t) in
-    clenv_constrain_missing_args largs clause
+    clenv_constrain_dep_args (n <> None) clause largs
   else if lcomargs = 0 then 
     let clause = mk_clenv_rename_from_n wc n (c,t) in
     clenv_match_args lbind clause
@@ -1079,18 +1036,8 @@ let make_clenv_binding_apply wc n (c,t) lbind =
     errorlabstrm "make_clenv_bindings"
       (str "Cannot mix bindings and free associations")
 
-let make_clenv_binding wc (c,t) lbind = 
-  let largs    = collect_com lbind in
-  let lcomargs = List.length largs in 
-  if lcomargs = List.length lbind then 
-    let clause = mk_clenv_from wc (c,t) in  
-    clenv_constrain_dep_args largs clause
-  else if lcomargs = 0 then 
-    let clause = mk_clenv_rename_from wc (c,t) in  
-    clenv_match_args lbind clause
-  else 
-    errorlabstrm "make_clenv_bindings"
-      (str "Cannot mix bindings and free associations")
+let make_clenv_binding_apply wc n = make_clenv_binding_gen (Some n) wc
+let make_clenv_binding = make_clenv_binding_gen None
 
 open Printer
 

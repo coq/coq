@@ -61,11 +61,10 @@ val unify_0 :
 val collect_metas : constr -> int list
 val mk_clenv : 'a -> constr -> 'a clausenv
 val mk_clenv_from : 'a -> constr * constr -> 'a clausenv
-val mk_clenv_from_n : 'a -> int -> constr * constr -> 'a clausenv
+val mk_clenv_from_n : 'a -> int option -> constr * constr -> 'a clausenv
 val mk_clenv_rename_from : wc -> constr * constr -> wc clausenv
-val mk_clenv_rename_from_n : wc -> int -> constr * constr -> wc clausenv
+val mk_clenv_rename_from_n : wc -> int option -> constr * constr -> wc clausenv
 val mk_clenv_hnf_constr_type_of : wc -> constr -> wc clausenv
-val mk_clenv_printable_type_of : wc -> constr -> wc clausenv
 val mk_clenv_type_of : wc -> constr -> wc clausenv
 
 val connect_clenv : wc -> 'a clausenv -> wc clausenv
@@ -88,8 +87,10 @@ val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
 val elim_res_pf : (wc -> tactic) -> wc clausenv -> tactic
 val clenv_independent : wc clausenv -> int list
 val clenv_missing : 'a clausenv -> int list
+(*
 val clenv_constrain_missing_args : constr list -> wc clausenv -> wc clausenv
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
+*)
 val clenv_lookup_name : 'a clausenv -> identifier -> int
 val clenv_match_args : (bindOcc * constr) list -> wc clausenv -> wc clausenv
 val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
@@ -108,8 +109,10 @@ val unify_to_subterm :
   wc clausenv -> constr * constr -> wc clausenv * constr
 val unify_to_subterm_list : 
   bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
+(*
 val clenv_constrain_dep_args_of : 
   int -> constr list -> wc clausenv -> wc clausenv
+*)
 val clenv_typed_unify :
   Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
 
