@@ -17,7 +17,6 @@ open Proof_type
 open Clenv
 open Reduction
 open Pattern
-open Wcclausenv
 open Tacexpr
 (*i*)
 

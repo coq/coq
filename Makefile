@@ -168,19 +168,19 @@ PROOFS=\
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-  tactics/nbtermdn.cmo tactics/wcclausenv.cmo \
-  tactics/tacticals.cmo tactics/hipattern.cmo tactics/tactics.cmo \
+  tactics/nbtermdn.cmo tactics/tacticals.cmo \
+  tactics/hipattern.cmo tactics/tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \
-  tactics/dhyp.cmo tactics/auto.cmo 
+  tactics/dhyp.cmo tactics/auto.cmo \
+  tactics/setoid_replace.cmo tactics/equality.cmo \
+  tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
+  tactics/tacinterp.cmo \
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
   toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
   toplevel/command.cmo \
-  tactics/setoid_replace.cmo tactics/equality.cmo \
-  tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-tactics/tacinterp.cmo \
-toplevel/record.cmo toplevel/recordobj.cmo \
+  toplevel/record.cmo toplevel/recordobj.cmo \
   toplevel/discharge.cmo translate/ppvernacnew.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \

@@ -18,7 +18,6 @@ open Proof_type
 open Tacmach
 open Hipattern
 open Pattern
-open Wcclausenv
 open Tacticals
 open Tactics
 open Tacexpr
