@@ -482,7 +482,11 @@ let dynconstr = Gram.Entry.create "Constr.dynconstr"
 let dyncasespattern = Gram.Entry.create "Constr.dyncasespattern"
 
 GEXTEND Gram
-  dynconstr: [ [ a = Constr.constr -> ConstrNode a ] ];
+  dynconstr:
+  [ [ a = Constr.constr -> ConstrNode a 
+    (* For compatibility *)
+    | "<<"; a = Constr.constr; ">>" -> ConstrNode a ] ]
+  ;
   dyncasespattern: [ [ a = Constr.pattern -> CasesPatternNode a ] ];
 END
 
