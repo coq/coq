@@ -11,6 +11,8 @@
 open Names
 
 (* Identifiers and names *)
+val id_of_v7_string : string -> identifier
+val string_of_v7_id : identifier -> string (* For v7->v8 translation *)
 val pr_id : identifier -> Pp.std_ppcmds
 val wildcard : identifier
 

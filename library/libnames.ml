@@ -131,8 +131,8 @@ let repr_path { dirpath = pa; basename = id } = (pa,id)
 (* parsing and printing of section paths *)
 let string_of_path sp =
   let (sl,id) = repr_path sp in
-  if repr_dirpath sl = [] then string_of_id id
-  else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
+  if repr_dirpath sl = [] then string_of_v7_id id
+  else (string_of_dirpath sl) ^ "." ^ (string_of_v7_id id)
 
 let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
