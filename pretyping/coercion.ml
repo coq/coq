@@ -15,11 +15,7 @@ open Retyping
 
 (* Typing operations dealing with coercions *)
 
-exception NoCoercion
-
-let class_of1 env sigma t =
-  try class_of env sigma (nf_ise1 sigma t)
-  with Not_found -> raise NoCoercion
+let class_of1 env sigma t = class_of env sigma (nf_ise1 sigma t)
 
 let j_nf_ise env sigma {uj_val=v;uj_type=t} =
   { uj_val = nf_ise1 sigma v; 
@@ -71,7 +67,7 @@ let inh_app_fun env isevars j =
  	   let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
       	   let p = lookup_path_to_fun_from i1 in
            apply_pcoercion env p j t
-	 with Not_found | NoCoercion -> j)
+	 with Not_found -> j)
 (* find out which exc we must trap (e.g we don't want to catch Sys.Break!) *)
 
 let inh_tosort_force env isevars j =
@@ -79,14 +75,14 @@ let inh_tosort_force env isevars j =
     let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
     let p = lookup_path_to_sort_from i1 in
     apply_pcoercion env p j t 
-  with Not_found | NoCoercion -> 
+  with Not_found -> 
     j
 
 let inh_tosort env isevars j = 
   let typ = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
   match typ with
     | DOP0(Sort _) -> j  (* idem inh_app_fun *)
-    | _ -> (try inh_tosort_force env isevars j with _ -> j)
+    | _ -> inh_tosort_force env isevars j
 
 let inh_ass_of_j env isevars j =
   let typ = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
@@ -96,11 +92,17 @@ let inh_ass_of_j env isevars j =
         let j1 = inh_tosort_force env isevars j in 
 	type_judgment env !isevars j1 
 
+exception NoCoercion
+
 let inh_coerce_to_fail env isevars c1 hj =
-  let t1,i1 = class_of1 env !isevars c1 in
-  let t2,i2 = class_of1 env !isevars (body_of_type hj.uj_type) in
-  let p = lookup_path_between (i2,i1) in
-  let hj' = apply_pcoercion env p hj t2 in
+  let hj' =
+    try 
+      let t1,i1 = class_of1 env !isevars c1 in
+      let t2,i2 = class_of1 env !isevars (body_of_type hj.uj_type) in
+      let p = lookup_path_between (i2,i1) in
+      apply_pcoercion env p hj t2
+    with Not_found -> raise NoCoercion 
+  in
   if the_conv_x_leq env isevars (body_of_type hj'.uj_type) c1 then 
     hj'
   else
@@ -133,7 +135,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
                let h2 = inh_conv_coerce_to_fail env isevars u2
 			  {uj_val = v2;
 			   uj_type =
-			     make_typed t2 (get_sort_of env !isevars t2) } in
+			     make_typed t2 (get_sort_of env1 !isevars t2) } in
                fst (abs_rel env !isevars x assv1 h2)
              else 
                (* let ju1 = exemeta_rec def_vty_con env isevars u1 in 
@@ -154,7 +156,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
 			 { uj_val = DOPN(AppL,[|(lift 1 v);h1.uj_val|]);
                            uj_type =
 			     make_typed (subst1 h1.uj_val t2)
-			       (get_sort_of env !isevars t2) }
+			       (get_sort_of env1 !isevars t2) }
 	       in
 	       fst (abs_rel env !isevars name assu1 h2)
 	 | _ -> raise NoCoercion)
