@@ -76,6 +76,10 @@ explicitement la grammaire avec "ast" ou "List" (renommé d'ailleurs
 que les 3 primitives), on peut typer avec "constr", "tactic", ou
 "vernac" pour utiliser le parseur correspondant.
 
+- Binding of constructions in Grammar rules is now done with absolute
+  paths. This means overloading of syntax for different constructions
+  having same base name is no longer possible.
+
 - Syntax changes
 
   AddPath -> Add LoadPath;
