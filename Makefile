@@ -31,7 +31,8 @@ noargument:
 
 LOCALINCLUDES= -I config -I tools -I scripts -I lib -I kernel -I library \
                -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
-               -I contrib/omega -I contrib/ring -I contrib/xml
+               -I contrib/omega -I contrib/ring -I contrib/xml \
+	       -I contrib/extraction
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)

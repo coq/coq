@@ -199,6 +199,9 @@ toplevel/vernacentries.cmi: kernel/names.cmi kernel/term.cmi \
     toplevel/vernacinterp.cmi 
 toplevel/vernacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
     proofs/proof_type.cmi 
+contrib/extraction/extraction.cmi: contrib/extraction/miniml.cmi \
+    kernel/names.cmi 
+contrib/extraction/miniml.cmi: kernel/names.cmi 
 contrib/xml/xmlcommand.cmi: kernel/names.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
@@ -1204,6 +1207,10 @@ toplevel/vernacinterp.cmx: parsing/ast.cmx parsing/astterm.cmx \
     kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
     pretyping/pretype_errors.cmx proofs/proof_type.cmx proofs/tacinterp.cmx \
     lib/util.cmx toplevel/vernacinterp.cmi 
+contrib/extraction/extraction.cmo: contrib/extraction/miniml.cmi \
+    kernel/names.cmi kernel/term.cmi contrib/extraction/extraction.cmi 
+contrib/extraction/extraction.cmx: contrib/extraction/miniml.cmi \
+    kernel/names.cmx kernel/term.cmx contrib/extraction/extraction.cmi 
 contrib/omega/coq_omega.cmo: parsing/ast.cmi proofs/clenv.cmi \
     kernel/closure.cmi library/declare.cmi kernel/environ.cmi \
     tactics/equality.cmi kernel/evd.cmi library/global.cmi \
