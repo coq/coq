@@ -397,6 +397,13 @@ let define_quotation default s e =
       ast: [ [ "<<"; c = e; ">>" -> c ] ];
    END);
   (GEXTEND Gram
+     GLOBAL: ast;
      ast:
-       [ [ "<"; ":"; IDENT $s$; ":"; "<"; c = e; ">>" -> c ] ];
+       [ [ _ = langle_colon; IDENT $s$; _ = colon_langle; c = e; ">>" -> c ] ];
+     langle_colon:
+       [ [ "<"; ":" -> ()
+	 | "<:" -> () ] ];  (* Maximal token rule *)
+     colon_langle:
+       [ [ ":"; "<" -> ()
+	 | ":<" -> () ] ]; (* Maximal token rule *)
    END)
