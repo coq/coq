@@ -888,11 +888,12 @@ let _ =
        | [VARG_QUALID qid] ->
 	   (fun () ->
 	      let ref =
-		try Nametab.locate qid
+		try 
+		  Nametab.locate qid
 		with Not_found ->
 		  Pretype_errors.error_global_not_found_loc loc qid
 	      in 
-	      search_by_head ref)
+	      Search.search_by_head ref)
        | _ -> bad_vernac_args "SEARCH")
 
 let _ =
@@ -900,6 +901,43 @@ let _ =
     (function 
        | [VARG_NUMBER n] -> (fun () -> mSG(inspect n))
        | _ -> bad_vernac_args "INSPECT")
+
+let string_of_id_list =
+  List.map (function 
+	      | VARG_IDENTIFIER s -> string_of_id s
+	      | _ -> bad_vernac_args "string_of_id_list")
+
+let inside_outside = function
+  | (VARG_STRING s) :: l -> string_of_id_list l, s
+  | [] -> [], ""
+  | _ -> bad_vernac_args "inside/outside"
+
+let _ =
+  add "SearchModules"
+    (function
+       | (VARG_IDENTIFIER id) :: l ->
+           (fun () -> 
+	      let ref = Nametab.sp_of_id CCI id in
+              Search.search_modules ref (inside_outside l))
+       | _ -> bad_vernac_args "SearchModules")
+
+let _ = 
+  add "SearchRewrite"
+    (function
+       | (VARG_CONSTR c) :: l ->
+	   (fun () -> 
+	      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+	      Search.search_rewrite pat (inside_outside l))
+       | _ -> bad_vernac_args "SearchRewrite")
+
+let _ = 
+  add "SearchPattern"
+    (function
+       | (VARG_CONSTR c) :: l ->
+	   (fun () -> 
+	      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+	      Search.search_pattern  pat (inside_outside l))
+       | _ -> bad_vernac_args "SearchPattern")
 
 let _ =
   add "SETUNDO"

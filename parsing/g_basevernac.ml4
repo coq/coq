@@ -97,6 +97,10 @@ GEXTEND Gram
       | IDENT "Print"; id = identarg; "." -> <:ast< (PrintId $id) >>
       | IDENT "Search"; id = Tactic.qualidarg; "." -> <:ast< (SEARCH $id) >>
       | IDENT "Inspect"; n = numarg; "." -> <:ast< (INSPECT $n) >>
+      | IDENT "SearchPattern"; c = constrarg; l = in_or_out_modules; "." ->
+	  <:ast< (SearchPattern $c ($LIST $l)) >>
+      | IDENT "SearchRewrite"; c = constrarg; l = in_or_out_modules; "." ->
+	  <:ast< (SearchRewrite $c ($LIST $l)) >>
       (* TODO: rapprocher Eval et Check *)
       | IDENT "Eval"; r = Tactic.red_tactic; "in"; c = constrarg; "." ->
           <:ast< (Eval (TACTIC_ARG (REDEXP $r)) $c) >>
@@ -185,6 +189,11 @@ GEXTEND Gram
   check_tok:
     [ [ IDENT "Check" -> <:ast< "CHECK" >>
       | "Type" -> <:ast< "PRINTTYPE" >> ] ] (* pas dans le RefMan *)
+  ;
+  in_or_out_modules:
+    [ [ IDENT "inside"; l = ne_identarg_list -> <:ast< "inside" >> :: l
+      | IDENT "outside"; l = ne_identarg_list -> <:ast< "outside" >> :: l
+      | -> [] ] ]
   ;
 END;
 

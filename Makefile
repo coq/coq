@@ -91,7 +91,8 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
-	parsing/printer.cmo parsing/pretty.cmo parsing/egrammar.cmo \
+	parsing/printer.cmo parsing/pretty.cmo parsing/search.cmo \
+        parsing/egrammar.cmo \
         parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
@@ -192,7 +193,7 @@ clean::
 archclean::
 	rm -f $(COQTOPBYTE) $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
 
-# we provide targets for each subdirectories
+# we provide targets for each subdirectory
 
 lib: $(LIB)
 kernel: $(KERNEL)

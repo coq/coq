@@ -46,7 +46,5 @@ val print_coercions : unit -> std_ppcmds
 val print_path_between : identifier -> identifier -> std_ppcmds
 
 
-val search_by_head : global_reference -> unit
-val crible : (std_ppcmds -> env -> constr -> unit) -> global_reference -> unit
 val inspect : int -> std_ppcmds
 
