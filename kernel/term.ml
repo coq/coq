@@ -1668,10 +1668,10 @@ let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
   (hcci,hfw,htcci)
 
-let hcons1_constr c =
-  let hnames = hcons_names() in
+let hcons1_constr =
+  let hnames = hcons_names () in
   let (hc,_,_) = hcons_constr hnames in
-  hc c
+  hc
 
 (* Abstract decomposition of constr to deal with generic functions *)
 

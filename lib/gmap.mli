@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Maps using the generic comparison function of ocaml. Same interface as
    the module [Map] from the ocaml standard library. *)

@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 val line_oriented_channel_to_option: string -> in_channel -> int -> char option
 

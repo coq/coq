@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Parsing of vernacular. *)
 

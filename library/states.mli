@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (*s States of the system. In that module, we provide functions to get
   and set the state of the whole system. Internally, it is done by

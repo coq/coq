@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 val search_in_lib : bool ref
 val type_search : Term.constr -> unit

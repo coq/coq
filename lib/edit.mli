@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* The type of editors.
  * An editor is a finite map, ['a -> 'b], which knows how to apply

@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Dynamics. Use with extreme care. Not for kids. *)
 

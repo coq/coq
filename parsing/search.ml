@@ -76,7 +76,7 @@ let crible (fn : std_ppcmds -> env -> constr -> unit) ref =
 let search_by_head ref =
   crible (fun pname ass_name constr -> 
             let pc = prterm_env ass_name constr in
-            mSG[< pname; 'sTR":"; pc; 'fNL >]) ref
+            mSG [< hOV 2 [< pname; 'sTR":"; 'sPC; pc >]; 'fNL >]) ref
 
 (* Fine Search. By Yves Bertot. *)
 
@@ -96,7 +96,7 @@ let xor a b = (a or b) & (not (a & b))
 
 let plain_display s a c =
   let pc = Printer.prterm_env a c in
-  mSG [< s; 'sTR":"; pc; 'fNL>]
+  mSG [< hOV 2 [< s; 'sTR":"; 'sPC; pc >]; 'fNL>]
 
 let filter_by_module module_list accept _ _ c =
   try

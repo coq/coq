@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (*s Prints the version number on the standard output and exits (with 0). *)
 

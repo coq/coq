@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Sets using the generic comparison function of ocaml. Same interface as
    the module [Set] from the ocaml standard library. *)

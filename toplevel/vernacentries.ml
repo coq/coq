@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
@@ -732,7 +732,7 @@ let _ =
 	   fun () ->
              begin
                start_proof_com (Some s) stre com;
-               if (not(is_silent())) then show_open_subgoals()
+               if not (is_silent()) then show_open_subgoals()
              end
        | _ -> bad_vernac_args "StartProof")
 
@@ -811,7 +811,7 @@ let _ =
 	     definition_body_red red_option id (local,stre) c typ_opt;
              if coe then begin
 	       Class.try_add_new_coercion id stre;
-               if (not (is_silent())) then
+               if not (is_silent()) then
 		 message ((string_of_id id) ^ " is now a coercion")
 	     end;
 	     if idcoe then 
@@ -1230,7 +1230,7 @@ let _ =
 	   in
 	   fun () -> 
 	     Class.try_add_new_class id stre;
-             if (not (is_silent())) then
+             if not (is_silent()) then
                message ((string_of_id id) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
 
@@ -1248,7 +1248,7 @@ let _ =
 	   let isid = identity = "IDENTITY" in
 	   fun () -> 
 	     Class.try_add_new_coercion_with_target id stre ids idt isid;
-             if (not (is_silent())) then
+             if not (is_silent()) then
 	       message ((string_of_id id) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 

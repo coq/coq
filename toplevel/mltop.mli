@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* If there is a toplevel under Coq, it is described by the following 
    record. *)

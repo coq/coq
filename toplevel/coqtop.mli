@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* The Coq main module. The following function [start] will parse the
    command line, print the banner, initialize the load path, load the input 

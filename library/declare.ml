@@ -153,7 +153,16 @@ let (in_constant, out_constant) =
   in
   declare_object ("CONSTANT", od)
 
+let hcons_constant_declaration = function
+  | (ConstantEntry ce, stre) ->
+      (ConstantEntry 
+	 { const_entry_body = hcons1_constr ce.const_entry_body;
+	   const_entry_type = option_app hcons1_constr ce.const_entry_type },
+	 stre)
+  | cd -> cd
+
 let declare_constant id cd =
+  (* let cd = hcons_constant_declaration cd in *)
   let sp = add_leaf id CCI (in_constant cd) in
   if is_implicit_args() then declare_constant_implicits sp
  
@@ -227,6 +236,7 @@ let declare_mind mie =
   let sp = add_leaf id CCI (in_inductive mie) in
   if is_implicit_args() then declare_mib_implicits sp;
   sp
+
 
 (*s Test and access functions. *)
 

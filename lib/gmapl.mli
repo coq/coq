@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Maps from ['a] to lists of ['b]. *)
 

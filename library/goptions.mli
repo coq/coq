@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* This module manages customization parameters at the vernacular level     *)
 

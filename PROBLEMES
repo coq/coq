@@ -39,17 +39,13 @@ CONTRIBS
 BellLabs/lazyPCF : OK
 
 Bordeaux/TREES :
-File "./ABR.v", line 131, characters 0-88
-Anomaly: Unrecognizable ast node of vernac arg:
- (COMMAND (PROP {Null})). Please report.
-
-Derive Inversion_clear HAS_INV with 
-    (n,p:nat)(t1,t2:bintree)(has (bin n t1 t2) p).
-
 Bordeaux/Additions : 
 	echecs sur Realizer
 
 Bordeaux/GROUPS : OK
+
+Bordeaux/EXCEPTIONS :
+        Hints Unfold n'unfold plus les Local => échec d'Auto 
 
 Dyade/Otway-Rees : OK
 Dyade/BDD : Require Rocq/GRAPHS

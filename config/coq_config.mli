@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 val local : bool        (* local use (no installation) *)
 

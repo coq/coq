@@ -344,9 +344,11 @@ let useInversionLemma =
   let gentac =
     hide_tactic "UseInversionLemma"
       (function
-	 | [Identifier id;Command com] ->
+	 | [Identifier id; Command com] ->
              fun gls -> lemInv id (pf_interp_constr gls com) gls
-	 | l  -> anomaly "useInversionLemma" l)
+	 | [Identifier id; Constr c] ->
+             fun gls -> lemInv id c gls
+	 | _  -> anomaly "useInversionLemma")
   in 
   fun id com -> gentac [Identifier id;Command com]
 

@@ -1,3 +1,6 @@
+
+(*i $Id$ i*)
+
 open Proof_type
 open Term
 

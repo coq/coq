@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Bounded stacks. If the depth is [None], then there is no depth limit. *)
 

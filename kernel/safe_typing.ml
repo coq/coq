@@ -312,6 +312,7 @@ let add_discharged_constant sp r env =
     | None -> 
 	add_parameter sp typ env
     | Some c -> 
+	(* let c = hcons1_constr c in *)
 	let (jtyp,cst) = safe_infer env typ in
 	let env' = add_constraints cst env in
 	let ids = 
@@ -319,7 +320,7 @@ let add_discharged_constant sp r env =
 	    (global_vars_set (body_of_type jtyp.uj_val))
 	in
 	let cb = { const_kind = kind_of_path sp;
-		   const_body = body;
+		   const_body = Some c;
 		   const_type = assumption_of_judgment env' Evd.empty jtyp;
 		   const_hyps = keep_hyps ids (named_context env);
 		   const_constraints = cst;

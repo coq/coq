@@ -68,14 +68,14 @@ Grammar vernac vernac: ast :=
 
 | der_inv_clr_with [ "Derive" "Inversion_clear"  identarg($na)
                      "with" constrarg($com) "." ]
-                    -> [(MakeInversionLemma $na $com (COMMAND (PROP{Null})))]
+                    -> [(MakeInversionLemma $na $com (CONSTR (PROP))) ]
 
 | der_inv_with_srt [ "Derive" "Inversion" identarg($na)
                      "with" constrarg($com) "Sort" sortarg($s) "." ]
                     -> [(MakeSemiInversionLemma $na $com $s)]
 
 | der_inv_with [ "Derive" "Inversion" identarg($na) "with" constrarg($com) "." ]
-                -> [(MakeSemiInversionLemma $na $com (COMMAND (PROP{Null})))]
+                -> [(MakeSemiInversionLemma $na $com (CONSTR (PROP)))]
 
 | der_inv [ "Derive" "Inversion" identarg($na) identarg($id) "." ]
            -> [(MakeSemiInversionLemmaFromHyp 1 $na $id)]

@@ -11,6 +11,8 @@
 (*                                                                            *)
 (******************************************************************************)
 
+(*i $Id$ i*)
+
 (* print id dest                                                          *)
 (*  where id   is the identifier (name) of a definition/theorem or of an  *)
 (*             inductive definition                                       *)
