@@ -305,7 +305,7 @@ let add_constant sp ce locals env =
     sp env locals (safe_infer_declaration env (Def body')) op
 
 let add_discharged_constant sp r locals env =
-  let (body,typ,cst) = Cooking.cook_constant env r in
+  let (body,typ,cst,op) = Cooking.cook_constant env r in
   let env' = add_constraints cst env in
   match body with
     | None -> 
@@ -322,7 +322,7 @@ let add_discharged_constant sp r locals env =
 	    const_type = typ;
 	    const_hyps = sp_hyps;
 	    const_constraints = cst;
-	    const_opaque = false } 
+	    const_opaque = op } 
 	in
 	Environ.add_constant sp cb env'
 

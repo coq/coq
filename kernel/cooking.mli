@@ -33,7 +33,8 @@ type recipe = {
   d_abstract : identifier list;
   d_modlist : work_list }
 
-val cook_constant : env -> recipe -> constr option * constr * constraints
+val cook_constant :
+  env -> recipe -> constr option * constr * constraints * bool
 
 (*s Utility functions used in module [Discharge]. *)
 
