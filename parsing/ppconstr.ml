@@ -410,10 +410,10 @@ let gentermpr gt =
 
 (* [at_top] means ids of env must be avoided in bound variables *)
 
-(*
 let gentermpr_core at_top env t =
   gentermpr (Termast.ast_of_constr at_top env t)
-*)
+(*
 let gentermpr_core at_top env t =
   pr_constr (Constrextern.extern_constr at_top env t)
+*)
   
