@@ -415,7 +415,7 @@ let print_name name =
     [< print_named_decl (name,c,typ) >]
   with Not_found ->
   try
-    let sp = Syntax_def.locate_syntactic_definition (make_path [] name CCI) in
+    let sp = Syntax_def.locate_syntactic_definition (make_qualid [] str) in
     print_syntactic_def true " = " sp
   with Not_found ->
     error (str ^ " not a defined object")

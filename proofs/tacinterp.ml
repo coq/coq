@@ -136,14 +136,14 @@ let look_for_interp = Hashtbl.find interp_tab
 
 (* Globalizes the identifier *)
 let glob_const_nvar loc id =
-  let sp = make_path [] id CCI in
+  let qid = make_qualid [] (string_of_id id) in
   try
-    match Nametab.locate sp with
+    match Nametab.locate qid with
       | ConstRef sp -> sp
-      | _ -> error ((string_of_path sp) ^ " does not denote a constant")
+      | _ -> error ((string_of_qualid qid) ^ " does not denote a constant")
   with
     | Not_found ->
-	Pretype_errors.error_global_not_found_loc loc sp
+	Pretype_errors.error_global_not_found_loc loc qid
 
 
 (* Summary and Object declaration *)

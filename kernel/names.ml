@@ -126,6 +126,15 @@ let kind_of_string = function
   | "obj" -> OBJ
   | _ -> invalid_arg "kind_of_string"
 
+(*s Section paths *)
+
+type qualid = string list * string
+
+let make_qualid p s = (p,s)
+let repr_qualid q = q
+
+let string_of_qualid (l,s) = String.concat "." (l@[s])
+let print_qualid (l,s) = prlist_with_sep (fun () -> pr_str ".") pr_str (l@[s])
 
 (*s Section paths *)
 

@@ -49,6 +49,17 @@ type dir_path = string list
 (* Printing of directory paths as ["#module#submodule"] *)
 val string_of_dirpath : dir_path -> string
 
+
+(*s Section paths *)
+
+type qualid
+
+val make_qualid : string list -> string -> qualid
+val repr_qualid : qualid -> string list * string
+
+val string_of_qualid : qualid -> string
+val print_qualid : qualid -> std_ppcmds
+
 (*s Section paths *)
 type section_path
 

@@ -178,49 +178,17 @@ let ref_from_constr c = match kind_of_term c with
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let ast_to_var env (vars1,vars2) loc id =
+let ast_to_var env (vars1,vars2) loc s =
+  let id = id_of_string s in
   let imp = 
-    if Idset.mem id env or List.mem (string_of_id id) vars1
+    if Idset.mem id env or List.mem s vars1
     then []
     else
       let _ = lookup_id id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
-      try implicits_of_global (Nametab.locate (make_path [] id CCI))
+      try implicits_of_global (Nametab.locate (make_qualid [] s))
       with _ -> []
   in RVar (loc, id), imp
-
-(*
-let ast_to_global_ref loc qualid =
-  try
-    let ref = Nametab.locate qualid in
-    RRef (loc, ref), implicits_of_global ref
-  with Not_found ->
-    let sp = Syntax_def.locate_syntactic_definition qualid in
-    Syntax_def.search_syntactic_definition sp, []
-
-let ast_to_ref env (vars1,vars2) loc s =
-  let id = ident_of_nvar loc s in
-  try
-    let id, imp = ast_to_var env (vars1,vars2) loc s in
-    RVar (loc, id), imp
-  with Not_found ->
-  try
-    ast_to_global_ref loc (make_path [] id CCI)
-  with Not_found ->
-    error_var_not_found_loc loc CCI id
-
-let ast_to_qualid env vars loc p =
-  let outnvar = function
-    | Nvar (loc,s) -> s
-    | _ -> anomaly "bad-formed path" in
-  match p with
-    | [] -> anomaly "ast_to_qualid: Empty qualified id"
-    | [s] -> ast_to_ref env vars loc (outnvar s)
-    | l -> 
-	let p,r = list_chop (List.length l -1) (List.map outnvar l) in
-	let id = id_of_string (List.hd r) in
-	ast_to_global_ref loc (make_path p id CCI)
-*)
 
 let interp_qualid p =
   let outnvar = function
@@ -230,32 +198,32 @@ let interp_qualid p =
     | [] -> anomaly "interp_qualid: empty qualified identifier"
     | l -> 
 	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
-	let id = id_of_string (List.hd r) in
-	make_path p id CCI
+	make_qualid p (List.hd r)
 
-let rawconstr_of_var env vars loc id =
+let rawconstr_of_var env vars loc s =
   try
-    ast_to_var env vars loc id
+    ast_to_var env vars loc s
   with Not_found ->
-    error_var_not_found_loc loc CCI id
+    error_var_not_found_loc loc CCI (id_of_string s)
 
-let rawconstr_of_qualid env vars loc sp =
+let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
   try
-    if dirpath sp <> [] then raise Not_found;
-    ast_to_var env vars loc (basename sp)
+    match repr_qualid qid with
+      | [],s -> ast_to_var env vars loc s
+      | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference? *)
   try
-    let ref = Nametab.locate sp in
+    let ref = Nametab.locate qid in
     RRef (loc, ref), implicits_of_global ref
   with Not_found ->
   (* Is it a reference to a syntactic definition? *)
   try
-    let sp = Syntax_def.locate_syntactic_definition sp in
+    let sp = Syntax_def.locate_syntactic_definition qid in
     Syntax_def.search_syntactic_definition sp, []
   with Not_found ->
-    error_global_not_found_loc loc sp
+    error_global_not_found_loc loc qid
 
 let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
@@ -338,7 +306,7 @@ let check_capture loc s ty = function
 let ast_to_rawconstr sigma env allow_soapp lvar =
   let rec dbrec env = function
     | Nvar(loc,s) ->
-	fst (rawconstr_of_var env lvar loc (ident_of_nvar loc s))
+	fst (rawconstr_of_var env lvar loc s)
 
     | Node(loc,"QUALID", l) ->
 	fst (rawconstr_of_qualid env lvar loc (interp_qualid l))
@@ -549,18 +517,19 @@ let ast_adjust_consts sigma =
         else if Idset.mem id env then ast
         else 
 	  (try
-	     ast_of_qualid loc (make_path [] id CCI)
+	     ast_of_qualid loc (make_qualid [] s)
 	   with Not_found ->
 	     warning ("Could not globalize " ^ s); ast)
     | Node (loc, "QUALID", p) as ast ->
 	(match p with
 	   | [Nvar (_,s) as v] when isMeta s -> v
 	   | _ ->
-	       let sp = interp_qualid p in
+	       let qid = interp_qualid p in
 	       try
-		 ast_of_qualid loc sp
+		 ast_of_qualid loc qid
 	       with Not_found -> 
-		 warning ("Could not globalize " ^ (string_of_path sp)); ast)
+		 warning ("Could not globalize " ^ (string_of_qualid qid));
+		 ast)
     | Slam (loc, None, t) -> Slam (loc, None, dbrec env t)
     | Slam (loc, Some na, t) ->
         let env' = Idset.add (id_of_string na) env in

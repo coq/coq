@@ -247,8 +247,10 @@ let push_inductive_names ccitab sp mie =
 	 let _,ccitab =
 	   List.fold_left
 	     (fun (p,ccitab) x ->
-		(p+1,Idmap.add x (ConstructRef (indsp,p)) ccitab))
-	     (1,Idmap.add id (IndRef indsp) ccitab)
+		(p+1,
+		 Stringmap.add (string_of_id x) (ConstructRef (indsp,p)) 
+		   ccitab))
+	     (1,Stringmap.add (string_of_id id) (IndRef indsp) ccitab)
 	     cnames in
 	 (n+1,ccitab))
       (0,ccitab)
@@ -259,7 +261,8 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
   | sp,Leaf obj -> 
       begin match object_tag obj with
 	| "CONSTANT" | "PARAMETER" ->
-            (Idmap.add (basename sp) (ConstRef sp) ccitab,objtab,modtab)
+            (Stringmap.add (string_of_id (basename sp))
+	       (ConstRef sp) ccitab,objtab,modtab)
 	| "INDUCTIVE" ->
 	    let mie = out_inductive obj in
 	    (push_inductive_names ccitab sp mie, objtab, modtab)
@@ -270,7 +273,9 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
         (* ou quelque chose comme cela *)
 	| "CLASS" | "COERCION" | "STRUCTURE" | "OBJDEF1" | "SYNTAXCONSTANT"
 	| _ ->
-	    (ccitab, Idmap.add (basename sp) (sp,obj) objtab, modtab)
+	    (ccitab,
+	     Stringmap.add (string_of_id (basename sp)) (sp,obj) objtab,
+	     modtab)
       end 
   | sp,ClosedSection (export,_,seg,contents) ->
       let id = string_of_id (basename sp) in
@@ -279,7 +284,8 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
 
 and module_contents seg =
   let ccitab, objtab, modtab =
-    List.fold_left process_object (Idmap.empty, Idmap.empty, Stringmap.empty)
+    List.fold_left process_object
+      (Stringmap.empty, Stringmap.empty, Stringmap.empty)
       seg
   in Nametab.Closed (ccitab, objtab, modtab)
 

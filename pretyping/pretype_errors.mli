@@ -17,7 +17,7 @@ val error_var_not_found_loc :
   loc -> path_kind -> identifier -> 'a
 
 val error_global_not_found_loc :
-  loc -> section_path -> 'a
+  loc -> qualid -> 'a
 
 val error_cant_find_case_type_loc : 
   loc -> env -> constr -> 'a

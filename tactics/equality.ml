@@ -669,8 +669,7 @@ let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
 let existS_pattern = put_pat mmk "(existS ?1 ?2 ?3 ?4)"
 let existT_pattern = put_pat mmk "(existT ?1 ?2 ?3 ?4)"
 
-let constant dir id = 
-  Declare.global_qualified_reference (make_path dir (id_of_string id) CCI)
+let constant dir s = Declare.global_qualified_reference (make_qualid dir s)
 
 let build_sigma_set () =
   { proj1 = constant ["Specif"] "projS1";

@@ -60,7 +60,7 @@ type type_error =
   | WrongPredicateArity of constr * int * int
   | NeedsInversion of constr * constr
   (* Relocation error *)
-  | GlobalNotFound of section_path
+  | QualidNotFound of qualid
 
 exception TypeError of path_kind * env * type_error
 

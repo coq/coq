@@ -113,18 +113,18 @@ let locate_file f =
     mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
 		  'sTR"on loadpath"; 'fNL >])
 
-let locate_sp sp =
+let locate_qualid qid =
   try
-    let ref = Nametab.locate sp in
+    let ref = Nametab.locate qid in
     mSG
       [< 'sTR (string_of_path (sp_of_global (Global.env()) ref)); 'fNL >]
   with Not_found -> 
   try
     mSG
-      [< 'sTR (string_of_path (Syntax_def.locate_syntactic_definition sp));
+      [< 'sTR (string_of_path (Syntax_def.locate_syntactic_definition qid));
 	 'fNL >]
   with Not_found ->
-    error ((string_of_path sp) ^ " not a defined object")
+    error ((string_of_qualid qid) ^ " not a defined object")
 
 let print_loadpath () =
   let l = get_load_path () in
@@ -158,7 +158,7 @@ let _ =
 let _ = 
   add "Locate"
     (function 
-       | [VARG_QUALID sp] -> (fun () -> locate_sp sp)
+       | [VARG_QUALID qid] -> (fun () -> locate_qualid qid)
        | _  -> bad_vernac_args "Locate")
 
 (* For compatibility *)
@@ -885,12 +885,12 @@ let _ =
 let _ =
   add "SEARCH"
     (function 
-       | [VARG_QUALID q] ->
+       | [VARG_QUALID qid] ->
 	   (fun () ->
 	      let ref =
-		try Nametab.locate q
+		try Nametab.locate qid
 		with Not_found ->
-		  Pretype_errors.error_global_not_found_loc loc q
+		  Pretype_errors.error_global_not_found_loc loc qid
 	      in 
 	      search_by_head ref)
        | _ -> bad_vernac_args "SEARCH")

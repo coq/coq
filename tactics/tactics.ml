@@ -1516,8 +1516,7 @@ let contradiction_on_hyp id gl =
   else 
     error "Not a contradiction"
 
-let constant dir id = 
-  Declare.global_qualified_reference (make_path dir (id_of_string id) CCI)
+let constant dir s = Declare.global_qualified_reference (make_qualid dir s)
 
 let coq_False = lazy (constant ["Logic"] "False")
 let coq_not = lazy (constant ["Logic"] "not")

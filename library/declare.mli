@@ -83,10 +83,10 @@ val extract_instance : global_reference -> constr array -> constr array
 val constr_of_reference :
   'a Evd.evar_map -> Environ.env -> global_reference -> constr
 
-val global_qualified_reference : section_path -> constr
+val global_qualified_reference : qualid -> constr
 val global_reference : path_kind -> identifier -> constr
 
-val construct_qualified_reference : Environ.env -> section_path -> constr
+val construct_qualified_reference : Environ.env -> qualid -> constr
 val construct_reference : Environ.env -> path_kind -> identifier -> constr
 
 val is_global : identifier -> bool

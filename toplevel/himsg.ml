@@ -279,8 +279,8 @@ let explain_var_not_found k ctx id =
      'sPC ; 'sTR "was not found"; 
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
-let explain_global_not_found k ctx sp = 
-  [< 'sTR "The reference"; 'sPC; 'sTR (string_of_path sp);
+let explain_global_not_found k ctx q = 
+  [< 'sTR "The reference"; 'sPC; print_qualid q;
      'sPC ; 'sTR "was not found"; 
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
@@ -360,7 +360,7 @@ let explain_type_error k ctx = function
       explain_not_clean k ctx n c
   | VarNotFound id ->
       explain_var_not_found k ctx id
-  | GlobalNotFound sp ->
+  | QualidNotFound sp ->
       explain_global_not_found k ctx sp
   | UnexpectedType (actual,expected) ->
       explain_unexpected_type k ctx actual expected

@@ -57,9 +57,9 @@ val globalize_ast    : Coqast.t -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)
-val interp_qualid : Coqast.t list -> section_path
+val interp_qualid : Coqast.t list -> qualid
 
-val ast_of_qualid : Coqast.loc -> section_path -> Coqast.t
+val ast_of_qualid : Coqast.loc -> qualid -> Coqast.t
 
 (* Translation rules from V6 to V7:
 
