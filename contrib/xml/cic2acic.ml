@@ -359,7 +359,9 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
       in
        let ainnertypes,innertype,innersort,expected_available =
         let {D.synthesized = synthesized; D.expected = expected} =
-         if computeinnertypes then
+         if computeinnertypes
+          || (match Term.kind_of_term tt with Term.Sort _ -> false | _ -> true)
+         then
 try
           Acic.CicHash.find terms_to_types tt
 with _ ->
