@@ -182,8 +182,7 @@ let rec pattern_of_constr t =
 	       Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
-    | CoFix _ ->
-	error "pattern_of_constr: (co)fix currently not supported"
+    | CoFix f -> PCoFix f
 
 (* To process patterns, we need a translation without typing at all. *)
 
