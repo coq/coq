@@ -35,6 +35,8 @@ let print_usage_channel co command =
   -load-vernac-source f  load Coq file f.v (Load f.)
   -load-vernac-object f  load Coq object file f.vo
   -require f             load Coq object file f.vo and import it (Require f.)
+  -compile f             compile Coq file f.v (implies -batch)
+  -compile-verbose f     verbosely compile Coq file f.v (implies -batch)
 
   -opt                   run the native-code version of Coq or Coq_SearchIsos
   -bindir dir            specify an alternative directory for the binaries

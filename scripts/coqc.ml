@@ -65,52 +65,27 @@ let check_module_name s =
 	done
     | c -> err c
 
- (* compilation of a file [file] with command [command] and args [args] *)
+let rec make_compilation_args = function
+  | [] -> []
+  | file :: fl -> 
+      let dirname = Filename.dirname file in
+      let basename = Filename.basename file in
+      let modulename =
+        if Filename.check_suffix basename ".v" then
+          Filename.chop_suffix basename ".v"
+        else
+          basename
+      in
+      check_module_name modulename;
+      let file = Filename.concat dirname modulename in
+      (if !verbose then "-compile-verbose" else "-compile")
+      :: file :: (make_compilation_args fl)
 
-let compile command args file =
-  let dirname = Filename.dirname file in
-  let basename = Filename.basename file in
-  let modulename =
-    if Filename.check_suffix basename ".v" then
-      Filename.chop_suffix basename ".v"
-    else
-      basename 
-  in
-  check_module_name modulename;
-  let tmpfile = Filename.temp_file "coqc" ".v" in
-  let args' = 
-    command :: "-batch" :: "-silent" :: args 
-    @ ["-load-vernac-source"; tmpfile] in
-  let devnull = 
-    if Sys.os_type = "Unix" then
-      Unix.openfile "/dev/null" [] 0o777 
-    else 
-      Unix.stdin
-  in 
-  let filevo = Filename.concat dirname (modulename ^ ".vo") in
-  let oc = open_out tmpfile in
-  Printf.fprintf oc "Module %s.\n" modulename;
-  Printf.fprintf oc "Load %s\"%s\".\n" 
-    (if !verbose then "Verbose " else "") (String.escaped file);
-  Printf.fprintf oc "Write Module %s \"%s\".\n" modulename
-    (String.escaped filevo);
-  flush oc;
-  close_out oc;
-  try
-    let pid =
-      Unix.create_process_env command
-        (Array.of_list args') environment devnull Unix.stdout Unix.stderr in
-    let status = Unix.waitpid [] pid in
-    if not !keep then Sys.remove tmpfile ;
-    match status with
-      | _, Unix.WEXITED 0 -> ()
-      | _, Unix.WEXITED 127 -> 
-	  Printf.printf "Cannot execute %s\n" command;
-	  exit 1
-      | _, Unix.WEXITED c -> exit c
-      | _                 -> exit 1
-  with _ -> 
-    if not !keep then Sys.remove tmpfile; exit 1
+(* compilation of files [files] with command [command] and args [args] *)
+
+let compile command args files =
+  let args' = command :: args @ (make_compilation_args files) in
+  Unix.execvpe command (Array.of_list args') environment 
 
 (* parsing of the command line
  *
@@ -192,6 +167,7 @@ let main () =
   let coqtopname = 
     if !image <> "" then !image else Filename.concat !bindir (!binary ^ Coq_config.exec_extension)
   in
-  List.iter (compile coqtopname args) cfiles
+(*  List.iter (compile coqtopname args) cfiles*)
+  compile coqtopname args cfiles
     
 let _ = Printexc.print main (); exit 0

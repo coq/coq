@@ -33,3 +33,8 @@ val raw_do_vernac : Pcoq.Gram.parsable -> unit
    and location *)
 
 val load_vernac : bool -> string -> unit
+
+
+(* Compile a vernac file, verbosely or not (f is assumed without .v suffix) *)
+
+val compile : bool -> string -> unit

@@ -72,6 +72,14 @@ let require () =
       Library.require_module None qid  (Some s) false)
     (List.rev !require_list)
 
+let compile_list = ref ([] : (bool * string) list)
+let add_compile verbose s =
+  set_batch_mode ();
+  Options.make_silent true; 
+  compile_list := (verbose,s) :: !compile_list
+let compile_files () =
+  List.iter (fun (v,f) -> Vernac.compile v f) (List.rev !compile_list)
+
 (* Re-exec Coq in bytecode or native code if necessary. [s] is either
    ["byte"] or ["opt"]. Notice that this is possible since the nature of
    the toplevel has already been set in [Mltop] by the main file created
@@ -146,6 +154,12 @@ let parse_args () =
     | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()
 
+    | "-compile" :: f :: rem -> add_compile false f; parse rem
+    | "-compile" :: []       -> usage ()
+
+    | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
+    | "-compile-verbose" :: []       -> usage ()
+
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()
 
@@ -207,7 +221,8 @@ let start () =
       require ();
       load_rcfile();
       load_vernacular ();
-      outputstate ()
+      compile_files ();
+      outputstate ();
     with e ->
       flush_all();
       if not !batch_mode then message "Error during initialization :";
@@ -215,7 +230,7 @@ let start () =
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
-  if not (!batch_mode) then Lib.init_toplevel_root ();
+  Lib.init_toplevel_root ();
   Toplevel.loop();
 (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();

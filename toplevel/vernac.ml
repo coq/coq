@@ -174,3 +174,20 @@ let load_vernac verb file =
     raw_load_vernac_file verb file
   with e -> 
     raise_with_file file e
+
+(* Compile a vernac file (f is assumed without .v suffix) *)
+let compile verbosely f =
+  try
+    let s = Filename.basename f in
+    let m = Names.id_of_string s in
+    let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
+    let ldir = (Library.find_logical_path (Filename.dirname longf)) @ [m] in
+    Lib.start_module ldir;
+    load_vernac verbosely longf;
+    let mid = Lib.end_module m in
+    assert (mid = ldir);
+    Library.save_module_to ldir (f^".vo")
+  with e ->
+    raise_with_file f e
+
+
