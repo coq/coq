@@ -23,6 +23,8 @@ BIBTEX=bibtex
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
+TEST=test
+
 TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):.:
 
 INPUTS=./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
@@ -67,8 +69,8 @@ FTPHTMLDOCS=doc-html.tar.gz
 all: check-env all-dvi all-pdf
 
 check-env:
-	if test "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
-	if test "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; fi
+	if $(TEST) "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
+	if $(TEST) "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; fi
 
 coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
@@ -202,8 +204,9 @@ Library.pdf: $(INPUTS) library.coqweb.tex Library.tex
 	$(PDFLATEX) Library
 	$(PDFLATEX) Library
 
+# The option -exec xxdate.exe is to product today's date (\today TeX macro)
 Library.html: $(INPUTS) library.coqweb.tex Library.tex
-	hevea ./coq-html.sty $(COQWEBSTY)/coqweb.sty ./Library.tex
+	hevea ./coq-html.sty -exec xxdate.exe $(COQWEBSTY)/coqweb.sty ./Library.tex
 
 LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations \
          Wellfounded IntMap
@@ -227,7 +230,7 @@ library.files::
 	   VOFILES=`ls -tr *.vo` ; \
 	   for file in $$VOFILES ; do \
 		VF=`basename $$file \.vo` ; \
-		if test \( ! -e $$VF.g \) -o \( $$VF.v -nt $$VF.g \); then \
+		if $(TEST) \( ! -e $$VF.g \) -o \( $$VF.v -nt $$VF.g \) ; then \
 	          $(GALLINA) $$VF.v; fi ; \
 		echo $$rep/$$VF.g >> $$ABSOLUTE ; \
            done \
@@ -284,7 +287,7 @@ Reference-Manual-RT.dvi: Reference-Manual.dvi RefMan-cover.tex
 	$(LATEX) RefMan-cover.tex
 	set a=`tail -1 Reference-Manual.log`;\
 	set a=expr \("$$a" : '.*(\(.*\) pages.*'\) % 2;\
-	if test "$$a = 0";\
+	if $(TEST) "$$a = 0";\
 	 then rrkit  RefMan-cover.dvi RefMan-body.dvi Reference-Manual-RT.dvi;\
 	 else rrkit -odd RefMan-cover.dvi RefMan-body.dvi Reference-Manual-RT.dvi;\
 	fi
@@ -295,7 +298,7 @@ Tutorial-RT.dvi : Tutorial.v.dvi Tutorial-cover.tex
 	$(LATEX) Tutorial-cover.tex
 	set a=`tail -1 Tutorial.v.log`;\
 	set a=expr \("$$a" : '.*(\(.*\) pages.*'\) % 2;\
-	if test "$$a = 0";\
+	if $(TEST) "$$a = 0";\
 	 then rrkit      Tutorial-cover.dvi Tutorial-body.dvi Tutorial-RT.dvi;\
 	 else rrkit -odd Tutorial-cover.dvi Tutorial-body.dvi Tutorial-RT.dvi;\
 	fi
