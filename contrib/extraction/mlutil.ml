@@ -407,12 +407,11 @@ and simpl_case o br e =
 	try (* Is each branch independant of [e] ? *) 
 	  check_constant_case br 
 	with Impossible ->
-	  if (is_atomic e) then (* Swap the case and the lam if possible *)
-	    let ids,br = permut_case_fun br [] in 
-	    let n = List.length ids in 
-	    if n = 0 then MLcase (e, br) 
-	    else named_lams (MLcase (ml_lift n e, br)) ids
-	  else MLcase (e, br)
+	  (* Swap the case and the lam if possible *)
+	  let ids,br = permut_case_fun br [] in 
+	  let n = List.length ids in 
+	  if n = 0 then MLcase (e, br) 
+	  else named_lams (MLcase (ml_lift n e, br)) ids
 
 (*s Local [prop] elimination. *) 
 (* Try to eliminate as many [prop] as possible inside an [ml_ast]. *)
