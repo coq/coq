@@ -995,8 +995,8 @@ To display the implicit arguments associated to an object use command
 \end{quote}
 
 \subsection{Explicitation of implicit arguments for pretty-printing
-\comindex{Set Print Implicit}
-\comindex{Unset Print Implicit}}
+\comindex{Set Printing Implicit}
+\comindex{Unset Printing Implicit}}
 
 By default the basic pretty-printing rules hide the inferable implicit
 arguments of an application. To force printing all implicit arguments,
@@ -1008,6 +1008,8 @@ Conversely, to restore the hidding of implicit arguments, use command
 \begin{quote}
 {\tt Unset Printing Implicit.}
 \end{quote}
+
+\SeeAlso {\tt Set Printing All} in section \ref{SetPrintingAll}.
 
 \subsection{Canonical structures
 \comindex{Canonical Structure}}
@@ -1121,6 +1123,30 @@ coercion between {\class$_1$} and {\class$_2$}.
 
 More details and examples, and a description of the commands related
 to coercions are provided in chapter \ref{Coercions-full}.
+
+\section{Printing constructions in full}
+\label{SetPrintingAll}
+\comindex{Set Printing All}
+\comindex{Unset Printing All}
+
+Coercions, implicit arguments, the type of pattern-matching, but also
+notations (see chapter \ref{Addoc-syntax}) can obfuscate the behavior
+of some tactics (typically the tactics applying to occurrences of
+subterms are sensitive to the implicit arguments). The command
+\begin{quote}
+{\tt Set Printing All.}
+\end{quote}
+deactivates all high-level printing features such as coercions,
+implicit arguments, returned type of pattern-matching, notations and
+various syntactic sugar for pattern-matching or record projections.
+Otherwise said, {\tt Set Printing All} includes the effects
+of the commands {\tt Set Printing Implicit}, {\tt Set Printing
+Coercions}, {\tt Set Printing Synth}, {\tt Unset Printing Projections}
+and {\tt Unset Printing Notations}.  To reactivate the high-level
+printing features, use the command
+\begin{quote}
+{\tt Unset Printing All.}
+\end{quote}
 
 %%% Local Variables: 
 %%% mode: latex
