@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open Pp
 open System
 open Util
 open Names
@@ -292,6 +293,13 @@ let check_imports env needed =
   in
   List.iter check needed
 
+let import_constraints g sp cst =
+  try
+    merge_constraints cst g
+  with UniverseInconsistency ->
+    errorlabstrm "import_constraints"
+      [< 'sTR "Universe Inconsistency during import of"; 'sPC; print_sp sp >]
+
 let import cenv env =
   check_imports env cenv.cenv_needed;
   let add_list t = List.fold_left (fun t (sp,x) -> Spmap.add sp x t) t in
@@ -305,10 +313,10 @@ let import cenv env =
   in
   let g = universes env in
   let g = List.fold_left 
-	    (fun g (_,cb) -> merge_constraints cb.const_constraints g) 
+	    (fun g (sp,cb) -> import_constraints g sp cb.const_constraints) 
 	    g cenv.cenv_constants in
   let g = List.fold_left 
-	    (fun g (_,mib) -> merge_constraints mib.mind_constraints g) 
+	    (fun g (sp,mib) -> import_constraints g sp mib.mind_constraints) 
 	    g cenv.cenv_inductives in
   { env with env_globals = new_globals; env_universes = g }
 
