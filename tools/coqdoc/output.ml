@@ -141,7 +141,10 @@ let _ = List.iter
 	    "~",   "\\ensuremath{\\lnot}";
 	    "/\\", "\\ensuremath{\\land}";
 	    "\\/", "\\ensuremath{\\lor}";
-	    "|-",  "\\ensuremath{\\vdash}" ]
+	    "|-",  "\\ensuremath{\\vdash}";
+	    "forall", "\\ensuremath{\\forall}";
+	    "exists", "\\ensuremath{\\exists}";
+	  ]
 
 (*s Table of contents *)
 

@@ -63,7 +63,6 @@
   type gallina_state = Nothing | AfterDot | Proof
 
   let gstate = ref AfterDot
-  let gparen = ref 0
 
   let is_proof = 
     let t = Hashtbl.create 13 in
@@ -78,10 +77,7 @@
 	if id <> "Add" then gstate := Nothing
 
   let gallina_symbol s = 
-    if s = "(" then incr gparen 
-    else if s = ")" then decr gparen
-    else if !gstate = AfterDot || 
-            (!gstate = Proof && !gparen = 0 && s = ":=") then 
+    if !gstate = AfterDot || (!gstate = Proof && s = ":=") then 
       gstate := Nothing
 
   let is_space = function ' ' | '\t' | '\n' | '\r' -> true | _ -> false
@@ -334,7 +330,8 @@ and coq = parse
       { let s = lexeme lexbuf in
 	if !gallina then gallina_id s;
         ident s (lexeme_start lexbuf); coq lexbuf }
-
+  | "(" space* (identifier as id) space* ":=" 
+      { symbol "("; ident id (lexeme_start lexbuf); symbol ":="; coq lexbuf }
   | (identifier '.')* identifier
       { let id = lexeme lexbuf in
 	if !gallina then gallina_id id;
