@@ -73,5 +73,5 @@ Proof.
 Intros A B H.
 Elim H; [ Intro; Exists true; Assumption
         | Intro; Exists false; Assumption ].
-Save.
+Defined.
 Implicits bool_of_sumbool.
