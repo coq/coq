@@ -1,3 +1,4 @@
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 (*Toplevel loop for the communication between Coq and Centaur *)
 open Names;;
@@ -42,11 +43,20 @@ open Astterm;;
 open Nametab;;
 open Showproof;;
 open Showproof_ct;;
+open Tacexpr;;
+open Vernacexpr;;
 
+let pcoq_started = ref None;;
+
+let if_pcoq f a =
+  if !pcoq_started <> None then f a else error "Pcoq is not started";;
 
 let text_proof_flag = ref "en";;
 
+(* 
 let current_proof_name = ref "";;
+*)
+let current_proof_name () = string_of_id (get_current_proof_name ())
 
 let current_goal_index = ref 0;;
 
@@ -72,13 +82,13 @@ let print_path p =
 ;;
 
 let kill_proof_node index =
- let paths = History.historical_undo !current_proof_name index in
+ let paths = History.historical_undo (current_proof_name()) index in
  let _ =  List.iter
             (fun path -> (traverse_to path;
                           Pfedit.mutate weak_undo_pftreestate;
 			  traverse_to []))
           paths in
- History.border_length !current_proof_name;;
+ History.border_length (current_proof_name());;
 
 
 (*Message functions, the text of these messages is recognized by the protocols *)
@@ -100,7 +110,7 @@ let ctf_acknowledge_command request_id command_count opt_exn =
     int command_count ++ fnl() ++
     int goal_count ++ fnl () ++
     int goal_index ++ fnl () ++
-    str !current_proof_name ++ fnl() ++
+    str (current_proof_name()) ++ fnl() ++
     (match opt_exn with
       Some e -> Cerrors.explain_exn e
     | None -> mt ()) ++ fnl() ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
@@ -203,7 +213,7 @@ let check_break () =
    else ();;
 
 let print_past_goal index =
- let path = History.get_path_for_rank !current_proof_name index in
+ let path = History.get_path_for_rank (current_proof_name()) index in
  try traverse_to path;
      let pf = proof_of_pftreestate (get_pftreestate ()) in
      output_results  (ctf_PathGoalMessage ())
@@ -223,7 +233,7 @@ let show_nth n =
 	   then output_results (ctf_TextMessage !global_request_id)
                                (Some (P_text (show_proof !text_proof_flag [])))
            else			       
-	   let path = History.get_nth_open_path !current_proof_name n in
+	   let path = History.get_nth_open_path (current_proof_name()) n in
 	   output_results (ctf_TextMessage !global_request_id)
                           (Some (P_text (show_proof !text_proof_flag path))))
     else
@@ -240,9 +250,11 @@ let show_nth n =
 
 let ctv_SEARCH_LIST = ref ([] : ct_PREMISE list);;
 
-let filter_by_module_from_varg_list (l:vernac_arg list) =
-  let dir_list, b = Vernacentries.inside_outside l in
+(*
+let filter_by_module_from_varg_list l =
+  let dir_list, b = Vernacentries.interp_search_restriction l in
     Search.filter_by_module_from_list (dir_list, b);;
+*)
 
 let add_search (global_reference:global_reference) assumptions cstr =
   try 
@@ -260,15 +272,17 @@ let add_search (global_reference:global_reference) assumptions cstr =
     ctv_SEARCH_LIST:= ast::!ctv_SEARCH_LIST
   with e -> msgnl (str "add_search raised an exception"); raise e;;
 
+(*
 let make_error_stream node_string =
   str "The syntax of " ++ str node_string ++
   str " is inconsistent with the vernac interpreter entry";;
+*)
 
 let ctf_EmptyGoalMessage id =
   fnl () ++ str "Empty Goal is a no-op.  Fun oh fun." ++ fnl ();;
 
 
-let print_check (ast, judg) =
+let print_check judg =
  let {uj_val=value; uj_type=typ} = judg in
  let value_ct_ast = 
      (try translate_constr false (Global.env()) value 
@@ -289,7 +303,7 @@ let print_check (ast, judg) =
     (CT_typed_formula(value_ct_ast,type_ct_ast)
     )]))));;
 
-let ct_print_eval ast red_fun env evd judg =
+let ct_print_eval ast red_fun env judg =
 ((if refining() then traverse_to []);
 let {uj_val=value; uj_type=typ} = judg in
 let nvalue = red_fun value
@@ -320,13 +334,13 @@ let globcv x =
   | _ -> failwith "globcv : unexpected value";;
 
 let pbp_tac_pcoq =
-    pbp_tac (function (x:Ctast.t) -> 
+    pbp_tac (function (x:raw_tactic_expr) -> 
       output_results
         (ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
 
 let blast_tac_pcoq =
-    blast_tac (function (x:Ctast.t) -> 
+    blast_tac (function (x:raw_tactic_expr) -> 
       output_results
 	(ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
@@ -345,18 +359,17 @@ let search_output_results () =
                       (List.rev !ctv_SEARCH_LIST))));;
 
 
-let debug_tac2_pcoq = function
-    [Tacexp ast] ->
+let debug_tac2_pcoq tac =
       (fun g ->
 	let the_goal = ref (None : goal sigma option) in
-	let the_ast = ref ast in
+	let the_ast = ref tac in
 	let the_path = ref ([] : int list) in
 	try
-	  let result = report_error ast the_goal the_ast the_path [] g in
+	  let result = report_error tac the_goal the_ast the_path [] g in
 	  (errorlabstrm "DEBUG TACTIC"
 	     (str "no error here " ++ fnl () ++ pr_goal (sig_it g) ++
 	      fnl () ++ str "the tactic is" ++ fnl () ++
-	      Printer.gentacpr ast);
+	      Pptactic.pr_raw_tactic tac);
 	   result)
 	with
 	  e ->
@@ -370,13 +383,12 @@ let debug_tac2_pcoq = function
                                (List.map
                                   (fun n -> CT_coerce_INT_to_SIGNED_INT
                                                  (CT_int n))
-                                  (clean_path 0 ast 
+                                  (clean_path tac 
 					       (List.rev !the_path)))))));
 	    	(output_results
 		   (ctf_OtherGoal !global_request_id)
 		   (Some (P_r (translate_goal (sig_it g)))));
-	    raise e)
-  | _ -> error "wrong arguments for debug_tac2_pcoq";;
+	    raise e);;
 
 let rec selectinspect n env =
     match env with
@@ -437,13 +449,15 @@ let pair_list_to_ct l =
 				       [ct_int_to_TARG a; ct_int_to_TARG b])))
 		     l));;
 
+(* Annule toutes les commandes qui s'appliquent sur les sous-buts du
+   but auquel a été appliquée la n-ième tactique *)
 let logical_kill n =
-  let path = History.get_path_for_rank !current_proof_name n in
+  let path = History.get_path_for_rank (current_proof_name()) n in
   begin
     traverse_to path;
     Pfedit.mutate weak_undo_pftreestate;
     (let kept_cmds, undone_cmds, remaining_goals, current_goal =
-      History.logical_undo !current_proof_name n in
+      History.logical_undo (current_proof_name()) n in
        output_results (ctf_undoResults !global_request_id)
 	 (Some
 	    (P_t
@@ -457,24 +471,118 @@ let logical_kill n =
     traverse_to []
   end;;
 
+let simulate_solve n tac =
+  let path = History.get_nth_open_path (current_proof_name()) n in
+  solve_nth n (Tacinterp.hide_interp tac);
+  traverse_to path;
+  Pfedit.mutate weak_undo_pftreestate;
+  traverse_to []
+
+let kill_node_verbose n =
+  let ngoals = kill_proof_node n in
+  output_results_nl (ctf_KilledMessage !global_request_id ngoals)
+
+let set_text_mode s = text_proof_flag := s
+
+VERNAC COMMAND EXTEND TextMode
+| [ "Text" "Mode" "fr" ] -> [ set_text_mode "fr" ]
+| [ "Text" "Mode" "en" ] -> [ set_text_mode "en" ]
+| [ "Text" "Mode" "Off" ] -> [ set_text_mode "off" ]
+END
+
+VERNAC COMMAND EXTEND OutputGoal
+  [ "Goal" ] -> [ output_results_nl(ctf_EmptyGoalMessage "") ]
+END
+
+VERNAC COMMAND EXTEND OutputGoal
+  [ "Goal" "Cmd" natural(n) "with" tactic(tac) ] -> [ simulate_solve n tac ]
+END
+
+VERNAC COMMAND EXTEND KillProof
+| [ "Kill" "Proof" "after"  natural(n) ] -> [ kill_node_verbose n ]
+| [ "Kill" "Proof" "at"  natural(n) ] -> [ kill_node_verbose n ]
+END
+
+VERNAC COMMAND EXTEND KillSubProof
+  [ "Kill" "SubProof" natural(n) ] -> [ logical_kill n ]
+END
+
+let start_proof_hook () =
+  History.start_proof (current_proof_name());
+  current_goal_index := 1
+
+let solve_hook n =
+  let name = current_proof_name () in
+  let old_n_count = History.border_length name in
+  let pf = proof_of_pftreestate (get_pftreestate ()) in
+  let n_goals = (List.length (fst (frontier pf))) + 1 - old_n_count in
+  begin
+    current_goal_index := n;
+    History.push_command name  n n_goals
+  end
+
+let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
+
+let pcoq_search s l =
+  ctv_SEARCH_LIST:=[];
+  begin match s with
+  | SearchPattern c ->
+      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+      raw_pattern_search (filter_by_module_from_list l) add_search pat
+  | SearchRewrite c ->
+      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+      raw_search_rewrite (filter_by_module_from_list l) add_search pat;
+  | SearchHead locqid ->
+      filtered_search
+	(filter_by_module_from_list l) add_search (Nametab.global locqid)
+  end;
+  search_output_results()
+
+let pcoq_print_name (_,qid) =
+  let results = xlate_vernac_list (name_to_ast qid) in
+  output_results 
+    (fnl () ++ str "message" ++ fnl () ++ str "PRINT_VALUE" ++ fnl ())
+    (Some (P_cl results))
+
+let pcoq_print_check j =
+  let a,b = print_check j in output_results a b
+
+let pcoq_print_eval redfun env c j =
+  let strm, vtp = ct_print_eval (Ctast.ast_to_ct c) redfun env j in
+  output_results strm vtp;;
+
+open Vernacentries
+
+let pcoq_show_goal = function
+  | Some n -> show_nth n
+  | None ->
+      if !pcoq_started = Some true (* = debug *) then show_open_subgoals ()
+      else errorlabstrm "show_goal"
+	(str "Show must be followed by an integer in Centaur mode");;
+
+let pcoq_hook = {
+  start_proof = start_proof_hook;
+  solve = solve_hook;
+  abort = abort_hook;
+  search = pcoq_search;
+  print_name = pcoq_print_name;
+  print_check = pcoq_print_check;
+  print_eval = pcoq_print_eval;
+  show_goal = pcoq_show_goal
+}
+
+(*
 let command_changes = [
   ("TEXT_MODE",
    (function
-     |  [VARG_AST (Str(_,x))] ->
-	 (match x with
-	   "fr" -> (function () -> text_proof_flag := "fr")
-	 | "en" -> (function () -> text_proof_flag := "en")
-	 | "off" -> (function () -> text_proof_flag := "off")
-	 | s -> errorlabstrm "TEXT_MODE" (make_error_stream 
-					    ("Unexpected flag " ^ s)))
-     | _ -> errorlabstrm "TEXT_MODE" 
-           (make_error_stream "Unexpected argument")));
+     |  [Coqast.VARG_AST (Str(_,x))] ->
+	 (fun () -> set_text_mode x)));
 
   ("StartProof", 
    (function
-     | (VARG_STRING kind) ::
-       ((VARG_IDENTIFIER s) ::
-	((VARG_CONSTR c) :: [])) ->
+     | (Coqast.VARG_STRING kind) ::
+       ((Coqast.VARG_IDENTIFIER s) ::
+	((Coqast.VARG_CONSTR c) :: [])) ->
 	  let stre =
 	    match kind with
 	    | "THEOREM" -> NeverDischarge
@@ -495,22 +603,18 @@ let command_changes = [
 		  );
 		let str = (string_of_id s) in
 		start_proof_com (Some s) stre c;
-		History.start_proof str;
-		current_proof_name := str;
-		current_goal_index := 1
+		start_proof_hook str;
 	    end
      | _ -> errorlabstrm "StartProof" (make_error_stream "StartProof")));
-  
+
   ("GOAL", 
    (function
-     | (VARG_CONSTR c) :: [] ->
+     | (Coqast.VARG_CONSTR c) :: [] ->
 	 (fun () ->
 	    if not (refining ()) then
 	      begin
 		start_proof_com None NeverDischarge c;
-		History.start_proof "Unnamed_thm";
-		current_proof_name := "Unnamed_thm";
-		current_goal_index := 1
+                start_proof_hook "Unnamed_thm"
 	      end)
      | [] ->
 	 (function () -> output_results_nl(ctf_EmptyGoalMessage ""))
@@ -518,24 +622,21 @@ let command_changes = [
   
   ("SOLVE",
    (function
-     | [VARG_NUMBER n; VARG_TACTIC tcom] ->
+     | [Coqast.VARG_NUMBER n; Coqast.VARG_TACTIC tcom] ->
        (fun () -> 
          if not (refining ()) then
            error "Unknown command of the non proof-editing mode";
          solve_nth n (Tacinterp.hide_interp tcom);
-	 let old_n_count = History.border_length !current_proof_name in
-	 let pf = proof_of_pftreestate (get_pftreestate ()) in
-	 let n_goals = (List.length (fst (frontier pf))) + 1 - old_n_count in
-	   begin
-	     current_goal_index := n;
-	     History.push_command !current_proof_name n n_goals
-	   end)
+(* pcoq *)
+         solve_hook n
+(**)
      | _ -> errorlabstrm "SOLVE" (make_error_stream "SOLVE")));
 
+(* SIMULE SOLVE SANS EFFET *)
   ("GOAL_CMD", 
    (function
-     | (VARG_NUMBER n) ::
-       ((VARG_TACTIC tac) :: []) ->
+     | (Coqast.VARG_NUMBER n) ::
+       ((Coqast.VARG_TACTIC tac) :: []) ->
 	 (function () -> 
 	    let path = History.get_nth_open_path !current_proof_name n in
               solve_nth n (Tacinterp.hide_interp tac);
@@ -543,29 +644,35 @@ let command_changes = [
               Pfedit.mutate weak_undo_pftreestate;
 	      traverse_to [])
      | _ -> errorlabstrm "GOAL_CMD" (make_error_stream "GOAL_CMD")));
-  
+
+(* Revient à l'état avant l'application de la n-ième tactique *)
   ("KILL_NODE", 
    (function
-     | (VARG_NUMBER n) :: [] ->
+     | (Coqast.VARG_NUMBER n) :: [] ->
 	 (function () -> 
 	   let ngoals = kill_proof_node n in
 	   output_results_nl
              (ctf_KilledMessage !global_request_id ngoals))
      | _ -> errorlabstrm "KILL_NODE" (make_error_stream "KILL_NODE")));
+(* Annule toutes les commandes qui s'appliquent sur les sous-buts du
+   but auquel a été appliquée la n-ième tactique *)
   ("KILL_SUB_PROOF",
    (function
-     | [VARG_NUMBER n] ->
+     | [Coqast.VARG_NUMBER n] ->
 	 (function () -> logical_kill n)
      | _ -> errorlabstrm "KILL_SUB_PROOF" (make_error_stream "KILL_SUB_PROOF")));
 
   ("RESUME",
-   (function [VARG_IDENTIFIER id] ->
+   (function [Coqast.VARG_IDENTIFIER id] ->
      (fun () -> 
        let str = (string_of_id id) in
 	 resume_proof id;
+(* Pcoq *)
 	 current_proof_name := str)
+(**)
       | _ -> errorlabstrm "RESUME" (make_error_stream "RESUME")));
 
+(* NoOp... *)
   ("BeginSilent", 
    (function
      | [] ->
@@ -586,23 +693,27 @@ let command_changes = [
   
   ("ABORT", 
    (function
-     | (VARG_IDENTIFIER id) :: [] ->
+     | (Coqast.VARG_IDENTIFIER id) :: [] ->
 	 (function
 	     () ->
 	       delete_proof id;
+(* Pcoq *)
 	       current_proof_name := "";
 	       output_results_nl
 		 (ctf_AbortedMessage !global_request_id (string_of_id id)))
+(**)
      | [] ->
 	 (function
 	     () -> delete_current_proof ();
+(* Pcoq *)
 	     current_proof_name := "";
 	       output_results_nl
 		 (ctf_AbortedMessage !global_request_id ""))
+(**)
      | _ -> errorlabstrm "ABORT" (make_error_stream "ABORT")));
   ("SEARCH",
    function
-       (VARG_QUALID qid)::l ->
+       (Coqast.VARG_QUALID qid)::l ->
          (fun () -> 
            ctv_SEARCH_LIST:=[];
 	    let global_ref = Nametab.global dummy_loc qid in
@@ -614,7 +725,7 @@ let command_changes = [
 
   ("SearchRewrite",
    function
-       (VARG_CONSTR c)::l ->
+       (Coqast.VARG_CONSTR c)::l ->
 	 (fun () -> 
             ctv_SEARCH_LIST:=[];
 	    let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
@@ -626,7 +737,7 @@ let command_changes = [
 
   ("SearchPattern",
    function
-       (VARG_CONSTR c)::l ->
+       (Coqast.VARG_CONSTR c)::l ->
 	 (fun () ->
 	    ctv_SEARCH_LIST := [];
 	    let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
@@ -638,7 +749,7 @@ let command_changes = [
   
   ("PrintId",
    (function
-      | [VARG_QUALID qid] ->
+      | [Coqast.VARG_QUALID qid] ->
 	 (function () -> 
 	   let results = xlate_vernac_list (Ctast.ast_to_ct (name_to_ast qid)) in
 	   output_results 
@@ -648,7 +759,7 @@ let command_changes = [
   
   ("Check", 
    (function
-     | (VARG_STRING kind) :: ((VARG_CONSTR c) :: g) ->
+     | (Coqast.VARG_STRING kind) :: ((Coqast.VARG_CONSTR c) :: g) ->
 	 let evmap, env =
 	   Vernacentries.get_current_context_of_args g in
 	 let f =
@@ -664,7 +775,7 @@ let command_changes = [
   
   ("Eval",
    (function
-     | VARG_TACTIC_ARG(Redexp redexp):: VARG_CONSTR c :: g ->
+     | Coqast.VARG_TACTIC_ARG(Redexp redexp):: Coqast.VARG_CONSTR c :: g ->
 	 let evmap, env = Vernacentries.get_current_context_of_args g in
 	 let redfun =
 	   ct_print_eval (Ctast.ast_to_ct c) (Tacred.reduction_of_redexp redexp env evmap) env in
@@ -675,7 +786,7 @@ let command_changes = [
   
   ("Centaur_Reset", 
    (function
-     | (VARG_IDENTIFIER c) :: [] ->
+     | (Coqast.VARG_IDENTIFIER c) :: [] ->
 	 if refining () then 
 	   output_results (ctf_AbortedAllMessage ()) None;
 	   current_proof_name := "";
@@ -710,21 +821,25 @@ let command_changes = [
 	   "Show_dad_rules" (make_error_stream "Show_dad_rules")));
   ("INSPECT",
    (function
-     | [VARG_NUMBER n] ->
+     | [Coqast.VARG_NUMBER n] ->
          (function () -> inspect n)
      | _ -> errorlabstrm "INSPECT" (make_error_stream "INSPECT")))
 
 ];;
-
+*)
+(*
 let non_debug_changes = [
   ("SHOW", 
    (function
-     | [VARG_NUMBER n] -> (function () -> show_nth n)
+     | [Coqast.VARG_NUMBER n] -> (function () -> show_nth n)
      | _ -> errorlabstrm "SHOW" (make_error_stream "SHOW")))];;
+*)
 
+(* Moved to Vernacentries...
 let command_creations = [
   ("Comments",
    function l -> (fun () -> message ("Comments ok\n")));
+(* Dead code
   ("CommentsBold",
    function l -> (fun () -> message ("CommentsBold ok\n")));
   ("Title",
@@ -734,28 +849,62 @@ let command_creations = [
   ("Note",
    function l -> (fun () -> message ("Note ok\n")));
   ("NL",
-   function l -> (fun () -> message ("Newline ok\n")))];;
+   function l -> (fun () -> message ("Newline ok\n")))
+*)
+];;
+*)
 
+TACTIC EXTEND Pbp
+| [ "Pbp" ident_opt(idopt) natural_list(nl) ] -> 
+    [ if_pcoq pbp_tac_pcoq idopt nl ]
+END
+TACTIC EXTEND Blast
+| [ "Blast" ne_natural_list(nl) ] ->
+    [ if_pcoq blast_tac_pcoq nl ]
+END
+TACTIC EXTEND Dad
+| [ "Dad" natural_list(nl1) "to" natural_list(nl2) ] ->
+    [ if_pcoq dad_tac_pcoq nl1 nl2 ]
+END
+
+TACTIC EXTEND CtDebugTac
+| [ "DebugTac" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq t ]
+END
+
+TACTIC EXTEND CtDebugTac2
+| [ "DebugTac2" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq t ]
+END
 
 
 let start_pcoq_mode debug = 
   begin
+    pcoq_started := Some debug;
     start_dad();
     set_xlate_mut_stuff (fun x ->Ctast.ast_to_ct (globcv (Ctast.ct_to_ast x)));
     declare_in_coq();
+(*
     add_tactic "PcoqPbp" pbp_tac_pcoq;
     add_tactic "PcoqBlast" blast_tac_pcoq;
     add_tactic "Dad" dad_tac_pcoq;
     add_tactic "CtDebugTac" debug_tac2_pcoq;
     add_tactic "CtDebugTac2" debug_tac2_pcoq;
+*)
 (* The following ones are added to enable rich comments in pcoq *)
+(* TODO ...
     add_tactic "Image" (fun _ -> tclIDTAC);
+*)
+(* "Comments" moved to Vernacentries, other obsolete ?
     List.iter (fun (a,b) -> vinterp_add a b) command_creations;
+*)
+(* Now hooks in Vernacentries
     List.iter (fun (a,b) -> overwriting_vinterp_add a b) command_changes;
     if not debug then
       List.iter (fun (a,b) -> overwriting_vinterp_add a b) non_debug_changes;
+*)
+    set_pcoq_hook pcoq_hook;
   end;;
 
+(*
 vinterp_add "START_PCOQ"
             (function _ -> 
               (function () ->
@@ -773,4 +922,25 @@ vinterp_add "START_PCOQ_DEBUG"
                 set_start_marker "--->";
                 set_end_marker "<---";
                 raise Vernacinterp.ProtectedLoop));;
+*)
+let start_pcoq () =
+  start_pcoq_mode false;
+  set_acknowledge_command ctf_acknowledge_command;
+  set_start_marker "CENTAUR_RESERVED_TOKEN_start_command";
+  set_end_marker "CENTAUR_RESERVED_TOKEN_end_command"(*;
+  raise Vernacexpr.ProtectedLoop*)
 
+let start_pcoq_debug () =
+  start_pcoq_mode true;
+  set_acknowledge_command ctf_acknowledge_command;
+  set_start_marker "--->";
+  set_end_marker "<---"(*;
+  raise Vernacexpr.ProtectedLoop;;*)
+
+VERNAC COMMAND EXTEND StartPcoq
+  [ "Start" "Pcoq" "Mode" ] -> [ start_pcoq () ]
+END
+
+VERNAC COMMAND EXTEND StartPcoqDebug
+| [ "Start" "Pcoq" "Debug" "Mode" ] -> [ start_pcoq_debug () ]
+END

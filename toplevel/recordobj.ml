@@ -72,3 +72,5 @@ let objdef_declare ref =
   List.iter
     (fun (refi,c,argj) -> add_new_objdef ((refi,c),v,lt,params,argj))
     comp
+
+let add_object_hook _ = objdef_declare

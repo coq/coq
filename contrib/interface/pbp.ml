@@ -14,6 +14,7 @@ open Environ;;
 open Proof_trees;;
 open Proof_type;;
 open Tacmach;;
+open Tacexpr;;
 open Typing;;
 open Pp;;
 
@@ -24,37 +25,79 @@ let get_hyp_by_name g name =
   let env = pf_env g in
   try (let judgment = 
          Pretyping.understand_judgment 
-          evd env (RVar(dummy_loc, id_of_string name)) in
+          evd env (RVar(dummy_loc, name)) in
        ("hyp",judgment.uj_type))
 (* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...
    Loïc *)
-  with _ -> (let parse_ast = Pcoq.parse_string Pcoq.Constr.constr in
-             let parse s = Astterm.interp_constr Evd.empty (Global.env())
-	          (parse_ast s) in
-             ("cste",type_of (Global.env()) Evd.empty (parse name)))
+  with _ -> (let ast = Termast.ast_of_qualid (Nametab.make_short_qualid name)in
+             let c = Astterm.interp_constr evd env ast in
+             ("cste",type_of (Global.env()) Evd.empty c))
 ;;
 
+type pbp_atom =
+  | PbpTryAssumption of identifier option
+  | PbpTryClear of identifier list
+  | PbpGeneralize of identifier * identifier list
+  | PbpLApply of identifier (* = CutAndApply *)
+  | PbpIntros of identifier list
+  | PbpSplit
+  (* Existential *)
+  | PbpExists of identifier
+  (* Or *)
+  | PbpLeft
+  | PbpRight
+  (* Not *)
+  | PbpReduce
+  (* Head *)
+  | PbpApply of identifier
+  | PbpElim of identifier * identifier list;;
+
+(* Invariant: In PbpThens ([a1;...;an],[t1;...;tp]), all tactics
+   [a1]..[an-1] are atomic (or try of an atomic) tactic and produce
+   exactly one goal, and [an] produces exactly p subgoals
+
+   In [PbpThen [a1;..an]], all tactics are (try of) atomic tactics and
+   produces exactly one subgoal, except the last one which may complete the
+   goal
+
+   Convention: [PbpThen []] is Idtac and [PbpThen t] is a coercion
+   from atomic to composed tactic
+*)
+
+type pbp_sequence =
+  | PbpThens of pbp_atom list * pbp_sequence list
+  | PbpThen of pbp_atom list
+
+(* This flattens sequences of tactics producing just one subgoal *)
+let chain_tactics tl1 = function
+  | PbpThens (tl2, tl3) -> PbpThens (tl1@tl2, tl3)
+  | PbpThen tl2 -> PbpThen (tl1@tl2)
+
 type pbp_rule = (identifier list *
-                    string list *
+                    identifier list *
                     bool *
-                    string option *
+                    identifier option *
                     (types, constr) kind_of_term *
                     int list *
                     (identifier list ->
-                     string list ->
+                     identifier list ->
                      bool ->
-                       string option -> (types, constr) kind_of_term -> int list -> Ctast.t)) ->
-                    Ctast.t option;;
+                       identifier option -> (types, constr) kind_of_term -> int list -> pbp_sequence)) ->
+                    pbp_sequence option;;
 
 let zz = (0,0);;
 
+(*
 let make_named_intro s =
     Node(zz, "Intros",
           [Node(zz,"INTROPATTERN",
             [Node(zz,"LISTPATTERN",
               [Node(zz, "IDENTIFIER", 
                 [Nvar(zz, s)])])])]);;
+*)
+let make_named_intro id = PbpIntros [id]
 
+(*
 let get_name_from_intro = function
     Node(a, "Intros",
           [Node(b,"INTROPATTERN",
@@ -63,21 +106,24 @@ let get_name_from_intro = function
                 [Nvar(e, s)])])])]) ->
 		  Some s
   | _ -> None;;
-
+*)
+(*
 let make_clears =  function
     [] -> Node(zz, "Idtac",[])
   | str_list ->
       Node(zz, "TRY", [Node(zz,"Clear",
 	   [Node(zz, "CLAUSE", List.map (function s -> Nvar(zz,s)) str_list)])
 	       ]);;
+*)
+let make_clears str_list = PbpThen [PbpTryClear str_list]
 
 let add_clear_names_if_necessary tactic clear_names =
     match clear_names with
       [] -> tactic
-    | l -> Node(zz, "TACTICLIST", [make_clears l; tactic]);;
+    | l -> chain_tactics [PbpTryClear l] tactic;;
 
 let make_final_cmd f optname clear_names constr path =
-    let tactic = f optname constr path in
+(*    let tactic = f optname constr path in*)
     add_clear_names_if_necessary (f optname constr path) clear_names;;
 
 let (rem_cast:pbp_rule) = function
@@ -94,18 +140,17 @@ let (forall_intro: pbp_rule) = function
    (2::path),
    f) ->
      let x' = next_global_ident_away x avoid in
-      Some(Node(zz, "TACTICLIST",
-             [make_named_intro (string_of_id x'); f (x'::avoid) 
-		clear_names clear_flag None (kind_of_term body) path]))
+      Some(chain_tactics [make_named_intro x']
+	      (f (x'::avoid)
+		clear_names clear_flag None (kind_of_term body) path))
 | _ -> None;;
 
 let (imply_intro2: pbp_rule) = function
   avoid, clear_names,
   clear_flag, None, Prod(Anonymous, _, body), 2::path, f ->
    let h' = next_global_ident_away (id_of_string "H") avoid in
-     Some(Node(zz, "TACTICLIST",
-            [make_named_intro (string_of_id h');
-      f (h'::avoid) clear_names clear_flag None (kind_of_term body) path]))
+     Some(chain_tactics [make_named_intro h']
+          (f (h'::avoid) clear_names clear_flag None (kind_of_term body) path))
   | _ -> None;;
 
 
@@ -113,72 +158,90 @@ let (imply_intro1: pbp_rule) = function
   avoid, clear_names,
   clear_flag, None, Prod(Anonymous, prem, body), 1::path, f ->
    let h' = next_global_ident_away (id_of_string "H") avoid in
-   let str_h' = (string_of_id h') in
-     Some(Node(zz, "TACTICLIST",
-            [make_named_intro str_h';
-              f (h'::avoid) clear_names clear_flag (Some str_h') 
-		(kind_of_term prem) path]))
+   let str_h' = h' in
+     Some(chain_tactics [make_named_intro str_h']
+            (f (h'::avoid) clear_names clear_flag (Some str_h') 
+		(kind_of_term prem) path))
   | _ -> None;;
 
+let make_pbp_pattern x =
+  Coqast.Node(zz,"APPLIST",
+    [Coqast.Nvar (zz, id_of_string "PBP_META");
+     Coqast.Nvar (zz, id_of_string ("Value_for_" ^ (string_of_id x)))])
+
+let rec make_then = function
+  | [] -> TacId
+  | [t] -> t
+  | t1::t2::l -> make_then (TacThen (t1,t2)::l)
+
+let make_pbp_atomic_tactic = function
+  | PbpTryAssumption None -> TacTry (TacAtom (zz, TacAssumption))
+  | PbpTryAssumption (Some a) ->
+      TacTry (TacAtom (zz, TacExact (Coqast.Nvar (zz,a))))
+  | PbpExists x -> 
+      TacAtom (zz, TacSplit (ImplicitBindings [make_pbp_pattern x]))
+  | PbpGeneralize (h,args) ->
+      let l = Coqast.Nvar (zz, h)::List.map make_pbp_pattern args in
+      TacAtom (zz, TacGeneralize [Coqast.Node (zz, "APPLIST", l)])
+  | PbpLeft -> TacAtom (zz, TacLeft NoBindings)
+  | PbpRight -> TacAtom (zz, TacRight NoBindings)
+  | PbpReduce -> TacAtom (zz, TacReduce (Red false, []))
+  | PbpIntros l -> 
+      let l = List.map (fun id -> IntroIdentifier id) l in
+      TacAtom (zz, TacIntroPattern l)
+  | PbpLApply h -> TacAtom (zz, TacLApply (Coqast.Nvar (zz, h)))
+  | PbpApply h -> TacAtom (zz, TacApply (Coqast.Nvar(zz, h),NoBindings))
+  | PbpElim (hyp_name, names) ->
+      let bind = List.map (fun s -> (NamedHyp s,make_pbp_pattern s)) names in
+      TacAtom
+	(zz, TacElim ((Coqast.Nvar(zz,hyp_name),ExplicitBindings bind),None))
+  | PbpTryClear l -> 
+      TacTry (TacAtom (zz, TacClear (List.map (fun s -> AN (zz,s)) l)))
+  | PbpSplit -> TacAtom (zz, TacSplit NoBindings);;
+
+let rec make_pbp_tactic = function
+  | PbpThen tl -> make_then (List.map make_pbp_atomic_tactic tl)
+  | PbpThens (l,tl) ->
+      TacThens
+        (make_then (List.map make_pbp_atomic_tactic l),
+	 List.map make_pbp_tactic tl)
 
 let (forall_elim: pbp_rule) = function
   avoid, clear_names, clear_flag, 
   Some h, Prod(Name x, _, body), 2::path, f ->
   let h' = next_global_ident_away (id_of_string "H") avoid in
   let clear_names' = if clear_flag then h::clear_names else clear_names in
-  let str_h' = (string_of_id h') in
-    Some(Node(zz, "TACTICLIST",
-     [Node(zz,"Generalize",[Node
-       (zz, "COMMAND",
-        [Node
-          (zz, "APPLIST",
-           [Nvar (zz, h); 
-             Node(zz,"APPLIST", [Nvar (zz, "PBP_META");
-                Nvar(zz, "Value_for_" ^ (string_of_id x))])])])]);
-         make_named_intro str_h';
-         f (h'::avoid) clear_names' true (Some str_h') (kind_of_term body) path]))
+    Some
+     (chain_tactics [PbpGeneralize (h,[x]); make_named_intro h']
+        (f (h'::avoid) clear_names' true (Some h') (kind_of_term body) path))
   | _ -> None;;
-          
+
+
 let (imply_elim1: pbp_rule) = function
   avoid, clear_names, clear_flag,
   Some h, Prod(Anonymous, prem, body), 1::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
   let h' = next_global_ident_away (id_of_string "H") avoid in
   let str_h' = (string_of_id h') in
-  Some(Node
-	 (zz, "TACTICLIST",
-	  [Node
-	      (zz, "CutAndApply",
-	       [Node (zz, "COMMAND", [Nvar (zz, h)])]);
-           Node(zz, "TACLIST",
-	      [Node
-		  (zz, "TACTICLIST",
-		   [Node (zz, "Intro", [Nvar (zz, str_h')]);
-                    make_clears (h::clear_names)]);
-            	Node (zz, "TACTICLIST",
-		      [f avoid clear_names' false None 
-			 (kind_of_term prem) path])])]))
+  Some(PbpThens
+	  ([PbpLApply h],
+	   [PbpThen [PbpIntros [h']];
+            make_clears (h::clear_names);
+	    f avoid clear_names' false None (kind_of_term prem) path]))
   | _ -> None;;
+
 
 let (imply_elim2: pbp_rule) = function
   avoid, clear_names, clear_flag,
   Some h, Prod(Anonymous, prem, body), 2::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
   let h' = next_global_ident_away (id_of_string "H") avoid in
-  let str_h' = (string_of_id h') in
-  Some(Node
-	 (zz, "TACTICLIST",
-	  [Node
-	      (zz, "CutAndApply",
-	       [Node (zz, "COMMAND", [Nvar (zz, h)])]);
-           Node(zz, "TACLIST",
-	      [Node
-		  (zz, "TACTICLIST",
-		   [Node (zz, "Intro", [Nvar (zz, str_h')]);
-                    f (h'::avoid) clear_names' false (Some str_h') 
-		      (kind_of_term body) path]);
-            	Node (zz, "TACTICLIST",
-		      [make_clears clear_names])])]))
+  Some(PbpThens
+	 ([PbpLApply h],
+          [chain_tactics [PbpIntros [h']]
+              (f (h'::avoid) clear_names' false (Some h') 
+		      (kind_of_term body) path);
+           make_clears clear_names]))
   | _ -> None;;
 
 let reference dir s =
@@ -217,18 +280,11 @@ let (and_intro: pbp_rule) = function
       	let cont_cmd = f avoid clear_names false None 
 			 (kind_of_term cont_term) path in
       	let clear_cmd = make_clears clear_names in
-      	let cmds = List.map 
-            (function tac -> 
-              Node (zz, "TACTICLIST", [tac]))
+      	let cmds =
             (if a = 1 
 	    then [cont_cmd;clear_cmd] 
 	    else [clear_cmd;cont_cmd]) in
-      	Some
-       	  (Node
- 	     (zz, "TACTICLIST",
-	      [Node (zz, "Split", [Node (zz, "BINDINGS", [])]);
-	      	Node
-	     	  (zz, "TACLIST", cmds)]))
+      	Some (PbpThens ([PbpSplit],cmds))
       else None
   | _ -> None;;
 
@@ -239,17 +295,7 @@ let (ex_intro: pbp_rule) = function
  	or (is_matching_local (sigconstr ()) oper)
 	      or (is_matching_local (sigTconstr ()) oper) ->
 		(match kind_of_term c2 with
-		  Lambda(Name x, _, body) ->
-		    Some(Node(zz, "Split",
-			      [Node(zz, "BINDINGS",
-				    [Node(zz, "BINDING",
-					  [Node(zz, "COMMAND",
-						[Node(zz, "APPLIST",
-						      [Nvar(zz, "PBP_META");
-							Nvar(zz,
-							     ("Value_for_" ^
-							      (string_of_id x)))])
-						])])])]))
+		  Lambda(Name x, _, body) -> Some (PbpThen [PbpExists x])
 		| _ -> None)
   | _ -> None;;
 
@@ -261,12 +307,10 @@ let (or_intro: pbp_rule) = function
 	(is_matching_local (sumconstr ()) or_oper))
 	  & (a = 1 or a = 2) then
 	let cont_term = if a = 1 then c1 else c2 in
-	let fst_cmd = Node(zz, (if a = 1 then "Left" else "Right"),
-                               [Node(zz, "BINDINGS",[])]) in
+	let fst_cmd = if a = 1 then PbpLeft else PbpRight in
 	let cont_cmd = f avoid clear_names false None 
 			 (kind_of_term cont_term) path in
-	Some(Node(zz, "TACTICLIST",
-		  [fst_cmd;cont_cmd]))
+	Some(chain_tactics [fst_cmd] cont_cmd)
       else
 	None
   | _ -> None;;
@@ -279,19 +323,16 @@ let (not_intro: pbp_rule) = function
       if(is_matching_local (notconstr ()) not_oper) or 
 	(is_matching_local (notTconstr ()) not_oper) then
 	let h' = next_global_ident_away (id_of_string "H") avoid in
-	let str_h' = (string_of_id h') in
-	Some(Node(zz,"TACTICLIST",
-	     [Node(zz,"Reduce",[Node(zz,"REDEXP",[Node(zz,"Red",[])]);
-				 Node(zz,"CLAUSE",[])]);
-	       make_named_intro str_h';
-	       f (h'::avoid) clear_names false (Some str_h') 
-		 (kind_of_term c1) path]))
+	Some(chain_tactics [PbpReduce;make_named_intro h']
+	       (f (h'::avoid) clear_names false (Some h') 
+		  (kind_of_term c1) path))
       else
  	None
   | _ -> None;;
 
 
 
+(*
 let elim_with_bindings hyp_name names =
   Node(zz,"Elim", 
        [Node(zz, "COMMAND", [Nvar(zz,hyp_name)]);
@@ -307,6 +348,9 @@ let elim_with_bindings hyp_name names =
 				 [Nvar(zz,"PBP_META");
 				   Nvar(zz,
 					"value_for_" ^ s)])])])) names)]);;
+*)
+let elim_with_bindings hyp_name names =
+  PbpElim (hyp_name, names);;
 
 let auxiliary_goals clear_names clear_flag this_name n_aux =
   let clear_cmd = 
@@ -338,13 +382,13 @@ let auxiliary_goals clear_names clear_flag this_name n_aux =
 
 
 let rec down_prods: (types, constr) kind_of_term * (int list) * int -> 
-           string list * (int list) * int * (types, constr) kind_of_term *
+           identifier list * (int list) * int * (types, constr) kind_of_term *
   (int list) = 
    function
      Prod(Name x, _, body), 2::path, k ->
 	let res_sl, res_il, res_i, res_cstr, res_p 
 	    = down_prods (kind_of_term body, path, k+1) in
-	(string_of_id x)::res_sl, (k::res_il), res_i, res_cstr, res_p
+	x::res_sl, (k::res_il), res_i, res_cstr, res_p
    | Prod(Anonymous, _, body), 2::path, k ->
         let res_sl, res_il, res_i, res_cstr, res_p 
 	    = down_prods (kind_of_term body, path, k+1) in
@@ -400,6 +444,7 @@ let (mk_db_indices: int list -> int -> int list) =
    answer is true, then the built command takes advantage of the power of
    head tactics.  *)
 
+(*
 let (head_tactic_patt: pbp_rule) = function
     avoid, clear_names, clear_flag, Some h, cstr, path, f ->
     (match down_prods (cstr, path, 0) with
@@ -505,7 +550,98 @@ let (head_tactic_patt: pbp_rule) = function
              clear_names)
     | _ -> None)
   | _ -> None;;
-	      
+*)
+
+let (head_tactic_patt: pbp_rule) = function
+    avoid, clear_names, clear_flag, Some h, cstr, path, f ->
+    (match down_prods (cstr, path, 0) with
+    | (str_list, _, nprems, 
+       App(oper,[|c1|]), 2::1::path) 
+      	when
+ 	  (is_matching_local (notconstr ()) oper) or
+ 	  (is_matching_local (notTconstr ()) oper) ->
+	 Some(chain_tactics [elim_with_bindings h str_list]
+		 (f avoid clear_names false None (kind_of_term c1) path))
+    | (str_list, _, nprems, 
+       App(oper, [|c1; c2|]), 2::a::path) 
+      when ((is_matching_local (andconstr()) oper) or
+	    (is_matching_local (prodconstr()) oper)) & (a = 1 or a = 2) ->
+	let h1 = next_global_ident_away (id_of_string "H") avoid in
+	let h2 = next_global_ident_away (id_of_string "H") (h1::avoid) in
+	Some(PbpThens
+                  ([elim_with_bindings h str_list;
+		    make_named_intro h1;
+		    make_named_intro h2],
+		    let cont_body = 
+		      if a = 1 then c1 else c2 in
+		    let cont_tac = 
+		      f (h2::h1::avoid) (h::clear_names) 
+                        false (Some (if 1 = a then h1 else h2))
+                        (kind_of_term cont_body) path in
+		    cont_tac::(auxiliary_goals
+					clear_names clear_flag
+					h nprems)))
+    | (str_list, _, nprems, App(oper,[|c1; c2|]), 2::a::path)
+      when ((is_matching_local (exconstr ()) oper) or
+	    (is_matching_local (exTconstr ()) oper) or
+	    (is_matching_local (sigconstr ()) oper) or
+	    (is_matching_local (sigTconstr()) oper)) & a = 2 ->
+		   (match (kind_of_term c2),path with
+		     Lambda(Name x, _,body), (2::path) ->
+		       Some(PbpThens
+		    		 ([elim_with_bindings h str_list],
+				   let x' = next_global_ident_away x avoid in
+				   let cont_body =
+				     Prod(Name x', c1,
+					    mkProd(Anonymous, body, 
+						   mkVar(dummy_id))) in
+				   let cont_tac 
+				       = f avoid (h::clear_names) false None
+				       cont_body (2::1::path) in
+				   cont_tac::(auxiliary_goals
+						       clear_names clear_flag
+						       h nprems)))
+		     | _ -> None)
+    | (str_list, _, nprems, App(oper,[|c1; c2|]), 2::a::path)
+	when ((is_matching_local (orconstr ()) oper) or
+              (is_matching_local (sumboolconstr ()) oper) or
+	      (is_matching_local (sumconstr ()) oper)) &
+                (a = 1 or a = 2) ->
+	  Some(PbpThens
+		    ([elim_with_bindings h str_list],
+		      let cont_body =
+			if a = 1 then c1 else c2 in
+                      (* h' is the name for the new intro *)
+		      let h' = next_global_ident_away (id_of_string "H") avoid in
+		      let cont_tac =
+                        chain_tactics 
+			  [make_named_intro h']
+			  (f 
+			     (* h' should not be used again *)
+			     (h'::avoid)
+			     (* the disjunct itself can be discarded *)
+			     (h::clear_names) false (Some h')
+                             (kind_of_term cont_body) path) in
+		      let snd_tac = 
+			chain_tactics
+			   [make_named_intro h']
+			   (make_clears (h::clear_names)) in
+		      let tacs1 = 
+			if a = 1 then
+			  [cont_tac; snd_tac]
+		      	else
+			  [snd_tac; cont_tac] in
+		      tacs1@(auxiliary_goals (h::clear_names)
+				   false dummy_id nprems)))
+    | (str_list, int_list, nprems, c, []) 
+        when  (check_apply c (mk_db_indices int_list nprems)) &
+              (match c with Prod(_,_,_) -> false
+              |  _ -> true) &
+              (List.length int_list) + nprems > 0 ->
+          Some(add_clear_names_if_necessary (PbpThen [PbpApply h]) clear_names)
+    | _ -> None)
+  | _ -> None;;
+      
 
 let pbp_rules = ref [rem_cast;head_tactic_patt;forall_intro;imply_intro2;
                       forall_elim; imply_intro1; imply_elim1; imply_elim2;
@@ -541,11 +677,15 @@ let rec clean_trace flag =
    command requested by the point-and-shoot strategy.  Default is
    Try Assumption--Try Exact.  *)
 
+(*
 let default_ast optname constr path =
       match optname with
         None ->  Node(zz, "TRY", [Node(zz, "Assumption",[])])
       | Some(a) -> Node(zz, "TRY", 
                    [Node(zz, "Exact",[Node(zz,"COMMAND",[Nvar(zz,a)])])]);;
+*)
+
+let default_ast optname constr path = PbpThen [PbpTryAssumption optname]
 
 (* This is the main proof by pointing function. *)
 (* avoid: les noms a ne pas utiliser *)
@@ -564,8 +704,9 @@ let rec pbpt final_cmd avoid clear_names clear_flag opt_name constr path =
   in try_all_rules (!pbp_rules);;
 
 (* these are the optimisation functions. *)
-(* This function takes care of flattening successive intro commands. *)
+(* This function takes care of flattening successive then commands. *)
 
+(*
 let rec optim1 =
     function
         Node(a,"TACTICLIST",b) ->
@@ -591,10 +732,25 @@ let rec optim1 =
           | [t] -> t
           | args -> Node(zz,"TACTICLIST", args))
       |	t -> t;;
-                
+*)
+
+(* Invariant: in [flatten_sequence t], occurrences of [PbpThenCont(l,t)] enjoy
+    that t is some [PbpAtom t] *)
+(*
+let rec flatten_sequence =
+  function
+      PbpThens (tl1,tl2) -> PbpThens (tl1,List.map flatten_sequence tl2)
+    | PbpThen (tl1,t1) as x ->
+	(match flatten_sequence t1 with
+	  | PbpThenCont (tl2,t2) -> PbpThenCont (tl1@tl2,t2)
+	  | PbpThens (tl2,tl3) -> PbpThens (tl1@tl2,tl3)
+	  | PbpAtom _ -> x)
+    | PbpAtom t as x -> x;;
+*)
 
 (* This optimization function takes care of compacting successive Intro commands
    together. *)
+(*
 let rec optim2 =
     function
 	Node(a,"TACTICLIST",b) ->
@@ -624,7 +780,42 @@ let rec optim2 =
 	       | l -> (put_ids l)::t1::(group_intros [] others)) in
 	 Node(a,"TACTICLIST",group_intros [] b)
    | t -> t;;
+*)
+(*
+let rec optim2 = function
+  | TacThens (t,tl) -> TacThens (optim2 t, List.map optim2 tl)
+  | t ->
+      let get_ids = 
+	List.map (function IntroIdentifier _ as x -> x
+	  |  _ -> failwith "get_ids expected an identifier") in
+      let rec group_intros names = function
+	  [] -> (match names with
+              [] -> []
+	    | l -> [TacIntroPattern l])
+	| (TacIntroPattern ids)::others ->
+	    group_intros (names@(get_ids ids)) others
+	| t1::others -> 
+	    (match names with
+		[] -> t1::(group_intros [] others)
+	      | l -> (TacIntroPattern l)::t1::(group_intros [] others)) in
+      make_then (group_intros [] (flatten_sequence t))
+*)
 
+let rec group_intros names = function
+    [] -> (match names with
+        [] -> []
+      | l -> [PbpIntros l])
+  | (PbpIntros ids)::others -> group_intros (names@ids) others
+  | t1::others ->
+      (match names with
+	  [] -> t1::(group_intros [] others)
+	| l -> (PbpIntros l)::t1::(group_intros [] others))
+
+let rec optim2 = function
+  | PbpThens (tl1,tl2) -> PbpThens (group_intros [] tl1, List.map optim2 tl2)
+  | PbpThen tl -> PbpThen (group_intros [] tl)
+
+(*
 let rec merge_ast_in_command com1 com2 =
     let args1 =
      (match com1 with
@@ -635,7 +826,8 @@ let rec merge_ast_in_command com1 com2 =
         Node(_, "APPLIST", hyp::args) -> args
      | _ -> failwith "unexpected com2 in merge_ast_in_command") in
       Node(zz, "COMMAND", [Node(zz, "APPLIST", args1@args2)]);;
-
+*)
+(*
 let cleanup_clears empty_allowed names str_list other =
   let rec clean_aux = function
       [] -> []
@@ -653,42 +845,44 @@ let cleanup_clears empty_allowed names str_list other =
 	      else [Node(zz,"Idtac",[])]
           | _ -> other)
   | l -> Node(zz, "TRY", [Node(zz, "Clear", [Node(zz,"CLAUSE", l)])])::other;;
-
+*)
+let rec cleanup_clears str_list = function
+    [] -> []
+  | x::tail ->
+      if List.mem x str_list then cleanup_clears str_list tail
+      else x::(cleanup_clears str_list tail);;
 
 (* This function takes care of compacting instanciations of universal
    quantifications. *)
+
+let rec optim3_aux str_list = function
+    (PbpGeneralize (h,l1))::(PbpIntros [s])::(PbpGeneralize (h',l2))::others
+      when s=h' ->
+      optim3_aux (s::str_list) (PbpGeneralize (h,l1@l2)::others)
+  | (PbpTryClear names)::other ->
+      (match cleanup_clears str_list names with
+	  [] -> other
+	| l -> (PbpTryClear l)::other)
+  | a::l -> a::(optim3_aux str_list l) 
+  | [] -> [];;
+
 let rec optim3 str_list = function
-    Node(a,"TACTICLIST", b) ->
-      let rec optim3_aux empty_allowed str_list = function
-	  ((Node(a, "Generalize", [Node(_, "COMMAND", [com1])])) as t1)::
-           intro::
-           (Node(b, "Generalize", [Node(_, "COMMAND", [com2])]) as t2)::others ->
-	     (match get_name_from_intro intro with
-	       None -> t1::intro::(optim3_aux true str_list (t2::others))
-	     | Some s -> optim3_aux true (s::str_list)
-                            (Node(a, "Generalize",
-                                [merge_ast_in_command com1 com2])::others))
-	|( Node(zz, "TRY", [Node(a,"Clear", [Node(_,"CLAUSE", names)])]))::other ->
-	    cleanup_clears empty_allowed names str_list other
-	| [Node(a,"TACLIST",branches)] ->
-	    [Node(a,"TACLIST",List.map (optim3 str_list) branches)]
-        | a::l -> a::(optim3_aux true str_list l) 
-        | [] -> if empty_allowed then
-                  []
-                else failwith "strange value in optim3_aux" in
-      Node(a, "TACTICLIST", optim3_aux false str_list b)
-   | t -> t;;
+    PbpThens (tl1, tl2) ->
+      PbpThens (optim3_aux str_list tl1, List.map (optim3 str_list) tl2)
+  | PbpThen tl -> PbpThen (optim3_aux str_list tl)
 
-let optim x = optim3 [] (optim2 (optim1 x));;
+let optim x = make_pbp_tactic (optim3 [] (optim2 x));;
 
+(* TODO
 add_tactic "Traced_Try" traced_try_entry;;
+*)
 
 let rec tactic_args_to_ints = function
     [] -> []
   | (Integer n)::l -> n::(tactic_args_to_ints l)
   | _ -> failwith "expecting only numbers";;
 
-
+(*
 let pbp_tac display_function = function 
             (Identifier a)::l -> 
                  (function g ->
@@ -718,5 +912,36 @@ let pbp_tac display_function = function
                      (display_function (default_ast None (pf_concl g) []);
                       tclIDTAC g))
           |  _ -> failwith "expecting other arguments";;
+
+
+*)
+let pbp_tac display_function idopt nl =
+  match idopt with
+    | Some str ->
+        (function g ->
+	  let (ou,tstr) = (get_hyp_by_name g str) in
+	  let exp_ast =
+	    pbpt default_ast
+	      (match ou with
+		  "hyp" ->(pf_ids_of_hyps g)
+		|_ -> (str::(pf_ids_of_hyps g)))
+              []
+	      false
+	      (Some str)
+	      (kind_of_term tstr)
+              nl in
+              (display_function (optim exp_ast); tclIDTAC g))
+    | None ->
+	if nl <> [] then
+          (function g ->
+            let exp_ast =
+              (pbpt default_ast (pf_ids_of_hyps g) [] false
+		None (kind_of_term (pf_concl g)) nl) in
+            (display_function (optim exp_ast); tclIDTAC g))
+	else
+          (function g ->
+            (display_function
+	       (make_pbp_tactic (default_ast None (pf_concl g) []));
+            tclIDTAC g));;
 
 

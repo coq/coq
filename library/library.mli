@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Libobject
 (*i*)
@@ -20,9 +21,9 @@ open Libobject
    provides a high level function [require] which corresponds to the 
    vernacular command [Require]. *)
 
-val read_module : Nametab.qualid -> unit
+val read_module : Nametab.qualid located -> unit
 val read_module_from_file : System.physical_path -> unit
-val import_module : bool -> Nametab.qualid -> unit
+val import_module : bool -> Nametab.qualid located -> unit
 
 val module_is_loaded : dir_path -> bool
 val module_is_opened : dir_path -> bool
@@ -39,10 +40,10 @@ val fmt_modules_state : unit -> Pp.std_ppcmds
   exported. *)
 
 val require_module :
-  bool option -> Nametab.qualid list -> bool -> unit
+  bool option -> Nametab.qualid located list -> bool -> unit
 
 val require_module_from_file :
-  bool option -> Nametab.qualid -> string -> bool -> unit
+  bool option -> identifier option -> string -> bool -> unit
 
 (*s [save_module_to s f] saves the current environment as a module [s]
   in the file [f]. *)

@@ -159,11 +159,11 @@ let protected_loop input_chan =
     try 
       while true do parse_one_command_group input_chan done
     with
-      | Vernacinterp.Drop -> raise Vernacinterp.Drop
-      | Vernacinterp.Quit -> exit 0
+      | Vernacexpr.Drop -> raise Vernacexpr.Drop
+      | Vernacexpr.Quit -> exit 0
       | End_of_file -> exit 0
-      | DuringCommandInterp(loc, Vernacinterp.Quit) -> raise Vernacinterp.Quit
-      | DuringCommandInterp(loc, Vernacinterp.Drop) -> raise Vernacinterp.Drop
+      | DuringCommandInterp(loc, Vernacexpr.Quit) -> raise Vernacexpr.Quit
+      | DuringCommandInterp(loc, Vernacexpr.Drop) -> raise Vernacexpr.Drop
       | DuringCommandInterp(loc, e) ->
 	  explain_and_restart e
       | e -> explain_and_restart e in

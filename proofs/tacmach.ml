@@ -24,6 +24,7 @@ open Proof_trees
 open Proof_type
 open Logic
 open Refiner
+open Tacexpr
 
 let re_sig it gc = { it = it; sigma = gc }
 
@@ -164,40 +165,6 @@ let top_of_tree             = top_of_tree
 let frontier                = frontier
 let change_constraints_pftreestate = change_constraints_pftreestate
 
-(*************************************************)
-(* Tacticals re-exported from the Refiner module.*)
-(*************************************************)
-
-(* A special exception for levels for the Fail tactic *)
-exception FailError = Refiner.FailError
-
-let tclIDTAC         = tclIDTAC
-let tclORELSE        = tclORELSE
-let tclTHEN          = tclTHEN
-let tclTHENLIST      = tclTHENLIST
-let tclTHEN_i        = tclTHEN_i
-let tclTHENL         = tclTHENL
-let tclTHENS         = tclTHENS
-let tclTHENSi        = tclTHENSi
-let tclTHENST        = tclTHENST
-let tclTHENSI        = tclTHENSI
-let tclREPEAT        = tclREPEAT
-let tclREPEAT_MAIN   = tclREPEAT_MAIN
-let tclFIRST         = tclFIRST
-let tclSOLVE         = tclSOLVE
-let tclTRY           = tclTRY
-let tclTHENTRY       = tclTHENTRY
-let tclCOMPLETE      = tclCOMPLETE
-let tclAT_LEAST_ONCE = tclAT_LEAST_ONCE
-let tclFAIL          = tclFAIL
-let tclDO            = tclDO
-let tclPROGRESS      = tclPROGRESS
-let tclWEAK_PROGRESS = tclWEAK_PROGRESS
-let tclNOTSAMEGOAL   = tclNOTSAMEGOAL
-let tclINFO          = tclINFO
-
-let unTAC            = unTAC
-
 
 (********************************************)
 (* Definition of the most primitive tactics *)
@@ -258,11 +225,13 @@ let rename_bound_var_goal gls =
 (* The interpreter of defined tactics *)
 (***************************************)
 
+(*
 let vernac_tactic = vernac_tactic
 
 let add_tactic = Refiner.add_tactic
 
 let overwriting_tactic = Refiner.overwriting_add_tactic
+*)
 
 
 (* Some combinators for parsing tactic arguments. 
@@ -302,26 +271,38 @@ let tactic_com_list =
     let translate = pf_interp_constr x in 
     tac (List.map translate tl) x
 
+open Rawterm 
+
 let tactic_bind_list =
   fun tac tl x -> 
     let translate = pf_interp_constr x in 
-    tac (List.map (fun (b,c)->(b,translate c)) tl) x
+    let tl =
+    match tl with
+      | NoBindings -> NoBindings
+      | ImplicitBindings l -> ImplicitBindings (List.map translate l)
+      | ExplicitBindings l ->
+	  ExplicitBindings (List.map (fun (b,c)->(b,translate c)) l)
+    in tac tl x
+
+let translate_bindings gl = function
+  | NoBindings -> NoBindings
+  | ImplicitBindings l -> ImplicitBindings (List.map (pf_interp_constr gl) l)
+  | ExplicitBindings l ->
+      ExplicitBindings (List.map (fun (b,c)->(b,pf_interp_constr gl c)) l)
 
 let tactic_com_bind_list =
-  fun tac (c,tl) x -> 
-    let translate = pf_interp_constr x in 
-    tac (translate c,List.map (fun (b,c')->(b,translate c')) tl) x
+  fun tac (c,tl) gl -> 
+    let translate = pf_interp_constr gl in 
+    tac (translate c,translate_bindings gl tl) gl
 
 let tactic_com_bind_list_list =
   fun tac args gl -> 
-    let translate (c,tl) = 
-      (pf_interp_constr gl c,
-       List.map (fun (b,c')->(b,pf_interp_constr gl c')) tl)
+    let translate (c,tl) = (pf_interp_constr gl c, translate_bindings gl tl)
     in 
     tac (List.map translate args) gl
 
 (* Some useful combinators for hiding tactic implementations *)
-
+(*
 type 'a hide_combinator = string -> ('a -> tactic) -> ('a -> tactic)
 
 let hide_atomic_tactic s tac = 
@@ -331,45 +312,48 @@ let hide_atomic_tactic s tac =
 let overwrite_hidden_atomic_tactic s tac =
   overwriting_tactic s (function [] -> tac | _ -> assert false);
   vernac_tactic(s,[])
-
-
+*)
+(*
 let hide_constr_comarg_tactic s tac =
   let tacfun = function 
     | [Constr c]    -> tac c
-    | [Command com] -> tactic_com tac com
-    | _ -> anomaly "hide_constr_comarg_tactic : neither CONSTR nor COMMAND"
+(*    | [Command com] -> tactic_com tac com*)
+    | _ -> anomaly "hide_constr_comarg_tactic : neither CONSTR nor CONSTR"
   in 
   add_tactic s tacfun;
   (fun c -> vernac_tactic(s,[Constr c]),
-   fun com -> vernac_tactic(s,[Command com]))
- 
+   (* fun com -> vernac_tactic(s,[Command com]) *) fun _ -> failwith "Command unsupported")
+*)
+(* 
 let overwrite_hidden_constr_comarg_tactic s tac =
   let tacfun = function 
     | [Constr c] -> tac c
-    | [Command com] -> 
-        (fun gls -> tac (pf_interp_constr gls com) gls)
+(*    | [Command com] -> 
+        (fun gls -> tac (pf_interp_constr gls com) gls)*)
     | _ -> 
 	anomaly 
-	  "overwrite_hidden_constr_comarg_tactic : neither CONSTR nor COMMAND"
+	  "overwrite_hidden_constr_comarg_tactic : neither CONSTR nor CONSTR"
   in 
   overwriting_tactic s tacfun;
   (fun c -> vernac_tactic(s,[(Constr c)]), 
-   fun c -> vernac_tactic(s,[(Command c)]))
-
+   (*fun c -> vernac_tactic(s,[(Command c)])*) fun _ -> failwith "Command unsupported")
+*)
+(*
 let hide_constr_tactic s tac =
   let tacfun = function 
     | [Constr c]    -> tac c
-    | [Command com] -> tactic_com tac com
-    | _ -> anomaly "hide_constr_tactic : neither CONSTR nor COMMAND"
+(*    | [Command com] -> tactic_com tac com*)
+    | _ -> anomaly "hide_constr_tactic : neither CONSTR nor CONSTR"
   in 
   add_tactic s tacfun;
   (fun c  -> vernac_tactic(s,[(Constr c)]))
-
+*)
+(*
 let hide_openconstr_tactic s tac =
   let tacfun = function 
     | [OpenConstr c] -> tac c
-    | [Command com] -> tactic_opencom tac com
-    | _ -> anomaly "hide_openconstr_tactic : neither OPENCONSTR nor COMMAND"
+(*    | [Command com] -> tactic_opencom tac com*)
+    | _ -> anomaly "hide_openconstr_tactic : neither OPENCONSTR nor CONSTR"
   in 
   add_tactic s tacfun;
   (fun c  -> vernac_tactic(s,[(OpenConstr c)]))
@@ -393,40 +377,44 @@ let hide_identl_tactic s tac =
   let tacfun = (function [Clause idl] -> tac idl | _ -> assert false) in 
   add_tactic s tacfun;
   fun idl -> vernac_tactic(s,[Clause idl])
-
+*)
+(*
 let hide_constrl_tactic s tac = 
   let tacfun = function 
-    | ((Command com)::_) as al -> 
+(*    | ((Command com)::_) as al -> 
       	tactic_com_list tac 
-          (List.map (function (Command com) -> com | _ -> assert false) al)
+          (List.map (function (Command com) -> com | _ -> assert false) al)*)
     | ((Constr com)::_) as al ->
       	tac (List.map (function (Constr c) -> c | _ -> assert false) al)
-    | _ -> anomaly "hide_constrl_tactic : neither CONSTR nor COMMAND"
+    | _ -> anomaly "hide_constrl_tactic : neither CONSTR nor CONSTR"
   in 
   add_tactic s tacfun;
   fun ids -> vernac_tactic(s,(List.map (fun id -> Constr id) ids))
-
+*)
+(*
 let hide_bindl_tactic s tac = 
   let tacfun = function  
-    | [Bindings  al] -> tactic_bind_list tac al
+(*    | [Bindings  al] -> tactic_bind_list tac al*)
     | [Cbindings al] -> tac al
     | _ -> anomaly "hide_bindl_tactic : neither BINDINGS nor CBINDINGS"
   in 
   add_tactic s tacfun;
   fun bindl -> vernac_tactic(s,[Cbindings bindl])
-      
+*)    
+(*
 let hide_cbindl_tactic s tac = 
   let tacfun = function 
-    | [Command com; Bindings al] -> tactic_com_bind_list tac (com,al)
+(*    | [Command com; Bindings al] -> tactic_com_bind_list tac (com,al)*)
     | [Constr c; Cbindings al]  -> tac (c,al)
-    | _ -> anomaly "hide_cbindl_tactic : neither CONSTR nor COMMAND"
+    | _ -> anomaly "hide_cbindl_tactic : neither CONSTR nor CONSTR"
   in 
   add_tactic s tacfun;
   fun (c,bindl) -> vernac_tactic(s,[Constr c; Cbindings bindl])
-      
+*)
+(*      
 let hide_cbindll_tactic s tac = 
   let rec getcombinds = function 
-    | ((Command com)::(Bindings al)::l) -> (com,al)::(getcombinds l)
+(*    | ((Command com)::(Bindings al)::l) -> (com,al)::(getcombinds l)*)
     | []                                ->  [] 
     | _ -> anomaly "hide_cbindll_tactic : not the expected form" 
   in  
@@ -440,19 +428,21 @@ let hide_cbindll_tactic s tac =
     |  []          -> [] 
   in
   let tacfun = function 
-    | ((Command com)::_) as args -> 
-      	tactic_com_bind_list_list tac (getcombinds args)
+(*    | ((Command com)::_) as args -> 
+      	tactic_com_bind_list_list tac (getcombinds args)*)
     | ((Constr com)::_) as args -> tac (getconstrbinds args)
-    | _ -> anomaly "hide_cbindll_tactic : neither CONSTR nor COMMAND"
+    | _ -> anomaly "hide_cbindll_tactic : neither CONSTR nor CONSTR"
   in 
   add_tactic s tacfun;
   fun l -> vernac_tactic(s,putconstrbinds l)
-
+*)
 
 (* Pretty-printers *)
 
 open Pp
 open Printer
+open Tacexpr
+open Rawterm
 
 let pr_com sigma goal com =
   prterm (rename_bound_var (Global.env())
@@ -460,15 +450,17 @@ let pr_com sigma goal com =
             (Astterm.interp_constr sigma (Evarutil.evar_env goal) com))
 
 let pr_one_binding sigma goal = function
-  | (Dep id,com)  -> pr_id id ++ str ":=" ++ pr_com sigma goal com
-  | (NoDep n,com) -> int n  ++ str ":=" ++ pr_com sigma goal com
-  | (Com,com)     -> pr_com sigma goal com
+  | (NamedHyp id,com) -> pr_id id ++ str ":=" ++ pr_com sigma goal com
+  | (AnonHyp n,com) -> int n  ++ str ":=" ++ pr_com sigma goal com
 
 let pr_bindings sigma goal lb =
   let prf = pr_one_binding sigma goal in
   match lb with 
-    | [] -> prlist_with_sep pr_spc prf lb
-    | _  -> str "with" ++ spc () ++ prlist_with_sep pr_spc prf lb
+    | ImplicitBindings l ->
+	str "with" ++ spc () ++ prlist_with_sep pr_spc (pr_com sigma goal) l
+    | ExplicitBindings l ->
+	str "with" ++ spc () ++ prlist_with_sep pr_spc prf l
+    | NoBindings -> mt ()
 	  
 let rec pr_list f = function
   | []   -> mt ()
@@ -480,5 +472,4 @@ let pr_gls gls =
 let pr_glls glls =
   hov 0 (pr_decls (sig_sig glls) ++ fnl () ++
          prlist_with_sep pr_fnl pr_seq (sig_it glls))
-    
-let pr_tactic = Refiner.pr_tactic
+  

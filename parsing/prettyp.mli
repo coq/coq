@@ -10,6 +10,7 @@
 
 (*i*)
 open Pp
+open Util
 open Names
 open Sign
 open Term
@@ -28,8 +29,8 @@ val print_context : bool -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (section_path * Lib.node) -> std_ppcmds
 val print_full_context : unit -> std_ppcmds
 val print_full_context_typ : unit -> std_ppcmds
-val print_sec_context : Nametab.qualid -> std_ppcmds
-val print_sec_context_typ : Nametab.qualid -> std_ppcmds
+val print_sec_context : Nametab.qualid located -> std_ppcmds
+val print_sec_context_typ : Nametab.qualid located -> std_ppcmds
 val print_judgment : env -> unsafe_judgment -> std_ppcmds
 val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
@@ -38,8 +39,8 @@ val print_eval :
 val build_inductive : section_path -> int ->
   global_reference * rel_context * types * identifier array * types array
 val print_mutual : section_path -> std_ppcmds
-val print_name : Nametab.qualid -> std_ppcmds
-val print_opaque_name : Nametab.qualid -> std_ppcmds
+val print_name : Nametab.qualid located -> std_ppcmds
+val print_opaque_name : Nametab.qualid located -> std_ppcmds
 val print_local_context : unit -> std_ppcmds
 
 (*i

@@ -84,7 +84,7 @@ let rec explain_exn_default = function
   | Nametab.GlobalizationConstantError q ->
       hov 0 (str "Error:" ++ spc () ++
 	       str "No constant of this name:" ++ spc () ++ Nametab.pr_qualid q)
-  | Tacmach.FailError i ->
+  | Refiner.FailError i ->
       hov 0 (str "Error: Fail tactic always fails (level " ++ 
 	       int i ++ str").")
   | Stdpp.Exc_located (loc,exc) ->

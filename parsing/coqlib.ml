@@ -27,15 +27,11 @@ let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
 let arith_module = make_dir ["Coq";"Arith";"Arith"]
 
 let nat_path = make_path datatypes_module (id_of_string "nat")
-let myvar_path =
-  make_path arith_module (id_of_string "My_special_variable")
 
 let glob_nat = IndRef (nat_path,0)
 
 let glob_O = ConstructRef ((nat_path,0),1)
 let glob_S = ConstructRef ((nat_path,0),2)
-
-let glob_My_special_variable_nat = ConstRef myvar_path
 
 let eq_path = make_path logic_module (id_of_string "eq")
 let eqT_path = make_path logic_type_module (id_of_string "eqT")
@@ -242,12 +238,11 @@ let coq_ex_pattern_gen ex =
 let coq_existS_pattern = coq_ex_pattern_gen coq_existS_ref
 let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
 
-(* Patterns "~ ?", "? -> False" and "(?1 -> ?2)" *)
+(* Patterns "~ ?" and "? -> False" *)
 let coq_not_pattern = lazy(PApp(PRef (Lazy.force coq_not_ref), [|PMeta None|]))
 let imp a b = PProd (Anonymous, a, b)
 let coq_imp_False_pattern =
   lazy (imp (PMeta None) (PRef (Lazy.force coq_False_ref)))
-let coq_arrow_pattern = lazy (imp (PMeta (Some 1)) (PMeta (Some 2)))
 
 (* Pattern "(sumbool (eq ?1 ?2 ?3) ?4)" *)
 let coq_eqdec_partial_pattern =
@@ -272,18 +267,6 @@ let coq_eqdec_pattern =
 		   [|PApp (PRef (Lazy.force coq_eq_ref),
  			   [| PMeta (Some 1); PRel 2; PRel 1 |])|]) |]))))
 
-(* "(A : ?)(x:A)(? A x x)" and "(x : ?)(? x x)" *)
-let name_A = Name (id_of_string "A")
-let coq_refl_rel1_pattern =
-  lazy
-    (PProd
-       (name_A, PMeta None,
-	PProd (x, PRel 1, PApp (PMeta None, [|PRel 2; PRel 1; PRel 1|]))))
-let coq_refl_rel2_pattern =
-  lazy
-    (PProd (x, PMeta None, PApp (PMeta None, [|PRel 1; PRel 1|])))
-
-
 let build_coq_eq_pattern () = Lazy.force coq_eq_pattern
 let build_coq_eqT_pattern () = Lazy.force coq_eqT_pattern
 let build_coq_idT_pattern () = Lazy.force coq_idT_pattern
@@ -293,7 +276,4 @@ let build_coq_not_pattern () = Lazy.force coq_not_pattern
 let build_coq_imp_False_pattern () = Lazy.force coq_imp_False_pattern
 let build_coq_eqdec_partial_pattern () = Lazy.force coq_eqdec_partial_pattern
 let build_coq_eqdec_pattern () = Lazy.force coq_eqdec_pattern
-let build_coq_arrow_pattern () = Lazy.force coq_arrow_pattern
-let build_coq_refl_rel1_pattern () = Lazy.force coq_refl_rel1_pattern
-let build_coq_refl_rel2_pattern () = Lazy.force coq_refl_rel2_pattern
 let build_coq_sig_pattern () = Lazy.force coq_sig_pattern

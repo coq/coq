@@ -53,5 +53,7 @@ val w_const_value       : wc -> constant -> constr
 val w_defined_evar      : wc -> existential_key -> bool
 
 val instantiate : evar -> constr -> tactic
+(*
 val instantiate_tac : tactic_arg list -> tactic
+*)
 val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate

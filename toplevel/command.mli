@@ -9,11 +9,11 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Term
-open Declare
-open Library
 open Nametab
+open Library
 (*i*)
 
 (*s Declaration functions. The following functions take ASTs,
@@ -21,6 +21,7 @@ open Nametab
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
+(*i
 val constant_entry_of_com :
   Coqast.t * Coqast.t option * bool -> Safe_typing.constant_entry
 
@@ -31,24 +32,23 @@ val declare_global_definition :
 
 val definition_body : identifier -> bool * strength -> 
   Coqast.t -> Coqast.t option -> global_reference
+i*)
 
-val definition_body_red : Tacred.red_expr option -> identifier
+val declare_definition : Tacred.red_expr option -> identifier
   -> bool * strength -> Coqast.t -> Coqast.t option -> global_reference
 
 val syntax_definition : identifier -> Coqast.t -> unit
 
 (*i
-val abstraction_definition : identifier -> int array -> Coqast.t -> unit
-i*)
-
 val hypothesis_def_var : bool -> identifier -> strength -> Coqast.t
   -> global_reference
 
 val parameter_def_var : identifier -> Coqast.t -> constant
+i*)
 
-val build_mutual : 
-  (identifier * Coqast.t) list -> 
-    (identifier * Coqast.t * (identifier * Coqast.t) list) list -> bool -> unit
+val declare_assumption : identifier -> strength -> Coqast.t -> unit
+
+val build_mutual : Vernacexpr.inductive_expr list -> bool -> unit
 
 val declare_mutual_with_eliminations :
   Indtypes.mutual_inductive_entry -> section_path
@@ -59,9 +59,9 @@ val build_recursive :
 
 val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
 
-val build_scheme : (identifier * bool * Nametab.qualid * Coqast.t) list -> unit
+val build_scheme : (identifier * bool * Nametab.qualid located * Coqast.t) list -> unit
 
-val start_proof_com : identifier option -> strength -> Coqast.t -> unit
+val start_proof_com : identifier option -> bool * strength -> Coqast.t -> Proof_type.declaration_hook -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

@@ -21,7 +21,9 @@ open Termops
 (*i*)
 
 (* These are the entry points for printing terms, context, tac, ... *)
-val gentacpr  : Coqast.t -> std_ppcmds
+(*
+val gentacpr  : Tacexpr.raw_tactic_expr -> std_ppcmds
+*)
 
 val prterm_env      : env -> constr -> std_ppcmds
 val prterm_env_at_top : env -> constr -> std_ppcmds

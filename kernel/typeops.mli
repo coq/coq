@@ -89,3 +89,7 @@ val judge_of_case : env -> case_info
 (* Typecheck general fixpoint (not checking guard conditions) *)
 val type_fixpoint : env -> name array -> types array 
     -> unsafe_judgment array -> constraints
+
+(* Kernel safe typing but applicable to partial proofs *)
+val typing : env -> constr -> unsafe_judgment
+

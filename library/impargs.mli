@@ -20,7 +20,7 @@ open Nametab
 
 val make_implicit_args : bool -> unit
 val is_implicit_args : unit -> bool
-val implicitely : ('a -> 'b) -> 'a -> 'b
+val implicitly : ('a -> 'b) -> 'a -> 'b
 val with_implicits : bool -> ('a -> 'b) -> 'a -> 'b
 
 (*s An [implicits_list] is a list of positions telling which arguments

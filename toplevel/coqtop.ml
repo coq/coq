@@ -67,10 +67,7 @@ let load_vernac_obj () =
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
-  List.iter
-    (fun s -> 
-      let qid = Nametab.make_short_qualid (id_of_string (Filename.basename s)) in
-      Library.require_module_from_file None qid s false)
+  List.iter (fun s -> Library.require_module_from_file None None s false)
     (List.rev !require_list)
 
 let compile_list = ref ([] : (bool * string) list)

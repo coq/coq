@@ -1,3 +1,4 @@
+(*
 Declare ML Module "ctast".
 Declare ML Module "paths".
 Declare ML Module "name_to_ast".
@@ -15,7 +16,7 @@ Declare ML Module "history".
 Declare ML Module "centaur".
 (* Require Export Illustrations. *)
 (* Require Export AddDad. *)
-
+(*
 Grammar vernac vernac : ast :=
   goal_cmd [ "Goal" "Cmd" numarg($n) "with" tacarg($tac) "." ] ->
         [(GOAL_CMD $n (TACTIC $tac))]
@@ -33,7 +34,7 @@ Grammar vernac vernac : ast :=
 | compute_in_goal [ "COMPUTE_IN_GOAL" numarg($n) constrarg($c) "." ] ->
        [(CHECK_IN_GOAL "COMPUTE" $n $c)]
 | centaur_reset [ "Centaur" "Reset" identarg($id) "." ] -> [(Centaur_Reset $id)]
-(* | show_dad_rules [ "Show" "Dad" "Rules" "." ] -> [(Show_dad_rules)] *)
+(*| show_dad_rules [ "Show" "Dad" "Rules" "." ] -> [(Show_dad_rules)]*)
 | start_pcoq [ "Start" "Pcoq" "Mode" "." ] -> [ (START_PCOQ) ]
 | start_pcoq [ "Start" "Pcoq" "Debug" "Mode" "." ] -> [ (START_PCOQ_DEBUG) ].
 Grammar vernac ne_id_list : ast list :=
@@ -83,4 +84,5 @@ Grammar vernac vernac : ast :=
 | text_proof_flag_on [ "Text" "Mode" "Off" "." ] ->
        [(TEXT_MODE (AST "off"))].
 
-
+*)
+*)

@@ -15,5 +15,16 @@ open Tacmach
 
 (* Programmable destruction of hypotheses and conclusions. *)
 
+val set_extern_interp : (Tacexpr.raw_tactic_expr -> tactic) -> unit
+
+(*
 val dHyp : identifier -> tactic
 val dConcl : tactic
+*)
+val h_destructHyp : bool -> identifier -> tactic
+val h_destructConcl : tactic
+val h_auto_tdb : int option -> tactic
+
+val add_destructor_hint :
+  identifier -> (bool,unit) Tacexpr.location ->
+    Genarg.constr_ast -> int -> Tacexpr.raw_tactic_expr -> unit

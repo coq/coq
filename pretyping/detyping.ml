@@ -28,13 +28,8 @@ open Nametab
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
 
-let encode_inductive ref =
-  let indsp = match ref with
-    | IndRef indsp -> indsp
-    | _ ->
-        errorlabstrm "indsp_of_id"
-          (pr_global_env (Global.env()) ref ++
-	     str" is not an inductive type") in
+let encode_inductive qid =
+  let indsp = global_inductive qid in
   let constr_lengths = mis_constr_nargs indsp in
   (indsp,constr_lengths)
 
@@ -47,59 +42,64 @@ let isomorphic_to_bool lc =
 
 let isomorphic_to_tuple lc = (Array.length lc = 1)
 
+let encode_bool (loc,_ as locqid) =
+  let (_,lc as x) = encode_inductive locqid in
+  if not (isomorphic_to_bool lc) then
+    user_err_loc (loc,"encode_if",
+      str "This type cannot be seen as a boolean type");
+  x
+
+let encode_tuple (loc,_ as locqid) =
+  let (_,lc as x) = encode_inductive locqid in
+  if not (isomorphic_to_tuple lc) then
+    user_err_loc (loc,"encode_tuple",
+      str "This type cannot be seen as a tuple type");
+  x
+
 module PrintingCasesMake =
   functor (Test : sig 
-     val test : int array -> bool
-     val error_message : string
-     val member_message : global_reference -> bool -> string
+     val encode : qualid located -> inductive * int array
+     val member_message : std_ppcmds -> bool -> std_ppcmds
      val field : string
      val title : string
   end) ->
   struct
     type t = inductive * int array
-    let encode = encode_inductive
-    let check (_,lc) =
-      if not (Test.test lc) then 
-	errorlabstrm "check_encode" (str Test.error_message)
-    let printer (ind,_) =
-      pr_id (basename (path_of_inductive (Global.env()) ind))
+    let encode = Test.encode
+    let printer (ind,_) = pr_global_env (Global.env()) (IndRef ind)
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
-    let member_message = Test.member_message
+    let member_message x = Test.member_message (printer x)
     let synchronous = true
   end
 
 module PrintingCasesIf =
   PrintingCasesMake (struct 
-    let test = isomorphic_to_bool
-    let error_message = "This type cannot be seen as a boolean type"
+    let encode = encode_bool
     let field = "If"
     let title = "Types leading to pretty-printing of Cases using a `if' form: "
-    let member_message ref b =
-      let s = string_of_qualid(shortest_qualid_of_global (Global.env()) ref) in
-      if b then
-        "Cases on elements of " ^ s ^ " are printed using a `if' form"
-      else
-        "Cases on elements of " ^ s ^ " are not printed using `if' form"
+    let member_message s b =
+      str "Cases on elements of " ++ s ++ 
+      str
+	(if b then " are printed using a `if' form"
+         else " are not printed using a `if' form")
   end)
 
 module PrintingCasesLet =
   PrintingCasesMake (struct 
-    let test = isomorphic_to_tuple
-    let error_message = "This type cannot be seen as a tuple type"
+    let encode = encode_tuple
     let field = "Let"
     let title = 
       "Types leading to a pretty-printing of Cases using a `let' form:"
-    let member_message ref b =
-      let s = string_of_qualid(shortest_qualid_of_global (Global.env()) ref) in
-      if b then
-        "Cases on elements of " ^ s ^ " are printed using a `let' form"
-      else
-        "Cases on elements of " ^ s ^ " are not printed using a `let' form"
+    let member_message s b =
+      str "Cases on elements of " ++ s ++
+      str
+	(if b then " are printed using a `let' form"
+         else " are not printed using a `let' form")
   end)
 
-module PrintingIf  = Goptions.MakeIdentTable(PrintingCasesIf)
-module PrintingLet = Goptions.MakeIdentTable(PrintingCasesLet)
+module PrintingIf  = Goptions.MakeRefTable(PrintingCasesIf)
+module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
 
 let force_let ci =
   let indsp = ci.ci_ind in

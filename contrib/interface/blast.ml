@@ -191,7 +191,7 @@ and e_my_find_search db_list local_db hdc concl =
                tclTHEN (unify_e_resolve (term,cl)) 
 		 (e_trivial_fail_db db_list local_db)
 	   | Unfold_nth c -> unfold_constr c
-	   | Extern tacast -> Tacticals.conclPattern concl 
+	   | Extern tacast -> Auto.conclPattern concl 
 	       (out_some p) tacast
        in 
        (free_try tac,fmt_autotactic t))
@@ -567,7 +567,6 @@ let vire_extvar s =
 let blast gls =
    let leaf g = {
       status = Incomplete_proof;
-      subproof = None;
       goal = g;
       ref = None } in
      try (let (sgl,v) as res = !blast_tactic gls in
@@ -592,17 +591,19 @@ let blast gls =
 ;;
 
 let blast_tac display_function = function 
-          | ((Integer n)::_) as l -> 
+          | (n::_) as l -> 
                  (function g ->
                     let exp_ast = (blast g) in
-                     (display_function (ast_to_ct exp_ast);
+                     (display_function exp_ast;
                        tclIDTAC g))
           |  _ -> failwith "expecting other arguments";;
 
 let blast_tac_txt = 
-  blast_tac (function x -> msgnl(Printer.gentacpr (ct_to_ast x)));;
+  blast_tac (function x -> msgnl(Pptactic.pr_raw_tactic x));;
 
+(* Obsolète ?
 overwriting_add_tactic "Blast1" blast_tac_txt;;
+*)
 
 (*
 Grammar tactic ne_numarg_list : list :=

@@ -381,10 +381,6 @@ let explain_refiner_cannot_generalize ty =
 let explain_refiner_not_well_typed c =
   str"The term "  ++ prterm c  ++ str" is not well-typed"
 
-let explain_refiner_bad_tactic_args s l =
-  str "Internal tactic " ++ str s ++ str " cannot be applied to " ++
-  Tacmach.pr_tactic (s,l)
-
 let explain_intro_needs_product () =
   str "Introduction tactics needs products"
 
@@ -404,7 +400,6 @@ let explain_refiner_error = function
   | CannotUnify (m,n) -> explain_refiner_cannot_unify m n
   | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NotWellTyped c -> explain_refiner_not_well_typed c
-  | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
   | IntroNeedsProduct -> explain_intro_needs_product ()
   | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
   | NonLinearProof c -> explain_non_linear_proof c

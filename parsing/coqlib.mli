@@ -29,9 +29,6 @@ val glob_nat : global_reference
 val glob_O : global_reference
 val glob_S : global_reference
 
-(* Special variable for pretty-printing of constant naturals *)
-val glob_My_special_variable_nat : global_reference
-
 (* Equality *)
 val glob_eq : global_reference
 val glob_eqT : global_reference
@@ -128,13 +125,6 @@ val build_coq_eqdec_partial_pattern : constr_pattern delayed
 
 (* ["! (x,y:?1). (sumbool (eq ?1 x y) ~(eq ?1 x y))"] *)
 val build_coq_eqdec_pattern : constr_pattern delayed
-
-(* ["(A : ?)(x:A)(? A x x)"] and ["(x : ?)(? x x)"] *)
-val build_coq_refl_rel1_pattern : constr_pattern delayed
-val build_coq_refl_rel2_pattern : constr_pattern delayed
-
-(* ["(?1 -> ?2)"] *)
-val build_coq_arrow_pattern : constr_pattern delayed
 
 (* ["(sig ?1 ?2)"] *)
 val build_coq_sig_pattern : constr_pattern delayed

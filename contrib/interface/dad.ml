@@ -25,6 +25,10 @@ open Pp;;
 
 open Paths;;
 
+open Genarg;;
+open Tacexpr;;
+open Rawterm;;
+
 (* In a first approximation, drag-and-drop rules are like in CtCoq
    1/ a pattern,
    2,3/ Two paths: start and end positions,
@@ -37,7 +41,8 @@ open Paths;;
 *)
 
 
-type dad_rule = Ctast.t * int list * int list * int * int list * Ctast.t;;
+type dad_rule =
+    Ctast.t * int list * int list * int * int list * raw_atomic_tactic_expr;;
 
 (* This value will be used systematically when constructing objects of
    type Ctast.t, the value is stupid and meaningless, but it is needed
@@ -65,13 +70,20 @@ let rec get_subterm  (depth:int) (path: int list) (constr:constr) =
 let map_subst (env :env) 
    (subst:(int * Term.constr) list) =
    let rec map_subst_aux = function
-    Node(_, "META", [Num(_, i)]) ->
+    Coqast.Node(_, "META", [Coqast.Num(_, i)]) ->
       let constr = List.assoc i subst in
-      Ctast.ast_to_ct (ast_of_constr false env constr)
-  | Node(loc, s, l) -> Node(loc, s, List.map map_subst_aux l)
+      ast_of_constr false env constr
+  | Coqast.Node(loc, s, l) -> Coqast.Node(loc, s, List.map map_subst_aux l)
   | ast -> ast in
     map_subst_aux;;
 
+let map_subst_tactic env subst = function
+  | TacExtend ("Rewrite" as x,[b;cbl]) ->
+      let c,bl = out_gen rawwit_constr_with_bindings cbl in
+      assert (bl = NoBindings);
+      let c = (map_subst env subst c,NoBindings) in
+      TacExtend (x,[b;in_gen rawwit_constr_with_bindings c])
+  | _ -> failwith "map_subst_tactic: unsupported tactic"
 
 (* This function is really the one that is important. *)
 let rec find_cmd (l:(string * dad_rule) list) env constr p p1 p2 =
@@ -93,7 +105,7 @@ let rec find_cmd (l:(string * dad_rule) list) env constr p p1 p2 =
                (ct_to_ast pat) in
          let subst = matches constr_pat term_to_match in
          if (is_prefix p_f (p_r@p1)) & (is_prefix p_l (p_r@p2)) then
-           map_subst env subst cmd
+           TacAtom (zz, map_subst_tactic env subst cmd)
          else
 	   failwith "internal"
      with
@@ -103,7 +115,7 @@ let rec find_cmd (l:(string * dad_rule) list) env constr p p1 p2 =
 
 let dad_rule_list = ref ([]: (string * dad_rule) list);;
 
-
+(*
 (* \\ This function is also used in pbp. *)
 let rec tactic_args_to_ints = function
     [] -> []
@@ -130,6 +142,12 @@ let dad_tac display_function = function
             (find_cmd (!dad_rule_list) (pf_env g)
 	       (pf_concl g) p_a p1prime p2prime));
             tclIDTAC g);;
+*)
+let dad_tac display_function p1 p2 g =
+  let (p_a, p1prime, p2prime) = decompose_path (p1,p2) in
+  (display_function 
+    (find_cmd (!dad_rule_list) (pf_env g) (pf_concl g) p_a p1prime p2prime));
+  tclIDTAC g;;
 
 (* Now we enter dad rule list management. *)
 
@@ -233,34 +251,40 @@ let rec sort_list = function
   | a::l -> add_in_list_sorting a (sort_list l);;
 
 let mk_dad_meta n = Node(zz,"META",[Num(zz, n)]);;
-let mk_rewrite1 ast =
-      Node(zz,"TACTICLIST",
-        [Node(zz,"RewriteLR",
-           [Node(zz, "COMMAND", ast);Node(zz,"BINDINGS",[])])]);;
+let mk_rewrite lr ast =
+  let b = in_gen rawwit_bool lr in
+  let cb = in_gen rawwit_constr_with_bindings (Ctast.ct_to_ast ast,NoBindings) in
+  TacExtend ("Rewrite",[b;cb])
 
-let mk_rewrite2 ast =
-      Node(zz,"TACTICLIST",
-        [Node(zz,"RewriteRL",
-           [Node(zz, "COMMAND", ast);Node(zz,"BINDINGS",[])])]);;
+open Vernacexpr
 
+let dad_status = ref false;;
 
+let start_dad () = dad_status := true;;
 
-let start_dad () =
-vinterp_add "AddDadRule"
-  (function
-          | [VARG_STRING name; VARG_CONSTR pat; VARG_NUMBERLIST p1; 
-             VARG_NUMBERLIST p2; VARG_TACTIC com] ->
-            (function () ->
-              let pr = match decompose_path (p1, p2) with pr, _, _ -> pr in
-              (add_dad_rule name (Ctast.ast_to_ct pat) p1 p2 (List.length pr) pr (Ctast.ast_to_ct com)))
-            | _ -> errorlabstrm "AddDadRule1" (str "AddDadRule2"));
+let add_dad_rule_fn name pat p1 p2 tac =
+  let pr = match decompose_path (p1, p2) with pr, _, _ -> pr in
+  add_dad_rule name (Ctast.ast_to_ct pat) p1 p2 (List.length pr) pr tac;;
+
+(* To be parsed by camlp4
+
+(*i camlp4deps: "parsing/grammar.cma" i*)
+
+VERNAC COMMAND EXTEND AddDadRule
+  [ "Add" "Dad" "Rule" string(name) constr(pat)
+    "From" natural_list(p1) "To" natural_list(p2) tactic(tac) ] ->
+  [ add_dad_rule_fn name pat p1 p2 tac ]
+END
+
+*)
+
 add_dad_rule "distributivity-inv"
 (Node(zz,"APPLIST",[Nvar(zz,"mult");Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,4)]);Node(zz,"META",[Num(zz,3)])]);Node(zz,"META",[Num(zz,2)])]))
 [2; 2]
 [2; 1]
 1
 [2]
-(mk_rewrite1 ([Node(zz, "APPLIST", [Nvar(zz, "mult_plus_distr");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite true (Node(zz, "APPLIST", [Nvar(zz, "mult_plus_distr");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "distributivity1-r"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"APPLIST",[Nvar(zz,"mult");Node(zz,"META",[Num(zz,4)]);Node(zz,"META",[Num(zz,2)])]);Node(zz,"APPLIST",[Nvar(zz,"mult");Node(zz,"META",[Num(zz,3)]);Node(zz,"META",[Num(zz,2)])])]))
@@ -268,7 +292,7 @@ add_dad_rule "distributivity1-r"
 []
 0
 []
-(mk_rewrite2 ([Node(zz, "APPLIST", [Nvar(zz, "mult_plus_distr");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite false (Node(zz, "APPLIST", [Nvar(zz, "mult_plus_distr");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "distributivity1-l"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"APPLIST",[Nvar(zz,"mult");Node(zz,"META",[Num(zz,4)]);Node(zz,"META",[Num(zz,2)])]);Node(zz,"APPLIST",[Nvar(zz,"mult");Node(zz,"META",[Num(zz,3)]);Node(zz,"META",[Num(zz,2)])])]))
@@ -276,7 +300,7 @@ add_dad_rule "distributivity1-l"
 []
 0
 []
-(mk_rewrite2 ([Node(zz, "APPLIST", [Nvar(zz, "mult_plus_distr");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite false (Node(zz, "APPLIST", [Nvar(zz, "mult_plus_distr");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "associativity"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,4)]);Node(zz,"META",[Num(zz,3)])]);Node(zz,"META",[Num(zz,2)])]))
@@ -284,7 +308,7 @@ add_dad_rule "associativity"
 []
 0
 []
-(mk_rewrite1 ([Node(zz, "APPLIST", [Nvar(zz, "plus_assoc_r");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite true (Node(zz, "APPLIST", [Nvar(zz, "plus_assoc_r");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "minus-identity-lr"
 (Node(zz,"APPLIST",[Nvar(zz,"minus");Node(zz,"META",[Num(zz,2)]);Node(zz,"META",[Num(zz,2)])]))
@@ -292,7 +316,7 @@ add_dad_rule "minus-identity-lr"
 [2; 2]
 1
 [2]
-(mk_rewrite2 ([Node(zz, "APPLIST", [Nvar(zz, "minus_n_n");(mk_dad_meta 2) ])]));
+(mk_rewrite false (Node(zz, "APPLIST", [Nvar(zz, "minus_n_n");(mk_dad_meta 2) ])));
 
 add_dad_rule "minus-identity-rl"
 (Node(zz,"APPLIST",[Nvar(zz,"minus");Node(zz,"META",[Num(zz,2)]);Node(zz,"META",[Num(zz,2)])]))
@@ -300,7 +324,7 @@ add_dad_rule "minus-identity-rl"
 [2; 1]
 1
 [2]
-(mk_rewrite2 ([Node(zz, "APPLIST", [Nvar(zz, "minus_n_n");(mk_dad_meta 2) ])]));
+(mk_rewrite false (Node(zz, "APPLIST", [Nvar(zz, "minus_n_n");(mk_dad_meta 2) ])));
 
 add_dad_rule "plus-sym-rl"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,3)]);Node(zz,"META",[Num(zz,2)])]))
@@ -308,7 +332,7 @@ add_dad_rule "plus-sym-rl"
 [2; 1]
 1
 [2]
-(mk_rewrite1 ([Node(zz, "APPLIST", [Nvar(zz, "plus_sym");(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite true (Node(zz, "APPLIST", [Nvar(zz, "plus_sym");(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "plus-sym-lr"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,3)]);Node(zz,"META",[Num(zz,2)])]))
@@ -316,7 +340,7 @@ add_dad_rule "plus-sym-lr"
 [2; 2]
 1
 [2]
-(mk_rewrite1 ([Node(zz, "APPLIST", [Nvar(zz, "plus_sym");(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite true (Node(zz, "APPLIST", [Nvar(zz, "plus_sym");(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "absorb-0-r-rl"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,2)]);Nvar(zz,"O")]))
@@ -324,7 +348,7 @@ add_dad_rule "absorb-0-r-rl"
 [1]
 0
 []
-(mk_rewrite2 ([Node(zz, "APPLIST", [Nvar(zz, "plus_n_O");(mk_dad_meta 2) ])]));
+(mk_rewrite false (Node(zz, "APPLIST", [Nvar(zz, "plus_n_O");(mk_dad_meta 2) ])));
 
 add_dad_rule "absorb-0-r-lr"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,2)]);Nvar(zz,"O")]))
@@ -332,7 +356,7 @@ add_dad_rule "absorb-0-r-lr"
 [2; 2]
 0
 []
-(mk_rewrite2 ([Node(zz, "APPLIST", [Nvar(zz, "plus_n_O");(mk_dad_meta 2) ])]));
+(mk_rewrite false (Node(zz, "APPLIST", [Nvar(zz, "plus_n_O");(mk_dad_meta 2) ])));
 
 add_dad_rule "plus-permute-lr"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,4)]);Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,3)]);Node(zz,"META",[Num(zz,2)])])]))
@@ -340,7 +364,7 @@ add_dad_rule "plus-permute-lr"
 [2; 2; 2; 1]
 1
 [2]
-(mk_rewrite1 ([Node(zz, "APPLIST", [Nvar(zz, "plus_permute");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));
+(mk_rewrite true (Node(zz, "APPLIST", [Nvar(zz, "plus_permute");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])));
 
 add_dad_rule "plus-permute-rl"
 (Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,4)]);Node(zz,"APPLIST",[Nvar(zz,"plus");Node(zz,"META",[Num(zz,3)]);Node(zz,"META",[Num(zz,2)])])]))
@@ -348,7 +372,7 @@ add_dad_rule "plus-permute-rl"
 [2; 1]
 1
 [2]
-(mk_rewrite1 ([Node(zz, "APPLIST", [Nvar(zz, "plus_permute");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])]));;
+(mk_rewrite true (Node(zz, "APPLIST", [Nvar(zz, "plus_permute");(mk_dad_meta 4) ;(mk_dad_meta 3) ;(mk_dad_meta 2) ])));;
 
 vinterp_add "StartDad"
    (function

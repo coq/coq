@@ -26,13 +26,7 @@ open Nametab
    reset works properly --- and will fill some global tables such as 
    [Nametab] and [Impargs]. *)
 
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge
-
-val is_less_persistent_strength : strength * strength -> bool
-val strength_min : strength * strength -> strength
+open Nametab
 
 type section_variable_entry =
   | SectionLocalDef of constr * types option
@@ -51,6 +45,10 @@ val declare_constant : identifier -> constant_declaration -> constant
 
 val redeclare_constant : constant -> Cooking.recipe * strength -> unit
 
+(*
+val declare_parameter : identifier -> constr -> constant
+*)
+
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block *)
@@ -61,6 +59,8 @@ val out_inductive : Libobject.obj -> mutual_inductive_entry
 val make_strength_0 : unit -> strength
 val make_strength_1 : unit -> strength
 val make_strength_2 : unit -> strength
+val is_less_persistent_strength : strength * strength -> bool
+val strength_min : strength * strength -> strength
 
 (*s Corresponding test and access functions. *)
 

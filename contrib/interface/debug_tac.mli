@@ -1,6 +1,6 @@
 
-val report_error : Coqast.t ->
+val report_error : Tacexpr.raw_tactic_expr ->
     Proof_type.goal Proof_type.sigma option ref ->
-    Coqast.t ref -> int list ref -> int list -> Tacmach.tactic;;
+    Tacexpr.raw_tactic_expr ref -> int list ref -> int list -> Tacmach.tactic;;
 
-val clean_path : int -> Coqast.t -> int list -> int list;;
+val clean_path : Tacexpr.raw_tactic_expr -> int list -> int list;;

@@ -19,6 +19,8 @@ open Proof_trees
 open Proof_type
 open Refiner
 open Tacred
+open Tacexpr
+open Rawterm
 (*i*)
 
 (* Operations for handling terms under a local typing context. *)
@@ -115,39 +117,9 @@ val top_of_tree             : pftreestate -> pftreestate
 val change_constraints_pftreestate :
   evar_map -> pftreestate -> pftreestate
 
-(*s Tacticals re-exported from the Refiner module. *)
-
-(* A special exception for levels for the Fail tactic *)
-exception FailError of int
-
-val tclIDTAC         : tactic
-val tclORELSE        : tactic -> tactic -> tactic
-val tclTHEN          : tactic -> tactic -> tactic
-val tclTHENLIST      : tactic list -> tactic
-val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
-val tclTHENL         : tactic -> tactic -> tactic
-val tclTHENS         : tactic -> tactic list -> tactic
-val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
-val tclTHENST        : tactic -> tactic list -> tactic -> tactic
-val tclTHENSI        : tactic -> tactic list -> tactic
-val tclREPEAT        : tactic -> tactic
-val tclREPEAT_MAIN   : tactic -> tactic
-val tclFIRST         : tactic list -> tactic
-val tclSOLVE         : tactic list -> tactic
-val tclTRY           : tactic -> tactic
-val tclTHENTRY       : tactic -> tactic -> tactic
-val tclCOMPLETE      : tactic -> tactic
-val tclAT_LEAST_ONCE : tactic -> tactic
-val tclFAIL          : int -> tactic
-val tclDO            : int -> tactic -> tactic
-val tclPROGRESS      : tactic -> tactic
-val tclWEAK_PROGRESS : tactic -> tactic
-val tclNOTSAMEGOAL   : tactic -> tactic
-val tclINFO          : tactic -> tactic
-
-val unTAC         : tactic -> goal sigma -> proof_tree sigma
-val vernac_tactic : tactic_expression -> tactic
-
+(*
+val vernac_tactic : string * tactic_arg list -> tactic
+*)
 (*s The most primitive tactics. *)
 
 val refiner         : rule -> tactic
@@ -185,9 +157,10 @@ val tclIDTAC_list      : tactic_list
 
 (*s Tactic Registration. *)
 
+(*
 val add_tactic         : string -> (tactic_arg list -> tactic) -> unit
 val overwriting_tactic : string -> (tactic_arg list -> tactic) -> unit
-
+*)
 
 (*s Transformation of tactic arguments. *)
 
@@ -197,42 +170,16 @@ val tactic_com       : (constr,Coqast.t) parse_combinator
 val tactic_com_sort  : (constr,Coqast.t) parse_combinator
 val tactic_com_list  : (constr list, Coqast.t list) parse_combinator
 
-val tactic_bind_list : ((bindOcc * constr) list,
-                        (bindOcc * Coqast.t) list) parse_combinator
+val tactic_bind_list :
+  (constr substitution, Coqast.t substitution) parse_combinator
 
 val tactic_com_bind_list : 
-  (constr   * (bindOcc * constr)   list,
-   Coqast.t * (bindOcc * Coqast.t) list) parse_combinator
+  (constr   * constr substitution,
+   Coqast.t * Coqast.t substitution) parse_combinator
 
 val tactic_com_bind_list_list :  
-  ((constr   * (bindOcc * constr)   list) list, 
-   (Coqast.t * (bindOcc * Coqast.t) list) list) parse_combinator
-
-
-(*s Hiding the implementation of tactics. *)
-
-val hide_tactic  : 
-  string -> (tactic_arg list -> tactic) -> (tactic_arg list -> tactic)
-
-val overwrite_hidden_tactic : 
-  string -> (tactic_arg list -> tactic) -> (tactic_arg list -> tactic)
-
-
-type 'a hide_combinator = string -> ('a -> tactic) -> ('a -> tactic)
-
-val hide_atomic_tactic  : string -> tactic -> tactic
-val hide_constr_tactic  : constr hide_combinator
-val hide_openconstr_tactic  : Pretyping.open_constr hide_combinator
-val hide_constrl_tactic : (constr list) hide_combinator
-val hide_numarg_tactic  : int hide_combinator
-val hide_ident_tactic   : identifier hide_combinator
-val hide_identl_tactic  : hyp_location list hide_combinator
-val hide_string_tactic  : string hide_combinator
-val hide_bindl_tactic   : ((bindOcc * constr) list) hide_combinator
-val hide_cbindl_tactic  : (constr * (bindOcc * constr) list) hide_combinator
-val hide_cbindll_tactic : 
-  ((constr * (bindOcc * constr) list) list) hide_combinator
-
+  ((constr   * constr substitution) list, 
+   (Coqast.t * Coqast.t substitution) list) parse_combinator
 
 (*s Pretty-printing functions. *)
 
@@ -243,4 +190,3 @@ open Pp
 val pr_com    : evar_map -> goal -> Coqast.t -> std_ppcmds
 val pr_gls    : goal sigma -> std_ppcmds
 val pr_glls   : goal list sigma -> std_ppcmds
-val pr_tactic : tactic_expression -> std_ppcmds

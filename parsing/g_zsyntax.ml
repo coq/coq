@@ -14,6 +14,7 @@ open Pp
 open Util
 open Names
 open Ast
+open Extend
 
 let get_z_sign loc =
   let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
@@ -22,10 +23,8 @@ let get_z_sign loc =
     ast_of_id (id_of_string "xH")),
    (ast_of_id (id_of_string "ZERO"), 
     ast_of_id (id_of_string "POS"),
-    ast_of_id (id_of_string "NEG")),
-   (ast_of_id (id_of_string "My_special_variable0"), 
-    ast_of_id (id_of_string "My_special_variable1")))
-  
+    ast_of_id (id_of_string "NEG")))
+
 let int_array_of_string s =
   let a = Array.create (String.length s) 0 in
   for i = 0 to String.length s - 1 do
@@ -85,7 +84,7 @@ let pos_of_int_array astxI astxO astxH x =
   pos_of x
     
 let z_of_string pos_or_neg s dloc = 
-  let ((astxI,astxO,astxH),(astZERO,astPOS,astNEG),_) = get_z_sign dloc in
+  let ((astxI,astxO,astxH),(astZERO,astPOS,astNEG)) = get_z_sign dloc in
   let v = int_array_of_string s in
   if is_nonzero v then
     if pos_or_neg then
@@ -112,8 +111,11 @@ let int_array_option_of_pos astxI astxO astxH p =
   with Non_closed_number -> 
     None
 
-let inside_printer posneg std_pr p = 
-  let ((astxI,astxO,astxH),_,(myvar0,myvar1)) = get_z_sign dummy_loc in
+let pr_pos a = hov 0 (str "POS" ++ brk (1,1) ++ a)
+let pr_neg a = hov 0 (str "NEG" ++ brk (1,1) ++ a)
+
+let inside_printer posneg std_pr p =
+  let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
   match (int_array_option_of_pos astxI astxO astxH p) with
     | Some n -> 
 	if posneg then 
@@ -121,11 +123,11 @@ let inside_printer posneg std_pr p =
 	else 
 	  (str "(-" ++ str (string_of_int_array n) ++ str ")")
     | None -> 
-	let c = if posneg then myvar0 else myvar1 in
-	std_pr (ope("ZEXPR",[ope("APPLIST",[c; p])]))
+	let pr = if posneg then pr_pos else pr_neg in
+	str "(" ++ pr (std_pr (ope("ZEXPR",[p]))) ++ str ")"
 
-let outside_printer posneg std_pr p = 
-  let ((astxI,astxO,astxH),_,(myvar0,myvar1)) = get_z_sign dummy_loc in
+let outside_printer posneg std_pr p =
+  let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
   match (int_array_option_of_pos astxI astxO astxH p) with
     | Some n -> 
 	if posneg then 
@@ -133,8 +135,8 @@ let outside_printer posneg std_pr p =
 	else 
 	  (str "`-" ++ str (string_of_int_array n) ++ str "`")
       | None -> 
-	  let c = if posneg then myvar0 else myvar1 in
-	  (str "(" ++ std_pr (ope("APPLIST", [c; p])) ++ str ")") 
+	  let pr = if posneg then pr_pos else pr_neg in
+	  str "(" ++ pr (std_pr p) ++ str ")"
 
 (* Declare pretty-printers for integers *)
 let _ = Esyntax.Ppprim.add ("positive_printer", (outside_printer true))
@@ -145,15 +147,9 @@ let _ = Esyntax.Ppprim.add ("negative_printer_inside", (inside_printer false))
 (* Declare the primitive parser *)
 open Pcoq
 
-let number = 
-  match create_entry (get_univ "znatural") "number" ETast with
-    | Ast n -> n 
-    | _ -> anomaly "G_zsyntax.number"
+let number = create_constr_entry (get_univ "znatural") "number" 
 
-let negnumber = 
-  match create_entry (get_univ "znatural") "negnumber" ETast with
-    | Ast n -> n 
-    | _ -> anomaly "G_zsyntax.negnumber"
+let negnumber = create_constr_entry (get_univ "znatural") "negnumber"
  
 let _ =
   Gram.extend number None

@@ -599,6 +599,15 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
     | a::args -> (dbrec env a) :: (ast_to_args env args)
     | [] -> []
 
+  and interp_binding env = function
+  | Node(_,"BINDING", [Num(_,n);Node(loc,"CONSTR",[c])]) ->
+      (AnonHyp n,dbrec env c)
+  | Node(_,"BINDING", [Nvar(loc0,s); Node(loc1,"CONSTR",[c])]) -> 
+      (NamedHyp (ident_of_nvar loc0 s), dbrec env c)
+  | x ->
+    errorlabstrm "bind_interp"
+      (str "Not the expected form in binding" ++ print_ast x)
+
   in 
   dbrec env
 
@@ -630,10 +639,10 @@ let implicits_of_extended_reference = function
 let warning_globalize qid =
   warning ("Could not globalize " ^ (string_of_qualid qid))
 
-let globalize_qualid qid =
+let globalize_qualid (loc,qid) =
   try
     let ref = Nametab.extended_locate qid in
-    ast_of_extended_ref_loc dummy_loc ref
+    ast_of_extended_ref_loc loc ref
   with Not_found ->
     if_verbose warning_globalize qid;
     Termast.ast_of_qualid qid
@@ -735,6 +744,10 @@ let constrOut = function
   | ast ->
     anomalylabstrm "constrOut"
       (str "Not a Dynamic ast: " ++ print_ast ast)
+
+let interp_global_constr env (loc,qid) = 
+  let c,_ = rawconstr_of_qualid (Idset.empty,[]) ([],env) loc qid in
+  understand Evd.empty env c
 
 let interp_constr sigma env c =
   understand sigma env (interp_rawconstr sigma env c)

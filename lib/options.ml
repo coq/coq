@@ -45,8 +45,7 @@ let if_verbose f x = if not !silent then f x
 (* The number of printed hypothesis in a goal *)
 
 let print_hyps_limit = ref (None : int option)
-let set_print_hyps_limit n = print_hyps_limit := Some n
-let unset_print_hyps_limit () = print_hyps_limit := None
+let set_print_hyps_limit n = print_hyps_limit := n
 let print_hyps_limit () = !print_hyps_limit
 
 (* A list of the areas of the system where "unsafe" operation

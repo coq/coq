@@ -477,3 +477,10 @@ let infer_local_decls env decls =
       push_rel d env, add_rel_decl d l, Constraint.union cst1 cst2
   | [] -> env, empty_rel_context, Constraint.empty in
   inferec env decls
+
+(* Exported typing functions *)
+
+let typing env c = 
+  let (j,cst) = infer env c in
+  let _ = add_constraints cst env in
+  j

@@ -10,11 +10,35 @@
 
 (* $Id$ *)
 
+open Coqast
+open Vernacexpr
 open Pcoq
 open Pp
 open Tactic
 open Util
+open Constr
 open Vernac_
+open Prim
+
+(* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
+let join_binders (idl,c) = List.map (fun id -> (id,c)) idl
+
+open Genarg
+
+let cast_constr loc c = function
+  | None -> c
+  | Some t -> <:ast< (CAST $c $t) >>
+
+let abstract_constr bl c =
+  let loc = dummy_loc in 
+  <:ast<($ABSTRACT "LAMBDALIST" $bl $c)>>
+
+let generalize_constr bl c =
+  let loc = dummy_loc in 
+  <:ast< ($ABSTRACT "PRODLIST" $bl $c) >>
+
+let evar_constr = let loc = dummy_loc in <:ast< (ISEVAR) >>
+
 
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
@@ -28,121 +52,123 @@ GEXTEND Gram
       | g = gallina_ext; "." -> g
       | c = command; "." -> c 
       | c = syntax; "." -> c
-      | "["; l = vernac_list_tail -> <:ast< (VernacList ($LIST $l)) >>
-
+      | n = Prim.natural; ":"; tac = Tactic.tactic; "." -> VernacSolve (n,tac)
+      | "["; l = vernac_list_tail -> VernacList l
       (* This is for "Grammar vernac" rules *)
-      | id = Prim.metaident -> id ] ]
+      | id = Prim.metaident -> VernacVar (Ast.nvar_of_ast id) ] ]
   ;
   vernac: FIRST
-    [ [ IDENT "Time"; v = vernac  -> <:ast< (Time $v)>> ] ]
+    [ [ IDENT "Time"; v = vernac  -> VernacTime v ] ]
   ;
   vernac: LAST
-    [ [ tac = tacarg; "." ->
+    [ [ tac = Tactic.tactic; "." ->
         (match tac with
-	| Coqast.Node(_,kind,_)
-          when kind = "StartProof" || kind = "TheoremProof" -> tac
-	| _ -> <:ast< (SOLVE 1 (TACTIC $tac)) >>) ] ]
+(* Horrible hack pour LETTOP !
+	| VernacSolve (Coqast.Node(_,kind,_))
+          when kind = "StartProof" || kind = "TheoremProof" -> ??
+*)
+	| _ -> VernacSolve (1,tac))
+      | IDENT "Existential"; n = natural; c = constr_body ->
+	  VernacSolveExistential (n,c)
+    ] ]
+  ;
+  def_body:
+    [ [ ":="; c = constr; ":"; t = constr -> c, Some t
+      | ":"; t = constr; ":="; c = constr -> c, Some t
+      | ":="; c = constr -> c, None ] ]
+  ;
+  constr_body:
+    [ [	(c,t) = def_body -> cast_constr loc c t ] ]
   ;
   vernac_list_tail:
-    [ [ v = vernac; l = vernac_list_tail -> v :: l
+    [ [ v = located_vernac; l = vernac_list_tail -> v :: l
       | "]"; "." -> [] ] ]
+  ;
+  located_vernac:
+    [ [ v = vernac -> loc, v ] ]
   ;
 END
 
+let test_plurial_form = function
+  | [_] ->
+      Options.if_verbose warning
+      "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
+  | _ -> ()
+
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext reduce thm_tok theorem_body;
+  GLOBAL: gallina gallina_ext (* reduce *) thm_token;
 
-  theorem_body_line:
-    [ [ n = numarg; ":"; tac = tacarg; "." ->
-          <:ast< (VERNACCALL "SOLVE" $n (TACTIC $tac)) >>
-      | tac = tacarg; "." -> <:ast< (VERNACCALL "SOLVE" 1 (TACTIC $tac)) >>
-      ] ]
+  thm_token:
+    [ [ "Theorem" -> Theorem
+      | IDENT "Lemma" -> Lemma
+      | IDENT "Fact" -> Fact
+      | IDENT "Remark" -> Remark
+      | IDENT "Decl" -> Decl ] ]
   ;
-  theorem_body_line_list:
-    [ [ t = theorem_body_line -> [t]
-      | t = theorem_body_line; l = theorem_body_line_list -> t :: l ] ]
+  def_token:
+    [ [ "Definition" -> (fun _ _ -> ()), Definition
+      | IDENT "Local" -> (fun _ _ -> ()), LocalDefinition
+      | IDENT "SubClass"  -> Class.add_subclass_hook, Definition
+      | IDENT "Local"; IDENT "SubClass"  ->
+	  Class.add_subclass_hook, LocalDefinition
+ ] ]  
   ;
-  theorem_body:
-    [ [ l = theorem_body_line_list ->
-          <:ast< (VERNACARGLIST ($LIST $l)) >> ] ]
+  assumption_token:
+    [ [ "Hypothesis" -> AssumptionHypothesis
+      | "Variable" -> AssumptionVariable
+      | "Axiom" -> AssumptionAxiom
+      | "Parameter" -> AssumptionParameter ] ]
   ;
-  thm_tok:
-    [ [ "Theorem" -> <:ast< "THEOREM" >>
-      | IDENT "Lemma" -> <:ast< "LEMMA" >>
-      | IDENT "Fact" -> <:ast< "FACT" >>
-      | IDENT "Remark" -> <:ast< "REMARK" >>
-      | IDENT "Decl" -> <:ast< "DECL" >> ] ]
-  ;
-  def_tok:
-    [ [ "Definition" -> <:ast< "DEFINITION" >>
-      | IDENT "Local" -> <:ast< "LOCAL" >> 
-      | IDENT "SubClass"  -> <:ast< "SUBCLASS" >>
-      | IDENT "Local"; IDENT "SubClass"  -> <:ast< "LSUBCLASS" >> ] ]  
-  ;
-  hyp_tok:
-    [ [ "Hypothesis" -> <:ast< "HYPOTHESIS" >>
-      | "Variable" -> <:ast< "VARIABLE" >> ] ]
-  ;
-  hyps_tok:
-    [ [ IDENT "Hypotheses" -> <:ast< "HYPOTHESES" >>
-      | IDENT "Variables" -> <:ast< "VARIABLES" >> ] ]
-  ;
-  param_tok:
-    [ [ "Axiom" -> <:ast< "AXIOM" >>
-      | "Parameter" -> <:ast< "PARAMETER" >> ] ]
-  ;
-  params_tok:
-    [ [ IDENT "Parameters" -> <:ast< "PARAMETERS" >> ] ]
+  assumptions_token:
+    [ [ IDENT "Hypotheses" -> AssumptionHypothesis
+      | IDENT "Variables" -> AssumptionVariable
+      | IDENT "Parameters" -> AssumptionParameter ] ]
   ;
   params:
-    [ [ idl = Constr.ne_ident_comma_list; ":"; c = Constr.constr ->
-          <:ast< (BINDER $c ($LIST $idl)) >> ] ]
+    [ [ idl = LIST1 ident SEP ","; ":"; c = constr -> join_binders (idl,c)
+    ] ]
   ;
   ne_params_list:
-    [ [ id = params; ";"; idl = ne_params_list -> id :: idl
-      | id = params -> [id] ] ]
+    [ [ ll = LIST1 params SEP ";" -> List.flatten ll ] ]
   ;
   reduce:
-    [ [ IDENT "Eval"; r = Tactic.red_tactic; "in" ->
-        [ <:ast< (TACTIC_ARG (REDEXP $r)) >> ]
-      | -> [] ] ]
+    [ [ IDENT "Eval"; r = Tactic.red_tactic; "in" -> Some r
+      | -> None ] ]
   ;
   binders_list:
-    [ [ idl = Constr.ne_binders_list -> <:ast< (BINDERS ($LIST $idl)) >>
+    [ [ idl = ne_binders_list -> <:ast< (BINDERS ($LIST $idl)) >>
       | -> <:ast< (BINDERS) >> ] ]
   ;
   gallina:
     (* Definition, Goal *)
-    [ [ thm = thm_tok; id = identarg; ":"; c = constrarg ->
-          <:ast< (StartProof $thm $id $c) >>
-      | thm = thm_tok; id = identarg; ":"; c = constrarg; ":="; "Proof";
-        tb = theorem_body; "Qed" ->
-          <:ast< (TheoremProof $thm $id $c $tb) >>
-      | def = def_tok; s = identarg; bl = binders_list;
-	":"; t = Constr.constr ->
-          <:ast< (StartProof $def $s (CONSTR ($ABSTRACT "PRODLIST" $bl $t))) >>
-      | def = def_tok; s = identarg; bl = binders_list;
-	":="; red = reduce; c = Constr.constr ->
-          <:ast< (DEFINITION $def $s (CONSTR ($ABSTRACT "LAMBDALIST" $bl $c))
-		    ($LIST $red)) >>
-      | def = def_tok; s = identarg; bl = binders_list;
-	":="; red = reduce; c = Constr.constr; ":"; t = Constr.constr ->
-          <:ast< (DEFINITION $def $s (CONSTR ($ABSTRACT "LAMBDALIST" $bl $c)) 
-		    (CONSTR ($ABSTRACT "PRODLIST" $bl $t)) ($LIST $red)) >>
-      | def = def_tok; s = identarg; bl = binders_list;
-	":"; t = Constr.constr; ":="; red = reduce; c = Constr.constr ->
-          <:ast< (DEFINITION $def $s (CONSTR ($ABSTRACT "LAMBDALIST" $bl $c))
-		    (CONSTR ($ABSTRACT "PRODLIST" $bl $t)) ($LIST $red)) >>
+    [ [ thm = thm_token; id = ident; ":"; c = constr -> 
+         VernacStartProof
+           (StartTheoremProof thm, Some id, c, false, (fun _ _ -> ()))
 
-      | hyp = hyp_tok; bl = ne_params_list ->
-          <:ast< (VARIABLE $hyp  (BINDERLIST ($LIST $bl))) >>
-      | hyp = hyps_tok; bl = ne_params_list ->
-          <:ast< (VARIABLE $hyp  (BINDERLIST ($LIST $bl))) >>
-      | hyp = param_tok; bl = ne_params_list ->
-          <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
-      | hyp = params_tok; bl = ne_params_list ->
-          <:ast< (PARAMETER $hyp (BINDERLIST ($LIST $bl))) >>
+      | (f,d) = def_token; id = ident; bl = binders_list;
+	":"; t = constr -> 
+          VernacStartProof 
+            (StartDefinitionBody d, Some id, generalize_constr bl t, false, f)
+      | (f,def) = def_token; s = Prim.ident; bl = binders_list;
+	":="; red = reduce; c = constr ->
+	  VernacDefinition
+	    (def, s, red, abstract_constr bl c, None, f)
+      | (f,def) = def_token; s = Prim.ident; bl = binders_list;
+	":="; red = reduce; c = constr; ":"; t = constr -> 
+	  VernacDefinition
+	    (def, s, red, abstract_constr bl c,
+            Some (generalize_constr bl t), f)
+      | (f,def) = def_token; s = Prim.ident; bl = binders_list;
+	":"; t = constr; ":="; red = reduce; c = constr -> 
+	  VernacDefinition
+	    (def, s, red, abstract_constr bl c,
+            Some (generalize_constr bl t), f)
+      | stre = assumption_token; bl = ne_params_list -> 
+	  VernacAssumption (stre, bl)
+      | stre = assumptions_token; bl = ne_params_list ->
+	  test_plurial_form bl;
+	  VernacAssumption (stre, bl)
       ] ]
   ;
   END
@@ -151,248 +177,202 @@ GEXTEND Gram
 GEXTEND Gram
   GLOBAL: gallina gallina_ext;
 
-  finite_tok:
-    [ [ "Inductive" -> <:ast< "Inductive" >>
-      | "CoInductive" -> <:ast< "CoInductive" >> ] ]
+  finite_token:
+    [ [ "Inductive" -> true
+      | "CoInductive" -> false ] ]
   ;
-  record_tok:
-    [ [ IDENT "Record" -> <:ast< "Record" >>
-      | IDENT "Structure" -> <:ast< "Structure" >> ] ]
+  record_token:
+    [ [ IDENT "Record" -> () | IDENT "Structure" -> () ] ]
   ;
   constructor:
-    [ [ id = identarg; ":"; c = Constr.constr ->
-          <:ast< (BINDER $c $id) >> ] ]
+    [ [ id = ident; coe = of_type_with_opt_coercion; c = constr ->
+        (id,coe,c) ] ]
   ;
   ne_constructor_list:
     [ [ idc = constructor; "|"; l = ne_constructor_list -> idc :: l
       | idc = constructor -> [idc] ] ]
   ;
   constructor_list:
-    [ [ "|"; l = ne_constructor_list -> <:ast< (BINDERLIST ($LIST $l)) >>
-      | l = ne_constructor_list -> <:ast< (BINDERLIST ($LIST $l)) >>
-      |  -> <:ast< (BINDERLIST) >> ] ]
+    [ [ "|"; l = ne_constructor_list -> l
+      | l = ne_constructor_list -> l
+      |  -> [] ] ]
   ;
   block_old_style:
     [ [ ind = oneind_old_style; "with"; indl = block_old_style -> ind :: indl
       | ind = oneind_old_style -> [ind] ] ]
   ;
   oneind_old_style:
-    [ [ id = identarg; ":"; c = constrarg; ":="; lc = constructor_list ->
-          <:ast< (VERNACARGLIST $id $c $lc) >> ] ]
+    [ [ id = ident; ":"; c = constr; ":="; lc = constructor_list ->
+          (id,c,lc) ] ]
   ;
   block:
     [ [ ind = oneind; "with"; indl = block -> ind :: indl
       | ind = oneind -> [ind] ] ]
   ;
   oneind:
-    [ [ id = identarg; indpar = indpar; ":"; c = constrarg; ":=";
-	lc = constructor_list
-      -> <:ast< (VERNACARGLIST $id $c $indpar $lc) >> ] ]
+    [ [ id = ident; indpar = indpar; ":"; c = constr; ":=";
+	lc = constructor_list -> (id,indpar,c,lc) ] ]
   ;
   indpar:
-    [ [ bl = ne_simple_binders_list ->
-          <:ast< (BINDERLIST ($LIST $bl)) >>
-      |  -> <:ast< (BINDERLIST) >> ] ]
+    [ [ bl = ne_simple_binders_list -> bl
+      |  -> [] ] ]
   ;
   opt_coercion:
-    [ [ ">" -> "COERCION"
-      |  -> "" ] ]
+    [ [ ">" -> true
+      |  -> false ] ]
   ;
   of_type_with_opt_coercion:
-    [ [ ":>" -> "COERCION"
-      | ":"; ">" -> "COERCION"
-      | ":" -> "" ] ]
+    [ [ ":>" -> true
+      | ":"; ">" -> true
+      | ":" -> false ] ]
   ;
   onescheme:
-    [ [ id = identarg; ":="; dep = dep; indid = qualidarg; IDENT "Sort";
-        s = sortarg ->
-          <:ast< (VERNACARGLIST $id $dep $indid $s) >> ] ]
+    [ [ id = ident; ":="; dep = dep; ind = qualid; IDENT "Sort";
+        s = sort -> (id,dep,ind,s) ] ]
   ;
-  specifscheme:
-    [ [ rec_ = onescheme; "with"; recl = specifscheme -> rec_ :: recl
-      | rec_ = onescheme -> [rec_] ] ]
+  schemes:
+    [ [ recl = LIST1 onescheme SEP "with" -> recl ] ]
   ;
   dep:
-    [ [ IDENT "Induction"; IDENT "for" -> <:ast< "DEP" >>
-      | IDENT "Minimality"; IDENT "for" -> <:ast< "NODEP" >> ] ]
+    [ [ IDENT "Induction"; IDENT "for" -> true
+      | IDENT "Minimality"; IDENT "for" -> false ] ]
   ;
   onerec:
-    [ [ id = identarg; idl = ne_simple_binders_list; ":"; c = constrarg;
-        ":="; def = constrarg ->
-          <:ast< (VERNACARGLIST $id (BINDERLIST ($LIST $idl)) $c $def) >> ] ]
+    [ [ id = ident; idl = ne_simple_binders_list; ":"; c = constr;
+        ":="; def = constr -> (id,idl,c,def) ] ]
   ;
   specifrec:
-    [ [ rec_ = onerec; "with"; recl = specifrec -> rec_ :: recl
-      | rec_ = onerec -> [rec_] ] ]
+    [ [ l = LIST1 onerec SEP "with" -> l ] ]
   ;
   onecorec:
-    [ [ id = identarg; ":"; c = constrarg; ":="; def = constrarg ->
-          <:ast< (VERNACARGLIST $id $c $def) >> ] ]
+    [ [ id = ident; ":"; c = constr; ":="; def = constr ->
+          (id,c,def) ] ]
   ;
   specifcorec:
-    [ [ corec = onecorec; "with"; corecl = specifcorec -> corec :: corecl
-      | corec = onecorec -> [corec] ] ]
+    [ [ l = LIST1 onecorec SEP "with" -> l ] ]
   ;
-  field:
-    [ [ id = identarg; oc = of_type_with_opt_coercion; c = constrarg ->
-          <:ast< (VERNACARGLIST ($STR $oc) "ASSUM" $id $c) >>
-      | id = identarg; oc = of_type_with_opt_coercion; t = Constr.constr;
-	":="; b = Constr.constr -> 
-          <:ast< (VERNACARGLIST "" "DEF" $id $b (COMMAND (CAST $b $t))) >>
-      | id = identarg; ":="; b = constrarg ->
-          <:ast< (VERNACARGLIST "" "DEF" $id $b) >>
-(*      | id = identarg; ":>"; c = constrarg ->
-          <:ast< (VERNACARGLIST "COERCION" $id $c) >> *)] ]
-  ;
-  nefields:
-    [ [ idc = field; ";"; fs = nefields -> idc :: fs
-      | idc = field -> [idc] ] ]
+  record_field:
+    [ [ id = ident; oc = of_type_with_opt_coercion; t = constr ->
+          (oc,AssumExpr (id,t))
+      | id = ident; oc = of_type_with_opt_coercion; t = constr;
+	":="; b = constr ->
+	  (oc,DefExpr (id,b,Some t))
+      | id = ident; ":="; b = constr ->
+	  (false,DefExpr (id,b,None)) ] ]
   ;
   fields:
-    [ [ fs = nefields -> <:ast< (VERNACARGLIST ($LIST $fs)) >>
-      |  -> <:ast< (VERNACARGLIST) >> ] ]
+    [ [ fs = LIST0 record_field SEP ";" -> fs ] ]
   ;
   simple_params:
-    [ [ idl = Constr.ne_ident_comma_list; ":"; c = Constr.constr ->
-          <:ast< (BINDER $c ($LIST $idl)) >>
-      | idl = Constr.ne_ident_comma_list ->
-          <:ast< (BINDER (ISEVAR) ($LIST $idl)) >> ] ]
-  ;
-  ne_simple_params_list:
-    [ [ id = simple_params; ";"; idl = ne_simple_params_list -> id :: idl
-      | id = simple_params -> [id] ] ]
+    [ [ idl = LIST1 ident SEP ","; ":"; c = constr -> join_binders (idl, c)
+      | idl = LIST1 ident SEP "," -> join_binders (idl, evar_constr)
+    ] ]
   ;
   simple_binders:
-    [ [ "["; bl = ne_simple_params_list; "]" -> bl ] ]
+    [ [ "["; bll = LIST1 simple_params SEP ";"; "]" -> List.flatten bll ] ]
   ;
   ne_simple_binders_list:
-    [ [ bl = simple_binders; bll = ne_simple_binders_list -> bl @ bll
-      | bl = simple_binders -> bl ] ]
+    [ [ bll = LIST1 simple_binders -> List.flatten bll ] ]
   ;
-  rec_constr:
-    [ [ c = Vernac_.identarg -> <:ast< (VERNACARGLIST $c) >>
-      |  -> <:ast< (VERNACARGLIST) >> ] ]
+  rec_constructor:
+    [ [ c = ident -> Some c
+      |  -> None ] ]
   ;
   gallina_ext:
-    [ [ IDENT "Mutual"; bl = ne_simple_binders_list ; f = finite_tok;
+    [ [ IDENT "Mutual"; bl = ne_simple_binders_list ; f = finite_token;
         indl = block_old_style ->
-          <:ast< (OLDMUTUALINDUCTIVE (BINDERLIST ($LIST $bl)) $f
-                                     (VERNACARGLIST ($LIST $indl))) >>
-      | record_tok; oc = opt_coercion; name = identarg; ps = indpar; ":";
-	s = sortarg; ":="; c = rec_constr; "{"; fs = fields; "}" ->
-          <:ast< (RECORD ($STR $oc) $name $ps $s $c $fs) >>
-(*      | record_tok; ">"; name = identarg; ps = indpar; ":";
-	s = sortarg; ":="; c = rec_constr; "{"; fs = fields; "}" ->
-          <:ast< (RECORD "COERCION" $name $ps $s $c $fs) >>
-*)      ] ]
+	  let indl' = List.map (fun (id,ar,c) -> (id,bl,ar,c)) indl in
+	  VernacInductive (f,indl')
+      | record_token; oc = opt_coercion; name = ident; ps = indpar; ":";
+	s = sort; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
+	  VernacRecord (oc,name,ps,s,c,fs)
+    ] ]
   ;
   gallina:
-    [ [ IDENT "Mutual"; f = finite_tok; indl = block ->
-          <:ast< (MUTUALINDUCTIVE $f (VERNACARGLIST ($LIST $indl))) >>
-      | "Fixpoint"; recs = specifrec ->
-          <:ast< (MUTUALRECURSIVE (VERNACARGLIST ($LIST $recs))) >>
-      | "CoFixpoint"; corecs = specifcorec ->
-          <:ast< (MUTUALCORECURSIVE (VERNACARGLIST ($LIST $corecs))) >>
-      | IDENT "Scheme"; schemes = specifscheme ->
-          <:ast< (INDUCTIONSCHEME (VERNACARGLIST ($LIST $schemes))) >>
-      | f = finite_tok; s = sortarg; id = identarg; indpar = indpar; ":=";
-        lc = constructor_list ->
-          <:ast< (ONEINDUCTIVE $f $id $s $indpar $lc) >>
-      | f = finite_tok; indl = block ->
-          <:ast< (MUTUALINDUCTIVE $f (VERNACARGLIST ($LIST $indl))) >>
-
-      | record_tok; oc = opt_coercion; name = identarg; ps = indpar; ":";
-	s = sortarg; ":="; c = rec_constr; "{"; fs = fields; "}" ->
-          <:ast< (RECORD ($STR $oc) $name $ps $s $c $fs) >>
-(*      | record_tok; ">"; name = identarg; ps = indpar; ":";
-	s = sortarg; ":="; c = rec_constr; "{"; fs = fields; "}" ->
-          <:ast< (RECORD "COERCION" $name $ps $s $c $fs) >>
-*)      ] ];
-
+    [ [ IDENT "Mutual"; f = finite_token; indl = block ->
+          VernacInductive (f,indl)
+      | "Fixpoint"; recs = specifrec -> VernacFixpoint recs
+      | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint corecs
+      | IDENT "Scheme"; l = schemes -> VernacScheme l
+      | f = finite_token; s = sort; id = ident; indpar = indpar; ":=";
+        lc = constructor_list -> 
+          VernacInductive (f,[id,indpar,s,lc])
+      | f = finite_token; indl = block ->
+          VernacInductive (f,indl) ] ]
+  ;
   END
 
 GEXTEND Gram
   GLOBAL: gallina_ext;
 
   def_body:
-    [ [
-	c1 = Constr.constr; ":"; c2 = Constr.constr ->
-          <:ast< (CONSTR (CAST $c1 $c2)) >>
-      | c = Constr.constr -> <:ast< (CONSTR $c) >>
-  ] ];
-
+    [ [ ":="; c = constr; ":"; t = constr -> c, Some t
+      | ":"; t = constr; ":="; c = constr -> c, Some t
+      | ":="; c = constr -> c, None ] ]
+  ;
   gallina_ext:
     [ [ 
 (* Sections *)
-	IDENT "Section"; id = identarg -> <:ast< (BeginSection $id) >>
-      | IDENT "Chapter"; id = identarg -> <:ast< (BeginSection $id) >>
-      | IDENT "Module"; id = identarg -> <:ast< (BeginModule $id) >>
-      | IDENT "End"; id = identarg -> <:ast< (EndSection $id) >>
+	IDENT "Section"; id = ident -> VernacBeginSection id
+      | IDENT "Chapter"; id = ident -> VernacBeginSection id
+      | IDENT "Module"; id = ident  -> 
+	  warning "Module is currently unsupported"; VernacNop
+      | IDENT "End"; id = ident -> VernacEndSection id
 
 (* Transparent and Opaque *)
-      | IDENT "Transparent"; l = ne_qualidarg_list ->
-          <:ast< (TRANSPARENT ($LIST $l)) >>
-      | IDENT "Opaque"; l = ne_qualidarg_list -> 
-	  <:ast< (OPAQUE ($LIST $l)) >>
+      | IDENT "Transparent"; l = LIST1 qualid -> VernacSetOpacity (false, l)
+      | IDENT "Opaque"; l = LIST1 qualid -> VernacSetOpacity (true, l)
 
 (* Canonical structure *)
-      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg ->
-          <:ast< (CANONICAL $qid) >>
-      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg; ":"; 
-	t = Constr.constr; ":="; c = Constr.constr ->
-          let s = Ast.coerce_to_var qid in
-          <:ast< (DEFINITION "OBJECT" $s (CONSTR $c) (CONSTR $t)) >>
-      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg; ":="; 
-	c = Constr.constr; ":"; t = Constr.constr ->
-          let s = Ast.coerce_to_var qid in
-          <:ast< (DEFINITION "OBJECT" $s (CONSTR $c) (CONSTR $t)) >>
-      | IDENT "Canonical"; IDENT "Structure"; qid = qualidarg; ":="; 
-	c = Constr.constr ->
-          let s = Ast.coerce_to_var qid in
-          <:ast< (DEFINITION "OBJECT" $s (CONSTR $c)) >>
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualid ->
+	  VernacCanonical qid
+      | IDENT "Canonical"; IDENT "Structure"; qid = qualid; (c,t) = def_body
+          ->
+          let s = Ast.coerce_qualid_to_id qid in
+	  VernacDefinition (Definition,s,None,c,t,Recordobj.add_object_hook)
       (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
-         (they were unused and undocumented *)
+         (they were unused and undocumented) *)
 
 (* Coercions *)
-      | IDENT "Coercion"; qid = qualidarg; ":="; c = def_body ->
-          let s = Ast.coerce_to_var qid in
-          <:ast< (DEFINITION "COERCION" $s $c) >>
-      | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":="; 
-	 c = constrarg ->
-           let s = Ast.coerce_to_var qid in
-	    <:ast< (DEFINITION "LCOERCION" $s $c) >>
-      | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":="; 
-	 c1 = Constr.constr; ":"; c2 = Constr.constr ->
-          let s = Ast.coerce_to_var qid in
-          <:ast< (DEFINITION "LCOERCION" $s (CONSTR (CAST $c1 $c2))) >>
-      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = qualidarg;
-         ":"; c = qualidarg; ">->"; d = qualidarg ->
-          <:ast< (COERCION "LOCAL" "IDENTITY" $f $c $d) >>
-      | IDENT "Identity"; IDENT "Coercion"; f = qualidarg; ":";
-         c = qualidarg; ">->"; d = qualidarg ->
-          <:ast< (COERCION "" "IDENTITY" $f $c $d) >>
-      | IDENT "Coercion"; IDENT "Local"; qid = qualidarg; ":"; c = qualidarg;
-        ">->"; d = qualidarg ->
-          <:ast< (COERCION "LOCAL" "" $qid $c $d) >>
-      | IDENT "Coercion"; qid = qualidarg; ":"; c = qualidarg; ">->";
-         d = qualidarg -> <:ast< (COERCION "" "" $qid $c $d) >>
-      | IDENT "Class"; IDENT "Local"; c = qualidarg ->
-          <:ast< (CLASS "LOCAL" $c) >>
-      | IDENT "Class"; c = qualidarg -> <:ast< (CLASS "" $c) >>
+      | IDENT "Coercion"; qid = qualid; (c,t) = def_body ->
+          let s = Ast.coerce_qualid_to_id qid in
+	  VernacDefinition (Definition,s,None,c,t,Class.add_coercion_hook)
+      | IDENT "Coercion"; IDENT "Local"; qid = qualid; (c,t) = def_body ->
+           let s = Ast.coerce_qualid_to_id qid in
+	  VernacDefinition (LocalDefinition,s,None,c,t,Class.add_coercion_hook)
+      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = Prim.ident;
+         ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
+	   VernacIdentityCoercion (Declare.make_strength_0 (), f, s, t)
+      | IDENT "Identity"; IDENT "Coercion"; f = Prim.ident; ":";
+         s = class_rawexpr; ">->"; t = class_rawexpr -> 
+	   VernacIdentityCoercion (Nametab.NeverDischarge, f, s, t)
+      | IDENT "Coercion"; IDENT "Local"; qid = qualid; ":";
+	 s = class_rawexpr; ">->"; t = class_rawexpr -> 
+	  VernacCoercion (Declare.make_strength_0 (), qid, s, t)
+      | IDENT "Coercion"; qid = qualid; ":"; s = class_rawexpr; ">->";
+         t = class_rawexpr ->
+	  VernacCoercion (Nametab.NeverDischarge, qid, s, t)
+      | IDENT "Class"; IDENT "Local"; c = qualid ->
+	  Pp.warning "Class is obsolete"; VernacNop
+      | IDENT "Class"; c = qualid ->
+	  Pp.warning "Class is obsolete"; VernacNop
 
 (* Implicit *)
-      | IDENT "Syntactic"; "Definition"; id = identarg; ":="; com = constrarg
-         -> <:ast< (SyntaxMacro $id $com) >>
-      | IDENT "Syntactic"; "Definition"; id = identarg; ":="; com = constrarg;
-         "|"; n = numarg -> <:ast< (SyntaxMacro $id $com $n) >>
+      | IDENT "Syntactic"; "Definition"; id = ident; ":="; c = constr;
+         n = OPT [ "|"; n = natural -> n ] ->
+	   VernacSyntacticDefinition (id,c,n)
+
+      | IDENT "Implicits"; qid = qualid; "["; l = LIST0 natural; "]" ->
+	  VernacDeclareImplicits (qid,Some l)
+      | IDENT "Implicits"; qid = qualid -> VernacDeclareImplicits (qid,None)
+
+      (* For compatibility *)
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "On" ->
-          <:ast< (IMPLICIT_ARGS_ON) >>
+	  VernacSetOption
+	    (Goptions.SecondaryTable ("Implicit","Arguments"), BoolValue true)
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "Off" ->
-          <:ast< (IMPLICIT_ARGS_OFF) >>
-      | IDENT "Implicits"; qid = qualidarg; "["; l = numarg_list; "]" ->
-          <:ast< (IMPLICITS "" $qid ($LIST $l)) >>
-      | IDENT "Implicits"; qid = qualidarg ->
-          <:ast< (IMPLICITS "Auto" $qid) >> 
+	  VernacSetOption
+	    (Goptions.SecondaryTable ("Implicit","Arguments"), BoolValue false)
   ] ]
   ;
 END
@@ -401,20 +381,20 @@ END
 GEXTEND Gram
   GLOBAL: command;
 
-  import_tok:
-    [ [ IDENT "Import" -> <:ast< "IMPORT" >>
-      | IDENT "Export" -> <:ast< "EXPORT" >>
-      |  -> <:ast< "IMPORT" >> ] ]
+  export_token:
+    [ [ IDENT "Import" -> false
+      | IDENT "Export" -> true
+      |  -> false ] ]
   ;
-  specif_tok:
-    [ [ IDENT "Implementation" -> <:ast< "IMPLEMENTATION" >>
-      | IDENT "Specification" -> <:ast< "SPECIFICATION" >>
-      |  -> <:ast< "UNSPECIFIED" >> ] ]
+  specif_token:
+    [ [ IDENT "Implementation" -> Some false
+      | IDENT "Specification" -> Some true
+      |  -> None ] ]
   ;
   command:
-    [ [ "Load"; verbosely = [ IDENT "Verbose" -> "Verbose" | -> "" ];
+    [ [ "Load"; verbosely = [ IDENT "Verbose" -> true | -> false ];
 	s = [ s = STRING -> s | s = IDENT -> s ] ->
-          <:ast< (LoadFile ($STR $verbosely) ($STR $s)) >>
+	  VernacLoad (verbosely, s)
 (*      | "Compile";
 	verbosely =
           [ IDENT "Verbose" -> "Verbose"
@@ -424,29 +404,28 @@ GEXTEND Gram
           [ IDENT "Specification" -> "Specification"
           | -> "" ];
 	mname = [ s = STRING -> s | s = IDENT -> s ];
-	fname = OPT [ s = STRING -> s | s = IDENT -> s ] ->
+	fname = OPT [ s = STRING -> s | s = IDENT -> s ] -> ExtraVernac
           let fname = match fname with Some s -> s | None -> mname in
             <:ast< (CompileFile ($STR $verbosely) ($STR $only_spec)
                       ($STR $mname) ($STR $fname))>>
 *)
-      | IDENT "Read"; IDENT "Module"; qidl = LIST1 qualidarg ->
-          <:ast< (ReadModule ($LIST $qidl)) >>
-      | IDENT "Require"; import = import_tok; specif = specif_tok;
-        qidl = LIST1 qualidarg ->
-          <:ast< (Require $import $specif ($LIST $qidl)) >>
-      | IDENT "Require"; import = import_tok; specif = specif_tok;
-        qid = qualidarg; filename = stringarg ->
-          <:ast< (RequireFrom $import $specif $qid $filename) >>
-      | IDENT "Write"; IDENT "Module"; id = identarg -> 
+      | IDENT "Read"; IDENT "Module"; qidl = LIST1 qualid ->
+	  VernacRequire (None, None, qidl)
+      | IDENT "Require"; export = export_token; specif = specif_token;
+        qidl = LIST1 qualid -> VernacRequire (Some export, specif, qidl)
+      | IDENT "Require"; export = export_token; specif = specif_token;
+        id = Prim.ident; filename = STRING -> 
+	  VernacRequireFrom (export, specif, id, filename)
+(*
+      | IDENT "Write"; IDENT "Module"; id = identarg -> ExtraVernac 
 	  <:ast< (WriteModule $id) >>
-      | IDENT "Write"; IDENT "Module"; id = identarg; s = stringarg -> 
+      | IDENT "Write"; IDENT "Module"; id = identarg; s = stringarg -> ExtraVernac 
 	  <:ast< (WriteModule $id $s) >>
-      | IDENT "Declare"; IDENT "ML"; IDENT "Module";
-        l = ne_stringarg_list -> <:ast< (DeclareMLModule ($LIST $l)) >>
-      | IDENT "Import"; qidl = ne_qualidarg_list ->
-          <:ast< (ImportModule ($LIST $qidl)) >>
-      | IDENT "Export"; qidl = ne_qualidarg_list ->
-          <:ast< (ExportModule ($LIST $qidl)) >>
+*)
+      | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 STRING ->
+	  VernacDeclareMLModule l
+      | IDENT "Import"; qidl = LIST1 qualid -> VernacImport (false,qidl)
+      | IDENT "Export"; qidl = LIST1 qualid -> VernacImport (true,qidl)
   ] 
 ]
   ;
@@ -459,24 +438,20 @@ GEXTEND Gram
     [ [ 
 
 (* State management *)
-        IDENT "Write"; IDENT "State"; id = identarg ->
-          <:ast< (WriteState $id) >>
-      | IDENT "Write"; IDENT "State"; s = stringarg ->
-          <:ast< (WriteState $s) >>
-      | IDENT "Restore";  IDENT "State"; id = identarg ->
-          <:ast< (RestoreState $id) >>
-      | IDENT "Restore";  IDENT "State"; s = stringarg ->
-          <:ast< (RestoreState $s) >>
-      | IDENT "Reset"; id = identarg -> <:ast< (ResetName $id) >>
-      | IDENT "Reset"; IDENT "Initial" -> <:ast< (ResetInitial) >>
-      | IDENT "Reset"; IDENT "Section"; id = identarg ->
-          <:ast< (ResetSection $id) >>
-      | IDENT "Back" -> <:ast<(Back)>>
-      | IDENT "Back"; n = numarg -> <:ast<(Back $n)>>
+        IDENT "Write"; IDENT "State"; s = IDENT -> VernacWriteState s
+      | IDENT "Write"; IDENT "State"; s = STRING -> VernacWriteState s
+      | IDENT "Restore"; IDENT "State"; s = IDENT -> VernacRestoreState s
+      | IDENT "Restore"; IDENT "State"; s = STRING -> VernacRestoreState s
+
+(* Resetting *)
+      | IDENT "Reset"; id = Prim.ident -> VernacResetName id
+      | IDENT "Reset"; IDENT "Initial" -> VernacResetInitial
+      | IDENT "Back" -> VernacBack 1
+      | IDENT "Back"; n = Prim.natural -> VernacBack n
 
 (* Tactic Debugger *)
-      | IDENT "Debug"; IDENT "On" -> <:ast< (DebugOn) >>
-      |	IDENT "Debug"; IDENT "Off" -> <:ast< (DebugOff) >>
+      |	IDENT "Debug"; IDENT "On" -> VernacDebug true
+      |	IDENT "Debug"; IDENT "Off" -> VernacDebug false
 
  ] ];
     END

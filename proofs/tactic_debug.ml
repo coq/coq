@@ -7,6 +7,7 @@
 (***********************************************************************)
 open Ast
 open Pp
+open Pptactic
 open Printer
 
 (* This module intends to be a beginning of debugger for tactic expressions.
@@ -33,7 +34,7 @@ let help () =
 (* Prints the state and waits for an instruction *)
 let debug_prompt goalopt tac_ast =
   db_pr_goal goalopt;
-  msg (str "Going to execute:" ++ fnl () ++ (gentacpr tac_ast) ++ fnl ());
+  msg (str "Going to execute:" ++ fnl () ++ (pr_raw_tactic tac_ast) ++ fnl ());
 (*         str "Commands: <Enter>=Continue, s=Skip, x=Exit" >];*)
 (*  mSG (str "Going to execute:" ++ fnl () ++ (gentacpr tac_ast) ++ fnl () ++ fnl () ++
          str "----<Enter>=Continue----s=Skip----x=Exit----");*)
@@ -62,7 +63,7 @@ let db_constr debug env c =
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,c) =
   if debug = DebugOn then
-    msgnl (str "Matched hypothesis --> " ++ str (id^": ") ++
+    msgnl (str "Matched hypothesis --> " ++ str (Names.string_of_id id^": ") ++
            prterm_env env c)
 
 (* Prints the matched conclusion *)

@@ -32,6 +32,7 @@ open Wcclausenv
 open Tacticals
 open Tactics
 open Inv
+open Vernacexpr
 open Safe_typing
 
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
@@ -246,7 +247,7 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
     (ConstantEntry { const_entry_body = invProof;
                      const_entry_type = None;
                      const_entry_opaque = false }, 
-     NeverDischarge)
+     Nametab.NeverDischarge)
   in ()
 
 (* open Pfedit *)
@@ -269,17 +270,6 @@ let inversion_lemma_from_goal n na id sort dep_option inv_op =
 	 str"which are not free in its instance"); *)
   add_inversion_lemma na env sigma t sort dep_option inv_op
    
-open Vernacinterp
-
-let _ = 
-  vinterp_add
-    "MakeInversionLemmaFromHyp"
-    (function
-       | [VARG_NUMBER n; VARG_IDENTIFIER na; VARG_IDENTIFIER id] ->
-	   fun () ->
-	     inversion_lemma_from_goal n na id mk_Prop false inv_clear_tac
-       | _ -> bad_vernac_args "MakeInversionLemmaFromHyp")
-
 let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () and sigma = Evd.empty in
   let c = Astterm.interp_type sigma env com in
@@ -289,51 +279,6 @@ let add_inversion_lemma_exn na com comsort bool tac =
   with 
     |   UserError ("Case analysis",s) -> (* référence à Indrec *)
 	  errorlabstrm "Inv needs Nodep Prop Set" s
-
-let _ = 
-  vinterp_add
-    "MakeInversionLemma"
-     (function
-	| [VARG_IDENTIFIER na; VARG_CONSTR com; VARG_CONSTR sort] ->
-	    fun () ->
-	      add_inversion_lemma_exn na com sort false inv_clear_tac
-       | _ -> bad_vernac_args "MakeInversionLemma")
-
-let _ = 
-  vinterp_add
-    "MakeSemiInversionLemmaFromHyp"
-    (function
-       | [VARG_NUMBER n; VARG_IDENTIFIER na; VARG_IDENTIFIER id] ->
-	   fun () ->
-	     inversion_lemma_from_goal n na id mk_Prop false half_inv_tac
-       | _ -> bad_vernac_args "MakeSemiInversionLemmaFromHyp")
-
-let _ = 
-  vinterp_add
-    "MakeSemiInversionLemma"
-    (function
-       | [VARG_IDENTIFIER na; VARG_CONSTR com; VARG_CONSTR sort] ->
-	   fun () ->
-	     add_inversion_lemma_exn na com sort false half_inv_tac
-       | _ -> bad_vernac_args "MakeSemiInversionLemma")
-
-let _ = 
-  vinterp_add
-    "MakeDependentInversionLemma"
-    (function
-       | [VARG_IDENTIFIER na; VARG_CONSTR com; VARG_CONSTR sort] ->
-	   fun () ->
-	     add_inversion_lemma_exn na com sort true dinv_clear_tac
-       | _ -> bad_vernac_args "MakeDependentInversionLemma")
-
-let _ = 
-  vinterp_add
-    "MakeDependentSemiInversionLemma"
-    (function
-       | [VARG_IDENTIFIER na; VARG_CONSTR com; VARG_CONSTR sort] ->
-	   fun () ->
-	     add_inversion_lemma_exn na com sort true half_dinv_tac
-       | _ -> bad_vernac_args "MakeDependentSemiInversionLemma")
 
 (* ================================= *)
 (* Applying a given inversion lemma  *)
@@ -355,21 +300,7 @@ let lemInv id c gls =
 	   (str "Cannot refine current goal with the lemma " ++ 
 	      prterm_env (Global.env()) c) 
 
-let useInversionLemma =
-  let gentac =
-    hide_tactic "UseInversionLemma"
-      (function
-	 | [id_or_num; Command com] ->
-	     tactic_try_intros_until
-               (fun id gls -> lemInv id (pf_interp_constr gls com) gls)
-	       id_or_num
-	 | [id_or_num; Constr c] ->
-	     tactic_try_intros_until
-               (fun id gls -> lemInv id c gls)
-	       id_or_num
-	 | l  -> bad_vernac_args "useInversionLemma" l)
-  in 
-  fun id c -> gentac [Identifier id;Constr c]
+let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 
 let lemInvIn id c ids gls =
   let hyps = List.map (pf_get_hyp gls) ids in
@@ -387,26 +318,4 @@ let lemInvIn id c ids gls =
     |  UserError(a,b) -> errorlabstrm "LemInvIn" b  
 *)
 
-let useInversionLemmaIn =
-  let gentac =
-    hide_tactic "UseInversionLemmaIn"
-      (function
-	 | ((Identifier id)::(Command com)::hl as ll) ->
-	     fun gls ->
-	       lemInvIn id (pf_interp_constr gls com)
-                 (List.map
-		    (function
-		       | (Identifier id) -> id
-		       | _ -> bad_vernac_args "UseInversionLemmaIn" ll) hl) gls
-	 | ((Identifier id)::(Constr c)::hl as ll) ->
-	     fun gls ->
-	       lemInvIn id c
-                 (List.map
-		    (function
-		       | (Identifier id) -> id
-		       | _ -> bad_vernac_args "UseInversionLemmaIn" ll) hl) gls
-	 | ll -> bad_vernac_args "UseInversionLemmaIn" ll)
-  in 
-  fun id c hl ->
-    gentac ((Identifier id)::(Constr c)
-            ::(List.map (fun id -> (Identifier id)) hl))
+let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id

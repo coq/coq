@@ -15,6 +15,7 @@ open Util
 open Options
 open System
 open Coqast
+open Vernacexpr
 open Vernacinterp
 
 (* The functions in this module may raise (unexplainable!) exceptions.
@@ -88,7 +89,7 @@ exception End_of_input
   
 let parse_phrase (po, verbch) =
   match Pcoq.Gram.Entry.parse Pcoq.main_entry po with
-    | Some com -> verbose_phrase verbch (Ast.loc com); com
+    | Some (loc,_ as com) -> verbose_phrase verbch loc; com
     | None -> raise End_of_input
 
 (* vernac parses the given stream, executes interpfun on the syntax tree it
@@ -97,37 +98,35 @@ let parse_phrase (po, verbch) =
 let just_parsing = ref false
 
 let rec vernac interpfun input =
-  let com = parse_phrase input in
-  let rec interp com =
-    match com with
-      | Node (_,"LoadFile",[Str(_, verbosely); Str(_,fname)]) ->
-          let verbosely = (verbosely = "Verbose") in
-          let _ = read_vernac_file verbosely (make_suffix fname ".v") in
-          ()
-            
-      | Node(_,"VernacList",l) ->
-	  List.iter interp l
+  let (loc,com) = parse_phrase input in
+  let rec interp = function
+    | VernacLoad (verbosely, fname) ->
+        let _ = read_vernac_file verbosely (make_suffix fname ".v") in
+        ()
 
-      | Node(_,"Time",[v]) ->
-	  let tstart = System.get_time() in
-          interp v;
-	  let tend = System.get_time() in
-          msgnl (str"Finished transaction in " ++
-                   System.fmt_time_difference tstart tend)
-	    
-      | _ -> if not !just_parsing then interpfun com
+    | VernacList l -> List.iter (fun (_,v) -> interp v) l
+
+    | VernacTime v ->
+	let tstart = System.get_time() in
+        if not !just_parsing then interpfun v;
+	let tend = System.get_time() in
+        msgnl (str"Finished transaction in " ++
+                 System.fmt_time_difference tstart tend)
+
+    | v -> if not !just_parsing then interpfun v
+
   in 
   try
     interp com
   with e -> 
-    raise (DuringCommandInterp (Ast.loc com, e))
+    raise (DuringCommandInterp (loc, e))
 
 and read_vernac_file verbosely s =
   let interpfun =
     if verbosely then 
-      Vernacinterp.interp
+      Vernacentries.interp
     else 
-      Options.silently Vernacinterp.interp 
+      Options.silently Vernacentries.interp 
   in
   let (in_chan, fname, input) = open_file_twice_if verbosely s in
   try
@@ -146,7 +145,7 @@ and read_vernac_file verbosely s =
  * easier. *)
 
 let raw_do_vernac po =
-  vernac (States.with_heavy_rollback Vernacinterp.interp) (po,None);
+  vernac (States.with_heavy_rollback Vernacentries.interp) (po,None);
   Lib.mark_end_of_command()
 
 (* Load a vernac file. Errors are annotated with file and location *)

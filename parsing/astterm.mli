@@ -24,7 +24,13 @@ open Pattern
 val constrIn : constr -> Coqast.t
 val constrOut : Coqast.t -> constr
 
+(* Interprets global names, including syntactic defs and section variables *)
+val interp_global_constr : env -> Nametab.qualid Util.located -> constr
+
 val interp_rawconstr     : evar_map -> env -> Coqast.t -> rawconstr
+val interp_rawconstr_gen : 
+  evar_map -> env -> (identifier * Impargs.implicits_list) list ->
+    bool -> identifier list -> Coqast.t -> rawconstr
 val interp_constr        : evar_map -> env -> Coqast.t -> constr
 val interp_casted_constr : evar_map -> env -> Coqast.t -> types -> constr
 val interp_type          : evar_map -> env -> Coqast.t -> types
@@ -75,7 +81,9 @@ val interp_constrpattern :
     bound idents in grammar or pretty-printing rules) *)
 val globalize_constr : Coqast.t -> Coqast.t
 val globalize_ast    : Coqast.t -> Coqast.t
-val globalize_qualid : Nametab.qualid -> Coqast.t
+val globalize_qualid : Nametab.qualid Util.located -> Coqast.t
+
+val ast_of_extended_ref_loc : loc -> Nametab.extended_global_reference -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)

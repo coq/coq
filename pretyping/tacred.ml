@@ -21,6 +21,7 @@ open Reductionops
 open Closure
 open Instantiate
 open Cbv
+open Rawterm
 
 exception Elimconst
 exception Redelimination
@@ -743,7 +744,8 @@ let compute = cbv_betadeltaiota
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
  * the specified occurrences. *)
 
-let abstract_scheme env (locc,a,ta) t =
+let abstract_scheme env sigma (locc,a) t =
+  let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env ta Anonymous in
   if occur_meta ta then error "cannot find a type for the generalisation";
   if occur_meta a then 
@@ -752,31 +754,60 @@ let abstract_scheme env (locc,a,ta) t =
     mkLambda (na, ta,subst_term_occ env locc a t)
 
 
-let pattern_occs loccs_trm_typ env sigma c =
-  let abstr_trm = List.fold_right (abstract_scheme env) loccs_trm_typ c in
-  applist(abstr_trm, List.map (fun (_,t,_) -> t) loccs_trm_typ)
+let pattern_occs loccs_trm env sigma c =
+  let abstr_trm = List.fold_right (abstract_scheme env sigma) loccs_trm c in
+  applist(abstr_trm, List.map snd loccs_trm)
 
 (* Generic reduction: reduction functions used in reduction tactics *)
 
-type red_expr =
-  | Red of bool
-  | Hnf
-  | Simpl
-  | Cbv of Closure.RedFlags.reds
-  | Lazy of Closure.RedFlags.reds
-  | Unfold of (int list * evaluable_global_reference) list
-  | Fold of constr list
-  | Pattern of (int list * constr * constr) list
+type red_expr = (constr, evaluable_global_reference) red_expr_gen
+
+open RedFlags
+
+let make_flag_constant = function
+  | EvalVarRef id -> fVAR id
+  | EvalConstRef sp -> fCONST sp
+
+let make_flag f =
+  let red = no_red in
+  let red = if f.rBeta then red_add red fBETA else red in
+  let red = if f.rIota then red_add red fIOTA else red in
+  let red = if f.rZeta then red_add red fZETA else red in
+  let red =
+    if f.rDelta then (* All but rConst *)
+        let red = red_add red fDELTA in
+        let red = red_add_transparent red (Conv_oracle.freeze ()) in
+	List.fold_right
+	  (fun v red -> red_sub red (make_flag_constant v))
+	  f.rConst red
+    else (* Only rConst *)
+        let red = red_add_transparent (red_add red fDELTA) all_opaque in
+	List.fold_right
+	  (fun v red -> red_add red (make_flag_constant v))
+	  f.rConst red
+  in red
+
+let red_expr_tab = ref Stringmap.empty
+
+type generic_reduction_function = constr list -> reduction_function
+
+let declare_red_expr s f =
+  try 
+    let _ = Stringmap.find s in
+    error ("There is already a reduction expression of name "^s)
+  with Not_found ->
+    red_expr_tab := Stringmap.add s f !red_expr_tab
 
 let reduction_of_redexp = function
   | Red internal -> if internal then internal_red_product else red_product
   | Hnf -> hnf_constr
   | Simpl -> nf
-  | Cbv f -> cbv_norm_flags f
-  | Lazy f -> clos_norm_flags f
+  | Cbv f -> cbv_norm_flags (make_flag f)
+  | Lazy f -> clos_norm_flags (make_flag f)
   | Unfold ubinds -> unfoldn ubinds
   | Fold cl -> fold_commands cl
   | Pattern lp -> pattern_occs lp
+  | ExtraRedExpr (s,cl) -> Stringmap.find s !red_expr_tab cl
 
 (* Used in several tactics. *)
 

@@ -19,6 +19,7 @@ open Environ
 open Reduction
 open Tacred
 open Declare
+open Nametab
 open Names
 open Nameops
 open Coqast
@@ -74,8 +75,8 @@ let declare_global_definition ident ce n local =
   if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef sp
 
-let definition_body_red red_option ident (local,n) com comtypeopt = 
-  let ce = constant_entry_of_com (com,comtypeopt,false) in
+let declare_definition red_option ident (local,n) c typopt = 
+  let ce = constant_entry_of_com (c,typopt,false) in
   let ce' = red_constant_entry ce red_option in
   match n with
     | NeverDischarge -> declare_global_definition ident ce' n local
@@ -95,42 +96,36 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
       anomalylabstrm "Command.definition_body_red"
         (str "Strength NotDeclare not for Definition, only for Let")
 
-let definition_body = definition_body_red None
-
-let syntax_definition ident com =
-  let c = interp_rawconstr Evd.empty (Global.env()) com in 
+let syntax_definition ident c =
+  let c = interp_rawconstr Evd.empty (Global.env()) c in 
   Syntax_def.declare_syntactic_definition ident c;
   if_verbose message ((string_of_id ident) ^ " is now a syntax macro")
 
-(* 2| Variable definitions *)
+(* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let parameter_def_var ident c =
+let assumption_message id =
+  if_verbose message ((string_of_id id) ^ " is assumed")
+
+let declare_assumption ident n c =
   let c = interp_type Evd.empty (Global.env()) c in
-  let sp = declare_constant ident (ParameterEntry c, NeverDischarge) in
-  if_verbose message ((string_of_id ident) ^ " is assumed");
-  sp
-
-let declare_global_assumption ident c =
-  let sp = parameter_def_var ident c in
-  msg_warning (pr_id ident ++ str" is declared as a parameter" ++
-               str" because it is at a global level");
-  ConstRef sp
-
-let hypothesis_def_var is_refining ident n c =
   match n with
-    | NeverDischarge -> declare_global_assumption ident c
+    | NeverDischarge ->
+	let _ = declare_constant ident (ParameterEntry c, NeverDischarge) in
+	assumption_message ident
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
-	  let t = interp_type Evd.empty (Global.env()) c in
-          let sp = declare_variable ident (Lib.cwd(),SectionLocalAssum t,n) in
-	  if_verbose message ((string_of_id ident) ^ " is assumed");
-          if is_refining then 
+          let _ = declare_variable ident (Lib.cwd(),SectionLocalAssum c,n) in
+	  assumption_message ident;
+          if is_verbose () & Pfedit.refining () then 
             msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
-                      str" is not visible from current goals");
-	  VarRef ident
+                      str" is not visible from current goals")
         end
 	else
-	  declare_global_assumption ident c
+	  let _ = declare_constant ident (ParameterEntry c, NeverDischarge) in
+	  assumption_message ident;
+	  if_verbose
+	    msg_warning (pr_id ident ++ str" is declared as a parameter" ++
+               str" because it is at a global level");
     | NotDeclare ->
       anomalylabstrm "Command.hypothesis_def_var"
         (str "Strength NotDeclare not for Variable, only for Let")
@@ -221,9 +216,41 @@ let declare_mutual_with_eliminations mie =
   Indrec.declare_eliminations sp;
   sp
 
-let build_mutual lparams lnamearconstrs finite =
-  let mie = interp_mutual lparams lnamearconstrs finite in
-  let _ = declare_mutual_with_eliminations mie in ()
+let eq_la (id,ast) (id',ast') = id = id' & alpha_eq(ast,ast')
+
+let extract_coe lc =
+  List.fold_right
+    (fun (id,addcoe,t) (l1,l2) ->
+      ((if addcoe then id::l1 else l1), (id,t)::l2)) lc ([],[])
+
+let extract_coe_la_lc = function
+  | []            -> anomaly "Vernacentries: empty list of inductive types"
+  | (id,la,ar,lc)::rest ->
+      let rec check = function 
+	| []             -> [],[]
+  	| (id,la',ar,lc)::rest ->
+            if (List.length la = List.length la') && 
+               (List.for_all2 eq_la la la')
+	    then
+	      let mcoes, mspec = check rest in
+	      let coes, lc' = extract_coe lc in
+	      (coes::mcoes,(id,ar,lc')::mspec)
+	    else 
+	      error ("Parameters should be syntactically the same "^
+		     "for each inductive type")
+      in
+      let mcoes, mspec = check rest in
+      let coes, lc' = extract_coe lc in
+      (coes,la,(id,ar,lc'):: mspec)
+
+let build_mutual lind finite =
+  let (coes,lparams,lnamearconstructs) = extract_coe_la_lc lind in
+  let mie = interp_mutual lparams lnamearconstructs finite in
+  let _ = declare_mutual_with_eliminations mie in
+  List.iter
+    (fun id -> 
+      Class.try_add_new_coercion
+        (locate (make_short_qualid id)) NeverDischarge) coes
 
 (* try to find non recursive definitions *)
 
@@ -389,13 +416,6 @@ let build_corecursive lnameardef =
   in
   ()
 
-let inductive_of_ident qid =
-  match Nametab.global dummy_loc qid with
-    | IndRef ind -> ind
-    | ref -> errorlabstrm "inductive_of_ident"
-	(pr_id (id_of_global (Global.env()) ref) ++ 
-           spc () ++ str "is not an inductive type")
-
 let build_scheme lnamedepindsort = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort
   and sigma = Evd.empty
@@ -403,7 +423,7 @@ let build_scheme lnamedepindsort =
   let lrecspec =
     List.map
       (fun (_,dep,indid,sort) ->
-        let ind = inductive_of_ident indid in
+        let ind = Nametab.global_inductive indid in
         let (mib,mip) = Global.lookup_inductive ind in
          (ind,mib,mip,dep,interp_elimination_sort sort)) 
       lnamedepindsort
@@ -420,7 +440,7 @@ let build_scheme lnamedepindsort =
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
 
-let start_proof_com sopt stre com =
+let start_proof_com sopt (local,stre) com hook =
   let env = Global.env () in
   let sign = Global.named_context () in
   let id = match sopt with
@@ -435,28 +455,28 @@ let start_proof_com sopt stre com =
   in
   let c = interp_type Evd.empty env com in
   let _ = Typeops.infer_type env c in
-  Pfedit.start_proof id stre sign c
+  Pfedit.start_proof id (local,stre) sign c hook
 
 let apply_tac_not_declare id pft = function
   | None -> error "Type of Let missing"
   | Some typ ->
-    let cutt = vernac_tactic ("Cut",[Constr typ])
-    and exat = vernac_tactic ("Exact",[Constr pft]) in
+    let cutt = Hiddentac.h_cut typ
+    and exat = Hiddentac.h_exact pft in
     Pfedit.delete_current_proof ();
-    Pfedit.by (tclTHENS cutt [introduction id;exat])
+    Pfedit.by (Refiner.tclTHENSV cutt [|introduction id;exat|])
 
-let save id const strength =
+let save id const strength hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
   begin match strength with
     | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
 	let c = SectionLocalDef (pft, tpo) in
-	let _ = declare_variable id (Lib.cwd(), c, strength)
-        in ()
+	let _ = declare_variable id (Lib.cwd(), c, strength) in
+	hook strength (VarRef id)
     | NeverDischarge | DischargeAt _ ->
-        let _ = declare_constant id (ConstantEntry const,strength)
-        in ()
+        let ref = ConstRef (declare_constant id (ConstantEntry const,strength)) in
+	hook strength ref
     | NotDeclare -> apply_tac_not_declare id pft tpo
   end;
   if not (strength = NotDeclare) then
@@ -466,9 +486,9 @@ let save id const strength =
   end
 
 let save_named opacity =
-  let id,(const,strength) = Pfedit.cook_proof () in
+  let id,(const,(local,strength),hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
-  save id const strength
+  save id const strength hook
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
@@ -478,16 +498,16 @@ let check_anonymity id save_ident =
 *)
 
 let save_anonymous opacity save_ident =
-  let id,(const,strength) = Pfedit.cook_proof () in
+  let id,(const,(local,strength),hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const strength
+  save save_ident const strength hook
 
 let save_anonymous_with_strength strength opacity save_ident =
-  let id,(const,_) = Pfedit.cook_proof () in
+  let id,(const,_,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const strength
+  save save_ident const strength hook
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

@@ -1,11 +1,16 @@
+(*i camlp4deps: "parsing/grammar.cma" i*)
+
 open Ast;;
 open Coqast;;
 open Tacmach;;
+open Tacticals;;
 open Proof_trees;;
 open Pp;;
-open Printer;;
+open Pptactic;;
 open Util;;
 open Proof_type;;
+open Tacexpr;;
+open Genarg;;
 
 (* Compacting and uncompacting proof commands *)
 
@@ -67,8 +72,13 @@ let check_subgoals_count2
 	 Recursive_fail (List.hd !new_report_holder)));
     result;;
 
+(*
 let traceable = function
     Node(_, "TACTICLIST", a::b::tl) -> true
+  | _ -> false;;
+*)
+let traceable = function
+  | TacThen _ | TacThens _ -> true
   | _ -> false;;
 
 let rec collect_status = function
@@ -105,7 +115,8 @@ let count_subgoals2
        card_holder := Recursive_fail(List.hd !new_report_holder));
     result;;
 
-let rec local_interp : Coqast.t -> report_holder -> tactic = function
+let rec local_interp : raw_tactic_expr -> report_holder -> tactic = function
+(*
     Node(_, "TACTICLIST", [a;Node(_, "TACLIST", l)]) ->
       (fun report_holder -> checked_thens report_holder a l)
   | Node(_, "TACTICLIST", a::((Node(_, "TACLIST", l))as b)::c::tl) ->
@@ -123,7 +134,21 @@ let rec local_interp : Coqast.t -> report_holder -> tactic = function
 	  result
 	with e -> (report_holder := (Failed 1)::!report_holder;
 		   tclIDTAC g))
-	
+*)
+    TacThens (a,l) ->
+      (fun report_holder -> checked_thens report_holder a l)
+  | TacThen (a,b) ->
+      (fun report_holder -> checked_then report_holder a b)
+  | t ->
+      (fun report_holder g ->
+	try
+	  let (gls, _) as result = Tacinterp.interp t g in
+	  report_holder := (Report_node(true, List.length (sig_it gls), []))
+			    ::!report_holder;
+	  result
+	with e -> (report_holder := (Failed 1)::!report_holder;
+		   tclIDTAC g))
+
 
 (* This tactical receives a tactic and a list of tactics as argument.
    It applies the first tactic and then maps the list of tactics to
@@ -137,7 +162,7 @@ let rec local_interp : Coqast.t -> report_holder -> tactic = function
    - In case of success of the first tactic, but count mismatch, then
      Mismatch n is added to the report holder. *)
 
-and checked_thens: report_holder -> Coqast.t -> Coqast.t list -> tactic = 
+and checked_thens: report_holder -> raw_tactic_expr -> raw_tactic_expr list -> tactic = 
   (fun report_holder t1 l g ->
     let flag = ref true in
     let traceable_t1 = traceable t1 in
@@ -192,7 +217,7 @@ and checked_thens: report_holder -> Coqast.t -> Coqast.t list -> tactic =
    reporting information about the success of all tactics in the report
    holder. It never fails. *)
 
-and checked_then: report_holder -> Coqast.t -> Coqast.t -> tactic =
+and checked_then: report_holder -> raw_tactic_expr -> raw_tactic_expr -> tactic =
   (fun report_holder t1 t2 g ->
     let flag = ref true in
     let card_holder = ref Fail in
@@ -238,23 +263,38 @@ and checked_then: report_holder -> Coqast.t -> Coqast.t -> tactic =
    by the list of integers given as extra arguments.
  *)
 
-let on_then : tactic_arg list -> tactic = function
-  (Tacexp t1)::(Tacexp t2)::l ->
+let on_then = function [t1;t2;l] ->
+  let t1 = out_gen wit_tactic t1 in
+  let t2 = out_gen wit_tactic t2 in
+  let l = out_gen (wit_list0 wit_int) l in
   tclTHEN_i (Tacinterp.interp t1)
     (fun i ->
-      if List.mem (Integer (i + 1)) l then
+      if List.mem (i + 1) l then
       	(Tacinterp.interp t2)
       else
 	tclIDTAC)
-  | _ -> error "bad arguments for on_then";;
+  | _ -> anomaly "bad arguments for on_then";;
+
+let mkOnThen t1 t2 selected_indices =
+  let a = in_gen rawwit_tactic t1 in
+  let b = in_gen rawwit_tactic t2 in
+  let l = in_gen (wit_list0 rawwit_int) selected_indices in
+  TacAtom (dummy_loc, TacExtend ("OnThen", [a;b;l]));;
 
 (* Analyzing error reports *)
 
+(*
 let rec select_success n = function
     [] -> []
   | Report_node(true,_,_)::tl -> (Num((0,0),n))::select_success (n+1) tl
   | _::tl -> select_success (n+1) tl;;
+*)
+let rec select_success n = function
+    [] -> []
+  | Report_node(true,_,_)::tl -> n::select_success (n+1) tl
+  | _::tl -> select_success (n+1) tl;;
 
+(*
 let rec expand_tactic = function
     Node(loc1, "TACTICLIST", [a;Node(loc2,"TACLIST", l)]) ->
       Node(loc1, "TACTICLIST",
@@ -269,7 +309,15 @@ let rec expand_tactic = function
       expand_tactic (Node(loc1, "TACTICLIST",
 			  (Node(loc1, "TACTICLIST", [a;b]))::c::tl))
   | any -> any;;
+*)
+(* Useless: already in binary form...
+let rec expand_tactic = function
+    TacThens (a,l) -> TacThens (expand_tactic a, List.map expand_tactic l)
+  | TacThen (a,b) -> TacThen (expand_tactic a, expand_tactic b)
+  | any -> any;;
+*)
 
+(*
 let rec reconstruct_success_tac ast = 
   match ast with
     Node(_, "TACTICLIST", [a;Node(_,"TACLIST",l)]) ->
@@ -299,6 +347,38 @@ let rec reconstruct_success_tac ast =
 	      "this error case should not happen on an unknown tactic"
               (str "error in reconstruction with " ++ fnl () ++
 	       (gentacpr ast)));;
+*)
+let rec reconstruct_success_tac tac =
+  match tac with
+    TacThens (a,l) ->
+      (function 
+	  Report_node(true, n, l) -> tac
+      	| Report_node(false, n, rl) ->
+	    TacThens (a,List.map2 reconstruct_success_tac l rl)
+      	| Failed n -> TacId
+      	| Tree_fail r -> reconstruct_success_tac a r
+      	| Mismatch (n,p) -> a)
+  | TacThen (a,b) ->
+      (function
+	  Report_node(true, n, l) -> tac
+	| Report_node(false, n, rl) ->
+	    let selected_indices = select_success 1 rl in
+	    TacAtom (Ast.dummy_loc,TacExtend ("OnThen",
+	      [in_gen rawwit_tactic a;
+	       in_gen rawwit_tactic b;
+	       in_gen (wit_list0 rawwit_int) selected_indices]))
+	| Failed n -> TacId
+	| Tree_fail r -> reconstruct_success_tac a r
+	| _ -> error "this error case should not happen in a THEN tactic")
+  | _ -> 
+      (function
+	  Report_node(true, n, l) -> tac
+	| Failed n -> TacId
+	| _ ->
+	    errorlabstrm
+	      "this error case should not happen on an unknown tactic"
+              (str "error in reconstruction with " ++ fnl () ++
+	       (pr_raw_tactic tac)));;
 	  
 
 let rec path_to_first_error = function
@@ -311,6 +391,7 @@ let rec path_to_first_error = function
     p::(path_to_first_error t)
 | _ -> [];;
 
+(*
 let rec flatten_then_list tail = function
   | Node(_, "TACTICLIST", [a;b]) ->
       flatten_then_list ((flatten_then b)::tail) a
@@ -323,32 +404,38 @@ and flatten_then = function
   | Node(_, "OnThen", t1::t2::l) ->
       ope("OnThen", (flatten_then t1)::(flatten_then t2)::l)
   | ast -> ast;;
+*)
 
 let debug_tac = function
     [(Tacexp ast)] ->
       (fun g -> 
       	let report = ref ([] : report_tree list) in
       	let result = local_interp ast report g in
-      	let clean_ast = expand_tactic ast in
+      	let clean_ast = (* expand_tactic *) ast in
       	let report_tree =
           try List.hd !report with
 	    Failure "hd" -> (msgnl (str "report is empty"); Failed 1) in
       	let success_tac = 
 	  reconstruct_success_tac clean_ast report_tree in
-        let compact_success_tac =
-	  flatten_then success_tac in
+        let compact_success_tac = (* flatten_then *) success_tac in
       	msgnl (fnl () ++
 	       str "=========    Successful tactic    =============" ++
                fnl () ++
-	       gentacpr compact_success_tac ++ fnl () ++
+	       pr_raw_tactic compact_success_tac ++ fnl () ++
 	       str "========= End of successful tactic ============");
       	result)
   | _ -> error "wrong arguments for debug_tac";;
 
+(* TODO ... used ?
 add_tactic "DebugTac" debug_tac;;
+*)
 
+(*
 hide_tactic "OnThen" on_then;;
+*)
+Refiner.add_tactic "OnThen" on_then;;
 
+(*
 let rec clean_path p ast l = 
   match ast, l with
     Node(_, "TACTICLIST", ([_;_] as tacs)), fst::tl ->
@@ -362,15 +449,24 @@ let rec clean_path p ast l =
       fst::(clean_path 0 (List.nth tacs (fst - 1)) tl)
   | _, [] -> []
   | _, _ -> failwith "this case should not happen in clean_path";;
-
-
+*)
+let rec clean_path tac l = 
+  match tac, l with
+  | TacThen (a,b), fst::tl ->
+      fst::(clean_path (if fst = 1 then a else b) tl)
+  | TacThens (a,l), 1::tl ->
+      1::(clean_path a tl)
+  | TacThens (a,tacs), 2::fst::tl ->
+      2::fst::(clean_path (List.nth tacs (fst - 1)) tl)
+  | _, [] -> []
+  | _, _ -> failwith "this case should not happen in clean_path";;
 
 let rec report_error
-    : Coqast.t -> goal sigma option ref -> Coqast.t ref -> int list ref -> 
+    : raw_tactic_expr -> goal sigma option ref -> raw_tactic_expr ref -> int list ref -> 
       int list -> tactic =
-  fun ast the_goal the_ast returned_path path -> 
-    match ast with
-      Node(loc1, "TACTICLIST", [a;(Node(loc2, "TACLIST", l)) as tail]) ->
+  fun tac the_goal the_ast returned_path path -> 
+    match tac with
+      TacThens (a,l) ->
       let the_card_holder = ref Fail in
       let the_flag = ref false in
       let the_exn = ref (Failure "") in
@@ -392,10 +488,10 @@ let rec report_error
 	  else
 	    (match !the_card_holder with
 			Fail -> 
-			  the_ast := ope("TACTICLIST", [!the_ast; tail]);
+			  the_ast := TacThens (!the_ast, l);
 			  raise !the_exn
 	    | Goals_mismatch p -> 
-		the_ast := ast;
+		the_ast := tac;
 		returned_path := path;
 		error ("Wrong number of tactics: expected " ^
 		       (string_of_int (List.length l)) ^ " received " ^
@@ -406,10 +502,7 @@ let rec report_error
 	  | t::tl -> (report_error t the_goal the_ast returned_path (n::2::path))::
 	      (fold_num (n + 1) tl) in
 	fold_num 1 l)
-    | Node(_, "TACTICLIST", a::((Node(_, "TACLIST", l)) as b)::c::tl) ->
-	report_error(ope("TACTICLIST", (ope("TACTICLIST", [a;b]))::c::tl))
-	  the_goal the_ast returned_path path
-    | Node(_, "TACTICLIST", [a;b]) ->
+    | TacThen (a,b) ->
 	let the_count = ref 1 in
 	tclTHEN
 	  (fun g ->
@@ -417,7 +510,7 @@ let rec report_error
 	      report_error a the_goal the_ast returned_path (1::path) g
 	    with
 	      e ->
-		(the_ast := ope("TACTICLIST", [!the_ast; b]);
+		(the_ast := TacThen (!the_ast, b);
 		 raise e))
 	  (fun g ->
 	    try
@@ -430,18 +523,15 @@ let rec report_error
 		if !the_count > 1 then
 		  msgnl
 		    (str "in branch no " ++ int !the_count ++
-		     str " after tactic " ++ gentacpr a);
+		     str " after tactic " ++ pr_raw_tactic a);
 		raise e)
-    | Node(_, "TACTICLIST", a::b::c::tl) ->
-	report_error (ope("TACTICLIST", (ope("TACTICLIST", [a;b]))::c::tl))
-	  the_goal the_ast returned_path path
-    | ast ->
+    | tac ->
 	(fun g ->
 	  try
-	   Tacinterp.interp ast g
+	   Tacinterp.interp tac g
 	  with
 	    e ->
-	      (the_ast := ast;
+	      (the_ast := tac;
 	       the_goal := Some g;
 	       returned_path := path;
 	       raise e));;
@@ -450,14 +540,13 @@ let strip_some = function
     Some n -> n
   | None -> failwith "No optional value";;
 
-let descr_first_error = function
-    [(Tacexp ast)] ->
+let descr_first_error tac =
       (fun g ->
 	let the_goal = ref (None : goal sigma option) in
-	let the_ast = ref ast in
+	let the_ast = ref tac in
 	let the_path = ref ([] : int list) in
 	try
-	  let result = report_error ast the_goal the_ast the_path [] g in
+	  let result = report_error tac the_goal the_ast the_path [] g in
 	  msgnl (str "no Error here");
 	  result
 	with
@@ -467,8 +556,15 @@ let descr_first_error = function
 		    fnl () ++ str "on goal"  ++ fnl () ++
 		    pr_goal (sig_it (strip_some !the_goal)) ++ fnl () ++
 		    str "faulty tactic is" ++ fnl () ++ fnl () ++
-		    gentacpr (flatten_then !the_ast) ++ fnl ());
+		    pr_raw_tactic ((*flatten_then*) !the_ast) ++ fnl ());
 	     tclIDTAC g))
-  | _ -> error "wrong arguments for descr_first_error";;
 
+(* TODO ... used ??
 add_tactic "DebugTac2" descr_first_error;;
+*)
+
+(*
+TACTIC EXTEND DebugTac2
+  [ ??? ] -> [ descr_first_error tac ]
+END
+*)

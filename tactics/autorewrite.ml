@@ -5,6 +5,7 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
+
 open Ast
 open Coqast
 open Equality
@@ -12,12 +13,13 @@ open Hipattern
 open Names
 open Pp
 open Proof_type
-open Tacmach
+open Tacticals
 open Tacinterp
 open Tactics
 open Term
 open Util
 open Vernacinterp
+open Tacexpr
 
 (* Rewriting rules *)
 type rew_rule = constr * bool * tactic
@@ -37,7 +39,7 @@ let _ =
       Summary.survive_section   = false }
 
 (* Rewriting rules before tactic interpretation *)
-type raw_rew_rule = constr * bool * t
+type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
 let one_base tac_main bas =
@@ -48,8 +50,8 @@ let one_base tac_main bas =
   else
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
-      (if dir then tclREPEAT_MAIN (tclTHENST (rewriteLR csr) [tac_main] tc)
-       else tclREPEAT_MAIN (tclTHENST (rewriteRL csr) [tac_main] tc))) 
+        (tclREPEAT_MAIN 
+	  (tclTHENSFIRSTn (general_rewrite dir csr) [|tac_main|] tc)))
       tclIDTAC lrul))
 
 (* The AutoRewrite tactic *)
@@ -77,39 +79,3 @@ let (in_hintrewrite,out_hintrewrite)=
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
   Lib.add_anonymous_leaf (in_hintrewrite (base,lrul))
-
-(* The vernac declaration of HintRewrite *)
-let _ = vinterp_add "HintRewrite"
-  (function
-    | [VARG_STRING ort;VARG_CONSTRLIST lcom;VARG_IDENTIFIER id;VARG_TACTIC t]
-      when ort = "LR" || ort = "RL" ->
-      (fun () ->
-       let (evc,env) = Command.get_current_context () in
-       let lcsr =
-         List.map (function
-	   | Node(loc,"CONSTR",l) ->
-             let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
-                         goalopt=None; debug=Tactic_debug.DebugOff } in
-             constr_of_Constr (interp_tacarg ist (Node(loc,"COMMAND",l)))
-           | _ -> bad_vernac_args "HintRewrite") lcom in
-       add_rew_rules (string_of_id id)
-         (List.map (fun csr -> (csr,ort = "LR",t)) lcsr))
-    | _  -> bad_vernac_args "HintRewrite")
-
-(* To get back the tactic arguments and call AutoRewrite *)
-let v_autorewrite = function
-  | (Tac (t,_))::l ->
-    let lbas =
-      List.map (function 
-	| Identifier id -> string_of_id id
-	| _ -> Tacinterp.bad_tactic_args "AutoRewrite") l in
-    autorewrite t lbas
-  | l ->
-    let lbas = 
-      List.map (function 
-	| Identifier id -> string_of_id id
-	| _ -> Tacinterp.bad_tactic_args "AutoRewrite") l in
-    autorewrite tclIDTAC lbas
-
-(* Declaration of AutoRewrite *)
-let _ = hide_tactic "AutoRewrite" v_autorewrite

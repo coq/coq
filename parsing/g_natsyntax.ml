@@ -19,12 +19,12 @@ open Coqast
 open Ast
 open Coqlib
 open Termast
+open Extend
 
 exception Non_closed_number
 
 let ast_O = ast_of_ref glob_O
 let ast_S = ast_of_ref glob_S
-let ast_myvar = ast_of_ref glob_My_special_variable_nat
   
 (* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
 let nat_of_int n dloc =
@@ -69,37 +69,29 @@ let int_of_nat p =
   with
     Non_closed_number -> None
 
-let replace_S p = 
-  let rec aux p =
-    match p with
-      | Node (l,"APPLIST", [b; a]) when b = ast_S ->
-          Node (l, "APPLIST", [ast_myvar; (aux a)])
-      | _ -> p
-  in 
-  ope("APPLIST", [ast_myvar; (aux p)])  
+let pr_S a = hov 0 (str "S" ++ brk (1,1) ++ a)
 
+let rec pr_external_S std_pr = function
+  | Node (l,"APPLIST", [b; a]) when b = ast_S ->
+      str"(" ++ pr_S (pr_external_S std_pr a) ++ str")"
+  | p -> std_pr p
 
 (* Declare the primitive printer *)
 
 (* Prints not p, but the SUCCESSOR of p !!!!! *)
 let nat_printer std_pr p =
   match (int_of_nat p) with
-    | Some i -> (str (string_of_int i))
-    | None -> std_pr (replace_S p)
+    | Some i -> str (string_of_int i)
+    | None -> pr_S (pr_external_S std_pr p)
 
 let _ = Esyntax.Ppprim.add ("nat_printer", nat_printer)
 
 (* Declare the primitive parser *)
 
-let number = 
-  match create_entry (get_univ "nat") "number" ETast with
-    | Ast n -> n
-    | _ -> anomaly "G_natsyntax : create_entry number failed"
+let unat = create_univ_if_new "nat"
 
-let pat_number = 
-  match create_entry (get_univ "nat") "pat_number" ETast with
-    | Ast n -> n
-    | _ -> anomaly "G_natsyntax : create_entry number failed"
+let number = create_constr_entry unat "number" 
+let pat_number = create_constr_entry unat "pat_number"
  
 let _ = 
   Gram.extend number None

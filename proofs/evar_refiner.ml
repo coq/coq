@@ -23,6 +23,7 @@ open Proof_trees
 open Proof_type
 open Logic
 open Refiner
+open Tacexpr
 
 type wc = named_context sigma (* for a better reading of the following *)
 
@@ -148,12 +149,14 @@ let pfic gls c =
   let evc = gls.sigma in 
   Astterm.interp_constr evc (Global.env_of_context gls.it.evar_hyps) c
 
+(*
 let instantiate_tac = function
   | [Integer n; Command com] ->
       (fun gl -> instantiate n (pfic gl com) gl)
   | [Integer n; Constr c] ->
       (fun gl -> instantiate n c gl)
   | _ -> invalid_arg "Instantiate called with bad arguments"
+*)
 
 (* vernac command existential *)
 

@@ -8,4 +8,7 @@
 
 (* $Id$ *)
 
-val objdef_declare : Nametab.global_reference -> unit
+open Nametab
+
+val objdef_declare : global_reference -> unit
+val add_object_hook : Proof_type.declaration_hook

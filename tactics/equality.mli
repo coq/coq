@@ -21,29 +21,24 @@ open Pattern
 open Wcclausenv
 open Tacticals
 open Tactics
+open Tacexpr
+open Rawterm
 (*i*)
 
 val find_eq_pattern : sorts -> sorts -> constr
 
-val general_rewrite_bindings : bool -> (constr * constr substitution) -> tactic
+val general_rewrite_bindings : bool -> constr with_bindings -> tactic
 val general_rewrite          : bool -> constr -> tactic
-val rewriteLR_bindings       : (constr * constr substitution) -> tactic
-val h_rewriteLR_bindings     : (constr * constr substitution) -> tactic
-val rewriteRL_bindings       : (constr * constr substitution) -> tactic
-val h_rewriteRL_bindings     : (constr * constr substitution) -> tactic
+val rewriteLR_bindings       : constr with_bindings -> tactic
+val rewriteRL_bindings       : constr with_bindings -> tactic
 
 val rewriteLR   : constr -> tactic
-val h_rewriteLR : constr -> tactic
 val rewriteRL   : constr  -> tactic
-val h_rewriteRL : constr  -> tactic
 
-val conditional_rewrite : 
-  bool -> tactic -> (constr * constr substitution) -> tactic
-val general_rewrite_in : 
-  bool -> identifier -> (constr * constr substitution) -> tactic
+val conditional_rewrite : bool -> tactic -> constr with_bindings -> tactic
+val general_rewrite_in : bool -> identifier -> constr with_bindings -> tactic
 val conditional_rewrite_in :
-  bool -> identifier -> tactic -> (constr * constr substitution) -> tactic
-
+  bool -> identifier -> tactic -> constr with_bindings -> tactic
 
 (* usage : abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl
    
@@ -58,7 +53,6 @@ val abstract_replace :
   constr * constr -> constr * constr -> constr -> constr -> bool -> tactic
 
 val replace   : constr -> constr -> tactic
-val h_replace : constr -> constr -> tactic
 
 type elimination_types =
   | Set_Type
@@ -75,13 +69,9 @@ val discrClause  : clause -> tactic
 val discrConcl   : tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere     : tactic
-val h_discrConcl : tactic
-val h_discrHyp   : identifier -> tactic
-val h_discrConcl : tactic
-val h_discr      : tactic
+val discr_tac    : identifier option -> tactic
 val inj          : identifier -> tactic
-val h_injHyp     : identifier -> tactic
-val h_injConcl   : tactic
+val injClause    : clause -> tactic
 
 val dEq : clause -> tactic
 val dEqThen : (int -> tactic) -> clause -> tactic
@@ -90,10 +80,12 @@ val make_iterated_tuple :
   env -> evar_map -> (constr * constr) -> (constr * constr) 
     -> constr * constr * constr
 
-val subst : constr -> clause -> tactic
-val hypSubst : identifier -> clause -> tactic
-val revSubst : constr -> clause -> tactic
-val revHypSubst : identifier -> clause -> tactic
+val substHypInConcl : bool -> identifier -> tactic
+val substConcl : bool -> constr -> tactic
+val substHyp : bool -> constr -> identifier -> tactic
+
+val hypSubst_LR : identifier -> clause -> tactic
+val hypSubst_RL : identifier -> clause -> tactic
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
 
@@ -132,4 +124,3 @@ val explicit_hint_base : goal sigma -> hint_base -> rewriting_rule list
 val autorewrite :
   hint_base list -> tactic list option -> option_step 
     -> tactic list option -> bool -> int -> tactic
-

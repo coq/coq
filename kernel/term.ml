@@ -353,6 +353,9 @@ let isRel c = match kind_of_term c with Rel _ -> true | _ -> false
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false
 
+(* Tests if an inductive *)
+let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
+
 (* Destructs the product (x:t1)t2 *)
 let destProd c = match kind_of_term c with 
   | Prod (x,t1,t2) -> (x,t1,t2) 

@@ -11,7 +11,8 @@
 (*i*)
 open Coqast
 open Ast
-open Pcoq
+open Coqast
+open Vernacexpr
 open Extend
 (*i*)
 
@@ -21,9 +22,19 @@ val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
 val init : unit -> unit
 
-val extend_grammar : grammar_command -> unit
+type all_grammar_command =
+  | AstGrammar of grammar_command
+  | TacticGrammar of (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list
 
-val remove_rule : (string * gram_universe) -> typed_entry -> grammar_rule ->
-  unit
-val remove_entry : (string * gram_universe) -> grammar_entry -> unit
-val remove_grammar : grammar_command -> unit
+val extend_grammar : all_grammar_command -> unit
+
+(* Add grammar rules for tactics *)
+type grammar_tactic_production =
+  | TacTerm of string
+  | TacNonTerm of loc * (Gramext.g_symbol * Genarg.argument_type) * string option
+
+val extend_tactic_grammar :
+  string -> (string * grammar_tactic_production list) list -> unit
+
+val extend_vernac_command_grammar :
+  string -> (string * grammar_tactic_production list) list -> unit

@@ -340,20 +340,3 @@ let refine oc gl =
   let th = compute_metamap env gmm c in
   tcc_aux th gl
 
-let refine_tac = Tacmach.hide_openconstr_tactic "Refine" refine
-
-open Proof_type
-
-let dyn_tcc args gl = match args with 
-  | [Command com]  ->
-      let env = pf_env gl in
-      refine
-	(Astterm.interp_casted_openconstr (project gl) env com (pf_concl gl))
-	gl
-  | [OpenConstr c] -> 
-      refine c gl
-  | _ -> assert false
-
-let tcc_tac = hide_tactic "Tcc" dyn_tcc
-
-

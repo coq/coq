@@ -19,11 +19,14 @@ open Instantiate
 open Environ
 open Evd
 open Proof_type
+open Refiner
 open Proof_trees
 open Logic
 open Reductionops
 open Tacmach
 open Evar_refiner
+open Rawterm
+open Tacexpr
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
@@ -48,9 +51,9 @@ let abstract_list_all env sigma typ c l =
     raise (RefinerError (CannotGeneralize typ))
 
 (* Generator of metavariables *)
-let meta_ctr=ref 0;;
+let meta_ctr = ref 0;;
 
-let new_meta ()=incr meta_ctr;!meta_ctr;;
+let new_meta () = incr meta_ctr;!meta_ctr;;
 
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
@@ -964,23 +967,22 @@ let clenv_match_args s clause =
     | [] -> clause
     | (b,c)::t ->
 	let k =
-	  (match b with
-             | Dep s ->
-		 if List.mem_assoc b t then 
-		   errorlabstrm "clenv_match_args" 
-		     (str "The variable " ++ pr_id s ++ 
-			str " occurs more than once in binding")
-		 else
-		   clenv_lookup_name clause s
-	     | NoDep n ->
-		 if List.mem_assoc b t then errorlabstrm "clenv_match_args"
-		   (str "The position " ++ int n ++
-		      str " occurs more than once in binding");
-		 (try 
-		    List.nth mvs (n-1)
-		  with (Failure _|Invalid_argument _) ->
-                    errorlabstrm "clenv_match_args" (str "No such binder"))
-	     | Com -> anomaly "No free term in clenv_match_args")
+	  match b with
+            | NamedHyp s ->
+		if List.mem_assoc b t then 
+		  errorlabstrm "clenv_match_args" 
+		    (str "The variable " ++ pr_id s ++ 
+		    str " occurs more than once in binding")
+		else
+		  clenv_lookup_name clause s
+	    | AnonHyp n ->
+		if List.mem_assoc b t then errorlabstrm "clenv_match_args"
+		  (str "The position " ++ int n ++
+		  str " occurs more than once in binding");
+		try 
+		  List.nth mvs (n-1)
+		with (Failure _|Invalid_argument _) ->
+                  errorlabstrm "clenv_match_args" (str "No such binder")
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
 	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
@@ -1036,21 +1038,15 @@ let e_res_pf kONT clenv gls =
 
 (* Clausal environment for an application *)
 
-let collect_com lbind = 
-  map_succeed (function (Com,c)->c | _ -> failwith "Com") lbind
-
-let make_clenv_binding_gen n wc (c,t) lbind = 
-  let largs = collect_com lbind in
-  let lcomargs = List.length largs in
-  if lcomargs = List.length lbind then 
-    let clause = mk_clenv_from_n wc n (c,t) in
-    clenv_constrain_dep_args (n <> None) clause largs
-  else if lcomargs = 0 then 
-    let clause = mk_clenv_rename_from_n wc n (c,t) in
-    clenv_match_args lbind clause
-  else 
-    errorlabstrm "make_clenv_bindings"
-      (str "Cannot mix bindings and free associations")
+let make_clenv_binding_gen n wc (c,t) = function
+  | ImplicitBindings largs ->
+      let clause = mk_clenv_from_n wc n (c,t) in
+      clenv_constrain_dep_args (n <> None) clause largs
+  | ExplicitBindings lbind ->
+      let clause = mk_clenv_rename_from_n wc n (c,t) in
+      clenv_match_args lbind clause
+  | NoBindings ->
+      mk_clenv_from_n wc n (c,t)
 
 let make_clenv_binding_apply wc n = make_clenv_binding_gen (Some n) wc
 let make_clenv_binding = make_clenv_binding_gen None

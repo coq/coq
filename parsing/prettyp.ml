@@ -379,10 +379,11 @@ let list_filter_vec f vec =
   frec (Array.length vec -1) []
 
 (* This is designed to print the contents of an opened section *)
-let read_sec_context qid =
+let read_sec_context (loc,qid) =
   let dir =
     try Nametab.locate_section qid
-    with Not_found -> error "Unknown section" in
+    with Not_found ->
+      user_err_loc (loc,"read_sec_context", str "Unknown section") in
   let rec get_cxt in_cxt = function
     | ((sp,Lib.OpenedSection (dir',_)) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
@@ -410,7 +411,7 @@ let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
   (str "     = " ++ print_judgment env {uj_val = ntrm; uj_type = typ})
 
-let print_name qid = 
+let print_name (loc,qid) = 
   try 
     let sp = Nametab.locate_obj qid in
     let (sp,lobj) = 
@@ -440,34 +441,28 @@ let print_name qid =
     let sp = Syntax_def.locate_syntactic_definition qid in
     print_syntactic_def " = " sp
   with Not_found ->
-    errorlabstrm "print_name"
-      (pr_qualid qid ++ spc () ++ str "not a defined object")
+    user_err_loc
+      (loc,"print_name",pr_qualid qid ++ spc () ++ str "not a defined object")
 
 let print_opaque_name qid = 
   let sigma = Evd.empty in
   let env = Global.env () in
   let sign = Global.named_context () in
-  try 
-    let x = global_qualified_reference qid in
-    match kind_of_term x with
-      | Const cst ->
-	  let cb = Global.lookup_constant cst in
-          if cb.const_body <> None then
-	    print_constant true " = " cst
-          else 
-	    error "not a defined constant"
-      | Ind (sp,_) ->
-          print_mutual sp
-      | Construct cstr -> 
-	  let ty = Inductive.type_of_constructor env cstr in
-	  print_typed_value (x, ty)
-      | Var id ->
-          let (_,c,ty) = lookup_named id env in 
-	  print_named_decl (id,c,ty)
-      | _ -> 
-	  assert false
-  with Not_found -> 
-    errorlabstrm "print_opaque" (pr_qualid qid ++ spc () ++ str "not declared")
+  match global qid with
+    | ConstRef cst ->
+	let cb = Global.lookup_constant cst in
+        if cb.const_body <> None then
+	  print_constant true " = " cst
+        else 
+	  error "not a defined constant"
+    | IndRef (sp,_) ->
+        print_mutual sp
+    | ConstructRef cstr -> 
+	let ty = Inductive.type_of_constructor env cstr in
+	print_typed_value (mkConstruct cstr, ty)
+    | VarRef id ->
+        let (_,c,ty) = lookup_named id env in 
+	print_named_decl (id,c,ty)
 
 let print_local_context () =
   let env = Lib.contents_after None in

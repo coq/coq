@@ -32,6 +32,17 @@ type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type binder_kind = BProd | BLambda | BLetIn
 
+type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
+
+type 'a explicit_substitution = (quantified_hypothesis * 'a) list
+
+type 'a substitution = 
+  | ImplicitBindings of 'a list
+  | ExplicitBindings of 'a explicit_substitution
+  | NoBindings
+
+type 'a with_bindings = 'a * 'a substitution
+
 type hole_kind =
   | ImplicitArg of global_reference * int
   | AbstractionType of name
@@ -46,7 +57,6 @@ type 'ctxt reference =
   | RVar of identifier
   | REVar of int * 'ctxt
 
-(*i Pas beau ce constr dans rawconstr, mais mal compris ce ctxt des ref i*)
 type rawconstr = 
   | RRef of loc * global_reference
   | RVar of loc * identifier
@@ -115,3 +125,30 @@ let set_loc_of_rawconstr loc = function
   | RDynamic (_,d)   -> RDynamic (loc,d)
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
+
+type 'a raw_red_flag = {
+  rBeta : bool;
+  rIota : bool;
+  rZeta : bool;
+  rDelta : bool; (* true = delta all but rConst; false = delta only on rConst*)
+  rConst : 'a list
+}
+
+type ('a,'b) red_expr_gen =
+  | Red of bool
+  | Hnf
+  | Simpl
+  | Cbv of 'b raw_red_flag
+  | Lazy of 'b raw_red_flag
+  | Unfold of (int list * 'b) list
+  | Fold of 'a list
+  | Pattern of (int list * 'a) list
+  | ExtraRedExpr of string * 'a list
+
+type 'a or_metanum = AN of loc * 'a | MetaNum of loc * int
+
+type 'a may_eval =
+  | ConstrTerm of 'a
+  | ConstrEval of ('a, qualid or_metanum) red_expr_gen * 'a
+  | ConstrContext of (loc * identifier) * 'a
+  | ConstrTypeOf of 'a

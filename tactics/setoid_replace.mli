@@ -10,6 +10,7 @@
 
 open Term
 open Proof_type
+open Genarg
 
 val equiv_list : unit -> constr list
 
@@ -20,3 +21,7 @@ val setoid_rewriteLR : constr -> tactic
 val setoid_rewriteRL : constr -> tactic
 
 val general_s_rewrite : bool -> constr -> tactic
+
+val add_setoid : constr_ast -> constr_ast -> constr_ast -> unit
+
+val new_named_morphism : Names.identifier -> constr_ast -> unit

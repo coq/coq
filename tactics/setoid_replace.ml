@@ -24,6 +24,8 @@ open Environ
 open Termast
 open Command
 open Tactics 
+open Tacticals
+open Vernacexpr
 open Safe_typing
 open Nametab
 
@@ -237,14 +239,14 @@ let add_setoid a aeq th =
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
 		      ((ConstantEntry {const_entry_body = eq_morph; 
-				       const_entry_type = None;
+		                       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Declare.NeverDischarge) in
+		       Nametab.NeverDischarge) in
 	    let _ = Declare.declare_constant eq_ext_name2
 		      ((ConstantEntry {const_entry_body = eq_morph2; 
 				       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Declare.NeverDischarge) in
+		       Nametab.NeverDischarge) in
 	    let eqmorph = (current_constant eq_ext_name) in
 	    let eqmorph2 = (current_constant eq_ext_name2) in
 	      (Lib.add_anonymous_leaf
@@ -257,21 +259,9 @@ let add_setoid a aeq th =
     else errorlabstrm "Add Setoid" (str "Not a valid setoid theory")
 
 (* The vernac command "Add Setoid" *)
+let add_setoid a aeq th =
+  add_setoid (constr_of a) (constr_of aeq) (constr_of th)
 
-let constr_of_comarg = function 
-  | VARG_CONSTR c -> constr_of c
-  | _ -> anomaly "Add Setoid"
-
-let _ = 
-  vinterp_add "AddSetoid"
-    (function 
-       | [(VARG_CONSTR a); (VARG_CONSTR aeq); (VARG_CONSTR th)] -> 
-	   (fun () -> (add_setoid 
-			 (constr_of a)
-			 (constr_of aeq)
-			 (constr_of th)))
-       | _ -> anomaly "AddSetoid")
- 
 (***************** Adding a morphism to the database ****************************)
 
 (* We maintain a table of the currently edited proofs of morphism lemma
@@ -347,7 +337,7 @@ let gen_compat_lemma env m body larg lisset =
     | _ -> assert false
   in aux larg lisset 0
 
-let new_morphism m id =
+let new_morphism m id hook =
   if morphism_table_mem m
   then errorlabstrm "New Morphism"
     (str "The term " ++ prterm m ++ str " is already declared as a morphism")
@@ -368,9 +358,9 @@ let new_morphism m id =
 	let poss = (List.map setoid_table_mem args_t) in
 	let lem = (gen_compat_lemma env m body args_t poss) in
 	let lemast = (ast_of_constr true env lem) in
-	  new_edited id m poss;
-	  start_proof_com (Some id) Declare.NeverDischarge lemast;
-	  (Options.if_verbose Vernacentries.show_open_subgoals ()))
+	new_edited id m poss;
+	start_proof_com (Some id) (false,Nametab.NeverDischarge) lemast hook;
+	(Options.if_verbose Vernacentries.show_open_subgoals ()))
 
 let rec sub_bool l1 n = function
   | [] -> []
@@ -464,7 +454,7 @@ let add_morphism lem_name (m,profil) =
 		    ((ConstantEntry {const_entry_body = lem_2; 
 				     const_entry_type = None;
                                      const_entry_opaque = true}),
-		     Declare.NeverDischarge) in
+		     Nametab.NeverDischarge) in
 	  let lem2 = (current_constant lem2_name) in
 	    (Lib.add_anonymous_leaf
 	       (morphism_to_obj (m, 
@@ -481,54 +471,13 @@ let add_morphism lem_name (m,profil) =
 				arg_types = args_t;
 				lem2 = None}))));
       Options.if_verbose ppnl (prterm m ++str " is registered as a morphism")   
-    
-let _ = 
-  let current_save = vinterp_map "SaveNamed" in
-    overwriting_vinterp_add "SaveNamed"
-      (function 
-	 |[] -> (fun () -> 
-		   let pf_id = Pfedit.get_current_proof_name () in
-		     current_save [] ();
-		     if (is_edited pf_id)
-		     then 
-		       (add_morphism pf_id (what_edited pf_id);
-			no_more_edited pf_id))
-	 | _ -> assert false)
+let morphism_hook stre ref =
+  let pf_id = basename (sp_of_global (Global.env()) ref) in
+  if (is_edited pf_id)
+  then 
+    (add_morphism pf_id (what_edited pf_id); no_more_edited pf_id)
 
-let _ = 
-  let current_defined = vinterp_map "DefinedNamed" in
-    overwriting_vinterp_add "DefinedNamed"
-      (function 
-	 |[] -> (fun () -> let pf_id = Pfedit.get_current_proof_name () in
-			 current_defined [] ();
-			 if (is_edited pf_id)
-			 then 
-			   (add_morphism pf_id (what_edited pf_id);
-			   no_more_edited pf_id))
-	 | _ -> assert false)
-
-(*
-let _ = 
-  vinterp_add "NewMorphism"
-    (function 
-       | [(VARG_IDENTIFIER s)] ->
-	   (fun () -> 
-	      try 
-		(let m = Declare.global_reference CCI s in
-		   new_morphism m (gen_lem_name m))
-	      with 
-		  Not_found -> 
-		    errorlabstrm "New Morphism" 
-		      (str "The term " ++ str(string_of_id s) ++ str" is not a known name"))
-       | _ -> anomaly "NewMorphism")
-*)
-  
-let _ = 
-  vinterp_add "NamedNewMorphism"
-    (function 
-       | [(VARG_IDENTIFIER s);(VARG_CONSTR m)] ->
-	   (fun () -> new_morphism (constr_of m) s)
-       | _ -> anomaly "NewMorphism")
+let new_named_morphism id m = new_morphism (constr_of m) id morphism_hook
 
 (****************************** The tactic itself *******************************)
 
@@ -670,21 +619,3 @@ let general_s_rewrite lft2rgt c gl =
 let setoid_rewriteLR = general_s_rewrite true
 
 let setoid_rewriteRL = general_s_rewrite false
-
-let dyn_setoid_replace = function
-  | [(Constr c1);(Constr c2)] -> (fun gl -> setoid_replace c1 c2 None gl)
-  | _ -> invalid_arg "Setoid_replace : Bad arguments"
-      
-let h_setoid_replace = hide_tactic "Setoid_replace" dyn_setoid_replace
-
-let dyn_setoid_rewriteLR = function
-  | [(Constr c)] -> setoid_rewriteLR c
-  | _ -> invalid_arg "Setoid_rewrite : Bad arguments"
-
-let h_setoid_rewriteLR = hide_tactic "Setoid_rewriteLR" dyn_setoid_rewriteLR
-
-let dyn_setoid_rewriteRL = function
-  | [(Constr c)] -> setoid_rewriteRL c
-  | _ -> invalid_arg "Setoid_rewrite : Bad arguments"
-
-let h_setoid_rewriteRL = hide_tactic "Setoid_rewriteRL" dyn_setoid_rewriteRL

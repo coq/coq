@@ -97,3 +97,150 @@ let hcons_ast (hstr,hid,hpath) =
   let hloc = Hashcons.simple_hcons Hloc.f () in
   let hast = Hashcons.recursive_hcons Hast.f (hloc,hstr,hid,hpath) in
   (hast,hloc)
+
+(*
+type 'vernac_ast raw_typed_ast =
+  | PureAstNode of t
+  | AstListNode of t list
+  | PureAstNode of t
+  | TacticAstNode of tactic_expr
+  | VernacAstNode of 'vernac_ast
+
+type entry_type =
+  | PureAstType
+  | AstListType
+  | VernacAstType
+  | TacticAstType
+  | VernacAtomAstType
+  | DynamicAstType
+  | QualidAstType
+  | ConstrAstType
+  | BinderAstType
+  | ThmTokAstType
+  | BindingListAstType
+
+type astpat =
+  | Pquote of t
+  | Pmeta of string * tok_kind
+  | Pnode of string * patlist
+  | Pslam of identifier option * astpat
+  | Pmeta_slam of string * astpat
+
+and patlist =
+  | Pcons of astpat * patlist
+  | Plmeta of string
+  | Pnil
+
+type 'a syntax_rule = string * 'a raw_typed_ast * t unparsing_hunk list
+type 'a raw_syntax_entry_ast = precedence * 'a syntax_rule list
+
+type grammar_associativity = Gramext.g_assoc option
+type 'a raw_grammar_action =
+  | SimpleAction of loc * 'a raw_typed_ast
+  | CaseAction of loc *
+     'a raw_grammar_action * entry_type option
+      * (t list * 'a raw_grammar_action) list
+type grammar_production =
+    VTerm of string | VNonTerm of loc * nonterm * string option
+type 'a grammar_rule = string * grammar_production list * 'a raw_grammar_action
+type 'a raw_grammar_entry_ast = 
+    (loc * string) * entry_type option * grammar_associativity * 'a grammar_rule list
+
+type evaluable_global_reference_ast =
+  | AEvalVarRef of identifier
+  | AEvalConstRef of section_path
+
+type flags_ast = int
+
+type red_expr_ast = (t,t,t) Rawterm.red_expr_gen
+
+type vernac_arg = 
+  | VARG_VARGLIST of vernac_arg list
+  | VARG_STRING of string
+  | VARG_NUMBER of int
+  | VARG_NUMBERLIST of int list
+  | VARG_IDENTIFIER of identifier
+  | VARG_QUALID of Nametab.qualid
+  | VCALL of string * vernac_arg list
+  | VARG_CONSTR of t
+  | VARG_CONSTRLIST of t list
+  | VARG_TACTIC of tactic_expr
+  | VARG_REDEXP of red_expr_ast
+  | VARG_BINDER of identifier list * t
+  | VARG_BINDERLIST of (identifier list * t) list
+  | VARG_AST of t
+  | VARG_ASTLIST of t list
+  | VARG_UNIT
+  | VARG_DYN of Dyn.t
+
+type def_kind = DEFINITION | LET | LOCAL | THEOREM | LETTOP | DECL | REMARK
+  | FACT | LEMMA
+  | COERCION | LCOERCION | OBJECT | LOBJECT | OBJCOERCION | LOBJCOERCION
+  | SUBCLASS | LSUBCLASS
+
+open Nametab
+
+type declaration_hook = strength -> global_reference -> unit
+let add_coercion = ref (fun _ _ -> ())
+let add_subclass = ref (fun _ _ -> ())
+let add_object = ref (fun _ _ -> ())
+
+type constr_ast = t
+type sort_expr = t
+
+type simple_binders = identifier * constr_ast
+type constructor_ast = identifier * constr_ast
+type inductive_ast =
+    identifier *  simple_binders list * constr_ast * constructor_ast list
+type fixpoint_ast =
+    identifier * simple_binders list * constr_ast * constr_ast
+type cofixpoint_ast =
+    identifier * constr_ast * constr_ast
+
+type local_decl_expr =
+  | AssumExpr of identifier * constr_ast
+  | DefExpr of identifier * constr_ast * constr_ast option
+
+type vernac_atom_ast =
+  (* Syntax *) 
+  | VernacGrammar of string * vernac_ast raw_grammar_entry_ast list
+  | VernacSyntax of string * vernac_ast raw_syntax_entry_ast list
+  | VernacInfix of grammar_associativity * int * string * t
+  | VernacDistfix of grammar_associativity * int * string * t
+  (* Gallina *)
+  | VernacDefinition of (bool * strength) * identifier * t option * constr_ast * constr_ast option * declaration_hook
+  | VernacStartProof of (bool * strength) * identifier * constr_ast * bool * declaration_hook
+  | VernacEndProof of bool * strength option * identifier option
+  | VernacAssumption of strength * (identifier list * constr_ast) list
+  | VernacInductive of bool * inductive_ast list
+  | VernacFixpoint of fixpoint_ast list
+  | VernacCoFixpoint of cofixpoint_ast list
+  (* Gallina extensions *)
+  | VernacRecord of bool * identifier * simple_binders list * sort_expr * identifier option * (bool * local_decl_expr) list
+
+  (* Commands *)
+  | TacticDefinition of loc * (identifier * tactic_expr) list
+  | VernacSetOpacity of bool * (loc * identifier list) list
+  | VernacSolve of int * tactic_expr
+  (* For temporary compatibility *)
+  | ExtraVernac of t
+  (* For extension *)
+  | VernacExtend of string * vernac_arg list
+  (* For actions in Grammar and patterns in Syntax rules *)
+  | VernacMeta of loc * string
+
+and located_vernac_atom_ast = loc * vernac_atom_ast
+
+and vernac_ast =
+  | VTime of located_vernac_atom_ast
+  | VLoad of bool * string
+  | VernacList of located_vernac_atom_ast list
+  | VernacVar of identifier
+
+type pat = vernac_ast raw_pat
+type typed_ast = vernac_ast raw_typed_ast
+type grammar_action = vernac_ast raw_grammar_action
+type grammar_entry_ast = vernac_ast raw_grammar_entry_ast
+type syntax_entry_ast = vernac_ast raw_syntax_entry_ast
+
+*)

@@ -15,6 +15,7 @@ open Term
 open Evd
 open Environ
 open Declare
+open Nametab
 (*i*)
 
 (*s This is the type of class kinds *)
@@ -80,15 +81,6 @@ val coercion_info_from_index : coe_index -> coe_typ * coe_info_typ
 
 val coercion_value : coe_index -> (unsafe_judgment * bool)
 
-(*s This is for printing purpose *)
-
-(* [hide_coercion] returns the number of params to skip if the coercion must
-   be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)
-val hide_coercion : coe_typ -> int option
-
-val set_coercion_visibility : bool -> coe_typ -> unit
-val is_coercion_visible : coe_typ -> bool
-
 (*s Lookup functions for coercion paths *)
 val lookup_path_between : cl_index * cl_index -> inheritance_path
 val lookup_path_to_fun_from : cl_index -> inheritance_path
@@ -115,9 +107,15 @@ val install_path_printer :
   ((cl_index * cl_index) * inheritance_path -> std_ppcmds) -> unit
 (*i*)
 
-(* This is for printing purpose *)
+(*s This is for printing purpose *)
 val string_of_class : cl_typ -> string
 val get_coercion_value : coe_info_typ -> constr
 val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
 val classes : unit -> (int * (cl_typ * cl_info_typ)) list
 val coercions : unit -> (int * (coe_typ * coe_info_typ)) list
+
+(* [hide_coercion] returns the number of params to skip if the coercion must
+   be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)
+val hide_coercion : coe_typ -> int option
+
+

@@ -40,7 +40,7 @@ val unfoldn :
 val fold_commands : constr list ->  reduction_function
 
 (* Pattern *)
-val pattern_occs : (int list * constr * constr) list ->  reduction_function
+val pattern_occs : (int list * constr) list ->  reduction_function
 (* Rem: Lazy strategies are defined in Reduction *)
 
 (* Call by value strategy (uses Closures) *)
@@ -60,6 +60,8 @@ val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
    returns [I] and [t'] or fails with a user error *)
 val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 
+open Rawterm
+(*
 type red_expr =
   | Red of bool    (* raise Redelimination if true otherwise UserError *)
   | Hnf
@@ -69,8 +71,14 @@ type red_expr =
   | Unfold of (int list * evaluable_global_reference) list
   | Fold of constr list
   | Pattern of (int list * constr * constr) list
+*)
+type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
-val reduction_of_redexp : red_expr ->  reduction_function
+val reduction_of_redexp : red_expr -> reduction_function
+
+type generic_reduction_function = constr list -> reduction_function
+
+val declare_red_expr : string -> generic_reduction_function -> unit
 
 (* Opaque and Transparent commands. *)
 val set_opaque_const      : section_path -> unit
