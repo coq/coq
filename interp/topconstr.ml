@@ -372,7 +372,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
-  | RLetIn (_,na1,t1,b1), AProd (na2,t2,b2) ->
+  | RLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RCases (_,(po1,rtno1),tml1,eqnl1), ACases (po2,rtno2,tml2,eqnl2) 
       when List.length tml1 = List.length tml2 ->
