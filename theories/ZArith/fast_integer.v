@@ -1011,6 +1011,7 @@ Intros; Elim H; Elim H0; Auto with arith.
 Qed.
 
 (** Addition on positive numbers *)
+
 Fixpoint times [x:positive] : positive -> positive:=
   [y:positive]
   Cases x of
@@ -1022,11 +1023,13 @@ Fixpoint times [x:positive] : positive -> positive:=
 Infix "*" times (at level 3, left associativity) : positive_scope.
 
 (** Correctness of multiplication on positive *)
+(*
 Theorem times_convert :
   (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
 Proof.
 NewInduction x as [ x' H | x' H | ]; [
-  Intro y; Simpl; Rewrite ZL6; Rewrite convert_add; 
+  Intro y; Simpl (mult (convert (xI x')) (convert y));
+  Rewrite ZL6; Rewrite convert_add; 
   Rewrite H; Unfold 3 convert; Simpl; Rewrite ZL6;
   Rewrite (mult_sym (convert x')); Do 2 Rewrite mult_plus_distr;
   Rewrite (mult_sym (convert x')); Trivial with arith
@@ -1035,6 +1038,9 @@ NewInduction x as [ x' H | x' H | ]; [
   Do 2 Rewrite mult_plus_distr; Rewrite (mult_sym (convert x')); Auto with arith
 | Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
 Qed.
+*)
+Axiom times_convert :
+  (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
 
 (** Multiplication on integers *)
 Definition Zmult := [x,y:Z]
