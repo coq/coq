@@ -188,7 +188,7 @@ let cook_proof () =
   let {evar_concl=concl} = ts.top_goal 
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in
-  !xml_cook_proof pfs;
+  !xml_cook_proof (strength,pfs);
   (ident,
    ({ const_entry_body = pfterm;
       const_entry_type = Some concl;

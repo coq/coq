@@ -433,6 +433,17 @@ let theory_output_string s =
    | None -> print_string s; flush stdout
 ;;
 
+let kind_of_theorem = function
+  | Decl_kinds.Theorem -> "Theorem"
+  | Decl_kinds.Lemma -> "Lemma"
+  | Decl_kinds.Fact -> "Fact"
+  | Decl_kinds.Remark -> "Remark"
+
+let kind_of_goal = function
+  | Decl_kinds.IsGlobal Decl_kinds.DefinitionBody -> "DEFINITION","Definition"
+  | Decl_kinds.IsGlobal (Decl_kinds.Proof k) -> "THEOREM",kind_of_theorem k
+  | Decl_kinds.IsLocal -> "VARIABLE","Hypothesis"
+
 let kind_of_object r =
   let module Ln = Libnames in
   let module DK = Decl_kinds in
@@ -457,12 +468,7 @@ let kind_of_object r =
       | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
       | DK.IsDefinition -> "DEFINITION","Definition"
       | DK.IsConjecture -> "THEOREM","Conjecture"
-      | DK.IsProof thm -> "THEOREM",
-          match thm with
-          | DK.Theorem -> "Theorem"
-          | DK.Lemma -> "Lemma"
-          | DK.Fact -> "Fact"
-          | DK.Remark -> "Remark")
+      | DK.IsProof thm -> "THEOREM",kind_of_theorem thm)
   | Ln.ConstructRef _ -> 
        Util.anomaly ("print: this should not happen")
 ;;
@@ -527,7 +533,7 @@ let print glob_ref xml_library_root =
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
-let show_pftreestate fn pftst id =
+let show_pftreestate fn (kind,pftst) id =
  let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
@@ -538,8 +544,11 @@ let show_pftreestate fn pftst id =
  let kn = Lib.make_kn id in
  let env = Global.env () in
  let obj = mk_current_proof_obj id val0 typ evar_map env in
+print_string "c";
  let uri = Cic2acic.uri_of_kernel_name kn Cic2acic.Constant in
-  print_object_kind uri  (kind_of_object (Libnames.ConstRef kn));
+print_string "b";
+  print_object_kind uri (kind_of_goal kind);
+print_string "a";
   print_object uri obj evar_map
    (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
     proof_tree_to_flattened_proof_tree)) fn
@@ -547,8 +556,9 @@ let show_pftreestate fn pftst id =
 
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
+ let (_,kind,_,_) = Pfedit.current_proof_statement () in
  let id = Pfedit.get_current_proof_name () in
-  show_pftreestate fn pftst id
+  show_pftreestate fn (kind,pftst) id
 ;;
 
 (*
