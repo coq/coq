@@ -248,7 +248,6 @@ let build_recursive lnameargsardef =
 		  (mkFix ((Array.of_list nvrec,i),
 			  (varrec,List.map (fun id -> Name id) lnamerec,
 			   recvec)));
-		  (* (mkFixDlam (Array.of_list nvrec) i varrec recvec); *)
 	      const_entry_type = None } 
 	  in
 	  declare_constant fi (ce, n);

@@ -64,8 +64,6 @@ let dest_match_eq gls eqn =
 	  errorlabstrm "dest_match_eq" 
 	    [< 'sTR "no primitive equality here" >]))
     
-let implicit = Sort implicit_sort
-
 (* Environment management *)
 let push_rel_type sigma (na,t) env =
   push_rel_decl (na,make_typed t (get_sort_of env sigma t)) env
