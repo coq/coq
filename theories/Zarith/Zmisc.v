@@ -303,8 +303,8 @@ Lemma Z_modulo_2 : (x:Z) `x >= 0` -> { y:Z | `x=2*y` }+{ y:Z | `x=2*y+1` }.
 Proof.
 Intros x Hx.
 Elim (Zeven_odd_dec x); Intro.
-Left. Split with (Zdiv2 x). Exact (Zeven_div2 x y).
-Right. Split with (Zdiv2 x). Exact (Zodd_div2 x Hx y).
+Left. Split with (Zdiv2 x). Exact (Zeven_div2 x a).
+Right. Split with (Zdiv2 x). Exact (Zodd_div2 x Hx b).
 Save.
 
 (* Very simple *)

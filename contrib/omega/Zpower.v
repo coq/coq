@@ -306,7 +306,7 @@ Elim (convert p); Simpl;
 | Intro n; Rewrite (two_power_nat_S n);
   Unfold 2 Zdiv_rest_aux;
   Elim (iter_nat n (Z*Z)*Z Zdiv_rest_aux ((x,`0`),`1`));
-  Destruct y; Intros; Apply f_equal with f:=[z:Z]`2*z`; Assumption ]. 
+  Destruct a; Intros; Apply f_equal with f:=[z:Z]`2*z`; Assumption ]. 
 Save.
 
 Lemma Zdiv_rest_correct2 :
@@ -368,12 +368,12 @@ Lemma  Zdiv_rest_correct :
 Intros x p.
 Generalize (Zdiv_rest_correct1 x p); Generalize (Zdiv_rest_correct2 x p).
 Elim  (iter_pos p (Z*Z)*Z Zdiv_rest_aux ((x,`0`),`1`)).
-Induction y.
+Induction a.
 Intros.
 Elim H; Intros H1 H2; Clear H.
 Rewrite -> H0 in H1; Rewrite -> H0 in H2;
 Elim H2; Intros;
-Apply Zdiv_rest_proof with q:=y0 r:=y1; Assumption.
+Apply Zdiv_rest_proof with q:=a0 r:=b; Assumption.
 Save.
 
 End power_div_with_rest.

@@ -301,7 +301,7 @@ Theorem wf_lex_exp :
   (well_founded A leA)->(well_founded Power Lex_Exp).
 Proof.
  Unfold 2 well_founded .
- Induction a;Intros.
+ Induction a;Intros x y.
  Apply Acc_intro.
  Induction y0.
  Unfold 1 lex_exp ;Simpl.
@@ -350,7 +350,7 @@ Proof.
  Apply Acc_intro.
  Induction y2.
  Unfold 1 lex_exp .
- Simpl;Intros.
+ Simpl;Intros x4 y3. Intros.
  Apply (H0 x4 y3);Auto with sets.
 
  Intros. 

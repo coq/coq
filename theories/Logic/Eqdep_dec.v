@@ -71,7 +71,7 @@ Unfold nu.
 Elim (eq_dec x y) using or_indd; Intros.
 Reflexivity.
 
-Case y0; Trivial.
+Case b; Trivial.
 Save.
 
 
@@ -123,7 +123,7 @@ Intro e.
 Elim e using K_dec; Trivial.
 
 Intros.
-Case y0; Trivial.
+Case b; Trivial.
 
 Case H.
 Reflexivity.

@@ -278,7 +278,7 @@ Variable vm : (varmap A).
  * choice *)
 Definition interp_var [i:index] := (varmap_find Azero i vm).
 
-Local ivl_aux := Fix ivl_aux {ivl_aux[x:index; t:varlist] : A := 
+(* Local *) Definition ivl_aux := Fix ivl_aux {ivl_aux[x:index; t:varlist] : A := 
   Cases t of
   | Nil_var => (interp_var x)
   | (Cons_var x' t') => (Amult (interp_var x) (ivl_aux x' t'))
@@ -290,14 +290,14 @@ Definition interp_vl :=  [l:varlist]
   | (Cons_var x t) => (ivl_aux x t)
   end.
 
-Local interp_m := [c:A][l:varlist] 
+(* Local *) Definition interp_m := [c:A][l:varlist] 
   Cases l of
   | Nil_var => c
   | (Cons_var x t) => 
       (Amult c (ivl_aux x t))
   end.
 
-Local ics_aux := Fix ics_aux{ics_aux[a:A; s:canonical_sum] : A :=  
+(* Local *) Definition ics_aux := Fix ics_aux{ics_aux[a:A; s:canonical_sum] : A :=  
   Cases s of
   | Nil_monom => a
   | (Cons_varlist l t) => (Aplus a (ics_aux (interp_vl l) t))

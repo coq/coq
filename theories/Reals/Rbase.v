@@ -64,7 +64,7 @@ Hints Resolve imp_not_Req : real.
 (**********)
 Lemma Req_EM:(r1,r2:R)(r1==r2)\/``r1<>r2``.
 Intros;Elim (total_order_T r1 r2);Intro.
-Case y; Auto with real.
+Case a; Auto with real.
 Auto with real.
 Save.
 Hints Resolve Req_EM : real.
@@ -72,7 +72,7 @@ Hints Resolve Req_EM : real.
 (**********)
 Lemma total_order:(r1,r2:R)``r1<r2``\/(r1==r2)\/``r1>r2``.
 Intros;Elim (total_order_T r1 r2);Intro;Auto.
-Elim y;Intro;Auto.
+Elim a;Intro;Auto.
 Save.
 
 (**********)
@@ -199,16 +199,16 @@ Save.
 (*s Decidability of the order *)
 Lemma total_order_Rlt:(r1,r2:R)(sumboolT ``r1<r2`` ~(``r1<r2``)).
 Intros;Elim (total_order_T r1 r2);Intros.
-Elim y;Intro.
+Elim a;Intro.
 Left;Assumption.
-Right;Rewrite y0;Apply Rlt_antirefl.
-Right;Unfold Rgt in y;Apply Rlt_antisym;Assumption.
+Right;Rewrite b;Apply Rlt_antirefl.
+Right;Unfold Rgt in b;Apply Rlt_antisym;Assumption.
 Save.
 
 (**********)
 Lemma total_order_Rle:(r1,r2:R)(sumboolT ``r1<=r2`` ~(``r1<=r2``)).
 Intros;Elim (total_order_T r1 r2);Intros.
-Left;Unfold Rle;Elim y;Auto with real.
+Left;Unfold Rle;Elim a;Auto with real.
 Right; Auto with real.
 Save.
 

@@ -29,11 +29,11 @@ Lemma acc_A_B_lexprod : (x:A)(Acc A leA x)
                 ->(y:(B x))(Acc (B x) (leB x) y)
                         ->(Acc (sigS A B) LexProd (existS A B x y)).
 Proof.
- Induction 1.
- Induction 4;Intros.
+ Induction 1; Intros x0 H0 H1 H2 y.
+ Induction 1;Intros.
  Apply Acc_intro.
  Induction y0.
- Intros.
+ Intros x2 y1 H6.
  Simple Inversion H6;Intros.
  Cut (leA x2 x0);Intros.
  Apply H1;Auto with sets.

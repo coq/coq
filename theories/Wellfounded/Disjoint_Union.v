@@ -42,13 +42,13 @@ Proof.
  Intros.
  Unfold well_founded .
  Induction a.
- Intro.
- Apply (acc_A_sum y).
- Apply (H y).
+ Intro a0.
+ Apply (acc_A_sum a0).
+ Apply (H a0).
 
- Intro.
- Apply (acc_B_sum H y).
- Apply (H0 y).
+ Intro b.
+ Apply (acc_B_sum H b).
+ Apply (H0 b).
 Qed.
 
 End Wf_Disjoint_Union.
