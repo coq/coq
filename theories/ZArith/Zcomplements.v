@@ -8,8 +8,8 @@
 
 (*i $Id$ i*)
 
-Require ZArith_base.
 Require ZArithRing.
+Require ZArith_base.
 Require Omega.
 Require Wf_nat.
 V7only [Import Z_scope.].
