@@ -273,8 +273,7 @@ End Z_scope.
 
 (* Declare Scope positive_scope with Key P. *)
 
-Delimits Scope positive_scope with P.
-Delimits Scope Z_scope with Z.
-
+(*
 Arguments Scope POS [positive_scope].
 Arguments Scope NEG [positive_scope].
+*)

@@ -17,15 +17,26 @@ Require Mult.
 Require Minus.
 
 (** Definition of fast binary integers *)
-Section fast_integers.
 
 Inductive positive : Set :=
   xI : positive -> positive
 | xO : positive -> positive
 | xH : positive.
 
+Delimits Scope positive_scope with P.
+Delimits Scope Z_scope with Z.
+Arguments Scope xO [ positive_scope ].
+Arguments Scope xI [ positive_scope ].
+
 Inductive Z : Set := 
   ZERO : Z | POS : positive -> Z | NEG : positive -> Z.
+
+Bind Scope positive_scope with positive.
+Bind Scope Z_scope with Z.
+Arguments Scope POS [ Z_scope ].
+Arguments Scope NEG [ Z_scope ].
+
+Section fast_integers.
 
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
