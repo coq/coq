@@ -5,3 +5,5 @@ hs2v
 v2hs
 log
 *.hi
+*.hs
+*.hc
