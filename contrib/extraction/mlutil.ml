@@ -330,24 +330,33 @@ let collect_lambda =
   in 
   collect []
 
-let test_eta n l =
-  let rec test n = function 
-    | [] -> true
-    | a :: q -> a = (MLrel n) && (test (succ n) q)
-  in (List.length l = n) && (test 1 l) 
+let rec test_eta n = function 
+  | [] -> n=0
+  | a :: q -> (a = (MLrel n)) && (test_eta (pred n) q)
+
+let rec make_args n = 
+  if n = 0 then [] else (MLrel n)::(make_args (pred n))
+  
+(* this abstract is written without lift on purpose *)
+let rec abstract ids a = match ids with
+  | [] -> a 
+  | id :: l -> MLlam(id, abstract l a)
 
 let optimize_fix a = 
   if not (optim()) then a 
   else
     let lams,b = collect_lambda a in 
-    let nlams = List.length lams in 
-    if nlams = 0 then a 
+    let n = List.length lams in 
+    if n = 0 then a 
     else  
       (match b with 
-	 | MLfix(_,[|_|],[|c|]) -> a (* TODO *)
+	 | MLfix(_,[|f|],[|c|]) -> 
+	     let new_f = MLapp (MLrel (n+1),make_args n) in 
+	     let new_c = abstract lams (ml_subst new_f c)
+	     in MLfix(1,[|f|],[|new_c|])
 	 | MLapp(b,ids) -> 
 	     (match b with 
-		| MLfix(_,[|_|],[|_|]) when (test_eta nlams ids)-> b
+		| MLfix(_,[|_|],[|_|]) when (test_eta n ids)-> b
 		| MLfix(_,[|_|],[|_|]) -> a (* TODO *)
 		| _ -> a)
 	 | _ -> a)
