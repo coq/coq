@@ -28,10 +28,9 @@ val add_token_obj : string -> unit
 val add_tactic_grammar :
   (string * (string * grammar_production list) * raw_tactic_expr) list -> unit
 
-val add_infix : locality_flag ->
-  grammar_associativity -> precedence option -> string -> reference -> bool ->
-    (grammar_associativity * precedence option * string) option ->
-      scope_name option -> unit
+val add_infix : locality_flag -> (string * syntax_modifier list) ->
+  reference -> (string * syntax_modifier list) option ->
+    scope_name option -> unit
 val add_distfix : locality_flag ->
   grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
@@ -55,5 +54,8 @@ val add_syntax_extension : locality_flag
 
 val print_grammar : string -> string -> unit
 
-val interp_infix_modifiers : Gramext.g_assoc option -> int option -> 
-  syntax_modifier list -> Gramext.g_assoc option * int option * bool
+val merge_modifiers : Gramext.g_assoc option -> int option -> 
+  syntax_modifier list -> syntax_modifier list
+
+val interp_infix_modifiers : syntax_modifier list ->
+  Gramext.g_assoc option * precedence option * bool * string option

@@ -109,7 +109,7 @@ let (inPPSyntax,outPPSyntax) =
  * Syntax objects in compiled modules are not re-checked. *)
 
 let add_syntax_obj whatfor sel =
-  if not !Options.v7_only then
+(*  if not !Options.v7_only then*)
   Lib.add_anonymous_leaf (inPPSyntax (interp_syntax_entry whatfor sel))
 
 
@@ -482,9 +482,9 @@ let make_syntax_rule n name symbols typs ast ntn sc =
     syn_hunks =
       [UNP_SYMBOLIC(sc,ntn,UNP_BOX (PpHOVB 1,make_hunks_ast symbols typs n))]}]
 
-let make_pp_rule (n,typs,symbols) =
+let make_pp_rule (n,typs,symbols,fmt) =
+  (* TODO: fmt *)
   [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
-
 
 (**************************************************************************)
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
@@ -511,17 +511,17 @@ let pr_level ntn (from,args) =
 	  | L,L -> Gramext.NoneA, l
 	  | _ -> args
 *)
-  str "at level " ++ int from ++ str " with arguments" ++ spc() ++
+  str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
   prlist_with_sep pr_coma (pr_arg_level from) args
 
 let cache_syntax_extension (_,(_,(prec,prec8),ntn,gr,se)) =
   try 
     let oldprec, oldprec8 = Symbols.level_of_notation ntn in
     if prec8 <> oldprec8 then errorlabstrm ""
-      (hov 0 (str ((if !Options.v7 then "For new syntax, notation " else "Notation ")
-       ^ntn^" is already defined ") ++ pr_level ntn oldprec8 ++ spc() ++
-      str "while it is now required to be" ++ spc() ++ 
-      pr_level ntn prec8))
+      (str ((if Options.do_translate () then "For new syntax, notation " else "Notation ")
+       ^ntn^" is already defined") ++ spc() ++ pr_level ntn oldprec8 ++ spc() 
+      ++ str "while it is now required to be" ++ spc() ++ 
+      pr_level ntn prec8)
     else
     (* V8 notations are consistent (from both translator or v8) *)
     if prec <> None then begin
@@ -564,48 +564,56 @@ let (inSyntaxExtension, outSyntaxExtension) =
        classify_function = classify_syntax_definition;
        export_function = export_syntax_definition}
 
-let interp_modifiers a n =
+let interp_modifiers =
   let onlyparsing = ref false in
-  let rec interp assoc level etyps = function
+  let rec interp assoc level etyps format = function
     | [] ->
-	(assoc,level,etyps,!onlyparsing)
+	(assoc,level,etyps,!onlyparsing,format)
     | SetEntryType (s,typ) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level")
-	else interp assoc level ((id,typ)::etyps) l
+	else interp assoc level ((id,typ)::etyps) format l
     | SetItemLevel ([],n) :: l ->
-	interp assoc level etyps l
+	interp assoc level etyps format l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level")
 	else
 	  let typ = ETConstr (n,()) in
-	  interp assoc level ((id,typ)::etyps) (SetItemLevel (idl,n)::l)
+	  interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
-	if level <> None then error "A level is mentioned more than twice"
-	else interp assoc (Some n) etyps l
+	if level <> None then error "A level is given more than once"
+	else interp assoc (Some n) etyps format l
     | SetAssoc a :: l ->
-	if assoc <> None then error "already an associativity"
-	else interp (Some a) level etyps l
+	if assoc <> None then error "An associativity is given more than once"
+	else interp (Some a) level etyps format l
     | SetOnlyParsing :: l ->
 	onlyparsing := true;
-	interp assoc level etyps l
-  in interp a n []
+	interp assoc level etyps format l
+    | SetFormat s :: l ->
+	if format <> None then error "A format is given more than once"
+	onlyparsing := true;
+	interp assoc level etyps format l
+  in interp None None [] None
 
-let interp_infix_modifiers a n l =
-  let (assoc,level,t,b) = interp_modifiers a n l in
+let merge_modifiers a n l =
+  (match a with None -> [] | Some a -> [SetAssoc a]) @
+  (match n with None -> [] | Some n -> [SetLevel n]) @ l
+
+let interp_infix_modifiers modl =
+  let (assoc,level,t,b,fmt) = interp_modifiers modl in
   if t <> [] then
     error "explicit entry level or type unexpected in infix notation";
-  (assoc,level,b)
+  (assoc,level,b,fmt)
 
 (* Notation defaults to NONA *)
 let interp_notation_modifiers modl =
-  let (assoc,n,t,b) = interp_modifiers None None modl in
+  let (assoc,n,t,b,format) = interp_modifiers modl in
   let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
   let n = match n with None -> 1 | Some n -> n in
-  (assoc,n,t,b)
+  (assoc,n,t,b,format)
 
 (* 2nd list of types has priority *)
 let rec merge_entry_types etyps' = function
@@ -626,7 +634,7 @@ let set_entry_type etyps (x,typ) =
   in (x,typ)
 
 let compute_syntax_data forv7 (df,modifiers) =
-  let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse,fmt) = interp_notation_modifiers modifiers in
   let toks = split df in
   let innerlevel = NumLevel (if forv7 then 10 else 200) in
   let (vars,symbols) = analyse_tokens toks in
@@ -639,14 +647,14 @@ let compute_syntax_data forv7 (df,modifiers) =
   (* To globalize... *)
   let typs = List.map (set_entry_type etyps) typs in
   let (prec,notation) = make_symbolic n symbols typs in
-  ((onlyparse,vars,notation),prec,(n,typs,symbols))
+  ((onlyparse,vars,notation),prec,(n,typs,symbols,fmt))
 
 let add_syntax_extension local mv mv8 =
   let data8 = option_app (compute_syntax_data false) mv8 in
   let data = option_app (compute_syntax_data !Options.v7) mv in
   let prec,gram_rule = match data with
     | None -> None, None
-    | Some ((_,_,notation),prec,(n,typs,symbols)) -> 
+    | Some ((_,_,notation),prec,(n,typs,symbols,_)) -> 
 	Some prec, Some (make_grammar_rule n typs symbols notation) in
   match data, data8 with
     | None, None -> (* Nothing to do: V8Notation while not translating *) () 
@@ -663,17 +671,20 @@ let add_syntax_extension local mv mv8 =
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
 let load_notation _ (_,(_,_,ntn,scope,pat,onlyparse,_,_)) =
-  Symbols.declare_scope scope
+  option_iter Symbols.declare_scope scope
 
 let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,pp8only,df)) =
   if i=1 then begin
     let b,oldpp8only = Symbols.exists_notation_in_scope scope ntn pat in
     (* Declare the old printer rule and its interpretation *)
-    if not b & oldse <> None then
+    if (not b or oldpp8only) & oldse <> None then
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
-    if not b or (oldpp8only & not pp8only) then
+    if not b then
       Symbols.declare_notation_interpretation ntn scope pat df pp8only;
+    if oldpp8only & not pp8only then
+      Options.silently 
+	(Symbols.declare_notation_interpretation ntn scope pat df) pp8only;
     if not b & not onlyparse then
       Symbols.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
@@ -720,11 +731,12 @@ let rec reify_meta_ast vars = function
 let make_old_pp_rule n symbols typs r ntn scope vars =
   let ast = Termast.ast_of_rawconstr r in
   let ast = reify_meta_ast vars ast in
-  let rule_name = ntn^"_"^scope^"_notation" in
+  let scope_name = match scope with Some s -> s | None -> "core_scope" in
+  let rule_name = ntn^"_"^scope_name^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
-let add_notation_in_scope local df c mods omodv8 sc toks =
-  let ((onlyparse,vars,notation),prec,(n,typs,symbols as ppdata)) =
+let add_notation_in_scope local df c mods omodv8 scope toks =
+  let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata)) =
     compute_syntax_data !Options.v7 (df,mods) in
 
   (* Declare the parsing and printing rules if not already done *)
@@ -753,7 +765,6 @@ let add_notation_in_scope local df c mods omodv8 sc toks =
       (local,(Some prec,ppprec),notation,Some gram_rule,pp_rule));
 
   (* Declare interpretation *)
-  let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let a = interp_aconstr vars c in
   let old_pp_rule =
     (* Used only by v7 *)
@@ -769,8 +780,6 @@ let add_notation_in_scope local df c mods omodv8 sc toks =
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
-let compute_scope = function None -> Symbols.default_scope | Some sc -> sc
-
 let build_old_pp_rule notation scope symbs (r,vars) =
   let prec = 
     try
@@ -783,9 +792,8 @@ let build_old_pp_rule notation scope symbs (r,vars) =
       id,ETConstr (NumLevel (level_rule n),InternalProd)) vars (snd prec) in
   make_old_pp_rule (fst prec) symbs typs r notation scope vars
 
-let add_notation_interpretation_core local symbs for_old df a sc onlyparse 
+let add_notation_interpretation_core local symbs for_old df a scope onlyparse 
   onlypp =
-  let scope = compute_scope sc in
   let notation = make_anon_notation symbs in
   let old_pp_rule = 
     option_app (build_old_pp_rule notation scope symbs) for_old in
@@ -816,14 +824,13 @@ let add_notation_interpretation df (c,l) sc =
   add_notation_interpretation_core local symbs for_oldpp df (la,a) sc
     onlyparse false
 
-let add_notation_in_scope_v8only local df c mv8 sc toks =
+let add_notation_in_scope_v8only local df c mv8 scope toks =
   let (_,vars,notation),prec,ppdata = compute_syntax_data false (df,mv8) in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
   (* Declare the interpretation *)
   let onlyparse = false in
-  let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let a = interp_aconstr vars c in
   Lib.add_anonymous_leaf
     (inNotation(local,None,notation,scope,a,onlyparse,true,df))
@@ -835,8 +842,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 	(* This is a ident to be declared as a rule *)
         add_notation_in_scope_v8only local df c (SetLevel 0::modifiers) sc toks
     | _ ->
-	let (assoc,lev,typs,onlyparse) = interp_modifiers None None modifiers
-	in
+	let (assoc,lev,typs,onlyparse,fmt) = interp_modifiers modifiers	in
 	match lev with
 	  | None->
 	      if modifiers <> [] & modifiers <> [SetOnlyParsing] then
@@ -876,8 +882,7 @@ let add_notation local c dfmod mv8 sc =
 	(* This is a ident to be declared as a rule *)
         add_notation_in_scope local df c (SetLevel 0::modifiers) mv8 sc toks
     | _ ->
-	let (assoc,lev,typs,onlyparse) = interp_modifiers None None modifiers
-	in
+	let (assoc,lev,typs,onlyparse,fmt) = interp_modifiers modifiers	in
 	match lev with
 	  | None->
 	      if modifiers <> [] & modifiers <> [SetOnlyParsing] then
@@ -928,14 +933,15 @@ let add_distfix local assoc n df r sc =
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
   add_notation_in_scope local df a [SetAssoc assoc;SetLevel n] None sc (split df)
 
-let add_infix local assoc n inf pr onlyparse mv8 sc =
+let add_infix local (inf,modl) pr mv8 sc =
   if inf="" (* Code for V8Infix only *) then
-    let (a8,v8,p8) = out_some mv8 in
+    let (p8,mv8) = out_some mv8 in
+    let (a8,n8,onlyparse,fmt) = interp_infix_modifiers mv8 in
     let metas = [inject_var "x"; inject_var "y"] in
     let a = mkAppC (mkRefC pr,metas) in
     let df = "x "^(quote p8)^" y" in
     let toks = split df in
-    if v8=None & a8=None then
+    if a8=None & n8=None & fmt=None then
       (* Declare only interpretation *)
       let (vars,symbs) = analyse_tokens toks in
       let a' = interp_aconstr vars a in
@@ -944,13 +950,11 @@ let add_infix local assoc n inf pr onlyparse mv8 sc =
       add_notation_interpretation_core local symbs None df a' sc 
 	onlyparse true
     else
-      let v8 = match v8 with None -> error "Needs a level" | Some n -> n in
-      let a8 = match a8 with None -> Gramext.NonA | Some a -> a in
-      let mods =
-	SetAssoc a8::SetLevel v8::(if onlyparse then [SetOnlyParsing] else [])
-      in
-      add_notation_in_scope_v8only local df a mods sc toks
+      if n8 = None then error "Needs a level" else
+      let mv8 = match a8 with None -> SetAssoc Gramext.NonA :: mv8 |_ -> mv8 in
+      add_notation_in_scope_v8only local df a mv8 sc toks
   else begin
+  let (assoc,n,onlyparse,fmt) = interp_infix_modifiers modl in
   (* check the precedence *)
   if !Options.v7 & (n<> None & (out_some n < 1 or out_some n > 10)) then
     errorlabstrm "Metasyntax.infix_grammar_entry"
@@ -976,20 +980,17 @@ let add_infix local assoc n inf pr onlyparse mv8 sc =
     add_notation_interpretation_core local symbs for_old df a' sc 
       onlyparse false
   else
-  (* Infix defaults to LEFTA (cf doc) *)
-  let n = match n with None -> 1 | Some n -> n in
-  let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
+  (* Infix defaults to LEFTA in V7 (cf doc) *)
+  let mv = match n with None -> SetLevel 1 :: modl | _ -> modl in
+  let mv = match assoc with None -> SetAssoc Gramext.LeftA :: mv | _ -> mv in
   let mv8 = match mv8 with
       None -> None
-    | Some(a8,n8,s8) ->
-	let a8 = match a8 with None -> Gramext.LeftA | Some a -> a in
-	let n8 = match n8 with None -> 1 | Some n -> n in
-        Some (("x "^quote s8^" y"),[SetAssoc a8; SetLevel n8]) in
-  let mods = 
-    [SetAssoc assoc;SetLevel n]@(if onlyparse then [SetOnlyParsing] else []) in
-  add_notation_in_scope local df a mods mv8 sc toks
+    | Some(s8,mv8) ->
+	if List.for_all (function SetLevel _ -> false | _ -> true) mv8 then
+	  error "Needs a level"
+	else Some (("x "^quote s8^" y"),mv8) in
+  add_notation_in_scope local df a mv mv8 sc toks
   end
-
 
 (* Delimiters and classes bound to scopes *)
 type scope_command = ScopeDelim of string | ScopeClasses of Classops.cl_typ
