@@ -746,6 +746,7 @@ GEXTEND Gram
   non_terminal:
     [[ u = IDENT; ":"; nt = IDENT ->
         NtQual(rename_command_entry u, rename_command_entry nt)
+     | IDENT "constr" -> NtQual ("constr","constr")
      | nt = IDENT -> NtShort (rename_command_entry nt) ]]
   ;
 END

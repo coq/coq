@@ -127,6 +127,7 @@ let pr_set_entry_type = function
 
 let pr_non_terminal = function
   | NtQual (u,nt) -> str u ++ str" : " ++ str nt
+  | NtShort "constrarg" -> str "constr"
   | NtShort nt -> str nt
 
 let strip_meta id =
