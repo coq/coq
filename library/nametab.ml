@@ -435,6 +435,10 @@ let shortest_qualid_of_global ctx_opt ref =
   let sp = sp_of_global ctx_opt ref in
     SpTab.shortest_qualid sp !the_ccitab
 
+let shortest_qualid_of_syndef kn = 
+  let sp = sp_of_syntactic_definition kn in
+    SpTab.shortest_qualid sp !the_ccitab
+
 let shortest_qualid_of_module mp = 
   let dir = MPmap.find mp !the_modrevtab in
     DirTab.shortest_qualid dir !the_dirtab

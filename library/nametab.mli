@@ -140,6 +140,8 @@ val sp_of_global :
   Sign.named_context option -> global_reference -> section_path
 val shortest_qualid_of_global : 
   Sign.named_context option -> global_reference -> qualid
+val shortest_qualid_of_syndef : 
+  kernel_name -> qualid
 val id_of_global : 
   Sign.named_context option -> global_reference -> identifier
 
