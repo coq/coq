@@ -1494,7 +1494,7 @@ and interp_match_context ist g lr lmr =
 	let lgoal = List.map (fun (id,c) -> (id,VConstr c)) lgoal in
         eval_with_fail { ist with lfun=lgoal@lctxt@ist.lfun } mt goal
       else
-        apply_hyps_context ist env goal mt lgoal mhyps hyps
+        apply_hyps_context ist env goal mt lctxt lgoal mhyps hyps
     with
     | e when is_failure e -> raise e
     | NextOccurrence _ -> raise No_match
@@ -1508,7 +1508,9 @@ and interp_match_context ist g lr lmr =
       begin
         db_mc_pattern_success ist.debug;
         try eval_with_fail ist t goal
-         with e when is_match_catchable e ->
+         with
+         | e when is_failure e -> raise e
+         | e when is_match_catchable e ->
            apply_match_context ist env goal (nrs+1) (List.tl lex) tl
       end
     | (Pat (mhyps,mgoal,mt))::tl ->
@@ -1529,9 +1531,10 @@ and interp_match_context ist g lr lmr =
               eval_with_fail {ist with lfun=lgoal@ist.lfun} mt goal
             end
             else
-              apply_hyps_context ist env goal mt lgoal mhyps hyps
+              apply_hyps_context ist env goal mt [] lgoal mhyps hyps
             end)
         with 
+        | e when is_failure e -> raise e
         | e when is_match_catchable e ->
           begin 
             (match e with
@@ -1542,7 +1545,9 @@ and interp_match_context ist g lr lmr =
           end)
       |	Subterm (id,mg) ->
         (try apply_goal_sub ist env goal 0 (id,mg) concl mt mhyps hyps
-         with e when is_match_catchable e ->
+         with 
+         | e when is_failure e -> raise e
+         | e when is_match_catchable e ->
            apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
     | _ ->
       errorlabstrm "Tacinterp.apply_match_context" (str
@@ -1557,7 +1562,7 @@ and interp_match_context ist g lr lmr =
     (read_match_rule (project g) env (fst (constr_list ist env)) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
-and apply_hyps_context ist env goal mt lgmatch mhyps hyps =
+and apply_hyps_context ist env goal mt lctxt lgmatch mhyps hyps =
   let rec apply_hyps_context_rec lfun lmatch lhyps_rest current = function
     | Hyp ((_,hypname),mhyp)::tl as mhyps ->
         let (lids,lm,hyp_match,next) =
@@ -1578,7 +1583,7 @@ and apply_hyps_context ist env goal mt lgmatch mhyps hyps =
         db_mc_pattern_success ist.debug;
         eval_with_fail {ist with lfun=lmatch@lfun@ist.lfun} mt goal
   in
-  apply_hyps_context_rec [] lgmatch hyps (hyps,0) mhyps
+  apply_hyps_context_rec lctxt lgmatch hyps (hyps,0) mhyps
 
   (* Interprets extended tactic generic arguments *)
 and interp_genarg ist goal x =
@@ -1641,6 +1646,8 @@ and interp_match ist g constr lmr =
       let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
       val_interp {ist with lfun=lm@lctxt@ist.lfun} g mt
     with | NextOccurrence _ -> raise No_match
+         | e when is_match_catchable e -> 
+             apply_sub_match ist (nocc + 1) (id,c) csr mt
   in
   let rec apply_match ist csr = function
     | (All t)::_ ->
