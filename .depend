@@ -767,8 +767,8 @@ lib/system.cmo: config/coq_config.cmi lib/pp.cmi lib/util.cmi lib/system.cmi
 lib/system.cmx: config/coq_config.cmx lib/pp.cmx lib/util.cmx lib/system.cmi 
 lib/tlm.cmo: lib/gmap.cmi lib/gset.cmi lib/tlm.cmi 
 lib/tlm.cmx: lib/gmap.cmx lib/gset.cmx lib/tlm.cmi 
-lib/util.cmo: lib/pp.cmi lib/util.cmi lib/util.cmi 
-lib/util.cmx: lib/pp.cmx lib/util.cmx lib/util.cmi 
+lib/util.cmo: lib/pp.cmi lib/util.cmi 
+lib/util.cmx: lib/pp.cmx lib/util.cmi 
 library/declare.cmo: library/decl_kinds.cmo kernel/declarations.cmi \
     library/dischargedhypsmap.cmi kernel/entries.cmi kernel/environ.cmi \
     library/global.cmi library/impargs.cmi kernel/indtypes.cmi \
@@ -2779,13 +2779,13 @@ contrib/interface/centaur.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     pretyping/evd.cmi parsing/extend.cmi interp/genarg.cmi library/global.cmi \
     contrib/interface/history.cmi library/lib.cmi library/libnames.cmi \
     library/libobject.cmi library/library.cmi \
-    toplevel/line_oriented_parser.cmi contrib/interface/name_to_ast.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
-    contrib/interface/pbp.cmi parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi \
-    parsing/pptactic.cmi pretyping/pretyping.cmi proofs/proof_trees.cmi \
-    proofs/proof_type.cmi toplevel/protectedtoplevel.cmi \
-    pretyping/rawterm.cmi kernel/reduction.cmi proofs/refiner.cmi \
-    parsing/search.cmi contrib/interface/showproof.cmi \
+    toplevel/line_oriented_parser.cmi pretyping/matching.cmi \
+    contrib/interface/name_to_ast.cmi library/nameops.cmi kernel/names.cmi \
+    library/nametab.cmi lib/options.cmi contrib/interface/pbp.cmi \
+    parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi parsing/pptactic.cmi \
+    pretyping/pretyping.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
+    toplevel/protectedtoplevel.cmi pretyping/rawterm.cmi kernel/reduction.cmi \
+    proofs/refiner.cmi parsing/search.cmi contrib/interface/showproof.cmi \
     contrib/interface/showproof_ct.cmo proofs/tacexpr.cmo \
     tactics/tacinterp.cmi proofs/tacmach.cmi kernel/term.cmi \
     parsing/termast.cmi contrib/interface/translate.cmi lib/util.cmi \
@@ -2800,13 +2800,13 @@ contrib/interface/centaur.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
     pretyping/evd.cmx parsing/extend.cmx interp/genarg.cmx library/global.cmx \
     contrib/interface/history.cmx library/lib.cmx library/libnames.cmx \
     library/libobject.cmx library/library.cmx \
-    toplevel/line_oriented_parser.cmx contrib/interface/name_to_ast.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
-    contrib/interface/pbp.cmx parsing/pcoq.cmx proofs/pfedit.cmx lib/pp.cmx \
-    parsing/pptactic.cmx pretyping/pretyping.cmx proofs/proof_trees.cmx \
-    proofs/proof_type.cmx toplevel/protectedtoplevel.cmx \
-    pretyping/rawterm.cmx kernel/reduction.cmx proofs/refiner.cmx \
-    parsing/search.cmx contrib/interface/showproof.cmx \
+    toplevel/line_oriented_parser.cmx pretyping/matching.cmx \
+    contrib/interface/name_to_ast.cmx library/nameops.cmx kernel/names.cmx \
+    library/nametab.cmx lib/options.cmx contrib/interface/pbp.cmx \
+    parsing/pcoq.cmx proofs/pfedit.cmx lib/pp.cmx parsing/pptactic.cmx \
+    pretyping/pretyping.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
+    toplevel/protectedtoplevel.cmx pretyping/rawterm.cmx kernel/reduction.cmx \
+    proofs/refiner.cmx parsing/search.cmx contrib/interface/showproof.cmx \
     contrib/interface/showproof_ct.cmx proofs/tacexpr.cmx \
     tactics/tacinterp.cmx proofs/tacmach.cmx kernel/term.cmx \
     parsing/termast.cmx contrib/interface/translate.cmx lib/util.cmx \
