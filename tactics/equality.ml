@@ -39,6 +39,7 @@ open Coqlib
 open Vernacexpr
 open Setoid_replace
 open Declarations
+open Indrec
 
 (* Rewriting tactics *)
 
@@ -47,10 +48,28 @@ open Declarations
    with type (A:<sort>)(x:A)(P:A->Prop)(P x)->(y:A)(eqname A y x)->(P y).
    If another equality myeq is introduced, then corresponding theorems
    myeq_ind_r, myeq_rec_r and myeq_rect_r have to be proven. See below.
-   -- Eduardo (19/8/97
+   -- Eduardo (19/8/97)
 *)
 
-let general_rewrite_bindings lft2rgt (c,l) gl =
+let general_s_rewrite_clause = function
+  | None -> general_s_rewrite
+  | Some id -> general_s_rewrite_in id
+
+(* Ad hoc asymmetric general_elim_clause *)
+let general_elim_clause cls c elim = match cls with
+  | None ->
+      (* was tclWEAK_PROGRESS which only fails for tactics generating one 
+         subgoal and did not fail for useless conditional rewritings generating
+         an extra condition *)
+      tclNOTSAMEGOAL (general_elim c elim ~allow_K:false)
+  | Some id ->
+      general_elim_in id c elim 
+
+let elimination_sort_of_clause = function
+  | None -> elimination_sort_of_goal
+  | Some id -> elimination_sort_of_hyp id
+
+let general_rewrite_bindings_clause cls lft2rgt (c,l) gl =
   let ctype = pf_type_of gl c in 
   let env = pf_env gl in
   let sigma = project gl in 
@@ -58,21 +77,27 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
   match match_with_equation t with
     | None -> 
 	if l = NoBindings
-	then general_s_rewrite lft2rgt c [] gl
+	then general_s_rewrite_clause cls lft2rgt c [] gl
 	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_of_inductive hdcncl in 
-	let suffix = Indrec.elimination_suffix (elimination_sort_of_goal gl)in
+	let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
+        let dir = if cls=None then lft2rgt else not lft2rgt in
+        let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
         let elim =
-	  if lft2rgt then
-            pf_global gl (id_of_string (hdcncls^suffix^"_r"))
-          else
-	    pf_global gl (id_of_string (hdcncls^suffix))
+	  try pf_global gl (id_of_string rwr_thm)
+          with Not_found ->
+            error ("Cannot find rewrite principle "^rwr_thm)
         in 
-	tclNOTSAMEGOAL (general_elim (c,l) (elim,NoBindings) ~allow_K:false) gl
-   (* was tclWEAK_PROGRESS which only fails for tactics generating one subgoal 
-      and did not fail for useless conditional rewritings generating an
-      extra condition *)
+	general_elim_clause cls (c,l) (elim,NoBindings) gl
+
+let general_rewrite_bindings = general_rewrite_bindings_clause None
+let general_rewrite l2r c = general_rewrite_bindings l2r (c,NoBindings)
+
+let general_rewrite_bindings_in l2r id =
+  general_rewrite_bindings_clause (Some id) l2r
+let general_rewrite_in l2r id c = 
+  general_rewrite_bindings_clause (Some id) l2r (c,NoBindings)
 
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
@@ -81,47 +106,22 @@ let conditional_rewrite lft2rgt tac (c,bl) =
   tclTHENSFIRSTn (general_rewrite_bindings lft2rgt (c,bl))
     [|tclIDTAC|] (tclCOMPLETE tac)
 
-let general_rewrite lft2rgt c = general_rewrite_bindings lft2rgt (c,NoBindings)
-
 let rewriteLR_bindings = general_rewrite_bindings true
 let rewriteRL_bindings = general_rewrite_bindings false
 
 let rewriteLR = general_rewrite true
 let rewriteRL = general_rewrite false
 
-(* The Rewrite in tactic *)
-let general_rewrite_in lft2rgt id (c,l) gl =
-  let ctype = pf_type_of gl c in 
-  let env = pf_env gl in
-  let sigma = project gl in 
-  let _,t = splay_prod env sigma ctype in
-  match match_with_equation t with
-    | None -> (* Do not deal with setoids yet *) 
-	if l = NoBindings
-	then general_s_rewrite_in id lft2rgt c [] gl
-	else error "The term provided does not end with an equation" 
-    | Some (hdcncl,_) -> 
-        let hdcncls = string_of_inductive hdcncl in 
-	let suffix =
-          Indrec.elimination_suffix (elimination_sort_of_hyp id gl) in
-        let rwr_thm =
-          if lft2rgt then hdcncls^suffix else hdcncls^suffix^"_r" in
-        let elim =
-	  try pf_global gl (id_of_string rwr_thm)
-          with Not_found ->
-            error ("Cannot find rewrite principle "^rwr_thm) in 
-	general_elim_in id (c,l) (elim,NoBindings) gl
-
-let rewriteLRin = general_rewrite_in true
-let rewriteRLin = general_rewrite_in false
+let rewriteLRin_bindings = general_rewrite_bindings_in true
+let rewriteRLin_bindings = general_rewrite_bindings_in false
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_in lft2rgt id (c,bl))
+  tclTHENSFIRSTn (general_rewrite_bindings_in lft2rgt id (c,bl))
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteRL_clause = function
   | None -> rewriteRL_bindings
-  | Some id -> rewriteRLin id
+  | Some id -> rewriteRLin_bindings id
 
 (* Replacing tactics *)
 
@@ -827,9 +827,8 @@ let swapEquandsInConcl gls =
   refine (applist(sym_equal,[t;e2;e1;Evarutil.mk_new_meta()])) gls
 
 let swapEquandsInHyp id gls =
-  ((tclTHENS (cut_replacing id (swap_equands gls (pf_get_hyp_typ gls id)))
-      ([tclIDTAC;
-      	(tclTHEN (swapEquandsInConcl) (exact_no_check (mkVar id)))]))) gls
+  cut_replacing id (swap_equands gls (pf_get_hyp_typ gls id))
+    (tclTHEN swapEquandsInConcl) gls
 
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. It yields the boolean true wether
@@ -940,9 +939,10 @@ let subst_tuple_term env sigma dep_pair b =
      |- (P e1)
      |- (eq T e1 e2)
  *)
+
 (* Redondant avec Replace ! *)
 
-let substInConcl_RL eqn gls =
+let cutSubstInConcl_RL eqn gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in
   let body = subst_tuple_term (pf_env gls) (project gls) e2 (pf_concl gls) in
   assert (dependent (mkRel 1) body);
@@ -953,28 +953,26 @@ let substInConcl_RL eqn gls =
      |- (P e2)
      |- (eq T e1 e2)
  *)
-let substInConcl_LR eqn gls =
-  (tclTHENS (substInConcl_RL (swap_equands gls eqn))
+let cutSubstInConcl_LR eqn gls =
+  (tclTHENS (cutSubstInConcl_RL (swap_equands gls eqn))
      ([tclIDTAC;
        swapEquandsInConcl])) gls
 
-let substInConcl l2r = if l2r then substInConcl_LR else substInConcl_RL
+let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 
-let substInHyp_LR eqn id gls =
+let cutSubstInHyp_LR eqn id gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
   let body = subst_term e1 (pf_get_hyp_typ gls id) in
   if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" (mt ());
-  (tclTHENS (cut_replacing id (subst1 e2 body))
-     ([tclIDTAC;
-       (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
-          ([exact_no_check (mkVar id);tclIDTAC]))])) gls
+  cut_replacing id (subst1 e2 body)
+    (tclTHENFIRST (bareRevSubstInConcl lbeq body (t,e1,e2))) gls
 
-let substInHyp_RL eqn id gls =
-  (tclTHENS (substInHyp_LR (swap_equands gls eqn) id)
+let cutSubstInHyp_RL eqn id gls =
+  (tclTHENS (cutSubstInHyp_LR (swap_equands gls eqn) id)
      ([tclIDTAC;
        swapEquandsInConcl])) gls
 
-let substInHyp l2r = if l2r then substInHyp_LR else substInHyp_RL
+let cutSubstInHyp l2r = if l2r then cutSubstInHyp_LR else cutSubstInHyp_RL
 
 let try_rewrite tac gls =
   try 
@@ -987,77 +985,51 @@ let try_rewrite tac gls =
           (str "Cannot find a well-typed generalization of the goal that" ++
              str " makes the proof progress")
 
-let subst l2r eqn cls gls =
+let cutSubstClause l2r eqn cls gls =
   match cls with
-    | None ->    substInConcl l2r eqn gls
-    | Some id -> substInHyp l2r eqn id gls
+    | None ->    cutSubstInConcl l2r eqn gls
+    | Some id -> cutSubstInHyp l2r eqn id gls
 
-(* |- (P a)
- * SubstConcl_LR a=b 
- *  |- (P b)
- *  |- a=b
- *)
+let cutRewriteClause l2r eqn cls = try_rewrite (cutSubstClause l2r eqn cls)
+let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
+let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
-let substConcl l2r eqn gls = try_rewrite (subst l2r eqn None) gls
-let substConcl_LR = substConcl true
+let substClause l2r c cls gls =
+  let eq = pf_type_of gls c in
+  tclTHENS (cutSubstClause l2r eq cls) [tclIDTAC; exact_no_check c] gls
 
-(* id:(P a) |- G
- * SubstHyp a=b id
- *  id:(P b) |- G
- *  id:(P a) |-a=b
+let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)
+let rewriteInHyp l2r c id = rewriteClause l2r c (Some id)
+let rewriteInConcl l2r c = rewriteClause l2r c None
+
+(* Renaming scheme correspondence new name (old name)
+
+      give equality                    give proof of equality
+
+    / cutSubstClause (subst)          substClause (HypSubst on hyp)
+raw | cutSubstInHyp (substInHyp)      substInHyp (none)
+    \ cutSubstInConcl (substInConcl)  substInConcl (none) 
+
+    / cutRewriteClause (none)         rewriteClause (none)
+user| cutRewriteInHyp (substHyp)      rewriteInHyp (none)
+    \ cutRewriteInConcl (substConcl)  rewriteInConcl (substHypInConcl on hyp)
+
+raw = raise typing error or PatternMatchingFailure
+user = raise user error specific to rewrite
 *)
 
-let hypSubst l2r id cls gls =
-  onClauses (function
-    | None -> 
-	(tclTHENS (substInConcl l2r (pf_get_hyp_typ gls id))
-	   ([tclIDTAC; exact_no_check (mkVar id)]))
-    | Some (hypid,_,_) -> 
-	(tclTHENS (substInHyp l2r (pf_get_hyp_typ gls id) hypid)
-	   ([tclIDTAC;exact_no_check (mkVar id)])))
-    cls gls
-
+(* Summary of obsolete forms
+let substInConcl = cutSubstInConcl
+let substInHyp = cutSubstInHyp
+let hypSubst l2r id = substClause l2r (mkVar id)
 let hypSubst_LR = hypSubst true
-
-(* id:a=b |- (P a)
- * HypSubst id.
- *  id:a=b |- (P b)
- *)
-let substHypInConcl l2r id gls = try_rewrite (hypSubst l2r id onConcl) gls
-let substHypInConcl_LR = substHypInConcl true
-
-(* id:a=b H:(P a) |- G
-   SubstHypInHyp id H.
-    id:a=b H:(P b) |- G
-*)
-(* |- (P b)
-   SubstConcl_RL a=b
-     |- (P a)
-     |- a=b
-*)
-let substConcl_RL = substConcl false
-
-(* id:(P b) |-G
-   SubstHyp_RL a=b id 
-      id:(P a) |- G
-      |- a=b  
-*)
-let substHyp l2r eqn id gls = try_rewrite (subst l2r eqn (Some id)) gls
-let substHyp_RL = substHyp false
-
 let hypSubst_RL = hypSubst false
-
-(* id:a=b |- (P b)
- * HypSubst id.
- * id:a=b |- (P a)
- *)
-let substHypInConcl_RL = substHypInConcl false
-
-(* id:a=b H:(P b) |- G
-   SubstHypInHyp id H.
-    id:a=b H:(P a) |- G
+let substHypInConcl l2r id = rewriteInConcl l2r (mkVar id)
+let substConcl = cutRewriteInConcl
+let substHyp = cutRewriteInHyp
 *)
 
+(**********************************************************************)
 (* Substitutions tactics (JCF) *)
 
 let unfold_body x gl =
@@ -1172,7 +1144,7 @@ let rewrite_assumption_cond_in faildir hyp gl =
       | [] -> error "No such assumption"
       | (id,_,t)::rest -> 
 	  (try let dir = faildir t gl in 
-	       general_rewrite_in dir hyp ((mkVar id),NoBindings) gl
+	       general_rewrite_in dir hyp (mkVar id) gl
 	   with Failure _ | UserError _ ->  arec rest)
    in arec (pf_hyps gl)
 

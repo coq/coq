@@ -41,6 +41,7 @@ open Genarg
 open Tacexpr
 open Decl_kinds
 open Evarutil
+open Indrec
 
 exception Bound
 
@@ -309,7 +310,7 @@ let rec intros_using = function
 
 let intros = tclREPEAT (intro_force false)
 
-let intro_erasing id = tclTHEN (thin [id]) (intro_using id)
+let intro_erasing id = tclTHEN (thin [id]) (introduction id)
 
 let intros_replacing ids gls = 
   let rec introrec = function
@@ -530,14 +531,13 @@ let cut c gl =
     | _  -> error "Not a proposition or a type"
 
 let cut_intro t = tclTHENFIRST (cut t) intro
-		    
-let cut_replacing id t = 
-  tclTHENFIRST
-    (cut t)
-    (tclORELSE
+
+let cut_replacing id t tac = 
+  tclTHENS (cut t)
+    [tclORELSE
       (intro_replacing id) 
-      (tclORELSE (intro_erasing id) 
-        (intro_using id)))
+      (tclORELSE (intro_erasing id) (intro_using id));
+     tac (refine_no_check (mkVar id)) ]
 
 let cut_in_parallel l = 
   let rec prec = function
@@ -895,7 +895,7 @@ let last_arg c = match kind_of_term c with
   | App (f,cl) ->  array_last cl
   | _ -> anomaly "last_arg"
 	
-let elimination_clause_scheme elimclause indclause allow_K gl = 
+let elimination_clause_scheme allow_K elimclause indclause gl = 
   let indmv = 
     (match kind_of_term (last_arg elimclause.templval.rebus) with
        | Meta mv -> mv
@@ -919,40 +919,30 @@ let type_clenv_binding wc (c,t) lbind =
  * matching I, lbindc are the expected terms for c arguments 
  *)
 
-let general_elim (c,lbindc) (elimc,lbindelimc) ?(allow_K=true) gl = 
+let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding gl (c,t) lbindc  in
   let elimt      = pf_type_of gl elimc in
   let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
-  elimination_clause_scheme elimclause indclause allow_K gl
+  elimtac elimclause indclause gl
+
+let general_elim c e ?(allow_K=true) =
+  general_elim_clause (elimination_clause_scheme allow_K) c e
 
 (* Elimination tactic with bindings but using the default elimination 
  * constant associated with the type. *)
 
 let find_eliminator c gl =
-  let env = pf_env gl in
-  let (ind,t) = reduce_to_quantified_ind env (project gl) (pf_type_of gl c) in
-  let s = elimination_sort_of_goal gl in
-    Indrec.lookup_eliminator ind s 
-(*  with Not_found -> 
-    let dir, base = repr_path (path_of_inductive env ind) in
-    let id = Indrec.make_elimination_ident base s in
-    errorlabstrm "default_elim"
-      (str "Cannot find the elimination combinator :" ++
-         pr_id id ++ spc () ++
-	 str "The elimination of the inductive definition :" ++
-         pr_id base ++ spc () ++ str "on sort " ++
-         spc () ++ print_sort (new_sort_in_family s) ++
-	 str " is probably not allowed")
-(* lookup_eliminator prints the message *) *)
-let default_elim (c,lbindc) gl = 
-  general_elim (c,lbindc) (find_eliminator c gl,NoBindings) gl
+  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  Indrec.lookup_eliminator ind (elimination_sort_of_goal gl)
 
-let elim_in_context (c,_ as cx) elim gl =
-  match elim with
-  | Some (elimc,lbindelimc) -> general_elim cx (elimc,lbindelimc) gl
-  | None -> general_elim cx (find_eliminator c gl,NoBindings) gl 
+let default_elim (c,_ as cx) gl = 
+  general_elim cx (find_eliminator c gl,NoBindings) gl
+
+let elim_in_context c = function
+  | Some elim -> general_elim c elim ~allow_K:true
+  | None -> default_elim c
 
 let elim (c,lbindc as cx) elim =
   match kind_of_term c with
@@ -985,31 +975,20 @@ let elimination_in_clause_scheme id elimclause indclause gl =
       (str "Nothing to rewrite in " ++ pr_id id);
   tclTHEN
     (tclEVARS (evars_of elimclause''.env))
-    (tclTHENS
-      (cut new_hyp_typ)
-      [ (* Try to insert the new hyp at the same place *)
-        tclORELSE (intro_replacing id)
-          (tclTHEN (clear [id]) (introduction id));
-        refine_no_check new_hyp_prf]) gl
+    (cut_replacing id new_hyp_typ
+      (fun x gls -> refine_no_check new_hyp_prf gls)) gl
 
-let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl = 
-  let ct = pf_type_of gl c in
-  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let indclause  = make_clenv_binding gl (c,t) lbindc  in
-  let elimt      = pf_type_of gl elimc in
-  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
-  elimination_in_clause_scheme id elimclause indclause gl
+let general_elim_in id =
+  general_elim_clause (elimination_in_clause_scheme id)
 
 (* Case analysis tactics *)
 
 let general_case_analysis_in_context (c,lbindc) gl =
-  let env = pf_env gl in
   let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sigma    = project gl in 
   let sort     = elimination_sort_of_goal gl in
-  let case = if occur_term c (pf_concl gl) then Indrec.make_case_dep
-  else Indrec.make_case_gen in
-  let elim     = case env sigma mind sort in 
+  let case = 
+    if occur_term c (pf_concl gl) then make_case_dep else make_case_gen in
+  let elim     = pf_apply case gl mind sort in 
   general_elim (c,lbindc) (elim,NoBindings) gl
 
 let general_case_analysis (c,lbindc as cx) =
@@ -1372,7 +1351,7 @@ let induction_tac varname typ ((elimc,lbindelimc),elimt) gl =
   let indclause  = make_clenv_binding gl (c,typ) NoBindings  in
   let elimclause =
     make_clenv_binding gl (mkCast (elimc,elimt),elimt) lbindelimc in
-  elimination_clause_scheme elimclause indclause true gl
+  elimination_clause_scheme true elimclause indclause gl
 
 let make_up_names7 n ind (old_style,cname) = 
   if old_style (* = V6.3 version of Induction on hypotheses *)

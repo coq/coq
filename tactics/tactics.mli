@@ -166,15 +166,13 @@ val cut_and_apply         : constr -> tactic
 
 val general_elim  :
   constr with_bindings -> constr with_bindings -> ?allow_K:bool -> tactic
+val general_elim_in :
+  identifier -> constr with_bindings -> constr with_bindings -> tactic
+
 val default_elim  : constr with_bindings -> tactic
 val simplest_elim : constr -> tactic
 val elim          : constr with_bindings -> constr with_bindings option -> tactic
-val general_elim_in : identifier -> constr * constr bindings ->
-                      constr * constr bindings -> tactic
-
 val simple_induct     : quantified_hypothesis * (bool ref * intro_pattern_expr list ref list) list ref -> tactic
-val general_elim_in : identifier -> constr * constr bindings ->
-                      constr * constr bindings -> tactic
 
 val new_induct : constr induction_arg -> constr with_bindings option ->
   intro_pattern_expr option * (bool ref * intro_pattern_expr list ref list) list ref
@@ -236,7 +234,8 @@ val intros_transitivity         : constr -> tactic
 
 val cut                         : constr -> tactic
 val cut_intro                   : constr -> tactic
-val cut_replacing               : identifier -> constr -> tactic
+val cut_replacing               : 
+  identifier -> constr -> (tactic -> tactic) -> tactic
 val cut_in_parallel             : constr list -> tactic
 
 val assert_tac                  : bool -> name -> constr -> tactic

@@ -28,14 +28,24 @@ val find_eq_pattern : sorts -> sorts -> constr
 
 val general_rewrite_bindings : bool -> constr with_bindings -> tactic
 val general_rewrite          : bool -> constr -> tactic
+
+(* Obsolete, use [general_rewrite_bindings l2r]
 val rewriteLR_bindings       : constr with_bindings -> tactic
 val rewriteRL_bindings       : constr with_bindings -> tactic
+*)
 
+(* Equivalent to [general_rewrite l2r] *)
 val rewriteLR   : constr -> tactic
 val rewriteRL   : constr  -> tactic
 
+(* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
+
+val general_rewrite_bindings_in :
+  bool -> identifier -> constr with_bindings -> tactic
+val general_rewrite_in          :
+  bool -> identifier -> constr -> tactic
+
 val conditional_rewrite : bool -> tactic -> constr with_bindings -> tactic
-val general_rewrite_in : bool -> identifier -> constr with_bindings -> tactic
 val conditional_rewrite_in :
   bool -> identifier -> tactic -> constr with_bindings -> tactic
 
@@ -57,12 +67,36 @@ val dEqThen : (int -> tactic) -> quantified_hypothesis option -> tactic
 val make_iterated_tuple : 
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr
 
-val substHypInConcl : bool -> identifier -> tactic
-val substConcl : bool -> constr -> tactic
-val substHyp : bool -> constr -> identifier -> tactic
+(* The family cutRewriteIn expect an equality statement *)
+val cutRewriteInHyp : bool -> types -> identifier -> tactic
+val cutRewriteInConcl : bool -> constr -> tactic
 
+(* The family rewriteIn expect the proof of an equality *)
+val rewriteInHyp : bool -> constr -> identifier -> tactic
+val rewriteInConcl : bool -> constr -> tactic
+
+(* Expect the proof of an equality; fails with raw internal errors *)
+val substClause : bool -> constr -> identifier option -> tactic
+
+(*
+(* [substHypInConcl l2r id] is obsolete: use [rewriteInConcl l2r (mkVar id)] *)
+val substHypInConcl : bool -> identifier -> tactic
+
+(* [substConcl] is an obsolete synonym for [cutRewriteInConcl] *)
+val substConcl : bool -> constr -> tactic
+
+(* [substHyp] is an obsolete synonym of [cutRewriteInHyp] *)
+val substHyp : bool -> types -> identifier -> tactic
+*)
+
+(* Obsolete, use [rewriteInConcl lr (mkVar id)] in concl
+              or [rewriteInHyp lr (mkVar id) (Some hyp)] in hyp
+   (which, if they fail, raise only UserError, not PatternMatchingFailure)
+   or [substClause lr (mkVar id) None]
+   or [substClause lr (mkVar id) (Some hyp)]
 val hypSubst_LR : identifier -> clause -> tactic
 val hypSubst_RL : identifier -> clause -> tactic
+*)
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
 
