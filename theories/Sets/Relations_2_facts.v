@@ -38,7 +38,7 @@ Qed.
 Theorem Rstar_contains_R :
   (U: Type) (R: (Relation U)) (contains U (Rstar U R) R).
 Proof.
-(Intros U R; Red); Intros x y H'; Apply Rstar_n with y; Auto with sets.
+Intros U R; Red; Intros x y H'; Apply Rstar_n with y; Auto with sets.
 Qed.
 
 Theorem Rstar_contains_Rplus :

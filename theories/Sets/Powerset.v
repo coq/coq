@@ -146,8 +146,8 @@ Theorem Union_is_Lub:
 Intros A a b H' H'0.
 Apply Lub_definition; Simpl.
 Apply Upper_Bound_definition; Simpl; Auto with sets.
-(Intros y H'1; Elim H'1); Auto with sets.
-(Intros y H'1; Elim H'1); Simpl; Auto with sets.
+Intros y H'1; Elim H'1; Auto with sets.
+Intros y H'1; Elim H'1; Simpl; Auto with sets.
 Qed.
 
 Theorem Intersection_is_Glb:
@@ -162,8 +162,8 @@ Apply Glb_definition; Simpl.
 Apply Lower_Bound_definition; Simpl; Auto with sets.
 Apply Definition_of_Power_set.
 Generalize Inclusion_is_transitive; Intro IT; Red in IT; Apply IT with a; Auto with sets.
-(Intros y H'1; Elim H'1); Auto with sets.
-(Intros y H'1; Elim H'1); Simpl; Auto with sets.
+Intros y H'1; Elim H'1; Auto with sets.
+Intros y H'1; Elim H'1; Simpl; Auto with sets.
 Qed.
 
 End The_power_set_partial_order.
