@@ -538,39 +538,57 @@ library is characterized by a name called {\it root} of the
 library. The standard library of {\Coq} has root name {\tt Coq} and is
 known by default when a {\Coq} session starts.
 
-Libraries have a tree structure. Typically, the {\tt Coq} library
+Libraries have a tree structure. E.g., the {\tt Coq} library
 contains the sub-libraries {\tt Init}, {\tt Logic}, {\tt Arith}, {\tt
 Lists}, ... The ``dot notation'' is used to separate the different
-component of a library name. Typically, the {\tt Arith} library of
+component of a library name. For instance, the {\tt Arith} library of
 {\Coq} standard library is written ``{\tt Coq.Arith}''.
 
 \medskip
-\Rem no space is allowed between the dot and the following
-identifier, otherwise the dot is interpreted as the final dot of the
-command!
+\Rem no blank is allowed between the dot and the identifier on its
+right, otherwise the dot is interpreted as the full stop (period) of
+the command!
 \medskip
 
-Libraries and sub-libraries can be mapped to physical directories of the
+\paragraph{Physical paths vs logical paths}
+
+Libraries and sub-libraries are denoted by {\em logical directory
+paths} (written {\dirpath} and of which the syntax is the same as
+{\qualid}, see \ref{qualid}). Logical directory
+paths can be mapped to physical directories of the
 operating system using the command (see \ref{AddLoadPath})
 
 \begin{quote}
-{\tt Add LoadPath {\it physical\_dir} as {\it (sub-)library}}.
+{\tt Add LoadPath {\it physical\_path} as {\dirpath}}.
 \end{quote}
 
 A library can inherit the tree structure of a physical directory by
-using the command  (see \ref{AddRecLoadPath})
+using the {\tt -R} option to {\tt coqtop} (see \ref{coqtop}) or the
+command (see \ref{AddRecLoadPath})
 
 \begin{quote}
-{\tt Add Rec LoadPath {\it physical\_dir} as {\it (sub-)library}}.
+{\tt Add Rec LoadPath {\it physical\_dir} as {\dirpath}}.
 \end{quote}
 
+\paragraph{Modules}
 At some point, (sub-)libraries contain {\it modules} which coincide
-with files at the physical level. Modules themselves contain
-axioms, parameters, definitions, lemmas and theorems.
-
+with files at the physical level. 
 As for sublibraries, the dot notation is used to denote a specific
-module, axiom, parameter, definition, lemma or theorem of a
-library. Typically, {\tt Coq.Init.Logic.eq} denotes Leibniz' equality
+module of a library. Typically, {\tt Coq.Init.Logic} is the logical name
+associated to the file {\tt Logic.v} of {\Coq} standard library.
+
+If the physical directory where a file {\tt file.v} lies is mapped to
+the empty logical directory path (which is the default when using the
+simple form of {\tt Add LoadPath} or {\tt -I} option to coqtop), then
+the name of the module it defines is simply {\tt file}.
+
+\paragraph{Constructions names}
+
+Finally, modules contain constructions (axioms, parameters,
+definitions, lemmas, theorems, remarks or facts). The (full) name of a
+construction starts with the name of the module in which it is defined
+followed by the (short) name of the construction.
+Typically, {\tt Coq.Init.Logic.eq} denotes Leibniz' equality
 defined in the module {\tt Logic} in the sublibrary {\tt Init} of the
 standard library of \Coq.
 
@@ -585,17 +603,15 @@ to absolute names. This greatly simplifies the notations.  {\Coq}
 cannot accept two constructions (definition, theorem, ...) with the
 same absolute name.
 
-As a special case, the logical name of a library, module or section is
-called a {\em logical directory path} (written {\dirpath}).
-
 \paragraph{Visibility and qualified names}
 An absolute path is called {\it visible} when its base name suffices
 to denote it. This means the base name is mapped to the absolute name
 in {\Coq} name table.
 
 All the base names of sublibraries, modules, sections, definitions and
-theorems are automatically put in the {\Coq} name table. But sometimes,
-the short name of a construction defined in a module may hide the short name of another construction defined in another module.
+theorems are automatically put in the {\Coq} name table. But
+sometimes, the short name of a construction defined in a module may
+hide the short name of another construction defined in another module.
 Instead of just distinguishing the clashing names by using the
 absolute names, it is enough to prefix the base name just by the name
 of the module in which the definition, theorem, ... is defined.
