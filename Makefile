@@ -421,40 +421,49 @@ archclean::
 # Installation
 ###########################################################################
 
+COQINSTALLPREFIX=
+  # Can be changed for a local installation (to make packages).
+  # You must put a "/" at the end (Cygnus for win32 does not like "//").
+
+FULLBINDIR=$(COQINSTALLPREFIX)$(BINDIR)
+FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)
+FULLMANDIR=$(COQINSTALLPREFIX)$(MANDIR)
+FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
+
 install: install-$(BEST) install-binaries install-library install-manpages
 
 install-byte:
-	$(MKDIR) $(BINDIR)
-	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BINDIR)
-	cd $(BINDIR); ln -sf coqtop.byte coqtop
+	$(MKDIR) $(FULLBINDIR)
+	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqtop.byte coqtop
 
 install-opt:
-	$(MKDIR) $(BINDIR)
-	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(BINDIR)
-	cd $(BINDIR); ln -sf coqtop.opt coqtop
+	$(MKDIR) $(FULLBINDIR)
+	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqtop.opt coqtop
 
 install-binaries:
-	$(MKDIR) $(BINDIR)
-	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(BINDIR)
+	$(MKDIR) $(FULLBINDIR)
+	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(FULLBINDIR)
 
 ALLVO=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 
 install-library:
-	$(MKDIR) $(COQLIB)
+	$(MKDIR) $(FULLCOQLIB)
 	for f in $(ALLVO); do \
-	  $(MKDIR) $(COQLIB)/`dirname $$f`; \
-	  cp $$f $(COQLIB)/`dirname $$f`; \
+	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
+	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
-	$(MKDIR) $(COQLIB)/states
-	cp states/*.coq $(COQLIB)/states
-	$(MKDIR) $(EMACSLIB)
-	cp tools/coq.el tools/coq.elc $(EMACSLIB)
+	$(MKDIR) $(FULLCOQLIB)/states
+	cp states/*.coq $(FULLCOQLIB)/states
+	$(MKDIR) $(FULLEMACSLIB)
+	cp tools/coq.el tools/coq.elc $(FULLEMACSLIB)
 
 MANPAGES=tools/coq-tex.1 tools/coqdep.1 tools/gallina.1
 
 install-manpages:
-	$(MKDIR) $(MANDIR)/man1
-	cp $(MANPAGES) $(MANDIR)/man1
+	$(MKDIR) $(FULLMANDIR)/man1
+	cp $(MANPAGES) $(FULLMANDIR)/man1
 
 ###########################################################################
 # Documentation
