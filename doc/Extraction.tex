@@ -16,14 +16,13 @@ obtained at the \Coq\ toplevel with the command {\tt Extraction}
 
 We present here a \Coq\ module, {\tt Extraction}, which translates the
 extracted terms to ML dialects, namely Objective Caml and Haskell. 
-In the following, we will not refer to a particular dialect
-when possible and ``ML'' will be used to refer to any of the target
+In the following, ``ML'' will be used to refer to any of the target 
 dialects.
 
-\Rem
-The current extraction mechanism is new from version 7.0 of {\Coq}.
-In particular, the \FW\ toplevel used as intermediate step between 
-\Coq\ and ML has been abandoned.  It is also not possible 
+\paragraph{Differences with old versions.}
+The current extraction mechanism is new for version 7.0 of {\Coq}.
+In particular, the \FW\ toplevel used as an intermediate step between 
+\Coq\ and ML has been withdrawn.  It is also not possible 
 any more to import ML objects in this \FW\ toplevel.
 The current mechanism also differs from
 the one in previous versions of \Coq: there is no more
@@ -31,7 +30,7 @@ an explicit toplevel for the language (formerly called {\sf Fml}).
 
 \medskip
 In the first part of this document we describe the commands of the
-{\tt Extraction} module, and we give some examples in the second part.
+{\tt Extraction} module, and in the second part we give some examples.
 
 \asection{Generating ML code}
 \comindex{Extraction}
@@ -61,9 +60,11 @@ cannot be copy-pasted directly into an Ocaml toplevel.
   \qualid$_n$ and all their dependencies in the \Coq\ toplevel.
 \end{description}
 
+%% TODO error messages
+
 \asubsection{Generating real Ocaml files}\label{extraction:com-ocaml}
 
-All following commands produce real Ocaml files. User can choose to produce
+All the following commands produce real Ocaml files. User can choose to produce
 one monolithic file or one file per \Coq\ module. 
 
 \begin{description}
@@ -71,7 +72,7 @@ one monolithic file or one file per \Coq\ module.
       \qualid$_1$ \dots\ \qualid$_n$. ~\par
   Recursive extraction of all the globals \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in one monolithic file {\em file}.
-  Global and local identifiers are renamed accordingly to the Ocaml
+  Global and local identifiers are renamed according to the Ocaml
   language to fullfill its syntactic conventions, keeping original
   names as much as possible.
 
@@ -116,9 +117,9 @@ calls but only the needed ones). So the extraction mechanism provides
 an automatic optimization routine that will be
 called each time the user want to generate Ocaml programs. Essentially,
 it performs constants inlining and reductions.  Therefore some
-constants may not appear in resulting monolithic Ocaml program (A warning is
+constants may not appear in resulting monolithic Ocaml program (a warning is
 printed for each such constant). In the case of modular extraction, 
-even if some inling is done, the inlined constant are nevertheless
+even if some inlining is done, the inlined constant are nevertheless
 printed, to ensure session-independent programs. 
 
 Concerning Haskell, such optimizations are less useful because of
@@ -134,7 +135,7 @@ All these optimizations are controled by the following \Coq\ options:
 
 Default is Set. This control all optimizations made on the ML terms 
 (mostly reduction of dummy beta/iota redexes, but also simplications on 
-Cases, etc). Put this option to Unset if you what a ML term as close as 
+Cases, etc). Put this option to Unset if you want a ML term as close as 
 possible to the Coq term.
 
 \item {\tt Set Extraction AutoInline.}
@@ -177,7 +178,7 @@ A user can explicitely asks a constant to be extracted by two means:
 In both cases, the declaration of this constant will be present in the
 produced file. 
 But this same constant may or may not be inlined in the following
-terms, depending on the automatic/custom inling mechanism.  
+terms, depending on the automatic/custom inlining mechanism.  
 
 
 
@@ -345,13 +346,5 @@ Extract Inductive sumbool => bool [ true false ].
  inductive type using an \verb|Obj.magic| that artificially gives it
  the good type. After compilation this example runs nonetheless,
  thanks to the (desired but not proved) correction of the extraction. 
-
-\section{Bugs}
-
-Surely there are still bugs in the {\tt Extraction} module.  You can
-send your bug reports directly to the authors
-(\textsf{Pierre.Letouzey$@$lri.fr} and
-\textsf{Jean-Christophe.Filliatre$@$lri.fr}) or to the \Coq\ mailing
-list (at \textsf{coq-bugs$@$pauillac.inria.fr}).
 
 % $Id$ 
