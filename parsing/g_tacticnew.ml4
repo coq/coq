@@ -22,11 +22,15 @@ let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
 
 (* Hack to parse "with n := c ..." as a binder without conflicts with the *)
 (* admissible notation "with c1 c2..." *)
-let test_coloneq2 =
-  Gram.Entry.of_parser "test_int_coloneq"
+let test_lparcoloneq2 =
+  Gram.Entry.of_parser "test_lparcoloneq2"
     (fun strm ->
-      match Stream.npeek 2 strm with
-        | [_; ("", ":=")] -> ()
+      match Stream.npeek 1 strm with
+        | [("", "(")] ->
+            begin match Stream.npeek 3 strm with
+              | [_; _; ("", ":=")] -> ()
+              | _ -> raise Stream.Failure
+            end
         | _ -> raise Stream.Failure)
 
 (* open grammar entries, possibly in quotified form *)
@@ -168,19 +172,12 @@ GEXTEND Gram
       ] ]
   ;
   simple_binding:
-    [ [ id = base_ident; ":="; c = constr -> (loc, NamedHyp id, c)
-      | n = natural; ":="; c = constr -> (loc, AnonHyp n, c) ] ]
+    [ [ "("; id = base_ident; ":="; c = lconstr; ")" -> (loc, NamedHyp id, c)
+      | "("; n = natural; ":="; c = lconstr; ")" -> (loc, AnonHyp n, c) ] ]
   ;
   binding_list:
-    [ [ test_coloneq2; n = natural; ":="; c = constr;
-        bl = LIST0 simple_binding ->
-	  ExplicitBindings ((join_to_constr loc c,AnonHyp n, c) :: bl)
-      | test_coloneq2; id = base_ident; ":="; c2 = constr;
-        bl = LIST0 simple_binding ->
-          ExplicitBindings
-            ((join_to_constr loc c2,NamedHyp id, c2) :: bl)
-      | c1 = constr; bl = LIST0 constr ->
-	  ImplicitBindings (c1 :: bl) ] ]
+    [ [ test_lparcoloneq2; bl = LIST1 simple_binding -> ExplicitBindings bl
+      | bl = LIST1 constr -> ImplicitBindings bl ] ]
   ;
   constr_with_bindings:
     [ [ c = constr; l = with_binding_list -> (c, l) ] ]

@@ -670,8 +670,10 @@ GEXTEND Gram
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          let (a,n,b) = Metasyntax.interp_infix_modifiers a n modl in
          VernacInfix (local,a,n,op,p,b,None,sc)
-     | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr ->
-	 VernacNotation (local,"'"^s^"'",c,[],None,None)
+     | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
+	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
+	       | -> [] ] ->
+	 VernacNotation (local,"'"^s^"'",c,l,None,None)
      | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->

@@ -153,7 +153,7 @@ GEXTEND Gram
       | "("; c=operconstr; ")" -> c ] ]
   ;
   binder_constr:
-    [ [ "!"; bl = LIST1 binder; "."; c = operconstr LEVEL "200" ->
+    [ [ "!"; bl = binder_list; "."; c = operconstr LEVEL "200" ->
           CProdN(loc,bl,c)
       | "fun"; bl = LIST1 binder; ty = type_cstr; "=>";
         c = operconstr LEVEL "200" ->
@@ -244,11 +244,14 @@ GEXTEND Gram
     [ [ c = pattern -> c
       | p1=pattern; ","; p2=lpattern ->  CPatCstr (loc, pair loc, [p1;p2]) ] ]
   ;
+  binder_list:
+    [ [ idl=LIST1 name; bl=LIST0 binder -> (idl,CHole loc)::bl
+      | "("; idl=LIST1 name; ":"; c=lconstr; ")"; bl=LIST0 binder ->(idl,c)::bl
+      | idl=LIST1 name; ":"; c=constr -> [(idl,c)] ] ]
+  ;
   binder:
     [ [ id=name -> ([id],CHole loc)
-      | "("; id=name; ")" -> ([id],CHole loc)
-      | "("; id=name; ":"; c=lconstr; ")" -> ([id],c)
-      | id=name; ":"; c=constr -> ([id],c) ] ] (* tolerance *)
+      | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,c) ] ]
   ;
   type_cstr:
     [ [ c=OPT [":"; c=lconstr -> c] -> (loc,c) ] ]
