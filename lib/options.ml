@@ -22,6 +22,8 @@ let emacs_str s = if !print_emacs then s else ""
 
 let term_quality = ref false
 
+let xml_export = ref false
+
 (* Silent / Verbose *)
 let silent = ref false
 let make_silent flag = silent := flag; ()
