@@ -20,7 +20,13 @@ open Libnames
 
 let qflag=ref true
 
-let (+-) i j=if i=0 then j else i
+let (=?) f g i1 i2 j1 j2=
+  let c=f i1 i2 in
+    if c=0 then g j1 j2 else c
+
+let (==?) fg h i1 i2 j1 j2 k1 k2=
+  let c=fg i1 i2 j1 j2 in
+    if c=0 then h k1 k2 else c
 
 type ('a,'b)sum=Left of 'a|Right of 'b
 	

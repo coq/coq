@@ -37,11 +37,19 @@ val left_or_tac : inductive -> lseqtac
 
 val forall_tac : seqtac
 
-val left_forall_tac : int -> types -> (bool * constr) list -> bool -> lseqtac
+val collect_forall : Sequent.t -> Formula.left_formula list * Sequent.t
+
+val left_instance_tac : Unify.instance * global_reference -> seqtac
+
+val left_forall_tac : Formula.left_formula list -> seqtac
 
 val arrow_tac : seqtac
 
-val exists_tac : int -> types -> (bool * constr) list -> seqtac
+val dummy_exists_tac : constr -> seqtac
+
+val right_instance_tac : constr * int -> seqtac
+
+val exists_tac : (constr * int) list -> seqtac
 	       
 val left_exists_tac : lseqtac
 

@@ -56,12 +56,16 @@ let ground_tac solver startseq gl=
 	    (or_tac toptac (re_add seq))
 	    (left_tac seq ctx) gl
 	| Rexists(i,dom)->
-	    tclORELSE
-	    (if seq.depth<=0 || not !qflag then 
-	       tclFAIL 0 "max depth" 
-	     else 
-	       exists_tac i dom atoms toptac (re_add seq))
-	    (left_tac seq ctx) gl
+	    let cont_tac=left_tac seq ctx in
+	      if seq.depth<=0 || not !qflag then 
+		cont_tac gl
+	      else 
+		(match Unify.give_right_instances i dom atoms seq with
+		    Some l -> tclORELSE
+		      (exists_tac l toptac (re_add seq)) cont_tac gl
+		  | None ->
+		      tclORELSE cont_tac
+		      (dummy_exists_tac dom  toptac (re_add seq)) gl)
 	| _-> anomaly "unreachable place"
   and left_tac seq ctx gl=
     if is_empty_left seq then 
@@ -77,13 +81,13 @@ let ground_tac solver startseq gl=
 	  | Lor ind->
 	      left_or_tac ind hd.id toptac (re_add seq1) gl
 	  | Lforall (i,dom)->
-	      tclORELSE
-	      (if seq.depth<=0 || not !qflag then 
-		 tclFAIL 0 "max depth" 
-	       else 
-		 left_forall_tac i dom hd.atoms hd.internal hd.id
-		    toptac (re_add seq))
-	      (left_tac seq1 (hd::ctx)) gl
+	      let (lfp,seq2)=collect_forall seq in
+		tclORELSE
+		  (if seq.depth<=0 || not !qflag then 
+		     tclFAIL 0 "max depth" 
+		   else 
+		     left_forall_tac lfp toptac (re_add seq))
+		  (left_tac seq2 (lfp@ctx)) gl
 	  | Lexists ->
 	      if !qflag then
 		left_exists_tac hd.id toptac (re_add seq1) gl
@@ -130,18 +134,23 @@ let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
 let fail_solver=tclFAIL 0 "GroundTauto failed"
 		      
 let gen_ground_tac flag taco io l=
-  qflag:=flag;
-  let depth=
-    match io with 
-	Some i->i
-      | None-> !Auto.default_search_depth in
-  let solver= 
-    match taco with 
-	Some tac->tac
-      | None-> default_solver in
-  let startseq=create_with_ref_list l depth in
-    ground_tac solver startseq
-
+  let backup= !qflag in
+    try
+      qflag:=flag;
+      let depth=
+	match io with 
+	    Some i->i
+	  | None-> !Auto.default_search_depth in
+      let solver= 
+	match taco with 
+	    Some tac->tac
+	  | None-> default_solver in
+      let startseq=create_with_ref_list l depth in
+      let result=
+	ground_tac solver startseq
+      in qflag:=backup;result
+    with e -> qflag:=backup;raise e
+	   
 open Genarg
 open Pcoq
 open Pp

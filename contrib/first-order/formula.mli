@@ -14,7 +14,11 @@ open Libnames
 
 val qflag : bool ref
 
-val (+-) : int -> int -> int
+val (=?) : ('a -> 'a -> int) -> ('b -> 'b -> int) -> 
+  'a -> 'a -> 'b -> 'b -> int
+  
+val (==?) : ('a -> 'a -> 'b ->'b -> int) -> ('c -> 'c -> int) -> 
+  'a -> 'a -> 'b -> 'b -> 'c ->'c -> int
 
 type ('a,'b) sum = Left of 'a | Right of 'b
 

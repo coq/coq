@@ -19,6 +19,8 @@ val right_reversible : right_pattern -> bool
 	
 val left_reversible : left_pattern -> bool
 
+module OrderedConstr: Set.OrderedType with type t=constr
+
 module CM: Map.S with type key=constr
 
 module History: Set.S with type elt = global_reference * constr option

@@ -13,6 +13,7 @@ open Formula
 open Sequent
 open Tacmach
 open Term
+open Names
 open Termops
 open Reductionops
 
@@ -80,71 +81,161 @@ let unif t1 t2= (* Martelli-Montanari style *)
       assert false 
 	(* this place is unreachable but needed for the sake of typing *)
     with Queue.Empty-> !sigma
-      
+
 (* collect tries finds ground instantiations for Meta i*)
 let is_ground t=(Clenv.collect_metas t)=[]
 
-let collect i l=
-  try
-    let t=List.assoc i l in 
-      if is_ground t then Some t else None
-  with Not_found->None
-
-let value i=
-  let tref=mkMeta i in
-  let rec vaux term=
-    if term=tref then 1 else 
-      let f v t=max v (vaux t) in
-      let vrec=fold_constr f 0 term in
-	if vrec=0 then 0 else succ vrec in vaux
-
 let is_head_meta t=match kind_of_term t with Meta _->true | _ ->false
 
-let unif_atoms_for_meta i (b1,t1) (b2,t2)=
-  if b1=b2  || is_head_meta t1 || is_head_meta t2  then None else
+let value i t=
+  let add x y=
+    if x<0 then y else if y<0 then x else x+y in
+  let tref=mkMeta i in
+  let rec vaux term=
+    if term=tref then 0 else 
+      let f v t=add v (vaux t) in
+      let vr=fold_constr f (-1) term in
+	if vr<0 then -1 else vr+1 in
+    vaux t
+	  
+type instance=
+    Real of constr*int (* instance*valeur heuristique*)
+  | Phantom of constr (* domaine de quantification *)
+ 	  
+let unif_atoms i dom t1 t2=
+  if is_head_meta t1 || is_head_meta t2  then None else
     try 
-       match collect i (unif t1 t2) with
-	   None->None
-	 | Some t->Some ((max (value i t1) (value i t2)),t)
-    with UFAIL(_,_) ->None
-    
-module OrderedConstr=
+      let t=List.assoc i (unif t1 t2) in 
+	if is_ground t then Some (Real(t,value i t1))
+	else if is_head_meta t then Some (Phantom dom)
+	else None
+    with
+	UFAIL(_,_) ->None
+      | Not_found ->Some (Phantom dom)
+      
+let compare_instance inst1 inst2=
+	match inst1,inst2 with
+	    Phantom(d1),Phantom(d2)->
+	      (OrderedConstr.compare d1 d2)
+	  | Real(c1,n1),Real(c2,n2)->
+	      ((-) =? OrderedConstr.compare) n2 n1 c1 c2
+	  | Phantom(_),_-> 1
+	  | _,_-> -1
+
+module OrderedRightInstance=
+struct 
+  type t = constr*int
+  let compare (c1,n1) (c2,n2) = ((-) =? OrderedConstr.compare) n2 n1 c1 c2
+end
+
+module OrderedLeftInstance=
 struct
-  type t=int*constr
-  let compare (n1,t1) (n2,t2)=
-    (n2 - n1) +- (Pervasives.compare t1 t2) 
-    (* we want a decreasing total order *)
+  type t=instance * Libnames.global_reference
+  let compare (inst1,id1) (inst2,id2)=
+    (compare_instance =? Pervasives.compare) inst1 inst2 id1 id2
+    (* we want a __decreasing__ total order *)
 end
   
-module CS=Set.Make(OrderedConstr)
+module RIS=Set.Make(OrderedRightInstance)
+module LIS=Set.Make(OrderedLeftInstance)
   
-let match_atom_list i atom l=
-  let f atom2 accu=
-    match unif_atoms_for_meta i atom atom2 with
-	None-> accu
-      | Some t-> CS.add t accu in
-    List.fold_right f l CS.empty
+(* le premier argument est une sous formule a instancier *)
 
-let match_lists i l1 l2=
-  let f atom accu=
-    CS.union (match_atom_list i atom l2) accu in
-    List.fold_right f l1 CS.empty
-      
-let find_instances i l seq=
-  let match_hyp f accu=
-    CS.union 
-      (if f.internal then 
-	 match_lists i l f.atoms 
-       else 
-	 CS.empty) 
-      accu in
-  let match_atom t accu=
-    CS.union (match_atom_list i (false,t) l) accu in
-  let s1=
-    match seq.gl with 
-	Atomic t->(match_atom_list i (true,t) l)
-      | Complex(_,_,l1)->(match_lists i l l1) in
-  let s2=List.fold_right match_atom seq.latoms s1 in
-  let s3=HP.fold match_hyp seq.redexes s2 in
-    List.map snd (CS.elements s3)
+let match_atom_with_latoms i dom (pol,atom) latoms accu=
+  if pol then 
+    let f latom accu=
+      match unif_atoms i dom atom latom with
+	  None->accu
+	| Some (Phantom _) ->(true,snd accu)
+	| Some (Real(t,i)) ->(false,RIS.add (t,i) (snd accu)) in
+      List.fold_right f latoms accu
+  else accu 
 
+let match_atom_with_hyp_atoms i dom (pol,atom) lf accu=
+  let f (b,hatom) accu=
+    if b=pol then accu else
+      match unif_atoms i dom atom hatom with
+	  None->accu
+	| Some (Phantom _) ->(true,snd accu)
+	| Some (Real(t,i))->(false,RIS.add (t,i) (snd accu)) in
+    List.fold_right f lf.atoms accu
+
+let match_atom_with_goal i dom (pol,atom) glatoms accu=
+  let f (b,glatom) accu=
+    if b=pol then accu else
+      match unif_atoms i dom atom glatom with
+	  None->accu
+	| Some (Phantom _) ->(true,snd accu)
+	| Some (Real(t,i)) ->(false,RIS.add (t,i) (snd accu)) in
+    List.fold_right f glatoms accu
+
+let give_right_instances i dom ratoms seq=
+  let f ratom accu=
+    let accu1= match_atom_with_goal i dom ratom ratoms accu in
+    let accu2=
+      match_atom_with_latoms i dom ratom seq.latoms accu1 in
+      HP.fold (match_atom_with_hyp_atoms i dom ratom) seq.redexes accu2 in
+  let (b,accu0)=List.fold_right f ratoms (false,RIS.empty) in
+    if b & RIS.is_empty accu0 then 
+      None
+    else
+      Some (RIS.elements accu0)
+
+(*left*) 
+	  
+let match_named_atom_with_latoms id i dom (pol,atom) latoms accu=
+  if pol then 
+    let f latom accu=
+      match unif_atoms i dom atom latom with
+	  None->accu
+	| Some (Phantom _) ->(true,snd accu)
+	| Some inst ->(false,LIS.add (inst,id) (snd accu)) in
+      List.fold_right f latoms accu
+  else accu 
+
+let match_named_atom_with_hyp_atoms id i dom (pol,atom) lf accu=
+  let f (b,hatom) accu=
+    if b=pol then accu else
+      match unif_atoms i dom atom hatom with
+	  None->accu
+	| Some (Phantom _) ->(true,snd accu)
+	| Some inst->(false,LIS.add (inst,id) (snd accu)) in
+    List.fold_right f lf.atoms accu
+
+let match_named_atom_with_goal id i dom (pol,atom) gl accu=
+  match gl with 
+      Atomic t->
+	if pol then accu else
+	  (match unif_atoms i dom atom t with
+	       None->accu
+	     | Some (Phantom _) ->(true,snd accu)
+	     | Some inst ->(false,LIS.add (inst,id) (snd accu)))
+    | Complex (_,_,glatoms)->
+	let f (b,glatom) accu=
+	  if b=pol then accu else
+	    match unif_atoms i dom atom glatom with
+		None->accu
+	      | Some (Phantom _) ->(true,snd accu)
+	      | Some inst ->(false,LIS.add (inst,id) (snd accu)) in
+	  List.fold_right f glatoms accu
+
+let match_one_forall_hyp seq lf accu=
+  match lf.pat with 
+      Lforall(i,dom)->
+	let f latom accu=
+	  let accu1=match_named_atom_with_goal lf.id i dom latom seq.gl accu in
+	  let accu2=
+	    match_named_atom_with_latoms lf.id i dom latom seq.latoms accu1 in
+	    HP.fold (match_named_atom_with_hyp_atoms lf.id i dom latom) 
+	      seq.redexes accu2 in
+	let (b,accu0)=List.fold_right f lf.atoms (false,LIS.empty) in
+	  if b & LIS.is_empty accu0 then 
+	    LIS.add (Phantom dom,lf.id) accu
+	  else
+	    LIS.union accu0 accu
+    | _ ->anomaly "can't happen" 
+
+let give_left_instances lfh seq=
+  LIS.elements (List.fold_right (match_one_forall_hyp seq) lfh LIS.empty)
+
+(* TODO: match with goal *)

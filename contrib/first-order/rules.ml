@@ -95,25 +95,35 @@ let left_or_tac ind id tacrec seq=
       (Array.map f v)
 
 let forall_tac tacrec seq=
-  tclTHEN intro (wrap 0 true tacrec seq)
+  tclTHEN intro (wrap 1 true tacrec seq)
 
-let left_forall_tac i dom atoms internal id tacrec seq=
-  let insts=find_instances i atoms seq in
-    if insts=[] then
-      if internal && not (lookup id None seq) then
-	tclTHENS (cut dom) 
-	  [tclTHENLIST
-	     [intro;
-	      (fun gls->generalize 
-	       [mkApp(constr_of_reference id,
-		      [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
-	      intro;
-	      tclSOLVE [wrap 1 false tacrec 
-			  (deepen (record id None seq))]]
-	  ;tclTRY assumption]
-      else tclFAIL 0 "no phantom variable for external hyp"
-    else
-      let tac t=
+let rec collect_forall seq=
+  if is_empty_left seq then ([],seq) 
+  else
+    let hd,seq1=take_left seq in
+      (match hd.pat with 
+	   Lforall(i,dom)-> 
+	     let (q,seq2)=collect_forall seq1 in
+	       ((hd::q),seq2)
+	 | _->[],seq)
+
+let left_instance_tac (inst,id) tacrec seq=
+  match inst with
+      Phantom dom->
+	if lookup id None seq then 
+	  tclFAIL 0 "already done"
+	else
+	  tclTHENS (cut dom) 
+	    [tclTHENLIST
+	       [intro;
+		(fun gls->generalize 
+		   [mkApp(constr_of_reference id,
+			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
+		intro;
+		tclSOLVE [wrap 1 false tacrec 
+			    (deepen (record id None seq))]];
+	    tclTRY assumption]
+    | Real(t,_)->
 	if lookup id (Some t) seq then 
 	  tclFAIL 0 "already done" 
 	else
@@ -122,29 +132,34 @@ let left_forall_tac i dom atoms internal id tacrec seq=
 	     intro; 
 	     tclSOLVE 
 	       [wrap 1 false tacrec 
-		  (deepen (record id (Some t) seq))]] in
-	tclFIRST (List.map tac insts)
+		  (deepen (record id (Some t) seq))]]
+
+let left_forall_tac lfp tacrec seq gl=
+  let insts=give_left_instances lfp seq in
+    tclFIRST (List.map (fun inst->left_instance_tac inst tacrec seq) insts) gl
 	  
 let arrow_tac tacrec seq=
   tclTHEN intro (wrap 1 true tacrec seq)
-    
-let exists_tac i dom atoms tacrec seq=
-  let insts=find_instances i atoms seq in
-    if insts=[] then 
-      tclTHENS (cut dom) 
+   
+
+let dummy_exists_tac dom  tacrec seq=
+	tclTHENS (cut dom) 
 	[tclTHENLIST
 	   [intro;
 	    (fun gls->
 	       split (Rawterm.ImplicitBindings 
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
-	       tclSOLVE [wrap 0 false tacrec (deepen seq)]]
-	    ;tclTRY assumption]
-	 else
-	   let tac t=
-	     tclTHEN (split (Rawterm.ImplicitBindings [t]))
-	       (tclSOLVE [wrap 0 true tacrec (deepen seq)]) in
-	     tclFIRST (List.map tac insts)
-	       
+	    tclSOLVE [wrap 0 false tacrec (deepen seq)]];
+	 tclTRY assumption] 
+ 
+let right_instance_tac (t,_) tacrec seq=
+	tclTHEN (split (Rawterm.ImplicitBindings [t]))
+	(tclSOLVE [wrap 0 true tacrec (deepen seq)])
+
+let exists_tac insts tacrec seq gl=
+    tclFIRST 
+      (List.map (fun inst -> right_instance_tac inst tacrec seq) insts) gl
+
 let left_exists_tac id tacrec seq=
   tclTHENLIST
     [simplest_elim (constr_of_reference id);
