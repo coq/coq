@@ -40,7 +40,7 @@ let rec expr_of_ast = function
   | Coqast.Id loc id when is_meta id -> <:expr< Coqast.Id loc $anti loc id$ >>
   | Coqast.Node _ "$VAR" [Coqast.Nmeta loc x] ->
       <:expr< let s = $anti loc x$ in
-      if String.length s > 0 && s.[0] = '$' then
+      if String.length s > 0 && String.sub s 0 1 = "$" then
 	failwith "Wrong ast: $VAR should not be bound to a meta variable"
       else
 	Coqast.Nvar loc (Names.id_of_string s) >>
