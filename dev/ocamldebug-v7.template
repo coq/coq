@@ -29,8 +29,12 @@ case $coqdebug in
 	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
         -I $COQTOP/proofs -I $COQTOP/tactics \
 	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config \
-        -I $COQTOP/contrib/omega -I $COQTOP/contrib/ring \
-	-I $COQTOP/contrib/extraction -I $COQTOP/contrib/correctness \
+        -I $COQTOP/contrib/correctness \
+        -I $COQTOP/contrib/extraction -I $COQTOP/contrib/field \
+        -I $COQTOP/contrib/fourier    -I $COQTOP/contrib/graphs \
+        -I $COQTOP/contrib/interface  -I $COQTOP/contrib/jprover \
+        -I $COQTOP/contrib/omega      -I $COQTOP/contrib/romega \
+        -I $COQTOP/contrib/ring       -I $COQTOP/contrib/xml \
 	$* $args;;
     *) exec $OCAMLDEBUG $*;;
 esac
