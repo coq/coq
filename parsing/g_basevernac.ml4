@@ -34,10 +34,10 @@ GEXTEND Gram
     [ [ s = Prim.string -> s ] ]
   ;
   comarg:
-    [ [ c = Command.command -> <:ast< (COMMAND $c) >> ] ]
+    [ [ c = Constr.constr -> <:ast< (CONSTR $c) >> ] ]
   ;
   lcomarg:
-    [ [ c = Command.lcommand -> <:ast< (COMMAND $c) >> ] ]
+    [ [ c = Constr.lconstr -> <:ast< (CONSTR $c) >> ] ]
   ;
   lvernac:
     [ [ v = vernac; l = lvernac -> v::l
@@ -54,9 +54,11 @@ GEXTEND Gram
     [ [ IDENT "Pwd"; "." -> <:ast< (PWD) >>
       | IDENT "Cd"; "." -> <:ast< (CD) >>
       | IDENT "Cd"; dir = stringarg; "." -> <:ast< (CD $dir) >>
-      | "Quit"; "." -> <:ast< (QUIT) >>
+
       | IDENT "Drop"; "." -> <:ast< (DROP) >>
-      | IDENT "ProtectedLoop"; "." -> <:ast< (PROTECTEDLOOP) >>
+      | IDENT "ProtectedLoop"; "." -> <:ast< (PROTECTEDLOOP)>>
+      | "Quit"; "." -> <:ast< (QUIT) >>
+
       | IDENT "Print"; IDENT "All"; "." -> <:ast< (PrintAll) >>
       | IDENT "Print"; "." -> <:ast< (PRINT) >>
       | IDENT "Print"; IDENT "Hint"; "*"; "." 

@@ -5,20 +5,20 @@ Require Export Datatypes.
 
 (* Parsing of things in Datatypes.v *)
 
-Grammar command command1 :=
-  pair_expl [ "<" lcommand($l1) "," lcommand($c2) ">" "(" lcommand($c3) ","
-    lcommand($c4) ")" ] -> [<<(pair $l1 $c2 $c3 $c4)>>]
-| fst_expl [ "<" lcommand($l1) "," lcommand($c2) ">" "Fst" "("
-    lcommand($l) ")" ] -> [<<(fst $l1 $c2 $l)>>]
-| snd_expl [ "<" lcommand($l1) "," lcommand($c2) ">" "Snd" "("
-    lcommand($l) ")" ] -> [<<(snd $l1 $c2 $l)>>]
+Grammar constr constr1 :=
+  pair_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "(" lconstr($c3) ","
+    lconstr($c4) ")" ] -> [<<(pair $l1 $c2 $c3 $c4)>>]
+| fst_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "Fst" "("
+    lconstr($l) ")" ] -> [<<(fst $l1 $c2 $l)>>]
+| snd_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "Snd" "("
+    lconstr($l) ")" ] -> [<<(snd $l1 $c2 $l)>>]
 
-with command0 :=
-  pair [ "(" lcommand($lc1) "," lcommand($lc2) ")" ] ->
+with constr0 :=
+  pair [ "(" lconstr($lc1) "," lconstr($lc2) ")" ] ->
          [<<(pair ? ? $lc1 $lc2)>>]
 
-with command3 :=
-  prod [ command2($c1) "*" command3($c2) ] -> [<<(prod $c1 $c2)>>].
+with constr3 :=
+  prod [ constr2($c1) "*" constr3($c2) ] -> [<<(prod $c1 $c2)>>].
 
 (* Pretty-printing of things in Datatypes.v *)
 

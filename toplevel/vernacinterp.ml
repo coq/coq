@@ -25,8 +25,8 @@ type vernac_arg =
   | VARG_NUMBERLIST of int list
   | VARG_IDENTIFIER of identifier
   | VCALL of string * vernac_arg list
-  | VARG_COMMAND of Coqast.t
-  | VARG_COMMANDLIST of Coqast.t list
+  | VARG_CONSTR of Coqast.t
+  | VARG_CONSTRLIST of Coqast.t list
   | VARG_TACTIC of Coqast.t
   | VARG_TACTIC_ARG of tactic_arg
   | VARG_BINDER of identifier list * Coqast.t
@@ -80,8 +80,8 @@ let rec cvt_varg ast =
     | Str(_,s) -> VARG_STRING s
     | Num(_,n) -> VARG_NUMBER n
     | Node(_,"NONE",[]) -> VARG_UNIT
-    | Node(_,"COMMAND",[c]) -> VARG_COMMAND c
-    | Node(_,"COMMANDLIST",l) -> VARG_COMMANDLIST l
+    | Node(_,"CONSTR",[c]) -> VARG_CONSTR c
+    | Node(_,"CONSTRLIST",l) -> VARG_CONSTRLIST l
     | Node(_,"TACTIC",[c]) -> VARG_TACTIC c
     | Node(_,"BINDER",c::idl) ->
         VARG_BINDER(List.map (compose id_of_string nvar_of_ast) idl, c)

@@ -227,10 +227,10 @@ let ctxt_access sigma sp =
 
 
 let pf_lookup_name_as_renamed hyps ccl s =
-  Termast.lookup_name_as_renamed (gLOB hyps) ccl s
+  Detyping.lookup_name_as_renamed (gLOB hyps) ccl s
 
 let pf_lookup_index_as_renamed ccl n =
-  Termast.lookup_index_as_renamed ccl n
+  Detyping.lookup_index_as_renamed ccl n
 
 (*********************************************************************)
 (*                  Pretty printing functions                        *)
@@ -239,31 +239,31 @@ let pf_lookup_index_as_renamed ccl n =
 open Pp
 open Printer
 
-(* Il faudrait parametrer toutes les pr_term, term0, etc. par la
+(* Il faudrait parametrer toutes les pr_term, term_env, etc. par la
   strategie de renommage choisie pour Termast (en particulier, il
   faudrait pouvoir etre sur que lookup_as_renamed qui est utilisé par
   Intros Until fonctionne exactement comme on affiche le but avec
-  term0 *)
+  term_env *)
 
 let pf_lookup_name_as_renamed hyps ccl s =
-  Termast.lookup_name_as_renamed (gLOB hyps) ccl s
+  Detyping.lookup_name_as_renamed (gLOB hyps) ccl s
 
 let pf_lookup_index_as_renamed ccl n =
-  Termast.lookup_index_as_renamed ccl n
+  Detyping.lookup_index_as_renamed ccl n
 
 let pr_idl idl = prlist_with_sep pr_spc print_id idl
 
 let pr_goal g =
   let sign = context g.evar_env in
   let penv = pr_env_opt sign in
-  let pc = term0_at_top sign g.evar_concl in
+  let pc = prterm_env_at_top sign g.evar_concl in
   [< 'sTR"  "; hV 0 [< penv; 'fNL;
 		       'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
                        'sTR "============================"; 'fNL ;
                        'sTR" " ; pc>]; 'fNL>]
 
 let pr_concl n g =
-  let pc = term0_at_top (context g.evar_env) g.evar_concl in
+  let pc = prterm_env_at_top (context g.evar_env) g.evar_concl in
   [< 'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
      'sTR "subgoal ";'iNT n;'sTR " is:";'cUT;'sTR" " ; pc >]
 
@@ -321,7 +321,7 @@ let pr_seq evd =
       (fun (id,ty) -> hOV 0 [< print_id id; 'sTR" : ";prterm ty.body >])
       sign 
   in
-  let pcl = term0_at_top (gLOB hyps) cl in
+  let pcl = prterm_env_at_top (gLOB hyps) cl in
   hOV 0 [< pc; pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
 
 let prgl gl =

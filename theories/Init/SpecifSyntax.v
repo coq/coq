@@ -6,26 +6,26 @@ Require Export Specif.
 
 (* Parsing of things in Specif.v *)
 
-Grammar command command1 :=
-  sig [ "{" lcommand($lc) ":" lcommand($c1) "|" lcommand($c2) "}" ]
+Grammar constr constr1 :=
+  sig [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}" ]
        -> [<<(sig $c1 [$lc : $c1]$c2)>>]
 
-| sig2 [ "{" lcommand($lc) ":" lcommand($c1)
-           "|" lcommand($c2) "&" lcommand($c3) "}" ]
+| sig2 [ "{" lconstr($lc) ":" lconstr($c1)
+           "|" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [<<(sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)>>]
 
-| sigS [ "{" lcommand($lc) ":" lcommand($c1) "&" lcommand($c2) "}" ]
+| sigS [ "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}" ]
        -> [<<(sigS $c1 [$lc : $c1]$c2)>>]
 
-| sigS2 [ "{" lcommand($lc) ":" lcommand($c1)
-             "&" lcommand($c2) "&" lcommand($c3) "}" ]
+| sigS2 [ "{" lconstr($lc) ":" lconstr($c1)
+             "&" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [<<(sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)>>]
 
-| squash [ "{" lcommand($lc) "}" ] -> [(SQUASH $lc)].
+| squash [ "{" lconstr($lc) "}" ] -> [(SQUASH $lc)].
 
-Grammar command lassoc_command4 :=
+Grammar constr lassoc_constr4 :=
   squash_sum
-  [ lassoc_command4($c1) "+" lassoc_command4($c2) ] ->
+  [ lassoc_constr4($c1) "+" lassoc_constr4($c2) ] ->
       case [$c2] of
         (SQUASH $T2) ->
             case [$c1] of

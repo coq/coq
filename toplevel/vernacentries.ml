@@ -339,7 +339,7 @@ let _ =
 let _ =
   add "GOAL"
     (function 
-       | [VARG_COMMAND com] ->
+       | [VARG_CONSTR com] ->
 	   (fun () ->
               if not (refining()) then begin
               	start_proof "Unnamed_thm" NeverDischarge com;
@@ -659,7 +659,7 @@ let _ =
 let _ =
   add "StartProof"
     (function 
-       | [VARG_STRING kind;VARG_IDENTIFIER s;VARG_COMMAND c] ->
+       | [VARG_STRING kind;VARG_IDENTIFIER s;VARG_CONSTR c] ->
 	   let stre = match kind with
 	     | "THEOREM" -> NeverDischarge
              | "LEMMA" -> NeverDischarge
@@ -681,7 +681,7 @@ let _ =
   add "TheoremProof"
     (function 
        | [VARG_STRING kind; VARG_IDENTIFIER s; 
-	  VARG_COMMAND c; VARG_VARGLIST coml] ->
+	  VARG_CONSTR c; VARG_VARGLIST coml] ->
 	   let calls = List.map
 			 (function 
 			    | (VCALL(na,l)) -> (na,l)
@@ -724,7 +724,7 @@ let _ =
 let _ =
   add "DEFINITION"
     (function 
-       | (VARG_STRING kind :: VARG_IDENTIFIER id :: VARG_COMMAND c ::optred) ->
+       | (VARG_STRING kind :: VARG_IDENTIFIER id :: VARG_CONSTR c ::optred) ->
 	   let red_option = match optred with 
 	     | [] -> None
 	     | [VARG_TACTIC_ARG (Redexp(r1,r2))] -> 
@@ -806,7 +806,7 @@ let _ =
 let _ =
   add "Eval"
     (function
-       | VARG_TACTIC_ARG (Redexp (rn,unf)) :: VARG_COMMAND c :: g ->
+       | VARG_TACTIC_ARG (Redexp (rn,unf)) :: VARG_CONSTR c :: g ->
            let (evmap,sign) = get_evmap_sign (goal_of_args g) in
            let redexp = redexp_of_ast evmap sign (rn,unf) in 
            let redfun = print_eval (reduction_of_redexp redexp) sign in 
@@ -816,7 +816,7 @@ let _ =
 let _ =
   add "Check"
     (function 
-       | VARG_STRING kind :: VARG_COMMAND c :: g ->
+       | VARG_STRING kind :: VARG_CONSTR c :: g ->
 	   let (evmap, sign) = get_evmap_sign (goal_of_args g) in
 	   let prfun = match kind with
 	     | "CHECK" -> print_val
@@ -881,7 +881,7 @@ let _ =
     (function 
        | [ VARG_STRING f;
            VARG_IDENTIFIER s;
-           VARG_COMMAND c;
+           VARG_CONSTR c;
            VARG_BINDERLIST binders;
            VARG_BINDERLIST constructors ] ->
            let la = join_binders binders in
@@ -921,7 +921,7 @@ let _ =
           	(function 
 		   | (VARG_VARGLIST 
 			[VARG_IDENTIFIER arid;
-			 VARG_COMMAND arc;
+			 VARG_CONSTR arc;
 			 VARG_BINDERLIST binders; 
 			 VARG_BINDERLIST lconstr])
 		     ->
@@ -948,7 +948,7 @@ let _ =
            	(function 
 		   | (VARG_VARGLIST 
 			[VARG_IDENTIFIER arid;
-			 VARG_COMMAND arc;
+			 VARG_CONSTR arc;
 			 VARG_BINDERLIST lconstr])
 		     -> (arid,
 			 arc,
@@ -969,7 +969,7 @@ let _ =
        | [VARG_STRING coe;
           VARG_IDENTIFIER struc; 
           VARG_BINDERLIST binders; 
-          VARG_COMMAND s; 
+          VARG_CONSTR s; 
           VARG_VARGLIST namec; 
           VARG_VARGLIST cfs] -> 
            let ps = join_binders binders in
@@ -977,7 +977,7 @@ let _ =
                        (function 
 			  | (VARG_VARGLIST 
                                [VARG_STRING str;VARG_IDENTIFIER id;
-                                VARG_COMMAND c]) ->
+                                VARG_CONSTR c]) ->
 			      (str = "COERCION",(id,c))
 			  | _ -> bad_vernac_args "RECORD")
                        cfs 
@@ -1001,8 +1001,8 @@ let _ =
 		   | (VARG_VARGLIST 
 			[VARG_IDENTIFIER fid;
 			 VARG_BINDERLIST farg; 
-			 VARG_COMMAND arf;
-			 VARG_COMMAND ardef])
+			 VARG_CONSTR arf;
+			 VARG_CONSTR ardef])
 		     -> (fid,join_binders farg,arf,ardef)
 		   | _ -> bad_vernac_args "MUTUALRECURSIVE") lmi
 	    in 
@@ -1018,8 +1018,8 @@ let _ =
                (function 
 		  | (VARG_VARGLIST 
 		       [VARG_IDENTIFIER fid; 
-			VARG_COMMAND arf;
-			VARG_COMMAND ardef])
+			VARG_CONSTR arf;
+			VARG_CONSTR ardef])
 		    -> (fid,arf,ardef)
 		  | _ -> bad_vernac_args "MUTUALCORECURSIVE") lmi
 	   in 
@@ -1037,7 +1037,7 @@ let _ =
 		       [VARG_IDENTIFIER fid;
 			VARG_STRING depstr;
 			VARG_IDENTIFIER indid;
-			VARG_COMMAND sort]) ->
+			VARG_CONSTR sort]) ->
 		      let dep = match depstr with 
 			| "DEP" -> true
                         | "NODEP" -> false
@@ -1052,9 +1052,9 @@ let _ =
 let _ =
   add "SyntaxMacro"
     (function 
-       | [VARG_IDENTIFIER id;VARG_COMMAND com] ->
+       | [VARG_IDENTIFIER id;VARG_CONSTR com] ->
 	   (fun () -> syntax_definition id com)
-       | [VARG_IDENTIFIER id;VARG_COMMAND com; VARG_NUMBER n] ->
+       | [VARG_IDENTIFIER id;VARG_CONSTR com; VARG_NUMBER n] ->
            (fun () ->
               let rec aux t = function
                 | 0 -> t
@@ -1067,7 +1067,7 @@ let _ =
 let _ =
   add "ABSTRACTION"
     (function 
-       | (VARG_IDENTIFIER id) :: (VARG_COMMAND com) :: l ->
+       | (VARG_IDENTIFIER id) :: (VARG_CONSTR com) :: l ->
 	   (fun () ->
               let arity = 
 		Array.of_list
@@ -1246,7 +1246,7 @@ let _ =
 let _ =
   add "Searchisos"
   (function
-     | [VARG_COMMAND com] -> 
+     | [VARG_CONSTR com] -> 
 	 (fun () ->
 	    let env = Global.env() in
 	    let c = constr_of_com Evd.empty env com in
@@ -1409,7 +1409,7 @@ open Pfedit
 let _ = 
   vinterp_add "EXISTENTIAL"
     (function 
-       | [VARG_NUMBER n; VARG_COMMAND c] -> 
+       | [VARG_NUMBER n; VARG_CONSTR c] -> 
            (fun () -> mutate (instantiate_pf_com n c))
        |  _  -> assert false)
 
@@ -1419,7 +1419,7 @@ let _ =
 let _ = 
   vinterp_add "PROOF"
     (function 
-       | [VARG_COMMAND c] ->
+       | [VARG_CONSTR c] ->
            (fun () -> (* by (tactic_com exact c) *)
               (* on experimente la synthese d'ise dans exact *)
               by (dyn_exact [Command c]); 
@@ -1460,7 +1460,7 @@ let _ =
 let _ =
   add "PrintConstr"
     (function
-       | [VARG_COMMAND c] -> 
+       | [VARG_CONSTR c] -> 
 	   (fun () ->
 	      Term.constr_display (constr_of_com empty_evd (initial_sign()) c))
        | _ -> bad_vernac_args "PrintConstr")

@@ -35,7 +35,7 @@ let raw_sopattern_of_compattern env com =
 let parse_pattern s =
   let com =
     try 
-      Pcoq.parse_string Pcoq.Command.command_eoi s 
+      Pcoq.parse_string Pcoq.Constr.constr_eoi s 
     with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
       error "Malformed pattern" 
   in

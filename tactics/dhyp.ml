@@ -206,7 +206,7 @@ let add_destructor_hint na pat pri code =
 let _ = 
   vinterp_add "HintDestruct"
     (function
-       | [VARG_IDENTIFIER na; VARG_AST location; VARG_COMMAND patcom;
+       | [VARG_IDENTIFIER na; VARG_AST location; VARG_CONSTR patcom;
           VARG_NUMBER pri; VARG_AST tacexp] ->
 	   let loc = match location with
              | Node(_,"CONCL",[]) -> Concl()

@@ -21,8 +21,8 @@ type vernac_arg =
   | VARG_NUMBERLIST of int list
   | VARG_IDENTIFIER of identifier
   | VCALL of string * vernac_arg list
-  | VARG_COMMAND of Coqast.t
-  | VARG_COMMANDLIST of Coqast.t list
+  | VARG_CONSTR of Coqast.t
+  | VARG_CONSTRLIST of Coqast.t list
   | VARG_TACTIC of Coqast.t
   | VARG_TACTIC_ARG of tactic_arg
   | VARG_BINDER of identifier list * Coqast.t

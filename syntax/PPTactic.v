@@ -312,4 +312,4 @@ Syntax tactic
   ;
 
   level 8:
-  command [(COMMAND $c)] -> [ (PPUNI$COMMAND $c):E ].
+  tactic_to_constr [(COMMAND $c)] -> [ $c:"constr":9 ].

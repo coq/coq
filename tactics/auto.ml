@@ -330,7 +330,7 @@ let _ =
   vinterp_add
     "HintResolve"
     (function 
-       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_COMMAND c] ->
+       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
 	   let c1 = Astterm.constr_of_com Evd.empty (Global.env()) c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -342,7 +342,7 @@ let _ =
   vinterp_add
     "HintImmediate"
     (function 
-       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_COMMAND c] ->
+       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
 	   let c1 = Astterm.constr_of_com Evd.empty (Global.env()) c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -377,7 +377,7 @@ let _ =
     "HintExtern"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l;
-	  VARG_NUMBER pri; VARG_COMMAND patcom; VARG_TACTIC tacexp] ->
+	  VARG_NUMBER pri; VARG_CONSTR patcom; VARG_TACTIC tacexp] ->
            let pat = Pattern.raw_sopattern_of_compattern 
 		       (Global.env()) patcom in
 	   let dbnames = if l = [] then ["core"] else 
