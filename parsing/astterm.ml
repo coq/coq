@@ -268,35 +268,39 @@ let destruct_binder = function
       List.map (fun id -> (id_of_string (nvar_of_ast id),c)) idl
   | _ -> anomaly "BINDER is expected"
 
-let merge_aliases p = function
-  | a, Anonymous    -> a, p
-  | Anonymous, a    -> a, p
-  | Name id1, (Name id2 as na) ->
-      let s1 = string_of_id id1 in
-      let s2 = string_of_id id2 in
-      warning ("Alias variable "^s1^" is merged with "^s2);
-      na, replace_var_ast s1 s2 p
+(* [merge_aliases] returns the sets of all aliases encountered at this
+   point and a substitution mapping extra aliases to the first one *)
+let merge_aliases (ids,subst as aliases) = function
+  | Anonymous -> aliases
+  | Name id   ->
+      ids@[id],
+      if ids=[] then subst 
+      else (string_of_id id,string_of_id (List.hd ids))::subst
 
-let rec ast_to_pattern env aliasopt = function
+let alias_of = function
+  | ([],_) -> Anonymous
+  | (id::_,_) -> Name id
+
+let message_redondant_alias (s1,s2) =
+  warning ("Alias variable "^s1^" is merged with "^s2)
+
+let rec ast_to_pattern env aliases = function
   | Node(_,"PATTAS",[Nvar (loc,s); p]) ->
-      let aliasopt',p' = merge_aliases p (aliasopt,name_of_nvar s) in
-      ast_to_pattern env aliasopt' p'
+      let aliases' = merge_aliases aliases (name_of_nvar s) in
+      ast_to_pattern env aliases' p
   | Nvar(loc,s) ->
       (match maybe_constructor env s with
-	 | Some c ->
-	     let ids = match aliasopt with Anonymous -> [] | Name id -> [id] in
-	     (ids,PatCstr (loc,c,[],aliasopt))
+	 | Some c -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
 	 | None ->
-	     (match name_of_nvar s with
-		| Anonymous -> ([], PatVar (loc,Anonymous))
-		| Name id as name -> ([id], PatVar (loc,name))))
+	     let aliases = merge_aliases aliases (name_of_nvar s) in
+	     ([aliases], PatVar (loc,alias_of aliases)))
   | Node(_,"PATTCONSTRUCT", Nvar(loc,s)::((_::_) as pl)) ->
       (match maybe_constructor env s with
 	 | Some c ->
-	     let ids = match aliasopt with Anonymous -> [] | Name id -> [id] in
-	     let (idsl,pl') = 
-	       List.split (List.map (ast_to_pattern env Anonymous) pl) in
-	     (List.flatten (ids::idsl),PatCstr (loc,c,pl',aliasopt))
+	     let (idsl,pl') =
+	       List.split (List.map (ast_to_pattern env ([],[])) pl) in
+	     (aliases::(List.flatten idsl),
+	      PatCstr (loc,c,pl',alias_of aliases))
 	 | None ->
 	     user_err_loc (loc,"ast_to_pattern",mssg_hd_is_not_constructor s))
   | _ -> anomaly "ast_to_pattern: badly-formed ast for Cases pattern"
@@ -461,13 +465,17 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
   and ast_to_eqn n env = function
     | Node(loc,"EQN",rhs::lhs) ->
-	let (idsl,pl) =
-	  List.split (List.map (ast_to_pattern env Anonymous) lhs) in
+	let (idsl_substl_list,pl) =
+	  List.split (List.map (ast_to_pattern env ([],[])) lhs) in
+	let idsl, substl = List.split (List.flatten idsl_substl_list) in
 	let ids = List.flatten idsl in
+	let subst = List.flatten substl in 
 	(* Linearity implies the order in ids is irrelevant *)
 	check_linearity loc ids;
 	check_uppercase loc ids;
 	check_number_of_pattern loc n pl;
+	let rhs = replace_vars_ast subst rhs in
+	List.iter message_redondant_alias subst;
 	let env' =
 	  List.fold_left (fun env id -> Idset.add id env) env ids in
 	(ids,pl,dbrec env' rhs)

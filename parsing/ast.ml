@@ -322,12 +322,13 @@ let rec occur_var_ast s = function
   | Id _ | Str _ | Num _ | Path _ -> false
   | Dynamic _ -> (* Hum... what to do here *) false
 
-let rec replace_var_ast s1 s2 = function
-  | Node(loc,op,args) -> Node (loc,op, List.map (replace_var_ast s1 s2) args)
-  | Nvar(loc,s) as a -> if s = s1 then Nvar (loc,s2) else a
-  | Slam(loc,None,body) -> Slam(loc,None,replace_var_ast s1 s2 body)
-  | Slam(loc,Some s,body) as a -> if s=s1 then a else
-      Slam(loc,Some s,replace_var_ast s1 s2 body)
+let rec replace_vars_ast l = function
+  | Node(loc,op,args) -> Node (loc,op, List.map (replace_vars_ast l) args)
+  | Nvar(loc,s) as a -> (try Nvar (loc, List.assoc s l) with Not_found -> a)
+  | Slam(loc,None,body) -> Slam(loc,None,replace_vars_ast l body)
+  | Slam(loc,Some s,body) as a -> 
+      if List.mem_assoc s l then a else
+      Slam(loc,Some s,replace_vars_ast l body)
   | Id _ | Str _ | Num _ | Path _ as a -> a
   | Dynamic _ as a -> (* Hum... what to do here *) a
 
