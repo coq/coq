@@ -34,7 +34,7 @@ MANUEL DE REFERENCE
 \part{Practical tools}
 \include{RefMan-com}% The coq commands (coqc coqtop)		HH
 %%ajouter nouvelles options -v7 -translate au document de passage
-\include{RefMan-uti}% utilities (gallina, do_Makefile, etc)	JCF
+\include{RefMan-uti}% utilities (gallina, do_Makefile, etc)	JCF -fait
 \include{RefMan-ide}%CoqIde					CM
 
 \include{AddRefMan-pre}%					CP
