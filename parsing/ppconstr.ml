@@ -73,10 +73,10 @@ let wrap_exception = function
 
 let latom = 0
 let lannot = 1
-let lprod = 1
-let llambda = 1
-let lif = 1
-let lletin = 1
+let lprod = 8 (* not 1 because the scope extends to 8 on the right *)
+let llambda = 8 (* not 1 *)
+let lif = 8 (* not 1 *)
+let lletin = 8 (* not 1 *)
 let lcases = 1
 let larrow = 8
 let lcast = 9
@@ -92,15 +92,15 @@ let env_assoc_value v env =
 
 open Symbols
 
-let rec print_hunk pr env = function
-  | UnpMetaVar (e,prec) -> pr prec (env_assoc_value e env)
+let rec print_hunk n pr env = function
+  | UnpMetaVar (e,prec) -> pr (n,prec) (env_assoc_value e env)
   | UnpTerminal s -> str s
-  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk pr env) sub)
+  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk n pr env) sub)
   | UnpCut cut -> ppcmd_of_cut cut
 
 let pr_notation pr s env =
   let unpl, level = find_notation_printing_rule s in
-  prlist (print_hunk pr env) unpl, level
+  prlist (print_hunk level pr env) unpl, level
 
 let pr_delimiters key strm =
   let left = "'"^key^":" and right = "'" in
@@ -138,18 +138,13 @@ let pr_opt_type pr = function
 let pr_tight_coma () = str "," ++ cut ()
 
 let pr_name = function
-  | Anonymous -> mt ()
+  | Anonymous -> str "_"
   | Name id -> pr_id id
 
 let pr_located pr (loc,x) = pr x
 
 let pr_let_binder pr x a =
-  hv 0 (
-    str "[" ++ brk(0,1) ++
-    pr_name x ++ brk(0,1) ++
-    str ":=" ++ brk(0,1) ++
-    pr ltop a ++ brk(0,1) ++
-    str "]")
+  hov 0 (hov 0 (pr_name x ++ brk(0,1) ++ str ":=") ++ brk(0,1) ++ pr ltop a)
 
 let pr_binder pr (nal,t) =
   hov 0 (
@@ -159,9 +154,21 @@ let pr_binder pr (nal,t) =
 let pr_binders pr bl =
   hv 0 (prlist_with_sep pr_semicolon (pr_binder pr) bl)
 
-let pr_recursive_decl pr id b t c =
-  pr_id id ++
-  brk (1,2) ++ str ": " ++ pr ltop t ++ str ":=" ++
+let rec pr_lambda_tail pr = function
+  | CLambdaN (_,bl,a) ->
+      pr_semicolon () ++ pr_binders pr bl ++ pr_lambda_tail pr a
+  | CLetIn (_,x,a,b) ->
+      pr_semicolon () ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr a
+  | a -> str "]" ++ brk(0,1) ++ pr ltop a
+
+let rec pr_prod_tail pr = function
+  | CProdN (_,bl,a) ->
+      pr_semicolon () ++ pr_binders pr bl ++ pr_prod_tail pr a
+  | a -> str ")" ++ brk(0,1) ++ pr ltop a
+
+let pr_recursive_decl pr id binders t c =
+  pr_id id ++ binders ++
+  brk (1,2) ++ str ": " ++ pr ltop t ++ str " :=" ++
   brk (1,2) ++ pr ltop c
 
 let split_lambda = function
@@ -193,11 +200,11 @@ let pr_fixdecl pr (id,n,t,c) =
 let pr_cofixdecl pr (id,t,c) =
   pr_recursive_decl pr id (mt ()) t c
 
-let pr_recursive s pr_decl id = function
+let pr_recursive fix pr_decl id = function
   | [] -> anomaly "(co)fixpoint with no definition"
   | d1::dl ->
       hov 0 (
-	str "Fix " ++ pr_id id ++ brk (0,2) ++ str "{" ++
+	str fix ++ spc () ++ pr_id id ++ brk (0,2) ++ str "{" ++
 	(v 0 (
 	  (hov 0 (pr_decl d1)) ++
 	  (prlist (fun fix -> fnl () ++ hov 0 (str "with" ++ pr_decl fix))
@@ -205,13 +212,13 @@ let pr_recursive s pr_decl id = function
 	str "}")
 
 let pr_fix pr = pr_recursive "Fix" (pr_fixdecl pr)
-let pr_cofix pr = pr_recursive "Fix" (pr_cofixdecl pr)
+let pr_cofix pr = pr_recursive "CoFix" (pr_cofixdecl pr)
 
 let rec pr_arrow pr = function
   | CArrow (_,a,b) -> pr (larrow,L) a ++ cut () ++ str "->" ++ pr_arrow pr b
   | a -> pr (larrow,E) a
 
-let pr_annotation pr t = str "<" ++ pr ltop t ++ str ">"
+let pr_annotation pr t = str "<" ++ pr ltop t ++ str ">" ++ brk (0,2)
 
 let rec pr_pat = function
   | CPatAlias (_,p,x) -> pr_pat p ++ spc () ++ str "as" ++ spc () ++ pr_id x
@@ -227,7 +234,7 @@ let rec pr_pat = function
 
 let pr_eqn pr (_,patl,rhs) =
   hov 0 (
-    prlist_with_sep spc pr_pat patl ++
+    prlist_with_sep spc pr_pat patl ++ spc () ++
     str "=>" ++
     brk (1,1) ++ pr ltop rhs)
 
@@ -237,9 +244,9 @@ let pr_cases pr po tml eqns =
     hv 0 (
       hv 0 (
 	str "Cases" ++ brk (1,2) ++
-	prlist_with_sep spc (pr ltop) tml ++ spc() ++ str "of") ++
-      prlist_with_sep pr_bar (pr_eqn pr) eqns ++ spc () ++
-      str "end"))
+	prlist_with_sep spc (pr ltop) tml ++ spc() ++ str "of") ++ brk(1,2) ++
+      prlist_with_sep (fun () -> spc () ++ str "| ") (pr_eqn pr) eqns ++
+      spc () ++ str "end"))
 
 let rec pr inherited a =
   let (strm,prec) = match a with
@@ -248,14 +255,12 @@ let rec pr inherited a =
   | CCoFix (_,id,cofix) -> pr_cofix pr (snd id) cofix, latom
   | CArrow _ -> hv 0 (pr_arrow pr a), larrow
   | CProdN (_,bl,a) ->
-      hov 0 (
-	str "(" ++ pr_binders pr bl ++ str ")" ++ brk(0,1) ++ pr ltop a), lprod
+      hov 0 (str "(" ++ pr_binders pr bl ++ pr_prod_tail pr a), lprod
   | CLambdaN (_,bl,a) ->
-      hov 0 (
-	str "[" ++ pr_binders pr bl ++ str "]" ++ brk(0,1) ++ pr ltop a),
-      llambda
+      hov 0 (str "[" ++ pr_binders pr bl ++ pr_lambda_tail pr a), llambda
   | CLetIn (_,x,a,b) ->
-      hov 0 (pr_let_binder pr (snd x) a ++ cut () ++ pr ltop b), lletin
+      hov 0 (str "[" ++ pr_let_binder pr (snd x) a ++ pr_lambda_tail pr b),
+      lletin
   | CAppExpl (_,f,l) ->
       hov 0 (
 	str "!" ++ pr_reference f ++
@@ -281,13 +286,13 @@ let rec pr inherited a =
 	hv 0 (
           str "let" ++ brk (1,1) ++
 	  hov 0 (str "(" ++ pr_binder pr bd ++ str ")") ++
-	  str "=" ++ brk (1,1) ++
+	  str " =" ++ brk (1,1) ++
 	  pr ltop c ++ spc () ++
 	  str "in " ++ pr ltop b)), lletin
   | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->
       hov 0 (
 	hov 0 (
-	pr_opt (pr_annotation pr) po ++ brk (0,2) ++
+	pr_opt (pr_annotation pr) po ++
 	  hov 0 (
 	    str (if style=RegularStyle then "Case" else "Match") ++ 
 	    brk (1,1) ++ pr ltop c ++ spc () ++
@@ -333,6 +338,8 @@ let pr_red_flag pr r =
 
 open Genarg
 
+let pr_occurrences prc (nl,c) = prlist (fun n -> int n ++ spc ()) nl ++ prc c
+
 let pr_metanum pr = function
   | AN x -> pr x
   | MetaNum (_,n) -> str "?" ++ int n
@@ -340,7 +347,7 @@ let pr_metanum pr = function
 let pr_red_expr (pr_constr,pr_ref) = function
   | Red false -> str "Red"
   | Hnf -> str "Hnf"
-  | Simpl -> str "Simpl"
+  | Simpl o -> str "Simpl" ++ pr_opt (pr_occurrences pr_constr) o
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
 	str "Compute"
@@ -353,9 +360,7 @@ let pr_red_expr (pr_constr,pr_ref) = function
         prlist (fun (nl,qid) ->
 	  prlist (pr_arg int) nl ++ spc () ++ pr_ref qid) l)
   | Fold l -> hov 1 (str "Fold" ++ prlist (pr_arg pr_constr) l)
-  | Pattern l ->
-      hov 1 (str "Pattern" ++ 
-        prlist(fun (nl,c) -> prlist (pr_arg int) nl ++ (pr_arg pr_constr) c) l)
+  | Pattern l -> hov 1 (str "Pattern " ++ prlist (pr_occurrences pr_constr) l)
   | Red true -> error "Shouldn't be accessible from user"
   | ExtraRedExpr (s,c) ->
       hov 1 (str s ++ pr_arg pr_constr c)
@@ -386,12 +391,10 @@ let gentermpr gt =
   with s -> wrap_exception s
 
 (* [at_top] means ids of env must be avoided in bound variables *)
-
-let gentermpr_core at_top env t =
-  gentermpr (Termast.ast_of_constr at_top env t)
-
 (*
 let gentermpr_core at_top env t =
-  pr_constr (Constrextern.extern_constr at_top env t)
+  gentermpr (Termast.ast_of_constr at_top env t)
 *)
+let gentermpr_core at_top env t =
+  pr_constr (Constrextern.extern_constr at_top env t)
 

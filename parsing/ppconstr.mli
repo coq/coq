@@ -34,6 +34,7 @@ val pr_qualid : qualid -> std_ppcmds
 val pr_red_expr :
   ('a -> std_ppcmds) * ('b -> std_ppcmds) ->
     ('a,'b) red_expr_gen -> std_ppcmds
+val pr_occurrences : ('a -> std_ppcmds) -> 'a occurrences -> std_ppcmds
 
 val pr_sort : rawsort -> std_ppcmds
 val pr_pattern : Tacexpr.pattern_expr -> std_ppcmds
