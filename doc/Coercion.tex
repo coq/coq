@@ -200,6 +200,51 @@ valid coercion paths are ignored; they are signaled by a warning.
   This defines {\ident} just like \texttt{Local {\ident} :=
     {\term}}, and then declares {\ident} as a coercion between it
   source and its target.
+
+\item Assumptions can be declared as coercions at declaration
+time. This extends the grammar of declarations from Figure
+\ref{sentences-syntax} as follows:
+\comindex{Variable \mbox{\rm (and coercions)}}
+\comindex{Axiom \mbox{\rm (and coercions)}}
+\comindex{Parameter \mbox{\rm (and coercions)}}
+\comindex{Hypothesis \mbox{\rm (and coercions)}}
+
+\begin{tabular}{lcl}
+%% Declarations
+{\declaration} & ::= & {\declarationkeyword} {\assums} {\tt .} \\
+&&\\
+{\assums} & ::= & {\simpleassums} \\
+          & $|$ & \nelist{{\tt (} \simpleassums {\tt )}}{} \\
+&&\\
+{\simpleassums} & ::= &  \nelist{\ident}{} {\tt :}\zeroone{{\tt >}} {\term}\\  
+\end{tabular}
+
+If the extra {\tt >} is present before the type of some assumptions, these
+assumptions are declared as coercions.
+
+\item Constructors of inductive types can be declared as coercions at
+definition time of the inductive type. This extends and modifies the
+grammar of inductive types from Figure \ref{sentences-syntax} as follows: 
+\comindex{Inductive \mbox{\rm (and coercions)}}
+\comindex{CoInductive \mbox{\rm (and coercions)}}
+
+\begin{center}
+\begin{tabular}{lcl}
+%% Inductives
+{\inductive} & ::= & 
+           {\tt Inductive} \nelist{\inductivebody}{with} {\tt .} \\
+ & $|$ & {\tt CoInductive} \nelist{\inductivebody}{with} {\tt .} \\
+           & & \\
+{\inductivebody} & ::= & 
+  {\ident} \sequence{\binderlet}{} {\tt :} {\term} {\tt :=} \\
+   && ~~~\zeroone{\zeroone{\tt |} \nelist{\constructor}{|}} \\
+           & & \\
+{\constructor} & ::= &  {\ident} \sequence{\binderlet}{} \zeroone{{\tt :}\zeroone{\tt >} {\term}} \\
+\end{tabular}
+\end{center}
+
+Especially, if the extra {\tt >} is present in a constructor
+declaration, this constructor is declared as a coercion.
 \end{Variants}
 
 \asubsection{\tt Identity Coercion {\ident}:{\class$_1$} >-> {\class$_2$}.} 
@@ -310,7 +355,6 @@ uniform inheritance condition is not satisfied).
 
 \Rem The keyword {\tt Structure}\comindex{Structure} is a synonym of {\tt
 Record}.
-
 
 \asection{Coercions and Sections}
 \index{Coercions!and sections}
