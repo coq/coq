@@ -125,10 +125,10 @@ necessarily parsed surrounded by parentheses.
 notation & precedence/associativity \\
 \hline
 \verb$"_ , _"$ & 250 \\
-\verb$exists _ : _ | _$ & 200 \\
-\verb$exists _ | _$ & 200 \\
-\verb$exists2 _ : _ | _ & _$ & 200 \\
-\verb$exists2 _ | _ & _$ & 200 \\
+\verb$exists _ : _, _$ & 200 \\
+\verb$exists _, _$ & 200 \\
+\verb$exists2 _ : _, _ & _$ & 200 \\
+\verb$exists2 _, _ & _$ & 200 \\
 \verb$"_ <-> _"$ & 95 \\
 \verb$"_ -> _"$ & 90\, R (primitive) \\
 \verb$"_ \/ _"$ & 85\, R \\
@@ -153,7 +153,7 @@ notation & precedence/associativity \\
 \verb$"_ / _"$  & 40\, L \\
 \verb$"- _"$  & 35\, R \\
 \verb$"/ _"$  & 35\, R \\
-\verb$"_ ^ _"$  & 30\, L \\
+\verb$"_ ^ _"$  & 30\, R \\
 \verb$"{ _ } + { _ }"$ & 0 \\
 \verb$"_ + { _ }"$  & 50\, L \\
 \verb$"{ _ : _ | _ }"$ & 0 \\
@@ -389,7 +389,7 @@ notation are replaced by ``\_''.
 
 \begin{coq_example}
 Locate "exists".
-Locate "'exists' _ | _".
+Locate "'exists' _ , _".
 \end{coq_example}
 
 \SeeAlso Section \ref{Locate}.

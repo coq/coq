@@ -2140,7 +2140,8 @@ Variable g:A->A->A.
 \end{coq_eval}
 
 \begin{coq_example}
-Theorem T: a=(f a) -> (g b (f a))=(f (f a)) -> (g a b)=(f (g b a)) -> (g a b)=a.
+Theorem T: 
+  a=(f a) -> (g b (f a))=(f (f a)) -> (g a b)=(f (g b a)) -> (g a b)=a.
 intros.
 congruence.
 \end{coq_example}

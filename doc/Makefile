@@ -1,6 +1,7 @@
 # Makefile for the Coq documentation
 
-# You need the environment variable COQBIN to be correctly set
+# if coqc,coqtop,coq-tex are not in your PATH, you need the environment 
+# variable COQBIN to be correctly set  
 # (COQTOP is autodetected)
 # (some files are preprocessed using Coq and some part of the documentation
 # is automatically built from the theories sources)
@@ -14,10 +15,17 @@
 #   - htmlSplit: http://coq.inria.fr/~delahaye
 # Rapports INRIA: dviselect, rrkit (par Michel Mauny)
 
-DOCCOQTOP=$(COQBIN)/coqtop #.byte
-DOCCOQC=$(COQBIN)/coqc
+
+ifeq ("$(COQBIN)","")
+ COQBINPATH =  
+else    
+ COQBINPATH = $(COQBIN)/
+endif
+
+DOCCOQTOP=$(COQBINPATH)coqtop #.byte
+DOCCOQC=$(COQBINPATH)coqc
 COQTOP=`$(DOCCOQC) -where`
-COQTEX=$(COQBIN)/coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
+COQTEX=$(COQBINPATH)coq-tex -n 72 -image $(DOCCOQTOP) -v -sl -small
 #COQWEBSTY=$(HOME)/lib/tex/
 COQWEBSTY=/usr/share/texmf/tex/latex/misc/
 HEVEALIB=/usr/local/lib/hevea
@@ -76,8 +84,12 @@ FTPHTMLDOCS=doc-html.tar.gz
 all: check-env all-ps all-pdf
 
 check-env:
-	@if $(TEST) "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
-	@if $(TEST) "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; fi
+	@if $(TEST) "$(COQBIN)" = ""; then \
+		if coq-tex; then true ; \
+		else echo "coq-tex not found, COQBIN undefined"; exit 1; fi; \
+	fi
+	@if $(TEST) "$(COQTOP)" = ""; then echo "COQTOP undefined"; exit 1; \
+		else echo "COQTOP = $(COQTOP)"; fi
 
 coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
@@ -245,7 +257,7 @@ library.coqweb.tex: library.files
 	cd $(COQTOP)/theories; \
 	coqweb --noweb -o $$WHERE/$@ --no-preamble `cat $$WHERE/library.files`
 
-GALLINA=$(COQBIN)/gallina
+GALLINA=$(COQBINPATH)gallina
 
 # On garde la liste de tous les *.v avec dates dans library.files.ls
 # Si elle a change depuis la derniere fois ou library.files n'existe pas
