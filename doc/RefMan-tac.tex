@@ -755,7 +755,7 @@ This tactic applies to a goal which has the form {\tt
   forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
 {\tt c} is transparent then it replaces {\tt c} with its definition
 (say {\tt t}) and then reduces {\tt (t t1 \dots\ tn)} according to
-$\beta\iota$-reduction rules.
+$\beta\iota\zeta$-reduction rules.
 
 \begin{ErrMsgs}
 \item \errindex{Not reducible}
@@ -765,7 +765,7 @@ $\beta\iota$-reduction rules.
 \tacindex{hnf}}
 
 This tactic applies to any goal. It replaces the current goal with its
-head normal form according to the $\beta\delta\iota$-reduction rules.
+head normal form according to the $\beta\delta\iota\zeta$-reduction rules.
 {\tt hnf} does not produce a real head normal form but either a
 product or an applicative term in head normal form or a variable.
 
@@ -1468,9 +1468,11 @@ This tactic acts like {\tt replace {\term$_1$} with {\term$_2$}}
 
 This tactic applies to any goal. It replaces all free occurrences of
 {\term$_1$} in the current goal with {\term$_2$} and generates the
-equality {\term$_2$}{\tt =}{\term$_1$} as a subgoal. It is equivalent
-to {\tt cut \term$_2$=\term$_1$; intro H{\sl n}; rewrite <- H{\sl n}; 
-  clear H{\sl n}}.
+equality {\term$_2$}{\tt =}{\term$_1$} as a subgoal. This equality is
+automatically solved if it occurs amongst the assumption, or if its
+symmetric form occurs.  It is equivalent to {\tt cut
+\term$_2$=\term$_1$; [intro H{\sl n}; rewrite <- H{\sl n}; clear H{\sl
+n}| assumption || symmetry; try assumption]}.
 
 \begin{Variants}
   
