@@ -85,9 +85,9 @@ Section Projections.
      Then [(projS1 y)] is the witness [a]
      and [(projS2 y)] is the proof of [(P a)] *)
 
-  Definition projS1 (* : (A:Set)(P:A->Set)(sigS A P) -> A *)
+  Definition projS1 : (sigS A P) -> A
            := [x:(sigS A P)]Cases x of (existS a _) => a end.
-  Definition projS2 (* : (A:Set)(P:A->Set)(H:(sigS A P))(P (projS1 A P H)) *)
+  Definition projS2 : (x:(sigS A P))(P (projS1 x))
            := [x:(sigS A P)]<[x:(sigS A P)](P (projS1 x))> 
                   Cases x of (existS _ h) => h end.
 
@@ -194,10 +194,10 @@ Section projections_sigT.
   Variable A:Type.
   Variable P:A->Type.
 
-  Definition projT1 (* : (A:Type)(P:A->Type)(sigT A P) -> A *)
+  Definition projT1 : (sigT A P) -> A
               := [H:(sigT A P)]Cases H of (existT x _) => x end.
    
-  Definition projT2 (* : (A:Type)(P:A->Type)(p:(sigT A P))(P (projT1 A P p)) *)
+  Definition projT2 : (x:(sigT A P))(P (projT1 x))
               := [H:(sigT A P)]<[H:(sigT A P)](P (projT1 H))> 
                      Cases H of (existT x h) => h end.
 

@@ -37,11 +37,10 @@ Hints Resolve Isnil_nil not_Isnil_cons.
 Lemma Isnil_dec : (l:(list A)){(Isnil l)}+{~(Isnil l)}.
 Intro l; Case l;Auto.
 (*
-Realizer [l:(list A)]Cases l of
+Realizer (fun l => match l with
   | nil => true
   | _ => false
-  end.
-Program_all.
+  end).
 *)
 Qed.
 
@@ -54,11 +53,10 @@ Intro l; Case l.
 Auto.
 Intros a m; Intros; Left; Exists a; Exists m; Reflexivity.
 (*
-Realizer [l:(list A)]<(Exc A*(list A))>Cases l of 
-  | nil => Error
-  | (cons a m) => (Value (a,m))
-  end.
-Program_all.
+Realizer (fun l => match l with
+  | nil => error
+  | (cons a m) => value (a,m)
+  end).
 *)
 Qed.
 
@@ -71,12 +69,10 @@ Intro l; Case l.
 Auto.
 Intros a m; Intros; Left; Exists a; Exists m; Reflexivity.
 (*
-Realizer [l:(list A)]<(Exc A)>Cases l of 
-  | nil => Error
-  | (cons a m) => (Value a)
-  end.
-Program_all.
-Exists m; Reflexivity.
+Realizer (fun l => match l with
+  | nil => error
+  | (cons a m) => value a
+  end).
 *)
 Qed.
 
@@ -86,12 +82,10 @@ Intro l; Case l.
 Exists (nil A); Auto.
 Intros a m; Intros; Exists m; Left; Exists a; Reflexivity.
 (*
-Realizer [l:(list A)]Cases l of 
-  | nil => (nil A)
+Realizer (fun l => match l with
+  | nil => nil
   | (cons a m) => m
-  end.
-Program_all.
-  Left; Exists a; Auto.
+  end).
 *)
 Qed.
 
@@ -99,7 +93,7 @@ Qed.
 (** Length of lists                     *)
 (****************************************)
 
-(* length is defined in PolyList *)
+(* length is defined in List *)
 Fixpoint Length_l [l:(list A)] : nat -> nat 
   :=  [n:nat] Cases l of
                   nil => n
@@ -114,17 +108,13 @@ Intro n; Elim (lrec (S n)); Simpl; Intros.
 Exists x; Transitivity (S (plus n (length m))); Auto.
 (*
 Realizer Length_l.
-Program_all.
-Simpl; Auto.
-Elim e; Simpl; Auto.
 *)
 Qed.
 
 Lemma Length : (l:(list A)){m:nat|(length l)=m}.
 Intro l. Apply (Length_l_pf l O).
 (*
-Realizer [l:(list A)](Length_l_pf l O).
-Program_all.
+Realizer (fun l -> Length_l_pf l O).
 *)
 Qed.
 
@@ -170,7 +160,6 @@ Auto.
 Simpl. Elim IHl; Auto.
 (*
 Realizer mem.
-Program_all.
 *)
 Qed.
 
@@ -224,12 +213,8 @@ Left; Exists b; Auto.
 Right; NewDestruct o.
 Absurd (S n1)=O; Auto.
 Auto with arith.
-
 (*
 Realizer Nth_func.
-Program_all.
-Simpl; Elim n; Auto with arith.
-(Elim o; Intro); [Absurd ((S p)=O); Auto with arith | Auto with arith].
 *)
 Qed.
 
@@ -267,18 +252,11 @@ Qed.
 Lemma Index : (a:A)(l:(list A))
      {n:nat|(fst_nth_spec l n a)}+{(AllS [b:A]~a=b l)}.
 
-(*
-Refine [a,l]if (Index_p a l (S O)) then [n,p](left ? ? (exists ? ? n ?)) 
-            else (right ? ? ?).
-*)
-
 Intros a l; Case (Index_p a l (S O)); Auto.
 Intros (n,P); Left; Exists n; Auto.
 Rewrite (minus_n_O n); Trivial.
-
 (*
-Realizer [a:A][l:(list A)](Index_p a l (S O)).
-Program_all.
+Realizer (fun a l -> Index_p a l (S O)).
 *)
 Qed.
 
@@ -331,7 +309,6 @@ Left; Exists a; Auto.
 Auto.
 (*
 Realizer find.
-Program_all.
 *)
 Qed.
 
@@ -358,12 +335,9 @@ NewDestruct (TS_dec a) as [[c H1]|].
 Left; Exists c.
 Exists a; Auto.
 Auto.
-
 (* 
 Realizer try_find.
-Program_all.
 *)
-
 Qed.
 
 End Find_sec.
@@ -399,7 +373,6 @@ Left; Exact b'.
 Right; Auto.
 (*
 Realizer assoc.
-Program_all.
 *)
 Qed.
 
