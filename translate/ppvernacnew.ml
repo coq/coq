@@ -1050,6 +1050,7 @@ and pr_extend s cl =
             | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
         (str hd,cl) rl in
     hov 1 pp
+    ++ (if s = "Correctness" then sep_end () ++ fnl() ++ str "Proof" else mt())
   with Not_found ->
     hov 1 (str ("TODO("^s) ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
