@@ -26,6 +26,7 @@ open Extract_env
 VERNAC ARGUMENT EXTEND language
 | [ "Ocaml" ] -> [ Ocaml ]
 | [ "Haskell" ] -> [ Haskell ]
+| [ "Scheme" ] -> [ Scheme ]
 | [ "Toplevel" ] -> [ Toplevel ]
 END
 

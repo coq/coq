@@ -28,6 +28,7 @@ parsing/g_cases.ml: parsing/grammar.cma
 parsing/g_constr.ml: parsing/grammar.cma
 parsing/g_tactic.ml: parsing/grammar.cma
 parsing/g_ltac.ml: parsing/grammar.cma
+parsing/argextend.ml: 
 parsing/tacextend.ml: 
 parsing/vernacextend.ml: 
 toplevel/mltop.ml: 

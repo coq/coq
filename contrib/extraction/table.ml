@@ -67,29 +67,9 @@ let check_constant r =
   else errorlabstrm "extract_constant"
 	(Printer.pr_global r ++ spc () ++ str "is not a constant.") 
 
-(*
-let string_of_varg = function
-  | VARG_IDENTIFIER id -> string_of_id id
-  | VARG_STRING s -> s
-  | _ -> assert false
-*)
-
-let no_such_reference q =
-  errorlabstrm "reference_of_varg" 
-    (str "There is no such reference " ++ Nametab.pr_qualid q ++ str ".")
-
-(*
-let reference_of_varg = function
-  | VARG_QUALID q -> 
-      (try Nametab.locate q with Not_found -> no_such_reference q)
-  | _ -> assert false
-
-let refs_of_vargl = List.map reference_of_varg
-*)
-
 (*s Target Language *)
 
-type lang = Ocaml | Haskell | Toplevel
+type lang = Ocaml | Haskell | Scheme | Toplevel
 
 let lang_ref = ref Ocaml
 
