@@ -2184,59 +2184,59 @@ Proof-search is bounded by a depth parameter which can be set by typing the
 {\nobreak \tt Set Firstorder Depth $n$} \comindex{Set Firstorder Depth} 
 vernacular command.
 
-\subsection{{\tt jp} {\em (Jprover)}
-\tacindex{jp}
-\label{jprover}}
+%% \subsection{{\tt jp} {\em (Jprover)}
+%% \tacindex{jp}
+%% \label{jprover}}
 
-The tactic \texttt{jp}, due to Huang Guan-Shieng, is an experimental
-port of the {\em Jprover}\cite{SLKN01} semi-decision procedure for
-first-order intuitionistic logic implemented in {\em
-  NuPRL}\cite{Kre02}.
+%% The tactic \texttt{jp}, due to Huang Guan-Shieng, is an experimental
+%% port of the {\em Jprover}\cite{SLKN01} semi-decision procedure for
+%% first-order intuitionistic logic implemented in {\em
+%%   NuPRL}\cite{Kre02}.
 
-The tactic \texttt{jp}, due to Huang Guan-Shieng, is an {\it
-  experimental} port of the {\em Jprover}\cite{SLKN01} semi-decision 
-procedure for first-order intuitionistic logic implemented in {\em
-  NuPRL}\cite{Kre02}. 
+%% The tactic \texttt{jp}, due to Huang Guan-Shieng, is an {\it
+%%   experimental} port of the {\em Jprover}\cite{SLKN01} semi-decision 
+%% procedure for first-order intuitionistic logic implemented in {\em
+%%   NuPRL}\cite{Kre02}. 
 
-Search may optionnaly be bounded by a multiplicity parameter
-indicating how many (at most) copies of a formula may be used in 
-the proof process, its absence may lead to non-termination of the tactic.
+%% Search may optionnaly be bounded by a multiplicity parameter
+%% indicating how many (at most) copies of a formula may be used in 
+%% the proof process, its absence may lead to non-termination of the tactic.
 
-%\begin{coq_eval}
-%Variable S:Set.
-%Variables P Q:S->Prop.
-%Variable f:S->S.
-%\end{coq_eval}
+%% %\begin{coq_eval}
+%% %Variable S:Set.
+%% %Variables P Q:S->Prop.
+%% %Variable f:S->S.
+%% %\end{coq_eval}
 
-%\begin{coq_example*}
-%Lemma example: (exists x |P x\/Q x)->(exists x |P x)\/(exists x |Q x).
-%jp.
-%Qed.
+%% %\begin{coq_example*}
+%% %Lemma example: (exists x |P x\/Q x)->(exists x |P x)\/(exists x |Q x).
+%% %jp.
+%% %Qed.
 
-%Lemma example2: (forall x ,P x->P (f x))->forall x,P x->P (f(f x)).
-%jp.
-%Qed.
-%\end{coq_example*}
+%% %Lemma example2: (forall x ,P x->P (f x))->forall x,P x->P (f(f x)).
+%% %jp.
+%% %Qed.
+%% %\end{coq_example*}
 
-\begin{Variants}
- \item {\tt jp $n$}\\
-   \tacindex{jp $n$} 
-   Tries the {\em Jprover} procedure with multiplicities up to $n$,
-   starting from 1.
- \item {\tt jp}\\
-   Tries the {\em Jprover} procedure without multiplicity bound, 
-   possibly running forever.
-\end{Variants}
+%% \begin{Variants}
+%%  \item {\tt jp $n$}\\
+%%    \tacindex{jp $n$} 
+%%    Tries the {\em Jprover} procedure with multiplicities up to $n$,
+%%    starting from 1.
+%%  \item {\tt jp}\\
+%%    Tries the {\em Jprover} procedure without multiplicity bound, 
+%%    possibly running forever.
+%% \end{Variants}
 
-\begin{ErrMsgs}
- \item \errindex{multiplicity limit reached}\\
-   The procedure tried all multiplicities below the limit and
-   failed. Goal might be solved by increasing the multiplicity limit. 
- \item \errindex{formula is not provable}\\
-   The procedure determined that goal was not provable in
-   intuitionistic first-order logic, no matter how big the
-   multiplicity is.
-\end{ErrMsgs}
+%% \begin{ErrMsgs}
+%%  \item \errindex{multiplicity limit reached}\\
+%%    The procedure tried all multiplicities below the limit and
+%%    failed. Goal might be solved by increasing the multiplicity limit. 
+%%  \item \errindex{formula is not provable}\\
+%%    The procedure determined that goal was not provable in
+%%    intuitionistic first-order logic, no matter how big the
+%%    multiplicity is.
+%% \end{ErrMsgs}
 
 
 % \subsection{\tt Linear}\tacindex{Linear}\label{Linear}
@@ -2303,7 +2303,7 @@ congruence closure algorithm, which is a decision procedure for ground
 equalities with uninterpreted symbols. It also include the constructor theory
 (see \ref{injection} and \ref{discriminate}).
 If the goal is a non-quantified equality, {\tt congruence} tries to
-prove it with non-quantified equalities in the constext. Otherwise it
+prove it with non-quantified equalities in the context. Otherwise it
 tries to infer a discriminable equality from those in the context.
 
 \begin{coq_eval}
@@ -2335,11 +2335,11 @@ congruence.
 \end{coq_example}
 
 \begin{ErrMsgs}
-  \item \errindex{I don't know how to handle dependent equality}
+  \item \errindex{I don't know how to handle dependent equality} \\
     The decision procedure managed to find a proof of the goal or of
     a discriminable equality but this proof couldn't be built in Coq
     because of dependently-typed functions.
-  \item \errindex{I couldn't solve goal}
+  \item \errindex{I couldn't solve goal} \\
     The decision procedure didn't managed to find a proof of the goal or of
     a discriminable equality.
 \end{ErrMsgs}
