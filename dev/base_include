@@ -13,6 +13,7 @@
 #directory "proofs";;
 #directory "tactics";;
 #directory "translate";;
+
 #use "top_printers.ml";;
 
 #install_printer  (* identifier *) prid;;
@@ -32,6 +33,8 @@
 #install_printer ppatom;;
 #install_printer ppwhd;;
 #install_printer ppvblock;;
+#install_printer  (* bigint *) ppbigint;;
+
 
 let qid = Libnames.qualid_of_string;;
 

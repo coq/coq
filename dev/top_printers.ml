@@ -50,6 +50,7 @@ let pppattern = (fun x -> pp(pr_pattern x))
 let pptype = (fun x -> pp(prtype x))
 let ppfconstr c = ppterm (Closure.term_of_fconstr c)
 
+let ppbigint n = pp (Bigint.pr_bigint n);;
 
 let pP s = pp (hov 0 s)
 
@@ -408,5 +409,3 @@ and ppvblock b =
 and ppvalues v =
   open_hovbox 0;ppwhd (whd_val v);close_box();
   print_flush()
-
-
