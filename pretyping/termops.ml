@@ -865,4 +865,6 @@ let construct_reference ctx id =
   with Not_found ->
     global_reference id
 
+let global_reference_in_absolute_module dir id = 
+  constr_of_reference (Nametab.absolute_reference (Libnames.make_path dir id))
 
