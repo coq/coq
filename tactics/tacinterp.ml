@@ -456,9 +456,15 @@ let intern_evaluable ist = function
       (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
       ArgArg (EvalVarRef id, None)
   | r ->
-      let _,qid = qualid_of_reference r in
+      let loc,qid = qualid_of_reference r in
       try
-	let e = match Nametab.locate qid with
+	let ref = match Nametab.extended_locate qid with
+	  | TrueGlobal ref -> ref
+	  | SyntacticDef kn -> 
+	      match Syntax_def.search_syntactic_definition loc kn with
+		| RRef (_,ref) -> ref
+		| _ -> error_not_evaluable (pr_reference r) in
+	let e = match ref with
 	  | ConstRef c -> EvalConstRef c
 	  | VarRef c -> EvalVarRef c
 	  | _ -> error_not_evaluable (pr_reference r) in
@@ -1087,7 +1093,7 @@ let interp_casted_constr ocl ist sigma env (c,ce) =
   let csr = 
     match ce with
     | None ->
-	Pretyping.understand_gen sigma env tl1 ocl c
+	Pretyping.understand_gen_ltac sigma env (tl1,l2) ocl c
       (* If at toplevel (ce<>None), the error can be due to an incorrect
          context at globalization time: we retype with the now known
          intros/lettac/inversion hypothesis names *)
