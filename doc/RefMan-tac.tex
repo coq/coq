@@ -806,8 +806,8 @@ Applies the conversion tactic {\convtactic} to the
 hypotheses \ident$_1$, \ldots, \ident$_n$. The tactic {\convtactic} is
 any of the conversion tactics listed in this section. 
 
-If $\ident$_i$ is a local definition, then $\ident$_i$ can be replaced
-by $(Type of \ident$_i)$ to adress not the body but the type of the
+If \ident$_i$ is a local definition, then \ident$_i$ can be replaced
+by (Type of \ident$_i$) to adress not the body but the type of the
 local definition. Example: {\tt Unfold not in (Type of H1) (Type of H3).}
 
 \begin{ErrMsgs}
@@ -1101,6 +1101,37 @@ Qed.
   like \texttt{and} and \texttt{exists} and those defined with the
   \texttt{Record} macro, see p. \pageref{Record}).
 \end{Variants}
+
+
+\subsection{\tt Functional Induction \ident\ \term$_1$ \dots\ \term$_n$.}
+\tacindex{Functional Scheme}
+\label{FunScheme}
+
+The tactic \texttt{Functional Induction} performs case analysis
+and induction following the definition of a function.
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Lemma moins_le : (n,m:nat) (le (minus n m) n).
+Intros n m.
+Functional Induction minus n m;Simpl;Auto.
+\end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
+
+\texttt{Functional Induction} is a shorthand for the more general
+command \texttt{Functional Scheme} which builds induction
+principles following the recursive structure of (possibly
+mutually recursive) functions.
+
+\texttt{Functional Induction} does not work on dependently typed
+function yet. It may also fail on functions built by certain
+tactics.
+
+\SeeAlso{\ref{FunScheme},\ref{FunScheme-examples}}
 
 \section{Equality}
 These tactics use the equality {\tt
@@ -1788,6 +1819,7 @@ incompatibilities.
 % \end{ErrMsgs}
 
 
+
 \subsection{\tt Omega}
 \tacindex{Omega}
 \label{Omega}
@@ -2399,6 +2431,42 @@ of mutual induction for objects in type {\term$_i$}.
 \end{Variants}
 
 \SeeAlso \ref{Scheme-examples}
+
+
+\section{Generation of induction principles with {\tt functional Scheme}}
+\label{FunScheme}
+\comindex{Functional Scheme}
+
+The {\tt Functional Scheme} command is a high-level experimental
+tool for generating automatically induction principles
+corresponding to (possibly mutually recursive) functions.  Its
+syntax follows the schema:\bigskip
+
+\noindent
+{\tt Functional Scheme {\ident$_i$} := Induction for
+    \ident'$_i$ with \ident'$_1$ \dots\ \ident'$_m$.}\\
+  
+  \ident'$_1$ \dots\ \ident'$_m$ are the names of mutually
+  recursive functions (they must be in the same order as when
+  they were defined), \ident'$_i$ being one of them. This command
+  generates the induction principle \ident$_i$, following the
+  recursive structure and case analyses of the functions
+  \ident'$_1$ \dots\ \ident'$_m$, and having \ident'$_i$ as entry
+  point.
+
+\begin{Variants}
+\item {\tt Functional Scheme {\ident$_1$} := Induction for \ident'$_1$.}\\
+  
+  This command is a shortcut for:
+  
+  {\tt Functional Scheme {\ident$_1$} := Induction for
+    \ident'$_1$ with \ident'$_1$.}
+
+  This variant can be used for non mutually recursive functions only.
+\end{Variants}
+
+\SeeAlso \ref{FunScheme-examples}
+
 
 \section{Simple tactic macros}
 \index[tactic]{tactic macros}

@@ -259,6 +259,139 @@ Check odd_even.
 The type of {\tt even\_odd} shares the same premises but the
 conclusion is {\tt (n:nat)(even n)->(Q n)}.
 
+\section{{\tt Functional Scheme and Functional Induction}}
+\comindex{FunScheme}
+\label{FunScheme-examples}
+
+\firstexample
+\example{Induction scheme for \texttt{div2}}
+
+We define the function \texttt{div2} as follows:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Require Arith.
+Fixpoint div2 [n:nat] : nat :=
+ Cases n of
+   (0) => (0)
+   | (S n0) => Cases n0 of
+                    (0) => (0)
+                  | (S n') => (S (div2 n'))
+                 end
+ end.
+\end{coq_example*}
+
+The definition of a principle of induction corresponding to the
+recursive structure of \texttt{div2} is defined by the command:
+
+\begin{coq_example}
+Functional Scheme div2_ind := Induction for div2.
+\end{coq_example}
+
+You may now look at the type of {\tt div2\_ind}:
+
+\begin{coq_example}
+Check div2_ind.
+\end{coq_example}
+
+We can now prove the following lemma using this principle:
+
+
+\begin{coq_example*}
+Lemma div2_le' : (n:nat)(le (div2 n) n).
+Intro n. Pattern n.
+\end{coq_example*}
+
+
+\begin{coq_example}
+Apply div2_ind;Intros.
+\end{coq_example}
+
+\begin{coq_example*}
+Auto with arith.
+Auto with arith.
+Simpl;Auto with arith.
+Save.
+\end{coq_example*}
+
+Since \texttt{div2} is not mutually recursive, we can use
+directly the \texttt{Functional Induction} tactic instead of
+building the principle:
+
+\begin{coq_example*}
+Reset div2_ind.
+Lemma div2_le : (n:nat)(le (div2 n) n).
+Intro n.
+\end{coq_example*}
+
+\begin{coq_example}
+Functional Induction div2 n.
+\end{coq_example}
+
+\begin{coq_example*}
+Auto with arith.
+Auto with arith.
+Auto with arith.
+Save.
+\end{coq_example*}
+
+\paragraph{remark:} \texttt{Functional Induction} makes no use of
+a induction principle, so be warned that each time it is used, a
+term mimicking the structure of \texttt{div2} (roughly the size
+of {\tt div2\_ind}) is built. Using \texttt{Functional Scheme} is
+generally faster and less memory consuming.  On the other hand
+\texttt{Functional Induction} performs some extra simplification
+steps that \texttt{Functional Scheme} doesn't.
+
+
+
+\example{Induction scheme for \texttt{tree\_size}}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+We define trees by the following mutual inductive type:
+
+\begin{coq_example*}
+Variable A : Set.
+Mutual Inductive 
+     tree   : Set := node : A -> forest -> tree
+with forest : Set := empty : forest 
+                  | cons : tree -> forest -> forest.
+\end{coq_example*}
+
+We define the function \texttt{tree\_size} that computes the size
+of a tree or a forest.
+
+\begin{coq_example*}                
+Fixpoint tree_size  [t:tree] : nat := 
+ Cases t of (node A f) => (S (forest_size f)) end
+  with  forest_size [f:forest]: nat := 
+ Cases f of
+  empty => O
+ | (cons t f') => (plus (tree_size t) (forest_size f'))
+ end.
+\end{coq_example*}
+
+The definition of principle of mutual induction following the
+recursive structure of \texttt{tree\_size} is defined by the
+command:
+
+\begin{coq_example*}
+Functional Scheme treeInd := Induction for tree_size with tree_size forest_size.
+\end{coq_example*}
+
+You may now look at the type of {\tt treeInd}:
+
+\begin{coq_example}
+Check treeInd.
+\end{coq_example}
+
+
 
 \section{{\tt Inversion}}
 \tacindex{Inversion}
