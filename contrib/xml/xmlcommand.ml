@@ -381,19 +381,21 @@ let mk_constant_obj id bo ty variables hyps =
       Acic.Constant (Names.string_of_id id,Some (Term.unshare c),ty,params)
 ;;
 
-let mk_inductive_obj packs variables hyps finite =
+let mk_inductive_obj sp packs variables hyps finite =
  let module D = Declarations in
   let hyps = string_list_of_named_context_list hyps in
   let params = filter_params variables hyps in
   let nparams = extract_nparams packs in
    let tys =
+    let tyno = ref (Array.length packs) in
     Array.fold_right
      (fun p i ->
+       decr tyno ;
        let {D.mind_consnames=consnames ;
             D.mind_typename=typename ;
-            D.mind_nf_lc=lc ;
             D.mind_nf_arity=arity} = p
        in
+        let lc = Inductive.arities_of_constructors (Global.env ()) (sp,!tyno) in
         let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
           (Array.mapi
@@ -448,7 +450,7 @@ let print (_,qid as locqid) fn =
        let {D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = G.lookup_mind sp in
-          false,sp,Inductive,mk_inductive_obj packs variables hyps finite
+          false,sp,Inductive,mk_inductive_obj sp packs variables hyps finite
     | Nt.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
@@ -563,7 +565,7 @@ let print_coq_object lobj id sp dn fv env =
              D.mind_finite = finite
             } = G.lookup_mind sp
            in
-            mk_inductive_obj packs fv hyps finite
+            mk_inductive_obj sp packs fv hyps finite
       | "VARIABLE" ->
           let (_,(_,varentry,_)) = Declare.out_variable lobj in
            begin
