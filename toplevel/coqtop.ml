@@ -55,12 +55,10 @@ let require () =
     (List.rev !require_list)
 
 
-(*
- * Parsing of the command line.
+(* Parsing of the command line.
  *
- * We no longer use Arg.parse, in order to use Usage.print_usage to be coherent
- * with launch/coqtop and launch/coqc.
- *)
+ * We no longer use Arg.parse, in order to use share Usage.print_usage 
+ * between coqtop and coqc. *)
 
 let usage () =
   if !batch_mode then
@@ -70,62 +68,75 @@ let usage () =
   flush stderr ;
   exit 1
 
+let version () =
+  Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
+    Coq_config.version Coq_config.date;
+  Printf.printf "compiled on %s\n" Coq_config.compile_date;
+  exit 0
 
 let parse_args () =
   let rec parse = function
     | [] -> ()
 
-    | ("-I"|"-include") :: d :: rem -> push_include d ; parse rem
+    | ("-I"|"-include") :: d :: rem -> push_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | ("-R") :: d :: rem -> rec_include d ; parse rem
-    | ("-R") :: []       -> usage ()
+    | "-R" :: d :: rem -> rec_include d; parse rem
+    | "-R" :: []       -> usage ()
 
-    | "-q" :: rem -> no_load_rc () ; parse rem
+    | "-q" :: rem -> no_load_rc (); parse rem
 
-    | "-batch" :: rem -> set_batch_mode () ; parse rem
+    | "-batch" :: rem -> set_batch_mode (); parse rem
 	     
-    | "-outputstate" :: s :: rem -> set_outputstate s ; parse rem
+    | "-outputstate" :: s :: rem -> set_outputstate s; parse rem
     | "-outputstate" :: []       -> usage ()
 
-    | "-nois" :: rem -> set_inputstate "" ; parse rem
+    | "-nois" :: rem -> set_inputstate ""; parse rem
 	     
-    | ("-inputstate"|"-is") :: s :: rem -> set_inputstate s ; parse rem
+    | ("-inputstate"|"-is") :: s :: rem -> set_inputstate s; parse rem
     | ("-inputstate"|"-is") :: []       -> usage ()
 
-    | "-load-ml-object" :: f :: rem -> Mltop.dir_ml_load f ; parse rem
+    | "-load-ml-object" :: f :: rem -> Mltop.dir_ml_load f; parse rem
     | "-load-ml-object" :: []       -> usage ()
 
-    | "-load-ml-source" :: f :: rem -> Mltop.dir_ml_use f ; parse rem
+    | "-load-ml-source" :: f :: rem -> Mltop.dir_ml_use f; parse rem
     | "-load-ml-source" :: []       -> usage ()
 
-    | "-load-vernac-source" :: f :: rem -> add_load_vernacular f ; parse rem
+    | "-load-vernac-source" :: f :: rem -> add_load_vernacular f; parse rem
     | "-load-vernac-source" :: []       -> usage ()
 
-    | "-load-vernac-object" :: f :: rem -> add_vernac_obj f ; parse rem
+    | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
 
-    | "-require" :: f :: rem -> add_require f ; parse rem
+    | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()
 
-    | "-unsafe" :: f :: rem -> add_unsafe f ; parse rem
+    | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()
 
-    | "-debug" :: rem -> set_debug () ; parse rem
+    | "-debug" :: rem -> set_debug (); parse rem
 
-    | "-emacs" :: rem -> Printer.print_emacs := true ; parse rem
+    | "-emacs" :: rem -> Printer.print_emacs := true; parse rem
+	  
+    | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0
 
-    | "-init-file" :: f :: rem -> set_rcfile f ; parse rem
+    | ("-quiet"|"-silent") :: rem -> Options.make_silent true; parse rem
+
+    | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
+
+    | ("-v"|"--version") :: _ -> version ()
+
+    | "-init-file" :: f :: rem -> set_rcfile f; parse rem
     | "-init-file" :: []       -> usage ()
 
-    | "-user" :: u :: rem -> set_rcuser u ; parse rem
+    | "-user" :: u :: rem -> set_rcuser u; parse rem
     | "-user" :: []       -> usage ()
 
-    | "-notactics" :: rem -> remove_top_ml () ; parse rem
+    | "-notactics" :: rem -> remove_top_ml (); parse rem
 
-    | "-just-parsing" :: rem -> Vernac.just_parsing := true ; parse rem
+    | "-just-parsing" :: rem -> Vernac.just_parsing := true; parse rem
 
-    | s :: _ -> prerr_endline ("Don't know what to do with " ^ s) ; usage ()
+    | s :: _ -> prerr_endline ("Don't know what to do with " ^ s); usage ()
 
   in
   try

@@ -31,11 +31,8 @@ let implicitely f x =
   end
 
 let auto_implicits ty =
-  if !implicit_args then
-    let genv = Global.env() in
-    Impl_auto (poly_args genv Evd.empty ty)
-  else
-    No_impl
+  let genv = Global.env() in
+  Impl_auto (poly_args genv Evd.empty ty)
 
 let list_of_implicits = function 
   | Impl_auto l -> l
@@ -55,7 +52,10 @@ let declare_constant_manual_implicits sp imps =
   constants_table := Spmap.add sp (Impl_manual imps) !constants_table
 
 let constant_implicits sp =
-  Spmap.find sp !constants_table
+  try Spmap.find sp !constants_table with Not_found -> No_impl
+
+let constant_implicits_list sp =
+  list_of_implicits (constant_implicits sp)
 
 (* Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
@@ -75,21 +75,22 @@ let declare_inductive_implicits sp =
   inductives_table := Spmap.add sp imps !inductives_table
     
 let inductive_implicits (sp,i) =
-  let imps = Spmap.find sp !inductives_table in
-  fst imps.(i)
+  try
+    let imps = Spmap.find sp !inductives_table in fst imps.(i)
+  with Not_found -> 
+    No_impl
 
 let constructor_implicits ((sp,i),j) =
-  let imps = Spmap.find sp !inductives_table in
-  (snd imps.(i)).(pred j)
+  try
+    let imps = Spmap.find sp !inductives_table in (snd imps.(i)).(pred j)
+  with Not_found -> 
+    No_impl
 
 let constructor_implicits_list constr_sp = 
   list_of_implicits (constructor_implicits constr_sp)
 
 let inductive_implicits_list ind_sp =
   list_of_implicits (inductive_implicits ind_sp)
-
-let constant_implicits_list sp =
-  list_of_implicits (constant_implicits sp)
 
 (* Variables. *)
 
@@ -101,11 +102,12 @@ let declare_var_implicits id =
   var_table := Idmap.add id imps !var_table
 
 let implicits_of_var _ id =
-  list_of_implicits (Idmap.find id !var_table)
+  list_of_implicits (try Idmap.find id !var_table with Not_found -> No_impl)
 
 (* Registration as global tables and roolback. *)
 
-type frozen_t = implicits Spmap.t 
+type frozen_t = bool
+              * implicits Spmap.t 
               * (implicits * implicits array) array Spmap.t 
               * implicits Idmap.t
 
@@ -115,9 +117,10 @@ let init () =
   var_table := Idmap.empty
 
 let freeze () =
-  !constants_table, !inductives_table, !var_table
+  (!implicit_args,!constants_table, !inductives_table, !var_table)
 
-let unfreeze (ct,it,vt) =
+let unfreeze (imps,ct,it,vt) =
+  implicit_args := imps;
   constants_table := ct;
   inductives_table := it;
   var_table := vt

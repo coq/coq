@@ -40,7 +40,9 @@ let make_strength_2 () =
 
 (* Variables. *)
 
-type variable_declaration = constr * strength * bool
+type sticky = bool
+
+type variable_declaration = constr * strength * sticky
 
 let vartab = ref (Spmap.empty : (identifier * variable_declaration) Spmap.t)
 
@@ -49,10 +51,10 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
 	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
 
-let cache_variable (sp,(id,(ty,_,_) as vd)) = 
+let cache_variable (sp,(id,(ty,_,_) as vd,imps)) = 
   Global.push_var (id,ty);
   Nametab.push id sp;
-  declare_var_implicits id;
+  if imps then declare_var_implicits id;
   vartab := Spmap.add sp vd !vartab
 
 let load_variable _ = anomaly "we shouldn't load a variable"
@@ -70,34 +72,36 @@ let (in_variable, out_variable) =
     specification_function = specification_variable } in
   declare_object ("VARIABLE", od)
 
-let declare_variable id ((ty,_,_) as obj) =
-  let _ = add_leaf id CCI (in_variable (id,obj)) in
+let declare_variable id obj =
+  let _ = add_leaf id CCI (in_variable ((id,obj),is_implicit_args())) in
   ()
 
 (* Parameters. *)
 
-let cache_parameter (sp,c) =
+let cache_parameter (sp,(c,imps)) =
   Global.add_parameter sp c;
   Nametab.push (basename sp) sp;
-  declare_constant_implicits sp
+  if imps then declare_constant_implicits sp
+
+let load_parameter (sp,(_,imps)) =
+  if imps then declare_constant_implicits sp
 
 let open_parameter (sp,_) =
-  Nametab.push (basename sp) sp;
-  declare_constant_implicits sp
+  Nametab.push (basename sp) sp
 
 let specification_parameter obj = obj
 
 let (in_parameter, out_parameter) =
   let od = {
     cache_function = cache_parameter;
-    load_function = (fun _ -> ());
+    load_function = load_parameter;
     open_function = open_parameter;
     specification_function = specification_parameter } 
   in
   declare_object ("PARAMETER", od)
 
 let declare_parameter id c =
-  let _ = add_leaf id CCI (in_parameter c) in ()
+  let _ = add_leaf id CCI (in_parameter (c,is_implicit_args())) in ()
 
 (* Constants. *)
 
@@ -110,14 +114,14 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.unfreeze_function = (fun ft -> csttab := ft);
 	    Summary.init_function = (fun () -> csttab := Spmap.empty) }
 
-let cache_constant (sp,((ce,_) as cd)) =
+let cache_constant (sp,((ce,_) as cd,imps)) =
   Global.add_constant sp ce;
   Nametab.push (basename sp) sp;
-  declare_constant_implicits sp;
+  if imps then declare_constant_implicits sp;
   csttab := Spmap.add sp cd !csttab
 
-let load_constant (sp,((ce,_) as cd)) =
-  declare_constant_implicits sp;
+let load_constant (sp,((ce,_) as cd,imps)) =
+  if imps then declare_constant_implicits sp;
   csttab := Spmap.add sp cd !csttab
 
 let open_constant (sp,_) =
@@ -135,7 +139,7 @@ let (in_constant, out_constant) =
   declare_object ("CONSTANT", od)
 
 let declare_constant id cd =
-  let _ = add_leaf id CCI (in_constant cd) in ()
+  let _ = add_leaf id CCI (in_constant (cd,is_implicit_args())) in ()
 
  
 (* Inductives. *)
@@ -147,15 +151,15 @@ let push_inductive_names sp mie =
        List.iter (fun x -> Nametab.push x sp) cnames)
     mie.mind_entry_inds
 
-let cache_inductive (sp,mie) =
+let cache_inductive (sp,(mie,imps)) =
   Global.add_mind sp mie;
   push_inductive_names sp mie;
-  declare_inductive_implicits sp
+  if imps then declare_inductive_implicits sp
 
-let load_inductive (sp,_) =
-  declare_inductive_implicits sp
+let load_inductive (sp,(_,imps)) =
+  if imps then declare_inductive_implicits sp
 
-let open_inductive (sp,mie) =
+let open_inductive (sp,(mie,_)) =
   push_inductive_names sp mie
 
 let specification_inductive obj = obj
@@ -163,7 +167,7 @@ let specification_inductive obj = obj
 let (in_inductive, out_inductive) =
   let od = {
     cache_function = cache_inductive;
-    load_function = (fun _ -> ());
+    load_function = load_inductive;
     open_function = open_inductive;
     specification_function = specification_inductive } 
   in
@@ -174,7 +178,7 @@ let declare_mind mie =
     | (id,_,_,_)::_ -> id
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let sp = add_leaf id CCI (in_inductive mie) in
+  let sp = add_leaf id CCI (in_inductive (mie,is_implicit_args())) in
   sp
 
 
@@ -297,7 +301,7 @@ let declare_eliminations sp i =
     declare_constant (id_of_string na)
       ({ const_entry_body = Cooked c; const_entry_type = None }, 
        NeverDischarge);
-    pPNL [< 'sTR na; 'sTR " is defined" >]
+    if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in
   let sigma = Evd.empty in

@@ -20,7 +20,9 @@ type strength =
   | DischargeAt of section_path 
   | NeverDischarge
 
-type variable_declaration = constr * strength * bool
+type sticky = bool
+
+type variable_declaration = constr * strength * sticky
 val declare_variable : identifier -> variable_declaration -> unit
 
 type constant_declaration = constant_entry * strength
@@ -43,7 +45,8 @@ val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
 
 val is_variable : identifier -> bool
-val out_variable : section_path -> identifier * typed_type * strength * bool
+val out_variable : 
+  section_path -> identifier * typed_type * strength * sticky
 val variable_strength : identifier -> strength
 
 

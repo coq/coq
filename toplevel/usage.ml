@@ -9,7 +9,7 @@ let print_usage_channel co command =
   output_string co
 "  -I dir                 add directory dir in the include path
   -include dir           (idem)
-  -R dir                 add recursively dir
+  -R dir                 add dir recursively
   -src                   add source directories in the include path
 
   -inputstate f          read state from file f.coq
@@ -33,8 +33,8 @@ let print_usage_channel co command =
   -v                     print Coq version and exit
 
   -q                     skip loading of rcfile
-  -init-file f           give the rcfile f
-  -user u                give the user u
+  -init-file f           set the rcfile to f
+  -user u                use the rcfile of user u
   -batch                 batch mode (exits just after arguments parsing)
   -emacs                 tells Coq it is executed under Emacs
 "
@@ -46,7 +46,7 @@ let print_usage = print_usage_channel stderr
 let print_usage_coqtop () =
   print_usage "Usage: coqtop <options>\n";
   output_string stderr
-"  -searchisos            run Coq_SearchIsos\n";;
+"  -searchisos            run Coq_SearchIsos\n"
 
 let print_usage_coqc () =
   print_usage "Usage: coqc [-i] [-t] <options> file...\n

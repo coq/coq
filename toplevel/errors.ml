@@ -48,9 +48,9 @@ let rec explain_exn_default = function
 
   | Sys.Break -> hOV 0 [< 'fNL; 'sTR"User Interrupt." >]
 
-  | TypeError(k,ctx,te) -> Himsg.explain_type_error k ctx te
+  | TypeError(k,ctx,te) -> hOV 0 (Himsg.explain_type_error k ctx te)
 
-  | InductiveError e -> Himsg.explain_inductive_error e
+  | InductiveError e -> hOV 0 (Himsg.explain_inductive_error e)
 
   | Stdpp.Exc_located (loc,exc) ->
       hOV 0 [< if loc = Ast.dummy_loc then [<>]

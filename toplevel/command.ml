@@ -3,6 +3,7 @@
 
 open Pp
 open Util
+open Options
 open Generic
 open Term
 open Constant
@@ -40,7 +41,8 @@ let constant_entry_of_com com =
 
 let definition_body ident n com = 
   let ce = constant_entry_of_com com in
-  declare_constant ident (ce,n)
+  declare_constant ident (ce,n);
+  if is_verbose() then message ((string_of_id ident) ^ " is defined")
 
 let red_constant_entry ce = function
   | None -> ce
@@ -57,11 +59,14 @@ let red_constant_entry ce = function
 let definition_body_red ident n com red_option = 
   let ce = constant_entry_of_com com in
   let ce' = red_constant_entry ce red_option in
-  declare_constant ident (ce',n)
+  declare_constant ident (ce',n);
+  if is_verbose() then message ((string_of_id ident) ^ " is defined")
 
 let syntax_definition ident com =
   let c = raw_constr_of_com Evd.empty (Global.context()) com in 
-  Syntax_def.declare_syntactic_definition ident c
+  Syntax_def.declare_syntactic_definition ident c;
+  if is_verbose() then 
+    message ((string_of_id ident) ^ " is now a syntax macro")
 
 (***TODO
 let abstraction_definition ident arity com =
@@ -158,7 +163,7 @@ let build_mutual lparams lnamearconstrs finite =
     in
     States.unfreeze fs;
     let sp = declare_mind mie in
-    pPNL(minductive_message lrecnames);
+    if is_verbose() then pPNL(minductive_message lrecnames);
     for i = 0 to List.length mispecvec - 1 do
       declare_eliminations sp i
     done
@@ -248,7 +253,7 @@ let build_recursive lnameargsardef =
     in 
     (* declare the recursive definitions *)
     declare 0 lnamerec; 
-    pPNL(recursive_message lnamerec)
+    if is_verbose() then pPNL(recursive_message lnamerec)
   end;
   (* The others are declared as normal definitions *)
   let var_subst id = (id,make_substituend (global_reference CCI id)) in
@@ -313,7 +318,7 @@ let build_corecursive lnameardef =
       | _        -> () 
     in 
     declare 0 lnamerec; 
-    pPNL(corecursive_message lnamerec)
+    if is_verbose() then pPNL(corecursive_message lnamerec)
   end;
   let var_subst id =
     (id,make_substituend (global_reference CCI id)) in
@@ -351,4 +356,6 @@ let build_scheme lnamedepindsort =
         declare (i+1) lf
     | _        -> ()
   in 
-  declare 0 lrecnames; pPNL(recursive_message lrecnames)
+  declare 0 lrecnames; 
+  if is_verbose() then pPNL(recursive_message lrecnames)
+

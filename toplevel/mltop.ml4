@@ -263,7 +263,7 @@ let _ = vinterp_add "PrintMLPath"
 let print_ml_modules () =
   let l = get_loaded_modules () in
   pP [< 'sTR"Loaded ML Modules : " ;
-        hOV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
+        hOV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l); 'fNL >]
 
 let _ = vinterp_add "PrintMLModules"
 	  (function 

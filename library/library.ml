@@ -63,7 +63,7 @@ let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
-    | _,FrozenState _ -> ()
+    | _,(FrozenState _ | Module _) -> ()
   and iter seg =
     List.iter apply seg
   in
@@ -91,8 +91,8 @@ let load_objects decls =
 
 let rec load_module_from doexp s f =
   let (fname,ch) = raw_intern_module f in
-  let md = input_value ch in
-  let digest = input_value ch in
+  let md = System.marshal_in ch in
+  let digest = System.marshal_in ch in
   close_in ch;
   let m = { module_name = md.md_name;
 	    module_compiled_env = md.md_compiled_env;
@@ -151,11 +151,11 @@ let save_module_to s f =
     md_compiled_env = Global.export s;
     md_declarations = seg;
     md_deps = current_imports () } in
-  let (_,ch) = raw_extern_module f in
-  output_value ch md;
+  let (f',ch) = raw_extern_module f in
+  System.marshal_out ch md;
   flush ch;
-  let di = Digest.file f in
-  output_value ch di;
+  let di = Digest.file f' in
+  System.marshal_out ch di;
   close_out ch
 
 

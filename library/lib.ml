@@ -8,12 +8,13 @@ open Summary
 
 type node = 
   | Leaf of obj
+  | Module of string
   | OpenedSection of string * Summary.frozen
   | FrozenState of Summary.frozen
 
-and library_segment = (section_path * node) list
+and library_entry = section_path * node
 
-type library_entry = section_path * node
+and library_segment = library_entry list
 
 
 (* We keep trace of operations in the stack [lib_stk]. 
@@ -109,13 +110,15 @@ let check_for_module () =
   let is_decl = function (_,FrozenState _) -> false | _ -> true in
   try
     let _ = find_entry_p is_decl in
-    error "a module can not be opened after some declarations"
+    error "a module can not be started after some declarations"
   with Not_found -> ()
 
-let open_module s =
-  if !module_name <> None then error "a module is already opened";
-  check_for_module ();
-  module_name := Some s
+let start_module s =
+  if !module_name <> None then error "a module is already started";
+  if !path_prefix <> [] then error "some sections are already opened";
+  module_name := Some s;
+  let _ = add_anonymous_entry (Module s) in
+  path_prefix := [s]
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
@@ -135,15 +138,16 @@ let close_section s =
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
-   closed sections and frozen states are removed. *)
+   frozen states are removed. *)
 
 let export_module () =
   if !module_name = None then error "no module declared";
   let rec export acc = function
-    | [] -> acc
+    | (_,Module _) :: _ -> acc
     | (_,Leaf _) as node :: stk -> export (node::acc) stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,FrozenState _) :: stk -> export acc stk
+    | _ -> assert false
   in
   export [] !lib_stk
 

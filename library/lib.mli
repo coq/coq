@@ -13,12 +13,13 @@ open Summary
 
 type node = 
   | Leaf of obj
+  | Module of string
   | OpenedSection of string * Summary.frozen
   | FrozenState of Summary.frozen
 
-and library_segment = (section_path * node) list
+and library_entry = section_path * node
 
-type library_entry = section_path * node
+and library_segment = library_entry list
 
 
 (*s Adding operations (which calls the [cache] method, and getting the
@@ -39,7 +40,7 @@ val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> string list
 val is_section_p : section_path -> bool
 
-val open_module : string -> unit
+val start_module : string -> unit
 val export_module : unit -> library_segment
 
 

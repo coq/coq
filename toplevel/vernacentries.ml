@@ -269,8 +269,17 @@ let _ =
   add "BeginModule"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   fun () -> Library.open_module (string_of_id id)
+	   fun () -> Lib.start_module (string_of_id id)
        | _ -> bad_vernac_args "BeginModule")
+
+let _ =
+  add "WriteModule"
+    (function 
+       | [VARG_IDENTIFIER id] ->
+	   fun () -> let m = string_of_id id in Library.save_module_to m m
+       | [VARG_IDENTIFIER id; VARG_STRING f] ->
+	   fun () -> Library.save_module_to (string_of_id id) f
+       | _ -> bad_vernac_args "WriteModule")
 
 let _ =
   add "ReadModule"
@@ -281,19 +290,27 @@ let _ =
        | _ -> bad_vernac_args "ReadModule")
 
 let _ =
+  add "ImportModule"
+    (function 
+       | [VARG_IDENTIFIER id] ->
+	   fun () -> 
+	     without_mes_ambig Library.open_module (string_of_id id)
+       | _ -> bad_vernac_args "ImportModule")
+
+let _ =
   add "PrintModules"
     (function 
        | [] -> 
 	   (fun () ->
               let opened = Library.opened_modules ()
 	      and loaded = Library.loaded_modules () in
-              mSG [< 'sTR"Imported (open) Modules: " ;
+              mSG [< 'sTR"Loaded Modules: ";
+		     hOV 0 (prlist_with_sep pr_fnl 
+			      (fun s -> [< 'sTR s >]) loaded);
+		     'fNL;
+		     'sTR"Imported (open) Modules: ";
 		     hOV 0 (prlist_with_sep pr_fnl
-			      (fun s -> [< 'sTR s >]) opened) ; 
-		     'fNL ;
-		     'sTR"Loaded Modules: " ;
-		     hOV 0 (prlist_with_sep pr_fnl
-			      (fun s -> [< 'sTR s >]) loaded) ;
+			      (fun s -> [< 'sTR s >]) opened); 
 		     'fNL >])
        | _ -> bad_vernac_args "PrintModules")
 
@@ -733,7 +750,6 @@ let _ =
 	   in 
 	   fun () ->
 	     definition_body_red id stre c red_option;
-	     message ((string_of_id id) ^ " is defined");
              if coe then begin
 	       Class.try_add_new_coercion id stre;
                message ((string_of_id id) ^ " is now a coercion")
@@ -1040,20 +1056,14 @@ let _ =
   add "SyntaxMacro"
     (function 
        | [VARG_IDENTIFIER id;VARG_COMMAND com] ->
-	   (fun () -> 
-	      syntax_definition id com;
-              if not(is_silent()) then
-                message ((string_of_id id) ^ " is now a syntax macro"))
+	   (fun () -> syntax_definition id com)
        | [VARG_IDENTIFIER id;VARG_COMMAND com; VARG_NUMBER n] ->
            (fun () ->
               let rec aux t = function
                 | 0 -> t
-               	| n -> aux (ope("APPLIST",
-                               	[t;ope("ISEVAR",[])])) (n-1)
+               	| n -> aux (ope("APPLIST",[t;ope("ISEVAR",[])])) (n-1)
               in 
-	      syntax_definition id (aux com n);
-              if not(is_silent()) then
-                message ((string_of_id id) ^ " is now a syntax macro"))
+	      syntax_definition id (aux com n))
        | _ -> bad_vernac_args "SyntaxMacro")
 
 (***

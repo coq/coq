@@ -182,11 +182,11 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
 (* Discharge of the various objects of the environment. *)
 
 let constant_message id =
-  if Options.verbose() then 
+  if Options.is_verbose() then 
     pPNL [< print_id id; 'sTR " is discharged." >]
 
 let inductive_message inds =
-  if Options.verbose() then 
+  if Options.is_verbose() then 
     pPNL (hOV 0 
 	    (match inds with
 	       | [] -> assert false
