@@ -538,19 +538,14 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 (* Globalization of AST quotations (mainly used to get statically         *)
 (* bound idents in grammar or pretty-printing rules)                      *)
 (**************************************************************************)
-let ast_of_ref loc ref = (* A brancher ultérieurement sur Termast.ast_of_ref *)
-  let c = constr_of_reference Evd.empty (Global.env()) ref in
-  let a = match kind_of_term c with
-    | IsConst (sp, _) -> Node (loc, "CONST", [path_section loc sp])
-    | IsEvar (ev, _) -> Node (loc, "EVAR", [Num (loc, ev)])
-    | IsMutConstruct (((sp, i), j), _) ->
+
+(* A brancher ultérieurement sur Termast.ast_of_ref *)
+let ast_of_ref loc = function
+  | ConstRef sp -> Node (loc, "CONST", [path_section loc sp])
+  | ConstructRef ((sp, i), j) ->
         Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
-    | IsMutInd ((sp, i), _) ->
-        Node (loc, "MUTIND", [path_section loc sp; num i])
-    | IsVar id -> failwith "ast_of_ref: TODO"
-    | _ -> anomaly "Not a reference" in
-(*  Node (loc, "$QUOTE", [a])*)
-  a
+  | IndRef (sp, i) -> Node (loc, "MUTIND", [path_section loc sp; num i])
+  | VarRef sp -> failwith "ast_of_ref: TODO"
 
 let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
 
