@@ -25,6 +25,9 @@ val make_clenv_binding_apply :
 val type_clenv_binding : walking_constraints ->
   constr * constr -> constr substitution  -> constr
 
+(* [force_reference c] fails if [c] is not a reference *)
+val force_reference   : constr -> constr
+
 val string_head       : constr -> string
 val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list

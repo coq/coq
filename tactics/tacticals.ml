@@ -48,8 +48,6 @@ let dyn_tclIDTAC = function [] -> tclIDTAC |  _ -> anomaly "tclIDTAC"
 
 let dyn_tclFAIL  = function [] -> tclFAIL |  _ -> anomaly "tclFAIL"
 
-let tclTHEN_i1 tac1 tac2 = tclTHEN_i tac1 tac2 1
-
 (* apply a tactic to the nth element of the signature  *)
 
 let tclNTH_HYP m (tac : constr->tactic) gl =
@@ -344,14 +342,14 @@ let general_elim_then_using
                largs = List.map (clenv_instance_term ce) largs;
                pred = clenv_instance_term ce hd }
     in 
-    tac ba gl 
+    tac ba gl
   in
   let elimclause' =
     match predicate with
        | None   -> elimclause'
        | Some p -> clenv_assign pmv p elimclause'
   in 
-  elim_res_pf_THEN_i kONT elimclause' after_tac 1 gl
+  elim_res_pf_THEN_i kONT elimclause' after_tac gl
 
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 

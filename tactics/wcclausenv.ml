@@ -124,13 +124,13 @@ let res_pf_THEN kONT clenv tac gls =
   let clenv' = (clenv_unique_resolver false clenv gls) in 
   (tclTHEN (clenv_refine kONT clenv') (tac clenv')) gls
 
-let res_pf_THEN_i kONT clenv tac i gls =
+let res_pf_THEN_i kONT clenv tac gls =
   let clenv' = (clenv_unique_resolver false clenv gls) in 
-  tclTHEN_i (clenv_refine kONT clenv') (tac clenv') i gls
+  tclTHEN_i (clenv_refine kONT clenv') (tac clenv') gls
 
-let elim_res_pf_THEN_i kONT clenv tac i gls =  
+let elim_res_pf_THEN_i kONT clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in
-  tclTHEN_i (clenv_refine kONT clenv') (tac clenv') i gls
+  tclTHEN_i (clenv_refine kONT clenv') (tac clenv') gls
 
 let rec build_args acc ce p_0 p_1 =
   match p_0,p_1 with 

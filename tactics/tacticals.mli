@@ -18,7 +18,7 @@ open Wcclausenv
 val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
-val tclTHEN_i        : tactic -> (int -> tactic) -> int -> tactic
+val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
 val tclREPEAT        : tactic -> tactic
@@ -44,7 +44,6 @@ val dyn_tclFAIL      : tactic_arg list -> tactic
 
 type clause = identifier option
 
-val tclTHEN_i1     : tactic -> (int -> tactic) -> tactic
 val nth_clause  : int -> goal sigma -> clause
 val clause_type : clause -> goal sigma -> constr
 

@@ -117,7 +117,7 @@ val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENLIST      : tactic list -> tactic
-val tclTHEN_i        : tactic -> (int -> tactic) -> int -> tactic
+val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
 val tclTHENSI        : tactic -> tactic list -> tactic

@@ -142,7 +142,7 @@ let h_replace c1 c2 = v_replace [(Constr c1);(Constr c2)]
 
 let conditional_rewrite lft2rgt tac (c,bl) = 
   tclTHEN_i (general_rewrite_bindings lft2rgt (c,bl))
-    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac) 1
+    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
 
 let dyn_conditional_rewrite lft2rgt = function
   | [(Tacexp tac); (Command com);(Bindings binds)] -> 
@@ -1470,7 +1470,7 @@ let rewriteRL_in_tac = hide_tactic "RewriteRLin" (dyn_rewrite_in false)
 			 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
   tclTHEN_i (general_rewrite_in lft2rgt id (c,bl))
-    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac) 1
+    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
     
 let dyn_conditional_rewrite_in lft2rgt = function
   | [(Tacexp tac); Identifier id; (Command com);(Bindings binds)] -> 

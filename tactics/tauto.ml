@@ -1864,18 +1864,14 @@ let tautoOR ti gls =
         (t_exacto := tt;
          subbuts l thyp gls)
 
-let exact_Idtac = function 
-  | 0 -> exacto (!t_exacto)
-  | _ -> tclIDTAC
-
 let tautoOR_0 gl = 
   tclORELSE
-    (tclTHEN_i (tautoOR false) exact_Idtac 0)
+    (tclTHENSI (tautoOR false) [exacto (!t_exacto)])
     tAUTOFAIL gl
 
 let intuitionOR = 
   tclTRY (tclTHEN 
-	    (tclTHEN_i (tautoOR true) exact_Idtac 0)  
+	    (tclTHENSI (tautoOR true) [exacto (!t_exacto)])
 	    default_full_auto)
 
 (*--- Mixed code Chet-Cesar ---*)

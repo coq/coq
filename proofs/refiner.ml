@@ -337,12 +337,11 @@ let thens_tac tac2l taci (sigr,gs,p) =
     with Failure _ -> errorlabstrm "Refiner.combine_tactics"
         [<'sTR "Wrong number of tactics.">] in
   let tac2gl =
-    List.combine gl tac2l @ list_map_i (fun i g -> (g, taci i)) 0 gi in
+    List.combine gl tac2l @ list_map_i (fun i g -> (g, taci i)) 1 gi in
   let gll,pl =
     List.split(List.map (fun (g,tac2) -> apply_sig_tac sigr tac2 g) tac2gl) in
   (sigr, List.flatten gll,
    compose p (mapshape (List.map List.length gll) pl))
-;;
 
 let then_tac tac = thens_tac [] (fun _ -> tac);;
 
@@ -350,55 +349,51 @@ let then_tac tac = thens_tac [] (fun _ -> tac);;
 let non_existent_goal n =
   errorlabstrm ("No such goal: "^(string_of_int n))
     [< 'sTR"Trying to apply a tactic to a non existent goal" >]
-;;
 
 (* Apply tac on the i-th goal (if i>0). If i<0, then start counting from
    the last goal (i=-1). *)
 let theni_tac i tac ((_,gl,_) as subgoals) =
   let nsg = List.length gl in
-  let k = if i < 0 then nsg + i else (i-1) in
+  let k = if i < 0 then nsg + i + 1 else i in
   if nsg < 1 then errorlabstrm "theni_tac" [< 'sTR"No more subgoals.">]
-  else if k >= 0 & k < nsg then
+  else if k >= 1 & k <= nsg then
     thens_tac [] (fun i -> if i = k then tac else tclIDTAC) subgoals
-  else non_existent_goal (k+1) 
-;;
+  else non_existent_goal k 
 
-
-(* tclTHENSi tac1 [t1 ; ... ; tn] taci gls applies the tactic tac1 to gls and
-   applies t1,..., tn to the n first resulting subgoals, and (taci i) to the
-   (i+n+1)-th goal. Raises an error if the number of resulting subgoals
-   is less than n *)
+(* [tclTHENSi tac1 [t1 ; ... ; tn] taci gls] applies the tactic [tac1]
+   to [gls] and applies [t1], ..., [tn] to the [n] first resulting
+   subgoals, and [(taci i)] to the (i+n)-th goal. Raises an error if
+   the number of resulting subgoals is less than [n] *)
 let tclTHENSi tac1 tac2l taci gls =
   finish_tac (thens_tac tac2l taci (then_tac tac1 (start_tac gls)))
 ;;
 
-(* tclTHEN tac1 tac2 gls applies the tactic tac1 to gls and applies tac2 to
-   every resulting subgoals *)
+(* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
+   [tac2] to every resulting subgoals *)
 let tclTHEN tac1 tac2 = tclTHENSi tac1 [] (fun _ -> tac2);;
 
-(* tclTHEN_i tac1 tac2 n gls applies the tactic tac1 to gls and applies
-   tac2 (i+n-1) to the i_th resulting subgoal *)
-let tclTHEN_i tac1 tac2 n = tclTHENSi tac1 [] (fun i -> tac2 (i+n));;
+(* [tclTHEN_i tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
+   [(tac2 i)] to the i_th resulting subgoal (starting from 1) *)
+let tclTHEN_i tac1 tac2 = tclTHENSi tac1 [] tac2;;
 
-(* tclTHENS tac1 [t1 ; ... ; tn] gls applies the tactic tac1 to gls and applies
-   t1,..., tn to the n resulting subgoals. Raises an error if the number of
-   resulting subgoals is not n *)
+(* [tclTHENS tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
+   [gls] and applies [t1],..., [tn] to the [n] resulting subgoals. Raises
+   an error if the number of resulting subgoals is not [n] *)
 let tclTHENS tac1 tac2l =
   tclTHENSi tac1 tac2l (fun _ -> tclFAIL_s "Wrong number of tactics.");;
 
-(* Same as tclTHENS but completes with Idtac if the number resulting subgoals
-  is strictly less than n *)
+(* Same as [tclTHENS] but completes with [Idtac] if the number resulting 
+  subgoals is strictly less than [n] *)
 let tclTHENSI tac1 tac2l = tclTHENSi tac1 tac2l (fun _ -> tclIDTAC);;
 
-
-(* tclTHENL tac1 tac2 gls applies the tactic tac1 to gls and tac2
+(* [tclTHENL tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
    to the last resulting subgoal *)
 let tclTHENL (tac1 : tactic) (tac2 : tactic) (gls : goal sigma) =
   finish_tac (theni_tac (-1) tac2 (then_tac tac1 (start_tac gls)))
 ;;
 
-(* tclTHENLIST [t1;..;tn] applies t1;..tn. More convenient than tclTHEN
-   when n is large. *)
+(* [tclTHENLIST [t1;..;tn]] applies [t1] then [t2] ... then [tn]. More
+   convenient than [tclTHEN] when [n] is large. *)
 let rec tclTHENLIST = function
     [] -> tclIDTAC
   | t1::tacl -> tclTHEN t1 (tclTHENLIST tacl)

@@ -38,7 +38,16 @@ let get_pairs_from_bindings =
     | _                  -> error "not a binding list!"
   in 
   List.map pair_from_binding
-    
+
+let force_reference c =
+  match fst (decomp_app c) with
+  | DOPN (Const sp,ctxt) -> c
+  | DOPN (Evar ev,ctxt) -> c
+  | DOPN (MutConstruct (spi,j),ctxt) -> c
+  | DOPN (MutInd (sp,i),ctxt) -> c
+  | VAR id -> c
+  | _ -> error "Not an atomic type"
+
 let rec string_head_bound = function 
   | DOPN(Const _,_) as x -> 
       string_of_id (basename (path_of_const x))
@@ -50,9 +59,10 @@ let rec string_head_bound = function
        string_of_id (mib.mind_packets.(tyi).mind_consnames.(i-1))
   |  VAR id -> string_of_id id
   |  _ -> raise Bound
-	 
+
 let string_head c = 
   try string_head_bound c with Bound -> error "Bound head variable"
+
 
 let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in

@@ -45,14 +45,35 @@ val extract_open_proof :
 
 (*s Tacticals. *)
 
+(* [tclIDTAC] is the identity tactic *)
 val tclIDTAC         : tactic
-val tclORELSE        : tactic -> tactic -> tactic
+
+(* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
+   [tac2] to every resulting subgoals *)
 val tclTHEN          : tactic -> tactic -> tactic
+
+(* [tclTHENLIST [t1;..;tn]] applies [t1] THEN [t2] ... THEN [tn]. More
+   convenient than [tclTHEN] when [n] is large *)
 val tclTHENLIST      : tactic list -> tactic
-val tclTHEN_i        : tactic -> (int -> tactic) -> int -> tactic
+
+(* [tclTHEN_i tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
+   [(tac2 i)] to the i_th resulting subgoal (starting from 1) *)
+val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
+
+(* [tclTHENL tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
+   to the last resulting subgoal *)
 val tclTHENL         : tactic -> tactic -> tactic
+
+(* [tclTHENS tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
+   [gls] and applies [t1],..., [tn] to the [n] resulting subgoals. Raises
+   an error if the number of resulting subgoals is not [n] *)
 val tclTHENS         : tactic -> tactic list -> tactic
+
+(* Same as [tclTHENS] but completes with [Idtac] if the number resulting 
+  subgoals is strictly less than [n] *)
 val tclTHENSI        : tactic -> tactic list -> tactic
+
+val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
 val tclSOLVE         : tactic list -> tactic

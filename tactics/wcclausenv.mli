@@ -42,13 +42,13 @@ val add_prods_sign :
 val res_pf_THEN : 
   (wc -> tactic) -> wc clausenv -> (wc clausenv -> tactic) -> tactic
 
+(* This behaves as [res_pf_THEN] but the tactic applied then takes
+   also the subgoal number (starting from 1) as argument *)
 val res_pf_THEN_i : 
-  (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> 
-    int -> tactic
+  (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> tactic
 
 val elim_res_pf_THEN_i : 
-  (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> 
-    int -> tactic
+  (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> tactic
 
 val mk_clenv_using : wc -> constr -> wc clausenv
 

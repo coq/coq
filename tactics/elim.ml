@@ -42,7 +42,7 @@ Require Elim.
 Require Le.
    Goal (y:nat){x:nat | (le O x)/\(le x y)}->(le O y).
    Intros y H.
-   Decompose [sig and] H;EAuto.
+   Decompose [sig and] H;EAuto.  [HUM HUM !! Y a peu de chance qu'ça marche !]
    Qed.
 
 Another example :
@@ -67,33 +67,46 @@ let rec general_decompose_clause recognizer =
 	 cls)
     (fun _ -> tclIDTAC)
 
+(* Faudrait ajouter un COMPLETE pour que l'hypothèse créée ne reste
+   pas si aucune élimination n'est possible *)
+
 let rec general_decompose recognizer c gl = 
   let typc = pf_type_of gl c in  
   (tclTHENS (cut typc) 
      [(tclTHEN intro 
          (onLastHyp (general_decompose_clause recognizer)));
       (exact c)]) gl
-  
-let head_in l c = List.mem (List.hd (head_constr c)) l
-		    
+
+let head_in gls indl t =
+  try
+    let ity = fst (find_mrectype (pf_env gls) (project gls) t) in
+    List.mem ity indl
+  with Induc -> false
+       
+let inductive_of_ident gls id =
+  try 
+    fst (find_mrectype (pf_env gls) (project gls) (pf_global gls id))
+  with Induc ->
+    errorlabstrm "Decompose" 
+      [< print_id id; 'sTR " is not an inductive type" >]
+
 let decompose_these c l gls =
-  let l = List.map (pf_global gls) l in 
-  general_decompose (fun (_,t) -> head_in l t) c gls
+  let indl = List.map (inductive_of_ident gls) l in 
+  general_decompose (fun (_,t) -> head_in gls indl t) c gls
 
 let decompose_nonrec c gls =
   general_decompose 
-    (fun (_,t) -> 
-       (is_non_recursive_type  (List.hd (head_constr t))))
+    (fun (_,t) -> is_non_recursive_type t)
     c gls
 
 let decompose_and c gls = 
   general_decompose 
-    (fun (_,t) -> (is_conjunction (List.hd (head_constr t))))
+    (fun (_,t) -> is_conjunction t)
     c gls
 
 let decompose_or c gls = 
   general_decompose 
-    (fun (_,t) -> (is_disjunction (List.hd (head_constr t))))
+    (fun (_,t) -> is_disjunction t)
     c gls
 
 let dyn_decompose args gl = 
