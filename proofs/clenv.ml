@@ -388,12 +388,12 @@ let clenv_instance_type_of ce c =
 
 (* Unification order: *)
 (* Left to right: unifies first argument and then the other arguments *)
-let unify_l2r x = List.rev x
+(*let unify_l2r x = List.rev x
 (* Right to left: unifies last argument and then the other arguments *)
 let unify_r2l x = x
 
 let sort_eqns = unify_r2l
-
+*)
 
 let unify_0 cv_pb wc m n =
   let env = w_env wc
@@ -448,7 +448,7 @@ let unify_0 cv_pb wc m n =
     ([],[])
   else 
     let (mc,ec) = unirec_rec cv_pb ([],[]) m n in
-    (sort_eqns mc, sort_eqns ec)
+    ((*sort_eqns*) mc, (*sort_eqns*) ec)
 
 
 (* Unification
@@ -517,17 +517,19 @@ let applyHead n c wc =
   in 
   apprec n c (w_type_of wc c) wc
 
-let mimick_evar hdc nargs sp wc =
+let rec mimick_evar hdc nargs sp wc =
   let evd = Evd.map wc.sigma sp in
   let wc' = extract_decl sp wc in
   let (wc'', c) = applyHead nargs hdc wc' in
-    if wc'==wc''
+  let (mc,ec) = unify_0 CONV wc'' (w_type_of wc'' c) (evd.evar_concl) in
+  let (wc''',_) = w_resrec mc ec wc'' in
+    if wc'== wc'''
     then w_Define sp c wc
-    else 
-      let wc''' = restore_decl sp evd wc'' in
-	w_Define sp c {it = wc.it ; sigma = wc'''.sigma}
+    else  
+      let wc'''' = restore_decl sp evd wc''' in
+	w_Define sp (Evarutil.nf_evar wc''''.sigma c) {it = wc.it ; sigma = wc''''.sigma}
 
-let rec w_Unify cv_pb m n wc =
+and w_Unify cv_pb m n wc =
   let (mc',ec') = unify_0 cv_pb wc m n in 
   w_resrec mc' ec' wc
 
@@ -602,7 +604,7 @@ let clenv_merge with_types metas evars clenv =
 		if occur_evar evn rhs' then error "w_Unify";
 		try 
 		  clenv_resrec metas t 
-		    (clenv_wtactic (w_Define evn rhs') clenv)
+		    (clenv_wtactic (w_Define evn rhs') clenv) 
 		with ex when catchable_exception ex ->
 		  (match krhs with
 		     | App (f,cl) when isConst f or isConstruct f ->
