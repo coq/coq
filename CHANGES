@@ -100,6 +100,7 @@ Tactics
   Intro naming strategy (exceptional source of incompatibilities)
 - LinearIntuition (* no documentation *)
 - Unfold expects a correct evaluable argument
+- Clear expects existing hypotheses
 
 Miscellaneous
 
