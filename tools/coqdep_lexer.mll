@@ -37,7 +37,7 @@
   let field_name s = String.sub s 1 (String.length s - 1)
 }
 
-let space = [' ' '\t' '\n']
+let space = [' ' '\t' '\n' '\r']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar = 
