@@ -11,7 +11,10 @@
 (** Here we define the predicates [even] and [odd] by mutual induction
     and we prove the decidability and the exclusion of those predicates.
     The main results about parity are proved in the module Div2. *)
+
 Import nat_scope.
+
+Implicit Variables Type m,n:nat.
 
 Inductive even : nat->Prop :=
     even_O : (even O)

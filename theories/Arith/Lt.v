@@ -11,6 +11,8 @@
 Require Le.
 Import nat_scope.
 
+Implicit Variables Type m,n,p:nat.
+
 Theorem lt_n_Sn : (n:nat)(lt n (S n)).
 Proof.
 Auto with arith.

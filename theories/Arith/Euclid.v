@@ -13,6 +13,7 @@ Require Compare_dec.
 Require Wf_nat.
 Import nat_scope.
 
+Implicit Variables Type a,b,n,q,r:nat.
 
 Inductive diveucl [a,b:nat] : Set 
       := divex : (q,r:nat)(gt b r)->(a=(plus (mult q b) r))->(diveucl a b).

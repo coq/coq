@@ -14,6 +14,8 @@ Require Gt.
 Require Decidable.
 Import nat_scope.
 
+Implicit Variables Type m,n,x,y:nat.
+
 Definition zerop : (n:nat){n=O}+{lt O n}.
 NewDestruct n; Auto with arith.
 Defined.

@@ -14,6 +14,8 @@ Require Compare_dec.
 Require Even.
 Import nat_scope.
 
+Implicit Variables Type n:nat.
+
 (** Here we define [n/2] and prove some of its properties *)
 
 Fixpoint div2 [n:nat] : nat :=

@@ -9,7 +9,10 @@
 (*i $Id$ i*)
 
 Require Arith.
+
 Import nat_scope.
+
+Implicit Variables Type m,n:nat.
 
 (** maximum of two natural numbers *)
 

@@ -12,6 +12,8 @@
 Import nat_scope.
 Open Scope nat_scope.
 
+Implicit Variables Type m,n,p:nat.
+
 Theorem le_n_S : (n,m:nat)(le n m)->(le (S n) (S m)).
 Proof.
   NewInduction 1; Auto.

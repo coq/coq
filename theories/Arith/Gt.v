@@ -13,6 +13,8 @@ Require Lt.
 Require Plus.
 Import nat_scope.
 
+Implicit Variables Type m,n,p:nat.
+
 Theorem gt_Sn_O : (n:nat)(gt (S n) O).
 Proof.
   Auto with arith.

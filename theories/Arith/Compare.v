@@ -11,9 +11,14 @@
 (** Equality is decidable on [nat] *)
 Import nat_scope.
 
+(*
 Lemma not_eq_sym : (A:Set)(p,q:A)(~p=q) -> ~(q=p).
 Proof sym_not_eq.
 Hints Immediate not_eq_sym : arith.
+*)
+Notation not_eq_sym := sym_not_eq.
+
+Implicit Variables Type m,n,p,q:nat.
 
 Require Arith.
 Require Peano_dec.

@@ -14,6 +14,8 @@ Require Lt.
 
 Import nat_scope.
 
+Implicit Variables Type m,n,p:nat.
+
 Chapter  Well_founded_Nat.
 
 Variable A : Set.

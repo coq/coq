@@ -13,6 +13,8 @@ Require Export Minus.
 Require Export Lt.
 Import nat_scope.
 
+Implicit Variables Type m,n,p:nat.
+
 (** Multiplication *)
 
 Lemma mult_plus_distr : 

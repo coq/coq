@@ -15,6 +15,8 @@ Require Le.
 Require Euclid_def.
 Require Compare_dec.
 
+Implicit Variables Type n,a,b,q,r:nat.
+
 Fixpoint inf_dec [n:nat] : nat->bool :=
       [m:nat] Cases n m of
                   O     _     => true

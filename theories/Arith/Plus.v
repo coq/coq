@@ -15,6 +15,8 @@ Require Lt.
 
 Import nat_scope.
 
+Implicit Variables Type m,n,p,q:nat.
+
 Lemma plus_sym : (n,m:nat)(n+m)=(m+n).
 Proof.
 Intros n m ; Elim n ; Simpl ; Auto with arith.
@@ -150,11 +152,11 @@ Proof.
   Simpl in H. Discriminate H.
 Defined.
 
-Lemma plus_permute_2_in_4 : (a,b,c,d:nat) ((a+b)+(c+d))=((a+c)+(b+d)).
+Lemma plus_permute_2_in_4 : (m,n,p,q:nat) ((m+n)+(p+q))=((m+p)+(n+q)).
 Proof.
   Intros. 
-  Rewrite <- (plus_assoc_l a b (c+d)). Rewrite (plus_assoc_l b c d).
-  Rewrite (plus_sym b c). Rewrite <- (plus_assoc_l c b d). Apply plus_assoc_l.
+  Rewrite <- (plus_assoc_l m n (p+q)). Rewrite (plus_assoc_l n p q).
+  Rewrite (plus_sym n p). Rewrite <- (plus_assoc_l p n q). Apply plus_assoc_l.
 Qed.
 
 
@@ -164,10 +166,10 @@ Qed.
     tail-recursive, whereas [plus] is not. This can be useful
     when extracting programs. *)
 
-Fixpoint plus_acc [s,n:nat] : nat := 
+Fixpoint plus_acc [q,n:nat] : nat := 
    Cases n of 
-      O => s
-      | (S p) => (plus_acc (S s) p)
+      O => q
+      | (S p) => (plus_acc (S q) p)
     end.
 
 Definition tail_plus := [n,m:nat](plus_acc m n).

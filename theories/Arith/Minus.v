@@ -14,12 +14,7 @@ Require Lt.
 Require Le.
 Import nat_scope.
 
-Fixpoint minus [n:nat] : nat -> nat := 
-  [m:nat]Cases n m of
-            O    _     =>  O
-         | (S k) O     => (S k)
-         | (S k) (S l) => (minus k l)
-        end. 
+Implicit Variables Type m,n,p:nat.
 
 Lemma minus_plus_simpl : 
 	(n,m,p:nat)((minus n m)=(minus (plus p n) (plus p m))).
