@@ -10,7 +10,6 @@
 
 open Pp
 open Names
-open Nametab
 open Miniml
 
 val keywords : Idset.t

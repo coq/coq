@@ -10,7 +10,6 @@
 
 (*s This module declares the extraction commands. *)
 
-open Util
 open Names
 open Libnames
 

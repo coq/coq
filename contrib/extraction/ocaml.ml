@@ -14,13 +14,10 @@ open Pp
 open Util
 open Names
 open Nameops
-open Term
-open Miniml
-open Table
-open Mlutil
-open Options
-open Nametab
 open Libnames
+open Table
+open Miniml
+open Mlutil
 
 let cons_cofix = ref Refset.empty
 
@@ -39,7 +36,6 @@ let pp_tuple_light f = function
   | [x] -> f true x
   | l -> 
       pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) (f false) l)
-
 
 let pp_tuple f = function
   | [] -> mt ()
@@ -160,6 +156,7 @@ let rec pp_type par vl t =
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy -> str "__"
     | Tunknown -> str "__"
+    | Tcustom s -> str s
   in 
   hov 0 (pp_rec par t)
 
@@ -258,7 +255,8 @@ let rec pp_expr par env args =
 		 (pp_expr true env [] a ++ spc () ++ str ":" ++ 
 		  spc () ++ pp_type true [] t))
     | MLmagic a ->
-	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args) 
+	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args)
+    | MLcustom s -> str s
 	  
 and pp_record_pat (projs, args) =
    str "{ " ++

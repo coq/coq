@@ -9,19 +9,15 @@
 (*i $Id$ i*)
 
 open Pp
+open Util
 open Names
 open Nameops
-open Miniml
-open Table
-open Mlutil
-open Extraction
-open Ocaml
-open Lib
 open Libnames
-open Util
-open Declare
 open Nametab
-
+open Table
+open Miniml
+open Mlutil
+open Ocaml
 
 module Orefset = struct 
   type t = { set : Refset.t ; list : global_reference list }
@@ -101,10 +97,9 @@ let short_module r = List.hd (repr_dirpath (long_module r))
   in a module. This is done by traversing the segment of module [m]. 
   We just keep constants and inductives. *)
 
-let extract_module m =
-  let seg = Declaremods.module_objects (MPfile m) in
+let segment_contents seg = 
   let get_reference = function
-    | (_,kn), Leaf o ->
+    | (_,kn), Lib.Leaf o ->
 	(match Libobject.object_tag o with
 	   | "CONSTANT" -> ConstRef kn
 	   | "INDUCTIVE" -> IndRef (kn,0)
@@ -113,6 +108,9 @@ let extract_module m =
   in
   Util.map_succeed get_reference seg
 
+let module_contents m =
+  segment_contents (Declaremods.module_objects (MPfile m))
+
 (*s The next function finds all names common to at least two used modules. *)
 
 let modules_reference_clashes modules = 
@@ -120,7 +118,7 @@ let modules_reference_clashes modules =
   let map = 
     Dirset.fold
       (fun mod_name map -> 
-	 let rl = List.map id_of_r (extract_module mod_name) in 
+	 let rl = List.map id_of_r (module_contents mod_name) in 
 	 List.fold_left (fun m id -> Idmap.add id (Idmap.mem id m) m) map rl)
       modules Idmap.empty 
   in Idmap.fold (fun i b s -> if b then Idset.add i s else s) map Idset.empty
@@ -267,9 +265,9 @@ let extract_to_file f prm decls =
   pp_with ft (preamble prm used_modules print_dummys);
   if not prm.modular then begin 
     List.iter (fun r -> pp_with ft (pp_logical_ind r)) 
-      (List.filter decl_is_logical_ind prm.to_appear); 
+      (List.filter Extraction.decl_is_logical_ind prm.to_appear); 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
-      (List.filter decl_is_singleton prm.to_appear); 
+      (List.filter Extraction.decl_is_singleton prm.to_appear); 
   end;
   begin try
     List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

@@ -12,23 +12,21 @@
 open Pp
 open Util
 open Names
-open Nameops
 open Term
-open Termops
 open Declarations
 open Environ
 open Reductionops
 open Inductive
+open Termops
 open Inductiveops
-(* open Instantiate *)
-open Miniml
-open Table
-open Mlutil
-(* open Closure *)
+open Recordops
+open Nameops
 open Summary
 open Libnames
 open Nametab
-open Recordops
+open Miniml
+open Table
+open Mlutil
 (*i*)
 
 (*S Extraction results. *)
@@ -76,9 +74,9 @@ type cons_extraction_result = ml_type list * int
 
 (*S Tables to keep the extraction results. *)
 
-let visited_inductive = ref (Gset.empty : kernel_name Gset.t)
-let visit_inductive k = visited_inductive := Gset.add k !visited_inductive
-let already_visited_inductive k = Gset.mem k !visited_inductive
+let visited_inductive = ref KNset.empty
+let visit_inductive k = visited_inductive := KNset.add k !visited_inductive
+let already_visited_inductive k = KNset.mem k !visited_inductive
 
 let inductive_table = 
   ref (Gmap.empty : (inductive, ind_extraction_result) Gmap.t)
@@ -90,13 +88,13 @@ let constructor_table =
 let add_constructor c e = constructor_table := Gmap.add c e !constructor_table
 let lookup_constructor c = Gmap.find c !constructor_table
 
-let cst_term_table = ref (Gmap.empty : (kernel_name, ml_decl) Gmap.t)
-let add_cst_term kn d = cst_term_table := Gmap.add kn d !cst_term_table
-let lookup_cst_term kn = Gmap.find kn !cst_term_table
+let cst_term_table = ref (KNmap.empty : ml_decl KNmap.t)
+let add_cst_term kn d = cst_term_table := KNmap.add kn d !cst_term_table
+let lookup_cst_term kn = KNmap.find kn !cst_term_table
 
-let cst_type_table = ref (Gmap.empty : (kernel_name, ml_schema) Gmap.t)
-let add_cst_type kn s = cst_type_table := Gmap.add kn s !cst_type_table
-let lookup_cst_type kn = Gmap.find kn !cst_type_table 
+let cst_type_table = ref (KNmap.empty : ml_schema KNmap.t)
+let add_cst_type kn s = cst_type_table := KNmap.add kn s !cst_type_table
+let lookup_cst_type kn = KNmap.find kn !cst_type_table 
 
 (* Tables synchronization. *)
 
@@ -340,6 +338,7 @@ and extract_constructor (((kn,_),_) as c) =
 
 and extract_mib kn =
   visit_inductive kn; 
+  add_recursors kn; 
   let env = Global.env () in 
   let (mib,mip) = Global.lookup_inductive (kn,0) in
   (* Everything concerning parameters. *)

@@ -10,25 +10,109 @@
 
 open Pp
 open Util
+open Declarations
 open Names
 open Nameops
-open Term
-open Lib
-open Extraction
+open Libnames
 open Miniml
 open Table
+open Extraction
 open Mlutil
-open Libnames
-open Nametab
-open Vernacinterp
 open Common
-open Declare
+
+
+
+let mp_of_kn kn = 
+  let mp,_,l = repr_kn kn in MPdot (mp,l) 
+
+
+let toplevel_structure_body () = 
+  let seg = Lib.contents_after None in 
+  let get_reference = function 
+    | (_,kn), Lib.Leaf o ->
+	let mp,_,l = repr_kn kn in 
+	let seb = match Libobject.object_tag o with
+	  | "CONSTANT" -> SEBconst (Global.lookup_constant kn)
+	  | "INDUCTIVE" -> SEBmind (Global.lookup_mind kn) 
+	  | "MODULE" -> SEBmodule (Global.lookup_module (MPdot (mp,l)))
+	  | "MODULE TYPE" -> SEBmodtype (Global.lookup_modtype kn)
+	  | _ -> failwith "caught"
+	in l,seb
+    | _ -> failwith "caught"
+  in 
+  List.rev (map_succeed get_reference seg)
+
+
+let environment_until dir_opt = 
+  let rec parse = function 
+    | [] -> [] 
+    | d :: l when dir_opt = Some d -> []
+    | d :: l -> 
+	match (Global.lookup_module (MPfile d)).mod_expr with 
+	  | Some (MEBstruct (_, msb)) -> (d, msb) :: (parse l)
+	  | _ -> assert false
+  in parse (Library.loaded_libraries ())
+
+let std_kn mp l = make_kn mp empty_dirpath l
+
+let rec sub_modpath mp = match mp with 
+  | MPdot (mp',_) -> MPset.add mp (sub_modpath mp')
+  | _ -> MPset.singleton mp
+
+type visit = { mutable kn : KNset.t; mutable mp : MPset.t }
+
+let in_kn kn v = KNset.mem kn v.kn
+let in_mp mp v = MPset.mem mp v.mp
+
+(* let rec extract_msb mp all v = function 
+  | [] -> [] 
+  | (l,seb) -> 
+      let ml_msb = extract_msb v in 
+      match seb with 
+	| SEBconst cb -> 
+	    let kn = std_kn mp l in 
+	    if all || in_kn kn v then 
+	      let ml_se = extraction_constant_body kn cb in 
+	      search_visit ml_se v; 
+	      ml_se :: ml_msb
+	    else ml_msb
+	| SEBmind mib ->
+	    let kn = std_kn mp l in 
+	    if all || in_kn kn v then 
+	      let ml_se = extraction_inductive_body kn mib in
+	      search_visit ml_se v;
+	      ml_se :: ml_msb 
+	    else ml_msb
+	| SEBmodule mb -> 
+	    let mp = MPdot (mp,l) in 
+	    if all || in_mp mp v then 
+	      SEmodule (extraction_module mp true v m) :: ml_msb
+	    else msb
+	| SEBmodtype mtb ->
+	    let kn = std_kn mp l in
+	    if all || in_kn kn v then 
+	      SEmodtype (extraction_mtb (MPdot (mp,l)) true v m) :: ml_msb
+	    else msb
+*)
+
+(*
+let mono_environment kn_set = 
+  let add_mp kn mpset = KNset.union (sub_modpath (modpath kn)) mpset
+  let kn_to_visit = ref kn_set 
+  and mp_to_visit = ref (KNset.fold add_mp kn_set MPset.empty)
+  in 
+  
+  let rec extract_structure_body = 
+
+
+  let top = toplevel_structure_body ()
+*)	      
 
 (*s Auxiliary functions dealing with modules. *)
 
-let module_of_id m = 
+let dir_module_of_id m = 
   try 
-    locate_loaded_library (make_short_qualid m) 
+    Nametab.locate_loaded_library (make_short_qualid m) 
   with Not_found ->  
     errorlabstrm "module_message"
       (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 
@@ -109,21 +193,28 @@ let rec visit_reference m eenv r =
        and in module extraction *)
     eenv.visited <- Refset.add r' eenv.visited;
     if m then begin 
-      let m_name = library_part r' in 
+      let m_name = Declare.library_part r' in 
       if not (Dirset.mem m_name eenv.modules) then begin
 	eenv.modules <- Dirset.add m_name eenv.modules;
-	List.iter (visit_reference m eenv) (extract_module m_name)
+	List.iter (visit_reference m eenv) (module_contents m_name)
       end
     end;
     visit_decl m eenv (extract_declaration r);
     eenv.to_extract <- r' :: eenv.to_extract
   end
-    
+
+(* and visit_fixpoint m eenv r = 
+  match (kind_of_term (constant_value (Global.env()) (kn_of_r r))) with 
+    | Fix (_,(f,_,_)) -> 
+	(try 
+	   let d = dirpath (sp_of_global None r) in 
+	   let v = Array.map (fun id -> locate (make_qualid d id)) f in *)
+
 and visit_type m eenv t =
   let rec visit = function
     | Tglob (r,l) -> visit_reference m eenv r; List.iter visit l  
     | Tarr (t1,t2) -> visit t1; visit t2
-    | Tvar _ | Tdummy | Tunknown -> ()
+    | Tvar _ | Tdummy | Tunknown | Tcustom _ -> ()
     | Tmeta _ | Tvar' _ -> assert false 
   in
   visit t
@@ -141,7 +232,7 @@ and visit_ast m eenv a =
     | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
-    | MLrel _ | MLdummy | MLexn _ -> ()
+    | MLrel _ | MLdummy | MLexn _ | MLcustom _ -> ()
   in
   visit a
 
@@ -173,8 +264,17 @@ let extract_env rl =
 let modules_extract_env m =
   let eenv = empty () in
   eenv.modules <- Dirset.singleton m;
-  List.iter (visit_reference true eenv) (extract_module m);
+  List.iter (visit_reference true eenv) (module_contents m);
   eenv.modules, List.rev eenv.to_extract
+
+(* let toplevel_contents () = 
+  segment_contents (contents_after None)
+
+let extract_env rl = 
+  let modules = List.rev (loaded_libraries ()) in 
+  let toplevel_list = toplevel_contents () in 
+  let modules_list = *)
+
 
 (*s Extraction in the Coq toplevel. We display the extracted term in
     Ocaml syntax and we use the Coq printers for globals. The
@@ -280,10 +380,10 @@ let extraction_module m =
     | Toplevel -> toplevel_error ()
     | Scheme -> scheme_error ()
     | _ -> 
-	let dir_m = module_of_id m in 
+	let dir_m = dir_module_of_id m in 
 	let f = module_file_name m in
 	let prm = {modular=true; mod_name=m; to_appear=[]} in 
-	let rl = extract_module dir_m in 
+	let rl = module_contents dir_m in 
 	let decls = optimize prm (decl_of_refs rl) in
 	let decls = add_ml_decls prm decls in 
 	check_one_module dir_m decls; 
@@ -298,7 +398,7 @@ let recursive_extraction_module m =
     | Toplevel -> toplevel_error () 
     | Scheme -> scheme_error () 
     | _ -> 
-	let dir_m = module_of_id m in 
+	let dir_m = dir_module_of_id m in 
 	let modules,refs = modules_extract_env dir_m in
 	check_modules modules; 
 	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in

@@ -8,11 +8,11 @@
 
 (*i $Id$ i*)
 
+open Util
 open Names
 open Term
 open Libnames
 open Miniml
-open Util
 
 (*s Utility functions over ML types with meta. *)
 

@@ -14,13 +14,9 @@ open Pp
 open Util
 open Names
 open Nameops
-open Term
-open Miniml
-open Table
-open Mlutil
-open Options
 open Libnames
-open Nametab
+open Miniml
+open Mlutil
 open Ocaml
 
 (*s Scheme renaming issues. *)
@@ -113,6 +109,7 @@ let rec pp_expr env args =
 	pp_expr env args a
     | MLmagic a ->
 	pp_expr env args a
+    | MLcustom s -> str s
 
 
 and pp_one_pat env (r,ids,t) = 

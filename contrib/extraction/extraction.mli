@@ -10,9 +10,8 @@
 
 (*s Extraction from Coq terms to Miniml. *)
 
-open Miniml
-open Environ
 open Libnames
+open Miniml
 
 (*s ML declaration corresponding to a Coq reference. *)
 

@@ -11,11 +11,9 @@
 (*s Some utility functions to be reused in module [Haskell]. *)
 
 open Pp
-open Miniml
 open Names
-open Term
 open Libnames
-open Nametab
+open Miniml
 
 val cons_cofix : Refset.t ref
 

@@ -10,15 +10,12 @@
 
 (*i*)
 open Pp
-open Names
-open Term
-open Declarations
 open Util
-open Miniml
+open Names
+open Libnames
 open Nametab
 open Table
-open Options
-open Libnames
+open Miniml
 (*i*)
 
 (*s Exceptions. *)
@@ -215,7 +212,7 @@ let kn_of_r r = match r with
     | ConstRef kn -> kn
     | IndRef (kn,_) -> kn
     | ConstructRef ((kn,_),_) -> kn
-    | _ -> assert false
+    | VarRef _ -> error_section ()
 
 let rec type_mem_kn kn = function 
   | Tmeta _ -> assert false
@@ -343,7 +340,7 @@ let ast_iter_rel f =
     | MLcons (_,l) ->  List.iter (iter n) l
     | MLcast (a,_) -> iter n a
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy -> ()
+    | MLglob _ | MLexn _ | MLdummy | MLcustom _ -> ()
   in iter 0 
 
 (*s Map over asts. *)
@@ -359,7 +356,7 @@ let ast_map f = function
   | MLcons (c,l) -> MLcons (c, List.map f l)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLcustom _ as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -375,7 +372,7 @@ let ast_map_lift f n = function
   | MLcons (c,l) -> MLcons (c, List.map (f n) l)
   | MLcast (a,t) -> MLcast (f n a, t)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a	
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLcustom _ as a -> a	
 
 (*s Iter over asts. *) 
 
@@ -390,7 +387,7 @@ let ast_iter f = function
   | MLcons (c,l) -> List.iter f l
   | MLcast (a,t) -> f a
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLcustom _ as a -> ()
 
 (*S Searching occurrences of a particular term (no lifting done). *)
 
@@ -920,7 +917,7 @@ and kill_dummy_fix i fi c =
 (*s Putting things together. *)
 
 let normalize a = 
-  if (optim()) then post_simpl (kill_dummy (simpl true a)) else simpl false a
+  if optim () then post_simpl (kill_dummy (simpl true a)) else simpl false a
 
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
 
@@ -986,25 +983,6 @@ let rec is_constr = function
   | MLcons _   -> true
   | MLlam(_,t) -> is_constr t
   | _          -> false
-
-let is_ind = function 
-  | IndRef _ -> true 
-  | _ -> false 
-
-let is_rec_principle r = match r with 
-  | ConstRef _ -> 
-      let d,i = repr_qualid (shortest_qualid_of_global None r) in 
-      let s = string_of_id i in 
-      if Filename.check_suffix s "_rec" then 
-	let i' = id_of_string (Filename.chop_suffix s "_rec") in 
-	(try is_ind (locate (make_qualid d i'))
-	 with Not_found -> false)
-      else if Filename.check_suffix s "_rect" then 
-	let i' = id_of_string (Filename.chop_suffix s "_rect") in 
-	(try is_ind (locate (make_qualid d i'))
-	 with Not_found -> false)
-      else false
-  | _ -> false 
 
 (*s Strictness *)
 
@@ -1094,10 +1072,10 @@ let inline_test t =
   not (is_fix t) && (is_constr t || (ml_size t < 12 && is_not_strict t))
 
 let manual_inline_list = 
-  let dir = dirpath_of_string "Coq.Init.Wf" in 
-  List.map (fun s -> (encode_kn dir (id_of_string s)))
-    [ "well_founded_induction"; 
-      "well_founded_induction_type" ]
+  let mp = MPfile (dirpath_of_string "Coq.Init.Wf") in 
+  List.map (fun s -> (make_kn mp empty_dirpath (mk_label s)))
+    [ "well_founded_induction_type"; "well_founded_induction"; 
+      "Acc_rect"; "Acc_rec" ]
 
 let manual_inline = function 
   | ConstRef c -> List.mem c manual_inline_list
@@ -1114,7 +1092,7 @@ let inline r t =
   not (to_keep r) (* The user DOES want to keep it *)
   && (to_inline r (* The user DOES want to inline it *) 
      || (auto_inline () && lang () <> Haskell 
-	 && (is_rec_principle r || manual_inline r || inline_test t)))
+	 && (is_recursor r || manual_inline r || inline_test t)))
 
 (*S Optimization. *)
 

@@ -14,12 +14,9 @@ open Pp
 open Util
 open Names
 open Nameops
-open Term
 open Miniml
 open Mlutil
-open Options
 open Ocaml
-open Nametab
 
 (*s Haskell renaming issues. *)
 
@@ -75,6 +72,7 @@ let rec pp_type par vl t =
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy -> str "()"
     | Tunknown -> str "()"
+    | Tcustom s -> str s
  in 
   hov 0 (pp_rec par t)
 
@@ -140,6 +138,7 @@ let rec pp_expr par env args =
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) -> pp_expr par env args a
     | MLmagic a ->  pp_expr par env args a
+    | MLcustom s -> str s
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =
