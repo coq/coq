@@ -205,7 +205,7 @@ Library.pdf: $(INPUTS) library.coqweb.tex Library.tex
 Library.html: $(INPUTS) library.coqweb.tex Library.tex
 	hevea ./coq-html.sty $(COQWEBSTY)/coqweb.sty ./Library.tex
 
-LIBDIRS= Logic Bool Arith Zarith Reals Lists Sets Relations \
+LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations \
          Wellfounded IntMap
 
 library.coqweb.tex: library.files
