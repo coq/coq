@@ -72,14 +72,16 @@ let print_term ids_to_inner_sorts =
          X.xml_nempty "PROD" ["type",sort]
           [< List.fold_left
               (fun i (id,binder,s) ->
-                let sort = Hashtbl.find ids_to_inner_sorts id in
-                let attrs =
-                 ("id",id)::("sort",sort)::
-                 match binder with
-                    Names.Anonymous -> []
-                  | Names.Name b -> ["name",Names.string_of_id b]
+                let sort =
+                 Hashtbl.find ids_to_inner_sorts (Cic2acic.source_id_of_id id)
                 in
-                 [< X.xml_nempty "binder" attrs (aux s) ; i >]
+                 let attrs =
+                  ("id",id)::("type",sort)::
+                  match binder with
+                     Names.Anonymous -> []
+                   | Names.Name b -> ["binder",Names.string_of_id b]
+                 in
+                  [< X.xml_nempty "decl" attrs (aux s) ; i >]
               ) [< >] prods ;
              X.xml_nempty "target" [] (aux t)
           >]
@@ -95,14 +97,16 @@ let print_term ids_to_inner_sorts =
          X.xml_nempty "LAMBDA" ["sort",sort]
           [< List.fold_left
               (fun i (id,binder,s) ->
-                let sort = Hashtbl.find ids_to_inner_sorts id in
-                let attrs =
-                 ("id",id)::("sort",sort)::
-                 match binder with
-                    Names.Anonymous -> []
-                  | Names.Name b -> ["name",Names.string_of_id b]
+                let sort =
+                 Hashtbl.find ids_to_inner_sorts (Cic2acic.source_id_of_id id)
                 in
-                 [< X.xml_nempty "binder" attrs (aux s) ; i >]
+                 let attrs =
+                  ("id",id)::("type",sort)::
+                  match binder with
+                     Names.Anonymous -> []
+                   | Names.Name b -> ["binder",Names.string_of_id b]
+                 in
+                  [< X.xml_nempty "decl" attrs (aux s) ; i >]
               ) [< >] lambdas ;
              X.xml_nempty "target" [] (aux t)
           >]
@@ -112,14 +116,16 @@ let print_term ids_to_inner_sorts =
          X.xml_nempty "LETIN" ["sort",sort]
           [< List.fold_left
               (fun i (id,binder,s) ->
-                let sort = Hashtbl.find ids_to_inner_sorts id in
-                let attrs =
-                 ("id",id)::("sort",sort)::
-                 match binder with
-                    Names.Anonymous -> assert false
-                  | Names.Name b -> ["name",Names.string_of_id b]
+                let sort =
+                 Hashtbl.find ids_to_inner_sorts (Cic2acic.source_id_of_id id)
                 in
-                 [< X.xml_nempty "binder" attrs (aux s) ; i >]
+                 let attrs =
+                  ("id",id)::("sort",sort)::
+                  match binder with
+                     Names.Anonymous -> assert false
+                   | Names.Name b -> ["binder",Names.string_of_id b]
+                 in
+                  [< X.xml_nempty "def" attrs (aux s) ; i >]
               ) [< >] letins ;
              X.xml_nempty "target" [] (aux t)
           >]

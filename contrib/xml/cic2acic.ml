@@ -111,6 +111,8 @@ let fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids =
    res
 ;;
 
+let source_id_of_id id = "#source#" ^ id;;
+
 let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
  ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars env evar_map t
  expectedty
@@ -230,6 +232,9 @@ print_endline "PASSATO" ; flush stdout ;
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id''
                (string_of_sort innertype) ;
+              let sourcetype = Retyping.get_type_of env evar_map s in
+               Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
+                (string_of_sort sourcetype) ;
               let new_passed_prods =
                let father_is_prod =
                 match father with
@@ -255,6 +260,9 @@ print_endline "PASSATO" ; flush stdout ;
           | T.Lambda (n,s,t) ->
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+              let sourcetype = Retyping.get_type_of env evar_map s in
+               Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
+                (string_of_sort sourcetype) ;
               let father_is_lambda =
                match father with
                   None -> false
@@ -282,6 +290,12 @@ print_endline "PASSATO" ; flush stdout ;
           | T.LetIn (n,s,t,d) ->
              let n' = Nameops.next_name_away n (Termops.ids_of_context env) in
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
+              let sourcesort =
+               Retyping.get_sort_family_of env evar_map
+                (Retyping.get_type_of env evar_map s)
+              in
+               Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
+                (string_of_sort_family sourcesort) ;
               let father_is_letin =
                match father with
                   None -> false
