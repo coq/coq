@@ -20,7 +20,8 @@ open Reductionops
 
 (*s printing of constr -- debugging *)
 
-let msg x = () ;; let prterm c = str "" (* comment this to see debug msgs *)
+(* comment this line to see debug msgs *)
+let msg x = () ;; let prterm c = str "" 
   (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ prterm c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
@@ -67,6 +68,10 @@ let  rec mkevarmap_from_listex lex =
   match lex with
 	 | [] -> Evd.empty
 	 | ((ex,_),typ)::lex' -> 
+(*		  let _ = prstr "mkevarmap" in
+		  let _ = prstr ("evar n. " ^ string_of_int ex ^ " ") in
+		  let _ = prstr "OF TYPE: " in
+		  let _ = prconstr typ in*)
 		  let info ={
 			 evar_concl = typ;
 			 evar_hyps = empty_named_context;
