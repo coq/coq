@@ -103,6 +103,8 @@ val interp_tac_gen : (identifier * value) list ->
 (* Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr
 
+val glob_tactic_env : identifier list -> Environ.env -> raw_tactic_expr -> glob_tactic_expr
+
 val eval_tactic : glob_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic

@@ -640,6 +640,11 @@ let rec intern_atomic lf ist x =
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
 
 and intern_tactic_seq ist = function
+  (* Traducteur v7->v8 *)
+  | TacAtom (_,TacReduce (Unfold [_,Ident (_,id)],_))
+      when string_of_id id = "INZ" -> ist.ltacvars, TacId
+
+
   | TacAtom (loc,t) ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
@@ -1169,11 +1174,7 @@ let interp_constr_with_bindings ist gl (c,bl) =
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
 
-  let ist = match ist.debug with
-  | DebugOn | Run _ -> {ist with debug = debug_prompt gl ist.debug tac }
-  | _ -> ist in
-
-  match tac with
+  let value_interp ist = match tac with
   (* Immediate evaluation *)
   | TacFun (it,body) -> VFun (ist.lfun,it,body)
   | TacLetRecIn (lrc,u) -> letrec_interp ist gl lrc u
@@ -1185,6 +1186,11 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   | TacArg a -> interp_tacarg ist gl a
   (* Delayed evaluation *)
   | t -> VTactic (dummy_loc,eval_tactic ist t)
+
+  in match ist.debug with
+    | DebugOn lev ->
+	debug_prompt lev gl tac (fun v -> value_interp {ist with debug=v})
+    | _ -> value_interp ist
 
 and eval_tactic ist = function
   | TacAtom (loc,t) -> fun gl -> catch_error loc (interp_atomic ist gl t) gl
@@ -1725,7 +1731,8 @@ let subst_or_var f =  function
 
 let subst_located f (_loc,id) = (loc,f id)
 
-let subst_reference subst r = (* TODO: subst ltac global names *) r
+let subst_reference subst = 
+  subst_or_var (subst_located (subst_kn subst))
 
 let subst_global_reference subst = 
   subst_or_var (subst_located (subst_global subst))
@@ -1885,13 +1892,11 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
 and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 
 and subst_tacarg subst = function
-  | Reference r -> Reference (subst_or_var (subst_reference subst) r)
+  | Reference r -> Reference (subst_reference subst r)
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
   | MetaIdArg (_loc,_) -> assert false
   | TacCall (_loc,f,l) ->
-      TacCall (_loc,
-        subst_or_var (subst_reference subst) f,
-	List.map (subst_tacarg subst) l)
+      TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
   | (TacVoid | Identifier _ | Integer _ | TacFreshId _) as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacDynamic(_,t) as x ->
@@ -1956,17 +1961,19 @@ let bad_tactic_args s =
     (str "Tactic " ++ str s ++ str " called with bad arguments")
 
 (* Declaration of the TAC-DEFINITION object *)
-let add (sp,td) = mactab := Gmap.add sp td !mactab
+let add (kn,td) = mactab := Gmap.add kn td !mactab
 
-let register_tacdef (sp,td) = sp,td
-
-let cache_md (_,defs) =
-  (* Needs a rollback if something goes wrong *)
-  List.iter (fun (sp,_) -> Nametab.push_tactic (Until 1) sp) defs;
-  List.iter add (List.map register_tacdef defs)
+let cache_md ((sp,kn),defs) =
+  let dp,_ = repr_path sp in
+  let mp,dir,_ = repr_kn kn in
+  List.iter (fun (id,t) -> 
+    let sp = Libnames.make_path dp id in
+    let kn = Names.make_kn mp dir (label_of_id id) in
+    Nametab.push_tactic (Until 1) sp kn;
+    add (kn,t)) defs
 
 let subst_md (_,subst,defs) =
-  List.map (fun (sp,t) -> (sp,subst_tactic subst t)) defs
+  List.map (fun (id,t) -> (id,subst_tactic subst t)) defs
 
 let (inMD,outMD) =
   declare_object {(default_object "TAC-DEFINITION") with
@@ -1978,12 +1985,11 @@ let (inMD,outMD) =
 
 (* Adds a definition for tactics in the table *)
 let make_absolute_name (loc,id) =
-  let sp = Lib.make_path id in
-  if Gmap.mem sp !mactab then
-    errorlabstrm "Tacinterp.add_tacdef" 
-      (str "There is already a Meta Definition or a Tactic Definition named "
-       ++ pr_sp sp);
-  sp
+  let kn = Lib.make_kn id in
+  if Gmap.mem kn !mactab then
+    user_err_loc (loc,"Tacinterp.add_tacdef",
+      str "There is already an Ltac Definition named " ++ pr_id id);
+  kn
 
 let make_empty_glob_sign () =
   { ltacvars = ([],[]); ltacrecvars = []; 
@@ -1995,9 +2001,9 @@ let add_tacdef isrec tacl =
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars = if isrec then rfun else []} in
   let gtacl =
-    List.map2 (fun (_,sp) (_,def) ->
-        (sp,Options.with_option strict_check (intern_tactic ist) def))
-      rfun tacl in
+    List.map (fun ((_,id),def) ->
+      (id,Options.with_option strict_check (intern_tactic ist) def))
+      tacl in
   let id0 = fst (List.hd rfun) in
   let _ = Lib.add_leaf id0 (inMD gtacl) in
   List.iter
@@ -2008,6 +2014,11 @@ let add_tacdef isrec tacl =
 (* Other entry points *)
 
 let glob_tactic x = intern_tactic (make_empty_glob_sign ()) x
+
+let glob_tactic_env l env x = 
+  intern_tactic
+    { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env }
+    x
 
 let interp_redexp env evc r = 
   let ist = { lfun=[]; debug=get_debug () } in
