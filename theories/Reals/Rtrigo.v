@@ -889,3 +889,20 @@ Definition tand [x:R] : R := (tan (toRad x)).
 Lemma Rsqr_sin_cos_d_one : (x:R) ``(Rsqr (sind x))+(Rsqr (cosd x))==1``.
 Intro x; Unfold sind; Unfold cosd; Apply sin2_cos2.
 Save.
+
+(***************************************************)
+(*                Other properties                 *)
+(***************************************************)
+
+Lemma sin_lb_ge_0 : (a:R) ``0<=a``->``a<=PI/2``->``0<=(sin_lb a)``.
+Intros; Case (total_order R0 a); Intro.
+Left; Apply sin_lb_gt_0; Assumption.
+Elim H1; Intro.
+Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sigma_aux; Unfold sin_term; Repeat Rewrite pow_ne_zero.
+Unfold Rdiv; Repeat Rewrite Rmult_Ol; Repeat Rewrite Rmult_Or; Repeat Rewrite Rplus_Or; Right; Reflexivity.
+Simpl; Discriminate.
+Simpl; Discriminate.
+Simpl; Discriminate.
+Simpl; Discriminate.
+Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` a ``0`` H H2)).
+Save.

@@ -49,6 +49,14 @@ Lemma Rsqr_eq_0 : (x:R) ``(Rsqr x)==0`` -> ``x==0``.
 Unfold Rsqr; Intros; Generalize (without_div_Od x x H); Intro; Elim H0; Intro ; Assumption.
 Save.
 
+Lemma Rsqr_minus_plus : (a,b:R) ``(a-b)*(a+b)==(Rsqr a)-(Rsqr b)``.
+Intros; SqRing.
+Save.
+
+Lemma Rsqr_plus_minus : (a,b:R) ``(a+b)*(a-b)==(Rsqr a)-(Rsqr b)``.
+Intros; SqRing.
+Save.
+
 Lemma Rsqr_incr_0 : (x,y:R) ``(Rsqr x)<=(Rsqr y)`` -> ``0<=x`` -> ``0<=y`` -> ``x<=y``.
 Intros; Case (total_order_Rle x y); Intro; [Assumption | Cut ``y<x``; [Intro; Unfold Rsqr in H; Generalize (Rmult_lt2 y x y x H1 H1 H2 H2); Intro; Generalize (Rle_lt_trans ``x*x`` ``y*y`` ``x*x`` H H3); Intro; Elim (Rlt_antirefl ``x*x`` H4) | Auto with real]].
 Save.

@@ -1567,6 +1567,24 @@ Lemma Rmult_lt2 : (r1,r2,r3,r4:R) ``0<=r1`` -> ``0<=r3`` -> ``r1<r2`` -> ``r3<r4
 Intros; Apply Rle_lt_trans with ``r2*r3``; [Apply Rle_monotony_r; [Assumption | Left; Assumption] | Apply Rlt_monotony; [Apply Rle_lt_trans with r1; Assumption | Assumption]].
 Save.
 
+Lemma le_epsilon : (x,y:R) ((eps : R) ``0<eps``->``x<=y+eps``) -> ``x<=y``.
+Intros; Elim (total_order x y); Intro.
+Left; Assumption.
+Elim H0; Intro.
+Right; Assumption.
+Clear H0; Generalize (Rgt_minus x y H1); Intro H2; Change ``0<x-y`` in H2.
+Cut ``0<2``.
+Intro.
+Generalize (Rmult_lt_pos ``x-y`` ``/2`` H2 (Rlt_Rinv ``2`` H0)); Intro H3; Generalize (H ``(x-y)*/2`` H3); Replace ``y+(x-y)*/2`` with ``(y+x)*/2``.
+Intro H4; Generalize (Rle_monotony ``2`` x ``(y+x)*/2`` (Rlt_le ``0`` ``2`` H0) H4); Rewrite <- (Rmult_sym ``((y+x)*/2)``); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Replace ``2*x`` with ``x+x``.
+Rewrite (Rplus_sym y); Intro H5; Apply Rle_anti_compatibility with x; Assumption.
+Ring. 
+Replace ``2`` with (INR (S (S O))); [Apply not_O_INR; Discriminate | Ring].
+Field; Replace ``2`` with (INR (S (S O))); [Apply not_O_INR; Discriminate | Ring].
+Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR; Intro; Assumption | Discriminate].
+Save.
+
 (*****************************************************)
 (* Résultat complémentaire sur la fonction INR       *)
 (*****************************************************)
