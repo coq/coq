@@ -28,6 +28,13 @@ let default_monospace_font_name = "Monospace 14"
 let manual_monospace_font = ref None
 let manual_general_font = ref None
 
+let status = ref None
+let push_info = ref (function s -> failwith "not ready")
+let pop_info = ref (function s -> failwith "not ready")
+let flash_info = ref  (function s -> failwith "not ready")
+
+let pulse = ref (function () -> failwith "not ready")
+
 let has_config_file = 
   (Sys.file_exists (Filename.concat lib_ide ".coqiderc")) || 
   (try Sys.file_exists (Filename.concat (Sys.getenv "HOME") ".coqiderc")
@@ -227,26 +234,28 @@ let coq_computing = Mutex.create ()
 let coq_may_stop = Mutex.create ()
 
 let full_do_if_not_computing f x = 
-if Mutex.try_lock coq_computing then 
-  ignore (Thread.create 
-	    (fun () ->
-	       Glib.Thread.enter ();
-	       prerr_endline "Launching thread";
-	       begin
-		   prerr_endline "Getting lock";
-		 try
-		   f x;
-		   prerr_endline "Releasing lock";
-		   Mutex.unlock coq_computing;
-		   Glib.Thread.leave ();
-		 with e -> 
-		   prerr_endline "Releasing lock (on error)";
-		   Mutex.unlock coq_computing;
-		   Glib.Thread.leave ();
-		   raise e
-	       end)
-	    ())
-else prerr_endline "Discarded order (computations are ongoing)"
+  if Mutex.try_lock coq_computing then 
+    ignore (Thread.create 
+	      (async (fun () ->
+			prerr_endline "Launching thread";
+			let idle = 
+			  Glib.Timeout.add ~ms:300
+			    ~callback:(fun () -> !pulse ();true) in
+			begin
+			  prerr_endline "Getting lock";
+			  try
+			    f x;
+			    Glib.Timeout.remove idle;
+			    prerr_endline "Releasing lock";
+			    Mutex.unlock coq_computing;
+			  with e -> 
+			    Glib.Timeout.remove idle;
+			    prerr_endline "Releasing lock (on error)";
+			    Mutex.unlock coq_computing;
+			    raise e
+			end))
+	      ())
+  else prerr_endline "Discarded order (computations are ongoing)"
 
 let do_if_not_computing f x = 
   ignore (full_do_if_not_computing f x)
@@ -264,11 +273,6 @@ let break () =
     Mutex.unlock coq_computing;
     prerr_endline "Break received and discarded (not computing)"
   end
-
-
-let can_break () = () 
-let cant_break () = () 
-
 
 let add_input_view tv = 
   Vector.append input_views tv
@@ -408,10 +412,6 @@ let get_current_word () =
 	prerr_endline t;
 	t
 	  
-let status = ref None
-let push_info = ref (function s -> failwith "not ready")
-let pop_info = ref (function s -> failwith "not ready")
-let flash_info = ref  (function s -> failwith "not ready")
 
 let input_channel b ic =
   let buf = String.create 1024 and len = ref 0 in
@@ -629,7 +629,16 @@ object(self)
   method get_insert = get_insert input_buffer
 
   method recenter_insert = 
-   ignore (input_view#scroll_to_iter ~within_margin:0.20 self#get_insert) 
+    (* BUG : to investigate further: 
+       FIXED : Never call  GMain.* in thread !
+    PLUS : GTK BUG ??? Cannot be called from a thread...*)
+    try 
+      ignore (GtkThread.sync (input_view#scroll_to_mark 
+		~use_align:false
+		~yalign:0.75
+		~within_margin:0.25)
+		`INSERT) 
+    with _ -> prerr_endline "Could not recenter ERROR ignored"
 
   method show_goals = 
     try
@@ -778,9 +787,7 @@ object(self)
   method send_to_coq phrase show_output show_error localize =
     try 
       prerr_endline "Send_to_coq starting now";
-      can_break ();
       let r = Some (Coq.interp phrase) in
-      cant_break ();
       let msg = read_stdout () in 
       self#insert_message (if show_output then msg else "");
       r
@@ -887,6 +894,7 @@ object(self)
 	      let b = input_buffer in
 	      if do_highlight then begin
 		input_buffer#apply_tag_by_name ~start ~stop "to_process";
+		prerr_endline "process_next_phrase : to_process applied";
 		process_pending ()
 	      end;
 	      prerr_endline "process_next_phrase : getting phrase";
@@ -976,7 +984,7 @@ object(self)
       ~stop
       "to_process";
     input_view#set_editable false;
-    !flash_info "Coq is computing";
+    !push_info "Coq is computing";
     process_pending ();
     (try 
        while ((stop#compare self#get_start_of_input>=0) 
@@ -1014,7 +1022,7 @@ object(self)
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
-      prerr_endline "Backtracking_to iter starts now.";
+    prerr_endline "Backtracking_to iter starts now.";
     (* re-synchronize Coq to the current state of the stack *)
     let rec synchro () =
       if is_empty () then
@@ -1079,7 +1087,8 @@ Please restart and report NOW.";
       
   method backtrack_to i = 
     if Mutex.try_lock coq_may_stop then 
-      (self#backtrack_to i ; Mutex.unlock coq_may_stop)
+      (!push_info "Undoing...";self#backtrack_to_no_lock i ; Mutex.unlock coq_may_stop;
+      !pop_info ())
     else prerr_endline "backtrack_to : discarded (lock is busy)"
 
   method backtrack_to_insert = 
@@ -1088,59 +1097,61 @@ Please restart and report NOW.";
 
   method undo_last_step =
     if Mutex.try_lock coq_may_stop then  
-      ((try
-	let last_command = top () in
-	let start = input_buffer#get_iter_at_mark last_command.start in
-	let update_input () =
-	  prerr_endline "Removing processed tag...";
-	  input_buffer#remove_tag_by_name 
-	    ~start
-	    ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
-	    "processed";
-	  prerr_endline "Moving start_of_input";
-	  input_buffer#move_mark
-	    ~where:start
-	    (`NAME "start_of_input");
-	  input_buffer#place_cursor start;
-	  self#recenter_insert;
-	  self#show_goals;
-	  self#clear_message
-	in
-	begin match last_command with 
-	  | {ast=_,VernacSolve _} -> 
-	      begin 
-		try Pfedit.undo 1; ignore (pop ()); update_input () 
-		with _ -> self#backtrack_to_no_lock start
-	      end
-	  | {ast=_,t;reset_info=Reset (id, {contents=true})} ->
-	      ignore (pop ());
-	      (match t with 
-		 | VernacBeginSection _ | VernacDefineModule _ 
-		 | VernacDeclareModule _ | VernacDeclareModuleType _
-		 | VernacEndSegment _ 
-		   -> reset_to_mod id
-		 | _ ->  reset_to id);
-	      update_input ()
-	  | { ast = _, ( VernacStartTheoremProof _ 
-		       | VernacDefinition (_,_,ProveBody _,_,_));
-	      reset_info=Reset(id,{contents=false})} ->
-	      ignore (pop ());
-	      (try 
-		 Pfedit.delete_current_proof () 
-	       with e ->
-		 begin 
-		   prerr_endline "WARNING : found a closed environment";
-		   raise e
-		 end);
-	      update_input ()
-	  | _ -> 
-	      self#backtrack_to_no_lock start
-	end;
-      with
-	| Size 0 -> !flash_info "Nothing to Undo"
-      );
-    Mutex.unlock coq_may_stop)
-    else prerr_endline "undo_last_step discaded"
+      (!push_info "Undoing...";
+       (try
+	  let last_command = top () in
+	  let start = input_buffer#get_iter_at_mark last_command.start in
+	  let update_input () =
+	    prerr_endline "Removing processed tag...";
+	    input_buffer#remove_tag_by_name 
+	      ~start
+	      ~stop:(input_buffer#get_iter_at_mark last_command.stop) 
+	      "processed";
+	    prerr_endline "Moving start_of_input";
+	    input_buffer#move_mark
+	      ~where:start
+	      (`NAME "start_of_input");
+	    input_buffer#place_cursor start;
+	    self#recenter_insert;
+	    self#show_goals;
+	    self#clear_message
+	  in
+	  begin match last_command with 
+	    | {ast=_,VernacSolve _} -> 
+		begin 
+		  try Pfedit.undo 1; ignore (pop ()); update_input () 
+		  with _ -> self#backtrack_to_no_lock start
+		end
+	    | {ast=_,t;reset_info=Reset (id, {contents=true})} ->
+		ignore (pop ());
+		(match t with 
+		   | VernacBeginSection _ | VernacDefineModule _ 
+		   | VernacDeclareModule _ | VernacDeclareModuleType _
+		   | VernacEndSegment _ 
+		     -> reset_to_mod id
+		   | _ ->  reset_to id);
+		update_input ()
+	    | { ast = _, ( VernacStartTheoremProof _ 
+			 | VernacDefinition (_,_,ProveBody _,_,_));
+		reset_info=Reset(id,{contents=false})} ->
+		ignore (pop ());
+		(try 
+		   Pfedit.delete_current_proof () 
+		 with e ->
+		   begin 
+		     prerr_endline "WARNING : found a closed environment";
+		     raise e
+		   end);
+		update_input ()
+	    | _ -> 
+		self#backtrack_to_no_lock start
+	  end;
+	with
+	  | Size 0 -> !flash_info "Nothing to Undo"
+       );
+       !pop_info ();
+       Mutex.unlock coq_may_stop)
+    else prerr_endline "undo_last_step discarded"
 
   method insert_command cp ip = 
     self#clear_message;
@@ -1277,9 +1288,10 @@ Please restart and report NOW.";
   method help_for_keyword () = browse_keyword (get_current_word ())
 
   initializer 
-    ignore (message_buffer#connect#after#insert_text
+    ignore (message_buffer#connect#insert_text
 	      ~callback:(fun it s -> ignore 
 			   (message_view#scroll_to_mark
+			      ~use_align:false
 			      ~within_margin:0.49
 			      `INSERT)));
     ignore (input_buffer#connect#insert_text
@@ -1338,7 +1350,14 @@ Please restart and report NOW.";
 				 ~stop:input_buffer#end_iter
 				 paren_highlight_tag;
 			     | _ -> () )
-	   )
+	   );
+    ignore (input_buffer#connect#insert_text
+	   (fun it s -> 
+	      prerr_endline "Should recenter ?";
+	      if String.contains s '\n' then begin
+		prerr_endline "Should recenter : yes";
+		self#recenter_insert
+	      end))
 end
 
 let create_input_tab filename =
@@ -1466,7 +1485,7 @@ let main files =
   in
   let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  
-    match  select_file ~title:"_Load file" () with 
+    match  select_file ~title:"Load file" () with 
       | None -> ()
       | (Some f) as fn -> load f
   in
@@ -1649,7 +1668,8 @@ let main files =
   ignore (rehighlight_m#connect#activate 
 	    (fun () -> 
 	       Highlight.rehighlight_all 
-	       (get_current_view()).view#buffer));
+	       (get_current_view()).view#buffer;
+	       (out_some (get_current_view()).analyzed_view)#recenter_insert));
 
   (* File/Refresh Menu *)
   let refresh_m = file_factory#add_item "Restart all" ~key:GdkKeysyms._R in
@@ -2026,7 +2046,7 @@ let main files =
   *)
   font_selector := 
   Some (GWindow.font_selection_dialog 
-	  ~title:"_Select font..."
+	  ~title:"Select font..."
 	  ~modal:true ());
   let font_selector = out_some !font_selector in
   font_selector#selection#set_font_name default_monospace_font_name;
@@ -2091,13 +2111,17 @@ let main files =
 	      ~vpolicy:`AUTOMATIC 
 	      ~hpolicy:`AUTOMATIC
 	      ~packing:(hb2#add) () in
-  let status_bar = GMisc.statusbar ~packing:vbox#pack () in
+  let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
+  let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
+  in
   let status_context = status_bar#new_context "Messages" in
   ignore (status_context#push "Ready");
   status := Some status_bar;
   push_info := (fun s -> ignore (status_context#push s));
   pop_info := (fun () -> status_context#pop ());
   flash_info := (fun s -> status_context#flash ~delay:5000 s);
+  pulse := 
+  (GRange.progress_bar ~text:"CoqIde started" ~pulse_step:0.1 ~packing:lower_hbox#pack ())#pulse;
   let tv2 = GText.view ~packing:(sw2#add) () in
   tv2#misc#set_name "GoalWindow";
   let _ = tv2#set_editable false in
@@ -2226,12 +2250,10 @@ let main files =
 let start () = 
   let files = Coq.init () in
   ignore_break ();
-  cant_break ();
   GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqiderc");
   (try 
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
   with Not_found -> ());
-  Glib.Thread.init ();
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 
     (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);

@@ -54,13 +54,13 @@ newtheories/Reals/RiemannInt.vo: newtheories/Reals/RiemannInt.v newtheories/Real
 newtheories/Reals/Integration.vo: newtheories/Reals/Integration.v newtheories/Reals/NewtonInt.vo newtheories/Reals/RiemannInt_SF.vo newtheories/Reals/RiemannInt.vo
 newtheories/Reals/Reals.vo: newtheories/Reals/Reals.v newtheories/Reals/Rbase.vo newtheories/Reals/Rfunctions.vo newtheories/Reals/SeqSeries.vo newtheories/Reals/Rtrigo.vo newtheories/Reals/Ranalysis.vo newtheories/Reals/Integration.vo
 newtheories/Init/Datatypes.vo: newtheories/Init/Datatypes.v
-newtheories/Init/DatatypesSyntax.vo: newtheories/Init/DatatypesSyntax.v newtheories/Init/Datatypes.vo
+newtheories/Init/DatatypesSyntax.vo: newtheories/Init/DatatypesSyntax.v
 newtheories/Init/Peano.vo: newtheories/Init/Peano.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Datatypes.vo
 newtheories/Init/PeanoSyntax.vo: newtheories/Init/PeanoSyntax.v newtheories/Init/Datatypes.vo newtheories/Init/Peano.vo
 newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Datatypes.vo
 newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
 newtheories/Init/LogicSyntax.vo: newtheories/Init/LogicSyntax.v newtheories/Init/Logic.vo
-newtheories/Init/SpecifSyntax.vo: newtheories/Init/SpecifSyntax.v newtheories/Init/DatatypesSyntax.vo newtheories/Init/Specif.vo
+newtheories/Init/SpecifSyntax.vo: newtheories/Init/SpecifSyntax.v newtheories/Init/Datatypes.vo newtheories/Init/Specif.vo
 newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
 newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
 newtheories/Init/Logic_TypeSyntax.vo: newtheories/Init/Logic_TypeSyntax.v newtheories/Init/Logic_Type.vo

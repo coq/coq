@@ -3,6 +3,14 @@ open Preferences
 
 exception Forbidden
 
+
+let debug = Options.debug
+
+let prerr_endline s =
+  if !debug then (prerr_endline s;flush stderr)
+let prerr_string s =
+  if !debug then (prerr_string s;flush stderr)
+
 let lib_ide = Filename.concat Coq_config.coqlib "ide"
   
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
@@ -28,16 +36,15 @@ let byte_offset_to_char_offset s byte_offset =
   end
 
 let process_pending () =
-  while Glib.Main.pending () do 
-    ignore (Glib.Main.iteration false)
-  done
-
-let debug = Options.debug
-
-let prerr_endline s =
-  if !debug then (prerr_endline s;flush stderr)
-let prerr_string s =
-  if !debug then (prerr_string s;flush stderr)
+  prerr_endline "Pending process";()
+(*  try 
+    while Glib.Main.pending () do 
+      ignore (Glib.Main.iteration false)
+    done
+  with e -> 
+    prerr_endline "Pending problems : expect a crash very soon";
+    raise e
+*)
 
 let print_id id =
   prerr_endline ("GOT sig id :"^(string_of_int (Obj.magic id)))
@@ -190,3 +197,6 @@ let find_tag_stop (tag :GText.tag) (it:GText.iter) =
   it
 let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
  (find_tag_start tag it , find_tag_stop tag it)
+
+let async = 
+  if Sys.os_type <> "Unix" then GtkThread.async else (fun x -> x)
