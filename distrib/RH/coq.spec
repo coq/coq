@@ -8,6 +8,7 @@ Vendor: INRIA & LRI
 URL: http://coq.inria.fr
 Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
 Icon: petit-coq.gif
+BuildRoot: /var/tmp/coq
 
 %description
 Coq is a proof assistant which: 
@@ -17,43 +18,40 @@ Coq is a proof assistant which:
   - extracts a certified program from the constructive proof
     of its formal specification, 
 
-# Ocaml is required but it is better to install it not with rpm but by
-# hand in /usr/local
-# Requires: ocaml >= 3.06
+Requires: ocaml >= 3.06
 
-
+%define debug_package %{nil}
+                                                                               
 %prep
 %setup
 
 %build
-./configure -prefix /usr -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt
-make coq       # Use native coq to compile theories
+./configure -bindir %{_bindir} -libdir %{_libdir}/coq -mandir %{_mandir} \
+   -emacslib %{_datadir}/emacs/site-lisp \
+   -coqdocdir %{_datadir}/texmf/tex/latex/misc \
+   -opt -reals all -coqide no
+make coq
 
 
 %clean
+rm -rf %{buildroot}
 make clean
 
 %install
-make -e COQINSTALLPREFIX=$RPM_BUILD_ROOT/ install-coq
-# To install only locally the binaries compiled with absolute paths
+rm -rf %{buildroot}
+make -e COQINSTALLPREFIX=%{buildroot} install-coq
 
-%post
-# This is a because the Coq Team usually build Coq with Ocaml in /usr/local
-# but ocaml is actually in /usr if coming from a rpm package
-# This works only if ocaml has been installed by rpm
-if [ ! -e /usr/local/lib/ocaml ]; then
-  ln -s /usr/lib/ocaml /usr/local/lib/ocaml || true
-fi
+%files
+%{_bindir}/*
+%{_libdir}/coq/theories
+%{_libdir}/coq/contrib
+%{_libdir}/coq/states
+%{_libdir}/coq/theories7
+%{_libdir}/coq/contrib7
+%{_libdir}/coq/states7
+%{_mandir}/man1/*
+%{_datadir}/emacs/site-lisp/*
+%{_datadir}/texmf/tex/latex/misc/*
 
-%postun
-# This is because the Coq Team usually build Coq with Ocaml in /usr/local
-# but ocaml is actually in /usr if coming from a rpm package
-if [ -L /usr/local/lib/ocaml ]; then
-  rm /usr/local/lib/ocaml
-fi
-
-# the spec file is read from distrib/RH/src/SOURCES/coqX.Y
-# but coq.list is in distrib/RH/src
-%files -f ../../coq.list
 %defattr(-,root,root)
 

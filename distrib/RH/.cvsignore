@@ -1,5 +1,3 @@
 build src
-coq.list pcoq.list coqide.list
-pcoq.spec
 rpmmacros rpmrc
 coq-*
