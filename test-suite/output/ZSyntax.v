@@ -14,4 +14,4 @@ Check `(inject_nat O)=0`.
 
 (* Submitted by Pierre Casteran *)
 Require Arith.
-Check (Zplus `0` (inject_nat (789))).
+Check (Zplus `0` (inject_nat (11))).

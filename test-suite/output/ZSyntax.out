@@ -22,5 +22,5 @@
      : Z
 `(inject_nat (0)) = 0`
      : Prop
-`0+(inject_nat (789))`
+`0+(inject_nat (11))`
      : Z
