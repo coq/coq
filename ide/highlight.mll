@@ -98,8 +98,8 @@ and comment = parse
     try 
       let i = get_insert input_buffer in
       highlight_slice input_buffer 
-	(i#backward_lines 3) 
-	(ignore (i#nocopy#forward_lines 3);i)
+	(i#backward_lines 10) 
+	(ignore (i#nocopy#forward_lines 10);i)
 
     with _ -> ()
       
@@ -108,4 +108,15 @@ and comment = parse
     highlight_slice input_buffer input_buffer#start_iter input_buffer#end_iter
   with _ -> ()
 
+  let rehighlight_all (input_buffer:GText.buffer) = 
+    input_buffer#remove_tag_by_name 
+      ~start:input_buffer#start_iter 
+      ~stop:input_buffer#end_iter "kwd";
+    input_buffer#remove_tag_by_name 
+      ~start:input_buffer#start_iter 
+      ~stop:input_buffer#end_iter "decl";
+    input_buffer#remove_tag_by_name 
+      ~start:input_buffer#start_iter 
+      ~stop:input_buffer#end_iter "error";
+    highlight_all input_buffer
 }

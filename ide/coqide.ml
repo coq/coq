@@ -1627,7 +1627,8 @@ let main files =
   (* File/Rehighlight Menu *)
   let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
   ignore (rehighlight_m#connect#activate 
-	    (fun () -> Highlight.highlight_all 
+	    (fun () -> 
+	       Highlight.rehighlight_all 
 	       (get_current_view()).view#buffer));
 
   (* File/Refresh Menu *)
@@ -2215,9 +2216,7 @@ let start () =
   cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
   Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 						      `WARNING;`CRITICAL]
-    (fun ~level msg ->
-         failwith ("Coqide internal error: " ^ msg)
-    );
+    (fun ~level msg -> failwith ("Coqide internal error: " ^ msg));
   Command_windows.main ();
   main files;
   while true do 
