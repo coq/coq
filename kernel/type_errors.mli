@@ -31,6 +31,8 @@ type type_error =
   | NotInductive of constr
   | MLCase of string * constr * constr * constr * constr
   | CantFindCaseType of constr
+  | OccurCheck of int * constr
+  | NotClean of int * constr
 
 exception TypeError of path_kind * context * type_error
 

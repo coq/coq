@@ -13,3 +13,6 @@ open Evd
 val type_of : unsafe_env -> 'a evar_map -> constr -> constr
 
 val execute_type : unsafe_env -> 'a evar_map -> constr -> typed_type
+
+val execute_rec_type : unsafe_env -> 'a evar_map -> constr -> typed_type
+

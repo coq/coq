@@ -172,6 +172,7 @@ val conv_forall2_i :
 
 val is_conv : unsafe_env -> 'a evar_map -> constr -> constr -> bool
 val is_conv_leq : unsafe_env -> 'a evar_map -> constr -> constr -> bool
+val is_fconv : conv_pb -> unsafe_env -> 'a evar_map -> constr -> constr -> bool
 
 
 (*s Special-Purpose Reduction Functions *)
@@ -182,11 +183,13 @@ val instance : (int * constr) list -> 'a reduction_function
 
 (* whd_ise raise Uninstantiated_evar if an evar remains uninstantiated *)
 (* the '*_ise1*' leave uninstantiated evar as it *)
+
 exception Uninstantiated_evar of int
-val whd_ise : 'a reduction_function
-val whd_ise1 : 'a reduction_function
-val nf_ise1 : 'a reduction_function
-val whd_ise1_metas : 'a reduction_function
+
+val whd_ise : 'a evar_map -> constr -> constr
+val whd_ise1 : 'a evar_map -> constr -> constr
+val nf_ise1 : 'a evar_map -> constr -> constr
+val whd_ise1_metas : 'a evar_map -> constr -> constr
 
 
 (*s Obsolete Reduction Functions *)

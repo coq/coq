@@ -933,7 +933,7 @@ let test_conversion f env sigma x y =
 
 let is_conv env sigma = test_conversion conv env sigma
 let is_conv_leq env sigma = test_conversion conv_leq env sigma
-
+let is_fconv = function | CONV -> is_conv | CONV_LEQ -> is_conv_leq
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
@@ -1268,30 +1268,30 @@ let poly_args env sigma t =
 
 exception Uninstantiated_evar of int
 
-let rec whd_ise env sigma = function
+let rec whd_ise sigma = function
   | DOPN(Evar sp,_) as k ->
       if Evd.in_dom sigma sp then
         if Evd.is_defined sigma sp then
-          whd_ise env sigma (existential_value sigma k)
+          whd_ise sigma (existential_value sigma k)
         else raise (Uninstantiated_evar sp)
       else k
-  | DOP2(Cast,c,_) -> whd_ise env sigma c
+  | DOP2(Cast,c,_) -> whd_ise sigma c
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c
 
 
 (* 2- undefined existentials are left unchanged *)
-let rec whd_ise1 env sigma = function
+let rec whd_ise1 sigma = function
   | (DOPN(Evar sp,_) as k) ->
       if Evd.in_dom sigma sp & Evd.is_defined sigma sp then
-        whd_ise1 env sigma (existential_value sigma k)
+        whd_ise1 sigma (existential_value sigma k)
       else 
 	k
-  | DOP2(Cast,c,_) -> whd_ise1 env sigma c
+  | DOP2(Cast,c,_) -> whd_ise1 sigma c
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c
 
-let nf_ise1 env sigma = strong whd_ise1 env sigma
+let nf_ise1 sigma = strong (fun _ -> whd_ise1) empty_env sigma
 
 (* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
  * Similarly we have is_fmachine1_metas and is_resolve1_metas *)

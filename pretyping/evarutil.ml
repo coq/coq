@@ -10,8 +10,10 @@ open Term
 open Sign
 open Environ
 open Evd
+open Instantiate
 open Reduction
 open Indrec
+open Pretype_errors
 
 let rec filter_unique = function
   | [] -> []
@@ -51,7 +53,6 @@ let new_isevar_sign env sigma typ args =
 	       evar_body = Evar_empty; evar_info = () } in
   (Evd.add sigma newev info, mkEvar newev args)
 
-
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
 let dummy_sort = mkType dummy_univ
@@ -89,30 +90,30 @@ let split_evar_to_arrow sigma c =
  * ?3 <-- ?1          no pb: env of ?3 is larger than ?1's
  * ?1 <-- (list ?2)   pb: ?2 may depend on x, but not ?1.
  * What we do is that ?2 is defined by a new evar ?4 whose context will be
- * a prefix of ?2's env, included in ?1's env.
- *)
+ * a prefix of ?2's env, included in ?1's env. *)
+
 let do_restrict_hyps sigma c =
-  let (ev,argsv) = destEvar c in
-  let args = Array.to_list argsv in
+  let (ev,args) = destEvar c in
+  let args = Array.to_list args in
   let evd = Evd.map sigma ev in
   let env = evd.evar_env in
+  let hyps = get_globals (context env) in
   let (_,(rsign,ncargs)) =
-    List.fold_left (fun (sign,(rs,na)) a ->
-      (tl_sign sign,
-       if not(closed0 a) then (rs,na)
-       else (add_sign (hd_sign sign) rs, a::na)))
-      (hyps,(nil_sign,[])) args in
-(*  let (_,(rsign,ncargs)) =
-    List.fold_left (fun (sign,(rs,na)) a ->
-      (tl_sign sign,
-       if not(closed0 a) then (nil_sign,[])
-       else (add_sign (hd_sign sign) rs, a::na)))
-      (hyps,(nil_sign,[])) args in *)
-  let nsign = rev_sign rsign in
-  let nargs = (Array.of_list (List.map mkVar (ids_of_sign nsign))) in
-  let (sigma',nc) = new_isevar_sign sigma nsign evd.concl nargs k in
-  let sigma'' = Evd.define sigma' sp nc in
-  (sigma'', mkConst (path_of_const nc) (Array.of_list (List.rev ncargs)))
+    List.fold_left 
+      (fun (sign,(rs,na)) a ->
+	 (tl_sign sign,
+	  if not(closed0 a) then 
+	    (rs,na)
+	  else 
+	    (add_sign (hd_sign sign) rs, a::na)))
+      (hyps,(nil_sign,[])) args 
+  in
+  let sign' = rev_sign rsign in
+  let env' = change_hyps (fun _ -> sign') env in
+  let args' = Array.of_list (List.map mkVar (ids_of_sign sign')) in
+  let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl args' in
+  let sigma'' = Evd.define sigma' ev nc in
+  (sigma'', nc)
 
 
 
@@ -149,48 +150,21 @@ let ise_map isevars sp = Evd.map !isevars sp
 let ise_define isevars sp body = isevars := Evd.define !isevars sp body
 
 (* Does k corresponds to an (un)defined existential ? *)
-let ise_undefined isevars k =
-  match k with
-    DOPN(Const _,_) ->
-      ise_in_dom isevars (path_of_const k) &
-      not (defined_const !isevars k)
+let ise_undefined isevars = function
+  | DOPN(Evar n,_) -> not (Evd.is_defined !isevars n)
   | _ -> false
 
-
-let ise_defined isevars k =
-  match k with
-    DOPN(Const _,_) -> Termenv.defined_existential !isevars k
+let ise_defined isevars = function
+  | DOPN(Evar n,_) -> Evd.is_defined !isevars n
   | _ -> false
-
 
 let restrict_hyps isevars c =
-  if ise_undefined isevars c & not (closed0 c)
-  then
-    (let (sigma,rc) = do_restrict_hyps !isevars c in
+  if ise_undefined isevars c & not (closed0 c) then begin
+    let (sigma,rc) = do_restrict_hyps !isevars c in
     isevars := sigma;
-    rc)
-  else c
-
-
-
-let error_occur_check sp rhs =
-  let id = string_of_id (Names.basename sp) in
-  let pt = prterm rhs in
-  errorlabstrm "Trad.occur_check"
-    [< 'sTR"Occur check failed: tried to define "; 'sTR id;
-      'sTR" with term"; 'bRK(1,1); pt >]
-
-
-(* We need the environment here *)
-let error_not_clean sp t =
-  let c = Rel (List.hd (Listset.elements(free_rels t))) in
-  let id = string_of_id (Names.basename sp) in
-  let var = pTERM(c) in
-  errorlabstrm "Trad.not_clean"
-    [< 'sTR"Tried to define "; 'sTR id;
-       'sTR" with a term using variable "; var; 'sPC;
-       'sTR"which is not in its scope." >]
-
+    rc
+  end else 
+    c
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or VARs, or appearing several times.
@@ -215,30 +189,33 @@ let real_clean isevars sp args rhs =
     | DLAM(n,a) -> DLAM(n, subs (k+1) a)
     | DLAMV(n,v) -> DLAMV(n, Array.map (subs (k+1)) v) in
   let body = subs 0 rhs in
-  if not (closed0 body) then error_not_clean sp body;
+  if not (closed0 body) then error_not_clean CCI empty_env sp body;
   body
 
 
 
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
+
 let new_isevar isevars env typ k =
-  let (ENVIRON(sign,dbenv)) = env in
+  let (ENVIRON(sign,dbenv)) = context env in
   let t =
     List.fold_left (fun b (na,d)-> mkLambda na (incast_type d) b) typ dbenv in
   let rec aux sign = function
-      (0, t) -> (sign,t)
-    | (n, (DOP2(Lambda,d,(DLAM(na,b))))) ->
+    | (0, t) -> (sign,t)
+    | (n, DOP2(Lambda,d,(DLAM(na,b)))) ->
 	let na = if na = Anonymous then Name(id_of_string"_") else na in
        	let id = next_name_away na (ids_of_sign sign) in
        	aux (add_sign (id,(outcast_type d)) sign) (n-1, subst1 (VAR id) b)
-    | (_, _) -> anomaly "Trad.new_isevar" in
+    | (_, _) -> anomaly "Trad.new_isevar" 
+  in
   let (sign',typ') = aux sign (List.length dbenv, t) in
+  let env' = change_hyps (fun _ -> sign') env in
   let newargs =
     (List.rev(rel_list 0 (List.length dbenv)))
     @(List.map (fun id -> VAR id) (ids_of_sign sign)) in
   let (sigma',evar) =
-    new_isevar_sign !isevars sign' typ' (Array.of_list newargs) k in
+    new_isevar_sign env' !isevars typ' (Array.of_list newargs) in
   isevars := sigma';
   (evar,typ')
 
@@ -262,67 +239,76 @@ let new_isevar isevars env typ k =
  * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
  *)
 let evar_define isevars lhs rhs =
-  let (sp,argsv) = destConst lhs in
-  let _ = if occur_opern (Const sp) rhs then error_occur_check sp rhs in
+  let (ev,argsv) = destEvar lhs in
+  if occur_opern (Evar ev) rhs then error_occur_check CCI empty_env ev rhs;
   let args = List.map (function (VAR _ | Rel _) as t -> t | _ -> mkImplicit)
       (Array.to_list argsv) in 
-  let evd = ise_map isevars sp in
-  let hyps= evd.hyps in
+  let evd = ise_map isevars ev in
+  let hyps = get_globals (context evd.evar_env) in
   (* the substitution to invert *)
   let worklist = List.combine (ids_of_sign hyps) args in
-  let body = real_clean isevars sp worklist rhs in
-  ise_define isevars sp body;
-  [sp]
+  let body = real_clean isevars ev worklist rhs in
+  ise_define isevars ev body;
+  [ev]
 
 
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
  * definitions. We try to unify the xi with the yi pairwise. The pairs
  * that don't unify are discarded (i.e. ?i is redefined so that it does not
- * depend on these args).
- *)
+ * depend on these args). *)
+
 let solve_refl conv_algo isevars c1 c2 =
-  let (sp,argsv1) = destConst c1
-  and (_,argsv2) = destConst c2 in
-  let evd = Evd.map !isevars sp in
-  let hyps = evd.Evd.hyps in
-  let (_,rsign) = it_vect2
+  let (ev,argsv1) = destEvar c1
+  and (_,argsv2) = destEvar c2 in
+  let evd = Evd.map !isevars ev in
+  let env = evd.evar_env in
+  let hyps = get_globals (context env) in
+  let (_,rsign) = 
+    array_fold_left2
       (fun (sgn,rsgn) a1 a2 ->
-	if conv_algo a1 a2
- 	then (tl_sign sgn, add_sign (hd_sign sgn) rsgn)
-	else (tl_sign sgn, rsgn))
-      (hyps,nil_sign) argsv1 argsv2 in
+	 if conv_algo a1 a2 then 
+	   (tl_sign sgn, add_sign (hd_sign sgn) rsgn)
+	 else 
+	   (tl_sign sgn, rsgn))
+      (hyps,nil_sign) argsv1 argsv2 
+  in
   let nsign = rev_sign rsign in
+  let nenv = change_hyps (fun _ -> nsign) env in
   let nargs = (Array.of_list (List.map mkVar (ids_of_sign nsign))) in
-  let newsp = new_isevar_path CCI in
+  let newev = Evd.new_evar () in
+  let info = { evar_concl = evd.evar_concl; evar_env = nenv;
+	       evar_body = Evar_empty; evar_info = () } in
   isevars :=
-    Evd.define (Evd.add_noinfo !isevars newsp nsign evd.Evd.concl)
-      sp (mkConst newsp nargs);
-  Some [sp]
+    Evd.define (Evd.add !isevars newev info) ev (mkEvar newev nargs);
+  Some [ev]
 
 
 (* Tries to solve problem t1 = t2.
  * Precondition: one of t1,t2 is an uninstanciated evar, possibly
  * applied to arguments.
  * Returns an optional list of evars that were instantiated, or None
- * if the problem couldn't be solved.
- *)
+ * if the problem couldn't be solved. *)
+
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
   let t1 = nf_ise1 !isevars t1 in
   let t2 = nf_ise1 !isevars t2 in
-  if eq_constr t1 t2 then Some []
-  else match (ise_undefined isevars t1, ise_undefined isevars t2) with
-    (true,true) ->
-      if path_of_const t1 = path_of_const t2
-      then solve_refl conv_algo isevars t1 t2
-      else if Array.length(args_of_const t1) < Array.length(args_of_const t2)
-      then Some (evar_define isevars t2 t1)
-      else Some (evar_define isevars t1 t2)
-  | (true,false) -> Some (evar_define isevars t1 t2)
-  | (false,true) -> Some (evar_define isevars t2 t1)
-  | _ -> None
-
+  if eq_constr t1 t2 then 
+    Some []
+  else 
+    match (ise_undefined isevars t1, ise_undefined isevars t2) with
+      | (true,true) ->
+	  if path_of_const t1 = path_of_const t2 then 
+	    solve_refl conv_algo isevars t1 t2
+	  else if Array.length(args_of_const t1) < 
+	          Array.length(args_of_const t2) then 
+	    Some (evar_define isevars t2 t1)
+	  else 
+	    Some (evar_define isevars t1 t2)
+      | (true,false) -> Some (evar_define isevars t1 t2)
+      | (false,true) -> Some (evar_define isevars t2 t1)
+      | _ -> None
 
 (*-------------------*)
 (* Now several auxiliary functions for the conversion algorithms modulo
@@ -332,69 +318,63 @@ let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
 
 let has_undefined_isevars isevars c =
   let rec hasrec = function
-    DOPN(Const sp,cl) as k ->
-    if ise_in_dom isevars sp then 
-       if defined_const !isevars k
-       then hasrec (const_value !isevars k)
-       else failwith "caught"
-    else Array.iter hasrec cl
-
-  | DOP1(_,c) -> hasrec c
-  | DOP2(_,c1,c2) -> (hasrec c1; hasrec c2)
-  | DOPL(_,l) -> List.iter hasrec l
-  | DOPN(_,cl) -> Array.iter hasrec cl
-  | DLAM(_,c) -> hasrec c
-  | DLAMV(_,cl) -> Array.iter hasrec cl
-  | (VAR _|Rel _|DOP0 _) -> ()
- in (try (hasrec c ; false) with Failure "caught" -> true)
-    
-
+    | DOPN(Evar ev,cl) as k ->
+	if ise_in_dom isevars ev then 
+	  if ise_defined isevars k then 
+	    hasrec (existential_value !isevars k)
+	  else 
+	    failwith "caught"
+	else 
+	  Array.iter hasrec cl
+    | DOP1(_,c) -> hasrec c
+    | DOP2(_,c1,c2) -> (hasrec c1; hasrec c2)
+    | DOPL(_,l) -> List.iter hasrec l
+    | DOPN(_,cl) -> Array.iter hasrec cl
+    | DLAM(_,c) -> hasrec c
+    | DLAMV(_,cl) -> Array.iter hasrec cl
+    | (VAR _|Rel _|DOP0 _) -> ()
+  in 
+  (try (hasrec c ; false) with Failure "caught" -> true)
 
 let head_is_exist isevars = 
- let rec hrec = function
-    DOPN(Const _,_) as k -> ise_undefined isevars k
-  | DOPN(AppL,cl) -> hrec (hd_vect cl)
-  | DOP2(Cast,c,_) -> hrec c
-  | _ -> false
- in hrec 
-
-
+  let rec hrec = function
+    | DOPN(Evar _,_) as k -> ise_undefined isevars k
+    | DOPN(AppL,cl) -> hrec (array_hd cl)
+    | DOP2(Cast,c,_) -> hrec c
+    | _ -> false
+  in 
+  hrec 
 
 let rec is_eliminator = function
-    DOPN (AppL,_)          -> true
-  | DOPN(MutCase _,_) -> true
-  | DOP2 (Cast,c,_)        -> is_eliminator c
+  | DOPN (AppL,_)      -> true
+  | DOPN (MutCase _,_) -> true
+  | DOP2 (Cast,c,_)    -> is_eliminator c
   | _ -> false
 
-
 let head_is_embedded_exist isevars c =
-    (head_is_exist isevars c) & (is_eliminator c)
+  (head_is_exist isevars c) & (is_eliminator c)
 
-
-let headconstant = 
- let rec hrec = function
-    DOPN(Const sp,_)       -> sp
-  | DOPN(MutCase _,_) as mc -> 
-       let (_,_,c,_) = destCase mc in
-       hrec c
-  | DOPN(AppL,cl)          -> hrec (hd_vect cl)
-  | DOP2(Cast,c,_)         -> hrec c
-  | _                      -> failwith "headconstant"
- in hrec 
-
-
-let status_changed lsp (pbty,t1,t2) =
-    try List.mem (headconstant t1) lsp or List.mem (headconstant t2) lsp
-    with Failure _ ->
-    try List.mem (headconstant t2) lsp
-    with Failure _ -> false
-
-
-
+let head_evar = 
+  let rec hrec = function
+    | DOPN(Evar ev,_)       -> ev
+    | DOPN(MutCase _,_) as mc -> 
+	let (_,_,c,_) = destCase mc in hrec c
+    | DOPN(AppL,cl)          -> hrec (array_hd cl)
+    | DOP2(Cast,c,_)         -> hrec c
+    | _                      -> failwith "headconstant"
+  in 
+  hrec 
+    
+let status_changed lev (pbty,t1,t2) =
+  try 
+    List.mem (head_evar t1) lev or List.mem (head_evar t2) lev
+  with Failure _ ->
+    try List.mem (head_evar t2) lev with Failure _ -> false
 
 (* Operations on value/type constraints used in trad and progmach *)
 
 type trad_constraint = bool * (constr option * constr option)
+
 (* Basically, we have the following kind of constraints (in increasing
  * strength order):
  *   (false,(None,None)) -> no constraint at all
@@ -407,8 +387,6 @@ type trad_constraint = bool * (constr option * constr option)
  * (n:nat) Case n of bool [_]nat end  would infer the predicate Type instead
  * of Set.
  *)
-
-
 
 (* The empty constraint *)
 let mt_tycon = (false,(None,None))
@@ -425,51 +403,49 @@ let mk_tycon2 (is_ass,_) ty = (is_ass,(None,Some ty))
 
 (* Given a type constraint on a term, returns the type constraint on its first
  * argument. If the input constraint is an evar instantiate it with the product
- * of 2 new evars.
- *)
-let prod_dom_tycon_unif isevars = function
-    None -> None
-  | Some c ->
-      (match whd_betadeltaiota !isevars c with
-        DOP2(Prod,c1,_) -> Some c1
-      |	t ->
-	  if (ise_undefined isevars t) then
-	    (let (sigma,dom,_) = split_evar_to_arrow !isevars t in
-	    isevars := sigma;
-	    Some dom)
-	  else None)
+ * of 2 new evars. *)
 
+let prod_dom_tycon_unif env isevars = function
+  | None -> None
+  | Some c ->
+      (match whd_betadeltaiota env !isevars c with
+         | DOP2(Prod,c1,_) -> Some c1
+	 | t ->
+	     if (ise_undefined isevars t) then begin
+	       let (sigma,dom,_) = split_evar_to_arrow !isevars t in
+	       isevars := sigma;
+	       Some dom
+	     end else 
+	       None)
 
 (* Given a constraint on a term, returns the constraint corresponding to its
- * first argument.
- *) 
-let app_dom_tycon isevars (_,(_,tyc)) =
-  (false,(None, prod_dom_tycon_unif isevars tyc))
+ * first argument. *) 
+
+let app_dom_tycon env isevars (_,(_,tyc)) =
+  (false,(None, prod_dom_tycon_unif env isevars tyc))
 
 
 (* Given a constraint on a term, returns the constraint corresponding to this
- * term applied to arg.
- *)
-let app_rng_tycon isevars arg = function
-    (_,(_,None)) as vtcon -> vtcon
-  | (_,(_,Some c)) ->
-      (match whd_betadeltaiota !isevars c with
-        DOP2(Prod,_,DLAM(_,b)) -> mk_tycon (subst1 arg b)
-      | _ -> mt_tycon)
+ * term applied to arg. *)
 
+let app_rng_tycon env isevars arg = function
+  | (_,(_,None)) as vtcon -> vtcon
+  | (_,(_,Some c)) ->
+      (match whd_betadeltaiota env !isevars c with
+         | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon (subst1 arg b)
+	 | _ -> mt_tycon)
 
 (* Given a constraint on an abstraction, returns the constraint on the value
  * of the domain type. If we had no constraint, we still know it should be
- * a type.
- *)
-let abs_dom_valcon isevars (_,(_,tyc)) =
-  (true,(prod_dom_tycon_unif isevars tyc, None))
-
+ * a type. *)
+      
+let abs_dom_valcon env isevars (_,(_,tyc)) =
+  (true,(prod_dom_tycon_unif env isevars tyc, None))
 
 (* Given a constraint on an abstraction, returns the constraint on the body *)
-let abs_rng_tycon isevars = function
-    (_,(_,None)) -> mt_tycon
+let abs_rng_tycon env isevars = function
+  | (_,(_,None)) -> mt_tycon
   | (_,(_,Some c)) ->
-      (match whd_betadeltaiota !isevars c with
-      | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon b
-      | _ -> mt_tycon)
+      (match whd_betadeltaiota env !isevars c with
+	 | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon b
+	 | _ -> mt_tycon)

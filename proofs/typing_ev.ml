@@ -146,5 +146,9 @@ let type_of env sigma c =
 (* The typed type of a judgment. *)
 
 let execute_type env sigma constr = 
-  let j = safe_machine env sigma constr in
+  let j = execute { fix=false; nocheck=true } env sigma constr in
+  assumption_of_judgment env sigma j
+
+let execute_type env sigma constr = 
+  let j = execute { fix=false; nocheck=false } env sigma constr in
   assumption_of_judgment env sigma j
