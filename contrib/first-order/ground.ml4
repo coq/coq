@@ -19,6 +19,23 @@ open Tactics
 open Tacticals
 open Libnames
 open Util
+open Goptions
+
+let ground_depth=ref 5
+		   
+let _=
+  let gdopt=
+    { optsync=false;
+      optname="ground_depth";
+      optkey=SecondaryTable("Ground","Depth"); 
+      optread=(fun ()->Some !ground_depth); 
+      optwrite=
+   (function 
+	None->ground_depth:=5
+      |	Some i->ground_depth:=(max i 0))}
+  in
+    declare_int_option gdopt
+      
 
 (* 
    1- keep track of the instantiations and of ninst in the Sequent.t structure 
@@ -132,19 +149,15 @@ let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
     
 let fail_solver=tclFAIL 0 "GroundTauto failed"
 		      
-let gen_ground_tac flag taco io l=
+let gen_ground_tac flag taco l=
   let backup= !qflag in
     try
       qflag:=flag;
-      let depth=
-	match io with 
-	    Some i->i
-	  | None-> !Auto.default_search_depth in
       let solver= 
 	match taco with 
 	    Some tac->tac
 	  | None-> default_solver in
-      let startseq=create_with_ref_list l depth in
+      let startseq=create_with_ref_list l !ground_depth in
       let result=
 	ground_tac solver startseq
       in qflag:=backup;result
@@ -155,33 +168,25 @@ open Pcoq
 open Pp
 
 TACTIC EXTEND Ground
-    [ "Ground" tactic(t) "depth" integer(i) "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true (Some (snd t)) (Some i) l ]
-|   [ "Ground" tactic(t) "depth" integer(i) ] -> 
-      [ gen_ground_tac true (Some (snd t)) (Some i) [] ]
-|   [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true (Some (snd t)) None l ]
-|   [ "Ground" tactic(t) ] -> 
-      [ gen_ground_tac true (Some (snd t)) None [] ]
-|   [ "Ground" "depth" integer(i) "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true None (Some i) l ]
-|   [ "Ground" "depth" integer(i) ] -> 
-      [ gen_ground_tac true None (Some i) [] ]
-|   [ "Ground" "with" ne_reference_list(l) ] -> 
-      [ gen_ground_tac true None None l ]
-|   [ "Ground" ] ->
-      [ gen_ground_tac true None None [] ]
+      |   [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
+	    [ gen_ground_tac true (Some (snd t)) l ]
+      |   [ "Ground" tactic(t) ] -> 
+	    [ gen_ground_tac true (Some (snd t)) [] ]
+      |   [ "Ground" "with" ne_reference_list(l) ] -> 
+	    [ gen_ground_tac true None l ]
+      |   [ "Ground" ] ->
+	    [ gen_ground_tac true None [] ]
 END
 
 TACTIC EXTEND GTauto   
   [ "GTauto" ] ->
-     [ gen_ground_tac false (Some fail_solver) None [] ]   
+     [ gen_ground_tac false (Some fail_solver) [] ]   
 END
 
 TACTIC EXTEND GIntuition
    ["GIntuition" tactic(t)] ->
-     [ gen_ground_tac false (Some(snd t)) None [] ]
+     [ gen_ground_tac false (Some(snd t)) [] ]
 |  [ "GIntuition" ] ->
-     [ gen_ground_tac false None None [] ] 
+     [ gen_ground_tac false None [] ] 
 END
 

@@ -80,7 +80,7 @@ type left_formula={id:global_reference;
 		   atoms:(bool*constr) list;
 		   internal:bool}
 
-exception Is_atom of constr
+(*exception Is_atom of constr*)
 
 val build_left_entry : 
   global_reference -> types -> bool -> Proof_type.goal Tacmach.sigma ->

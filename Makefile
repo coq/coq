@@ -279,7 +279,7 @@ FUNINDCMO=\
 FOCMO=\
   contrib/first-order/formula.cmo contrib/first-order/sequent.cmo \
   contrib/first-order/unify.cmo contrib/first-order/rules.cmo \
-  contrib/first-order/engine.cmo
+  contrib/first-order/ground.cmo
 
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
@@ -297,16 +297,7 @@ LINEARCMO=\
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
   contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4 contrib/funind/tacinv.ml4 \
-  contrib/first-order/engine.ml4
-
-USERCMO =\
-	user-contrib/formula.cmo \
-	user-contrib/prio.cmo \
-	user-contrib/sequent.cmo \
-	user-contrib/unify.cmo \
-	user-contrib/rules.cmo \
-	user-contrib/engine.cmo
-
+  contrib/first-order/ground.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
@@ -401,7 +392,12 @@ beforedepend:: ide/config_parser.mli ide/config_parser.ml
 beforedepend:: ide/utf8_convert.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
-IDEFILES=ide/utf8.vo ide/coq.png ide/.coqide-gtk2rc ide/FAQ
+
+COQIDEVO=ide/utf8.vo
+
+$(COQIDEVO): states/initial.coq
+
+IDEFILES=$(COQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
 coqide: $(IDEFILES) coqide-$(HASCOQIDE)
 coqide-no:
