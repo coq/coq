@@ -1186,6 +1186,22 @@ This tactic applies to a goal which have form {\tt t=u}
 and transforms it into the two subgoals 
 {\tt t={\term}} and {\tt {\term}=u}.
 
+\subsection{\tt Subst {\ident}}\tacindex{Subst}
+This tactic applies to a goal which have \ident\ in its context and
+(at least) one hypothesis, say {\tt H}, of type {\tt
+  \ident=t}. Then it replaces 
+\ident\ by {\tt t} everywhere in the goal (in the hypotheses 
+and in the conclusion) and clears \ident\ and {\tt H} from the context.
+
+\Rem 
+When several hypotheses have the form {\tt \ident=t}, the first one is used.
+
+\begin{Variants}
+  \item {\tt Subst \ident$_1$ \dots \ident$_n$} \\
+    Is equivalent to {\tt Subst \ident$_1$; \dots; Subst \ident$_n$}
+\end{Variants}
+
+
 \section{Equality and inductive sets}
 We describe in this section some special purpose
 tactics dealing with equality and inductive sets or
