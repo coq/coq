@@ -7,14 +7,9 @@ TOPDIR=../../..
 # Files with axioms to be realized: can't be extracted directly
 
 AXIOMSVO:= \
-theories/Init/PeanoSyntax.vo \
 theories/Init/Prelude.vo \
-theories/Arith/Arith.vo \
-theories/Lists/List.vo \
 theories/Reals/% \
-theories/Reals/Rsyntax.vo \
-theories/Num/% \
-theories/ZArith/Zsyntax.vo
+theories/Num/%
 
 DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -name CVS))
 
@@ -40,7 +35,7 @@ tree:
 	mkdir -p $(DIRS)
 
 %.o:%.hs
-	hbc $(INCL) -c $<
+	ghc $(INCL) -c $<
 
 $(HS): hs2v
 	./extract.haskell $@

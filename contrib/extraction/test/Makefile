@@ -7,12 +7,8 @@ TOPDIR=../../..
 # Files with axioms to be realized: can't be extracted directly
 
 AXIOMSVO:= \
-theories/Arith/Arith.vo \
-theories/Lists/List.vo \
 theories/Reals/% \
-theories/Reals/Rsyntax.vo \
-theories/Num/% \
-theories/ZArith/Zsyntax.vo
+theories/Num/%
 
 DIRS:= $(shell (cd $(TOPDIR);find theories -type d ! -name CVS))
 
@@ -28,6 +24,8 @@ MLI:= $(patsubst %.ml,%.mli,$(ML))
 
 CMO:= $(patsubst %.ml,%.cmo,$(ML))
 
+OSTDLIB:=$(shell (ocamlc -where))
+
 #
 #	General rules 
 #
@@ -41,15 +39,16 @@ depend: $(ML)
 
 tree:
 	mkdir -p $(DIRS)
+	cp $(OSTDLIB)/pervasives.cmi $(OSTDLIB)/obj.cmi $(OSTDLIB)/lazy.cmi theories
 
 #%.mli:%.ml
 #	./make_mli $< > $@
 
 %.cmi:%.mli
-	ocamlc $(INCL) -c -i $<
+	ocamlc -c $(INCL) -nostdlib $<
 
 %.cmo:%.ml
-	ocamlc $(INCL) -c -i $<
+	ocamlc -c $(INCL) -nostdlib $<
 
 $(ML): ml2v
 	./extract $@
