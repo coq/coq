@@ -12,6 +12,7 @@ Notes:
 
 Language
 
+- New construction for local definitions (Let-In) with syntax [x:=u]t (+)
 - New reduction flags Zeta and Evar in Eval Compute, for inlining of
   local definitions and instantiation of existential variables
 - Delta reduction flag does not perform Zeta and Evar reduction any more (*)
@@ -20,18 +21,23 @@ Language
   qualified names as soon as their strength expires; Local's disappear and
   are moved into local definitions for each construction persistent at
   section closing
+- Local definitions allowed in Record (aka record à la Randy Pollack)
 
 - known Coercion bugs fixed
 - Cases predicate inference bug fixed
 - known dependent Cases predicate bugs fixed
+- bug with identifiers ended by a number greater than 2^30 fixed (+)
 
 
 Language : long names
 
 - Each construction has a unique absolute names built from a base
   name, the name of the module in which they are defined (Top if in
-  coqtop), and possibly an arbitrary long sequence of directory -
-  Constructions can be referred by their base name, or, in case of
+  coqtop), and possibly an arbitrary long sequence of directory (e.g.
+  "Coq.Lists.PolyList.flat_map" where "Coq" means that "flat_map" is part
+  of Coq standard library, "Lists" means it is defined in the Lists
+  library and "PolyList" means it is in the file Polylist) (+)
+- Constructions can be referred by their base name, or, in case of
   conflict, by a "qualified" name, where the base name is prefixed
   by the module name (and possibly by a directory name, and so
   on). A fully qualified name is an absolute name which always refer
@@ -39,7 +45,7 @@ Language : long names
   all constructions, no conflict is allowed for an absolute name) (+)
 - Long names are available for modules with the possibility of using
   the directory name as a component of the module full name (with
-  option -R to coqtop and coqc, or command Add LoadPath)
+  option -R to coqtop and coqc, or command Add LoadPath) (+)
 - Improved conflict resolution strategy (the Unix PATH model),
   allowing more constructions to be referred just by their base name
 
@@ -52,6 +58,8 @@ Tactics
 - New tactic NewDestruct and NewInduction intended to replace Elim
   and Induction, Case and Destruct in a more user-friendly way (see
   restrictions in the reference manual)
+- New tactic ROmega: an experimental alternative (based on reflexion) to Omega
+  [by P. Crégut]
 
 - Reduction tactics in local definitions apply only to the body
 - New syntax of the form "Compute in Type of H." to require a reduction on
@@ -72,6 +80,8 @@ Efficiency
 
 Parsing and grammar extension
 
+- Only identifiers starting with "_" or a letter, and followed by letters,
+  digits, "_" or "'" are allowed (e.g. "$" and "@" are no longer allowed)
 - Un lieur multiple comme (a:A)(a,b:(P a))(Q a), n'est plus compris comme
   (a:A)(a0:(P a))(b:(P a))(Q a0), mais comme 
   (a:A)(a0:(P a))(b:(P a0))(Q a0)  (*)(+)
@@ -81,6 +91,24 @@ Parsing and grammar extension
   - identifiers should starts with a letter or "_" and be followed
      by letters, digits, "_" or "'" (other caracters are still
      supported but it is not advised to use them) (*)(+)
+- Entry "command" in "Grammar" and quotations (<<...>> stuff) is
+  renamed "constr" as in "Syntax" (+)
+- New syntax "[" sentence_1 ... sentence_n"]." to group sentences (useful
+  for Time and to write grammar rules abbreviating several commands) (+)
+- The default parser for actions in the grammar rules (and for
+  patterns in the pretty-printing rules) is now the one associated to
+  the grammar (i.e. vernac, tactic or constr); no need then for
+  quotations as in <:vernac:<...>>; to return an "ast", the grammar
+  must be explicity typed with tag ": ast" or ": ast list", or if a
+  syntax rule, by using <<...>> in the patterns (expression inside
+  these angle brackets are parsed as "ast"); for grammars other than
+  vernac, tactic or constr, you may explicitly type the action with
+  tags ": constr", ": tactic", or ":vernac" (+)
+- Interpretation of names in Grammar rule is now based on long names,
+  which allows to avoid problems (or sometimes tricks) related to
+  overloaded names (+)
+- A dedicated syntax has been introduced for Reals (e.g ``3+1/x``) (+)
+
 
 
 Commands
@@ -91,11 +119,16 @@ Commands
 - Require synchronous with Reset; Require's scope stops at Section ending
 
 
+Extraction
+
+- New algorithm for extraction able to deal with "Type" (+)
+
+
 Standard library
 
-- New library on maps on integer (IntMap, contributed by Jean Goubault)
+- New library on maps on integers (IntMap, contributed by Jean Goubault)
 - New lemmas about integer numbers [ZArith]
-- New lemmas about [Reals]
+- New lemmas about [Reals] (+)
 - Exc/Error/Value renamed into Option/Some/None (*)
 
 
@@ -107,6 +140,8 @@ New user contributions
 - A new axiomatization of ZFC set theory [Functions_in_ZFC]
   (C. Simpson, Sophia-Antipolis)
 - Basic notions of graph theory [GRAPHS-BASICS] (Jean Duprat, Lyon)
+- A library for floating-point numbers [Float] (Laurent Théry, Sylvie Boldo,
+  Sophia-Antipolis)
 - Formalisation of CTL and TCTL temporal logic [CtlTctl] (Carlos
   Daniel Luna,Montevideo)
 - Specification and verification of the Railroad Crossing Problem
@@ -114,33 +149,21 @@ New user contributions
 - P-automaton and the ABR algorithm [PAutomata] (Christine Paulin,
   Emmanuel Freund, Orsay)
 - Correctness proofs of the following imperative algorithms:
-  Bresenham line drawing algorithm [Bresenham], Marche's minimal edition
+  Bresenham line drawing algorithm [Bresenham], Marché's minimal edition
   distance algorithm [Diff] (Jean-Christophe Filliâtre, Orsay)
 - Correctness proofs of Buchberger's algorithm [Buchberger] and RSA
-  cryptographic algorithm [Rsa] (L. Thery, Sophia-Antipolis)
+  cryptographic algorithm [Rsa] (Laurent Théry, Sophia-Antipolis)
 - Correctness proof of Stalmarck tautology checker algorithm
-  [Stalmarck] (L.Thery, P. Letouzey, Sophia-Antipolis)
+  [Stalmarck] (Laurent Théry, Pierre Letouzey, Sophia-Antipolis)
 
 
 
 Changes from V6.3.1 to V7.0
 ---------------------------
 
-Note: For an English version, see accompanying V7.0 Changes.ps file
-(ftp://ftp.inria.fr/INRIA/coq/V7.0/Changes.ps)
-
+To report:
 
 Langage
-
-- Ajout de définitions locales (Let-In) avec la syntaxe [x:=u]t. Cela
-  peut entrainer des comportements nouveaux pour certaines tactiques.
-
-- Les définitions globales de la bibliothèque standard sont associées
-  à un nom long reflétant la structure logique de la notion. Un tel nom
-  long a la forme Coq.Lists.PolyList.Map.flat_map où Coq dénote que la
-  définition flat_map fait partie de la bibliothèque standard, Lists
-  qu'elle se trouve dans le répertoire Lists, PolyList qu'elle se trouve
-  dans le module PolyList, et Map qu'elle se trouve dans la section Map.
 
 - On peut (et il est conseillé) associer à un répertoire physique un
   nom logique dans la structure des noms de Coq. Les définitions de la
@@ -155,48 +178,12 @@ Langage
   La syntaxe du "." final change (cf Vernac). Le nommage des définitions
   globales change (cf Métathéorie).
 
-- Le problème avec les identificateurs se terminant par un nombre
-  supérieur à 2^30 est résolu.
-
-- Le caractère "$" n'est plus autorisé dans les identificateurs.
-
-- Réécriture de Extraction
-
-- Possibilité de déclarations locales dans les Record (record à la Pollack).
 
 
 Extensions de syntaxe avec Grammar et Syntax
 
-- L'analyseur lexical considère maintenant comme lexème toute suite de
-  symboles. Des exceptions ont été codées dans l'analyseur lexical pour séparer
-  des lexèmes que l'on a l'habitude de "coller" (par exemple A->~B), mais ce
-  n'est pas exhaustif et des espaces doivent être insérés dans certains cas
-  qui n'ont pas été traités (source d'incompatibilité).
-
-- L'entrée "command" dans "Grammar" et dans les piquants s'appelle
-  maintenant "constr" comme dans "Syntax".
-
-- Ajout de la syntaxe "[" phrase_1 ... phrase_n"]." pour grouper des
-  phrases (utile pour Time et pour des grammaires abrégeant plusieurs
-  commandes).
-
-- Le parseur par défaut des actions des règles de grammaires et des
-  motifs des règles d'affichage est maintenant celui associé au nom de
-  la grammaire (vernac, tactic ou constr). Donc plus de piqants
-  <:vernac:<...>> etc. Pour retourner de l'ast, il faut typer
-  explicitement la grammaire avec "ast" ou "List" (renommé d'ailleurs
-  "ast list"), ou, si c'est dans une règle Syntax, utiliser la quotation
-  << ... >> qui replace dans ast. Pour les nouvelles grammaires (autre
-  que les 3 primitives), on peut typer avec "constr", "tactic", ou
-  "vernac" pour utiliser le parseur correspondant.
-
-- L'interprétation des noms dans les règles de grammaire (Grammar) se
-  font maintenant avec un nom long. Ceci interdit la surcharge de
-  notation basée uniquement sur le nom court.
-
 - Le non affichage des Infix est corrigé.
 
-- Ajout d'une syntaxe pour les réels: ``Rexpr``.
 
 
 Syntaxe des constructions
