@@ -58,8 +58,8 @@ type relation =
    }
 
 type 'a relation_class =
-   Relation of 'a     (* the rel_aeq of the relation or the relation*)
- | Leibniz of constr  (* the carrier *)
+   Relation of 'a            (* the rel_aeq of the relation or the relation   *)
+ | Leibniz of constr option  (* the carrier (if eq is partially instantiated) *)
 
 type 'a morphism =
     { args : (bool option * 'a relation_class) list;
@@ -79,7 +79,7 @@ type morphism_class =
 let subst_mps_in_relation_class subst =
  function
     Relation  t -> Relation  (subst_mps subst t)
-  | Leibniz t -> Leibniz (subst_mps subst t) 
+  | Leibniz t -> Leibniz (option_app (subst_mps subst) t) 
 
 let subst_mps_in_argument_class subst (variance,rel) =
  variance, subst_mps_in_relation_class subst rel
@@ -225,7 +225,8 @@ let prrelation_class =
       with Not_found ->
        (*CSC: still "setoid" in the error message *)
        str "[[ Error: setoid on equality " ++ prterm eq ++ str " not found! ]]")
-  | Leibniz ty -> prterm ty
+  | Leibniz (Some ty) -> prterm ty
+  | Leibniz None -> str "?"
 
 let prmorphism_argument_gen prrelation (variance,rel) =
  prrelation rel ++
@@ -252,7 +253,7 @@ let prmorphism k m =
 let default_relation_for_carrier a =
  let rng = Gmap.rng !relation_table in
  match List.filter (fun {rel_a=rel_a} -> rel_a = a) rng with
-    [] -> Leibniz a
+    [] -> Leibniz (Some a)
   | relation::tl ->
      if tl <> [] then
       ppnl
@@ -266,8 +267,10 @@ let find_relation_class rel =
  try Relation (relation_table_find rel)
  with
   Not_found ->
-   match kind_of_term (Reduction.whd_betadeltaiota (Global.env ()) rel) with
-    | App (eq,[|ty|]) when eq_constr eq (Lazy.force coq_eq) -> Leibniz ty
+   let rel = Reduction.whd_betadeltaiota (Global.env ()) rel in
+   match kind_of_term rel with
+    | App (eq,[|ty|]) when eq_constr eq (Lazy.force coq_eq) -> Leibniz (Some ty)
+    | _ when eq_constr rel (Lazy.force coq_eq) -> Leibniz None
     | _ -> raise Not_found
 
 let relation_morphism_of_constr_morphism =
@@ -555,7 +558,7 @@ let no_more_edited id =
 let what_edited id =
   Gmap.find id !edited
 
-(*CSC: reimplementare con qualcosa che faccia senso *)
+(*CSCXX: reimplementare con qualcosa che faccia senso *)
 let check_is_dependent t n =
   let rec aux t i =
     if (i<n)
@@ -585,7 +588,9 @@ let cic_relation_class_of_X_relation_class typ value =
     ->
      mkApp ((Lazy.force coq_SymmetricAreflexive),
       [| Lazy.force typ ; rel_a ; rel_aeq; sym |])
-  | Leibniz t -> mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
+  | Leibniz (Some t) ->
+     mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
+  | Leibniz None -> assert false
 
 let cic_precise_relation_class_of_relation_class =
  function
@@ -609,9 +614,10 @@ let cic_precise_relation_class_of_relation_class =
     ->
      rel_aeq, mkApp ((Lazy.force coq_ASymmetric), [| rel_a ; rel_aeq; sym |]),
       false
-  | Leibniz t ->
+  | Leibniz (Some t) ->
      mkApp ((Lazy.force coq_eq), [| t |]),
       mkApp ((Lazy.force coq_RLeibniz), [| t |]), true
+  | Leibniz None -> assert false
 
 let cic_relation_class_of_relation_class =
  cic_relation_class_of_X_relation_class coq_unit coq_tt
@@ -695,14 +701,14 @@ let unify_relation_carrier_with_type env rel t =
   match kind_of_term rel.rel_a, kind_of_term t with
      App (he,args), App (he',args') ->
       let argsno = Array.length args in
-(*CSC: knowing the number of quantifiers I could be more precise *)
+(*CSCXX: knowing the number of quantifiers I could be more precise *)
       let args1 = Array.sub args' 0 argsno in
       let args2 = Array.sub args' argsno (Array.length args' - argsno) in
        if is_conv env Evd.empty rel.rel_a (mkApp (he',args1)) then
         args2
        else
         raise_error ()
-(*CSC: knowing the number of quantifiers I could be more precise *)
+(*CSCXX: knowing the number of quantifiers I could be more precise *)
    | _, App (t'',args) when is_conv env Evd.empty rel.rel_a t'' -> args
    | _, _ when is_conv env Evd.empty rel.rel_a t -> [||]
    | _, _ -> raise_error ()
@@ -711,7 +717,7 @@ let unify_relation_carrier_with_type env rel t =
 
 let unify_relation_class_carrier_with_type env rel t =
  match rel with
-    Leibniz t' ->
+    Leibniz (Some t') ->
      if is_conv env Evd.empty t t' then
       rel
      else
@@ -719,6 +725,7 @@ let unify_relation_class_carrier_with_type env rel t =
        (str "One morphism argument or its output has type " ++ prterm t ++
         str " but the signature requires an argument of type " ++
         prterm t')
+  | Leibniz None -> Leibniz (Some t)
   | Relation rel -> Relation (unify_relation_carrier_with_type env rel t)
 
 (* first order matching with a bit of conversion *)
@@ -778,7 +785,7 @@ let new_morphism m signature id hook =
     if (args_ty=[])
     then errorlabstrm "New Morphism"
      (str "The term " ++ prterm m ++ str " is not a product")
-(*CSC: check_is_dependent e' completamente bacata
+(*CSCXX: check_is_dependent e' completamente bacata
     else if (check_is_dependent typ (List.length args_ty))
     then  errorlabstrm "New Morphism"
      (str "The term " ++ prterm m ++ str" should not be a dependent product")
@@ -788,8 +795,6 @@ let new_morphism m signature id hook =
       let args,args_instance,output,output_instance =
        match signature with
           None ->
-           (*CSC: ???? qui assumiamo che non siano mai quantificati; ma e'
-             vero??? *)
            let args =
             List.map
              (fun (_,ty) -> None,default_relation_for_carrier ty) args_ty in
@@ -805,7 +810,7 @@ let new_morphism m signature id hook =
              errorlabstrm "Add Morphism"
               (str "Not a valid signature: " ++ prterm t ++
                str " is neither a registered relation nor the Leibniz " ++
-               str " equality partially applied to a type.")
+               str " equality.")
            in
            let find_relation_class_v (variance,t) real_t =
             let relation,relation_instance = find_relation_class t real_t in
@@ -830,7 +835,7 @@ let new_morphism m signature id hook =
                 (fun i arg real_arg ->
                   find_relation_class_v arg (lift (-i) real_arg))
                 0 args real_args_ty) in
-            (*CSC: bug here; output deve essere de-liftato; ma a sto
+            (*CSCXX: bug here; output deve essere de-liftato; ma a sto
               punto meglio farsi tornare dalla check_non_dependent
               gli argomenti gia' deliftati *)
             let output,output_instance = find_relation_class output' output in
@@ -929,7 +934,7 @@ let add_setoid id a aeq th =
       Relation
        {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
     in
-     (*CSC: [] means no quantified setoids (yet???) *)
+     (*CSCXX: [] means no quantified setoids (yet???) *)
      add_morphism None mor_name
       (aeq,[],[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
    end
@@ -1016,9 +1021,13 @@ let relation_of_hypothesis_and_term_to_rewrite new_goals gl (_,h) t =
       Leibniz _,[] ->
        assert (subst = []);
        raise Use_rewrite (* let's optimize the proof term size *)
-    | Leibniz _, _ ->
+    | Leibniz (Some _), _ ->
        assert (subst = []);
        rel
+    | Leibniz None, _ ->
+       (match subst with
+           [t] -> Leibniz (Some t)
+         | _ -> assert false)
     | Relation rel,_ -> Relation (apply_to_relation (Array.of_list subst) rel)
   with Not_found ->
    if l = [] then
@@ -1044,10 +1053,12 @@ let subrelation gl rel1 rel2 =
  match rel1,rel2 with
     Relation {rel_aeq=rel_aeq1}, Relation {rel_aeq=rel_aeq2} ->
      Tacmach.pf_conv_x gl rel_aeq1 rel_aeq2
-  | Leibniz t1, Leibniz t2 ->
+  | Leibniz (Some t1), Leibniz (Some t2) ->
      Tacmach.pf_conv_x gl t1 t2
+  | Leibniz None, _
+  | _, Leibniz None -> assert false
 (* This is the commented out case (see comment above)
-  | Leibniz t1, Relation {rel_a=t2; rel_refl = Some _} ->
+  | Leibniz (Some t1), Relation {rel_a=t2; rel_refl = Some _} ->
      Tacmach.pf_conv_x gl t1 t2
 *)
   | _,_ -> false
@@ -1212,7 +1223,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                       else
                        let err =
                         match output_relation with
-                           Leibniz typ' when pf_conv_x gl typ typ' -> false
+                           Leibniz (Some typ') when pf_conv_x gl typ typ' ->
+                            false
+                         | Leibniz None -> assert false
                          | _ when output_relation = Lazy.force coq_prop_relation
                              -> false
                          | _ -> true
@@ -1233,8 +1246,8 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                   | Prod (name,s,t) ->
                      let env' = push_rel (name,None,s) env in
                      let he =
-                      (aux (Leibniz s) Left2Right he) @
-                      (aux (Leibniz s) Right2Left he) in
+                      (aux (Leibniz (Some s)) Left2Right he) @
+                      (aux (Leibniz (Some s)) Right2Left he) in
                      if he = [] then []
                      else
                       let he0 = List.hd he in
@@ -1400,7 +1413,7 @@ let syntactic_but_representation_of_marked_but hole_relation hole_direction =
               mkApp ((Lazy.force coq_morphism_theory_of_function),
                [| cic_type_nelist_of_list f_args; f_output; f|])
            in
-            mt,List.map (fun x -> None,Leibniz x) f_args in
+            mt,List.map (fun x -> None,Leibniz (Some x)) f_args in
       let cic_relations =
        List.map
         (fun (variance,r) ->
