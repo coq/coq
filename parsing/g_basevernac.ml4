@@ -82,9 +82,9 @@ GEXTEND Gram
 	  VernacRemoveLoadPath dir
 
        (* For compatibility *)
-      | IDENT "AddPath"; dir = lstring; "as"; alias = as_dirpath ->
+      | IDENT "AddPath"; dir = lstring; alias = as_dirpath ->
 	  VernacAddLoadPath (false, dir, alias)
-      | IDENT "AddRecPath"; dir = lstring; "as"; alias = as_dirpath ->
+      | IDENT "AddRecPath"; dir = lstring; alias = as_dirpath ->
 	  VernacAddLoadPath (true, dir, alias)
       | IDENT "DelPath"; dir = lstring ->
 	  VernacRemoveLoadPath dir
