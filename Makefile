@@ -110,8 +110,9 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
          toplevel/record.cmo toplevel/discharge.cmo toplevel/vernacinterp.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
-	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
-         toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
+	 toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
+         toplevel/toplevel.cmo toplevel/usage.cmo \
+	 toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
             tactics/inv.cmo tactics/leminv.cmo tactics/eauto.cmo \

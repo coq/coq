@@ -24,7 +24,6 @@ let print_usage_channel co command =
   -require f             load Coq object file f.vo and import it (Require f.)
 
   -opt                   run the native-code version of Coq or Coq_SearchIsos
-  -full                  run the native-code version of Coq with all tactics
   -image f               specify an alternative binary image f
   -bindir dir            specify an alternative directory for the binaries
   -libdir dir            specify an alternative directory for the library

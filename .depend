@@ -1049,6 +1049,8 @@ toplevel/himsg.cmx: parsing/ast.cmx kernel/environ.cmx library/global.cmx \
     parsing/printer.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx kernel/type_errors.cmx lib/util.cmx \
     toplevel/himsg.cmi 
+toplevel/line_oriented_parser.cmo: toplevel/line_oriented_parser.cmi 
+toplevel/line_oriented_parser.cmx: toplevel/line_oriented_parser.cmi 
 toplevel/metasyntax.cmo: parsing/ast.cmi parsing/astterm.cmi \
     parsing/coqast.cmi parsing/egrammar.cmi parsing/esyntax.cmi \
     parsing/extend.cmi library/lib.cmi library/libobject.cmi \
@@ -1069,11 +1071,13 @@ toplevel/minicoq.cmx: kernel/declarations.cmx toplevel/fhimsg.cmx \
     parsing/g_minicoq.cmi kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
     kernel/safe_typing.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx lib/util.cmx 
-toplevel/protectedtoplevel.cmo: toplevel/errors.cmi parsing/pcoq.cmi \
-    lib/pp.cmi toplevel/vernac.cmi toplevel/vernacinterp.cmi \
+toplevel/protectedtoplevel.cmo: toplevel/errors.cmi \
+    toplevel/line_oriented_parser.cmi parsing/pcoq.cmi lib/pp.cmi \
+    toplevel/vernac.cmi toplevel/vernacinterp.cmi \
     toplevel/protectedtoplevel.cmi 
-toplevel/protectedtoplevel.cmx: toplevel/errors.cmx parsing/pcoq.cmx \
-    lib/pp.cmx toplevel/vernac.cmx toplevel/vernacinterp.cmx \
+toplevel/protectedtoplevel.cmx: toplevel/errors.cmx \
+    toplevel/line_oriented_parser.cmx parsing/pcoq.cmx lib/pp.cmx \
+    toplevel/vernac.cmx toplevel/vernacinterp.cmx \
     toplevel/protectedtoplevel.cmi 
 toplevel/record.cmo: parsing/ast.cmi parsing/astterm.cmi toplevel/class.cmi \
     toplevel/command.cmi parsing/coqast.cmi kernel/declarations.cmi \
