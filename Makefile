@@ -743,7 +743,7 @@ contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/i
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
 
 clean::
-	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
+	rm -f bin/parser$(EXE) bin/parser.opt$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
 
 # install targets
 install-pcoq:: install-pcoq-binaries install-pcoq-files install-pcoq-manpages
