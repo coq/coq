@@ -22,7 +22,8 @@ let stre_gt = function
   | (NeverDischarge,NeverDischarge) -> false
   | (NeverDischarge,x) -> false
   | (x,NeverDischarge) -> true
-  | (DischargeAt sp1,DischargeAt sp2) -> sp_gt (sp1,sp2) 
+  | (DischargeAt sp1,DischargeAt sp2) ->
+      dirpath_prefix_of sp1 sp2 (* was sp_gt but don't understand why - HH *)
 
 let stre_max (stre1,stre2) =
   if stre_gt (stre1,stre2) then stre1 else stre2
@@ -365,10 +366,7 @@ let try_add_new_coercion_record id stre source =
 
 (* fonctions pour le discharge: plutot sale *)
 
-let defined_in_sec sp sec_sp =
-  let ((p1,id1,k1)) = repr_path sp in
-  let ((p2,id2,k2)) = repr_path sec_sp in
-  p1 = (string_of_id id2)::p2
+let defined_in_sec sp sec_sp = dirpath sp = sec_sp
 
 let process_class sec_sp ((cl,{cL_STR=s;cL_STRE=stre;cL_PARAM=p}) as x ) =
   let env = Global.env () in

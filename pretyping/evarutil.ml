@@ -20,13 +20,14 @@ let rec filter_unique = function
       if List.mem x l then filter_unique (List.filter (fun y -> x<>y) l)
       else x::filter_unique l
 
+(*
 let distinct_id_list = 
   let rec drec fresh = function
       [] -> List.rev fresh 
     | id::rest ->
  	let id' = next_ident_away_from id fresh in drec (id'::fresh) rest
   in drec []
-
+*)
 
 (*
 let filter_sign p sign x =

@@ -239,7 +239,7 @@ let close_section _ s =
   let oldenv = Global.env() in
   let (sec_sp,decls) = close_section s in
   let (ops,ids,_) = 
-    List.fold_left (process_item oldenv sec_sp) ([],[],[]) decls in 
+    List.fold_left (process_item oldenv (wd_of_sp sec_sp)) ([],[],[]) decls in 
   Global.pop_named_decls ids;
   List.iter process_operation (List.rev ops)
 

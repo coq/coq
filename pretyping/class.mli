@@ -18,9 +18,7 @@ val try_add_new_coercion_with_target : identifier -> strength ->
 
 val try_add_new_class : identifier -> strength -> unit
 val process_class :
-  section_path -> (cl_typ * cl_info_typ) -> (cl_typ * cl_info_typ)
+  dir_path -> (cl_typ * cl_info_typ) -> (cl_typ * cl_info_typ)
 val process_coercion :
-  section_path -> (coe_typ * coe_info_typ) * cl_typ * cl_typ -> 
+  dir_path -> (coe_typ * coe_info_typ) * cl_typ * cl_typ -> 
     ((coe_typ * coe_info_typ) * cl_typ * cl_typ) * identifier * int 
-
-val defined_in_sec : section_path -> section_path -> bool

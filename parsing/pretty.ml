@@ -27,6 +27,7 @@ let print_basename sp =
     warning "Undeclared constants in print_name";
     string_of_path sp
 
+(*
 let print_basename_mind sp mindid =
   let (_,id,k) = repr_path sp in
   try 
@@ -37,7 +38,7 @@ let print_basename_mind sp mindid =
   with Not_found ->
     warning "Undeclared constants in print_name";
     string_of_path_mind sp mindid
-
+*)
 let print_closed_sections = ref false
 
 let print_typed_value_in_env env (trm,typ) =
@@ -184,14 +185,6 @@ let print_mutual sp mib =
 	       [<strcoind; strind>];
              implicit_args_msg sp mipv >])
 
-let print_extracted_mutual sp = 
-  let mib = Global.lookup_mind (ccisp_of sp) in
-  match mib.mind_singl with 
-    | None -> 
-	let fwsp = fwsp_of sp in
-	print_mutual fwsp (Global.lookup_mind fwsp)
-    | Some a -> fprterm a
-
 let print_section_variable sp =
   let ((id,_,_) as d,_,_) = out_variable sp in
   let l = implicits_of_var id in
@@ -213,10 +206,10 @@ let print_constant with_values sep sp =
     hOV 0 [< (match val_0 with 
 		| None -> 
 		    [< 'sTR"*** [ "; 
-		       'sTR (print_basename (ccisp_of sp));  
+		       'sTR (print_basename sp);  
 		       'sTR " : "; 'cUT ; prtype typ ; 'sTR" ]"; 'fNL >]
 		| _ -> 
-		    [< 'sTR(print_basename (ccisp_of sp)) ; 
+		    [< 'sTR(print_basename sp) ; 
 		       'sTR sep; 'cUT ;
 		       if with_values then 
 			 print_typed_body (val_0,typ) 
@@ -225,7 +218,7 @@ let print_constant with_values sep sp =
 	     print_impl_args (list_of_implicits l); 'fNL >]
   else
     hOV 0 [< 'sTR"Fw constant " ; 
-	     'sTR (print_basename (fwsp_of sp)) ; 'fNL>]
+	     'sTR (print_basename sp) ; 'fNL>]
 
 let print_inductive sp =
   let mib = Global.lookup_mind sp in
@@ -233,7 +226,7 @@ let print_inductive sp =
     [< print_mutual sp mib; 'fNL >]
   else
     hOV 0 [< 'sTR"Fw inductive definition "; 
-	     'sTR (print_basename (fwsp_of sp)); 'fNL >]
+	     'sTR (print_basename sp); 'fNL >]
 
 let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
@@ -355,7 +348,7 @@ let crible (fn : string -> env -> constr -> unit) name =
 	       let env_ar = push_rels arities env in
                (match kind_of_term const with 
 		  | IsMutInd ((sp',tyi),_) -> 
-		      if sp = objsp_of sp' then
+		      if sp=sp' then (*Suffit pas, cf les inds de Ensemble.v*)
 			print_constructors fn env_ar
 			  (mind_nth_type_packet mib tyi)
 		  | _ -> ());
@@ -501,151 +494,6 @@ let unfold_head_fconst =
   in 
   unfrec
 
-(***
-let print_extracted_name name =
-  let (sigma,(sign,fsign)) = initial_sigma_assumptions() in
-  try
-    let x = (Machops.global (gLOB sign) name) in
-    match kind_of_term x with
-      | IsConst _ ->
-          let cont = snd(infexecute sigma (sign,fsign) x) in 
-          (match cont with
-             | Inf {_VAL=trm; _TYPE=typ} ->
-                 (hOV 0
-                    [< 'sTR (string_of_id name); 
-                       if defined_const sigma x then 
-                         begin
-			   Constants.set_transparent_extraction name;
-			   [< 'sTR " ==>";'bRK(1,4); 
-                              fprterm (unfold_head_fconst sigma trm); 'fNL>]
-			 end
-                       else 
-			 [< >]; 
-		       'sTR " :  "; fprterm typ; 'fNL >])
-             | _ -> error "Non informative term")
-      | IsVar id ->
-	  (* Pourquoi on n'utilise pas fsign ? *)
-          let a = snd(lookup_sign id sign) in
-          let cont = snd(infexecute sigma (sign,fsign) a.body) in 
-	  (match cont with  (* Cradingue *)
-             | Inf {_VAL=t;_TYPE=k} -> 
-		 (match kind_of_term (whd_betadeltaiota sigma k) with
-		    | IsSort s ->
-			fprint_var (string_of_id name) {body=t;typ=s})
-             | _  -> error "Non informative term")
-	  
-      | IsMutInd ((sp,_),_) ->
-          let cont = snd(infexecute sigma (sign,fsign) x) in 
-	  (match cont with
-             | Inf _ ->
-                 (hOV 0 [< 'sTR (string_of_id name); 'sTR " ==>"; 'bRK(1,4);
-                           print_extracted_mutual sp >])
-             | _ -> error "Non informative term")
-      | IsMutConstruct _  ->
-          let cont = snd(infexecute sigma (sign,fsign) x) in 
-	  (match cont with
-             | Inf d ->
-                 [< 'sTR ((string_of_id name) ^" ==> ");
-		    fprint_judge d ; 'fNL >]
-             | _  -> error "Non informative term")
-      | _ -> anomaly "should be a variable or constant"
-  with Not_found -> 
-    error ((string_of_id name) ^ " not declared")
-
-let print_extraction () = 
-  let rec print_rec = function
-    | (sp,Lib.LEAF lobj)::rest ->
-	(match (sp,object_tag lobj) with
-	   | (sp,"CONSTANT") ->
-	       (try 
-		  let (_,{cONSTBODY=d}) = const_of_path (fwsp_of sp) in 
-		  [< print_rec rest;
-		     'sTR(print_basename sp) ; 'sTR" ==> ";  
-		     fprint_recipe d; 'fNL >]
-		with Not_found -> 
-		  print_rec rest)
-	   | (_,"VARIABLE") ->
-	       let (name,(_,cont),_,_,_,_) = outVariable lobj in
-               [< print_rec rest;
-		  (match cont with 
-		     | Some(t,_) -> fprint_var (string_of_id name) t
-                     | _         -> [< >]) >]
-	   | (sp,"INDUCTIVE") ->
-	       [< print_rec rest; 
-		  (try 
-		     [< print_extracted_mutual sp ; 'fNL >] 
-		   with Not_found -> [<>]) >]
-	   | _ -> print_rec rest)
-	
-    | (sp,Lib.ClosedDir _)::rest -> print_rec rest
-	  
-    | _::rest -> print_rec rest
-	  
-    | [] -> [< 'fNL >]
-  in 
-  [< print_rec (Lib.contents_after None); 'fNL >]
- 
-let print_extracted_context () =
-  let env = Lib.contents_after None in 
-  let rec print_var_rec = function 
-    | ((_,Lib.LEAF lobj))::rest ->
-	if "VARIABLE" = object_tag lobj then
-          let (name,(typ,cont),_,_,_,_) = outVariable lobj in
-          [< print_var_rec rest ; 'fNL;
-             match cont with
-	       | Some(t,_) -> fprint_var (string_of_id name) t
-               | _         -> [< >] >]
-	else 
-	  print_var_rec rest
-    |  _::rest -> print_var_rec rest
-    | [] -> [< 'fNL >]
-
-  and print_last_constants = function 
-    | (sp,Lib.LEAF lobj)::rest ->
-	(match object_tag lobj with 
-	   | "CONSTANT" -> 
-	       let (_,{cONSTBODY=c;cONSTTYPE=typ}) = 
-		 const_of_path (fwsp_of sp) in
-               [< print_last_constants rest;
-		  let s=print_basename sp	in 
-		  (try 
-		     let (_,{cONSTBODY = d}) = const_of_path (fwsp_of sp) in 
-		     [< 'sTR (s ^" ==> "); fprint_recipe d; 'fNL >]
-		   with Not_found -> 
-		     [< >]) >]
-	   | "INDUCTIVE" -> 
-	       [< print_last_constants rest; 
-		  try print_extracted_mutual sp with Not_found -> [<>] >]
-	   | "VARIABLE" -> 
-	       let (_,(_,cont),_,_,_,_) = outVariable lobj in
-               (match cont with 
-		  | Some _ -> [<>]
-                  | None -> print_last_constants rest)
-	   | _ ->  print_last_constants rest)
-	
-    |  (_,Lib.ClosedDir _)::rest -> print_last_constants rest
-    | _ -> [< >]
-  in 
-  [< print_var_rec env; print_last_constants env >]
-
-let print_extracted_vars () =
-  let env = Lib.contents_after None in 
-  let rec print_var_rec = function
-    | ((_,Lib.LEAF lobj))::rest ->
-	if "VARIABLE" = object_tag lobj then
-          let (name,(_,cont),_,_,_,_) = outVariable lobj in
-          [< print_var_rec rest ; 'fNL;
-             match cont with
-	       | Some (t,_) -> fprint_var (string_of_id name) t
-               | _          -> [< >] >]
-	else 
-	  print_var_rec rest
-    |  _::rest -> print_var_rec rest
-    | [] -> [< 'fNL >]
-  in 
-  print_var_rec env
-***)
-
 (* for debug *)
 let inspect depth = 
   let rec inspectrec n res env = 
@@ -665,7 +513,7 @@ open Classops
 
 let string_of_strength = function 
   | NeverDischarge -> "(global)"
-  | DischargeAt sp -> "(disch@"^(string_of_path sp)
+  | DischargeAt sp -> "(disch@"^(string_of_dirpath sp)
 
 let print_coercion_value v = prterm v.cOE_VALUE.uj_val
 

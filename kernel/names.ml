@@ -12,14 +12,17 @@ type identifier = {
 
 type name = Name of identifier | Anonymous
 
-let make_ident sa n = { atom = sa; index = n }
+let code_of_0 = Char.code '0'
+let code_of_9 = Char.code '9'
+
 let repr_ident { atom = sa; index = n } = (sa,n)
+let make_ident sa n = 
+  let c = Char.code (String.get sa (String.length sa -1)) in
+  if c < code_of_0 or c > code_of_9 then { atom = sa; index = n }
+  else { atom = sa^"_"; index = n }
 
 let string_of_id { atom = s; index = n } =
   s ^ (if n = -1 then "" else string_of_int n)
-
-let code_of_0 = Char.code '0'
-let code_of_9 = Char.code '9'
 
 let id_of_string s =
   let slen = String.length s in
@@ -46,16 +49,11 @@ let id_of_string s =
 let atompart_of_id id = id.atom
 let index_of_id id = id.index
 
-let explode_id { atom = s; index = n } =
-  (explode s) @ (if n = -1 then [] else explode (string_of_int n))
-
 let print_id { atom = a; index = n } = 
   match (a,n) with
     | ("",-1) -> [< 'sTR"[]" >]
     | ("",n)  -> [< 'sTR"[" ; 'iNT n ; 'sTR"]" >]
     | (s,n)   -> [< 'sTR s ; (if n = (-1) then [< >] else [< 'iNT n >]) >]
-
-let print_idl idl = prlist_with_sep pr_spc print_id idl
 
 let id_ord id1 id2 =
   let (s1,n1) = repr_ident id1
@@ -82,17 +80,26 @@ module Idmap = Map.Make(IdOrdered)
 
 
 (* Fresh names *)
+let add_subscript_to_ident id n =
+  if n < 0 then error "Only natural numbers are allowed as subscripts";
+  if id.index = -1 then { atom = id.atom; index = n }
+  else  { atom = (string_of_id id)^"_"; index = n }
 
 let lift_ident { atom = str; index = i } = { atom = str; index = i+1 }
 
-let next_ident_away ({atom=str} as id) avoid = 
-  let rec name_rec i =
-    let create = if i = (-1) then id else {atom=str;index=i} in
-    if List.mem create avoid then name_rec (i+1) else create
-  in 
-  name_rec (-1)
+let next_ident_away id avoid = 
+  if List.mem id avoid then
+    let str = if id.index = -1 then id.atom else 
+    (* Ce serait sans doute mieux avec quelque chose inspiré de 
+       *** string_of_id id ^ "_" *** mais ça brise la compatibilité... *)
+      id.atom in
+    let rec name_rec i =
+      let create = {atom=str;index=i} in
+      if List.mem create avoid then name_rec (i+1) else create in 
+    name_rec 0
+  else id
 
-let rec next_ident_away_from {atom=str;index=i} avoid = 
+let next_ident_away_from {atom=str;index=i} avoid = 
   let rec name_rec i =
     let create = {atom=str;index=i} in
     if List.mem create avoid then name_rec (i+1) else create
@@ -108,17 +115,6 @@ let next_name_away name l =
   match name with
     | Name(str) -> next_ident_away str l
     | Anonymous -> id_of_string "_"
-
-(* returns lids@[i1..in] where i1..in are new identifiers prefixed id *)
-let get_new_ids n id lids  =
-  let rec get_rec n acc =
-    if n = 0 then 
-      acc 
-    else 
-      let nid = next_ident_away id (acc@lids) in
-      get_rec (n-1) (nid::acc) 
-  in 
-  get_rec n []
 
 let id_of_name default = function
   | Name s -> s
@@ -140,10 +136,12 @@ let kind_of_string = function
   | _ -> invalid_arg "kind_of_string"
 
 
-(* Section paths *)
+(*s Section paths *)
+
+type dir_path = string list
 
 type section_path = {
-  dirpath : string list ;
+  dirpath : dir_path ;
   basename : identifier ;
   kind : path_kind }
 
@@ -154,14 +152,15 @@ let kind_of_path sp = sp.kind
 let basename sp = sp.basename
 let dirpath sp = sp.dirpath
 
-let string_of_path_mind sp id =
-  let (sl,_,k) = repr_path sp in
+(* parsing and printing of section paths *)
+let string_of_dirpath sl = String.concat "#" (""::sl)
+
+let string_of_path sp =
+  let (sl,id,k) = repr_path sp in
   String.concat ""
     ((List.flatten (List.map (fun s -> ["#";s]) sl))
      @ [ "#"; string_of_id id; "."; string_of_kind k ])
     
-let string_of_path sp = string_of_path_mind sp sp.basename
-
 let path_of_string s =
   try
     let (sl,s,k) = parse_section_path s in
@@ -170,33 +169,6 @@ let path_of_string s =
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
 let print_sp sp = [< 'sTR (string_of_path sp) >]
-
-
-let coerce_path k { dirpath = p; basename = id } =
-  { dirpath = p; basename = id; kind = k }
-
-let ccisp_of_fwsp = function
-  | { dirpath = p; basename = id; kind = FW } -> 
-      { dirpath = p; basename = id; kind = CCI }
-  | _ -> invalid_arg "ccisp_of_fwsp"
-
-let ccisp_of { dirpath = p; basename = id } =
-  { dirpath = p; basename = id; kind = CCI }
-
-let objsp_of { dirpath = p; basename = id } =
-  { dirpath = p; basename = id; kind = OBJ }
-
-let fwsp_of_ccisp = function
-  | { dirpath = p; basename = id; kind = CCI } -> 
-      { dirpath = p; basename = id; kind = FW }
-  | _ -> invalid_arg "fwsp_of_ccisp"
-
-let fwsp_of { dirpath = p; basename = id } =
-  { dirpath = p; basename = id; kind = FW }
-
-let append_to_path sp str =
-  let (sp,id,k) = repr_path sp in
-  make_path sp (id_of_string ((string_of_id id)^str)) k
 
 let sp_of_wd = function
   | [] -> invalid_arg "Names.sp_of_wd"
@@ -215,7 +187,7 @@ let sp_ord sp1 sp2 =
   else
     ck
 
-let sp_gt (sp1,sp2) = sp_ord sp1 sp2 > 0
+let dirpath_prefix_of = list_prefix_of
 
 module SpOrdered =
   struct

@@ -232,10 +232,9 @@ let hdchar env c =
 	if i=0 then 
 	  lowercase_first_char (basename sp)
 	else 
-	  let na = id_of_global env (IndRef x) in lowercase_first_char na
+	  lowercase_first_char (id_of_global env (IndRef x))
     | IsMutConstruct ((sp,i) as x,_) ->
-	let na = id_of_global env (ConstructRef x) in
-	String.lowercase(List.hd(explode_id na))
+	lowercase_first_char (id_of_global env (ConstructRef x))
     | IsVar id  -> lowercase_first_char id
     | IsSort s -> sort_hdchar s
     | IsRel n ->

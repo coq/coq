@@ -28,7 +28,7 @@ and library_segment = library_entry list
 let lib_stk = ref ([] : (section_path * node) list)
 
 let module_name = ref None
-let path_prefix = ref ([] : string list)
+let path_prefix = ref ([] : dir_path)
 
 let recalc_path_prefix () =
   let rec recalc = function
@@ -189,7 +189,7 @@ let reset_name id =
   with Not_found ->
     error (string_of_id id ^ ": no such entry")
 
-let is_section_p sp = list_prefix_of (wd_of_sp sp) !path_prefix
+let is_section_p sp = dirpath_prefix_of sp !path_prefix
 
 (* State and initialization. *)
 

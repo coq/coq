@@ -17,7 +17,7 @@ open Inductive
    [Nametab] and [Impargs]. *)
 
 type strength = 
-  | DischargeAt of section_path 
+  | DischargeAt of dir_path
   | NeverDischarge
 
 type section_variable_entry =

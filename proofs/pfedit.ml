@@ -36,7 +36,8 @@ let msg_proofs use_resume =
   match Edit.dom proof_edits with
     | [] -> [< 'sPC ; 'sTR"(No proof-editing in progress)." >]
     | l ->  [< 'sTR"." ; 'fNL ; 'sTR"Proofs currently edited:" ; 'sPC ;
-               (print_idl (get_all_proof_names ())) ; 'sTR"." ;
+               (prlist_with_sep pr_spc print_id (get_all_proof_names ())) ;
+	       'sTR"." ;
                (if use_resume then [< 'fNL ; 'sTR"Use \"Resume\" first." >]
               	else [< >])
             >]

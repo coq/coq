@@ -17,12 +17,12 @@ open Impargs
 open Indrec
 
 type strength = 
-  | DischargeAt of section_path 
+  | DischargeAt of dir_path
   | NeverDischarge
 
 let make_strength = function
   | [] -> NeverDischarge
-  | l  -> DischargeAt (sp_of_wd l)
+  | l  -> DischargeAt l
 
 let make_strength_0 () = make_strength (Lib.cwd())
 
