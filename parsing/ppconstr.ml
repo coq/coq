@@ -219,6 +219,10 @@ let rec pr_cases_pattern _inh = function
 	prlist_with_sep spc (pr_cases_pattern _inh) pl ++ str ")")
   | CPatAtom (_,Some c) -> pr_reference c
   | CPatAtom (_,None) -> str "_"
+  | CPatOr (_,pl) ->
+      str "(" ++
+      hov 0 (prlist_with_sep pr_bar (pr_cases_pattern _inh) pl) ++
+      str ")"
   | CPatNotation (_,"( _ )",[p]) ->
       str"("++ pr_cases_pattern _inh p ++ str")"
   | CPatNotation (_,s,env) -> fst (pr_patnotation pr_cases_pattern s env)

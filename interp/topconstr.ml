@@ -481,6 +481,7 @@ type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
+  | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_expr list
   | CPatNumeral of loc * Bignat.bigint
   | CPatDelimiters of loc * string * cases_pattern_expr
@@ -568,6 +569,7 @@ let cases_pattern_loc = function
   | CPatAlias (loc,_,_) -> loc
   | CPatCstr (loc,_,_) -> loc
   | CPatAtom (loc,_) -> loc
+  | CPatOr (loc,_) -> loc
   | CPatNotation (loc,_,_) -> loc
   | CPatNumeral (loc,_) -> loc
   | CPatDelimiters (loc,_,_) -> loc

@@ -160,6 +160,7 @@ let pr_or_var pr = function
   | Genarg.ArgVar (loc,s) -> pr_lident (loc,s)
 
 let las = lapp
+let lpator = 100
 
 let rec pr_patt sep inh p =
   let (strm,prec) = match p with
@@ -170,6 +171,8 @@ let rec pr_patt sep inh p =
       pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
   | CPatAtom (_,None) -> str "_", latom
   | CPatAtom (_,Some r) -> pr_reference r, latom
+  | CPatOr (_,pl) ->
+      hov 0 (prlist_with_sep pr_bar (pr_patt spc (lpator,L)) pl), lpator
   | CPatNotation (_,"( _ )",[p]) ->
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
   | CPatNotation (_,s,env) -> pr_patnotation (pr_patt mt) s env

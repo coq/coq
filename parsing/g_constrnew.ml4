@@ -285,8 +285,10 @@ GEXTEND Gram
     [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
   ;
   pattern:
-    [ "10" LEFTA
-      [ p = pattern ; lp = LIST1 (pattern LEVEL "0") ->
+    [ "100" LEFTA
+      [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (loc,p::pl) ]
+    | "10" LEFTA
+      [ p = pattern; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 

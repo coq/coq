@@ -1,3 +1,8 @@
+Changes from V8.0
+=================
+
+- Added disjunctive patterns in match-with patterns
+
 Changes from V8.0beta to V8.0
 =============================
 
