@@ -49,6 +49,10 @@ let typecheck_params_and_fields ps fs =
   let env1,newps =
     List.fold_left
       (fun (env,newps) d -> match d with
+	| LocalRawAssum ([_,na],(CHole _ as t)) ->
+	    let t = interp_binder Evd.empty env na t in
+	    let d = (na,None,t) in
+	    (push_rel d env, d::newps)
 	| LocalRawAssum (nal,t) ->
 	    let t = interp_type Evd.empty env t in
 	    let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
