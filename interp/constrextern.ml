@@ -176,8 +176,9 @@ let translate_v7_string = function
   | "times_convert" -> "IPN_Pmult_morphism"
   | "true_sub" -> "Pminus"
   | "true_sub_convert" -> "IPN_Pminus_morphism"
-  | "sub_add" -> "Lt_Plus_Pminus" (* equiv de le_plus_minus de Arith *)
-  | "sub_add_one" -> "Psucc_Ppred"
+  | "sub_add" -> "Lt_Pplus_Pminus" (* equiv de le_plus_minus de Arith *)
+  | "sub_add_one" -> "Ppred_Psucc"
+  | "add_sub_one" -> "Psucc_Ppred"
   | "add_un" -> "Psucc"
   | "sub_un" -> "Ppred"
   | "sub_pos" -> "PNminus"
@@ -218,11 +219,20 @@ let translate_v7_string = function
   | "Zcompare_et_un"            -> "Zcompare_Gt_not_Lt"
   | "Zcompare_trans_SUPERIEUR"  -> "Zcompare_Gt_trans"
   | "SUPERIEUR_POS"             -> "Zcompare_Gt_POS"
+  | "compare_positive_to_nat_O" -> "le_IPN_shift"
   | "bij1" -> "IPN_INP_succ_eq_succ"
   | "bij2" -> "INP_succ_IPN_eq_succ"
   | "bij3" -> "pred_INP_succ_IPN_bij"
   | "absolu" -> "Zabs_nat"
+  | "absolu_lt" -> "Zabs_nat_lt" (* "Zabs_nat_lt_morphism_pos" ? *)
   | "Zeq_add_S" -> "Zs_inj"
+  (* IntMap *)
+  | "convert_xH" -> "IPN_xH"
+  | "convert_xO" -> "IPN_xO"
+  | "convert_xI" -> "IPN_xI"
+  | "positive_to_nat_mult" -> "IPN_shift_mult"
+  | "positive_to_nat_2" -> "IPN_shift_2"
+  | "positive_to_nat_4" -> "IPN_shift_4"
   (* Arith *)
   | "plus_sym" -> "plus_comm"
   | "mult_sym" -> "mult_comm"
@@ -240,10 +250,29 @@ let translate_v7_string = function
   | "orb_sym" -> "orb_comm"
   | "andb_sym" -> "andb_comm"
   (* Reals *)
-    (* redundant *)
+  | s when String.length s >= 7 & (String.sub s 0 7 = "Rabsolu") ->
+      "Rabs"^(String.sub s 7 (String.length s - 7))
+  | s when String.length s >= 7 &
+      (String.sub s (String.length s - 7) 7 = "Rabsolu") ->
+      (String.sub s 0 (String.length s - 7))^"Rabs"
+(*
   | "Rabsolu" -> "Rabs"
+  | "Rabsolu_pos_lt" -> "Rabs_pos_lt"
+  | "Rabsolu_no_R0" -> "Rabs_no_R0"
+  | "Rabsolu_Rabsolu" -> "Rabs_Rabs"
+  | "Rabsolu_mult" -> "Rabs_mult"
+  | "Rabsolu_triang" -> "Rabs_triang"
+  | "Rabsolu_Ropp" -> "Rabs_Ropp"
+  | "Rabsolu_right" -> "Rabs_right"
+...
+  | "case_Rabsolu" -> "case_Rabs"
+  | "Pow_Rabsolu" -> "Pow_Rabs"
+...
+*)
   | "Rle_sym1" -> "Rle_ge"
   | "Rmin_sym" -> "Rmin_comm"
+  | "Rsqr_times" -> "Rsqr_mult"
+  | "sqrt_times" -> "sqrt_mult"
   | s when String.length s >= 7 & 
       let s' = String.sub s 0 7 in
       (s' = "unicite" or s' = "unicity") ->
@@ -463,13 +492,21 @@ let rec skip_coercion dest_ref (f,args as app) =
 	| None -> app
     with Not_found -> app
 
+let extern_global loc impl f =
+  if impl <> [] & List.for_all is_status_implicit impl then
+    CAppExpl (loc, (None, f), [])
+  else
+    CRef f
+
 let extern_app loc inctx impl (cf,f) args =
+  if args = [] (* maybe caused by a hidden coercion *) then
+    extern_global loc impl f
+  else
   if !print_implicits &
     not !print_implicits_explicit_args &
     List.exists is_status_implicit impl
   then 
-    if args = [] (* maybe caused by a hidden coercion *) then CRef f 
-    else CAppExpl (loc, (is_projection (List.length args) cf, f), args)
+    CAppExpl (loc, (is_projection (List.length args) cf, f), args)
   else
     explicitize loc inctx impl (cf,CRef f) args
 
@@ -493,7 +530,9 @@ let rec extern inctx scopes vars r =
     if !print_no_symbol then raise No_match;
     extern_symbol scopes vars r (Symbols.uninterp_notations r)
   with No_match -> match r with
-  | RRef (loc,ref) -> CRef (extern_reference loc vars ref)
+  | RRef (loc,ref) ->
+      extern_global loc (implicits_of_global_out ref)
+        (extern_reference loc vars ref)
 
   | RVar (loc,id) -> CRef (Ident (loc,v7_to_v8_id id))
 
