@@ -387,7 +387,7 @@ Fixpoint nth_ok [n:nat; l:list] : A->bool :=
 Lemma nth_in_or_default :
   (n:nat)(l:list)(d:A){(In (nth n l d) l)}+{(nth n l d)=d}.
 (** Realizer nth_ok. Program_all. **)
-Intros n l d; Generalize n; Induction l; Intro n0.
+Intros n l d; Generalize n; NewInduction l; Intro n0.
 Right; Case n0; Trivial.
 Case n0; Simpl.
 Auto.

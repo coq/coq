@@ -156,7 +156,7 @@ Fixpoint mem [a:A; l:(list A)] : bool :=
 Hints Unfold  In.
 Lemma Mem : (a:A)(l:(list A)){(In a l)}+{(AllS [b:A]~b=a l)}.
 Intros a l.
-Induction l.
+NewInduction l.
 Auto.
 Elim (eqA_dec a a0).
 Auto.
