@@ -293,6 +293,11 @@ let rec decompose_last = function
   | [a] -> [], a
   | a::tl -> let rl, b = decompose_last tl in (a::rl), b;;
 
+(* The boolean argument should be false if a name is not really necessary, 
+   for instance if there is only one argument.  On the other hand, all
+   recursive calls in this function should have the boolean argument to true,
+   because recursive calls mean that there is more than one argument. *)
+
 let rec make_fix_struct b = function
     0, CProdN(_, [(na::tl,_)], CProdN(_, _,_)) -> xlate_id_opt na
   | 0, CProdN(_, [([na],_)], _) ->
@@ -430,9 +435,12 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
         CT_cofixc(xlate_ident id,
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
-     let strip_mutrec (fid, n, arf, ardef) =
+     let strip_mutrec (fid, n, optional_nargs, arf, ardef) =
        let struct_arg = make_fix_struct false (n, arf) in
-        let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
+       let split_rank = match optional_nargs with
+	   Some v -> v
+	 | None -> n+1 in
+        let (bl,arf,ardef) = Ppconstr.split_fix split_rank arf ardef in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match cvt_fixpoint_binders bl with
@@ -1870,13 +1878,12 @@ let rec xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
-      let strip_mutrec ((fid, n, arf, ardef), ntn) =
-(* The boolean argument should be false if a name is not really necessary, 
-   for instance if there is only one argument.  On the other hand, all
-   recursive calls in this function should have the boolean argument to true,
-   because recursive calls mean that there is more than one argument. *)
+      let strip_mutrec ((fid, n, optional_nargs, arf, ardef), ntn) =
 	let struct_arg = make_fix_struct false (n, arf) in
-        let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
+	let split_rank = match optional_nargs with
+	    Some v -> v
+	  | None -> n+1 in
+        let (bl,arf,ardef) = Ppconstr.split_fix split_rank arf ardef in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match cvt_fixpoint_binders bl with

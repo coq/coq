@@ -528,7 +528,7 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
 
 let rec intern_fix = function
   | [] -> ([],[],[],[])
-  | (fi, n, c, t)::rest->
+  | (fi, n, on, c, t)::rest->
       let (lf,ln,lc,lt) = intern_fix rest in
       (fi::lf, n::ln, c::lc, t::lt)
 

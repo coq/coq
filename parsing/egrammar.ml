@@ -237,7 +237,7 @@ let subst_constr_expr a loc subs =
       let na = option_app (name_app (subst_id subs)) na in
       CIf (loc,subst c,(na,option_app subst po),subst b1,subst b2)
   | CFix (_,id,dl) ->
-      CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,subst t,subst d)) dl)
+      CFix (loc,id,List.map (fun (id,n,on, t,d) -> (id,n, on,subst t,subst d)) dl)
   | CCoFix (_,id,dl) ->
       CCoFix (loc,id,List.map (fun (id,t,d) -> (id,subst t,subst d)) dl)
   in subst a

@@ -107,7 +107,7 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_expr = identifier * int * constr_expr * constr_expr
+and fixpoint_expr = identifier * int * int option * constr_expr * constr_expr
 
 and cofixpoint_expr = identifier * constr_expr * constr_expr
 

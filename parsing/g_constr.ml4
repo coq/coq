@@ -339,14 +339,14 @@ GEXTEND Gram
   fixbinder:
     [ [ id = base_ident; "/"; recarg = natural; ":"; type_ = constr;
         ":="; def = constr ->
-          (id, recarg-1, type_, def)
+          (id, recarg-1, None, type_, def)
       | id = base_ident; bl = ne_simple_binders_list; ":"; type_ = constr;
 	":="; def = constr ->
           let ni = List.length (List.flatten (List.map fst bl)) -1 in
           let loc0 = fst (List.hd (fst (List.hd bl))) in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
-	  (id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)) ] ]
+	  (id, ni, None, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)) ] ]
   ;
   fixbinders:
     [ [ fbs = LIST1 fixbinder SEP "with" -> fbs ] ]

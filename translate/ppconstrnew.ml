@@ -354,7 +354,7 @@ let name_of_binder = function
   | LocalRawAssum (nal,_) -> nal
   | LocalRawDef (_,_) -> []
 
-let pr_fixdecl pr (id,n,t0,c0) =
+let pr_fixdecl pr (id,n,_,t0,c0) =
   let (bl,c,t) = extract_def_binders c0 t0 in
   let (bl,t,c) =
     let ids = List.flatten (List.map name_of_binder bl) in

@@ -447,16 +447,16 @@ let collect_non_rec env =
   in 
   searchrec [] 
 
-let build_recursive lnameargsardef =
-  let lrecnames = List.map (fun ((f,_,_,_),_) -> f) lnameargsardef 
+let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
+  let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and sigma = Evd.empty
   and env0 = Global.env()
-  and nv = Array.of_list (List.map (fun ((_,n,_,_),_) -> n) lnameargsardef) in
+  and nv = Array.of_list (List.map (fun ((_,n,_,_,_),_) -> n) lnameargsardef) in
   let fs = States.freeze() in
   (* Declare the notations for the recursive types pushed in local context*)
   let (rec_sign,arityl) = 
     List.fold_left 
-      (fun (env,arl) ((recname,_,arityc,_),_) -> 
+      (fun (env,arl) ((recname,_,_,arityc,_),_) -> 
         let arity = interp_type sigma env0 arityc in
         (Environ.push_named (recname,None,arity) env, (arity::arl)))
       (env0,[]) lnameargsardef in
@@ -479,7 +479,7 @@ let build_recursive lnameargsardef =
 	      (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
 	    ()) lrecnames arityl;
 	List.map2
-	  (fun ((_,_,_,def),_) arity ->
+	  (fun ((_,_,_,_,def),_) arity ->
             interp_casted_constr sigma rec_sign def arity)
           lnameargsardef arityl
       with e ->

@@ -361,7 +361,7 @@ type constr_expr =
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_expr = identifier * int * constr_expr * constr_expr
+and fixpoint_expr = identifier * int * int option * constr_expr * constr_expr
 
 and cofixpoint_expr = identifier * constr_expr * constr_expr
 
@@ -518,7 +518,7 @@ let map_constr_expr_with_binders f g e = function
       let e' = option_fold_right (name_fold g) ona e in
       CIf (loc,f e c,(ona,option_app (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
-      CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,f e t,f e d)) dl)
+      CFix (loc,id,List.map (fun (id,n,on,t,d) -> (id,n,on,f e t,f e d)) dl)
   | CCoFix (loc,id,dl) ->
       CCoFix (loc,id,List.map (fun (id,t,d) -> (id,f e t,f e d)) dl)
 

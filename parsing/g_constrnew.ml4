@@ -84,10 +84,11 @@ let rec index_of_annot bl ann =
 
 let mk_fixb (loc,id,bl,ann,body,(tloc,tyc)) =
   let n = index_of_annot bl ann in
+  let nargs = List.length (decls_of_binders bl) in
   let ty = match tyc with
       None -> CHole tloc
     | Some t -> mkCProdN loc bl t in
-  (snd id,n,ty,mkCLambdaN loc bl body)
+  (snd id,n,Some nargs,ty,mkCLambdaN loc bl body)
 
 let mk_cofixb (loc,id,bl,ann,body,(tloc,tyc)) =
   let _ = option_app (fun (aloc,_) ->

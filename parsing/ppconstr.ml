@@ -155,7 +155,7 @@ let rec split_fix n typ def =
     let (bl,typ,def) = split_fix (n-1) typ def in
     (concat_binder na t bl,typ,def)
 
-let pr_fixdecl pr (id,n,t,c) =
+let pr_fixdecl pr (id,n,_,t,c) =
   let (bl,t,c) = split_fix (n+1) t c in
   pr_recursive_decl pr id 
     (brk (1,2) ++ str "[" ++ pr_binders pr bl ++ str "]") t c

@@ -255,7 +255,7 @@ GEXTEND Gram
           let loc0 = fst (List.hd (fst (List.hd bl))) in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
-	  ((id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)), ntn) ] ]
+	  ((id, ni, None, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)), ntn) ] ]
   ;
   specifrec:
     [ [ l = LIST1 onerec SEP "with" -> l ] ]

@@ -205,6 +205,7 @@ GEXTEND Gram
         annot = OPT rec_annotation; type_ = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (G_constrnew.decls_of_binders bl) in
+	  let nargs = List.length names in
           let ni =
             match annot with
                 Some id ->
@@ -221,7 +222,7 @@ GEXTEND Gram
           let loc0 = G_constrnew.loc_of_binder_let bl in
           let loc1 = join_loc loc0 (constr_loc type_) in
           let loc2 = join_loc loc0 (constr_loc def) in
-	  ((id, ni, G_constrnew.mkCProdN loc1 bl type_,
+	  ((id, ni, Some nargs, G_constrnew.mkCProdN loc1 bl type_,
 	    G_constrnew.mkCLambdaN loc2 bl def),ntn) ] ]
   ;
   corec_definition:

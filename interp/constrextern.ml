@@ -1009,7 +1009,7 @@ let rec check_same_type ty1 ty2 =
   match ty1, ty2 with
   | CRef r1, CRef r2 -> check_same_ref r1 r2
   | CFix(_,(_,id1),fl1), CFix(_,(_,id2),fl2) when id1=id2 ->
-      List.iter2 (fun (id1,i1,a1,b1) (id2,i2,a2,b2) ->
+      List.iter2 (fun (id1,i1,_,a1,b1) (id2,i2,_,a2,b2) ->
         if id1<>id2 || i1<>i2 then failwith "not same fix";
         check_same_type a1 a2;
         check_same_type b1 b2)
@@ -1508,7 +1508,7 @@ let rec extern inctx scopes vars r =
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-		 (fi,nv.(i),extern_type scopes vars tyv.(i),
+		 (fi,nv.(i), None, extern_type scopes vars tyv.(i),
                   extern false scopes vars' bv.(i))) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)

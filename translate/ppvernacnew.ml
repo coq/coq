@@ -755,7 +755,7 @@ let rec pr_vernac = function
       let notations = 
 	List.fold_right (fun (_,ntnopt) l -> option_cons ntnopt l) recs [] in
       let impl = List.map
-        (fun ((recname,_,arityc,_),_) -> 
+        (fun ((recname,_, _, arityc,_),_) -> 
           let arity = Constrintern.interp_type sigma env0 arityc in
 	  let impl_in =
 	    if Impargs.is_implicit_args()
@@ -777,7 +777,7 @@ let rec pr_vernac = function
 
       let rec_sign = 
         List.fold_left 
-          (fun env ((recname,_,arityc,_),_) -> 
+          (fun env ((recname,_,_,arityc,_),_) -> 
             let arity = Constrintern.interp_type sigma env0 arityc in
             Environ.push_named (recname,None,arity) env)
           (Global.env()) recs in
@@ -786,7 +786,7 @@ let rec pr_vernac = function
         | LocalRawAssum (nal,_) -> nal
         | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
-        | (id,n,type_0,def0),ntn ->
+        | (id,n,_,type_0,def0),ntn ->
             let (bl,def,type_) = extract_def_binders def0 type_0 in
             let ids = List.flatten (List.map name_of_binder bl) in
             let (bl,def,type_) =
