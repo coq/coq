@@ -27,7 +27,9 @@ Notation "~ x" := (not x) : type_scope.
 
 Hints Unfold not : core.
 
-Inductive and [A,B:Prop] : Prop as "A /\ B" := conj : A -> B -> A /\ B.
+Inductive and [A,B:Prop] : Prop := conj : A -> B -> A /\ B
+
+where "A /\ B" := (and A B) : type_scope.
 
 V7only[
 Notation "< P , Q > { p , q }" := (conj P Q p q) (P annot, at level 1).
@@ -58,9 +60,11 @@ End Conjunction.
 
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
-Inductive or [A,B:Prop] : Prop as "A \/ B":=
+Inductive or [A,B:Prop] : Prop :=
      or_introl : A -> A \/ B 
-   | or_intror : B -> A \/ B.
+   | or_intror : B -> A \/ B
+
+where "A \/ B" := (or A B) : type_scope.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
@@ -173,8 +177,10 @@ Section universal_quantification.
     The others properties (symmetry, transitivity, replacement of 
     equals) are proved below *)
 
-Inductive eq [A:Type;x:A] : (y:A)Prop as "x = y :> A" : type_scope
-       := refl_equal : x = x :> A.
+Inductive eq [A:Type;x:A] : A->Prop
+       := refl_equal : x = x :> A
+
+where "x = y :> A" := (!eq A x y) : type_scope.
 
 Notation "x = y" := (eq ? x y) : type_scope.
 Notation "x <> y  :> T" := ~ (!eq T x y) : type_scope.

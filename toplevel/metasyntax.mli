@@ -45,8 +45,8 @@ val add_notation : locality_flag -> constr_expr
   -> (string * syntax_modifier list) option
       -> scope_name option -> unit
 
-val add_notation_interpretation : string -> (aconstr * Names.name list)
-  -> scope_name option -> unit
+val add_notation_interpretation : string -> Constrintern.implicits_env
+  -> constr_expr -> scope_name option -> unit
 
 val add_syntax_extension : locality_flag
   -> (string * syntax_modifier list) option

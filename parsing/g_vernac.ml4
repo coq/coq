@@ -148,8 +148,8 @@ GEXTEND Gram
     [ [ ","; nal = LIST1 base_ident SEP "," -> nal | -> [] ] ]
   ;
   decl_notation:
-    [ [ "as"; ntn = STRING; scopt = OPT [ ":"; sc = IDENT -> sc] -> 
-        (ntn,scopt) ] ]
+    [ [ "where"; ntn = STRING; ":="; c = constr; 
+         scopt = OPT [ ":"; sc = IDENT -> sc] -> (ntn,c,scopt) ] ]
   ;
   type_option:
     [ [ ":"; c = constr -> c 
@@ -228,7 +228,7 @@ GEXTEND Gram
   ;
   oneind:
     [ [ id = base_ident; indpar = simple_binders_list; ":"; c = constr; 
-        ntn = OPT decl_notation ; ":="; lc = constructor_list ->
+        ":="; lc = constructor_list; ntn = OPT decl_notation ->
 	  (id,ntn,indpar,c,lc) ] ]
   ;
   simple_binders_list:
@@ -252,7 +252,7 @@ GEXTEND Gram
   ;
   onerec:
     [ [ id = base_ident; bl = ne_fix_binders; ":"; type_ = constr;
-        ntn = OPT decl_notation; ":="; def = constr ->
+        ":="; def = constr; ntn = OPT decl_notation ->
           let ni = List.length (List.flatten (List.map fst bl)) - 1 in
           let loc0 = fst (List.hd (fst (List.hd bl))) in
           let loc1 = join_loc loc0 (constr_loc type_) in

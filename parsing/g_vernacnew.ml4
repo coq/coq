@@ -28,7 +28,7 @@ open Vernac_
 open Module
 
 
-let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "..." ]
+let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "..."; "where" ]
 let _ = 
   if not !Options.v7 then
     List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
@@ -181,13 +181,13 @@ GEXTEND Gram
       | -> None ] ]
   ;
   decl_notation:
-    [ [ OPT [ "as"; ntn = STRING; scopt = OPT [ ":"; sc = IDENT -> sc]
-               -> (ntn,scopt) ] ] ]
+    [ [ OPT [ "where"; ntn = STRING; ":="; c = constr; 
+         scopt = OPT [ ":"; sc = IDENT -> sc] -> (ntn,c,scopt) ] ] ]
     ;
   (* Inductives and records *)
   inductive_definition:
     [ [ id = base_ident; indpar = LIST0 binder_let; ":"; c = lconstr; 
-        ntn = decl_notation; ":="; lc = constructor_list ->
+        ":="; lc = constructor_list; ntn = decl_notation ->
 	  (id,ntn,indpar,c,lc) ] ]
   ;
   constructor_list:
@@ -208,7 +208,7 @@ GEXTEND Gram
   rec_definition:
     [ [ id = base_ident; bl = LIST1 binder_nodef;
         annot = OPT rec_annotation; type_ = type_cstr; 
-	ntn = decl_notation; ":="; def = lconstr ->
+	":="; def = lconstr; ntn = decl_notation ->
           let names = List.map snd (List.flatten (List.map fst bl)) in
           let ni =
             match annot with

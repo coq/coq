@@ -906,7 +906,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
       (local,(Some prec,ppprec),ppnot,Some gram_rule,pp_rule));
 
   (* Declare interpretation *)
-  let a = interp_aconstr vars c in
+  let a = interp_aconstr [] vars c in
   let old_pp_rule =
     (* Used only by v7 *)
     if onlyparse then None
@@ -940,29 +940,13 @@ let add_notation_interpretation_core local symbs for_old df a scope onlyparse
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,df))
 
-let check_occur l id =
-  if not (List.mem (Name id) l) then error ((string_of_id id)^"is unbound")
-
-let add_notation_interpretation df (c,l) sc =
+let add_notation_interpretation df names c sc =
   let (vars,symbs) = analyse_tokens (split df) in
-  List.iter (check_occur l) vars;
-  let a_for_old =
-    let c = match c with AVar id -> RVar (dummy_loc,id)
-      | ARef c -> RRef (dummy_loc,c)
-      | _ -> anomaly "add_notation_interpretation" in
-    RApp (dummy_loc, c,
-      List.map (function
-	| Name id when List.mem id vars -> RVar (dummy_loc,id)
-	| _ -> RHole (dummy_loc,QuestionMark)) l) in
-  let a = AApp (c,List.map (function 
-    | Name id when List.mem id vars -> AVar id
-    | _ -> AHole QuestionMark) l) in
-  let la = List.map (fun id -> id,(None,[])) vars in
-  let onlyparse = false in
-  let local = false in
+  let a = interp_aconstr names vars c in
+  let a_for_old = interp_rawconstr_with_implicits (Global.env()) vars names c 
+  in
   let for_oldpp = Some (a_for_old,vars) in
-  add_notation_interpretation_core local symbs for_oldpp df (la,a) sc
-    onlyparse false
+  add_notation_interpretation_core false symbs for_oldpp df a sc false false
 
 let add_notation_in_scope_v8only local df c mv8 scope toks =
   let (_,vars,notation),prec,ppdata = compute_syntax_data false (df,mv8) in
@@ -971,7 +955,7 @@ let add_notation_in_scope_v8only local df c mv8 scope toks =
     (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
   (* Declare the interpretation *)
   let onlyparse = false in
-  let a = interp_aconstr vars c in
+  let a = interp_aconstr [] vars c in
   Lib.add_anonymous_leaf
     (inNotation(local,None,notation,scope,a,onlyparse,true,df))
 
@@ -991,7 +975,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 	        (* Declare only interpretation *)
 		let (vars,symbs) = analyse_tokens toks in
 		let onlyparse = modifiers = [SetOnlyParsing] in
-		let a = interp_aconstr vars c in
+		let a = interp_aconstr [] vars c in
 		let a_for_old = interp_global_rawconstr_with_vars vars c in
 		add_notation_interpretation_core local symbs None df a sc 
 		  onlyparse true
@@ -1014,7 +998,7 @@ let add_notation local c dfmod mv8 sc =
 	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
         (* Means a Syntactic Definition *)
         let ident = id_of_string (strip x) in
-	let c = snd (interp_aconstr [] c) in
+	let c = snd (interp_aconstr [] [] c) in
 	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
         Syntax_def.declare_syntactic_definition local ident onlyparse c
     | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
@@ -1030,7 +1014,7 @@ let add_notation local c dfmod mv8 sc =
 	        (* Declare only interpretation *)
 		let (vars,symbs) = analyse_tokens toks in
 		let onlyparse = modifiers = [SetOnlyParsing] in
-		let a = interp_aconstr vars c in
+		let a = interp_aconstr [] vars c in
 		let a_for_old = interp_global_rawconstr_with_vars vars c in
 		let for_old = Some (a_for_old,vars) in
 		add_notation_interpretation_core local symbs for_old df a
@@ -1082,7 +1066,7 @@ let add_infix local (inf,modl) pr mv8 sc =
     if a8=None & n8=None & fmt=None then
       (* Declare only interpretation *)
       let (vars,symbs) = analyse_tokens toks in
-      let a' = interp_aconstr vars a in
+      let a' = interp_aconstr [] vars a in
       let a_for_old = interp_global_rawconstr_with_vars vars a in
       add_notation_interpretation_core local symbs None df a' sc 
 	onlyparse true
@@ -1110,7 +1094,7 @@ let add_infix local (inf,modl) pr mv8 sc =
     (* de ne déclarer que l'interprétation *)
     (* Declare only interpretation *)
     let (vars,symbs) = analyse_tokens toks in
-    let a' = interp_aconstr vars a in
+    let a' = interp_aconstr [] vars a in
     let a_for_old = interp_global_rawconstr_with_vars vars a in
     let for_old = Some (a_for_old,vars) in
     add_notation_interpretation_core local symbs for_old df a' sc 
