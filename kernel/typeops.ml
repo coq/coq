@@ -170,11 +170,11 @@ let type_of_existential env sigma c =
 
 (* Case. *)
 
-let rec sort_of_arity env sigma c =
+let rec mysort_of_arity env sigma c =
   match whd_betadeltaiota env sigma c with
     | DOP0(Sort( _)) as c' -> c'
-    | DOP2(Prod,_,DLAM(_,c2)) -> sort_of_arity env sigma c2
-    | _ -> invalid_arg "sort_of_arity"
+    | DOP2(Prod,_,DLAM(_,c2)) -> mysort_of_arity env sigma c2
+    | _ -> invalid_arg "mysort_of_arity"
 
 let make_arity_dep env sigma k = 
   let rec mrec c m = match whd_betadeltaiota env sigma c with 
@@ -315,14 +315,13 @@ let check_branches_message env sigma (c,ct) (explft,lft) =
 	(nf_betaiota env sigma explft.(i))
   done
 
-let type_of_case env sigma pj cj lfj =
+let type_of_case env sigma ci pj cj lfj =
   let lft = Array.map (fun j -> j.uj_type) lfj in
   let (mind,bty,rslty) =
     type_case_branches env sigma cj.uj_type pj.uj_type pj.uj_val cj.uj_val in
-  let kind = sort_of_arity env sigma pj.uj_type in
+  let kind = mysort_of_arity env sigma pj.uj_type in
   check_branches_message env sigma (cj.uj_val,cj.uj_type) (bty,lft);
-  { uj_val  = 
-      mkMutCaseA (ci_of_mind mind) (j_val pj) (j_val cj) (Array.map j_val lfj);
+  { uj_val  = mkMutCaseA ci (j_val pj) (j_val cj) (Array.map j_val lfj);
     uj_type = rslty;
     uj_kind = kind }
 

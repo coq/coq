@@ -67,12 +67,12 @@ let rec execute mf env cstr =
 	let (typ,kind) =destCast (type_of_constructor env Evd.empty c) in
         ({ uj_val = cstr; uj_type = typ; uj_kind = kind } , cst0)
 	  
-    | IsMutCase (_,p,c,lf) ->
+    | IsMutCase (ci,p,c,lf) ->
         let (cj,cst1) = execute mf env c in
         let (pj,cst2) = execute mf env p in
         let (lfj,cst3) = execute_array mf env lf in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-        (type_of_case env Evd.empty pj cj lfj, cst)
+        (type_of_case env Evd.empty ci pj cj lfj, cst)
   
     | IsFix (vn,i,lar,lfi,vdef) ->
         if (not mf.fix) && array_exists (fun n -> n < 0) vn then

@@ -126,9 +126,12 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
          end else 
 	   let p = mkLambda x rp2 (replace_vars subst ti) in
 	   let branch = mk_LambdaCit newfs (VAR fi) in
+	   let ci = Inductive.make_case_info
+		      (Global.lookup_mind_specif (destMutInd r))
+		      (Some PrintLet) [| RegularPat |] in
 	   let proj = mk_LambdaCit newps 
 			(mkLambda x rp1 
-			   (mkMutCaseA (ci_of_mind r) p (Rel 1) [|branch|])) in
+			   (mkMutCaseA ci p (Rel 1) [|branch|])) in
 	   let ok = 
 	     try
 	       let cie =

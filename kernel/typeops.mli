@@ -35,9 +35,7 @@ val type_of_constructor : env -> 'a evar_map -> constructor -> constr
 
 val type_of_existential : env -> 'a evar_map -> constr -> constr
 
-val sort_of_arity : env -> 'a Evd.evar_map -> constr -> constr 
-
-val type_of_case : env -> 'a evar_map 
+val type_of_case : env -> 'a evar_map -> case_info
   -> unsafe_judgment -> unsafe_judgment 
     -> unsafe_judgment array -> unsafe_judgment
 
