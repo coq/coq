@@ -626,8 +626,8 @@ let rec strip_context n iscast t =
 
 let transf istype env iscast bl c =
   let c' =
-    if istype then abstract_constr_expr c bl 
-    else prod_constr_expr c bl in
+    if istype then prod_constr_expr c bl
+    else abstract_constr_expr c bl in
   if Options.do_translate() then
     let r = 
       Constrintern.for_grammar
