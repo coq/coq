@@ -496,8 +496,8 @@ let is_operator s =
 
 type previous_prod_status = NoBreak | CanBreak
 
-let is_non_terminal = function
-  | NonTerminal _ -> true
+let rec is_non_terminal = function
+  | NonTerminal _ | SProdList _ -> true
   | _ -> false
 
 let add_break n l = UNP_BRK (n,1) :: l
@@ -597,7 +597,9 @@ let make_hunks etyps symbols from =
     | SProdList (m,sl) :: prods ->
 	let i = list_index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
-	UnpListMetaVar (i,prec,make NoBreak sl) :: make CanBreak prods
+        (* We add NonTerminal for simulation but remove it afterwards *)
+        let _,sl' = list_sep_last (make NoBreak (sl@[NonTerminal m])) in
+	UnpListMetaVar (i,prec,sl') :: make CanBreak prods
 
     | [] -> []
 
