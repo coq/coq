@@ -135,7 +135,9 @@ let token_list_of_kernel_name ~keep_sections kn tag =
  let module N = Names in
  let module LN = Libnames in
  let dir = match tag with
-   | Variable -> if keep_sections then Lib.cwd () else N.empty_dirpath
+   | Variable -> 
+       if keep_sections then Lib.cwd () else
+       LN.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ()) in
    | Constant -> 
        let ref = LN.ConstRef kn in
        if keep_sections then LN.dirpath (Nametab.sp_of_global ref)
@@ -153,9 +155,11 @@ let uri_of_kernel_name ?(keep_sections=false) kn tag =
   let tokens = token_list_of_kernel_name ~keep_sections kn tag in
    "cic:/" ^ String.concat "/" tokens
 
-let uri_of_path dir id tag =
-  let tokens = token_list_of_path dir id tag in
-   "cic:/" ^ String.concat "/" tokens
+let uri_of_declaration id tag =
+ let module LN = Libnames in
+ let dir = LN.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ()) in
+ let tokens = token_list_of_path dir id tag in
+  "cic:/" ^ String.concat "/" tokens
 
 (* Special functions for handling of CCorn's CProp "sort" *)
 
