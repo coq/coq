@@ -12,6 +12,3 @@ open Term
 open Tacmach
 
 val refine : Pretyping.open_constr -> tactic
-(*
-val refine_tac : Pretyping.open_constr -> tactic
-*)

@@ -253,7 +253,8 @@ let rec compute_metamap env gmm c = match kind_of_term c with
  *  Réalise le 3. ci-dessus
  *)
 
-let rec tcc_aux (TH (c,mm,sgp) as th) gl =
+let rec tcc_aux subst (TH (c,mm,sgp) as th) gl =
+  let c = substl subst c in
   match (kind_of_term c,sgp) with
     (* mv => sous-but : on ne fait rien *)
     | Meta _ , _ ->
@@ -270,7 +271,9 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
     | Lambda (Name id,_,m), _ when isMeta (strip_outer_cast m) ->
 	begin match sgp with
 	  | [None] -> introduction id gl
-	  | [Some th] -> tclTHEN (introduction id) (tcc_aux th) gl
+	  | [Some th] ->
+              tclTHEN (introduction id)
+                (onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)) gl
 	  | _ -> assert false
 	end
 	
@@ -285,7 +288,9 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	  (change_in_concl None newc) 
 	  (match sgp with 
 	     | [None] -> introduction id
-	     | [Some th] -> tclTHEN (introduction id) (tcc_aux th)
+	     | [Some th] ->
+                 tclTHEN (introduction id)
+                   (onLastHyp (fun id -> tcc_aux (mkVar id::subst) th))
 	     | _ -> assert false) 
 	  gl
 
@@ -304,7 +309,7 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	    (List.tl (Array.to_list fixes)))
 	  (List.map (function
 		       | None -> tclIDTAC 
-		       | Some th -> tcc_aux th) sgp)
+		       | Some th -> tcc_aux subst th) sgp)
 	  gl
 
     (* cofix => tactique CoFix *)
@@ -318,7 +323,7 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	  (mutual_cofix (out_name fi.(0)) (List.tl (Array.to_list cofixes)))
 	  (List.map (function
 		       | None -> tclIDTAC 
-		       | Some th -> tcc_aux th) sgp)
+		       | Some th -> tcc_aux subst th) sgp)
 	  gl
 
     (* sinon on fait refine du terme puis appels rec. sur les sous-buts.
@@ -326,7 +331,8 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
     | _ ->
 	tclTHENS
 	  (refine c)
-	  (List.map (function None -> tclIDTAC | Some th -> tcc_aux th) sgp)
+	  (List.map
+            (function None -> tclIDTAC | Some th -> tcc_aux subst th) sgp)
 	  gl
 
 (* Et finalement la tactique refine elle-même : *)
@@ -336,5 +342,5 @@ let refine oc gl =
   let env = pf_env gl in
   let (gmm,c) = Clenv.exist_to_meta sigma oc in
   let th = compute_metamap env gmm c in
-  tcc_aux th gl
+  tcc_aux [] th gl
 
