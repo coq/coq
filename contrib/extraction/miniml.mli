@@ -19,6 +19,7 @@ type ml_type =
   | Tarr  of ml_type * ml_type
   | Tglob of global_reference
   | Tprop
+  | Tarity
       
 (*s ML inductive types. *)
 

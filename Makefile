@@ -211,7 +211,7 @@ toplevel: $(TOPLEVEL)
 
 EXTRACTIONCMO=contrib/extraction/ocaml.cmo contrib/extraction/extraction.cmo 
 
-bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO)
+bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(EXTRACTIONCMO)
 
 ###########################################################################

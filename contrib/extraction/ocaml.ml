@@ -76,6 +76,8 @@ let pp_type t =
 	P.pp_global r
     | Tprop ->
 	string "prop"
+    | Tarity ->
+	string "arity"
   in 
   hOV 0 (pp_rec false t)
 

@@ -20,3 +20,9 @@ Definition f :=  [x:nat][_:(le x O)](S x).
 Extraction (f O (le_n O)).  
 
 Extraction ([X:Set][x:X]x nat).
+
+Definition d := [X:Type]X->X.
+
+Extraction d.
+Extraction (d Set).
+Extraction [x:(d Set)]O.
