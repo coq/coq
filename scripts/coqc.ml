@@ -35,9 +35,11 @@ let _ =
     if c <> "" then bindir := c
   with Not_found -> ()
 
-let specification = ref false
+(* coqc options *)
 
+let specification = ref false
 let keep = ref false
+let verbose = ref false
 
 (* Verifies that a string do not contains others caracters than letters, 
    digits, or `_` *)
@@ -84,7 +86,8 @@ let compile command args file =
   let filevo = Filename.concat dirname (modulename ^ ".vo") in
   let oc = open_out tmpfile in
   Printf.fprintf oc "Module %s.\n" modulename;
-  Printf.fprintf oc "Load \"%s\".\n" file;
+  Printf.fprintf oc "Load %s\"%s\".\n" 
+    (if !verbose then "Verbose " else "") file;
   Printf.fprintf oc "Write Module %s \"%s\".\n" modulename filevo;
   flush oc;
   close_out oc;
@@ -122,6 +125,8 @@ let parse_args () =
 	specification := true ; parse (cfiles,args) rem
     | "-t" :: rem -> 
 	keep := true ; parse (cfiles,args) rem
+    | ("-verbose" | "--verbose") :: rem -> 
+	verbose := true ; parse (cfiles,args) rem
     | "-bindir" :: d :: rem ->
 	bindir := d ; parse (cfiles,args) rem
     | "-bindir" :: []       ->

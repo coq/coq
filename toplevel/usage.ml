@@ -61,6 +61,6 @@ let print_usage_coqtop () =
 "  -searchisos            run Coq_SearchIsos\n"
 
 let print_usage_coqc () =
-  print_usage "Usage: coqc [-i] [-t] <options> file...\n
-  -i  compile specification only (in file.vi)
-  -t  keep temporary files\n\n"
+  print_usage "Usage: coqc [-t] [-verbose] <options> file...\n
+  -verbose  compile verbosely
+  -t        keep temporary files\n\n"
