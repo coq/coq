@@ -239,6 +239,19 @@ let check_case br =
     if check_and_generalize br.(i) <> f then raise Impossible 
   done; f
 
+let check_constant_case br = 
+  if br = [||] then raise Impossible; 
+  let (r,l,t) = br.(0) in
+  let n = List.length l in 
+  if occurs_itvl 1 n t then raise Impossible; 
+  let cst = ml_lift (-n) t in 
+  for i = 1 to Array.length br - 1 do 
+    let (r,l,t) = br.(i) in
+    let n = List.length l in
+    if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
+    then raise Impossible
+  done; cst
+
 (*s Some Beta-iota reductions + simplifications*)
 
 let constructor_index = function
@@ -320,7 +333,9 @@ let normalize a =
 		 try 
 		   let f = check_case br' in 
 		   simplify (MLapp (MLlam (anonymous,f),[e']))
-		 with Impossible -> MLcase (e', br')
+		 with Impossible -> 
+	           try check_constant_case br' 
+                   with Impossible -> MLcase (e', br')
 	       else MLcase (e', br'))
     | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
 	(* expansion of a letin in special cases *)

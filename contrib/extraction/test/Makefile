@@ -75,6 +75,12 @@ $(REALSML): realsml
 #	Utilities
 #
 
+open: 
+	find theories -name "*".ml -exec qualify2open \{\} \;
+
+undo_open: 
+	find theories -name "*".ml -exec mv \{\}.orig \{\} \;
+
 ml2v: ml2v.ml
 	ocamlc -o $@ $<
 
