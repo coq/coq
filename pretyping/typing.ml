@@ -159,6 +159,7 @@ let unsafe_machine env sigma constr =
 
 let type_of env sigma c = 
   let j = safe_machine env sigma c in 
+  (* No normalization: it breaks Pattern! *)
   (*nf_betaiota*) (body_of_type j.uj_type)
 
 (* The typed type of a judgment. *)
