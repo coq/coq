@@ -69,7 +69,7 @@ val error_global_constant_not_found_loc : loc -> qualid -> 'a
 (* The visibility can be registered either for all suffixes not
    shorter then a given int - when the object is loaded inside a module,
    or for a precise suffix, when the module containing (the module
-   containing ...) the object is open *)
+   containing ...) the object is open (imported) *)
 
 type visibility = Until of int | Exactly of int
 

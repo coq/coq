@@ -1,3 +1,188 @@
+CHANGES CONNECTED TO INTRODUCTION OF MODULES
+============================================
+
+1.Kernel
+--------
+
+  The module level has no effect on constr except for the structure of
+section_path. The type of unique names for constructions (what
+section_path served) is now called a kernel name and is defined by
+ 
+type uniq_ident = int * string * dir_path (* int may be enough *)
+type module_path =
+  | MPfile of dir_path    (* reference to physical module, e.g. file *)
+  | MPbound of uniq_ident (* reference to a module parameter in a functor *)
+  | MPself of uniq_ident  (* reference to one of the containing module *)
+  | MPdot of module_path * label
+type label = identifier
+type kernel_name = module_path * dir_path * label
+                   ^^^^^^^^^^^   ^^^^^^^^   ^^^^^
+                        |           |         \
+                        |           |          the base name
+                        |           \
+                       /             the (true) section path
+   example:                          (non empty only inside open sections)
+   L = (* i.e. some file of logical name L *)
+   struct
+     module A = struct Def a = ... end
+   end
+   M = (* i.e. some file of logical name M *)
+   struct
+     Def t = ...
+     N = functor (X : sig module T = struct Def b = ... end end) -> struct
+       module O = struct
+         Def u = ...
+       end
+       Def x := ... <M>.t ... <N>.O.u ... X.T.b ... L.A.a
+ 
+   <M> and <N> are self-references, X is a bound reference and L is a
+reference to a physical module.
+ 
+  Notice that functor application is not part of a path: it must be
+named by a "module M = F(A)" declaration to be used in a kernel
+name.
+ 
+  Notice that Jacek chose a practical approach, making directories not
+modules. Another approach could have been to replace the constructor
+MPfile by a constant constructor MProot representing the root of the
+world.
+ 
+  Other relevant informations are in kernel/entries.ml (type
+module_expr) and kernel/declarations.ml (type module_body and
+module_type_body).                                                              
+
+2. Library
+----------
+
+i) tables 
+[Summaries] - the only change is the special treatment of the
+global environmet.
+
+ii) objects 
+[Libobject] declares persistent objects, given with methods:
+
+   * cache_function specifying how to add the object in the current
+       scope;
+   * load_function, specifying what to do when the module 
+       containing the object is loaded; 
+   * open_function, specifying what to do when the module 
+       containing the object is opened (imported);
+   * classify_function, specyfying what to do with the object,
+       when the current module (containing the object) is ended. 
+   * subst_function
+   * export_function, to signal end_section survival
+
+(Almost) Each of these methods is called with a parameter of type
+object_name = section_path * kernel_name
+where section_path is the full user name of the object (such as
+Coq.Init.Datatypes.Fst) and kernel_name is its substitutive internal
+version such as (MPself<Datatypes#1>,[],"Fst") (see above)
+
+
+What happens at the end of an interactive module ?
+==================================================
+(or when a file is stored and reloaded from disk)
+
+All summaries (except Global environment) are reverted to the state
+from before the beginning of the module, and:
+
+a) the objects (again, since last Declaremods.start_module or
+   Library.start_library) are classified using the classify_function.
+   To simplify consider only those who returned Substitute _ or Keep _.
+
+b) If the module is not a functor, the subst_function for each object of
+   the first group is called with the substitution 
+   [MPself "<Datatypes#1>" |-> MPfile "Coq.Init.Datatypes"].
+   Then the load_function is called for substituted objects and the
+   "keep" object. 
+   (If the module is a library the substitution is done at reloading).
+
+c) The objects which returned substitute are stored in the modtab
+   together with the self ident of the module, and functor argument
+   names if the module was a functor.
+
+   They will be used (substituted and loaded) when a command like 
+     Module M := F(N)    or
+     Module Z := N 
+   is evaluated
+
+
+The difference between "substitutive" and "keep" objects
+========================================================
+i) The "keep" objects can _only_ reference other objects by section_paths
+and qualids. They do not need the substitution function.
+
+They will work after end_module (or reloading a compiled library),
+because these operations do not change section_path's
+
+They will obviously not work after Module Z:=N.
+ 
+These would typically be grammar rules, pretty printing rules etc.
+
+
+
+ii) The "substitutive" objects can _only_ reference objects by
+kernel_names. They must have a valid subst_function. 
+
+They will work after end_module _and_ after Module Z:=N or 
+Module Z:=F(M).
+
+
+
+Other kinds of objects:
+iii) "Dispose" - objects which do not survive end_module
+     As a consequence, objects which reference other objects sometimes
+by kernel_names and sometimes by 
+
+iv) "Anticipate" - objects which must be treated individually by
+    end_module (typically "REQUIRE" objects)
+
+
+
+Writing subst_thing functions
+=============================
+The subst_thing shoud not copy the thing if it hasn't actually
+changed. There are some cool emacs macros in dev/objects.el 
+to help writing subst functions this way quickly and without errors.
+Also there are *_smartmap functions in Util.
+
+The subst_thing functions are already written for many types,
+including constr (Term.subst_mps), 
+global_reference (Libnames.subst_global),
+rawconstr (Rawterm.subst_raw) etc
+
+They are all (apart from constr, for now) written in the non-copying
+way.
+
+
+Nametab
+=======
+
+Nametab has been made more uniform. For every kind of thing there is
+only one "push" function and one "locate" function. 
+
+
+Lib
+===
+
+library_segment is now a list of object_name * library_item, where
+object_name = section_path * kernel_name (see above)
+
+New items have been added for open modules and module types
+
+
+Declaremods
+==========
+Functions to declare interactive and noninteractive modules and module
+types.
+
+
+Library
+=======
+Uses Declaremods to actually communicate with Global and to register
+objects.
+
+
 MAIN CHANGES FROM COQ V7.3
 ==========================
 

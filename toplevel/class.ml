@@ -377,7 +377,7 @@ let count_extra_abstractions hyps ids_to_discard =
   in n
 
 let defined_in_sec kn sec_sp = 
-  let dir,_ = decode_kn kn in
+  let _,dir,_ = repr_kn kn in
     dir = sec_sp
 
 (* This moves the global path one step below *)

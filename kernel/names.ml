@@ -72,7 +72,8 @@ let string_of_dirpath = function
 let u_number = ref 0 
 type uniq_ident = int * string * dir_path
 let make_uid dir s = incr u_number;(!u_number,s,dir)
-let string_of_uid (i,s,p) = "<"^string_of_dirpath p ^ s ^ string_of_int i^">"
+let string_of_uid (i,s,p) = 
+  "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
 
 module Umap = Map.Make(struct 
 			 type t = uniq_ident 
