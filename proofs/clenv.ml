@@ -727,7 +727,7 @@ let unify_to_subterm clause (op,cl) =
 		 matchrec c)
           | _ -> error "Match_subterm")) 
   in 
-  if isMeta op then error "Match_subterm";
+(*  if isMeta op then error "Match_subterm";*)
   try matchrec cl
   with ex when catchable_exception ex ->
     raise (RefinerError (NoOccurrenceFound op))
@@ -736,22 +736,22 @@ let unify_to_subterm clause (op,cl) =
    a meta : BUG ?? *)
 let unify_to_subterm_list allow_K clause oplist t = 
   List.fold_right 
-    (fun op (clause,l) -> 
-       if occur_meta op then
-         let (clause',cl) =
-           try 
-	     (* This is up to some delta ... *)
-	     unify_to_subterm clause (strip_outer_cast op,t)
-           with RefinerError (NoOccurrenceFound _) when allow_K -> (clause,op)
-         in 
-	 (clause',cl::l)
-       else
-	 if not allow_K & not (dependent op t) then
-	   (* This is not up to delta ... *)
-	   raise (RefinerError (NoOccurrenceFound op))
-	 else
-	 (* Optimisation *)
-	 (clause,op::l))
+    (fun op (clause,l) ->
+      if isMeta op then
+	(clause,op::l)
+      else if occur_meta op then
+        let (clause',cl) =
+          try 
+	    (* This is up to some delta ... *)
+	    unify_to_subterm clause (strip_outer_cast op,t)
+          with RefinerError (NoOccurrenceFound _) when allow_K -> (clause,op)
+        in 
+	(clause',cl::l)
+      else if not allow_K & not (dependent op t) then
+	(* This is not up to delta ... *)
+	raise (RefinerError (NoOccurrenceFound op))
+      else
+	(clause,op::l))
     oplist 
     (clause,[])
 
