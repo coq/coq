@@ -448,23 +448,23 @@ let prim_refiner r sigma goal =
         if b then [sg1;sg2] else [sg2;sg1]  
 
     | FixRule (f,n,rest) ->
-     	let rec check_ind k cl = 
+     	let rec check_ind env k cl = 
           match kind_of_term (strip_outer_cast cl) with 
-            | Prod (_,c1,b) -> 
+            | Prod (na,c1,b) -> 
             	if k = 1 then 
 		  try 
 		    fst (find_inductive env sigma c1)
 		  with Not_found -> 
 		    error "cannot do a fixpoint on a non inductive type"
             	else 
-		  check_ind (k-1) b
+		  check_ind (push_rel (na,None,c1) env) (k-1) b
             | _ -> error "not enough products"
 	in
-	let (sp,_) = check_ind n cl in
+	let (sp,_) = check_ind env n cl in
 	let all = (f,n,cl)::rest in
      	let rec mk_sign sign = function 
 	  | (f,n,ar)::oth ->
-	      let (sp',_)  = check_ind n ar in 
+	      let (sp',_)  = check_ind env n ar in 
 	      if not (sp=sp') then 
 		error ("fixpoints should be on the same " ^ 
 		       "mutual inductive declaration");
@@ -477,10 +477,10 @@ let prim_refiner r sigma goal =
 	mk_sign sign all
 	
     | Cofix (f,others) ->
-     	let rec check_is_coind cl = 
+     	let rec check_is_coind env cl = 
 	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
-            | Prod (_,c1,b) -> check_is_coind  b
+            | Prod (na,c1,b) -> check_is_coind (push_rel (na,None,c1) env) b
             | _ -> 
 		try 
 		  let _ = find_coinductive env sigma b in ()
@@ -489,7 +489,7 @@ let prim_refiner r sigma goal =
 			  "in coinductive types")
 	in
 	let all = (f,cl)::others in
-     	List.iter (fun (_,c) -> check_is_coind c) all;
+     	List.iter (fun (_,c) -> check_is_coind env c) all;
         let rec mk_sign sign = function 
           | (f,ar)::oth ->
 	      (try
