@@ -1,4 +1,3 @@
-
 \documentclass[a4paper]{article}
 \pagestyle{plain}
 
@@ -6,11 +5,11 @@
 \usepackage{stmaryrd}
 \usepackage{amssymb}
 \usepackage{url}
-\usepackage{multicol}
+%\usepackage{multicol}
 \usepackage{hevea}
 \usepackage{fullpage}
-%\usepackage[latin1]{inputenc}
-%\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
 
 %\input{../macros.tex}
 
@@ -1773,15 +1772,16 @@ You can use this bibtex entry :
 
 \Question{How to use those Forall and Exists pretty symbols ?}\label{forallcoqide}
  Thanks to the notation features in \Coq, you just need to insert these
-lines in your \Coq buffer :
+lines in your \Coq buffer :\\
 \begin{texttt}
-======================================================================\\
 Notation "$\forall$ x : t, P" := (forall x:t, P) (at level 200, x ident).
+\end{texttt}\\
+\begin{texttt}
 Notation "$\exists$ x : t, P" := (exists x:t, P) (at level 200, x ident).
-======================================================================
 \end{texttt}
+
 Copy/Paste of these lines from this file will not work outside of \CoqIde.
-You need to load a file containing these lines or to enter the "∀" 
+You need to load a file containing these lines or to enter the $\forall$
 using an input method (see \ref{inputmeth}). To try it just use \verb#Require utf8# from inside
 \CoqIde. 
 To enable these notations automatically start coqide with
@@ -1795,7 +1795,7 @@ pretty simple notations.
 
 \begin{itemize}
 \item First solution : type \verb#<CONTROL><SHIFT>2200# to enter a forall in the script widow. 
-	2200 is the hexadecimal code for forall in unicode charts and is encoded as "∀"	
+	2200 is the hexadecimal code for forall in unicode charts and is encoded as 	
 	in UTF-8.
 	2203 is for exists. See \url{http://www.unicode.org} for more codes.
 \item Second solution : rebind \verb#<AltGr>a# to forall and \verb#<AltGr>e# to exists. 
@@ -1806,11 +1806,11 @@ pretty simple notations.
 \end{verbatim}
 	and then to add   
 \begin{verbatim}
-		bind "F13" {"insert-at-cursor" ("∀")}
-		bind "F14" {"insert-at-cursor" ("∃")}
+		bind "F13" {"insert-at-cursor" ("")}
+		bind "F14" {"insert-at-cursor" ("")}
 \end{verbatim}
 	to your "binding "text"" section in \verb#.coqiderc-gtk2rc.#
-	The strange ("∀") argument is the UTF-8 encoding for
+	The strange ("") argument is the UTF-8 encoding for
 	0x2200. 
 	You can compute these encodings using the lablgtk2 toplevel with 
 \begin{verbatim}		
