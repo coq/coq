@@ -67,9 +67,9 @@ let add_load_path_entry (phys_path,coq_path) =
   let phys_path = canonical_path_name phys_path in
   match list_filter2 (fun p d -> p = phys_path) !load_path with
   | _,[dir] ->
-      if dir <> coq_path && coq_path <> Nametab.default_root_prefix then
-	  (* Assume the user is concerned by module naming *)
+      if coq_path <> dir then
 	begin
+          (* Assume the user is concerned by module naming *)
 	  if dir <> Nametab.default_root_prefix then
 	    warning (phys_path^" was previously bound to "
 	    ^(string_of_dirpath dir)
