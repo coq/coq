@@ -192,14 +192,45 @@ let renum_db ctx n =
 
 (*s Environment for the bodies of some mutual fixpoints. *)
 
-let rec push_many_rels env ctx = function
+let push_many_rels env binders =  
+    List.fold_left (fun e (f,t) -> push_rel (f,None,t) e) env binders
+
+let rec push_many_rels_ctx env ctx = function
   | (fi,ti) :: l -> 
-      push_many_rels (push_rel (fi,None,ti) env) ((v_of_arity env ti)::ctx) l
+      push_many_rels_ctx 
+	(push_rel (fi,None,ti) env) ((v_of_arity env ti)::ctx) l
   | [] ->
       (env, ctx)
 
 let fix_environment env ctx fl tl =
-  push_many_rels env ctx (List.combine fl (Array.to_list tl))
+  push_many_rels_ctx env ctx (List.combine fl (Array.to_list tl))
+
+(* Decomposition of a type beginning with at least n products when reduced *)
+
+let decompose_prod_reduce n env c = 
+  let c = 
+    if nb_prod c >= n then 
+      c 
+    else 
+      whd_betadeltaiota env Evd.empty c 
+  in decompose_prod_n n c
+
+(* Decomposition of a function expecting n arguments at least. We eta-expanse
+   if needed *)
+
+let decompose_lam_eta n env c = 
+  let dif = n - (nb_lam c) in 
+  if (dif <= 0) then 
+    decompose_lam_n n c
+  else 
+    let tyc = Typing.type_of env Evd.empty c in
+    let (type_binders,_) = decompose_prod_reduce n env tyc in
+    let (binders, e) = decompose_lam c in 
+    let binders = (list_firstn dif type_binders) @ binders in 
+    let e =
+      applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
+    (binders, e)
+
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
@@ -403,52 +434,35 @@ and extract_term_with_type env ctx c t =
     | IsMutConstruct (cp,_) ->
 	Rmlterm (MLglob (ConstructRef cp)) (* TODO eta-expansion *)
     | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
-	let mib = Global.lookup_mind (fst ip) in
-	let mis = build_mis (ip,[||]) mib in
-	let nparams = mis_nparams mis in
-	let mk_type_binders n env b = 
-	  let tyb = Typing.type_of env Evd.empty b in
-	  let tyb = 
-	    if nb_prod tyb >= n then 
-	      tyb 
-	    else 
-	      whd_betadeltaiota env Evd.empty tyb 
-	  in fst (decompose_prod_n n tyb)
-	in
 	let extract_branch j b =
 	  let (_,s) = extract_constructor (ip,succ j) in
-	  assert (List.length s = ni.(j) + nparams);
-	  let (sparam, sargs) = list_chop nparams s in
-	  let tb = mk_type_binders ni.(j) env b in
-	  let (binders,e) = decompose_lam b in
-	  let dif = ni.(j) - List.length binders in
-	  let binders = (list_firstn dif tb) @ binders in
-	  let e = if dif = 0 then 
-	    e 
-	  else
-	    applist ((lift dif e), List.rev_map mkRel (interval 1 dif))
-	  in
+	  assert (List.length s = ni.(j));
+	  (* number of arguments, without parameters *)
+	  let (binders,e) = decompose_lam_eta ni.(j) env b in
 	  let binders = List.rev binders in
-	  let (env',ctx') = push_many_rels env ctx binders in
+	  let (env',ctx') = push_many_rels_ctx env ctx binders in
+	  (* Some patological cases need an extract_constr here 
+	     rather than an extract_term. See exemples in test_extraction.v *)
 	  let e' = match extract_constr env' ctx' e with
-	    | Eprop -> MLprop (* TODO: probably wrong *)
-	    | Emltype _ -> assert false
+	    | Eprop -> MLprop
+	    | Emltype _ -> MLarity
 	    | Emlterm a -> a
 	  in
 	  let ids = 
 	    List.fold_right 
 	      (fun ((v,_),(n,_)) acc ->
 		 if v = Vdefault then (id_of_name n :: acc) else acc)
-	      (List.combine sargs binders) []
+	      (List.combine s binders) []
 	  in
 	  (cnames.(j), ids, e')
 	in
-	let a = match extract_constr env ctx c with
-	  | Emlterm a -> a
-	  | Eprop -> MLprop
-	  | Emltype _ -> assert false
-	in
-	Rmlterm (MLcase (a, Array.mapi extract_branch br))
+	(* c has an  inductive type, not an arity type *)
+	(match extract_term env ctx c with
+	   | Rmlterm a -> Rmlterm (MLcase (a, Array.mapi extract_branch br))
+	   | Rprop -> (* Singlaton elimination *)
+	       assert (Array.length br = 1);
+	       let (c,ids,e) = extract_branch 0 br.(0) in 	  
+	       Rmlterm e)
     | IsFix ((_,i),(ti,fi,ci)) ->
 	let (env', ctx') = fix_environment env ctx fi ti in
 	let extract_fix_body c = 
@@ -559,13 +573,13 @@ and extract_mib sp =
 	   array_foldi
 	     (fun j _ fl -> 
 		let t = mis_constructor_type (succ j) mis in
-		match extract_type genv t with
+		let nparams = mis_nparams mis in 
+		let (binders, t) = decompose_prod_n nparams t in
+		let env = push_many_rels genv (List.rev binders) in
+		match extract_type env t with
 		  | Tarity | Tprop -> assert false
 		  | Tmltype (mlt, s, f) -> 
 		      let l = list_of_ml_arrows mlt in
-		      (*i
-			let (l,s) = extract_params mib.mind_nparams (l,s) in
-		      i*)
 		      add_constructor_extraction ((sp,i),succ j) (l,s);
 		      f @ fl)
 	     ib.mind_nf_lc fl)

@@ -89,3 +89,7 @@ Extraction tree_size.
 Extraction Cases (left True True I) of (left x)=>(S O) | (right x)=>O end.
 
 Extraction sumbool_rec.
+
+Definition horibilis := [b:bool]<[b:bool]if b then Type else nat>if b then Set else O.
+
+Extraction horibilis.
