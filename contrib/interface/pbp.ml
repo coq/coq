@@ -235,10 +235,10 @@ let constant dir s =  constr_of_reference (reference dir s);;
 
 let andconstr: unit -> constr = Coqlib.build_coq_and;;
 let prodconstr () = constant "Datatypes" "prod";;
-let exconstr () = constant "Logic" "ex";;
+let exconstr = Coqlib.build_coq_ex;;
 let exTconstr () = constant "Logic_Type" "exT";;
 let sigconstr () = constant "Specif" "sig";;
-let sigTconstr () = constant "Logic_Type" "sigT";;
+let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ;;
 let orconstr = Coqlib.build_coq_or;;
 let sumboolconstr = Coqlib.build_coq_sumbool;;
 let sumconstr() = constant "Datatypes" "sum";;
@@ -265,15 +265,31 @@ let (and_intro: pbp_rule) = function
       else None
   | _ -> None;;
 
+let exists_from_lambda avoid clear_names clear_flag c2 path f =
+  match kind_of_term c2 with
+    Lambda(Name x, _, body) -> 
+      Some (PbpThens ([PbpExists x],
+		      [f avoid clear_names false None (kind_of_term body) path]))
+  | _ -> None;;
+
+
 let (ex_intro: pbp_rule) = function
     avoid, clear_names, clear_flag, None,
+    App(oper, [| c1; c2|]), 2::3::path, f
+      when (is_matching_local (exconstr ()) oper)
+ 	or (is_matching_local (sigconstr ()) oper) ->
+	  exists_from_lambda avoid clear_names clear_flag c2 path f
+  | _ -> None;;
+
+let (exT_intro : pbp_rule) = function
+    avoid, clear_names, clear_flag, None,
     App(oper, [| c1; c2|]), 2::2::2::path, f
-      when (is_matching_local (exconstr ()) oper) or (is_matching_local (exTconstr ()) oper)
- 	or (is_matching_local (sigconstr ()) oper)
-	      or (is_matching_local (sigTconstr ()) oper) ->
-		(match kind_of_term c2 with
-		  Lambda(Name x, _, body) -> Some (PbpThen [PbpExists x])
-		| _ -> None)
+      when (is_matching_local (sigTconstr ()) oper) ->
+	exists_from_lambda avoid clear_names clear_flag c2 path f
+  | avoid, clear_names, clear_flag, None,
+    App(oper, [| c1; c2|]), 2::2::path, f
+      when (is_matching_local (exTconstr ()) oper) ->
+      exists_from_lambda avoid clear_names clear_flag c2 path f
   | _ -> None;;
 
 let (or_intro: pbp_rule) = function
@@ -498,7 +514,7 @@ let (head_tactic_patt: pbp_rule) = function
 
 let pbp_rules = ref [rem_cast;head_tactic_patt;forall_intro;imply_intro2;
                       forall_elim; imply_intro1; imply_elim1; imply_elim2;
-		      and_intro; or_intro; not_intro; ex_intro];;
+		      and_intro; or_intro; not_intro; ex_intro; exT_intro];;
 
 
 let try_trace = ref true;;
