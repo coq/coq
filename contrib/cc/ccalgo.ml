@@ -11,137 +11,41 @@
 (* This file implements the basic congruence-closure algorithm by *)
 (* Downey,Sethi and Tarjan. *)
 
+open Util
 open Names
 open Term
 
 let init_size=251
-  
+
+type pa_constructor=
+    {head_constr: int;
+     arity:int;
+     nhyps:int;
+     args:int list;
+     term_head:int}
+
+
+module PacMap=Map.Make(struct type t=int*int let compare=compare end) 
+
 type term=
     Symb of constr
   | Appli of term*term
+  | Constructor of constructor*int*int (* constructor arity+ nhyps *)
 
 type rule=
     Congruence
   | Axiom of identifier
+  | Injection of int*int*int*int (* terms+head+arg position *)
 
-type valid={lhs:int;rhs:int;rule:rule}
+type equality = {lhs:int;rhs:int;rule:rule}
 
-let congr_valid i j= {lhs=i;rhs=j;rule=Congruence}
+let swap eq=
+  let swap_rule=match eq.rule with
+      Congruence -> Congruence
+    | Injection (i,j,c,a) -> Injection (j,i,c,a)
+    | Axiom id -> anomaly "no symmetry for axioms"    
+  in {lhs=eq.rhs;rhs=eq.lhs;rule=swap_rule}
 
-let ax_valid i j id= {lhs=i;rhs=j;rule=Axiom id}
-
-(* Basic Union-Find algo w/o path compression *)
-    
-module UF = struct
-
-  type cl=Rep of int*(int list)|Eqto of int*valid
-
-  type vertex=Leaf|Node of (int*int) 
-
-  type node={clas:cl;vertex:vertex;term:term}    
-
-  type t={mutable size:int;
-	  map:(int,node) Hashtbl.t;
-	  syms:(term,int) Hashtbl.t}
-	
-  let empty ():t={size=0;
-		  map=Hashtbl.create init_size;
-		  syms=Hashtbl.create init_size}
-
-  let add_lst i t uf=
-    let node=Hashtbl.find uf.map i in
-      match node.clas with
-	  Rep(l,lst)->Hashtbl.replace uf.map i 
-	    {node with clas=Rep(l+1,t::lst)}
-	| _ ->failwith "add_lst: not a representative"
-	    
-  let rec find uf i=
-    match (Hashtbl.find uf.map i).clas with
-	Rep(_,_) -> i
-      | Eqto(j,_) ->find uf j
-	  
-  let list uf i=
-    match (Hashtbl.find uf.map i).clas with
-	Rep(_,lst)-> lst
-      | _ ->failwith "list: not a class"
-	  
-  let size uf i=
-    match (Hashtbl.find uf.map i).clas with
-	Rep (l,_) -> l
-      | _ ->failwith "size: not a class"
-
-  let term uf i=(Hashtbl.find uf.map i).term
-
-  let subterms uf i=
-    match (Hashtbl.find uf.map i).vertex with
-	Node(j,k) -> (j,k)
-      | _ -> failwith "subterms: not a node"
-
-  let signature uf i=
-    match (Hashtbl.find uf.map i).vertex with
-	Node(j,k)->(find uf j,find uf k)
-      | _ ->failwith "signature: not a node"
-
-  let nodes uf=  (* cherche les noeuds binaires *)
-    Hashtbl.fold 
-      (fun i node l->
-	 match node.vertex with 
-	     Node (_,_)->i::l
-	   | _ ->l) uf.map [] 
-
-  let next uf=
-    let n=uf.size in uf.size<-n+1; n
-	
-  let rec add t uf= 
-    try Hashtbl.find uf.syms t with 
-	Not_found ->
-	  let b=next uf in
-	  let new_node=
-	    match t with
-		Symb s -> 
-		  {clas=Rep (0,[]);
-		   vertex=Leaf;
-		   term=t}
-	      | Appli (t1,t2) -> 
-		  let i1=add t1 uf 
-		  and i2=add t2 uf in
-		    add_lst (find uf i1) b uf;
-		    add_lst (find uf i2) b uf;
-		    {clas=Rep (0,[]);
-		     vertex=Node(i1,i2);
-		     term=t}
-      in
-	    Hashtbl.add uf.map b new_node;
-	    Hashtbl.add uf.syms t b;
-	    b
-	      
-  let union uf i1 i2 t=
-    let node1=(Hashtbl.find uf.map i1) 
-    and node2=(Hashtbl.find uf.map i2) in
-      match node1.clas,node2.clas with
-	  Rep (l1,lst1),Rep (l2,lst2) -> 
-	    Hashtbl.replace uf.map i2 {node2 with clas=Eqto (i1,t)};
-	    Hashtbl.replace uf.map i1 
-	      {node1 with clas=Rep(l2+l1,lst2@lst1)}
-	| _ ->failwith "union: not classes"	  	  
-	    
-  let rec up_path uf i l=
-    match (Hashtbl.find uf.map i).clas with
-	Eqto(j,t)->up_path uf j (((i,j),t)::l)
-      | Rep(_,_)->l
-
-  let rec min_path=function
-      ([],l2)->([],l2)
-    | (l1,[])->(l1,[])
-    | (((c1,t1)::q1),((c2,t2)::q2)) when c1=c2 -> min_path (q1,q2) 
-    | cpl -> cpl
-	
-  let join_path uf i j=
-    assert (find uf i=find uf j);
-    min_path (up_path uf i [],up_path uf j [])
-      
-end    
-    
 (* Signature table *)
 
 module ST=struct
@@ -157,7 +61,7 @@ module ST=struct
       
   let enter t sign st=
     if Hashtbl.mem st.toterm sign then 
-	failwith "enter: signature already entered"
+	anomaly "enter: signature already entered"
     else 
 	Hashtbl.replace st.toterm sign t;
 	Hashtbl.replace st.tosign t sign
@@ -178,73 +82,237 @@ module ST=struct
 	  
 end
     
-let rec combine_rec uf st=function 
+(* Basic Union-Find algo w/o path compression *)
+    
+module UF = struct
+
+module PacSet=Set.Make(struct type t=int*int let compare=compare end) 
+
+  type representative=
+      {mutable nfathers:int;
+       mutable fathers:int list;
+       mutable constructors:pa_constructor PacMap.t}
+
+  type cl = Rep of representative| Eqto of int*equality
+
+  type vertex = Leaf| Node of (int*int) 
+
+  type node = 
+      {clas:cl;
+       vertex:vertex;
+       term:term;
+       mutable node_constr: int PacMap.t}    
+
+  type t={mutable size:int;
+          map:(int,node) Hashtbl.t;
+          syms:(term,int) Hashtbl.t;
+	  sigtable:ST.t}
+
+  let empty ():t={size=0;
+		  map=Hashtbl.create init_size;
+		  syms=Hashtbl.create init_size;
+		  sigtable=ST.empty ()}
+
+  let rec find uf i=
+    match (Hashtbl.find uf.map i).clas with
+	Rep _ -> i
+      | Eqto (j,_) ->find uf j
+	  
+  let get_representative uf i=
+    let node=Hashtbl.find uf.map i in
+      match node.clas with
+	  Rep r ->r
+	| _ -> anomaly "get_representative: not a representative"
+
+  let fathers uf i=
+    (get_representative uf i).fathers
+	  
+  let size uf i=
+    (get_representative uf i).nfathers
+
+  let add_father uf i t=
+    let r=get_representative uf i in
+      r.nfathers<-r.nfathers+1;
+      r.fathers<-t::r.fathers 
+
+  let pac_map uf i=
+    (get_representative uf i).constructors  
+
+  let pac_arity uf i sg=
+    (PacMap.find sg (get_representative uf i).constructors).arity
+
+  let add_node_pac uf i sg j=
+    let node=Hashtbl.find uf.map i in
+      if not (PacMap.mem sg node.node_constr) then
+	node.node_constr<-PacMap.add sg j node.node_constr 
+  
+  let mem_node_pac uf i sg= 
+    PacMap.find sg (Hashtbl.find uf.map i).node_constr
+  
+  let add_pacs uf i pacs =
+    let rep=get_representative uf i in
+    let pending=ref [] and combine=ref [] in 
+    let add_pac sg pac=
+      try  
+	let opac=PacMap.find sg rep.constructors in
+	  if (snd sg)>0 then () else
+	    let tk=pac.term_head 
+	    and tl=opac.term_head in
+	    let rec f n lk ll q=
+	      if n > 0 then match (lk,ll) with
+		  k::qk,l::ql->
+		    let qq=
+		      {lhs=k;rhs=l;rule=Injection(tk,tl,pac.head_constr,n)}::q 
+		    in
+		      f (n-1) qk ql qq 
+		| _->anomaly 
+		    "add_pacs : weird error in injection subterms merge"
+	      else q in
+ 	      combine:=f pac.nhyps pac.args opac.args !combine
+      with Not_found ->
+	rep.constructors <- PacMap.add sg pac rep.constructors;
+	pending:=(fathers uf (find uf pac.term_head))@rep.fathers@ !pending in
+      PacMap.iter add_pac pacs;
+      !pending,!combine
+	
+  let term uf i=(Hashtbl.find uf.map i).term
+		  
+  let subterms uf i=
+    match (Hashtbl.find uf.map i).vertex with
+	Node(j,k) -> (j,k)
+      | _ -> anomaly "subterms: not a node"
+
+  let signature uf i=
+    let j,k=subterms uf i in (find uf j,find uf k)
+
+  let nodes uf=  (* cherche les noeuds binaires *)
+    Hashtbl.fold 
+      (fun i node l->
+	 match node.vertex with 
+	     Node (_,_)->i::l
+	   | _ ->l) uf.map [] 
+
+  let next uf=
+    let n=uf.size in uf.size<-n+1; n
+	
+  let new_representative l={nfathers=0;fathers=[];constructors=l}
+
+  let rec add uf t= 
+    try Hashtbl.find uf.syms t with 
+	Not_found ->
+	  let b=next uf in
+	  let new_node=
+	    match t with
+		Symb s -> 
+		  {clas=Rep (new_representative PacMap.empty);
+		   vertex=Leaf;term=t;node_constr=PacMap.empty}
+	      | Appli (t1,t2) -> 
+		  let i1=add uf t1 and i2=add uf t2 in
+		    add_father uf (find uf i1) b;
+		    add_father uf (find uf i2) b;
+		    {clas=Rep (new_representative PacMap.empty);
+		     vertex=Node(i1,i2);term=t;node_constr=PacMap.empty}
+	      | Constructor (c,a,n) ->
+		  let pacs=
+		    PacMap.add (b,a) 
+		      {head_constr=b;arity=a;nhyps=n;args=[];term_head=b} 
+		      PacMap.empty in
+		    {clas=Rep (new_representative pacs);
+		     vertex=Leaf;term=t;node_constr=PacMap.empty}
+	  in
+	    Hashtbl.add uf.map b new_node;
+	    Hashtbl.add uf.syms t b;
+	    b
+
+  let link uf i j eq= (* links i -> j *)
+    let node=Hashtbl.find uf.map i in 
+      Hashtbl.replace uf.map i {node with clas=Eqto (j,eq)}
+	      
+  let union uf i1 i2 eq=
+    let r1= get_representative uf i1 
+    and r2= get_representative uf i2 in
+      link uf i1 i2 eq;
+      r2.nfathers<-r1.nfathers+r2.nfathers;
+      r2.fathers<-r1.fathers@r2.fathers;
+      add_pacs uf i2 r1.constructors 
+	
+  let rec down_path uf i l=
+    match (Hashtbl.find uf.map i).clas with
+	Eqto(j,t)->down_path uf j (((i,j),t)::l)
+      | Rep _ ->l
+
+  let rec min_path=function
+      ([],l2)->([],l2)
+    | (l1,[])->(l1,[])
+    | (((c1,t1)::q1),((c2,t2)::q2)) when c1=c2 -> min_path (q1,q2) 
+    | cpl -> cpl
+	
+  let join_path uf i j=
+    assert (find uf i=find uf j);
+    min_path (down_path uf i [],down_path uf j [])
+      
+end    
+    
+let rec combine_rec uf=function 
     []->[]
-  | v::pending->
-      let combine=(combine_rec uf st pending) in
-      let s=UF.signature uf v in
-      try (v,(ST.query s st))::combine with
+  | t::pending->
+      let combine=combine_rec uf pending in
+      let s=UF.signature uf t in
+      let u=snd (UF.subterms uf t) in
+      let f (c,a) pac pacs=
+	if a=0 then pacs else 
+	  let sg=(c,a-1) in
+	    UF.add_node_pac uf t sg pac.term_head;
+	    PacMap.add sg {pac with args=u::pac.args;term_head=t} pacs
+      in
+      let pacs=PacMap.fold f (UF.pac_map uf (fst s)) PacMap.empty in
+      let i=UF.find uf t in
+      let (p,c)=UF.add_pacs uf i pacs in
+      let combine2=(combine_rec uf p)@c@combine in
+      try {lhs=t;rhs=ST.query s uf.UF.sigtable;rule=Congruence}::combine2 with
 	Not_found->
-	  ST.enter v s st;combine
+	  ST.enter t s uf.UF.sigtable;combine2
 	    
-let rec process_rec uf st=function
+let rec process_rec uf=function
     []->[] 
-  | (v,w)::combine->
-      let pending=process_rec uf st combine in
-      let i=UF.find uf v 
-      and j=UF.find uf w in
-      if i=j then 
-	pending 
+  | eq::combine->
+      let pending=process_rec uf combine in
+      let i=UF.find uf eq.lhs 
+      and j=UF.find uf eq.rhs in
+      if i=j then
+	pending
       else
 	if (UF.size uf i)<(UF.size uf j) then
-	  let l=UF.list uf i in
-	  UF.union uf j i (congr_valid v w);
-	  ST.delete_list l st;
-	  l@pending
+	  let l=UF.fathers uf i in
+	  let (p,c)=UF.union uf i j eq in
+	  let _ =ST.delete_list l uf.UF.sigtable in
+	  let inj_pending=process_rec uf c in
+	    inj_pending@p@l@pending
 	else
-	  let l=UF.list uf j in
-	  UF.union uf i j (congr_valid w v);
-	  ST.delete_list l st;
-	  l@pending
+	  let l=UF.fathers uf j in
+	  let (p,c)=UF.union uf j i (swap eq) in
+	  let _ =ST.delete_list l uf.UF.sigtable in
+	  let inj_pending=process_rec uf c in
+	    inj_pending@p@l@pending
 	  
-let rec cc_rec uf st=function
+let rec cc_rec uf=function
     []->()
   | pending->
-      let combine=combine_rec uf st pending in
-      let pending0=process_rec uf st combine in
-      (cc_rec uf st pending0)
+      let combine=combine_rec uf pending in
+      let pending0=process_rec uf combine in
+	cc_rec uf pending0
 	
-let cc uf=(cc_rec uf (ST.empty ()) (UF.nodes uf))
+let cc uf=cc_rec uf (UF.nodes uf)
 
 let rec make_uf=function
-    []->(UF.empty ())
-  | (ax,(v,w))::q->
+    []->UF.empty ()
+  | (ax,(t1,t2))::q->
       let uf=make_uf q in
-      let i1=UF.add v uf in
-      let i2=UF.add w uf in
-      UF.union uf (UF.find uf i2) (UF.find uf i1) (ax_valid i1 i2 ax);
-      uf
-	
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      let i1=UF.add uf t1 in
+      let i2=UF.add uf t2 in
+      let j1=UF.find uf i1 and j2=UF.find uf i2 in
+	if j1=j2 then uf else  
+	    let (_,inj_combine)=
+		UF.union uf j1 j2 {lhs=i1;rhs=i2;rule=Axiom ax} in
+	    let _ = process_rec uf inj_combine in uf
+      

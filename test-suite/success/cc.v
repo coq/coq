@@ -1,6 +1,5 @@
 Require CC.
 
-
 Theorem t1: (A:Set)(a:A)(f:A->A)
 	(f a)=a->(f (f a))=a.
 Intros.
@@ -47,3 +46,16 @@ Theorem t4 :  (A:Set; P:(A->Prop); u,v:A)u=v->(P u)->(P v).
 Intros.
 CCsolve.
 Save.
+
+(* Exambles with injection rule *)
+
+Theorem t5 : (A:Set;a,b,c,d:A)(a,c)=(b,d)->a=b/\c=d.
+Intros.
+Split;CC.
+Save.
+
+Theorem t6 : (A:Set;a,c,d:A;f:A->A*A) (f=(pair A A a))->(f c)=(f d)->c=d.
+Intros.
+CC.
+Save.
+

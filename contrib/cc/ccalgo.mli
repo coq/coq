@@ -8,41 +8,26 @@
 
 (* $Id$ *)
 
-val init_size : int
+type pa_constructor
+    (*{head: int; arity: int; args: (int * int) list}*)
+
+module PacMap:Map.S with type key=int * int 
 
 type term = 
     Symb of Term.constr 
   | Appli of term * term 
+  | Constructor of Names.constructor*int*int
 
 type rule = 
     Congruence 
-  | Axiom of Names.identifier      
+  | Axiom of Names.identifier
+  | Injection of int*int*int*int
 
-type valid =
+type equality =
     {lhs : int; 
      rhs : int; 
      rule : rule}
 
-module UF :
-sig
-  type t 
-  val empty : unit -> t
-  val add_lst : int -> int -> t -> unit
-  val find : t -> int -> int
-  val list : t -> int -> int list
-  val size : t -> int -> int
-  val term : t -> int -> term    
-  val subterms : t -> int -> int * int
-  val signature : t -> int -> int * int
-  val nodes : t -> int list
-  val add : term -> t -> int
-  val union : t -> int -> int -> valid -> unit
-  val join_path : t -> int -> int -> 
-    ((int*int)*valid) list*
-    ((int*int)*valid) list
-end
-
-  
 module ST :
 sig
   type t
@@ -52,10 +37,31 @@ sig
   val delete : int -> t -> unit
   val delete_list : int list -> t -> unit
 end
+  
+module UF :
+sig
+  type t 
+  val empty : unit -> t
+  val find : t -> int -> int
+  val size : t -> int -> int
+  val pac_arity : t -> int -> int * int -> int
+  val mem_node_pac : t -> int -> int * int -> int 
+  val term : t -> int -> term    
+  val subterms : t -> int -> int * int
+  val add : t -> term -> int
+  val union : t -> int -> int -> equality -> int list * equality list
+  val join_path : t -> int -> int -> 
+    ((int*int)*equality) list*
+    ((int*int)*equality) list
+end
+  
 
+val combine_rec : UF.t -> int list -> equality list
+val process_rec : UF.t -> equality list -> int list
 
 val cc : UF.t -> unit
-
+  
 val make_uf :
   (Names.identifier * (term * term)) list -> UF.t
-
+  
+  
