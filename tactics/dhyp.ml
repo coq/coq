@@ -138,14 +138,24 @@ open Libnames
 type destructor_pattern = {
   d_typ: constr_pattern; 
   d_sort: constr_pattern }
-    
+
+let subst_destructor_pattern subst { d_typ = t; d_sort = s } =
+  { d_typ = subst_pattern subst t; d_sort = subst_pattern subst s }
+
 (* hypothesis patterns might need to do matching on the conclusion, too.
  * conclusion-patterns only need to do matching on the hypothesis *)
 type located_destructor_pattern =
-   (* discadable , pattern for hyp, pattern for concl *)
+   (* discardable, pattern for hyp, pattern for concl *)
    (bool * destructor_pattern * destructor_pattern,
    (* pattern for concl *)
    destructor_pattern) location
+
+let subst_located_destructor_pattern subst = function
+  | HypLocation (b,d,d') -> 
+      HypLocation
+        (b,subst_destructor_pattern subst d, subst_destructor_pattern subst d')
+  | ConclLocation d ->
+      ConclLocation (subst_destructor_pattern subst d)
 
 type destructor_data = {
   d_pat : located_destructor_pattern;
@@ -186,9 +196,14 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
-      Summary.survive_section = true }
+      Summary.survive_section = false }
 
-let cache_dd (_,(na,dd)) =
+let forward_subst_tactic = 
+  ref (fun _ -> failwith "subst_tactic is not installed for DHyp")
+
+let set_extern_subst_tactic f = forward_subst_tactic := f
+
+let cache_dd (_,(_,na,dd)) =
   try 
     add (na,dd)
   with _ -> 
@@ -196,16 +211,23 @@ let cache_dd (_,(na,dd)) =
       (str"The code which adds destructor hints broke;" ++ spc () ++ 
 	 str"this is not supposed to happen")
 
-let export_dd x = Some x
+let classify_dd (_,(local,_,_ as o)) =
+  if local then Dispose else Substitute o
 
-type destructor_data_object = identifier * destructor_data
+let export_dd (local,_,_ as x) = if local then None else Some x
 
-let ((inDD : destructor_data_object->obj),
-     (outDD : obj->destructor_data_object)) =
+let subst_dd (_,subst,(local,na,dd)) =
+  (local,na,
+  { d_pat = subst_located_destructor_pattern subst dd.d_pat;
+    d_pri = dd.d_pri; 
+    d_code = !forward_subst_tactic subst dd.d_code })
+
+let (inDD,outDD) =
   declare_object {(default_object "DESTRUCT-HYP-CONCL-DATA") with
                     cache_function = cache_dd;
 		    open_function = (fun i o -> if i=1 then cache_dd o);
-                    (* TODO: substitution *)
+                    subst_function = subst_dd;
+		    classify_function = classify_dd;
                     export_function = export_dd }
 
 let forward_intern_tac = 
@@ -216,7 +238,7 @@ let set_extern_intern_tac f = forward_intern_tac := f
 let catch_all_sort_pattern = PMeta(Some (id_of_string "SORT"))
 let catch_all_type_pattern = PMeta(Some (id_of_string "TYPE"))
     
-let add_destructor_hint na loc pat pri code =
+let add_destructor_hint local na loc pat pri code =
   let code = !forward_intern_tac code in
   let code =
     begin match loc, code with
@@ -236,7 +258,7 @@ let add_destructor_hint na loc pat pri code =
     | ConclLocation () ->
 	ConclLocation({d_typ=pat;d_sort=catch_all_sort_pattern}) in
   Lib.add_anonymous_leaf
-    (inDD (na,{ d_pat = pat; d_pri=pri; d_code=code }))
+    (inDD (local,na,{ d_pat = pat; d_pri=pri; d_code=code }))
 
 let match_dpat dp cls gls =
   let cltyp = clause_type cls gls in

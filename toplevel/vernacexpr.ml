@@ -227,8 +227,8 @@ type vernac_expr =
   (* Commands *)
   | VernacDeclareTacticDefinition of
       rec_flag * (identifier located * raw_tactic_expr) list
-  | VernacHints of string list * hints
-  | VernacHintDestruct of
+  | VernacHints of locality_flag * string list * hints
+  | VernacHintDestruct of locality_flag *
       identifier * (bool,unit) location * constr_expr * int * raw_tactic_expr
   | VernacSyntacticDefinition of identifier * constr_expr * int option
   | VernacDeclareImplicits of reference * int list option

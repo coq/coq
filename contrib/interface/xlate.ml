@@ -1361,7 +1361,8 @@ let xlate_vernac =
 	  (fst::rest) -> CT_formula_ne_list(fst,rest)
 	| _ -> assert false in
       CT_hintrewrite(ct_orient, f_ne_list, CT_ident base, xlate_tactic t)
-  | VernacHints (dbnames,h) ->
+  | VernacHints (local,dbnames,h) ->
+      (* TODO: locality flag *)
       let dblist = CT_id_list(List.map (fun x -> CT_ident x) dbnames) in
       (match h with
 	| HintsResolve [Some id_name, c] -> (* = Old HintResolve *)
@@ -1668,7 +1669,7 @@ let xlate_vernac =
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
      VernacSetOption (_, _)|VernacUnsetOption _|
-     VernacHintDestruct (_, _, _, _, _)|VernacBack _|VernacRestoreState _|
+     VernacHintDestruct (_, _, _, _, _, _)|VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
      VernacImport (_, _)|VernacExactProof _|VernacDistfix _|
      VernacTacticGrammar _|VernacVar _|VernacTime _|VernacProof _)

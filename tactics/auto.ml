@@ -278,7 +278,7 @@ let add_hint dbname hintlist =
     let db = Hint_db.add_list hintlist Hint_db.empty in
     searchtable_add (dbname,db)
 
-let cache_autohint (_,(name,hintlist)) = add_hint name hintlist
+let cache_autohint (_,(local,name,hintlist)) = add_hint name hintlist
 
 (*  let recalc_hints hintlist =
     let env = Global.env() and sigma = Evd.empty in
@@ -317,7 +317,7 @@ let forward_subst_tactic =
 
 let set_extern_subst_tactic f = forward_subst_tactic := f
 
-let subst_autohint (_,subst,(name,hintlist as obj)) = 
+let subst_autohint (_,subst,(local,name,hintlist as obj)) = 
   let trans_clenv clenv = Clenv.subst_clenv (fun _ a -> a) subst clenv in
   let trans_data data code = 	      
     { data with
@@ -359,14 +359,13 @@ let subst_autohint (_,subst,(name,hintlist as obj)) =
   in
   let hintlist' = list_smartmap subst_hint hintlist in
     if hintlist' == hintlist then obj else
-      (name,hintlist')
+      (local,name,hintlist')
 
-let classify_autohint (_,((name,hintlist) as obj)) =
-  match hintlist with
-      [] -> Dispose   
-    | _ -> Substitute obj
+let classify_autohint (_,((local,name,hintlist) as obj)) =
+  if local or hintlist = [] then Dispose else Substitute obj
 
-let export_autohint x = Some x
+let export_autohint ((local,name,hintlist) as obj) =
+  if local then None else Some obj
 
 let (inAutoHint,outAutoHint) =
   declare_object {(default_object "AUTOHINT") with
@@ -380,12 +379,12 @@ let (inAutoHint,outAutoHint) =
 (**************************************************************************)
 (*                     The "Hint" vernacular command                      *)
 (**************************************************************************)
-let add_resolves env sigma clist dbnames =
+let add_resolves env sigma clist local dbnames =
   List.iter 
     (fun dbname ->
        Lib.add_anonymous_leaf
 	 (inAutoHint
-	    (dbname,
+	    (local,dbname,
      	     List.flatten
 	       (List.map
 		  (fun (name,c) -> 
@@ -397,14 +396,14 @@ let add_resolves env sigma clist dbnames =
     dbnames
 
 
-let add_unfolds l dbnames =
+let add_unfolds l local dbnames =
   List.iter 
     (fun dbname -> Lib.add_anonymous_leaf 
-       (inAutoHint (dbname, List.map make_unfold l)))
+       (inAutoHint (local,dbname, List.map make_unfold l)))
     dbnames
 
 
-let add_extern name pri (patmetas,pat) tacast dbname =
+let add_extern name pri (patmetas,pat) tacast local dbname =
   (* We check that all metas that appear in tacast have at least
      one occurence in the left pattern pat *)
 (* TODO
@@ -417,16 +416,16 @@ let add_extern name pri (patmetas,pat) tacast dbname =
 	  (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound")
     | []  ->
 	Lib.add_anonymous_leaf
-	  (inAutoHint(dbname, [make_extern name pri pat tacast]))
+	  (inAutoHint(local,dbname, [make_extern name pri pat tacast]))
 
-let add_externs name pri pat tacast dbnames = 
-  List.iter (add_extern name pri pat tacast) dbnames
+let add_externs name pri pat tacast local dbnames = 
+  List.iter (add_extern name pri pat tacast local) dbnames
 
-let add_trivials env sigma l dbnames =
+let add_trivials env sigma l local dbnames =
   List.iter
     (fun dbname ->
        Lib.add_anonymous_leaf (
-	 inAutoHint(dbname, List.map (make_trivial env sigma) l)))
+	 inAutoHint(local,dbname, List.map (make_trivial env sigma) l)))
     dbnames
 
 let forward_intern_tac = 
@@ -434,7 +433,7 @@ let forward_intern_tac =
 
 let set_extern_intern_tac f = forward_intern_tac := f
 
-let add_hints dbnames h =
+let add_hints local dbnames h =
   let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
   | HintsResolve lhints ->	
       let env = Global.env() and sigma = Evd.empty in
@@ -444,7 +443,7 @@ let add_hints dbnames h =
 	  | None -> id_of_global (reference_of_constr c)
 	  | Some n -> n in
 	(n,c) in
-      add_resolves env sigma (List.map f lhints) dbnames
+      add_resolves env sigma (List.map f lhints) local dbnames
   | HintsImmediate lhints ->
       let env = Global.env() and sigma = Evd.empty in
       let f (n,c) = 
@@ -453,7 +452,7 @@ let add_hints dbnames h =
 	  | None -> id_of_global (reference_of_constr c)
 	  | Some n -> n in
 	(n,c) in
-      add_trivials env sigma (List.map f lhints) dbnames
+      add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
       let f (n,locqid) =
 	let r = Nametab.global locqid in
@@ -461,18 +460,18 @@ let add_hints dbnames h =
 	  | None -> id_of_global r
 	  | Some n -> n in
 	(n,r) in
-      add_unfolds (List.map f lhints) dbnames
+      add_unfolds (List.map f lhints) local dbnames
   | HintsConstructors (hintname, qid) ->
       let env = Global.env() and sigma = Evd.empty in
       let isp = global_inductive qid in
       let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
       let lcons = list_tabulate (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
       let lcons = List.map2 (fun id c -> (id,c)) (Array.to_list consnames) lcons in
-      add_resolves env sigma lcons dbnames
+      add_resolves env sigma lcons local dbnames
   | HintsExtern (hintname, pri, patcom, tacexp) ->
       let pat =	Constrintern.interp_constrpattern Evd.empty (Global.env()) patcom in
       let tacexp = !forward_intern_tac (fst pat) tacexp in
-      add_externs hintname pri pat tacexp dbnames
+      add_externs hintname pri pat tacexp local dbnames
 
 (**************************************************************************)
 (*                    Functions for printing the hints                    *)

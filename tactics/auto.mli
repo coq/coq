@@ -20,6 +20,7 @@ open Pattern
 open Environ
 open Evd
 open Libnames
+open Vernacexpr
 (*i*)
   
 type auto_tactic = 
@@ -61,7 +62,7 @@ type hint_db_table = Hint_db.t Stringmap.t ref
 
 type hint_db_name = string
 
-val add_hints : hint_db_name list -> Vernacexpr.hints -> unit
+val add_hints : locality_flag -> hint_db_name list -> hints -> unit
 
 val print_searchtable : unit -> unit
 

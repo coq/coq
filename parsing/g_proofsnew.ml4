@@ -84,6 +84,7 @@ GEXTEND Gram
 (* Hints for Auto and EAuto *)
 
       | IDENT "HintDestruct"; 
+	  local = locality;
           dloc = destruct_location;
           id  = base_ident;
           hyptyp = Constr.constr_pattern;
@@ -91,10 +92,12 @@ GEXTEND Gram
           "["; tac = tactic; "]" -> 
 	    VernacHintDestruct (id,dloc,hyptyp,pri,tac)
 
-      | IDENT "Hint"; hintname = base_ident; dbnames = opt_hintbases; ":="; h = hint
-          -> VernacHints (dbnames, h hintname)
+      | IDENT "Hint"; local = locality; hintname = base_ident; 
+	  dbnames = opt_hintbases; ":="; h = hint ->
+            VernacHints (dbnames, h hintname)
 	  
-      | IDENT "Hints"; (dbnames,h) = hints -> VernacHints (dbnames, h)
+      | IDENT "Hints"; local = locality; (dbnames,h) = hints ->
+	  VernacHints (dbnames, h)
 	  
 
 (*This entry is not commented, only for debug*)

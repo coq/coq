@@ -1202,8 +1202,9 @@ let interp c = match c with
 
   (* Commands *)
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
-  | VernacHints (dbnames,hints) -> vernac_hints dbnames hints
-  | VernacHintDestruct (id,l,p,n,tac) -> Dhyp.add_destructor_hint id l p n tac
+  | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
+  | VernacHintDestruct (local,id,l,p,n,tac) -> 
+      Dhyp.add_destructor_hint local id l p n tac
   | VernacSyntacticDefinition (id,c,n) -> vernac_syntactic_definition id c n
   | VernacDeclareImplicits (qid,l) -> vernac_declare_implicits qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c

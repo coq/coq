@@ -36,6 +36,8 @@ Vernacular commands
    (TODO : doc).
 - "Implicit Variables Type x,y:t" assigns default types for binding variables.
 - "Set Implicits Printing" disable printing of implicit arguments
+- Declaration of Hints and Notation now accept a "Local" flag not to
+  be exported outside the current file even if not in section
 
 Gallina
 
