@@ -15,6 +15,7 @@ Require Rbase.
 Require Rseries.
 Require Rtrigo_fun.
 Require Export Alembert.
+Require Export AltSeries.
 
 (*****************************)
 (* Definition of exponential *)
@@ -368,17 +369,7 @@ Intro; Unfold sin; Replace ``(Rsqr (-x))`` with (Rsqr x); [Idtac | Apply Rsqr_ne
 Case (exist_sin (Rsqr x)); Intros; Ring.
 Qed.
 
-Axiom PI_ax : (SigT R [l:R]``0<l``/\``(sin (l/2))==1``/\((l1:R)``0<l1``->``(sin (l1/2))==1``->``l<=l1``)).
-
 (**********)
-Definition PI : R := (projT1 ? ? PI_ax).
-
-(**********)
-Lemma PI_RGT_0 : ``0<PI``.
-Assert X := (projT2 ? ? PI_ax).
-Elim X; Intros; Unfold PI; Exact H.
-Qed.
-
 Axiom sin_plus : (x,y:R) ``(sin (x+y))==(sin x)*(cos y)+(cos x)*(sin y)``.
 Axiom  cos_plus : (x,y:R) ``(cos (x+y))==(cos x)*(cos y)-(sin x)*(sin y)``.
 
@@ -425,6 +416,4 @@ Exact (projT2 ? ? exist_cos0).
 Assert H := (projT2 ? ? (exist_cos (Rsqr R0))); Unfold cos; Pattern 1 R0; Replace R0 with (Rsqr R0); [Exact H | Apply Rsqr_O].
 Qed.
 
-Lemma sin_PI2 : ``(sin (PI/2))==1``.
-Assert H := (projT2 ? ? PI_ax); Elim H; Intros; Elim H1; Intros; Unfold PI; Exact H2.
-Qed.
+Axiom sin_PI2 : ``(sin (PI/2))==1``.
