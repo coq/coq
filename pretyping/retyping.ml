@@ -29,8 +29,7 @@ let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
       match kind_of_term (whd_betadeltaiota env sigma typ) with
-        | Prod (na,c1,c2) -> 
-	    subst_type (push_rel (na,None,c1) env) sigma (subst1 h c2) rest
+        | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> anomaly "Non-functional construction"
 
 (* Si ft est le type d'un terme f, lequel est appliqué à args, *)
