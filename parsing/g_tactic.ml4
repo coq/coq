@@ -254,7 +254,7 @@ GEXTEND Gram
       | IDENT "Induction"; n = pure_numarg -> <:ast< (Induction $n) >>
       | IDENT "NewInduction"; c=ident_or_constrarg -> <:ast<(NewInduction $c)>>
       | IDENT "NewInduction"; n = pure_numarg -> <:ast< (NewInduction $n) >>
-      | IDENT "Double"; IDENT "Induction"; i = numarg; j = numarg ->
+      | IDENT "Double"; IDENT "Induction"; i = pure_numarg; j = pure_numarg ->
           <:ast< (DoubleInd $i $j) >>
       | IDENT "Trivial" -> <:ast<(Trivial)>>
       | IDENT "Trivial"; "with"; lid = ne_identarg_list -> 
