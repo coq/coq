@@ -28,7 +28,7 @@ Grammaires:
 Doc:
 
 - restriction de syntaxe pour Cbv Delta [- toto]. FAIT
-- documenter tactiques Induction, LetTac
+- documenter tactiques NewInduction, LetTac, NewDestruct, Assert FAIT
 - documenter AutoRewrite
 - Ajouter let dans les règles du CIC
   -> FAIT, mais reste a documenter le let dans les inductifs
@@ -38,7 +38,7 @@ Doc:
 - une passe sur le chapitre Cases
 - documenter le langage de tactique et Field
 - revoir le chapitre sur les tactiques utilisateur
-- clarifier la sémantique de Decompose (i.e. travaille pas sous les ->)
+- clarifier la sémantique de Decompose (i.e. travaille pas sous les ->) FAIT
 - faut-il mieux spécifier la sémantique de Simpl (??)
 - vérifier si Print Table id est à jour
 - documenter @Definition and co
