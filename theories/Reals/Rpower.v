@@ -379,7 +379,7 @@ Qed.
  
 Definition Rpower (x y:R) := exp (y * ln x).
 
-Infix Local "^R" := Rpower (at level 30, left associativity) : R_scope.
+Infix Local "^R" := Rpower (at level 30, right associativity) : R_scope.
 
 (******************************************************************)
 (*                        Properties of  Rpower                   *)
@@ -390,7 +390,7 @@ intros x y z; unfold Rpower in |- *.
 rewrite Rmult_plus_distr_r; rewrite exp_plus; auto.
 Qed.
  
-Theorem Rpower_mult : forall x y z:R, x ^R y ^R z = x ^R (y * z).
+Theorem Rpower_mult : forall x y z:R, (x ^R y) ^R z = x ^R (y * z).
 intros x y z; unfold Rpower in |- *.
 rewrite ln_exp.
 replace (z * (y * ln x)) with (y * z * ln x).
@@ -437,7 +437,7 @@ apply sqrt_lt_R0; apply H.
 apply Rmult_eq_reg_l with (INR 2).
 apply exp_inv.
 fold Rpower in |- *.
-cut (x ^R (/ 2) ^R INR 2 = sqrt x ^R INR 2).
+cut ((x ^R (/ 2)) ^R INR 2 = sqrt x ^R INR 2).
 unfold Rpower in |- *; auto.
 rewrite Rpower_mult.
 rewrite Rinv_l.

@@ -2375,7 +2375,7 @@ let main files =
 		       "Scheme new_scheme := Induction for _ Sort _
 with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
-  (* Template for Cases *)
+  (* Template for match *)
   let callback = (fun () -> 
 		    let w = get_current_word () in
 		    try 
@@ -2389,7 +2389,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		      in
 		      let b = Buffer.create 1024 in
 		      let fmt = formatter_of_buffer b in
-		      fprintf fmt "@[Cases var of@\n%aend@]@."
+		      fprintf fmt "@[match var with@\n%aend@]@."
 			(print_list print) cases;
 		      let s = Buffer.contents b in
 		      prerr_endline s;
@@ -2407,7 +2407,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		    with Not_found -> !flash_info "Not an inductive type"
 		 )
   in
-  ignore (templates_factory#add_item "Cases ..."
+  ignore (templates_factory#add_item "match ..."
 	    ~key:GdkKeysyms._C
 	    ~callback
 	 );

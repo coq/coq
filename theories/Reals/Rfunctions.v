@@ -419,7 +419,7 @@ rewrite Hrecn; rewrite Rmult_1_l; simpl in |- *; rewrite Rmult_1_r;
  rewrite Rabs_Ropp; apply Rabs_R1.
 Qed.
 
-Lemma pow_mult : forall (x:R) (n1 n2:nat), x ^ (n1 * n2) = x ^ n1 ^ n2.
+Lemma pow_mult : forall (x:R) (n1 n2:nat), x ^ (n1 * n2) = (x ^ n1) ^ n2.
 Proof.
 intros; induction  n2 as [| n2 Hrecn2].
 simpl in |- *; replace (n1 * 0)%nat with 0%nat; [ reflexivity | ring ].
@@ -534,7 +534,7 @@ Definition powerRZ (x:R) (n:Z) :=
   | Zneg p => / x ^ nat_of_P p
   end.
 
-Infix Local "^Z" := powerRZ (at level 30, left associativity) : R_scope.
+Infix Local "^Z" := powerRZ (at level 30, right associativity) : R_scope.
 
 Lemma Zpower_NR0 :
  forall (x:Z) (n:nat), (0 <= x)%Z -> (0 <= Zpower_nat x n)%Z.

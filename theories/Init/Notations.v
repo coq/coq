@@ -47,7 +47,7 @@ Reserved Notation "x * y" (at level 40, left associativity).
 Reserved Notation "x / y" (at level 40, left associativity).
 Reserved Notation "- x" (at level 35, right associativity).
 Reserved Notation "/ x" (at level 35, right associativity).
-Reserved Notation "x ^ y" (at level 30, left associativity).
+Reserved Notation "x ^ y" (at level 30, right associativity).
 
 (** Notations for pairs *)
 
