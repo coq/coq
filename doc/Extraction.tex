@@ -369,7 +369,7 @@ We can now extract this program to \ocaml:
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Require Euclid.
+Require Import Euclid.
 Extraction Inline Wf_nat.gt_wf_rec Wf_nat.lt_wf_rec.
 Recursive Extraction  eucl_dev.
 \end{coq_example}
@@ -421,13 +421,13 @@ treesort}, whose type is shown below:
 
 \begin{coq_eval}
 Reset Initial.
-Require Relation_Definitions.
-Require List.
-Require Sorting.
-Require Permutation.
+Require Import Relation_Definitions.
+Require Import List.
+Require Import Sorting.
+Require Import Permutation.
 \end{coq_eval}
 \begin{coq_example}
-Require Heap.
+Require Import Heap.
 Check treesort.
 \end{coq_example}
 
