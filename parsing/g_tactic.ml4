@@ -247,7 +247,12 @@ GEXTEND Gram
           <:ast< (RECCLAUSE $name (FUNVAR ($LIST $it)) $body) >> ] ]
   ;
   match_pattern:
-    [ [ id = identarg; "["; pc = constrarg; "]" -> <:ast< (SUBTERM $id $pc) >>
+    [ [ id = constrarg; "["; pc = constrarg; "]" ->
+        (match id with
+        | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) ->
+          <:ast< (SUBTERM ($VAR $s) $pc) >>
+        | _ ->
+          errorlabstrm "Gram.match_pattern" [<'sTR "Not a correct SUBTERM">])
       | "["; pc = constrarg; "]" -> <:ast< (SUBTERM $pc) >>
       | pc = constrarg -> <:ast< (TERM $pc) >> ] ]
   ;
