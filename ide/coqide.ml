@@ -1233,7 +1233,7 @@ Please restart and report NOW.";
       c#set i
 	s 
 	(fun () -> try_interptac (s ^ ". "))
-	(fun () -> prerr_endline "Clicked")
+	(fun () -> self#insert_command (s^".\n") (s^".\n"))
     in
     set 0 "Assumption" ;
     set 1 "Reflexivity" ;
@@ -1977,7 +1977,8 @@ let main files =
     if analyzed_view#is_active then ignore (f analyzed_view)
   in
   let do_if_active f = do_if_not_computing (do_if_active f) in
-  ignore (tactics_factory#add_item "_Blaster" 
+
+  ignore (tactics_factory#add_item "_Blaster"
 	    ~key:GdkKeysyms._b
 	    ~callback:(do_if_active (fun a -> a#blaster ()))
 	 )
