@@ -6,31 +6,29 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* Certification of Imperative Programs / Jean-Christophe Filliâtre *)
-
 (* $Id$ *)
 
 Require ZArith.
 Require Export Wf_nat.
 
-(* Well-founded relations on Z. *)
+(** Well-founded relations on Z. *)
 
-(* We define the following family of relations on ZxZ : 
- * 
- *      x (Zwf c) y   iff   c <= x < y
+(** We define the following family of relations on [Z x Z]: 
+
+    [x (Zwf c) y]   iff   [c <= x < y]
  *)
 
 Definition Zwf := [c:Z][x,y:Z] `c <= x` /\ `c <= y` /\ `x < y`.
 
 
-(* and we prove that (Zwf c) is well founded *)
+(** and we prove that [(Zwf c)] is well founded *)
 
 Section wf_proof.
 
 Variable c : Z.
 
-(* The proof of well-foundness is classic : we do the proof by induction
- * on a measure in nat, which is here |x-c| *)
+(** The proof of well-foundness is classic: we do the proof by induction
+    on a measure in nat, which is here [|x-c|] *)
 
 Local f := [z:Z](absolu (Zminus z c)).
 
@@ -51,21 +49,21 @@ End wf_proof.
 Hints Resolve Zwf_well_founded : datatypes v62.
 
 
-(* We also define the other family of relations :
- *
- *      x (Zwf_up c) y   iff   y < x <= c
+(** We also define the other family of relations:
+
+    [x (Zwf_up c) y]   iff   [y < x <= c]
  *)
 
 Definition Zwf_up := [c:Z][x,y:Z] `y < x <= c`.
 
-(* and we prove that (Zwf_up c) is well founded *)
+(** and we prove that [(Zwf_up c)] is well founded *)
 
 Section wf_proof_up.
 
 Variable c : Z.
 
-(* The proof of well-foundness is classic : we do the proof by induction
- * on a measure in nat, which is here |c-x| *)
+(** The proof of well-foundness is classic: we do the proof by induction
+    on a measure in nat, which is here [|c-x|] *)
 
 Local f := [z:Z](absolu (Zminus c z)).
 
