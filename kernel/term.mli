@@ -483,7 +483,7 @@ type lift_spec =
 val el_shft : int -> lift_spec -> lift_spec
 val el_liftn : int -> lift_spec -> lift_spec
 val el_lift : lift_spec -> lift_spec
-val reloc_rel: int -> lift_spec -> int
+val reloc_rel : int -> lift_spec -> int
 
 (*s Occur check functions. *)                         
 
