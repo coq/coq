@@ -173,7 +173,7 @@ let translate_v7_string = function
   | "xO_xI_add_double_moins_un" -> "xO_xI_Pplus_Pdouble_minus_one"
   | "double_moins_un_plus_xO_double_moins_un" ->
       "Pdouble_minus_one_Pplus_xO_Pdouble_minus_one"
-  | "add_xI_double_moins_un" -> "add_xI_double_minus_one"
+  | "add_xI_double_moins_un" -> "Pplus_xI_Pdouble_minus_one"
   | "iter_pos_add" -> "iter_pos_Pplus"
   | "add_no_neutral" -> "Pplus_no_neutral"
   | "add_carry_not_add_un" -> "Pplus_carry_no_neutral"
@@ -195,6 +195,7 @@ let translate_v7_string = function
   | "sub_add_one" -> "Ppred_Psucc"
   | "add_sub_one" -> "Psucc_Ppred"
   | "add_un" -> "Psucc"
+  | "add_un_not_un" -> "Psucc_not_one"
   | "add_un_inj" -> "Psucc_inj"
   | "xI_add_un_xO" -> "xI_Psucc_xO"
   | "ZL14" -> "Pplus_Psucc_permute_r"
@@ -204,9 +205,9 @@ let translate_v7_string = function
   | "sub_pos_x_x" -> "PNminus_x_x"
   | "sub_pos_SUPERIEUR" -> "PNminus_Gt"
   | "sub_neg" -> "PNminus_carry"
-  | "Nul" -> "Null"
-  | "Un_suivi_de" -> "double_plus_one"
-  | "Zero_suivi_de" -> "double"
+  | "Nul" -> "N0"
+  | "Un_suivi_de" -> "Pdouble_plus_one_mask"
+  | "Zero_suivi_de" -> "Pdouble_mask"
   | "ZS" -> "double_eq_zero_inversion"
   | "US" -> "double_plus_one_zero_discr"
   | "USH" -> "double_plus_one_eq_one_inversion"
@@ -622,7 +623,11 @@ let rec extern inctx scopes vars r =
       let tml = List.map (fun (tm,{contents=(na,x)}) ->
 	(sub_extern false scopes vars tm,
 	(na,option_app (fun (loc,ind,nal) ->
-	  (loc,extern_reference loc vars (IndRef ind),nal)) x))) tml in
+	  let args = List.map (function
+	    | Anonymous -> RHole (dummy_loc,InternalHole) 
+	    | Name id -> RVar (dummy_loc,id)) nal in
+	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),args) in
+	  (extern_type scopes vars t)) x))) tml in
       let eqns = List.map (extern_eqn (typopt<>None) scopes vars) eqns in 
       CCases (loc,(pred,rtntypopt),tml,eqns)
 
