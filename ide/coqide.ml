@@ -18,7 +18,7 @@ let out_some s = match s with
   | None -> failwith "Internal error in out_some" | Some f -> f
 
 let cb_ = ref None
-let cb () = out_some !cb_
+let cb () = ((out_some !cb_):GData.clipboard)
 let last_cb_content = ref ""
 
 let yes_icon = `YES
@@ -63,13 +63,15 @@ let set_tab_label i n =
   let nb = notebook () in
   let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget 
   in
-  lbl#set_markup n
+  lbl#set_use_markup true;
+  lbl#set_text n
 
 let set_tab_image i s = 
   let nb = notebook () in
   let _,img,_ = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget
   in
-  img#set_stock s ~size:small_size
+  img#set_icon_size small_size;
+  img#set_stock s
 
 let set_current_tab_image s = set_tab_image (notebook())#current_page s
   
@@ -419,7 +421,7 @@ let rec complete input_buffer w (offset:int) =
 	  
 let get_current_word () =
   let av = out_some ((get_current_view ()).analyzed_view) in 
-  match GtkBase.Clipboard.wait_for_text (cb ()) with
+  match GtkBase.Clipboard.wait_for_text (cb ())#as_clipboard with
     | None -> 
 	prerr_endline "None selected";
 	let it = av#get_insert in
@@ -665,7 +667,8 @@ object(self)
 	       ~default:1
 	       ~icon:
 	       (let img = GMisc.image () in
-		img#set_stock warning_icon ~size:dialog_size;
+		img#set_stock warning_icon;
+		img#set_icon_size dialog_size;
 		img#coerce)
 	       ("File "^f^"already exists")
 	    )
@@ -800,7 +803,7 @@ object(self)
 		ignore
 		  (tag#connect#event ~callback:
 		     (fun ~origin ev it ->
-			match GdkEvent.get_type ev with 
+			begin match GdkEvent.get_type ev with 
 			| `BUTTON_PRESS -> 
 			    let ev = (GdkEvent.Button.cast ev) in
 			    if (GdkEvent.Button.button ev) = 3
@@ -844,7 +847,9 @@ object(self)
 			    
 			    prerr_endline "Applied tag";
 			    ()
-			| _ -> ())
+			| _ -> ()
+			end;true
+		     )
 		  );
 		tag
 	      in
@@ -1523,7 +1528,7 @@ Please restart and report NOW.";
     let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "purple"]  in
     self#electric_paren paren_highlight_tag;
     ignore (input_buffer#connect#after#mark_set 
-	      ~callback:(fun it (m:Gtk.textmark) ->
+	      ~callback:(fun it (m:Gtk.text_mark) ->
 			   !set_location 
 			   (Printf.sprintf 
 			      "Line: %5d Char: %3d" (self#get_insert#line + 1)
@@ -1901,7 +1906,8 @@ let main files =
 	       ~default:0
 	       ~icon:
 	       (let img = GMisc.image () in
-		img#set_stock warning_icon ~size:dialog_size;
+		img#set_stock warning_icon;
+		img#set_icon_size dialog_size;
 		img#coerce)
 	       "There are unsaved buffers"
 	    )
@@ -1928,18 +1934,18 @@ let main files =
   ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
 	   (fun () -> GtkSignal.emit_unit
 	      (get_current_view()).view#as_view 
-	      GtkText.View.Signals.copy_clipboard));
+	      GtkText.View.S.copy_clipboard));
   ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
 	   (do_if_not_computing 
 	      (fun () -> GtkSignal.emit_unit
 		 (get_current_view()).view#as_view 
-		 GtkText.View.Signals.cut_clipboard)));
+		 GtkText.View.S.cut_clipboard)));
   ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
 	   (do_if_not_computing
 	      (fun () -> 
 		 try GtkSignal.emit_unit
 		   (get_current_view()).view#as_view 
-		   GtkText.View.Signals.paste_clipboard
+		   GtkText.View.S.paste_clipboard
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
   let read_only_i = edit_f#add_check_item "Expert" ~active:false
@@ -2486,7 +2492,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   in
   let search_history = ref [] in
   let search_input = GEdit.combo ~popdown_strings:!search_history
-		       ~use_arrows:`DEFAULT
+		       ~enable_arrow_keys:true
 		       ~show:false
 		       ~packing:(lower_hbox#pack ~expand:false) () 
   in
@@ -2638,7 +2644,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
   (* Progress Bar *)
   pulse := 
-  (GRange.progress_bar ~text:"CoqIde started" ~pulse_step:0.2 ~packing:lower_hbox#pack ())#pulse;
+  (let pb = GRange.progress_bar ~pulse_step:0.2 ~packing:lower_hbox#pack ()
+   in pb#set_text "CoqIde started";pb)#pulse;
   let tv2 = GText.view ~packing:(sw2#add) () in
   tv2#misc#set_name "GoalWindow";
   let _ = tv2#set_editable false in
@@ -2673,7 +2680,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 				     t#as_tag
 				     tv2#as_widget
 				     e 
-				     it#as_textiter))
+				     it#as_iter))
 		       tags;
 		     false)) e;
 	       false)
@@ -2751,7 +2758,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		   !current.window_width <- w;
 		 end
 	    ));
-  ignore(nb#connect#switch_page 
+  ignore(nb#connect#change_current_page
 	   ~callback:
 	   (fun i -> List.iter (function f -> f i) !to_do_on_page_switch)
 	);
@@ -2779,7 +2786,7 @@ let start () =
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 
     (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);
-  cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
+  cb_ := Some (GData.clipboard Gdk.Atom.primary);
   ignore (
     Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
 							`WARNING;`CRITICAL]

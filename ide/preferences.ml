@@ -273,9 +273,10 @@ let configure () =
     custom
       ~label:"Fonts for text"
       box
-      (fun () -> match w#font_name with 
-	 | None -> () 
-	 | Some fd -> !current.text_font <- (Pango.Font.from_string fd) ; !change_font !current.text_font)
+      (fun () -> 
+	 let fd =  w#font_name in
+	 !current.text_font <- (Pango.Font.from_string fd) ; 
+	 !change_font !current.text_font)
       true
   in
   let show_toolbar = 

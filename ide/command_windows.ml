@@ -67,8 +67,8 @@ object(self)
     let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
     let hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
     let combo = GEdit.combo ~popdown_strings:Coq_commands.state_preserving
-		  ~use_arrows:`DEFAULT
-		  ~ok_if_empty:false
+		  ~enable_arrow_keys:true
+		  ~allow_empty:false
 		  ~value_in_list:false (* true is not ok with disable_activate...*)
 		  ~packing:hbox#pack
 		  ()

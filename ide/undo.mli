@@ -10,7 +10,7 @@
 
 (* An undoable view class *)
 
-class undoable_view : Gtk.textview Gtk.obj ->
+class undoable_view : Gtk.text_view Gtk.obj ->
 object
   inherit GText.view
   method undo : bool
@@ -19,10 +19,17 @@ object
 end
 
 val undoable_view : 
-  ?buffer:GText.buffer ->
-  ?editable:bool ->
-  ?cursor_visible:bool ->
-  ?wrap_mode:Gtk.Tags.wrap_mode ->
-  ?packing:(GObj.widget -> unit) -> ?show:bool -> unit -> undoable_view
+    ?buffer:GText.buffer ->
+    ?editable:bool ->
+    ?cursor_visible:bool ->
+    ?justification:GtkEnums.justification ->
+    ?wrap_mode:GtkEnums.wrap_mode ->
+    ?border_width:int ->
+    ?width:int ->
+    ?height:int ->
+    ?packing:(GObj.widget -> unit) ->
+    ?show:bool ->
+    unit ->
+  undoable_view
 
 

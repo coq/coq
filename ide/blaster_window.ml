@@ -49,16 +49,16 @@ class blaster_window (n:int) =
   let _ = view#set_rules_hint true in
 
   let col = GTree.view_column ~title:"Argument" ()
-	      ~renderer:(GTree.cell_renderer_text(), ["text",argument]) in
+	      ~renderer:(GTree.cell_renderer_text [], ["text",argument]) in
   let _ = view#append_column col in
   let col = GTree.view_column ~title:"Tactics" ()
-	      ~renderer:(GTree.cell_renderer_text(), ["text",tactic]) in
+	      ~renderer:(GTree.cell_renderer_text [], ["text",tactic]) in
   let _ = view#append_column col in
   let col = GTree.view_column ~title:"Status" ()
-	      ~renderer:(GTree.cell_renderer_toggle (), ["active",status]) in
+	      ~renderer:(GTree.cell_renderer_toggle [], ["active",status]) in
   let _ = view#append_column col in
   let col = GTree.view_column ~title:"Delta Goal" ()
-	      ~renderer:(GTree.cell_renderer_text (), ["text",nb_goals]) in
+	      ~renderer:(GTree.cell_renderer_text [], ["text",nb_goals]) in
   let _ = view#append_column col in 
 
   let _ = GMisc.separator `HORIZONTAL ~packing:box1#pack () in

@@ -1,4 +1,3 @@
-
 (***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
@@ -19,7 +18,7 @@ let neg act = match act with
   | Insert (s,i,l) -> Delete (s,i,l)
   | Delete (s,i,l) -> Insert (s,i,l)
 
-class undoable_view (tv:Gtk.textview Gtk.obj) =
+class undoable_view (tv:Gtk.text_view Gtk.obj) =
   let undo_lock = ref true in 
 object(self)
   inherit GText.view tv as super
@@ -166,13 +165,14 @@ object(self)
 	      ))
 end
 
-let undoable_view ?(buffer:buffer option) 
-?editable ?cursor_visible ?wrap_mode
-    ?packing ?show () = 
-    let w = match buffer with 
-      | None -> GtkText.View.create ()
-      | Some b -> GtkText.View.create_with_buffer b#as_buffer
-    in
-    GtkText.View.set w ?editable ?cursor_visible ?wrap_mode;
-    GObj.pack_return (new undoable_view w) ~packing ~show
-
+let undoable_view ?(buffer:GText.buffer option) =
+  GtkText.View.make_params [] 
+    ~cont:(GContainer.pack_container 
+	     ~create:
+	     (fun pl -> let w = match buffer with 
+	      | None -> GtkText.View.create []
+	      | Some b -> GtkText.View.create_with_buffer b#as_buffer
+	      in
+	      Gobject.set_params w pl; ((new undoable_view w):undoable_view)))
+    
+    

@@ -26,27 +26,24 @@ let create l =
   (* Alternate colors for the rows *)
   view#set_rules_hint true;
 
-  let renderer_comm = GTree.cell_renderer_text () in
-  ignore (GtkSignal.connect renderer_comm 
-	    ~sgn:GtkTree.CellRendererText.Signals.edited 
-	    ~callback:(fun (path:Gtk.tree_path) (s:string) -> 
-			 store#set 
-			 ~row:(store#get_iter path) 
-			 ~column:command_col s));
-  GtkText.Tag.set_property renderer_comm (`EDITABLE true);
+  let renderer_comm = GTree.cell_renderer_text [`EDITABLE true]  in
+  ignore (renderer_comm#connect#edited 
+    ~callback:(fun (path:Gtk.tree_path) (s:string) -> 
+		 store#set 
+		 ~row:(store#get_iter path) 
+		 ~column:command_col s));
   let first = 
     GTree.view_column ~title:"Coq Command to try" 
       ~renderer:(renderer_comm,["text",command_col]) 
       () 
   in ignore (view#append_column first);
 
-  let renderer_coq = GTree.cell_renderer_text () in
-  ignore (GtkSignal.connect renderer_coq ~sgn:GtkTree.CellRendererText.Signals.edited 
-    ~callback:(fun (path:Gtk.tree_path) (s:string) -> 
-		 store#set 
-		 ~row:(store#get_iter path) 
-		 ~column:coq_col s));
-  GtkText.Tag.set_property renderer_coq (`EDITABLE true);
+  let renderer_coq = GTree.cell_renderer_text [`EDITABLE true] in
+  ignore(renderer_coq#connect#edited
+	   ~callback:(fun (path:Gtk.tree_path) (s:string) -> 
+			store#set 
+			~row:(store#get_iter path) 
+			~column:coq_col s));
   let second = 
     GTree.view_column ~title:"Coq Command to insert" 
       ~renderer:(renderer_coq,["text",coq_col]) 

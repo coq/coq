@@ -70,9 +70,9 @@ let select_files ?dir
   let _ = fs # ok_button # connect#clicked ~callback:
       (match fok with
         None ->
-          (fun () -> files := [fs#get_filename] ; fs#destroy ())
+          (fun () -> files := [fs#filename] ; fs#destroy ())
       | Some f ->
-          (fun () -> f fs#get_filename)
+          (fun () -> f fs#filename)
       )
   in
   let _ = fs # cancel_button # connect#clicked ~callback:fs#destroy in
@@ -371,7 +371,7 @@ class combo_param_box param =
   let wc = GEdit.combo
       ~popdown_strings: param.combo_choices
       ~value_in_list: (not param.combo_new_allowed)
-      ~ok_if_empty: param.combo_blank_allowed
+(*      ~ok_if_empty: param.combo_blank_allowed*)
       ~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
       ()
   in
@@ -464,7 +464,7 @@ class color_param_box param =
     let _ = dialog#connect#destroy GMain.Main.quit in
     let _ = wb_ok#connect#clicked
 	(fun () -> 
-	  let color = dialog#colorsel#get_color in
+	  (* let color = dialog#colorsel#get_color in
 	  let r = int_of_float (ceil (color.Gtk.red *. 255.)) in
 	  let g = int_of_float (ceil (color.Gtk.green *. 255.)) in
 	  let b = int_of_float (ceil (color.Gtk.blue *. 255.)) in
@@ -475,7 +475,7 @@ class color_param_box param =
 	    done
 	  in
 	  we#set_text s ;
-	  set_color s;
+	  set_color s;*)
 	  dialog#destroy ()
 	)
     in
@@ -548,8 +548,8 @@ class font_param_box param =
     let _ = wb_ok#connect#clicked
 	(fun () -> 
 	  let font_opt = dialog#selection#font_name in
-	  we#set_text (match font_opt with None -> "" | Some s -> s) ;
-	  set_entry_font font_opt;
+(*	  we#set_text (match font_opt with None -> "" | Some s -> s) ;
+	  set_entry_font font_opt;*)
 	  dialog#destroy ()
 	)
     in
@@ -582,7 +582,7 @@ class text_param_box param =
       ~packing: (hbox#pack ~expand: true ~padding: 2) () 
   in
   let wt = GText.view ~packing:wscroll#add () in
-  let _ = wt#coerce#misc#set_size_request ~height:100 in
+(*   let _ = wt#coerce#misc#set_size_request ~height:100 in *)
   let _ = wt#set_editable param.string_editable in
   let _ = 
     match param.string_help with
@@ -1198,9 +1198,9 @@ let simple_edit ?(with_apply=true)
   let window = GWindow.window ~modal: true ~title: title () in
   let _ = match width, height with
     None, None -> ()
-  | Some w, None -> window#misc#set_geometry ~width: w ()
-  | None, Some h -> window#misc#set_geometry ~height: h ()
-  | Some w, Some h -> window#misc#set_geometry ~width: w ~height: h ()
+  | Some w, None -> window#misc#set_size_request ~width: w ()
+  | None, Some h -> window#misc#set_size_request ~height: h ()
+  | Some w, Some h -> window#misc#set_size_request ~width: w ~height: h ()
   in
   let _ = window#connect#destroy ~callback: GMain.Main.quit in
   let buttons = 

@@ -187,12 +187,12 @@ let select_file ~title ?(dir = last_dir) ?(filename="") () =
     if Filename.is_relative filename then begin
       if !dir <> "" then
         let filename = Filename.concat !dir filename in 
-        GWindow.file_selection ~fileop_buttons:true ~modal:true ~title ~filename ()
+        GWindow.file_selection ~show_fileops:true ~modal:true ~title ~filename ()
       else
-        GWindow.file_selection ~fileop_buttons:true ~modal:true ~title ()
+        GWindow.file_selection ~show_fileops:true ~modal:true ~title ()
     end else begin
       dir := Filename.dirname filename;
-      GWindow.file_selection ~fileop_buttons:true ~modal:true ~title ~filename ()
+      GWindow.file_selection ~show_fileops:true ~modal:true ~title ~filename ()
     end
   in
   fs#complete ~filter:"";
@@ -200,8 +200,8 @@ let select_file ~title ?(dir = last_dir) ?(filename="") () =
   let file = ref None in 
   ignore (fs#ok_button#connect#clicked ~callback:
     begin fun () ->
-      file := Some fs#get_filename; 
-      dir := Filename.dirname fs#get_filename;
+      file := Some fs#filename; 
+      dir := Filename.dirname fs#filename;
       fs#destroy ()
     end);
   ignore (fs # cancel_button # connect#clicked ~callback:fs#destroy);
@@ -233,7 +233,7 @@ let async =
 
 let stock_to_widget ?(size=`DIALOG) s = 
   let img = GMisc.image () 
-  in img#set_stock ~size s ;
+  in img#set_stock s;
   img#coerce
 
 let rec print_list print fmt = function
