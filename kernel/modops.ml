@@ -195,7 +195,9 @@ let strengthen_const env mp l cb =
       let const_subs = Some (Declarations.from_val const) in
 	{cb with 
       	   const_body = const_subs;
-	   const_opaque = false
+	   const_opaque = false;
+           const_body_code = Cemitcodes.from_val
+             (Cbytegen.compile_constant_body env const_subs false false)
 	}
 
 let strengthen_mind env mp l mib = match mib.mind_equiv with

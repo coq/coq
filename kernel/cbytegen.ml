@@ -471,7 +471,7 @@ let compile env c =
   init_code,!fun_code, Array.of_list fv
 
 
-let compile_constant_body env kn body opaque boxed =
+let compile_constant_body env body opaque boxed =
   if opaque then BCconstant
   else match body with
   | None -> BCconstant

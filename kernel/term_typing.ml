@@ -102,7 +102,7 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed) =
 	  (global_vars_set env (Declarations.force b)) 
 	  (global_vars_set env typ)
   in
-  let tps = from_val (compile_constant_body env kn body op boxed) in
+  let tps = from_val (compile_constant_body env body op boxed) in
   let hyps = keep_hyps env ids in
     { const_hyps = hyps;
       const_body = body;
