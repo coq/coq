@@ -120,6 +120,8 @@ Reference-Manual.html: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	hevea -fix ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
 #1.04	hevea ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
 
+coq.info: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
+	hevea -info ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
 
 doc-html.tar.gz: all-html
 	- $(MKDIR) coq-docs-html
