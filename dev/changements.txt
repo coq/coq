@@ -1,5 +1,5 @@
-CHANGES CONNECTED TO INTRODUCTION OF MODULES
-============================================
+CHANGES DUE TO INTRODUCTION OF MODULES
+======================================
 
 1.Kernel
 --------
@@ -107,7 +107,7 @@ c) The objects which returned substitute are stored in the modtab
    is evaluated
 
 
-The difference between "substitutive" and "keep" objects
+The difference between "substitute" and "keep" objects
 ========================================================
 i) The "keep" objects can _only_ reference other objects by section_paths
 and qualids. They do not need the substitution function.
@@ -121,7 +121,7 @@ These would typically be grammar rules, pretty printing rules etc.
 
 
 
-ii) The "substitutive" objects can _only_ reference objects by
+ii) The "substitute" objects can _only_ reference objects by
 kernel_names. They must have a valid subst_function. 
 
 They will work after end_module _and_ after Module Z:=N or 
@@ -132,7 +132,7 @@ Module Z:=F(M).
 Other kinds of objects:
 iii) "Dispose" - objects which do not survive end_module
      As a consequence, objects which reference other objects sometimes
-by kernel_names and sometimes by 
+     by kernel_names and sometimes by section_path must be of this kind...
 
 iv) "Anticipate" - objects which must be treated individually by
     end_module (typically "REQUIRE" objects)
