@@ -8,9 +8,9 @@
 
 (*i $Id$ i*)
 
-(** These are the notations whose level and associativity is imposed by Coq *)
+(** These are the notations whose level and associativity are imposed by Coq *)
 
-(** Notations for logical connectives *)
+(** Notations for propositional connectives *)
 
 Reserved Notation "x <-> y" (at level 95, no associativity).
 Reserved Notation "x /\ y" (at level 80, right associativity).
