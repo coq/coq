@@ -17,6 +17,7 @@ type target =
   | Subdir of string
   | Def of string * string (* X=foo -> Def ("X","foo") *)
   | Include of string
+  | RInclude of string * string (* -R physicalpath logicalpath *)
 
 let output_channel = ref stdout
 
@@ -54,8 +55,8 @@ let usage () =
   output_string stderr "Usage summary:
 
 coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
-  command dependencies file] ... [-I dir] ... [VARIABLE = value] ...
-  [-opt|-byte] [-f file] [-o file] [-h] [--help]
+  command dependencies file] ... [-I dir] ... [-R physicalpath logicalpath]
+  ... [VARIABLE = value] ...  [-opt|-byte] [-f file] [-o file] [-h] [--help]
 
 [file.v]: Coq file to be compiled
 [file.ml]: ML file to be compiled
@@ -63,6 +64,9 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [-custom command dependencies file]: add target \"file\" with command
   \"command\" and dependencies \"dependencies\"
 [-I dir]: look for dependencies in \"dir\"
+[-R physicalpath logicalpath]: look for dependencies resursively starting from
+ \"physicalpath\". The logical path associated to the physical path is
+ \"logicalpath\".
 [VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq
@@ -82,8 +86,8 @@ let standard sds =
   print "depend:\n";
   if !some_file then begin
     print "\trm .depend\n";
-    print "\t$(COQDEP) -i $(LIBS) *.v *.ml *.mli >.depend\n";
-    print "\t$(COQDEP) $(LIBS) -suffix .html *.v >>.depend\n";
+    print "\t$(COQDEP) -i $(COQLIBS) *.v *.ml *.mli >.depend\n";
+    print "\t$(COQDEP) $(COQLIBS) -suffix .html *.v >>.depend\n";
   end;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
@@ -161,16 +165,16 @@ let variables l =
   -I $(COQTOP)/library -I $(COQTOP)/parsing -I $(COQTOP)/pretyping \\
   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
   -I $(COQTOP)/toplevel -I $(CAMLP4LIB)\n";
-  print "ZFLAGS=$(LIBS) $(COQSRC)\n";
+  print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
   if !opt="-opt" then
-    print "COQFLAGS=-q $(OPT) $(LIBS)\n"
+    print "COQFLAGS=-q $(OPT) $(COQLIBS)\n"
   else begin
     print "OPTCOQ=";
     print "$(OPT:-opt="; print !opt; print ")\n";
-    print "COQFLAGS=-q $(OPTCOQ) $(LIBS)\n"
+    print "COQFLAGS=-q $(OPTCOQ) $(COQLIBS)\n"
   end;
   print "COQC=$(COQBIN)coqc\n";
-  print "COQFULL=$(COQBIN)coqc $(FULLOPT) -q $(LIBS)\n";
+  print "COQFULL=$(COQBIN)coqc $(FULLOPT) -q $(COQLIBS)\n";
   print "GALLINA=gallina\n";
   print "COQ2HTML=coq2html\n";
   print "COQ2LATEX=coq2latex\n";
@@ -183,16 +187,24 @@ let variables l =
   print "\n"
 
 let include_dirs l =
-  let rec include_aux = function
-    | [] -> []
-    | Include x :: r -> ("-I "^x) :: (include_aux r)
-    | _ :: r -> include_aux r
+  let include_aux' includeR =
+   let rec include_aux = function
+     | [] -> []
+     | Include x :: r -> ("-I "^x) :: (include_aux r)
+     | RInclude (p,l) :: r when includeR ->
+        let l' =
+         if l = "" then "\"\"" else l
+        in
+         ("-R "^p^" "^l') :: (include_aux r)
+     | _ :: r -> include_aux r
+   in
+    include_aux
   in
-  let i = "-I ." :: (include_aux l) in
-  if i <> [] then begin
+  let i_ocaml = "-I ." :: (include_aux' false l) in
+  let i_coq   = "-I ." :: (include_aux' true  l) in
     section "Libraries definition.";
-    print "LIBS="; print_list "\\\n  " i; print "\n\n"
-  end
+    print "OCAMLLIBS="; print_list "\\\n  " i_ocaml; print "\n";
+    print "COQLIBS=";   print_list "\\\n  " i_coq; print "\n\n"
 
 let special l =
   let pr_sp (file,dependencies,com) =
@@ -249,6 +261,7 @@ let all_target l =
     | V n :: r -> n::(fnames r)
     | Special (n,_,_) :: r -> n::(fnames r)
     | Include _ :: r -> fnames r
+    | RInclude _ :: r -> fnames r
     | Def _ :: r -> fnames r
     | [] -> []
   in
@@ -308,6 +321,8 @@ let rec process_cmd_line = function
       Special (file,dependencies,com) :: (process_cmd_line r)
   | "-I" :: d :: r ->
       Include d :: (process_cmd_line r)
+  | "-R" :: p :: l :: r ->
+      RInclude (p,l) :: (process_cmd_line r)
   | ("-I" | "-h" | "--help" | "-custom") :: _ -> 
       usage ()
   | "-f"::file::r -> 
