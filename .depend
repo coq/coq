@@ -1902,10 +1902,11 @@ tactics/setoid_replace.cmo: pretyping/clenv.cmi interp/constrintern.cmi \
     lib/pp.cmi translate/ppconstrnew.cmi pretyping/pretype_errors.cmi \
     parsing/printer.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
     kernel/reduction.cmi pretyping/reductionops.cmi kernel/safe_typing.cmi \
-    library/summary.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi \
-    interp/topconstr.cmi pretyping/typing.cmi pretyping/unification.cmi \
-    lib/util.cmi toplevel/vernacexpr.cmo tactics/setoid_replace.cmi 
+    kernel/sign.cmi library/summary.cmi proofs/tacmach.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
+    pretyping/termops.cmi interp/topconstr.cmi pretyping/typing.cmi \
+    pretyping/unification.cmi lib/util.cmi toplevel/vernacexpr.cmo \
+    tactics/setoid_replace.cmi 
 tactics/setoid_replace.cmx: pretyping/clenv.cmx interp/constrintern.cmx \
     interp/coqlib.cmx library/decl_kinds.cmx library/declare.cmx \
     kernel/entries.cmx kernel/environ.cmx pretyping/evarutil.cmx \
@@ -1915,10 +1916,11 @@ tactics/setoid_replace.cmx: pretyping/clenv.cmx interp/constrintern.cmx \
     lib/pp.cmx translate/ppconstrnew.cmx pretyping/pretype_errors.cmx \
     parsing/printer.cmx proofs/proof_type.cmx pretyping/rawterm.cmx \
     kernel/reduction.cmx pretyping/reductionops.cmx kernel/safe_typing.cmx \
-    library/summary.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx \
-    interp/topconstr.cmx pretyping/typing.cmx pretyping/unification.cmx \
-    lib/util.cmx toplevel/vernacexpr.cmx tactics/setoid_replace.cmi 
+    kernel/sign.cmx library/summary.cmx proofs/tacmach.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
+    pretyping/termops.cmx interp/topconstr.cmx pretyping/typing.cmx \
+    pretyping/unification.cmx lib/util.cmx toplevel/vernacexpr.cmx \
+    tactics/setoid_replace.cmi 
 tactics/tacinterp.cmo: parsing/ast.cmi tactics/auto.cmi kernel/closure.cmi \
     interp/constrintern.cmi parsing/coqast.cmi library/decl_kinds.cmo \
     kernel/declarations.cmi tactics/dhyp.cmi lib/dyn.cmi tactics/elim.cmi \
