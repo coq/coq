@@ -75,8 +75,9 @@ GEXTEND Gram
       | IDENT "Goal" -> <:ast< (CCLPATTERN) >>
       | id = identarg -> <:ast< (HYPPATTERN $id) >> ] ]
   ;
-  ne_pattern_hyp_list:
-    [ [ l = LIST1 pattern_occ_hyp -> l ] ]
+  clause_pattern:
+    [ [ "in"; l = LIST1 pattern_occ_hyp -> <:ast< (LETPATTERNS ($LIST $l)) >>
+      | -> <:ast< (LETPATTERNS) >> ] ]
   ;
   one_intropattern:
     [ [ p= ne_intropattern ->  <:ast< (INTROPATTERN $p)>> ]]
@@ -397,9 +398,8 @@ GEXTEND Gram
           <:ast< (Generalize ($LIST $lc)) >>
       | IDENT "Generalize"; IDENT "Dependent"; c = constrarg ->
           <:ast< (GeneralizeDep $c) >>
-      | IDENT "LetTac"; s = identarg; ":="; c = constrarg; "in";
-	  l = ne_pattern_hyp_list -> 
-	    <:ast< (LetTac $s $c (LETPATTERNS ($LIST $l))) >>
+      | IDENT "LetTac"; s = identarg; ":="; c = constrarg; p = clause_pattern->
+	  <:ast< (LetTac $s $c $p) >>
       | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
       | IDENT "Clear"; l = ne_identarg_list -> 
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
