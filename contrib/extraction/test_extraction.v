@@ -40,3 +40,14 @@ Extraction (id' Set nat).
 
 Extraction let t = nat in (id' Set t). (* 5904-5916: Assertion failed *)
 
+Definition Ensemble := [U:Type]U->Prop.
+
+Definition Empty_set := [U:Type][x:U]False.
+
+Definition Add := [U:Type][A:(Ensemble U)][x:U][y:U](A y) \/ x==y.
+
+Inductive Finite [U:Type] : (Ensemble U) -> Set :=
+      Empty_is_finite: (Finite U (Empty_set U))
+   |  Union_is_finite:
+      (A: (Ensemble U)) (Finite U A) -> 
+      (x: U) ~ (A x) -> (Finite U (Add U A x)).
