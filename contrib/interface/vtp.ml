@@ -624,6 +624,13 @@ and fFORMULA = function
    fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "lambdac" 2
+| CT_let_tuple(x1, x2, x3, x4, x5) ->
+   fID_OPT_NE_LIST x1;
+   fID_OPT x2;
+   fFORMULA_OPT x3;
+   fFORMULA x4;
+   fFORMULA x5;
+   fNODE "let_tuple" 5
 | CT_letin(x1, x2) ->
    fDEF x1;
    fFORMULA x2;
@@ -640,6 +647,10 @@ and fFORMULA = function
    fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "prodc" 2
+| CT_proj(x1, x2) ->
+   fFORMULA x1;
+   fFORMULA_NE_LIST x2;
+   fNODE "proj" 2
 and fFORMULA_LIST = function
 | CT_formula_list l ->
    (List.iter fFORMULA l);
