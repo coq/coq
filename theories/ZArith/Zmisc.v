@@ -298,25 +298,25 @@ Proof.
   NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
 Qed.
 
-Lemma Zeven_Sn : (z:Z)(Zeven z) -> (Zodd (Zs z)).
+Lemma Zeven_Sn : (z:Z)(Zodd z) -> (Zeven (Zs z)).
 Proof.
  NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
-Lemma Zodd_Sn : (z:Z)(Zodd z) -> (Zeven (Zs z)).
+Lemma Zodd_Sn : (z:Z)(Zeven z) -> (Zodd (Zs z)).
 Proof.
  NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
-Lemma Zeven_pred : (z:Z)(Zeven z) -> (Zodd (Zpred z)).
+Lemma Zeven_pred : (z:Z)(Zodd z) -> (Zeven (Zpred z)).
 Proof.
  NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
 Qed.
 
-Lemma Zodd_pred : (z:Z)(Zodd z) -> (Zeven (Zpred z)).
+Lemma Zodd_pred : (z:Z)(Zeven z) -> (Zodd (Zpred z)).
 Proof.
  NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
  Unfold double_moins_un; Case p; Simpl; Auto.
@@ -384,7 +384,7 @@ Intro p; Split with (Zdiv2 (Zpred (NEG p))).
 Pattern 1 (NEG p); Rewrite (Zs_pred (NEG p)).
 Pattern 1 (Zpred (NEG p)); Rewrite (Zeven_div2 (Zpred (NEG p))).
 Reflexivity.
-Apply Zodd_pred; Assumption.
+Apply Zeven_pred; Assumption.
 Qed.
 
 Lemma Zsplit2 :  (x:Z) { p : Z*Z | let (x1,x2)=p in (`x=x1+x2` /\ (x1=x2 \/ `x2=x1+1`)) }.
