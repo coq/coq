@@ -61,7 +61,7 @@ with rexpr0 : constr :=
 
 with meta : ast :=
 | rimpl [ "?" ] -> [ (ISEVAR) ]
-| rmeta [ "?" prim:number($n) ] -> [ (META $n) ]
+| rmeta [ "?" prim:numarg($n) ] -> [ (META $n) ]
 
 with rapplication : constr :=
   apply [ rapplication($p) rexpr($c1) ] -> [ ($p $c1) ]

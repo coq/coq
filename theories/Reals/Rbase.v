@@ -1211,7 +1211,7 @@ Qed.
 Hints Resolve pos_INR: real.
 
 Lemma INR_lt:(n,m:nat)``(INR n) < (INR m)``->(lt n m).
-Double Induction 1 2;Intros.
+Double Induction n m;Intros.
 Simpl;ElimType False;Apply (Rlt_antirefl R0);Auto.
 Auto with arith.
 Generalize (pos_INR (S n0));Intro;Cut (INR O)==R0;
@@ -1585,3 +1585,4 @@ Qed.
 Lemma add_auto : (p,q:nat) ``(INR2 (S p))+(INR2 q)==(INR2 p)+(INR2 (S q))``.
 Intros; Repeat Rewrite <- INR_eq_INR2; Repeat Rewrite S_INR; Ring.
 Qed.
+

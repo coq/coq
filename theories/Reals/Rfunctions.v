@@ -40,7 +40,7 @@ Cut ~(plus n0 (1))=O.
 Intro;Apply H;Assumption.
 Replace (plus n0 (1)) with (S n0);[Auto|Ring].
 Intros;Ring.
-Double Induction 1 2;Simpl;Auto.
+Double Induction n m;Simpl;Auto.
 Qed.
 
 (*********)

@@ -64,7 +64,7 @@ Qed.
 
 Definition beq_nat_eq : (x,y:nat)true=(beq_nat x y)->x=y.
 Proof.
-  Double Induction 1 2; Simpl.
+  Double Induction x y; Simpl.
     Reflexivity.
     Intros; Discriminate H0.
     Intros; Discriminate H0.
