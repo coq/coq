@@ -178,7 +178,7 @@ Infix "&&" andb (at level 3, no associativity) : bool_scope
 Notation "- b" := (negb b) (at level 0, right associativity) : bool_scope
   V8only.
 
-Open Scope bool_scope.
+Open Local Scope bool_scope.
 
 (**************************)
 (** Lemmas about [negb]   *)

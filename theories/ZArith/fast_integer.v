@@ -1313,7 +1313,7 @@ Definition Zcompare := [x,y:Z]
 
 V8Infix "?=" Zcompare (at level 50, no associativity) : Z_scope.
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
 
 (**********************************************************************)
 (** Properties of opposite on binary integer numbers *)
