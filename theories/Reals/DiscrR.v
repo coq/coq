@@ -70,3 +70,9 @@ Recursive Tactic Definition Sup :=
   | [ |- (Rlt (Ropp ?1) ?2) ] -> Apply Rlt_trans with ``0``; Sup
   | [ |- (Rlt ?1 ?2) ] -> SupOmega
   | _ -> Idtac.
+
+Lemma IZR_eq : (z1,z2:Z) z1=z2 -> (IZR z1)==(IZR z2).
+Intros; Rewrite H; Reflexivity.
+Qed.
+
+Tactic Definition RCompute := Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_eq; Ring | Reflexivity] | Reflexivity].
