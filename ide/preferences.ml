@@ -184,7 +184,7 @@ let save_pref () =
     add "encoding_manual" [p.encoding_manual] ++
 
     add "automatic_tactics" 
-      (List.fold_left (fun l v -> v::l) [] p.automatic_tactics) ++
+      (List.rev p.automatic_tactics) ++
     add "cmd_print" [p.cmd_print] ++
     add "modifier_for_navigation" 
       (List.map mod_to_str p.modifier_for_navigation) ++
