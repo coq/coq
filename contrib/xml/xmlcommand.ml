@@ -153,6 +153,23 @@ let add_to_pvars x =
     | (he::tl) -> pvars := (v::he)::tl
 ;;
 
+(* The computation is very inefficient, but we can't do anything *)
+(* better unless this function is reimplemented in the Declare   *)
+(* module.                                                       *)
+let rec search_variables =
+ let module N = Names in
+  function
+     [] -> []
+   | he::tl as modules ->
+      let one_section_variables =
+       let dirpath = N.make_dirpath modules in
+        match List.map N.string_of_id (Declare.last_section_hyps dirpath) with
+          [] -> []
+        | t -> [t]
+       in
+        one_section_variables @ search_variables tl
+;;
+
 (* FUNCTIONS TO PRINT A SINGLE OBJECT OF COQ *)
 
 let print_object uri obj sigma proof_tree_infos filename typesfilename prooftreefilename =
@@ -213,8 +230,8 @@ let mk_variable_obj id body typ =
 
 (* Unsharing is not performed on the body, that must be already unshared. *)
 (* The evar map and the type, instead, are unshared by this function.     *)
-let mk_current_proof_obj id bo ty evar_map =
- let ty = Term.body_of_type ty in
+let mk_current_proof_obj id bo ty evar_map env =
+ let unshared_ty = Term.unshare (Term.body_of_type ty) in
  let metasenv' =
   List.map
    (function
@@ -231,8 +248,19 @@ let mk_current_proof_obj id bo ty evar_map =
         (n,context,Term.unshare evar_concl)
    ) (Evd.non_instantiated evar_map)
  in
-  Acic.CurrentProof
-   (Names.string_of_id id,metasenv',bo,Term.unshare ty)
+  let id' = Names.string_of_id id in
+   if metasenv' = [] then
+    let ids =
+     Names.Idset.union
+      (Environ.global_vars_set env bo) (Environ.global_vars_set env ty) in
+    let hyps0 = Environ.keep_hyps env ids in
+    let hyps = string_list_of_named_context_list hyps0 in
+    (* Variables are the identifiers of the variables in scope *)
+    let variables = search_variables (Names.repr_dirpath (Lib.cwd ())) in
+    let params = filter_params variables hyps in
+     Acic.Definition (id',bo,unshared_ty,params)
+   else
+    Acic.CurrentProof (id',metasenv',bo,unshared_ty)
 ;;
 
 let mk_constant_obj id bo ty variables hyps =
@@ -296,24 +324,7 @@ let print (_,qid as locqid) fn =
     _ -> let (_,id) = Nt.repr_qualid qid in Nt.VarRef id
   in
   (* Variables are the identifiers of the variables in scope *)
-  let variables =
-   (* The computation is very inefficient, but we can't do anything *)
-   (* better unless this function is reimplemented in the Declare   *)
-   (* module.                                                       *)
-   let rec search_variables =
-    function
-       [] -> []
-     | he::tl as modules ->
-        let one_section_variables =
-         let dirpath = N.make_dirpath modules in
-          match List.map N.string_of_id (De.last_section_hyps dirpath) with
-            [] -> []
-          | t -> [t]
-         in
-          one_section_variables @ search_variables tl
-   in
-    search_variables (Names.repr_dirpath (Lib.cwd ()))
-  in
+  let variables = search_variables (Names.repr_dirpath (Lib.cwd ())) in
   let sp,tag,obj =
    match glob_ref with
       Nt.VarRef id ->
@@ -347,7 +358,8 @@ let show_pftreestate fn pftst =
  let val0,evar_map,proof_tree_to_constr =
   Proof2aproof.extract_open_pftreestate pftst in
  let sp = Lib.make_path id in
- let obj = mk_current_proof_obj id val0 typ evar_map in
+ let env = Global.env () in
+ let obj = mk_current_proof_obj id val0 typ evar_map env in
   print_object (uri_of_path sp Constant) obj evar_map
    (Some (pf,proof_tree_to_constr)) fn (types_filename_of_filename fn)
     (prooftree_filename_of_filename fn)
