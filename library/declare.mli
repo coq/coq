@@ -50,7 +50,7 @@ val constant_strength : section_path -> strength
 val constant_or_parameter_strength : section_path -> strength
 
 val is_variable : identifier -> bool
-val out_variable : section_path -> var_declaration * strength * sticky
+val out_variable : section_path -> named_declaration * strength * sticky
 val variable_strength : identifier -> strength
 
 
@@ -58,7 +58,7 @@ val variable_strength : identifier -> strength
     construtor) corresponding to [id] in global environment, together
     with its definition environment. *)
 
-val global_operator : path_kind -> identifier -> global_reference * var_context
+val global_operator : path_kind -> identifier -> global_reference * named_context
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 

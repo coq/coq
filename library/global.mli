@@ -21,23 +21,19 @@ val env : unit -> env
 
 val universes : unit -> universes
 val context : unit -> context
-val var_context : unit -> var_context
+val named_context : unit -> named_context
 
-val push_var_decl : identifier * constr -> unit
-val push_var_def : identifier * constr -> unit
-(*i
-val push_var : identifier * constr option * constr -> unit
-val push_rel_decl : name * constr -> unit
-val push_rel_def : name * constr -> unit
-i*)
+val push_named_assum : identifier * constr -> unit
+val push_named_def : identifier * constr -> unit
+
 val add_constant : section_path -> constant_entry -> unit
 val add_parameter : section_path -> constr -> unit
 val add_mind : section_path -> mutual_inductive_entry -> unit
 val add_constraints : constraints -> unit
 
-val pop_vars : identifier list -> unit
+val pop_named_decls : identifier list -> unit
 
-val lookup_var : identifier -> constr option * typed_type
+val lookup_named : identifier -> constr option * typed_type
 (*i val lookup_rel : int -> name * typed_type i*)
 val lookup_constant : section_path -> constant_body
 val lookup_mind : section_path -> mutual_inductive_body

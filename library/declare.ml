@@ -57,8 +57,8 @@ let _ = Summary.declare_summary "VARIABLE"
 
 let cache_variable (sp,((id,(d,_,_) as vd),imps)) =
   begin match d with (* Fails if not well-typed *)
-    | SectionLocalDecl ty -> Global.push_var_decl (id,ty)
-    | SectionLocalDef c -> Global.push_var_def (id,c)
+    | SectionLocalDecl ty -> Global.push_named_assum (id,ty)
+    | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
   Nametab.push id sp;
   if imps then declare_var_implicits id;
@@ -204,7 +204,7 @@ let is_variable id =
   
 let out_variable sp = 
   let (id,(_,str,sticky)) = Spmap.find sp !vartab in
-  let (c,ty) = Global.lookup_var id in
+  let (c,ty) = Global.lookup_named id in
   ((id,c,ty),str,sticky)
 
 let variable_strength id =
@@ -262,7 +262,7 @@ let occur_decl env (id,c,t) hyps =
 (*
 let rec find_common_hyps_then_abstract c env hyps' = function
   | (id,_,_ as d) :: hyps when occur_decl env d hyps' ->
-      find_common_hyps_then_abstract c (Environ.push_var d env) hyps' hyps
+      find_common_hyps_then_abstract c (Environ.push_named_decl d env) hyps' hyps
   | hyps ->
       Environ.it_mkNamedLambda_or_LetIn c hyps
 
@@ -271,11 +271,11 @@ let find_common_hyps_then_abstract c env hyps' hyps =
 *)
 
 let find_common_hyps_then_abstract c env hyps' hyps = 
-  snd (fold_var_context_both_sides
+  snd (fold_named_context_both_sides
 	 (fun
 	    (env,c) (id,_,_ as d) hyps ->
 	      if occur_decl env d hyps' then 
-		(Environ.push_var d env,c)
+		(Environ.push_named_decl d env,c)
 	      else
 		(env, Environ.it_mkNamedLambda_or_LetIn c hyps))
 	 hyps
@@ -283,9 +283,9 @@ let find_common_hyps_then_abstract c env hyps' hyps =
 
 let construct_sp_reference env sp id =
   let (oper,hyps) = global_sp_operator env sp id in
-  let hyps0 = Global.var_context () in
+  let hyps0 = Global.named_context () in
   let env0 = Environ.reset_context env in
-  let args = List.map mkVar (ids_of_var_context hyps) in
+  let args = List.map mkVar (ids_of_named_context hyps) in
   let body = match oper with
     | ConstRef sp -> mkConst (sp,Array.of_list args)
     | ConstructRef sp -> mkMutConstruct (sp,Array.of_list args)
@@ -298,7 +298,7 @@ let construct_reference env kind id =
     let sp = Nametab.sp_of_id kind id in
     construct_sp_reference env sp id
   with Not_found -> 
-    mkVar (let _ = Environ.lookup_var id env in id)
+    mkVar (let _ = Environ.lookup_named id env in id)
 
 let global_sp_reference sp id = 
   construct_sp_reference (Global.env()) sp id
@@ -351,8 +351,8 @@ let elimination_suffix = function
 
 let declare_eliminations sp i =
   let mib = Global.lookup_mind sp in
-  let ids = ids_of_var_context mib.mind_hyps in
-  if not (list_subset ids (ids_of_var_context (Global.var_context ()))) then
+  let ids = ids_of_named_context mib.mind_hyps in
+  if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then
     error ("Declarations of elimination scheme outside the section "^
     "of the inductive definition is not implemented");
   let ctxt = Array.of_list (List.map mkVar ids) in
