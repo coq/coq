@@ -25,14 +25,12 @@ type w_tactic = walking_constraints -> walking_constraints
 
 let local_Constraints lc gs = refiner (Local_constraints lc) gs
 
-let debug = ref true;;
-
 let startWalk gls =
   let evc = project_with_focus gls in
   let wc = (ids_mk evc) in 
   (wc,
    (fun wc' gls' ->
-      if !debug & ids_eq wc wc' & gls.it = gls'.it then
+      if not !Options.debug or (ids_eq wc wc' & gls.it = gls'.it) then
         if Intset.equal (get_lc gls.it) (get_focus (ids_it wc')) then
           tclIDTAC {it=gls'.it; sigma = get_gc (ids_it wc')}
         else
