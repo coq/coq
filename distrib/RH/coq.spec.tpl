@@ -1,12 +1,12 @@
 Name: coq
-Version: 7.0
-Release: 2
+Version: 7.1
+Release: 1
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA Rocquencourt
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V7.0/coq-7.0.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V7.1/coq-7.1.tar.gz
 Icon: petit-coq.gif
 
 %description
