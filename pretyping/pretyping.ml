@@ -354,8 +354,8 @@ let rec pretype tycon env isevars lvar lmeta = function
 		    let pty =
                       Retyping.get_type_of env (evars_of isevars) pred in
 		    let pj = { uj_val = pred; uj_type = pty } in
-                    option_app (the_conv_x_leq env isevars pred) tycon;
-                    pj
+                    let _ = option_app (the_conv_x_leq env isevars pred) tycon
+                    in pj
 		with UserError _ -> findtype (i+1) in
 	    findtype 0 in
       let pj = j_nf_evar (evars_of isevars) pj in
