@@ -486,8 +486,11 @@ and pr_atom1 = function
       hov 1 (str "Generalize" ++ spc () ++ str "Dependent" ++ spc () ++
       pr_constr c)
   | TacLetTac (id,c,cl) ->
+      let pcl = match cl with
+          {onhyps=None;onconcl=true;concl_occs=[]} -> mt()
+        | _ -> pr_clauses pr_ident cl in
       hov 1 (str "LetTac" ++ spc () ++ pr_id id ++ str ":=" ++
-        pr_constr c ++ pr_clauses pr_ident cl)
+             pr_constr c ++ pcl)
   | TacInstantiate (n,c,cls) ->
       hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++ 
 	     pr_clauses pr_ident cls)
