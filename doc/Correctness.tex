@@ -670,51 +670,51 @@ following:
 % Extraction %
 %%%%%%%%%%%%%%
 
-\asection{Extraction}
-\index{Imperative programs!extraction of}
+% \asection{Extraction}
+% \index{Imperative programs!extraction of}
 
-Once a program is proved, one usually wants to run it, and that's why
-this implementation comes with an extraction mechanism.
-For the moment, there is only extraction to \ocaml\ code.
-This functionality is provided by the following module:
-$$
-\mbox{\texttt{Require ProgramsExtraction.}}
-$$
-This extraction facility extends the extraction of functional programs
-(see chapter~\ref{Extraction}), on which it is based.
-Indeed, the extraction of functional terms (\Coq\ objects) is first
-performed by the module \texttt{Extraction}, and the extraction of
-imperative programs comes after.
-Therefore, we have kept the same syntax as for functional terms:
-$$
-\mbox{\tt Write Caml File "\str" [ \ident$_1$ \dots\ \ident$_n$ ].} 
-$$
-where \str\ is the name given to the file to be produced (the suffix
-{\tt .ml} is added if necessary), and \ident$_1$ \dots\ \ident$_n$ the
-names of the objects to be extracted. 
-That list may contain functional and imperative objects, and does not need
-to be exhaustive.
+% Once a program is proved, one usually wants to run it, and that's why
+% this implementation comes with an extraction mechanism.
+% For the moment, there is only extraction to \ocaml\ code.
+% This functionality is provided by the following module:
+% $$
+% \mbox{\texttt{Require ProgramsExtraction.}}
+% $$
+% This extraction facility extends the extraction of functional programs
+% (see chapter~\ref{Extraction}), on which it is based.
+% Indeed, the extraction of functional terms (\Coq\ objects) is first
+% performed by the module \texttt{Extraction}, and the extraction of
+% imperative programs comes after.
+% Therefore, we have kept the same syntax as for functional terms:
+% $$
+% \mbox{\tt Write Caml File "\str" [ \ident$_1$ \dots\ \ident$_n$ ].} 
+% $$
+% where \str\ is the name given to the file to be produced (the suffix
+% {\tt .ml} is added if necessary), and \ident$_1$ \dots\ \ident$_n$ the
+% names of the objects to be extracted. 
+% That list may contain functional and imperative objects, and does not need
+% to be exhaustive.
 
-Of course, you can use the extraction facilities described in
-chapter~\ref{Extraction}, namely the \texttt{ML Import},
-\texttt{Link} and \texttt{Extract} commands.
+% Of course, you can use the extraction facilities described in
+% chapter~\ref{Extraction}, namely the \texttt{ML Import},
+% \texttt{Link} and \texttt{Extract} commands.
 
 
-\paragraph{The case of integers}
-There is no use of the \ocaml\ native integers: indeed, it would not be safe
-to use the machine integers while the correctness proof is done
-with unbounded integers (\texttt{nat}, \texttt{Z} or whatever type).
-But since \ocaml\ arrays are indexed over the type \texttt{int}
-(the machine integers) arrays indexes are converted from \texttt{Z}
-to \texttt{int} when necessary (the conversion is very fast: due
-to the binary representation of integers in type \texttt{Z}, it
-will never exceed thirty elementary steps).
+% \paragraph{The case of integers}
+% There is no use of the \ocaml\ native integers: indeed, it would not be safe
+% to use the machine integers while the correctness proof is done
+% with unbounded integers (\texttt{nat}, \texttt{Z} or whatever type).
+% But since \ocaml\ arrays are indexed over the type \texttt{int}
+% (the machine integers) arrays indexes are converted from \texttt{Z}
+% to \texttt{int} when necessary (the conversion is very fast: due
+% to the binary representation of integers in type \texttt{Z}, it
+% will never exceed thirty elementary steps).
 
-And it is also safe, since the size of a \ocaml\ array can not be greater
-than the maximum integer ($2^{30}-1$) and since the correctness proof
-establishes that indexes are always within the bounds of arrays
-(Therefore, indexes will never be greater than the maximum integer,
-and the conversion will never produce an overflow).
+% And it is also safe, since the size of a \ocaml\ array can not be greater
+% than the maximum integer ($2^{30}-1$) and since the correctness proof
+% establishes that indexes are always within the bounds of arrays
+% (Therefore, indexes will never be greater than the maximum integer,
+% and the conversion will never produce an overflow).
 
 
 %%%%%%%%%%%%
