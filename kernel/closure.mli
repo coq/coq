@@ -134,7 +134,7 @@ val create:
    one by one *)
 
 type 'a stack_member =
-  | Zapp of 'a array * int
+  | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array
   | Zfix of 'a * 'a stack
   | Zshift of int
@@ -182,6 +182,7 @@ type fterm =
   | FLetIn of name * fconstr * fconstr * fconstr * constr * fconstr subs
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
+  | FLOCKED
 
 and freference =
   | FConst of section_path * fconstr array
