@@ -218,10 +218,6 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let invProof = 
     it_lambda_name env (local_strong (whd_meta mvb) pfterm) ownSign in
   invProof
-(*
-open Discharge
-open Constrtypes
-*)
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
@@ -260,7 +256,6 @@ let _ =
 	   fun () ->
 	     inversion_lemma_from_goal n na id prop false inv_clear_tac
        | _ -> bad_vernac_args "MakeInversionLemmaFromHyp")
-
 
 let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () and sigma = Evd.empty in
