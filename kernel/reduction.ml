@@ -267,7 +267,7 @@ let reduce_fix whdfun fix stack =
 
 (* Generic reduction function *)
 
-let whd_state_gen flags env sigma = 
+let rec whd_state_gen flags env sigma = 
   let rec whrec (x, stack as s) =
     match kind_of_term x with
       | IsRel n when red_delta flags ->
@@ -289,15 +289,17 @@ let whd_state_gen flags env sigma =
       | IsLetIn (_,b,_,c) when red_letin flags -> stacklam whrec [b] c stack
       | IsCast (c,_) -> whrec (c, stack)
       | IsApp (f,cl)  -> whrec (f, append_stack cl stack)
-      | IsLambda (_,_,c) ->
+      | IsLambda (na,t,c) ->
           (match decomp_stack stack with
              | Some (a,m) when red_beta flags -> stacklam whrec [a] c m
              | None when red_eta flags ->
-                 (match kind_of_term (app_stack (whrec (c, empty_stack))) with 
+		 let env' = push_rel_assum (na,t) env in
+		 let whrec' = whd_state_gen flags env' sigma in
+                 (match kind_of_term (app_stack (whrec' (c, empty_stack))) with
                     | IsApp (f,cl) ->
 			let napp = Array.length cl in
 			if napp > 0 then
-			  let x', l' = whrec (array_last cl, empty_stack) in
+			  let x', l' = whrec' (array_last cl, empty_stack) in
                           match kind_of_term x', decomp_stack l' with
                             | IsRel 1, None ->
 				let lc = Array.sub cl 0 (napp-1) in
