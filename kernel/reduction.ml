@@ -276,11 +276,11 @@ let whd_state_gen flags env sigma =
 	  (match lookup_rel_value n env with
 	     | Some body -> whrec (lift n body, stack)
 	     | None -> s)
-*)
       | IsVar id when red_delta flags ->
 	  (match lookup_var_value id env with
 	     | Some body -> whrec (body, stack)
 	     | None -> s)
+*)
       | IsEvar ev when red_evar flags ->
 	  (match existential_opt_value sigma ev with
 	     | Some body -> whrec (body, stack)
