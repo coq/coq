@@ -21,8 +21,8 @@ let pr_global ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent
   paresseusement : il faut forcer l'évaluation pour capturer
   l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
-  let qid = Global.qualid_of_global ref in
-  [< 'sTR (string_of_qualid qid) >]
+  let s = Global.string_of_global ref in
+  [< 'sTR s >]
 
 let global_const_name sp =
   try pr_global (ConstRef sp)

@@ -8,6 +8,7 @@ open Names
 open Environ
 open Libobject
 open Lib
+open Nametab
 
 (*s Load path. *)
 
@@ -27,7 +28,7 @@ type module_disk = {
   md_name : string;
   md_compiled_env : compiled_env;
   md_declarations : library_segment;
-  md_nametab : Nametab.module_contents;
+  md_nametab : module_contents;
   md_deps : (string * Digest.t * bool) list }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -38,7 +39,7 @@ type module_t = {
   module_filename : load_path_entry * string;
   module_compiled_env : compiled_env;
   module_declarations : library_segment;
-  module_nametab : Nametab.module_contents;
+  module_nametab : module_contents;
   mutable module_opened : bool;
   mutable module_exported : bool;
   module_deps : (string * Digest.t * bool) list;
@@ -117,7 +118,7 @@ let rec open_module force s =
   if force or not m.module_opened then begin
     List.iter (fun (m,_,exp) -> if exp then open_module force m) m.module_deps;
     open_objects m.module_declarations;
-    Nametab.open_module_contents (make_qualid [] (id_of_string s)); 
+    open_module_contents (make_qualid [] (id_of_string s)); 
     m.module_opened <- true
   end
 
@@ -155,7 +156,7 @@ let rec load_module_from s f =
     Global.import m.module_compiled_env;
     load_objects m.module_declarations;
     let sp = Names.make_path lpe.coq_dirpath (id_of_string s) CCI in
-    Nametab.push_module sp m.module_nametab;
+    push_module sp m.module_nametab;
     modules_table := Stringmap.add s m !modules_table;
     m
 

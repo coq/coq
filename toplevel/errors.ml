@@ -63,6 +63,11 @@ let rec explain_exn_default = function
       hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_inductive_error e >]
   | Logic.RefinerError e -> 
       hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_refiner_error e >]
+  | Nametab.GlobalizationError q ->
+      hOV 0 [< 'sTR "Error:"; 'sPC;
+	       'sTR "The reference"; 'sPC; Nametab.pr_qualid q;
+	       'sPC ; 'sTR "was not found"; 
+	       'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
   | Tacmach.FailError i ->
       hOV 0 [< 'sTR "Error: Fail tactic always fails (level "; 
 	       'iNT i; 'sTR")." >]

@@ -18,7 +18,11 @@ open Pretyping
 open Evarutil
 open Ast
 open Coqast
-open Pretype_errors
+open Nametab
+
+type extended_global_reference =
+  | TrueGlobal of global_reference
+  | SyntacticDef of section_path
 
 (*Takes a list of variables which must not be globalized*)
 let from_list l = List.fold_right Idset.add l Idset.empty
@@ -243,9 +247,8 @@ let ast_to_var (env,impls) (vars1,vars2) loc s =
 (* This is generic code to deal with globalization                  *)
 
 type 'a globalization_action = {
-  parse_var : string -> 'a;
-  parse_ref : global_reference -> 'a;
-  parse_syn : section_path -> 'a;
+  parse_var : identifier -> 'a;
+  parse_ref : extended_global_reference -> 'a;
   fail : qualid -> 'a * int list;
 }
 
@@ -253,18 +256,18 @@ let translate_qualid act qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | [],s -> act.parse_var (string_of_id s), []
+      | [],id -> act.parse_var id, []
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference? *)
   try
     let ref = Nametab.locate qid in
-    act.parse_ref ref, implicits_of_global ref
+    act.parse_ref (TrueGlobal ref), implicits_of_global ref
   with Not_found ->
   (* Is it a reference to a syntactic definition? *)
   try
     let sp = Syntax_def.locate_syntactic_definition qid in
-    act.parse_syn sp, []
+    act.parse_ref (SyntacticDef sp), []
   with Not_found ->
     act.fail qid
 
@@ -274,7 +277,7 @@ let rawconstr_of_var env vars loc s =
   try
     ast_to_var env vars loc s
   with Not_found ->
-    error_var_not_found_loc loc CCI (id_of_string s)
+    Pretype_errors.error_var_not_found_loc loc CCI (id_of_string s)
 
 let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
@@ -564,7 +567,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 (* Globalization of AST quotations (mainly used to get statically         *)
 (* bound idents in grammar or pretty-printing rules)                      *)
 (**************************************************************************)
-
+(*
 (* A brancher ultérieurement sur Termast.ast_of_ref *)
 let ast_of_ref loc = function
   | ConstRef sp -> Node (loc, "CONST", [path_section loc sp])
@@ -572,11 +575,19 @@ let ast_of_ref loc = function
         Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
   | IndRef (sp, i) -> Node (loc, "MUTIND", [path_section loc sp; num i])
   | VarRef sp -> failwith "ast_of_ref: TODO"
+*)
+let ast_of_ref_loc loc ref = set_loc loc (Termast.ast_of_ref ref)
 
 let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
 
-let ast_of_var env ast s =
-  if isMeta s or Idset.mem (id_of_string s) env then ast
+let ast_of_extended_ref_loc loc = function
+  | TrueGlobal ref -> ast_of_ref_loc loc ref
+  | SyntacticDef sp -> ast_of_syndef loc sp
+
+let ast_of_extended_ref = ast_of_extended_ref_loc dummy_loc
+
+let ast_of_var env ast id =
+  if isMeta (string_of_id id) or Idset.mem id env then ast
   else raise Not_found
 
 let ast_hole = Node (dummy_loc, "ISEVAR", [])
@@ -606,8 +617,7 @@ let ast_adjust_consts sigma =
   and adjust_qualid env loc ast sp =
     let act = {
       parse_var = ast_of_var env ast;
-      parse_ref = ast_of_ref loc;
-      parse_syn = ast_of_syndef loc;
+      parse_ref = ast_of_extended_ref_loc loc;
       fail = warning_globalize ast } in
     fst (translate_qualid act sp)
 

@@ -15,6 +15,7 @@ open Declare
 open Impargs
 open Libobject
 open Printer
+open Nametab
 
 let print_basename sp = pr_global (ConstRef sp)
 

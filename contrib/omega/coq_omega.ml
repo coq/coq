@@ -217,7 +217,8 @@ let constant dir s =
   try 
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Coq_omega: cannot find "^(string_of_qualid (make_qualid dir id)))
+    anomaly ("Coq_omega: cannot find "^
+	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
 let zarith_constant dir = constant ("Zarith"::dir)
 
@@ -373,12 +374,13 @@ let make_coq_path dir s =
   let ref = 
     try Nametab.locate_in_absolute_module dir id 
     with Not_found ->
-      anomaly("Coq_omega: cannot find "^(string_of_qualid(make_qualid dir id)))
+      anomaly("Coq_omega: cannot find "^
+	      (Nametab.string_of_qualid(Nametab.make_qualid dir id)))
   in
   match ref with
     | ConstRef sp -> EvalConstRef sp
     | _ -> anomaly ("Coq_omega: "^
-		    (string_of_qualid (make_qualid dir id))^
+		    (Nametab.string_of_qualid (Nametab.make_qualid dir id))^
 		    " is not a constant")
 
 let sp_Zs = lazy (make_coq_path ["Zarith";"zarith_aux"] "Zs")

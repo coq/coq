@@ -593,7 +593,7 @@ let unfold env sigma name =
 
 let string_of_evaluable_ref = function
   | EvalVarRef id -> string_of_id id
-  | EvalConstRef sp -> string_of_qualid (qualid_of_sp sp)
+  | EvalConstRef sp -> string_of_path sp
 
 (* [unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.

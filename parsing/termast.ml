@@ -15,6 +15,7 @@ open Coqast
 open Ast
 open Rawterm
 open Pattern
+open Nametab
 
 (* In this file, we translate rawconstr to ast, in order to print constr *)
 

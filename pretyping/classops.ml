@@ -232,9 +232,9 @@ let strength_of_cl = function
 let string_of_class = function
   | CL_FUN -> "FUNCLASS"
   | CL_SORT -> "SORTCLASS" 
-  | CL_CONST sp -> string_of_qualid (Global.qualid_of_global (ConstRef sp))
-  | CL_IND sp -> string_of_qualid (Global.qualid_of_global (IndRef sp))
-  | CL_SECVAR sp -> string_of_qualid (Global.qualid_of_global (VarRef sp))
+  | CL_CONST sp -> Global.string_of_global (ConstRef sp)
+  | CL_IND sp -> Global.string_of_global (IndRef sp)
+  | CL_SECVAR sp -> Global.string_of_global (VarRef sp)
 
 (* coercion_value : int -> unsafe_judgment * bool *)
 

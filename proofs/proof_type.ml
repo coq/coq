@@ -88,7 +88,7 @@ and tactic_arg =
   | OpenConstr     of ((int * constr) list * constr) (* constr with holes *)
   | Constr_context of constr
   | Identifier     of identifier
-  | Qualid         of qualid
+  | Qualid         of Nametab.qualid
   | Integer        of int
   | Clause         of identifier list
   | Bindings       of Coqast.t substitution

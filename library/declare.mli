@@ -90,11 +90,11 @@ val extract_instance : global_reference -> constr array -> constr array
 val constr_of_reference :
   'a Evd.evar_map -> Environ.env -> global_reference -> constr
 
-val global_qualified_reference : qualid -> constr
+val global_qualified_reference : Nametab.qualid -> constr
 val global_absolute_reference : section_path -> constr
 val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
-val construct_qualified_reference : Environ.env -> qualid -> constr
+val construct_qualified_reference : Environ.env -> Nametab.qualid -> constr
 val construct_absolute_reference : Environ.env -> section_path -> constr
 
 (* This should eventually disappear *)

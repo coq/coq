@@ -6,6 +6,7 @@ open Names
 open Term
 open Declare
 open Pattern
+open Nametab
 
 let nat_path = make_path ["Coq";"Init";"Datatypes"] (id_of_string "nat") CCI
 let myvar_path =

@@ -33,6 +33,7 @@ open Tactic_debug
 open Command
 open Goptions
 open Mltop
+open Nametab
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders binders = 
@@ -108,7 +109,14 @@ let show_top_evars () =
 (* Locate commands *)
 let locate_qualid loc qid =
   try Nametab.locate qid
-  with Not_found -> Pretype_errors.error_global_not_found_loc loc qid
+  with Not_found -> 
+  try
+    let _ = Syntax_def.locate_syntactic_definition qid in
+    error
+      ("Unexpected reference to a syntactic definition: "
+       ^(string_of_qualid qid))
+  with Not_found ->
+    Nametab.error_global_not_found_loc loc qid
 
  (* Pour pcoq *)
 let global = locate_qualid
@@ -180,7 +188,7 @@ let _ =
        | [VARG_STRING dir] ->
 	   (fun () -> add_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
-           let aliasdir,aliasname = repr_qualid alias in
+           let aliasdir,aliasname = Nametab.repr_qualid alias in
 	    (fun () -> add_path dir (aliasdir@[string_of_id aliasname]))
        | _ -> bad_vernac_args "ADDPATH")
 
@@ -197,7 +205,7 @@ let _ =
        | [VARG_STRING dir] ->
 	   (fun () -> add_rec_path dir [Nametab.default_root])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
-           let aliasdir,aliasname = repr_qualid alias in
+           let aliasdir,aliasname = Nametab.repr_qualid alias in
 	    (fun () ->
 	       let alias = aliasdir@[string_of_id aliasname] in
 	       add_rec_path dir alias;
@@ -631,8 +639,7 @@ let _ =
        List.iter
 	 (function 
 	    | VARG_CONSTANT sp ->
-		warning_opaque
-		  (string_of_qualid (Global.qualid_of_global (ConstRef sp)));
+		warning_opaque (Global.string_of_global (ConstRef sp));
 		Global.set_opaque sp
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
@@ -1463,7 +1470,8 @@ let _ =
     (function
        | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING inf; VARG_QUALID pref] ->
            (fun () ->
-	      Metasyntax.add_infix (Extend.gram_assoc assoc) n inf pref)
+	      let ref = global dummy_loc pref in
+	      Metasyntax.add_infix (Extend.gram_assoc assoc) n inf ref)
        | _ -> bad_vernac_args "INFIX")
 
 let _ =
@@ -1471,7 +1479,8 @@ let _ =
     (function
        | [VARG_AST assoc; VARG_NUMBER n; VARG_STRING s; VARG_QUALID pref] ->
            (fun () ->
-              Metasyntax.add_distfix (Extend.gram_assoc assoc) n s pref)
+	      let ref = global dummy_loc pref in
+              Metasyntax.add_distfix (Extend.gram_assoc assoc) n s ref)
        | _ -> bad_vernac_args "DISTFIX")
 
 let _ =

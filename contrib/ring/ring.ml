@@ -31,7 +31,8 @@ let constant dir s =
   try 
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Ring: cannot find "^(string_of_qualid (make_qualid dir id)))
+    anomaly ("Ring: cannot find "^
+	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
 (* Ring_theory *)
 

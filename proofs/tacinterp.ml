@@ -185,7 +185,7 @@ let look_for_interp = Hashtbl.find interp_tab
 let glob_const_nvar loc env qid =
   try
     (* We first look for a variable of the current proof *)
-    match repr_qualid qid with
+    match Nametab.repr_qualid qid with
       | [],id ->
 	  (* lookup_value may raise Not_found *)
 	  (match Environ.lookup_named_value id env with
@@ -201,10 +201,10 @@ let glob_const_nvar loc env qid =
       | VarRef sp when
 	  Environ.evaluable_named_decl (Global.env ()) (basename sp) ->
 	  EvalVarRef (basename sp)
-      | _ -> error ((string_of_qualid qid) ^
+      | _ -> error ((Nametab.string_of_qualid qid) ^
 		    " does not denote an evaluable constant")
   with Not_found ->
-    Pretype_errors.error_global_not_found_loc loc qid
+    Nametab.error_global_not_found_loc loc qid
 
 let qid_interp = function
   | Node (loc, "QUALIDARG", p) -> interp_qualid p

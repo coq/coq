@@ -57,15 +57,6 @@ type dir_path = string list
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 
-(*s Qualified idents are names relative to the current visilibity of names *)
-type qualid
-
-val make_qualid : dir_path -> identifier -> qualid
-val repr_qualid : qualid -> dir_path * identifier
-
-val string_of_qualid : qualid -> string
-val pr_qualid : qualid -> std_ppcmds
-
 (*s Section paths are {\em absolute} names *)
 type section_path
 
@@ -80,9 +71,6 @@ val kind_of_path : section_path -> path_kind
 
 val sp_of_wd : string list -> section_path
 val wd_of_sp : section_path -> string list
-
-(* Turns an absolute name into a qualified name denoting the same name *)
-val qualid_of_sp : section_path -> qualid
 
 (* Parsing and printing of section path as ["coq_root.module.id"] *)
 val path_of_string : string -> section_path

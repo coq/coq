@@ -49,7 +49,10 @@ val import : compiled_env -> unit
 (*s Some functions of [Environ] instanciated on the global environment. *)
 
 val sp_of_global : global_reference -> section_path
-val qualid_of_global : global_reference -> qualid
+
+(*s This is for printing purpose *)
+val qualid_of_global : global_reference -> Nametab.qualid
+val string_of_global : global_reference -> string
 
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)

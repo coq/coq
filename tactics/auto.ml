@@ -267,7 +267,7 @@ let add_resolves env sigma clist dbnames =
 
 let global qid =
   try Nametab.locate qid
-  with Not_found -> Pretype_errors.error_global_not_found_loc dummy_loc qid
+  with Not_found -> Nametab.error_global_not_found_loc dummy_loc qid
 
 (* REM : in most cases hintname = id *)
 let make_unfold (hintname, ref) =
@@ -387,7 +387,7 @@ let _ =
 			     | _ -> bad_vernac_args "HintConstructors") l in
     	       fun () -> add_resolves env sigma lcons dbnames
 	     with Invalid_argument("mind_specif_of_mind") -> 
-	       error ((string_of_qualid qid) ^ " is not an inductive type")
+	       error ((Nametab.string_of_qualid qid) ^ " is not an inductive type")
 	   end 
        | _ -> bad_vernac_args "HintConstructors")
     
@@ -420,7 +420,7 @@ let _ =
 		      let c = Declare.constr_of_reference Evd.empty env ref in
 		      let hyps = Declare.implicit_section_args ref in
 		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
-		      let _,i = repr_qualid qid in
+		      let _,i = Nametab.repr_qualid qid in
 		      (i, applist (c,section_args))
 		  | _-> bad_vernac_args "HintsResolve") lh in
 	   let dbnames = if l = [] then ["core"] else 
@@ -437,7 +437,7 @@ let _ =
 	   let lhints = 
 	     List.map (function
 			 | VARG_QUALID qid ->
-			     let _,n = repr_qualid qid in
+			     let _,n = Nametab.repr_qualid qid in
 			     (n, global qid)
 		      	 | _ -> bad_vernac_args "HintsUnfold") lh in
 	   let dbnames = if l = [] then ["core"] else 
@@ -456,7 +456,7 @@ let _ =
 	     List.map
 	       (function
 		  | VARG_QUALID qid -> 
-		      let _,n = repr_qualid qid in
+		      let _,n = Nametab.repr_qualid qid in
 		      let ref = Nametab.locate qid in
 		      let env = Global.env () in
 		      let c = Declare.constr_of_reference Evd.empty env ref in
@@ -954,8 +954,8 @@ let cvt_autoArgs =
        | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "String expected" >])
 
 let interp_to_add gl = function
-  | (Qualid qid) ->
-      let _,id = repr_qualid qid in
+  | Qualid qid ->
+      let _,id = Nametab.repr_qualid qid in
       (next_ident_away id (pf_ids_of_hyps gl), 
        Declare.constr_of_reference Evd.empty (Global.env()) (global qid))
   | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "Qualid expected" >]

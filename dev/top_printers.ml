@@ -252,7 +252,7 @@ let print_pure_constr csr =
 
   in
      box_display csr; print_newline()
-
+(*
 let _ =
   Vernacentries.add "PrintConstr"
     (function
@@ -270,3 +270,4 @@ let _ =
               let (evmap,sign) = Command.get_current_context () in
   	      print_pure_constr (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintPureConstr")
+*)

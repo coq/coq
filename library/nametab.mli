@@ -3,18 +3,40 @@
 
 (*i*)
 open Util
+open Pp
 open Names
 open Term
 (*i*)
 
-(* This module contains the table for globalization, which associates global
-   names (section paths) to identifiers. *)
+(*s This module contains the table for globalization, which associates global
+   names (section paths) to qualified names. *)
 
+(*s A [qualid] is a partially qualified ident; it includes fully
+    qualified names (= absolute names) and all intermediate partial
+    qualifications of absolute names, including single identifiers *)
+type qualid
+
+val make_qualid : dir_path -> identifier -> qualid
+val repr_qualid : qualid -> dir_path * identifier
+
+val string_of_qualid : qualid -> string
+val pr_qualid : qualid -> std_ppcmds
+
+(* Turns an absolute name into a qualified name denoting the same name *)
+val qualid_of_sp : section_path -> qualid
+
+exception GlobalizationError of qualid
+
+(* Raises a globalization error *)
+val error_global_not_found_loc : loc -> qualid -> 'a
+
+(*s Names tables *)
 type cci_table = global_reference Idmap.t
 type obj_table = (section_path * Libobject.obj) Idmap.t
 type mod_table = (section_path * module_contents) Stringmap.t
 and module_contents = Closed of cci_table * obj_table * mod_table
 
+(*s Registers absolute paths *)
 val push : section_path -> global_reference -> unit
 val push_object : section_path -> Libobject.obj -> unit
 val push_module : section_path -> module_contents -> unit
@@ -24,6 +46,8 @@ val push_local_object : section_path -> Libobject.obj -> unit
 
 (* This should eventually disappear *)
 val sp_of_id : path_kind -> identifier -> global_reference
+
+(*s The following functions perform globalization of qualified names *)
 
 (* This returns the section path of a constant or fails with [Not_found] *)
 val constant_sp_of_id : identifier -> section_path

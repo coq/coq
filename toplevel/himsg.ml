@@ -279,11 +279,6 @@ let explain_var_not_found k ctx id =
      'sPC ; 'sTR "was not found"; 
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
-let explain_global_not_found k ctx q = 
-  [< 'sTR "The reference"; 'sPC; pr_qualid q;
-     'sPC ; 'sTR "was not found"; 
-     'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
-
 (* Pattern-matching errors *)
 let explain_bad_pattern k ctx cstr ty = 
   let pt = prterm_env ctx ty in
@@ -360,8 +355,6 @@ let explain_type_error k ctx = function
       explain_not_clean k ctx n c
   | VarNotFound id ->
       explain_var_not_found k ctx id
-  | QualidNotFound sp ->
-      explain_global_not_found k ctx sp
   | UnexpectedType (actual,expected) ->
       explain_unexpected_type k ctx actual expected
   | NotProduct c ->
@@ -506,3 +499,4 @@ let explain_inductive_error = function
   | NotAllowedCaseAnalysis (dep,k,i) -> error_not_allowed_case_analysis dep k i
   | BadInduction (dep,indid,kind) -> error_bad_induction dep indid kind
   | NotMutualInScheme -> error_not_mutual_in_scheme ()
+

@@ -15,6 +15,7 @@ open Libobject
 open Lib
 open Impargs
 open Indrec
+open Nametab
 
 type strength = 
   | NotDeclare

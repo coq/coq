@@ -300,13 +300,13 @@ let push_inductive_names ccitab sp mie =
 
 let cache_end_section (_,(sp,mc)) =
   Nametab.push_section sp mc;
-  Nametab.open_section_contents (qualid_of_sp sp)
+  Nametab.open_section_contents (Nametab.qualid_of_sp sp)
 
 let load_end_section (_,(sp,mc)) =
   Nametab.push_module sp mc
 
 let open_end_section (_,(sp,_)) =
-  Nametab.rec_open_module_contents (qualid_of_sp sp)
+  Nametab.rec_open_module_contents (Nametab.qualid_of_sp sp)
 
 let (in_end_section, out_end_section) =
   declare_object

@@ -254,16 +254,6 @@ let kind_of_string = function
   | "obj" -> OBJ
   | _ -> invalid_arg "kind_of_string"
 
-(*s Section paths *)
-
-type qualid = string list * identifier
-
-let make_qualid p s = (p,s)
-let repr_qualid q = q
-
-let string_of_qualid (l,s) = String.concat "." (l@[s])
-let pr_qualid (l,s) = prlist_with_sep (fun () -> pr_str ".") pr_str (l@[s])
-
 (*s Directory paths = section names paths *)
 type dir_path = string list
 
@@ -280,9 +270,6 @@ let repr_path { dirpath = pa; basename = id; kind = k} = (pa,id,k)
 let kind_of_path sp = sp.kind
 let basename sp = sp.basename
 let dirpath sp = sp.dirpath
-
-let qualid_of_sp sp =
-  make_qualid (dirpath sp) (string_of_id (basename sp))
 
 (* parsing and printing of section paths *)
 let string_of_dirpath sl = String.concat "." sl

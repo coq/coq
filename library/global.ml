@@ -57,7 +57,7 @@ let import cenv = global_env := import cenv !global_env
 
 (* Some instanciations of functions from [Environ]. *)
 
-let sp_of_global id = Environ.sp_of_global (env_of_safe_env !global_env) id
+let sp_of_global ref = Environ.sp_of_global (env_of_safe_env !global_env) ref
 
 (* To know how qualified a name should be to be understood in the current env*)
 
@@ -65,13 +65,15 @@ let qualid_of_global ref =
   let sp = sp_of_global ref in
   let id = basename sp in
   let rec find_visible dir qdir =
-    let qid = make_qualid qdir id in
+    let qid = Nametab.make_qualid qdir id in
     if (try Nametab.locate qid = ref with Not_found -> false) then qid
     else match dir with
-      | [] -> qualid_of_sp sp
+      | [] -> Nametab.qualid_of_sp sp
       | a::l -> find_visible l (a::qdir)
   in
   find_visible (List.rev (dirpath sp)) []
+
+let string_of_global ref = Nametab.string_of_qualid (qualid_of_global ref)
 
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)

@@ -8,6 +8,23 @@ open Libobject
 open Declarations
 open Term
 
+(*s qualified names *)
+type qualid = string list * identifier
+
+let make_qualid p id = (p,id)
+let repr_qualid q = q
+
+let string_of_qualid (l,id) = String.concat "." (l@[string_of_id id])
+let pr_qualid (l,id) =
+  prlist_with_sep (fun () -> pr_str ".") pr_str (l@[string_of_id id])
+
+let qualid_of_sp sp = make_qualid (dirpath sp) (basename sp)
+
+exception GlobalizationError of qualid
+
+let error_global_not_found_loc loc q =
+  Stdpp.raise_with_loc loc (GlobalizationError q)
+
 (*s Roots of the space of absolute names *)
 
 let roots = ref []

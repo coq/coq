@@ -13,9 +13,6 @@ let raise_pretype_error (loc,k,ctx,te) =
 let error_var_not_found_loc loc k s =
   raise_pretype_error (loc,k, Global.env() (*bidon*), VarNotFound s)
 
-let error_global_not_found_loc loc q =
-  raise_pretype_error (loc,CCI, Global.env() (*bidon*), QualidNotFound q)
-
 let error_cant_find_case_type_loc loc env expr =
   raise_pretype_error (loc, CCI, env, CantFindCaseType expr)
 

@@ -63,8 +63,6 @@ type type_error =
   | WrongNumargConstructor of constructor_path * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
-  (* Relocation error *)
-  | QualidNotFound of qualid
 
 exception TypeError of path_kind * env * type_error
 

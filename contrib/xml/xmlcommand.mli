@@ -21,7 +21,7 @@
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-val print : Names.qualid -> string option -> unit
+val print : Nametab.qualid -> string option -> unit
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
