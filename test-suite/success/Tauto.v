@@ -181,10 +181,10 @@ Save.
 
 (* A bug found by Freek Wiedijk <freek@cs.kun.nl> *)
 Lemma new_bug:
-Goal ((A<->B)->(B<->C)) ->
-     ((B<->C)->(C<->A)) ->
-     ((C<->A)->(A<->B)) ->
-     (A<->B).
+ ((A<->B)->(B<->C)) ->
+ ((B<->C)->(C<->A)) ->
+ ((C<->A)->(A<->B)) ->
+ (A<->B).
 Proof.
   Tauto.
 Save.
