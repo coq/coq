@@ -29,6 +29,8 @@ and library_entry = section_path * node
 
 and library_segment = library_entry list
 
+(* The function [module_sp] returns the [dir_path] of the current module *)
+val module_sp : unit -> dir_path
 
 (*s Adding operations (which calls the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)

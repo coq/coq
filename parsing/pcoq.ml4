@@ -13,7 +13,7 @@ open Util
 open Ast
 open Genarg
 open Tacexpr
-open Vernacexpr
+(*open Vernacexpr*)
 
 (* The lexer of Coq *)
 
@@ -75,6 +75,7 @@ type typed_entry = entry_type Gramobj.entry
 
 module type Gramtypes =
 sig
+  open Decl_kinds
   val inAstListType : Coqast.t list G.Entry.e -> typed_entry
   val inTacticAtomAstType : raw_atomic_tactic_expr G.Entry.e -> typed_entry
   val inThmTokenAstType : theorem_kind G.Entry.e -> typed_entry
@@ -108,7 +109,7 @@ type ext_kind =
   | ByGrammar of
       typed_entry * Gramext.position option *
       (string option * Gramext.g_assoc option *
-       (Gramext.g_symbol list * Gramext.g_action) list) list
+       (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []
@@ -117,6 +118,7 @@ let camlp4_state = ref []
    extensions. *)
 module Gram =
   struct
+    type te = Token.t
     type parsable = G.parsable
     let parsable = G.parsable
     let tokens = G.tokens

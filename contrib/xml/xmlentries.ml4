@@ -85,6 +85,7 @@ VERNAC COMMAND EXTEND Xml
 
 | [ "Show" "XML" filename(fn) "Proof" ] -> [ Xmlcommand.show fn ]
 
+(*
 | [ "Print" "XML" "All" ] -> [ Xmlcommand.printAll () ]
 
 | [ "Print" "XML" "Module" diskname(dn) qualid(id) ] ->
@@ -92,6 +93,7 @@ VERNAC COMMAND EXTEND Xml
 
 | [ "Print" "XML" "Section" diskname(dn) ident(id) ] ->
     [ Xmlcommand.printSection id dn ]
+*)
 END
 (*
 vinterp_add "Print"

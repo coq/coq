@@ -34,6 +34,7 @@ open Nametab
 open Typeops
 open Indtypes
 open Vernacexpr
+open Decl_kinds
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
@@ -82,35 +83,34 @@ let red_constant_entry ce = function
       { ce with const_entry_body = 
 	  reduction_of_redexp red (Global.env()) Evd.empty body }
 
-let declare_global_definition ident ce n local =
-  let sp = declare_constant ident (ConstantEntry ce,n) in
-  if local then
+let declare_global_definition ident ce local =
+  let sp = declare_constant ident (ConstantEntry ce,IsDefinition) in
+  if local = Local then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
   if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef sp
 
-let declare_definition ident (local,n) bl red_option c typopt = 
+let declare_definition ident local bl red_option c typopt =
   let ce = constant_entry_of_com (bl,c,typopt,false) in
   if bl<>[] && red_option <> None then 
     error "Evaluation under a local context not supported";
   let ce' = red_constant_entry ce red_option in
-  match n with
-    | NeverDischarge -> declare_global_definition ident ce' n local
-    | DischargeAt (disch_sp,_) ->
-        if Lib.is_section_p disch_sp then begin
-	  let c = SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type) in
-          let _ = declare_variable ident (Lib.cwd(), c, n) in
-	  if_verbose message ((string_of_id ident) ^ " is defined");
+  match local with
+    | Global ->
+        declare_global_definition ident ce' Global
+    | Local ->
+        if Lib.is_section_p (Lib.cwd ()) then begin
+          let c =
+            SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
+          let _ = declare_variable ident (Lib.cwd(), c, IsDefinition) in
+          if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
-                      str" is not visible from current goals");
-	  VarRef ident
+            str" is not visible from current goals");
+          VarRef ident
         end
-	else
-	  declare_global_definition ident ce' n true
-    | NotDeclare ->
-      anomalylabstrm "Command.definition_body_red"
-        (str "Strength NotDeclare not for Definition, only for Let")
+        else
+          declare_global_definition ident ce' Local
 
 let syntax_definition ident c =
   let c = interp_rawconstr Evd.empty (Global.env()) c in 
@@ -122,32 +122,32 @@ let syntax_definition ident c =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_assumption ident n c =
+let declare_assumption ident (local,kind) c =
   let c = interp_type Evd.empty (Global.env()) c in
-  match n with
-    | NeverDischarge ->
-	let r = declare_constant ident (ParameterEntry c, NeverDischarge) in
-	assumption_message ident;
-	ConstRef r
-    | DischargeAt (disch_sp,_) ->
-        if Lib.is_section_p disch_sp then begin
-          let r = declare_variable ident (Lib.cwd(),SectionLocalAssum c,n) in
-	  assumption_message ident;
+  match local with
+    | Global ->
+        let r = declare_constant ident (ParameterEntry c, IsAssumption kind) in
+        assumption_message ident;
+        ConstRef r
+    | Local ->
+        if Lib.is_section_p (Lib.cwd ()) then begin
+          let r = 
+            declare_variable ident
+              (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
+          assumption_message ident;
           if is_verbose () & Pfedit.refining () then 
             msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
-                      str" is not visible from current goals");
-	  VarRef ident
+            str" is not visible from current goals");
+          VarRef ident
         end
-	else
-	  let r = declare_constant ident (ParameterEntry c, NeverDischarge) in
-	  assumption_message ident;
-	  if_verbose
-	    msg_warning (pr_id ident ++ str" is declared as a parameter" ++
-               str" because it is at a global level");
-	  ConstRef r
-    | NotDeclare ->
-      anomalylabstrm "Command.hypothesis_def_var"
-        (str "Strength NotDeclare not for Variable, only for Let")
+        else
+          let r =
+            declare_constant ident (ParameterEntry c, IsAssumption kind) in
+          assumption_message ident;
+          if_verbose
+            msg_warning (pr_id ident ++ str" is declared as a parameter" ++
+            str" because it is at a global level");
+          ConstRef r
 
 (* 3| Mutual Inductive definitions *)
 
@@ -268,8 +268,7 @@ let build_mutual lind finite =
   let _ = declare_mutual_with_eliminations mie in
   List.iter
     (fun id -> 
-      Class.try_add_new_coercion
-        (locate (make_short_qualid id)) NeverDischarge) coes
+      Class.try_add_new_coercion (locate (make_short_qualid id)) Global) coes
 
 (* try to find non recursive definitions *)
 
@@ -321,7 +320,7 @@ let build_recursive lnameargsardef =
            let raw_arity = mkProdCit lparams arityc in
            let arity = interp_type sigma env0 raw_arity in
            let _ = declare_variable recname
-	     (Lib.cwd(),SectionLocalAssum arity, NeverDischarge) in
+	     (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
            (Environ.push_named (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
@@ -339,7 +338,6 @@ let build_recursive lnameargsardef =
   States.unfreeze fs;
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec env0 lrecnames recdef arityl (Array.to_list nv) in
-  let n = NeverDischarge in 
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
   let rec declare i fi =
@@ -351,7 +349,7 @@ let build_recursive lnameargsardef =
 		  recvec));
         const_entry_type = None;
         const_entry_opaque = false } in
-    let sp = declare_constant fi (ConstantEntry ce, n) in
+    let sp = declare_constant fi (ConstantEntry ce, IsDefinition) in
     (ConstRef sp)
   in 
   (* declare the recursive definitions *)
@@ -365,7 +363,7 @@ let build_recursive lnameargsardef =
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = Some t;
                     const_entry_opaque = false } in
-	 let _ = declare_constant f (ConstantEntry ce,n) in
+	 let _ = declare_constant f (ConstantEntry ce, IsDefinition) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -385,7 +383,7 @@ let build_corecursive lnameardef =
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
            let _ = declare_variable recname
-	     (Lib.cwd(),SectionLocalAssum arj.utj_val,NeverDischarge) in
+	     (Lib.cwd(),SectionLocalAssum arj.utj_val,IsAssumption Definitional) in
            (Environ.push_named (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
@@ -403,7 +401,6 @@ let build_corecursive lnameardef =
   States.unfreeze fs;
   let (lnonrec,(namerec,defrec,arrec,_)) = 
     collect_non_rec env0 lrecnames recdef arityl [] in
-  let n = NeverDischarge in 
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
   let rec declare i fi =
@@ -415,7 +412,7 @@ let build_corecursive lnameardef =
         const_entry_type = None;
         const_entry_opaque = false } 
     in
-    let sp = declare_constant fi (ConstantEntry ce,n) in
+    let sp = declare_constant fi (ConstantEntry ce, IsDefinition) in
     (ConstRef sp)
   in 
   let lrefrec = Array.mapi declare namerec in
@@ -427,7 +424,7 @@ let build_corecursive lnameardef =
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = Some t;
                     const_entry_opaque = false } in
-	 let _ = declare_constant f (ConstantEntry ce,n) in
+	 let _ = declare_constant f (ConstantEntry ce, IsDefinition) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -447,19 +444,18 @@ let build_scheme lnamedepindsort =
          (ind,mib,mip,dep,interp_elimination_sort sort)) 
       lnamedepindsort
   in
-  let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi lrecref =
     let ce = { const_entry_body = decl;
                const_entry_type = None;
                const_entry_opaque = false } in
-    let sp = declare_constant fi (ConstantEntry ce,n) in
+    let sp = declare_constant fi (ConstantEntry ce, IsDefinition) in
     ConstRef sp :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
 
-let start_proof_com sopt (local,stre) com hook =
+let start_proof_com sopt kind com hook =
   let env = Global.env () in
   let sign = Global.named_context () in
   let id = match sopt with
@@ -474,7 +470,7 @@ let start_proof_com sopt (local,stre) com hook =
   in
   let c = interp_type Evd.empty env com in
   let _ = Typeops.infer_type env c in
-  Pfedit.start_proof id (local,stre) sign c hook
+  Pfedit.start_proof id kind sign c hook
 
 let apply_tac_not_declare id pft = function
   | None -> error "Type of Let missing"
@@ -484,30 +480,27 @@ let apply_tac_not_declare id pft = function
     Pfedit.delete_current_proof ();
     Pfedit.by (Refiner.tclTHENSV cutt [|introduction id;exat|])
 
-let save id const strength hook =
+let save id const kind hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
-  begin match strength with
-    | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
-	let c = SectionLocalDef (pft, tpo) in
-	let _ = declare_variable id (Lib.cwd(), c, strength) in
-	hook strength (VarRef id)
-    | NeverDischarge | DischargeAt _ ->
-        let ref = ConstRef (declare_constant id (ConstantEntry const,strength)) in
-	hook strength ref
-    | NotDeclare -> apply_tac_not_declare id pft tpo
+  begin match kind with
+    | IsLocal ->
+	let c = SectionLocalDef (pft, tpo, opacity) in
+	let _ = declare_variable id (Lib.cwd(), c, IsDefinition) in
+	hook Local (VarRef id)
+    | IsGlobal k ->
+        let k = theorem_kind_of_goal_kind k in
+        let sp = declare_constant id (ConstantEntry const, k) in
+	hook Global (ConstRef sp)
   end;
-  if not (strength = NotDeclare) then
-  begin
-    Pfedit.delete_current_proof ();
-    if_verbose message ((string_of_id id) ^ " is defined")
-  end
+  Pfedit.delete_current_proof ();
+  if_verbose message ((string_of_id id) ^ " is defined")
 
 let save_named opacity =
-  let id,(const,(local,strength),hook) = Pfedit.cook_proof () in
+  let id,(const,persistence,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
-  save id const strength hook
+  save id const persistence hook
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
@@ -517,16 +510,17 @@ let check_anonymity id save_ident =
 *)
 
 let save_anonymous opacity save_ident =
-  let id,(const,(local,strength),hook) = Pfedit.cook_proof () in
+  let id,(const,persistence,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const strength hook
+  save save_ident const persistence hook
 
-let save_anonymous_with_strength strength opacity save_ident =
+let save_anonymous_with_strength kind opacity save_ident =
   let id,(const,_,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const strength hook
+  (* we consider that non opaque behaves as local for discharge *)
+  save save_ident const (IsGlobal (Proof kind)) hook
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

@@ -20,7 +20,7 @@ open Declare
 open Term
 open Termops
 open Rawterm
-open Nametab
+open Decl_kinds
 
 (* usage qque peu general: utilise aussi dans record *)
 
@@ -99,8 +99,8 @@ let add_new_path x =
 
 let init () =
   class_tab:= []; 
-  add_new_class (CL_FUN,  { cl_param = 0; cl_strength = NeverDischarge });
-  add_new_class (CL_SORT, { cl_param = 0; cl_strength = NeverDischarge });
+  add_new_class (CL_FUN,  { cl_param = 0; cl_strength = Global });
+  add_new_class (CL_SORT, { cl_param = 0; cl_strength = Global });
   coercion_tab:= [];
   inheritance_graph:= []
 
@@ -227,7 +227,7 @@ let class_args_of c = snd (decompose_app c)
 let strength_of_cl = function 
   | CL_CONST sp -> constant_strength sp
   | CL_SECVAR sp -> variable_strength sp
-  | _ -> NeverDischarge
+  | _ -> Global
 
 let string_of_class = function
   | CL_FUN -> "FUNCLASS"

@@ -14,6 +14,7 @@ open Coqast
 open Tacexpr
 open Extend
 open Genarg
+open Decl_kinds
 
 (* Toplevel control exceptions *)
 exception ProtectedLoop
@@ -80,27 +81,6 @@ type showable =
   | ShowIntros of bool
   | ExplainProof of int list
   | ExplainTree of int list
-
-type theorem_kind =
-  | Theorem
-  | Lemma
-  | Decl
-  | Fact
-  | Remark
-
-type definition_kind =
-  | Definition
-  | LocalDefinition
-
-type goal_kind =
-  | StartTheoremProof of theorem_kind
-  | StartDefinitionBody of definition_kind
-
-type assumption_kind =
-  | AssumptionHypothesis
-  | AssumptionVariable
-  | AssumptionAxiom
-  | AssumptionParameter
 
 type comment =
   | CommentConstr of constr_ast

@@ -34,7 +34,7 @@ open Safe_typing
 type proof_topstate = {
   top_hyps : named_context * named_context;
   top_goal : goal;
-  top_strength : bool * Nametab.strength;
+  top_strength : Decl_kinds.goal_kind;
   top_hook : declaration_hook }
 
 let proof_edits =
@@ -175,12 +175,16 @@ let undo n =
 (*                  Proof cooking                                    *)
 (*********************************************************************)
 
+let xml_cook_proof = ref (fun _ -> ())
+let set_xml_cook_proof f = xml_cook_proof := f
+
 let cook_proof () =
   let (pfs,ts) = get_state() 
   and ident = get_current_proof_name () in
   let {evar_concl=concl} = ts.top_goal 
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in
+  !xml_cook_proof pfs;
   (ident,
    ({ const_entry_body = pfterm;
       const_entry_type = Some concl;

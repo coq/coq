@@ -175,7 +175,7 @@ let prgl gl =
   (str"["  ++ pgl  ++ str"]"  ++ spc ())
 
 let pr_evgl gl =
-  let phyps = pr_idl (ids_of_named_context gl.evar_hyps) in
+  let phyps = pr_idl (List.rev (ids_of_named_context gl.evar_hyps)) in
   let pc = prterm gl.evar_concl in
   hov 0 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pc ++ str"]")
 

@@ -420,10 +420,15 @@ chmod a-w $COQTOP/config/Makefile
 
 if test "$coq_debug_flag" = "-g" ; then
   rm -f $COQTOP/dev/ocamldebug-v7
+  if [ "$CAMLP4LIB" = "+camlp4" ] ; then
+    CAMLP4LIBFORCAMLDEBUG=$CAMLLIB/camlp4
+  else
+    CAMLP4LIBFORCAMLDEBUG=$CAMLP4LIB
+  fi
   sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
       -e "s|COQLIBDIRECTORY|$LIBDIR|" \
       -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
-      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIBFORCAMLDEBUG|" \
       $COQTOP/dev/ocamldebug-v7.template > $COQTOP/dev/ocamldebug-v7
   chmod a-w,a+x $COQTOP/dev/ocamldebug-v7
 fi
@@ -457,7 +462,7 @@ PRINTF=`which printf`
 
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find . -type d ! -name CVS ! -regex ".*extraction/test.*" ! -name .  -exec $PRINTF "\"%s\";\n" {} \; >> $mlconfig_file)
+    (cd $1; find * -type d ! -name CVS ! -regex ".*extraction/test.*" -exec $PRINTF "\"%s\";\n" {} \; >> $mlconfig_file)
 }
 
 echo "let theories_dirs = [" >> $mlconfig_file

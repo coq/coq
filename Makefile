@@ -60,7 +60,7 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=   # is "-dump-glob file" when making the doc
 
-BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB)
+BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB) $(COQ_XML)
 
 ###########################################################################
 # Objects files 
@@ -88,7 +88,8 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
 LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
         library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/goptions.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/declare.cmo 
+	library/impargs.cmo library/dischargedhypsmap.cmo \
+	library/decl_kinds.cmo library/declare.cmo 
 
 PRETYPING=pretyping/termops.cmo \
           pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -126,15 +127,24 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/hiddentac.cmo tactics/elim.cmo \
 	tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
-	 toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
-         toplevel/discharge.cmo toplevel/vernacexpr.cmo \
-         toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-         parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
-         toplevel/vernacentries.cmo toplevel/vernac.cmo \
-	 toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-         toplevel/toplevel.cmo toplevel/usage.cmo \
-	 toplevel/coqinit.cmo toplevel/coqtop.cmo
+TOPLEVEL1=toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
+	  toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
+          toplevel/discharge.cmo toplevel/vernacexpr.cmo \
+          toplevel/vernacinterp.cmo toplevel/mltop.cmo \
+          parsing/pcoq.cmo parsing/egrammar.cmo
+
+# XMLCMO depends on TOPLEVEL1; TOPLEVEL2 depends on XMLCMO
+XMLCMO=contrib/xml/xml.cmo contrib/xml/acic.cmo \
+       contrib/xml/doubleTypeInference.cmo \
+       contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
+       contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
+       contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
+
+TOPLEVEL2=toplevel/metasyntax.cmo \
+          toplevel/vernacentries.cmo toplevel/vernac.cmo \
+	  toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
+          toplevel/toplevel.cmo toplevel/usage.cmo \
+	  toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/setoid_replace.cmo tactics/equality.cmo \
             tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
@@ -186,15 +196,15 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	library/nameops.cmo library/libobject.cmo library/summary.cmo \
 	library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
-        library/goptions.cmo \
+	library/dischargedhypsmap.cmo library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
-        pretyping/termops.cmo \
-        pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
+        pretyping/termops.cmo pretyping/reductionops.cmo \
+        pretyping/inductiveops.cmo pretyping/retyping.cmo library/declare.cmo \
         pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
         pretyping/rawterm.cmo \
         pretyping/pattern.cmo pretyping/pretype_errors.cmo \
 	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-	pretyping/coercion.cmo pretyping/inductiveops.cmo pretyping/cases.cmo \
+	pretyping/coercion.cmo pretyping/cases.cmo \
         pretyping/indrec.cmo \
 	pretyping/pretyping.cmo pretyping/syntax_def.cmo \
 	parsing/lexer.cmo parsing/coqast.cmo parsing/genarg.cmo \
@@ -239,9 +249,6 @@ RINGCMO=contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
 
 FIELDCMO=contrib/field/field.cmo 
 
-XMLCMO=contrib/xml/xml.cmo \
-       contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
-
 FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
         contrib/fourier/g_fourier.cmo
 
@@ -272,7 +279,7 @@ JPROVERCMO=contrib/jprover/opname.cmo \
 
 ML4FILES += contrib/jprover/jprover.ml4
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) \
 	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
 
@@ -280,7 +287,8 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING)  \
-    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL) $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
+    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL1) $(XMLCMO) $(TOPLEVEL2) \
+    $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
@@ -328,7 +336,9 @@ scripts/tolink.ml: Makefile
 	echo "let parsing = \""$(PARSING)"\"" >> $@
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
-	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
+	echo "let toplevel1 = \""$(TOPLEVEL1)"\"" >> $@
+	echo "let xml = \""$(XMLCMO)"\"" >> $@
+	echo "let toplevel2 = \""$(TOPLEVEL2)"\"" >> $@
 	echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
@@ -804,7 +814,8 @@ GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo $(KERNEL) \
 	   library/summary.cmo library/nameops.cmo library/nametab.cmo \
 	   library/libobject.cmo library/lib.cmo library/global.cmo \
-	   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
+	   library/goptions.cmo library/decl_kinds.cmo \
+           pretyping/rawterm.cmo pretyping/evd.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
            parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
@@ -866,7 +877,8 @@ library/nametab.cmx: library/nametab.ml
 
 ML4FILES += lib/pp.ml4 			\
 	 contrib/xml/xml.ml4		\
-	 contrib/xml/xmlcommand.ml4	\
+	 contrib/xml/acic2Xml.ml4	\
+	 contrib/xml/proofTree2Xml.ml4	\
 	 contrib/interface/line_parser.ml4	\
 	 tools/coq_makefile.ml4		\
 	 tools/coq-tex.ml4

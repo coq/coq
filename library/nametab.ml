@@ -349,8 +349,3 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
       Summary.survive_section = false }
-
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge

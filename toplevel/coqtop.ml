@@ -194,6 +194,8 @@ let parse_args () =
 
     | ("-m" | "--memory") :: rem -> memory_stat := true; parse rem
 
+    | "-xml" :: rem -> Xmlcommand.activate_xml_exportation () ; parse rem
+
     | s :: _ -> prerr_endline ("Don't know what to do with " ^ s); usage ()
 
   in

@@ -28,6 +28,7 @@ open Tacticals
 open Vernacexpr
 open Safe_typing
 open Nametab
+open Decl_kinds
 
 type setoid =
     { set_a : constr;
@@ -241,12 +242,12 @@ let add_setoid a aeq th =
 		      ((ConstantEntry {const_entry_body = eq_morph; 
 		                       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Nametab.NeverDischarge) in
+		       IsProof Lemma) in
 	    let _ = Declare.declare_constant eq_ext_name2
 		      ((ConstantEntry {const_entry_body = eq_morph2; 
 				       const_entry_type = None;
                                        const_entry_opaque = true}),
-		       Nametab.NeverDischarge) in
+		       IsProof Lemma) in
 	    let eqmorph = (current_constant eq_ext_name) in
 	    let eqmorph2 = (current_constant eq_ext_name2) in
 	      (Lib.add_anonymous_leaf
@@ -359,7 +360,7 @@ let new_morphism m id hook =
 	let lem = (gen_compat_lemma env m body args_t poss) in
 	let lemast = (ast_of_constr true env lem) in
 	new_edited id m poss;
-	start_proof_com (Some id) (false,Nametab.NeverDischarge) lemast hook;
+	start_proof_com (Some id) (IsGlobal DefinitionBody) lemast hook;
 	(Options.if_verbose Vernacentries.show_open_subgoals ()))
 
 let rec sub_bool l1 n = function
@@ -454,7 +455,7 @@ let add_morphism lem_name (m,profil) =
 		    ((ConstantEntry {const_entry_body = lem_2; 
 				     const_entry_type = None;
                                      const_entry_opaque = true}),
-		     Nametab.NeverDischarge) in
+		     IsProof Lemma) in
 	  let lem2 = (current_constant lem2_name) in
 	    (Lib.add_anonymous_leaf
 	       (morphism_to_obj (m, 
