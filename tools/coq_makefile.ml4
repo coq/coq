@@ -169,7 +169,13 @@ let variables l =
   print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing -I $(COQTOP)/pretyping \\
   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
-  -I $(COQTOP)/toplevel -I $(CAMLP4LIB)\n";
+  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/correctness \\
+  -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
+  -I $(COQTOP)/contrib/fourier -I $(COQTOP)/contrib/graphs \\
+  -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \\
+  -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
+  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
+  -I $(CAMLP4LIB)\n";
   print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
   print "OPT="; if !opt = "-byte" then print "-byte"; print "\n";
   print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
