@@ -344,7 +344,7 @@ module Constr =
 
     (* Entries that can be refered via the string -> Gram.Entry.e table *)
     let constr = gec_constr "constr"
-    let constr9 = gec_constr "constr9"
+    let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
     let ident = make_gen_entry uconstr rawwit_ident "ident"
@@ -398,12 +398,34 @@ module Vernac_ =
     let syntax = gec_vernac "syntax_command"
     let vernac = gec_vernac "Vernac_.vernac"
 
-    (* Various vernacular entries needed to be exported *)
-    let thm_token = Gram.Entry.create "vernac:thm_token"
-    let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
-
     let vernac_eoi = eoi_entry vernac
   end
+
+
+(* Prim is not re-initialized *)
+let reset_all_grammars () =
+  let f = Gram.Unsafe.clear_entry in
+  List.iter f
+    [Constr.constr;Constr.operconstr;Constr.lconstr;Constr.annot;
+     Constr.constr_pattern];
+  f Constr.ident; f Constr.global; f Constr.sort; f Constr.pattern;
+  f Module.module_expr; f Module.module_type;
+  f Tactic.simple_tactic;
+  f Tactic.castedopenconstr;
+  f Tactic.constr_with_bindings;
+  f Tactic.constrarg;
+  f Tactic.quantified_hypothesis;
+  f Tactic.int_or_var;
+  f Tactic.red_expr;
+  f Tactic.tactic_arg;
+  f Tactic.tactic;
+  f Vernac_.gallina;
+  f Vernac_.gallina_ext;
+  f Vernac_.command;
+  f Vernac_.syntax;
+  f Vernac_.vernac;
+  Lexer.init()
+
 
 
 let main_entry = Gram.Entry.create "vernac"
@@ -424,8 +446,6 @@ open Vernac_
 (* current file and toplevel/vernac.ml *)
 let globalizer = ref (fun x -> failwith "No globalizer")
 let set_globalizer f = globalizer := f
-
-let f = (ast : Coqast.t G.Entry.e)
 
 let define_ast_quotation default s (e:Coqast.t G.Entry.e) =
   (if default then
@@ -462,7 +482,7 @@ GEXTEND Gram
   dynconstr:
   [ [ a = Constr.constr -> ConstrNode a 
     (* For compatibility *)
-    | "<<"; a = Constr.constr; ">>" -> ConstrNode a ] ]
+    | "<<"; a = Constr.lconstr; ">>" -> ConstrNode a ] ]
   ;
   dyncasespattern: [ [ a = Constr.pattern -> CasesPatternNode a ] ];
 END
@@ -527,9 +547,7 @@ let adjust_level assoc from = function
 	| _ -> Some (Some n)
 
 let compute_entry allow_create adjust = function
-  | ETConstr (10,_) -> weaken_entry Constr.lconstr, None, true
-  | ETConstr (9,_) -> weaken_entry Constr.constr9, None, true
-  | ETConstr (n,q) -> weaken_entry Constr.constr, adjust (n,q), false
+  | ETConstr (n,q) -> weaken_entry Constr.operconstr, adjust (n,q), false
   | ETIdent -> weaken_entry Constr.ident, None, false
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
@@ -543,19 +561,50 @@ let compute_entry allow_create adjust = function
         with e when allow_create -> create_entry u n ConstrArgType in
       object_of_typed_entry e, None, true
 
-let get_constr_entry = compute_entry true (fun (n,()) -> Some n)
+let get_constr_entry en =
+  match en with
+      ETConstr(200,_) when not !Options.v7 ->
+        snd (get_entry (get_univ "constr") "binder_constr"),
+        None,
+        false
+    | _ -> compute_entry true (fun (n,()) -> Some n) en
 
-let get_constr_production_entry ass from =
-  compute_entry false (adjust_level ass from)
+let get_constr_production_entry ass from en =
+  (* first 2 cases to help factorisation *)
+  match en with
+    | ETConstr (10,q) when !Options.v7 ->
+        weaken_entry Constr.lconstr, None, false
+    | ETConstr (8,q) when !Options.v7 ->
+        weaken_entry Constr.constr, None, false
+    | _ -> compute_entry false (adjust_level ass from) en
 
 let constr_prod_level = function
-  | 8 -> "top"
-  | 4 -> "4L"
+  | 4 when !Options.v7 -> "4L"
   | n -> string_of_int n
 
+let is_self from e =
+  match from, e with
+      ETConstr(n,_), ETConstr(n',
+        BorderProd(false,Some(Gramext.NonA|Gramext.LeftA))) -> false
+    | ETConstr(n,_), ETConstr(n',_) -> n=n'
+    | (ETIdent,ETIdent | ETReference, ETReference | ETBigint,ETBigint
+      | ETPattern, ETPattern) -> true
+    | ETOther(s1,s2), ETOther(s1',s2') -> s1=s1' & s2=s2'
+    | _ -> false
+
+let is_binder_level from e =
+  match from, e with
+      ETConstr(200,_), ETConstr(200,_) -> not !Options.v7
+    | _ -> false
+
 let symbol_of_production assoc from typ =
-  match get_constr_production_entry assoc from typ with
-    | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
-    | (eobj,Some None,_) -> Gramext.Snext
-    | (eobj,Some (Some lev),_) -> 
-        Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level lev)
+  if is_binder_level from typ then
+    let eobj = snd (get_entry (get_univ "constr") "operconstr") in
+    Gramext.Snterml (Gram.Entry.obj eobj,"200")
+  else if is_self from typ then Gramext.Sself
+  else
+    match get_constr_production_entry assoc from typ with
+      | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
+      | (eobj,Some None,_) -> Gramext.Snext
+      | (eobj,Some (Some lev),_) -> 
+          Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level lev)

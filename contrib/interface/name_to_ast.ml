@@ -114,7 +114,7 @@ let convert_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
   let envpar = push_rel_context params env in
-  let sp = sp_of_global None (IndRef (sp, tyi)) in
+  let sp = sp_of_global (IndRef (sp, tyi)) in
   (basename sp,
    convert_env(List.rev params),
    (extern_constr true envpar arity),

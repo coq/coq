@@ -22,7 +22,7 @@ let dflt_gp = {
   margin     = 72;
   max_indent = 62;
   max_depth  = 50;
-  ellipsis   = "." }
+  ellipsis   = ".." }
 
 (* A deeper pretty-printer to print proof scripts *)
 
@@ -30,7 +30,7 @@ let deep_gp = {
   margin     = 72;
   max_indent = 62;
   max_depth  = 10000;
-  ellipsis   = "." }
+  ellipsis   = "..." }
 
 (* set_gp : Format.formatter -> pp_global_params -> unit
  * set the parameters of a formatter *)

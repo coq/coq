@@ -9,6 +9,8 @@
 (*i $Id$ i*)
 
 (** Order on natural numbers *)
+Import nat_scope.
+Open Scope nat_scope.
 
 Theorem le_n_S : (n,m:nat)(le n m)->(le (S n) (S m)).
 Proof.

@@ -42,11 +42,26 @@ let assoc_level = function
   | _ -> ""
 
 let constr_level = function
-  | 8,assoc -> assert (assoc <> Gramext.LeftA); "top"
   | n,assoc -> (string_of_int n)^(assoc_level assoc)
 
-let default_levels = [8,Gramext.RightA; 1,Gramext.RightA; 0,Gramext.RightA]
-let level_stack = ref [default_levels]
+let default_levels_v7 =
+  [10,Gramext.RightA;
+   9,Gramext.RightA;
+   8,Gramext.RightA;
+   1,Gramext.RightA;
+   0,Gramext.RightA]
+
+let default_levels_v8 =
+  [200,Gramext.RightA;
+   100,Gramext.RightA;
+   80,Gramext.RightA;
+   40,Gramext.LeftA;
+   10,Gramext.LeftA;
+   9,Gramext.RightA;
+   1,Gramext.LeftA;
+   0,Gramext.RightA]
+
+let level_stack = ref [default_levels_v7]
 
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
@@ -65,15 +80,17 @@ let create_assoc = function
   | Some a -> a
 
 let find_position other assoc lev =
+  let default =
+    if !Options.v7 then (10,Gramext.RightA) else (200,Gramext.RightA) in
   let current = List.hd !level_stack in 
   match lev with
   | None ->
       level_stack := current :: !level_stack;
       None, (if other then assoc else None), None
   | Some n ->
-      if n = 8 & assoc = Some Gramext.LeftA then 
+      if !Options.v7 & n = 8 & assoc = Some Gramext.LeftA then 
 	error "Left associativity not allowed at level 8";
-      let after = ref (8,Gramext.RightA) in
+      let after = ref default in
       let rec add_level q = function
         | (p,_ as pa)::l when p > n -> pa :: add_level pa l
         | (p,a as pa)::l as l' when p = n ->
@@ -92,7 +109,7 @@ let find_position other assoc lev =
       try
 	(* Create the entry *)
         let current = List.hd !level_stack in
-        level_stack := add_level (8,Gramext.RightA) current :: !level_stack;
+        level_stack := add_level default current :: !level_stack;
 	let assoc = create_assoc assoc in
         Some (Gramext.After (constr_level !after)),
 	Some assoc, Some (constr_level (n,assoc))
@@ -347,7 +364,7 @@ let extend_constr_notation (n,assoc,ntn,rule) =
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
   let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.constr (ETConstr(0,()),Some 0,Some Gramext.NonA,false)
+  extend_constr Constr.operconstr (ETConstr(0,()),Some 0,Some Gramext.NonA,false)
     (make_act mkact) rule;
   let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in
   extend_constr Constr.pattern (ETPattern,None,None,false)
@@ -361,13 +378,21 @@ let make_rule univ f g (s,pt) =
   let act = make_gen_act f ntl in
   (symbs, act)
 
+let tac_exts = ref []
+let get_extend_tactic_grammars () = !tac_exts
+
 let extend_tactic_grammar s gl =
+  tac_exts := (s,gl) :: !tac_exts;
   let univ = get_univ "tactic" in
   let make_act loc l = Tacexpr.TacExtend (loc,s,List.map snd l) in
   let rules = List.map (make_rule univ make_act make_prod_item) gl in
   Gram.extend Tactic.simple_tactic None [(None, None, List.rev rules)]
 
+let vernac_exts = ref []
+let get_extend_vernac_grammars () = !vernac_exts
+
 let extend_vernac_command_grammar s gl =
+  vernac_exts := (s,gl) :: !vernac_exts;
   let univ = get_univ "vernac" in
   let make_act loc l = Vernacexpr.VernacExtend (s,List.map snd l) in
   let rules = List.map (make_rule univ make_act make_prod_item) gl in
@@ -418,6 +443,15 @@ let extend_grammar gram =
   | TacticGrammar l -> add_tactic_entries l);
   grammar_state := gram :: !grammar_state
 
+let reset_extend_grammars_v8 () =
+  let te = List.rev !tac_exts in
+  let tv = List.rev !vernac_exts in
+  tac_exts := [];
+  vernac_exts := [];
+  List.iter (fun (s,gl) -> extend_tactic_grammar s gl) te;
+  List.iter (fun (s,gl) -> extend_vernac_command_grammar s gl) tv;
+  level_stack := [default_levels_v8]
+
 
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
@@ -448,12 +482,10 @@ let unfreeze (grams, lex) =
   grammar_state := common;
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev redo)
-    
+ 
 let init_grammar () =
   remove_grammars (number_of_entries !grammar_state);
   grammar_state := []
-
-let _ = Lexer.init ()
 
 let init () =
   init_grammar ()

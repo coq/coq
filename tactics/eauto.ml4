@@ -47,22 +47,28 @@ let e_resolve_with_bindings_tac  (c,lbind) gl =
 
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls
 			     
-TACTIC EXTEND EExact
+(* V8 TACTIC EXTEND eexact
+| [ "eexact" constr(c) ] -> [ e_give_exact c ]
+END*)
+TACTIC EXTEND Eexact
 | [ "EExact" constr(c) ] -> [ e_give_exact c ]
 END
 
-let e_give_exact_constr = h_eExact
+let e_give_exact_constr = h_eexact
 
 let registered_e_assumption gl = 
   tclFIRST (List.map (fun id gl -> e_give_exact_constr (mkVar id) gl) 
               (pf_ids_of_hyps gl)) gl
 
 (* This automatically define h_eApply (among other things) *)
-TACTIC EXTEND EApply
+(*V8 TACTIC EXTEND eapply
+  [ "eapply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
+END*)
+TACTIC EXTEND eapply
   [ "EApply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
 END
 
-let vernac_e_resolve_constr c = h_eApply (c,NoBindings)
+let vernac_e_resolve_constr c = h_eapply (c,NoBindings)
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
@@ -89,6 +95,9 @@ let prolog_tac l n gl =
   with UserError ("Refiner.tclFIRST",_) ->
     errorlabstrm "Prolog.prolog" (str "Prolog failed")
 
+(* V8 TACTIC EXTEND prolog
+| [ "prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
+END*)
 TACTIC EXTEND Prolog
 | [ "Prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
 END
@@ -370,16 +379,26 @@ let pr_hintbases = function
   | Some l -> str " with " ++ Util.prlist str l
 
 let _ = 
-  Pptactic.declare_extra_genarg_pprule 
+  Pptactic.declare_extra_genarg_pprule
+    true
     (rawwit_hintbases, pr_hintbases)
     (wit_hintbases, pr_hintbases)
 
+(* V8 TACTIC EXTEND eauto
+| [ "eauto" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
+    [ gen_eauto false (make_dimension n p) db ]
+END
+
+V8 TACTIC EXTEND eautodebug
+| [ "eautod" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
+    [ gen_eauto true (make_dimension n p) db ]
+END*)
 TACTIC EXTEND EAuto
 | [ "EAuto" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
     [ gen_eauto false (make_dimension n p) db ]
 END
 
-TACTIC EXTEND EAutoDebug
+V7 TACTIC EXTEND EAutodebug
 | [ "EAutod" int_or_var_opt(n) int_or_var_opt(p) hintbases(db) ] ->
     [ gen_eauto true (make_dimension n p) db ]
 END

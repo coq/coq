@@ -1271,8 +1271,8 @@ let rec natural_ntree ig ntree =
 	    TacIntroPattern _ -> natural_intros ig lh g gs ltree
 	  | TacIntroMove _ -> natural_intros ig lh g gs ltree
 	  | TacFix (_,n) -> natural_fix ig lh g gs n ltree
-	  | TacSplit NoBindings -> natural_split ig lh g gs ge [] ltree
-	  | TacSplit(ImplicitBindings l) -> natural_split ig lh g gs ge l ltree
+	  | TacSplit (_,NoBindings) -> natural_split ig lh g gs ge [] ltree
+	  | TacSplit(_,ImplicitBindings l) -> natural_split ig lh g gs ge l ltree
 	  | TacGeneralize l -> natural_generalize ig lh g gs ge l ltree
 	  | TacRight _ -> natural_right ig lh g gs ltree
 	  | TacLeft _ -> natural_left ig lh g gs ltree

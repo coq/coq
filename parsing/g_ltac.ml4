@@ -60,6 +60,10 @@ end
 
 open Prelude
 
+let arg_of_expr = function
+    TacArg a -> a
+  | e -> Tacexp e
+    
 (* Tactics grammar rules *)
 
 GEXTEND Gram
@@ -220,8 +224,8 @@ GEXTEND Gram
       | ta = tactic_arg0 -> ta ] ]
   ;
   tactic_arg0:
-    [ [ "("; a = tactic_expr; ")" -> Tacexp a
-      | "()" -> TacVoid
+    [ [ "("; a = tactic_expr; ")" -> arg_of_expr a
+      | "()" -> Integer 0
       | r = reference -> Reference r
       | n = integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)

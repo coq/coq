@@ -12,6 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo_def.
+Import R_scope.
 
 Definition A1 [x:R] : nat->R := [N:nat](sum_f_R0 [k:nat]``(pow (-1) k)/(INR (fact (mult (S (S O)) k)))*(pow x (mult (S (S O)) k))`` N). 
  

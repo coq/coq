@@ -75,7 +75,7 @@ with add_carry [x,y:positive]:positive :=
           end
   end.
 
-Infix "+" add (at level 4, left associativity) : positive_scope.
+Infix LEFTA 4 "+" add : positive_scope.
 
 Open Scope positive_scope.
 
@@ -1020,7 +1020,8 @@ Fixpoint times [x:positive] : positive -> positive:=
   | xH => y
   end.
 
-Infix "*" times (at level 3, left associativity) : positive_scope.
+Infix LEFTA 3 "*" times : positive_scope
+  V8only 30.
 
 (** Correctness of multiplication on positive *)
 Theorem times_convert :
@@ -1065,7 +1066,8 @@ Definition Zmult := [x,y:Z]
              end
     end.
 
-Infix "*" Zmult (at level 3, left associativity) : Z_scope.
+Infix LEFTA 3 "*" Zmult : Z_scope
+  V8only 30.
 
 Open Scope Z_scope.
 

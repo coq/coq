@@ -50,7 +50,7 @@ END
 let pr_filename = function Some fn -> str " File" ++ str fn | None -> mt ()
 
 let _ = 
-  Pptactic.declare_extra_genarg_pprule 
+  Pptactic.declare_extra_genarg_pprule true
     (rawwit_filename, pr_filename)
     (wit_filename, pr_filename)
 
@@ -76,7 +76,7 @@ open Pp
 let pr_diskname = function Some fn -> str " Disk" ++ str fn | None -> mt ()
 
 let _ = 
-  Pptactic.declare_extra_genarg_pprule 
+  Pptactic.declare_extra_genarg_pprule true
     (rawwit_diskname, pr_diskname)
     (wit_diskname, pr_diskname)
 

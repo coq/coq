@@ -105,7 +105,7 @@ let add_glob loc ref =
   in
   let s = string_of_dirpath (find_module dir) in
   i*)
-  let sp = Nametab.sp_of_global None ref in
+  let sp = Nametab.sp_of_global ref in
   let id = let _,id = repr_path sp in string_of_id id in
   let dp = string_of_dirpath (Declare.library_part ref) in
   dump_string (Printf.sprintf "R%d %s.%s\n" (fst loc) dp id)
@@ -418,6 +418,8 @@ let internalise isarity sigma env allow_soapp lvar c =
     | CLetIn (loc,(_,na),c1,c2) ->
 	RLetIn (loc, na, intern false env c1,
           intern false (name_fold Idset.add na ids,impls,scopes) c2)
+    | CNotation (loc,"- _",[CNumeral(_,Bignat.POS p)]) ->
+        Symbols.interp_numeral loc (Bignat.NEG p) scopes
     | CNotation (loc,ntn,args) ->
 	let scopes = if isarity then Symbols.type_scope::scopes else scopes in
 	let (ids,c) = Symbols.interp_notation ntn scopes in
@@ -665,9 +667,37 @@ let rec pat_of_raw metas vars lvar = function
       PCase (st,option_app (pat_of_raw metas vars lvar) po,
              pat_of_raw metas vars lvar c,
              Array.map (pat_of_raw metas vars lvar) br)
+  | RCases (loc,po,[c],br) ->
+      PCase (Term.RegularStyle,option_app (pat_of_raw metas vars lvar) po,
+             pat_of_raw metas vars lvar c,
+             Array.init (List.length br)
+               (pat_of_raw_branch loc metas vars lvar br))
   | r ->
       let loc = loc_of_rawconstr r in
       user_err_loc (loc,"pattern_of_rawconstr", str "Not supported pattern")
+
+and pat_of_raw_branch loc metas vars lvar brs i =
+  let bri = List.filter
+    (function
+        (_,_,[PatCstr(_,c,lv,_)],_) -> snd c = i+1
+      | (loc,_,_,_) ->
+          user_err_loc (loc,"pattern_of_rawconstr",
+                        str "Not supported pattern")) brs in
+  match bri with
+      [(_,_,[PatCstr(_,_,lv,_)],br)] ->
+        let lna =
+          List.map
+            (function PatVar(_,na) -> na
+              | PatCstr(loc,_,_,_) ->
+                  user_err_loc (loc,"pattern_of_rawconstr",
+                                str "Not supported pattern")) lv in
+        let vars' = List.rev lna @ vars in 
+        List.fold_right (fun na b -> PLambda(na,PMeta None,b)) lna
+          (pat_of_raw metas vars' lvar br)
+    | _ -> user_err_loc (loc,"pattern_of_rawconstr",
+                         str "No unique branch for " ++ int (i+1) ++
+                         str"-th constructor")
+
 
 let pattern_of_rawconstr lvar c =
   let metas = ref [] in

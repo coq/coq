@@ -14,6 +14,7 @@ Require Rseries.
 Require SeqProp.
 Require PartSum.
 Require Max.
+Import R_scope.
 
 (***************************************************)
 (* Various versions of the criterion of D'Alembert *)

@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Decidable.
+Import nat_scope.
 
 Theorem O_or_S : (n:nat)({m:nat|(S m)=n})+{O=n}.
 Proof.

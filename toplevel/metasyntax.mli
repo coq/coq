@@ -29,15 +29,17 @@ val add_tactic_grammar :
   (string * (string * grammar_production list) * raw_tactic_expr) list -> unit
 
 val add_infix :
-  grammar_associativity -> precedence -> string -> reference -> bool
-    -> scope_name option -> unit
+  grammar_associativity -> precedence -> string -> reference -> bool ->
+    (grammar_associativity * precedence * string) option ->
+      scope_name option -> unit
 val add_distfix :
   grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
 val add_delimiters : scope_name -> string -> unit
 
 val add_notation : string -> constr_expr
-    -> syntax_modifier list -> scope_name option -> unit
+    -> syntax_modifier list -> (string * syntax_modifier list) option
+      -> scope_name option -> unit
 
 val add_syntax_extension : string -> syntax_modifier list -> unit
 

@@ -119,25 +119,38 @@ let rec vernac_com interpfun (loc,com) =
                  System.fmt_time_difference tstart tend)
 
     (* To be interpreted in v7 or translator input only *)
-    | VernacV7only v -> if !Options.v7 then interp v
+    | VernacV7only v ->
+        if !Options.v7 || Options.do_translate() then interp v
 
     (* To be interpreted in translator output only *)
-    | VernacV8only v -> if true (* !translate *) then interp v
+    | VernacV8only v -> 
+        if not !Options.v7 && not (do_translate()) then
+          interp v
 
     | v -> if not !just_parsing then interpfun v
 
   in 
   try
+    Options.v7_only := false;
     if do_translate () then
-      let _ = Format.set_formatter_out_channel stdout in
-      let _ = interp com in
-      let _ = Format.set_formatter_out_channel !chan_translate in
-      if !translate_file then
-	msgnl (pr_comments !comments ++ pr_vernac com ++ sep_end) 
-      else
-	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++ pr_vernac com ++ sep_end)); comments := None
-    else interp com
-  with e ->
+      (Format.set_formatter_out_channel !chan_translate;
+       Format.set_max_boxes max_int;
+       (match com with
+         | VernacV7only _ ->
+             Options.v7_only := true;
+             if !translate_file then msgnl (pr_comments !comments)
+         | _ ->
+             if !translate_file then
+	       msgnl
+                 (pr_comments !comments ++ hov 0 (pr_vernac com) ++ sep_end) 
+             else
+	       msgnl
+                 (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++
+                         pr_vernac com ++ sep_end)));
+       comments := None;
+       Format.set_formatter_out_channel stdout);
+    interp com;
+  with e -> 
     Format.set_formatter_out_channel stdout;
     raise (DuringCommandInterp (loc, e))
 
@@ -197,8 +210,8 @@ let compile verbosely f =
 *)
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  chan_translate := if Options.do_translate () then open_out (f^".v8") else stdout;
-  let _ = Format.set_formatter_out_channel !chan_translate in
+  chan_translate :=
+    if Options.do_translate () then open_out (f^".v8") else stdout;
   let _ = load_vernac verbosely long_f_dot_v in
   let _ = close_out !chan_translate in
   if Pfedit.get_all_proof_names () <> [] then

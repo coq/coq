@@ -15,6 +15,7 @@
 Require Export ZArith_base.
 Require Export Rsyntax.
 Require Export TypeSyntax.
+Import R_scope.
 
 (*********************************************************)
 (*               Field axioms                            *)
@@ -111,6 +112,8 @@ Fixpoint INR [n:nat]:R:=(Cases n of
                          |(S O)  => ``1``
                          |(S n)  => ``(INR n)+1``
                         end).  
+Arguments Scope INR [nat_scope].
+
 
 (**********************************************************) 
 (**      Injection from [Z] to [R]                        *)
@@ -122,6 +125,7 @@ Definition IZR:Z->R:=[z:Z](Cases z of
                         |(POS n) => (INR (convert n))
                         |(NEG n) => ``-(INR (convert n))``
                            end).  
+Arguments Scope IZR [Z_scope].
 
 (**********************************************************)
 (**      [R] Archimedian                                  *)

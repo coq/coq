@@ -19,6 +19,8 @@ open Qast
 
 open Prim
 
+let _ = reset_all_grammars()
+
 (* camlp4o pa_extend.cmo pa_extend_m.cmo pr_o.cmo q_prim.ml *)
 
 ifdef Quotify then

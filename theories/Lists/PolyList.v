@@ -38,7 +38,8 @@ Fixpoint app [l:list] : list -> list
                  | (cons a l1) => (cons a (app l1 m))
                  end.
 
-Infix RIGHTA 7 "^" app.
+Infix RIGHTA 7 "^" app
+  V8only 30.
 
 Lemma app_nil_end : (l:list)l=(l^nil).
 Proof. 

@@ -20,55 +20,12 @@ open Ppextend
 open Topconstr
 open Term
 
-let sep = fun _ -> spc()
+let sep = fun _ -> brk(1,0)
 let sep_p = fun _ -> str"."
-let sep_v = fun _ -> str","
+let sep_v = fun _ -> str"," ++ spc()
 let sep_pp = fun _ -> str":"
-let sep_pv = fun _ -> str"; "
-
-let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
-
-let pr_global ref = pr_global_env None ref
-
-let global_const_name kn =
-  try pr_global (ConstRef kn)
-  with Not_found -> (str ("CONST("^(string_of_kn kn)^")"))
-
-let global_var_name id =
-  try pr_global (VarRef id)
-  with Not_found -> (str ("SECVAR("^(string_of_id id)^")"))
-
-let global_ind_name (kn,tyi) =
-  try pr_global (IndRef (kn,tyi))
-  with Not_found -> (str ("IND("^(string_of_kn kn)^","^(string_of_int tyi)^")"))
-
-let global_constr_name ((kn,tyi),i) =
-  try pr_global (ConstructRef ((kn,tyi),i))
-  with Not_found -> (str ("CONSTRUCT("^(string_of_kn kn)^","^(string_of_int tyi)^","^(string_of_int i)^")"))
-
-let globpr gt = match gt with
-  | Nvar(_,s) -> (pr_id s)
-  | Node(_,"EVAR", [Num (_,ev)]) -> (str ("?" ^ (string_of_int ev)))
-  | Node(_,"CONST",[Path(_,sl)]) ->
-      global_const_name (section_path sl)
-  | Node(_,"SECVAR",[Nvar(_,s)]) ->
-      global_var_name s
-  | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
-      global_ind_name (section_path sl, tyi)
-  | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
-      global_constr_name ((section_path sl, tyi), i)
-  | Dynamic(_,d) ->
-    if (Dyn.tag d) = "constr" then (str"<dynamic [constr]>")
-    else dfltpr gt
-  | gt -> dfltpr gt
-
-let wrap_exception = function
-    Anomaly (s1,s2) ->
-      warning ("Anomaly ("^s1^")"); pp s2;
-      str"<PP error: non-printable term>"
-  | Failure _ | UserError _ | Not_found ->
-      str"<PP error: non-printable term>"
-  | s -> raise s
+let sep_bar = fun _ -> spc() ++ str"| "
+let pr_tight_coma () = str "," ++ cut ()
 
 let latom = 0
 let lannot = 100
@@ -76,18 +33,23 @@ let lprod = 200
 let llambda = 200
 let lif = 200
 let lletin = 200
-let lcases = 0
-let larrow = 90
-let lcast = 0
-let lapp = 10
+let lfix = 200
+let larrow = 80
+let lnegint = 40
+let lcast = 100
+let lapp = 1
 let ltop = (200,E)
+let lsimple = (0,E)
 
 let prec_less child (parent,assoc) =
-  match assoc with
-  | E -> (<=) child parent
-  | L -> (<) child parent
-  | Prec n -> child<=n
-  | Any -> true
+  if parent < 0 && child = lprod then true
+  else
+    let parent = abs parent in
+    match assoc with
+      | E -> (<=) child parent
+      | L -> (<) child parent
+      | Prec n -> child<=n
+      | Any -> true
 
 let env_assoc_value v env =
   try List.nth env (v-1)
@@ -106,13 +68,7 @@ let pr_notation pr s env =
   prlist (print_hunk level pr env) unpl, level
 
 let pr_delimiters key strm =
-  let left = "`"^key^":" and right = "`" in
-  let lspace =
-    if is_letter (left.[String.length left -1]) then str " " else mt () in
-  let rspace =
-    let c = right.[0] in
-    if is_letter c or is_digit c or c = '\'' then str " " else mt () in
-  str left ++ lspace ++ strm ++ rspace ++ str right
+  strm ++ str ("%"^key)
 
 open Rawterm
 
@@ -129,7 +85,7 @@ let pr_sort = function
 
 let pr_explicitation = function
   | None -> mt ()
-  | Some n -> int n ++ str "!"
+  | Some n -> str "@" ++ int n ++ str ":="
 
 let pr_expl_args pr (a,expl) =
   pr_explicitation expl ++ pr (lapp,L) a
@@ -138,7 +94,9 @@ let pr_opt_type pr = function
   | CHole _ -> mt ()
   | t -> cut () ++ str ":" ++ pr ltop t
 
-let pr_tight_coma () = str "," ++ cut ()
+let pr_opt_type_spc pr = function
+  | CHole _ -> mt ()
+  | t ->  str " :" ++ brk(1,2) ++ pr ltop t
 
 let pr_name = function
   | Anonymous -> str"_"
@@ -146,26 +104,50 @@ let pr_name = function
 
 let pr_located pr (loc,x) = pr x
 
-let pr_let_binder pr x a =
-  hov 0 (
-    str "let" ++ spc () ++
-    pr_name x ++ spc () ++
-    str "=" ++ spc () ++
-    pr ltop a ++ spc () ++
-    str "in")
+let las = 2
 
+let rec pr_patt inh p =
+  let (strm,prec) = match p with
+  | CPatAlias (_,p,id) ->
+      pr_patt (las,E) p ++ str " as " ++ pr_id id, las
+  | CPatCstr (_,c,[]) -> pr_reference c, latom
+  | CPatCstr (_,c,args) ->
+      pr_reference c ++ spc() ++
+      prlist_with_sep sep (pr_patt (lapp,L)) args, lapp
+  | CPatAtom (_,None) -> str "_", latom
+  | CPatAtom (_,Some r) -> pr_reference r, latom
+  | CPatNumeral (_,i) -> Bignat.pr_bigint i, latom
+  | CPatDelimiters (_,k,p) ->
+      pr_delimiters k (pr_patt (latom,E) p), latom
+  in
+  if prec_less prec inh then strm
+  else str"(" ++ strm ++ str")"
+
+let pr_eqn pr (_,pl,rhs) =
+  spc() ++ hov 4
+    (str "| " ++
+     hv 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
+     spc() ++ pr ltop rhs)
+
+
+(*
 let pr_binder pr (nal,t) =
-  h 0 (
+  hov 0 (
     prlist_with_sep sep (pr_located pr_name) nal ++
     pr_opt_type pr t)
+*)
+let pr_oneb pr t na =
+  match t with
+      CHole _ -> pr_located pr_name na
+    | _ -> hov 1
+        (str "(" ++  pr_located pr_name na ++ pr_opt_type pr t ++ str ")")
+let pr_binder pr (nal,t) =
+  hov 0 (prlist_with_sep sep (pr_oneb pr t) nal)
 
 let pr_binders pr bl =
-  h 0 (prlist_with_sep sep (pr_binder pr) bl)
+  hv 0 (prlist_with_sep sep (pr_binder pr) bl)
 
-let pr_recursive_decl pr id b t c =
-  pr_id id ++
-  brk (1,2) ++ str ": " ++ pr ltop t ++ str ":=" ++
-  brk (1,2) ++ pr ltop c
+let pr_global vars ref = pr_global_env vars ref
 
 let split_lambda = function
   | CLambdaN (loc,[[na],t],c) -> (na,t,c)
@@ -188,109 +170,152 @@ let rec split_fix n typ def =
     let (bl,typ,def) = split_fix (n-1) typ def in
     (([na],t)::bl,typ,def)
 
+let pr_recursive_decl pr id b t c =
+  pr_id id ++ b ++ pr_opt_type_spc pr t ++ str " :=" ++
+  brk(1,2) ++ pr ltop c
+
 let pr_fixdecl pr (id,n,t,c) =
   let (bl,t,c) = split_fix (n+1) t c in
-  pr_recursive_decl pr id 
-    (brk (1,2) ++ str "[" ++ pr_binders pr bl ++ str "]") t c
+  let annot =
+    let ids = List.flatten (List.map fst bl) in
+    if List.length ids > 1 then 
+      spc() ++ str "{struct " ++ pr_name (snd (list_last ids)) ++ str"}"
+    else mt() in
+  pr_recursive_decl pr id (str" " ++ hov 0 (pr_binders pr bl) ++ annot) t c
 
 let pr_cofixdecl pr (id,t,c) =
   pr_recursive_decl pr id (mt ()) t c
 
-let pr_recursive s pr_decl id = function
+let pr_recursive pr_decl id = function
   | [] -> anomaly "(co)fixpoint with no definition"
-  | d1::dl ->
-      hov 0 (
-	str "Fix " ++ pr_id id ++ brk (0,2) ++ str "{" ++
-	(v 0 (
-	  (hov 0 (pr_decl d1)) ++
-	  (prlist (fun fix -> fnl () ++ hov 0 (str "with" ++ pr_decl fix))
-	    dl))) ++
-	str "}")
-
-let pr_fix pr = pr_recursive "Fix" (pr_fixdecl pr)
-let pr_cofix pr = pr_recursive "Fix" (pr_cofixdecl pr)
+  | [d1] -> pr_decl d1
+  | dl ->
+      prlist_with_sep (fun () -> fnl() ++ str "with ") pr_decl dl ++
+      fnl() ++ str "for " ++ pr_id id
 
 let rec pr_arrow pr = function
-  | CArrow (_,a,b) -> pr (larrow,L) a ++ str "->" ++ pr_arrow pr b
-  | a -> pr (larrow,E) a
+  | CArrow (_,a,b) -> pr (larrow,L) a ++ str " ->" ++ brk(1,0) ++ pr_arrow pr b
+  | a -> pr (-larrow,E) a
 
-let pr_annotation pr t = str "<" ++ pr ltop t ++ str ">"
-
-let pr_cases _ _ _ = str "<CASES(TODO)>"
+let pr_annotation pr po =
+  match po with
+      None -> mt()
+    | Some p -> spc() ++ str "=> " ++ hov 0 (pr ltop p)
 
 let rec pr inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
-  | CFix (_,id,fix) -> pr_fix pr (snd id) fix, latom
-  | CCoFix (_,id,cofix) -> pr_cofix pr (snd id) cofix, latom
-  | CArrow _ -> h 0 (pr_arrow pr a), larrow
+  | CFix (_,id,fix) ->
+      hov 0 (str "fix " ++ pr_recursive (pr_fixdecl pr) (snd id) fix),
+      lfix
+  | CCoFix (_,id,cofix) ->
+      hov 0 (str "cofix " ++ pr_recursive (pr_cofixdecl pr) (snd id) cofix),
+      lfix
+  | CArrow _ -> hv 0 (pr_arrow pr a), larrow
   | CProdN (_,bl,a) ->
-      h 0 (
-	str "!" ++ pr_binders pr bl ++ str "." ++ spc ()  ++ pr ltop a), lprod
+      hv 1 (
+	str "!" ++ pr_binders pr bl ++ str "." ++ spc()  ++ pr ltop a), lprod
   | CLambdaN (_,bl,a) ->
-      hov 0 (
-	str "fun" ++ spc () ++ pr_binders pr bl ++ spc () ++ str "=>" ++ spc () ++ pr ltop a),
+      hov 2 (
+	str "fun" ++ spc () ++ pr_binders pr bl ++
+        str " =>" ++ spc() ++ pr ltop a),
       llambda
   | CLetIn (_,x,a,b) ->
-      h 0 (pr_let_binder pr (snd x) a ++ spc () ++ pr ltop b), lletin
+      hv 0 (
+        hov 2 (str "let " ++ pr_name (snd x) ++ str " :=" ++ spc() ++
+               pr ltop a ++ str " in") ++
+        spc () ++ pr ltop b),
+      lletin
   | CAppExpl (_,f,l) ->
-      h 0 (
+      hov 2 (
 	str "@" ++ pr_reference f ++
-	prlist (fun a -> spc () ++ pr (lapp,L) a) l), lapp
+	prlist (fun a -> spc () ++ pr (lapp,L) a) l),
+      lapp
   | CApp (_,a,l) ->
-      h 0 (
-	pr (lapp,E) a  ++ 
-	prlist (fun a -> spc () ++ pr_expl_args pr a) l), lapp
+      hov 2 (
+	pr (lapp,L) a  ++ 
+	prlist (fun a -> spc () ++ pr_expl_args pr a) l),
+      lapp
   | CCases (_,po,c,eqns) ->
-      pr_cases po c eqns, lcases
-  | COrderedCase (_,IfStyle,po,c,[b1;b2]) ->
+      v 0
+        (hov 4 (str "match " ++ prlist_with_sep sep_v (pr ltop) c ++
+                pr_annotation pr po ++ str " with") ++
+        prlist (pr_eqn pr) eqns ++
+        spc() ++ str "end"),
+      latom
+  | COrderedCase (_,_,po,c,[b1;b2]) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
-      hov 0 (
-	pr_opt (pr_annotation pr) po ++
-	hv 0 (
-	  str "if" ++ pr ltop c ++ spc () ++
-	  hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
-	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lif
-  | COrderedCase (_,LetStyle,po,c,[CLambdaN(_,[_,_ as bd],b)]) ->
-      hov 0 (
-	pr_opt (pr_annotation pr) po ++
-	hv 0 (
-          str "let" ++ brk (1,1) ++
-	  hov 0 (str "(" ++ pr_binder pr bd ++ str ")") ++
-	  str "=" ++ brk (1,1) ++
-	  pr ltop c ++ spc () ++
-	  str "in " ++ pr ltop b)), lletin
-  | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->
-      hov 0 (
-	hov 0 (
-	pr_opt (pr_annotation pr) po ++ brk (0,2) ++
-	  hov 0 (
-	    str (if style=RegularStyle then "Case" else "match") ++ 
-	    brk (1,1) ++ pr ltop c ++ spc () ++
-	    str (if style=RegularStyle then "of" else "with") ++
-	  brk (1,3) ++
-	  hov 0 (prlist (fun b -> pr ltop b ++ fnl ()) bl)) ++
-	str "end")), lcases
-  | COrderedCase (_,_,_,_,_) -> 
-      anomaly "malformed if or destructuring let"
+      hv 0 (
+	str "if " ++ pr ltop c ++ pr_annotation pr po ++ spc () ++
+	hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
+	hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2)),
+      lif
+  | COrderedCase (_,_,po,c,[CLambdaN(_,[nal,_],b)]) ->
+      hv 0 (
+        str "let " ++
+	hov 0 (str "(" ++
+               prlist_with_sep sep_v (fun (_,n) -> pr_name n) nal ++
+               str ")" ++
+	       pr_annotation pr po ++ str " :=" ++
+               spc() ++ pr ltop c ++ str " in") ++
+        spc() ++ pr ltop b),
+      lletin
+  | COrderedCase (_,style,po,c,bl) ->
+      hv 0 (
+	str (if style=MatchStyle then "old_match " else "match ") ++ 
+	pr ltop c ++
+	pr_annotation pr po ++
+	str " with" ++ brk (1,0) ++
+	hov 0 (prlist
+          (fun b -> str "| ??? =>" ++ spc() ++ pr ltop b ++ fnl ()) bl) ++
+        str "end"),
+      latom
   | CHole _ -> str "_", latom
-  | CMeta (_,p) -> str "@" ++ int p, latom
+  | CMeta (_,p) -> str "?" ++ int p, latom
   | CSort (_,s) -> pr_sort s, latom
   | CCast (_,a,b) ->
-      hv 0 (pr (lcast,L) a ++ cut () ++ str "::" ++ pr (lcast,E) b), lcast
+      hv 0 (pr (lcast,L) a ++ cut () ++ str ":" ++ pr (-lcast,E) b), lcast
   | CNotation (_,s,env) -> pr_notation pr s env
-  | CNumeral (_,p) -> Bignat.pr_bigint p, latom
-  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr ltop a), latom
+  | CNumeral (_,(Bignat.POS _ as p)) -> Bignat.pr_bigint p, latom
+  | CNumeral (_,(Bignat.NEG _ as p)) -> Bignat.pr_bigint p, lnegint
+  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr (latom,E) a), latom
   | CDynamic _ -> str "<dynamic>", latom
   in
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"
-  
-let pr_constr c = pr ltop (Constrextern.extern_rawconstr (Constrintern.for_grammar (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
+
+
+let rec fact_constr c =
+  match c with
+      CLambdaN(loc,bl1,CLambdaN(_,bl2,b)) ->
+        fact_constr (CLambdaN(loc,bl1@bl2,b))
+    | CProdN(loc,bl1,CProdN(_,bl2,b)) ->
+        fact_constr (CProdN(loc,bl1@bl2,b))
+    | _ -> map_constr_expr_with_binders
+        (fun _ -> fact_constr) (fun _ _ -> ()) () c
+let pr l c = pr l (fact_constr c)
+
+
+let transf env c =
+  if Options.do_translate() then
+    Constrextern.extern_rawconstr (Termops.vars_of_env env)
+      (Constrintern.for_grammar
+        (Constrintern.interp_rawconstr Evd.empty env) c)
+  else c
+
+let pr_constr_env env c = pr lsimple (transf env c)
+let pr_lconstr_env env c = pr ltop (transf env c)
+let pr_constr c = pr_constr_env (Global.env()) c
+let pr_lconstr c = pr_lconstr_env (Global.env()) c
+
+let pr_binders = pr_binders pr
+let pr_cases_pattern = pr_patt ltop
 
 let pr_pattern = pr_constr
-let pr_occurrences prc (nl,c) = prlist (fun n -> int n ++ spc ()) nl ++ prc c  
+let pr_occurrences prc (nl,c) =
+  prlist (fun n -> int n ++ spc ()) nl ++
+  str"(" ++ prc c ++ str")"
 
 let pr_qualid qid = str (string_of_qualid qid)
 
@@ -299,14 +324,14 @@ open Rawterm
 let pr_arg pr x = spc () ++ pr x
 
 let pr_red_flag pr r =
-  (if r.rBeta then pr_arg str "Beta" else mt ()) ++
-  (if r.rIota then pr_arg str "Iota" else mt ()) ++
-  (if r.rZeta then pr_arg str "Zeta" else mt ()) ++
+  (if r.rBeta then pr_arg str "beta" else mt ()) ++
+  (if r.rIota then pr_arg str "iota" else mt ()) ++
+  (if r.rZeta then pr_arg str "zeta" else mt ()) ++
   (if r.rConst = [] then
-     if r.rDelta then pr_arg str "Delta"
+     if r.rDelta then pr_arg str "delta"
      else mt ()
    else
-     pr_arg str "Delta" ++ (if r.rDelta then str "-" else mt ()) ++
+     pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
      hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
 
 open Genarg
@@ -317,54 +342,38 @@ let pr_metanum pr = function
 
 let pr_metaid id = str"?" ++ pr_id id
 
-let pr_red_expr (pr_constr,pr_ref) = function
-  | Red false -> str "Red"
-  | Hnf -> str "Hnf"
-  | Simpl o -> str "Simpl" ++ pr_opt (pr_occurrences pr_constr) o  
+let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
+  | Red false -> str "red"
+  | Hnf -> str "hnf"
+  | Simpl o -> str "simpl" ++ pr_opt (pr_occurrences pr_lconstr) o  
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
-	str "Compute"
+	str "compute"
       else
-	hov 1 (str "Cbv" ++ spc () ++ pr_red_flag pr_ref f)
+	hov 1 (str "cbv" ++ pr_red_flag pr_ref f)
   | Lazy f -> 
-      hov 1 (str "Lazy" ++ spc () ++ pr_red_flag pr_ref f)
+      hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Unfold l ->
-      hov 1 (str "Unfold" ++
+      hov 1 (str "unfold" ++
         prlist (fun (nl,qid) ->
 	  prlist (pr_arg int) nl ++ spc () ++ pr_ref qid) l)
-  | Fold l -> hov 1 (str "Fold" ++ prlist (pr_arg pr_constr) l)
+  | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
-      hov 1 (str "Pattern" ++ prlist (pr_occurrences pr_constr) l)
+      hov 1 (str "pattern" ++ pr_arg (prlist (pr_occurrences pr_lconstr)) l)
         
   | Red true -> error "Shouldn't be accessible from user"
   | ExtraRedExpr (s,c) ->
       hov 1 (str s ++ pr_arg pr_constr c)
 
-let rec pr_may_eval pr = function
+let rec pr_may_eval prc prlc  = function
   | ConstrEval (r,c) ->
       hov 0
-        (str "Eval" ++ brk (1,1) ++ pr_red_expr (pr,pr_metanum pr_reference) r ++
-	 spc () ++ str "in" ++ brk (1,1) ++ pr c)
+        (str "eval" ++ brk (1,1) ++
+         pr_red_expr (prc,prlc,pr_metanum pr_reference) r ++
+	 str " in" ++ spc() ++ prlc c)
   | ConstrContext ((_,id),c) ->
       hov 0
-	(str "Inst " ++ brk (1,1) ++ pr_id id ++ spc () ++
-	 str "[" ++ pr c ++ str "]")
-  | ConstrTypeOf c -> hov 0 (str "Check " ++ brk (1,1) ++ pr c)
-  | ConstrTerm c -> pr c
-
-(**********************************************************************)
-let constr_syntax_universe = "constr"
-(* This is starting precedence for printing constructions or tactics *)
-(* Level 9 means no parentheses except for applicative terms (at level 10) *)
-let constr_initial_prec = Some (9,Ppextend.L)
-
-let gentermpr_fail gt =
-  Esyntax.genprint globpr constr_syntax_universe constr_initial_prec gt
-
-let gentermpr gt =
-  try gentermpr_fail gt
-  with s -> wrap_exception s
-
-(* [at_top] means ids of env must be avoided in bound variables *)
-let gentermpr_core at_top env t =
-  gentermpr (Termast.ast_of_constr at_top env t)
+	(str "inst " ++ pr_id id ++ spc () ++
+	 str "[" ++ prlc c ++ str "]")
+  | ConstrTypeOf c -> hov 1 (str "check" ++ spc() ++ prlc c)
+  | ConstrTerm c -> prlc c

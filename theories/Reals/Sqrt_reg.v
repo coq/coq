@@ -12,6 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Ranalysis1.
 Require R_sqrt.
+Import R_scope.
 
 (**********)
 Lemma sqrt_var_maj : (h:R) ``(Rabsolu h) <= 1`` -> ``(Rabsolu ((sqrt (1+h))-1))<=(Rabsolu h)``.

@@ -335,7 +335,7 @@ let try_add_new_coercion_with_source ref stre ~source =
 let add_coercion_hook stre ref = 
   try_add_new_coercion ref stre;
   Options.if_verbose message
-    (string_of_qualid (shortest_qualid_of_global None ref)
+    (string_of_qualid (shortest_qualid_of_global Idset.empty ref)
     ^ " is now a coercion")
 
 let add_subclass_hook stre ref =

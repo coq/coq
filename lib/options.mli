@@ -24,6 +24,7 @@ val term_quality : bool ref
 val xml_export : bool ref
 
 val v7 : bool ref
+val v7_only : bool ref
 
 val translate : bool ref
 val make_translate : bool -> unit

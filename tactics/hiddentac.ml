@@ -72,7 +72,7 @@ let h_rename id1 id2 =
 (* Constructors *)
 let h_left l          = abstract_tactic (TacLeft l) (left l)
 let h_right l         = abstract_tactic (TacLeft l) (right l)
-let h_split l         = abstract_tactic (TacSplit l) (split l)
+let h_split l         = abstract_tactic (TacSplit (false,l)) (split l)
 (* Moved to tacinterp because of dependence in Tacinterp.interp
 let h_any_constructor t =
   abstract_tactic (TacAnyConstructor t) (any_constructor t)

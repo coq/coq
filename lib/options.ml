@@ -25,10 +25,11 @@ let term_quality = ref false
 let xml_export = ref false
 
 let v7 = ref true
+let v7_only = ref false
 
 (* Translate *)
 let translate = ref false
-let make_translate f = translate := f; ()
+let make_translate f = translate := f; v7 := f; ()
 let do_translate () = !translate
 let translate_file = ref false
 

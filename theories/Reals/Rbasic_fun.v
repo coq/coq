@@ -16,6 +16,7 @@
 Require Rbase.
 Require R_Ifp.
 Require Fourier.
+Import R_scope.
 
 (*******************************)
 (**          Rmin              *)

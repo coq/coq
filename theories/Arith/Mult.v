@@ -11,6 +11,7 @@
 Require Export Plus.
 Require Export Minus.
 Require Export Lt.
+Import nat_scope.
 
 (** Multiplication *)
 

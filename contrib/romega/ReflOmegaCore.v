@@ -642,25 +642,46 @@ Recursive Tactic Definition loop t := (
   | [(Topp ?1)] -> (loop ?1)
   | [(Tint ?1)] -> (loop ?1)
   (* Eliminations *)
-  | [(Case ?1 of ? ? ? ?   ? ? ? ?  ? end)] -> 
+  | [(Cases ?1 of
+        | (EqTerm _ _) => ?
+        | (LeqTerm _ _) => ?
+        | TrueTerm => ?
+        | FalseTerm => ?
+        | (Tnot _) => ?
+        | (GeqTerm _ _) => ?
+        | (GtTerm _ _) => ?
+        | (LtTerm _ _) => ?
+        | (NeqTerm _ _) => ?
+        end)] -> 
        (Case ?1; [ Intro; Intro | Intro; Intro | Idtac | Idtac 
                  | Intro | Intro; Intro | Intro; Intro | Intro; Intro
                  | Intro; Intro ]);
         Auto; Simplify
-  | [(Case ?1 of ? ? ? ? ? ? end)] -> 
+  | [(Cases ?1 of
+        (Tint _) => ?
+      | (Tplus _ _) => ?
+      | (Tmult _ _) => ?
+      | (Tminus _ _) => ?
+      | (Topp _) => ?
+      | (Tvar _) => ?
+      end)] -> 
        (Case ?1; [ Intro | Intro; Intro | Intro; Intro | Intro; Intro | 
                    Intro | Intro ]); Auto; Simplify
-  | [(Case (Zcompare ?1 ?2) of ? ? ? end)] -> 
+  | [(Cases (Zcompare ?1 ?2) of
+        EGAL => ?
+      | INFERIEUR => ?
+      | SUPERIEUR => ?
+      end)] -> 
        (Elim_Zcompare ?1 ?2) ; Intro ; Auto; Simplify
-  | [(Case ?1 of ? ? ? end)] -> 
+  | [(Cases ?1 of ZERO => ? | (POS _) => ? | (NEG _) => ? end)] -> 
        (Case ?1; [ Idtac | Intro | Intro ]); Auto; Simplify
-  | [(Case (eq_Z ?1 ?2) of ? ? end)] -> 
+  | [(if (eq_Z ?1 ?2) then ? else ?)] -> 
        ((Elim_eq_Z ?1 ?2); Intro H; [Rewrite H; Clear H | Clear H]);
        Simpl; Auto; Simplify
-  | [(Case (eq_term ?1 ?2) of ? ? end)] -> 
+  | [(if (eq_term ?1 ?2) then ? else ?)] -> 
        ((Elim_eq_term ?1 ?2); Intro H; [Rewrite H; Clear H | Clear H]); 
        Simpl; Auto; Simplify
-  | [(Case (eq_pos ?1 ?2) of ? ? end)] -> 
+  | [(if (eq_pos ?1 ?2) then ? else ?)] -> 
        ((Elim_eq_pos ?1 ?2); Intro H; [Rewrite H; Clear H | Clear H]);
        Simpl; Auto; Simplify
   | _ -> Fail)

@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (** Equality on natural numbers *)
+Import nat_scope.
 
 Fixpoint  eq_nat [n:nat] : nat -> Prop :=
   [m:nat]Cases n m of 

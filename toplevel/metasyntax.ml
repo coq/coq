@@ -42,15 +42,15 @@ let constr_parser_with_glob = Pcoq.map_entry constr_to_ast Constr.constr
 
 let globalize_ref vars ref =
   match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,a) -> Constrextern.extern_reference loc a
+  | RRef (loc,a) -> Constrextern.extern_reference loc Idset.empty a
   | RVar (loc,x) -> Ident (loc,x)
   | _ -> anomaly "globalize_ref: not a reference"
 
 let globalize_ref_term vars ref =
   match Constrintern.interp_reference (vars,[]) ref with
-  | RRef (loc,a) -> CRef (Constrextern.extern_reference loc a)
+  | RRef (loc,a) -> CRef (Constrextern.extern_reference loc Idset.empty a)
   | RVar (loc,x) -> CRef (Ident (loc,x))
-  | c -> Constrextern.extern_rawconstr c 
+  | c -> Constrextern.extern_rawconstr Idset.empty c 
 
 let rec globalize_constr_expr vars = function
   | CRef ref -> globalize_ref_term vars ref
@@ -100,6 +100,7 @@ let (inPPSyntax,outPPSyntax) =
  * Syntax objects in compiled modules are not re-checked. *)
 
 let add_syntax_obj whatfor sel =
+  if not !Options.v7_only then
   Lib.add_anonymous_leaf (inPPSyntax (interp_syntax_entry whatfor sel))
 
 
@@ -304,7 +305,7 @@ let make_hunks_ast symbols etyps from =
 
   in make NoBreak symbols
 
-let add_break n l = UnpCut (PpBrk(n,1)) :: l
+let add_break n l = UnpCut (PpBrk(n,0)) :: l
 
 let make_hunks etyps symbols =
   let vars,typs = List.split etyps in
@@ -319,25 +320,21 @@ let make_hunks etyps symbols =
 	  u :: make CanBreak prods
 
     | Terminal s :: prods when List.exists is_non_terminal prods ->
-	let protect =
-	  is_letter s.[0] ||
-	  (is_non_terminal (List.hd prods) &&
-	    (is_letter (s.[String.length s -1])) ||
-	    (is_digit (s.[String.length s -1]))) in
-	if is_comma s || is_right_bracket s then
-	  UnpTerminal s :: add_break 0 (make NoBreak prods)
-	else if (is_operator s || is_left_bracket s) && ws = CanBreak then
-	  add_break (if protect then 1 else 0)
-	    (UnpTerminal (if protect then s^" " else s) :: make CanBreak prods)
-	else
-          if protect then
-            (if ws = CanBreak then add_break 1 else (fun x -> x))
-	      (UnpTerminal (s^" ") :: make CanBreak prods)
-          else
-	    UnpTerminal s :: make CanBreak prods
+        if ws = CanBreak then
+          if is_comma s || is_right_bracket s then
+	    UnpTerminal s :: add_break 1 (make NoBreak prods)
+          else if is_operator s then
+	    UnpTerminal (" "^s) :: add_break 1 (make NoBreak prods)
+	  else
+	    add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
+        else
+	  UnpTerminal (s^" ") :: make CanBreak prods
 
     | Terminal s :: prods ->
-	UnpTerminal s :: make NoBreak prods
+        if ws = CanBreak then
+	  UnpTerminal (" "^s) :: make NoBreak prods
+        else
+          UnpTerminal s :: make NoBreak prods
 
     | Break n :: prods ->
 	add_break n (make NoBreak prods)
@@ -365,17 +362,28 @@ let make_symbolic n symbols etyps =
   (n,List.map assoc_of_type etyps),
   (String.concat " " (List.flatten (List.map string_of_symbol symbols)))
 
+let rec define_keywords = function
+    NonTerm(_,Some(_,(ETConstr _|ETOther("constr","binder_constr")))) as n1 ::
+    Term("IDENT",k) :: l when not !Options.v7 ->
+      prerr_endline ("Defining '"^k^"' as keyword");
+      Lexer.add_token("",k);
+      n1 :: Term("",k) :: define_keywords l
+  | n :: l -> n :: define_keywords l
+  | [] -> []
+
 let make_production etyps symbols =
-  List.fold_right
-    (fun t l -> match t with
-      | NonTerminal m ->
-	  let typ = List.assoc m etyps in
-	  NonTerm (ProdPrimitive typ, Some (m,typ)) :: l
-      | Terminal s ->
-	  Term (Extend.terminal s) :: l
-      | Break _ ->
-	  l)
-    symbols []
+  let prod =
+    List.fold_right
+      (fun t l -> match t with
+        | NonTerminal m ->
+	    let typ = List.assoc m etyps in
+	    NonTerm (ProdPrimitive typ, Some (m,typ)) :: l
+        | Terminal s ->
+	    Term (Extend.terminal s) :: l
+        | Break _ ->
+	    l)
+      symbols [] in
+  define_keywords prod
 
 let strip s =
   let n = String.length s in
@@ -550,9 +558,11 @@ let recompute_assoc typs =
 
 let add_syntax_extension df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
+  let inner = if !Options.v7 then (10,InternalProd) else
+    (200,InternalProd) in
   let (typs,symbs) =
     find_symbols
-      (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
+      (n,BorderProd(true,assoc)) inner (n,BorderProd(false,assoc))
       [] (split df) in
   let typs = List.map (set_entry_type etyps) typs in
   let assoc = recompute_assoc typs in
@@ -570,6 +580,7 @@ let load_notation _ (_,(_,prec,ntn,scope,pat,onlyparse,_)) =
   Symbols.declare_scope scope
 
 let open_notation i (_,(oldse,prec,ntn,scope,pat,onlyparse,df)) =
+(*print_string ("Open notation "^ntn^" at "^string_of_int (fst prec)^"\n");*)
   if i=1 then begin
     let b = Symbols.exists_notation_in_scope scope prec ntn pat in
     (* Declare the old printer rule and its interpretation *)
@@ -622,11 +633,14 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   let rule_name = ntn^"_"^scope^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
-let add_notation_in_scope df c (assoc,n,etyps,onlyparse) sc toks =
+let add_notation_in_scope df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
+  let onlyparse = onlyparse or !Options.v7_only in
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
+  let inner =
+    if !Options.v7 then (10,InternalProd) else (200,InternalProd) in
   let (typs,symbols) =
     find_symbols
-      (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
+      (n,BorderProd(true,assoc)) inner (n,BorderProd(false,assoc))
       [] toks in
   let vars = List.map fst typs in
   (* To globalize... *)
@@ -635,21 +649,36 @@ let add_notation_in_scope df c (assoc,n,etyps,onlyparse) sc toks =
   let assoc = recompute_assoc typs in
   (* Declare the parsing and printing rules if not already done *)
   let (prec,notation) = make_symbolic n symbols typs in
+  let (ppprec,ppn,pptyps,ppsymbols) =
+    match omodv8 with
+        Some(toks8,(a8,n8,typs8,_)) when Options.do_translate() ->
+          let (typs,symbols) =
+            find_symbols
+              (n8,BorderProd(true,a8)) (200,InternalProd)
+              (n8,BorderProd(false,a8))
+              [] toks8 in
+          let typs = List.map (set_entry_type typs8) typs in
+          let (prec,notation) = make_symbolic n8 symbols typs in
+          (prec, n8, typs, symbols)
+    | _ -> (prec, n, typs, symbols) in
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
-  let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbols) in
-  Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule));
+  let pp_rule =
+    if onlyparse then None
+    else Some (make_pp_rule pptyps ppsymbols) in
+  Lib.add_anonymous_leaf
+    (inSyntaxExtension(ppprec,notation,gram_rule,pp_rule));
   let old_pp_rule =
     if onlyparse then None
-    else 
-      let r = 
-	interp_rawconstr_gen false Evd.empty (Global.env()) [] false (vars,[]) c in
-      Some (make_old_pp_rule n symbols typs r notation scope vars) in
+    else
+      let r = interp_rawconstr_gen
+          false Evd.empty (Global.env()) [] false (vars,[]) c in
+      Some (make_old_pp_rule ppn ppsymbols pptyps r notation scope vars) in
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(old_pp_rule,prec,notation,scope,a,onlyparse,df))
+    (inNotation(old_pp_rule,ppprec,notation,scope,a,onlyparse,df))
 
-let add_notation df a modifiers sc =
+let add_notation df a modifiers mv8 sc =
   let toks = split df in
   match toks with 
     | [String x] when quote(strip x) = x & modifiers = [] ->
@@ -658,7 +687,13 @@ let add_notation df a modifiers sc =
 	let c = snd (interp_aconstr [] a) in
         Syntax_def.declare_syntactic_definition ident c
     | _ ->
-       add_notation_in_scope df a (interp_notation_modifiers modifiers) sc toks
+        add_notation_in_scope
+          df a (interp_notation_modifiers modifiers)
+          (option_app (fun (s8,ml8) ->
+            let toks8 = split s8 in 
+            let im8 = interp_notation_modifiers ml8 in
+            (toks8,im8)) mv8)
+          sc toks
 
 (* TODO add boxes information in the expression *)
 
@@ -682,12 +717,12 @@ let add_distfix assoc n df r sc =
   let df = String.concat " " l in
   let a = mkAppC (mkRefC r, vars) in
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
-  add_notation_in_scope df a (Some assoc,n,[],false) sc (split df)
+  add_notation_in_scope df a (Some assoc,n,[],false) None sc (split df)
 
-let add_infix assoc n inf pr onlyparse sc =
+let add_infix assoc n inf pr onlyparse mv8 sc =
 (*  let pr = Astterm.globalize_qualid pr in*)
   (* check the precedence *)
-  if n<1 or n>10 then
+  if !Options.v7 & (n<1 or n>10) then
     errorlabstrm "Metasyntax.infix_grammar_entry"
       (str"Precedence must be between 1 and 10.");
   (*
@@ -698,7 +733,11 @@ let add_infix assoc n inf pr onlyparse sc =
   let metas = [inject_var "x"; inject_var "y"] in
   let a = mkAppC (mkRefC pr,metas) in
   let df = "x "^(quote inf)^" y" in
-  add_notation_in_scope df a (assoc,n,[],onlyparse) sc (split df)
+  let mv8 = match mv8 with
+      None -> Some(split df,(assoc,n*10,[],false))
+    | Some(a8,n8,s8) ->
+        Some(split ("x "^quote s8^" y"),(a8,n8,[],false)) in
+  add_notation_in_scope df a (assoc,n,[],onlyparse) mv8 sc (split df)
 
 (* Delimiters *)
 let load_delimiters _ (_,(scope,dlm)) =

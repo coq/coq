@@ -107,6 +107,19 @@ let _ = Tacinterp.add_genarg_interp "minus_div_arg"
 	  (in_gen (wit_pair (wit_opt rawwit_constr) (wit_opt rawwit_constr))
 	    (out_gen rawwit_minus_div_arg x))))))
 
+open Ppconstrnew
+let pp_minus_div_arg (omin,odiv) = str "still no printer for minus_div_arg"
+let pp_raw_minus_div_arg (omin,odiv) =
+  if omin=None && odiv=None then mt() else
+    spc() ++ str "with" ++
+    pr_opt (fun c -> str "minus := " ++ pr_constr c) omin ++
+    pr_opt (fun c -> str "div := " ++ pr_constr c) odiv
+
+let () =
+  Pptactic.declare_extra_genarg_pprule true
+    (rawwit_minus_div_arg,pp_raw_minus_div_arg)
+    (wit_minus_div_arg,pp_minus_div_arg)
+
 open Pcoq.Constr
 GEXTEND Gram
   GLOBAL: minus_div_arg;

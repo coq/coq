@@ -175,7 +175,8 @@ let explicitize_prod_entry pos univ nt =
   | "constr5" -> ETConstr (5,pos)
   | "constr6" -> ETConstr (6,pos)
   | "constr7" -> ETConstr (7,pos)
-  | "constr8" | "constr" -> ETConstr (8,pos)
+  | "constr8" -> ETConstr (8,pos)
+  | "constr" when !Options.v7 -> ETConstr (8,pos)
   | "constr9" -> ETConstr (9,pos)
   | "constr10" | "lconstr" -> ETConstr (10,pos)
   | "pattern" -> ETPattern

@@ -14,6 +14,7 @@ Require SeqSeries.
 Require Ranalysis1.
 Require Max.
 Require Even.
+Import R_scope.
 
 Definition Boule [x:R;r:posreal] : R -> Prop := [y:R]``(Rabsolu (y-x))<r``.
 

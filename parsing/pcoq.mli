@@ -129,9 +129,9 @@ module Prim :
 module Constr :
   sig
     val constr : constr_expr Gram.Entry.e
-    val constr9 : constr_expr Gram.Entry.e
     val constr_eoi : constr_expr Gram.Entry.e
     val lconstr : constr_expr Gram.Entry.e
+    val operconstr : constr_expr Gram.Entry.e
     val ident : identifier Gram.Entry.e
     val global : reference Gram.Entry.e
     val sort : rawsort Gram.Entry.e
@@ -164,8 +164,6 @@ module Tactic :
 module Vernac_ :
   sig
     open Decl_kinds
-    val thm_token : theorem_kind Gram.Entry.e
-    val class_rawexpr : class_rawexpr Gram.Entry.e
     val gallina : vernac_expr Gram.Entry.e
     val gallina_ext : vernac_expr Gram.Entry.e
     val command : vernac_expr Gram.Entry.e
@@ -173,3 +171,5 @@ module Vernac_ :
     val vernac : vernac_expr Gram.Entry.e
     val vernac_eoi : vernac_expr Gram.Entry.e
   end
+
+val reset_all_grammars : unit -> unit

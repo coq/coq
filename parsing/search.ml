@@ -107,7 +107,7 @@ let plain_display ref a c =
 let filter_by_module (module_list:dir_path list) (accept:bool) 
   (ref:global_reference) _ _ =
   try
-    let sp = sp_of_global None ref in
+    let sp = sp_of_global ref in
     let sl = dirpath sp in
     let rec filter_aux = function
       | m :: tl -> (not (is_dirpath_prefix_of m sl)) && (filter_aux tl)

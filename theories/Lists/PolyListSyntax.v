@@ -12,4 +12,5 @@
 
 Require PolyList.
 
-Infix RIGHTA 7 "^" app.
+Infix RIGHTA 7 "^" app
+  V8only 30.

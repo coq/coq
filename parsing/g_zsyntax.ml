@@ -54,11 +54,15 @@ let z_of_string pos_or_neg s dloc =
     aZERO
 
 (* Declare the primitive parser with Grammar and without the scope mechanism *)
-open Pcoq
+let zsyntax_create name =
+  let e =
+    Pcoq.create_constr_entry (Pcoq.get_univ "znatural") name in
+  Pcoq.Gram.Unsafe.clear_entry e;
+  e
 
-let number = create_constr_entry (get_univ "znatural") "number" 
+let number = zsyntax_create "number" 
 
-let negnumber = create_constr_entry (get_univ "znatural") "negnumber"
+let negnumber = zsyntax_create "negnumber"
  
 let _ =
   Gram.extend number None

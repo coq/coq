@@ -420,18 +420,18 @@ let print_term inner_types l env csr =
        >]
 )
    | T.Const kn ->
-       let sp = Nt.sp_of_global None (L.ConstRef kn) in  
+       let sp = Nt.sp_of_global (L.ConstRef kn) in  
 	 X.xml_empty "CONST"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Constant) ; "id", next_id])
    | T.Ind (kn,i) ->
-      let sp = Nt.sp_of_global None (L.IndRef(kn,0)) in  
+      let sp = Nt.sp_of_global (L.IndRef(kn,0)) in  
       X.xml_empty "MUTIND"
        ["uri",(uri_of_path sp Inductive) ;
         "noType",(string_of_int i) ;
         "id", next_id]
    | T.Construct ((kn,i),j) ->
-      let sp = Nt.sp_of_global None (L.IndRef(kn,0)) in  
+      let sp = Nt.sp_of_global (L.IndRef(kn,0)) in  
       X.xml_empty "MUTCONSTRUCT"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Inductive) ;
@@ -439,7 +439,7 @@ let print_term inner_types l env csr =
          "noConstr",(string_of_int j) ;
          "id", next_id])
    | T.Case ({T.ci_ind=(kn,i)},ty,term,a) ->
-      let sp = Nt.sp_of_global None (L.IndRef(kn,0)) in  
+      let sp = Nt.sp_of_global (L.IndRef(kn,0)) in  
       let (uri, typeno) = (uri_of_path sp Inductive),i in
        X.xml_nempty "MUTCASE"
         (add_sort_attribute true
@@ -728,7 +728,7 @@ let print (_,qid as locqid) fn =
        let (_,body,typ) = G.lookup_named id in
         sp,Variable,print_variable id body (T.body_of_type typ) env inner_types
     | Ln.ConstRef kn ->
-       let sp = Nt.sp_of_global None glob_ref in
+       let sp = Nt.sp_of_global glob_ref in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant kn in
        let hyps = string_list_of_named_context_list hyps in
@@ -742,7 +742,7 @@ let print (_,qid as locqid) fn =
 	      print_definition id c typ [] hyps env inner_types
         end
     | Ln.IndRef (kn,_) ->
-       let sp = Nt.sp_of_global None (Ln.IndRef(kn,0)) in  
+       let sp = Nt.sp_of_global (Ln.IndRef(kn,0)) in  
        let {D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = G.lookup_mind kn in

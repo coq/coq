@@ -117,8 +117,8 @@ let raw_string_of_ref = function
   | VarRef id -> 
       "SECVAR("^(string_of_id id)^")"
 
-let extern_reference loc r =
-  try Qualid (loc,shortest_qualid_of_global None r)
+let extern_reference loc vars r =
+  try Qualid (loc,shortest_qualid_of_global vars r)
   with Not_found ->
     (* happens in debugger *)
     Ident (loc,id_of_string (raw_string_of_ref r))
@@ -126,7 +126,7 @@ let extern_reference loc r =
 (**********************************************************************)
 (* conversion of terms and cases patterns                             *)
 
-let rec extern_cases_pattern_in_scope scopes pat =
+let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !print_no_symbol then raise No_match;
     let (sc,n) = Symbols.uninterp_cases_numeral pat in
@@ -138,8 +138,9 @@ let rec extern_cases_pattern_in_scope scopes pat =
   | PatVar (_,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
   | PatVar (_,Anonymous) -> CPatAtom (loc, None) 
   | PatCstr(_,cstrsp,args,na) ->
-      let args = List.map (extern_cases_pattern_in_scope scopes) args in
-      let p = CPatCstr (loc,extern_reference loc (ConstructRef cstrsp),args) in
+      let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
+      let p = CPatCstr
+        (loc,extern_reference loc vars (ConstructRef cstrsp),args) in
       (match na with
 	| Name id -> CPatAlias (loc,p,id)
 	| Anonymous -> p)
@@ -187,16 +188,16 @@ let extern_app impl f args =
   else
     explicitize impl (CRef f) args
 
-let rec extern_args extern scopes args subscopes =
+let rec extern_args extern scopes env args subscopes =
   match args with
     | [] -> []
     | a::args ->
 	let argscopes, subscopes = match subscopes with
 	  | [] -> scopes, []
 	  | scopt::subscopes -> option_cons scopt scopes, subscopes in
-	extern argscopes a :: extern_args extern scopes args subscopes
+	extern argscopes env a :: extern_args extern scopes env args subscopes
 
-let rec extern scopes r =
+let rec extern scopes vars r =
   try 
     if !print_no_symbol then raise No_match;
     extern_numeral scopes r (Symbols.uninterp_numeral r)
@@ -204,10 +205,10 @@ let rec extern scopes r =
 
   try 
     if !print_no_symbol then raise No_match;
-    extern_symbol scopes r (Symbols.uninterp_notations r)
+    extern_symbol scopes vars r (Symbols.uninterp_notations r)
   with No_match -> match r with
 
-  | RRef (_,ref) -> CRef (extern_reference loc ref)
+  | RRef (_,ref) -> CRef (extern_reference loc vars ref)
 
   | RVar (_,id) -> CRef (Ident (loc,id))
 
@@ -222,52 +223,59 @@ let rec extern scopes r =
 	 | REvar (loc,ev) -> extern_evar loc ev (* we drop args *)
 	 | RRef (loc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
-	     let args = extern_args extern scopes args subscopes in
-	     extern_app (implicits_of_global ref) (extern_reference loc ref)
+	     let args = extern_args extern scopes vars args subscopes in
+	     extern_app (implicits_of_global ref)
+               (extern_reference loc vars ref)
 	       args
 	 | _       -> 
-	     explicitize [] (extern scopes f) (List.map (extern scopes) args))
+	     explicitize [] (extern scopes vars f)
+               (List.map (extern scopes vars) args))
 
   | RProd (_,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
-      CArrow (loc,extern scopes t,extern scopes c)
+      CArrow (loc,extern scopes vars t, extern scopes vars c)
 
   | RLetIn (_,na,t,c) ->
-      CLetIn (loc,(loc,na),extern scopes t,extern scopes c)
+      CLetIn (loc,(loc,na),extern scopes vars t,
+              extern scopes (add_vname vars na) c)
 
   | RProd (_,na,t,c) ->
-      let t = extern scopes t in
-      let (idl,c) = factorize_prod scopes t c in
+      let t = extern scopes vars t in
+      let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
       CProdN (loc,[(loc,na)::idl,t],c)
 
   | RLambda (_,na,t,c) ->
-      let t = extern scopes t in
-      let (idl,c) = factorize_lambda scopes t c in
+      let t = extern scopes vars t in
+      let (idl,c) = factorize_lambda scopes (add_vname vars na) t c in
       CLambdaN (loc,[(loc,na)::idl,t],c)
 
   | RCases (_,typopt,tml,eqns) ->
-      let pred = option_app (extern scopes) typopt in
-      let tml = List.map (extern scopes) tml in
-      let eqns = List.map (extern_eqn scopes) eqns in 
+      let pred = option_app (extern scopes vars) typopt in
+      let tml = List.map (extern scopes vars) tml in
+      let eqns = List.map (extern_eqn scopes vars) eqns in 
       CCases (loc,pred,tml,eqns)
 	
   | ROrderedCase (_,cs,typopt,tm,bv) ->
-      let bv = Array.to_list (Array.map (extern scopes) bv) in
+      let bv = Array.to_list (Array.map (extern scopes vars) bv) in
       COrderedCase
-	(loc,cs,option_app (extern scopes) typopt,extern scopes tm,bv)
+	(loc,cs,option_app (extern scopes vars) typopt,
+         extern scopes vars tm,bv)
 
   | RRec (_,fk,idv,tyv,bv) ->
+      let vars' = Array.fold_right Idset.add idv vars in
       (match fk with
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-		 (fi,nv.(i),extern scopes tyv.(i),extern scopes bv.(i))) idv
+		 (fi,nv.(i),extern scopes vars tyv.(i),
+                  extern scopes vars' bv.(i))) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 
 	     let listdecl =
                Array.mapi (fun i fi ->
-		 (fi,extern scopes tyv.(i),extern scopes bv.(i))) idv
+		 (fi,extern scopes vars tyv.(i),
+                  extern scopes vars' bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
@@ -280,33 +288,36 @@ let rec extern scopes r =
 
   | RHole (_,e) -> CHole loc
 
-  | RCast (_,c,t) -> CCast (loc,extern scopes c,extern scopes t)
+  | RCast (_,c,t) -> CCast (loc,extern scopes vars c,extern scopes vars t)
 
   | RDynamic (_,d) -> CDynamic (loc,d)
 	
-and factorize_prod scopes aty = function
+and factorize_prod scopes vars aty = function
   | RProd (_,Name id,ty,c)
-      when aty = extern scopes ty
+      when aty = extern scopes vars ty
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
-	-> let (nal,c) = factorize_prod scopes aty c in ((loc,Name id)::nal,c)
-  | c -> ([],extern scopes c)
+	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
+           ((loc,Name id)::nal,c)
+  | c -> ([],extern scopes vars c)
 
-and factorize_lambda scopes aty = function
+and factorize_lambda scopes vars aty = function
   | RLambda (_,na,ty,c)
-      when aty = extern scopes ty
+      when aty = extern scopes vars ty
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
-	-> let (nal,c) = factorize_lambda scopes aty c in ((loc,na)::nal,c)
-  | c -> ([],extern scopes c)
+	-> let (nal,c) = factorize_lambda scopes (add_vname vars na) aty c in
+           ((loc,na)::nal,c)
+  | c -> ([],extern scopes vars c)
 
-and extern_eqn scopes (loc,ids,pl,c) =
-  (loc,List.map (extern_cases_pattern_in_scope scopes) pl,extern scopes c)
+and extern_eqn scopes vars (loc,ids,pl,c) =
+  (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
+   extern scopes vars c)
 
 and extern_numeral scopes t (sc,n) =
   match Symbols.availability_of_numeral sc scopes with
     | None -> raise No_match
     | Some key -> insert_delimiters (CNumeral (loc,n)) key
 
-and extern_symbol scopes t = function
+and extern_symbol scopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as rule)::rules ->
       try
@@ -329,34 +340,36 @@ and extern_symbol scopes t = function
 	      | Some (scopt,key) ->
 	          let scopes = option_cons scopt scopes in
 	          let l =
-		    List.map (fun (c,scl) -> extern (scl@scopes) c) subst in
+		    List.map (fun (c,scl) -> extern (scl@scopes) vars c)
+                      subst in
 	          insert_delimiters (CNotation (loc,ntn,l)) key)
           | SynDefRule kn ->
               CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
  	if args = [] then e 
-	else explicitize [] e (List.map (extern scopes) args)
+	else explicitize [] e (List.map (extern scopes vars) args)
       with
-	  No_match -> extern_symbol scopes t rules
+	  No_match -> extern_symbol scopes vars t rules
 
-let extern_rawconstr = 
-  extern (Symbols.current_scopes())
+let extern_rawconstr vars c = 
+  extern (Symbols.current_scopes()) vars c
 
-let extern_cases_pattern = 
-  extern_cases_pattern_in_scope (Symbols.current_scopes())
+let extern_cases_pattern vars p = 
+  extern_cases_pattern_in_scope (Symbols.current_scopes()) vars p
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
        
 let extern_constr at_top env t =
+  let vars = vars_of_env env in
   let avoid = if at_top then ids_of_context env else [] in
-  extern (Symbols.current_scopes())
+  extern (Symbols.current_scopes()) vars
     (Detyping.detype env avoid (names_of_rel_context env) t)
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 
-let rec extern_pattern tenv env = function
-  | PRef ref -> CRef (extern_reference loc ref)
+let rec extern_pattern tenv vars env = function
+  | PRef ref -> CRef (extern_reference loc vars ref)
 
   | PVar id -> CRef (Ident (loc,id))
 
@@ -379,47 +392,53 @@ let rec extern_pattern tenv env = function
       let (f,args) = 
 	skip_coercion (function PRef r -> Some r | _ -> None)
 	  (f,Array.to_list args) in
-      let args = List.map (extern_pattern tenv env) args in
+      let args = List.map (extern_pattern tenv vars env) args in
       (match f with
 	 | PRef ref ->
-	     extern_app (implicits_of_global ref) (extern_reference loc ref)
-	     args
-	 | _       -> explicitize [] (extern_pattern tenv env f) args)
+	     extern_app (implicits_of_global ref)
+               (extern_reference loc vars ref)
+	       args
+	 | _       -> explicitize [] (extern_pattern tenv vars env f) args)
 
   | PSoApp (n,args) ->
-      let args = List.map (extern_pattern tenv env) args in
+      let args = List.map (extern_pattern tenv vars env) args in
       (* [-n] is the trick to embed a so patten into a regular application *)
       (* see constrintern.ml and g_constr.ml4 *)
       explicitize [] (CMeta (loc,-n)) args
 
   | PProd (Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
-      CArrow (loc,extern_pattern tenv env t,extern_pattern tenv env c)
+      CArrow (loc,extern_pattern tenv vars env t,
+              extern_pattern tenv vars env c)
 
   | PLetIn (na,t,c) ->
-      CLetIn (loc,(loc,na),extern_pattern tenv env t,extern_pattern tenv env c)
+      CLetIn (loc,(loc,na),extern_pattern tenv vars env t,
+              extern_pattern tenv (add_vname vars na) (na::env) c)
 
   | PProd (na,t,c) ->
-      let t = extern_pattern tenv env t in
-      let (idl,c) = factorize_prod_pattern tenv (add_name na env) t c in
+      let t = extern_pattern tenv vars env t in
+      let (idl,c) =
+        factorize_prod_pattern tenv (add_vname vars na) (na::env) t c in
       CProdN (loc,[(loc,na)::idl,t],c)
 
   | PLambda (na,t,c) ->
-      let t = extern_pattern tenv env t in
-      let (idl,c) = factorize_lambda_pattern tenv (add_name na env) t c in
+      let t = extern_pattern tenv vars env t in
+      let (idl,c) =
+        factorize_lambda_pattern tenv (add_vname vars na) (na::env) t c in
       CLambdaN (loc,[(loc,na)::idl,t],c)
 
   | PCase (cs,typopt,tm,bv) ->
-      let bv = Array.to_list (Array.map (extern_pattern tenv env) bv) in
+      let bv = Array.to_list (Array.map (extern_pattern tenv vars env) bv) in
       COrderedCase
-	(loc,cs,option_app (extern_pattern tenv env) typopt,
-	 extern_pattern tenv env tm,bv)
+	(loc,cs,option_app (extern_pattern tenv vars env) typopt,
+	 extern_pattern tenv vars env tm,bv)
 
   | PFix f ->
-      extern (Symbols.current_scopes()) (Detyping.detype tenv [] env (mkFix f))
+      extern (Symbols.current_scopes()) vars
+        (Detyping.detype tenv [] env (mkFix f))
 
   | PCoFix c ->
-      extern (Symbols.current_scopes())
+      extern (Symbols.current_scopes()) vars
         (Detyping.detype tenv [] env (mkCoFix c))
 
   | PSort s ->
@@ -429,18 +448,23 @@ let rec extern_pattern tenv env = function
 	 | RType _ -> RType None in
       CSort (loc,s)
 
-and factorize_prod_pattern tenv env aty = function
+and factorize_prod_pattern tenv vars env aty = function
   | PProd (Name id as na,ty,c)
-      when aty = extern_pattern tenv env ty
-	& not (occur_var_constr_expr id aty) (*To avoid na in ty escapes scope*)
-	-> let (nal,c) = factorize_prod_pattern tenv (na::env) aty c in
+      when aty = extern_pattern tenv vars env ty
+      & not (occur_var_constr_expr id aty) (*To avoid na in ty escapes scope*)
+	-> let (nal,c) =
+          factorize_prod_pattern tenv (add_vname vars na) (na::env) aty c in
 	   ((loc,Name id)::nal,c)
-  | c -> ([],extern_pattern tenv env c)
+  | c -> ([],extern_pattern tenv vars env c)
 
-and factorize_lambda_pattern tenv env aty = function
+and factorize_lambda_pattern tenv vars env aty = function
   | PLambda (na,ty,c)
-      when aty = extern_pattern tenv env ty
+      when aty = extern_pattern tenv vars env ty
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
-	-> let (nal,c) = factorize_lambda_pattern tenv (add_name na env) aty c
-           in ((loc,na)::nal,c)
-  | c -> ([],extern_pattern tenv env c)
+	-> let (nal,c) =
+          factorize_lambda_pattern tenv (add_vname vars na) (na::env) aty c
+        in ((loc,na)::nal,c)
+  | c -> ([],extern_pattern tenv vars env c)
+
+let extern_pattern tenv env pat =
+  extern_pattern tenv (vars_of_env tenv) env pat

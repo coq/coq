@@ -107,7 +107,7 @@ Apply F_ext; Auto.
 Qed.
 
 
-Lemma fix_eq : (x:A)(fix x)=(F x [y:A][p:(R y x)](fix y)).
+Lemma Fix_eq : (x:A)(fix x)=(F x [y:A][p:(R y x)](fix y)).
 Intro; Unfold fix.
 Case (Fix_F_eq x).
 Apply F_ext; Intros.

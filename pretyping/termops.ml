@@ -537,7 +537,19 @@ let first_char id =
 
 let lowercase_first_char id = String.lowercase (first_char id)
 
-let id_of_global env ref = Nametab.id_of_global (Some (named_context env)) ref
+let vars_of_env env =
+  let s = 
+    Sign.fold_named_context (fun (id,_,_) s -> Idset.add id s)
+      (named_context env) ~init:Idset.empty in
+  Sign.fold_rel_context
+    (fun (na,_,_) s -> match na with Name id -> Idset.add id s | _ -> s)
+    (rel_context env) ~init:s
+
+let add_vname vars = function
+    Name id -> Idset.add id vars
+  | _ -> vars
+
+let id_of_global = Nametab.id_of_global
 
 let sort_hdchar = function
   | Prop(_) -> "P"
@@ -558,9 +570,9 @@ let hdchar env c =
 	if i=0 then 
 	  lowercase_first_char (id_of_label (label kn))
 	else 
-	  lowercase_first_char (id_of_global env (IndRef x))
+	  lowercase_first_char (id_of_global (IndRef x))
     | Construct ((sp,i) as x) ->
-	lowercase_first_char (id_of_global env (ConstructRef x))
+	lowercase_first_char (id_of_global (ConstructRef x))
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar s
     | Rel n ->
@@ -671,12 +683,12 @@ let occur_rel p env id =
 let occur_id env nenv id0 c =
   let rec occur n c = match kind_of_term c with
     | Var id when  id=id0 -> raise Occur
-    | Const kn when id_of_global env (ConstRef kn) = id0 -> raise Occur
+    | Const kn when id_of_global (ConstRef kn) = id0 -> raise Occur
     | Ind ind_sp
-	when id_of_global env (IndRef ind_sp) = id0 ->
+	when id_of_global (IndRef ind_sp) = id0 ->
         raise Occur
     | Construct cstr_sp
-	when id_of_global env (ConstructRef cstr_sp) = id0 ->
+	when id_of_global (ConstructRef cstr_sp) = id0 ->
         raise Occur
     | Rel p when p>n & occur_rel (p-n) nenv id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c

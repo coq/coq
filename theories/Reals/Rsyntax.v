@@ -12,6 +12,7 @@ Require Export Rdefinitions.
 Axiom NRplus : R->R.
 Axiom NRmult : R->R.
 
+V7only[
 Grammar rnatural ident :=
   nat_id [ prim:var($id) ] -> [$id]
 
@@ -194,43 +195,51 @@ Syntax constr
   | Rodd_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [ $r:"r_printer_odd" ]
   | Reven_inside [<<(REXPR <<(Rmult (Rplus R1 R1) $r)>>)>>] -> [ $r:"r_printer_even" ]
 .
-
+].
 (* For parsing/printing based on scopes *)
 Module R_scope.
 
 Delimits Scope R_scope with R.
-Infix "<=" Rle (at level 5, no associativity) : R_scope.
-Infix "<"  Rlt (at level 5, no associativity) : R_scope.
-Infix ">=" Rge (at level 5, no associativity) : R_scope.
-Infix ">" Rgt (at level 5, no associativity) : R_scope.
-Infix "+" Rplus (at level 4) : R_scope.
-Infix "-" Rminus (at level 4) : R_scope.
-Infix "*" Rmult (at level 3) : R_scope.
-Infix "/" Rdiv (at level 3) : R_scope.
-Distfix 0 "- _" Ropp : R_scope.
-Notation "x == y == z" := (eqT R x y)/\(eqT R y z)
-  (at level 5, y at level 4): R_scope.
-Notation "x  <=  y  <=  z" := (Rle x y)/\(Rle y z)
-  (at level 5, y at level 4) : R_scope.
-Notation "x  <=  y  <  z"  := (Rle x y)/\(Rlt y z)
-  (at level 5, y at level 4) : R_scope.
-Notation  "x  <  y  <  z"  := (Rlt x y)/\(Rlt y z)
-  (at level 5, y at level 4) : R_scope.
-Notation  "x  <  y  <=  z" := (Rlt x y)/\(Rle y z)
-  (at level 5, y at level 4) : R_scope.
-Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.
-Distfix 0 "/ _" Rinv : R_scope.
 
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope R_scope.
 
-(*
-Syntax constr
-  level 0:
-    Rzero' [ R0 ] -> [ _:"r_printer_R0" ]
-  | Rone' [ R1 ] -> [ _:"r_printer_R1" ]
-  | Rconst' [(Rplus R1 $r)] -> [$r:"r_printer_Rplus1"]
-  | Ropp' [(Ropp $n)] -> [ $n:"r_printer_Ropp" ]
-*)
+Infix "<=" Rle (at level 5, no associativity) : R_scope
+  V8only (at level 50, no associativity).
+Infix "<"  Rlt (at level 5, no associativity) : R_scope
+  V8only (at level 50, no associativity).
+Infix ">=" Rge (at level 5, no associativity) : R_scope
+  V8only (at level 50, no associativity).
+Infix ">" Rgt (at level 5, no associativity) : R_scope
+  V8only (at level 50, no associativity).
+Infix "+" Rplus (at level 4) : R_scope
+  V8only (at level 40, left associativity).
+Infix "-" Rminus (at level 4) : R_scope
+  V8only (at level 40, left associativity).
+Infix "*" Rmult (at level 3) : R_scope
+  V8only (at level 30, left associativity).
+Infix "/" Rdiv (at level 3) : R_scope
+  V8only (at level 30, left associativity).
+Notation "- x" := (Ropp x) (at level 0) : R_scope
+  V8only (at level 40, left associativity).
+Notation "x == y == z" := (eqT R x y)/\(eqT R y z)
+  (at level 5, y at level 4, no associtivity): R_scope
+  V8only (at level 50, y at level 49, no associativity).
+Notation "x  <=  y  <=  z" := (Rle x y)/\(Rle y z)
+  (at level 5, y at level 4) : R_scope
+  V8only (at level 50, y at level 49, no associativity).
+Notation "x  <=  y  <  z"  := (Rle x y)/\(Rlt y z)
+  (at level 5, y at level 4) : R_scope
+  V8only (at level 50, y at level 49, no associativity).
+Notation  "x  <  y  <  z"  := (Rlt x y)/\(Rlt y z)
+  (at level 5, y at level 4) : R_scope
+  V8only (at level 50, y at level 49, no associativity).
+Notation  "x  <  y  <=  z" := (Rlt x y)/\(Rle y z)
+  (at level 5, y at level 4) : R_scope
+  V8only (at level 50, y at level 49, no associativity).
+Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope
+  V8only (at level 50).
+Notation "/ x" := (Rinv x) (at level 0): R_scope
+  V8only (at level 30, left associativity).
 
 End R_scope.

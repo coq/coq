@@ -22,55 +22,6 @@ open Topconstr
 open Term
 (*i*)
 
-let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
-
-let pr_global ref = pr_global_env None ref
-
-let global_const_name kn =
-  try pr_global (ConstRef kn)
-  with Not_found -> (* May happen in debug *)
-    (str ("CONST("^(string_of_kn kn)^")"))
-
-let global_var_name id =
-  try pr_global (VarRef id)
-  with Not_found -> (* May happen in debug *)
-    (str ("SECVAR("^(string_of_id id)^")"))
-
-let global_ind_name (kn,tyi) =
-  try pr_global (IndRef (kn,tyi))
-  with Not_found -> (* May happen in debug *)
-    (str ("IND("^(string_of_kn kn)^","^(string_of_int tyi)^")"))
-
-let global_constr_name ((kn,tyi),i) =
-  try pr_global (ConstructRef ((kn,tyi),i))
-  with Not_found -> (* May happen in debug *)
-    (str ("CONSTRUCT("^(string_of_kn kn)^","^(string_of_int tyi)
-		  ^","^(string_of_int i)^")"))
-
-let globpr gt = match gt with
-  | Nvar(_,s) -> (pr_id s)
-  | Node(_,"EVAR", [Num (_,ev)]) -> (str ("?" ^ (string_of_int ev)))
-  | Node(_,"CONST",[Path(_,sl)]) ->
-      global_const_name (section_path sl)
-  | Node(_,"SECVAR",[Nvar(_,s)]) ->
-      global_var_name s
-  | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
-      global_ind_name (section_path sl, tyi)
-  | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
-      global_constr_name ((section_path sl, tyi), i)
-  | Dynamic(_,d) ->
-    if (Dyn.tag d) = "constr" then (str"<dynamic [constr]>")
-    else dfltpr gt
-  | gt -> dfltpr gt
-
-let wrap_exception = function
-    Anomaly (s1,s2) ->
-      warning ("Anomaly ("^s1^")"); pp s2;
-      str"<PP error: non-printable term>"
-  | Failure _ | UserError _ | Not_found ->
-      str"<PP error: non-printable term>"
-  | s -> raise s
-
 let latom = 0
 let lannot = 1
 let lprod = 8 (* not 1 because the scope extends to 8 on the right *)
@@ -157,6 +108,8 @@ let pr_binder pr (nal,t) =
 let pr_binders pr bl =
   hv 0 (prlist_with_sep pr_semicolon (pr_binder pr) bl)
 
+let pr_global vars ref = pr_global_env vars ref
+
 let rec pr_lambda_tail pr bll = function
   | CLambdaN (_,bl,a) ->
       pr_lambda_tail pr (bll ++ pr_semicolon() ++ pr_binders pr bl) a
@@ -230,21 +183,22 @@ let pr_annotation pr = function
   | None -> mt ()
   | Some t -> str "<" ++ pr ltop t ++ str ">" ++ brk (0,2)
 
-let rec pr_pat = function
-  | CPatAlias (_,p,x) -> pr_pat p ++ spc () ++ str "as" ++ spc () ++ pr_id x
+let rec pr_cases_pattern = function
+  | CPatAlias (_,p,x) ->
+      pr_cases_pattern p ++ spc () ++ str "as" ++ spc () ++ pr_id x
   | CPatCstr (_,c,[]) -> pr_reference c
   | CPatCstr (_,c,pl) ->
       hov 0 (
 	str "(" ++ pr_reference c ++ spc () ++ 
-	prlist_with_sep spc pr_pat pl ++ str ")")
+	prlist_with_sep spc pr_cases_pattern pl ++ str ")")
   | CPatAtom (_,Some c) -> pr_reference c
   | CPatAtom (_,None) -> str "_"
   | CPatNumeral (_,n) -> Bignat.pr_bigint n
-  | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_pat p)
+  | CPatDelimiters (_,key,p) -> pr_delimiters key (pr_cases_pattern p)
 
 let pr_eqn pr (_,patl,rhs) =
   hov 0 (
-    prlist_with_sep spc pr_pat patl ++ spc () ++
+    prlist_with_sep spc pr_cases_pattern patl ++ spc () ++
     str "=>" ++
     brk (1,1) ++ pr ltop rhs) ++ spc ()
 
@@ -394,26 +348,3 @@ let rec pr_may_eval pr = function
 	 str "[" ++ pr c ++ str "]")
   | ConstrTypeOf c -> hov 0 (str "Check " ++ brk (1,1) ++ pr c)
   | ConstrTerm c -> pr c
-
-(**********************************************************************)
-let constr_syntax_universe = "constr"
-(* This is starting precedence for printing constructions or tactics *)
-(* Level 9 means no parentheses except for applicative terms (at level 10) *)
-let constr_initial_prec = Some (9,Ppextend.L)
-
-let gentermpr_fail gt =
-  Esyntax.genprint globpr constr_syntax_universe constr_initial_prec gt
-
-let gentermpr gt =
-  try gentermpr_fail gt
-  with s -> wrap_exception s
-
-(* [at_top] means ids of env must be avoided in bound variables *)
-
-let gentermpr_core at_top env t =
-  gentermpr (Termast.ast_of_constr at_top env t)
-(*
-let gentermpr_core at_top env t =
-  pr_constr (Constrextern.extern_constr at_top env t)
-*)
-  

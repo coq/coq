@@ -22,6 +22,10 @@ open Constr
 open Prim
 open Tactic
 
+let tactic_kw =
+  [ "using"; "Orelse"; "Proof"; "Qed"; "And"; "()"; "|-" ]
+let _ = List.iter (fun s -> Lexer.add_token ("",s)) tactic_kw
+
 (* Functions overloaded by quotifier *)
 
 let induction_arg_of_constr c =
@@ -319,9 +323,9 @@ GEXTEND Gram
       (* Constructors *)
       | IDENT "Left"; bl = with_binding_list -> TacLeft bl
       | IDENT "Right"; bl = with_binding_list -> TacRight bl
-      | IDENT "Split"; bl = with_binding_list -> TacSplit bl
-      | IDENT "Exists"; bl = binding_list -> TacSplit bl
-      | IDENT "Exists" -> TacSplit NoBindings
+      | IDENT "Split"; bl = with_binding_list -> TacSplit (false,bl)
+      | IDENT "Exists"; bl = binding_list -> TacSplit (true,bl)
+      | IDENT "Exists" -> TacSplit (true,NoBindings)
       | IDENT "Constructor"; n = num_or_meta; l = with_binding_list ->
 	  TacConstructor (n,l)
       | IDENT "Constructor"; t = OPT tactic -> TacAnyConstructor t

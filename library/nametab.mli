@@ -133,23 +133,20 @@ val full_name_module : qualid -> dir_path
 (*s Reverse lookup -- finding user names corresponding to the given
   internal name *)
 
-
 val sp_of_syntactic_definition : kernel_name -> section_path
-
-val sp_of_global : 
-  Sign.named_context option -> global_reference -> section_path
 val shortest_qualid_of_global : 
-  Sign.named_context option -> global_reference -> qualid
+  Idset.t -> global_reference -> qualid
 val shortest_qualid_of_syndef : 
   kernel_name -> qualid
-val id_of_global : 
-  Sign.named_context option -> global_reference -> identifier
 
 val dir_of_mp :
   module_path -> dir_path
 
+val sp_of_global : global_reference -> section_path
+val id_of_global : global_reference -> identifier
+
 (* Printing of global references using names as short as possible *)
-val pr_global_env : Sign.named_context option -> global_reference -> std_ppcmds
+val pr_global_env : Idset.t -> global_reference -> std_ppcmds
 
 
 (* The [shortest_qualid] functions given an object with user_name

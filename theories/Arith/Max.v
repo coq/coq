@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Arith.
+Import nat_scope.
 
 (** maximum of two natural numbers *)
 

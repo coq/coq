@@ -12,6 +12,7 @@ Require fast_integer.
 Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
+Import Z_scope.
 
 (** Our purpose is to write an induction shema for {0,1,2,...}
   similar to the [nat] schema (Theorem [Natlike_rec]). For that the

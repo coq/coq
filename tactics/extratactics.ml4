@@ -18,6 +18,9 @@ open Extraargs
 (* Equality *)
 open Equality
 
+(* V8 TACTIC EXTEND rewrite
+  [ "rewrite" orient(b) constr_with_bindings(c) ] -> [general_rewrite_bindings b c]
+END*)
 TACTIC EXTEND Rewrite
   [ "Rewrite" orient(b) constr_with_bindings(c) ] -> [general_rewrite_bindings b c]
 END
@@ -104,6 +107,13 @@ TACTIC EXTEND Inversion
     -> [ dinv (Some false) c id ]
 END
 
+(* V8 TACTIC EXTEND inversionclear
+| [ "inversion_clear" quantified_hypothesis(id) ] -> [ inv (Some true) id ]
+| [ "inversion_clear" quantified_hypothesis(id) "in" ne_ident_list(l) ]
+      -> [ invIn_gen (Some true) id l]
+| [ "dependent" "inversion_clear" quantified_hypothesis(id) with_constr(c) ]
+    -> [ dinv (Some true) c id ]
+END*)
 TACTIC EXTEND InversionClear
 | [ "Inversion_clear" quantified_hypothesis(id) ] -> [ inv (Some true) id ]
 | [ "Inversion_clear" quantified_hypothesis(id) "in" ne_ident_list(l) ]

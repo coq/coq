@@ -124,7 +124,16 @@ let make_printing_rule l =
     (<:patt< _ >>,None,<:expr< failwith "Tactic extension: cannot occur" >>) in
   List.fold_right add_printing_clause l [default]
 
-let declare_tactic loc s cl =
+let new_tac_ext (s,cl) =
+  (String.lowercase s, List.map 
+    (fun (s,l,e) ->
+      (String.lowercase s, List.map
+        (function TacTerm s -> TacTerm (String.lowercase s)
+          | t -> t) l,
+        e))
+    cl)
+
+let declare_tactic_v7 loc s cl =
   let pl = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
   let hide_tac (_,p,e) =
@@ -142,13 +151,44 @@ let declare_tactic loc s cl =
   <:str_item<
     declare
       open Pcoq;
-      declare $list:List.map hide_tac cl$ end;
-      try
-       Refiner.add_tactic $se$ (fun [ $list:make_clauses s cl$ ])
-      with e -> Pp.pp (Cerrors.explain_exn e);
       Egrammar.extend_tactic_grammar $se$ $gl$;
       let pp = fun [ $list:pl$ ] in
-      Pptactic.declare_extra_tactic_pprule $se$ pp pp;
+      Pptactic.declare_extra_tactic_pprule False $se$ pp pp;
+    end
+  >>
+
+let declare_tactic loc s cl =
+  let (s',cl') = new_tac_ext (s,cl) in
+  let pl' = make_printing_rule cl' in
+  let gl' = mlexpr_of_clause cl' in
+  let se' = mlexpr_of_string s' in
+  let pl = make_printing_rule cl in
+  let gl = mlexpr_of_clause cl in
+  let hide_tac (_,p,e) =
+    (* reste a definir les fonctions cachees avec des noms frais *)
+    let stac = "h_"^s' in
+    let e = 
+      make_fun
+        <:expr<
+          Refiner.abstract_extended_tactic $mlexpr_of_string s'$ $make_args p$ $e$
+        >>
+      p in
+    <:str_item< value $lid:stac$ = $e$ >>
+  in
+  let se = mlexpr_of_string s in
+  <:str_item<
+    declare
+      open Pcoq;
+      declare $list:List.map hide_tac cl'$ end;
+      try
+       Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ])
+      with e -> Pp.pp (Cerrors.explain_exn e);
+      Egrammar.extend_tactic_grammar $se'$ $gl'$;
+      let pp' = fun [ $list:pl'$ ] in
+      Pptactic.declare_extra_tactic_pprule True $se'$ pp' pp';
+      Egrammar.extend_tactic_grammar $se'$ $gl$;
+      let pp = fun [ $list:pl$ ] in
+      Pptactic.declare_extra_tactic_pprule False $se'$ pp pp;
     end
   >>
 
@@ -194,7 +234,11 @@ EXTEND
     [ [ "TACTIC"; "EXTEND"; s = [ UIDENT | LIDENT ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
-         declare_tactic loc s l ] ]
+         declare_tactic loc s l
+      | "V7"; "TACTIC"; "EXTEND"; s = [ UIDENT | LIDENT ];
+        OPT "|"; l = LIST1 tacrule SEP "|";
+        "END" ->
+         declare_tactic_v7 loc s l ] ]
   ;
   tacrule:
     [ [ "["; s = STRING; l = LIST0 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"

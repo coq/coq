@@ -14,6 +14,7 @@ Require Rfunctions.
 Require Rseries.
 Require PartSum.
 Require Binomial.
+Import R_scope.
 
 (* TT Ak; 1<=k<=N *)
 Fixpoint prod_f_SO [An:nat->R;N:nat] : R := Cases N of

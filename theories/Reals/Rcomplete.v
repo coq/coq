@@ -13,6 +13,7 @@ Require Rfunctions.
 Require Rseries.
 Require SeqProp.
 Require Max.
+Import R_scope.
 
 (****************************************************)
 (*              R is complete :                     *)

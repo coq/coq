@@ -70,7 +70,7 @@ module PrintingCasesMake =
       let kn' = subst_kn subst kn in
 	if kn' == kn then obj else
 	  (kn',i), ints
-    let printer (ind,_) = pr_global_env None (IndRef ind)
+    let printer (ind,_) = pr_global_env Idset.empty (IndRef ind)
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message x = Test.member_message (printer x)

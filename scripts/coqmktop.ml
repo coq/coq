@@ -36,6 +36,7 @@ let proofs = split_cmo Tolink.proofs
 let tactics = split_cmo Tolink.tactics
 let toplevel = split_cmo Tolink.toplevel
 let highparsing = split_cmo Tolink.highparsing
+let highparsingnew = split_cmo Tolink.highparsingnew
 
 let core_objs = 
   libobjs @ lib @ kernel @ library @ pretyping @ interp @ parsing @ 
@@ -63,6 +64,7 @@ let top        = ref false
 let searchisos = ref false
 let coqide     = ref false
 let echo       = ref false
+let newsyntax  = ref false
 
 let src_dirs = [ []; [ "config" ]; [ "toplevel" ] ]
 
@@ -92,9 +94,10 @@ let module_of_file name =
 let files_to_link userfiles =
   let dyn_objs = if not !opt then dynobjs else [] in
   let command_objs = if !searchisos then coqsearch else [] in
-  let toplevel_objs = if !top then topobjs else if !opt then notopobjs else []
-  in
-  let objs = core_objs @ dyn_objs @ toplevel @ highparsing @ 
+  let toplevel_objs =
+    if !top then topobjs else if !opt then notopobjs else [] in
+  let parsobjs = if !newsyntax then highparsingnew else highparsing in
+  let objs = core_objs @ dyn_objs @ toplevel @ parsobjs @ 
     command_objs @ hightactics @ toplevel_objs in
   let tolink =
     if !opt then 
@@ -140,7 +143,8 @@ Options are:
   -top          Build Coq on a ocaml toplevel (incompatible with -opt)
   -searchisos   Build a toplevel for SearchIsos
   -ide          Build a toplevel for the Coq IDE
-  -R dir        Specify recursively directories for Ocaml\n";
+  -R dir        Specify recursively directories for Ocaml
+  -v8           Link with V8 grammar\n";
   exit 1
 
 (* parsing of the command line *)
@@ -156,6 +160,8 @@ let parse_args () =
         searchisos := true; parse (op,fl) rem
     | "-ide" :: rem ->
         coqide := true; parse (op,fl) rem
+    | "-v8" :: rem ->
+        newsyntax := true; parse (op,fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
     | ("-cclib"|"-ccopt"|"-I"|"-o" as o) :: rem' ->
 	begin

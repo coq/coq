@@ -259,7 +259,7 @@ let filter_by_module_from_varg_list l =
 let add_search (global_reference:global_reference) assumptions cstr =
   try 
   let id_string =
-    string_of_qualid (Nametab.shortest_qualid_of_global None 
+    string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty
 			global_reference) in
   let ast = 
     try
@@ -323,10 +323,10 @@ let globcv x =
     match x with
       | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
 	    convert_qualid
-	      (Nametab.shortest_qualid_of_global None (IndRef(sp,tyi)))
+	      (Nametab.shortest_qualid_of_global Idset.empty (IndRef(sp,tyi)))
       | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
 	  convert_qualid
-            (Nametab.shortest_qualid_of_global None
+            (Nametab.shortest_qualid_of_global Idset.empty
 	       (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 

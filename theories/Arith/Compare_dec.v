@@ -12,6 +12,7 @@ Require Le.
 Require Lt.
 Require Gt.
 Require Decidable.
+Import nat_scope.
 
 Definition zerop : (n:nat){n=O}+{lt O n}.
 NewDestruct n; Auto with arith.

@@ -11,6 +11,7 @@
 Require Mult.
 Require Compare_dec.
 Require Wf_nat.
+Import nat_scope.
 
 
 Inductive diveucl [a,b:nat] : Set 

@@ -46,7 +46,7 @@ val require_library :
   bool option -> qualid located list -> bool -> unit
 
 val require_library_from_file :
-  bool option -> identifier option -> string -> bool -> unit
+  bool option -> identifier option -> System.physical_path -> bool -> unit
 
 (*s [save_library_to s f] saves the current environment as a library [s]
   in the file [f]. *)

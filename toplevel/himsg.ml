@@ -316,7 +316,7 @@ let explain_unsolvable_implicit env = function
       str "Cannot infer a type of this anonymous abstraction"
   | ImplicitArg (c,n) ->
       str "Cannot infer the " ++ pr_ord n ++
-      str " implicit argument of " ++ Nametab.pr_global_env None c
+      str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
   | InternalHole ->
       str "Cannot infer a term for an internal placeholder"
   | TomatchTypeParameter (tyi,n) ->

@@ -12,6 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Rseries.
 Require PartSum.
+Import R_scope.
 
 (**********)
 Lemma sum_N_predN : (An:nat->R;N:nat) (lt O N) -> (sum_f_R0 An N)==``(sum_f_R0 An (pred N)) + (An N)``.

@@ -11,6 +11,7 @@
 Require Rbase.
 Require Rfunctions.
 Require Ranalysis1.
+Import R_scope.
 
 (**********)
 Lemma formule : (x,h,l1,l2:R;f1,f2:R->R) ``h<>0`` -> ``(f2 x)<>0`` -> ``(f2 (x+h))<>0`` -> ``((f1 (x+h))/(f2 (x+h))-(f1 x)/(f2 x))/h-(l1*(f2 x)-l2*(f1 x))/(Rsqr (f2 x))`` == ``/(f2 (x+h))*(((f1 (x+h))-(f1 x))/h-l1) + l1/((f2 x)*(f2 (x+h)))*((f2 x)-(f2 (x+h))) - (f1 x)/((f2 x)*(f2 (x+h)))*(((f2 (x+h))-(f2 x))/h-l2) + (l2*(f1 x))/((Rsqr (f2 x))*(f2 (x+h)))*((f2 (x+h))-(f2 x))``.

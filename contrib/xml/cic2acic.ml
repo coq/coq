@@ -254,11 +254,11 @@ print_endline "PASSATO" ; flush stdout ;
                 match g with
                    Libnames.ConstructRef ((induri,_),_)
                  | Libnames.IndRef (induri,_) ->
-                    Nametab.sp_of_global None (Libnames.IndRef (induri,0))
+                    Nametab.sp_of_global (Libnames.IndRef (induri,0))
                  | Libnames.VarRef id ->
                     (* Invariant: variables are never cooked in Coq *)
                     raise Not_found
-                 | _ -> Nametab.sp_of_global None g
+                 | _ -> Nametab.sp_of_global g
                in
                Dischargedhypsmap.get_discharged_hyps sp,
                get_module_path_of_section_path sp

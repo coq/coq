@@ -70,7 +70,7 @@ module type NAMETREE = sig
   val find : user_name -> 'a t -> 'a
   val exists : user_name -> 'a t -> bool
   val user_name : qualid -> 'a t -> user_name
-  val shortest_qualid : user_name -> 'a t -> qualid
+  val shortest_qualid : Idset.t -> user_name -> 'a t -> qualid
 end
 
 module Make(U:UserName) : NAMETREE with type user_name = U.t 
@@ -207,15 +207,17 @@ let exists uname tab =
   with
       Not_found -> false
 
-let shortest_qualid uname tab = 
+let shortest_qualid ctx uname tab = 
+  let id,dir = U.repr uname in
+  let hidden = Idset.mem id ctx in
   let rec find_uname pos dir (path,tab) = match path with
-    | Absolute (u,_) | Relative (u,_) when u=uname -> List.rev pos 
+    | Absolute (u,_) | Relative (u,_)
+          when u=uname && not(pos=[] && hidden) -> List.rev pos 
     | _ -> 
 	match dir with 
 	    [] -> raise Not_found
 	  | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tab)
   in
-  let id,dir = U.repr uname in
   let ptab = Idmap.find id tab in
   let found_dir = find_uname [] dir ptab in
     make_qualid (make_dirpath found_dir) id
@@ -413,16 +415,14 @@ let exists_modtype sp = SpTab.exists sp !the_modtypetab
 
 (* Reverse locate functions ***********************************************)
 
-let sp_of_global ctx_opt ref = 
-  match (ctx_opt,ref) with
-    | Some ctx, VarRef id -> 
-	let _ = Sign.lookup_named id ctx in
-	  make_path empty_dirpath id
+let sp_of_global ref = 
+  match ref with
+    | VarRef id -> make_path empty_dirpath id
     | _ -> Globrevtab.find (TrueGlobal ref) !the_globrevtab
 
 
-let id_of_global ctx_opt ref = 
-  let (_,id) = repr_path (sp_of_global ctx_opt ref) in 
+let id_of_global ref = 
+  let (_,id) = repr_path (sp_of_global ref) in 
   id
 
 let sp_of_syntactic_definition kn = 
@@ -434,21 +434,24 @@ let dir_of_mp mp =
 
 (* Shortest qualid functions **********************************************)
 
-let shortest_qualid_of_global ctx_opt ref = 
-  let sp = sp_of_global ctx_opt ref in
-    SpTab.shortest_qualid sp !the_ccitab
+let shortest_qualid_of_global ctx ref = 
+  match ref with
+    | VarRef id -> make_qualid empty_dirpath id
+    | _ ->
+        let sp = Globrevtab.find (TrueGlobal ref) !the_globrevtab in
+        SpTab.shortest_qualid ctx sp !the_ccitab
 
 let shortest_qualid_of_syndef kn = 
   let sp = sp_of_syntactic_definition kn in
-    SpTab.shortest_qualid sp !the_ccitab
+    SpTab.shortest_qualid Idset.empty sp !the_ccitab
 
 let shortest_qualid_of_module mp = 
   let dir = MPmap.find mp !the_modrevtab in
-    DirTab.shortest_qualid dir !the_dirtab
+    DirTab.shortest_qualid Idset.empty dir !the_dirtab
 
 let shortest_qualid_of_modtype kn =
   let sp = KNmap.find kn !the_modtyperevtab in
-    SpTab.shortest_qualid sp !the_modtypetab
+    SpTab.shortest_qualid Idset.empty sp !the_modtypetab
 
 let pr_global_env env ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent

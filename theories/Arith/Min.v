@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Arith.
+Import nat_scope.
 
 (** minimum of two natural numbers *)
 

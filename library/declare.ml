@@ -431,7 +431,7 @@ let strength_of_global = function
   | IndRef _ | ConstructRef _ | ConstRef _ -> Global
 
 let library_part ref =
-  let sp = Nametab.sp_of_global None ref in
+  let sp = Nametab.sp_of_global ref in
   let dir,_ = repr_path sp in
   match strength_of_global ref with
   | Local -> 

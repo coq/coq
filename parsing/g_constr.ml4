@@ -17,6 +17,19 @@ open Libnames
 open Prim
 open Topconstr
 
+(* Initialize the lexer *)
+let constr_kw =
+  [ "Cases"; "of"; "with"; "end"; "as"; "in"; "Prop"; "Set"; "Type";
+    ":"; "("; ")"; "["; "]"; "{"; "}"; ","; ";"; "->"; "="; ":="; "!";
+    "::"; "<:"; ":<"; "=>"; "<"; ">"; "|"; "?"; "/";
+    "<->"; "\\/"; "/\\"; "`"; "``"; "&"; "*"; "+"; "@"; "^"; "#"; "-";
+    "~"; "'"; "<<"; ">>"; "<>";
+  ]
+let _ = List.iter (fun s -> Lexer.add_token ("",s)) constr_kw
+(* "let" is not a keyword because #Core#let.cci would not parse.
+   Is it still accurate ? *)
+
+
 let coerce_to_var = function
   | CRef (Ident (_,id)) -> id
   | ast -> Util.user_err_loc
@@ -78,8 +91,9 @@ let test_ident_colon =
             end
         | _ -> raise Stream.Failure)
 
+
 GEXTEND Gram
-  GLOBAL: constr9 lconstr constr sort global constr_pattern Constr.ident annot
+  GLOBAL: operconstr lconstr constr sort global constr_pattern Constr.ident annot
           (*ne_name_comma_list*);
   Constr.ident:
     [ [ id = Prim.ident -> id
@@ -105,8 +119,24 @@ GEXTEND Gram
       | "Type" -> RType None ] ]
   ;
   constr:
-    [ "top" RIGHTA
-      [ c1 = constr; "->"; c2 = constr -> CArrow (loc, c1, c2) ]
+    [ [ c = operconstr LEVEL "8" -> c ] ]
+  ;
+  lconstr:
+    [ [ c = operconstr LEVEL "10" -> c ] ]
+  ;
+  operconstr:
+    [ "10" RIGHTA
+      [ "!"; f = global; args = LIST0 (operconstr LEVEL "9") ->
+          CAppExpl (loc, f, args)
+(*
+      | "!"; f = global; "with"; b = binding_list ->
+	  <:ast< (APPLISTWITH $f $b) >>
+*)
+      | f = operconstr; args = LIST1 constr91 -> CApp (loc, f, args) ]
+    | "9" RIGHTA
+      [ c1 = operconstr; "::"; c2 = operconstr -> CCast (loc, c1, c2) ]
+    | "8" RIGHTA
+      [ c1 = operconstr; "->"; c2 = operconstr -> CArrow (loc, c1, c2) ]
     | "1" RIGHTA
       [ "<"; p = annot; ">"; IDENT "Match"; c = constr; "with";
         cl = LIST0 constr; "end" ->
@@ -119,32 +149,32 @@ GEXTEND Gram
       | IDENT "Match"; c = constr; "with"; cl = LIST1 constr; "end" ->
           COrderedCase (loc, MatchStyle, None, c, cl)
       | IDENT "let"; "("; b = ne_name_comma_list; ")"; "=";
-        c = constr; "in"; c1 = constr LEVEL "top"->
+        c = constr; "in"; c1 = constr ->
           (* TODO: right loc *)
 	  COrderedCase
             (loc, LetStyle, None, c, [CLambdaN (loc, [b, CHole loc], c1)])
       | IDENT "let"; na = name; "="; c = opt_casted_constr; 
-	"in"; c1 = constr LEVEL "top" ->
+	"in"; c1 = constr ->
           CLetIn (loc, na, c, c1)
       | IDENT "if"; c1 = constr;
         IDENT "then"; c2 = constr;
-        IDENT "else"; c3 = constr LEVEL "top" ->
+        IDENT "else"; c3 = constr ->
 	  COrderedCase (loc, IfStyle, None, c1, [c2; c3])
       | "<"; p = annot; ">";
         IDENT "let"; "("; b = ne_name_comma_list; ")"; "="; c = constr; 
-        "in"; c1 = constr LEVEL "top" ->
+        "in"; c1 = constr ->
           (* TODO: right loc *)
 	  COrderedCase (loc, LetStyle, Some p, c,
             [CLambdaN (loc, [b, CHole loc], c1)])
       | "<"; p = annot; ">";
         IDENT "if"; c1 = constr;
         IDENT "then"; c2 = constr; 
-        IDENT "else"; c3 = constr LEVEL "top" ->
+        IDENT "else"; c3 = constr ->
 	  COrderedCase (loc, IfStyle, Some p, c1, [c2; c3]) ]
     | "0" RIGHTA
       [ "?" -> CHole loc
       | "?"; n = Prim.natural -> CMeta (loc, n)
-      | bll = binders; c = constr LEVEL "top" -> abstract_constr loc c bll
+      | bll = binders; c = constr -> abstract_constr loc c bll
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; test_int_rparen; n = bigint; ")" ->
           CDelimiters (loc,"N",CNumeral (loc,n))
@@ -182,24 +212,10 @@ GEXTEND Gram
       | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
           CDelimiters (loc,key,c) ] ]
   ;
-  lconstr:
-    [ "10" RIGHTA
-      [ "!"; f = global; args = LIST0 constr9 -> CAppExpl (loc, f, args)
-(*
-      | "!"; f = global; "with"; b = binding_list ->
-	  <:ast< (APPLISTWITH $f $b) >>
-*)
-      | f = constr9; args = LIST1 constr91 -> CApp (loc, f, args)
-      | f = constr9 -> f ] ]
-  ;
   constr91:
-    [ [ test_int_bang; n = INT; "!"; c = constr9 ->
+    [ [ test_int_bang; n = INT; "!"; c = operconstr LEVEL "9" ->
         (c, Some (int_of_string n))
-      | c = constr9 -> (c, None) ] ]
-  ;
-  constr9:
-    [ RIGHTA [ c1 = constr -> c1
-      | c1 = constr; "::"; c2 = constr -> CCast (loc, c1, c2) ] ]
+      | c = operconstr LEVEL "9" -> (c, None) ] ]
   ;
   (* annot and product_annot_tail are hacks to forbid concrete syntax *)
   (* ">" (e.g. for gt, Zgt, ...) in annotations *)
@@ -232,7 +248,7 @@ GEXTEND Gram
       [ c1 = SELF; "=="; c2 = NEXT -> CNotation (loc, "_ == _", [c1;c2]) ]
     | RIGHTA
       [ c1 = SELF; "="; c2 = NEXT -> CNotation (loc, "_ = _", [c1;c2]) ]
-    | [ c = constr LEVEL "4L" -> c ] ]
+    | [ c = operconstr LEVEL "4L" -> c ] ]
   ;
   product_annot_tail:
     [ [ ";"; idl = ne_name_comma_list; ":"; c = constr;

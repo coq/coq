@@ -411,12 +411,6 @@ let print_local_context () =
   in 
   (print_var_rec env ++  print_last_const env)
 
-let fprint_var name typ =
-  (str ("*** [" ^ name ^ " :") ++ fprtype typ ++ str "]" ++ fnl ())
-
-let fprint_judge {uj_val=trm;uj_type=typ} = 
-  (fprterm trm ++ str" : " ++ fprterm typ)
-
 let unfold_head_fconst = 
   let rec unfrec k = match kind_of_term k with
     | Const cst -> constant_value (Global.env ()) cst 

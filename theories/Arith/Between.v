@@ -10,6 +10,7 @@
 
 Require Le.
 Require Lt.
+Import nat_scope.
 
 Section Between.
 Variables P,Q : nat -> Prop.

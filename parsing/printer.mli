@@ -58,13 +58,3 @@ val pr_context_of   : env -> std_ppcmds
 
 val emacs_str       : string -> string
 
-(*i*) 
-val fprterm_env     : env -> constr -> std_ppcmds
-val fprterm         : constr -> std_ppcmds
-val fprtype_env     : env -> types -> std_ppcmds
-val fprtype         : types -> std_ppcmds
-
-(* For compatibility *)
-val fterm0          : env -> constr -> std_ppcmds
-(*i*)
-

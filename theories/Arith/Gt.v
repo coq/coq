@@ -11,6 +11,7 @@
 Require Le.
 Require Lt.
 Require Plus.
+Import nat_scope.
 
 Theorem gt_Sn_O : (n:nat)(gt (S n) O).
 Proof.

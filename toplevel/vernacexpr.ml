@@ -156,17 +156,19 @@ type vernac_expr =
       (string * (string * grammar_production list) * raw_tactic_expr) list
   | VernacSyntax of string * raw_syntax_entry list
   | VernacSyntaxExtension of string * syntax_modifier list
+  | VernacDistfix of
+      grammar_associativity * precedence * string * reference *
+      scope_name option
   | VernacOpenScope of scope_name
   | VernacDelimiters of scope_name * string
   | VernacArgumentsScope of reference * scope_name option list
   | VernacInfix of
       grammar_associativity * precedence * string * reference * bool *
-      scope_name option
-  | VernacDistfix of
-      grammar_associativity * precedence * string * reference *
+      (grammar_associativity * precedence * string) option *
       scope_name option
   | VernacNotation of
-      string * constr_expr * syntax_modifier list * scope_name option
+      string * constr_expr * syntax_modifier list *
+      (string * syntax_modifier list) option * scope_name option
 
   (* Gallina *)
   | VernacDefinition of definition_kind * identifier * definition_expr *
@@ -207,7 +209,7 @@ type vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom of export_flag * specif_flag option * string
+  | VernacRequireFrom of export_flag option * specif_flag option * string
   | VernacAddLoadPath of rec_flag * string * dir_path option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of rec_flag * string

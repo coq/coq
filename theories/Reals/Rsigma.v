@@ -12,6 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Rseries.
 Require PartSum.
+Import R_scope.
 
 Set Implicit Arguments.
 

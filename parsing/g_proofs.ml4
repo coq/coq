@@ -18,6 +18,8 @@ open Vernacexpr
 open Prim
 open Constr
 
+let thm_token = Gram.Entry.create "vernac:thm_token"
+
 (* Proof commands *)
 GEXTEND Gram
   GLOBAL: command;

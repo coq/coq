@@ -255,7 +255,7 @@ let inductive_class_of ind = fst (class_info (CL_IND ind))
 let class_args_of c = snd (decompose_app c)
 
 let strength_of_cl = function 
-  | CL_CONST kn -> constant_strength (sp_of_global None (ConstRef kn))
+  | CL_CONST kn -> constant_strength (sp_of_global (ConstRef kn))
   | CL_SECVAR sp -> variable_strength sp
   | _ -> Global
 
@@ -263,11 +263,11 @@ let string_of_class = function
   | CL_FUN -> "FUNCLASS"
   | CL_SORT -> "SORTCLASS" 
   | CL_CONST sp ->
-      string_of_qualid (shortest_qualid_of_global None (ConstRef sp))
+      string_of_qualid (shortest_qualid_of_global Idset.empty (ConstRef sp))
   | CL_IND sp ->
-      string_of_qualid (shortest_qualid_of_global None (IndRef sp))
+      string_of_qualid (shortest_qualid_of_global Idset.empty (IndRef sp))
   | CL_SECVAR sp ->
-      string_of_qualid (shortest_qualid_of_global None (VarRef sp))
+      string_of_qualid (shortest_qualid_of_global Idset.empty (VarRef sp))
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
@@ -393,7 +393,7 @@ let coercion_of_qualid qid =
   let coe = coe_of_reference ref in
   if not (coercion_exists coe) then
     errorlabstrm "try_add_coercion" 
-      (Nametab.pr_global_env None ref ++ str" is not a coercion");
+      (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion");
   coe
 
 module CoercionPrinting =
@@ -401,7 +401,7 @@ module CoercionPrinting =
     type t = coe_typ
     let encode = coercion_of_qualid
     let subst = subst_coe_typ
-    let printer x = pr_global_env None x
+    let printer x = pr_global_env Idset.empty x
     let key = Goptions.SecondaryTable ("Printing","Coercion")
     let title = "Explicitly printed coercions: "
     let member_message x b =

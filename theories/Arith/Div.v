@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (** Euclidean division *)
+Import nat_scope.
 
 Require Le.
 Require Euclid_def.

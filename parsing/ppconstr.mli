@@ -23,10 +23,7 @@ open Util
 val split_fix : int -> constr_expr -> constr_expr -> 
   (name located list * constr_expr) list * constr_expr * constr_expr
 
-val pr_global : global_reference -> std_ppcmds
-
-val gentermpr : Coqast.t -> std_ppcmds
-val gentermpr_core : bool -> env -> constr -> std_ppcmds
+val pr_global : Idset.t -> global_reference -> std_ppcmds
 
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val pr_name : name -> std_ppcmds
@@ -39,4 +36,5 @@ val pr_occurrences : ('a -> std_ppcmds) -> 'a occurrences -> std_ppcmds
 val pr_sort : rawsort -> std_ppcmds
 val pr_pattern : Tacexpr.pattern_expr -> std_ppcmds
 val pr_constr : constr_expr -> std_ppcmds
+val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
 val pr_may_eval : ('a -> std_ppcmds) -> 'a may_eval -> std_ppcmds

@@ -10,32 +10,26 @@
 Require Datatypes.
 Require Peano.
 
+V7only[
 Syntax constr
   level 0:
     S [ (S $p) ] -> [$p:"nat_printer":9]
   | O [ O ]      -> ["(0)"].
-
+].
 (* Outside the module to be able to parse the grammar for 0,1,2... !! *)
 Delimits Scope nat_scope with N.
 
 (* For parsing/printing based on scopes *)
 Module nat_scope.
 
-Infix "+" plus (at level 4) : nat_scope.
-Infix "*" mult (at level 3): nat_scope.
-Infix "<=" le (at level 5, no associativity) : nat_scope.
-Infix "<" lt (at level 5, no associativity) : nat_scope.
-Infix ">=" ge (at level 5, no associativity) : nat_scope.
-Infix ">" gt (at level 5, no associativity) : nat_scope.
-
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope nat_scope.
 
-(*
-Syntax constr
-  level 0:
-  S' [ (S $p) ] -> [$p:"nat_printer_S":9]
-| O' [ O ] -> [ _:"nat_printer_O" ]
-.
-*)
+Infix 4 "+" plus : nat_scope  V8only 40.
+Infix 3 "*" mult : nat_scope  V8only 30.
+Infix NONA 5 "<=" le : nat_scope V8only 50.
+Infix NONA 5 "<" lt : nat_scope V8only 50.
+Infix NONA 5 ">=" ge : nat_scope V8only 50.
+Infix NONA 5 ">" gt : nat_scope V8only 50.
+
 End nat_scope.

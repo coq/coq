@@ -12,6 +12,7 @@
 
 Require Lt.
 Require Le.
+Import nat_scope.
 
 Fixpoint minus [n:nat] : nat -> nat := 
   [m:nat]Cases n m of

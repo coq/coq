@@ -122,21 +122,35 @@ type grammar_action =
 
 type env = (string * typed_ast) list
 
+let string_of_dirpath = function
+  | [] -> "<empty>"
+  | sl ->
+      String.concat "." (List.map string_of_id (List.rev sl))
+
+let pr_id id = str (string_of_id id)
+
+let print_kn kn =
+  let (mp,dp,l) = repr_kn kn in
+  let dpl = repr_dirpath dp in
+  str (string_of_mp mp) ++ str "." ++
+  prlist_with_sep (fun _ -> str".") pr_id dpl ++
+  str (string_of_label l)
+
 (* Pretty-printing *)
 let rec print_ast ast =
   match ast with
     | Num(_,n) -> int n
     | Str(_,s) -> qs s
-    | Path(_,sl) -> str (string_of_kn sl)
+    | Path(_,sl) -> print_kn sl
     | Id (_,s) -> str "{" ++ str s ++ str "}"
-    | Nvar(_,s) -> str (string_of_id s)
+    | Nvar(_,s) -> pr_id s
     | Nmeta(_,s) -> str s
     | Node(_,op,l) ->
         hov 3 (str "(" ++ str op ++ spc () ++ print_astl l ++ str ")")
     | Slam(_,None,ast) -> hov 1 (str "[<>]" ++ print_ast ast)
     | Slam(_,Some x,ast) ->
         hov 1
-          (str "[" ++ str (string_of_id x) ++ str "]" ++ cut () ++ 
+          (str "[" ++ pr_id x ++ str "]" ++ cut () ++ 
 	   print_ast ast)
     | Smetalam(_,id,ast) -> hov 1 (str id ++ print_ast ast)
     | Dynamic(_,d) ->

@@ -13,6 +13,7 @@ Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
 Require Bool.
+Import Z_scope.
 
 (** Overview of the sections of this file:
     - logic: Logic complements.
@@ -37,8 +38,10 @@ End logic.
 
 Section numbers.
 
-Definition entier_of_Z := [z:Z]Case z of Nul Pos Pos end.
-Definition Z_of_entier := [x:entier]Case x of ZERO POS end.
+Definition entier_of_Z :=
+  [z:Z]Cases z of ZERO => Nul | (POS p) => (Pos p) | (NEG p) => (Pos p) end.
+Definition Z_of_entier :=
+  [x:entier]Cases x of Nul => ZERO | (Pos p) => (POS p) end.
  
 (* Coercion Z_of_entier : entier >-> Z. *)
 
@@ -370,7 +373,7 @@ Qed.
 Theorem Zcompare_elim :
   (c1,c2,c3:Prop)(x,y:Z)
     ((x=y) -> c1) ->(`x < y` -> c2) ->(`x > y`-> c3)
-       -> Case `x ?= y`of c1 c2 c3 end.
+       -> Cases `x ?= y`of EGAL => c1 | INFERIEUR => c2 | SUPERIEUR => c3 end.
 
 Intros.
 Apply rename with x:=`x ?= y`; Intro r; Elim r;
@@ -380,7 +383,7 @@ Apply rename with x:=`x ?= y`; Intro r; Elim r;
 Qed.
 
 Lemma Zcompare_x_x : (x:Z) `x ?= x` = EGAL.
-Intro; Apply Case (Zcompare_EGAL x x) of [h1,h2: ?]h2 end.
+Intro; Apply let (h1,h2) = (Zcompare_EGAL x x) in h2.
 Apply refl_equal.
 Qed.
 
@@ -397,7 +400,8 @@ Discriminate H.
 Qed.
 
 Lemma Zcompare_eq_case : 
-  (c1,c2,c3:Prop)(x,y:Z) c1 -> x=y -> (Case `x ?= y` of c1 c2 c3 end).
+  (c1,c2,c3:Prop)(x,y:Z) c1 -> x=y ->
+  Cases `x ?= y` of EGAL => c1 | INFERIEUR => c2 | SUPERIEUR => c3 end.
 Intros.
 Rewrite -> (Case (Zcompare_EGAL x y) of [h1,h2: ?]h2 end H0).
 Assumption.
@@ -405,22 +409,26 @@ Qed.
 
 (** Four very basic lemmas about [Zle], [Zlt], [Zge], [Zgt] *)
 Lemma Zle_Zcompare :
-  (x,y:Z)`x <= y` -> Case `x ?= y` of True True False end.
+  (x,y:Z)`x <= y` ->
+  Cases `x ?= y` of EGAL => True | INFERIEUR => True | SUPERIEUR => False end.
 Intros x y; Unfold Zle; Elim `x ?=y`; Auto with arith.
 Qed.
 
 Lemma Zlt_Zcompare :
-  (x,y:Z)`x < y`  -> Case `x ?= y` of False True False end.
+  (x,y:Z)`x < y`  ->
+  Cases `x ?= y` of EGAL => False | INFERIEUR => True | SUPERIEUR => False end.
 Intros x y; Unfold Zlt; Elim `x ?=y`; Intros; Discriminate Orelse Trivial with arith.
 Qed.
 
 Lemma Zge_Zcompare :
-  (x,y:Z)` x >= y`-> Case `x ?= y` of True False True end.
+  (x,y:Z)` x >= y`->
+  Cases `x ?= y` of EGAL => True | INFERIEUR => False | SUPERIEUR => True end.
 Intros x y; Unfold Zge; Elim `x ?=y`; Auto with arith. 
 Qed.
 
 Lemma Zgt_Zcompare :
-  (x,y:Z)`x > y` -> Case `x ?= y` of False False True end.
+  (x,y:Z)`x > y` ->
+  Cases `x ?= y` of EGAL => False | INFERIEUR => False | SUPERIEUR => True end.
 Intros x y; Unfold Zgt; Elim `x ?= y`; Intros; Discriminate Orelse Trivial with arith.
 Qed.
 

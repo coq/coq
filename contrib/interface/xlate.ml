@@ -822,7 +822,8 @@ and xlate_tac =
     | TacIntroMove (None, None) ->  CT_intro (CT_coerce_NONE_to_ID_OPT CT_none)
     | TacLeft bindl -> CT_left (xlate_bindings bindl)
     | TacRight bindl -> CT_right (xlate_bindings bindl)
-    | TacSplit bindl -> CT_split (xlate_bindings bindl)
+    | TacSplit (false,bindl) -> CT_split (xlate_bindings bindl)
+    | TacSplit (true,bindl) -> CT_exists (xlate_bindings bindl)
     | TacExtend (_,"Replace", [c1; c2]) ->
      let c1 = xlate_formula (out_gen rawwit_constr c1) in
      let c2 = xlate_formula (out_gen rawwit_constr c2) in
@@ -1581,13 +1582,14 @@ let xlate_vernac =
         CT_coerce_NONE_to_STRING_OPT CT_none)
    | VernacRequire (_,_,([]|_::_::_)) ->
        xlate_error "TODO: general form of future Require"
-   | VernacRequireFrom (impexp, spec, filename) ->
+   | VernacRequireFrom (Some impexp, spec, filename) ->
       let ct_impexp, ct_spec = get_require_flags impexp spec 
       and id = id_of_string (Filename.basename filename)
       in
       CT_require
        (ct_impexp, ct_spec, xlate_ident id, 
          CT_coerce_STRING_to_STRING_OPT (CT_string filename))
+   | VernacRequireFrom (None, _, _) -> xlate_error "TODO: Read Module"
 
    | VernacSyntax (phylum, l) -> xlate_error "SYNTAX not implemented"
        (*Two versions of the syntax node with and without the binder list. *)
@@ -1607,7 +1609,7 @@ let xlate_vernac =
 
    | VernacSyntaxExtension _ -> xlate_error "Syntax Extension not implemented"
 
-   | VernacInfix (str_assoc, n, str, id, false, None) ->
+   | VernacInfix (str_assoc, n, str, id, false, _, None) ->
       CT_infix (
        (match str_assoc with
         | Some Gramext.LeftA -> CT_lefta

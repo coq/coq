@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Le.
+Import nat_scope.
 
 Theorem lt_n_Sn : (n:nat)(lt n (S n)).
 Proof.

@@ -11,6 +11,7 @@
 Require ZArith_base.
 Require Omega.
 Require Zcomplements.
+Import Z_scope.
 
 Section section1.
 
@@ -312,7 +313,7 @@ Elim (convert p); Simpl;
 [ Trivial with zarith
 | Intro n; Rewrite (two_power_nat_S n);
   Unfold 2 Zdiv_rest_aux;
-  Elim (iter_nat n (Z*Z)*Z Zdiv_rest_aux ((x,`0`),`1`));
+  Elim (iter_nat n 'T:(Z*Z)*Z ' Zdiv_rest_aux ((x,`0`),`1`));
   NewDestruct a; Intros; Apply f_equal with f:=[z:Z]`2*z`; Assumption ]. 
 Qed.
 
@@ -374,7 +375,7 @@ Lemma  Zdiv_rest_correct :
   (x:Z)(p:positive)(Zdiv_rest_proofs x p).
 Intros x p.
 Generalize (Zdiv_rest_correct1 x p); Generalize (Zdiv_rest_correct2 x p).
-Elim  (iter_pos p (Z*Z)*Z Zdiv_rest_aux ((x,`0`),`1`)).
+Elim  (iter_pos p 'T:(Z*Z)*Z ' Zdiv_rest_aux ((x,`0`),`1`)).
 Induction a.
 Intros.
 Elim H; Intros H1 H2; Clear H.

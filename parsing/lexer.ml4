@@ -151,22 +151,7 @@ let unfreeze (kw,tt) =
   token_tree := tt
 
 let init () =
-  unfreeze (empty_ttree, empty_ttree);
-  List.iter add_keyword
-    [ "Grammar"; "Syntax"; "Quit"; "Load"; "Compile";
-      "of"; "with"; "end"; "as"; "in"; "using";
-      "Cases"; "Fixpoint"; "CoFixpoint";
-      "Definition"; "Inductive"; "CoInductive"; 
-      "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
-      "Orelse"; "Proof"; "Qed";
-      "Prop"; "Set"; "Type"; "And"
-    ]; (* "let" is not a keyword because #Core#let.cci would not parse *)
-  List.iter add_special_token 
-    [ ":"; "("; ")"; "["; "]"; "{"; "}"; "_"; ";"; "`"; "``"; 
-      "()"; "->"; "\\/"; "/\\"; "|-"; ":="; "<->"; "!"; "$"; "%"; "&";
-      "*"; "+"; ","; "@"; "^"; "#"; "\\"; "/"; "-"; "<"; ">"; 
-      "|"; "?"; "="; "~"; "'"; "<<"; ">>"; "<>"; "::";
-      "<:"; ":<"; "=>"; ">->" ]
+  unfreeze (empty_ttree, empty_ttree)
 
 let _ = init()
 
@@ -318,20 +303,11 @@ let parse_226_tail tk = parser
   | [< len = ident (store 0 '\226') >] ->
       TokIdent (get_buff len)
 
-(* Parse a token in a char stream *)
 
-let rec next_token = parser bp
-  | [< ''\n'; s >] -> (match !current with
-	| BeVernac s -> current := InComment s
-	| InComment _ -> add_comment_pp (fnl ())
-	| _ -> ()); next_token s
-  | [< '' ' | '\t'; s >] -> (match !current with
-	| BeVernac _ |  InComment _ -> add_comment_pp (spc ())
-	| _ -> ()); next_token s
-  | [< ''\r'; s >] -> next_token s
-  | [< ''$'; len = ident (store 0 '$') >] ep -> 
-      (("METAIDENT", get_buff len), (bp,ep))
-  | [< ''.' as c; t = parser
+(* Parse what foolows a dot *)
+let parse_after_dot bp c strm =
+  if !Options.v7 then 
+    match strm with parser
 	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ->
 	     ("FIELD", get_buff len)
 	 (* Greek utf-8 letters [CE80-CEBF and CF80-CFBF] (CE=206; BF=191) *)
@@ -349,10 +325,26 @@ let rec next_token = parser bp
 	 | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c);
 	   len = ident (store 0 c) >] ->
 	     ("FIELD", get_buff len)
-(*
-	 | [< >] -> ("", ".") >] ep -> (t, (bp,ep))
-*)
-	 | [< (t,_) = process_chars bp c >] -> t >] ep ->
+	 | [< (t,_) = process_chars bp c >] -> t
+  else
+    match strm with parser
+	 | [< (t,_) = process_chars bp c >] -> t
+
+
+(* Parse a token in a char stream *)
+
+let rec next_token = parser bp
+  | [< ''\n'; s >] -> (match !current with
+	| BeVernac s -> current := InComment s
+	| InComment _ -> add_comment_pp (fnl ())
+	| _ -> ()); next_token s
+  | [< '' ' | '\t'; s >] -> (match !current with
+	| BeVernac _ |  InComment _ -> add_comment_pp (spc ())
+	| _ -> ()); next_token s
+  | [< ''\r'; s >] -> next_token s
+  | [< ''$'; len = ident (store 0 '$') >] ep -> 
+      (("METAIDENT", get_buff len), (bp,ep))
+  | [< ''.' as c; t = parse_after_dot bp c >] ep ->
       current:=BeVernac ""; (t, (bp,ep))
   | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ep ->
       let id = get_buff len in current:=InVernac; 

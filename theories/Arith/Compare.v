@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (** Equality is decidable on [nat] *)
+Import nat_scope.
 
 Lemma not_eq_sym : (A:Set)(p,q:A)(~p=q) -> ~(q=p).
 Proof sym_not_eq.

@@ -11,6 +11,7 @@
 Require Rbase.
 Require Rfunctions.
 Require Rsqrt_def.
+Import R_scope.
 
 (* Here is a continuous extension of Rsqrt on R *)
 Definition sqrt : R->R := [x:R](Cases (case_Rabsolu x) of

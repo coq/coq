@@ -278,6 +278,10 @@ let glob_name l ist = function
   | Anonymous -> Anonymous
   | Name id -> Name (glob_ident l ist id)
 
+let vars_of_ist (lfun,_,_,env) =
+  List.fold_left (fun s id -> Idset.add id s)
+    (vars_of_env env) lfun
+
 let get_current_context () =
     try Pfedit.get_current_goal_context ()
     with e when Logic.catchable_exception e -> 
@@ -310,12 +314,14 @@ let glob_hyp_or_metanum ist = function
   | MetaNum (_loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
 let glob_qualid_or_metanum ist = function
-  | AN qid -> AN (Qualid(loc,qualid_of_sp (sp_of_global None (Nametab.global qid))))
+  | AN qid -> AN (Qualid(loc,
+      shortest_qualid_of_global (vars_of_ist ist) (Nametab.global qid)))
   | MetaNum (_loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
 let glob_reference ist = function
   | Ident (loc,id) as r when find_ident id ist -> r
-  | r -> Qualid (loc,qualid_of_sp (sp_of_global None (Nametab.global r)))
+  | r -> Qualid (loc,
+      shortest_qualid_of_global (vars_of_ist ist) (Nametab.global r))
 
 let glob_ltac_qualid ist ref =
   let (loc,qid) = qualid_of_reference ref in
@@ -534,7 +540,7 @@ let rec glob_atomic lf (_,_,_,_ as ist) = function
   (* Constructors *)
   | TacLeft bl -> TacLeft (glob_bindings ist bl)
   | TacRight bl -> TacRight (glob_bindings ist bl)
-  | TacSplit bl -> TacSplit (glob_bindings ist bl)
+  | TacSplit (b,bl) -> TacSplit (b,glob_bindings ist bl)
   | TacAnyConstructor t -> TacAnyConstructor (option_app (glob_tactic ist) t)
   | TacConstructor (n,bl) -> TacConstructor (n, glob_bindings ist bl)
 
@@ -827,7 +833,7 @@ let constr_to_id loc c =
   else invalid_arg_loc (loc, "Not an identifier")
 
 let constr_to_qid loc c =
-  try qualid_of_sp (sp_of_global None (reference_of_constr c))
+  try shortest_qualid_of_global Idset.empty (reference_of_constr c)
   with _ -> invalid_arg_loc (loc, "Not a global reference")
 
 (* Check for LetTac *)
@@ -1556,7 +1562,7 @@ and interp_atomic ist gl = function
   (* Constructors *)
   | TacLeft bl -> h_left (bindings_interp ist gl bl)
   | TacRight bl -> h_right (bindings_interp ist gl bl)
-  | TacSplit bl -> h_split (bindings_interp ist gl bl)
+  | TacSplit (_,bl) -> h_split (bindings_interp ist gl bl)
   | TacAnyConstructor t ->
       abstract_tactic (TacAnyConstructor t)
         (Tactics.any_constructor (option_app (tactic_interp ist) t))

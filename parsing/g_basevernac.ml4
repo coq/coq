@@ -18,6 +18,15 @@ open Goptions
 open Constr
 open Prim
 
+let vernac_kw =
+  [ "Quit"; "Load"; "Compile"; "Fixpoint"; "CoFixpoint";
+    "Definition"; "Inductive"; "CoInductive"; 
+    "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
+    "."; ">->" ]
+let _ = List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
+
+let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
+
 GEXTEND Gram
   GLOBAL: class_rawexpr;
 
@@ -155,7 +164,7 @@ GEXTEND Gram
     [ [ IDENT "Term"; qid = global -> PrintName qid
       | IDENT "All" -> PrintFullContext
       | IDENT "Section"; s = global -> PrintSectionContext s
-      | "Grammar"; uni = IDENT; ent = IDENT ->
+      | IDENT "Grammar"; uni = IDENT; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  PrintGrammar (uni, ent)
       | IDENT "LoadPath" -> PrintLoadPath
@@ -213,19 +222,19 @@ GEXTEND Gram
    [ [ IDENT "Token"; s = STRING ->
        Pp.warning "Token declarations are now useless"; VernacNop
 
-     | "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
+     | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
         OPT [ ":"; IDENT "tactic" ]; ":=";
         OPT "|"; tl = LIST0 grammar_tactic_rule SEP "|" -> 
 	  VernacTacticGrammar tl
 
-     | "Grammar"; u = univ;
+     | IDENT "Grammar"; u = univ;
          tl = LIST1 grammar_entry SEP "with" -> 
 	   VernacGrammar (rename_command_entry u,tl)
 
-     | "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
+     | IDENT "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
          VernacSyntax (u,el)
 
-     | "Uninterpreted"; IDENT "Notation"; s = STRING; 
+     | IDENT "Uninterpreted"; IDENT "Notation"; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (s,l)
 
@@ -237,19 +246,46 @@ GEXTEND Gram
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
-     | IDENT "Infix"; a = entry_prec; n = OPT natural; op = STRING; 
+     | IDENT "Infix"; a = entry_prec; n = OPT natural;
+         op = STRING; 
          p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
-	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-         let (a,n,b) = Metasyntax.interp_infix_modifiers a n modl in
-         VernacInfix (a,n,op,p,b,sc)
+	 sc = OPT [ ":"; sc = IDENT -> sc];
+         v8 = OPT[IDENT "V8only";
+                  op8=OPT STRING;
+                  n8=OPT natural;
+                  mv8=OPT["("; l = LIST1 syntax_modifier SEP ","; ")" -> l] ->
+                    (op8,n8,mv8) ] ->
+           let (ai,ni,b) = Metasyntax.interp_infix_modifiers a n modl in
+           let v8 =
+             let (op8,nv8,mv8) =
+               match v8 with
+                   Some (op8,nv8,mv8) ->
+                     let op8 = match op8 with Some s -> s | _ -> op in
+                     let nv8 = match nv8 with Some n -> Some n
+                       | _ -> Util.option_app (( * ) 10) n in
+                     let mv8 = match mv8 with Some m -> m | _ -> modl in
+                     (op8,nv8,mv8)
+                 | None ->  (op,Util.option_app(( * ) 10) n, modl) in
+             let (a8,n8,_) =
+               Metasyntax.interp_infix_modifiers a nv8 mv8 in
+             Some(a8,n8,op8) in
+           VernacInfix (ai,ni,op,p,b,v8,sc)
      | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = global;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
      | IDENT "Notation"; s = IDENT; ":="; c = constr ->
-	 VernacNotation ("'"^s^"'",c,[],None)
+	 VernacNotation ("'"^s^"'",c,[],None,None)
      | IDENT "Notation"; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
-	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacNotation (s,c,modl,sc)
+	 sc = OPT [ ":"; sc = IDENT -> sc ];
+         v8 = OPT[IDENT "V8only";
+                  s8=OPT STRING;
+                  mv8=["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8
+                      | ->[] ] -> (s8,mv8) ] ->
+           let v8 = Util.option_app (fun (s8,mv8) ->
+             let s8 = match s8 with Some s -> s | _ -> s in
+             (s8,mv8)) v8 in
+           VernacNotation (s,c,modl,v8,sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
@@ -269,9 +305,8 @@ GEXTEND Gram
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference
-      | IDENT "annot" ->
-	  if !Options.v7 <> true then Util.error "annot not allowed in new syntax";
-	  ETOther ("constr","annot")
+      | IDENT "bigint" -> ETBigint
+      | i=IDENT -> ETOther ("constr",i)
     ] ]
   ;
   opt_scope:

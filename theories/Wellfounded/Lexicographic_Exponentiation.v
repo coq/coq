@@ -32,7 +32,10 @@ Notation List := (list A).
 Notation Nil := (nil A).
 (* useless but symmetric *)
 Notation Cons := (cons 1!A).
+Notation "<< x , y >>" := (exist List Descl x y) (at level 0)
+  V8only (at level 0, x,y at level 100).
 
+V7only[
 Syntax constr
   level 1:
     List [ (list A) ] -> ["List"]
@@ -42,12 +45,11 @@ Syntax constr
   level 10:
     Cons2 [ (cons A $e $l) ] -> ["Cons " $e:L " " $l:L ].
 
-Hints Resolve d_one d_nil  t_step.
-
 Syntax constr
   level 1:
   pair_sig [ (exist (list A) Desc $e $d) ] -> ["<<" $e:L "," $d:L ">>"].
-
+].
+Hints Resolve d_one d_nil  t_step.
 
 Lemma left_prefix : (x,y,z:List)(ltl x^y z)-> (ltl x z).
 Proof.

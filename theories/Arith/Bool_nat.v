@@ -11,6 +11,7 @@
 Require Export Compare_dec.
 Require Export Peano_dec.
 Require Sumbool.
+Import nat_scope.
 
 (** The decidability of equality and order relations over
     type [nat] give some boolean functions with the adequate specification. *)

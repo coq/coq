@@ -32,7 +32,7 @@ let typ_lams_of t =
 
 let objdef_err ref =
   errorlabstrm "object_declare"
-    (pr_id (id_of_global None ref) ++
+    (pr_id (id_of_global ref) ++
        str" is not a structure object")
 
 let objdef_declare ref =

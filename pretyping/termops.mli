@@ -114,7 +114,6 @@ val eta_eq_constr : constr -> constr -> bool
 (* finding "intuitive" names to hypotheses *)
 val first_char : identifier -> string
 val lowercase_first_char : identifier -> string
-(*val id_of_global : env -> Libnames.global_reference -> identifier*)
 val sort_hdchar : sorts -> string
 val hdchar : env -> types -> string
 val id_of_name_using_hdchar :
@@ -143,6 +142,10 @@ val ids_of_rel_context : rel_context -> identifier list
 val ids_of_named_context : named_context -> identifier list
 val ids_of_context : env -> identifier list
 val names_of_rel_context : env -> names_context
+
+(* Set of local names *)
+val vars_of_env: env -> Idset.t
+val add_vname : Idset.t -> name -> Idset.t
 
 (* sets of free identifiers *)
 type used_idents = identifier list

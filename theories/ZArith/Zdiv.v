@@ -23,6 +23,7 @@ Require Export ZArith_base.
 Require Omega.
 Require ZArithRing.
 Require Zcomplements.
+Import Z_scope.
 
 (**
 
@@ -267,6 +268,7 @@ Save.
 
 (** Syntax *)
 
+V7only[
 Grammar znatural expr2 : constr :=
   expr_div  [ expr2($p) "/" expr2($c) ] -> [ (Zdiv $p $c) ]
 | expr_mod  [ expr2($p) "%" expr2($c) ] -> [ (Zmod $p $c) ]
@@ -283,8 +285,13 @@ Syntax constr
       	 -> [ (ZEXPR $n1):E "/" [0 0] (ZEXPR $n2):L ]
   | Zmod_inside
       [ << (ZEXPR <<(Zmod $n1 $n2)>>) >> ]
-      	 -> [ (ZEXPR $n1):E "%" [0 0] (ZEXPR $n2):L ]
+      	 -> [ (ZEXPR $n1):E " %" [1 0] (ZEXPR $n2):L ]
 .
+].
+Infix 3 "/" Zdiv : Z_scope
+  V8only 30.
+Infix 3 "mod" Zmod : Z_scope
+  V8only 30.
 
 (** Other lemmas (now using the syntax for [Zdiv] and [Zmod]). *)
 
@@ -302,7 +309,7 @@ Absurd `b-a >= 1`.
 Omega.
 Rewrite -> H0.
 Rewrite -> H2.
-Assert `c*(b/c)+b%c-(c*(a/c)+a%c) = c*(b/c - a/c) + b%c - a%c`.
+Assert `c*(b/c)+b % c-(c*(a/c)+a % c) = c*(b/c - a/c) + b % c - a % c`.
 Ring.
 Rewrite H3.
 Assert `c*(b/c-a/c) >= c*1`.
@@ -314,7 +321,7 @@ Ring.
 Omega.
 Save.
 
-Lemma Z_mod_plus : (a,b,c:Z)`c > 0`->`(a+b*c)%c = a%c`.
+Lemma Z_mod_plus : (a,b,c:Z)`c > 0`->`(a+b*c) % c = a % c`.
 Proof.
 Intros a b c cPos.
 Generalize (Z_div_mod_eq a c cPos).
@@ -323,9 +330,9 @@ Generalize (Z_div_mod_eq `a+b*c` c cPos).
 Generalize (Z_mod_lt `a+b*c` c cPos).
 Intros.
 
-Assert `(a+b*c)%c - a%c = c*(b+a/c - (a+b*c)/c)`.
-Replace `(a+b*c)%c` with `a+b*c - c*((a+b*c)/c)`.
-Replace `a%c` with `a - c*(a/c)`.
+Assert `(a+b*c) % c - a % c = c*(b+a/c - (a+b*c)/c)`.
+Replace `(a+b*c) % c` with `a+b*c - c*((a+b*c)/c)`.
+Replace `a % c` with `a - c*(a/c)`.
 Ring.
 Omega.
 Omega.
@@ -358,7 +365,7 @@ Generalize (Z_div_mod_eq `a+b*c` c cPos).
 Generalize (Z_mod_lt `a+b*c` c cPos).
 Intros.
 Apply Zmult_reg_left with c. Omega.
-Replace `c*((a+b*c)/c)` with `a+b*c-(a+b*c)%c`.
+Replace `c*((a+b*c)/c)` with `a+b*c-(a+b*c) % c`.
 Rewrite (Z_mod_plus a b c cPos).
 Pattern 1 a; Rewrite H2.
 Ring.
@@ -375,7 +382,7 @@ Pattern 2 a; Rewrite H.
 Omega.
 Save.
 
-Lemma Z_mod_same : (a:Z)`a>0`->`a%a=0`.
+Lemma Z_mod_same : (a:Z)`a>0`->`a % a=0`.
 Proof.
 Intros a aPos.
 Generalize (Z_mod_plus `0` `1` a aPos).

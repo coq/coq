@@ -431,7 +431,7 @@ let add_hints dbnames h =
       let f (n,c) =
 	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> basename (sp_of_global None (reference_of_constr c))
+	  | None -> id_of_global (reference_of_constr c)
 	  | Some n -> n in
 	(n,c) in
       add_resolves env sigma (List.map f lhints) dbnames
@@ -440,7 +440,7 @@ let add_hints dbnames h =
       let f (n,c) = 
 	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> basename (sp_of_global None (reference_of_constr c))
+	  | None -> id_of_global (reference_of_constr c)
 	  | Some n -> n in
 	(n,c) in
       add_trivials env sigma (List.map f lhints) dbnames
@@ -448,7 +448,7 @@ let add_hints dbnames h =
       let f (n,locqid) =
 	let r = Nametab.global locqid in
 	let n = match n with
-	  | None -> basename (sp_of_global None r)
+	  | None -> id_of_global r
 	  | Some n -> n in
 	(n,r) in
       add_unfolds (List.map f lhints) dbnames
@@ -900,7 +900,7 @@ let default_superauto g = superauto !default_search_depth [] [] g
 
 let interp_to_add gl locqid =
   let r = Nametab.global locqid in
-  let id = basename (sp_of_global None r) in
+  let id = id_of_global r in
   (next_ident_away id (pf_ids_of_hyps gl), constr_of_reference r)
 
 let gen_superauto nopt l a b gl =

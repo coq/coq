@@ -33,7 +33,7 @@ let set_transparent_const sp =
   if cb.const_body <> None & cb.const_opaque then
     errorlabstrm "set_transparent_const"
       (str "Cannot make" ++ spc () ++ 
-         Nametab.pr_global_env None (ConstRef sp) ++
+         Nametab.pr_global_env Idset.empty (ConstRef sp) ++
          spc () ++ str "transparent because it was declared opaque.");
   Conv_oracle.set_transparent_const sp
 

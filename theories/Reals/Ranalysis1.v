@@ -12,6 +12,7 @@ Require Rbase.
 Require Rfunctions.
 Require Export Rlimit.
 Require Export Rderiv.
+Import R_scope.
 
 (****************************************************)
 (**           Basic operations on functions         *)

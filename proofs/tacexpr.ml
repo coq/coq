@@ -146,7 +146,7 @@ type ('constr,'cst,'ind,'id) gen_atomic_tactic_expr =
   (* Constructors *)
   | TacLeft of 'constr substitution
   | TacRight of 'constr substitution
-  | TacSplit of 'constr substitution
+  | TacSplit of bool * 'constr substitution
   | TacAnyConstructor of raw_tactic_expr option
   | TacConstructor of int or_metaid * 'constr substitution
 

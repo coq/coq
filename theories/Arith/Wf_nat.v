@@ -12,6 +12,8 @@
 
 Require Lt.
 
+Import nat_scope.
+
 Chapter  Well_founded_Nat.
 
 Variable A : Set.

@@ -166,7 +166,11 @@ let parse_args is_ide =
     | "-compile-verbose" :: []       -> usage ()
 
     | "-translate" :: rem -> make_translate true; parse rem
-    | "-ftranslate" :: rem -> make_translate true; translate_file := true; parse rem
+    | "-ftranslate" :: rem ->
+        make_translate true;
+        translate_file := true;
+        Constrextern.print_coercions := true;
+        parse rem
 
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()

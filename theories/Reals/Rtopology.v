@@ -14,6 +14,7 @@ Require Ranalysis1.
 Require RList.
 Require Classical_Prop.
 Require Classical_Pred_Type.
+Import R_scope.
 
 Definition included [D1,D2:R->Prop] : Prop := (x:R)(D1 x)->(D2 x).
 Definition disc [x:R;delta:posreal] : R->Prop := [y:R]``(Rabsolu (y-x))<delta``.
@@ -90,7 +91,8 @@ Qed.
 
 Definition eq_Dom [D1,D2:R->Prop] : Prop := (included D1 D2)/\(included D2 D1).
 
-Infix "=_D" eq_Dom (at level 5, no associativity).
+Infix "=_D" eq_Dom (at level 5, no associativity)
+  V8only (at level 50, no associativity).
 
 Lemma open_set_P1 : (D:R->Prop) (open_set D) <-> D =_D (interior D).
 Intro; Split.

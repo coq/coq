@@ -309,7 +309,7 @@ let msg_option_value (name,v) =
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
     | StringValue s   -> str s
-    | IdentValue r    -> pr_global_env None r
+    | IdentValue r    -> pr_global_env Idset.empty r
 
 let print_option_value key =
   let (name,(_,read,_)) = get_option key in

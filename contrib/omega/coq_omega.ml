@@ -151,7 +151,7 @@ let dest_const_apply t =
     | Ind isp       -> IndRef isp
     | _ -> raise Destruct
   in
-  id_of_global None ref, args
+  id_of_global ref, args
 
 type result = 
   | Kvar of string
@@ -164,11 +164,11 @@ let destructurate t =
 (*  let env = Global.env() in*)
   match kind_of_term c, args with
     | Const sp, args ->
-	Kapp (string_of_id (id_of_global None (ConstRef sp)),args)
+	Kapp (string_of_id (id_of_global (ConstRef sp)),args)
     | Construct csp , args ->
-	Kapp (string_of_id (id_of_global None (ConstructRef csp)), args)
+	Kapp (string_of_id (id_of_global (ConstructRef csp)), args)
     | Ind isp, args ->
-	Kapp (string_of_id (id_of_global None (IndRef isp)),args)
+	Kapp (string_of_id (id_of_global (IndRef isp)),args)
     | Var id,[] -> Kvar(string_of_id id)
     | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
     | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"

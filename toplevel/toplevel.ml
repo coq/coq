@@ -237,10 +237,13 @@ let print_toplevel_error exc =
 	(if is_pervasive_exn exc then (mt ()) else locstrm) ++
         Cerrors.explain_exn exc
 
+let is_term s =
+  if !Options.v7 then s="." else s=";"
+
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
   let rec dot st = match Stream.next st with
-    | ("", ".") -> ()
+    | ("", c) when is_term c -> ()
     | ("EOI", "") -> raise End_of_input
     | _ -> dot st
   in 

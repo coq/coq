@@ -14,6 +14,7 @@ Require Rseries.
 Require SeqProp.
 Require PartSum.
 Require Max.
+Import R_scope.
 
 (**********)
 Definition tg_alt [Un:nat->R] : nat->R := [i:nat]``(pow (-1) i)*(Un i)``.

@@ -229,7 +229,7 @@ let print_located_qualid r =
 	| ConstructRef _ -> "Constructor"
 	| VarRef _ -> "Variable"
       in
-      let sp = Nametab.sp_of_global None ref in
+      let sp = Nametab.sp_of_global ref in
 	str ref_str ++ spc () ++ pr_sp sp
     with Not_found -> 
       try
@@ -643,7 +643,10 @@ let vernac_set_end_tac tac =
 (* Auxiliary file management *)
 
 let vernac_require_from export spec filename =
-  Library.require_library_from_file spec None filename export
+  match export with
+      Some exp ->
+        Library.require_library_from_file spec None filename exp
+    | None -> Library.read_library_from_file filename
 
 let vernac_add_loadpath isrec pdir ldiropt =
   let alias = match ldiropt with
@@ -1126,9 +1129,11 @@ let interp c = match c with
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacOpenScope sc -> vernac_open_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
-  | VernacInfix (assoc,n,inf,qid,b,sc) -> vernac_infix assoc n inf qid b sc
+  | VernacInfix (assoc,n,inf,qid,b,mv8,sc) ->
+      vernac_infix assoc n inf qid b mv8 sc
   | VernacDistfix (assoc,n,inf,qid,sc) -> vernac_distfix assoc n inf qid sc
-  | VernacNotation (inf,c,pl,sc) -> vernac_notation inf c pl sc
+  | VernacNotation (inf,c,pl,mv8,sc) ->
+      vernac_notation inf c pl mv8 sc
 
   (* Gallina *)
   | VernacDefinition (k,id,d,f,_) -> vernac_definition k id d f

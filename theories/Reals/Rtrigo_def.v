@@ -13,6 +13,7 @@ Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo_fun.
 Require Max.
+Import R_scope.
 
 (*****************************)
 (* Definition of exponential *)

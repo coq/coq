@@ -11,6 +11,7 @@
 Require Export fast_integer.
 Require Export zarith_aux.
 
+V7only[
 Grammar znatural ident :=
   nat_id [ prim:var($id) ] -> [$id]
 
@@ -114,9 +115,9 @@ Syntax constr
   | Zlt_Zlt [ (Zlt $n1 $n2)/\(Zlt $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2)
                                 [1 0] "< " (ZEXPR $n3) "`"]]
-  | ZZero [ ZERO ] -> [ "`0`" ]
-  | ZPos [ (POS $r) ] -> [$r:"positive_printer":9]
-  | ZNeg [ (NEG $r) ] -> [$r:"negative_printer":9]
+  | ZZero_v7 [ ZERO ] -> [ "`0`" ]
+  | ZPos_v7 [ (POS $r) ] -> [$r:"positive_printer":9]
+  | ZNeg_v7 [ (NEG $r) ] -> [$r:"negative_printer":9]
   ;
 
   level 7:
@@ -217,6 +218,7 @@ Syntax constr
   | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >>] ->
       [$p:"negative_printer_inside":9]
 .
+].
 
 (* For parsing/printing based on scopes *)
 Module Z_scope.
@@ -226,44 +228,46 @@ Module Z_scope.
 Delimits Scope positive_scope with P.
 Delimits Scope Z_scope with Z.
 
-Infix "+" Zplus (at level 4) : Z_scope.
-Infix "-" Zminus (at level 4) : Z_scope.
-Infix "*" Zmult (at level 3) : Z_scope.
-Distfix 0 "- _" Zopp : Z_scope.
-Infix "<=" Zle (at level 5, no associativity) : Z_scope.
-Infix "<"  Zlt (at level 5, no associativity) : Z_scope.
-Infix ">=" Zge (at level 5, no associativity) : Z_scope.
-Infix ">"  Zgt (at level 5, no associativity) : Z_scope.
-Infix "? =" Zcompare (at level 5, no associativity) : Z_scope.
-Notation "x <= y <= z" := (Zle x y)/\(Zle y z)
-  (at level 5, y at level 4):Z_scope.
-Notation "x <= y < z"  := (Zle x y)/\(Zlt y z)
-  (at level 5, y at level 4):Z_scope.
-Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z)
-  (at level 5, y at level 4):Z_scope.
-Notation  "x < y <= z" := (Zlt x y)/\(Zle y z)
-  (at level 5, y at level 4):Z_scope.
-Notation  "x = y = z" := x=y/\y=z
-  (at level 5, y at level 4):Z_scope.
-
-Notation "x <> y" := ~(eq Z x y) (at level 5) : Z_scope.
-(* Notation "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
-
-(* Overwrite the printing of "`x = y`" *)
-Syntax constr level 0:
-  Zeq [ (eq Z $n1 $n2) ] -> [[<hov 0> $n1 [1 0] "= " $n2 ]].
-
-
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)
 Open Scope Z_scope.
 
-(*
-Syntax constr
-  level 0:
-  | ZZero' [ ZERO ] -> [dummy:"z_printer_ZERO"]
-  | ZPos' [ (POS $r) ] -> [$r:"z_printer_POS":9]
-  | ZNeg' [ (NEG $r) ] -> [$r:"z_printer_NEG":9]
-.
-*)
+Arguments Scope POS [positive_scope].
+Arguments Scope NEG [positive_scope].
+
+Infix LEFTA 4 "+" Zplus : Z_scope.
+Infix LEFTA 4 "-" Zminus : Z_scope.
+Infix LEFTA 3 "*" Zmult : Z_scope.
+Notation "- x" := (Zopp x) (at level 0) : Z_scope
+  V8only (at level 40).
+Infix NONA 5 "<=" Zle : Z_scope.
+Infix NONA 5 "<"  Zlt : Z_scope.
+Infix NONA 5 ">=" Zge : Z_scope.
+Infix NONA 5 ">"  Zgt  : Z_scope.
+Infix NONA 5 "?=" Zcompare : Z_scope.
+Notation "x <= y <= z" := (Zle x y)/\(Zle y z)
+  (at level 5, y at level 4):Z_scope
+  V8only (at level 50, y at level 49).
+Notation "x <= y < z"  := (Zle x y)/\(Zlt y z)
+  (at level 5, y at level 4):Z_scope
+  V8only (at level 50, y at level 49).
+Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z)
+  (at level 5, y at level 4):Z_scope
+  V8only (at level 50, y at level 49).
+Notation  "x < y <= z" := (Zlt x y)/\(Zle y z)
+  (at level 5, y at level 4):Z_scope
+  V8only (at level 50, y at level 49).
+Notation  "x = y = z" := x=y/\y=z
+  (at level 5, y at level 4) : Z_scope
+  V8only (at level 50, y at level 49).
+
+Notation "x <> y" := ~(eq Z x y) (at level 5, no associativity) : Z_scope
+  V8only (at level 50, no associativity).
+(* Notation "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
+
+V7only[
+(* Overwrite the printing of "`x = y`" *)
+Syntax constr level 0:
+  Zeq [ (eq Z $n1 $n2) ] -> [[<hov 0> $n1 [1 0] "= " $n2 ]].
+].
 
 End Z_scope.

@@ -13,22 +13,32 @@ open Names
 open Nameops
 open Util
 open Extend
-open Ppconstr
 open Tacexpr
 open Rawterm
 open Topconstr
 open Genarg
 open Libnames
 
+let pr_red_expr = Ppconstr.pr_red_expr
+let pr_may_eval = Ppconstr.pr_may_eval
+let pr_sort = Ppconstr.pr_sort
+let pr_global = Ppconstr.pr_global Idset.empty
+let pr_name = Ppconstr.pr_name
+let pr_opt = Ppconstr.pr_opt
+let pr_occurrences = Ppconstr.pr_occurrences
+
   (* Extensions *)
+let prtac_tab_v7 = Hashtbl.create 17
 let prtac_tab = Hashtbl.create 17
 
-let declare_extra_tactic_pprule s f g =
-  Hashtbl.add prtac_tab s (f,g)
+let declare_extra_tactic_pprule for_v8 s f g =
+  Hashtbl.add prtac_tab_v7 s (f,g);
+  if for_v8 then Hashtbl.add prtac_tab s (f,g)
 
+let genarg_pprule_v7 = ref Stringmap.empty
 let genarg_pprule = ref Stringmap.empty
 
-let declare_extra_genarg_pprule (rawwit, f) (wit, g) =
+let declare_extra_genarg_pprule for_v8 (rawwit, f) (wit, g) =
   let s = match unquote wit with
     | ExtraArgType s -> s 
     | _ -> error
@@ -36,7 +46,9 @@ let declare_extra_genarg_pprule (rawwit, f) (wit, g) =
   in
   let f x = f (out_gen rawwit x) in
   let g x = g (out_gen wit x) in
-  genarg_pprule := Stringmap.add s (f,g) !genarg_pprule 
+  genarg_pprule_v7 := Stringmap.add s (f,g) !genarg_pprule_v7;
+  if for_v8 then
+    genarg_pprule := Stringmap.add s (f,g) !genarg_pprule 
 
 (* [pr_rawtac] is here to cheat with ML typing system,
    gen_tactic_expr is polymorphic but with some occurrences of its
@@ -65,8 +77,6 @@ let pr_or_var pr = function
 let pr_or_meta pr = function
   | AI x -> pr x
   | _ -> failwith "pr_hyp_location: unexpected quotation meta-variable"
-
-let pr_casted_open_constr = pr_constr
 
 let pr_quantified_hypothesis = function
   | AnonHyp n -> int n
@@ -133,9 +143,9 @@ let pr_induction_arg prc = function
   | ElimOnAnonHyp n -> int n
 
 let pr_match_pattern = function
-  | Term a -> pr_pattern a
-  | Subterm (None,a) -> str "[" ++ pr_pattern a ++ str "]"
-  | Subterm (Some id,a) -> pr_id id ++ str "[" ++ pr_pattern a ++ str "]"
+  | Term a -> Ppconstr.pr_pattern a
+  | Subterm (None,a) -> str "[" ++ Ppconstr.pr_pattern a ++ str "]"
+  | Subterm (Some id,a) -> pr_id id ++ str "[" ++ Ppconstr.pr_pattern a ++ str "]"
 
 let pr_match_hyps = function
   | NoHypId mp -> str "_:" ++ pr_match_pattern mp
@@ -146,7 +156,8 @@ let pr_match_rule m pr = function
       str "[" ++ pr_match_pattern mp ++ str "]"
       ++ spc () ++ str "->" ++ brk (1,2) ++ pr t
   | Pat (rl,mp,t) ->
-      str "[" ++ prlist_with_sep pr_semicolon pr_match_hyps rl ++ spc () ++ 
+      str "[" ++ prlist_with_sep pr_semicolon
+                   pr_match_hyps rl ++ spc () ++ 
       str "|-" ++ spc () ++ pr_match_pattern mp ++ spc () ++ str "]" ++
       spc () ++ str "->" ++ brk (1,2) ++ pr t
   | All t -> str "_" ++ spc () ++ str "->" ++ brk (1,2) ++ pr t
@@ -192,7 +203,16 @@ let pr_autoarg_usingTDB = function
   | true -> spc () ++ str "Using TDB"
   | false -> mt ()
 
-let rec pr_rawgen prtac x =
+let rec pr_tacarg_using_rule pr_gen = function
+  | Egrammar.TacTerm s :: l, al ->
+      spc () ++ str s ++ pr_tacarg_using_rule pr_gen (l,al)
+  | Egrammar.TacNonTerm _ :: l, a :: al ->
+      pr_gen a ++ pr_tacarg_using_rule  pr_gen (l,al)
+  | [], [] -> mt ()
+  | _ -> failwith "Inconsistent arguments of extended tactic"
+
+
+let rec pr_rawgen prc prtac x =
   match Genarg.genarg_tag x with
   | BoolArgType -> pr_arg str (if out_gen rawwit_bool x then "true" else "false")
   | IntArgType -> pr_arg int (out_gen rawwit_int x)
@@ -202,45 +222,44 @@ let rec pr_rawgen prtac x =
   | IdentArgType -> pr_arg pr_id (out_gen rawwit_ident x)
   | RefArgType -> pr_arg pr_reference (out_gen rawwit_ref x)
   | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
-  | ConstrArgType -> pr_arg pr_constr (out_gen rawwit_constr x)
+  | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
-      pr_arg (pr_may_eval pr_constr) (out_gen rawwit_constr_may_eval x)
+      pr_arg (pr_may_eval prc) (out_gen rawwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
-      pr_arg (pr_red_expr (pr_constr,pr_metanum pr_reference)) (out_gen rawwit_red_expr x)
+      pr_arg (pr_red_expr (prc,pr_metanum pr_reference)) (out_gen rawwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen rawwit_tactic x)
   | CastedOpenConstrArgType ->
-      pr_arg pr_casted_open_constr (out_gen rawwit_casted_open_constr x)
+      pr_arg prc (out_gen rawwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
-      pr_arg (pr_with_bindings pr_constr)
+      pr_arg (pr_with_bindings prc)
       (out_gen rawwit_constr_with_bindings x)
   | List0ArgType _ -> 
-      hov 0 (fold_list0 (fun x a -> pr_rawgen prtac x ++ a) x (mt()))
+      hov 0 (fold_list0 (fun x a -> pr_rawgen prc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
-      hov 0 (fold_list1 (fun x a -> pr_rawgen prtac x ++ a) x (mt()))
-  | OptArgType _ -> hov 0 (fold_opt (pr_rawgen prtac) (mt()) x)
+      hov 0 (fold_list1 (fun x a -> pr_rawgen prc prtac x ++ a) x (mt()))
+  | OptArgType _ -> hov 0 (fold_opt (pr_rawgen prc prtac) (mt()) x)
   | PairArgType _ ->
       hov 0
         (fold_pair
-	  (fun a b -> pr_rawgen prtac a ++ spc () ++ pr_rawgen prtac b)
+	  (fun a b -> pr_rawgen prc prtac a ++ spc () ++ pr_rawgen prc
+  prtac b)
 	  x)
   | ExtraArgType s -> 
-      try fst (Stringmap.find s !genarg_pprule) x
+      let tab = if Options.do_translate() then !genarg_pprule
+        else !genarg_pprule_v7 in
+      try fst (Stringmap.find s tab) x
       with Not_found -> str " [no printer for " ++ str s ++ str "] "
 
-let rec pr_raw_tacarg_using_rule pr_gen = function
-  | Egrammar.TacTerm s :: l, al -> spc () ++ str s ++ pr_raw_tacarg_using_rule pr_gen (l,al)
-  | Egrammar.TacNonTerm _ :: l, a :: al -> pr_gen a ++ pr_raw_tacarg_using_rule  pr_gen (l,al)
-  | [], [] -> mt ()
-  | _ -> failwith "Inconsistent arguments of extended tactic"
-
-let pr_raw_extend prt s l =
+let pr_raw_extend prc prt s l =
+  let prg = pr_rawgen prc prt in
+  let tab = if Options.do_translate() then prtac_tab else prtac_tab_v7 in
   try 
-    let (s,pl) = fst (Hashtbl.find prtac_tab s) l in
-    str s ++ pr_raw_tacarg_using_rule (pr_rawgen prt) (pl,l)
+    let (s,pl) = fst (Hashtbl.find tab s) l in
+    str s ++ pr_tacarg_using_rule prg (pl,l)
   with Not_found ->
-    str "TODO(" ++ str s ++ prlist (pr_rawgen prt) l ++ str ")"
+    str "TODO(" ++ str s ++ prlist prg l ++ str ")"
 
 open Closure
 
@@ -284,23 +303,21 @@ let rec pr_generic prtac x =
 	  (fun a b -> pr_generic prtac a ++ spc () ++ pr_generic prtac b)
 	  x)
   | ExtraArgType s -> 
-      try snd (Stringmap.find s !genarg_pprule) x
+      let tab = if Options.do_translate() then !genarg_pprule
+        else !genarg_pprule_v7 in
+      try snd (Stringmap.find s tab) x
       with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
-let rec pr_tacarg_using_rule prt = function
-  | Egrammar.TacTerm s :: l, al -> spc () ++ str s ++ pr_tacarg_using_rule prt (l,al)
-  | Egrammar.TacNonTerm _ :: l, a :: al -> pr_generic prt a ++ pr_tacarg_using_rule prt (l,al)
-  | [], [] -> mt ()
-  | _ -> failwith "Inconsistent arguments of extended tactic"
-
 let pr_extend prt s l =
+  let prg = pr_generic prt in
+  let tab = if Options.do_translate() then prtac_tab else prtac_tab_v7 in
   try 
-    let (s,pl) = snd (Hashtbl.find prtac_tab s) l in
-    str s ++ pr_tacarg_using_rule prt (pl,l)
+    let (s,pl) = snd (Hashtbl.find tab s) l in
+    str s ++ pr_tacarg_using_rule prg (pl,l)
   with Not_found ->
-    str s ++ prlist (pr_generic prt) l
+    str s ++ prlist prg l
 
-let make_pr_tac (pr_constr,pr_cst,pr_ind,pr_ident,pr_extend) =
+let make_pr_tac (pr_constr,pr_pattern,pr_cst,pr_ind,pr_ident,pr_extend) =
 
 let pr_bindings = pr_bindings pr_constr in
 let pr_with_bindings = pr_with_bindings pr_constr in
@@ -445,7 +462,7 @@ and pr_atom1 = function
   (* Constructors *)
   | TacLeft l -> hov 1 (str "Left" ++ pr_bindings l)
   | TacRight l -> hov 1 (str "Right" ++ pr_bindings l)
-  | TacSplit l -> hov 1 (str "Split" ++ pr_bindings l)
+  | TacSplit (_,l) -> hov 1 (str "Split" ++ pr_bindings l)
   | TacAnyConstructor (Some t) ->
       hov 1 (str "Constructor" ++ pr_arg !pr_rawtac0 t)
   | TacAnyConstructor None as t -> pr_atom0 t
@@ -546,13 +563,15 @@ and pr6 = function
       hov 0 (str "Match" ++ spc () ++ pr_may_eval Ppconstr.pr_constr t ++ spc()
         ++ str "With"
         ++ prlist
-	  (fun r -> fnl () ++ str "|" ++ spc () ++ pr_match_rule true prtac r)
+	  (fun r -> fnl () ++ str "|" ++ spc () ++
+            pr_match_rule true prtac r)
 	lrul)
   | TacMatchContext (lr,lrul) ->
       hov 0 (
 	str (if lr then "Match Reverse Context With" else "Match Context With")
 	++ prlist
-	  (fun r -> fnl () ++ str "|" ++ spc () ++ pr_match_rule false prtac r)
+	  (fun r -> fnl () ++ str "|" ++ spc () ++
+            pr_match_rule false prtac r)
 	lrul)
   | TacFun (lvar,body) ->
       hov 0 (str "Fun" ++
@@ -586,10 +605,11 @@ in (prtac,pr0,pr_match_rule)
 let (pr_raw_tactic,pr_raw_tactic0,pr_match_rule) =
   make_pr_tac
     (Ppconstr.pr_constr,
+     Ppconstr.pr_constr,
      pr_metanum pr_reference,
      pr_reference,
      pr_or_meta (fun (loc,id) -> pr_id id),
-     pr_raw_extend)
+     pr_raw_extend Ppconstr.pr_constr)
 
 let _ = pr_rawtac := pr_raw_tactic
 let _ = pr_rawtac0 := pr_raw_tactic0
@@ -597,7 +617,9 @@ let _ = pr_rawtac0 := pr_raw_tactic0
 let (pr_tactic,_,_) =
   make_pr_tac
     (Printer.prterm,
+     Ppconstr.pr_constr,
      pr_evaluable_reference,
      pr_inductive,
      pr_id,
      pr_extend)
+

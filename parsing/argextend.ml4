@@ -78,7 +78,7 @@ let make_rule loc (prods,act) =
   let (symbs,pil) = List.split prods in
   <:expr< ($mlexpr_of_list (fun x -> x) symbs$,$make_act loc act pil$) >>
 
-let declare_tactic_argument loc s typ pr f rawtyppr cl =
+let declare_tactic_argument for_v8 loc s typ pr f rawtyppr cl =
   let interp = match f with
     | None -> <:expr< Tacinterp.genarg_interp >>
     | Some f -> <:expr< $lid:f$>> in
@@ -103,12 +103,13 @@ let declare_tactic_argument loc s typ pr f rawtyppr cl =
       Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None 
         [(None, None, $rules$)];
       Pptactic.declare_extra_genarg_pprule
+        $mlexpr_of_bool for_v8$
         ($rawwit$, $lid:rawpr$)
         ($wit$, $lid:pr$);
     end
   >>
 
-let declare_vernac_argument loc s cl =
+let declare_vernac_argument for_v8 loc s cl =
   let se = mlexpr_of_string s in
   let typ = ExtraArgType s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
@@ -173,13 +174,31 @@ EXTEND
         "END" ->
 	  if String.capitalize s = s then
 	    failwith "Argument entry names must be lowercase";
-         declare_tactic_argument loc s typ pr f rawtyppr l
+         declare_tactic_argument true loc s typ pr f rawtyppr l
       | "VERNAC"; "ARGUMENT"; "EXTEND"; s = [ UIDENT | LIDENT ];
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
 	  if String.capitalize s = s then
 	    failwith "Argument entry names must be lowercase";
-         declare_vernac_argument loc s l ] ]
+         declare_vernac_argument true loc s l
+      | "V7"; "ARGUMENT"; "EXTEND"; s = [ UIDENT | LIDENT ];
+        "TYPED"; "AS"; typ = argtype;
+        "PRINTED"; "BY"; pr = LIDENT;
+        f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
+        rawtyppr =
+          OPT [ "RAW"; "TYPED"; "AS"; t = argtype; 
+                "RAW"; "PRINTED"; "BY"; pr = LIDENT -> (t,pr) ];
+        OPT "|"; l = LIST1 argrule SEP "|";
+        "END" ->
+	  if String.capitalize s = s then
+	    failwith "Argument entry names must be lowercase";
+         declare_tactic_argument false loc s typ pr f rawtyppr l
+      | "V7"; "VERNAC"; "ARGUMENT"; "EXTEND"; s = [ UIDENT | LIDENT ];
+        OPT "|"; l = LIST1 argrule SEP "|";
+        "END" ->
+	  if String.capitalize s = s then
+	    failwith "Argument entry names must be lowercase";
+         declare_vernac_argument false loc s l ] ]
   ;
   argtype:
     [ [ e = LIDENT -> fst (interp_entry_name loc e) ] ]

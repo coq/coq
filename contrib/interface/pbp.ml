@@ -158,7 +158,7 @@ let make_pbp_atomic_tactic = function
   | PbpTryAssumption (Some a) ->
       TacTry (TacAtom (zz, TacExact (make_var a)))
   | PbpExists x -> 
-      TacAtom (zz, TacSplit (ImplicitBindings [make_pbp_pattern x]))
+      TacAtom (zz, TacSplit (true,ImplicitBindings [make_pbp_pattern x]))
   | PbpGeneralize (h,args) ->
       let l = List.map make_pbp_pattern args in
       TacAtom (zz, TacGeneralize [make_app (make_var h) l])
@@ -176,7 +176,7 @@ let make_pbp_atomic_tactic = function
 	(zz, TacElim ((make_var hyp_name,ExplicitBindings bind),None))
   | PbpTryClear l -> 
       TacTry (TacAtom (zz, TacClear (List.map (fun s -> AN s) l)))
-  | PbpSplit -> TacAtom (zz, TacSplit NoBindings);;
+  | PbpSplit -> TacAtom (zz, TacSplit (false,NoBindings));;
 
 let rec make_pbp_tactic = function
   | PbpThen tl -> make_then (List.map make_pbp_atomic_tactic tl)

@@ -25,15 +25,15 @@ open Symbols
 (* Translation of pattern, cases pattern, rawterm and term into syntax
    trees for printing *)
 
-val extern_cases_pattern : cases_pattern -> cases_pattern_expr
-val extern_rawconstr : rawconstr -> constr_expr
+val extern_cases_pattern : Idset.t -> cases_pattern -> cases_pattern_expr
+val extern_rawconstr : Idset.t -> rawconstr -> constr_expr
 val extern_pattern : env -> names_context -> constr_pattern -> constr_expr
 
 (* If [b=true] in [extern_constr b env c] then the variables in the first 
    level of quantification clashing with the variables in [env] are renamed *)
 
 val extern_constr : bool -> env -> constr -> constr_expr
-val extern_reference : loc -> global_reference -> reference
+val extern_reference : loc -> Idset.t -> global_reference -> reference
 
 (* For debugging *)
 val print_implicits : bool ref

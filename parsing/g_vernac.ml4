@@ -27,6 +27,9 @@ open Genarg
 
 let evar_constr loc = CHole loc
 
+let class_rawexpr = G_basevernac.class_rawexpr
+let thm_token = G_proofs.thm_token
+
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
@@ -325,15 +328,13 @@ GEXTEND Gram
       | IDENT "Chapter"; id = base_ident -> VernacBeginSection id ] ]
   ;
 
-  module_vardecls: (* This is interpreted by Pcoq.abstract_binder *)
-    [ [ id = base_ident; idl = ident_comma_list_tail; ":"; mty = Module.module_type
+  module_vardecls:
+    [ [ "("; id = base_ident; idl = ident_comma_list_tail;
+        ":"; mty = Module.module_type; ")"
         -> (id::idl,mty) ] ]
   ;
-  module_binders:
-    [ [ "["; bl = LIST1 module_vardecls SEP ";"; "]" -> bl ] ]
-  ;
   module_binders_list:
-    [ [ bls = LIST0 module_binders -> List.flatten bls ] ]
+    [ [ bl = LIST0 module_vardecls -> bl ] ]
   ;
   of_module_type:
     [ [ ":"; mty = Module.module_type -> (mty, true) 
@@ -417,7 +418,7 @@ GEXTEND Gram
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
 		 CApp (loc,c,l)
 	     | None -> c in
-	   VernacNotation ("'"^id^"'",c,[],None)
+	   VernacNotation ("'"^id^"'",c,[],None,None)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
 	  VernacDeclareImplicits (qid,Some l)
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
@@ -474,7 +475,7 @@ GEXTEND Gram
 	  VernacRequireFrom (export, specif, id, filename) *)
       | IDENT "Require"; export = export_token; specif = specif_token;
         filename = STRING -> 
-	  VernacRequireFrom (export, specif, filename)
+	  VernacRequireFrom (Some export, specif, filename)
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 STRING ->
 	  VernacDeclareMLModule l
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)

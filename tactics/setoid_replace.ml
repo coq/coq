@@ -530,7 +530,7 @@ let add_morphism lem_name (m,profil) =
 				lem2 = None}))));
       Options.if_verbose ppnl (prterm m ++str " is registered as a morphism")   
 let morphism_hook stre ref =
-  let pf_id = basename (sp_of_global None ref) in
+  let pf_id = id_of_global ref in
   if (is_edited pf_id)
   then 
     (add_morphism pf_id (what_edited pf_id); no_more_edited pf_id)

@@ -66,7 +66,13 @@ let r_of_int n dloc =
 let r_of_string s dloc = 
   r_of_int (int_of_string s) dloc
 
-let rnumber = create_constr_entry (get_univ "rnatural") "rnumber"
+let rsyntax_create name =
+  let e =
+    Pcoq.create_constr_entry (Pcoq.get_univ "rnatural") name in
+  Pcoq.Gram.Unsafe.clear_entry e;
+  e
+
+let rnumber = rsyntax_create "rnumber"
 
 let _ = 
   Gram.extend rnumber None
