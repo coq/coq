@@ -24,10 +24,12 @@ Syntax extensions
 
 Revision of the standard library
 
-- Many theorems and definitions names have been made more uniform mostly 
+- Many lemmas and definitions names have been made more uniform mostly 
   in Arith, NArith, ZArith and Reals (e.g : "times" -> "Pmult",
   "times_sym" -> "Pmult_comm", "Zle_Zmult_pos_right" ->
   "Zmult_le_compat_r", "SUPERIEUR" -> "Gt", "ZERO" -> "Z0")
+- Order and names of arguments of basic lemmas on nat, Z, positive and R
+  have been made uniform.
 - Notions of Coq initial state are declared with (strict) implicit arguments
 - eq merged with eqT: old eq disappear, new eq (written =) is old eqT
   and new eqT is syntactic sugar for new eq (notation == is an alias
@@ -56,6 +58,9 @@ Gallina
 
 Known problems of the automatic translation
 
+- iso-latin-1 characters are no longer supported: move your files to
+  7-bits ASCII or unicode before translation (swith to unicode is
+  automatically done if a file is loaded and saved again by coqide)
 - Renaming in ZArith: incompatibilities in Coq user contribs due to
   merging names INZ, from Reals, and inject_nat.
 - Renaming and new lemmas in ZArith: may clash with names used by users
@@ -151,11 +156,9 @@ Library
   (Zmult_assoc_l, Zmult_assoc), (Zmult_minus_distr, Zmult_Zminus_distr_l)
   (add_un_double_moins_un_xO, is_double_moins_un),
   (Rlt_monotony_rev,Rlt_monotony_contra) (source of incompatibilities)
-- Few minor changes (order of arguments of Zsimpl_le_plus_r,
-  Zsimpl_le_plus_l changed, Rge_monotony, Rlt_monotony_contra and
-  Rle_monotony_contra; simpl_plus_l, simpl_le_plus_l; no more implicit
-  arguments in Zmult_Zminus_distr_l and Zmult_Zminus_distr_r, lemmas
-  moved from Zcomplements to other files) (source of incompatibilities)
+- Few minor changes (no more implicit arguments in
+  Zmult_Zminus_distr_l and Zmult_Zminus_distr_r, lemmas moved from
+  Zcomplements to other files) (rare source of incompatibilities)
 - New lemmas provided by users added
 
 Tactic language
