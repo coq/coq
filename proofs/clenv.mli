@@ -24,7 +24,7 @@ val new_meta : unit -> int
 (* [exist_to_meta] generates new metavariables for each existential
    and performs the replacement in the given constr *)
 val exist_to_meta :
-  Evd.evar_map -> (Evd.evar_map * constr) ->
+  Evd.evar_map -> Pretyping.open_constr ->
   ((int * types) list * constr)
 
 (* The Type of Constructions clausale environments. *)

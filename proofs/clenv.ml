@@ -52,24 +52,20 @@ let meta_ctr=ref 0;;
 
 let new_meta ()=incr meta_ctr;!meta_ctr;;
 
-(* replaces a mapping of existentials into a mapping of metas. *)
+(* replaces a mapping of existentials into a mapping of metas.
+   Problem if an evar appears in the type of another one (pops anomaly) *)
 let exist_to_meta sigma (emap, c) =
-  let subst = ref [] in
-  let mmap = ref [] in
-  let add_binding (e,ev_decl) =
-    if not (Evd.in_dom sigma e) then begin
-      let n = new_meta() in
-      subst := (e, mkMeta n) :: !subst;
-      mmap := (n, ev_decl.evar_concl) :: !mmap
-    end in
-  List.iter add_binding (Evd.to_list emap);
+  let metamap = ref [] in
+  let change_exist evar =
+    let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
+    let n = new_meta() in
+    metamap := (n, ty) :: !metamap;
+    mkMeta n in
   let rec replace c =
     match kind_of_term c with
-        Evar (k,_) ->
-          (try List.assoc k !subst
-          with Not_found -> c)
+        Evar (k,_ as ev) when not (Evd.in_dom sigma k) -> change_exist ev
       | _ -> map_constr replace c in
-  (!mmap, replace c)
+  (!metamap, replace c)
 
 type 'a freelisted = {
   rebus : 'a;
