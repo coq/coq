@@ -646,81 +646,6 @@ let clenv_unify_core with_types cv_pb m n clenv =
 let clenv_unify = clenv_unify_core false
 let clenv_typed_unify = clenv_unify_core true
 
-(* [clenv_bchain mv clenv' clenv]
- *
- * Resolves the value of "mv" (which must be undefined) in clenv to be
- * the template of clenv' be the value "c", applied to "n" fresh
- * metavars, whose types are chosen by destructing "clf", which should
- * be a clausale forme generated from the type of "c".  The process of
- * resolution can cause unification of already-existing metavars, and
- * of the fresh ones which get created.  This operation is a composite
- * of operations which pose new metavars, perform unification on
- * terms, and make bindings.  *)
-
-let clenv_bchain mv subclenv clenv =
-  (* Add the metavars of [subclenv] to [clenv], with their name-environment *)
-  let clenv' =
-    { templval = clenv.templval;
-      templtyp = clenv.templtyp;
-      namenv =
-	List.fold_left (fun ne (mv,id) ->
-			  if clenv_defined subclenv mv then 
-			    ne
-			  else if intmap_in_dom mv ne then begin
-			    warning ("Cannot put metavar "^(string_of_int mv)^
-				     " in name-environment twice");
-			    ne
-			  end else 
-			    Intmap.add mv id ne)
-          clenv.namenv (intmap_to_list subclenv.namenv);
-      env = List.fold_left (fun m (n,v) -> Intmap.add n v m) 
-	       clenv.env (intmap_to_list subclenv.env);
-      hook = clenv.hook } 
-  in
-  (* unify the type of the template of [subclenv] with the type of [mv] *)
-  let clenv'' =
-    clenv_unify CUMUL (clenv_instance clenv' (clenv_template_type subclenv))
-      (clenv_instance_type clenv' mv)
-      clenv' 
-  in
-  (* assign the metavar *)
-  let clenv''' =
-    clenv_assign mv (clenv_instance clenv' (clenv_template subclenv)) clenv''
-  in 
-  clenv'''
-
-
-(* swaps the "hooks" in [clenv1] and [clenv2], so we can then use
-   backchain to hook them together *)
-
-let clenv_swap clenv1 clenv2 =
-  let clenv1' = { templval = clenv1.templval;
-		  templtyp = clenv1.templtyp;
-		  namenv = clenv1.namenv;
-		  env = clenv1.env;
-		  hook = clenv2.hook} 
-  and clenv2' = { templval = clenv2.templval;
-		  templtyp = clenv2.templtyp;
-		  namenv = clenv2.namenv;
-		  env = clenv2.env;
-		  hook = clenv1.hook}
-  in 
-  (clenv1',clenv2')
-
-let clenv_fchain mv nextclenv clenv =
-  let (clenv',nextclenv') = clenv_swap clenv nextclenv in 
-  clenv_bchain mv clenv' nextclenv'
-
-let clenv_refine kONT clenv gls =
-  tclTHEN
-    (kONT clenv.hook) 
-    (refine (clenv_instance_template clenv)) gls
-
-let clenv_refine_cast kONT clenv gls =
-  tclTHEN
-    (kONT clenv.hook) 
-    (refine (clenv_cast_meta clenv (clenv_instance_template clenv)))
-    gls
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -809,6 +734,179 @@ let constrain_clenv_using_subterm_list allow_K clause oplist t =
     oplist 
     (clause,[])
 
+(* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
+   gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
+
+let abstract_scheme env c l lname_typ =
+  List.fold_left2 
+    (fun t (locc,a) (na,_,ta) ->
+       if occur_meta ta then error "cannot find a type for the generalisation"
+       else if occur_meta a then lambda_name env (na,ta,t)
+       else lambda_name env (na,ta,subst_term_occ env locc a t))
+    c
+    (List.rev l)
+    lname_typ
+
+let abstract_list_all env sigma typ c l =
+  let ctxt,_ = decomp_n_prod env sigma (List.length l) typ in
+  let p = abstract_scheme env c (List.map (function a -> [],a) l) ctxt in 
+  try 
+    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
+    else error "abstract_list_all"
+  with UserError _ ->
+    raise (RefinerError (CannotGeneralize typ))
+
+let secondOrderAbstraction allow_K typ (p, oplist) clause =
+  let env = w_env clause.hook in
+  let sigma = w_Underlying clause.hook in
+  let (clause',cllist) = 
+    constrain_clenv_using_subterm_list allow_K clause oplist typ in
+  let typp = clenv_instance_type clause' p in 
+  clenv_unify CONV (mkMeta p)
+    (abstract_list_all env sigma typp typ cllist) 
+    clause'
+
+let clenv_unify2 allow_K cv_pb ty1 ty2 clause =
+  let c1, oplist1 = whd_stack ty1 in
+  let c2, oplist2 = whd_stack ty2 in
+  match kind_of_term c1, kind_of_term c2 with
+    | Meta p1, _ ->
+        (* Find the predicate *)
+	let clause' =
+          secondOrderAbstraction allow_K ty2 (p1,oplist1) clause in 
+        (* Resume first order unification *)
+	clenv_unify cv_pb (clenv_instance_term clause' ty1) ty2 clause'
+    | _, Meta p2 ->
+        (* Find the predicate *)
+	let clause' =
+          secondOrderAbstraction allow_K ty1 (p2, oplist2) clause in 
+        (* Resume first order unification *)
+	clenv_unify cv_pb ty1 (clenv_instance_term clause' ty2) clause'
+    | _ -> error "clenv_unify2"
+
+
+(* The unique unification algorithm works like this: If the pattern is
+   flexible, and the goal has a lambda-abstraction at the head, then
+   we do a first-order unification.
+
+   If the pattern is not flexible, then we do a first-order
+   unification, too.
+
+   If the pattern is flexible, and the goal doesn't have a
+   lambda-abstraction head, then we second-order unification. *)
+
+(* We decide here if first-order or second-order unif is used for Apply *)
+(* We apply a term of type (ai:Ai)C and try to solve a goal C'          *)
+(* The type C is in clenv.templtyp.rebus with a lot of Meta to solve    *)
+
+(* 3-4-99 [HH] New fo/so choice heuristic :
+   In case we have to unify (Meta(1) args) with ([x:A]t args')
+   we first try second-order unification and if it fails first-order.
+   Before, second-order was used if the type of Meta(1) and [x:A]t was
+   convertible and first-order otherwise. But if failed if e.g. the type of
+   Meta(1) had meta-variables in it. *)
+let clenv_unify_gen allow_K cv_pb ty1 ty2 clenv =
+  let hd1,l1 = whd_stack ty1 in
+  let hd2,l2 = whd_stack ty2 in
+  match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
+    | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true) ->
+	(try 
+	   clenv_unify cv_pb ty1 ty2 clenv
+	 with ex when catchable_exception ex -> 
+	   try 
+	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
+	   with ex when catchable_exception ex -> 
+	     error "Cannot solve a second-order unification problem")
+
+     | (Meta _, true, _, _ | _, _, Meta _, true) -> 
+	(try 
+	   clenv_unify2 allow_K cv_pb ty1 ty2 clenv
+         with ex when catchable_exception ex -> 
+           try 
+	     clenv_typed_unify CONV ty1 ty2 clenv
+           with ex when catchable_exception ex -> 
+             error "Cannot solve a second-order unification problem")
+
+     | _ -> clenv_unify CONV ty1 ty2 clenv
+
+
+(* [clenv_bchain mv clenv' clenv]
+ *
+ * Resolves the value of "mv" (which must be undefined) in clenv to be
+ * the template of clenv' be the value "c", applied to "n" fresh
+ * metavars, whose types are chosen by destructing "clf", which should
+ * be a clausale forme generated from the type of "c".  The process of
+ * resolution can cause unification of already-existing metavars, and
+ * of the fresh ones which get created.  This operation is a composite
+ * of operations which pose new metavars, perform unification on
+ * terms, and make bindings.  *)
+
+let clenv_bchain mv subclenv clenv =
+  (* Add the metavars of [subclenv] to [clenv], with their name-environment *)
+  let clenv' =
+    { templval = clenv.templval;
+      templtyp = clenv.templtyp;
+      namenv =
+	List.fold_left (fun ne (mv,id) ->
+			  if clenv_defined subclenv mv then 
+			    ne
+			  else if intmap_in_dom mv ne then begin
+			    warning ("Cannot put metavar "^(string_of_int mv)^
+				     " in name-environment twice");
+			    ne
+			  end else 
+			    Intmap.add mv id ne)
+          clenv.namenv (intmap_to_list subclenv.namenv);
+      env = List.fold_left (fun m (n,v) -> Intmap.add n v m) 
+	       clenv.env (intmap_to_list subclenv.env);
+      hook = clenv.hook } 
+  in
+  (* unify the type of the template of [subclenv] with the type of [mv] *)
+  let clenv'' =
+    clenv_unify_gen true CUMUL
+      (clenv_instance clenv' (clenv_template_type subclenv))
+      (clenv_instance_type clenv' mv)
+      clenv' 
+  in
+  (* assign the metavar *)
+  let clenv''' =
+    clenv_assign mv (clenv_instance clenv' (clenv_template subclenv)) clenv''
+  in 
+  clenv'''
+
+
+(* swaps the "hooks" in [clenv1] and [clenv2], so we can then use
+   backchain to hook them together *)
+
+let clenv_swap clenv1 clenv2 =
+  let clenv1' = { templval = clenv1.templval;
+		  templtyp = clenv1.templtyp;
+		  namenv = clenv1.namenv;
+		  env = clenv1.env;
+		  hook = clenv2.hook} 
+  and clenv2' = { templval = clenv2.templval;
+		  templtyp = clenv2.templtyp;
+		  namenv = clenv2.namenv;
+		  env = clenv2.env;
+		  hook = clenv1.hook}
+  in 
+  (clenv1',clenv2')
+
+let clenv_fchain mv nextclenv clenv =
+  let (clenv',nextclenv') = clenv_swap clenv nextclenv in 
+  clenv_bchain mv clenv' nextclenv'
+
+let clenv_refine kONT clenv gls =
+  tclTHEN
+    (kONT clenv.hook) 
+    (refine (clenv_instance_template clenv)) gls
+
+let clenv_refine_cast kONT clenv gls =
+  tclTHEN
+    (kONT clenv.hook) 
+    (refine (clenv_cast_meta clenv (clenv_instance_template clenv)))
+    gls
+
 (* [clenv_metavars clenv mv]
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
@@ -872,7 +970,8 @@ let clenv_constrain_missing_args mlist clause =
     let occlist = clenv_missing clause (clenv_template clause,
                                    	(clenv_template_type clause)) in 
     if List.length occlist = List.length mlist then
-      List.fold_left2 (fun clenv occ m -> clenv_unify CONV (mkMeta occ) m clenv)
+      List.fold_left2
+        (fun clenv occ m -> clenv_unify_gen true CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("Not the right number of missing arguments (expected "
@@ -885,7 +984,8 @@ let clenv_constrain_dep_args mlist clause =
     let occlist = clenv_dependent clause (clenv_template clause,
 					  (clenv_template_type clause)) in 
     if List.length occlist = List.length mlist then
-      List.fold_left2 (fun clenv occ m -> clenv_unify CONV (mkMeta occ) m clenv)
+      List.fold_left2
+        (fun clenv occ m -> clenv_unify_gen true CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("Not the right number of missing arguments (expected "
@@ -898,7 +998,8 @@ let clenv_constrain_dep_args_of mv mlist clause =
     let occlist = clenv_dependent clause (clenv_value clause mv,
                                           clenv_type clause mv) in 
     if List.length occlist = List.length mlist then
-      List.fold_left2 (fun clenv occ m -> clenv_unify CONV (mkMeta occ) m clenv)
+      List.fold_left2
+        (fun clenv occ m -> clenv_unify_gen true CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("clenv_constrain_dep_args_of: Not the right number " ^ 
@@ -943,7 +1044,8 @@ let clenv_match_args s clause =
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
 	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
-	matchrec (clenv_assign k c (clenv_unify CUMUL c_typ k_typ clause)) t
+	matchrec
+          (clenv_assign k c (clenv_unify_gen true CUMUL c_typ k_typ clause)) t
   in 
   matchrec clause s
 
@@ -974,95 +1076,11 @@ let clenv_add_sign (id,sign) clenv =
     env = clenv.env;
     hook = w_add_sign (id,sign) clenv.hook}
 
-(* The unique unification algorithm works like this: If the pattern is
-   flexible, and the goal has a lambda-abstraction at the head, then
-   we do a first-order unification.
+(***************************)
 
-   If the pattern is not flexible, then we do a first-order
-   unification, too.
-
-   If the pattern is flexible, and the goal doesn't have a
-   lambda-abstraction head, then we second-order unification. *)
-
-let clenv_fo_resolver clenv gls =
-  clenv_unify CUMUL (clenv_instance_template_type clenv) (pf_concl gls) clenv
-
-let clenv_typed_fo_resolver clenv gls =
-  clenv_typed_unify CUMUL (clenv_instance_template_type clenv) (pf_concl gls) clenv
-
-(* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
-   gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
-
-let abstract_scheme env c l lname_typ =
-  List.fold_left2 
-    (fun t (locc,a) (na,ta) ->
-       if occur_meta ta then error "cannot find a type for the generalisation"
-       else if occur_meta a then lambda_name env (na,ta,t)
-       else lambda_name env (na,ta,subst_term_occ env locc a t))
-    c
-    (List.rev l)
-    lname_typ
-
-let abstract_list_all env sigma typ c l =
-  let lname_typ,_ = splay_prod env sigma typ in
-  let p = abstract_scheme env c (List.map (function a -> [],a) l) lname_typ in 
-  try 
-    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
-    else error "abstract_list_all"
-  with UserError _ ->
-    raise (RefinerError (CannotGeneralize typ))
-
-let secondOrderAbstraction allow_K gl p oplist clause =
-  let (clause',cllist) = 
-    constrain_clenv_using_subterm_list allow_K clause oplist (pf_concl gl) in
-  let typp = clenv_instance_type clause' p in 
-  clenv_unify CONV (mkMeta p)
-    (abstract_list_all (pf_env gl) (project gl) typp (pf_concl gl) cllist) 
-    clause'
-
-let clenv_so_resolver allow_K clause gl =
-  let c, oplist = whd_stack (clenv_instance_template_type clause) in
-  match kind_of_term c with
-    | Meta p ->
-	let clause' = secondOrderAbstraction allow_K gl p oplist clause in 
-	clenv_fo_resolver clause' gl
-    | _ -> error "clenv_so_resolver"
-
-(* We decide here if first-order or second-order unif is used for Apply *)
-(* We apply a term of type (ai:Ai)C and try to solve a goal C'          *)
-(* The type C is in clenv.templtyp.rebus with a lot of Meta to solve    *)
-
-(* 3-4-99 [HH] New fo/so choice heuristic :
-   In case we have to unify (Meta(1) args) with ([x:A]t args')
-   we first try second-order unification and if it fails first-order.
-   Before, second-order was used if the type of Meta(1) and [x:A]t was
-   convertible and first-order otherwise. But if failed if e.g. the type of
-   Meta(1) had meta-variables in it. *)
-
-let clenv_unique_resolver allow_K clenv gls =
-  let pathd,_ = whd_stack (clenv_instance_template_type clenv) in
-  let glhd,_ = whd_stack (pf_concl gls) in
-  match kind_of_term pathd, kind_of_term glhd with
-    | Meta _, Lambda _ ->
-	(try 
-	   clenv_typed_fo_resolver clenv gls
-	 with ex when catchable_exception ex -> 
-	   try 
-	     clenv_so_resolver allow_K clenv gls
-	   with ex when catchable_exception ex -> 
-	     error "Cannot solve a second-order unification problem")
-
-    | Meta _, _ -> 
-	(try 
-	   clenv_so_resolver allow_K clenv gls
-         with ex when catchable_exception ex -> 
-           try 
-	     clenv_typed_fo_resolver clenv gls
-           with ex when catchable_exception ex -> 
-             error "Cannot solve a second-order unification problem")
-
-    | _ -> clenv_fo_resolver clenv gls
-
+let clenv_unique_resolver allow_K clause gl =
+  clenv_unify_gen allow_K CUMUL
+    (clenv_instance_template_type clause) (pf_concl gl) clause 
 
 let res_pf kONT clenv gls =
   clenv_refine kONT (clenv_unique_resolver false clenv gls) gls
