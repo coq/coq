@@ -8,7 +8,7 @@
 # Rapports INRIA: dviselect, rrkit (par Michel Mauny)
 
 DOCCOQTOP=@COQTOPBYTE@
-DOCCOQC=@COQC@
+DOCCOQC=@COQC@ -byte
 COQLIB=@COQLIB@
 COQTEX=@COQTEX@ -image $(DOCCOQTOP) -v -sl -small
 

@@ -17,12 +17,9 @@ roughly described below. You can also look at the \verb!man!  pages of
 
 
 \section{Interactive use ({\tt coqtop})}
-In the interactive mode, also known as the \Coq~toplevel, the user can develop his theories and proofs
-step by step.  The \Coq~toplevel is ran by the
-command {\tt coqtop}. This toplevel is based on a Caml toplevel (to
-allow the dynamic link of tactics).  You can switch to the Caml
-toplevel with the command \verb!Drop.!, and come back to the
-\Coq~toplevel with the command \verb!Coqtoplevel.go();;!.
+In the interactive mode, also known as the \Coq~toplevel, the user can
+develop his theories and proofs step by step.  The \Coq~toplevel is
+ran by the command {\tt coqtop}. 
 
 \index{byte-code}
 \index{native code}
@@ -40,10 +37,15 @@ can be required by \verb=Require=) and tools (\verb!Extraction! and
 byte-code one.  Notice that it is no longer possible to access the
 Caml toplevel, neither to load tactics.
 
-The command \verb!coqtop -searchisos! runs the search tool {\sf
-Coq\_SearchIsos} (see section~\ref{coqsearchisos},
-page~\pageref{coqsearchisos}) and, as the \Coq~system, can be combined with the
-option \verb!-opt!.
+This byte-code toplevel is based on a Caml
+toplevel (to allow the dynamic link of tactics).  You can switch to
+the Caml toplevel with the command \verb!Drop.!, and come back to the
+\Coq~toplevel with the command \verb!Coqtoplevel.go();;!.
+
+% The command \verb!coqtop -searchisos! runs the search tool {\sf
+%   Coq\_SearchIsos} (see section~\ref{coqsearchisos},
+% page~\pageref{coqsearchisos}) and, as the \Coq~system, can be combined
+% with the option \verb!-opt!.
 
 \section{Batch compilation ({\tt coqc})}
 The {\tt coqc} command takes a name {\em file} as argument.  Then it
@@ -127,7 +129,7 @@ There are 3 environment variables used by the \Coq\ system.
 \verb:$COQLIB: for the directory whrer the standard library is, and 
 \verb:$COQTOP: for the directory of the sources. The latter is useful
 only for developpers that are writing there own tactics using
-\texttt{do\_Makeffile} (see \ref{Makefile}). If \verb:$COQBIN: or
+\texttt{coq\_makefile} (see \ref{Makefile}). If \verb:$COQBIN: or
 \verb:$COQLIB: are not defined, \Coq\ will use the default values
 (choosen at installation time). So these variables are useful onlt if
 you move the \Coq\ binaries and library after installation.

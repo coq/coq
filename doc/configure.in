@@ -43,6 +43,7 @@ AC_CHECK_PROG(COQTEX,coq-tex,coq-tex,no)
 if test "$COQTEX" = no ; then
     AC_MSG_ERROR(Cannot find coq-tex)
 fi
+
 # substitutions to perform
 AC_SUBST(COQTOPBYTE)
 AC_SUBST(COQC)
