@@ -1,0 +1,172 @@
+Langage
+
+- Ajout de définitions locales (Let-In) avec la syntaxe [x:=u]t. Cela
+  peut entrainer des comportements nouveaux pour certaines tactiques.
+
+- Les définitions globales de la bibliothèque standard sont associées
+  à un nom long reflétant la structure logique de la notion. Un tel nom
+  long a la forme Coq.Lists.PolyList.Map.flat_map où Coq dénote que la
+  définition flat_map fait partie de la bibliothèque standard, Lists
+  qu'elle se trouve dans le répertoire Lists, PolyList qu'elle se trouve
+  dans le module PolyList, et Map qu'elle se trouve dans la section Map.
+
+- On peut (et il est conseillé) associer à un répertoire physique un
+  nom logique dans la structure des noms de Coq. Les définitions de la
+  bibliothèque standard sont associées au préfixe logique `Coq'. Pour
+  associer un répertoire physique à un nom logique, il faut utiliser
+  l'option -R de coqtop et coqc (cf Outils). Par défaut, le nom logique
+  "Scratch" est utilisé pour toute définition globale non associée à un
+  module non associé à un nom logique.
+
+- Le nom long des définitions globales est accessible pour
+  l'utilisateur par la notation pointée (style Coq.Arith.Plus.plus_assoc_l).
+  La syntaxe du "." final change (cf Vernac). Le nommage des définitions
+  globales change (cf Métathéorie).
+
+
+Extensions de syntaxe avec Grammar et Syntax
+
+- L'analyseur syntaxique considère maintenant comme token toute suite
+  de symboles (source d'incompatibilité : il faut insérer des espaces
+  entre tokens spéciaux consécutifs).
+
+- L'entrée "command" dans "Grammar" et dans les piquants s'appelle
+  maintenant "constr" comme dans "Syntax".
+
+- Ajout de la syntaxe "[" phrase_1 ... phrase_n"]." pour grouper des
+  phrases (utile pour Time et pour des grammaires abrégeant plusieurs
+  commandes).
+
+- Le parseur par défaut des actions des règles de grammaires et des
+  motifs des règles d'affichage est maintenant celui associé au nom de
+  la grammaire (vernac, tactic ou constr). Donc plus de piqants
+  <:vernac:<...>> etc. Pour retourner de l'ast, il faut typer
+  explicitement la grammaire avec "ast" ou "List" (renommé d'ailleurs
+  "ast list"), ou, si c'est dans une règle Syntax, utiliser la quotation
+  << ... >> qui replace dans ast. Pour les nouvelles grammaires (autre
+  que les 3 primitives), on peut typer avec "constr", "tactic", ou
+  "vernac" pour utiliser le parseur correspondant.
+
+- L'interprétation des noms dans les règles de grammaire (Grammar) se
+  font maintenant avec un nom long. Ceci interdit la surcharge de
+  notation basée uniquement sur le nom court.
+
+- Le non affichage des Infix est corrigé.
+
+- Ajout d'une syntaxe pour les réels: ``Rexpr``.
+  Point noir dû aux constantes: (Rplus (Rplus (Rplus R1 R1) (Rplus R1 R1)) R1)
+  est toujours (2+2+1) au lieu de 2+2+1 
+
+
+Syntaxe des constructions
+
+- Cases engendre parfois des noms differents (source théorique
+  d'incompatibilité mais insensible dans la pratique)
+
+- Davantage d'inférence automatique de "?".
+
+- Davantage d'arguments implicites engendrés par le discharge.
+
+- Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
+  cas de clauses par défaut redondantes auquel cas la première est prise
+  avec un avertissement.
+
+
+Commandes
+
+- Changement de noms de certaines commandes
+
+  AddPath -> Add LoadPath;
+  Print LoadPath -> Print LoadPath;
+  DelPath -> Remove LoadPath;
+  AddRecPath -> Add Rec LoadPath
+  Print Path -> Print Coercion Paths.
+
+  Implicit Arguments On -> Set Implicit Arguments
+  Implicit Arguments Off -> Unset Implicit Arguments
+
+  Nouveau: Test Implicit Arguments
+
+- End Silent était interprété comme une fin de section 
+  Begin Silent -> Set Silent
+  End Silent -> Unset Silent.
+
+- Commandes pour associer des chemins physiques à des chemins logiques
+
+  Add LoadPath physical_dir as logical_dir
+  Add Rec LoadPath physical_dir as logical_dir
+
+- Import module (re-)rend visible toutes les définitions et théorèmes
+  définis dans module.
+
+- Déclaration manuelle des implicites avec
+
+  "Implicits ident." pour activer les arguments implicites pour ident
+  indépendamment de l'état courant du mode implicite.
+
+  "Implicits ident [ num num ... num ]." pour donner explicitement
+  quels arguments doivent être implicites.
+
+- SearchPattern / SearchRewrite (contribution de Yves Bertot); Search
+  peut lui aussi être restreint à une recherche dans ou à l'extérieur de
+  modules.
+
+- Le point final des commandes doit être suivi d'un blanc (retour
+  chariot, tabulation ou espace)
+
+- Légère restriction de la syntaxe de Cbv Delta : l'option [-myconst]
+  de Cbv doit immédiatement suivre Delta
+
+
+Tactiques
+
+- Langage de tactique Ltac
+
+- Tactique Let renommé en LetTac et utilise le let-in primitif;
+  Induction renommé en OldInduction et nouveau Induction plus
+  "convivial".
+
+- Elim avec un schéma d'élimination différent de celui créé à la
+  définition d'un inductif n'est plus possible. Il faut utiliser Elim
+  <hyp> with <nom du schéma d'élimination>.
+
+- Decompose
+  - Numérotation dans l'ordre des hypothèses créées
+  - Correction de bugs (quand le type ne commence pas par un inductif)
+    et refus d'agir sous les ->.
+
+- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. 
+  Rem: c'est une source d'incompatibilité.
+
+- Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
+
+- Plus de "Require Prolog" (intégré par défaut)
+
+- Unfold échoue si on lui donne en argument une définition non dépliable
+
+- AutoRewrite ne s'occupe maintenant que du but principal et c'est les
+  Hint Rewrite qui gèrent les sous-buts générés
+
+- Les instantiations redondantes ou incompatibles de Apply ... with ...
+  sont maintenant correctement traitées.
+
+
+Outils
+
+- Deux binaires maximum : coqtop.byte et coqtop.opt si plateforme native; 
+  coqtop est un lien vers le plus efficace possible (coqtop.opt s'il existe,
+  coqtop.byte sinon); -full maintenant obsolete
+
+- do_Makefile s'appelle maintenant coq_makefile
+
+- Utilisation de l'option -R de coqtop et coqc pour associer un
+  répertoire physique à un répertoire logique (cf Métathéorie) 
+
+- La plupart des erreurs de typage sont maintenant localisée dans le
+  source (à l'exception des erreurs d'univers et de garde).
+
+
+Développeurs
+
+- Beaucoup de modification dans le sens de la simplification et de la
+  documentation (mais cela reste une version de transition)
