@@ -42,16 +42,6 @@ val conditional_rewrite_in :
 val replace    : constr -> constr -> tactic
 val replace_in : identifier -> constr -> constr -> tactic
 
-type elimination_types =
-  | Set_Type
-  | Type_Type
-  | Set_SetorProp
-  | Type_SetorProp 
-
-
-(* necessary_elimination [sort_of_arity] [sort_of_goal] *)
-val necessary_elimination : sorts -> sorts -> elimination_types 
-
 val discr        : identifier -> tactic
 val discrConcl   : tactic
 val discrClause  : clause -> tactic

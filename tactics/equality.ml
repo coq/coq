@@ -170,33 +170,6 @@ let build_rect eq =
 	  
 (*********** List of constructions depending of the initial state *)
 
-type elimination_types =
-  | Set_Type
-  | Type_Type
-  | Set_SetorProp
-  | Type_SetorProp 
-
-let necessary_elimination sort_arity sort =
-  let sort_arity = mkSort sort_arity in
-  match sort with
-      Type _ ->
-        if is_Set sort_arity then
-          Set_Type
-        else 
-          if is_Type sort_arity then
-	    Type_Type
-          else  
-	    errorlabstrm "necessary_elimination" 
-	      (str "no primitive equality on proofs")  
-    | _ ->
-        if is_Set sort_arity then
-          Set_SetorProp
-        else
-          if is_Type sort_arity then
-	    Type_SetorProp
-          else  errorlabstrm "necessary_elimination" 
-            (str "no primitive equality on proofs")
-
 let find_eq_pattern aritysort sort = 
   (* "eq" now accept arguments in Type and elimination to Type *)
   Coqlib.build_coq_eq ()
@@ -397,12 +370,7 @@ let construct_discriminator sigma env dirn c sort =
   let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let arsign,arsort = get_arity env indf in
-  let (true_0,false_0,sort_0) = 
-    match necessary_elimination arsort (destSort sort) with
-      | Type_Type ->
-	  build_coq_UnitT (), build_coq_EmptyT (), Evarutil.new_Type_sort ()
-      | _         -> build_coq_True (),  build_coq_False (), (Prop Null)
-  in
+  let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) arsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
@@ -426,9 +394,7 @@ let rec build_discriminator sigma env dirn c sort = function
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
-      (match necessary_elimination arsort (destSort sort) with
-         | Type_Type -> kont subval (build_coq_EmptyT (),Evarutil.new_Type ())
-	 | _ -> kont subval (build_coq_False (),mkSort (Prop Null)))
+      kont subval (build_coq_False (),mkSort (Prop Null))
 
 let gen_absurdity id gl =
   if is_empty_type (clause_type (onHyp id) gl)
@@ -441,40 +407,15 @@ let gen_absurdity id gl =
 (* Precondition: eq is leibniz equality
  
   returns ((eq_elim t t1 P i t2), absurd_term)
-  where  P=[e:t][h:(t1=e)]discrimator 
-          absurd_term=EmptyT    if the necessary elimination is Type_Tyoe 
-
-   and   P=[e:t][h[e:t]discriminator 
-         absurd_term=Fale       if the necessary eliination is Type_ProporSet
-                                   or Set_ProporSet
+  where  P=[e:t]discriminator 
+         absurd_term=False
 *)
 
 let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
-  let env = pf_env gls in
-  let (indt,_) = find_mrectype env (project gls) t in 
-  let (mib,mip) = lookup_mind_specif env indt in
-  let aritysort = mip.mind_sort in
-  let sort = pf_type_of gls (pf_concl gls) in
-  match necessary_elimination aritysort (destSort sort) with
-    | Type_Type  ->
- 	let eq_elim     = build_rect lbeq in
-	let eq_term     = build_coq_eq lbeq in
-	let i           = build_coq_IT () in
-	let absurd_term = build_coq_EmptyT () in
-        let h = pf_get_new_id (id_of_string "HH")gls in
-        let pred= mkNamedLambda e t 
-                    (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
-		       discriminator)
-        in (applist(eq_elim, [t;t1;pred;i;t2]), absurd_term)
-	     
-    | _ ->
-	let i           = build_coq_I () in
-	let absurd_term = build_coq_False ()
-
- in
-	let eq_elim     = build_ind lbeq in
-        (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]),
- 	 absurd_term)
+  let i           = build_coq_I () in
+  let absurd_term = build_coq_False () in
+  let eq_elim     = build_ind lbeq in
+  (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term)
 
 exception NotDiscriminable
 
@@ -683,7 +624,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
-  Evarutil.nf_evar (Evarutil.evars_of isevars) (sigrec_clausal_form siglen ty)
+  sigrec_clausal_form siglen ty
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors
