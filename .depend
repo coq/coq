@@ -58,7 +58,7 @@ kernel/safe_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
 kernel/sign.cmi: kernel/names.cmi kernel/term.cmi 
 kernel/subtyping.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/univ.cmi 
-kernel/term.cmi: kernel/names.cmi kernel/univ.cmi 
+kernel/term.cmi: kernel/esubst.cmi kernel/names.cmi kernel/univ.cmi 
 kernel/term_typing.cmi: kernel/cooking.cmi kernel/declarations.cmi \
     kernel/entries.cmi kernel/environ.cmi kernel/inductive.cmi \
     kernel/names.cmi kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
