@@ -188,9 +188,9 @@ let build_coq_sym_eqT () = Lazy.force coq_eqT_sym
 (* Equality on Type as a Type *)
 let coq_idT_eq = lazy_init_constant ["Datatypes"] "identity"
 let coq_idT_refl = lazy_init_constant ["Datatypes"] "refl_identity"
-let coq_idT_ind = lazy_init_constant ["Logic_Type"] "identity_ind"
-let coq_idT_rec = lazy_init_constant ["Logic_Type"] "identity_rec"
-let coq_idT_rect = lazy_init_constant ["Logic_Type"] "identity_rect"
+let coq_idT_ind = lazy_init_constant ["Datatypes"] "identity_ind"
+let coq_idT_rec = lazy_init_constant ["Datatypes"] "identity_rec"
+let coq_idT_rect = lazy_init_constant ["Datatypes"] "identity_rect"
 let coq_idT_congr = lazy_init_constant ["Logic_Type"] "congr_id"
 let coq_idT_sym = lazy_init_constant ["Logic_Type"] "sym_id"
 
