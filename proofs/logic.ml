@@ -353,6 +353,10 @@ and mk_hdgoals sigma goal goalacc trm =
 	check_typability env sigma ty;
 	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
 
+    | Cast (t,ty) ->
+	check_typability env sigma ty;
+	mk_refgoals sigma goal goalacc ty t
+
     | App (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
 	mk_arggoals sigma goal acc' hdty (Array.to_list l)
