@@ -1860,7 +1860,8 @@ let destructure_goal gl =
 
 let destructure_goal = all_time (destructure_goal)
 
-let omega_solver gl = 
+let omega_solver gl =
+  Library.check_required_module ["Coq";"omega";"Omega"];
   let result = destructure_goal gl in 
   (* if !display_time_flag then begin text_time (); 
      flush Pervasives.stdout end; *)

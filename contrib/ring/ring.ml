@@ -35,7 +35,7 @@ open Nametab
 open Quote
 
 let mt_evd = Evd.empty
-let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
+let constr_of c = Astterm.interp_constr mt_evd (Global.env()) c
 
 let constant dir s =
   let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
@@ -782,6 +782,7 @@ let match_with_equiv c = match (kind_of_term c) with
   | _ -> None
 
 let polynom lc gl =
+  Library.check_required_module ["Coq";"ring";"Ring"];
   match lc with 
    (* If no argument is given, try to recognize either an equality or
       a declared relation with arguments c1 ... cn, 

@@ -56,7 +56,7 @@ let tuple_n n =
       l1n 
   in
   let cons = id_of_string ("Build_tuple_" ^ string_of_int n) in
-  Record.definition_structure (false, id, params, fields, cons, mk_Set)
+  Record.definition_structure ((false, id), params, fields, cons, mk_Set)
 
 (*s [(sig_n n)] generates the inductive
     \begin{verbatim}

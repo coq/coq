@@ -128,6 +128,7 @@ END
 
 (* Guesses the type and calls Field_Gen with the right theory *)
 let field g =
+  Library.check_required_module ["Coq";"field";"Field"];
   let evc = project g
   and env = pf_env g in
   let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
@@ -161,6 +162,7 @@ let guess_theory env evc = function
 
 (* Guesses the type and calls Field_Term with the right theory *)
 let field_term l g =
+  Library.check_required_module ["Coq";"field";"Field"];
   let env = (pf_env g)
   and evc = (project g) in
   let th = valueIn (VConstr (guess_theory env evc l))

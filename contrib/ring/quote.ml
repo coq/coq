@@ -388,7 +388,8 @@ let rec sort_subterm gl l =
   [lc: constr list]\\
   [gl: goal sigma]\\ *)
 
-let quote_terms ivs lc gl= 
+let quote_terms ivs lc gl =
+  Library.check_required_module ["Coq";"ring";"Quote"];
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
