@@ -151,49 +151,88 @@ let is_module m =
 
 let translate_v7_string = function
   (* ZArith *)
-  | "double_moins_un" -> "double_minus_one"
-  | "double_moins_deux" -> "double_minus_two"
+  | "double_moins_un" -> "Pdouble_minus_one"
+  | "double_moins_deux" -> "Pdouble_minus_two"
+  | "double_moins_un_add_un" -> "xI_eq_Pdouble_minus_one_Psucc"
+  | "add_un_double_moins_un_xO" -> "Psucc_Pdouble_minus_one_eq_xO"
+  | "add_un_Zs" -> "Psucc_Zs" (* POS_is_succ_morphism ? *)
   | "entier" -> "N"
-  | "SUPERIEUR" -> "GREATER"
-  | "EGAL" -> "EQUAL"
-  | "INFERIEUR" -> "LESS"
-  | "add" -> "Padd"
+  | "SUPERIEUR" -> "Gt"
+  | "EGAL" -> "Eq"
+  | "INFERIEUR" -> "Lt"
+  | "add" -> "Pplus"
+  | "add_carry" -> "Pplus_carry"
+  | "add_assoc" -> "Pplus_assoc"
+  | "add_sym" -> "Pplus_comm"
+  | "add_x_x" -> "Pplus_x_x"
+  | "simpl_add_r" -> "Pplus_simpl_r"
+  | "simpl_add_l" -> "Pplus_simpl_l"
+  | "iter_pos_add" -> "iter_pos_Pplus"
   | "times" when not (is_module "Mapfold") -> "Pmult"
-  | "true_sub" -> "Psub"
-  | "add_un" -> "Padd_one"
-  | "sub_un" -> "Psub_one"
-  | "sub_pos" -> "PNsub"
-  | "sub_neg" -> "PNsub_carry"
-  | "convert_add_un" -> "convert_Padd_one"
-  | "compare_convert_INFERIEUR" -> "compare_convert_LESS"
-  | "compare_convert_SUPERIEUR" -> "compare_convert_GREATER"
-  | "compare_convert_EGAL"      -> "compare_convert_EQUAL"
-  | "convert_compare_INFERIEUR" -> "convert_compare_LESS"
-  | "convert_compare_SUPERIEUR" -> "convert_compare_GREATER"
-  | "convert_compare_EGAL"      -> "convert_compare_EQUAL"
-  | "Zcompare_EGAL"             -> "Zcompare_EQUAL"
+  | "times_add_distr" -> "Pmult_Pplus_distr"
+  | "times_true_sub_distr" -> "Pmult_Pminus_distr"
+  | "times_sym" -> "Pmult_comm"
+  | "times_assoc" -> "Pmult_assoc"
+  | "times_convert" -> "IPN_Pmult_morphism"
+  | "true_sub" -> "Pminus"
+  | "true_sub_convert" -> "IPN_Pminus_morphism"
+  | "sub_add" -> "Lt_Plus_Pminus" (* equiv de le_plus_minus de Arith *)
+  | "sub_add_one" -> "Psucc_Ppred"
+  | "add_un" -> "Psucc"
+  | "sub_un" -> "Ppred"
+  | "sub_pos" -> "PNminus"
+  | "sub_pos_x_x" -> "PNminus_x_x"
+  | "sub_pos_SUPERIEUR" -> "PNminus_Gt"
+  | "sub_neg" -> "PNminus_carry"
   | "Nul" -> "Null"
   | "Un_suivi_de" -> "double_plus_one"
   | "Zero_suivi_de" -> "double"
-  | "is_double_moins_un" -> "is_double_minus_one"
+  | "is_double_moins_un" -> "is_Pdouble_minus_one"
   | "Zplus_sym" -> "Zplus_comm"
   | "Zmult_sym" -> "Zmult_comm"
-  | "sub_pos_SUPERIEUR" -> "sub_pos_GREATER"
   | "inject_nat" -> "INZ"
+  | "inject_nat_complete" -> "INZ_complete"
+  | "inject_nat_complete_inf" -> "INZ_complete_inf"
+  | "inject_nat_prop" -> "INZ_prop"
+  | "inject_nat_set" -> "INZ_set"
   | "convert" -> "IPN"
-  | "anti_convert" -> "INP"
+  | "anti_convert" -> "INP_succ"
+  | "positive_to_nat" -> "IPN_shift"
   | "convert_intro" -> "IPN_inj"
-  | "convert_add" -> "IPN_add"
-  | "convert_add_carry" -> "IPN_add_carry"
+  | "convert_add" -> "IPN_Pplus_morphism"
+  | "convert_add_un" -> "IPN_shift_Psucc"
+  | "convert_add_carry" -> "IPN_shift_Pplus_carry"
   | "compare_convert_O" -> "lt_O_IPN"
   | "Zopp_intro" -> "Zopp_inj"
+  | "add_verif" -> "IPN_shift_Pplus_morphism"
+  | "cvt_carry" -> "IPN_Pplus_carry"
+  | "iter_convert" -> "iter_IPN"
+  | "compare_convert1" -> "compare_not_Eq"
+  | "compare_convert_INFERIEUR" -> "IPN_lt_morphism_compare"
+  | "compare_convert_SUPERIEUR" -> "IPN_gt_morphism_compare"
+  | "compare_convert_EGAL"      -> "compare_Eq_eq"
+  | "convert_compare_INFERIEUR" -> "IPN_lt_surj_morphism_compare"
+  | "convert_compare_SUPERIEUR" -> "IPN_gt_surj_morphism_compare"
+  | "convert_compare_EGAL"      -> "compare_refl"
+  | "Zcompare_EGAL"             -> "Zcompare_Eq_eq"
+  | "Zcompare_et_un"            -> "Zcompare_Gt_not_Lt"
+  | "Zcompare_trans_SUPERIEUR"  -> "Zcompare_Gt_trans"
+  | "SUPERIEUR_POS"             -> "Zcompare_Gt_POS"
+  | "bij1" -> "IPN_INP_succ_eq_succ"
+  | "bij2" -> "INP_succ_IPN_eq_succ"
+  | "bij3" -> "pred_INP_succ_IPN_bij"
+  | "absolu" -> "Zabs_nat"
+  | "Zeq_add_S" -> "Zs_inj"
   (* Arith *)
   | "plus_sym" -> "plus_comm"
   | "mult_sym" -> "mult_comm"
   | "max_sym" -> "max_comm"
   | "min_sym" -> "min_comm"
   | "gt_not_sym" -> "gt_asym"
+  | "simpl_plus_l" -> "plus_simpl_l"
+  | "simpl_plus_r" -> "plus_simpl_r"
   | "fact_growing" -> "fact_le"
+  | "lt_mult_left" -> "lt_mult_S_left"
   (* Lists *)
   | "idempot_rev" -> "involutive_rev"
   | "forall" -> "HereAndFurther"
@@ -202,6 +241,7 @@ let translate_v7_string = function
   | "andb_sym" -> "andb_comm"
   (* Reals *)
     (* redundant *)
+  | "Rabsolu" -> "Rabs"
   | "Rle_sym1" -> "Rle_ge"
   | "Rmin_sym" -> "Rmin_comm"
   | s when String.length s >= 7 & 
@@ -370,7 +410,12 @@ let stdlib = function
       && not (List.mem (string_of_id id) 
         ["Zlength";"Zlength_correct";"eq_ind"])
   | None -> false
-  
+
+let explicit_code imp q =
+  dummy_loc,
+  if !Options.v7 & not (Options.do_translate()) then ExplByPos q
+  else ExplByName (name_of_implicit imp)
+
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
 let explicitize loc inctx impl (cf,f) args =
@@ -383,7 +428,7 @@ let explicitize loc inctx impl (cf,f) args =
           or (not (is_inferable_implicit inctx n imp))
 	  or ((match a with CHole _ -> false | _ -> true)
 	      & Options.do_translate() & not (stdlib cf)) in
-        if visible then (a,Some q) :: tail else tail
+        if visible then (a,Some (explicit_code imp q)) :: tail else tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
     | [], _ -> [] in
