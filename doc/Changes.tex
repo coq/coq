@@ -35,6 +35,8 @@ dot notation to access names (see section \ref{Names})
 provided by Yves Bertot (see section \ref{Search})
 \item A ``natural'' syntax for real numbers (see section
 \ref{SyntaxExtensions}) 
+\item New tactics (and developments) for real numbers 
+(see section~\ref{NewTactics})
 \item The tactic {\tt Field} which solves equalities using commutative field
 theory (see section~\ref{NewTactics})
 \item A command to export theories to XML to
@@ -210,7 +212,7 @@ Check ``2*3/(4+2)``.
 \end{coq_example}
 
 Remark: A constant, say \verb:``4``:, is equivalent to
-\verb:``(((1+1)+1)+1)``:.
+\verb:``(1+(1+(1+1)))``:.
 
 \paragraph{{\tt Infix}} was inactive on pretty-printer. Now it works.
 
@@ -300,6 +302,17 @@ been implemented using essentially the new tactic language $\ltac$. Only the
 table of field theories (as for the tactic {\tt Ring}) is dealt by means of an
 \ml{} part. This tactic is currently used in the real number theory. For more
 details, see the Reference Manual.
+
+   \paragraph{{\tt Fourier}} written by Loœc Pottier solves linear inequations.
+
+   \paragraph{Others tactics and developments} has been included in the Reals
+library: {\tt DiscrR} prove that a real integer constante c1 is non equal to
+another real integer constante c2; {\tt SplitAbsolu} allows us to split 
+Rabsolu; {\tt SplitRmult} allows us to split Rabsolu a product non equal to 
+zero and give the corresponding subgoals with each term non equal to zero.
+All this tactics has been written with the tactic language $\ltac$.\\
+A development on Cauchy series, power series,... has been added.\\
+For more details, see the Reference Manual.
 
 \subsection{Changes in pre-existing tactics}
 \label{TacticChanges}
@@ -534,6 +547,9 @@ documentation tool (see the ``doc'' directory in {\Coq} source).
 
   \item Default parsers in {\tt Grammar} and {\tt Syntax} are
   different (see section \ref{GrammarSyntax}).
+  
+  \item Definition of {\tt D\_in} (Reals/Rderiv.v) is now with Rdiv (Rmult and 
+        Rinv before).
 
   \item {\tt Extraction} is currently not available in {\Coq} V7.
 
