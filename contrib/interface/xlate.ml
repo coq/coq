@@ -2053,6 +2053,7 @@ let rec xlate_vernac =
   | VernacReserve([], _) -> assert false
   | VernacLocate(LocateTerm id) -> CT_locate(reference_to_ct_ID id)
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
+  | VernacLocate(LocateModule _) -> xlate_error "TODO: Locate Module"
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
   | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
