@@ -160,8 +160,8 @@ INTERFACE=contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
 
 PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
-	lib/hashcons.cmo library/libobject.cmo library/summary.cmo \
-	kernel/names.cmo \
+	lib/hashcons.cmo lib/profile.cmo library/libobject.cmo \
+	library/summary.cmo kernel/names.cmo \
 	parsing/lexer.cmo parsing/coqast.cmo \
 	parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
@@ -840,4 +840,3 @@ clean::
 
 include .depend
 include .depend.coq
-
