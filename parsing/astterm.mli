@@ -50,7 +50,9 @@ val fconstr_of_com_sort : 'a evar_map -> env -> Coqast.t -> constr
 val raw_constr_of_compattern :
   'c evar_map -> 'a assumptions -> Coqast.t -> rawconstr
 
+*)
 val globalize_command : Coqast.t -> Coqast.t
+(*
 val globalize_ast     : Coqast.t -> Coqast.t
 
 (* Typing with Trad, and re-checking with Mach *)
