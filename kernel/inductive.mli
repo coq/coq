@@ -43,11 +43,13 @@ val mis_consnames : inductive_instance -> identifier array
 val mis_typed_arity : inductive_instance -> typed_type
 val mis_inductive : inductive_instance -> inductive
 val mis_arity : inductive_instance -> constr
-val mis_lc : inductive_instance -> constr array
-val mis_type_mconstructs : inductive_instance -> constr array * constr array
-val mis_type_mconstruct : int -> inductive_instance -> typed_type
 val mis_params_ctxt : inductive_instance -> (name * constr) list
 val mis_sort : inductive_instance -> sorts
+val mis_type_mconstruct : int -> inductive_instance -> typed_type
+
+(* The ccl of constructor is pre-normalised in the following functions *)
+val mis_lc : inductive_instance -> constr array
+val mis_type_mconstructs : inductive_instance -> constr array * constr array
 
 (*s [inductive_family] = [inductive_instance] applied to global parameters *)
 type inductive_family = IndFamily of inductive_instance * constr list
@@ -117,8 +119,7 @@ val build_dependent_inductive : inductive_family -> constr
    indf k] builds [(x1:A1)...(xn:An)sort] which is the arity of an
    elimination predicate on sort [k]; if [dep=true] then it rather
    builds [(x1:A1)...(xn:An)(I params x1...xn)->sort] *)
-val make_arity : env -> 'a evar_map -> bool -> inductive_family ->
-  sorts -> constr
+val make_arity : env -> bool -> inductive_family -> sorts -> constr
 
 (* [build_branch_type env dep p cs] builds the type of the branch
    associated to constructor [cs] in a Case with elimination predicate
@@ -162,15 +163,14 @@ val find_rectype : env -> 'a evar_map -> constr -> inductive_type
 
 val get_constructors : inductive_family -> constructor_summary array
 
-(* [get_arity env sigma inf] returns the product and the sort of the
+(* [get_arity inf] returns the product and the sort of the
    arity of the inductive family described by [is]; global parameters are
    already instanciated; [indf] must be defined w.r.t. [env] and [sigma];
    the products signature is relative to [env] and [sigma]; the names
    of the products of the constructors types are not renamed when
    [Anonymous] *)
 
-val get_arity : env -> 'a evar_map -> inductive_family ->
-      (name * constr) list * sorts
+val get_arity : inductive_family -> flat_arity
 
 (* Examples: assume
   

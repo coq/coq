@@ -39,7 +39,7 @@ let mis_typed_lc mis =
   let ids = ids_of_sign mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in
   Array.map (fun t -> Instantiate.instantiate_type ids t args)
-    mis.mis_mip.mind_lc
+    mis.mis_mip.mind_nf_lc
 
 let mis_lc mis = Array.map body_of_type (mis_typed_lc mis)
 
@@ -58,7 +58,15 @@ let mis_type_mconstructs mispec =
   (Array.init nconstr make_Ck, 
    Array.map (substl (list_tabulate make_Ik ntypes)) specif)
 
-let mis_type_mconstruct i mispec =
+let mis_type_nf_mconstruct i mispec =
+  let specif = mis_lc mispec
+  and ntypes = mis_ntypes mispec
+  and nconstr = mis_nconstr mispec in
+  let make_Ik k = DOPN(MutInd(mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
+  if i > nconstr then error "Not enough constructors in the type";
+  substl (list_tabulate make_Ik ntypes) specif.(i-1)
+
+let mis_type_mconstruct i mispec = 
   let specif = mis_typed_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
@@ -69,9 +77,13 @@ let mis_type_mconstruct i mispec =
 let mis_typed_arity mis =
   let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
   and largs = Array.to_list mis.mis_args in
-  Instantiate.instantiate_type idhyps mis.mis_mip.mind_arity largs
+  Instantiate.instantiate_type idhyps mis.mis_mip.mind_nf_arity largs
 
+(*
 let mis_arity mispec = incast_type (mis_typed_arity mispec)
+*)
+
+let mis_arity mis = body_of_type (mis_typed_arity mis)
 
 let mis_params_ctxt mispec =
   let paramsign,_ =
@@ -221,7 +233,7 @@ let lift_constructor n cs = {
 
 let get_constructor (IndFamily (mispec,params)) j =
   assert (j <= mis_nconstr mispec);
-  let typi = body_of_type (mis_type_mconstruct j mispec) in
+  let typi = mis_type_nf_mconstruct j mispec in
   let (args,ccl) = decompose_prod (prod_applist typi params) in
   let (_,vargs) = array_chop (mis_nparams mispec + 1) (destAppL (ensure_appl ccl)) in
   { cs_cstr = ith_constructor_of_inductive (mis_inductive mispec) j;
@@ -233,9 +245,9 @@ let get_constructor (IndFamily (mispec,params)) j =
 let get_constructors (IndFamily (mispec,params) as indf) =
   Array.init (mis_nconstr mispec) (fun j -> get_constructor indf (j+1))
 
-let get_arity env sigma (IndFamily (mispec,params)) =
+let get_arity (IndFamily (mispec,params)) =
   let arity = mis_arity mispec in
-  splay_arity env sigma (prod_applist arity params)
+  destArity (prod_applist arity params)
 
 (* Functions to build standard types related to inductive *)
 
@@ -251,8 +263,8 @@ let build_dependent_inductive (IndFamily (mis, params)) =
      (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
 
 (* builds the arity of an elimination predicate in sort [s] *)
-let make_arity env sigma dep indf s =
-  let (arsign,_) = get_arity env sigma indf in
+let make_arity env dep indf s =
+  let (arsign,_) = get_arity indf in
   if dep then
     (* We need names everywhere *)
     it_prod_name env
