@@ -775,15 +775,18 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
   let hd1,l1 = whd_stack ty1 in
   let hd2,l2 = whd_stack ty2 in
   match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
-    | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true) ->
+    (* Pattern case *)
+    | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
+      when List.length l1 = List.length l2 ->
 	(try 
-	   clenv_unify_0 cv_pb ty1 ty2 clenv
+	   clenv_typed_unify cv_pb ty1 ty2 clenv
 	 with ex when catchable_exception ex -> 
 	   try 
 	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
 	   with ex when catchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
 
+     (* Second order case *)
      | (Meta _, true, _, _ | _, _, Meta _, true) -> 
 	(try 
 	   clenv_unify2 allow_K cv_pb ty1 ty2 clenv
@@ -793,6 +796,7 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
            with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
+     (* General case: try first order *)
      | _ -> clenv_unify_0 cv_pb ty1 ty2 clenv
 
 
