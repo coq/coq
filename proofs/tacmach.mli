@@ -37,23 +37,23 @@ val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
   evar_map ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
 
-val pf_concl              : goal sigma -> constr
+val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env
 val pf_hyps               : goal sigma -> named_context
 (*i val pf_untyped_hyps       : goal sigma -> (identifier * constr) list i*)
-val pf_hyps_types         : goal sigma -> (identifier * constr) list
+val pf_hyps_types         : goal sigma -> (identifier * types) list
 val pf_nth_hyp_id         : goal sigma -> int -> identifier
 val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> identifier list
 val pf_global             : goal sigma -> identifier -> constr
 val pf_parse_const        : goal sigma -> string -> constr
-val pf_type_of            : goal sigma -> constr -> constr
-val pf_check_type         : goal sigma -> constr -> constr -> constr
+val pf_type_of            : goal sigma -> constr -> types
+val pf_check_type         : goal sigma -> constr -> types -> unit
 val pf_execute            : goal sigma -> constr -> unsafe_judgment
-val hnf_type_of           : goal sigma -> constr -> constr
+val hnf_type_of           : goal sigma -> constr -> types
 
 val pf_interp_constr      : goal sigma -> Coqast.t -> constr
-val pf_interp_type        : goal sigma -> Coqast.t -> constr
+val pf_interp_type        : goal sigma -> Coqast.t -> types
 
 val pf_get_hyp            : goal sigma -> identifier -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> identifier -> types

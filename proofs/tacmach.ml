@@ -112,8 +112,7 @@ let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_type_of gls)
 
-let pf_check_type gls c1 c2 =
-  let casted = mkCast (c1, c2) in pf_type_of gls casted
+let pf_check_type gls c1 c2 = ignore (pf_type_of gls (mkCast (c1, c2)))
 
 (************************************)
 (* Tactics handling a list of goals *)
