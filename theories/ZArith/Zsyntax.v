@@ -172,6 +172,9 @@ Syntax constr
       -> [(MUTIND $i $n)]
   | mutconstruct_inside [ << (ZEXPR (MUTCONSTRUCT $c1 $c2 $c3)) >> ]
       -> [ (MUTCONSTRUCT $c1 $c2 $c3) ]
+
+  | O_inside [ << (ZEXPR << O >>) >> ] -> [ "O" ] (* To shunt Arith printer *)
+
   (* Added by JCF, 9/3/98; updated HH, 11/9/01 *)
   | implicit_head_inside [ << (ZEXPR (APPLISTEXPL ($LIST $c))) >> ]
       -> [ (APPLIST ($LIST $c)) ]
