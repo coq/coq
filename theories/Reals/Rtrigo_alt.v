@@ -219,7 +219,7 @@ Apply pow_lt; Assumption.
 Apply Rlt_Rinv; Apply lt_INR_0; Apply neq_O_lt; Red; Intro; Assert H8 := (sym_eq ? ? ? H7); Elim (fact_neq_0 ? H8).
 Clear Un Vn; Apply INR_le; Simpl.
 Induction M_nat.
-Assert H6 := (archimed (Rabsolu x)); Elim H6; Intros; Fold M in H6.
+Assert H6 := (archimed (Rabsolu x)); Fold M in H6; Elim H6; Intros. 
 Rewrite H4 in H7; Rewrite <- INR_IZR_INZ in H7.
 Simpl in H7; Elim (Rlt_antirefl ? (Rlt_trans ? ? ? H2 H7)).
 Replace R1 with (INR (S O)); [Apply le_INR | Reflexivity]; Apply le_n_S; Apply le_O_n.

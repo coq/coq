@@ -73,10 +73,6 @@ val free_rels : constr -> Intset.t
 (* Substitution of metavariables *)
 val subst_meta : (int * constr) list -> constr -> constr
 
-(* Expansion of local definitions *)
-val whd_locals : env -> constr -> constr
-val nf_locals  : env -> constr -> constr
-
 (* [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr
 
@@ -84,20 +80,19 @@ val pop : constr -> constr
    reduction of let *)
 val dependent : constr -> constr -> bool
 val subst_term_gen :
-  (env -> constr -> constr -> bool) -> env -> constr -> constr -> constr
+  (constr -> constr -> bool) -> constr -> constr -> constr
 val replace_term_gen :
-  (env -> constr -> constr -> bool) ->
-    env -> constr -> constr -> constr -> constr
+  (constr -> constr -> bool) ->
+    constr -> constr -> constr -> constr
 val subst_term : constr -> constr -> constr
 val replace_term : constr -> constr -> constr -> constr
 val subst_term_occ_gen :
-  env -> int list -> int -> constr -> types -> int * types
-val subst_term_occ : env -> int list -> constr -> types -> types
+  int list -> int -> constr -> types -> int * types
+val subst_term_occ : int list -> constr -> types -> types
 val subst_term_occ_decl :
-  env -> int list -> constr -> named_declaration -> named_declaration
+  int list -> constr -> named_declaration -> named_declaration
 
 (* Alternative term equalities *)
-val zeta_eq_constr : constr -> constr -> bool
 val eta_reduce_head : constr -> constr
 val eta_eq_constr : constr -> constr -> bool
 

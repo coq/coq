@@ -671,7 +671,7 @@ let letin_abstract id c occs gl =
 	match occurrences_of_hyp hyp occs with
 	  | None -> raise Not_found
 	  | Some occ ->
-              let newdecl = subst_term_occ_decl env occ c d in
+              let newdecl = subst_term_occ_decl occ c d in
               if d = newdecl then
 		if not (everywhere occs)
 		then raise (RefinerError (DoesNotOccurIn (c,hyp)))
@@ -690,7 +690,7 @@ let letin_abstract id c occs gl =
   let (depdecls,marks),_ = List.fold_left compute_marks (([],[]),None) ctxt' in
   let ccl = match occurrences_of_goal occs with
     | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_term_occ env occ c (pf_concl gl))
+    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl))
   in
   (depdecls,marks,ccl)
 

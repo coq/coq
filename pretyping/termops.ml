@@ -286,15 +286,6 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
       then cstr
       else mkCoFix (ln,(lna,tl',bl'))
 
-
-(* Equality modulo let reduction *)
-let rec zeta_eq_constr m n = 
-  (m==n) or
-  match kind_of_term m, kind_of_term n with
-    | LetIn(_,v1,_,b1),_ -> zeta_eq_constr (subst1 v1 b1) n
-    | _,LetIn(_,v2,_,b2) -> zeta_eq_constr m (subst1 v2 b2)
-    | _ -> compare_constr zeta_eq_constr m n
-
 (***************************)
 (* occurs check functions  *)                         
 (***************************)
@@ -366,7 +357,7 @@ let free_rels m =
 
 let dependent m t =
   let rec deprec m t =
-    if zeta_eq_constr m t then
+    if eq_constr m t then
       raise Occur
     else
       iter_constr_with_binders (lift 1) deprec m t
@@ -384,53 +375,29 @@ let rec subst_meta bl c =
     | Meta i -> (try List.assoc i bl with Not_found -> c)
     | _ -> map_constr (subst_meta bl) c
 
-(* Equality modulo let reduction *)
-let rec whd_locals env c =
-  match kind_of_term c with
-      Rel i ->
-        (try
-          (match lookup_rel i env with
-              (_,Some v,_) -> whd_locals env (lift i v)
-            | _ -> c)
-         with Not_found -> c)
-    | Var id ->
-        (try
-          (match lookup_named id env with
-              (_,Some v,_) -> whd_locals env v
-            | _ -> c)
-         with Not_found -> c)
-    | _ -> c
-
-(* Expand de Bruijn indices bound to a value *)
-let rec nf_locals env c =
-  map_constr_with_full_binders push_rel nf_locals env (whd_locals env c)
-
-(* compare terms modulo expansion of let and local variables *)
-let compare_zeta env m n = zeta_eq_constr m (nf_locals env n)
-
 (* First utilities for avoiding telescope computation for subst_term *)
 
-let prefix_application eq_fun (e,k,c) (t : constr) = 
+let prefix_application eq_fun (k,c) (t : constr) = 
   let c' = collapse_appl c and t' = collapse_appl t in
   match kind_of_term c', kind_of_term t' with
     | App (f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_fun e c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	   && eq_fun c' (mkApp (f2, Array.sub cl2 0 l1)) then
 	  Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
 	else 
 	  None
     | _ -> None
 
-let my_prefix_application eq_fun (e,k,c) (by_c : constr) (t : constr) = 
+let my_prefix_application eq_fun (k,c) (by_c : constr) (t : constr) = 
   let c' = collapse_appl c and t' = collapse_appl t in
   match kind_of_term c', kind_of_term t' with
     | App (f1,cl1), App (f2,cl2) ->
 	let l1 = Array.length cl1
 	and l2 = Array.length cl2 in
 	if l1 <= l2
-	   && eq_fun e c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	   && eq_fun c' (mkApp (f2, Array.sub cl2 0 l1)) then
 	  Some (mkApp ((lift k by_c), Array.sub cl2 l1 (l2 - l1)))
 	else 
 	  None
@@ -441,49 +408,43 @@ let my_prefix_application eq_fun (e,k,c) (by_c : constr) (t : constr) =
    term [c] in a term [t] *)
 (*i Bizarre : si on cherche un sous terme clos, pourquoi le lifter ? i*)
 
-let subst_term_gen eq_fun env c t = 
-  let rec substrec (e,k,c as kc) t =
+let subst_term_gen eq_fun c t = 
+  let rec substrec (k,c as kc) t =
     match prefix_application eq_fun kc t with
       | Some x -> x
       | None ->
-    (if eq_fun e c t then mkRel k
+    if eq_fun c t then mkRel k
     else
-      let red_t = whd_locals env t in
-      let red_t' =
-        map_constr_with_full_binders
-          (fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
-          substrec kc red_t in
-      if red_t == red_t' then t else red_t')
+      map_constr_with_binders (fun (k,c) -> (k+1,lift 1 c)) substrec kc t
   in 
-  substrec (env,1,nf_locals env c) t
+  substrec (1,c) t
 
 (* Recognizing occurrences of a given (closed) subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of (closed)
    term [c1] in a term [t] *)
 (*i Meme remarque : a priori [c] n'est pas forcement clos i*)
 
-let replace_term_gen eq_fun env c by_c in_t = 
-  let rec substrec (e,k,c as kc) t =
+let replace_term_gen eq_fun c by_c in_t = 
+  let rec substrec (k,c as kc) t =
     match my_prefix_application eq_fun kc by_c t with
       | Some x -> x
       | None ->
-    (if eq_fun e c t then (lift k by_c) else
-      map_constr_with_full_binders
-	(fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
+    (if eq_fun c t then (lift k by_c) else
+      map_constr_with_binders (fun (k,c) -> (k+1,lift 1 c))
 	substrec kc t)
   in 
-  substrec (env,0,nf_locals env c) in_t
+  substrec (0,c) in_t
 
-let subst_term = subst_term_gen (fun _ -> eq_constr) empty_env
+let subst_term = subst_term_gen eq_constr
 
-let replace_term = replace_term_gen (fun _ -> eq_constr) empty_env
+let replace_term = replace_term_gen eq_constr
 
 (* Substitute only a list of locations locs, the empty list is
    interpreted as substitute all, if 0 is in the list then no
    substitution is done. The list may contain only negative occurrences
    that will not be substituted. *)
 
-let subst_term_occ_gen env locs occ c t =
+let subst_term_occ_gen locs occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
   let check = ref true in
@@ -491,10 +452,10 @@ let subst_term_occ_gen env locs occ c t =
   if except & (List.exists (fun n -> n>=0) locs) 
   then error "mixing of positive and negative occurences"
   else
-   let rec substrec (e,k,c as kc) t =
+   let rec substrec (k,c as kc) t =
     if (not except) & (!pos > maxocc) then t
     else
-    if compare_zeta e c t then
+    if eq_constr c t then
       let r = 
 	if except then 
 	  if List.mem (- !pos) locs then t else (mkRel k)
@@ -503,34 +464,34 @@ let subst_term_occ_gen env locs occ c t =
       in incr pos; r
     else
       map_constr_with_binders_left_to_right
-	(fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
+	(fun d (k,c) -> (k+1,lift 1 c))
         substrec kc t
   in
-  let t' = substrec (env,1,nf_locals env c) t in
+  let t' = substrec (1,c) t in
   (!pos, t')
 
-let subst_term_occ env locs c t = 
+let subst_term_occ locs c t = 
   if locs = [] then
-    subst_term_gen compare_zeta env c t
+    subst_term_gen eq_constr c t
   else if List.mem 0 locs then 
     t
   else 
-    let (nbocc,t') = subst_term_occ_gen env locs 1 c t in
+    let (nbocc,t') = subst_term_occ_gen locs 1 c t in
     if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
       errorlabstrm "subst_term_occ" (str "Too few occurences");
     t'
 
-let subst_term_occ_decl env locs c (id,bodyopt,typ as d) =
+let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
   match bodyopt with
-    | None -> (id,None,subst_term_occ env locs c typ)
+    | None -> (id,None,subst_term_occ locs c typ)
     | Some body -> 
 	if locs = [] then
 	  (id,Some (subst_term c body),type_app (subst_term c) typ)
 	else if List.mem 0 locs then 
 	  d
 	else 
-	  let (nbocc,body') = subst_term_occ_gen env locs 1 c body in
-	  let (nbocc',t') = subst_term_occ_gen env locs nbocc c typ in
+	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
+	  let (nbocc',t') = subst_term_occ_gen locs nbocc c typ in
 	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
 	    errorlabstrm "subst_term_occ_decl" (str "Too few occurences");
 	  (id,Some body',t')

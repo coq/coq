@@ -49,14 +49,14 @@ let mkAppliedInd (IndType ((ind,params), realargs)) =
   applist (mkInd ind,params@realargs)
 
 
+(* Does not consider imbricated or mutually recursive types *) 
 let mis_is_recursive_subset listind rarg = 
   let rec one_is_rec rvec = 
     List.exists
       (fun ra ->
         match dest_recarg ra with
 	  | Mrec i -> List.mem i listind 
-          | Imbr _ -> array_exists one_is_rec (dest_subterms ra)
-          | Norec  -> false) rvec
+          | _ -> false) rvec
   in 
   array_exists one_is_rec (dest_subterms rarg)
 
