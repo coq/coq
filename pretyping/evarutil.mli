@@ -46,53 +46,43 @@ val whd_castappevar :  evar_map -> constr -> constr
 (* [new_meta] is a generator of unique meta variables *)
 val new_meta : unit -> metavariable
 val mk_new_meta : unit -> constr
-val nf_meta       : meta_map -> constr -> constr
-val meta_type     : meta_map -> metavariable -> types
-val meta_instance : meta_map -> constr freelisted -> constr
+val nf_meta       : evar_defs -> constr -> constr
+val meta_type     : evar_defs -> metavariable -> types
+val meta_instance : evar_defs -> constr freelisted -> constr
 
 (* [exist_to_meta] generates new metavariables for each existential
    and performs the replacement in the given constr *)
 val exist_to_meta : evar_map -> open_constr -> (Termops.metamap * constr)
 
-(* Creating new existential variables *)
-val new_evar : unit -> evar
-val new_evar_in_sign : env -> constr
-
-val evar_env :  evar_info -> env
 
 (***********************************************************)
 
-type maps = evar_map * meta_map
-type evar_defs
-val evars_of : evar_defs -> evar_map
-val metas_of : evar_defs -> meta_map
+(* Creating a fresh evar given their type and context *)
+val new_evar :
+  evar_defs -> env -> ?src:loc * hole_kind -> types -> evar_defs * constr
+(* the same with side-effects *)
+val e_new_evar :
+  evar_defs ref -> env -> ?src:loc * hole_kind -> types -> constr
+
+(* Create a fresh evar in a context different from its definition context:
+   [new_evar_instance sign evd ty inst] creates a new evar of context
+   [sign] and type [ty], [inst] is a mapping of the evar context to
+   the context where the evar should occur. This means that the terms 
+   of [inst] are typed in the occurrence context and their type (seen
+   as a telescope) is [sign] *)
+val new_evar_instance :
+ named_context -> evar_defs -> types -> ?src:loc * hole_kind -> constr list ->
+ evar_defs * constr
+
+(* Builds the instance in the case where the occurrence context is the
+   same as the evar context *)
+val make_evar_instance : env -> constr list
+
+(***********************************************************)
 
 val non_instantiated : evar_map -> (evar * evar_info) list
 
-val mk_evar_defs :  maps -> evar_defs
-(* the same with empty meta map: *)
-val create_evar_defs :  evar_map -> evar_defs
-val evars_reset_evd :  evar_map ->  evar_defs -> evar_defs
-val reset_evd :  maps ->  evar_defs -> evar_defs
-val evar_source : existential_key -> evar_defs -> loc * hole_kind
-
-type evar_constraint = conv_pb * constr * constr
-val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
-
-val is_defined_evar :  evar_defs -> existential -> bool
-val ise_undefined :  evar_defs -> constr -> bool
-val has_undefined_isevars :  evar_defs -> constr -> bool
-
-val new_isevar_sign :
- Environ.env -> Evd.evar_map -> Term.constr -> Term.constr list ->
-  Evd.evar_map * Term.constr
-
-val new_isevar :  evar_defs -> env -> loc * hole_kind -> constr ->
-  evar_defs * constr
-
-(* the same with side-effects *)
-val e_new_isevar : evar_defs ref -> env -> loc * hole_kind -> constr -> constr
-
+val has_undefined_evars :  evar_defs -> constr -> bool
 val is_eliminator : constr -> bool
 val head_is_embedded_evar :  evar_defs -> constr -> bool
 val solve_simple_eqn :
@@ -106,10 +96,7 @@ val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 (***********************************************************)
 (* Value/Type constraints *)
 
-val new_Type_sort : unit -> sorts
-val new_Type : unit -> constr
 val judge_of_new_Type : unit -> unsafe_judgment
-val refresh_universes : types -> types
 
 type type_constraint = constr option
 type val_constraint = constr option

@@ -127,7 +127,7 @@ let mk_open_instance id gl m t=
       match t with
 	  RLambda(loc,name,_,t0)->
 	    let t1=raux (n-1) t0 in
-	      RLambda(loc,name,RHole (dummy_loc,BinderType name),t1)
+	      RLambda(loc,name,RHole (dummy_loc,Evd.BinderType name),t1)
 	| _-> anomaly "can't happen" in
   let ntt=Pretyping.understand evmap env (raux m rawt) in
     Sign.decompose_lam_n_assum m ntt

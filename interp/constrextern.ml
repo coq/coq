@@ -1231,10 +1231,10 @@ let rec cases_pattern_expr_of_constr_expr = function
 
 let rec rawconstr_of_cases_pattern = function
   | PatVar (loc,Name id) -> RVar (loc,id)
-  | PatVar (loc,Anonymous) -> RHole (loc,InternalHole)
+  | PatVar (loc,Anonymous) -> RHole (loc,Evd.InternalHole)
   | PatCstr (loc,(ind,_ as c),args,_) -> 
       let nparams = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
-      let params = list_tabulate (fun _ -> RHole (loc,InternalHole)) nparams in
+      let params = list_tabulate (fun _ -> RHole (loc,Evd.InternalHole)) nparams in
       let args = params @ List.map rawconstr_of_cases_pattern args in
       let f = RRef (loc,ConstructRef c) in
       if args = [] then f else RApp (loc,f,args)
@@ -1573,7 +1573,7 @@ let rec extern inctx scopes vars r =
 	(sub_extern false scopes vars tm,
 	(na',option_app (fun (loc,ind,nal) ->
 	  let args = List.map (function
-	    | Anonymous -> RHole (dummy_loc,InternalHole) 
+	    | Anonymous -> RHole (dummy_loc,Evd.InternalHole) 
 	    | Name id -> RVar (dummy_loc,id)) nal in
 	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),args) in
 	  (extern_type scopes vars t)) x))) tml in
@@ -1794,7 +1794,7 @@ let rec raw_of_pat tenv env = function
 	    anomaly "rawconstr_of_pattern: index to an anonymous variable"
       with Not_found -> id_of_string ("[REL "^(string_of_int n)^"]") in
       RVar (loc,id)
-  | PMeta None -> RHole (loc,InternalHole)
+  | PMeta None -> RHole (loc,Evd.InternalHole)
   | PMeta (Some n) -> RPatVar (loc,(false,n))
   | PApp (f,args) ->
       RApp (loc,raw_of_pat tenv env f,array_map_to_list (raw_of_pat tenv env) args)

@@ -461,10 +461,6 @@ let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
 
 type conversion_test = constraints -> constraints
 
-type conv_pb = 
-  | CONV 
-  | CUMUL
-
 let pb_is_equal pb = pb = CONV
 
 let pb_equal = function

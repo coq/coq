@@ -70,25 +70,6 @@ let is_tactic_proof pf = match pf.ref with
 (*            Constraints for existential variables                *)
 (*******************************************************************)
 
-(* A readable constraint is a global constraint plus a focus set
-   of existential variables and a signature. *)
-
-(* Functions on readable constraints *)
-			     
-let mt_evcty gc = 
-  { it = empty_named_context; sigma = gc }
-
-let rc_of_gc evds gl = 
-  { it = gl.evar_hyps; sigma = evds }
-
-let rc_add evc (k,v) = 
-  { it  = evc.it;
-    sigma = Evd.add evc.sigma k v }
-
-let get_hyps  evc = evc.it
-let get_env   evc = Global.env_of_context evc.it
-let get_gc    evc = evc.sigma
-
 let pf_lookup_name_as_renamed env ccl s =
   Detyping.lookup_name_as_renamed env ccl s
 

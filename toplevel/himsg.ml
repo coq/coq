@@ -27,6 +27,7 @@ open Logic
 open Printer
 open Ast
 open Rawterm
+open Evd
 
 let quote s = if !Options.v7 then s else h 0 (str "\"" ++ s ++ str "\"")
 

@@ -101,6 +101,20 @@ let new_univ =
   (fun sp ->
     incr univ_gen; 
     Univ.make_univ (Lib.library_dp(),!univ_gen))
+let new_Type () = mkType (new_univ ())
+let new_Type_sort () = Type (new_univ ())
+
+(* This refreshes universes in types; works only for inferred types (i.e. for
+   types of the form (x1:A1)...(xn:An)B with B a sort or an atom in
+   head normal form) *)
+let refresh_universes t =
+  let modified = ref false in
+  let rec refresh t = match kind_of_term t with
+    | Sort (Type _) -> modified := true; new_Type ()
+    | Prod (na,u,v) -> mkProd (na,u,refresh v)
+    | _ -> t in
+  let t' = refresh t in
+  if !modified then t' else t
 
 let new_sort_in_family = function 
   | InProp -> mk_Prop

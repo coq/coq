@@ -13,6 +13,7 @@ open Names
 open Term
 open Sign
 open Environ
+open Libnames
 
 (* The type of mappings for existential variables *)
 
@@ -60,6 +61,7 @@ let is_defined sigma ev =
   not (info.evar_body = Evar_empty)
 
 let evar_body ev = ev.evar_body
+let evar_env evd = Global.env_of_context evd.evar_hyps
 
 let string_of_existential ev = "?" ^ string_of_int ev
 
@@ -184,25 +186,103 @@ let metamap_to_list m =
 let metamap_inv m b =
   Metamap.fold (fun n v l -> if v = b then n::l else l) m []
  
+(*************************)
+(* Unification state *)
+
+type hole_kind =
+  | ImplicitArg of global_reference * (int * identifier option)
+  | BinderType of name
+  | QuestionMark
+  | CasesType
+  | InternalHole
+  | TomatchTypeParameter of inductive * int
+
+type conv_pb = 
+  | CONV 
+  | CUMUL
+
 type meta_map = clbinding Metamap.t
- 
-let meta_defined env mv =
-  match Metamap.find mv env with
+type evar_constraint = conv_pb * constr * constr
+type evar_defs =
+    { evars : evar_map;
+      conv_pbs : evar_constraint list;
+      history : (existential_key * (loc * hole_kind)) list;
+      metas : meta_map }
+
+let mk_evar_defs (sigma,mmap) =
+  { evars=sigma; conv_pbs=[]; history=[]; metas=mmap }
+let create_evar_defs sigma =
+  mk_evar_defs (sigma,Metamap.empty)
+let evars_of d = d.evars
+let metas_of d = d.metas
+let evars_reset_evd evd d = {d with evars = evd}
+let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}
+let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
+let evar_source ev d =
+  try List.assoc ev d.history
+  with Failure _ -> (dummy_loc, InternalHole)
+
+(* define the existential of section path sp as the constr body *)
+let evar_define sp body isevars =
+  (* needed only if an inferred type *)
+  let body = Termops.refresh_universes body in
+  {isevars with evars = define isevars.evars sp body}
+
+
+let evar_declare hyps evn ty ?(src=(dummy_loc,InternalHole)) evd =
+  { evd with
+    evars = add evd.evars evn
+      {evar_hyps=hyps; evar_concl=ty; evar_body=Evar_empty};
+    history = (evn,src)::evd.history }
+
+let set_evar_source ev k evd = {evd with history=(ev,k)::evd.history}
+
+let is_defined_evar isevars (n,_) = is_defined isevars.evars n
+
+(* Does k corresponds to an (un)defined existential ? *)
+let is_undefined_evar isevars c = match kind_of_term c with
+  | Evar ev -> not (is_defined_evar isevars ev)
+  | _ -> false
+
+
+let get_conv_pbs isevars p =
+  let (pbs,pbs1) = 
+    List.fold_left
+      (fun (pbs,pbs1) pb ->
+    	 if p pb then 
+	   (pb::pbs,pbs1)
+         else 
+	   (pbs,pb::pbs1))
+      ([],[])
+      isevars.conv_pbs
+  in
+  {isevars with conv_pbs = pbs1},
+  pbs
+
+let meta_defined evd mv =
+  match Metamap.find mv evd.metas with
     | Clval _ -> true
     | Cltyp _ -> false
  
-let meta_fvalue env mv =
-  match Metamap.find mv env with
+let meta_fvalue evd mv =
+  match Metamap.find mv evd.metas with
     | Clval(b,_) -> b
     | Cltyp _ -> anomaly "meta_fvalue: meta has no value"
            
-let meta_ftype env mv =
-  match Metamap.find mv env with
+let meta_ftype evd mv =
+  match Metamap.find mv evd.metas with
     | Cltyp b -> b
     | Clval(_,b) -> b
  
-let meta_declare mv v menv =
-  Metamap.add mv (Cltyp(mk_freelisted v)) menv
+let meta_declare mv v evd =
+  { evd with metas = Metamap.add mv (Cltyp(mk_freelisted v)) evd.metas }
   
-let meta_assign mv v menv =
-  Metamap.add mv (Clval(mk_freelisted v, meta_ftype menv mv)) menv
+let meta_assign mv v evd =
+  {evd with
+    metas =
+      Metamap.add mv (Clval(mk_freelisted v, meta_ftype evd mv)) evd.metas }
+
+let meta_merge evd1 evd2 =
+  {evd2 with
+    metas = List.fold_left (fun m (n,v) -> Metamap.add n v m) 
+      evd2.metas (metamap_to_list evd1.metas) }

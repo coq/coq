@@ -31,8 +31,6 @@ let sig_it x = x.it
 let sig_sig x = x.sigma
 
 
-let project_with_focus gls = rc_of_gc (gls.sigma) (gls.it)
-
 let pf_status pf = pf.open_subgoals
 
 let is_complete pf = (0 = (pf_status pf))

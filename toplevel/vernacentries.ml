@@ -1039,7 +1039,7 @@ let vernac_check_guard () =
   let (pfterm,_) = extract_open_pftreestate pts in
   let message = 
     try 
-      Inductiveops.control_only_guard (Evarutil.evar_env (goal_of_proof pf))
+      Inductiveops.control_only_guard (Evd.evar_env (goal_of_proof pf))
 	pfterm; 
       (str "The condition holds up to here")
     with UserError(_,s) -> 

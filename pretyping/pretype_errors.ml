@@ -24,8 +24,8 @@ type pretype_error =
   | CantFindCaseType of constr
   (* Unification *)
   | OccurCheck of existential_key * constr
-  | NotClean of existential_key * constr * hole_kind
-  | UnsolvableImplicit of hole_kind
+  | NotClean of existential_key * constr * Evd.hole_kind
+  | UnsolvableImplicit of Evd.hole_kind
   | CannotUnify of constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr

@@ -133,15 +133,15 @@ LIBRARY=\
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo \
-  pretyping/rawterm.cmo pretyping/pattern.cmo \
-  pretyping/detyping.cmo pretyping/retyping.cmo \
-  pretyping/cbv.cmo pretyping/tacred.cmo \
+  pretyping/retyping.cmo pretyping/cbv.cmo pretyping/tacred.cmo \
   pretyping/pretype_errors.cmo \
-  pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
   pretyping/evarutil.cmo pretyping/typing.cmo \
-  pretyping/unification.cmo pretyping/evarconv.cmo \
-  pretyping/coercion.cmo pretyping/clenv.cmo pretyping/cases.cmo \
-  pretyping/pretyping.cmo pretyping/matching.cmo
+  pretyping/unification.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
+  pretyping/classops.cmo pretyping/indrec.cmo \
+  pretyping/coercion.cmo pretyping/clenv.cmo \
+  pretyping/rawterm.cmo pretyping/pattern.cmo \
+  pretyping/detyping.cmo \
+  pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
 
 INTERP=\
   parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
@@ -1302,11 +1302,11 @@ GRAMMARNEEDEDCMO=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
   lib/dyn.cmo lib/options.cmo \
   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
-  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
-  kernel/sign.cmo kernel/declarations.cmo kernel/environ.cmo\
+  $(KERNEL) \
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
   library/goptions.cmo library/decl_kinds.cmo \
+  library/global.cmo pretyping/termops.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo pretyping/evd.cmo \
   interp/topconstr.cmo interp/genarg.cmo \
   interp/ppextend.cmo parsing/coqast.cmo parsing/ast.cmo \

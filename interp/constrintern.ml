@@ -625,7 +625,7 @@ let locate_if_isevar loc na = function
       (try match na with
 	| Name id ->  Reserve.find_reserved_type id
 	| Anonymous -> raise Not_found 
-      with Not_found -> RHole (loc, BinderType na))
+      with Not_found -> RHole (loc, Evd.BinderType na))
   | x -> x
 
 let check_hidden_implicit_parameters id (_,_,_,indnames,_) =
@@ -669,8 +669,8 @@ let get_implicit_name n imps =
   else Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
 let set_hole_implicit i = function
-  | RRef (loc,r) -> (loc,ImplicitArg (r,i))
-  | RVar (loc,id) -> (loc,ImplicitArg (VarRef id,i))
+  | RRef (loc,r) -> (loc,Evd.ImplicitArg (r,i))
+  | RVar (loc,id) -> (loc,Evd.ImplicitArg (VarRef id,i))
   | _ -> anomaly "Only refs have implicits"
 
 let exists_implicit_name id =
@@ -908,7 +908,7 @@ let internalise sigma env allow_soapp lvar c =
         let p' = option_app (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole loc -> 
-	RHole (loc, QuestionMark)
+	RHole (loc, Evd.QuestionMark)
     | CPatVar (loc, n) when allow_soapp ->
 	RPatVar (loc, n)
     | CPatVar (loc, (false,n)) when Options.do_translate () ->
@@ -943,7 +943,7 @@ let internalise sigma env allow_soapp lvar c =
           (env,bl) nal
     | LocalRawDef((loc,na),def) ->
         ((name_fold Idset.add na ids,ts,sc),
-         (na,Some(intern env def),RHole(loc,BinderType na))::bl)
+         (na,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
   and intern_eqn n (ids,tmp_scope,scopes as env) (loc,lhs,rhs) =
     let idsl_pll = List.map (intern_cases_pattern scopes ([],[]) None) lhs in

@@ -67,8 +67,7 @@ val clenv_fchain : metavariable -> clausenv -> clausenv -> clausenv
 
 (* Unifies two terms in a clenv. The boolean is allow_K (see Unification) *)
 val clenv_unify : 
-  bool -> Reductionops.conv_pb -> constr -> constr ->
-  clausenv -> clausenv
+  bool -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
 (* unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :

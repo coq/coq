@@ -46,14 +46,6 @@ type 'a bindings =
 
 type 'a with_bindings = 'a * 'a bindings
 
-type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option)
-  | BinderType of name
-  | QuestionMark
-  | CasesType
-  | InternalHole
-  | TomatchTypeParameter of inductive * int
-
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
@@ -74,7 +66,7 @@ type rawconstr =
   | RRec of loc * fix_kind * identifier array * rawdecl list array *
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
-  | RHole of (loc * hole_kind)
+  | RHole of (loc * Evd.hole_kind)
   | RCast of loc * rawconstr * rawconstr
   | RDynamic of loc * Dyn.t
 

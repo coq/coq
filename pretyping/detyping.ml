@@ -23,6 +23,7 @@ open Nameops
 open Termops
 open Libnames
 open Nametab
+open Evd
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)

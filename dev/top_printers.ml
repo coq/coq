@@ -88,7 +88,7 @@ let pproof p = pp(print_proof Evd.empty empty_named_context p)
 
 let prevm evd = pp(pr_decls evd)
 
-let prevd evd = prevm(Evarutil.evars_of evd)
+let prevd evd = prevm(Evd.evars_of evd)
 
 let prwc wc = pp(pr_evc wc)
 

@@ -19,6 +19,9 @@ open Environ
 (*val set_module : Names.dir_path -> unit*)
 val new_univ : unit -> Univ.universe
 val new_sort_in_family : sorts_family -> sorts
+val new_Type : unit -> types
+val new_Type_sort : unit -> sorts
+val refresh_universes : types -> types
 
 (* printers *)
 val print_sort : sorts -> std_ppcmds

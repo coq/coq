@@ -384,7 +384,7 @@ Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-ty
           {D.synthesized =
             Reductionops.nf_beta
              (CPropRetyping.get_type_of env evar_map
-              (Evarutil.refresh_universes tt)) ;
+              (Termops.refresh_universes tt)) ;
            D.expected = None}
         in
 (* Debugging only:

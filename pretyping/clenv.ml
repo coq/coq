@@ -48,7 +48,6 @@ type clausenv = {
   namenv   : identifier Metamap.t }
 
 let cl_env ce = ce.templenv
-let cl_metas ce = metas_of ce.env
 let cl_sigma ce = evars_of ce.env
 
 let subst_clenv sub clenv = 
@@ -57,14 +56,14 @@ let subst_clenv sub clenv =
     namenv = clenv.namenv;
     env = reset_evd
       (evars_of clenv.env,
-       Metamap.map (map_clb (subst_mps sub)) (cl_metas clenv))
+       Metamap.map (map_clb (subst_mps sub)) (metas_of clenv.env))
       clenv.env;
     templenv = clenv.templenv }
 
-let clenv_nf_meta clenv c = nf_meta (cl_metas clenv) c
-let clenv_meta_type clenv mv = meta_type (cl_metas clenv) mv
-let clenv_value clenv = meta_instance (cl_metas clenv) clenv.templval
-let clenv_type clenv = meta_instance (cl_metas clenv) clenv.templtyp
+let clenv_nf_meta clenv c = nf_meta clenv.env c
+let clenv_meta_type clenv mv = meta_type clenv.env mv
+let clenv_value clenv = meta_instance clenv.env clenv.templval
+let clenv_type clenv = meta_instance clenv.env clenv.templtyp
 
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
@@ -75,12 +74,12 @@ let clenv_get_type_of ce c =
       (function
 	 | (n,Clval(_,typ)) -> (n,typ.rebus)
          | (n,Cltyp typ)    -> (n,typ.rebus))
-      (metamap_to_list (cl_metas ce)) in
+      (metamap_to_list (metas_of ce.env)) in
   Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) metamap c
 
 
 
-let clenv_environments bound c =
+let clenv_environments evd bound c =
   let rec clrec (ne,e,metas) n c =
     match n, kind_of_term c with
       | (Some 0, _) -> (ne, e, List.rev metas, c)
@@ -109,14 +108,15 @@ let clenv_environments bound c =
 	  clrec (ne,e,metas) (option_app ((+) (-1)) n) (subst1 b c)
       | (n, _) -> (ne, e, List.rev metas, c)
   in 
-  clrec (Metamap.empty,Metamap.empty,[]) bound c
+  clrec (Metamap.empty,evd,[]) bound c
 
 let mk_clenv_from_n gls n (c,cty) =
-  let (namenv,env,args,concl) = clenv_environments n cty in
+  let evd = create_evar_defs gls.sigma in
+  let (namenv,env,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
     namenv = namenv;
-    env = mk_evar_defs (gls.sigma,env);
+    env = env;
     templenv = Global.env_of_context gls.it.evar_hyps }
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
@@ -138,7 +138,7 @@ let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 let mentions clenv mv0 = 
   let rec menrec mv1 =
     try
-     (match Metamap.find mv1 (cl_metas clenv) with
+     (match Metamap.find mv1 (metas_of clenv.env) with
 	 | Clval (b,_) -> 
 	     Metaset.mem mv0 b.freemetas || meta_exists menrec b.freemetas
 	 | Cltyp _ -> false)
@@ -147,7 +147,7 @@ let mentions clenv mv0 =
   in 
   menrec
 
-let clenv_defined clenv mv = meta_defined (cl_metas clenv) mv
+let clenv_defined clenv mv = meta_defined clenv.env mv
 
 (* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)		      
 let clenv_assign mv rhs clenv =
@@ -155,7 +155,7 @@ let clenv_assign mv rhs clenv =
   if meta_exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv__assign: circularity in unification";
   try
-    (match Metamap.find mv (cl_metas clenv) with
+    (match Metamap.find mv (metas_of clenv.env) with
        | Clval (fls,ty) ->
 	   if not (eq_constr fls.rebus rhs) then
 	     try 
@@ -167,12 +167,7 @@ let clenv_assign mv rhs clenv =
 	       anomaly "clenv_assign: non dependent metavar already assigned"
 	   else
 	     clenv
-       | Cltyp bty -> 
-	   { clenv with
-	     env = reset_evd
-               (cl_sigma clenv,
-                Metamap.add mv (Clval (rhs_fls,bty)) (cl_metas clenv))
-               clenv.env })
+       | Cltyp _ -> {clenv with env = meta_assign mv rhs_fls.rebus clenv.env})
   with Not_found -> 
     error "clenv_assign"
 
@@ -203,12 +198,12 @@ let collect_metas c =
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
 
-let clenv_metavars clenv mv = (meta_ftype (cl_metas clenv) mv).freemetas
+let clenv_metavars clenv mv = (meta_ftype clenv mv).freemetas
 
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
     (fun mv deps ->
-       Metaset.union deps (clenv_metavars clenv mv))
+       Metaset.union deps (clenv_metavars clenv.env mv))
     mvs conclmetas
 
 let clenv_dependent hyps_only clenv =
@@ -240,12 +235,9 @@ let clenv_pose_dependent_evars clenv =
   let dep_mvs = clenv_dependent false clenv in
   List.fold_left
     (fun clenv mv ->
-       let evar = Evarutil.new_evar_in_sign (cl_env clenv) in
-       let (evar_n,_) = destEvar evar in
-       let tY = clenv_meta_type clenv mv in
-       let clenv' =
-         clenv_wtactic (w_Declare (cl_env clenv) evar_n tY) clenv in
-       clenv_assign mv evar clenv')
+      let ty = clenv_meta_type clenv mv in
+      let (evd,evar) = new_evar clenv.env (cl_env clenv) ty in
+      clenv_assign mv evar {clenv with env=evd})
     clenv
     dep_mvs
 
@@ -286,11 +278,7 @@ let clenv_fchain mv clenv nextclenv =
 			  end else 
 			    Metamap.add mv id ne)
           clenv.namenv (metamap_to_list nextclenv.namenv);
-      env = reset_evd
-        (cl_sigma nextclenv,
-         List.fold_left (fun m (n,v) -> Metamap.add n v m) 
-	       (cl_metas clenv) (metamap_to_list (cl_metas nextclenv)))
-        nextclenv.env;
+      env = meta_merge clenv.env nextclenv.env;
       templenv = nextclenv.templenv } 
   in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
@@ -474,4 +462,4 @@ let pr_clenv clenv =
   in
   (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
      str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
-     (prlist pr_meta_binding (metamap_to_list (cl_metas clenv))))
+     (prlist pr_meta_binding (metamap_to_list (metas_of clenv.env))))

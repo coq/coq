@@ -15,6 +15,7 @@ open Sign
 open Term
 open Libnames
 open Nametab
+open Evd
 (*i*)
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
@@ -47,14 +48,6 @@ type 'a bindings =
   | NoBindings
 
 type 'a with_bindings = 'a * 'a bindings
-
-type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option)
-  | BinderType of name
-  | QuestionMark
-  | CasesType
-  | InternalHole
-  | TomatchTypeParameter of inductive * int
 
 type rawconstr = 
   | RRef of (loc * global_reference)

@@ -162,10 +162,6 @@ val reduce_fix : local_state_reduction_function -> fixpoint
 
 type conversion_test = constraints -> constraints
 
-type conv_pb = 
-  | CONV 
-  | CUMUL
-
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 

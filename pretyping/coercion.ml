@@ -19,6 +19,7 @@ open Recordops
 open Evarutil
 open Evarconv
 open Retyping
+open Evd
 
 (* Typing operations dealing with coercions *)
 

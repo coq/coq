@@ -92,7 +92,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity) =
 	let b = abstract_rawconstr com bl in
 	let j = judgment_of_rawconstr sigma env b in
 	{ const_entry_body = j.uj_val;
-	  const_entry_type = Some (Evarutil.refresh_universes j.uj_type);
+	  const_entry_type = Some (refresh_universes j.uj_type);
           const_entry_opaque = opacity }
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
@@ -602,7 +602,7 @@ let build_scheme lnamedepindsort =
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 Evd.empty decl in
-    let decltype = Evarutil.refresh_universes decltype in
+    let decltype = refresh_universes decltype in
     let ce = { const_entry_body = decl;
                const_entry_type = Some decltype;
                const_entry_opaque = false } in

@@ -276,7 +276,7 @@ let rec pretype tycon env isevars lvar = function
   | RHole (loc,k) ->
       (match tycon with
 	 | Some ty ->
-	     { uj_val = e_new_isevar isevars env (loc,k) ty; uj_type = ty }
+	     { uj_val = e_new_evar isevars env ~src:(loc,k) ty; uj_type = ty }
 	 | None -> error_unsolvable_implicit loc env (evars_of !isevars) k)
 
   | RRec (loc,fixkind,names,bl,lar,vdef) ->
@@ -391,7 +391,7 @@ let rec pretype tycon env isevars lvar = function
 	
   | RLetIn(loc,name,c1,c2)      ->
       let j = pretype empty_tycon env isevars lvar c1 in
-      let t = Evarutil.refresh_universes j.uj_type in
+      let t = refresh_universes j.uj_type in
       let var = (name,Some j.uj_val,t) in
         let tycon = option_app (lift 1) tycon in
       let j' = pretype tycon (push_rel var env) isevars lvar c2 in
@@ -529,7 +529,7 @@ let rec pretype tycon env isevars lvar = function
 		   Cases.pred_case_ml 
 		     env (evars_of !isevars) false indt (0,fj.uj_type) 
 		 in 
-		 if has_undefined_isevars !isevars pred then
+		 if has_undefined_evars !isevars pred then
 		   use_constraint ()
 		 else
 		   true, pred
@@ -683,7 +683,8 @@ let rec pretype tycon env isevars lvar = function
 	| None -> 
 	    let p = match tycon with
 	    | Some ty -> ty
-	    | None -> e_new_isevar isevars env (loc,InternalHole) (new_Type ())
+	    | None ->
+                e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ())
 	    in
 	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let f cs b =
@@ -750,7 +751,7 @@ let rec pretype tycon env isevars lvar = function
 		  let pred = 
 		    Cases.pred_case_ml (* eta-expanse *)
                       env (evars_of !isevars) isrec indt (i,fj.uj_type) in
-		  if has_undefined_isevars !isevars pred then findtype (i+1)
+		  if has_undefined_evars !isevars pred then findtype (i+1)
 		  else 
 		    let pty =
                       Retyping.get_type_of env (evars_of !isevars) pred in
@@ -942,7 +943,7 @@ and pretype_type valcon env isevars lvar = function
 	       utj_type = s }
 	 | None ->
 	     let s = new_Type_sort () in
-	     { utj_val = e_new_isevar isevars env loc (mkSort s);
+	     { utj_val = e_new_evar isevars env ~src:loc (mkSort s);
 	       utj_type = s})
   | c ->
       let j = pretype empty_tycon env isevars lvar c in

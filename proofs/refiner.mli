@@ -23,8 +23,6 @@ open Tacexpr
 val sig_it  : 'a sigma -> 'a
 val sig_sig : 'a sigma -> evar_map
 
-val project_with_focus : goal sigma -> named_context sigma
-
 val unpackage : 'a sigma -> evar_map ref * 'a
 val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :

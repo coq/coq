@@ -9,9 +9,11 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Term
 open Sign
+open Libnames
 (*i*)
 
 (* The type of mappings for existential variables.
@@ -51,6 +53,7 @@ val is_evar : evar_map -> evar -> bool
 val is_defined : evar_map -> evar -> bool
 
 val evar_body : evar_info -> evar_body
+val evar_env :  evar_info -> Environ.env
 
 val string_of_existential : evar -> string
 val existential_of_int : int -> evar
@@ -104,8 +107,51 @@ type clbinding =
 val map_clb : (constr -> constr) -> clbinding -> clbinding
 
 type meta_map = clbinding Metamap.t
-val meta_defined : meta_map -> metavariable -> bool
-val meta_fvalue   : meta_map -> metavariable -> constr freelisted
-val meta_ftype    : meta_map -> metavariable -> constr freelisted
-val meta_declare : metavariable -> types -> meta_map -> meta_map
-val meta_assign  : metavariable -> constr -> meta_map -> meta_map
+
+(*************************)
+(* Unification state *)
+
+type hole_kind =
+  | ImplicitArg of global_reference * (int * identifier option)
+  | BinderType of name
+  | QuestionMark
+  | CasesType
+  | InternalHole
+  | TomatchTypeParameter of inductive * int
+
+type conv_pb = 
+  | CONV 
+  | CUMUL
+
+type evar_defs
+val evars_of : evar_defs -> evar_map
+val metas_of : evar_defs -> meta_map
+
+val mk_evar_defs :  evar_map * meta_map -> evar_defs
+(* the same with empty meta map: *)
+val create_evar_defs :  evar_map -> evar_defs
+val evars_reset_evd :  evar_map ->  evar_defs -> evar_defs
+val reset_evd :  evar_map * meta_map ->  evar_defs -> evar_defs
+val evar_source : existential_key -> evar_defs -> loc * hole_kind
+
+type evar_constraint = conv_pb * constr * constr
+val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
+
+val evar_declare :
+  named_context -> evar -> types -> ?src:loc * hole_kind ->
+  evar_defs -> evar_defs
+val evar_define : evar -> constr -> evar_defs -> evar_defs
+
+val is_defined_evar :  evar_defs -> existential -> bool
+val is_undefined_evar :  evar_defs -> constr -> bool
+
+val get_conv_pbs : evar_defs -> (evar_constraint -> bool) -> 
+  evar_defs * evar_constraint list
+
+val meta_defined : evar_defs -> metavariable -> bool
+val meta_fvalue   : evar_defs -> metavariable -> constr freelisted
+val meta_ftype    : evar_defs -> metavariable -> constr freelisted
+val meta_declare : metavariable -> types -> evar_defs -> evar_defs
+val meta_assign  : metavariable -> constr -> evar_defs -> evar_defs
+
+val meta_merge : evar_defs -> evar_defs -> evar_defs

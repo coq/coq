@@ -43,7 +43,7 @@ type aconstr =
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
-  | AHole of hole_kind
+  | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr
   
@@ -192,12 +192,12 @@ let rec subst_aconstr subst raw =
 
   | APatVar _ | ASort _ -> raw
 
-  | AHole (ImplicitArg (ref,i)) ->
+  | AHole (Evd.ImplicitArg (ref,i)) ->
       let ref' = subst_global subst ref in 
 	if ref' == ref then raw else
-	  AHole (ImplicitArg (ref',i))
-  | AHole (BinderType _ | QuestionMark | CasesType |
-      InternalHole | TomatchTypeParameter _) -> raw
+	  AHole (Evd.ImplicitArg (ref',i))
+  | AHole (Evd.BinderType _ | Evd.QuestionMark | Evd.CasesType |
+      Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
 
   | ACast (r1,r2) -> 
       let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in

@@ -20,7 +20,7 @@ open Termops
 
 (* The instantiate tactic *)
 
-let evars_of evc c = 
+let evar_list evc c = 
   let rec evrec acc c =
     match kind_of_term c with
     | Evar (n, _) when Evd.in_dom evc n -> c :: acc
@@ -29,30 +29,30 @@ let evars_of evc c =
     evrec [] c
 
 let instantiate n rawc ido gl = 
-  let wc = Refiner.project_with_focus gl in
+  let sigma = gl.sigma in
   let evl = 
     match ido with
-	ConclLocation () -> evars_of wc.sigma gl.it.evar_concl 
+	ConclLocation () -> evar_list sigma gl.it.evar_concl 
       | HypLocation (id,hloc) ->
 	  let decl = lookup_named id gl.it.evar_hyps in
 	    match hloc with
 		InHyp ->  
 		  (match decl with 
-		       (_,None,typ) -> evars_of wc.sigma typ
+		       (_,None,typ) -> evar_list sigma typ
 		     | _ -> error 
 			 "please be more specific : in type or value ?")
 	      | InHypTypeOnly ->
-		  let (_, _, typ) = decl in evars_of wc.sigma typ
+		  let (_, _, typ) = decl in evar_list sigma typ
 	      | InHypValueOnly ->
 		  (match decl with 
-		       (_,Some body,_) -> evars_of wc.sigma body
+		       (_,Some body,_) -> evar_list sigma body
 		     | _ -> error "not a let .. in  hypothesis") in
     if List.length evl < n then
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let wc' = w_refine ev rawc wc in
-      Tacticals.tclIDTAC {gl with sigma = wc'.sigma}
+    let evd' = w_refine (pf_env gl) ev rawc (create_evar_defs sigma)  in
+    Refiner.tclEVARS (evars_of evd') gl
 	
 (*
 let pfic gls c =
@@ -67,12 +67,9 @@ let instantiate_tac = function
   | _ -> invalid_arg "Instantiate called with bad arguments"
 *)
 
-let let_evar nam typ gls =
-  let sp = Evarutil.new_evar () in
-  let evd = Evarutil.create_evar_defs gls.sigma in
-  let evd' = Unification.w_Declare (pf_env gls) sp typ evd in
-  let ngls = {gls with sigma = Evarutil.evars_of evd'} in
-  let args = Array.of_list 
-	       (List.map mkVar (ids_of_named_context (pf_hyps gls))) in
-    Tactics.forward true nam (mkEvar(sp,args)) ngls
+let let_evar name typ gls =
+  let evd = Evd.create_evar_defs gls.sigma in
+  let evd',evar = Evarutil.new_evar evd (pf_env gls) typ in
+  Refiner.tclTHEN (Refiner.tclEVARS (evars_of evd'))
+    (Tactics.forward true name evar) gls
  

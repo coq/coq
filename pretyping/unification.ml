@@ -51,7 +51,7 @@ let abstract_list_all env sigma typ c l =
 
 let w_Declare env sp ty evd =
   let sigma = evars_of evd in
-  let _ = Typing.type_of env sigma ty in (* Utile ?? *)
+  let _ = Typing.type_of env sigma ty in (* Checks there is no meta *)
   let newdecl =
     { evar_hyps=named_context env; evar_concl=ty; evar_body=Evar_empty } in 
   evars_reset_evd (Evd.add sigma sp newdecl) evd
@@ -211,9 +211,7 @@ let applyHead env evd n c  =
     else 
       match kind_of_term (whd_betadeltaiota env (evars_of evd) cty) with
         | Prod (_,c1,c2) ->
-            let (evd',evar) =
-              Evarutil.new_isevar evd env
-                (dummy_loc,Rawterm.InternalHole) c1 in
+            let (evd',evar) = Evarutil.new_evar evd env c1 in
 	    apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
 	| _ -> error "Apply_Head_Then"
   in 
@@ -270,25 +268,23 @@ let w_merge env with_types metas evars evd =
 	  | _ -> anomaly "w_merge_rec"))
 
       | ([], (mv,n)::t) ->
-          let mmap = metas_of evd in
-    	  if meta_defined mmap mv then
+    	  if meta_defined evd mv then
             let (metas',evars') =
-              unify_0 env (evars_of evd) CONV (meta_fvalue mmap mv).rebus n in
+              unify_0 env (evars_of evd) CONV (meta_fvalue evd mv).rebus n in
             w_merge_rec evd (metas'@t) evars'
     	  else
             begin
 	      if with_types (* or occur_meta mvty *) then
-	        (let mvty = meta_type mmap mv in
+	        (let mvty = meta_type evd mv in
 		try 
                   let sigma = evars_of evd in
                   (* why not typing with the metamap ? *)
-		  let nty = Typing.type_of env sigma (nf_meta mmap n) in
+		  let nty = Typing.type_of env sigma (nf_meta evd n) in
 		  let (mc,ec) = unify_0 env sigma CUMUL nty mvty in
                   ty_metas := mc @ !ty_metas;
                   ty_evars := ec @ !ty_evars
 		with e when precatchable_exception e -> ());
-              let evd' =
-                reset_evd (evars_of evd,meta_assign mv n mmap) evd in
+              let evd' = meta_assign mv n evd in
 	      w_merge_rec evd' t []
             end
 
@@ -430,7 +426,7 @@ let secondOrderAbstraction env allow_K typ (p, oplist) evd =
   let sigma = evars_of evd in
   let (evd',cllist) =
     w_unify_to_subterm_list env allow_K oplist typ evd in
-  let typp = meta_type (metas_of evd') p in
+  let typp = meta_type evd' p in
   let pred = abstract_list_all env sigma typp typ cllist in
   w_unify_0 env CONV (mkMeta p) pred evd'
 
@@ -443,13 +439,13 @@ let w_unify2 env allow_K cv_pb ty1 ty2 evd =
 	let evd' =
           secondOrderAbstraction env allow_K ty2 (p1,oplist1) evd in 
         (* Resume first order unification *)
-	w_unify_0 env cv_pb (nf_meta (metas_of evd') ty1) ty2 evd'
+	w_unify_0 env cv_pb (nf_meta evd' ty1) ty2 evd'
     | _, Meta p2 ->
         (* Find the predicate *)
 	let evd' =
           secondOrderAbstraction env allow_K ty1 (p2, oplist2) evd in 
         (* Resume first order unification *)
-	w_unify_0 env cv_pb ty1 (nf_meta (metas_of evd') ty2) evd'
+	w_unify_0 env cv_pb ty1 (nf_meta evd' ty2) evd'
     | _ -> error "w_unify2"
 
 

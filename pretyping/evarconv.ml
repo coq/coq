@@ -19,6 +19,7 @@ open Classops
 open Recordops 
 open Evarutil
 open Libnames
+open Evd
 
 type flex_kind_of_term =
   | Rigid of constr 
@@ -175,13 +176,13 @@ let rec evar_conv_x env isevars pbty term1 term2 =
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]*)
   (* could have found, we do it only if the terms are free of evar  *)
   if
-    (not (has_undefined_isevars isevars term1) &
-    not (has_undefined_isevars isevars term2) &
+    (not (has_undefined_evars isevars term1) &
+    not (has_undefined_evars isevars term2) &
     is_fconv pbty env (evars_of isevars) term1 term2) then
       (isevars,true)
-  else if ise_undefined isevars term1 then
+  else if is_undefined_evar isevars term1 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term1,term2)
-  else if ise_undefined isevars term2 then
+  else if is_undefined_evar isevars term2 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term2,term1)
   else 
     let (t1,l1) = apprec_nohdbeta env isevars term1 in
@@ -438,8 +439,8 @@ and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) =
   let (isevars',ks) =
     List.fold_left
       (fun (i,ks) b ->
-	 let dloc = (dummy_loc,Rawterm.InternalHole) in
-         let (i',ev) = new_isevar i env dloc (substl ks b) in
+	 let dloc = (dummy_loc,InternalHole) in
+         let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
 	 (i', ev :: ks))
       (isevars,[]) bs
   in

@@ -39,7 +39,7 @@ type aconstr =
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
-  | AHole of hole_kind
+  | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr
 

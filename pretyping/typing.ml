@@ -24,23 +24,24 @@ let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 (* The typing machine without information, without universes but with
    existential variables. *)
 
-let assumption_of_judgment env (sigma,_) j =
-  assumption_of_judgment env (j_nf_evar sigma j)
+let assumption_of_judgment env evd j =
+  assumption_of_judgment env (j_nf_evar (Evd.evars_of evd) j)
 
-let type_judgment env (sigma,_) j =
-  type_judgment env (j_nf_evar sigma j)
+let type_judgment env evd j =
+  type_judgment env (j_nf_evar (Evd.evars_of evd) j)
 
-let check_type env (sigma,_) j ty =
+let check_type env evd j ty =
+  let sigma = Evd.evars_of evd in
   if not (is_conv_leq env sigma j.uj_type ty) then
     error_actual_type env (j_nf_evar sigma j) (nf_evar sigma ty)
 
 let rec execute env evd cstr =
   match kind_of_term cstr with
     | Meta n ->
-        { uj_val = cstr; uj_type = Evarutil.meta_type (snd evd) n }
+        { uj_val = cstr; uj_type = Evarutil.meta_type evd n }
 
     | Evar ev ->
-        let sigma = fst evd in
+        let sigma = Evd.evars_of evd in
 	let ty = Evd.existential_type sigma ev in
 	let jty = execute env evd ty in
 	let jty = assumption_of_judgment env evd jty in
@@ -161,11 +162,11 @@ let msort_of env evd c =
   a.utj_type
 
 let type_of env sigma c =
-  mtype_of env (sigma, Evd.Metamap.empty) c
+  mtype_of env (Evd.create_evar_defs sigma) c
 let sort_of env sigma c =
-  msort_of env (sigma, Evd.Metamap.empty) c
+  msort_of env (Evd.create_evar_defs sigma) c
 let check env sigma c   =
-  mcheck env (sigma, Evd.Metamap.empty) c
+  mcheck env (Evd.create_evar_defs sigma) c
 
 (* The typed type of a judgment. *)
 

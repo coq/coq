@@ -11,23 +11,14 @@
 (*i*)
 open Names
 open Term
-open Sign
 open Environ
 open Evd
 open Refiner
-open Proof_type
 (*i*)
-
-type wc = named_context sigma (* for a better reading of the following *)
 
 (* Refinement of existential variables. *)
 
-(* A [w_tactic] is a tactic which modifies the a set of evars of which
-   a goal depend, either by instantiating one, or by declaring a new
-   dependent goal *)
-type w_tactic = wc -> wc
-
-val w_refine :  evar -> Rawterm.rawconstr  -> w_tactic
+val w_refine :  env -> evar -> Rawterm.rawconstr  -> evar_defs -> evar_defs
 
 val instantiate_pf_com :
   int -> Topconstr.constr_expr -> pftreestate -> pftreestate

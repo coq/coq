@@ -13,7 +13,7 @@ open Term
 open Sign
 open Environ
 open Reductionops
-open Evarutil
+open Evd
 (*i*)
 
 (* returns exception Reduction.NotConvertible if not unifiable *)

@@ -93,7 +93,7 @@ module ProofTreeHash =
 let extract_open_proof sigma pf =
  let module PT = Proof_type in
  let module L = Logic in
-  let sigma = ref sigma in
+  let evd = ref (Evd.create_evar_defs sigma) in
   let proof_tree_to_constr = ProofTreeHash.create 503 in
   let proof_tree_to_flattened_proof_tree = ProofTreeHash.create 503 in
   let unshared_constrs = ref S.empty in
@@ -134,17 +134,18 @@ let extract_open_proof sigma pf =
 (*CSC: the section variables in the right order must be added too *)
          let evar_instance = List.map (fun (n,_) -> Term.mkRel n) sorted_rels in
          let env = Global.env_of_context context in
-         let sigma',evar =
-          Evarutil.new_isevar_sign env !sigma goal.Evd.evar_concl evar_instance
-         in
-         sigma := sigma' ;
+         let evd',evar =
+           Evarutil.new_evar_instance context !evd goal.Evd.evar_concl
+             evar_instance in
+         evd := evd' ;
          evar
 	  
      | _ -> Util.anomaly "Bug : a case has been forgotten in proof_extractor"
    in
     let unsharedconstr =
      let evar_nf_constr =
-      nf_evar !sigma ~preserve:(function e -> S.mem e !unshared_constrs) constr
+      nf_evar (Evd.evars_of !evd)
+        ~preserve:(function e -> S.mem e !unshared_constrs) constr
      in
       Unshare.unshare
        ~already_unshared:(function e -> S.mem e !unshared_constrs)
@@ -152,14 +153,15 @@ let extract_open_proof sigma pf =
     in
 (*CSC: debugging stuff to be removed *)
 if ProofTreeHash.mem proof_tree_to_constr node then
- Pp.ppnl (Pp.(++) (Pp.str "#DUPLICATE INSERTION: ") (Refiner.print_proof !sigma [] node)) ;
+ Pp.ppnl (Pp.(++) (Pp.str "#DUPLICATE INSERTION: ")
+ (Refiner.print_proof (Evd.evars_of !evd) [] node)) ;
      ProofTreeHash.add proof_tree_to_constr node unsharedconstr ;
      unshared_constrs := S.add unsharedconstr !unshared_constrs ;
      unsharedconstr
   in
   let unshared_pf = unshare_proof_tree pf in
   let pfterm = proof_extractor [] unshared_pf in
-   (pfterm, !sigma, proof_tree_to_constr, proof_tree_to_flattened_proof_tree,
+   (pfterm, Evd.evars_of !evd, proof_tree_to_constr, proof_tree_to_flattened_proof_tree,
     unshared_pf)
 ;;
 
