@@ -113,11 +113,11 @@ GEXTEND Gram
       | IDENT "fail"; n = [ n = natural -> n | -> fail_default_value ];
 	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
       | st = simple_tactic -> TacAtom (loc,st)
-      | IDENT "eval"; rtc = red_expr; "in"; c = Constr.lconstr ->
+      | IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
 	  TacArg(ConstrMayEval (ConstrEval (rtc,c)))
       | IDENT "inst"; id = identref; "["; c = Constr.lconstr; "]" ->
 	  TacArg(ConstrMayEval (ConstrContext (id,c)))
-      | IDENT "check"; c = Constr.lconstr ->
+      | IDENT "check"; c = Constr.constr ->
 	  TacArg(ConstrMayEval (ConstrTypeOf c))
       | IDENT "fresh"; s = OPT STRING ->
 	  TacArg (TacFreshId s)
