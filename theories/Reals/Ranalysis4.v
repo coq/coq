@@ -19,6 +19,7 @@ Require Ranalysis1.
 Require R_sqrt.
 Require Ranalysis2.
 Require Ranalysis3.
+Require Export Exp_prop.
 Require Export Rtrigo_reg.
 Require Export Sqrt_reg.
 
@@ -237,8 +238,6 @@ Intros; Unfold derivable; Intro; Apply derivable_pt_finite_sum.
 Qed.
 
 (* Regularity of hyperbolic functions *)
-Axiom derivable_pt_lim_exp : (x:R) (derivable_pt_lim exp x (exp x)).   
-
 Lemma derivable_pt_lim_cosh : (x:R) (derivable_pt_lim cosh x ``(sinh x)``).
 Intro.
 Unfold cosh sinh; Unfold Rdiv.
