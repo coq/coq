@@ -40,18 +40,6 @@ val general_rewrite_in : bool -> identifier -> constr with_bindings -> tactic
 val conditional_rewrite_in :
   bool -> identifier -> tactic -> constr with_bindings -> tactic
 
-(* usage : abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl
-   
-   eq,symeq : equality on Set and its symmetry theorem
-   eqt,sym_eqt : equality on Type and its symmetry theorem
-   c2 c1 : c1 is to be replaced by c2
-   unsafe : If true, do not check that c1 and c2 are convertible
-   gl : goal
-*)
-
-val abstract_replace : 
-  constr * constr -> constr * constr -> constr -> constr -> bool -> tactic
-
 val replace   : constr -> constr -> tactic
 
 type elimination_types =

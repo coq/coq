@@ -91,3 +91,36 @@ val has_nodep_prod         : testing_function
 val match_with_nodep_ind   : (constr * constr list) matching_function	  
 val is_nodep_ind           : testing_function 
 
+(***** Destructing patterns bound to some theory *)
+
+open Coqlib
+
+(* Match terms [(eq A t u)], [(eqT A t u)] or [(identityT A t u)] *)
+(* Returns associated lemmas and [A,t,u] *)
+val find_eq_data_decompose : constr -> 
+  coq_leibniz_eq_data * (constr * constr * constr)
+
+(* Match a term of the form [(existS A P t p)] or [(existT A P t p)] *)
+(* Returns associated lemmas and [A,P,t,p] *)
+val find_sigma_data_decompose : constr -> 
+  coq_sigma_data * (constr * constr * constr * constr)
+
+(* Match a term of the form [{x:A|P}], returns [A] and [P] *)
+val match_sigma : constr -> constr * constr
+
+val is_matching_sigma : constr -> bool
+
+(* Match a term of the form [{x=y}+{_}], returns [x] and [y] *)
+val match_eqdec_partial : constr -> constr * constr
+
+(* Match a term of the form [(x,y:t){x=y}+{~x=y}], returns [t] *)
+val match_eqdec : constr -> constr
+
+(* Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
+open Proof_type
+open Tacmach
+val dest_nf_eq : goal sigma -> constr -> (constr * constr * constr)
+
+(* Match a negation *)
+val is_matching_not : constr -> bool
+val is_matching_imp_False : constr -> bool

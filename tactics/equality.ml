@@ -122,13 +122,12 @@ let conditional_rewrite_in lft2rgt id tac (c,bl) =
     
 (* Replacing tactics *)
 
-(* eq,symeq : equality on Set and its symmetry theorem
-   eqt,sym_eqt : equality on Type and its symmetry theorem
+(* eqt,sym_eqt : equality on Type and its symmetry theorem
    c2 c1 : c1 is to be replaced by c2
    unsafe : If true, do not check that c1 and c2 are convertible
    gl : goal *)
 
-let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
+let abstract_replace (eqt,sym_eqt) c2 c1 unsafe gl =
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
@@ -140,11 +139,9 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
     error "terms does not have convertible types"
 
 let replace c2 c1 gl =
-  let eq = build_coq_eq_data.eq () in
-  let eq_sym = build_coq_eq_data.sym () in
-  let eqT = build_coq_eqT_data.eq () in
-  let eqT_sym = build_coq_eqT_data.sym () in
-  abstract_replace (eq,eq_sym) (eqT,eqT_sym) c2 c1 false gl
+  let eqT = (build_coq_eqT_data ()).eq in
+  let eqT_sym = (build_coq_eqT_data ()).sym in
+  abstract_replace (eqT,eqT_sym) c2 c1 false gl
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
@@ -158,20 +155,14 @@ let replace c2 c1 gl =
 
 (* Patterns *)
 
-let build_coq_eq eq = eq.eq ()
-let build_ind eq = eq.ind ()
+let build_coq_eq eq = eq.eq
+let build_ind eq = eq.ind
 let build_rect eq = 
   match eq.rect with
     | None -> assert false
-    | Some c -> c ()
+    | Some c -> c
 	  
-(* List of constructions depending of the initial state *)
-
-(* Destructuring patterns *)
-let match_eq eqn eq_pat =
-  match matches eqn eq_pat with
-    | [(1,t);(2,x);(3,y)] -> (t,x,y)
-    | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
+(*********** List of constructions depending of the initial state *)
 
 type elimination_types =
   | Set_Type
@@ -202,10 +193,10 @@ let necessary_elimination sort_arity sort =
 
 let find_eq_pattern aritysort sort = 
   match necessary_elimination aritysort sort with
-    | Set_Type       ->  build_coq_eq_data.eq ()
-    | Type_Type      ->  build_coq_idT_data.eq ()
-    | Set_SetorProp  ->  build_coq_eq_data.eq ()
-    | Type_SetorProp ->  build_coq_eq_data.eq ()
+    | Set_Type       -> (build_coq_eq_data ()).eq
+    | Type_Type      -> (build_coq_idT_data ()).eq
+    | Set_SetorProp  -> (build_coq_eq_data ()).eq
+    | Type_SetorProp -> (build_coq_eq_data ()).eq
 
 (* [find_positions t1 t2]
 
@@ -296,7 +287,7 @@ let discriminable env sigma t1 t2 =
 
    We can get an approximation to the right type to choose by:
 
-   (0) Before beginning, we reserve a metavariable for the default
+   (0) Before beginning, we reserve a patvar for the default
    value of the match, to be used in all the bogus branches.
 
    (1) perform the case-splits, down to the site of the injection.  At
@@ -434,16 +425,6 @@ let rec build_discriminator sigma env dirn c sort = function
          | Type_Type -> kont subval (build_coq_EmptyT (),Evarutil.new_Type ())
 	 | _ -> kont subval (build_coq_False (),mkSort (Prop Null)))
 
-let find_eq_data_decompose eqn =
-  if (is_matching (build_coq_eq_pattern ()) eqn) then
-    (build_coq_eq_data, match_eq (build_coq_eq_pattern ()) eqn)
-  else if (is_matching (build_coq_eqT_pattern ()) eqn) then
-    (build_coq_eqT_data, match_eq (build_coq_eqT_pattern ()) eqn)
-  else if (is_matching (build_coq_idT_pattern ()) eqn) then
-    (build_coq_idT_data, match_eq (build_coq_idT_pattern ()) eqn)
-  else
-    errorlabstrm  "find_eq_data_decompose" (mt ())
-
 let gen_absurdity id gl =
   if is_empty_type (clause_type (Some id) gl)
   then
@@ -497,9 +478,8 @@ let discr id gls =
   let sort = pf_type_of gls (pf_concl gls) in 
   let (lbeq,(t,t1,t2)) =
     try find_eq_data_decompose eqn
-    with e when catchable_exception e ->
-      errorlabstrm "discr"  (str(string_of_id id) ++ 
-			    str" Not a primitive equality here ")
+    with PatternMatchingFailure ->
+      errorlabstrm "discr" (pr_id id ++ str": not a primitive equality here")
   in
   let sigma = project gls in
   let env = pf_env gls in
@@ -525,9 +505,9 @@ let not_found_message id =
     str" was not found in the current environment")
 
 let onNegatedEquality tac gls =
-  if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
+  if is_matching_not (pf_concl gls) then
     (tclTHEN (tclTHEN hnf_in_concl intro) (onLastHyp tac)) gls
-  else if is_matching (build_coq_imp_False_pattern ()) (pf_concl gls)then
+  else if is_matching_imp_False (pf_concl gls)then
     (tclTHEN intro (onLastHyp tac)) gls
   else 
     errorlabstrm "extract_negated_equality_then"
@@ -596,7 +576,7 @@ let minimal_free_rels env sigma (c,cty) =
   else
     (nf_cty,nf_rels)
 
-(* [sig_clausale_forme siglen ty]
+(* [sig_clausal_form siglen ty]
     
    Will explode [siglen] [sigS,sigT ]'s on [ty] (depending on the 
    type of ty), and return:
@@ -610,20 +590,36 @@ let minimal_free_rels env sigma (c,cty) =
 
    (3) a pattern, for the type of that last meta
 
-   (4) a typing for each metavariable
+   (4) a typing for each patvar
 
    WARNING: No checking is done to make sure that the 
             sigS(or sigT)'s are actually there.
           - Only homogenious pairs are built i.e. pairs where all the 
    dependencies are of the same sort
+
+   [sig_clausal_form] proceed as follows: the default tuple is
+   constructed by taking the tuple-type, exploding the first [tuplen]
+   [sigS]'s, and replacing at each step the binder in the
+   right-hand-type by a fresh metavariable. In addition, on the way
+   back out, we will construct the pattern for the tuple which uses
+   these meta-vars.
+
+   This gives us a pattern, which we use to match against the type of
+   [dflt]; if that fails, then against the S(TRONG)NF of that type.  If
+   both fail, then we just cannot construct our tuple.  If one of
+   those succeed, then we can construct our value easily - we just use
+   the tuple-pattern.
+
  *)
 
-let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
+let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
   let { intro = exist_term } = find_sigma_data sort_of_ty in 
-  let rec sigrec_clausale_forme siglen ty =
+  let isevars = Evarutil.create_evar_defs sigma in
+  let rec sigrec_clausal_form siglen p_i =
     if siglen = 0 then
+(*
       (* We obtain the components dependent in dFLT by matching *)
-      let headpat = nf_betadeltaiota env sigma ty in
+      let headpat = nf_betadeltaiota env sigma p_i in
       let nf_ty = nf_betadeltaiota env sigma dFLTty in
       let bindings =
         (* Test inutile car somatch ne prend pas en compte les univers *) 
@@ -631,7 +627,7 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 	  []
         else
           let headpat = pattern_of_constr headpat in
-          let weakpat = pattern_of_constr (nf_betaiota ty) in
+          let weakpat = pattern_of_constr (nf_betaiota p_i) in
 	  list_try_find
 	    (fun ty -> 
               try 
@@ -646,60 +642,109 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 	  [dFLTty; nf_ty]
       in
       (bindings,dFLT)
+*)
+      if Evarconv.the_conv_x env isevars p_i dFLTty then
+	(* the_conv_x had a side-effect on isevars *)
+	dFLT
+      else
+	error "Cannot solve an unification problem"
     else
-      let (a,p) = match whd_beta_stack ty with
-	| (_,[a;p]) -> (a,p)
- 	| _ -> anomaly "sig_clausale_forme: should be a sigma type" in
+      let (a,p_i_minus_1) = match whd_beta_stack p_i with
+	| (_sigS,[a;p]) -> (a,p)
+ 	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
+(*
       let mv = Clenv.new_meta() in
-      let rty = applist(p,[mkMeta mv]) in
-      let (bindings,tuple_tail) = sigrec_clausale_forme (siglen-1) rty in
+      let rty = applist(p_i_minus_1,[mkMeta mv]) in
+      let (bindings,tuple_tail) = sigrec_clausal_form (siglen-1) rty in
       let w =
 	try List.assoc mv bindings
 	with Not_found ->
 	  anomaly "Not enough components to build the dependent tuple" in
       (bindings,applist(exist_term,[a;p;w;tuple_tail]))
   in
-  snd (sigrec_clausale_forme siglen ty)
+  snd (sigrec_clausal_form siglen ty)
+*)
+      let ev = Evarutil.new_isevar isevars env (dummy_loc,InternalHole)
+	(Evarutil.new_Type ()) in
+      let rty = beta_applist(p_i_minus_1,[ev]) in
+      let tuple_tail = sigrec_clausal_form (siglen-1) rty in
+      match
+	Instantiate.existential_opt_value (Evarutil.evars_of isevars) 
+	(destEvar ev)
+      with
+	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
+	| None -> anomaly "Not enough components to build the dependent tuple"
+  in
+  sigrec_clausal_form siglen ty
 
-(* [make_iterated_tuple sigma env DFLT c]
+(* The problem is to build a destructor (a generalization of the
+   predecessor) which, when applied to a term made of constructors
+   (say [Ci(e1,Cj(e2,Ck(...,term,...),...),...)]), returns a given
+   subterm of the term (say [term]).
 
-   Will find the free (DB) references of the S(TRONG)NF of [c]'s type,
-   gather them together in left-to-right order (i.e. highest-numbered
-   is farthest-left), and construct a big iterated pair out of it.
-   This only works when the references are all themselves to members
-   of [Set]s, because we use [sigS] to construct the tuple.
+   Let [typ] be the type of [term]. If [term] has no dependencies in
+   the [e1], [e2], etc, then all is simple. If not, then we need to
+   encapsulated the dependencies into a dependent tuple in such a way
+   that the destructor has not a dependent type and rewriting can then
+   be applied. The destructor has the form
 
-   Suppose now that our constructed tuple is of length [tuplen].
+   [e]Cases e of
+      | ...
+      | Ci (x1,x2,...) =>
+          Cases x2 of
+          | ...
+          | Cj (y1,y2,...) =>
+              Cases y2 of
+              | ...
+              | Ck (...,z,...) => z
+              | ... end
+          | ... end
+      | ... end
 
-   Then, we need to construct the default value for the other
-   branches.  The default value is constructed by taking the
-   tuple-type, exploding the first [tuplen] [sigS]'s, and replacing at
-   each step the binder in the right-hand-type by a fresh
-   metavariable.
+   and the dependencies is expressed by the fact that [z] has a type
+   dependent in the x1, y1, ...
 
-   In addition, on the way back out, we will construct the pattern for
-   the tuple which uses these meta-vars.
+   Assume [z] is typed as follows: env |- z:zty
 
-   This gives us a pattern, which we use to match against the type of
-   DFLT; if that fails, then against the S(TRONG)NF of that type.  If
-   both fail, then we just cannot construct our tuple.  If one of
-   those succeed, then we can construct our value easily - we just use
-   the tuple-pattern.
+   If [zty] has no dependencies, this is simple. Otherwise, assume
+   [zty] has free (de Bruijn) variables in,...i1 then the role of
+   [make_iterated_tuple sigma env (term,typ) (z,zty)] is to build the
+   tuple
 
+   [existS [xn]Pn Rel(in) .. (existS [x2]P2 Rel(i2) (existS [x1]P1 Rel(i1) z))]
+
+   where P1 is zty[i1/x1], P2 is {x1 | P1[i2/x2]} etc.
+
+   To do this, we find the free (relative) references of the strong NF
+   of [z]'s type, gather them together in left-to-right order
+   (i.e. highest-numbered is farthest-left), and construct a big
+   iterated pair out of it. This only works when the references are
+   all themselves to members of [Set]s, because we use [sigS] to
+   construct the tuple.
+
+   Suppose now that our constructed tuple is of length [tuplen]. We
+   need also to construct a default value for the other branches of
+   the destructor. As default value, we take a tuple of the form
+
+    [existS [xn]Pn ?n (... existS [x2]P2 ?2 (existS [x1]P1 ?1 term))]
+
+   but for this we have to solve the following unification problem:
+
+     typ = zty[i1/?1;...;in/?n]
+
+   This is done by [sig_clausal_form].
  *)
 
-let make_iterated_tuple env sigma (dFLT,dFLTty) (c,cty) =
-  let (cty,rels) = minimal_free_rels env sigma (c,cty) in
-  let sort_of_cty = get_sort_of env sigma cty in
+let make_iterated_tuple env sigma dflt (z,zty) =
+  let (zty,rels) = minimal_free_rels env sigma (z,zty) in
+  let sort_of_zty = get_sort_of env sigma zty in
   let sorted_rels = Sort.list (<) (Intset.elements rels) in
   let (tuple,tuplety) =
-    List.fold_left (make_tuple env sigma) (c,cty) sorted_rels 
+    List.fold_left (make_tuple env sigma) (z,zty) sorted_rels 
   in
   assert (closed0 tuplety);
-  let dfltval = 
-    sig_clausale_forme env sigma sort_of_cty (List.length sorted_rels) 
-      tuplety (dFLT,dFLTty)
-  in
+  let n = List.length sorted_rels in
+  let dfltval = sig_clausal_form env sigma sort_of_zty n tuplety dflt in
   (tuple,tuplety,dfltval)
 
 let rec build_injrec sigma env (t1,t2) c = function
@@ -741,11 +786,9 @@ let try_delta_expand env sigma t =
 let inj id gls =
   let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
   let (eq,(t,t1,t2))= 
-    try 
-      find_eq_data_decompose eqn
-    with e when catchable_exception e -> 
-      errorlabstrm "Inj"  (str(string_of_id id) ++ 
-			    str" Not a primitive equality here ") 
+    try find_eq_data_decompose eqn
+    with PatternMatchingFailure ->
+      errorlabstrm "Inj" (pr_id id ++ str": not a primitive equality here") 
   in
   let sigma = project gls in
   let env = pf_env gls in
@@ -763,20 +806,23 @@ let inj id gls =
 	let injectors =
 	  map_succeed
 	    (fun (cpath,t1_0,t2_0) ->
-	       let (injbody,resty) =
-		 build_injector sigma e_env (t1_0,t2_0) (mkVar e) cpath in
-	       let injfun = mkNamedLambda e t injbody in
-	       try 
-		 let _ = type_of env sigma injfun in (injfun,resty)
-	       with e when catchable_exception e -> failwith "caught")
-            posns 
+	      try 
+		let (injbody,resty) =
+		  build_injector sigma e_env (t1_0,t2_0) (mkVar e) cpath in
+		let injfun = mkNamedLambda e t injbody in
+		let _ = type_of env sigma injfun in (injfun,resty)
+	      with e when catchable_exception e ->
+		(* may fail because ill-typed or because of a Prop argument *)
+		(* error "find_sigma_data" *)
+		failwith "caught")
+            posns
 	in
 	if injectors = [] then
 	  errorlabstrm "Equality.inj" 
 	    (str "Failed to decompose the equality");
 	tclMAP 
 	  (fun (injfun,resty) ->
-	     let pf = applist(eq.congr (),
+	     let pf = applist(eq.congr,
 			      [t;resty;injfun;
 			       try_delta_expand env sigma t1;
 			       try_delta_expand env sigma t2;
@@ -801,7 +847,7 @@ let injHyp id gls = injClause (Some id) gls
 
 let decompEqThen ntac id gls =
   let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
-  let (lbeq,(t,t1,t2))= find_eq_data_decompose  eqn in
+  let (lbeq,(t,t1,t2))= find_eq_data_decompose eqn in
   let sort = pf_type_of gls (pf_concl gls) in 
   let sigma = project gls in
   let env = pf_env gls in 
@@ -838,7 +884,7 @@ let decompEqThen ntac id gls =
               (str "Discriminate failed to decompose the equality");
 	  (tclTHEN
 	      (tclMAP (fun (injfun,resty) ->
-			 let pf = applist(lbeq.congr (),
+			 let pf = applist(lbeq.congr,
 					  [t;resty;injfun;t1;t2;
 					   mkVar id]) in
 			 let ty = pf_nf gls (pf_type_of gls pf) in
@@ -860,26 +906,16 @@ let dEqConcl gls = dEq None gls
 let dEqHyp id gls = dEq (Some id) gls
 
 let rewrite_msg = function 
-  | None ->  
-      (str "passed term is not a primitive equality") 
-  | Some id ->
-      (str (string_of_id id) ++ str "does not satisfy preconditions ")
+  | None -> str "passed term is not a primitive equality" 
+  | Some id -> pr_id id ++ str "does not satisfy preconditions "
 
 let swap_equands gls eqn =
-  let (lbeq,(t,e1,e2)) =
-    try 
-      find_eq_data_decompose eqn
-    with _ -> errorlabstrm "swap_equamds" (rewrite_msg None)
-  in 
-  applist(lbeq.eq (),[t;e2;e1])
+  let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
+  applist(lbeq.eq,[t;e2;e1])
 
 let swapEquandsInConcl gls =
-  let (lbeq,(t,e1,e2)) =
-    try 
-      find_eq_data_decompose (pf_concl gls)
-    with _-> errorlabstrm "SwapEquandsInConcl" (rewrite_msg None) 
-  in
-  let sym_equal = lbeq.sym () in
+  let (lbeq,(t,e1,e2)) = find_eq_data_decompose (pf_concl gls) in
+  let sym_equal = lbeq.sym in
   refine (applist(sym_equal,[t;e2;e1;mkMeta (Clenv.new_meta())])) gls
 
 let swapEquandsInHyp id gls =
@@ -894,15 +930,15 @@ let swapEquandsInHyp id gls =
 
 let find_elim  sort_of_gl  lbeq =
   match kind_of_term sort_of_gl  with
-    | Sort(Prop Null)  (* Prop *)  ->  (lbeq.ind (), false)  
+    | Sort(Prop Null)  (* Prop *)  -> (lbeq.ind, false)  
     | Sort(Prop Pos)   (* Set *)   ->  
 	(match lbeq.rrec with
-           | Some eq_rec -> (eq_rec (), false) 
+           | Some eq_rec -> (eq_rec, false) 
 	   | None -> errorlabstrm "find_elim"
 		 (str "this type of elimination is not allowed"))
     | _ (* Type *) -> 
         (match lbeq.rect with
-           | Some eq_rect -> (eq_rect (), true) 
+           | Some eq_rect -> (eq_rect, true) 
            | None -> errorlabstrm "find_elim"
 		 (str "this type of elimination is not allowed"))
 
@@ -913,7 +949,7 @@ let find_elim  sort_of_gl  lbeq =
 let build_dependent_rewrite_predicate (t,t1,t2) body lbeq gls =
   let e = pf_get_new_id  (id_of_string "e") gls in 
   let h = pf_get_new_id  (id_of_string "HH") gls in 
-  let eq_term = lbeq.eq () in
+  let eq_term = lbeq.eq in
   (mkNamedLambda e t 
      (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
         (lift 1 body))) 
@@ -969,23 +1005,6 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
  *)
 
-let match_sigma ex ex_pat =
-  match matches ex_pat ex with
-    | [(1,a);(2,p);(3,car);(4,cdr)] -> (a,p,car,cdr)
-    | _ ->
-	anomaly "match_sigma: a successful sigma pattern should match 4 terms"
-
-let find_sigma_data_decompose ex =
-  try
-    let subst = match_sigma ex (build_coq_existS_pattern ()) in
-    (build_sigma_set (),subst)
-  with PatternMatchingFailure ->
-    (try 
-       let subst = match_sigma ex (build_coq_existT_pattern ()) in
-       (build_sigma_type (),subst)
-     with PatternMatchingFailure -> 
-       errorlabstrm "find_sigma_data_decompose" (mt ()))
-
 let decomp_tuple_term env c t = 
   let rec decomprec inner_code ex exty =
     try
@@ -995,7 +1014,7 @@ let decomp_tuple_term env c t =
       and cdr_code = applist (p2,[a;p;inner_code]) in
       let cdrtyp = beta_applist (p,[car]) in
       ((car,a),car_code)::(decomprec cdr_code cdr cdrtyp)
-    with e when catchable_exception e ->
+    with PatternMatchingFailure ->
       [((ex,exty),inner_code)]
   in
   List.split (decomprec (mkRel 1) c t)
@@ -1034,7 +1053,7 @@ let substInConcl_LR eqn gls =
 let substInConcl l2r = if l2r then substInConcl_LR else substInConcl_RL
 
 let substInHyp_LR eqn id gls =
-  let (lbeq,(t,e1,e2)) = (find_eq_data_decompose eqn) in 
+  let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
   let body = subst_term e1 (clause_type (Some id) gls) in
   if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" (mt ());
   (tclTHENS (cut_replacing id (subst1 e2 body))
@@ -1053,12 +1072,8 @@ let try_rewrite tac gls =
   try 
     tac gls
   with 
-    | UserError ("find_eq_data_decompose",_) -> errorlabstrm 
-	  "try_rewrite" (str "Not a primitive equality here")
-    | UserError ("swap_equamds",_) -> errorlabstrm 
-          "try_rewrite" (str "Not a primitive equality here")
-    | UserError("find_eq_elim",s) -> errorlabstrm "try_rew" 
-          (str "This type of elimination is not allowed ")  
+    | PatternMatchingFailure ->
+	errorlabstrm "try_rewrite" (str "Not a primitive equality here")
     | e when catchable_exception e -> 
 	errorlabstrm "try_rewrite"
           (str "Cannot find a well type generalisation of the goal that" ++
@@ -1160,10 +1175,11 @@ let unfold_body x gl =
 exception FoundHyp of named_declaration
 
 let is_eq_x x c =
-  let eqpat = build_coq_eq_pattern () in
-  (is_matching eqpat c) &&
-  let (_,lhs,rhs) = match_eq eqpat c in
-  (x = lhs) && not (occur_term x rhs)
+  try
+    let (_,lhs,rhs) = snd (find_eq_data_decompose c) in
+    (x = lhs) && not (occur_term x rhs)
+  with PatternMatchingFailure ->
+    false
 
 let eq_rhs eq =
   (snd (destApplication eq)).(2)
@@ -1220,11 +1236,11 @@ let subst_one x gl =
 let subst = tclMAP subst_one
 
 let subst_all gl =
-  let eqpat = build_coq_eq_pattern () in
   let test (_,c) =
-    if not (is_matching eqpat c) then failwith "caught";
-    let (_,x,_) = match_eq eqpat c in
-    match kind_of_term x with Var x -> x | _ -> failwith "caught"
+    try
+      let (_,x,_) = snd (find_eq_data_decompose c) in
+      match kind_of_term x with Var x -> x | _ -> failwith "caught"
+    with PatternMatchingFailure -> failwith "caught"
   in
   let ids = map_succeed test (pf_hyps_types gl) in
   let ids = list_uniquize ids in
@@ -1252,25 +1268,25 @@ let rewrite_assumption_cond_in faildir hyp gl =
 	   with Failure _ | UserError _ ->  arec rest)
    in arec (pf_hyps gl)
 
-let cond_eq_term_left c t gl = 
- let eqpat = build_coq_eq_pattern ()
- in if not (is_matching eqpat t) then failwith "not an equality";
-    let (_,x,_) = match_eq eqpat t in
+let cond_eq_term_left c t gl =
+  try
+    let (_,x,_) = snd (find_eq_data_decompose t) in
     if pf_conv_x gl c x then true else failwith "not convertible"
+  with PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl = 
- let eqpat = build_coq_eq_pattern ()
- in if not (is_matching eqpat t) then failwith "not an equality";
-    let (_,_,x) = match_eq eqpat t in
+  try
+    let (_,_,x) = snd (find_eq_data_decompose t) in
     if pf_conv_x gl c x then false else failwith "not convertible"
+  with PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl = 
- let eqpat = build_coq_eq_pattern ()
- in if not (is_matching eqpat t) then failwith "not an equality";
-    let (_,x,y) = match_eq eqpat t in
+  try
+    let (_,x,y) = snd (find_eq_data_decompose t) in
     if pf_conv_x gl c x then true 
     else if pf_conv_x gl c y then false
     else failwith "not convertible"
+  with PatternMatchingFailure -> failwith "not an equality"
 
 let replace_term_left t = rewrite_assumption_cond (cond_eq_term_left t)
 

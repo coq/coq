@@ -86,17 +86,19 @@ let build_sigma_type () =
 
 (* Equalities *)
 type coq_leibniz_eq_data = {
-  eq   : constr delayed;
-  ind  : constr delayed;
-  rrec : constr delayed option;
-  rect : constr delayed option;
-  congr: constr delayed;
-  sym  : constr delayed }
+  eq   : constr;
+  refl : constr;
+  ind  : constr;
+  rrec : constr option;
+  rect : constr option;
+  congr: constr;
+  sym  : constr }
 
 let lazy_init_constant dir id = lazy (init_constant dir id)
 
 (* Equality on Set *)
 let coq_eq_eq = lazy_init_constant ["Logic"] "eq"
+let coq_eq_refl = lazy_init_constant ["Logic"] "refl_equal"
 let coq_eq_ind = lazy_init_constant ["Logic"] "eq_ind"
 let coq_eq_rec = lazy_init_constant ["Logic"] "eq_rec"
 let coq_eq_rect = lazy_init_constant ["Logic"] "eq_rect"
@@ -104,15 +106,16 @@ let coq_eq_congr = lazy_init_constant ["Logic"] "f_equal"
 let coq_eq_sym  = lazy_init_constant ["Logic"] "sym_eq"
 let coq_f_equal2 = lazy_init_constant ["Logic"] "f_equal2"
 
-let build_coq_eq_data = {
-  eq = (fun () -> Lazy.force coq_eq_eq);
-  ind = (fun () -> Lazy.force coq_eq_ind);
-  rrec = Some (fun () -> Lazy.force coq_eq_rec);
-  rect = Some (fun () -> Lazy.force coq_eq_rect);
-  congr = (fun () -> Lazy.force coq_eq_congr);
-  sym  = (fun () -> Lazy.force coq_eq_sym) }
+let build_coq_eq_data () = {
+  eq = Lazy.force coq_eq_eq;
+  refl = Lazy.force coq_eq_refl;
+  ind = Lazy.force coq_eq_ind;
+  rrec = Some (Lazy.force coq_eq_rec);
+  rect = Some (Lazy.force coq_eq_rect);
+  congr = Lazy.force coq_eq_congr;
+  sym  = Lazy.force coq_eq_sym }
 
-let build_coq_eq = build_coq_eq_data.eq
+let build_coq_eq () = Lazy.force coq_eq_eq
 let build_coq_f_equal2 () = Lazy.force coq_f_equal2
 
 (* Specif *)
@@ -123,36 +126,40 @@ let build_coq_sumbool () = Lazy.force coq_sumbool
 (* Equality on Type *)
 
 let coq_eqT_eq = lazy_init_constant ["Logic"] "eq"
+let coq_eqT_refl = lazy_init_constant ["Logic"] "refl_equal"
 let coq_eqT_ind = lazy_init_constant ["Logic"] "eq_ind"
 let coq_eqT_congr =lazy_init_constant ["Logic"] "f_equal"
 let coq_eqT_sym  = lazy_init_constant ["Logic"] "sym_eq"
 
-let build_coq_eqT_data = {
-  eq = (fun () -> Lazy.force coq_eqT_eq);
-  ind = (fun () -> Lazy.force coq_eqT_ind);
+let build_coq_eqT_data () = {
+  eq = Lazy.force coq_eqT_eq;
+  refl = Lazy.force coq_eqT_refl;
+  ind = Lazy.force coq_eqT_ind;
   rrec = None;
   rect = None;
-  congr = (fun () -> Lazy.force coq_eqT_congr);
-  sym  = (fun () -> Lazy.force coq_eqT_sym) }
+  congr = Lazy.force coq_eqT_congr;
+  sym  = Lazy.force coq_eqT_sym }
 
-let build_coq_eqT = build_coq_eqT_data.eq
-let build_coq_sym_eqT = build_coq_eqT_data.sym
+let build_coq_eqT () = Lazy.force coq_eqT_eq
+let build_coq_sym_eqT () = Lazy.force coq_eqT_sym
 
 (* Equality on Type as a Type *)
 let coq_idT_eq = lazy_init_constant ["Logic_Type"] "identityT"
+let coq_idT_refl = lazy_init_constant ["Logic_Type"] "refl_identityT"
 let coq_idT_ind = lazy_init_constant ["Logic_Type"] "identityT_ind"
 let coq_idT_rec = lazy_init_constant ["Logic_Type"] "identityT_rec"
 let coq_idT_rect = lazy_init_constant ["Logic_Type"] "identityT_rect"
 let coq_idT_congr = lazy_init_constant ["Logic_Type"] "congr_idT"
 let coq_idT_sym = lazy_init_constant ["Logic_Type"] "sym_idT"
 
-let build_coq_idT_data = {
-  eq = (fun () -> Lazy.force coq_idT_eq);
-  ind = (fun () -> Lazy.force coq_idT_ind);
-  rrec = Some (fun () -> Lazy.force coq_idT_rec);
-  rect = Some (fun () -> Lazy.force coq_idT_rect);
-  congr = (fun () -> Lazy.force coq_idT_congr);
-  sym  = (fun () -> Lazy.force coq_idT_sym) }
+let build_coq_idT_data () = {
+  eq = Lazy.force coq_idT_eq;
+  refl = Lazy.force coq_idT_refl;
+  ind = Lazy.force coq_idT_ind;
+  rrec = Some (Lazy.force coq_idT_rec);
+  rect = Some (Lazy.force coq_idT_rect);
+  congr = Lazy.force coq_idT_congr;
+  sym  = Lazy.force coq_idT_sym }
 
 (* Empty Type *)
 let coq_EmptyT = lazy_init_constant ["Logic_Type"] "EmptyT"
@@ -232,61 +239,3 @@ let coq_not_ref     = lazy (init_reference ["Logic"] "not")
 let coq_False_ref   = lazy (init_reference ["Logic"] "False")
 let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")
 let coq_sig_ref = lazy (init_reference ["Specif"] "sig")
-
-(* Pattern "(sig ?1 ?2)" *)
-let coq_sig_pattern = 
-  lazy (PApp (PRef (Lazy.force coq_sig_ref), 
-	      [| PMeta (Some 1); PMeta (Some 2) |]))
-
-(* Patterns "(eq ?1 ?2 ?3)", "(eqT ?1 ?2 ?3)" and "(idT ?1 ?2 ?3)" *)
-let coq_eq_pattern_gen eq = 
-  lazy (PApp(PRef (Lazy.force eq), Array.init 3 (fun i -> PMeta (Some (i+1)))))
-let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
-let coq_eqT_pattern = coq_eq_pattern_gen coq_eqT_ref
-let coq_idT_pattern = coq_eq_pattern_gen coq_idT_ref
-
-(* Patterns "(existS ?1 ?2 ?3 ?4)" and "(existT ?1 ?2 ?3 ?4)" *)
-let coq_ex_pattern_gen ex =
-  lazy (PApp(PRef (Lazy.force ex), Array.init 4 (fun i -> PMeta (Some (i+1)))))
-let coq_existS_pattern = coq_ex_pattern_gen coq_existS_ref
-let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
-
-(* Patterns "~ ?" and "? -> False" *)
-let coq_not_pattern = lazy(PApp(PRef (Lazy.force coq_not_ref), [|PMeta None|]))
-let imp a b = PProd (Anonymous, a, b)
-let coq_imp_False_pattern =
-  lazy (imp (PMeta None) (PRef (Lazy.force coq_False_ref)))
-
-(* Pattern "(sumbool (eq ?1 ?2 ?3) ?4)" *)
-let coq_eqdec_partial_pattern =
-  lazy
-    (PApp
-       (PRef (Lazy.force coq_sumbool_ref),
-	[| Lazy.force coq_eq_pattern; PMeta (Some 4) |]))
-
-(* The expected form of the goal for the tactic Decide Equality *)
-
-(* Pattern "(x,y:?1){<?1>x=y}+{~(<?1>x=y)}" *)
-(* i.e. "(x,y:?1)(sumbool (eq ?1 x y) ~(eq ?1 x y))" *)
-let x = Name (id_of_string "x")
-let y = Name (id_of_string "y")
-let coq_eqdec_pattern =
-  lazy
-    (PProd (x, PMeta (Some 1), PProd (y, PMeta (Some 1), 
-    PApp (PRef (Lazy.force coq_sumbool_ref),
-	  [| PApp (PRef (Lazy.force coq_eq_ref),
-		   [| PMeta (Some 1); PRel 2; PRel 1 |]);
-	     PApp (PRef (Lazy.force coq_not_ref), 
-		   [|PApp (PRef (Lazy.force coq_eq_ref),
- 			   [| PMeta (Some 1); PRel 2; PRel 1 |])|]) |]))))
-
-let build_coq_eq_pattern () = Lazy.force coq_eq_pattern
-let build_coq_eqT_pattern () = Lazy.force coq_eqT_pattern
-let build_coq_idT_pattern () = Lazy.force coq_idT_pattern
-let build_coq_existS_pattern () = Lazy.force coq_existS_pattern
-let build_coq_existT_pattern () = Lazy.force coq_existT_pattern
-let build_coq_not_pattern () = Lazy.force coq_not_pattern
-let build_coq_imp_False_pattern () = Lazy.force coq_imp_False_pattern
-let build_coq_eqdec_partial_pattern () = Lazy.force coq_eqdec_partial_pattern
-let build_coq_eqdec_pattern () = Lazy.force coq_eqdec_pattern
-let build_coq_sig_pattern () = Lazy.force coq_sig_pattern

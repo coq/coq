@@ -58,21 +58,23 @@ type coq_sigma_data = {
   intro : constr;
   typ   : constr }
 
-val build_sigma_set : unit -> coq_sigma_data
-val build_sigma_type : unit -> coq_sigma_data
+val build_sigma_set : coq_sigma_data delayed
+val build_sigma_type : coq_sigma_data delayed
 
 type coq_leibniz_eq_data = {
-  eq   : constr delayed;
-  ind  : constr delayed;
-  rrec : constr delayed option;
-  rect : constr delayed option;
-  congr: constr delayed;
-  sym  : constr delayed }
+  eq   : constr;
+  refl : constr;
+  ind  : constr;
+  rrec : constr option;
+  rect : constr option;
+  congr: constr;
+  sym  : constr }
 
-val build_coq_eq_data : coq_leibniz_eq_data
-val build_coq_eqT_data : coq_leibniz_eq_data
-val build_coq_idT_data : coq_leibniz_eq_data
+val build_coq_eq_data : coq_leibniz_eq_data delayed
+val build_coq_eqT_data : coq_leibniz_eq_data delayed
+val build_coq_idT_data : coq_leibniz_eq_data delayed
 
+val build_coq_eq : constr delayed (* = (build_coq_eq_data()).eq *)
 val build_coq_f_equal2 : constr delayed
 val build_coq_eqT : constr delayed
 val build_coq_sym_eqT : constr delayed
@@ -107,33 +109,12 @@ val build_coq_or : constr delayed
 (* Existential quantifier *)
 val build_coq_ex : constr delayed
 
-(**************************** Patterns ************************************)
-(* ["(eq ?1 ?2 ?3)"] *)
-val build_coq_eq_pattern : constr_pattern delayed
-
-(* ["(eqT ?1 ?2 ?3)"] *)
-val build_coq_eqT_pattern : constr_pattern delayed
-
-(* ["(identityT ?1 ?2 ?3)"] *)
-val build_coq_idT_pattern : constr_pattern delayed
-
-(* ["(existS ?1 ?2 ?3 ?4)"] *)
-val build_coq_existS_pattern : constr_pattern delayed
-
-(* ["(existT ?1 ?2 ?3 ?4)"] *)
-val build_coq_existT_pattern : constr_pattern delayed
-
-(* ["(not ?)"] *)
-val build_coq_not_pattern : constr_pattern delayed
-
-(* ["? -> False"] *)
-val build_coq_imp_False_pattern : constr_pattern delayed
-
-(* ["(sumbool (eq ?1 ?2 ?3) ?4)"] *)
-val build_coq_eqdec_partial_pattern : constr_pattern delayed
-
-(* ["! (x,y:?1). (sumbool (eq ?1 x y) ~(eq ?1 x y))"] *)
-val build_coq_eqdec_pattern : constr_pattern delayed
-
-(* ["(sig ?1 ?2)"] *)
-val build_coq_sig_pattern : constr_pattern delayed
+val coq_eq_ref : global_reference lazy_t
+val coq_eqT_ref : global_reference lazy_t
+val coq_idT_ref : global_reference lazy_t
+val coq_existS_ref : global_reference lazy_t
+val coq_existT_ref : global_reference lazy_t
+val coq_not_ref : global_reference lazy_t
+val coq_False_ref : global_reference lazy_t
+val coq_sumbool_ref : global_reference lazy_t
+val coq_sig_ref : global_reference lazy_t

@@ -212,6 +212,9 @@ let forward_intern_tac =
   ref (fun _ -> failwith "intern_tac is not installed for DHyp")
 
 let set_extern_intern_tac f = forward_intern_tac := f
+
+let catch_all_sort_pattern = PMeta(Some (id_of_string "SORT"))
+let catch_all_type_pattern = PMeta(Some (id_of_string "TYPE"))
     
 let add_destructor_hint na loc pat pri code =
   let code = !forward_intern_tac code in
@@ -223,15 +226,15 @@ let add_destructor_hint na loc pat pri code =
 	  errorlabstrm "add_destructor_hint"
           (str "The tactic should be a function of the hypothesis name") end
   in
-  let (_,pat) = Constrintern.interp_constrpattern Evd.empty (Global.env()) pat in
+  let (_,pat) = Constrintern.interp_constrpattern Evd.empty (Global.env()) pat
+  in
   let pat = match loc with
     | HypLocation b ->
 	HypLocation
-	  (b,{d_typ=pat;d_sort=PMeta(Some (Clenv.new_meta()))},
-	     {d_typ=PMeta(Some (Clenv.new_meta()));
-	      d_sort=PMeta(Some (Clenv.new_meta())) })
+	  (b,{d_typ=pat;d_sort=catch_all_sort_pattern},
+	     {d_typ=catch_all_type_pattern;d_sort=catch_all_sort_pattern})
     | ConclLocation () ->
-	ConclLocation({d_typ=pat;d_sort=PMeta(Some (Clenv.new_meta()))}) in
+	ConclLocation({d_typ=pat;d_sort=catch_all_sort_pattern}) in
   Lib.add_anonymous_leaf
     (inDD (na,{ d_pat = pat; d_pri=pri; d_code=code }))
 
@@ -239,13 +242,13 @@ let match_dpat dp cls gls =
   let cltyp = clause_type cls gls in
   match (cls,dp) with
     | (Some id,HypLocation(_,hypd,concld)) ->
-        (matches hypd.d_typ cltyp)@
-        (matches hypd.d_sort (pf_type_of gls cltyp))@
-        (matches concld.d_typ (pf_concl gls))@
-        (matches concld.d_sort (pf_type_of gls (pf_concl gls)))
+        (is_matching hypd.d_typ cltyp) &
+        (is_matching hypd.d_sort (pf_type_of gls cltyp)) &
+        (is_matching concld.d_typ (pf_concl gls)) &
+        (is_matching concld.d_sort (pf_type_of gls (pf_concl gls)))
     | (None,ConclLocation concld) ->
-        (matches concld.d_typ (pf_concl gls))@
-        (matches concld.d_sort (pf_type_of gls (pf_concl gls)))
+        (is_matching concld.d_typ (pf_concl gls)) &
+        (is_matching concld.d_sort (pf_type_of gls (pf_concl gls)))
     | _ -> error "ApplyDestructor"
 
 let forward_interp_tactic = 
@@ -254,9 +257,7 @@ let forward_interp_tactic =
 let set_extern_interp f = forward_interp_tactic := f
 
 let applyDestructor cls discard dd gls =
-  let mvb =
-    try match_dpat dd.d_pat cls gls
-    with PatternMatchingFailure -> error "No match" in
+  if not (match_dpat dd.d_pat cls gls) then error "No match" else
   let tac = match cls, dd.d_code with
     | Some id, (Some x, tac) -> 
 	let arg = ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in

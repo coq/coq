@@ -84,7 +84,7 @@ let h_solveRightBranch =
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
 let mkDecideEqGoal rectype c1 c2 g = 
-  let equality    = mkApp(build_coq_eq_data.eq (), [|rectype; c1; c2|]) in
+  let equality    = mkApp(build_coq_eq(), [|rectype; c1; c2|]) in
   let disequality = mkApp(build_coq_not (), [|equality|]) in
   mkApp(build_coq_sumbool (), [|equality; disequality |])
 
@@ -124,20 +124,16 @@ let solveArg a1 a2 tac  g =
      [(eqCase tac);diseqCase;default_auto]) g
 
 let solveLeftBranch rectype g =
-  match
-    try matches (Coqlib.build_coq_eqdec_partial_pattern ()) (pf_concl g)
-    with PatternMatchingFailure -> error "Unexpected conclusion!"
-  with 
-    | _ :: lhs :: rhs :: _ -> 
-        let (mib,mip) = Global.lookup_inductive rectype in
-	let nparams   = mip.mind_nparams in
-	let getargs l = list_skipn nparams (snd (decompose_app l)) in
-	let rargs   = getargs (snd rhs)
-	and largs   = getargs (snd lhs) in 
-	List.fold_right2 
-	  solveArg largs rargs (tclTHEN h_simplest_left h_reflexivity) g
-    | _ -> anomaly "Unexpected pattern for solveLeftBranch"
-
+  try
+    let (lhs,rhs) = match_eqdec_partial (pf_concl g) in
+    let (mib,mip) = Global.lookup_inductive rectype in
+    let nparams   = mip.mind_nparams in
+    let getargs l = list_skipn nparams (snd (decompose_app l)) in
+    let rargs   = getargs rhs
+    and largs   = getargs lhs in 
+    List.fold_right2 
+      solveArg largs rargs (tclTHEN h_simplest_left h_reflexivity) g
+  with PatternMatchingFailure -> error "Unexpected conclusion!"
 
 (* The tactic Decide Equality *)
 
@@ -146,23 +142,19 @@ let hd_app c = match kind_of_term c with
   | _ -> c
 
 let decideGralEquality g =
-  match
-    try matches (build_coq_eqdec_pattern ()) (pf_concl g)
-    with PatternMatchingFailure ->
-      error "The goal does not have the expected form"
-  with 
-    | (_,typ) :: _ ->
-	let headtyp = hd_app (pf_compute g typ) in
-	let rectype =
-	  match kind_of_term headtyp with
-            | Ind mi -> mi
-	    | _ -> error 
-		"This decision procedure only works for inductive objects" 
-	in 
-	(tclTHEN
-	   mkBranches 
-           (tclORELSE h_solveRightBranch (solveLeftBranch rectype))) g
-    | _ -> anomaly "Unexpected pattern for decideGralEquality"
+  try
+    let typ = match_eqdec (pf_concl g) in
+    let headtyp = hd_app (pf_compute g typ) in
+    let rectype =
+      match kind_of_term headtyp with
+        | Ind mi -> mi
+	| _ -> error "This decision procedure only works for inductive objects"
+    in 
+    (tclTHEN
+      mkBranches 
+      (tclORELSE h_solveRightBranch (solveLeftBranch rectype))) g
+  with PatternMatchingFailure ->
+    error "The goal does not have the expected form"
 
 
 let decideEquality c1 c2 g = 
