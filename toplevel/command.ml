@@ -31,8 +31,14 @@ let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 let constant_entry_of_com (com,comtypopt) =
   let sigma = Evd.empty in
   let env = Global.env() in
-    { const_entry_body = Cooked (constr_of_com sigma env com);
-      const_entry_type = option_app (constr_of_com1 true sigma env) comtypopt }
+  match comtypopt with
+      None -> 
+	{ const_entry_body = Cooked (constr_of_com sigma env com);
+	  const_entry_type = None }
+    | Some comtyp ->
+	let typ = constr_of_com_sort sigma env comtyp in
+	{ const_entry_body = Cooked (constr_of_com_casted sigma env com typ);
+	  const_entry_type = Some typ }
 
 let red_constant_entry ce = function
   | None -> ce
