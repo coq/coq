@@ -9,6 +9,9 @@ Grammar extension
   global, constr and pattern (e.g. nvar, numarg disappears); the only
   allowed grammar types are constr and pattern; ast and ast list are no
   longer supported.
+- Some incompatibilities: precedence of product (cf FTA); when a
+  syntax is a initial segment of the other, Grammar does not work, use
+  Notation
 
 Symbolic notations
 
