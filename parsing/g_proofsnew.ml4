@@ -27,7 +27,7 @@ GEXTEND Gram
 
   destruct_location :
   [ [ IDENT "Conclusion"  -> Tacexpr.ConclLocation ()
-    | discard = [ IDENT "Discardable" -> true | -> false ]; IDENT "Hypothesis"
+    | discard = [ IDENT "Discardable" -> true | -> false ]; "Hypothesis"
 	-> Tacexpr.HypLocation discard ] ]
   ;
   opt_hintbases:
