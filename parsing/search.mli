@@ -36,6 +36,8 @@ val filter_by_module_from_list :
 
 (* raw search functions can be used for various extensions.
    They are also used for pcoq. *)
+val gen_filtered_search : (global_reference -> env -> constr -> bool) ->
+      (global_reference -> env -> constr -> unit) -> unit
 val filtered_search : (global_reference -> env -> constr -> bool) -> 
   (global_reference -> env -> constr -> unit) -> global_reference -> unit
 val raw_pattern_search : (global_reference -> env -> constr -> bool) ->
