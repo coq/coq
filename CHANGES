@@ -20,6 +20,8 @@ Tactics
 - Pattern now working on partially applied subterms
 - Ring no longer applies irreversible congruence laws of mult but
   better applies congruence laws of plus (slight source of incompatibilities).
+- Field now accepts terms to be simplified as arguments (as for Ring). This
+  extension has been also implemented using the toplevel tactic language.
 - Intuition does no longer unfold constants except "<->" and "~". It
   can be parameterized by a tactic. It also can introduce dependent
   product if needed (source of incompatibilities)
@@ -57,7 +59,8 @@ Tools
 User Contributions
 
 - CongruenceClosure (congruence closure decision procedure)
-- MapleMode (an interface to embed Maple simplification procedures in Coq)
+- MapleMode (an interface to embed Maple simplification procedures over
+  rational fractions in Coq)
 - Chinese has been rewritten using Z from ZArith as datatype
   ZChinese is the new version, Chinese the obsolete one
 
