@@ -907,15 +907,15 @@ let relation_of_hypothesis_and_term_to_rewrite new_goals gl (_,h) t =
    useful generalization that does not go against the original spirit of
    the tactic.
 *)
-let subrelation rel1 rel2 =
+let subrelation gl rel1 rel2 =
  match rel1,rel2 with
     Relation {rel_aeq=rel_aeq1}, Relation {rel_aeq=rel_aeq2} ->
-     eq_constr rel_aeq1 rel_aeq2
+     Tacmach.pf_conv_x gl rel_aeq1 rel_aeq2
   | Leibniz t1, Leibniz t2 ->
-     eq_constr t1 t2
+     Tacmach.pf_conv_x gl t1 t2
 (* This is the commented out case (see comment above)
   | Leibniz t1, Relation {rel_a=t2; rel_refl = Some _} ->
-     eq_constr t1 t2
+     Tacmach.pf_conv_x gl t1 t2
 *)
   | _,_ -> false
 
@@ -929,10 +929,10 @@ let rec collect_new_goals =
  | ToKeep (c,Relation {rel_aeq=aeq; rel_refl=None},_) -> [mkApp(aeq,[|c ; c|])]
 
 (* two marked_constr are equivalent if they produce the same set of new goals *)
-let marked_constr_equiv_or_more_complex to_marked_constr c1 c2 =
+let marked_constr_equiv_or_more_complex to_marked_constr gl c1 c2 =
   let glc1 = collect_new_goals (to_marked_constr c1) in
   let glc2 = collect_new_goals (to_marked_constr c2) in
-   List.for_all (fun c -> List.exists (fun c' -> eq_constr c c') glc1) glc2
+   List.for_all (fun c -> List.exists (fun c' -> pf_conv_x gl c c') glc1) glc2
 
 let pr_new_goals i c =
  let glc = collect_new_goals c in
@@ -946,26 +946,27 @@ let pr_new_goals i c =
 (* given a list of constr_with_marks, it returns the list where
    constr_with_marks than open more goals than simpler ones in the list
    are got rid of *)
-let elim_duplicates to_marked_constr =
+let elim_duplicates gl to_marked_constr =
  let rec aux =
   function
      [] -> []
    | he:: tl ->
-      if List.exists(marked_constr_equiv_or_more_complex to_marked_constr he) tl
+      if List.exists
+          (marked_constr_equiv_or_more_complex to_marked_constr gl he) tl
       then aux tl
       else he::aux tl
  in
   aux
 
-let filter_superset_of_new_goals new_goals l =
+let filter_superset_of_new_goals gl new_goals l =
  List.filter
   (fun (_,_,c) ->
     List.for_all
-     (fun g -> List.exists (eq_constr g) (collect_new_goals c)) new_goals) l
+     (fun g -> List.exists (pf_conv_x gl g) (collect_new_goals c)) new_goals) l
 
 (* given the array of lists [| l1 ; ... ; ln |] it returns the list of arrays
    [ c1 ; ... ; cn ] that is the cartesian product of the sets l1, ..., ln *)
-let cartesian_product a =
+let cartesian_product gl a =
  let rec aux =
   function
      [] -> assert false
@@ -976,13 +977,13 @@ let cartesian_product a =
         (List.map (function e -> List.map (function l -> e :: l) tl') he)
  in
   List.map Array.of_list
-   (aux (List.map (elim_duplicates identity) (Array.to_list a)))
+   (aux (List.map (elim_duplicates gl identity) (Array.to_list a)))
 
 let mark_occur gl ~new_goals t in_c input_relation input_direction =
  let rec aux output_relation output_direction in_c =
   if eq_constr t in_c then
    if input_direction = output_direction
-   && subrelation input_relation output_relation then
+   && subrelation gl input_relation output_relation then
     [ToReplace]
    else []
   else
@@ -995,7 +996,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
              (morphism_table_find c)
            in
             List.filter
-             (fun mor -> subrelation mor.output output_relation) morphisms
+             (fun mor -> subrelation gl mor.output output_relation) morphisms
           with Not_found -> []
          in
           (* First we look for well typed morphisms *)
@@ -1018,7 +1019,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                      (apply_variance_to_direction Right2Left variance) a)
                  ) al arguments
               in
-               let a' = cartesian_product a in
+               let a' = cartesian_product gl a in
                 (List.map
                   (function a ->
                     if not (get_mark a) then
@@ -1043,7 +1044,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                  if a_rev = [] then
                   [ToKeep (in_c,output_relation,output_direction)]
                  else
-                  let a' = cartesian_product (Array.of_list (List.rev a_rev)) in
+                  let a' =
+                   cartesian_product gl (Array.of_list (List.rev a_rev))
+                  in
                    List.fold_left
                     (fun res a ->
                       if not (get_mark a) then
@@ -1051,7 +1054,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                       else
                        let err =
                         match output_relation with
-                           Leibniz typ' when eq_constr typ typ' -> false
+                           Leibniz typ' when pf_conv_x gl typ typ' -> false
                          | _ when output_relation = Lazy.force coq_prop_relation
                              -> false
                          | _ -> true
@@ -1085,7 +1088,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                            assert
                             (List.for_all
                               (function
-                                  ToKeep (arg',_,_) when eq_constr arg arg' ->
+                                  ToKeep(arg',_,_) when pf_conv_x gl arg arg' ->
                                     true
                                 | _ -> false) he) ;
                            (* generic product, to keep *)
@@ -1111,7 +1114,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
              find_non_dependent_function (Tacmach.pf_env gl) c [] typ [] []
               (Array.to_list al)
           in
-           elim_duplicates identity (res_functions @ res_mors)
+           elim_duplicates gl identity (res_functions @ res_mors)
       | Prod (_, c1, c2) -> 
           if (dependent (mkRel 1) c2)
           then
@@ -1145,8 +1148,8 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
    (* This is the case of a proposition of signature A ++> iff or B --> iff *)
    (aux2 (Lazy.force coq_prop_relation) Left2Right) @
    (aux2 (Lazy.force coq_prop_relation2) Right2Left) in
-  let res = elim_duplicates (function (_,_,t) -> t) res in
-  let res' = filter_superset_of_new_goals new_goals res in
+  let res = elim_duplicates gl (function (_,_,t) -> t) res in
+  let res' = filter_superset_of_new_goals gl new_goals res in
   match res' with
      [] when res = [] ->
       errorlabstrm "Setoid_rewrite"
