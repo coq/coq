@@ -141,7 +141,8 @@ Pp.ppnl (Pp.(++) (Pp.str
             aux flat_proof old_hyps
         | _ ->
          (****** la tactique employee *)
-         let tac = std_ppcmds_to_string (Pptactic.pr_tactic tactic_expr) in
+	 let prtac = if !Options.v7 then Pptactic.pr_tactic else Pptacticnew.pr_tactic (Global.env()) in
+         let tac = std_ppcmds_to_string (prtac tactic_expr) in
          let tacname= first_word tac in
          let of_attribute = ("name",tacname)::("script",tac)::of_attribute in
 
