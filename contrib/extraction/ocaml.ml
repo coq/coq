@@ -443,10 +443,10 @@ module ModularParams = struct
   let rename_global r = id_of_string (rename_global_aux r)
 
   let pp_type_global r = 
-    string ((module_option r)^(check_ml r (rename_type_global r)))
+    string (check_ml r ((module_option r)^(rename_type_global r)))
 
   let pp_global r = 
-    string ((module_option r)^(check_ml r (rename_global_aux r)))
+    string (check_ml r ((module_option r)^(rename_global_aux r)))
 
   let cofix_warning = true
 end
