@@ -42,9 +42,14 @@ Hashtbl.add type_table "Coq.Init.Datatypes.prod"
 Hashtbl.add type_table "Coq.Init.Datatypes.nat"
   [|[|"";"O"; "S"|]|];;
 
+(* //menage a faire....*)
+Hashtbl.add type_table "Coq.Zarith.fast_integer.Z"
+[|[|"";"ZERO";"POS";"NEG"|]|];;
 Hashtbl.add type_table "Coq.ZArith.fast_integer.Z"
 [|[|"";"ZERO";"POS";"NEG"|]|];;
-
+(*//itou *)
+Hashtbl.add type_table "Coq.Zarith.fast_integer.positive"
+[|[|"";"xI";"xO";"XH"|]|];;
 Hashtbl.add type_table "Coq.ZArith.fast_integer.positive"
 [|[|"";"xI";"xO";"XH"|]|];;
 
@@ -243,6 +248,11 @@ let strip_Rform =
     | Rform body -> body
     | _ -> xlate_error "strip_Rform: binder expression as formula";;
 
+let rec flatten_one_level = function
+  [Node(_, _, l)] -> l
+| Node(_, _, l)::tl -> List.append l (flatten_one_level tl)
+| _ -> assert false;;
+
 let make_lambdac dom boundcod =
  let rec gather =
   function
@@ -432,7 +442,11 @@ let xlate_op the_node opn a b =
               let ident = type_desc''.(n) in
               CT_coerce_ID_to_FORMULA(CT_ident ident))
   | _, _ -> xlate_error "xlate_op : MUTCONSTRUCT")
-     
+ |"EXPL" ->(match a, b with
+  | [(Num (_, i))], ((Rform t)::[]) -> 
+             CT_bang (CT_coerce_INT_to_INT_OPT (CT_int i), t)
+  | _, _ -> xlate_error "xlate_op : EXPL ")
+    
  | opn  -> xlate_error ("xlate_op : " ^ opn ^ " doesn't exist (" ^
 			    (string_of_node_loc the_node) ^ ")");;
 
@@ -926,10 +940,12 @@ let rec get_flag_rec =
 
 let rec xlate_intro_pattern =
     function
-    | Node(_,"CONJPATTERN",[Node(_, "LISTPATTERN", l)]) ->
-        CT_conj_pattern(CT_intro_patt_list (List.map xlate_intro_pattern l))
-    | Node(_, "DISJPATTERN", [Node(_,"LISTPATTERN",l)]) ->
-        CT_disj_pattern(CT_intro_patt_list (List.map xlate_intro_pattern l))
+    | Node(_,"CONJPATTERN", l) ->
+        CT_conj_pattern(CT_intro_patt_list (List.map xlate_intro_pattern 
+                                               (flatten_one_level l)))
+    | Node(_, "DISJPATTERN", l) ->
+        CT_disj_pattern(CT_intro_patt_list (List.map xlate_intro_pattern 
+                                               (flatten_one_level l)))
     | Node(_, "IDENTIFIER",  [Nvar(_,c)]) ->
         CT_coerce_ID_to_INTRO_PATT(CT_ident c)
     | Node(_, a, _) -> failwith ("xlate_intro_pattern on node " ^ a)
@@ -1784,6 +1800,9 @@ and xlate_vernac =
 	   | [Varg_tactic_arg r] -> ctv_FORMULA_OPT_NONE, Some r
 	   | [Varg_constr b; Varg_tactic_arg r] ->
 	       CT_coerce_FORMULA_to_FORMULA_OPT b, Some r
+	   | [Varg_sorttype b] -> 
+               CT_coerce_FORMULA_to_FORMULA_OPT 
+                    (CT_coerce_SORT_TYPE_to_FORMULA b), None
 	   | _ -> assert false in
          CT_definition
 	   (xlate_defn kind, s, 
