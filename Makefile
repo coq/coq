@@ -50,7 +50,7 @@ OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING)
 
 # Targets
 
-world: minicoq coqtop
+world: minicoq coqtop dev/db_printers.cmo
 
 # coqtop
 
