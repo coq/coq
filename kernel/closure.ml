@@ -884,7 +884,7 @@ let rec knh m stk =
            | (None, stk') -> (m,stk'))
     | FCast(t,_) -> knh t stk
 (* cases where knh stops *)
-    | (FFlex _|FLetIn _|FInd _|FConstruct _|FEvar _) -> (m, stk)
+    | (FFlex _|FLetIn _|FConstruct _|FEvar _) -> (m, stk)
     | (FRel _|FAtom _|FInd _) -> (set_norm m; (m, stk))
     | (FLambda _|FCoFix _|FProd _) ->
         (set_whnf m; (m, stk))
