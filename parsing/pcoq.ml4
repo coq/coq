@@ -282,6 +282,7 @@ module Tactic =
     let numarg_binding_list = gec_list "numarg_binding_list"
     let lconstrarg_binding_list = gec_list "lconstrarg_binding_list"
     let constrarg_list = gec_list "constrarg_list"
+    let ident_or_constrarg = gec "ident_or_constrarg"
     let identarg = gec "identarg"
     let qualidarg = gec "qualidarg"
     let qualidconstarg = gec "qualidconstarg"

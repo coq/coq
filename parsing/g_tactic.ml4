@@ -47,6 +47,13 @@ GEXTEND Gram
   castedconstrarg:
     [ [ c = Constr.constr -> <:ast< (CASTEDCOMMAND $c) >> ] ]
   ;
+  ident_or_constrarg:
+    [ [ c = Constr.constr ->
+	  match c with
+            | Coqast.Nvar(_,s) -> <:ast<($VAR $s)>>
+	    | Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
+	    | _ -> <:ast< (COMMAND $c) >> ] ]
+  ;
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]
   ;
@@ -301,12 +308,7 @@ GEXTEND Gram
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
       |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
-      |	"'"; c = constrarg ->
-          (match c with
-           | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
-	   | Coqast.Node(_,"COMMAND",[Coqast.Node(_,"QUALID",
-               [Coqast.Nvar(_,s)])]) -> <:ast<($VAR $s)>>
-           |_ -> c) ] ]
+      |	"'"; c = ident_or_constrarg -> c ] ]
   ;
   simple_tactic:
     [ [ IDENT "Fix"; n = pure_numarg -> <:ast< (Fix $n) >>
@@ -319,7 +321,7 @@ GEXTEND Gram
           <:ast< (Cofix $id ($LIST $fd)) >>
       | IDENT "Induction"; s = identarg -> <:ast< (Induction $s) >>
       | IDENT "Induction"; n = pure_numarg -> <:ast< (Induction $n) >>
-      | IDENT "NewInduction"; c = constrarg -> <:ast< (NewInduction $c) >>
+      | IDENT "NewInduction"; c=ident_or_constrarg -> <:ast<(NewInduction $c)>>
       | IDENT "NewInduction"; n = pure_numarg -> <:ast< (NewInduction $n) >>
       | IDENT "Double"; IDENT "Induction"; i = numarg; j = numarg ->
           <:ast< (DoubleInd $i $j) >>
