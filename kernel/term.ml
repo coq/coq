@@ -1553,6 +1553,19 @@ let prefix_application (k,c) (t : constr) =
 	  None
     | _ -> None
 
+let my_prefix_application (k,c) (by_c : constr) (t : constr) = 
+  let c' = strip_head_cast c and t' = strip_head_cast t in
+  match kind_of_term c', kind_of_term t' with
+    | IsApp (f1,cl1), IsApp (f2,cl2) ->
+	let l1 = Array.length cl1
+	and l2 = Array.length cl2 in
+	if l1 <= l2
+	   && eq_constr c' (mkApp (f2, Array.sub cl2 0 l1)) then
+	  Some (mkApp ((lift k by_c), Array.sub cl2 l1 (l2 - l1)))
+	else 
+	  None
+    | _ -> None
+
 let prefix_application_eta (k,c) (t : constr) =
   let c' = strip_head_cast c and t' = strip_head_cast t in
   match kind_of_term c', kind_of_term t' with
@@ -1575,6 +1588,7 @@ let sort_increasing_snd =
 (* Recognizing occurrences of a given (closed) subterm in a term for Pattern :
    [subst_term c t] substitutes [(Rel 1)] for all occurrences of (closed)
    term [c] in a term [t] *)
+(*i Bizarre : si on cherche un sous terme clos, pourquoi le lifter ? i*)
 
 let subst_term_gen eq_fun c t = 
   let rec substrec (k,c as kc) t =
@@ -1590,8 +1604,29 @@ let subst_term_gen eq_fun c t =
   in 
   substrec (1,c) t
 
+(* Recognizing occurrences of a given (closed) subterm in a term :
+   [replace_term c1 c2 t] substitutes [c2] for all occurrences of (closed)
+   term [c1] in a term [t] *)
+(*i Meme remarque : a priori [c] n'est pas forcement clos i*)
+
+let replace_term_gen eq_fun c by_c in_t = 
+  let rec substrec (k,c as kc) t =
+    match my_prefix_application kc by_c t with
+      | Some x -> x
+      | None ->
+    (if eq_fun t c then (lift k by_c) else match kind_of_term t with
+       | IsConst _ | IsMutInd _ | IsMutConstruct _ -> t
+       | _ ->
+	   map_constr_with_binders
+	     (fun (k,c) -> (k+1,lift 1 c))
+	     substrec kc t)
+  in 
+  substrec (0,c) in_t
+
 let subst_term = subst_term_gen eq_constr
 let subst_term_eta = subst_term_gen eta_eq_constr
+
+let replace_term = replace_term_gen eq_constr
 
 (* bl : (int,constr) Listmap.t = (int * constr) list *)
 (* c : constr *)

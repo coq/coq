@@ -540,6 +540,9 @@ val subst_term_occ : occs:int list -> what:constr -> where:constr -> constr
 val subst_term_occ_decl : occs:int list -> what:constr ->
       where:named_declaration -> named_declaration
 
+(* [replace_subst_term c by_c in_t substitutes c by by_c in in_t *)
+val replace_term : constr -> constr -> constr -> constr
+
 (* [subst_meta bl c] substitutes the metavar $i$ by $c_i$ in [c] 
    for each binding $(i,c_i)$ in [bl],
    and raises [Not_found] if [c] contains a meta that is not in the 
