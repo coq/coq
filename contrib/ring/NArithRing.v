@@ -10,8 +10,9 @@
 
 (* Instantiation of the Ring tactic for the binary natural numbers *)
 
-Require Export ArithRing.
+Require Export Ring.
 Require Export ZArith_base.
+Require NArith.
 Require Eqdep_dec.
 
 Definition Neq := [n,m:entier]
