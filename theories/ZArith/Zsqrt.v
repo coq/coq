@@ -8,9 +8,9 @@
 
 (* $Id$ *)
 
+Require Omega.
 Require Export ZArith_base.
 Require Export ZArithRing.
-Require Export Omega.
 V7only [Import Z_scope.].
 Open Local Scope Z_scope.
 

@@ -160,5 +160,60 @@ Intros x y z H1 H2 H3; Apply Zlt_n_Sm_le; Apply Zmult_lt with x; [
 
 Qed.
 
-V7only [Notation OMEGA2 := Zle_0_plus.].
-
+V7only [
+(* Compatibility *)
+Require Znat.
+Require Zcompare.
+Notation neq := neq.
+Notation Zne := Zne.
+Notation OMEGA2 := Zle_0_plus.
+Notation add_un_Zs := add_un_Zs.
+Notation inj_S := inj_S.
+Notation Zplus_S_n := Zplus_S_n.
+Notation inj_plus := inj_plus.
+Notation inj_mult := inj_mult.
+Notation inj_neq := inj_neq.
+Notation inj_le := inj_le.
+Notation inj_lt := inj_lt.
+Notation inj_gt := inj_gt.
+Notation inj_ge := inj_ge.
+Notation inj_eq := inj_eq.
+Notation intro_Z := intro_Z.
+Notation inj_minus1 := inj_minus1.
+Notation inj_minus2 := inj_minus2.
+Notation dec_eq := dec_eq.
+Notation dec_Zne := dec_Zne.
+Notation dec_Zle := dec_Zle.
+Notation dec_Zgt := dec_Zgt.
+Notation dec_Zge := dec_Zge.
+Notation dec_Zlt := dec_Zlt.
+Notation dec_eq_nat := dec_eq_nat.
+Notation not_Zge := not_Zge.
+Notation not_Zlt := not_Zlt.
+Notation not_Zle := not_Zle.
+Notation not_Zgt := not_Zgt.
+Notation not_Zeq := not_Zeq.
+Notation Zopp_one := Zopp_one.
+Notation Zopp_Zmult_r := Zopp_Zmult_r.
+Notation Zmult_Zopp_left := Zmult_Zopp_left.
+Notation Zopp_Zmult_l := Zopp_Zmult_l.
+Notation Zcompare_Zplus_compatible2 := Zcompare_Zplus_compatible2.
+Notation Zcompare_Zmult_compatible := Zcompare_Zmult_compatible.
+Notation Zmult_eq := Zmult_eq.
+Notation Z_eq_mult := Z_eq_mult.
+Notation Zmult_le := Zmult_le.
+Notation Zle_ZERO_mult := Zle_ZERO_mult.
+Notation Zgt_ZERO_mult := Zgt_ZERO_mult.
+Notation Zle_mult := Zle_mult.
+Notation Zmult_lt := Zmult_lt.
+Notation Zmult_gt := Zmult_gt.
+Notation Zle_Zmult_pos_right := Zle_Zmult_pos_right.
+Notation Zle_Zmult_pos_left := Zle_Zmult_pos_left.
+Notation Zge_Zmult_pos_right := Zge_Zmult_pos_right.
+Notation Zge_Zmult_pos_left := Zge_Zmult_pos_left.
+Notation Zge_Zmult_pos_compat := Zge_Zmult_pos_compat.
+Notation Zle_mult_simpl := Zle_mult_simpl.
+Notation Zge_mult_simpl := Zge_mult_simpl.
+Notation Zgt_mult_simpl := Zgt_mult_simpl.
+Notation Zgt_square_simpl := Zgt_square_simpl.
+].
