@@ -27,7 +27,7 @@ let keywords =
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance"; 
     "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_"; "__";
-    "as"; "qualified"; "hiding" ; "unit" ]
+    "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
   Idset.empty
 
 let preamble prm used_modules (mldummy,tdummy,tunknown) =
@@ -38,8 +38,10 @@ let preamble prm used_modules (mldummy,tdummy,tunknown) =
   str "module " ++ pr_upper_id prm.mod_name ++ str " where" ++ fnl () 
   ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
+  str "import qualified GHC.Base" ++ fnl() ++
   prlist (fun mp -> str "import qualified " ++ pp_mp mp ++ fnl ()) used_modules
   ++ fnl () ++
+  str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl() ++
   (if mldummy then 
      str "__ = Prelude.error \"Logical or arity value used\"" 
      ++ fnl () ++ fnl()
@@ -146,7 +148,8 @@ let rec pp_expr par env args =
 	pp_par par (str "Prelude.error" ++ spc () ++ qs s)
     | MLdummy ->
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
-    | MLmagic a ->  pp_expr par env args a
+    | MLmagic a ->  
+	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
 
 and pp_pat env pv = 
@@ -210,7 +213,7 @@ let pp_one_ind ip pl cv =
        | [] -> (mt ()) 
        | _  -> (str " " ++
       	       	prlist_with_sep 
-		  (fun () -> (str " ")) (pp_type true (List.rev pl)) l))
+		  (fun () -> (str " ")) (pp_type true pl) l))
   in
   str (if cv = [||] then "type " else "data ") ++ 
   pp_global (IndRef ip) ++ str " " ++
@@ -249,10 +252,9 @@ let pp_decl mpl =
       if is_inline_custom r then mt () 
       else 
 	let l = rename_tvars keywords l in
-	let l' = List.rev l in 
 	hov 2 (str "type " ++ pp_global r ++ spc () ++ 
 	       prlist (fun id -> pr_id id ++ str " ") l ++
-	       str "=" ++ spc () ++ pp_type false l' t) ++ fnl () ++ fnl ()
+	       str "=" ++ spc () ++ pp_type false l t) ++ fnl () ++ fnl ()
   | Dfix (rv, defs,_) ->
       let ppv = Array.map pp_global rv in 
       prlist_with_sep (fun () -> fnl () ++ fnl ())
@@ -262,7 +264,12 @@ let pp_decl mpl =
   | Dterm (r, a, _) ->
       if is_inline_custom r then mt () 
       else 
-	hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl () ++ fnl ())
+	if is_custom r then 	
+	  hov 0 (pp_global r ++ str " = " ++ str (find_custom r) 
+		 ++ fnl() ++ fnl ())
+	else 
+	  hov 0 (pp_function (empty_env ()) (pp_global r) a 
+		 ++ fnl () ++ fnl ())
 
 let pp_structure_elem mpl = function 
   | (l,SEdecl d) -> pp_decl mpl d
