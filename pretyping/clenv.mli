@@ -14,6 +14,7 @@ open Names
 open Term
 open Sign
 open Evd
+open Evarutil
 (*i*)
 
 (* [new_meta] is a generator of unique meta variables *)
@@ -56,7 +57,7 @@ val mk_clenv_type_of : wc -> constr -> wc clausenv
 val subst_clenv : (substitution -> 'a -> 'a) -> 
   substitution -> 'a clausenv -> 'a clausenv
 val clenv_wtactic :
-  (evar_map * meta_map -> evar_map * meta_map) -> wc clausenv -> wc clausenv
+  (evar_defs * meta_map -> evar_defs * meta_map) -> wc clausenv -> wc clausenv
 
 val connect_clenv : evar_info sigma -> 'a clausenv -> wc clausenv
 val clenv_assign : metavariable -> constr -> 'a clausenv -> 'a clausenv

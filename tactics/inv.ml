@@ -445,9 +445,8 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 let raw_inversion inv_kind indbinding id status names gl =
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
-  let (wc,kONT) = startWalk gl in
   let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
-  let indclause = mk_clenv_from wc (c,t) in
+  let indclause = mk_clenv_from (rc_of_glsigma gl) (c,t) in
   let indclause' = clenv_constrain_with_bindings indbinding indclause in
   let newc = clenv_instance_template indclause' in
   let ccl = clenv_instance_template_type indclause' in

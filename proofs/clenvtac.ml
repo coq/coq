@@ -17,6 +17,7 @@ open Termops
 open Sign
 open Environ
 open Evd
+open Evarutil
 open Proof_type
 open Refiner
 open Proof_trees
@@ -69,29 +70,29 @@ let clenv_cast_meta clenv =
   crec
 
 
-let clenv_refine kONT clenv gls =
+let clenv_refine clenv gls =
   tclTHEN
-    (kONT clenv.hook) 
+    (tclEVARS clenv.hook.sigma) 
     (refine (clenv_instance_template clenv)) gls
 
-let clenv_refine_cast kONT clenv gls =
+let clenv_refine_cast clenv gls =
   tclTHEN
-    (kONT clenv.hook) 
+    (tclEVARS clenv.hook.sigma) 
     (refine (clenv_cast_meta clenv (clenv_instance_template clenv)))
     gls
 
-let res_pf kONT clenv gls =
-  clenv_refine kONT (clenv_unique_resolver false clenv gls) gls
+let res_pf clenv gls =
+  clenv_refine (clenv_unique_resolver false clenv gls) gls
     
-let res_pf_cast kONT clenv gls =
-  clenv_refine_cast kONT (clenv_unique_resolver false clenv gls) gls
+let res_pf_cast clenv gls =
+  clenv_refine_cast (clenv_unique_resolver false clenv gls) gls
 
-let elim_res_pf kONT clenv allow_K gls =
-  clenv_refine_cast kONT (clenv_unique_resolver allow_K clenv gls) gls
+let elim_res_pf clenv allow_K gls =
+  clenv_refine_cast (clenv_unique_resolver allow_K clenv gls) gls
 
-let elim_res_pf_THEN_i kONT clenv tac gls =  
+let elim_res_pf_THEN_i clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in
-  tclTHENLASTn (clenv_refine kONT clenv') (tac clenv') gls
+  tclTHENLASTn (clenv_refine clenv') (tac clenv') gls
 
 (* [clenv_pose_dependent_evars clenv]
  * For each dependent evar in the clause-env which does not have a value,
@@ -103,7 +104,7 @@ let clenv_pose_dependent_evars clenv =
   let dep_mvs = clenv_dependent false clenv in
   List.fold_left
     (fun clenv mv ->
-       let evar = Evarutil.new_evar_in_sign (w_env clenv.hook) in
+       let evar = Evarutil.new_evar_in_sign (get_env clenv.hook) in
        let (evar_n,_) = destEvar evar in
        let tY = clenv_instance_type clenv mv in
        let clenv' = clenv_wtactic (w_Declare evar_n tY) clenv in
@@ -111,8 +112,8 @@ let clenv_pose_dependent_evars clenv =
     clenv
     dep_mvs
 
-let e_res_pf kONT clenv gls =
-  clenv_refine kONT
+let e_res_pf clenv gls =
+  clenv_refine
     (clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)) gls
 
 
@@ -125,9 +126,9 @@ let e_res_pf kONT clenv gls =
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unifyTerms m n gls = 
   let env = pf_env gls in
-  let sigma = project gls in
-  tclIDTAC {it = gls.it; 
-	    sigma = fst (Unification.w_unify false env CONV m n (sigma,Evd.Metamap.empty))}
+  let maps = (create_evar_defs (project gls), Evd.Metamap.empty) in
+  let maps' = Unification.w_unify false env CONV m n maps in
+  tclIDTAC {it = gls.it; sigma = evars_of (fst maps')}
 
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls

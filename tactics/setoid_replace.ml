@@ -886,10 +886,10 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
      *)
 
 let general_s_rewrite lft2rgt c gl =
- let (wc,_)  = Evar_refiner.startWalk gl in
  let ctype = pf_type_of gl c in
  let eqclause  =
-  Clenv.make_clenv_binding wc (c,ctype) Rawterm.NoBindings in
+  Clenv.make_clenv_binding
+    (Evar_refiner.rc_of_glsigma gl) (c,ctype) Rawterm.NoBindings in
  let (equiv, args) =
   decompose_app (Clenv.clenv_instance_template_type eqclause) in
  let rec get_last_two = function

@@ -287,10 +287,9 @@ let add_inversion_lemma_exn na com comsort bool tac =
 
 let lemInv id c gls =
   try
-    let (wc,kONT) = startWalk gls in
-    let clause = mk_clenv_type_of wc c in
+    let clause = mk_clenv_type_of (rc_of_glsigma gls) c in
     let clause = clenv_constrain_with_bindings [(-1,mkVar id)] clause in
-    Clenvtac.elim_res_pf kONT clause true gls
+    Clenvtac.elim_res_pf clause true gls
   with 
     |  UserError (a,b) -> 
 	 errorlabstrm "LemInv" 

@@ -25,19 +25,19 @@ open Rawterm
    inserts a coercion into [j], if needed, in such a way it gets as
    type a product; it returns [j] if no coercion is applicable *)
 val inh_app_fun :
-  env -> evar_defs -> unsafe_judgment -> unsafe_judgment
+  env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_judgment
 
 (* [inh_coerce_to_sort env isevars j] coerces [j] to a type; i.e. it
    inserts a coercion into [j], if needed, in such a way it gets as
    type a sort; it fails if no coercion is applicable *)
 val inh_coerce_to_sort :
-  env -> evar_defs -> unsafe_judgment -> unsafe_type_judgment
+  env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_type_judgment
 
 (* [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type 
    [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
    [j.uj_type] are convertible; it fails if no coercion is applicable *)
 val inh_conv_coerce_to : loc -> 
-  env -> evar_defs -> unsafe_judgment -> constr -> unsafe_judgment
+  env -> evar_defs -> unsafe_judgment -> constr -> evar_defs * unsafe_judgment
 
 (* [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
    pattern [pat] typed in [ind1] into a pattern typed in [ind2];

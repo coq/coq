@@ -15,11 +15,12 @@ open Term
 open Sign
 open Environ
 open Evd
+open Evarutil
 (*i*)
 
-type maps = evar_map * meta_map
+type maps = evar_defs * meta_map
 
-val w_Define : evar -> constr -> Evarutil.evar_defs -> unit
+val w_Define : evar -> constr -> maps -> maps
 
 (* The "unique" unification fonction *)
 val w_unify :

@@ -22,7 +22,6 @@ type wc = named_context sigma (* for a better reading of the following *)
 
 (* Refinement of existential variables. *)
 
-val rc_of_pfsigma : proof_tree sigma -> wc
 val rc_of_glsigma : goal sigma -> wc
 
 (* A [w_tactic] is a tactic which modifies the a set of evars of which
@@ -30,28 +29,11 @@ val rc_of_glsigma : goal sigma -> wc
    dependent goal *)
 type w_tactic = wc -> wc
 
-val startWalk : goal sigma -> wc * (wc -> tactic)
-
-val extract_decl : evar -> w_tactic
-val restore_decl : evar -> evar_info -> w_tactic
 val w_Declare    : evar -> types -> w_tactic
-val w_Define     : evar -> constr -> w_tactic
-
-val w_Underlying : wc -> evar_map
-val w_env        : wc -> env
-val w_hyps       : wc -> named_context
-val w_whd        : wc -> constr -> constr
-val w_type_of    : wc -> constr -> constr
-val w_add_sign   : (identifier * types) -> w_tactic
-
-val w_whd_betadeltaiota : wc -> constr -> constr
-val w_hnf_constr        : wc -> constr -> constr
-val w_conv_x            : wc -> constr -> constr -> bool
-val w_const_value       : wc -> constant -> constr
-val w_defined_evar      : wc -> existential_key -> bool
 
 val w_refine :  evar -> Rawterm.rawconstr  -> w_tactic
 
-val instantiate_pf_com : int -> Topconstr.constr_expr -> pftreestate -> pftreestate
+val instantiate_pf_com :
+  int -> Topconstr.constr_expr -> pftreestate -> pftreestate
 
 (* the instantiate tactic was moved to tactics/evar_tactics.ml *) 

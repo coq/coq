@@ -125,6 +125,44 @@ let check_conv_record (t1,l1) (t2,l2) =
 (* Precondition: one of the terms of the pb is an uninstanciated evar,
  * possibly applied to arguments. *)
 
+let rec ise_try isevars = function
+    [] -> assert false
+  | [f] -> f isevars
+  | f1::l ->
+      let (isevars',b) = f1 isevars in
+      if b then (isevars',b) else ise_try isevars l
+
+let ise_and isevars l =
+  let rec ise_and i = function
+      [] -> assert false
+    | [f] -> f i
+    | f1::l ->
+        let (i',b) = f1 i in
+        if b then  ise_and i' l else (isevars,false) in
+  ise_and isevars l
+
+let ise_list2 isevars f l1 l2 =
+  let rec ise_list2 i l1 l2 =
+    match l1,l2 with
+        [], [] -> (i, true)
+      | [x], [y] -> f i x y
+      | x::l1, y::l2 ->
+          let (i',b) = f i x y in
+          if b then ise_list2 i' l1 l2 else (isevars,false)
+      | _ -> (isevars, false) in
+  ise_list2 isevars l1 l2
+
+let ise_array2 isevars f v1 v2 =
+  let rec allrec i = function
+    | -1 -> (i,true)
+    | n ->
+        let (i',b) = f i v1.(n) v2.(n) in
+        if b then allrec i' (n-1) else (isevars,false)
+  in 
+  let lv1 = Array.length v1 in
+  if lv1 = Array.length v2 then allrec isevars (pred lv1) 
+  else (isevars,false)
+
 let rec evar_conv_x env isevars pbty term1 term2 = 
   let sigma = evars_of isevars in
   let term1 = whd_castappevar sigma term1 in
@@ -136,11 +174,12 @@ let rec evar_conv_x env isevars pbty term1 term2 =
 *)
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]*)
   (* could have found, we do it only if the terms are free of evar  *)
-  (not (has_undefined_isevars isevars term1) &
-   not (has_undefined_isevars isevars term2) &
-   is_fconv pbty env (evars_of isevars) term1 term2) 
-  or
-  if ise_undefined isevars term1 then
+  if
+    (not (has_undefined_isevars isevars term1) &
+    not (has_undefined_isevars isevars term2) &
+    is_fconv pbty env (evars_of isevars) term1 term2) then
+      (isevars,true)
+  else if ise_undefined isevars term1 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term1,term2)
   else if ise_undefined isevars term2 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term2,term1)
@@ -150,7 +189,7 @@ let rec evar_conv_x env isevars pbty term1 term2 =
     if (head_is_embedded_evar isevars t1 & not(is_eliminator t2))
       or (head_is_embedded_evar isevars t2 & not(is_eliminator t1))
     then 
-      (add_conv_pb isevars (pbty,applist(t1,l1),applist(t2,l2)); true)
+      (add_conv_pb (pbty,applist(t1,l1),applist(t2,l2)) isevars, true)
     else 
       evar_eqappr_x env isevars pbty (t1,l1) (t2,l2)
 
@@ -158,67 +197,81 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have whd_ised *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
-	let f1 () =
+	let f1 i =
 	  if List.length l1 > List.length l2 then 
             let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-            solve_simple_eqn evar_conv_x env isevars 
-	      (pbty,ev2,applist(term1,deb1))
-            & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
+            ise_and i
+              [(fun i -> solve_simple_eqn evar_conv_x env i
+	        (pbty,ev2,applist(term1,deb1)));
+              (fun i -> ise_list2 i
+                  (fun i -> evar_conv_x env i CONV) rest1 l2)]
 	  else
 	    let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
-	    solve_simple_eqn evar_conv_x env isevars
-	      (pbty,ev1,applist(term2,deb2))
-            & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
-	and f2 () =
-          (sp1 = sp2)
-	  & (array_for_all2 (evar_conv_x env isevars CONV) al1 al2)  
-	  & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
+            ise_and i
+              [(fun i -> solve_simple_eqn evar_conv_x env i
+	          (pbty,ev1,applist(term2,deb2)));
+              (fun i -> ise_list2 i
+                  (fun i -> evar_conv_x env i CONV) l1 rest2)]
+	and f2 i =
+          if sp1 = sp2 then
+            ise_and i
+            [(fun i -> ise_array2 i
+                (fun i -> evar_conv_x env i CONV) al1 al2);
+             (fun i -> ise_list2 i
+                 (fun i -> evar_conv_x env i CONV) l1 l2)]
+          else (i,false)
 	in 
 	ise_try isevars [f1; f2]
 
     | Flexible ev1, MaybeFlexible flex2 ->
-	let f1 () =
-	  (List.length l1 <= List.length l2) &
-	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
-          (* First compare extra args for better failure message *)
-          list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2 &
-	  evar_conv_x env isevars pbty term1 (applist(term2,deb2))
-	and f4 () =
+	let f1 i =
+          if List.length l1 <= List.length l2 then
+	    let (deb2,rest2) =
+              list_chop (List.length l2-List.length l1) l2 in
+            ise_and i
+              (* First compare extra args for better failure message *)
+              [(fun i -> ise_list2 i
+                  (fun i -> evar_conv_x env i CONV) l1 rest2);
+               (fun i -> evar_conv_x env i pbty term1 (applist(term2,deb2)))]
+          else (i,false)
+	and f4 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
-		evar_eqappr_x env isevars pbty
-		  appr1 (evar_apprec env isevars l2 v2)
-	    | None -> false
+		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
+	    | None -> (i,false)
 	in 
 	ise_try isevars [f1; f4]
 
     | MaybeFlexible flex1, Flexible ev2 ->
-	let f1 () =
-       	  (List.length l2 <= List.length l1) &
-       	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-          (* First compare extra args for better failure message *)
-          list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2 &
-	  evar_conv_x env isevars pbty (applist(term1,deb1)) term2
-	and f4 () =
+	let f1 i =
+       	  if List.length l2 <= List.length l1 then
+            let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
+            ise_and i
+            (* First compare extra args for better failure message *)
+              [(fun i -> ise_list2 i
+                  (fun i -> evar_conv_x env i CONV) rest1 l2);
+               (fun i -> evar_conv_x env i pbty (applist(term1,deb1)) term2)]
+          else (i,false)
+	and f4 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x env isevars pbty
-		  (evar_apprec env isevars l1 v1) appr2
-	    | None -> false
+		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+	    | None -> (i,false)
 	in 
 	ise_try isevars [f1; f4]
 
     | MaybeFlexible flex1, MaybeFlexible flex2 ->
-	let f2 () =
-          (flex1 = flex2)
-	  & (List.length l1 = List.length l2)
-	  & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
-	and f3 () =
-	  (try conv_record env isevars 
+	let f2 i =
+          if flex1 = flex2 then
+            ise_list2 i (fun i -> evar_conv_x env i CONV) l1 l2
+          else (i,false)
+	and f3 i =
+	  (try conv_record env i
              (try check_conv_record appr1 appr2
 	      with Not_found -> check_conv_record appr2 appr1)
-           with _ -> false)
-	and f4 () =
+(* TODO: remove this _ !!! *)
+           with _ -> (i,false))
+	and f4 i =
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
              only if necessary) *)
@@ -228,57 +281,55 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
               | _ -> eval_flexible_term env flex2 in
 	  match val2 with
 	    | Some v2 ->
-		evar_eqappr_x env isevars pbty
-		  appr1 (evar_apprec env isevars l2 v2)
+		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None ->
 		match eval_flexible_term env flex1 with
 		  | Some v1 ->
-		      evar_eqappr_x env isevars pbty
-			(evar_apprec env isevars l1 v1) appr2
-		  | None -> false
+		      evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+		  | None -> (i,false)
 	in 
 	ise_try isevars [f2; f3; f4]
 
     | Flexible ev1, Rigid _ ->
-       	(List.length l1 <= List.length l2) &
-       	let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
-        (* First compare extra args for better failure message *)
-        list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2 &
-	solve_simple_eqn evar_conv_x env isevars
-	  (pbty,ev1,applist(term2,deb2))
-
+       	if (List.length l1 <= List.length l2) then
+       	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
+          ise_and isevars
+            (* First compare extra args for better failure message *)
+            [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) l1 rest2);
+             (fun i -> solve_simple_eqn evar_conv_x env i
+                 (pbty,ev1,applist(term2,deb2)))]
+        else (isevars,false)
     | Rigid _, Flexible ev2 ->
-       	(List.length l2 <= List.length l1) &
-       	let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-        (* First compare extra args for better failure message *)
-        list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2 &
-	solve_simple_eqn evar_conv_x env isevars
-	  (pbty,ev2,applist(term1,deb1))
-        
+        if List.length l2 <= List.length l1 then
+       	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
+          ise_and isevars
+            (* First compare extra args for better failure message *)
+            [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) rest1 l2);
+	     (fun i -> solve_simple_eqn evar_conv_x env i
+	         (pbty,ev2,applist(term1,deb1)))]
+        else (isevars,false)
 
     | MaybeFlexible flex1, Rigid _ ->
-	let f3 () =
-	  (try conv_record env isevars (check_conv_record appr1 appr2)
-           with _ -> false)
-	and f4 () =
+	let f3 i =
+	  (try conv_record env i (check_conv_record appr1 appr2)
+           with _ -> (i,false))
+	and f4 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
- 		evar_eqappr_x env isevars pbty
-		  (evar_apprec env isevars l1 v1) appr2
-	    | None -> false
+ 		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+	    | None -> (i,false)
 	in 
 	ise_try isevars [f3; f4]
 	     
     | Rigid _ , MaybeFlexible flex2 -> 
-	let f3 () = 
-	  (try (conv_record env isevars (check_conv_record appr2 appr1))
-           with _ -> false)
-	and f4 () =
+	let f3 i = 
+	  (try (conv_record env i (check_conv_record appr2 appr1))
+           with _ -> (i,false))
+	and f4 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
- 		evar_eqappr_x env isevars pbty
-		  appr1 (evar_apprec env isevars l2 v2)
-	    | None -> false
+ 		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
+	    | None -> (i,false)
 	in 
 	ise_try isevars [f3; f4]
 
@@ -288,27 +339,30 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
 	| _, Cast (c2,_) -> evar_eqappr_x env isevars pbty appr1 (c2,l2)
 
-	| Sort s1, Sort s2 when l1=[] & l2=[] -> base_sort_cmp pbty s1 s2
+	| Sort s1, Sort s2 when l1=[] & l2=[] ->
+            (isevars,base_sort_cmp pbty s1 s2)
 
 	| Lambda (na,c1,c'1), Lambda (_,c2,c'2) when l1=[] & l2=[] -> 
-	    evar_conv_x env isevars CONV c1 c2
-	    & 
-	    (let c = nf_evar (evars_of isevars) c1 in
-             evar_conv_x (push_rel (na,None,c) env) isevars CONV c'1 c'2)
+            ise_and isevars
+              [(fun i -> evar_conv_x env i CONV c1 c2);
+               (fun i ->
+                 let c = nf_evar (evars_of i) c1 in
+                 evar_conv_x (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
 	| LetIn (na,b1,t1,c'1), LetIn (_,b2,_,c'2) ->
-	    let f1 () =
-	      evar_conv_x env isevars CONV b1 b2
-	      & 
-              (let b = nf_evar (evars_of isevars) b1 in
-	       let t = nf_evar (evars_of isevars) t1 in
-               evar_conv_x (push_rel (na,Some b,t) env) isevars pbty c'1 c'2)
-	      & (List.length l1 = List.length l2)
-	      & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
-	    and f2 () =
-              let appr1 = evar_apprec env isevars l1 (subst1 b1 c'1)
-              and appr2 = evar_apprec env isevars l2 (subst1 b2 c'2)
-	      in evar_eqappr_x env isevars pbty appr1 appr2
+	    let f1 i =
+              ise_and i
+                [(fun i -> evar_conv_x env i CONV b1 b2);
+                 (fun i ->
+                   let b = nf_evar (evars_of i) b1 in
+	           let t = nf_evar (evars_of i) t1 in
+                   evar_conv_x (push_rel (na,Some b,t) env) i pbty c'1 c'2);
+                 (fun i -> ise_list2 i
+                     (fun i -> evar_conv_x env i CONV) l1 l2)]
+	    and f2 i =
+              let appr1 = evar_apprec env i l1 (subst1 b1 c'1)
+              and appr2 = evar_apprec env i l2 (subst1 b2 c'2)
+	      in evar_eqappr_x env i pbty appr1 appr2
 	    in 
 	    ise_try isevars [f1; f2]
 
@@ -321,71 +375,102 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
             in evar_eqappr_x env isevars pbty appr1 appr2
 
 	| Prod (n,c1,c'1), Prod (_,c2,c'2) when l1=[] & l2=[] -> 
-            evar_conv_x env isevars CONV c1 c2
-            & 
-	    (let c = nf_evar (evars_of isevars) c1 in
-	     evar_conv_x (push_rel (n,None,c) env) isevars pbty c'1 c'2)
+            ise_and isevars
+              [(fun i -> evar_conv_x env i CONV c1 c2);
+               (fun i ->
+ 	         let c = nf_evar (evars_of i) c1 in
+	         evar_conv_x (push_rel (n,None,c) env) i pbty c'1 c'2)]
 
 	| Ind sp1, Ind sp2 ->
-	    sp1=sp2
-            & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
-             
+	    if sp1=sp2 then
+              ise_list2 isevars (fun i -> evar_conv_x env i CONV) l1 l2
+            else (isevars, false)
+
 	| Construct sp1, Construct sp2 ->
-	    sp1=sp2
-            & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
+	    if sp1=sp2 then
+              ise_list2 isevars (fun i -> evar_conv_x env i CONV) l1 l2
+            else (isevars, false)
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-	    evar_conv_x env isevars CONV p1 p2
-	    & evar_conv_x env isevars CONV c1 c2
-	    & (array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2)
-	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
+            ise_and isevars
+              [(fun i -> evar_conv_x env i CONV p1 p2);
+               (fun i -> evar_conv_x env i CONV c1 c2);
+	       (fun i -> ise_array2 i
+                   (fun i -> evar_conv_x env i CONV) cl1 cl2);
+               (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) l1 l2)]
 
 	| Fix (li1,(_,tys1,bds1 as recdef1)), Fix (li2,(_,tys2,bds2)) ->
-	    li1=li2
-	    & (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
-	    & (array_for_all2
-		 (evar_conv_x (push_rec_types recdef1 env) isevars CONV)
-		 bds1 bds2)
-	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
-	     
+            if li1=li2 then
+              ise_and isevars
+                [(fun i -> ise_array2 i
+                    (fun i -> evar_conv_x env i CONV) tys1 tys2);
+                 (fun i -> ise_array2 i
+		     (fun i -> evar_conv_x (push_rec_types recdef1 env) i CONV)
+		     bds1 bds2);
+	         (fun i -> ise_list2 i
+                     (fun i -> evar_conv_x env i CONV) l1 l2)]
+	    else (isevars,false)
 	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
-	    i1=i2 
-	    & (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
-	    & (array_for_all2
-		 (evar_conv_x (push_rec_types recdef1 env) isevars CONV)
-		 bds1 bds2)
-	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
+            if i1=i2  then
+              ise_and isevars
+                [(fun i -> ise_array2 i
+                    (fun i -> evar_conv_x env i CONV) tys1 tys2);
+                 (fun i -> ise_array2 i
+		     (fun i -> evar_conv_x (push_rec_types recdef1 env) i CONV)
+		     bds1 bds2);
+                 (fun i -> ise_list2 i
+                     (fun i -> evar_conv_x env i CONV) l1 l2)]
+            else (isevars,false)
 
-	| (Meta _ | Lambda _), _ -> false
-	| _, (Meta _ | Lambda _) -> false
+	| (Meta _ | Lambda _), _ -> (isevars,false)
+	| _, (Meta _ | Lambda _) -> (isevars,false)
 
-	| (Ind _ | Construct _ | Sort _ | Prod _), _ -> false
-	| _, (Ind _ | Construct _ | Sort _ | Prod _) -> false
+	| (Ind _ | Construct _ | Sort _ | Prod _), _ -> (isevars,false)
+	| _, (Ind _ | Construct _ | Sort _ | Prod _) -> (isevars,false)
 
 	| (App _ | Case _ | Fix _ | CoFix _), 
-	  (App _ | Case _ | Fix _ | CoFix _) -> false
+	  (App _ | Case _ | Fix _ | CoFix _) -> (isevars,false)
 
 	| (Rel _ | Var _ | Const _ | Evar _), _ -> assert false
 	| _, (Rel _ | Var _ | Const _ | Evar _) -> assert false
 
 and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) = 
-  let ks =
+  let (isevars',ks) =
     List.fold_left
-      (fun ks b ->
+      (fun (i,ks) b ->
 	 let dloc = (dummy_loc,Rawterm.InternalHole) in
-	 (new_isevar isevars env dloc (substl ks b)) :: ks)
-      [] bs
+         let (i',ev) = new_isevar i env dloc (substl ks b) in
+	 (i', ev :: ks))
+      (isevars,[]) bs
   in
-  (list_for_all2eq 
-     (fun u1 u -> evar_conv_x env isevars CONV u1 (substl ks u))
-     us2 us)
-  &
-  (list_for_all2eq 
-     (fun x1 x -> evar_conv_x env isevars CONV x1 (substl ks x))
-     params1 params)
-  & (list_for_all2eq (evar_conv_x env isevars CONV) ts ts1)
-  & (evar_conv_x env isevars CONV c1 (applist (c,(List.rev ks))))
+  ise_and isevars'
+    [(fun i ->
+      ise_list2 i
+        (fun i u1 u -> evar_conv_x env i CONV u1 (substl ks u))
+        us2 us);
+     (fun i ->
+       ise_list2 i
+         (fun i x1 x -> evar_conv_x env i CONV x1 (substl ks x))
+         params1 params);
+     (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) ts ts1);
+     (fun i -> evar_conv_x env i CONV c1 (applist (c,(List.rev ks))))]
     
-let the_conv_x     env isevars t1 t2 = evar_conv_x env isevars CONV  t1 t2
-let the_conv_x_leq env isevars t1 t2 = evar_conv_x env isevars CUMUL t1 t2
+let the_conv_x     env t1 t2 isevars =
+  match evar_conv_x env isevars CONV  t1 t2 with
+      (evd',true) -> evd'
+    | _ -> raise Reduction.NotConvertible
+
+let the_conv_x_leq env t1 t2 isevars =
+  match evar_conv_x env isevars CUMUL t1 t2 with
+      (evd', true) -> evd'
+    | _ -> raise Reduction.NotConvertible
  
+let e_conv env isevars t1 t2 =
+  match evar_conv_x env !isevars CONV t1 t2 with
+      (evd',true) -> isevars := evd'; true
+    | _ -> false
+
+let e_cumul env isevars t1 t2 =
+  match evar_conv_x env !isevars CUMUL t1 t2 with
+      (evd',true) -> isevars := evd'; true
+    | _ -> false

@@ -95,7 +95,7 @@ let string_of_prim_rule x = match x with
 
 
 let
- print_proof_tree curi sigma0 pf proof_tree_to_constr
+ print_proof_tree curi sigma pf proof_tree_to_constr
   proof_tree_to_flattened_proof_tree constr_to_ids
 =
  let module PT = Proof_type in
@@ -164,10 +164,7 @@ Pp.ppnl (Pp.(++) (Pp.str
          let {Evd.evar_concl=concl;
               Evd.evar_hyps=hyps}=goal in
 
-         let rc = (Proof_trees.rc_of_gc sigma0 goal) in
-         let sigma = Proof_trees.get_gc rc in
-         let hyps = Proof_trees.get_hyps rc in
-         let env= Proof_trees.get_env rc in
+         let env = Global.env_of_context hyps in
 
          let xgoal =
           X.xml_nempty "Goal" [] (constr_to_xml concl sigma env) in

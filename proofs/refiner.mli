@@ -68,6 +68,8 @@ val frontier_mapi :
 val tclIDTAC          : tactic
 val tclIDTAC_MESSAGE  : string -> tactic
 
+(* [tclEVARS sigma] changes the current evar map *)
+val tclEVARS : evar_map -> tactic
 
 (* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)

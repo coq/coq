@@ -257,12 +257,6 @@ let vernac_tactic (s,args) =
   let tacfun = lookup_tactic s args in
   abstract_extended_tactic s args tacfun
 
-(* [rc_of_pfsigma : proof sigma -> readable_constraints] *)
-let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
-
-(* [rc_of_glsigma : proof sigma -> readable_constraints] *)
-let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
-
 (* [extract_open_proof : proof_tree -> constr * (int * constr) list]
   takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
   where pfterm is the constr corresponding to the proof
@@ -1027,3 +1021,6 @@ let tclINFO (tac : tactic) gls =
     msgnl (hov 0 (str "Info failed to apply validation"))
   end;
   res
+
+(* Change evars *)
+let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}

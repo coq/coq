@@ -16,13 +16,20 @@ open Reductionops
 open Evarutil
 (*i*)
 
-val the_conv_x : env -> evar_defs -> constr -> constr -> bool
+(* returns exception Reduction.NotConvertible if not unifiable *)
+val the_conv_x     : env -> constr -> constr -> evar_defs -> evar_defs
+val the_conv_x_leq : env -> constr -> constr -> evar_defs -> evar_defs
 
-val the_conv_x_leq : env -> evar_defs -> constr -> constr -> bool
+(* The same function resolving evars by side-effect and 
+   catching the exception *)
+val e_conv  : env -> evar_defs ref -> constr -> constr -> bool
+val e_cumul : env -> evar_defs ref -> constr -> constr -> bool
 
 (*i For debugging *)
-val evar_conv_x : env -> evar_defs -> conv_pb -> constr -> constr -> bool
+val evar_conv_x :
+  env -> evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool
 val evar_eqappr_x : 
   env -> evar_defs ->
-    conv_pb -> constr * constr list -> constr * constr list -> bool
+    conv_pb -> constr * constr list -> constr * constr list ->
+      evar_defs * bool
 (*i*)

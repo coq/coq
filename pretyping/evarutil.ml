@@ -218,31 +218,17 @@ let do_restrict_hyps sigma ev args =
 
 type evar_constraint = conv_pb * constr * constr
 type evar_defs =
-    { mutable evars : Evd.evar_map;
-      mutable conv_pbs : evar_constraint list;
-      mutable history : (existential_key * (loc * Rawterm.hole_kind)) list }
+    { evars : Evd.evar_map;
+      conv_pbs : evar_constraint list;
+      history : (existential_key * (loc * Rawterm.hole_kind)) list }
 
 let create_evar_defs evd = { evars=evd; conv_pbs=[]; history=[] }
 let evars_of d = d.evars
-let evars_reset_evd evd d = d.evars <- evd
-let add_conv_pb d pb = d.conv_pbs <- pb::d.conv_pbs
+let evars_reset_evd evd d = {d with evars = evd}
+let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source ev d =
   try List.assoc ev d.history
   with Failure _ -> (dummy_loc, Rawterm.InternalHole)
-
-(* ise_try [f1;...;fn] tries fi() for i=1..n, restoring the evar constraints
- * when fi returns false or an exception. Returns true if one of the fi
- * returns true, and false if every fi return false (in the latter case,
- * the evar constraints are restored).
- *)
-let ise_try isevars l =
-  let u = isevars.evars in
-  let rec test = function
-      [] -> isevars.evars <- u; false
-    | f::l ->
- 	  (try f() with reraise -> isevars.evars <- u; raise reraise)
-       or (isevars.evars <- u; test l)
-  in test l
 
 (* say if the section path sp corresponds to an existential *)
 let ise_in_dom isevars sp = Evd.in_dom isevars.evars sp
@@ -253,7 +239,7 @@ let ise_map isevars sp = Evd.map isevars.evars sp
 (* define the existential of section path sp as the constr body *)
 let ise_define isevars sp body =
   let body = refresh_universes body in (* needed only if an inferred type *)
-  isevars.evars <- Evd.define isevars.evars sp body
+  {isevars with evars = Evd.define isevars.evars sp body}
 
 let is_defined_evar isevars (n,_) = Evd.is_defined isevars.evars n
 
@@ -283,6 +269,7 @@ let non_instantiated sigma =
  *)
 
 let real_clean env isevars ev args rhs =
+  let evd = ref isevars in
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
     match kind_of_term t with
@@ -296,9 +283,11 @@ let real_clean env isevars ev args rhs =
 	      subs k (existential_value isevars.evars (ev,args'))
 	    else begin
 	      let (sigma,rc) = do_restrict_hyps isevars.evars ev args' in
-	      isevars.evars <- sigma;
-              isevars.history <- 
-                (fst (destEvar rc),evar_source ev isevars)::isevars.history;
+              evd :=
+	      {!evd with
+               evars = sigma;
+               history = 
+                (fst (destEvar rc),evar_source ev isevars):: !evd.history};
 	      rc
 	    end
 	  else
@@ -309,7 +298,7 @@ let real_clean env isevars ev args rhs =
   let body = subs 0 rhs in
   if not (closed0 body)
   then error_not_clean env isevars.evars ev body (evar_source ev isevars);
-  body
+  (!evd,body)
 
 let make_evar_instance_with_rel env =
   let n = rel_context_length (rel_context env) in
@@ -354,9 +343,16 @@ let new_isevar isevars env src typ =
   let typ' = substl subst typ in
   let instance = make_evar_instance_with_rel env in
   let (sigma',evar) = new_isevar_sign env' isevars.evars typ' instance in
-  isevars.evars <- sigma';
-  isevars.history <- (fst (destEvar evar),src)::isevars.history;
+  {isevars with
+   evars = sigma';
+   history = (fst (destEvar evar),src)::isevars.history},
   evar
+
+(* The same using side-effect *)
+let e_new_isevar isevars env loc ty =
+  let (evd',ev) = new_isevar !isevars env loc ty in
+  isevars := evd';
+  ev
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
  * evar, i.e. tries to find the body ?sp for lhs=mkEvar (sp,args)
@@ -380,12 +376,12 @@ let evar_define env isevars (ev,argsv) rhs =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
-  let evd = ise_map isevars ev in
+  let evi = ise_map isevars ev in
   (* the bindings to invert *)
-  let worklist = make_subst (evar_env evd) args in
-  let body = real_clean env isevars ev worklist rhs in
-  ise_define isevars ev body;
-  [ev]
+  let worklist = make_subst (evar_env evi) args in
+  let (isevars',body) = real_clean env isevars ev worklist rhs in
+  let isevars'' = ise_define isevars' ev body in
+  isevars'',[ev]
 
 (*-------------------*)
 (* Auxiliary functions for the conversion algorithms modulo evars
@@ -466,7 +462,7 @@ let get_changed_pb isevars lev =
       ([],[])
       isevars.conv_pbs
   in
-  isevars.conv_pbs <- pbs1;
+  {isevars with conv_pbs = pbs1},
   pbs
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
@@ -475,26 +471,28 @@ let get_changed_pb isevars lev =
  * depend on these args). *)
 
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
-  if argsv1 = argsv2 then [] else
+  if argsv1 = argsv2 then (isevars,[]) else
   let evd = Evd.map isevars.evars ev in
   let hyps = evd.evar_hyps in
-  let (_,rsign) = 
+  let (isevars',_,rsign) = 
     array_fold_left2
-      (fun (sgn,rsgn) a1 a2 ->
-	 if conv_algo env isevars CONV a1 a2 then 
-	   (List.tl sgn, add_named_decl (List.hd sgn) rsgn)
+      (fun (isevars,sgn,rsgn) a1 a2 ->
+        let (isevars',b) = conv_algo env isevars CONV a1 a2 in
+	 if b then 
+	   (isevars',List.tl sgn, add_named_decl (List.hd sgn) rsgn)
 	 else 
-	   (List.tl  sgn, rsgn))
-      (hyps,[]) argsv1 argsv2 
+	   (isevars,List.tl  sgn, rsgn))
+      (isevars,hyps,[]) argsv1 argsv2 
   in
   let nsign = List.rev rsign in
   let nargs = (Array.of_list (List.map mkVar (ids_of_named_context nsign))) in
   let newev = new_evar () in
   let info = { evar_concl = evd.evar_concl; evar_hyps = nsign;
 	       evar_body = Evar_empty } in
-  isevars.evars <-
+  {isevars with
+   evars =
     Evd.define (Evd.add isevars.evars newev info) ev (mkEvar (newev,nargs));
-  isevars.history <- (newev,evar_source ev isevars)::isevars.history;
+   history = (newev,evar_source ev isevars)::isevars.history},
   [ev]
 
 
@@ -506,7 +504,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
   let t2 = nf_evar isevars.evars t2 in
-  let lsp = match kind_of_term t2 with
+  let (isevars,lsp) = match kind_of_term t2 with
     | Evar (n2,args2 as ev2)
         when not (Evd.is_defined isevars.evars n2) ->
 	if n1 = n2 then
@@ -518,8 +516,11 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 	    evar_define env isevars ev1 t2
     | _ ->
 	evar_define env isevars ev1 t2 in
-  let pbs = get_changed_pb isevars lsp in
-  List.for_all (fun (pbty,t1,t2) -> conv_algo env isevars pbty t1 t2) pbs
+  let (isevars,pbs) = get_changed_pb isevars lsp in
+  List.fold_left
+    (fun (isevars,b as p) (pbty,t1,t2) ->
+      if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
+    pbs
 
 (* Operations on value/type constraints *)
 
@@ -556,20 +557,21 @@ let mk_valcon c = Some c
 
 let refine_evar_as_arrow isevars ev =
   let (sigma,prod,evdom,evrng) = split_evar_to_arrow isevars.evars ev in
-  evars_reset_evd sigma isevars;
   let hst = evar_source (fst ev) isevars in
-  isevars.history <- (fst evrng,hst)::(fst evdom, hst)::isevars.history;
-  (prod,evdom,evrng)
+  let isevars' =
+    {isevars with
+     evars=sigma;
+     history = (fst evrng,hst)::(fst evdom, hst)::isevars.history } in
+  (isevars',prod,evdom,evrng)
 
 let define_evar_as_arrow isevars ev =
-  let (prod,_,_) = refine_evar_as_arrow isevars ev in
-  prod
+  let (isevars',prod,_,_) = refine_evar_as_arrow isevars ev in
+  isevars',prod
 
 let define_evar_as_sort isevars (ev,args) =
   let s = new_Type () in
   let sigma' = Evd.define isevars.evars ev s in
-  evars_reset_evd sigma' isevars;
-  destSort s
+  evars_reset_evd sigma' isevars, destSort s
 
 
 (* Propagation of constraints through application and abstraction:
@@ -578,15 +580,15 @@ let define_evar_as_sort isevars (ev,args) =
    an evar instantiate it with the product of 2 new evars. *)
 
 let split_tycon loc env isevars = function
-  | None -> Anonymous,None,None
+  | None -> isevars,(Anonymous,None,None)
   | Some c ->
       let sigma = evars_of isevars in
       let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
-        | Prod (na,dom,rng) -> na, Some dom, Some rng
+        | Prod (na,dom,rng) -> isevars, (na, Some dom, Some rng)
 	| Evar (n,_ as ev) when not (Evd.is_defined isevars.evars n) ->
-	    let (_,evdom,evrng) = refine_evar_as_arrow isevars ev in
-	    Anonymous, Some (mkEvar evdom), Some (mkEvar evrng)
+	    let (isevars',_,evdom,evrng) = refine_evar_as_arrow isevars ev in
+	    isevars',(Anonymous, Some (mkEvar evdom), Some (mkEvar evrng))
 	| _ -> error_not_product_loc loc env sigma c
 
 let valcon_of_tycon x = x

@@ -77,16 +77,16 @@ let apply_coercion env p hj typ_cl =
 let inh_app_fun env isevars j = 
   let t = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term t with
-    | Prod (_,_,_) -> j
+    | Prod (_,_,_) -> (isevars,j)
     | Evar ev when not (is_defined_evar isevars ev) ->
-	let t = define_evar_as_arrow isevars ev in
-	{ uj_val = j.uj_val; uj_type = t }
+	let (isevars',t) = define_evar_as_arrow isevars ev in
+	(isevars',{ uj_val = j.uj_val; uj_type = t })
     | _ ->
        	(try
  	   let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
       	   let p = lookup_path_to_fun_from i1 in
-           apply_coercion env p j t
-	 with Not_found -> j)
+           (isevars,apply_coercion env p j t)
+	 with Not_found -> (isevars,j))
 
 let inh_tosort_force env isevars j =
   try
@@ -99,13 +99,13 @@ let inh_tosort_force env isevars j =
 let inh_coerce_to_sort env isevars j =
   let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term typ with
-    | Sort s -> { utj_val = j.uj_val; utj_type = s }
+    | Sort s -> (isevars,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev when not (is_defined_evar isevars ev) ->
-	let s = define_evar_as_sort isevars ev in
-	{ utj_val = j.uj_val; utj_type = s }
+	let (isevars',s) = define_evar_as_sort isevars ev in
+	(isevars',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
         let j1 = inh_tosort_force env isevars j in 
-	type_judgment env (j_nf_evar (evars_of isevars) j1) 
+	(isevars,type_judgment env (j_nf_evar (evars_of isevars) j1))
 
 let inh_coerce_to_fail env isevars c1 hj =
   let hj' =
@@ -116,33 +116,34 @@ let inh_coerce_to_fail env isevars c1 hj =
       apply_coercion env p hj t2
     with Not_found -> raise NoCoercion 
   in
-  if the_conv_x_leq env isevars hj'.uj_type c1 then 
-    hj'
-  else
-    raise NoCoercion
+  try (the_conv_x_leq env hj'.uj_type c1 isevars, hj')
+  with Reduction.NotConvertible -> raise NoCoercion
 
 let rec inh_conv_coerce_to_fail env isevars hj c1 =
   let {uj_val = v; uj_type = t} = hj in
-  if the_conv_x_leq env isevars t c1 then hj
-  else 
-    try 
+  try (the_conv_x_leq env t c1 isevars, hj)
+  with Reduction.NotConvertible ->
+    (try 
       inh_coerce_to_fail env isevars c1 hj
-    with NoCoercion ->  (* try ... with _ -> ... is BAD *)
+    with NoCoercion ->
       (match kind_of_term (whd_betadeltaiota env (evars_of isevars) t),
 	     kind_of_term (whd_betadeltaiota env (evars_of isevars) c1) with
 	 | Prod (_,t1,t2), Prod (name,u1,u2) -> 
              let v' = whd_betadeltaiota env (evars_of isevars) v in
-             if (match kind_of_term v' with
-                   | Lambda (_,v1,v2) ->
-                       the_conv_x env isevars v1 u1 (* leq v1 u1? *)
-                   | _  -> false)
+             let (evd',b) =
+               match kind_of_term v' with
+                 | Lambda (_,v1,v2) ->
+                     (try the_conv_x env v1 u1 isevars, true  (* leq v1 u1? *)
+                     with Reduction.NotConvertible -> (isevars, false))
+                 | _  -> (isevars,false) in
+             if b
              then 
 	       let (x,v1,v2) = destLambda v' in
                let env1 = push_rel (x,None,v1) env in
-               let h2 = inh_conv_coerce_to_fail env1 isevars 
+               let (evd'',h2) = inh_conv_coerce_to_fail env1 evd'
 			  {uj_val = v2; uj_type = t2 } u2 in
-               { uj_val = mkLambda (x, v1, h2.uj_val);
-                 uj_type = mkProd (x, v1, h2.uj_type) }
+               (evd'',{ uj_val = mkLambda (x, v1, h2.uj_val);
+                 uj_type = mkProd (x, v1, h2.uj_type) })
              else 
                (* Mismatch on t1 and u1 or not a lambda: we eta-expand *)
                (* we look for a coercion c:u1->t1 s.t. [name:u1](v' (c x)) *)
@@ -151,57 +152,27 @@ let rec inh_conv_coerce_to_fail env isevars hj c1 =
 			     | Anonymous -> Name (id_of_string "x")
                              | _ -> name) in
                let env1 = push_rel (name,None,u1) env in
-               let h1 =
+               let (evd',h1) =
 		 inh_conv_coerce_to_fail env1 isevars
 		   {uj_val = mkRel 1; uj_type = (lift 1 u1) }
                    (lift 1 t1) in
-               let h2 = inh_conv_coerce_to_fail env1 isevars
+               let (evd'',h2) = inh_conv_coerce_to_fail env1 evd'
 			 { uj_val = mkApp (lift 1 v, [|h1.uj_val|]);
                            uj_type = subst1 h1.uj_val t2 }
                           u2
 	       in
-               { uj_val = mkLambda (name, u1, h2.uj_val);
-                 uj_type = mkProd (name, u1, h2.uj_type) }
-	 | _ -> raise NoCoercion)
+               (evd'',
+                { uj_val = mkLambda (name, u1, h2.uj_val);
+                  uj_type = mkProd (name, u1, h2.uj_type) })
+	 | _ -> raise NoCoercion))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
 let inh_conv_coerce_to loc env isevars cj t =
-  let cj' = 
+  let (evd',cj') = 
     try 
       inh_conv_coerce_to_fail env isevars cj t
     with NoCoercion ->
       let sigma = evars_of isevars in
       error_actual_type_loc loc env sigma cj t
   in
-  { uj_val = cj'.uj_val; uj_type = t }
-
-(* [inh_apply_rel_list loc env isevars args f tycon] tries to type [(f
-   args)] of type [tycon] (if any) by inserting coercions in front of
-   each arg$_i$, if necessary *)
-
-let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
-  let rec apply_rec env n resj = function
-    | [] -> resj
-    | (loc,hj)::restjl ->
-        let sigma = evars_of isevars in
-	let resj = inh_app_fun env isevars resj in
-        let ntyp = whd_betadeltaiota env sigma resj.uj_type in
-      	match kind_of_term ntyp with
-          | Prod (na,c1,c2) ->
-              let hj' =
-		try 
-		  inh_conv_coerce_to_fail env isevars hj c1
-		with NoCoercion ->
-                  error_cant_apply_bad_type_loc apploc env sigma
-		    (1,c1,hj.uj_type) resj (List.map snd restjl) in
-	      let newresj =
-      		{ uj_val = applist (j_val resj, [j_val hj']);
-		  uj_type = subst1 hj'.uj_val c2 } in
-	      apply_rec (push_rel (na,None,c1) env) (n+1) newresj restjl
-          | _ ->
-              error_cant_apply_not_functional_loc 
-		(join_loc funloc loc) env sigma resj
-                (List.map snd restjl)
-  in 
-  apply_rec env 1 funj argjl
-
+  (evd',{ uj_val = cj'.uj_val; uj_type = t })

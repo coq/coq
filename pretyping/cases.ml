@@ -63,7 +63,8 @@ let error_needs_inversion env x t =
 (* A) Typing old cases                                               *)
 (* This was previously in Indrec but creates existential holes       *)
 
-let mkExistential isevars env loc = new_isevar isevars env loc (new_Type ())
+let mkExistential isevars env loc =
+  e_new_isevar isevars env loc (new_Type ())
 
 let norec_branch_scheme env isevars cstr =
   let rec crec env = function
@@ -378,7 +379,7 @@ let push_history_pattern n current cont =
 *)
 type pattern_matching_problem =
     { env      : env;
-      isevars  : evar_defs;
+      isevars  : evar_defs ref;
       pred     : predicate_signature option;
       tomatch  : tomatch_stack;
       history  : pattern_continuation;
@@ -404,7 +405,7 @@ exception NotCoercible
 
 let inh_coerce_to_ind isevars env tmloc ty tyi =
   let (mib,mip) = Inductive.lookup_mind_specif env tyi in
-  let (ntys,_) = splay_prod env (evars_of isevars) mip.mind_nf_arity in
+  let (ntys,_) = splay_prod env (evars_of !isevars) mip.mind_nf_arity in
   let hole_source = match tmloc with 
     | Some loc -> fun i -> (loc, TomatchTypeParameter (tyi,i))
     | None -> fun _ -> (dummy_loc, InternalHole) in
@@ -412,12 +413,12 @@ let inh_coerce_to_ind isevars env tmloc ty tyi =
     List.fold_right
       (fun (na,ty) (env,evl,n) ->
 	 (push_rel (na,None,ty) env,
-	    (new_isevar isevars env (hole_source n) ty)::evl,n+1))
+	    (e_new_isevar isevars env (hole_source n) ty)::evl,n+1))
       ntys (env,[],1) in
   let expected_typ = applist (mkInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
         un inductif cela doit être égal *)
-  if the_conv_x_leq env isevars expected_typ ty then ty
+  if e_cumul env isevars expected_typ ty then ty
   else raise NotCoercible
 
 (* We do the unification for all the rows that contain
@@ -431,17 +432,17 @@ let unify_tomatch_with_patterns isevars env tmloc typ = function
       (let tyi = inductive_of_constructor c in
        try 
 	 let indtyp = inh_coerce_to_ind isevars env tmloc typ tyi in
-	 IsInd (typ,find_rectype env (evars_of isevars) typ)
+	 IsInd (typ,find_rectype env (evars_of !isevars) typ)
        with NotCoercible ->
 	 (* 2 cases : Not the right inductive or not an inductive at all *)
 	 try
-	   IsInd (typ,find_rectype env (evars_of isevars) typ)
+	   IsInd (typ,find_rectype env (evars_of !isevars) typ)
              (* will try to coerce later in check_and_adjust_constructor.. *)
 	 with Not_found ->
 	   NotInd (None,typ))
 	     (* error will be detected in check_all_variables *)
   | None -> 
-      try IsInd (typ,find_rectype env (evars_of isevars) typ)
+      try IsInd (typ,find_rectype env (evars_of !isevars) typ)
       with Not_found -> NotInd (None,typ)
 
 let coerce_row typing_fun isevars env cstropt tomatch =
@@ -929,7 +930,7 @@ let infer_predicate loc env isevars typs cstrs indf =
     (* Empiric normalization: p may depend in a irrelevant way on args of the*)
     (* cstr as in [c:{_:Alpha & Beta}] Cases c of (existS a b)=>(a,b) end *)
     let typs =
-      Array.map (local_strong (whd_betaevar empty_env (evars_of isevars))) typs
+      Array.map (local_strong (whd_betaevar empty_env (evars_of !isevars))) typs
     in
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
@@ -942,7 +943,7 @@ let infer_predicate loc env isevars typs cstrs indf =
       else
 	mkExistential isevars env (loc, CasesType)
     in
-    if array_for_all (fun (_,_,typ) -> the_conv_x_leq env isevars typ mtyp) eqns
+    if array_for_all (fun (_,_,typ) -> e_cumul env isevars typ mtyp) eqns
     then
       (* Non dependent case -> turn it into a (dummy) dependent one *)
       let sign = (Anonymous,None,build_dependent_inductive env indf)::sign in
@@ -1127,7 +1128,7 @@ let find_predicate loc env isevars p typs cstrs current
   (IndType (indf,realargs)) tms =
   let (dep,pred) =
     match p with
-      | Some p -> abstract_predicate env (evars_of isevars) indf current tms p
+      | Some p -> abstract_predicate env (evars_of !isevars) indf current tms p
       | None -> infer_predicate loc env isevars typs cstrs indf in
   let typ = whd_beta (applist (pred, realargs)) in
   if dep then
@@ -1367,7 +1368,7 @@ and compile_generalization pb d rest =
 and compile_alias pb (deppat,nondeppat,d,t) rest =
   let history = simplify_history pb.history in
   let sign, newenv, mat =
-    insert_aliases pb.env (evars_of pb.isevars) (deppat,nondeppat,d,t) pb.mat in
+    insert_aliases pb.env (evars_of !(pb.isevars)) (deppat,nondeppat,d,t) pb.mat in
   let n = List.length sign in
 
   (* We had Gamma1; x:current; Gamma2 |- tomatch(x) and we rebind x to get *)
@@ -1585,7 +1586,7 @@ let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
 	(n, l, env) in
   let n, allargs, env = List.fold_left cook (0, [], env) tomatchs in
   let allargs =
-    List.map (fun c -> lift n (nf_betadeltaiota env (evars_of isevars) c)) allargs in
+    List.map (fun c -> lift n (nf_betadeltaiota env (evars_of !isevars) c)) allargs in
   let rec build_skeleton env c =
     (* Don't put into normal form, it has effects on the synthesis of evars *)
  (* let c = whd_betadeltaiota env (evars_of isevars) c in *)
@@ -1699,21 +1700,21 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
   | (Some pred,x) ->
       let loc = loc_of_rawconstr pred in
       let dep, n, predj =
-	let isevars_copy = evars_of isevars in
+	let isevars_copy = evars_of !isevars in
         (* We first assume the predicate is non dependent *)
 	let ndep_arity = build_expected_arity env isevars false tomatchs in
         try
 	  false, nb_prod ndep_arity, typing_fun (mk_tycon ndep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        evars_reset_evd isevars_copy isevars;
+        isevars := evars_reset_evd isevars_copy !isevars;
         (* We then assume the predicate is dependent *)
 	let dep_arity = build_expected_arity env isevars true tomatchs in
 	try
 	  true, nb_prod dep_arity, typing_fun (mk_tycon dep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        evars_reset_evd isevars_copy isevars;
+        isevars := evars_reset_evd isevars_copy !isevars;
         (* Otherwise we attempt to type it without constraints, possibly *)
         (* failing with an error message; it may also be well-typed *)
 	(* but fails to satisfy arity constraints in case_dependent *)
@@ -1769,5 +1770,8 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
   List.iter (check_unused_pattern env) matx;
   
   match tycon with
-    | Some p ->	Coercion.inh_conv_coerce_to loc env isevars j p
+    | Some p ->
+	let (evd',j) = Coercion.inh_conv_coerce_to loc env !isevars j p in
+        isevars := evd';
+        j
     | None -> j

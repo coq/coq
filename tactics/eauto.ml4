@@ -41,10 +41,9 @@ let e_assumption gl =
   tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
 
 let e_resolve_with_bindings_tac  (c,lbind) gl = 
-  let (wc,kONT) = startWalk gl in
-  let t = w_hnf_constr wc (w_type_of wc c) in 
-  let clause = make_clenv_binding_apply wc (-1) (c,t) lbind in 
-  Clenvtac.e_res_pf kONT clause gl
+  let t = pf_hnf_constr gl (pf_type_of gl c) in 
+  let clause = make_clenv_binding_apply (rc_of_glsigma gl) (-1) (c,t) lbind in 
+  Clenvtac.e_res_pf clause gl
 
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls
 			     

@@ -34,7 +34,7 @@ exception PatternMatchingError of env * pattern_matching_error
 (*s Used for old cases in pretyping *)
 
 val branch_scheme : 
-  env -> evar_defs -> bool -> inductive_family -> constr array
+  env -> evar_defs ref -> bool -> inductive_family -> constr array
 
 type ml_case_error =
   | MlCaseAbsurd
@@ -48,9 +48,12 @@ val pred_case_ml : (* raises [NotInferable] if not inferable *)
 (*s Compilation of pattern-matching. *)
 
 val compile_cases :
-  loc -> (type_constraint -> env -> rawconstr -> unsafe_judgment)
-  * evar_defs -> type_constraint -> env ->
-      (rawconstr option * rawconstr option ref) *
-      (rawconstr * (name * (loc * inductive * name list) option) ref) list *
-    (loc * identifier list * cases_pattern list * rawconstr) list ->
-    unsafe_judgment
+  loc ->
+  (type_constraint -> env -> rawconstr -> unsafe_judgment) *
+  evar_defs ref ->
+  type_constraint -> 
+  env ->
+  (rawconstr option * rawconstr option ref) *
+  (rawconstr * (name * (loc * inductive * name list) option) ref) list *
+  (loc * identifier list * cases_pattern list * rawconstr) list ->
+  unsafe_judgment

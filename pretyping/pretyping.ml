@@ -32,6 +32,23 @@ open Pattern
 open Dyn
 
 
+let evd_comb0 f isevars =
+  let (evd',x) = f !isevars in
+  isevars := evd';
+  x
+let evd_comb1 f isevars x =
+  let (evd',y) = f !isevars x in
+  isevars := evd';
+  y
+let evd_comb2 f isevars x y =
+  let (evd',z) = f !isevars x y in
+  isevars := evd';
+  z
+let evd_comb3 f isevars x y z =
+  let (evd',t) = f !isevars x y z in
+  isevars := evd';
+  t
+
 (************************************************************************)
 (* This concerns Cases *)
 open Declarations
@@ -147,24 +164,23 @@ let evar_type_fixpoint loc env isevars lna lar vdefj =
   let lt = Array.length vdefj in 
     if Array.length lar = lt then 
       for i = 0 to lt-1 do 
-        if not (the_conv_x_leq env isevars
-		  (vdefj.(i)).uj_type
+        if not (e_cumul env isevars (vdefj.(i)).uj_type
 		  (lift lt lar.(i))) then
-          error_ill_typed_rec_body_loc loc env (evars_of isevars)
+          error_ill_typed_rec_body_loc loc env (evars_of !isevars)
             i lna vdefj lar
       done
 
 let check_branches_message loc env isevars c (explft,lft) = 
   for i = 0 to Array.length explft - 1 do
-    if not (the_conv_x_leq env isevars lft.(i) explft.(i)) then 
-      let sigma = evars_of isevars in
+    if not (e_cumul env isevars lft.(i) explft.(i)) then 
+      let sigma = evars_of !isevars in
       error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
   done
 
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon loc env isevars j = function
    | None -> j
-   | Some typ -> inh_conv_coerce_to loc env isevars j typ
+   | Some typ -> evd_comb2 (inh_conv_coerce_to loc env) isevars j typ
 
 let push_rels vars env = List.fold_right push_rel vars env
 
@@ -246,12 +262,12 @@ let rec pretype tycon env isevars lvar = function
   | REvar (loc, ev, instopt) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
       sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
-      let hyps = (Evd.map (evars_of isevars) ev).evar_hyps in
+      let hyps = (Evd.map (evars_of !isevars) ev).evar_hyps in
       let args = match instopt with
         | None -> instance_from_named_context hyps
         | Some inst -> failwith "Evar subtitutions not implemented" in
       let c = mkEvar (ev, args) in
-      let j = (Retyping.get_judgment_of env (evars_of isevars) c) in
+      let j = (Retyping.get_judgment_of env (evars_of !isevars) c) in
       inh_conv_coerce_to_tycon loc env isevars j tycon
 
   | RPatVar (loc,(someta,n)) -> 
@@ -260,8 +276,8 @@ let rec pretype tycon env isevars lvar = function
   | RHole (loc,k) ->
       (match tycon with
 	 | Some ty ->
-	     { uj_val = new_isevar isevars env (loc,k) ty; uj_type = ty }
-	 | None -> error_unsolvable_implicit loc env (evars_of isevars) k)
+	     { uj_val = e_new_isevar isevars env (loc,k) ty; uj_type = ty }
+	 | None -> error_unsolvable_implicit loc env (evars_of !isevars) k)
 
   | RRec (loc,fixkind,names,bl,lar,vdef) ->
       let rec type_bl env ctxt = function
@@ -323,9 +339,9 @@ let rec pretype tycon env isevars lvar = function
 	| [] -> resj
 	| c::rest ->
 	    let argloc = loc_of_rawconstr c in
-	    let resj = inh_app_fun env isevars resj in
+	    let resj = evd_comb1 (inh_app_fun env) isevars resj in
             let resty =
-              whd_betadeltaiota env (evars_of isevars) resj.uj_type in
+              whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
       	    match kind_of_term resty with
 	      | Prod (na,c1,c2) ->
 		  let hj = pretype (mk_tycon c1) env isevars lvar c in
@@ -337,7 +353,7 @@ let rec pretype tycon env isevars lvar = function
 	      | _ ->
 		  let hj = pretype empty_tycon env isevars lvar c in
 		  error_cant_apply_not_functional_loc 
-		    (join_loc floc argloc) env (evars_of isevars)
+		    (join_loc floc argloc) env (evars_of !isevars)
 	      	    resj [hj]
 
       in let resj = apply_rec env 1 fj args in
@@ -356,7 +372,7 @@ let rec pretype tycon env isevars lvar = function
       inh_conv_coerce_to_tycon loc env isevars resj tycon
 
   | RLambda(loc,name,c1,c2)      ->
-      let (name',dom,rng) = split_tycon loc env isevars tycon in
+      let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in
       let dom_valcon = valcon_of_tycon dom in
       let j = pretype_type dom_valcon env isevars lvar c1 in
       let var = (name,None,j.utj_val) in
@@ -385,10 +401,10 @@ let rec pretype tycon env isevars lvar = function
   | RLetTuple (loc,nal,(na,po),c,d) ->
       let cj = pretype empty_tycon env isevars lvar c in
       let (IndType (indf,realargs) as indt) = 
-	try find_rectype env (evars_of isevars) cj.uj_type
+	try find_rectype env (evars_of !isevars) cj.uj_type
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
-	  error_case_not_inductive_loc cloc env (evars_of isevars) cj 
+	  error_case_not_inductive_loc cloc env (evars_of !isevars) cj 
       in
       let cstrs = get_constructors env indf in
       if Array.length cstrs <> 1 then
@@ -408,14 +424,14 @@ let rec pretype tycon env isevars lvar = function
 	 | Some p ->
              let env_p = push_rels psign env in
              let pj = pretype_type empty_valcon env_p isevars lvar p in
-             let ccl = nf_evar (evars_of isevars) pj.utj_val in
+             let ccl = nf_evar (evars_of !isevars) pj.utj_val in
 	     let psign = make_arity_signature env true indf in (* with names *)
 	     let p = it_mkLambda_or_LetIn ccl psign in
              let inst = 
 	       (Array.to_list cs.cs_concl_realargs)
 	       @[build_dependent_constructor cs] in
 	     let lp = lift cs.cs_nargs p in
-             let fty = hnf_lam_applist env (evars_of isevars) lp inst in
+             let fty = hnf_lam_applist env (evars_of !isevars) lp inst in
 	     let fj = pretype (mk_tycon fty) env_f isevars lvar d in
 	     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 	     let v =
@@ -429,12 +445,12 @@ let rec pretype tycon env isevars lvar = function
              let tycon = option_app (lift cs.cs_nargs) tycon in
 	     let fj = pretype tycon env_f isevars lvar d in
 	     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
-	     let ccl = nf_evar (evars_of isevars) fj.uj_type in
+	     let ccl = nf_evar (evars_of !isevars) fj.uj_type in
              let ccl =
                if noccur_between 1 cs.cs_nargs ccl then
                  lift (- cs.cs_nargs) ccl 
                else
-                 error_cant_find_case_type_loc loc env (evars_of isevars) 
+                 error_cant_find_case_type_loc loc env (evars_of !isevars) 
                    cj.uj_val in
              let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 	     let v =
@@ -448,10 +464,10 @@ let rec pretype tycon env isevars lvar = function
   | ROrderedCase (loc,st,po,c,[|f|],xx) when st <> MatchStyle ->
       let cj = pretype empty_tycon env isevars lvar c in
       let (IndType (indf,realargs) as indt) = 
-	try find_rectype env (evars_of isevars) cj.uj_type
+	try find_rectype env (evars_of !isevars) cj.uj_type
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
-	  error_case_not_inductive_loc cloc env (evars_of isevars) cj 
+	  error_case_not_inductive_loc cloc env (evars_of !isevars) cj 
       in
       let j = match po with
 	 | Some p ->
@@ -459,16 +475,16 @@ let rec pretype tycon env isevars lvar = function
              let dep = is_dependent_elimination env pj.uj_type indf in
              let ar =
                arity_of_case_predicate env indf dep (Type (new_univ())) in
-             let _ = the_conv_x_leq env isevars pj.uj_type ar in
-	     let pj = j_nf_evar (evars_of isevars) pj in
+             let _ = e_cumul env isevars pj.uj_type ar in
+	     let pj = j_nf_evar (evars_of !isevars) pj in
 	     let pj = if dep then pj else make_dep_of_undep env indt pj in
 	     let (bty,rsty) = 
 	       Indrec.type_rec_branches 
-		 false env (evars_of isevars) indt pj.uj_val cj.uj_val 
+		 false env (evars_of !isevars) indt pj.uj_val cj.uj_val 
 	     in
 	     if Array.length bty <> 1 then
 	       error_number_branches_loc 
-		 loc env (evars_of isevars) cj (Array.length bty);
+		 loc env (evars_of !isevars) cj (Array.length bty);
 	     let fj = 
 	       let tyc = bty.(0) in 
 	       pretype (mk_tycon tyc) env isevars lvar f 
@@ -487,7 +503,7 @@ let rec pretype tycon env isevars lvar = function
              (* get type information from type of branches *)
 	     let expbr = Cases.branch_scheme env isevars false indf in
 	     if Array.length expbr <> 1 then
-	       error_number_branches_loc loc env (evars_of isevars) 
+	       error_number_branches_loc loc env (evars_of !isevars) 
 		 cj (Array.length expbr);
              let expti = expbr.(0) in
 	     let fj = pretype (mk_tycon expti) env isevars lvar f in
@@ -500,32 +516,32 @@ let rec pretype tycon env isevars lvar = function
 		     let arsgn = make_arity_signature env true indf in
                      let pred = lift (List.length arsgn) pred in
   		     let pred = 
-                       it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred)
+                       it_mkLambda_or_LetIn (nf_evar (evars_of !isevars) pred)
 			 arsgn in
                      false, pred
 	         | None ->
-                     let sigma = evars_of isevars in
+                     let sigma = evars_of !isevars in
                      error_cant_find_case_type_loc loc env sigma cj.uj_val
 	     in
              let ok, p =
 	       try
 		 let pred = 
 		   Cases.pred_case_ml 
-		     env (evars_of isevars) false indt (0,fj.uj_type) 
+		     env (evars_of !isevars) false indt (0,fj.uj_type) 
 		 in 
-		 if has_undefined_isevars isevars pred then
+		 if has_undefined_isevars !isevars pred then
 		   use_constraint ()
 		 else
 		   true, pred
 	       with Cases.NotInferable _ ->
 		 use_constraint ()
 	     in 
-	     let p = nf_evar (evars_of isevars) p in
+	     let p = nf_evar (evars_of !isevars) p in
 	     let (bty,rsty) =
 	       Indrec.type_rec_branches
-		 false env (evars_of isevars) indt p cj.uj_val 
+		 false env (evars_of !isevars) indt p cj.uj_val 
 	     in
-	     let _ = option_app (the_conv_x_leq env isevars rsty) tycon in
+	     let _ = option_app (e_cumul env isevars rsty) tycon in
 	     let fj = 
 	       if ok then fj 
 	       else pretype (mk_tycon bty.(0)) env isevars lvar f 
@@ -643,10 +659,10 @@ let rec pretype tycon env isevars lvar = function
   | RIf (loc,c,(na,po),b1,b2) ->
       let cj = pretype empty_tycon env isevars lvar c in
       let (IndType (indf,realargs) as indt) = 
-	try find_rectype env (evars_of isevars) cj.uj_type
+	try find_rectype env (evars_of !isevars) cj.uj_type
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
-	  error_case_not_inductive_loc cloc env (evars_of isevars) cj in
+	  error_case_not_inductive_loc cloc env (evars_of !isevars) cj in
       let cstrs = get_constructors env indf in 
       if Array.length cstrs <> 2 then
         user_err_loc (loc,"",
@@ -661,13 +677,13 @@ let rec pretype tycon env isevars lvar = function
 	| Some p ->
 	    let env_p = push_rels psign env in
             let pj = pretype_type empty_valcon env_p isevars lvar p in
-            let ccl = nf_evar (evars_of isevars) pj.utj_val in
+            let ccl = nf_evar (evars_of !isevars) pj.utj_val in
 	    let pred = it_mkLambda_or_LetIn ccl psign in
 	    pred, lift (- nar) (beta_applist (pred,[cj.uj_val]))
 	| None -> 
 	    let p = match tycon with
 	    | Some ty -> ty
-	    | None -> new_isevar isevars env (loc,InternalHole) (new_Type ())
+	    | None -> e_new_isevar isevars env (loc,InternalHole) (new_Type ())
 	    in
 	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
       let f cs b =
@@ -680,8 +696,8 @@ let rec pretype tycon env isevars lvar = function
 	it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
       let b1 = f cstrs.(0) b1 in
       let b2 = f cstrs.(1) b2 in
-      let pred = nf_evar (evars_of isevars) pred in
-      let p = nf_evar (evars_of isevars) p in
+      let pred = nf_evar (evars_of !isevars) pred in
+      let p = nf_evar (evars_of !isevars) p in
       let v =
 	let mis,_ = dest_ind_family indf in
 	let ci = make_default_case_info env IfStyle mis in
@@ -693,17 +709,17 @@ let rec pretype tycon env isevars lvar = function
       let isrec = (st = MatchStyle) in
       let cj = pretype empty_tycon env isevars lvar c in
       let (IndType (indf,realargs) as indt) = 
-	try find_rectype env (evars_of isevars) cj.uj_type
+	try find_rectype env (evars_of !isevars) cj.uj_type
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
-	  error_case_not_inductive_loc cloc env (evars_of isevars) cj in
+	  error_case_not_inductive_loc cloc env (evars_of !isevars) cj in
       let (dep,pj) = match po with
 	| Some p ->
             let pj = pretype empty_tycon env isevars lvar p in
             let dep = is_dependent_elimination env pj.uj_type indf in
             let ar =
               arity_of_case_predicate env indf dep (Type (new_univ())) in
-            let _ = the_conv_x_leq env isevars pj.uj_type ar in
+            let _ = e_cumul env isevars pj.uj_type ar in
             (dep, pj)
 	| None -> 
             (* get type information from type of branches *)
@@ -719,12 +735,12 @@ let rec pretype tycon env isevars lvar = function
 		      let arsgn = make_arity_signature env true indf in
                       let pred = lift (List.length arsgn) pred in
   		      let pred = 
-			it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred)
+			it_mkLambda_or_LetIn (nf_evar (evars_of !isevars) pred)
 			  arsgn in
                       (true, 
-                       Retyping.get_judgment_of env (evars_of isevars) pred)
+                       Retyping.get_judgment_of env (evars_of !isevars) pred)
 	          | None ->
-                      let sigma = evars_of isevars in
+                      let sigma = evars_of !isevars in
                       error_cant_find_case_type_loc loc env sigma cj.uj_val
 	      else
 		try
@@ -733,11 +749,11 @@ let rec pretype tycon env isevars lvar = function
 		    pretype (mk_tycon expti) env isevars lvar lf.(i) in
 		  let pred = 
 		    Cases.pred_case_ml (* eta-expanse *)
-                      env (evars_of isevars) isrec indt (i,fj.uj_type) in
-		  if has_undefined_isevars isevars pred then findtype (i+1)
+                      env (evars_of !isevars) isrec indt (i,fj.uj_type) in
+		  if has_undefined_isevars !isevars pred then findtype (i+1)
 		  else 
 		    let pty =
-                      Retyping.get_type_of env (evars_of isevars) pred in
+                      Retyping.get_type_of env (evars_of !isevars) pred in
 		    let pj = { uj_val = pred; uj_type = pty } in
 (*
                     let _ = option_app (the_conv_x_leq env isevars pred) tycon
@@ -747,14 +763,14 @@ let rec pretype tycon env isevars lvar = function
 		with Cases.NotInferable _ -> findtype (i+1) in
 	    findtype 0 
       in
-      let pj = j_nf_evar (evars_of isevars) pj in
+      let pj = j_nf_evar (evars_of !isevars) pj in
       let pj = if dep then pj else make_dep_of_undep env indt pj in
       let (bty,rsty) =
 	Indrec.type_rec_branches
-          isrec env (evars_of isevars) indt pj.uj_val cj.uj_val in
-      let _ = option_app (the_conv_x_leq env isevars rsty) tycon in
+          isrec env (evars_of !isevars) indt pj.uj_val cj.uj_val in
+      let _ = option_app (e_cumul env isevars rsty) tycon in
       if Array.length bty <> Array.length lf then
-	error_number_branches_loc loc env (evars_of isevars) 
+	error_number_branches_loc loc env (evars_of !isevars) 
 	  cj (Array.length bty)
       else
 	let lfj =
@@ -767,7 +783,7 @@ let rec pretype tycon env isevars lvar = function
 	let v =
 	  if isrec
 	  then 
-	    transform_rec loc env (evars_of isevars)(pj,cj.uj_val,lfv) indt
+	    transform_rec loc env (evars_of !isevars)(pj,cj.uj_val,lfv) indt
 	  else
 	    let mis,_ = dest_ind_family indf in
 	    let ci = make_default_case_info env st mis in
@@ -785,7 +801,7 @@ let rec pretype tycon env isevars lvar = function
           if isrec && mis_is_recursive_subset [tyi] recargs then
             Some (Detyping.detype (false,env)
 	      (ids_of_context env) (names_of_rel_context env)
-              (nf_evar (evars_of isevars) v))
+              (nf_evar (evars_of !isevars) v))
 	  else
 	    (* Translate into a "match ... with" *)
             let rtntypopt, indnalopt = match po with
@@ -902,7 +918,7 @@ let rec pretype tycon env isevars lvar = function
   | RDynamic (loc,d) ->
     if (tag d) = "constr" then
       let c = constr_out d in
-      let j = (Retyping.get_judgment_of env (evars_of isevars) c) in
+      let j = (Retyping.get_judgment_of env (evars_of !isevars) c) in
       j
       (*inh_conv_coerce_to_tycon loc env isevars j tycon*)
     else
@@ -914,39 +930,39 @@ and pretype_type valcon env isevars lvar = function
       (match valcon with
 	 | Some v ->
              let s =
-               let sigma = evars_of isevars in
+               let sigma = evars_of !isevars in
                let t = Retyping.get_type_of env sigma v in
                match kind_of_term (whd_betadeltaiota env sigma t) with
                  | Sort s -> s
                  | Evar v when is_Type (existential_type sigma v) -> 
-                     define_evar_as_sort isevars v
+                     evd_comb1 (define_evar_as_sort) isevars v
                  | _ -> anomaly "Found a type constraint which is not a type"
              in
 	     { utj_val = v;
 	       utj_type = s }
 	 | None ->
 	     let s = new_Type_sort () in
-	     { utj_val = new_isevar isevars env loc (mkSort s);
+	     { utj_val = e_new_isevar isevars env loc (mkSort s);
 	       utj_type = s})
   | c ->
       let j = pretype empty_tycon env isevars lvar c in
-      let tj = inh_coerce_to_sort env isevars j in
+      let tj = evd_comb1 (inh_coerce_to_sort env) isevars j in
       match valcon with
 	| None -> tj
 	| Some v ->
-	    if the_conv_x_leq env isevars v tj.utj_val then tj
+	    if e_cumul env isevars v tj.utj_val then tj
 	    else
 	      error_unexpected_type_loc
-                (loc_of_rawconstr c) env (evars_of isevars) tj.utj_val v
+                (loc_of_rawconstr c) env (evars_of !isevars) tj.utj_val v
 
 
 let unsafe_infer tycon isevars env lvar constr =
   let j = pretype tycon env isevars lvar constr in
-  j_nf_evar (evars_of isevars) j
+  j_nf_evar (evars_of !isevars) j
 
 let unsafe_infer_type valcon isevars env lvar constr =
   let tj = pretype_type valcon env isevars lvar constr in
-  tj_nf_evar (evars_of isevars) tj
+  tj_nf_evar (evars_of !isevars) tj
 
 (* If fail_evar is false, [process_evars] builds a meta_map with the
    unresolved Evar that were not in initial sigma; otherwise it fail
@@ -958,14 +974,14 @@ let unsafe_infer_type valcon isevars env lvar constr =
 (* assumes the defined existentials have been replaced in c (should be
    done in unsafe_infer and unsafe_infer_type) *)
 let check_evars fail_evar env initial_sigma isevars c =
-  let sigma = evars_of isevars in
+  let sigma = evars_of !isevars in
   let rec proc_rec c =
     match kind_of_term c with
       | Evar (ev,args as k) ->
           assert (Evd.in_dom sigma ev);
 	  if not (Evd.in_dom initial_sigma ev) then
 	    (if fail_evar then
-              let (loc,k) = evar_source ev isevars in
+              let (loc,k) = evar_source ev !isevars in
 	       error_unsolvable_implicit loc env sigma k)
       | _ -> iter_constr proc_rec c      
   in
@@ -980,10 +996,10 @@ let check_evars fail_evar env initial_sigma isevars c =
 type open_constr = evar_map * constr
 
 let ise_resolve_casted_gen fail_evar sigma env lvar typ c =
-  let isevars = create_evar_defs sigma in
+  let isevars = ref (create_evar_defs sigma) in
   let j = unsafe_infer (mk_tycon typ) isevars env lvar c in
   check_evars fail_evar env sigma isevars (mkCast(j.uj_val,j.uj_type));
-  (evars_of isevars, j)
+  (evars_of !isevars, j)
 
 let ise_resolve_casted sigma env typ c =
   ise_resolve_casted_gen true sigma env ([],[]) typ c
@@ -993,16 +1009,16 @@ let ise_resolve_casted sigma env typ c =
    allows us to extend env with some bindings *)
 let ise_infer_gen fail_evar sigma env lvar exptyp c =
   let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
-  let isevars = create_evar_defs sigma in
+  let isevars = ref (create_evar_defs sigma) in
   let j = unsafe_infer tycon isevars env lvar c in
   check_evars fail_evar env sigma isevars (mkCast(j.uj_val,j.uj_type));
-  (evars_of isevars, j)
+  (evars_of !isevars, j)
 
 let ise_infer_type_gen fail_evar sigma env lvar c =
-  let isevars = create_evar_defs sigma in
+  let isevars = ref (create_evar_defs sigma) in
   let tj = unsafe_infer_type empty_valcon isevars env lvar c in
   check_evars fail_evar env sigma isevars tj.utj_val;
-  (evars_of isevars, tj)
+  (evars_of !isevars, tj)
 
 type var_map = (identifier * unsafe_judgment) list
 

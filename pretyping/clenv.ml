@@ -23,6 +23,7 @@ open Pattern
 open Tacexpr
 open Tacred
 open Pretype_errors
+open Evarutil
 
 (* *)
 let get_env   evc = Global.env_of_context evc.it
@@ -157,8 +158,9 @@ let connect_clenv gls clenv =
   { clenv with hook = wc }
 
 let clenv_wtactic f clenv =
-  let (sigma',mmap') = f (clenv.hook.sigma, clenv.env) in
-  {clenv with env = mmap' ; hook = {it=clenv.hook.it; sigma=sigma'}}
+  let (evd',mmap') =
+    f (create_evar_defs clenv.hook.sigma, clenv.env) in
+  {clenv with env = mmap' ; hook = {it=clenv.hook.it; sigma=evars_of evd'}}
 
 let mk_clenv_hnf_constr_type_of wc t =
   mk_clenv_from wc (t,w_hnf_constr wc (w_type_of wc t))
@@ -411,10 +413,9 @@ let clenv_independent clenv =
 let w_coerce wc c ctyp target =
   let j = make_judge c ctyp in
   let env = get_env wc in
-  let isevars = Evarutil.create_evar_defs wc.sigma in
-  let j' = Coercion.inh_conv_coerce_to dummy_loc env isevars j target in
-  (* faire quelque chose avec isevars ? *)
-  j'.uj_val
+  let isevars = create_evar_defs wc.sigma in
+  let (evd',j') = Coercion.inh_conv_coerce_to dummy_loc env isevars j target in
+  (evars_of evd',j'.uj_val)
 
 let clenv_constrain_dep_args hyps_only clause = function
   | [] -> clause 
@@ -427,7 +428,8 @@ let clenv_constrain_dep_args hyps_only clause = function
 	    try
 	      let k_typ = w_hnf_constr wc (clenv_instance_type clause k) in
 	      let c_typ = w_hnf_constr wc (w_type_of wc c) in
-	      let c' = w_coerce wc c c_typ k_typ in
+              (* faire quelque chose avec le sigma retourne ? *)
+	      let (_,c') = w_coerce wc c c_typ k_typ in
 	      clenv_unify true CONV (mkMeta k) c' clenv
 	    with _ ->
               clenv_unify true CONV (mkMeta k) c clenv)
@@ -485,7 +487,7 @@ let clenv_match_args s clause =
 	  with _ ->
 	  (* Try to coerce to the type of [k]; cannot merge with the
 	     previous case because Coercion does not handle Meta *)
-          let c' = w_coerce clause.hook c c_typ k_typ in
+          let (_,c') = w_coerce clause.hook c c_typ k_typ in
 	  try clenv_unify true CONV (mkMeta k) c' clause
 	  with PretypeError (env,CannotUnify (m,n)) ->
 	    Stdpp.raise_with_loc loc

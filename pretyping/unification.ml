@@ -49,7 +49,7 @@ let abstract_list_all env sigma typ c l =
 
 (*******************************)
 
-type maps = evar_map * meta_map
+type maps = evar_defs * meta_map
 
 (* [w_Define evd sp c]
  *
@@ -59,18 +59,22 @@ type maps = evar_map * meta_map
  * No unification is performed in order to assert that [c] has the
  * correct type.
  *)
-let w_Define sp c evd =
+let w_Define sp c (evd,mmap) =
   let sigma = evars_of evd in
   if Evd.is_defined sigma sp then
     error "Unify.w_Define: cannot define evar twice";
   let spdecl = Evd.map sigma sp in
   let env = evar_env spdecl in
   let _ =
-    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
-    with Not_found ->
-      error "Instantiation contains unlegal variables" in
+    try Typing.mcheck env (Evd.rmv sigma sp,Metamap.empty) c spdecl.evar_concl
+    with
+	Not_found -> error "Instantiation contains unlegal variables"
+      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
+      errorlabstrm "w_Define"
+      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
+       str (string_of_existential sp)) in
   let spdecl' = { spdecl with evar_body = Evar_defined c } in
-  evars_reset_evd (Evd.add sigma sp spdecl') evd
+  (evars_reset_evd (Evd.add sigma sp spdecl') evd, mmap)
 
 
 (* Unification à l'ordre 0 de m et n: [unify_0 env sigma cv_pb m n]
@@ -194,21 +198,20 @@ let unify_0 env sigma cv_pb m n =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let applyHead env sigma n c  = 
-  let evd = create_evar_defs sigma in
-  let rec apprec n c cty =
+let applyHead env evd n c  = 
+  let rec apprec n c cty evd =
     if n = 0 then 
-      (evars_of evd, c)
+      (evd, c)
     else 
       match kind_of_term (whd_betadeltaiota env (evars_of evd) cty) with
         | Prod (_,c1,c2) ->
-            let evar =
+            let (evd',evar) =
               Evarutil.new_isevar evd env
                 (dummy_loc,Rawterm.InternalHole) c1 in
-	    apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2)
+	    apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
 	| _ -> error "Apply_Head_Then"
   in 
-  apprec n c (Typing.type_of env (evars_of evd) c)
+  apprec n c (Typing.type_of env (evars_of evd) c) evd
 
 let is_mimick_head f =
   match kind_of_term f with
@@ -219,19 +222,17 @@ let is_mimick_head f =
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
 
-let w_merge env with_types metas evars (sigma,metamap) =
-  let evd = create_evar_defs sigma in
-  let mmap = ref metamap in
+let w_merge env with_types metas evars maps =
   let ty_metas = ref [] in
   let ty_evars = ref [] in
-  let rec w_merge_rec metas evars =
+  let rec w_merge_rec (evd,mmap as maps) metas evars =
     match (evars,metas) with
-      | ([], []) -> ()
+      | ([], []) -> maps
 
       | ((lhs,rhs)::t, metas) ->
       (match kind_of_term rhs with
 
-	| Meta k -> w_merge_rec ((k,lhs)::metas) t
+	| Meta k -> w_merge_rec maps ((k,lhs)::metas) t
 
 	| krhs ->
         (match kind_of_term lhs with
@@ -240,7 +241,7 @@ let w_merge env with_types metas evars (sigma,metamap) =
     	      if is_defined_evar evd ev then
 		let (metas',evars') =
                   unify_0 env (evars_of evd) CONV rhs lhs in
-		w_merge_rec (metas'@metas) (evars'@t)
+		w_merge_rec maps (metas'@metas) (evars'@t)
     	      else begin
 		let rhs' = 
 		  if occur_meta rhs then subst_meta metas rhs else rhs 
@@ -250,60 +251,59 @@ let w_merge env with_types metas evars (sigma,metamap) =
                 match krhs with
 		  | App (f,cl) when is_mimick_head f ->
 		      (try 
-                        w_Define evn rhs' evd; 
-		        w_merge_rec metas t
+		        w_merge_rec (w_Define evn rhs' maps) metas t
 		      with ex when precatchable_exception ex ->
-                        mimick_evar f (Array.length cl) evn;
-			w_merge_rec metas evars)
+                        let maps' =
+                          mimick_evar maps f (Array.length cl) evn in
+			w_merge_rec maps' metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
-                      w_Define evn rhs' evd; 
-		      w_merge_rec metas t
+		      w_merge_rec (w_Define evn rhs' maps) metas t
 	      end
 
 	  | _ -> anomaly "w_merge_rec"))
 
       | ([], (mv,n)::t) ->
-    	  if meta_defined !mmap mv then
+    	  if meta_defined mmap mv then
             let (metas',evars') =
-              unify_0 env (evars_of evd) CONV (meta_fvalue !mmap mv).rebus n in
-            w_merge_rec (metas'@t) evars'
+              unify_0 env (evars_of evd) CONV (meta_fvalue mmap mv).rebus n in
+            w_merge_rec maps (metas'@t) evars'
     	  else
             begin
 	      if with_types (* or occur_meta mvty *) then
-	        (let mvty = meta_type !mmap mv in
+	        (let mvty = meta_type mmap mv in
 		try 
                   let sigma = evars_of evd in
                   (* why not typing with the metamap ? *)
-		  let nty = Typing.type_of env sigma (nf_meta !mmap n) in
+		  let nty = Typing.type_of env sigma (nf_meta mmap n) in
 		  let (mc,ec) = unify_0 env sigma CUMUL nty mvty in
                   ty_metas := mc @ !ty_metas;
                   ty_evars := ec @ !ty_evars
 		with e when precatchable_exception e -> ());
-              mmap := meta_assign mv n !mmap;
-	      w_merge_rec t []
+              let mmap' = meta_assign mv n mmap in
+	      w_merge_rec (evd,mmap') t []
             end
-  and mimick_evar hdc nargs sp =
+
+  and mimick_evar (evd,mmap) hdc nargs sp =
     let ev = Evd.map (evars_of evd) sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
-    let (sigma', c) = applyHead sp_env (evars_of evd) nargs hdc in
-    evars_reset_evd sigma' evd;
+    let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =
-      unify_0 sp_env (evars_of evd) CUMUL
-        (Retyping.get_type_of sp_env (evars_of evd) c) ev.evar_concl in
-    w_merge_rec mc ec;
-    if sigma'== (evars_of evd)
-    then w_Define sp c evd
-    else w_Define sp (Evarutil.nf_evar (evars_of evd) c) evd in
+      unify_0 sp_env (evars_of evd') CUMUL
+        (Retyping.get_type_of sp_env (evars_of evd') c) ev.evar_concl in
+    let maps' = w_merge_rec (evd',mmap) mc ec in
+    if (evars_of evd') == (evars_of (fst maps'))
+    then w_Define sp c maps'
+    else w_Define sp (Evarutil.nf_evar (evars_of (fst maps')) c) maps' in
 
   (* merge constraints *)
-  w_merge_rec metas evars;
-  (if with_types then
+  let maps' = w_merge_rec maps metas evars in
+  if with_types then
     (* merge constraints about types: if they fail, don't worry *)
-    try w_merge_rec !ty_metas !ty_evars
-(* TODO: should backtrack *)
-    with e when precatchable_exception e -> ());
-  (evars_of evd, !mmap)
+    try w_merge_rec maps' !ty_metas !ty_evars
+    with e when precatchable_exception e -> maps'
+  else
+    maps'
 
 (* [w_unify env evd M N]
    performs a unification of M and N, generating a bunch of
@@ -316,7 +316,7 @@ let w_merge env with_types metas evars (sigma,metamap) =
    types of metavars are unifiable with the types of their instances    *)
 
 let w_unify_core_0 env with_types cv_pb m n evd =
-  let (mc,ec) = unify_0 env (fst evd) cv_pb m n in 
+  let (mc,ec) = unify_0 env (evars_of (fst evd)) cv_pb m n in 
   w_merge env with_types mc ec evd
 
 let w_unify_0 env = w_unify_core_0 env false
@@ -419,7 +419,7 @@ let w_unify_to_subterm_list env allow_K oplist t evd =
     (evd,[])
 
 let secondOrderAbstraction env allow_K typ (p, oplist) evd =
-  let sigma = fst evd in
+  let sigma = evars_of (fst evd) in
   let (evd',cllist) =
     w_unify_to_subterm_list env allow_K oplist typ evd in
   let typp = meta_type (snd evd') p in
