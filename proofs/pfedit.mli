@@ -98,6 +98,9 @@ val cook_proof : unit ->
   identifier *
   (Safe_typing.constant_entry * (bool * strength) * declaration_hook)
 
+(* To export completed proofs to xml *)
+val set_xml_cook_proof : (pftreestate -> unit) -> unit
+
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)
 
