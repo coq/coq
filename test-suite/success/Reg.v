@@ -117,3 +117,10 @@ Reg().
 Apply n_y.
 Apply d_z.
 Qed.
+
+(* Pour tester la continuite de sqrt en 0 *)
+Lemma essai23 : (continuity_pt [x:R]``(sin (sqrt (x-1)))+(exp (Rsqr ((sqrt x)+3)))`` R1).
+Reg().
+Left; Apply Rlt_R0_R1.
+Right; Unfold Rminus; Rewrite Rplus_Ropp_r; Reflexivity.
+Qed.
