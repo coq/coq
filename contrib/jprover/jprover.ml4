@@ -361,7 +361,7 @@ let dyn_impl id gl =
          (TCL.tclTHENLAST
             (TCL.tclTHENS (T.cut b) [T.intro_using id2;TCL.tclIDTAC])
          (T.apply_term (TR.mkVar (short_addr id))
-                       [TR.mkMeta (Clenv.new_meta())])) gl
+                       [TR.mkMeta (Evarutil.new_meta())])) gl
 
 let dyn_allr c =       (* [c] must be an eigenvariable which replaces [v] *)
   HT.h_intro (N.id_of_string c)

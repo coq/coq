@@ -408,7 +408,7 @@ let tac_zero_infeq_false gl (n,d) =
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
 
-let create_meta () = mkMeta(new_meta());;
+let create_meta () = mkMeta(Evarutil.new_meta());;
    
 let my_cut c gl=
      let concl = pf_concl gl in

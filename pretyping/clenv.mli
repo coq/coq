@@ -13,40 +13,31 @@ open Util
 open Names
 open Term
 open Sign
+open Environ
 open Evd
 open Evarutil
 (*i*)
 
-(* [new_meta] is a generator of unique meta variables *)
-val new_meta : unit -> metavariable
-
-(* [exist_to_meta] generates new metavariables for each existential
-   and performs the replacement in the given constr *)
-val exist_to_meta :
-  evar_map -> Pretyping.open_constr -> (Termops.metamap * constr)
-
 (***************************************************************)
 (* The Type of Constructions clausale environments. *)
 
-(* [templval] is the template which we are trying to fill out.
+(* [templenv] is the typing context
+ * [env] is the mapping from metavar and evar numbers to their types
+ *       and values.
+ * [templval] is the template which we are trying to fill out.
  * [templtyp] is its type.
  * [namenv] is a mapping from metavar numbers to names, for
  *          use in instanciating metavars by name.
- * [evd] is the mapping from metavar and evar numbers to their types
- *       and values.
- * [hook] is a signature (named_context) and a sigma: the
- *        typing context
  *)
-type wc = named_context sigma (* for a better reading of the following *)
 type clausenv = {
+  templenv : env;
+  env      : evar_defs;
   templval : constr freelisted;
   templtyp : constr freelisted;
-  namenv : identifier Metamap.t;
-  env : meta_map;
-  hook : wc }
+  namenv   : identifier Metamap.t }
 
-val subst_clenv :
-  (substitution -> wc -> wc) -> substitution -> clausenv -> clausenv
+(* Substitution is not applied neither to the evar_map of evar_defs nor hook *)
+val subst_clenv : substitution -> clausenv -> clausenv
 
 (* subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
@@ -117,10 +108,4 @@ val make_clenv_binding :
 (***************************************************************)
 (* Pretty-print *)
 val pr_clenv : clausenv -> Pp.std_ppcmds
-
-(***************************************************************)
-(* Old or unused stuff... *)
-
-val clenv_wtactic :
-  (evar_defs * meta_map -> evar_defs * meta_map) -> clausenv -> clausenv
 

@@ -48,7 +48,7 @@ let clenv_cast_meta clenv =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
 	  (try 
-	     match Metamap.find mv clenv.env with
+	     match Metamap.find mv (metas_of clenv.env) with
                | Cltyp b ->
 		   let b' = clenv_nf_meta clenv b.rebus in 
 		   if occur_meta b' then u else mkCast (mkMeta mv, b')
@@ -62,26 +62,14 @@ let clenv_cast_meta clenv =
   in 
   crec
 
-
 let clenv_refine clenv gls =
   tclTHEN
-    (tclEVARS clenv.hook.sigma) 
-    (refine (clenv_value clenv)) gls
-
-let clenv_refine_cast clenv gls =
-  tclTHEN
-    (tclEVARS clenv.hook.sigma) 
+    (tclEVARS (evars_of clenv.env)) 
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 
-let res_pf clenv gls =
-  clenv_refine (clenv_unique_resolver false clenv gls) gls
-    
-let res_pf_cast clenv gls =
-  clenv_refine_cast (clenv_unique_resolver false clenv gls) gls
-
-let elim_res_pf clenv allow_K gls =
-  clenv_refine_cast (clenv_unique_resolver allow_K clenv gls) gls
+let res_pf clenv ?(allow_K=false) gls =
+  clenv_refine (clenv_unique_resolver allow_K clenv gls) gls
 
 let elim_res_pf_THEN_i clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in
@@ -102,9 +90,9 @@ let e_res_pf clenv gls =
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unifyTerms m n gls = 
   let env = pf_env gls in
-  let maps = (create_evar_defs (project gls), Evd.Metamap.empty) in
-  let maps' = Unification.w_unify false env CONV m n maps in
-  tclIDTAC {it = gls.it; sigma = evars_of (fst maps')}
+  let evd = create_evar_defs (project gls) in
+  let evd' = Unification.w_unify false env CONV m n evd in
+  tclIDTAC {it = gls.it; sigma = evars_of evd'}
 
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls

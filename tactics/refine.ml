@@ -92,7 +92,7 @@ and pp_sg sg =
 let replace_by_meta env gmm = function
   | TH (m, mm, sgp) when isMeta (strip_outer_cast m) -> m,mm,sgp
   | (TH (c,mm,_)) as th ->
-      let n = Clenv.new_meta() in
+      let n = Evarutil.new_meta() in
       let m = mkMeta n in
       (* quand on introduit une mv on calcule son type *)
       let ty = match kind_of_term c with
@@ -340,7 +340,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as th) gl =
 let refine oc gl =
   let sigma = project gl in
   let env = pf_env gl in
-  let (gmm,c) = Clenv.exist_to_meta sigma oc in
+  let (gmm,c) = Evarutil.exist_to_meta sigma oc in
   let th = compute_metamap env gmm c in
   tcc_aux [] th gl
 

@@ -67,7 +67,7 @@ let instantiate_tac = function
 
 let let_evar nam typ gls =
   let sp = Evarutil.new_evar () in
-  let mm = (Evarutil.create_evar_defs gls.sigma, Metamap.empty) in
-  let (evd,_) = Unification.w_Declare (pf_env gls) sp typ mm in
-  let ngls = {gls with sigma = Evarutil.evars_of evd} in
+  let evd = Evarutil.create_evar_defs gls.sigma in
+  let evd' = Unification.w_Declare (pf_env gls) sp typ evd in
+  let ngls = {gls with sigma = Evarutil.evars_of evd'} in
     Tactics.forward true nam (mkEvar(sp,[||])) ngls 

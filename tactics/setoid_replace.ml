@@ -22,6 +22,8 @@ open Util
 open Pp
 open Printer
 open Environ
+open Clenv
+open Unification
 open Tactics 
 open Tacticals
 open Vernacexpr
@@ -919,7 +921,7 @@ let syntactic_but_representation_of_marked_but hole_relation =
        else
         let c_is_proper =
          let typ = mkApp (rel_out, [| c ; c |]) in
-          mkCast (mkMeta (Clenv.new_meta ()),typ)
+          mkCast (Evarutil.mk_new_meta (),typ)
         in
          mkApp ((Lazy.force coq_ProperElementToKeep),
           [| hole_relation ; Lazy.force coq_Left2Right; precise_out ;
@@ -958,9 +960,7 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
  let but = pf_concl gl in
  let (hyp,c1,c2) =
    let cl' =
-     Clenv.clenv_wtactic
-       (fun evd-> fst (Unification.w_unify_to_subterm (pf_env gl) (c1,but) evd))
-       cl in
+     {cl with env = fst (w_unify_to_subterm (pf_env gl) (c1,but) cl.env)} in
    let c1 = Clenv.clenv_nf_meta cl' c1 in
    let c2 = Clenv.clenv_nf_meta cl' c2 in
    (lft2rgt,Clenv.clenv_value cl'), c1, c2
@@ -974,7 +974,7 @@ let relation_rewrite c1 c2 (lft2rgt,cl) gl =
    let impl2 = mkProd (Anonymous, hyp1, lift 1 hyp2) in
     let th' = mkApp ((Lazy.force coq_proj2), [|impl1; impl2; th|]) in
      Tactics.refine
-      (mkApp (th', [| mkCast (mkMeta (Clenv.new_meta()), hyp1) |])) gl
+      (mkApp (th', [| mkCast (Evarutil.mk_new_meta(), hyp1) |])) gl
 
 let general_s_rewrite lft2rgt c gl =
  let ctype = pf_type_of gl c in

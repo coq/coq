@@ -27,65 +27,47 @@ open Evarutil
 open Unification
 
 (* *)
-let w_coerce wc c ctyp target =
+let w_coerce env c ctyp target evd =
   let j = make_judge c ctyp in
-  let env = Global.env_of_context wc.it in
-  let isevars = create_evar_defs wc.sigma in
-  let (evd',j') = Coercion.inh_conv_coerce_to dummy_loc env isevars j target in
-  (evars_of evd',j'.uj_val)
+  let (evd',j') = Coercion.inh_conv_coerce_to dummy_loc env evd j target in
+  (evd',j'.uj_val)
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
 let pf_hnf_constr gls c = hnf_constr (pf_env gls) gls.sigma c
 let pf_concl gl = gl.it.evar_concl
 
-(* Generator of metavariables *)
-let new_meta =
-  let meta_ctr = ref 0 in
-  fun () -> incr meta_ctr; !meta_ctr
-
-(* replaces a mapping of existentials into a mapping of metas.
-   Problem if an evar appears in the type of another one (pops anomaly) *)
-let exist_to_meta sigma (emap, c) =
-  let metamap = ref [] in
-  let change_exist evar =
-    let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
-    let n = new_meta() in
-    metamap := (n, ty) :: !metamap;
-    mkMeta n in
-  let rec replace c =
-    match kind_of_term c with
-        Evar (k,_ as ev) when not (Evd.in_dom sigma k) -> change_exist ev
-      | _ -> map_constr replace c in
-  (!metamap, replace c)
-
 (******************************************************************)
 (* Clausal environments *)
 
-type wc = named_context sigma
-
 type clausenv = {
+  templenv : env;
+  env      : evar_defs;
   templval : constr freelisted;
   templtyp : constr freelisted;
-  namenv : identifier Metamap.t;
-  env : meta_map;
-  hook : wc }
+  namenv   : identifier Metamap.t }
 
-let subst_clenv f sub clenv = 
+let cl_env ce = ce.templenv
+let cl_metas ce = metas_of ce.env
+let cl_sigma ce = evars_of ce.env
+
+let subst_clenv sub clenv = 
   { templval = map_fl (subst_mps sub) clenv.templval;
     templtyp = map_fl (subst_mps sub) clenv.templtyp;
     namenv = clenv.namenv;
-    env = Metamap.map (map_clb (subst_mps sub)) clenv.env;
-    hook = f sub clenv.hook }
+    env = reset_evd
+      (evars_of clenv.env,
+       Metamap.map (map_clb (subst_mps sub)) (cl_metas clenv))
+      clenv.env;
+    templenv = clenv.templenv }
 
-let clenv_nf_meta clenv c = nf_meta clenv.env c
-let clenv_meta_type clenv mv = meta_type clenv.env mv
-let clenv_value clenv = meta_instance clenv.env clenv.templval
-let clenv_type clenv = meta_instance clenv.env clenv.templtyp
+let clenv_nf_meta clenv c = nf_meta (cl_metas clenv) c
+let clenv_meta_type clenv mv = meta_type (cl_metas clenv) mv
+let clenv_value clenv = meta_instance (cl_metas clenv) clenv.templval
+let clenv_type clenv = meta_instance (cl_metas clenv) clenv.templtyp
 
-let cl_env ce = Global.env_of_context ce.hook.it
 
-let clenv_hnf_constr ce t = hnf_constr (cl_env ce) ce.hook.sigma t
+let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
 let clenv_get_type_of ce c =
   let metamap =
@@ -93,8 +75,8 @@ let clenv_get_type_of ce c =
       (function
 	 | (n,Clval(_,typ)) -> (n,typ.rebus)
          | (n,Cltyp typ)    -> (n,typ.rebus))
-      (metamap_to_list ce.env) in
-  Retyping.get_type_of_with_meta (cl_env ce) ce.hook.sigma metamap c
+      (metamap_to_list (cl_metas ce)) in
+  Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) metamap c
 
 
 
@@ -120,7 +102,7 @@ let clenv_environments bound c =
             else 
 	      ne 
 	  in
-	  let e' = Metamap.add mv (Cltyp (mk_freelisted c1)) e in 
+	  let e' = meta_declare mv c1 e in
 	  clrec (ne',e', (mkMeta mv)::metas) (option_app ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) c2) else c2)
       | (n, LetIn (na,b,_,c)) ->
@@ -134,8 +116,8 @@ let mk_clenv_from_n gls n (c,cty) =
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
     namenv = namenv;
-    env = env;
-    hook = {it=gls.it.evar_hyps; sigma=gls.sigma} }
+    env = mk_evar_defs (gls.sigma,env);
+    templenv = Global.env_of_context gls.it.evar_hyps }
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
@@ -156,7 +138,7 @@ let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 let mentions clenv mv0 = 
   let rec menrec mv1 =
     try
-     (match Metamap.find mv1 clenv.env with
+     (match Metamap.find mv1 (cl_metas clenv) with
 	 | Clval (b,_) -> 
 	     Metaset.mem mv0 b.freemetas || meta_exists menrec b.freemetas
 	 | Cltyp _ -> false)
@@ -165,7 +147,7 @@ let mentions clenv mv0 =
   in 
   menrec
 
-let clenv_defined clenv mv = meta_defined clenv.env mv
+let clenv_defined clenv mv = meta_defined (cl_metas clenv) mv
 
 (* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)		      
 let clenv_assign mv rhs clenv =
@@ -173,11 +155,10 @@ let clenv_assign mv rhs clenv =
   if meta_exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv__assign: circularity in unification";
   try
-    (match Metamap.find mv clenv.env with
+    (match Metamap.find mv (cl_metas clenv) with
        | Clval (fls,ty) ->
 	   if not (eq_constr fls.rebus rhs) then
 	     try 
-	       (* Streams are lazy, force evaluation of id to catch Not_found*)
 	       let id = Metamap.find mv clenv.namenv in
 	       errorlabstrm "clenv_assign"
 		 (str "An incompatible instantiation has already been found for " ++ 
@@ -187,19 +168,16 @@ let clenv_assign mv rhs clenv =
 	   else
 	     clenv
        | Cltyp bty -> 
-	   { templval = clenv.templval;
-	     templtyp = clenv.templtyp;
-	     namenv = clenv.namenv;
-	     env = Metamap.add mv (Clval (rhs_fls,bty)) clenv.env;
-	     hook = clenv.hook })
+	   { clenv with
+	     env = reset_evd
+               (cl_sigma clenv,
+                Metamap.add mv (Clval (rhs_fls,bty)) (cl_metas clenv))
+               clenv.env })
   with Not_found -> 
     error "clenv_assign"
 
 
-let clenv_wtactic f clenv =
-  let (evd',mmap') =
-    f (create_evar_defs clenv.hook.sigma, clenv.env) in
-  {clenv with env = mmap' ; hook = {it=clenv.hook.it; sigma=evars_of evd'}}
+let clenv_wtactic f clenv = {clenv with env = f clenv.env }
 
 
 (* [clenv_dependent hyps_only clenv]
@@ -225,7 +203,7 @@ let collect_metas c =
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
 
-let clenv_metavars clenv mv = (meta_ftype clenv.env mv).freemetas
+let clenv_metavars clenv mv = (meta_ftype (cl_metas clenv) mv).freemetas
 
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
@@ -247,8 +225,7 @@ let clenv_missing ce = clenv_dependent true ce
 (******************************************************************)
 
 let clenv_unify allow_K cv_pb t1 t2 clenv =
-  let env = cl_env clenv in
-  clenv_wtactic (w_unify allow_K env cv_pb t1 t2) clenv
+  { clenv with env = w_unify allow_K clenv.templenv cv_pb t1 t2 clenv.env }
 
 let clenv_unique_resolver allow_K clause gl =
   clenv_unify allow_K CUMUL (clenv_type clause) (pf_concl gl) clause 
@@ -279,8 +256,9 @@ let evar_clenv_unique_resolver clenv gls =
 (******************************************************************)
 
 let connect_clenv gls clenv =
-  let wc = {it=gls.it.evar_hyps; sigma=gls.sigma} in
-  { clenv with hook = wc }
+  { clenv with
+    env = evars_reset_evd gls.sigma clenv.env;
+    templenv = Global.env_of_context gls.it.evar_hyps }
 
 (* [clenv_fchain mv clenv clenv']
  *
@@ -308,9 +286,12 @@ let clenv_fchain mv clenv nextclenv =
 			  end else 
 			    Metamap.add mv id ne)
           clenv.namenv (metamap_to_list nextclenv.namenv);
-      env = List.fold_left (fun m (n,v) -> Metamap.add n v m) 
-	       clenv.env (metamap_to_list nextclenv.env);
-      hook = nextclenv.hook } 
+      env = reset_evd
+        (cl_sigma nextclenv,
+         List.fold_left (fun m (n,v) -> Metamap.add n v m) 
+	       (cl_metas clenv) (metamap_to_list (cl_metas nextclenv)))
+        nextclenv.env;
+      templenv = nextclenv.templenv } 
   in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
@@ -390,11 +371,11 @@ let clenv_match_args s clause =
 	  with _ ->
 	  (* Try to coerce to the type of [k]; cannot merge with the
 	     previous case because Coercion does not handle Meta *)
-          let (_,c') = w_coerce clause.hook c c_typ k_typ in
-	  try clenv_unify true CONV (mkMeta k) c' clause
-	  with PretypeError (env,CannotUnify (m,n)) ->
-	    Stdpp.raise_with_loc loc
- 	      (PretypeError (env,CannotUnifyBindingType (m,n)))
+            let (_,c') = w_coerce (cl_env clause) c c_typ k_typ clause.env in
+	    try clenv_unify true CONV (mkMeta k) c' clause
+	    with PretypeError (env,CannotUnify (m,n)) ->
+	      Stdpp.raise_with_loc loc
+ 	        (PretypeError (env,CannotUnifyBindingType (m,n)))
 	in matchrec cl t
   in 
   matchrec clause s
@@ -435,14 +416,13 @@ let clenv_constrain_dep_args hyps_only clause = function
       if List.length occlist = List.length mlist then
 	List.fold_left2
           (fun clenv k c ->
-	    let wc = clause.hook in
 	    try
 	      let k_typ =
                 clenv_hnf_constr clause (clenv_meta_type clause k) in
 	      let c_typ =
                 clenv_hnf_constr clause (clenv_get_type_of clause c) in
               (* faire quelque chose avec le sigma retourne ? *)
-	      let (_,c') = w_coerce wc c c_typ k_typ in
+	      let (_,c') = w_coerce (cl_env clenv) c c_typ k_typ clenv.env in
 	      clenv_unify true CONV (mkMeta k) c' clenv
 	    with _ ->
               clenv_unify true CONV (mkMeta k) c clenv)
@@ -494,4 +474,4 @@ let pr_clenv clenv =
   in
   (str"TEMPL: " ++ print_constr clenv.templval.rebus ++
      str" : " ++ print_constr clenv.templtyp.rebus ++ fnl () ++
-     (prlist pr_meta_binding (metamap_to_list clenv.env)))
+     (prlist pr_meta_binding (metamap_to_list (cl_metas clenv))))

@@ -821,7 +821,7 @@ let swap_equands gls eqn =
 let swapEquandsInConcl gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose (pf_concl gls) in
   let sym_equal = lbeq.sym in
-  refine (applist(sym_equal,[t;e2;e1;mkMeta (Clenv.new_meta())])) gls
+  refine (applist(sym_equal,[t;e2;e1;Evarutil.mk_new_meta()])) gls
 
 let swapEquandsInHyp id gls =
   ((tclTHENS (cut_replacing id (swap_equands gls (pf_get_hyp_typ gls id)))
@@ -880,8 +880,8 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
     else
       (build_non_dependent_rewrite_predicate (t,e1,e2)  body  gls)
   in
-  refine (applist(eq_elim,[t;e1;p;mkMeta(Clenv.new_meta());
-                           e2;mkMeta(Clenv.new_meta())])) gls
+  refine (applist(eq_elim,[t;e1;p;Evarutil.mk_new_meta();
+                           e2;Evarutil.mk_new_meta()])) gls
 
 (* [subst_tuple_term dep_pair B]
 

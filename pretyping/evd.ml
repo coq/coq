@@ -118,6 +118,9 @@ let existential_opt_value sigma ev =
   with NotInstantiatedEvar -> None
 
 (*******************************************************************)
+type open_constr = evar_map * constr
+
+(*******************************************************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
 type 'a sigma = {

@@ -289,7 +289,7 @@ let lemInv id c gls =
   try
     let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_with_bindings [(-1,mkVar id)] clause in
-    Clenvtac.elim_res_pf clause true gls
+    Clenvtac.res_pf clause ~allow_K:true gls
   with 
     |  UserError (a,b) -> 
 	 errorlabstrm "LemInv" 

@@ -40,19 +40,40 @@ exception Uninstantiated_evar of existential_key
 val whd_ise :  evar_map -> constr -> constr
 val whd_castappevar :  evar_map -> constr -> constr
 
+(***********************************************************)
+(* Metas *)
+
+(* [new_meta] is a generator of unique meta variables *)
+val new_meta : unit -> metavariable
+val mk_new_meta : unit -> constr
+val nf_meta       : meta_map -> constr -> constr
+val meta_type     : meta_map -> metavariable -> types
+val meta_instance : meta_map -> constr freelisted -> constr
+
+(* [exist_to_meta] generates new metavariables for each existential
+   and performs the replacement in the given constr *)
+val exist_to_meta : evar_map -> open_constr -> (Termops.metamap * constr)
+
 (* Creating new existential variables *)
 val new_evar : unit -> evar
 val new_evar_in_sign : env -> constr
 
 val evar_env :  evar_info -> env
 
+(***********************************************************)
+
+type maps = evar_map * meta_map
 type evar_defs
-val evars_of :  evar_defs ->  evar_map
+val evars_of : evar_defs -> evar_map
+val metas_of : evar_defs -> meta_map
 
 val non_instantiated : evar_map -> (evar * evar_info) list
 
-val create_evar_defs :  evar_map ->  evar_defs
+val mk_evar_defs :  maps -> evar_defs
+(* the same with empty meta map: *)
+val create_evar_defs :  evar_map -> evar_defs
 val evars_reset_evd :  evar_map ->  evar_defs -> evar_defs
+val reset_evd :  maps ->  evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
 type evar_constraint = conv_pb * constr * constr
@@ -82,6 +103,7 @@ val solve_simple_eqn :
 val define_evar_as_arrow : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
+(***********************************************************)
 (* Value/Type constraints *)
 
 val new_Type_sort : unit -> sorts
@@ -105,7 +127,3 @@ val valcon_of_tycon : type_constraint -> val_constraint
 
 val lift_tycon : type_constraint -> type_constraint
 
-(* Metas *)
-val nf_meta       : meta_map -> constr -> constr
-val meta_type     : meta_map -> metavariable -> types
-val meta_instance : meta_map -> constr freelisted -> constr

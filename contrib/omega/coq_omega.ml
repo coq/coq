@@ -567,7 +567,7 @@ let rec decompile af =
   in
   loop af.body
 
-let mkNewMeta () = mkMeta (Clenv.new_meta())
+let mkNewMeta () = mkMeta (Evarutil.new_meta())
 
 let clever_rewrite_base_poly typ p result theorem gl = 
   let full = pf_concl gl in

@@ -18,19 +18,19 @@ open Evd
 open Evarutil
 (*i*)
 
-type maps = evar_defs * meta_map
-
-val w_Declare : env -> evar -> types -> maps -> maps
-val w_Define : evar -> constr -> maps -> maps
+val w_Declare : env -> evar -> types -> evar_defs -> evar_defs
+val w_Define : evar -> constr -> evar_defs -> evar_defs
 
 (* The "unique" unification fonction *)
 val w_unify :
-  bool -> env -> Reductionops.conv_pb -> constr -> constr -> maps -> maps
+  bool -> env -> Reductionops.conv_pb -> constr -> constr ->
+  evar_defs -> evar_defs
 
 (* [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
-val w_unify_to_subterm : env -> constr * constr -> maps -> maps * constr
+val w_unify_to_subterm :
+  env -> constr * constr -> evar_defs -> evar_defs * constr
 
 (*i This should be in another module i*)
 

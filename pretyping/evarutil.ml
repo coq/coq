@@ -92,6 +92,63 @@ let nf_evar_info evc info =
     evar_body = info.evar_body}
 
 (**********************)
+(* Creating new metas *)
+(**********************)
+
+(* Generator of metavariables *)
+let new_meta =
+  let meta_ctr = ref 0 in
+  fun () -> incr meta_ctr; !meta_ctr
+
+let mk_new_meta () = mkMeta(new_meta())
+
+(* replaces a mapping of existentials into a mapping of metas.
+   Problem if an evar appears in the type of another one (pops anomaly) *)
+let exist_to_meta sigma (emap, c) =
+  let metamap = ref [] in
+  let change_exist evar =
+    let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
+    let n = new_meta() in
+    metamap := (n, ty) :: !metamap;
+    mkMeta n in
+  let rec replace c =
+    match kind_of_term c with
+        Evar (k,_ as ev) when not (Evd.in_dom sigma k) -> change_exist ev
+      | _ -> map_constr replace c in
+  (!metamap, replace c)
+
+(*************************************)
+(* Metas *)
+
+let meta_val_of env mv = 
+  let rec valrec mv =
+    try
+      (match Metamap.find mv env with
+	 | Cltyp _ -> mkMeta mv
+	 | Clval(b,_) ->
+	     instance (List.map (fun mv' -> (mv',valrec mv')) 
+			       (Metaset.elements b.freemetas)) b.rebus)
+    with Not_found -> 
+      mkMeta mv
+  in 
+  valrec mv
+
+let meta_instance env b =
+  let c_sigma =
+    List.map 
+      (fun mv -> (mv,meta_val_of env mv)) (Metaset.elements b.freemetas)
+  in 
+  instance c_sigma b.rebus
+
+let nf_meta env c = meta_instance env (mk_freelisted c)
+
+let meta_type env mv =
+  let ty =
+    try meta_ftype env mv
+    with Not_found -> error ("unknown meta ?"^string_of_int mv) in
+  meta_instance env ty
+
+(**********************)
 (* Creating new evars *)
 (**********************)
 
@@ -216,15 +273,22 @@ let do_restrict_hyps sigma ev args =
  * operations on the evar constraints *
  *------------------------------------*)
 
+type maps = evar_map * meta_map
 type evar_constraint = conv_pb * constr * constr
 type evar_defs =
     { evars : Evd.evar_map;
       conv_pbs : evar_constraint list;
-      history : (existential_key * (loc * Rawterm.hole_kind)) list }
+      history : (existential_key * (loc * Rawterm.hole_kind)) list;
+      metas : Evd.meta_map }
 
-let create_evar_defs evd = { evars=evd; conv_pbs=[]; history=[] }
+let mk_evar_defs (sigma,mmap) =
+  { evars=sigma; conv_pbs=[]; history=[]; metas=mmap }
+let create_evar_defs sigma =
+  mk_evar_defs (sigma,Metamap.empty)
 let evars_of d = d.evars
+let metas_of d = d.metas
 let evars_reset_evd evd d = {d with evars = evd}
+let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source ev d =
   try List.assoc ev d.history
@@ -594,33 +658,3 @@ let valcon_of_tycon x = x
 
 let lift_tycon = option_app (lift 1)
 
-(*************************************)
-(* Metas *)
-
-let meta_val_of env mv = 
-  let rec valrec mv =
-    try
-      (match Metamap.find mv env with
-	 | Cltyp _ -> mkMeta mv
-	 | Clval(b,_) ->
-	     instance (List.map (fun mv' -> (mv',valrec mv')) 
-			       (Metaset.elements b.freemetas)) b.rebus)
-    with Not_found -> 
-      mkMeta mv
-  in 
-  valrec mv
-
-let meta_instance env b =
-  let c_sigma =
-    List.map 
-      (fun mv -> (mv,meta_val_of env mv)) (Metaset.elements b.freemetas)
-  in 
-  instance c_sigma b.rebus
-
-let nf_meta env c = meta_instance env (mk_freelisted c)
-
-let meta_type env mv =
-  let ty =
-    try meta_ftype env mv
-    with Not_found -> error ("unknown meta ?"^string_of_int mv) in
-  meta_instance env ty

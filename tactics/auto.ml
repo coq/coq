@@ -323,7 +323,7 @@ let forward_subst_tactic =
 let set_extern_subst_tactic f = forward_subst_tactic := f
 
 let subst_autohint (_,subst,(local,name,hintlist as obj)) = 
-  let trans_clenv clenv = Clenv.subst_clenv (fun _ a -> a) subst clenv in
+  let trans_clenv clenv = Clenv.subst_clenv subst clenv in
   let trans_data data code = 	      
     { data with
 	pat = option_smartmap (subst_pattern subst) data.pat ;

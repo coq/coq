@@ -64,6 +64,10 @@ val existential_type : evar_map -> existential -> types
 val existential_opt_value : evar_map -> existential -> constr option
 
 (*************************)
+(* constr with holes *)
+type open_constr = evar_map * constr
+
+(*************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
 type 'a sigma = {

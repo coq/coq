@@ -20,10 +20,6 @@ open Evarutil
 
 type var_map = (identifier * unsafe_judgment) list
 
-(* constr with holes *)
-type open_constr = evar_map * constr
-
-
 (* Generic call to the interpreter from rawconstr to constr, failing
    unresolved holes in the rawterm cannot be instantiated.
 

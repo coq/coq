@@ -40,6 +40,7 @@ open Nametab
 open Genarg
 open Tacexpr
 open Decl_kinds
+open Evarutil
 
 exception Bound
 
@@ -421,7 +422,7 @@ let rec intros_rmove = function
  *  of the type of a term. *)
 
 let apply_type hdcty argl gl =
-  refine (applist (mkCast (mkMeta (new_meta()),hdcty),argl)) gl
+  refine (applist (mkCast (Evarutil.mk_new_meta(),hdcty),argl)) gl
     
 let apply_term hdc argl gl =
   refine (applist (hdc,argl)) gl
@@ -431,17 +432,12 @@ let bring_hyps hyps =
   else
     (fun gl ->
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
-      let f = mkCast (mkMeta (new_meta()),newcl) in
+      let f = mkCast (Evarutil.mk_new_meta(),newcl) in
       refine_no_check (mkApp (f, instance_from_named_context hyps)) gl)
 
 (* Resolution with missing arguments *)
 
 let apply_with_bindings (c,lbind) gl = 
-  let apply = 
-    match kind_of_term c with 
-      | Lambda _ -> Clenvtac.res_pf_cast 
-      | _ -> Clenvtac.res_pf 
-  in 
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -451,7 +447,7 @@ let apply_with_bindings (c,lbind) gl =
       let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
       if n<0 then error "Apply: theorem has not enough premisses.";
       let clause = make_clenv_binding_apply gl n (c,thm_ty) lbind in
-      apply clause gl
+      Clenvtac.res_pf clause gl
     with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
       let red_thm =
         try red_product (pf_env gl) (project gl) thm_ty
@@ -462,7 +458,7 @@ let apply_with_bindings (c,lbind) gl =
     (* Last chance: if the head is a variable, apply may try
        second order unification *)
     let clause = make_clenv_binding_apply gl (-1) (c,thm_ty0) lbind in 
-    apply clause gl
+    Clenvtac.res_pf clause gl
 
 let apply c = apply_with_bindings (c,NoBindings)
 
@@ -838,7 +834,7 @@ let new_hyp mopt (c,lbind) g =
 	      | Some m -> if m < nargs then list_firstn m tstack else tstack
 	      | None   -> tstack)
   in 
-  (tclTHENLAST (tclTHEN (tclEVARS clause.hook.sigma)
+  (tclTHENLAST (tclTHEN (tclEVARS (evars_of clause.env))
                (cut (pf_type_of g cut_pf)))
      ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
 
@@ -905,7 +901,7 @@ let elimination_clause_scheme elimclause indclause allow_K gl =
              (str "The type of elimination clause is not well-formed")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
-  elim_res_pf elimclause' allow_K gl
+  res_pf elimclause' ~allow_K:allow_K gl
 
 (* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
  * refine fails *)
@@ -986,7 +982,7 @@ let elimination_in_clause_scheme id elimclause indclause gl =
     errorlabstrm "general_rewrite_in" 
       (str "Nothing to rewrite in " ++ pr_id id);
   tclTHEN
-    (tclEVARS elimclause''.hook.sigma)
+    (tclEVARS (evars_of elimclause''.env))
     (tclTHENS
       (cut new_hyp_typ)
       [ (* Try to insert the new hyp at the same place *)
@@ -1667,7 +1663,7 @@ let elim_scheme_type elim t gl =
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify true CUMUL t (clenv_meta_type clause mv) clause in
-	elim_res_pf clause' true gl
+	res_pf clause' ~allow_K:true gl
     | _ -> anomaly "elim_scheme_type"
 
 let elim_type t gl =

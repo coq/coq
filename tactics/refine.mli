@@ -8,7 +8,6 @@
 
 (*i $Id$ i*)
 
-open Term
 open Tacmach
 
-val refine : Pretyping.open_constr -> tactic
+val refine : Evd.open_constr -> tactic
