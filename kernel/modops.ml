@@ -168,7 +168,7 @@ let subst_signature_msid msid mp =
 let rec constants_of_specification env mp sign =
  let aux res (l,elem) =
   match elem with
-   | SPBconst cb -> (make_con mp empty_dirpath l)::res
+   | SPBconst cb -> ((make_con mp empty_dirpath l),cb)::res
    | SPBmind _ -> res
    | SPBmodule mb ->
       (constants_of_modtype env (MPdot (mp,l))
@@ -191,16 +191,23 @@ let resolver_of_environment mbid modtype mp env =
  let constants = constants_of_modtype env (MPbound mbid) modtype in
  let resolve =
   List.map
-   (fun con ->
+   (fun (con,expecteddef) ->
      let con' = replace_mp_in_con (MPbound mbid) mp con in
      let constr =
       try
-       let constant = lookup_constant con' env in
-        if constant.Declarations.const_opaque then
-         None
-        else
-         option_app Declarations.force
-          constant.Declarations.const_body
+       if expecteddef.Declarations.const_body <> None then
+        (* Do not expand constants that already have a body in the
+           expected type (i.e. only parameters/axioms in the module type
+           are expanded). In the few examples we have this seems to
+           be the more reasonable behaviour for the user. *)
+        None
+       else
+        let constant = lookup_constant con' env in
+         if constant.Declarations.const_opaque then
+          None
+         else
+          option_app Declarations.force
+           constant.Declarations.const_body
       with Not_found -> assert false
      in
       con,constr
