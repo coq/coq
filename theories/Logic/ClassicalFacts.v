@@ -189,16 +189,16 @@ End Proof_irrelevance_CC.
 
 Section Proof_irrelevance_CIC.
 
-Inductive bool : Prop := true : bool | false : bool.
-Definition bool_elim_redl : (C:Prop)(c1,c2:C)c1==(bool_ind C c1 c2 true)
+Inductive boolP : Prop := trueP : boolP | falseP : boolP.
+Definition boolP_elim_redl : (C:Prop)(c1,c2:C)c1==(boolP_ind C c1 c2 trueP)
   := [C;c1,c2](refl_eqT C c1).
-Definition bool_elim_redr : (C:Prop)(c1,c2:C)c2==(bool_ind C c1 c2 false)
+Definition boolP_elim_redr : (C:Prop)(c1,c2:C)c2==(boolP_ind C c1 c2 falseP)
   := [C;c1,c2](refl_eqT C c2).
-Scheme bool_indd := Induction for bool Sort Prop.
+Scheme boolP_indd := Induction for boolP Sort Prop.
 
 Lemma ext_prop_dep_proof_irrel_cic : prop_extensionality -> proof_irrelevance.
-Proof [pe](ext_prop_dep_proof_irrel_gen bool true false bool_ind
-         bool_elim_redl bool_elim_redr pe bool_indd).
+Proof [pe](ext_prop_dep_proof_irrel_gen boolP trueP falseP boolP_ind
+         boolP_elim_redl boolP_elim_redr pe boolP_indd).
 
 End Proof_irrelevance_CIC.
 
@@ -212,4 +212,3 @@ End Proof_irrelevance_CIC.
   (nor dependent case analysis). This would imply that the previous
   results cannot be refined.
 *)
-
