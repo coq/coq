@@ -90,6 +90,13 @@ val intros_clearing      : bool list -> tactic
    hypothesis is already in context and directly apply [tac] *)
 val tactic_try_intros_until : (identifier,tactic_arg) parse_combinator
 
+(* Assuming a tactic [tac] depending on an hypothesis identifier,
+   [hide_ident_or_numarg_tactic str tac] registers a tactic which
+   compose [tac] with "Intros Until" and returns a tactic which
+   behaves as [tac] (without implicit "Intros until") but hiding the
+   implementation under the name [str] *)
+
+val hide_ident_or_numarg_tactic : identifier hide_combinator
 
 (*s Exact tactics. *)
 
