@@ -47,7 +47,7 @@ type local_state_reduction_function = state -> state
 (* Removes cast and put into applicative form *)
 val whd_stack : local_stack_reduction_function
 
-(* For compatibility: alias for whd_stack *)
+(* For compatibility: alias for whd\_stack *)
 val whd_castapp_stack : local_stack_reduction_function
 
 (*s Reduction Function Operators *)
