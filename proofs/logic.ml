@@ -221,7 +221,7 @@ let prim_refiner r sigma goal =
   match r with
     | { name = Intro; newids = [id] } ->
     	if mem_sign sign id then error "New variable is already declared";
-        (match strip_outer_cast cl.body with
+        (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = mk_assumption env sigma c1
@@ -232,7 +232,7 @@ let prim_refiner r sigma goal =
 	
     | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
     	if mem_sign sign id then error "New variable is already declared";
-        (match strip_outer_cast cl.body with
+        (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       if not (List.for_all
@@ -248,7 +248,7 @@ let prim_refiner r sigma goal =
 	   | _ -> error "Introduction needs a product")
 	
     | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
-	(match strip_outer_cast cl.body with
+	(match strip_outer_cast cl with
            | DOP2(Prod,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       if not (List.for_all 
@@ -280,10 +280,10 @@ let prim_refiner r sigma goal =
 		  check_ind (k-1) b
             | _ -> error "not enough products"
 	in
-     	let _ = check_ind n cl.body in 
+     	let _ = check_ind n cl in 
 	if mem_sign sign f then error "name already used in the environment";
-        let a = mk_assumption env sigma cl.body in
-        let sg = mk_goal info (push_var (f,a) env) cl.body in
+        let a = mk_assumption env sigma cl in
+        let sg = mk_goal info (push_var (f,a) env) cl in
         [sg]
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->

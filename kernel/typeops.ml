@@ -181,7 +181,7 @@ let type_of_existential env sigma c =
   let hyps = get_globals (context evi.Evd.evar_env) in
   let id = id_of_string ("?" ^ string_of_int ev) in
   check_hyps id env sigma hyps;
-  instantiate_type (ids_of_sign hyps) evi.Evd.evar_concl (Array.to_list args)
+  instantiate_constr (ids_of_sign hyps) evi.Evd.evar_concl (Array.to_list args)
 
 
 (* Case. *)

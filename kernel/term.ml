@@ -72,6 +72,10 @@ let body_of_type ty = ty.body
 
 let incast_type tty = DOP2 (Cast, tty.body, (DOP0 (Sort tty.typ)))
 
+let outcast_type = function
+   DOP2 (Cast, b, DOP0 (Sort s)) -> {body=b; typ=s}
+  | _ -> anomaly "outcast_type: Not an in-casted type judgement"
+
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)

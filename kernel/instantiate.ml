@@ -82,7 +82,7 @@ let existential_type sigma c =
   let (n,args) = destEvar c in
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
-  instantiate_constr (ids_of_sign hyps) (body_of_type info.evar_concl)
+  instantiate_constr (ids_of_sign hyps) info.evar_concl
     (Array.to_list args)
 
 let existential_value sigma c =

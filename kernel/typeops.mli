@@ -32,7 +32,7 @@ val type_of_inductive : unsafe_env -> 'a evar_map -> constr -> typed_type
 
 val type_of_constructor : unsafe_env -> 'a evar_map -> constr -> constr
 
-val type_of_existential : unsafe_env -> 'a evar_map -> constr -> typed_type
+val type_of_existential : unsafe_env -> 'a evar_map -> constr -> constr
 
 val type_of_case : unsafe_env -> 'a evar_map 
   -> unsafe_judgment -> unsafe_judgment 
