@@ -44,7 +44,7 @@ type value =
   | VTactic of interp_sign * Coqast.t
   | VFTactic of tactic_arg list * string
   | VRTactic of (goal list sigma * validation)
-  | VContext of (interp_sign -> goal sigma -> value)
+  | VContext of interp_sign * Coqast.t * Coqast.t list
   | VArg of tactic_arg
   | VFun of (identifier * value) list * identifier option list * Coqast.t
   | VVoid
@@ -483,7 +483,10 @@ let rec val_interp ist ast =
     | Node(_,"LET",[Node(_,"LETDECL",l);u]) ->
         let addlfun=letin_interp ist ast l in
         val_interp { ist with lfun=addlfun@ist.lfun } u
-    | Node(_,"MATCHCONTEXT",lmr) -> match_context_interp ist ast lmr
+    | Node(_,"MATCHCONTEXT",lmr) ->
+       (match ist.goalopt with
+          | None -> VContext (ist,ast,lmr)
+          | Some g -> match_context_interp ist ast lmr g)
     | Node(_,"MATCH",lmr) -> match_interp ist ast lmr
     (* Delayed evaluation *)
     | Node(loc,("LETCUT"|"IDTAC"|"FAIL"|"PROGRESS"|"TACTICLIST"|"DO"|"TRY"|"INFO"|"REPEAT"|"ORELSE"|"FIRST"|"TCLSOLVE"),_) -> VTactic (ist,ast)
@@ -754,7 +757,7 @@ and letcut_interp ist ast = function
       "LetCut not well formed: " ++ print_ast ast))
 
 (* Interprets the Match Context expressions *)
-and match_context_interp ist ast lmr =
+and match_context_interp ist ast lmr g =
 (*  let goal =
     (match goalopt with
     | None ->
@@ -827,9 +830,12 @@ and match_context_interp ist ast lmr =
      apply_match_context ist goal
      (read_match_context_rule evc env (constr_list ist) lmr)) in*)
 
+(*
  (match ist.goalopt with
     | None -> VContext app_wo_goal
     | Some g -> app_wo_goal ist g)
+*)
+        app_wo_goal ist g
 
 (*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc
       env (constr_list ist) lmr)*)
@@ -876,10 +882,10 @@ and apply_hyps_context ist mt lgmatch mhyps hyps =
 
 (* Interprets a VContext value *)
 and vcontext_interp ist = function
-  | (VContext f) as v ->
+  | (VContext (ist', ast, lmr)) as v ->
     (match ist.goalopt with
     | None -> v
-    | Some g -> f ist g)
+    | Some g -> match_context_interp ist' ast lmr g)
   | v -> v
 
 (* Interprets the Match expressions *)
