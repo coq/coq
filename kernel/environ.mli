@@ -97,7 +97,7 @@ val lookup_constant : section_path -> env -> constant_body
 val lookup_mind : section_path -> env -> mutual_inductive_body
 
 (*s Miscellanous *)
-val id_of_global : env -> sorts oper -> identifier
+val id_of_global : env -> global_reference -> identifier
 
 val make_all_name_different : env -> env
 

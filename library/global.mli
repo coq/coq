@@ -48,7 +48,7 @@ val import : compiled_env -> unit
 
 (*s Some functions of [Environ] instanciated on the global environment. *)
 
-val id_of_global : sorts oper -> identifier
+val id_of_global : global_reference -> identifier
 
 (*s Re-exported functions of [Inductive], composed with 
     [lookup_mind_specif]. *)

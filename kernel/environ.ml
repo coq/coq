@@ -195,23 +195,19 @@ let lowercase_first_char id = String.lowercase (first_char id)
 
 (* id_of_global gives the name of the given sort oper *)
 let id_of_global env = function
-  | Const sp -> 
+  | ConstRef sp -> 
       basename sp
-  | Evar ev ->
-      id_of_string ("?" ^ string_of_int ev)
-  | MutInd (sp,tyi) -> 
+  | IndRef (sp,tyi) -> 
       (* Does not work with extracted inductive types when the first 
 	 inductive is logic : if tyi=0 then basename sp else *)
       let mib = lookup_mind sp env in
       let mip = mind_nth_type_packet mib tyi in
       mip.mind_typename
-  | MutConstruct ((sp,tyi),i) ->
+  | ConstructRef ((sp,tyi),i) ->
       let mib = lookup_mind sp env in
       let mip = mind_nth_type_packet mib tyi in
       assert (i <= Array.length mip.mind_consnames && i > 0);
       mip.mind_consnames.(i-1)
-  | _ -> 
-      assert false
 
 let hdchar env c = 
   let rec hdrec k c =
@@ -228,9 +224,9 @@ let hdchar env c =
 	if i=0 then 
 	  lowercase_first_char (basename sp)
 	else 
-	  let na = id_of_global env (MutInd x) in lowercase_first_char na
+	  let na = id_of_global env (IndRef x) in lowercase_first_char na
     | IsMutConstruct ((sp,i) as x,_) ->
-	let na = id_of_global env (MutConstruct x) in
+	let na = id_of_global env (ConstructRef x) in
 	String.lowercase(List.hd(explode_id na))
     | IsVar id  -> lowercase_first_char id
     | IsSort s -> sort_hdchar s

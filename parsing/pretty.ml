@@ -414,10 +414,9 @@ let print_name name =
   with Not_found -> 
   try 
     match fst (Declare.global_operator CCI name) with
-      | Const sp -> print_constant true " = " sp
-      | MutInd (sp,_) -> print_inductive sp
-      | MutConstruct((sp,_),_) -> print_inductive sp
-      | _ -> assert false
+      | ConstRef sp -> print_constant true " = " sp
+      | IndRef (sp,_) -> print_inductive sp
+      | ConstructRef ((sp,_),_) -> print_inductive sp
   with Not_found -> 
   try
     let (c,typ) = Global.lookup_var name in 

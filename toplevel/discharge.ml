@@ -34,10 +34,9 @@ let interp_modif absfun oper (oper',modif) cl =
   let rec interprec = function
     | ([], cl) -> 
 	(match oper' with
-	   | Const sp -> mkConst (sp,Array.of_list cl)
-	   | MutConstruct sp -> mkMutConstruct (sp,Array.of_list cl)
-	   | MutInd sp -> mkMutInd (sp,Array.of_list cl)
-	   | _ -> anomaly "not a reference operator")
+	   | ConstRef sp -> mkConst (sp,Array.of_list cl)
+	   | ConstructRef sp -> mkMutConstruct (sp,Array.of_list cl)
+	   | IndRef sp -> mkMutInd (sp,Array.of_list cl))
     | (ERASE::tlm, c::cl) -> interprec (tlm,cl)
     | (ABSTRACT::tlm, c::cl) -> absfun (interprec (tlm,cl)) c
     | _ -> assert false
@@ -67,8 +66,8 @@ let modify_opers replfun absfun oper_alist =
       (* Hack pour le sp dans l'annotation du Cases *)
       | OpMutCase (n,(spi,a,b,c,d) as oper) ->
 	  (try
-	     match List.assoc (MutInd spi) oper_alist with
-	       | DO_ABSTRACT (MutInd spi',_) ->
+	     match List.assoc (IndRef spi) oper_alist with
+	       | DO_ABSTRACT (IndRef spi',_) ->
 		   gather_constr (OpMutCase (n,(spi',a,b,c,d)),cl')
 	       | _ -> raise Not_found
 	   with
@@ -76,13 +75,13 @@ let modify_opers replfun absfun oper_alist =
 
       | OpMutInd spi ->
 	  (try
-	     (match List.assoc (MutInd spi) oper_alist with
+	     (match List.assoc (IndRef spi) oper_alist with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',modif) ->
 		    if List.length modif > Array.length cl then
 		      anomaly "found a reference with too few args"
 		    else 
-		      interp_modif absfun (MutInd spi) (oper',modif)
+		      interp_modif absfun (IndRef spi) (oper',modif)
 			(Array.to_list cl')
 		| DO_REPLACE -> assert false)
 	   with 
@@ -90,13 +89,13 @@ let modify_opers replfun absfun oper_alist =
 
       | OpMutConstruct spi ->
 	  (try
-	     (match List.assoc (MutConstruct spi) oper_alist with
+	     (match List.assoc (ConstructRef spi) oper_alist with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',modif) ->
 		    if List.length modif > Array.length cl then
 		      anomaly "found a reference with too few args"
 		    else 
-		      interp_modif absfun (MutConstruct spi) (oper',modif)
+		      interp_modif absfun (ConstructRef spi) (oper',modif)
 			(Array.to_list cl')
 		| DO_REPLACE -> assert false)
 	   with 
@@ -104,13 +103,13 @@ let modify_opers replfun absfun oper_alist =
 
       | OpConst sp ->
 	  (try
-	     (match List.assoc (Const sp) oper_alist with
+	     (match List.assoc (ConstRef sp) oper_alist with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',modif) ->
 		    if List.length modif > Array.length cl then
 		      anomaly "found a reference with too few args"
 		    else 
-		      interp_modif absfun (Const sp) (oper',modif)
+		      interp_modif absfun (ConstRef sp) (oper',modif)
 			(Array.to_list cl')
 		| DO_REPLACE -> substrec (replfun (sp,cl')))
 	   with 
@@ -247,12 +246,12 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   let (inds',modl) = abstract_inductive ids_to_discard mib.mind_hyps inds in
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
-    (MutInd(osecsp,i),DO_ABSTRACT(MutInd(nsecsp,i),modl))::
+    (IndRef (osecsp,i), DO_ABSTRACT (IndRef(nsecsp,i),modl))::
     (list_tabulate
        (function j -> 
 	  let j' = j + 1 in
-	  (MutConstruct((osecsp,i),j'),
-	   DO_ABSTRACT(MutConstruct((nsecsp,i),j'),modl)))
+	  (ConstructRef ((osecsp,i),j'),
+	   DO_ABSTRACT (ConstructRef ((nsecsp,i),j'),modl)))
        nbc) 
   in
   let modifs = List.flatten (list_tabulate lmodif_one_mind mib.mind_ntypes) in 
@@ -270,7 +269,7 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
   let typ = expmod_type oldenv modlist cb.const_type in
   let hyps = map_var_context (expmod_constr oldenv modlist) cb.const_hyps in
   let (body',typ',modl) = abstract_constant ids_to_discard hyps (body,typ) in
-  let mods = [ (Const osecsp, DO_ABSTRACT(Const nsecsp,modl)) ] in
+  let mods = [ (ConstRef osecsp, DO_ABSTRACT(ConstRef nsecsp,modl)) ] in
   (body', body_of_type typ', mods)
 
 
@@ -322,7 +321,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
     | "CONSTANT" | "PARAMETER" ->
 	let stre = constant_or_parameter_strength sp in
 	if stre = (DischargeAt sec_sp) then
-	  (ops, ids_to_discard, (Const sp, DO_REPLACE) :: work_alist)
+	  (ops, ids_to_discard, (ConstRef sp, DO_REPLACE) :: work_alist)
 	else
 	  let cb = Environ.lookup_constant sp oldenv in
 	  let spid = basename sp in

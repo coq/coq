@@ -83,7 +83,7 @@ let resolve_with_bindings_tac  (c,lbind) gl =
 
 let reduce_to_mind gl t = 
   let rec elimrec t l =
-    let c, args = whd_castapp_stack t [] in
+    let c, args = whd_stack t in
     match kind_of_term c, args with
     | (IsMutInd _,_) -> (c,Environ.it_mkProd_or_LetIn t l)
     | (IsConst _,_) -> 
@@ -162,9 +162,9 @@ exception Destruct
 let dest_const_apply t = 
   let f,args = get_applist t in 
   match kind_of_term f with 
-    | IsConst (sp,_) -> 	Global.id_of_global (Const sp),args
-    | IsMutConstruct (csp,_) -> Global.id_of_global (MutConstruct csp),args
-    | IsMutInd (isp,_)       -> Global.id_of_global (MutInd isp),args
+    | IsConst (sp,_) -> 	Global.id_of_global (ConstRef sp),args
+    | IsMutConstruct (csp,_) -> Global.id_of_global (ConstructRef csp),args
+    | IsMutInd (isp,_)       -> Global.id_of_global (IndRef isp),args
     | _ -> raise Destruct 
 
 type result = 
@@ -177,11 +177,11 @@ let destructurate t =
   let c, args = get_applist t in
   match kind_of_term c, args with
     | IsConst (sp,_), args ->
-	Kapp (string_of_id (Global.id_of_global (Const sp)),args)
+	Kapp (string_of_id (Global.id_of_global (ConstRef sp)),args)
     | IsMutConstruct (csp,_) , args ->
-	Kapp (string_of_id (Global.id_of_global (MutConstruct csp)),args)
+	Kapp (string_of_id (Global.id_of_global (ConstructRef csp)),args)
     | IsMutInd (isp,_), args ->
-	Kapp (string_of_id (Global.id_of_global (MutInd isp)),args)
+	Kapp (string_of_id (Global.id_of_global (IndRef isp)),args)
     | IsVar id,[] -> Kvar(string_of_id id)
     | IsProd (Anonymous,typ,body), [] -> Kimp(typ,body)
     | IsProd (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"

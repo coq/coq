@@ -223,22 +223,22 @@ let first f v =
   look_for 0
 
 let mind_oper_of_id sp id mib =
-  first 
+  first
     (fun tyi mip ->
        if id = mip.mind_typename then 
-	 MutInd (sp,tyi)
+	 IndRef (sp,tyi)
        else
 	 first 
 	   (fun cj cid -> 
 	      if id = cid then 
-		MutConstruct((sp,tyi),succ cj) 
+		ConstructRef ((sp,tyi),succ cj) 
 	      else raise Not_found) 
 	   mip.mind_consnames)
     mib.mind_packets
 
 let global_sp_operator env sp id =
   try
-    let cb = Environ.lookup_constant sp env in Const sp, cb.const_hyps
+    let cb = Environ.lookup_constant sp env in ConstRef sp, cb.const_hyps
   with Not_found -> 
     let mib = Environ.lookup_mind sp env in
     mind_oper_of_id sp id mib, mib.mind_hyps
@@ -287,10 +287,9 @@ let construct_sp_reference env sp id =
   let env0 = Environ.reset_context env in
   let args = List.map mkVar (ids_of_var_context hyps) in
   let body = match oper with
-    | Const sp -> mkConst (sp,Array.of_list args)
-    | MutConstruct sp -> mkMutConstruct (sp,Array.of_list args)
-    | MutInd sp -> mkMutInd (sp,Array.of_list args)
-    | _ -> assert false
+    | ConstRef sp -> mkConst (sp,Array.of_list args)
+    | ConstructRef sp -> mkMutConstruct (sp,Array.of_list args)
+    | IndRef sp -> mkMutInd (sp,Array.of_list args)
   in
   find_common_hyps_then_abstract body env0 hyps0 hyps
 
@@ -351,7 +350,6 @@ let elimination_suffix = function
   | Prop Pos  -> "_rec"
 
 let declare_eliminations sp i =
-  let oper = MutInd (sp,i) in
   let mib = Global.lookup_mind sp in
   let ids = ids_of_var_context mib.mind_hyps in
   if not (list_subset ids (ids_of_var_context (Global.var_context ()))) then

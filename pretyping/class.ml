@@ -443,9 +443,9 @@ let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
 	if defined_in_sec sp sec_sp then 
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  let id = Global.id_of_global (MutConstruct((newsp,i),j)) in
+	  let id = Global.id_of_global (ConstructRef ((newsp,i),j)) in
           (((NAM_Constructor ((newsp,i),j)),coeinfo),s1,t1),id,p
 	else
 	  ((coe,coeinfo),s1,t1),
-	  Global.id_of_global (MutConstruct((sp,i),j)),
+	  Global.id_of_global (ConstructRef ((sp,i),j)),
 	  p

@@ -103,7 +103,7 @@ let coq_eqT = lazy (constant "#Logic_Type#eqT.cci" "eqT")
 
 module OperSet = 
   Set.Make (struct 
-	      type t = sorts oper
+	      type t = global_reference
 	      let compare = (Pervasives.compare : t->t->int)
 	    end)	
 
@@ -299,7 +299,7 @@ let build_spolynom gl th lc =
   (* aux creates the spolynom p by a recursive destructuration of c 
      and builds the varmap with side-effects *)
   let rec aux c = 
-    match (kind_of_term (whd_castapp c)) with 
+    match (kind_of_term (strip_outer_cast c)) with 
       | IsAppL (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_SPplus; th.th_a; aux c1; aux c2 |]
       | IsAppL (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
@@ -353,7 +353,7 @@ let build_polynom gl th lc =
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
-    match (kind_of_term (whd_castapp c)) with 
+    match (kind_of_term (strip_outer_cast c)) with 
       | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_Pplus; th.th_a; aux c1; aux c2 |]
       | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
@@ -418,7 +418,7 @@ let build_aspolynom gl th lc =
   (* aux creates the aspolynom p by a recursive destructuration of c 
      and builds the varmap with side-effects *)
   let rec aux c = 
-    match (kind_of_term (whd_castapp c)) with 
+    match (kind_of_term (strip_outer_cast c)) with 
       | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_ASPplus; aux c1; aux c2 |]
       | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
@@ -469,7 +469,7 @@ let build_apolynom gl th lc =
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
-    match (kind_of_term (whd_castapp c)) with 
+    match (kind_of_term (strip_outer_cast c)) with 
       | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_APplus; aux c1; aux c2 |]
       | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->

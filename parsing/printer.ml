@@ -38,10 +38,10 @@ let globpr gt = match gt with
       pr_qualified_path sp (basename (section_path sl s))
   | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
       let sp = section_path sl s in
-      pr_qualified_path sp (Global.id_of_global (MutInd (sp,tyi)))
+      pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
   | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
       let sp = section_path sl s in
-      pr_qualified_path sp (Global.id_of_global (MutConstruct ((sp,tyi),i)))
+      pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
 (*
   | Node(_,"EVAR", (Num (_,ev))::_) ->
       if !print_arguments then dfltpr gt

@@ -58,7 +58,7 @@ val variable_strength : identifier -> strength
     construtor) corresponding to [id] in global environment, together
     with its definition environment. *)
 
-val global_operator : path_kind -> identifier -> sorts oper * var_context
+val global_operator : path_kind -> identifier -> global_reference * var_context
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 
