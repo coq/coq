@@ -1924,10 +1924,11 @@ tactics/tactics.cmo: lib/util.cmi pretyping/termops.cmi kernel/term.cmi \
     library/nametab.cmi kernel/names.cmi library/nameops.cmi proofs/logic.cmi \
     library/libnames.cmi pretyping/inductiveops.cmi kernel/inductive.cmi \
     pretyping/indrec.cmi tactics/hipattern.cmi library/global.cmi \
-    interp/genarg.cmi pretyping/evd.cmi proofs/evar_refiner.cmi \
-    kernel/environ.cmi kernel/entries.cmi library/declare.cmi \
-    kernel/declarations.cmi library/decl_kinds.cmo interp/coqlib.cmi \
-    interp/constrintern.cmi proofs/clenv.cmi tactics/tactics.cmi 
+    interp/genarg.cmi pretyping/evd.cmi pretyping/evarutil.cmi \
+    proofs/evar_refiner.cmi kernel/environ.cmi kernel/entries.cmi \
+    library/declare.cmi kernel/declarations.cmi library/decl_kinds.cmo \
+    interp/coqlib.cmi interp/constrintern.cmi proofs/clenv.cmi \
+    tactics/tactics.cmi 
 tactics/tactics.cmx: lib/util.cmx pretyping/termops.cmx kernel/term.cmx \
     tactics/tacticals.cmx pretyping/tacred.cmx proofs/tacmach.cmx \
     proofs/tacexpr.cmx kernel/sign.cmx proofs/refiner.cmx \
@@ -1936,10 +1937,11 @@ tactics/tactics.cmx: lib/util.cmx pretyping/termops.cmx kernel/term.cmx \
     library/nametab.cmx kernel/names.cmx library/nameops.cmx proofs/logic.cmx \
     library/libnames.cmx pretyping/inductiveops.cmx kernel/inductive.cmx \
     pretyping/indrec.cmx tactics/hipattern.cmx library/global.cmx \
-    interp/genarg.cmx pretyping/evd.cmx proofs/evar_refiner.cmx \
-    kernel/environ.cmx kernel/entries.cmx library/declare.cmx \
-    kernel/declarations.cmx library/decl_kinds.cmx interp/coqlib.cmx \
-    interp/constrintern.cmx proofs/clenv.cmx tactics/tactics.cmi 
+    interp/genarg.cmx pretyping/evd.cmx pretyping/evarutil.cmx \
+    proofs/evar_refiner.cmx kernel/environ.cmx kernel/entries.cmx \
+    library/declare.cmx kernel/declarations.cmx library/decl_kinds.cmx \
+    interp/coqlib.cmx interp/constrintern.cmx proofs/clenv.cmx \
+    tactics/tactics.cmi 
 tactics/tauto.cmo: lib/util.cmi interp/topconstr.cmi tactics/tactics.cmi \
     tactics/tacticals.cmi tactics/tacinterp.cmi proofs/tacexpr.cmo \
     proofs/refiner.cmi pretyping/rawterm.cmi proofs/proof_type.cmi \
