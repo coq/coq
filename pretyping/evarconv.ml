@@ -203,14 +203,19 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
 	| IsSort s1, IsSort s2 when l1=[] & l2=[] -> base_sort_cmp pbty s1 s2
 
-	| IsLambda (_,c1,c'1), IsLambda (_,c2,c'2) when l1=[] & l2=[] -> 
+	| IsLambda (na,c1,c'1), IsLambda (_,c2,c'2) when l1=[] & l2=[] -> 
 	    evar_conv_x env isevars CONV c1 c2
-	    & evar_conv_x env isevars CONV c'1 c'2
+	    & 
+	    (let c = nf_ise1 (evars_of isevars) c1 in
+             evar_conv_x (push_rel_assum (na,c) env) isevars CONV c'1 c'2)
 
-	| IsLetIn (_,b1,_,c'1), IsLetIn (_,b2,_,c'2) ->
+	| IsLetIn (na,b1,t1,c'1), IsLetIn (_,b2,_,c'2) ->
 	    let f1 () =
 	      evar_conv_x env isevars CONV b1 b2
-	      & evar_conv_x env isevars pbty c'1 c'2
+	      & 
+              (let b = nf_ise1 (evars_of isevars) b1 in
+	       let t = nf_ise1 (evars_of isevars) t1 in
+               evar_conv_x (push_rel_def (na,b,t) env) isevars pbty c'1 c'2)
 	      & (List.length l1 = List.length l2)
 	      & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
 	    and f2 () =
@@ -228,8 +233,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
             evar_conv_x env isevars CONV c1 c2
             & 
-	    (let d = nf_ise1 (evars_of isevars) c1 in
-	     evar_conv_x (push_rel_assum (n,d) env) isevars pbty c'1 c'2)
+	    (let c = nf_ise1 (evars_of isevars) c1 in
+	     evar_conv_x (push_rel_assum (n,c) env) isevars pbty c'1 c'2)
 
 	| IsMutInd (sp1,cl1), IsMutInd (sp2,cl2) ->
 	    sp1=sp2
