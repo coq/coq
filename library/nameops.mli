@@ -38,7 +38,7 @@ val pr_lab : label -> Pp.std_ppcmds
 
 (* some preset paths *)
 
-val default_module : dir_path
+val default_library : dir_path
 
 (* This is the root of the standard library of Coq *)
 val coq_root : module_ident

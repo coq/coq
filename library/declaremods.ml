@@ -403,7 +403,7 @@ let rec get_some_body mty env = match mty with
 
 
 let intern_args interp_modtype (env,oldargs) (idl,arg) = 
-  let lib_dir = Lib.module_dp() in
+  let lib_dir = Lib.library_dp() in
   let mbids = List.map (fun id -> make_mbid lib_dir (string_of_id id)) idl in
   let mty = interp_modtype env arg in
   let dirs = List.map (fun id -> make_dirpath [id]) idl in
@@ -446,7 +446,7 @@ let end_module id =
 
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module id in
   let mp = Global.end_module id in
-  let substitute, keep, special = Lib.classify_objects lib_stack in
+  let substitute, keep, special = Lib.classify_segment lib_stack in
 
   let dir = fst oldprefix in
   let msid = msid_of_prefix oldprefix in
@@ -537,7 +537,7 @@ let export_library dir =
   let cenv = Global.export dir in
   let prefix, lib_stack = Lib.end_compilation dir in
   let msid = msid_of_prefix prefix in
-  let substitute, keep, _ = Lib.classify_objects lib_stack in
+  let substitute, keep, _ = Lib.classify_segment lib_stack in
     cenv,(msid,substitute,keep)
 
 
@@ -568,7 +568,7 @@ let end_modtype id =
 
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype id in
   let ln = Global.end_modtype id in
-  let substitute, _, special = Lib.classify_objects lib_stack in
+  let substitute, _, special = Lib.classify_segment lib_stack in
 
   let msid = msid_of_prefix prefix in
   let mbids = !openmodtype_info in

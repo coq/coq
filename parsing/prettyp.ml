@@ -365,7 +365,7 @@ let rec print_library_entry with_values ent =
         (str " >>>>>>> Section " ++ pr_name oname ++ fnl ())
     | (oname,Lib.ClosedSection _) -> 
         (str " >>>>>>> Closed Section " ++ pr_name oname ++ fnl ())
-    | (_,Lib.CompilingModule (dir,_)) ->
+    | (_,Lib.CompilingLibrary (dir,_)) ->
 	(str " >>>>>>> Library " ++ pr_dirpath dir ++ fnl ())
     | (oname,Lib.OpenedModule _) ->
 	(str " >>>>>>> Module " ++ pr_name oname ++ fnl ())

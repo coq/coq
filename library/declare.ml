@@ -405,7 +405,7 @@ let is_section_variable = function
 
 (* TODO temporary hack!!! *)
 let rec is_imported_modpath = function
-  | MPfile dp -> dp <> (Lib.module_dp ())
+  | MPfile dp -> dp <> (Lib.library_dp ())
 (*  | MPdot (mp,_) -> is_imported_modpath mp *)
   | _ -> false
 

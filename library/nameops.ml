@@ -147,7 +147,7 @@ let next_name_away name l =
 
 let pr_lab l = str (string_of_label l)
 
-let default_module = Names.initial_dir (* = ["Top"] *)
+let default_library = Names.initial_dir (* = ["Top"] *)
 
 (*s Roots of the space of absolute names *)
 let coq_root = id_of_string "Coq"

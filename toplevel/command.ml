@@ -106,7 +106,7 @@ let declare_definition ident local bl red_option c typopt =
     error "Evaluation under a local context not supported";
   let ce' = red_constant_entry ce red_option in
   match local with
-    | Local when Lib.is_section_p (Lib.cwd ()) ->
+    | Local when Lib.sections_are_opened () ->
         let c =
           SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
         let _ = declare_variable ident (Lib.cwd(), c, IsDefinition) in
@@ -134,7 +134,7 @@ let declare_assumption ident (local,kind) bl c =
   let c = prod_rawconstr c bl in
   let c = interp_type Evd.empty (Global.env()) c in
   match local with
-    | Local when Lib.is_section_p (Lib.cwd ()) ->
+    | Local when Lib.sections_are_opened () ->
         let r = 
           declare_variable ident 
             (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
@@ -500,7 +500,7 @@ let save id const kind hook =
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
   begin match kind with
-    | IsLocal when Lib.is_section_p (Lib.cwd ()) ->
+    | IsLocal when Lib.sections_are_opened () ->
 	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, IsDefinition) in
 	hook Local (VarRef id)

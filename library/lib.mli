@@ -22,56 +22,35 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | CompilingModule of object_prefix
+  | CompilingLibrary of object_prefix
   | OpenedModule of object_prefix * Summary.frozen
   | OpenedModtype of object_prefix * Summary.frozen
   | OpenedSection of object_prefix * Summary.frozen
   | ClosedSection of bool * dir_path * library_segment
   | FrozenState of Summary.frozen
 
-and library_entry = object_name * node
-
-and library_segment = library_entry list
+and library_segment = (object_name * node) list
 
 type lib_objects = (identifier * obj) list
 
-(*s These functions iterate (or map) object functions.
-
-  [subst_segment prefix subst seg] makes an assumption that all
-  objects in [seg] have the same prefix. This prefix is universally
-  changed to [prefix].
-
-  [classify_segment seg] divides segment into objects which responded
-  with [Substitute], [Keep], [Anticipate] respectively, to the
-  [classify_object] function.  The order of each returned list is the
-  same as in the input list.
-
-  [change_kns mp lib] only changes the prefix of the [kernel_name]
-  part of the [object_name] of every object to [(mp,empty_dirpath)].
-  The [section_path] part of the [object_name] and the object itself
-  are unchanged.
-*)
-
-
-val open_segment : int -> library_segment -> unit
-val load_segment : int -> library_segment -> unit
-val subst_segment : 
-  object_prefix -> substitution -> library_segment -> library_segment
-val classify_segment : 
-  library_segment -> library_segment * library_segment * library_segment
-val change_kns : module_path -> library_segment -> library_segment
-
-
+(*s Object iteratation functions. *)
 
 val open_objects : int -> object_prefix -> lib_objects -> unit
 val load_objects : int -> object_prefix -> lib_objects -> unit
-val subst_objects : 
-  object_prefix -> substitution -> lib_objects -> lib_objects
-val classify_objects : 
+val subst_objects : object_prefix -> substitution -> lib_objects -> lib_objects
+
+(* [classify_segment seg] verifies that there are no OpenedThings,
+   clears ClosedSections and FrozenStates and divides Leafs according
+   to their answers to the [classify_object] function in three groups:
+   [Substitute], [Keep], [Anticipate] respectively.  The order of each
+   returned list is the same as in the input list. *)
+val classify_segment : 
   library_segment -> lib_objects * lib_objects * obj list
 
+(* [segment_of_objects prefix objs] forms a list of Leafs *)
 val segment_of_objects :
   object_prefix -> lib_objects -> library_segment
+
 
 (*s Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
@@ -87,41 +66,33 @@ val add_leaves : identifier -> obj list -> object_name
 val add_frozen_state : unit -> unit
 val mark_end_of_command : unit -> unit
 
+
 (*s The function [contents_after] returns the current library segment, 
   starting from a given section path. If not given, the entire segment
   is returned. *)
 
 val contents_after : object_name option -> library_segment
 
-(* Returns true if we are inside an opened module type *)
+(*s Functions relative to current path *)
+
+(* User-side names *)
+val cwd : unit -> dir_path
+val make_path : identifier -> section_path
+
+(* Kernel-side names *)
+val current_prefix : unit -> module_path * dir_path
+val make_kn : identifier -> kernel_name
+
+(* Are we inside an opened section *)
+val sections_are_opened : unit -> bool
+val sections_depth : unit -> int
+
+(* Are we inside an opened module type *)
 val is_specification : unit -> bool
 
 (* Returns the most recent OpenedThing node *)
-val what_is_opened : unit -> library_entry
+val what_is_opened : unit -> object_name * node
 
-(*s Opening and closing a section. *)
-
-val open_section : identifier -> object_prefix
-
-val close_section : export:bool -> identifier -> 
-  object_prefix * library_segment * Summary.frozen
-
-val sections_are_opened : unit -> bool
-
-val make_path : identifier -> section_path
-val make_kn : identifier -> kernel_name
-
-val cwd : unit -> dir_path
-val sections_depth : unit -> int
-val is_section_p : dir_path -> bool
-
-(*s Compilation units *)
-
-val start_compilation : dir_path -> module_path -> unit
-val end_compilation : dir_path -> object_prefix * library_segment
-
-(* The function [module_dp] returns the [dir_path] of the current module *)
-val module_dp : unit -> dir_path
 
 (*s Modules and module types *)
 
@@ -134,10 +105,23 @@ val start_modtype :
   module_ident -> module_path -> Summary.frozen -> object_prefix
 val end_modtype : module_ident 
   -> object_name * object_prefix * Summary.frozen * library_segment
+(* Lib.add_frozen_state must be called after each of the above functions *)
 
-(* Lib.add_frozen_state must be called after all of the above functions *)
+(*s Compilation units *)
 
-val current_prefix : unit -> module_path * dir_path
+val start_compilation : dir_path -> module_path -> unit
+val end_compilation : dir_path -> object_prefix * library_segment
+
+(* The function [library_dp] returns the [dir_path] of the current
+   compiling library (or [default_library]) *)
+val library_dp : unit -> dir_path
+
+(*s Sections *)
+
+val open_section : identifier -> object_prefix
+
+val close_section : export:bool -> identifier -> 
+  object_prefix * library_segment * Summary.frozen
 
 (*s Backtracking (undo). *)
 

@@ -124,7 +124,7 @@ type library_t = {
   library_imports : compilation_unit_name list;
   library_digest : Digest.t }
 
-module CompilingModuleOrdered = 
+module CompilingLibraryOrdered = 
   struct
     type t = dir_path
     let compare d1 d2 =
@@ -132,10 +132,10 @@ module CompilingModuleOrdered =
         (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
   end
 
-module CompilingModulemap = Map.Make(CompilingModuleOrdered)
+module CompilingLibraryMap = Map.Make(CompilingLibraryOrdered)
 
 (* This is a map from names to libraries *)
-let libraries_table = ref CompilingModulemap.empty
+let libraries_table = ref CompilingLibraryMap.empty
 
 (* These are the _ordered_ lists of loaded, imported and exported libraries *)
 let libraries_loaded_list = ref []
@@ -155,7 +155,7 @@ let unfreeze (mt,mo,mi,me) =
   libraries_exports_list := me
 
 let init () =
-  libraries_table := CompilingModulemap.empty;
+  libraries_table := CompilingLibraryMap.empty;
   libraries_loaded_list := [];
   libraries_imports_list := [];
   libraries_exports_list := []
@@ -169,14 +169,14 @@ let _ =
 
 let find_library s =
   try
-    CompilingModulemap.find s !libraries_table
+    CompilingLibraryMap.find s !libraries_table
   with Not_found ->
     error ("Unknown library " ^ (string_of_dirpath s))
 
 let library_full_filename m = (find_library m).library_filename
 
 let library_is_loaded dir =
-  try let _ = CompilingModulemap.find dir !libraries_table in true
+  try let _ = CompilingLibraryMap.find dir !libraries_table in true
   with Not_found -> false
 
 let library_is_opened dir = 
@@ -200,7 +200,7 @@ let register_loaded_library m =
     | m'::_ as l when m'.library_name = m.library_name -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
-  libraries_table := CompilingModulemap.add m.library_name m !libraries_table
+  libraries_table := CompilingLibraryMap.add m.library_name m !libraries_table
 
   (* ... while if a library is imported/exported several time, then
      only the last occurrence is really needed - though the imported
@@ -220,41 +220,11 @@ let register_open_library export m =
     libraries_exports_list := remember_last_of_each !libraries_exports_list m
 
 (************************************************************************)
-(*s Operations on library objects and opening *)
-
-(*let segment_rec_iter f =
-  let rec apply = function
-    | sp,Leaf obj -> f (sp,obj)
-    | _,OpenedSection _ -> assert false
-    | _,ClosedSection (_,_,seg) -> iter seg
-    | _,(FrozenState _ | CompilingModule _ 
-	| OpenedModule _ | OpenedModtype _) -> ()
-  and iter seg =
-    List.iter apply seg
-  in
-  iter
-
-let segment_iter i v f =
-  let rec apply = function
-    | sp,Leaf obj -> f (i,sp,obj)
-    | _,OpenedSection _ -> assert false
-    | sp,ClosedSection (export,dir,seg) ->
-	push_dir v dir (DirClosedSection dir);
-	if export then iter seg
-    | _,(FrozenState _ | CompilingModule _ 
-	| OpenedModule _ | OpenedModtype _) -> ()
-  and iter seg =
-    List.iter apply seg
-  in
-  iter
-*)
+(*s Opening libraries *)
 
 (*s [open_library s] opens a library. The library [s] and all libraries needed by
     [s] are assumed to be already loaded. When opening [s] we recursively open
     all the libraries needed by [s] and tagged [exported]. *) 
-
-(*let open_objects i decls =
-  segment_iter i (Exactly i) open_object decls*)
 
 let eq_lib_name m1 m2 = m1.library_name = m2.library_name
 
@@ -288,7 +258,7 @@ let open_libraries export modl =
 (************************************************************************)
 (*s Loading from disk to cache (preparation phase) *)
 
-let compunit_cache = ref CompilingModulemap.empty
+let compunit_cache = ref CompilingLibraryMap.empty
 
 let vo_magic_number = 0703 (* V7.3 *)
 
@@ -308,7 +278,7 @@ type library_location = LibLoaded | LibInPath
 let locate_absolute_library dir =
   (* Look if loaded in current environment *)
   try
-    let m = CompilingModulemap.find dir !libraries_table in
+    let m = CompilingLibraryMap.find dir !libraries_table in
     (dir, m.library_filename)
   with Not_found ->
   (* Look if in loadpath *)
@@ -348,11 +318,11 @@ let intern_from_file f =
 let rec intern_library (dir, f) =
   try
     (* Look if in the current logical environment *)
-    CompilingModulemap.find dir !libraries_table
+    CompilingLibraryMap.find dir !libraries_table
   with Not_found ->
   try
     (* Look if already loaded in cache and consequently its dependencies *)
-    CompilingModulemap.find dir !compunit_cache
+    CompilingLibraryMap.find dir !compunit_cache
   with Not_found ->
     (* [dir] is an absolute name which matches [f] which must be in loadpath *)
     let m = intern_from_file f in
@@ -361,12 +331,12 @@ let rec intern_library (dir, f) =
 	(str ("The file " ^ f ^ " contains library") ++ spc () ++
 	 pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
          spc() ++ pr_dirpath dir);
-    compunit_cache := CompilingModulemap.add dir m !compunit_cache;
+    compunit_cache := CompilingLibraryMap.add dir m !compunit_cache;
     try
       List.iter (intern_mandatory_library dir) m.library_deps;
       m
     with e ->
-      compunit_cache := CompilingModulemap.remove dir !compunit_cache; 
+      compunit_cache := CompilingLibraryMap.remove dir !compunit_cache; 
       raise e
 
 and intern_mandatory_library caller (dir,d) =
@@ -406,13 +376,13 @@ let rec_intern_by_filename_only id f =
   check_library_short_name f m.library_name id;
   (* We check no other file containing same library is loaded *)
   try
-    let m' = CompilingModulemap.find m.library_name !libraries_table in
+    let m' = CompilingLibraryMap.find m.library_name !libraries_table in
     Options.if_verbose warning 
       ((string_of_dirpath m.library_name)^" is already loaded from file "^
        m'.library_filename);
     m.library_name
   with Not_found ->
-    compunit_cache := CompilingModulemap.add m.library_name m !compunit_cache;
+    compunit_cache := CompilingLibraryMap.add m.library_name m !compunit_cache;
     List.iter (intern_mandatory_library m.library_name) m.library_deps;
     m.library_name
 
@@ -483,11 +453,11 @@ let string_of_library (_,dir,_) = string_of_id (List.hd (repr_dirpath dir))
 let rec load_library dir =
   try
     (* Look if loaded in current env (and consequently its dependencies) *)
-    CompilingModulemap.find dir !libraries_table
+    CompilingLibraryMap.find dir !libraries_table
   with Not_found ->
     (* [dir] is an absolute name matching [f] which must be in loadpath *)
     let m =
-      try CompilingModulemap.find dir !compunit_cache
+      try CompilingLibraryMap.find dir !compunit_cache
       with Not_found ->
         anomaly ((string_of_dirpath dir)^" should be in cache")
     in

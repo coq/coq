@@ -54,12 +54,6 @@ val require_library_from_file :
 val start_library : string -> dir_path * string
 val save_library_to : dir_path -> string -> unit
 
-(*s [library_segment m] returns the segment of the loaded library
-    [m]; if not given, the segment of the current library is returned
-    (which is then the same as [Lib.contents_after None]). 
-*)
-(*val library_segment : dir_path option -> Lib.library_segment*)
-
 (* [library_full_filename] returns the full filename of a loaded library. *)
 
 val library_full_filename : dir_path -> string

@@ -36,7 +36,7 @@ let new_univ =
   let univ_gen = ref 0 in
   (fun sp ->
     incr univ_gen; 
-    Univ.make_univ (Lib.module_dp(),!univ_gen))
+    Univ.make_univ (Lib.library_dp(),!univ_gen))
 
 let new_sort_in_family = function 
   | InProp -> mk_Prop

@@ -3,7 +3,7 @@
 exception TwoModulesWhoseDirPathIsOneAPrefixOfTheOther;;
 let get_module_path_of_section_path path =
  let dirpath = fst (Libnames.repr_path path) in
- let modules = Lib.module_dp () :: (Library.loaded_libraries ()) in
+ let modules = Lib.library_dp () :: (Library.loaded_libraries ()) in
   match
    List.filter
     (function modul -> Libnames.is_dirpath_prefix_of modul dirpath) modules

@@ -958,7 +958,7 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
          | he::tl -> pvars := tl
        end ;
       print_if_verbose "/ClosedDir\n"
-   | L.CompilingModule (s,_) ->
+   | L.CompilingLibrary (s,_) ->
       print_if_verbose ("Library " ^ (Names.string_of_dirpath s) ^ "\n")
    | L.OpenedModtype ((s,_), _) ->
       print_if_verbose ("Open Module Type " ^ (Names.string_of_dirpath s) ^ "\n")

@@ -31,12 +31,6 @@ val declare_module :
 val start_module : (env -> 'modtype -> module_type_entry) ->
   identifier -> (identifier list * 'modtype) list -> 'modtype option -> unit
 
-(*val declare_module : identifier -> module_entry -> unit
-
-val start_module : 
-  identifier -> identifier list -> (mod_bound_id * module_type_entry) list 
-    -> module_type_entry option -> unit
-*)
 val end_module : identifier -> unit
 
 

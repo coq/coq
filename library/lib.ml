@@ -20,7 +20,7 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | CompilingModule of object_prefix
+  | CompilingLibrary of object_prefix
   | OpenedModule of object_prefix * Summary.frozen
   | OpenedModtype of object_prefix * Summary.frozen
   | OpenedSection of object_prefix * Summary.frozen
@@ -33,41 +33,6 @@ and library_entry = object_name * node
 and library_segment = library_entry list
 
 type lib_objects =  (identifier * obj) list
-
-let rec iter_leaves f i seg =
-  match seg with
-    | [] -> ()
-    | (oname ,Leaf obj)::segtl ->
-	f i (oname,obj);
-	iter_leaves f i segtl
-    | _ -> anomaly "We should have leaves only here"
-
-
-let open_segment = iter_leaves open_object
-
-let load_segment = iter_leaves load_object
-
-let change_kns mp seg = 
-  let subst_one = function
-    | ((sp,kn),(Leaf obj as lobj)) -> 
-	let kn' = make_kn mp empty_dirpath (label kn) in
-	  ((sp,kn'),lobj)
-    | _ -> anomaly "We should have leaves only here"
-  in
-    List.map subst_one seg
-
-let subst_segment (dirpath,(mp,dir)) subst seg = 
-  let subst_one = function
-    | ((sp,kn),Leaf obj) ->
-	let sp' = make_path dirpath (basename sp) in
-	let kn' = make_kn mp dir (label kn) in
-	let oname' = sp',kn' in
-	let obj' = subst_object (oname',subst,obj) in
-	  (oname', Leaf obj')
-    | _ -> anomaly "We should have leaves only here"
-  in
-    List.map subst_one seg
-
 
 let iter_objects f i prefix =
   List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
@@ -83,9 +48,9 @@ let subst_objects prefix subst seg =
   in
     list_smartmap subst_one seg
 
-let classify_objects seg =
+let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
-    | (_,CompilingModule _) :: _ | [] -> acc
+    | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn as oname),Leaf o) as node :: stk -> 
 	let id = id_of_label (label kn) in
 	  (match classify_object (oname,o) with 
@@ -115,22 +80,50 @@ let segment_of_objects prefix =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *) 
 
-let initial_prefix = default_module,(initial_path,empty_dirpath)
+let initial_prefix = default_library,(initial_path,empty_dirpath)
 
 let lib_stk = ref ([] : library_segment)
 
 let comp_name = ref None
+
+let library_dp () =
+  match !comp_name with Some m -> m | None -> default_library
+
+(* [path_prefix] is a pair of absolute dirpath and a pair of current
+   module path and relative section path *)
 let path_prefix = ref initial_prefix
 
-let module_dp () =
-  match !comp_name with Some m -> m | None -> default_module
+
+let cwd () = fst !path_prefix
+
+let make_path id = Libnames.make_path (cwd ()) id
+
+
+let current_prefix () = snd !path_prefix
+
+let make_kn id = 
+  let mp,dir = current_prefix () in
+    Names.make_kn mp dir (label_of_id id)
+
+
+let make_oname id = make_path id, make_kn id
+
+
+let sections_depth () =
+  List.length (repr_dirpath (snd (snd !path_prefix)))
+
+let sections_are_opened () =
+  match repr_dirpath (snd (snd !path_prefix)) with
+      [] -> false
+    | _ -> true
+
 
 let recalc_path_prefix () =
   let rec recalc = function
     | (sp, OpenedSection (dir,_)) :: _ -> dir
     | (sp, OpenedModule (dir,_)) :: _ -> dir
     | (sp, OpenedModtype (dir,_)) :: _ -> dir
-    | (sp, CompilingModule dir) :: _ -> dir
+    | (sp, CompilingLibrary dir) :: _ -> dir
     | _::l -> recalc l
     | [] -> initial_prefix
   in
@@ -139,20 +132,6 @@ let recalc_path_prefix () =
 let pop_path_prefix () = 
   let dir,(mp,sec) = !path_prefix in
     path_prefix := fst (split_dirpath dir), (mp, fst (split_dirpath sec))
-
-let make_path id = Libnames.make_path (fst !path_prefix) id
-
-let make_kn id = 
-  let mp,dir = snd !path_prefix in
-    Names.make_kn mp dir (label_of_id id)
-
-let make_oname id = make_path id, make_kn id
-
-let sections_depth () =
-  List.length (repr_dirpath (snd (snd !path_prefix)))
-
-let cwd () = fst !path_prefix
-let current_prefix () = snd !path_prefix
 
 let find_entry_p p = 
   let rec find = function
@@ -225,29 +204,9 @@ let is_something_opened = function
   | (_,OpenedModtype _) -> true
   | _ -> false
 
-let classify_segment seg =
-  let rec clean ((substl,keepl,anticipl) as acc) = function
-    | (_,CompilingModule _) :: _ | [] -> acc
-    | (oname,Leaf o) as node :: stk -> 
-	(match classify_object (oname,o) with 
-	   | Dispose -> clean acc stk
-	   | Keep o' -> 
-	       clean (substl, (oname,Leaf o')::keepl, anticipl) stk
-	   | Substitute o' -> 
-	       clean ((oname,Leaf o')::substl, keepl, anticipl) stk
-	   | Anticipate o' ->
-	       clean (substl, keepl, (oname,Leaf o')::anticipl) stk)
-    | (oname,ClosedSection _ as item) :: stk -> clean acc stk
-    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
-    | (_,OpenedModule _) :: _ -> error "there are still opened modules"
-    | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
-    | (_,FrozenState _) :: stk -> clean acc stk
-  in
-  clean ([],[],[]) (List.rev seg)
-
 let export_segment seg =
   let rec clean acc = function
-    | (_,CompilingModule _) :: _ | [] -> acc
+    | (_,CompilingLibrary _) :: _ | [] -> acc
     | (oname,Leaf o) as node :: stk ->
 	(match export_object o with
 	   | None -> clean acc stk
@@ -352,7 +311,7 @@ let start_compilation s mp =
   if snd (snd (!path_prefix)) <> empty_dirpath then
     error "some sections are already opened";
   let prefix = s, (mp, empty_dirpath) in
-  let _ = add_anonymous_entry (CompilingModule prefix) in
+  let _ = add_anonymous_entry (CompilingLibrary prefix) in
   comp_name := Some s;
   path_prefix := prefix
 
@@ -367,11 +326,11 @@ let end_compilation dir =
 	Not_found -> ()
   in
   let module_p =
-    function (_,CompilingModule _) -> true | x -> is_something_opened x
+    function (_,CompilingLibrary _) -> true | x -> is_something_opened x
   in
   let oname = 
     try match find_entry_p module_p with
-	(oname, CompilingModule prefix) -> oname
+	(oname, CompilingLibrary prefix) -> oname
       | _ -> assert false
     with
 	Not_found -> anomaly "No module declared"
@@ -416,13 +375,6 @@ let open_section id =
   path_prefix := prefix;
   prefix
 
-let sections_are_opened () =
-  try 
-    match find_entry_p is_something_opened with
-      | (_,OpenedSection _) -> true
-      | (_,OpenedModule _) -> false
-      | _ -> false
-  with Not_found -> false
 
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
@@ -498,11 +450,6 @@ let rec back_stk n stk =
     | [] -> error "Reached begin of command history"
 
 let back n = reset_to (back_stk n !lib_stk)
-
-(* [dir] is a section dir if [module] < [dir] <= [path_prefix] *)
-let is_section_p sp =
-  not (is_dirpath_prefix_of sp (module_dp ()))
-  & (is_dirpath_prefix_of sp (fst !path_prefix))
 
 (* State and initialization. *)
 
