@@ -703,24 +703,3 @@ let fconstruct_with_univ sigma sign com =
   let(_,j) = with_universes (Mach.fexecute sigma sign)
                (univ_sp, Constraintab.current_constraints(), c)
   in j
-
-
-(* Keeping universe constraints *)
-let fconstruct_type_with_univ_sp sigma sign sp c =
-  with_universes
-    (Mach.fexecute_type sigma sign) (sp,initial_universes,c) 
-
-
-let fconstruct_with_univ_sp sigma sign sp c =
-  with_universes
-    (Mach.fexecute sigma sign) (sp,initial_universes,c) 
-
-
-let infconstruct_type_with_univ_sp sigma (sign,fsign) sp c =
-  with_universes
-    (Mach.infexecute_type sigma (sign,fsign)) (sp,initial_universes,c) 
-
-
-let infconstruct_with_univ_sp sigma (sign,fsign) sp c =
-  with_universes
-    (Mach.infexecute sigma (sign,fsign)) (sp,initial_universes,c) 

@@ -50,8 +50,8 @@ library/redinfo.cmi: kernel/names.cmi kernel/term.cmi
 library/summary.cmi: kernel/names.cmi 
 parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
     parsing/pcoq.cmi lib/pp.cmi 
-parsing/astterm.cmi: kernel/evd.cmi kernel/names.cmi pretyping/rawterm.cmi \
-    kernel/term.cmi 
+parsing/astterm.cmi: parsing/coqast.cmi kernel/evd.cmi kernel/names.cmi \
+    pretyping/rawterm.cmi kernel/term.cmi 
 parsing/coqast.cmi: lib/dyn.cmi 
 parsing/esyntax.cmi: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     lib/pp.cmi 
@@ -67,6 +67,8 @@ parsing/printer.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/names.cmi kernel/sign.cmi \
     kernel/term.cmi 
+pretyping/astterm.cmi: kernel/evd.cmi kernel/names.cmi pretyping/rawterm.cmi \
+    kernel/term.cmi 
 pretyping/classops.cmi: library/declare.cmi kernel/environ.cmi kernel/evd.cmi \
     library/libobject.cmi kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 pretyping/coercion.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
@@ -75,16 +77,20 @@ pretyping/evarconv.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
     kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi 
 pretyping/evarutil.cmi: kernel/environ.cmi kernel/evd.cmi kernel/names.cmi \
     kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi 
+pretyping/multcase.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
+    kernel/evd.cmi kernel/names.cmi pretyping/rawterm.cmi kernel/term.cmi 
 pretyping/pretype_errors.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/type_errors.cmi 
-pretyping/pretyping.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
-    kernel/names.cmi pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
+pretyping/pretyping.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
+    kernel/evd.cmi kernel/names.cmi pretyping/rawterm.cmi kernel/sign.cmi \
+    kernel/term.cmi 
 pretyping/rawterm.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/type_errors.cmi 
 pretyping/recordops.cmi: pretyping/classops.cmi kernel/generic.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
     kernel/term.cmi 
+pretyping/retyping.cmi: kernel/environ.cmi kernel/evd.cmi kernel/term.cmi 
 proofs/clenv.cmi: kernel/names.cmi proofs/proof_trees.cmi proofs/tacmach.cmi \
     kernel/term.cmi lib/util.cmi 
 proofs/evar_refiner.cmi: kernel/environ.cmi kernel/evd.cmi kernel/names.cmi \
@@ -342,12 +348,12 @@ parsing/ast.cmo: parsing/coqast.cmi lib/dyn.cmi lib/hashcons.cmi \
     kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi lib/util.cmi parsing/ast.cmi 
 parsing/ast.cmx: parsing/coqast.cmx lib/dyn.cmx lib/hashcons.cmx \
     kernel/names.cmx parsing/pcoq.cmi lib/pp.cmx lib/util.cmx parsing/ast.cmi 
-parsing/astterm.cmo: parsing/ast.cmi parsing/astterm.cmi kernel/environ.cmi \
+parsing/astterm.cmo: parsing/ast.cmi pretyping/astterm.cmi kernel/environ.cmi \
     kernel/evd.cmi kernel/generic.cmi toplevel/himsg.cmi kernel/names.cmi \
     parsing/pcoq.cmi lib/pp.cmi parsing/printer.cmi pretyping/rawterm.cmi \
     kernel/term.cmi parsing/termast.cmi toplevel/vernac.cmi \
     parsing/astterm.cmi 
-parsing/astterm.cmx: parsing/ast.cmx parsing/astterm.cmx kernel/environ.cmx \
+parsing/astterm.cmx: parsing/ast.cmx pretyping/astterm.cmi kernel/environ.cmx \
     kernel/evd.cmx kernel/generic.cmx toplevel/himsg.cmx kernel/names.cmx \
     parsing/pcoq.cmi lib/pp.cmx parsing/printer.cmx pretyping/rawterm.cmi \
     kernel/term.cmx parsing/termast.cmx toplevel/vernac.cmx \
@@ -420,32 +426,48 @@ pretyping/evarutil.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
 pretyping/evarutil.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
     kernel/names.cmx lib/pp.cmx parsing/printer.cmx kernel/reduction.cmx \
     kernel/term.cmx lib/util.cmx pretyping/evarutil.cmi 
+pretyping/multcase.cmo: parsing/ast.cmi pretyping/astterm.cmi \
+    kernel/environ.cmi pretyping/evarconv.cmi kernel/evd.cmi \
+    kernel/generic.cmi toplevel/himsg.cmi library/indrec.cmi kernel/names.cmi \
+    lib/pp.cmi pretyping/rawterm.cmi kernel/reduction.cmi kernel/term.cmi \
+    kernel/typing.cmi pretyping/multcase.cmi 
+pretyping/multcase.cmx: parsing/ast.cmx pretyping/astterm.cmi \
+    kernel/environ.cmx pretyping/evarconv.cmx kernel/evd.cmx \
+    kernel/generic.cmx toplevel/himsg.cmx library/indrec.cmx kernel/names.cmx \
+    lib/pp.cmx pretyping/rawterm.cmi kernel/reduction.cmx kernel/term.cmx \
+    kernel/typing.cmx pretyping/multcase.cmi 
 pretyping/pretype_errors.cmo: pretyping/pretype_errors.cmi 
 pretyping/pretype_errors.cmx: pretyping/pretype_errors.cmi 
 pretyping/pretyping.cmo: parsing/ast.cmi pretyping/classops.cmi \
     pretyping/coercion.cmi kernel/environ.cmi pretyping/evarconv.cmi \
     pretyping/evarutil.cmi kernel/evd.cmi kernel/generic.cmi \
-    library/indrec.cmi pretyping/multcase.cmi kernel/names.cmi lib/pp.cmi \
+    library/indrec.cmi kernel/inductive.cmi kernel/instantiate.cmi \
+    pretyping/multcase.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/pretype_errors.cmi pretyping/rawterm.cmi \
-    pretyping/recordops.cmi kernel/reduction.cmi kernel/sign.cmi \
-    kernel/term.cmi kernel/type_errors.cmi kernel/typeops.cmi lib/util.cmi \
-    pretyping/pretyping.cmi 
+    pretyping/recordops.cmi kernel/reduction.cmi pretyping/retyping.cmi \
+    kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi kernel/typeops.cmi \
+    lib/util.cmi pretyping/pretyping.cmi 
 pretyping/pretyping.cmx: parsing/ast.cmx pretyping/classops.cmx \
     pretyping/coercion.cmx kernel/environ.cmx pretyping/evarconv.cmx \
     pretyping/evarutil.cmx kernel/evd.cmx kernel/generic.cmx \
-    library/indrec.cmx pretyping/multcase.cmi kernel/names.cmx lib/pp.cmx \
+    library/indrec.cmx kernel/inductive.cmx kernel/instantiate.cmx \
+    pretyping/multcase.cmx kernel/names.cmx lib/pp.cmx \
     pretyping/pretype_errors.cmx pretyping/rawterm.cmi \
-    pretyping/recordops.cmx kernel/reduction.cmx kernel/sign.cmx \
-    kernel/term.cmx kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
-    pretyping/pretyping.cmi 
-pretyping/recordops.cmo: pretyping/classops.cmi kernel/generic.cmi \
-    library/libobject.cmi library/library.cmi kernel/names.cmi lib/pp.cmi \
-    lib/pp_control.cmi kernel/term.cmi kernel/typeops.cmi lib/util.cmi \
+    pretyping/recordops.cmx kernel/reduction.cmx pretyping/retyping.cmx \
+    kernel/sign.cmx kernel/term.cmx kernel/type_errors.cmx kernel/typeops.cmx \
+    lib/util.cmx pretyping/pretyping.cmi 
+pretyping/recordops.cmo: library/libobject.cmi library/library.cmi \
+    kernel/names.cmi lib/pp.cmi kernel/typeops.cmi lib/util.cmi \
     pretyping/recordops.cmi 
-pretyping/recordops.cmx: pretyping/classops.cmx kernel/generic.cmx \
-    library/libobject.cmx library/library.cmx kernel/names.cmx lib/pp.cmx \
-    lib/pp_control.cmx kernel/term.cmx kernel/typeops.cmx lib/util.cmx \
+pretyping/recordops.cmx: library/libobject.cmx library/library.cmx \
+    kernel/names.cmx lib/pp.cmx kernel/typeops.cmx lib/util.cmx \
     pretyping/recordops.cmi 
+pretyping/retyping.cmo: kernel/environ.cmi kernel/generic.cmi \
+    library/global.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/typeops.cmi lib/util.cmi pretyping/retyping.cmi 
+pretyping/retyping.cmx: kernel/environ.cmx kernel/generic.cmx \
+    library/global.cmx kernel/names.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/typeops.cmx lib/util.cmx pretyping/retyping.cmi 
 proofs/clenv.cmo: kernel/environ.cmi kernel/evd.cmi kernel/generic.cmi \
     kernel/instantiate.cmi proofs/logic.cmi kernel/names.cmi lib/pp.cmi \
     proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \

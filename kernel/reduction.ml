@@ -1265,16 +1265,16 @@ let poly_args env sigma t =
 
 (* Expanding existential variables (trad.ml, progmach.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
+
+exception Uninstantiated_evar of int
+
 let rec whd_ise env sigma = function
   | DOPN(Evar sp,_) as k ->
       if Evd.in_dom sigma sp then
         if Evd.is_defined sigma sp then
           whd_ise env sigma (existential_value sigma k)
-        else
-          errorlabstrm "whd_ise"
-            [< 'sTR"There is an unknown subterm I cannot solve" >]
-      else 
-	k
+        else raise (Uninstantiated_evar sp)
+      else k
   | DOP2(Cast,c,_) -> whd_ise env sigma c
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c

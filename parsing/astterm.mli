@@ -41,4 +41,30 @@ val raw_constr_of_compattern :
 val globalize_command : CoqAst.t -> CoqAst.t
 val globalize_ast     : CoqAst.t -> CoqAst.t
 
+(*i Ceci était avant dans Trad
+    Maintenant elles sont là car relève des ast i*)
+
+val type_of_com : context -> Coqast.t -> typed_type
+
+val constr_of_com_casted : 'c evar_map -> context -> Coqast.t -> constr ->
+  constr
+
+val constr_of_com1 : bool -> 'c evar_map -> context -> Coqast.t -> constr
+val constr_of_com : 'c evar_map -> context -> Coqast.t -> constr
+val constr_of_com_sort : 'c evar_map -> context -> Coqast.t -> constr
+
+val fconstr_of_com1 : bool -> 'c evar_map -> context -> Coqast.t -> constr
+val fconstr_of_com : 'c evar_map -> context -> Coqast.t -> constr
+val fconstr_of_com_sort : 'c evar_map -> context -> Coqast.t -> constr
+
+(* Typing with Trad, and re-checking with Mach *)
+
+val fconstruct :'c evar_map -> context -> Coqast.t -> unsafe_judgment
+val fconstruct_type :
+  'c evar_map -> context -> Coqast.t -> typed_type
+
+(* Typing, re-checking with universes constraints *)
+val fconstruct_with_univ :
+  'c evar_map -> context -> Coqast.t -> judgement
+
 (* $Id$ *)

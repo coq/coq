@@ -150,4 +150,3 @@ let mind_check_lc params mie =
       raise (InductiveError BadEntry)
   in
   List.iter check_lc mie.mind_entry_inds
-

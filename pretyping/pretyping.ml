@@ -21,6 +21,124 @@ open Rawterm
 open Evarconv
 open Coercion
 
+
+(***********************************************************************)
+(* This concerns Cases *)
+open Inductive
+open Instantiate
+
+(* Pour le vieux "match" que Program utilise encore, vieille histoire ... *)
+
+(* Awful special reduction function which skips abstraction on Xtra in
+   order to be safe for Program ... *)
+
+let stacklamxtra recfun = 
+  let rec lamrec sigma p_0 p_1 = match p_0,p_1 with 
+    | (stack, (DOP2(Lambda,DOP1(XTRA "COMMENT",_),DLAM(_,c)) as t)) ->
+        recfun stack (substl sigma t)
+    | ((h::t), (DOP2(Lambda,_,DLAM(_,c)))) -> lamrec (h::sigma) t c
+    | (stack, t) -> recfun stack (substl sigma t)
+  in 
+  lamrec 
+
+let rec whrec x stack =
+  match x with   
+    | DOP2(Lambda,DOP1(XTRA "COMMENT",c),DLAM(name,t)) ->
+    	let t' = applist (whrec t (List.map (lift 1) stack)) in 
+	DOP2(Lambda,DOP1(XTRA "COMMENT",c),DLAM(name,t')),[]
+    | DOP2(Lambda,c1,DLAM(name,c2)) ->
+    	(match stack with
+	   | [] -> (DOP2(Lambda,c1,DLAM(name,whd_betaxtra c2)),[])
+	   | a1::rest -> stacklamxtra (fun l x -> whrec x l) [a1] rest c2)
+    | DOPN(AppL,cl) -> whrec (array_hd cl) (array_app_tl cl stack)
+    | DOP2(Cast,c,_) ->  whrec c stack
+    | x -> x,stack
+
+and whd_betaxtra x = applist(whrec x [])
+
+let lift_context n l = 
+  let k = List.length l in 
+  list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
+let prod_create env (a,b) = 
+  mkProd (named_hd env a Anonymous) a b
+let lambda_name env (n,a,b) = 
+  mkLambda (named_hd env a n) a b
+let lambda_create env (a,b) = 
+  mkLambda (named_hd env a Anonymous) a b
+let it_prod_name env = 
+  List.fold_left (fun c (n,t) -> prod_name env (n,t,c)) 
+let it_lambda_name env = 
+  List.fold_left (fun c (n,t) -> lambda_name env (n,t,c))
+
+let transform_rec loc env sigma cl (ct,pt) = 
+  let (mI,largs as mind) = find_minductype env sigma ct in
+  let p = cl.(0)
+  and c = cl.(1)
+  and lf = Array.sub cl 2 ((Array.length cl) - 2) in
+  let mispec = lookup_mind_specif mI env in 
+  let recargs = mis_recarg mispec in
+  let expn = Array.length recargs in
+  if Array.length lf <> expn then 
+    error_number_branches_loc loc CCI env c ct expn;
+  if is_recursive [mispec.mis_tyi] recargs then
+    let (dep,_) = find_case_dep_nparams env sigma (c,p) mind pt in 
+    let ntypes = mis_nconstr mispec 
+    and tyi = mispec.mis_tyi 
+    and nparams = mis_nparams mispec in
+    let depFvec = Array.create ntypes (None : (bool * constr) option) in 
+    let _ = Array.set depFvec mispec.mis_tyi (Some(dep,Rel 1)) in 
+    let (pargs,realargs) = list_chop nparams largs in
+    let vargs = Array.of_list pargs in
+    let (_,typeconstrvec) = mis_type_mconstructs mispec in
+    (* build now the fixpoint *)
+    let realar =
+      hnf_prod_appvect env sigma "make_branch" (mis_arity mispec) vargs in
+    let lnames,_ = splay_prod env sigma realar in 
+    let nar = List.length lnames in
+    let branches = 
+      array_map3
+	(fun f t reca -> 
+	   whd_betaxtra
+             (Indrec.make_rec_branch_arg env sigma
+                ((Array.map (lift (nar+2)) vargs),depFvec,nar+1)
+                f t reca))
+        (Array.map (lift (nar+2)) lf) typeconstrvec recargs 
+    in 
+    let deffix = 
+      it_lambda_name env
+	(lambda_create env
+	   (appvect (mI,Array.append (Array.map (lift (nar+1)) vargs)
+                       (rel_vect 0 nar)),
+            mkMutCaseA (ci_of_mind mI) 
+              (lift (nar+2) p) (Rel 1) branches))
+        (lift_context 1 lnames) 
+    in
+    if noccurn 1 deffix then 
+      whd_beta env sigma (applist (pop deffix,realargs@[c]))
+    else
+      let typPfix = 
+	it_prod_name env
+	  (prod_create env
+	     (appvect (mI,(Array.append 
+			     (Array.map (lift nar) vargs)
+			     (rel_vect 0 nar))),
+	      (if dep then 
+		 applist (whd_beta_stack env sigma 
+			    (lift (nar+1) p) (rel_list 0 (nar+1)))
+	       else 
+		 applist (whd_beta_stack env sigma 
+			    (lift (nar+1) p) (rel_list 1 nar)))))
+          lnames 
+      in
+      let fix = DOPN(Fix([|nar|],0),
+		     [|typPfix;
+		       DLAMV(Name(id_of_string "F"),[|deffix|])|])
+      in 
+      applist (fix,realargs@[c])
+  else 
+    mkMutCaseA (ci_of_mind mI) p c lf
+
+(***********************************************************************)
 let ctxt_of_ids ids =
   Array.of_list (List.map (function id -> VAR id) ids)
 
@@ -32,6 +150,14 @@ let j_nf_ise env sigma {uj_val=v;uj_type=t;uj_kind=k} =
   {uj_val=nf_ise1 env sigma v;uj_type=nf_ise1 env sigma t;uj_kind=k}
 
 let jv_nf_ise env sigma = Array.map (j_nf_ise env sigma)
+
+(* Utilisé pour inférer le prédicat des Cases *)
+(* Semble exagérement fort *)
+(* Faudra préférer une unification entre les types de toutes les clauses *)
+(* et autoriser des ? à rester dans le résultat de l'unification *)
+let has_ise env sigma t = 
+  try let _ = whd_ise env sigma t in true
+  with UserError _ -> false
 
 let evar_type_fixpoint env isevars lna lar vdefj =
   let lt = Array.length vdefj in 
@@ -58,7 +184,7 @@ let let_path = make_path ["Core"] (id_of_string "let") CCI
 
 let wrong_number_of_cases_message loc env isevars (c,ct) expn = 
   let c = nf_ise1 env !isevars c and ct = nf_ise1 env !isevars ct in
-  error_number_branches_loc loc env c ct expn
+  error_number_branches_loc loc CCI env c ct expn
 
 let check_branches_message loc env isevars (c,ct) (explft,lft) = 
   let n = Array.length explft and expn = Array.length lft in
@@ -105,8 +231,9 @@ let pretype_ref loc isevars env = function
 | RConst (sp,ids) ->
     let cstr = mkConst sp (ctxt_of_ids ids) in
     make_judge cstr (type_of_constant env !isevars cstr)
+
+| RAbst sp -> failwith "Pretype: abst doit disparaître"
 (*
-| RAbst sp ->
   if sp = let_path then
       (match Array.to_list cl with
        [m;DLAM(na,b)] ->
@@ -115,7 +242,7 @@ let pretype_ref loc isevars env = function
 	    let mj = inh_ass_of_j isevars env mj in
 	    let mb = body_of_type mj in
 	    let bj =
-	     pretype mt_tycon isevars (add_rel (na,mj) env) b in
+	     pretype mt_tycon (push_rel (na,mj) env) isevars b in
 	   {uj_val = DOPN(Abst sp,[|mb;DLAM(na,bj.uj_val)|]);
             uj_type = sAPP (DLAM(na,bj.uj_type)) mb;
             uj_kind = pop bj.uj_kind }
@@ -221,24 +348,23 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let assum = inh_ass_of_j env isevars j in
     let var = (name,assum) in
     let j' =
-      pretype (abs_rng_tycon isevars vtcon) isevars
- 	(add_rel var env) c2 in 
-    abs_rel !isevars name assum j'
+      pretype (abs_rng_tycon isevars vtcon) (push_rel var env) isevars c2 in 
+    fst (abs_rel env !isevars name assum j')
 
 | RBinder(loc,BProd,name,c1,c2)        ->
     let j = pretype def_vty_con env isevars c1 in
     let assum = inh_ass_of_j env isevars j in
     let var = (name,assum) in
-    let j' = pretype def_vty_con isevars (add_rel var env) c2 in
+    let j' = pretype def_vty_con (push_rel var env) isevars c2 in
     let j'' = inh_tosort env isevars j' in
-    gen_rel !isevars CCI env name assum j''
+    fst (gen_rel env !isevars name assum j'')
 
 | ROldCase (loc,isrec,po,c,lf) ->
   let cj = pretype mt_tycon env isevars c in
   let (mind,_) =
-    try find_mrectype !isevars cj.uj_type
+    try find_mrectype env !isevars cj.uj_type
     with Induc -> error_case_not_inductive CCI env
-	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars cj.uj_type) in
+	(nf_ise1 env !isevars cj.uj_val) (nf_ise1 env !isevars cj.uj_type) in
   let pj = match po with
     | Some p -> pretype mt_tycon env isevars p
     | None -> 
@@ -251,24 +377,25 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	with UserError _ -> (* get type information from type of branches *)
 	  let rec findtype i =
 	    if i > Array.length lf
-	    then error_cant_find_case_type loc env cj.uj_val
+	    then error_cant_find_case_type_loc loc env cj.uj_val
 	    else
 	      try
-		let expti = Indrec.branch_scheme !isevars isrec i cj.uj_type in
+		let expti = Indrec.branch_scheme env !isevars isrec i cj.uj_type in
 		let fj = pretype (mk_tycon expti) env isevars lf.(i-1) in
-		let efjt = nf_ise1 !isevars fj.uj_type in 
+		let efjt = nf_ise1 env !isevars fj.uj_type in 
 		let pred = 
 		  Indrec.pred_case_ml_onebranch env !isevars isrec 
 		    (cj.uj_val,cj.uj_type) (i,fj.uj_val,efjt) in
-		if has_ise pred then findtype (i+1)
+		if has_ise env !isevars pred then findtype (i+1)
 		else 
-		  let pty = Mach.newtype_of env !isevars pred in
-		    {uj_val=pred;uj_type=pty;uj_kind=Mach.newtype_of env !isevars pty}
+		  let pty = Retyping.get_type_of env !isevars pred in
+		  let k = Retyping.get_type_of env !isevars pty in
+		    {uj_val=pred;uj_type=pty;uj_kind=k}
 	      with UserError _ -> findtype (i+1) in
 	    findtype 1 in
 
-  let evalct = nf_ise1 !isevars cj.uj_type
-  and evalPt = nf_ise1 !isevars pj.uj_type in
+  let evalct = nf_ise1 env !isevars cj.uj_type
+  and evalPt = nf_ise1 env !isevars pj.uj_type in
 
   let (mind,bty,rsty) =
     Indrec.type_rec_branches isrec env !isevars evalct evalPt pj.uj_val cj.uj_val in
@@ -277,38 +404,38 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       (Array.length bty)
   else
     let lfj =
-      map2_vect
+      array_map2
         (fun tyc f -> pretype (mk_tycon tyc) env isevars f) bty lf in
+    let lfv = (Array.map (fun j -> j.uj_val) lfj) in
     let lft = (Array.map (fun j -> j.uj_type) lfj) in
     check_branches_message loc env isevars (cj.uj_val,evalct) (bty,lft);
     let v =
       if isrec
       then 
-	let rEC = Array.append [|(j_val pj); (j_val cj)|]
-		    (Array.map j_val lfj) in
-	Indrec.transform_rec loc env !isevars rEC (evalct,evalPt)
+	let rEC = Array.append [|pj.uj_val; cj.uj_val|] lfv in
+	transform_rec loc env !isevars rEC (evalct,evalPt)
       else let ci = ci_of_mind mind in
-	mkMutCaseA ci (j_val pj) (j_val cj) (Array.map j_val lfj) in
+	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj) in
 
-      {uj_val = v;
+       {uj_val = v;
        uj_type = rsty;
-       uj_kind = sort_of_arity !isevars evalPt}
+       uj_kind = snd (splay_prod env !isevars evalPt)}
 
 | RCases (loc,prinfo,po,tml,eqns) ->
     Multcase.compile_multcase
-      ((fun vtyc -> pretype vtyc isevars),isevars)
+      ((fun vtyc env -> pretype vtyc env isevars),isevars)
       vtcon env (po,tml,eqns)
-(*
-| DOP2(Cast,c,t) ->
+
+| RCast(loc,c,t) ->
   let tj = pretype def_vty_con env isevars t in
   let tj = inh_tosort_force env isevars tj in
   let cj =
-    pretype (mk_tycon2 vtcon (assumption_of_judgement env !isevars tj).body)
+    pretype (mk_tycon2 vtcon (assumption_of_judgment env !isevars tj).body)
       env isevars c in
   inh_cast_rel env isevars cj tj
-*)
+
 (* Maintenant, tout s'exécute... 
-  | _ -> error_cant_execute CCI env (nf_ise1 !isevars cstr)
+  | _ -> error_cant_execute CCI env (nf_ise1 env !isevars cstr)
 *)
 
 
@@ -323,14 +450,22 @@ let unsafe_fmachine vtcon nocheck isevars metamap env constr =
  *   true -> raise an error message
  *   false -> convert them into new Metas (casted with their type)
  *)
-let process_evars fail_evar sigma =
-  (if fail_evar then whd_ise sigma else whd_ise1_metas sigma)
+let process_evars fail_evar env sigma =
+  (if fail_evar then
+     try whd_ise env sigma
+     with Uninstantiated_evar n ->
+          errorlabstrm "whd_ise"
+            [< 'sTR"There is an unknown subterm I cannot solve" >]
+   else whd_ise1_metas env sigma)
 
 
-let j_apply f j = 
-  { uj_val=strong (under_outer_cast f) j.uj_val;
-    uj_type=strong f j.uj_type;
-    uj_kind=strong f j.uj_kind}
+let j_apply f env sigma j =
+  let under_outer_cast f env sigma = function
+    | DOP2 (Cast,b,t) -> DOP2 (Cast,f env sigma b,f env sigma t)
+    | c -> f env sigma c in
+  { uj_val=strong (under_outer_cast f) env sigma j.uj_val;
+    uj_type=strong f env sigma j.uj_type;
+    uj_kind=strong f env sigma j.uj_kind}
 
 (* TODO: comment faire remonter l'information si le typage a resolu des
        variables du sigma original. il faudrait que la fonction de typage
@@ -339,22 +474,44 @@ let j_apply f j =
 let ise_resolve fail_evar sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine mt_tycon false isevars metamap env c in
-  j_apply (process_evars fail_evar !isevars) j
+  j_apply (process_evars fail_evar) env !isevars j
 
 
 let ise_resolve_type fail_evar sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine def_vty_con false isevars metamap env c in
   let tj = inh_ass_of_j env isevars j in
-  type_app (strong (process_evars fail_evar !isevars)) tj
+  typed_app (strong (process_evars fail_evar) env !isevars) tj
 
 
 let ise_resolve_nocheck sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine mt_tycon true isevars metamap env c in
-  j_apply (process_evars true !isevars) j
+  j_apply (process_evars true) env !isevars j
 
 
 let ise_resolve1 is_ass sigma env c =
   if is_ass then body_of_type (ise_resolve_type true sigma [] env c)
   else (ise_resolve true sigma [] env c).uj_val
+
+(* Keeping universe constraints *)
+(*
+let fconstruct_type_with_univ_sp sigma sign sp c =
+  with_universes
+    (Mach.fexecute_type sigma sign) (sp,initial_universes,c) 
+
+
+let fconstruct_with_univ_sp sigma sign sp c =
+  with_universes
+    (Mach.fexecute sigma sign) (sp,initial_universes,c) 
+
+
+let infconstruct_type_with_univ_sp sigma (sign,fsign) sp c =
+  with_universes
+    (Mach.infexecute_type sigma (sign,fsign)) (sp,initial_universes,c) 
+
+
+let infconstruct_with_univ_sp sigma (sign,fsign) sp c =
+  with_universes
+    (Mach.infexecute sigma (sign,fsign)) (sp,initial_universes,c) 
+*)
