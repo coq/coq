@@ -30,7 +30,7 @@ Inductive Zdivide (a b:Z) : Prop :=
 
 (** Syntax for divisibility *)
 
-Notation "( a | b )" := (Zdivide a b) (at level 0, a, b at level 250) :
+Notation "a | b" := (Zdivide a b) (at level 260, no associativity) :
   Z_scope.
 
 (** Results concerning divisibility*)
