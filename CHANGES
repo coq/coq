@@ -32,6 +32,12 @@ Différences oubliées dans la V7.0beta :
 - les objets non persistants (Grammaires, Hints) d'un module chargé par Require
 disparaissent à la fermeture de la section si le Require est dans la
 section. Les Require ultérieurs ne les réintroduisent pas.
+- Un lieur multiple comme (a:A)(a,b,c:(P a))(Q a), n'est plus compris comme
+  (a:A)(a0:(P a))(b:(P a),c:(P a))(Q a0), mais comme 
+  (a:A)(a0:(P a))(b:(P a0),c:(P a0))(Q a0)
+- Les noms de variables des projections de Record sont maintenant basés sur
+  l'initiale de leur type.
+
 
 Différences V7.0beta / V7.0
 
@@ -60,7 +66,7 @@ Différences oubliées dans la V7.0beta :
 - Du fait des noms qualifiés, les variables de buts n'évitent plus les
   globaux de même nom de base
 - Unfold ne peut s'appliquer qu'à des constantes dépliables (en
-  particulier pas à des Syntactic Definition)
+  particulier pas à des Syntactic Definition, ni des types inductifs)
 
 ----------------------------------------------------------------------
 English version of changes is available on
