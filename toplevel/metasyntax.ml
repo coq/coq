@@ -159,21 +159,20 @@ let nonterm_meta nt var = NonTerm(NtShort nt, ETast, Some var)
  *    takes precedence, infix op and prefix op and returns
  *    the corresponding Syntax entry *)
 
-let infix_syntax_entry assoc n inf pref =
+let infix_syntax_entry assoc n inf prefname astpref =
   let (lp,rp) =  match assoc with 
     | Some(Gramext.RightA) -> (Extend.L,Extend.E)
     | Some(Gramext.LeftA) -> (Extend.E,Extend.L)
     | Some(Gramext.NonA) -> (Extend.L,Extend.L)
     | None -> (Extend.E,Extend.L)  (* LEFTA by default *)
   in
-  let astref = Astterm.globalize_constr (Nvar ((0,0), pref)) in
-  [{Extend.syn_id = pref^"_infix";
+  [{Extend.syn_id = prefname;
     Extend.syn_prec = n,0,0;
     Extend.syn_astpat = 
       Pnode
     	("APPLIST",
 	 Pcons
-	   (Pquote astref,
+	   (Pquote astpref,
 	    Pcons (Pmeta ("$e1", Tany), Pcons (Pmeta ("$e2", Tany), Pnil))));
     Extend.syn_hunks =
       [Extend.UNP_BOX
@@ -186,11 +185,11 @@ let infix_syntax_entry assoc n inf pref =
  *    takes precedence, infix op and prefix op and returns
  *    the corresponding Grammar entry *)
 
-let gram_infix assoc n infl pref =
+let gram_infix assoc n infl prefname astpref =
   let (lp,rp) = prec_assoc assoc in
   let action =
     Aast(Pnode("APPLIST",
-               Pcons(Pquote(nvar pref),
+               Pcons(Pquote astpref,
                      Pcons(Pmeta("$a",Tany),
                            Pcons(Pmeta("$b",Tany),Pnil)))))
   in
@@ -200,7 +199,7 @@ let gram_infix assoc n infl pref =
           ge_type = ETast;
           gl_assoc = None;
           gl_rules =
-            [ { gr_name = pref^"_infix";
+            [ { gr_name = prefname;
                 gr_production =
                   (nonterm_meta (constr_rule n lp) "$a")
                   ::(List.map (fun s -> Term("", s)) infl)
@@ -219,9 +218,11 @@ let add_infix assoc n inf pr =
     errorlabstrm "Vernacentries.infix_grammar_entry"
       [< 'sTR"Associativity Precedence must be 6,7,8 or 9." >];
   (* check the grammar entry *)
-  let gram_rule = gram_infix assoc n (split inf) pr in
+  let prefast = Astterm.ast_of_qualid dummy_loc pr in
+  let prefname = (Names.string_of_path pr)^"_infix" in
+  let gram_rule = gram_infix assoc n (split inf) prefname prefast in
   (* check the syntax entry *)
-  let syntax_rule = infix_syntax_entry assoc n inf pr in
+  let syntax_rule = infix_syntax_entry assoc n inf prefname prefast in
   Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule))
 
 (* Distfix *)
@@ -245,12 +246,12 @@ let collect_metas sl =
          | _ -> metatl)
     sl Pnil
 
-let distfix assoc n sl f =
+let distfix assoc n sl fname astf  =
   let (lp,rp) = prec_assoc assoc in
   let symbols =
     make_symbols (constr_rule n lp) constr_tab.(8) (constr_rule n rp) 0 sl in
   let action =
-    Aast(Pnode("APPLIST",Pcons(Pquote(nvar f), collect_metas symbols)))
+    Aast(Pnode("APPLIST",Pcons(Pquote astf, collect_metas symbols)))
   in
   { gc_univ = "constr";
     gc_entries =
@@ -258,7 +259,7 @@ let distfix assoc n sl f =
           ge_type = ETast;
           gl_assoc = None;
           gl_rules =
-            [ { gr_name = f^"_distfix";
+            [ { gr_name = fname;
                 gr_production = symbols;
                 gr_action = action} ]
         }
@@ -266,5 +267,7 @@ let distfix assoc n sl f =
   }
 
 let add_distfix a n df f =
-  Lib.add_anonymous_leaf (inInfix(distfix a n (split df) f, []))
+  let fname = (Names.string_of_path f)^"_distfix" in
+  let astf = Astterm.ast_of_qualid dummy_loc f in
+  Lib.add_anonymous_leaf (inInfix(distfix a n (split df) fname astf, []))
 
