@@ -959,7 +959,7 @@ let rec print_script nochange sigma osign pf =
              (print_script nochange sigma sign) spfl)
 
 let print_treescript nochange sigma _osign pf =
-  let rec aux pf =
+  let rec aux top pf =
     let {evar_hyps=sign; evar_concl=cl} = pf.goal in
     match pf.ref with
     | None ->
@@ -972,10 +972,10 @@ let print_treescript nochange sigma _osign pf =
 	pr_rule_dot r ++
 	match spfl with
 	| [] -> mt ()
-	| [spf] -> fnl () ++ aux spf
+	| [spf] -> fnl () ++ (if top then mt () else str "  ") ++ aux top spf
 	| _ -> fnl () ++ str " " ++
-	    hov 0 (prlist_with_sep fnl (fun spf -> hov 2 (aux spf)) spfl)
-  in hov 0 (aux pf)
+	    hov 0 (prlist_with_sep fnl (aux false) spfl)
+  in hov 0 (aux true pf)
 
 let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
