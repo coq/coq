@@ -132,7 +132,9 @@ let filtered_search filter_function display_function ref =
 
 let rec id_from_pattern = function
   | PRef gr -> gr
-  | PVar id -> Nametab.sp_of_id CCI id
+(* should be appear as a PRef (VarRef sp) !!
+  | PVar id -> Nametab.locate (make_qualid [] (string_of_id id))
+ *)
   | PApp (p,_) -> id_from_pattern p
   | _ -> error "the pattern is not simple enough"
 	
