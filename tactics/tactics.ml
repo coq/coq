@@ -355,7 +355,7 @@ let rec intros_until s g =
 	  ((tclTHEN (reduce (Red true) []) (intros_until s)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
-	    [<'sTR "No such hypothesis in current goal";
+	    [<'sTR ("No hypothesis "^(string_of_id s)^" in current goal");
 	      'sTR " even after head-reduction" >]
 
 let rec intros_until_n_gen red n g =
@@ -367,7 +367,8 @@ let rec intros_until_n_gen red n g =
           ((tclTHEN (reduce (Red true) []) (intros_until_n_gen red n)) g)
 	with Redelimination ->
           errorlabstrm "Intros" 
-	    [<'sTR "No such hypothesis in current goal";
+	    [<'sTR ("No "^(string_of_int n));
+	      'sTR "th non dependent hypothesis in current goal";
 	      'sTR " even after head-reduction" >]
       else
         errorlabstrm "Intros" [<'sTR "No such hypothesis in current goal" >]
@@ -1349,8 +1350,12 @@ let induction_with_atomization_of_ind_arg hyp0 =
 let new_induct c gl =
   match kind_of_term c with
     | IsVar id when not (mem_named_context id (Global.named_context())) ->
+(*
 	tclORELSE
 	  (tclTHEN (intros_until id) (tclLAST_HYP simplest_elim))
+	  (induction_with_atomization_of_ind_arg id) gl
+*)
+	tclTHEN (tclTRY (intros_until id))
 	  (induction_with_atomization_of_ind_arg id) gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
