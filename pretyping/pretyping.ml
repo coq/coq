@@ -162,11 +162,11 @@ let strip_meta id = (* For Grammar v7 compatibility *)
 let pretype_id loc env (lvar,unbndltacvars) id =
   let id = strip_meta id in (* May happen in tactics defined by Grammar *)
   try
-    List.assoc id lvar
-  with Not_found ->
-  try
     let (n,typ) = lookup_rel_id id (rel_context env) in
     { uj_val  = mkRel n; uj_type = type_app (lift n) typ }
+  with Not_found ->
+  try
+    List.assoc id lvar
   with Not_found ->
   try
     let (_,_,typ) = lookup_named id env in
