@@ -167,6 +167,7 @@ let rec pp_type par ren t =
 
 let expr_needs_par = function
   | MLlam _  -> true
+  | MLcase (_,[|_|]) -> false 
   | MLcase _ -> true
   | _        -> false 
 
