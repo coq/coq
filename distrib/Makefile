@@ -187,10 +187,14 @@ RH/coq.list: ${COQPACKAGE}.tar.gz Makefile config.distrib
 	cd RH ; tar xzf ../${COQPACKAGE}.tar.gz
 	cd RH/${COQPACKAGE} ; sh ../do_build
 	cd RH/${COQPACKAGE} ; make COQINSTALLPREFIX=${DISTRIBDIR}/RH/build install
-	cd RH/build ; find . '!' -type d > ../coq.list
+	echo "# This file has been generated" > RH/coq.list
+	echo "# Do not edit" >>RH/coq.list
+	cd RH/build ; find . '!' -type d | sed -e 's|^\./|/|g'>> ../coq.list
 
 coq.spec: RH/coq.list RH/coq.spec.tpl
-	cd RH ; m4 -P coq.spec.tpl > ../coq.spec
+	echo "# This file has been generated from RH/coq.spec.tpl" > coq.spec
+	echo "# Do not edit" >> coq.spec
+	cd RH ; m4 -P coq.spec.tpl >> ../coq.spec
 
 ##########
 contrib-tag:

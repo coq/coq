@@ -1,8 +1,9 @@
-coq (7.0.0-1) unstable; urgency=low
+coq (7.0-1) unstable; urgency=low
   * New maintainer Judicaël Courant <Judicael.Courant@lri.fr>.
   * New upstream version.
   * Added Build-Depends (closes: Bug#70273).
   * Cleaned up dependencies.
+  * emacs mode installation now follows Emacs policy.
   * Made compilation non-interactive (closes: Bug#92461).
   
 

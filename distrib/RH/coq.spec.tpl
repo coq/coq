@@ -26,7 +26,7 @@ Coq is a proof assistant which:
 %setup
 
 %build
-m4_include(coq.list)
+m4_include(do_build)
 
 %clean
 make clean
@@ -51,28 +51,4 @@ if [ -L /usr/local/lib/ocaml ]; then
 fi
 
 %files
-/usr/bin/coqc
-/usr/bin/coqtop
-/usr/bin/coqtop.byte
-/usr/bin/coqtop.opt
-/usr/bin/coq-tex
-/usr/bin/coqdep
-/usr/bin/gallina
-/usr/bin/coq_makefile
-/usr/bin/coq-interface
-/usr/bin/parser
-#/usr/bin/coq_searchisos.out
-/usr/bin/coqmktop
-#/usr/bin/coq2html
-#/usr/bin/coq2latex
-/usr/lib/coq
-#/usr/man/man1/coqc.1
-#/usr/man/man1/coqtop.1
-#/usr/man/man1/coqmktop.1
-/usr/man/man1/coqdep.1
-/usr/man/man1/gallina.1
-/usr/man/man1/coq-tex.1
-#/usr/man/man1/coq2latex.1
-#/usr/man/man1/coq2html.1
-/usr/share/emacs/site-lisp/coq.el
-/usr/share/emacs/site-lisp/coq.elc
+m4_include(coq.list)
