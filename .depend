@@ -771,11 +771,11 @@ kernel/sign.cmx: lib/util.cmx kernel/term.cmx kernel/names.cmx \
 kernel/subtyping.cmo: lib/util.cmi kernel/univ.cmi kernel/term.cmi \
     kernel/reduction.cmi kernel/names.cmi kernel/modops.cmi \
     kernel/mod_subst.cmi kernel/inductive.cmi kernel/environ.cmi \
-    kernel/declarations.cmi kernel/subtyping.cmi 
+    kernel/entries.cmi kernel/declarations.cmi kernel/subtyping.cmi 
 kernel/subtyping.cmx: lib/util.cmx kernel/univ.cmx kernel/term.cmx \
     kernel/reduction.cmx kernel/names.cmx kernel/modops.cmx \
     kernel/mod_subst.cmx kernel/inductive.cmx kernel/environ.cmx \
-    kernel/declarations.cmx kernel/subtyping.cmi 
+    kernel/entries.cmx kernel/declarations.cmx kernel/subtyping.cmi 
 kernel/term.cmo: lib/util.cmi kernel/univ.cmi lib/pp.cmi kernel/names.cmi \
     lib/hashcons.cmi kernel/esubst.cmi kernel/term.cmi 
 kernel/term.cmx: lib/util.cmx kernel/univ.cmx lib/pp.cmx kernel/names.cmx \
