@@ -406,7 +406,6 @@ let rec optimize prm = function
       else
 	optimize prm l
 
-
 (*s Table for direct ML extractions. *)
 
 module Refmap = 
@@ -445,6 +444,29 @@ let _ = declare_summary "ML extractions"
 	    init_function = (fun () -> extractions := empty_extractions);
 	    survive_section = true }
 
+(*s List of Extract Constant directives *)
+
+let cst_extractions = ref ([],[])
+
+let ml_cst_extractions () = !cst_extractions
+
+let add_ml_cst_extraction r s = 
+  let l,l' = !cst_extractions in 
+  cst_extractions := r::l,s::l'
+
+let (in_ml_cst_extraction,_) = 
+  declare_object ("ML constants extractions",
+		  { cache_function = (fun (_,(r,s)) -> add_ml_cst_extraction r s);
+		    load_function = (fun (_,(r,s)) -> add_ml_cst_extraction r s);
+		    open_function = (fun _ -> ());
+		    export_function = (fun x -> Some x) })
+
+let _ = declare_summary "ML constants extractions"
+	  { freeze_function = (fun () -> !cst_extractions);
+	    unfreeze_function = ((:=) cst_extractions);
+	    init_function = (fun () -> cst_extractions := [],[]);
+	    survive_section = true }
+
 (*s Grammar entries. *)
 
 open Vernacinterp
@@ -466,8 +488,10 @@ let reference_of_varg = function
 (*s \verb!Extract Constant qualid => string! *)
 
 let extract_constant r s = match r with
-  | ConstRef _ -> 
-      add_anonymous_leaf (in_ml_extraction (r,s))
+  | ConstRef sp -> 
+      let rs = string_of_id (basename sp) in
+      add_anonymous_leaf (in_ml_cst_extraction (r,s));
+      add_anonymous_leaf (in_ml_extraction (r,rs))
   | _ -> 
       errorlabstrm "extract_constant"
 	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >]
@@ -477,7 +501,28 @@ let _ =
     (function 
        | [id; s] -> 
 	   (fun () -> 
-	      extract_constant (reference_of_varg id) (string_of_varg s))
+	      extract_constant 
+		(reference_of_varg id)
+		(string_of_varg s))
+       | _ -> assert false)
+
+(*s \verb!Extract Inlined Constant qualid => string! *)
+
+let extract_inlined_constant r s = match r with
+  | ConstRef _ -> 
+      add_anonymous_leaf (in_ml_extraction (r,s))
+  | _ -> 
+      errorlabstrm "extract_constant"
+	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >]
+
+let _ = 
+  vinterp_add "EXTRACT_INLINED_CONSTANT"
+    (function 
+       | [id; s] -> 
+	   (fun () -> 
+	      extract_inlined_constant 
+		(reference_of_varg id) 
+		(string_of_varg s))
        | _ -> assert false)
 
 (*s \verb!Extract Inductive qualid => string [ string ... string ]! *)

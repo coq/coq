@@ -36,6 +36,11 @@ Grammar vernac vernac : ast :=
      [ "Extract" "Constant" qualidarg($x) "=>" idorstring($y) "." ]
   -> [ (EXTRACT_CONSTANT $x $y) ]
 
+| extract_inlined_constant 
+     [ "Extract" "Inlined" "Constant" qualidarg($x) 
+      "=>" idorstring($y) "." ]
+  -> [ (EXTRACT_INLINED_CONSTANT $x $y) ]
+
 | extract_inductive 
      [ "Extract" "Inductive" qualidarg($x) "=>" mindnames($y) "."]
   -> [ (EXTRACT_INDUCTIVE $x $y) ]

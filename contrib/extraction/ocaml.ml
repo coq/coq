@@ -18,6 +18,8 @@ open Miniml
 open Mlutil
 open Options
 
+let current_module = ref None
+
 (*s Some utility functions. *)
 
 let string s = [< 'sTR s >]
@@ -78,6 +80,27 @@ let uppercase_id id = id_of_string (String.capitalize (string_of_id id))
 let rename_lower_global id = rename_global (lowercase_id id)
 let rename_upper_global id = rename_global (uppercase_id id)
 
+(*s Modules considerations *)
+
+let sp_of_r r = match r with 
+    | ConstRef sp -> sp
+    | IndRef (sp,_) -> sp
+    | ConstructRef ((sp,_),_) -> sp
+    | _ -> assert false
+
+let module_of_r r = list_last (dirpath (sp_of_r r))
+
+let string_of_r r = string_of_id (basename (sp_of_r r))
+
+let module_option r = 
+  let m = module_of_r r in
+  if Some m = !current_module then ""
+  else (String.capitalize (string_of_id m)) ^ "."
+
+let check_ml r d = 
+  try find_ml_extraction r
+  with Not_found -> d
+
 (*s de Bruijn environments for programs *)
 
 type env = identifier list * Idset.t
@@ -126,12 +149,8 @@ let pr_binding = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_reference f r = 
-  try let s = find_ml_extraction r in [< 'sTR s >]
-  with Not_found -> f r
- 
-let pp_type_global = pp_reference P.pp_type_global
-let pp_global = pp_reference P.pp_global
+let pp_type_global = P.pp_type_global
+let pp_global = P.pp_global
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
@@ -375,8 +394,6 @@ let rename_type_global r =
        let id = Environ.id_of_global (Global.env()) r in
        rename_lower_global id)
 
-let pp_type_global r = pr_id (rename_type_global r)
-
 let rename_global r = 
   cache r
     (fun r -> 
@@ -385,7 +402,11 @@ let rename_global r =
 	 | ConstructRef _ -> rename_upper_global id
 	 | _ -> rename_lower_global id)
 
-let pp_global r = pr_id (rename_global r)
+let pp_type_global r = 
+  string (check_ml r (string_of_id (rename_type_global r)))
+
+let pp_global r = 
+  string (check_ml r (string_of_id (rename_global r)))
 
 let cofix_warning = true
 
@@ -395,7 +416,7 @@ module MonoPp = Make(MonoParams)
 
 (*s Renaming issues in a modular extraction. *)
 
-let current_module = ref None
+
 
 module ModularParams = struct
 
@@ -415,34 +436,23 @@ module ModularParams = struct
     else 
       string_of_id id
 
-  let qualify_global r s =
-    let sp = match r with
-      | ConstRef sp -> sp
-      | IndRef (sp,_) -> sp
-      | ConstructRef ((sp,_),_) -> sp
-      | _ -> assert false
-    in
-    let m = list_last (dirpath sp) in
-    if Some m = !current_module then s 
-    else (String.capitalize (string_of_id m)) ^ "." ^ s
-
-  let rename_qualified_type_global r = 
+  let rename_type_global r = 
     let id = Environ.id_of_global (Global.env()) r in 
-    qualify_global r (rename_lower id)
+    rename_lower id
 
-  let rename_global_to_string r = 
+  let rename_global_aux r = 
     let id = Environ.id_of_global (Global.env()) r in 
     match r with
       | ConstructRef _ -> rename_upper id
       | _ -> rename_lower id
 
-  let rename_global r = id_of_string (rename_global_to_string r)
+  let rename_global r = id_of_string (rename_global_aux r)
 
-  let rename_qualified_global r = 
-    qualify_global r (rename_global_to_string r)
- 
-  let pp_type_global r = string (rename_qualified_type_global r)
-  let pp_global r = string (rename_qualified_global r)
+  let pp_type_global r = 
+    string ((module_option r)^(check_ml r (rename_type_global r)))
+
+  let pp_global r = 
+    string ((module_option r)^(check_ml r (rename_global_aux r)))
 
   let cofix_warning = true
 end
@@ -457,11 +467,23 @@ let ocaml_preamble () =
      'sTR "type arity = unit"; 'fNL;
      'sTR "let arity = ()"; 'fNL; 'fNL >]
 
-let extract_to_file f prm decls =
+
+let ocaml_header ft b ml_decls =
+  let l,l' = ml_cst_extractions () in
+  List.iter2 
+    (fun r s -> 
+       if (not b) or (Some (module_of_r r) = !current_module)  then 
+       pP_with ft (hV 0  
+	 [< 'sTR "let "; 'sTR (string_of_r r); 'sTR " ="; 'sPC; 'sTR s; 'fNL ; 'fNL >]))
+    ((List.rev l) @ ml_decls)
+    ((List.rev l') @ (List.map find_ml_extraction ml_decls))
+
+let extract_to_file f prm decls ml_decls =
   let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
   pP_with ft (hV 0 (ocaml_preamble ()));
+  ocaml_header ft prm.modular ml_decls;
   begin 
     try
       List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls

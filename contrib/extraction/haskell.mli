@@ -12,5 +12,7 @@
 
 open Miniml
 open Mlutil
+open Term
 
-val extract_to_file : string -> extraction_params -> ml_decl list -> unit
+val extract_to_file : 
+  string -> extraction_params -> ml_decl list -> global_reference list -> unit

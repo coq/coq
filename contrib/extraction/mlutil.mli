@@ -66,3 +66,8 @@ val is_ml_extraction : global_reference -> bool
 val find_ml_extraction : global_reference -> string
 
 val ml_extractions : unit -> Refset.t
+
+(* List of Extract Constant directives *)
+
+val ml_cst_extractions : 
+  unit -> global_reference list * string list

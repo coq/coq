@@ -201,12 +201,17 @@ let _ =
   vinterp_add "ExtractionFile"
     (function 
        | VARG_STRING lang :: VARG_VARGLIST o :: VARG_STRING f :: vl ->
-	   let refs = refs_of_vargl vl in
-	   let prm = interp_options lang refs false "" o in
 	   (fun () -> 
+	      let refs = refs_of_vargl vl in
+	      let prm = interp_options lang refs false "" o in
 	      let decls = decl_of_refs refs in 
 	      let decls = optimize prm decls in
-	      extract_to_file lang f prm decls)
+	      let ml_decls = 
+		list_subtract 
+		  (List.filter is_ml_extraction refs)
+		  (fst (ml_cst_extractions ()))
+	      in
+	      extract_to_file lang f prm decls ml_decls)
        | _ -> assert false)
 
 (*s Extraction of a module. The vernacular command is \verb!Extraction Module!
@@ -250,5 +255,5 @@ let _ =
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in
 	      let decls = List.filter (decl_mem rl) decls in
-	      extract_to_file lang f prm decls)
+	      extract_to_file lang f prm decls [])
        | _ -> assert false)

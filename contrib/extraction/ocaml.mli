@@ -13,6 +13,7 @@
 open Pp
 open Miniml
 open Names
+open Term
 
 val string : string -> std_ppcmds
 val open_par : bool -> std_ppcmds
@@ -24,6 +25,14 @@ val push_vars : identifier list -> identifier list * Idset.t ->
 
 val current_module : identifier option ref
 
+val module_of_r : global_reference -> module_ident
+
+val string_of_r : global_reference -> string
+
+val check_ml : global_reference -> string -> string
+
+val module_option : global_reference -> string
+
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 
     declarations to a file. *)
@@ -33,6 +42,7 @@ open Mlutil
 module Make : functor(P : Mlpp_param) -> Mlpp
 
 val current_module : Names.identifier option ref
-val extract_to_file : string -> extraction_params -> ml_decl list -> unit
+val extract_to_file : 
+  string -> extraction_params -> ml_decl list -> global_reference list -> unit
 
 
