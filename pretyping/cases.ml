@@ -315,7 +315,7 @@ let occur_rawconstr id =
 	(array_exists occur tyl) or
 	(not (array_exists (fun id2 -> id=id2) idl) & array_exists occur bv)
     | RCast (loc,c,t) -> (occur c) or (occur t)
-    | (RSort _ | RHole _ | RRef _ ) -> false
+    | (RSort _ | RHole _ | RRef _ | RMeta _) -> false
 
   and occur_pattern (idl,p,c) = not (List.mem id idl) & (occur c)
 
