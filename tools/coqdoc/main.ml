@@ -57,7 +57,6 @@ let usage () =
   prerr_endline "  --utf8              set UTF-8 input language";
   prerr_endline "  --charset <string>  set HTML charset";
   prerr_endline "  --inputenc <string> set LaTeX input encoding";
-  prerr_endline "  --raw-comments      don't insert comments in table";
   prerr_endline "";
   prerr_endline 
     "On-line documentation at http://www.lri.fr/~filliatr/coqdoc/\n";
