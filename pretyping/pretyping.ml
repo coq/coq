@@ -408,7 +408,8 @@ let rec pretype tycon env isevars lvar lmeta = function
       let tj = pretype_type (valcon_of_tycon tycon) env isevars lvar lmeta t in
       let cj = pretype (mk_tycon tj.utj_val) env isevars lvar lmeta c in
       (* User Casts are for helping pretyping, experimentally not to be kept*)
-      let v = (* mkCast ( *) cj.uj_val (* , tj.utj_val) *) in
+      (* ... except for Correctness *)
+      let v = mkCast (cj.uj_val, tj.utj_val) in
       let cj = { uj_val = v; uj_type = tj.utj_val } in
       inh_conv_coerce_to_tycon loc env isevars cj tycon
 
