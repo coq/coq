@@ -58,7 +58,7 @@ let pf_get_hyp_typ gls id =
   with Not_found -> 
     error ("No such hypothesis : " ^ (string_of_id id))
 
-let pf_ids_of_hyps gls = ids_of_named_context (named_context (pf_env gls))
+let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
 let pf_ctxt gls      = get_ctxt (sig_it gls)
 
