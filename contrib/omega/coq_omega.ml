@@ -148,6 +148,7 @@ open Coqlib
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
   init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
+    @ [["Coq"; "omega"; "OmegaLemmas"]]
 
 let constant = gen_constant_in_modules "Omega" coq_modules
 

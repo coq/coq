@@ -16,13 +16,8 @@
 (* $Id$ *)
 
 (* We do not require [ZArith] anymore, but only what's necessary for Omega *)
-Require Export fast_integer.
-Require Export zarith_aux.
-Require Export auxiliary.
-Require Export Zsyntax.
-Require Export ZArith_dec.
-Require Export Zmisc.
-Require Export Wf_Z.
+Require Export ZArith_base.
+Require Export OmegaLemmas.
 
 Hints Resolve Zle_n Zplus_sym Zplus_assoc Zmult_sym Zmult_assoc
   Zero_left Zero_right Zmult_one Zplus_inverse_l Zplus_inverse_r 
