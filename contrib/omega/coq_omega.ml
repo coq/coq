@@ -1648,6 +1648,7 @@ let destructure_hyps gl =
     | [] -> (tclTHEN nat_inject coq_omega)
     | (i,body,t)::lit ->
 	begin try match destructurate t with
+	  | Kapp("False",[]) -> elim_id i
           | Kapp(("Zle"|"Zge"|"Zgt"|"Zlt"|"Zne"),[t1;t2]) -> loop evbd lit
           | Kapp("or",[t1;t2]) ->
               (tclTHENS ((tclTHEN ((tclTHEN (elim_id i) (clear [i]))) 
@@ -1674,7 +1675,8 @@ let destructure_hyps gl =
 			 (clear [i])) 
 		      (intros_using [i])) 
 		   (loop evbd ((i,None,mk_or (mk_not t1) t2)::lit)))
-              end else loop evbd lit
+              end else
+		loop evbd lit
           | Kapp("not",[t]) -> 
               begin match destructurate t with 
 		  Kapp("or",[t1;t2]) -> 
@@ -1842,7 +1844,7 @@ let destructure_goal gl =
   let concl = pf_concl gl in
   let rec loop t =
     match destructurate t with
-      | Kapp("not",[t1;t2]) -> 
+      | Kapp("not",[t]) ->
           (tclTHEN 
 	     (tclTHEN (unfold sp_not) intro) 
 	     destructure_hyps)
