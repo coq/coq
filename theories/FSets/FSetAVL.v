@@ -251,10 +251,12 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
   Inductive avl : tree -> Prop :=
   | RBLeaf : 
       (avl Leaf)
-  | RBNode : (x:elt)(l,r:tree)
+  | RBNode : (x:elt)(l,r:tree)(h:Z)
       (avl l) -> (avl r) ->
       `-2 <= (height l) - (height r) <= 2` ->
-      (avl (Node l x r ((max (height l) (height r)) + 1))).
+      (((height l) >= (height r) /\ h = (height l) + 1) \/
+       ((height r) >= (height l) /\ h = (height r) + 1)) ->
+      (avl (Node l x r h)).
 
   Hint avl := Constructors avl.
 
@@ -286,32 +288,19 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Induction s; Simpl; Intros.
     Omega.
     Inversion_clear H1; Intuition.
-    MaxCase '(height t) '(height t1); Intros; Omega.
   Save.
   
-  Lemma height_equation :
-    (l,r:tree)(x:elt)(h:Z)
-    (avl (Node l x r h)) -> 
-    h = (max (height l) (height r)) + 1.
-  Proof.
-    Inversion 1; Trivial.
-  Save.
-
-  (* variant without [max] to ease the use of Omega *)
-  Lemma height_equation_2 : 
+  Lemma height_equation : 
     (l,r:tree)(x:elt)(h:Z)
     (avl (Node l x r h)) -> 
     ((height l) >= (height r) /\ h = (height l) + 1) \/
     ((height r) >= (height l) /\ h = (height r) + 1).
   Proof.
-    Inversion 1.
-    Generalize H4; Clear H4.
-    MaxCase '(height l) '(height r); Intuition.
+    Inversion 1; Trivial.
   Save.
 
   Implicits height_non_negative. 
   Implicits height_equation.
-  Implicits height_equation_2.
 
   (** * Sets as AVL trees *)
 
@@ -432,9 +421,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
   Lemma singleton_avl : (x:elt)(avl (singleton_tree x)).
   Proof.
     Unfold singleton_tree; Intro.
-    Replace 1 with (max (height Leaf) (height Leaf)) + 1; Trivial.
-    Constructor; Auto.
-    Unfold height; Simpl; Omega.
+    Constructor; Auto; Unfold height; Simpl; Omega.
   Save.
 
   Definition singleton : (x:elt){ s:t | (y:elt)(In y s) <-> (E.eq x y)}.
@@ -458,22 +445,22 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     { s:tree | 
         (bst s) /\
         (avl s) /\
-        (((height l) >= (height r) /\ (height s) = (height l) + 1) \/
-         ((height r) >= (height l) /\ (height s) = (height r) + 1)) /\
+        (((height l) >= (height r) /\ (height s) = `(height l) + 1`) \/
+         ((height r) >= (height l) /\ (height s) = `(height r) + 1`)) /\
         (y:elt)(In_tree y s) <-> 
             ((X.eq y x) \/ (In_tree y l) \/ (In_tree y r)) }.
   Proof.
     Intros.
     Exists (Node l x r ((max (height l) (height r)) + 1)).
-    Intuition.
     MaxCase '(height l) '(height r); Intuition.
+    Inversion_clear H5; Intuition.
     Inversion_clear H5; Intuition.
   Defined.
 
   (* [h] is a proof of [avl (Node l x r h)] *)
   Tactic Definition AVL h :=
     (Generalize (height_non_negative h); Try Simpl);
-    (Try Generalize (height_equation_2 h)); Intros.
+    (Try Generalize (height_equation h)); Intros.
 
   (** [bal l x r] acts as [create], but performs one step of
       rebalancing if necessary. *)
