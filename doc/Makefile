@@ -18,6 +18,7 @@ DOCCOQC=$(COQBIN)/coqc
 COQTEX=$(COQBIN)/coq-tex -image $(DOCCOQTOP) -v -sl -small
 #COQWEBSTY=$(HOME)/lib/tex/
 COQWEBSTY=/usr/share/texmf/tex/latex/misc/
+HEVEALIB=/usr/local/lib/hevea
 
 LATEX=latex
 BIBTEX=bibtex
@@ -27,7 +28,7 @@ PDFLATEX=pdflatex
 MKDIR=mkdir
 TEST=test
 
-TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):.:
+TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):$(HEVEALIB):.:
 
 INPUTS=./macros.tex ./title.tex ./headers.tex ./Reference-Manual.tex
 
@@ -50,8 +51,8 @@ REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
 
 REFMAN=Reference-Manual
 
-#VERSION=POSITIONNEZ-CETTE-VARIABLE
 VERSION=V7.4
+#VERSION=POSITIONNEZ-CETTE-VARIABLE
 
 FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
@@ -80,13 +81,13 @@ coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
 latex-part: all-dvi
 
-all-dvi: Tutorial.v.dvi Reference-Manual.dvi # Library.dvi # Changes.v.dvi
+all-dvi: Tutorial.v.dvi Reference-Manual.dvi faq.v.dvi # Library.dvi Changes.v.dvi
 
-all-pdf: Tutorial.v.pdf Reference-Manual.pdf # Library.pdf # Changes.v.pdf
+all-pdf: Tutorial.v.pdf Reference-Manual.pdf faq.v.pdf # Library.pdf Changes.v.pdf
 
-all-ps: Tutorial.v.ps Reference-Manual.ps # Library.ps # Changes.v.ps
+all-ps: Tutorial.v.ps Reference-Manual.ps faq.v.ps # Library.ps Changes.v.ps
 
-all-html: Tutorial.v.html Reference-Manual.html # Library.html # Changes.v.html
+all-html: Tutorial.v.html Reference-Manual.html faq.v.html # Library.html Changes.v.html
 
 
 # dvips et dviselect existent sur loupiac
@@ -122,6 +123,9 @@ Changes.v.html: Changes.v.tex
 Reference-Manual.html: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	hevea -fix ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
 #1.04	hevea ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
+
+faq.v.html: faq.v.tex
+	hevea ./faq.v.tex
 
 coq.info: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	hevea -info ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
@@ -179,6 +183,8 @@ clean: clean-coq clean-latex
 
 clean-html:
 	rm -f Tutorial.v.html Reference-Manual.html # Changes.v.html
+	rm -f *.hatoc *.haux *.hcomind *.herrind *.hidx *.hind *.htacind *.htoc
+
 
 cleanall: clean clean-html
 
@@ -332,6 +338,9 @@ doc-ftp-install:
 	- mkdir $(FTPDOCDIR)
 	cp $(FTPDOCS) $(FTPHTMLDOCS) $(FTPDOCDIR)
 	- chmod g+w $(FTPDOCDIR)/*
+
+faq-www-install:
+	cp faq.v.html $(WWWDOCDIR)/faq.html
 
 doc-www-install: 
 	(cd $(WWWDOCDIR); rm -f node*.html main*.html toc.html \

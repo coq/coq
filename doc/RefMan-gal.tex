@@ -1196,16 +1196,18 @@ After a statement, Coq needs a proof.
 \item {\tt Lemma {\ident} : {\type}.}\comindex{Lemma}\\ 
 It is a synonymous of \texttt{Theorem}
 \item {\tt Remark {\ident} : {\type}.}\comindex{Remark}\\ 
-Same as {\tt Theorem} except
-that if this statement is in one or more levels of sections then the
-name {\ident} will be accessible only prefixed by the sections names
-when the sections (see \ref{Section} and \ref{LongNames}) will be
-closed.
-%All proofs of  persistent objects (such as theorems) referring to {\ident}
-%within the section will be replaced by the proof of  {\ident}.
-\item {\tt Fact {\ident} : {\type}.}\comindex{Fact}\\ 
-Same as {\tt Remark} except
-that the innermost section name is dropped from the full name.
+It is a synonymous of \texttt{Theorem}
+% Same as {\tt Theorem} except
+% that if this statement is in one or more levels of sections then the
+% name {\ident} will be accessible only prefixed by the sections names
+% when the sections (see \ref{Section} and \ref{LongNames}) will be
+% closed.
+% %All proofs of  persistent objects (such as theorems) referring to {\ident}
+% %within the section will be replaced by the proof of  {\ident}.
+ \item {\tt Fact {\ident} : {\type}.}\comindex{Fact}\\ 
+It is a synonymous of \texttt{Theorem}
+% Same as {\tt Remark} except
+% that the innermost section name is dropped from the full name.
 \item {\tt Definition {\ident} : {\type}.} \\
 Allow to define a term of type {\type} using the proof editing mode. It
 behaves as {\tt Theorem} except the defined term will be transparent (see
