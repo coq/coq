@@ -359,13 +359,15 @@ let rec pretype tycon env isevars lvar = function
              let env_p = push_rels psign env in
              let pj = pretype_type empty_valcon env_p isevars lvar p in
              let ccl = nf_evar (evars_of isevars) pj.utj_val in
-             let fty =
-               let inst = (Array.to_list cs.cs_concl_realargs)
-                 @[build_dependent_constructor cs]
-               in substl inst (liftn cs.cs_nargs nar ccl) in
+	     let psign = make_arity_signature env true indf in (* with names *)
+	     let p = it_mkLambda_or_LetIn ccl psign in
+             let inst = 
+	       (Array.to_list cs.cs_concl_realargs)
+	       @[build_dependent_constructor cs] in
+	     let lp = lift cs.cs_nargs p in
+             let fty = hnf_lam_applist env (evars_of isevars) lp inst in
 	     let fj = pretype (mk_tycon fty) env_f isevars lvar d in
 	     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
-	     let p = it_mkLambda_or_LetIn ccl psign in
 	     let v =
 	       let mis,_ = dest_ind_family indf in
 	       let ci = make_default_case_info env LetStyle mis in
