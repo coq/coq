@@ -85,7 +85,7 @@ let make_case_ml isrec pred c ci lf =
  * where A'_bar = A_bar[p_bar <- globargs] *)
 
 let build_notdep_pred env sigma indf pred =
-  let arsign,_ = get_arity env sigma indf in
+  let arsign,_ = get_arity indf in
   let nar = List.length arsign in
   it_lambda_name env (lift nar pred) arsign
 
@@ -549,7 +549,7 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
 
   (* First strategy: no dependencies at all *)
   let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
-  let (sign,_) = get_arity env !isevars indf in
+  let (sign,_) = get_arity indf in
   if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
   then
     let pred = lam_it (lift (List.length sign) typn) sign in
@@ -621,7 +621,7 @@ let rec extract_predicate = function
 let abstract_predicate env sigma indf = function
   | PrProd _ | PrCcl _ -> anomaly "abstract_predicate: must be some LetIn"
   | PrLetIn ((_,copt),pred) ->
-      let asign,_ = get_arity env sigma indf in
+      let asign,_ = get_arity indf in
       let sign =
 	List.map (fun (na,t) -> (named_hd (Global.env()) t na,t)) asign in
       let dep = copt<> None in
@@ -895,7 +895,7 @@ let coerce_row typing_fun isevars env row tomatch =
 	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
 	     IsInd (typ,find_rectype env !isevars typ)
 	   with NotCoercible ->
-	     (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
+	     (* 2 cases : Not the right inductive or not an inductive at all *)
 	     try
 	       let mind,_ = find_mrectype env !isevars typ in
 	       error_bad_constructor_loc cloc CCI
@@ -921,7 +921,7 @@ let build_expected_arity env isevars isdep tomatchl =
   let cook n = function
     | _,IsInd (_,IndType(indf,_)) ->
 	let indf' = lift_inductive_family n indf in
-	(build_dependent_inductive indf', fst (get_arity env !isevars indf'))
+	(build_dependent_inductive indf', fst (get_arity indf'))
     | _,NotInd _ -> anomaly "Should have been catched in case_dependent"
   in
   let rec buildrec n = function

@@ -149,7 +149,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
   let p = next_ident_away (id_of_string "P") allvars in
   let pty,goal =
     if dep_option  then
-      let pty = make_arity env sigma true indf sort in
+      let pty = make_arity env true indf sort in
       let goal = 
 	mkProd Anonymous (mkAppliedInd ind) (applist(VAR p,realargs@[Rel 1]))
       in

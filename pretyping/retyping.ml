@@ -54,7 +54,7 @@ let rec type_of env cstr=
         let IndType (indf,realargs) =
           try find_rectype env sigma (type_of env c)
           with Induc -> anomaly "type_of: Bad recursive type" in
-	let (aritysign,_) = get_arity env sigma indf in
+	let (aritysign,_) = get_arity indf in
 	let (psign,_) = splay_prod env sigma (type_of env p) in
         let al =
 	  if List.length psign > List.length aritysign

@@ -462,7 +462,7 @@ let descend_then sigma env head dirn =
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let aritysign,_ = get_arity env sigma indf in
+      let aritysign,_ = get_arity indf in
       let p = lam_it (lift (mis_nrealargs mispec) resty) aritysign in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
@@ -500,7 +500,7 @@ let construct_discriminator sigma env dirn c sort =
       errorlabstrm "Equality.construct_discriminator"
 	[< 'sTR "Cannot discriminate on inductive constructors with 
 		 dependent types" >] in
-  let arsign,arsort = get_arity env sigma indf in
+  let arsign,arsort = get_arity indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
       | Type_Type -> build_UnitT (), build_EmptyT (), (Type dummy_univ)
@@ -524,7 +524,7 @@ let rec build_discriminator sigma env dirn c sort = function
       let cty = type_of env sigma c in
       let IndType (indf,_) =
 	try find_rectype env sigma cty with Not_found -> assert false in
-      let _,arsort = get_arity env sigma indf in
+      let _,arsort = get_arity indf in
       let nparams = mis_nparams (fst (dest_ind_family indf)) in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = Rel(cnum_nlams-(argnum-nparams)) in

@@ -93,7 +93,7 @@ let make_inv_predicate env sigma ind id status concl =
     match status with
       | NoDep ->
 	  (* We push the arity and leave concl unchanged *)
-	  let hyps_arity,_ = get_arity env sigma indf in
+	  let hyps_arity,_ = get_arity indf in
 	  let env' = push_rels hyps_arity env in
 	  (hyps_arity,concl)
       | Dep dflt_concl ->
@@ -108,7 +108,7 @@ let make_inv_predicate env sigma ind id status concl =
               | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
 		let sort = get_sort_of env sigma concl in
-		let p = make_arity env sigma true indf sort in
+		let p = make_arity env true indf sort in
 		abstract_list_all env sigma p concl (realargs@[VAR id])
 	  in
 	  let hyps,_ = decompose_lam pred in

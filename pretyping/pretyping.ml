@@ -75,7 +75,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
     let depFvec = Array.init (mis_ntypes mispec) init_depFvec in
     let constrs = get_constructors indf in
     (* build now the fixpoint *)
-    let lnames,_ = get_arity env sigma indf in
+    let lnames,_ = get_arity indf in
     let nar = List.length lnames in
     let nparams = mis_nparams mispec in
     let ci = make_default_case_info mispec in
