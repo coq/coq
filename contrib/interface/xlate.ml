@@ -729,6 +729,8 @@ and (xlate_call_or_tacarg:raw_tactic_arg -> ct_TACTIC_COM) =
 	  (reference_to_ct_ID r,
 	    CT_tactic_arg_list(xlate_tacarg a,List.map xlate_tacarg l))
     | Reference (Ident (_,s)) -> ident_tac s
+    | ConstrMayEval(ConstrTerm a) ->
+	CT_formula_marker(xlate_formula a)
     | t -> xlate_error "TODO LATER: result other than tactic or constr"
 
 and xlate_red_tactic =
@@ -971,7 +973,7 @@ and xlate_tac =
      let id = ctf_ID_OPT_SOME (xlate_ident (out_gen rawwit_ident id)) in
      if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, id)
      else CT_condrewrite_rl (xlate_tactic t, c, bindl, id)
-    | TacExtend (_,"DependentRewrite", [b; id_or_constr]) ->
+    | TacExtend (_,"dependentrewrite", [b; id_or_constr]) ->
       let b = out_gen Extraargs.rawwit_orient b in
       (match genarg_tag id_or_constr with
 	| IdentArgType -> (*Dependent Rewrite/SubstHypInConcl*)
