@@ -693,7 +693,7 @@ GEXTEND Gram
 
      | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (local,s,l)
+	 -> VernacSyntaxExtension (local,s,l,None)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
