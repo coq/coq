@@ -17,12 +17,20 @@ let constr_to_xml obj sigma env =
   let ids_to_inner_types = Hashtbl.create 503 in
 
   let pvars = [] in
+  (* named_context holds section variables and local variables *)
   let named_context = Environ.named_context env  in
-  let rel_context = Sign.push_named_to_rel_context named_context [] in
+  (* real_named_context holds only the section variables *)
+  let real_named_context = Environ.named_context (Global.env ()) in
+  (* named_context' holds only the local variables *)
+  let named_context' =
+   List.filter (function n -> not (List.mem n real_named_context)) named_context
+  in
+  let rel_context = Sign.push_named_to_rel_context named_context' [] in
   let rel_env =
-   Environ.push_rel_context rel_context (Environ.reset_context env) in
+   Environ.push_rel_context rel_context
+    (Environ.reset_with_named_context real_named_context env) in
   let obj' =
-   Term.subst_vars (List.map (function (i,_,_) -> i) named_context) obj in
+   Term.subst_vars (List.map (function (i,_,_) -> i) named_context') obj in
   let seed = ref 0 in
    try
     let annobj =
@@ -32,16 +40,19 @@ let constr_to_xml obj sigma env =
     in
      Acic2Xml.print_term ids_to_inner_sorts annobj
    with e ->
-    begin
-     Pp.ppnl (Pp.str "Problem during the conversion of constr into XML") ;
+    Util.anomaly
+     ("Problem during the conversion of constr into XML: " ^
+      Printexc.to_string e)
+(* CSC: debugging stuff
+Pp.ppnl (Pp.str "Problem during the conversion of constr into XML") ;
 Pp.ppnl (Pp.str "ENVIRONMENT:") ;
 Pp.ppnl (Printer.pr_context_of rel_env) ;
 Pp.ppnl (Pp.str "TERM:") ;
 Pp.ppnl (Printer.prterm_env rel_env obj') ;
 Pp.ppnl (Pp.str "RAW-TERM:") ;
 Pp.ppnl (Printer.prterm obj') ;
-     Xml.xml_empty "MISSING TERM" [] (*; raise e*)
-    end
+Xml.xml_empty "MISSING TERM" [] (*; raise e*)
+*)
 ;;
 
 let first_word s =
@@ -66,7 +77,7 @@ let string_of_prim_rule x = match x with
 
 
 let
- print_proof_tree curi pf proof_tree_to_constr
+ print_proof_tree curi sigma0 pf proof_tree_to_constr
   proof_tree_to_flattened_proof_tree constr_to_ids
 =
  let module PT = Proof_type in
@@ -103,9 +114,12 @@ Pp.ppnl (Pp.(++) (Pp.str
        {PT.ref=Some(PT.Prim tactic_expr,nodes)} ->
          let tac = string_of_prim_rule tactic_expr in
          let of_attribute = ("name",tac)::of_attribute in
-          X.xml_nempty "Prim" of_attribute
-           (List.fold_left
-             (fun i n -> [< i ; (aux n old_hyps) >]) [<>] nodes)
+          if nodes = [] then
+           X.xml_empty "Prim" of_attribute
+          else
+           X.xml_nempty "Prim" of_attribute
+            (List.fold_left
+              (fun i n -> [< i ; (aux n old_hyps) >]) [<>] nodes)
 
      | {PT.goal=goal;
         PT.ref=Some(PT.Tactic (tactic_expr,hidden_proof),nodes)} ->
@@ -131,7 +145,7 @@ Pp.ppnl (Pp.(++) (Pp.str
          let {Evd.evar_concl=concl;
               Evd.evar_hyps=hyps}=goal in
 
-         let rc = (Proof_trees.rc_of_gc Evd.empty goal) in
+         let rc = (Proof_trees.rc_of_gc sigma0 goal) in
          let sigma = Proof_trees.get_gc rc in
          let hyps = Proof_trees.get_hyps rc in
          let env= Proof_trees.get_env rc in

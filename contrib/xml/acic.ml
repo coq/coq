@@ -55,8 +55,8 @@ type aconstr =
   | AEvar      of id * int * aconstr list
   | ASort      of id * sorts
   | ACast      of id * aconstr * aconstr
-  | AProd      of id * name * aconstr * aconstr
-  | ALambda    of id * name * aconstr * aconstr
+  | AProds     of (id * name * aconstr) list * aconstr
+  | ALambdas   of (id * name * aconstr) list * aconstr
   | ALetIn     of id * name * aconstr * aconstr
   | AApp       of id * aconstr list
   | AConst     of id * explicit_named_substitution * uri

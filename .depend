@@ -361,7 +361,7 @@ contrib/jprover/jlogic.cmi: contrib/jprover/jterm.cmi
 contrib/jprover/jterm.cmi: contrib/jprover/opname.cmi 
 contrib/xml/doubleTypeInference.cmi: contrib/xml/acic.cmo kernel/environ.cmi \
     pretyping/evd.cmi kernel/term.cmi 
-contrib/xml/xmlcommand.cmi: kernel/names.cmi library/nametab.cmi lib/util.cmi 
+contrib/xml/xmlcommand.cmi: library/nametab.cmi lib/util.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
@@ -1619,13 +1619,13 @@ toplevel/coqtop.cmo: toplevel/cerrors.cmi config/coq_config.cmi \
     toplevel/mltop.cmi library/nameops.cmi kernel/names.cmi lib/options.cmi \
     lib/pp.cmi lib/profile.cmi library/states.cmi lib/system.cmi \
     toplevel/toplevel.cmi toplevel/usage.cmi lib/util.cmi toplevel/vernac.cmi \
-    toplevel/coqtop.cmi 
+    contrib/xml/xmlcommand.cmi toplevel/coqtop.cmi 
 toplevel/coqtop.cmx: toplevel/cerrors.cmx config/coq_config.cmx \
     toplevel/coqinit.cmx library/lib.cmx library/library.cmx \
     toplevel/mltop.cmx library/nameops.cmx kernel/names.cmx lib/options.cmx \
     lib/pp.cmx lib/profile.cmx library/states.cmx lib/system.cmx \
     toplevel/toplevel.cmx toplevel/usage.cmx lib/util.cmx toplevel/vernac.cmx \
-    toplevel/coqtop.cmi 
+    contrib/xml/xmlcommand.cmx toplevel/coqtop.cmi 
 toplevel/discharge.cmo: toplevel/class.cmi pretyping/classops.cmi \
     kernel/cooking.cmi kernel/declarations.cmi library/declare.cmi \
     library/dischargedhypsmap.cmi kernel/environ.cmi library/global.cmi \
@@ -2571,15 +2571,13 @@ contrib/xml/cic2acic.cmo: contrib/xml/acic.cmo library/declare.cmi \
     kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     library/global.cmi library/lib.cmi library/nameops.cmi kernel/names.cmi \
     lib/pp.cmi parsing/printer.cmi pretyping/reductionops.cmi \
-    pretyping/retyping.cmi kernel/safe_typing.cmi kernel/term.cmi \
-    pretyping/termops.cmi lib/util.cmi 
+    pretyping/retyping.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
 contrib/xml/cic2acic.cmx: contrib/xml/acic.cmx library/declare.cmx \
     library/dischargedhypsmap.cmx contrib/xml/doubleTypeInference.cmx \
     kernel/environ.cmx pretyping/evarutil.cmx pretyping/evd.cmx \
     library/global.cmx library/lib.cmx library/nameops.cmx kernel/names.cmx \
     lib/pp.cmx parsing/printer.cmx pretyping/reductionops.cmx \
-    pretyping/retyping.cmx kernel/safe_typing.cmx kernel/term.cmx \
-    pretyping/termops.cmx lib/util.cmx 
+    pretyping/retyping.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 contrib/xml/doubleTypeInference.cmo: contrib/xml/acic.cmo kernel/environ.cmi \
     pretyping/evarutil.cmi pretyping/evd.cmi kernel/inductive.cmi \
     pretyping/instantiate.cmi lib/pp.cmi parsing/printer.cmi \
@@ -2602,14 +2600,16 @@ contrib/xml/proof2aproof.cmx: pretyping/evarutil.cmx pretyping/evd.cmx \
     proofs/tacmach.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 contrib/xml/proofTree2Xml.cmo: contrib/xml/acic.cmo contrib/xml/acic2Xml.cmo \
     contrib/xml/cic2acic.cmo kernel/environ.cmi pretyping/evd.cmi \
-    proofs/logic.cmi kernel/names.cmi lib/pp.cmi parsing/pptactic.cmi \
-    parsing/printer.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
-    proofs/refiner.cmi kernel/term.cmi contrib/xml/xml.cmi 
+    library/global.cmi proofs/logic.cmi kernel/names.cmi lib/pp.cmi \
+    parsing/pptactic.cmi parsing/printer.cmi contrib/xml/proof2aproof.cmo \
+    proofs/proof_trees.cmi proofs/proof_type.cmi kernel/sign.cmi \
+    proofs/tacexpr.cmo kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi 
 contrib/xml/proofTree2Xml.cmx: contrib/xml/acic.cmx contrib/xml/acic2Xml.cmx \
     contrib/xml/cic2acic.cmx kernel/environ.cmx pretyping/evd.cmx \
-    proofs/logic.cmx kernel/names.cmx lib/pp.cmx parsing/pptactic.cmx \
-    parsing/printer.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
-    proofs/refiner.cmx kernel/term.cmx contrib/xml/xml.cmx 
+    library/global.cmx proofs/logic.cmx kernel/names.cmx lib/pp.cmx \
+    parsing/pptactic.cmx parsing/printer.cmx contrib/xml/proof2aproof.cmx \
+    proofs/proof_trees.cmx proofs/proof_type.cmx kernel/sign.cmx \
+    proofs/tacexpr.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx 
 contrib/xml/xmlcommand.cmo: contrib/xml/acic.cmo contrib/xml/acic2Xml.cmo \
     contrib/xml/cic2acic.cmo kernel/declarations.cmi library/declare.cmi \
     kernel/environ.cmi pretyping/evd.cmi library/global.cmi library/lib.cmi \

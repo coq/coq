@@ -63,36 +63,42 @@ let print_term ids_to_inner_sorts =
           | Term.InType -> "Type"
         in
          X.xml_empty "SORT" ["value",string_of_sort ; "id",id]
-     | A.AProd (id,Names.Anonymous,s,t) ->
-        let ty = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_nempty "PROD" ["id",id ; "type",ty]
-          [< X.xml_nempty "source" [] (aux s) ;
-             X.xml_nempty "target" [] (aux t)
-          >]
-     | A.AProd (xid,Names.Name id,s,t) ->
-        let ty = Hashtbl.find ids_to_inner_sorts xid in
-         X.xml_nempty "PROD" ["id",xid ; "type",ty]
-          [< X.xml_nempty "source" [] (aux s) ;
-             X.xml_nempty "target" ["binder",Names.string_of_id id] (aux t)
-          >]
+     | A.AProds (prods,t) ->
+        X.xml_nempty "PRODS" []
+         [< List.fold_left
+             (fun i (id,binder,s) ->
+               let sort = Hashtbl.find ids_to_inner_sorts id in
+               let attrs =
+                ("id",id)::("sort",sort)::
+                match binder with
+                   Names.Anonymous -> []
+                 | Names.Name b -> ["binder",Names.string_of_id b]
+               in
+                [< X.xml_nempty "prod" attrs (aux s) ; i >]
+             ) [< >] prods ;
+            X.xml_nempty "target" [] (aux t)
+         >]
      | A.ACast (id,v,t) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
          X.xml_nempty "CAST" ["id",id ; "sort",sort]
           [< X.xml_nempty "term" [] (aux v) ;
              X.xml_nempty "type" [] (aux t)
           >]
-     | A.ALambda (id,Names.Anonymous,s,t) ->
-        let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_nempty "LAMBDA" ["id",id ; "sort",sort]
-          [< X.xml_nempty "source" [] (aux s) ;
-             X.xml_nempty "target" [] (aux t)
-          >]
-     | A.ALambda (xid,Names.Name id,s,t) ->
-        let sort = Hashtbl.find ids_to_inner_sorts xid in
-         X.xml_nempty "LAMBDA" ["id",xid ; "sort",sort]
-          [< X.xml_nempty "source" [] (aux s) ;
-             X.xml_nempty "target" ["binder",Names.string_of_id id] (aux t)
-          >]
+     | A.ALambdas (lambdas,t) ->
+        X.xml_nempty "LAMBDAS" []
+         [< List.fold_left
+             (fun i (id,binder,s) ->
+               let sort = Hashtbl.find ids_to_inner_sorts id in
+               let attrs =
+                ("id",id)::("sort",sort)::
+                match binder with
+                   Names.Anonymous -> []
+                 | Names.Name b -> ["binder",Names.string_of_id b]
+               in
+                [< X.xml_nempty "lambda" attrs (aux s) ; i >]
+             ) [< >] lambdas ;
+            X.xml_nempty "target" [] (aux t)
+         >]
      | A.ALetIn (xid,Names.Anonymous,s,t) ->
        assert false
      | A.ALetIn (xid,Names.Name id,s,t) ->
@@ -191,15 +197,16 @@ let param_attribute_of_params params =
   ) params ""
 ;;
 
-let print_object ids_to_inner_sorts =
+let print_object uri ids_to_inner_sorts =
  let rec aux =
   let module A = Acic in
   let module X = Xml in
     function
        A.ACurrentProof (id,n,conjectures,bo,ty) ->
-        let xml_for_current_proof =
+        let xml_for_current_proof_body =
 (*CSC: Should the CurrentProof also have the list of variables it depends on? *)
-         X.xml_nempty "CurrentProof" ["name",n ; "id", id]
+(*CSC: I think so. Not implemented yet.                                       *)
+         X.xml_nempty "CurrentProof" ["of",uri ; "id", id]
           [< List.fold_left
               (fun i (cid,n,canonical_context,t) ->
                 [< i ;
@@ -225,33 +232,54 @@ let print_object ids_to_inner_sorts =
                     >]
                 >])
               [<>] (List.rev conjectures) ;
-             X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo) ;
-             X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)  >]
+             X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo) >]
         in
+        let xml_for_current_proof_type =
+         X.xml_nempty "DefinitionType" ["name",n ; "id", id]
+          (print_term ids_to_inner_sorts ty)
+        in
+        let xmlbo =
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-            X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \""^dtdname ^"\">\n\n");
-             xml_for_current_proof
+            X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \""^dtdname ^"\">\n");
+            xml_for_current_proof_body
+         >] in
+        let xmlty =
+         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+            X.xml_cdata
+             ("<!DOCTYPE DefinitionType SYSTEM \"" ^ dtdname ^ "\">\n");
+            xml_for_current_proof_type
          >]
+        in
+         xmlty, Some xmlbo
      | A.ADefinition (id,n,bo,ty,params) ->
         let params' = param_attribute_of_params params in
+        let xmlbo =
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-            X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^"\">\n\n");
-             X.xml_nempty "Definition" ["name",n ; "params",params' ; "id", id]
-              [< X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo);
-                 X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)
-               >]
+            X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^"\">\n");
+             X.xml_nempty "DefinitionBody"
+              ["for",uri ; "params",params' ; "id", id]
+              [< print_term ids_to_inner_sorts bo >]
+         >] in
+        let xmlty =
+         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+            X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^"\">\n");
+             X.xml_nempty "DefinitionType"
+              ["name",n ; "params",params' ; "id", id]
+              [< print_term ids_to_inner_sorts ty >]
          >]
+        in
+         xmlty, Some xmlbo
      | A.AAxiom (id,n,ty,params) ->
         let params' = param_attribute_of_params params in
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-            X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
+            X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n") ;
             X.xml_nempty "Axiom"
              ["name",n ; "id",id ; "params",params']
              (X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty))
-         >]
+         >], None
      | A.AVariable (id,n,bo,ty) ->
         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-           X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
+           X.xml_cdata ("<!DOCTYPE Variable SYSTEM \"" ^ dtdname ^ "\">\n") ;
            X.xml_nempty "Variable" ["name",n ; "id", id]
             [< (match bo with
                    None -> [<>]
@@ -261,12 +289,12 @@ let print_object ids_to_inner_sorts =
                ) ;
                X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)
             >]
-        >]
+        >], None
      | A.AInductiveDefinition (id,tys,params,nparams) ->
         let params' = param_attribute_of_params params in
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
             X.xml_cdata ("<!DOCTYPE InductiveDefinition SYSTEM \"" ^
-             dtdname ^ "\">\n\n") ;
+             dtdname ^ "\">\n") ;
             X.xml_nempty "InductiveDefinition"
              ["noParams",string_of_int nparams ;
               "id",id ;
@@ -293,7 +321,7 @@ let print_object ids_to_inner_sorts =
                   ) [< >] tys
                 )
              >]
-         >]
+         >], None
  in
   aux
 ;;
@@ -302,7 +330,7 @@ let print_inner_types curi ids_to_inner_sorts ids_to_inner_types =
  let module C2A = Cic2acic in
  let module X = Xml in
   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
-     X.xml_cdata ("<!DOCTYPE InnerTypes SYSTEM \"" ^ typesdtdname ^"\">\n\n");
+     X.xml_cdata ("<!DOCTYPE InnerTypes SYSTEM \"" ^ typesdtdname ^"\">\n");
       X.xml_nempty "InnerTypes" ["of",curi]
        (Hashtbl.fold
          (fun id {C2A.annsynthesized = synty ; C2A.annexpected = expty} x ->

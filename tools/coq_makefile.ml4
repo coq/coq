@@ -178,7 +178,7 @@ let variables l =
   -I $(CAMLP4LIB)\n";
   print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
   print "OPT="; if !opt = "-byte" then print "-byte"; print "\n";
-  print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
+  print "COQFLAGS=-q $(OPT) $(COQLIBS) $(COQ_XML)\n";
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
   print "COQDOC=coqdoc\n";

@@ -60,7 +60,7 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=   # is "-dump-glob file" when making the doc
 
-BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB)
+BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB) $(COQ_XML)
 
 ###########################################################################
 # Objects files 
@@ -126,15 +126,24 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/hiddentac.cmo tactics/elim.cmo \
 	tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
-	 toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
-         toplevel/discharge.cmo toplevel/vernacexpr.cmo \
-         toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-         parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
-         toplevel/vernacentries.cmo toplevel/vernac.cmo \
-	 toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-         toplevel/toplevel.cmo toplevel/usage.cmo \
-	 toplevel/coqinit.cmo toplevel/coqtop.cmo
+TOPLEVEL1=toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
+	  toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
+          toplevel/discharge.cmo toplevel/vernacexpr.cmo \
+          toplevel/vernacinterp.cmo toplevel/mltop.cmo \
+          parsing/pcoq.cmo parsing/egrammar.cmo
+
+# XMLCMO depends on TOPLEVEL1; TOPLEVEL2 depends on XMLCMO
+XMLCMO=contrib/xml/xml.cmo contrib/xml/acic.cmo \
+       contrib/xml/doubleTypeInference.cmo \
+       contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
+       contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
+       contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
+
+TOPLEVEL2=toplevel/metasyntax.cmo \
+          toplevel/vernacentries.cmo toplevel/vernac.cmo \
+	  toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
+          toplevel/toplevel.cmo toplevel/usage.cmo \
+	  toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/setoid_replace.cmo tactics/equality.cmo \
             tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
@@ -239,12 +248,6 @@ RINGCMO=contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
 
 FIELDCMO=contrib/field/field.cmo 
 
-XMLCMO=contrib/xml/xml.cmo contrib/xml/acic.cmo \
-       contrib/xml/doubleTypeInference.cmo \
-       contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
-       contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
-       contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
-
 FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
         contrib/fourier/g_fourier.cmo
 
@@ -275,7 +278,7 @@ JPROVERCMO=contrib/jprover/opname.cmo \
 
 ML4FILES += contrib/jprover/jprover.ml4
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) \
 	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
 
@@ -283,7 +286,8 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING)  \
-    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL) $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
+    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL1) $(XMLCMO) $(TOPLEVEL2) \
+    $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
@@ -331,7 +335,9 @@ scripts/tolink.ml: Makefile
 	echo "let parsing = \""$(PARSING)"\"" >> $@
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
-	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
+	echo "let toplevel1 = \""$(TOPLEVEL1)"\"" >> $@
+	echo "let xml = \""$(XMLCMO)"\"" >> $@
+	echo "let toplevel2 = \""$(TOPLEVEL2)"\"" >> $@
 	echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@

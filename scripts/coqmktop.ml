@@ -33,7 +33,10 @@ let pretyping = split_cmo Tolink.pretyping
 let parsing = split_cmo Tolink.parsing
 let proofs = split_cmo Tolink.proofs
 let tactics = split_cmo Tolink.tactics
-let toplevel = split_cmo Tolink.toplevel
+let toplevel1 = split_cmo Tolink.toplevel1
+(* xml depends on toplevel1; toplevel2 depends on xml *)
+let xml = split_cmo Tolink.xml
+let toplevel2 = split_cmo Tolink.toplevel2
 let highparsing = split_cmo Tolink.highparsing
 
 let core_objs = 
@@ -92,7 +95,7 @@ let files_to_link userfiles =
   let command_objs = if !searchisos then coqsearch else [] in
   let toplevel_objs = if !top then topobjs else if !opt then notopobjs else []
   in
-  let objs = core_objs @ dyn_objs @ toplevel @ highparsing @ 
+  let objs = core_objs @ dyn_objs @ toplevel1 @ xml @ toplevel2 @ highparsing @ 
     command_objs @ hightactics @ toplevel_objs in
   let tolink =
     if !opt then 

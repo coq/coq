@@ -183,7 +183,25 @@ let rec search_variables =
 
 (* FUNCTIONS TO PRINT A SINGLE OBJECT OF COQ *)
 
-let print_object uri obj sigma proof_tree_infos filename typesfilename prooftreefilename =
+let body_filename_of_filename =
+ function
+    Some f -> Some (f ^ ".body")
+  | None   -> None
+;;
+
+let types_filename_of_filename =
+ function
+    Some f -> Some (f ^ ".types")
+  | None   -> None
+;;
+
+let prooftree_filename_of_filename =
+ function
+    Some f -> Some (f ^ ".proof_tree")
+  | None   -> None
+;;
+
+let print_object uri obj sigma proof_tree_infos filename =
  (* function to pretty print and compress an XML file *)
 (*CSC: Unix.system "gzip ..." is an orrible non-portable solution. *)
  let pp xml filename =
@@ -204,37 +222,31 @@ let print_object uri obj sigma proof_tree_infos filename typesfilename prooftree
  in
   let (annobj,_,constr_to_ids,_,ids_to_inner_sorts,ids_to_inner_types,_,_) =
    Cic2acic.acic_object_of_cic_object !pvars sigma obj in
-  let xml = Acic2Xml.print_object ids_to_inner_sorts annobj in
+  let (xml, xml') = Acic2Xml.print_object uri ids_to_inner_sorts annobj in
   let xmltypes =
    Acic2Xml.print_inner_types uri ids_to_inner_sorts ids_to_inner_types in
   pp xml filename ;
-  pp xmltypes typesfilename ;
+  begin
+   match xml' with
+      None -> ()
+    | Some xml' -> pp xml' (body_filename_of_filename filename)
+  end ;
+  pp xmltypes (types_filename_of_filename filename) ;
   match proof_tree_infos with
      None -> ()
-   | Some (proof_tree,proof_tree_to_constr,proof_tree_to_flattened_proof_tree)->
+   | Some (sigma0,proof_tree,proof_tree_to_constr,
+           proof_tree_to_flattened_proof_tree) ->
       let xmlprooftree =
        ProofTree2Xml.print_proof_tree
-        uri proof_tree proof_tree_to_constr proof_tree_to_flattened_proof_tree
-        constr_to_ids
+        uri sigma0 proof_tree proof_tree_to_constr
+        proof_tree_to_flattened_proof_tree constr_to_ids
       in
-       pp xmlprooftree prooftreefilename
+       pp xmlprooftree (prooftree_filename_of_filename filename)
 ;;
 
 let string_list_of_named_context_list =
  List.map
   (function (n,_,_) -> Names.string_of_id n)
-;;
-
-let types_filename_of_filename =
- function
-    Some f -> Some (f ^ ".types")
-  | None   -> None
-;;
-
-let prooftree_filename_of_filename =
- function
-    Some f -> Some (f ^ ".proof_tree")
-  | None   -> None
 ;;
 
 (* Functions to construct an object *)
@@ -377,7 +389,6 @@ let print (_,qid as locqid) fn =
        Util.anomaly ("print: this should not happen")
   in
    print_object (uri_of_path ~keep_sections sp tag) obj Evd.empty None fn
-    (types_filename_of_filename fn) (prooftree_filename_of_filename fn)
 ;;
 
 (* show dest                                                  *)
@@ -395,8 +406,8 @@ let show_pftreestate fn pftst id =
  let env = Global.env () in
  let obj = mk_current_proof_obj id val0 typ evar_map env in
   print_object (uri_of_path sp Constant) obj evar_map
-   (Some (unshared_pf,proof_tree_to_constr,proof_tree_to_flattened_proof_tree))
-   fn (types_filename_of_filename fn) (prooftree_filename_of_filename fn)
+   (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
+    proof_tree_to_flattened_proof_tree)) fn 
 ;;
 
 let show fn =
@@ -510,7 +521,6 @@ let print_coq_object lobj id sp dn fv env =
      let fileext () = ext_of_tag tag in
      let fn = mkfilename dn sp (fileext ()) in
       print_object (uri_of_path sp tag) obj Evd.empty None fn
-       (types_filename_of_filename fn) (prooftree_filename_of_filename fn)
    with
     Uninteresting -> ()
 ;;
@@ -692,23 +702,26 @@ let rec join_dirs cwd =
 let filename_of_path ?(keep_sections=false) xml_library_root sp tag =
  let module N = Names in
  let module No = Nameops in
-  let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
-  let dir1 =
-   if not keep_sections then
-    Cic2acic.remove_sections_from_dirpath dir0
-   else
-    dir0
-  in
-  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
-   (join_dirs xml_library_root dir) ^ "." ^ (ext_of_tag tag)
+  match xml_library_root with
+     None -> None  (* stdout *)
+   | Some xml_library_root' ->
+      let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
+      let dir1 =
+       if not keep_sections then
+        Cic2acic.remove_sections_from_dirpath dir0
+       else
+        dir0
+      in
+      let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
+       Some ((join_dirs xml_library_root' dir) ^ "." ^ (ext_of_tag tag))
 ;;
 
 (* Let's register the callbacks *)
-let _ =
+let activate_xml_exportation () =
  let xml_library_root =
   try
-   Sys.getenv "XML_LIBRARY_ROOT"
-  with Not_found -> "/home/projects/helm/EXPORT/examples7.3/objects"
+   Some (Sys.getenv "COQ_XML_LIBRARY_ROOT")
+  with Not_found -> None
  in
  let proof_to_export = ref None in (* holds the proof-tree to export *)
   Pfedit.set_xml_cook_proof
@@ -719,23 +732,23 @@ let _ =
       filename_of_path ~keep_sections:true xml_library_root sp Variable
      in
      let dummy_location = -1,-1 in
-      print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)) ;
+      print (dummy_location,Nametab.qualid_of_sp sp) filename) ;
   Declare.set_xml_declare_constant
    (function sp ->
      let filename = filename_of_path xml_library_root sp Constant in
      match !proof_to_export with
         None ->
          let dummy_location = -1,-1 in
-          print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)
+          print (dummy_location,Nametab.qualid_of_sp sp) filename
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
-         show_pftreestate (Some filename) pftreestate (Nameops.basename sp) ;
+         show_pftreestate filename pftreestate (Nameops.basename sp) ;
          proof_to_export := None
    ) ;
   Declare.set_xml_declare_inductive
    (function sp ->
      let filename = filename_of_path xml_library_root sp Inductive in
      let dummy_location = -1,-1 in
-      print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)) ;
+      print (dummy_location,Nametab.qualid_of_sp sp) filename) ;
 ;;
