@@ -85,7 +85,11 @@ let parse_include d =
   with Not_found ->
     let alias = Filename.basename d in
     let alias =
-      if alias = "." then Filename.basename (Unix.getcwd ()) else alias in
+      if alias = "." then
+	Filename.basename (Unix.getcwd ())
+      else if alias = ".." then
+	Filename.basename (Filename.dirname (Unix.getcwd ()))
+      else alias in
     if not (Names.is_ident alias) then 
       error ("Cannot find a name to which "^d^" may map in Coq library");
     (d, [alias])
