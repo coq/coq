@@ -35,6 +35,12 @@ let open_par = function true -> string "(" | false -> [< >]
 
 let close_par = function true -> string ")" | false -> [< >]
 
+let pp_tvar id = 
+  let s = string_of_id id in 
+  if String.length s < 2 || s.[1]<>'\'' 
+  then string ("'"^s)
+  else string ("' "^s)
+
 let pp_tuple f = function
   | [] -> [< >]
   | [x] -> f x
@@ -129,7 +135,7 @@ let empty_env () = [], P.globals()
 let rec pp_type par t =
   let rec pp_rec par = function
     | Tvar id -> 
-	string ("'" ^ string_of_id id)
+	pp_tvar id
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
@@ -295,7 +301,7 @@ let pp_ast a = hOV 0 (pp_expr false (empty_env ()) [] a)
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_parameters l = 
-  [< pp_tuple (fun id -> string ("'" ^ string_of_id id)) l; space_if (l<>[]) >]
+  [< pp_tuple pp_tvar l; space_if (l<>[]) >]
 
 let pp_one_inductive (pl,name,cl) =
   let pp_constructor (id,l) =

@@ -9,4 +9,8 @@ Extract Inlined Constant Rinv => "(fun x -> 1.0 /. x)".
 Extract Inlined Constant Rlt => "(<)".
 Extract Inlined Constant up => "AddReals.my_ceil".
 Extract Inlined Constant total_order_T => "AddReals.total_order_T".
-
+Extract Inlined Constant sqrt => "sqrt".
+Extract Inlined Constant sigma => "(fun l h -> sigma_aux l h (Minus.minus h l))".
+Extract Inlined Constant PI => "3.141593".
+Extract Inlined Constant cos => cos.
+Extract Inlined Constant sin => sin.

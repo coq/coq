@@ -9,6 +9,7 @@ TOPDIR=../../..
 AXIOMSVO:= \
 theories/Arith/Arith.vo \
 theories/Lists/List.vo \
+theories/Reals/% \
 theories/Reals/Rsyntax.vo \
 theories/Num/% \
 theories/ZArith/Zsyntax.vo

@@ -616,7 +616,7 @@ let is_exn = function
   | MLexn _ -> true
   | _ -> false
 
-let rec optimize prm = function
+let rec optim prm = function
   | [] -> 
       []
   | ( Dabbrev (r,_,Tarity) |
@@ -624,8 +624,8 @@ let rec optimize prm = function
 	  Dglob(r,MLarity) | 
 	    Dglob(r,MLprop) ) as d :: l ->
       if List.mem r prm.to_appear then
-	d :: (optimize prm l) 
-      else optimize prm l
+	d :: (optim prm l) 
+      else optim prm l
   | Dglob (r,t) :: l ->
       let t = normalize t in
       let b = expand (strict_language prm.lang) r t
@@ -644,19 +644,20 @@ let rec optimize prm = function
       if not b' && 
 	(not b || prm.mod_name <> None || List.mem r prm.to_appear) then 
 	let t = optimize_fix t in
-	Dglob (r,t) :: (optimize prm l)
+	Dglob (r,t) :: (optim prm l)
       else 
-	optimize prm l
+	optim prm l
   | (Dtype ([],_) | Dabbrev _ | Dcustom _) as d :: l -> 
-      d :: (optimize prm l)
+      d :: (optim prm l)
   | Dtype ([ids,r,[r0,[t0]]],false) :: l when not (type_mem r t0) ->
       (* Detection of informative singleton. *)
       add_singleton r0; 
-      Dabbrev (r, ids, t0) :: (optimize prm l)
+      Dabbrev (r, ids, t0) :: (optim prm l)
   | Dtype(il,b) :: l -> 
       (* Detection of empty inductives. *)
       let l1,l2 = empty_ind il in 
-      if l2 = [] then l1 @ (optimize prm l) 
-      else l1 @ (Dtype(l2,b) :: (optimize prm l))
+      if l2 = [] then l1 @ (optim prm l) 
+      else l1 @ (Dtype(l2,b) :: (optim prm l))
 
 
+let optimize prm l = clear_singletons(); optim prm l

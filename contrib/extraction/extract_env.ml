@@ -22,18 +22,62 @@ open Nametab
 open Vernacinterp
 open Common
 
+(*s Auxiliary functions dealing with modules. *)
+
+module Dirset =
+  Set.Make(struct type t = dir_path let compare = compare end)
+
+let module_of_id m = 
+  try 
+    locate_loaded_library (make_short_qualid m) 
+  with Not_found ->  
+    errorlabstrm "module_message"
+      [< 'sTR "Module"; 'sPC;pr_id m; 'sPC; 'sTR "not found." >] 
+
+(*s Module name clash verification. *)
+
+let clash_error sn n1 n2 = 
+  errorlabstrm "clash_module_message"
+    [< 'sTR ("There are two Coq modules with ML name " ^ sn ^" :"); 
+       'fNL ; 'sTR ("  "^(string_of_dirpath n1)) ; 
+       'fNL ; 'sTR ("  "^(string_of_dirpath n2)) ; 
+       'fNL ; 'sTR "This is not allowed in ML. Please do some renaming first." >]
+    
+let check_r m sm r = 
+  let rm = String.capitalize (string_of_id (short_module r)) in 
+  if rm = sm && not (is_long_module m r) 
+  then clash_error sm m (long_module r)
+
+let check_decl m sm = function 
+  | Dglob (r,_) -> check_r m sm r 
+  | Dabbrev (r,_,_) -> check_r m sm r
+  | Dtype ((_,r,_)::_, _) -> check_r m sm r 
+  | Dtype ([],_) -> ()
+  | Dcustom (r,_) ->  check_r m sm r
+
+(* [check_one_module m l] checks that no module names in [l] clashes with [m]. *)
+
+let check_one_module m l = 
+  let sm = String.capitalize (string_of_id (snd (split_dirpath m))) in 
+  List.iter (check_decl m sm) l
+
+(* [check_modules m] checks if there are conflicts within the set [m] of modules dirpath. *) 
+
+let check_modules m = 
+  let map = ref Idmap.empty in 
+  Dirset.iter 
+    (fun m -> 
+       let sm = String.capitalize (string_of_id (snd (split_dirpath m))) in 
+       let idm = id_of_string sm in 
+       try 
+	 let m' = Idmap.find idm !map in clash_error sm m m'
+       with Not_found -> map := Idmap.add idm m !map) m
+    
 (*s [extract_module m] returns all the global reference declared 
-  in a module. This is done by traversing the segment of module [M]. 
+  in a module. This is done by traversing the segment of module [m]. 
   We just keep constants and inductives. *)
 
 let extract_module m =
-  let m = 
-    try 
-      Nametab.locate_loaded_library (Nametab.make_short_qualid m) 
-    with Not_found ->  
-      errorlabstrm "module_message"
-	[< 'sTR "Module"; 'sPC;pr_id m; 'sPC; 'sTR "not found." >] 
-    in
   let seg = Library.module_segment (Some m) in
   let get_reference = function
     | sp, Leaf o ->
@@ -59,11 +103,13 @@ let extract_module m =
 type extracted_env = {
   mutable visited : Refset.t;
   mutable to_extract : global_reference list;
-  mutable modules : Idset.t
+  mutable modules : Dirset.t
 }
 
 let empty () = 
-  { visited = ml_extractions (); to_extract = []; modules = Idset.empty }
+  { visited = ml_extractions (); 
+    to_extract = []; 
+    modules = Dirset.empty }
 
 let rec visit_reference m eenv r =
   let r' = match r with
@@ -76,12 +122,10 @@ let rec visit_reference m eenv r =
        and in module extraction *)
     eenv.visited <- Refset.add r' eenv.visited;
     if m then begin 
-      let m_name = module_of_r r' in 
-      if not (Idset.mem m_name eenv.modules) then begin
-	eenv.modules <- Idset.add m_name eenv.modules;
- 	try (* HACK temporaire pour eviter les m_name qui sont des sections *)
-	  List.iter (visit_reference m eenv) (extract_module m_name)
-	with _ -> ()
+      let m_name = long_module r' in 
+      if not (Dirset.mem m_name eenv.modules) then begin
+	eenv.modules <- Dirset.add m_name eenv.modules;
+	List.iter (visit_reference m eenv) (extract_module m_name)
       end
     end;
     visit_decl m eenv (extract_declaration r);
@@ -141,7 +185,7 @@ let extract_env rl =
 
 let modules_extract_env m =
   let eenv = empty () in
-  eenv.modules <- Idset.singleton m;
+  eenv.modules <- Dirset.singleton m;
   List.iter (visit_reference true eenv) (extract_module m);
   eenv.modules, List.rev eenv.to_extract
 
@@ -158,7 +202,6 @@ let local_optimize refs =
   let prm = 
     { lang = "ocaml" ; toplevel = true; 
       mod_name = None; to_appear = refs} in
-  clear_singletons ();
   optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
@@ -223,7 +266,6 @@ let _ =
     (function 
        | VARG_STRING lang :: VARG_STRING f :: vl ->
 	   (fun () -> 
-	      clear_singletons ();
 	      let refs = refs_of_vargl vl in
 	      let prm = {lang=lang;
 			 toplevel=false;
@@ -239,11 +281,11 @@ let _ =
   \verb!Extraction Module! [M]. *) 
 
 let decl_in_m m = function 
-  | Dglob (r,_) -> m = module_of_r r
-  | Dabbrev (r,_,_) -> m = module_of_r r
-  | Dtype ((_,r,_)::_, _) -> m = module_of_r r 
+  | Dglob (r,_) -> is_long_module m r
+  | Dabbrev (r,_,_) -> is_long_module m r
+  | Dtype ((_,r,_)::_, _) -> is_long_module m r 
   | Dtype ([],_) -> false
-  | Dcustom (r,_) ->  m = module_of_r r
+  | Dcustom (r,_) ->  is_long_module m r
 
 let file_suffix = function
   | "ocaml" -> ".ml"
@@ -255,21 +297,22 @@ let _ =
     (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      clear_singletons ();
+	      let dir_m = module_of_id m in 
 	      let f = (String.uncapitalize (string_of_id m))
 		       ^ (file_suffix lang) in
 	      let prm = {lang=lang;
 			 toplevel=false;
 			 mod_name= Some m;
 			 to_appear= []} in 
-	      let rl = extract_module m in 
+	      let rl = extract_module dir_m in 
 	      let decls = optimize prm (decl_of_refs rl) in
 	      let decls = add_ml_decls prm decls in 
-	      let decls = List.filter (decl_in_m m) decls in
+	      check_one_module dir_m decls; 
+	      let decls = List.filter (decl_in_m dir_m) decls in
 	      extract_to_file f prm decls)
        | _ -> assert false)
 
-(*s Recusrive Extraction of all the modules [M] depends on. 
+(*s Recursive Extraction of all the modules [M] depends on. 
   The vernacular command is \verb!Recursive Extraction Module! [M]. *) 
 
 let _ = 
@@ -277,23 +320,26 @@ let _ =
         (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      clear_singletons ();
-	      let modules,refs = modules_extract_env m in 
+	      let dir_m = module_of_id m in 
+	      let modules,refs = 
+		modules_extract_env dir_m in
+	      check_modules modules; 
 	      let dummy_prm = {lang=lang;
 			      toplevel=false;
 			      mod_name= Some m;
 			      to_appear= []} in
 	      let decls = optimize dummy_prm (decl_of_refs refs) in
 	      let decls = add_ml_decls dummy_prm decls in
-	      Idset.iter 
+	      Dirset.iter 
 		(fun m ->
-		   let f = (String.uncapitalize (string_of_id m))
+		   let short_m = snd (split_dirpath m) in
+		   let f = (String.uncapitalize (string_of_id short_m))
 			   ^ (file_suffix lang) in
 		   let prm = {lang=lang;
 			      toplevel=false;
-			      mod_name= Some m;
+			      mod_name= Some short_m;
 			      to_appear= []} in 
 		   let decls = List.filter (decl_in_m m) decls in
-		   extract_to_file f prm decls)
+		   if decls <> [] then extract_to_file f prm decls)
 		modules)
        | _ -> assert false)

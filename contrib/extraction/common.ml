@@ -16,6 +16,7 @@ open Table
 open Mlutil
 open Ocaml
 open Nametab
+open Util
 
 (*s Modules considerations *)
 
@@ -27,11 +28,43 @@ let sp_of_r r = match r with
     | ConstructRef ((sp,_),_) -> sp
     | _ -> assert false
 
-let module_of_r r = 
-  snd (split_dirpath (dirpath (sp_of_r r)))
+let qualid_of_dirpath d = 
+  let dir,id = split_dirpath d in 
+  make_qualid dir id 
+
+(* [long_module r] computes the dirpath of the module of the global 
+   reference [r]. The difficulty comes from the possible section names 
+   at the beginning of the dirpath (due to Remark). *)
+
+let long_module r = 
+  let rec check_module d = 
+    try 
+      locate_loaded_library (qualid_of_dirpath d)
+    with Not_found -> 
+      let d' = 
+	try 
+	  dirpath_prefix d 
+	with _ -> errorlabstrm "long_module_message"
+	[< 'sTR "Can't find the module of"; 'sPC; 
+	   Printer.pr_global r >]
+      in check_module d' 
+  in check_module (dirpath (sp_of_r r))
+
+(* From a valid module dirpath [d], we check if [r] belongs to this module. *)
+      
+let is_long_module d r = 
+  let dir = repr_dirpath d 
+  and dir' = repr_dirpath (dirpath (sp_of_r r)) in 
+  let l = List.length dir 
+  and l' = List.length dir' in 
+  if l' < l then false 
+  else dir = snd (list_chop (l'-l) dir')
+
+let short_module r = 
+  snd (split_dirpath (long_module r))
 
 let module_option r = 
-  let m = module_of_r r in
+  let m = short_module r in
   if Some m = !current_module then ""
   else (String.capitalize (string_of_id m)) ^ "."
 
@@ -42,7 +75,7 @@ let check_ml r d =
     with Not_found -> d
   else d
 
-(*s tables of global renamings *)
+(*s Tables of global renamings *)
 
 let keywords = ref Idset.empty
 let global_ids = ref Idset.empty
