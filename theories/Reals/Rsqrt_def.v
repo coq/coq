@@ -430,7 +430,7 @@ Cut (n:nat)``0<=(f (Wn n))``.
 Intros.
 Assert H9 := (H6 H8).
 Assert H10 := (H5 H7).
-Apply Rle_Rle_eq; Assumption.
+Apply Rle_antisym; Assumption.
 Intro.
 Unfold Wn.
 Cut (z:R) (cond_pos z)=true <-> ``0<=z``.
