@@ -10,6 +10,7 @@ open Environ;;
 open Tactics;;
 open Tacticals;;
 open Pattern;;
+open Matching;;
 open Reduction;;
 open Constrextern;;
 open Constrintern;;

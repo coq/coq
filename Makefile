@@ -112,7 +112,7 @@ PRETYPING=\
   pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
   pretyping/evarutil.cmo pretyping/evarconv.cmo \
   pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
-  pretyping/pattern.cmo 
+  pretyping/pattern.cmo pretyping/matching.cmo
 
 INTERP=\
   interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
@@ -147,8 +147,7 @@ PROOFS=\
   proofs/tacexpr.cmo proofs/proof_type.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/clenv.cmo proofs/pfedit.cmo translate/ppvernacnew.cmo \
-  proofs/tactic_debug.cmo
+  proofs/clenv.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
@@ -160,7 +159,8 @@ TACTICS=\
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
   toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
-  toplevel/discharge.cmo toplevel/vernacexpr.cmo $(TRANSLATE) \
+  toplevel/discharge.cmo toplevel/vernacexpr.cmo \
+  translate/ppvernacnew.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/metasyntax.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \
@@ -976,7 +976,7 @@ GRAMMARNEEDEDCMO=\
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
   library/goptions.cmo library/decl_kinds.cmo \
-  pretyping/rawterm.cmo pretyping/evd.cmo \
+  pretyping/rawterm.cmo pretyping/pattern.cmo pretyping/evd.cmo \
   interp/topconstr.cmo interp/genarg.cmo \
   interp/ppextend.cmo parsing/coqast.cmo parsing/ast.cmo \
   proofs/tacexpr.cmo parsing/ast.cmo \
@@ -1049,6 +1049,12 @@ library/nametab.cmo: library/nametab.ml
 	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 library/nametab.cmx: library/nametab.ml
+	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+
+proofs/tacexpr.cmo: proofs/tacexpr.ml
+	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+
+proofs/tacexpr.cmx: proofs/tacexpr.ml
 	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 # files compiled with camlp4 because of streams syntax

@@ -16,6 +16,7 @@ open Nameops
 open Term
 open Termops
 open Pattern
+open Matching
 open Environ
 
 open Pmisc

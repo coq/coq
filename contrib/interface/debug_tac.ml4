@@ -115,7 +115,7 @@ let count_subgoals2
        card_holder := Recursive_fail(List.hd !new_report_holder));
     result;;
 
-let rec local_interp : raw_tactic_expr -> report_holder -> tactic = function
+let rec local_interp : glob_tactic_expr -> report_holder -> tactic = function
 (*
     Node(_, "TACTICLIST", [a;Node(_, "TACLIST", l)]) ->
       (fun report_holder -> checked_thens report_holder a l)
@@ -142,7 +142,7 @@ let rec local_interp : raw_tactic_expr -> report_holder -> tactic = function
   | t ->
       (fun report_holder g ->
 	try
-	  let (gls, _) as result = Tacinterp.interp t g in
+	  let (gls, _) as result = Tacinterp.eval_tactic t g in
 	  report_holder := (Report_node(true, List.length (sig_it gls), []))
 			    ::!report_holder;
 	  result
@@ -162,7 +162,7 @@ let rec local_interp : raw_tactic_expr -> report_holder -> tactic = function
    - In case of success of the first tactic, but count mismatch, then
      Mismatch n is added to the report holder. *)
 
-and checked_thens: report_holder -> raw_tactic_expr -> raw_tactic_expr list -> tactic = 
+and checked_thens: report_holder -> glob_tactic_expr -> glob_tactic_expr list -> tactic = 
   (fun report_holder t1 l g ->
     let flag = ref true in
     let traceable_t1 = traceable t1 in
@@ -174,7 +174,7 @@ and checked_thens: report_holder -> raw_tactic_expr -> raw_tactic_expr list -> t
            flag (local_interp t1))
       else
 	(check_subgoals_count card_holder (List.length l)
-           flag (Tacinterp.interp t1)) in
+           flag (Tacinterp.eval_tactic t1)) in
     let (gls, _) as result = 
       tclTHEN_i tac_t1
 	(fun i ->
@@ -185,7 +185,7 @@ and checked_thens: report_holder -> raw_tactic_expr -> raw_tactic_expr list -> t
                  local_interp tac_i new_holder g
               else
 		 try
-		   let (gls,_) as result = Tacinterp.interp tac_i g in
+		   let (gls,_) as result = Tacinterp.eval_tactic tac_i g in
 		   let len = List.length (sig_it gls) in
 				   new_holder :=
 		     (Report_node(true, len, []))::!new_holder;
@@ -217,7 +217,7 @@ and checked_thens: report_holder -> raw_tactic_expr -> raw_tactic_expr list -> t
    reporting information about the success of all tactics in the report
    holder. It never fails. *)
 
-and checked_then: report_holder -> raw_tactic_expr -> raw_tactic_expr -> tactic =
+and checked_then: report_holder -> glob_tactic_expr -> glob_tactic_expr -> tactic =
   (fun report_holder t1 t2 g ->
     let flag = ref true in
     let card_holder = ref Fail in
@@ -225,7 +225,7 @@ and checked_then: report_holder -> raw_tactic_expr -> raw_tactic_expr -> tactic 
       if traceable t1 then
 	(count_subgoals2 card_holder flag (local_interp t1))
       else
-	(count_subgoals card_holder flag (Tacinterp.interp t1)) in
+	(count_subgoals card_holder flag (Tacinterp.eval_tactic t1)) in
     let new_tree_holder = ref ([] : report_tree list) in
     let (gls, _) as result =
       tclTHEN tac_t1
@@ -235,7 +235,7 @@ and checked_then: report_holder -> raw_tactic_expr -> raw_tactic_expr -> tactic 
 	      local_interp t2 new_tree_holder g
 	    else
 	      try
-		let (gls, _) as result = Tacinterp.interp t2 g in
+		let (gls, _) as result = Tacinterp.eval_tactic t2 g in
 	      	new_tree_holder :=
 		  (Report_node(true, List.length (sig_it gls),[]))::
 		  !new_tree_holder;
@@ -267,10 +267,10 @@ let on_then = function [t1;t2;l] ->
   let t1 = out_gen wit_tactic t1 in
   let t2 = out_gen wit_tactic t2 in
   let l = out_gen (wit_list0 wit_int) l in
-  tclTHEN_i (Tacinterp.interp t1)
+  tclTHEN_i (Tacinterp.eval_tactic t1)
     (fun i ->
       if List.mem (i + 1) l then
-      	(Tacinterp.interp t2)
+      	(Tacinterp.eval_tactic t2)
       else
 	tclIDTAC)
   | _ -> anomaly "bad arguments for on_then";;
@@ -348,7 +348,7 @@ let rec reconstruct_success_tac ast =
               (str "error in reconstruction with " ++ fnl () ++
 	       (gentacpr ast)));;
 *)
-let rec reconstruct_success_tac tac =
+let rec reconstruct_success_tac (tac:glob_tactic_expr) =
   match tac with
     TacThens (a,l) ->
       (function 
@@ -364,9 +364,9 @@ let rec reconstruct_success_tac tac =
 	| Report_node(false, n, rl) ->
 	    let selected_indices = select_success 1 rl in
 	    TacAtom (dummy_loc,TacExtend (dummy_loc,"OnThen",
-	      [in_gen rawwit_tactic a;
-	       in_gen rawwit_tactic b;
-	       in_gen (wit_list0 rawwit_int) selected_indices]))
+	      [in_gen globwit_tactic a;
+	       in_gen globwit_tactic b;
+	       in_gen (wit_list0 globwit_int) selected_indices]))
 	| Failed n -> TacId
 	| Tree_fail r -> reconstruct_success_tac a r
 	| _ -> error "this error case should not happen in a THEN tactic")
@@ -378,7 +378,7 @@ let rec reconstruct_success_tac tac =
 	    errorlabstrm
 	      "this error case should not happen on an unknown tactic"
               (str "error in reconstruction with " ++ fnl () ++
-	       (pr_raw_tactic tac)));;
+	       (pr_glob_tactic tac)));;
 	  
 
 let rec path_to_first_error = function
@@ -421,7 +421,7 @@ let debug_tac = function
       	msgnl (fnl () ++
 	       str "=========    Successful tactic    =============" ++
                fnl () ++
-	       pr_raw_tactic compact_success_tac ++ fnl () ++
+	       pr_glob_tactic compact_success_tac ++ fnl () ++
 	       str "========= End of successful tactic ============");
       	result)
   | _ -> error "wrong arguments for debug_tac";;
@@ -462,7 +462,7 @@ let rec clean_path tac l =
   | _, _ -> failwith "this case should not happen in clean_path";;
 
 let rec report_error
-    : raw_tactic_expr -> goal sigma option ref -> raw_tactic_expr ref -> int list ref -> 
+    : glob_tactic_expr -> goal sigma option ref -> glob_tactic_expr ref -> int list ref -> 
       int list -> tactic =
   fun tac the_goal the_ast returned_path path -> 
     match tac with
@@ -523,12 +523,12 @@ let rec report_error
 		if !the_count > 1 then
 		  msgnl
 		    (str "in branch no " ++ int !the_count ++
-		     str " after tactic " ++ pr_raw_tactic a);
+		     str " after tactic " ++ pr_glob_tactic a);
 		raise e)
     | tac ->
 	(fun g ->
 	  try
-	   Tacinterp.interp tac g
+	   Tacinterp.eval_tactic tac g
 	  with
 	    e ->
 	      (the_ast := tac;
@@ -556,7 +556,7 @@ let descr_first_error tac =
 		    fnl () ++ str "on goal"  ++ fnl () ++
 		    pr_goal (sig_it (strip_some !the_goal)) ++ fnl () ++
 		    str "faulty tactic is" ++ fnl () ++ fnl () ++
-		    pr_raw_tactic ((*flatten_then*) !the_ast) ++ fnl ());
+		    pr_glob_tactic ((*flatten_then*) !the_ast) ++ fnl ());
 	     tclIDTAC g))
 
 (* TODO ... used ??

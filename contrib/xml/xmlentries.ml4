@@ -32,53 +32,17 @@ open Pcoq;;
 
 (* File name *)
 
-let wit_filename, rawwit_filename = Genarg.create_arg "filename"
-let filename = Pcoq.create_generic_entry "filename" rawwit_filename
-let _ = Tacinterp.add_genarg_interp "filename"
-  (fun ist gl x ->
-    (in_gen wit_filename
-      (out_gen (wit_opt wit_string)
-	(Tacinterp.genarg_interp ist gl
-	  (in_gen (wit_opt rawwit_string)
-	    (out_gen rawwit_filename x))))))
-
-GEXTEND Gram
-  GLOBAL: filename;
-  filename: [ [ IDENT "File"; fn = STRING -> Some fn | -> None ] ];
+VERNAC ARGUMENT EXTEND filename
+| [ "File" string(fn) ] -> [ Some fn ]
+| [ ] -> [ None ]
 END
-
-let pr_filename = function Some fn -> str " File" ++ str fn | None -> mt ()
-
-let _ = 
-  Pptactic.declare_extra_genarg_pprule true
-    (rawwit_filename, pr_filename)
-    (wit_filename, pr_filename)
 
 (* Disk name *)
 
-let wit_diskname, rawwit_diskname = Genarg.create_arg "diskname"
-let diskname = create_generic_entry "diskname" rawwit_diskname
-let _ = Tacinterp.add_genarg_interp "diskname"
-  (fun ist gl x ->
-    (in_gen wit_diskname
-      (out_gen (wit_opt wit_string)
-	(Tacinterp.genarg_interp ist gl
-	  (in_gen (wit_opt rawwit_string)
-	    (out_gen rawwit_diskname x))))))
-
-GEXTEND Gram
-  GLOBAL: diskname;
-  diskname: [ [ IDENT "Disk"; fn = STRING -> Some fn | -> None ] ];
+VERNAC ARGUMENT EXTEND diskname
+| [ "Disk" string(fn) ] -> [ Some fn ]
+| [ ] -> [ None ]
 END
-
-open Pp
-
-let pr_diskname = function Some fn -> str " Disk" ++ str fn | None -> mt ()
-
-let _ = 
-  Pptactic.declare_extra_genarg_pprule true
-    (rawwit_diskname, pr_diskname)
-    (wit_diskname, pr_diskname)
 
 VERNAC COMMAND EXTEND Xml
 | [ "Print" "XML" filename(fn) global(id) ] -> [ Xmlcommand.print id fn ]
@@ -95,39 +59,3 @@ VERNAC COMMAND EXTEND Xml
     [ Xmlcommand.printSection id dn ]
 *)
 END
-(*
-vinterp_add "Print"
- (function
-     [VARG_QUALID id] ->
-        (fun () -> Xmlcommand.print id None)
-   | [VARG_QUALID id ; VARG_STRING fn] ->
-        (fun () -> Xmlcommand.print id (Some fn))
-   | _ -> anomaly "This should be trapped");;
-
-vinterp_add "Show"
- (function
-     [] ->
-        (fun () -> Xmlcommand.show None)
-   | [VARG_STRING fn] ->
-        (fun () -> Xmlcommand.show (Some fn))
-   | _ -> anomaly "This should be trapped");;
-
-vinterp_add "XmlPrintAll"
- (function
-     [] -> (fun () -> Xmlcommand.printAll ())
-   | _  -> anomaly "This should be trapped");;
-
-vinterp_add "XmlPrintModule"
- (function
-     [VARG_QUALID id] -> (fun () -> Xmlcommand.printModule id None)
-   | [VARG_QUALID id ; VARG_STRING dn] ->
-        (fun () -> Xmlcommand.printModule id (Some dn))
-   | _  -> anomaly "This should be trapped");;
-
-vinterp_add "XmlPrintSection"
- (function
-     [VARG_IDENTIFIER id] -> (fun () -> Xmlcommand.printSection id None)
-   | [VARG_IDENTIFIER id ; VARG_STRING dn] ->
-        (fun () -> Xmlcommand.printSection id (Some dn))
-   | _  -> anomaly "This should be trapped");;
-*)

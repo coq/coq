@@ -485,8 +485,8 @@ GEXTEND Gram
   END
 ;;
 
-let wit_prog, rawwit_prog = Genarg.create_arg "PROGRAMS-PROG"
-let wit_typev, rawwit_typev = Genarg.create_arg "PROGRAMS-TYPEV"
+let wit_prog, _, rawwit_prog = Genarg.create_arg "PROGRAMS-PROG"
+let wit_typev, _, rawwit_typev = Genarg.create_arg "PROGRAMS-TYPEV"
 
 open Pp
 open Util

@@ -583,7 +583,7 @@ let blast gls =
     (* on remplace les ?1 ?2 ... de refine par ? *)
 		parse_tac ((vire_extvar tac_string)
 			   ^ ".")
-		)
+	  )
 	  else (msgnl (hov 0 (str"Blast failed to prove the goal..."));
 		failwith "echec de blast"))
      with _ -> failwith "echec de blast"
@@ -598,7 +598,8 @@ let blast_tac display_function = function
           |  _ -> failwith "expecting other arguments";;
 
 let blast_tac_txt = 
-  blast_tac (function x -> msgnl(Pptactic.pr_raw_tactic x));;
+  blast_tac
+    (function x -> msgnl(Pptactic.pr_glob_tactic (Tacinterp.glob_tactic x)));;
 
 (* Obsolète ?
 overwriting_add_tactic "Blast1" blast_tac_txt;;

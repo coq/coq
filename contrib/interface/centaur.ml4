@@ -367,7 +367,7 @@ let debug_tac2_pcoq tac =
 	  (errorlabstrm "DEBUG TACTIC"
 	     (str "no error here " ++ fnl () ++ pr_goal (sig_it g) ++
 	      fnl () ++ str "the tactic is" ++ fnl () ++
-	      Pptactic.pr_raw_tactic tac);
+	      Pptactic.pr_glob_tactic tac);
 	   result)
 	with
 	  e ->
@@ -901,11 +901,11 @@ END
  </cpa> *)
 
 TACTIC EXTEND CtDebugTac
-| [ "DebugTac" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq t ]
+| [ "DebugTac" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq (fst t) ]
 END
 
 TACTIC EXTEND CtDebugTac2
-| [ "DebugTac2" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq t ]
+| [ "DebugTac2" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq (fst t) ]
 END
 
 

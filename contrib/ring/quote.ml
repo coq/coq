@@ -109,6 +109,7 @@ open Names
 open Term
 open Instantiate
 open Pattern
+open Matching
 open Tacmach
 open Tactics
 open Proof_trees

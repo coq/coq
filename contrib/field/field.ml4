@@ -89,38 +89,43 @@ open Extend
 open Pcoq
 open Genarg
 
-let wit_minus_div_arg, rawwit_minus_div_arg = Genarg.create_arg "minus_div_arg"
-let minus_div_arg = create_generic_entry "minus_div_arg" rawwit_minus_div_arg
-let _ = Tacinterp.add_genarg_interp "minus_div_arg"
-  (fun ist gl x ->
-    (in_gen wit_minus_div_arg
-      (out_gen (wit_pair (wit_opt wit_constr) (wit_opt wit_constr))
-	(Tacinterp.genarg_interp ist gl
-	  (in_gen (wit_pair (wit_opt rawwit_constr) (wit_opt rawwit_constr))
-	    (out_gen rawwit_minus_div_arg x))))))
+VERNAC ARGUMENT EXTEND divarg
+| [ "div" ":=" constr(adiv) ] -> [ adiv ]
+END
 
+VERNAC ARGUMENT EXTEND minusarg
+| [ "minus" ":=" constr(aminus) ] -> [ aminus ]
+END
+
+(*
+(* The v7->v8 translator needs printers, then temporary use ARGUMENT EXTEND...*)
+VERNAC ARGUMENT EXTEND minus_div_arg
+| [ "with" minusarg(m) divarg_opt(d) ] -> [ Some m, d ]
+| [ "with" divarg(d) minusarg_opt(m) ] -> [ m, Some d ]
+| [ ] -> [ None, None ]
+END
+*)
+
+(* For the translator, otherwise the code above is OK *)
 open Ppconstrnew
-let pp_minus_div_arg (omin,odiv) = str "still no printer for minus_div_arg"
-let pp_raw_minus_div_arg (omin,odiv) =
+let pp_minus_div_arg _prc _prt (omin,odiv) = 
   if omin=None && odiv=None then mt() else
     spc() ++ str "with" ++
-    pr_opt (fun c -> str "minus := " ++ pr_constr c) omin ++
-    pr_opt (fun c -> str "div := " ++ pr_constr c) odiv
-
+    pr_opt (fun c -> str "minus := " ++ _prc c) omin ++
+    pr_opt (fun c -> str "div := " ++ _prc c) odiv
+(*
 let () =
   Pptactic.declare_extra_genarg_pprule true
-    (rawwit_minus_div_arg,pp_raw_minus_div_arg)
+    (rawwit_minus_div_arg,pp_minus_div_arg)
+    (globwit_minus_div_arg,pp_minus_div_arg)
     (wit_minus_div_arg,pp_minus_div_arg)
-
-open Pcoq.Constr
-GEXTEND Gram
-  GLOBAL: minus_div_arg;
-  minus_arg: [ [ IDENT "minus"; ":="; aminus = constr -> aminus ] ];
-  div_arg: [ [ IDENT "div"; ":="; adiv = constr -> adiv ] ];
-  minus_div_arg:
-    [ [ "with"; m = minus_arg; d = OPT div_arg -> Some m, d
-      | "with"; d = div_arg; m = OPT minus_arg -> m, Some d
-      | -> None, None ] ];
+*)
+ARGUMENT EXTEND minus_div_arg 
+  TYPED AS constr_opt * constr_opt
+  PRINTED BY pp_minus_div_arg
+| [ "with" minusarg(m) divarg_opt(d) ] -> [ Some m, d ]
+| [ "with" divarg(d) minusarg_opt(m) ] -> [ m, Some d ]
+| [ ] -> [ None, None ]
 END
 
 VERNAC COMMAND EXTEND Field

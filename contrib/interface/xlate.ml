@@ -598,10 +598,6 @@ let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
 	CT_coerce_TERM_CHANGE_to_TACTIC_ARG(CT_check_term(xlate_formula c))
     | MetaIdArg _ ->
 	xlate_error "MetaIdArg should only be used in quotations"
-    | MetaNumArg (_,n) ->
-	CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG 
-	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
-	     (CT_coerce_ID_to_ID_OR_INT(CT_metac (CT_int n))))
     | t ->
 	CT_coerce_TACTIC_COM_to_TACTIC_ARG(xlate_call_or_tacarg t)
 

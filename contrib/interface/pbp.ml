@@ -6,6 +6,7 @@ open Tactics;;
 open Tacticals;;
 open Hipattern;;
 open Pattern;;
+open Matching;;
 open Reduction;;
 open Rawterm;;
 open Environ;;
@@ -17,6 +18,7 @@ open Tacexpr;;
 open Typing;;
 open Pp;;
 open Libnames;;
+open Genarg;;
 open Topconstr;;
 
 let zz = (0,0);;

@@ -14,6 +14,7 @@ open Names
 open Term
 open Termast
 open Pattern
+open Matching
 
 open Pmisc
 open Ptype
