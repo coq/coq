@@ -28,6 +28,7 @@ COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
 COQPACKAGE=coq-${VERSION}
 COQRPMPACKAGE=coq-${VERSION}-${RELEASENUM}
 COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
+COQDEBCHANGES=coq_${VERSION}-${RELEASENUM}_*.changes
 
 ######################
 
@@ -307,4 +308,4 @@ deb: ${COQPACKAGE}.tar.gz
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
 	cp -a debian deb_build/${COQPACKAGE}
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us
-	lintian deb_build/${COQDEBPACKAGE}
+	lintian deb_build/${COQDEBCHANGES}
