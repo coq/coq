@@ -10,6 +10,7 @@
 
 open Util
 open Pp
+open Options
 open System
 open Libobject
 open Library
@@ -246,11 +247,12 @@ let cache_ml_module_object (_,{mnames=mnames}) =
          let fname = file_of_name mname in
          begin 
 	   try 
-	     mSG [< 'sTR"[Loading ML file " ; 'sTR fname ; 'sTR" ..." >];
+	     if_verbose 
+	       mSG [< 'sTR"[Loading ML file "; 'sTR fname; 'sTR" ..." >];
              load_object mname fname;
-             mSGNL [< 'sTR"done]" >]
+             if_verbose mSGNL [< 'sTR"done]" >]
            with e -> 
-	     pPNL [< 'sTR"failed]" >]; 
+	     if_verbose mSGNL [< 'sTR"failed]" >]; 
 	     raise e
 	 end;
          add_loaded_module mname)

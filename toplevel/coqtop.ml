@@ -197,7 +197,7 @@ let start () =
     Lib.init();
     try
       parse_args ();
-      if is_verbose() then print_header ();
+      if_verbose print_header ();
       init_load_path ();
       inputstate ();
       init_library_roots ();

@@ -480,7 +480,7 @@ let declare_one_elimination mispec =
     let _ = declare_constant (id_of_string na)
       (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
        NeverDischarge,false) in
-    if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
+    Options.if_verbose pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in
   let sigma = Evd.empty in

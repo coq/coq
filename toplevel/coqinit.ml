@@ -39,7 +39,7 @@ let load_rcfile() =
         Vernac.load_vernac false !rcfile
       else ()
 	(*
-	if Options.is_verbose() then 
+	Options.if_verbose
 	  mSGNL [< 'sTR ("No .coqrc or .coqrc."^Coq_config.version^
 			 " found. Skipping rcfile loading.") >]
 	*)
@@ -47,7 +47,7 @@ let load_rcfile() =
       (mSGNL [< 'sTR"Load of rcfile failed." >];
        raise e)
   else 
-    if Options.is_verbose() then mSGNL [< 'sTR"Skipping rcfile loading." >]
+    Options.if_verbose mSGNL [< 'sTR"Skipping rcfile loading." >]
 
 let add_ml_include s =
   Mltop.add_ml_dir s

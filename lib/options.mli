@@ -21,6 +21,8 @@ val make_silent : bool -> unit
 val is_silent : unit -> bool
 val is_verbose : unit -> bool
 val silently : ('a -> 'b) -> 'a -> 'b
+val if_silent : ('a -> unit) -> 'a -> unit
+val if_verbose : ('a -> unit) -> 'a -> unit
 
 val set_print_hyps_limit : int -> unit
 val unset_print_hyps_limit : unit -> unit

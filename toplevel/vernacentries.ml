@@ -384,7 +384,7 @@ let _ =
        | [VARG_IDENTIFIER id] ->
 	   (fun () ->
 	      check_no_pending_proofs ();
-              Discharge.close_section (not (is_silent())) (string_of_id id))
+              Discharge.close_section (is_verbose ()) (string_of_id id))
        | _ -> bad_vernac_args "EndSection")
 
 (* Proof switching *)
@@ -396,7 +396,7 @@ let _ =
 	   (fun () ->
               if not (refining()) then begin
               	start_proof_com None NeverDischarge com;
-		if not (is_silent()) then show_open_subgoals ()
+		if_verbose show_open_subgoals ()
               end else 
 		error "repeated Goal not permitted in refining mode")
        | [] -> (fun () -> ())
@@ -579,14 +579,14 @@ let _ =
   add "SaveNamed"
     (function 
        | [] -> 
-	   (fun () -> if not(is_silent()) then show_script(); save_named true)
+	   (fun () -> if_verbose show_script (); save_named true)
        | _ -> bad_vernac_args "SaveNamed")
 
 let _ =
   add "DefinedNamed"
     (function 
        | [] -> 
-	   (fun () -> if not(is_silent()) then show_script(); save_named false)
+	   (fun () -> if_verbose show_script (); save_named false)
        | _ -> bad_vernac_args "DefinedNamed")
 
 let _ =
@@ -594,7 +594,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
-	      if not(is_silent()) then show_script();
+	      if_verbose show_script ();
               save_anonymous false (string_of_id id))
        | _ -> bad_vernac_args "DefinedAnonymous")
 
@@ -603,7 +603,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
-	      if not(is_silent()) then show_script();
+	      if_verbose show_script ();
               save_anonymous true (string_of_id id))
        | _ -> bad_vernac_args "SaveAnonymous")
 
@@ -612,7 +612,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
-	      if not(is_silent()) then show_script();
+	      if_verbose show_script ();
               save_anonymous_thm true (string_of_id id))
        | _ -> bad_vernac_args "SaveAnonymousThm")
 
@@ -621,7 +621,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
-	      if not(is_silent()) then show_script();
+	      if_verbose show_script ();
               save_anonymous_remark true (string_of_id id))
        | _ -> bad_vernac_args "SaveAnonymousRmk")
 
@@ -635,8 +635,7 @@ let _ =
 	 id_list)
 
 let warning_opaque s =
-  if not(is_silent()) then 
-    warning
+  if_verbose warning
       ("This command turns the constants which depend on the definition/proof
 of "^s^" un-re-checkable until the next \"Transparent "^s^"\" command.")
 
@@ -869,7 +868,7 @@ let _ =
                  errorlabstrm "Vernacentries.StartProof" [< 'sTR
                  "Let declarations can only be used in proof editing mode" >];
                start_proof_com (Some s) stre com;
-               if not (is_silent()) then show_open_subgoals()
+               if_verbose show_open_subgoals ()
              end
        | _ -> bad_vernac_args "StartProof")
 
@@ -900,9 +899,9 @@ let _ =
             	States.with_heavy_rollback
 		  (fun () ->
                      start_proof_com (Some s) stre com;
-                     if not (is_silent()) then show_open_subgoals();
+                     if_verbose show_open_subgoals ();
                      List.iter Vernacinterp.call calls;
-                     if not (is_silent()) then show_script();
+                     if_verbose show_script ();
                      if not (kind = "LETTOP") then
                        save_named opacity
                      else
@@ -959,8 +958,7 @@ let _ =
 	       definition_body_red red_option id (local,stre) c typ_opt in
              if coe then begin
 	       Class.try_add_new_coercion ref stre;
-               if not (is_silent()) then
-		 message ((string_of_id id) ^ " is now a coercion")
+               if_verbose message ((string_of_id id) ^ " is now a coercion")
 	     end;
 	     if idcoe then begin
 	       let cl = Class.class_of_ref ref in
@@ -1332,7 +1330,7 @@ let _ =
                                | _ -> bad_vernac_args "") l)
               in 
 	      abstraction_definition id arity com;
-              if (not(is_silent())) then
+              if_verbose
                 message ((string_of_id id)^" is now an abstraction"))
        | _ -> bad_vernac_args "ABSTRACTION")
 ***)
@@ -1387,8 +1385,7 @@ let _ =
 	   fun () -> 
 	     let ref = locate_qualid dummy_loc qid in
 	     Class.try_add_new_class ref stre;
-             if not (is_silent()) then
-               message ((string_of_qualid qid) ^ " is now a class")
+             if_verbose message ((string_of_qualid qid) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
 
 let cl_of_qualid qid =
@@ -1419,8 +1416,8 @@ let _ =
 	     else
 	       let ref = locate_qualid dummy_loc qid in
 	       Class.try_add_new_coercion_with_target ref stre source target;
-             if not (is_silent()) then
-	       message ((string_of_qualid qid) ^ " is now a coercion")
+	       if_verbose
+		 message ((string_of_qualid qid) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 
 let _ =
@@ -1745,8 +1742,7 @@ let _ =
               save_named true)
        |   _  -> assert false)
 
-let print_subgoals () = 
-  if not (is_silent()) then show_open_subgoals_focused()
+let print_subgoals () = if_verbose show_open_subgoals_focused ()
 
 let _ = 
   vinterp_add "SOLVE"

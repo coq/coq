@@ -141,10 +141,10 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 (* Discharge messages. *)
 
 let constant_message id =
-  if Options.is_verbose() then pPNL [< pr_id id; 'sTR " is discharged." >]
+  Options.if_verbose pPNL [< pr_id id; 'sTR " is discharged." >]
 
 let inductive_message inds =
-  if Options.is_verbose() then 
+  Options.if_verbose 
     pPNL
       (hOV 0 
 	 (match inds with

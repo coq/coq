@@ -35,6 +35,9 @@ let silently f x =
     silent := oldsilent; raise e
   end
 
+let if_silent f x = if !silent then f x
+let if_verbose f x = if not !silent then f x
+
 (* The number of printed hypothesis in a goal *)
 
 let print_hyps_limit = ref (None : int option)

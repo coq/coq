@@ -1189,5 +1189,5 @@ let add_tacdef na vbody =
          "There is already a Meta Definition or a Tactic Definition named ";
          'sTR na>];
     let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
-    if Options.is_verbose() then mSGNL [< 'sTR (na ^ " is defined") >]
+    Options.if_verbose mSGNL [< 'sTR (na ^ " is defined") >]
   end

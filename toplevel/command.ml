@@ -67,8 +67,7 @@ let declare_global_definition ident ce n local =
   let sp = declare_constant ident (ConstantEntry ce,n,false) in
   if local then
     wARNING [< pr_id ident; 'sTR" is declared as a global definition" >];
-  if is_verbose() then
-    message ((string_of_id ident) ^ " is defined");
+  if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef sp
 
 let definition_body_red red_option ident (local,n) com comtypeopt = 
@@ -80,7 +79,7 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
         if Lib.is_section_p disch_sp then begin
 	  let c = constr_of_constr_entry ce' in
           let sp = declare_variable ident (SectionLocalDef c,n,false) in
-	  if is_verbose() then message ((string_of_id ident) ^ " is defined");
+	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
                         'sTR" is not visible from current goals" >];
@@ -97,15 +96,14 @@ let definition_body = definition_body_red None
 let syntax_definition ident com =
   let c = interp_rawconstr Evd.empty (Global.env()) com in 
   Syntax_def.declare_syntactic_definition ident c;
-  if is_verbose() then 
-    message ((string_of_id ident) ^ " is now a syntax macro")
+  if_verbose message ((string_of_id ident) ^ " is now a syntax macro")
 
 (* 2| Variable definitions *)
 
 let parameter_def_var ident c =
   let c = interp_type Evd.empty (Global.env()) c in
   let sp = declare_parameter (id_of_string ident) c in
-  if is_verbose() then message (ident ^ " is assumed");
+  if_verbose message (ident ^ " is assumed");
   sp
 
 let declare_global_assumption ident c =
@@ -122,7 +120,7 @@ let hypothesis_def_var is_refining ident n c =
 	  let t = interp_type Evd.empty (Global.env()) c in
           let sp = declare_variable (id_of_string ident)
 		     (SectionLocalAssum t,n,false) in
-	  if is_verbose() then message (ident ^ " is assumed");
+	  if_verbose message (ident ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
                         'sTR" is not visible from current goals" >];
@@ -214,7 +212,7 @@ let declare_mutual_with_eliminations mie =
   let lrecnames =
     List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let sp = declare_mind mie in
-  if is_verbose() then pPNL(minductive_message lrecnames);
+  if_verbose pPNL (minductive_message lrecnames);
   declare_eliminations sp;
   sp
 
@@ -309,7 +307,7 @@ let build_recursive lnameargsardef =
     in 
     (* declare the recursive definitions *)
     let lrefrec = declare 0 lnamerec in
-    if is_verbose() then pPNL(recursive_message lrefrec)
+    if_verbose pPNL (recursive_message lrefrec)
   end;
   (* The others are declared as normal definitions *)
   let var_subst id = (id, global_reference CCI id) in
@@ -377,7 +375,7 @@ let build_corecursive lnameardef =
       | _        -> [] 
     in 
     let lrefrec = declare 0 lnamerec in
-    if is_verbose() then pPNL(corecursive_message lrefrec)
+    if_verbose pPNL (corecursive_message lrefrec)
   end;
   let var_subst id = (id, global_reference CCI id) in
   let _ = 
@@ -422,7 +420,7 @@ let build_scheme lnamedepindsort =
     ConstRef sp :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
-  if is_verbose() then pPNL(recursive_message lrecref)
+  if_verbose pPNL (recursive_message lrecref)
 
 let start_proof_com sopt stre com =
   let env = Global.env () in
@@ -456,8 +454,7 @@ let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
   if not (strength = NotDeclare) then
   begin
     Pfedit.delete_current_proof ();
-    if Options.is_verbose() then
-      message ((string_of_id id) ^ " is defined")
+    if_verbose message ((string_of_id id) ^ " is defined")
   end
 
 let save_named opacity =
