@@ -49,20 +49,6 @@ type type_error =
   | IllFormedRecBody of guard_error * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * types array
-  | NotInductive of constr
-  | MLCase of string * constr * constr * constr * constr
-  | CantFindCaseType of constr
-  | OccurCheck of int * constr
-  | NotClean of int * constr
-  | VarNotFound of identifier
-  | UnexpectedType of constr * constr
-  | NotProduct of constr
-  (* Pattern-matching errors *)
-  | BadPattern of constructor * constr
-  | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor_path * int
-  | WrongPredicateArity of constr * constr * constr
-  | NeedsInversion of constr * constr
 
 exception TypeError of path_kind * env * type_error
 
@@ -107,11 +93,3 @@ val error_ill_typed_rec_body  :
   path_kind -> env -> int -> name list -> unsafe_judgment array 
     -> types array -> 'b
 
-val error_not_inductive : path_kind -> env -> constr -> 'a
-
-val error_ml_case : path_kind -> env -> 
-  string -> constr -> constr -> constr -> constr -> 'a
-
-val error_unexpected_type : env -> actual:constr -> expected:constr -> 'a
-
-val error_not_product : env -> constr -> 'a

@@ -160,7 +160,7 @@ let pretype_id loc env lvar id =
     let typ = lookup_id_type id (named_context env) in
     { uj_val  = mkVar id; uj_type = typ }
   with Not_found ->
-    error_var_not_found_loc loc CCI id
+    error_var_not_found_loc loc id
 
 (*************************************************************************)
 (* Main pretyping function                                               *)
@@ -372,7 +372,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 		      pretype (mk_tycon expti) env isevars lvar lmeta lf.(i) in
 		    let efjt = nf_ise1 !isevars fj.uj_type in 
 		    let pred = 
-		      Cases.pred_case_ml_onebranch env !isevars isrec indt
+		      Cases.pred_case_ml_onebranch loc env !isevars isrec indt
 			(i,fj.uj_val,efjt) in
 		    if has_undefined_isevars isevars pred then findtype (i+1)
 		    else 

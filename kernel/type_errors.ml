@@ -45,20 +45,6 @@ type type_error =
   | IllFormedRecBody of guard_error * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * types array
-  | NotInductive of constr
-  | MLCase of string * constr * constr * constr * constr
-  | CantFindCaseType of constr
-  | OccurCheck of int * constr
-  | NotClean of int * constr
-  | VarNotFound of identifier
-  | UnexpectedType of constr * constr
-  | NotProduct of constr
-  (* Pattern-matching errors *)
-  | BadPattern of constructor * constr
-  | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor_path * int
-  | WrongPredicateArity of constr * constr * constr
-  | NeedsInversion of constr * constr
 
 exception TypeError of path_kind * env * type_error
 
@@ -107,15 +93,4 @@ let error_ill_formed_rec_body k env why lna i vdefs =
 let error_ill_typed_rec_body k env i lna vdefj vargs =
   raise (TypeError (k, env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
-let error_not_inductive k env c =
-  raise (TypeError (k, env, NotInductive c))
-
-let error_ml_case k env mes c ct br brt =
-  raise (TypeError (k, env, MLCase (mes,c,ct,br,brt)))
-
-let error_unexpected_type env actual expected =
-  raise (TypeError (CCI, env, UnexpectedType (actual, expected)))
-
-let error_not_product env c =
-  raise (TypeError (CCI, env, NotProduct c))
 

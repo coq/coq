@@ -6,6 +6,7 @@ open Util
 open Ast
 open Indtypes
 open Type_errors
+open Pretype_errors
 open Lexer
 
 let print_loc loc =
@@ -59,8 +60,13 @@ let rec explain_exn_default = function
       hOV 0 [< 'sTR "Error: Universe Inconsistency." >]
   | TypeError(k,ctx,te) -> 
       hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_type_error k ctx te >]
+  | PretypeError(ctx,te) -> 
+      hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_pretype_error ctx te >]
   | InductiveError e -> 
       hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_inductive_error e >]
+  | Cases.PatternMatchingError (env,e) -> 
+      hOV 0
+	[< 'sTR "Error:"; 'sPC; Himsg.explain_pattern_matching_error env e >]
   | Logic.RefinerError e -> 
       hOV 0 [< 'sTR "Error:"; 'sPC; Himsg.explain_refiner_error e >]
   | Nametab.GlobalizationError q ->

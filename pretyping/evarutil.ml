@@ -197,7 +197,7 @@ let real_clean isevars sp args rhs =
       | _ -> map_constr_with_binders succ subs k t
   in
   let body = subs 0 rhs in
-  if not (closed0 body) then error_not_clean CCI empty_env sp body;
+  if not (closed0 body) then error_not_clean empty_env sp body;
   body
 
 let make_evar_instance_with_rel env =
@@ -253,7 +253,7 @@ let keep_rels_and_vars c = match kind_of_term c with
   | _ -> mkImplicit   (* Mettre mkMeta ?? *)
 
 let evar_define isevars (ev,argsv) rhs =
-  if occur_evar ev rhs then error_occur_check CCI empty_env ev rhs;
+  if occur_evar ev rhs then error_occur_check empty_env ev rhs;
   let args = List.map keep_rels_and_vars (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
   (* the substitution to invert *)
@@ -449,8 +449,7 @@ let split_tycon loc env isevars = function
 	      isevars := sigma;
 	      Some dom, Some rng
 	    else
-	      Stdpp.raise_with_loc loc
-		(Type_errors.TypeError (CCI,env,Type_errors.NotProduct c))
+	      error_not_product_loc loc env c
 
 let valcon_of_tycon x = x
 

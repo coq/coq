@@ -10,8 +10,10 @@ open Inductive
 open Indtypes
 open Sign
 open Environ
+open Pretype_errors
 open Type_errors
 open Reduction
+open Cases
 open Logic
 open Pretty
 open Printer
@@ -225,27 +227,14 @@ let explain_not_inductive k ctx c =
   [< 'sTR"The term"; 'bRK(1,1); pc; 'sPC;
      'sTR "is not an inductive definition" >]
 
-let explain_ml_case k ctx mes c ct br brt =
-  let pc = prterm_env ctx c in
-  let pct = prterm_env ctx ct in
-  let expln =
-    match mes with
-      | "Inductive" -> [< pct; 'sTR "is not an inductive definition">]
-      | "Predicate" -> [< 'sTR "ML case not allowed on a predicate">]
-      | "Absurd" -> [< 'sTR "Ill-formed case expression on an empty type" >]
-      | "Decomp" ->
-          let plf = prterm_env ctx br in
-          let pft = prterm_env ctx brt in
-          [< 'sTR "The branch "; plf; 'wS 1; 'cUT; 'sTR "has type "; pft;
-             'wS 1; 'cUT;
-             'sTR "does not correspond to the inductive definition" >]
-      | "Dependent" ->
-          [< 'sTR "ML case not allowed for a dependent case elimination">]
-      | _ -> [<>]
+let explain_ml_case k ctx mes =
+  let expln = match mes with
+    | MlCaseAbsurd ->
+	[< 'sTR "Unable to infer a predicate for an elimination an empty type">]
+    | MlCaseDependent ->
+        [< 'sTR "Unable to infer a dependent elimination predicate">]
   in
-  hOV 0 [< 'sTR "In ML case expression on "; pc; 'wS 1; 'cUT ;
-           'sTR "of type";  'wS 1; pct; 'wS 1; 'cUT; 
-           'sTR "which is an inductive predicate."; 'fNL; expln >]
+  hOV 0 [< 'sTR "Cannot infer ML Case predicate:"; 'fNL; expln >] 
 
 let explain_cant_find_case_type k ctx c =
   let pe = prterm_env ctx c in
@@ -279,41 +268,6 @@ let explain_var_not_found k ctx id =
      'sPC ; 'sTR "was not found"; 
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
-(* Pattern-matching errors *)
-let explain_bad_pattern k ctx cstr ty = 
-  let pt = prterm_env ctx ty in
-  let pc = pr_constructor ctx cstr in
-  [< 'sTR "Found the constructor "; pc; 'bRK(1,1); 
-     'sTR "while matching a term of type "; pt; 'bRK(1,1); 
-     'sTR "which is not an inductive type" >]
-
-let explain_bad_constructor k ctx cstr ind =
-  let pi = pr_inductive ctx ind in
-  let pc = pr_constructor ctx cstr in
-  let pt = pr_inductive ctx (inductive_of_constructor cstr) in
-  [< 'sTR "Expecting a constructor in inductive type "; pi; 'bRK(1,1) ;
-     'sTR " but found the constructor " ; pc; 'bRK(1,1) ;
-     'sTR " in inductive type "; pt >]
-
-let explain_wrong_numarg_of_constructor k ctx cstr n =
-  let pc = pr_constructor ctx (cstr,[||]) in
-  [<'sTR "The constructor "; pc;
-    'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
-
-let explain_wrong_predicate_arity k ctx pred nondep_arity dep_arity=
-  let pp = prterm_env ctx pred in
-  [<'sTR "The elimination predicate "; 'sPC; pp; 'fNL;
-    'sTR "should be of arity" ; 'sPC;
-    prterm_env ctx nondep_arity ; 'sPC; 'sTR "(for non dependent case) or" ;
-    'sPC; prterm_env ctx dep_arity ; 'sPC; 'sTR "(for dependent case).">]
-
-let explain_needs_inversion k ctx x t =
-  let px = prterm_env ctx x in
-  let pt = prterm_env ctx t in
-  [< 'sTR "Sorry, I need inversion to compile pattern matching of term ";
-     px ; 'sTR " of type: "; pt>]
-
-
 let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n
@@ -343,33 +297,27 @@ let explain_type_error k ctx = function
       explain_ill_formed_rec_body k ctx i lna vdefj vargs
   | IllTypedRecBody (i, lna, vdefj, vargs) -> 
      explain_ill_typed_rec_body k ctx i lna vdefj vargs
+(*
   | NotInductive c ->
       explain_not_inductive k ctx c
-  | MLCase (mes,c,ct,br,brt) ->
-      explain_ml_case k ctx mes c ct br brt
+*)
+let explain_pretype_error ctx = function
+  | MlCase mes ->
+      explain_ml_case CCI ctx mes
   | CantFindCaseType c ->
-      explain_cant_find_case_type k ctx c
+      explain_cant_find_case_type CCI ctx c
   | OccurCheck (n,c) ->
-      explain_occur_check k ctx n c
+      explain_occur_check CCI ctx n c
   | NotClean (n,c) ->
-      explain_not_clean k ctx n c
+      explain_not_clean CCI ctx n c
   | VarNotFound id ->
-      explain_var_not_found k ctx id
+      explain_var_not_found CCI ctx id
   | UnexpectedType (actual,expected) ->
-      explain_unexpected_type k ctx actual expected
+      explain_unexpected_type CCI ctx actual expected
   | NotProduct c ->
-      explain_not_product k ctx c
-  (* Pattern-matching errors *)
-  | BadPattern (c,t) ->
-      explain_bad_pattern k ctx c t
-  | BadConstructor (c,ind) ->
-      explain_bad_constructor k ctx c ind
-  | WrongNumargConstructor (c,n) ->
-      explain_wrong_numarg_of_constructor k ctx c n
-  | WrongPredicateArity (pred,n,dep) ->
-      explain_wrong_predicate_arity k ctx pred n dep
-  | NeedsInversion (x,t) ->
-      explain_needs_inversion k ctx x t
+      explain_not_product CCI ctx c
+
+(* Refiner errors *)
 
 let explain_refiner_bad_type arg ty conclty =
   [< 'sTR"refiner was given an argument"; 'bRK(1,1); 
@@ -421,6 +369,8 @@ let explain_refiner_error = function
   | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
   | IntroNeedsProduct -> explain_intro_needs_product ()
   | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
+
+(* Inductive errors *)
 
 let error_non_strictly_positive k env c v  =
   let pc = prterm_env env c in
@@ -500,3 +450,63 @@ let explain_inductive_error = function
   | BadInduction (dep,indid,kind) -> error_bad_induction dep indid kind
   | NotMutualInScheme -> error_not_mutual_in_scheme ()
 
+(* Pattern-matching errors *)
+
+let explain_bad_pattern ctx cstr ty = 
+  let pt = prterm_env ctx ty in
+  let pc = pr_constructor ctx cstr in
+  [< 'sTR "Found the constructor "; pc; 'bRK(1,1); 
+     'sTR "while matching a term of type "; pt; 'bRK(1,1); 
+     'sTR "which is not an inductive type" >]
+
+let explain_bad_constructor ctx cstr ind =
+  let pi = pr_inductive ctx ind in
+  let pc = pr_constructor ctx cstr in
+  let pt = pr_inductive ctx (inductive_of_constructor cstr) in
+  [< 'sTR "Expecting a constructor in inductive type "; pi; 'bRK(1,1) ;
+     'sTR " but found the constructor " ; pc; 'bRK(1,1) ;
+     'sTR " in inductive type "; pt >]
+
+let explain_wrong_numarg_of_constructor ctx cstr n =
+  let pc = pr_constructor ctx (cstr,[||]) in
+  [<'sTR "The constructor "; pc;
+    'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
+
+let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
+  let pp = prterm_env ctx pred in
+  [<'sTR "The elimination predicate "; 'sPC; pp; 'fNL;
+    'sTR "should be of arity" ; 'sPC;
+    prterm_env ctx nondep_arity ; 'sPC; 'sTR "(for non dependent case) or" ;
+    'sPC; prterm_env ctx dep_arity ; 'sPC; 'sTR "(for dependent case).">]
+
+let explain_needs_inversion ctx x t =
+  let px = prterm_env ctx x in
+  let pt = prterm_env ctx t in
+  [< 'sTR "Sorry, I need inversion to compile pattern matching of term ";
+     px ; 'sTR " of type: "; pt>]
+
+let explain_redundant_clauses env pats =
+  let s = if List.length pats > 1 then "s" else "" in
+  [<'sTR ("Redundant clause for pattern"^s); 'sPC;
+    hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats) >]
+
+let explain_non_exhaustive env pats =
+  let s = if List.length pats > 1 then "s" else "" in
+  [<'sTR ("Non exhaustive pattern-matching: no clause found for pattern"^s);
+    'sPC; hOV 0 (prlist_with_sep pr_spc pr_cases_pattern pats) >]
+
+let explain_pattern_matching_error env = function
+  | BadPattern (c,t) -> 
+      explain_bad_pattern env c t
+  | BadConstructor (c,ind) ->
+      explain_bad_constructor env c ind
+  | WrongNumargConstructor (c,n) ->
+      explain_wrong_numarg_of_constructor env c n
+  | WrongPredicateArity (pred,n,dep) ->
+      explain_wrong_predicate_arity env pred n dep
+  | NeedsInversion (x,t) ->
+      explain_needs_inversion env x t
+  | RedundantClause tms ->
+      explain_redundant_clauses env tms
+  | NonExhaustive tms ->
+      explain_non_exhaustive env tms
