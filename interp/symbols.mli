@@ -116,7 +116,7 @@ val exists_notation_in_scope : scope_name -> notation ->
 val declare_arguments_scope: global_reference -> scope_name option list -> unit
 val find_arguments_scope : global_reference -> scope_name option list
 
-val declare_class_scope : Classops.cl_typ -> scope_name -> unit
+val declare_class_scope : scope_name -> Classops.cl_typ -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
 (* Analysing notation *)
