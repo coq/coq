@@ -265,7 +265,7 @@ contrib/ring/ArithRing.vo: contrib/ring/ArithRing.v contrib/ring/Ring.vo theorie
 contrib/ring/Ring_normalize.vo: contrib/ring/Ring_normalize.v contrib/ring/Ring_theory.vo contrib/ring/Quote.vo
 contrib/ring/Ring_theory.vo: contrib/ring/Ring_theory.v theories/Bool/Bool.vo
 contrib/ring/Ring.vo: contrib/ring/Ring.v theories/Bool/Bool.vo contrib/ring/Ring_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo contrib/ring/Ring_abstract.vo
-contrib/ring/NArithRing.vo: contrib/ring/NArithRing.v contrib/ring/ArithRing.vo theories/ZArith/ZArith_base.vo theories/Logic/Eqdep_dec.vo
+contrib/ring/NArithRing.vo: contrib/ring/NArithRing.v contrib/ring/Ring.vo theories/ZArith/ZArith_base.vo theories/NArith/NArith.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/ZArith/ZArith_base.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Ring_abstract.vo: contrib/ring/Ring_abstract.v contrib/ring/Ring_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo
 contrib/ring/Quote.vo: contrib/ring/Quote.v
