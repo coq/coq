@@ -13,29 +13,29 @@ we are interested in the problem of determining if it can be well
 typed modulo insertion of appropriate coercions.  We allow to write:
 
 \begin{itemize}
-\item $(f~a)$ where $f:(x:A)B$ and $a:A'$ when $A'$ can 
+\item $f~a$ where $f:forall~ x:A, B$ and $a:A'$ when $A'$ can 
       be seen in some sense as a subtype of $A$.
 \item $x:A$ when $A$ is not a type, but can be seen in 
       a certain sense as a type: set, group, category etc.
-\item $(f~a)$ when $f$ is not a function, but can be seen in a certain sense
+\item $f~a$ when $f$ is not a function, but can be seen in a certain sense
       as a function: bijection, functor, any structure morphism etc.
 \end{itemize}
 
 \asection{Classes}
 \index{Coercions!classes}
  A class with $n$ parameters is any defined name with a type
-$(x_1:A_1)..(x_n:A_n)s$ where $s$ is a sort.  Thus a class with
+$forall~ (x_1:A_1)..(x_n:A_n), s$ where $s$ is a sort.  Thus a class with
 parameters is considered as a single class and not as a family of
-classes.  An object of a class $C$ is any term of type $(C~t_1
-.. t_n)$.  In addition to these user-classes, we have two abstract
+classes.  An object of a class $C$ is any term of type $C~t_1
+.. t_n$.  In addition to these user-classes, we have two abstract
 classes:
 
 \begin{itemize}
-\item {\tt SORTCLASS}, the class of sorts; 
+\item {\tt Sortclass}, the class of sorts; 
   its objects are the terms whose type is a sort.
-\item {\tt FUNCLASS}, the class of functions; 
+\item {\tt Funclass}, the class of functions; 
   its objects are all the terms with a functional 
-  type, i.e. of form $(x:A)B$.
+  type, i.e. of form $forall~ x:A, B$.
 \end{itemize}
 
 Formally, the syntax of a classes is defined by
@@ -45,37 +45,39 @@ Formally, the syntax of a classes is defined by
 \begin{tabular}{|lcl|}
 \hline
 {\class} & ::= & {\qualid} \\
-  & $|$ & {\tt SORTCLASS} \\
-  & $|$ & {\tt FUNCLASS} \\
+  & $|$ & {\tt Sortclass} \\
+  & $|$ & {\tt Funclass} \\
 \hline
 \end{tabular}
 \end{center}
 \medskip
 
 \asection{Coercions}
-\index{Coercions!FUNCLASS}
-\index{Coercions!SORTCLASS}
+\index{Coercions!Funclass}
+\index{Coercions!Sortclass}
   A name $f$ can be declared as a coercion between a source user-class
 $C$ with $n$ parameters and a target class $D$ if one of these
 conditions holds:
 
+\newcommand{\oftype}{\!:\!}
+
 \begin{itemize}
 \item $D$ is a user-class, then the type of $f$ must have the form
-      $(x_1:A_1)..(x_n:A_n)(y:(C~x_1..x_n)) (D~u_1..u_m)$ where $m$
+      $forall~ (x_1 \oftype A_1)..(x_n \oftype A_n)(y\oftype C~x_1..x_n), D~u_1..u_m$ where $m$
       is the number of parameters of $D$.
-\item $D$ is {\tt FUNCLASS}, then the type of $f$ must have the form
-      $(x_1:A_1)..(x_n:A_n)(y:(C~x_1..x_n))(x:A)B$. 
-\item $D$ is {\tt SORTCLASS}, then the type of $f$ must have the form
-      $(x_1:A_1)..(x_n:A_n)(y:(C~x_1..x_n))s$ with $s$ a sort. 
+\item $D$ is {\tt Funclass}, then the type of $f$ must have the form
+      $forall~ (x_1\oftype A_1)..(x_n\oftype A_n)(y\oftype C~x_1..x_n)(x:A), B$. 
+\item $D$ is {\tt Sortclass}, then the type of $f$ must have the form
+      $forall~ (x_1\oftype A_1)..(x_n\oftype A_n)(y\oftype C~x_1..x_n), s$ with $s$ a sort. 
 \end{itemize}
 
 We then write $f:C \mbox{\texttt{>->}} D$. The restriction on the type
 of coercions is called {\em the uniform inheritance condition}.
-Remark that the abstract classes {\tt FUNCLASS} and {\tt SORTCLASS}
+Remark that the abstract classes {\tt Funclass} and {\tt Sortclass}
 cannot be source classes.
 
-  To coerce an object $t:(C~t_1..t_n)$ of $C$ towards $D$, we have to
-apply the coercion $f$ to it; the obtained term $(f~t_1..t_n~t)$ is
+To coerce an object $t:C~t_1..t_n$ of $C$ towards $D$, we have to
+apply the coercion $f$ to it; the obtained term $f~t_1..t_n~t$ is
 then an object of $D$.
 
 \asection{Identity Coercions}
@@ -84,26 +86,25 @@ then an object of $D$.
   Identity coercions are special cases of coercions used to go around
 the uniform inheritance condition.  Let $C$ and $D$ be two classes
 with respectively $n$ and $m$ parameters and
-$f:(x_1:T_1)..(x_k:T_k)(y:(C~u_1..u_n))(D~v_1..v_m)$ a function which
+$f:forall~(x_1:T_1)..(x_k:T_k)(y:C~u_1..u_n), D~v_1..v_m$ a function which
 does not verify the uniform inheritance condition. To declare $f$ as
 coercion, one has first to declare a subclass $C'$ of $C$:
 
-$$C' := [x_1:T_1]..[x_k:T_k](C~u_1..u_n)$$
+$$C' := fun~ (x_1:T_1)..(x_k:T_k) => C~u_1..u_n$$
 
 \noindent We then define an {\em identity coercion} between $C'$ and $C$:
 \begin{eqnarray*}
-Id\_C'\_C  & := & [x_1:T_1]..[x_k:T_k][y:(C'~x_1..x_k)]\\
-           &    & (y::(C~u_1..u_n))
+Id\_C'\_C  & := & fun~ (x_1:T_1)..(x_k:T_k)(y:C'~x_1..x_k) => (y:C~u_1..u_n)\\
 \end{eqnarray*}
 
 We can now declare $f$ as coercion from $C'$ to $D$, since we can
 ``cast'' its type as
-$(x_1:T_1)..(x_k:T_k)(y:(C'~x_1..x_k))(D~v_1..v_m)$.\\ The identity
-coercions have a special status: to coerce an object $t:(C'~t_1..t_k)$
-of $C'$ towards $C$, we have not to insert explicitly $Id\_C'\_C$
-since $(Id\_C'\_C~t_1..t_k~t)$ is convertible with $t$.  However we
+$forall~ (x_1:T_1)..(x_k:T_k)(y:C'~x_1..x_k),D~v_1..v_m$.\\ The identity
+coercions have a special status: to coerce an object $t:C'~t_1..t_k$
+of $C'$ towards $C$, we does not have to insert explicitly $Id\_C'\_C$
+since $Id\_C'\_C~t_1..t_k~t$ is convertible with $t$.  However we
 ``rewrite'' the type of $t$ to become an object of $C$; in this case,
-it becomes $(C~u_1^*..u_k^*)$ where each $u_i^*$ is the result of the
+it becomes $C~u_1^*..u_k^*$ where each $u_i^*$ is the result of the
 substitution in $u_i$ of the variables $x_j$ by $t_j$.
 
 
@@ -158,13 +159,14 @@ Declares the construction denoted by {\qualid} as a coercion between
 \begin{ErrMsgs}
 \item {\qualid} \errindex{not declared}
 \item {\qualid} \errindex{is already a coercion}
-\item \errindex{FUNCLASS cannot be a source class}
-\item \errindex{SORTCLASS cannot be a source class}
-\item \errindex{Does not correspond to a coercion} \\
-   {\qualid} is not a function.
-\item \errindex{Cannot find the source class}
+\item \errindex{Funclass cannot be a source class}
+\item \errindex{Sortclass cannot be a source class}
+\item {\qualid} \errindex{is not a function}
+\item \errindex{Cannot find the source class of {\qualid}}
+\item \errindex{Cannot recognize {\class$_1$} as a source class of {\qualid}}
 \item {\qualid} \errindex{does not respect the inheritance uniform condition}
-\item \errindex{The target class does not correspond to {\class$_2$}}
+\item \errindex{Found target class {\class} instead of {\class$_2$}}
+
 \end{ErrMsgs}
 
 When the coercion {\qualid} is added to the inheritance graph, non
@@ -205,15 +207,14 @@ valid coercion paths are ignored; they are signaled by a warning.
 \comindex{Identity Coercion}
 
 We check that {\class$_1$} is a constant with a value of the form
-$[x_1:T_1]..[x_n:T_n](\mbox{\class}_2~t_1..t_m)$ where $m$ is the
+$fun~ (x_1:T_1)..(x_n:T_n) => (\mbox{\class}_2~t_1..t_m)$ where $m$ is the
 number of parameters of \class$_2$.  Then we define an identity
 function with the type
-$(x_1:T_1)..(x_n:T_n)(y:(\mbox{\class}_1~x_1..x_n))
-({\mbox{\class}_2}~t_1..t_m)$, and we declare it as an identity
+$forall~ (x_1:T_1)..(x_n:T_n)(y:\mbox{\class}_1~x_1..x_n),
+{\mbox{\class}_2}~t_1..t_m$, and we declare it as an identity
 coercion between {\class$_1$} and {\class$_2$}.
 
 \begin{ErrMsgs}
-\item \errindex{Clash with previous constant {\ident}}
 \item {\class$_1$} \errindex{must be a transparent constant} 
 \end{ErrMsgs}
 
@@ -264,7 +265,7 @@ Print the list of valid coercion paths from {\class$_1$} to {\class$_2$}.
 \comindex{Unset Printing Coercions}
 
 This command forces all the coercions to be printed.
-To skip the printing of coercions, use
+Conversely, to skip the printing of coercions, use
  {\tt Unset Printing Coercions}.
 By default, coercions are not printed.
 
@@ -286,7 +287,7 @@ classes as records) by extending the existing {\tt Record} macro
 
 \begin{center}
 \begin{tabular}{l}
-{\tt Record \zeroone{>}~{\ident} [ {\params} ] : {\sort} := \zeroone{\ident$_0$} \verb+{+} \\
+{\tt Record \zeroone{>}~{\ident} {\binderlet} : {\sort} := \zeroone{\ident$_0$} \verb+{+} \\
 ~~~~\begin{tabular}{l}
         {\tt \ident$_1$ $[$:$|$:>$]$ \term$_1$ ;} \\
         ... \\
@@ -318,9 +319,9 @@ Record}.
 mechanism. The global classes and coercions defined inside a section
 are redefined after its closing, using their new value and new
 type. The classes and coercions which are local to the section are
-simply forgotten (no warning message is printed). 
+simply forgotten.
 Coercions with a local source class or a local target class, and 
-coercions which do no more verify the uniform inheritance condition
+coercions which do not verify the uniform inheritance condition any longer
 are also forgotten.
 
 \asection{Examples}
@@ -328,9 +329,9 @@ are also forgotten.
   There are three situations:
 
 \begin{itemize}
-\item $(f~a)$ is ill-typed where $f:(x:A)B$ and $a:A'$. If there is a
-      coercion path between $A'$ and $A$, $(f~a)$ is transformed into
-      $(f~a')$ where $a'$ is the result of the application of this
+\item $f~a$ is ill-typed where $f:forall~x:A,B$ and $a:A'$. If there is a
+      coercion path between $A'$ and $A$, $f~a$ is transformed into
+      $f~a'$ where $a'$ is the result of the application of this
       coercion path to $a$.
 
 We first give an example of coercion between atomic inductive types
@@ -351,7 +352,7 @@ Unset Printing Coercions.
 
 \Warning ``\verb|Check true=O.|'' fails. This is ``normal'' behaviour of
 coercions. To validate \verb|true=O|, the coercion is searched from
-\verb=nat= to \verb=bool=. There is no one.
+\verb=nat= to \verb=bool=. There is none.
 
 We give an example of coercion between classes with parameters.
 
@@ -394,9 +395,9 @@ Unset Printing Coercions.
 
 
   In the case of functional arguments, we use the monotonic rule of
-sub-typing.  Approximatively, to coerce $t:(x:A)B$ towards $(x:A')B'$,
-one have to coerce $A'$ towards $A$ and $B$ towards $B'$. An example
-is given below:
+sub-typing.  Approximatively, to coerce $t:forall~x:A, B$ towards
+$forall~x:A',B'$, one have to coerce $A'$ towards $A$ and $B$ towards
+$B'$. An example is given below:
 
 %\begin{small}
 \begin{coq_example}
@@ -434,11 +435,11 @@ Unset Printing Coercions.
 \item An assumption $x:A$ when $A$ is not a type, is ill-typed.  It is
       replaced by $x:A'$ where $A'$ is the result of the application
       to $A$ of the coercion path between the class of $A$ and {\tt
-      SORTCLASS} if it exists.  This case occurs in the abstraction
-      $[x:A]t$, universal quantification $(x:A)B$, global variables
-      and parameters of (co-)inductive definitions and functions. In
-      $(x:A)B$, such a coercion path may be applied to $B$ also if
-      necessary.
+      Sortclass} if it exists.  This case occurs in the abstraction
+      $fun~ x:A => t$, universal quantification $forall~x:A, B$,
+      global variables and parameters of (co-)inductive definitions
+      and functions. In $forall~x:A, B$, such a coercion path may be
+      applied to $B$ also if necessary.
 
 %\begin{small}
 \begin{coq_example}
@@ -459,9 +460,9 @@ Check fg.
 Unset Printing Coercions.
 \end{coq_eval}
 
-\item $(f~a)$ is ill-typed because $f:A$ is not a function. The term
+\item $f~a$ is ill-typed because $f:A$ is not a function. The term
       $f$ is replaced by the term obtained by applying to $f$ the
-      coercion path between $A$ and {\tt FUNCLASS} if it exists.
+      coercion path between $A$ and {\tt Funclass} if it exists.
 
 %\begin{small}
 \begin{coq_example}
