@@ -47,7 +47,7 @@ Add Field R Rplus Rmult R1 R0 Ropp [x,y:R]false Rinv RTheory Rinv_l
 
 (**********)
 Lemma Rlt_antirefl:(r:R)~``r<r``.
-  Red; Intros; Apply (Rlt_antisym r r H); Auto with zarith real.
+  Generalize Rlt_antisym. Intuition EAuto.
 Save.
 Hints Resolve Rlt_antirefl : real.
 
@@ -62,9 +62,7 @@ Save.
 
 (**********)
 Lemma imp_not_Req:(r1,r2:R)(``r1<r2``\/ ``r1>r2``) -> ``r1<>r2``.
-Intros r1 r2 [H|H].
-Apply Rlt_not_eq; Auto with real.
-Apply Rgt_not_eq; Auto with real.
+Generalize Rlt_not_eq Rgt_not_eq. Intuition EAuto.
 Save.
 Hints Resolve imp_not_Req : real.
 
@@ -72,24 +70,18 @@ Hints Resolve imp_not_Req : real.
 
 (**********)
 Lemma Req_EM:(r1,r2:R)(r1==r2)\/``r1<>r2``.
-Intros;Elim (total_order_T r1 r2);Intro.
-Case a; Auto with real.
-Auto with real.
+Intros ; Generalize (total_order_T r1 r2) ; Intuition EAuto with real.
 Save.
 Hints Resolve Req_EM : real.
 
 (**********)
 Lemma total_order:(r1,r2:R)``r1<r2``\/(r1==r2)\/``r1>r2``.
-Intros;Elim (total_order_T r1 r2);Intro;Auto.
-Elim a;Intro;Auto.
+Intros;Generalize (total_order_T r1 r2);Tauto.
 Save.
 
 (**********)
 Lemma not_Req:(r1,r2:R)``r1<>r2``->(``r1<r2``\/``r1>r2``).
-Intros; Case (total_order r1 r2); Intros; Auto with real.
-Case H0; Intros.
-Absurd r1==r2; Auto with real.
-Auto with real.
+Intros; Generalize (total_order_T r1 r2) ; Tauto.
 Save.
 
 
@@ -99,7 +91,7 @@ Save.
 
 (**********)
 Lemma Rlt_le:(r1,r2:R)``r1<r2``-> ``r1<=r2``.
-Unfold Rle; Auto.
+Intuition Auto.
 Save.
 Hints Resolve Rlt_le : real.
 
@@ -115,19 +107,14 @@ Save.
 
 (**********)
 Lemma not_Rle:(r1,r2:R)~(``r1<=r2``)->``r1>r2``.
-Intros; Unfold Rle in H; Elim (total_order r1 r2); Intro.
-Elim H;Left; Assumption.
-Elim H0; Intro;Auto.
-Elim H;Right; Assumption.
+Intros r1 r2 ; Generalize (total_order r1 r2) ; Tauto.
 Save.
 
 Hints Immediate Rle_ge Rge_le not_Rle : real.
 
 (**********)
 Lemma Rlt_le_not:(r1,r2:R)``r2<r1``->~(``r1<=r2``).
-Intros; Red; Intro; Elim H0; Clear H0; Intro.
-Exact (Rlt_antisym r1 r2 H0 H).
-Case (imp_not_Req r1 r2); Auto with real.
+Intros r1 r2 ; Generalize (Rlt_antisym r1 r2) (imp_not_Req r1 r2) ; Intuition.
 Save.
 
 Lemma Rle_not:(r1,r2:R)``r1>r2`` -> ~(``r1<=r2``).
@@ -136,27 +123,24 @@ Proof Rlt_le_not.
 Hints Immediate Rlt_le_not : real.
 
 Lemma Rle_not_lt: (r1, r2:R) ``r2 <= r1`` ->~ (``r1<r2``).
-Intros r1 r2 H'; Elim H';Auto with real.
-Intro H; Rewrite H; Auto with real.
+Intros r1 r2. Generalize (Rlt_antisym r1 r2) (imp_not_Req r1 r2); Intuition.
 Save.
 
 (**********)
 Lemma Rlt_ge_not:(r1,r2:R)``r1<r2``->~(``r1>=r2``).
-Unfold Rge; Red; Intros.
-Apply (Rlt_le_not r2 r1 H).
-Red; Case H0; Auto with real.
+Generalize Rlt_le_not. Intuition EAuto 3.
 Save.
 
 Hints Immediate Rlt_ge_not : real.
 
 (**********)
 Lemma eq_Rle:(r1,r2:R)r1==r2->``r1<=r2``.
-Unfold Rle; Auto.
+Unfold Rle; Tauto.
 Save.
 Hints Immediate eq_Rle : real.
 
 Lemma eq_Rge:(r1,r2:R)r1==r2->``r1>=r2``.
-Unfold Rge; Auto.
+Unfold Rge; Tauto.
 Save.
 Hints Immediate eq_Rge : real.
 
@@ -171,78 +155,58 @@ Save.
 Hints Immediate eq_Rge_sym : real.
 
 Lemma Rle_antisym : (r1,r2:R)``r1<=r2`` -> ``r2<=r1``-> r1==r2.
-Unfold Rle; Intros.
-Case H; Intro; Auto with real.
-Case H0; Intro; Auto with real.
-Case (Rlt_antisym r1 r2 H1 H2).
+Intros r1 r2; Generalize (Rlt_antisym r1 r2) ; Intuition.
 Save.
 Hints Resolve Rle_antisym : real.
 
 (**********)
 Lemma Rle_le_eq:(r1,r2:R)(``r1<=r2``/\``r2<=r1``)<->(r1==r2).
-Split; Auto with real.
-Intros (H1,H2); Auto with real.
+Intuition.
+Save.
+
+Lemma Rlt_rew : (x,x',y,y':R)``x==x'``->``x'<y'`` -> `` y' == y`` -> ``x < y``.
+Intros; Replace x with x'; Replace y with y'; Assumption.
 Save.
 
 (**********)
 Lemma Rle_trans:(r1,r2,r3:R) ``r1<=r2``->``r2<=r3``->``r1<=r3``.
-Intros r1 r2 r3; Unfold Rle; Intros.
-Elim H; Elim H0; Intros.
-Left; Apply Rlt_trans with r2; Trivial.
-Left; Rewrite <- H1; Trivial.
-Left; Rewrite H2; Trivial.
-Right; Transitivity r2; Trivial.
+Generalize trans_eqT Rlt_trans Rlt_rew.
+Intuition EAuto 2.
 Save.
 
 (**********)
 Lemma Rle_lt_trans:(r1,r2,r3:R)``r1<=r2``->``r2<r3``->``r1<r3``.
-Intros; Unfold Rle in H; Elim H; Intro.
-Apply (Rlt_trans r1 r2 r3 H1 H0).
-Rewrite -> H1; Auto with zarith real.
+Generalize Rlt_trans Rlt_rew. Intuition EAuto 2.
 Save.
 
 (**********)
 Lemma Rlt_le_trans:(r1,r2,r3:R)``r1<r2``->``r2<=r3``->``r1<r3``.
-Intros; Unfold Rle in H0; Elim H0; Intro.
-Apply (Rlt_trans r1 r2 r3 H H1).
-Rewrite <- H1; Auto with zarith real.
+Generalize Rlt_trans Rlt_rew; Intuition EAuto 2.
 Save.
 
 
 (** Decidability of the order *)
 Lemma total_order_Rlt:(r1,r2:R)(sumboolT ``r1<r2`` ~(``r1<r2``)).
-Intros;Elim (total_order_T r1 r2);Intros.
-Elim a;Intro.
-Left;Assumption.
-Right;Rewrite b;Apply Rlt_antirefl.
-Right;Unfold Rgt in b;Apply Rlt_antisym;Assumption.
+Intros;Generalize (total_order_T r1 r2) (imp_not_Req r1 r2) ; Intuition.
 Save.
 
 (**********)
 Lemma total_order_Rle:(r1,r2:R)(sumboolT ``r1<=r2`` ~(``r1<=r2``)).
-Intros;Elim (total_order_T r1 r2);Intros.
-Left;Unfold Rle;Elim a;Auto with real.
-Right; Auto with real.
+Intros r1 r2; Generalize (total_order_T r1 r2);Intuition EAuto with real.
 Save.
 
 (**********)
 Lemma total_order_Rgt:(r1,r2:R)(sumboolT ``r1>r2`` ~(``r1>r2``)).
-Unfold Rgt;Intros;Apply total_order_Rlt.
+Intros;Unfold Rgt;Intros;Apply total_order_Rlt.
 Save.
 
 (**********)
 Lemma total_order_Rge:(r1,r2:R)(sumboolT (``r1>=r2``) ~(``r1>=r2``)).
-Intros;Elim (total_order_Rle r2 r1);Intro.
-Left; Auto with real.
-Right; Auto with real.
+Intros;Generalize (total_order_Rle r2 r1);Intuition.
 Save.
 
 Lemma total_order_Rlt_Rle:(r1,r2:R)(sumboolT ``r1<r2`` ``r2<=r1``).
-Intros;Elim (total_order_T r1 r2); Intro H.
-Case H; Intro.
-Left; Trivial.
-Right; Auto with real.
-Right; Auto with real.
+Intros;Generalize (total_order_T r1 r2); Intuition.
 Save.
 
 Lemma Rle_or_lt: (n, m:R)(Rle n m) \/ (Rlt m n).
@@ -251,15 +215,12 @@ Save.
 
 Lemma total_order_Rle_Rlt_eq :(r1,r2:R)``r1<=r2``-> 
                               (sumboolT ``r1<r2`` ``r1==r2``).
-Intros r1 r2 H;Elim (total_order_T r1 r2); Trivial; Intro.
-Elim (Rlt_le_not r1 r2); Trivial.
+Intros r1 r2 H;Generalize (total_order_T r1 r2); Intuition.
 Save.
 
 (**********)
 Lemma inser_trans_R:(n,m,p,q:R)``n<=m<p``-> (sumboolT ``n<=m<q`` ``q<=m<p``).
-Intros n m p q H; Case (total_order_Rlt_Rle m q); Intro.
-Left; Case H; Auto.
-Right; Case H; Auto.
+Intros; Generalize (total_order_Rlt_Rle m q); Intuition.
 Save.
 
 (****************************************************************)

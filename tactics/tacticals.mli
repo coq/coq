@@ -32,6 +32,7 @@ val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
 val tclTHENSEQ       : tactic list -> tactic
 val tclREPEAT        : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
+val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic
 val tclINFO          : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic

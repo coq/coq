@@ -103,7 +103,8 @@ let rec tauto_intuit t_reduce t_solver ist =
         $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
       )
     Orelse
-      (Intro;$t_tauto_intuit)
+      (* NB: [|- ? -> ?] matches any product *)
+      (Match Context With |[ |- ? -> ? ] -> Intro;$t_tauto_intuit)
     Orelse
       $t_solver
    ) >>
@@ -121,6 +122,8 @@ let unfold_not_iff = function
 
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
+let no_reduction = tclIDTAC
+
 (* Reduce until finding atoms in head normal form *)
 open Term
 open Termops
@@ -129,7 +132,7 @@ open Environ
 let rec reduce env sigma c =
   let c = Tacred.hnf_constr env sigma c in
   match Term.kind_of_term c with
-    | Prod (na,t,u) when noccurn 1 u ->
+    | Prod (na,t,u) (* when noccurn 1 u*) ->
       mkProd (na,reduce env sigma t, reduce (push_rel (na,None,t) env) sigma u)
     | _ -> c
 
@@ -137,6 +140,7 @@ let reduction =
   Tacticals.onAllClauses
     (fun cl -> reduct_option reduce (option_app (fun id -> InHyp id) cl))
 
+let t_no_reduction = valueIn (VTactic no_reduction)
 let t_reduction = valueIn (VTactic reduction)
 let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
 
@@ -152,12 +156,65 @@ let tauto g =
     (* ) *)
     g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
-
+(*
 let intuition =
   (*  tclTHEN init_intros*)
     (tclORELSE
       (interp (tacticIn (intuition_main t_reduction_not_iff)))
       (interp (tacticIn (intuition_main t_reduction))))
+*)
+
+let intuition_not_reducing tac =
+  interp (tacticIn (tauto_intuit t_no_reduction tac))
+
+let intuition_reducing tac =
+  interp (tacticIn (tauto_intuit t_reduction tac))
+
+let intuition_reducing_not_iff tac =
+  interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
+
+(* Idea: we want to destructure the goal and the hyps but we do not
+   want to unfold constants unless we can solve the obtained goals.
+   Moreover, we need to unfold "not" and "iff" in order to solve all
+   propositionnal tautologies but we should do it only if necessary;
+   otherwise, if tac=Auto, it may fail to recognize that a given goal
+   is an instance of one of its Hints *)
+let intuition_gen tac =
+  let tnored = tclSOLVE [ intuition_not_reducing tac ]
+  and tr = tclTRY (tclSOLVE [ intuition_reducing tac ])
+  and trnotiff = intuition_reducing_not_iff tac in
+  tclORELSE tnored
+    (tclORELSE
+       (tclTHEN trnotiff tr)
+       tr
+    )
+
+let v_intuition args =
+  match args with
+    | [] -> intuition_gen <:tactic< Auto with * >>
+    | [ Tac(_, t)] -> intuition_gen t
+    | _ -> assert false
+
+let v_intuitnred args =
+  match args with
+    | [] -> intuition_not_reducing <:tactic< Auto with * >>
+    | [ Tac(_, t)] -> intuition_not_reducing t
+    | _ -> assert false
+
+let v_intuitred args =
+  match args with
+    | [] -> intuition_reducing <:tactic< Auto with * >>
+    | [ Tac(_, t)] -> intuition_reducing t
+    | _ -> assert false
+
+let _ = hide_atomic_tactic "IntSimplif" (interp (tacticIn (simplif t_reduction_not_iff)))
+let _ = hide_atomic_tactic "IntReduce" (interp (tacticIn (simplif t_reduction_not_iff)))
 
 let _ = hide_atomic_tactic "Tauto" tauto
-let _ = hide_atomic_tactic "Intuition" intuition
+(* let _ = hide_atomic_tactic "Intuition" intuition*)
+let _ = hide_tactic "Intuition" v_intuition
+
+let _ = hide_tactic "Intuitionr" v_intuitred
+let _ = hide_tactic "Intuitionnr" v_intuitnred
+
+
