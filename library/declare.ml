@@ -78,7 +78,8 @@ let (in_variable, out_variable) =
 
 let declare_variable id obj =
   let sp = add_leaf id CCI (in_variable (id,obj)) in
-  if is_implicit_args() then declare_var_implicits sp
+  if is_implicit_args() then declare_var_implicits sp;
+  sp
 
 (* Parameters. *)
 
@@ -106,7 +107,8 @@ let (in_parameter, out_parameter) =
 
 let declare_parameter id c =
   let sp = add_leaf id CCI (in_parameter c) in 
-  if is_implicit_args() then declare_constant_implicits sp
+  if is_implicit_args() then declare_constant_implicits sp;
+  sp
 
 (* Constants. *)
 
@@ -165,8 +167,9 @@ let hcons_constant_declaration = function
 let declare_constant id cd =
   (* let cd = hcons_constant_declaration cd in *)
   let sp = add_leaf id CCI (in_constant cd) in
-  if is_implicit_args() then declare_constant_implicits sp
- 
+  if is_implicit_args() then declare_constant_implicits sp;
+  sp
+
 (* Inductives. *)
 
 
@@ -376,7 +379,7 @@ let construct_reference env kind id =
   with Not_found ->
     mkVar (let _ = Environ.lookup_named id env in id)
 
-let global_qualified_reference qid = 
+let global_qualified_reference qid =
   construct_qualified_reference (Global.env()) qid
 
 let global_absolute_reference sp = 
@@ -385,11 +388,6 @@ let global_absolute_reference sp =
 let global_reference kind id = 
   construct_reference (Global.env()) kind id
 
-(*
-let global env id =
-  try let _ = lookup_glob id (Environ.context env) in mkVar id
-  with Not_found -> global_reference CCI id
-*)
 let dirpath_of_global = function
   | EvarRef n -> ["evar"]
   | VarRef sp -> dirpath sp
@@ -430,9 +428,9 @@ let elimination_suffix = function
 let declare_one_elimination mispec =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
-    declare_constant (id_of_string na)
+    let _ = declare_constant (id_of_string na)
       (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
-       NeverDischarge,false);
+       NeverDischarge,false) in
     if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in
@@ -445,33 +443,7 @@ let declare_one_elimination mispec =
     (fun (sort,suff) -> 
        if List.mem sort kelim then declare (mindstr^suff) (make_elim sort))
     eliminations
-(*
-let declare_eliminations sp i =
-  let mib = Global.lookup_mind sp in
 
-  if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then
-    error ("Declarations of elimination scheme outside the section "^
-    "of the inductive definition is not implemented");
-  let ctxt = instance_from_named_context mib.mind_hyps in
-  let mispec = Global.lookup_mind_specif ((sp,i),Array.of_list ctxt) in 
-  let mindstr = string_of_id (mis_typename mispec) in
-  let declare na c =
-    declare_constant (id_of_string na)
-      (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
-       NeverDischarge,false);
-    if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
-  in
-  let env = Global.env () in
-  let sigma = Evd.empty in
-  let elim_scheme = build_indrec env sigma mispec in
-  let npars = mis_nparams mispec in
-  let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
-  let kelim = mis_kelim mispec in
-  List.iter
-    (fun (sort,suff) -> 
-       if List.mem sort kelim then declare (mindstr^suff) (make_elim sort))
-    eliminations
-*)
 let declare_eliminations sp =
   let mib = Global.lookup_mind sp in
   let ids = ids_of_named_context mib.mind_hyps in

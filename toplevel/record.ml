@@ -77,8 +77,8 @@ let warning_or_error coe err =
   pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
 (* We build projections *)
-let declare_projections idstruc coers paramdecls fields =
-  let r = global_reference CCI idstruc in
+let declare_projections structref coers paramdecls fields =
+  let r = constr_of_reference Evd.empty (Global.env()) structref in
   let paramargs = List.rev (List.map (fun (id,_,_) -> mkVar id) paramdecls) in
   let rp = applist (r, paramargs) in
   let x = Environ.named_hd (Global.env()) r Anonymous in
@@ -105,25 +105,29 @@ let declare_projections idstruc coers paramdecls fields =
 		 mkMutCase (ci, p, mkRel 1, [|branch|]) in
 	   let proj =
 	     it_mkNamedLambda_or_LetIn (mkLambda (x, rp, body)) paramdecls in
-	   let ok = 
+	   let name = 
 	     try
 	       let cie = { const_entry_body = proj; const_entry_type = None} in
-	       declare_constant fi (ConstantEntry cie,NeverDischarge,false); 
-	       true
+	       let sp =
+		 declare_constant fi (ConstantEntry cie,NeverDischarge,false)
+	       in Some sp
              with Type_errors.TypeError (k,ctx,te) -> begin
                warning_or_error coe (BadTypedProj (fi,k,ctx,te));
-	       false
+	       None
 	     end in
-	   if not ok then 
-	     (None::sp_projs,fi::ids_not_ok,subst)
-	   else begin
-             if coe then
-	       Class.try_add_new_coercion_record fi NeverDischarge idstruc;
-             let constr_fi = global_reference CCI fi in
-             let constr_fip = applist (constr_fi,proj_args)
-             in (Some(path_of_const constr_fi)::sp_projs,
-		 ids_not_ok, (fi,constr_fip)::subst)
-	   end)
+	   match name with
+	     | None -> (None::sp_projs, fi::ids_not_ok, subst)
+	     | Some sp ->
+		 let refi = ConstRef sp in
+		 let constr_fi =
+		   constr_of_reference Evd.empty (Global.env()) refi in
+		 if coe then begin
+		   let cl = Class.class_of_ref structref in
+		   Class.try_add_new_coercion_with_source 
+		     refi NeverDischarge cl
+		 end;
+		 let constr_fip = applist (constr_fi,proj_args) in
+		 (name::sp_projs, ids_not_ok, (fi,constr_fip)::subst))
       ([],[],[]) coers (List.rev fields)
   in sp_projs
 
@@ -164,7 +168,8 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
     { mind_entry_finite = true;
       mind_entry_inds = [mie_ind] } in
   let sp = declare_mutual_with_eliminations mie in
-  let sp_projs = declare_projections idstruc coers params fields in
-  let rsp = (sp,0) in
-  if is_coe then Class.try_add_new_coercion idbuild NeverDischarge;
+  let rsp = (sp,0) in (* This is ind path of idstruc *)
+  let sp_projs = declare_projections (IndRef rsp) coers params fields in
+  let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
+  if is_coe then Class.try_add_new_coercion build NeverDischarge;
   Recordops.add_new_struc (rsp,idbuild,nparams,List.rev sp_projs)

@@ -30,6 +30,8 @@ type constr_label =
   | VarNode of identifier
   | SectionVarNode of section_path
 
+val label_of_ref : global_reference -> constr_label
+
 exception BoundPattern
 
 (* [head_pattern_bound t] extracts the head variable/constant of the

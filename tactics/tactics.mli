@@ -125,7 +125,7 @@ val reduce            : red_expr -> identifier list -> tactic
 val dyn_reduce        : tactic_arg list -> tactic
 val dyn_change        : tactic_arg list -> tactic
 
-val unfold_constr     : constr -> tactic
+val unfold_constr     : global_reference -> tactic
 val pattern_option    : 
   (int list * constr * constr) list -> identifier option -> tactic
 

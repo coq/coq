@@ -29,7 +29,7 @@ type sticky = bool
 
 type variable_declaration = section_variable_entry * strength * sticky
 
-val declare_variable : identifier -> variable_declaration -> unit
+val declare_variable : identifier -> variable_declaration -> variable_path
 
 type constant_declaration_type =
   | ConstantEntry  of constant_entry
@@ -39,10 +39,16 @@ type opacity = bool
 
 type constant_declaration = constant_declaration_type * strength * opacity
 
-val declare_constant : identifier -> constant_declaration -> unit
+(* [declare_constant id cd] declares a global declaration
+   (constant/parameter) with name [id] in the current section; it returns
+   the full path of the declaration *)
+val declare_constant : identifier -> constant_declaration -> constant_path
 
-val declare_parameter : identifier -> constr -> unit
+val declare_parameter : identifier -> constr -> constant_path
 
+(* [declare_constant id cd] declares a block of inductive types with
+   their constructors in the current section; it returns the path of
+   the whole block *)
 val declare_mind : mutual_inductive_entry -> section_path
 
 (* [declare_eliminations sp] declares elimination schemes associated

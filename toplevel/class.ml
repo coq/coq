@@ -91,8 +91,8 @@ let try_add_class v (cl,p) streopt check_exist =
 
 (* try_add_new_class : Names.identifier -> unit *)
 
-let try_add_new_class id stre =
-  let v = global_reference CCI id in
+let try_add_new_class ref stre =
+  let v = constr_of_reference Evd.empty (Global.env()) ref in
   let env = Global.env () in
   let t = Retyping.get_type_of env Evd.empty v in
   let p1 =
@@ -100,7 +100,7 @@ let try_add_new_class id stre =
       arity_sort t 
     with Not_found -> 
       errorlabstrm "try_add_class" 
-        [< 'sTR "Type of "; 'sTR (string_of_id id);
+        [< 'sTR "Type of "; Printer.pr_global ref;
            'sTR " does not end with a sort" >] 
   in
   let cl = fst (constructor_at_head v) in
@@ -109,7 +109,7 @@ let try_add_new_class id stre =
 (* check_class : Names.identifier ->
   Term.constr -> cl_typ -> int -> int * Libobject.strength *)
 
-let check_class id v cl p =
+let check_class v cl p =
   try 
     let _,clinfo = class_info cl in
     check_fully_applied cl p clinfo.cL_PARAM;
@@ -121,12 +121,22 @@ let check_class id v cl p =
       try 
 	arity_sort t 
       with Not_found -> 
-	errorlabstrm "try_add_class" 
-          [< 'sTR "Type of "; 'sTR (string_of_id id);
+	errorlabstrm "check_class" 
+          [< 'sTR "Type of "; 'sTR (string_of_class cl);
              'sTR " does not end with a sort" >] 
     in
     check_fully_applied cl p p1;
     try_add_class v (cl,p1) None false
+
+(* check that the computed target is the provided one *)
+let check_target clt = function
+    | None -> ()
+    | Some cl -> 
+	if cl <> clt then 
+	  errorlabstrm "try_add_coercion" 
+            [<'sTR"Found target class "; 'sTR(string_of_class cl);
+	      'sTR " while "; 'sTR(string_of_class clt);
+	      'sTR " is expected" >]
 
 (* decomposition de constr vers coe_typ *)
 
@@ -177,7 +187,18 @@ let id_of_cl  = function
   | CL_IND (sp,i) ->
       (mind_nth_type_packet (Global.lookup_mind sp) i).mind_typename
   | CL_SECVAR sp -> (basename sp)
-	
+
+let class_of_ref = function
+  | ConstRef sp -> CL_CONST sp
+  | IndRef sp -> CL_IND sp
+  | VarRef sp -> CL_SECVAR sp
+  | ConstructRef _ as c -> 
+      errorlabstrm "class_of_ref"
+	[< 'sTR "Constructors, such as "; Printer.pr_global c; 
+	   'sTR " cannot be used as class" >]
+  | EvarRef _ -> 
+      errorlabstrm "class_of_ref"
+	[< 'sTR "Existential variables cannot be used as class" >]
 (* 
 lp est la liste (inverse'e) des arguments de la coercion
 ids est le nom de la classe source
@@ -193,24 +214,24 @@ la liste des variables dont depend la classe source
 let get_source lp source =
   match source with
     | None ->
-	let (v1,lv1,l,cl1,p1) as x =
+	let (v1,lv1,l,cl1,p1) =
 	  match lp with
 	    | [] -> raise Not_found
             | t1::_ ->
 		try constructor_at_head1 t1
                 with _ -> raise Not_found
         in 
-	(id_of_cl cl1),(cl1,p1,v1,lv1,1,l)
-    | Some id -> 
+	(cl1,p1,v1,lv1,1,l)
+    | Some cl ->
 	let rec aux n = function
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try 
 		let v1,lv1,l,cl1,p1 = constructor_at_head1 t1 in
-		if id_of_cl cl1 = id then cl1,p1,v1,lv1,n,l
+		if cl1 = cl then cl1,p1,v1,lv1,n,l
 		else aux (n+1) lt
               with _ -> aux (n + 1) lt
-	in id, aux 1 lp
+	in aux 1 lp
 
 let get_target t ind =
   if (ind > 1) then 
@@ -226,23 +247,20 @@ let prods_of t =
   in 
   aux [] t
 
-(* coercion identite' *)
+(* coercion identité *)
 
-let build_id_coercion idf_opt ids =
+let error_not_transparent source =
+  errorlabstrm "build_id_coercion"
+    [< 'sTR ((string_of_class source)^" must be a transparent constant") >]
+
+let build_id_coercion idf_opt source =
   let env = Global.env () in
-  let vs = construct_reference env CCI ids in 
-  let c = match kind_of_term (strip_outer_cast vs) with
-    | IsConst cst -> 
-	(try Instantiate.constant_value env cst
-         with Instantiate.NotEvaluableConst _ ->
-	   errorlabstrm "build_id_coercion"
-             [< 'sTR(string_of_id ids);
-		'sTR" must be a transparent constant" >])
-    | _ -> 
-	errorlabstrm "build_id_coercion"
-          [< 'sTR(string_of_id ids); 
-	     'sTR" must be a transparent constant" >] 
-  in
+  let vs = match source with
+    | CL_CONST sp -> constr_of_reference Evd.empty env (ConstRef sp)
+    | _ -> error_not_transparent source in
+  let c = match Instantiate.constant_opt_value env (destConst vs) with
+    | Some c -> c
+    | None -> error_not_transparent source in
   let lams,t = Sign.decompose_lam_assum c in
   let llams = List.length lams in
   let lams = List.rev lams in
@@ -269,19 +287,19 @@ let build_id_coercion idf_opt ids =
   in
   let idf =
     match idf_opt with
-      | Some(idf) -> idf
+      | Some idf -> idf
       | None ->
-	  id_of_string ("Id_"^(string_of_id ids)^"_"^
+	  id_of_string ("Id_"^(string_of_class source)^"_"^
                         (string_of_class (fst (constructor_at_head t)))) 
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
+    ConstantEntry
+      { const_entry_body = mkCast (val_f, typ_f);
+	const_entry_type = None } in
+  let sp = declare_constant idf (constr_entry,NeverDischarge,false) in
+  ConstRef sp
 
-    { const_entry_body = mkCast (val_f, typ_f);
-      const_entry_type = None } in
-  declare_constant idf (ConstantEntry constr_entry,NeverDischarge,false);
-  idf
-
-let add_new_coercion_in_graph1 (coef,v,stre,isid,cls,clt) idf ps =
+let add_new_coercion_in_graph1 (coef,v,stre,isid,cls,clt) ps =
   add_anonymous_leaf
     (inCoercion
        ((coef,
@@ -301,18 +319,18 @@ lorque source est None alors target est None aussi.
 
 let try_add_new_coercion_core idf stre source target isid =
   let env = Global.env () in
-  let v = construct_reference env CCI idf in
+  let v = constr_of_reference Evd.empty env idf in
   let vj = Retyping.get_judgment_of env Evd.empty v in
   let f_vardep,coef = coe_of_reference v in
   if coercion_exists coef then
     errorlabstrm "try_add_coercion" 
-      [< 'sTR(string_of_id idf) ; 'sTR" is already a coercion" >];
+      [< Printer.pr_global idf; 'sTR" is already a coercion" >];
   let lp = prods_of (vj.uj_type) in
   let llp = List.length lp in
   if llp <= 1 then
     errorlabstrm "try_add_coercion"         
       [< 'sTR"Does not correspond to a coercion" >];
-  let ids,(cls,ps,vs,lvs,ind,s_vardep) =
+  let (cls,ps,vs,lvs,ind,s_vardep) =
     try 
       get_source (List.tl lp) source
     with Not_found -> 
@@ -327,8 +345,8 @@ let try_add_new_coercion_core idf stre source target isid =
       [< 'sTR"SORTCLASS cannot be a source class" >];
   if not (uniform_cond (llp-1-ind) lvs) then
     errorlabstrm "try_add_coercion" 
-      [<'sTR(string_of_id idf);
-        'sTR" does not respect the inheritance uniform condition" >];
+      [< Printer.pr_global idf;
+         'sTR" does not respect the inheritance uniform condition" >];
   let clt,pt,vt =
     try 
       get_target (List.hd lp) ind 
@@ -336,19 +354,9 @@ let try_add_new_coercion_core idf stre source target isid =
       errorlabstrm "try_add_coercion" 
         [<'sTR"We cannot find the target class" >] 
   in
-  let idt =
-    (match target with
-       | Some idt -> 
-	   if idt = id_of_cl clt then 
-	     idt
-	   else 
-	     errorlabstrm "try_add_coercion" 
-               [<'sTR"The target class does not correspond to ";
-		 'sTR(string_of_id idt) >]
-       | None -> (id_of_cl clt)) 
-  in
-  let stres = check_class ids vs cls ps in
-  let stret = check_class idt vt clt pt in
+  check_target clt target;
+  let stres = check_class vs cls ps in
+  let stret = check_class vt clt pt in
   let stref = stre_of_coe coef in
 (* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
   let streunif = stre_unif_cond (s_vardep,f_vardep) in
@@ -357,29 +365,29 @@ let try_add_new_coercion_core idf stre source target isid =
   let stre' = stre_max4 stres stret stref streunif in
   (* if (stre=NeverDischarge) & (stre'<>NeverDischarge)
      then errorlabstrm "try_add_coercion" 
-     [<'sTR(string_of_id idf);
+     [< pr_global idf;
      'sTR" must be declared as a local coercion (its strength is ";
      'sTR(string_of_strength stre');'sTR")" >] *)
   let stre = stre_max (stre,stre') in
-  add_new_coercion_in_graph1 (coef,vj,stre,isid,cls,clt) idf ps
+  add_new_coercion_in_graph1 (coef,vj,stre,isid,cls,clt) ps
 
 
-let try_add_new_coercion id stre =
-  try_add_new_coercion_core id stre None None false
+let try_add_new_coercion ref stre =
+  try_add_new_coercion_core ref stre None None false
 
-let try_add_new_coercion_subclass id stre =
-  let idf = build_id_coercion None id in
-  try_add_new_coercion_core idf stre (Some id) None true
+let try_add_new_coercion_subclass cl stre =
+  let coe_ref = build_id_coercion None cl in
+  try_add_new_coercion_core coe_ref stre (Some cl) None true
 
-let try_add_new_coercion_with_target id stre source target isid =
-  if isid then
-    let idf = build_id_coercion (Some id) source in
-    try_add_new_coercion_core idf stre (Some source) (Some target) true
-  else 
-    try_add_new_coercion_core id stre (Some source) (Some target) false
+let try_add_new_coercion_with_target ref stre source target =
+  try_add_new_coercion_core ref stre (Some source) (Some target) false
 
-let try_add_new_coercion_record id stre source =
-  try_add_new_coercion_core id stre (Some source) None false
+let try_add_new_identity_coercion id stre source target =
+  let ref = build_id_coercion (Some id) source in
+  try_add_new_coercion_core ref stre (Some source) (Some target) true
+
+let try_add_new_coercion_with_source ref stre source =
+  try_add_new_coercion_core ref stre (Some source) None false
 
 (* fonctions pour le discharge: plutot sale *)
 

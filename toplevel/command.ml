@@ -57,11 +57,12 @@ let constr_of_constr_entry ce =
     | Some t -> mkCast (ce.const_entry_body, t)
 
 let declare_global_definition ident ce n local =
-  declare_constant ident (ConstantEntry ce,n,false);
+  let sp = declare_constant ident (ConstantEntry ce,n,false) in
   if local then
     wARNING [< pr_id ident; 'sTR" is declared as a global definition" >];
   if is_verbose() then
-    message ((string_of_id ident) ^ " is defined")
+    message ((string_of_id ident) ^ " is defined");
+  ConstRef sp
 
 let definition_body_red red_option ident (local,n) com comtypeopt = 
   let ce = constant_entry_of_com (com,comtypeopt) in
@@ -71,11 +72,12 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
 	  let c = constr_of_constr_entry ce' in
-          declare_variable ident (SectionLocalDef c,n,false);
+          let sp = declare_variable ident (SectionLocalDef c,n,false) in
 	  if is_verbose() then message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
-                        'sTR" is not visible from current goals" >]
+                        'sTR" is not visible from current goals" >];
+	  VarRef sp
         end
 	else
 	  declare_global_definition ident ce' n true
@@ -95,13 +97,15 @@ let syntax_definition ident com =
 
 let parameter_def_var ident c =
   let c = interp_type Evd.empty (Global.env()) c in
-  declare_parameter (id_of_string ident) c;
-  if is_verbose() then message (ident ^ " is assumed")
+  let sp = declare_parameter (id_of_string ident) c in
+  if is_verbose() then message (ident ^ " is assumed");
+  sp
 
 let declare_global_assumption ident c =
-  parameter_def_var ident c;
+  let sp = parameter_def_var ident c in
   wARNING [< 'sTR ident; 'sTR" is declared as a parameter";
-             'sTR" because it is at a global level" >]
+             'sTR" because it is at a global level" >];
+  ConstRef sp
 
 let hypothesis_def_var is_refining ident n c =
   match n with
@@ -109,12 +113,13 @@ let hypothesis_def_var is_refining ident n c =
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
-          declare_variable (id_of_string ident)
-             (SectionLocalAssum t,n,false);
+          let sp = declare_variable (id_of_string ident)
+		     (SectionLocalAssum t,n,false) in
 	  if is_verbose() then message (ident ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
-                        'sTR" is not visible from current goals" >]
+                        'sTR" is not visible from current goals" >];
+	  VarRef sp
         end
 	else
 	  declare_global_assumption ident c
@@ -132,14 +137,14 @@ let minductive_message = function
 
 let recursive_message = function 
   | []  -> anomaly "no recursive definition"
-  | [x] -> [< pr_id x; 'sTR " is recursively defined">]
-  | l   -> hOV 0 [< prlist_with_sep pr_coma pr_id l;
+  | [sp] -> [< Printer.pr_global sp; 'sTR " is recursively defined">]
+  | l   -> hOV 0 [< prlist_with_sep pr_coma Printer.pr_global l;
 		    'sPC; 'sTR "are recursively defined">]
 
 let corecursive_message = function 
   | []  -> anomaly "no corecursive definition"
-  | [x] -> [< pr_id x; 'sTR " is corecursively defined">]
-  | l   -> hOV 0 [< prlist_with_sep pr_coma pr_id l;
+  | [x] -> [< Printer.pr_global x; 'sTR " is corecursively defined">]
+  | l   -> hOV 0 [< prlist_with_sep pr_coma Printer.pr_global l;
                     'sPC; 'sTR "are corecursively defined">]
 
 let interp_mutual lparams lnamearconstrs finite = 
@@ -250,8 +255,8 @@ let build_recursive lnameargsardef =
         (fun (env,arl) (recname,lparams,arityc,_) -> 
            let raw_arity = mkProdCit lparams arityc in
            let arity = interp_type sigma env0 raw_arity in
-           declare_variable recname
-	     (SectionLocalAssum arity, NeverDischarge, false);
+           let _ = declare_variable recname
+	     (SectionLocalAssum arity, NeverDischarge, false) in
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
@@ -284,13 +289,13 @@ let build_recursive lnameargsardef =
 			recvec));
 	      const_entry_type = None } 
 	  in
-	  declare_constant fi (ConstantEntry ce, n, false);
-          declare (i+1) lf
-      | _ -> () 
+	  let sp = declare_constant fi (ConstantEntry ce, n, false) in
+          (ConstRef sp)::(declare (i+1) lf)
+      | _ -> [] 
     in 
     (* declare the recursive definitions *)
-    declare 0 lnamerec; 
-    if is_verbose() then pPNL(recursive_message lnamerec)
+    let lrefrec = declare 0 lnamerec in
+    if is_verbose() then pPNL(recursive_message lrefrec)
   end;
   (* The others are declared as normal definitions *)
   let var_subst id = (id, global_reference CCI id) in
@@ -299,7 +304,7 @@ let build_recursive lnameargsardef =
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ConstantEntry ce,n,false);
+	 let _ = declare_constant f (ConstantEntry ce,n,false) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -318,8 +323,8 @@ let build_corecursive lnameardef =
         (fun (env,arl) (recname,arityc,_) -> 
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
-           declare_variable recname
-	     (SectionLocalAssum arj.utj_val,NeverDischarge,false);
+           let _ = declare_variable recname
+	     (SectionLocalAssum arj.utj_val,NeverDischarge,false) in
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
@@ -353,12 +358,12 @@ let build_corecursive lnameardef =
 			     recvec));
 	      const_entry_type = None } 
 	  in
-          declare_constant fi (ConstantEntry ce,n,false);
-          declare (i+1) lf
-      | _        -> () 
+          let sp = declare_constant fi (ConstantEntry ce,n,false) in
+          (ConstRef sp) :: declare (i+1) lf
+      | _        -> [] 
     in 
-    declare 0 lnamerec; 
-    if is_verbose() then pPNL(corecursive_message lnamerec)
+    let lrefrec = declare 0 lnamerec in
+    if is_verbose() then pPNL(corecursive_message lrefrec)
   end;
   let var_subst id = (id, global_reference CCI id) in
   let _ = 
@@ -366,7 +371,7 @@ let build_corecursive lnameardef =
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ConstantEntry ce,n,false);
+	 let _ = declare_constant f (ConstantEntry ce,n,false) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -397,12 +402,13 @@ let build_scheme lnamedepindsort =
   in
   let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
-  let rec declare decl fi =
-    let ce = { const_entry_body = decl; const_entry_type = None } 
-    in declare_constant fi (ConstantEntry ce,n,false)
+  let rec declare decl fi lrecref =
+    let ce = { const_entry_body = decl; const_entry_type = None } in
+    let sp = declare_constant fi (ConstantEntry ce,n,false) in
+    ConstRef sp :: lrecref
   in 
-  List.iter2 declare listdecl lrecnames; 
-  if is_verbose() then pPNL(recursive_message lrecnames)
+  let lrecref = List.fold_right2 declare listdecl lrecnames [] in
+  if is_verbose() then pPNL(recursive_message lrecref)
 
 let start_proof_com sopt stre com =
   let env = Global.env () in
@@ -428,9 +434,9 @@ let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
   begin match strength with
     | DischargeAt disch_sp when Lib.is_section_p disch_sp ->
 	let c = constr_of_constr_entry const in
-	declare_variable id (SectionLocalDef c,strength,opacity)
+	let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
     | NeverDischarge | DischargeAt _ ->
-        declare_constant id (ConstantEntry const,strength,opacity)
+        let _ = declare_constant id (ConstantEntry const,strength,opacity)in ()
     | NotDeclare -> apply_tac_not_declare id pft tpo
   end;
   if not (strength = NotDeclare) then

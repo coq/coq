@@ -19,7 +19,7 @@ type auto_tactic =
   | ERes_pf    of constr * unit clausenv    (* Hint EApply *)
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
-  | Unfold_nth of constr                    (* Hint Unfold *)
+  | Unfold_nth of global_reference          (* Hint Unfold *)
   | Extern     of Coqast.t (* Hint Extern *)
 
 open Rawterm

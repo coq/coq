@@ -34,7 +34,7 @@ type auto_tactic =
   | ERes_pf    of constr * unit clausenv (* Hint EApply *)
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
-  | Unfold_nth of constr                 (* Hint Unfold *)
+  | Unfold_nth of global_reference       (* Hint Unfold *)
   | Extern of Coqast.t                   (* Hint Extern *) 
 
 type pri_auto_tactic = { 
@@ -265,20 +265,17 @@ let add_resolves env sigma clist dbnames =
 	    )))
     dbnames
 
-(* REM : in most cases hintname = id *)
+let global qid =
+  try Nametab.locate qid
+  with Not_found -> Pretype_errors.error_global_not_found_loc dummy_loc qid
 
-let make_unfold (hintname, id) =
-  let hdconstr = 
-    (try 
-       Declare.global_reference CCI id
-     with Not_found -> 
-       errorlabstrm  "make_unfold" [<pr_id id; 'sTR " not declared" >])
-  in 
-  (head_of_constr_reference hdconstr, 
+(* REM : in most cases hintname = id *)
+let make_unfold (hintname, ref) =
+  (Pattern.label_of_ref ref,
    { hname = hintname;
      pri = 4;
      pat = None;
-     code = Unfold_nth hdconstr })
+     code = Unfold_nth ref })
 
 let add_unfolds l dbnames =
   List.iter 
@@ -329,11 +326,14 @@ let _ =
   vinterp_add
     "HintUnfold"
     (function 
-       | [ VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_IDENTIFIER id] ->
+       | [ VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_QUALID qid] ->
 	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function VARG_IDENTIFIER i -> string_of_id i
-		      	 | _ -> bad_vernac_args "HintUnfold") l in
-      	   fun () -> add_unfolds [(hintname, id)] dbnames
+	     List.map
+	       (function VARG_IDENTIFIER i -> string_of_id i
+		  | _ -> bad_vernac_args "HintUnfold") l in
+      	   fun () -> 
+	     let ref = global qid in
+	     add_unfolds [(hintname, ref)] dbnames
        | _-> bad_vernac_args "HintUnfold")
     
 let _ = 
@@ -365,22 +365,22 @@ let _ =
   vinterp_add
     "HintConstructors"
     (function 
-       | [VARG_IDENTIFIER idr; VARG_VARGLIST l; VARG_IDENTIFIER c] ->
+       | [VARG_IDENTIFIER idr; VARG_VARGLIST l; VARG_QUALID qid] ->
 	   begin 
 	     try
 	       let env = Global.env() and sigma = Evd.empty in
-	       let trad = Declare.global_reference CCI in
-	       let rectype = destMutInd (trad c) in
+	       let rectype = destMutInd (Declare.global_qualified_reference qid) in
 	       let consnames = 
 		 mis_consnames (Global.lookup_mind_specif rectype) in
 	       let lcons = 
-		 array_map_to_list (fun id -> (id, trad id)) consnames in
+		 array_map_to_list
+		   (fun id -> (id, Declare.global_reference CCI id)) consnames in
 	       let dbnames = if l = [] then ["core"] else 
 	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
 			     | _ -> bad_vernac_args "HintConstructors") l in
     	       fun () -> add_resolves env sigma lcons dbnames
 	     with Invalid_argument("mind_specif_of_mind") -> 
-	       error ((string_of_id c) ^ " is not an inductive type")
+	       error ((string_of_qualid qid) ^ " is not an inductive type")
 	   end 
        | _ -> bad_vernac_args "HintConstructors")
     
@@ -405,10 +405,18 @@ let _ =
        | (VARG_VARGLIST l)::lh ->
 	   let env = Global.env() and sigma = Evd.empty in
  	   let lhints = 
-	     List.map (function
-			 | VARG_IDENTIFIER i -> 
-			     (i, Declare.global_reference CCI i)
-		      	 | _-> bad_vernac_args "HintsResolve") lh in
+	     List.map
+	       (function
+		  | VARG_QUALID qid -> 
+		      let c =
+			try Declare.global_qualified_reference qid
+		        with Not_found -> 
+			  errorlabstrm "global_reference"
+			    [<'sTR ("Cannot find reference "
+				    ^(string_of_qualid qid))>] in
+		      let _,i = repr_qualid qid in
+		      (id_of_string i, c)
+		  | _-> bad_vernac_args "HintsResolve") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _-> bad_vernac_args "HintsResolve") l in
@@ -422,7 +430,9 @@ let _ =
        | (VARG_VARGLIST l)::lh ->
 	   let lhints = 
 	     List.map (function
-			 | VARG_IDENTIFIER i -> (i, i)
+			 | VARG_QUALID qid ->
+			     let _,n = repr_qualid qid in
+			     (id_of_string n, global qid)
 		      	 | _ -> bad_vernac_args "HintsUnfold") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
@@ -438,8 +448,10 @@ let _ =
        | (VARG_VARGLIST l)::lh ->
 	   let lhints = 
 	     List.map (function
-			 | VARG_IDENTIFIER i -> 
-			     (i, Declare.global_reference CCI i)
+			 | VARG_QUALID qid -> 
+			     let _,n = repr_qualid qid in
+			     (id_of_string n,
+			      Declare.global_qualified_reference qid)
 		      	 | _ -> bad_vernac_args "HintsImmediate") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
@@ -458,7 +470,7 @@ let fmt_autotactic = function
   | Give_exact c -> [< 'sTR"Exact " ; prterm c >]
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
       [< 'sTR"Apply "; prterm c ; 'sTR" ; Trivial" >]
-  | Unfold_nth c -> [< 'sTR"Unfold " ;  prterm c >]
+  | Unfold_nth c -> [< 'sTR"Unfold " ;  pr_global c >]
   | Extern coqast -> [< 'sTR "Extern "; gentacpr coqast >]
 
 let fmt_hint_list hintlist =

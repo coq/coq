@@ -105,7 +105,10 @@ let show_top_evars () =
   mSG (pr_evars_int 1 (Evd.non_instantiated sigma))
 
 (* Locate commands *)
- 
+let global loc qid =
+  try Nametab.locate qid
+  with Not_found -> Pretype_errors.error_global_not_found_loc loc qid
+
 let locate_file f =
   try
     let _,file = System.where_in_path (get_load_path()) f in
@@ -829,7 +832,7 @@ let _ =
                            'sPC; 'sTR "failed";
                            'sTR "... converting to Axiom" >];
                   delete_proof s;
-                  parameter_def_var (string_of_id s) com
+                  let _ = parameter_def_var (string_of_id s) com in ()
            	end else 
 		  errorlabstrm "Vernacentries.TheoremProof"
                     [< 'sTR "checking of theorem "; pr_id s; 'sPC;
@@ -864,14 +867,16 @@ let _ =
              | _       -> anomaly "Unexpected string"
 	   in 
 	   fun () ->
-	     definition_body_red red_option id (local,stre) c typ_opt;
+	     let ref =
+	       definition_body_red red_option id (local,stre) c typ_opt in
              if coe then begin
-	       Class.try_add_new_coercion id stre;
+	       Class.try_add_new_coercion ref stre;
                if not (is_silent()) then
 		 message ((string_of_id id) ^ " is now a coercion")
 	     end;
-	     if idcoe then 
-	       Class.try_add_new_coercion_subclass id stre;
+	     if idcoe then
+	       let cl = Class.class_of_ref ref in
+	       Class.try_add_new_coercion_subclass cl stre;
              (***TODO if objdef then Recordobj.objdef_declare id ***)
        | _ -> bad_vernac_args "DEFINITION")
 
@@ -896,10 +901,11 @@ let _ =
 	       (fun (sl,c) -> 
 		  List.iter 
 		    (fun s ->
-                       hypothesis_def_var (refining()) (string_of_id s) 
-			 stre c;
+                       let ref = 
+			 hypothesis_def_var 
+			   (refining()) (string_of_id s) stre c in
                        if coe then
-			 Class.try_add_new_coercion s stre)
+			 Class.try_add_new_coercion ref stre)
                     sl)
 	       slcl
        | _ -> bad_vernac_args "VARIABLE")
@@ -915,7 +921,7 @@ let _ =
 	       (fun (sl,c) ->
 		  List.iter 
 		    (fun s -> 
-		       parameter_def_var (string_of_id s) c)
+		       let _ = parameter_def_var (string_of_id s) c in ())
 		    sl)
                slcl
        | _ -> bad_vernac_args "PARAMETER")
@@ -991,12 +997,7 @@ let _ =
     (function 
        | (VARG_QUALID qid) :: l ->
 	   (fun () ->
-	      let ref =
-		try 
-		  Nametab.locate qid
-		with Not_found ->
-		  Pretype_errors.error_global_not_found_loc loc qid
-	      in 
+	      let ref = global dummy_loc qid in
 	      Search.search_by_head ref (inside_outside l))
        | _ -> bad_vernac_args "SEARCH")
 
@@ -1277,7 +1278,7 @@ let _ =
 let _ =
   add "CLASS"
     (function 
-       | [VARG_STRING kind;VARG_IDENTIFIER id] -> 
+       | [VARG_STRING kind; VARG_QUALID qid] -> 
 	   let stre = 
 	     if kind = "LOCAL" then 
 	       make_strength_0()
@@ -1285,16 +1286,23 @@ let _ =
 	       NeverDischarge 
 	   in
 	   fun () -> 
-	     Class.try_add_new_class id stre;
+	     let ref = global dummy_loc qid in
+	     Class.try_add_new_class ref stre;
              if not (is_silent()) then
-               message ((string_of_id id) ^ " is now a class")
+               message ((string_of_qualid qid) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
+
+let cl_of_qualid qid =
+  match repr_qualid qid with
+    | [], "FUNCLASS" -> Classops.CL_FUN
+    | [], "SORTCLASS" -> Classops.CL_SORT
+    | _ -> Class.class_of_ref (global dummy_loc qid)	
 
 let _ =
   add "COERCION"
     (function 
        | [VARG_STRING kind;VARG_STRING identity;
-          VARG_IDENTIFIER id;VARG_IDENTIFIER ids;VARG_IDENTIFIER idt] -> 
+          VARG_QUALID qid;VARG_QUALID qids;VARG_QUALID qidt] -> 
 	   let stre = 
 	     if (kind = "LOCAL") then 
 	       make_strength_0()
@@ -1302,10 +1310,19 @@ let _ =
 	       NeverDischarge 
 	   in
 	   let isid = identity = "IDENTITY" in
-	   fun () -> 
-	     Class.try_add_new_coercion_with_target id stre ids idt isid;
+	   let target = cl_of_qualid qidt in
+	   let source = cl_of_qualid qids in
+	   fun () ->
+	     if isid then match repr_qualid qid with
+	       | [], s ->
+		   let id = id_of_string s in
+		   Class.try_add_new_identity_coercion id stre source target
+	       | _ -> bad_vernac_args "COERCION"
+	     else
+	       let ref = global dummy_loc qid in
+	       Class.try_add_new_coercion_with_target ref stre source target;
              if not (is_silent()) then
-	       message ((string_of_id id) ^ " is now a coercion")
+	       message ((string_of_qualid qid) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 
 let _ =

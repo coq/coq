@@ -7,14 +7,16 @@ open Term
 open Declare
 (*i*)
 
-(* Declaration functions. The following functions take ASTs, transform them
-   into [constr] and then call the corresponding functions of [Declare]. *)
+(*s Declaration functions. The following functions take ASTs,
+   transform them into [constr] and then call the corresponding
+   functions of [Declare]; they return an absolute reference to the
+   defined object *)
 
 val definition_body : identifier -> bool * strength -> 
-  Coqast.t -> Coqast.t option -> unit
+  Coqast.t -> Coqast.t option -> global_reference
 
-val definition_body_red : Tacred.red_expr option ->  
-  identifier -> bool * strength -> Coqast.t -> Coqast.t option -> unit
+val definition_body_red : Tacred.red_expr option -> identifier
+  -> bool * strength -> Coqast.t -> Coqast.t option -> global_reference
 
 val syntax_definition : identifier -> Coqast.t -> unit
 
@@ -22,9 +24,10 @@ val syntax_definition : identifier -> Coqast.t -> unit
 val abstraction_definition : identifier -> int array -> Coqast.t -> unit
 i*)
 
-val hypothesis_def_var : bool -> string -> strength -> Coqast.t -> unit
+val hypothesis_def_var : bool -> string -> strength -> Coqast.t
+  -> global_reference
 
-val parameter_def_var : string -> Coqast.t -> unit
+val parameter_def_var : string -> Coqast.t -> constant_path
 
 val build_mutual : 
   (identifier * Coqast.t) list -> 
