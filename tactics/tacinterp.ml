@@ -369,12 +369,12 @@ let intern_global_reference ist = function
 let intern_tac_ref ist = function
   | Ident (loc,id) when find_ltacvar id ist -> ArgVar (loc,id)
   | Ident (loc,id) ->
-      ArgArg
-        (try find_recvar id ist 
+      ArgArg (loc,
+         try find_recvar id ist 
          with Not_found -> locate_tactic (make_short_qualid id))
   | r -> 
       let (loc,qid) = qualid_of_reference r in
-      ArgArg (locate_tactic qid)
+      ArgArg (loc,locate_tactic qid)
 
 let intern_tactic_reference ist r =
   try intern_tac_ref ist r
@@ -726,8 +726,8 @@ and intern_tacarg strict ist = function
       let id = id_of_string s in
       if find_ltacvar id ist then Reference (ArgVar (dummy_loc,strip_meta id))
       else error_syntactic_metavariables_not_allowed loc
-  | TacCall (_loc,f,l) ->
-      TacCall (_loc,
+  | TacCall (loc,f,l) ->
+      TacCall (loc,
         intern_tactic_reference ist f,
         List.map (intern_tacarg !strict_check ist) l)
   | Tacexp t -> Tacexp (intern_tactic ist t)
@@ -1280,8 +1280,8 @@ and eval_tactic ist = function
 
 and interp_ltac_reference isapplied ist gl = function
   | ArgVar (loc,id) -> unrec (List.assoc id ist.lfun)
-  | ArgArg qid ->
-      let v = val_interp {lfun=[];lmatch=[];debug=ist.debug} gl (lookup qid) in
+  | ArgArg (loc,r) ->
+      let v = val_interp {lfun=[];lmatch=[];debug=ist.debug} gl (lookup r) in
       if isapplied then v else locate_tactic_call loc v
 
 and interp_tacarg ist gl = function

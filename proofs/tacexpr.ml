@@ -245,7 +245,7 @@ type glob_tactic_expr =
      constr_pattern,
      evaluable_global_reference and_short_name or_var or_metanum,
      inductive or_var or_metanum,
-     ltac_constant or_var,
+     ltac_constant located or_var,
      identifier located,
      glob_tactic_expr) gen_tactic_expr
 
@@ -254,7 +254,7 @@ type glob_atomic_tactic_expr =
      constr_pattern,
      evaluable_global_reference and_short_name or_var or_metanum,
      inductive or_var or_metanum,
-     ltac_constant or_var,
+     ltac_constant located or_var,
      identifier located,
      glob_tactic_expr) gen_atomic_tactic_expr
 
@@ -263,7 +263,7 @@ type glob_tactic_arg =
      constr_pattern,
      evaluable_global_reference and_short_name or_var or_metanum,
      inductive or_var or_metanum,
-     ltac_constant or_var,
+     ltac_constant located or_var,
      identifier located,
      glob_tactic_expr) gen_tactic_arg
 

@@ -519,7 +519,7 @@ let rec glob_printers =
      Printer.pr_pattern,
      pr_or_metanum (pr_or_var (pr_and_short_name pr_evaluable_reference)),
      (fun vars -> pr_or_var (pr_inductive vars)),
-     pr_or_var pr_ltac_constant,
+     pr_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,
      Pptactic.pr_glob_extend)
 
