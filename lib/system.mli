@@ -28,6 +28,9 @@ val find_file_in_path : string -> string
   and a suffix. The intern functions raise the exception [Bad_magic_number]
   when the check fails, with the full file name. *)
 
+val marshal_out : out_channel -> 'a -> unit
+val marshal_in : in_channel -> 'a
+
 exception Bad_magic_number of string
 
 val raw_extern_intern : int -> string -> 

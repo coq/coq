@@ -101,13 +101,15 @@ let try_remove f =
   with _ -> mSGNL [< 'sTR"Warning: " ; 'sTR"Could not remove file " ;
                      'sTR f ; 'sTR" which is corrupted !!" >]
 
+let marshal_out ch v = Marshal.to_channel ch v [Marshal.Closures]
+let marshal_in ch = Marshal.from_channel ch
+
 exception Bad_magic_number of string
 
 let (raw_extern_intern :
      int -> string -> 
        (string -> string * out_channel) * (string -> string * in_channel))
   = fun magic suffix ->
-
     let extern_state name = 
       let (_,channel) as filec =
 	open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
@@ -125,13 +127,12 @@ let (raw_extern_intern :
 let (extern_intern :
      int -> string -> (string -> 'a -> unit) * (string -> 'a))
   = fun magic suffix ->
-
     let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
     let extern_state name val_0 = 
       try
 	let (fname,channel) = raw_extern name in
       	try
-          output_value channel val_0;
+          marshal_out channel val_0;
           close_out channel
       	with e -> 
 	  begin try_remove fname; raise e end
@@ -140,7 +141,7 @@ let (extern_intern :
   and intern_state name = 
     try
       let (fname,channel) = raw_intern name in
-      let v = input_value channel in
+      let v = marshal_in channel in
       close_in channel; 
       v
     with Sys_error s -> error("System error: " ^ s)

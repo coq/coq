@@ -58,7 +58,7 @@ let fprint_recipe = function
   | None -> [< 'sTR"<uncookable>" >]
 
 let print_typed_recipe (val_0,typ) =
-  [< print_recipe val_0 ; 'fNL ; 'sTR "     : "; prtype typ ; 'fNL >]
+  [< print_recipe val_0; 'fNL; 'sTR "     : "; prtype typ; 'fNL >]
 
 let print_impl_args = function
   | []  -> [<>]
@@ -215,66 +215,74 @@ let print_extracted_mutual sp =
 	print_mutual fwsp (Global.lookup_mind fwsp)
     | Some a -> fprterm a
 
-let print_leaf_entry with_values sep (spopt,lobj) =
+let print_variable sp =
+  let (name,typ,_,_) = out_variable sp in
+  let l = implicits_of_var (kind_of_path sp) name in
+  [< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
+
+let print_constant with_values sep sp =
+  let cb = Global.lookup_constant sp in
+  if kind_of_path sp = CCI then
+    let val_0 = cb.const_body in
+    let typ = cb.const_type in
+    let l = constant_implicits sp in
+    hOV 0 [< (match val_0 with 
+		| None -> 
+		    [< 'sTR"*** [ "; 
+		       'sTR (print_basename (ccisp_of sp));  
+		       'sTR " : "; 'cUT ; prtype typ ; 'sTR" ]"; 'fNL >]
+		| _ -> 
+		    [< 'sTR(print_basename (ccisp_of sp)) ; 
+		       'sTR sep; 'cUT ;
+		       if with_values then 
+			 print_typed_recipe (val_0,typ) 
+		       else 
+			 [< prtype typ ; 'fNL >] >]); 
+	     print_impl_args (list_of_implicits l); 'fNL >]
+  else
+    hOV 0 [< 'sTR"Fw constant " ; 
+	     'sTR (print_basename (fwsp_of sp)) ; 'fNL>]
+
+let print_inductive sp =
+  let mib = Global.lookup_mind sp in
+  if kind_of_path sp = CCI then
+    [< print_mutual sp mib; 'fNL >]
+  else
+    hOV 0 [< 'sTR"Fw inductive definition "; 
+	     'sTR (print_basename (fwsp_of sp)); 'fNL >]
+
+let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
-  match (spopt,tag) with
+  match (sp,tag) with
     | (_,"VARIABLE") ->
-	let (name,typ,_,_) = out_variable spopt in
-	let l = implicits_of_var (kind_of_path spopt) name in
-	[< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
- 
-    | (sp,("CONSTANT"|"PARAMETER")) ->
-	let cb = Global.lookup_constant sp in
-	if kind_of_path sp = CCI then
-	  let val_0 = cb.const_body in
-	  let typ = cb.const_type in
-	  let l = constant_implicits sp in
-	  hOV 0 [< (match val_0 with 
-		      | None -> 
-			  [< 'sTR"*** [ "; 
-			     'sTR (print_basename (ccisp_of sp));  
-			     'sTR " : "; 'cUT ; prtype typ ; 'sTR" ]"; 'fNL >]
-		      | _ -> 
-			  [< 'sTR(print_basename (ccisp_of sp)) ; 
-			     'sTR sep; 'cUT ;
-			     if with_values then 
-			       print_typed_recipe (val_0,typ) 
-			     else 
-			       [< prtype typ ; 'fNL >] >]); 
-		   print_impl_args (list_of_implicits l); 'fNL >]
-	else
-	  hOV 0 [< 'sTR"Fw constant " ; 
-		   'sTR (print_basename (fwsp_of sp)) ; 'fNL>]
-
-    | (sp,"INDUCTIVE") ->
-	let mib = Global.lookup_mind sp in
-	if kind_of_path sp = CCI then
-	  [< print_mutual sp mib; 'fNL >]
-	else
-	  hOV 0 [< 'sTR"Fw inductive definition " ; 
-		   'sTR (print_basename (fwsp_of sp)) ; 'fNL >]
-
-    | (_,"AUTOHINT") -> [< 'sTR" Add Auto Marker" ; 'fNL >]
-
-    | (_,"GRAMMAR") -> [< 'sTR" Grammar Marker" ; 'fNL >]
-
-    | (sp,"SYNTAXCONSTANT") -> 
+	print_variable sp
+    | (_,("CONSTANT"|"PARAMETER")) ->
+	print_constant with_values sep sp
+    | (_,"INDUCTIVE") ->
+	print_inductive sp
+    | (_,"AUTOHINT") -> 
+	[< 'sTR" Add Auto Marker"; 'fNL >]
+    | (_,"GRAMMAR") -> 
+	[< 'sTR" Grammar Marker"; 'fNL >]
+    | (_,"SYNTAXCONSTANT") -> 
 	let id = basename sp in
-        [< 'sTR" Syntax Macro " ; 
+        [< 'sTR" Syntax Macro "; 
       	   print_id id ; 'sTR sep;  
            if with_values then 
              let c = Syntax_def.search_syntactic_definition id in 
 	     [< prrawterm c >]
            else [<>]; 'fNL >]
-	
-    | (_,"PPSYNTAX") -> [< 'sTR" Syntax Marker" ; 'fNL >]
-
-    | (_,"TOKEN") -> [< 'sTR" Token Marker" ; 'fNL >]
-
-    | (_,"CLASS") -> [< 'sTR" Class Marker" ; 'fNL >]
-    | (_,"COERCION") -> [< 'sTR" Coercion Marker" ; 'fNL >]
-    | (sp,s) -> [< 'sTR(string_of_path sp) ; 'sTR" : " ;
-                   'sTR"Unrecognized object " ; 'sTR s ; 'fNL >]
+    | (_,"PPSYNTAX") -> 
+	[< 'sTR" Syntax Marker"; 'fNL >]
+    | (_,"TOKEN") -> 
+	[< 'sTR" Token Marker"; 'fNL >]
+    | (_,"CLASS") -> 
+	[< 'sTR" Class Marker"; 'fNL >]
+    | (_,"COERCION") -> 
+	[< 'sTR" Coercion Marker"; 'fNL >]
+    | (_,s) -> 
+	[< 'sTR(string_of_path sp); 'sTR" : ";
+           'sTR"Unrecognized object "; 'sTR s; 'fNL >]
 
 let rec print_library_entry with_values ent = 
   let sep = if with_values then " = " else " : " in 
@@ -282,7 +290,9 @@ let rec print_library_entry with_values ent =
     | (sp,Lib.Leaf lobj) -> 
 	[< print_leaf_entry with_values sep (sp,lobj) >]
     | (_,Lib.OpenedSection (str,_)) -> 
-        [< 'sTR(" >>>>>>> Section " ^ str) ; 'fNL >]
+        [< 'sTR(" >>>>>>> Section " ^ str); 'fNL >]
+    | (_,Lib.Module str) ->
+	[< 'sTR(" >>>>>>> Module " ^ str); 'fNL >]
     | (_,Lib.FrozenState _) ->
 	[< >]
 	
@@ -374,7 +384,7 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
                crible_rec rest
 	   | _ -> crible_rec rest)
 
-    | (_, (Lib.OpenedSection _ | Lib.FrozenState _))::rest -> 
+    | (_, (Lib.OpenedSection _ | Lib.FrozenState _ | Lib.Module _))::rest -> 
 	crible_rec rest
     | []      -> ()
   in 
@@ -429,10 +439,19 @@ let print_name name =
   with 
     | Not_found -> 
 	(try 
-	   let (_,typ) = Global.lookup_var name in 
-	   [< print_var str typ;
-              try print_impl_args (implicits_of_var CCI name)
-              with _ -> [<>] >]
+	   (match Declare.global_reference CCI name with
+	      | VAR _ ->
+		  let (_,typ) = Global.lookup_var name in 
+		  [< print_var str typ;
+		     try print_impl_args (implicits_of_var CCI name)
+		     with _ -> [<>] >]
+	      | DOPN(Const sp,_) ->
+		  print_constant true " = " sp
+	      | DOPN(MutInd (sp,_),_) ->
+		  print_inductive sp
+	      | DOPN (MutConstruct((sp,_),_),_) ->
+		  print_inductive sp
+	      | _ -> assert false)
 	 with Not_found | Invalid_argument _ -> 
 	   error (str ^ " not a defined object"))
     | Invalid_argument _ -> error (str ^ " not a defined object")

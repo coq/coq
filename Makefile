@@ -39,6 +39,9 @@ DEPFLAGS=$(LOCALINCLUDES)
 CAMLP4EXTEND=camlp4o $(INCLUDES) pa_extend.cmo
 OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
+CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
+
+COQINCLUDES=
 
 ###########################################################################
 # Objects files 
@@ -117,8 +120,9 @@ CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 ###########################################################################
 
 COQMKTOP=scripts/coqmktop
+COQC=scripts/coqc
 
-world: $(COQMKTOP) coqtop.byte coqtop.opt states tools
+world: $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt states tools
 
 coqtop.opt: $(COQMKTOP) $(CMX)
 	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop.opt
@@ -131,7 +135,8 @@ coqtop.byte: $(COQMKTOP) $(CMO) Makefile
 COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
 
 $(COQMKTOP): $(COQMKTOPCMO)
-	$(OCAMLC) $(BYTEFLAGS) -o $(COQMKTOP) -custom str.cma unix.cma $(COQMKTOPCMO) $(OSDEPLIBS) $(STRLIB)
+	$(OCAMLC) $(BYTEFLAGS) -o $(COQMKTOP) -custom str.cma unix.cma \
+          $(COQMKTOPCMO) $(OSDEPLIBS) $(STRLIB)
 
 scripts/tolink.ml: Makefile
 	echo "let lib = \""$(LIB)"\"" > $@
@@ -145,6 +150,17 @@ scripts/tolink.ml: Makefile
 	echo "let hightactics = \""$(HIGHTACTICS)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
+
+# coqc
+
+COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
+
+$(COQC): $(COQCCMO)
+	$(OCAMLC) $(BYTEFLAGS) -o $(COQC) -custom unix.cma $(COQCCMO) \
+	  $(OSDEPLIBS)
+
+scripts/coqc.cmo: scripts/coqc.ml4
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4IFDEF) -impl" -impl $<
 
 # we provide targets for each subdirectories
 
@@ -178,6 +194,8 @@ COQDEPCMX= config/coq_config.cmx tools/coqdep_lexer.cmx tools/coqdep.cmx
 tools/coqdep: $(COQDEPCMX)
 	$(OCAMLOPT) $(OPTFLAGS) -o tools/coqdep unix.cmxa $(COQDEPCMX) \
           $(OSDEPLIBS)
+
+beforedepend:: tools/coqdep
 
 GALLINACMX=tools/gallina_lexer.cmx tools/gallina.cmx
 
@@ -321,8 +339,6 @@ beforedepend:: parsing/pcoq.ml parsing/extend.ml
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
-CAMLP4IFDEF=camlp4o pa_ifdef.cmo
-
 toplevel/mltop.cmo: toplevel/mltop.ml4
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4IFDEF) -DByte -impl" -impl $<
 toplevel/mltop.cmx: toplevel/mltop.ml4
@@ -332,7 +348,7 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 # Default rules
 ###########################################################################
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4 .el .elc
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4 .v .vo .el .elc
 
 .ml.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -c $<
@@ -351,6 +367,9 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 
 .ml4.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+
+.v.vo:
+	$(COQC) $(COQCINCLUDES) $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile

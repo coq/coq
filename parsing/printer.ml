@@ -33,9 +33,10 @@ let with_implicits f x =
     Termast.print_implicits := oimpl; raise e
 
 let pr_qualified sp id = 
-  if Nametab.sp_of_id (kind_of_path sp) id = sp
-  then [< 'sTR(string_of_id id) >]
-  else [< 'sTR(string_of_path sp) >]
+  if Nametab.sp_of_id (kind_of_path sp) id = sp then 
+    [< 'sTR(string_of_id id) >]
+  else 
+    [< 'sTR(string_of_path sp) >]
 
 let pr_constant sp = pr_qualified sp (basename sp)
 
@@ -205,7 +206,7 @@ let dbenv_it_with f env e =
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_sign sign =
   hV 0 [< (sign_it_with (fun id t sign pps ->
-                           [<  pps ; 'wS 2 ; print_decl CCI sign (id,t) >])
+                           [< pps; 'wS 2; print_decl CCI sign (id,t) >])
              sign) [< >] >]
 
 (* Prints an env (variables and de Bruijn). Separator: newline *)
@@ -213,13 +214,13 @@ let pr_env k env =
   let sign_env =
     sign_it_with
       (fun id t sign pps ->
-         let pidt =  print_decl k sign (id,t) in [<  pps ; 'fNL ; pidt >])
+         let pidt =  print_decl k sign (id,t) in [< pps; 'fNL; pidt >])
       (get_globals env) [< >] 
   in
   let db_env =
     dbenv_it_with 
       (fun na t env pps ->
-         let pnat = print_binding k env (na,t) in [<  pps ; 'fNL ; pnat >])
+         let pnat = print_binding k env (na,t) in [< pps; 'fNL; pnat >])
       env [< >]
   in 
   [< sign_env; db_env >]
@@ -251,7 +252,7 @@ let pr_env_limit n env =
       dbenv_it_with
         (fun na t env pps ->
            let pnat = print_binding CCI env (na,t) in
-	   [< pps ; 'fNL ;
+	   [< pps; 'fNL;
 	      'sTR (emacs_str (String.make 1 (Char.chr 253)));
 	      pnat >])
         env [< >]

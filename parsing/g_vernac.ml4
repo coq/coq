@@ -341,6 +341,10 @@ GEXTEND Gram
       | IDENT "Section"; id = identarg; "." -> <:ast< (BeginSection $id) >>
       | IDENT "Chapter"; id = identarg; "." -> <:ast< (BeginSection $id) >>
       | IDENT "Module"; id = identarg; "." -> <:ast< (BeginModule $id) >>
+      | IDENT "Write"; IDENT "Module"; id = identarg; "." -> 
+	  <:ast< (WriteModule $id) >>
+      | IDENT "Write"; IDENT "Module"; id = identarg; s = stringarg; "." -> 
+	  <:ast< (WriteModule $id $s) >>
       | IDENT "Begin"; IDENT "Silent"; "." -> <:ast< (BeginSilent) >>
       | IDENT "End"; IDENT "Silent"; "." -> <:ast< (EndSilent) >>
       | IDENT "End"; id = identarg; "." -> <:ast< (EndSection $id) >>

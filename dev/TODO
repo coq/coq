@@ -1,9 +1,10 @@
 
- o Lib
-     - écrire une fonction d'export qui supprimme les FrozenState,
-       vérifie qu'il n'y a pas de section ouverte, et présente les
-       déclarations dans l'ordre chronologique (y compris dans les
-       sections fermées ?). A utiliser dans Library pour sauver un module.
+ o options de la ligne de commande
+     - reporter les options de l'ancien script coqtop sur le nouveau coqtop.ml
+
+ o arguments implicites
+     - les calculer une fois pour toutes à la déclaration (dans Declare)
+       et stocker cette information dans le in_variable, in_constant, etc.
 
  o configure
      - il faut tester la version du programme correspondant à $bytecamlc

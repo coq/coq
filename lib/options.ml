@@ -15,7 +15,7 @@ let emacs_str s = if !print_emacs then s else ""
 let silent = ref false
 let make_silent flag = silent := flag; ()
 let is_silent () = !silent
-let verbose () = not !silent
+let is_verbose () = not !silent
 
 let silently f x =
   let oldsilent = !silent in
