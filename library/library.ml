@@ -402,13 +402,17 @@ let cache_require (_,(modref,export)) =
   if export then m.module_exported <- true;
   open_module false m.module_name
 
+  (* keeps the require marker for closed section replay but removes
+     OS dependent fields from .vo files for cross-platform compatibility *)
+let export_require ((a,b,_),e) = Some ((a,b,""),e)
+
 let (in_require, out_require) =
   declare_object
     ("REQUIRE",
      { cache_function = cache_require;
        load_function = (fun _ -> ());
        open_function = (fun _ -> ());
-       export_function = (fun i -> Some i) })
+       export_function = export_require })
   
 let require_module spec qid fileopt export =
 (* Trop contraignant
