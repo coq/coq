@@ -1,10 +1,9 @@
-newtheories/Reals/TypeSyntax.vo: newtheories/Reals/TypeSyntax.v
-newtheories/Reals/Rdefinitions.vo: newtheories/Reals/Rdefinitions.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/TypeSyntax.vo
+newtheories/Reals/Rdefinitions.vo: newtheories/Reals/Rdefinitions.v newtheories/ZArith/ZArith_base.vo
 newtheories/Reals/Rsyntax.vo: newtheories/Reals/Rsyntax.v newtheories/Reals/Rdefinitions.vo
-newtheories/Reals/Raxioms.vo: newtheories/Reals/Raxioms.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/Rsyntax.vo newtheories/Reals/TypeSyntax.vo
+newtheories/Reals/Raxioms.vo: newtheories/Reals/Raxioms.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/Rsyntax.vo
 newtheories/Reals/RIneq.vo: newtheories/Reals/RIneq.v newtheories/Reals/Raxioms.vo newcontrib/ring/ZArithRing.vo newcontrib/omega/Omega.vo newcontrib/field/Field.vo
 newtheories/Reals/DiscrR.vo: newtheories/Reals/DiscrR.v newtheories/Reals/RIneq.vo newcontrib/omega/Omega.vo
-newtheories/Reals/Rbase.vo: newtheories/Reals/Rbase.v newtheories/Reals/Rdefinitions.vo newtheories/Reals/TypeSyntax.vo newtheories/Reals/Raxioms.vo newtheories/Reals/RIneq.vo newtheories/Reals/DiscrR.vo
+newtheories/Reals/Rbase.vo: newtheories/Reals/Rbase.v newtheories/Reals/Rdefinitions.vo newtheories/Reals/Raxioms.vo newtheories/Reals/RIneq.vo newtheories/Reals/DiscrR.vo
 newtheories/Reals/R_Ifp.vo: newtheories/Reals/R_Ifp.v newtheories/Reals/Rbase.vo newcontrib/omega/Omega.vo
 newtheories/Reals/Rbasic_fun.vo: newtheories/Reals/Rbasic_fun.v newtheories/Reals/Rbase.vo newtheories/Reals/R_Ifp.vo newcontrib/fourier/Fourier.vo
 newtheories/Reals/R_sqr.vo: newtheories/Reals/R_sqr.v newtheories/Reals/Rbase.vo newtheories/Reals/Rbasic_fun.vo
@@ -55,15 +54,12 @@ newtheories/Reals/Integration.vo: newtheories/Reals/Integration.v newtheories/Re
 newtheories/Reals/Reals.vo: newtheories/Reals/Reals.v newtheories/Reals/Rbase.vo newtheories/Reals/Rfunctions.vo newtheories/Reals/SeqSeries.vo newtheories/Reals/Rtrigo.vo newtheories/Reals/Ranalysis.vo newtheories/Reals/Integration.vo
 newtheories/Init/Notations.vo: newtheories/Init/Notations.v
 newtheories/Init/Datatypes.vo: newtheories/Init/Datatypes.v newtheories/Init/Notations.vo
-newtheories/Init/Peano.vo: newtheories/Init/Peano.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Datatypes.vo
+newtheories/Init/Peano.vo: newtheories/Init/Peano.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
 newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo
-newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
-newtheories/Init/LogicSyntax.vo: newtheories/Init/LogicSyntax.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo
-newtheories/Init/SpecifSyntax.vo: newtheories/Init/SpecifSyntax.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Specif.vo
-newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
-newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Datatypes.vo
-newtheories/Init/Logic_TypeSyntax.vo: newtheories/Init/Logic_TypeSyntax.v newtheories/Init/Notations.vo newtheories/Init/Logic_Type.vo
-newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Specif.vo newtheories/Init/SpecifSyntax.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
+newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
+newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo
+newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo
+newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
 newtheories/Logic/Hurkens.vo: newtheories/Logic/Hurkens.v
 newtheories/Logic/ProofIrrelevance.vo: newtheories/Logic/ProofIrrelevance.v newtheories/Logic/Hurkens.vo
 newtheories/Logic/Classical.vo: newtheories/Logic/Classical.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Set.vo
@@ -116,7 +112,7 @@ newtheories/ZArith/zarith_aux.vo: newtheories/ZArith/zarith_aux.v newtheories/Ar
 newtheories/ZArith/Zhints.vo: newtheories/ZArith/Zhints.v newtheories/ZArith/zarith_aux.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/Zmisc.vo newtheories/ZArith/Wf_Z.vo
 newtheories/ZArith/Zlogarithm.vo: newtheories/ZArith/Zlogarithm.v newtheories/ZArith/ZArith_base.vo newcontrib/omega/Omega.vo newtheories/ZArith/Zcomplements.vo newtheories/ZArith/Zpower.vo
 newtheories/ZArith/Zpower.vo: newtheories/ZArith/Zpower.v newtheories/ZArith/ZArith_base.vo newcontrib/omega/Omega.vo newtheories/ZArith/Zcomplements.vo
-newtheories/ZArith/Zcomplements.vo: newtheories/ZArith/Zcomplements.v newtheories/ZArith/ZArith_base.vo newcontrib/ring/ZArithRing.vo newcontrib/omega/Omega.vo newtheories/Arith/Wf_nat.vo newtheories/Lists/PolyList.vo
+newtheories/ZArith/Zcomplements.vo: newtheories/ZArith/Zcomplements.v newcontrib/ring/ZArithRing.vo newtheories/ZArith/ZArith_base.vo newcontrib/omega/Omega.vo newtheories/Arith/Wf_nat.vo newtheories/Lists/PolyList.vo
 newtheories/ZArith/Zdiv.vo: newtheories/ZArith/Zdiv.v newtheories/ZArith/ZArith_base.vo newcontrib/omega/Omega.vo newcontrib/ring/ZArithRing.vo newtheories/ZArith/Zcomplements.vo
 newtheories/ZArith/Zsqrt.vo: newtheories/ZArith/Zsqrt.v newtheories/ZArith/ZArith_base.vo newcontrib/ring/ZArithRing.vo newcontrib/omega/Omega.vo
 newtheories/ZArith/Zwf.vo: newtheories/ZArith/Zwf.v newtheories/ZArith/ZArith_base.vo newtheories/Arith/Wf_nat.vo newcontrib/omega/Omega.vo
@@ -182,13 +178,12 @@ newtheories/Wellfounded/Union.vo: newtheories/Wellfounded/Union.v newtheories/Re
 newtheories/Wellfounded/Wellfounded.vo: newtheories/Wellfounded/Wellfounded.v newtheories/Wellfounded/Disjoint_Union.vo newtheories/Wellfounded/Inclusion.vo newtheories/Wellfounded/Inverse_Image.vo newtheories/Wellfounded/Lexicographic_Exponentiation.vo newtheories/Wellfounded/Lexicographic_Product.vo newtheories/Wellfounded/Transitive_Closure.vo newtheories/Wellfounded/Union.vo newtheories/Wellfounded/Well_Ordering.vo
 newtheories/Wellfounded/Well_Ordering.vo: newtheories/Wellfounded/Well_Ordering.v newtheories/Logic/Eqdep.vo
 newtheories/Wellfounded/Lexicographic_Product.vo: newtheories/Wellfounded/Lexicographic_Product.v newtheories/Logic/Eqdep.vo newtheories/Relations/Relation_Operators.vo newtheories/Wellfounded/Transitive_Closure.vo
-newtheories/Reals/TypeSyntax.vo: newtheories/Reals/TypeSyntax.v
-newtheories/Reals/Rdefinitions.vo: newtheories/Reals/Rdefinitions.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/TypeSyntax.vo
+newtheories/Reals/Rdefinitions.vo: newtheories/Reals/Rdefinitions.v newtheories/ZArith/ZArith_base.vo
 newtheories/Reals/Rsyntax.vo: newtheories/Reals/Rsyntax.v newtheories/Reals/Rdefinitions.vo
-newtheories/Reals/Raxioms.vo: newtheories/Reals/Raxioms.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/Rsyntax.vo newtheories/Reals/TypeSyntax.vo
+newtheories/Reals/Raxioms.vo: newtheories/Reals/Raxioms.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/Rsyntax.vo
 newtheories/Reals/RIneq.vo: newtheories/Reals/RIneq.v newtheories/Reals/Raxioms.vo newcontrib/ring/ZArithRing.vo newcontrib/omega/Omega.vo newcontrib/field/Field.vo
 newtheories/Reals/DiscrR.vo: newtheories/Reals/DiscrR.v newtheories/Reals/RIneq.vo newcontrib/omega/Omega.vo
-newtheories/Reals/Rbase.vo: newtheories/Reals/Rbase.v newtheories/Reals/Rdefinitions.vo newtheories/Reals/TypeSyntax.vo newtheories/Reals/Raxioms.vo newtheories/Reals/RIneq.vo newtheories/Reals/DiscrR.vo
+newtheories/Reals/Rbase.vo: newtheories/Reals/Rbase.v newtheories/Reals/Rdefinitions.vo newtheories/Reals/Raxioms.vo newtheories/Reals/RIneq.vo newtheories/Reals/DiscrR.vo
 newtheories/Reals/R_Ifp.vo: newtheories/Reals/R_Ifp.v newtheories/Reals/Rbase.vo newcontrib/omega/Omega.vo
 newtheories/Reals/Rbasic_fun.vo: newtheories/Reals/Rbasic_fun.v newtheories/Reals/Rbase.vo newtheories/Reals/R_Ifp.vo newcontrib/fourier/Fourier.vo
 newtheories/Reals/R_sqr.vo: newtheories/Reals/R_sqr.v newtheories/Reals/Rbase.vo newtheories/Reals/Rbasic_fun.vo

@@ -17,8 +17,8 @@ V7only [Unset Implicit Arguments.].
 
    from a well-founded ordering on a given set *)
 
+Require Notations.
 Require Logic.
-Require LogicSyntax.
 Require Datatypes.
 
 (** Well-founded induction principle on Prop *)

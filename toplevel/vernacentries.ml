@@ -553,7 +553,9 @@ let is_obsolete_module (_,qid) =
       (match string_of_id id with
 	| ("Refine" | "Inv" | "Equality" | "EAuto" | "AutoRewrite"
 	  | "EqDecide" | "Xml" |  "Extraction" | "Tauto" | "Setoid_replace"
-          | "Elimdep" )
+          | "Elimdep" 
+	  | "DatatypesSyntax" | "LogicSyntax" | "Logic_TypeSyntax"
+	  | "SpecifSyntax" | "PeanoSyntax" | "TypeSyntax")
 	  -> true
 	| _ -> false)
   | _ -> false
@@ -717,7 +719,7 @@ let vernac_declare_implicits locqid = function
 
 let vernac_reserve idl c =
   let t = Constrintern.interp_type Evd.empty (Global.env()) c in
-  let t = Detyping.detype (Global.env()) [] [] t in
+  let t = Detyping.detype (false,Global.env()) [] [] t in
   List.iter (fun id -> Reserve.declare_reserved_type id t) idl
 
 let make_silent_if_not_pcoq b =

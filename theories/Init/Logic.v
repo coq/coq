@@ -95,7 +95,7 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
   (at level 1, c1, c2, c3 at level 8)
   V8only (at level 200).
 
-Section First_order_quantifiers.
+(** First-order quantifiers *)
 
   (** [(ex A P)], or simply [(EX x | P(x))], expresses the existence of an 
       [x] of type [A] which satisfies the predicate [P] ([A] is of type 
@@ -110,15 +110,41 @@ Section First_order_quantifiers.
       construction [(all A P)], or simply [(All P)], is provided as an 
       abbreviation of [(x:A)(P x)] *) 
 
-  Inductive ex [A:Type;P:A->Prop] : Prop 
-      := ex_intro : (x:A)(P x)->(ex A P).
+Inductive ex [A:Type;P:A->Prop] : Prop 
+    := ex_intro : (x:A)(P x)->(ex A P).
 
-  Inductive ex2 [A:Type;P,Q:A->Prop] : Prop
-      := ex_intro2 : (x:A)(P x)->(Q x)->(ex2 A P Q).
+Inductive ex2 [A:Type;P,Q:A->Prop] : Prop
+    := ex_intro2 : (x:A)(P x)->(Q x)->(ex2 A P Q).
 
-  Definition all := [A:Type][P:A->Prop](x:A)(P x). 
+Definition all := [A:Type][P:A->Prop](x:A)(P x). 
 
-  Section universal_quantification.
+(*Rule order is important to give printing priority to fully typed ALL and EX*)
+
+V7only [ Notation Ex  := (ex ?). ].
+Notation "'EX' x | p"      := (ex ? [x]p)    (at level 10, p at level 8)
+  V8only (at level 200, x ident, p at level 80).
+Notation "'EX' x : t | p"  := (ex ? [x:t]p)  (at level 10, p at level 8)
+  V8only (at level 200, x ident, p at level 80).
+
+V7only [ Notation Ex2 := (ex2 ?). ].
+Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
+  (at level 10, p, q at level 8)
+  V8only "'EX2' x | p & q" (at level 200, x ident, p, q at level 80).
+Notation "'EX' x : t | p & q"   := (ex2 ? [x:t]p [x:t]q)
+  (at level 10, p, q at level 8)
+  V8only "'EX2' x : t | p & q"
+    (at level 200, x ident, t at level 200, p, q at level 80).
+
+V7only [Notation All := (all ?).].
+Notation "'ALL' x | p"     := (all ? [x]p)   (at level 10, p at level 8)
+  V8only (at level 200, x ident, p at level 200).
+Notation "'ALL' x : t | p" := (all ? [x:t]p) (at level 10, p at level 8)
+  V8only (at level 200, x ident, t, p at level 200).
+
+
+(** Universal quantification *)
+
+Section universal_quantification.
 
   Variable A : Type.
   Variable P : A->Prop.
@@ -135,7 +161,7 @@ Section First_order_quantifiers.
 
   End universal_quantification.
 
-End First_order_quantifiers.
+(** Equality *)
 
 (** [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
     of [x] and [y]. Both [x] and [y] must belong to the same type [A].
@@ -249,3 +275,12 @@ Proof.
 Qed.
 
 Hints Immediate sym_eq sym_not_eq : core v62.
+
+V7only[
+(** Parsing only of things in [Logic.v] *)
+Notation "< A > 'All' ( P )" :=(all A P) (A annot, at level 1, only parsing).
+Notation "< A > x = y" := (eq A x y)
+ (A annot, at level 1, x at level 0, only parsing).
+Notation "< A > x <> y" := ~(eq A x y)
+  (A annot, at level 1, x at level 0, only parsing).
+].

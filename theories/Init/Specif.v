@@ -13,9 +13,9 @@ V7only [Unset Implicit Arguments.].
 
 (** Basic specifications : Sets containing logical information *)
 
+Require Notations.
 Require Datatypes.
 Require Logic.
-Require LogicSyntax.
 
 (** Subsets *)
 
@@ -100,16 +100,16 @@ Inductive sumbool [A,B:Prop] : Set as "{ A } + { B }"
     := left  : A -> {A}+{B}
      | right : B -> {A}+{B}.
 
-(*
-  (** Syntax sumor ["_+{_}"]. *)
-  Inductive sumor [A:Set;B:Prop] : Set
-      := inleft  : A -> (sumor A B) 
-       | inright : B -> (sumor A B).
-*)
 Inductive sumor [A:Set;B:Prop] : Set as "A + { B }"
     := inleft  : A -> A+{B}
      | inright : B -> A+{B}.
 
+(* Factorizing "sumor" at level 4 to parse B+{x:A|P} without parentheses *)
+
+Notation "B + { x : A | P }"     := B + (sig A [x:A]P) (only parsing).
+Notation "B + { x : A | P & Q }" := B + (sig2 A [x:A]P [x:A]Q) (only parsing).
+Notation "B + { x : A & P }"     := B + (sigS A [x:A]P) (only parsing).
+Notation "B + { x : A & P & Q }" := B + (sigS2 A [x:A]P [x:A]Q) (only parsing).
 
 (** Choice *)
 
@@ -161,6 +161,9 @@ Definition error := None.
 
 Definition except := False_rec. (* for compatibility with previous versions *)
 
+Notation Except := (except ?).
+Notation Error := (error ?).
+
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
 Proof.
   Intros A C h1 h2.
@@ -188,3 +191,10 @@ Section projections_sigT.
                      Cases H of (existT x h) => h end.
 
 End projections_sigT.
+
+V7only [
+Notation ProjS1 := (projS1 ? ?).
+Notation ProjS2 := (projS2 ? ?).
+Notation Value := (value ?).
+].
+

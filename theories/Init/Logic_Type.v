@@ -14,10 +14,10 @@ V7only [Unset Implicit Arguments.].
 (** This module defines quantification on the world [Type]
     ([Logic.v] was defining it on the world [Set]) *)
 
+Require Notations.
 Require Export Logic.
-Require LogicSyntax.
 
-
+V7only [
 (*
 (** [allT A P], or simply [(ALLT x | P(x))], stands for [(x:A)(P x)]
    when [A] is of type [Type] *)
@@ -25,11 +25,15 @@ Require LogicSyntax.
 Definition allT := [A:Type][P:A->Prop](x:A)(P x). 
 *)
 
-V7only [
 Notation allT := all (only parsing).
 Notation inst := Logic.inst (only parsing).
 Notation gen := Logic.gen (only parsing).
-].
+
+(* Order is important to give printing priority to fully typed ALL and EX *)
+
+Notation AllT := (all ?).
+Notation "'ALLT' x | p"     := (all ? [x]p)   (at level 10, p at level 8).
+Notation "'ALLT' x : t | p" := (all ? [x:t]p) (at level 10, p at level 8).
 
 (*
 Section universal_quantification.
@@ -63,22 +67,28 @@ Inductive  exT [A:Type;P:A->Prop] : Prop
     := exT_intro : (x:A)(P x)->(exT A P).
 *)
 
-V7only [
 Notation exT := ex (only parsing).
 Notation exT_intro := ex_intro (only parsing).
 Notation exT_ind  := ex_ind (only parsing).
-].
+
+Notation ExT  := (ex ?).
+Notation "'EXT' x | p"      := (ex ? [x]p)    (at level 10, p at level 8).
+Notation "'EXT' x : t | p"  := (ex ? [x:t]p)  (at level 10, p at level 8).
 
 (*
 Inductive exT2 [A:Type;P,Q:A->Prop] : Prop
     := exT_intro2 : (x:A)(P x)->(Q x)->(exT2 A P Q).
 *)
 
-V7only [
 Notation exT2 := ex2 (only parsing).
 Notation exT_intro2 := ex_intro2 (only parsing).
 Notation exT2_ind  := ex2_ind (only parsing).
-].
+
+Notation ExT2 := (ex2 ?).
+Notation "'EXT' x | p & q"     := (ex2 ? [x]p [x]q)
+  (at level 10, p, q at level 8).
+Notation "'EXT' x : t | p & q" := (ex2 ? [x:t]p [x:t]q)
+  (at level 10, p, q at level 8).
 
 (*
 (** Leibniz equality : [A:Type][x,y:A] (P:A->Prop)(P x)->(P y)
@@ -93,13 +103,19 @@ Inductive eqT [A:Type;x:A] : A -> Prop
 
 Hints Resolve refl_eqT (* exT_intro2 exT_intro *) : core v62.
 *)
-V7only [
+
 Notation eqT      := eq (only parsing).
 Notation refl_eqT := refl_equal (only parsing).
 Notation eqT_ind  := eq_ind (only parsing).
 Notation eqT_rect := eq_rect (only parsing).
 Notation eqT_rec  := eq_rec (only parsing).
-].
+
+Notation "x == y"  := (eq ? x y) (at level 5, no associativity, only parsing).
+
+(** Parsing only of things in [Logic_type.v] *)
+
+Notation "< A > x == y"  := (eq A x y)
+   (A annot, at level 1, x at level 0, only parsing).
 
 (*
 Section Equality_is_a_congruence.
@@ -131,12 +147,11 @@ Section Equality_is_a_congruence.
 
 End Equality_is_a_congruence.
 *)
-V7only [
+
 Notation sym_eqT  := sym_eq (only parsing).
 Notation trans_eqT  := trans_eq (only parsing).
 Notation congr_eqT  := f_equal (only parsing).
 Notation sym_not_eqT  := sym_not_eq (only parsing).
-].
 
 (*
 Hints Immediate sym_eqT sym_not_eqT : core v62.
@@ -158,7 +173,6 @@ Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
 *)
 
-V7only [
 Notation eqT_ind_r  := eq_ind_r (only parsing).
 Notation eqT_rec_r  := eq_rec_r (only parsing).
 Notation eqT_rect_r  := eq_rect_r (only parsing).
@@ -173,8 +187,17 @@ Definition notT := [A:Type] A->EmptyT.
 
 (** Have you an idea of what means [identityT A a b]? No matter! *)
 
-Inductive identityT [A:Type; a:A] : A->Type :=
+Uninterpreted Notation "x === y :> A"
+  (at level 5, y at next level, no associativity).
+
+Inductive identityT [A:Type; a:A] : (b:A)Type as "a === b :> A" :=
      refl_identityT : (identityT A a a).
+
+V7only [
+Notation "< A > x === y" := (!identityT A x y)
+   (A annot, at level 1, x at level 0, only parsing).
+].
+Notation "x === y" := (identityT ? x y) (at level 5, no associativity).
 
 Hints Resolve refl_identityT : core v62.
 
@@ -254,6 +277,8 @@ Definition prodT_curry : (A,B,C:Type)(A->B->C)->(prodT A B)->C :=
 
 Hints Immediate sym_idT sym_not_idT : core v62.
 
+V7only [
 Implicits fstT [1 2].
 Implicits sndT [1 2].
 Implicits pairT [1 2].
+].

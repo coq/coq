@@ -528,9 +528,8 @@ states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 INITVO=theories/Init/Notations.vo \
        theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
-       theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-       theories/Init/Logic_TypeSyntax.vo  theories/Init/Prelude.vo
+       theories/Init/Prelude.vo
 
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
@@ -635,7 +634,7 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 	      theories/Wellfounded/Well_Ordering.vo \
 	      theories/Wellfounded/Lexicographic_Product.vo 
 
-REALSBASEVO=theories/Reals/TypeSyntax.vo \
+REALSBASEVO=\
 	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
 	theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
 	theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \

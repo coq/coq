@@ -14,7 +14,6 @@
 (*********************************************************)
 
 Require Export ZArith_base.
-Require Export TypeSyntax.
 
 Parameter R:Type.
 

@@ -24,9 +24,8 @@
    Case analysis on [nat] and induction on [nat * nat] are provided too *)
 
 Require Notations.
-Require Logic.
-Require LogicSyntax.
 Require Datatypes.
+Require Logic.
 
 Open Local Scope nat_scope.
 

@@ -9,7 +9,6 @@
 (*i $Id$ i*)
 
 Require Export Rdefinitions.
-Require Export TypeSyntax.
 Require Export Raxioms.
 Require Export RIneq.
 Require Export DiscrR.
