@@ -1,23 +1,23 @@
+
 (* $Id$ *)
 
-open Util;;
-open Pp;;
-open Names;;
-open Impuniv;;
-open Generic;;
-open Term;;
-open Printer;;
-open Termenv;;
-open Evd;;
-open Reduction;;
-
+open Util
+open Pp
+open Names
+open Univ
+open Generic
+open Term
+open Sign
+open Environ
+open Evd
+open Reduction
+open Indrec
 
 let rec filter_unique = function
-    [] -> []
+  | [] -> []
   | x::l ->
-      if List.mem x l then filter_unique (filter (fun y -> x<>y) l)
+      if List.mem x l then filter_unique (List.filter (fun y -> x<>y) l)
       else x::filter_unique l
-;;
 
 let distinct_id_list = 
   let rec drec fresh = function
@@ -25,7 +25,7 @@ let distinct_id_list =
     | id::rest ->
  	let id' = next_ident_away_from id fresh in drec (id'::fresh) rest
   in drec []
-;;
+
 
 let filter_sign p sign x =
   sign_it
@@ -34,7 +34,7 @@ let filter_sign p sign x =
       if disc then (v', id::ids, sgn) else (v', ids, add_sign (id,ty) sgn))
     sign
     (x,[],nil_sign)
-;;
+
 
 
 (*------------------------------------*
@@ -42,44 +42,46 @@ let filter_sign p sign x =
  *------------------------------------*)
 
 (* All ids of sign must be distincts! *)
-let new_isevar_sign env sigma typ args k =
-  let sign = context env in
-  (if not (distinct (ids_of_sign sign))
-  then error "new_isevar_sign: two vars have the same name");
-  let newsp = new_isevar_path k in
-  (Evd.add_noinfo sigma newsp sign typ, mkConst newsp args)
-;;
+let new_isevar_sign env sigma typ args =
+  let sign = get_globals (context env) in
+  if not (list_distinct (ids_of_sign sign)) then 
+    error "new_isevar_sign: two vars have the same name";
+  let newev = Evd.new_evar() in
+  let info = { evar_concl = typ; evar_env = env; 
+	       evar_body = Evar_empty; evar_info = () } in
+  (Evd.add sigma newev info, mkEvar newev args)
+
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
-let dummy_sort = mkType dummy_univ;;
+let dummy_sort = mkType dummy_univ
 
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)
-let new_type_var sigma sign k =
+let new_type_var env sigma =
+  let sign = get_globals (context env) in
   let args = (Array.of_list (List.map mkVar (ids_of_sign sign))) in
-  let (sigma',c) = new_isevar_sign sigma sign dummy_sort args k in
-  (sigma', make_type c (Type dummy_univ))
-;;
+  let (sigma',c) = new_isevar_sign env sigma dummy_sort args in
+  (sigma', make_typed c (Type dummy_univ))
 
 let split_evar_to_arrow sigma c =
-  let (sp,args) = destConst c in
-  let k = kind_of_path sp in
-  let evd = Evd.map sigma sp in
-  let hyps= evd.hyps in
-  let (sigma1,dom) = new_type_var sigma hyps k in
+  let (ev,args) = destEvar c in
+  let evd = Evd.map sigma ev in
+  let evenv = evd.evar_env in
+  let (sigma1,dom) = new_type_var evenv sigma in
+  let hyps = get_globals (context evenv) in
   let nvar = next_ident_away (id_of_string "x") (ids_of_sign hyps) in
-  let nhyps = add_sign (nvar,dom) hyps in
-  let (sigma2,rng) = new_type_var sigma1 nhyps k in
-  let prod = Environ.prod_create (incast_type dom, 
-				  subst_var nvar (body_of_type rng)) in
-  let sigma3 = Evd.define sigma2 sp prod in
+  let nevenv = push_var (nvar,dom) evenv in
+  let (sigma2,rng) = new_type_var nevenv sigma1 in
+  let prod = prod_create nevenv (incast_type dom, 
+				 subst_var nvar (body_of_type rng)) in
+  let sigma3 = Evd.define sigma2 ev prod in
   let dsp = path_of_const (body_of_type dom) in
   let rsp = path_of_const (body_of_type rng) in
   (sigma3,
    mkCast (mkConst dsp args) dummy_sort,
-   mkCast (mkConst rsp (cons_vect (mkRel 1) args)) dummy_sort)
-;;
+   mkCast (mkConst rsp (array_cons (mkRel 1) args)) dummy_sort)
+
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
  * variables) such that c becomes closed.
@@ -90,11 +92,10 @@ let split_evar_to_arrow sigma c =
  * a prefix of ?2's env, included in ?1's env.
  *)
 let do_restrict_hyps sigma c =
-  let (sp,argsv) = destConst c in
-  let k = kind_of_path sp in
+  let (ev,argsv) = destEvar c in
   let args = Array.to_list argsv in
-  let evd = Evd.map sigma sp in
-  let hyps= evd.hyps in
+  let evd = Evd.map sigma ev in
+  let env = evd.evar_env in
   let (_,(rsign,ncargs)) =
     List.fold_left (fun (sign,(rs,na)) a ->
       (tl_sign sign,
@@ -112,7 +113,7 @@ let do_restrict_hyps sigma c =
   let (sigma',nc) = new_isevar_sign sigma nsign evd.concl nargs k in
   let sigma'' = Evd.define sigma' sp nc in
   (sigma'', mkConst (path_of_const nc) (Array.of_list (List.rev ncargs)))
-;;
+
 
 
 
@@ -135,17 +136,17 @@ let ise_try isevars l =
  	  (try f() with reraise -> isevars := u; raise reraise)
        or (isevars := u; test l)
   in test l
-;;
+
 
 
 (* say if the section path sp corresponds to an existential *)
-let ise_in_dom isevars sp = Evd.in_dom !isevars sp;;
+let ise_in_dom isevars sp = Evd.in_dom !isevars sp
 
 (* map the given section path to the evar_declaration *)
-let ise_map isevars sp = Evd.map !isevars sp;;
+let ise_map isevars sp = Evd.map !isevars sp
 
 (* define the existential of section path sp as the constr body *)
-let ise_define isevars sp body = isevars := Evd.define !isevars sp body;;
+let ise_define isevars sp body = isevars := Evd.define !isevars sp body
 
 (* Does k corresponds to an (un)defined existential ? *)
 let ise_undefined isevars k =
@@ -154,13 +155,13 @@ let ise_undefined isevars k =
       ise_in_dom isevars (path_of_const k) &
       not (defined_const !isevars k)
   | _ -> false
-;;
+
 
 let ise_defined isevars k =
   match k with
     DOPN(Const _,_) -> Termenv.defined_existential !isevars k
   | _ -> false
-;;
+
 
 let restrict_hyps isevars c =
   if ise_undefined isevars c & not (closed0 c)
@@ -169,7 +170,7 @@ let restrict_hyps isevars c =
     isevars := sigma;
     rc)
   else c
-;;
+
 
 
 let error_occur_check sp rhs =
@@ -178,7 +179,7 @@ let error_occur_check sp rhs =
   errorlabstrm "Trad.occur_check"
     [< 'sTR"Occur check failed: tried to define "; 'sTR id;
       'sTR" with term"; 'bRK(1,1); pt >]
-;;
+
 
 (* We need the environment here *)
 let error_not_clean sp t =
@@ -189,7 +190,7 @@ let error_not_clean sp t =
     [< 'sTR"Tried to define "; 'sTR id;
        'sTR" with a term using variable "; var; 'sPC;
        'sTR"which is not in its scope." >]
-;;
+
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or VARs, or appearing several times.
@@ -216,7 +217,7 @@ let real_clean isevars sp args rhs =
   let body = subs 0 rhs in
   if not (closed0 body) then error_not_clean sp body;
   body
-;;
+
 
 
 (* [new_isevar] declares a new existential in an env env with type typ *)
@@ -240,7 +241,7 @@ let new_isevar isevars env typ k =
     new_isevar_sign !isevars sign' typ' (Array.of_list newargs) k in
   isevars := sigma';
   (evar,typ')
-;;
+
 
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
@@ -272,7 +273,7 @@ let evar_define isevars lhs rhs =
   let body = real_clean isevars sp worklist rhs in
   ise_define isevars sp body;
   [sp]
-;;
+
 
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
@@ -321,7 +322,7 @@ let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
   | (true,false) -> Some (evar_define isevars t1 t2)
   | (false,true) -> Some (evar_define isevars t2 t1)
   | _ -> None
-;;
+
 
 (*-------------------*)
 (* Now several auxiliary functions for the conversion algorithms modulo
@@ -347,7 +348,7 @@ let has_undefined_isevars isevars c =
   | (VAR _|Rel _|DOP0 _) -> ()
  in (try (hasrec c ; false) with Failure "caught" -> true)
     
-;;
+
 
 let head_is_exist isevars = 
  let rec hrec = function
@@ -356,7 +357,7 @@ let head_is_exist isevars =
   | DOP2(Cast,c,_) -> hrec c
   | _ -> false
  in hrec 
-;;
+
 
 
 let rec is_eliminator = function
@@ -364,11 +365,11 @@ let rec is_eliminator = function
   | DOPN(MutCase _,_) -> true
   | DOP2 (Cast,c,_)        -> is_eliminator c
   | _ -> false
-;;
+
 
 let head_is_embedded_exist isevars c =
     (head_is_exist isevars c) & (is_eliminator c)
-;;
+
 
 let headconstant = 
  let rec hrec = function
@@ -380,14 +381,14 @@ let headconstant =
   | DOP2(Cast,c,_)         -> hrec c
   | _                      -> failwith "headconstant"
  in hrec 
-;;
+
 
 let status_changed lsp (pbty,t1,t2) =
     try List.mem (headconstant t1) lsp or List.mem (headconstant t2) lsp
     with Failure _ ->
     try List.mem (headconstant t2) lsp
     with Failure _ -> false
-;;
+
 
 
 
@@ -410,13 +411,13 @@ type trad_constraint = bool * (constr option * constr option)
 
 
 (* The empty constraint *)
-let mt_tycon = (false,(None,None));;
+let mt_tycon = (false,(None,None))
 
 (* The default constraints for types. *)
-let def_vty_con = (true,(None,None));;
+let def_vty_con = (true,(None,None))
 
 (* Constrain only the type *)
-let mk_tycon ty = (false,(None,Some ty));;
+let mk_tycon ty = (false,(None,Some ty))
 let mk_tycon2 (is_ass,_) ty = (is_ass,(None,Some ty))
 
 
@@ -437,14 +438,14 @@ let prod_dom_tycon_unif isevars = function
 	    isevars := sigma;
 	    Some dom)
 	  else None)
-;;
+
 
 (* Given a constraint on a term, returns the constraint corresponding to its
  * first argument.
  *) 
 let app_dom_tycon isevars (_,(_,tyc)) =
   (false,(None, prod_dom_tycon_unif isevars tyc))
-;;
+
 
 (* Given a constraint on a term, returns the constraint corresponding to this
  * term applied to arg.
@@ -455,7 +456,7 @@ let app_rng_tycon isevars arg = function
       (match whd_betadeltaiota !isevars c with
         DOP2(Prod,_,DLAM(_,b)) -> mk_tycon (subst1 arg b)
       | _ -> mt_tycon)
-;;
+
 
 (* Given a constraint on an abstraction, returns the constraint on the value
  * of the domain type. If we had no constraint, we still know it should be
@@ -463,7 +464,7 @@ let app_rng_tycon isevars arg = function
  *)
 let abs_dom_valcon isevars (_,(_,tyc)) =
   (true,(prod_dom_tycon_unif isevars tyc, None))
-;;
+
 
 (* Given a constraint on an abstraction, returns the constraint on the body *)
 let abs_rng_tycon isevars = function
@@ -472,6 +473,3 @@ let abs_rng_tycon isevars = function
       (match whd_betadeltaiota !isevars c with
       | DOP2(Prod,_,DLAM(_,b)) -> mk_tycon b
       | _ -> mt_tycon)
-;;
-
-(* $Id$ *)

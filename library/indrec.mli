@@ -52,3 +52,8 @@ val pred_case_ml_onebranch : unsafe_env ->'c evar_map -> bool ->
 
 val make_case_ml :
   bool -> constr -> constr -> case_info -> constr array -> constr
+
+
+(*s Auxiliary functions. TODO: les déplacer ailleurs. *)
+
+val prod_create : unsafe_env -> constr * constr -> constr

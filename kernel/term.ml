@@ -147,6 +147,9 @@ let mkAppList a l = DOPN (AppL, Array.of_list (a::l))
 (* The array of terms correspond to the variables introduced in the section *)
 let mkConst sp a = DOPN (Const  sp, a)
 
+(* Constructs an existential variable *)
+let mkEvar n a = DOPN (Evar n, a)
+
 (* Constructs an abstract object *)
 let mkAbst sp a = DOPN (Abst sp, a)
 

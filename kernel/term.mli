@@ -157,6 +157,9 @@ val mkAppList : constr -> constr list  -> constr
 (* The array of terms correspond to the variables introduced in the section *)
 val mkConst : section_path -> constr array -> constr
 
+(* Constructs an existential variable *)
+val mkEvar : int -> constr array -> constr
+
 (* Constructs an abstract object *)
 val mkAbst : section_path -> constr array -> constr
 
