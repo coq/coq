@@ -45,7 +45,7 @@ val ise_resolve : bool -> 'c evar_map -> (int * constr) list ->
 val ise_resolve_type : bool -> 'c evar_map -> (int * constr) list ->
   unsafe_env -> rawconstr -> typed_type
 
-(* Call ise_resolve with empty metamap and fail_evar=true. The boolean says
+(* Call [ise_resolve] with empty metamap and [fail_evar=true]. The boolean says
  * if we must coerce to a type *)
 val ise_resolve1 : bool -> 'c evar_map -> unsafe_env -> rawconstr -> constr
 

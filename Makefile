@@ -129,12 +129,13 @@ doc: doc/coq.tex
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
+LPPRETYPING = pretyping/doc.tex pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
+LPPARSING =$(PARSING:.cmo=.mli)
 LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
 LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli)
-LPPRETYPING = pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
 LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
-	  $(LPPROOFS) $(LPTACTICS) $(LPPRETYPING) $(LPTOPLEVEL)
+	  $(LPPRETYPING) $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
 
 doc/coq.tex: doc/preamble.tex $(LPFILES)
 	cat doc/preamble.tex > doc/coq.tex

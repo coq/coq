@@ -181,8 +181,8 @@ val whd_meta : (int * constr) list -> constr -> constr
 val plain_instance : (int * constr) list -> constr -> constr
 val instance : (int * constr) list -> 'a reduction_function
 
-(* whd_ise raise Uninstantiated_evar if an evar remains uninstantiated *)
-(* the '*_ise1*' leave uninstantiated evar as it *)
+(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated *)
+(* the *[_ise1]* leave uninstantiated evar as it *)
 
 exception Uninstantiated_evar of int
 
