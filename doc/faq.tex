@@ -204,15 +204,15 @@ Axiom UIP_refl: (A:Set)(x:A)(p:x=x)p==(refl_equal A x).
 Axiom $K$ is also equivalent to 
 
 \begin{coq_example*}
-Axiom eq_rec_eq : (a:A)(P:A->Set)(p:(P p))(h:a==a) p=(eq_rect A a P p a h).
+Axiom eq_rec_eq : (A:Set)(a:A)(P:A->Set)(p:(P p))(h:a==a) p=(eq_rect A a P p a h).
 \end{coq_example*}
 
 It is also equivalent to the injectivity of dependent equality (dependent equality is itself equivalent to equality of dependent pairs).
 
 \begin{coq_example*}
-Inductive eq_dep [p:U;x:(P p)] : (q:U)(P q)->Prop :=
-   eq_dep_intro : (eq_dep p x p x).
-Axiom eq_dep_eq : (a:A)(P:A->Set)(p1,p2:(P a))(eq_dep a p1 a p2)->p1=p2.
+Inductive eq_dep [U:Set;P:U->Set;p:U;x:(P p)] : (q:U)(P q)->Prop :=
+   eq_dep_intro : (eq_dep U P p x p x).
+Axiom eq_dep_eq : (U:Set)(u:U)(P:U->Set)(p1,p2:(P u))(eq_dep U P u p1 u p2)->p1=p2.
 \end{coq_example*}
 
 All of these statements can be found in file \vfile{\LogicEqdep}{Eqdep}.
@@ -262,7 +262,7 @@ Exact [x]x.
 Rewrite H in Hdiscr.
 Elim Hdiscr.
 Assert H1:=(snd (exist nat [z](le z (S n)) (S n) (le_n (S n)))).
-...
+(* ... *)
 \end{coq_example*}
 
 \section{Axioms}
@@ -331,6 +331,10 @@ e.g. Burali-Forti paradox \cite{Gir70,Coq85}.
 
 \question{Why Injection does not work on impredicative types?}
  E.g. in this case:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 
 \begin{coq_example*}
   Inductive I : Set := intro : (k:Set)k -> I.
@@ -613,6 +617,10 @@ Lemma eq_comb
 \answer You need to derive the dependent elimination
 scheme for DefProp by hand using {\coqtt Scheme}.
 
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
 \begin{coq_example*}
 Scheme DefProp_elim := Induction for DefProp Sort Prop.
 
@@ -647,7 +655,7 @@ Lemma eq_pack
 \answer
 
 \begin{coq_eval}
-Reset eq_pack.
+Abort.
 \end{coq_eval}
 \begin{coq_example*}
 Scheme natProp_elim := Induction for natProp Sort Prop.
