@@ -32,14 +32,14 @@ type 'a path_status = Nothing | Relative of 'a | Absolute of 'a
 (* Dictionaries of short names *)
 type 'a nametree = ('a path_status * 'a nametree ModIdmap.t)
 type ccitab = extended_global_reference nametree Idmap.t
-type kntab = kernel_name nametree Idmap.t
+type knsptab = (kernel_name * section_path) nametree Idmap.t
 type objtab = section_path nametree Idmap.t
 type dirtab = global_dir_reference nametree ModIdmap.t
 
 let the_ccitab = ref (Idmap.empty : ccitab)
 let the_dirtab = ref (ModIdmap.empty : dirtab)
 let the_objtab = ref (Idmap.empty : objtab)
-let the_modtypetab = ref (Idmap.empty : kntab)
+let the_modtypetab = ref (Idmap.empty : knsptab)
 
 (* This table translates extended_global_references back to section paths *)
 module Globtab = Map.Make(struct type t=extended_global_reference 
@@ -194,7 +194,7 @@ let push_syntactic_definition visibility sp kn =
 
 let push = push_cci
 
-let push_modtype = push_idtree the_modtypetab
+let push_modtype vis sp kn = push_idtree the_modtypetab vis sp (kn,sp)
 
 
 (* This is for dischargeable non-cci objects (removed at the end of the
@@ -257,7 +257,8 @@ let locate_syntactic_definition qid = match extended_locate qid with
   | TrueGlobal _ -> raise Not_found
   | SyntacticDef kn -> kn
 
-let locate_modtype qid = get (find_modtype qid)
+let full_name_modtype qid = get (find_modtype qid)
+let locate_modtype qid = fst (get (find_modtype qid))
 
 let locate_obj qid = get (find_in_idtree the_objtab qid)
 
@@ -376,24 +377,27 @@ let global_inductive (loc,qid as locqid) =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * objtab * globtab
+type frozen = ccitab * dirtab * objtab * knsptab * globtab
 
 let init () = 
   the_ccitab := Idmap.empty; 
   the_dirtab := ModIdmap.empty;
   the_objtab := Idmap.empty;
+  the_modtypetab := Idmap.empty;
   the_globtab := Globtab.empty
 
 let freeze () =
   !the_ccitab, 
   !the_dirtab,
   !the_objtab,
+  !the_modtypetab,
   !the_globtab
 
-let unfreeze (mc,md,mo,gt) =
+let unfreeze (mc,md,mo,mt,gt) =
   the_ccitab := mc;
   the_dirtab := md;
   the_objtab := mo;
+  the_modtypetab := mt;
   the_globtab := gt
 
 let _ = 

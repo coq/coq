@@ -205,6 +205,20 @@ let print_located_qualid (_,qid) =
     let sp = Nametab.sp_of_syntactic_definition kn in
     msgnl (pr_sp sp)
   with Not_found ->
+  try
+    let dir = match Nametab.locate_dir qid with
+      | DirOpenModule (dir,_)
+      | DirOpenModtype (dir,_)
+      | DirOpenSection (dir,_)
+      | DirModule (dir,_)
+      | DirClosedSection dir -> dir
+    in
+    msgnl (pr_dirpath dir)
+  with Not_found ->
+  try
+    let (_,sp) = Nametab.full_name_modtype qid in
+    msgnl (pr_sp sp)
+  with Not_found ->
     msgnl (pr_qualid qid ++ str " is not a defined object")
 
 (*let print_path_entry (s,l) =
@@ -426,7 +440,7 @@ let vernac_declare_module_type id bl mty_ast_o =
       | _, None ->
 	  Declaremods.start_modtype id argids args;
 	  if_verbose message 
-	    ("Interactive Module "^ string_of_id id ^" started")
+	    ("Interactive Module Type "^ string_of_id id ^" started")
 
       | _, Some base_mty ->
 	  let mty = 

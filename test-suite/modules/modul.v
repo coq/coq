@@ -1,4 +1,4 @@
-Mod M.
+Module M.
   Parameter rel:nat -> nat -> Prop.
 
   Axiom w : (n:nat)(rel O (S n)).
@@ -14,13 +14,13 @@ Mod M.
   Auto.
   Save.
 
-EndM M.
+End M.
 
 (*Lemma w1 : (M.rel O (S O)).
 Auto.
 *)
 
-Imp M.
+Import M.
 
 Print Hint *.
 Lemma w1 : (O#(S O)).
@@ -35,5 +35,5 @@ Locate rel.
 
 Locate M.
 
-Mod N:=Scratch.M.
+Module N:=Top.M.
 

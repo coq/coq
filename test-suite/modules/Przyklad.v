@@ -27,12 +27,12 @@ Split with b0; Reflexivity.
 
 Save.
 
-Modtype ELEM.
+Module Type ELEM.
   Parameter T : Set.
   Parameter eq_dec : (a,a':T){a=a'}+{~ a=a'}.
-EndT ELEM.
+End ELEM.
                                         
-Modtype SET[Elt : ELEM].
+Module Type SET[Elt : ELEM].
   Parameter T : Set.
   Parameter empty : T.
   Parameter add : Elt.T -> T -> T.
@@ -50,9 +50,9 @@ Modtype SET[Elt : ELEM].
         (s:T) (e:Elt.T) (e':Elt.T) ~(e=e') -> 
 	(find e (add e' s))=(find e s).
 
-EndT SET.
+End SET.
 
-Mod FuncDict[E : ELEM].
+Module FuncDict[E : ELEM].
   Definition T := E.T -> bool.
   Definition empty := [e':E.T] false.
   Definition find := [e':E.T] [s:T] (s e').
@@ -93,20 +93,20 @@ Mod FuncDict[E : ELEM].
 
   Qed.
 
-EndM FuncDict.
+End FuncDict.
 
-Mod F : SET := FuncDict.
+Module F : SET := FuncDict.
 
 
-Mod Nat.
+Module Nat.
   Definition T:=nat.
   Lemma eq_dec :  (a,a':T){a=a'}+{~ a=a'}.
     Decide Equality.
   Qed.
-EndM Nat.
+End Nat.
 
 
-Mod SetNat:=F Nat. 
+Module SetNat:=F Nat. 
 
 
 Lemma no_zero_in_empty:(SetNat.find O SetNat.empty)=false. 
@@ -114,9 +114,9 @@ Apply SetNat.find_empty_false.
 Save.
 
 (***************************************************************************)
-Mod Lemmas[G:SET][E:ELEM].
+Module Lemmas[G:SET][E:ELEM].
 
-  Mod ESet:=G E.
+  Module ESet:=G E.
 
   Lemma commute : (S:ESet.T)(a1,a2:E.T) 
     let S1 = (ESet.add a1 (ESet.add a2 S)) in 
@@ -132,13 +132,13 @@ Mod Lemmas[G:SET][E:ELEM].
        Try (Rewrite ESet.find_add_false; Auto); 
        Auto).
   Save.
-EndM Lemmas.
+End Lemmas.
 
 
 Inductive list [A:Set] : Set := nil : (list A) 
                              | cons : A -> (list A) -> (list A).
 
-Mod ListDict[E : ELEM]. 
+Module ListDict[E : ELEM]. 
   Definition T := (list E.T).
   Definition elt := E.T.
    
@@ -179,10 +179,10 @@ Mod ListDict[E : ELEM].
   Save.    
   
 
-EndM ListDict.
+End ListDict.
 
 
-Mod L : SET := ListDict.
+Module L : SET := ListDict.
 
 
 

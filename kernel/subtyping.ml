@@ -145,6 +145,17 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
       | _ -> error ()
   in 
     assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
+ (*Start by checking bodies*)
+    match cb2.const_body with
+      |	None -> check_conv cst conv_leq env cb1.const_type cb2.const_type
+      | Some c2 -> (* no checking types ! *)
+	  let c1 = match cb1.const_body with
+	    | None -> mkConst (make_kn (MPself msid1) empty_dirpath l) 
+	    | Some c1 -> c1
+	  in
+	    check_conv cst conv env c1 c2
+
+(*  (*Start by checking types*)
     let cst = check_conv cst conv_leq env cb1.const_type cb2.const_type in
     match cb1.const_body, cb2.const_body with
       | None, None -> cst
@@ -158,6 +169,7 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 	    env 
 	    (mkConst (make_kn (MPself msid1) empty_dirpath l)) 
 	    c2
+*)
 
 let rec check_modules cst env msid1 l msb1 msb2 =
   let cst = check_modtypes cst env (fst msb1) (fst msb2) false in

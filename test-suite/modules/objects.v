@@ -1,32 +1,32 @@
 Reset Initial.
 
-Modtype SET.
+Module Type SET.
   Axiom T:Set.
   Axiom x:T.
-EndT SET.
+End SET.
  
 Implicit Arguments On.
 
-Mod M[X:SET].
+Module M[X:SET].
   Definition T := nat.
   Definition x := O.
   Definition f := [A:Set][x:A]X.x.
-EndM M.
+End M.
 
-Mod N:=M.
+Module N:=M.
 
-Mod Nat.
+Module Nat.
   Definition T := nat.
   Definition x := O.
-EndM Nat.
+End Nat.
 
-Mod Z:=(N Nat).
+Module Z:=(N Nat).
 
 Check (Z.f O).
 
-Mod P[Y:SET] := N.
+Module P[Y:SET] := N.
 
-Mod Y:=P Z Nat.
+Module Y:=P Z Nat.
 
 Check (Y.f O).
 

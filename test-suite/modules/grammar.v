@@ -1,15 +1,15 @@
-Mod N.
+Module N.
 Definition f:=plus.
 Syntax constr level 7: plus [ (f $n $m)] -> [ $n:L "+" $m:E].
 Check (f O O).
-EndM N.
+End N.
 Check (N.f O O).
-Imp N.
+Import N.
 Check (N.f O O).
 Check (f O O).
-Mod M:=N.
+Module M:=N.
 Check (f O O).
 Check (N.f O O).
-Imp M.
+Import M.
 Check (f O O).
 Check (N.f O O).

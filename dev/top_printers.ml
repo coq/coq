@@ -34,7 +34,8 @@ let prast c = pp(print_ast c)
 
 let prastpat c = pp(print_astpat c)
 let prastpatl c = pp(print_astlpat c)
-let ppterm = (fun x -> pp(prterm x))
+let ppterm x = pp(prterm x)
+let ppterm_univ x = Termast.with_universes ppterm x
 let pprawterm = (fun x -> pp(pr_rawterm x))
 let pppattern = (fun x -> pp(pr_pattern x))
 let pptype = (fun x -> pp(prtype x))

@@ -549,28 +549,38 @@ let declare_modtype id mte =
 			       
 
 
-let rec get_module_substobjs = function
-    MEident mp -> MPmap.find mp !modtab_substobjs 
-  | MEfunctor (mbid,_,mexpr) ->
-      let (subst, mbids, msid, objs) = get_module_substobjs mexpr in
+let rec get_module_substobjs locals = function
+    MEident (MPbound mbid as mp) -> 
+      begin
+	try 
+	  let mty = List.assoc mbid locals in
+	    get_modtype_substobjs mty
+	with
+	    Not_found -> MPmap.find mp !modtab_substobjs 
+      end
+  | MEident mp -> MPmap.find mp !modtab_substobjs 
+  | MEfunctor (mbid,mty,mexpr) ->
+      let (subst, mbids, msid, objs) = 
+	get_module_substobjs ((mbid,mty)::locals) mexpr 
+      in
 	(subst, mbid::mbids, msid, objs)
   | MEstruct (msid,_) ->
       (empty_subst, [], msid, [])
   | MEapply (mexpr, MEident mp) ->
-      let (subst, mbids, msid, objs) = get_module_substobjs mexpr in
+      let (subst, mbids, msid, objs) = get_module_substobjs locals mexpr in
 	(match mbids with
 	   | mbid::mbids ->
 	       (add_mbid mbid mp subst, mbids, msid, objs)
 	   | [] -> anomaly "Too few arguments in functor")
-  | MEapply (_,_) ->
-      anomaly "The argument of a module application must be a path!"
+  | MEapply (_,mexpr) ->
+      Modops.error_application_to_not_path mexpr
 
 
 let declare_module id me =
   let substobjs =
     match me with
       | {mod_entry_type = Some mte} -> get_modtype_substobjs mte
-      | {mod_entry_expr = Some mexpr} -> get_module_substobjs mexpr
+      | {mod_entry_expr = Some mexpr} -> get_module_substobjs [] mexpr
       | _ -> anomaly "declare_module: No type, no body ..."
   in
   let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in

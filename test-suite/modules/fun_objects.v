@@ -1,29 +1,29 @@
 Implicit Arguments On.
 
-Modtype SIG.
+Module Type SIG.
   Parameter id:(A:Set)A->A.
-EndT SIG.
+End SIG.
  
-Mod M[X:SIG].
+Module M[X:SIG].
   Definition idid := (X.id X.id).
   Definition id := (idid X.id).
-EndM M.
+End M.
 
-Mod N:=M.
+Module N:=M.
 
-Mod Nat.
+Module Nat.
   Definition T := nat.
   Definition x := O.
   Definition id := [A:Set][x:A]x.
-EndM Nat.
+End Nat.
 
-Mod Z:=(N Nat).
+Module Z:=(N Nat).
 
 Check (Z.idid O).
 
-Mod P[Y:SIG] := N.
+Module P[Y:SIG] := N.
 
-Mod Y:=P Nat Z.
+Module Y:=P Nat Z.
 
 Check (Y.id O).
 

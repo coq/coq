@@ -120,6 +120,8 @@ val exists_dir : dir_path -> bool
 val exists_section : dir_path -> bool (* deprecated *)
 val exists_module : dir_path -> bool (* deprecated *)
 
+val full_name_modtype : qualid -> kernel_name * section_path
+
 (*s Roots of the space of absolute names *)
 
 (* This turns a "user" absolute name into a global reference;

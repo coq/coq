@@ -1,26 +1,26 @@
 Implicit Arguments On.
 
-Mod M. 
+Module M. 
   Definition a:=[s:Set]s.
   Print a.
-EndM M.
+End M.
 
 Print M.a.
 
-Mod K.
+Module K.
   Definition app:=[A,B:Set; f:(A->B); x:A](f x).
-  Mod N.
+  Module N.
     Definition apap:=[A,B:Set](app (app 1!A 2!B)).
     Print app.
     Print apap.
-  EndM N.
+  End N.
   Print N.apap.
-EndM K.
+End K.
 
 Print K.app.
 Print K.N.apap.
 
-Mod W:=K.N.
+Module W:=K.N.
 
 Print W.apap.
 

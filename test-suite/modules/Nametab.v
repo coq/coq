@@ -1,35 +1,35 @@
-Module M.
-  Definition id:=[x:Set]x.
-  Module M.
-    Definition zero:(id nat):= O.
-    Definition id:=Set.
-    Definition nacik:id:=nat.
-  End M.
-End M.
-
-Module M.
+Module Q.
 Module N.
 Module K.
 Definition id:=Set.
 End K.
 End N.
-End M.
-
+End Q.
 
 Locate id.
 Locate K.id.
 Locate N.K.id.
-Locate M.N.K.id.
-Locate Top.M.N.K.id.
+Locate Q.N.K.id.
+Locate Top.Q.N.K.id.
 Locate K.
 Locate N.K.
-Locate M.N.K.
-Locate Scratch.M.N.K.
+Locate Q.N.K.
+Locate Top.Q.N.K.
 Locate N.
-Locate M.N.
-Locate Scratch.M.N.
-Locate M.
-Locate Scratch.M.
+Locate Q.N.
+Locate Top.Q.N.
+Locate Q.
+Locate Top.Q.
+
+
+Module Type SIG.
+End SIG.
+
+Module Type FSIG[X:SIG].
+End FSIG.
+
+Module F[X:SIG].
+End F.
 
 (*
 #trace Nametab.push;;
@@ -40,46 +40,74 @@ Locate Scratch.M.
 *)
 
 Module M.
+Reset M.
 Module M[X:SIG].
+Reset M.
 Module M[X,Y:SIG].
+Reset M.
 Module M[X:SIG;Y:SIG].
-Module M[X,Y:SIG;X,Z:SIG].
+Reset M.
+Module M[X,Y:SIG;Z1,Z:SIG].
+Reset M.
 Module M[X:SIG][Y:SIG].
-Module M[X,Y:SIG][X,Z:SIG].
+Reset M.
+Module M[X,Y:SIG][Z1,Z:SIG].
+Reset M.
 Module M:SIG.
+Reset M.
 Module M[X:SIG]:SIG.
+Reset M.
 Module M[X,Y:SIG]:SIG.
+Reset M.
 Module M[X:SIG;Y:SIG]:SIG.
-Module M[X,Y:SIG;X,Z:SIG]:SIG.
+Reset M.
+Module M[X,Y:SIG;Z1,Z:SIG]:SIG.
+Reset M.
 Module M[X:SIG][Y:SIG]:SIG.
-Module M[X,Y:SIG][X,Z:SIG]:SIG.
-Module M:=(M N).
-Module M[X:SIG]:=(M N).
-Module M[X,Y:SIG]:=(M N).
-Module M[X:SIG;Y:SIG]:=(M N).
-Module M[X,Y:SIG;X,Z:SIG]:=(M N).
-Module M[X:SIG][Y:SIG]:=(M N).
-Module M[X,Y:SIG][X,Z:SIG]:=(M N).
-Module M:SIG:=(M N).
-Module M[X:SIG]:SIG:=(M N).
-Module M[X,Y:SIG]:SIG:=(M N).
-Module M[X:SIG;Y:SIG]:SIG:=(M N).
-Module M[X,Y:SIG;X,Z:SIG]:SIG:=(M N).
-Module M[X:SIG][Y:SIG]:SIG:=(M N).
-Module M[X,Y:SIG][X,Z:SIG]:SIG:=(M N).
+Reset M.
+Module M[X,Y:SIG][Z1,Z:SIG]:SIG.
+Reset M.
+Module M:=(F Q).
+Reset M.
+Module M[X:FSIG]:=(X Q).
+Reset M.
+Module M[X,Y:FSIG]:=(X Q).
+Reset M.
+Module M[X:FSIG;Y:SIG]:=(X Y).
+Reset M.
+Module M[X,Y:FSIG;Z1,Z:SIG]:=(X Z).
+Reset M.
+Module M[X:FSIG][Y:SIG]:=(X Y).
+Reset M.
+Module M[X,Y:FSIG][Z1,Z:SIG]:=(X Z).
+Reset M.
+Module M:SIG:=(F Q).
+Reset M.
+Module M[X:FSIG]:SIG:=(X Q).
+Reset M.
+Module M[X,Y:FSIG]:SIG:=(X Q).
+Reset M.
+Module M[X:FSIG;Y:SIG]:SIG:=(X Y).
+Reset M.
+Module M[X,Y:FSIG;Z1,Z:SIG]:SIG:=(X Z).
+Reset M.
+Module M[X:FSIG][Y:SIG]:SIG:=(X Y).
+Reset M.
+Module M[X,Y:FSIG][Z1,Z:SIG]:SIG:=(X Z).
+Reset M.
 
 
-Moduletype SIG.
+Module Type ELEM.
   Parameter A:Set.
   Parameter x:A.
-EndT SIG.
+End ELEM.
 
 Module Nat.
     Definition A:=nat.
     Definition x:=O.
 End Nat. 
 
-Module List[X:SIG].
+Module List[X:ELEM].
   Inductive list : Set := nil : list 
 		       | cons : X.A -> list -> list.
  

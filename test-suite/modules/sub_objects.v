@@ -3,33 +3,33 @@ Reset Initial.
 Set Implicit Arguments.
 
 
-Mod M.
+Module M.
   Definition id:=[A:Set][x:A]x.
 
-  Modtype SIG.
+  Module Type SIG.
     Parameter idid:(A:Set)A->A.
-  EndT SIG.
+  End SIG.
 
-  Mod N.
+  Module N.
     Definition idid:=[A:Set][x:A](id x).
     Grammar constr constr8 := 
       not_eq [ "#"  constr7($b) ] -> [ (idid $b) ].
     Syntactic Definition inc := (plus (S O)). 
-  EndM N.
+  End N.
 
   Definition zero:=(N.idid O).
 
-EndM M.
+End M.
 
 Definition zero := (M.N.idid O).
 Definition jeden := (M.N.inc O).
 
-Mod Goly:=M.N.
+Module Goly:=M.N.
 
 Definition Gole_zero := (Goly.idid O).
 Definition Goly_jeden := (Goly.inc O).
 
-Mod Ubrany : M.SIG := M.N.
+Module Ubrany : M.SIG := M.N.
 
 Definition Ubrane_zero := (Ubrany.idid O).
 
