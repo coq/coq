@@ -12,7 +12,8 @@ let get_state () =
 
 let set_state (fl,fs) =
   Lib.unfreeze fl;
-  unfreeze_summaries fs
+  unfreeze_summaries fs;
+  Lib.declare_initial_state()
 
 let state_magic_number = 19764
 

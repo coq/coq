@@ -228,16 +228,6 @@ let abort_refine f x =
   f x
   (* used to be: error "Must save or abort current goal first" *)
 
-let reset_name = abort_refine reset_name
-(*** TODO 
-and reset_keeping_name = abort_refine reset_keeping
-and reset_section = abort_refine raw_reset_section
-and save_state = abort_refine States.raw_save_state
-and restore_state = abort_refine States.raw_restore_state
-and restore_last_saved_state = abort_refine States.raw_restore_last_saved_state
-***)
-and reset_initial = abort_refine Lib.reset_initial
-
    
 (*********************************************************************)
 (*              Modifying the current prooftree                      *)

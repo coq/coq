@@ -1,6 +1,8 @@
 
 (* $Id$ *)
 
+val local : bool        (* local use (no installation) *)
+
 val bindir : string     (* where the binaries are installed *)
 val coqlib : string     (* where the std library is installed *)
 

@@ -15,6 +15,9 @@
 #
 #############################################################################
 
+# Local use (no installation)
+LOCAL=LOCALINSTALLATION
+
 # Paths for true installation
 # BINDIR=path where coqtop, coqc, coqmktop, coq-tex, coqdep, gallina and
 #        do_Makefile will reside

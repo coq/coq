@@ -13,8 +13,6 @@ open Rawterm
 
 (* The type of errors raised by the pretyper *)
 
-exception PretypeError of loc * path_kind * context * type_error
-
 val error_var_not_found_loc :
   loc -> path_kind -> identifier -> 'a
 

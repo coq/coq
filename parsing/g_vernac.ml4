@@ -311,26 +311,23 @@ GEXTEND Gram
 
   END
 
-(* State management *)
 GEXTEND Gram
   vernac:
     [ [ 
-        IDENT "Save"; IDENT "State"; id = identarg; "." ->
-          <:ast< (SaveState $id "") >>
-      | IDENT "Save"; IDENT "State"; id = identarg; s = stringarg; "." ->
-          <:ast< (SaveState $id $s) >>
-      | IDENT "Write"; IDENT "States"; id = identarg; "." ->
-          <:ast< (WriteStates $id) >>
-      | IDENT "Write"; IDENT "States"; id = stringarg; "." ->
-          <:ast< (WriteStates $id) >>
+
+(* State management *)
+        IDENT "Write"; IDENT "State"; id = identarg; "." ->
+          <:ast< (WriteState $id) >>
+      | IDENT "Write"; IDENT "State"; s = stringarg; "." ->
+          <:ast< (WriteState $s) >>
       | IDENT "Restore";  IDENT "State"; id = identarg; "." ->
           <:ast< (RestoreState $id) >>
-      | IDENT "Remove";  IDENT "State"; id = identarg; "." ->
-          <:ast< (RemoveState $id) >>
+      | IDENT "Restore";  IDENT "State"; s = stringarg; "." ->
+          <:ast< (RestoreState $s) >>
+      | IDENT "Reset"; id = identarg; "." -> <:ast< (ResetName $id) >>
       | IDENT "Reset"; IDENT "Initial"; "." -> <:ast< (ResetInitial) >>
       | IDENT "Reset"; IDENT "Section"; id = identarg; "." ->
           <:ast< (ResetSection $id) >>
-      | IDENT "Reset"; id = identarg; "." -> <:ast< (ResetName $id) >>
 
 (* Modules and Sections *)   
 

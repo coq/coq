@@ -219,25 +219,38 @@ let _ =
 (* Managing states *)
 
 let _ =
-  add "SaveState"
+  add "WriteState"
     (function 
        | [VARG_STRING file] ->
-	   (fun () -> States.extern_state file)
+	   (fun () -> Pfedit.abort_refine States.extern_state file)
+       | [VARG_IDENTIFIER id] ->
+	   let file = string_of_id id in
+	   (fun () -> Pfedit.abort_refine States.extern_state file)
        | _ -> bad_vernac_args "SaveState")
 
 let _ =
-  add "LoadState"
+  add "RestoreState"
     (function 
        | [VARG_STRING file] ->
-	   (fun () -> States.intern_state file)
-       | _ -> bad_vernac_args "RestoreState")
+	   (fun () -> Pfedit.abort_refine States.intern_state file)
+       | [VARG_IDENTIFIER id] ->
+	   let file = string_of_id id in
+	   (fun () -> Pfedit.abort_refine States.intern_state file)
+       | _ -> bad_vernac_args "LoadState")
 
 (* Resetting *)
 
 let _ =
+  add "ResetName"
+    (function 
+       | [VARG_IDENTIFIER id] -> 
+	   (fun () -> Pfedit.abort_refine Lib.reset_name id)
+       | _ -> bad_vernac_args "ResetName")
+
+let _ =
   add "ResetInitial"
     (function 
-       | [] -> (fun () -> reset_initial ())
+       | [] -> (fun () -> Pfedit.abort_refine Lib.reset_initial ())
        | _  -> bad_vernac_args "ResetInitial")
 
 (***
@@ -249,11 +262,6 @@ let _ =
        | _ -> bad_vernac_args "ResetSection")
 
 ***)
-let _ =
-  add "ResetName"
-    (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> Pfedit.reset_name id)
-       | _ -> bad_vernac_args "ResetName")
 
 (* Modules *)
 
