@@ -1140,7 +1140,7 @@ let interp c = match c with
   | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
   | VernacTacticGrammar al -> Metasyntax.add_tactic_grammar al
   | VernacGrammar (univ,al) -> vernac_grammar univ al
-  | VernacSyntaxExtension (lcl,s,l,l8) -> vernac_syntax_extension lcl s l l8
+  | VernacSyntaxExtension (lcl,sl,l8) -> vernac_syntax_extension lcl sl l8
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacOpenScope sc -> vernac_open_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
@@ -1148,8 +1148,8 @@ let interp c = match c with
       vernac_infix local assoc n inf qid b mv8 sc
   | VernacDistfix (local,assoc,n,inf,qid,sc) -> 
       vernac_distfix local assoc n inf qid sc
-  | VernacNotation (local,inf,c,pl,mv8,sc) ->
-      vernac_notation local inf c pl mv8 sc
+  | VernacNotation (local,c,infpl,mv8,sc) ->
+      vernac_notation local c infpl mv8 sc
 
   (* Gallina *)
   | VernacDefinition (k,id,d,f,_) -> vernac_definition k id d f

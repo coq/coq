@@ -486,7 +486,7 @@ let cache_syntax_extension (_,(_,prec,ntn,gr,se)) =
     (* Reserve the notation level *)
     Symbols.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
-    Egrammar.extend_grammar (Egrammar.Notation gr);
+    option_iter (fun gr -> Egrammar.extend_grammar (Egrammar.Notation gr)) gr;
     (* Declare the printing rule *)
     Symbols.declare_notation_printing_rule ntn (se,fst prec)
 
@@ -496,7 +496,7 @@ let subst_printing_rule subst x = x
 
 let subst_syntax_extension (_,subst,(local,prec,ntn,gr,se)) =
   (local,prec,ntn,
-   subst_notation_grammar subst gr,
+   option_app (subst_notation_grammar subst) gr,
    subst_printing_rule subst se)
 
 let classify_syntax_definition (_,(local,_,_,_,_ as o)) =
@@ -588,7 +588,26 @@ let recompute_assoc typs =
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
 
-let add_syntax_extension local df modifiers mv8 =
+let add_syntax_extension_v8only local mv8 =
+  let (df,modifiers) = out_some mv8 in
+  let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
+  let inner = if !Options.v7 then (NumLevel 10,InternalProd) else
+    (NumLevel 200,InternalProd) in
+  let (_,symbs) = analyse_tokens (split df) in
+  let typs =
+    find_symbols
+      (NumLevel n,BorderProd(true,assoc)) inner
+      (NumLevel n,BorderProd(false,assoc)) symbs in
+  let typs = List.map (set_entry_type etyps) typs in
+  let assoc = recompute_assoc typs in
+  let (prec,notation) = make_symbolic n symbs typs in
+  let pp_rule = make_pp_rule typs symbs n in
+  Lib.add_anonymous_leaf
+    (inSyntaxExtension(local,prec,notation,None,pp_rule))
+
+let add_syntax_extension local dfmod mv8 = match dfmod with
+  | None -> add_syntax_extension_v8only local mv8
+  | Some (df,modifiers) ->
   let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
   let inner = if !Options.v7 then (NumLevel 10,InternalProd) else
     (NumLevel 200,InternalProd) in
@@ -620,7 +639,7 @@ let add_syntax_extension local df modifiers mv8 =
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
   let pp_rule = make_pp_rule pptyps ppsymbols ppn in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,ppprec,notation,gram_rule,pp_rule))
+    (inSyntaxExtension(local,ppprec,notation,Some gram_rule,pp_rule))
 
 (**********************************************************************)
 (* Distfix, Infix, Notations *)
@@ -721,7 +740,7 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
   let pp_rule = make_pp_rule pptyps ppsymbols ppn in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,ppprec,notation,gram_rule,pp_rule));
+    (inSyntaxExtension(local,ppprec,notation,Some gram_rule,pp_rule));
   let old_pp_rule =
     if onlyparse then None
     else
@@ -770,7 +789,62 @@ let add_notation_interpretation df (c,l) sc =
   add_notation_interpretation_core local vars symbs df ((la,a),a_for_old) sc
     onlyparse
 
-let add_notation local df c modifiers mv8 sc =
+let add_notation_v8only local c (df,modifiers) sc =
+  let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) sc toks =
+    let onlyparse = false in
+    let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
+    let inner = (NumLevel 200,InternalProd) in
+    let (vars,symbols) = analyse_tokens toks in
+    let typs =
+      find_symbols
+	(NumLevel n,BorderProd(true,assoc)) inner 
+	(NumLevel n,BorderProd(false,assoc)) symbols in
+    (* To globalize... *)
+    let a = interp_aconstr vars c in
+    let typs = List.map (set_entry_type etyps) typs in
+    let assoc = recompute_assoc typs in
+    (* Declare the parsing and printing rules if not already done *)
+    let (prec,notation) = make_symbolic n symbols typs in
+    let pp_rule = make_pp_rule typs symbols n in
+    Lib.add_anonymous_leaf
+      (inSyntaxExtension(local,prec,notation,None,pp_rule));
+    (* Declare the interpretation *)
+    let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
+    Lib.add_anonymous_leaf
+      (inNotation(local,None,notation,scope,a,onlyparse,df))
+  in
+  let toks = split df in
+  match toks with 
+    | [String x] when (modifiers = [] or modifiers = [SetOnlyParsing]) ->
+	(* This is a ident to be declared as a rule *)
+        add_notation_in_scope local df c (None,0,[],modifiers=[SetOnlyParsing])
+          sc toks
+    | _ ->
+	let (assoc,lev,typs,onlyparse) = interp_modifiers None None modifiers
+	in
+	match lev with
+	  | None->
+	      if modifiers <> [] & modifiers <> [SetOnlyParsing] then
+		error "Parsing rule for this notation includes no level"
+	      else
+	        (* Declare only interpretation *)
+		let (vars,symbs) = analyse_tokens toks in
+		let onlyparse = modifiers = [SetOnlyParsing] in
+		let a = interp_aconstr vars c in
+		let a_for_old = interp_rawconstr_gen
+		  false Evd.empty (Global.env()) [] false (vars,[]) c in
+		add_notation_interpretation_core local vars symbs df
+		  (a,a_for_old) sc onlyparse
+	  | Some n ->
+	    (* Declare both syntax and interpretation *)
+	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
+	    let mods = (assoc,n,typs,onlyparse)	in
+            add_notation_in_scope local df c mods sc toks
+
+let add_notation local c dfmod mv8 sc =
+  match dfmod with
+  | None -> add_notation_v8only local c (out_some mv8) sc
+  | Some (df,modifiers) ->
   let toks = split df in
   match toks with 
     | [String x] when quote(strip x) = x

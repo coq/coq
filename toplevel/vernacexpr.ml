@@ -152,8 +152,9 @@ type vernac_expr =
   | VernacTacticGrammar of
       (string * (string * grammar_production list) * raw_tactic_expr) list
   | VernacSyntax of string * raw_syntax_entry list
-  | VernacSyntaxExtension of locality_flag * string *
-      syntax_modifier list * (string * syntax_modifier list) option
+  | VernacSyntaxExtension of locality_flag *
+      (string * syntax_modifier list) option 
+      * (string * syntax_modifier list) option
   | VernacDistfix of locality_flag *
       grammar_associativity * precedence * string * reference *
       scope_name option
@@ -165,7 +166,7 @@ type vernac_expr =
       (grammar_associativity * precedence * string) option *
       scope_name option
   | VernacNotation of
-      locality_flag * string * constr_expr * syntax_modifier list *
+      locality_flag * constr_expr * (string * syntax_modifier list) option *
       (string * syntax_modifier list) option * scope_name option
 
   (* Gallina *)

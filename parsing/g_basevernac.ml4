@@ -253,7 +253,11 @@ GEXTEND Gram
                let mv8 = match mv8 with
                    Some mv8 -> mv8
                  | _ -> List.map map_modl modl in
-	       VernacSyntaxExtension (local,s,modl,Some(s8,mv8))
+	       VernacSyntaxExtension (local,Some (s,modl),Some(s8,mv8))
+
+     | IDENT "Uninterpreted"; IDENT "V8Notation"; local = locality; s = STRING; 
+	 modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->
+	   VernacSyntaxExtension (local,None,Some(s,modl))
 
      | IDENT "Open"; local = locality; IDENT "Scope"; 
 	 sc = IDENT -> VernacOpenScope (local,sc)
@@ -294,7 +298,7 @@ GEXTEND Gram
      | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->
-	 VernacNotation (local,"'"^s^"'",c,l,None,None)
+	 VernacNotation (local,c,Some("'"^s^"'",l),None,None)
      | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ];
@@ -308,7 +312,11 @@ GEXTEND Gram
                let mv8 = match mv8 with
                    Some mv8 -> mv8
                  | _ -> List.map map_modl modl in
-               VernacNotation (local,s,c,modl,Some(s8,mv8),sc)
+               VernacNotation (local,c,Some(s,modl),Some(s8,mv8),sc)
+     | IDENT "V8Notation"; local = locality; s = STRING; ":="; c = constr;
+         modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
+	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
+         VernacNotation (local,c,None,Some(s,modl),sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)

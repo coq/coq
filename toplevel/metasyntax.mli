@@ -37,14 +37,17 @@ val add_distfix : locality_flag ->
     -> scope_name option -> unit
 val add_delimiters : scope_name -> string -> unit
 
-val add_notation : locality_flag -> string -> constr_expr
-    -> syntax_modifier list -> (string * syntax_modifier list) option
+val add_notation : locality_flag -> constr_expr
+  -> (string * syntax_modifier list) option
+  -> (string * syntax_modifier list) option
       -> scope_name option -> unit
 
 val add_notation_interpretation : string -> (aconstr * Names.name list)
   -> scope_name option -> unit
 
-val add_syntax_extension : locality_flag -> string -> syntax_modifier list -> (string * syntax_modifier list) option -> unit
+val add_syntax_extension : locality_flag
+  -> (string * syntax_modifier list) option
+  -> (string * syntax_modifier list) option -> unit
 
 val print_grammar : string -> string -> unit
 

@@ -429,7 +429,7 @@ GEXTEND Gram
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
 		 CApp (loc,c,l)
 	     | None -> c in
-	   VernacNotation (false,"'"^id^"'",c,[],None,None)
+	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
 *)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
 	  VernacDeclareImplicits (qid,Some l)
@@ -678,11 +678,11 @@ GEXTEND Gram
      | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->
-	 VernacNotation (local,"'"^s^"'",c,l,None,None)
+	 VernacNotation (local,c,Some("'"^s^"'",l),None,None)
      | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-           VernacNotation (local,s,c,modl,None,sc)
+           VernacNotation (local,c,Some(s,modl),None,sc)
 
      | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
         OPT [ ":"; IDENT "tactic" ]; ":=";
@@ -698,7 +698,7 @@ GEXTEND Gram
 
      | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (local,s,l,None)
+	 -> VernacSyntaxExtension (local,Some(s,l),None)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
