@@ -246,7 +246,7 @@ let add_search (global_reference:global_reference) assumptions cstr =
   try 
     let env = Global.env() in
     let id_string =
-      string_of_qualid (Nametab.qualid_of_global env global_reference) in
+      string_of_qualid (Nametab.shortest_qualid_of_global env global_reference) in
     let ast = 
     try
       CT_premise (CT_ident id_string, translate_constr assumptions cstr)
@@ -308,11 +308,11 @@ let globcv = function
   | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
       let env = Global.env() in
       convert_qualid
-	 (Nametab.qualid_of_global env (IndRef(sp,tyi)))
+	 (Nametab.shortest_qualid_of_global env (IndRef(sp,tyi)))
   | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
       let env = Global.env() in
       convert_qualid
-          (Nametab.qualid_of_global env (ConstructRef ((sp, tyi), i)))
+          (Nametab.shortest_qualid_of_global env (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
 let pbp_tac_pcoq =

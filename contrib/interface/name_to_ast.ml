@@ -110,7 +110,7 @@ let convert_one_inductive sp tyi =
   let env = Global.env () in
   let envpar = push_rel_context params env in
   ope("VERNACARGLIST",
-      [convert_qualid (Nametab.qualid_of_global env (IndRef (sp, tyi)));
+      [convert_qualid (Nametab.shortest_qualid_of_global env (IndRef (sp, tyi)));
        ope("CONSTR", [ast_of_constr true envpar arity]);
        ope("BINDERLIST", convert_env(List.rev params));
        convert_constructors envpar cstrnames cstrtypes]);;
