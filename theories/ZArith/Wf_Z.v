@@ -96,13 +96,6 @@ Intros Hn; Elim Hn; Intros.
 Rewrite -> p; Apply H.
 Qed.
 
-Lemma ZERO_le_inj :
-  (n:nat) `0 <= (inject_nat n)`.
-Induction n; Simpl; Intros;
-[ Apply Zle_n
-| Unfold Zle; Simpl; Discriminate].
-Qed.
-
 Lemma natlike_ind : (P:Z->Prop) (P `0`) ->
   ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
   (x:Z) `0 <= x` -> (P x).

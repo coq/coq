@@ -637,6 +637,13 @@ Lemma NEG_lt_ZERO : (p:positive)`(NEG p)<0`.
 Unfold Zlt; Trivial.
 Qed.
 
+Lemma ZERO_le_inj :
+  (n:nat) `0 <= (inject_nat n)`.
+Induction n; Simpl; Intros;
+[ Apply Zle_n
+| Unfold Zle; Simpl; Discriminate].
+Qed.
+
 Hints Immediate Zle_refl : zarith.
 
 (** Transitivity using successor *)
