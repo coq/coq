@@ -31,6 +31,14 @@ val declare_mind : mutual_inductive_entry -> unit
 val declare_eliminations : section_path -> unit
 
 
+(*s Corresponding test and access functions. *)
+
+val is_constant : section_path -> bool
+val constant_strength : section_path -> strength
+
+val is_variable : identifier -> bool
+val variable_strength : identifier -> strength
+
 (*s It also provides a function [global_reference] to construct a global
   constr (a constant, an inductive or a constructor) from an identifier.
   To do so, it first looks for the section path using [Nametab.sp_of_id] and

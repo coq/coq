@@ -3,9 +3,6 @@
      - conserver les constantes dans leur section de définition
        et redéfinir des constantes déchargées à la sortie
 
- o Variables existentielles
-     - unifier Meta et Evar
-
  o Lib
      - écrire une fonction d'export qui supprimme les FrozenState,
        vérifie qu'il n'y a pas de section ouverte, et présente les

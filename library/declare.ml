@@ -135,6 +135,14 @@ let declare_mind mie =
   push_inductive_names sp mie;
   declare_inductive_implicits sp
 
+(* Test and access functions. *)
+
+let is_constant sp = failwith "TODO"
+let constant_strength sp = failwith "TODO"
+
+let is_variable id = failwith "TODO"
+let variable_strength id = failwith "TODO"
+
 (* Global references. *)
 
 let first f v =

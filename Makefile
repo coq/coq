@@ -59,11 +59,15 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
 	tactics/wcclausenv.cmo tactics/tacticals.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
 
-PRETYPING=pretyping/astterm.cmo
+PRETYPING=pretyping/classops.cmo pretyping/recordops.cmo \
+          pretyping/evarutil.cmo pretyping/evarconv.cmo \
+          pretyping/pretype_errors.cmo pretyping/coercion.cmo \
+	  pretyping/multcase.cmo pretyping/pretyping.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
-	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
+	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo\
+        parsing/printer.cmo parsing/pretty.cmo parsing/astterm.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/vernac.cmo toplevel/mltop.cmo \
@@ -79,6 +83,14 @@ CMX=$(CMO:.cmo=.cmx)
 # Targets
 
 world: minicoq coqtop.byte dev/db_printers.cmo
+
+kernel: $(KERNEL)
+library: $(LIBRARY)
+proofs: $(PROOFS)
+tactics: $(TACTICS)
+parsing: $(PARSING)
+pretyping: $(PRETYPING)
+toplevel: $(TOPLEVEL)
 
 # coqtop
 
@@ -215,6 +227,8 @@ archclean::
 	rm -f proofs/*.cmx proofs/*.[so]
 	rm -f tactics/*.cmx tactics/*.[so]
 	rm -f parsing/*.cmx parsing/*.[so]
+	rm -f pretyping/*.cmx pretyping/*.[so]
+	rm -f toplevel/*.cmx toplevel/*.[so]
 
 cleanall:: archclean
 	rm -f *~
@@ -226,6 +240,8 @@ cleanall:: archclean
 	rm -f proofs/*.cm[io] proofs/*~
 	rm -f tactics/*.cm[io] tactics/*~
 	rm -f parsing/*.cm[io] parsing/*.ppo parsing/*~
+	rm -f pretyping/*.cm[io] pretyping/*~
+	rm -f toplevel/*.cm[io] toplevel/*~
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml

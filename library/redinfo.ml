@@ -74,7 +74,7 @@ let constant_eval sp =
     v
   end
 
-(* Registration as global tables and roolback. *)
+(* Registration as global tables and rollback. *)
 
 type frozen = constant_evaluation Spmap.t
 

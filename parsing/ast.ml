@@ -3,6 +3,7 @@
 
 open Pp
 open Util
+open Names
 open Coqast
 open Pcoq
 
