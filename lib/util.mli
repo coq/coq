@@ -85,6 +85,7 @@ val list_try_find : ('a -> 'b) -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
+val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 val list_firstn : int -> 'a list -> 'a list
 val list_last : 'a list -> 'a
 val list_lastn : int -> 'a list -> 'a list
@@ -168,6 +169,8 @@ val pr_fnl : unit -> std_ppcmds
 val pr_int : int -> std_ppcmds
 val pr_str : string -> std_ppcmds
 val pr_coma : unit -> std_ppcmds
+val pr_semicolon : unit -> std_ppcmds
+val pr_bar : unit -> std_ppcmds
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds

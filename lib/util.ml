@@ -254,6 +254,11 @@ let list_splitby p =
   in 
   splitby_loop []
 
+let rec list_split3 = function
+  | [] -> ([], [], [])
+  | (x,y,z)::l ->
+      let (rx, ry, rz) = list_split3 l in (x::rx, y::ry, z::rz)
+
 let list_firstn n l =
   let rec aux acc = function
     | (0, l) -> List.rev acc
@@ -510,6 +515,8 @@ let pr_fnl = fnl
 let pr_int = int
 let pr_str = str
 let pr_coma () = str "," ++ spc ()
+let pr_semicolon () = str ";" ++ spc ()
+let pr_bar () = str "|" ++ spc ()
 
 let rec prlist elem l = match l with 
   | []   -> mt ()
