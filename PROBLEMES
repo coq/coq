@@ -18,17 +18,6 @@ Associativite Repeat Orelse changee
 	Repeat A Orelse B se lit (Repeat A) Orelse B 
 ce n'est pas malin car Repeat A n'echoue jamais
 
-Probleme de Reset Initial.
-Load Field.
-Reset Initial.
-Coq <  Load Field.
-Error while reading ./Field.v :
-File "./Field.v", line 6, characters 0-83
-Error: list already exists
-(* l'erreur ne se produit pas sur un fichier plus court ..)
-voir dans library states.ml 
-la fonction freeze=set_state qui modifie l'etat initial ....
-
 les parentheses ne sont pas autorises autour de 
 motifs constants :
 > Check [n:nat]Cases n of (O) => true | _ => false end.
@@ -44,8 +33,7 @@ Bordeaux/Additions :
 
 Bordeaux/GROUPS : OK
 
-Bordeaux/EXCEPTIONS :
-        Hints Unfold n'unfold plus les Local => échec d'Auto 
+Bordeaux/EXCEPTIONS : OK
 
 Dyade/Otway-Rees : OK
 Dyade/BDD : Require Rocq/GRAPHS
