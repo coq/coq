@@ -173,7 +173,7 @@ let (inClass,outClass) =
                   { load_function = (fun _ -> ());
 		    open_function = cache_class;
                     cache_function = cache_class;
-                    specification_function = (function x -> x) })
+                    export_function = (function x -> Some x) })
 
 let add_new_class (cl,s,stre,p) = 
   Lib.add_anonymous_leaf (inClass ((cl,{cL_STR=s;cL_STRE=stre;cL_PARAM=p})))
@@ -324,4 +324,4 @@ let (inCoercion,outCoercion) =
                   { load_function = (fun _ -> ());
 		    open_function = cache_coercion;
                     cache_function = cache_coercion;
-                    specification_function = (function x -> x) })
+                    export_function = (function x -> Some x) })

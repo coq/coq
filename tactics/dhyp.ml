@@ -187,7 +187,7 @@ let cache_dd (_,(na,dd)) =
       [< 'sTR"The code which adds destructor hints broke;"; 'sPC; 
 	 'sTR"this is not supposed to happen" >]
 
-let specification_dd x = x
+let export_dd x = Some x
 
 type destructor_data_object = identifier * destructor_data
 
@@ -197,7 +197,7 @@ let ((inDD : destructor_data_object->obj),
                   { load_function = (fun _ -> ());
                     cache_function = cache_dd;
 		    open_function = cache_dd;
-                    specification_function = specification_dd })
+                    export_function = export_dd })
     
 let add_destructor_hint na pat pri code =
   Lib.add_anonymous_leaf

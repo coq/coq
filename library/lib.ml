@@ -151,12 +151,15 @@ let close_section s =
 let export_module () =
   if !module_name = None then error "no module declared";
   let rec clean acc = function
-    | (_,Module _) :: _ -> acc
-    | (_,Leaf _) as node :: stk -> clean (node::acc) stk
-    | (_,ClosedSection _) as node :: stk -> clean (node::acc) stk
+    | (_,Module _) :: _ | [] -> acc
+    | (sp,Leaf o) as node :: stk -> 
+	(match export_object o with 
+	   | None -> clean acc stk
+	   | Some o' -> clean ((sp,Leaf o') :: acc) stk)
+    | (sp,ClosedSection (s,ctx)) :: stk -> 
+	clean ((sp,ClosedSection (s, clean [] ctx)) :: acc) stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,FrozenState _) :: stk -> clean acc stk
-    | _ -> assert false
   in
   clean [] !lib_stk
 

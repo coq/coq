@@ -38,7 +38,7 @@ let (inStruc,outStruc) =
                   { load_function = (fun _ -> ());
                     cache_function = cache_structure;
 		    open_function = cache_structure;
-                    specification_function = (function x -> x) })
+                    export_function = (function x -> Some x) })
 
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
@@ -72,7 +72,7 @@ let (inObjDef,outObjDef) =
                   { load_function = (fun _ -> ());
 		    open_function = cache_obj;
                     cache_function = cache_obj;
-                    specification_function = (function x -> x)})
+                    export_function = (function x -> Some x)})
 
 let add_new_objdef (o,c,la,lp,l) =
   try 
@@ -88,7 +88,7 @@ let ((inObjDef1 : section_path -> obj),(outObjDef1 : obj -> section_path)) =
                   { load_function = (fun _ -> ());
 		    open_function = cache_objdef1;
                     cache_function = cache_objdef1;
-                    specification_function = (function x -> x)})
+                    export_function = (function x -> Some x)})
 
 let objdef_info o = List.assoc o !oBJDEFS
 

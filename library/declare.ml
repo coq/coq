@@ -67,14 +67,14 @@ let load_variable _ = ()
 
 let open_variable _ = ()
 
-let specification_variable x = x
+let export_variable x = None
 
 let (in_variable, out_variable) =
   let od = {
     cache_function = cache_variable;
     load_function = load_variable;
     open_function = open_variable;
-    specification_function = specification_variable } in
+    export_function = export_variable } in
   declare_object ("VARIABLE", od)
 
 let out_variable sp = fst (out_variable sp)
@@ -96,14 +96,14 @@ let load_parameter (sp,(_,imps)) =
 let open_parameter (sp,_) =
   Nametab.push (basename sp) sp
 
-let specification_parameter obj = obj
+let export_parameter obj = Some obj
 
 let (in_parameter, out_parameter) =
   let od = {
     cache_function = cache_parameter;
     load_function = load_parameter;
     open_function = open_parameter;
-    specification_function = specification_parameter } 
+    export_function = export_parameter } 
   in
   declare_object ("PARAMETER", od)
 
@@ -141,14 +141,14 @@ let load_constant (sp,((ce,stre),imps)) =
 let open_constant (sp,_) =
   Nametab.push (basename sp) sp
 
-let specification_constant obj = obj
+let export_constant obj = Some obj
 
 let (in_constant, out_constant) =
   let od = {
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
-    specification_function = specification_constant } 
+    export_function = export_constant } 
   in
   declare_object ("CONSTANT", od)
 
@@ -176,14 +176,14 @@ let load_inductive (sp,(_,imps)) =
 let open_inductive (sp,(mie,_)) =
   push_inductive_names sp mie
 
-let specification_inductive obj = obj
+let export_inductive obj = Some obj
 
 let (in_inductive, out_inductive) =
   let od = {
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
-    specification_function = specification_inductive } 
+    export_function = export_inductive } 
   in
   declare_object ("INDUCTIVE", od)
 

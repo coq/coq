@@ -221,14 +221,14 @@ let cache_ml_module_object (_,{mnames=mnames}) =
          add_loaded_module mname)
     mnames
 
-let specification_ml_module_object x = x
+let export_ml_module_object x = Some x
 					 
 let (inMLModule,outMLModule) =
   declare_object ("ML-MODULE",
                   { load_function = cache_ml_module_object;
                     cache_function = cache_ml_module_object;
 		    open_function = (fun _ -> ());
-                    specification_function = specification_ml_module_object })
+                    export_function = export_ml_module_object })
 
 let declare_ml_modules l =
   Lib.add_anonymous_leaf (inMLModule {mnames=l})

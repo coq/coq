@@ -944,10 +944,10 @@ let (inMD,outMD) =
     let ve=val_interp (Evd.empty,Environ.empty_env,[],[],None,get_debug ()) td 
     in add (na,ve) in 
     declare_object ("TACTIC-DEFINITION",
-       {cache_function         = cache_md;
-        load_function          = (fun _ -> ());
-        open_function          = cache_md;
-        specification_function = (fun x -> x)})
+       {cache_function  = cache_md;
+        load_function   = (fun _ -> ());
+        open_function   = cache_md;
+        export_function = (fun x -> Some x)})
 
 (* Adds a Tactic Definition in the table *)
 let add_tacdef na vbody =

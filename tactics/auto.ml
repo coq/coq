@@ -163,14 +163,14 @@ let add_hint dbname hintlist =
 let cache_autohint (_,(name,hintlist)) =
   try add_hint name hintlist with _ -> anomaly "Auto.add_hint"
 
-let specification_autohint x = x
+let export_autohint x = Some x
 
 let (inAutoHint,outAutoHint) =
   declare_object ("AUTOHINT",
                   { load_function = (fun _ -> ());
                     cache_function = cache_autohint;
 		    open_function = cache_autohint;
-                    specification_function = specification_autohint })
+                    export_function = export_autohint })
 
 (**************************************************************************)
 (*                     The "Hint" vernacular command                      *)

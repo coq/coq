@@ -49,7 +49,7 @@ let (inPPSyntax,outPPSyntax) =
      { load_function = (fun _ -> ());
        open_function = cache_syntax;
        cache_function = cache_syntax;
-       specification_function = (fun x -> x) })
+       export_function = (fun x -> Some x) })
 
 (* Syntax extension functions (registered in the environnement) *)
 
@@ -81,7 +81,7 @@ let (inToken, outToken) =
      { load_function = (fun _ -> ());
        open_function = cache_token;
        cache_function = cache_token;
-       specification_function = (fun x -> x)})
+       export_function = (fun x -> Some x)})
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
@@ -94,7 +94,7 @@ let (inGrammar, outGrammar) =
      { load_function = (fun _ -> ());
        open_function = cache_grammar;
        cache_function = cache_grammar;
-       specification_function = (fun x -> x)})
+       export_function = (fun x -> Some x)})
 
 let add_grammar_obj univ al =
    Lib.add_anonymous_leaf (inGrammar (Extend.interp_grammar_command univ al))
@@ -139,7 +139,7 @@ let (inInfix, outInfix) =
      { load_function = (fun _ -> ());
        open_function = cache_infix;
        cache_function = cache_infix;
-       specification_function = (fun x -> x)})
+       export_function = (fun x -> Some x)})
 
 let prec_assoc = function
   | Some(Gramext.RightA) -> (":L",":E")

@@ -31,7 +31,7 @@ let (in_syntax_constant, out_syntax_constant) =
     cache_function = cache_syntax_constant;
     load_function = (fun _ -> ());
     open_function = cache_syntax_constant;
-    specification_function = (fun x -> x) } 
+    export_function = (fun x -> Some x) } 
   in
   declare_object ("SYNTAXCONSTANT", od)
 

@@ -8,7 +8,7 @@ type 'a object_declaration = {
   cache_function : section_path * 'a -> unit;
   load_function : section_path * 'a -> unit;
   open_function : section_path * 'a -> unit;
-  specification_function : 'a -> 'a }
+  export_function : 'a -> 'a option }
 
 type obj = Dyn.t (* persistent dynamic objects *)
 
@@ -16,7 +16,7 @@ type dynamic_object_declaration = {
   dyn_cache_function : section_path * obj -> unit;
   dyn_load_function : section_path * obj -> unit;
   dyn_open_function : section_path * obj -> unit;
-  dyn_specification_function : obj -> obj }
+  dyn_export_function : obj -> obj option }
 
 let object_tag lobj = Dyn.tag lobj
 
@@ -34,13 +34,13 @@ let declare_object (na,odecl) =
   and opener (spopt,lobj) =
     if Dyn.tag lobj = na then odecl.open_function (spopt,outfun lobj)
     else anomaly "somehow we got the wrong dynamic object in the openfun"
-  and spec_extractor lobj = 
-    infun(odecl.specification_function (outfun lobj))
+  and exporter lobj = 
+    option_app infun (odecl.export_function (outfun lobj))
   in 
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;
 			     dyn_load_function = loader;
                              dyn_open_function = opener;
-                             dyn_specification_function = spec_extractor };
+                             dyn_export_function = exporter };
   (infun,outfun)
 
 let apply_dyn_fun f lobj =
@@ -50,7 +50,8 @@ let apply_dyn_fun f lobj =
       Hashtbl.find cache_tab tag
     with Not_found -> 
       anomaly ("Cannot find library functions for an object with tag "^tag)
-  in f dodecl
+  in 
+  f dodecl
 
 let cache_object ((_,lobj) as node) =
   apply_dyn_fun (fun d -> d.dyn_cache_function node) lobj
@@ -61,5 +62,5 @@ let load_object ((_,lobj) as node) =
 let open_object ((_,lobj) as node) = 
   apply_dyn_fun (fun d -> d.dyn_open_function node) lobj
 
-let extract_object_specification lobj =
-  apply_dyn_fun (fun d -> d.dyn_specification_function lobj) lobj
+let export_object lobj =
+  apply_dyn_fun (fun d -> d.dyn_export_function lobj) lobj

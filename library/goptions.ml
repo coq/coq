@@ -85,13 +85,13 @@ module MakeTable =
         let cache_options (_,(f,p)) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
-        let specification_options fp = fp in
+        let export_options fp = Some fp in
         let (inGo,outGo) =
           Libobject.declare_object (kn,
               { Libobject.load_function = load_options;
 		Libobject.open_function = cache_options;
 		Libobject.cache_function = cache_options;
-		Libobject.specification_function = specification_options}) in
+		Libobject.export_function = export_options}) in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
       else
@@ -204,13 +204,13 @@ let async_value_tab = ref OptionMap.empty
 let load_sync_value _ = ()
 let cache_sync_value (_,(k,v)) =
   sync_value_tab := OptionMap.add k v !sync_value_tab
-let spec_sync_value fp = fp
+let export_sync_value fp = Some fp
 let (inOptVal,_) =
-   Libobject.declare_object ("Sync_option_value",
-     {Libobject.load_function = load_sync_value;
+  Libobject.declare_object ("Sync_option_value",
+    { Libobject.load_function = load_sync_value;
       Libobject.open_function = cache_sync_value;
       Libobject.cache_function = cache_sync_value;
-      Libobject.specification_function = spec_sync_value})
+      Libobject.export_function = export_sync_value })
 
 let freeze_sync_table () = !sync_value_tab
 let unfreeze_sync_table l = sync_value_tab := l

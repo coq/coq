@@ -39,12 +39,12 @@ let _ =
 let (inMD,outMD) =
   let add (na,md) = mactab := Stringmap.add na md !mactab in
   let cache_md (_,(na,md)) = add (na,md) in 
-  let specification_md x = x in
+  let export_md x = Some x in
   declare_object ("TACTIC-MACRO-DATA",
                   { cache_function = cache_md;
 		    load_function = (fun _ -> ());
                     open_function = cache_md;
-                    specification_function = specification_md })
+                    export_function = export_md })
 
 let add_macro_hint na (ids,body) =
   if Stringmap.mem na !mactab then errorlabstrm "add_macro_hint"

@@ -19,7 +19,7 @@ type 'a object_declaration = {
   cache_function : section_path * 'a -> unit;
   load_function : section_path * 'a -> unit;
   open_function : section_path * 'a -> unit;
-  specification_function : 'a -> 'a }
+  export_function : 'a -> 'a option }
 
 (*s Given an object name and a declaration, the function [declare_object]
    will hand back two functions, the "injection" and "projection"
@@ -35,4 +35,5 @@ val object_tag : obj -> string
 val cache_object : section_path * obj -> unit
 val load_object : section_path * obj -> unit
 val open_object : section_path * obj -> unit
-val extract_object_specification : obj -> obj
+val export_object : obj -> obj option
+

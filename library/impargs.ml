@@ -123,7 +123,7 @@ let is_implicit_inductive_definition sp =
 let is_implicit_var id =
   try let _ = Idmap.find id !var_table in true with Not_found -> false
 
-(* Registration as global tables and roolback. *)
+(* Registration as global tables and rollback. *)
 
 type frozen_t = bool
               * implicits Spmap.t 
