@@ -79,13 +79,16 @@ Theorem cong_symmetric_same_relation:
   (U:Type) (R, R':(Relation U)) (same_relation U R R') -> (Symmetric U R) ->
   (Symmetric U R').
 Proof.
-Intuition.
+  Compute;Intros;Elim H;Intros;Clear H;Apply (H3 y x (H0 x y (H2 x y H1))).
+(*Intuition.*)
 Qed.
 
 Theorem cong_antisymmetric_same_relation:
   (U:Type) (R, R':(Relation U)) (same_relation U R R') ->
            (Antisymmetric U R) -> (Antisymmetric U R').
-Intuition.
+Proof.
+  Compute;Intros;Elim H;Intros;Clear H;Apply (H0 x y (H3 x y H1) (H3 y x H2)).
+(*Intuition.*)
 Qed.
 
 Theorem cong_transitive_same_relation:

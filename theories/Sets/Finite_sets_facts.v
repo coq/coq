@@ -189,7 +189,7 @@ Clear H'.
 Intro H'; Red in H'.
 Elim H'; Intros H'0 H'1; Red in H'0; Clear H' H'1.
 Absurd (In U (Add U X0 x0) x); Auto with sets.
-LApply (Add_inv U X0 x0 x); Intuition.
+LApply (Add_inv U X0 x0 x); [ Intuition | Apply (H'0 x); Apply Add_intro2 ].
 Qed.
 
 Lemma cardinal_Empty : (m:nat)(cardinal U (Empty_set U) m) -> O = m.
