@@ -1866,12 +1866,12 @@ let tautoOR ti gls =
 
 let tautoOR_0 gl = 
   tclORELSE
-    (tclTHENSI (tautoOR false) [exacto (!t_exacto)])
+    (tclTHENSI (tautoOR false) [fun gl -> exacto (!t_exacto) gl])
     tAUTOFAIL gl
 
 let intuitionOR = 
   tclTRY (tclTHEN 
-	    (tclTHENSI (tautoOR true) [exacto (!t_exacto)])
+	    (tclTHENSI (tautoOR true) [fun gl -> exacto (!t_exacto) gl])
 	    default_full_auto)
 
 (*--- Mixed code Chet-Cesar ---*)
@@ -1885,7 +1885,7 @@ let rec prove  tauto_intu g   =
 			    (prove tauto_intu)))
   (tclORELSE (tryAllHyps (clauseTacThen
                           (compose dyck_and_elim out_some) (prove tauto_intu)))
-  (tclORELSE (tryAllHyps (flush stdout;clauseTacThen
+  (tclORELSE (tryAllHyps (clauseTacThen
                           (compose dyck_atomic_imply_elim out_some)
                           (prove tauto_intu)))
   (tclORELSE (tryAllHyps (clauseTacThen
@@ -1896,7 +1896,7 @@ let rec prove  tauto_intu g   =
 			    (prove tauto_intu)))
   (tclORELSE (tclTHEN dyck_and_intro (prove tauto_intu))
   (tclORELSE (tclTHEN dyck_imply_intro (prove tauto_intu))
-  (tclORELSE (tryAllHyps (flush stdout;clauseTacThen
+  (tclORELSE (tryAllHyps (clauseTacThen
                           (compose dyck_or_elim out_some) (prove tauto_intu)))
   (tclORELSE (tryAllHyps (clauseTacThen (* 28/5/99, ajout par HH *)
 			    (compose dyck_imply_imply_elim out_some)
