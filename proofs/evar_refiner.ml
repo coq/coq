@@ -11,7 +11,9 @@
 open Pp
 open Util
 open Names
+open Rawterm
 open Term
+open Termops
 open Environ
 open Evd
 open Sign
@@ -129,6 +131,18 @@ let w_Define sp c wc =
 (* Instantiation of existential variables *)
 (******************************************)
 
+(* w_tactic pour instantiate *) 
+
+let build_open_instance ev rawc wc =
+  if Evd.is_defined wc.sigma ev then 
+    error "Instantiate called on already-defined evar";
+  let e_info = Evd.map wc.sigma ev in
+  let env = Evarutil.evar_env e_info in
+  let evd,typed_c = 
+    Pretyping.understand_gen_tcc wc.sigma env [] 
+      (Some e_info.evar_concl) rawc in
+    w_Define ev typed_c {wc with sigma=evd}
+
 (* The instantiate tactic *)
 
 let evars_of evc c = 
@@ -137,9 +151,9 @@ let evars_of evc c =
     | Evar (n, _) when Evd.in_dom evc n -> c :: acc
     | _ -> fold_constr evrec acc c
   in 
-  evrec [] c
+    evrec [] c
 
-let instantiate n c ido gl = 
+let instantiate n rawc ido gl = 
   let wc = Refiner.project_with_focus gl in
   let evl = 
     match ido with
@@ -148,11 +162,9 @@ let instantiate n c ido gl =
 	  let (_,_,typ)=Sign.lookup_named id gl.it.evar_hyps in
 	    evars_of wc.sigma typ in
     if List.length evl < n then error "not enough evars";
-    let (n,_) as k = destEvar (List.nth evl (n-1)) in 
-      if Evd.is_defined wc.sigma n then 
-	error "Instantiate called on already-defined evar";
-      let wc' = w_Define n c wc in 
-	tclIDTAC {it = gl.it ; sigma = wc'.sigma}
+    let ev,_ =  destEvar (List.nth evl (n-1)) in
+    let wc' = build_open_instance ev rawc wc in
+      tclIDTAC {it = gl.it ; sigma = wc'.sigma}
 
 let pfic gls c =
   let evc = gls.sigma in 
@@ -173,15 +185,17 @@ let instantiate_pf_com n com pfts =
   let gls = top_goal_of_pftreestate pfts in
   let wc = project_with_focus gls in
   let sigma = (w_Underlying wc) in 
-  let (sp,evd) = 
+  let (sp,evd) (* as evc *) = 
     try
       List.nth (Evd.non_instantiated sigma) (n-1) 
     with Failure _ -> 
       error "not so many uninstantiated existential variables"
   in 
-  let c = Constrintern.interp_constr sigma (Evarutil.evar_env evd) com in     
-  let wc' = w_Define sp c wc in
+  let e_info = Evd.map sigma sp in
+  let env = Evarutil.evar_env e_info in
+  let rawc = Constrintern.interp_rawconstr sigma env com in 
+  let wc' = build_open_instance sp rawc wc in
   let newgc = (w_Underlying wc') in
-  change_constraints_pftreestate newgc pfts
+    change_constraints_pftreestate newgc pfts
 
 

@@ -1712,7 +1712,8 @@ and interp_atomic ist gl = function
   | TacLetTac (na,c,clp) ->
       let clp = interp_clause ist gl clp in
       h_let_tac (interp_name ist na) (pf_interp_constr ist gl c) clp
-  | TacInstantiate (n,c,ido) -> h_instantiate n (pf_interp_constr ist gl c)
+  | TacInstantiate (n,c,ido) -> h_instantiate n (fst c) 
+      (* pf_interp_constr ist gl c *)
       (clause_app (interp_hyp_location ist gl) ido)
 
   (* Automation tactics *)
