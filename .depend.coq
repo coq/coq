@@ -1,9 +1,3 @@
-theories/FSets/FSet.vo: theories/FSets/FSet.v theories/FSets/FSetInterface.vo theories/FSets/FSetBridge.vo theories/FSets/FSetProperties.vo theories/FSets/FSetList.vo theories/FSets/FSetRBT.vo
-theories/FSets/FSetList.vo: theories/FSets/FSetList.v theories/FSets/FSetInterface.vo
-theories/FSets/FSetBridge.vo: theories/FSets/FSetBridge.v theories/FSets/FSetInterface.vo
-theories/FSets/FSetProperties.vo: theories/FSets/FSetProperties.v contrib/omega/Omega.vo theories/FSets/FSetInterface.vo theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Bool/Zerob.vo
-theories/FSets/FSetInterface.vo: theories/FSets/FSetInterface.v theories/Bool/Bool.vo theories/Lists/PolyList.vo theories/Sorting/Sorting.vo theories/Setoids/Setoid.vo
-theories/FSets/FSetRBT.vo: theories/FSets/FSetRBT.v theories/FSets/FSetInterface.vo theories/FSets/FSetList.vo theories/FSets/FSetBridge.vo contrib/omega/Omega.vo theories/ZArith/ZArith.vo
 theories/Reals/TypeSyntax.vo: theories/Reals/TypeSyntax.v
 theories/Reals/Rdefinitions.vo: theories/Reals/Rdefinitions.v theories/ZArith/ZArith_base.vo theories/Reals/TypeSyntax.vo
 theories/Reals/Rsyntax.vo: theories/Reals/Rsyntax.v theories/Reals/Rdefinitions.vo
