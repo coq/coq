@@ -284,7 +284,7 @@ Apply H; [Left; Assumption | Assumption].
 Apply H; [Right; Assumption | Assumption].
 Cut ``0< -a``.
 Intro; Cut (x:R;n:nat) (cos_approx x n)==(cos_approx ``-x`` n).
-Intro; Rewrite H3; Rewrite (H3 a (mult (S (S O)) (plus n (S O)))); Rewrite cos_paire; Apply H.
+Intro; Rewrite H3; Rewrite (H3 a (mult (S (S O)) (plus n (S O)))); Rewrite cos_sym; Apply H.
 Left; Assumption.
 Rewrite <- (Ropp_Ropp ``PI/2``); Apply Rle_Ropp1; Unfold Rdiv; Unfold Rdiv in H0; Rewrite <- Ropp_mul1; Exact H0.
 Intros; Unfold cos_approx; Apply sum_eq; Intros; Unfold cos_term; Do 2 Rewrite pow_Rsqr; Rewrite Rsqr_neg; Unfold Rdiv; Reflexivity.

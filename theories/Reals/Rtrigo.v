@@ -31,7 +31,7 @@ Qed.
 (**********) 
 Lemma cos_minus : (x,y:R) ``(cos (x-y))==(cos x)*(cos y)+(sin x)*(sin y)``.
 Intros; Unfold Rminus; Rewrite cos_plus.
-Rewrite <- cos_paire; Rewrite sin_impaire; Ring.
+Rewrite <- cos_sym; Rewrite sin_antisym; Ring.
 Qed.
 
 (**********)
@@ -94,7 +94,7 @@ Qed.
 
 Lemma sin_minus : (x,y:R) ``(sin (x-y))==(sin x)*(cos y)-(cos x)*(sin y)``.
 Intros; Unfold Rminus; Rewrite sin_plus.
-Rewrite <- cos_paire; Rewrite sin_impaire; Ring.
+Rewrite <- cos_sym; Rewrite sin_antisym; Ring.
 Qed.
 
 (**********)
@@ -151,11 +151,11 @@ Repeat Rewrite double; Intros; Repeat Rewrite double; Rewrite double in H0; Appl
 Qed.
 
 Lemma sin_neg : (x:R) ``(sin (-x))==-(sin x)``.
-Apply sin_impaire.
+Apply sin_antisym.
 Qed.
 
 Lemma cos_neg : (x:R) ``(cos (-x))==(cos x)``.
-Intro; Symmetry; Apply cos_paire.
+Intro; Symmetry; Apply cos_sym.
 Qed.
 
 Lemma tan_0 : ``(tan 0)==0``.

@@ -232,7 +232,7 @@ Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rsqr_pos_lt
 Assert H0 := (cond_pos r); Red; Intro; Rewrite H1 in H0; Elim (Rlt_antirefl ? H0).
 Qed.
 
-(* (sin h)/h -> 1 quand h -> 0 *)
+(* (sin h)/h -> 1 when h -> 0 *)
 Lemma derivable_pt_lim_sin_0 : (derivable_pt_lim sin R0 R1).
 Unfold derivable_pt_lim; Intros.
 Pose fn := [N:nat][x:R]``(pow ( -1) N)/(INR (fact (plus (mult (S (S O)) N) (S O))))*(pow x (mult (S (S O)) N))``.
@@ -298,7 +298,7 @@ Apply (CVN_R_CVS ? X).
 Apply CVN_R_sin; Unfold fn; Reflexivity.
 Qed.
 
-(* ((cos h)-1)/h -> 0 quand h -> 0 *)
+(* ((cos h)-1)/h -> 0 when h -> 0 *)
 Lemma derivable_pt_lim_cos_0 : (derivable_pt_lim cos ``0`` ``0``).
 Unfold derivable_pt_lim; Intros.
 Assert H0 := derivable_pt_lim_sin_0.

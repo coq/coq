@@ -38,7 +38,7 @@ Intros; Apply pow_ne_zero.
 Red; Intro; Rewrite H0 in H; Elim (lt_n_n ? H).
 Qed.
 
-(*i Calcul de $e^0$ *)
+(*i Calculus of $e^0$ *)
 Lemma exist_exp0 : (SigT R [l:R](exp_in R0 l)).
 Apply Specif.existT with R1.
 Unfold exp_in; Unfold infinit_sum; Intros.
@@ -81,7 +81,6 @@ Unfold sinh; Rewrite Ropp_O; Rewrite exp_0.
 Unfold Rminus Rdiv; Rewrite Rplus_Ropp_r; Apply Rmult_Ol.
 Qed.
 
-(* TG de la série entière définissant COS *)
 Definition cos_n [n:nat] : R := ``(pow (-1) n)/(INR (fact (mult (S (S O)) n)))``.
 
 Lemma simpl_cos_n : (n:nat) (Rdiv (cos_n (S n)) (cos_n n))==(Ropp (Rinv (INR (mult (mult (2) (S n)) (plus (mult (2) n) (1)))))). 
@@ -142,7 +141,6 @@ Assert H0 := (archimed ``/eps``).
 Elim H0; Intros; Assumption.
 Qed.
 
-(* Convergence de la SE de TG cos_n *)
 Lemma Alembert_cos : (Un_cv [n:nat]``(Rabsolu (cos_n (S n))/(cos_n n))`` R0).
 Unfold Un_cv; Intros.
 Assert H0 := (archimed_cor1 eps H).
@@ -207,11 +205,11 @@ Intro; Generalize (Alembert_C3 cos_n x cosn_no_R0 Alembert_cos).
 Unfold Pser cos_in; Trivial.
 Qed.
 
-(* Définition du cosinus *)
+(* Definition of cosinus *)
 (*************************)
 Definition cos : R -> R := [x:R](Cases (exist_cos (Rsqr x)) of (Specif.existT a b) => a end).
 
-(* TG de la série entière définissant SIN *)
+
 Definition sin_n [n:nat] : R := ``(pow (-1) n)/(INR (fact (plus (mult (S (S O)) n) (S O))))``.
 
 Lemma simpl_sin_n : (n:nat) (Rdiv (sin_n (S n)) (sin_n n))==(Ropp (Rinv (INR (mult (plus (mult (2) (S n)) (1)) (mult (2) (S n)))))). 
@@ -250,7 +248,6 @@ Apply pow_nonzero; DiscrR.
 Apply Rinv_neq_R0; Apply INR_fact_neq_0.
 Qed.
 
-(* Convergence de la SE de TG sin_n *)
 Lemma Alembert_sin : (Un_cv [n:nat]``(Rabsolu (sin_n (S n))/(sin_n n))`` R0).
 Unfold Un_cv; Intros; Assert H0 := (archimed_cor1 eps H).
 Elim H0; Intros; Exists x.
@@ -306,20 +303,20 @@ Unfold Pser sin_n; Trivial.
 Qed.
 
 (***********************)
-(* Définition du sinus *)
+(* Definition of sinus *)
 Definition sin : R -> R := [x:R](Cases (exist_sin (Rsqr x)) of (Specif.existT a b) => ``x*a`` end).
 
 (*********************************************)
-(*                 PROPRIETES                *)
+(*                 PROPERTIES                *)
 (*********************************************)
 
-Lemma cos_paire : (x:R) ``(cos x)==(cos (-x))``.
+Lemma cos_sym : (x:R) ``(cos x)==(cos (-x))``.
 Intros; Unfold cos; Replace ``(Rsqr (-x))`` with (Rsqr x).
 Reflexivity.
 Apply Rsqr_neg.
 Qed.
 
-Lemma sin_impaire : (x:R)``(sin (-x))==-(sin x)``.
+Lemma sin_antisym : (x:R)``(sin (-x))==-(sin x)``.
 Intro; Unfold sin; Replace ``(Rsqr (-x))`` with (Rsqr x); [Idtac | Apply Rsqr_neg]. 
 Case (exist_sin (Rsqr x)); Intros; Ring.
 Qed.
@@ -346,7 +343,7 @@ Apply Hrecn; Unfold ge; Apply le_O_n.
 Simpl; Ring.
 Defined.
 
-(* Calcul de (cos 0) *)
+(* Calculus of (cos 0) *)
 Lemma cos_0 : ``(cos 0)==1``.
 Cut (cos_in R0 (cos R0)).
 Cut (cos_in R0 R1).
