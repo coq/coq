@@ -1,5 +1,9 @@
 Modifications depuis la V7.0
 
+- Tauto considère de façon uniforme les égalités : un but contenant des
+  égalités de la forme "t=t" sera résolu de la même façon que si toutes
+  ces égalités étaient remplacées par "True". En particulier, Tauto résout
+  tous les buts de la forme "H : ~ t = t |- A".
 - Fonctions de réduction dans les définitions locales s'appliquent par
   défaut au corps de la définition. Extension de la notion de Clause
   pour forcer l'action sur le type des défs seulement sous la forme
