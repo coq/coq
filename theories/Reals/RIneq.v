@@ -1311,12 +1311,14 @@ Hints Resolve not_1_INR : real.
 (**      Injection from [Z] to [R]                        *)
 (**********************************************************)
 
+V7only [
 (**********)
-Definition INZ:=inject_nat.
+Notation INZ:=inject_nat.
+].
 
 (**********)
 Lemma IZN:(z:Z)(`0<=z`)->(Ex [n:nat] z=(INZ n)).
-Unfold INZ;Intros;Apply inject_nat_complete;Assumption.
+Intros;Apply inject_nat_complete;Assumption.
 Qed.
 
 (**********)

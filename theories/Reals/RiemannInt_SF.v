@@ -23,7 +23,7 @@ Implicit Arguments On.
 Definition Nbound [I:nat->Prop] : Prop := (EX n:nat | (i:nat)(I i)->(le i n)).
 
 Lemma IZN_var:(z:Z)(`0<=z`)->{ n:nat | z=(INZ n)}.
-Unfold INZ;Intros; Apply inject_nat_complete_inf; Assumption.
+Intros; Apply inject_nat_complete_inf; Assumption.
 Qed.
 
 Lemma Nzorn : (I:nat->Prop) (EX n:nat | (I n)) -> (Nbound I) -> (sigTT ?  [n:nat](I n)/\(i:nat)(I i)->(le i n)).
