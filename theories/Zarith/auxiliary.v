@@ -388,7 +388,7 @@ Save.
 
 Lemma add_x_x : (x:positive) (add x x) = (xO x).
 Intros p; Apply convert_intro; Simpl; Rewrite convert_add;
-Simpl; Rewrite ZL6; Trivial with arith.
+Rewrite ZL6; Trivial with arith.
 Save.
 
 Theorem Zcompare_Zmult_compatible : 
