@@ -268,10 +268,10 @@ let print_term inner_types l env csr =
    let type_of_term =
     Reduction.nf_betaiota (R.get_type_of env (Evd.empty) term)
    in
-    match R.get_sort_of env (Evd.empty) type_of_term with
-       T.Prop T.Null -> InnerProp type_of_term
-     | T.Prop _      -> InnerSet
-     | _             -> InnerType
+    match R.get_sort_family_of env (Evd.empty) type_of_term with
+       T.InProp -> InnerProp type_of_term
+     | T.InSet  -> InnerSet
+     | T.InType -> InnerType
   in
 
 (*WHICH FORCE FUNCTION DEPENDS ON THE ORDERING YOU WANT
@@ -879,7 +879,7 @@ let print_object lobj id sp dn fv env =
 let rec print_library_segment state bprintleaf dn =
   List.iter
    (function (sp, node) ->
-     print_if_verbose (Names.string_of_path sp ^ "\n") ;
+     print_if_verbose ("Print_library_segment: " ^ Names.string_of_path sp ^ "\n") ;
      print_node node (Names.basename sp) sp bprintleaf dn ;
      print_if_verbose "\n"
    ) (List.rev state)
@@ -895,6 +895,7 @@ and print_node n id sp bprintleaf dn =
          if not (List.mem id !printed) then
           (* this is an uncooked term or a local (with no namesakes) term *)
           begin
+try
            if could_have_namesakes o sp then
             begin
              (* this is an uncooked term *)
@@ -908,6 +909,7 @@ and print_node n id sp bprintleaf dn =
              print_if_verbose ("OK, stampo " ^ Names.string_of_id id ^ "\n") ;
              print_object o id sp dn !pvars !cumenv
             end
+with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
           end
          else
           begin
@@ -959,18 +961,20 @@ let print_closed_section s ls dn =
 (* and terms of the module d                                                 *)
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
-let printModule id dn =
+let printModule qid dn =
  let module L = Library in
- let module N = Names in
+ let module N = Nametab in
  let module X = Xml in
-  let str = N.string_of_id id in 
-  let sp = Lib.make_path id N.OBJ in
-  let ls = L.module_segment (Some [id]) in
-   print_if_verbose ("MODULE_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
-    (L.module_full_filename [id]) ^ "\n") ;
+
+  let (_,dir_path,_) = L.locate_qualified_library qid in
+
+  let str = N.string_of_qualid qid in 
+  let ls = L.module_segment (Some dir_path) in
+   print_if_verbose ("MODULE_BEGIN " ^ str ^ " " ^
+    (L.module_full_filename dir_path) ^ "\n") ;
    print_closed_section str (List.rev ls) dn ;
-   print_if_verbose ("MODULE_END " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
-    (L.module_full_filename [id]) ^ "\n")
+   print_if_verbose ("MODULE_END " ^ str ^ " " ^
+    (L.module_full_filename dir_path) ^ "\n")
 ;;
 
 (* printSection identifier directory_name                                    *)

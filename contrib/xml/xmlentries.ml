@@ -45,8 +45,8 @@ vinterp_add "XmlPrintAll"
 
 vinterp_add "XmlPrintModule"
  (function
-     [VARG_IDENTIFIER id] -> (fun () -> Xmlcommand.printModule id None)
-   | [VARG_IDENTIFIER id ; VARG_STRING dn] ->
+     [VARG_QUALID id] -> (fun () -> Xmlcommand.printModule id None)
+   | [VARG_QUALID id ; VARG_STRING dn] ->
         (fun () -> Xmlcommand.printModule id (Some dn))
    | _  -> anomaly "This should be trapped");;
 

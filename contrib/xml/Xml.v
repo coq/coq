@@ -33,10 +33,10 @@ Grammar vernac vernac : ast :=
 | xml_print_all [ "Print" "XML" "All" "." ] ->
                [(XmlPrintAll)]
 
-| xml_print_module [ "Print" "XML" "Module" identarg($id) "." ] ->
+| xml_print_module [ "Print" "XML" "Module" tactic:qualidarg($id) "." ] ->
                [(XmlPrintModule $id)]
 
-| xml_print_module_disk [ "Print" "XML" "Module" "Disk" stringarg($dn) identarg($id) "." ] ->
+| xml_print_module_disk [ "Print" "XML" "Module" "Disk" stringarg($dn) tactic:qualidarg($id) "." ] ->
                [(XmlPrintModule $id $dn)]
 
 | xml_print_section [ "Print" "XML" "Section" identarg($id) "." ] ->
