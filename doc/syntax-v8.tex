@@ -1211,8 +1211,10 @@ $$
 \nlsep \TERM{Infix}~\OPT{\TERM{Local}} %%% ~\NT{prec}~\OPT{\NT{num}}
        ~\NT{string}~\KWD{:=}~\NT{reference}~\OPT{\NT{modifiers}}
        ~\OPT{\NT{in-scope}}
-\nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:=}~\NT{constr}
+\nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}~\KWD{:=}~\NT{constr}
        ~\OPT{\NT{modifiers}}~\OPT{\NT{in-scope}}
+\nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:=}~\NT{constr}
+       ~\OPT{\KWD{(}\TERM{only~\TERM{parsing}\KWD{)}}}
 \nlsep \TERM{Reserved}~\TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}
        ~\OPT{\NT{modifiers}}
 \SEPDEF
@@ -1226,18 +1228,20 @@ $$
 \DEFNT{modifier}
        \NT{ident}~\KWD{at}~\NT{num}
 \nlsep \NT{ident}~\STARGR{\KWD{,}~\NT{ident}}~\KWD{at}~\NT{num}
+\nlsep \KWD{at}~\TERM{next}~\TERM{level}
 \nlsep \KWD{at}~\TERM{level}~\NT{num}
 \nlsep \TERM{left}~\TERM{associativity}
 \nlsep \TERM{right}~\TERM{associativity}
 \nlsep \TERM{no}~\TERM{associativity}
 \nlsep \NT{ident}~\NT{syntax-entry}
 \nlsep \TERM{only}~\TERM{parsing}
+\nlsep \TERM{format}~\NT{string}
 \SEPDEF
 \DEFNT{in-scope}
        \KWD{:}~\NT{ident}
 \SEPDEF
 \DEFNT{syntax-entry}
-       \TERM{ident}~\mid~\TERM{reference}~\mid~\NT{ident}
+       \TERM{ident}~\mid~\TERM{global}~\mid~\TERM{bigint}
 %%% \SEPDEF
 %%% \DEFNT{prec}
 %%%       \TERM{LeftA}~\mid~\TERM{RightA}~\mid~\TERM{NonA}
