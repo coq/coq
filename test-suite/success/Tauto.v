@@ -2,13 +2,13 @@
 
 (**** Tauto:
   Tactic for automating proof in Intuionnistic Propositional Calculus, based on
-  the contraction-free LJT of Dickhoff ****)
+  the contraction-free LJT* of Dickhoff ****)
 
 (**** Intuition:
-  Simplifications of goals, based on LJT calcul ****)
+  Simplifications of goals, based on LJT* calcul ****)
 
-(**** Examples of intuitionistics tautologies ****)
-Parameter A,B,C:Prop.
+(**** Examples of intuitionistic tautologies ****)
+Parameter A,B,C,D,E,F:Prop.
 Parameter even:nat -> Prop.
 Parameter P:nat -> Prop.
 
@@ -134,6 +134,12 @@ Proof.
   Tauto.
 Save.
 
+(* An example which was a bug *)
+Lemma old_bug:(~A<->B)->(~(C\/E)<->D/\F)->~(C\/A\/E)<->D/\B/\F.
+Proof.
+  Tauto.
+Save.
+
 (*  A private club has the following rules :
  *
  *  . rule 1 : Every non-scottish member wears red socks
@@ -164,7 +170,13 @@ Save.
 End club.
 
 (**** Use of Intuition ****)
-Lemma Intu:(((x:nat)(P x)) /\ B) ->
+Lemma intu0:(((x:nat)(P x)) /\ B) ->
               (((y:nat)(P y)) /\ (P O)) \/ (B /\ (P O)).
-Intuition.
+Proof.
+  Intuition.
+Save.
+
+Lemma intu1:((A:Prop)A\/~A)->(x,y:nat)(x=y\/~x=y).
+Proof.
+  Intuition.
 Save.
