@@ -17,6 +17,7 @@ Require Decidable.
 Require Peano_dec.
 Require Export Compare_dec.
 
+
 Definition neq := [x,y:nat] ~(x=y).
 Definition Zne := [x,y:Z] ~(x=y).
 Theorem add_un_Zs : (x:positive) (POS (add_un x)) = (Zs (POS x)).
@@ -332,11 +333,6 @@ Intros r x y z t; Case r; [
     Rewrite Zcompare_Zplus_compatible; Assumption
   | Do 2 Rewrite <- (Zplus_sym t);
     Rewrite Zcompare_Zplus_compatible; Assumption]].
-Qed.
-
-Lemma add_x_x : (x:positive) (add x x) = (xO x).
-Intros p; Apply convert_intro; Simpl; Rewrite convert_add;
-Unfold 3 convert ; Simpl; Rewrite ZL6; Trivial with arith.
 Qed.
 
 Theorem Zcompare_Zmult_compatible : 
