@@ -354,7 +354,7 @@ let listrec_mconstr env ntypes hyps nparams i indlc =
     let (lpar,auxlargs) = list_chop auxnpar largs in 
     if not (List.for_all (noccur_between n ntypes) auxlargs) then
       raise (IllFormedInd (LocalNonPos n));
-    let auxlc = arities_of_constructors env mi in
+    let auxlc = mip.mind_nf_lc in
     let auxntyp = mib.mind_ntypes in 
     if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
     let lrecargs = List.map (check_weak_pos env n) lpar in
@@ -407,7 +407,7 @@ let listrec_mconstr env ntypes hyps nparams i indlc =
      check_head=true, also check the head corresponds to a constructor of
      the ith type *) 
 
-  and check_construct env check_head = 
+  and check_construct env check_head n c = 
     let rec check_constr_rec env lrec n c = 
       let x,largs = decompose_app (whd_betadeltaiota env c) in
       match kind_of_term x with
@@ -439,7 +439,7 @@ let listrec_mconstr env ntypes hyps nparams i indlc =
 	      if not (List.for_all (noccur_between n ntypes) largs)
               then raise (IllFormedInd (LocalNonPos n));
 	    List.rev lrec
-    in check_constr_rec env []
+    in check_constr_rec env [] n c
   in
   Array.map
     (fun c ->

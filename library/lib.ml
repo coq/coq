@@ -38,7 +38,6 @@ and library_segment = library_entry list
 
 let lib_stk = ref ([] : (section_path * node) list)
 
-
 let module_name = ref None
 let path_prefix = ref (default_module : dir_path)
 
@@ -92,7 +91,7 @@ let add_anonymous_entry node =
   add_entry sp node;
   sp
 
-let add_absolutely_named_lead sp obj =
+let add_absolutely_named_leaf sp obj =
   cache_object (sp,obj);
   add_entry sp (Leaf obj)
 
@@ -114,18 +113,7 @@ let contents_after = function
   | None -> !lib_stk
   | Some sp -> let (after,_,_) = split_lib sp in after
 
-(* Sections. *)
-
-let open_section id =
-  let dir = extend_dirpath !path_prefix id in
-  let sp = make_path id in
-  if Nametab.exists_section dir then
-    errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
-  add_entry sp (OpenedSection (dir, freeze_summaries()));
-  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_section dir;
-  path_prefix := dir;
-  sp
+(* Modules. *)
 
 let check_for_module () =
   let is_decl = function (_,FrozenState _) -> false | _ -> true in
@@ -134,6 +122,7 @@ let check_for_module () =
     error "a module can not be started after some declarations"
   with Not_found -> ()
 
+(* TODO: use check_for_module ? *)
 let start_module s =
   if !module_name <> None then
     error "a module is already started";
@@ -152,6 +141,20 @@ let end_module s =
 	if bm <> s then
 	  error ("The current open module has basename "^(string_of_id bm));
 	m
+
+(* Sections. *)
+
+let open_section id =
+  let dir = extend_dirpath !path_prefix id in
+  let sp = make_path id in
+  if Nametab.exists_section dir then
+    errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
+  let sum = freeze_summaries() in
+  add_entry sp (OpenedSection (dir, sum));
+  (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
+  Nametab.push_section dir;
+  path_prefix := dir;
+  sp
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
@@ -172,6 +175,8 @@ let export_segment seg =
   in
   clean [] seg
 
+(* Restore lib_stk and summaries as before the section opening, and
+   add a ClosedSection object. *)
 let close_section export id =
   let sp,dir,fs = 
     try match find_entry_p is_opened_section with
@@ -185,9 +190,9 @@ let close_section export id =
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
-  let after' = export_segment after in
   pop_path_prefix ();
-  add_entry (make_path id) (ClosedSection (export, dir, after'));
+  let closed_sec = ClosedSection (export, dir, export_segment after) in
+  add_entry (make_path id) closed_sec;
   (dir,after,fs)
 
 (* The following function exports the whole library segment, that will be 

@@ -229,7 +229,7 @@ let declare_constant id cd =
   sp
 
 let redeclare_constant sp cd =
-  add_absolutely_named_lead sp (in_constant cd);
+  add_absolutely_named_leaf sp (in_constant cd);
   if is_implicit_args() then declare_constant_implicits sp
 
 (* Inductives. *)

@@ -157,8 +157,6 @@ val reduce_fix : local_state_reduction_function -> fixpoint
 
 type conversion_test = constraints -> constraints
 
-exception NotConvertible
-
 type conv_pb = 
   | CONV 
   | CUMUL

@@ -100,17 +100,10 @@ let rec vernac interpfun input =
   let rec interp com =
     match com with
       | Node (_,"LoadFile",[Str(_, verbosely); Str(_,fname)]) ->
-          let verbosely = verbosely = "Verbose" in
-          raw_load_vernac_file verbosely (make_suffix fname ".v")
+          let verbosely = (verbosely = "Verbose") in
+          let _ = read_vernac_file verbosely (make_suffix fname ".v") in
+          ()
             
-(*      | Node (_,"CompileFile",[Str(_,verbosely); Str(_,only_spec);
-			       Str (_,mname); Str(_,fname)]) ->
-          let verbosely = verbosely = "Verbose" in
-          let only_spec = only_spec = "Specification" in
-          States.with_heavy_rollback (* to roll back in case of error *)
-            (raw_compile_module verbosely only_spec mname)
-            (make_suffix fname ".v")
-*)	    
       | Node(_,"VernacList",l) ->
 	  List.iter interp l
 
@@ -127,22 +120,6 @@ let rec vernac interpfun input =
     interp com
   with e -> 
     raise (DuringCommandInterp (Ast.loc com, e))
-    
-and raw_load_vernac_file verbosely s =
-  let _ = read_vernac_file verbosely s in ()
-
-(*
-and raw_compile_module verbosely only_spec mname file =
-  assert false; (* I bet this code is never used in practice. Judicael. *)
-  Library.import_module mname; (* ??? *)
-  let lfname = read_vernac_file verbosely file in
-  let base = Filename.chop_suffix lfname ".v" in
-  Pfedit.check_no_pending_proofs ();
-  if only_spec then
-    failwith ".vi not yet implemented"
-  else 
-    Discharge.save_module_to mname base
-*)
 
 and read_vernac_file verbosely s =
   let interpfun =
@@ -171,7 +148,7 @@ let raw_do_vernac po =
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   try 
-    raw_load_vernac_file verb file
+    let _ = read_vernac_file verb file in ()
   with e -> 
     raise_with_file file e
 
@@ -184,7 +161,7 @@ let compile verbosely f =
     let ldir0 = Library.find_logical_path (Filename.dirname longf) in
     let ldir = Nameops.extend_dirpath ldir0 m in
     Lib.start_module ldir;
-    load_vernac verbosely longf;
+    let _ = load_vernac verbosely longf in
     let mid = Lib.end_module m in
     assert (mid = ldir);
     Library.save_module_to ldir (longf^"o")

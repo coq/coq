@@ -9,17 +9,15 @@
 (* $Id$ *)
 
 open System
-open Lib
-open Summary
 
 type state = Lib.frozen * Summary.frozen
 
 let get_state () =
-  (Lib.freeze(), freeze_summaries())
+  (Lib.freeze(), Summary.freeze_summaries())
 
 let set_state (fl,fs) =
   Lib.unfreeze fl;
-  unfreeze_summaries fs
+  Summary.unfreeze_summaries fs
 
 let state_magic_number = 19764
 
@@ -34,12 +32,8 @@ let freeze = get_state
 let unfreeze = set_state
 
 let with_heavy_rollback f x =
-  let sum = freeze_summaries ()
-  and flib = freeze() in
+  let st = get_state () in
   try 
     f x
-  with reraise -> begin
-    unfreeze_summaries sum;
-    unfreeze flib;
-    raise reraise
-  end
+  with reraise ->
+    (set_state st; raise reraise)

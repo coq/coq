@@ -247,7 +247,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	 | Some ty -> { uj_val = new_isevar isevars env ty; uj_type = ty }
 	 | None ->
 	     (match loc with
-		  None -> anomaly "There is an implicit argument I cannot solve"
+		  None -> error "There is an implicit argument I cannot solve"
 		| Some loc -> 
 		    user_err_loc
 		      (loc,"pretype",
@@ -351,7 +351,7 @@ let rec pretype tycon env isevars lvar lmeta = function
   | ROldCase (loc,isrec,po,c,lf) ->
       let cj = pretype empty_tycon env isevars lvar lmeta c in
       let (IndType (indf,realargs) as indt) = 
-	try find_rectype env (evars_of isevars) cj.uj_type
+	try find_rectype env Evd.empty (nf_evar (evars_of isevars) cj.uj_type)
 	with Induc ->
           error_case_not_inductive_loc loc env (evars_of isevars) cj in
       let pj = match po with
