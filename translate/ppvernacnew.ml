@@ -220,8 +220,16 @@ let pr_type_option pr_c = function
   | CHole loc -> mt()
   | _ as c -> str":" ++ pr_c c
 
+let anonymize_binder na c =
+  if Options.do_translate() then
+    Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
+      (Reserve.anonymize_if_reserved na
+      (Constrintern.for_grammar
+        (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
+  else c
+
 let pr_binder pr_c ty na =
-  match ty with
+  match anonymize_binder (snd na) ty with
       CHole _ -> pr_located pr_name na
     | _ ->
         hov 1
@@ -648,6 +656,10 @@ let rec pr_vernac = function
   | VernacDeclareImplicits (q,Some l) ->
       hov 1 (str"Implicits" ++ spc() ++ pr_reference q ++ spc() ++
              str"[" ++ prlist_with_sep sep int l ++ str"]")
+  | VernacReserve (idl,c) ->
+      hov 1 (str"Implicit Variable" ++
+        str (if List.length idl > 1 then "s " else " ") ++ str "Type " ++
+        prlist_with_sep spc pr_id idl ++ str " : " ++ pr_constr c)
   | VernacSetOpacity (fl,l) ->
       hov 1 ((if fl then str"Opaque" else str"Transparent") ++
              spc() ++ prlist_with_sep sep pr_reference l)
