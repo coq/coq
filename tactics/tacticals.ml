@@ -364,7 +364,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = elimination_sort_of_goal gl  in
-  let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
+  let elim  = Indrec.make_case_dep (pf_env gl) sigma ity sort in  
   general_elim_then_using 
     elim case_sign tac predicate (indbindings,elimbindings) c gl
 
