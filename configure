@@ -515,11 +515,13 @@ sed -e "s|LOCALINSTALLATION|$local|" \
 chmod a-w $COQTOP/config/Makefile
 
 ##################################################
-# Building the $COQTOP/dev/ocamldebug-v7 file
-####################################################
+# Building the $COQTOP/dev/ocamldebug-coq file
+##################################################
+
+OCAMLDEBUGCOQ=$COQTOP/dev/ocamldebug-coq
 
 if test "$coq_debug_flag" = "-g" ; then
-  rm -f $COQTOP/dev/ocamldebug-v7
+  rm -f $OCAMLDEBUGCOQ
   if [ "$CAMLP4LIB" = "+camlp4" ] ; then
     CAMLP4LIBFORCAMLDEBUG=$CAMLLIB/camlp4
   else
@@ -529,8 +531,8 @@ if test "$coq_debug_flag" = "-g" ; then
       -e "s|COQLIBDIRECTORY|$LIBDIR|" \
       -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
       -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIBFORCAMLDEBUG|" \
-      $COQTOP/dev/ocamldebug-v7.template > $COQTOP/dev/ocamldebug-v7
-  chmod a-w,a+x $COQTOP/dev/ocamldebug-v7
+      $OCAMLDEBUGCOQ.template > $OCAMLDEBUGCOQ
+  chmod a-w,a+x $OCAMLDEBUGCOQ
 fi
 
 echo "If anything in the above is wrong, please restart './configure'"
