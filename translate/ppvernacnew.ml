@@ -1076,7 +1076,8 @@ let pr_vernac = function
 	["Refine"; "Inv"; "Equality"; "EAuto"; "AutoRewrite"; "EqDecide"; 
          "Xml"; "Extraction"; "Tauto"; "Setoid_replace";"Elimdep";
 	 "DatatypesSyntax"; "LogicSyntax"; "Logic_TypeSyntax";
-	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"; "PolyListSyntax"] ->
+	 "SpecifSyntax"; "PeanoSyntax"; "TypeSyntax"; "PolyListSyntax";
+	 "Zsyntax";"zarith_aux"] ->
       warning ("Forgetting obsolete module "^(string_of_id r));
       mt()
   | VernacImport (false,[Libnames.Ident (_,a)]) when
