@@ -17,6 +17,7 @@
 
 open Util
 open Hashtbl
+open Names
 
 let flat_map f =
  let rec flat_map_f = function
@@ -46,11 +47,14 @@ let floor_div a b =
     | true, false -> (a-1) / b - 1
     | false,true  -> (a+1) / b - 1
 
-let new_id = let cpt = ref 0 in fun () -> incr cpt; ! cpt
+let new_id =
+  let cpt = ref 0 in fun () -> incr cpt; ! cpt
 
-let new_var = let cpt = ref 0 in fun () -> incr cpt; "WW" ^ string_of_int !cpt
+let new_var =
+  let cpt = ref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
     
-let new_var_num = let cpt = ref 1000 in (fun () -> incr cpt; !cpt)
+let new_var_num =
+  let cpt = ref 1000 in (fun () -> incr cpt; !cpt)
 					  
 type coeff = {c: int ; v: int}
 
@@ -94,7 +98,7 @@ exception NO_CONTRADICTION
 let intern_id,unintern_id =
   let cpt = ref 0 in
   let table = create 7 and co_table = create 7 in
-  (fun (name : string) -> 
+  (fun (name : identifier) -> 
      try find table name with Not_found -> 
        let idx = !cpt in
        add table name idx; add co_table idx name; incr cpt; idx),
@@ -110,9 +114,9 @@ let display_eq (l,e) =
 	   (if f.c < 0 then "- " else if not_first then "+ " else "");
 	 let c = abs f.c in
 	 if c = 1 then 
-	   Printf.printf "%s " (unintern_id f.v)
+	   Printf.printf "%s " (string_of_id (unintern_id f.v))
 	 else 
-	   Printf.printf "%d %s " c (unintern_id f.v); 
+	   Printf.printf "%d %s " c (string_of_id (unintern_id f.v)); 
 	 true)
       false l
   in

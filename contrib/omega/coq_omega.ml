@@ -138,56 +138,6 @@ let hide_constr,find_constr,clear_tables,dump_tables =
   (fun () -> l := []),
   (fun () -> !l)
 
-let get_applist = decompose_app
-
-exception Destruct
-
-let dest_const_apply t = 
-  let f,args = get_applist t in
-  let ref = 
-  match kind_of_term f with 
-    | Const sp         -> ConstRef sp
-    | Construct csp -> ConstructRef csp
-    | Ind isp       -> IndRef isp
-    | _ -> raise Destruct
-  in
-  id_of_global ref, args
-
-type result = 
-  | Kvar of string
-  | Kapp of string * constr list
-  | Kimp of constr * constr
-  | Kufo
-
-let destructurate t =
-  let c, args = get_applist t in
-(*  let env = Global.env() in*)
-  match kind_of_term c, args with
-    | Const sp, args ->
-	Kapp (string_of_id (id_of_global (ConstRef sp)),args)
-    | Construct csp , args ->
-	Kapp (string_of_id (id_of_global (ConstructRef csp)), args)
-    | Ind isp, args ->
-	Kapp (string_of_id (id_of_global (IndRef isp)),args)
-    | Var id,[] -> Kvar(string_of_id id)
-    | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
-    | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
-    | _ -> Kufo
-
-let recognize_number t =
-  let rec loop t =
-    let f,l = dest_const_apply t in
-    match string_of_id f,l with
-      | "xI",[t] -> 1 + 2 * loop t
-      | "xO",[t] -> 2 * loop t 
-      | "xH",[] -> 1
-      | _ -> failwith "not a number" 
-  in
-  let f,l = dest_const_apply t in
-  match string_of_id f,l with
-    | "POS",[t] -> loop t | "NEG",[t] -> - (loop t) | "ZERO",[] -> 0
-    | _ -> failwith "not a number"
-	  
 (* Lazy evaluation is used for Coq constants, because this code
  is evaluated before the compiled modules are loaded.
  To use the constant Zplus, one must type "Lazy.force coq_Zplus"
@@ -300,11 +250,20 @@ let coq_not_Zge = lazy (zarith_constant ["auxiliary"] "not_Zge")
 let coq_not_Zgt = lazy (zarith_constant ["auxiliary"] "not_Zgt")
 let coq_neq = lazy (zarith_constant ["auxiliary"] "neq")
 let coq_Zne = lazy (zarith_constant ["auxiliary"] "Zne")
+let coq_Zle = lazy (zarith_constant ["zarith_aux"] "Zle")
+let coq_Zgt = lazy (zarith_constant ["zarith_aux"] "Zgt")
+let coq_Zge = lazy (zarith_constant ["zarith_aux"] "Zge")
+let coq_Zlt = lazy (zarith_constant ["zarith_aux"] "Zlt")
 
 (* Peano *)
 let coq_le = lazy (constant ["Init";"Peano"] "le")
+let coq_lt = lazy (constant ["Init";"Peano"] "lt")
+let coq_ge = lazy (constant ["Init";"Peano"] "ge")
 let coq_gt = lazy (constant ["Init";"Peano"] "gt")
 let coq_minus = lazy (constant ["Init";"Peano"] "minus")
+let coq_plus = lazy (constant ["Init";"Peano"] "plus")
+let coq_mult = lazy (constant ["Init";"Peano"] "mult")
+let coq_pred = lazy (constant ["Init";"Peano"] "pred")
 
 (* Datatypes *)
 let coq_nat = lazy (constant ["Init";"Datatypes"] "nat")
@@ -395,6 +354,99 @@ let mk_integer n =
   else mkApp ((if n > 0 then Lazy.force coq_POS else Lazy.force coq_NEG),
 		 [| loop (abs n) |])
     
+type omega_constant =
+  | Zplus | Zmult | Zminus | Zs | Zopp
+  | Plus | Mult | Minus | Pred | S | O
+  | POS | NEG | ZERO | Inject_nat
+  | Eq | Neq
+  | Zne | Zle | Zlt | Zge | Zgt
+  | Z | Nat
+  | And | Or | False | True | Not
+  | Le | Lt | Ge | Gt
+  | Other of string
+
+type omega_proposition =
+  | Keq of constr * constr * constr
+  | Kn
+
+type result = 
+  | Kvar of identifier
+  | Kapp of omega_constant * constr list
+  | Kimp of constr * constr
+  | Kufo
+
+let destructurate_prop t =
+  let c, args = decompose_app t in
+  match kind_of_term c, args with
+    | _, [_;_;_] when c = build_coq_eq () -> Kapp (Eq,args)
+    | _, [_;_] when c = Lazy.force coq_neq -> Kapp (Neq,args)
+    | _, [_;_] when c = Lazy.force coq_Zne -> Kapp (Zne,args)
+    | _, [_;_] when c = Lazy.force coq_Zle -> Kapp (Zle,args)
+    | _, [_;_] when c = Lazy.force coq_Zlt -> Kapp (Zlt,args)
+    | _, [_;_] when c = Lazy.force coq_Zge -> Kapp (Zge,args)
+    | _, [_;_] when c = Lazy.force coq_Zgt -> Kapp (Zgt,args)
+    | _, [_;_] when c = build_coq_and () -> Kapp (And,args)
+    | _, [_;_] when c = build_coq_or () -> Kapp (Or,args)
+    | _, [_] when c = build_coq_not () -> Kapp (Not,args)
+    | _, [] when c = build_coq_False () -> Kapp (False,args)
+    | _, [] when c = build_coq_True () -> Kapp (True,args)
+    | _, [_;_] when c = Lazy.force coq_le -> Kapp (Le,args)
+    | _, [_;_] when c = Lazy.force coq_lt -> Kapp (Lt,args)
+    | _, [_;_] when c = Lazy.force coq_ge -> Kapp (Ge,args)
+    | _, [_;_] when c = Lazy.force coq_gt -> Kapp (Gt,args)
+    | Const sp, args ->
+	Kapp (Other (string_of_id (id_of_global (ConstRef sp))),args)
+    | Construct csp , args ->
+	Kapp (Other (string_of_id (id_of_global (ConstructRef csp))), args)
+    | Ind isp, args ->
+	Kapp (Other (string_of_id (id_of_global (IndRef isp))),args)
+    | Var id,[] -> Kvar id
+    | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
+    | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
+    | _ -> Kufo
+
+let destructurate_type t =
+  let c, args = decompose_app t in
+  match kind_of_term c, args with
+    | _, [] when c = Lazy.force coq_Z -> Kapp (Z,args)
+    | _, [] when c = Lazy.force coq_nat -> Kapp (Nat,args)
+    | _ -> Kufo
+
+let destructurate_term t =
+  let c, args = decompose_app t in
+  match kind_of_term c, args with
+    | _, [_;_] when c = Lazy.force coq_Zplus -> Kapp (Zplus,args)
+    | _, [_;_] when c = Lazy.force coq_Zmult -> Kapp (Zmult,args)
+    | _, [_;_] when c = Lazy.force coq_Zminus -> Kapp (Zminus,args)
+    | _, [_] when c = Lazy.force coq_Zs -> Kapp (Zs,args)
+    | _, [_] when c = Lazy.force coq_Zopp -> Kapp (Zopp,args)
+    | _, [_;_] when c = Lazy.force coq_plus -> Kapp (Plus,args)
+    | _, [_;_] when c = Lazy.force coq_mult -> Kapp (Mult,args)
+    | _, [_;_] when c = Lazy.force coq_minus -> Kapp (Minus,args)
+    | _, [_] when c = Lazy.force coq_pred -> Kapp (Pred,args)
+    | _, [_] when c = Lazy.force coq_S -> Kapp (S,args)
+    | _, [] when c = Lazy.force coq_O -> Kapp (O,args)
+    | _, [_] when c = Lazy.force coq_POS -> Kapp (NEG,args)
+    | _, [_] when c = Lazy.force coq_NEG -> Kapp (POS,args)
+    | _, [] when c = Lazy.force coq_ZERO -> Kapp (ZERO,args)
+    | _, [_] when c = Lazy.force coq_inject_nat -> Kapp (Inject_nat,args)
+    | Var id,[] -> Kvar id
+    | _ -> Kufo
+
+let recognize_number t =
+  let rec loop t =
+    match decompose_app t with
+      | f, [t] when f = Lazy.force coq_xI -> 1 + 2 * loop t
+      | f, [t] when f = Lazy.force coq_xO -> 2 * loop t
+      | f, [] when f = Lazy.force coq_xH -> 1
+      | _ -> failwith "not a number" 
+  in
+  match decompose_app t with 
+    | f, [t] when f = Lazy.force coq_POS -> loop t
+    | f, [t] when f = Lazy.force coq_NEG -> - (loop t)
+    | f, [] when f = Lazy.force coq_ZERO -> 0
+    | _ -> failwith "not a number"
+	  
 type constr_path =
   | P_APP of int
   (* Abstraction and product *)
@@ -482,7 +534,7 @@ type oformula =
   | Oplus of oformula * oformula
   | Oinv of  oformula
   | Otimes of oformula * oformula
-  | Oatom of  string
+  | Oatom of identifier
   | Oz of int
   | Oufo of constr
 
@@ -494,7 +546,7 @@ let rec oprint = function
   | Otimes (t1,t2) -> 
       print_string "("; oprint t1; print_string "*"; 
       oprint t2; print_string ")"
-  | Oatom s -> print_string s
+  | Oatom s -> print_string (string_of_id s)
   | Oz i -> print_int i
   | Oufo f -> print_string "?"
 
@@ -507,7 +559,7 @@ let rec weight = function
   | Oufo _ -> -1
 
 let rec val_of = function
-  | Oatom c -> (mkVar (id_of_string c))
+  | Oatom c -> mkVar c
   | Oz c -> mk_integer c
   | Oinv c -> mkApp (Lazy.force coq_Zopp, [| val_of c |])
   | Otimes (t1,t2) -> mkApp (Lazy.force coq_Zmult, [| val_of t1; val_of t2 |])
@@ -816,30 +868,30 @@ let rec transform p t =
   let default () =
     try 
       let v,th,_ = find_constr t in
-      [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom (string_of_id v)
+      [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
     with _ -> 
       let v = new_identifier_var ()
       and th = new_identifier () in
       hide_constr t v th false;
-      [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom (string_of_id v) 
+      [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
   in
-  try match destructurate t with
-    | Kapp("Zplus",[t1;t2]) ->
+  try match destructurate_term t with
+    | Kapp(Zplus,[t1;t2]) ->
 	let tac1,t1' = transform (P_APP 1 :: p) t1 
 	and tac2,t2' = transform (P_APP 2 :: p) t2 in
 	let tac,t' = shuffle p (t1',t2') in
 	tac1 @ tac2 @ tac, t'
-    | Kapp("Zminus",[t1;t2]) ->
+    | Kapp(Zminus,[t1;t2]) ->
 	let tac,t = 
 	  transform p
 	    (mkApp (Lazy.force coq_Zplus,
 		     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
 	unfold sp_Zminus :: tac,t
-    | Kapp("Zs",[t1]) ->
+    | Kapp(Zs,[t1]) ->
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer 1 |])) in
 	unfold sp_Zs :: tac,t
-   | Kapp("Zmult",[t1;t2]) ->
+   | Kapp(Zmult,[t1;t2]) ->
        let tac1,t1' = transform (P_APP 1 :: p) t1 
        and tac2,t2' = transform (P_APP 2 :: p) t2 in
        begin match t1',t2' with
@@ -851,21 +903,21 @@ let rec transform p t =
              let tac,t' = scalar p n t2' in tac1 @ tac2 @ (sym :: tac),t'
          | _ -> default ()
        end
-   | Kapp(("POS"|"NEG"|"ZERO"),_) -> 
+   | Kapp((POS|NEG|ZERO),_) -> 
        (try ([],Oz(recognize_number t)) with _ -> default ())
    | Kvar s -> [],Oatom s
-   | Kapp("Zopp",[t]) ->
+   | Kapp(Zopp,[t]) ->
        let tac,t' = transform (P_APP 1 :: p) t in
        let tac',t'' = negate p t' in
        tac @ tac', t''
-   | Kapp("inject_nat",[t']) ->
+   | Kapp(Inject_nat,[t']) ->
        begin try 
          let v,th,_ = find_constr t' in 
-         [clever_rewrite_base p (mkVar v) (mkVar th)],Oatom(string_of_id v)
+         [clever_rewrite_base p (mkVar v) (mkVar th)],Oatom v
        with _ -> 
          let v = new_identifier_var () and th = new_identifier () in
          hide_constr t' v th true;
-         [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom (string_of_id v)
+         [clever_rewrite_base p (mkVar v) (mkVar th)], Oatom v
        end
    | _ -> default ()
   with e when catchable_exception e -> default ()
@@ -1155,13 +1207,12 @@ let replay_history tactic_normalisation =
 	  tag_hypothesis id new_eq.id;
 	  let eq1 = val_of(decompile def) 
 	  and eq2 = val_of(decompile orig) in
-	  let v = unintern_id sigma in
-	  let vid = id_of_string v in
+	  let vid = unintern_id sigma in
 	  let theorem =
             mkApp (build_coq_ex (), [| 
 		      Lazy.force coq_Z;
 		      mkLambda
-			(Name(id_of_string v),
+			(Name vid,
 			 Lazy.force coq_Z,
 			 mk_eq (mkRel 1) eq1) |])
 	  in
@@ -1296,29 +1347,29 @@ let destructure_omega gl tac_def (id,c) =
   if atompart_of_id id = "State" then 
     tac_def
   else
-    try match destructurate c with
-      | Kapp("eq",[typ;t1;t2]) 
-	when destructurate (pf_nf gl typ) = Kapp("Z",[]) ->
+    try match destructurate_prop c with
+      | Kapp(Eq,[typ;t1;t2]) 
+	when destructurate_type (pf_nf gl typ) = Kapp(Z,[]) ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation 
 	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
-      | Kapp("Zne",[t1;t2]) ->
+      | Kapp(Zne,[t1;t2]) ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation
 	    id DISE (Lazy.force coq_Zne_left) 1 t t1 t2 tac_def
-      | Kapp("Zle",[t1;t2]) ->
+      | Kapp(Zle,[t1;t2]) ->
 	  let t = mk_plus t2 (mk_inv t1) in
 	  normalize_equation
 	    id INEQ (Lazy.force coq_Zle_left) 2 t t1 t2 tac_def
-      | Kapp("Zlt",[t1;t2]) ->
+      | Kapp(Zlt,[t1;t2]) ->
 	  let t = mk_plus (mk_plus t2 (mk_integer (-1))) (mk_inv t1) in
 	  normalize_equation
 	    id INEQ (Lazy.force coq_Zlt_left) 2 t t1 t2 tac_def
-      | Kapp("Zge",[t1;t2]) ->
+      | Kapp(Zge,[t1;t2]) ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation
 	    id INEQ (Lazy.force coq_Zge_left) 2 t t1 t2 tac_def
-      | Kapp("Zgt",[t1;t2]) ->
+      | Kapp(Zgt,[t1;t2]) ->
 	  let t = mk_plus (mk_plus t1 (mk_integer (-1))) (mk_inv t2) in
 	  normalize_equation
 	    id INEQ (Lazy.force coq_Zgt_left) 2 t t1 t2 tac_def
@@ -1348,7 +1399,7 @@ let coq_omega gl =
 	     (intros_using [th;id]);
 	     tac ]),
            {kind = INEQ; 
-	    body = [{v=intern_id (string_of_id v); c=1}]; 
+	    body = [{v=intern_id v; c=1}]; 
             constant = 0; id = i} :: sys
 	 else
            (tclTHENLIST [
@@ -1380,22 +1431,22 @@ let nat_inject gl =
   let aux = id_of_string "auxiliary" in
   let table = Hashtbl.create 7 in
   let rec explore p t = 
-    try match destructurate t with
-      | Kapp("plus",[t1;t2]) ->
+    try match destructurate_term t with
+      | Kapp(Plus,[t1;t2]) ->
           tclTHENLIST [ 
 	    (clever_rewrite_gen p (mk_plus (mk_inj t1) (mk_inj t2))
               ((Lazy.force coq_inj_plus),[t1;t2]));
 	    (explore (P_APP 1 :: p) t1);
 	    (explore (P_APP 2 :: p) t2)
           ]
-      | Kapp("mult",[t1;t2]) ->
+      | Kapp(Mult,[t1;t2]) ->
           tclTHENLIST [
 	    (clever_rewrite_gen p (mk_times (mk_inj t1) (mk_inj t2))
               ((Lazy.force coq_inj_mult),[t1;t2]));
 	    (explore (P_APP 1 :: p) t1);
 	    (explore (P_APP 2 :: p) t2)
           ]
-      | Kapp("minus",[t1;t2]) ->
+      | Kapp(Minus,[t1;t2]) ->
           let id = new_identifier () in
           tclTHENS
             (tclTHEN 
@@ -1414,17 +1465,17 @@ let nat_inject gl =
                     ((Lazy.force coq_inj_minus2),[t1;t2;mkVar id]))
 		 (loop [id,mkApp (Lazy.force coq_gt, [| t2;t1 |])]))
 	    ]
-      | Kapp("S",[t']) ->
+      | Kapp(S,[t']) ->
           let rec is_number t =
-            try match destructurate t with 
-		Kapp("S",[t]) -> is_number t
-              | Kapp("O",[]) -> true
+            try match destructurate_term t with 
+		Kapp(S,[t]) -> is_number t
+              | Kapp(O,[]) -> true
               | _ -> false
             with e when catchable_exception e -> false 
 	  in
           let rec loop p t =
-            try match destructurate t with 
-		Kapp("S",[t]) ->
+            try match destructurate_term t with 
+		Kapp(S,[t]) ->
                   (tclTHEN 
                      (clever_rewrite_gen p 
 			(mkApp (Lazy.force coq_Zs, [| mk_inj t |]))
@@ -1434,7 +1485,7 @@ let nat_inject gl =
             with e when catchable_exception e -> explore p t 
 	  in
           if is_number t' then focused_simpl p else loop p t
-      | Kapp("pred",[t]) ->
+      | Kapp(Pred,[t]) ->
           let t_minus_one = 
 	    mkApp (Lazy.force coq_minus, [| t; 
 		      mkApp (Lazy.force coq_S, [| Lazy.force coq_O |]) |]) in
@@ -1442,15 +1493,15 @@ let nat_inject gl =
             (clever_rewrite_gen_nat (P_APP 1 :: p) t_minus_one 
                ((Lazy.force coq_pred_of_minus),[t]))
             (explore p t_minus_one) 
-      | Kapp("O",[]) -> focused_simpl p
+      | Kapp(O,[]) -> focused_simpl p
       | _ -> tclIDTAC 
     with e when catchable_exception e -> tclIDTAC 
 	
   and loop = function
     | [] -> tclIDTAC
     | (i,t)::lit -> 
-	  begin try match destructurate t with 
-              Kapp("le",[t1;t2]) ->
+	  begin try match destructurate_prop t with 
+              Kapp(Le,[t1;t2]) ->
 		tclTHENLIST [
 		  (generalize_tac 
 		    [mkApp (Lazy.force coq_inj_le, [| t1;t2;mkVar i |]) ]);
@@ -1459,7 +1510,7 @@ let nat_inject gl =
 		  (reintroduce i);
 		  (loop lit)
                 ]
-            | Kapp("lt",[t1;t2]) ->
+            | Kapp(Lt,[t1;t2]) ->
 		tclTHENLIST [
 		  (generalize_tac 
 		    [mkApp (Lazy.force coq_inj_lt, [| t1;t2;mkVar i |]) ]);
@@ -1468,7 +1519,7 @@ let nat_inject gl =
 		  (reintroduce i);
 		  (loop lit)
                 ]
-            | Kapp("ge",[t1;t2]) ->
+            | Kapp(Ge,[t1;t2]) ->
 		tclTHENLIST [
 		  (generalize_tac 
 		    [mkApp (Lazy.force coq_inj_ge, [| t1;t2;mkVar i |]) ]);
@@ -1477,7 +1528,7 @@ let nat_inject gl =
 		  (reintroduce i);
 		  (loop lit)
                 ]
-            | Kapp("gt",[t1;t2]) ->
+            | Kapp(Gt,[t1;t2]) ->
 		tclTHENLIST [
 		  (generalize_tac
                     [mkApp (Lazy.force coq_inj_gt, [| t1;t2;mkVar i |]) ]);
@@ -1486,7 +1537,7 @@ let nat_inject gl =
 		  (reintroduce i);
 		  (loop lit)
                 ]
-            | Kapp("neq",[t1;t2]) ->
+            | Kapp(Neq,[t1;t2]) ->
 		tclTHENLIST [
 		  (generalize_tac
 		    [mkApp (Lazy.force coq_inj_neq, [| t1;t2;mkVar i |]) ]);
@@ -1495,7 +1546,7 @@ let nat_inject gl =
 		  (reintroduce i);
 		  (loop lit)
 ]
-            | Kapp("eq",[typ;t1;t2]) ->
+            | Kapp(Eq,[typ;t1;t2]) ->
 		if pf_conv_x gl typ (Lazy.force coq_nat) then
                   tclTHENLIST [
 		    (generalize_tac 
@@ -1512,40 +1563,40 @@ let nat_inject gl =
   loop (List.rev (pf_hyps_types gl)) gl
     
 let rec decidability gl t =
-  match destructurate t with
-    | Kapp("or",[t1;t2]) -> 
+  match destructurate_prop t with
+    | Kapp(Or,[t1;t2]) -> 
 	mkApp (Lazy.force coq_dec_or, [| t1; t2;
 		  decidability gl t1; decidability gl t2 |])
-    | Kapp("and",[t1;t2]) -> 
+    | Kapp(And,[t1;t2]) -> 
 	mkApp (Lazy.force coq_dec_and, [| t1; t2;
 		  decidability gl t1; decidability gl t2 |])
     | Kimp(t1,t2) -> 
 	mkApp (Lazy.force coq_dec_imp, [| t1; t2;
 		  decidability gl t1; decidability gl t2 |])
-    | Kapp("not",[t1]) -> mkApp (Lazy.force coq_dec_not, [| t1; 
+    | Kapp(Not,[t1]) -> mkApp (Lazy.force coq_dec_not, [| t1; 
 				    decidability gl t1 |])
-    | Kapp("eq",[typ;t1;t2]) -> 
-	begin match destructurate (pf_nf gl typ) with
-          | Kapp("Z",[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
-          | Kapp("nat",[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
+    | Kapp(Eq,[typ;t1;t2]) -> 
+	begin match destructurate_type (pf_nf gl typ) with
+          | Kapp(Z,[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
+          | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> errorlabstrm "decidability" 
 		(str "Omega: Can't solve a goal with equality on " ++ 
 		   Printer.prterm typ)
 	end
-    | Kapp("Zne",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zne, [| t1;t2 |])
-    | Kapp("Zle",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zle, [| t1;t2 |])
-    | Kapp("Zlt",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zlt, [| t1;t2 |])
-    | Kapp("Zge",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zge, [| t1;t2 |])
-    | Kapp("Zgt",[t1;t2]) -> mkApp (Lazy.force coq_dec_Zgt, [| t1;t2 |])
-    | Kapp("le", [t1;t2]) -> mkApp (Lazy.force coq_dec_le, [| t1;t2 |])
-    | Kapp("lt", [t1;t2]) -> mkApp (Lazy.force coq_dec_lt, [| t1;t2 |])
-    | Kapp("ge", [t1;t2]) -> mkApp (Lazy.force coq_dec_ge, [| t1;t2 |])
-    | Kapp("gt", [t1;t2]) -> mkApp (Lazy.force coq_dec_gt, [| t1;t2 |])
-    | Kapp("False",[]) -> Lazy.force coq_dec_False
-    | Kapp("True",[]) -> Lazy.force coq_dec_True
-    | Kapp(t,_::_) -> error ("Omega: Unrecognized predicate or connective: "
-			     ^ t)
-    | Kapp(t,[]) -> error ("Omega: Unrecognized atomic proposition: "^ t)
+    | Kapp(Zne,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zne, [| t1;t2 |])
+    | Kapp(Zle,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zle, [| t1;t2 |])
+    | Kapp(Zlt,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zlt, [| t1;t2 |])
+    | Kapp(Zge,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zge, [| t1;t2 |])
+    | Kapp(Zgt,[t1;t2]) -> mkApp (Lazy.force coq_dec_Zgt, [| t1;t2 |])
+    | Kapp(Le, [t1;t2]) -> mkApp (Lazy.force coq_dec_le, [| t1;t2 |])
+    | Kapp(Lt, [t1;t2]) -> mkApp (Lazy.force coq_dec_lt, [| t1;t2 |])
+    | Kapp(Ge, [t1;t2]) -> mkApp (Lazy.force coq_dec_ge, [| t1;t2 |])
+    | Kapp(Gt, [t1;t2]) -> mkApp (Lazy.force coq_dec_gt, [| t1;t2 |])
+    | Kapp(False,[]) -> Lazy.force coq_dec_False
+    | Kapp(True,[]) -> Lazy.force coq_dec_True
+    | Kapp(Other t,_::_) -> error 
+	("Omega: Unrecognized predicate or connective: "^t)
+    | Kapp(Other t,[]) -> error ("Omega: Unrecognized atomic proposition: "^t)
     | Kvar _ -> error "Omega: Can't solve a goal with proposition variables"
     | _ -> error "Omega: Unrecognized proposition"
 	  
@@ -1553,14 +1604,14 @@ let destructure_hyps gl =
   let rec loop evbd = function
     | [] -> (tclTHEN nat_inject coq_omega)
     | (i,body,t)::lit ->
-	begin try match destructurate t with
-	  | Kapp("False",[]) -> elim_id i
-          | Kapp(("Zle"|"Zge"|"Zgt"|"Zlt"|"Zne"),[t1;t2]) -> loop evbd lit
-          | Kapp("or",[t1;t2]) ->
+	begin try match destructurate_prop t with
+	  | Kapp(False,[]) -> elim_id i
+          | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop evbd lit
+          | Kapp(Or,[t1;t2]) ->
               (tclTHENS 
                 (tclTHENLIST [ (elim_id i); (clear [i]); (intros_using [i]) ])
 	        [ loop evbd ((i,None,t1)::lit); loop evbd ((i,None,t2)::lit) ])
-          | Kapp("and",[t1;t2]) ->
+          | Kapp(And,[t1;t2]) ->
               let i1 = id_of_string (string_of_id i ^ "_left") in
               let i2 = id_of_string (string_of_id i ^ "_right") in
               tclTHENLIST [
@@ -1584,9 +1635,9 @@ let destructure_hyps gl =
                 ]
               else
 		loop evbd lit
-          | Kapp("not",[t]) -> 
-              begin match destructurate t with 
-		  Kapp("or",[t1;t2]) -> 
+          | Kapp(Not,[t]) -> 
+              begin match destructurate_prop t with 
+		  Kapp(Or,[t1;t2]) -> 
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
@@ -1595,7 +1646,7 @@ let destructure_hyps gl =
                       (loop evbd
                         ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit))
                     ]
-		| Kapp("and",[t1;t2]) -> 
+		| Kapp(And,[t1;t2]) -> 
                     tclTHENLIST [
 		      (generalize_tac
 		        [mkApp (Lazy.force coq_not_and, [| t1; t2;
@@ -1614,7 +1665,7 @@ let destructure_hyps gl =
 		      (intros_using [i]);
                       (loop evbd ((i,None,mk_and t1 (mk_not t2)) :: lit))
                     ]
-		| Kapp("not",[t]) ->
+		| Kapp(Not,[t]) ->
                     tclTHENLIST [
 		      (generalize_tac
 			[mkApp (Lazy.force coq_not_not, [| t;
@@ -1623,7 +1674,7 @@ let destructure_hyps gl =
 		      (intros_using [i]);
                       (loop evbd ((i,None,t)::lit))
                     ]
-		| Kapp("Zle", [t1;t2]) ->
+		| Kapp(Zle, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_Zle, [| t1;t2;mkVar i|])]);
@@ -1631,7 +1682,7 @@ let destructure_hyps gl =
 		      (intros_using [i]);
 		      (loop evbd lit)
                     ]
-		| Kapp("Zge", [t1;t2]) ->
+		| Kapp(Zge, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_Zge, [| t1;t2;mkVar i|])]);
@@ -1639,7 +1690,7 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("Zlt", [t1;t2]) ->
+		| Kapp(Zlt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac 
                         [mkApp (Lazy.force coq_not_Zlt, [| t1;t2;mkVar i|])]);
@@ -1647,7 +1698,7 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("Zgt", [t1;t2]) ->
+		| Kapp(Zgt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_Zgt, [| t1;t2;mkVar i|])]);
@@ -1655,7 +1706,7 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("le", [t1;t2]) ->
+		| Kapp(Le, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_le, [| t1;t2;mkVar i|])]);
@@ -1663,7 +1714,7 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("ge", [t1;t2]) ->
+		| Kapp(Ge, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_ge, [| t1;t2;mkVar i|])]);
@@ -1671,7 +1722,7 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("lt", [t1;t2]) ->
+		| Kapp(Lt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_lt, [| t1;t2;mkVar i|])]);
@@ -1679,7 +1730,7 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("gt", [t1;t2]) ->
+		| Kapp(Gt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_gt, [| t1;t2;mkVar i|])]);
@@ -1687,10 +1738,10 @@ let destructure_hyps gl =
 		      (intros_using [i]); 
 		      (loop evbd lit);
                     ]
-		| Kapp("eq",[typ;t1;t2]) ->
+		| Kapp(Eq,[typ;t1;t2]) ->
                     if !old_style_flag then begin 
-		      match destructurate (pf_nf gl typ) with
-			| Kapp("nat",_) -> 
+		      match destructurate_type (pf_nf gl typ) with
+			| Kapp(Nat,_) -> 
                             tclTHENLIST [
 			      (simplest_elim 
 				(mkApp
@@ -1699,7 +1750,7 @@ let destructure_hyps gl =
 			      (intros_using [i]); 
 			      (loop evbd lit);
                             ]
-			| Kapp("Z",_) ->
+			| Kapp(Z,_) ->
                             tclTHENLIST [
 			      (simplest_elim 
 				(mkApp
@@ -1710,14 +1761,14 @@ let destructure_hyps gl =
                             ]
 			| _ -> loop evbd lit
                     end else begin 
-		      match destructurate (pf_nf gl typ) with
-			| Kapp("nat",_) -> 
+		      match destructurate_type (pf_nf gl typ) with
+			| Kapp(Nat,_) -> 
                                (tclTHEN 
 			       (convert_hyp_no_check
                                   (i,body,
 				  (mkApp (Lazy.force coq_neq, [| t1;t2|]))))
 			       (loop evbd lit))
-			| Kapp("Z",_) ->
+			| Kapp(Z,_) ->
                                (tclTHEN 
 			       (convert_hyp_no_check
                                   (i,body,
@@ -1736,13 +1787,13 @@ let destructure_hyps gl =
 let destructure_goal gl =
   let concl = pf_concl gl in
   let rec loop t =
-    match destructurate t with
-      | Kapp("not",[t]) ->
+    match destructurate_prop t with
+      | Kapp(Not,[t]) ->
           (tclTHEN 
 	     (tclTHEN (unfold sp_not) intro) 
 	     destructure_hyps)
       | Kimp(a,b) -> (tclTHEN intro (loop b))
-      | Kapp("False",[]) -> destructure_hyps
+      | Kapp(False,[]) -> destructure_hyps
       | _ ->
           (tclTHEN 
 	     (tclTHEN
