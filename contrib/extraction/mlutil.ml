@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+(*i*)
 open Pp
 open Names
 open Term
@@ -18,16 +19,25 @@ open Nametab
 open Table
 open Options
 open Nameops
+(*i*)
 
 (*s Exceptions. *)
 
 exception Found
 exception Impossible
 
-(*s Dummy names. *)
+(*S Names operations. *)
 
 let anonymous = id_of_string "x"
 let prop_name = id_of_string "_"
+let flex_name = id_of_string "flex"
+
+let id_of_name = function
+  | Anonymous -> anonymous
+  | Name id when id = prop_name -> anonymous
+  | Name id -> id 
+
+(*S Operations upon ML types. *)
 
 (*s Get all type variables from a ML type *)
 
@@ -64,66 +74,10 @@ let rec update_args sp vl = function
   | Tarr (a,b)-> 
       Tarr (update_args sp vl a, update_args sp vl b)
   | a -> a
-
-(*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
-    the list [idn;...;id1] and the term [t]. *)
-
-let collect_lams = 
-  let rec collect acc = function
-    | MLlam(id,t) -> collect (id::acc) t
-    | x           -> acc,x
-  in collect []
-
-(* [collect_n_lams] does the same for a precise number of [MLlam] *)
-
-let collect_n_lams = 
-  let rec collect acc n t = 
-    if n = 0 then acc,t 
-    else match t with 
-      | MLlam(id,t) -> collect (id::acc) (n-1) t
-      | _ -> assert false
-  in collect [] 
-
-(* [remove_n_lams] just remove some [MLlam] *)
-
-let rec remove_n_lams n t = 
-  if n = 0 then t  
-  else match t with 
-      | MLlam(_,t) -> remove_n_lams (n-1) t
-      | _ -> assert false
-
-(* [nb_lams] gives the number of head [MLlam] *)
-
-let rec nb_lams = function 
-  | MLlam(_,t) -> succ (nb_lams t)
-  | _ -> 0 
-
-(*s [named_lams] does the converse of [collect_lams] *)
-
-let rec named_lams a = function 
-  | [] -> a 
-  | id :: ids -> named_lams (MLlam(id,a)) ids
-
-(* The same in anonymous version. *)
-
-let rec anonym_lams a = function 
-  | 0 -> a 
-  | n -> anonym_lams (MLlam(anonymous,a)) (pred n)
-
-(*s The following function create [MLrel n;...;MLrel 1] *)
-
-let rec make_eta_args n = 
-  if n = 0 then [] else (MLrel n)::(make_eta_args (pred n))
-
-(* This one tests [MLrel (n+k); ... ;MLrel (1+k)] *)
-
-let rec test_eta_args_lift k n = function 
-  | [] -> n=0
-  | a :: q -> (a = (MLrel (k+n))) && (test_eta_args_lift k (pred n) q)
   
-(*s Generic functions overs [ml_ast]. *)
+(*S Generic functions over ML ast terms. *)
 
-(* [ast_iter_rel f t] applies [f] on every [MLrel] in t. It takes care 
+(*s [ast_iter_rel f t] applies [f] on every [MLrel] in t. It takes care 
    of the number of bingings crossed before reaching the [MLrel]. *)
 
 let ast_iter_rel f = 
@@ -141,7 +95,7 @@ let ast_iter_rel f =
     | MLglob _ | MLexn _ | MLprop | MLarity -> ()
   in iter 0 
 
-(* Map over asts. *)
+(*s Map over asts. *)
 
 let ast_map_case f (c,ids,a) = (c,ids,f a)
 
@@ -156,7 +110,7 @@ let ast_map f = function
   | MLmagic a -> MLmagic (f a)
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a
 
-(* Map over asts, with binding depth as parameter. *)
+(*s Map over asts, with binding depth as parameter. *)
 
 let ast_map_lift_case f n (c,ids,a) = (c,ids, f (n+(List.length ids)) a)
 
@@ -172,7 +126,7 @@ let ast_map_lift f n = function
   | MLmagic a -> MLmagic (f n a)
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a	
 
-(* Iter over asts. *) 
+(*s Iter over asts. *) 
 
 let ast_iter_case f (c,ids,a) = f a
 
@@ -187,14 +141,16 @@ let ast_iter f = function
   | MLmagic a -> f a
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> ()
 
-(*s [occurs k t] returns true if [(Rel k)] occurs in [t]. *)
+(*S Operations concerning De Bruijn indices. *)
+
+(*s [occurs k t] returns [true] if [(Rel k)] occurs in [t]. *)
 
 let occurs k t = 
   try 
     ast_iter_rel (fun i -> if i = k then raise Found) t; false 
   with Found -> true
 
-(*s [occurs_itvl k k' t] return true if there is a [(Rel i)] 
+(*s [occurs_itvl k k' t] returns [true] if there is a [(Rel i)] 
    in [t] with [k<=i<=k'] *)
 
 let occurs_itvl k k' t = 
@@ -222,22 +178,6 @@ let ml_lift k t =
 
 let ml_pop t = ml_lift (-1) t
 
-(*s Computes a eta-reduction *)
-
-let eta_red e = 
-  let ids,t = collect_lams e in 
-  let n = List.length ids in
-  if n = 0 then e 
-  else match t with 
-    | MLapp (f,a) -> 
-	let m = (List.length a) - n in 
-	if m < 0 then e else
-	  let a',a'' = list_chop m a in 
-	  let f = if m = 0 then f else MLapp (f,a') in 
-	  if test_eta_args_lift 0 n a'' && not (occurs_itvl 1 n f)
-	  then ml_lift (-n) f
-	  else e 
-    | _ -> e
 
 (*s [permut_rels k k' c] translates [Rel 1 ... Rel k] to [Rel (k'+1) ... 
   Rel (k'+k)] and [Rel (k+1) ... Rel (k+k')] to [Rel 1 ... Rel k'] *)
@@ -265,6 +205,106 @@ let rec ml_subst e =
     | a -> ast_map_lift subst n a
   in subst 0
 
+(*s Generalized substitution. 
+   [gensubst v m d t] applies to [t] the substitution coded in the 
+   [v] array: [(Rel i)] becomes [(Rel v.(i))]. [d] is the correction applies 
+   to [Rel] greater than [m]. *)
+
+let gen_subst v d t = 
+  let rec subst n = function
+    | MLrel i as a -> 
+	let i'= i-n in 
+	if i' < 1 then a 
+	else if i' < Array.length v then MLrel (v.(i')+n) 
+	else MLrel (i+d) 
+    | a -> ast_map_lift subst n a
+  in subst 0 t
+
+(*S Operations concerning lambdas. *)
+
+(*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
+    [[idn;...;id1]] and the term [t]. *)
+
+let collect_lams = 
+  let rec collect acc = function
+    | MLlam(id,t) -> collect (id::acc) t
+    | x           -> acc,x
+  in collect []
+
+(*s [collect_n_lams] does the same for a precise number of [MLlam]. *)
+
+let collect_n_lams = 
+  let rec collect acc n t = 
+    if n = 0 then acc,t 
+    else match t with 
+      | MLlam(id,t) -> collect (id::acc) (n-1) t
+      | _ -> assert false
+  in collect [] 
+
+(*s [remove_n_lams] just removes some [MLlam]. *)
+
+let rec remove_n_lams n t = 
+  if n = 0 then t  
+  else match t with 
+      | MLlam(_,t) -> remove_n_lams (n-1) t
+      | _ -> assert false
+
+(*s [nb_lams] gives the number of head [MLlam]. *)
+
+let rec nb_lams = function 
+  | MLlam(_,t) -> succ (nb_lams t)
+  | _ -> 0 
+
+(*s [named_lams] does the converse of [collect_lams]. *)
+
+let rec named_lams ids a = match ids with 
+  | [] -> a 
+  | id :: ids -> named_lams ids (MLlam(id,a))
+
+(*s The same in anonymous version. *)
+
+let rec anonym_lams a = function 
+  | 0 -> a 
+  | n -> anonym_lams (MLlam(anonymous,a)) (pred n)
+
+(*s Idem for [prop_name]. *)
+
+let rec prop_lams a = function 
+  | 0 -> a 
+  | n -> anonym_lams (MLlam(prop_name,a)) (pred n)
+
+(*S Operations concerning eta. *)
+
+(*s The following function creates [MLrel n;...;MLrel 1] *)
+
+let rec eta_args n = 
+  if n = 0 then [] else (MLrel n)::(eta_args (pred n))
+
+(*s This one tests [MLrel (n+k); ... ;MLrel (1+k)] *)
+
+let rec test_eta_args_lift k n = function 
+  | [] -> n=0
+  | a :: q -> (a = (MLrel (k+n))) && (test_eta_args_lift k (pred n) q)
+
+(*s Computes a eta-reduction. *)
+
+let eta_red e = 
+  let ids,t = collect_lams e in 
+  let n = List.length ids in
+  if n = 0 then e 
+  else match t with 
+    | MLapp (f,a) -> 
+	let m = (List.length a) - n in 
+	if m < 0 then e else
+	  let a',a'' = list_chop m a in 
+	  let f = if m = 0 then f else MLapp (f,a') in 
+	  if test_eta_args_lift 0 n a'' && not (occurs_itvl 1 n f)
+	  then ml_lift (-n) f
+	  else e 
+    | _ -> e
+
+(*S Auxiliary functions used in simplification of ML cases. *)
+
 (*s [check_and_generalize (r0,l,c)] transforms any [MLcons(r0,l)] in [MLrel 1]
   and raises [Impossible] if any variable in [l] occurs outside such a 
   [MLcons] *)
@@ -281,8 +321,6 @@ let check_and_generalize (r0,l,c) =
 	MLrel (n+1) 
     | a -> ast_map_lift genrec n a
   in genrec 0 c  
-
-(*s Auxialiary functions used during simplifications of [MLcase]. *)
 
 let check_generalizable_case br = 
   let f = check_and_generalize br.(0) in 
@@ -319,10 +357,11 @@ let rec permut_case_fun br acc =
   done; 
   (ids,br)
   
-(*s Generalized iota-reduction. *)
+(*S Generalized iota-reduction. *)
 
 (* Definition of a generalized iota-redex: it's a [MLcase(e,_)] 
-   with [(is_iota_gen e)=true]. *)
+   with [(is_iota_gen e)=true]. Any generalized iota-redex is 
+   transformed into beta-redexes. *)
 
 let rec is_iota_gen = function 
   | MLcons _ -> true
@@ -332,8 +371,6 @@ let rec is_iota_gen = function
 let constructor_index = function
   | ConstructRef (_,j) -> pred j
   | _ -> assert false
-
-(* Any generalized iota-redex is transformed into beta-redexes. *)
 
 let iota_gen br = 
   let rec iota k = function 
@@ -349,11 +386,13 @@ let iota_gen br =
     | _ -> assert false
   in iota 0 
 
-(*s Some beta-iota reductions + simplifications. *)
-
 let is_atomic = function 
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> true
   | _ -> false
+
+(*S The main simplification function. *)
+
+(* Some beta-iota reductions + simplifications. *)
 
 let rec simpl o = function
   | MLapp (f, []) ->
@@ -363,8 +402,9 @@ let rec simpl o = function
   | MLcase (e,br) ->
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
       simpl_case o br (simpl o e) 
-  | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
-      simpl o (ml_subst c e)
+  | MLletin(id,c,e) when 
+      (id = prop_name) || (is_atomic c) || (nb_occur e <= 1) -> 
+	simpl o (ml_subst c e)
   | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 
       simpl o (ml_subst (eta_red c) e)
   | MLfix(i,ids,c) as t when o -> 
@@ -376,6 +416,8 @@ let rec simpl o = function
 
 and simpl_app o a = function  
   | MLapp (f',a') -> simpl_app o (a'@a) f'
+  | MLlam (id,t) when id = prop_name -> 
+      simpl o (MLapp (ml_pop t, List.tl a))
   | MLlam (id,t) -> (* Beta redex *)
       (match nb_occur t with
 	 | 0 -> simpl o (MLapp (ml_pop t, List.tl a))
@@ -394,7 +436,9 @@ and simpl_app o a = function
 	     let k = List.length l in
 	     let a' = List.map (ml_lift k) a in
       	     (n, l, simpl o (MLapp (t,a')))) br 
-      in simpl o (MLcase (e,br'))
+      in simpl o (MLcase (e,br')) 
+  | (MLarity | MLprop | MLexn _) as e -> e 
+	(* We just discard arguments in those cases. *)
   | f -> MLapp (f,a)
 
 and simpl_case o br e = 
@@ -414,117 +458,121 @@ and simpl_case o br e =
 	  let ids,br = permut_case_fun br [] in 
 	  let n = List.length ids in 
 	  if n = 0 then MLcase (e, br) 
-	  else named_lams (MLcase (ml_lift n e, br)) ids
+	  else named_lams ids (MLcase (ml_lift n e, br))
 
-(*s Local [prop] elimination. *) 
-(* Try to eliminate as many [prop] as possible inside an [ml_ast]. *)
+(*S Local prop elimination. *) 
+(* We try to eliminate as many [prop] as possible inside an [ml_ast]. *)
 
-(* Given the names of the variables, build a substitution array. *)
+(*s In a list, it selects only the elements corresponding to a [true] 
+   in the boolean list [l]. *)
 
-let rels_to_kill ids =
-  let n = List.length ids in 
-  let v = Array.make (n+1) 0 in 
-  for i = 1 to n do v.(i) <- i done;
-  let rec parse_ids i j = function 
-    | [] -> ()
-    | id :: q  when id <> prop_name -> 
-	v.(i) <- j; parse_ids (i+1) (j+1) q
-    | _ :: q -> parse_ids (i+1) j q
-  in parse_ids 1 1 ids ; v
-
-(* [kill_prop_rels v m d t] applies to [t] the substitution coded with the 
-   [v] array. [m] is the number of [Rel] concerned by this substitution, 
-   and [d] is the correction applies to [Rel] greater than [m]. *)
-
-let rec kill_prop_rels v m d t = 
-  let rec killrec n = function
-    | MLrel i as a -> 
-	let i'= i-n in 
-	if i' < 1 then a 
-	else if i' <= m then MLrel (v.(i')+n) 
-	else MLrel (i-d) 
-    | a -> ast_map_lift killrec n a
-  in killrec 0 t
-
-(* In a list of args, kill the ones corresponding to a [prop]. *)
-
-let rec kill_some_args ids args = match ids,args with 
+let rec select_via_bl l args = match l,args with 
   | [],_ -> args
-  | i::l,t::q -> let a = kill_some_args l q in 
-    if i = prop_name then a else t::a
-  | _ -> assert false
+  | true::l,a::args -> a :: (select_via_bl l args)
+  | false::l,a::args -> select_via_bl l args
+  | _ -> assert false 
 
-(* Apply the previous function recursively on a whole term *)
+(*s [kill_some_lams] removes some head lambdas according to the bool list [bl].
+   This list is build on the identifier list model: outermost lambda
+   is on the right. [true] means "to keep" and [false] means "to eliminate". 
+   [Rels] corresponding to removed lambdas are supposed not to occur, and 
+   the other [Rels] are made correct via a [gen_subst].
+   Output is not directly a [ml_ast], compose with [named_lams] if needed. *)
 
-let kill_prop_args t0 ids m t =
-  let rids = List.rev ids in 
+let kill_some_lams bl (ids,c) =
+  let n = List.length bl in
+  let n' = List.fold_left (fun n b -> if b then (n+1) else n) 0 bl in 
+  if n = n' then ids,c
+  else if n' = 0 then [],ml_lift (-n) c 
+  else begin 
+    let v = Array.make (n+1) 0 in 
+    let rec parse_ids i j = function 
+      | [] -> ()
+      | true :: q -> 
+	  v.(i) <- j; parse_ids (i+1) (j+1) q
+      | false :: q -> parse_ids (i+1) j q
+    in parse_ids 1 1 bl ; 
+    select_via_bl bl ids, gen_subst v (n'-n) c
+  end
+
+(*s [kill_prop_lams] uses the last function to kill the lambdas corresponding 
+  to a [prop_name]. It can raise [Impossible] if there is nothing to do, or 
+  if there is no lambda left at all. *)
+
+let kill_prop_lams c = 
+  let ids,c = collect_lams c in 
+  let bl = List.map ((<>) prop_name) ids in 
+  if (List.mem true bl) && (List.mem false bl) then 
+    let ids',c = kill_some_lams bl (ids,c) in 
+    ids, named_lams ids' c
+  else raise Impossible
+      
+(*s [kill_prop_args ids t0 t] looks for occurences of [t0] in [t] and 
+  purge the args of [t0] corresponding to a [prop_name]. 
+  It makes eta-expansion if needed. *) 
+
+let kill_prop_args ids t0 t =
+  let m = List.length ids in 
+  let bl = List.rev_map ((<>) prop_name) ids in
   let rec killrec n = function 
     | MLapp(e, a) when e = ml_lift n t0 -> 
 	let k = max 0 (m - (List.length a)) in 
 	let a = List.map (killrec n) a in  
 	let a = List.map (ml_lift k) a in 
-	let a = kill_some_args rids (a @ (make_eta_args k)) in 
-	named_lams (MLapp (ml_lift k e, a)) (list_firstn k ids) 
+	let a = select_via_bl bl (a @ (eta_args k)) in 
+	named_lams (list_firstn k ids) (MLapp (ml_lift k e, a)) 
     | e when e = ml_lift n t0 -> 
-	let a = kill_some_args rids (make_eta_args m) in 
-	named_lams (MLapp (ml_lift m e, a)) ids
+	let a = select_via_bl bl (eta_args m) in 
+	named_lams ids (MLapp (ml_lift m e, a))
     | e -> ast_map_lift killrec n e 
   in killrec 0 t 
 
-let kill_prop_aux c = 
-  let ids,c = collect_lams c in 
-  let m = List.length ids in 
-  let ids' = List.filter ((<>) prop_name) ids in 
-  let diff = m - List.length ids' in
-  if ids' = [] || diff = 0  then raise Impossible; 
-  let db = rels_to_kill ids in 
-  let c = named_lams (kill_prop_rels db m diff c) ids' in 
-  (c,ids,m)
-	
-(* The main function for local [prop] elimination. *)
+(*s The main function for local [prop] elimination. *)
 
 let rec kill_prop = function 
   | MLfix(i,fi,c) -> 
       (try 
-	 let c,ids,m = kill_prop_fix i fi c in 
-	 ml_subst (MLfix (i,fi,c)) (kill_prop_args (MLrel 1) ids m (MLrel 1))
+	 let ids,c = kill_prop_fix i fi c in 
+	 ml_subst (MLfix (i,fi,c)) (kill_prop_args ids (MLrel 1) (MLrel 1))
        with Impossible -> MLfix (i,fi,Array.map kill_prop c))
   | MLapp (MLfix (i,fi,c),a) -> 
       (try 
-	 let c,ids,m = kill_prop_fix i fi c in 
+	 let ids,c = kill_prop_fix i fi c in 
 	 let a = List.map (fun t -> ml_lift 1 (kill_prop t)) a in 
-	 let e = kill_prop_args (MLrel 1) ids m (MLapp (MLrel 1,a)) in
+	 let e = kill_prop_args ids (MLrel 1) (MLapp (MLrel 1,a)) in
 	 ml_subst (MLfix (i,fi,c)) e  
        with Impossible -> 
 	 MLapp(MLfix(i,fi,Array.map kill_prop c),List.map kill_prop a))
   | MLletin(id, MLfix (i,fi,c),e) -> 
       (try 
-	 let c,ids,m = kill_prop_fix i fi c in
-	 let e = kill_prop (kill_prop_args (MLrel 1) ids m e) in 
+	 let ids,c = kill_prop_fix i fi c in
+	 let e = kill_prop (kill_prop_args ids (MLrel 1) e) in 
 	 MLletin(id, MLfix(i,fi,c),e)
       with Impossible -> 
 	MLletin(id, MLfix(i,fi,Array.map kill_prop c),kill_prop e))
   | MLletin(id,c,e) -> 
       (try 
-	 let c,ids,m = kill_prop_aux c in 
-	 let e = kill_prop_args (MLrel 1) ids m e in 
+	 let ids,c = kill_prop_lams c in 
+	 let e = kill_prop_args ids (MLrel 1) e in 
 	 MLletin (id, kill_prop c,kill_prop e) 
        with Impossible -> MLletin(id,kill_prop c,kill_prop e))
   | a -> ast_map kill_prop a
 
 and kill_prop_fix i fi c = 
   let n = Array.length fi in 
-  let ci,ids,m = kill_prop_aux c.(i) in 
+  let ids,ci = kill_prop_lams c.(i) in 
   let c = Array.copy c in c.(i) <- ci; 
   for j = 0 to (n-1) do 
-    c.(j) <- kill_prop (kill_prop_args (MLrel (n-i)) ids m c.(j)) 
+    c.(j) <- kill_prop (kill_prop_args ids (MLrel (n-i)) c.(j)) 
   done;
-  c,ids,m
+  ids,c
+
+(*s Putting things together. *)
 
 let normalize a = 
   if (optim()) then kill_prop (simpl true a) else simpl false a
 
-(*s Special treatment of non-mutual fixpoint for pretty-printing purpose. *)
+(*S Special treatment of non-mutual fixpoint for pretty-printing purpose. *)
 
 (* TODO a reecrire plus proprement!! *)
 
@@ -532,19 +580,13 @@ let make_general_fix f ids n args m c =
   let v = Array.make n 0 in 
   for i=0 to (n-1) do v.(i)<-i done;
   let aux i = function 
-      MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
+    | MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
     | _ -> raise Impossible
-  in
-  list_iter_i aux args; 
-  let args_f = 
-    List.rev_map 
-      (fun i -> MLrel (i+m+1)) (Array.to_list v) in
-  let new_f = 
-    anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
-  let new_c = 
-    named_lams 
-      (normalize (MLapp ((ml_subst new_f c),args))) ids
-  in MLfix(0,[|f|],[|new_c|])
+  in list_iter_i aux args; 
+  let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
+  let new_f = anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
+  let new_c = named_lams ids (normalize (MLapp ((ml_subst new_f c),args))) in
+  MLfix(0,[|f|],[|new_c|])
 
 let optimize_fix a = 
   if not (optim()) then a 
@@ -552,28 +594,27 @@ let optimize_fix a =
     let ids,a' = collect_lams a in 
     let n = List.length ids in 
     if n = 0 then a 
-    else  
-      (match a' with 
-	 | MLfix(_,[|f|],[|c|]) ->
-	     let new_f = MLapp (MLrel (n+1),make_eta_args n) in 
-	     let new_c = named_lams (ml_subst new_f c) ids
-	     in MLfix(0,[|f|],[|new_c|])
-	 | MLapp(a',args) ->
-	     let m = List.length args in 
-	     (match a' with 
-		| MLfix(_,[|_|],[|_|]) when 
-		    (test_eta_args_lift 0 n args) && not (occurs_itvl 1 m a') 
-		    -> a'
-		| MLfix(_,[|f|],[|c|]) -> 
-		    (try 
-		       make_general_fix f ids n args m c
-		     with Impossible -> 
-		       named_lams (MLapp (MLfix (0,[|f|],[|c|]),args)) ids) 
-		| _ -> a)
-	 | _ -> a)
+    else match a' with 
+      | MLfix(_,[|f|],[|c|]) ->
+	  let new_f = MLapp (MLrel (n+1),eta_args n) in 
+	  let new_c = named_lams ids (ml_subst new_f c)
+	  in MLfix(0,[|f|],[|new_c|])
+      | MLapp(a',args) ->
+	  let m = List.length args in 
+	  (match a' with 
+	     | MLfix(_,[|_|],[|_|]) when 
+		 (test_eta_args_lift 0 n args) && not (occurs_itvl 1 m a') 
+		 -> a'
+	     | MLfix(_,[|f|],[|c|]) -> 
+		 (try make_general_fix f ids n args m c
+		  with Impossible -> 
+		    named_lams ids (MLapp (MLfix (0,[|f|],[|c|]),args))) 
+	     | _ -> a)
+      | _ -> a
 
+(*S Inlining. *)
 
-(*s Utility functions used for the decision of expansion. *)
+(* Utility functions used in the decision of inlining. *)
 
 let rec ml_size = function
   | MLapp(t,l) -> List.length l + ml_size t + ml_size_list l
@@ -629,9 +670,8 @@ let rec non_stricts add cand = function
       List.filter ((<>) n) cand  
   | MLapp (MLrel n, _) -> 
       List.filter ((<>) n) cand
-	(* In [(x y)] we say that only x is strict. Cf [sig_rec]. 
-	   We may gain something if x is replaced by a function like
-	   a projection *)
+	(* In [(x y)] we say that only x is strict. Cf [sig_rec]. We may *)
+	(* gain something if x is replaced by a function like a projection *)
   | MLapp (t,l)-> 
       let cand = non_stricts false cand t in 
       List.fold_left (non_stricts false) cand l 
@@ -646,9 +686,9 @@ let rec non_stricts add cand = function
       let cand = Array.fold_left (non_stricts false) cand f in 
       pop n cand
   | MLcase (t,v) -> 
-      (* The only interesting case: for a variable to be non-strict, 
-	 it is sufficient that it appears non-strict in at least one branch,
-	 so he make an union (in fact a merge). *)
+      (* The only interesting case: for a variable to be non-strict, *)
+      (* it is sufficient that it appears non-strict in at least one branch, *)
+      (* so he make an union (in fact a merge). *)
       let cand = non_stricts false cand t in 
       Array.fold_left 
 	(fun c (_,i,t)-> 
@@ -669,63 +709,55 @@ let rec non_stricts add cand = function
    exception. *)
 
 let is_not_strict t = 
-  try 
-    let _ = non_stricts true [] t in false
-  with 
-    | Toplevel -> true
+  try let _ = non_stricts true [] t in false
+  with Toplevel -> true
 
-(*s Expansion decision *)
+(*s Inlining decision *)
 
-(* [expansion_test] answers the following question: 
-   If we could expand [t] (the user said nothing special), 
-   should we expand ? 
+(* [inline_test] answers the following question: 
+   If we could inline [t] (the user said nothing special), 
+   should we inline ? 
    
    We don't expand fixpoints, but always inductive constructors
    and small terms.
-   Last case of expansion is a term with at least one non-strict 
+   Last case of inlining is a term with at least one non-strict 
    variable (i.e. a variable that may not be evaluated). *)
 
-let expansion_test t = 
-  (not (is_fix t))
-  &&
-  ((is_constr t) ||
-   (ml_size t < 3) ||
-   ((ml_size t < 12) && (is_not_strict t)))
+let inline_test t = 
+  not (is_fix t) 
+  && (is_constr t || ml_size t < 3 || (ml_size t < 12 && is_not_strict t))
 
-let manual_expand_list = 
+let manual_inline_list = 
   List.map (fun s -> path_of_string ("Coq.Init."^s))
     [ "Specif.sigS_rect" ; "Specif.sigS_rec" ; 
       "Datatypes.prod_rect" ; "Datatypes.prod_rec"; 
       "Wf.Acc_rec" ; "Wf.Acc_rect" ; 
       "Wf.well_founded_induction" ; "Wf.well_founded_induction_type" ]
 
-let manual_expand = function 
-  | ConstRef sp -> List.mem sp manual_expand_list
+let manual_inline = function 
+  | ConstRef sp -> List.mem sp manual_inline_list
   | _ -> false 
 
-(* If the user doesn't say he wants to keep [t], we expand in two cases:
+(* If the user doesn't say he wants to keep [t], we inline in two cases:
    \begin{itemize}
    \item the user explicitly requests it 
-   \item [expansion_test] answers that the expansion is a good idea, and 
+   \item [expansion_test] answers that the inlining is a good idea, and 
    we are free to act (AutoInline is set)
    \end{itemize} *)
 
-let expand r t = 
-  (not (to_keep r)) (* The user DOES want to keep it *)
-  &&
-  ((to_inline r) (* The user DOES want to expand it *) 
-  || 
-   (auto_inline () && lang () <> Haskell && 
-    ((manual_expand r) ||  expansion_test t)))
+let inline r t = 
+  not (to_keep r) (* The user DOES want to keep it *)
+  && (to_inline r (* The user DOES want to inline it *) 
+     || (auto_inline () && lang () <> Haskell 
+	 && (manual_inline r || inline_test t)))
 
-(*s Optimization *)
+(*S Optimization. *)
 
 let subst_glob_ast r m = 
   let rec substrec = function
     | MLglob r' as t -> if r = r' then m else t
     | t -> ast_map substrec t
-  in
-  substrec
+  in substrec
 
 let subst_glob_decl r m = function
   | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
@@ -747,20 +779,14 @@ let rec optimize prm = function
 	Dabbrev(r,_,Tprop) | 
 	  Dglob(r,MLarity) | 
 	    Dglob(r,MLprop) ) as d :: l ->
-      if List.mem r prm.to_appear then
-	d :: (optimize prm l) 
+      if List.mem r prm.to_appear then d :: (optimize prm l) 
       else optimize prm l
   | Dglob (r,t) :: l ->
       let t = normalize t in
-      let b = expand r t in
-      let l = if b then 
-	List.map (subst_glob_decl r t) l
-      else l in 
-      if (not b || prm.modular || List.mem r prm.to_appear) then 
- 	  let t = optimize_fix t in
-	  Dglob (r,t) :: (optimize prm l)
+      let b = not (inline r t) in
+      let l = if b then l else List.map (subst_glob_decl r t) l in
+      if (b || prm.modular || List.mem r prm.to_appear) then 
+	Dglob (r,optimize_fix t) :: (optimize prm l)
       else 
 	optimize prm l
   | d :: l -> d :: (optimize prm l)
-
-

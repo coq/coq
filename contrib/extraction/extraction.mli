@@ -46,3 +46,5 @@ val decl_is_logical_ind : global_reference -> bool
   a singleton inductive. *)
 
 val decl_is_singleton : global_reference -> bool
+
+val signature : env -> constr -> signature

@@ -28,7 +28,7 @@ Extraction [f:nat->nat][x:nat](f x).
 (* fun f x -> f x *)
 
 Extraction [f:nat->Set->nat][x:nat](f x nat).
-(* fun f x -> f x *)
+(* fun f x -> f x arity *)
 
 Extraction [f:(nat->nat)->nat][x:nat][g:nat->nat](f g).
 (* fun f x g -> f g *)
@@ -46,7 +46,7 @@ Extraction ([X:Set][x:X]x nat).
 Definition d := [X:Type]X.
 Extraction d. (* type 'x d = 'x *)
 Extraction (d Set). (* arity d *)
-Extraction [x:(d Set)]O. (* O *)
+Extraction [x:(d Set)]O. (* fun _ -> O *)
 Extraction (d nat). (* nat d *)
 
 Extraction ([x:(d Type)]O Type).  (* O *)
@@ -148,11 +148,11 @@ Extraction eta_c.
     Eta_c of nat * nat
 *)
 Extraction (eta_c O).
-(* fun x -> Eta_c (O, x) *)
+(* fun _ x _ -> Eta_c (O, x) *)
 Extraction (eta_c O True).
-(* fun x -> Eta_c (O, x) *)
+(* fun x _ -> Eta_c (O, x) *)
 Extraction (eta_c O True O).
-(* Eta_c (O, O) *)
+(* fun _ -> Eta_c (O, O) *)
 
 
 (** Example of singleton inductive type *)
@@ -295,7 +295,6 @@ Extraction [i:(X:Type)X->X](pair ? ? (i nat O) (i bool true)).
 (* problem: fun f -> (f 0, f true) not legal in ocaml *)
 (* solution: fun f -> (f 0, Obj.magic f true) *)
 
-(* Prop applied to Prop : impossible ?*)
 
 Definition funPropSet:= 
  [b:bool]<[_:bool]Type>if b then (X:Prop)X->X else (X:Set)X->X.
@@ -309,4 +308,34 @@ Definition idpropset :=
 (* Definition proprop := [b:bool]((idpropset b) (natTrue b) (zeroprop b)). *)
 
 Definition funProp := [b:bool][x:True]<natTrue>if b then O else x.
+
+(*s prop and arity can be applied.... *)
+
+Definition f : (X:Type)(nat->X)->(X->bool)->bool := 
+ [X:Type;x:nat->X;y:X->bool](y (x O)).
+Extraction f.
+(* let f x y =
+  y (x O)
+*)
+
+Definition f_prop := (f (O=O) [_](refl_equal ? O) [_]true).
+Extraction NoInline f.
+Extraction f_prop.
+(* let f_prop =
+  f prop (fun _ -> True)
+*)
+
+Definition f_arity := (f Set [_:nat]nat [_:Set]true).
+Extraction f_arity.
+(* let f_arity =
+  f arity (fun _ -> True)
+*)
+
+Definition f_normal := (f nat [x]x [x](Cases x of O => true | _ => false end)).
+Extraction f_normal.
+(* let f_normal =
+  f (fun x -> x) (fun x -> match x with
+                             O -> True
+                           | S n -> False)
+*)
 

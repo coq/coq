@@ -18,17 +18,25 @@ open Nametab
 
 val anonymous : identifier
 val prop_name : identifier
+val flex_name : identifier
+val id_of_name : name -> identifier
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
     the list [idn;...;id1] and the term [t]. *)
 
 val collect_lams : ml_ast -> identifier list * ml_ast
 
+val collect_n_lams : int -> ml_ast -> identifier list * ml_ast
+
+val nb_lams : ml_ast -> int
+
 (*s [anonym_lams a n] creates [n] anonymous [MLlam] in front of [a] *)
 
 val anonym_lams : ml_ast -> int -> ml_ast
 
-val named_lams : ml_ast -> identifier list -> ml_ast
+val prop_lams : ml_ast -> int -> ml_ast
+
+val named_lams : identifier list -> ml_ast -> ml_ast
 
 (*s Utility functions over ML types. [update_args sp vl t] puts [vl]
    as arguments behind every inductive types [(sp,_)]. *)
@@ -56,7 +64,7 @@ val ml_subst : ml_ast -> ml_ast -> ml_ast
 (*s Some transformations of ML terms. [normalize] simplify
     all beta redexes (when the argument does not occur, it is just
     thrown away; when it occurs exactly once it is substituted; otherwise
-    a let in redex is created for clarity) and iota redexes, plus some other
+    a let-in redex is created for clarity) and iota redexes, plus some other
     optimizations. *)
 
 val normalize : ml_ast -> ml_ast
@@ -69,7 +77,5 @@ val add_ml_decls :
 val optimize : 
   extraction_params -> ml_decl list -> ml_decl list
 
-exception Impossible
-
-val kill_prop_aux : ml_ast -> ml_ast * identifier list * int
-
+val kill_some_lams : 
+  bool list -> identifier list * ml_ast -> identifier list * ml_ast

@@ -156,13 +156,13 @@ let rec pp_expr par env args =
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
     | MLexn s -> 
-	(* An [MLexn] may be applied, but I don't really care *)
+	(* An [MLexn] may be applied, but I don't really care. *)
 	(open_par par ++ str "Prelude.error" ++ spc () ++ 
 	 qs s ++ close_par par)
     | MLprop ->
-	assert (args=[]); str "prop"
+	str "prop" (* An [MLprop] may be applied, but I don't really care. *)
     | MLarity ->
-	assert (args=[]); str "arity"
+	str "arity" (* Idem for [MLarity].*)
     | MLcast (a,t) ->
 	let tvars = get_tvars t in 
 	let _,ren = rename_tvars keywords tvars in 
