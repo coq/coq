@@ -39,7 +39,7 @@ val declare_scope : scope_name -> unit
 (* Open scope *)
 
 val current_scopes : unit -> scopes
-val open_scope : scope_name -> unit
+val open_scope : bool * scope_name -> unit
 
 (* Declare delimiters for printing *)
 

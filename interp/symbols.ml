@@ -293,7 +293,7 @@ let exists_notation prec nt =
     !scope_map false 
 
 (* Exportation of scopes *)
-let cache_scope (_,sc) =
+let cache_scope (_,(exp,sc)) =
   check_scope sc;
   scope_stack := sc :: !scope_stack
 
@@ -307,7 +307,7 @@ let (inScope,outScope) =
       open_function = (fun i o -> if i=1 then cache_scope o);
       subst_function = subst_scope;
       classify_function = (fun (_,o) -> Substitute o);
-      export_function = (fun x -> Some x) }
+      export_function = (fun (exp,_ as x) -> if exp then Some x else None) }
 
 let open_scope sc = Lib.add_anonymous_leaf (inScope sc)
 

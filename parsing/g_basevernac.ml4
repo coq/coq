@@ -245,7 +245,8 @@ GEXTEND Gram
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (s,l)
 
-     | IDENT "Open"; IDENT "Scope"; sc = IDENT -> VernacOpenScope sc
+     | IDENT "Open"; exp = [IDENT "Local" -> false | -> true]; IDENT "Scope"; 
+	 sc = IDENT -> VernacOpenScope (exp,sc)
 
      | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)

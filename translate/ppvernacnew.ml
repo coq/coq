@@ -415,7 +415,8 @@ let rec pr_vernac = function
   | VernacTacticGrammar l -> hov 1 (str"Grammar tactic simple_tactic :=" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"|") pr_grammar_tactic_rule l) (***)
   | VernacSyntax (u,el) -> hov 1 (str"Syntax " ++ str u ++ spc() ++
     prlist_with_sep sep_v2 pr_syntax_entry el) (***)
-  | VernacOpenScope sc -> str"Open Scope" ++ spc() ++ str sc
+  | VernacOpenScope (exp,sc) ->
+      str ("Open "^(if exp then "" else "Local ")^"Scope") ++ spc() ++ str sc
   | VernacDelimiters (sc,key) ->
       str"Delimits Scope" ++ spc () ++ str sc ++
       spc() ++ str "with " ++ str key
