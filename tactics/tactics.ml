@@ -493,7 +493,7 @@ let apply_with_bindings  (c,lbind) gl =
     try
       let clause = make_clenv_binding_apply wc (c,thm_ty) lbind in
       apply kONT clause gl
-    with (Logic.RefinerError _|UserError _) as exn ->
+    with (RefinerError _|UserError _|Failure _) as exn ->
       let ored =
         try Some (Tacred.red_product (w_env wc) (w_Underlying wc) thm_ty)
         with Tacred.Redelimination -> None

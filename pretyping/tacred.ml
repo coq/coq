@@ -403,17 +403,19 @@ and construct_const env sigma =
 (* Red reduction tactic: reduction to a product *)
 
 let internal_red_product env sigma c = 
+  let simpfun = clos_norm_flags (UNIFORM,betaiotazeta_red) env sigma in
   let rec redrec env x =
     match kind_of_term x with
-      | IsApp (f,l) -> appvect (redrec env f, l)
+      | IsApp (f,l) -> simpfun (appvect (redrec env f, l))
       | IsCast (c,_) -> redrec env c
       | IsProd (x,a,b) -> mkProd (x, a, redrec (push_rel_assum (x,a) env) b)
+      | IsLetIn (x,a,b,t) -> redrec env (subst1 a t)
       | _ when isEvalRef x -> 
 	  (match reference_opt_value sigma env (destEvalRef x) with
 	     | None -> raise Redelimination
-	     | Some c -> c)
+	     | Some c -> simpfun c)
       | _ -> raise Redelimination
-  in nf_betaiota (redrec env c)
+  in redrec env c
 
 let red_product env sigma c = 
   try internal_red_product env sigma c
