@@ -9,6 +9,17 @@ The translator is a smart, robust and powerful tool to improve the
 readibility of your script. The current document describes the
 possibilities of the translator.
 
+In case of problem recompiling the translated files, don't waste time
+to modify the translated file by hand, read first the following
+document telling on how to modify the original files to get a smooth
+uniform safe translation. All 60000 lines of Coq lines on our
+user-contributions server have been translated without any change
+afterwards, and 0,5 % of the lines of the original files (mainly
+notations) had to be modified beforehand to get this result.
+
+Table of contents
+-----------------
+
 I) Implicit Arguments
  1) Strict Implicit Arguments 
  2) Implicit Arguments in standard library
@@ -32,6 +43,7 @@ III) Various pitfalls
  1) New keywords
  2) Old "Case" and "Match"
  3) Change of definition or theorem names
+ 4) Change of tactic names
 
 ---------------------------------------------------------------------
 
@@ -321,6 +333,12 @@ translator. As a consequence, user-defined objects of same name "N"
 are systematically qualified even tough it may not be necessary.  The
 same apply for names "GREATER", "EQUAL", "LESS", etc... [COMPLETE LIST
 TO GIVE].
+
+4) Change of tactics names
+
+  Since tactics names are now lowercase, this can clash with
+user-defined tactic definitions. To pally this, clashing names are
+renamed by adding an extra "_" to their name.
 
 ======================================================================
 Main examples for new syntax
