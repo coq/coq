@@ -43,7 +43,7 @@ TACTIC EXTEND DEq
 END
 
 TACTIC EXTEND Discriminate
-  [ "Discriminate" ident_opt(h) ] -> [ discr_tac h ]
+  [ "Discriminate" quantified_hypothesis_opt(h) ] -> [ discr_tac h ]
 END
 
 let h_discrHyp id = h_discriminate (Some id)

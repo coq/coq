@@ -33,6 +33,7 @@ open Elim
 open Equality
 open Typing
 open Pattern
+open Rawterm
 
 let collect_meta_variables c = 
   let rec collrec acc c = match kind_of_term c with
@@ -273,7 +274,7 @@ let projectAndApply thin id depids gls =
         let deq_trailer neqns =
           tclDO neqns
             (tclTHENSEQ [intro; tclTRY subst_hyp; trailer]) in 
-	(tclTHEN (dEqThen deq_trailer (Some id)) (clear [id])) gls
+	(tclTHEN (dEqThen deq_trailer (Some (NamedHyp id))) (clear [id])) gls
 
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
@@ -438,15 +439,15 @@ let com_of_id id =
 
 let inv k id = inv_gen false k NoDep id
 
-let half_inv_tac id = inv None (Rawterm.NamedHyp id)
-let inv_tac id = inv (Some false) (Rawterm.NamedHyp id)
-let inv_clear_tac id = inv (Some true) (Rawterm.NamedHyp id)
+let half_inv_tac id = inv None (NamedHyp id)
+let inv_tac id = inv (Some false) (NamedHyp id)
+let inv_clear_tac id = inv (Some true) (NamedHyp id)
 
 let dinv k c id = inv_gen false k (Dep c) id
 
-let half_dinv_tac id = dinv None None (Rawterm.NamedHyp id)
-let dinv_tac id = dinv (Some false) None (Rawterm.NamedHyp id)
-let dinv_clear_tac id = dinv (Some true) None (Rawterm.NamedHyp id)
+let half_dinv_tac id = dinv None None (NamedHyp id)
+let dinv_tac id = dinv (Some false) None (NamedHyp id)
+let dinv_clear_tac id = dinv (Some true) None (NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them

@@ -69,7 +69,7 @@ val discrClause  : clause -> tactic
 val discrConcl   : tactic
 val discrHyp     : identifier -> tactic
 val discrEverywhere     : tactic
-val discr_tac    : identifier option -> tactic
+val discr_tac    : quantified_hypothesis option -> tactic
 val inj          : identifier -> tactic
 val injClause    : quantified_hypothesis option -> tactic
 

@@ -69,7 +69,8 @@ let mkBranches =
 
 let solveRightBranch  = 
   tclTHEN h_simplest_right
-    (tclTHEN (intro_force true) (onLastHyp Extratactics.h_discrHyp))
+    (tclTHEN (intro_force true)
+      (onLastHyp (fun id -> Extratactics.h_discrHyp (Rawterm.NamedHyp id))))
 
 let h_solveRightBranch =
   Refiner.abstract_extended_tactic "solveRightBranch" [] solveRightBranch

@@ -551,7 +551,7 @@ let discrEverywhere =
 
 let discr_tac = function
   | None -> discrEverywhere
-  | Some id -> discr id
+  | Some id -> try_intros_until discr id
 
 let discrConcl gls  = discrClause None gls
 let discrHyp id gls = discrClause (Some id) gls
