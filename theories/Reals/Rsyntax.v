@@ -195,21 +195,21 @@ Syntax constr
 Module R_scope.
 
 Delimiters "'R:" R_scope "'".
-Infix NONA 4 "<=" Rle : R_scope.
-Infix NONA 4 "<"  Rlt : R_scope.
-Infix NONA 4 ">=" Rge : R_scope.
-(*Infix NONA 4 ">"  Rgt : R_scope. (* Conflicts with "<..>Cases ... " *) *)
-Infix 3 "+" Rplus : R_scope.
-Infix 3 "-" Rminus : R_scope.
-Infix 2 "*" Rmult : R_scope.
+Infix NONA 5 "<=" Rle : R_scope.
+Infix NONA 5 "<"  Rlt : R_scope.
+Infix NONA 5 ">=" Rge : R_scope.
+(*Infix NONA 5 ">"  Rgt : R_scope. (* Conflicts with "<..>Cases ... " *) *)
+Infix 4 "+" Rplus : R_scope.
+Infix 4 "-" Rminus : R_scope.
+Infix 3 "*" Rmult : R_scope.
+Infix LEFTA 3 "/" Rdiv : R_scope.
 Distfix 0 "- _" Ropp : R_scope.
-Notation NONA 4 "x == y == z" (eqT R x y)/\(eqT R y z) (y at level 3): R_scope.
-Notation NONA 4 "x <= y <= z" (Rle x y)/\(Rle y z) (y at level 3) : R_scope.
-Notation NONA 4 "x <= y <  z" (Rle x y)/\(Rlt y z) (y at level 3) : R_scope.
-Notation NONA 4 "x <  y <  z" (Rlt x y)/\(Rlt y z) (y at level 3) : R_scope.
-Notation NONA 4 "x <  y <= z" (Rlt x y)/\(Rle y z) (y at level 3) : R_scope.
-Notation NONA 4 "x <> y"  ~(eqT R x y) : R_scope.
-Infix LEFTA 2 "/" Rdiv : R_scope.
+Notation NONA 5 "x == y == z" (eqT R x y)/\(eqT R y z) (y at level 4): R_scope.
+Notation NONA 5 "x <= y <= z" (Rle x y)/\(Rle y z) (y at level 4) : R_scope.
+Notation NONA 5 "x <= y <  z" (Rle x y)/\(Rlt y z) (y at level 4) : R_scope.
+Notation NONA 5 "x <  y <  z" (Rlt x y)/\(Rlt y z) (y at level 4) : R_scope.
+Notation NONA 5 "x <  y <= z" (Rlt x y)/\(Rle y z) (y at level 4) : R_scope.
+Notation NONA 5 "x <> y"  ~(eqT R x y) : R_scope.
 Distfix 0 "/ _" Rinv : R_scope.
 
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)

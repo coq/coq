@@ -220,20 +220,20 @@ Syntax constr
 Module Z_scope.
 
 Delimiters "'Z:" Z_scope "'".
-Infix NONA 4 "<=" Zle : Z_scope.
-Infix NONA 4 "<"  Zlt : Z_scope.
-Infix NONA 4 ">=" Zge : Z_scope.
-(*Infix NONA 4 ">"  Zgt : Z_scope. (* Conflicts with "<..>Cases ... " *) *)
-Infix NONA 4 "?=" Zcompare : Z_scope.
-Infix 3 "+" Zplus : Z_scope.
-Infix 3 "-" Zminus : Z_scope.
-Infix 2 "*" Zmult : Z_scope.
+Infix 4 "+" Zplus : Z_scope.
+Infix 4 "-" Zminus : Z_scope.
+Infix 3 "*" Zmult : Z_scope.
 Distfix 0 "- _" Zopp : Z_scope.
-Notation NONA 4 "x <= y <= z" (Zle x y)/\(Zle y z) (y at level 3) : Z_scope.
-Notation NONA 4 "x <= y <  z" (Zle x y)/\(Zlt y z) (y at level 3) : Z_scope.
-Notation NONA 4 "x <  y <  z" (Zlt x y)/\(Zlt y z) (y at level 3) : Z_scope.
-Notation NONA 4 "x <  y <= z" (Zlt x y)/\(Zle y z) (y at level 3) : Z_scope.
-Notation NONA 4 "x <> y"      ~(eq Z x y)          : Z_scope.
+Infix NONA 5 "<=" Zle : Z_scope.
+Infix NONA 5 "<"  Zlt : Z_scope.
+Infix NONA 5 ">=" Zge : Z_scope.
+(*Infix NONA 5 ">"  Zgt : Z_scope. (* Conflicts with "<..>Cases ... " *) *)
+Infix NONA 5 "?=" Zcompare : Z_scope.
+Notation NONA 5 "x <= y <= z" (Zle x y)/\(Zle y z) (y at level 4) : Z_scope.
+Notation NONA 5 "x <= y <  z" (Zle x y)/\(Zlt y z) (y at level 4) : Z_scope.
+Notation NONA 5 "x <  y <  z" (Zlt x y)/\(Zlt y z) (y at level 4) : Z_scope.
+Notation NONA 5 "x <  y <= z" (Zlt x y)/\(Zle y z) (y at level 4) : Z_scope.
+Notation NONA 5 "x <> y"      ~(eq Z x y)          : Z_scope.
 (* Notation NONA 1 "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
 Notation NONA 1 "|| x ||" (Zabs x) : Z_scope.
 
