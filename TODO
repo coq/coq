@@ -4,6 +4,10 @@ Distribution:
 - remercier les auteurs des contributions de la lib standard (p.ex. ZArith)
 - changer Zarith/ en ZArith/
 
+Langage:
+
+- Avertir en cas de clause par défaut inutilisée
+
 Environnement:
 
 - Porter SearchIsos

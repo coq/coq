@@ -6,7 +6,8 @@ Différences V7.0beta / V7.0
    - Rel not in scope of ?
    - implicits in inductive defs
    - localisation des erreurs avec Syntactif Definition
-   - clauses par défaut de Cases non lues séquentiellement
+   - clauses par défaut de Cases non lues séquentiellement et
+     détection des cas non utilisés
    - plusieurs bugs avec les prédicats de Cases lorsque dépendants
 - Prise en compte noms longs dans Hints, Coercions et Unfold
 - Rétablissement des @Definition and co
