@@ -383,9 +383,8 @@ clean::
 LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
       theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
-      theories/Logic/Elimdep.vo              theories/Logic/Berardi.vo \
-      theories/Logic/Eqdep_dec.vo            theories/Logic/Decidable.vo \
-      theories/Logic/JMeq.vo
+      theories/Logic/Berardi.vo       	     theories/Logic/Eqdep_dec.vo \
+      theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
 
 ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Between.vo       theories/Arith/Le.vo          \
