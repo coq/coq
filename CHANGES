@@ -5,7 +5,8 @@ Vernacular commands
 
 - "Declare ML Module" now allows us to import .cma files. This avoids to use a
    bunch of "Declare ML Module" statements when using several ML files.
-
+- "Set Printing Width n" added, allows to change the size of width printing
+   (TODO : doc).
 Gallina
 
 - New syntax of the form "Inductive bool : Set := true, false : bool." for

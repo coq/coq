@@ -96,7 +96,13 @@ let _ = set_gp deep_ft deep_gp
 
 (* For parametrization through vernacular *)
 let default = Format.pp_get_max_boxes !std_ft ()
+let default_margin = Format.pp_get_margin !std_ft ()
+
 let get_depth_boxes () = Some (Format.pp_get_max_boxes !std_ft ())
 let set_depth_boxes v =
   Format.pp_set_max_boxes !std_ft (match v with None -> default | Some v -> v)
+
+let get_margin () = Some (Format.pp_get_margin !std_ft ())
+let set_margin v =
+  Format.pp_set_margin !std_ft (match v with None -> default_margin | Some v -> v)
 

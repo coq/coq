@@ -791,6 +791,14 @@ let _ =
       optread=Pp_control.get_depth_boxes;
       optwrite=Pp_control.set_depth_boxes }
 
+let _ =
+  declare_int_option
+    { optsync=true;
+      optkey=SecondaryTable("Printing","Width");
+      optname="the printing width";
+      optread=Pp_control.get_margin;
+      optwrite=Pp_control.set_margin}
+
 let vernac_set_opacity opaq locqid =
   match Nametab.global locqid with
     | ConstRef sp ->

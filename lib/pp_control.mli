@@ -44,3 +44,6 @@ val deep_ft : Format.formatter
 
 val set_depth_boxes : int option -> unit
 val get_depth_boxes : unit -> int option
+
+val set_margin : int option -> unit
+val get_margin : unit -> int option

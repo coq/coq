@@ -34,7 +34,7 @@ Syntax constr
        [ [<hov 0> (IDBINDER ($LIST $id))] ":" $c:E ]
 
   | letbinder  [ << (BINDERS (LETBINDER $c $id)) >> ] -> 
-       [ [<hov 0> $id ":=" $c:E ] ]
+       [ [<hov 0> id ":=" [0 1] $c:E ] ]
   ;
 
 
@@ -146,8 +146,8 @@ Syntax constr
 (* redundant
   | let [ [$x = $M]$N ] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
 *)
-  | letin [ << (LETIN $A [$x]$B) >> ] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
-  | letincast [ << (LETIN (CAST $A $C) [$x]$B) >> ] -> [ [ <hov 0> "[" $x ":=" $A:E ":" $C:E "]" [0 1] $B:E ] ]
+  | letin [ << (LETIN $A [$x]$B) >> ] -> [ [ <hov 0> "[" $x ":=" [0 1] $A:E "]" [0 1] $B:E ] ]
+  | letincast [ << (LETIN (CAST $A $C) [$x]$B) >> ] -> [ [ <hov 0> "[" $x ":=" [0 1] $A:E ":" $C:E "]" [0 1] $B:E ] ]
   ;
 
 (* Things parsed in command9 *)
