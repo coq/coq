@@ -50,9 +50,8 @@ val w_conv_x            : wc -> constr -> constr -> bool
 val w_const_value       : wc -> constant -> constr
 val w_defined_evar      : wc -> existential_key -> bool
 
-val instantiate : int -> Rawterm.rawconstr -> 
-  identifier Tacexpr.gsimple_clause -> tactic
-(*
-val instantiate_tac : tactic_arg list -> tactic
-*)
+val w_refine :  evar -> Rawterm.rawconstr  -> w_tactic
+
 val instantiate_pf_com : int -> Topconstr.constr_expr -> pftreestate -> pftreestate
+
+(* the instantiate tactic was moved to tactics/evar_tactics.ml *) 

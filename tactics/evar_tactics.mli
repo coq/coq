@@ -1,0 +1,22 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
+
+open Tacmach
+open Names
+open Tacexpr
+
+val instantiate : int -> Rawterm.rawconstr -> 
+  (identifier * hyp_location_flag, unit) location -> tactic
+
+(*
+val instantiate_tac : tactic_arg list -> tactic
+*)
+
+val let_evar : name -> Term.types -> tactic

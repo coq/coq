@@ -47,8 +47,8 @@ let h_generalize cl  = abstract_tactic (TacGeneralize cl) (generalize cl)
 let h_generalize_dep c = abstract_tactic (TacGeneralizeDep c)(generalize_dep c)
 let h_let_tac na c cl =
   abstract_tactic (TacLetTac (na,c,cl)) (letin_tac true na c cl)
-let h_instantiate n c cls = 
-(Evar_refiner.instantiate n c (simple_clause_of cls))
+let h_instantiate n c ido = 
+(Evar_tactics.instantiate n c ido)
   (* abstract_tactic (TacInstantiate (n,c,cls))
     (Evar_refiner.instantiate n c (simple_clause_of cls)) *)
 

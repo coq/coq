@@ -133,7 +133,7 @@ let w_Define sp c wc =
 
 (* w_tactic pour instantiate *) 
 
-let build_open_instance ev rawc wc =
+let w_refine ev rawc wc =
   if Evd.is_defined wc.sigma ev then 
     error "Instantiate called on already-defined evar";
   let e_info = Evd.map wc.sigma ev in
@@ -143,43 +143,9 @@ let build_open_instance ev rawc wc =
       (Some e_info.evar_concl) rawc in
     w_Define ev typed_c {wc with sigma=evd}
 
-(* The instantiate tactic *)
+(* the instantiate tactic was moved to tactics/evar_tactics.ml *) 
 
-let evars_of evc c = 
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) when Evd.in_dom evc n -> c :: acc
-    | _ -> fold_constr evrec acc c
-  in 
-    evrec [] c
-
-let instantiate n rawc ido gl = 
-  let wc = Refiner.project_with_focus gl in
-  let evl = 
-    match ido with
-	None -> evars_of wc.sigma gl.it.evar_concl 
-      | Some (id,_,_) -> 
-	  let (_,_,typ)=Sign.lookup_named id gl.it.evar_hyps in
-	    evars_of wc.sigma typ in
-    if List.length evl < n then error "not enough evars";
-    let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let wc' = build_open_instance ev rawc wc in
-      tclIDTAC {it = gl.it ; sigma = wc'.sigma}
-
-let pfic gls c =
-  let evc = gls.sigma in 
-  Constrintern.interp_constr evc (Global.env_of_context gls.it.evar_hyps) c
-
-(*
-let instantiate_tac = function
-  | [Integer n; Command com] ->
-      (fun gl -> instantiate n (pfic gl com) gl)
-  | [Integer n; Constr c] ->
-      (fun gl -> instantiate n c gl)
-  | _ -> invalid_arg "Instantiate called with bad arguments"
-*)
-
-(* vernac command existential *)
+(* vernac command Existential *)
 
 let instantiate_pf_com n com pfts = 
   let gls = top_goal_of_pftreestate pfts in
@@ -194,8 +160,6 @@ let instantiate_pf_com n com pfts =
   let e_info = Evd.map sigma sp in
   let env = Evarutil.evar_env e_info in
   let rawc = Constrintern.interp_rawconstr sigma env com in 
-  let wc' = build_open_instance sp rawc wc in
+  let wc' = w_refine sp rawc wc in
   let newgc = (w_Underlying wc') in
     change_constraints_pftreestate newgc pfts
-
-

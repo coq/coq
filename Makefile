@@ -181,11 +181,12 @@ TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
   tactics/nbtermdn.cmo tactics/tacticals.cmo \
   tactics/hipattern.cmo tactics/tactics.cmo \
+  tactics/evar_tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \
   tactics/dhyp.cmo tactics/auto.cmo \
   tactics/setoid_replace.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-  tactics/tacinterp.cmo \
+  tactics/tacinterp.cmo 
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \

@@ -231,6 +231,17 @@ TACTIC EXTEND Subst
 | [ "Subst" ] -> [ subst_all ]
 END
 
+open Evar_tactics
+
+(* evar creation *)
+
+TACTIC EXTEND Evar
+ [ "Evar" "(" ident(id) ":" constr(typ) ")" ] ->
+    [ let_evar (Names.Name id) typ ]
+| [ "Evar" constr(typ) ] ->
+    [ let_evar Names.Anonymous typ ]
+END
+
 (** Nijmegen "step" tactic for setoid rewriting *)
 
 open Tacticals

@@ -663,9 +663,12 @@ let rec intern_atomic lf ist x =
       let na = intern_name lf ist na in
       TacLetTac (na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls))
-  | TacInstantiate (n,c,cls) -> 
+  | TacInstantiate (n,c,idh) -> 
       TacInstantiate (n,intern_constr ist c,
-		      (clause_app (intern_hyp_location ist) cls))
+		      (match idh with
+			   ConclLocation () -> ConclLocation ()
+			 | HypLocation (id,hloc) -> 
+			      HypLocation(intern_hyp_or_metaid ist id,hloc)))
 
   (* Automation tactics *)
   | TacTrivial l -> TacTrivial l
@@ -1714,9 +1717,12 @@ and interp_atomic ist gl = function
   | TacLetTac (na,c,clp) ->
       let clp = interp_clause ist gl clp in
       h_let_tac (interp_name ist na) (pf_interp_constr ist gl c) clp
-  | TacInstantiate (n,c,ido) -> h_instantiate n (fst c) 
+  | TacInstantiate (n,c,idh) -> h_instantiate n (fst c) 
       (* pf_interp_constr ist gl c *)
-      (clause_app (interp_hyp_location ist gl) ido)
+      (match idh with
+	   ConclLocation () -> ConclLocation ()
+	 | HypLocation (id,hloc) -> 
+	     HypLocation(interp_hyp ist gl id,hloc))
 
   (* Automation tactics *)
   | TacTrivial l -> Auto.h_trivial l

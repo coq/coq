@@ -154,7 +154,6 @@ let pr_clause pr_id = function
   | [] -> mt ()
   | l -> spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
 
-
 let pr_clauses pr_id cls =
   match cls with
       { onhyps = Some l; onconcl = false } ->
@@ -497,9 +496,12 @@ and pr_atom1 = function
         | _ -> pr_clauses pr_ident cl in
       hov 1 (str "LetTac" ++ spc () ++ pr_name na ++ str ":=" ++
              pr_constr c ++ pcl)
-  | TacInstantiate (n,c,cls) ->
-      hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++ 
-	     pr_clauses pr_ident cls)
+  | TacInstantiate (n,c,ConclLocation ()) ->
+      hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c )
+  | TacInstantiate (n,c,HypLocation (id,hloc)) ->
+      hov 1 (str "Instantiate" ++ pr_arg int n ++ pr_arg pr_constr c ++
+	     str "in" ++  pr_hyp_location pr_ident (id,[],(hloc,ref None)))
+
   (* Derived basic tactics *)
   | TacSimpleInduction (h,_) ->
       hov 1 (str "Induction" ++ pr_arg pr_quantified_hypothesis h)

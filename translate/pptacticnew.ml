@@ -539,11 +539,16 @@ and pr_atom1 env = function
              hov 1 (str"(" ++ pr_id id ++ str " :=" ++
                     pr_lconstrarg env c ++ str")") ++
              pr_clauses pr_ident cl)
-  | TacInstantiate (n,c,cls) ->
+  | TacInstantiate (n,c,ConclLocation ()) ->
       hov 1 (str "instantiate" ++ spc() ++
              hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
-                    pr_lconstrarg env c ++ str ")" ++ 
-		    pr_clauses pr_ident cls))
+                    pr_lconstrarg env c ++ str ")" ))
+  | TacInstantiate (n,c,HypLocation (id,hloc)) ->
+      hov 1 (str "instantiate" ++ spc() ++
+             hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
+                    pr_lconstrarg env c ++ str ")" ) 
+	     ++ str "in" ++ pr_hyp_location pr_ident (id,[],(hloc,ref None)))
+
   (* Derived basic tactics *)
   | TacSimpleInduction (h,l) ->
       if List.exists (fun (pp,_) -> !pp) !l then

@@ -303,8 +303,10 @@ GEXTEND Gram
       | IDENT "Generalize"; IDENT "Dependent"; c = constr -> TacGeneralizeDep c
       | IDENT "LetTac"; (_,na) = name; ":="; c = constr; p = clause_pattern
         -> TacLetTac (na,c,p)
-      | IDENT "Instantiate"; n = natural; c = constr; cls = clause -> 
-	    TacInstantiate (n,c,cls)
+      | IDENT "Instantiate"; n = natural; c = constr -> 
+	    TacInstantiate (n,c,ConclLocation ())
+      | IDENT "Instantiate"; n = natural; c = constr; "in"; id = id_or_meta -> 
+	    TacInstantiate (n,c,HypLocation(id,InHypTypeOnly))
       | IDENT "Specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
       | IDENT "LApply"; c = constr -> TacLApply c

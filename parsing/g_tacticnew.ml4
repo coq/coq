@@ -347,10 +347,13 @@ GEXTEND Gram
           p = clause -> TacLetTac (Names.Name id,c,p)
       | IDENT "set"; c = constr; p = clause ->
           TacLetTac (Names.Anonymous,c,p)
-      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")";
-	  cls = clause ->
-            TacInstantiate (n,c,cls)
-	    
+      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")"; "in";
+	  hid = hypident ->
+	    let (id,(hloc,_)) = hid in
+              TacInstantiate (n,c,HypLocation (id,hloc))
+      | IDENT "instantiate"; "("; n = natural; ":="; c = lconstr; ")" ->
+            TacInstantiate (n,c,ConclLocation ())
+
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
 	  TacSpecialize (n,lcb)
       | IDENT "lapply"; c = constr -> TacLApply c
