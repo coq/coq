@@ -779,7 +779,7 @@ let _ =
     { optsync  = true;
       optname  = "use of boxed values";
       optkey   = (SecondaryTable ("Boxed","Values"));
-      optread  = Vm.transp_values;
+      optread  = (fun _ -> not (Vm.transp_values ()));
       optwrite = (fun b -> Vm.set_transp_values (not b)) } 
 
 let _ =
