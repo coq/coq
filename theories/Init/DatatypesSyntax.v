@@ -20,7 +20,7 @@ Notation Snd := (snd ? ?).
 
 (** Parsing only of things in [Datatypes.v] *)
 
-Notation "< A , B > ( x , y )" := (pair A B x y) (at level 0, only parsing).
+Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing).
 Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing).
 Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing).
 
