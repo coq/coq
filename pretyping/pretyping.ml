@@ -374,7 +374,11 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let tj = pretype_type (valcon_of_tycon tycon) env isevars lvar lmeta t in
   let tj = type_judgment env !isevars tj in
   let cj = pretype (mk_tycon tj.utj_val) env isevars lvar lmeta c in
-  inh_conv_coerce_to loc env isevars cj (assumption_of_type_judgment tj)
+  match tycon with
+    | None  -> cj
+    | Some t' -> 
+	let tj' = Retyping.get_assumption_of env !isevars t' in
+	inh_conv_coerce_to loc env isevars cj tj'
 
 and pretype_type valcon env isevars lvar lmeta = function
 | RHole loc ->
