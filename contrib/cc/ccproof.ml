@@ -143,10 +143,10 @@ let cc_proof (axioms,m)=
 		    Prove (prf,axioms)
 		  else anomaly "wrong proof generated"
 	      else
-		errorlabstrm  "CC" (Pp.str "CC couldn't solve goal")
+		errorlabstrm  "Congruence" (Pp.str "I couldn't solve goal")
 	| None ->
 	    cc uf;
-	    errorlabstrm  "CC" (Pp.str "CC couldn't solve goal")
+	    errorlabstrm  "Congruence" (Pp.str "I couldn't solve goal")
     with UF.Discriminable (i,ci,j,cj,uf) ->
       let prf=build_proof uf (Refute(i,ci,j,cj)) in 
       let (t1,t2)=type_proof axioms prf in 

@@ -154,9 +154,9 @@ let rec proof_tac axioms=function
 		[tclTHEN (apply lemma2) (proof_tac axioms p2);
 		 reflexivity;
 		 fun gls ->
-		   errorlabstrm  "CC" 
+		   errorlabstrm  "Congruence" 
 		   (Pp.str 
-		      "CC doesn't know how to handle dependent equality.")]]
+		      "I don't know how to handle dependent equality")]]
 	     gls)
   | Inject (prf,cstr,nargs,argind)  as gprf->
       (fun gls ->
@@ -176,10 +176,7 @@ let rec proof_tac axioms=function
 	
 let cc_tactic gls=
   Library.check_required_library ["Coq";"Init";"Logic"];
-  let prb=
-    try make_prb gls with 
-	Not_an_eq ->
-	  errorlabstrm  "CC" (str "Goal is not an equality") in
+  let prb=make_prb gls in
     match (cc_proof prb) with
         Prove (p,axioms)-> proof_tac axioms p gls
       | Refute (t1,t2,p,axioms) ->
