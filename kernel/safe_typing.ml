@@ -286,26 +286,13 @@ let add_parameter sp t env =
   Environ.add_constant sp cb env'
 
 let add_constant_with_value sp body typ env =
-  let (jb,cst) = safe_infer env body in
-  let env' = add_constraints cst env in
-  let (env'',ty,cst') = 
+  let body' =
     match typ with
-      | None -> 
-	  env', jb.uj_type, Constraint.empty
-      | Some ty -> 
-	  let (jt,cst') = safe_infer env ty in
-	  let env'' = add_constraints cst' env' in
-	  try
-	    let cst'' = 
-	      conv env'' Evd.empty (body_of_type jb.uj_type) jt.uj_val 
-	    in
-	    let env'' = add_constraints cst'' env'' in
-	    (env'', assumption_of_judgment env'' Evd.empty jt, 
-	     Constraint.union cst' cst'')
-	  with NotConvertible -> 
-	    error_actual_type 
-	      CCI env jb.uj_val (body_of_type jb.uj_type) jt.uj_val
-  in
+      | None -> body
+      | Some ty -> mkCast (body, ty) in
+  let (jb,cst) = safe_infer env body' in
+  let env' = add_constraints cst env in
+  let ty = jb.uj_type in
   let ids = 
     Idset.union (global_vars_set body) (global_vars_set (body_of_type ty))
   in
@@ -314,10 +301,10 @@ let add_constant_with_value sp body typ env =
     const_body = Some body;
     const_type = ty;
     const_hyps = keep_hyps ids (named_context env);
-    const_constraints = Constraint.union cst cst';
+    const_constraints = cst;
     const_opaque = false } 
   in
-  add_constant sp cb env''
+  add_constant sp cb env'
 
 let add_discharged_constant sp r env =
   let (body,typ) = Cooking.cook_constant env r in
