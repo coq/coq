@@ -216,14 +216,15 @@ let indice = function Left x | Right x -> x
 (* Affichage de l'environnement de réification (termes et propositions) *)
 let print_env_reification env = 
   let rec loop c i = function
-      [] -> Printf.printf "===============================\n\n"
+      [] -> Printf.printf "  ===============================\n\n"
     | t :: l -> 
-	Printf.printf "(%c%02d) : " c i;
+	Printf.printf "  (%c%02d) := " c i;
 	Pp.ppnl (Printer.prterm t);
 	Pp.flush_all ();
 	loop c (succ i) l in
-  Printf.printf "PROPOSITIONS :\n\n"; loop 'P' 0 env.props;
-  Printf.printf "TERMES :\n\n"; loop 'V' 0 env.terms
+  print_newline ();
+  Printf.printf "  ENVIRONMENT OF PROPOSITIONS :\n\n"; loop 'P' 0 env.props;
+  Printf.printf "  ENVIRONMENT OF TERMS :\n\n"; loop 'V' 0 env.terms
 
 
 (* \subsection{Gestion des environnements de variable pour Omega} *)
@@ -242,8 +243,8 @@ let intern_omega env t =
     env.om_vars <- (t,v) :: env.om_vars; v
   end
 
-(* Ajout forcé d'un lien entre un terme et une variable  Cas ou la
-   variable est crée par Omega et ou il faut la lier après coup a un atome
+(* Ajout forcé d'un lien entre un terme et une variable  Cas où la
+   variable est créée par Omega et où il faut la lier après coup à un atome
    réifié introduit de force *)
 let intern_omega_force env t v = env.om_vars <- (t,v) :: env.om_vars
 
@@ -305,7 +306,7 @@ let rec pprint ch = function
     Pequa (_,{ e_comp=comp; e_left=t1; e_right=t2 })  ->
       let connector = 
 	match comp with 
-	  Eq -> "=" | Leq -> "=<" | Geq -> ">="
+	  Eq -> "=" | Leq -> "<=" | Geq -> ">="
 	| Gt -> ">" | Lt -> "<" | Neq -> "!=" in
       Printf.fprintf ch "%a %s %a" oprint t1 connector oprint t2  
   | Ptrue -> Printf.fprintf ch "TT"
@@ -589,7 +590,7 @@ let reduce_factor = function
 	[Lazy.force coq_c_reduce], Omult(Oatom v,Oint(compute c))
   | t -> Util.error "reduce_factor.1"
 
-(* \subsection{Réordonancement} *)
+(* \subsection{Réordonnancement} *)
 
 let rec condense env = function
     Oplus(f1,(Oplus(f2,r) as t)) ->
@@ -625,7 +626,7 @@ let rec condense env = function
 (* \subsection{Elimination des zéros} *)
 
 let rec clear_zero = function
-   Oplus(Omult(Oatom v,Oint zero),r) ->
+   Oplus(Omult(Oatom v,Oint n),r) when n=zero ->
      let tac',t = clear_zero r in
      Lazy.force coq_c_red5 :: tac',t
   | Oplus(f,r) -> 
@@ -696,11 +697,22 @@ let normalize_equation env (negated,depends,origin,path) (oper,t1,t2) =
 
 (* \section{Compilation des hypothèses} *)
 
+let is_scalar t =
+  let rec aux t = match destructurate t with
+    | Kapp(("Zplus"|"Zminus"|"Zmult"),[t1;t2]) -> aux t1 & aux t2
+    | Kapp(("Zopp"|"Zsucc"),[t]) -> aux t
+    | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> let _ = recognize_number t in true
+    | _ -> false in
+  try aux t with _ -> false
+
 let rec oformula_of_constr env t =
   try match destructurate t with
   | Kapp("Zplus",[t1;t2]) -> binop env (fun x y -> Oplus(x,y)) t1 t2
-  | Kapp("Zminus",[t1;t2]) ->binop env (fun x y -> Ominus(x,y)) t1 t2
-  | Kapp("Zmult",[t1;t2]) ->binop env (fun x y -> Omult(x,y)) t1 t2
+  | Kapp("Zminus",[t1;t2]) -> binop env (fun x y -> Ominus(x,y)) t1 t2
+  | Kapp("Zmult",[t1;t2]) when is_scalar t1 or is_scalar t2 ->
+      binop env (fun x y -> Omult(x,y)) t1 t2
+  | Kapp("Zopp",[t]) -> Oopp(oformula_of_constr env t)
+  | Kapp("Zsucc",[t]) -> Oplus(oformula_of_constr env t, Oint one)
   | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> 
       begin try Oint(recognize_number t)
       with _ -> Oatom (add_reified_atom t env) end
@@ -776,13 +788,14 @@ let reify_gl env gl =
   let t_concl =
     Pnot (oproposition_of_constr env (true,[],id_concl,[O_mono]) gl concl) in
   if !debug then begin
-    Printf.printf "CONCL: "; pprint stdout t_concl; Printf.printf "\n"
+    Printf.printf "REIFED PROBLEM\n\n";
+    Printf.printf "  CONCL: "; pprint stdout t_concl; Printf.printf "\n"
   end;
   let rec loop = function
       (i,t) :: lhyps ->
 	let t' = oproposition_of_constr env (false,[],i,[]) gl t in
 	if !debug then begin
-	  Printf.printf "%s: " (Names.string_of_id i);
+	  Printf.printf "  %s: " (Names.string_of_id i);
 	  pprint stdout t';
 	  Printf.printf "\n"
 	end;
@@ -860,7 +873,7 @@ let display_depend = function
 
 let display_systems syst_list = 
   let display_omega om_e = 
-    Printf.printf "%d : %a %s 0\n"
+    Printf.printf "  E%d : %a %s 0\n"
       om_e.id
       (fun _ -> display_eq display_omega_id) 
       (om_e.body, om_e.constant)
@@ -875,12 +888,12 @@ let display_systems syst_list =
       (String.concat ""
 	 (List.map (function O_left -> "L" | O_right -> "R" | O_mono -> "M")
 	    oformula_eq.e_origin.o_path));
-    Printf.printf "\n  Origin: %s -- Negated : %s\n"
+    Printf.printf "\n  Origin: %s (negated : %s)\n\n"
       (Names.string_of_id oformula_eq.e_origin.o_hyp)
-      (if oformula_eq.e_negated then "yes" else "false") in
+      (if oformula_eq.e_negated then "yes" else "no") in
 
   let display_system syst =
-    Printf.printf "=SYSTEME==================================\n";
+    Printf.printf "=SYSTEM===================================\n";
     List.iter display_equation syst in
   List.iter display_system syst_list
 
@@ -969,11 +982,15 @@ let rec equas_of_solution_tree = function
   | Leaf s -> s.s_equa_deps
 
 
+(* Because of really_useful_prop, decidable formulas such as Pfalse
+   and Ptrue are moved to Pprop, thus breaking the decidability check
+   in ReflOmegaCore.concl_to_hyp... *)
+
 let really_useful_prop l_equa c =
   let rec real_of = function
       Pequa(t,_) -> t
-    | Ptrue ->  app  coq_true [||]
-    | Pfalse -> app  coq_false [||]
+    | Ptrue ->  app  coq_True [||]
+    | Pfalse -> app  coq_False [||]
     | Pnot t1 -> app coq_not [|real_of t1|]
     | Por(_,t1,t2) -> app coq_or [|real_of t1; real_of t2|]
     | Pand(_,t1,t2) -> app coq_and [|real_of t1; real_of t2|]
@@ -1263,7 +1280,7 @@ let resolution env full_reified_goal systems_list =
             (l_reified_stated @ l_reified_terms) in
   let reified = 
     app coq_interp_sequent 
-       [| env_props_reified;env_terms_reified;reified_concl;reified_goal |] in
+       [| reified_concl;env_props_reified;env_terms_reified;reified_goal|] in
   let normalize_equation e = 
     let rec loop = function
 	[] -> app (if e.e_negated then coq_p_invert else coq_p_step)
@@ -1292,13 +1309,12 @@ let resolution env full_reified_goal systems_list =
 
 let total_reflexive_omega_tactic gl = 
   if !Options.v7 then Util.error "ROmega does not work in v7 mode";
+  Coqlib.check_required_library ["Coq";"romega";"ROmega"];
   try
   let env = new_environment () in
   let full_reified_goal = reify_gl env gl in
   let systems_list = destructurate_hyps full_reified_goal in
-  if !debug then begin 
-    display_systems systems_list
-  end;
+  if !debug then display_systems systems_list;
   resolution env full_reified_goal systems_list gl
   with NO_CONTRADICTION -> Util.error "ROmega can't solve this system"
 
