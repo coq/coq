@@ -25,6 +25,7 @@ Translation between Coq and ML is based upon the following principles:
 
 - Terms of sort Prop don't have any computational meaning, so they are
 merged in one ML term "prop", which is for the moment the ML constant ().
+This part is done according to P. Letouzey's work (*).
 
 - Terms that are arities (i.e. something of shape ( : )( : )...s with 
 s a sort ) don't have any ML counterpart, since they are types of 
@@ -99,6 +100,13 @@ Go there.
 "make tree" to make a local copy of the "theories" tree
 "make" to extract & compile most of the theories file 
 "make reals" to extract & compile a realization of the Reals axioms
+
+
+(*):
+Exécution de termes de preuves: une nouvelle méthode d'extraction 
+pour le Calcul des Constructions Inductives, Pierre Letouzey,
+master thesis, 2000, 
+http://www.eleves.ens.fr/home/letouzey/download/rapport_dea.ps.gz
 
 
 

@@ -1,15 +1,13 @@
 
- 4. Cofix : seulement en Haskell
+ 5. Haskell Syntax
 
- 5. Syntaxe Haskell
+ 7. Eta expansion for resolving message: "variables cannot be generalized"
 
- 7. Eta expansion pour contourner typage Caml
+ 9. Doc!! (examples)
 
- 9. Doc!! (exemples)
+ 10. Comments in  extraction.ml
 
- 10. Recommenter extraction.ml
-
- 11. tester contribs
+ 11. test contribs
 	
- 12. garantir typage Caml => magic + cast.
+ 12.  Ocaml typing => magic + cast.
 
