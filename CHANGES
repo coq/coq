@@ -8,7 +8,9 @@ Tactics
 - Pattern now working on partially applied subterms
 - Ring no longer applies irreversible congruence laws of mult but
   better applies congruence laws of plus (slight source of incompatibilities).
-- Intuition (cf JC)
+- Intuition does no longer unfold constants except "<->" and "~". It
+  can be parameterized by a tactic. It also can introduce dependent
+  product if needed.
 
 Bugs
 
