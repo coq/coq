@@ -27,6 +27,7 @@ let tclTHEN          = Tacmach.tclTHEN
 let tclTHEN_i        = Tacmach.tclTHEN_i
 let tclTHENL         = Tacmach.tclTHENL
 let tclTHENS         = Tacmach.tclTHENS
+let tclTHENSi        = Tacmach.tclTHENSi
 let tclREPEAT        = Tacmach.tclREPEAT
 let tclFIRST         = Tacmach.tclFIRST
 let tclSOLVE         = Tacmach.tclSOLVE

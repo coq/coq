@@ -126,6 +126,7 @@ val tclTHENLIST      : tactic list -> tactic
 val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
+val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
 val tclTHENST        : tactic -> tactic list -> tactic -> tactic
 val tclTHENSI        : tactic -> tactic list -> tactic
 val tclREPEAT        : tactic -> tactic

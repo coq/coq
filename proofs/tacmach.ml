@@ -206,6 +206,7 @@ let tclTHENLIST      = tclTHENLIST
 let tclTHEN_i        = tclTHEN_i
 let tclTHENL         = tclTHENL
 let tclTHENS         = tclTHENS
+let tclTHENSi        = tclTHENSi
 let tclTHENST        = tclTHENST
 let tclTHENSI        = tclTHENSI
 let tclREPEAT        = tclREPEAT

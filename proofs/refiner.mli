@@ -63,6 +63,9 @@ val tclTHENS         : tactic -> tactic list -> tactic
    subgoals is strictly less than [n] *)
 val tclTHENST        : tactic -> tactic list -> tactic -> tactic
 
+(* Same as [tclTHENS] but  completes with [tac3 i] *)
+val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
+
 (* Same as tclTHENST but completes with [Idtac] *)
 val tclTHENSI        : tactic -> tactic list -> tactic
 
