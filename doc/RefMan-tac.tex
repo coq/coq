@@ -1702,6 +1702,28 @@ Field}.
 \SeeAlso \cite{DelMay01} for more details regarding the implementation of {\tt
 Field}.
 
+\subsection{\tt Fourier}
+\tacindex{Fourier}
+
+This tactic written by Loïc Pottier solves linear inequations on real numbers 
+using Fourier's method (\cite{Fourier}). This tactic must be loaded by 
+{\tt Require Fourier}.
+
+\Example
+\begin{coq_example*}
+Require Reals.
+Require Fourier.
+Goal (x,y:R)``x < y``->``y+1 >= x-1``.
+\end{coq_example*}
+
+\begin{coq_example}
+Intros; Fourier.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.  
+\end{coq_eval}
+
 \subsection{\tt AutoRewrite  [ \ident$_1$ \dots \ident$_n$ ]}
 \tacindex{AutoRewrite}
 

@@ -779,7 +779,6 @@ Inductive identityT [A:Type; a:A] : A->Type :=
      refl_identityT : (identityT A a a).
 \end{coq_example*}
 
-
 \section{The standard library}
 
 \subsection{Survey}
@@ -799,9 +798,10 @@ subdirectories:
             etc.) \\
   {\bf IntMap}    & Representation of finite sets by an efficient
   structure of map (trees indexed by binary integers).\\
- {\bf Reals}   & Axiomatization of Real Numbers (classical, basic functions 
-                 and results, integer part and fractional part,
-                 requires the \textbf{ZArith} library).\\
+ {\bf Reals}   & Axiomatization of Real Numbers (classical, basic functions, 
+                 integer part, fractional part, limit, derivative, Cauchy 
+                 series, power series and results,... Requires the 
+                 \textbf{ZArith} library).\\
  {\bf Relations} & Relations (definitions and basic results). \\
  {\bf Wellfounded} & Well-founded relations (basic results). \\
 
@@ -880,9 +880,12 @@ naturals using decimal notation. That is he can write \texttt{(3)}
 for \texttt{(S (S (S O)))}. The number must be between parentheses.
 This works also in the left hand side of a \texttt{Cases} expression
 (see for example section \ref{Refine-example}).
+
+%Remove the redefinition of nat
 \begin{coq_eval}
-Reset Initial. (* Remove the redefinition of nat *)
+Reset Initial.
 \end{coq_eval}
+
 \begin{coq_example*}
 Require Arith.
 Fixpoint even [n:nat] : nat :=
@@ -891,6 +894,86 @@ Cases n of (0) => true
         | (S (S n)) => (even n)
 end.
 \end{coq_example*}
+
+\begin{coq_eval}
+Reset Initial. 
+\end{coq_eval}
+
+\subsection{Real numbers library}
+
+\subsubsection{Notations for real numbers}
+\index{Notations for real numbers}
+
+This is provided by requiring the module {\tt Reals}. This notation is very
+similar to the notation for integer arithmetics (see figure 
+\ref{zarith-syntax}) where Inverse (/x) and division (x/y) have been added. 
+This syntax is used parenthesizing by a double back-quote (\verb:``:).
+
+\begin{coq_example}
+Require Reals.
+Check ``2+3``.
+\end{coq_example}
+
+A constant, say \verb:``4``:, is equivalent to \verb:``(1+(1+(1+1)))``:.
+
+\subsubsection{Some tactics}
+
+In addition to the Ring, Field and Fourier tactics (see chapter \ref{Tactics})
+there are:
+
+{\tt DiscrR} prove that a real integer constante c1 is non equal to
+another real integer constante c2.
+\tacindex{DiscrR}
+
+\begin{coq_example*}
+Require DiscrR.
+Goal ``5<>0``.
+\end{coq_example*}
+
+\begin{coq_example}
+DiscrR.
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+{\tt SplitAbsolu} allows us to unfold {\tt Rabsolu} contants and split 
+corresponding conjonctions.
+\tacindex{SplitAbsolu}
+
+\begin{coq_example*}
+Require SplitAbsolu.
+Goal (x:R) ``x <= (Rabsolu x)``.
+\end{coq_example*}
+
+\begin{coq_example}
+Intro;SplitAbsolu.
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+{\tt SplitRmult} allows us to split a condition that a product is non equal to 
+zero into subgoals corresponding to the condition on each subterm of the 
+product.
+\tacindex{SplitRmult}
+
+\begin{coq_example*}
+Require SplitRmult.
+Goal (x,y,z:R)``x*y*z<>0``.
+\end{coq_example*}
+
+\begin{coq_example}
+Intros;SplitRmult.
+\end{coq_example}
+
+All this tactics has been written with the new tactic language.\\
+
+\begin{coq_eval}
+Reset Initial.  
+\end{coq_eval}
 
 \section{Users' contributions}
 \index{Contributions}
