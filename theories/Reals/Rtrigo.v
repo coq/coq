@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require ZArith.
+Require ZArith_base.
 Require Classical_Prop.
 Require DiscrR.
 Require Rbase.

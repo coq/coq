@@ -11,8 +11,8 @@
 (* $Id$ *)
 
 Require ZArith.
-Require Bool_nat.
-Require Sumbool.
+Require Export Bool_nat.
+Require Export Sumbool.
 
 Definition annot_bool :
   (b:bool) { b':bool | if b' then b=true else b=false }.

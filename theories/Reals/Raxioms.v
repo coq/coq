@@ -12,7 +12,7 @@
 (**    Axiomatisation of the classical reals             *)
 (*********************************************************)
 
-Require Export ZArith.
+Require Export ZArith_base.
 Require Export Rsyntax.
 Require Export TypeSyntax.
 
