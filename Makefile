@@ -26,7 +26,9 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/hashcons.cmo \
     lib/dyn.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/term.cmo \
-       kernel/sign.cmo kernel/evd.cmo \
+       kernel/sign.cmo kernel/evd.cmo kernel/constant.cmo \
+       kernel/inductive.cmo \
+       kernel/environ.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
        kernel/himsg.cmo kernel/machops.cmo kernel/mach.cmo
 
@@ -36,6 +38,8 @@ OBJS=$(CONFIG) $(LIB) $(KERNEL)
 
 world: $(OBJS)
 
+# Literate programming (with ocamlweb)
+
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL)
@@ -44,6 +48,18 @@ doc/coq.ps: doc/coq.tex
 	cd doc; make coq.ps
 doc/coq.tex: $(LPFILES)
 	ocamlweb -o doc/coq.tex $(LPFILES)
+
+# Emacs tags
+
+tags:
+	find . -name "*.ml*" | sort -r | xargs \
+	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+              "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
 
 # Default rules
 
