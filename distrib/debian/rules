@@ -2,16 +2,49 @@
 
 export DH_COMPAT=3
 
+COQPREF=$(CURDIR)/debian/coq
+ADDPREF=COQINSTALLPREFIX=${COQPREF}
+
+# in version 3.04, ocamlopt has several bugs: on some arches, it produces
+# executables that sometimes fail mysteriously or loop.
+# We use a workaround to detect this kind of situations:
+# - we try to make Coq with timeouts (TMAKE)
+# - once this is done, we check make succeeded (timeout does not
+# return the exit status of MAKE)
+#
+TMAKE=timeout 5300 ${MAKE}
+MAKEQ=${MAKE} -q
+
+CONFIGUREOPTS=--prefix /usr --mandir /usr/share/man --emacslib /usr/share/emacs/site-lisp/coq
+
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./configure --prefix /usr --mandir /usr/share/man --emacslib /usr/share/emacs/site-lisp/coq
+	./configure -opt ${CONFIGUREOPTS} || ./configure ${CONFIGUREOPTS}
+	# on powerpc, we refuse to use the ".opt" compilers
+	if [ `arch` = ppc ] ; then ./configure ${CONFIGUREOPTS} ; fi
 	touch configure-stamp
 
 build: configure-stamp build-stamp
 build-stamp:
 	dh_testdir
-	$(MAKE) world || (echo WARNING: NATIVE CODE COMPILATION FAILED && echo Trying to build coq in bytecode && echo "OPT=byte" >> config/Makefile && $(MAKE) world)
+	if grep -q BEST=opt config/Makefile; \
+	then (${TMAKE} bin/coqmktop bin/coqc bin/coqtop.byte \
+	      && ${MAKEQ} bin/coqmktop bin/coqc bin/coqtop.byte \
+	      && ${TMAKE} bin/coqtop.opt bin/coqtop \
+	      && ${MAKEQ} bin/coqtop.opt bin/coqtop \
+	      && ${TMAKE} states \
+	      && ${MAKEQ} states \
+	      && ${TMAKE} world \
+	      && ${MAKEQ} world) \
+          ||  (echo WARNING: NATIVE CODE COMPILATION FAILED \
+	    && echo Trying to build coq in bytecode \
+	    && ${MAKE} archclean clean \
+	    && ${MAKE} BEST=byte world \
+	    && echo NATIVE CODE COMPILATION FAILED \
+	    && echo Coq was built in bytecode instead); \
+	else ${MAKE} world; \
+	fi
 	touch build-stamp
 
 clean:
@@ -30,8 +63,8 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	$(MAKE) install COQINSTALLPREFIX=$(CURDIR)/debian/coq
-	-strip -R .note -R .comment $(CURDIR)/debian/coq/usr/bin/coqtop.opt
+	$(MAKE) ${ADDPREF} install || $(MAKE) BEST=byte ${ADDPREF} install
+	-strip -R .note -R .comment ${COQPREF}/usr/bin/coqtop.opt
 
 # Build architecture-independent files here.
 binary-indep: build install

@@ -23,7 +23,7 @@ RPM=${RAWRPM} ${RPMBUILDROOTOPT} --rcfile rpmrc
 FTPDIR=/net/pauillac/infosystems/ftp/coq/coq
 WWWDIR=/net/pauillac/infosystems/www/coq
 
-COQDEBPACKAGE=coq_${VERSION}-${RELEASENUM}_i386.deb
+COQDEBPACKAGE=coq_${VERSION}-${DEBRELEASENUM}_i386.deb
 
 COQPACKAGE=coq-${VERSION}
 COQRPMPACKAGE=coq-${VERSION}-${RELEASENUM}
@@ -311,12 +311,18 @@ ${COQDEBORIG}.tar.gz: ${COQPACKAGE}.tar.gz
 	tar czf ${COQDEBORIG}.tar.gz ${COQDEBORIG}	
 	rm -rf ${COQDEBORIG}
 
-deb: ${COQDEBORIG}.tar.gz ${COQPACKAGE}.tar.gz
+prep-deb: ${COQDEBORIG}.tar.gz ${COQPACKAGE}.tar.gz
 	rm -rf deb_build
 	mkdir -p deb_build
 	cd deb_build ; cp ../${COQDEBORIG}.tar.gz .
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
 	cp -a debian deb_build/${COQPACKAGE}
 	rm -rf deb_build/${COQPACKAGE}/debian/CVS
+
+deb: prep-deb
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us 2>&1 | tee ../../deb.log
+	lintian deb_build/${COQDEBCHANGES} || true
+
+deb-sign: prep-deb
+	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot 2>&1 | tee ../../deb.log
 	lintian deb_build/${COQDEBCHANGES} || true

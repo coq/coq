@@ -59,7 +59,7 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=   # is "-dump-glob file" when making the doc
 
-BOOTCOQTOP=$(COQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB)
+BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB)
 
 ###########################################################################
 # Objects files 
@@ -247,11 +247,12 @@ BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
 COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
 
-
-world:: binaries states theories contrib tools
-
-binaries:: $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
              $(COQINTERFACE) 
+
+coqbinaries:: ${COQBINARIES}
+
+world: coqbinaries states theories contrib tools
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(MLINCLUDES) -o $@
@@ -527,10 +528,10 @@ INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(COQTOP) -boot -byte $(COQINCLUDES) -compile $*
+	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(COQTOP) -boot -byte $(COQINCLUDES) -compile $*
+	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO)\
@@ -897,9 +898,11 @@ depend: beforedepend
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
 # 3. We compute the dependencies inside the .ml files using ocamldep
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
-# 4. We express dependencies of .cmo files w.r.t their grammars
+# 4. We express dependencies of .cmo and .cmx files w.r.t their grammars
 	for f in $(ML4FILES); do \
 	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmo: " >> .depend; \
+	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
+	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmx: " >> .depend; \
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
 # 5. Finally, we erase the generated .ml files

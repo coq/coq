@@ -1,3 +1,47 @@
+coq (7.2-9) unstable; urgency=low
+  * ocamlc.opt completely broken on powerpc. Added a special case in
+    "rules" for using only bytecode.
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Fri, 15 Feb 2002 09:17:20 +0100
+
+coq (7.2-8) unstable; urgency=low
+
+  * "timeout" time is now 5300s (< 90 min).
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Thu, 14 Feb 2002 17:38:06 +0100
+
+coq (7.2-7) unstable; urgency=low
+
+  * Build now uses ocamlc.opt and ocamlopt.opt if available.
+  * Dependency forced on ocaml >= 3.04 (dependency ocaml >=3.04 | camlp4
+    does not make buildd happy. See http://buildd.debian.org/fetch.php?
+    &pkg=coq&ver=7.2-5&arch=arm&stamp=1013388706&file=log&as=raw).
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Tue, 12 Feb 2002 09:10:01 +0100
+
+coq (7.2-6) unstable; urgency=low
+
+  * Typo in rules, which made the build process always build in
+    bytecode. Fixed.
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Mon, 11 Feb 2002 11:22:21 +0100
+
+coq (7.2-5) unstable; urgency=low
+
+  * Pb with timeout, used in 7.2-4 (bug 132927) making the build process
+    fail when compilation in native mode fails. Workaround in rules: after
+    a "timeout ... make ..." we try a "make -q" to check that everything
+    has been done correctly.
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Fri,  8 Feb 2002 10:08:10 +0100
+
+coq (7.2-4) unstable; urgency=low
+  * Native code compilation failed on sparc; coqtop built by ocamlopt
+    entered an infinite loop on powerpc. Fixed (using timeout for powerpc:
+    if coqtop loops, it is rebuild using the bytecode compiler)
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Fri,  1 Feb 2002 11:04:25 +0100
+
 coq (7.2-3) unstable; urgency=low
   * Workaround for problems with buildd/apt trying to install camlp4
     (closes: Bug#130046).
