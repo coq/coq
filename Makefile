@@ -329,7 +329,7 @@ tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
+	$(COQC) -$(BEST) -bindir bin -q -I contrib/extraction -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
 	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -R theories Coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
