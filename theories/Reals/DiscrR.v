@@ -34,6 +34,6 @@ Tactic Definition DiscrR :=
     Isrealint ?1;Isrealint ?2;
     Apply Rminus_not_eq; Ring ``?1-?2``; 
       (Match Context With
-      | [ |- ``-1+?<>0`` ] -> 
+      | [ |- [``-1``] ] -> 
         Repeat Rewrite <- Ropp_distr1;Apply Ropp_neq
       | _ -> Idtac);Apply Rgt_not_eq;Sup0.
