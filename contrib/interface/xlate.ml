@@ -877,7 +877,8 @@ and xlate_tac =
       if b then CT_cutrewrite_lr (c, ctf_ID_OPT_SOME id)
       else CT_cutrewrite_lr (c, ctf_ID_OPT_SOME id)
     | TacReflexivity -> CT_reflexivity
-    | TacSymmetry -> CT_symmetry
+    | TacSymmetry None -> CT_symmetry
+    | TacSymmetry (Some _) -> xlate_error "TODO: Symmetry in"
     | TacTransitivity c -> CT_transitivity (xlate_formula c)
     | TacAssumption -> CT_assumption
     | TacExact c -> CT_exact (xlate_formula c)

@@ -159,7 +159,7 @@ let rule_is_complex r =
    match r with
       Tactic (TacArg (Tacexp t),_) -> true  
    |  Tactic (TacAtom (_,TacAuto _), _) -> true
-   |  Tactic (TacAtom (_,TacSymmetry), _) -> true 
+   |  Tactic (TacAtom (_,TacSymmetry _), _) -> true 
    |_ -> false
 ;;
 
@@ -1143,7 +1143,7 @@ let is_equality_tac = function
 	 |"ERewriteParallel"|"ERewriteNormal"
 	 |"RewriteLR"|"RewriteRL"|"Replace"),_)
       | TacReduce _
-      | TacSymmetry | TacReflexivity
+      | TacSymmetry _ | TacReflexivity
       | TacExact _ | TacIntroPattern _ | TacIntroMove _ | TacAuto _)) -> true
   | _ -> false
 
