@@ -62,7 +62,8 @@ type obj_typ = {
   o_TPARAMS : constr list; (* dans l'ordre *)
   o_TCOMPS : constr list } (* dans l'ordre *)
 
-let oBJDEFS = (ref [] : ((cte_typ * cte_typ) * obj_typ) list ref)
+let oBJDEFS =
+  (ref [] : ((global_reference * global_reference) * obj_typ) list ref)
 
 let add_new_objdef1 x = oBJDEFS:=x::(!oBJDEFS)
 

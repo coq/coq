@@ -34,9 +34,9 @@ type obj_typ = {
   o_TPARAMS : constr list; (* dans l'ordre *)
   o_TCOMPS : constr list } (* dans l'ordre *)
                
-val objdef_info : (cte_typ * cte_typ) -> obj_typ
+val objdef_info : (global_reference * global_reference) -> obj_typ
 val add_new_objdef : 
-  (Classops.cte_typ * Classops.cte_typ) * Term.constr * Term.constr list *
+  (global_reference * global_reference) * Term.constr * Term.constr list *
   Term.constr list * Term.constr list -> unit
 
 
@@ -45,4 +45,4 @@ val outStruc : obj -> inductive_path * struc_typ
 val inObjDef1 : section_path -> obj
 val outObjDef1 : obj -> section_path
 
-val add_new_objdef1 : ((cte_typ * cte_typ) * obj_typ) -> unit
+val add_new_objdef1 : ((global_reference * global_reference) * obj_typ) -> unit

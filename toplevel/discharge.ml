@@ -216,7 +216,7 @@ let process_object oldenv dir sec_sp
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
-	if clinfo.cL_STRE = (DischargeAt sec_sp) then 
+	if clinfo.cl_strength = (DischargeAt sec_sp) then 
 	  (ops,ids_to_discard,work_alist)
 	else
 	  let (y1,y2) = process_class sec_sp ids_to_discard x in
@@ -224,7 +224,7 @@ let process_object oldenv dir sec_sp
 	  
     | "COERCION" -> 
 	let (((_,coeinfo),_,_)as x) = outCoercion lobj in
-        if coeinfo.cOE_STRE = (DischargeAt sec_sp) then 
+        if coercion_strength coeinfo = (DischargeAt sec_sp) then 
 	  (ops,ids_to_discard,work_alist)
         else
 	  let y = process_coercion sec_sp x in
@@ -298,8 +298,8 @@ let push_inductive_names ccitab sp mie =
 (*s Operations performed at section closing. *)
 
 let cache_end_section (_,(sp,mc)) =
-  Nametab.push_module sp mc;
-  Nametab.open_module_contents (qualid_of_sp sp)
+  Nametab.push_section sp mc;
+  Nametab.open_section_contents (qualid_of_sp sp)
 
 let load_end_section (_,(sp,mc)) =
   Nametab.push_module sp mc

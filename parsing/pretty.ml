@@ -439,7 +439,7 @@ let string_of_strength = function
   | NeverDischarge -> "(global)"
   | DischargeAt sp -> "(disch@"^(string_of_dirpath sp)
 
-let print_coercion_value v = prterm v.cOE_VALUE.uj_val
+let print_coercion_value v = prterm (get_coercion_value v)
 
 let print_index_coercion c = 
   let _,v = coercion_info_from_index c in
@@ -465,7 +465,7 @@ let print_classes () =
   [< prlist_with_sep pr_spc
        (fun (_,(cl,x)) -> 
           [< 'sTR (string_of_class cl)
-	       (*; 'sTR(string_of_strength x.cL_STRE) *) >]) 
+	       (*; 'sTR(string_of_strength x.cl_strength) *) >]) 
        (classes()) >]
 
 let print_coercions () = 
@@ -483,7 +483,7 @@ let cl_of_id id =
 let index_cl_of_id id =
   try 
     let cl = cl_of_id id in
-    let i,_=class_info cl in 
+    let i,_ = class_info cl in 
     i
   with _ -> 
     errorlabstrm "index_cl_of_id"

@@ -20,10 +20,10 @@ type cte_typ =
   | NAM_Constructor of constructor_path
 
 let cte_of_constr c = match kind_of_term c with
-  | IsConst (sp,_) -> NAM_Constant sp
-  | IsMutInd (ind_sp,_) -> NAM_Inductive ind_sp
-  | IsMutConstruct (cstr_cp,_) -> NAM_Constructor cstr_cp
-  | IsVar id -> NAM_Section_Variable (find_section_variable id)
+  | IsConst (sp,_) -> ConstRef sp
+  | IsMutInd (ind_sp,_) -> IndRef ind_sp
+  | IsMutConstruct (cstr_cp,_) -> ConstructRef cstr_cp
+  | IsVar id -> VarRef (find_section_variable id)
   |  _ -> raise Not_found
 
 type cl_typ = 
@@ -34,40 +34,41 @@ type cl_typ =
   | CL_IND of inductive_path
 
 type cl_info_typ = {
-  cL_STRE : strength;
-  cL_PARAM : int }
+  cl_strength : strength;
+  cl_param : int }
 
-type coe_typ = cte_typ
+type coe_typ = global_reference
 
 type coe_info_typ = {
-  cOE_VALUE : unsafe_judgment;
-  cOE_STRE : strength;
-  cOE_ISID : bool;
-  cOE_PARAM : int }
+  coe_value : unsafe_judgment;
+  coe_strength : strength;
+  coe_is_identity : bool;
+  coe_param : int;
+  mutable coe_hide : bool }
 
-type inheritance_path = int list
+type cl_index = int
+type coe_index = int
+
+type inheritance_path = coe_index list
 
 
 (* table des classes, des coercions et graphe d'heritage *)
 
-let cLASSES = (ref [] : (int * (cl_typ * cl_info_typ)) list ref)
+let class_tab =
+  (ref [] : (cl_index * (cl_typ * cl_info_typ)) list ref)
 
-let classes () = !cLASSES
+let coercion_tab =
+  (ref [] : (coe_index * (coe_typ * coe_info_typ)) list ref)
 
-let cOERCIONS = (ref [] : (int * (coe_typ * coe_info_typ)) list ref)
+let inheritance_graph =
+  (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) 
 
-let coercions () = !cOERCIONS
-
-let iNHERITANCE_GRAPH = (ref [] : ((int * int) * inheritance_path) list ref) 
-
-let inheritance_graph () = !iNHERITANCE_GRAPH
-
-let freeze () = (!cLASSES,!cOERCIONS, !iNHERITANCE_GRAPH)
+let freeze () = (!class_tab, !coercion_tab, !inheritance_graph)
 
 let unfreeze (fcl,fco,fig) = 
-  cLASSES:=fcl;
-  cOERCIONS:=fco;
-  iNHERITANCE_GRAPH:=fig
+  class_tab:=fcl;
+  coercion_tab:=fco;
+  inheritance_graph:=fig
 
 (* ajout de nouveaux "objets" *)
 
@@ -80,27 +81,27 @@ let newNum_coercion =
  function () -> (num:=!num+1;!num)
 
 let add_new_class_num (n,(cl,s)) = 
-  cLASSES := (n,(cl,s))::(!cLASSES)
+  class_tab := (n,(cl,s))::(!class_tab)
 
-let add_new_class1 (cl,s) = 
+let add_new_class (cl,s) = 
   add_new_class_num (newNum_class(),(cl,s))
 
 let add_new_coercion_num (n,(coe,s)) = 
-  cOERCIONS := (n,(coe,s))::(!cOERCIONS)
+  coercion_tab := (n,(coe,s))::(!coercion_tab)
 
 let add_new_coercion (coe,s) = 
   let n = newNum_coercion() in 
   add_new_coercion_num (n,(coe,s));n
 
 let add_new_path x =
-  iNHERITANCE_GRAPH := x::(!iNHERITANCE_GRAPH)
+  inheritance_graph := x::!inheritance_graph
 
 let init () =
-  cLASSES:= []; 
-  add_new_class1 (CL_FUN,  { cL_PARAM=0; cL_STRE=NeverDischarge });
-  add_new_class1 (CL_SORT, { cL_PARAM=0; cL_STRE=NeverDischarge });
-  cOERCIONS:= [];
-  iNHERITANCE_GRAPH:= []
+  class_tab:= []; 
+  add_new_class (CL_FUN,  { cl_param = 0; cl_strength = NeverDischarge });
+  add_new_class (CL_SORT, { cl_param = 0; cl_strength = NeverDischarge });
+  coercion_tab:= [];
+  inheritance_graph:= []
 
 let _ = init()
 
@@ -115,7 +116,7 @@ let search_info x l =
 
 (* class_info : cl_typ -> int * cl_info_typ *)
 
-let class_info cl = search_info cl (!cLASSES)
+let class_info cl = search_info cl (!class_tab)
 
 let class_exists cl =
   try let _ = class_info cl in true
@@ -123,34 +124,33 @@ let class_exists cl =
 
 (* class_info_from_index : int -> cl_typ * cl_info_typ *)
 
-let class_info_from_index i = List.assoc i (!cLASSES)
+let class_info_from_index i = List.assoc i !class_tab
 
 (* coercion_info : coe_typ -> int * coe_info_typ *)
 
-let coercion_info coe = search_info coe (!cOERCIONS)
+let coercion_info coe = search_info coe !coercion_tab
 
 let coercion_exists coe =
   try let _ = coercion_info coe in true
   with Not_found -> false
 
 let coe_of_reference = function
-  | ConstRef sp -> NAM_Constant sp
-  | IndRef sp -> NAM_Inductive sp
-  | ConstructRef sp -> NAM_Constructor sp
-  | VarRef sp  -> NAM_Section_Variable sp
   | EvarRef _ -> raise Not_found
+  | x -> x
 
-let coercion_params r =
+let hide_coercion r =
   let _,coe_info = coercion_info (coe_of_reference r) in
-  coe_info.cOE_PARAM
+  if coe_info.coe_hide then None else Some coe_info.coe_param
+
+let coercion_params coe_info = coe_info.coe_param
 
 (* coercion_info_from_index : int -> coe_typ * coe_info_typ *)
 
 let coercion_info_from_index i = 
-  List.assoc i (!cOERCIONS)
+  List.assoc i !coercion_tab
 
 let lookup_path_between (s,t) =
-  List.assoc (s,t) (!iNHERITANCE_GRAPH)
+  List.assoc (s,t) !inheritance_graph
 
 let lookup_path_to_fun_from s = 
   lookup_path_between (s,fst(class_info CL_FUN))
@@ -163,7 +163,7 @@ let lookup_path_to_sort_from s =
 (*val inClass : (cl_typ * cl_info_typ) -> Libobject.object = <fun>
  val outClass : Libobject.object -> (cl_typ * cl_info_typ) = <fun> *)
 
-let cache_class (_,x) = add_new_class1 x
+let cache_class (_,x) = add_new_class x
 
 let (inClass,outClass) =
   declare_object ("CLASS",
@@ -172,8 +172,8 @@ let (inClass,outClass) =
                     cache_function = cache_class;
                     export_function = (function x -> Some x) })
 
-let add_new_class (cl,stre,p) = 
-  Lib.add_anonymous_leaf (inClass ((cl,{cL_STRE=stre;cL_PARAM=p})))
+let declare_class (cl,stre,p) = 
+  Lib.add_anonymous_leaf (inClass ((cl,{ cl_strength = stre; cl_param = p })))
    
 let _ = 
   Summary.declare_summary "inh_graph"
@@ -206,19 +206,19 @@ let class_of env sigma t =
   let t,n,n1,i = 
     (try 
        let (cl,n) = constructor_at_head t in
-       let (i,{cL_PARAM=n1}) = class_info cl in
+       let (i,{cl_param=n1}) = class_info cl in
        t,n,n1,i              
      with _ -> 
        let t = Tacred.hnf_constr env sigma t in
        let (cl,n) = constructor_at_head t in
-       let (i,{cL_PARAM=n1}) = class_info cl in
+       let (i,{cl_param=n1}) = class_info cl in
        t,n,n1,i) 
   in
   if n = n1 then t,i else raise Not_found
 
 let class_args_of c = snd (decomp_app c)
 
-let stre_of_cl = function 
+let strength_of_cl = function 
   | CL_CONST sp -> constant_or_parameter_strength sp
   | CL_SECVAR sp -> variable_strength sp
   | _ -> NeverDischarge
@@ -230,18 +230,12 @@ let string_of_class = function
   | CL_IND sp -> string_of_qualid (Global.qualid_of_global (IndRef sp))
   | CL_SECVAR sp -> string_of_qualid (Global.qualid_of_global (VarRef sp))
 
-(* coe_value : int -> Term.constr * bool *)
+(* coercion_value : int -> unsafe_judgment * bool *)
 
-let coe_value i = 
-  let (coe,{cOE_VALUE=_;cOE_ISID=b}) = coercion_info_from_index i in
+let coercion_value i = 
+  let (coe,{ coe_is_identity = b }) = coercion_info_from_index i in
   let env = Global.env () in
-  let v = match coe with 
-    | NAM_Section_Variable sp -> constr_of_reference Evd.empty env (VarRef sp)
-    | NAM_Constant sp -> constr_of_reference Evd.empty env (ConstRef sp)
-    | NAM_Constructor ((sp,i),j) ->
-	constr_of_reference Evd.empty env (ConstructRef ((sp,i),j))
-    | NAM_Inductive (sp,i) ->
-	constr_of_reference Evd.empty env (IndRef (sp,i)) in
+  let v = constr_of_reference Evd.empty env coe in
   let j = Retyping.get_judgment_of env Evd.empty v in
   (j,b)
 
@@ -259,16 +253,17 @@ let message_ambig l =
   [< 'sTR"Ambiguous paths:"; 'sPC;
      prlist_with_sep pr_fnl (fun ijp -> print_path ijp) l >]
 
-(* add_coercion_in_graph : int * int * int -> unit 
+(* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit 
                          coercion,source,target *)
 
 let add_coercion_in_graph (ic,source,target) =
-  let old_iNHERITANCE_GRAPH = !iNHERITANCE_GRAPH in
-  let ambig_paths = (ref []:((int * int) * inheritance_path) list ref) in
+  let old_inheritance_graph = !inheritance_graph in
+  let ambig_paths =
+    (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
   let try_add_new_path (p,i,j) =
     try 
       if i=j then begin
-	if (snd (class_info_from_index i)).cL_PARAM > 0 then begin
+	if (snd (class_info_from_index i)).cl_param > 0 then begin
 	  let _ = lookup_path_between (i,j) in
           ambig_paths := ((i,j),p)::!ambig_paths
 	end
@@ -295,19 +290,19 @@ let add_coercion_in_graph (ic,source,target) =
 	       (fun ((u,v),q) ->
                   if u<>v & (u = target) & (p <> q) then 
 		    try_add_new_path1 (p @ [ ic ] @ q,s,v))
-               old_iNHERITANCE_GRAPH
+               old_inheritance_graph
            end;
            if s = target then try_add_new_path1 (ic::p,source,t)
 	 end)
-      old_iNHERITANCE_GRAPH 
+      old_inheritance_graph 
   end;
   if (!ambig_paths <> []) & is_mes_ambig() then 
     pPNL (message_ambig !ambig_paths)
 
-let add_new_coercion_in_graph ((coef,xf),cls,clt) =
+let cache_coercion (_,((coe,xf),cls,clt)) =
   let is,_ = class_info cls in
   let it,_ = class_info clt in
-  let jf = add_new_coercion (coef,xf) in
+  let jf = add_new_coercion (coe,xf) in
   add_coercion_in_graph (jf,is,it)
 
 (* val inCoercion : (coe_typ * coe_info_typ) * cl_typ * cl_typ  ->
@@ -315,11 +310,30 @@ let add_new_coercion_in_graph ((coef,xf),cls,clt) =
    val outCoercion : Libobject.object -> (coe_typ * coe_info_typ) 
                          * cl_typ * cl_typ *)
 
-let cache_coercion (_,x) = add_new_coercion_in_graph x
-
 let (inCoercion,outCoercion) =
   declare_object ("COERCION",
                   { load_function = (fun _ -> ());
 		    open_function = cache_coercion;
                     cache_function = cache_coercion;
                     export_function = (function x -> Some x) })
+
+let declare_coercion coef v stre isid cls clt ps =
+  Lib.add_anonymous_leaf
+    (inCoercion
+       ((coef,
+	 { coe_value = v;
+	   coe_strength = stre;
+	   coe_is_identity = isid;
+	   coe_param = ps;
+	   coe_hide = true }),
+	cls, clt))
+
+let coercion_strength v = v.coe_strength
+(* For printing purpose *)
+let get_coercion_value v = v.coe_value.uj_val
+
+let classes () = !class_tab
+let coercions () = !coercion_tab
+let inheritance_graph () = !inheritance_graph
+
+

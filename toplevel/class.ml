@@ -57,9 +57,10 @@ let rec stre_unif_cond = function
 	stre_max (stre1,stre2)
 
 let stre_of_coe = function
-  | NAM_Constant sp -> constant_or_parameter_strength sp
-  | NAM_Section_Variable sp -> variable_strength sp
-  | NAM_Inductive _ | NAM_Constructor _ -> NeverDischarge 
+  | ConstRef sp -> constant_or_parameter_strength sp
+  | VarRef sp -> variable_strength sp
+  | IndRef _ | ConstructRef _ -> NeverDischarge 
+  | EvarRef _ -> anomaly "Not a persistent reference"
 
 (* verfications pour l'ajout d'une classe *)
 
@@ -81,12 +82,12 @@ let try_add_class v (cl,p) streopt check_exist =
   if check_exist & class_exists cl then
     errorlabstrm "try_add_new_class" 
       [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >];
-  let stre' = stre_of_cl cl in 
+  let stre' = strength_of_cl cl in 
   let stre = match streopt with
     | Some stre -> stre_max (stre,stre')
     | None -> stre'
   in
-  add_new_class (cl,stre,p);
+  declare_class (cl,stre,p);
   stre
 
 (* try_add_new_class : Names.identifier -> unit *)
@@ -112,8 +113,8 @@ let try_add_new_class ref stre =
 let check_class v cl p =
   try 
     let _,clinfo = class_info cl in
-    check_fully_applied cl p clinfo.cL_PARAM;
-    clinfo.cL_STRE
+    check_fully_applied cl p clinfo.cl_param;
+    clinfo.cl_strength
   with Not_found -> 
     let env = Global.env () in
     let t = Retyping.get_type_of env Evd.empty v in
@@ -143,14 +144,14 @@ let check_target clt = function
 (* t provient de global_reference donc pas de Cast, pas de App *)
 let coe_of_reference t = 
   match kind_of_term t with
-    | IsConst (sp,l) -> (Array.to_list l),NAM_Constant sp
-    | IsMutInd (ind_sp,l) -> (Array.to_list l),NAM_Inductive ind_sp
-    | IsMutConstruct (cstr_sp,l) -> (Array.to_list l),NAM_Constructor cstr_sp
+    | IsConst (sp,l) -> (Array.to_list l), ConstRef sp
+    | IsMutInd (ind_sp,l) -> (Array.to_list l), IndRef ind_sp
+    | IsMutConstruct (cstr_sp,l) -> (Array.to_list l), ConstructRef cstr_sp
     | IsVar id  ->
 	let sp =
 	  try find_section_variable id 
 	  with Not_found -> anomaly "Not a reference"
-	in [],NAM_Section_Variable sp
+	in [], VarRef sp
     |  _ -> anomaly "Not a reference"
 
 let constructor_at_head1 t = 
@@ -299,13 +300,6 @@ let build_id_coercion idf_opt source =
   let sp = declare_constant idf (constr_entry,NeverDischarge,false) in
   ConstRef sp
 
-let add_new_coercion_in_graph1 (coef,v,stre,isid,cls,clt) ps =
-  add_anonymous_leaf
-    (inCoercion
-       ((coef,
-	 {cOE_VALUE=v;cOE_STRE=stre;cOE_ISID=isid;cOE_PARAM=ps}),
-	cls,clt))
-
 (* 
 nom de la fonction coercion
 strength de f
@@ -369,7 +363,7 @@ let try_add_new_coercion_core idf stre source target isid =
      'sTR" must be declared as a local coercion (its strength is ";
      'sTR(string_of_strength stre');'sTR")" >] *)
   let stre = stre_max (stre,stre') in
-  add_new_coercion_in_graph1 (coef,vj,stre,isid,cls,clt) ps
+  declare_coercion coef vj stre isid cls clt ps
 
 
 let try_add_new_coercion ref stre =
@@ -404,7 +398,7 @@ let count_extra_abstractions hyps ids_to_discard =
 let defined_in_sec sp sec_sp = dirpath sp = sec_sp
 
 let process_class sec_sp ids_to_discard x =
-  let (cl,{cL_STRE=stre; cL_PARAM=p}) = x in
+  let (cl,{cl_strength=stre; cl_param=p}) = x in
 (*  let env = Global.env () in*)
   match cl with 
     | CL_SECVAR _ -> x
@@ -419,7 +413,7 @@ let process_class sec_sp ids_to_discard x =
           let t = Retyping.get_type_of env Evd.empty v in
           let p = arity_sort t in
 *)
-          (CL_CONST newsp,{cL_STRE=stre;cL_PARAM=p+n})
+          (CL_CONST newsp,{cl_strength=stre;cl_param=p+n})
         else 
 	  x
     | CL_IND (sp,i) ->
@@ -433,7 +427,7 @@ let process_class sec_sp ids_to_discard x =
           let t = Retyping.get_type_of env Evd.empty v in
           let p = arity_sort t in
 *)
-          (CL_IND (newsp,i),{cL_STRE=stre;cL_PARAM=p+n})
+          (CL_IND (newsp,i),{cl_strength=stre;cl_param=p+n})
         else 
 	  x
     | _ -> anomaly "process_class" 
@@ -463,25 +457,26 @@ let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
   let s1= process_cl sec_sp s in
   let t1 = process_cl sec_sp t in
   match coe with 
-    | NAM_Section_Variable _ -> ((coe,coeinfo),s1,t1)
-    | NAM_Constant sp -> 
+    | VarRef _ -> ((coe,coeinfo),s1,t1)
+    | ConstRef sp -> 
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  ((NAM_Constant newsp,coeinfo),s1,t1)
+	  ((ConstRef newsp,coeinfo),s1,t1)
 	else
 	  ((coe,coeinfo),s1,t1)
-    | NAM_Inductive (sp,i) -> 
+    | IndRef (sp,i) -> 
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  ((NAM_Inductive (newsp,i),coeinfo),s1,t1)
+	  ((IndRef (newsp,i),coeinfo),s1,t1)
 	else
 	  ((coe,coeinfo),s1,t1)
-    | NAM_Constructor ((sp,i),j) -> 
+    | ConstructRef ((sp,i),j) -> 
 	if defined_in_sec sp sec_sp then 
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-          (((NAM_Constructor ((newsp,i),j)),coeinfo),s1,t1)
+          (((ConstructRef ((newsp,i),j)),coeinfo),s1,t1)
 	else
 	  ((coe,coeinfo),s1,t1)
+    | EvarRef _ -> anomaly "No Evar expected here as coercion"
