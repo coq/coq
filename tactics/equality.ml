@@ -1279,6 +1279,7 @@ let substConcl_LR_tac =
       (function 
 	 | [Command eqn] -> 
 	     (fun gls ->  substConcl_LR (pf_interp_constr gls eqn)  gls)
+	 | [Constr c] -> substConcl_LR c
 	 | _ -> assert false)
   in 
   fun eqn  -> gentac [Command eqn] 
