@@ -34,11 +34,11 @@ Case (total_order_Rle x y); Intro; Assumption.
 Qed.
 
 Lemma Rgt_8_0 : ``0 < 8``.
-Cut ~(O=(8)); [Intro H; Generalize (lt_INR_0 (8) (neq_O_lt (8) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H0; Assumption | Discriminate].
+Sup0.
 Qed.
 
 Lemma Rgt_4_0 : ``0 < 4``.
-Cut ~(O=(4)); [Intro H; Generalize (lt_INR_0 (4) (neq_O_lt (4) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H0; Assumption | Discriminate].
+Sup0.
 Qed.
 
 Lemma maj_term1 : (x,h,eps,l1,alp_f2:R;eps_f2,alp_f1d:posreal;f1,f2:R->R) ``0 < eps`` -> ``(f2 x)<>0`` -> ``(f2 (x+h))<>0`` -> ((h:R)``h <> 0``->``(Rabsolu h) < alp_f1d``->``(Rabsolu (((f1 (x+h))-(f1 x))/h-l1)) < (Rabsolu ((eps*(f2 x))/8))``) -> ((a:R)``(Rabsolu a) < (Rmin eps_f2 alp_f2)``->``/(Rabsolu (f2 (x+a))) < 2/(Rabsolu (f2 x))``) -> ``h<>0`` -> ``(Rabsolu h)<alp_f1d`` -> ``(Rabsolu h) < (Rmin eps_f2 alp_f2)`` -> ``(Rabsolu (/(f2 (x+h))*(((f1 (x+h))-(f1 x))/h-l1))) < eps/4``.
@@ -98,7 +98,8 @@ Unfold Rdiv in H8; Exact H8.
 Symmetry; Apply Rabsolu_right; Left; Sup0.
 Right.
 Unfold Rsqr Rdiv.
-Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Do 1 Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Do 1 Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
 Repeat Rewrite Rabsolu_mult.
 Repeat Rewrite Rabsolu_Rinv; Try Assumption Orelse DiscrR.
 Replace (Rabsolu eps) with eps.
@@ -144,7 +145,8 @@ Unfold Rdiv in H9; Exact H9.
 Symmetry; Apply Rabsolu_right; Left; Sup0.
 Right.
 Unfold Rsqr Rdiv.
-Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
 Repeat Rewrite Rabsolu_mult.
 Repeat Rewrite Rabsolu_Rinv; Try Assumption Orelse DiscrR.
 Replace (Rabsolu eps) with eps.
@@ -174,7 +176,8 @@ Apply Rlt_monotony_r.
 Apply Rabsolu_pos_lt.
 Unfold Rdiv; Unfold Rsqr; Repeat Apply prod_neq_R0; Assumption Orelse Idtac.
 Red; Intro H11; Rewrite H11 in H; Elim (Rlt_antirefl ? H).
-Apply Rinv_neq_R0; Repeat Apply prod_neq_R0.
+Apply Rinv_neq_R0; Apply prod_neq_R0.
+Apply prod_neq_R0.
 DiscrR.
 Assumption.
 Assumption.
@@ -193,7 +196,10 @@ Rewrite <- (Rmult_sym ``2``).
 Unfold Rdiv in H10; Exact H10.
 Symmetry; Apply Rabsolu_right; Left; Sup0.
 Right; Unfold Rsqr Rdiv.
-Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
+Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
 Repeat Rewrite Rabsolu_mult.
 Repeat Rewrite Rabsolu_Rinv; Try Assumption Orelse DiscrR.
 Replace (Rabsolu eps) with eps.

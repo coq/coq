@@ -295,7 +295,10 @@ Apply Rle_trans with ``PI/2``; [Assumption | Unfold Rdiv; Apply Rle_monotony_con
 Left; Assumption.
 Left; Sup0.
 Rewrite H1; Replace (plus (plus (mult (S (S O)) n) (S O)) (S (S O))) with (S (S (plus (mult (S (S O)) n) (S O)))).
-Do 2 Rewrite fact_simpl; Do 2 Rewrite mult_INR; Rewrite <- Rmult_assoc; Rewrite <- (Rmult_sym (INR (fact (plus (mult (S (S O)) n) (S O))))).
+Do 2 Rewrite fact_simpl; Do 2 Rewrite mult_INR.
+Repeat Rewrite <- Rmult_assoc.
+Rewrite <- (Rmult_sym (INR (fact (plus (mult (S (S O)) n) (S O))))).
+Rewrite Rmult_assoc.
 Apply Rlt_monotony.
 Apply lt_INR_0; Apply neq_O_lt.
 Assert H2 := (fact_neq_0 (plus (mult (2) n) (1))).
@@ -305,7 +308,14 @@ Replace ``(2*x+1+1+1)*(2*x+1+1)`` with ``4*x*x+10*x+6``; [Idtac | Ring].
 Apply Rlt_anti_compatibility with ``-4``; Rewrite Rplus_Ropp_l; Replace ``-4+(4*x*x+10*x+6)`` with ``(4*x*x+10*x)+2``; [Idtac | Ring].
 Apply ge0_plus_gt0_is_gt0.
 Cut ``0<=x``.
-Intro; Apply ge0_plus_ge0_is_ge0; Repeat Apply Rmult_le_pos; Try (Left; Sup0) Orelse Assumption.
+Intro; Apply ge0_plus_ge0_is_ge0; Repeat Apply Rmult_le_pos.
+Left; Sup0.
+Left; Sup0.
+Assumption.
+Assumption.
+Left; Sup0.
+Left; Sup0.
+Assumption.
 Unfold x; Replace R0 with (INR O); [Rewrite <- INR_eq_INR2; Apply le_INR; Apply le_O_n | Reflexivity].
 Sup0.
 Apply INR_eq; Do 2 Rewrite S_INR; Do 3 Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite S_INR; Ring.

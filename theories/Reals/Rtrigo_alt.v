@@ -75,10 +75,11 @@ Apply Rsqr_incr_1.
 Apply Rle_trans with PI; [Assumption | Apply PI_4].
 Assumption.
 Left; Sup0.
-Pattern 1 ``16``; Rewrite <- Rplus_Or; Replace ``20`` with ``16+4``; [Apply Rle_compatibility; Left; Sup0 | Ring].
+Rewrite <- (Rplus_Or ``16``); Replace ``20`` with ``16+4``; [Apply Rle_compatibility; Left; Sup0 | Ring].
 Rewrite <- (Rplus_sym ``20``); Pattern 1 ``20``; Rewrite <- Rplus_Or; Apply Rle_compatibility.
 Apply ge0_plus_ge0_is_ge0.
 Repeat Apply Rmult_le_pos.
+Left; Sup0.
 Left; Sup0.
 Replace R0 with (INR O); [Apply le_INR; Apply le_O_n | Reflexivity].
 Replace R0 with (INR O); [Apply le_INR; Apply le_O_n | Reflexivity].
@@ -213,6 +214,7 @@ Pattern 1 ``4``; Rewrite <- Rplus_Or; Replace ``12`` with ``4+8``; [Apply Rle_co
 Rewrite <- (Rplus_sym ``12``); Pattern 1 ``12``; Rewrite <- Rplus_Or; Apply Rle_compatibility.
 Apply ge0_plus_ge0_is_ge0.
 Repeat Apply Rmult_le_pos.
+Left; Sup0.
 Left; Sup0.
 Replace R0 with (INR O); [Apply le_INR; Apply le_O_n | Reflexivity].
 Replace R0 with (INR O); [Apply le_INR; Apply le_O_n | Reflexivity].

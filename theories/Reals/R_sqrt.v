@@ -141,17 +141,19 @@ Unfold Rsqr; Repeat Rewrite Rinv_Rmult.
 Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym a).
 Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Rewrite Rmult_Rplus_distrl.
-Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc.
+Pattern 2 ``2``; Rewrite (Rmult_sym ``2``).
 Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Rewrite (Rmult_Rplus_distrl ``-b`` ``(sqrt (b*b-4*(a*c))) `` ``(/2*/a)``).
+Rewrite Rmult_1r.
+Rewrite (Rmult_Rplus_distrl ``-b`` ``(sqrt (b*b-(2*(2*(a*c)))))`` ``(/2*/a)``).
 Rewrite Rmult_Rplus_distr; Repeat Rewrite Rplus_assoc.
-Replace ``( -b*((sqrt (b*b-4*(a*c)))*(/2*/a))+(b*( -b*(/2*/a))+(b*((sqrt (b*b-4*(a*c)))*(/2*/a))+c)))`` with ``(b*( -b*(/2*/a)))+c``.
+Replace ``( -b*((sqrt (b*b-(2*(2*(a*c)))))*(/2*/a))+(b*( -b*(/2*/a))+(b*((sqrt (b*b-(2*(2*(a*c)))))*(/2*/a))+c)))`` with ``(b*( -b*(/2*/a)))+c``.
 Unfold Rminus; Repeat Rewrite <- Rplus_assoc.
 Replace ``b*b+b*b`` with ``2*(b*b)``.
 Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_assoc.
 Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Replace ``2+1+1`` with ``2*2``.
+Rewrite Rmult_1r.
 Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
 Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Rewrite (Rmult_sym ``/2``); Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
@@ -164,13 +166,9 @@ Ring.
 Apply (cond_nonzero a).
 DiscrR.
 DiscrR.
-Ring.
 DiscrR.
 Ring.
-Repeat Rewrite Rplus_assoc; Repeat Rewrite <- (Rplus_sym c); Repeat Rewrite Rplus_assoc.
-Rewrite (Rplus_sym ``-b*((sqrt (b*b-4*(a*c)))*(/2*/a))``); Repeat Rewrite Rplus_assoc.
-Repeat Rewrite Ropp_mul1; Rewrite Rplus_Ropp_r.
-Rewrite Rplus_Or; Apply Rplus_sym.
+Ring.
 DiscrR.
 Apply (cond_nonzero a).
 DiscrR.
@@ -185,15 +183,14 @@ Unfold Rsqr; Repeat Rewrite Rinv_Rmult; Repeat Rewrite Rmult_assoc.
 Rewrite (Rmult_sym a); Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Unfold Rminus; Rewrite Rmult_Rplus_distrl.
-Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``).
+Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc; Pattern 2 ``2``; Rewrite (Rmult_sym ``2``).
 Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Rewrite (Rmult_Rplus_distrl ``-b`` ``-(sqrt (b*b+ -(4*(a*c)))) `` ``(/2*/a)``).
+Rewrite Rmult_1r; Rewrite (Rmult_Rplus_distrl ``-b`` ``-(sqrt (b*b+ -(2*(2*(a*c))))) `` ``(/2*/a)``).
 Rewrite Rmult_Rplus_distr; Repeat Rewrite Rplus_assoc.
 Rewrite Ropp_mul1; Rewrite Ropp_Ropp.
-Replace ``(b*((sqrt (b*b+ -(4*(a*c))))*(/2*/a))+(b*( -b*(/2*/a))+(b*( -(sqrt (b*b+ -(4*(a*c))))*(/2*/a))+c)))`` with ``(b*( -b*(/2*/a)))+c``.
+Replace ``(b*((sqrt (b*b+ -(2*(2*(a*c)))))*(/2*/a))+(b*( -b*(/2*/a))+(b*( -(sqrt (b*b+ -(2*(2*(a*c)))))*(/2*/a))+c)))`` with ``(b*( -b*(/2*/a)))+c``.
 Repeat Rewrite <- Rplus_assoc; Replace ``b*b+b*b`` with ``2*(b*b)``.
 Rewrite Rmult_Rplus_distrl; Repeat Rewrite Rmult_assoc; Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r; Replace ``2+1+1`` with ``2*2``.
 Rewrite Ropp_mul1; Repeat Rewrite Rmult_assoc.
 Rewrite (Rmult_sym ``2``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Rewrite (Rmult_sym ``/2``); Repeat Rewrite Rmult_assoc.
@@ -203,12 +200,12 @@ Rewrite Rmult_1r; Rewrite <- Ropp_mul2; Ring.
 Apply (cond_nonzero a).
 DiscrR.
 DiscrR.
-Ring.
 DiscrR.
 Ring.
 Ring.
 DiscrR.
 Apply (cond_nonzero a).
+DiscrR.
 DiscrR.
 Apply (cond_nonzero a).
 Apply prod_neq_R0; DiscrR Orelse Apply (cond_nonzero a).
@@ -236,10 +233,10 @@ Repeat Rewrite Rmult_assoc.
 Rewrite (Rmult_sym ``/a``).
 Rewrite Rmult_assoc.
 Rewrite <- Rinv_Rmult.
-Replace ``4*a*a`` with ``(Rsqr (2*a))``.
+Replace ``(2*(2*a))*a`` with ``(Rsqr (2*a))``.
 Reflexivity.
 SqRing.
-Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
+Rewrite <- Rmult_assoc; Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].
 Apply (cond_nonzero a).
 Assumption.
 Apply prod_neq_R0; [DiscrR | Apply (cond_nonzero a)].

@@ -381,6 +381,7 @@ Repeat Rewrite <- Rmult_assoc.
 Rewrite <- Rinv_r_sym.
 Rewrite Rmult_1l.
 Replace ``(INR N)*(INR N)`` with (Rsqr (INR N)); [Idtac | Reflexivity].
+Rewrite Rmult_assoc.
 Rewrite Rmult_sym.
 Replace ``4`` with (Rsqr ``2``); [Idtac | SqRing].
 Rewrite <- Rsqr_times.
@@ -576,8 +577,9 @@ Apply RmaxLess1.
 Left; Apply Rlt_Rinv; Apply INR_fact_lt_0.
 DiscrR.
 Apply Rle_sym1.
-Unfold Rdiv; Repeat Apply Rmult_le_pos.
+Unfold Rdiv; Apply Rmult_le_pos.
 Left; Sup0.
+Apply Rmult_le_pos.
 Apply pow_le.
 Apply Rle_trans with R1.
 Left; Apply Rlt_R0_R1.

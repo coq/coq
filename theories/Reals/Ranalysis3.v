@@ -91,7 +91,7 @@ Unfold limit_in in H10.
 Unfold dist in H10.
 Simpl in H10.
 Unfold R_dist in H10.
-Elim (H10 ``(Rabsolu (eps*(Rsqr (f2 x)))/(8*l1))``); [Idtac | Change ``0<(Rabsolu ((eps*(Rsqr (f2 x)))/(8*l1)))``; Apply Rabsolu_pos_lt; Unfold Rdiv Rsqr; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; [Red; Intro; Rewrite H11 in H6; Elim (Rlt_antirefl ? H6) | Assumption | Assumption | Apply Rinv_neq_R0; Apply prod_neq_R0; [DiscrR | Assumption]]].
+Elim (H10 ``(Rabsolu (eps*(Rsqr (f2 x)))/(8*l1))``).
 Clear H10; Intros alp_f2t2 H10.
 Cut (a:R) ``(Rabsolu a) < alp_f2t2`` -> ``(Rabsolu ((f2 (x+a)) - (f2 x))) < (Rabsolu ((eps*(Rsqr (f2 x)))/(8*l1)))``.
 Intro H11.
@@ -153,18 +153,24 @@ Apply Rabsolu_pos_lt.
 Unfold Rdiv Rsqr; Repeat Rewrite Rmult_assoc.
 Repeat Apply prod_neq_R0; Try Assumption.
 Red; Intro; Rewrite H15 in H6; Elim (Rlt_antirefl ? H6).
-Apply Rinv_neq_R0; Apply prod_neq_R0; [DiscrR | Assumption].
+Apply Rinv_neq_R0; Repeat Apply prod_neq_R0; DiscrR Orelse Assumption.
 Apply H13.
 Split.
 Apply D_x_no_cond; Assumption.
 Replace ``x+a-x`` with a; [Assumption | Ring].
+Change ``0<(Rabsolu ((eps*(Rsqr (f2 x)))/(8*l1)))``.
+Apply Rabsolu_pos_lt; Unfold Rdiv Rsqr; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0.
+Red; Intro; Rewrite H11 in H6; Elim (Rlt_antirefl ? H6).
+Assumption. 
+Assumption.
+Apply Rinv_neq_R0; Repeat Apply prod_neq_R0; [DiscrR | DiscrR | DiscrR | Assumption].
 (***********************************)
 (*              Cas n° 3           *)
 (*     (f1 x)<>0  l1=0  l2=0       *)
 (***********************************)
 Case (Req_EM l1 R0); Intro.
 Case (Req_EM l2 R0); Intro.
-Elim (H0 ``(Rabsolu ((Rsqr (f2 x))*eps)/(8*(f1 x)))``); [Idtac | Apply Rabsolu_pos_lt; Unfold Rdiv Rsqr; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; [Assumption | Assumption | Red; Intro; Rewrite H11 in H6; Elim (Rlt_antirefl ? H6) | Apply Rinv_neq_R0; Apply prod_neq_R0; DiscrR Orelse Assumption]].
+Elim (H0 ``(Rabsolu ((Rsqr (f2 x))*eps)/(8*(f1 x)))``); [Idtac | Apply Rabsolu_pos_lt; Unfold Rdiv Rsqr; Repeat Rewrite Rmult_assoc; Repeat Apply prod_neq_R0; [Assumption | Assumption | Red; Intro; Rewrite H11 in H6; Elim (Rlt_antirefl ? H6) | Apply Rinv_neq_R0; Repeat Apply prod_neq_R0; DiscrR Orelse Assumption]].
 Intros alp_f2d H12.
 Cut ``0 < (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d))``.
 Intro.
@@ -286,8 +292,14 @@ Repeat Rewrite Rinv_Rmult; Try Assumption.
 Repeat Apply prod_neq_R0; Try Assumption.
 Red; Intro H18; Rewrite H18 in H6; Elim (Rlt_antirefl ? H6). 
 Apply Rinv_neq_R0; DiscrR.
+Apply Rinv_neq_R0; DiscrR.
+Apply Rinv_neq_R0; DiscrR.
 Apply Rinv_neq_R0; Assumption.
 Apply Rinv_neq_R0; Assumption.
+DiscrR.
+DiscrR.
+DiscrR.
+DiscrR.
 DiscrR.
 Apply prod_neq_R0; [DiscrR | Assumption].
 Elim H13; Intros.
@@ -308,10 +320,14 @@ Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
 Repeat Apply prod_neq_R0; Try Assumption.
 Red; Intro H13; Rewrite H13 in H6; Elim (Rlt_antirefl ? H6). 
 Apply Rinv_neq_R0; DiscrR.
+Apply Rinv_neq_R0; DiscrR.
+Apply Rinv_neq_R0; DiscrR.
 Apply Rinv_neq_R0; Assumption.
 Apply Rinv_neq_R0; Assumption.
 Apply prod_neq_R0; [DiscrR | Assumption].
 Red; Intro H11; Rewrite H11 in H6; Elim (Rlt_antirefl ? H6). 
+Apply Rinv_neq_R0; DiscrR.
+Apply Rinv_neq_R0; DiscrR.
 Apply Rinv_neq_R0; DiscrR.
 Apply Rinv_neq_R0; Assumption.
 (***********************************)

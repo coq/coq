@@ -9,7 +9,8 @@
 
 Require Export Rdefinitions.
 
-Axiom NRplus : R->R->R.
+Axiom NRplus : R->R.
+Axiom NRmult : R->R.
 
 Grammar rnatural ident :=
   nat_id [ prim:var($id) ] -> [$id]
@@ -73,7 +74,6 @@ with rapplication : constr :=
 | pair [ rexpr($p) "," rexpr($c) ] -> [ ($p, $c) ]
 | appl0 [ rexpr($a) ] -> [ $a ].
 
-
 Grammar constr constr0 :=
   r_in_com [ "``" rnatural:rformula($c) "``" ] -> [ $c ].
 
@@ -81,10 +81,6 @@ Grammar constr atomic_pattern :=
   r_in_pattern [ "``" rnatural:rnumber($c) "``" ] -> [ $c ].   
 
 (*i* pp **)
-(* pb: on rajoute des () lorsque les constantes commencent par 1 lors de
-l'appel avec NRplus i*)
-
-
 
 Syntax constr
   level 0:
@@ -119,7 +115,7 @@ Syntax constr
   level 7:
     Rplus [ (Rplus $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "+"  [0 0] (REXPR $n2):L "``"] ]
-   | Rconst [(Rplus R1 $r)] -> [$r:"r_printer_outside"]
+   | Rodd_outside [(Rplus R1 $r)] -> [ $r:"r_printer_odd_outside"]
    | Rminus [ (Rminus $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "-" [0 0] (REXPR $n2):L "``"] ]
   ;
@@ -127,13 +123,14 @@ Syntax constr
   level 6:
     Rmult [ (Rmult $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "*" [0 0] (REXPR $n2):L "``"] ]
-    |Rdiv [ (Rdiv $n1 $n2) ]
+    | Reven_outside [ (Rmult (Rplus R1 R1) $r) ] -> [ $r:"r_printer_even_outside"]
+    | Rdiv [ (Rdiv $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "/" [0 0] (REXPR $n2):L "``"] ]
   ;
 
   level 8:
     Ropp [(Ropp $n1)] -> [ [<hov 0> "``" "-"(REXPR $n1):E "``"] ]
-    |Rinv [(Rinv $n1)] -> [ [<hov 0> "``" "/"(REXPR $n1):E "``"] ]
+    | Rinv [(Rinv $n1)] -> [ [<hov 0> "``" "/"(REXPR $n1):E "``"] ]
   ;
 
   level 0:
@@ -172,20 +169,21 @@ Syntax constr
       [<<(REXPR <<(Rminus $n1 $n2)>>)>>]
       	 -> [ (REXPR $n1):E "-" [0 0] (REXPR $n2):L ]
   | NRplus_inside
-      [<<(REXPR <<(NRplus $n1 $n2)>>)>>]
-      	 -> ["(" (REXPR $n1):E "+" [0 0] (REXPR $n2):L ")"]
+      [<<(REXPR <<(NRplus $r)>>)>>] -> [ "(" "1" "+" (REXPR $r):L ")"]
   ;
 
   level 6:
     Rmult_inside
       [<<(REXPR <<(Rmult $n1 $n2)>>)>>]
-      	 -> [ (REXPR $n1):E "*" [0 0] (REXPR $n2):L ]
+      	 -> [ (REXPR $n1):E "*" (REXPR $n2):L ]
+  |  NRmult_inside
+      [<<(REXPR <<(NRmult $r)>>)>>] -> [ "(" "2" "*" (REXPR $r):L ")"]
   ;
 
   level 5:
- Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ " -" (REXPR $n1):E  ]
-|Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "/" (REXPR $n1):E  ]
-|Rdiv_inside
+    Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ " -" (REXPR $n1):E  ]
+  | Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "/" (REXPR $n1):E  ]
+  | Rdiv_inside
       [<<(REXPR <<(Rdiv $n1 $n2)>>)>>]
       	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]
   ;  
@@ -193,7 +191,8 @@ Syntax constr
   level 0:
     Rzero_inside [<<(REXPR <<R0>>)>>] -> ["0"]
   | Rone_inside [<<(REXPR <<R1>>)>>] -> ["1"]
-  | Rconst_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [$r:"r_printer"]
+  | Rodd_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [ $r:"r_printer_odd" ]
+  | Reven_inside [<<(REXPR <<(Rmult (Rplus R1 R1) $r)>>)>>] -> [ $r:"r_printer_even" ]
 .
 
 (* For parsing/printing based on scopes *)

@@ -1508,7 +1508,7 @@ Qed.
 
 Lemma double_var : (x:R) ``x == x/2 + x/2``.
 Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
-Replace ``2`` with (INR (2)); [Apply not_O_INR; Discriminate | Reflexivity].
+Replace ``2`` with (INR (2)); [Apply not_O_INR; Discriminate | Unfold INR; Ring].
 Qed.
 
 (**********************************************************)

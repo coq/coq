@@ -168,6 +168,7 @@ Intros; Unfold Rsqr.
 Rewrite Rinv_Rmult; Try Reflexivity Orelse Assumption.
 Qed.
 
+Import R_scope.
 Lemma canonical_Rsqr : (a:nonzeroreal;b,c,x:R) ``a*(Rsqr x)+b*x+c == a* (Rsqr (x+b/(2*a))) + (4*a*c - (Rsqr b))/(4*a)``.
 Intros.
 Rewrite Rsqr_plus.
@@ -175,6 +176,7 @@ Repeat Rewrite Rmult_Rplus_distr.
 Repeat Rewrite Rplus_assoc.
 Apply Rplus_plus_r.
 Unfold Rdiv Rminus.
+Replace ``2*1+2*1`` with ``4``; [Idtac | Ring].
 Rewrite (Rmult_Rplus_distrl ``4*a*c`` ``-(Rsqr b)`` ``/(4*a)``).
 Rewrite Rsqr_times.
 Repeat Rewrite Rinv_Rmult.
@@ -186,38 +188,35 @@ Rewrite (Rmult_sym ``2``).
 Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
-Rewrite (Rmult_sym ``/4``).
-Rewrite (Rmult_sym ``4``).
+Rewrite (Rmult_sym ``/2``).
+Rewrite (Rmult_sym ``2``).
 Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
 Rewrite (Rmult_sym a).
-Rewrite Rmult_assoc.
-Rewrite <- Rinv_l_sym.
-Rewrite Rmult_1r.
-Rewrite (Rmult_sym x).
-Repeat Rewrite Rplus_assoc.
-Rewrite (Rplus_sym ``(Rsqr b)*((Rsqr (/2*/a))*a)``).
-Repeat Rewrite Rplus_assoc.
-Apply Rplus_plus_r.
-Rewrite Ropp_mul1.
-Unfold Rsqr.
 Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
-Rewrite <- (Rmult_sym ``(/a*/2)``).
-Rewrite Rmult_assoc.
-Rewrite <- (Rinv_Rmult ``2`` ``2``).
-Replace ``2*2`` with ``4``.
-Rewrite Rplus_Ropp_l.
-Symmetry; Apply Rplus_Or.
+Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Repeat Rewrite Rplus_assoc.
+Rewrite (Rplus_sym ``(Rsqr b)*((Rsqr (/a*/2))*a)``).
+Repeat Rewrite Rplus_assoc.
+Rewrite (Rmult_sym x).
+Apply Rplus_plus_r.
+Rewrite (Rmult_sym ``/a``).
+Unfold Rsqr; Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
 Ring.
+Apply (cond_nonzero a).
+DiscrR.
+Apply (cond_nonzero a).
 DiscrR.
 DiscrR.
 Apply (cond_nonzero a).
-Apply (cond_nonzero a).
 DiscrR.
 DiscrR.
-Apply (cond_nonzero a).
 DiscrR.
 Apply (cond_nonzero a).
 DiscrR.

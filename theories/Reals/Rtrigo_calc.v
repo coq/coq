@@ -37,11 +37,11 @@ Rewrite neg_sin; Rewrite sin_neg; Ring.
 Cut ``PI==PI/2+PI/2``; [Intro | Apply double_var].
 Pattern 2 3 PI; Rewrite H.
 Pattern 2 3 PI; Rewrite H.
-Unfold Rdiv; Cut ``2*2==4``.
-Intro; Rewrite Rmult_Rplus_distrl.
-Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_Rmult; [Rewrite H0; Ring | DiscrR | DiscrR].
+Unfold Rdiv.
+Repeat Rewrite Rinv_Rmult.
 Ring.
+DiscrR.
+DiscrR.
 Qed.
 
 
@@ -128,7 +128,7 @@ Rewrite sin_PI3_cos_PI6.
 Unfold Rdiv. 
 Rewrite Rmult_1l.
 Rewrite Rmult_assoc.
-Rewrite (Rmult_sym ``2``).
+Pattern 2 ``2``; Rewrite (Rmult_sym ``2``).
 Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Reflexivity.
@@ -200,7 +200,7 @@ Reflexivity.
 DiscrR.
 DiscrR.
 DiscrR.
-Ring.
+Reflexivity.
 Unfold Rdiv.
 Rewrite Rmult_1l.
 Repeat Rewrite <- Rmult_assoc.
@@ -424,11 +424,7 @@ Symmetry; Apply Ropp_mul1.
 Pattern 2 PI; Rewrite double_var.
 Pattern 2 3 PI; Rewrite double_var.
 Unfold Rdiv.
-Rewrite Rmult_Rplus_distrl.
-Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_Rmult.
-Replace ``2*2`` with ``4``.
-Ring.
+Repeat Rewrite Rinv_Rmult.
 Ring.
 DiscrR.
 DiscrR.
@@ -441,11 +437,7 @@ Unfold Rdiv; Symmetry; Apply Ropp_mul1.
 Pattern 2 PI; Rewrite double_var.
 Pattern 2 3 PI; Rewrite double_var.
 Unfold Rdiv.
-Rewrite Rmult_Rplus_distrl.
-Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_Rmult.
-Replace ``2*2`` with ``4``.
-Ring.
+Repeat Rewrite Rinv_Rmult.
 Ring.
 DiscrR.
 DiscrR.

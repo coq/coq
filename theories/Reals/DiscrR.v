@@ -39,17 +39,20 @@ Tactic Definition DiscrR :=
         Replace ?1 with (INR nbr);
           [Apply not_O_INR;Discriminate|Simpl;Ring]).
 
-Tactic Definition Sup0_lt trm:=
-  Replace ``0`` with (INR O);
-  [Let nbr=(ToINR trm) In
-      Replace trm with (INR nbr);
-      [Apply lt_INR; Apply lt_O_Sn|Simpl;Ring]|Simpl;Reflexivity].
+Lemma Rlt_R0_R2 : ``0<2``.
+Replace ``2`` with (INR (2)); [Apply lt_INR_0; Apply lt_O_Sn | Reflexivity].
+Qed.
 
-Tactic Definition Sup0_gt trm:=
-  Unfold Rgt; Sup0_lt trm.   
+Lemma Rplus_lt_pos : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x+y``.
+Intros.
+Apply Rlt_trans with x.
+Assumption. 
+Pattern 1 x; Rewrite <- Rplus_Or.
+Apply Rlt_compatibility.
+Assumption.
+Qed.
 
-Tactic Definition Sup0 :=
+Recursive Tactic Definition Sup0 :=
   Match Context With
-  | [ |- ``0<?1`` ] -> (Sup0_lt ?1)
-  | [ |- ``?1>0`` ] -> (Sup0_gt ?1).
-
+  | [ |- ``0<?1`` ] -> Repeat (Apply Rmult_lt_pos Orelse Apply Rplus_lt_pos; Try Apply Rlt_R0_R1 Orelse Apply Rlt_R0_R2)
+  | [ |- ``?1>0`` ] -> Change ``0<?1``; Sup0.
