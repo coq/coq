@@ -580,7 +580,7 @@ Defined.
 
 Add Morphism iff : Iff_Morphism.
  tauto.
-Defined.
+Qed.
 
 (* impl IS A MORPHISM *)
 
@@ -588,25 +588,45 @@ Definition impl (A B: Prop) := A -> B.
 
 Add Morphism impl : Impl_Morphism.
 unfold impl; tauto.
-Defined.
+Qed.
 
 (* and IS A MORPHISM *)
 
 Add Morphism and : And_Morphism.
  tauto.
-Defined.
+Qed.
 
 (* or IS A MORPHISM *)
 
 Add Morphism or : Or_Morphism.
  tauto.
-Defined.
+Qed.
 
 (* not IS A MORPHISM *)
 
 Add Morphism not : Not_Morphism.
  tauto.
-Defined.
+Qed.
+
+(* THE ASYMMETRIC AREFLEXIVE RELATION impl WITH A FEW MORPHISMS *)
+
+Add Relation Prop impl.
+
+Add Morphism impl with signature impl --> impl ++> impl as Impl_Morphism2.
+ unfold impl; tauto.
+Qed.
+
+Add Morphism and with signature impl ++> impl ++> impl as And_Morphism2.
+ unfold impl; tauto.
+Qed.
+
+Add Morphism or with signature impl ++> impl ++> impl as Or_Morphism2.
+ unfold impl; tauto.
+Qed.
+
+Add Morphism not with signature impl --> impl as Not_Morphism2.
+ unfold impl; tauto.
+Qed.
 
 (* FOR BACKWARD COMPATIBILITY *)
 Implicit Arguments Setoid_Theory [].
