@@ -85,6 +85,7 @@ theories/Logic/JMeq.vo: theories/Logic/JMeq.v theories/Logic/Eqdep.vo
 theories/Logic/ClassicalDescription.vo: theories/Logic/ClassicalDescription.v theories/Logic/Classical.vo
 theories/Logic/ClassicalChoice.vo: theories/Logic/ClassicalChoice.v theories/Logic/ClassicalDescription.vo theories/Logic/RelationalChoice.vo theories/Logic/ChoiceFacts.vo
 theories/Logic/RelationalChoice.vo: theories/Logic/RelationalChoice.v
+theories/Logic/Diaconescu.vo: theories/Logic/Diaconescu.v theories/Logic/ClassicalFacts.vo theories/Logic/ChoiceFacts.vo theories/Bool/Bool.vo
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo theories/Arith/Factorial.vo
 theories/Arith/Gt.vo: theories/Arith/Gt.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo
 theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theories/Arith/Lt.vo

@@ -85,6 +85,7 @@ newtheories/Logic/JMeq.vo: newtheories/Logic/JMeq.v newtheories/Logic/Eqdep.vo
 newtheories/Logic/ClassicalDescription.vo: newtheories/Logic/ClassicalDescription.v newtheories/Logic/Classical.vo
 newtheories/Logic/ClassicalChoice.vo: newtheories/Logic/ClassicalChoice.v newtheories/Logic/ClassicalDescription.vo newtheories/Logic/RelationalChoice.vo newtheories/Logic/ChoiceFacts.vo
 newtheories/Logic/RelationalChoice.vo: newtheories/Logic/RelationalChoice.v
+newtheories/Logic/Diaconescu.vo: newtheories/Logic/Diaconescu.v newtheories/Logic/ClassicalFacts.vo newtheories/Logic/ChoiceFacts.vo newtheories/Bool/Bool.vo
 newtheories/Arith/Arith.vo: newtheories/Arith/Arith.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo newtheories/Arith/Gt.vo newtheories/Arith/Minus.vo newtheories/Arith/Mult.vo newtheories/Arith/Between.vo newtheories/Arith/Peano_dec.vo newtheories/Arith/Compare_dec.vo newtheories/Arith/Factorial.vo
 newtheories/Arith/Gt.vo: newtheories/Arith/Gt.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo
 newtheories/Arith/Between.vo: newtheories/Arith/Between.v newtheories/Arith/Le.vo newtheories/Arith/Lt.vo
