@@ -1077,9 +1077,8 @@ Qed.
 
 (***********)
 Lemma Rmult_ge_compat_r :
- forall r r1 r2, r2 >= 0 -> r >= r1 -> r * r2 >= r1 * r2.
-intros x y z; intros; apply Rle_ge; apply Rmult_le_compat_r; apply Rge_le;
- assumption.
+ forall r r1 r2, r >= 0 -> r1 >= r2 -> r1 * r >= r2 * r.
+intros; apply Rle_ge; apply Rmult_le_compat_r; apply Rge_le; assumption.
 Qed.
 
 (***********)
