@@ -17,16 +17,6 @@ open Evarutil
  * to VARs). But evars may be applied to Rels or other terms! This is the
  * difference between type_of_const and type_of_const2.
  *)
-(* Fonctions temporaires pour relier la forme castée de la forme jugement *)
-let tjudge_of_cast_safe sigma env var =
-  match under_casts (fun _ -> nf_ise1) env sigma var with
-    | DOP2 (Cast, b, t) ->
-	(match whd_betadeltaiota env sigma t with
-	   | DOP0 (Sort s) -> make_typed b s
-	   | _ -> anomaly "Not a type (tjudge_of_cast)")
-    | c -> execute_rec_type env sigma c
-(* FIN TMP ***** *)
-
 
 (* This code (i.e. try_solve_pb, solve_pb, etc.) takes a unification
  * problem, and tries to solve it. If it solves it, then it removes
@@ -272,7 +262,7 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
     | ((DOP2(Prod,c1,DLAM(n,c2)),[]), (DOP2(Prod,c'1,DLAM(_,c'2)),[])) -> 
         evar_conv_x env isevars CONV c1 c'1 
         & evar_conv_x 
-	  (push_rel (n,tjudge_of_cast_safe !isevars env c1) env) isevars
+	  (push_rel (n,Retyping.get_assumption_of env !isevars (nf_ise1 !isevars c1)) env) isevars
 	  pbty c2 c'2
 
     | ((DOPN(MutInd _ as o1,cl1) as ind1,l'1),

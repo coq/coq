@@ -88,12 +88,15 @@ and sort_of env t =
 
 in type_of, sort_of
 
-let get_type_of env sigma = fst (typeur sigma []) env
-let get_sort_of env sigma = snd (typeur sigma []) env
+let get_type_of env sigma c = fst (typeur sigma []) env c
+let get_sort_of env sigma t = snd (typeur sigma []) env t
 let get_type_of_with_meta env sigma metamap = fst (typeur sigma metamap) env
 
-(*Makes an unsafe judgment from a constr*)
-let mk_unsafe_judgment env evc c=
-  let typ=get_type_of env evc c
-  in
-    {uj_val=c;uj_type=make_typed typ (get_sort_of env evc typ)};;
+(* Makes an assumption from a constr *)
+let get_assumption_of env evc c = make_typed_lazy c (get_sort_of env evc)
+
+(* Makes an unsafe judgment from a constr *)
+let get_judgment_of env evc c =
+  let typ = get_type_of env evc c in
+  { uj_val = c; uj_type = get_assumption_of env evc typ }
+
