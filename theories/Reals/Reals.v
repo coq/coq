@@ -23,4 +23,5 @@ Require Export Rgeom.
 Require Export Rderiv.
 Require Export Rseries.
 Require Export Rtrigo_fun.
+Require Export Ranalysis.
 Require Export DiscrR.
