@@ -973,10 +973,20 @@ let general_elim (c,lbindc) (elimc,lbindelimc) gl =
  * constant associated with the type. *)
 
 let default_elim (c,lbindc)  gl = 
-  let (path_name,_,t) = reduce_to_ind (pf_env gl) (project gl) 
-			  (pf_type_of gl c) in
-  let elimc = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in  
-  general_elim (c,lbindc) (elimc,[]) gl
+  let env = pf_env gl in
+  let (path,_,t) = reduce_to_ind env (project gl) (pf_type_of gl c) in
+  let s = sort_of_goal gl in
+  let elimc = try lookup_eliminator  env path s 
+  with Not_found -> 
+    let dir, base,k = repr_path path
+    in let id = id_of_string ((string_of_id base)^(elimination_suffix s)) in
+    errorlabstrm "default_elim"
+       [< 'sTR "Cannot find the elimination combinator :";
+        pr_id id; 'sPC;
+	'sTR "The elimination of the inductive definition :";
+         pr_id base; 'sPC; 'sTR "on sort "; 
+         'sPC; print_sort s ; 'sTR " is probably not allowed" >]
+  in  general_elim (c,lbindc) (elimc,[]) gl
 
 
 (* The simplest elimination tactic, with no substitutions at all. *)
