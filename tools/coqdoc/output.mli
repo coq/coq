@@ -28,6 +28,7 @@ val toc : bool ref
 val title : string ref
 val externals : bool ref
 val coqlib : string ref
+val raw_comments : bool ref
 
 val charset : string ref
 val inputenc : string ref
