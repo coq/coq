@@ -15,7 +15,6 @@
 (*CSC: tutto da rifare!!! Basarsi su Retyping che e' meno costoso! *)
 type types = {synthesized : Term.types ; expected : Term.types option};;
 
-let myprerr_endline = prerr_endline;;
 let prerr_endline _ = ();;
 
 let cprop =
