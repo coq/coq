@@ -8,23 +8,21 @@
 
 (* $Id$ *)
 
-(* ======================================= *)
-(*   PP rules for basic elements           *)
-(* ======================================= *)
-
 Syntax tactic
-  level 3:
-    interpret [<<(Interp (TACTIC $t))>>] -> [ $t:E ]
+
+(* ======================================== *)
+(*     PP rules for the tactic language     *)
+(* ======================================== *)
+
+  level 4:
+  | interpret [<<(Interp (TACTIC $t))>>] -> [ $t:E ]
+  | tacticlist_parsimp [<<(TACTICLISTPAR $tac0 $tac1)>>] ->
+    [ $tac0 ";" [1 0] $tac1]
+  | tacticlist_parcomp [<<(TACTICLISTPAR $tac0 (TACTICLIST $tac1 $tac2))>>]
+    -> [ (TACTICLIST $tac0 (TACTICLIST $tac1 $tac2)) ]
   ;
 
   level 3:
-    | tacticlist_parsimp [<<(TACTICLISTPAR $tac0 $tac1)>>] ->
-      [ $tac0 ";" [1 0] $tac1]
-    | tacticlist_parcomp [<<(TACTICLISTPAR $tac0 (TACTICLIST $tac1 $tac2))>>]
-      -> [ (TACTICLIST $tac0 (TACTICLIST $tac1 $tac2)) ]
-  ;
-
-  level 2:
   | tacticlist_simp [<<(TACTICLIST $tac0 $tac1)>>] ->
     [ $tac0 ";" [1 0] $tac1]
   | tacticlist_comp [<<(TACTICLIST $tac0 (TACTICLIST $tac1 $tac2))>>] ->
@@ -34,8 +32,34 @@ Syntax tactic
   | tacticseqbody_cons [<<(TACTICSEQBODY $t ($LIST $l))>>]
       -> [ [<hov 0> $t] [1 0] "| " (TACTICSEQBODY ($LIST $l)) ]
   | tacticseqbody_one  [<<(TACTICSEQBODY $t)>>] -> [ [<hov 0> $t] ]
+  ;
 
-(* Match Context *)
+(* These constructions should be at level 0 but the application cannot be at
+   the same level than the tacticals and must be also at level 2 for some
+   constructions at level 1. To avoid duplications and particular cases, these
+   constructions have been put here and additional but completely fair
+   parentheses (w.r.t. to what has been parsed) are to be expected. *)
+
+  level 2:
+  | orelse [ $st Orelse $tc ] -> [ [<hov 0> $st:L " Orelse" [1 1] $tc:E] ]
+  | match_context [<<(MATCHCONTEXT ($LIST $lrul))>>] ->
+    [ [ <hov 0> "Match Context With" (MATCHCONTEXTLIST ($LIST $lrul)) ] ]
+  | match [<<(MATCH $t ($LIST $lrul))>>] ->
+    [ [ <hov 0> "Match" [1 0] $t [1 0] "With" (MATCHLIST ($LIST $lrul)) ] ]
+  | fun [<<(FUN (FUNVAR ($LIST $lvar)) $body)>>] ->
+    [ [ <hov 0> "Fun" [1 0] (FUNVAR ($LIST $lvar)) [1 0] "->" [1 0] $body ] ]
+  | let [<<(LET (LETDECL ($LIST $llc)) $u)>>] ->
+    [ [ <hov 0> "Let" [1 0] (LETDECL ($LIST $llc)) [1 0] "In" FNL $u ] ]
+  | rec [<<(REC $rc)>>] -> [ [ <hov 0> "Rec" [1 0] (RECDECL $rc) ] ]
+  | rec_in [<<(REC (RECDECL ($LIST $rc)) $body)>>] ->
+    [ [ <hov 0> "Rec" [1 0] (RECDECL ($LIST $rc)) [1 0] "In" FNL $body ] ]
+  | app_cons [<<(APP $te ($LIST $lte))>>] -> [ $te [1 0] (APP ($LIST $lte)) ]
+  | app_one [<<(APP $te)>>] -> [ $te ]
+  ;
+
+  level 1:
+
+(* Match Context rules *)
 
   | term [<<(TERM $t)>>] -> [ $t ]
   | subterm [<<(SUBTERM ($VAR $id) $t)>>] -> [ $id "[" $t "]" ]
@@ -56,7 +80,7 @@ Syntax tactic
   | match_context_rule_one [<<(MATCHCONTEXTLIST $rul)>>] ->
     [ FNL "|" [1 0] $rul ]
 
-(* Match *)
+(* Match rules *)
 
   | match_list_cons [<<(MATCHLIST $rul ($LIST $lrul))>>] ->
     [ $rul (MATCHLIST ($LIST $lrul)) ]
@@ -66,7 +90,14 @@ Syntax tactic
   | match_rul_all [<<(MATCHRULE $tac)>>] ->
     [ FNL "|" [1 0] "_" [1 0] "->" [1 2] $tac ]
 
-(* Let *)
+(* Fun clauses *)
+
+  | fun_var_cons [<<(FUNVAR $var ($LIST $lvar))>>] ->
+    [ $var [1 0] (FUNVAR ($LIST $lvar)) ]
+  | fun_var_one [<<(FUNVAR $var)>>] -> [ $var ]
+  | void [<<(VOID)>>] -> [ "()" ]
+
+(* Let clauses *)
 
   | let_decl_cons [<<(LETDECL (LETCLAUSE ($LIST $rul)) ($LIST $lrul))>>] ->
     [ (LET ($LIST $rul)) (LETLIST ($LIST $lrul)) ]
@@ -77,24 +108,29 @@ Syntax tactic
   | let_list_one [<<(LETLIST (LETCLAUSE ($LIST $rul)))>>] ->
     [ (AND ($LIST $rul)) ]
   | let_rule [<<(LET ($VAR $id) $tac)>>] ->
-    [ $id [1 0] "=" [1 0] $tac ]
+    [ $id [1 0] "=" [1 0] $tac:E ]
   | and_rule [<<(AND ($VAR $id) $tac)>>] ->
-    [ FNL "And" [1 0] $id [1 0] "=" [1 0] $tac]
+    [ FNL "And" [1 0] $id [1 0] "=" [1 0] $tac:E ]
+
+(* Rec clauses *)
+
+  | rec_decl_cons [<<(RECDECL (RECCLAUSE $id (FUNVAR ($LIST $lvar))
+                     $body) ($LIST $lrc))>>] ->
+    [ $id [1 0 ] (FUNVAR ($LIST $lvar)) [1 0] "->" [1 0] $body:E FNL "And"
+      [1 0] (RECDECL ($LIST $lrc)) ]
+  | rec_decl_one [<<(RECDECL (RECCLAUSE $id (FUNVAR ($LIST $lvar))
+                     $body))>>] ->
+    [ $id [1 0 ] (FUNVAR ($LIST $lvar)) [1 0] "->" [1 0] $body:E ]
   ;
 
-  level 1:
-    orelse [ $st Orelse $tc ] -> [ [<hov 0> $st:L " Orelse" [1 1] $tc:E] ]
-  ;
+(* ============================== *)
+(*     PP rules for tacticals     *)
+(* ============================== *)
 
   level 0:
-
-(* ============================= *)
-(*       PP rules for LTAC       *)
-(* ============================= *)
-
   | idtac  [<<(IDTAC)>>]            -> ["Idtac"]
   | fail   [<<(FAIL)>>]             -> ["Fail"]
-  | do     [<<(DO ($NUM $n) $tc)>>] -> ["Go " $n " " $tc:E]
+  | do     [<<(DO ($NUM $n) $tc)>>] -> ["Do " $n " " $tc:E]
   | try    [<<(TRY $t)>>]           -> ["Try " $t:E]
   | info   [<<(INFO $t)>>]          -> ["Info " $t:E]
   | repeat [<<(REPEAT $tc)>>]       -> ["Repeat " $tc:E]
@@ -106,16 +142,10 @@ Syntax tactic
          -> ["Abstract " $t:E]
   | abstract_name [<<(ABSTRACT ($VAR $id) (TACTIC $t))>>] 
          -> ["Abstract " $t:E " using "  $id]
-  | match_context [<<(MATCHCONTEXT ($LIST $lrul))>>] ->
-    [ [0 0] "Match Context With" (MATCHCONTEXTLIST ($LIST $lrul))]
-  | match [<<(MATCH $t ($LIST $lrul))>>] ->
-    [ [0 0] "Match" [1 0] $t [1 0] "With" (MATCHLIST ($LIST $lrul)) ]
-  | let [<<(LET (LETDECL ($LIST $llc)) $u)>>] ->
-    [ [0 0] "Let" [1 0] (LETDECL ($LIST $llc)) [1 0] "In" FNL $u ]
 
-(* ========================================== *)
-(*       PP rules for simple tactics          *)
-(* ========================================== *)
+(* =================================== *)
+(*     PP rules for simple tactics     *)
+(* =================================== *)
 
   | reduce [<<(Reduce (REDEXP $rexp) $cl)>>] -> [ (REDEXP $rexp) $cl ]
 
@@ -235,16 +265,16 @@ Syntax tactic
   | symmetry [<<(Symmetry)>>] -> ["Symmetry"]
   | transitivity [<<(Transitivity $C)>>] -> ["Transitivity " $C]
 
-(* ============================================== *)
-(*      PP rules for tactic arguments             *)
-(* ============================================== *)
+(* ===================================== *)
+(*     PP rules for tactic arguments     *)
+(* ===================================== *)
 
   | idargnil [<<(IDARGLIST)>>] -> [ ]
   | idargcons
       [<<(IDARGLIST $id ($LIST $L))>>] -> [ $id " "  (IDARGLIST ($LIST $L)) ]
 
-  | nenumlistcons
-      [<<(NENUMLIST ($NUM $n) ($LIST $l))>>] -> [ $n " " (NENUMLIST ($LIST $l)) ]
+  | nenumlistcons [<<(NENUMLIST ($NUM $n) ($LIST $l))>>] ->
+    [ $n " " (NENUMLIST ($LIST $l)) ]
   | nenumlistone [<<(NENUMLIST ($NUM $n))>>] -> [ $n ]
 
   | numlistcons [<<(NUMLIST ($LIST $l))>>] -> [ (NENUMLIST ($LIST $l)) ]
@@ -256,7 +286,8 @@ Syntax tactic
   | without_binding [<<(WITHBINDING (BINDINGS))>>] -> [ ]
 
   (* Bindings: nor break nor "with" before. *)
-  | bindings [<<(BINDINGS ($LIST $l))>>] -> [ " " [<hov 0> (BINDBOX ($LIST $l)) ] ]
+  | bindings [<<(BINDINGS ($LIST $l))>>] ->
+    [ " " [<hov 0> (BINDBOX ($LIST $l)) ] ]
   | bindingsnone [<<(BINDINGS)>>] -> [ ]
 
   (* Prints a non-empty list of bindings, assuming the box and the first space
