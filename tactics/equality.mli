@@ -91,6 +91,8 @@ val discriminable : env -> evar_map -> constr -> constr -> bool
 
 (* Subst *)
 
+val unfold_body : identifier -> tactic
+
 val subst : identifier list -> tactic
 val subst_all : tactic
 

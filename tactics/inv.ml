@@ -220,11 +220,11 @@ let split_dep_and_nodep hyps gl =
     hyps ([],[])
 
 
-let dest_eq gls t =
+let dest_nf_eq gls t =
   match dest_match_eq gls t with
     | [(1,x);(2,y);(3,z)] ->
         (x,pf_whd_betadeltaiota gls y, pf_whd_betadeltaiota gls z)
-    | _ -> error "dest_eq: should be an equality"
+    | _ -> error "dest_nf_eq: should be an equality"
 
 let generalizeRewriteIntros tac depids id gls = 
   let dids = dependent_hyps id depids (pf_env gls) in
@@ -246,7 +246,7 @@ let projectAndApply thin id depids gls =
   let subst_hyp_RL id = tclTRY(hypSubst_RL id None) in
   let subst_hyp gls = 
     let orient_rule id = 
-      let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id) in
+      let (t,t1,t2) = dest_nf_eq gls (pf_get_hyp_typ gls id) in
       match (kind_of_term t1, kind_of_term t2) with
         | Var id1, _ ->
             generalizeRewriteIntros (subst_hyp_LR id) depids id1
@@ -256,7 +256,7 @@ let projectAndApply thin id depids gls =
     in 
     onLastHyp orient_rule gls 
   in
-  let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id)  in
+  let (t,t1,t2) = dest_nf_eq gls (pf_get_hyp_typ gls id)  in
   match (thin, kind_of_term t1, kind_of_term t2) with
     | (true, Var id1,  _) ->
         generalizeRewriteIntros

@@ -30,6 +30,7 @@ open Evar_refiner
 open Wcclausenv
 open Pattern
 open Hipattern
+open Tacexpr
 open Tacticals
 open Tactics
 open Tacinterp
@@ -100,9 +101,6 @@ let general_rewrite_in lft2rgt id (c,l) gl =
     | None -> (* Do not deal with setoids yet *) 
         error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
-        let hdcncls = string_of_inductive hdcncl in 
-	let suffix =
-          Indrec.elimination_suffix (elimination_sort_of_hyp id gl) in
         let hdcncls = string_of_inductive hdcncl in 
 	let suffix =
           Indrec.elimination_suffix (elimination_sort_of_hyp id gl) in
@@ -1142,45 +1140,79 @@ let substHypInConcl_RL = substHypInConcl false
 
 (* Substitutions tactics (JCF) *)
 
-exception FoundHyp of identifier
+let unfold_body x gl =
+  let hyps = pf_hyps gl in
+  let xval =
+    match Sign.lookup_named x hyps with
+        (_,Some xval,_) -> xval
+      | _ -> errorlabstrm "unfold_body"
+          (pr_id x ++ str" is not a defined hypothesis") in
+  let aft = afterHyp x gl in
+  let hl = List.fold_right
+    (fun (y,yval,_) cl ->
+      if yval=None then InHypType y :: cl
+      else InHyp y :: InHypType y :: cl) aft [] in
+  let xvar = mkVar x in
+  let rfun _ _ c = replace_term xvar xval c in
+  tclTHENLIST
+    [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
+     reduct_in_concl rfun] gl
+
+
+
+
+exception FoundHyp of named_declaration
 
 let is_eq_x x c =
   let eqpat = build_coq_eq_pattern () in
   (is_matching eqpat c) &&
-  (let (_,y,_) = match_eq eqpat c in
-   match kind_of_term y with Var y -> x = y | _ -> false)
+  let (_,lhs,rhs) = match_eq eqpat c in
+  (x = lhs) && not (occur_term x rhs)
+
+let eq_rhs eq =
+  (snd (destApplication eq)).(2)
 
 let subst_one x gl = 
+  let hyps = pf_hyps gl in
+  let (_,xval,_) = Sign.lookup_named x hyps in
+  if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl else
   let varx = mkVar x in
-  let hyps = pf_hyps_types gl in
-  let hyp = 
+  let (hyp,rhs) = 
     try
-      let test (id,c) = if is_eq_x x c then raise (FoundHyp id) in
-      List.iter test hyps;
-      errorlabstrm "subst" (str "cannot find any equality over " ++ pr_id x)
-    with FoundHyp id ->
-      id
-  in
-  let dephyps = 
-    let test (id,c) = 
-      if id <> hyp && occur_term varx c then id else failwith "caught" 
-    in
-    map_succeed test hyps
-  in
-  let clear_x = let (_,d,_) = Sign.lookup_named x (pf_hyps gl) in d = None in
-  let dephyps = List.rev dephyps in
-  tclTHENLIST [
-    generalize (List.map mkVar dephyps);
-    thin dephyps;
-    rewriteLR (mkVar hyp);
-    intros_using dephyps;
-    clear [hyp];
-    if clear_x then tclTRY (clear [x]) else tclIDTAC
-  ] gl
+      let test (_,_,c as d) _ = if is_eq_x varx c then raise (FoundHyp d) in
+      Sign.fold_named_context test ~init:() hyps;
+      errorlabstrm "Subst"
+        (str "cannot find any non-recursive equality over " ++ pr_id x)
+    with FoundHyp (id,_,c) -> (id, eq_rhs c) in
+  let depdecls = 
+    let test (id,_,c as dcl) = 
+      if id <> hyp && occur_var_in_decl (pf_env gl) x dcl then dcl
+      else failwith "caught" in
+    List.rev (map_succeed test hyps) in
+  let dephyps = List.map (fun (id,_,_) -> id) depdecls in
+  let abshyps =
+    map_succeed
+      (fun (id,v,_) -> if v=None then mkVar id else failwith "caught")
+      depdecls in
+  let introtac = function
+      (id,None,_) -> intro_using id
+    | (id,Some hval,htyp) ->
+        forward true (Name id) (mkCast(replace_term varx rhs hval,
+                                       replace_term varx rhs htyp)) in
+  tclTHENLIST 
+    ((if depdecls <> [] then
+        if abshyps <> [] then
+          [generalize abshyps;
+           rewriteLR (mkVar hyp);
+           thin dephyps;
+           tclMAP introtac depdecls]
+        else
+          [thin dephyps;
+           tclMAP introtac depdecls]
+      else []) @
+     [tclTRY (clear [x;hyp])]) gl
 
-let rec subst = function
-  | [] -> tclIDTAC
-  | x :: r -> tclTHEN (subst_one x) (subst r)
+let subst = tclMAP subst_one
 
 let subst_all gl =
   let eqpat = build_coq_eq_pattern () in
