@@ -56,6 +56,7 @@ type printable =
   | PrintHintGoal
   | PrintHintDbName of string
   | PrintHintDb
+  | PrintScope of string
 
 type searchable =
   | SearchPattern of pattern_expr

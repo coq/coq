@@ -199,7 +199,7 @@ Syntax constr
 (* For parsing/printing based on scopes *)
 Module R_scope.
 
-Delimiters "'R:" R_scope "'".
+Delimits Scope R_scope with R.
 Infix NONA 5 "<=" Rle : R_scope.
 Infix NONA 5 "<"  Rlt : R_scope.
 Infix NONA 5 ">=" Rge : R_scope.
@@ -209,12 +209,17 @@ Infix 4 "-" Rminus : R_scope.
 Infix 3 "*" Rmult : R_scope.
 Infix LEFTA 3 "/" Rdiv : R_scope.
 Distfix 0 "- _" Ropp : R_scope.
-Notation NONA 5 "x == y == z" (eqT R x y)/\(eqT R y z) (y at level 4): R_scope.
-Notation NONA 5 "x <= y <= z" (Rle x y)/\(Rle y z) (y at level 4) : R_scope.
-Notation NONA 5 "x <= y <  z" (Rle x y)/\(Rlt y z) (y at level 4) : R_scope.
-Notation NONA 5 "x <  y <  z" (Rlt x y)/\(Rlt y z) (y at level 4) : R_scope.
-Notation NONA 5 "x <  y <= z" (Rlt x y)/\(Rle y z) (y at level 4) : R_scope.
-Notation NONA 5 "x <> y"  ~(eqT R x y) : R_scope.
+Notation "x == y == z" := (eqT R x y)/\(eqT R y z)
+  (at level 5, y at level 4): R_scope.
+Notation "x <= y <= z" := (Rle x y)/\(Rle y z)
+  (at level 5, y at level 4) : R_scope.
+Notation "x <= y < z"  := (Rle x y)/\(Rlt y z)
+  (at level 5, y at level 4) : R_scope.
+Notation  "x < y < z"  := (Rlt x y)/\(Rlt y z)
+  (at level 5, y at level 4) : R_scope.
+Notation  "x < y <= z" := (Rlt x y)/\(Rle y z)
+  (at level 5, y at level 4) : R_scope.
+Notation "x <> y" := ~(eqT R x y) (at level 5) : R_scope.
 Distfix 0 "/ _" Rinv : R_scope.
 
 (* Warning: this hides sum and prod and breaks sumor symbolic notation *)

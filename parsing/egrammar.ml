@@ -20,7 +20,7 @@ open Libnames
 (* State of the grammar extensions *)
 
 type all_grammar_command =
-  | Notation of (string * notation * prod_item list)
+  | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
   | Delimiters of (scope_name * prod_item list * prod_item list)
   | Grammar of grammar_command
   | TacticGrammar of
@@ -34,6 +34,35 @@ let subst_all_grammar_command subst = function
   | TacticGrammar g -> TacticGrammar g (* TODO ... *)
 
 let (grammar_state : all_grammar_command list ref) = ref []
+
+
+(**************************************************************************)
+let constr_level = function
+  | 8 -> "top"
+  | n -> string_of_int n
+
+let symbolic_level = function
+  | 9 -> "constr9", None
+  | 10 -> "lconstr", None
+  | 11 -> "pattern", None
+  | n -> "constr", Some n
+
+let numeric_levels = ref [8;1;0]
+
+exception Found
+
+let find_position n =
+  let after = ref 8 in
+  let rec add_level q = function
+    | p::l when p > n -> p :: add_level p l
+    | p::l when p = n -> raise Found
+    | l -> after := q; n::l
+  in
+  try
+    numeric_levels := add_level 8 !numeric_levels;
+    Gramext.After (constr_level !after)
+  with
+      Found -> Gramext.Level (constr_level n)
 
 (* Interpretation of the right hand side of grammar rules *)
 
@@ -78,13 +107,15 @@ let make_act f pil =
 	Gramext.action (fun loc -> f loc env)
     | None :: tl -> (* parse a non-binding item *)
         Gramext.action (fun _ -> make env tl)
-    | Some (p, ETConstr) :: tl -> (* non-terminal *)
+    | Some (p, (ETConstr _| ETOther _)) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:constr_expr) -> make ((p,v) :: env) tl)
     | Some (p, ETReference) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:reference) -> make ((p,CRef v) :: env) tl)
     | Some (p, ETIdent) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:identifier) ->
-	  make ((p,CRef (Ident (dummy_loc,v))) :: env) tl) in
+	  make ((p,CRef (Ident (dummy_loc,v))) :: env) tl)
+    | Some (p, ETPattern) :: tl -> 
+	failwith "Unexpected entry of type cases pattern" in
   make [] (List.rev pil)
 
 let make_cases_pattern_act f pil =
@@ -93,12 +124,12 @@ let make_cases_pattern_act f pil =
 	Gramext.action (fun loc -> f loc env)
     | None :: tl -> (* parse a non-binding item *)
         Gramext.action (fun _ -> make env tl)
-    | Some (p, ETConstr) :: tl -> (* non-terminal *)
+    | Some (p, ETPattern) :: tl -> (* non-terminal *)
         Gramext.action (fun v -> make ((p,v) :: env) tl)
     | Some (p, ETReference) :: tl -> (* non-terminal *)
         Gramext.action (fun v -> make ((p,CPatAtom (dummy_loc,Some v)) :: env) tl)
-    | Some (p, ETIdent) :: tl ->
-	error "ident entry not admitted in patterns cases syntax extensions" in
+    | Some (p, (ETIdent | ETConstr _ | ETOther _)) :: tl ->
+	error "ident and constr entry not admitted in patterns cases syntax extensions" in
   make [] (List.rev pil)
 
 (* Grammar extension command. Rules are assumed correct.
@@ -108,31 +139,22 @@ let make_cases_pattern_act f pil =
  * annotations are added when type-checking the command, function
  * Extend.of_ast) *)
 
-let get_entry_type (u,n) =
-  if u = "constr" & n = "pattern" then Gram.Entry.obj Constr.pattern
-  else Gram.Entry.obj (object_of_typed_entry (get_entry (get_univ u) n))
-
 let rec build_prod_item univ = function
   | ProdList0 s -> Gramext.Slist0 (build_prod_item univ s)
   | ProdList1 s -> Gramext.Slist1 (build_prod_item univ s)
   | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ s)
-  | ProdPrimitive nt -> 
-      let eobj = get_entry_type nt in
-      Gramext.Snterm eobj
+  | ProdPrimitive typ ->
+      match entry_of_type false typ with
+	| (eobj,None) ->
+	    Gramext.Snterm (Gram.Entry.obj eobj)
+	| (eobj,Some lev) ->
+	    Gramext.Snterml (Gram.Entry.obj eobj,constr_level lev)
 
 let symbol_of_prod_item univ = function
   | Term tok -> (Gramext.Stoken tok, None)
   | NonTerm (nt, ovar) ->
       let eobj = build_prod_item univ nt in
       (eobj, ovar)
-
-(*
-let make_rule univ etyp rule =
-  let pil = List.map (symbol_of_prod_item univ) rule.gr_production in
-  let (symbs,ntl) = List.split pil in
-  let act = make_act (rule.gr_name,etyp) rule.gr_action ntl in
-  (symbs, act)
-*)
 
 let make_rule univ etyp rule =
   let pil = List.map (symbol_of_prod_item univ) rule.gr_production in
@@ -147,18 +169,19 @@ let make_rule univ etyp rule =
   let act = make_act f ntl in
   (symbs, act)
 
-
 (* Rules of a level are entered in reverse order, so that the first rules
    are applied before the last ones *)
-let extend_entry univ (te, etyp, ass, rls) =
+let extend_entry univ (te, etyp, pos, name, ass, rls) =
   let rules = List.rev (List.map (make_rule univ etyp) rls) in
-  grammar_extend (object_of_typed_entry te) None [(None, ass, rules)]
+  grammar_extend te pos [(name, ass, rules)]
 
 (* Defines new entries. If the entry already exists, check its type *)
-let define_entry univ {ge_name=n; ge_type=typ; gl_assoc=ass; gl_rules=rls} =
-  let typ = entry_type_of_constr_entry_type typ in
-  let e = force_entry_type univ n typ in
-  (e,typ,ass,rls)
+let define_entry univ {ge_name=n; gl_assoc=ass; gl_rules=rls} =
+  let typ = explicitize_entry (fst univ) n in
+  let e,lev = entry_of_type true typ in
+  let pos = option_app find_position lev in
+  let name = option_app constr_level lev in
+  (e,typ,pos,name,ass,rls)
 
 (* Add a bunch of grammar rules. Does not check if it is well formed *)
 let extend_grammar_rules gram =
@@ -186,29 +209,31 @@ let make_gen_act f pil =
         Gramext.action (fun v -> make ((p,in_generic t v) :: env) tl) in
   make [] (List.rev pil)
 
-let extend_constr entry make_act pt =
+let extend_constr entry pos (level,assoc) make_act pt =
   let univ = get_univ "constr" in
   let pil = List.map (symbol_of_prod_item univ) pt in
   let (symbs,ntl) = List.split pil in
   let act = make_act ntl in
-  grammar_extend entry None [(None, None, [symbs, act])]
+  grammar_extend entry pos [(level, assoc, [symbs, act])]
 
 let constr_entry name =
   object_of_typed_entry (get_entry (get_univ "constr") name)
 
-let extend_constr_notation (name,ntn,rule) =
+let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,env) in
-  extend_constr (constr_entry name) (make_act mkact) rule
-
-let extend_constr_grammar (name,c,rule) =
-  let mkact loc env = CGrammar (loc,c,env) in
-  extend_constr (constr_entry name) (make_act mkact) rule
+  let (e,level) = entry_of_type false (ETConstr ((n,Ppextend.E),Some n)) in
+  let pos = option_app find_position level in
+  extend_constr e pos (option_app constr_level level,assoc) 
+    (make_act mkact) rule
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
   let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr (constr_entry "constr8") (make_act mkact) rule;
+  extend_constr (constr_entry "constr") (Some (Gramext.Level "top"))
+    (None,None)
+    (make_act mkact) rule;
   let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.pattern (make_cases_pattern_act mkact) pat_rule
+  extend_constr Constr.pattern None (None,None)
+    (make_cases_pattern_act mkact) pat_rule
 
 (* These grammars are not a removable *)
 let make_rule univ f g (s,pt) =
@@ -246,7 +271,7 @@ let rec interp_entry_name u s =
     let e = get_entry (get_univ u) n in
     let o = object_of_typed_entry e in
     let t = type_of_typed_entry e in
-    t, Gramext.Snterm (Pcoq.Gram.Entry.obj o)
+    t,Gramext.Snterm (Pcoq.Gram.Entry.obj o)
 
 let qualified_nterm current_univ = function
   | NtQual (univ, en) -> (rename_command univ, rename_command en)

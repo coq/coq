@@ -42,7 +42,8 @@ type pcoq_hook = {
   search : searchable -> dir_path list * bool -> unit;
   print_name : reference -> unit;
   print_check : Environ.unsafe_judgment -> unit;
-  print_eval : (constr -> constr) -> Environ.env -> constr_expr -> Environ.unsafe_judgment -> unit;
+  print_eval : (constr -> constr) -> Environ.env -> constr_expr -> 
+    Environ.unsafe_judgment -> unit;
   show_goal : int option -> unit
 }
 
@@ -783,6 +784,7 @@ let vernac_print = function
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintHintDb -> Auto.print_searchtable ()
+  | PrintScope s -> pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
 
 let global_loaded_library r =
   let (loc,qid) = qualid_of_reference r in

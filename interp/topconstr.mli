@@ -31,7 +31,7 @@ type aconstr =
   | ALetIn of name * aconstr * aconstr
   | ACases of aconstr option * aconstr list *
       (identifier list * cases_pattern list * aconstr) list
-  | AOldCase of case_style * aconstr option * aconstr * aconstr array
+  | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ASort of rawsort
   | AHole of hole_kind
   | AMeta of int
@@ -44,6 +44,12 @@ val map_aconstr_with_binders_loc : loc ->
 val subst_aconstr : Names.substitution -> aconstr -> aconstr
 
 val aconstr_of_rawconstr : rawconstr -> aconstr
+
+(* [match_aconstr metas] match a rawconstr against an aconstr with
+   metavariables in [metas]; it raises [No_match] if the matching fails *)
+exception No_match
+val match_aconstr : 
+  rawconstr -> (identifier list * aconstr) -> (identifier * rawconstr) list
 
 (*s Concrete syntax for terms *)
 

@@ -73,7 +73,12 @@ let wrap_exception = function
 
 let latom = 0
 let lannot = 1
-let lprod = 8
+let lprod = 1
+let llambda = 1
+let lif = 1
+let lletin = 1
+let lcases = 1
+let larrow = 8
 let lcast = 9
 let lapp = 10
 let ltop = (8,E)
@@ -98,7 +103,17 @@ let pr_notation pr s env =
   let unpl, level = find_notation_printing_rule s in
   prlist (print_hunk pr env) unpl, level
 
-let pr_delimiters x = failwith "pr_delimiters: TODO"
+let pr_delimiters sc strm =
+  match find_delimiters sc with
+  | None -> anomaly "Delimiters without concrete syntax"
+  | Some (left,right) ->
+  assert (left <> "" && right <> "");
+  let lspace =
+    if is_letter (left.[String.length left -1]) then str " " else mt () in
+  let rspace =
+    let c = right.[0] in
+    if is_letter c or is_digit c or c = '\'' then str " " else mt () in
+  str left ++ lspace ++ strm ++ rspace ++ str right
 
 open Rawterm
 
@@ -118,7 +133,7 @@ let pr_explicitation = function
   | Some n -> int n ++ str "!"
 
 let pr_expl_args pr (a,expl) =
-  pr_explicitation expl ++ pr (latom,E) a
+  pr_explicitation expl ++ pr (lapp,L) a
 
 let pr_opt_type pr = function
   | CHole _ -> mt ()
@@ -197,8 +212,8 @@ let pr_fix pr = pr_recursive "Fix" (pr_fixdecl pr)
 let pr_cofix pr = pr_recursive "Fix" (pr_cofixdecl pr)
 
 let rec pr_arrow pr = function
-  | CArrow (_,a,b) -> pr (lprod,L) a ++ cut () ++ str "->" ++ pr_arrow pr b
-  | a -> pr (lprod,E) a
+  | CArrow (_,a,b) -> pr (larrow,L) a ++ cut () ++ str "->" ++ pr_arrow pr b
+  | a -> pr (larrow,E) a
 
 let pr_annotation pr t = str "<" ++ pr ltop t ++ str ">"
 
@@ -209,25 +224,26 @@ let rec pr inherited a =
   | CRef r -> pr_reference r, latom
   | CFix (_,id,fix) -> pr_fix pr (snd id) fix, latom
   | CCoFix (_,id,cofix) -> pr_cofix pr (snd id) cofix, latom
-  | CArrow _ -> hv 0 (pr_arrow pr a), lprod
+  | CArrow _ -> hv 0 (pr_arrow pr a), larrow
   | CProdN (_,bl,a) ->
       hov 0 (
 	str "(" ++ pr_binders pr bl ++ str ")" ++ brk(0,1) ++ pr ltop a), lprod
   | CLambdaN (_,bl,a) ->
       hov 0 (
-	str "[" ++ pr_binders pr bl ++ str "]" ++ brk(0,1) ++ pr ltop a), lprod
+	str "[" ++ pr_binders pr bl ++ str "]" ++ brk(0,1) ++ pr ltop a),
+      llambda
   | CLetIn (_,x,a,b) ->
-      hov 0 (pr_let_binder pr (snd x) a ++ cut () ++ pr ltop b), lprod
+      hov 0 (pr_let_binder pr (snd x) a ++ cut () ++ pr ltop b), lletin
   | CAppExpl (_,f,l) ->
       hov 0 (
-	str "!" ++ pr_reference f ++ 
-	prlist (fun a -> brk (1,1) ++ pr (latom,E) a) l), lapp
+	str "!" ++ pr_reference f ++
+	prlist (fun a -> brk (1,1) ++ pr (lapp,L) a) l), lapp
   | CApp (_,a,l) ->
       hov 0 (
 	pr (latom,E) a ++ 
 	prlist (fun a -> brk (1,1) ++ pr_expl_args pr a) l), lapp
   | CCases (_,po,c,eqns) ->
-      pr_cases po c eqns, lannot
+      pr_cases po c eqns, lcases
   | COrderedCase (_,IfStyle,po,c,[b1;b2]) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
@@ -236,7 +252,7 @@ let rec pr inherited a =
 	hv 0 (
 	  str "if" ++ pr ltop c ++ spc () ++
 	  hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
-	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lapp
+	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lif
   | COrderedCase (_,LetStyle,po,c,[CLambdaN(_,[_,_ as bd],b)]) ->
       hov 0 (
 	pr_opt (pr_annotation pr) po ++
@@ -245,7 +261,7 @@ let rec pr inherited a =
 	  hov 0 (str "(" ++ pr_binder pr bd ++ str ")") ++
 	  str "=" ++ brk (1,1) ++
 	  pr ltop c ++ spc () ++
-	  str "in " ++ pr ltop b)), lapp
+	  str "in " ++ pr ltop b)), lletin
   | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->
       hov 0 (
 	hov 0 (
@@ -256,7 +272,7 @@ let rec pr inherited a =
 	    str (if style=RegularStyle then "of" else "with") ++
 	  brk (1,3) ++
 	  hov 0 (prlist (fun b -> pr ltop b ++ fnl ()) bl)) ++
-	str "end")), lannot
+	str "end")), lcases
   | COrderedCase (_,_,_,_,_) -> 
       anomaly "malformed if or destructuring let"
   | CHole _ -> str "?", latom
@@ -267,8 +283,7 @@ let rec pr inherited a =
   | CNotation (_,s,env) -> pr_notation pr s env
   | CGrammar _ -> failwith "CGrammar: TODO"
   | CNumeral (_,p) -> Bignat.pr_bigint p, latom
-  | CDelimiters (_,sc,a) -> failwith "pr_delim: TODO"
-(*      pr_delimiters (find_delimiters) (pr_constr_expr a)*)
+  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr ltop a), latom
   | CDynamic _ -> str "<dynamic>", latom
   in
   if prec_less prec inherited then strm
@@ -352,8 +367,10 @@ let gentermpr gt =
 (* [at_top] means ids of env must be avoided in bound variables *)
 let gentermpr_core at_top env t =
   gentermpr (Termast.ast_of_constr at_top env t)
+
 (*
 let gentermpr_core at_top env t =
   pr_constr (Constrextern.extern_constr at_top env t)
 *)
+
 

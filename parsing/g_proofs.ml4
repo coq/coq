@@ -108,7 +108,7 @@ GEXTEND Gram
       | IDENT "Immediate"; c = Constr.constr -> fun name -> HintsImmediate [Some name, c]
       | IDENT "Unfold"; qid = global -> fun name -> HintsUnfold [Some name,qid]
       | IDENT "Constructors"; c = global -> fun n -> HintsConstructors (n,c)
-      | IDENT "Extern"; n = natural; c = Constr.constr8 ; tac = tactic ->
+      | IDENT "Extern"; n = natural; c = Constr.constr ; tac = tactic ->
 	  fun name -> HintsExtern (name,n,c,tac) ] ]
   ;
   hints:

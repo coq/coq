@@ -117,23 +117,21 @@ let add_glob loc ref =
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-(* Is it a bound variables? *)
 let intern_var (env,impls,_) (vars1,vars2) loc id =
+  (* Is [id] bound in  *)
+  if Idset.mem id env or List.mem id vars1
+  then
+    RVar (loc,id), (try List.assoc id impls with Not_found -> []), []
+  else
+  (* Is [id] a section variable *)
+  let _ = Sign.lookup_named id vars2 in
+  (* Car Fixpoint met les fns définies temporairement comme vars de sect *)
   let imps, args_scopes =
-    (* Is [id] bound in  *)
-    if Idset.mem id env or List.mem id vars1
-    then
-      try List.assoc id impls, []
-      with Not_found -> [], []
-    else
-    (* Is [id] a section variable *)
-    let _ = Sign.lookup_named id vars2 in
-    (* Car Fixpoint met les fns définies temporairement comme vars de sect *)
     try
       let ref = VarRef id in
       implicits_of_global ref, find_arguments_scope ref
-    with _ -> [], []
-  in RVar (loc, id), imps, args_scopes
+    with _ -> [], [] in
+  RRef (loc, VarRef id), imps, args_scopes
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid env vars loc qid =
@@ -334,11 +332,8 @@ let coerce_to_id = function
         str"This expression should be a simple identifier")
 
 let traverse_binder id (subst,(ids,impls,scopes as env)) =
-  try 
-    let id' = coerce_to_id (List.assoc id subst) in
-    id', (subst,(Idset.add id' ids,impls,scopes))
-  with Not_found ->
-    id, (List.remove_assoc id subst,env)
+  let id = try coerce_to_id (List.assoc id subst) with Not_found -> id in
+  id,(subst,(Idset.add id ids,impls,scopes))
 
 let rec subst_rawconstr loc interp (subst,env as senv) = function
   | AVar id ->

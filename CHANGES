@@ -14,6 +14,8 @@ Symbolic notations
 
 - Introduction of a notion of scope gathering notations in a consistent set;
   set a notation sets has been developped for nat, Z and R
+- New command "Notation" for declaring notations simultaneously for
+  parsing and printing
 - Declarations with only implicit arguments now handled (e.g. the
   argument of nil can be set implicit; use !nil to refer to nil
   without arguments)
@@ -25,6 +27,10 @@ Library
 - Lemmas in Set from Compare_dec.v (le_lt_dec, ...) and Wf_nat.v
   (lt_wf_rec, ...) are now transparent. This may be source of
   incompatibilities.
+- Syntactic Definitions Fst, Snd, Ex, All, Ex2, AllT, ExT, ExT2,
+  ProjS1, ProjS2, Error, Value and Except are turned to
+  notations. They now must be applied (incompatibilities only in
+  unrealistic cases).
 
 Language
 
@@ -74,10 +80,13 @@ Tactics
   hypothesis was unfolded to `x < y` -> False. This is fixed. In addition,
   it can also recognize 'False' in the hypothesis and use it to solve the
   goal.
+- New syntax for Ring and Field when arguments are provided (use "Ring on" and
+  "Field on")
 
 Miscellaneous
 
 - Printing Coercion now used through the standard keywords Set/Add, Test, Print
+- "Print Term id" is an alias for "Print id"
 
 Incompatibilities
 

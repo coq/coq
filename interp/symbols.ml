@@ -14,6 +14,7 @@ open Pp
 open Bignat
 open Names
 open Nametab
+open Libnames
 open Summary
 open Rawterm
 open Topconstr
@@ -41,7 +42,7 @@ open Ppextend
 type level = precedence * precedence list
 type delimiters = string * string
 type scope = {
-  notations: (aconstr * level) Stringmap.t;
+  notations: (aconstr * (level * string)) Stringmap.t;
   delimiters: delimiters option
 }
 type scopes = scope_name list
@@ -58,6 +59,9 @@ let default_scope = "core_scope"
 
 let _ = Stringmap.add default_scope empty_scope !scope_map
 
+(**********************************************************************)
+(* The global stack of scopes                                         *)
+
 let scope_stack = ref [default_scope]
 
 let current_scopes () = !scope_stack
@@ -65,26 +69,8 @@ let current_scopes () = !scope_stack
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 (**********************************************************************)
-(* Interpreting numbers (not in summary because functional objects)   *)
+(* Operations on scopes *)
 
-type numeral_interpreter_name = string
-type numeral_interpreter =
-    (loc -> bigint -> rawconstr)
-    * (loc -> bigint -> name -> cases_pattern) option
-
-let numeral_interpreter_tab =
-  (Hashtbl.create 17 : (numeral_interpreter_name,numeral_interpreter)Hashtbl.t)
-
-let declare_numeral_interpreter sc t =
-  Hashtbl.add numeral_interpreter_tab sc t
-
-let lookup_numeral_interpreter s =
-  try 
-    Hashtbl.find numeral_interpreter_tab s
-  with Not_found -> 
-    error ("No interpretation for numerals in scope "^s)
-
-(* For loading without opening *)
 let declare_scope scope =
   try let _ = Stringmap.find scope !scope_map in ()
   with Not_found ->
@@ -97,6 +83,9 @@ let find_scope scope =
 
 let check_scope sc = let _ = find_scope sc in ()
 
+(**********************************************************************)
+(* Delimiters *)
+
 let declare_delimiters scope dlm =
   let sc = find_scope scope in
   if sc.delimiters <> None && Options.is_verbose () then
@@ -104,14 +93,119 @@ let declare_delimiters scope dlm =
   let sc = { sc with delimiters = Some dlm } in
   scope_map := Stringmap.add scope sc !scope_map   
 
-(* The mapping between notations and production *)
+let find_delimiters scope = (find_scope scope).delimiters
 
-let declare_notation nt scope (c,prec as info) =
+(* Uninterpretation tables *)
+
+type interpretation = identifier list * aconstr
+type interp_rule = scope_name * notation * interpretation * int option
+
+(* We define keys for rawterm and aconstr to split the syntax entries
+   according to the key of the pattern (adapted from Chet Murthy by HH) *)
+
+type key =
+  | RefKey of global_reference
+  | Oth
+
+(* Scopes table : interpretation -> scope_name *)
+let notations_key_table = ref Gmapl.empty
+let numeral_key_table = Hashtbl.create 7
+
+let rawconstr_key = function
+  | RApp (_,RRef (_,ref),_) -> RefKey ref
+  | RRef (_,ref) -> RefKey ref
+  | _ -> Oth
+
+let aconstr_key = function
+  | AApp (ARef ref,args) -> RefKey ref, Some (List.length args)
+  | ARef ref -> RefKey ref, Some 0
+  | _ -> Oth, None
+
+let pattern_key = function
+  | PatCstr (_,cstr,_,_) -> RefKey (ConstructRef cstr)
+  | _ -> Oth
+
+(**********************************************************************)
+(* Interpreting numbers (not in summary because functional objects)   *)
+
+type num_interpreter =
+    (loc -> bigint -> rawconstr)
+    * (loc -> bigint -> name -> cases_pattern) option
+
+type num_uninterpreter =
+    rawconstr list * (rawconstr -> bigint option)
+    * (cases_pattern -> bigint option) option
+
+type required_module = string list 
+
+let numeral_interpreter_tab =
+  (Hashtbl.create 7 : (scope_name,required_module*num_interpreter) Hashtbl.t)
+
+let declare_numeral_interpreter sc dir interp (patl,uninterp,uninterpc) =
+  declare_scope sc;
+  Hashtbl.add numeral_interpreter_tab sc (dir,interp);
+  List.iter
+    (fun pat -> Hashtbl.add numeral_key_table (rawconstr_key pat)
+      (sc,uninterp,uninterpc))
+    patl
+
+let check_required_module loc sc d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+  if not (Library.library_is_loaded dir) then
+    user_err_loc (loc,"numeral_interpreter",
+    str ("Cannot interpret numbers in "^sc^" without requiring first module "
+    ^(list_last d)))
+
+let lookup_numeral_interpreter loc sc =
+  try
+    let (dir,interpreter) = Hashtbl.find numeral_interpreter_tab sc in
+    check_required_module loc sc dir;
+    interpreter
+  with Not_found -> 
+    error ("No interpretation for numerals in scope "^sc)
+
+(* Look if some notation or numeral printer in [scope] can be used in
+   the scope stack [scopes], and if yes, using delimiters or not *)
+
+let find_with_delimiters scope =
+  match (Stringmap.find scope !scope_map).delimiters with
+    | Some _ -> Some (Some scope)
+    | None -> None
+
+let rec find_without_delimiters find ntn_scope = function
+  | scope :: scopes -> 
+      (* Is the expected ntn/numpr attached to the most recently open scope? *)
+      if scope = ntn_scope then
+	Some None
+      else
+	(* If the most recently open scope has a notation/numeral printer
+    	   but not the expected one then we need delimiters *)
+	if find scope then
+	  find_with_delimiters ntn_scope
+	else
+	  find_without_delimiters find ntn_scope scopes
+  | [] ->
+      (* Can we switch to [scope]? Yes if it has defined delimiters *)
+      find_with_delimiters ntn_scope
+
+(* The mapping between notations and their interpretation *)
+
+let declare_interpretation ntn scope pat =
   let sc = find_scope scope in
-  if Stringmap.mem nt sc.notations && Options.is_verbose () then
-    warning ("Notation "^nt^" is already used in scope "^scope);
-  let sc = { sc with notations = Stringmap.add nt info sc.notations } in
+  if Stringmap.mem ntn sc.notations && Options.is_verbose () then
+    warning ("Notation "^ntn^" is already used in scope "^scope);
+  let sc = { sc with notations = Stringmap.add ntn pat sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map
+
+let declare_uninterpretation ntn scope metas c =
+  let (key,n) = aconstr_key c in
+  notations_key_table :=
+    Gmapl.add key (scope,ntn,(metas,c),n) !notations_key_table
+
+let declare_notation ntn scope (metas,c) prec df onlyparse =
+  declare_interpretation ntn scope (c,(prec,df));
+  if not onlyparse then declare_uninterpretation ntn scope metas c
 
 let rec find_interpretation f = function
   | scope::scopes ->
@@ -124,85 +218,22 @@ let rec interp_notation ntn scopes =
   try find_interpretation f scopes
   with Not_found -> anomaly ("Unknown interpretation for notation "^ntn)
 
-let find_notation_with_delimiters scope =
-  match (Stringmap.find scope !scope_map).delimiters with
-    | Some dlm -> Some (Some dlm)
-    | None -> None
+let uninterp_notations c =
+  Gmapl.find (rawconstr_key c) !notations_key_table
 
-let rec find_notation_without_delimiters ntn_scope ntn = function
-  | scope::scopes ->
-      (* Is the expected printer attached to the most recently open scope? *)
-      if scope = ntn_scope then
-	Some None
-      else
-	(* If the most recently open scope has a printer for this pattern
-    	   but not the expected one then we need delimiters *)
-	if Stringmap.mem ntn (Stringmap.find scope !scope_map).notations then
-	  find_notation_with_delimiters ntn_scope
-	else
-	  find_notation_without_delimiters ntn_scope ntn scopes
-  | [] ->
-      find_notation_with_delimiters ntn_scope
-
-let find_notation ntn_scope ntn scopes =
+let availability_of_notation (ntn_scope,ntn) scopes =
   match 
-    find_notation_without_delimiters ntn_scope ntn scopes
+    let f scope =
+      Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
+    find_without_delimiters f ntn_scope scopes
   with
     | None -> None
-    | Some None -> Some (None,scopes)
-    | Some x -> Some (x,ntn_scope::scopes)
-
-let exists_notation_in_scope scope prec ntn r =
-  try Stringmap.find ntn (Stringmap.find scope !scope_map).notations = (r,prec)
-  with Not_found -> false
-
-let exists_notation_prec prec nt sc =
-  try snd (Stringmap.find nt sc.notations) = prec with Not_found -> false
-
-let exists_notation prec nt =
-  Stringmap.fold (fun scn sc b -> b or exists_notation_prec prec nt sc)
-    !scope_map false 
-
-(* We have to print delimiters; look for the more recent defined one *)
-(* Do we need to print delimiters? To know it, we look for a numeral *)
-(* printer available in the current stack of scopes *)
-let find_numeral_with_delimiters scope =
-  match (Stringmap.find scope !scope_map).delimiters with
-    | Some dlm -> Some (Some dlm)
-    | None -> None
-
-let rec find_numeral_without_delimiters printer_scope = function
-  | scope :: scopes -> 
-      (* Is the expected printer attached to the most recently open scope? *)
-      if scope = printer_scope then
-	Some None
-      else
-	(* If the most recently open scope has a printer for numerals
-    	   but not the expected one then we need delimiters *)
-	if not (Hashtbl.mem numeral_interpreter_tab scope) then
-	  find_numeral_without_delimiters printer_scope scopes
-	else
-	  find_numeral_with_delimiters printer_scope
-  | [] ->
-      (* Can we switch to [scope]? Yes if it has defined delimiters *)
-      find_numeral_with_delimiters printer_scope
-
-let find_numeral_printer printer_scope scopes =
-  match 
-    find_numeral_without_delimiters printer_scope scopes
-  with
-    | None -> None
-    | Some None -> Some (None,scopes)
-    | Some x -> Some (x,printer_scope::scopes)
-
-(* This is the map associating the scope a numeral printer belongs to *)
-(*
-let numeral_printer_map = ref (Stringmap.empty : scope_name Stringmap.t)
-*)
+    | Some None -> Some None
+    | Some (Some dlm) -> Some (Some ntn_scope)
 
 let rec interp_numeral loc n = function
   | scope :: scopes ->
-      (try fst (lookup_numeral_interpreter scope) loc n
+      (try fst (lookup_numeral_interpreter loc scope) loc n
        with Not_found -> interp_numeral loc n scopes)
   | [] ->
       user_err_loc (loc,"interp_numeral",
@@ -211,13 +242,55 @@ let rec interp_numeral loc n = function
 let rec interp_numeral_as_pattern loc n name = function
   | scope :: scopes ->
       (try 
-	match snd (lookup_numeral_interpreter scope) with
+	match snd (lookup_numeral_interpreter loc scope) with
 	  | None -> raise Not_found
 	  | Some g -> g loc n name
 	with Not_found -> interp_numeral_as_pattern loc n name scopes)
   | [] ->
       user_err_loc (loc,"interp_numeral_as_pattern",
       str "No interpretation for numeral " ++ pr_bigint n)
+
+let uninterp_numeral c =
+  try 
+    let (sc,numpr,_) = Hashtbl.find numeral_key_table (rawconstr_key c) in
+    match numpr c with
+      | None -> raise No_match
+      | Some n -> (sc,n)
+  with Not_found -> raise No_match
+
+let uninterp_cases_numeral c =
+  try 
+    match Hashtbl.find numeral_key_table (pattern_key c) with
+      | (_,_,None) -> raise No_match
+      | (sc,_,Some numpr) ->
+	  match numpr c with
+	    | None -> raise No_match
+	    | Some n -> (sc,n)
+  with Not_found -> raise No_match
+
+let availability_of_numeral printer_scope scopes =
+  match 
+    let f scope = Hashtbl.mem numeral_interpreter_tab scope in
+    find_without_delimiters f printer_scope scopes
+  with
+    | None -> None
+    | Some x -> Some x
+
+(* Miscellaneous *)
+
+let exists_notation_in_scope scope prec ntn r =
+  try
+    let sc = Stringmap.find scope !scope_map in
+    let (r',(prec',_)) = Stringmap.find ntn sc.notations in
+    r' = r & prec = prec'
+  with Not_found -> false
+
+let exists_notation_prec prec nt sc =
+  try fst (snd (Stringmap.find nt sc.notations)) = prec with Not_found -> false
+
+let exists_notation prec nt =
+  Stringmap.fold (fun scn sc b -> b or exists_notation_prec prec nt sc)
+    !scope_map false 
 
 (* Exportation of scopes *)
 let cache_scope (_,sc) =
@@ -238,18 +311,7 @@ let (inScope,outScope) =
 
 let open_scope sc = Lib.add_anonymous_leaf (inScope sc)
 
-
 (* Special scopes associated to arguments of a global reference *)
-
-open Libnames
-
-module RefOrdered =
-  struct
-    type t = global_reference
-    let compare = Pervasives.compare
-  end
-
-module Refmap = Map.Make(RefOrdered)
 
 let arguments_scope = ref Refmap.empty
 
@@ -276,18 +338,22 @@ let find_arguments_scope r =
 
 (* Printing *)
 
-let pr_delimiters = function
+let pr_delimiters_info = function
   | None -> str "No delimiters"
   | Some (l,r) -> str "Delimiters are " ++ str l ++ str " and " ++ str r
 
-let pr_notation prraw ntn r =
-  str ntn ++ str " stands for " ++ prraw r
+let rec rawconstr_of_aconstr () x =
+  map_aconstr_with_binders_loc dummy_loc (fun id () -> (id,())) 
+    rawconstr_of_aconstr () x
+
+let pr_notation_info prraw ntn c =
+  str ntn ++ str " stands for " ++ prraw (rawconstr_of_aconstr () c)
 
 let pr_named_scope prraw scope sc =
   str "Scope " ++ str scope ++ fnl ()
-  ++ pr_delimiters sc.delimiters ++ fnl ()
+  ++ pr_delimiters_info sc.delimiters ++ fnl ()
   ++ Stringmap.fold
-       (fun ntn (r,_) strm -> pr_notation prraw ntn r ++ fnl () ++ strm)
+       (fun ntn (r,(_,df)) strm -> pr_notation_info prraw df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
 let pr_scope prraw scope = pr_named_scope prraw scope (find_scope scope)
@@ -297,20 +363,44 @@ let pr_scopes prraw =
    (fun scope sc strm -> pr_named_scope prraw scope sc ++ fnl () ++ strm)
    !scope_map (mt ())
 
+(**********************************************************************)
+(* Mapping notations to concrete syntax *)
+
+type unparsing_rule = unparsing list * precedence
+
+(* Concrete syntax for symbolic-extension table *)
+let printing_rules = 
+  ref (Stringmap.empty : unparsing_rule Stringmap.t)
+
+let declare_notation_printing_rule ntn unpl =
+  printing_rules := Stringmap.add ntn unpl !printing_rules
+
+let find_notation_printing_rule ntn =
+  try Stringmap.find ntn !printing_rules
+  with Not_found -> anomaly ("No printing rule found for "^ntn)
+
+(**********************************************************************)
 (* Synchronisation with reset *)
 
-let freeze () = (!scope_map, !scope_stack, !arguments_scope)
+let freeze () =
+ (!scope_map, !scope_stack, !arguments_scope,
+  !notations_key_table, !printing_rules)
 
-let unfreeze (scm,scs,asc) =
+let unfreeze (scm,scs,asc,fkm,pprules) =
   scope_map := scm;
   scope_stack := scs;
-  arguments_scope := asc
+  arguments_scope := asc;
+  notations_key_table := fkm;
+  printing_rules := pprules
 
-let init () = ()
+let init () =
 (*
   scope_map := Strinmap.empty;
   scope_stack := Stringmap.empty
+  arguments_scope := Refmap.empty
 *)
+  notations_key_table := Gmapl.empty;
+  printing_rules := Stringmap.empty
 
 let _ = 
   declare_summary "symbols"
@@ -318,14 +408,3 @@ let _ =
       unfreeze_function = unfreeze;
       init_function = init;
       survive_section = false }
-
-
-let printing_rules = 
-  ref (Stringmap.empty : (unparsing list * precedence) Stringmap.t)
-
-let declare_printing_rule ntn unpl =
-  printing_rules := Stringmap.add ntn unpl !printing_rules
-
-let find_notation_printing_rule ntn =
-  try Stringmap.find ntn !printing_rules
-  with Not_found -> anomaly ("No printing rule found for "^ntn)

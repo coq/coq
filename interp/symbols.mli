@@ -14,22 +14,17 @@ open Pp
 open Bignat
 open Names
 open Nametab
+open Libnames
 open Rawterm
 open Topconstr
 open Ppextend
+
 (*i*)
 
-(*s A numeral interpreter is the pair of an interpreter for _integer_
-   numbers in terms and an optional interpreter in pattern, if
-   negative numbers are not supported, the interpreter must fail with
-   an appropriate error message *)
+(**********************************************************************)
+(* Scopes *)
 
-type numeral_interpreter_name = string
-type numeral_interpreter =
-    (loc -> bigint -> rawconstr)
-    * (loc -> bigint -> name -> cases_pattern) option
-
-(* A scope is a set of interpreters for symbols + optional
+(*s A scope is a set of interpreters for symbols + optional
    interpreter and printers for integers + optional delimiters *)
 
 type level = precedence * precedence list
@@ -38,40 +33,92 @@ type scope
 type scopes = scope_name list
 
 val default_scope : scope_name
-val current_scopes : unit -> scopes
-val open_scope : scope_name -> unit
 val declare_scope : scope_name -> unit
 
-(* Declare delimiters for printing *)
-val declare_delimiters : scope_name -> delimiters -> unit
+(* Open scope *)
 
-(* Declare, interpret, and look for a printer for numeral *)
-val declare_numeral_interpreter :
-  numeral_interpreter_name -> numeral_interpreter -> unit
+val current_scopes : unit -> scopes
+val open_scope : scope_name -> unit
+
+(* Declare delimiters for printing *)
+
+val declare_delimiters : scope_name -> delimiters -> unit
+val find_delimiters : scope_name -> delimiters option
+
+(*s Declare and uses back and forth a numeral interpretation *)
+
+(* A numeral interpreter is the pair of an interpreter for _integer_
+   numbers in terms and an optional interpreter in pattern, if
+   negative numbers are not supported, the interpreter must fail with
+   an appropriate error message *)
+
+type num_interpreter =
+    (loc -> bigint -> rawconstr)
+    * (loc -> bigint -> name -> cases_pattern) option
+
+type num_uninterpreter =
+    rawconstr list * (rawconstr -> bigint option)
+    * (cases_pattern -> bigint option) option
+
+type required_module = string list 
+val declare_numeral_interpreter : scope_name -> required_module ->
+  num_interpreter -> num_uninterpreter -> unit
+
+(* Returns the term/cases_pattern bound to a numeral in a given scope context*)
 val interp_numeral : loc -> bigint -> scopes -> rawconstr
 val interp_numeral_as_pattern : loc -> bigint -> name -> scopes ->cases_pattern
-val find_numeral_printer : string -> scopes ->
-  (delimiters option * scopes) option
 
-(* Declare, interpret, and look for a printer for symbolic notations *)
-val declare_notation : notation -> scope_name -> aconstr * level -> unit
+(* Returns the numeral bound to a term/cases_pattern; raises No_match if no *)
+(* such numeral *)
+val uninterp_numeral : rawconstr -> scope_name * bigint
+val uninterp_cases_numeral : cases_pattern -> scope_name * bigint
+
+val availability_of_numeral : scope_name -> scopes -> scope_name option option
+
+(*s Declare and interpret back and forth a notation *)
+
+type interpretation = identifier list * aconstr
+
+(* Binds a notation in a given scope to an interpretation *)
+type interp_rule = scope_name * notation * interpretation * int option
+val declare_notation : notation -> scope_name -> interpretation -> level ->
+  string -> bool -> unit
+
+(* Returns the interpretation bound to a notation *)
 val interp_notation : notation -> scopes -> aconstr
-val find_notation : scope_name -> notation -> scopes -> 
-  (delimiters option * scopes) option
-val exists_notation_in_scope : 
-  scope_name -> level -> notation -> aconstr -> bool
+
+(* Returns the possible notations for a given term *)
+val uninterp_notations : rawconstr -> interp_rule list
+
+(* Test if a notation is available in the scopes *)
+(* context [scopes] if available, the result is not None; the first *)
+(* argument is itself not None if a delimiters is needed; the second *)
+(* argument is a numeral printer if the *)
+val availability_of_notation : scope_name * notation -> scopes -> 
+  scope_name option option
+
+(*s** Miscellaneous *)
+
+(* Checks for already existing notations *)
+val exists_notation_in_scope : scope_name -> level -> notation -> aconstr->bool
 val exists_notation : level -> notation -> bool
 
-(* Declare and look for scopes associated to arguments of a global ref *)
-open Libnames
+(* Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope: global_reference -> scope_name option list -> unit
 val find_arguments_scope : global_reference -> scope_name option list
 
-(* Printing scopes *)
-val pr_scope : (aconstr -> std_ppcmds) -> scope_name -> std_ppcmds
-val pr_scopes : (aconstr -> std_ppcmds) -> std_ppcmds
+(* Prints scopes (expect a pure aconstr printer *)
+val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
+val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
 
+(**********************************************************************)
+(*s Printing rules for notations *)
 
-val declare_printing_rule : notation -> unparsing list * precedence -> unit
-val find_notation_printing_rule : notation -> unparsing list * precedence
+(* Declare and look for the printing rule for symbolic notations *)
+type unparsing_rule = unparsing list * precedence
+val declare_notation_printing_rule : notation -> unparsing_rule -> unit
+val find_notation_printing_rule : notation -> unparsing_rule
+
+(**********************************************************************)
+(* Rem: printing rules for numerals are trivial *)
 

@@ -18,8 +18,9 @@ open Rawterm
 open Term
 (*i*)
 
-
+(**********************************************************************)
 (* This is the subtype of rawconstr allowed in syntactic extensions *)
+
 type aconstr =
   | ARef of global_reference
   | AVar of identifier
@@ -29,7 +30,7 @@ type aconstr =
   | ALetIn of name * aconstr * aconstr
   | ACases of aconstr option * aconstr list *
       (identifier list * cases_pattern list * aconstr) list
-  | AOldCase of case_style * aconstr option * aconstr * aconstr array
+  | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ASort of rawsort
   | AHole of hole_kind
   | AMeta of int
@@ -53,7 +54,7 @@ let map_aconstr_with_binders_loc loc g f e = function
       let eqnl = List.map (fun (idl,pat,rhs) ->
         let (idl,e) = List.fold_right fold idl ([],e) in (loc,idl,pat,f e rhs)) eqnl in
       RCases (loc,option_app (f e) tyopt,List.map (f e) tml,eqnl)
-  | AOldCase (b,tyopt,tm,bv) ->
+  | AOrderedCase (b,tyopt,tm,bv) ->
       ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv)
   | ACast (c,t) -> RCast (loc,f e c,f e t)
   | ASort x -> RSort (loc,x)
@@ -114,12 +115,12 @@ let rec subst_aconstr subst raw =
         if ro' == ro && rl' == rl && branches' == branches then raw else
           ACases (ro',rl',branches')
 
-  | AOldCase (b,ro,r,ra) -> 
+  | AOrderedCase (b,ro,r,ra) -> 
       let ro' = option_smartmap (subst_aconstr subst) ro
       and r' = subst_aconstr subst r 
       and ra' = array_smartmap (subst_aconstr subst) ra in
 	if ro' == ro && r' == r && ra' == ra then raw else
-	  AOldCase (b,ro',r',ra')
+	  AOrderedCase (b,ro',r',ra')
 
   | AMeta _ | ASort _ -> raw
 
@@ -145,7 +146,7 @@ let rec aux = function
       let eqnl = List.map (fun (_,idl,pat,rhs) -> (idl,pat,aux rhs)) eqnl in
       ACases (option_app aux tyopt,List.map aux tml, eqnl)
   | ROrderedCase (_,b,tyopt,tm,bv) ->
-      AOldCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
+      AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RCast (_,c,t) -> ACast (aux c,aux t)
   | RSort (_,s) -> ASort s
   | RHole (_,w) -> AHole w
@@ -157,6 +158,75 @@ allowed in abbreviatable expressions"
 
 let aconstr_of_rawconstr = aux
 
+(* Pattern-matching rawconstr and aconstr *)
+
+exception No_match
+
+let rec alpha_var id1 id2 = function
+  | (i1,i2)::_ when i1=id1 -> i2 = id2
+  | (i1,i2)::_ when i2=id2 -> i1 = id1
+  | _::idl -> alpha_var id1 id2 idl
+  | [] -> id1 = id2
+
+let alpha_eq_val (x,y) = x = y
+
+let bind_env sigma var v =
+  try
+    let vvar = List.assoc var sigma in
+    if alpha_eq_val (v,vvar) then sigma
+    else raise No_match
+  with Not_found -> 
+    (var,v)::sigma
+
+let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
+  | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
+  | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
+  | RRef (_,r1), ARef r2 when r1 = r2 -> sigma
+  | RMeta (_,n1), AMeta n2 when n1=n2 -> sigma
+  | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
+      List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
+  | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
+     match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
+  | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
+     match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
+  | RLetIn (_,na1,t1,b1), AProd (na2,t2,b2) ->
+     match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
+  | RCases (_,po1,tml1,eqnl1), ACases (po2,tml2,eqnl2) ->
+     let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
+     let sigma = List.fold_left2 (match_ alp metas) sigma tml1 tml2 in
+     List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
+  | ROrderedCase (_,st,po1,c1,bl1), AOrderedCase (st2,po2,c2,bl2) ->
+     let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
+     array_fold_left2 (match_ alp metas) (match_ alp metas sigma c1 c2) bl1 bl2
+  | RCast(_,c1,t1), ACast(c2,t2) ->
+      match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
+  | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
+  | RHole _, a -> sigma
+  | a, AHole _ -> sigma
+  | (RDynamic _ | RRec _ | REvar _), _ 
+  | _,_ -> raise No_match
+
+and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
+  | (na1,Name id2) when List.mem id2 metas ->
+      let sigma =
+	name_fold
+	  (fun id sigma -> bind_env sigma id2 (RVar (dummy_loc,id))) na1 sigma
+      in 
+      match_ alp metas sigma b1 b2
+  | (na1,na2) -> 
+      let alp =
+        name_fold
+	  (fun id1 -> name_fold (fun id2 alp -> (id1,id2)::alp) na2) na1 alp in
+      match_ alp metas sigma b1 b2
+
+and match_equations alp metas sigma (_,idl1,pat1,rhs1) (idl2,pat2,rhs2) =
+  if idl1 = idl2 & pat1 = pat2 (* Useful to reason up to alpha ?? *) then
+    match_ alp metas sigma rhs1 rhs2
+  else raise No_match
+
+let match_aconstr c (metas,pat) = match_ [] metas [] c pat
+
+(**********************************************************************)
 (*s Concrete syntax for terms *)
 
 type scope_name = string
@@ -200,6 +270,16 @@ and fixpoint_expr = identifier * int * constr_expr * constr_expr
 
 and cofixpoint_expr = identifier * constr_expr * constr_expr
 
+(***********************)
+(* For binders parsing *)
+
+type local_binder =
+  | LocalRawDef of name located * constr_expr
+  | LocalRawAssum of name located list * constr_expr
+
+(**********************************************************************)
+(* Functions on constr_expr *)
+
 let constr_loc = function
   | CRef (Ident (loc,_)) -> loc
   | CRef (Qualid (loc,_)) -> loc
@@ -229,9 +309,6 @@ let cases_pattern_loc = function
   | CPatAtom (loc,_) -> loc
   | CPatNumeral (loc,_) -> loc
   | CPatDelimiters (loc,_,_) -> loc
-
-let replace_vars_constr_expr l t =
-  if l = [] then t else failwith "replace_constr_expr: TODO"
 
 let occur_var_constr_ref id = function
   | Ident (loc,id') -> id = id'
@@ -307,12 +384,14 @@ let map_constr_expr_with_binders f g e = function
   | CCoFix (loc,id,dl) ->
       CCoFix (loc,id,List.map (fun (id,t,d) -> (id,f e t,f e d)) dl)
 
-(* For binders parsing *)
+(* Used in constrintern *)
+let rec replace_vars_constr_expr l = function
+  | CRef (Ident (loc,id)) as x ->
+      (try CRef (Ident (loc,List.assoc id l)) with Not_found -> x)
+  | c -> map_constr_expr_with_binders replace_vars_constr_expr 
+      (fun id l -> List.remove_assoc id l) l c
 
-type local_binder =
-  | LocalRawDef of name located * constr_expr
-  | LocalRawAssum of name located list * constr_expr
-
+(**********************************************************************)
 (* Concrete syntax for modules and modules types *)
 
 type with_declaration_ast = 

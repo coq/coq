@@ -20,7 +20,7 @@ let pair loc =
   Qualid (loc, Libnames.qualid_of_string "Coq.Init.Datatypes.pair")
 
 GEXTEND Gram
-  GLOBAL: constr1 pattern;
+  GLOBAL: constr pattern;
 
   pattern:
     [ [ r = Prim.reference -> CPatAtom (loc,Some r)
@@ -52,8 +52,7 @@ GEXTEND Gram
   ne_eqn_list:
     [ [ leqn = LIST1 equation SEP "|" -> leqn ] ]
   ;
-
-  constr1:
+  constr: LEVEL "1"
     [ [ "<"; p = lconstr; ">"; "Cases"; lc = LIST1 constr; "of";
         OPT "|"; eqs = ne_eqn_list; "end" ->
 	  CCases (loc, Some p, lc, eqs)

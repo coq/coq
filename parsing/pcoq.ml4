@@ -69,6 +69,7 @@ type typed_entry = entry_type * grammar_object G.Entry.e
 let in_typed_entry t e = (t,Gramobj.weaken_entry e)
 let type_of_typed_entry (t,e) = t
 let object_of_typed_entry (t,e) = e
+let weaken_entry x = Gramobj.weaken_entry x
 
 module type Gramtypes =
 sig
@@ -168,21 +169,6 @@ let map_entry f en =
 
 let parse_string f x =
   let strm = Stream.of_string x in Gram.Entry.parse f (Gram.parsable strm)
-
-(*
-let entry_type ast =
-  match ast with
-    | Coqast.Id (_, "LIST") -> ETastl
-    | Coqast.Id (_, "AST") -> ETast
-    | _ -> invalid_arg "Ast.entry_type"
-*)
-
-(*
-let entry_type ast =
-  match ast with
-    | AstListType -> ETastl
-    | _ -> ETast
-*)
 
 type gram_universe = (string, typed_entry) Hashtbl.t
 
@@ -353,27 +339,12 @@ module Constr =
 
     (* Entries that can be refered via the string -> Gram.Entry.e table *)
     let constr = gec_constr "constr"
-    let constr0 = gec_constr "constr0"
-    let constr1 = gec_constr "constr1"
-    let constr2 = gec_constr "constr2"
-    let constr3 = gec_constr "constr3"
-    let lassoc_constr4 = gec_constr "lassoc_constr4"
-    let constr5 = gec_constr "constr5"
-    let constr6 = gec_constr "constr6"
-    let constr7 = gec_constr "constr7"
-    let constr8 = gec_constr "constr8"
     let constr9 = gec_constr "constr9"
-    let constr91 = gec_constr "constr91"
-    let constr10 = gec_constr "constr10"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
-    let sort = make_gen_entry uconstr rawwit_sort "sort"
-
     let ident = make_gen_entry uconstr rawwit_ident "ident"
     let global = make_gen_entry uconstr rawwit_ref "global"
-
-    let ne_name_comma_list = Gram.Entry.create "constr:ne_name_comma_list"
-    let ne_constr_list = gec_constr_list "ne_constr_list"
+    let sort = make_gen_entry uconstr rawwit_sort "sort"
     let pattern = Gram.Entry.create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
   end
@@ -520,3 +491,17 @@ let set_default_action_parser = function
 let default_action_parser =
   Gram.Entry.of_parser "default_action_parser" 
     (fun strm -> Gram.Entry.parse_token (get_default_action_parser ()) strm)
+
+let entry_of_type allow_create = function
+  | ETConstr (_,Some 10) -> weaken_entry Constr.lconstr, None
+  | ETConstr (_,Some 9) -> weaken_entry Constr.constr9, None
+  | ETConstr (_,lev) -> weaken_entry Constr.constr, lev
+  | ETIdent -> weaken_entry Constr.ident, None
+  | ETReference -> weaken_entry Constr.global, None
+  | ETOther (u,n) ->
+      let u = get_univ u in
+      let e =
+        try get_entry u n
+        with e when allow_create -> create_entry u n ConstrArgType in
+      object_of_typed_entry e, None
+  | ETPattern -> weaken_entry Constr.pattern, None

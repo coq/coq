@@ -30,6 +30,10 @@ type typed_entry
 
 val type_of_typed_entry : typed_entry -> Extend.entry_type
 val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
+val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
+
+val entry_of_type :
+  bool -> constr_entry_type -> grammar_object Gram.Entry.e * int option
 
 val grammar_extend :
   'a Gram.Entry.e -> Gramext.position option ->
@@ -56,6 +60,7 @@ val get_univ : string -> string * gram_universe
 val get_entry : string * gram_universe -> string -> typed_entry
 
 val entry_type : string * gram_universe -> string -> entry_type option
+
 val get_entry_type : string * string -> entry_type
 val create_entry_if_new :
   string * gram_universe -> string -> entry_type -> unit
@@ -118,30 +123,14 @@ module Prim :
 module Constr :
   sig
     val constr : constr_expr Gram.Entry.e
-    val constr0 : constr_expr Gram.Entry.e
-    val constr1 : constr_expr Gram.Entry.e
-    val constr2 : constr_expr Gram.Entry.e
-    val constr3 : constr_expr Gram.Entry.e
-    val lassoc_constr4 : constr_expr Gram.Entry.e
-    val constr5 : constr_expr Gram.Entry.e
-    val constr6 : constr_expr Gram.Entry.e
-    val constr7 : constr_expr Gram.Entry.e
-    val constr8 : constr_expr Gram.Entry.e
     val constr9 : constr_expr Gram.Entry.e
-    val constr91 : constr_expr Gram.Entry.e
-    val constr10 : constr_expr Gram.Entry.e
     val constr_eoi : constr_expr Gram.Entry.e
     val lconstr : constr_expr Gram.Entry.e
     val ident : identifier Gram.Entry.e
     val global : reference Gram.Entry.e
-    val ne_name_comma_list : name located list Gram.Entry.e
-    val ne_constr_list : constr_expr list Gram.Entry.e
     val sort : rawsort Gram.Entry.e
     val pattern : cases_pattern_expr Gram.Entry.e
     val constr_pattern : constr_expr Gram.Entry.e
-(*
-    val ne_binders_list : local_binder list Gram.Entry.e
-*)
   end
 
 module Module : 

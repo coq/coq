@@ -20,15 +20,17 @@ open Genarg
 (*i*)
 
 type entry_type = argument_type
-type constr_entry_type = ETConstr | ETIdent | ETReference
-
-val entry_type_of_constr_entry_type : constr_entry_type -> entry_type
+type constr_entry_type =
+  | ETIdent | ETReference
+  | ETConstr of (int * parenRelation) * int option
+  | ETPattern
+  | ETOther of string * string
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
   | ProdList1 of nonterm_prod
   | ProdOpt of nonterm_prod
-  | ProdPrimitive of (string * string)
+  | ProdPrimitive of constr_entry_type
 
 type prod_item =
   | Term of Token.pattern
@@ -41,7 +43,6 @@ type grammar_rule = {
 
 type grammar_entry = { 
   ge_name : string;
-  ge_type : constr_entry_type;
   gl_assoc : Gramext.g_assoc option;
   gl_rules : grammar_rule list }
 
@@ -57,10 +58,11 @@ val to_act_check_vars : entry_context -> grammar_action -> aconstr
 val set_ast_to_rawconstr : (entry_context -> constr_expr -> aconstr) -> unit
 
 type syntax_modifier =
-  | SetItemLevel of string * int
+  | SetItemLevel of string list * int
   | SetLevel of int
   | SetAssoc of Gramext.g_assoc
   | SetEntryType of string * constr_entry_type
+  | SetOnlyParsing
 
 type nonterm =
   | NtShort of string
@@ -69,12 +71,13 @@ type grammar_production =
   | VTerm of string
   | VNonTerm of loc * nonterm * Names.identifier option
 type raw_grammar_rule = string * grammar_production list * grammar_action
-type raw_grammar_entry = 
-  string * constr_entry_type * grammar_associativity * raw_grammar_rule list
+type raw_grammar_entry = string * grammar_associativity * raw_grammar_rule list
 
 val terminal : string -> string * string
 
 val rename_command : string -> string
+
+val explicitize_entry : string -> string -> constr_entry_type
 
 val subst_grammar_command : 
   Names.substitution -> grammar_command -> grammar_command
@@ -90,10 +93,6 @@ type 'pat unparsing_hunk =
   | UNP_TAB
   | UNP_FNL
   | UNP_SYMBOLIC of string * string * 'pat unparsing_hunk
-(*
-  | UNP_INFIX of Libnames.extended_global_reference * string * string *
-      (parenRelation * parenRelation)
-*)
 
 (*val subst_unparsing_hunk : 
   Names.substitution -> (Names.substitution -> 'pat -> 'pat) -> 
@@ -129,7 +128,7 @@ type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
 type raw_syntax_entry = precedence * syntax_rule list
 
 val interp_grammar_command :
-  string -> (string * string -> Genarg.argument_type) -> 
+  string -> (string * string -> unit) -> 
       raw_grammar_entry list -> grammar_command
 
 val interp_syntax_entry :

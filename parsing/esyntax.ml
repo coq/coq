@@ -186,7 +186,8 @@ let pr_parenthesis inherited se strm =
     
 let print_delimiters inh se strm = function
   | None -> pr_parenthesis inh se strm
-  | Some (left,right) ->
+  | Some sc ->
+      let (left,right) = out_some (find_delimiters sc) in
       assert (left <> "" && right <> "");
       let lspace =
 	if is_letter (left.[String.length left -1]) then str " " else mt () in
@@ -227,21 +228,21 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 	  (* Test for a primitive printer; may raise Not_found *)
 	  let sc,pr = lookup_primitive_printer c in
 	  (* Look if scope [sc] associated to this printer is OK *)
-	  (match Symbols.find_numeral_printer sc scopes with
+	  (match Symbols.availability_of_numeral sc scopes with
 	    | None -> otherwise ()
-	    | Some (dlm,scopes) ->
+	    | Some scopt ->
 	        (* We can use this printer *)
 	        let node = Ast.pat_sub dummy_loc env e in
 	        match pr node with
-		  | Some strm -> print_delimiters inherited se strm dlm
+		  | Some strm -> print_delimiters inherited se strm scopt
 		  | None -> otherwise ())
     | [UNP_SYMBOLIC (sc,pat,sub)] ->
-	(match Symbols.find_notation sc pat scopes with
+	(match Symbols.availability_of_notation (sc,pat) scopes with
 	  | None -> otherwise ()
-	  | Some (dlm,scopes) ->
+	  | Some scopt ->
 	      print_delimiters inherited se
-		(print_syntax_entry rec_pr scopes env 
-		  {se with syn_hunks = [sub]}) dlm)
+		(print_syntax_entry rec_pr (option_cons scopt scopes) env 
+		  {se with syn_hunks = [sub]}) scopt)
     | _ ->
 	pr_parenthesis inherited se (print_syntax_entry rec_pr scopes env se)
   )

@@ -153,7 +153,8 @@ GEXTEND Gram
 	  VernacRemoveOption (PrimaryTable table, v) ] ]
   ;
   printable:
-    [ [ IDENT "All" -> PrintFullContext
+    [ [ IDENT "Term"; qid = global -> PrintName qid
+      | IDENT "All" -> PrintFullContext
       | IDENT "Section"; s = global -> PrintSectionContext s
       | "Grammar"; uni = IDENT; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
@@ -173,7 +174,8 @@ GEXTEND Gram
       | IDENT "Hint" -> PrintHintGoal
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
-      | IDENT "HintDb"; s = IDENT  -> PrintHintDbName s ] ]
+      | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
+      | IDENT "Scope"; s = IDENT -> PrintScope s ] ]
   ;
   option_value:
     [ [ n  = integer   -> IntValue n
@@ -217,14 +219,14 @@ GEXTEND Gram
      | "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
          VernacSyntax (u,el)
 
-     | "Syntax"; IDENT "Extension"; s = STRING; 
+     | "Uninterpreted"; IDENT "Notation"; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (s,l)
 
      | IDENT "Open"; IDENT "Scope"; sc = IDENT -> VernacOpenScope sc
 
-     | IDENT "Delimiters"; left = STRING; sc = IDENT; right = STRING ->
-	 VernacDelimiters (sc,(left,right))
+     | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
+	 VernacDelimiters (sc,("`"^key^":","`"))
 
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
@@ -233,23 +235,27 @@ GEXTEND Gram
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacInfix (a,n,op,p,sc)
      | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = global;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
-     | IDENT "Notation"; a = entry_prec; n = natural; s = STRING; c = constr;
+     | IDENT "Notation"; s = IDENT; ":="; c = constr ->
+	 VernacNotation ("'"^s^"'",c,[],None)
+     | IDENT "Notation"; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
-	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-	   let a = match a with None -> Gramext.LeftA | Some a -> a in
-	   VernacNotation (s,c,(SetAssoc a)::(SetLevel n)::modl,sc)
+	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacNotation (s,c,modl,sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
   ;
   syntax_modifier:
-    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> SetItemLevel (x,n)
+    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> 
+        SetItemLevel ([x],n)
+      | x = IDENT; ","; l = LIST1 IDENT SEP ","; IDENT "at"; IDENT "level";
+        n = natural -> SetItemLevel (x::l,n)
       | IDENT "at"; IDENT "level"; n = natural -> SetLevel n
       | IDENT "left"; IDENT "associativity" -> SetAssoc Gramext.LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
-      | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ) ] ]
+      | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference ] ]
@@ -259,9 +265,9 @@ GEXTEND Gram
   ;
   (* Syntax entries for Grammar. Only grammar_entry is exported *)
   grammar_entry:
-    [[ nont = IDENT; etyp = set_entry_type; ":=";
+    [[ nont = IDENT; set_entry_type; ":=";
        ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
-	 (nont,etyp,ep,rl) ]]
+	 (nont,ep,rl) ]]
   ;
   entry_prec:
     [[ IDENT "LEFTA" -> Some Gramext.LeftA
@@ -366,13 +372,8 @@ GEXTEND Gram
      | [ ":"; IDENT "ast" -> () | -> () ] -> Ast.ETast ]]
   ;
   set_entry_type:
-    [[ ":"; et = entry_type -> set_default_action_parser et;
-       let a = match et with
-	 | ConstrParser -> ETConstr
-	 | CasesPatternParser ->
-	     failwith "entry_type_of_parser: cases_pattern, TODO" in
-       a
-     | -> ETConstr ]]
+    [[ ":"; et = entry_type -> set_default_action_parser et
+     | -> () ]]
   ;
   entry_type:
     [[ IDENT "ast"; IDENT "list" -> Util.error "type ast list no longer supported"

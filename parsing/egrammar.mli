@@ -24,14 +24,12 @@ val unfreeze : frozen_t -> unit
 val init : unit -> unit
 
 type all_grammar_command =
-  | Notation of (string * notation * prod_item list)
+  | Notation of (int * Gramext.g_assoc option * notation * prod_item list)
   | Delimiters of (scope_name * prod_item list * prod_item list)
   | Grammar of grammar_command
   | TacticGrammar of (string * (string * grammar_production list) * Tacexpr.raw_tactic_expr) list
 
 val extend_grammar : all_grammar_command -> unit
-
-val extend_constr_grammar : string * aconstr * prod_item list -> unit
 
 (* Add grammar rules for tactics *)
 type grammar_tactic_production =

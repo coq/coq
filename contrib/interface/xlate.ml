@@ -1789,7 +1789,8 @@ let xlate_vernac =
 	| PrintLocalContext -> xlate_error "TODO: Print"
 	| PrintTables -> xlate_error "TODO: Print Tables"
         | PrintModuleType _ -> xlate_error "TODO: Print Module Type"
-        | PrintModule _ -> xlate_error "TODO: Print Module")
+        | PrintModule _ -> xlate_error "TODO: Print Module"
+        | PrintScope _ -> xlate_error "TODO: Print Scope")
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment id -> CT_section_end (xlate_ident id)

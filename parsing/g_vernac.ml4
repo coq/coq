@@ -403,9 +403,19 @@ GEXTEND Gram
 	  Pp.warning "Class is obsolete"; VernacNop
 
 (* Implicit *)
+(*
       | IDENT "Syntactic"; "Definition"; id = base_ident; ":="; c = constr;
          n = OPT [ "|"; n = natural -> n ] ->
 	   VernacSyntacticDefinition (id,c,n)
+*)
+      | IDENT "Syntactic"; "Definition"; id = IDENT; ":="; c = constr;
+         n = OPT [ "|"; n = natural -> n ] ->
+	   let c = match n with
+	     | Some n ->
+		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
+		 CApp (loc,c,l)
+	     | None -> c in
+	   VernacNotation ("'"^id^"'",c,[],None)
 
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
 	  VernacDeclareImplicits (qid,Some l)

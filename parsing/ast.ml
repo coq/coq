@@ -345,6 +345,8 @@ let rec amatch alp sigma spat ast =
     | (Pmeta(pv,Tlist),_) -> grammar_type_error (loc ast,"Ast.amatch")
     | (Pmeta_slam(pv,pb), Slam(loc, Some s, b)) ->
         amatch alp (bind_env_ast sigma pv (Nvar(loc,s))) pb b
+    | (Pmeta_slam(pv,pb), Slam(loc, None, b)) ->
+        amatch alp (bind_env_ast sigma pv (Nvar(loc,id_of_string "_"))) pb b
     | (Pmeta_slam(pv,pb), Smetalam(loc, s, b)) ->
 	anomaly "amatch: match a pattern with an open ast"
     | (Pnode(nodp,argp), Node(loc,op,args)) when nodp = op ->
