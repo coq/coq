@@ -28,9 +28,6 @@ exception Impossible
 let anonymous = id_of_string "x"
 let prop_name = id_of_string "_"
 
-(*i let prop_name_to_anonymous = 
-  List.map (fun i -> if i=prop_name then anonymous else i) i*)
-
 (*s In an ML type, update the arguments to all inductive types [(sp,_)] *)  
 
 let rec update_args sp vl = function  
@@ -169,23 +166,6 @@ let ast_map_lift f n = function
   | MLmagic a -> MLmagic (f n a)
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a	
 
-(* Fold over asts, with binding depth as parameter. *)
-
-let ast_map_lift_case f n m (_,ids,a) = f (n+(List.length ids)) m a
-
-let ast_fold_lift f n m = function 
-  | MLlam (i,a) -> f (n+1) m a
-  | MLletin (i,a,b) -> f (n+1) (f n m a) b
-  | MLcase (a,v) -> let m = f n m a in 
-    Array.fold_left (ast_map_lift_case f n) m v 
-  | MLfix (i,ids,v) -> 
-      let k = Array.length ids in Array.fold_left (f (k+n)) m v
-  | MLapp (a,l) -> let m = f n m a in  List.fold_left (f n) m l
-  | MLcons (c,l) -> List.fold_left (f n) m l
-  | MLcast (a,t) -> f n m a
-  | MLmagic a -> f n m a
-  | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> m	
-
 (*s [occurs k t] returns true if [(Rel k)] occurs in [t]. *)
 
 let occurs k t = 
@@ -221,6 +201,23 @@ let ml_lift k t =
 
 let ml_pop t = ml_lift (-1) t
 
+(*s Computes a eta-reduction *)
+
+let eta_red e = 
+  let ids,t = collect_lams e in 
+  let n = List.length ids in
+  if n = 0 then e 
+  else match t with 
+    | MLapp (f,a) -> 
+	let m = (List.length a) - n in 
+	if m < 0 then e else
+	  let a',a'' = list_chop m a in 
+	  let f = if m = 0 then f else MLapp (f,a') in 
+	  if test_eta_args_lift 0 n a'' && not (occurs_itvl 1 n f)
+	  then ml_lift (-n) f
+	  else e 
+    | _ -> e
+
 (*s [permut_rels k k' c] translates [Rel 1 ... Rel k] to [Rel (k'+1) ... 
   Rel (k'+k)] and [Rel (k+1) ... Rel (k+k')] to [Rel 1 ... Rel k'] *)
 
@@ -246,31 +243,6 @@ let rec ml_subst e =
 	else MLrel (i-1)
     | a -> ast_map_lift subst n a
   in subst 0
-
-(*s Idem without lifting of one. *)
-
-(*i
-let rec ml_subst_no_lift e =
-  let rec subst n = function
-    | MLrel i as a ->
-	let i' = i-n in 
-	if i'=1 then ml_lift n e
-	else if i'<1 then a 
-	else MLrel i
-    | a -> ast_map_lift subst n a
-  in subst 0
-i*)
-
-(*s Simplification of any [MLapp (MLapp (_,_),_)] *)
-
-let rec merge_app = function 
-  | MLapp (f,l) -> 
-      let f = merge_app f in 
-      let l = List.map merge_app l in 
-      (match f with 
-	 | MLapp (f',l') -> MLapp (f',l' @ l)
-	 | _ -> MLapp (f,l))
-  | a -> ast_map merge_app a
 
 (*s [check_and_generalize (r0,l,c)] transforms any [MLcons(r0,l)] in [MLrel 1]
   and raises [Impossible] if any variable in [l] occurs outside such a 
@@ -323,8 +295,10 @@ let rec permut_case_fun br acc =
     let (r,l,t) = br.(i) in 
     let t = permut_rels !nb (List.length l) (remove_n_lams !nb t) 
     in br.(i) <- (r,l,t)
-  done; ids,br
-
+  done; 
+  (ids,br)
+  
+  
 (*s Generalized iota-reduction. *)
 
 (* Definition of a generalized iota-redex: it's a [MLcase(e,_)] 
@@ -361,78 +335,78 @@ let is_atomic = function
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> true
   | _ -> false
 
-let rec simplify o = function
+let rec simpl o = function
   | MLapp (f, []) ->
-      simplify o f
+      simpl o f
   | MLapp (f, a) -> 
-      simplify_app o (List.map (simplify o) a) (simplify o f)
-  | MLcons (r,[t]) when is_singleton r -> simplify o t 
+      simpl_app o (List.map (simpl o) a) (simpl o f)
+  | MLcons (r,[t]) when is_singleton r -> simpl o t 
 	(* Informative singleton *) 
   | MLcase (e,[||]) ->
-      MLexn "empty inductive"
+      MLexn "absurd case"
   | MLcase (e,[|r,[i],c|]) when is_singleton r -> (* Informative singleton *)
-      simplify o (MLletin (i,e,c))
+      simpl o (MLletin (i,e,c))
   | MLcase (e,br) ->
-      let br = Array.map (fun (n,l,t) -> (n,l,simplify o t)) br in 
-      simplify_case o br (simplify o e) 
+      let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
+      simpl_case o br (simpl o e) 
   | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
-      (* Expansion of a letin in special cases *)
-      simplify o (ml_subst c e)
+      simpl o (ml_subst c e)
+  | MLletin(_,c,e) when (is_atomic (eta_red c)) -> 
+      simpl o (ml_subst (eta_red c) e)
   | MLfix(i,ids,c) as t when o -> 
       let n = Array.length ids in 
       if occurs_itvl 1 n c.(i) then 
-	MLfix (i, ids, Array.map (simplify o) c)
-      else simplify o (ml_lift (-n) c.(i)) (* Dummy fixpoint *)
-  | a -> ast_map (simplify o) a 
-	
-and simplify_app o a = function  
+	MLfix (i, ids, Array.map (simpl o) c)
+      else simpl o (ml_lift (-n) c.(i)) (* Dummy fixpoint *)
+  | a -> ast_map (simpl o) a 
+
+and simpl_app o a = function  
+  | MLapp (f',a') -> simpl_app o (a'@a) f'
   | MLlam (id,t) -> (* Beta redex *)
       (match nb_occur t with
-	 | 0 -> simplify o (MLapp (ml_pop t, List.tl a))
+	 | 0 -> simpl o (MLapp (ml_pop t, List.tl a))
 	 | 1 when o -> 
-	     simplify o (MLapp (ml_subst (List.hd a) t, List.tl a))
+	     simpl o (MLapp (ml_subst (List.hd a) t, List.tl a))
 	 | _ -> 
 	     let a' = List.map (ml_lift 1) (List.tl a) in
-	     simplify o (MLletin (id, List.hd a, MLapp (t, a'))))
+	     simpl o (MLletin (id, List.hd a, MLapp (t, a'))))
   | MLletin (id,e1,e2) -> 
       (* Application of a letin: we push arguments inside *)
-      MLletin (id, e1, simplify o (MLapp (e2, List.map (ml_lift 1) a)))
+      MLletin (id, e1, simpl o (MLapp (e2, List.map (ml_lift 1) a)))
   | MLcase (e,br) -> (* Application of a case: we push arguments inside *)
       let br' = 
 	Array.map 
       	  (fun (n,l,t) -> 
 	     let k = List.length l in
 	     let a' = List.map (ml_lift k) a in
-      	     (n, l, simplify o (MLapp (t,a')))) br 
-      in simplify o (MLcase (e,br'))
+      	     (n, l, simpl o (MLapp (t,a')))) br 
+      in simpl o (MLcase (e,br'))
   | f -> MLapp (f,a)
 
-and simplify_case o br e = 
+and simpl_case o br e = 
   if (not o) then MLcase (e,br)
   else 
     if (is_iota_gen e) then (* Generalized iota-redex *)
-      simplify o (iota_gen br e)
+      simpl o (iota_gen br e)
     else 
       try (* Does a term [f] exist such as each branch is [(f e)] ? *)
 	let f = check_generalizable_case br in 
-	simplify o (MLapp (MLlam (anonymous,f),[e]))
+	simpl o (MLapp (MLlam (anonymous,f),[e]))
       with Impossible -> 
 	try (* Is each branch independant of [e] ? *) 
 	  check_constant_case br 
 	with Impossible ->
 	  if (is_atomic e) then (* Swap the case and the lam if possible *)
 	    let ids,br = permut_case_fun br [] in 
-(* 	    let ids = prop_name_to_anonymous ids in  *)
 	    let n = List.length ids in 
 	    if n = 0 then MLcase (e, br) 
 	    else named_lams (MLcase (ml_lift n e, br)) ids
 	  else MLcase (e, br)
 
-
-
 (*s Local [prop] elimination. *) 
 (* Try to eliminate as many [prop] as possible inside an [ml_ast]. *)
 
+(*i
 (* Index of the first [prop] lambda *) 
 
 let rec first_prop_rank = function 
@@ -450,11 +424,11 @@ let min_nb_args p m t =
 	if f=(MLrel (n+p)) then min (List.length a) m else m
     | a -> ast_fold_lift minrec n m a 
   in minrec 0 m t
-
+i*)
 (* Given the names of the variables, build a substitution array. *)
 
 let rels_to_kill ids =
-  let n = (List.length ids)+1 in 
+  let n = List.length ids in 
   let v = Array.make (n+1) 0 in 
   for i = 1 to n do v.(i) <- i done;
   let rec parse_ids i j = function 
@@ -472,8 +446,8 @@ let rec kill_prop_rels v m d t =
   let rec killrec n = function
     | MLrel i as a -> 
 	let i'= i-n in 
-	if i' < 0 then a 
-	else if i' <= m then MLrel (v.(i')+n ) 
+	if i' < 1 then a 
+	else if i' <= m then MLrel (v.(i')+n) 
 	else MLrel (i-d) 
     | a -> ast_map_lift killrec n a
   in killrec 0 t
@@ -488,85 +462,79 @@ let rec kill_some_args ids args = match ids,args with
 
 (* Apply the previous function recursively on a whole term *)
 
-let kill_prop_args p ids t =
-  let ids = List.rev ids in 
+let kill_prop_args t0 ids m t =
+  let rids = List.rev ids in 
   let rec killrec n = function 
-    | MLapp(MLrel i, a) when i = n+p -> 
-	let a = kill_some_args ids a in 
-	MLapp (MLrel i, List.map (killrec n) a) 
-    | a -> ast_map_lift killrec n a 
+    | MLapp(e, a) when e = ml_lift n t0 -> 
+	let k = max 0 (m - (List.length a)) in 
+	let a = List.map (killrec n) a in  
+	let a = List.map (ml_lift k) a in 
+	let a = kill_some_args rids (a @ (make_eta_args k)) in 
+	named_lams (MLapp (ml_lift k e, a)) (list_firstn k ids) 
+    | e when e = ml_lift n t0 -> 
+	let a = kill_some_args rids (make_eta_args m) in 
+	named_lams (MLapp (ml_lift m e, a)) ids
+    | e -> ast_map_lift killrec n e 
   in killrec 0 t 
+
+let kill_prop_aux c = 
+  let m = nb_lams c in 
+  let ids,c = collect_lams c in 
+  let ids' = List.filter ((<>) prop_name) ids in 
+  let diff = m - List.length ids' in
+  if ids' = [] || diff = 0  then raise Impossible; 
+  let db = rels_to_kill ids in 
+  let c = named_lams (kill_prop_rels db m diff c) ids' in 
+  (c,ids,m)
 	
 (* The main function for local [prop] elimination. *)
-       
+
 let rec kill_prop = function 
-  | MLapp (MLfix(i,fi,c),a) -> 
-      let n = Array.length fi in
+  | MLfix(i,fi,c) -> 
       (try 
-	 let k = first_prop_rank c.(i) in
-	 let m0 = nb_lams c.(i) in 
- 	 let m = min m0 (List.length a) in 
-	 let m = Array.fold_left (min_nb_args (n-i)) m c in
-	 if m < k then raise Impossible;
-	 let ids,ci = collect_n_lams m c.(i) in 
-	 let ids' = List.filter ((<>) prop_name) ids in 
-	 if ids' = [] && m = m0 then raise Impossible; 
-	 let diff = m - List.length ids' in 
-	 let db = rels_to_kill ids in 
-	 let ci = named_lams (kill_prop_rels db m diff ci) ids' in 
-	 let c = Array.copy c in c.(i) <- ci; 
-	 for j = 0 to (n-1) do 
-	   c.(j) <- kill_prop (kill_prop_args (n-i) ids c.(j)) 
-	 done;
-	 let a = List.map kill_prop (kill_some_args (List.rev ids) a) in 
-	 MLapp(MLfix(i,fi,c),a)
+	 let c,ids,m = kill_prop_fix i fi c in 
+	 ml_subst (MLfix (i,fi,c)) (kill_prop_args (MLrel 1) ids m (MLrel 1))
+       with Impossible -> MLfix (i,fi,Array.map kill_prop c))
+  | MLapp (MLfix (i,fi,c),a) -> 
+      (try 
+	 let c,ids,m = kill_prop_fix i fi c in 
+	 let a = List.map (fun t -> ml_lift 1 (kill_prop t)) a in 
+	 let e = kill_prop_args (MLrel 1) ids m (MLapp (MLrel 1,a)) in
+	 ml_subst (MLfix (i,fi,c)) e  
        with Impossible -> 
 	 MLapp(MLfix(i,fi,Array.map kill_prop c),List.map kill_prop a))
-  | MLletin(id,MLfix(i,fi,c),e) -> 
-      let n = Array.length fi in 
+  | MLletin(id, MLfix (i,fi,c),e) -> 
       (try 
-	 let k = first_prop_rank c.(i) in
-	 let m0 = nb_lams c.(i) in
-	 let m = min_nb_args 1 m0 e in 
-	 let m = Array.fold_left (min_nb_args (n-i)) m c in   
-	 if m < k then raise Impossible;
-	 let ids,ci = collect_n_lams m c.(i) in 
-	 let ids' = List.filter ((<>) prop_name) ids in 
-	 if ids' = [] && m = m0 then raise Impossible; 
-	 let diff = m - List.length ids' in 
-	 let db = rels_to_kill ids in 
-	 let ci = named_lams (kill_prop_rels db m diff ci) ids' in 
-	 let c = Array.copy c in c.(i) <- ci; 
-	 for j = 0 to (n-1) do 
-	   c.(j) <- kill_prop (kill_prop_args (n-i) ids c.(j)) 
-	 done;
-	 let e = kill_prop (kill_prop_args 1 ids e) in 
-	 MLletin(id,MLfix(i,fi,c),e)
+	 let c,ids,m = kill_prop_fix i fi c in
+	 let e = kill_prop (kill_prop_args (MLrel 1) ids m e) in 
+	 MLletin(id, MLfix(i,fi,c),e)
       with Impossible -> 
-	MLletin(id,MLfix(i,fi,Array.map kill_prop c),kill_prop e))
+	MLletin(id, MLfix(i,fi,Array.map kill_prop c),kill_prop e))
   | MLletin(id,c,e) -> 
       (try 
- 	 let k = first_prop_rank c in
-	 let m0 = nb_lams c in 
-	 let m = min_nb_args 1 m0 e in 
-	 if m < k then raise Impossible;
-	 let ids,c = collect_n_lams m c in 
-	 let ids' = List.filter ((<>) prop_name) ids in 
-	 if ids' = [] && m0 = m then raise Impossible; 
-	 let diff = m - List.length ids' in 
-	 let db = rels_to_kill ids in 
-	 let c = named_lams (kill_prop_rels db m diff c) ids' in 
-	 let e = kill_prop_args 1 ids e in 
+	 let c,ids,m = kill_prop_aux c in 
+	 let e = kill_prop_args (MLrel 1) ids m e in 
 	 MLletin (id, kill_prop c,kill_prop e) 
        with Impossible -> MLletin(id,kill_prop c,kill_prop e))
   | a -> ast_map kill_prop a
 
+and kill_prop_fix i fi c = 
+  let n = Array.length fi in 
+  let ci,ids,m = kill_prop_aux c.(i) in 
+  let c = Array.copy c in c.(i) <- ci; 
+  for j = 0 to (n-1) do 
+    c.(j) <- kill_prop (kill_prop_args (MLrel (n-i)) ids m c.(j)) 
+  done;
+  c,ids,m
+
+
+
 let normalize a = 
-  if (optim()) 
-  then kill_prop (simplify true (merge_app a))
-  else simplify false (merge_app a)
+  if (optim()) then kill_prop (simpl true a) else simpl false a
 
 (*s Special treatment of non-mutual fixpoint for pretty-printing purpose. *)
+
+(* TODO a reecrire plus proprement!! *)
 
 let make_general_fix f ids n args m c = 
   let v = Array.make n 0 in 
@@ -762,13 +730,7 @@ let subst_glob_decl r m = function
 let warning_expansion r = 
   warn (hov 0 (str "The constant" ++ spc () ++
 		 Printer.pr_global r ++ 
-(*i    str (" of size "^ (string_of_int (ml_size t))) ++ i*)
     spc () ++ str "is expanded."))
-
-let warning_expansion_must r = 
-  warn (hov 0 (str "The constant" ++ spc () ++
-		 Printer.pr_global r ++ 
-    spc () ++ str "must be expanded."))
 
 let print_ml_decl prm (r,_) = 
   not (to_inline r) || List.mem r prm.to_appear
@@ -791,9 +753,9 @@ let rec empty_ind = function
        | ids,r,[] -> Dabbrev (r,ids,Texn "empty inductive") :: l,l'
        | _ -> l,t::l')
 
-let is_exn = function 
-  | MLexn _ -> true
-  | _ -> false
+let global_kill_prop r0 ids m = function 
+  | Dglob(r,e) -> Dglob (r,kill_prop_args (MLglob r0) ids m e)
+  | d -> d
 
 let rec optim prm = function
   | [] -> 
@@ -807,22 +769,21 @@ let rec optim prm = function
       else optim prm l
   | Dglob (r,t) :: l ->
       let t = normalize t in
-      let b = expand (strict_language prm.lang) r t
-      and b' = is_exn t in 
+      let t,l = 
+	try 
+	  let t,ids,m = kill_prop_aux t in 
+	  t,(List.map (global_kill_prop r ids m) l) 
+	    (* TODO: options & modularité? *)
+	with Impossible -> (t,l) in 
+      let b = expand (strict_language prm.lang) r t in
       let l = if b then 
 	begin
 	  if not (prm.toplevel) then if_verbose warning_expansion r;
 	  List.map (subst_glob_decl r t) l
 	end
-      else if b' then 
-	begin 
-	  if not (prm.toplevel) then if_verbose warning_expansion_must r;
-          List.map (subst_glob_decl r t) l
-	end
       else l in 
-      if not b' && 
-	(not b || prm.mod_name <> None || List.mem r prm.to_appear) then 
-	  let t = optimize_fix t in
+      if (not b || prm.mod_name <> None || List.mem r prm.to_appear) then 
+ 	  let t = optimize_fix t in
 	  Dglob (r,t) :: (optim prm l)
       else 
 	optim prm l

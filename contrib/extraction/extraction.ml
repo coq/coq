@@ -205,7 +205,9 @@ let sign_of_arity env c =
 let vl_of_lbinders = 
   lbinders_fold 
     (fun n _ v a -> 
-       if v = info_arity then (next_ident_away (id_of_name n) (prop_name::a))::a else a) []
+       if v = info_arity 
+       then (next_ident_away (id_of_name n) (prop_name::a))::a 
+       else a) []
   
 let vl_of_arity env c = vl_of_lbinders env (List.rev (fst (decompose_prod c)))
 	 
@@ -542,7 +544,8 @@ and extract_term_info_wt env ctx c t =
    match kind_of_term c with
      | Lambda (n, t, d) ->
 	 let v = v_of_t env t in 
-	 let id = next_ident_away (id_of_name n) [prop_name] in 
+	 let id = id_of_name n in 
+	 let id = if id=prop_name then anonymous else id in 
 	 let env' = push_rel_assum (Name id,t) env in
 	 let ctx' = (snd v = NotArity) :: ctx in
 	 let d' = extract_term_info env' ctx' d in
@@ -553,7 +556,8 @@ and extract_term_info_wt env ctx c t =
             | Info,NotArity -> MLlam (id, d'))
      | LetIn (n, c1, t1, c2) ->
 	 let v = v_of_t env t1 in
-	 let id = next_ident_away (id_of_name n) [prop_name] in 
+	 let id = id_of_name n in 
+	 let id = if id=prop_name then anonymous else id in 
 	 let env' = push_rel (Name id,Some c1,t1) env in
 	 (match v with
 	    | (Info, NotArity) -> 

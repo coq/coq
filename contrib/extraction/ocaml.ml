@@ -177,9 +177,7 @@ let rec pp_expr par env args =
   in
   function
     | MLrel n -> 
-	let id = get_db_name n env in 
-	apply (if string_of_id id = "_" then str "prop" else pr_id id)
-	  (* HACK, should disappear soon *)
+	let id = get_db_name n env in apply (pr_id id)
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
@@ -187,24 +185,24 @@ let rec pp_expr par env args =
       	let fl,a' = collect_lams a in
 	let fl,env' = push_vars fl env in
 	let st = (pp_abst (List.rev fl) ++ pp_expr false env' [] a') in
-	(open_par par' ++ st ++ close_par par')
+	apply (open_par par' ++ st ++ close_par par')
     | MLletin (id,a1,a2) ->
-	let id',env' = push_vars [id] env in
+	let i,env' = push_vars [id] env in
 	let par2 = not par' && expr_needs_par a2 in
 	apply 
 	  (hov 0 (open_par par' ++
-		    hov 2 (str "let " ++ pr_id (List.hd id') ++ str " =" ++ spc () ++
-			     pp_expr false env [] a1 ++ spc () ++ str "in") ++
-		    spc () ++
-		    pp_expr par2 env' [] a2 ++
-		    close_par par'))
+		  hov 2 (str "let " ++ pr_id (List.hd i) ++ str " =" ++ spc ()
+			 ++ pp_expr false env [] a1 ++ spc () ++ str "in") 
+		  ++ spc () ++ pp_expr par2 env' [] a2 ++ close_par par'))
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,[]) ->
+	assert (args=[]);
 	if Refset.mem r !cons_cofix then 
 	  (open_par par ++ str "lazy " ++ pp_global r ++ close_par par)
 	else pp_global r
     | MLcons (r,[a]) ->
+	assert (args=[]);
 	if Refset.mem r !cons_cofix then 
 	  (open_par par ++ str "lazy (" ++
 	   pp_global r ++ spc () ++
@@ -213,6 +211,7 @@ let rec pp_expr par env args =
 	  (open_par par ++ pp_global r ++ spc () ++
 	   pp_expr true env [] a ++ close_par par)
     | MLcons (r,args') ->
+	assert (args=[]);
 	if Refset.mem r !cons_cofix then 
 	  (open_par par ++ str "lazy (" ++ pp_global r ++ spc () ++
 	   pp_tuple (pp_expr true env []) args' ++ str ")" ++ close_par par)
@@ -245,18 +244,19 @@ let rec pp_expr par env args =
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
     | MLexn s -> 
+	assert (args=[]);
 	(open_par par ++ str "assert false" ++ spc () ++ 
-	   str ("(* "^s^" *)") ++ close_par par)
+	 str ("(* "^s^" *)") ++ close_par par)
     | MLprop ->
-	str "prop"
+	assert (args=[]); str "prop"
     | MLarity ->
-	str "arity"
+	assert (args=[]); str "arity"
     | MLcast (a,t) ->
-	(open_par true ++ pp_expr false env args a ++ spc () ++ str ":" ++ spc () ++ 
-	   pp_type false t ++ close_par true)
+	(open_par true ++ pp_expr false env args a ++ spc () ++ str ":" ++ 
+	 spc () ++ pp_type false t ++ close_par true)
     | MLmagic a ->
 	(open_par true ++ str "Obj.magic" ++ spc () ++ 
-	   pp_expr false env args a ++ close_par true)
+	 pp_expr false env args a ++ close_par true)
 
 and pp_one_pat s env (r,ids,t) = 
   let ids,env' = push_vars (List.rev ids) env in
@@ -326,7 +326,7 @@ let pp_ast a = hov 0 (pp_expr false (empty_env ()) [] a)
 let pp_parameters l = 
   (pp_tuple pp_tvar l ++ space_if (l<>[]))
 
-let pp_one_inductive prefix (pl,name,cl) =
+let pp_one_ind prefix (pl,name,cl) =
   let pp_constructor (id,l) =
     (pp_global id ++
        match l with
@@ -341,20 +341,20 @@ let pp_one_inductive prefix (pl,name,cl) =
 	       prlist_with_sep (fun () -> (fnl () ++ str "  | "))
                  (fun c -> hov 2 (pp_constructor c)) cl)))
   
-let pp_inductive il =
+let pp_ind il =
   (str "type " ++
-   prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_inductive "") il ++
-   fnl ())
+   prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_ind "") il
+   ++ fnl ())
 
-let pp_coinductive_preamble (pl,name,_) = 
+let pp_coind_preamble (pl,name,_) = 
   (pp_parameters pl ++ pp_type_global name ++ str " = " ++ 
     pp_parameters pl ++ str "__" ++ pp_type_global name ++ str " Lazy.t")
 
-let pp_coinductive il = 
+let pp_coind il = 
   (str "type " ++ 
-   prlist_with_sep (fun () -> (fnl () ++ str "and ")) pp_coinductive_preamble il ++
+   prlist_with_sep (fun () -> (fnl () ++ str "and ")) pp_coind_preamble il ++
    fnl () ++ str "and " ++ 
-   prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_inductive "__") il ++
+   prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_ind "__") il ++
    fnl ())
  
 
@@ -370,9 +370,9 @@ let pp_decl = function
 	  (fun (_,_,l) -> 
 	     List.iter (fun (r,_) -> 
 			  cons_cofix := Refset.add r !cons_cofix)  l) i; 
-	hov 0 (pp_coinductive i)
+	hov 0 (pp_coind i)
       end else 
-	hov 0 (pp_inductive i)
+	hov 0 (pp_ind i)
   | Dabbrev (r, l, t) ->
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
 	       pp_type_global r ++ spc () ++ str "=" ++ spc () ++ 

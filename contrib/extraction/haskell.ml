@@ -102,9 +102,7 @@ let rec pp_expr par env args =
   in
   function
     | MLrel n -> 
-	let id = get_db_name n env in 
-	apply (if string_of_id id = "_" then str "prop" else pr_id id)
-	  (* HACK, should disappear soon *)
+	let id = get_db_name n env in apply (pr_id id)
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
@@ -117,24 +115,24 @@ let rec pp_expr par env args =
         else
           apply (str "(" ++ st ++ str ")")
     | MLletin (id,a1,a2) ->
-	let id',env' = push_vars [id] env in
+	let i,env' = push_vars [id] env in
 	let par' = par || args <> [] in
 	let par2 = not par' && expr_needs_par a2 in
 	apply 
 	  (hov 0 (open_par par' ++
-		    hov 2 (str "let " ++ pr_id (List.hd id') ++ str " =" ++ spc () ++
-			     pp_expr false env [] a1 ++ spc () ++ str "in") ++
-		    spc () ++
-		    pp_expr par2 env' [] a2 ++
-		    close_par par'))
+		  hov 2 (str "let " ++ pr_id (List.hd i) ++ str " =" ++ spc ()
+			 ++ pp_expr false env [] a1 ++ spc () ++ str "in") 
+		  ++ spc () ++ pp_expr par2 env' [] a2 ++ close_par par'))
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,[]) ->
-	pp_global r
+	assert (args=[]); pp_global r
     | MLcons (r,[a]) ->
+	assert (args=[]);
 	(open_par par ++ pp_global r ++ spc () ++
 	   pp_expr true env [] a ++ close_par par)
     | MLcons (r,args') ->
+	assert (args=[]);
 	(open_par par ++ pp_global r ++ spc () ++
 	   prlist_with_sep (fun () -> (spc ())) (pp_expr true env []) args' ++
 	   close_par par)
@@ -148,17 +146,18 @@ let rec pp_expr par env args =
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
     | MLexn s -> 
+	assert (args=[]);
 	(open_par par ++ str "error" ++ spc () ++ qs s ++ close_par par)
     | MLprop ->
-	str "prop"
+	assert (args=[]); str "prop"
     | MLarity ->
-	str "arity"
+	assert (args=[]); str "arity"
     | MLcast (a,t) ->
-	(open_par true ++ pp_expr false env args a ++ spc () ++ str "::" ++ spc () ++ 
-	   pp_type false t ++ close_par true)
+	(open_par true ++ pp_expr false env args a ++ spc () ++ str "::" ++ 
+	 spc () ++ pp_type false t ++ close_par true)
     | MLmagic a ->
 	(open_par true ++ str "Obj.magic" ++ spc () ++ 
-	   pp_expr false env args a ++ close_par true)
+	 pp_expr false env args a ++ close_par true)
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =

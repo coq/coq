@@ -61,3 +61,9 @@ val add_ml_decls :
 val optimize : 
   extraction_params -> ml_decl list -> ml_decl list
 
+
+(* DEBUG *)
+
+val kill_prop_aux : ml_ast -> ml_ast * identifier list * int 
+
+val global_kill_prop : global_reference -> identifier list -> int -> ml_decl -> ml_decl
