@@ -39,6 +39,19 @@ test_success() {
 	    echo "V7 Error! (should be accepted)"
         fi 
     done
+    for f in $1/*.v8; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+        cp $f tmp8.v
+	$command tmp8.v > /dev/null 2>&1
+        if [ $? = 0 ]; then
+            echo "Ok"
+            nbtestsok=`expr $nbtestsok + 1`
+        else
+            echo "V8 Error! (should be accepted)"
+        fi
+        rm tmp8.v
+    done
 }
 
 # La fonction suivante teste le compilateur sur des fichiers qu'il doit

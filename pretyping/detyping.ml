@@ -390,6 +390,7 @@ and share_names tenv n l avoid env c t =
     (List.rev l,c,t)
   else
   match kind_of_term c, kind_of_term t with
+    (* factorize even when not necessary to have better presentation *)
     | Lambda (na,t,c), Prod (na',t',c') ->
         let na = match (na,na') with
             Name _, _ -> na
@@ -400,21 +401,22 @@ and share_names tenv n l avoid env c t =
         let avoid = id::avoid and env = add_name (Name id) env in
         share_names tenv (n-1) ((Name id,None,t)::l) avoid env c c'
     (* May occur for fix built interactively *)
-    | LetIn (na,b,t',c), _ ->
+    | LetIn (na,b,t',c), _ when n > 0 ->
         let t' = detype tenv avoid env t' in
         let b = detype tenv avoid env b in
 	let id = next_name_away na avoid in 
         let avoid = id::avoid and env = add_name (Name id) env in
         share_names tenv n ((Name id,Some b,t')::l) avoid env c t
     (* Only if built with the f/n notation or w/o let-expansion in types *)
-    | _, LetIn (_,b,_,t) ->
+    | _, LetIn (_,b,_,t) when n > 0 ->
 	share_names tenv n l avoid env c (subst1 b t)
     (* If it is an open proof: we cheat and eta-expand *)
-    | _, Prod (na',t',c') ->
+    | _, Prod (na',t',c') when n > 0 ->
         let t' = detype tenv avoid env t' in
-        let avoid = name_cons na' avoid and env = add_name na' env in
+	let id = next_name_away na' avoid in 
+        let avoid = id::avoid and env = add_name (Name id) env in
         let appc = mkApp (lift 1 c,[|mkRel 1|]) in
-        share_names tenv (n-1) ((na',None,t')::l) avoid env appc c'
+        share_names tenv (n-1) ((Name id,None,t')::l) avoid env appc c'
     (* If built with the f/n notation: we renounce to share names *)
     | _ ->
         if n>0 then warning "Detyping.detype: cannot factorize fix enough";
