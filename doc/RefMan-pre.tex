@@ -311,9 +311,9 @@ Christine Paulin
 \end{flushright}
 \newpage
 
-\section*{Credits: version 7.0}
+\section*{Credits: versions 7.0 and 7.1}
 
-The current version V7 is a new implementation started in September
+The version V7 is a new implementation started in September
 1999 by J-C. Filliâtre. This is a major revision with respect to the
 internal architecture of the system.
 
@@ -324,14 +324,18 @@ data-structures in order to get more sharing, to prepare the addition
 of modules and also to get closer to a certified kernel.
 
 H. Herbelin introduced a new structure of terms with local
-definitions and redesigned the translation from the high-level
-language of Coq to the internal representation, in particular 
-pattern-matching compiling. 
+definitions. He introduced ``qualified'' names, wrote a new
+pattern-matching compilation algorithm and designed a more compact
+logical consistency check algorithm. He contributed to the
+simplification of Coq internal structures and the optimisation of the
+system.
 
 D. Delahaye introduced a new language for tactics. General tactics
 using pattern-matching on goals and context can directly be written
 from the Coq toplevel. He also provided primitives for the design
 of user-defined tactics in Caml.
+
+M. Mayero contributed the library on real numbers.
 
 J.-C. Filliâtre and P. Letouzey redesigned a new extraction procedure
 from Coq terms to Caml programs. This new extraction procedure, unlike
@@ -339,13 +343,20 @@ the one implemented in previous version of \Coq{} is able
 to handle all terms in the Calculus of Inductive Constructions, 
 even involving universes and strong elimination.
 
-B. Barras improved the reduction strategy for lazy evaluation. 
+B. Barras improved the reduction strategy for lazy evaluation and took care of the logical consistency.
 
 Y. Bertot designed  the \texttt{SearchPattern} and
 \texttt{SearchRewrite} tools and the support for the pcoq interface 
 (\url{http://www-sop.inria.fr/lemme/pcoq/}).
 
-C. Sacerdotti helped by H. Herbelin designed an XML output for the Coq
+M. Mayero and D. Delahaye introduced a decision tactic for commutative fields.
+
+L. Pottier developed a tactic solving linear inequalities on real numbers.
+
+Pierre Crégut developed a new version based on reflexion of the Omega
+decision tactic.
+
+C. Sacerdoti Coen designed an XML output for the Coq
 modules to be used in the Hypertextual Electronic Library of
 Mathematics (HELM cf \url{http://www.cs.unibo.it/helm}).
 
@@ -357,13 +368,13 @@ The development was coordinated by C. Paulin.
 Many discussions within the Démons team and the LogiCal project
 influenced significantly the design of Coq especially with J.
 Chrz\k{a}szcz, J. Courant, P. Courtieu, J. Duprat, J. Goubault, A. Miquel,
-C. Marché, M. Mayero, B. Monate and B. Werner.
+C. Marché, B. Monate and B. Werner.
 
 Intensive users suggested improvements of the system : 
 Y. Bertot, L. Pottier, L. Théry , P. Zimmerman from INRIA 
 C. Alvarado, P. Crégut, J.-F. Monin from France Telecom R \& D.
 \begin{flushright}
-Orsay, Apr. 2001\\
+Orsay, Sep. 2001\\
 Christine Paulin
 \end{flushright}
 \newpage
