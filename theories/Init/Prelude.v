@@ -14,3 +14,4 @@ Require Export Datatypes.
 Require Export Specif.
 Require Export Peano.
 Require Export Wf.
+Require Export Tactics.

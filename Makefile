@@ -781,7 +781,7 @@ INITVO=\
  theories/Init/Datatypes.vo         theories/Init/Peano.vo     \
  theories/Init/Logic.vo             theories/Init/Specif.vo    \
  theories/Init/Logic_Type.vo        theories/Init/Wf.vo      \
- theories/Init/Prelude.vo
+ theories/Init/Tactics.vo           theories/Init/Prelude.vo
 
 init: $(INITVO)
 
