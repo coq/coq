@@ -316,12 +316,14 @@ let make_hunks_ast symbols etyps from =
   in l
 
 let make_hunks etyps symbols =
+  let vars,typs = List.split etyps in
   let (_,l) =
   List.fold_right
     (fun it (ws,l) -> match it with
       | NonTerminal m ->
-	  let prec = precedence_of_entry_type (List.assoc m etyps) in
-	  let u = UnpMetaVar (m,prec) in
+	  let i = list_index m vars in
+	  let prec = precedence_of_entry_type (List.nth typs (i-1)) in
+	  let u = UnpMetaVar (i ,prec) in
 	  let l' = match ws with
 	    | AddBrk n -> UnpCut (PpBrk(n,1)) :: u :: l
 	    | _ -> u :: l in
@@ -561,10 +563,10 @@ let add_syntax_extension df modifiers =
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
-let load_notation _ (_,(_,prec,ntn,scope,_,pat,onlyparse,_)) =
+let load_notation _ (_,(_,prec,ntn,scope,pat,onlyparse,_)) =
   Symbols.declare_scope scope
 
-let open_notation i (_,(oldse,prec,ntn,scope,metas,pat,onlyparse,df)) =
+let open_notation i (_,(oldse,prec,ntn,scope,pat,onlyparse,df)) =
   if i=1 then begin
     let b = Symbols.exists_notation_in_scope scope prec ntn pat in
     (* Declare the old printer rule and its interpretation *)
@@ -572,21 +574,21 @@ let open_notation i (_,(oldse,prec,ntn,scope,metas,pat,onlyparse,df)) =
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
     if not b then
-      Symbols.declare_notation_interpretation ntn scope (metas,pat) prec df;
+      Symbols.declare_notation_interpretation ntn scope pat prec df;
     if not b & not onlyparse then
-      Symbols.declare_uninterpretation (NotationRule (ntn,scope)) (metas,pat)
+      Symbols.declare_uninterpretation (NotationRule (ntn,scope)) pat
   end
 
 let cache_notation o =
   load_notation 1 o;
   open_notation 1 o
 
-let subst_notation (_,subst,(oldse,prec,ntn,scope,metas,pat,b,df)) =
+let subst_notation (_,subst,(oldse,prec,ntn,scope,(metas,pat),b,df)) =
   (option_app
     (list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst)) oldse,
    prec,ntn,
    scope,
-   metas,subst_aconstr subst pat, b, df)
+   (metas,subst_aconstr subst pat), b, df)
 
 let (inNotation, outNotation) =
   declare_object {(default_object "NOTATION") with
@@ -642,8 +644,9 @@ let add_notation_in_scope df a (assoc,n,etyps,onlyparse) sc toks =
     if onlyparse then None
     else Some (make_old_pp_rule n symbols typs r notation scope vars) in
   (* Declare the interpretation *)
+  let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(old_pp_rule,prec,notation,scope,vars,a,onlyparse,df))
+    (inNotation(old_pp_rule,prec,notation,scope,(vars,a),onlyparse,df))
 
 let add_notation df a modifiers sc =
   let toks = split df in

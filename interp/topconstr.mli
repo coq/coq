@@ -48,12 +48,14 @@ val aconstr_of_rawconstr : rawconstr -> aconstr
 (* [match_aconstr metas] match a rawconstr against an aconstr with
    metavariables in [metas]; it raises [No_match] if the matching fails *)
 exception No_match
-val match_aconstr : 
-  rawconstr -> (identifier list * aconstr) -> (identifier * rawconstr) list
-
-(*s Concrete syntax for terms *)
 
 type scope_name = string
+type interpretation = (identifier * scope_name list) list * aconstr
+
+val match_aconstr : rawconstr -> interpretation ->
+      (rawconstr * scope_name list) list
+
+(*s Concrete syntax for terms *)
 
 type notation = string
 
@@ -84,7 +86,7 @@ type constr_expr =
   | CMeta of loc * int
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
-  | CNotation of loc * notation * (identifier * constr_expr) list
+  | CNotation of loc * notation * constr_expr list
   | CNumeral of loc * Bignat.bigint
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t

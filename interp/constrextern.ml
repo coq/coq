@@ -111,7 +111,7 @@ let rec extern_cases_pattern_in_scope scopes pat =
     let (sc,n) = Symbols.uninterp_cases_numeral pat in
     match Symbols.availability_of_numeral sc scopes with
     | None -> raise No_match
-    | Some scopt -> insert_pat_delimiters (CPatNumeral (loc,n)) scopt
+    | Some key -> insert_pat_delimiters (CPatNumeral (loc,n)) key
   with No_match ->
   match pat with
   | PatVar (_,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
@@ -283,7 +283,7 @@ and extern_eqn scopes (loc,ids,pl,c) =
 and extern_numeral scopes t (sc,n) =
   match Symbols.availability_of_numeral sc scopes with
     | None -> raise No_match
-    | Some scopt -> insert_delimiters (CNumeral (loc,n)) scopt
+    | Some key -> insert_delimiters (CNumeral (loc,n)) key
 
 and extern_symbol scopes t = function
   | [] -> raise No_match
@@ -305,10 +305,11 @@ and extern_symbol scopes t = function
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
-	      | Some scopt ->
+	      | Some (scopt,key) ->
 	          let scopes = option_cons scopt scopes in
-	          let l = list_map_assoc (extern scopes) subst in
-	          insert_delimiters (CNotation (loc,ntn,l)) scopt)
+	          let l =
+		    List.map (fun (c,scl) -> extern (scl@scopes) c) subst in
+	          insert_delimiters (CNotation (loc,ntn,l)) key)
           | SynDefRule kn ->
               CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
  	if args = [] then e 

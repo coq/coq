@@ -51,7 +51,7 @@ let ppcmd_of_cut = function
   | PpTbrk(n1,n2) -> tbrk(n1,n2)
 
 type unparsing = 
-  | UnpMetaVar of identifier * tolerability
+  | UnpMetaVar of int * tolerability
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing list
   | UnpCut of ppcut

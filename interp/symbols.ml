@@ -39,13 +39,13 @@ open Ppextend
 (**********************************************************************)
 (* Scope of symbols *)
 
+type scopes = scope_name list
 type level = precedence * precedence list
 type delimiters = string
 type scope = {
-  notations: (aconstr * (level * string)) Stringmap.t;
+  notations: (interpretation * (level * string)) Stringmap.t;
   delimiters: delimiters option
 }
-type scopes = scope_name list
 
 (* Scopes table: scope_name -> symbol_interpretation *)
 let scope_map = ref Stringmap.empty
@@ -56,13 +56,15 @@ let empty_scope = {
 }
 
 let default_scope = "core_scope"
+let type_scope = "type_scope"
 
 let _ = Stringmap.add default_scope empty_scope !scope_map
+let _ = Stringmap.add type_scope empty_scope !scope_map
 
 (**********************************************************************)
 (* The global stack of scopes                                         *)
 
-let scope_stack = ref [default_scope]
+let scope_stack = ref [default_scope;type_scope]
 
 let current_scopes () = !scope_stack
 
@@ -111,7 +113,6 @@ let find_delimiters_scope loc key =
 
 (* Uninterpretation tables *)
 
-type interpretation = identifier list * aconstr
 type interp_rule =
   | NotationRule of scope_name * notation
   | SynDefRule of kernel_name
@@ -183,14 +184,14 @@ let lookup_numeral_interpreter loc sc =
 
 let find_with_delimiters scope =
   match (Stringmap.find scope !scope_map).delimiters with
-    | Some _ -> Some (Some scope)
+    | Some key -> Some (Some scope, Some key)
     | None -> None
 
 let rec find_without_delimiters find ntn_scope = function
   | scope :: scopes -> 
       (* Is the expected ntn/numpr attached to the most recently open scope? *)
       if scope = ntn_scope then
-	Some None
+	Some (None,None)
       else
 	(* If the most recently open scope has a notation/numeral printer
     	   but not the expected one then we need delimiters *)
@@ -204,7 +205,7 @@ let rec find_without_delimiters find ntn_scope = function
 
 (* The mapping between notations and their interpretation *)
 
-let declare_notation_interpretation ntn scope (_,pat) prec df =
+let declare_notation_interpretation ntn scope pat prec df =
   let sc = find_scope scope in
   if Stringmap.mem ntn sc.notations && Options.is_verbose () then
     warning ("Notation "^ntn^" is already used in scope "^scope);
@@ -231,14 +232,9 @@ let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table
 
 let availability_of_notation (ntn_scope,ntn) scopes =
-  match 
-    let f scope =
-      Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
-    find_without_delimiters f ntn_scope scopes
-  with
-    | None -> None
-    | Some None -> Some None
-    | Some (Some dlm) -> Some (Some ntn_scope)
+  let f scope =
+    Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
+  find_without_delimiters f ntn_scope scopes
 
 let rec interp_numeral loc n = function
   | scope :: scopes ->
@@ -278,12 +274,8 @@ let uninterp_cases_numeral c =
   with Not_found -> raise No_match
 
 let availability_of_numeral printer_scope scopes =
-  match 
-    let f scope = Hashtbl.mem numeral_interpreter_tab scope in
-    find_without_delimiters f printer_scope scopes
-  with
-    | None -> None
-    | Some x -> Some x
+  let f scope = Hashtbl.mem numeral_interpreter_tab scope in
+  option_app snd (find_without_delimiters f printer_scope scopes)
 
 (* Miscellaneous *)
 
@@ -356,13 +348,14 @@ let rec rawconstr_of_aconstr () x =
     rawconstr_of_aconstr () x
 
 let pr_notation_info prraw ntn c =
-  str ntn ++ str " stands for " ++ prraw (rawconstr_of_aconstr () c)
+  str "\"" ++ str ntn ++ str "\" := " ++ prraw (rawconstr_of_aconstr () c)
 
 let pr_named_scope prraw scope sc =
   str "Scope " ++ str scope ++ fnl ()
   ++ pr_delimiters_info sc.delimiters ++ fnl ()
   ++ Stringmap.fold
-       (fun ntn (r,(_,df)) strm -> pr_notation_info prraw df r ++ fnl () ++ strm)
+       (fun ntn ((_,r),(_,df)) strm ->
+	 pr_notation_info prraw df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
 let pr_scope prraw scope = pr_named_scope prraw scope (find_scope scope)
@@ -405,7 +398,7 @@ let unfreeze (scm,scs,asc,dlm,fkm,pprules) =
 
 let init () =
 (*
-  scope_map := Strinmap.empty;
+  scope_map := Stringmap.empty;
   scope_stack := Stringmap.empty
   arguments_scope := Refmap.empty
 *)

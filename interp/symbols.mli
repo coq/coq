@@ -73,11 +73,9 @@ val interp_numeral_as_pattern : loc -> bigint -> name -> scopes ->cases_pattern
 val uninterp_numeral : rawconstr -> scope_name * bigint
 val uninterp_cases_numeral : cases_pattern -> scope_name * bigint
 
-val availability_of_numeral : scope_name -> scopes -> scope_name option option
+val availability_of_numeral : scope_name -> scopes -> delimiters option option
 
 (*s Declare and interpret back and forth a notation *)
-
-type interpretation = identifier list * aconstr
 
 (* Binds a notation in a given scope to an interpretation *)
 type interp_rule =
@@ -89,7 +87,7 @@ val declare_notation_interpretation : notation -> scope_name ->
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (* Returns the interpretation bound to a notation *)
-val interp_notation : notation -> scopes -> aconstr
+val interp_notation : notation -> scopes -> interpretation
 
 (* Returns the possible notations for a given term *)
 val uninterp_notations : rawconstr ->
@@ -100,12 +98,13 @@ val uninterp_notations : rawconstr ->
 (* argument is itself not None if a delimiters is needed; the second *)
 (* argument is a numeral printer if the *)
 val availability_of_notation : scope_name * notation -> scopes -> 
-  scope_name option option
+  (scope_name option * delimiters option) option
 
 (*s** Miscellaneous *)
 
 (* Checks for already existing notations *)
-val exists_notation_in_scope : scope_name -> level -> notation -> aconstr->bool
+val exists_notation_in_scope : scope_name -> level -> notation ->
+      interpretation-> bool
 val exists_notation : level -> notation -> bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)

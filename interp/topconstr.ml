@@ -41,7 +41,7 @@ let name_app f e = function
   | Anonymous -> Anonymous, e
 
 let map_aconstr_with_binders_loc loc g f e = function
-  | AVar (id) -> RVar (loc,id)
+  | AVar id -> RVar (loc,id)
   | AApp (a,args) -> RApp (loc,f e a, List.map (f e) args)
   | ALambda (na,ty,c) ->
       let na,e = name_app g e na in RLambda (loc,na,f e ty,f e c)
@@ -225,12 +225,17 @@ and match_equations alp metas sigma (_,idl1,pat1,rhs1) (idl2,pat2,rhs2) =
     match_ alp metas sigma rhs1 rhs2
   else raise No_match
 
-let match_aconstr c (metas,pat) = match_ [] metas [] c pat
+type scope_name = string
+
+type interpretation = (identifier * scope_name list) list * aconstr
+
+let match_aconstr c (metas_scl,pat) =
+  let subst = match_ [] (List.map fst metas_scl) [] c pat in
+  (* Reorder canonically the substitution *)
+  List.map (fun (x,scl) -> (List.assoc x subst,scl)) metas_scl
 
 (**********************************************************************)
 (*s Concrete syntax for terms *)
-
-type scope_name = string
 
 type notation = string
 
@@ -261,7 +266,7 @@ type constr_expr =
   | CMeta of loc * int
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
-  | CNotation of loc * notation * (identifier * constr_expr) list
+  | CNotation of loc * notation * constr_expr list
   | CNumeral of loc * Bignat.bigint
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
@@ -325,7 +330,7 @@ let rec occur_var_constr_expr id = function
   | CLambdaN (_,l,b) -> occur_var_binders id b l
   | CLetIn (_,na,a,b) -> occur_var_binders id b [[na],a]
   | CCast (loc,a,b) -> occur_var_constr_expr id a or occur_var_constr_expr id b
-  | CNotation (_,_,l) -> List.exists (fun (_,x) -> occur_var_constr_expr id x) l
+  | CNotation (_,_,l) -> List.exists (occur_var_constr_expr id) l
   | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
   | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ -> false
   | CCases (loc,_,_,_) 
@@ -367,7 +372,7 @@ let map_constr_expr_with_binders f g e = function
       let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
   | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
   | CCast (loc,a,b) -> CCast (loc,f e a,f e b)
-  | CNotation (loc,n,l) -> CNotation (loc,n,List.map (fun (x,t) ->(x,f e t)) l)
+  | CNotation (loc,n,l) -> CNotation (loc,n,List.map (f e) l)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
   | CCases (loc,po,a,bl) ->

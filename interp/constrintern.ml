@@ -334,18 +334,19 @@ let coerce_to_id = function
       user_err_loc (constr_loc c, "subst_rawconstr",
         str"This expression should be a simple identifier")
 
-let traverse_binder id (subst,(ids,impls,scopes as env)) =
-  let id = try coerce_to_id (List.assoc id subst) with Not_found -> id in
-  id,(subst,(Idset.add id ids,impls,scopes))
+let traverse_binder subst id (ids,impls,scopes as env) =
+  let id = try coerce_to_id (fst (List.assoc id subst)) with Not_found -> id in
+  id,(Idset.add id ids,impls,scopes)
 
-let rec subst_rawconstr loc interp (subst,env as senv) = function
+let rec subst_rawconstr loc interp subst (ids,impls,scopes as env) = function
   | AVar id ->
-      let a = try List.assoc id subst
-      with Not_found -> CRef (Ident (loc,id)) in
-      interp env a
+      let (a,subscopes) =
+	try List.assoc id subst
+	with Not_found -> (CRef (Ident (loc,id)),[]) in
+      interp (ids,impls,subscopes@scopes) a
   | t ->
-      map_aconstr_with_binders_loc loc traverse_binder
-      (subst_rawconstr loc interp) senv t
+      map_aconstr_with_binders_loc loc (traverse_binder subst)
+      (subst_rawconstr loc interp subst) env t
 
 (**********************************************************************)
 (* Main loop                                                          *)
@@ -395,8 +396,9 @@ let internalise sigma env allow_soapp lvar c =
 	RLetIn (loc, na, intern env c1,
           intern (name_fold Idset.add na ids,impls,scopes) c2)
     | CNotation (loc,ntn,args) ->
-	subst_rawconstr loc intern (args,env)
-	  (Symbols.interp_notation ntn scopes)
+	let (ids,c) = Symbols.interp_notation ntn scopes in
+	let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
+	subst_rawconstr loc intern subst env c
     | CNumeral (loc, n) ->
 	Symbols.interp_numeral loc n scopes
     | CDelimiters (loc, key, e) ->
