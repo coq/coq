@@ -161,6 +161,41 @@ INTERFACE=contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
 	contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
 	contrib/interface/centaur.cmo
 
+PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
+	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
+	lib/hashcons.cmo library/libobject.cmo library/summary.cmo \
+	kernel/names.cmo \
+	parsing/lexer.cmo parsing/coqast.cmo \
+	parsing/pcoq.cmo parsing/ast.cmo \
+	parsing/g_prim.cmo parsing/g_basevernac.cmo \
+	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
+	parsing/g_constr.cmo parsing/g_cases.cmo \
+	parsing/extend.cmo config/coq_config.cmo\
+        lib/system.cmo lib/bstack.cmo lib/edit.cmo \
+	library/nametab.cmo kernel/univ.cmo library/lib.cmo kernel/esubst.cmo \
+        kernel/term.cmo kernel/declarations.cmo lib/options.cmo \
+	kernel/sign.cmo kernel/environ.cmo kernel/evd.cmo \
+	kernel/instantiate.cmo kernel/closure.cmo kernel/reduction.cmo \
+	kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
+	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
+	library/global.cmo \
+	library/library.cmo lib/options.cmo library/indrec.cmo \
+	library/impargs.cmo pretyping/retyping.cmo library/declare.cmo \
+	pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
+	pretyping/rawterm.cmo \
+	parsing/coqlib.cmo library/goptions.cmo pretyping/detyping.cmo \
+	parsing/termast.cmo \
+	pretyping/pattern.cmo pretyping/pretype_errors.cmo \
+	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
+	pretyping/coercion.cmo pretyping/cases.cmo \
+	pretyping/pretyping.cmo pretyping/syntax_def.cmo parsing/astterm.cmo \
+	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
+	parsing/printer.cmo lib/stamps.cmo pretyping/typing.cmo \
+	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
+	proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
+	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
+	toplevel/errors.cmo
+
 ML4FILES += contrib/correctness/psyntax.ml4
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
@@ -251,6 +286,13 @@ bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
 bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
+bin/parser: contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo
+	$(OCAMLC) -cclib -lunix -custom $(INCLUDES) -o $@ $(CMA) \
+	$(PARSERREQUIRES) \
+	line_parser.cmo vtp.cmo xlate.cmo parse.cmo
+
+clean::
+	rm -f bin/parser bin/coq-interface
 ###########################################################################
 # tests
 ###########################################################################
@@ -399,6 +441,13 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
          contrib/ring/Quote.vo
 
 XMLVO = contrib/xml/Xml.vo
+
+INTERFACEV0 = contrib/interface/Centaur.vo
+contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
+	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
+
+contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE)
+	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
 CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(EXTRACTIONVO)
 
