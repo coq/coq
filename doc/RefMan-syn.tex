@@ -4,15 +4,17 @@
 In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
 concrete and internal representations of terms and commands. The main
-commands are {\tt Notation} and {\tt Infix}.
-It also happens that the same symbolic notation is expected in
-different contexts. To achieve this form of overloading, {\Coq} offers a
-notion of interpretation scope described in section \ref{scopes}.
+commands are {\tt Notation} and {\tt Infix} which are described in
+section \label{Notation}.  It also happens that the same symbolic
+notation is expected in different contexts. To achieve this form of
+overloading, {\Coq} offers a notion of interpretation scope. This is
+described in section \ref{scopes}.
 
-\Rem: Commands {\tt Grammar}, {\tt Syntax}, {\tt Syntactic Definition}
-and {\tt Distfix} which were present for a while in {\Coq} are no longer
-available from {\Coq} version 8. The underlying AST structure is also no
-longer available.
+\Rem: Commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
+were present for a while in {\Coq} are no longer available from {\Coq}
+version 8.0. The underlying AST structure is also no longer available.
+The functionalities of the command {\tt Syntactic Definition} are
+still available, see section \label{Abbreviations}.
 
 \section{Notations}
 \label{Notation}
@@ -47,7 +49,7 @@ An identifier can be used as a symbol but it must be surrounded by
 simple quotes to avoid the confusion with a parameter. Here is an example.
 
 \begin{coq_example*}
-Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3).
+Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3).
 \end{coq_example*}
 
 %TODO quote the identifier when not in front, not a keyword, as in "x 'U' y" ?
@@ -57,8 +59,9 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3).
 \index{Associativity}
 
 Mixing different symbolic notations in a same text may cause serious
-parsing ambiguity. To deal with the ambiguity of notations, {\Coq} uses
-precedence levels ranging from 0 to 100 and associativity rules.
+parsing ambiguity. To deal with the ambiguity of notations, {\Coq}
+uses precedence levels ranging from 0 to 100 (plus two extra levels
+numbered 200 and 250) and associativity rules.
 
 Consider for example the new notation
 
@@ -119,6 +122,7 @@ is on figure~\ref{coq-symbols}.
 \hline
 notation & precedence/associativity \\
 \hline
+\verb$"_ , _"$ & 250 \\
 \verb$"_ <-> _"$ & 95 \\
 \verb$"_ -> _"$ & 90\, R (primitive) \\
 \verb$"_ \/ _"$ & 85\, R \\
@@ -138,6 +142,7 @@ notation & precedence/associativity \\
 \verb$"_ - _"$  & 50\, L \\
 \verb$"_ * _"$  & 40\, L \\
 \verb$"_ / _"$  & 40\, L \\
+\verb$"_ ^ _"$  & 30\, L \\
 \verb$"{ _ } + { _ }"$ & 0 \\
 \verb$"_ + { _ }"$  & 0 \\
 \verb$"{ _ : _ | _ }"$ & 0 \\
@@ -291,6 +296,10 @@ Thus, for the previous example, we get\footnote{The ``@'' is here to shunt
 the notation "'IF' A 'then' B 'else' C" which is defined in {\Coq}
 initial state}:
 
+Notations do not survive the end of sections. No typing of the denoted
+expression is performed at definition time. Type-checking is done only
+at the time of use of the notation.
+
 \begin{coq_example}
 Check 
  (@IF (@IF True False True) (@IF True False True) (@IF True False True)).   
@@ -368,6 +377,7 @@ Infix "/\\" and (at level 6, right associativity).
 % Print Scopes
 
 \section{Abbreviations}
+\comindex{Abbreviations}
 \label{Abbreviations}
 
 An {\em abbreviation} is a name denoting a (presumably) more complex
@@ -376,21 +386,46 @@ parameter and only one symbol which is an identifier. This identifier
 is given with no quotes around. Example:
 
 \begin{coq_example*}
-Notation List := (list A).
+Notation List := (list nat).
 \end{coq_example*}
 
-An abbreviation expects also no modifiers, since such a notation can
-always be put at the lower level of atomic expressions, and
-associativity is irrelevant.
+An abbreviation expects no precedence nor associativity, since such a
+notation can always be put at the lower level of atomic expressions,
+and associativity is irrelevant. Abbreviations are used as much as
+possible by the {\Coq} printers unless the modifier
+\verb=(only parsing)= is given.
 
 Abbreviations are bound to an absolute name like for an ordinary
 definition, and can be referred by partially qualified names too.
+
+Abbreviations are syntactic in the sense that they are bound to
+expressions which are not typed at the time of the definition of the
+abbreviation but at the time it is used. Especially, abbreviation can
+be bound to terms with holes (i.e. with ``\_'').
+
+\Example
+
+\begin{coq_eval}
+Set Strict Implicit.
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Definition explicit_id (A:Set) (a:A) := a.
+Notation id := (explicit_id _).
+Check (id 0%N).
+\end{coq_example}
 
 Abbreviations do not survive the end of sections. No typing of the denoted
 expression is performed at definition time. Type-checking is done only
 at the time of use of the abbreviation.
 
-\section{Summary of the options of \texttt{Notation}}
+\Rem \comindex{Syntactic Definition (cf Abbreviations)} % For compatibility
+Abbreviations are similar to the {\em syntactic definitions}
+available in versions of {\Coq} prior to version 8.0, except that
+abbreviation are printed too (unless the modifier
+\verb=(only parsing)= is given).
+
+\section{Summary}
 
 \paragraph{Persistence of notations}
 
@@ -2214,7 +2249,6 @@ allow the printer of tactic to change the universe. The primitive printer
 purpose. They are used in the code of the default printer that {\tt
 gentacpr} gives to {\tt genprint}.
 \fi
-
 
 % $Id$ 
 
