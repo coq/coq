@@ -1061,16 +1061,30 @@ Proof c.
 %\subsection{\tt FixPoint \dots}\tacindex{Fixpoint}
 %Not yet documented.
 
-\subsection {\tt Double Induction \num$_1$ \num$_2$}
+\subsection {\tt Double Induction \ident$_1$ \ident$_2$}
 \tacindex{Double Induction}
-This tactic applies to any goal. If the \num$_1$th and  \num$_2$th
-premises of the goal have an inductive type, then this tactic
-performs double induction on these premises.
+This tactic applies to any goal. If the variables {\ident$_1$} and {\ident$_2$}
+of the goal have an inductive type, then this tactic
+performs double induction on these variables.
 For instance, if the current goal is \verb+(n,m:nat)(P n m)+ then,
-{\tt Double Induction 1 2} yields the four cases with their respective
-inductive hypothesis. In particular the case for
+{\tt Double Induction n m} yields the four cases with their respective
+inductive hypotheses. In particular the case for
 \verb+(P (S n) (S m))+
-with the inductive hypothesis about both \verb+n+ and \verb+m+.
+with the induction hypotheses \verb+(P (S n) m)+ and 
+\verb+(m:nat)(P n m)+ (hence \verb+(P n m)+ and \verb+(P n (S m))+).
+
+\Rem When the induction hypothesis \verb+(P (S n) m)+ is not
+needed, {\tt NewInduction \ident$_1$; NewDestruct \ident$_2$} produces
+more concise subgoals.
+
+\begin{Variant}
+
+\item {\tt Double Induction \num$_1$ \num$_2$}\\
+This applies double induction on the \num$_1^{th}$ and \num$_2^{th}$ {\it
+non dependent} premises of the goal. More generally, any combination of an
+{\ident} and an {\num} is valid.
+
+\end{Variant}
 
 \subsection{\tt Decompose [ {\ident$_1$} \dots\ {\ident$_n$} ] \term}
 \label{Decompose}
