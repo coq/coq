@@ -88,18 +88,18 @@ let arrow_tac backtrack continue seq=
        backtrack)
 (* left connectives rules *)
 
-let left_and_tac ind backtrack id continue seq=
- let n=(construct_nhyps ind).(0) in  
+let left_and_tac ind backtrack id continue seq gls=
+ let n=(construct_nhyps ind gls).(0) in  
    tclIFTHENELSE
      (tclTHENLIST 
       [simplest_elim (constr_of_reference id);
        clear_global id; 
        tclDO n intro])
      (wrap n false continue seq)
-     backtrack
+     backtrack gls
 
-let left_or_tac ind backtrack id continue seq=
-  let v=construct_nhyps ind in  
+let left_or_tac ind backtrack id continue seq gls=
+  let v=construct_nhyps ind gls in  
   let f n=
     tclTHENLIST
       [clear_global id;
@@ -108,7 +108,7 @@ let left_or_tac ind backtrack id continue seq=
     tclIFTHENSVELSE
       (simplest_elim (constr_of_reference id))
       (Array.map f v)
-      backtrack
+      backtrack gls
 
 let left_false_tac id=
   simplest_elim (constr_of_reference id)
@@ -118,7 +118,7 @@ let left_false_tac id=
 (* We use this function for false, and, or, exists *)
 
 let ll_ind_tac ind largs backtrack id continue seq gl= 
-     let rcs=ind_hyps 0 ind largs in
+     let rcs=ind_hyps 0 ind largs gl in
      let vargs=Array.of_list largs in
 	     (* construire le terme  H->B, le generaliser etc *)   
      let myterm i=
@@ -172,13 +172,13 @@ let forall_tac backtrack continue seq=
      else
        backtrack)
 
-let left_exists_tac ind id continue seq=
-  let n=(construct_nhyps ind).(0) in  
+let left_exists_tac ind id continue seq gls=
+  let n=(construct_nhyps ind gls).(0) in  
     tclTHENLIST
       [simplest_elim (constr_of_reference id);
        clear_global id;
        tclDO n intro;
-       (wrap (n-1) false continue seq)]
+       (wrap (n-1) false continue seq)] gls
 	
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE

@@ -26,9 +26,10 @@ type ('a,'b) sum = Left of 'a | Right of 'b
 
 type counter = bool -> metavariable
 
-val construct_nhyps : inductive -> int array
+val construct_nhyps : inductive -> Proof_type.goal Tacmach.sigma -> int array
 
-val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
+val ind_hyps : int -> inductive -> constr list -> 
+  Proof_type.goal Tacmach.sigma -> Sign.rel_context array
 
 type atoms = {positive:constr list;negative:constr list}
 

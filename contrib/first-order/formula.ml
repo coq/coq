@@ -17,6 +17,7 @@ open Tacmach
 open Util
 open Declarations
 open Libnames
+open Inductiveops
 
 let qflag=ref true
 
@@ -44,20 +45,16 @@ let rec nb_prod_after n c=
 	1+(nb_prod_after 0 b)
     | _ -> 0
 
-let nhyps mip = 
-  let constr_types = mip.mind_nf_lc in 
-  let hyp = nb_prod_after mip.mind_nparams in	
+let construct_nhyps ind gls =
+  let env=pf_env gls in
+  let nparams = (snd (Global.lookup_inductive ind)).mind_nparams in
+  let constr_types = Inductive.arities_of_constructors (pf_env gls) ind in 
+  let hyp = nb_prod_after nparams in	
     Array.map hyp constr_types
 
-let construct_nhyps ind= nhyps (snd (Global.lookup_inductive ind))
-
 (* indhyps builds the array of arrays of constructor hyps for (ind largs)*)
-let ind_hyps nevar ind largs= 
-  let (mib,mip) = Global.lookup_inductive ind in
-  let n = mip.mind_nparams in
-    (* assert (n=(List.length largs));*)
-  let lp=Array.length mip.mind_consnames in
-  let types= mip.mind_nf_lc in   
+let ind_hyps nevar ind largs gls= 
+  let types= Inductive.arities_of_constructors (pf_env gls) ind in 
   let lp=Array.length types in     
   let myhyps i=
     let t1=Term.prod_applist types.(i) largs in
@@ -146,7 +143,7 @@ let build_atoms gl metagen side cciterm =
 		else 
 		  negative:= unsigned :: !negative
 	    end;
-	  let v = ind_hyps 0 i l in
+	  let v = ind_hyps 0 i l gl in
 	  let g i _ (_,_,t) =
 	    build_rec env polarity (lift i t) in
 	  let f l =
@@ -157,7 +154,7 @@ let build_atoms gl metagen side cciterm =
 	    Array.iter f v 
       | Exists(i,l)->
 	  let var=mkMeta (metagen true) in
-	  let v =(ind_hyps 1 i l).(0) in
+	  let v =(ind_hyps 1 i l gl).(0) in
 	  let g i _ (_,_,t) =
 	    build_rec (var::env) polarity (lift i t) in
 	    list_fold_left_i g (2-(List.length l)) () v
@@ -232,7 +229,7 @@ let build_formula side nam typ gl metagen=
 		  | And(_,_,_)        -> Rand
 		  | Or(_,_,_)         -> Ror
 		  | Exists (i,l) -> 
-		      let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
+		      let (_,_,d)=list_last (ind_hyps 0 i l gl).(0) in
 			Rexists(m,d,trivial)
 		  | Forall (_,a) -> Rforall 
 		  | Arrow (a,b) -> Rarrow in

@@ -80,7 +80,8 @@ let read_eq env term=
 let rec make_term=function
     Symb s->s
   | Constructor(c,_,_)->mkConstruct c 
-  | Appli (s1,s2)->make_app [(make_term s2)] s1
+  | Appli (s1,s2)->
+      make_app [(make_term s2)] s1
 and make_app l=function
     Symb s->applistc s l
   | Constructor(c,_,_)->applistc (mkConstruct c) l
@@ -105,15 +106,13 @@ let make_prb gl=
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
 let build_projection intype outtype (cstr:constructor) special default gls=
+  let env=pf_env gls in 
   let (h,argv) = 
     try destApplication intype with 
 	Invalid_argument _ -> (intype,[||])  in
   let ind=destInd h in 
-  let (mib,mip) = Global.lookup_inductive ind in
-  let n = mip.mind_nparams in
-    (* assert (n=(Array.length argv));*)
-  let lp=Array.length mip.mind_consnames in
-  let types=mip.mind_nf_lc in   
+  let types=Inductive.arities_of_constructors env ind in
+  let lp=Array.length types in
   let ci=(snd cstr)-1 in
   let branch i=
     let ti=Term.prod_appvect types.(i) argv in
@@ -124,12 +123,11 @@ let build_projection intype outtype (cstr:constructor) special default gls=
   let branches=Array.init lp branch in
   let casee=mkRel 1 in
   let pred=mkLambda(Anonymous,intype,outtype) in
-  let env=pf_env gls in 
   let case_info=make_default_case_info (pf_env gls) RegularStyle ind in
   let body= mkCase(case_info, pred, casee, branches) in
   let id=pf_get_new_id (id_of_string "t") gls in     
     mkLambda(Name id,intype,body)
-
+  
 (* generate an adhoc tactic following the proof tree  *)
 
 let rec proof_tac axioms=function
