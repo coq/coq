@@ -432,14 +432,15 @@ let ast_of_cvt_arg = function
   | Integer n       -> num n 
   | Command c       -> ope ("COMMAND",[c])
   | Constr  c       -> 
-      ope ("COMMAND",[bdize false (assumptions_for_print []) c])
+      ope ("COMMAND",[ast_of_constr false (assumptions_for_print []) c])
   | Clause idl      -> ope ("CLAUSE", List.map (compose nvar string_of_id) idl)
   | Bindings bl     -> ope ("BINDINGS", 
 			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
   | Cbindings bl    -> 
       ope ("BINDINGS", 
 	   List.map 
-	     (ast_of_cvt_bind (bdize false (assumptions_for_print []))) bl)
+	     (ast_of_cvt_bind
+		(ast_of_constr false (assumptions_for_print []))) bl)
   | Tacexp ast      -> ope ("TACTIC",[ast]) 
   | Redexp (s,args) -> ope ("REDEXP", [ope(s,args)])
   | Fixexp (id,n,c) -> ope ("FIXEXP",[(nvar (string_of_id id)); 
