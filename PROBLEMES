@@ -12,7 +12,9 @@ MUTUAL-EXCLUSION/binary/version1/Soundness.v
 
 l'entree numarg de g_tactic.ml4 accepte aussi des id... (pour les
 binding je pense) d'ou des erreurs de syntaxe ...  pure_numarg est
-plus sûr
+plus sûr 
+REPONSE PROVISOIRE: si c'est pour Specialize, faudrait en changer la
+syntaxe, elle est incompatible avec L_tac.
 
 Associativite Repeat Orelse changee
 	Repeat A Orelse B se lit (Repeat A) Orelse B 
@@ -21,7 +23,8 @@ ce n'est pas malin car Repeat A n'echoue jamais
 les parentheses ne sont pas autorises autour de 
 motifs constants :
 > Check [n:nat]Cases n of (O) => true | _ => false end.
-Syntax error: 'as' or ',' or [ne_pattern_list] expected after [Constr.pattern] (in [compound_pattern])
+Syntax error: 'as' or ',' or [ne_pattern_list] expected after
+[Constr.pattern] (in [compound_pattern])        ...CORRIGE
 
 CONTRIBS
 ---------
