@@ -243,6 +243,12 @@ let print_term inner_types l env csr =
     | _             -> InnerType
   in
 
+  let rec force =
+   parser
+      [< 'he ; tl >] -> let tl = (force tl) in [< 'he ; tl >]
+    | [< >] -> [<>]
+  in
+
   let rec term_display idradix in_lambda l env cstr =
    let next_id = get_next_id idradix in
    let add_sort_attribute do_output_type l' =
@@ -290,12 +296,15 @@ let print_term inner_types l env csr =
       X.xml_empty "SORT" ["value",(string_of_sort s) ; "id", next_id]
    | T.IsCast (t1,t2) ->
       X.xml_nempty "CAST" (add_sort_attribute false ["id", next_id])
+(force
        [< X.xml_nempty "term" [] (term_display idradix false l env t1) ;
           X.xml_nempty "type" [] (term_display idradix false l env t2)
        >]
+)
    | T.IsLetIn (nid,s,t,d)->
       let nid' = N.next_name_away nid (names_to_ids l) in
        X.xml_nempty "LETIN" (add_sort_attribute true ["id", next_id])
+(force
         [< X.xml_nempty "term" [] (term_display idradix false l env s) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
             (term_display idradix false
@@ -304,9 +313,11 @@ let print_term inner_types l env csr =
              d
             )
         >]
+)
    | T.IsProd (N.Name _ as nid, t1, t2) ->
       let nid' = N.next_name_away nid (names_to_ids l) in
        X.xml_nempty "PROD" ["id", next_id]
+(force
         [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
             (term_display idradix false
@@ -315,8 +326,10 @@ let print_term inner_types l env csr =
              t2
             )
         >]
+)
    | T.IsProd (N.Anonymous as nid, t1, t2) ->
       X.xml_nempty "PROD" ["id", next_id]
+(force
        [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
           X.xml_nempty "target" []
            (term_display idradix false
@@ -325,9 +338,11 @@ let print_term inner_types l env csr =
             t2
            )
        >]
+)
    | T.IsLambda (N.Name _ as nid, t1, t2) ->
       let nid' = N.next_name_away nid (names_to_ids l) in
        X.xml_nempty "LAMBDA" (add_sort_attribute (not in_lambda) ["id",next_id])
+(force
         [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
             (term_display idradix true
@@ -336,8 +351,10 @@ let print_term inner_types l env csr =
              t2
             )
         >]
+)
    | T.IsLambda (N.Anonymous as nid, t1, t2) ->
       X.xml_nempty "LAMBDA" (add_sort_attribute (not in_lambda) ["id", next_id])
+(force
        [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
           X.xml_nempty "target" []
            (term_display idradix true
@@ -346,12 +363,15 @@ let print_term inner_types l env csr =
             t2
           )
        >]
+)
    | T.IsApp (h,t) ->
       X.xml_nempty "APPLY" (add_sort_attribute true ["id", next_id])
+(force
        [< (term_display idradix false l env h) ;
          (Array.fold_right
           (fun x i -> [< (term_display idradix false l env x); i >]) t [<>])
        >]
+)
    | T.IsConst (sp,_) ->
       X.xml_empty "CONST"
        (add_sort_attribute false
@@ -373,6 +393,7 @@ let print_term inner_types l env csr =
        X.xml_nempty "MUTCASE"
         (add_sort_attribute true
          ["uriType",uri ; "noType",(string_of_int typeno) ; "id",next_id])
+(force
         [< X.xml_nempty "patternsType" []
             [< (term_display idradix false l env ty) >] ;
 	   X.xml_nempty "inductiveTerm" []
@@ -383,9 +404,11 @@ let print_term inner_types l env csr =
                   [<term_display idradix false l env x >] ; i>]
             ) a [<>]
         >]
+)
    | T.IsFix ((ai,i),((t,f,b) as rec_decl)) ->
       X.xml_nempty "FIX"
        (add_sort_attribute true ["noFun", (string_of_int i) ; "id",next_id])
+(force
        [< Array.fold_right
            (fun (fi,ti,bi,ai) i ->
              [< X.xml_nempty "FixFunction"
@@ -405,9 +428,11 @@ let print_term inner_types l env csr =
 	   (Array.mapi (fun j x -> (x,t.(j),b.(j),ai.(j)) ) (Array.of_list f) )
            [<>]
        >]
+)
    | T.IsCoFix (i,((t,f,b) as rec_decl)) ->
       X.xml_nempty "COFIX"
        (add_sort_attribute true ["noFun", (string_of_int i) ; "id",next_id])
+(force
        [< Array.fold_right
            (fun (fi,ti,bi) i ->
             [< X.xml_nempty "CofixFunction" ["name", (string_of_name fi)]
@@ -425,6 +450,7 @@ let print_term inner_types l env csr =
 	   )
 	   (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) (Array.of_list f) ) [<>]
        >]
+)
    | T.IsXtra _ ->
       Util.anomaly "Xtra node in a term!!!"
    | T.IsEvar _ ->
