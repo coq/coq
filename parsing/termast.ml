@@ -303,7 +303,7 @@ let ast_of_constr at_top env t =
     else Reductionops.local_strong strip_outer_cast t in
   let avoid = if at_top then ids_of_context env else [] in
   ast_of_raw 
-    (Detyping.detype avoid (names_of_rel_context env) t')
+    (Detyping.detype env avoid (names_of_rel_context env) t')
 
 let ast_of_constant env sp =
   let a = ast_of_constant_ref sp in
@@ -329,7 +329,7 @@ let decompose_binder_pattern = function
   | PLetIn(na,b,c) -> Some (BLetIn,na,b,c)
   | _ -> None
 
-let rec ast_of_pattern env = function
+let rec ast_of_pattern tenv env = function
   | PRef ref -> ast_of_ref ref
 
   | PVar id -> ast_of_ident id
@@ -348,44 +348,47 @@ let rec ast_of_pattern env = function
       let (f,args) = 
 	skip_coercion (function PRef r -> Some r | _ -> None)
 	  (f,Array.to_list args) in
-      let astf = ast_of_pattern env f in
-      let astargs = List.map (ast_of_pattern env) args in
+      let astf = ast_of_pattern tenv env f in
+      let astargs = List.map (ast_of_pattern tenv env) args in
       (match f with 
 	 | PRef ref -> ast_of_app (implicits_of_global ref) astf astargs
 	 | _        -> ast_of_app [] astf astargs)
 
   | PSoApp (n,args) ->
       ope("SOAPP",(ope ("META",[num n])):: 
-		  (List.map (ast_of_pattern env) args))
+		  (List.map (ast_of_pattern tenv env) args))
 
   | PLetIn (na,b,c) ->
-      let c' = ast_of_pattern (add_name na env) c in
-      ope("LETIN",[ast_of_pattern env b;slam(idopt_of_name na,c')])
+      let c' = ast_of_pattern tenv (add_name na env) c in
+      ope("LETIN",[ast_of_pattern tenv env b;slam(idopt_of_name na,c')])
 		
   | PProd (Anonymous,t,c) ->
-      ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])
+      ope("PROD",[ast_of_pattern tenv env t;
+                  slam(None,ast_of_pattern tenv env c)])
   | PProd (na,t,c) ->
       let env' = add_name na env in
       let (n,a) =
-	factorize_binder_pattern env' 1 BProd na (ast_of_pattern env t) c in
+	factorize_binder_pattern tenv env' 1 BProd na
+          (ast_of_pattern tenv env t) c in
       (* PROD et PRODLIST doivent être distingués à cause du cas *)
       (* non dépendant, pour isoler l'implication; peut-être un *)
       (* constructeur ARROW serait-il plus justifié ? *) 
       let tag = if n=1 then "PROD" else "PRODLIST" in
-      ope(tag,[ast_of_pattern env t;a])
+      ope(tag,[ast_of_pattern tenv env t;a])
   | PLambda (na,t,c) ->
       let env' = add_name na env in
       let (n,a) =
-	factorize_binder_pattern env' 1 BLambda na (ast_of_pattern env t) c in
+	factorize_binder_pattern tenv env' 1 BLambda na
+          (ast_of_pattern tenv env t) c in
       (* LAMBDA et LAMBDALIST se comportent pareil *)
       let tag = if n=1 then "LAMBDA" else "LAMBDALIST" in
-      ope(tag,[ast_of_pattern env t;a])
+      ope(tag,[ast_of_pattern tenv env t;a])
 
   | PCase (typopt,tm,bv) ->
       warning "Old Case syntax";
-      ope("MUTCASE",(ast_of_patopt env typopt)
-	    ::(ast_of_pattern env tm)
-	    ::(Array.to_list (Array.map (ast_of_pattern env) bv)))
+      ope("MUTCASE",(ast_of_patopt tenv env typopt)
+	    ::(ast_of_pattern tenv env tm)
+	    ::(Array.to_list (Array.map (ast_of_pattern tenv env) bv)))
 
   | PSort s ->
       (match s with
@@ -395,20 +398,20 @@ let rec ast_of_pattern env = function
 
   | PMeta (Some n) -> ope("META",[num n])
   | PMeta None -> ope("ISEVAR",[])
-  | PFix f -> ast_of_raw (Detyping.detype [] env (mkFix f))
-  | PCoFix c -> ast_of_raw (Detyping.detype [] env (mkCoFix c))
+  | PFix f -> ast_of_raw (Detyping.detype tenv [] env (mkFix f))
+  | PCoFix c -> ast_of_raw (Detyping.detype tenv [] env (mkCoFix c))
 	
-and ast_of_patopt env = function
+and ast_of_patopt tenv env = function
   | None -> (string "SYNTH")
-  | Some p -> ast_of_pattern env p
+  | Some p -> ast_of_pattern tenv env p
 
-and factorize_binder_pattern env n oper na aty c =
+and factorize_binder_pattern tenv env n oper na aty c =
   let (p,body) = match decompose_binder_pattern c with
     | Some (oper',na',ty',c')
-	when (oper = oper') & (aty = ast_of_pattern env ty')
+	when (oper = oper') & (aty = ast_of_pattern tenv env ty')
 	  & not (na' = Anonymous & oper = BProd)
 	  ->
-	factorize_binder_pattern (add_name na' env) (n+1) oper na' aty c'
-    | _ -> (n,ast_of_pattern env c)
+	factorize_binder_pattern tenv (add_name na' env) (n+1) oper na' aty c'
+    | _ -> (n,ast_of_pattern tenv env c)
   in
   (p,slam(idopt_of_name na, body))

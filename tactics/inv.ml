@@ -373,7 +373,7 @@ let res_case_then gene thin indbinding id status gl =
   check_no_metas indclause' ccl;
   let (IndType (indf,realargs) as indt) =
     try find_rectype env sigma ccl
-    with Induc ->
+    with Not_found ->
       errorlabstrm "res_case_then"
 	(str ("The type of "^(string_of_id id)^" is not inductive")) in
   let (elim_predicate,neqns) =

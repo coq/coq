@@ -33,7 +33,7 @@ exception PatternMatchingError of env * pattern_matching_error
 (*s Used for old cases in pretyping *)
 
 val branch_scheme : 
-  env -> evar_defs -> bool -> inductive * constr list -> constr array
+  env -> evar_defs -> bool -> inductive_family -> constr array
 
 type ml_case_error =
   | MlCaseAbsurd

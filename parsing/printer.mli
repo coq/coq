@@ -42,7 +42,7 @@ val pr_inductive    : env -> inductive -> std_ppcmds
 val pr_global       : global_reference -> std_ppcmds
 val pr_ref_label    : constr_label -> std_ppcmds
 val pr_pattern      : constr_pattern -> std_ppcmds
-val pr_pattern_env  : names_context -> constr_pattern -> std_ppcmds
+val pr_pattern_env  : env -> names_context -> constr_pattern -> std_ppcmds
 
 val pr_ne_context_of : std_ppcmds -> env -> std_ppcmds
 

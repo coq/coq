@@ -24,7 +24,7 @@ open Pattern
 
 val ast_of_cases_pattern : cases_pattern -> Coqast.t
 val ast_of_rawconstr : rawconstr -> Coqast.t
-val ast_of_pattern : names_context -> constr_pattern -> Coqast.t
+val ast_of_pattern : env -> names_context -> constr_pattern -> Coqast.t
 
 (* If [b=true] in [ast_of_constr b env c] then the variables in the first 
    level of quantification clashing with the variables in [env] are renamed *)

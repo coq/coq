@@ -98,7 +98,7 @@ let head_in gls indl t =
       then find_mrectype (pf_env gls) (project gls) t
       else extract_mrectype t
     in List.mem ity indl
-  with Induc -> false
+  with Not_found -> false
        
 let inductive_of_qualid gls qid =
   let c = 

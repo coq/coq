@@ -638,25 +638,25 @@ let occur_rel p env id =
   try lookup_name_of_rel p env = Name id
   with Not_found -> false (* Unbound indice : may happen in debug *)
 
-let occur_id env id0 c =
+let occur_id env nenv id0 c =
   let rec occur n c = match kind_of_term c with
     | Var id when  id=id0 -> raise Occur
     | Const sp when basename sp = id0 -> raise Occur
     | Ind ind_sp
-	when basename (path_of_inductive (Global.env()) ind_sp) = id0 ->
+	when basename (path_of_inductive env ind_sp) = id0 ->
         raise Occur
     | Construct cstr_sp
-	when basename (path_of_constructor (Global.env()) cstr_sp) = id0 ->
+	when basename (path_of_constructor env cstr_sp) = id0 ->
         raise Occur
-    | Rel p when p>n & occur_rel (p-n) env id0 -> raise Occur
+    | Rel p when p>n & occur_rel (p-n) nenv id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c
   in 
   try occur 1 c; false
   with Occur -> true
 
-let next_name_not_occuring name l env_names t =
+let next_name_not_occuring env name l env_names t =
   let rec next id =
-    if List.mem id l or occur_id env_names id t then next (lift_ident id)
+    if List.mem id l or occur_id env env_names id t then next (lift_ident id)
     else id
   in 
   match name with
@@ -664,16 +664,16 @@ let next_name_not_occuring name l env_names t =
     | Anonymous -> id_of_string "_"
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name l env_names n c =
+let concrete_name env l env_names n c =
   if n = Anonymous & not (dependent (mkRel 1) c) then
     (None,l)
   else
-    let fresh_id = next_name_not_occuring n l env_names c in
+    let fresh_id = next_name_not_occuring env n l env_names c in
     let idopt = if dependent (mkRel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
 
-let concrete_let_name l env_names n c =
-  let fresh_id = next_name_not_occuring n l env_names c in
+let concrete_let_name env l env_names n c =
+  let fresh_id = next_name_not_occuring env n l env_names c in
   (Name fresh_id, fresh_id::l)
 
 let global_vars env ids = Idset.elements (global_vars_set env ids)

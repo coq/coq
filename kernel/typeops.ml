@@ -282,7 +282,7 @@ let check_branch_types env cj (lft,explft) =
 let judge_of_case env ci pj cj lfj =
   let indspec =
     try find_rectype env cj.uj_type
-    with Induc -> error_case_not_inductive env cj in
+    with Not_found -> error_case_not_inductive env cj in
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty,univ) =
     type_case_branches env indspec pj cj.uj_val in

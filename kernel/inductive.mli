@@ -16,22 +16,20 @@ open Declarations
 open Environ
 (*i*)
 
-exception Induc
-
 (*s Extracting an inductive type from a construction *)
 
 (* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
    [find_rectype], [find_inductive] and [find_coinductive]
    respectively accepts any recursive type, only an inductive type and
    only a coinductive type.
-   They raise [Induc] if not convertible to a recursive type. *)
+   They raise [Not_found] if not convertible to a recursive type. *)
 
 val find_rectype     : env -> types -> inductive * constr list
 val find_inductive   : env -> types -> inductive * constr list
 val find_coinductive : env -> types -> inductive * constr list
 
 (*s Fetching information in the environment about an inductive type.
-    Raises Induc if the inductive type is not found. *)
+    Raises [Not_found] if the inductive type is not found. *)
 val lookup_mind_specif :
   env -> inductive -> mutual_inductive_body * one_inductive_body
 
@@ -66,9 +64,3 @@ val check_case_info : env -> inductive -> case_info -> unit
 (*s Guard conditions for fix and cofix-points. *)
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
-
-(********************)
-(* TODO: remove (used in pretyping only...) *)
-val find_case_dep_nparams :
-  env -> constr * unsafe_judgment -> inductive * constr list ->
-    bool * constraints

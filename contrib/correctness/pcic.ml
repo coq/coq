@@ -137,7 +137,7 @@ let tuple_ref dep n =
 
 let trad_binder avoid nenv = function
   | CC_untyped_binder -> RHole None
-  | CC_typed_binder ty -> Detyping.detype avoid nenv ty
+  | CC_typed_binder ty -> Detyping.detype (Global.env()) avoid nenv ty
 
 let rec push_vars avoid nenv = function
   | [] -> ([],avoid,nenv)
@@ -207,21 +207,22 @@ let rawconstr_of_prog p =
       	let n = List.length l in
       	let cl = List.map (trad avoid nenv) l in
       	let tuple = tuple_ref dep n in
-	let tyl = List.map (Detyping.detype avoid nenv) tyl in
+	let tyl = List.map (Detyping.detype (Global.env()) avoid nenv) tyl in
       	let args = tyl @ cl in
 	RApp (dummy_loc, RRef (dummy_loc, tuple), args)
 
     | CC_case (ty,b,el) ->
 	let c = trad avoid nenv b in
 	let cl = List.map (trad avoid nenv) el in
-	let ty = Detyping.detype avoid nenv ty in
+	let ty = Detyping.detype (Global.env()) avoid nenv ty in
 	ROldCase (dummy_loc, false, Some ty, c, Array.of_list cl)
 
     | CC_expr c -> 
-	Detyping.detype avoid nenv c
+	Detyping.detype (Global.env()) avoid nenv c
 
     | CC_hole c -> 
-	RCast (dummy_loc, RHole None, Detyping.detype avoid nenv c)
+	RCast (dummy_loc, RHole None,
+               Detyping.detype (Global.env()) avoid nenv c)
 
   in
   trad [] empty_names_context p

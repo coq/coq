@@ -128,8 +128,9 @@ let pr_ref_label = function (* On triche sur le contexte *)
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)
 let pr_rawterm t = gentermpr (Termast.ast_of_rawconstr t)
-let pr_pattern_env env t = gentermpr (Termast.ast_of_pattern env t)
-let pr_pattern t = pr_pattern_env empty_names_context t
+let pr_pattern_env tenv env t =
+  gentermpr (Termast.ast_of_pattern tenv env t)
+let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t
 
 let rec gentacpr gt =
   Esyntax.genprint default_tacpr tactic_syntax_universe tactic_initial_prec gt

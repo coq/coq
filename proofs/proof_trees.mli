@@ -42,9 +42,8 @@ val get_hyps  : named_context sigma -> named_context
 val get_env   : named_context sigma -> env
 val get_gc    : named_context sigma -> evar_map
 
-val pf_lookup_name_as_renamed : 
-  named_context -> constr -> identifier -> int option
-val pf_lookup_index_as_renamed : constr -> int -> int option
+val pf_lookup_name_as_renamed  : env -> constr -> identifier -> int option
+val pf_lookup_index_as_renamed : env -> constr -> int -> int option
 
 
 (*s Pretty printing functions. *)

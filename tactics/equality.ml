@@ -420,7 +420,7 @@ let descend_then sigma env head dirn =
    giving [True], and all the rest giving False. *)
 
 let construct_discriminator sigma env dirn c sort =
-  let (IndType((ind,_) as indf,_) as indt) =
+  let (IndType(indf,_) as indt) =
     try find_rectype env sigma (type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
@@ -431,6 +431,7 @@ let construct_discriminator sigma env dirn c sort =
       errorlabstrm "Equality.construct_discriminator"
 	(str "Cannot discriminate on inductive constructors with 
 		 dependent types") in
+  let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let arsign,arsort = get_arity env indf in
   let (true_0,false_0,sort_0) = 
@@ -453,8 +454,9 @@ let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort
   | ((sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
-      let IndType ((ind,_)as indf,_) =
+      let IndType (indf,_) =
 	try find_rectype env sigma cty with Not_found -> assert false in
+      let (ind,_) = dest_ind_family indf in
       let (mib,mip) = lookup_mind_specif env ind in
       let _,arsort = get_arity env indf in
       let nparams = mip.mind_nparams  in

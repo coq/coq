@@ -43,7 +43,8 @@ let lift_context n l =
 
 let transform_rec loc env sigma (pj,c,lf) indt = 
   let p = pj.uj_val in
-  let ((ind,params) as indf,realargs) = dest_ind_type indt in
+  let (indf,realargs) = dest_ind_type indt in
+  let (ind,params) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let mI = mkInd ind in
   let recargs = mip.mind_listrec in
@@ -54,9 +55,8 @@ let transform_rec loc env sigma (pj,c,lf) indt =
     (let cj = {uj_val=c; uj_type=mkAppliedInd indt} in
      error_number_branches_loc loc env sigma cj nconstr);
   if mis_is_recursive_subset [tyi] mip then
-    let (dep,_) =
-      find_case_dep_nparams env
-        (nf_evar sigma c, j_nf_evar sigma pj) indf in 
+    let dep =
+      is_dependent_elimination env (nf_evar sigma pj.uj_type) indf in 
     let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
     let depFvec = Array.init mib.mind_ntypes init_depFvec in
     (* build now the fixpoint *)
@@ -322,10 +322,16 @@ let rec pretype tycon env isevars lvar lmeta = function
       let cj = pretype empty_tycon env isevars lvar lmeta c in
       let (IndType (indf,realargs) as indt) = 
 	try find_rectype env (evars_of isevars) cj.uj_type
-	with Induc ->
+	with Not_found ->
           error_case_not_inductive_loc loc env (evars_of isevars) cj in
-      let pj = match po with
-	| Some p -> pretype empty_tycon env isevars lvar lmeta p
+      let (dep,pj) = match po with
+	| Some p ->
+            let pj = pretype empty_tycon env isevars lvar lmeta p in
+            let dep = is_dependent_elimination env pj.uj_type indf in
+            let ar =
+              arity_of_case_predicate env indf dep (Type (new_univ())) in
+            let _ = the_conv_x_leq env isevars pj.uj_type ar in
+            (dep, pj)
 	| None -> 
             (* get type information from type of branches *)
 	    let expbr = Cases.branch_scheme env isevars isrec indf in
@@ -337,7 +343,8 @@ let rec pretype tycon env isevars lvar lmeta = function
                 (* may be Type while Prop or Set would be expected *)
 	        match tycon with
 		  | Some pred ->
-                      Retyping.get_judgment_of env (evars_of isevars) pred
+                      (false,
+                       Retyping.get_judgment_of env (evars_of isevars) pred)
 	          | None ->
                       let sigma = evars_of isevars in
                       error_cant_find_case_type_loc loc env sigma cj.uj_val
@@ -355,12 +362,10 @@ let rec pretype tycon env isevars lvar lmeta = function
                       Retyping.get_type_of env (evars_of isevars) pred in
 		    let pj = { uj_val = pred; uj_type = pty } in
                     let _ = option_app (the_conv_x_leq env isevars pred) tycon
-                    in pj
+                    in (false,pj)
 		with Cases.NotInferable _ -> findtype (i+1) in
 	    findtype 0 in
       let pj = j_nf_evar (evars_of isevars) pj in
-
-      let (dep,_) = find_case_dep_nparams env (cj.uj_val,pj) indf in
 
       let pj =
 	if dep then pj else

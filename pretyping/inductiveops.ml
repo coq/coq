@@ -190,19 +190,17 @@ let build_branch_type env dep p cs =
 
 (**************************************************)
 
-exception Induc
-
 let extract_mrectype t =
   let (t, l) = decompose_app t in
   match kind_of_term t with
     | Ind ind -> (ind, l)
-    | _ -> raise Induc
+    | _ -> raise Not_found
 
 let find_mrectype env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
     | Ind ind -> (ind, l)
-    | _ -> raise Induc
+    | _ -> raise Not_found
 
 let find_rectype env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
@@ -211,7 +209,7 @@ let find_rectype env sigma c =
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         let (par,rargs) = list_chop mip.mind_nparams l in
         IndType((ind, par),rargs)
-    | _ -> raise Induc
+    | _ -> raise Not_found
 
 let find_inductive env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
@@ -219,7 +217,7 @@ let find_inductive env sigma c =
     | Ind ind
         when (fst (Inductive.lookup_mind_specif env ind)).mind_finite ->
         (ind, l)
-    | _ -> raise Induc
+    | _ -> raise Not_found
 
 let find_coinductive env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
@@ -227,28 +225,27 @@ let find_coinductive env sigma c =
     | Ind ind
         when not (fst (Inductive.lookup_mind_specif env ind)).mind_finite ->
         (ind, l)
-    | _ -> raise Induc
+    | _ -> raise Not_found
 
 
 (***********************************************)
 (* find appropriate names for pattern variables. Useful in the
    Case tactic. *)
 
-let is_dep_arity env kelim predty t = 
-  let rec srec (pt,t) =
+let is_dep_arity env kelim predty nodep_ar = 
+  let rec srec pt nodep_ar =
     let pt' = whd_betadeltaiota env Evd.empty pt in
-    let t' = whd_betadeltaiota env Evd.empty t in
-    match kind_of_term pt', kind_of_term t' with
-      | Prod (_,a1,a2), Prod (_,a1',a2') -> srec (a2,a2')
+    match kind_of_term pt', kind_of_term nodep_ar with
+      | Prod (_,a1,a2), Prod (_,a1',a2') -> srec a2 a2'
       | Prod (_,a1,a2), _ -> true
       | _ -> false in 
-  srec (predty,t)
+  srec predty nodep_ar
 
-let is_dep env predty (ind,args) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let params = fst (list_chop mip.mind_nparams args) in
+let is_dependent_elimination env predty indf =
+  let (ind,params) = indf in
+  let (_,mip) = Inductive.lookup_mind_specif env ind in
   let kelim = mip.mind_kelim in
-  let arsign,s = get_arity env (ind,params) in
+  let arsign,s = get_arity env indf in
   let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
   is_dep_arity env kelim predty glob_t
 
@@ -261,16 +258,28 @@ let set_pattern_names env ind brv =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   let arities =
     Array.map
-      (fun c -> List.length (fst (decompose_prod c)) - mip.mind_nparams)
+      (fun c ->
+        rel_context_length (fst (decompose_prod_assum c)) -
+        mip.mind_nparams)
       mip.mind_nf_lc in
   array_map2 (set_names env) arities brv
 
 
 let type_case_branches_with_names env indspec pj c =
+  let (ind,args) = indspec in
   let (lbrty,conclty,_) = Inductive.type_case_branches env indspec pj c in
-  if is_dep env pj.uj_type indspec then
-    (set_pattern_names env (fst indspec) lbrty, conclty)
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let params = fst (list_chop mip.mind_nparams args) in
+  if is_dependent_elimination env pj.uj_type (ind,params) then
+    (set_pattern_names env ind lbrty, conclty)
   else (lbrty, conclty)
+
+(* Type of Case predicates *)
+let arity_of_case_predicate env (ind,params) dep k =
+  let arsign,_ = get_arity env (ind,params) in
+  let mind = build_dependent_inductive env (ind,params) in
+  let concl = if dep then mkArrow mind (mkSort k) else mkSort k in
+  it_mkProd_or_LetIn concl arsign
 
 (***********************************************)
 (* Guard condition *)

@@ -17,15 +17,14 @@ open Rawterm
 open Termops
 (*i*)
 
-(* [detype avoid env c] turns [c], typed in [env], into a rawconstr. *)
+(* [detype env avoid nenv c] turns [c], typed in [env], into a rawconstr. *)
 (* De Bruijn indexes are turned to bound names, avoiding names in [avoid] *)
 
-val detype : identifier list -> names_context -> constr -> rawconstr
+val detype : env -> identifier list -> names_context -> constr -> rawconstr
 
 (* look for the index of a named var or a nondep var as it is renamed *)
-val lookup_name_as_renamed :
-  named_context -> constr -> identifier -> int option
-val lookup_index_as_renamed : constr -> int -> int option
+val lookup_name_as_renamed  : env -> constr -> identifier -> int option
+val lookup_index_as_renamed : env -> constr -> int -> int option
 
 
 val force_wildcard : unit -> bool

@@ -172,7 +172,7 @@ and mk_casegoals sigma goal goalacc p c =
   let pj = {uj_val=p; uj_type=pt} in 
   let indspec =
     try find_mrectype env sigma ct
-    with Induc -> anomaly "mk_casegoals" in
+    with Not_found -> anomaly "mk_casegoals" in
   let (lbrty,conclty) =
     type_case_branches_with_names env indspec pj c in
   (acc'',lbrty,conclty)
@@ -463,7 +463,7 @@ let prim_refiner r sigma goal =
             	if k = 1 then 
 		  try 
 		    let _ = find_inductive env sigma c1 in ()
-		  with Induc -> 
+		  with Not_found -> 
 		    error "cannot do a fixpoint on a non inductive type"
             	else 
 		  check_ind (k-1) b
@@ -482,7 +482,7 @@ let prim_refiner r sigma goal =
             	if k = 1 then 
 		  try 
 		    fst (find_inductive env sigma c1)
-		  with Induc -> 
+		  with Not_found -> 
 		    error "cannot do a fixpoint on a non inductive type"
             	else 
 		  check_ind (k-1) b
@@ -513,7 +513,7 @@ let prim_refiner r sigma goal =
             | _ -> 
 		try 
 		  let _ = find_coinductive env sigma b in ()
-                with Induc -> 
+                with Not_found -> 
 		  error ("All methods must construct elements " ^
 			  "in coinductive types")
 	in

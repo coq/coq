@@ -126,15 +126,15 @@ val names_of_rel_context : env -> names_context
 (* sets of free identifiers *)
 type used_idents = identifier list
 val occur_rel : int -> name list -> identifier -> bool
-val occur_id : name list -> identifier -> constr -> bool
+val occur_id : env -> name list -> identifier -> constr -> bool
 
 val next_name_not_occuring :
-  name -> identifier list -> name list -> constr -> identifier
+  env -> name -> identifier list -> name list -> constr -> identifier
 val concrete_name :
-  identifier list -> name list -> name ->
+  env -> identifier list -> name list -> name ->
   constr -> identifier option * identifier list
 val concrete_let_name :
-  identifier list -> name list ->
+  env -> identifier list -> name list ->
   name -> constr -> name * identifier list
 val global_vars : env -> constr -> identifier list
 val rename_bound_var : env -> identifier list -> types -> types

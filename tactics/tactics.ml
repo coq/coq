@@ -372,7 +372,7 @@ let dyn_intro_move = function
   | l -> bad_tactic_args "intro_move" l
 
 let rec intros_until s g =
-  match pf_lookup_name_as_renamed (pf_hyps g) (pf_concl g) s with
+  match pf_lookup_name_as_renamed (pf_env g) (pf_concl g) s with
     | Some depth -> tclDO depth intro g
     | None -> 
 	try
@@ -383,7 +383,7 @@ let rec intros_until s g =
 	      str " even after head-reduction")
 
 let rec intros_until_n_gen red n g =
-  match pf_lookup_index_as_renamed (pf_concl g) n with
+  match pf_lookup_index_as_renamed (pf_env g) (pf_concl g) n with
     | Some depth -> tclDO depth intro g
     | None ->
       if red then
@@ -1150,8 +1150,7 @@ let rec is_rec_arg env sigma indpath t =
   try
     let (ind_sp,_) = find_mrectype env sigma t in
     path_of_inductive env ind_sp = indpath
-  with Induc -> 
-    false
+  with Not_found -> false
 
 let rec recargs indpath env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with

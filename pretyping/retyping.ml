@@ -70,7 +70,7 @@ let typeur sigma metamap =
         (* TODO: could avoid computing the type of branches *)
         let i =
           try find_rectype env (type_of env c)
-          with Induc -> anomaly "type_of: Bad recursive type" in
+          with Not_found -> anomaly "type_of: Bad recursive type" in
         let pj = { uj_val = p; uj_type = type_of env p } in
         let (_,ty,_) = type_case_branches env i pj c in
         ty

@@ -85,11 +85,11 @@ let get_hyps  evc = evc.it
 let get_env   evc = Global.env_of_context evc.it
 let get_gc    evc = evc.sigma
 
-let pf_lookup_name_as_renamed hyps ccl s =
-  Detyping.lookup_name_as_renamed hyps ccl s
+let pf_lookup_name_as_renamed env ccl s =
+  Detyping.lookup_name_as_renamed env ccl s
 
-let pf_lookup_index_as_renamed ccl n =
-  Detyping.lookup_index_as_renamed ccl n
+let pf_lookup_index_as_renamed env ccl n =
+  Detyping.lookup_index_as_renamed env ccl n
 
 (*********************************************************************)
 (*                  Pretty printing functions                        *)

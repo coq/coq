@@ -92,7 +92,8 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
   in 
   crec env (List.rev cstr.cs_args,recargs) 
     
-let branch_scheme env isevars isrec ((ind,params) as indf) =
+let branch_scheme env isevars isrec indf =
+  let (ind,params) = dest_ind_family indf in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let cstrs = get_constructors env indf in 
   if isrec then
@@ -139,7 +140,7 @@ exception NotInferable of ml_case_error
 
 let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
-    let (ind,params) = indf in
+    let (ind,params) = dest_ind_family indf in
     let (mib,mip) = Inductive.lookup_mind_specif env ind in
     let recargs = mip.mind_listrec in
     if Array.length recargs = 0 then raise (NotInferable MlCaseAbsurd);
@@ -449,12 +450,12 @@ let unify_tomatch_with_patterns isevars env typ = function
 	 try
 	   IsInd (typ,find_rectype env (evars_of isevars) typ)
              (* will try to coerce later in check_and_adjust_constructor.. *)
-	 with Induc ->
+	 with Not_found ->
 	   NotInd (None,typ))
 	     (* error will be detected in check_all_variables *)
   | None -> 
       try IsInd (typ,find_rectype env (evars_of isevars) typ)
-      with Induc -> NotInd (None,typ)
+      with Not_found -> NotInd (None,typ)
 
 let coerce_row typing_fun isevars env cstropt tomatch =
   let j = typing_fun empty_tycon env tomatch in
@@ -939,7 +940,8 @@ let abstract_conclusion typ cs =
   let (sign,p) = decompose_prod_n n typ in
   lam_it p sign
 
-let infer_predicate loc env isevars typs cstrs ((mis,_) as indf) =
+let infer_predicate loc env isevars typs cstrs indf =
+  let (mis,_) = dest_ind_family indf in
   (* Il faudra substituer les isevars a un certain moment *)
   if Array.length cstrs = 0 then (* "TODO4-3" *)
     error "Inference of annotation for empty inductive types not implemented"

@@ -166,39 +166,39 @@ let computable p k =
 
 
 
-let lookup_name_as_renamed ctxt t s =
+let lookup_name_as_renamed env t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
     | Prod (name,_,c') ->
-	(match concrete_name avoid env_names name c' with
+	(match concrete_name env avoid env_names name c' with
            | (Some id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
-	(match concrete_name avoid env_names name c' with
+	(match concrete_name env avoid env_names name c' with
            | (Some id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
     | Cast (c,_) -> lookup avoid env_names n c
     | _ -> None
-  in lookup (ids_of_named_context ctxt) empty_names_context 1 t
+  in lookup (ids_of_named_context (named_context env)) empty_names_context 1 t
 
-let lookup_index_as_renamed t n =
+let lookup_index_as_renamed env t n =
   let rec lookup n d c = match kind_of_term c with
     | Prod (name,_,c') ->
-	  (match concrete_name [] empty_names_context name c' with
+	  (match concrete_name env [] empty_names_context name c' with
                (Some _,_) -> lookup n (d+1) c'
              | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-	  (match concrete_name [] empty_names_context name c' with
+	  (match concrete_name env [] empty_names_context name c' with
              | (Some _,_) -> lookup n (d+1) c'
              | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
     | Cast (c,_) -> lookup n d c
     | _ -> None
   in lookup n 1 t
 
-let rec detype avoid env t =
+let rec detype tenv avoid env t =
   match kind_of_term (collapse_appl t) with
     | Rel n ->
       (try match lookup_name_of_rel n env with
@@ -212,23 +212,26 @@ let rec detype avoid env t =
     | Sort (Prop c) -> RSort (dummy_loc,RProp c)
     | Sort (Type u) -> RSort (dummy_loc,RType (Some u))
     | Cast (c1,c2) ->
-	RCast(dummy_loc,detype avoid env c1,detype avoid env c2)
-    | Prod (na,ty,c) -> detype_binder BProd avoid env na ty c
-    | Lambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
-    | LetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
+	RCast(dummy_loc,detype tenv avoid env c1,
+              detype tenv avoid env c2)
+    | Prod (na,ty,c) -> detype_binder tenv BProd avoid env na ty c
+    | Lambda (na,ty,c) -> detype_binder tenv BLambda avoid env na ty c
+    | LetIn (na,b,_,c) -> detype_binder tenv BLetIn avoid env na b c
     | App (f,args) ->
-	RApp (dummy_loc,detype avoid env f,array_map_to_list (detype avoid env) args)
+	RApp (dummy_loc,detype tenv avoid env f,
+              array_map_to_list (detype tenv avoid env) args)
     | Const sp -> RRef (dummy_loc, ConstRef sp)
     | Evar (ev,cl) ->
 	let f = REvar (dummy_loc, ev) in
-	RApp (dummy_loc, f, List.map (detype avoid env) (Array.to_list cl))
+	RApp (dummy_loc, f,
+              List.map (detype tenv avoid env) (Array.to_list cl))
     | Ind ind_sp ->
 	RRef (dummy_loc, IndRef ind_sp)
     | Construct cstr_sp ->
 	RRef (dummy_loc, ConstructRef cstr_sp)
     | Case (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
-	let tomatch = detype avoid env c in
+	let tomatch = detype tenv avoid env c in
 	let indsp = annot.ci_ind in
         let considl = annot.ci_pp_info.cnames in
         let k = annot.ci_pp_info.ind_nargs in
@@ -237,11 +240,11 @@ let rec detype avoid env t =
 	  if synth_type & computable p k & considl <> [||] then
 	    None
 	  else 
-	    Some (detype avoid env p) in
+	    Some (detype tenv avoid env p) in
 	let constructs = 
 	  Array.init (Array.length considl) (fun i -> (indsp,i+1)) in
 	let eqnv =
-	  array_map3 (detype_eqn avoid env) constructs consnargsl bl in
+	  array_map3 (detype_eqn tenv avoid env) constructs consnargsl bl in
 	let eqnl = Array.to_list eqnv in
 	let tag =
 	  if PrintingLet.active (indsp,consnargsl) then 
@@ -253,10 +256,10 @@ let rec detype avoid env t =
 	in 
 	RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	
-    | Fix (nvn,recdef) -> detype_fix avoid env (RFix nvn) recdef
-    | CoFix (n,recdef) -> detype_fix avoid env (RCoFix n) recdef
+    | Fix (nvn,recdef) -> detype_fix tenv avoid env (RFix nvn) recdef
+    | CoFix (n,recdef) -> detype_fix tenv avoid env (RCoFix n) recdef
 
-and detype_fix avoid env fixkind (names,tys,bodies) =
+and detype_fix tenv avoid env fixkind (names,tys,bodies) =
   let def_avoid, def_env, lfi =
     Array.fold_left
       (fun (avoid, env, l) na ->
@@ -264,11 +267,11 @@ and detype_fix avoid env fixkind (names,tys,bodies) =
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
   RRec(dummy_loc,fixkind,Array.of_list (List.rev lfi),
-       Array.map (detype avoid env) tys,
-       Array.map (detype def_avoid def_env) bodies)
+       Array.map (detype tenv avoid env) tys,
+       Array.map (detype tenv def_avoid def_env) bodies)
 
 
-and detype_eqn avoid env constr construct_nargs branch =
+and detype_eqn tenv avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
     if not (force_wildcard ()) or (dependent (mkRel 1) b) then
       let id = next_name_away_with_default "x" x avoid in
@@ -280,7 +283,7 @@ and detype_eqn avoid env constr construct_nargs branch =
     if n=0 then
       (dummy_loc, ids, 
        [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
-       detype avoid env b)
+       detype tenv avoid env b)
     else
       match kind_of_term b with
 	| Lambda (x,_,b) -> 
@@ -305,15 +308,15 @@ and detype_eqn avoid env constr construct_nargs branch =
   in 
   buildrec [] [] avoid env construct_nargs branch
 
-and detype_binder bk avoid env na ty c =
+and detype_binder tenv bk avoid env na ty c =
   let na',avoid' =
-    if bk = BLetIn then concrete_let_name avoid env na c
+    if bk = BLetIn then concrete_let_name tenv avoid env na c
     else
-      match concrete_name avoid env na c with
+      match concrete_name tenv avoid env na c with
 	| (Some id,l') -> (Name id), l'
 	| (None,l')    -> Anonymous, l' in
-  let r =  detype avoid' (add_name na' env) c in
+  let r =  detype tenv avoid' (add_name na' env) c in
   match bk with
-    | BProd -> RProd (dummy_loc, na',detype [] env ty, r)
-    | BLambda -> RLambda (dummy_loc, na',detype [] env ty, r)
-    | BLetIn -> RLetIn (dummy_loc, na',detype [] env ty, r)
+    | BProd -> RProd (dummy_loc, na',detype tenv [] env ty, r)
+    | BLambda -> RLambda (dummy_loc, na',detype tenv [] env ty, r)
+    | BLetIn -> RLetIn (dummy_loc, na',detype tenv [] env ty, r)
