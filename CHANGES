@@ -26,6 +26,8 @@ Bug fixes
 - Fix a printing bug with lambda-variable names inherited from the names of 
   a product cast
 - Fix a bug with Focus
+- Fix pattern-matching compilation bugs (and new support for patterns
+  in a same column but in different inductive types)
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
