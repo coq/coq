@@ -96,15 +96,15 @@ Hints Immediate sym_eqT sym_not_eqT : core v62.
 
 (** This states the replacement of equals by equals *)
 
-Definition eqT_ind_r : (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)y==x -> (P y).
+Definition eqT_ind_r : (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)(eqT ? y x)->(P y).
 Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
 
-Definition eqT_rec_r : (A:Type)(x:A)(P:A->Set)(P x)->(y:A)y==x -> (P y).
+Definition eqT_rec_r : (A:Type)(x:A)(P:A->Set)(P x)->(y:A)(eqT ? y x)->(P y).
 Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
 
-Definition eqT_rect_r : (A:Type)(x:A)(P:A->Type)(P x)->(y:A)y==x -> (P y).
+Definition eqT_rect_r : (A:Type)(x:A)(P:A->Type)(P x)->(y:A)(eqT ? y x)->(P y).
 Intros A x P H y H0; Case sym_eqT with 1:=H0; Trivial.
 Defined.
 
