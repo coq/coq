@@ -152,7 +152,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
 
   (* Equivalence relations *)
   | TacReflexivity
-  | TacSymmetry
+  | TacSymmetry of 'id option
   | TacTransitivity of 'constr 
 
   (* For ML extensions *)

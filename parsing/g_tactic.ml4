@@ -337,7 +337,8 @@ GEXTEND Gram
 
       (* Equivalence relations *)
       | IDENT "Reflexivity" -> TacReflexivity
-      | IDENT "Symmetry" -> TacSymmetry
+      | IDENT "Symmetry"; ido = OPT [ "in"; id = id_or_ltac_ref -> id ] -> 
+	  TacSymmetry ido
       | IDENT "Transitivity"; c = constr -> TacTransitivity c
 
       (* Conversion *)

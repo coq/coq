@@ -623,7 +623,8 @@ let rec intern_atomic lf ist x =
 
   (* Equivalence relations *)
   | TacReflexivity -> TacReflexivity
-  | TacSymmetry -> TacSymmetry
+  | TacSymmetry idopt -> 
+      TacSymmetry (option_app (intern_hyp_or_metaid ist) idopt)
   | TacTransitivity c -> TacTransitivity (intern_constr ist c)
 
   (* For extensions *)
@@ -1644,7 +1645,7 @@ and interp_atomic ist gl = function
 
   (* Equivalence relations *)
   | TacReflexivity -> h_reflexivity
-  | TacSymmetry -> h_symmetry
+  | TacSymmetry c -> h_symmetry (option_app (interp_hyp ist gl) c)
   | TacTransitivity c -> h_transitivity (pf_interp_constr ist gl c)
 
   (* For extensions *)
@@ -1848,7 +1849,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
         subst_rawconstr subst c, cl)
 
   (* Equivalence relations *)
-  | TacReflexivity | TacSymmetry as x -> x
+  | TacReflexivity | TacSymmetry _ as x -> x
   | TacTransitivity c -> TacTransitivity (subst_rawconstr subst c)
 
   (* For extensions *)

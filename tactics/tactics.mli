@@ -222,7 +222,8 @@ val reflexivity                 : tactic
 val intros_reflexivity          : tactic
 
 val symmetry                    : tactic
-val intros_symmetry             : tactic
+val symmetry_in                 : identifier -> tactic
+val intros_symmetry             : clause -> tactic
 
 val transitivity                : constr -> tactic
 val intros_transitivity         : constr -> tactic

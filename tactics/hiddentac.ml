@@ -87,7 +87,7 @@ let h_change oc c cl  = abstract_tactic (TacChange (oc,c,cl)) (change oc c cl)
 
 (* Equivalence relations *)
 let h_reflexivity    = abstract_tactic TacReflexivity intros_reflexivity
-let h_symmetry       = abstract_tactic TacSymmetry intros_symmetry
+let h_symmetry c     = abstract_tactic (TacSymmetry c) (intros_symmetry c)
 let h_transitivity c =
   abstract_tactic (TacTransitivity c) (intros_transitivity c)
 

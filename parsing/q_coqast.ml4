@@ -422,7 +422,7 @@ let rec mlexpr_of_atomic_tactic = function
 
   (* Equivalence relations *)
   | Tacexpr.TacReflexivity -> <:expr< Tacexpr.TacReflexivity >>
-  | Tacexpr.TacSymmetry -> <:expr< Tacexpr.TacSymmetry >>
+  | Tacexpr.TacSymmetry ido -> <:expr< Tacexpr.TacSymmetry $mlexpr_of_option mlexpr_of_hyp ido$ >>
   | Tacexpr.TacTransitivity c -> <:expr< Tacexpr.TacTransitivity $mlexpr_of_constr c$ >>
 
   (* Automation tactics *)

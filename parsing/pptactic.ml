@@ -388,7 +388,7 @@ let rec pr_atom0 = function
   | TacAutoTDB None -> str "AutoTDB"
   | TacDestructConcl -> str "DConcl"
   | TacReflexivity -> str "Reflexivity"
-  | TacSymmetry -> str "Symmetry"
+  | TacSymmetry None -> str "Symmetry"
   | t -> str "(" ++ pr_atom1 t ++ str ")"
 
   (* Main tactic printer *)
@@ -530,7 +530,8 @@ and pr_atom1 = function
         brk (1,1) ++ pr_constr c ++ pr_clause pr_ident h)
 
   (* Equivalence relations *)
-  | (TacReflexivity | TacSymmetry) as x -> pr_atom0 x
+  | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 x
+  | TacSymmetry (Some id) -> str "Symmetry " ++ pr_ident id
   | TacTransitivity c -> str "Transitivity" ++ pr_arg pr_constr c
 
 and pr_tactic_seq_body tl = 

@@ -1606,7 +1606,26 @@ let symmetry gl =
 	      gl
 	end
 
-let intros_symmetry  = (tclTHEN intros symmetry)
+let symmetry_in id gl = 
+  let ctype = pf_type_of gl (mkVar id) in 
+  let sign,t = decompose_prod_assum ctype in
+  match match_with_equation t with
+    | None -> (* Do not deal with setoids yet *) 
+        error "The term provided does not end with an equation" 
+    | Some (hdcncl,args) -> 
+        let symccl = match args with 
+	  | [t1; c1; t2; c2] -> mkApp (hdcncl, [| t2; c2; t1; c1 |])
+          | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c2; c1 |])
+          | [c1;c2]     -> mkApp (hdcncl, [| c2; c1 |])
+	  | _ -> assert false in
+	tclTHENS (cut (it_mkProd_or_LetIn symccl sign))
+	  [ intro_replacing id;
+            tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
+	  gl
+
+let intros_symmetry = function
+  | None -> tclTHEN intros symmetry
+  | Some id -> symmetry_in id
 
 (* Transitivity tactics *)
 
