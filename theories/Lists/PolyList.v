@@ -407,6 +407,20 @@ Lemma nth_S_cons :
 Simpl; Auto.
 Save.
 
+Fixpoint nth_error [l:list;n:nat] : (Exc A) :=
+  Cases n l of
+  | O (cons x _) => (Value x)
+  | (S n) (cons _ l) => (nth_error l n)
+  | _ _ => Error 
+  end.
+
+Definition nth_default : A -> list -> nat -> A :=
+  [default,l,n]Cases (nth_error l n) of
+  | (value x) => x
+  | error => default
+  end.
+
+
 (*i
 Lemma nth_In :
   (n:nat)(l:list)(d:A)(lt n (length l))->(In (nth n l d) l).
@@ -423,6 +437,20 @@ Unfold lt; Induction l;
 ].
 i*)
 
+(* Decidable equality on lists *)
+
+
+Lemma list_eq_dec : ((x,y:A){x=y}+{~x=y})->(x,y:list){x=y}+{~x=y}.
+Proof.
+  Induction x; Destruct y; Intros; Auto.
+  Case (H a a0); Intro e.
+  Case (H0 l0); Intro e'.
+  Left; Rewrite e; Rewrite e'; Trivial.
+  Right; Red; Intro.
+  Apply e'; Injection H1; Trivial.
+  Right; Red; Intro.
+  Apply e; Injection H1; Trivial.
+Qed.
 
 (*********************************************)
 (*   Reverse Induction Principle on Lists    *)
