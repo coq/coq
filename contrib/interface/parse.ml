@@ -106,7 +106,7 @@ let execute_when_necessary ast =
 let execute_when_necessary v =
  (match v with
   | VernacGrammar _ -> Vernacentries.interp v
-  | VernacOpenScope sc -> Vernacentries.interp v
+  | VernacOpenCloseScope sc -> Vernacentries.interp v
   | VernacRequire (_,_,l) ->
       (try 
 	Vernacentries.interp v

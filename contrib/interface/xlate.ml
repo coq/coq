@@ -1475,7 +1475,8 @@ let xlate_vernac =
         | PrintModuleType _ -> xlate_error "TODO: Print Module Type"
         | PrintModule _ -> xlate_error "TODO: Print Module"
         | PrintScopes -> xlate_error "TODO: Print Scopes"
-        | PrintScope _ -> xlate_error "TODO: Print Scope")
+        | PrintScope _ -> xlate_error "TODO: Print Scope"
+        | PrintAbout _ -> xlate_error "TODO: Print About")
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment id -> CT_section_end (xlate_ident id)
@@ -1616,7 +1617,7 @@ let xlate_vernac =
          	| ("SYNTAX", [Varg_ident phy; Varg_ident s; spatarg; unparg]) ->
          	        (syntaxop phy s spatarg unparg 
          coerce_ID_OPT_to_FORMULA_OPT(CT_coerce_NONE_to_ID_OPT(CT_none)))*)
-   | VernacOpenScope sc -> xlate_error "TODO: open scope"
+   | VernacOpenCloseScope sc -> xlate_error "TODO: open/close scope"
 
    | VernacArgumentsScope _ -> xlate_error "TODO: Arguments Scope"
 
@@ -1628,7 +1629,9 @@ let xlate_vernac =
 
    | VernacSyntaxExtension _ -> xlate_error "Syntax Extension not implemented"
 
-   | VernacInfix (false,str_assoc, Some n, str, id, false, _, None) ->
+   | VernacInfix (false,(str,modl),id,_,None) ->
+       (match Metasyntax.interp_infix_modifiers modl with
+	 | (str_assoc,Some n,false,None) ->
       CT_infix (
        (match str_assoc with
         | Some Gramext.LeftA -> CT_lefta
@@ -1636,6 +1639,7 @@ let xlate_vernac =
         | Some Gramext.NonA -> CT_nona
         | None -> CT_coerce_NONE_to_ASSOC CT_none),
        CT_int n, CT_string str, loc_qualid_to_ct_ID id)
+	 | _ -> xlate_error "TODO: handle onlyparse and format")
    | VernacInfix _ -> xlate_error "TODO: handle scopes and locality"
    | VernacGrammar _ -> xlate_error "GRAMMAR not implemented"
    | VernacCoercion (s, id1, id2, id3) ->
