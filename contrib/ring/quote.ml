@@ -112,14 +112,14 @@ open Proof_type
   We do that lazily, because this code can be linked before
   the constants are loaded in the environment *)
 
-let constant dir s = Declare.global_qualified_reference (make_qualid [dir] s)
+let constant dir s = Declare.global_qualified_reference (make_qualid dir s)
 
-let coq_Empty_vm = lazy (constant "#Quote#varmap.cci" "Empty_vm")
-let coq_Node_vm = lazy (constant "#Quote#varmap.cci" "Node_vm")
-let coq_varmap_find = lazy (constant "#Quote#varmap_find.cci" "varmap_find")
-let coq_Right_idx = lazy (constant "#Quote#index.cci" "Right_idx")
-let coq_Left_idx = lazy (constant "#Quote#index.cci" "Left_idx")
-let coq_End_idx = lazy (constant "#Quote#index.cci" "End_idx")
+let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
+let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")
+let coq_varmap_find = lazy (constant ["Quote"] "varmap_find")
+let coq_Right_idx = lazy (constant ["Quote"] "Right_idx")
+let coq_Left_idx = lazy (constant ["Quote"] "Left_idx")
+let coq_End_idx = lazy (constant ["Quote"] "End_idx")
 
 (*s Then comes the stuff to decompose the body of interpetation function
   and pre-compute the inversion data.
