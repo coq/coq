@@ -574,7 +574,6 @@ and xlate_tactic =
    | TacFun (largs, t) ->
        let fst, rest =  xlate_largs_to_id_unit largs in
        CT_tactic_fun (CT_id_unit_list(fst, rest), xlate_tactic t)
-   | TacFunRec _ -> xlate_error "Merged with Tactic Definition"
    | TacThen (t1,t2) -> 
        (match xlate_tactic t1 with
             CT_then(a,l) -> CT_then(a,l@[xlate_tactic t2])
@@ -1159,7 +1158,7 @@ let xlate_comment = function
 
 let xlate_vernac =
  function
-   | VernacDeclareTacticDefinition (loc,[(_,id),TacFun (largs,tac)]) ->
+   | VernacDeclareTacticDefinition (false,[(_,id),TacFun (largs,tac)]) ->
        let fst, rest = xlate_largs_to_id_unit largs in
        let extract = function CT_unit -> xlate_error "TODO: void parameter"
 	 | CT_coerce_ID_to_ID_UNIT x -> x in
@@ -1169,25 +1168,24 @@ let xlate_vernac =
 			    CT_id_list largs,
 			    xlate_tactic tac)
    | VernacDeclareTacticDefinition 
-       (loc,((id,TacFunRec (largs,tac))::_ as the_list)) ->
+       (true,((id,TacFun (largs,tac))::_ as the_list)) ->
        let x_rec_tacs =
 	 List.map
            (function
-	     | ((_,x),TacFunRec ((_,fst),(argl,tac))) ->
-		  let fst, rest = xlate_largs_to_id_unit ((Some fst)::argl) in
+	     | ((_,x),TacFun (argl,tac)) ->
+		  let fst, rest = xlate_largs_to_id_unit ((Some x)::argl) in
 	 	  CT_rec_tactic_fun(xlate_ident x,
 				 CT_id_unit_list(fst, rest),
 				 xlate_tactic tac)
 	     | ((_,x),tac) ->
 	 	  CT_rec_tactic_fun(xlate_ident x,
-                                 (* Pas clair... *)
 				 CT_id_unit_list (xlate_id_unit (Some x), []),
 				 xlate_tactic tac)) the_list in
        let fst, others = match x_rec_tacs with
 	   fst::others -> fst, others
 	 | _ -> assert false in
        CT_rec_tactic_definition(CT_rec_tactic_fun_list(fst, others))
-    | VernacDeclareTacticDefinition (_,[(_,id),tac]) ->
+    | VernacDeclareTacticDefinition (false,[(_,id),tac]) ->
        CT_tactic_definition(xlate_ident id, CT_id_list[], xlate_tactic tac)
     | VernacDeclareTacticDefinition (loc,_) -> xlate_error "Shouldn't occur"
     | VernacLoad (verbose,s) ->
