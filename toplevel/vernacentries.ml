@@ -236,12 +236,6 @@ let _ =
 
 (***
 let _ =
-  add "ResetAfter"
-    (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> reset_keeping_name id)
-       | _ -> bad_vernac_args "ResetAfter")
-
-let _ =
   add "ResetInitial"
     (function 
        | [] -> (fun () -> reset_initial ())

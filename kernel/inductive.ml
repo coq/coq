@@ -133,7 +133,7 @@ let check_params nparams params c =
   try
     List.iter2 
       (fun (n1,t1) (n2,t2) ->
-	 if n1 <> n2 || strip_outer_cast t1 <> strip_outer_cast t2 then
+	 if n1 <> n2 || strip_all_casts t1 <> strip_all_casts t2 then
 	   raise (InductiveError BadEntry))
       eparams params
   with Invalid_argument _ ->

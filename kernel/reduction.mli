@@ -206,7 +206,3 @@ val find_mcoinductype :
 val check_mrectype_spec : env -> 'a evar_map -> constr -> constr
 val minductype_spec : env -> 'a evar_map -> constr -> constr
 val mrectype_spec : env -> 'a evar_map -> constr -> constr
-
-(* Special function, which keep the key casts under Fix and MutCase. *)
-
-val strip_all_casts : constr -> constr

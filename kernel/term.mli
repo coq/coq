@@ -260,6 +260,9 @@ val isCast : constr -> bool
    [strip_outer_cast] (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
 val strip_outer_cast : constr -> constr
 
+(* Special function, which keep the key casts under Fix and MutCase. *)
+val strip_all_casts : constr -> constr
+
 (* Destructs the product $(x:t_1)t_2$ *)
 val destProd : constr -> name * constr * constr
 val hd_of_prod : constr -> constr

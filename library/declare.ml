@@ -288,7 +288,8 @@ let mind_path = function
 
 let declare_eliminations sp i =
   let oper = MutInd (sp,i) in
-  let ids = ids_of_sign (Global.var_context()) in
+  let mib = Global.lookup_mind sp in
+  let ids = ids_of_sign mib.mind_hyps in
   let mind = DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids)) in
   let mispec = Global.lookup_mind_specif mind in 
   let mindstr = string_of_id (mis_typename mispec) in

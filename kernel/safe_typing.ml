@@ -367,7 +367,7 @@ let type_one_constructor env_ar nparams ar c =
     | Prop _ -> cst
   in
   let (j,cst'') = safe_machine env_ar c in
-  let issmall = is_small_type env_par c in
+  let issmall = is_small_type env_par dc in
   ((issmall,j), Constraint.union cst' cst'')
 
 let logic_constr env c =

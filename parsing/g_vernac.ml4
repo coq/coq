@@ -327,8 +327,6 @@ GEXTEND Gram
           <:ast< (RestoreState $id) >>
       | IDENT "Remove";  IDENT "State"; id = identarg; "." ->
           <:ast< (RemoveState $id) >>
-      | IDENT "Reset"; IDENT "after"; id = identarg; "." ->
-          <:ast< (ResetAfter $id) >>
       | IDENT "Reset"; IDENT "Initial"; "." -> <:ast< (ResetInitial) >>
       | IDENT "Reset"; IDENT "Section"; id = identarg; "." ->
           <:ast< (ResetSection $id) >>

@@ -58,13 +58,17 @@ let getenv_else s dft = try Sys.getenv s with Not_found -> dft
 let init_load_path () =
   (* default load path; only if COQLIB is defined *)
   let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
-  if coqlib <> "" then
-    List.iter
-      (fun s -> add_include (Filename.concat coqlib s))
-      ("states" :: 
+  let coqtop = getenv_else "COQTOP" Coq_config.coqtop in
+  if coqlib = coqtop then
+    (* local installation *)
+    List.iter 
+      (fun s -> add_include (Filename.concat coqtop s))
+      ("states" :: "dev" ::
        (List.map 
 	  (fun s -> Filename.concat "theories" (hm2 s))
-          Coq_config.theories_dirs));
+          Coq_config.theories_dirs))
+  else
+    add_include coqlib;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_include camlp4;
   add_include ".";

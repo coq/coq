@@ -331,6 +331,42 @@ let rec strip_outer_cast = function
   | DOP2(Cast,c,_) -> strip_outer_cast c
   | c -> c
 
+
+
+(* Fonction spéciale qui laisse les cast clés sous les Fix ou les MutCase *)
+
+let under_outer_cast f = function
+  | DOP2 (Cast,b,t) -> DOP2 (Cast,f b,f t)
+  | c -> f c
+
+let rec strip_all_casts t = 
+  match t with
+    | DOP2 (Cast, b, _) -> strip_all_casts b
+    | DOP0 _ as t -> t
+    (* Cas ad hoc *)
+    | DOPN(Fix _ as f,v) -> 
+	let n = Array.length v in
+	let ts = Array.sub v 0 (n-1) in
+	let b = v.(n-1) in 
+	DOPN(f, Array.append 
+	       (Array.map strip_all_casts ts)
+	       [|under_outer_cast strip_all_casts b|])
+    | DOPN(CoFix _ as f,v) -> 
+	let n = Array.length v in
+	let ts = Array.sub v 0 (n-1) in
+	let b = v.(n-1) in 
+	DOPN(f, Array.append 
+	       (Array.map strip_all_casts ts)
+	       [|under_outer_cast strip_all_casts b|])
+    | DOP1(oper,c) -> DOP1(oper,strip_all_casts c)
+    | DOP2(oper,c1,c2) -> DOP2(oper,strip_all_casts c1,strip_all_casts c2)
+    | DOPN(oper,cl) -> DOPN(oper,Array.map strip_all_casts cl)
+    | DOPL(oper,cl) -> DOPL(oper,List.map strip_all_casts cl)
+    | DLAM(na,c) -> DLAM(na,strip_all_casts c)
+    | DLAMV(na,c) -> DLAMV(na,Array.map (under_outer_cast strip_all_casts) c)
+    | VAR _ as t -> t
+    | Rel _ as t -> t
+
 (* Destructs the product (x:t1)t2 *)
 let destProd = function 
   | DOP2 (Prod, t1, (DLAM (x,t2))) -> (x,t1,t2) 
