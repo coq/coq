@@ -109,8 +109,7 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
    to compile Coq in Objective Caml bytecode (and native-code if supported).
 
    This will compile the entire system. This phase can take more or less time,
-   depending on your architecture (about 30 minutes for both compilations
-   on a Pentium Pro 150), and is fairly verbose. 
+   depending on your architecture and is fairly verbose. 
 
 6- You can now install the Coq system. Executables, libraries, manual pages
    and emacs mode are copied in some standard places of your system, defined at

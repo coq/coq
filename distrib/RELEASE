@@ -22,17 +22,12 @@ A1) VÉRIFICATIONS
 
   - Changement des variables en tête du fichier "configure" et
     vérification du numéro de versions de OCaml et Camlp4 demandées
-  - Mise à jour des champs Version, Source et Require et vérifier la
-    liste des "%files" dans "distrib/coq.spec"
+  - Mise à jour des champs Version, Source et Require
   - Relecture des fichiers "README", "README.win", en particulier,
     vérification du numéro de version, des adresses internet et des
     coordonnées de Coq
   - Relecture des fichiers "INSTALL", "INSTALL.win" en particulier numéro
     de version de coq et numéros des versions de OCaml et Camlp4 demandées
-
-  - S'assurer après un "make cleanall" que "make world" et "make
-    world-opt" commutent                      # Caduc pour la V7
-
   - Mise à jour/nettoyage du fichier CHANGES et du fichier ANNONCE
 
   EN CAS DE MODIFICATION DE L'ARCHIVE, REPRENDRE EN A3

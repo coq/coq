@@ -70,7 +70,7 @@ tar-gz:
 	@echo done
 	@echo -n Building the tar.gz source package
 	@tar cvf ${COQPACKAGE}.tar ${COQPACKAGE}
-	@gzip ${COQPACKAGE}.tar
+	@gzip --best ${COQPACKAGE}.tar
 	@echo done
 	@echo Checking release parameters
 	./check-list
@@ -107,12 +107,12 @@ release-bin:
 	@echo
 	@read
 	tar -cvf $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar --files-from $(COQLIB)/COQFILES
-	gzip $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
+	gzip --best $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
 
 arch-tar-gz-final:
 	(cd ${ARCHBUILDROOT}/buildroot;\
 	tar -cvf ${DISTRIBDIR}/$(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar *)
-	gzip $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
+	gzip --best $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar
 
 arch-tar-gz: ${COQPACKAGE}.tar.gz
 	@echo "Building $(COQPACKAGE)-$(SYSTEM)-$(ARCH).tar.gz to be installed in /usr/local/"
@@ -157,7 +157,7 @@ ${COQPACKAGE}.tar.gz:
 	${MAKE} tar-gz
 
 # rpm 3.0 met dans LOCALARCH mais rpm 2.5 dans ARCH...
-${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz
+${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz coq.spec
 	${MAKE} rpm-config
 	cp -f petit-coq.gif ${RPMTOPDIR}/SOURCES
 	cp -f ${COQPACKAGE}.tar.gz ${RPMTOPDIR}/SOURCES
@@ -182,6 +182,16 @@ ${COQRPMPACKAGE}.${ARCH}.rpm: rpm-config ${COQRPMPACKAGE}.src.rpm
 	else mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .;\
 	fi)
 
+RH/coq.list: ${COQPACKAGE}.tar.gz Makefile config.distrib
+	rm -rf RH/${COQPACKAGE} RH/build
+	cd RH ; tar xzf ../${COQPACKAGE}.tar.gz
+	cd RH/${COQPACKAGE} ; sh ../do_build
+	cd RH/${COQPACKAGE} ; make COQINSTALLPREFIX=${DISTRIBDIR}/RH/build install
+	cd RH/build ; find . '!' -type d > ../coq.list
+
+coq.spec: RH/coq.list RH/coq.spec.tpl
+	cd RH ; m4 -P coq.spec.tpl > ../coq.spec
+
 ##########
 contrib-tag:
 	@dashedversion=V`echo ${VERSION} | sed -e 's/\./-/g'`;\
@@ -198,7 +208,7 @@ contrib-tar-gz:
 	- rm contrib-${VERSION}.tar.gz
 	@echo -n Building the tar.gz contrib package
 	@tar cvf contrib-${VERSION}.tar contrib-${VERSION}
-	@gzip contrib-${VERSION}.tar
+	@gzip --best contrib-${VERSION}.tar
 	@echo done
 
 ##########
@@ -210,7 +220,7 @@ patch:
 	rm -rf ${COQPACKAGE}
 	gunzip -c ${COQPACKAGE}.tar.gz | tar x
 	diff -rc coq-$(PREVIOUSVERSION) ${COQPACKAGE} > patch-${VERSION}-$(PREVIOUSVERSION)
-	gzip patch-${VERSION}-$(PREVIOUSVERSION)
+	gzip --best patch-${VERSION}-$(PREVIOUSVERSION)
 
 ##########
 clean:
@@ -263,8 +273,10 @@ patch-ftp-install: prep-ftp-install
 	chmod g+w ${FTPDIR}/V${VERSION}/patch-${VERSION}-$(PREVIOUSVERSION).gz
 
 deb: ${COQPACKAGE}.tar.gz
-	tar xzf ${COQPACKAGE}.tar.gz
-	mv ${COQPACKAGE} ${COQPACKAGE}.orig
-	tar xzf ${COQPACKAGE}.tar.gz
-	cd ${COQPACKAGE} ; cp -a distrib/debian .
-	cd ${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us
+	rm -rf deb_build
+	mkdir -p deb_build
+	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
+	cd deb_build ; mv ${COQPACKAGE} ${COQPACKAGE}.orig
+	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
+	cd deb_build/${COQPACKAGE} ; cp -a distrib/debian .
+	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us

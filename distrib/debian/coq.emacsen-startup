@@ -16,8 +16,6 @@
                               (symbol-name flavor)
 			      "/site-lisp/coq") load-path))
 
-(autoload 'coq-mode "coq" "Coq major mode" t)
+(setq auto-mode-alist (cons '("\\.v$" . coq-mode) auto-mode-alist))
+(autoload 'coq-mode "coq" "Major mode for editing Coq vernacular." t)
 
-(setq-default auto-mode-alist 
-	      (cons '("\\.v" . coq-mode) 
-		    auto-mode-alist))

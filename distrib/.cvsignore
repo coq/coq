@@ -12,3 +12,4 @@ config.distrib
 coq-*
 contrib-*
 patch-*
+deb_build
