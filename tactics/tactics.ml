@@ -1175,7 +1175,7 @@ let induct_discharge statuslists destopt avoid' ((avoid7,avoid8),ra) (names,forc
 		(match kind_of_term (pf_concl gl) with
 		  | Prod (name,t,_) -> (name,None,t)
 		  | LetIn (name,b,t,_) -> (name,Some b,t) 
-		  | _ -> assert false)) gl in
+		  | _ -> raise (RefinerError IntroNeedsProduct))) gl in
 	      if Options.do_translate() & id7 <> id8 then force := true;
               let id = if !Options.v7 then id7 else id8 in
 	      rnames := !rnames @ [IntroIdentifier id];
@@ -1192,12 +1192,12 @@ let induct_discharge statuslists destopt avoid' ((avoid7,avoid8),ra) (names,forc
 		(match kind_of_term (pf_concl gl) with
 		  | Prod (name,t,_) -> (name,None,t)
 		  | LetIn (name,b,t,_) -> (name,Some b,t) 
-		  | _ -> assert false)) gl in
+		  | _ -> raise (RefinerError IntroNeedsProduct))) gl in
 	      let id8 = fresh_id avoid8 (default_id gl
 		(match kind_of_term (pf_concl gl) with
 		  | Prod (name,t,_) -> (name,None,t)
 		  | LetIn (name,b,t,_) -> (name,Some b,t) 
-		  | _ -> assert false)) gl in
+		  | _ -> raise (RefinerError IntroNeedsProduct))) gl in
 	      if Options.do_translate() & id7 <> id8 then force := true;
               let id = if !Options.v7 then id7 else id8 in
               let avoid = if !Options.v7 then avoid7 else avoid8 in
