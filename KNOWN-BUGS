@@ -1,15 +1,19 @@
   THIS IS A LIST OF KNOWN BUGS OF COQ V7.0 BETA
 
-- The syntax "Specialize num ident" is temporarily not accepted
-  outside "Tactic Definition". Syntax "Specialize ident" is OK.
-
 - Realizer and Program/Program_all are not available
+
+- Correctness is not available
+
+- Local definitions in Record/Structure are not allowed
+
+- Alias of pattern with dependent types are not supported
+
+- Tokens with both symbols and letters are not supported
 
 - No consistency check is done when requiring a module (that is, a
   module can be compiled with logical name Mycontrib.Arith.Plus but
   required with name HisContrib.Zarith.Plus).
 
-- Real numbers not subterm of a complex expression are written under a
-  form like ``4+1`` instead of ``5``.
+- The syntax "Specialize num ident" is temporarily not accepted
+  outside "Tactic Definition". Syntax "Specialize ident" is OK.
 
-- Local definitions in Record/Structure are not allowed
