@@ -60,8 +60,9 @@ let rec head_pattern_bound t =
     | PRef r                -> label_of_ref r
     | PVar id               -> VarNode id
     | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ -> raise BoundPattern
-    | PBinder(BLambda,_,_,_) | PCoFix _ ->
-      anomaly "head_pattern_bound: not a type"
+    (* Perhaps they were arguments, but we don't beta-reduce *)
+    | PBinder(BLambda,_,_,_) -> raise BoundPattern
+    | PCoFix _ -> anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
   | IsConst (sp,_) -> ConstNode sp

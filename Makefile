@@ -84,10 +84,10 @@ PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/classops.cmo pretyping/recordops.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
-	  pretyping/syntax_def.cmo
+	  pretyping/syntax_def.cmo pretyping/pattern.cmo 
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
-	parsing/pattern.cmo parsing/astterm.cmo parsing/termast.cmo \
+	parsing/astterm.cmo parsing/termast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
