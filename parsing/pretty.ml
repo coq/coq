@@ -239,6 +239,8 @@ let print_leaf_entry with_values sep (sp,lobj) =
 	[< 'sTR" Class Marker"; 'fNL >]
     | (_,"COERCION") -> 
 	[< 'sTR" Coercion Marker"; 'fNL >]
+    | (_,"REQUIRE") -> 
+	[< 'sTR" Require Marker"; 'fNL >]
     | (_,s) -> 
 	[< 'sTR(string_of_path sp); 'sTR" : ";
            'sTR"Unrecognized object "; 'sTR s; 'fNL >]
