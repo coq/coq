@@ -22,8 +22,6 @@ Notation "A + { B }" := (sumor A B)
 
 Notation ProjS1 := (projS1 ?).
 Notation ProjS2 := (projS2 ?).
-Notation Error  := (error ?).
-Notation Value  := (value ?).
 Notation Except := (except ?).
 
 Notation "{ x : A  |  P }"       := (sig A [x:A]P)

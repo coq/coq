@@ -147,6 +147,9 @@ Definition Exc := option.
 Definition value := Some.
 Definition error := None.
 
+Syntactic Definition Error := (error ?).
+Syntactic Definition Value := (value ?).
+ 
 Definition except := False_rec. (* for compatibility with previous versions *)
 
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
