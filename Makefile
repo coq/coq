@@ -96,7 +96,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/termast.cmo parsing/astterm.cmo parsing/coqlib.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-	parsing/g_constr.cmo parsing/g_cases.cmo \
+	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
 	parsing/printer.cmo parsing/prettyp.cmo parsing/search.cmo \
         parsing/egrammar.cmo \
@@ -165,7 +165,7 @@ PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 	parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-	parsing/g_constr.cmo parsing/g_cases.cmo \
+	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
 	parsing/extend.cmo config/coq_config.cmo\
         lib/system.cmo lib/bstack.cmo lib/edit.cmo \
 	library/nametab.cmo kernel/univ.cmo library/lib.cmo kernel/esubst.cmo \
@@ -695,7 +695,8 @@ clean::
 
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
-	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/extend.ml4    
+	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
+	   parsing/extend.ml4    
 
 # beforedepend:: $(GRAMMARCMO)
 

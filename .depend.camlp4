@@ -1,6 +1,6 @@
 tactics/tauto.ml: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
 contrib/correctness/psyntax.ml: parsing/grammar.cma
-contrib/field/field.ml: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
+contrib/field/field.ml: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo
 parsing/lexer.ml: 
 parsing/q_coqast.ml: 
 parsing/g_prim.ml: 
@@ -12,5 +12,6 @@ parsing/g_proofs.ml: parsing/grammar.cma
 parsing/g_cases.ml: parsing/grammar.cma
 parsing/g_constr.ml: parsing/grammar.cma
 parsing/g_tactic.ml: parsing/grammar.cma
+parsing/g_ltac.ml: parsing/grammar.cma
 parsing/extend.ml: parsing/grammar.cma
 toplevel/mltop.ml: 
