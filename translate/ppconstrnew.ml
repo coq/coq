@@ -587,8 +587,22 @@ let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
 let pr_binders = pr_undelimited_binders (pr ltop)
 
+let is_Eval_key c =
+  Options.do_translate () &
+  (let f id = let s = string_of_id id in s = "Eval" in
+  let g = function
+    | Ident(_,id) -> f id
+    | Qualid (_,qid) -> let d,id = repr_qualid qid in d = empty_dirpath & f id
+  in
+  match c with
+    | CRef ref | CApp (_,(_,CRef ref),_) when g ref -> true
+    | _ -> false)
+
+let pr_protect_eval c =
+  if is_Eval_key c then h 0 (str "(" ++ pr ltop c ++ str ")") else pr ltop c
+
 let pr_lconstr_env_n env n b c =
-  let bl, c = transf false env n b c in bl, pr ltop c
+  let bl, c = transf false env n b c in bl, pr_protect_eval c
 let pr_type_env_n env n c = pr ltop (snd (transf true env n false c))
 let pr_type c = pr ltop (snd (transf true (Global.env()) 0 false c))
 
@@ -663,7 +677,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | ExtraRedExpr (s,c) ->
       hov 1 (str s ++ pr_arg pr_constr c)
 
-let rec pr_may_eval prc prlc pr2 = function
+let rec pr_may_eval test prc prlc pr2 = function
   | ConstrEval (r,c) ->
       hov 0
         (str "eval" ++ brk (1,1) ++
@@ -674,7 +688,10 @@ let rec pr_may_eval prc prlc pr2 = function
 	(str "context " ++ pr_id id ++ spc () ++
 	 str "[" ++ prlc c ++ str "]")
   | ConstrTypeOf c -> hov 1 (str "type of" ++ spc() ++ prc c)
+  | ConstrTerm c when test c -> h 0 (str "(" ++ prc c ++ str ")")
   | ConstrTerm c -> prc c
+
+let pr_may_eval a = pr_may_eval (fun _ -> false) a
 
 let pr_rawconstr_env_no_translate env c =
   pr lsimple (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
