@@ -156,7 +156,8 @@ type discharge_operation =
   | Constant of identifier * recipe * strength * opacity * bool
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
-  | Struc of inductive_path * struc_typ
+  | Struc of inductive_path * (unit -> struc_typ)
+  | Objdef of constant_path
   | Coercion of ((coe_typ * coe_info_typ) * cl_typ * cl_typ)
 
 (* Main function to traverse the library segment and compute the various
@@ -232,20 +233,17 @@ let process_object oldenv dir sec_sp
     | "STRUCTURE" ->
 	let ((sp,i),info) = outStruc lobj in
 	let newsp = recalc_sp dir sp in
-	let mib = Environ.lookup_mind sp oldenv in
-	let strobj =
+	let strobj () =
+	  let mib = Environ.lookup_mind newsp (Global.env ()) in
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = (mind_nth_type_packet mib 0).mind_nparams;
 	    s_PROJ = List.map (option_app (recalc_sp dir)) info.s_PROJ } in
 	((Struc ((newsp,i),strobj))::ops, ids_to_discard, work_alist)
 
-    (***TODO
     | "OBJDEF1" -> 
 	let sp = outObjDef1 lobj in
-        let ((_,spid,_)) = repr_path sp in
-        begin try objdef_declare spid with _ -> () end;
-        (ids_to_discard,work_alist)
-    ***)
+	let new_sp = recalc_sp dir sp in
+        ((Objdef new_sp)::ops, ids_to_discard, work_alist)
 
     | _ -> (ops,ids_to_discard,work_alist)
 
@@ -272,7 +270,9 @@ let process_operation = function
   | Class (y1,y2) ->
       Lib.add_anonymous_leaf (inClass (y1,y2))
   | Struc (newsp,strobj) ->
-      Lib.add_anonymous_leaf (inStruc (newsp,strobj))
+      Lib.add_anonymous_leaf (inStruc (newsp,strobj ()))
+  | Objdef newsp ->
+      begin try Recordobj.objdef_declare (ConstRef newsp) with _ -> () end
   | Coercion y ->
       Lib.add_anonymous_leaf (inCoercion y) 
 

@@ -854,17 +854,17 @@ let _ =
 	     | _ -> bad_vernac_args "DEFINITION"
 	   in 
 	   let local,stre,coe,objdef,idcoe = match kind with
-	     | "DEFINITION" -> false,NeverDischarge,false,false,false
-             | "COERCION" -> false,NeverDischarge,true,false,false
-             | "LCOERCION" -> true,make_strength_0(),true,false,false
-             | "LET" -> true,make_strength_2(),false,false,false
-             | "LOCAL" -> true,make_strength_0(),false,false,false
-             | "OBJECT" -> false,NeverDischarge,false,true,false
-             | "LOBJECT" -> true,make_strength_0(),false,true,false
-             | "OBJCOERCION" -> false,NeverDischarge,true,true,false
-             | "LOBJCOERCION" -> true,make_strength_0(),true,true,false
-             | "SUBCLASS" -> false,NeverDischarge,false,false,true
-             | "LSUBCLASS" -> true,make_strength_0(),false,false,true
+	     | "DEFINITION" -> false,NeverDischarge,   false,false,false
+             | "COERCION" ->   false,NeverDischarge,   true, false,false
+             | "LCOERCION" ->  true, make_strength_0(),true, false,false
+             | "LET" ->        true, make_strength_2(),false,false,false
+             | "LOCAL" ->      true, make_strength_0(),false,false,false
+             | "OBJECT" ->     false,NeverDischarge,   false,true, false
+             | "LOBJECT" ->    true, make_strength_0(),false,true, false
+             | "OBJCOERCION" -> false,NeverDischarge,  true, true, false
+             | "LOBJCOERCION" -> true,make_strength_0(),true,true, false
+             | "SUBCLASS" ->   false,NeverDischarge,   false,false,true
+             | "LSUBCLASS" ->  true, make_strength_0(),false,false,true
              | _       -> anomaly "Unexpected string"
 	   in 
 	   fun () ->
@@ -875,10 +875,11 @@ let _ =
                if not (is_silent()) then
 		 message ((string_of_id id) ^ " is now a coercion")
 	     end;
-	     if idcoe then
+	     if idcoe then begin
 	       let cl = Class.class_of_ref ref in
-	       Class.try_add_new_coercion_subclass cl stre;
-             (***TODO if objdef then Recordobj.objdef_declare id ***)
+	       Class.try_add_new_coercion_subclass cl stre
+	     end;
+             if objdef then Recordobj.objdef_declare ref
        | _ -> bad_vernac_args "DEFINITION")
 
 let _ =
