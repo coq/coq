@@ -133,25 +133,22 @@ type fconstr
 
 type fterm =
   | FRel of int
-  | FAtom of constr
+  | FAtom of constr (* Metas and Sorts *)
   | FCast of fconstr * fconstr
   | FFlex of table_key
   | FInd of inductive
   | FConstruct of constructor
   | FApp of fconstr * fconstr array
-  | FFix of (int array * int) * (name array * fconstr array * fconstr array)
-      * constr array * fconstr subs
-  | FCoFix of int * (name array * fconstr array * fconstr array)
-      * constr array * fconstr subs
+  | FFix of fixpoint * fconstr subs
+  | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
-  | FLambda of name * fconstr * fconstr * constr * fconstr subs
-  | FProd of name * fconstr * fconstr * constr * fconstr subs
-  | FLetIn of name * fconstr * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (name * constr) list * constr * fconstr subs
+  | FProd of name * fconstr * fconstr
+  | FLetIn of name * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential_key * fconstr array
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
-
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -160,6 +157,8 @@ type fterm =
 val inject : constr -> fconstr
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
+val destFLambda :
+  (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
 
 (* Global and local constant cache *)
 type clos_infos
@@ -200,7 +199,7 @@ val mk_clos_deep :
 
 val kni: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
 val knr: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
-val kl : clos_infos -> fconstr -> fconstr
+val kl : clos_infos -> fconstr -> constr
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
 

@@ -39,3 +39,4 @@ val subs_liftn: int -> 'a subs -> 'a subs
 val subs_shift_cons: int * 'a subs * 'a -> 'a subs
 val expand_rel: int -> 'a subs -> (int * 'a, int * int option) Util.union
 val is_subs_id: 'a subs -> bool
+val comp : ('a subs * 'a -> 'a) -> 'a subs -> 'a subs -> 'a subs

@@ -77,13 +77,22 @@ let nf_betaiota t =
   norm_val (create_clos_infos betaiota empty_env) (inject t)
 
 let whd_betaiotazeta env x =
-  whd_val (create_clos_infos betaiotazeta env) (inject x)
+  match kind_of_term x with
+    | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
+       Prod _|Lambda _|Fix _|CoFix _) -> x
+    | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
 
 let whd_betadeltaiota env t = 
-  whd_val (create_clos_infos betadeltaiota env) (inject t)
+  match kind_of_term t with
+    | (Sort _|Meta _|Evar _|Ind _|Construct _|
+       Prod _|Lambda _|Fix _|CoFix _) -> t
+    | _ -> whd_val (create_clos_infos betadeltaiota env) (inject t)
 
 let whd_betadeltaiota_nolet env t = 
-  whd_val (create_clos_infos betadeltaiotanolet env) (inject t)
+  match kind_of_term t with
+    | (Sort _|Meta _|Evar _|Ind _|Construct _|
+       Prod _|Lambda _|Fix _|CoFix _|LetIn _) -> t
+    | _ -> whd_val (create_clos_infos betadeltaiotanolet env) (inject t)
 
 (* Beta *)
 
@@ -226,27 +235,20 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            | None -> raise NotConvertible)
 	
     (* other constructors *)
-    | (FLambda (_,c1,c2,_,_), FLambda (_,c'1,c'2,_,_)) ->
-        assert (is_empty_stack v1 && is_empty_stack v2);
-        let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
-        ccnv CONV infos (el_lift el1) (el_lift el2) c2 c'2 u1
+    | (FLambda _, FLambda _) ->
+        let (_,ty1,bd1) = destFLambda mk_clos hd1 in
+        let (_,ty2,bd2) = destFLambda mk_clos hd2 in
+        let u1 = ccnv CONV infos el1 el2 ty1 ty2 cuniv in
+        ccnv CONV infos (el_lift el1) (el_lift el2) bd1 bd2 u1
 
-    | (FProd (_,c1,c2,_,_), FProd (_,c'1,c'2,_,_)) ->
+    | (FProd (_,c1,c2), FProd (_,c'1,c'2)) ->
         assert (is_empty_stack v1 && is_empty_stack v2);
 	(* Luo's system *)
         let u1 = ccnv CONV infos el1 el2 c1 c'1 cuniv in
         ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2 u1
 
-    (* Inductive types:  MutInd MutConstruct MutCase Fix Cofix *)
+    (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
-      (* Les annotations du MutCase ne servent qu'à l'affichage *)
-(*
-    | (FCases (_,p1,c1,cl1), FCases (_,p2,c2,cl2)) ->
-        let u1 = ccnv CONV infos el1 el2 p1 p2 cuniv in
-        let u2 = ccnv CONV infos el1 el2 c1 c2 u1 in
-        let u3 = convert_vect infos el1 el2 cl1 cl2 u2 in
-	convert_stacks infos lft1 lft2 v1 v2 u3
-*)
      | (FInd (kn1,i1), FInd (kn2,i2)) ->
          if i1 = i2 && mind_equiv infos kn1 kn2
 	 then
@@ -259,25 +261,33 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
-     | (FFix (op1,(_,tys1,cl1),_,_), FFix(op2,(_,tys2,cl2),_,_)) ->
+     | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
 	 if op1 = op2
 	 then
-	   let u1 = convert_vect infos el1 el2 tys1 tys2 cuniv in
-           let n = Array.length cl1 in
+	   let n = Array.length cl1 in
+           let fty1 = Array.map (mk_clos e1) tys1 in
+           let fty2 = Array.map (mk_clos e2) tys2 in
+           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
+           let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+	   let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
            let u2 =
              convert_vect infos 
-		 (el_liftn n el1) (el_liftn n el2) cl1 cl2 u1 in
+		 (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 
-     | (FCoFix (op1,(_,tys1,cl1),_,_), FCoFix(op2,(_,tys2,cl2),_,_)) ->
+     | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
          if op1 = op2
          then
-           let u1 = convert_vect infos el1 el2 tys1 tys2 cuniv in
 	   let n = Array.length cl1 in
+           let fty1 = Array.map (mk_clos e1) tys1 in
+           let fty2 = Array.map (mk_clos e2) tys2 in
+           let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
+           let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+           let u1 = convert_vect infos el1 el2 fty1 fty2 cuniv in
            let u2 =
 	     convert_vect infos
-		 (el_liftn n el1) (el_liftn n el2) cl1 cl2 u1 in
+		 (el_liftn n el1) (el_liftn n el2) fcl1 fcl2 u1 in
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 

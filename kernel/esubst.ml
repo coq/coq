@@ -67,28 +67,30 @@ type 'a subs =
 let subs_cons(x,s) = CONS(x,s)
 
 let subs_liftn n = function
-  | ESID p -> ESID (p+n) (* bounded identity lifted extends by p *)
+  | ESID p        -> ESID (p+n) (* bounded identity lifted extends by p *)
   | LIFT (p,lenv) -> LIFT (p+n, lenv)
-  | lenv -> LIFT (n,lenv)
+  | lenv          -> LIFT (n,lenv)
 
 let subs_lift a = subs_liftn 1 a
+let subs_liftn n a = if n = 0 then a else subs_liftn n a
 
 let subs_shft = function
   | (0, s)            -> s
   | (n, SHIFT (k,s1)) -> SHIFT (k+n, s1)
   | (n, s)            -> SHIFT (n,s)
+let subs_shft (n,a) = if n = 0 then a else subs_shft(n,a)
 
 let subs_shift_cons = function
-  (0, s, t) -> CONS(t,s)
+  (0, s, t)           -> CONS(t,s)
 | (k, SHIFT(n,s1), t) -> CONS(t,SHIFT(k+n, s1))
-| (k, s, t) -> CONS(t,SHIFT(k, s));;
+| (k, s, t)           -> CONS(t,SHIFT(k, s));;
 
 (* Tests whether a substitution is extensionnaly equal to the identity *)
 let rec is_subs_id = function
-    ESID _ -> true
-  | LIFT(_,s) -> is_subs_id s
+    ESID _     -> true
+  | LIFT(_,s)  -> is_subs_id s
   | SHIFT(0,s) -> is_subs_id s
-  | _ -> false
+  | _          -> false
 
 (* Expands de Bruijn k in the explicit substitution subs
  * lams accumulates de shifts to perform when retrieving the i-th value
@@ -107,13 +109,29 @@ let rec is_subs_id = function
  *) 
 let rec exp_rel lams k subs =
   match (k,subs) with
-    | (1, CONS (def,_)) -> Inl(lams,def)
-    | (_, CONS (_,l)) -> exp_rel lams (pred k) l
+    | (1, CONS (def,_))         -> Inl(lams,def)
+    | (_, CONS (_,l))           -> exp_rel lams (pred k) l
     | (_, LIFT (n,_)) when k<=n -> Inr(lams+k,None)
-    | (_, LIFT (n,l)) -> exp_rel (n+lams) (k-n) l
-    | (_, SHIFT (n,s)) -> exp_rel (n+lams) k s
-    | (_, ESID n) when k<=n -> Inr(lams+k,None)
-    | (_, ESID n) -> Inr(lams+k,Some (k-n))
+    | (_, LIFT (n,l))           -> exp_rel (n+lams) (k-n) l
+    | (_, SHIFT (n,s))          -> exp_rel (n+lams) k s
+    | (_, ESID n) when k<=n     -> Inr(lams+k,None)
+    | (_, ESID n)               -> Inr(lams+k,Some (k-n))
 
 let expand_rel k subs = exp_rel 0 k subs
 
+let rec comp mk_cl s1 s2 =
+  match (s1, s2) with
+    | _, ESID _ -> s1
+    | ESID _, _ -> s2
+    | SHIFT(k,s), _ -> subs_shft(k, comp mk_cl s s2)
+    | _, CONS(x,s') -> CONS(mk_cl(s1,x), comp mk_cl s1 s')
+    | CONS(x,s), SHIFT(k,s') -> comp mk_cl s (subs_shft(k-1, s'))
+    | CONS(x,s), LIFT(k,s') -> CONS(x,comp mk_cl s (subs_liftn (k-1) s'))
+    | LIFT(k,s), SHIFT(k',s') ->
+        if k<k'
+        then subs_shft(k, comp mk_cl s (subs_shft(k'-k, s')))
+        else subs_shft(k', comp mk_cl (subs_liftn (k-k') s) s')
+    | LIFT(k,s), LIFT(k',s') ->
+        if k<k'
+        then subs_liftn k (comp mk_cl s (subs_liftn (k'-k) s'))
+        else subs_liftn k' (comp mk_cl (subs_liftn (k-k') s) s')

@@ -489,12 +489,28 @@ let rec stack_nth s p = match s with
 
 (* type of shared terms. fconstr and frterm are mutually recursive.
  * Clone of the constr structure, but completely mutable, and
- * annotated with booleans (true when we noticed that the term is
- * normal and neutral) FLIFT is a delayed shift; allows sharing
- * between 2 lifted copies of a given term FCLOS is a delayed
- * substitution applied to a constr
+ * annotated with reduction state (reducible or not).
+ *  - FLIFT is a delayed shift; allows sharing between 2 lifted copies
+ *    of a given term.
+ *  - FCLOS is a delayed substitution applied to a constr
+ *  - FLOCKED is used to erase the content of a reference that must
+ *    be updated. This is to allow the garbage collector to work
+ *    before the term is computed.
  *)
+
+(* Norm means the term is fully normalized and cannot create a redex
+     when substituted
+   Cstr means the term is in head normal form and that it can
+     create a redex when substituted (i.e. constructor, fix, lambda)
+   Whnf means we reached the head normal form and that it cannot
+     create a redex when substituted
+   Red is used for terms that might be reduced
+*)
 type red_state = Norm | Cstr | Whnf | Red
+
+let neutr = function
+  | (Whnf|Norm) -> Whnf
+  | (Red|Cstr) -> Red
 
 type fconstr = { 
   mutable norm: red_state; 
@@ -502,28 +518,24 @@ type fconstr = {
 
 and fterm =
   | FRel of int
-  | FAtom of constr
+  | FAtom of constr (* Metas and Sorts *)
   | FCast of fconstr * fconstr
   | FFlex of table_key
   | FInd of inductive
   | FConstruct of constructor
   | FApp of fconstr * fconstr array
-  | FFix of (int array * int) * (name array * fconstr array * fconstr array)
-      * constr array * fconstr subs
-  | FCoFix of int * (name array * fconstr array * fconstr array)
-      * constr array * fconstr subs
+  | FFix of fixpoint * fconstr subs
+  | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
-  | FLambda of name * fconstr * fconstr * constr * fconstr subs
-  | FProd of name * fconstr * fconstr * constr * fconstr subs
-  | FLetIn of name * fconstr * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (name * constr) list * constr * fconstr subs
+  | FProd of name * fconstr * fconstr
+  | FLetIn of name * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential_key * fconstr array
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
 
 let fterm_of v = v.term
-let set_whnf v = if v.norm = Red then v.norm <- Whnf
-let set_cstr v = if v.norm = Red then v.norm <- Cstr
 let set_norm v = v.norm <- Norm
 let is_val v = v.norm = Norm
 
@@ -536,13 +548,19 @@ let update v1 (no,t) =
      v1)
   else {norm=no;term=t}
 
-(* Lifting. Preserves sharing.
+(* Lifting. Preserves sharing (useful only for cell with norm=Red).
    lft_fconstr always create a new cell, while lift_fconstr avoids it
    when the lift is 0. *)
 let rec lft_fconstr n ft =
   match ft.term with
-    FLIFT(k,m) -> lft_fconstr (n+k) m
-  | _ -> {norm=ft.norm; term=FLIFT(n,ft)}
+    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FAtom _) -> ft
+    | FRel i -> {norm=Norm;term=FRel(i+n)}
+    | FLambda(k,tys,f,e) -> {norm=Cstr; term=FLambda(k,tys,f,subs_shft(n,e))}
+    | FFix(fx,e) -> {norm=Cstr; term=FFix(fx,subs_shft(n,e))}
+    | FCoFix(cfx,e) -> {norm=Cstr; term=FCoFix(cfx,subs_shft(n,e))}
+    | FLIFT(k,m) -> lft_fconstr (n+k) m
+    | FLOCKED -> anomaly "lft_constr found locked term"
+    | _ -> {norm=ft.norm; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if k=0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
@@ -573,28 +591,37 @@ let zupdate m s =
     Zupdate(m)::s'
   else s
 
+let mk_lambda env t =
+(*  let (env,t) =
+    if is_subs_id env then (env,t) else mk_clos_opt env t in*)
+  let (rvars,t') = decompose_lam t in
+  FLambda(List.length rvars, List.rev rvars, t', env)
+
+let destFLambda clos_fun t =
+  match t.term with
+      FLambda(_,[(na,ty)],b,e) -> (na,clos_fun e ty,clos_fun (subs_lift e) b)
+    | FLambda(n,(na,ty)::tys,b,e) ->
+        (na,clos_fun e ty,{norm=Cstr;term=FLambda(n-1,tys,b,subs_lift e)})
+    | _ -> assert false
 
 let clos_rel e i =
   match expand_rel i e with
     | Inl(n,mt) -> lift_fconstr n mt
-    | Inr(k,None) -> {norm=Red; term= FRel k}
+    | Inr(k,None) -> {norm=Norm; term= FRel k}
     | Inr(k,Some p) ->
         lift_fconstr (k-p) {norm=Norm;term=FFlex(FarRelKey p)}
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
-let rec mk_clos e t =
+let mk_clos e t =
   match kind_of_term t with
     | Rel i -> clos_rel e i
     | Var x -> { norm = Red; term = FFlex (VarKey x) }
+    | Const c -> { norm = Red; term = FFlex (ConstKey c) }
     | Meta _ | Sort _ ->  { norm = Norm; term = FAtom t }
     | Ind kn -> { norm = Norm; term = FInd kn }
     | Construct kn -> { norm = Cstr; term = FConstruct kn }
-    | Evar (ev,args) ->
-        { norm = Cstr; term = FEvar (ev,Array.map (mk_clos e) args) }
-    | (Fix _|CoFix _|Lambda _|Prod _) ->
-        {norm = Cstr; term = FCLOS(t,e)}
-    | (App _|Case _|Cast _|Const _|LetIn _) ->
+    | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _) ->
         {norm = Red; term = FCLOS(t,e)}
 
 let mk_clos_vect env v = Array.map (mk_clos env) v
@@ -605,7 +632,7 @@ let mk_clos_vect env v = Array.map (mk_clos env) v
    Could be used insted of mk_clos. *)
 let mk_clos_deep clos_fun env t =
   match kind_of_term t with
-    | (Rel _|Ind _|Construct _|Var _|Meta _ | Sort _|Evar _) ->
+    | (Rel _|Ind _|Const _|Construct _|Var _|Meta _ | Sort _) ->
         mk_clos env t
     | Cast (a,b) ->
         { norm = Red;
@@ -613,42 +640,27 @@ let mk_clos_deep clos_fun env t =
     | App (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
-    | Const kn ->
-        { norm = Red;
-	  term = FFlex (ConstKey kn) }
     | Case (ci,p,c,v) ->
         { norm = Red;
 	  term = FCases (ci, clos_fun env p, clos_fun env c,
 			 Array.map (clos_fun env) v) }
-    | Fix (op,(lna,tys,bds)) ->
-	let env' = subs_liftn (Array.length bds) env in
-        { norm = Cstr;
-	  term = FFix
-                   (op,(lna, Array.map (clos_fun env) tys,
-                             Array.map (clos_fun env') bds),
-                    bds, env) }
-    | CoFix (op,(lna,tys,bds)) ->
-	let env' = subs_liftn (Array.length bds) env in
-        { norm = Cstr;
-	  term = FCoFix
-                   (op,(lna, Array.map (clos_fun env) tys,
-	                     Array.map (clos_fun env') bds),
-	            bds, env) }
-    | Lambda (n,t,c) ->
-        { norm = Cstr;
-	  term = FLambda (n, clos_fun env t,
-			  clos_fun (subs_lift env) c,
-			  c, env) }
+    | Fix fx ->
+        { norm = Cstr; term = FFix (fx, env) }
+    | CoFix cfx ->
+        { norm = Cstr; term = FCoFix(cfx,env) }
+    | Lambda _ ->
+        { norm = Cstr; term = mk_lambda env t }
     | Prod (n,t,c)   ->
-        { norm = Cstr;
-	  term = FProd (n, clos_fun env t, 
-			clos_fun (subs_lift env) c,
-			c, env) }
+        { norm = Whnf;
+	  term = FProd (n, clos_fun env t, clos_fun (subs_lift env) c) }
     | LetIn (n,b,t,c) ->
         { norm = Red;
-	  term = FLetIn (n, clos_fun env b, clos_fun env t,
-			 clos_fun (subs_lift env) c,
-			 c, env) }
+	  term = FLetIn (n, clos_fun env b, clos_fun env t, c, env) }
+    | Evar(ev,args) ->
+	{ norm = Whnf; term = FEvar(ev,Array.map (clos_fun env) args) }
+
+(* A better mk_clos? *)
+let mk_clos2 = mk_clos_deep mk_clos
 
 (* The inverse of mk_clos_deep: move back to constr *)
 let rec to_constr constr_fun lfts v =
@@ -670,34 +682,43 @@ let rec to_constr constr_fun lfts v =
 	mkCase (ci, constr_fun lfts p,
                 constr_fun lfts c,
 		Array.map (constr_fun lfts) ve)
-    | FFix (op,(lna,tys,bds),_,_) ->
+    | FFix ((op,(lna,tys,bds)),e) ->
+        let n = Array.length bds in
+        let ftys = Array.map (mk_clos e) tys in
+        let fbds = Array.map (mk_clos (subs_liftn n e)) bds in
+	let lfts' = el_liftn n lfts in
+	mkFix (op, (lna, Array.map (constr_fun lfts) ftys,
+		         Array.map (constr_fun lfts') fbds))
+    | FCoFix ((op,(lna,tys,bds)),e) ->
+        let n = Array.length bds in
+        let ftys = Array.map (mk_clos e) tys in
+        let fbds = Array.map (mk_clos (subs_liftn n e)) bds in
 	let lfts' = el_liftn (Array.length bds) lfts in
-	mkFix (op, (lna, Array.map (constr_fun lfts) tys,
-		         Array.map (constr_fun lfts') bds))
-    | FCoFix (op,(lna,tys,bds),_,_) ->
-	let lfts' = el_liftn (Array.length bds) lfts in
-	mkCoFix (op, (lna, Array.map (constr_fun lfts) tys,
-		           Array.map (constr_fun lfts') bds))
+	mkCoFix (op, (lna, Array.map (constr_fun lfts) ftys,
+		           Array.map (constr_fun lfts') fbds))
     | FApp (f,ve) ->
 	mkApp (constr_fun lfts f,
 	       Array.map (constr_fun lfts) ve)
-    | FLambda (n,t,c,_,_)   ->
-	mkLambda (n, constr_fun lfts t,
-	             constr_fun (el_lift lfts) c)
-    | FProd (n,t,c,_,_)   ->
+    | FLambda _ ->
+        let (na,ty,bd) = destFLambda mk_clos2 v in
+	mkLambda (na, constr_fun lfts ty,
+	              constr_fun (el_lift lfts) bd)
+    | FProd (n,t,c)   ->
 	mkProd (n, constr_fun lfts t,
 	           constr_fun (el_lift lfts) c)
-    | FLetIn (n,b,t,c,_,_) ->
+    | FLetIn (n,b,t,f,e) ->
+        let fc = mk_clos2 (subs_lift e) f in
 	mkLetIn (n, constr_fun lfts b,
-	      constr_fun lfts t,
-	      constr_fun (el_lift lfts) c)
+	            constr_fun lfts t,
+	            constr_fun (el_lift lfts) fc)
     | FEvar (ev,args) -> mkEvar(ev,Array.map (constr_fun lfts) args)
     | FLIFT (k,a) -> to_constr constr_fun (el_shft k lfts) a
     | FCLOS (t,env) ->
-        let fr = mk_clos_deep mk_clos env t in
+        let fr = mk_clos2 env t in
         let unfv = update v (fr.norm,fr.term) in
         to_constr constr_fun lfts unfv
-    | FLOCKED -> anomaly "Closure.to_constr: found locked term"
+    | FLOCKED -> (*anomaly "Closure.to_constr: found locked term"*)
+mkVar(id_of_string"_LOCK_")
 
 (* This function defines the correspondance between constr and
    fconstr. When we find a closure whose substitution is the identity,
@@ -707,6 +728,10 @@ let term_of_fconstr =
   let rec term_of_fconstr_lift lfts v =
     match v.term with
       | FCLOS(t,env) when is_subs_id env & is_lift_id lfts -> t
+      | FLambda(_,tys,f,e) when is_subs_id e & is_lift_id lfts ->
+          compose_lam (List.rev tys) f
+      | FFix(fx,e) when is_subs_id e & is_lift_id lfts -> mkFix fx
+      | FCoFix(cfx,e) when is_subs_id e & is_lift_id lfts -> mkCoFix cfx
       | _ -> to_constr term_of_fconstr_lift lfts v in
   term_of_fconstr_lift ELID
 
@@ -719,16 +744,15 @@ let rec fstrong unfreeze_fun lfts v =
   to_constr (fstrong unfreeze_fun) lfts (unfreeze_fun v)
 *)
 
-(* TODO: the norm flags are not handled properly *)
 let rec zip zfun m stk =
   match stk with
     | [] -> m
     | Zapp args :: s ->
         let args = Array.of_list args in
-        zip zfun {norm=m.norm; term=FApp(m, Array.map zfun args)} s
+        zip zfun {norm=neutr m.norm; term=FApp(m, Array.map zfun args)} s
     | Zcase(ci,p,br)::s ->
         let t = FCases(ci, zfun p, m, Array.map zfun br) in
-        zip zfun {norm=m.norm; term=t} s
+        zip zfun {norm=neutr m.norm; term=t} s
     | Zfix(fx,par)::s ->
         zip zfun fx (par @ append_stack_list ([m], s))
     | Zshift(n)::s ->
@@ -801,6 +825,28 @@ let get_arg h stk =
       Some (v, s') -> (Some (depth,v), s')
     | None -> (None, zshift depth stk')
 
+let rec get_args n tys f e stk =
+  match stk with
+      Zupdate r :: s ->
+        let hd = update r (Cstr,FLambda(n,tys,f,e)) in
+        get_args n tys f e s
+    | Zshift k :: s ->
+        get_args n tys f (subs_shft (k,e)) s
+    | Zapp l :: s ->
+        let na = List.length l in
+        if n == na then
+          let e' = List.fold_left (fun e arg -> subs_cons(arg,e)) e l in
+          (Inl e',s)
+        else if n < na then (* more arguments *)
+          let (args,eargs) = list_chop n l in
+          let e' = List.fold_left (fun e arg -> subs_cons(arg,e)) e args in
+          (Inl e', Zapp eargs :: s)
+        else (* more lambdas *)
+          let (_,etys) = list_chop na tys in
+          let e' = List.fold_left (fun e arg -> subs_cons(arg,e)) e l in
+          get_args (n-na) etys f e' s
+    | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
+
 
 (* Iota reduction: extract the arguments to be passed to the Case
    branches *)
@@ -840,19 +886,19 @@ let rec drop_parameters depth n stk =
 let contract_fix_vect fix =
   let (thisbody, make_body, env, nfix) =
     match fix with
-      | FFix ((reci,i),def,bds,env) ->
+      | FFix (((reci,i),(_,_,bds as rdcl)),env) ->
           (bds.(i),
-	   (fun j -> { norm = Whnf; term = FFix ((reci,j),def,bds,env) }),
+	   (fun j -> { norm = Cstr; term = FFix (((reci,j),rdcl),env) }),
 	   env, Array.length bds)
-      | FCoFix (i,def,bds,env) ->
+      | FCoFix ((i,(_,_,bds as rdcl)),env) ->
           (bds.(i),
-	   (fun j -> { norm = Whnf; term = FCoFix (j,def,bds,env) }),
+	   (fun j -> { norm = Cstr; term = FCoFix ((j,rdcl),env) }),
 	   env, Array.length bds)
       | _ -> anomaly "Closure.contract_fix_vect: not a (co)fixpoint" 
   in
   let rec subst_bodies_from_i i env =
     if i = nfix then
-      mk_clos env thisbody
+      (env, thisbody)
     else
       subst_bodies_from_i (i+1) (subs_cons (make_body i, env))
   in       
@@ -867,21 +913,19 @@ let contract_fix_vect fix =
 let rec knh m stk =
   match m.term with
     | FLIFT(k,a) -> knh a (zshift k stk)
-    | FCLOS(t,e) -> knht e t (Zupdate(m)::stk)
+    | FCLOS(t,e) -> knht e t (zupdate m stk)
     | FLOCKED -> anomaly "Closure.knh: found lock"
     | FApp(a,b) -> knh a (append_stack b (zupdate m stk))
     | FCases(ci,p,t,br) -> knh t (Zcase(ci,p,br)::zupdate m stk)
-    | FFix((ri,n),_,_,_) ->
-        (set_whnf m;
-         match get_nth_arg m ri.(n) stk with
+    | FFix(((ri,n),(_,_,_)),_) ->
+        (match get_nth_arg m ri.(n) stk with
              (Some(pars,arg),stk') -> knh arg (Zfix(m,pars)::stk')
            | (None, stk') -> (m,stk'))
     | FCast(t,_) -> knh t stk
 (* cases where knh stops *)
-    | (FFlex _|FLetIn _|FConstruct _|FEvar _) -> (m, stk)
-    | (FRel _|FAtom _|FInd _) -> (set_norm m; (m, stk))
-    | (FLambda _|FCoFix _|FProd _) ->
-        (set_whnf m; (m, stk))
+    | (FFlex _|FLetIn _|FConstruct _|FEvar _|
+       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _) ->
+        (m, stk)
 
 (* The same for pure terms *)
 and knht e t stk =
@@ -890,12 +934,12 @@ and knht e t stk =
         knht e a (append_stack (mk_clos_vect e b) stk)
     | Case(ci,p,t,br) ->
         knht e t (Zcase(ci, mk_clos e p, mk_clos_vect e br)::stk)
-    | Fix _ -> knh (mk_clos_deep mk_clos e t) stk
+    | Fix _ -> knh (mk_clos2 e t) stk
     | Cast(a,b) -> knht e a stk
     | Rel n -> knh (clos_rel e n) stk
     | (Lambda _|Prod _|Construct _|CoFix _|Ind _|
        LetIn _|Const _|Var _|Evar _|Meta _|Sort _) ->
-        (mk_clos_deep mk_clos e t, stk)
+        (mk_clos2 e t, stk)
 
 
 (***********************************************************************)
@@ -903,10 +947,10 @@ and knht e t stk =
 (* Computes a normal form from the result of knh. *)
 let rec knr info m stk =
   match m.term with
-  | FLambda(_,_,_,f,e) when red_set info.i_flags fBETA ->
-      (match get_arg m stk with
-          (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
-        | (None,s) -> (m,s))
+  | FLambda(n,tys,f,e) when red_set info.i_flags fBETA ->
+      (match get_args n tys f e stk with
+          Inl e', s -> knit info e' f s
+        | Inr lam, s -> (lam,s)) 
   | FFlex(ConstKey kn) when red_set info.i_flags (fCONST kn) ->
       (match ref_value_cache info (ConstKey kn) with
           Some v -> kni info v stk
@@ -928,16 +972,16 @@ let rec knr info m stk =
         | (_, cargs, Zfix(fx,par)::s) ->
             let rarg = fapp_stack(m,cargs) in
             let stk' = par @ append_stack [|rarg|] s in
-            let efx = contract_fix_vect fx.term in
-            kni info efx stk'
+            let (fxe,fxbd) = contract_fix_vect fx.term in
+            knit info fxe fxbd stk'
         | (_,args,s) -> (m,args@s))
   | FCoFix _ when red_set info.i_flags fIOTA ->
       (match strip_update_shift_app m stk with
           (_, args, ((Zcase _::_) as stk')) ->
-            let efx = contract_fix_vect m.term in
-            kni info efx (args@stk')
+            let (fxe,fxbd) = contract_fix_vect m.term in
+            knit info fxe fxbd (args@stk')
         | (_,args,s) -> (m,args@s))
-  | FLetIn (_,v,_,_,bd,e) when red_set info.i_flags fZETA ->
+  | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info (subs_cons(v,e)) bd stk
   | _ -> (m,stk)
 
@@ -953,38 +997,58 @@ let kh info v stk = fapp_stack(kni info v stk)
 
 (***********************************************************************)
 
+let rec zip_term zfun m stk =
+  match stk with
+    | [] -> m
+    | Zapp args :: s ->
+        let args = Array.of_list args in
+        zip_term zfun (mkApp(m, Array.map zfun args)) s
+    | Zcase(ci,p,br)::s ->
+        let t = mkCase(ci, zfun p, m, Array.map zfun br) in
+        zip_term zfun t s
+    | Zfix(fx,par)::s ->
+        let h = mkApp(zip_term zfun (zfun fx) par,[|m|]) in
+        zip_term zfun h s
+    | Zshift(n)::s ->
+        zip_term zfun (lift n m) s
+    | Zupdate(rf)::s ->
+        zip_term zfun m s
+
 (* Computes the strong normal form of a term.
    1- Calls kni
    2- tries to rebuild the term. If a closure still has to be computed,
       calls itself recursively. *)
 let rec kl info m =
-  if is_val m then (incr prune; m)
+  if is_val m then (incr prune; term_of_fconstr m)
   else
     let (nm,s) = kni info m [] in
-    down_then_up info nm s
+    let _ = fapp_stack(nm,s) in (* to unlock Zupdates! *)
+    zip_term (kl info) (norm_head info nm) s
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *) 
-and down_then_up info m stk =
-  let nm =
-    if is_val m then (incr prune; m) else 
-      let nt =
-      match m.term with
-        | FLambda(na,ty,bd,f,e) ->
-            FLambda(na, kl info ty, kl info bd, f, e)
-        | FLetIn(na,a,b,c,f,e) ->
-            FLetIn(na, kl info a, kl info b, kl info c, f, e)
-        | FProd(na,dom,rng,f,e) ->
-            FProd(na, kl info dom, kl info rng, f, e)
-        | FCoFix(n,(na,ftys,fbds),bds,e) ->
-            FCoFix(n,(na, Array.map (kl info) ftys,
-                          Array.map (kl info) fbds),bds,e)
-        | FEvar(i,args) -> FEvar(i, Array.map (kl info) args)
-        | t -> t in
-      {norm=Norm;term=nt} in
-(* Precondition: m.norm = Norm *)
-  zip (kl info) nm stk
-
+and norm_head info m =
+  if is_val m then (incr prune; term_of_fconstr m) else
+    match m.term with
+      | FLambda(n,tys,f,e) ->
+          let (e',rvtys) =
+            List.fold_left (fun (e,ctxt) (na,ty) ->
+              (subs_lift e, (na,kl info (mk_clos e ty))::ctxt))
+              (e,[]) tys in
+          let bd = kl info (mk_clos e' f) in
+          List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
+      | FLetIn(na,a,b,f,e) ->
+          let c = mk_clos (subs_lift e) f in
+          mkLetIn(na, kl info a, kl info b, kl info c)
+      | FProd(na,dom,rng) ->
+          mkProd(na, kl info dom, kl info rng)
+      | FCoFix((n,(na,tys,bds)),e) ->
+          let ftys = Array.map (mk_clos e) tys in
+          let fbds =
+            Array.map (mk_clos (subs_liftn (Array.length na) e)) bds in
+          mkCoFix(n,(na, Array.map (kl info) ftys, Array.map (kl info) fbds))
+      | FEvar(i,args) -> mkEvar(i, Array.map (kl info) args)
+      | t -> term_of_fconstr m
 
 (* Initialization and then normalization *)
 
@@ -994,11 +1058,14 @@ let whd_val info v =
 
 (* strong reduction *)
 let norm_val info v =
-  with_stats (lazy (term_of_fconstr (kl info v)))
+  with_stats (lazy (kl info v))
 
 let inject = mk_clos (ESID 0)
 
-let whd_stack = kni
+let whd_stack infos m stk =
+  let k = kni infos m stk in
+  let _ = fapp_stack k in (* to unlock Zupdates! *)
+  k
 
 (* cache of constants: the body is computed only when needed. *)
 type clos_infos = fconstr infos
