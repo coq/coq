@@ -676,81 +676,6 @@ sorting: $(SORTINGVO:%.vo=new%.vo)
 noreal: logic arith bool zarith lists sets intmap relations wellfounded \
 	setoids sorting
 
-NEWINITVO=$(INITVO:%.vo=new%.vo)
-NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
-NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
-
-newinit:: $(NEWINITVO)
-newtheories:: $(NEWTHEORIESVO)
-newcontrib:: $(NEWCONTRIBVO) $(CONTRIBCMO)
-
-NEWINITV=$(INITVO:%.vo=new%.v)
-NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
-NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
-
-translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
-
-###########################################################################
-# rules to make theories and states
-###########################################################################
-
-SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
-
-states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
-
-states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
-	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
-
-states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
-	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
-
-newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
-	@$(MKDIR) newtheories/Init
-	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
-
-theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
-	$(BOOTCOQTOP) -translate -no-strict -nois -compile theories/Init/$*
-
-newtheories/%.v: theories/%.vo
-	@$(MKDIR) newtheories/`dirname $*`
-	@cp -f theories/$*.v8  newtheories/$*.v
-
-theories/%.vo: theories/%.v states/initial.coq
-	$(BOOTCOQTOP) -translate -no-strict -compile theories/$*
-
-newcontrib/%.v: contrib/%.vo
-	@$(MKDIR) newcontrib/`dirname $*`
-	@cp -f contrib/$*.v8  newcontrib/$*.v
-
-contrib/%.vo: contrib/%.v states/initial.coq
-	$(BOOTCOQTOP) -translate -no-strict -compile contrib/$*
-
-newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
-	$(BOOTCOQTOP) -nois -compile $*
-
-newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newtheories/$*
-
-newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newcontrib/$*
-
-contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -translate -no-strict -is states/barestate.coq -compile $*
-clean::
-	rm -f states/*.coq
-
-# globalizations (for coqdoc)
-
-glob.dump::
-	rm -f glob.dump
-	rm -f theories/*/*.vo
-	$(MAKE) GLOB="-dump-glob glob.dump" world
-
-clean::
-	rm -f theories/*/*.vo
-
-
 ###########################################################################
 # contribs
 ###########################################################################
@@ -797,12 +722,6 @@ JPROVERVO=
 CCVO=\
  contrib/cc/CC.vo
 
-contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) -translate -no-strict -boot -byte $(COQOPTS) -compile $*
-
-contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(BESTCOQTOP) -translate -no-strict -boot -byte  $(COQOPTS) -compile $*
-
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
 	    $(JPROVERVO) $(INTERFACEVO) $(CCVO) $(FUNINDVO)
@@ -822,13 +741,96 @@ jprover: $(JPROVERVO) $(JPROVERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 
+NEWINITVO=$(INITVO:%.vo=new%.vo)
+NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
+NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
+
+NEWINITV=$(INITVO:%.vo=new%.v)
+NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
+NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
+
+# Made new*.v targets explicit, otherwise "make" removes them after use
+newinit:: $(NEWINITV) $(NEWINITVO)
+newtheories:: $(NEWTHEORIESV) $(NEWTHEORIESVO)
+newcontrib:: $(NEWCONTRIBV) $(NEWCONTRIBVO) $(CONTRIBCMO)
+
+translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
+
 ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
+
+###########################################################################
+# rules to make theories, contrib and states
+###########################################################################
+
+SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
+
+states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
+	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
+
+states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
+	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+
+states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
+	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+
+newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
+	@$(MKDIR) newtheories/Init
+	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
+
+theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
+	$(BOOTCOQTOP) -translate -no-strict -nois -compile theories/Init/$*
+
+newtheories/%.v: theories/%.vo
+	@$(MKDIR) newtheories/`dirname $*`
+	@cp -f theories/$*.v8  newtheories/$*.v
+
+theories/%.vo: theories/%.v states/initial.coq
+	$(BOOTCOQTOP) -translate -no-strict -compile theories/$*
+
+newcontrib/%.v: contrib/%.vo
+	@$(MKDIR) newcontrib/`dirname $*`
+	@cp -f contrib/$*.v8  newcontrib/$*.v
+
+contrib/%.vo: contrib/%.v states/initial.coq
+	$(BOOTCOQTOP) -translate -no-strict -compile contrib/$*
+
+newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
+	$(BOOTCOQTOP) -nois -compile $*
+
+newtheories/%.vo: newtheories/%.v states/initialnew.coq
+	$(BOOTCOQTOP) -compile newtheories/$*
+
+newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
+	$(BOOTCOQTOP) -compile newcontrib/$*
+
+contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
+	$(BOOTCOQTOP) -translate -no-strict -is states/barestate.coq -compile $*
+# Obsolete ?
+contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
+	$(BESTCOQTOP) -translate -no-strict -boot -byte $(COQOPTS) -compile $*
+
+# Obsolete ?
+contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
+	$(BESTCOQTOP) -translate -no-strict -boot -byte  $(COQOPTS) -compile $*
+
+clean::
+	rm -f states/*.coq
+
+clean::
+	rm -f theories/*/*.vo
 
 clean::
 	rm -f contrib/*/*.cm[io] contrib/*/*.vo user-contrib/*.cm[io]
 
 archclean::
 	rm -f contrib/*/*.cmx contrib/*/*.[so]
+
+# globalizations (for coqdoc)
+
+glob.dump::
+	rm -f glob.dump
+	rm -f theories/*/*.vo
+	$(MAKE) GLOB="-dump-glob glob.dump" world
 
 ###########################################################################
 # tools
