@@ -376,37 +376,37 @@ let count_extra_abstractions hyps ids_to_discard =
       (hyps,0) ids_to_discard
   in n
 
-let defined_in_sec kn sec_sp = 
+let defined_in_sec kn olddir = 
   let _,dir,_ = repr_kn kn in
-    dir = sec_sp
+    dir = olddir
 
 (* This moves the global path one step below *)
-let process_global sec_sp = function
+let process_global olddir = function
   | VarRef _ ->
       anomaly "process_global only processes global surviving the section"
   | ConstRef kn as x ->
-      if defined_in_sec kn sec_sp then
+      if defined_in_sec kn olddir then
         let newkn = Lib.make_kn (id_of_label (label kn)) in
         ConstRef newkn
       else x
   | IndRef (kn,i) as x -> 
-      if defined_in_sec kn sec_sp then
+      if defined_in_sec kn olddir then
         let newkn = Lib.make_kn (id_of_label (label kn)) in
         IndRef (newkn,i)
       else x
   | ConstructRef ((kn,i),j) as x -> 
-      if defined_in_sec kn sec_sp then
+      if defined_in_sec kn olddir then
         let newkn = Lib.make_kn (id_of_label (label kn)) in
         ConstructRef ((newkn,i),j)
       else x
 
-let process_class sec_sp ids_to_discard x =
+let process_class olddir ids_to_discard x =
   let (cl,{cl_strength=stre; cl_param=p}) = x in
 (*  let env = Global.env () in*)
   match cl with 
     | CL_SECVAR _ -> x
     | CL_CONST kn -> 
-       if defined_in_sec kn sec_sp then
+       if defined_in_sec kn olddir then
          let newkn = Lib.make_kn (id_of_label (label kn)) in
 	 let hyps = (Global.lookup_constant kn).const_hyps in
 	 let n = count_extra_abstractions hyps ids_to_discard in
@@ -414,7 +414,7 @@ let process_class sec_sp ids_to_discard x =
        else 
 	 x
     | CL_IND (kn,i) ->
-	if defined_in_sec kn sec_sp then
+	if defined_in_sec kn olddir then
           let newkn = Lib.make_kn (id_of_label (label kn)) in
 	  let hyps = (Global.lookup_mind kn).mind_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
@@ -440,12 +440,12 @@ let process_cl sec_sp cl =
 	  cl
     | _ -> cl
 
-let process_coercion sec_sp ids_to_discard ((coe,coeinfo),cls,clt) =
+let process_coercion olddir ids_to_discard ((coe,coeinfo),cls,clt) =
   let hyps = context_of_global_reference coe in
   let nargs = count_extra_abstractions hyps ids_to_discard in
-  (process_global sec_sp coe,
+  (process_global olddir coe,
    coercion_strength coeinfo,
    coercion_identity coeinfo,
-   process_cl sec_sp cls,
-   process_cl sec_sp clt,
+   process_cl olddir cls,
+   process_cl olddir clt,
    nargs + coercion_params coeinfo)

@@ -188,7 +188,8 @@ type discharge_operation =
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
 
-let process_object oldenv dir sec_sp
+let process_object oldenv olddir full_olddir newdir  
+(* {dir -> newdir} {sec_sp -> full_olddir, olddir} *)
   (ops,ids_to_discard,(constl,indl,cstrl as work_alist)) ((sp,kn),lobj) =
   let tag = object_tag lobj in 
   match tag with
@@ -234,7 +235,7 @@ let process_object oldenv dir sec_sp
 	let imp = is_implicit_constant kn in
 	let newkn = (*match stre with (* this did not work anyway...*)
 	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> kn
-	  | _ -> *)recalc_kn dir kn in
+	  | _ -> *)recalc_kn newdir kn in
         let mods = 
 	  let abs_vars = build_abstract_list cb.const_hyps ids_to_discard in
 	  [ (kn, DO_ABSTRACT(newkn,abs_vars)) ]
@@ -248,7 +249,7 @@ let process_object oldenv dir sec_sp
     | "INDUCTIVE" ->
 	let kn = Nametab.locate_mind (qualid_of_sp sp) in
 	let mib = Environ.lookup_mind kn oldenv in
-	let newkn = recalc_kn dir kn in
+	let newkn = recalc_kn newdir kn in
 	let imp = is_implicit_args() (* CHANGE *) in
 	let (mie,indmods,cstrmods) = 
 	  process_inductive kn newkn oldenv (ids_to_discard,work_alist) mib in
@@ -257,33 +258,33 @@ let process_object oldenv dir sec_sp
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
-	if (match clinfo.cl_strength with DischargeAt (sp,_) -> sp = sec_sp | _ -> false) then 
+	if (match clinfo.cl_strength with DischargeAt (dp,_) -> dp = full_olddir | _ -> false) then 
 	  (ops,ids_to_discard,work_alist)
 	else
-	  let (y1,y2) = process_class sec_sp ids_to_discard x in
+	  let (y1,y2) = process_class olddir ids_to_discard x in
           ((Class (y1,y2))::ops, ids_to_discard, work_alist)
 	  
     | "COERCION" -> 
 	let (((_,coeinfo),_,_)as x) = outCoercion lobj in
-	if (match coercion_strength coeinfo with DischargeAt (sp,_) -> sp = sec_sp | _ -> false) then 
+	if (match coercion_strength coeinfo with DischargeAt (dp,_) -> dp = full_olddir | _ -> false) then 
 	  (ops,ids_to_discard,work_alist)
         else
-	  let y = process_coercion sec_sp ids_to_discard x in
+	  let y = process_coercion olddir ids_to_discard x in
           ((Coercion y)::ops, ids_to_discard, work_alist)
                     
     | "STRUCTURE" ->
 	let ((kn,i),info) = outStruc lobj in
-	let newkn = recalc_kn dir kn in
+	let newkn = recalc_kn newdir kn in
 	let strobj () =
 	  let mib = Environ.lookup_mind newkn (Global.env ()) in
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_packets.(0).mind_nparams;
-	    s_PROJ = List.map (option_app (fun kn -> recalc_kn dir kn)) info.s_PROJ } in
+	    s_PROJ = List.map (option_app (fun kn -> recalc_kn newdir kn)) info.s_PROJ } in
 	((Struc ((newkn,i),strobj))::ops, ids_to_discard, work_alist)
 
     | "OBJDEF1" -> 
 	let kn = outObjDef1 lobj in
-	let new_kn = recalc_kn dir kn in
+	let new_kn = recalc_kn newdir kn in
         ((Objdef new_kn)::ops, ids_to_discard, work_alist)
 
     | "REQUIRE" -> 
@@ -292,8 +293,9 @@ let process_object oldenv dir sec_sp
 
     | _ -> (ops,ids_to_discard,work_alist)
 
-let process_item oldenv dir sec_sp acc = function
-  | (sp,Leaf lobj) -> process_object oldenv dir sec_sp acc (sp,lobj)
+let process_item oldenv olddir full_olddir newdir acc = function
+  | (sp,Leaf lobj) -> 
+      process_object oldenv olddir full_olddir newdir  acc (sp,lobj)
   | (_,_) -> acc
 
 let process_operation = function
@@ -331,7 +333,7 @@ let close_section _ s =
   let newdir = fst (split_dirpath olddir) in
   let (ops,ids,_) = 
     List.fold_left 
-      (process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
+      (process_item oldenv olddir full_olddir newdir) ([],[],([],[],[])) decls 
   in
   let ids = last_section_hyps olddir in
   Summary.unfreeze_lost_summaries fs;
