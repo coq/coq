@@ -404,8 +404,9 @@ contrib/extraction/scheme.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     lib/pp.cmi 
 contrib/extraction/table.cmi: kernel/environ.cmi library/libnames.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
-contrib/first-order/formula.cmi: library/libnames.cmi kernel/names.cmi \
-    proofs/proof_type.cmi kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi 
+contrib/first-order/formula.cmi: kernel/closure.cmi library/libnames.cmi \
+    kernel/names.cmi proofs/proof_type.cmi kernel/sign.cmi proofs/tacmach.cmi \
+    kernel/term.cmi 
 contrib/first-order/ground.cmi: proofs/proof_type.cmi \
     contrib/first-order/sequent.cmi proofs/tacmach.cmi 
 contrib/first-order/instances.cmi: contrib/first-order/formula.cmi \
@@ -2760,18 +2761,16 @@ contrib/field/field.cmx: toplevel/cerrors.cmx interp/constrintern.cmx \
     proofs/tacmach.cmx tactics/tacticals.cmx kernel/term.cmx \
     interp/topconstr.cmx pretyping/typing.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx 
-contrib/first-order/formula.cmo: kernel/declarations.cmi kernel/environ.cmi \
+contrib/first-order/formula.cmo: kernel/closure.cmi kernel/declarations.cmi \
     library/global.cmi tactics/hipattern.cmi pretyping/inductiveops.cmi \
     library/libnames.cmi kernel/names.cmi pretyping/reductionops.cmi \
-    proofs/refiner.cmi kernel/sign.cmi proofs/tacmach.cmi \
-    pretyping/tacred.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi \
-    contrib/first-order/formula.cmi 
-contrib/first-order/formula.cmx: kernel/declarations.cmx kernel/environ.cmx \
+    kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi pretyping/termops.cmi \
+    lib/util.cmi contrib/first-order/formula.cmi 
+contrib/first-order/formula.cmx: kernel/closure.cmx kernel/declarations.cmx \
     library/global.cmx tactics/hipattern.cmx pretyping/inductiveops.cmx \
     library/libnames.cmx kernel/names.cmx pretyping/reductionops.cmx \
-    proofs/refiner.cmx kernel/sign.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx \
-    contrib/first-order/formula.cmi 
+    kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx pretyping/termops.cmx \
+    lib/util.cmx contrib/first-order/formula.cmi 
 contrib/first-order/g_ground.cmo: tactics/auto.cmi toplevel/cerrors.cmi \
     parsing/egrammar.cmi contrib/first-order/formula.cmi interp/genarg.cmi \
     library/goptions.cmi contrib/first-order/ground.cmi library/libnames.cmi \
@@ -2786,18 +2785,20 @@ contrib/first-order/g_ground.cmx: tactics/auto.cmx toplevel/cerrors.cmx \
     proofs/refiner.cmx contrib/first-order/sequent.cmx proofs/tacexpr.cmx \
     tactics/tacinterp.cmx tactics/tacticals.cmx tactics/tactics.cmx \
     kernel/term.cmx 
-contrib/first-order/ground.cmo: contrib/first-order/formula.cmi lib/heap.cmi \
-    contrib/first-order/instances.cmi lib/pp.cmi proofs/proof_trees.cmi \
-    contrib/first-order/rules.cmi contrib/first-order/sequent.cmi \
-    tactics/tacinterp.cmi proofs/tacmach.cmi proofs/tactic_debug.cmi \
-    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
-    contrib/first-order/ground.cmi 
-contrib/first-order/ground.cmx: contrib/first-order/formula.cmx lib/heap.cmx \
-    contrib/first-order/instances.cmx lib/pp.cmx proofs/proof_trees.cmx \
-    contrib/first-order/rules.cmx contrib/first-order/sequent.cmx \
-    tactics/tacinterp.cmx proofs/tacmach.cmx proofs/tactic_debug.cmx \
-    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
-    contrib/first-order/ground.cmi 
+contrib/first-order/ground.cmo: tactics/auto.cmi kernel/closure.cmi \
+    contrib/first-order/formula.cmi lib/heap.cmi \
+    contrib/first-order/instances.cmi library/libnames.cmi kernel/names.cmi \
+    lib/pp.cmi proofs/proof_trees.cmi contrib/first-order/rules.cmi \
+    contrib/first-order/sequent.cmi tactics/tacinterp.cmi proofs/tacmach.cmi \
+    proofs/tactic_debug.cmi tactics/tacticals.cmi tactics/tactics.cmi \
+    kernel/term.cmi lib/util.cmi contrib/first-order/ground.cmi 
+contrib/first-order/ground.cmx: tactics/auto.cmx kernel/closure.cmx \
+    contrib/first-order/formula.cmx lib/heap.cmx \
+    contrib/first-order/instances.cmx library/libnames.cmx kernel/names.cmx \
+    lib/pp.cmx proofs/proof_trees.cmx contrib/first-order/rules.cmx \
+    contrib/first-order/sequent.cmx tactics/tacinterp.cmx proofs/tacmach.cmx \
+    proofs/tactic_debug.cmx tactics/tacticals.cmx tactics/tactics.cmx \
+    kernel/term.cmx lib/util.cmx contrib/first-order/ground.cmi 
 contrib/first-order/instances.cmo: kernel/declarations.cmi \
     pretyping/detyping.cmi contrib/first-order/formula.cmi lib/heap.cmi \
     library/libnames.cmi kernel/names.cmi pretyping/pretyping.cmi \
