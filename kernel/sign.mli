@@ -2,6 +2,8 @@
 (* $Id$ *)
 
 open Names
+open Generic
+open Term
 
 type 'a signature = identifier list * 'a list
 type 'a db_signature = (name * 'a) list
@@ -40,6 +42,13 @@ val add_sign_replacing :
   identifier -> (identifier * 'a) -> 'a signature -> 'a signature
 val prepend_sign : 'a signature -> 'a signature -> 'a signature
 
+val dunbind : identifier -> 'a signature -> 'a -> 'b term 
+  -> 'a signature * 'b term
+val dunbindv : identifier -> 'a signature -> 'a -> 'b term 
+  -> 'a signature * 'b term array
+val dbind : 'a signature -> 'b term -> 'a * 'b term
+val dbindv : 'a signature -> 'b term array -> 'a * 'b term
+
 
 val gLOB : 'b signature -> ('b,'a) env
 
@@ -66,3 +75,6 @@ type ('b,'a) search_result =
 val lookup_id : identifier -> ('b,'a) env -> ('b,'a) search_result
 
 
+type 'b assumptions = (type_judgment,'b) env
+type environment = (type_judgment,type_judgment) env
+type context = type_judgment signature

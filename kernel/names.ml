@@ -65,6 +65,14 @@ let id_ord id1 id2 =
 
 let id_without_number id = id.index = (-1)
 
+module IdOrdered = 
+  struct
+    type t = identifier
+    let compare = id_ord
+  end
+
+module Idset = Set.Make(IdOrdered)
+
 
 (* Fresh names *)
 
@@ -105,6 +113,9 @@ let get_new_ids n id lids  =
   in 
   get_rec n []
 
+let id_of_name default = function
+  | Name s -> s
+  | Anonymous -> default
 
 (* Kinds *)
 
@@ -198,6 +209,8 @@ module SpOrdered =
   end
 
 module Spset = Set.Make(SpOrdered)
+
+module Spmap = Map.Make(SpOrdered)
 
 (* Hash-consing of name objects *)
 module Hident = Hashcons.Make(

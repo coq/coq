@@ -3,6 +3,8 @@
 
 open Names
 open Util
+open Generic
+open Term
 
 (* Signatures *)
 
@@ -139,6 +141,28 @@ let prepend_sign gamma1 gamma2 =
   else
     invalid_arg "prepend_sign"
 
+let dunbind default sign ty = function 
+  | DLAM(na,c) ->
+      let id = next_ident_away (id_of_name default na) (ids_of_sign sign) in
+      (add_sign (id,ty) sign, subst1 (VAR id) c)
+  | _ -> invalid_arg "dunbind default"
+
+let dunbindv default sign ty = function
+  | DLAMV(na,c) ->
+      let id = next_ident_away (id_of_name default na) (ids_of_sign sign) in 
+      (add_sign (id,ty) sign,Array.map (subst1 (VAR id)) c)
+  | _ -> invalid_arg "dunbindv default"
+
+let dbind sign c =
+  let (id,ty) = hd_sign sign
+  and sign' = tl_sign sign in
+  (ty,DLAM(Name id,subst_var id c))
+
+let dbindv sign cl =
+  let (id,ty) = hd_sign sign
+  and sign' = tl_sign sign in
+  (ty,DLAMV(Name id,Array.map (subst_var id) cl))
+
 
 (* Signatures + de Bruijn environments *)
 
@@ -207,3 +231,7 @@ let lookup_id id env =
   with 
     | Not_found -> let (x,y) = lookup_glob id env in GLOBNAME(x,y)
 
+
+type 'b assumptions = (type_judgment,'b) env
+type environment = (type_judgment,type_judgment) env
+type context = type_judgment signature

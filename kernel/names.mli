@@ -18,6 +18,7 @@ val index_of_id : identifier -> int
 val id_ord : identifier -> identifier -> int
 val id_without_number : identifier -> bool
 
+module Idset : Set.S with type elt = identifier
 
 val lift_ident : identifier -> identifier
 val next_ident_away_from : identifier -> identifier list -> identifier
@@ -27,6 +28,7 @@ val next_name_away_with_default :
   string -> name -> identifier list -> identifier
 val get_new_ids : int -> identifier -> identifier list -> identifier list
 
+val id_of_name : identifier -> name -> identifier
 
 type path_kind = CCI | FW | OBJ
 
@@ -58,6 +60,7 @@ val sp_ord : section_path -> section_path -> int
 val sp_gt : section_path * section_path -> bool
 
 module Spset : Set.S with type elt = section_path
+module Spmap : Map.S with type key = section_path
 
 (* Hash-consing *)
 val hcons_names : unit ->
