@@ -124,7 +124,7 @@ arch-tar-gz: ${COQPACKAGE}.tar.gz
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
 	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt;\
-	make world tools;\
+	make world;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install)
 	$(MAKE) arch-tar-gz-final
@@ -142,6 +142,7 @@ win: ${COQPACKAGE}.tar.gz
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install;\
 	cd ${ARCHBUILDROOT}/buildroot;\
+	mv ../$(COQPACKAGE)/INSTALL.win .;\
 	zip -A -r $(COQPACKAGE)-win.zip *;\
 	mv $(COQPACKAGE)-Win.zip ../..)
 
