@@ -96,7 +96,7 @@ let typeur sigma metamap =
     | _ -> outsort env sigma (type_of env t)
 
   and sort_family_of env t =
-    match kind_of_term t with
+    match kind_of_term (whd_betadeltaiota env sigma t) with
     | IsCast (c,s) when isSort s -> family_of_sort (destSort s)
     | IsSort (Prop c) -> InType
     | IsSort (Type u) -> InType
