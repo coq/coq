@@ -60,14 +60,17 @@ documentation)
 You can have a taste of extraction directly at the toplevel by 
 using the "Extraction <ident>" or the "Recursive Extraction <ident>".
 This toplevel extraction was already there in V6.3, but was printing 
-Fw terms. It now prints in an Ocaml-like syntax.
+Fw terms. It now prints in the language of your choice: 
+Ocaml, Haskell or an Ocaml-like with Coq namings. 
 
-The optimization done on extracted code has been mostly ported between 
-V6.3 and V7, and in particular the mechanism of automatic expansion. 
+The optimization done on extracted code has been ported between 
+V6.3 and V7 and enhanced, and in particular the mechanism of automatic
+expansion. 
 
 2.b) The cons 
 
-The presence of some parasite "unit" or "prop" as dummy arguments
+The presence of some parasite "unit" or "prop" (now () in ocaml and __ in 
+Haskell) as dummy arguments
 in functions. This denotes the rests of a proof part. The previous 
 extraction was able to remove them totally, but this is no more possible
 due to extraction upon Type.
@@ -91,6 +94,9 @@ In the subdirectory "test", you can test extraction on the Coq theories.
 Go there.
 "make tree" to make a local copy of the "theories" tree
 "make" to extract & compile most of the theories file 
+
+See also Reference Manual for explanation of extraction syntaxes
+and more examples. 
 
 
 (*):
