@@ -69,6 +69,11 @@ val put_squel          : module_mark -> string -> marked_term
 val raw_sopattern_of_compattern : Environ.env -> Coqast.t -> constr
 i*)
 
+(* [get_reference mods id] interprets [id] as a global identifier
+   assuming defined in the modules listed in [mods] *)
+
+val get_reference : string list -> string -> constr
+
 (*s Second part : Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using \verb!XTRA[$SOAPP]! to
    terms, this function will perform second-order, binding-preserving,

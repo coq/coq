@@ -55,6 +55,14 @@ let (squeleton_stock : (int list * constr) Stock.stock) =
 let put_squel = Stock.stock squeleton_stock
 let get_squel_core = Stock.retrieve squeleton_stock
 
+(* Sera mieux avec des noms qualifiés *)
+let get_reference mods s =
+  if list_subset mods (Library.loaded_modules()) then
+    try Declare.global_reference CCI (id_of_string s)
+    with Not_found ->
+      error ("get_reference: "^s^"is not defined in the given modules")
+  else error "The required modules are not open"
+
 (*
 let dest_somatch n pat =
   let _,m = get_pat pat in
