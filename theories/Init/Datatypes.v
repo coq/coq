@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 Require Notations.
+Require Logic.
 
 Set Implicit Arguments.
 V7only [Unset Implicit Arguments.].
@@ -91,9 +92,26 @@ Notation Snd := (snd ? ?).
 ].
 Hints Resolve pair inl inr : core v62.
 
+Lemma surjective_pairing : (A,B:Set;H:A*B)H=(pair A B (Fst H) (Snd H)).
+Proof.
+NewDestruct H; Reflexivity.
+Qed.
+
 V7only[
 (** Parsing only of things in [Datatypes.v] *)
 Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing, A annot).
 Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing, A annot).
 Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing, A annot).
 ].
+
+(** Comparison *)
+
+Inductive relation : Set := 
+  EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
+
+Definition Op := [r:relation]
+  Cases r of
+    EGAL => EGAL
+  | INFERIEUR => SUPERIEUR
+  | SUPERIEUR => INFERIEUR
+  end.
