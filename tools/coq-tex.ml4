@@ -135,8 +135,26 @@ let insert texfile coq_output result =
     in
     let first = !last_read in first :: (read_lines ())
   in
+  (* we are just after \end{coq_...} block *)
+  let rec just_after () = 
+    let s = input_line c_tex in
+    if Str.string_match begin_coq_example s 0 then begin
+      inside (Str.matched_group 1 s <> "example*")
+             (Str.matched_group 1 s <> "example#") 0 false
+    end
+    else begin
+      if !hrule then output_string c_out "\\hrulefill\\\\\n";
+      output_string c_out "\\end{flushleft}\n";
+      if !small then output_string c_out "\\end{small}\n";
+      if Str.string_match begin_coq_eval s 0 then
+	eval 0     
+      else begin
+	output_string c_out (s ^ "\n");
+	outside ()
+      end	  
+    end
   (* we are outside of a \begin{coq_...} ... \end{coq_...} block *)
-  let rec outside () =
+  and outside () =
     let s = input_line c_tex in
     if Str.string_match begin_coq_example s 0 then begin
       if !small then output_string c_out "\\begin{small}\n";
@@ -156,10 +174,7 @@ let insert texfile coq_output result =
   and inside show_answers  show_questions k first_block = 
     let s = input_line c_tex in
     if Str.string_match end_coq_example s 0 then begin
-      if !hrule then output_string c_out "\\hrulefill\\\\\n";
-      output_string c_out "\\end{flushleft}\n";
-      if !small then output_string c_out "\\end{small}\n";
-      outside ()
+      just_after ()
     end else begin
       if !verbose then Printf.printf "Coq < %s\n" s;
       if (not first_block) & k=0 then output_string c_out "\\medskip\n";
