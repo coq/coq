@@ -500,6 +500,10 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	   | RHole _ :: _ -> anomaly "Metavariable for 2nd-order pattern-matching cannot be anonymous"
 	   | _ -> anomaly "Bad arguments for second-order pattern-matching")
 
+    | Node(loc,"SQUASH",_) ->
+        user_err_loc(loc,"ast_to_rawconstr",
+                     [< 'sTR "Ill-formed specification" >])
+
     | Node(loc,opn,tl) -> 
 	anomaly ("ast_to_rawconstr found operator "^opn^" with "^
 		 (string_of_int (List.length tl))^" arguments")
