@@ -124,12 +124,14 @@ proofs/proof_type.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
 proofs/refiner.cmi: lib/pp.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     kernel/sign.cmi kernel/term.cmi 
 proofs/stock.cmi: kernel/names.cmi 
-proofs/tacinterp.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/names.cmi \
-    lib/pp.cmi proofs/proof_type.cmi proofs/tacmach.cmi kernel/term.cmi 
+proofs/tacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/environ.cmi \
+    kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacmach.cmi \
+    kernel/term.cmi 
 proofs/tacmach.cmi: parsing/coqast.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi kernel/evd.cmi kernel/names.cmi lib/pp.cmi \
     proofs/proof_trees.cmi proofs/proof_type.cmi kernel/reduction.cmi \
     proofs/refiner.cmi kernel/sign.cmi pretyping/tacred.cmi kernel/term.cmi 
+proofs/tactic_debug.cmi: parsing/coqast.cmi proofs/proof_type.cmi 
 tactics/auto.cmi: tactics/btermdn.cmi proofs/clenv.cmi parsing/coqast.cmi \
     kernel/environ.cmi kernel/evd.cmi kernel/names.cmi parsing/pattern.cmi \
     proofs/proof_type.cmi pretyping/rawterm.cmi kernel/sign.cmi \
@@ -693,18 +695,20 @@ proofs/stock.cmo: lib/bij.cmi lib/gmap.cmi lib/gmapl.cmi library/library.cmi \
 proofs/stock.cmx: lib/bij.cmx lib/gmap.cmx lib/gmapl.cmx library/library.cmx \
     kernel/names.cmx lib/pp.cmx lib/util.cmx proofs/stock.cmi 
 proofs/tacinterp.cmo: parsing/ast.cmi parsing/astterm.cmi kernel/closure.cmi \
-    parsing/coqast.cmi library/declare.cmi kernel/environ.cmi lib/gmap.cmi \
-    library/lib.cmi library/libobject.cmi proofs/macros.cmi kernel/names.cmi \
-    library/nametab.cmi lib/options.cmi parsing/pattern.cmi lib/pp.cmi \
-    proofs/proof_type.cmi pretyping/rawterm.cmi kernel/sign.cmi \
-    library/summary.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    parsing/coqast.cmi library/declare.cmi lib/dyn.cmi kernel/environ.cmi \
+    kernel/evd.cmi lib/gmap.cmi library/lib.cmi library/libobject.cmi \
+    proofs/macros.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
+    parsing/pattern.cmi lib/pp.cmi proofs/proof_type.cmi \
+    pretyping/rawterm.cmi kernel/sign.cmi library/summary.cmi \
+    proofs/tacmach.cmi pretyping/tacred.cmi proofs/tactic_debug.cmi \
     kernel/term.cmi pretyping/typing.cmi lib/util.cmi proofs/tacinterp.cmi 
 proofs/tacinterp.cmx: parsing/ast.cmx parsing/astterm.cmx kernel/closure.cmx \
-    parsing/coqast.cmx library/declare.cmx kernel/environ.cmx lib/gmap.cmx \
-    library/lib.cmx library/libobject.cmx proofs/macros.cmx kernel/names.cmx \
-    library/nametab.cmx lib/options.cmx parsing/pattern.cmx lib/pp.cmx \
-    proofs/proof_type.cmx pretyping/rawterm.cmx kernel/sign.cmx \
-    library/summary.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    parsing/coqast.cmx library/declare.cmx lib/dyn.cmx kernel/environ.cmx \
+    kernel/evd.cmx lib/gmap.cmx library/lib.cmx library/libobject.cmx \
+    proofs/macros.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
+    parsing/pattern.cmx lib/pp.cmx proofs/proof_type.cmx \
+    pretyping/rawterm.cmx kernel/sign.cmx library/summary.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx proofs/tactic_debug.cmx \
     kernel/term.cmx pretyping/typing.cmx lib/util.cmx proofs/tacinterp.cmi 
 proofs/tacmach.cmo: parsing/ast.cmi parsing/astterm.cmi library/declare.cmi \
     kernel/environ.cmi proofs/evar_refiner.cmi kernel/evd.cmi \
@@ -720,6 +724,10 @@ proofs/tacmach.cmx: parsing/ast.cmx parsing/astterm.cmx library/declare.cmx \
     kernel/reduction.cmx proofs/refiner.cmx kernel/sign.cmx lib/stamps.cmx \
     pretyping/tacred.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
     proofs/tacmach.cmi 
+proofs/tactic_debug.cmo: parsing/ast.cmi lib/pp.cmi proofs/proof_trees.cmi \
+    proofs/tacmach.cmi proofs/tactic_debug.cmi 
+proofs/tactic_debug.cmx: parsing/ast.cmx lib/pp.cmx proofs/proof_trees.cmx \
+    proofs/tacmach.cmx proofs/tactic_debug.cmi 
 scripts/coqmktop.cmo: config/coq_config.cmi scripts/tolink.cmo 
 scripts/coqmktop.cmx: config/coq_config.cmx scripts/tolink.cmx 
 tactics/auto.cmo: parsing/astterm.cmi tactics/btermdn.cmi proofs/clenv.cmi \

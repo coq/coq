@@ -101,7 +101,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
        proofs/macros.cmo proofs/clenv.cmo proofs/stock.cmo proofs/pfedit.cmo \
-       proofs/tacinterp.cmo
+       proofs/tactic_debug.cmo proofs/tacinterp.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
@@ -116,8 +116,10 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
-            tactics/tauto.cmo tactics/inv.cmo tactics/leminv.cmo \
-            tactics/eauto.cmo tactics/refine.cmo
+            tactics/inv.cmo tactics/leminv.cmo tactics/eauto.cmo \
+            tactics/refine.cmo
+
+SPECTAC=tactics/tauto.ml4
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
@@ -143,11 +145,11 @@ COQBINARIES= $(COQMKTOP) $(COQC) coqtop.byte $(BESTCOQTOP)
 
 world: $(COQBINARIES) states theories contrib tools
 
-coqtop.opt: $(COQMKTOP) $(CMX)
+coqtop.opt: $(COQMKTOP) $(CMX) user-tac-opt
 	$(COQMKTOP) -opt $(OPTFLAGS) -o coqtop.opt
 	$(STRIP) ./coqtop.opt
 
-coqtop.byte: $(COQMKTOP) $(CMO) Makefile
+coqtop.byte: $(COQMKTOP) $(CMO) user-tac-byte Makefile
 	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte
 
 # coqmktop 
@@ -167,7 +169,7 @@ scripts/tolink.ml: Makefile
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
-	echo "let hightactics = \""$(HIGHTACTICS)"\"" >> $@
+	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTAC:.ml4=.cmo)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
@@ -339,6 +341,25 @@ archclean::
 	rm -f contrib/*/*.cmx contrib/*/*.[so]
 
 ###########################################################################
+# ML user tactics
+# (intended to be rather generic)
+###########################################################################
+
+USERTAC = $(SPECTAC)
+
+CAMLP4GRAMMAR = camlp4o -I parsing pa_extend.cmo grammar.cma
+OPTCAMLP4GRAMMAR = camlp4o -I parsing pa_extend.cmo grammar.cma \
+                   $(OSDEPP4OPTFLAGS)
+
+COQCMO = names.cmo ast.cmo g_tactic.cmo g_constr.cmo
+
+user-tac-byte: parsing/grammar.cma
+	for i in $(USERTAC); do $(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -I kernel $(COQCMO) -impl" -impl $$i; done
+
+user-tac-opt: parsing/grammar.cma
+	for i in $(USERTAC); do $(OCAMLOPT) $(OPTFLAGS) -c -pp "$(OPTCAMLP4GRAMMAR) -I kernel $(COQCMO) -impl" -impl $$i; done
+
+###########################################################################
 # tools
 ###########################################################################
 
@@ -480,9 +501,6 @@ parsing/grammar.cma: $(GRAMMARCMO)
 
 clean::
 	rm -f parsing/grammar.cma
-
-CAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma
-OPTCAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma $(OSDEPP4OPTFLAGS)
 
 parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<

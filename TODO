@@ -9,15 +9,16 @@ Distribution:
 Environnement:
 
 - Faire fonctionner Search
+- Porter SearchIsos
 - Faire fonctionner Abstract
 - Faire fonctionner Reset
 - Décider s'il faut garder Transparent/Opaque et si oui, l'implanter
 - Ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo) FAIT
 
-Tactiques
+Tactiques:
 
-- Choisir la précédence de Try/Orelse
 - Éviter si possible les '(
+- Réécrire AutoRewrite avec le langage de tactiques
 
 Noyau:
 
@@ -36,5 +37,6 @@ Doc:
 - une passe sur le chapitre extensions de syntaxe
 - une passe sur le chapitre Cases
 - documenter le langage de tactique et Field
+- revoir le chapitre sur les tactiques utilisateur
 - clarifier la sémantique de Decompose (i.e. travaille pas sous les ->)
 - faut-il mieux spécifier la sémantique de Simpl (??)
