@@ -134,7 +134,7 @@ let avoid_wildcard id =
 
 let translate_keyword = function
   | ("forall" | "fun" | "match" | "fix" | "cofix" | "for" | "let"
-    | "if"  | "then" | "else" | "return" | "mod" as s) ->
+    | "if"  | "then" | "else" | "return" | "mod" | "where" as s) ->
       let s' = s^"_" in
       msgerrnl
       (str ("Warning: '"^
@@ -206,8 +206,10 @@ let translate_v7_string = function
   | "sub_pos_SUPERIEUR" -> "PNminus_Gt"
   | "sub_neg" -> "PNminus_carry"
   | "Nul" -> "N0"
-  | "Un_suivi_de" -> "Pdouble_plus_one_mask"
-  | "Zero_suivi_de" -> "Pdouble_mask"
+  | "Un_suivi_de" -> "Ndouble_plus_one"
+  | "Zero_suivi_de" -> "Ndouble"
+  | "Un_suivi_de_mask" -> "Pdouble_plus_one_mask"
+  | "Zero_suivi_de_mask" -> "Pdouble_mask"
   | "ZS" -> "double_eq_zero_inversion"
   | "US" -> "double_plus_one_zero_discr"
   | "USH" -> "double_plus_one_eq_one_inversion"
@@ -303,6 +305,7 @@ let translate_v7_string = function
 ...
 *)
   | "complet" -> "completeness"
+  | "complet_weak" -> "completeness_weak"
   | "Rle_sym1" -> "Rle_ge"
   | "Rmin_sym" -> "Rmin_comm"
   | "Rsqr_times" -> "Rsqr_mult"
@@ -482,6 +485,8 @@ let explicit_code imp q =
   if !Options.v7 & not (Options.do_translate()) then ExplByPos q
   else ExplByName (name_of_implicit imp)
 
+let is_not_hole = function CHole _ -> false | _ -> true
+
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
 let explicitize loc inctx impl (cf,f) args =
@@ -490,10 +495,11 @@ let explicitize loc inctx impl (cf,f) args =
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
-          (!print_implicits & !print_implicits_explicit_args)
-          or (not (is_inferable_implicit inctx n imp))
-	  or ((match a with CHole _ -> false | _ -> true)
-	      & Options.do_translate() & not (stdlib cf)) in
+          (!print_implicits & !print_implicits_explicit_args) or 
+	  (is_not_hole a &
+	  (not (is_inferable_implicit inctx n imp) or
+	    (Options.do_translate() & not (stdlib cf))))
+	in
         if visible then (a,Some (explicit_code imp q)) :: tail else tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
