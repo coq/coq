@@ -96,7 +96,8 @@ precedence do not apply.
 Lexical categories are:
 \begin{rules}
 \DEFNT{ident}
-     \NT{letter}\STARGR{\NT{letter}\mid \NT{digit} \mid \CHAR{'} \mid \CHAR{_}}
+     \STARGR{\NT{letter}\mid\CHAR{_}}
+     \STARGR{\NT{letter}\mid \NT{digit} \mid \CHAR{'} \mid \CHAR{_}}
 \SEPDEF
 \DEFNT{field}       \CHAR{.}\NT{ident}
 \SEPDEF

@@ -645,8 +645,6 @@ let translate_v7_string dir = function
       (s' = "unicite" or s' = "unicity") -> c dir,
       "uniqueness"^(String.sub s 7 (String.length s - 7))
   (* Default *)
-  | s when String.length s > 1 && s.[0]='_' -> c dir,
-      String.sub s 1 (String.length s - 1)
   | "_" -> 
       msgerrnl (str 
 	"Warning: '_' is no longer an ident; it has been translated to 'x_'");

@@ -309,6 +309,12 @@ let abstract_mind_lc env ntyps npars lc =
     in 
     Array.map (substl make_abs) lc
 
+(* [env] is the typing environment
+   [n] is the dB of the last inductive type
+   [ntypes] is the number of inductive types in the definition
+     (i.e. range of inductives is [n; n+ntypes-1])
+   [lra] is the list of recursive tree of each variable
+ *) 
 let ienv_push_var (env, n, ntypes, lra) (x,a,ra) =
  (push_rel (x,None,a) env, n+1, ntypes, (Norec,ra)::lra)
 
