@@ -33,6 +33,26 @@ Section Inverse_Image.
     Red; Intros; Apply Acc_inverse_image; Auto.
   Qed.
 
+  Variable F : A -> B -> Prop.
+  Local RoF : A -> A -> Prop := [x,y]
+    (EX b : B | (F x b) & (c:B)(F y c)->(R b c)).
+
+Lemma Acc_inverse_rel :
+   (b:B)(Acc B R b)->(x:A)(F x b)->(Acc A RoF x).
+Induction 1; Intros.
+Constructor; Intros.
+Case H3; Intros.
+Apply (H1 x1); Auto.
+Save.
+
+
+Theorem wf_inverse_rel : 
+   (well_founded B R)->(well_founded A RoF).
+    Red; Constructor; Intros.
+    Case H0; Intros.
+    Apply (Acc_inverse_rel x); Auto.
+Save.
+
 End Inverse_Image.
 
 

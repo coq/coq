@@ -164,3 +164,37 @@ Qed.
 
 Hints Resolve lt_wf : arith.
 Hints Resolve well_founded_lt_compat : arith.
+
+Section LT_WF_REL.
+Variable A :Set.
+Variable R:A->A->Prop.
+
+(* Relational form of inversion *)
+Variable F : A -> nat -> Prop.
+Definition inv_lt_rel 
+ [x,y]:=(EX n | (F x n) & (m:nat)(F y m)->(lt n m)).
+
+Hypothesis F_compat : (x,y:A) (R x y) -> (inv_lt_rel x y).
+Remark acc_lt_rel : 
+  (x:A)(EX n | (F x n))->(Acc A R x).
+Intros x (n,fxn); Generalize x fxn; Clear x fxn.
+Pattern n; Apply lt_wf_ind; Intros.
+Constructor; Intros.
+Case (F_compat y x); Trivial; Intros.
+Apply (H x0); Auto.
+Save.
+
+Theorem well_founded_inv_lt_rel_compat : (well_founded A R).
+Constructor; Intros.
+Case (F_compat y a); Trivial; Intros.
+Apply acc_lt_rel; Trivial.
+Exists x; Trivial.
+Save.
+
+
+End LT_WF_REL.
+
+Lemma well_founded_inv_rel_inv_lt_rel 
+  : (A:Set)(F:A->nat->Prop)(well_founded A (inv_lt_rel A F)).
+Intros; Apply (well_founded_inv_lt_rel_compat A (inv_lt_rel A F) F); Trivial.
+Save.
