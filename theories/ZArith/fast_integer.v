@@ -785,6 +785,52 @@ Rewrite le_plus_minus_r; [
 | Apply lt_le_weak; Exact (compare_convert_SUPERIEUR x y H)].
 Qed.
 
+(** Misc properties of the injection from positive to nat *)
+
+Lemma convert_xH : (convert xH)=(1).
+Proof.
+  Reflexivity.
+Qed.
+
+Lemma positive_to_nat_mult : (p:positive) (n,m:nat)
+    (positive_to_nat p (mult m n))=(mult m (positive_to_nat p n)).
+Proof.
+  Induction p. Intros. Simpl. Rewrite mult_plus_distr_r. Rewrite <- (mult_plus_distr_r m n n).
+  Rewrite (H (plus n n) m). Reflexivity.
+  Intros. Simpl. Rewrite <- (mult_plus_distr_r m n n). Apply H.
+  Trivial.
+Qed.
+
+Lemma positive_to_nat_2 : (p:positive)
+    (positive_to_nat p (2))=(mult (2) (positive_to_nat p (1))).
+Proof.
+  Intros. Rewrite <- positive_to_nat_mult. Reflexivity.
+Qed.
+
+Lemma positive_to_nat_4 : (p:positive)
+    (positive_to_nat p (4))=(mult (2) (positive_to_nat p (2))).
+Proof.
+  Intros. Rewrite <- positive_to_nat_mult. Reflexivity.
+Qed.
+
+Lemma convert_xO : (p:positive) (convert (xO p))=(mult (2) (convert p)).
+Proof.
+  Induction p. Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2.
+  Rewrite positive_to_nat_4. Rewrite H. Simpl. Rewrite <- plus_Snm_nSm. Reflexivity.
+  Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2. Rewrite positive_to_nat_4.
+  Rewrite H. Reflexivity.
+  Reflexivity.
+Qed.
+
+Lemma convert_xI : (p:positive) (convert (xI p))=(S (mult (2) (convert p))).
+Proof.
+  Induction p. Unfold convert. Simpl. Intro p0. Intro. Rewrite positive_to_nat_2.
+  Rewrite positive_to_nat_4. Inversion H. Rewrite H1. Rewrite <- plus_Snm_nSm. Reflexivity.
+  Unfold convert. Simpl. Intros. Rewrite positive_to_nat_2. Rewrite positive_to_nat_4.
+  Inversion H. Rewrite H1. Reflexivity.
+  Reflexivity.
+Qed.
+
 (** Addition on integers *)
 Definition Zplus := [x,y:Z]
   <Z>Cases x of
