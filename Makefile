@@ -122,7 +122,7 @@ CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 COQMKTOP=scripts/coqmktop
 COQC=scripts/coqc
 
-world: $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt states tools
+world: $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt states theories tools
 
 coqtop.opt: $(COQMKTOP) $(CMX)
 	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop.opt
@@ -181,6 +181,19 @@ SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) coqtop.byte
 	./coqtop.byte -q -batch -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+
+###########################################################################
+# theories
+###########################################################################
+
+INIT=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
+     theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
+     theories/Init/Logic.vo             theories/Init/Specif.vo        \
+     theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
+     theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
+     theories/Init/Logic_TypeSyntax.vo
+
+theories: $(INIT)
 
 ###########################################################################
 # tools
@@ -416,10 +429,13 @@ cleanconfig::
 # Dependencies
 ###########################################################################
 
-alldepend: depend dependcamlp4
+alldepend: depend dependcoq dependcamlp4
 
 depend: beforedepend
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
+
+dependcoq: beforedepend
+	tools/coqdep $(COQINCLUDES) */*.v */*/*.v > .depend.coq
 
 dependcamlp4: beforedepend
 	rm -f .depend.camlp4
@@ -431,4 +447,5 @@ dependcamlp4: beforedepend
 	done
 
 include .depend
+include .depend.coq
 include .depend.camlp4

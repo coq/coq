@@ -360,7 +360,7 @@ val to_lambda : int -> constr -> constr
 val to_prod : int -> constr -> constr
 
 (* pseudo-reduction rule *)
-(* prod_applist (x1:B1;...;xn:Bn)B a1...an --> B[a1...an] *)
+(* [prod_applist] $(x1:B1;...;xn:Bn)B a1...an \rightarrow B[a1...an]$ *)
 val prod_applist : constr -> constr list -> constr
 
 (*s Other term destructors. *)
