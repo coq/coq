@@ -205,7 +205,7 @@ let sign_of_arity env c =
 let vl_of_lbinders = 
   lbinders_fold 
     (fun n _ v a -> 
-       if v = info_arity then (next_ident_away (id_of_name n) a)::a else a) []
+       if v = info_arity then (next_ident_away (id_of_name n) (prop_name::a))::a else a) []
   
 let vl_of_arity env c = vl_of_lbinders env (List.rev (fst (decompose_prod c)))
 	 
@@ -357,7 +357,7 @@ and extract_type_rec_info env c vl args =
     | Const sp when args = [] && is_ml_extraction (ConstRef sp) ->
 	Tmltype (Tglob (ConstRef sp), vl)
     | Const sp when is_axiom sp -> 
-	let id = next_ident_away (basename sp) vl in 
+	let id = next_ident_away (basename sp) (prop_name::vl) in 
 	Tmltype (Tvar id,  id :: vl)
     | Const sp ->
 	let t = constant_type env sp in 
@@ -379,7 +379,7 @@ and extract_type_rec_info env c vl args =
 	       extract_type_app env (IndRef spi,si,vli) vl args 
 	   |Iprop -> assert false (* Cf. initial tests *))
     | Case _ | Fix _ | CoFix _ ->
-	let id = next_ident_away flexible_name vl in
+	let id = next_ident_away flexible_name (prop_name::vl) in
 	Tmltype (Tvar id,  id :: vl)
 	  (* Type without counterpart in ML: we generate a 
 	     new flexible type variable. *) 
@@ -398,7 +398,7 @@ and extract_prod_lam env (n,t,d) vl flag =
     | (Info, Arity), _ -> 
 	(* We rename before the [push_rel], to be sure that the corresponding*)
 	(* [lookup_rel] will be correct. *)
-	let id' = next_ident_away (id_of_name n) vl in 
+	let id' = next_ident_away (id_of_name n) (prop_name::vl) in 
 	let env' = push_rel_assum (Name id', t) env in
 	extract_type_rec_info env' d (id'::vl) []
     | (Logic, Arity), _ | _, Lam ->
@@ -454,7 +454,7 @@ and extract_type_app env (r,sc,vlc) vl args =
   assert (nvlargs >= 0);
   let vl'' = 
     List.fold_right 
-      (fun id l -> (next_ident_away id l) :: l) 
+      (fun id l -> (next_ident_away id (prop_name::l)) :: l) 
       (list_firstn nvlargs vlc) vl'
   in
   (* We complete the list of arguments of [c] by variables *)
@@ -542,25 +542,26 @@ and extract_term_info_wt env ctx c t =
    match kind_of_term c with
      | Lambda (n, t, d) ->
 	 let v = v_of_t env t in 
-	 let env' = push_rel_assum (n,t) env in
+	 let id = next_ident_away (id_of_name n) [prop_name] in 
+	 let env' = push_rel_assum (Name id,t) env in
 	 let ctx' = (snd v = NotArity) :: ctx in
 	 let d' = extract_term_info env' ctx' d in
 	 (* If [d] was of type an arity, [c] too would be so *)
 	 (match v with
 	    | _,Arity -> d'
             | Logic,NotArity -> MLlam (prop_name, d')
-            | Info,NotArity -> MLlam (id_of_name n, d'))
+            | Info,NotArity -> MLlam (id, d'))
      | LetIn (n, c1, t1, c2) ->
 	 let v = v_of_t env t1 in
-	 let env' = push_rel (n,Some c1,t1) env in
+	 let id = next_ident_away (id_of_name n) [prop_name] in 
+	 let env' = push_rel (Name id,Some c1,t1) env in
 	 (match v with
 	    | (Info, NotArity) -> 
 		let c1' = extract_term_info_wt env ctx c1 t1 in
 		let c2' = extract_term_info env' (true :: ctx) c2 in
 		(* If [c2] was of type an arity, [c] too would be so *)
-		MLletin (id_of_name n,c1',c2')
-	    | _ ->
-		extract_term_info env' (false :: ctx) c2)
+		MLletin (id,c1',c2')
+	    | _ -> extract_term_info env' (false :: ctx) c2)
      | Rel n ->
 	 MLrel (renum_db ctx n)
      | Const sp ->

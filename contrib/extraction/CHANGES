@@ -1,3 +1,160 @@
+7.1 -> 7.2 :
+
+* Syntax changes, see Documentation for more details: 
+
+Set/Unset Extraction Optimize. 
+
+Default is Set. This control all optimizations made on the ML terms 
+(mostly reduction of dummy beta/iota redexes, but also simplications on 
+Cases, etc). Put this option to Unset if you what a ML term as close as 
+possible to the Coq term.
+
+Set/Unset Extraction AutoInline. 
+
+Default in Set, so by default, the extraction mechanism feels free to 
+inline the bodies of some defined constants, according to some heuristics 
+like size of bodies, useness of some arguments, etc. Those heuristics are 
+not always perfect, you may want to disable this feature, do it by Unset. 
+
+Extraction Inline toto foo. 
+Extraction NoInline titi faa bor. 
+
+In addition to the automatic inline feature, you can now tell precisely to 
+inline some more constants by the Extraction Inline command. Conversely, 
+you can forbid the inlining of some specific constants by automatic inlining. 
+Those two commands enable a precise control of what is inlined and what is not. 
+
+Print Extraction Inline. 
+
+Sum up the current state of the table recording the custom inlings 
+(Extraction (No)Inline). 
+
+Reset Extraction Inline. 
+
+Put the table recording the custom inlings back to empty. 
+
+As a consequence, there is no more need for options inside the commands of 
+extraction: 
+
+Extraction foo. 
+Recursive Extraction foo bar. 
+Extraction "file" foo bar. 
+Extraction Module Mymodule. 
+Recursive Extraction Module Mymodule. 
+
+New: The last syntax extracts the module Mymodule and all the modules 
+it depends on. 
+
+You can also try the Haskell versions (not tested yet): 
+
+Haskell Extraction foo.
+Haskell Recursive Extraction foo bar.
+Haskell Extraction "file" foo bar.
+Haskell Extraction Module Mymodule.
+Haskell Recursive Extraction Module Mymodule.
+
+And there's still the realization syntax: 
+
+Extract Constant coq_bla => "caml_bla".
+Extract Inlined Constant coq_bla => "caml_bla".
+Extract Inductive myinductive => mycamlind [my_caml_constr1 ... ].
+
+Note that now, the Extract Inlined Constant command is sugar for an Extract 
+Constant followed by a Extraction Inline. So be careful with 
+Reset Extraction Inline. 
+
+ 
+
+* Lot of works around optimization of produced code. Should make code more 
+readable. 
+
+- fixpoint definitions : there should be no more stupid printings like 
+
+let foo x = 
+  let rec f x = 
+    .... (f y) ....
+  in f x
+
+but rather 
+
+let rec foo x = 
+  .... (foo y) .... 
+
+- generalized iota (in particular iota and permutation cases/cases):
+
+A generalized iota redex is a "Cases e of ...." where e is ok. 
+And the recursive predicate "ok" is given by:  
+e is ok if e is a Constructor or a Cases where all branches are ok.
+In the case of generalized iota redex, it might be good idea to reduce it, 
+so we do it. 
+Example: 
+
+match (match t with 
+         O -> Left
+       | S n -> match n with 
+                  O -> Right 
+                | S m -> Left) with 
+ Left -> blabla 
+| Right -> bloblo
+
+After simplification, that gives: 
+
+match t with 
+  O -> blabla
+| S n -> match n with 
+          O -> bloblo
+        | S n -> blabla
+
+As shown on the example, code duplication can occur. In practice 
+it seems not to happen frequently. 
+
+- "constant" case:
+In V7.1 we used to simplify cases where all branches are the same. 
+In V7.2 we can simplify in addition terms like 
+	cases e of 
+	  C1 x y -> f (C x y)
+	| C2 z -> f (C2 z) 
+If x y z don't occur in f, we can produce (f e). 
+
+- permutation cases/fun: 
+extracted code has frequenty functions in branches of cases: 
+
+let foo x = match x with 
+   O -> fun _ -> .... 
+ | S y -> fun _ -> .... 
+
+the optimization consist in lifting the common "fun _ ->", and that gives
+ 
+let foo x _ = match x with 
+   O -> .....
+ | S y -> ....
+ 
+
+* Some bug corrections (many thanks in particular to Michel Levy). 
+
+* Testing in coq contributions: 
+If you are interested in extraction, you can look at the extraction tests 
+I'have put in the following coq contributions 
+
+Bordeaux/Additions			computation of fibonacci(2000)
+Bordeaux/EXCEPTIONS			multiplication using exception.
+Bordeaux/SearchTrees			list -> binary tree. maximum.
+Dyade/BDDS				boolean tautology checker.
+Lyon/CIRCUITS				multiplication via a modelization of a circuit.
+Lyon/FIRING-SQUAD			print the states of the firing squad.
+Marseille/CIRCUITS			compares integers via a modelization of a circuit. 
+Nancy/FOUnify				unification of two first-orderde deux termes.
+Rocq/ARITH/Chinese			computation of the chinese remaindering.  
+Rocq/COC				small coc typechecker. (test by B. Barras, not by me)
+Rocq/HIGMAN				run the proof on one example. 
+Rocq/GRAPHS				linear constraints checker in Z. 
+Sophia-Antipolis/Stalmarck		boolean tautology checker.
+Suresnes/BDD				boolean tautology checker.
+
+Just do "make" in those contributions, the extraction test is integrated. 
+More tests will follow on more contributions.
+
+
 
 7.0 -> 7.1 : mostly bug corrections. No theoretical problems dealed with.
 

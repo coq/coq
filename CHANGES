@@ -18,6 +18,15 @@ Tactics
 - Slight improvement in naming strategy for NewInduction/NewDestruct
 - Intuition/Tauto do not perform useless unfolding and work up to conversion
 
+Extraction
+
+See contrib/extraction/CHANGES or documentation. In brief: 
+- Syntax changes: there are no more options inside the extraction commands. 
+  New commands for customization and options have been introduced instead. 
+- More optimizations on extracted code. 
+- Extraction tests are now embbeded in 14 user contributions. 
+
+
 Standard library
 
 - In [Relations], Rstar.v and Newman.v now axiom-free. 

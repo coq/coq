@@ -28,7 +28,7 @@ exception Impossible
 let anonymous = id_of_string "x"
 let prop_name = id_of_string "_"
 
-let no_prop_name = 
+let prop_name_to_anonymous = 
   List.map (fun i -> if i=prop_name then anonymous else i)
 
 (*s In an ML type, update the arguments to all inductive types [(sp,_)] *)  
@@ -383,7 +383,7 @@ and simplify_case o br e =
 	  check_constant_case br 
 	with Impossible ->
 	  if (is_atomic e) then (* Swap the case and the lam if possible *)
-	    let ids = no_prop_name (permut_case_fun br []) in 
+	    let ids = prop_name_to_anonymous (permut_case_fun br []) in 
 	    let n = List.length ids in 
 	    if n = 0 then MLcase (e, br) 
 	    else named_lams (MLcase (ml_lift n e, br)) ids

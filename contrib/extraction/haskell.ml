@@ -102,7 +102,9 @@ let rec pp_expr par env args =
   in
   function
     | MLrel n -> 
-	apply (pr_id (get_db_name n env))
+	let id = get_db_name n env in 
+	apply (if string_of_id id = "_" then str "prop" else pr_id id)
+	  (* HACK, should disappear soon *)
     | MLapp (f,args') ->
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
