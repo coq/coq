@@ -126,7 +126,7 @@ Qed.
 \end{coq_example*}
 \begin{coq_example}
 Definition half := (mkRat true (1) (2) (O_S (1)) one_two_irred).
-\end{coq_example*}
+\end{coq_example}
 \begin{coq_example}
 Check half.
 \end{coq_example}
@@ -200,7 +200,7 @@ empty.
 \begin{figure}[t]
 \begin{tabular}{|rcl|}
 \hline
-{\nestedpattern}  & := & {\ident} \\
+{\nestedpattern}  & ::= & {\ident} \\
  & $|$ & \_ \\
  & $|$ & \texttt{(} {\ident} \nelist{\nestedpattern}{} \texttt{)} \\
  & $|$ & \texttt{(} {\nestedpattern} \texttt{as}  {\ident} \texttt{)} \\
@@ -208,13 +208,13 @@ empty.
  & $|$ & \texttt{(} {\nestedpattern} \texttt{)} \\
  &&\\
 
-{\multpattern} & := &  \nelist{nested\_pattern}{} \\
+{\multpattern} & ::= &  \nelist{nested\_pattern}{} \\
  && \\
 
-{\exteqn} & := &  {\multpattern} \texttt{=>} {\term} \\
+{\exteqn} & ::= &  {\multpattern} \texttt{=>} {\term} \\
  && \\
 
-{\term} & := &  
+{\term} & ::= &  
  \zeroone{\annotation} \texttt{Cases} \nelist{\term}{} \texttt{of} 
 \sequence{\exteqn}{$|$} \texttt{end} \\
 \hline
@@ -234,7 +234,7 @@ constructors without arguments), it is possible to use a {\tt if
 
 \medskip
 \begin{tabular}{rcl}
-term & := & \zeroone{\annotation} {\tt if} {\term} {\tt then} {\term} {\tt else} {\term}\\
+term & ::= & \zeroone{\annotation} {\tt if} {\term} {\tt then} {\term} {\tt else} {\term}\\
 \end{tabular}
 \medskip
 
@@ -501,8 +501,7 @@ Note the difference between the value of {\tt x'} inside section {\tt
   s1} and outside.
 
 \begin{ErrMsgs}
-\item \errindex{Section {\ident} does not exist (or is already closed)}
-\item \errindex{Section {\ident} is not the innermost section}
+\item \errindex{This is not the last opened section}
 \end{ErrMsgs}
 
 \begin{Remarks}
@@ -518,6 +517,8 @@ section is closed.
 %\item A module implicitly open a section. Be careful not to name a
 %module with an identifier already used in the module (see \ref{compiled}).
 \end{Remarks}
+
+\input{RefMan-mod.v}
 
 \section{Logical paths of libraries and compilation units}
 \label{Libraries}

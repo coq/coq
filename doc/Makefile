@@ -13,7 +13,7 @@
 #   - htmlSplit: http://coq.inria.fr/~delahaye
 # Rapports INRIA: dviselect, rrkit (par Michel Mauny)
 
-DOCCOQTOP=$(COQBIN)/coqtop.byte
+DOCCOQTOP=$(COQBIN)/coqtop #.byte
 DOCCOQC=$(COQBIN)/coqc
 COQTEX=$(COQBIN)/coq-tex -image $(DOCCOQTOP) -v -sl -small
 #COQWEBSTY=$(HOME)/lib/tex/
@@ -35,7 +35,7 @@ LIBFILES=library/Logic.tex library/Datatypes.tex library/Peano.tex \
          library/Wf.tex library/Specif.tex
 
 REFMANCOQTEXFILES=\
-  RefMan-gal.v.tex RefMan-ext.v.tex RefMan-tac.v.tex \
+  RefMan-gal.v.tex RefMan-ext.v.tex RefMan-mod.v.tex RefMan-tac.v.tex \
   RefMan-cic.v.tex RefMan-lib.v.tex RefMan-tacex.v.tex \
   RefMan-syn.v.tex RefMan-ltac.v.tex RefMan-oth.v.tex
 
@@ -45,6 +45,7 @@ COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
   RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-add.tex \
+  RefMan-modr.tex \
   $(REFMANCOQTEXFILES) 
 
 REFMAN=Reference-Manual

@@ -1,0 +1,206 @@
+\section{Module system}
+
+The module system provides a way of packaging related elements
+together, as well as a mean of massive abstraction.
+
+\begin{figure}[t]
+\begin{tabular}{|rcl|}
+\hline
+{\modtype}  & ::= & {\ident} \\
+ & $|$ & \modtype \texttt{ with Definition }{\ident} \verb.:=. {\term} \\
+ & $|$ & \modtype \texttt{ with Module }{\ident} \verb.:=. {\qualid} \\
+ &&\\
+
+{\onemodbinding}  & ::= & \nelist{\ident}{\texttt{,}} \verb.:. {\modtype} \\
+ &&\\
+
+{\modbindings} & ::= & \nelist{\onemodbinding}{\texttt{;}}\\
+ &&\\
+
+{\modexpr} & ::= & \nelist{\qualid}{} \\
+\hline
+\end{tabular}
+\caption{Syntax of modules.}
+\label{ecases-grammar}
+\end{figure}
+
+\subsection{\tt Module {\ident}}\comindex{Module}
+This command is used to start an interactif module named {\ident}.
+
+\begin{Variants}
+\item{\tt Module \ident [\modbindings]}\\
+  Starts an interactif functor with parameters given by {\modbindings}.
+\item{\tt Module {\ident} \verb.:. \modtype}\\
+  Starts an interactif module specifying its the module type. 
+\item{\tt Module {\ident} [\modbindings] \verb.:. \modtype}\\
+  Starts an interactif functor with parameters given by
+  {\modbindings}, and output module type \modtype.
+\end{Variants}
+
+\subsection{\tt End {\ident}}\comindex{End}
+This command closes the interactif module {\ident}. If the module type
+was given the content of the module is matched against it and an error
+is signaled if the matching fails. If the module is basic (is not a
+functor) ist components (constants, inductives, submodules etc) are
+now available through the dot notation.
+
+\begin{ErrMsgs}
+\item \errindex{No such label {\ident}}
+\item \errindex{Signature components for label {\ident} do not match}
+\item \errindex{This is not the last opened module}
+\end{ErrMsgs}
+
+
+\subsection{\tt Module {\ident} := {\modexpr}}\comindex{Module}
+This command defines the module identifier {\ident} to be equal to \modexpr.
+
+\begin{Variants}
+\item{\tt Module \ident [\modbindings] := {\modexpr}}\\
+  Defines a functor with parameters given by {\modbindings} and body \modexpr.
+\item{\tt Module {\ident} \verb.:. {\modtype} := {\modexpr}}\\
+  Defines a module specifying its module type.
+\item{\tt Module {\ident} [\modbindings] \verb.:. {\modtype} := {\modexpr}}\\
+  Defines a functor with parameters given by {\modbindings}, and
+  output module type \modtype, with body {\modexpr}.
+\end{Variants}
+
+\subsection{\tt Module Type {\ident}}\comindex{Module Type}
+This command is used to start an interactif module type {\ident}.
+
+\begin{Variants}
+\item{\tt Module \ident [\modbindings]}\\
+  Starts an interactif functor type with parameters given by {\modbindings}.
+\end{Variants}
+
+\subsection{\tt End {\ident}}\comindex{End}
+This command closes the interactif module type {\ident}.
+
+\begin{ErrMsgs}
+\item \errindex{This is not the last opened module type}
+\end{ErrMsgs}
+
+\subsection{\tt Module Type {\ident} := {\modtype}}
+Define a module type \ident equal to \modtype.
+
+\begin{Variants}
+\item {\tt Module Type {\ident} {\modbindings} := {\modtype}} \\
+  Define a functor type {\ident} specifying functors taking arguments
+  {\modbindings} and returning {\modtype}.
+\end{Variants}
+
+\subsubsection{Example}
+
+Let us define a simple module.
+\begin{coq_example}
+Module M.
+  Definition T:=nat.
+  Definition x:=O.
+  Definition y:bool.
+    Exact true.
+  Defined.
+End M.
+\end{coq_example}
+Inside a module one can define constants, prove thorems and do any
+other things that can be done in the toplevel. Components of a closed
+module can be accessed using the dot notation:
+\begin{coq_example}
+Print M.x.
+\end{coq_example}
+A simple module type:
+\begin{coq_example}
+Module Type SIG.
+  Definition T:Set.
+  Definition x:T.
+End SIG.
+\end{coq_example}
+Notice that \texttt{Definition}\ without body did not start the proof
+mode. Also \texttt{Lemma} or \texttt{Theorem} do not start one.
+Inside a module type \texttt{Definition}\ withount body,
+\texttt{Lemma}, \texttt{Theorem}, \texttt{Axiom}, \texttt{Parameter} are
+equivalent.
+
+Now we can create a new module from \texttt{M}, giving it a less
+precise specification: the \texttt{y} component is dropped as well
+as the body of \texttt{x}.
+\begin{coq_example}
+Module N  :  SIG with Definition T:=nat  :=  M.
+Print N.T.
+Print N.x.
+Print N.y.
+\end{coq_example}
+\begin{coq_eval}
+Reset N.
+\end{coq_eval}
+The definition of \texttt{N} using the module type expression
+\texttt{SIG with Definition T:=nat} is equivalent to the following
+one:
+\begin{coq_example*}
+Module Type SIG'.
+  Definition T:Set:=nat.
+  Definition x:T.
+End SIG'.
+Module N : SIG' := M.
+\end{coq_example*}
+Now let us create a functor
+\begin{coq_example}
+Module Two[X,Y:SIG].
+\end{coq_example}
+\begin{coq_example*}
+  Definition T:=X.T * Y.T.
+  Definition x:=(X.x, Y.x).
+\end{coq_example*}
+\begin{coq_example}
+End Two.
+\end{coq_example}
+and apply it to our modules and do some computations
+\begin{coq_example}
+Module P:=Two M N.
+Eval Compute in (plus (Fst P.x) (Snd P.x)).
+\end{coq_example}
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{Remarks}
+\item Modules and module types can be nested components of each other.
+\item When a module is started inside a module type,
+  \texttt{Definition} without body, \texttt{Lemma}, and
+  \texttt{Theorem} still do not start the proof mode.  This is still a
+  specification (of a sub-module component) and not a real definition.
+\item The only way of using a proof mode in a module type is using the 
+  \texttt{Goal} command.
+\item One can have sections inside a module or a module type, but
+  not a module or a module type inside a section.
+\item Other commands like \texttt{Hint} or \texttt{Syntactic
+    Definition} can also appear inside modules and module types. In
+    case of a module definition like:
+
+    \medskip
+    \noindent
+    {\tt Module N : SIG := M.} 
+    \medskip
+
+    or
+
+    \medskip
+    {\tt Module N : SIG.\\
+      \ \ \dots\\
+      End N.}
+    \medskip 
+
+    the commands valid for \texttt{N} are not those from
+    \texttt{M} (or the module body) but the ones from \texttt{SIG}.
+
+\end{Remarks}
+
+\subsection{\tt Print Module {\ident}}\comindex{Print Module}
+Prints the module type and the body of the module {\ident}.
+
+\subsection{\tt Print Module Type {\ident}}\comindex{Print Module Type}
+Prints the module type correspondint to {\ident}.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

@@ -8,7 +8,7 @@
 
 \makeatletter
 
-%\includeonly{RefMan-syn.v,Cases.v,Coercion.v}
+%\includeonly{RefMan-cic.v,RefMan-ext.v}
 
 \input{./macros.tex}% extension .tex pour htmlgen
 \input{./title.tex}% extension .tex pour htmlgen
@@ -32,6 +32,9 @@
 \include{RefMan-ext.v}% Gallina extensions
 \include{RefMan-lib.v}% The coq library
 \include{RefMan-cic.v}% The Calculus of Constructions
+
+\include{RefMan-modr.tex}% The module system
+
 
 \part{The proof engine}
 \include{RefMan-oth.v}% Vernacular commands
