@@ -212,8 +212,10 @@ Syntax constr
 
   level 0:
     ZZero_inside [ << (ZEXPR <<ZERO>>) >> ] -> ["0"]
-  | ZPos_inside [ << (ZEXPR <<(POS $p)>>) >>] -> [$p:"positive_printer_inside"]
-  | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >>] -> [$p:"negative_printer_inside"]
+  | ZPos_inside [ << (ZEXPR <<(POS $p)>>) >>] -> 
+      [$p:"positive_printer_inside":9]
+  | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >>] ->
+      [$p:"negative_printer_inside":9]
 .
 
 (* For parsing/printing based on scopes *)
