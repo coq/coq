@@ -105,16 +105,6 @@ val sAPPViList : int -> 'a term -> 'a term list -> 'a term
 val under_dlams : ('a term -> 'a term) -> 'a term -> 'a term
 val eq_term : 'a term -> 'a term -> bool
 
-type modification_action = ABSTRACT | ERASE
-
-type 'a modification =
-  | NOT_OCCUR
-  | DO_ABSTRACT of 'a * modification_action list
-  | DO_REPLACE
-
-val modify_opers : ('a term -> 'a term) -> ('a term -> 'a term -> 'a term) 
-  -> ('a * 'a modification) list -> 'a term -> 'a term
-
 val put_DLAMSV : name list -> 'a term array -> 'a term
 val decomp_DLAMV : int -> 'a term -> 'a term array
 val decomp_DLAMV_name : int -> 'a term -> name list * 'a term array
