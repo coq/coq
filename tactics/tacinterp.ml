@@ -1375,7 +1375,7 @@ and genarg_interp ist goal x =
   | PreIdentArgType ->
       in_gen wit_pre_ident (out_gen rawwit_pre_ident x)
   | IdentArgType ->
-      in_gen wit_ident (out_gen rawwit_ident x)
+      in_gen wit_ident (eval_ident ist (out_gen rawwit_ident x))
   | RefArgType ->
       in_gen wit_ref (pf_reference_interp ist goal (out_gen rawwit_ref x))
   | SortArgType ->
