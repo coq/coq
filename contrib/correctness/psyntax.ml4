@@ -492,7 +492,7 @@ GEXTEND Gram
       | t = type_v3 -> t ] ]
   ;
   type_v3:
-    [ [ IDENT "array"; size = Constr.lconstr; IDENT "of"; v = type_v0 ->
+    [ [ IDENT "array"; size = Constr.constr; IDENT "of"; v = type_v0 ->
           Array (size,v)
       | "fun"; bl = binders; c = type_c -> make_arrow bl c
       | c = Constr.constr -> TypePure c	  
@@ -870,7 +870,7 @@ let pr_post_condition_opt = function
 
 let rec pr_type_v_v8 = function
   | Array (a,v) ->
-      str "array" ++ spc() ++ Ppconstrnew.pr_lconstr a ++ spc() ++ str "of " ++
+      str "array" ++ spc() ++ Ppconstrnew.pr_constr a ++ spc() ++ str "of " ++
       pr_type_v_v8 v
   | v -> pr_type_v3 v
 
