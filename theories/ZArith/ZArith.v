@@ -19,4 +19,3 @@ Require Export Zsqrt.
 Require Export Zpower.
 Require Export Zdiv.
 Require Export Zlogarithm.
-Require Export Zbool.
