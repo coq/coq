@@ -55,8 +55,9 @@ let typeur sigma metamap =
         let (_,_,ty) = lookup_rel n env in
         lift n (body_of_type ty)
     | Var id ->
-        let (_,_,ty) = lookup_named id env in
-        (try body_of_type ty
+        (try
+          let (_,_,ty) = lookup_named id env in
+          body_of_type ty
         with Not_found ->
           anomaly ("type_of: variable "^(string_of_id id)^" unbound"))
     | Const c ->
