@@ -51,6 +51,8 @@ val require_library :
 val require_library_from_file :
   bool option -> identifier option -> System.physical_path -> bool -> unit
 
+val set_xml_require : (dir_path -> unit) -> unit
+
 (*s [save_library_to s f] saves the current environment as a library [s]
   in the file [f]. *)
 

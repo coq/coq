@@ -554,6 +554,9 @@ let (in_require, out_require) =
        export_function = export_require;
        classify_function = (fun (_,o) -> Anticipate o) }
 
+let xml_require = ref (fun d -> ())
+let set_xml_require f = xml_require := f
+
 let require_library spec qidl export =
 (*
   if sections_are_opened () && Options.verbose () then
@@ -571,7 +574,8 @@ let require_library spec qidl export =
     end
     else
       add_anonymous_leaf (in_require (modrefl,Some export));
-    add_frozen_state ()
+  if !Options.xml_export then List.iter !xml_require modrefl;
+  add_frozen_state ()
 
 let require_library_from_file spec idopt file export =
   let modref = rec_intern_library_from_file idopt file in
