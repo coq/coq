@@ -85,6 +85,12 @@ INSTALL=COQTOPDIRECTORY/bin/ARCHITECTURE/coqinstallEXECUTEEXTENSION
 # the command MKDIR (try to replace it with mkdirhier if you have problems)
 MKDIR=mkdir -p
 
+# where to put the coqdoc.sty style file
+BASETEXDIR=TEXDIRECTORY
+
+# command to update TeX' kpathsea database
+MKTEXLSR=MKTEXLSRCOMMAND
+
 #the command STRIP 
 # Unix systems and profiling: true
 # Unix systems and no profiling: strip

@@ -1,3 +1,4 @@
+doc/syntax.cmi: parsing/ast.cmi 
 ide/config_parser.cmi: lib/util.cmi 
 ide/coq.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     kernel/term.cmi lib/util.cmi toplevel/vernacexpr.cmo 
@@ -435,6 +436,8 @@ contrib/xml/doubleTypeInference.cmi: contrib/xml/acic.cmo kernel/environ.cmi \
     pretyping/evd.cmi kernel/term.cmi 
 contrib/xml/xmlcommand.cmi: library/libnames.cmi 
 ide/utils/configwin.cmi: ide/utils/uoptions.cmi 
+tools/coqdoc/output.cmi: tools/coqdoc/index.cmi 
+tools/coqdoc/pretty.cmi: tools/coqdoc/index.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
@@ -455,6 +458,8 @@ dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
+doc/syntax.cmo: parsing/ast.cmi contrib/interface/parse.cmo doc/syntax.cmi 
+doc/syntax.cmx: parsing/ast.cmx contrib/interface/parse.cmx doc/syntax.cmi 
 ide/blaster_window.cmo: ide/coq.cmi ide/ideutils.cmi 
 ide/blaster_window.cmx: ide/coq.cmx ide/ideutils.cmx 
 ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmi \
@@ -3239,6 +3244,20 @@ ide/utils/okey.cmo: ide/utils/okey.cmi
 ide/utils/okey.cmx: ide/utils/okey.cmi 
 ide/utils/uoptions.cmo: ide/utils/uoptions.cmi 
 ide/utils/uoptions.cmx: ide/utils/uoptions.cmi 
+tools/coqdoc/alpha.cmo: tools/coqdoc/alpha.cmi 
+tools/coqdoc/alpha.cmx: tools/coqdoc/alpha.cmi 
+tools/coqdoc/index.cmo: tools/coqdoc/alpha.cmi tools/coqdoc/index.cmi 
+tools/coqdoc/index.cmx: tools/coqdoc/alpha.cmx tools/coqdoc/index.cmi 
+tools/coqdoc/main.cmo: config/coq_config.cmi tools/coqdoc/index.cmi \
+    tools/coqdoc/output.cmi tools/coqdoc/pretty.cmi 
+tools/coqdoc/main.cmx: config/coq_config.cmx tools/coqdoc/index.cmx \
+    tools/coqdoc/output.cmx tools/coqdoc/pretty.cmx 
+tools/coqdoc/output.cmo: tools/coqdoc/index.cmi tools/coqdoc/output.cmi 
+tools/coqdoc/output.cmx: tools/coqdoc/index.cmx tools/coqdoc/output.cmi 
+tools/coqdoc/pretty.cmo: tools/coqdoc/index.cmi tools/coqdoc/output.cmi \
+    tools/coqdoc/pretty.cmi 
+tools/coqdoc/pretty.cmx: tools/coqdoc/index.cmx tools/coqdoc/output.cmx \
+    tools/coqdoc/pretty.cmi 
 tactics/tauto.cmo: parsing/grammar.cma
 tactics/tauto.cmx: parsing/grammar.cma
 tactics/eqdecide.cmo: parsing/grammar.cma

@@ -36,6 +36,7 @@ libdir_spec=no
 mandir_spec=no
 emacslib_spec=no
 emacs_spec=no
+texdir_spec=no
 reals_opt=no
 reals=all
 arch_spec=no
@@ -55,6 +56,8 @@ while : ; do
 		      libdir=$2/lib/coq
                       mandir_spec=yes
 		      mandir=$2/man
+		      texdir_spec=yes
+		      texdir=$2/share/texmf
 		      shift;;
     -local|--local) local=true
                     bindir_spec=yes
@@ -65,6 +68,8 @@ while : ; do
 		    mandir=$COQTOP/man
                     emacslib_spec=yes
 		    emacslib=$COQTOP/tools/emacs
+		    texdir_spec=yes
+		    texdir=$COQTOP/share/texmf
 		    reals_opt=yes
 		    reals=all;;
     -src|--src) COQTOP=$2
@@ -84,6 +89,9 @@ while : ; do
     -emacs |--emacs) emacs_spec=yes
 		     emacs=$2
 		     shift;;
+    -texdir|--texdir) texdir_spec=yes
+	              texdir=$2
+		      shift;;
     -arch|--arch) arch_spec=yes
                   arch=$2
 		  shift;;
@@ -151,7 +159,8 @@ case $ARCH in
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
 	 mandir_def=/usr/local/man
-	 emacslib_def=/usr/share/emacs/site-lisp;;
+	 emacslib_def=/usr/share/emacs/site-lisp
+         texdir_def=/usr/share/texmf;;
 esac
 
 emacs_def=emacs
@@ -198,6 +207,17 @@ case $emacslib_spec in
 	    *) true;;
 	esac;;
     yes) EMACSLIB=$emacslib;;
+esac
+
+case $texdir_spec in
+    no) echo "Where should I install TeX/LaTeX files [$texdir_def] ?"
+        read TEXDIR
+	
+	case $TEXDIR in
+	    "") TEXDIR=$texdir_def;;
+	    *) true;;
+	esac;;
+    yes) TEXDIR=$texdir;;
 esac
 
 case $reals_opt in
@@ -357,6 +377,12 @@ case $ARCH in
     fi
 esac
 
+# mktexlsr
+MKTEXLSR=`which mktexlsr`
+case $MKTEXLSR in
+    "") MKTEXLSR=true;;
+esac
+
 # Summary of the configuration
 
 echo ""
@@ -465,6 +491,8 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|MANDIRDIRECTORY|$MANDIR|" \
     -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
     -e "s|EMACSCOMMAND|$EMACS|" \
+    -e "s|TEXDIRECTORY|$TEXDIR|" \
+    -e "s|MKTEXLSRCOMMAND|$MKTEXLSR|" \
     -e "s|ARCHITECTURE|$ARCH|" \
     -e "s|OSDEPENDENTLIBS|$OSDEPLIBS|" \
     -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \

@@ -62,7 +62,8 @@ else
  HIDE = @
 endif
 
-LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
+LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
+	      -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping \
               -I interp -I toplevel -I parsing -I ide/utils \
 	      -I ide -I translate \
@@ -1045,10 +1046,12 @@ COQMAKEFILE=bin/coq_makefile$(EXE)
 GALLINA=bin/gallina$(EXE)
 COQTEX=bin/coq-tex$(EXE)
 COQWC=bin/coqwc$(EXE)
+COQDOC=bin/coqdoc$(EXE)
 COQVO2XML=bin/coq_vo2xml$(EXE)
 RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
-TOOLS=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) $(COQWC)
+TOOLS=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) \
+      $(COQWC) $(COQDOC)
 
 tools:: $(TOOLS) dev/top_printers.cmo
 
@@ -1082,6 +1085,16 @@ $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
 
+beforedepend:: tools/coqdoc/pretty.ml tools/coqdoc/index.ml
+
+COQDOCCMO=$(CONFIG) tools/coqdoc/alpha.cmo tools/coqdoc/index.cmo \
+          tools/coqdoc/output.cmo tools/coqdoc/pretty.cmo \
+	  tools/coqdoc/main.cmo
+
+$(COQDOC): $(COQDOCCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
+
 COQVO2XMLCMO=$(CONFIG) toplevel/usage.cmo tools/coq_vo2xml.cmo
 
 $(COQVO2XML): $(COQVO2XMLCMO)
@@ -1091,6 +1104,7 @@ $(COQVO2XML): $(COQVO2XMLCMO)
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
 	rm -f tools/coqwc.ml
+	rm -f tools/coqdoc/pretty.ml tools/coqdoc/index.ml
 
 archclean::
 	rm -f $(TOOLS)
@@ -1201,7 +1215,7 @@ install-allreals::
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
 
-install-coq-info: install-coq-manpages install-emacs
+install-coq-info: install-coq-manpages install-emacs install-latex
 
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
@@ -1214,6 +1228,17 @@ install-coq-manpages:
 install-emacs:
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
+
+# where to put the coqdoc style file
+TEXDIR = $(BASETEXDIR)/tex/latex/misc 
+
+# command to update TeX' kpathsea database
+UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
+
+install-latex:
+	$(MKDIR) $(TEXDIR)
+	cp tools/coqdoc/coqdoc.sty $(TEXDIR)	
+	-$(UPDATETEX)
 
 ###########################################################################
 # Documentation
