@@ -51,7 +51,7 @@ GEXTEND Gram
   (* Syntax entries for Grammar. Only grammar_entry is exported *)
   Prim.grammar_entry:
     [[ nont = Prim.ident; etyp = Prim.entry_type; ":=";
-       ep = entry_prec; rl = LIST0 grammar_rule SEP "|" ->
+       ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
          <:ast< (GRAMMARENTRY $nont $etyp $ep ($LIST rl)) >> ]]
   ;
   entry_prec:
@@ -83,7 +83,8 @@ GEXTEND Gram
 
   (* Syntax entries for Syntax. Only syntax_entry is exported *)
   Prim.syntax_entry:
-    [ [ IDENT "level"; p = precedence; ":"; rl = LIST1 syntax_rule SEP "|" ->
+    [ [ IDENT "level"; p = precedence; ":";
+	OPT "|"; rl = LIST1 syntax_rule SEP "|" ->
           <:ast< (SYNTAXENTRY $p ($LIST $rl)) >> ] ]
   ;
   syntax_rule:
