@@ -1,5 +1,13 @@
-Changes from V8.0 old syntax to V8.0
-====================================
+Changes from V8.0beta to V8.0
+=============================
+
+Bug fixes
+
+- Translator printing bug of reals fixed
+- Obsolete "Implicit Arguments On/Off" removed
+
+Changes from V8.0beta old syntax to V8.0beta
+============================================
 
 New concrete syntax
 
@@ -74,8 +82,8 @@ Known problems of the automatic translation
   annotations are eta-reduced predicates
  
 
-Changes from V7.4 to V8.0 old syntax
-====================================
+Changes from V7.4 to V8.0beta old syntax
+========================================
 
 Logic
 
