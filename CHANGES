@@ -6,6 +6,8 @@ Différences V7.0beta / V7.0
    - Rel not in scope of ?
    - implicits in inductive defs
    - localisation des erreurs avec Syntactif Definition
+   - clauses par défaut de Cases non lues séquentiellement
+   - plusieurs bugs avec les prédicats de Cases lorsque dépendants
 - Prise en compte noms longs dans Hints, Coercions et Unfold
 - Rétablissement des @Definition and co
 - Rétablissement des token extensibles et mélangeant symboles et lettres
@@ -13,6 +15,7 @@ Différences V7.0beta / V7.0
 - Possibilité de déplier des définitions locales à un but
 - Suppression message .coqrc
 - Add ML Path est fait automatiquement par Add LoadPath
+- Nouveau mécanisme de nommage des schémas d'élimination (incompatibilités...)
 
 Différences oubliées dans la V7.0beta :
 
