@@ -2077,20 +2077,20 @@ toplevel/fhimsg.cmx: kernel/environ.cmx parsing/g_minicoq.cmx \
     kernel/names.cmx lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/type_errors.cmx lib/util.cmx toplevel/fhimsg.cmi 
 toplevel/himsg.cmo: parsing/ast.cmi pretyping/cases.cmi kernel/environ.cmi \
-    pretyping/evd.cmi library/global.cmi kernel/indtypes.cmi \
-    kernel/inductive.cmi proofs/logic.cmi library/nameops.cmi \
-    kernel/names.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \
-    pretyping/pretype_errors.cmi parsing/printer.cmi pretyping/rawterm.cmi \
-    kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
-    pretyping/termops.cmi kernel/type_errors.cmi lib/util.cmi \
+    pretyping/evd.cmi library/global.cmi library/impargs.cmi \
+    kernel/indtypes.cmi kernel/inductive.cmi proofs/logic.cmi \
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
+    lib/pp.cmi pretyping/pretype_errors.cmi parsing/printer.cmi \
+    pretyping/rawterm.cmi kernel/reduction.cmi kernel/sign.cmi \
+    kernel/term.cmi pretyping/termops.cmi kernel/type_errors.cmi lib/util.cmi \
     toplevel/himsg.cmi 
 toplevel/himsg.cmx: parsing/ast.cmx pretyping/cases.cmx kernel/environ.cmx \
-    pretyping/evd.cmx library/global.cmx kernel/indtypes.cmx \
-    kernel/inductive.cmx proofs/logic.cmx library/nameops.cmx \
-    kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
-    pretyping/pretype_errors.cmx parsing/printer.cmx pretyping/rawterm.cmx \
-    kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
-    pretyping/termops.cmx kernel/type_errors.cmx lib/util.cmx \
+    pretyping/evd.cmx library/global.cmx library/impargs.cmx \
+    kernel/indtypes.cmx kernel/inductive.cmx proofs/logic.cmx \
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
+    lib/pp.cmx pretyping/pretype_errors.cmx parsing/printer.cmx \
+    pretyping/rawterm.cmx kernel/reduction.cmx kernel/sign.cmx \
+    kernel/term.cmx pretyping/termops.cmx kernel/type_errors.cmx lib/util.cmx \
     toplevel/himsg.cmi 
 toplevel/line_oriented_parser.cmo: toplevel/line_oriented_parser.cmi 
 toplevel/line_oriented_parser.cmx: toplevel/line_oriented_parser.cmi 
