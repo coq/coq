@@ -36,6 +36,15 @@ let print_sort = function
   | Prop Null -> [< 'sTR "Prop" >]
   | Type _ -> [< 'sTR "Type" >]
 
+(********************************************************************)
+(* type of global reference *)
+
+type global_reference =
+  | VarRef of section_path
+  | ConstRef of constant_path
+  | IndRef of inductive_path
+  | ConstructRef of constructor_path
+  | EvarRef of int
 
 (********************************************************************)
 (*       Constructions as implemented                               *)
@@ -114,7 +123,7 @@ struct
 type constr = kind_of_term
 
 and existential = existential_key * constr array
-and constant = section_path * constr array
+and constant = constant_path * constr array
 and constructor = constructor_path * constr array
 and inductive = inductive_path * constr array
 and rec_declaration = constr array * name list * constr array
@@ -313,15 +322,6 @@ type hnftype =
   | HnfProd   of name * constr * constr
   | HnfAtom   of constr
   | HnfMutInd of inductive * constr array
-
-(***********************************************************************)
-(*   kind of global references                                         *)
-(***********************************************************************)
-
-type global_reference =
-  | ConstRef of section_path
-  | IndRef of inductive_path
-  | ConstructRef of constructor_path
 
 (**********************************************************************)
 (*          Non primitive term destructors                            *)
@@ -1377,7 +1377,7 @@ let rel_list n m =
 
 (* Various occurs checks *)
 
-(* (occur_const (s:section_path) c) -> true if constant s occurs in c,
+(* (occur_const s c) -> true if constant s occurs in c,
  * false otherwise *)
 let occur_const s c = 
   let rec occur_rec c = match kind_of_term c with
@@ -1661,7 +1661,7 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpApp | OpConst of section_path
+  | OpApp | OpConst of constant_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path

@@ -34,7 +34,7 @@ let stop() =
 (* [r_const=(false,cl)] means only those in [cl] *)
 type reds = {
   r_beta : bool;
-  r_const : bool * section_path list;
+  r_const : bool * constant_path list;
   r_zeta : bool;
   r_evar : bool;
   r_iota : bool }
@@ -89,7 +89,7 @@ let unfold_red sp = {
 
 type red_kind =
     BETA | DELTA | ZETA | EVAR | IOTA
-  | CONST of section_path list | CONSTBUT of section_path list
+  | CONST of constant_path list | CONSTBUT of constant_path list
 
 let rec red_add red = function
   | BETA -> { red with r_beta = true }
@@ -339,7 +339,7 @@ type cbv_value =
   | LAM of name * constr * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value list
   | COFIXP of cofixpoint * cbv_value subs * cbv_value list
-  | CONSTR of int * (section_path * int) * cbv_value array * cbv_value list
+  | CONSTR of int * inductive_path * cbv_value array * cbv_value list
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *) 

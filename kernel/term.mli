@@ -31,6 +31,19 @@ type case_printing =
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int array * case_printing
 
+(********************************************************************)
+(* type of global reference *)
+
+type global_reference =
+  | VarRef of section_path
+  | ConstRef of constant_path
+  | IndRef of inductive_path
+  | ConstructRef of constructor_path
+  | EvarRef of int
+
+(********************************************************************)
+(* The type of constructions *)
+
 type constr
 
 (* [types] is the same as [constr] but is intended to be used where a
@@ -57,13 +70,6 @@ type rel_declaration = name * constr option * types
 
 type arity = rel_declaration list * sorts
 
-(*i********************************************************************i*)
-(*s type of global reference *)
-type global_reference =
-  | ConstRef of section_path
-  | IndRef of inductive_path
-  | ConstructRef of constructor_path
-
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 
   manipulation of terms. Some of these functions may be overlapped with
@@ -74,7 +80,7 @@ type global_reference =
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type existential = int * constr array
-type constant = section_path * constr array
+type constant = constant_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
 type rec_declaration = constr array * name list * constr array
@@ -302,9 +308,9 @@ i*)
 val destApplication : constr -> constr * constr array
 
 (* Destructs a constant *)
-val destConst : constr -> section_path * constr array
+val destConst : constr -> constant_path * constr array
 val isConst : constr -> bool
-val path_of_const : constr -> section_path
+val path_of_const : constr -> constant_path
 val args_of_const : constr -> constr array
 
 (* Destructs an existential variable *)
@@ -492,7 +498,7 @@ val occur_existential : constr -> bool
 
 (* [(occur_const (s:section_path) c)] returns [true] if constant [s] occurs 
    in c, [false] otherwise *)
-val occur_const : section_path -> constr -> bool
+val occur_const : constant_path -> constr -> bool
 
 (* [(occur_evar ev c)] returns [true] if existential variable [ev] occurs 
    in c, [false] otherwise *)
@@ -537,7 +543,7 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpApp | OpConst of section_path
+  | OpApp | OpConst of constant_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path

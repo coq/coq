@@ -91,6 +91,7 @@ module Spset : Set.S with type elt = section_path
 module Spmap : Map.S with type key = section_path
 
 (*s Specific paths for declarations *)
+type constant_path = section_path
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int
 
