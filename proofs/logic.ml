@@ -355,7 +355,7 @@ let prim_refiner r sigma goal =
             | IsProd (_,c1,b) -> 
             	if k = 1 then 
 		  try 
-		    let _ = find_minductype env sigma c1 in ()
+		    let _ = find_inductive env sigma c1 in ()
 		  with Induc -> 
 		    error "cannot do a fixpoint on a non inductive type"
             	else 
@@ -375,7 +375,7 @@ let prim_refiner r sigma goal =
             | IsProd (_,c1,b) -> 
             	if k = 1 then 
 		  try 
-		    fst (find_minductype env sigma c1)
+		    fst (find_inductive env sigma c1)
 		  with Induc -> 
 		    error "cannot do a fixpoint on a non inductive type"
             	else 
@@ -407,7 +407,7 @@ let prim_refiner r sigma goal =
             | IsProd (_,c1,b) -> check_is_coind  b
             | _ -> 
 		try 
-		  let _ = find_mcoinductype env sigma b in ()
+		  let _ = find_coinductive env sigma b in ()
                 with Induc -> 
 		  error ("All methods must construct elements " ^
 			  "in coinductive types")

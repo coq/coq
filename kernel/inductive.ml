@@ -198,14 +198,14 @@ let find_mrectype env sigma c =
     | IsMutInd ind -> (ind, l)
     | _ -> raise Induc
 
-let find_minductype env sigma c =
+let find_inductive env sigma c =
   let (t, l) = whd_betadeltaiota_stack env sigma c in
   match kind_of_term t with
     | IsMutInd ((sp,i),_ as ind)
         when mind_type_finite (lookup_mind sp env) i -> (ind, l)
     | _ -> raise Induc
 
-let find_mcoinductype env sigma c =
+let find_coinductive env sigma c =
   let (t, l) = whd_betadeltaiota_stack env sigma c in
   match kind_of_term t with
     | IsMutInd ((sp,i),_ as ind)

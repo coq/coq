@@ -139,14 +139,14 @@ exception Induc
 val extract_mrectype  : constr -> inductive * constr list
 
 (* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
-   [find_mrectype], [find_minductype] and [find_mcoinductype]
+   [find_rectype], [find_inductive] and [find_coinductive]
    respectively accepts any recursive type, only an inductive type and
    only a coinductive type.
    They raise [Induc] if not convertible to a recursive type. *)
 
-val find_mrectype     : env -> 'a evar_map -> constr -> inductive * constr list
-val find_minductype   : env -> 'a evar_map -> constr -> inductive * constr list
-val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
+val find_mrectype    : env -> 'a evar_map -> constr -> inductive * constr list
+val find_inductive   : env -> 'a evar_map -> constr -> inductive * constr list
+val find_coinductive : env -> 'a evar_map -> constr -> inductive * constr list
 
 val lookup_mind_specif : inductive -> env -> inductive_instance
 
