@@ -752,6 +752,7 @@ let get_name (ln,lp,lz,ll,lr,lr') id refbase n =
     | "R" when (* Noms r,r1,r2 *)
 	refbase = "Rle_refl" or
 	refbase = "Rlt_monotony_contra" or 
+	refbase = "Rmult_le_reg_l" or 
 	refbase = "Rle_monotony_contra" or 
 	refbase = "Rge_monotony" ->
 	(id_of_string (List.hd lr')),(ln,lp,lz,ll,lr,List.tl lr')
