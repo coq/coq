@@ -186,16 +186,3 @@ let init () =
   add_frozen_state ();
   path_prefix := []
 
-
-(* Rollback. *)
-
-let with_heavy_rollback f x =
-  let sum = freeze_summaries ()
-  and flib = freeze() in
-  try 
-    f x
-  with reraise -> begin
-    unfreeze_summaries sum;
-    unfreeze flib;
-    raise reraise
-  end

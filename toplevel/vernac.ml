@@ -100,7 +100,7 @@ let rec vernac interpfun input =
                                Str (_,mname); Str(_,fname)]) ->
           let verbosely = verbosely = "Verbose" in
           let only_spec = only_spec = "Specification" in
-          Lib.with_heavy_rollback (* to roll back in case of error *)
+          States.with_heavy_rollback (* to roll back in case of error *)
             (raw_compile_module verbosely only_spec mname)
             (make_suffix fname ".v")
       | _ -> if not !just_parsing then interpfun com
@@ -144,7 +144,7 @@ and read_vernac_file verbosely s =
  * parses and executes one command of the vernacular char stream *)
 
 let raw_do_vernac po =
-  vernac (Lib.with_heavy_rollback Vernacinterp.interp) (po,None)
+  vernac (States.with_heavy_rollback Vernacinterp.interp) (po,None)
 
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
