@@ -37,25 +37,10 @@ VERNAC ARGUMENT EXTEND filename
 | [ ] -> [ None ]
 END
 
-(* Disk name *)
-
-VERNAC ARGUMENT EXTEND diskname
-| [ "Disk" string(fn) ] -> [ Some fn ]
-| [ ] -> [ None ]
-END
+(* Print XML and Show XML *)
 
 VERNAC COMMAND EXTEND Xml
 | [ "Print" "XML" filename(fn) global(id) ] -> [ Xmlcommand.print id fn ]
 
 | [ "Show" "XML" filename(fn) "Proof" ] -> [ Xmlcommand.show fn ]
-
-(*
-| [ "Print" "XML" "All" ] -> [ Xmlcommand.printAll () ]
-
-| [ "Print" "XML" "Module" diskname(dn) global(id) ] ->
-    [ Xmlcommand.printLibrary id dn ]
-
-| [ "Print" "XML" "Section" diskname(dn) ident(id) ] ->
-    [ Xmlcommand.printSection id dn ]
-*)
 END
