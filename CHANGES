@@ -1,6 +1,7 @@
 Bug fixes
 
-  - Inversion bug fixed (PR#212)
+  - Inversion bug fixed (#212)
+  - Omega bug related to Set fixed (#180)
 
 
 Changes from V7.3 to V7.3.1
