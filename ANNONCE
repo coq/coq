@@ -1,44 +1,16 @@
-  The Coq development team is pleased to release version 7.1 of Coq.
-This release is a major update on version 6.3.1 and a bug-fixes update
-on version 7.0.
+  The Coq development team is announcing the release version 7.2 of
+Coq. This release fixes several bugs of version 7.1 and offers the following 
+novelties or improvements
 
-  The main features of Coq versions 7.0 and 7.1 over version 6.3.1 are
+  - Coercions allowed in Cases patterns
+  - Extended standard library
+  - Extended tactic "Assert H := P" for forward reasoning
+  - New tactic "ClearBody H" to clear the body of definitions in local context
+  - New declaration "Canonical Structure id = t : I" to help resolution of
+    implicits in developments using Record/Structure (contributed by A. Saïbi)
 
-  - new primitive let-in construct
-  - qualified names
-  - new high-level tactic language
-  - improved search facilities
-  - new rewriting tactic for types equipped with specific equalities
-  - new tactic Field to decide equalities on commutative fields
-  - new tactic Fourier to solve linear inequalities on reals numbers
-  - new tactics DiscrR, SplitRmult and SplitAbsolu dedicated to real numbers
-  - new tactics for induction/case analysis in "natural" style
-  - new extraction algorithm managing the Type level
-  - export of theories to XML for publishing and rendering purposes
-  - deep restructuration of the code (safer, simpler and more efficient)
-
-
-  Compared to version 7.0, the new version provides with
-
-  - port of user contributions (including new libraries for
-    constructive complex analysis, floating-point numbers, P-automaton
-    and graph theory, and formalizations of the ABR algorithm, CTL and
-    TCTL temporal logic, the Railroad Crossing Problem, a subset of the
-    C language, imperative Bresenham line drawing algorithm, imperative
-    Marché's minimal edition distance algorithm, Buchberger's algorithm,
-    RSA cryptographic algorithm, Stalmarck tautology checker algorithm,
-    the Fundamental Theorem of Algebra and ZFC set theory).
-  - new induction tactics NewDestruct and NewInduction
-  - new tactic Assert for forward reasoning
-  - known-bugs fixed
-  - excessive memory use mainly fixed
-
-
-  The Realizer/Program tactics are not available in Coq V7.1.
-  The Correctness command can be used instead.
-
-  Coq V7.1 is available in several formats from http://coq.inria.fr
-and ftp://ftp.inria.fr/INRIA/coq/V7.1. We currently provide the
+  Coq V7.2 is available in several formats from http://coq.inria.fr
+and ftp://ftp.inria.fr/INRIA/coq/V7.2. We currently provide the
 following versions
 
   package for sources
@@ -51,13 +23,11 @@ following versions
   The documentation is available in postscript, pdf and html format.
 
   Please refer to the accompanying document CHANGES or the location
-ftp://ftp.inria.fr/INRIA/coq/V7.1/doc/Changes.html for a full list of
+ftp://ftp.inria.fr/INRIA/coq/V7.2/doc/Changes.html for a full list of
 changes including sources of incompatibilities.
 
   Users are kindly invited to report bugs to coq-bugs@pauillac.inria.fr
-and to mail Coq-Club@pauillac.inria.fr for general questions or
-remarks (moderated).
+and to mail Coq-Club@pauillac.inria.fr for general questions or remarks.
 
-
-      The Coq development team
+  The Coq development team
 
