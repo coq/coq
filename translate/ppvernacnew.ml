@@ -70,9 +70,9 @@ let pr_ne_sep sep pr = function
   | l -> sep() ++ pr l
 
 let pr_entry_prec = function
-  | Some Gramext.LeftA -> spc() ++ str"LEFTA"
-  | Some Gramext.RightA -> spc() ++ str"RIGHTA"
-  | Some Gramext.NonA -> spc() ++ str"NONA"
+  | Some Gramext.LeftA -> str"LEFTA "
+  | Some Gramext.RightA -> str"RIGHTA "
+  | Some Gramext.NonA -> str"NONA "
   | None -> mt()
 
 let pr_set_entry_type = function
@@ -107,6 +107,8 @@ let pr_search a b pr_c = match a with
   | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_c c ++ spc() ++ pr_in_out_modules b
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_c c ++ spc() ++ pr_in_out_modules b
   | SearchAbout qid -> str"SearchAbout" ++ spc() ++ pr_reference qid ++ spc() ++ pr_in_out_modules b
+
+let pr_locality local = if local then str "Local " else str ""
 
 let pr_class_rawexpr = function
   | FunClass -> str"FUNCLASS"
@@ -416,8 +418,8 @@ let rec pr_vernac = function
   | VernacTacticGrammar l -> hov 1 (str"Grammar tactic simple_tactic :=" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"|") pr_grammar_tactic_rule l) (***)
   | VernacSyntax (u,el) -> hov 1 (str"Syntax " ++ str u ++ spc() ++
     prlist_with_sep sep_v2 pr_syntax_entry el) (***)
-  | VernacOpenScope (exp,sc) ->
-      str ("Open "^(if exp then "" else "Local ")^"Scope") ++ spc() ++ str sc
+  | VernacOpenScope (local,sc) ->
+      str "Open " ++ pr_locality local ++ str "Scope" ++ spc() ++ str sc
   | VernacDelimiters (sc,key) ->
       str"Delimits Scope" ++ spc () ++ str sc ++
       spc() ++ str "with " ++ str key
@@ -425,21 +427,24 @@ let rec pr_vernac = function
       |	None -> str"_"
       |	Some sc -> str sc in 
     str"Arguments Scope" ++ spc() ++ pr_reference q ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
-  | VernacInfix (a,p,s,q,_,ov8,sn) -> (* A Verifier *)
+  | VernacInfix (local,a,p,s,q,_,ov8,sn) -> (* A Verifier *)
       let (a,p,s) = match ov8 with
           Some mv8 -> mv8
         | None -> (a,p,s) in
-      hov 0 (str"Infix" ++ pr_entry_prec a ++ pr_intarg p ++ spc() ++ qs s ++ spc() ++ pr_reference q ++ (match sn with
+      hov 0 (str"Infix " ++ pr_locality local ++ pr_entry_prec a ++ int p
+        ++ spc() ++ qs s ++ spc() ++ pr_reference q ++ (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-  | VernacDistfix (a,p,s,q,sn) -> hov 0 (str"Distfix" ++ pr_entry_prec a ++ pr_intarg p ++ spc() ++ qs s ++ spc() ++ pr_reference q ++ (match sn with
+  | VernacDistfix (local,a,p,s,q,sn) ->
+      hov 0 (str"Distfix " ++ pr_locality local ++ pr_entry_prec a ++ int p
+        ++ spc() ++ qs s ++ spc() ++ pr_reference q ++ (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
-  | VernacNotation (s,c,l,mv8,opt) ->
+  | VernacNotation (local,s,c,l,mv8,opt) ->
       let (s,l) = match mv8 with
           None -> (s,l)
         | Some ml -> ml in
-      hov 2( str"Notation" ++ spc() ++ qs s ++
+      hov 2( str"Notation" ++ spc() ++ pr_locality local ++ qs s ++
       str " :=" ++ pr_constrarg c ++
       (match l with
         | [] -> mt()
@@ -448,7 +453,10 @@ let rec pr_vernac = function
       (match opt with
         | None -> mt()
         | Some sc -> str" :" ++ spc() ++ str sc))
-  | VernacSyntaxExtension (a,b) -> str"Uninterpreted Notation" ++ spc() ++ qs a ++ (match b with | [] -> mt() | _ as l -> str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
+  | VernacSyntaxExtension (local,a,b) ->
+      str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs a ++
+      (match b with | [] -> mt() | _ as l -> 
+	str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
   (* Gallina *)
   | VernacDefinition (d,id,b,f,e) -> (* A verifier... *)

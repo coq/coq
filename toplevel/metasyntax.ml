@@ -470,7 +470,7 @@ let make_pp_rule symbols typs =
 (**************************************************************************)
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
 
-let cache_syntax_extension (_,(prec,ntn,gr,se)) =
+let cache_syntax_extension (_,(_,prec,ntn,gr,se)) =
   if not (Symbols.exists_notation prec ntn) then begin
     Egrammar.extend_grammar (Egrammar.Notation gr);
     if se<>None then
@@ -481,18 +481,24 @@ let subst_notation_grammar subst x = x
 
 let subst_printing_rule subst x = x
 
-let subst_syntax_extension (_,subst,(prec,ntn,gr,se)) =
-  (prec,ntn,
+let subst_syntax_extension (_,subst,(local,prec,ntn,gr,se)) =
+  (local,prec,ntn,
    subst_notation_grammar subst gr,
    option_app (subst_printing_rule subst) se)
+
+let classify_syntax_definition (_,(local,_,_,_,_ as o)) =
+  if local then Dispose else Substitute o
+
+let export_syntax_definition (local,_,_,_,_ as o) =
+  if local then None else Some o
 
 let (inSyntaxExtension, outSyntaxExtension) =
   declare_object {(default_object "SYNTAX-EXTENSION") with
        open_function = (fun i o -> if i=1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
        subst_function = subst_syntax_extension;
-       classify_function = (fun (_,o) -> Substitute o);
-       export_function = (fun x -> Some x)}
+       classify_function = classify_syntax_definition;
+       export_function = export_syntax_definition}
 
 let interp_modifiers a n =
   let onlyparsing = ref false in
@@ -568,7 +574,7 @@ let recompute_assoc typs =
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
 
-let add_syntax_extension df modifiers =
+let add_syntax_extension local df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
   let inner = if !Options.v7 then (10,InternalProd) else
     (200,InternalProd) in
@@ -581,17 +587,18 @@ let add_syntax_extension df modifiers =
   let (prec,notation) = make_symbolic n symbs typs in
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
   let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbs) in
-  Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule))
+  Lib.add_anonymous_leaf
+    (inSyntaxExtension(local,prec,notation,gram_rule,pp_rule))
 
 (**********************************************************************)
 (* Distfix, Infix, Notations *)
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
-let load_notation _ (_,(_,prec,ntn,scope,pat,onlyparse,_)) =
+let load_notation _ (_,(_,_,prec,ntn,scope,pat,onlyparse,_)) =
   Symbols.declare_scope scope
 
-let open_notation i (_,(oldse,prec,ntn,scope,pat,onlyparse,df)) =
+let open_notation i (_,(_,oldse,prec,ntn,scope,pat,onlyparse,df)) =
 (*print_string ("Open notation "^ntn^" at "^string_of_int (fst prec)^"\n");*)
   if i=1 then begin
     let b = Symbols.exists_notation_in_scope scope prec ntn pat in
@@ -609,12 +616,18 @@ let cache_notation o =
   load_notation 1 o;
   open_notation 1 o
 
-let subst_notation (_,subst,(oldse,prec,ntn,scope,(metas,pat),b,df)) =
-  (option_app
+let subst_notation (_,subst,(lc,oldse,prec,ntn,scope,(metas,pat),b,df)) =
+  (lc,option_app
     (list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst)) oldse,
    prec,ntn,
    scope,
    (metas,subst_aconstr subst pat), b, df)
+
+let classify_notation (_,(local,_,_,_,_,_,_,_ as o)) =
+  if local then Dispose else Substitute o
+
+let export_notation (local,_,_,_,_,_,_,_ as o) =
+  if local then None else Some o
 
 let (inNotation, outNotation) =
   declare_object {(default_object "NOTATION") with
@@ -622,8 +635,8 @@ let (inNotation, outNotation) =
        cache_function = cache_notation;
        subst_function = subst_notation;
        load_function = load_notation;
-       classify_function = (fun (_,o) -> Substitute o);
-       export_function = (fun x -> Some x)}
+       classify_function = classify_notation;
+       export_function = export_notation}
 
 (* For old ast printer *)
 let rec reify_meta_ast vars = function
@@ -645,7 +658,7 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   let rule_name = ntn^"_"^scope^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
-let add_notation_in_scope df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
+let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   let onlyparse = onlyparse or !Options.v7_only in
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let inner =
@@ -678,7 +691,7 @@ let add_notation_in_scope df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
     if onlyparse then None
     else Some (make_pp_rule pptyps ppsymbols) in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(ppprec,notation,gram_rule,pp_rule));
+    (inSyntaxExtension(local,ppprec,notation,gram_rule,pp_rule));
   let old_pp_rule =
     if onlyparse then None
     else
@@ -688,9 +701,9 @@ let add_notation_in_scope df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(old_pp_rule,ppprec,notation,scope,a,onlyparse,df))
+    (inNotation(local,old_pp_rule,ppprec,notation,scope,a,onlyparse,df))
 
-let add_notation df a modifiers mv8 sc =
+let add_notation local df a modifiers mv8 sc =
   let toks = split df in
   match toks with 
     | [String x] when quote(strip x) = x
@@ -699,9 +712,9 @@ let add_notation df a modifiers mv8 sc =
         let ident = id_of_string (strip x) in
 	let c = snd (interp_aconstr [] a) in
 	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
-        Syntax_def.declare_syntactic_definition ident onlyparse c
+        Syntax_def.declare_syntactic_definition local ident onlyparse c
     | _ ->
-        add_notation_in_scope
+        add_notation_in_scope local
           df a (interp_notation_modifiers modifiers)
           (option_app (fun (s8,ml8) ->
             let toks8 = split s8 in 
@@ -725,15 +738,15 @@ let rec rename x vars n = function
   | WhiteSpace _::l ->
       rename x vars n l
 
-let add_distfix assoc n df r sc =
+let add_distfix local assoc n df r sc =
   (* "x" cannot clash since r is globalized (included section vars) *)
   let (vars,l) = rename "x" [] 1 (split df) in
   let df = String.concat " " l in
   let a = mkAppC (mkRefC r, vars) in
   let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
-  add_notation_in_scope df a (Some assoc,n,[],false) None sc (split df)
+  add_notation_in_scope local df a (Some assoc,n,[],false) None sc (split df)
 
-let add_infix assoc n inf pr onlyparse mv8 sc =
+let add_infix local assoc n inf pr onlyparse mv8 sc =
 (*  let pr = Astterm.globalize_qualid pr in*)
   (* check the precedence *)
   if !Options.v7 & (n<1 or n>10) then
@@ -751,7 +764,7 @@ let add_infix assoc n inf pr onlyparse mv8 sc =
       None -> Some(split df,(assoc,n*10,[],false))
     | Some(a8,n8,s8) ->
         Some(split ("x "^quote s8^" y"),(a8,n8,[],false)) in
-  add_notation_in_scope df a (assoc,n,[],onlyparse) mv8 sc (split df)
+  add_notation_in_scope local df a (assoc,n,[],onlyparse) mv8 sc (split df)
 
 (* Delimiters *)
 let load_delimiters _ (_,(scope,dlm)) =

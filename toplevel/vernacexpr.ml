@@ -150,19 +150,19 @@ type vernac_expr =
   | VernacTacticGrammar of
       (string * (string * grammar_production list) * raw_tactic_expr) list
   | VernacSyntax of string * raw_syntax_entry list
-  | VernacSyntaxExtension of string * syntax_modifier list
-  | VernacDistfix of
+  | VernacSyntaxExtension of locality_flag * string * syntax_modifier list
+  | VernacDistfix of locality_flag *
       grammar_associativity * precedence * string * reference *
       scope_name option
-  | VernacOpenScope of (export_flag * scope_name)
+  | VernacOpenScope of (locality_flag * scope_name)
   | VernacDelimiters of scope_name * string
   | VernacArgumentsScope of reference * scope_name option list
-  | VernacInfix of
+  | VernacInfix of locality_flag *
       grammar_associativity * precedence * string * reference * bool *
       (grammar_associativity * precedence * string) option *
       scope_name option
   | VernacNotation of
-      string * constr_expr * syntax_modifier list *
+      locality_flag * string * constr_expr * syntax_modifier list *
       (string * syntax_modifier list) option * scope_name option
 
   (* Gallina *)

@@ -28,20 +28,21 @@ val add_token_obj : string -> unit
 val add_tactic_grammar :
   (string * (string * grammar_production list) * raw_tactic_expr) list -> unit
 
-val add_infix :
+val add_infix : locality_flag ->
   grammar_associativity -> precedence -> string -> reference -> bool ->
     (grammar_associativity * precedence * string) option ->
       scope_name option -> unit
-val add_distfix :
+val add_distfix : locality_flag ->
   grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
 val add_delimiters : scope_name -> string -> unit
 
-val add_notation : string -> constr_expr
+val add_notation : locality_flag -> string -> constr_expr
     -> syntax_modifier list -> (string * syntax_modifier list) option
       -> scope_name option -> unit
 
-val add_syntax_extension : string -> syntax_modifier list -> unit
+val add_syntax_extension : locality_flag -> string -> syntax_modifier list
+  -> unit
 
 val print_grammar : string -> string -> unit
 
