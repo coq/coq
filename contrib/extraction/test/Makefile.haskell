@@ -31,7 +31,7 @@ O:= $(patsubst %.hs,%.o,$(HS))
 #	General rules 
 #
 
-all: v2hs hs Unit.o $(O)
+all: v2hs hs $(O)
 
 hs: $(HS)
 

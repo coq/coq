@@ -48,7 +48,7 @@ open Nametab
 
 type info = Logic | Info
 
-type arity = Arity | NotArity
+type arity = Arity | Flexible | Default
 
 type flag = info * arity
 
@@ -123,13 +123,20 @@ let _ = declare_summary "Extraction tables"
 	    init_function = (fun () -> ());
 	    survive_section = true }
 
-(*S Error messages. *)
+(*S Warning & Error messages. *)
 
-let axiom_message sp =
+let axiom_error_message sp =
   errorlabstrm "axiom_message"
     (str "You must specify an extraction for axiom" ++ spc () ++ 
        pr_sp sp ++ spc () ++ str "first.")
 
+let axiom_warning_message sp = 
+  Options.if_verbose warn 
+    (str "This extraction depends on logical axiom" ++ spc () ++ 
+     pr_sp sp ++ str "." ++ spc() ++ 
+     str "Having false logical axiom in the environment when extracting" ++ 
+     spc () ++ str "may lead to incorrect or non-terminating ML terms.")
+    
 let section_message () = 
   errorlabstrm "section_message"
     (str "You can't extract within a section. Close it and try again.")
@@ -147,11 +154,12 @@ let is_axiom sp = (Global.lookup_constant sp).const_body = None
 (*s [flag_of_type] transforms a type [t] into a [flag]. 
   Really important function. *)
 
-let flag_of_type env t = match find_conclusion env t with
+let flag_of_type env t = match find_conclusion env none t with
   | Sort (Prop Null) -> (Logic,Arity)
   | Sort _ -> (Info,Arity)
-  | _ -> if (sort_of env t) = InProp then (Logic,NotArity)
-    else (Info,NotArity)
+  | (Case _ | Fix _ | CoFix _) -> 
+      if (sort_of env t) = InProp then (Logic,Flexible) else (Info,Default)
+  | _ -> if (sort_of env t) = InProp then (Logic,Default) else (Info,Default)
 
 (*s [is_default] is a particular case of the last function. *)
 
@@ -554,8 +562,10 @@ and extract_constr_to_term env c =
 (* Same, but With Type (wt). *)
 
 and extract_constr_to_term_wt env c t = 
-  if is_default env t then extract_term_wt env c t 
-  else dummy_lams MLdummy (List.length (fst (splay_prod env none t)))
+  match flag_of_type env t with 
+    | (Info, Default) -> extract_term_wt env c t
+    | (Logic, Flexible) -> MLdummy'
+    | _ -> dummy_lams MLdummy (List.length (fst (splay_prod env none t)))
 
 (*S Extraction of a constr. *)
 
@@ -572,8 +582,8 @@ and extract_constr_wt env c t =
 	let ctx = ctx_from_sign s in 
 	let mlt = extract_type_arity env c ctx (List.length s) in 
 	Emltype (mlt, s, vl)
-    | (Logic, NotArity) -> Emlterm MLdummy
-    | (Info, NotArity) -> Emlterm (extract_term_wt env c t)
+    | (Logic, _) -> Emlterm MLdummy
+    | (Info, _) -> Emlterm (extract_term_wt env c t)
 	  
 (*S Extraction of a constant. *)
 		
@@ -584,11 +594,13 @@ and extract_constant sp =
     let cb = Global.lookup_constant sp in
     let typ = cb.const_type in
     match cb.const_body with
-      | None ->
+      | None -> (* A logical axiom is risky, an informative one is fatal. *) 
           (match flag_of_type env typ with
-             | (Info,_) -> axiom_message sp (* We really need some code here *)
-             | (Logic,NotArity) -> Emlterm MLdummy (* Axiom? I don't mind! *)
-             | (Logic,Arity) -> Emltype (Tdummy,[],[]))  (* Idem *)
+             | (Info,_) -> axiom_error_message sp 
+             | (Logic,Arity) -> axiom_warning_message sp; 
+		 Emltype (Tdummy,[],[])
+	     | (Logic,_) -> axiom_warning_message sp;
+		 Emlterm MLdummy)
       | Some body ->
 	  let e = match extract_constr_wt env body typ with 
 	    | Emlterm MLdummy as e -> e
@@ -666,7 +678,7 @@ and extract_mib sp =
 	      let n = List.length s in 
 	      let db,ctx = 
 		if si=[] then Intmap.empty,[]
-		else match find_conclusion params_env t with 
+		else match find_conclusion params_env none t with 
 		  | App (f, args) -> 
 		      (*i assert (kind_of_term f = Ind ip); i*)
 		      let db = parse_ind_args si args in 

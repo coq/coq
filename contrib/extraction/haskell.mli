@@ -15,6 +15,6 @@ open Miniml
 
 val keywords : Idset.t
 
-val preamble : extraction_params -> Idset.t -> std_ppcmds
+val preamble : extraction_params -> Idset.t -> bool -> std_ppcmds
 
 module Make : functor(P : Mlpp_param) -> Mlpp

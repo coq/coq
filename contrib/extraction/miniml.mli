@@ -43,6 +43,7 @@ type ml_ast =
   | MLfix   of int * identifier array * ml_ast array
   | MLexn   of string
   | MLdummy
+  | MLdummy' 
   | MLcast  of ml_ast * ml_type
   | MLmagic of ml_ast
 

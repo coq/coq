@@ -216,6 +216,11 @@ let extract_to_file f prm decls =
     Idset.remove prm.mod_name (decl_get_modules decls)
   else Idset.empty
   in 
+  let print_dummy = match lang() with 
+    | Ocaml -> decl_search MLdummy' decls
+    | Haskell -> (decl_search MLdummy decls) || (decl_search MLdummy' decls)
+    | _ -> assert false 
+  in 
   cons_cofix := Refset.empty;
   current_module := prm.mod_name;
   Hashtbl.clear renamings;
@@ -231,7 +236,7 @@ let extract_to_file f prm decls =
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
       (List.filter decl_is_singleton prm.to_appear); 
-  pp_with ft (preamble prm used_modules);
+  pp_with ft (preamble prm used_modules print_dummy);
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

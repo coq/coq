@@ -119,14 +119,19 @@ let keywords =
     "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
     "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ] 
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ] 
   Idset.empty
 
-let preamble _ used_modules = 
+let preamble _ used_modules print_dummy = 
   Idset.fold (fun m s -> s ++ str "open " ++ pr_id (uppercase_id m) ++ fnl())
     used_modules (mt ())
   ++ 
-  (if Idset.is_empty used_modules  then mt () else fnl ()) 
+  (if Idset.is_empty used_modules  then mt () else fnl ())
+  ++
+  (if print_dummy then 
+     str "let (__:unit) = let rec f _ = Obj.magic f in Obj.magic f" 
+     ++ fnl () ++ fnl()
+   else mt ())
 
 (*s The pretty-printing functor. *)
 
@@ -144,7 +149,8 @@ let empty_env () = [], P.globals()
 
 let rec pp_type par vl t =
   let rec pp_rec par = function
-    | Tvar i -> (try pp_tvar (List.nth vl (pred i)) with _ -> (str "'a" ++ int i))
+    | Tvar i -> (try pp_tvar (List.nth vl (pred i)) 
+		 with _ -> (str "'a" ++ int i))
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
@@ -259,6 +265,8 @@ let rec pp_expr par env args =
 	 str ("(* "^s^" *)") ++ close_par par)
     | MLdummy ->
 	str "()" (* An [MLdummy] may be applied, but I don't really care. *)
+    | MLdummy' -> 
+	str "__" (* idem *)
     | MLcast (a,t) ->
 	(open_par true ++ pp_expr false env args a ++ spc () ++ str ":" ++ 
 	 spc () ++ pp_type false [] t ++ close_par true)

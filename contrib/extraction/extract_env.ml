@@ -157,7 +157,7 @@ and visit_ast m eenv a =
     | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
-    | MLrel _ | MLdummy | MLexn _ -> ()
+    | MLrel _ | MLdummy | MLdummy' | MLexn _ -> ()
   in
   visit a
 
