@@ -3,7 +3,9 @@ binding "text" {
 		   "move-cursor" (display-lines,1,0)
 		   "cut-clipboard" ()	
 		}
+  bind "<ctrl>w" { "cut-clipboard" () }
   bind "<ctrl>x" { }
+
   bind "F13" {"insert-at-cursor" ("∀")}
   bind "F14" {"insert-at-cursor" ("∃")}
 }

@@ -127,3 +127,32 @@ let read_stdout,clear_stdout =
      Buffer.clear out_buff; r),
   (fun () -> 
      Format.pp_print_flush !Pp_control.std_ft (); Buffer.clear out_buff)
+
+
+let last_dir = ref ""
+let select_file ~title ?(dir = last_dir) ?(filename="") () =
+  let fs =
+    if Filename.is_relative filename then begin
+      if !dir <> "" then
+        let filename = Filename.concat !dir filename in 
+        GWindow.file_selection ~modal:true ~title ~filename ()
+      else
+        GWindow.file_selection ~modal:true ~title ()
+    end else begin
+      dir := Filename.dirname filename;
+      GWindow.file_selection ~modal:true ~title ~filename ()
+    end
+  in
+  fs#complete ~filter:"";
+  ignore (fs#connect#destroy ~callback: GMain.Main.quit);
+  let file = ref None in 
+  ignore (fs#ok_button#connect#clicked ~callback:
+    begin fun () ->
+      file := Some fs#get_filename; 
+      dir := Filename.dirname fs#get_filename;
+      fs#destroy ()
+    end);
+  ignore (fs # cancel_button # connect#clicked ~callback:fs#destroy);
+  fs # show ();
+  GMain.Main.main ();
+  !file

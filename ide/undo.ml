@@ -76,16 +76,19 @@ object(self)
 
   method redo = prerr_endline "REDO"; true
   initializer
+    ignore (self#buffer#connect#mark_set
+	      ~callback:
+	      (fun it tm -> if !undo_lock && not (Queue.is_empty redo) then begin
+		 Stack.iter (fun e -> Stack.push (neg e) history) nredo;
+		 Stack.clear nredo;
+		 Queue.iter (fun e -> Stack.push e history) redo;
+		 Queue.clear redo;
+	       end)
+	   );
     ignore (self#buffer#connect#insert_text 
 	      ~callback:
 	      (fun it s ->
-		 if !undo_lock && not (Queue.is_empty redo) then begin
-		   Stack.iter (fun e -> Stack.push (neg e) history) nredo;
-		   Stack.clear nredo;
-		   Queue.iter (fun e -> Stack.push e history) redo;
-		   Queue.clear redo;
-		 end;
-		   let pos = it#offset in
+		 let pos = it#offset in
 		 if Stack.is_empty history or 
 		   s=" " or s="\t" or s="\n" or
 					(match Stack.top history with 
@@ -112,13 +115,33 @@ object(self)
 		   Queue.iter (fun e -> Stack.push e history) redo;
 		   Queue.clear redo;
 		 end;
-		 Stack.push 
-		   (Delete(self#buffer#get_text ~start ~stop (),
-			   start#offset,
-			   stop#offset - start#offset
-			  ))
-		   history;
-		 self#dump_debug
+		 let start_offset = start#offset in
+		 let stop_offset = stop#offset in
+		 let s = self#buffer#get_text ~start ~stop () in
+		 if Stack.is_empty history or (match Stack.top history with
+						 | Delete(old,opos,olen) -> 
+						     olen=1 or opos <> start_offset
+						 | _ -> true
+					      )
+		 then
+		   Stack.push 
+		     (Delete(s,
+			     start_offset,
+			     stop_offset - start_offset
+			    ))
+		     history
+	       else begin
+		   match Stack.pop history with
+		     | Delete(olds,offset,len) -> 
+			 Stack.push 
+			 (Delete(olds^s,
+				 offset,
+				 len+(Glib.Utf8.length s)))
+			 history
+		     | _ -> assert false
+		 
+	       end;
+	    self#dump_debug
 	      ))
 end
 

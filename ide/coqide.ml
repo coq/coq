@@ -1180,7 +1180,7 @@ let main files =
   in
   let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  
-    match GToolbox.select_file ~title:"_Load file" () with 
+    match  select_file ~title:"_Load file" () with 
       | None -> ()
       | (Some f) as fn -> load f
   in
@@ -1405,7 +1405,7 @@ let main files =
 	   (fun () -> GtkSignal.emit_unit
 	      (get_current_view()).view#as_view 
 	      GtkText.View.Signals.copy_clipboard));
-  ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
+  ignore(edit_f#add_item "Cut" (* ~key:GdkKeysyms._X *) ~callback:
 	   (do_if_not_computing 
 	      (fun () -> GtkSignal.emit_unit
 		 (get_current_view()).view#as_view 
@@ -1425,6 +1425,13 @@ let main files =
 				) 
   in
   read_only_i#misc#set_state `INSENSITIVE;
+  let search_i = edit_f#add_item "Search"
+		   ~key:GdkKeysyms._F
+		   ~callback:(fun b -> 
+				let v = get_current_view () in ()
+			     ) 
+  in
+(*  search_i#misc#set_state `INSENSITIVE;*)
 
   to_do_on_page_switch := 
   (fun i -> 

@@ -1,8 +1,11 @@
+open GTree
+open Gobject
+
 let create l = 
   let hbox = GPack.hbox () in
   let columns = new GTree.column_list in
-  let command_col =  columns#add GTree.Data.string in
-  let coq_col = columns#add GTree.Data.string in
+  let command_col =  columns#add Data.string in
+  let coq_col = columns#add Data.string in
   let store = GTree.list_store columns
   in 
 (* populate the store *)
