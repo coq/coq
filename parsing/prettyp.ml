@@ -64,6 +64,15 @@ let print_impl_args l =
 (*********************)
 (** Printing Scopes  *)
 
+let print_ref reduce ref =
+  let typ = Global.type_of_global ref in
+  let typ = 
+    if reduce then
+      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
+      in it_mkProd_or_LetIn ccl ctx 
+    else typ in
+  hov 0 (pr_global ref ++ str " :" ++ spc () ++ prtype typ) ++ fnl ()
+
 let print_argument_scopes = function
   | [Some sc] -> str"Argument scope is [" ++ str sc ++ str"]" ++ fnl()
   | l when not (List.for_all ((=) None) l) ->
@@ -73,13 +82,27 @@ let print_argument_scopes = function
       str "]") ++ fnl()
   | _  -> mt()
 
+let need_expansion impl ref = 
+  let typ = Global.type_of_global ref in
+  let ctx = fst (decompose_prod_assum typ) in
+  let nprods = List.length (List.filter (fun (_,b,_) -> b=None) ctx) in
+  let _,lastimpl = list_chop nprods impl in
+  List.filter is_status_implicit lastimpl <> []
+
 let print_name_infos ref =
   let impl = implicits_of_global ref in
   let scopes = Symbols.find_arguments_scope ref in
+  let type_for_implicit = 
+    if need_expansion impl ref then
+      (* Need to reduce since implicits are computed with products flattened *)
+      str "Expanded type for implicit arguments" ++ fnl () ++ 
+      print_ref true ref ++ fnl()
+    else mt() in
   (if (List.filter is_status_implicit impl<>[])
       or not (List.for_all ((=) None) scopes) 
   then fnl()
   else mt())
+  ++ type_for_implicit 
   ++ print_impl_args impl ++ print_argument_scopes scopes
 
 let print_id_args_data test pr id l =
@@ -468,15 +491,6 @@ let print_opaque_name qid =
         let (_,c,ty) = lookup_named id env in 
 	print_named_decl (id,c,ty)
 
-let print_ref reduce ref =
-  let typ = Global.type_of_global ref in
-  let typ = 
-    if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
-      in it_mkProd_or_LetIn ccl ctx 
-    else typ in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ prtype typ) ++ fnl ()
-
 let print_about ref = 
   let sigma = Evd.empty in
   let k = locate_any_name ref in
@@ -492,7 +506,7 @@ let print_impargs ref =
   let impl = implicits_of_global ref in
   let has_impl = List.filter is_status_implicit impl <> [] in
   (* Need to reduce since implicits are computed with products flattened *)
-  print_ref true ref ++ fnl() ++
+  print_ref (need_expansion impl ref) ref ++ fnl() ++
   (if has_impl then print_impl_args impl 
    else (str "No implicit arguments" ++ fnl ()))
 
