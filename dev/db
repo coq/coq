@@ -1,0 +1,4 @@
+load_printer "db_printers.cmo"
+install_printer Db_printers.prid
+install_printer Db_printers.prsp
+
