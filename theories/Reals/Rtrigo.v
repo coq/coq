@@ -19,17 +19,7 @@ Require Rsigma.
 (**********)
 Parameter PI : R.
 
-Definition PI_lb : R := ``314/100``.
-Definition PI_ub : R := ``315/100``.
-Axiom PI_approx : ``PI_lb <= PI <= PI_ub``.
- 
-Lemma PI_RGT_0 : ``0<PI``.
-Cut ~(O=(314)).
-Cut ~(O=(100)).
-Intros; Apply Rlt_le_trans with PI_lb; [Unfold PI_lb; Generalize (lt_INR_0 (314) (neq_O_lt (314) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (lt_INR_0 (100) (neq_O_lt (100) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H2; Generalize (Rlt_Rinv ``100`` H2); Intro H3; Generalize (Rmult_lt_pos ``314`` (Rinv ``100``) H1 H3); Intro H4 | Elim PI_approx; Intros H3 _]; Assumption.
-Discriminate.
-Discriminate.
-Save.
+Axiom PI_RGT_0 : ``0<PI``.
 
 Lemma PI_neq0 : ~``PI==0``.
 Red; Intro.
@@ -1487,7 +1477,7 @@ Save.
 (* Radian -> Degree | Degree -> Radian                         *)
 (***************************************************************)
 
-Definition plat : R := ``180``.
+Definition plat : R := (IZR `180`).
 Definition toRad [x:R] : R := ``x*PI*/plat``.
 Definition toDeg [x:R] : R := ``x*plat*/PI``.
 
@@ -1502,9 +1492,8 @@ Rewrite Rmult_1r; Rewrite <- Rinv_l_sym.
 Apply Rmult_1r.
 Apply PI_neq0.
 Unfold plat.
-Replace ``180`` with (INR (180)).
-Apply not_O_INR; Discriminate.
-Rewrite INR_eq_INR2; Unfold INR2; Reflexivity.
+Apply not_O_IZR.
+Discriminate.
 Save.
 
 Lemma toRad_inj : (x,y:R) (toRad x)==(toRad y) -> x==y.
@@ -1512,7 +1501,10 @@ Intros; Unfold toRad in H; Apply r_Rmult_mult with PI.
 Rewrite <- (Rmult_sym x); Rewrite <- (Rmult_sym y).
 Apply r_Rmult_mult with ``/plat``.
 Rewrite <- (Rmult_sym ``x*PI``); Rewrite <- (Rmult_sym ``y*PI``); Assumption.
-Unfold plat; Cut ~(O=(180)); [Intro H0; Generalize (lt_INR_0 (180) (neq_O_lt (180) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (Rlt_Rinv ``180`` H1); Intro H2; Red; Intro H3; Rewrite H3 in H2; Elim (Rlt_antirefl ``0`` H2) | Discriminate].
+Apply Rinv_neq_R0.
+Unfold plat.
+Apply not_O_IZR.
+Discriminate.
 Apply PI_neq0.
 Save.
 
