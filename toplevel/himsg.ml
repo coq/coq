@@ -310,10 +310,10 @@ let explain_unsolvable_implicit env = function
   | QuestionMark -> str "Cannot infer a term for this placeholder"
   | CasesType ->
       str "Cannot infer the type of this pattern-matching problem"
-  | AbstractionType (Name id) ->
+  | BinderType (Name id) ->
       str "Cannot infer a type for " ++ Nameops.pr_id id
-  | AbstractionType Anonymous ->
-      str "Cannot infer a type of this anonymous abstraction"
+  | BinderType Anonymous ->
+      str "Cannot infer a type of this anonymous binder"
   | ImplicitArg (c,n) ->
       str "Cannot infer the " ++ pr_ord n ++
       str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c

@@ -272,18 +272,18 @@ let rec detype tenv avoid env t =
 	  let rec remove_type avoid args c =
                 match c,args with
                   | RLambda (loc,na,t,c), _::args ->
-                      let h = RHole (loc,AbstractionType na) in
+                      let h = RHole (loc,BinderType na) in
                         RLambda (loc,na,h,remove_type avoid args c)
                   | RLetIn (loc,na,b,c), _::args ->
                         RLetIn (loc,na,b,remove_type avoid args c)
                   | c, (na,None,t)::args ->
                       let id = next_name_away_with_default "x" na avoid in
-                      let h = RHole (dummy_loc,AbstractionType na) in
+                      let h = RHole (dummy_loc,BinderType na) in
                       let c = remove_type (id::avoid) args
                         (RApp (dummy_loc,c,[RVar (dummy_loc,id)])) in
                       RLambda (dummy_loc,Name id,h,c)
                   | c, (na,Some b,t)::args ->
-                      let h = RHole (dummy_loc,AbstractionType na) in
+                      let h = RHole (dummy_loc,BinderType na) in
                       let avoid = name_fold (fun x l -> x::l) na avoid in
                       RLetIn (dummy_loc,na,h,remove_type avoid args c)
                   | c, [] -> c in

@@ -228,6 +228,7 @@ type vernac_expr =
       identifier * (bool,unit) location * constr_expr * int * raw_tactic_expr
   | VernacSyntacticDefinition of identifier * constr_expr * int option
   | VernacDeclareImplicits of reference * int list option
+  | VernacReserve of identifier list * constr_expr
   | VernacSetOpacity of opacity_flag * reference list
   | VernacUnsetOption of Goptions.option_name
   | VernacSetOption of Goptions.option_name * option_value

@@ -470,7 +470,6 @@ let vernac_define_module id binders_ast mty_ast_o mexpr_ast_o =
 (*     | true, _, _, _ -> *)
 (* 	error "Module definition not allowed in a Module Type" *)
 
-
 let vernac_end_module id =
   Declaremods.end_module id;
   if_verbose message 
@@ -714,6 +713,11 @@ let vernac_declare_implicits locqid = function
   | Some imps -> Impargs.declare_manual_implicits (Nametab.global locqid) imps
   | None -> Impargs.declare_implicits (Nametab.global locqid)
 
+let vernac_reserve idl c =
+  let t = Constrintern.interp_type Evd.empty (Global.env()) c in
+  let t = Detyping.detype (Global.env()) [] [] t in
+  List.iter (fun id -> Reserve.declare_reserved_type id t) idl
+
 let make_silent_if_not_pcoq b =
   if !pcoq <> None then 
     error "Turning on/off silent flag is not supported in Centaur mode"
@@ -790,14 +794,6 @@ let _ =
       optname="the printing depth";
       optread=Pp_control.get_depth_boxes;
       optwrite=Pp_control.set_depth_boxes }
-
-let _ =
-  declare_int_option
-    { optsync=true;
-      optkey=SecondaryTable("Printing","Width");
-      optname="the printing width";
-      optread=Pp_control.get_margin;
-      optwrite=Pp_control.set_margin}
 
 let vernac_set_opacity opaq locqid =
   match Nametab.global locqid with
@@ -1202,6 +1198,7 @@ let interp c = match c with
   | VernacHintDestruct (id,l,p,n,tac) -> Dhyp.add_destructor_hint id l p n tac
   | VernacSyntacticDefinition (id,c,n) -> vernac_syntactic_definition id c n
   | VernacDeclareImplicits (qid,l) -> vernac_declare_implicits qid l
+  | VernacReserve (idl,c) -> vernac_reserve idl c
   | VernacSetOpacity (opaq, qidl) -> List.iter (vernac_set_opacity opaq) qidl
   | VernacSetOption (key,v) -> vernac_set_option key v
   | VernacUnsetOption key -> vernac_unset_option key

@@ -23,27 +23,29 @@ let wildcard = id_of_string "_"
 let code_of_0 = Char.code '0'
 let code_of_9 = Char.code '9'
 
-let cut_ident s =
+let cut_ident skip_quote s =
   let s = string_of_id s in
   let slen = String.length s in
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
     if n = 0 then 
       failwith
-	("The string " ^ s ^ " is not an identifier: it contains only digits")
+	("The string " ^ s ^ " is not an identifier: it contains only digits or _")
     else 
       let c = Char.code (String.get s (n-1)) in
       if c = code_of_0 && n <> slen then 
 	numpart (n-1) n' 
       else if code_of_0 <= c && c <= code_of_9 then 
 	numpart (n-1) (n-1)
-      else 
+      else if skip_quote & (c = Char.code '\'' || c = Char.code '_') then
+	numpart (n-1) (n-1)
+      else
 	n'
   in
   numpart slen slen
 
 let repr_ident s =
-  let numstart = cut_ident s in
+  let numstart = cut_ident false s in
   let s = string_of_id s in
   let slen = String.length s in
   if numstart = slen then 
@@ -60,6 +62,10 @@ let make_ident sa = function
         else sa ^ "_" ^ (string_of_int n) in
       id_of_string s
   | None -> id_of_string (String.copy sa)
+
+let root_of_id id =
+  let suffixstart = cut_ident true id in
+  id_of_string (String.sub (string_of_id id) 0 suffixstart)
 
 (* Rem: semantics is a bit different, if an ident starts with toto00 then
   after successive renamings it comes to toto09, then it goes on with toto10 *)
@@ -94,7 +100,7 @@ let has_subscript id =
   is_digit (id.[String.length id - 1])
 
 let forget_subscript id =
-  let numstart = cut_ident id in
+  let numstart = cut_ident false id in
   let newid = String.make (numstart+1) '0' in
   String.blit (string_of_id id) 0 newid 0 numstart;
   (id_of_string newid)

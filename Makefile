@@ -116,7 +116,8 @@ PRETYPING=\
 
 INTERP=\
   interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
-  interp/genarg.cmo interp/syntax_def.cmo interp/constrintern.cmo \
+  interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
+  interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo
 
 PARSING=\

@@ -133,7 +133,7 @@ let tuple_ref dep n =
 (* Binders. *)
 
 let trad_binder avoid nenv id = function
-  | CC_untyped_binder -> RHole (dummy_loc,AbstractionType (Name id))
+  | CC_untyped_binder -> RHole (dummy_loc,BinderType (Name id))
   | CC_typed_binder ty -> Detyping.detype (Global.env()) avoid nenv ty
 
 let rec push_vars avoid nenv = function

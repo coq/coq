@@ -335,7 +335,11 @@ let check_capture loc ty = function
       ()
 
 let locate_if_isevar loc na = function
-  | RHole _ -> RHole (loc, AbstractionType na)
+  | RHole _ -> 
+      (try match na with
+	| Name id ->  Reserve.find_reserved_type id
+	| Anonymous -> raise Not_found 
+      with Not_found -> RHole (loc, BinderType na))
   | x -> x
 
 (**********************************************************************)

@@ -17,7 +17,8 @@ val wildcard : identifier
 val make_ident : string -> int option -> identifier
 val repr_ident : identifier -> string * int option
 
-val atompart_of_id : identifier -> string
+val atompart_of_id : identifier -> string  (* remove trailing digits *)
+val root_of_id : identifier -> identifier (* remove trailing digits, ' and _ *)
 
 val add_suffix : identifier -> string -> identifier
 val add_prefix : string -> identifier -> identifier

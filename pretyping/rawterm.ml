@@ -50,7 +50,7 @@ type 'a with_bindings = 'a * 'a substitution
 
 type hole_kind =
   | ImplicitArg of global_reference * int
-  | AbstractionType of name
+  | BinderType of name
   | QuestionMark
   | CasesType
   | InternalHole
@@ -235,7 +235,7 @@ let rec subst_raw subst raw =
       let ref' = subst_global subst ref in 
 	if ref' == ref then raw else
 	  RHole (loc,ImplicitArg (ref',i))
-  | RHole (loc, (AbstractionType _ | QuestionMark | CasesType |
+  | RHole (loc, (BinderType _ | QuestionMark | CasesType |
       InternalHole | TomatchTypeParameter _)) -> raw
 
   | RCast (loc,r1,r2) -> 

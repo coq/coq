@@ -128,7 +128,7 @@ let rec subst_aconstr subst raw =
       let ref' = subst_global subst ref in 
 	if ref' == ref then raw else
 	  AHole (ImplicitArg (ref',i))
-  | AHole ( (AbstractionType _ | QuestionMark | CasesType |
+  | AHole ( (BinderType _ | QuestionMark | CasesType |
       InternalHole | TomatchTypeParameter _)) -> raw
 
   | ACast (r1,r2) -> 

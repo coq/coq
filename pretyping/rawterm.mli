@@ -48,7 +48,7 @@ type 'a with_bindings = 'a * 'a substitution
 
 type hole_kind =
   | ImplicitArg of global_reference * int
-  | AbstractionType of name
+  | BinderType of name
   | QuestionMark
   | CasesType
   | InternalHole

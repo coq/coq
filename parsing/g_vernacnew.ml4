@@ -423,6 +423,9 @@ GEXTEND Gram
 	  VernacDeclareImplicits (qid,Some l)
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
 
+      | IDENT "Implicit"; ["Variable"; "Type" | IDENT "Variables"; "Type"];
+	   idl = LIST1 ident; ":"; c = constr -> VernacReserve (idl,c)
+
       (* For compatibility *)
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "On" ->
 	  VernacSetOption
