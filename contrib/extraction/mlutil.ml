@@ -296,10 +296,10 @@ let rec betaiota = function
 		 (function 
 		    | (n, i, MLcons (r,a))-> 
 			let (_,ids,c) = br.(constructor_index r) in
-			let c = ml_lift (List.length i) c in 
-			let c' = List.fold_right 
+			let c = List.fold_right 
 				   (fun id t -> MLlam (id,t)) ids c in
-			(n,i,betaiota (MLapp (c',a)))
+			let c = ml_lift (List.length i) c in 
+			(n,i,betaiota (MLapp (c,a)))
 		    | _ -> assert false) br'
 	     in MLcase(e', new_br)
 	 | e' -> 
