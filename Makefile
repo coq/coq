@@ -329,13 +329,13 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
 
 coqbinaries:: ${COQBINARIES}
 
+# Aliases for various worlds
 newworld: world8
-
+world: world7
+translation: coqbinaries coqlib8-source
 oldworld: world7
 
-world: world7
-
-world8: coqbinaries translation coqlib8 tools coqide
+world8: coqbinaries coqlib8-source coqlib8 tools coqide
 
 world7: coqbinaries coqlib7 tools coqide
 
@@ -1296,7 +1296,7 @@ devel:
 ############################################################################
 
 # 1. Translate the old syntax files and build new syntax theories hierarchy
-translation:: $(BESTCOQTOP)
+coqlib8-source:: $(BESTCOQTOP)
 	@$(MAKE) SYNTAX="-translate -no-strict" coqlib7
 	@$(MAKE) movenew
 
