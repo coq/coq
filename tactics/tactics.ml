@@ -741,7 +741,7 @@ let letin_tac with_eq name c occs gl =
       if not (mem_named_context x (pf_hyps gl)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
-  let t = pf_type_of gl c in
+  let t = Evarutil.refresh_universes (pf_type_of gl c) in
   let newcl = mkNamedLetIn id c t ccl in
   tclTHENLIST
     [ convert_concl_no_check newcl;
