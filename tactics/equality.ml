@@ -666,8 +666,8 @@ let h_discrConcl = hide_atomic_tactic "DiscrConcl" discrConcl
 let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
 (**)
 
-let existS_pattern = put_pat mmk "(existS ? ? ? ?)"
-let existT_pattern = put_pat mmk "(existT ? ? ? ?)"
+let existS_pattern = put_pat mmk "(existS ?1 ?2 ?3 ?4)"
+let existT_pattern = put_pat mmk "(existT ?1 ?2 ?3 ?4)"
 
 let constant dir id = 
   Declare.global_qualified_reference (make_path dir (id_of_string id) CCI)
@@ -695,9 +695,10 @@ let find_sigma_data s =
     | Type _    -> build_sigma_type ()                   (* Type *)
     | Prop Null -> error "find_sigma_data"
 
-(* [make_tuple env sigma lind rterm rty]
+(* [make_tuple env sigma (lift,rterm,rty) lind] assumes [lind-lift] is
+   bound in [rty] but no lesser index is bound in [rty]
 
-   If [rty] depends on lind, then we will build the term
+   Then we will build the term
 
      (existS A==[type_of(mkRel lind)] P==(Lambda(na:type_of(mkRel lind),
                                         [rty{1/lind}]))
@@ -707,19 +708,19 @@ let find_sigma_data s =
    typechecking at the end.
  *)
 
-let make_tuple env sigma (rterm,rty) lind =
-  if dependent (mkRel lind) rty then
-    let {intro = exist_term; ex = sig_term} =
-      find_sigma_data (get_sort_of env sigma rty) in
-    let a = type_of env sigma (mkRel lind) in
-    (* We replace (mkRel lind) by (mkRel 1) in rty then abstract on (na:a) *)
-    let rty' = substnl [mkRel 1] lind rty in
-    let na = fst (lookup_rel_type lind env) in
-    let p = mkLambda (na, a, rty') in
-    (applist(exist_term,[a;p;(mkRel lind);rterm]),
-     applist(sig_term,[a;p]))
-  else
-    (rterm,rty)
+let make_tuple env sigma (prev_lind,rterm,rty) lind =
+  assert (dependent (mkRel lind) rty);
+  let {intro = exist_term; ex = sig_term} =
+    find_sigma_data (get_sort_of env sigma rty) in
+  let a = type_of env sigma (mkRel lind) in
+  let na = fst (lookup_rel_type lind env) in
+  (* If [lind] is not [prev_lind+1] then we lift down rty *)
+  let rty = lift (- lind + prev_lind + 1) rty in
+  (* Now [lind] is [mkRel 1] and we abstract on (na:a) *)
+  let p = mkLambda (na, a, rty) in
+  (lind,
+   applist(exist_term,[a;p;(mkRel lind);rterm]),
+   applist(sig_term,[a;p]))
 
 (* check that the free-references of the type of [c] are contained in
    the free-references of the normal-form of that type.  If the normal
@@ -823,8 +824,8 @@ let make_iterated_tuple env sigma (dFLT,dFLTty) (c,cty) =
   let (cty,rels) = minimal_free_rels env sigma (c,cty) in
   let sort_of_cty = get_sort_of env sigma cty in
   let sorted_rels = Sort.list (>=) (Intset.elements rels) in
-  let (tuple,tuplety) =
-    List.fold_left (make_tuple env sigma) (c,cty) sorted_rels 
+  let (_,tuple,tuplety) =
+    List.fold_left (make_tuple env sigma) (0,c,cty) sorted_rels 
   in
   assert (closed0 tuplety);
   let dfltval = 
