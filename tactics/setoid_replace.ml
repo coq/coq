@@ -979,8 +979,9 @@ let int_add_relation id a aeq refl sym trans =
    } in
   let x_relation_class =
    let subst =
+    let len = List.length a_quantifiers_rev in
     Array.of_list
-     (Util.list_map_i (fun i _ -> mkRel (i + 2)) 1 a_quantifiers_rev) in
+     (Util.list_map_i (fun i _ -> mkRel (len - i + 2)) 0 a_quantifiers_rev) in
    cic_relation_class_of_X_relation
     (mkRel 2) (mkRel 1) (apply_to_relation subst aeq_rel) in
   let _ =
@@ -997,8 +998,9 @@ let int_add_relation id a aeq refl sym trans =
   let id_precise = id_of_string (string_of_id id ^ "_precise_relation_class") in
   let xreflexive_relation_class =
    let subst =
+    let len = List.length a_quantifiers_rev in
     Array.of_list
-     (Util.list_map_i (fun i _ -> mkRel i) 1 a_quantifiers_rev)
+     (Util.list_map_i (fun i _ -> mkRel (len - i)) 0 a_quantifiers_rev)
    in
     cic_precise_relation_class_of_relation (apply_to_relation subst aeq_rel) in
   let _ =
