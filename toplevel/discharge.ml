@@ -170,7 +170,6 @@ type opacity = bool
 
 type discharge_operation = 
   | Variable of identifier * section_variable_entry * strength * bool
-  | Parameter of identifier * constr * bool
   | Constant of section_path * recipe * strength * bool
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
@@ -215,7 +214,7 @@ let process_object oldenv dir sec_sp
     | ("CONSTANT" | "PARAMETER") ->
 	(* CONSTANT/PARAMETER means never discharge (though visibility *)
 	(* may vary) *)
- 	let stre = constant_or_parameter_strength sp in
+ 	let stre = constant_strength sp in
 (*
 	if stre = (DischargeAt sec_sp) then
 	  let cb = Environ.lookup_constant sp oldenv in
@@ -294,11 +293,8 @@ let process_operation = function
       let _ =
         with_implicits imp (declare_variable id) (Lib.cwd(),expmod_a,stre) in
       ()
-  | Parameter (spid,typ,imp) ->
-      let _ = with_implicits imp (declare_parameter spid) typ in
-      constant_message spid
   | Constant (sp,r,stre,imp) ->
-      with_implicits imp (redeclare_constant sp) (ConstantRecipe r,stre);
+      with_implicits imp (redeclare_constant sp) (r,stre);
       constant_message (basename sp)
   | Inductive (mie,imp) ->
       let _ = with_implicits imp declare_mind mie in

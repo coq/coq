@@ -33,7 +33,6 @@ open Nametab
 open Typeops
 open Indtypes
 
-let mkCastC(c,t) = ope("CAST",[c;t])
 let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdC (x,a,b) = ope("PROD",[a;slam(Some x,b)])
@@ -103,7 +102,7 @@ let syntax_definition ident com =
 
 let parameter_def_var ident c =
   let c = interp_type Evd.empty (Global.env()) c in
-  let sp = declare_parameter ident c in
+  let sp = declare_constant ident (ParameterEntry c, NeverDischarge) in
   if_verbose message ((string_of_id ident) ^ " is assumed");
   sp
 

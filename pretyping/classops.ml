@@ -222,7 +222,7 @@ let class_of env sigma t =
 let class_args_of c = snd (decompose_app c)
 
 let strength_of_cl = function 
-  | CL_CONST sp -> constant_or_parameter_strength sp
+  | CL_CONST sp -> constant_strength sp
   | CL_SECVAR sp -> variable_strength sp
   | _ -> NeverDischarge
 

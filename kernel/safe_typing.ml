@@ -71,12 +71,15 @@ type constant_entry = {
   const_entry_type   : types option;
   const_entry_opaque : bool }
 
-type global_declaration = Def of constant_entry | Assum of types
+type global_declaration = 
+  | ConstantEntry of constant_entry
+  | ParameterEntry of types
+  | GlobalRecipe of Cooking.recipe
 
 (* Definition always declared transparent *)
 let safe_infer_declaration env dcl =
   match dcl with
-  | Def c ->
+  | ConstantEntry c ->
       let (j,cst) = safe_infer env c.const_entry_body in
       let typ,cst = match c.const_entry_type with
 	| None -> j.uj_type,cst
@@ -87,9 +90,11 @@ let safe_infer_declaration env dcl =
 	      with NotConvertible -> error_actual_type env j tj.utj_val in
 	    tj.utj_val, Constraint.union (Constraint.union cst cst2) cst3 in
       Some j.uj_val, typ, cst, c.const_entry_opaque
-  | Assum t ->
+  | ParameterEntry t ->
       let (j,cst) = safe_infer env t in
       None, Typeops.assumption_of_judgment env j, cst, false
+  | GlobalRecipe r ->
+      Cooking.cook_constant env r
 
 let add_global_declaration sp env (body,typ,cst,op) =
   let env' = add_constraints cst env in
@@ -106,35 +111,10 @@ let add_global_declaration sp env (body,typ,cst,op) =
     const_opaque = op } in
   Environ.add_constant sp cb env'
 
-let add_parameter sp t env =
-  add_global_declaration sp env (safe_infer_declaration env (Assum t))
-
 (*s Global and local constant declaration. *)
 
 let add_constant sp ce env =
-  add_global_declaration sp env (safe_infer_declaration env (Def ce))
-
-let add_discharged_constant sp r env =
-  let (body,typ,cst,op) = Cooking.cook_constant env r in
-  match body with
-    | None -> 
-	add_parameter sp typ (* Bricolage avant poubelle *) env
-    | Some c -> 
-	(* let c = hcons1_constr c in *)
-	let ids = 
-	  Idset.union (global_vars_set env c) 
-	    (global_vars_set env (body_of_type typ))
-	in
-	let hyps = keep_hyps env ids in
-	let env' = Environ.add_constraints cst env in
-	let cb =
-	  { const_body = Some c;
-	    const_type = typ;
-	    const_hyps = hyps;
-	    const_constraints = cst;
-	    const_opaque = op } in
-	Environ.add_constant sp cb env'
-
+  add_global_declaration sp env (safe_infer_declaration env ce)
 
 (* Insertion of inductive types. *)
 

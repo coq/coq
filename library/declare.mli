@@ -39,20 +39,14 @@ type variable_declaration = dir_path * section_variable_entry * strength
 
 val declare_variable : variable -> variable_declaration -> section_path
 
-type constant_declaration_type =
-  | ConstantEntry  of constant_entry
-  | ConstantRecipe of Cooking.recipe
-
-type constant_declaration = constant_declaration_type * strength
+type constant_declaration = global_declaration * strength
 
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration *)
 val declare_constant : identifier -> constant_declaration -> constant
 
-val redeclare_constant : constant -> constant_declaration -> unit
-
-val declare_parameter : identifier -> constr -> constant
+val redeclare_constant : constant -> Cooking.recipe * strength -> unit
 
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
@@ -69,7 +63,6 @@ val make_strength_2 : unit -> strength
 
 val is_constant : section_path -> bool
 val constant_strength : constant -> strength
-val constant_or_parameter_strength : constant -> strength
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : variable -> named_declaration * strength
@@ -105,3 +98,5 @@ val global_reference : identifier -> constr
 val construct_reference : Environ.env -> identifier -> constr
 
 val is_global : identifier -> bool
+
+val strength_of_global : global_reference -> strength

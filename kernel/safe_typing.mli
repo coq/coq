@@ -35,21 +35,18 @@ val push_named_def :
 val pop_named_decls : identifier list -> safe_environment -> safe_environment
 
 (* Adding global axioms or definitions *)
-
-val add_parameter :
-  section_path -> constr -> safe_environment -> safe_environment
-
-(*s Global and local constant declaration. *)
-
 type constant_entry = {
   const_entry_body   : constr;
   const_entry_type   : types option;
   const_entry_opaque : bool }
 
+type global_declaration = 
+  | ConstantEntry of constant_entry
+  | ParameterEntry of types
+  | GlobalRecipe of Cooking.recipe
+
 val add_constant : 
-  section_path -> constant_entry -> safe_environment -> safe_environment
-val add_discharged_constant : 
-  section_path -> Cooking.recipe -> safe_environment -> safe_environment
+  section_path -> global_declaration -> safe_environment -> safe_environment
 
 (* Adding an inductive type *)
 val add_mind : 

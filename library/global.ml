@@ -47,10 +47,7 @@ let push_named_def d =
   cst
 let pop_named_decls ids = global_env := pop_named_decls ids !global_env
 
-let add_parameter sp c = global_env := add_parameter sp c !global_env
 let add_constant sp ce = global_env := add_constant sp ce !global_env
-let add_discharged_constant sp r = 
-  global_env := add_discharged_constant sp r !global_env
 let add_mind sp mie = global_env := add_mind sp mie !global_env
 let add_constraints c = global_env := add_constraints c !global_env
 

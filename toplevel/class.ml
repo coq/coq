@@ -69,11 +69,6 @@ let rec stre_unif_cond = function
 	and stre2 = (variable_strength v2) in 
 	stre_max (stre1,stre2)
 
-let stre_of_global = function
-  | ConstRef sp -> constant_or_parameter_strength sp
-  | VarRef id -> variable_strength id
-  | IndRef _ | ConstructRef _ -> NeverDischarge 
-
 (* Errors *)
 
 type coercion_error_kind =
@@ -235,7 +230,7 @@ let prods_of t =
 let get_strength stre ref cls clt =
   let stres = (snd (class_info cls)).cl_strength in
   let stret = (snd (class_info clt)).cl_strength in
-  let stref = stre_of_global ref in
+  let stref = strength_of_global ref in
 (* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
   let streunif = stre_unif_cond (s_vardep,f_vardep) in
  *)

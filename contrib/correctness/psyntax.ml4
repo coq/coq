@@ -546,9 +546,11 @@ let _ =
 	      let ren = update empty_ren "" [] in
 	      let v = Ptyping.cic_type_v env ren v in
 	      if not (is_mutable v) then begin
-		let c = trad_ml_type_v ren env v in
+		let c =
+		  Safe_typing.ParameterEntry (trad_ml_type_v ren env v),
+		  Declare.NeverDischarge in
 		List.iter 
-		  (fun id -> ignore (Declare.declare_parameter id c)) ids;
+		  (fun id -> ignore (Declare.declare_constant id c)) ids;
 		if_verbose (is_assumed false) ids
 	      end;
 	      if not (is_pure v) then begin

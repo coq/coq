@@ -110,50 +110,9 @@ let declare_variable id obj =
   if is_implicit_args() then declare_var_implicits id;
   sp
 
-(* Parameters. *)
+(* Globals: constants and parameters *)
 
-let cache_parameter (sp,c) =
-  (if Nametab.exists_cci sp then
-    let (_,id) = repr_path sp in
-    errorlabstrm "cache_parameter" [< pr_id id; 'sTR " already exists" >]);
-  Global.add_parameter sp c;
-  Nametab.push 0 sp (ConstRef sp)
-
-let load_parameter (sp,_) =
-  (if Nametab.exists_cci sp then
-    let (_,id) = repr_path sp in
-    errorlabstrm "cache_parameter" [< pr_id id; 'sTR " already exists" >]);
-  Nametab.push 1 sp (ConstRef sp)
-
-let open_parameter (sp,_) =
-  Nametab.push 0 (restrict_path 0 sp) (ConstRef sp)
-
-(* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_parameter_entry = mkProp
-
-let export_parameter c = Some dummy_parameter_entry
-
-let (in_parameter, out_parameter) =
-  let od = {
-    cache_function = cache_parameter;
-    load_function = load_parameter;
-    open_function = open_parameter;
-    export_function = export_parameter } 
-  in
-  declare_object ("PARAMETER", od)
-
-let declare_parameter id c =
-  let sp = add_leaf id (in_parameter c) in 
-  if is_implicit_args() then declare_constant_implicits sp;
-  sp
-
-(* Constants. *)
-
-type constant_declaration_type =
-  | ConstantEntry  of constant_entry
-  | ConstantRecipe of Cooking.recipe
-
-type constant_declaration = constant_declaration_type * strength
+type constant_declaration = global_declaration * strength
 
 let csttab = ref (Spmap.empty : strength Spmap.t)
 
@@ -167,10 +126,7 @@ let cache_constant (sp,(cdt,stre)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" [< pr_id id; 'sTR " already exists" >]);
-  begin match cdt with 
-    | ConstantEntry ce -> Global.add_constant sp ce
-    | ConstantRecipe r -> Global.add_discharged_constant sp r
-  end;
+  Global.add_constant sp cdt;
   (match stre with
     | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
         (* Only qualifications including the sections segment from the current
@@ -197,10 +153,7 @@ let open_constant (sp,(_,stre)) =
   Nametab.push n (restrict_path n sp) (ConstRef sp)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = ConstantEntry { 
-  const_entry_body = mkProp;
-  const_entry_type = None;
-  const_entry_opaque = false }
+let dummy_constant_entry = ParameterEntry mkProp
 
 let export_constant (ce,stre) = Some (dummy_constant_entry,stre)
 
@@ -215,11 +168,10 @@ let (in_constant, out_constant) =
 
 let hcons_constant_declaration = function
   | (ConstantEntry ce, stre) ->
-      (ConstantEntry 
-	 { const_entry_body = hcons1_constr ce.const_entry_body;
-	   const_entry_type = option_app hcons1_constr ce.const_entry_type;
-           const_entry_opaque = ce.const_entry_opaque },
-	 stre)
+      (ConstantEntry
+       { const_entry_body = hcons1_constr ce.const_entry_body;
+	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
+         const_entry_opaque = ce.const_entry_opaque }, stre)
   | cd -> cd
 
 let declare_constant id cd =
@@ -228,8 +180,8 @@ let declare_constant id cd =
   if is_implicit_args() then declare_constant_implicits sp;
   sp
 
-let redeclare_constant sp cd =
-  add_absolutely_named_leaf sp (in_constant cd);
+let redeclare_constant sp (cd,stre) =
+  add_absolutely_named_leaf sp (in_constant (GlobalRecipe cd,stre));
   if is_implicit_args() then declare_constant_implicits sp
 
 (* Inductives. *)
@@ -314,9 +266,6 @@ let is_constant sp =
   try let _ = Global.lookup_constant sp in true with Not_found -> false
 
 let constant_strength sp = Spmap.find sp !csttab
-
-let constant_or_parameter_strength sp =
-  try constant_strength sp with Not_found -> NeverDischarge
 
 let get_variable id = 
   let (p,(c,ty,cst),str) = Idmap.find id !vartab in
@@ -431,3 +380,8 @@ let is_global id =
     is_dirpath_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false
+
+let strength_of_global = function
+  | ConstRef sp -> constant_strength sp
+  | VarRef id -> variable_strength id
+  | IndRef _ | ConstructRef _ -> NeverDischarge 

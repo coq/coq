@@ -422,7 +422,7 @@ let hide_ident_or_numarg_tactic s tac =
    | _ -> assert false in
   add_tactic s tacfun;
   fun id -> vernac_tactic(s,[Identifier id])
-      
+
 
 (* Obsolete, remplace par intros_unitl_n ?
 let intros_do n g = 
@@ -1844,7 +1844,8 @@ let abstract_subproof name tac gls =
       with e when catchable_exception e -> 
 	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
-    let sp = Declare.declare_constant na (ConstantEntry const,strength) in
+    let cd = Safe_typing.ConstantEntry const in
+    let sp = Declare.declare_constant na (cd,strength) in
     let newenv = Global.env() in
     Declare.constr_of_reference (ConstRef sp)
   in
