@@ -238,6 +238,21 @@ let matches_core convert pat c =
 
       | PSort (RType _), Sort (Type _) -> sigma
 
+      | PApp (PMeta (Some n),args1), App (c2,args2) ->
+          let p = Array.length args2 - Array.length args1 in
+          if p>=0 then
+            let args21, args22 = array_chop p args2 in
+            let sigma =
+	      let depth = List.length stk in
+              let c = mkApp(c2,args21) in
+	      let frels = Intset.elements (free_rels c) in
+              if List.for_all (fun i -> i > depth) frels then
+	        constrain (n,lift (-depth) c) sigma
+              else
+	        raise PatternMatchingFailure in
+            array_fold_left2 (sorec stk) sigma args1 args22
+          else raise PatternMatchingFailure
+
       | PApp (c1,arg1), App (c2,arg2) ->
         (try array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
          with Invalid_argument _ -> raise PatternMatchingFailure)
