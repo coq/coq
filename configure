@@ -125,7 +125,7 @@ case $arch_spec in
 	    ARCH=`/usr/ucb/arch`
 	elif test -x /bin/uname && (/bin/uname -s | grep -q -i CYGWIN) ; then
 	    ARCH=win32
-	    # cygwin returns a name of the form \\cygdrive\\c\\... 
+	    # cygwin returns a name of the form /cygdrive/c/... 
 	    # that coqc does not understand; need to transform it
 	    COQTOP=`echo $COQTOP | sed -e "s#.*cygdrive.\(.\)#\1:#"`
 	elif test -x /usr/bin/uname ; then
@@ -143,10 +143,10 @@ esac
 
 case $ARCH in
   win32)
-	 bindir_def=\\coq\\bin
-	 libdir_def=\\coq\\lib
-	 mandir_def=\\coq\\man
-	 emacslib_def=\\coq\\emacs;;
+	 bindir_def=C:\\coq\\bin
+	 libdir_def=C:\\coq\\lib
+	 mandir_def=C:\\coq\\man
+	 emacslib_def=C:\\coq\\emacs;;
   *)
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
@@ -341,9 +341,9 @@ fi
 
 # Tell on windows if ocaml understands cygwin or windows path formats
 
-"$CAMLC" -o config/giveostype config/giveostype.ml
-CAMLOSTYPE=`config/giveostype`
-rm config/giveostype
+#"$CAMLC" -o config/giveostype config/giveostype.ml
+#CAMLOSTYPE=`config/giveostype`
+#rm config/giveostype
 
 case $ARCH in
     win32)
@@ -385,65 +385,20 @@ echo "    man pages  will be copied in $MANDIR"
 echo "    emacs mode will be copied in $EMACSLIB"
 echo ""
 
-# Building the $COQTOP/config/Makefile file
+#####################################################
+# Building the $COQTOP/config/coq_config.ml file
+#####################################################
 
-rm -f $COQTOP/config/Makefile
-
+# damned backslashes under M$Windows
 case $ARCH in
     win32)
-	BINDIR=`echo $BINDIR |sed -e 's|\\\|/|g'`
-	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
-  	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`
-   	EMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|/|g'`
+	CAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
+	BINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
+	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
+  	MANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
+   	EMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
 	;;
 esac
-
-sed -e "s|LOCALINSTALLATION|$local|" \
-    -e "s|COQTOPDIRECTORY|$COQTOP|" \
-    -e "s|COQVERSION|$VERSION|" \
-    -e "s|BINDIRDIRECTORY|$BINDIR|" \
-    -e "s|COQLIBDIRECTORY|$LIBDIR|" \
-    -e "s|MANDIRDIRECTORY|$MANDIR|" \
-    -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
-    -e "s|EMACSCOMMAND|$EMACS|" \
-    -e "s|ARCHITECTURE|$ARCH|" \
-    -e "s|OSDEPENDENTLIBS|$OSDEPLIBS|" \
-    -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
-    -e "s|CAMLLIBDIRECTORY|$CAMLLIB|" \
-    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
-    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
-    -e "s|CAMLP4TOOL|$camlp4o|" \
-    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
-    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
-    -e "s|BESTCOMPILER|$best_compiler|" \
-    -e "s|EXECUTEEXTENSION|$EXE|" \
-    -e "s|BYTECAMLC|$bytecamlc|" \
-    -e "s|NATIVECAMLC|$nativecamlc|" \
-    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
-    -e "s|REALSOPT|$reals|" \
-    -e "s|COQIDEOPT|$COQIDE|" \
-      $COQTOP/config/Makefile.template > $COQTOP/config/Makefile
-
-chmod a-w $COQTOP/config/Makefile
-
-# Building the $COQTOP/dev/ocamldebug-v7 file
-
-if test "$coq_debug_flag" = "-g" ; then
-  rm -f $COQTOP/dev/ocamldebug-v7
-  if [ "$CAMLP4LIB" = "+camlp4" ] ; then
-    CAMLP4LIBFORCAMLDEBUG=$CAMLLIB/camlp4
-  else
-    CAMLP4LIBFORCAMLDEBUG=$CAMLP4LIB
-  fi
-  sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
-      -e "s|COQLIBDIRECTORY|$LIBDIR|" \
-      -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
-      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIBFORCAMLDEBUG|" \
-      $COQTOP/dev/ocamldebug-v7.template > $COQTOP/dev/ocamldebug-v7
-  chmod a-w,a+x $COQTOP/dev/ocamldebug-v7
-fi
-
-# Building the $COQTOP/config/coq_config.ml file
 
 mlconfig_file=$COQTOP/config/coq_config.ml
 rm -f $mlconfig_file
@@ -483,13 +438,71 @@ echo "let contrib_dirs = [" >> $mlconfig_file
 subdirs contrib
 echo "]" >> $mlconfig_file
 
-if test "$CAMLOSTYPE" = "Win32" ; then
-# We change: / -> \\ and \ -> \\ (dos paths)
-# This is a bit tricky
-sed -e "s|\\\\\\\\\\\\\\\|\\\|" -e "s|/|\\\|g"  -e "s|\\\|\\\\\\\|g" $mlconfig_file > $mlconfig_file.win
-mv $mlconfig_file.win $mlconfig_file
-fi
 chmod a-w $mlconfig_file
+
+
+###############################################
+# Building the $COQTOP/config/Makefile file
+###############################################
+
+rm -f $COQTOP/config/Makefile
+
+# damned backslashes under M$Windows (bis)
+case $ARCH in
+    win32)
+	BINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
+	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
+  	MANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
+   	EMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
+	;;
+esac
+
+sed -e "s|LOCALINSTALLATION|$local|" \
+    -e "s|COQTOPDIRECTORY|$COQTOP|" \
+    -e "s|COQVERSION|$VERSION|" \
+    -e "s|BINDIRDIRECTORY|$BINDIR|" \
+    -e "s|COQLIBDIRECTORY|$LIBDIR|" \
+    -e "s|MANDIRDIRECTORY|$MANDIR|" \
+    -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
+    -e "s|EMACSCOMMAND|$EMACS|" \
+    -e "s|ARCHITECTURE|$ARCH|" \
+    -e "s|OSDEPENDENTLIBS|$OSDEPLIBS|" \
+    -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
+    -e "s|CAMLLIBDIRECTORY|$CAMLLIB|" \
+    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
+    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+    -e "s|CAMLP4TOOL|$camlp4o|" \
+    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
+    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
+    -e "s|BESTCOMPILER|$best_compiler|" \
+    -e "s|EXECUTEEXTENSION|$EXE|" \
+    -e "s|BYTECAMLC|$bytecamlc|" \
+    -e "s|NATIVECAMLC|$nativecamlc|" \
+    -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
+    -e "s|REALSOPT|$reals|" \
+    -e "s|COQIDEOPT|$COQIDE|" \
+      $COQTOP/config/Makefile.template > $COQTOP/config/Makefile
+
+chmod a-w $COQTOP/config/Makefile
+
+##################################################
+# Building the $COQTOP/dev/ocamldebug-v7 file
+####################################################
+
+if test "$coq_debug_flag" = "-g" ; then
+  rm -f $COQTOP/dev/ocamldebug-v7
+  if [ "$CAMLP4LIB" = "+camlp4" ] ; then
+    CAMLP4LIBFORCAMLDEBUG=$CAMLLIB/camlp4
+  else
+    CAMLP4LIBFORCAMLDEBUG=$CAMLP4LIB
+  fi
+  sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
+      -e "s|COQLIBDIRECTORY|$LIBDIR|" \
+      -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
+      -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIBFORCAMLDEBUG|" \
+      $COQTOP/dev/ocamldebug-v7.template > $COQTOP/dev/ocamldebug-v7
+  chmod a-w,a+x $COQTOP/dev/ocamldebug-v7
+fi
 
 echo "If anything in the above is wrong, please restart './configure'"
 echo
