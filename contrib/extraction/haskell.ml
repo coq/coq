@@ -103,7 +103,7 @@ let rec pp_expr par env args =
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
     | MLlam _ as a -> 
-      	let fl,a' = collect_lambda a in
+      	let fl,a' = collect_lams a in
 	let fl,env' = push_vars fl env in
 	let st = [< pp_abst (List.rev fl); pp_expr false env' [] a' >] in
 	if args = [] then
@@ -194,7 +194,7 @@ and pp_fix par env in_p (ids,bl) args =
      close_par par >]
 
 and pp_function env f t =
-  let bl,t' = collect_lambda t in
+  let bl,t' = collect_lams t in
   let bl,env' = push_vars bl env in
   [< f; pr_binding (List.rev bl);
      'sTR " ="; 'fNL; 'sTR "  ";

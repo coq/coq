@@ -81,8 +81,8 @@ let rec occurs_itvl k k' = function
   | MLcase(t,pv) -> 
       (occurs_itvl k k' t) ||
       (array_exists
-	 (fun (_,l,t') -> 
-	    let n = List.length l in occurs_itvl (k + n) (k' + n) t') pv)
+         (fun (_,l,t') -> 
+            let n = List.length l in occurs_itvl (k + n) (k' + n) t') pv)
   | MLfix(_,l,cl) -> 
       let n = Array.length l in occurs_itvl_vect (k + n) (k' + n) cl
   | MLcast(t,_) -> occurs_itvl k k' t
@@ -119,14 +119,14 @@ let ml_liftn k n c =
     | MLrel i as c -> if i < n then c else MLrel (i+k)
     | MLlam (id,t) -> MLlam (id, liftrec (n+1) t)
     | MLletin (id,a,b) -> MLletin (id, liftrec n a, liftrec (n+1) b)
-    | MLcase (t,pl) -> 
+    | MLcase (t,pv) -> 
 	MLcase (liftrec n t,
       	       	Array.map (fun (id,idl,p) -> 
 			     let k = List.length idl in
-			     (id, idl, liftrec (n+k) p)) pl)
-    | MLfix (n0,idl,pl) -> 
+			     (id, idl, liftrec (k+n) p)) pv)
+    | MLfix (n0,idl,pv) -> 
 	MLfix (n0,idl,
-	       let k = Array.length idl in Array.map (liftrec (n+k)) pl)
+	       let k = Array.length idl in Array.map (liftrec (k+n)) pv)
     | a -> ast_map (liftrec n) a
   in 
   if k = 0 then c else liftrec n c
@@ -196,6 +196,48 @@ let nb_occur a =
   in 
   count 1 a; !cpt
 
+(*s The two following functions test and create [MLrel n;...;MLrel 1] *)
+
+let rec test_eta_args n = function 
+  | [] -> n=0
+  | a :: q -> (a = (MLrel n)) && (test_eta_args (pred n) q)
+
+let rec make_eta_args n = 
+  if n = 0 then [] else (MLrel n)::(make_eta_args (pred n))
+  
+(*s [generalize_check k k' i] return true if there is a [(Rel j)] 
+   in [t] with [k<=i<=k'] *)
+
+exception Impossible
+
+let check_and_generalize (r0,l,c) = 
+  let nargs = List.length l in 
+  let rec genrec k k' = function 
+    | MLrel i as c -> 
+	if i<k then c 
+	else if i>k' then MLrel (i-nargs+1) 
+	else raise Impossible
+    | MLcons(r,args) when r=r0 -> 
+	if (test_eta_args nargs args) then MLrel k
+	else raise Impossible
+    | MLlam(id,t) -> MLlam(id,genrec (k + 1) (k' + 1) t)
+    | MLletin(id,t,t') -> MLletin(id,(genrec k k' t),(genrec (k+1) (k'+1) t'))
+    | MLcase(t,pv) -> 
+	MLcase(genrec k k' t,
+	       Array.map (fun (id,idl,t') -> 
+			    let n = List.length idl in 
+			    (id,idl,genrec (k+n) (k'+n) t')) pv)
+    | MLfix(n0,idl,pv) -> 
+	MLfix(n0,idl,
+	      let n = Array.length idl in Array.map (genrec (k+n) (k'+n)) pv)
+    | a -> ast_map (genrec k k') a
+  in genrec 1 nargs c  
+
+let check_case br = 
+  let f = check_and_generalize br.(0) in 
+  for i = 1 to Array.length br - 1 do 
+    if check_and_generalize br.(i) <> f then raise Impossible 
+  done; f
 
 (*s Some Beta-iota reductions + simplifications*)
 
@@ -206,38 +248,6 @@ let constructor_index = function
 let is_atomic = function 
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> true
   | _ -> false
-
-exception Impossible
-
-let check_identity_case br = 
-  let rec check_list k = function 
-    | [] -> ()
-    | t :: q -> 
-	if t <> MLrel k then raise Impossible;
-	check_list (k-1) q
-  in
-  let check_one_branch (r,l,t) = 
-    match t with 
-      | MLcons (r',l') -> 
-	  if r<>r' then raise Impossible;
-	  check_list (List.length l) l'
-      | _ -> raise Impossible
-  in 
-  Array.iter check_one_branch br
-
-
-let check_constant_case br = 
-  let (_,l,t) = br.(0) in
-  let n = List.length l in 
-  if occurs_itvl 1 n t then raise Impossible; 
-  let cst = ml_lift (-n) t in 
-  for i = 1 to Array.length br - 1 do 
-    let (_,l,t) = br.(i) in
-    let n = List.length l in
-    if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
-    then raise Impossible
-  done; cst
- 
 
 let all_constr br = 
   try 
@@ -250,7 +260,6 @@ let all_constr br =
     true
   with Impossible -> false
   
-
 let normalize a = 
   let o = optim() in 
   let rec simplify = function
@@ -308,10 +317,10 @@ let normalize a =
 	   | e' -> 
 	       let br' = Array.map (fun (n,l,t) -> (n,l,simplify t)) br in 
 	       if o then
-		 try check_identity_case br'; e' 
-		 with Impossible -> 
-		   try check_constant_case br' 
-		   with Impossible -> MLcase (e', br')
+		 try 
+		   let f = check_case br' in 
+		   simplify (MLapp (MLlam (anonymous,f),[e']))
+		 with Impossible -> MLcase (e', br')
 	       else MLcase (e', br'))
     | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
 	(* expansion of a letin in special cases *)
@@ -325,72 +334,65 @@ let normalize a =
 	ast_map simplify a 
   in simplify (merge_app a)
 
-(*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
+let normalize_decl = function
+ | Dglob (id, a) -> Dglob (id, normalize a)
+ | d -> d
+
+(*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
     the list [idn;...;id1] and the term [t]. *)
 
-let collect_lambda = 
+let collect_lams = 
   let rec collect acc = function
     | MLlam(id,t) -> collect (id::acc) t
     | x           -> acc,x
   in 
   collect []
 
-let rec pass_n_lambda n = function 
-  | MLlam(_,t)-> pass_n_lambda (n-1) t
-  | _ -> raise Impossible
+(* [named_abstract] does the converse of [collect_lambda] *)
 
-let rec test_eta n = function 
-  | [] -> n=0
-  | a :: q -> (a = (MLrel n)) && (test_eta (pred n) q)
-
-let rec make_args n = 
-  if n = 0 then [] else (MLrel n)::(make_args (pred n))
-  
-(* this abstract is written without lift on purpose *)
-let rec abstract ids a = match ids with
+let rec named_lams a = function 
   | [] -> a 
-  | id :: l -> abstract l (MLlam(id,a))
+  | id :: ids -> named_lams (MLlam(id,a)) ids
+
+let rec anonym_lams a = function 
+  | 0 -> a 
+  | n -> anonym_lams (MLlam(anonymous,a)) (pred n)
+
+(*s special treatment of non-mutual fixpoint for pretty-printing purpose *)
 
 let optimize_fix a = 
   if not (optim()) then a 
   else
-    let lams,b = collect_lambda a in 
-    let n = List.length lams in 
+    let ids,a' = collect_lams a in 
+    let n = List.length ids in 
     if n = 0 then a 
     else  
-      (match b with 
+      (match a' with 
 	 | MLfix(_,[|f|],[|c|]) ->
-	     let new_f = MLapp (MLrel (n+1),make_args n) in 
-	     let new_c = abstract lams (ml_subst new_f c)
+	     let new_f = MLapp (MLrel (n+1),make_eta_args n) in 
+	     let new_c = named_lams (ml_subst new_f c) ids
 	     in MLfix(0,[|f|],[|new_c|])
-	 | MLapp(b,ids) ->
-	     (match b with 
-		| MLfix(_,[|_|],[|_|]) when (test_eta n ids)-> b
-		| MLfix(_,[|f|],[|c|]) -> a
-(* TODO: tenir compte des occurrences des ids 
+	 | MLapp(a',args) ->
+	     (match a' with 
+		| MLfix(_,[|_|],[|_|]) when (test_eta_args n args)-> a'
+		| MLfix(_,[|f|],[|c|]) -> 
 		    (try 
+		      let m = List.length args in 
 		      let v = Array.make n 0 in 
-		      let m = List.length ids in 
-		      list_iter_i (fun i t -> 
-				     (match t with 
-					  MLrel j when v.(j-1)=0 -> v.(j-1)<-(succ i)
-					| _ -> raise Impossible)) ids;
-		      let args = array_fold_left_i
-				   (fun i accum j -> 
-				      let r = if j=0 then (succ i)+m else j 
-				      in (MLrel r) :: accum) [] v in
-		      let new_f = 
-			abstract (List.map (fun _ ->anonymous) ids)
-			  (MLapp (MLrel (m+n+1),args)) in  
-		      let new_c = abstract lams (normalize (ml_subst new_f c))
+		      for i=0 to (n-1) do v.(i)<-i done;
+		      let aux i = function 
+			  MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
+			| _ -> raise Impossible
+		      in
+		      list_iter_i aux args; 
+		      let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
+		      let new_f = anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
+		      let new_c = named_lams (normalize (MLapp ((ml_subst new_f c),args))) ids
 		      in MLfix(0,[|f|],[|new_c|])
 		    with Impossible -> a) 
-*)		| _ -> a)
+		| _ -> a)
 	 | _ -> a)
 
-let normalize_decl = function
- | Dglob (id, a) -> Dglob (id, normalize a)
- | d -> d
 
 (*s Utility functions used for the decision of expansion *)
 

@@ -158,6 +158,7 @@ let expr_needs_par = function
   | _        -> false 
 
 let rec pp_expr par env args = 
+  let par' = args <> [] || par in 
   let apply st = match args with
     | [] -> st
     | _  -> hOV 2 [< open_par par; st; 'sPC;
@@ -171,16 +172,12 @@ let rec pp_expr par env args =
 	let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
     | MLlam _ as a -> 
-      	let fl,a' = collect_lambda a in
+      	let fl,a' = collect_lams a in
 	let fl,env' = push_vars fl env in
 	let st = [< pp_abst (List.rev fl); pp_expr false env' [] a' >] in
-	if args = [] then
-          [< open_par par; st; close_par par >]
-        else
-          apply [< 'sTR "("; st; 'sTR ")" >]
+	[< open_par par'; st; close_par par' >]
     | MLletin (id,a1,a2) ->
 	let id',env' = push_vars [id] env in
-	let par' = par || args <> [] in
 	let par2 = not par' && expr_needs_par a2 in
 	apply 
 	  (hOV 0 [< open_par par';
@@ -199,12 +196,20 @@ let rec pp_expr par env args =
     | MLcons (r,args') ->
 	[< open_par par; pp_global r; 'sPC;
 	   pp_tuple (pp_expr true env []) args'; close_par par >]
+    | MLcase (t,[|x|])->
+	apply 
+	  (hOV 0 [< open_par par'; 'sTR "let ";  
+		    pp_one_pat 
+		      [< 'sTR " ="; 'sPC;
+			 pp_expr false env [] t; 'sPC; 'sTR "in" >] 
+		      env x;
+		    close_par par' >])
     | MLcase (t, pv) ->
       	apply
-      	  [< if args <> [] then [< 'sTR "(" >]  else open_par par;
+      	  [< open_par par';
       	     v 0 [< 'sTR "match "; pp_expr false env [] t; 'sTR " with";
 		    'fNL; 'sTR "  "; pp_pat env pv >];
-	     if args <> [] then [< 'sTR ")" >] else close_par par >]
+	     close_par par' >]
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
@@ -222,18 +227,17 @@ let rec pp_expr par env args =
 	[< open_par true; 'sTR "Obj.magic"; 'sPC; 
 	   pp_expr false env args a; close_par true >]
 
+and pp_one_pat s env (r,ids,t) = 
+  let ids,env' = push_vars (List.rev ids) env in
+  let par = expr_needs_par t in
+  [< pp_global r; 
+     if ids = [] then [< >] 
+     else [< 'sTR " "; pp_boxed_tuple pr_id (List.rev ids) >];
+     s; 'sPC; pp_expr par env' [] t >]
+  
 and pp_pat env pv = 
-  let pp_one_pat (name,ids,t) =
-    let ids,env' = push_vars (List.rev ids) env in
-    let par = expr_needs_par t in
-    hOV 2 [< pp_global name;
-	     begin match ids with 
-	       | [] -> [< >]
-	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id (List.rev ids) >]
-	     end;
-	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
-  in 
-  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
+  [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) 
+       (fun x -> hOV 2 (pp_one_pat (string " ->") env x)) pv >]
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
@@ -260,7 +264,7 @@ and pp_fix par env in_p (ids,bl) args =
      close_par par >]
 
 and pp_function env f t =
-  let bl,t' = collect_lambda t in
+  let bl,t' = collect_lams t in
   let bl,env' = push_vars bl env in
   let is_function pv =
     let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in

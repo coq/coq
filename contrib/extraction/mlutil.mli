@@ -42,15 +42,22 @@ val ml_subst : ml_ast -> ml_ast -> ml_ast
 val subst_glob_ast : global_reference -> ml_ast -> ml_ast -> ml_ast
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
-    the list [id1;...;idn] and the term [t]. *)
+    the list [idn;...;id1] and the term [t]. *)
 
-val collect_lambda : ml_ast -> identifier list * ml_ast
+val collect_lams : ml_ast -> identifier list * ml_ast
+
+(* [named_abstract] is the converse of [collect_lambda]. *)
+
+val named_lams : ml_ast -> identifier list -> ml_ast
+
+val anonym_lams : ml_ast -> int -> ml_ast
+
 
 (*s Some transformations of ML terms. [normalize] and [normalize_decl] reduce
     all beta redexes (when the argument does not occur, it is just
     thrown away; when it occurs exactly once it is substituted; otherwise
     a let in redex is created for clarity) and iota redexes, plus some other
-    optimizations. *)
+    optimizations. *)  (* TO UPDATE *)
 
 val normalize : ml_ast -> ml_ast
 val normalize_decl : ml_decl -> ml_decl

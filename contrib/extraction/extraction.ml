@@ -244,10 +244,6 @@ let decompose_lam_eta n env c =
     let e = applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
     (rb, e)
 
-let rec abstract_n n a = 
-  if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
-
-
 
 (*s Error message when extraction ends on an axiom. *)
 
@@ -573,7 +569,7 @@ and abstract_constructor cp  =
     | (_,Arity) :: l -> 
 	abstract rels i l
   in
-  abstract_n n (abstract [] 1 s)
+  anonym_lams (ml_lift n (abstract [] 1 s)) n
 
 (* Extraction of a case *)
 
