@@ -657,12 +657,16 @@ let pr_level ntn (from,args) =
 let cache_syntax_extension (_,(_,(prec,prec8),ntn,gr,se)) =
   try 
     let oldprec, oldprec8 = Symbols.level_of_notation ntn in
-    if prec8 <> oldprec8 then errorlabstrm ""
-      (str ((if Options.do_translate () then "For new syntax, notation " else "Notation ")
-       ^ntn^" is already defined") ++ spc() ++ pr_level ntn oldprec8 ++ spc() 
-      ++ str "while it is now required to be" ++ spc() ++ 
-      pr_level ntn prec8)
+    if prec8 <> oldprec8 & (Options.do_translate () or not !Options.v7) then
+      errorlabstrm ""
+	(str ((if Options.do_translate () then "For new syntax, notation "
+	else "Notation ")
+	^ntn^" is already defined") ++ spc() ++ pr_level ntn oldprec8 ++ 
+	spc() ++ str "while it is now required to be" ++ spc() ++ 
+	pr_level ntn prec8)
     else
+      (* Inconsistent v8 notations but not while translating; forget... *)
+      ();
     (* V8 notations are consistent (from both translator or v8) *)
     if prec <> None then begin
       (* Update the V7 parsing rule *)
