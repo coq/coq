@@ -11,6 +11,7 @@ open Sign
 open Environ
 open Printer
 open Reduction
+open Retyping
 open Tacmach
 open Proof_trees
 open Clenv
@@ -21,6 +22,7 @@ open Tactics
 open Elim
 open Equality
 open Typing
+open Pattern
 
 (* [make_inv_predicate (ity,args) C]
   
@@ -70,14 +72,15 @@ let named_push_lambda_and_liftl env n hyps t l =
 
 let dest_match_eq gls eqn =
   try 
-    dest_match gls eqn eq_pattern
-  with _ -> 
+    pf_matches gls (eq_pattern ()) eqn
+  with PatternMatchingFailure -> 
     (try 
-       dest_match gls eqn eqT_pattern
-     with _ -> 
+       pf_matches gls (eqT_pattern ()) eqn
+     with PatternMatchingFailure -> 
        (try 
-	  dest_match gls eqn idT_pattern
-        with _ -> errorlabstrm "dest_match_eq" 
+	  pf_matches gls (idT_pattern ()) eqn
+        with PatternMatchingFailure ->
+	  errorlabstrm "dest_match_eq" 
 	    [< 'sTR "no primitive equality here" >]))
     
 let type_of_predicate_argument gls ity globargs =
@@ -114,16 +117,13 @@ let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
                 (nf_betadeltaiota env sigma (mind_arity ity)) globargs in 
   let len = List.length largs_init in
   let hyps = [] in
-  let largs = (List.map insert_lifted largs_init) in
+  let largs = List.map insert_lifted largs_init in
   let (hyps,larg_var_list,concl,dephyp) =                   
     if not dep_option (* (dependent (VAR id) concl) *) then 
       (* We push de arity and leave concl unchanged *)
       let hyps_ar,_,largs_ar = named_push_and_liftl env len hyps arity largs in
       let larg_var_list =
-        list_map_i 
-          (fun i ai ->
-             insert_lifted
-               (DOP2(implicit,extract_lifted ai,Rel(len-i+1)))) 1 largs
+        list_map_i (fun i ai -> (extract_lifted ai,len-i+1)) 1 largs
       in 
       (hyps_ar,larg_var_list,concl,0)
     else 
@@ -147,10 +147,7 @@ let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
                                   (nb_prod arity +1)))) 
 	in
         let larg_var_list =
-          list_map_i
-            (fun i ai->
-               insert_lifted
-                 (DOP2(implicit,extract_lifted ai,Rel(len-i+2)))) 1 largs 
+          list_map_i (fun i ai-> (extract_lifted ai,len-i+2)) 1 largs 
         in 
 	(hyps,larg_var_list,c3,1)
   in
@@ -159,19 +156,15 @@ let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
   (* Now, we can recurse down this list, for each ai,(Rel k) whether to
      push <Ai>(Rel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of larg_var_list *)
-  let rec build_concl (hyps,l) =
-    match l with
+  let rec build_concl hyps n = function
       | [] ->
-          let neqns = ((List.length hyps-dephyp)-len) in
+          let neqns = (List.length hyps) - dephyp - len in
+	  let (hyps1,hyps2) = list_chop neqns hyps in
           let hyps,concl,_ = prod_and_popl neqns hyps concl [] in
-          let _,concl,_ = lam_and_popl (List.length hyps) hyps concl [] in 
-	  (concl,neqns)
-      | t::restlist ->
-          let (ai,k) = 
-	    match extract_lifted t with 
-	      | DOP2(_,ai,Rel k) -> (ai,k) 
-	      | _ -> assert false 
-	  in
+	  (lam_it (prod_it concl hyps1) hyps2,neqns)
+      | (ai,k)::restlist ->
+	  let ai = lift n ai in
+	  let k = k+n in
           let tk = (Typeops.relative (change_sign env (sign,hyps)) k).uj_val in
           let (lhs,eqnty,rhs) =
             if closed0 tk then 
@@ -180,15 +173,15 @@ let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
 	      make_iterated_tuple Evd.empty
 		(change_sign env (sign,hyps))
 		(ai,type_of env Evd.empty ai)
-		(Rel k,tk) 
+		(Rel k,tk)
 	  in
-          let type_type_rhs = type_of env sigma (type_of env sigma rhs) in
-          let sort = pf_type_of gls (pf_concl gls) in 
+          let type_type_rhs = get_sort_of env sigma (type_of env sigma rhs) in
+          let sort = destSort (pf_type_of gls (pf_concl gls)) in 
           let eq_term = find_eq_pattern type_type_rhs sort in
           let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in 
-	  build_concl (push_and_lift (Anonymous,eqn) hyps restlist) 
+	  build_concl ((Anonymous,eqn)::hyps) (n+1) restlist
   in
-  let (predicate,neqns) = build_concl (hyps,larg_var_list) in
+  let (predicate,neqns) = build_concl hyps 0 larg_var_list in
   (* OK - this predicate should now be usable by res_elimination_then to
      do elimination on the conclusion. *)
   (predicate,neqns)
@@ -253,7 +246,7 @@ let rec dependent_hyps id idlist sign =
     | [] -> []
     | (id1::l) -> 
 	let id1ty = snd (lookup_var id1 sign) in  
-	if occur_var id id1ty.body then id1::dep_rec l else dep_rec l
+	if occur_var id (body_of_type id1ty) then id1::dep_rec l else dep_rec l
   in 
   dep_rec idlist 
 
@@ -279,7 +272,7 @@ let split_dep_and_nodep idl gl =
 
 let dest_eq gls t =
   match dest_match_eq gls t with
-    | [x;y;z] -> (x,y,z)
+    | [(1,x);(2,y);(3,z)] -> (x,y,z)
     | _ -> error "dest_eq: should be an equality"
 
 (* invariant: ProjectAndApplyNoThining simplifies the clause (an equality) .
@@ -513,7 +506,7 @@ let (half_dinv_with, dinv_with, dinv_clear_with) =
 	 | [ic; Identifier id; Command com] ->
              fun gls -> 
 	       inv false (com_of_id ic)
-		 (Some (pf_constr_of_com gls com)) true id gls
+		 (Some (pf_interp_constr gls com)) true id gls
 	 | _ -> anomaly "DInvWith called with bad args")
   in
   ((fun id com -> gentac [hinv_kind; Identifier id; Command com]),

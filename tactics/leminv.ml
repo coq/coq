@@ -24,7 +24,7 @@ open Inv
 (* Fonctions temporaires pour relier la forme castée et la forme jugement *)
 let tsign_of_csign (idl,tl) = (idl,List.map outcast_type tl)
 
-let csign_of_tsign (idl,tl) = (idl,List.map incast_type tl)
+let csign_of_tsign = map_sign_typ incast_type
 (* FIN TMP *)
 
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
@@ -84,7 +84,7 @@ let thin_hyps_to_term (hyps,t) =
 
 let get_local_sign sign =
   let lid = ids_of_sign sign in
-  let globsign = initial_sign() in
+  let globsign = Global.var_context() in
   let add_local id res_sign = 
     if not (mem_sign globsign id) then 
       add_sign (lookup_sign id sign) res_sign
@@ -100,7 +100,7 @@ let get_local_sign sign =
  * it returns both the pair (id,(sign_prefix id sign)) *)
 
 let max_prefix_sign lid sign =
-  let rec max_rec (resid,prefix)  = function
+  let rec max_rec (resid,prefix) = function
     | [] -> (resid,prefix)
     | (id::l) -> 
 	let pre = sign_prefix id sign in  
@@ -109,8 +109,9 @@ let max_prefix_sign lid sign =
         else 
 	  max_rec (resid,prefix) l
   in
-  let (id::l) = lid in 
-  max_rec (id, sign_prefix id sign) l
+  match lid with 
+    | [] -> nil_sign
+    | id::l -> snd (max_rec (id, sign_prefix id sign) l)
 
 let rel_of_env env = 
   let rec rel_rec = function 
@@ -126,12 +127,7 @@ let build_app op env = applist (op, List.rev (rel_of_env env))
 let prod_and_pop_named = function
   | ([], body, l, acc_ids) -> error "lam_and_pop"
   | (((na,t)::tlenv), body, l, acc_ids) -> 
-      let (Name id)=
-	if na=Anonymous then 
-	  Name(next_ident_away (id_of_string "a") acc_ids)
-        else 
-	  na
-      in 
+      let id = next_name_away_with_default "a" na acc_ids in
       (tlenv,DOP2(Prod,t,DLAM((Name id),body)),
        List.map (function 
 		   | (0,x) -> (0,lift (-1) x)
@@ -163,13 +159,15 @@ let prod_and_popl_named  n env t l =
    where P: P:(x_bar:T_bar)(H:(I t_bar)->[sort]     
 *)
 
+(* Adaption rapide : à relire *)
 let compute_first_inversion_scheme sign i sort dep_option =
-  let (ity,largs) = find_mrectype empty_evd i in
-  let ar = mind_arity ity in 
+  let globenv = Global.env () in
+  let (ity,largs) = find_mrectype globenv Evd.empty i in
+  let ar = Global.mind_arity ity in 
   (* let ar = nf_betadeltaiota empty_evd (mind_arity ity) in *)
   let fv = global_vars i in
   let thin_sign = thin_hyps_to_term (sign,i) in
-  if not(same_members fv (ids_of_sign thin_sign)) then
+  if not(list_subset fv (ids_of_sign thin_sign)) then
     errorlabstrm "lemma_inversion"
       [< 'sTR"Cannot compute lemma inversion when there are" ; 'sPC ;
 	 'sTR"free variables in the types of an inductive" ; 'sPC ;
@@ -179,13 +177,13 @@ let compute_first_inversion_scheme sign i sort dep_option =
     let (pty,goal) =
       let (env,_,_) = push_and_liftl (nb_prod ar) []  ar [] in
       let h = next_ident_away (id_of_string "P") (ids_of_sign sign) in
-      let (env1,_)= push_and_lift (Name h, (build_app ity env)) env [] in
+      let (env1,_)= push_and_lift (Name h, (build_app (mkMutInd ity) env)) env [] in
       let (_,pty,_) = prod_and_popl_named (List.length env1) env1 sort [] in 
       let pHead= applist(VAR p, largs@[Rel 1]) 
-      in  (pty, Environ.prod_name(Name h,i,pHead))
+      in  (pty, Environ.prod_name globenv (Name h,i,pHead))
     in 
     (prepend_sign thin_sign 
-       (add_sign (p,nf_betadeltaiota empty_evd pty) nil_sign),
+       (add_sign (p,nf_betadeltaiota globenv Evd.empty pty) nil_sign),
        goal)
   else  
     let local_sign = get_local_sign thin_sign in 
@@ -196,11 +194,9 @@ let compute_first_inversion_scheme sign i sort dep_option =
       (it_sign (fun b id ty -> mkNamedProd id ty b) 
 	 sort local_sign, mkArrow i pHead) 
     in 
-    let npty = nf_betadeltaiota empty_evd pty in
+    let npty = nf_betadeltaiota globenv Evd.empty pty in
     let lid = global_vars npty in 
-    let maxprefix = 
-      if lid=[] then nil_sign else snd (max_prefix_sign lid thin_sign)
-    in 
+    let maxprefix = max_prefix_sign lid thin_sign in
     (prepend_sign local_sign (add_sign (p,npty)  maxprefix), goal)
 
 (* [inversion_scheme sign I]
@@ -211,15 +207,15 @@ let compute_first_inversion_scheme sign i sort dep_option =
    build a dependent lemma or a non-dependent one *)
 
 let inversion_scheme sign i sort dep_option inv_op =
-  let (i,sign) = add_prods_sign empty_evd (i,sign) in
+  let (i,sign) = add_prods_sign Evd.empty (i,sign) in
   let sign = csign_of_tsign sign in
   let (invSign,invGoal) =
     compute_first_inversion_scheme sign i sort dep_option in
-  let invSign = castify_sign empty_evd invSign in
-  if (not((subset (global_vars invGoal) (ids_of_sign invSign)))) then
+  let invSign = castify_sign Evd.empty invSign in
+  if (not((list_subset (global_vars invGoal) (ids_of_sign invSign)))) then
     errorlabstrm "lemma_inversion"
       [< 'sTR"Computed inversion goal was not closed in initial signature" >];
-  let invGoalj = fexecute empty_evd invSign invGoal in
+  let invGoalj = get_type_of Evd.empty invSign invGoal in
   let pfs =
     mk_pftreestate
       (mkGOAL (mt_ctxt Spset.empty) invSign (j_val_cast invGoalj)) in
@@ -315,8 +311,8 @@ let _ =
 	  VARG_COMMAND sort] ->
        fun () ->
 	 add_inversion_lemma_exn na 
-	   (constr_of_com empty_evd (initial_sign()) com)
-	   (constr_of_com empty_evd (initial_sign()) sort)
+	   (constr_of_com Evd.empty (initial_sign()) com)
+	   (constr_of_com Evd.empty (initial_sign()) sort)
 	   false (inversion_clear false))
 
 let _ = 
@@ -337,8 +333,8 @@ let _ =
 	  VARG_COMMAND sort] ->
        fun () ->
 	 add_inversion_lemma_exn na 
-	   (constr_of_com empty_evd (initial_sign()) com)
-	   (constr_of_com empty_evd (initial_sign()) sort)
+	   (constr_of_com Evd.empty (initial_sign()) com)
+	   (constr_of_com Evd.empty (initial_sign()) sort)
 	   false (inv false (Some false) None false))
 
 let _ = 
@@ -349,8 +345,8 @@ let _ =
 	  VARG_COMMAND sort] ->
        fun () ->
 	 add_inversion_lemma_exn na 
-	   (constr_of_com empty_evd (initial_sign()) com)
-	   (constr_of_com empty_evd (initial_sign()) sort)
+	   (constr_of_com Evd.empty (initial_sign()) com)
+	   (constr_of_com Evd.empty (initial_sign()) sort)
 	   true (inversion_clear true))
 
 let _ = 
@@ -361,8 +357,8 @@ let _ =
 	  VARG_COMMAND sort] ->
        fun () ->
 	 add_inversion_lemma_exn na
-	   (constr_of_com empty_evd (initial_sign()) com)
-	   (constr_of_com empty_evd (initial_sign()) sort)
+	   (constr_of_com Evd.empty (initial_sign()) com)
+	   (constr_of_com Evd.empty (initial_sign()) sort)
 	   true (inversion_clear true))
 
 (* ================================= *)
