@@ -37,17 +37,17 @@ Syntax constr
 
   level 8:
 
-    cases_exp_none [(MULTCASE $pred $tomatch)]
+    cases_exp_none [(CASES $pred $tomatch)]
       -> [ [<hov 0> (ELIMPRED $pred)
               [<hv 0> "Cases"[1 2] $tomatch:E [1 0] "of"] [1 0] "end"] ]
 
-  | cases_exp_one [(MULTCASE $pred $tomatch $eqn)]
+  | cases_exp_one [(CASES $pred $tomatch $eqn)]
       -> [ [<hov 0> (ELIMPRED $pred)
               [<hv 0> [<hv 0> "Cases"[1 2] $tomatch:E [1 0] "of"] [1 2]
                      $eqn [1 0]
                      "end"] ] ]
 
-  | cases_exp_many [(MULTCASE $pred $tomatch $eqn1 $eqn2 ($LIST $eqns))]
+  | cases_exp_many [(CASES $pred $tomatch $eqn1 $eqn2 ($LIST $eqns))]
       -> [ [<hov 0> (ELIMPRED $pred)
               [<v 0> [<hv 0> "Cases"[1 2] $tomatch:E [1 0] "of"] [1 2]
                      $eqn1 [1 0]
@@ -73,13 +73,13 @@ Syntax constr
   level 10:
     boolean_cases [(FORCEIF $pred $tomatch (EQN $c1 $_) (EQN $c2 $_))]
       -> [ [<hov 0> (ELIMPRED $pred)
-              [<hv 0> "if " [<hov 0> $tomatch:E ]
-                      [1 0] [<hov 0> "then" [1 1] $c1:E ]
-                      [1 0] [<hov 0> "else" [1 1] $c2:E ] ] ] ]
+              [<hv 0> "if " [<hov 0> $tomatch:L ]
+                      [1 0] [<hov 0> "then" [1 1] $c1:L ]
+                      [1 0] [<hov 0> "else" [1 1] $c2:L ] ] ] ]
 
   | let_cases [(FORCELET $pred $tomatch (EQN $c $pat))]
       -> [ [<hov 0> (ELIMPRED $pred)
               [<hv 0> "let " [<hov 0> (LETBINDER $pat) ] " ="
-                      [1 1] [<hov 0> $tomatch:E ] ]
-              [1 0] "in " [<hov 0> $c:E ] ] ]
+                      [1 1] [<hov 0> $tomatch:L ] ]
+              [1 0] "in " [<hov 0> $c:L ] ] ]
 .
