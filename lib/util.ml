@@ -551,6 +551,28 @@ let array_map3 f v1 v2 v3 =
     res
   end
 
+let array_map_left f a = (* Ocaml does not guarantee Array.map is LR *)
+  let l = Array.length a in (* (even if so), then we rewrite it *)
+  if l = 0 then [||] else begin
+    let r = Array.create l (f a.(0)) in
+    for i = 1 to l - 1 do
+      r.(i) <- f a.(i)
+    done;
+    r
+  end
+
+let array_map_left_pair f a g b =
+  let l = Array.length a in
+  if l = 0 then [||],[||] else begin
+    let r = Array.create l (f a.(0)) in
+    let s = Array.create l (g b.(0)) in
+    for i = 1 to l - 1 do
+      r.(i) <- f a.(i);
+      s.(i) <- g b.(i)
+    done;
+    r, s
+  end
+
 (* Matrices *)
 
 let matrix_transpose mat =
