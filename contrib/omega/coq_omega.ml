@@ -143,24 +143,11 @@ let hide_constr,find_constr,clear_tables,dump_tables =
  To use the constant Zplus, one must type "Lazy.force coq_Zplus"
  This is the right way to access to Coq constants in tactics ML code *)
 
-let init_dir = ["Coq";"Init"]
-let arith_dir = ["Coq";"Arith"]
-let logic_dir = ["Coq";"Logic"]
-let zarith_dir = ["Coq";"ZArith"]
-let coq_modules = [
-  zarith_dir@["fast_integer"];
-  zarith_dir@["zarith_aux"];
-  zarith_dir@["auxiliary"];
-  init_dir@["Datatypes"];
-  init_dir@["Peano"];
-  init_dir@["Logic"];
-  arith_dir@["Compare_dec"];
-  arith_dir@["Peano_dec"];
-  arith_dir@["Minus"];
-  logic_dir@["Decidable"]
-]
-
 open Coqlib
+
+let logic_dir = ["Coq";"Logic";"Decidable"]
+let coq_modules =
+  init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
 
 let constant = gen_constant_in_modules "Omega" coq_modules
 

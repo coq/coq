@@ -65,15 +65,10 @@ let init_constant dir s=gen_constant "Coqlib" ("Init"::dir) s
 let arith_dir = ["Coq";"Arith"]
 let arith_modules = [arith_dir]
 
+let narith_dir = ["Coq";"NArith"]
+
 let zarith_dir = ["Coq";"ZArith"]
-let zarith_base_modules = [
-  zarith_dir@["fast_integer"];
-  zarith_dir@["zarith_aux"];
-  zarith_dir@["auxiliary"];
-  zarith_dir@["ZArith_dec"];
-  zarith_dir@["Zmisc"];
-  zarith_dir@["Wf_Z"]
-]
+let zarith_base_modules = [narith_dir;zarith_dir]
 
 let init_dir = ["Coq";"Init"]
 let init_modules = [
