@@ -313,6 +313,12 @@ let occur_var_in_decl env hyp (_,c,typ) =
         occur_var env hyp (body_of_type typ) ||
         occur_var env hyp body
 
+(* Tests that t is a subterm of c *)
+let occur_term t c = 
+  let eq_constr_fail c = if eq_constr t c then raise Occur
+  in let rec occur_rec c = eq_constr_fail c; iter_constr occur_rec c
+  in try occur_rec c; false with Occur -> true
+
 (* returns the list of free debruijn indices in a term *)
 
 let free_rels m = 

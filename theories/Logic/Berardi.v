@@ -26,8 +26,6 @@
 }
 >> *)
 
-Require Elimdep.
-
 Set Implicit Arguments.
 
 Section Berardis_paradox.
@@ -51,7 +49,7 @@ Lemma AC_IF : (P,B:Prop)(e1,e2:P)(Q:P->Prop)
 Proof.
 Intros P B e1 e2 Q p1 p2.
 Unfold IFProp.
-Elim (EM B) using or_indd; Assumption.
+Case (EM B); Assumption.
 Qed.
 
 
@@ -82,13 +80,12 @@ Record retract_cond : Prop := {
     inv2: retract -> (a:A)(j2 (i2 a))==a
   }.
 
-Scheme retract_cond_indd := Induction for retract_cond Sort Prop.
 
 (** The dependent elimination above implies the axiom of choice: *)
 Lemma AC: (r:retract_cond) retract -> (a:A)((j2 r) ((i2 r) a))==a.
 Proof.
 Intros r.
-Elim r using retract_cond_indd; Simpl.
+Case r; Simpl.
 Trivial.
 Qed.
 

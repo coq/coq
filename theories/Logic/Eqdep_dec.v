@@ -24,8 +24,6 @@
 
 Set Implicit Arguments.
 
-Require Elimdep.
-
   (** Bijection between [eq] and [eqT] *)
   Definition eq2eqT: (A:Set)(x,y:A)x=y->x==y :=
     [A,x,_,eqxy]<[y:A]x==y>Cases eqxy of refl_equal => (refl_eqT ? x) end.
@@ -35,14 +33,12 @@ Require Elimdep.
 
   Lemma eq_eqT_bij: (A:Set)(x,y:A)(p:x=y)p==(eqT2eq (eq2eqT p)).
 Intros.
-Elim p using eq_indd.
-Reflexivity.
+Case p; Reflexivity.
 Save.
 
   Lemma eqT_eq_bij: (A:Set)(x,y:A)(p:x==y)p==(eq2eqT (eqT2eq p)).
 Intros.
-Elim p using eqT_indd.
-Reflexivity.
+Case p; Reflexivity.
 Save.
 
 
@@ -55,8 +51,7 @@ Section DecidableEqDep.
 
   Remark trans_sym_eqT: (x,y:A)(u:x==y)(comp u u)==(refl_eqT ? y).
 Intros.
-Elim u using eqT_indd.
-Trivial.
+Case u; Trivial.
 Save.
 
 
@@ -75,10 +70,10 @@ Save.
   Local nu_constant : (y:A)(u,v:x==y) (nu u)==(nu v).
 Intros.
 Unfold nu.
-Elim (eq_dec x y) using or_indd; Intros.
+Case (eq_dec x y); Intros.
 Reflexivity.
 
-Case b; Trivial.
+Case n; Trivial.
 Save.
 
 
@@ -87,8 +82,7 @@ Save.
 
   Remark nu_left_inv : (y:A)(u:x==y) (nu_inv (nu u))==u.
 Intros.
-Elim u using eqT_indd.
-Unfold nu_inv.
+Case u; Unfold nu_inv.
 Apply trans_sym_eqT.
 Save.
 
@@ -125,12 +119,12 @@ Save.
 Intros.
 Cut (proj (exT_intro A P x y) y)==(proj (exT_intro A P x y') y).
 Simpl.
-Elim (eq_dec x x) using or_indd.
+Case (eq_dec x x).
 Intro e.
 Elim e using K_dec; Trivial.
 
 Intros.
-Case b; Trivial.
+Case n; Trivial.
 
 Case H.
 Reflexivity.

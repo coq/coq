@@ -1638,7 +1638,9 @@ let general_case_analysis (c,lbindc) gl =
   let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma    = project gl in 
   let sort     = elimination_sort_of_goal gl in
-  let elim     = Indrec.make_case_gen env sigma mind sort in 
+  let case = if occur_term c (pf_concl gl) then Indrec.make_case_dep
+  else Indrec.make_case_gen in
+  let elim     = case env sigma mind sort in 
   general_elim (c,lbindc) (elim,[]) gl
     
 let simplest_case c = general_case_analysis (c,[])

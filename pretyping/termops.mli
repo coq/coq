@@ -67,6 +67,7 @@ val occur_var : env -> identifier -> types -> bool
 val occur_var_in_decl :
   env ->
   identifier -> 'a * types option * types -> bool
+val occur_term : constr -> constr -> bool
 val free_rels : constr -> Intset.t
 
 (* Substitution of metavariables *)
