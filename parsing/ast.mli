@@ -30,6 +30,8 @@ val dynamic : Dyn.t -> Coqast.t
 val set_loc : Coqast.loc -> Coqast.t -> Coqast.t
 
 val path_section : Coqast.loc -> section_path -> Coqast.t
+val section_path : string list -> string -> section_path
+
 
 (* ast destructors *)
 val num_of_ast : Coqast.t -> int

@@ -148,7 +148,10 @@ let (inClass,outClass) =
                     specification_function = (function x -> x) })
 
 let add_new_class (cl,s,stre,p) = 
-  Lib.add_anonymous_leaf (inClass ((cl,{cL_STR=s;cL_STRE=stre;cL_PARAM=p})))
+  let _ = 
+    Lib.add_anonymous_leaf (inClass ((cl,{cL_STR=s;cL_STRE=stre;cL_PARAM=p})))
+  in
+  ()
     
 let _ = 
   Summary.declare_summary "inh_graph"

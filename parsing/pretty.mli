@@ -27,18 +27,23 @@ val print_full_context_typ : unit -> std_ppcmds
 val print_crible : identifier -> unit
 val print_sec_context : string -> std_ppcmds
 val print_sec_context_typ : string -> std_ppcmds
-val print_val : context -> unsafe_judgment -> std_ppcmds
-val print_type : context -> unsafe_judgment -> std_ppcmds
+val print_val : unsafe_env -> unsafe_judgment -> std_ppcmds
+val print_type : unsafe_env -> unsafe_judgment -> std_ppcmds
 val print_eval :
-  'a reduction_function -> context -> unsafe_judgment -> std_ppcmds
-val implicit_args_msg : mutual_inductive_packet array -> std_ppcmds
-val print_mutual : path_kind -> mutual_inductive_body -> std_ppcmds
+  'a reduction_function -> unsafe_env -> unsafe_judgment -> std_ppcmds
+val implicit_args_msg : 
+  section_path -> mutual_inductive_packet array -> std_ppcmds
+val print_mutual : section_path -> mutual_inductive_body -> std_ppcmds
 val print_name : identifier -> std_ppcmds
 val print_opaque_name : identifier -> std_ppcmds
 val print_local_context : unit -> std_ppcmds
+
+(*i
 val print_extracted_name : identifier -> std_ppcmds
 val print_extraction : unit -> std_ppcmds
 val print_extracted_vars : unit -> std_ppcmds
+i*)
+
 val crible : (string -> unit assumptions -> constr -> unit) -> identifier ->
   unit
 val inspect : int -> std_ppcmds

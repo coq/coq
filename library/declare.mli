@@ -30,6 +30,8 @@ val declare_mind : mutual_inductive_entry -> unit
 
 val declare_eliminations : section_path -> unit
 
+val declare_syntax_constant : identifier -> constr -> unit
+
 
 (*s Corresponding test and access functions. *)
 
@@ -37,7 +39,10 @@ val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
 
 val is_variable : identifier -> bool
+val out_variable : section_path -> identifier * typed_type * strength
 val variable_strength : identifier -> strength
+
+val out_syntax_constant : identifier -> constr
 
 (*s It also provides a function [global_reference] to construct a global
   constr (a constant, an inductive or a constructor) from an identifier.
@@ -47,6 +52,7 @@ val variable_strength : identifier -> strength
 
 val global_operator : section_path -> identifier -> sorts oper * var_context
 val global_reference : path_kind -> identifier -> constr
+val global_reference_imps : path_kind -> identifier -> constr * int list
 
 val is_global : identifier -> bool
 

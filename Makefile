@@ -84,6 +84,12 @@ CMX=$(CMO:.cmo=.cmx)
 
 world: minicoq coqtop.byte dev/db_printers.cmo
 
+LINK=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY)  $(PARSING) $(PRETYPING)
+# $(PROOFS) $(TACTICS) $(TOPLEVEL)
+link: $(LINK)
+	ocamlc -o link $(LINK)
+	rm -f link 
+
 kernel: $(KERNEL)
 library: $(LIBRARY)
 proofs: $(PROOFS)

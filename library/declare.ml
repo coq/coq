@@ -135,12 +135,48 @@ let declare_mind mie =
   push_inductive_names sp mie;
   declare_inductive_implicits sp
 
+(* Syntax constants. *)
+
+let syntax_table = ref (Idmap.empty : constr Idmap.t)
+
+let _ = Summary.declare_summary
+	  "SYNTAXCONSTANT"
+	  { Summary.freeze_function = (fun () -> !syntax_table);
+	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
+	    Summary.init_function = (fun () -> syntax_table := Idmap.empty) }
+
+let add_syntax_constant id c =
+  syntax_table := Idmap.add id c !syntax_table
+
+let cache_syntax_constant (sp,c) = 
+  add_syntax_constant (basename sp) c;
+  Nametab.push (basename sp) sp
+
+let open_syntax_constant (sp,_) =
+  Nametab.push (basename sp) sp
+
+let (in_syntax_constant, out_syntax_constant) =
+  let od = {
+    cache_function = cache_syntax_constant;
+    load_function = (fun _ -> ());
+    open_function = open_syntax_constant;
+    specification_function = (fun x -> x) } in
+  declare_object ("SYNTAXCONSTANT", od)
+
+let declare_syntax_constant id c =
+  let sp = add_leaf id CCI (in_syntax_constant c) in
+  add_syntax_constant id c;
+  Nametab.push (basename sp) sp
+
+let out_syntax_constant id = Idmap.find id !syntax_table
+
 (* Test and access functions. *)
 
 let is_constant sp = failwith "TODO"
 let constant_strength sp = failwith "TODO"
 
 let is_variable id = failwith "TODO"
+let out_variable sp = failwith "TODO"
 let variable_strength id = failwith "TODO"
 
 (* Global references. *)
@@ -180,6 +216,17 @@ let global_reference kind id =
   let hyps = get_globals (Global.context ()) in
   let ids = ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
+
+let global_reference_imps kind id =
+  let c = global_reference kind id in
+  match c with
+    | DOPN (Const sp,_) -> 
+	c, list_of_implicits (constant_implicits sp)
+    | DOPN (MutInd (sp,i),_) -> 
+	c, list_of_implicits (inductive_implicits (sp,i))
+    | DOPN (MutConstruct ((sp,i),j),_) ->
+	c, list_of_implicits (constructor_implicits ((sp,i),j))
+    | _ -> assert false
 
 let is_global id =
   try 

@@ -26,10 +26,11 @@ type library_entry = section_path * node
   recent ones coming first). *)
 
 val add_leaf : identifier -> path_kind -> obj -> section_path
-val add_anonymous_leaf : obj -> unit
+val add_anonymous_leaf : obj -> section_path
 
 val contents_after : section_path option -> library_segment
 
+val map_leaf : section_path -> obj
 
 (*s Opening and closing a section. *)
 

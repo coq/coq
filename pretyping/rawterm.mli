@@ -29,7 +29,7 @@ type reference =
   | RConstruct of constructor_id * identifier list
   | RAbst of section_path
   | RVar of identifier
-  | REVar of section_path * identifier list
+  | REVar of int * identifier list
   | RMeta of int
 
 type cases_style = PrintLet | PrintIf | PrintCases

@@ -46,6 +46,12 @@ let path_section loc sp =
   let (sl,bn,pk) = repr_path sp in
   Coqast.Path(loc,List.rev(string_of_id bn :: sl), string_of_kind pk)
 
+let section_path sl k =
+  match List.rev sl with
+    | s::pa -> 
+	make_path pa (id_of_string s) (kind_of_string k)
+    | [] -> invalid_arg "section_path"
+
 (* raising located exceptions *)
 let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))

@@ -6,10 +6,13 @@ open Util
 open Names
 open Generic
 open Term
+open Constant
 open Inductive
 open Sign
-open Printer
 open Reduction
+open Environ
+open Instantiate
+open Declare
 open Impargs
 open Libobject
 open Printer
@@ -38,11 +41,12 @@ let print_basename_mind sp mindid =
 
 let print_closed_sections = ref false
 
-let print_typed_value_in_sign sign (trm,typ) =
+let print_typed_value_in_env env (trm,typ) =
+  let sign = get_globals (Environ.context env) in
   [< term0 (gLOB sign) trm ; 'fNL ;
      'sTR "     : "; term0 (gLOB sign) typ ; 'fNL >]
 
-let print_typed_value = print_typed_value_in_sign nil_sign
+let print_typed_value x = print_typed_value_in_env (Global.unsafe_env()) x
 			  		  
 let print_recipe = function
   | Some c -> prterm c
@@ -123,7 +127,8 @@ let implicit_args_msg sp mipv =
           >])
        mipv >]
 
-let print_mutual pk sp mib = 
+let print_mutual sp mib = 
+  let pk = kind_of_path sp in
   let pterm,pterminenv =
     if pk = FW then (fprterm,fterm0) else (prterm,term0) in
   let env = Global.unsafe_env () in
@@ -206,23 +211,23 @@ let print_extracted_mutual sp =
   match mib.mind_singl with 
     | None -> 
 	let fwsp = fwsp_of sp in
-	print_mutual FW fwsp (Global.lookup_mind fwsp)
+	print_mutual fwsp (Global.lookup_mind fwsp)
     | Some a -> fprterm a
 
 let print_leaf_entry with_values sep (spopt,lobj) =
   let tag = object_tag lobj in
   match (spopt,tag) with
     | (_,"VARIABLE") ->
-	let (name,(typ,_),_,l,_,_) = outVariable lobj in
-	[< print_var (string_of_id name) typ; 
-	   print_impl_args (list_of_implicits l); 'fNL >]
+	let (name,typ,_) = out_variable spopt in
+	let l = implicits_of_var (kind_of_path spopt) name in
+	[< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
  
     | (sp,"CONSTANT") ->
-	let (cmap,_,_) = outConstant lobj in
-	if Listmap.in_dom cmap CCI then
-	  let {cONSTBODY=val_0;cONSTTYPE=typ;cONSTIMPARGS=l} = 
-	    Listmap.map cmap CCI
-	  in 
+	let cb = Global.lookup_constant sp in
+	if kind_of_path sp = CCI then
+	  let val_0 = cb.const_body in
+	  let typ = cb.const_type in
+	  let l = constant_implicits sp in
 	  hOV 0 [< (match val_0 with 
 		      | None -> 
 			  [< 'sTR"*** [ "; 
@@ -241,25 +246,23 @@ let print_leaf_entry with_values sep (spopt,lobj) =
 		   'sTR (print_basename (fwsp_of sp)) ; 'fNL>]
 
     | (sp,"MUTUALINDUCTIVE") ->
-	let (cmap,_) = outMutualInductive lobj in
-	if Listmap.in_dom cmap CCI then
-	  [< print_mutual CCI (Listmap.map cmap CCI); 'fNL >]
+	let mib = Global.lookup_mind sp in
+	if kind_of_path sp = CCI then
+	  [< print_mutual sp mib; 'fNL >]
 	else
 	  hOV 0 [< 'sTR"Fw inductive definition " ; 
 		   'sTR (print_basename (fwsp_of sp)) ; 'fNL >]
-
-    | (_,"UNIVERSES") -> [< print_universes_object (outUniverses lobj); 'fNL >]
 
     | (_,"AUTOHINT") -> [< 'sTR" Add Auto Marker" ; 'fNL >]
 
     | (_,"GRAMMAR") -> [< 'sTR" Grammar Marker" ; 'fNL >]
 
     | (sp,"SYNTAXCONSTANT") -> 
+	let id = basename sp in
         [< 'sTR" Syntax Macro " ; 
-      	   'sTR(string_of_id(basename sp)) ; 'sTR sep;  
+      	   print_id id ; 'sTR sep;  
            if with_values then 
-             let cmap = outSyntaxConstant lobj in 
-      	     [< prterm (Listmap.map cmap CCI) >]
+             let c = out_syntax_constant id in [< prterm c >]
            else [<>]; 'fNL >]
 	
     | (_,"PPSYNTAX") -> [< 'sTR" Syntax Marker" ; 'fNL >]
@@ -274,20 +277,19 @@ let print_leaf_entry with_values sep (spopt,lobj) =
 let rec print_library_entry with_values ent = 
   let sep = if with_values then " = " else " : " in 
   match ent with
-    | (sp,Lib.LEAF lobj) -> [< print_leaf_entry with_values sep (sp,lobj) >]
-    | (s,Lib.ClosedDir(_,_,_,ctxt)) ->
+    | (sp,Lib.Leaf lobj) -> 
+	[< print_leaf_entry with_values sep (sp,lobj) >]
+    | (s,Lib.ClosedSection(_,ctxt)) ->
 	[< 'sTR"Closed Section " ; 'sTR (string_of_path s) ; 'fNL ;
 	   if !print_closed_sections then
              [< 'sTR " " ; hOV 0 [< print_context with_values ctxt >] >]
 	   else 
 	     [< >] >]
-    | (sp,Lib.OpenDir(str,_)) -> 
+    | (_,Lib.OpenedSection str) -> 
         [< 'sTR(" >>>>>>> Section " ^ str) ; 'fNL >]
-    | (_,Lib.Import(s,_,true)) ->
-	[< 'sTR" >>>>>>> Import " ; 'sTR s ; 'fNL >]
-    | (_,Lib.Import(s,_,false)) ->
-	[< 'sTR" >>>>>>> Export " ; 'sTR s ; 'fNL >]
-
+    | (_,Lib.FrozenState _) ->
+	[< >]
+	
 and print_context with_values = 
   let rec prec = function
     | h::rest -> [< prec rest ; print_library_entry with_values h >]
@@ -306,7 +308,7 @@ let print_full_context_typ () = print_context false (Lib.contents_after None)
 
 let rec head_const c = match strip_outer_cast c with
   | DOP2(Prod,_,DLAM(_,c)) -> head_const c
-  | DOPN(AppL,cl)    -> head_const (hd_vect cl)
+  | DOPN(AppL,cl)    -> head_const (array_hd cl)
   | def         -> def
 
 let list_filter_vec f vec = 
@@ -328,63 +330,57 @@ let list_filter_vec f vec =
 
 let print_constructors_head 
   (fn:string -> unit assumptions -> constr -> unit) c mip = 
-  let (lna,lC) = decomp_all_DLAMV_name mip.mINDLC in
+  let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
   let ass_name = assumptions_for_print lna in
-  let lidC = map2_vect (fun id c_0 -> (id,c_0)) mip.mINDCONSNAMES lC in
+  let lidC = array_map2 (fun id c_0 -> (id,c_0)) mip.mind_consnames lC in
   let flid = list_filter_vec (fun (_,c_0) -> head_const c_0 = c) lidC in
   List.iter
     (function (id,c_0) -> fn (string_of_id id) ass_name c_0) flid
     
 let print_all_constructors_head fn c mib = 
-  let mipvec = mib.mINDPACKETS 
-  and n = mib.mINDNTYPES in 
-  let rec prec i = 
-    if i = n then 
-      mSG([< >])
-    else begin
-      print_constructors_head fn c mipvec.(i); 
-      prec (i+1)
-    end
-  in 
-  prec 0 
+  let mipvec = mib.mind_packets 
+  and n = mib.mind_ntypes in 
+  for i = 0 to n-1 do
+    print_constructors_head fn c mipvec.(i)
+  done
 
 let print_constructors_rel fn mip = 
-  let (lna,lC) = decomp_all_DLAMV_name mip.mINDLC in
+  let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
   let ass_name = assumptions_for_print lna in
-  let lidC = map2_vect (fun id c -> (id,c)) mip.mINDCONSNAMES lC in
+  let lidC = array_map2 (fun id c -> (id,c)) mip.mind_consnames lC in
   let flid = list_filter_vec (fun (_,c) -> isRel (head_const c)) lidC in
   List.iter (function (id,c) -> fn (string_of_id id) ass_name c) flid
 
 let crible (fn:string -> unit assumptions -> constr -> unit) name =
-  let imported = Library.search_imports() in
-  let const = Machops.global (gLOB(initial_sign())) name in 
+  let hyps = gLOB (get_globals (Global.context())) in
+  let imported = Library.opened_modules() in
+  let const = global_reference CCI name in 
   let rec crible_rec = function
-    | (spopt,Lib.LEAF lobj)::rest ->
+    | (spopt,Lib.Leaf lobj)::rest ->
 	(match (spopt,object_tag lobj) with
 	   | (_,"VARIABLE") ->
-	       let (namec,(typ,_),_,_,_,_) = outVariable lobj in 
-               (if (head_const typ.body)=const then  
-                  fn (string_of_id namec) (gLOB(initial_sign())) typ.body);
+	       let (namec,typ,_) = out_variable spopt in 
+               if (head_const typ.body) = const then  
+                 fn (string_of_id namec) hyps typ.body;
                crible_rec rest
 	   | (sp,"CONSTANT") ->
-	       let (_,{cONSTTYPE=typ}) = const_of_path (ccisp_of sp) in
-               (if (head_const typ.body)=const then
-                  fn (print_basename sp) (gLOB(initial_sign())) typ.body);
+	       let {const_type=typ} = Global.lookup_constant sp in
+               if (head_const typ.body) = const then
+                 fn (print_basename sp) hyps typ.body;
                crible_rec rest
 	   | (sp,"MUTUALINDUCTIVE") -> 
-               let (_,mib) = mind_of_path (ccisp_of sp) in 
-               (match const with (DOPN(MutInd(sp',tyi),_)) 
-                    -> if sp = objsp_of sp' then print_constructors_rel fn
-                      (mind_nth_type_packet mib tyi) 
+               let mib = Global.lookup_mind sp in 
+               (match const with 
+		  | (DOPN(MutInd(sp',tyi),_)) -> 
+		      if sp = objsp_of sp' then print_constructors_rel fn
+			(mind_nth_type_packet mib tyi) 
 		  | _ -> print_all_constructors_head fn const mib); 
                crible_rec rest
 	   | _ -> crible_rec rest)
 
-    | (spopt,Lib.OpenDir _)::rest -> crible_rec rest
-    | (spopt,Lib.ClosedDir (_,_,_,libseg))::rest -> 
-        (if List.mem spopt imported then crible_rec libseg);
-        crible_rec rest
-    | (spopt,Lib.Import _)::rest -> crible_rec rest
+    | (_, (Lib.OpenedSection _ | Lib.ClosedSection _ 
+	  | Lib.FrozenState _))::rest -> 
+	crible_rec rest
     | []      -> ()
   in 
   try 
@@ -399,7 +395,7 @@ let print_crible name =
 
 let read_sec_context sec =
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenDir(str,_)) as hd)::rest ->
+    | ((sp,Lib.OpenedSection str) as hd)::rest ->
         if str = sec then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
@@ -411,16 +407,16 @@ let print_sec_context sec = print_context true (read_sec_context sec)
 
 let print_sec_context_typ sec = print_context false (read_sec_context sec)
 
-let print_val sign {_VAL=trm;_TYPE=typ} =
-  print_typed_value_in_sign sign (trm,typ)
+let print_val env {uj_val=trm;uj_type=typ} =
+  print_typed_value_in_env env (trm,typ)
     
-let print_type sign {_VAL=trm;_TYPE=typ} =
-  print_typed_value_in_sign sign (trm, nf_betaiota typ)
+let print_type env {uj_val=trm;uj_type=typ} =
+  print_typed_value_in_env env (trm, nf_betaiota env Evd.empty typ)
     
-let print_eval red_fun sign {_VAL=trm;_TYPE=typ} =
-  let ntrm = red_fun trm
-  and ntyp = nf_betaiota typ in
-  [< 'sTR "     = "; print_typed_value_in_sign sign (ntrm, ntyp) >]
+let print_eval red_fun env {uj_val=trm;uj_type=typ} =
+  let ntrm = red_fun env Evd.empty trm
+  and ntyp = nf_betaiota env Evd.empty typ in
+  [< 'sTR "     = "; print_typed_value_in_env env (ntrm, ntyp) >]
 
 let print_name name = 
   let str = string_of_id name in 
@@ -431,31 +427,32 @@ let print_name name =
   with 
     | Not_found -> 
 	(try 
-	   let typ = snd(lookup_glob name (gLOB (initial_sign ()))) in 
+	   let (_,typ) = Global.lookup_var name in 
 	   ([< print_var str typ;
-               try print_impl_args (Vartab.implicits_of_var CCI name)
+               try print_impl_args (implicits_of_var CCI name)
                with _ -> [<>] >]) 
 	 with Not_found | Invalid_argument _ -> 
 	   error (str ^ " not a defined object"))
     | Invalid_argument _ -> error (str ^ " not a defined object")
 
 let print_opaque_name name = 
-  let (sigma,sign) = initial_sigma_sign() in
+  let sigma = Evd.empty in
+  let env = Global.unsafe_env () in
+  let sign = get_globals (Global.context ()) in
   try 
-    match (Machops.global (gLOB sign) name) with
+    match global_reference CCI name with
       | DOPN(Const sp,_) as x ->
-          if evaluable_const sigma x then
-            print_typed_value(const_value sigma x,const_type sigma x)
-          else begin
-            Constants.set_transparent_sp sp;
-            let valu = const_value sigma x in 
-	    Constants.set_opaque_sp sp;
-            print_typed_value(valu,const_type sigma x)
-	  end
+	  let cb = Global.lookup_constant sp in
+          if is_defined cb then
+	    let typ = constant_type env x in
+            print_typed_value (constant_value env x,typ.body)
+          else 
+	    anomaly "print_opaque_name"
       | DOPN(MutInd (sp,_),_) as x ->
-          print_mutual CCI (snd (mind_of_path sp))
+          print_mutual sp (Global.lookup_mind sp)
       | DOPN(MutConstruct _,_) as x -> 
-          print_typed_value(x, type_of sigma sign x)
+	  let ty = Typeops.type_of_constructor env sigma x in
+	  print_typed_value(x, ty)
       | VAR id ->
           let a = snd(lookup_sign id sign) in 
 	  print_var (string_of_id id) a
@@ -467,9 +464,9 @@ let print_local_context () =
   let env = Lib.contents_after None in
   let rec print_var_rec = function 
     | [] -> [< >]
-    | ((_,Lib.LEAF lobj))::rest ->
+    | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (name,(typ,_),_,_,_,_) = outVariable lobj in 
+          let (name,typ,_) = out_variable sp in 
 	  [< print_var_rec rest;
              print_var (string_of_id name) typ >]
 	else 
@@ -477,20 +474,20 @@ let print_local_context () =
     | _::rest -> print_var_rec rest
 
   and print_last_const = function
-    | (sp,Lib.LEAF lobj)::rest -> 
+    | (sp,Lib.Leaf lobj)::rest -> 
         (match object_tag lobj with
            | "CONSTANT" -> 
-               let (_,{cONSTBODY=val_0;cONSTTYPE=typ}) = 
-		 const_of_path (ccisp_of sp) in
+               let {const_body=val_0;const_type=typ} = 
+		 Global.lookup_constant sp in
                [< print_last_const rest;
                   'sTR(print_basename sp) ;'sTR" = ";
                   print_typed_recipe (val_0,typ) >]
            | "MUTUALINDUCTIVE" -> 
-               let (_,mib) = mind_of_path (ccisp_of sp) in 
-               [< print_last_const rest;print_mutual CCI mib; 'fNL >]
+               let mib = Global.lookup_mind sp in 
+               [< print_last_const rest;print_mutual sp mib; 'fNL >]
            |  "VARIABLE" ->  [< >]
            |  _          ->  print_last_const rest)
-    | (sp,Lib.ClosedDir _)::rest -> print_last_const rest
+    | (sp,Lib.ClosedSection _)::rest -> print_last_const rest
     | _ -> [< >]
   in 
   [< print_var_rec env;  print_last_const env >]
@@ -498,18 +495,19 @@ let print_local_context () =
 let fprint_var name typ =
   [< 'sTR ("*** [" ^ name ^ " :"); fprtype typ; 'sTR "]"; 'fNL >]
 
-let fprint_judge {_VAL=trm;_TYPE=typ} = 
+let fprint_judge {uj_val=trm;uj_type=typ} = 
   [< fprterm trm; 'sTR" : " ; fprterm typ >]
 
-let unfold_head_fconst sigma = 
+let unfold_head_fconst = 
   let rec unfrec = function
-    | DOPN(Const _,_) as k -> const_value sigma k 
+    | DOPN(Const _,_) as k -> constant_value (Global.unsafe_env()) k 
     | DOP2(Lambda,t,DLAM(na,b)) -> DOP2(Lambda,t,DLAM(na,unfrec b))
-    | DOPN(AppL,v) -> DOPN(AppL,cons_vect (unfrec (hd_vect v)) (tl_vect v))
+    | DOPN(AppL,v) -> DOPN(AppL,array_cons (unfrec (array_hd v)) (array_tl v))
     | x -> x
   in 
   unfrec
 
+(***
 let print_extracted_name name =
   let (sigma,(sign,fsign)) = initial_sigma_assumptions() in
   try
@@ -651,6 +649,7 @@ let print_extracted_vars () =
     | [] -> [< 'fNL >]
   in 
   print_var_rec env
+***)
 
 (* for debug *)
 let inspect depth = 
