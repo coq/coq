@@ -147,6 +147,14 @@ Qed.
 
 (*** Corollaires ***)
 
+Lemma Rolle : (f:R->R;a,b:R;pr:(x:R)``a<x<b``->(derivable_pt f x)) ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ``a<b`` -> (f a)==(f b) -> (EXT c:R | (EXT P: ``a<c<b`` | ``(derive_pt f c (pr c P))==0``)).
+Intros; Assert H2 : (x:R)``a<x<b``->(derivable_pt id x).
+Intros; Apply derivable_pt_id.
+Assert H3 := (TAF_gen f id a b pr H2 H0 H); Assert H4 : (x:R)``a<=x<=b``->(continuity_pt id x).
+Intros; Apply derivable_continuous; Apply derivable_id.
+Elim (H3 H4); Intros; Elim H5; Intros; Exists x; Exists x0; Rewrite H1 in H6; Unfold id in H6; Unfold Rminus in H6; Rewrite Rplus_Ropp_r in H6; Rewrite Rmult_Ol in H6; Apply r_Rmult_mult with ``b-a``; [Rewrite Rmult_Or; Apply H6 | Apply Rminus_eq_contra; Red; Intro; Rewrite H7 in H0; Elim (Rlt_antirefl ? H0)].
+Qed.
+
 (**********)
 Lemma nonneg_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``0<=(derive_pt f x (pr x))``) -> (increasing f).
 Intros.
