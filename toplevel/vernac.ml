@@ -101,13 +101,19 @@ let just_parsing = ref false
 let chan_translate = ref stdout
 let last_char = ref '\000'
 
+(* postprocessor to avoid lexical icompatibilities between V7 and V8.
+   Ex: auto.(* comment *)  or  simpl.auto
+ *)
 let set_formatter_translator() =
   let ch = !chan_translate in
   let out s b e =
     let n = e-b in
     if n > 0 then begin
       (match !last_char with
-          '.' -> if s.[b] = '(' then output ch " " 0 1 
+          '.' -> 
+            (match s.[b] with
+                '('|'a'..'z'|'A'..'Z' -> output ch " " 0 1 
+              | _ -> ())
         | _ -> ());
       last_char := s.[e-1]
     end;
