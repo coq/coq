@@ -23,6 +23,7 @@ Vernac:
 Grammaires:
 
 - pb avec les extensions constr (cf Zsyntax et Cases x of `0` => ...)
+- revoir numarg/pure_numarg dans g_tactic.ml4 (regles a factoriser)
 
 Doc:
 

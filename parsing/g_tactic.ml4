@@ -101,7 +101,7 @@ GEXTEND Gram
   ;
   simple_binding:
     [ [ id = identarg; ":="; c = constrarg -> <:ast< (BINDING $id $c) >>
-      | n = numarg; ":="; c = constrarg -> <:ast< (BINDING $n $c) >> ] ]
+      | n = pure_numarg; ":="; c = constrarg -> <:ast< (BINDING $n $c) >> ] ]
   ;
   simple_binding_list:
     [ [ b = simple_binding; l = simple_binding_list -> b :: l | -> [] ] ]
@@ -169,7 +169,7 @@ GEXTEND Gram
       | -> <:ast< (CLAUSE) >> ] ]
   ;
   autoarg_depth:
-  [ [ n = numarg -> <:ast< $n>>
+  [ [ n = pure_numarg -> <:ast< $n>>
      | -> Coqast.Str(loc,"NoAutoArg") ] ]
   ;
   autoarg_adding:
@@ -186,7 +186,7 @@ GEXTEND Gram
       | -> Coqast.Str(loc,"NoAutoArg")  ] ]
   ;
   fixdecl:
-    [ [ id = identarg; n = numarg; ":"; c = constrarg; fd = fixdecl ->
+    [ [ id = identarg; n = pure_numarg; ":"; c = constrarg; fd = fixdecl ->
           <:ast< (FIXEXP $id $n $c) >> :: fd
       | -> [] ] ]
   ;
@@ -281,11 +281,11 @@ GEXTEND Gram
       |	IDENT "Try"; ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
         <:ast< (TRY (ORELSE $ta0 $ta1)) >>
       |	IDENT "Try"; ta = tactic_atom -> <:ast< (TRY $ta) >>
-      | IDENT "Do"; n = numarg; ta = tactic_atom -> <:ast< (DO $n $ta) >>
+      | IDENT "Do"; n = pure_numarg; ta = tactic_atom -> <:ast< (DO $n $ta) >>
       | IDENT "Repeat"; ta = tactic_atom -> <:ast< (REPEAT $ta) >>
       |	IDENT "Idtac" -> <:ast< (IDTAC) >>
       |	IDENT "Fail" -> <:ast<(FAIL)>>
-      |	IDENT "Fail"; n = numarg -> <:ast<(FAIL $n)>>
+      |	IDENT "Fail"; n = pure_numarg -> <:ast<(FAIL $n)>>
       |	ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
           <:ast< (ORELSE $ta0 $ta1) >>
       |	st = simple_tactic -> st
@@ -307,35 +307,35 @@ GEXTEND Gram
            |_ -> c) ] ]
   ;
   simple_tactic:
-    [ [ IDENT "Fix"; n = numarg -> <:ast< (Fix $n) >>
-      | IDENT "Fix"; id = identarg; n = numarg -> <:ast< (Fix $id $n) >>
-      | IDENT "Fix"; id = identarg; n = numarg; "with"; fd = fixdecl ->
+    [ [ IDENT "Fix"; n = pure_numarg -> <:ast< (Fix $n) >>
+      | IDENT "Fix"; id = identarg; n = pure_numarg -> <:ast< (Fix $id $n) >>
+      | IDENT "Fix"; id = identarg; n = pure_numarg; "with"; fd = fixdecl ->
           <:ast< (Fix $id $n ($LIST $fd)) >>
       | IDENT "Cofix" -> <:ast< (Cofix) >>
       | IDENT "Cofix"; id = identarg -> <:ast< (Cofix $id) >>
       | IDENT "Cofix"; id = identarg; "with"; fd = cofixdecl ->
           <:ast< (Cofix $id ($LIST $fd)) >>
       | IDENT "Induction"; s = identarg -> <:ast< (Induction $s) >>
-      | IDENT "Induction"; n = numarg -> <:ast< (Induction $n) >>
+      | IDENT "Induction"; n = pure_numarg -> <:ast< (Induction $n) >>
       | IDENT "NewInduction"; c = constrarg -> <:ast< (NewInduction $c) >>
-      | IDENT "NewInduction"; n = numarg -> <:ast< (NewInduction $n) >>
+      | IDENT "NewInduction"; n = pure_numarg -> <:ast< (NewInduction $n) >>
       | IDENT "Double"; IDENT "Induction"; i = numarg; j = numarg ->
           <:ast< (DoubleInd $i $j) >>
       | IDENT "Trivial" -> <:ast<(Trivial)>>
       | IDENT "Trivial"; "with"; lid = ne_identarg_list -> 
 	  <:ast<(Trivial ($LIST $lid))>>
       | IDENT "Trivial"; "with"; "*" ->  <:ast<(Trivial "*")>>
-      | IDENT "Auto"; n = numarg -> <:ast< (Auto $n) >>
+      | IDENT "Auto"; n = pure_numarg -> <:ast< (Auto $n) >>
       | IDENT "Auto" -> <:ast< (Auto) >>
-      | IDENT "Auto"; n = numarg; "with";
+      | IDENT "Auto"; n = pure_numarg; "with";
 	  lid = ne_identarg_list -> <:ast< (Auto $n ($LIST $lid)) >>
       | IDENT "Auto"; "with";
 	  lid = ne_identarg_list -> <:ast< (Auto ($LIST $lid)) >>
-      | IDENT "Auto"; n = numarg; "with"; "*" ->
+      | IDENT "Auto"; n = pure_numarg; "with"; "*" ->
 	  <:ast< (Auto $n "*") >>
       | IDENT "Auto"; "with"; "*" -> <:ast< (Auto "*") >>
      
-      | IDENT "AutoTDB"; n = numarg -> <:ast< (AutoTDB $n) >>
+      | IDENT "AutoTDB"; n = pure_numarg -> <:ast< (AutoTDB $n) >>
       | IDENT "AutoTDB" -> <:ast< (AutoTDB) >>
       | IDENT "DHyp";  id=identarg  -> <:ast< (DHyp  $id)>>
       | IDENT "CDHyp"; id=identarg -> <:ast<  (CDHyp $id)>>
@@ -346,9 +346,9 @@ GEXTEND Gram
                        a2 = autoarg_destructing; 
                        a3 = autoarg_usingTDB -> 
                    <:ast< (SuperAuto $a0 $a1 $a2 $a3) >>
-      | IDENT "Auto"; n = numarg; IDENT "Decomp" -> <:ast< (DAuto $n) >>
+      | IDENT "Auto"; n = pure_numarg; IDENT "Decomp" -> <:ast< (DAuto $n) >>
       | IDENT "Auto"; IDENT "Decomp" -> <:ast< (DAuto) >>
-      | IDENT "Auto"; n = numarg; IDENT "Decomp"; p = numarg ->
+      | IDENT "Auto"; n = pure_numarg; IDENT "Decomp"; p = pure_numarg ->
           <:ast< (DAuto $n $p) >>
       ] ];
     END
@@ -390,7 +390,7 @@ GEXTEND Gram
       | IDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = constrarg ->
           <:ast< (DecomposeThese (CLAUSE ($LIST $l)) $c) >>
       | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
-      | IDENT "Specialize"; n = numarg; lcb = constrarg_binding_list ->
+      | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
       | IDENT "Specialize"; lcb = constrarg_binding_list ->
           <:ast< (Specialize ($LIST $lcb)) >>

@@ -48,7 +48,7 @@ let usage () =
 
 coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
   command dependencies file] ... [-I dir] ... [VARIABLE = value] ...
-  [-full] [-no-opt] [-f file] [-o file] [-h] [--help]
+  [-opt|-byte] [-f file] [-o file] [-h] [--help]
 
 [file.v]: Coq file to be compiled
 [file.ml]: ML file to be compiled
@@ -57,8 +57,8 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
   \"command\" and dependencies \"dependencies\"
 [-I dir]: look for dependencies in \"dir\"
 [VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
-[-full]: \"opt\" should use \"coqc -full\" instead of \"coqc -opt\"
-[-no-opt]: target \"opt\" should be equivalent to \"byte\"
+[-byte]: compile with byte-code version of coq
+[-opt]: compile with native-code version of coq
 [-f file]: take the contents of file as arguments
 [-o file]: output should go in file file 
 [-h]: print this usage summary
@@ -77,7 +77,6 @@ let standard sds =
     print "\trm .depend\n";
     print "\t$(COQDEP) -i $(LIBS) *.v *.ml *.mli >.depend\n";
     print "\t$(COQDEP) $(LIBS) -suffix .html *.v >>.depend\n";
-    if !some_mlfile then print "\t$(P4DEP) *.ml >>.depend\n"
   end;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
@@ -113,8 +112,6 @@ let implicit () =
     print ".mli.cmi:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n" ;
     print ".ml.cmo:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n" ;
     print ".ml.cmx:\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n" ;
-    print ".ml4.cmo:\n\t$(CAMLC) -pp $(P4) $(ZDEBUG) $(ZFLAGS) -impl $<\n\n";
-    print ".ml4.cmx:\n\t$(CAMLOPTC) -pp $(P4) $(ZDEBUG) $(ZFLAGS)\n\n"
   and v_rule () =
     print ".v.vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n" ;
     print ".v.vi:\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n" ;
@@ -153,12 +150,11 @@ let variables l =
   section "Variables definitions.";
   print "CAMLP4LIB=`camlp4 -where`\n";
   print "MAKE=make \"COQBIN=$(COQBIN)\" \"OPT=$(OPT)\"\n";
-  print "COQSRC=-I $(COQTOP)/src/tactics -I $(COQTOP)/src/proofs \\
-  -I $(COQTOP)/src/syntax -I $(COQTOP)/src/env -I $(COQTOP)/src/lib/util \\
-  -I $(COQTOP)/src/constr -I $(COQTOP)/tactics -I $(COQTOP)/src/meta \\
-  -I $(COQTOP)/src/parsing -I $(COQTOP)/src/typing -I $(CAMLP4LIB)\n";
+  print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
+  -I $(COQTOP)/library -I $(COQTOP)/parsing -I $(COQTOP)/pretyping \\
+  -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
+  -I $(COQTOP)/toplevel -I $(CAMLP4LIB)\n";
   print "ZFLAGS=$(LIBS) $(COQSRC)\n";
-  print "FULLOPT=$(OPT:-opt=-full)\n";
   if !opt="-opt" then
     print "COQFLAGS=-q $(OPT) $(LIBS)\n"
   else begin
@@ -176,9 +172,6 @@ let variables l =
   print "CAMLLINK=ocamlc\n";
   print "CAMLOPTLINK=ocamlopt\n";
   print "COQDEP=$(COQBIN)coqdep -c\n";
-  print "P4=$(COQBIN)call_camlp4 -I $(COQTOP)/src/parsing \\
-  -I $(COQTOP)/theories/INIT -I $(COQTOP)/tactics\n";
-  print "P4DEP=$(COQBIN)camlp4dep\n";
   var_aux l;
   print "\n"
 
@@ -299,10 +292,10 @@ let rec process_cmd_line = function
       some_file := !some_file or !some_mlfile or !some_vfile ; []
   | ("-h"|"--help") :: _ -> 
       usage ()
-  | "-no-opt" :: r -> 
-      opt := "" ; process_cmd_line r
-  | "-full"::r -> 
-      opt := "-full" ; process_cmd_line r
+  | ("-no-opt"|"-byte") :: r -> 
+      opt := "-byte" ; process_cmd_line r
+  | ("-full"|"-opt")::r -> 
+      opt := "-opt" ; process_cmd_line r
   | "-custom" :: com :: dependencies :: file :: r ->
       some_file := true;
       Special (file,dependencies,com) :: (process_cmd_line r)
