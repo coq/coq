@@ -560,7 +560,7 @@ let _ =
   add "SaveNamed"
     (function 
        | [] -> 
-	   (fun () -> if not(is_silent()) then show_script(); save_named false)
+	   (fun () -> if not(is_silent()) then show_script(); save_named true)
        | _ -> bad_vernac_args "SaveNamed")
 
 let _ =
