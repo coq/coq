@@ -17,3 +17,18 @@ Check
     f:((p0,q0:C)(P (Build_B C D x y p0 q0)));
     b:(B C D x y)]
     <[b0:(B C D x y)](P b0)>Cases b of (Build_B x0 x1) => (f x0 x1) end.
+
+(* Check implicit parameters of inductive types (submitted by Pierre
+  Casteran and also implicit in #338) *)
+
+Set Implicit Arguments.
+
+CoInductive LList [A:Set] : Set :=
+   | LNil : (LList A)
+   | LCons : A -> (LList A) -> (LList A).
+
+Implicits LNil [1].
+
+Inductive Finite [A:Set] : (LList A) -> Prop :=
+   | Finite_LNil : (Finite LNil)
+   | Finite_LCons : (a:A) (l:(LList A)) (Finite l) -> (Finite (LCons a l)).
