@@ -141,6 +141,11 @@ let name_fold f na a =
   | Name id -> f id a
   | Anonymous -> a
 
+let name_cons na l =
+  match na with
+  | Anonymous -> l 
+  | Name id -> id::l
+
 let next_name_away_with_default default name l = 
   match name with
     | Name str  -> next_ident_away str l

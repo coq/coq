@@ -34,6 +34,7 @@ val next_name_away_with_default :
 val out_name : name -> identifier
 
 val name_fold : (identifier -> 'a -> 'a) -> name -> 'a -> 'a
+val name_cons : name -> identifier list -> identifier list
 
 val pr_lab : label -> Pp.std_ppcmds
 
