@@ -37,11 +37,7 @@ let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref "initial.coq"
 let set_inputstate s = inputstate:= s
-let inputstate () =
-  if !inputstate <> "" then begin
-    intern_state !inputstate;
-    Lib.declare_initial_state()
-  end
+let inputstate () = if !inputstate <> "" then intern_state !inputstate
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
@@ -245,6 +241,7 @@ let start () =
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile (); exit 0);
+  Lib.declare_initial_state ();
   Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
