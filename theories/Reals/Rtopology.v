@@ -1142,3 +1142,212 @@ Apply adherence_P2; Apply compact_P2; Assumption.
 Apply H4.
 Unfold famille_ferme; Unfold f0; Simpl; Unfold g; Intro; Apply adherence_P3.
 Qed.
+
+(********************************************************)
+(*               Proof of Heine's theorem               *)
+(********************************************************)
+
+Definition uniform_continuity [f:R->R;X:R->Prop] : Prop := (eps:posreal)(EXT delta:posreal | (x,y:R) (X x)->(X y)->``(Rabsolu (x-y))<delta`` ->``(Rabsolu ((f x)-(f y)))<eps``).
+
+Fixpoint pos_Rl [l:Rlist] : nat->R :=
+[i:nat] Cases l of
+| nil => R0
+| (cons a l') =>
+ Cases i of
+ | O => a
+ | (S i') => (pos_Rl l' i')
+ end
+end.
+
+(* La borne supérieure, si elle existe, est unique *)
+Lemma is_lub_u : (E:R->Prop;x,y:R) (is_lub E x) -> (is_lub E y) -> x==y.
+Unfold is_lub; Intros; Elim H; Elim H0; Intros; Apply Rle_antisym; [Apply (H4 ? H1) | Apply (H2 ? H3)].
+Qed.
+
+Lemma pos_Rl_P1 : (l:Rlist;a:R) (lt O (longueur l)) -> (pos_Rl (cons a l) (longueur l))==(pos_Rl l (pred (longueur l))).
+Intros; Induction l; [Elim (lt_n_O ? H) | Simpl; Case (longueur l); [Reflexivity | Intro; Reflexivity]].
+Qed.
+
+Lemma pos_Rl_P2 : (l:Rlist;x:R) (In x l)<->(EX i:nat | (lt i (longueur l))/\x==(pos_Rl l i)).
+Intros; Induction l.
+Split; Intro; [Elim H | Elim H; Intros; Elim H0; Intros; Elim (lt_n_O ? H1)].
+Split; Intro.
+Elim H; Intro.
+Exists O; Split; [Simpl; Apply lt_O_Sn | Simpl; Apply H0].
+Elim Hrecl; Intros; Assert H3 := (H1 H0); Elim H3; Intros; Elim H4; Intros; Exists (S x0); Split; [Simpl; Apply lt_n_S; Assumption | Simpl; Assumption].
+Elim H; Intros; Elim H0; Intros; Elim (zerop x0); Intro.
+Rewrite a in H2; Simpl in H2; Left; Assumption.
+Right; Elim Hrecl; Intros; Apply H4; Assert H5 : (S (pred x0))=x0.
+Symmetry; Apply S_pred with O; Assumption.
+Exists (pred x0); Split; [Simpl in H1; Apply lt_S_n; Rewrite H5; Assumption | Rewrite <- H5 in H2; Simpl in H2; Assumption].
+Qed.
+
+Lemma Rlist_P1 : (l:Rlist;P:R->R->Prop) ((x:R)(In x l)->(EXT y:R | (P x y))) -> (EXT l':Rlist | (longueur l)=(longueur l')/\(i:nat) (lt i (longueur l))->(P (pos_Rl l i) (pos_Rl l' i))).
+Intros; Induction l.
+Exists nil; Intros; Split; [Reflexivity | Intros; Simpl in H0; Elim (lt_n_O ? H0)].
+Assert H0 : (In r (cons r l)).
+Simpl; Left; Reflexivity.
+Assert H1 := (H ? H0); Assert H2 : (x:R)(In x l)->(EXT y:R | (P x y)).
+Intros; Apply H; Simpl; Right; Assumption.
+Assert H3 := (Hrecl H2); Elim H1; Intros; Elim H3; Intros; Exists (cons x x0); Intros; Elim H5; Clear H5; Intros; Split.
+Simpl; Rewrite H5; Reflexivity.
+Intros; Elim (zerop i); Intro.
+Rewrite a; Simpl; Assumption.
+Assert H8 : i=(S (pred i)).
+Apply S_pred with O; Assumption.
+Rewrite H8; Simpl; Apply H6; Simpl in H7; Apply lt_S_n; Rewrite <- H8; Assumption.
+Qed.
+
+Lemma domaine_P1 : (X:R->Prop) ~(EXT y:R | (X y))\/(EXT y:R | (X y)/\((x:R)(X x)->x==y))\/(EXT x:R | (EXT y:R | (X x)/\(X y)/\``x<>y``)).
+Intro; Elim (classic (EXT y:R | (X y))); Intro.
+Right; Elim H; Intros; Elim (classic (EXT y:R | (X y)/\``y<>x``)); Intro.
+Right; Elim H1; Intros; Elim H2; Intros; Exists x; Exists x0; Intros.
+Split; [Assumption | Split; [Assumption | Apply not_sym; Assumption]].
+Left; Exists x; Split.
+Assumption.
+Intros; Case (Req_EM x0 x); Intro.
+Assumption.
+Elim H1; Exists x0; Split; Assumption.
+Left; Assumption.
+Qed.
+
+Theorem Heine : (f:R->R;X:R->Prop) (compact X) -> ((x:R)(X x)->(continuity_pt f x)) -> (uniform_continuity f X).
+Intros f0 X H0 H; Elim (domaine_P1 X); Intro Hyp.
+(* X est vide *)
+Unfold uniform_continuity; Intros; Exists (mkposreal ? Rlt_R0_R1); Intros; Elim Hyp; Exists x; Assumption.
+Elim Hyp; Clear Hyp; Intro Hyp.
+(* X possède un seul élément *)
+Unfold uniform_continuity; Intros; Exists (mkposreal ? Rlt_R0_R1); Intros; Elim Hyp; Clear Hyp; Intros; Elim H4; Clear H4; Intros; Assert H6 := (H5 ? H1); Assert H7 := (H5 ? H2); Rewrite H6; Rewrite H7; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply (cond_pos eps).
+(* X possède au moins deux éléments distincts *)
+Assert X_enc : (EXT m:R | (EXT M:R | ((x:R)(X x)->``m<=x<=M``)/\``m<M``)).
+Assert H1 := (compact_P1 X H0); Unfold bornee in H1; Elim H1; Intros; Elim H2; Intros; Exists x; Exists x0; Split.
+Apply H3.
+Elim Hyp; Intros; Elim H4; Intros; Decompose [and] H5; Assert H10 := (H3 ? H6); Assert H11 := (H3 ? H8); Elim H10; Intros; Elim H11; Intros; Case (total_order_T x x0); Intro.
+Elim s; Intro.
+Assumption.
+Rewrite b in H13; Rewrite b in H7; Elim H9; Apply Rle_antisym; Apply Rle_trans with x0; Assumption.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? (Rle_trans ? ? ? H13 H14) r)).
+Elim X_enc; Clear X_enc; Intros m X_enc; Elim X_enc; Clear X_enc; Intros M X_enc; Elim X_enc; Clear X_enc Hyp; Intros X_enc Hyp; Unfold uniform_continuity; Intro; Assert H1 : (t:posreal)``0<t/2``.
+Intro; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos t) | Apply Rlt_Rinv; Sup0].
+Pose g := [x:R][y:R](X x)/\(EXT del:posreal | ((z:R) ``(Rabsolu (z-x))<del``->``(Rabsolu ((f0 z)-(f0 x)))<eps/2``)/\(is_lub [zeta:R]``0<zeta<=M-m``/\((z:R) ``(Rabsolu (z-x))<zeta``->``(Rabsolu ((f0 z)-(f0 x)))<eps/2``) del)/\(Disque x (mkposreal ``del/2`` (H1 del)) y)).
+Assert H2 : (x:R)(EXT y:R | (g x y))->(X x).
+Intros; Elim H2; Intros; Unfold g in H3; Elim H3; Clear H3; Intros H3 _; Apply H3.
+Pose f' := (mkfamille X g H2); Unfold compact in H0; Assert H3 : (recouvrement_ouvert X f').
+Unfold recouvrement_ouvert; Split.
+Unfold recouvrement; Intros; Exists x; Simpl; Unfold g; Split.
+Assumption.
+Assert H4 := (H ? H3); Unfold continuity_pt in H4; Unfold continue_in in H4; Unfold limit1_in in H4; Unfold limit_in in H4; Simpl in H4; Unfold R_dist in H4; Elim (H4 ``eps/2`` (H1 eps)); Intros; Pose E:=[zeta:R]``0<zeta <= M-m``/\((z:R)``(Rabsolu (z-x)) < zeta``->``(Rabsolu ((f0 z)-(f0 x))) < eps/2``); Assert H6 : (bound E).
+Unfold bound; Exists ``M-m``; Unfold is_upper_bound; Unfold E; Intros; Elim H6; Clear H6; Intros H6 _; Elim H6; Clear H6; Intros _ H6; Apply H6.
+Assert H7 : (EXT x:R | (E x)).
+Elim H5; Clear H5; Intros; Exists (Rmin x0 ``M-m``); Unfold E; Intros; Split.
+Split.
+Unfold Rmin; Case (total_order_Rle x0 ``M-m``); Intro.
+Apply H5.
+Apply Rlt_Rminus; Apply Hyp.
+Apply Rmin_r.
+Intros; Case (Req_EM x z); Intro.
+Rewrite H9; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply (H1 eps).
+Apply H7; Split.
+Unfold D_x no_cond; Split; [Trivial | Assumption].
+Apply Rlt_le_trans with (Rmin x0 ``M-m``); [Apply H8 | Apply Rmin_l].
+Assert H8 := (complet ? H6 H7); Elim H8; Clear H8; Intros; Cut ``0<x1<=(M-m)``.
+Intro; Elim H8; Clear H8; Intros; Exists (mkposreal ? H8); Split.
+Intros; Cut (EXT alp:R | ``(Rabsolu (z-x))<alp<=x1``/\(E alp)).
+Intros; Elim H11; Intros; Elim H12; Clear H12; Intros; Unfold E in H13; Elim H13; Intros; Apply H15.
+Elim H12; Intros; Assumption.
+Elim (classic (EXT alp:R | ``(Rabsolu (z-x)) < alp <= x1``/\(E alp))); Intro.
+Assumption.
+Assert H12 := (not_ex_all_not ? [alp:R]``(Rabsolu (z-x)) < alp <= x1``/\(E alp) H11); Unfold is_lub in p; Elim p; Intros; Cut (is_upper_bound E ``(Rabsolu (z-x))``).
+Intro; Assert H16 := (H14 ? H15); Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? H10 H16)).
+Unfold is_upper_bound; Intros; Unfold is_upper_bound in H13; Assert H16 := (H13 ? H15); Case (total_order_Rle x2 ``(Rabsolu (z-x))``); Intro.
+Assumption.
+Elim (H12 x2); Split; [Split; [Auto with real | Assumption] | Assumption].
+Split.
+Apply p.
+Unfold Disque; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Simpl; Unfold Rdiv; Apply Rmult_lt_pos; [Apply H8 | Apply Rlt_Rinv; Sup0].
+Elim H7; Intros; Unfold E in H8; Elim H8; Intros H9 _; Elim H9; Intros H10 _; Unfold is_lub in p; Elim p; Intros; Unfold is_upper_bound in H12; Unfold is_upper_bound in H11; Split.
+Apply Rlt_le_trans with x2; [Assumption | Apply (H11 ? H8)].
+Apply H12; Intros; Unfold E in H13; Elim H13; Intros; Elim H14; Intros; Assumption.
+Unfold famille_ouvert; Intro; Simpl; Elim (classic (X x)); Intro.
+Unfold g; Unfold ouvert; Intros; Elim H4; Clear H4; Intros _ H4; Elim H4; Clear H4; Intros; Elim H4; Clear H4; Intros; Unfold voisinage; Case (Req_EM x x0); Intro.
+Exists (mkposreal ? (H1 x1)); Rewrite <- H6; Unfold inclus; Intros; Split.
+Assumption.
+Exists x1; Split.
+Apply H4.
+Split.
+Elim H5; Intros; Apply H8.
+Apply H7.
+Pose d := ``x1/2-(Rabsolu (x0-x))``; Assert H7 : ``0<d``.
+Unfold d; Apply Rlt_Rminus; Elim H5; Clear H5; Intros; Unfold Disque in H7; Apply H7.
+Exists (mkposreal ? H7); Unfold inclus; Intros; Split.
+Assumption.
+Exists x1; Split.
+Apply H4.
+Elim H5; Intros; Split.
+Assumption.
+Unfold Disque in H8; Simpl in H8; Unfold Disque; Simpl; Unfold Disque in H10; Simpl in H10; Apply Rle_lt_trans with ``(Rabsolu (x2-x0))+(Rabsolu (x0-x))``.
+Replace ``x2-x`` with ``(x2-x0)+(x0-x)``; [Apply Rabsolu_triang | Ring].
+Replace ``x1/2`` with ``d+(Rabsolu (x0-x))``; [Idtac | Unfold d; Ring].
+Do 2 Rewrite <- (Rplus_sym ``(Rabsolu (x0-x))``); Apply Rlt_compatibility; Apply H8.
+Apply ouvert_P6 with [_:R]False.
+Apply ouvert_P4.
+Unfold eq_Dom; Unfold inclus; Intros; Split.
+Intros; Elim H4.
+Intros; Unfold g in H4; Elim H4; Clear H4; Intros H4 _; Elim H3; Apply H4.
+Elim (H0 ? H3); Intros DF H4; Unfold recouvrement_fini in H4; Elim H4; Clear H4; Intros; Unfold famille_finie in H5; Unfold domaine_fini in H5; Unfold recouvrement in H4; Simpl in H4; Simpl in H5; Elim H5; Clear H5; Intros l H5; Unfold intersection_domaine in H5; Cut (x:R)(In x l)->(EXT del:R | ``0<del``/\((z:R)``(Rabsolu (z-x)) < del``->``(Rabsolu ((f0 z)-(f0 x))) < eps/2``)/\(inclus (g x) [z:R]``(Rabsolu (z-x))<del/2``)).
+Intros; Assert H7 := (Rlist_P1 l [x:R][del:R]``0<del``/\((z:R)``(Rabsolu (z-x)) < del``->``(Rabsolu ((f0 z)-(f0 x))) < eps/2``)/\(inclus (g x) [z:R]``(Rabsolu (z-x))<del/2``) H6); Elim H7; Clear H7; Intros l' H7; Elim H7; Clear H7; Intros; Pose D := (MinRlist l'); Cut ``0<D/2``.
+Intro; Exists (mkposreal ? H9); Intros; Assert H13 := (H4 ? H10); Elim H13; Clear H13; Intros xi H13; Assert H14 : (In xi l).
+Unfold g in H13; Decompose [and] H13; Elim (H5 xi); Intros; Apply H14; Split; Assumption.
+Elim (pos_Rl_P2 l xi); Intros H15 _; Elim (H15 H14); Intros i H16; Elim H16; Intros; Apply Rle_lt_trans with ``(Rabsolu ((f0 x)-(f0 xi)))+(Rabsolu ((f0 xi)-(f0 y)))``.
+Replace ``(f0 x)-(f0 y)`` with ``((f0 x)-(f0 xi))+((f0 xi)-(f0 y))``; [Apply Rabsolu_triang | Ring].
+Rewrite (double_var eps); Apply Rplus_lt.
+Assert H19 := (H8 i H17); Elim H19; Clear H19; Intros; Rewrite <- H18 in H20; Elim H20; Clear H20; Intros; Apply H20; Unfold inclus in H21; Apply Rlt_trans with ``(pos_Rl l' i)/2``.
+Apply H21.
+Elim H13; Clear H13; Intros; Assumption.
+Unfold Rdiv; Apply Rlt_monotony_contra with ``2``.
+Sup0.
+Rewrite Rmult_sym; Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Pattern 1 (pos_Rl l' i); Rewrite <- Rplus_Or; Rewrite double; Apply Rlt_compatibility; Apply H19.
+DiscrR.
+Assert H19 := (H8 i H17); Elim H19; Clear H19; Intros; Rewrite <- H18 in H20; Elim H20; Clear H20; Intros; Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply H20; Unfold inclus in H21; Elim H13; Intros; Assert H24 := (H21 x H22); Apply Rle_lt_trans with ``(Rabsolu (y-x))+(Rabsolu (x-xi))``.
+Replace ``y-xi`` with ``(y-x)+(x-xi)``; [Apply Rabsolu_triang | Ring].
+Rewrite (double_var (pos_Rl l' i)); Apply Rplus_lt.
+Apply Rlt_le_trans with ``D/2``.
+Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply H12.
+Unfold Rdiv; Do 2 Rewrite <- (Rmult_sym ``/2``); Apply Rle_monotony.
+Left; Apply Rlt_Rinv; Sup0.
+Unfold D; Apply MinRlist_P1; Elim (pos_Rl_P2 l' (pos_Rl l' i)); Intros; Apply H26; Exists i; Split; [Rewrite <- H7; Assumption | Reflexivity].
+Assumption.
+Unfold Rdiv; Apply Rmult_lt_pos; [Unfold D; Apply MinRlist_P2; Intros; Elim (pos_Rl_P2 l' y); Intros; Elim (H10 H9); Intros; Elim H12; Intros; Rewrite H14; Rewrite <- H7 in H13; Elim (H8 x H13); Intros; Apply H15 | Apply Rlt_Rinv; Sup0].
+Intros; Elim (H5 x); Intros; Elim (H8 H6); Intros; Pose E:=[zeta:R]``0<zeta <= M-m``/\((z:R)``(Rabsolu (z-x)) < zeta``->``(Rabsolu ((f0 z)-(f0 x))) < eps/2``); Assert H11 : (bound E).
+Unfold bound; Exists ``M-m``; Unfold is_upper_bound; Unfold E; Intros; Elim H11; Clear H11; Intros H11 _; Elim H11; Clear H11; Intros _ H11; Apply H11.
+Assert H12 : (EXT x:R | (E x)).
+Assert H13 := (H ? H9); Unfold continuity_pt in H13; Unfold continue_in in H13; Unfold limit1_in in H13; Unfold limit_in in H13; Simpl in H13; Unfold R_dist in H13; Elim (H13 ? (H1 eps)); Intros; Elim H12; Clear H12; Intros; Exists (Rmin x0 ``M-m``); Unfold E; Intros; Split.
+Split; [Unfold Rmin; Case (total_order_Rle x0 ``M-m``); Intro; [Apply H12 | Apply Rlt_Rminus; Apply Hyp] | Apply Rmin_r].
+Intros; Case (Req_EM x z); Intro.
+Rewrite H16; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply (H1 eps).
+Apply H14; Split; [Unfold D_x no_cond; Split; [Trivial | Assumption] | Apply Rlt_le_trans with (Rmin x0 ``M-m``); [Apply H15 | Apply Rmin_l]].
+Assert H13 := (complet ? H11 H12); Elim H13; Clear H13; Intros; Cut ``0<x0<=M-m``.
+Intro; Elim H13; Clear H13; Intros; Exists x0; Split.
+Assumption.
+Split.
+Intros; Cut (EXT alp:R | ``(Rabsolu (z-x))<alp<=x0``/\(E alp)).
+Intros; Elim H16; Intros; Elim H17; Clear H17; Intros; Unfold E in H18; Elim H18; Intros; Apply H20; Elim H17; Intros; Assumption.
+Elim (classic (EXT alp:R | ``(Rabsolu (z-x)) < alp <= x0``/\(E alp))); Intro.
+Assumption.
+Assert H17 := (not_ex_all_not ? [alp:R]``(Rabsolu (z-x)) < alp <= x0``/\(E alp) H16); Unfold is_lub in p; Elim p; Intros; Cut (is_upper_bound E ``(Rabsolu (z-x))``).
+Intro; Assert H21 := (H19 ? H20); Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? H15 H21)).
+Unfold is_upper_bound; Intros; Unfold is_upper_bound in H18; Assert H21 := (H18 ? H20); Case (total_order_Rle x1 ``(Rabsolu (z-x))``); Intro.
+Assumption.
+Elim (H17 x1); Split.
+Split; [Auto with real | Assumption].
+Assumption.
+Unfold inclus g; Intros; Elim H15; Intros; Elim H17; Intros; Decompose [and] H18; Cut x0==x2.
+Intro; Rewrite H20; Apply H22.
+Unfold E in p; EApply is_lub_u.
+Apply p.
+Apply H21.
+Elim H12; Intros; Unfold E in H13; Elim H13; Intros H14 _; Elim H14; Intros H15 _; Unfold is_lub in p; Elim p; Intros; Unfold is_upper_bound in H16; Unfold is_upper_bound in H17; Split.
+Apply Rlt_le_trans with x1; [Assumption | Apply (H16 ? H13)].
+Apply H17; Intros; Unfold E in H18; Elim H18; Intros; Elim H19; Intros; Assumption.
+Qed.
