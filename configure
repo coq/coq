@@ -319,7 +319,7 @@ esac
 
 if [ "$coqide_spec" = "no" ] ; then
 if test -x ${CAMLLIB}/lablgtk2; then
-    if grep -q -w convert_with_fallbacks ${CAMLLIB}/lablgtk2/glib.mli; then
+    if grep -q -w convert_with_fallback ${CAMLLIB}/lablgtk2/glib.mli; then
 	COQIDE=byte
 	# native threads
 	if test -f ${CAMLLIB}/threads/threads.cmxa; then
