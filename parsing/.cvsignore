@@ -2,3 +2,10 @@ lexer.ml
 *.ppo
 pcoq.ml
 extend.ml
+g_prim.ml
+q_coqast.ml
+g_basevernac.ml
+g_vernac.ml
+g_tactic.ml
+g_constr.ml
+g_cases.ml

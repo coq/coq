@@ -39,10 +39,10 @@ OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
-CAMLP4EXTEND=camlp4o $(INCLUDES) pa_extend.cmo
+CAMLP4ARGS=$(INCLUDES) pa_extend.cmo
 OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
-CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
+CAMLP4IFDEF=pa_ifdef.cmo -D$(OSTYPE)
 
 COQINCLUDES=-I contrib/omega -I contrib/ring -I contrib/xml \
             -I theories/Init -I theories/Logic -I theories/Arith \
@@ -120,6 +120,11 @@ HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
             tactics/refine.cmo
 
 SPECTAC=tactics/tauto.ml4
+USERTAC = $(SPECTAC)
+ML4FILES += $(USERTAC)
+USERTACML=$(USERTAC:.ml4=.ml)
+USERTACCMO=$(USERTAC:.ml4=.cmo)
+USERTACCMX=$(USERTAC:.ml4=.cmx)
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
@@ -145,11 +150,11 @@ COQBINARIES= $(COQMKTOP) $(COQC) coqtop.byte $(BESTCOQTOP)
 
 world: $(COQBINARIES) states theories contrib tools
 
-coqtop.opt: $(COQMKTOP) $(CMX) user-tac-opt
+coqtop.opt: $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) -o coqtop.opt
 	$(STRIP) ./coqtop.opt
 
-coqtop.byte: $(COQMKTOP) $(CMO) user-tac-byte Makefile
+coqtop.byte: $(COQMKTOP) $(CMO) $(USERTACCMO)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte
 
 # coqmktop 
@@ -169,7 +174,7 @@ scripts/tolink.ml: Makefile
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
-	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTAC:.ml4=.cmo)"\"" >> $@
+	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
@@ -182,8 +187,8 @@ $(COQC): $(COQCCMO) coqtop.byte coqtop.$(BEST)
 	$(OCAMLC) $(BYTEFLAGS) -o $(COQC) -custom unix.cma $(COQCCMO) \
 	  $(OSDEPLIBS)
 
-scripts/coqc.cmo: scripts/coqc.ml4
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4IFDEF) -impl" -impl $<
+scripts/coqc.ml scripts/coqc.cmo scripts/coqc.cmx: CAMLP4ARGS=$(CAMLP4IFDEF)
+ML4FILES += scripts/coqc.ml4
 
 archclean::
 	rm -f scripts/coqc scripts/coqmktop
@@ -345,19 +350,14 @@ archclean::
 # (intended to be rather generic)
 ###########################################################################
 
-USERTAC = $(SPECTAC)
-
-CAMLP4GRAMMAR = camlp4o -I parsing pa_extend.cmo grammar.cma
-OPTCAMLP4GRAMMAR = camlp4o -I parsing pa_extend.cmo grammar.cma \
-                   $(OSDEPP4OPTFLAGS)
+CAMLP4GRAMMAR = -I parsing pa_extend.cmo grammar.cma
 
 COQCMO = names.cmo ast.cmo g_tactic.cmo g_constr.cmo
 
-user-tac-byte: parsing/grammar.cma
-	for i in $(USERTAC); do $(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -I kernel $(COQCMO) -impl" -impl $$i; done
+$(USERTACML): CAMLP4ARGS=$(CAMLP4GRAMMAR) -I kernel $(COQCMO)
+$(USERTACCMO): CAMLP4ARGS=$(CAMLP4GRAMMAR) -I kernel $(COQCMO)
+$(USERTACCMX): CAMLP4ARGS=$(CAMLP4GRAMMAR) -I kernel $(COQCMO)
 
-user-tac-opt: parsing/grammar.cma
-	for i in $(USERTAC); do $(OCAMLOPT) $(OPTFLAGS) -c -pp "$(OPTCAMLP4GRAMMAR) -I kernel $(COQCMO) -impl" -impl $$i; done
 
 ###########################################################################
 # tools
@@ -481,16 +481,17 @@ beforedepend:: parsing/lexer.ml
 
 # grammar modules with camlp4
 
-parsing/q_coqast.cmo: parsing/q_coqast.ml4
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o q_MLast.cmo -impl" -impl $<
+QCOQAST=parsing/q_coqast.ml4
+ML4FILES += $(QCOQAST)
+$(QCOQAST:.ml4=.ml): CAMLP4ARGS=q_MLast.cmo
+$(QCOQAST:.ml4=.cmo): CAMLP4ARGS=q_MLast.cmo
+$(QCOQAST:.ml4=.cmx): CAMLP4ARGS=q_MLast.cmo
 
-# the generic rules could be used for g_prim.ml4, but this implies
-# circular dependencies between g_prim and grammar
-parsing/g_prim.cmo: parsing/g_prim.ml4
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4EXTEND) -impl" -impl $<
-
-parsing/g_prim.cmx: parsing/g_prim.ml4
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4EXTEND) -impl" -impl $<
+GPRIM=parsing/g_prim.ml4 parsing/pcoq.ml4
+ML4FILES += $(GPRIM)
+$(GPRIM:.ml4=.ml): CAMLP4ARGS=pa_extend.cmo
+$(GPRIM:.ml4=.cmo): CAMLP4ARGS=pa_extend.cmo
+$(GPRIM:.ml4=.cmx): CAMLP4ARGS=pa_extend.cmo
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
 	   lib/hashcons.cmo parsing/coqast.cmo parsing/lexer.cmo \
@@ -502,34 +503,28 @@ parsing/grammar.cma: $(GRAMMARCMO)
 clean::
 	rm -f parsing/grammar.cma
 
-parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
-
-parsing/g_%.cmx: parsing/g_%.ml4 parsing/grammar.cma
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(OPTCAMLP4GRAMMAR) -impl" -impl $<
-
-parsing/extend.cmo: parsing/extend.ml4 parsing/grammar.cma
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
-
-parsing/extend.cmx: parsing/extend.ml4 parsing/grammar.cma
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
+PARSINGML4=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
+	   parsing/g_vernac.ml4 parsing/g_cases.ml4 \
+	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/extend.ml4    
+ML4FILES += $(PARSINGML4)
+$(PARSINGML4:.ml4=.ml): parsing/grammar.cma
+$(PARSINGML4:.ml4=.cmo) $(PARSINGML4:.ml4=.cmx): parsing/grammar.cma
+$(PARSINGML4:.ml4=.ml): CAMLP4ARGS=$(CAMLP4GRAMMAR)
+$(PARSINGML4:.ml4=.cmo) $(PARSINGML4:.ml4=.cmx): CAMLP4ARGS=$(CAMLP4GRAMMAR)
 
 beforedepend:: $(GRAMMARCMO)
-
-parsing/pcoq.ml: parsing/pcoq.ml4
-	$(CAMLP4EXTEND) pr_o.cmo -impl $< -o $@
-
-parsing/extend.ml: parsing/extend.ml4 parsing/grammar.cma
-	$(CAMLP4GRAMMAR) pr_o.cmo -impl $< -o $@
 
 beforedepend:: parsing/pcoq.ml parsing/extend.ml
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
+toplevel/mltop.ml: CAMLP4ARGS=$(CAMLP4IFDEF)
 toplevel/mltop.cmo: toplevel/mltop.ml4
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4IFDEF) -DByte -impl" -impl $<
+	$(OCAMLC) $(BYTEFLAGS) -pp "camlp4o $(CAMLP4IFDEF) -DByte -impl" \
+	  -c -impl $<
 toplevel/mltop.cmx: toplevel/mltop.ml4
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4IFDEF) -impl" -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -pp "camlp4o $(CAMLP4IFDEF) -impl" -c -impl $<
+ML4FILES += toplevel/mltop.ml4
 
 ###########################################################################
 # Default rules
@@ -550,10 +545,13 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 	ocamllex $<
 
 .ml4.cmo:
-	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+	$(OCAMLC) $(BYTEFLAGS) -pp "camlp4o $(CAMLP4ARGS) -impl" -c -impl $<
 
 .ml4.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -pp "camlp4o $(CAMLP4ARGS) -impl" -c -impl $<
+
+.ml4.ml:
+	camlp4o pr_o.cmo $(CAMLP4ARGS) -impl $< > $@ || rm -f $@
 
 .v.vo:
 	$(COQC) -q -$(BEST) $(COQINCLUDES) $<
@@ -614,14 +612,12 @@ depend: beforedepend
 dependcoq: beforedepend
 	tools/coqdep $(COQINCLUDES) */*.v */*/*.v > .depend.coq
 
-dependcamlp4: beforedepend
-	rm -f .depend.camlp4
-	for f in */*.ml4; do \
-	  file=`dirname $$f`/`basename $$f .ml4`; \
-	  camlp4o $(INCLUDES) -I . pa_ifdef.cmo pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
-	  ocamldep $(DEPFLAGS) $$file.ml >> .depend.camlp4; \
-	  rm -f $$file.ml; \
-	done
+ML4FILESML = $(ML4FILES:.ml4=.ml)
+dependcamlp4: beforedepend $(ML4FILESML)
+	ocamldep $(DEPFLAGS) $(ML4FILESML) > .depend.camlp4
+
+clean::
+	rm -f $(ML4FILESML)
 
 include .depend
 include .depend.coq

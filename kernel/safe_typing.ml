@@ -208,7 +208,8 @@ let unsafe_infer_type env constr =
 (* ``Type of'' machines. *)
 
 let type_of env c = 
-  let (j,_) = safe_infer env c in nf_betaiota env Evd.empty (body_of_type j.uj_type)
+  let (j,_) = safe_infer env c in
+  nf_betaiota env Evd.empty (body_of_type j.uj_type)
 
 (* Typing of several terms. *)
 
@@ -281,12 +282,15 @@ let add_constant_with_value sp body typ env =
 	  let (jt,cst') = safe_infer env ty in
 	  let env'' = add_constraints cst' env' in
 	  try
-	    let cst'' = conv env'' Evd.empty (body_of_type jb.uj_type) jt.uj_val in
+	    let cst'' = 
+	      conv env'' Evd.empty (body_of_type jb.uj_type) jt.uj_val 
+	    in
 	    let env'' = add_constraints cst'' env'' in
 	    (env'', assumption_of_judgment env'' Evd.empty jt, 
 	     Constraint.union cst' cst'')
 	  with NotConvertible -> 
-	    error_actual_type CCI env jb.uj_val (body_of_type jb.uj_type) jt.uj_val
+	    error_actual_type 
+	      CCI env jb.uj_val (body_of_type jb.uj_type) jt.uj_val
   in
   let ids = 
     Idset.union (global_vars_set body) (global_vars_set (body_of_type ty))
@@ -396,7 +400,8 @@ let type_one_constructor env_ar nparams arsort c =
   let infos = 
     let (params,dc) = mind_extract_params nparams c in
     let env_par = push_rels params env_ar in
-    infos_and_sort env_par dc in
+    infos_and_sort env_par dc 
+  in
   (* Constructors are typed-checked here *)
   let (j,cst) = safe_infer_type env_ar c in
 

@@ -8,7 +8,7 @@ open Environ
 open Libobject
 open Lib
 
-(*s This generates commands Add Path, Remove Path, Print Path *)
+(*s Load path. Used for commands Add Path, Remove Path, Print Path *)
 
 let loadpath_name = "LoadPath"
 
@@ -77,7 +77,8 @@ let loaded_modules () =
   Stringmap.fold (fun s _ l -> s :: l) !modules_table []
 
 let opened_modules () =
-  Stringmap.fold (fun s m l -> if m.module_opened then s :: l else l) 
+  Stringmap.fold 
+    (fun s m l -> if m.module_opened then s :: l else l) 
     !modules_table []
 
 let module_segment = function
@@ -103,12 +104,18 @@ let segment_iter f =
   iter
 
 
-(*s [open_module s] opens a module which is assumed to be already loaded. *)
+(*s [open_module s] opens a module. The module [s] and all modules needed by
+    [s] are assumed to be already loaded. When opening [s] we recursively open
+    all the modules needed by [s] and tagged [exported]. *) 
 
-let open_module s =
+let open_objects decls =
+  segment_iter open_object decls
+
+let rec open_module s =
   let m = find_module s in
   if not m.module_opened then begin
-    segment_iter open_object m.module_declarations;
+    List.iter (fun (m,_,exp) -> if exp then open_module m) m.module_deps;
+    open_objects m.module_declarations;
     m.module_opened <- true
   end
 
@@ -122,7 +129,7 @@ let open_module s =
 let load_objects decls =
   segment_iter load_object decls
 
-let rec load_module_from doexp s f =
+let rec load_module_from s f =
   let (fname,ch) = raw_intern_module (get_load_path ()) f in
   let md = System.marshal_in ch in
   let digest = System.marshal_in ch in
@@ -132,32 +139,31 @@ let rec load_module_from doexp s f =
 	    module_compiled_env = md.md_compiled_env;
 	    module_declarations = md.md_declarations;
 	    module_opened = false;
-	    module_exported = doexp;
+	    module_exported = false;
 	    module_deps = md.md_deps;
 	    module_digest = digest } in
   if s <> md.md_name then
     error ("The file " ^ fname ^ " does not contain module " ^ s);
-  List.iter (load_mandatory_module doexp s) m.module_deps;
+  List.iter (load_mandatory_module s) m.module_deps;
   Global.import m.module_compiled_env;
   load_objects m.module_declarations;
   modules_table := Stringmap.add s m !modules_table;
   m
 
-and load_mandatory_module doexp caller (s,d,export) =
-  let m = find_module export s s in
+and load_mandatory_module caller (s,d,_) =
+  let m = find_module s s in
   if d <> m.module_digest then
-    error ("module "^caller^" makes inconsistent assumptions over module "^s);
-  if doexp && export then open_module s
+    error ("module "^caller^" makes inconsistent assumptions over module "^s)
 
-and find_module doexp s f =
+and find_module s f =
   try 
     Stringmap.find s !modules_table 
   with Not_found -> 
-    load_module_from doexp s f
+    load_module_from s f
 
 let load_module s = function
-  | None -> let _ = load_module_from true s s in ()
-  | Some f -> let _ = load_module_from true s f in ()
+  | None -> let _ = load_module_from s s in ()
+  | Some f -> let _ = load_module_from s f in ()
 
 
 (*s [require_module] loads and opens a module. *)
@@ -166,7 +172,7 @@ let require_module spec name fileopt export =
   let file = match fileopt with
     | None -> name
     | Some f -> f in
-  let m = load_module_from true name file in
+  let m = load_module_from name file in
   open_module name;
   if export then m.module_exported <- true
 
