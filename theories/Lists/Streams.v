@@ -10,7 +10,9 @@
 
 Set Implicit Arguments.
 
-Section Streams. (* The set of streams : definition *)
+(** Streams *)
+
+Section Streams.
 
 Variable A : Set.
 
@@ -125,9 +127,9 @@ Section Stream_Properties.
 Variable P : Stream->Prop.
 
 (*i
-Inductive   Exists :  Stream -> Prop :=
-   Here    : (x:Stream)(P x) ->(Exists x) |
-   Further : (x:Stream)~(P x)->(Exists (tl x))->(Exists x).
+Inductive Exists : Stream -> Prop :=
+  | Here    : forall x:Stream, P x -> Exists x
+  | Further : forall x:Stream, ~ P x -> Exists (tl x) -> Exists x.
 i*)
 
 Inductive   Exists :  Stream -> Prop :=
