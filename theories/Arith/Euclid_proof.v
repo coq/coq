@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+Require Plus.
 Require Minus.
 Require Euclid_def.
 Require Compare_dec.
