@@ -337,11 +337,11 @@ We first give an example of coercion between atomic inductive types
 
 %\begin{\small}
 \begin{coq_example}
-Definition bool_in_nat (b:bool) := if b then 0%N else 1%N.
+Definition bool_in_nat (b:bool) := if b then 0 else 1.
 Coercion bool_in_nat : bool >-> nat.
-Check (0%N = true).
+Check (0 = true).
 Set Printing Coercions.
-Check (0%N = true).
+Check (0 = true).
 \end{coq_example}
 %\end{small}
 
@@ -469,9 +469,9 @@ Parameter bij : Set -> Set -> Set.
 Parameter ap : forall A B:Set, bij A B -> A -> B.
 Coercion ap : bij >-> Funclass.
 Parameter b : bij nat nat.
-Check (b 0%N).
+Check (b 0).
 Set Printing Coercions.
-Check (b 0%N).
+Check (b 0).
 \end{coq_example}
 %\end{small}
 
