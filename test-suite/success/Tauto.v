@@ -122,7 +122,7 @@ Proof.
   Tauto.
 Save.
 
-(* This example takes much time with the old version of Tauto *)
+(* This example took much time with the old version of Tauto *)
 Lemma critical_example0:(~~B->B)->(A->B)->~~A->B.
 Proof.
   Tauto.
@@ -130,6 +130,13 @@ Save.
 
 (* Same remark as previously *)
 Lemma critical_example1:(~~B->B)->(~B->~A)->~~A->B.
+Proof.
+  Tauto.
+Save.
+
+(* This example took very much time (about 3mn on a PIII 450MHz in bytecode)
+   with the old Tauto. Now, it's immediate (less than 1s). *)
+Lemma critical_example2:(~A<->B)->(~B<->A)->(~~A<->A).
 Proof.
   Tauto.
 Save.
