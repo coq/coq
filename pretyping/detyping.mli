@@ -12,8 +12,6 @@ open Rawterm
 (* [detype avoid env c] turns [c], typed in [env], into a rawconstr. *)
 (* De Bruijn indexes are turned to bound names, avoiding names in [avoid] *)
 
-exception StillDLAM
-
 val detype : identifier list -> names_context -> constr -> rawconstr
 
 (* look for the index of a named var or a nondep var as it is renamed *)

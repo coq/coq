@@ -50,12 +50,6 @@ let rec execute mf env cstr =
     | IsVar id -> 
 	(make_judge cstr (lookup_var_type id env), cst0)
 
-    | IsAbst _ ->
-        if evaluable_abst env cstr then 
-	  execute mf env (abst_value env cstr)
-        else 
-	  error "Cannot typecheck an unevaluable abstraction"
-
     (* ATTENTION : faudra faire le typage du contexte des Const,
     MutInd et MutConstructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)

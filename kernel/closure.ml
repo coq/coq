@@ -144,7 +144,7 @@ let const_value_cache info c =
   try  
     Some (Hashtbl.find info.i_tab c)
   with Not_found ->
-    match const_abst_opt_value info.i_env info.i_evc c with
+    match const_evar_opt_value info.i_env info.i_evc c with
       | Some body ->
           let v = info.i_repr info body in
           Hashtbl.add info.i_tab c v;
@@ -450,7 +450,6 @@ let rec norm_head info env t stack =
       (VAL(0, mkProd (x, cbv_norm_term info env t,
 		      cbv_norm_term info (subs_lift env) c)),
 	     stack)
-  | IsAbst (_,_) -> failwith "No longer implemented"
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
@@ -519,8 +518,8 @@ and apply_stack info t = function
       apply_stack info (applistc t (List.map (cbv_norm_value info) args)) st
   | CASE (ty,br,ci,env,st) ->
       apply_stack info
-        (mkMutCaseA ci (cbv_norm_term info env ty) t
-           (Array.map (cbv_norm_term info env) br))
+        (mkMutCase (ci, cbv_norm_term info env ty, t,
+		    Array.map (cbv_norm_term info env) br))
         st
 
 
@@ -883,7 +882,7 @@ and whnf_frterm info ft =
           { norm = uf.norm; term = FLIFT(k, uf) }
       | FOP2 (Cast,f,_) -> whnf_frterm info f  (* remove outer casts *)
       | FOPN (AppL,appl) -> whnf_apply info appl.(0) (array_tl appl)
-      | FOPN ((Const _ | Evar _ | Abst _) as op,vars) ->
+      | FOPN ((Const _ | Evar _) as op,vars) ->
 	  if red_under info.i_flags (DELTA op) then
             let cst = DOPN(op, Array.map term_of_freeze vars) in
             (match const_value_cache info cst with
@@ -953,7 +952,7 @@ and whnf_term info env t =
     | DOP1 (op, nt) -> { norm = false; term = FOP1 (op, freeze env nt) }
     | DOP2 (Cast,ct,c) -> whnf_term info env ct    (* remove outer casts *)
     | DOP2 (_,_,_) -> assert false (* Lambda|Prod made explicit *)
-    | DOPN ((AppL | Const _ | Evar _ | Abst _ | MutCase _) as op, ve) ->
+    | DOPN ((AppL | Const _ | Evar _ | MutCase _) as op, ve) ->
       	whnf_frterm info { norm = false; term = FOPN (op, freeze_vect env ve) }
     | DOPN ((MutInd _ | MutConstruct _) as op,v) ->
       	{ norm = (v=[||]); term = FOPN (op, freeze_vect env v) }

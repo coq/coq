@@ -535,7 +535,6 @@ let polynom_unfold_tac =
      { r_beta = true;
        r_delta = (function
                     | Const sp -> SectionPathSet.mem sp constants_to_unfold
-                    | Abst sp -> SectionPathSet.mem sp constants_to_unfold
                     | _ -> false);
        r_iota = true })
   in

@@ -91,7 +91,7 @@ let reduce_mind_case_use_function env f mia =
 	applist (mia.mlf.(i-1),real_cargs)
     | DOPN(CoFix _,_) as cofix ->
 	let cofix_def = contract_cofix_use_function f (destCoFix cofix) in
-	mkMutCaseA mia.mci mia.mP (applist(cofix_def,mia.mcargs)) mia.mlf
+	mkMutCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 	  
 let special_red_case env whfun p c ci lf  =
@@ -160,13 +160,6 @@ and construct_const env sigma c stack =
                   | _ -> hnfstack (cval, stack))
              else 
 	       raise Redelimination)
-(*
-      | (DOPN(Abst _,_) as a) ->
-          if evaluable_abst env a then 
-	    hnfstack (abst_value env a) stack
-          else 
-	    raise Redelimination
-*)
       | IsCast (c,_) -> hnfstack (c, stack)
       | IsAppL (f,cl) -> hnfstack (f, cl@stack)
       | IsLambda (_,_,c) ->
@@ -208,13 +201,6 @@ let hnf_constr env sigma c =
 		  | _ ->  redrec (c, largs))
              else 
 	       applist s)
-(*
-      | DOPN(Abst _,_) ->
-          if evaluable_abst env x then 
-	    redrec (abst_value env x) largs
-          else 
-	    applist s
-*)
       | IsCast (c,_) -> redrec (c, largs)
       | IsMutCase (ci,p,c,lf) ->
           (try
@@ -307,11 +293,7 @@ let one_step_reduce env sigma c =
              if evaluable_constant env x then
                applistc (constant_value env x) largs
              else error "Not reductible 1")
-(*
-      | DOPN(Abst _,_) ->
-          if evaluable_abst env x then applistc (abst_value env x) largs
-          else error "Not reducible 0"
-*)
+
       | IsMutCase (ci,p,c,lf) ->
           (try
 	     applistc 

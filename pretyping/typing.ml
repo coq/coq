@@ -40,12 +40,6 @@ let rec execute mf env sigma cstr =
        with Not_found ->
          error ("execute: variable " ^ (string_of_id id) ^ " not defined"))
 	  
-    | IsAbst _ ->
-        if evaluable_abst env cstr then 
-	  execute mf env sigma (abst_value env cstr)
-        else 
-	  error "Cannot typecheck an unevaluable abstraction"
-	      
     | IsConst c ->
         make_judge cstr (type_of_constant env sigma c)
 	  

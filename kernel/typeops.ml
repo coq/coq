@@ -213,7 +213,7 @@ let type_of_case env sigma ci pj cj lfj =
     type_case_branches env sigma indspec (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
   check_branches_message env sigma (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
-  { uj_val  = mkMutCaseA ci pj.uj_val cj.uj_val (Array.map j_val_only lfj);
+  { uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val_only lfj);
     uj_type = make_typed rslty kind }
 
 (* Prop and Set *)
@@ -636,7 +636,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
 	| IsVar _ | IsSort _ ->  List.for_all (check_rec_call n lst) l
 
-	| IsXtra _ | IsAbst _ ->  List.for_all (check_rec_call n lst) l
+	| IsXtra _ ->  List.for_all (check_rec_call n lst) l
      )
      
    in 
@@ -856,7 +856,6 @@ let control_only_guard env sigma =
     | IsMutConstruct (_,cl) -> Array.iter control_rec cl
     | IsConst (_,cl)        -> Array.iter control_rec cl
     | IsEvar (_,cl)         -> Array.iter control_rec cl
-    | IsAbst (_,cl)         -> Array.iter control_rec cl
     | IsAppL (_,cl)         -> List.iter control_rec cl
     | IsCast (c1,c2)       -> control_rec c1; control_rec c2
     | IsProd (_,c1,c2)     -> control_rec c1; control_rec c2

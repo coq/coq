@@ -22,3 +22,8 @@ maintenant celui associé au nom de la grammaire (vernac, tactic ou
 constr). Donc plus de piquants <:vernac:<...>> etc. Pour retourner de
 l'ast, il faut typer explicitement la grammaire avec Ast ou List
 (renommé d'ailleurs AstList).
+
+- AddPath -> Add Path;
+  Print LoadPath -> Print Path;
+  DelPath -> Remove Path;
+  Print Path -> Print Coercion Paths.

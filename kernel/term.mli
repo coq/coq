@@ -42,7 +42,7 @@ type 'a oper =
   | Meta of int
   | Sort of 'a
   | Cast | Prod | Lambda
-  | AppL | Const of section_path | Abst of section_path
+  | AppL | Const of section_path
   | Evar of existential_key
   | MutInd of inductive_path
   | MutConstruct of constructor_path
@@ -104,7 +104,6 @@ type 'ctxt reference =
   | RConst of section_path * 'ctxt
   | RInd of inductive_path * 'ctxt
   | RConstruct of constructor_path * 'ctxt
-  | RAbst of section_path
   | RVar of identifier
   | REVar of int * 'ctxt
 
@@ -136,7 +135,6 @@ type kindOfTerm =
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
   | IsAppL         of constr * constr list
-  | IsAbst         of section_path * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -230,9 +228,6 @@ val mkConst : constant -> constr
 (* Constructs an existential variable *)
 val mkEvar : existential -> constr
 
-(* Constructs an abstract object *)
-val mkAbst : section_path -> constr array -> constr
-
 (* Constructs the ith (co)inductive type of the block named sp *)
 (* The array of terms correspond to the variables introduced in the section *)
 val mkMutInd : inductive -> constr
@@ -243,8 +238,8 @@ val mkMutInd : inductive -> constr
 val mkMutConstruct : constructor -> constr
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-val mkMutCase : case_info * constr * constr * constr list -> constr
-val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
+val mkMutCaseL : case_info * constr * constr * constr list -> constr
+val mkMutCase : case_info * constr * constr * constr array -> constr
 
 (* If [recindxs = [|i1,...in|]]
       [typarray = [|t1,...tn|]]
@@ -363,11 +358,12 @@ val args_of_const : constr -> constr array
 val destEvar : constr -> int * constr array
 val num_of_evar : constr -> int
 
+(*
 (* Destructs an abstract term *)
 val destAbst : constr -> section_path * constr array
 val path_of_abst : constr -> section_path
 val args_of_abst : constr -> constr array
-
+*)
 (* Destructs a (co)inductive type *)
 val destMutInd : constr -> inductive
 val op_of_mind : constr -> inductive_path
@@ -697,7 +693,7 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpAppL | OpConst of section_path | OpAbst of section_path
+  | OpAppL | OpConst of section_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
@@ -716,6 +712,20 @@ val gather_constr_with_binders :
 val generic_fold_left :
   ('a -> constr -> 'a) -> 'a -> (name * constr option * constr) list
       -> constr array -> 'a
+
+val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
+
+val fold_constr_with_binders :
+  ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
+
+val iter_constr_with_binders :
+  ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
+
+val map_constr : (constr -> constr) -> constr -> constr
+
+val map_constr_with_binders :
+  (name -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+
 
 (*s Hash-consing functions for constr. *)
 

@@ -53,7 +53,6 @@ let label_of_ref = function
   | RInd (sp,_)       -> IndNode sp
   | RConstruct (sp,_) -> CstrNode sp
   | RVar id           -> VarNode id
-  | RAbst _           -> error "Obsolète"
   | REVar _           -> raise BoundPattern
 
 let rec head_pattern_bound t =
@@ -265,12 +264,12 @@ let rec sub_match nocc pat c =
     (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
     | PatternMatchingFailure ->
       let (lm,le) = try_sub_match nocc pat (c1::Array.to_list lc) in
-      (lm,mkMutCase (ci,hd,List.hd le,List.tl le))
+      (lm,mkMutCaseL (ci,hd,List.hd le,List.tl le))
     | NextOccurrence nocc ->
       let (lm,le) = try_sub_match (nocc - 1) pat (c1::Array.to_list lc) in
-      (lm,mkMutCase (ci,hd,List.hd le,List.tl le)))
+      (lm,mkMutCaseL (ci,hd,List.hd le,List.tl le)))
   | IsMutConstruct _ | IsFix _ | IsMutInd _|IsCoFix _ |IsEvar _|IsConst _
-  | IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _|IsAbst (_, _) ->
+  | IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _ ->
     (try authorized_occ nocc ((matches pat c),DOP0 (Meta (-1))) with
     | PatternMatchingFailure -> raise (NextOccurrence nocc)
     | NextOccurrence nocc -> raise (NextOccurrence (nocc - 1)))
@@ -327,4 +326,4 @@ let rec pattern_of_constr t =
 	       Array.map pattern_of_constr br)
     | IsFix _ | IsCoFix _ ->
 	error "pattern_of_constr: (co)fix currently not supported"
-    | IsAbst _ | IsXtra _   -> anomaly "No longer supported"
+    | IsXtra _   -> anomaly "No longer supported"

@@ -30,11 +30,30 @@ open Rawterm
 
 type used_idents = identifier list
 
+exception Occur
+
+let occur_rel p env id = 
+  try lookup_name_of_rel p env = Name id
+  with Not_found -> false (* Unbound indice : may happen in debug *)
+
+let occur_id env id0 c =
+  let rec occur n c = match kind_of_term c with
+    | IsVar id when  id=id0 -> raise Occur
+    | IsConst (sp, _) when basename sp = id0 -> raise Occur
+    | IsMutInd (ind_sp, _)
+	when basename (path_of_inductive_path ind_sp) = id0 -> raise Occur
+    | IsMutConstruct (cstr_sp, _) 
+	when basename (path_of_constructor_path cstr_sp) = id0 -> raise Occur
+    | IsRel p when p>n & occur_rel (p-n) env id0 -> raise Occur
+    | _ -> iter_constr_with_binders succ occur n c
+  in 
+  try occur 1 c; false
+  with Occur -> true
+(*
 let occur_id env_names id0 c =
   let rec occur n = function
     | VAR id             -> id=id0
     | DOPN (Const sp,cl) -> (basename sp = id0) or (array_exists (occur n) cl)
-    | DOPN (Abst sp,cl)  -> (basename sp = id0) or (array_exists (occur n) cl)
     | DOPN (MutInd ind_sp, cl) as t -> 
   	(basename (path_of_inductive_path ind_sp) = id0)
 	or (array_exists (occur n) cl)
@@ -56,7 +75,7 @@ let occur_id env_names id0 c =
     | DOP0 _             -> false
   in 
   occur 1 c
-
+*)
 let next_name_not_occuring name l env_names t =
   let rec next id =
     if List.mem id l or occur_id env_names id t then next (lift_ident id)
@@ -83,7 +102,6 @@ let global_vars_and_consts t =
     match op with
     | OpVar id -> id::acc'
     | OpConst sp -> (basename sp)::acc'
-    | OpAbst sp  -> (basename sp)::acc'
     | OpMutInd ind_sp -> (basename (path_of_inductive_path ind_sp))::acc'
     | OpMutConstruct csp -> (basename (path_of_constructor_path csp))::acc'
     | _ -> acc'
@@ -247,15 +265,6 @@ let computable p k =
   in 
   striprec (k,p)
 
-(*
-let ids_of_var cl =
-  List.map
-    (function 
-       | RRef (_,RVar id) -> id
-       | _-> anomaly "ids_of_var")
-    (Array.to_list cl)
-*)
-
 let lookup_name_as_renamed ctxt t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
     | IsProd (name,t,c') ->
@@ -278,12 +287,10 @@ let lookup_index_as_renamed t n =
     | _ -> None
   in lookup n 1 t
 
-exception StillDLAM
-
 let rec detype avoid env t =
   match collapse_appl t with
     (* Not well-formed constructions *)
-    | DLAM _ | DLAMV _ -> raise StillDLAM
+    | DLAM _ | DLAMV _ -> error "Cannot detype"
     (* Well-formed constructions *)
     | regular_constr -> 
     (match kind_of_term regular_constr with
@@ -312,8 +319,6 @@ let rec detype avoid env t =
 	RRef(dummy_loc,RConst(sp,Array.map (detype avoid env) cl))
     | IsEvar (ev,cl) ->
 	RRef(dummy_loc,REVar(ev,Array.map (detype avoid env) cl))
-    | IsAbst (sp,cl) -> 
-	anomaly "bdize: Abst should no longer occur in constr"
     | IsMutInd (ind_sp,cl) ->
 	RRef (dummy_loc,RInd (ind_sp,Array.map (detype avoid env) cl))
     | IsMutConstruct (cstr_sp,cl) ->

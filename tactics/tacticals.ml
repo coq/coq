@@ -297,9 +297,9 @@ let general_elim_then_using
   elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
   let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let name_elim =
-    (match elim with
-       | DOPN(Const sp,_) -> id_of_string(string_of_path sp)
-       | VAR id -> id
+    (match kind_of_term elim with
+       | IsConst (sp,_) -> id_of_string (string_of_path sp)
+       | IsVar id -> id
        | _ -> id_of_string " ") 
   in
   (* applying elimination_scheme just a little modified *)

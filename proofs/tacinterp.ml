@@ -765,8 +765,7 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt) lf =
             in
               idents := Some
                 (function
-                     Const sp -> List.mem sp idl
-                   | Abst sp -> List.mem sp idl
+                   | Const sp -> List.mem sp idl
                    | _ -> false)
           else user_err_loc(loc,"flag_of_ast",
                   [<'sTR "Cannot specify identifiers to unfold twice">])
@@ -781,8 +780,7 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt) lf =
             in
               idents := Some
                 (function
-                     Const sp -> not (List.mem sp idl)
-                   | Abst sp -> not (List.mem sp idl)
+                   | Const sp -> not (List.mem sp idl)
                    | _ -> false)
           else user_err_loc(loc,"flag_of_ast",
                   [<'sTR "Cannot specify identifiers to unfold twice">])

@@ -40,6 +40,7 @@ let get_pairs_from_bindings =
   in 
   List.map pair_from_binding
 
+(*
 let force_reference c =
   match fst (decomp_app c) with
   | DOPN (Const sp,ctxt) -> c
@@ -48,18 +49,18 @@ let force_reference c =
   | DOPN (MutInd (sp,i),ctxt) -> c
   | VAR id -> c
   | _ -> error "Not an atomic type"
+*)
 
-let rec string_head_bound = function 
-  | DOPN(Const _,_) as x -> 
-      string_of_id (basename (path_of_const x))
-  | DOPN(MutInd ind_sp,args) as x -> 
+let rec string_head_bound x = match kind_of_term x with
+  | IsConst _ -> string_of_id (basename (path_of_const x))
+  | IsMutInd (ind_sp,args) -> 
       let mispec = Global.lookup_mind_specif (ind_sp,args) in 
       string_of_id (mis_typename mispec)
-  |  DOPN(MutConstruct (ind_sp,i),args) ->
+  | IsMutConstruct ((ind_sp,i),args) ->
        let mispec = Global.lookup_mind_specif (ind_sp,args) in 
        string_of_id (mis_consnames mispec).(i-1)
-  |  VAR id -> string_of_id id
-  |  _ -> raise Bound
+  | IsVar id -> string_of_id id
+  | _ -> raise Bound
 
 let string_head c = 
   try string_head_bound c with Bound -> error "Bound head variable"
@@ -232,10 +233,10 @@ let dyn_reduce = function
 (* Unfolding occurrences of a constant *)
 
 let unfold_constr c = 
-  match strip_outer_cast c with 
-    | DOPN(Const(sp),_) -> 
+  match kind_of_term (strip_outer_cast c) with 
+    | IsConst(sp,_) -> 
 	unfold_in_concl [[],sp]
-    | t -> 
+    | _ -> 
 	errorlabstrm "unfold_constr"
 	  [< 'sTR "Cannot unfold a non-constant." >]
 
@@ -937,14 +938,14 @@ let dyn_split  = function
  * gl : the current goal
 *)
 
-let last_arg = function
-  | DOPN(AppL,cl) ->  cl.(Array.length cl - 1)
+let last_arg c = match kind_of_term c with
+  | IsAppL (f,cl) ->  List.nth cl (List.length cl - 1)
   | _ -> anomaly "last_arg"
 	
 let elimination_clause_scheme kONT wc elimclause indclause gl = 
   let indmv = 
-    (match last_arg (clenv_template elimclause).rebus with
-       | DOP0(Meta mv) -> mv
+    (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
+       | IsMeta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
              [< 'sTR "The type of elimination clause is not well-formed" >]) 
   in
@@ -1416,8 +1417,8 @@ let dyn_destruct = function
 let elim_scheme_type elim t gl =
   let (wc,kONT) = startWalk gl in
   let clause = mk_clenv_type_of wc elim in 
-  match last_arg (clenv_template clause).rebus with
-    | DOP0(Meta mv) ->
+  match kind_of_term (last_arg (clenv_template clause).rebus) with
+    | IsMeta mv ->
         let clause' = clenv_unify (clenv_instance_type clause mv) t clause in 
 	elim_res_pf kONT clause' gl
     | _ -> anomaly "elim_scheme_type"

@@ -335,8 +335,8 @@ let explain_type_error k ctx = function
       explain_cant_apply_not_functional k ctx rator randl
   | IllFormedRecBody (i, lna, vdefj, vargs) ->
       explain_ill_formed_rec_body k ctx i lna vdefj vargs
-  | IllTypedRecBody (i, lna, vdefj, vargs) ->
-      explain_ill_typed_rec_body k ctx i lna vdefj vargs
+  | IllTypedRecBody (i, lna, vdefj, vargs) -> 
+     explain_ill_typed_rec_body k ctx i lna vdefj vargs
   | NotInductive c ->
       explain_not_inductive k ctx c
   | MLCase (mes,c,ct,br,brt) ->

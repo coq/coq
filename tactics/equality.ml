@@ -464,7 +464,7 @@ let descend_then sigma env head dirn =
 	let result = if i = dirn then dirnval else dfltval in
 	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args
       in
-      mkMutCase (make_default_case_info mispec, p, head,
+      mkMutCaseL (make_default_case_info mispec, p, head,
 		 List.map build_branch (interval 1 (mis_nconstr mispec)))))
   
 (* Now we need to construct the discriminator, given a discriminable
@@ -509,7 +509,7 @@ let construct_discriminator sigma env dirn c sort =
     it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args 
   in
   let build_match =
-    mkMutCase (make_default_case_info mispec, p, c,
+    mkMutCaseL (make_default_case_info mispec, p, c,
 	       List.map build_branch (interval 1 (mis_nconstr mispec)))
   in
   build_match

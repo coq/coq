@@ -124,7 +124,7 @@ let fresh env n =
 
 let rec compute_metamap env c = match kind_of_term c with
   (* le terme est directement une preuve *)
-  | (IsConst _ | IsEvar _ | IsAbst _ | IsMutInd _ | IsMutConstruct _ |
+  | (IsConst _ | IsEvar _ | IsMutInd _ | IsMutConstruct _ |
     IsSort _ | IsVar _ | IsRel _) -> TH (c,[],[])
 
   (* le terme est une mv => un but *)

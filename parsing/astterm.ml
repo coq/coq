@@ -153,8 +153,6 @@ let dbize_global loc = function
       RRef (loc,RInd ((dbize_sp sp, tyi),dbize_ctxt ctxt))
   | ("MUTCONSTRUCT", sp::Num(_,ti)::Num(_,n)::ctxt) ->
       RRef (loc,RConstruct (((dbize_sp sp,ti),n),dbize_ctxt ctxt))
-  (* | ("SYNCONST", [sp]) -> search_synconst_path CCI (dbize_sp sp) *)
-  (* | ("ABST", [sp]) -> RRef (loc,Abst (dbize_sp sp)) *)
   | _ -> anomaly_loc (loc,"dbize_global",
 		      [< 'sTR "Bad ast for this global a reference">])
 
@@ -595,7 +593,6 @@ let rec pat_of_ref metas vars = function
   | RInd (ip,ctxt) -> RInd (ip, dbize_rawconstr_ctxt ctxt)
   | RConstruct(cp,ctxt) ->RConstruct(cp, dbize_rawconstr_ctxt ctxt)
   | REVar (n,ctxt) -> REVar (n, dbize_rawconstr_ctxt ctxt)
-  | RAbst _ -> error "pattern_of_rawconstr: not implemented"
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
 
 and pat_of_raw metas vars lvar = function

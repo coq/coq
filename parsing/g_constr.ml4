@@ -86,7 +86,6 @@ GEXTEND Gram
                    ($SLAM $b $c1))) >>
       | IDENT "let"; id1 = IDENT ; "="; c = constr; "in"; c1 = constr -> 
 	  <:ast< (LETIN $c [$id1]$c1) >>
-(* <:ast< (ABST #Core#let.cci $c [$id1]$c1) >>*)
       | IDENT "if"; c1 = constr; IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr ->
         <:ast< ( CASE "NOREC" "SYNTH" $c1 $c2 $c3) >>

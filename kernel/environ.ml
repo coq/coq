@@ -262,7 +262,7 @@ let hdchar env c =
     | IsCoFix (i,(_,ln,_)) -> 
 	let id = match List.nth ln i with Name id -> id | _ -> assert false in
 	lowercase_first_char id
-    | IsMeta _|IsXtra _|IsAbst (_, _)|IsEvar _|IsMutCase (_, _, _, _) -> "y"
+    | IsMeta _|IsXtra _|IsEvar _|IsMutCase (_, _, _, _) -> "y"
   in 
   hdrec 0 c
 
@@ -311,7 +311,7 @@ let make_all_name_different env =
     env
 
 (* Abstractions. *)
-
+(*
 let evaluable_abst env = function
   | DOPN (Abst _,_) -> true
   | _ -> invalid_arg "evaluable_abst"
@@ -324,7 +324,7 @@ let abst_value env = function
   | DOPN(Abst sp, args) ->
       contract_abstraction (lookup_abst sp env) args
   | _ -> invalid_arg "abst_value"
-
+*)
 let defined_constant env = function
   | DOPN (Const sp, _) -> is_defined (lookup_constant sp env)
   | _ -> invalid_arg "defined_constant"

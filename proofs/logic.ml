@@ -157,7 +157,7 @@ let new_meta_variables =
     | IsCast (c,t) -> mkCast (newrec c, t)
     | IsAppL (f,cl) -> applist (newrec f, List.map newrec cl)
     | IsMutCase (ci,p,c,lf) ->
-	mkMutCaseA ci (newrec p) (newrec c) (Array.map newrec lf)
+	mkMutCase (ci, newrec p, newrec c, Array.map newrec lf)
     | _ -> x
   in 
  newrec

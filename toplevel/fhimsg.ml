@@ -190,7 +190,43 @@ let explain_cant_apply_not_functional k ctx rator randl =
      'sTR" "; v 0 appl; 'fNL >]
 
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body k ctx str lna i vdefs =
+let explain_ill_formed_rec_body k ctx err lna i vdefs =
+  let str = match err with
+
+  (* Fixpoint guard errors *)
+  | NotEnoughAbstractionInFixBody ->
+      [< 'sTR "Not enough abstractions in the definition" >]
+  | RecursionNotOnInductiveType ->
+      [< 'sTR "Recursive definition on a non inductive type" >]
+  | RecursionOnIllegalTerm ->
+      [< 'sTR "Recursive call applied to an illegal term" >]
+  | NotEnoughArgumentsForFixCall ->
+      [< 'sTR "Not enough arguments for the recursive call" >]
+
+  (* CoFixpoint guard errors *)
+  (* TODO : récupérer le contexte des termes pour pouvoir les afficher *)
+  | CodomainNotInductiveType c ->
+      [< 'sTR "The codomain is"; 'sPC; P.pr_term k ctx c; 'sPC;
+	 'sTR "which should be a coinductive type" >]
+  | NestedRecursiveOccurrences ->
+      [< 'sTR "Nested recursive occurrences" >]
+  | UnguardedRecursiveCall c ->
+      [< 'sTR "Unguarded recursive call" >]
+  | RecCallInTypeOfAbstraction c ->
+      [< 'sTR "Not allowed recursive call in the domain of an abstraction" >]
+  | RecCallInNonRecArgOfConstructor c ->
+      [< 'sTR "Not allowed recursive call in a non-recursive argument of constructor" >]
+  | RecCallInTypeOfDef c ->
+      [< 'sTR "Not allowed recursive call in the type of a recursive definition" >]
+  | RecCallInCaseFun c ->
+      [< 'sTR "Not allowed recursive call in a branch of cases" >]
+  | RecCallInCaseArg c -> 
+      [< 'sTR "Not allowed recursive call in the argument of cases" >]
+  | RecCallInCasePred c ->
+      [< 'sTR "Not allowed recursive call in the type of cases in" >]
+  | NotGuardedForm ->
+      [< 'sTR "Definition not in guarded form" >]
+in
   let pvd = P.pr_term k ctx vdefs.(i) in
   let s =
     match List.nth lna i with Name id -> string_of_id id | Anonymous -> "_" in

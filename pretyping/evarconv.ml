@@ -210,32 +210,6 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	in 
 	ise_try isevars [f3; f4]
 
-    | IsAbst (_,_), IsAbst (_,_) ->
-	let f1 () =
-          (term1=term2) &
- 	  (List.length(l1) = List.length(l2)) &
- 	  (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
-	and f2 () =
-          if evaluable_abst env term2 then 
-	    evar_eqappr_x env isevars pbty
-              appr1 (evar_apprec env isevars l2 (abst_value env term2))
-	  else 
-	    evaluable_abst env term1
-            & evar_eqappr_x env isevars pbty
-              (evar_apprec env isevars l1 (abst_value env term1)) appr2
-	in 
-	ise_try isevars [f1; f2]
-
-    | IsAbst (_,_), _ ->  
-        (evaluable_abst env term1)
-	& evar_eqappr_x env isevars pbty
-          (evar_apprec env isevars l1 (abst_value env term1)) appr2
-	  
-    | _, IsAbst (_,_)  -> 
-        (evaluable_abst env term2)
-	& evar_eqappr_x env isevars pbty
- 	  appr1 (evar_apprec env isevars l2 (abst_value env term2))
-
     | IsRel n, IsRel m ->
 	n=m
 	  & (List.length(l1) = List.length(l2))

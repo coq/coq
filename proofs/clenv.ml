@@ -429,10 +429,10 @@ let clenv_instance_term clenv c =
 
 let clenv_cast_meta clenv = 
   let rec crec u =
-    match splay_constr u with
-      | (OpAppL | OpMutCase _), _ -> crec_hd u
-      | OpCast , [|c;_|] when isMeta c -> u
-      | op, cl  -> gather_constr (op, Array.map crec cl)
+    match kind_of_term u with
+      | IsAppL _ | IsMutCase _ -> crec_hd u
+      | IsCast (c,_) when isMeta c -> u
+      | _  -> map_constr crec u
 	    
   and crec_hd u =
     match kind_of_term (strip_outer_cast u) with
@@ -447,7 +447,7 @@ let clenv_cast_meta clenv =
 	     u)
       | IsAppL(f,args) -> mkAppList (crec_hd f) (List.map crec args)
       | IsMutCase(ci,p,c,br) ->
-	  mkMutCaseA ci (crec_hd p) (crec_hd c) (Array.map crec br)
+	  mkMutCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | _ -> u
   in 
   crec

@@ -144,11 +144,11 @@ val it_mkNamedProd_or_LetIn : constr -> var_context -> constr
 val lambda_create : env -> constr * constr -> constr
 val prod_create : env -> constr * constr -> constr
 
-
+(*
 val translucent_abst : env -> constr -> bool
 val evaluable_abst : env -> constr -> bool
 val abst_value : env -> constr -> constr
-
+*)
 val defined_constant : env -> constr -> bool
 val evaluable_constant : env -> constr -> bool
 

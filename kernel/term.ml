@@ -26,7 +26,7 @@ type 'a oper =
   (* DOP2 *)
   | Cast | Prod | Lambda
   (* DOPN *)
-  | AppL | Const of section_path | Abst of section_path
+  | AppL | Const of section_path
   | Evar of existential_key
   | MutInd of inductive_path
   | MutConstruct of constructor_path
@@ -505,9 +505,6 @@ let mkConst (sp,a) = DOPN (Const  sp, a)
 (* Constructs an existential variable *)
 let mkEvar (n,a) = DOPN (Evar n, a)
 
-(* Constructs an abstract object *)
-let mkAbst sp a = DOPN (Abst sp, a)
-
 (* Constructs the ith (co)inductive type of the block named sp *)
 (* The array of terms correspond to the variables introduced in the section *)
 let mkMutInd (ind_sp,l) = DOPN (MutInd ind_sp, l)
@@ -518,9 +515,9 @@ let mkMutInd (ind_sp,l) = DOPN (MutInd ind_sp, l)
 let mkMutConstruct (cstr_sp,l) =  DOPN (MutConstruct cstr_sp,l)
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-let mkMutCase (ci, p, c, ac) = 
+let mkMutCaseL (ci, p, c, ac) = 
   DOPN (MutCase ci, Array.append [|p;c|] (Array.of_list ac))
-let mkMutCaseA ci p c ac = 
+let mkMutCase (ci, p, c, ac) = 
   DOPN (MutCase ci, Array.append [|p;c|] ac)
 
 (* If recindxs = [|i1,...in|] 
@@ -782,6 +779,7 @@ let num_of_evar = function
   | DOPN (Evar n, _) -> n
   | _ -> anomaly "num_of_evar called with bad args"
 
+(*
 (* Destructs an abstract term *)
 let destAbst = function
   | DOPN (Abst sp, a) -> (sp, a)
@@ -794,7 +792,7 @@ let path_of_abst = function
 let args_of_abst = function
   | DOPN(Abst _,args) -> args
   | _ -> anomaly "args_of_abst called with bad args"
-
+*)
 (* Destructs a (co)inductive type named sp *)
 let destMutInd = function
   | DOPN (MutInd ind_sp, l) -> (ind_sp,l)
@@ -870,7 +868,6 @@ type 'ctxt reference =
   | RConst of section_path * 'ctxt
   | RInd of inductive_path * 'ctxt
   | RConstruct of constructor_path * 'ctxt
-  | RAbst of section_path
   | RVar of identifier
   | REVar of int * 'ctxt
 
@@ -902,7 +899,6 @@ type kindOfTerm =
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
   | IsAppL         of constr * constr list
-  | IsAbst         of section_path * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -932,7 +928,6 @@ let kind_of_term c =
 	IsAppL (a.(0), List.tl (Array.to_list a))
     | DOPN (Const sp, a)                   -> IsConst (sp,a)
     | DOPN (Evar sp, a)                    -> IsEvar (sp,a)
-    | DOPN (Abst sp, a)                    -> IsAbst (sp, a)
     | DOPN (MutInd ind_sp, l)              -> IsMutInd (ind_sp,l)
     | DOPN (MutConstruct cstr_sp,l)        -> IsMutConstruct (cstr_sp,l)
     | DOPN (MutCase ci,v)                  -> 
@@ -1709,7 +1704,6 @@ module Hoper =
 	| XTRA s -> XTRA (hstr s)
         | Sort s -> Sort (hsort s)
         | Const sp -> Const (hsp sp)
-        | Abst sp -> Abst (hsp sp)
         | MutInd (sp,i) -> MutInd (hsp sp, i)
         | MutConstruct ((sp,i),j) -> MutConstruct ((hsp sp,i),j)
         | MutCase ci as t -> t (* TO DO: extract ind_sp *)
@@ -1719,7 +1713,6 @@ module Hoper =
           | (XTRA s1, XTRA s2) -> s1==s2
           | (Sort s1, Sort s2) -> s1==s2
           | (Const sp1, Const sp2) -> sp1==sp2
-          | (Abst sp1, Abst sp2) -> sp1==sp2
           | (MutInd (sp1,i1), MutInd (sp2,i2)) -> sp1==sp2 & i1=i2
           | (MutConstruct((sp1,i1),j1), MutConstruct((sp2,i2),j2)) ->
               sp1==sp2 & i1=i2 & j1=j2
@@ -1795,7 +1788,7 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpAppL | OpConst of section_path | OpAbst of section_path
+  | OpAppL | OpConst of section_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
@@ -1922,3 +1915,88 @@ let generic_fold_left f acc bl tl =
 	   | None -> f acc t
 	   | Some b -> f (f acc b) t) acc bl in
   Array.fold_left f acc tl
+
+let fold_constr f acc c = match kind_of_term c with
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> acc
+  | IsCast (c,t) -> f (f acc c) t
+  | IsProd (_,t,c) -> f (f acc t) c
+  | IsLambda (_,t,c) -> f (f acc t) c
+  | IsLetIn (_,b,t,c) -> f (f (f acc b) t) c
+  | IsAppL (c,l) -> List.fold_left f (f acc c) l
+  | IsEvar (_,l) -> Array.fold_left f acc l
+  | IsConst (_,l) -> Array.fold_left f acc l
+  | IsMutInd (_,l) -> Array.fold_left f acc l
+  | IsMutConstruct (_,l) -> Array.fold_left f acc l
+  | IsMutCase (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
+  | IsFix (_,(tl,_,bl)) -> Array.fold_left f (Array.fold_left f acc tl) bl
+  | IsCoFix (_,(tl,_,bl)) -> Array.fold_left f (Array.fold_left f acc tl) bl
+
+let fold_constr_with_binders g f n acc c = match kind_of_term c with
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> acc
+  | IsCast (c,t) -> f n (f n acc c) t
+  | IsProd (_,t,c) -> f (g n) (f n acc t) c
+  | IsLambda (_,t,c) -> f (g n) (f n acc t) c
+  | IsLetIn (_,b,t,c) -> f (g n) (f n (f n acc b) t) c
+  | IsAppL (c,l) -> List.fold_left (f n) (f n acc c) l
+  | IsEvar (_,l) -> Array.fold_left (f n) acc l
+  | IsConst (_,l) -> Array.fold_left (f n) acc l
+  | IsMutInd (_,l) -> Array.fold_left (f n) acc l
+  | IsMutConstruct (_,l) -> Array.fold_left (f n) acc l
+  | IsMutCase (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
+  | IsFix (_,(tl,_,bl)) -> 
+      let n' = iterate g (Array.length tl) n in
+      Array.fold_left (f n') (Array.fold_left (f n) acc tl) bl
+  | IsCoFix (_,(tl,_,bl)) ->
+      let n' = iterate g (Array.length tl) n in
+      Array.fold_left (f n') (Array.fold_left (f n) acc tl) bl
+
+let iter_constr_with_binders g f n c = match kind_of_term c with
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> ()
+  | IsCast (c,t) -> f n c; f n t
+  | IsProd (_,t,c) -> f n t; f (g n) c
+  | IsLambda (_,t,c) -> f n t; f (g n) c
+  | IsLetIn (_,b,t,c) -> f n b; f n t; f (g n) c
+  | IsAppL (c,l) -> f n c; List.iter (f n) l
+  | IsEvar (_,l) -> Array.iter (f n) l
+  | IsConst (_,l) -> Array.iter (f n) l
+  | IsMutInd (_,l) -> Array.iter (f n) l
+  | IsMutConstruct (_,l) -> Array.iter (f n) l
+  | IsMutCase (_,p,c,bl) -> f n p; f n c; Array.iter (f n) bl
+  | IsFix (_,(tl,_,bl)) -> 
+      Array.iter (f n) tl; Array.iter (f (iterate g (Array.length tl) n)) bl
+  | IsCoFix (_,(tl,_,bl)) ->
+      Array.iter (f n) tl; Array.iter (f (iterate g (Array.length tl) n)) bl
+
+let map_constr f c = match kind_of_term c with
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsCast (c,t) -> mkCast (f c, f t)
+  | IsProd (na,t,c) -> mkProd (na, f t, f c)
+  | IsLambda (na,t,c) -> mkLambda (na, f t, f c)
+  | IsLetIn (na,b,t,c) -> mkLetIn (na, f b, f t, f c)
+  | IsAppL (c,l) -> applist (f c, List.map f l)
+  | IsEvar (e,l) -> mkEvar (e, Array.map f l)
+  | IsConst (c,l) -> mkConst (c, Array.map f l)
+  | IsMutInd (c,l) -> mkMutInd (c, Array.map f l)
+  | IsMutConstruct (c,l) -> mkMutConstruct (c, Array.map f l)
+  | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f p, f c, Array.map f bl)
+  | IsFix (ln,(tl,lna,bl)) -> mkFix (ln,(Array.map f tl,lna,Array.map f bl))
+  | IsCoFix(ln,(tl,lna,bl)) -> mkCoFix (ln,(Array.map f tl,lna,Array.map f bl))
+
+let map_constr_with_binders g f l c = match kind_of_term c with
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsCast (c,t) -> mkCast (f l c, f l t)
+  | IsProd (na,t,c) -> mkProd (na, f l t, f (g na l) c)
+  | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
+  | IsLetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g na l) c)
+  | IsAppL (c,al) -> applist (f l c, List.map (f l) al)
+  | IsEvar (e,al) -> mkEvar (e, Array.map (f l) al)
+  | IsConst (c,al) -> mkConst (c, Array.map (f l) al)
+  | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
+  | IsMutConstruct (c,al) -> mkMutConstruct (c, Array.map (f l) al)
+  | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f l p, f l c, Array.map (f l) bl)
+  | IsFix (ln,(tl,lna,bl)) ->
+      let l' = List.fold_right g lna l in
+      mkFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
+  | IsCoFix(ln,(tl,lna,bl)) ->
+      let l' = List.fold_right g lna l in
+      mkCoFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))

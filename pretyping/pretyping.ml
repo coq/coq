@@ -96,7 +96,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 	(lambda_create env
 	   (applist (mI,List.append (List.map (lift (nar+1)) params)
                        (rel_list 0 nar)),
-            mkMutCaseA ci (lift (nar+2) p) (Rel 1) branches))
+            mkMutCase (ci, lift (nar+2) p, Rel 1, branches)))
         (lift_context 1 lnames) 
     in
     if noccurn 1 deffix then 
@@ -119,7 +119,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
       applist (fix,realargs@[c])
   else
     let ci = make_default_case_info mispec in
-    mkMutCaseA ci p c lf
+    mkMutCase (ci, p, c, lf)
 
 (***********************************************************************)
 
@@ -216,8 +216,6 @@ let pretype_ref pretype loc isevars env lvar = function
 | RConst (sp,ctxt) ->
     let cst = (sp,Array.map pretype ctxt) in
     make_judge (mkConst cst) (type_of_constant env !isevars cst)
-
-| RAbst sp -> failwith "Pretype: abst doit disparaître"
 
 | REVar (sp,ctxt) -> error " Not able to type terms with dependent subgoals"
 
@@ -401,7 +399,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       else
 	let mis,_ = dest_ind_family indf in
 	let ci = make_default_case_info mis in
-	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj)
+	mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map (fun j-> j.uj_val) lfj)
     in
     let s = snd (splay_arity env !isevars evalPt) in
     {uj_val = v;

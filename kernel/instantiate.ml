@@ -72,7 +72,7 @@ let existential_value sigma (n,args) =
     | Evar_empty ->
 	anomaly "a defined existential with no body"
 
-let const_abst_opt_value env sigma c =
+let const_evar_opt_value env sigma c =
   match c with
     | DOPN(Const sp,_) ->
 	if evaluable_constant env c then Some (constant_value env c) else None
@@ -81,7 +81,5 @@ let const_abst_opt_value env sigma c =
 	  Some (existential_value sigma (ev,args)) 
 	else 
 	  None
-    | DOPN(Abst sp,_) ->
-	if evaluable_abst env c then Some (abst_value env c) else None
     | _ -> invalid_arg "const_abst_opt_value"
 

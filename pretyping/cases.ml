@@ -79,7 +79,7 @@ let make_case_ml isrec pred c ci lf =
   if isrec then 
     DOPN(XTRA("REC"),Array.append [|pred;c|] lf)
   else 
-    mkMutCaseA ci pred c lf
+    mkMutCase (ci, pred, c, lf)
 
 (* if arity of mispec is (p_bar:P_bar)(a_bar:A_bar)s where p_bar are the
  * K parameters. Then then build_notdep builds the predicate
@@ -598,7 +598,7 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let predpred = lam_it (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
-      let predbody = mkMutCaseA caseinfo predpred (Rel 1) brs in
+      let predbody = mkMutCase (caseinfo, predpred, Rel 1, brs) in
       let pred = lam_it (lift (List.length sign) typn) sign in
       failwith "TODO4-2"; (true,pred)
 
@@ -833,7 +833,7 @@ and match_current pb (n,tm) =
 	    find_predicate pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info mis None tags in
-	  { uj_val = mkMutCaseA ci (*eta_reduce_if_rel*) pred current brvals;
+	  { uj_val = mkMutCase (ci, (*eta_reduce_if_rel*)pred,current,brvals);
 	    uj_type = make_typed typ s }
 
 and compile_further pb firstnext rest =

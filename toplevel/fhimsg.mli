@@ -57,7 +57,7 @@ val explain_actual_type :
   path_kind -> env -> constr -> constr -> constr -> std_ppcmds
 
 val explain_ill_formed_rec_body :
-  path_kind -> env -> std_ppcmds -> 
+  path_kind -> env -> guard_error -> 
     name list -> int -> constr array -> std_ppcmds
 
 val explain_ill_typed_rec_body  :

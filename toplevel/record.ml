@@ -134,7 +134,7 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 		      (Some PrintLet) [| RegularPat |] in
 	   let proj = mk_LambdaCit newps 
 			(mkLambda (x, rp1,
-				   mkMutCaseA ci p (Rel 1) [|branch|])) in
+				   mkMutCase (ci, p, Rel 1, [|branch|]))) in
 	   let ok = 
 	     try
 	       let cie =

@@ -26,6 +26,17 @@ let lookup_var id =
 let args sign = 
   Array.of_list (List.map (fun id -> VAR id) (ids_of_var_context sign))
 
+let rec globalize bv c = match kind_of_term c with
+  | IsVar id -> lookup_var id bv
+  | IsConst (sp, _) ->
+      let cb = lookup_constant sp !env in mkConst (sp, args cb.const_hyps)
+  | IsMutInd (sp,_ as spi, _) ->
+      let mib = lookup_mind sp !env in mkMutInd (spi, args mib.mind_hyps)
+  | IsMutConstruct ((sp,_),_ as spc, _) ->
+      let mib = lookup_mind sp !env in mkMutConstruct (spc, args mib.mind_hyps)
+  | _ -> map_constr_with_binders (fun na l -> na::l) globalize bv c
+
+(*
 let rec globalize bv = function
   | VAR id -> lookup_var id bv
   | DOP1 (op,c) -> DOP1 (op, globalize bv c)
@@ -43,6 +54,7 @@ let rec globalize bv = function
   | CPrd(n,t,c)   -> CPrd (n, globalize bv t, globalize (n::bv) c)
   | CLet(n,b,t,c) -> CLet (n,globalize bv b,globalize bv t,globalize (n::bv) c)
   | Rel _ | DOP0 _ as c -> c
+*)
 
 let check c = 
   let c = globalize [] c in
