@@ -194,7 +194,7 @@ let ast_of_app impl f args =
 let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
   | RVar (_,id) -> ast_of_ident id
-  | REvar (_,n) -> ast_of_existential_ref n
+  | REvar (_,n,_) -> (* we drop args *) ast_of_existential_ref n
   | RPatVar (_,(_,n)) -> ope("META",[ast_of_ident n])
   | RApp (_,f,args) ->
       let (f,args) =
@@ -202,7 +202,6 @@ let rec ast_of_raw = function
       let astf = ast_of_raw f in
       let astargs = List.map ast_of_raw args in
       (match f with 
-	 | REvar (_,ev) -> ast_of_existential_ref ev (* we drop args *)
 	 | RRef (_,ref) -> ast_of_app (implicits_of_global ref) astf astargs
 	 | _       -> ast_of_app [] astf astargs)
 
@@ -368,7 +367,7 @@ let rec ast_of_pattern tenv env = function
 
   | PVar id -> ast_of_ident id
 
-  | PEvar n -> ast_of_existential_ref n
+  | PEvar (n,_) -> ast_of_existential_ref n
 
   | PRel n ->
       (try match lookup_name_of_rel n env with

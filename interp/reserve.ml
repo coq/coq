@@ -62,7 +62,7 @@ let rec unloc = function
   | RSort (_,x) -> RSort (dummy_loc,x)
   | RHole (_,x)  -> RHole (dummy_loc,x)
   | RRef (_,x) -> RRef (dummy_loc,x)
-  | REvar (_,x) -> REvar (dummy_loc,x)
+  | REvar (_,x,l) -> REvar (dummy_loc,x,l)
   | RPatVar (_,x) -> RPatVar (dummy_loc,x)
   | RDynamic (_,x) -> RDynamic (dummy_loc,x)
 

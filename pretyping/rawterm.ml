@@ -61,7 +61,7 @@ type hole_kind =
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
-  | REvar of loc * existential_key
+  | REvar of loc * existential_key * rawconstr list option
   | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
   | RApp of loc * rawconstr * rawconstr list
   | RLambda of loc * name * rawconstr * rawconstr
@@ -153,7 +153,7 @@ let map_rawconstr_with_binders_loc loc g f e = function
   | RSort (_,x) -> RSort (loc,x)
   | RHole (_,x)  -> RHole (loc,x)
   | RRef (_,x) -> RRef (loc,x)
-  | REvar (_,x) -> REvar (loc,x)
+  | REvar (_,x,l) -> REvar (loc,x,l)
   | RPatVar (_,x) -> RPatVar (loc,x)
   | RDynamic (_,x) -> RDynamic (loc,x)
 *)
@@ -300,7 +300,7 @@ let rec subst_raw subst raw =
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
   | RVar (loc,_) -> loc
-  | REvar (loc,_) -> loc
+  | REvar (loc,_,_) -> loc
   | RPatVar (loc,_) -> loc
   | RApp (loc,_,_) -> loc
   | RLambda (loc,_,_,_) -> loc

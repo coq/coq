@@ -34,7 +34,7 @@ let patvar_of_int_v7 n = Names.id_of_string ("?" ^ string_of_int n)
 type constr_pattern =
   | PRef of global_reference
   | PVar of identifier
-  | PEvar of existential_key
+  | PEvar of existential_key * constr_pattern array
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of patvar * constr_pattern list
@@ -176,9 +176,7 @@ let rec pattern_of_constr t =
     | Const sp         -> PRef (ConstRef sp)
     | Ind sp        -> PRef (IndRef sp)
     | Construct sp -> PRef (ConstructRef sp)
-    | Evar (n,ctxt) ->
-	if ctxt = [||] then PEvar n
-	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
+    | Evar (n,ctxt) -> PEvar (n,Array.map pattern_of_constr ctxt)
     | Case (ci,p,a,br) ->
 	PCase ((Some ci.ci_ind,ci.ci_pp_info.style),
 	       Some (pattern_of_constr p),pattern_of_constr a,

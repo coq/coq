@@ -1331,7 +1331,7 @@ let rec extern inctx scopes vars r =
 
   | RVar (loc,id) -> CRef (Ident (loc,v7_to_v8_id id))
 
-  | REvar (loc,n) -> extern_evar loc n
+  | REvar (loc,n,_) -> (* we drop args *) extern_evar loc n
 
   | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
 
@@ -1342,7 +1342,6 @@ let rec extern inctx scopes vars r =
 	else 
 	  (f,args) in
       (match f with
-	 | REvar (loc,ev) -> extern_evar loc ev (* we drop args *)
 	 | RRef (rloc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
 	     let args =
@@ -1558,7 +1557,7 @@ let extern_constr at_top env t =
 let rec raw_of_pat tenv env = function
   | PRef ref -> RRef (loc,ref)
   | PVar id -> RVar (loc,id)
-  | PEvar n -> REvar (loc,n)
+  | PEvar (n,l) -> REvar (loc,n,Some (array_map_to_list (raw_of_pat tenv env) l))
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id

@@ -223,11 +223,13 @@ let rec pretype tycon env isevars lvar = function
 	(pretype_id loc env lvar id)
 	tycon
 
-  | REvar (loc, ev) ->
+  | REvar (loc, ev, instopt) ->
       (* Ne faudrait-il pas s'assurer que hyps est bien un
       sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let hyps = (Evd.map (evars_of isevars) ev).evar_hyps in
-      let args = instance_from_named_context hyps in
+      let args = match instopt with
+        | None -> instance_from_named_context hyps
+        | Some inst -> failwith "Evar subtitutions not implemented" in
       let c = mkEvar (ev, args) in
       let j = (Retyping.get_judgment_of env (evars_of isevars) c) in
       inh_conv_coerce_to_tycon loc env isevars j tycon

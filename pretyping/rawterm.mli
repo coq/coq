@@ -59,7 +59,7 @@ type hole_kind =
 type rawconstr = 
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
-  | REvar of loc * existential_key
+  | REvar of loc * existential_key * rawconstr list option
   | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
   | RApp of loc * rawconstr * rawconstr list
   | RLambda of loc * name * rawconstr * rawconstr

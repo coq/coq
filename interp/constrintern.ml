@@ -699,7 +699,7 @@ let internalise sigma env allow_soapp lvar c =
     | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
     | CEvar (loc, n) ->
-	REvar (loc, n)
+	REvar (loc, n, None)
     | CSort (loc, s) ->
 	RSort(loc,s)
     | CCast (loc, c1, c2) ->
