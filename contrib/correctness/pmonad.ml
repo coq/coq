@@ -178,6 +178,11 @@ let make_abs bl t = match bl with
  * if there is no yi and no post-condition, it is simplified in res itself.
  *)
 
+let simple_constr_of_prog = function
+  | CC_expr c -> c
+  | CC_var id -> mkVar id
+  | _ -> assert false
+
 let make_tuple l q ren env before = match l with
   | [e,_] when q = None -> 
       e
@@ -186,7 +191,7 @@ let make_tuple l q ren env before = match l with
       let dep,h,th = match q with
 	| None -> false,[],[]
 	| Some c ->
-	    let args = List.map (fun (e,_) -> constr_of_prog e) l in
+	    let args = List.map (fun (e,_) -> simple_constr_of_prog e) l in
 	    let c = apply_post ren env before c in
 	    true,
 	    [ CC_hole (Term.applist (c.a_value, args)) ], (* hole *)
@@ -219,7 +224,7 @@ let result_tuple ren before env (res,v) (ef,q) =
 
 let let_in_pre ty p t =
   let h = p.p_value in
-  CC_letin (false, ty, [pre_name p.p_name,CC_typed_binder h], (CC_hole h,h), t)
+  CC_letin (false, ty, [pre_name p.p_name,CC_typed_binder h], CC_hole h, t)
 
 let multiple_let_in_pre ty hl t =
   List.fold_left (fun t h -> let_in_pre ty h t) t hl
@@ -236,7 +241,7 @@ let make_let_in ren env fe p (vo,q) (res,tyres) (t,ty) =
     let name = match q with None -> product_name n | _ -> dep_product_name n in
     constant name 
   in
-  let t = CC_letin (dep, ty, bl, (fe,tyapp), t) in
+  let t = CC_letin (dep, ty, bl, fe, t) in
   multiple_let_in_pre ty (List.map (apply_pre ren env) p) t
 
 
@@ -404,7 +409,7 @@ let make_if_case ren env ty (b,qb) (br1,br2) =
     	Term.mkLambda (name, t1, (mkArrow t2 ty)), q.a_name
     | None -> assert false
   in
-  CC_app (CC_case (ty', (b, constant "bool"), [br1;br2]),
+  CC_app (CC_case (ty', b, [br1;br2]),
 	  [CC_var (post_name id_b)])
 
 let make_if ren env (tb,cb) ren' (t1,c1) (t2,c2) c =

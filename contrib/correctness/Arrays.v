@@ -64,19 +64,17 @@ Hints Resolve new_def store_def_1 store_def_2 : datatypes v62.
 
 (* A tactic to simplify access in arrays *)
 
-Tactic Definition ArrayAccess [$i $j $H] :=
- [<:tactic: <
-    Elim (Z_eq_dec $i $j); [ 
-      Intro $H; Rewrite $H; Rewrite store_def_1
-    | Intro $H; Rewrite store_def_2; [ Idtac | Idtac | Idtac | Exact $H ] ]
-  >>].
+Tactic Definition ArrayAccess i j H :=
+    Elim (Z_eq_dec i j); [ 
+      Intro H; Rewrite H; Rewrite store_def_1
+    | Intro H; Rewrite store_def_2; [ Idtac | Idtac | Idtac | Exact H ] ].
 
 (* Syntax and pretty-print for arrays *)
 
-Grammar command command0 :=
+Grammar constr constr0 :=
   array_access
-    [ ident($t) "#" "[" command($c) "]" ] -> [ <<(access $t $c)>> ].
+    [ "#" ident($t) "[" constr($c) "]" ] -> [ (access $t $c) ].
 
 Syntax constr level 0 :
   array_access
-    [ (APPLIST <<access>> ($VAR $t) $c) ] -> [ $t "#[" $c:L "]" ].
+    [ << (APPLIST access ($VAR $t) $c) >> ] -> [ $t "#[" $c:L "]" ].

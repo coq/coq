@@ -457,11 +457,6 @@ GEXTEND Gram
       | IDENT "Reset"; IDENT "Section"; id = identarg ->
           <:ast< (ResetSection $id) >>
       
-(* Extraction *)
-      | IDENT "Extraction"; id = identarg ->
-          <:ast< (PrintExtractId $id) >>
-      | IDENT "Extraction" -> <:ast< (PrintExtract) >>
-
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" -> <:ast< (DebugOn) >>
       |	IDENT "Debug"; IDENT "Off" -> <:ast< (DebugOff) >>

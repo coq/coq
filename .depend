@@ -77,7 +77,6 @@ parsing/printer.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/names.cmi \
     kernel/term.cmi 
 parsing/search.cmi: kernel/environ.cmi kernel/names.cmi pretyping/pattern.cmi \
     lib/pp.cmi kernel/term.cmi 
-parsing/stdlib.cmi: kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi pretyping/rawterm.cmi \
     kernel/sign.cmi kernel/term.cmi 
@@ -136,7 +135,6 @@ proofs/proof_type.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
     lib/stamps.cmi pretyping/tacred.cmi kernel/term.cmi lib/util.cmi 
 proofs/refiner.cmi: lib/pp.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     kernel/sign.cmi kernel/term.cmi 
-proofs/stock.cmi: kernel/names.cmi 
 proofs/tacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/environ.cmi \
     kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacmach.cmi \
     proofs/tactic_debug.cmi kernel/term.cmi 
@@ -621,10 +619,6 @@ parsing/search.cmx: parsing/astterm.cmx parsing/coqast.cmx \
     library/library.cmx kernel/names.cmx pretyping/pattern.cmx lib/pp.cmx \
     parsing/pretty.cmx parsing/printer.cmx kernel/term.cmx \
     pretyping/typing.cmx lib/util.cmx parsing/search.cmi 
-parsing/stdlib.cmo: library/declare.cmi kernel/names.cmi kernel/term.cmi \
-    parsing/stdlib.cmi 
-parsing/stdlib.cmx: library/declare.cmx kernel/names.cmx kernel/term.cmx \
-    parsing/stdlib.cmi 
 parsing/termast.cmo: parsing/ast.cmi pretyping/classops.cmi \
     parsing/coqast.cmi library/declare.cmi pretyping/detyping.cmi \
     kernel/environ.cmi library/impargs.cmi kernel/inductive.cmi \
@@ -857,10 +851,6 @@ proofs/refiner.cmx: parsing/ast.cmx kernel/environ.cmx kernel/evd.cmx \
     parsing/printer.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
     kernel/reduction.cmx kernel/sign.cmx lib/stamps.cmx kernel/term.cmx \
     kernel/type_errors.cmx lib/util.cmx proofs/refiner.cmi 
-proofs/stock.cmo: lib/bij.cmi lib/gmap.cmi lib/gmapl.cmi library/library.cmi \
-    kernel/names.cmi lib/pp.cmi lib/util.cmi proofs/stock.cmi 
-proofs/stock.cmx: lib/bij.cmx lib/gmap.cmx lib/gmapl.cmx library/library.cmx \
-    kernel/names.cmx lib/pp.cmx lib/util.cmx proofs/stock.cmi 
 proofs/tacinterp.cmo: parsing/ast.cmi parsing/astterm.cmi kernel/closure.cmi \
     parsing/coqast.cmi kernel/declarations.cmi library/declare.cmi \
     lib/dyn.cmi kernel/environ.cmi kernel/evd.cmi library/global.cmi \

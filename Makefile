@@ -277,9 +277,6 @@ parsing: $(PARSING)
 pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
 
-extraction: $(EXTRACTIONCMO)
-correctness: $(CORRECTNESSCMO)
-
 # special binaries for debugging
 
 bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
@@ -429,8 +426,19 @@ clean::
 ###########################################################################
 
 EXTRACTIONVO=contrib/extraction/Extraction.vo
-contrib/extraction/Extraction.vo: contrib/extraction/Extraction.v \
-                                  $(EXTRACTIONCMO)
+contrib/extraction/%.vo: contrib/extraction/%.v
+	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
+
+CORRECTNESSVO=contrib/correctness/Arrays.vo				\
+	contrib/correctness/Correctness.vo				\
+	contrib/correctness/Exchange.vo					\
+	contrib/correctness/ArrayPermut.vo				\
+	contrib/correctness/ProgBool.vo contrib/correctness/ProgInt.vo	\
+	contrib/correctness/ProgWf.vo contrib/correctness/Sorted.vo	\
+	contrib/correctness/Tuples.vo
+#	contrib/correctness/ProgramsExtraction.vo			
+
+contrib/correctness/%.vo: contrib/correctness/%.v
 	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
 
 OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
@@ -459,6 +467,8 @@ contrib: $(CONTRIBVO)
 omega: $(OMEGAVO)
 ring: $(RINGVO)
 xml: $(XMLVO)
+extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
+correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 
 clean::
 	rm -f contrib/*/*.cm[io] contrib/*/*.vo

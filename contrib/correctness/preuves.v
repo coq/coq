@@ -3,29 +3,43 @@
  * juste histoire d'avoir un petit bench.
  *)
 
-Require Programs.
+Require Correctness.
 Require Omega.
 
-Prog Variable x : Z ref.
-Prog Variable y : Z ref.
-Prog Variable z : Z ref.
-Prog Variable i : Z ref.
-Prog Variable j : Z ref.
-Prog Variable n : Z ref.
-Prog Variable m : Z ref.
+Global Variable x : Z ref.
+Global Variable y : Z ref.
+Global Variable z : Z ref.
+Global Variable i : Z ref.
+Global Variable j : Z ref.
+Global Variable n : Z ref.
+Global Variable m : Z ref.
 Variable r : Z.
 Variable N : Z.
-Prog Variable t : array N of Z.
+Global Variable t : array N of Z.
 
+(**********************************************************************)
+
+Global Variable x : Z ref.
+Debug on.
+Correctness assign0 (x := 0) { `x=0` }.
+Save.
+
+(**********************************************************************)
+
+Global Variable i : Z ref.
+Debug on.
+Correctness assign1 { `0 <= i` } begin i := !i + 1 end { `0 < i` }.
+
+(**********************************************************************)
 
 (**********************************************************************)
 
 Correctness echange
   { `0 <= i < N` /\ `0 <= j < N` }
   begin
-    state B;
+    label B;
     x := t[!i]; t[!i] := t[!j]; t[!j] := !x;
-    assert { t#[i] = t@B#[j] /\ t#[j] = t@B#[i] }
+    assert { #t[i] = #t@B[j] /\ #t[j] = #t@B[i] }
   end.
 Proof.
 Auto.

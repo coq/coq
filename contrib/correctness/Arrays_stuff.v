@@ -11,6 +11,6 @@
 (* $Id$ *)
 
 Require Export Exchange.
-Require Export Permut.
+Require Export ArrayPermut.
 Require Export Sorted.
 

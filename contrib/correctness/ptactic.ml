@@ -36,7 +36,7 @@ let coqast_of_prog p =
   let p = Pdb.db_prog p in
 
   (* 2. typage avec effets *)
-  deb_mess [< 'sTR"Ptyping.states: Typage avec effets..."; 'fNL >];
+  deb_mess [< 'sTR"Ptyping.states: Typing with effects..."; 'fNL >];
   let env = Penv.empty in
   let ren = initial_renaming env in
   let p = Ptyping.states ren env p in
@@ -53,20 +53,20 @@ let coqast_of_prog p =
 
   (* 4b. traduction terme (terme intermédiaire de type cc_term) *)
   deb_mess 
-    [< 'fNL; 'sTR"Mlise.trad: Traduction program -> cc_term..."; 'fNL >];
+    [< 'fNL; 'sTR"Mlize.trad: Translation program -> cc_term..."; 'fNL >];
   let cc = Pmlize.trans ren p in
   let cc = Pred.red cc in
   deb_mess (Putil.pp_cc_term cc);
 
   (* 5. traduction en constr *)
   deb_mess 
-    [< 'fNL; 'sTR"Pcic.constr_of_prog: Traduction cc_term -> constr..."; 
+    [< 'fNL; 'sTR"Pcic.constr_of_prog: Translation cc_term -> rawconstr..."; 
        'fNL >];
   let r = Pcic.rawconstr_of_prog cc in
   deb_mess (Printer.pr_rawterm r);
 
   (* 6. résolution implicites *)
-  deb_mess [< 'fNL; 'sTR"Résolution implicites (? => Meta(n))..."; 'fNL >];
+  deb_mess [< 'fNL; 'sTR"Resolution implicits (? => Meta(n))..."; 'fNL >];
   let oc = understand_gen_tcc Evd.empty (Global.env()) [] [] None r in
   deb_mess (Printer.prterm (snd oc));
 
@@ -195,6 +195,24 @@ let (automatic : tactic) =
  * Vernac: Correctness <string> <program> [; <tactic>].
  *)
 
+let reduce_open_constr (em,c) =
+  let existential_map_of_constr = 
+    let rec collect em c = match kind_of_term c with
+      | IsCast (c',t) -> 
+	  (match kind_of_term c' with
+	     | IsEvar ev -> (ev,t) :: em
+	     | _ -> fold_constr collect em c)
+      | IsEvar _ -> 
+	  assert false (* all existentials should be casted *)
+      | _ -> 
+	  fold_constr collect em c
+    in
+    collect []
+  in
+  let c = Pred.red_cci c in
+  let em = existential_map_of_constr c in
+  (em,c)
+
 let correctness s p opttac =
   Pmisc.reset_names();
   let p,oc,cty,v = coqast_of_prog p in
@@ -206,9 +224,9 @@ let correctness s p opttac =
   start_proof id Declare.NeverDischarge sign cty;
   Penv.new_edited id (v,p);
   if !debug then show_open_subgoals();
-  deb_mess [< 'sTR"Pred.red_cci: Réduction..."; 'fNL >];
-  let oc = let (mm,c) = oc in (mm, Pred.red_cci c) in
-  deb_mess [< 'sTR"APRES REDUCTION :"; 'fNL >];
+  deb_mess [< 'sTR"Pred.red_cci: Reduction..."; 'fNL >];
+  let oc = reduce_open_constr oc in
+  deb_mess [< 'sTR"AFTER REDUCTION:"; 'fNL >];
   deb_mess (Printer.prterm (snd oc));
   let tac = (tclTHEN (Refine.refine_tac oc) automatic) in
   let tac = match opttac with 

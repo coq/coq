@@ -230,18 +230,18 @@ GEXTEND Gram
   ;
   type_v2:
     [ LEFTA
-      [ v = type_v2; LIDENT "ref" -> Ref v
+      [ v = type_v2; IDENT "ref" -> Ref v
       | t = type_v3 -> t ] ]
   ;
   type_v3:
-    [ [ LIDENT "array"; size = Constr.constr; "of"; v = type_v0 ->
+    [ [ IDENT "array"; size = Constr.constr; "of"; v = type_v0 ->
           Array (size,v)
-      | LIDENT "fun"; bl = binders; c = type_c -> make_arrow bl c
+      | IDENT "fun"; bl = binders; c = type_c -> make_arrow bl c
       | c = Constr.constr -> TypePure c	  
       ] ]
   ;
   type_c:
-    [ [ LIDENT "returns"; id = LIDENT; ":"; v = type_v;
+    [ [ IDENT "returns"; id = IDENT; ":"; v = type_v;
         e = effects; p = OPT pre_condition; q = OPT post_condition; "end" ->
         ((id_of_string id, v), e, list_of_some p, q)
       ] ] 
@@ -256,21 +256,21 @@ GEXTEND Gram
       ] ]
   ;
   reads:
-    [ [ LIDENT "reads"; l = LIST0 LIDENT SEP "," -> List.map id_of_string l ] ]
+    [ [ IDENT "reads"; l = LIST0 IDENT SEP "," -> List.map id_of_string l ] ]
   ;
   writes:
-    [ [ LIDENT "writes"; l=LIST0 LIDENT SEP "," -> List.map id_of_string l ] ]
+    [ [ IDENT "writes"; l=LIST0 IDENT SEP "," -> List.map id_of_string l ] ]
   ;
   pre_condition:
-    [ [ LIDENT "pre"; c = predicate -> pre_of_assert false c ] ]
+    [ [ IDENT "pre"; c = predicate -> pre_of_assert false c ] ]
   ;
   post_condition:
-    [ [ LIDENT "post"; c = predicate -> c ] ]
+    [ [ IDENT "post"; c = predicate -> c ] ]
   ;
 
   (* Binders (for both types and programs) **********************************)
   binder:
-    [ [ "("; sl = LIST1 LIDENT SEP ","; ":"; t = binder_type ; ")" ->
+    [ [ "("; sl = LIST1 IDENT SEP ","; ":"; t = binder_type ; ")" ->
 	  List.map (fun s -> (id_of_string s, t)) sl
       ] ]
   ;
@@ -288,17 +288,17 @@ GEXTEND Gram
     [ [ c = Constr.constr; n = name -> { a_name = n; a_value = c } ] ]
   ;
   name:
-    [ [ "as"; s = LIDENT -> Name (id_of_string s)
+    [ [ "as"; s = IDENT -> Name (id_of_string s)
       | -> Anonymous
       ] ]
   ;
 
   (* Programs ***************************************************************)
   variable:
-    [ [ s = LIDENT -> id_of_string s ] ]
+    [ [ s = IDENT -> id_of_string s ] ]
   ;
   ident:
-    [ [ s = LIDENT -> id_of_string s ] ]
+    [ [ s = IDENT -> id_of_string s ] ]
   ;
   assertion:
     [ [ "{"; c = predicate; "}" -> c ] ]
@@ -338,13 +338,13 @@ GEXTEND Gram
   ;
 
   ast1:
-    [ [ x = prog2; LIDENT "or"; y = prog1  -> bool_or loc x y
-      | x = prog2; LIDENT "and"; y = prog1 -> bool_and loc x y
+    [ [ x = prog2; IDENT "or"; y = prog1  -> bool_or loc x y
+      | x = prog2; IDENT "and"; y = prog1 -> bool_and loc x y
       | x = prog2 -> x
       ] ]
   ;
   ast2:
-    [ [ LIDENT "not"; x = prog3 -> bool_not loc x
+    [ [ IDENT "not"; x = prog3 -> bool_not loc x
       | x = prog3 -> x
       ] ]
   ;
@@ -386,35 +386,35 @@ GEXTEND Gram
 	  TabAff (true,v,e,p)
       | v = variable; "#"; "["; e = program; "]"; ":="; p = program -> 
 	  TabAff (true,v,e,p)
-      | LIDENT "if"; e1 = program; LIDENT "then"; e2 = program;
-	LIDENT "else"; e3 = program ->
+      | IDENT "if"; e1 = program; IDENT "then"; e2 = program;
+	IDENT "else"; e3 = program ->
 	  If (e1,e2,e3)
-      | LIDENT "if"; e1 = program; LIDENT "then"; e2 = program ->
+      | IDENT "if"; e1 = program; IDENT "then"; e2 = program ->
 	  If (e1,e2,without_effect loc (Expression (constant "tt")))
-      | LIDENT "while"; b = program; LIDENT "do"; 
-	"{"; inv = OPT invariant; LIDENT "variant"; wf = variant; "}";
-	bl = block; LIDENT "done" ->
+      | IDENT "while"; b = program; IDENT "do"; 
+	"{"; inv = OPT invariant; IDENT "variant"; wf = variant; "}";
+	bl = block; IDENT "done" ->
 	  While (b, inv, wf, bl)
-      | LIDENT "for"; i = LIDENT; "="; v1 = program; LIDENT "to"; v2 = program;
-	LIDENT "do"; "{"; inv = invariant; "}"; 
-	bl = block; LIDENT "done" -> 
+      | IDENT "for"; i = IDENT; "="; v1 = program; IDENT "to"; v2 = program;
+	IDENT "do"; "{"; inv = invariant; "}"; 
+	bl = block; IDENT "done" -> 
 	  make_ast_for loc i v1 v2 inv bl
-      | LIDENT "let"; v = variable; "="; LIDENT "ref"; p1 = program;
+      | IDENT "let"; v = variable; "="; IDENT "ref"; p1 = program;
 	"in"; p2 = program ->
 	  LetRef (v, p1, p2)
-      | LIDENT "let"; v = variable; "="; p1 = program; "in"; p2 = program ->
+      | IDENT "let"; v = variable; "="; p1 = program; "in"; p2 = program ->
 	  LetIn (v, p1, p2)
-      | LIDENT "begin"; b = block; "end" ->
+      | IDENT "begin"; b = block; "end" ->
 	  Seq b
-      | LIDENT "fun"; bl = binders; "->"; p = program ->
+      | IDENT "fun"; bl = binders; "->"; p = program ->
 	  Lam (bl,p)
-      | LIDENT "let"; LIDENT "rec"; f = variable; 
+      | IDENT "let"; IDENT "rec"; f = variable; 
 	bl = binders; ":"; v = type_v;
-	"{"; LIDENT "variant"; var = variant; "}"; "="; p = program ->
+	"{"; IDENT "variant"; var = variant; "}"; "="; p = program ->
 	  LetRec (f,bl,v,var,p)
-      | LIDENT "let"; LIDENT "rec"; f = variable; 
+      | IDENT "let"; IDENT "rec"; f = variable; 
 	bl = binders; ":"; v = type_v;
-	"{"; LIDENT "variant"; var = variant; "}"; "="; p = program;
+	"{"; IDENT "variant"; var = variant; "}"; "="; p = program;
  	"in"; p2 = program ->
 	  LetIn (f, without_effect loc (LetRec (f,bl,v,var,p)), p2)
 
@@ -441,8 +441,8 @@ GEXTEND Gram
       | s = block_statement                 -> [s] ] ]
   ;
   block_statement:
-    [ [ LIDENT "label"; s = LIDENT -> Label s
-      | LIDENT "assert"; c = assertion -> Assert c 
+    [ [ IDENT "label"; s = IDENT -> Label s
+      | IDENT "assert"; c = assertion -> Assert c 
       | p = program -> Statement p ] ]
   ;
   relation:
@@ -456,17 +456,17 @@ GEXTEND Gram
 
   (* Other entries (invariants, etc.) ***************************************)
   wf_arg:
-    [ [ "{"; LIDENT "wf"; c = Constr.constr; LIDENT "for";
+    [ [ "{"; IDENT "wf"; c = Constr.constr; IDENT "for";
 	w = Constr.constr; "}" ->
 	  Wf (c,w)
-      | "{"; LIDENT "wf"; n = INT; "}" ->
+      | "{"; IDENT "wf"; n = INT; "}" ->
 	  RecArg (int_of_string n) ] ]
   ;
   invariant:
-    [ [ LIDENT "invariant"; c = predicate -> c ] ]
+    [ [ IDENT "invariant"; c = predicate -> c ] ]
   ;
   variant:
-    [ [ c = Constr.constr; LIDENT "for"; r = Constr.constr -> (c, r)
+    [ [ c = Constr.constr; IDENT "for"; r = Constr.constr -> (c, r)
       | c = Constr.constr -> (c, ast_zwf_zero loc) ] ]
   ;
   END
@@ -550,30 +550,30 @@ let _ = add "PROGVARIABLE"
 open Vernac
 
 GEXTEND Gram
-  Pcoq.Vernac.vernac:
-  [ [ LIDENT "Global"; "Variable"; 
-      l = LIST1 LIDENT SEP ","; ":"; t = type_v; "." ->
+  Pcoq.Vernac_.vernac:
+  [ [ IDENT "Global"; "Variable"; 
+      l = LIST1 IDENT SEP ","; ":"; t = type_v; "." ->
 	let idl = List.map Ast.nvar l in
 	let d = Ast.dynamic (in_typev t) in
 	  <:ast< (PROGVARIABLE (VERNACARGLIST ($LIST $idl)) (VERNACDYN $d)) >>
 
-    | LIDENT "Show"; LIDENT "Programs"; "." ->
+    | IDENT "Show"; IDENT "Programs"; "." ->
 	<:ast< (SHOWPROGRAMS) >>
 
-    | LIDENT "Correctness"; s = LIDENT; p = Programs.program; "." ->
+    | IDENT "Correctness"; s = IDENT; p = Programs.program; "." ->
 	let d = Ast.dynamic (in_prog p) in
 	let str = Ast.str s in
 	<:ast< (CORRECTNESS $str (VERNACDYN $d)) >>
 
-     | LIDENT "Correctness"; s = LIDENT; p = Programs.program; ";";
-       tac = Tactic.tactic; "." ->
+    | IDENT "Correctness"; s = IDENT; p = Programs.program; ";";
+      tac = Tactic.tactic; "." ->
 	let d = Ast.dynamic (in_prog p) in
 	let str = Ast.str s in
 	<:ast< (CORRECTNESS $str (VERNACDYN $d) (TACTIC $tac)) >>
 
-   | LIDENT "Debug"; LIDENT "on"; "." -> <:ast< (PROGDEBUGON) >>
-	    
-    | LIDENT "Debug"; LIDENT "off"; "." -> <:ast< (PROGDEBUGOFF) >>
+    | IDENT "Debug"; IDENT "on"; "." -> <:ast< (PROGDEBUGON) >>
+	
+    | IDENT "Debug"; IDENT "off"; "." -> <:ast< (PROGDEBUGOFF) >>
 	    
   ] ]
   ;

@@ -11,7 +11,7 @@
 (* $Id$ *)
 
 Require Export Arrays.
-Require Permut.
+Require ArrayPermut.
 
 Require ZArithRing.
 Require Omega.
@@ -22,7 +22,7 @@ Implicit Arguments On.
 
 Definition sorted_array :=
   [N:Z][A:(array N Z)][deb:Z][fin:Z]
-     `deb<=fin` -> (x:Z) `x>=deb` -> `x<fin` -> (Zle A#[x] A#[`x+1`]).
+     `deb<=fin` -> (x:Z) `x>=deb` -> `x<fin` -> (Zle #A[x] #A[`x+1`]).
 
 (* Elements of a sorted sub-array are in increasing order *)
 
@@ -87,7 +87,7 @@ Hints Resolve sub_sorted_array : datatypes v62.
 
 Lemma left_extension : (N:Z)(A:(array N Z))(i:Z)(j:Z)
    `i>0` -> `j<N` -> (sorted_array A i j) 
-   -> (Zle A#[`i-1`]  A#[i]) -> (sorted_array A `i-1` j).
+   -> (Zle #A[`i-1`]  #A[i]) -> (sorted_array A `i-1` j).
 Proof.
 (Intros; Unfold sorted_array ; Intros).
 Elim (Z_ge_lt_dec x i).   (* (`x >= i`) + (`x < i`) *)
@@ -105,7 +105,7 @@ Save.
 
 Lemma right_extension : (N:Z)(A:(array N Z))(i:Z)(j:Z)
    `i>=0` -> `j<N-1` -> (sorted_array A i j) 
-   -> (Zle A#[j]  A#[`j+1`]) -> (sorted_array A i `j+1`).
+   -> (Zle #A[j]  #A[`j+1`]) -> (sorted_array A i `j+1`).
 Proof.
 (Intros; Unfold sorted_array ; Intros).
 Elim (Z_lt_ge_dec x j).
@@ -121,7 +121,7 @@ Save.
 Lemma left_substitution : 
    (N:Z)(A:(array N Z))(i:Z)(j:Z)(v:Z)
    `i>=0`  -> `j<N`  -> (sorted_array A i j)
-   -> (Zle v A#[i])
+   -> (Zle v #A[i])
    -> (sorted_array (store A i v) i j).
 Proof.
 Intros N A i j v H_i H_j H_sorted H_v.
@@ -145,7 +145,7 @@ Save.
 Lemma right_substitution : 
    (N:Z)(A:(array N Z))(i:Z)(j:Z)(v:Z)
    `i>=0`  -> `j<N`  -> (sorted_array A i j)
-   -> (Zle A#[j] v)
+   -> (Zle #A[j] v)
    -> (sorted_array (store A j v) i j).
 Proof.
 Intros N A i j v H_i H_j H_sorted H_v.

@@ -177,7 +177,7 @@ let get_buff len = String.sub !buff 0 len
 
 let rec ident len = parser
   | [< ' ('a'..'z' | 'A'..'Z' | '\192'..'\214' | '\216'..'\246' 
-         |'\248'..'\255' | '0'..'9' | ''' | '_' as c); s >] ->
+         |'\248'..'\255' | '0'..'9' | ''' | '_' | '@' as c); s >] ->
       ident (store len c) s
   | [< >] -> len
 

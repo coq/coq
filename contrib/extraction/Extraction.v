@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Declare ML Module "mlutil.cmo" "ocaml.cmo" "extraction.cmo" "extract_env.cmo".
+Declare ML Module "mlutil" "ocaml" "extraction" "extract_env".
 
 Grammar vernac vernac : ast :=
   extr_constr [ "Extraction" constrarg($c) "." ] -> 

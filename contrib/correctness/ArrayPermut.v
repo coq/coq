@@ -69,7 +69,7 @@ Hints Resolve exchange_is_sub_permut sub_permut_refl sub_permut_sym sub_permut_t
  *)
 
 Definition array_id := [n:Z][A:Set][t,t':(array n A)][g,d:Z]
-  (i:Z) `g <= i <= d` -> t#[i] = t'#[i].
+  (i:Z) `g <= i <= d` -> #t[i] = #t'[i].
 
 (* array_id is an equivalence relation *)
 
@@ -101,7 +101,7 @@ Lemma array_id_trans :
     -> (array_id t t'' g d).
 Proof.
 Unfold array_id. Intros.
-Apply trans_eq with y:=t'#[i]; Auto with datatypes.
+Apply trans_eq with y:=#t'[i]; Auto with datatypes.
 Save.
 
 Hints Resolve array_id_trans: v62 datatypes.
@@ -128,7 +128,7 @@ Hints Resolve sub_permut_id.
 Lemma sub_permut_eq :
   (n:Z)(A:Set)(t,t':(array n A))(g,d:Z)
   (sub_permut g d t t') ->
-  (i:Z) (`0<=i<g` \/ `d<i<n`) -> t#[i]=t'#[i].
+  (i:Z) (`0<=i<g` \/ `d<i<n`) -> #t[i]=#t'[i].
 Proof.
 Intros n A t t' g d Htt' i Hi.
 Elim (sub_permut_id Htt'). Unfold array_id. 

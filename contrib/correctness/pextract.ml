@@ -17,29 +17,27 @@ open System
 open Names
 open Term
 open Himsg
-open Termenv
 open Reduction
 
-open Genpp
-
-open Mutil
-open Ptypes
+open Putil
+open Ptype
 open Past
 open Penv
 open Putil
 
 let extraction env c =
   let ren = initial_renaming env in
-  let sign = TradEnv.now_sign_of ren env in
+  let sign = Pcicenv.now_sign_of ren env in
   let fsign = Mach.fsign_of_sign (Evd.mt_evd()) sign in
-    match Mach.infexecute (Evd.mt_evd()) (sign,fsign) c with
-	(_,Inf j) -> j._VAL
-      | (_,Logic) -> failwith "Prog_extract.pp: should be informative"
+  match Mach.infexecute (Evd.mt_evd()) (sign,fsign) c with
+    | (_,Inf j) -> j._VAL
+    | (_,Logic) -> failwith "Prog_extract.pp: should be informative"
 
 (* les tableaux jouent un role particulier, puisqu'ils seront extraits
  * vers des tableaux ML *)
 
-let sp_access = path_of_string "#Arrays#access.fw"
+let sp_access = coq_constant ["correctness"; "Arrays"] "access"
+let access = ConstRef sp_access
 
 let has_array = ref false
 
@@ -63,8 +61,8 @@ let int_of_z = function
 let spset_of_cci env c =
   let spl = Fw_env.collect (extraction env c) in
   let sps = List.fold_left (fun e x -> SpSet.add x e) SpSet.empty spl in
-    has_array := !has_array or (SpSet.mem sp_access sps);
-    SpSet.remove sp_access sps
+  has_array := !has_array or (SpSet.mem sp_access sps);
+  SpSet.remove sp_access sps
 
 
 (* collect all Coq constants and all pgms appearing in a given program *)
@@ -79,7 +77,7 @@ let add_id env ((sp,ids) as s) id =
 
 let collect env =
   let rec collect_desc env s = function
-      Var x -> add_id env s x
+    | Var x -> add_id env s x
     | Acc x -> add_id env s x
     | Aff (x,e1) -> add_id env (collect_rec env s e1) x
     | TabAcc (_,x,e1) ->
@@ -133,7 +131,7 @@ let collect env =
   and collect_rec env s p = collect_desc env s p.desc
 
   in
-    collect_rec env (SpSet.empty,IdSet.empty)
+  collect_rec env (SpSet.empty,IdSet.empty)
 
 
 (* On a besoin de faire du renommage, tout comme pour l'extraction des
@@ -146,8 +144,8 @@ module Ocaml_ren = Ocaml.OCaml_renaming
 
 let rename_global id =
   let id' = Ocaml_ren.rename_global_term !Fwtoml.globals (Name id) in
-    Fwtoml.add_global_renaming (id,id');
-    id'
+  Fwtoml.add_global_renaming (id,id');
+  id'
 
 type rename_struct = { rn_map : identifier IdMap.t;
 		       rn_avoid : identifier list }
@@ -156,8 +154,8 @@ let rn_empty = { rn_map = IdMap.empty; rn_avoid = [] }
 
 let rename_local rn id =
   let id' = Ocaml_ren.rename_term (!Fwtoml.globals@rn.rn_avoid) (Name id) in
-    { rn_map = IdMap.add id id' rn.rn_map; rn_avoid = id' :: rn.rn_avoid },
-    id'
+  { rn_map = IdMap.add id id' rn.rn_map; rn_avoid = id' :: rn.rn_avoid },
+  id'
 
 let get_local_name rn id = IdMap.find id rn.rn_map
 
@@ -168,8 +166,8 @@ let get_name env rn id =
     Fwtoml.get_global_name id
 
 let rec rename_binders rn = function
-    [] -> rn
-  | (id,_)::bl -> let rn',_ = rename_local rn id in rename_binders rn' bl
+  | [] -> rn
+  | (id,_) :: bl -> let rn',_ = rename_local rn id in rename_binders rn' bl
 
 (* on a bespoin d'un pretty-printer de constr particulier, qui reconnaisse
  * les acces a des references et dans des tableaux, et qui de plus n'imprime
@@ -188,7 +186,7 @@ let is_ref env id =
     Not_found -> false
 
 let rec pp_constr env rn = function
-    VAR id ->
+  | VAR id ->
       if is_ref env id then 
 	[< 'sTR"!"; pID (get_name env rn id) >] 
       else
@@ -214,21 +212,22 @@ let rec pp_constr env rn = function
 (* pretty-print of imperative programs *)
 
 let collect_lambda = 
- let rec collect acc p = match p.desc with
-     Lam(bl,t) -> collect (bl@acc) t
-   | x         -> acc,p
- in collect []
+  let rec collect acc p = match p.desc with
+    | Lam(bl,t) -> collect (bl@acc) t
+    | x         -> acc,p
+  in 
+  collect []
 
 let pr_binding rn = 
   prlist_with_sep (fun () -> [< >])
     (function 
-	 (id,(Untyped | BindType _)) -> 
+       | (id,(Untyped | BindType _)) -> 
 	   [< 'sTR" "; pID (get_local_name rn id) >]
        | (id,BindSet) -> [< >])
 
 let pp_prog id =
   let rec pp_d env rn par = function
-      Var x -> pID (get_name env rn x)
+    | Var x -> pID (get_name env rn x)
     | Acc x -> [< 'sTR"!"; pID (get_name env rn x) >]
     | Aff (x,e1) -> [< pID (get_name env rn x); 
 		       'sTR" := "; hOV 0 (pp env rn false e1) >]
@@ -325,7 +324,7 @@ let pp_prog id =
     [< pp_d env rn par p.desc >]
 
   and pp_mut v c = match v with
-      Ref _ ->
+    | Ref _ ->
 	[< 'sTR"ref "; pp_constr empty rn_empty (extraction empty c) >]
     | Array (n,_) ->
 	[< 'sTR"Array.create "; 'cUT;
@@ -341,13 +340,13 @@ let pp_prog id =
       try
 	let c = find_init id in
 	hOV 0 [< 'sTR"let "; pID id'; 'sTR" = "; pp_mut v c >]
-      with
-	  Not_found -> errorlabstrm "Prog_extract.pp_prog"
-	      [< 'sTR"The variable "; pID id;
-		 'sTR" must be initialized first !" >]
+      with Not_found -> 
+	errorlabstrm "Prog_extract.pp_prog"
+	  [< 'sTR"The variable "; pID id;
+	     'sTR" must be initialized first !" >]
     else
       match find_pgm id with
-	  None -> 
+	| None -> 
 	    errorlabstrm "Prog_extract.pp_prog"
 	      [< 'sTR"The program "; pID id;
 		 'sTR" must be realized first !" >]
@@ -355,8 +354,8 @@ let pp_prog id =
 	    let bl,p = collect_lambda p in
 	    let rn = rename_binders rn_empty bl in
 	    let env = traverse_binders empty bl in
-	      hOV 0  [< 'sTR"let "; pID id'; pr_binding rn bl; 'sTR" ="; 'fNL; 
-			'sTR"  "; hOV 2 (pp env rn false p) >]
+	    hOV 0  [< 'sTR"let "; pID id'; pr_binding rn bl; 'sTR" ="; 'fNL; 
+		      'sTR"  "; hOV 2 (pp env rn false p) >]
 
 (* extraction des programmes impératifs/fonctionnels vers ocaml *)
 
@@ -367,14 +366,13 @@ let pp_prog id =
  * de ml_import.fwsp_of_id
  *)
 
-let import sp =
-  match repr_path sp with
-      [m],_,_ ->
-	begin
-	  try Library.import_export_module m true
-          with _ -> ()
-	end
-    | _ -> ()
+let import sp = match repr_path sp with
+  | [m],_,_ ->
+      begin
+	try Library.import_export_module m true
+        with _ -> ()
+      end
+  | _ -> ()
 
 let pp_ocaml file prm =
   has_array := false;
@@ -388,31 +386,31 @@ let pp_ocaml file prm =
   (* on met les programmes dans l'ordre et pour chacun on recherche les
    * objects Coq necessaires, que l'on rajoute a l'ensemble cic *)
   let cic,_,pgms =
-    let o_pgms = fold_all (fun (id,_) l -> id::l) empty []
-    in
-      List.fold_left
-      	(fun (cic,pgms,pl) id -> 
-	   if IdSet.mem id pgms then
-	     let spl,pgms' =
-	       try
-		 (match find_pgm id with
-		      Some p -> collect empty p
-		    | None ->
-			(try 
-			   let c = find_init id in
-			     spset_of_cci empty c,IdSet.empty
-			 with Not_found -> SpSet.empty,IdSet.empty))
-	       with Not_found -> SpSet.empty,IdSet.empty
-	     in
-	     let cic' = 
-	       SpSet.fold 
-		 (fun sp cic -> import sp; IdSet.add (basename sp) cic)
-		 spl cic
-	     in
-	     (cic',IdSet.union pgms pgms',id::pl)
-	   else
-	     (cic,pgms,pl)) 
-      	 (cic,pgms,[]) o_pgms
+    let o_pgms = fold_all (fun (id,_) l -> id::l) empty [] in
+    List.fold_left
+      (fun (cic,pgms,pl) id -> 
+	 if IdSet.mem id pgms then
+	   let spl,pgms' =
+	     try
+	       (match find_pgm id with
+		  | Some p -> collect empty p
+		  | None ->
+		      (try 
+			 let c = find_init id in
+			 spset_of_cci empty c,IdSet.empty
+		       with Not_found -> 
+			 SpSet.empty,IdSet.empty))
+	     with Not_found -> SpSet.empty,IdSet.empty
+	   in
+	   let cic' = 
+	     SpSet.fold 
+	       (fun sp cic -> import sp; IdSet.add (basename sp) cic)
+	       spl cic
+	   in
+	   (cic',IdSet.union pgms pgms',id::pl)
+	 else
+	   (cic,pgms,pl)) 
+      (cic,pgms,[]) o_pgms
   in
   let cic = IdSet.elements cic in
   (* on pretty-print *)
@@ -429,10 +427,12 @@ let pp_ocaml file prm =
   (* puis on ecrit dans le fichier *)
   let chan = open_trapping_failure open_out file ".ml" in
   let ft = with_output_to chan in
-    (try  pP_with ft strm ; pp_flush_with ft ()
-     with e -> pp_flush_with ft () ; close_out chan; raise e);
-    close_out chan
-
+  begin
+    try  pP_with ft strm ; pp_flush_with ft ()
+    with e -> pp_flush_with ft () ; close_out chan; raise e
+  end;
+  close_out chan
+    
 
 (* Initializations of mutable objects *)
 
@@ -440,32 +440,33 @@ let initialize id com =
   let loc = Ast.loc com in
   let c = constr_of_com (Evd.mt_evd()) (initial_sign()) com in
   let ty = type_of (Evd.mt_evd()) (initial_sign()) c in
-    try
-      let v = lookup_global id in
-      let ety = match v with Ref (TypePure c) -> c | Array (_,TypePure c) -> c
-	                    | _ -> raise Not_found in
-	if conv (Evd.mt_evd()) ty ety then
-	  initialize id c
-	else
-	  errorlabstrm "Prog_extract.initialize"
-	    [< 'sTR"Not the expected type for the mutable "; pID id >]
-    with
-	Not_found -> errorlabstrm "Prog_extract.initialize"
-	    [< pID id; 'sTR" is not a mutable" >]
+  try
+    let v = lookup_global id in
+    let ety = match v with 
+      | Ref (TypePure c) -> c | Array (_,TypePure c) -> c
+      | _ -> raise Not_found 
+    in
+    if conv (Evd.mt_evd()) ty ety then
+      initialize id c
+    else
+      errorlabstrm "Prog_extract.initialize"
+	[< 'sTR"Not the expected type for the mutable "; pID id >]
+  with Not_found -> 
+    errorlabstrm "Prog_extract.initialize"
+      [< pr_id id; 'sTR" is not a mutable" >]
 
 (* grammaire *)
 
-open Vernacinterp;;
+open Vernacinterp
 
-overwriting_vinterp_add("IMPERATIVEEXTRACTION",
-	    function VARG_STRING file :: rem ->
-	      let prm = parse_param rem in
-	      	(fun () -> pp_ocaml file prm)
-    | _ -> anomaly "IMPERATIVEEXTRACTION called with bad arguments.")
-;;
-
-overwriting_vinterp_add("INITIALIZE",
-	    function [VARG_IDENTIFIER id ; VARG_COMMAND com] ->
-	      fun () -> initialize id com
-    | _ -> anomaly "INITIALIZE called with bad arguments.")
-;;
+let _ = vinterp_add "IMPERATIVEEXTRACTION"
+	  (function 
+	     | VARG_STRING file :: rem ->
+		 let prm = parse_param rem in (fun () -> pp_ocaml file prm)
+	     | _ -> assert false)
+	  
+let _ = vinterp_add "INITIALIZE"
+	  (function 
+	     | [VARG_IDENTIFIER id ; VARG_COMMAND com] ->
+		 (fun () -> initialize id com)
+	     | _ -> assert false)

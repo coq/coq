@@ -16,11 +16,11 @@ Extract Inductive unit => unit [ "()" ].
 Extract Inductive bool => bool [ true false ].
 Extract Inductive sumbool => bool [ true false ].
 
-Require Export Programs.
+Require Export Correctness.
 
-Declare ML Module "prog_extract".
+Declare ML Module "pextract".
 
-Grammar vernac vernac :=
+Grammar vernac vernac : ast :=
   imperative_ocaml [ "Write" "Caml" "File" stringarg($file) 
     "[" ne_identarg_list($idl) "]" "." ]
      -> [ (IMPERATIVEEXTRACTION $file (VERNACARGLIST ($LIST $idl))) ]

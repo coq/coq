@@ -16,10 +16,11 @@ open Names
 open Term
 open Himsg
 
-open Putil
 open Ptype
 open Past
 
+let is_mutable = function Ref _ | Array _ -> true | _ -> false
+let is_pure = function TypePure _ -> true | _ -> false
 
 let raise_with_loc = function
   | None -> raise

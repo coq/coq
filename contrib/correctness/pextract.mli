@@ -11,8 +11,7 @@
 (* $Id$ *)
 
 open Names
-open Genpp
 
-val pp_ocaml : string -> extraction_params -> unit
+val pp_ocaml : string -> unit
 
 
