@@ -28,7 +28,7 @@ let init () =
 
 let i = ref 0
 
-let version () = 
+let version () =
   Printf.sprintf "The Coq Proof Assistant, version %s (%s)\nCompiled on %s\n"
     Coq_config.version Coq_config.date Coq_config.compile_date
 

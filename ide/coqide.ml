@@ -29,10 +29,11 @@ let has_config_file =
   (try Sys.file_exists (Filename.concat (Sys.getenv "HOME") ".coqiderc")
    with Not_found -> false)
 
-let _ = if not has_config_file then 
-  manual_monospace_font := Some (Pango.Font.from_string default_monospace_font_name);
-  manual_general_font := Some (Pango.Font.from_string default_general_font_name)
-
+let () = if not has_config_file then 
+  manual_monospace_font := Some 
+    (Pango.Font.from_string default_monospace_font_name);
+  manual_general_font := Some 
+    (Pango.Font.from_string default_general_font_name)
 
 let (font_selector:GWindow.font_selection_dialog option ref) = ref None
 let (message_view:GText.view option ref) = ref None
@@ -834,11 +835,11 @@ object(self)
 			   ~stop:input_buffer#end_iter
 			   "error";
 			   Highlight.highlight_current_line input_buffer));
-(*    ignore (input_buffer#add_selection_clipboard cb);
-    ignore (input_view#connect#paste_clipboard
-            (fun () ->  match GtkBase.Clipboard.wait_for_text cb with
-		   | None -> prerr_endline "None selected";
-  | Some t -> prerr_endline "Some selected")) *)
+(*    ignore (input_buffer#add_selection_clipboard cb);*)
+(*    ignore (input_view#connect#paste_clipboard
+              (fun () ->  match GtkBase.Clipboard.wait_for_text cb with
+		 | None -> prerr_endline "None selected";
+		 | Some t -> prerr_endline "Some selected"))*)
 end
 
 let create_input_tab filename =
@@ -1307,13 +1308,13 @@ let main () =
     ~callback:(fun () ->
 		 let av = out_some ((get_current_view ()).analyzed_view) in 
 		 match GtkBase.Clipboard.wait_for_text cb with
-		   | None -> 
+		   | _ -> 
 		       prerr_endline "None selected";
 		       av#help_for_keyword ()
-		   | Some t ->
+		   (* | Some t ->
  		       prerr_endline "Some selected";
 		       prerr_endline t;
-		       browse_keyword t)
+		       browse_keyword t*))
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "About" in
@@ -1399,7 +1400,7 @@ let main () =
      tv2#buffer#insert ~iter:tv2#buffer#start_iter "\t\t";
    with _ -> ());
   tv2#buffer#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n";
-  tv2#buffer#insert (try_convert (Coq.version ()));
+  tv2#buffer#insert ((Coq.version ()));
   w#add_accel_group accel_group;
   (* Remove default pango menu for textviews *)
   ignore (tv2#event#connect#button_press ~callback:
