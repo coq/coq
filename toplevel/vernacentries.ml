@@ -766,6 +766,9 @@ let _ =
            in 
 	   fun () ->
              begin
+               if (kind = "LETTOP") && not(refining ()) then
+                 errorlabstrm "Vernacentries.StartProof" [< 'sTR
+                 "Let declarations can only be used in proof editing mode" >];
                start_proof_com (Some s) stre com;
                if not (is_silent()) then show_open_subgoals()
              end
