@@ -81,7 +81,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 
 let standard sds =
   print "byte:\n";
-  print "\t$(MAKE) all \"OPT=\"\n\n";
+  print "\t$(MAKE) all \"OPT=-byte\"\n\n";
   print "opt:\n";
   if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
   print "\t$(MAKE) all \"OPT="; print !opt; print "\"\n\n";
@@ -89,8 +89,8 @@ let standard sds =
   print ".depend depend:\n";
   if !some_file then begin
     print "\trm -f .depend\n";
-    print "\t$(COQDEP) -i $(COQLIBS) *.v *.ml *.mli >.depend\n";
-    print "\t$(COQDEP) $(COQLIBS) -suffix .html *.v >>.depend\n";
+    print "\t$(COQDEP) -i $(COQLIBS) $(VOFILES) *.ml *.mli >.depend\n";
+    print "\t$(COQDEP) $(COQLIBS) -suffix .html $(VOFILES) >>.depend\n";
   end;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
