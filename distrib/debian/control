@@ -3,12 +3,12 @@ Section: devel
 Priority: optional
 Maintainer: Judicaël Courant <Judicael.Courant@lri.fr>
 Standards-Version: 3.5.3
-Build-Depends: debhelper (>= 3), timeout, ocaml (>= 3.04)
+Build-Depends: debhelper (>= 3), timeout, ocaml (>= 3.06)
 
 Package: coq
 Architecture: any
 Depends: ${shlibs:Depends}
-Suggests: coq-doc, ocaml (>= 3.04), cle
+Suggests: coq-doc, ocaml (>= 3.06), cle, ledit
 Recommends: coq-doc, proofgeneral-coq
 Description: a proof assistant for higher-order logic.
  Coq is a proof assistant for higher-order logic, which allows the
