@@ -153,12 +153,6 @@ theories/Sets/Multiset.vo: theories/Sets/Multiset.v theories/Sets/Permut.vo theo
 theories/Sets/Relations_3_facts.vo: theories/Sets/Relations_3_facts.v theories/Sets/Relations_1.vo theories/Sets/Relations_1_facts.vo theories/Sets/Relations_2.vo theories/Sets/Relations_2_facts.vo theories/Sets/Relations_3.vo
 theories/Sets/Partial_Order.vo: theories/Sets/Partial_Order.v theories/Sets/Ensembles.vo theories/Sets/Relations_1.vo
 theories/Sets/Uniset.vo: theories/Sets/Uniset.v theories/Bool/Bool.vo theories/Sets/Permut.vo
-theories/FSets/FSet.vo: theories/FSets/FSet.v theories/FSets/FSetInterface.vo theories/FSets/FSetBridge.vo theories/FSets/FSetProperties.vo theories/FSets/FSetList.vo theories/FSets/FSetRBT.vo
-theories/FSets/FSetList.vo: theories/FSets/FSetList.v theories/FSets/FSetInterface.vo
-theories/FSets/FSetBridge.vo: theories/FSets/FSetBridge.v theories/FSets/FSetInterface.vo
-theories/FSets/FSetProperties.vo: theories/FSets/FSetProperties.v contrib/omega/Omega.vo theories/FSets/FSetInterface.vo theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Bool/Zerob.vo
-theories/FSets/FSetInterface.vo: theories/FSets/FSetInterface.v theories/Bool/Bool.vo theories/Lists/PolyList.vo theories/Sorting/Sorting.vo theories/Setoids/Setoid.vo
-theories/FSets/FSetRBT.vo: theories/FSets/FSetRBT.v theories/FSets/FSetInterface.vo theories/FSets/FSetList.vo theories/FSets/FSetBridge.vo contrib/omega/Omega.vo theories/ZArith/ZArith.vo
 theories/IntMap/Adalloc.vo: theories/IntMap/Adalloc.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/Arith/Arith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Fset.vo
 theories/IntMap/Mapcanon.vo: theories/IntMap/Mapcanon.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo theories/IntMap/Adist.vo theories/IntMap/Addec.vo theories/IntMap/Map.vo theories/IntMap/Mapaxioms.vo theories/IntMap/Mapiter.vo theories/IntMap/Fset.vo theories/Lists/PolyList.vo theories/IntMap/Lsort.vo theories/IntMap/Mapsubset.vo theories/IntMap/Mapcard.vo
 theories/IntMap/Addec.vo: theories/IntMap/Addec.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/ZArith/ZArith.vo theories/IntMap/Addr.vo
