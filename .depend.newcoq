@@ -153,6 +153,12 @@ newtheories/Sets/Multiset.vo: newtheories/Sets/Multiset.v newtheories/Sets/Permu
 newtheories/Sets/Relations_3_facts.vo: newtheories/Sets/Relations_3_facts.v newtheories/Sets/Relations_1.vo newtheories/Sets/Relations_1_facts.vo newtheories/Sets/Relations_2.vo newtheories/Sets/Relations_2_facts.vo newtheories/Sets/Relations_3.vo
 newtheories/Sets/Partial_Order.vo: newtheories/Sets/Partial_Order.v newtheories/Sets/Ensembles.vo newtheories/Sets/Relations_1.vo
 newtheories/Sets/Uniset.vo: newtheories/Sets/Uniset.v newtheories/Bool/Bool.vo newtheories/Sets/Permut.vo
+newtheories/FSets/FSet.vo: newtheories/FSets/FSet.v newtheories/FSets/FSetInterface.vo newtheories/FSets/FSetBridge.vo newtheories/FSets/FSetProperties.vo newtheories/FSets/FSetList.vo newtheories/FSets/FSetRBT.vo
+newtheories/FSets/FSetList.vo: newtheories/FSets/FSetList.v newtheories/FSets/FSetInterface.vo
+newtheories/FSets/FSetBridge.vo: newtheories/FSets/FSetBridge.v newtheories/FSets/FSetInterface.vo
+newtheories/FSets/FSetProperties.vo: newtheories/FSets/FSetProperties.v newcontrib/omega/Omega.vo newtheories/FSets/FSetInterface.vo newtheories/Bool/Bool.vo newtheories/Bool/Sumbool.vo newtheories/Bool/Zerob.vo
+newtheories/FSets/FSetInterface.vo: newtheories/FSets/FSetInterface.v newtheories/Bool/Bool.vo newtheories/Lists/PolyList.vo newtheories/Sorting/Sorting.vo newtheories/Setoids/Setoid.vo
+newtheories/FSets/FSetRBT.vo: newtheories/FSets/FSetRBT.v newtheories/FSets/FSetInterface.vo newtheories/FSets/FSetList.vo newtheories/FSets/FSetBridge.vo newcontrib/omega/Omega.vo newtheories/ZArith/ZArith.vo
 newtheories/IntMap/Adalloc.vo: newtheories/IntMap/Adalloc.v newtheories/Bool/Bool.vo newtheories/Bool/Sumbool.vo newtheories/ZArith/ZArith.vo newtheories/Arith/Arith.vo newtheories/IntMap/Addr.vo newtheories/IntMap/Adist.vo newtheories/IntMap/Addec.vo newtheories/IntMap/Map.vo newtheories/IntMap/Fset.vo
 newtheories/IntMap/Mapcanon.vo: newtheories/IntMap/Mapcanon.v newtheories/Bool/Bool.vo newtheories/Bool/Sumbool.vo newtheories/Arith/Arith.vo newtheories/ZArith/ZArith.vo newtheories/IntMap/Addr.vo newtheories/IntMap/Adist.vo newtheories/IntMap/Addec.vo newtheories/IntMap/Map.vo newtheories/IntMap/Mapaxioms.vo newtheories/IntMap/Mapiter.vo newtheories/IntMap/Fset.vo newtheories/Lists/PolyList.vo newtheories/IntMap/Lsort.vo newtheories/IntMap/Mapsubset.vo newtheories/IntMap/Mapcard.vo
 newtheories/IntMap/Addec.vo: newtheories/IntMap/Addec.v newtheories/Bool/Bool.vo newtheories/Bool/Sumbool.vo newtheories/ZArith/ZArith.vo newtheories/IntMap/Addr.vo

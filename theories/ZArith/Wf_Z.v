@@ -146,7 +146,7 @@ Apply lt_reg_r; Auto.
 Intuition; Elim H1; Simpl; Trivial.
 Qed.
 
-Lemma Z_rec : (P:Z->Type)(P `0`) -> 
+Lemma natlike_rec2 : (P:Z->Type)(P `0`) -> 
         ((z:Z)`0<z` -> (P (Zpred z)) -> (P z)) -> (z:Z)`0<=z` -> (P z).
 Proof.
 Intros P Ho Hrec z; Pattern z; Apply (well_founded_induction_type Z R R_wf).

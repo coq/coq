@@ -503,3 +503,38 @@ Lemma absoption_orb : (b1,b2:bool)
 Proof.
   NewDestruct b1; NewDestruct b2; Simpl; Reflexivity.
 Qed.
+
+
+(** Misc. equalities between booleans (to be used by Auto) *)
+
+Lemma bool_1 : (b1,b2:bool)(b1=true <-> b2=true) -> b1=b2. 
+Proof. 
+ Intros b1 b2; Case b1; Case b2; Intuition.
+Qed.
+
+Lemma bool_2 : (b1,b2:bool)b1=b2 -> b1=true -> b2=true.
+Proof. 
+ Intros b1 b2; Case b1; Case b2; Intuition.
+Qed. 
+
+Lemma bool_3 : (b:bool) ~(negb b)=true -> b=true.
+Proof.
+  Induction b; Intuition.
+Qed.
+
+Lemma bool_4 : (b:bool) b=true -> ~(negb b)=true.  
+Proof.
+  Induction b; Intuition.
+Qed.
+
+Lemma bool_5 : (b:bool) (negb b)=true -> ~b=true.
+Proof.
+  Induction b; Intuition.
+Qed.
+
+Lemma bool_6 : (b:bool) ~b=true -> (negb b)=true.  
+Proof.
+  Induction b; Intuition.
+Qed.
+
+Hints Resolve bool_1 bool_2 bool_3 bool_4 bool_5 bool_6.
