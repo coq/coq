@@ -97,16 +97,15 @@ type extraction_result =
 
 (*s Utility functions. *)
 
+let none = Evd.empty
+
+let type_of env c = Typing.type_of env Evd.empty c
+
 let whd_betaiotalet = clos_norm_flags (UNIFORM, red_add betaiota_red ZETA)
 
 let is_axiom sp = (Global.lookup_constant sp).const_body = None
 
 type lamprod = Lam | Prod
-
-let dest_fix_cofix = function
-  | IsFix ((_,i),(ti,fi,ci)) -> (i,ti,fi,ci)
-  | IsCoFix (i,(ti,fi,ci)) -> (i,ti,fi,ci)
-  | _ -> assert false
 
 let flexible_name = id_of_string "flex"
 
@@ -128,7 +127,7 @@ let rec list_of_ml_arrows = function
    and [None] otherwise. *)
 
 let rec get_arity env c =
-  match kind_of_term (whd_betadeltaiota env Evd.empty c) with
+  match kind_of_term (whd_betadeltaiota env none c) with
     | IsProd (x,t,c0) -> get_arity (push_rel_assum (x,t) env) c0
     | IsCast (t,_) -> get_arity env t
     | IsSort s -> Some s
@@ -137,7 +136,7 @@ let rec get_arity env c =
 (* idem, but goes through [Lambda] as well. Cf. [find_conclusion]. *)
 
 let rec get_lam_arity env c =
-  match kind_of_term (whd_betadeltaiota env Evd.empty c) with
+  match kind_of_term (whd_betadeltaiota env none c) with
     | IsLambda (x,t,c0) -> get_lam_arity (push_rel_assum (x,t) env) c0
     | IsProd (x,t,c0) -> get_lam_arity (push_rel_assum (x,t) env) c0
     | IsCast (t,_) -> get_lam_arity env t
@@ -146,18 +145,17 @@ let rec get_lam_arity env c =
 
 (*s Detection of non-informative parts. *)
 
-let is_non_info_sort env s = is_Prop (whd_betadeltaiota env Evd.empty s)
+let is_non_info_sort env s = is_Prop (whd_betadeltaiota env none s)
 
 let is_non_info_type env t = 
-  let s = Typing.type_of env Evd.empty t in
-  (is_non_info_sort env s) || ((get_arity env t) = (Some (Prop Null)))
+  (is_non_info_sort env (type_of env t)) || (get_arity env t) = Some (Prop Null)
 
 (*i This one is not used, left only to precise what we call a non-informative 
    term.
 
 let is_non_info_term env c = 
-  let t = Typing.type_of env Evd.empty c in
-  let s = Typing.type_of env Evd.empty t in
+  let t = type_of env c in
+  let s = type_of env t in
   (is_non_info_sort env s) ||
   match get_arity env t with 
     | Some (Prop Null) -> true
@@ -218,14 +216,14 @@ let renum_db ctx n =
    if needed *)
 
 let force_n_prod n env c = 
-  if nb_prod c < n then whd_betadeltaiota env Evd.empty c else c
+  if nb_prod c < n then whd_betadeltaiota env none c else c
 
 let decompose_lam_eta n env c = 
   let dif = n - (nb_lam c) in 
   if dif <= 0 then 
     decompose_lam_n n c
   else
-    let t = Typing.type_of env Evd.empty c in
+    let t = type_of env c in
     let (trb,_) = decompose_prod_n n (force_n_prod n env t) in
     let (rb, e) = decompose_lam c in 
     let rb = (list_firstn dif trb) @ rb in 
@@ -302,9 +300,9 @@ let _ = declare_summary "Extraction tables"
 (*s Extraction of a type. *)
 
 (* When calling [extract_type] we suppose that the type of [c] is an
-   arity. This is for example checked in [extract_constr]. 
+   arity. This is for example checked in [extract_constr]. *)
 
-   Relation with [v_of_t]: it is less precise, since we do not 
+(* Relation with [v_of_t]: it is less precise, since we do not 
    delta-reduce in [extract_type] in general.
    \begin{itemize}
    \item If [v_of_t env t = NotArity,_], 
@@ -312,40 +310,49 @@ let _ = declare_summary "Extraction tables"
    \item If [extract_type env t = Tarity], then [v_of_t env t = Arity,_]
    \end{itemize} *)
 
-let rec extract_type env c =
-  extract_type_rec env [] c [] 
+(* Generation of type variable list (['a] in caml).
+   In Coq [(a:Set)(a:Set)a] is legal, but in ML we have only a flat list 
+   of type variable, so we must take care of renaming now, in order to get 
+   something like [type ('a,'a0) foo = 'a0].  The list [vl] is used to 
+   accumulate those type variables and to do renaming on the fly. 
+   Convention: the last elements of this list correspond to external products.
+   This is used when dealing with applications *)
 
-and extract_type_rec env vl c args = 
-  (* We accumulate the two contexts, the generated variable list *)
-  let ty = Typing.type_of env Evd.empty (applist (c, args)) in
+
+let rec extract_type env c =
+  extract_type_rec env c [] [] 
+
+and extract_type_rec env c vl args = 
+  (* We accumulate the context, the arguments and the generated variable list *)
+  let t = type_of env (applist (c, args)) in
   (* Since [ty] is an arity, there is two non-informative case: 
      [ty] is an arity of sort [Prop], or 
      [c] has a non-informative head symbol *)
-  match get_arity env ty with 
+  match get_arity env t with 
     | None -> 
 	assert false (* Cf. precondition. *)
     | Some (Prop Null) ->
 	Tprop 
-    | Some _ -> extract_type_rec_info env vl c args
+    | Some _ -> extract_type_rec_info env c vl args
  
-and extract_type_rec_info env vl c args = 
-  match (kind_of_term (whd_betaiotalet env Evd.empty c)) with
+and extract_type_rec_info env c vl args = 
+  match (kind_of_term (whd_betaiotalet env none c)) with
     | IsSort _ ->
 	assert (args = []); (* A sort can't be applied. *)
 	Tarity 
     | IsProd (n,t,d) ->
 	assert (args = []); (* A product can't be applied. *)
-	extract_prod_lam env vl (n,t,d) Prod
+	extract_prod_lam env (n,t,d) vl Prod
     | IsLambda (n,t,d) ->
 	assert (args = []); (* [c] is now in head normal form. *)
-	extract_prod_lam env vl (n,t,d) Lam
+	extract_prod_lam env (n,t,d) vl Lam
     | IsApp (d, args') ->
 	(* We just accumulate the arguments. *)
-	extract_type_rec_info env vl d (Array.to_list args' @ args)
+	extract_type_rec_info env d vl (Array.to_list args' @ args)
     | IsRel n -> 
 	(match lookup_rel_value n env with
 	   | Some t -> 
-	       extract_type_rec_info env vl (lift n t) args  
+	       extract_type_rec_info env (lift n t) vl args  
 	   | None ->
 	       let id = id_of_name (fst (lookup_rel_type n env)) in 
 	       Tmltype (Tvar id, [], vl))
@@ -353,62 +360,63 @@ and extract_type_rec_info env vl c args =
 	let id = next_ident_away (basename sp) vl in 
 	Tmltype (Tvar id, [], id :: vl)
     | IsConst (sp,a) ->
-	let cty = constant_type env Evd.empty (sp,a) in 
-	if is_arity env Evd.empty cty then
+	let t = constant_type env none (sp,a) in 
+	if is_arity env none t then
 	  (match extract_constant sp with 
 	     | Emltype (Miniml.Tarity,_,_) -> Tarity
 	     | Emltype (Miniml.Tprop,_,_) -> Tprop
-	     | Emltype (mlt, sc, vlc) ->  
-		 extract_type_app env vl (ConstRef sp,sc,vlc) args 
+	     | Emltype (_, sc, vlc) ->  
+		 extract_type_app env (ConstRef sp,sc,vlc) vl args 
 	     | Emlterm _ -> assert false) 
-	else begin
+	else 
 	  (* We can't keep as ML type abbreviation a CIC constant *)
 	  (*   which type is not an arity: we reduce this constant. *)
 	  let cvalue = constant_value env (sp,a) in
-	  extract_type_rec_info env vl (applist (cvalue, args)) []
-	end
+	  extract_type_rec_info env (applist (cvalue, args)) vl []
     | IsMutInd (spi,_) ->
 	(match extract_inductive spi with 
 	   |Iml (si,vli) -> 
-	       extract_type_app env vl (IndRef spi,si,vli) args
-	   |Iprop -> assert false
-		 (* Cf. initial tests *))
-    | IsMutCase _ 
-    | IsFix _ | IsCoFix _ ->
+	       extract_type_app env (IndRef spi,si,vli) vl args 
+	   |Iprop -> assert false (* Cf. initial tests *))
+    | IsMutCase _ | IsFix _ | IsCoFix _ ->
 	let id = next_ident_away flexible_name vl in
 	Tmltype (Tvar id, [], id :: vl)
 	  (* Type without counterpart in ML: we generate a 
 	     new flexible type variable. *) 
     | IsCast (c, _) ->
-	extract_type_rec_info env vl c args
+	extract_type_rec_info env c vl args
     | _ -> 
 	assert false
 
 (* Auxiliary function used to factor code in lambda and product cases *)
 
-and extract_prod_lam env vl (n,t,d) flag = 
+and extract_prod_lam env (n,t,d) vl flag = 
   let tag = v_of_t env t in
   let env' = push_rel_assum (n,t) env in
   match tag,flag with
     | (Info, Arity), _ -> 
+	  (* We rename before the [push_rel], to be sure that the corresponding *)
+	  (* [lookup_rel] will be correct. *)
 	  let id' = next_ident_away (id_of_name n) vl in 
 	  let env' = push_rel_assum (Name id', t) env in
-	  (match extract_type_rec_info env' (id'::vl) d [] with 
+	  (match extract_type_rec_info env' d (id'::vl) [] with 
 	     | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
 	     | et -> et)
     | (Logic, Arity), _ | _, Lam ->
-	(match extract_type_rec_info  env' vl d [] with 
+	(match extract_type_rec_info  env' d vl [] with 
 	   | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
 	   | et -> et)
     | (Logic, NotArity), Prod ->
-	  (match extract_type_rec_info env' vl d [] with 
+	  (match extract_type_rec_info env' d vl [] with 
 	     | Tmltype (mld, sign, vl') ->
 		 Tmltype (Tarr (Miniml.Tprop, mld), tag::sign, vl')
 	     | et -> et)
     | (Info, NotArity), Prod ->
-	(match extract_type_rec_info env' vl d [] with 
+	(* It is important to treat [d] first and [t] in second. *)
+	(* This ensures that the end of [vl] correspond to external binders. *)
+	(match extract_type_rec_info env' d vl [] with 
 	   | Tmltype (mld, sign, vl') -> 
-	       (match extract_type_rec_info env vl' t [] with
+	       (match extract_type_rec_info env t vl' [] with
 		  | Tprop | Tarity -> 
 		      assert false 
 			(* Cf. relation between [extract_type] and [v_of_t] *)
@@ -419,7 +427,7 @@ and extract_prod_lam env vl (n,t,d) flag =
  (* Auxiliary function dealing with type application. 
     Precondition: [r] is of type an arity. *)
 		  
-and extract_type_app env vl (r,sc,vlc) args =
+and extract_type_app env (r,sc,vlc) vl args =
   let nargs = List.length args in
   assert (List.length sc >= nargs);
   (* [r] is of type an arity, so it can't be applied to more than n args, 
@@ -430,7 +438,7 @@ and extract_type_app env vl (r,sc,vlc) args =
       (fun (v,a) ((args,vl) as acc) -> match v with
 	 | _, NotArity -> acc
 	 | Logic, Arity -> acc (* TO JUSTIFY *)
-	 | Info, Arity -> match extract_type_rec_info env vl a [] with
+	 | Info, Arity -> match extract_type_rec_info env a vl [] with
 	     | Tarity -> (Miniml.Tarity :: args, vl) 
   	           (* we pass a dummy type [arity] as argument *)
 	     | Tprop -> (Miniml.Tprop :: args, vl)
@@ -438,6 +446,8 @@ and extract_type_app env vl (r,sc,vlc) args =
       (List.combine sign_args args) 
       ([],vl)
   in
+  (* The type variable list is [vl'] plus those variables of [c] not 
+     corresponding to arguments. There is [nvlargs] such variables of [c] *)
   let nvlargs = List.length vlc - List.length mlargs in 
   assert (nvlargs >= 0);
   let vl'' = 
@@ -445,6 +455,7 @@ and extract_type_app env vl (r,sc,vlc) args =
       (fun id l -> (next_ident_away id l) :: l) 
       (list_firstn nvlargs vlc) vl'
   in
+  (* We complete the list of arguments of [c] by variables *)
   let vlargs = 
     List.rev_map (fun i -> Tvar i) (list_firstn nvlargs vl'') in
   Tmltype (Tapp ((Tglob r) :: mlargs @ vlargs), sign_rem, vl'')
@@ -455,13 +466,12 @@ and extract_type_app env vl (r,sc,vlc) args =
     This is normaly checked in [extract_constr]. *)
 
 and extract_term env ctx c = 
-  let t = Typing.type_of env Evd.empty c in
-  extract_term_with_type env ctx c t
+  extract_term_with_type env ctx c (type_of env c)
 
 and extract_term_with_type env ctx c t =
-  let s = Typing.type_of env Evd.empty t in
+  let s = Typing.type_of env none t in
   (* The only non-informative case: [s] is [Prop] *)
-  if is_Prop (whd_betadeltaiota env Evd.empty s) then
+  if is_Prop (whd_betadeltaiota env none s) then
     Rprop
   else 
     Rmlterm (extract_term_info_with_type env ctx c t)
@@ -470,8 +480,7 @@ and extract_term_with_type env ctx c t =
    We directly return a [ml_ast], not a [term_extraction_result] *)
 
 and extract_term_info env ctx c = 
-  let t = Typing.type_of env Evd.empty c in
-  extract_term_info_with_type env ctx c t
+  extract_term_info_with_type env ctx c (type_of env c)
 
 and extract_term_info_with_type env ctx c t = 
    match kind_of_term c with
@@ -490,9 +499,9 @@ and extract_term_info_with_type env ctx c t =
 	  (* TODO : magic or not *) 
 	  MLrel (renum_db ctx n)
       | IsApp (f,a) ->
-  	  let tyf = Typing.type_of env Evd.empty f in
-          let s = signature_of_application env f tyf a in  
-      	  extract_app env ctx (f,tyf,s) (Array.to_list a) 
+  	  let tf = type_of env f in
+          let s = signature_of_application env f tf a in  
+      	  extract_app env ctx (f,tf,s) (Array.to_list a) 
       | IsConst (sp,_) ->
 	  MLglob (ConstRef sp)
       | IsMutConstruct (cp,_) ->
@@ -515,64 +524,11 @@ and extract_term_info_with_type env ctx c t =
 	  in
 	  abstract_n n (abstract [] 1 s)
       | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
-	  let extract_branch_aux j b = 	  
-	    let (rb,e) = decompose_lam_eta ni.(j) env b in
-	    let lb = List.rev rb in
-	    let env' = push_rels_assum rb env in
-	    let ctx' = 
-	      lbinders_fold (fun _ _ v a -> (v = default) :: a) ctx env lb in
-	    (* Some pathological cases need an [extract_constr] here rather *)
-	    (* than an [extract_term]. See exemples in [test_extraction.v] *)
-	    let e' = match extract_constr env' ctx' e with
-	      | Emltype _ -> MLarity
-	      | Emlterm a -> a
-	    in (lb,e')
-	  in
-	  let extract_branch j b =
-	    let cp = (ip,succ j) in
-	    let (s,_) = signature_of_constructor cp in
-	    assert (List.length s = ni.(j));
-	    (* number of arguments, without parameters *)
-	    let (lb, e') = extract_branch_aux j b in
-	    let ids = 
-	      List.fold_right 
-		(fun (v,(n,_)) acc -> 
-		   if v = default then (id_of_name n :: acc) else acc)
-		(List.combine s lb) []
-	    in
-	    (ConstructRef cp, ids, e')
-	  in
-	  (* [c] has an inductive type, not an arity type *)
-	  (match extract_term env ctx c with
-	     | Rmlterm a -> 
-		 if (is_singleton_inductive ip) then 
-		   begin
-		     (* informative singleton case *)
-		     assert (Array.length br = 1);
-		     let (_,ids,e') = extract_branch 0 br.(0) in
-		     assert (List.length ids = 1);
-		     MLletin (List.hd ids,a,e')
-		   end
-		 else
-		   MLcase (a, Array.mapi extract_branch br)
-	     | Rprop -> (* Logical singleton elimination *)
-		 assert (Array.length br = 1);
-		 snd (extract_branch_aux 0 br.(0)))
-      | IsFix _ | IsCoFix _ as c ->
-          let (i,ti,fi,ci) = dest_fix_cofix c in
-	  let n = Array.length ti in
-	  let ti' = Array.mapi lift ti in 
-	  let lb = (List.combine fi (Array.to_list ti')) in
-	  let env' = push_rels_assum (List.rev lb) env in
-	  let ctx' = 
-	    lbinders_fold (fun _ _ v a -> (snd v = NotArity) :: a) ctx env lb in
-	  let extract_fix_body c t =
-	    match extract_constr_with_type env' ctx' c (lift n t) with
-	      | Emltype _ -> MLarity
-	      | Emlterm a -> a
-	  in
-	  let ei = Array.to_list (array_map2 extract_fix_body ci ti) in
-	  MLfix (i, List.map id_of_name fi, ei)
+	  extract_case env ctx ni ip cnames p c br
+      | IsFix ((_,i),(ti,fi,ci)) -> 
+	  extract_fix env ctx i ti fi ci 
+      | IsCoFix (i,(ti,fi,ci)) -> 
+	  extract_fix env ctx i ti fi ci  
       | IsLetIn (n, c1, t1, c2) ->
 	  let id = id_of_name n in
 	  let env' = push_rel_def (n,c1,t1) env in
@@ -590,6 +546,66 @@ and extract_term_info_with_type env ctx c t =
       | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ | IsMeta _ | IsEvar _ ->
 	  assert false 
 	    
+and extract_case env ctx ni ip cnames p c br = 
+  let extract_branch_aux j b = 	  
+    let (rb,e) = decompose_lam_eta ni.(j) env b in
+    let lb = List.rev rb in
+    let env' = push_rels_assum rb env in
+    let ctx' = 
+      lbinders_fold (fun _ _ v a -> (v = default) :: a) ctx env lb in
+    (* Some pathological cases need an [extract_constr] here rather *)
+    (* than an [extract_term]. See exemples in [test_extraction.v] *)
+    let e' = match extract_constr env' ctx' e with
+      | Emltype _ -> MLarity
+      | Emlterm a -> a
+    in (lb,e')
+  in
+  let extract_branch j b =
+    let cp = (ip,succ j) in
+    let (s,_) = signature_of_constructor cp in
+    assert (List.length s = ni.(j));
+    (* number of arguments, without parameters *)
+    let (lb, e') = extract_branch_aux j b in
+    let ids = 
+      List.fold_right 
+	(fun (v,(n,_)) acc -> 
+	   if v = default then (id_of_name n :: acc) else acc)
+	(List.combine s lb) []
+    in
+    (ConstructRef cp, ids, e')
+  in
+  (* [c] has an inductive type, not an arity type *)
+  (match extract_term env ctx c with
+     | Rmlterm a -> 
+	 if (is_singleton_inductive ip) then 
+	   begin
+	     (* informative singleton case *)
+	     assert (Array.length br = 1);
+	     let (_,ids,e') = extract_branch 0 br.(0) in
+	     assert (List.length ids = 1);
+	     MLletin (List.hd ids,a,e')
+	   end
+	 else
+	   MLcase (a, Array.mapi extract_branch br)
+     | Rprop -> (* Logical singleton elimination *)
+	 assert (Array.length br = 1);
+	 snd (extract_branch_aux 0 br.(0)))
+  
+and extract_fix env ctx i ti fi ci = 
+  let n = Array.length ti in
+  let ti' = Array.mapi lift ti in 
+  let lb = (List.combine fi (Array.to_list ti')) in
+  let env' = push_rels_assum (List.rev lb) env in
+  let ctx' = 
+    lbinders_fold (fun _ _ v a -> (snd v = NotArity) :: a) ctx env lb in
+  let extract_fix_body c t =
+    match extract_constr_with_type env' ctx' c (lift n t) with
+      | Emltype _ -> MLarity
+      | Emlterm a -> a
+  in
+  let ei = Array.to_list (array_map2 extract_fix_body ci ti) in
+  MLfix (i, List.map id_of_name fi, ei)
+
 and extract_app env ctx (f,tyf,sf) args =
   let nargs = List.length args in
   assert (List.length sf >= nargs);
@@ -611,7 +627,6 @@ and extract_app env ctx (f,tyf,sf) args =
   let f' = extract_term_info_with_type env ctx f tyf in 
   MLapp (f', mlargs)
 
-
 and signature_of_application env f t a =
   let nargs = Array.length a in	 	
   let t = force_n_prod nargs env t  in
@@ -626,7 +641,7 @@ and signature_of_application env f t a =
   else 
     let f' = mkApp (f, Array.sub a 0 nbp) in 
     let a' = Array.sub a nbp (nargs-nbp) in 
-    let t' = Typing.type_of env Evd.empty f' in
+    let t' = type_of env f' in
     s @ signature_of_application env f' t' a'
 	  
 
@@ -645,7 +660,7 @@ and extract_constr_with_type env ctx c t =
 	  Emlterm (extract_term_info_with_type env ctx c t)
  	    
 and extract_constr env ctx c = 
-  extract_constr_with_type env ctx c (Typing.type_of env Evd.empty c)
+  extract_constr_with_type env ctx c (type_of env c)
 
 (*s Extraction of a constant. *)
 		
@@ -737,7 +752,7 @@ and extract_mib sp =
 	       (fun j vl _ -> 
 		  let t = mis_constructor_type (succ j) mis in
 		  let t = snd (decompose_prod_n nb t) in
-		  match extract_type_rec_info env vl t [] with
+		  match extract_type_rec_info env t vl [] with
 		    | Tarity | Tprop -> assert false
 		    | Tmltype (mlt, s, v) -> 
 			let l = list_of_ml_arrows mlt in

@@ -303,7 +303,7 @@ let rec non_stricts add cand = function
   | MLcase (t,v) -> 
       (* The only interesting case: for a variable to be non-strict, 
 	 it is sufficient that it appears non-strict in at least one branch,
-	 so he make en union (in fact a merge). *)
+	 so he make an union (in fact a merge). *)
       let cand = non_stricts false cand t in 
       Array.fold_left 
 	(fun c (_,i,t)-> 
