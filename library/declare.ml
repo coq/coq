@@ -426,9 +426,15 @@ let dirpath_of_global = function
   | IndRef (sp,_) -> dirpath sp
   | ConstructRef ((sp,_),_) -> dirpath sp
 
+let is_section_variable = function
+  | VarRef _ -> true
+  | _ -> false
+
 let is_global id =
   try 
     let osp = Nametab.locate (make_qualid [] id) in
+    (* Compatibilité V6.3: Les variables de section de sont pas globales
+    not (is_section_variable osp) && *)
     list_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false

@@ -1368,9 +1368,10 @@ let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
       (clear [id]) 
   in
   if tac <> [] then
-    ((id,((tclTHEN ((tclTHEN (shift_left) (mk_then tac))) 
-	     (intros_using [id])))) :: tactic,
-     compile id flag t' :: defs)
+    let id' = new_identifier () in 
+    ((id',((tclTHEN ((tclTHEN (shift_left) (mk_then tac))) 
+	     (intros_using [id'])))) :: tactic,
+     compile id' flag t' :: defs)
   else 
     (tactic,defs)
     
