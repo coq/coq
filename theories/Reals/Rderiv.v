@@ -27,13 +27,14 @@ Definition continue_in:(R->R)->(R->Prop)->R->Prop:=
 (*********)
 Definition D_in:(R->R)->(R->R)->(R->Prop)->R->Prop:=
   [f:R->R; d:R->R; D:R->Prop; x0:R](limit1_in 
-    [x:R] (Rmult (Rminus (f x) (f x0)) (Rinv (Rminus x x0))) 
+    [x:R] (Rdiv (Rminus (f x) (f x0)) (Rminus x x0)) 
     (D_x D x0) (d x0) x0).
 
 (*********)
 Lemma cont_deriv:(f,d:R->R;D:R->Prop;x0:R)
          (D_in f d D x0)->(continue_in f D x0).
-Unfold continue_in;Unfold D_in;Unfold limit1_in;Unfold limit_in;Simpl;
+Unfold continue_in;Unfold D_in;Unfold limit1_in;Unfold limit_in;
+ Unfold Rdiv;Simpl;
  Intros;Cut (Rgt (Rminus eps (Rabsolu (d x0))) R0)\/
             ~(Rgt (Rminus eps (Rabsolu (d x0))) R0).
 Intro;Elim H1;Clear H1;Intro.
@@ -284,7 +285,7 @@ Save.
 
 (*********)
 Lemma Dconst:(D:R->Prop)(y:R)(x0:R)(D_in [x:R]y [x:R]R0 D x0).
-Unfold D_in;Intros;Unfold limit1_in;Unfold limit_in;Intros;Simpl;
+Unfold D_in;Intros;Unfold limit1_in;Unfold limit_in;Unfold Rdiv;Intros;Simpl;
  Split with eps;Split;Auto.
 Intros;Rewrite (eq_Rminus y y (refl_eqT R y));
  Rewrite Rmult_Ol;Unfold R_dist; 
@@ -297,7 +298,7 @@ Save.
 
 (*********)
 Lemma Dx:(D:R->Prop)(x0:R)(D_in [x:R]x [x:R]R1 D x0).
-Unfold D_in;Intros;Unfold limit1_in;Unfold limit_in;Intros;Simpl;
+Unfold D_in;Unfold Rdiv;Intros;Unfold limit1_in;Unfold limit_in;Intros;Simpl;
   Split with eps;Split;Auto.
 Intros;Elim H0;Clear H0;Intros;Unfold D_x in H0;
  Elim H0;Intros;
@@ -448,7 +449,7 @@ Lemma Dcomp:(Df,Dg:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
   (D_in f df Df x0)->(D_in g dg Dg (f x0))->
   (D_in [x:R](g (f x)) [x:R](Rmult (df x) (dg (f x))) 
                        (Dgf Df Dg f) x0).
-Intros Df Dg df dg f g x0 H H0;Generalize H H0;Unfold D_in;Intros;
+Intros Df Dg df dg f g x0 H H0;Generalize H H0;Unfold D_in;Unfold Rdiv;Intros;
 Generalize (limit_comp f [x:R](Rmult (Rminus (g x) (g (f x0)))
                                (Rinv (Rminus x (f x0)))) (D_x Df x0)
               (D_x Dg (f x0)) 

@@ -135,6 +135,11 @@ Proof Rlt_le_not.
 
 Hints Immediate Rlt_le_not : real.
 
+Lemma Rle_not_lt: (r1, r2:R) ``r2 <= r1`` ->~ (``r1<r2``).
+Intros r1 r2 H'; Elim H';Auto with real.
+Intro H; Rewrite H; Auto with real.
+Save.
+
 (**********)
 Lemma Rlt_ge_not:(r1,r2:R)``r1<r2``->~(``r1>=r2``).
 Unfold Rge; Red; Intros.
@@ -178,7 +183,6 @@ Lemma Rle_le_eq:(r1,r2:R)(``r1<=r2``/\``r2<=r1``)<->(r1==r2).
 Split; Auto with real.
 Intros (H1,H2); Auto with real.
 Save.
-
 
 (**********)
 Lemma Rle_trans:(r1,r2,r3:R) ``r1<=r2``->``r2<=r3``->``r1<=r3``.
@@ -241,11 +245,15 @@ Right; Auto with real.
 Right; Auto with real.
 Save.
 
-Lemma total_order_Rle_Rlt_eq :(r1,r2:R)``r1<=r2``-> (sumboolT ``r1<r2`` ``r1==r2``).
+Lemma Rle_or_lt: (n, m:R)(Rle n m) \/ (Rlt m n).
+Intros n m; Elim (total_order_Rlt_Rle m n);Auto with real.
+Save.
+
+Lemma total_order_Rle_Rlt_eq :(r1,r2:R)``r1<=r2``-> 
+                              (sumboolT ``r1<r2`` ``r1==r2``).
 Intros r1 r2 H;Elim (total_order_T r1 r2); Trivial; Intro.
 Elim (Rlt_le_not r1 r2); Trivial.
 Save.
-
 
 (**********)
 Lemma inser_trans_R:(n,m,p,q:R)``n<=m<p``-> (sumboolT ``n<=m<q`` ``q<=m<p``).
@@ -526,6 +534,11 @@ Intros;Generalize (Rminus_eq r2 r1 H);Clear H;Intro H;Rewrite H;Ring.
 Save.
 Hints Immediate Rminus_eq_right : real.
 
+Lemma Rplus_Rminus: (p,q:R)``p+(q-p)``==q.
+Intros; Ring.
+Save.
+Hints Resolve Rplus_Rminus:real.
+
 (**********)
 Lemma Rminus_eq_contra:(r1,r2:R)``r1<>r2``->``r1-r2<>0``.
 Red; Intros r1 r2 H H0.
@@ -665,17 +678,23 @@ Lemma Rplus_lt:(r1,r2,r3,r4:R)``r1<r2`` -> ``r3<r4`` -> ``r1+r3 < r2+r4``.
 Intros; Apply Rlt_trans with ``r2+r3``; Auto with real.
 Save.
 
+Lemma Rplus_le:(r1,r2,r3,r4:R)``r1<=r2`` -> ``r3<=r4`` -> ``r1+r3 <= r2+r4``.
+Intros; Apply Rle_trans with ``r2+r3``; Auto with real.
+Save.
+
 (*********)
-Lemma Rplus_lt_le_lt:(r1,r2,r3,r4:R)``r1<r2`` -> ``r3<=r4`` -> ``r1+r3 < r2+r4``.
+Lemma Rplus_lt_le_lt:(r1,r2,r3,r4:R)``r1<r2`` -> ``r3<=r4`` -> 
+                     ``r1+r3 < r2+r4``.
 Intros; Apply Rlt_le_trans with ``r2+r3``; Auto with real.
 Save.
 
 (*********)
-Lemma Rplus_le_lt_lt:(r1,r2,r3,r4:R)``r1<=r2`` -> ``r3<r4`` -> ``r1+r3 < r2+r4``.
+Lemma Rplus_le_lt_lt:(r1,r2,r3,r4:R)``r1<=r2`` -> ``r3<r4`` -> 
+                                    ``r1+r3 < r2+r4``.
 Intros; Apply Rle_lt_trans with ``r2+r3``; Auto with real.
 Save.
 
-Hints Immediate Rplus_lt Rplus_lt_le_lt Rplus_le_lt_lt : real.
+Hints Immediate Rplus_lt Rplus_le Rplus_lt_le_lt Rplus_le_lt_lt : real.
 
 (*s Order and Opposite *)
 
@@ -697,16 +716,40 @@ Unfold Rgt; Auto with real.
 Save.
 Hints Resolve Rlt_Ropp : real.
 
+Lemma Ropp_Rlt: (x,y:R) ``-y < -x`` ->``x<y``.
+Intros x y H'.
+Rewrite <- (Ropp_Ropp x); Rewrite <- (Ropp_Ropp y); Auto with real.
+Save.
+Hints Resolve Ropp_Rlt : real.
+
+Lemma Rlt_Ropp1:(r1,r2:R) ``r2 < r1`` -> ``-r1 < -r2``.
+Auto with real.
+Save.
+Hints Resolve Rlt_Ropp1 : real.
+
 (**********)
 Lemma Rle_Ropp:(r1,r2:R) ``r1 <= r2`` -> ``-r1 >= -r2``.
 Unfold Rge; Intros r1 r2 [H|H]; Auto with real.
 Save.
 Hints Resolve Rle_Ropp : real.
 
+Lemma Ropp_Rle: (x,y:R) ``-y <= -x`` ->``x <= y``.
+Intros x y H.
+Elim H;Auto with real.
+Intro H1;Rewrite <-(Ropp_Ropp x);Rewrite <-(Ropp_Ropp y);Rewrite H1;
+  Auto with real.
+Save.
+Hints Resolve Ropp_Rle : real.
+
+Lemma Rle_Ropp1:(r1,r2:R) ``r2 <= r1`` -> ``-r1 <= -r2``.
+Intros r1 r2 H;Elim H;Auto with real.
+Intro H1;Rewrite H1;Auto with real.
+Save.
+Hints Resolve Rle_Ropp1 : real.
+
 (**********)
 Lemma Rge_Ropp:(r1,r2:R) ``r1 >= r2`` -> ``-r1 <= -r2``.
 Unfold Rge; Intros r1 r2 [H|H]; Auto with real.
-Red; Auto with real.
 Save.
 Hints Resolve Rge_Ropp : real.
 
@@ -741,6 +784,16 @@ Intros; Rewrite (Rmult_sym r1 r); Rewrite (Rmult_sym r2 r); Auto with real.
 Save.
 Hints Resolve Rlt_monotony_r.
 
+Lemma Rlt_monotony_contra:
+  (x, y, z:R) ``0<z`` ->``z*x<z*y`` ->``x<y``.
+Intros x y z H H0.
+Case (total_order x y); Intros Eq0; Auto; Elim Eq0; Clear Eq0; Intros Eq0.
+ Rewrite Eq0 in H0;ElimType False;Apply (Rlt_antirefl ``z*y``);Auto.
+Generalize (Rlt_monotony z y x H Eq0);Intro;ElimType False;
+ Generalize (Rlt_trans ``z*x`` ``z*y`` ``z*x`` H0 H1);Intro;
+ Apply (Rlt_antirefl ``z*x``);Auto.
+Save.
+
 Lemma Rlt_anti_monotony:(r,r1,r2:R)``r < 0`` -> ``r1 < r2`` -> ``r*r1 > r*r2``.
 Intros; Replace r with ``-(-r)``; Auto with real.
 Rewrite (Ropp_mul1 ``-r``); Rewrite (Ropp_mul1 ``-r``).
@@ -762,6 +815,18 @@ Rewrite (Rmult_sym r1 r); Rewrite (Rmult_sym r2 r); Auto with real.
 Save.
 Hints Resolve Rle_monotony_r : real.
 
+Lemma Rle_monotony_contra:
+  (x, y, z:R) ``0<z`` ->``z*x<=z*y`` ->``x<=y``.
+Intros x y z H H0;Case H0; Auto with real.
+Intros H1; Apply Rlt_le.
+Apply Rlt_monotony_contra with z := z;Auto.
+Intros H1;Replace x with (Rmult (Rinv z) (Rmult z x)); Auto with real.
+Replace y with (Rmult (Rinv z) (Rmult z y)).
+ Rewrite H1;Auto with real.
+Rewrite <- Rmult_assoc; Rewrite Rinv_l; Auto with real.
+Rewrite <- Rmult_assoc; Rewrite Rinv_l; Auto with real.
+Save.
+
 Lemma Rle_anti_monotony
 	:(r,r1,r2:R)``r <= 0`` -> ``r1 <= r2`` -> ``r*r1 >= r*r2``.
 Intros; Replace r with ``-(-r)``; Auto with real.
@@ -770,7 +835,16 @@ Apply Rle_Ropp; Auto with real.
 Save.
 Hints Resolve Rle_anti_monotony : real.
 
-
+Lemma Rle_Rmult_comp:
+  (x, y, z, t:R) ``0 <= x`` -> ``0 <= z`` -> ``x <= y`` -> ``z <= t`` ->
+  ``x*z <= y*t``.
+Intros x y z t H' H'0 H'1 H'2.
+Apply Rle_trans with r2 := ``x*t``; Auto with real.
+Repeat Rewrite [x:?](Rmult_sym x t).
+Apply Rle_monotony; Auto.
+Apply Rle_trans with z; Auto.
+Save.
+Hints Resolve Rle_Rmult_comp :real.
 
 Lemma Rmult_lt:(r1,r2,r3,r4:R)``r3>0`` -> ``r2>0`` ->
   `` r1 < r2`` -> ``r3 < r4`` -> ``r1*r3 < r2*r4``.
@@ -804,7 +878,6 @@ Intros; Replace r1 with ``r1-r2+r2``.
 Pattern 3 r2; Replace r2 with ``0+r2``; Auto with real.
 Ring.
 Save.
-
 
 (**********)
 Lemma tech_Rplus:(r,s:R)``0<=r`` -> ``0<s`` -> ``r+s<>0``.
@@ -852,7 +925,6 @@ Intros; Change ``0>/r``; Apply not_Rle; Red; Intros.
 Absurd ``1<=0``; Auto with real.
 Replace ``1`` with ``r*(/r)``; Auto with real.
 Replace ``0`` with ``r*0``; Auto with real.
-Apply Rge_le; Auto with real.
 Save.
 Hints Resolve Rlt_Rinv2 : real.
 
@@ -877,6 +949,22 @@ Symmetry; Auto with real.
 Symmetry; Auto with real.
 Save.
 
+Lemma Rlt_Rinv_R1: (x, y:R) ``1 <= x`` -> ``x<y`` ->``/y< /x``.
+Intros x y H' H'0.
+Cut (Rlt R0 x); [Intros Lt0 | Apply Rlt_le_trans with r2 := R1]; 
+  Auto with real.
+Apply Rlt_monotony_contra with z := x; Auto with real.
+Rewrite (Rmult_sym x (Rinv x)); Rewrite Rinv_l; Auto with real.
+Apply Rlt_monotony_contra with z := y; Auto with real.
+Apply Rlt_trans with r2:=x;Auto.
+Cut ``y*(x*/y)==x``.
+Intro H1;Rewrite H1;Rewrite (Rmult_1r y);Auto.
+Rewrite (Rmult_sym x); Rewrite <- Rmult_assoc; Rewrite (Rmult_sym y (Rinv y));
+ Rewrite Rinv_l; Auto with real.
+Apply imp_not_Req; Right.
+Red; Apply Rlt_trans with r2 := x; Auto with real.
+Save.
+Hints Resolve Rlt_Rinv_R1 :reals.
 
 (*********************************************************)        
 (*s      Greater                                         *)
@@ -970,7 +1058,6 @@ Pattern 1 r; Replace r with ``r+0``; Auto with real.
 Save.
 Hints Resolve Rlt_r_r_plus_R1: real.
 
-
 (**********)
 Lemma tech_Rgt_minus:(r1,r2:R)``0<r2``->``r1>r1-r2``.
 Red; Unfold Rminus; Intros.
@@ -1015,7 +1102,6 @@ Save.
 Lemma minus_Rgt:(r1,r2:R)``r1-r2 > 0`` -> ``r1>r2``.
 Intros; Replace r2 with ``r2+0``; Auto with real.
 Intros; Replace r1 with ``r2+(r1-r2)``; Auto with real.
-Ring.
 Save.
 
 (**********)
@@ -1029,7 +1115,6 @@ Save.
 Lemma minus_Rge:(r1,r2:R)``r1-r2 >= 0`` -> ``r1>=r2``.
 Intros; Replace r2 with ``r2+0``; Auto with real.
 Intros; Replace r1 with ``r2+(r1-r2)``; Auto with real.
-Ring.
 Save.
 
 
@@ -1104,7 +1189,6 @@ Repeat Rewrite S_INR.
 Rewrite Hrecn; Ring.
 Save.
 
-
 (**********)
 Lemma minus_INR:(n,m:nat)(le m n)->(INR (minus n m))==``(INR n)-(INR m)``.
 Intros n m le; Pattern m n; Apply le_elim_rel; Auto with real.
@@ -1129,6 +1213,18 @@ Induction 1; Intros; Auto with real.
 Rewrite S_INR; Auto with real.
 Save.
 Hints Resolve INR_lt_0: real.
+
+Lemma INR_lt_nm:(n,m:nat)(lt n m)->``(INR n) < (INR m)``.
+Induction 1; Intros; Auto with real.
+Rewrite S_INR; Auto with real.
+Rewrite S_INR; Apply Rlt_trans with (INR m0); Auto with real.
+Save.
+Hints Resolve INR_lt_nm: real.
+
+Lemma INR_lt_1:(n:nat)(lt (S O) n)->``1 < (INR n)``.
+Intros;Replace ``1`` with (INR (S O));Auto with real.
+Save.
+Hints Resolve INR_lt_1: real.
 
 (**********)
 Lemma INR_pos : (p:positive)``0<(INR (convert p))``.
@@ -1162,7 +1258,6 @@ Rewrite H1; Trivial.
 Save.
 Hints Immediate not_INR_O : real.
 
-
 (**********)
 Lemma not_O_INR:(n:nat)~n=O->``(INR n)<>0``.
 Intro n; Case n.
@@ -1172,7 +1267,19 @@ Apply Rgt_not_eq; Red; Auto with real.
 Save.
 Hints Resolve not_O_INR : real.
 
+Lemma not_nm_INR:(n,m:nat)~n=m->``(INR n)<>(INR m)``.
+Intros n m H; Case (le_or_lt n m); Intros H1.
+Case (le_lt_or_eq ? ? H1); Intros H2.
+Apply imp_not_Req; Auto with real.
+ElimType False;Auto.
+Apply sym_not_eqT; Apply imp_not_Req; Auto with real.
+Save.
+Hints Resolve not_nm_INR : real.
 
+Lemma not_1_INR:(n:nat)~n=(S O)->``(INR n)<>1``.
+Replace ``1``  with (INR (S O)); Auto with real.
+Save.
+Hints Resolve not_1_INR : real.
 
 (**********************************************************) 
 (*s      Injection from Z to R                            *)
@@ -1252,7 +1359,6 @@ Lemma eq_IZR_R0:(z:Z)``(IZR z)==0``->`z=0`.
 Destruct z; Simpl; Intros; Auto with zarith.
 Case (Rlt_not_eq ``0`` (INR (convert p))); Auto with real.
 Case (Rlt_not_eq ``-(INR (convert p))`` ``0`` ); Auto with real.
-Apply Rgt_RoppO; Red; Auto with real.
 Save.
 
 (**********)

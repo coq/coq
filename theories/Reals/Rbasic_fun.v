@@ -99,6 +99,11 @@ Unfold Rabsolu;Case (case_Rabsolu R0);Auto;Intro.
 Generalize (Rlt_antirefl R0);Intro;ElimType False;Auto.
 Save.
 
+Lemma Rabsolu_R1: (Rabsolu R1)==R1.
+Unfold Rabsolu; Case (case_Rabsolu R1); Auto with real.
+Intros H; Absurd ``1 < 0``;Auto with real.
+Save.
+
 (*********)
 Lemma Rabsolu_no_R0:(r:R)~r==R0->~(Rabsolu r)==R0.
 Intros;Unfold Rabsolu;Case (case_Rabsolu r);Intro;Auto.
