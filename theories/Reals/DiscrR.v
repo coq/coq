@@ -9,6 +9,7 @@
 (*i        $Id$       i*)
 
 Require RIneq.
+Require Omega.
 
 Recursive Tactic Definition Isrealint trm:=
   Match trm With
@@ -57,3 +58,15 @@ Recursive Tactic Definition Sup0 :=
   | [ |- ``0<1`` ] -> Apply Rlt_R0_R1
   | [ |- ``0<?1`` ] -> Repeat (Apply Rmult_lt_pos Orelse Apply Rplus_lt_pos; Try Apply Rlt_R0_R1 Orelse Apply Rlt_R0_R2)
   | [ |- ``?1>0`` ] -> Change ``0<?1``; Sup0.
+
+Tactic Definition SupOmega := Replace R1 with (IZR `1`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR; Apply IZR_lt; Omega | Reflexivity].
+  
+Recursive Tactic Definition Sup :=
+  Match Context With
+  | [ |- (Rgt ?1 ?2) ] -> Change ``?2<?1``; Sup
+  | [ |- ``0<?1`` ] -> Sup0
+  | [ |- (Rlt (Ropp ?1) R0) ] -> Rewrite <- Ropp_O; Sup
+  | [ |- (Rlt (Ropp ?1) (Ropp ?2)) ] -> Apply Rlt_Ropp; Sup
+  | [ |- (Rlt (Ropp ?1) ?2) ] -> Apply Rlt_trans with ``0``; Sup
+  | [ |- (Rlt ?1 ?2) ] -> SupOmega
+  | _ -> Idtac.
