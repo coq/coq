@@ -401,9 +401,9 @@ beforedepend:: ide/config_parser.mli ide/config_parser.ml
 beforedepend:: ide/utf8_convert.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
-IDEFILES=ide/coq.png ide/.coqide-gtk2rc ide/FAQ
+IDEFILES=ide/utf8.vo ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
-coqide: coqide-$(HASCOQIDE)
+coqide: $(IDEFILES) coqide-$(HASCOQIDE)
 coqide-no:
 coqide-byte: $(COQIDEBYTE) $(COQIDE)
 coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
@@ -411,7 +411,7 @@ coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 ide: coqide-$(HASCOQIDE) states
 
 clean-ide: 
-	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
+	rm -f ide/utf8.vo $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 	$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
