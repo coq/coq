@@ -33,6 +33,9 @@ contrib/omega/Zpower.vo: contrib/omega/Zpower.v theories/ZArith/ZArith.vo contri
 contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
 contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v theories/ZArith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo contrib/omega/Zpower.vo
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith.vo theories/Arith/Minus.vo contrib/omega/OmegaSyntax.vo
+theories/Sorting/Sorting.vo: theories/Sorting/Sorting.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo
+theories/Sorting/Permutation.vo: theories/Sorting/Permutation.v theories/Relations/Relations.vo theories/Lists/PolyList.vo theories/Sets/Multiset.vo
+theories/Sorting/Heap.vo: theories/Sorting/Heap.v theories/Lists/PolyList.vo theories/Sets/Multiset.vo theories/Sorting/Permutation.vo theories/Relations/Relations.vo theories/Sorting/Sorting.vo
 theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v
 theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo theories/Reals/Rbasic_fun.vo theories/Reals/Rlimit.vo theories/Reals/Rfunctions.vo theories/Reals/Rderiv.vo theories/Reals/Rseries.vo theories/Reals/Rtrigo_fun.vo
 theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rseries.vo

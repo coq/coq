@@ -387,6 +387,10 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
 #	theories/Arith/Div.vo 
 
+SORTINGVO=theories/Sorting/Heap.vo \
+	theories/Sorting/Permutation.vo \
+	theories/Sorting/Sorting.vo
+ 
 BOOLVO=theories/Bool/Bool.vo  		theories/Bool/IfProp.vo \
        theories/Bool/Zerob.vo 		theories/Bool/DecBool.vo \
 	theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo
@@ -454,7 +458,7 @@ SETOIDSVO=theories/Setoids/Setoid.vo
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
-	     $(REALSVO) $(SETOIDSVO)
+	     $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
 $(THEORIESVO): states/initial.coq
 
@@ -470,6 +474,7 @@ intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
+sorting: $(SORTING)
 
 clean::
 	rm -f theories/*/*.vo
