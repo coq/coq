@@ -28,6 +28,8 @@ Tactics
 - "Match Context" now matching more recent hypotheses first and failing only 
   on user errors and Fail tactic (possible source of incompatibilities)
 - Tactic Definition's without arguments now allowed in Coq states
+- Better simplification and discrimination made by Inversion (slight
+  source of incompatibilities)
 
 Bugs
 
@@ -65,11 +67,15 @@ Incompatibilities
 - Intuition: does not unfold any definition except "<->" and "~".
 - Cases: removal of some extra Cases in configurations of the form
   "Cases ... of C _ => ... | _ D => ..."  (effects on 2 definitions of
-  submitted user contributions necessitating the removal of now superflous
+  submitted user contributions necessitating the removal of now superfluous
   proof steps in 3 different proofs)
 - Match Context, in case of incompatibilities because of a now non
   trapped error (e.g. Not_found or Failure), use instead tactic Fail
   to force Match Context trying the next clause
+- Inversion: better simplification and discrimination may occasionally
+  lead to less subgoals and/or hypotheses and different naming of hypotheses
+- Unification done by Apply/Elim has been changed and may exceptionally lead
+  to incompatible instantiations
 
 Changes from V7.1 to V7.2
 =========================
