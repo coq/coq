@@ -596,7 +596,9 @@ let coq_omega gl =
   with Omega.NO_CONTRADICTION -> Util.error "Omega can't solve this system"
   end
 
+(*
 let refl_omega = Tacmach.hide_atomic_tactic "StepOmega" coq_omega 
+*)
 
 (* \section{Encapsulation ROMEGA} *)
 
@@ -614,6 +616,7 @@ open Term
 open Environ
 open Sign
 open Inductive
+open Tacticals
 open Tacmach
 open Tactics
 open Tacticals
@@ -832,5 +835,7 @@ let omega_solver gl =
   in
   (loop concl) gl
 
+(*
 let omega = hide_atomic_tactic "ReflOmega" omega_solver
+*)
 

@@ -5,12 +5,14 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
+
 open Coqast
 open Ast
 open Pp
 open Util
 open Names
 open Pcoq
+open Extend
 
 exception Non_closed_number
 
@@ -36,10 +38,7 @@ let r_of_int n dloc =
 let r_of_string s dloc = 
   r_of_int (int_of_string s) dloc
 
-let rnumber = 
-  match create_entry (get_univ "rnatural") "rnumber" ETast with
-    | Ast n -> n
-    | _ -> anomaly "G_rsyntax : create_entry rnumber failed"
+let rnumber = create_constr_entry (get_univ "rnatural") "rnumber"
 
 let _ = 
   Gram.extend rnumber None
@@ -71,13 +70,13 @@ let replace_plus p =
 let r_printer std_pr p =
  let (_,ast1,astp,_) = get_r_sign dummy_loc in
   match (int_of_r p) with
-    | Some i -> (str (string_of_int (i+1)))
+    | Some i -> str (string_of_int (i+1))
     | None -> std_pr (replace_plus p)
 
 let r_printer_outside std_pr p =
  let (_,ast1,astp,_) = get_r_sign dummy_loc in
   match (int_of_r p) with
-    | Some i -> (str "``" ++ str (string_of_int (i+1)) ++ str "``")
+    | Some i -> str "``" ++ str (string_of_int (i+1)) ++ str "``"
     | None -> std_pr (replace_plus p)
 
 let _ = Esyntax.Ppprim.add ("r_printer", r_printer)

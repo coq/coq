@@ -22,80 +22,20 @@ open Coqast
 open Ast
 open Termast
 open Libnames
+open Extend
 open Nametab
+open Ppconstr
 
 let emacs_str s = if !Options.print_emacs then s else "" 
-
-let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
-
-let pr_global ref = pr_global_env None ref
-
-let global_const_name sp =
-  try pr_global (ConstRef sp)
-  with Not_found -> (* May happen in debug *)
-    (str ("CONST("^(string_of_kn sp)^")"))
-
-let global_var_name id =
-  try pr_global (VarRef id)
-  with Not_found -> (* May happen in debug *)
-    (str ("SECVAR("^(string_of_id id)^")"))
-
-let global_ind_name (sp,tyi) =
-  try pr_global (IndRef (sp,tyi))
-  with Not_found -> (* May happen in debug *)
-    (str ("IND("^(string_of_kn sp)^","^(string_of_int tyi)^")"))
-
-let global_constr_name ((sp,tyi),i) =
-  try pr_global (ConstructRef ((sp,tyi),i))
-  with Not_found -> (* May happen in debug *)
-    (str ("CONSTRUCT("^(string_of_kn sp)^","^(string_of_int tyi)
-		  ^","^(string_of_int i)^")"))
-
-let globpr gt = match gt with
-  | Nvar(_,s) -> (pr_id s)
-  | Node(_,"EVAR", [Num (_,ev)]) -> (str ("?" ^ (string_of_int ev)))
-  | Node(_,"CONST",[Path(_,sl)]) ->
-      global_const_name (section_path sl)
-  | Node(_,"SECVAR",[Nvar(_,s)]) ->
-      global_var_name s
-  | Node(_,"MUTIND",[Path(_,sl); Num(_,tyi)]) ->
-      global_ind_name (section_path sl, tyi)
-  | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
-      global_constr_name ((section_path sl, tyi), i)
-  | Dynamic(_,d) ->
-    if (Dyn.tag d) = "constr" then (str"<dynamic [constr]>")
-    else dfltpr gt
-  | gt -> dfltpr gt
-
-let wrap_exception = function
-    Anomaly (s1,s2) ->
-      warning ("Anomaly ("^s1^")"); pp s2;
-      str"<PP error: non-printable term>"
-  | Failure _ | UserError _ | Not_found ->
-      str"<PP error: non-printable term>"
-  | s -> raise s
 
 (* These are the names of the universes where the pp rules for constr and
    tactic are put (must be consistent with files PPConstr.v and PPTactic.v *)
 
-let constr_syntax_universe = "constr"
 let tactic_syntax_universe = "tactic"
 
 (* This is starting precedence for printing constructions or tactics *)
 (* Level 9 means no parentheses except for applicative terms (at level 10) *)
-let constr_initial_prec = Some ((constr_syntax_universe,(9,0,0)),Extend.L)
 let tactic_initial_prec = Some ((tactic_syntax_universe,(9,0,0)),Extend.L)
-
-let gentermpr_fail gt =
-  Esyntax.genprint globpr constr_syntax_universe constr_initial_prec gt
-
-let gentermpr gt =
-  try gentermpr_fail gt
-  with s -> wrap_exception s
-
-(* [at_top] means ids of env must be avoided in bound variables *)
-let gentermpr_core at_top env t =
-  gentermpr (Termast.ast_of_constr at_top env t)
 
 let prterm_env_at_top env = gentermpr_core true env
 let prterm_env env = gentermpr_core false env
@@ -124,8 +64,9 @@ let fterm0 = fprterm_env
 let pr_constant env cst = gentermpr (ast_of_constant env cst)
 let pr_existential env ev = gentermpr (ast_of_existential env ev)
 let pr_inductive env ind = gentermpr (ast_of_inductive env ind)
-let pr_constructor env cstr =
-  gentermpr (ast_of_constructor env cstr)
+let pr_constructor env cstr = gentermpr (ast_of_constructor env cstr)
+
+let pr_global = pr_global
 
 open Pattern
 let pr_ref_label = function (* On triche sur le contexte *)
@@ -136,13 +77,14 @@ let pr_ref_label = function (* On triche sur le contexte *)
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)
 let pr_rawterm t = gentermpr (Termast.ast_of_rawconstr t)
-let pr_pattern_env tenv env t =
-  gentermpr (Termast.ast_of_pattern tenv env t)
+let pr_pattern_env tenv env t = gentermpr (Termast.ast_of_pattern tenv env t)
 let pr_pattern t = pr_pattern_env (Global.env()) empty_names_context t
 
-let rec gentacpr gt =
-  Esyntax.genprint default_tacpr tactic_syntax_universe tactic_initial_prec gt
+(*
+let gentacpr x = Pptactic.prtac x
+*)
 
+(*
 and default_tacpr = function
     | Nvar(_,s) -> (pr_id s)
 
@@ -160,8 +102,10 @@ and default_tacpr = function
 
     (* This should be tactics *)
     | Node(_,s,[]) -> (str s)
+(* TODO
     | Node(_,s,ta) ->
 	(str s ++ brk(1,2) ++ hov 0 (prlist_with_sep pr_spc gentacpr ta))
+*)
     | Dynamic(_,d) as gt ->
       let tg = Dyn.tag d in
       if tg = "tactic" then (str"<dynamic [tactic]>")
@@ -169,6 +113,7 @@ and default_tacpr = function
       else if tg = "constr" then (str"<dynamic [constr]>")
       else dfltpr gt
     | gt -> dfltpr gt 
+*)
 
 let pr_var_decl env (id,c,typ) =
   let pbody = match c with

@@ -31,12 +31,12 @@ open Tacticals
 open Clenv
 open Hiddentac
 open Libnames
+open Nametab
 open Libobject
 open Library
-open Vernacinterp
 open Printer
-open Libnames
 open Declarations
+open Tacexpr
 
 (****************************************************************************)
 (*            The Type of Constructions Autotactic Hints                    *)
@@ -48,7 +48,7 @@ type auto_tactic =
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
   | Unfold_nth of global_reference       (* Hint Unfold *)
-  | Extern of Coqast.t                   (* Hint Extern *) 
+  | Extern of raw_tactic_expr                (* Hint Extern *) 
 
 type pri_auto_tactic = { 
   hname : identifier;    (* name of the hint *)
@@ -136,6 +136,8 @@ end
 type frozen_hint_db_table = Hint_db.t Stringmap.t 
 
 type hint_db_table = Hint_db.t Stringmap.t ref
+
+type hint_db_name = string
 
 let searchtable = (ref Stringmap.empty : hint_db_table)
 
@@ -301,7 +303,10 @@ let make_extern name pri pat tacast =
 let add_extern name pri (patmetas,pat) tacast dbname =
   (* We check that all metas that appear in tacast have at least
      one occurence in the left pattern pat *)
-  let tacmetas = Coqast.collect_metas tacast in 
+(* TODO
+  let tacmetas = Coqast.collect_metas tacast in
+*)
+  let tacmetas = [] in
   match (list_subtract tacmetas patmetas) with
     | i::_ ->
 	errorlabstrm "add_extern" 
@@ -329,148 +334,8 @@ let add_trivials l dbnames =
        Lib.add_anonymous_leaf (inAutoHint(dbname, List.map make_trivial l)))
     dbnames
 
-let _ = 
-  vinterp_add
-    "HintUnfold"
-    (function 
-       | [ VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_QUALID qid] ->
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map
-	       (function VARG_IDENTIFIER i -> string_of_id i
-		  | _ -> bad_vernac_args "HintUnfold") l in
-      	   fun () -> 
-	     let ref = Nametab.global dummy_loc qid in
-	     add_unfolds [(hintname, ref)] dbnames
-       | _-> bad_vernac_args "HintUnfold")
-    
-let _ = 
-  vinterp_add
-    "HintResolve"
-    (function 
-       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
-	   let env = Global.env() and sigma = Evd.empty in
-	   let c1 = Astterm.interp_constr sigma env c in
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function VARG_IDENTIFIER i -> string_of_id i
-		      	 | _ -> bad_vernac_args "HintResolve") l in
-	   fun () -> add_resolves env sigma [hintname, c1] dbnames
-       | _-> bad_vernac_args "HintResolve" )
-   
-let _ = 
-  vinterp_add
-    "HintImmediate"
-    (function 
-       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
-	   let c1 = Astterm.interp_constr Evd.empty (Global.env()) c in
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function VARG_IDENTIFIER i -> string_of_id i
-			 | _ -> bad_vernac_args "HintImmediate") l in
-	   fun () -> add_trivials [hintname, c1] dbnames
-       | _ -> bad_vernac_args "HintImmediate")
+open Vernacexpr
 
-
-let _ = 
-  vinterp_add
-    "HintConstructors"
-    (function 
-       | [VARG_IDENTIFIER idr; VARG_VARGLIST l; VARG_QUALID qid] ->
-	   begin 
-	     try
-	       let env = Global.env() and sigma = Evd.empty in
-	       let isp = destInd (Declare.global_qualified_reference qid) in
-	       let conspaths =
-                 let (mib,mip) = Global.lookup_inductive isp in
-                 mip.mind_consnames in
-	       let lcons = 
-		 list_map_i 
-		   (fun i id -> (id, mkConstruct (isp,i)))
-		   1
-		   (Array.to_list conspaths) in
-	       let dbnames = if l = [] then ["core"] else 
-	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
-			     | _ -> bad_vernac_args "HintConstructors") l in
-    	       fun () -> add_resolves env sigma lcons dbnames
-	     with Invalid_argument("mind_specif_of_mind") -> 
-	       error ((string_of_qualid qid) ^ " is not an inductive type")
-	   end 
-       | _ -> bad_vernac_args "HintConstructors")
-    
-let _ = 
-  vinterp_add
-    "HintExtern"
-    (function 
-       | [VARG_IDENTIFIER hintname; VARG_VARGLIST l;
-	  VARG_NUMBER pri; VARG_CONSTR patcom; VARG_TACTIC tacexp] ->
-           let pat =
-	     Astterm.interp_constrpattern Evd.empty (Global.env()) patcom in
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function VARG_IDENTIFIER i -> string_of_id i
-		      	 | _ -> bad_vernac_args "HintConstructors") l in
-           fun () -> add_externs hintname pri pat tacexp dbnames
-       | _ -> bad_vernac_args "HintExtern")
-
-let _ = 
-  vinterp_add
-    "HintsResolve"
-    (function
-       | (VARG_VARGLIST l)::lh ->
-	   let env = Global.env() and sigma = Evd.empty in
- 	   let lhints = 
-	     List.map
-	       (function
-		  | VARG_QUALID qid -> 
-		      let ref = Nametab.global dummy_loc qid in
-		      let env = Global.env() in
-		      let c = Declare.constr_of_reference ref in
-		      let _,i = repr_qualid qid in
-		      (i, c)
-		  | _-> bad_vernac_args "HintsResolve") lh in
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function VARG_IDENTIFIER i -> string_of_id i
-		      	 | _-> bad_vernac_args "HintsResolve") l in
-	   fun () -> add_resolves env sigma lhints dbnames
-       | _-> bad_vernac_args "HintsResolve")
-    
-let _ = 
-  vinterp_add
-    "HintsUnfold"
-    (function
-       | (VARG_VARGLIST l)::lh ->
-	   let lhints = 
-	     List.map (function
-			 | VARG_QUALID qid ->
-			     let _,n = repr_qualid qid in
-			     (n, Nametab.global dummy_loc qid)
-		      	 | _ -> bad_vernac_args "HintsUnfold") lh in
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function 
-			 | VARG_IDENTIFIER i -> string_of_id i
-		      	 | _ -> bad_vernac_args "HintsUnfold") l in
-	   fun () -> add_unfolds lhints dbnames
-       | _ -> bad_vernac_args "HintsUnfold")
-    
-let _ = 
-  vinterp_add
-    "HintsImmediate"
-    (function
-       | (VARG_VARGLIST l)::lh ->
-	   let lhints = 
-	     List.map
-	       (function
-		  | VARG_QUALID qid -> 
-		      let _,n = repr_qualid qid in
-		      let ref = Nametab.locate qid in
-		      let env = Global.env () in
-		      let c = Declare.constr_of_reference ref in
-		      (n, c)
-		  | _ -> bad_vernac_args "HintsImmediate") lh in
-	   let dbnames = if l = [] then ["core"] else 
-	     List.map (function 
-			 | VARG_IDENTIFIER i -> string_of_id i
-		      	 | _ -> bad_vernac_args "HintsImmediate") l in
-	   fun () -> add_trivials lhints dbnames
-       | _-> bad_vernac_args "HintsImmediate")
-    
 (**************************************************************************)
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
@@ -482,7 +347,7 @@ let fmt_autotactic = function
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
       (str"Apply " ++ prterm c ++ str" ; Trivial")
   | Unfold_nth c -> (str"Unfold " ++  pr_global c)
-  | Extern coqast -> (str "Extern " ++ gentacpr coqast)
+  | Extern coqast -> (str "Extern " ++ Pptactic.pr_raw_tactic coqast)
 
 let fmt_hint v =
   (fmt_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ())
@@ -513,7 +378,7 @@ let fmt_hint_list_for_head c =
 let fmt_hint_ref ref = fmt_hint_list_for_head (label_of_ref ref)
 
 (* Print all hints associated to head id in any database *)
-let print_hint_qid qid =  ppnl(fmt_hint_ref (Nametab.global dummy_loc qid))
+let print_hint_ref ref =  ppnl(fmt_hint_ref ref)
 
 let fmt_hint_term cl = 
   try 
@@ -573,30 +438,44 @@ let print_searchtable () =
        print_hint_db db)
     !searchtable
 
-let _ = 
-  vinterp_add "PrintHint"
-    (function 
-       | [] -> fun () -> print_searchtable()
-       | _ -> bad_vernac_args "PrintHint")
-
-let _ = 
-  vinterp_add "PrintHintDb"
-    (function 
-       | [(VARG_IDENTIFIER id)] -> 
-	   fun () -> print_hint_db_by_name (string_of_id id)
-       | _ -> bad_vernac_args "PrintHintDb")
-
-let _ = 
-  vinterp_add "PrintHintGoal"
-    (function 
-       | [] -> fun () -> print_applicable_hint()
-       | _ -> bad_vernac_args "PrintHintGoal")
-    
-let _ = 
-  vinterp_add "PrintHintId"
-    (function 
-       | [(VARG_QUALID qid)] -> fun () -> print_hint_qid qid
-       | _ -> bad_vernac_args "PrintHintId")
+let add_hints dbnames h =
+  let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
+  | HintsResolve lhints ->	
+      let env = Global.env() and sigma = Evd.empty in
+      let f (n,c) = 
+	let c = Astterm.interp_constr sigma env c in
+	let n = match n with
+	  | None -> basename (sp_of_global None (Declare.reference_of_constr c))
+	  | Some n -> n in
+	(n,c) in
+      add_resolves env sigma (List.map f lhints) dbnames
+  | HintsImmediate lhints ->
+      let env = Global.env() and sigma = Evd.empty in
+      let f (n,c) = 
+	let c = Astterm.interp_constr sigma env c in
+	let n = match n with
+	  | None -> basename (sp_of_global None (Declare.reference_of_constr c))
+	  | Some n -> n in
+	(n,c) in
+      add_trivials (List.map f lhints) dbnames
+  | HintsUnfold lhints ->
+      let f (n,locqid) =
+	let r = Nametab.global locqid in
+	let n = match n with
+	  | None -> basename (sp_of_global None r)
+	  | Some n -> n in
+	(n,r) in
+      add_unfolds (List.map f lhints) dbnames
+  | HintsConstructors (hintname, qid) ->
+      let env = Global.env() and sigma = Evd.empty in
+      let isp = global_inductive qid in
+      let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
+      let lcons = list_tabulate (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
+      let lcons = List.map2 (fun id c -> (id,c)) (Array.to_list consnames) lcons in
+      add_resolves env sigma lcons dbnames
+  | HintsExtern (hintname, pri, patcom, tacexp) ->
+      let pat =	Astterm.interp_constrpattern Evd.empty (Global.env()) patcom in
+      add_externs hintname pri pat tacexp dbnames
 
 (**************************************************************************)
 (*                           Automatic tactics                            *)
@@ -625,6 +504,29 @@ let make_local_hint_db g =
   let hintlist = list_map_append (make_resolve_hyp (pf_env g) (project g)) sign
   in Hint_db.add_list hintlist Hint_db.empty
 
+
+(* Serait-ce possible de compiler d'abord la tactique puis de faire la
+   substitution sans passer par bdize dont l'objectif est de préparer un
+   terme pour l'affichage ? (HH) *)
+
+(* Si on enlève le dernier argument (gl) conclPattern est calculé une
+fois pour toutes : en particulier si Pattern.somatch produit une UserError 
+Ce qui fait que si la conclusion ne matche pas le pattern, Auto échoue, même
+si après Intros la conclusion matche le pattern.
+*)
+
+(* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
+
+let forward_tac_interp = 
+  ref (fun _ -> failwith "tac_interp is not installed for Auto")
+
+let set_extern_interp f = forward_tac_interp := f
+
+let conclPattern concl pat tac gl =
+  let constr_bindings =
+    try Pattern.matches pat concl
+    with PatternMatchingFailure -> error "conclPattern" in
+  !forward_tac_interp constr_bindings tac gl
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)
@@ -696,16 +598,11 @@ let full_trivial gl =
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl
 
-let dyn_trivial = function
-  | []                  -> trivial []
-  | [Quoted_string "*"] -> full_trivial
-  | l -> trivial (List.map 
-		    (function 
-		       | Identifier id -> (string_of_id id)
-		       | other -> bad_tactic_args "dyn_trivial" [other]) 
-		    l)
-   
-let h_trivial = hide_tactic "Trivial" dyn_trivial
+let gen_trivial = function
+  | None -> full_trivial
+  | Some l -> trivial l
+
+let h_trivial l = Refiner.abstract_tactic (TacTrivial l) (gen_trivial l)
 
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
@@ -806,24 +703,13 @@ let full_auto n gl =
   
 let default_full_auto gl = full_auto !default_search_depth gl
 
-let dyn_auto l = match l with
-  | []          -> auto !default_search_depth []
-  | [Integer n] -> auto n []
-  | [Quoted_string "*"] -> default_full_auto 
-  | [Integer n; Quoted_string "*"] -> full_auto n
-  | (Integer n)::l1 -> 
-      auto n (List.map 
-		(function 
-		   | Identifier id -> (string_of_id id)
-		   | other -> bad_tactic_args "dyn_auto" [other]) l1)
-  | _ -> 
-      auto !default_search_depth 
-	(List.map 
-	   (function 
-	      | Identifier id -> (string_of_id id)
-	      | other -> bad_tactic_args "dyn_auto" [other]) l)
+let gen_auto n dbnames =
+  let n = match n with None -> !default_search_depth | Some n -> n in
+  match dbnames with
+  | None -> full_auto n
+  | Some l -> auto n l
 
-let h_auto = hide_tactic "Auto" dyn_auto 
+let h_auto n l = Refiner.abstract_tactic (TacAuto (n,l)) (gen_auto n l)
 
 (**************************************************************************)
 (*                  The "destructing Auto" from Eduardo                   *)
@@ -844,19 +730,13 @@ let dautomatic des_opt n = tclTRY (destruct_auto des_opt n)
 
 let default_dauto = dautomatic !default_search_decomp !default_search_depth
 
-let dyn_dauto = function
-  | []          -> default_dauto
-  | [Integer n] -> dautomatic !default_search_decomp n
-  | [Integer n; Integer p] -> dautomatic p n
-  | _           -> invalid_arg "DAuto: non numeric arguments"
-     
-let dauto =
-  let gentac = hide_tactic "DAuto" dyn_dauto in
-  function
-    | (None, None)     -> gentac []
-    | (Some n, None)   -> gentac [Integer n]
-    | (Some n, Some p) -> gentac [Integer n; Integer p]
-    | _ -> assert false
+let dauto = function
+  | None, None     -> default_dauto
+  | Some n, None   -> dautomatic !default_search_decomp n
+  | Some n, Some p -> dautomatic p n
+  | None, Some p   -> dautomatic p !default_search_depth
+
+let h_dauto (n,p) = Refiner.abstract_tactic (TacDAuto (n,p)) (dauto (n,p))
 
 (***************************************)
 (*** A new formulation of Auto *********)
@@ -887,8 +767,8 @@ let compileAutoArg contac = function
       (tclTHEN  
          (Tacticals.tryAllClauses 
             (function 
-               | Some id -> Dhyp.dHyp id
-               | None    -> Dhyp.dConcl))
+               | Some id -> Dhyp.h_destructHyp false id
+               | None    -> Dhyp.h_destructConcl))
          contac)
 
 let compileAutoArgList contac = List.map (compileAutoArg contac)
@@ -930,33 +810,16 @@ let superauto n to_add argl  =
 
 let default_superauto g = superauto !default_search_depth [] [] g
 
-let cvt_autoArg = function
-  | "Destructing"  -> [Destructing]
-  | "UsingTDB"     -> [UsingTDB]
-  | "NoAutoArg"    -> []
-  | x -> errorlabstrm "cvt_autoArg"
-        (str "Unexpected argument for Auto!" ++ str x)
+let interp_to_add gl locqid =
+  let r = Nametab.global locqid in
+  let id = basename (sp_of_global None r) in
+  (next_ident_away id (pf_ids_of_hyps gl), Declare.constr_of_reference r)
 
-let cvt_autoArgs =
-  list_join_map
-    (function 
-       | Quoted_string s -> (cvt_autoArg s)
-       | _ -> errorlabstrm "cvt_autoArgs" (str "String expected"))
+let gen_superauto nopt l a b gl =
+  let n = match nopt with Some n -> n | None -> !default_search_depth in
+  let al = (if a then [Destructing] else [])@(if b then [UsingTDB] else []) in
+  superauto n (List.map (interp_to_add gl) l) al gl
 
-let interp_to_add gl = function
-  | Qualid qid ->
-      let _,id = repr_qualid qid in
-      (next_ident_away id (pf_ids_of_hyps gl), 
-       Declare.constr_of_reference (Nametab.global dummy_loc qid))
-  | _ -> errorlabstrm "cvt_autoArgs" (str "Qualid expected")
+let h_superauto no l a b =
+  Refiner.abstract_tactic (TacSuperAuto (no,l,a,b)) (gen_superauto no l a b)
 
-let dyn_superauto l g = 
-  match l with
-    | (Integer n)::a::b::c::to_add ->
-        superauto n (List.map (interp_to_add g) to_add) (cvt_autoArgs [a;b;c])g
-    | _::a::b::c::to_add  -> 
-        superauto !default_search_depth (List.map (interp_to_add g) to_add)
-	  (cvt_autoArgs [a;b;c]) g
-    | l -> bad_tactic_args "SuperAuto" l g
-
-let h_superauto = hide_tactic "SuperAuto" dyn_superauto

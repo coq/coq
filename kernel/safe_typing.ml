@@ -151,9 +151,4 @@ let import = import
 
 let env_of_safe_env e = e
 
-(* Exported typing functions *)
-
-let typing env c = 
-  let (j,cst) = safe_infer env c in
-  let _ = add_constraints cst env in
-  j
+let typing = Typeops.typing

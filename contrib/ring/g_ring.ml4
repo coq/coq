@@ -19,7 +19,7 @@ END
 
 (* The vernac commands "Add Ring" and co *)
 
-let cset_of_constrarg_list l = 
+let cset_of_comarg_list l = 
   List.fold_right ConstrSet.add (List.map constr_of l) ConstrSet.empty
 
 VERNAC COMMAND EXTEND AddRing
@@ -38,7 +38,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (Some (constr_of aopp))
 			 (constr_of aeq)
 			 (constr_of t)
-			 (cset_of_constrarg_list l) ]
+			 (cset_of_comarg_list l) ]
 
 | [ "Add" "Semi" "Ring" 
       	  constr(a) constr(aplus) constr(amult) constr(aone) constr(azero)
@@ -55,7 +55,7 @@ VERNAC COMMAND EXTEND AddRing
 			 None
 			 (constr_of aeq)
 			 (constr_of t)
-			 (cset_of_constrarg_list l) ]
+			 (cset_of_comarg_list l) ]
 
 | [ "Add" "Abstract" "Ring" 
     	  constr(a) constr(aplus) constr(amult) constr(aone)
@@ -110,7 +110,7 @@ VERNAC COMMAND EXTEND AddRing
 			 (Some (constr_of aopp))
 			 (constr_of aeq)
 			 (constr_of t)
-			 (cset_of_constrarg_list l) ]
+			 (cset_of_comarg_list l) ]
 
 | [ "Add" "Semi" "Setoid" "Ring" 
           constr(a) constr(aequiv) constr(asetth) constr(aplus)
@@ -131,5 +131,5 @@ VERNAC COMMAND EXTEND AddRing
 			 None
 			 (constr_of aeq)
 			 (constr_of t)
-			 (cset_of_constrarg_list l) ]
+			 (cset_of_comarg_list l) ]
 END

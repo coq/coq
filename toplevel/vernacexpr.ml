@@ -25,6 +25,7 @@ type def_kind = DEFINITION | LET | LOCAL | THEOREM | LETTOP | DECL | REMARK
   | COERCION | LCOERCION | OBJECT | LOBJECT | OBJCOERCION | LOBJCOERCION
   | SUBCLASS | LSUBCLASS
 
+open Libnames
 open Nametab
 
 type class_rawexpr = FunClass | SortClass | RefClass of qualid located
@@ -140,13 +141,12 @@ type inductive_flag = bool (* true = Inductive;     false = CoInductive    *)
 
 type sort_expr = t
 
-type simple_binder = identifier * constr_ast
-type 'a with_coercion = coercion_flag * 'a
-type constructor_expr = simple_binder with_coercion
+type simple_binders = identifier * constr_ast
+type constructor_expr = identifier * coercion_flag * constr_ast
 type inductive_expr =
-    identifier *  simple_binder list * constr_ast * constructor_expr list
+    identifier *  simple_binders list * constr_ast * constructor_expr list
 type fixpoint_expr =
-    identifier * simple_binder list * constr_ast * constr_ast
+    identifier * simple_binders list * constr_ast * constr_ast
 type cofixpoint_expr =
     identifier * constr_ast * constr_ast
 
@@ -181,15 +181,15 @@ type vernac_expr =
       constr_ast * bool * Proof_type.declaration_hook
   | VernacEndProof of opacity_flag * (identifier * theorem_kind option) option
   | VernacExactProof of constr_ast
-  | VernacAssumption of assumption_kind * simple_binder with_coercion list
+  | VernacAssumption of assumption_kind * simple_binders list
   | VernacInductive of inductive_flag * inductive_expr list
   | VernacFixpoint of fixpoint_expr list
   | VernacCoFixpoint of cofixpoint_expr list
   | VernacScheme of (identifier * bool * qualid located * sort_expr) list
 
   (* Gallina extensions *)
-  | VernacRecord of identifier with_coercion * simple_binder list
-      * sort_expr * identifier option * local_decl_expr with_coercion list
+  | VernacRecord of coercion_flag * identifier * simple_binders list
+      * sort_expr * identifier option * (coercion_flag * local_decl_expr) list
   | VernacBeginSection of identifier
   | VernacEndSection of identifier
   | VernacRequire of

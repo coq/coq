@@ -18,6 +18,8 @@ open Line_parser;;
 
 open Pcoq;;
 
+open Vernacexpr;;
+
 type parsed_tree =
   | P_cl of ct_COMMAND_LIST
   | P_c of ct_COMMAND
@@ -55,6 +57,7 @@ let ctf_FileErrorMessage reqid pps =
   int reqid ++ fnl () ++ pps ++ fnl () ++ str "E-n-d---M-e-s-s-a-g-e" ++
   fnl ();;
 
+(*
 (*In the code for CoqV6.2, the require_module call is encapsulated in
   a function "without_mes_ambig".  Here I have supposed that this
   function has no effect on parsing *)
@@ -62,23 +65,29 @@ let try_require_module import specif names =
  try Library.require_module 
    (if specif = "UNSPECIFIED" then None
     else Some (specif = "SPECIFICATION"))
-   (List.map (fun name -> Nametab.make_short_qualid (Names.id_of_string name))
+   (List.map 
+     (fun name ->
+       (dummy_loc,Nametab.make_short_qualid (Names.id_of_string name)))
       names)
    (import = "IMPORT")
  with
    | e -> msgnl (str "Reinterning of " ++ prlist str names ++ str " failed");;
-
+*)
+(*
 let try_require_module_from_file import specif name fname =
  try Library.require_module_from_file (if specif = "UNSPECIFIED" then None
-  else Some (specif = "SPECIFICATION")) (Nametab.make_short_qualid (Names.id_of_string name)) fname (import = "IMPORT")
+  else Some (specif = "SPECIFICATION")) (Some (Names.id_of_string name)) fname (import = "IMPORT")
  with
  | e -> msgnl (str "Reinterning of " ++ str name ++ str " failed");;
-
+*)
+(*
 let execute_when_necessary ast =
  (match ast with
   | Node (_, "GRAMMAR", ((Nvar (_, s)) :: ((Node (_, "ASTLIST", al)) :: []))) ->
    Metasyntax.add_grammar_obj s (List.map Ctast.ct_to_ast al)
+(* Obsolete
   | Node (_, "TOKEN", ((Str (_, s)) :: [])) -> Metasyntax.add_token_obj s
+*)
   | Node (_, "Require",
             ((Str (_, import)) ::
               ((Str (_, specif)) :: l))) ->
@@ -92,6 +101,23 @@ let execute_when_necessary ast =
                 ((Nvar (_, mname)) :: ((Str (_, file_name)) :: []))))) ->
    try_require_module_from_file import specif mname file_name
   | _ -> ()); ast;;
+*)
+
+let execute_when_necessary v =
+ (match v with
+  | VernacGrammar _ -> Vernacentries.interp v
+  | VernacRequire (_,_,l) ->
+      (try 
+	Vernacentries.interp v
+       with _ ->
+	 let l=prlist_with_sep spc (fun (_,qid) -> Nametab.pr_qualid qid) l in
+	 msgnl (str "Reinterning of " ++ l ++ str " failed"))
+  | VernacRequireFrom (_,_,name,_) ->
+      (try 
+	Vernacentries.interp v
+       with _ ->
+	 msgnl (str "Reinterning of " ++ Nameops.pr_id name ++ str " failed"))
+  | _ -> ()); v;;
 
 let parse_to_dot =
   let rec dot st = match Stream.next st with
@@ -106,13 +132,13 @@ let rec discard_to_dot stream =
 
 let rec decompose_string_aux s n =
     try let index = String.index_from s n '\n' in
-            (Ctast.str (String.sub s n (index - n)))::
+            (String.sub s n (index - n))::
             (decompose_string_aux s (index + 1))
-    with Not_found -> [Ctast.str(String.sub s n ((String.length s) - n))];;
+    with Not_found -> [String.sub s n ((String.length s) - n)];;
 
 let decompose_string s n =
   match decompose_string_aux s n with
-      (Ctast.Str(_,""))::tl -> tl
+      ""::tl -> tl
     | a -> a;;
 
 let make_string_list file_chan fst_pos snd_pos =
@@ -161,13 +187,21 @@ let rec get_substring_list string_list fst_pos snd_pos =
 (* When parsing a list of commands, we try to recover error messages for
    each individual command. *)
 
+type parse_result =
+  | ParseOK of Vernacexpr.vernac_expr located option
+  | ParseError of string * string list
+
+let embed_string s =
+  CT_coerce_STRING_OPT_to_VARG (CT_coerce_STRING_to_STRING_OPT (CT_string s))
+
+let make_parse_error_item s l =
+  CT_user_vernac (CT_ident s, CT_varg_list (List.map embed_string l))
+
 let parse_command_list reqid stream string_list =
     let rec parse_whole_stream () =
     let this_pos = Stream.count stream in
     let first_ast = 
-        try option_app 
-	  Ctast.ast_to_ct (Gram.Entry.parse 
-			       Pcoq.main_entry (Gram.parsable stream))
+        try ParseOK (Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
         with
         | (Stdpp.Exc_located(l, Stream.Error txt)) as e -> 
           begin
@@ -176,31 +210,48 @@ let parse_command_list reqid stream string_list =
                 discard_to_dot stream;
                 msgnl (str "debug" ++ fnl () ++ int this_pos ++ fnl () ++
 		       int (Stream.count stream));
+(*
                 Some( Node(l, "PARSING_ERROR",
                         List.map Ctast.str
                         (get_substring_list string_list this_pos
                             (Stream.count stream))))
-             with End_of_file -> None
+*)
+		ParseError ("PARSE_ERROR",
+                  get_substring_list string_list this_pos
+		    (Stream.count stream))
+             with End_of_file -> ParseOK None
            end
         | e-> 
           begin
             discard_to_dot stream;
+(*
             Some(Node((0,0), "PARSING_ERROR2",
                    List.map Ctast.str
 		   (get_substring_list string_list this_pos
                      (Stream.count stream))))
+*)
+	    ParseError ("PARSE_ERROR2",
+	      get_substring_list string_list this_pos (Stream.count stream))
           end in
     match first_ast with
-    | Some ast ->
+    | ParseOK (Some (loc,ast)) ->
         let ast0 = (execute_when_necessary ast) in
           (try xlate_vernac ast
 	  with e ->
+(*
 	    xlate_vernac 
               (Node((0,0), "PARSING_ERROR2",
                List.map Ctast.str
 		 (get_substring_list string_list this_pos
 		    (Stream.count stream)))))::parse_whole_stream()
-    | None -> [] in
+*)
+	    make_parse_error_item "PARSING_ERROR2" 
+		     (get_substring_list string_list this_pos
+		       (Stream.count stream)))::parse_whole_stream()
+    | ParseOK None -> []
+    | ParseError (s,l) -> 
+	(make_parse_error_item s l)::parse_whole_stream()
+ in
     match parse_whole_stream () with
     | first_one::tail -> (P_cl (CT_command_list(first_one, tail)))
     | [] -> raise (UserError ("parse_string", (str "empty text.")));;
@@ -219,25 +270,25 @@ let parse_string_action reqid phylum char_stream string_list =
        P_c
         (xlate_vernac
         (execute_when_necessary
-        (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream)))))
+        (Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream))))
       | "TACTIC_COM" ->
        P_t
-        (xlate_tactic (Ctast.ast_to_ct(Gram.Entry.parse Pcoq.Tactic.tactic_eoi 
-                         (Gram.parsable char_stream))))
+        (xlate_tactic (Gram.Entry.parse Pcoq.Tactic.tactic_eoi 
+                         (Gram.parsable char_stream)))
       | "FORMULA" ->
        P_f
         (xlate_formula
         (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Constr.constr_eoi (Gram.parsable char_stream))))
-      | "ID" -> P_id (xlate_id 
-                       (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Prim.ident 
-                              (Gram.parsable char_stream))))
+      | "ID" -> P_id (xlate_ident
+                       (Gram.Entry.parse Pcoq.Prim.ident
+                              (Gram.parsable char_stream)))
       | "STRING" ->
 	  P_s
-         (xlate_string (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Prim.string 
-                  (Gram.parsable char_stream))))
+         (CT_string (Gram.Entry.parse Pcoq.Prim.string 
+                  (Gram.parsable char_stream)))
       | "INT" ->
-	  P_i (xlate_int (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Prim.number
-                              (Gram.parsable char_stream))))
+	  P_i (CT_int (Gram.Entry.parse Pcoq.Prim.natural
+                              (Gram.parsable char_stream)))
       | _ -> error "parse_string_action : bad phylum" in
       print_parse_results reqid msg
  with
@@ -273,10 +324,7 @@ let parse_file_action reqid file_name =
 	 let this_pos = Stream.count stream in
            match 
              try
-               let this_ast = 
-		 option_app Ctast.ast_to_ct
-		   (Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream)) in
-		 this_ast
+	       ParseOK(Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
              with
                | Stdpp.Exc_located(l,Stream.Error txt) -> 
                    msgnl (ctf_SyntaxWarningMessage reqid
@@ -287,21 +335,21 @@ let parse_file_action reqid file_name =
 		   (try 
 		      begin
                       	discard_to_dot ();
-                    	Some( Node(l, "PARSING_ERROR",
+                    	ParseError ("PARSING_ERROR",
 				   (make_string_list file_chan_err this_pos 
-			       	      (Stream.count stream))))
+			       	      (Stream.count stream)))
 		      end
-                    with End_of_file -> None)
+                    with End_of_file -> ParseOK None)
                | e ->
                    begin
                      Gram.Entry.parse parse_to_dot (Gram.parsable stream);
-                     Some(Node((0,0), "PARSING_ERROR2",
-			       (make_string_list file_chan this_pos 
-				  (Stream.count stream))))
+                     ParseError ("PARSING_ERROR2",
+			       (make_string_list file_chan this_pos
+				  (Stream.count stream)))
                    end
 		   
              with
-               | Some ast ->
+               | ParseOK (Some (_,ast)) ->
 		   let ast0=(execute_when_necessary ast) in 
 		   let term =
                      (try xlate_vernac ast
@@ -311,12 +359,13 @@ let parse_file_action reqid file_name =
 				      " " ^
 				      (string_of_int (Stream.count stream)) ^
 				      "\n");
-		    	xlate_vernac 
-			  (Node((0,0), "PARSING_ERROR2",
-			    	(make_string_list file_chan_err this_pos
-				   (Stream.count stream))))) in 
+			make_parse_error_item "PARSING_ERROR2"
+			  (make_string_list file_chan_err this_pos
+			    (Stream.count stream))) in 
 		     term::parse_whole_file ()
-               | None -> [] in
+               | ParseOK None -> []
+	       | ParseError (s,l) -> 
+		   (make_parse_error_item s l)::parse_whole_file () in
          parse_whole_file () with
 	   | first_one :: tail ->
 	       print_parse_results reqid
@@ -379,9 +428,9 @@ let load_syntax_action reqid module_name =
  msg (str "loading " ++ str module_name ++ str "... ");
  try
       (let qid = Nametab.make_short_qualid (Names.id_of_string module_name) in
-      read_module qid;
+      read_module (dummy_loc,qid);
       msg (str "opening... ");
-      import_module false qid; 
+      import_module false (dummy_loc,qid); 
       msgnl (str "done" ++ fnl ());
       ())
  with

@@ -28,7 +28,7 @@ module Refset : Set.S with type elt = global_reference
 		      
 val check_constant : global_reference -> global_reference
 
-val refs_of_vargl : vernac_arg list -> global_reference list
+(*val refs_of_vargl : Extend.vernac_arg list -> global_reference list*)
 
 (*s Target language. *)
 
@@ -52,3 +52,18 @@ val ml_extractions : unit -> Refset.t
 
 val sorted_ml_extractions : unit -> (global_reference * string) list
 
+(*s Extraction commands. *)
+
+open Util
+
+val extraction_language : lang -> unit
+
+val extraction_inline : bool -> qualid located list -> unit
+
+val print_extraction_inline : unit -> unit
+
+val reset_extraction_inline : unit -> unit
+
+val extract_constant_inline : bool -> qualid located -> string -> unit
+
+val extract_inductive : qualid located -> string * string list -> unit

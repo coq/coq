@@ -33,7 +33,9 @@ val errorlabstrm : string -> std_ppcmds -> 'a
 val todo : string -> unit
 
 type loc = int * int
+type 'a located = loc * 'a
 
+val dummy_loc : loc
 val anomaly_loc : loc * string * std_ppcmds -> 'a
 val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a

@@ -64,7 +64,7 @@ Qed.
 
 (*********)
 Lemma growing_prop:(n,m:nat)Un_growing->(ge n m)->(Rge (Un n) (Un m)).
-Double Induction 1 2;Intros.
+Double Induction n m;Intros.
 Unfold Rge;Right;Trivial.
 ElimType False;Unfold ge in H1;Generalize (le_Sn_O n0);Intro;Auto.
 Cut (ge n0 (0)).

@@ -45,6 +45,6 @@ val add_prods_sign :
 **i*)
 
 val elim_res_pf_THEN_i : 
-  (wc -> tactic) -> wc clausenv -> (wc clausenv -> int -> tactic) -> tactic
+  (wc -> tactic) -> wc clausenv -> (wc clausenv -> tactic array) -> tactic
 
 val applyUsing : constr -> tactic

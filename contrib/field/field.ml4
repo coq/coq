@@ -19,6 +19,8 @@ open Term
 open Typing
 open Util
 open Vernacinterp
+open Vernacexpr
+open Tacexpr
 
 (* Interpretation of constr's *)
 let constr_of com = Astterm.interp_constr Evd.empty (Global.env()) com
@@ -86,30 +88,43 @@ let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
   end
 
 (* Vernac command declaration *)
-let _ =
-  let rec opt_arg (aminus_o,adiv_o) = function
-    | (VARG_STRING "minus")::(VARG_CONSTR aminus)::l ->
-      (match aminus_o with
-      |	None -> opt_arg ((Some aminus),adiv_o) l
-      |	_ -> anomaly "AddField")
-    | (VARG_STRING "div")::(VARG_CONSTR adiv)::l ->
-      (match adiv_o with
-      |	None -> opt_arg (aminus_o,(Some adiv)) l
-      |	_ -> anomaly "AddField")
-    | _ -> (aminus_o,adiv_o) in
-  vinterp_add "AddField"
-    (function 
-       | (VARG_CONSTR a)::(VARG_CONSTR aplus)::(VARG_CONSTR amult)
-	 ::(VARG_CONSTR aone)::(VARG_CONSTR azero)::(VARG_CONSTR aopp)
-	 ::(VARG_CONSTR aeq)::(VARG_CONSTR ainv)::(VARG_CONSTR rth)
-         ::(VARG_CONSTR ainv_l)::l ->
-         (fun () ->
-           let (aminus_o,adiv_o) = opt_arg (None,None) l in
-           add_field (constr_of a) (constr_of aplus) (constr_of amult)
-             (constr_of aone) (constr_of azero) (constr_of aopp)
-             (constr_of aeq) (constr_of ainv) (constr_of_opt a aminus_o)
-             (constr_of_opt a adiv_o) (constr_of rth) (constr_of ainv_l))
-       | _ -> anomaly "AddField")
+open Extend
+open Pcoq
+open Genarg
+
+let wit_minus_div_arg, rawwit_minus_div_arg = Genarg.create_arg "minus_div_arg"
+let minus_div_arg = create_generic_entry "minus_div_arg" rawwit_minus_div_arg
+let _ = Tacinterp.add_genarg_interp "minus_div_arg"
+  (fun ist x ->
+    (in_gen wit_minus_div_arg
+      (out_gen (wit_pair (wit_opt wit_constr) (wit_opt wit_constr))
+	(Tacinterp.genarg_interp ist
+	  (in_gen (wit_pair (wit_opt rawwit_constr) (wit_opt rawwit_constr))
+	    (out_gen rawwit_minus_div_arg x))))))
+
+open Pcoq.Constr
+GEXTEND Gram
+  GLOBAL: minus_div_arg;
+  minus_arg: [ [ IDENT "minus"; ":="; aminus = constr -> aminus ] ];
+  div_arg: [ [ IDENT "div"; ":="; adiv = constr -> adiv ] ];
+  minus_div_arg:
+    [ [ "with"; m = minus_arg; d = OPT div_arg -> Some m, d
+      | "with"; d = div_arg; m = OPT minus_arg -> m, Some d
+      | -> None, None ] ];
+END
+
+VERNAC COMMAND EXTEND Field
+  [ "Add" "Field" 
+      constr(a) constr(aplus) constr(amult) constr(aone)
+      constr(azero) constr(aopp) constr(aeq)
+      constr(ainv) constr(rth) constr(ainv_l) minus_div_arg(md) ]
+    -> [ let (aminus_o, adiv_o) = md in
+         add_field
+           (constr_of a) (constr_of aplus) (constr_of amult)
+           (constr_of aone) (constr_of azero) (constr_of aopp)
+           (constr_of aeq) (constr_of ainv) (constr_of_opt a aminus_o)
+           (constr_of_opt a adiv_o) (constr_of rth) (constr_of ainv_l) ]
+END
 
 (* Guesses the type and calls Field_Gen with the right theory *)
 let field g =
@@ -117,12 +132,12 @@ let field g =
   and env = pf_env g in
   let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
               goalopt=Some g; debug=get_debug () } in
-  let typ = constr_of_Constr (interp_tacarg ist
+  let typ = constr_of_VConstr (val_interp ist
     <:tactic<
       Match Context With
       | [|- (eq ?1 ? ?)] -> ?1
       | [|- (eqT ?1 ? ?)] -> ?1>>) in
-  let th = VArg (Constr (lookup typ)) in
+  let th = VConstr (lookup typ) in
   (tac_interp [(id_of_string "FT",th)] [] (get_debug ())
     <:tactic<
       Match Context With
@@ -148,21 +163,16 @@ let guess_theory env evc = function
 let field_term l g =
   let env = (pf_env g)
   and evc = (project g) in
-  let th = constrIn (guess_theory env evc l)
-  and nl = List.map constrIn (Quote.sort_subterm g l) in
+  let th = valueIn (VConstr (guess_theory env evc l))
+  and nl = List.map (fun x -> valueIn (VConstr x)) (Quote.sort_subterm g l) in
   (List.fold_right
     (fun c a ->
      let tac = (Tacinterp.interp <:tactic<(Field_Term $th $c)>>) in
-     tclTHENSI tac [a]) nl tclIDTAC) g
-
-(* Gives the constr list from the tactic_arg list *)
-let targ_constr =
-   List.map
-     (fun e ->
-        match e with
-        | Constr c -> c
-        | _ -> anomaly "Field: must be a constr")
+     Tacticals.tclTHENFIRSTn tac [|a|]) nl Tacticals.tclIDTAC) g
 
 (* Declaration of Field *)
-let _ = hide_tactic "Field"
-        (fun l -> if l = [] then field else field_term (targ_constr l))
+
+TACTIC EXTEND Field
+| [ "Field" ] -> [ field ]
+| [ "Field" ne_constr_list(l) ] -> [ field_term l ]
+END

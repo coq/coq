@@ -12,8 +12,6 @@
 
 (* Correctness is base on the tactic Refine (developped on purpose) *)
 
-Require Export Refine.
-
 Require Export Tuples.
 
 Require Export ProgInt.
@@ -22,4 +20,6 @@ Require Export ProgWf.
 
 Require Export Arrays.
 
+(*
 Token "'".
+*)

@@ -220,6 +220,14 @@ let reduce_open_constr (em0,c) =
   let em = existential_map_of_constr c in
   (em,c)
 
+let register id n =
+  let id' = match n with None -> id | Some id' -> id' in
+  Penv.register id id'
+
+let correctness_hook _ ref = 
+  let pf_id = Nameops.basename (Nametab.sp_of_global (Global.env()) ref) in
+  register pf_id None
+
 let correctness s p opttac =
   Pmisc.reset_names();
   let p,oc,cty,v = coqast_of_prog p in
@@ -228,14 +236,14 @@ let correctness s p opttac =
   let sigma = Evd.empty in
   let cty = Reduction.nf_betaiota cty in
   let id = id_of_string s in 
-  start_proof id Declare.NeverDischarge sign cty;
+  start_proof id (false,Nametab.NeverDischarge) sign cty correctness_hook;
   Penv.new_edited id (v,p);
   if !debug then show_open_subgoals();
   deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());
   let oc = reduce_open_constr oc in
   deb_mess (str"AFTER REDUCTION:" ++ fnl ());
   deb_mess (Printer.prterm_env (Global.env()) (snd oc));
-  let tac = (tclTHEN (Refine.refine_tac oc) automatic) in
+  let tac = (tclTHEN (Extratactics.refine_tac oc) automatic) in
   let tac = match opttac with 
     | None -> tac
     | Some t -> tclTHEN tac t
@@ -245,14 +253,10 @@ let correctness s p opttac =
 
 
 (* On redéfinit la commande "Save" pour enregistrer les nouveaux programmes *)
-
+(*
 open Vernacinterp
 
 let add = Vernacinterp.overwriting_vinterp_add
-
-let register id n =
-  let id' = match n with None -> id | Some id' -> id' in
-  Penv.register id id'
 
 let _ = 
   let current_save = Vernacinterp.vinterp_map "SaveNamed" in
@@ -282,4 +286,4 @@ let _ =
 	let pf_id = Pfedit.get_current_proof_name () in
 	current_saveanonymous l ();
 	register pf_id (Some id)))
-
+*)

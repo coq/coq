@@ -26,6 +26,7 @@ open Ptype
 open Past
 open Penv
 open Pmonad
+open Vernacexpr
 
 
 (* We define new entries for programs, with the use of this module
@@ -479,13 +480,17 @@ GEXTEND Gram
   END
 ;;
 
+let wit_prog, rawwit_prog = Genarg.create_arg "PROGRAMS-PROG"
+let wit_typev, rawwit_typev = Genarg.create_arg "PROGRAMS-TYPEV"
+(*
 let (in_prog,out_prog) = Dyn.create "PROGRAMS-PROG"
 let (in_typev,out_typev) = Dyn.create "PROGRAMS-TYPEV"
-
+*)
 open Pp
 open Util
 open Himsg
 open Vernacinterp
+open Vernacexpr
 open Declare
 
 let is_assumed global ids =
@@ -497,15 +502,18 @@ let is_assumed global ids =
 	     prlist_with_sep (fun () -> (str ", ")) pr_id ids ++
 	     str " are assumed")
 
+open Genarg
+
 let add = vinterp_add
 
 let _ = add "CORRECTNESS"
      (function
-	 [ VARG_STRING s; VARG_DYN d ] -> 
-	   fun () -> Ptactic.correctness s (out_prog d) None
-       | [ VARG_STRING s; VARG_DYN d; VARG_TACTIC t ] ->
-	   let tac = Tacinterp.interp t in
-	   fun () -> Ptactic.correctness s (out_prog d) (Some tac)
+	 [ s; p; t ] ->
+	   let str = out_gen rawwit_pre_ident s in
+	   let pgm = out_gen rawwit_prog p in
+	   let tac = out_gen (wit_opt rawwit_tactic) t in
+	   fun () ->
+	     Ptactic.correctness str pgm (option_app Tacinterp.interp tac)
        | _ -> assert false)
 
 let _ = 
@@ -522,28 +530,28 @@ let _ =
 		Penv.empty ())
        | _ -> assert false)
 
-let id_of_varg = function VARG_IDENTIFIER id -> id | _ -> assert false
-    
+open Extend
+
 let _ = 
   add "PROGVARIABLE"
     (function
-       | [ VARG_VARGLIST l; VARG_DYN d ] ->
+       | [ ids; v ] ->
 	   (fun () ->
-	      let ids = List.map id_of_varg l in
+ 	      let ids = out_gen (wit_list1 rawwit_ident) ids in
 	      List.iter
 		(fun id -> if Penv.is_global id then
 		   Util.errorlabstrm "PROGVARIABLE"
 		     (str"Clash with previous constant " ++ pr_id id))
 		ids;
-	      let v = out_typev d in
+              let v = out_gen rawwit_typev v in
 	      Pdb.check_type_v (all_refs ()) v;
 	      let env = empty in
 	      let ren = update empty_ren "" [] in
 	      let v = Ptyping.cic_type_v env ren v in
 	      if not (is_mutable v) then begin
-		let c =
+		let c = 
 		  Safe_typing.ParameterEntry (trad_ml_type_v ren env v),
-		  Declare.NeverDischarge in
+		  Nametab.NeverDischarge in
 		List.iter 
 		  (fun id -> ignore (Declare.declare_constant id c)) ids;
 		if_verbose (is_assumed false) ids
@@ -555,28 +563,27 @@ let _ =
        | _ -> assert false)
 
 open Vernac
+open Coqast
 
 GEXTEND Gram
-  Pcoq.Vernac_.vernac:
-  [ [ IDENT "Global"; "Variable"; 
-      l = LIST1 ident SEP ","; ":"; t = type_v; "." ->
-	let idl = List.map Ast.nvar l in
-	let d = Ast.dynamic (in_typev t) in
-	  <:ast< (PROGVARIABLE (VERNACARGLIST ($LIST $idl)) (VERNACDYN $d)) >>
+  GLOBAL:  Pcoq.Vernac_.command;
 
-    | IDENT "Show"; IDENT "Programs"; "." ->
-	<:ast< (SHOWPROGRAMS) >>
+  Pcoq.Vernac_.command:
+  [ [ (s,l) = aux -> VernacExtend (s,l) ] ];
+  aux:
+  [ [ IDENT "Global"; "Variable"; l = LIST1 Pcoq.Prim.ident SEP ","; ":"; t = type_v ->
+	("PROGVARIABLE",
+	  [in_gen (wit_list1 rawwit_ident) l;in_gen rawwit_typev t])
 
-    | IDENT "Correctness"; s = IDENT; p = Programs.program; "." ->
-	let d = Ast.dynamic (in_prog p) in
-	let str = Ast.string s in
-	<:ast< (CORRECTNESS $str (VERNACDYN $d)) >>
+    | IDENT "Show"; IDENT "Programs" ->
+	("SHOWPROGRAMS",[])
 
-    | IDENT "Correctness"; s = IDENT; p = Programs.program; ";";
-      tac = Tactic.tactic; "." ->
-	let d = Ast.dynamic (in_prog p) in
-	let str = Ast.string s in
-	<:ast< (CORRECTNESS $str (VERNACDYN $d) (TACTIC $tac)) >> ] ];
+    | IDENT "Correctness"; s = IDENT; p = Programs.program; 
+      t = OPT [ ";"; tac = Tactic.tactic -> tac ] ->
+	let str = in_gen rawwit_pre_ident s in
+	let d = in_gen rawwit_prog p in
+	let tac = in_gen (wit_opt rawwit_tactic) t in
+	("CORRECTNESS",[str;d;tac]) ] ];
  END
 ;;
 

@@ -23,7 +23,7 @@ GEXTEND Gram
   compound_pattern:
     [ [ p = pattern ; lp = ne_pattern_list ->
 	  <:ast< (PATTCONSTRUCT $p ($LIST $lp)) >>
-      | p = pattern; "as"; id = ident ->
+      | p = pattern; "as"; id = Prim.var ->
 	  <:ast< (PATTAS $id $p)>>
       | p1 = pattern; ","; p2 = pattern ->
           <:ast< (PATTCONSTRUCT  Coq.Init.Datatypes.pair $p1 $p2) >>

@@ -245,9 +245,9 @@ open Closure
 
 let pr_evaluable_reference = function 
   | EvalVarRef id -> pr_id id
-  | EvalConstRef sp -> pr_global (Nametab.ConstRef sp)
+  | EvalConstRef sp -> pr_global (Libnames.ConstRef sp)
 
-let pr_inductive ind = pr_global (Nametab.IndRef ind)
+let pr_inductive ind = pr_global (Libnames.IndRef ind)
 
 let rec pr_generic prtac x =
   match Genarg.genarg_tag x with

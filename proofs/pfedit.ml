@@ -34,7 +34,8 @@ open Safe_typing
 type proof_topstate = {
   top_hyps : named_context * named_context;
   top_goal : goal;
-  top_strength : strength }
+  top_strength : bool * Nametab.strength;
+  top_hook : declaration_hook }
 
 let proof_edits =
   (Edit.empty() : (identifier,pftreestate,proof_topstate) Edit.t)
@@ -105,7 +106,7 @@ let get_current_proof_name () =
     | Some(na,_,_) -> na
 
 let add_proof (na,pfs,ts) =
-  Edit.create proof_edits (na,pfs,ts,Some !undo_limit)
+  Edit.create proof_edits (na,pfs,ts,Some (!undo_limit+1))
     
 let delete_proof na =
   try 
@@ -149,14 +150,16 @@ let subtree_solved () =
 (*********************************************************************)
 (*                 Undo functions                                    *)
 (*********************************************************************)
-    
-let set_undo n = 
-  if n>=0 then 
-    undo_limit := n+1
-  else 
-    error "Cannot set a negative undo limit"
-      
-let reset_undo  () = set_undo undo_default
+
+let set_undo = function
+  | None -> undo_limit := undo_default
+  | Some n -> 
+      if n>=0 then 
+	undo_limit := n
+      else 
+	error "Cannot set a negative undo limit"
+
+let get_undo () = Some !undo_limit
 
 let undo n =
   try 
@@ -182,7 +185,7 @@ let cook_proof () =
    ({ const_entry_body = pfterm;
       const_entry_type = Some concl;
       const_entry_opaque = true },
-    strength))
+    strength, ts.top_hook))
 
 (*********************************************************************)
 (*              Abort   functions                                    *)
@@ -204,12 +207,13 @@ let delete_all_proofs = init_proofs
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
 
-let start_proof na str sign concl =
+let start_proof na str sign concl hook =
   let top_goal = mk_goal sign concl in
   let ts = { 
     top_hyps = (sign,empty_named_context);
     top_goal = top_goal;
-    top_strength = str }
+    top_strength = str;
+    top_hook = hook}
   in
   start(na,ts);
   set_current_proof na

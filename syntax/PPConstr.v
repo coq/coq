@@ -251,4 +251,12 @@ Syntax constr
   | onecofixdecl [ << (CFDECL $f $A $t) >> ] ->
       [ $f " : "
         [1 2] $A:E " :="
-        [1 2] $t:E ].
+        [1 2] $t:E ]
+  ;
+
+  level 8:
+    evalconstr [ << (EVAL $c $r) >> ] ->
+	 [ [<hv 0> "Eval" [1 1] $r [1 0] "in" [1 1] $c:E ] ].
+
+
+  

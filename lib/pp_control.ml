@@ -95,6 +95,8 @@ let deep_ft = with_output_to stdout
 let _ = set_gp deep_ft deep_gp
 
 (* For parametrization through vernacular *)
-let set_depth_boxes v  = Format.pp_set_max_boxes std_ft v
-let get_depth_boxes () = Format.pp_get_max_boxes std_ft ()
+let default = Format.pp_get_max_boxes std_ft ()
+let get_depth_boxes () = Some (Format.pp_get_max_boxes std_ft ())
+let set_depth_boxes v =
+  Format.pp_set_max_boxes std_ft (match v with None -> default | Some v -> v)
 

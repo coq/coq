@@ -20,11 +20,6 @@ Require Export Fourier_util.
 Require Export Field.
 Require Export DiscrR.
 
-Grammar tactic simple_tactic:ast:=
-  fourier
-  ["FourierZ" constrarg_list($arg)] ->
-  [(Fourier ($LIST $arg))].
-
 Tactic Definition Fourier  :=
   Abstract (FourierZ;Field;DiscrR).
 

@@ -78,7 +78,7 @@ let with_implicits b f x =
     raise e
   end
 
-let implicitely f = with_implicits true f
+let implicitly f = with_implicits true f
 
 let using_implicits = function
   | No_impl -> with_implicits false

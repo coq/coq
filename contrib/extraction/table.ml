@@ -13,6 +13,7 @@ open Lib
 open Libobject
 open Goptions
 open Vernacinterp
+open Extend
 open Names
 open Util
 open Pp
@@ -66,21 +67,25 @@ let check_constant r =
   else errorlabstrm "extract_constant"
 	(Printer.pr_global r ++ spc () ++ str "is not a constant.") 
 
+(*
 let string_of_varg = function
   | VARG_IDENTIFIER id -> string_of_id id
   | VARG_STRING s -> s
   | _ -> assert false
+*)
 
 let no_such_reference q =
   errorlabstrm "reference_of_varg" 
     (str "There is no such reference " ++ Nametab.pr_qualid q ++ str ".")
 
+(*
 let reference_of_varg = function
   | VARG_QUALID q -> 
       (try Nametab.locate q with Not_found -> no_such_reference q)
   | _ -> assert false
 
 let refs_of_vargl = List.map reference_of_varg
+*)
 
 (*s Target Language *)
 
@@ -103,18 +108,7 @@ let _ = declare_summary "Extraction Lang"
 	    init_function = (fun () -> lang_ref := Ocaml);
 	    survive_section = true }  
 
-let lang_to_lang = function 
-    "Ocaml" -> Ocaml 
-  | "Haskell" -> Haskell 
-  | "Toplevel" -> Toplevel
-  | _ -> assert false
-
-let _ = 
-  vinterp_add "ExtractionLang" 
-     (function 
-	  [VARG_STRING l] -> 
-	    (fun () -> add_anonymous_leaf (extr_lang (lang_to_lang l)))
-	| _ -> assert false)
+let extraction_language x = add_anonymous_leaf (extr_lang x)
 
 (*s Table for custom inlining *)
 
@@ -150,21 +144,13 @@ let _ = declare_summary "Extraction Inline"
 
 (*s Grammar entries. *)
 
-let _ = 
-  vinterp_add "ExtractionInline"
-    (fun vl () -> 
-       let refs = List.map check_constant (refs_of_vargl vl) in 
-       add_anonymous_leaf (inline_extraction (true,refs)))
-
-let _ = 
-  vinterp_add "ExtractionNoInline"
-    (fun vl () -> 
-       let refs = List.map check_constant (refs_of_vargl vl) in 
-       add_anonymous_leaf (inline_extraction (false,refs)))
+let extraction_inline b vl =
+  let refs = List.map (fun x -> check_constant (Nametab.global x)) vl in 
+  add_anonymous_leaf (inline_extraction (true,refs))
 
 (*s Printing part *)
 
-let print_inline () = 
+let print_extraction_inline () = 
   let (i,n)= !inline_table in 
   let i'= Refset.filter is_constant i in 
   msg 
@@ -177,9 +163,6 @@ let print_inline () =
        (fun r p -> 
 	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ()))
 
-let _ = vinterp_add "PrintExtractionInline" (fun _ -> print_inline)
-
-
 (*s Reset part *)
 
 let (reset_inline,_) = 
@@ -189,10 +172,8 @@ let (reset_inline,_) =
 	load_function = (fun (_,_)-> inline_table :=  empty_inline_table); 
 	open_function = (fun _ -> ());
 	export_function = (fun x -> Some x) })
-	
-let _ = vinterp_add "ResetExtractionInline" 
-	  (fun _ () -> add_anonymous_leaf (reset_inline ()))
-	  
+
+let reset_extraction_inline () = add_anonymous_leaf (reset_inline ())
 
 (*s Table for direct ML extractions. *)
 
@@ -235,30 +216,13 @@ let _ = declare_summary "ML extractions"
 
 (*s Grammar entries. *)
 
-let _ = 
-  vinterp_add "ExtractConstant"
-    (function 
-       | [id; vs] -> 
-	   (fun () -> 
-	      let r = check_constant (reference_of_varg id) in 
-	      let s = string_of_varg vs in 
-	      add_anonymous_leaf (inline_extraction (false,[r]));
-	      add_anonymous_leaf (in_ml_extraction (r,s)))
-       | _ -> assert false)
+let extract_constant_inline inline qid s =
+  let r = check_constant (Nametab.global qid) in
+  add_anonymous_leaf (inline_extraction (inline,[r]));
+  add_anonymous_leaf (in_ml_extraction (r,s))
 
-let _ = 
-  vinterp_add "ExtractInlinedConstant"
-    (function 
-       | [id; vs] -> 
-	   (fun () -> 
-	      let r = check_constant (reference_of_varg id) in 
-	      let s = string_of_varg vs in 
-	      add_anonymous_leaf (inline_extraction (true,[r]));
-	      add_anonymous_leaf (in_ml_extraction (r,s)))
-       | _ -> assert false)
-
-
-let extract_inductive r (id2,l2) = match r with
+let extract_inductive r (id2,l2) =
+  let r = Nametab.global r in match r with
   | IndRef ((sp,i) as ip) ->
       let mib = Global.lookup_mind sp in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
@@ -273,13 +237,3 @@ let extract_inductive r (id2,l2) = match r with
   | _ -> 
       errorlabstrm "extract_inductive"
 	(Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
-
-let _ = 
-  vinterp_add "ExtractInductive"
-    (function 
-       | [q1; VARG_VARGLIST (id2 :: l2)] ->
-	   (fun () -> 
-	      extract_inductive (reference_of_varg q1) 
-		(string_of_varg id2, List.map string_of_varg l2))
-       | _ -> assert false)
-

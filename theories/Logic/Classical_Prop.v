@@ -10,6 +10,8 @@
 
 (** Classical Propositional Logic *)
 
+Require ProofIrrelevance.
+
 Hints Unfold not : core.
 
 Axiom classic: (P:Prop)(P \/ ~(P)).
@@ -78,3 +80,6 @@ Lemma imply_and_or2: (P,Q,R:Prop)(P->Q) -> P \/ R -> Q \/ R.
 Proof.
 Induction 2; Auto.
 Qed.
+
+Lemma proof_irrelevance: (P:Prop)(p1,p2:P)p1==p2.
+Proof (proof_irrelevance_cci classic).

@@ -28,7 +28,7 @@
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-val print : Nametab.qualid -> string option -> unit
+val print : Nametab.qualid Util.located -> string option -> unit
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
@@ -46,7 +46,7 @@ val printAll : unit -> unit
 (* and terms of the module d                                                 *)
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
-val printModule : Nametab.qualid -> string option -> unit
+val printModule : Nametab.qualid Util.located -> string option -> unit
 
 (* printSection identifier directory_name *)
 (*  where identifier     is the name of a closed section d                   *)

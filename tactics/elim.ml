@@ -24,6 +24,7 @@ open Tacmach
 open Tacticals
 open Tactics
 open Hiddentac
+open Tacexpr
 
 let introElimAssumsThen tac ba =
   let nassums = 
@@ -86,12 +87,12 @@ let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c gl = 
   let typc = pf_type_of gl c in  
-  (tclTHENS (cut typc) 
-    [tclTHEN (intro_using tmphyp_name)
-      (onLastHyp
-	(ifOnHyp recognizer (general_decompose recognizer)
-          (fun id -> clear [id])));
-     exact_no_check c]) gl
+  tclTHENSV (cut typc) 
+    [| tclTHEN (intro_using tmphyp_name)
+         (onLastHyp
+	    (ifOnHyp recognizer (general_decompose recognizer)
+	      (fun id -> clear [id])));
+       exact_no_check c |] gl
 
 let head_in gls indl t =
   try
@@ -102,19 +103,14 @@ let head_in gls indl t =
     in List.mem ity indl
   with Not_found -> false
        
-let inductive_of_qualid gls qid =
-  let c = 
-    try Declare.construct_qualified_reference qid
-    with Not_found -> Nametab.error_global_not_found qid
-  in
-  match kind_of_term c with
-    | Ind ity -> ity
-    | _ ->
-	errorlabstrm "Decompose"
-	  (pr_qualid qid ++ str " is not an inductive type")
+let inductive_of = function
+  | IndRef ity -> ity
+  | r ->
+      errorlabstrm "Decompose"
+        (Printer.pr_global r ++ str " is not an inductive type")
 
 let decompose_these c l gls =
-  let indl = List.map (inductive_of_qualid gls) l in 
+  let indl = (*List.map inductive_of*) l in 
   general_decompose (fun (_,t) -> head_in gls indl t) c gls
 
 let decompose_nonrec c gls =
@@ -132,27 +128,23 @@ let decompose_or c gls =
     (fun (_,t) -> is_disjunction t)
     c gls
 
-let dyn_decompose args gl =
-  let out_qualid = function
-    | Qualid qid -> qid
-    | l -> bad_tactic_args "DecomposeThese" [l] gl in
-  match args with 
-    | Command c :: ids -> 
-        decompose_these (pf_interp_constr gl c) (List.map out_qualid ids) gl
-    | Constr c :: ids  -> 
-	decompose_these c (List.map out_qualid ids) gl
-    | l -> bad_tactic_args "DecomposeThese" l gl
-	  
-let h_decompose =
-  let v_decompose = hide_tactic "DecomposeThese" dyn_decompose in 
-  fun ids c ->
-    v_decompose 
-      (Constr c :: List.map (fun x -> Qualid (qualid_of_sp x)) ids)
+let inj x = Rawterm.AN (Rawterm.dummy_loc,x)
+let h_decompose l c =
+  Refiner.abstract_tactic
+    (TacDecompose (List.map inj l,c)) (decompose_these c l)
 
+let h_decompose_or c =
+  Refiner.abstract_tactic (TacDecomposeOr c) (decompose_or c)
+
+let h_decompose_and c =
+  Refiner.abstract_tactic (TacDecomposeAnd c) (decompose_and c)
+
+(*
 let vernac_decompose_and = 
   hide_constr_tactic "DecomposeAnd" decompose_and
 let vernac_decompose_or  = 
   hide_constr_tactic  "DecomposeOr"  decompose_or
+*)
 
 (* The tactic Double performs a double induction *)
 
@@ -182,7 +174,13 @@ let induction_trailer abs_i abs_j bargs =
             [bring_hyps hyps; clear ids; simple_elimination (mkVar id)])
           gls))
 
-let double_ind abs_i abs_j gls =
+let double_ind h1 h2 gls =
+  let abs_i = depth_of_quantified_hypothesis true h1 gls in
+  let abs_j = depth_of_quantified_hypothesis true h2 gls in
+  let (abs_i,abs_j) =
+    if abs_i < abs_j then (abs_i,abs_j) else
+    if abs_i > abs_j then (abs_j,abs_i) else
+      error "Both hypotheses are the same" in
   let cl = pf_concl gls in 
   (tclTHEN (tclDO abs_i intro)
      (onLastHyp
@@ -191,38 +189,32 @@ let double_ind abs_i abs_j gls =
              (introElimAssumsThen (induction_trailer abs_i abs_j))
              ([],[]) (mkVar id)))) gls
 
-let dyn_double_ind = function
-  | [Integer i; Integer j] -> double_ind i j
-  | _ -> assert false
-
-let _ = add_tactic "DoubleInd" dyn_double_ind
-
+let h_double_induction h1 h2 =
+  Refiner.abstract_tactic (TacDoubleInduction (h1,h2)) (double_ind h1 h2)
 
 (*****************************)
 (* Decomposing introductions *)
 (*****************************)
 
-let rec intro_pattern p = 
-  let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
-  and case_last  = tclLAST_HYP h_simplest_case in  
-  match p with
-    | WildPat    -> tclTHEN intro clear_last
-    | IdPat  id  -> intro_mustbe_force id
-    | DisjPat l  -> tclTHEN introf
-                       (tclTHENS 
-			  (tclTHEN case_last clear_last)
-			  (List.map intro_pattern l))
-    | ConjPat l  ->
-        tclTHENSEQ [introf; case_last; clear_last; intros_pattern l]
-    | ListPat l  ->  intros_pattern l
+let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
+let case_last  = tclLAST_HYP h_simplest_case
+
+let rec intro_pattern = function
+  | IntroWildcard ->
+      tclTHEN intro clear_last
+  | IntroIdentifier id ->
+      intro_mustbe_force id
+  | IntroOrAndPattern l ->
+      tclTHEN introf
+        (tclTHENS
+	  (tclTHEN case_last clear_last)
+	  (List.map intros_pattern l))
 
 and intros_pattern l = tclMAP intro_pattern l
 
-let dyn_intro_pattern = function 
-  | []               -> intros
-  | [Intropattern p] -> intro_pattern p
-  | l                -> bad_tactic_args "Elim.dyn_intro_pattern" l
+let intro_patterns = function 
+  | [] -> tclREPEAT intro
+  | l  -> tclMAP intro_pattern l
 
-let v_intro_pattern = hide_tactic "Intros" dyn_intro_pattern
+let h_intro_patterns l = Refiner.abstract_tactic (TacIntroPattern l) (intro_patterns l)
 
-let h_intro_pattern p = v_intro_pattern [Intropattern p]

@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 open Proof_type
+open Names
 open Term
 
 (* This module intends to be a beginning of debugger for tactic expressions.
@@ -22,13 +23,13 @@ type debug_info =
   | Exit
 
 (* Prints the state and waits *)
-val debug_prompt : goal sigma option -> Coqast.t -> debug_info
+val debug_prompt : goal sigma option -> Tacexpr.raw_tactic_expr -> debug_info
 
 (* Prints a constr *)
 val db_constr : debug_info -> Environ.env -> constr -> unit
 
 (* Prints a matched hypothesis *)
-val db_matched_hyp : debug_info -> Environ.env -> string * constr -> unit
+val db_matched_hyp : debug_info -> Environ.env -> identifier * constr -> unit
 
 (* Prints the matched conclusion *)
 val db_matched_concl : debug_info -> Environ.env -> constr -> unit

@@ -34,8 +34,10 @@ open Tacticals
 open Tactics
 open Tacinterp
 open Tacred
+open Rawterm
 open Vernacinterp
 open Coqlib
+open Vernacexpr
 open Setoid_replace
 open Declarations
 
@@ -56,7 +58,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
   let _,t = splay_prod env sigma ctype in
   match match_with_equation t with
     | None -> 
-	if l = []
+	if l = NoBindings
 	then general_s_rewrite lft2rgt c gl
 	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
@@ -68,61 +70,25 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
           else
 	    pf_global gl (id_of_string (hdcncls^suffix))
         in 
-	tclNOTSAMEGOAL (general_elim (c,l) (elim,[])) gl
+	tclNOTSAMEGOAL (general_elim (c,l) (elim,NoBindings)) gl
    (* was tclWEAK_PROGRESS which only fails for tactics generating one subgoal 
       and did not fail for useless conditional rewritings generating an
       extra condition *)
 
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)
-let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHEN_i (general_rewrite_bindings lft2rgt (c,bl))
-    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
 
-let general_rewrite lft2rgt c = general_rewrite_bindings lft2rgt (c,[])
+let conditional_rewrite lft2rgt tac (c,bl) = 
+  tclTHENSFIRSTn (general_rewrite_bindings lft2rgt (c,bl))
+    [|tclIDTAC|] (tclCOMPLETE tac)
+
+let general_rewrite lft2rgt c = general_rewrite_bindings lft2rgt (c,NoBindings)
 
 let rewriteLR_bindings = general_rewrite_bindings true
 let rewriteRL_bindings = general_rewrite_bindings false
 
 let rewriteLR = general_rewrite true
 let rewriteRL = general_rewrite false
-
-let dyn_rewriteLR = function
-  | [Command com; Bindings binds] -> 
-      tactic_com_bind_list rewriteLR_bindings (com,binds)
-  | [Constr c; Cbindings binds] -> 
-      rewriteLR_bindings (c,binds)
-  | _ -> assert false
-
-let dyn_rewriteRL = function
-  | [Command com; Bindings binds] -> 
-      tactic_com_bind_list rewriteRL_bindings (com,binds)
-  | [Constr c; Cbindings binds] -> 
-      rewriteRL_bindings (c,binds)
-  | _ -> assert false
-
-let dyn_conditional_rewrite lft2rgt = function
-  | [(Tacexp tac); (Command com);(Bindings binds)] -> 
-      tactic_com_bind_list 
-	(conditional_rewrite lft2rgt (Tacinterp.interp tac)) 
-	(com,binds)
-  | [(Tac (tac,_)); (Constr c);(Cbindings binds)] -> 
-      conditional_rewrite lft2rgt tac (c,binds)
-  | _ -> assert false
-                 
-let v_rewriteLR = hide_tactic "RewriteLR" dyn_rewriteLR
-let h_rewriteLR_bindings (c,bl) = v_rewriteLR [(Constr c);(Cbindings bl)] 
-let h_rewriteLR c = h_rewriteLR_bindings (c,[])
-
-let v_rewriteRL = hide_tactic "RewriteRL" dyn_rewriteRL
-let h_rewriteRL_bindings (c,bl) = v_rewriteRL [(Constr c);(Cbindings bl)] 
-let h_rewriteRL c = h_rewriteRL_bindings (c,[])
-	
-let v_conditional_rewriteLR = 
-  hide_tactic "CondRewriteLR" (dyn_conditional_rewrite true)
-let v_conditional_rewriteRL = 
-  hide_tactic "CondRewriteRL" (dyn_conditional_rewrite false)
-
 
 (* The Rewrite in tactic *)
 let general_rewrite_in lft2rgt id (c,l) gl =
@@ -146,37 +112,15 @@ let general_rewrite_in lft2rgt id (c,l) gl =
 	  try pf_global gl (id_of_string rwr_thm)
           with Not_found ->
             error ("Cannot find rewrite principle "^rwr_thm) in 
-	general_elim_in id (c,l) (elim,[]) gl
+	general_elim_in id (c,l) (elim,NoBindings) gl
+
+let rewriteLRin = general_rewrite_in true
+let rewriteRLin = general_rewrite_in false
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHEN_i (general_rewrite_in lft2rgt id (c,bl))
-    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
-
-
-let dyn_rewrite_in lft2rgt = function
-  | [Identifier id;(Command com);(Bindings binds)] -> 
-      tactic_com_bind_list (general_rewrite_in lft2rgt id) (com,binds)
-  | [Identifier id;(Constr c);(Cbindings binds)] -> 
-      general_rewrite_in lft2rgt id (c,binds)
-  | _ -> assert false
+  tclTHENSFIRSTn (general_rewrite_in lft2rgt id (c,bl))
+    [|tclIDTAC|] (tclCOMPLETE tac)
     
-let dyn_conditional_rewrite_in lft2rgt = function
-  | [(Tacexp tac); Identifier id; (Command com);(Bindings binds)] -> 
-      tactic_com_bind_list 
-	(conditional_rewrite_in lft2rgt id (Tacinterp.interp tac)) 
-	(com,binds)
-  | [(Tac (tac,_)); Identifier id; (Constr c);(Cbindings binds)] -> 
-      conditional_rewrite_in lft2rgt id tac (c,binds)
-  | _ -> assert false
-
-let rewriteLR_in_tac =  hide_tactic "RewriteLRin" (dyn_rewrite_in true)
-let rewriteRL_in_tac = hide_tactic "RewriteRLin" (dyn_rewrite_in false)
-let v_conditional_rewriteLR_in = 
-  hide_tactic "CondRewriteLRin" (dyn_conditional_rewrite_in true) 
-let v_conditional_rewriteRL_in = 
-  hide_tactic "CondRewriteRLin" (dyn_conditional_rewrite_in false)
-
-
 (* Replacing tactics *)
 
 (* eq,symeq : equality on Set and its symmetry theorem
@@ -195,7 +139,7 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
         | Sort (Type(_))   -> (eqt,sym_eqt)
         | _                  -> error "replace"
     in 
-    (tclTHENL (elim_type (applist (e, [t1;c1;c2])))
+    (tclTHENLAST (elim_type (applist (e, [t1;c1;c2])))
        (tclORELSE assumption 
           (tclTRY (tclTHEN (apply sym) assumption)))) gl
   else
@@ -207,17 +151,6 @@ let replace c2 c1 gl =
   let eqT = build_coq_eqT_data.eq () in
   let eqT_sym = build_coq_eqT_data.sym () in
   abstract_replace (eq,eq_sym) (eqT,eqT_sym) c2 c1 false gl
-    
-let dyn_replace args gl = 
-  match args with 
-    | [(Command c1);(Command c2)] -> 
-       	replace (pf_interp_constr gl c1) (pf_interp_constr gl c2) gl
-    | [(Constr c1);(Constr c2)] -> 
-       	replace c1 c2 gl
-    | _ -> assert false
-
-let v_replace = hide_tactic "Replace" dyn_replace
-let h_replace c1 c2 = v_replace [(Constr c1);(Constr c2)]
 
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
@@ -616,14 +549,18 @@ let discrEverywhere =
     (fun gls -> 
        errorlabstrm "DiscrEverywhere" (str" No discriminable equalities"))
 
+let discr_tac = function
+  | None -> discrEverywhere
+  | Some id -> discr id
+
 let discrConcl gls  = discrClause None gls
 let discrHyp id gls = discrClause (Some id) gls
 
-(**)
+(*
 let h_discr      = hide_atomic_tactic "Discr"      discrEverywhere
 let h_discrConcl = hide_atomic_tactic "DiscrConcl" discrConcl
 let h_discrHyp   = hide_ident_or_numarg_tactic "DiscrHyp" discrHyp
-(**)
+*)
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
@@ -870,10 +807,10 @@ let injClause = function
 let injConcl gls  = injClause None gls
 let injHyp id gls = injClause (Some id) gls
 
-(**)
+(*
 let h_injConcl = hide_atomic_tactic "Inj" injConcl
 let h_injHyp   = hide_ident_or_numarg_tactic "InjHyp" injHyp
-(**)
+*)
 
 let decompEqThen ntac id gls =
   let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
@@ -935,10 +872,10 @@ let dEq = dEqThen (fun x -> tclIDTAC)
 let dEqConcl gls = dEq None gls
 let dEqHyp id gls = dEq (Some id) gls
 
-(**)
+(*
 let dEqConcl_tac = hide_atomic_tactic "DEqConcl" dEqConcl
 let dEqHyp_tac = hide_ident_or_numarg_tactic "DEqHyp" dEqHyp
-(**)
+*)
 
 let rewrite_msg = function 
   | None ->  
@@ -1094,7 +1031,9 @@ let subst_tuple_term env sigma dep_pair b =
      |- (P e1)
      |- (eq T e1 e2)
  *)
-let revSubstInConcl eqn gls =
+(* Redondant avec Replace ! *)
+
+let substInConcl_RL eqn gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in
   let body = subst_tuple_term (pf_env gls) (project gls) e2 (pf_concl gls) in
   assert (dependent (mkRel 1) body);
@@ -1105,12 +1044,14 @@ let revSubstInConcl eqn gls =
      |- (P e2)
      |- (eq T e1 e2)
  *)
-let substInConcl eqn gls =
-  (tclTHENS (revSubstInConcl (swap_equands gls eqn))
+let substInConcl_LR eqn gls =
+  (tclTHENS (substInConcl_RL (swap_equands gls eqn))
      ([tclIDTAC;
        swapEquandsInConcl])) gls
 
-let substInHyp eqn id gls =
+let substInConcl l2r = if l2r then substInConcl_LR else substInConcl_RL
+
+let substInHyp_LR eqn id gls =
   let (lbeq,(t,e1,e2)) = (find_eq_data_decompose eqn) in 
   let body = subst_term e1 (clause_type (Some id) gls) in
   if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" (mt ());
@@ -1119,10 +1060,12 @@ let substInHyp eqn id gls =
        (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
           ([exact_no_check (mkVar id);tclIDTAC]))])) gls
 
-let revSubstInHyp eqn id gls =
-  (tclTHENS (substInHyp (swap_equands gls eqn) id)
+let substInHyp_RL eqn id gls =
+  (tclTHENS (substInHyp_LR (swap_equands gls eqn) id)
      ([tclIDTAC;
        swapEquandsInConcl])) gls
+
+let substInHyp l2r = if l2r then substInHyp_LR else substInHyp_RL
 
 let try_rewrite tac gls =
   try 
@@ -1138,20 +1081,21 @@ let try_rewrite tac gls =
 	errorlabstrm "try_rewrite"
           (str "Cannot find a well type generalisation of the goal that" ++
              str " makes progress the proof.")
-	 
 
-let subst eqn cls gls =
+let subst l2r eqn cls gls =
   match cls with
-    | None ->    substInConcl eqn gls
-    | Some id -> substInHyp eqn id gls
+    | None ->    substInConcl l2r eqn gls
+    | Some id -> substInHyp l2r eqn id gls
 
 (* |- (P a)
- * Subst_Concl a=b 
+ * SubstConcl_LR a=b 
  *  |- (P b)
  *  |- a=b
  *)
 
-let substConcl_LR eqn gls = try_rewrite (subst eqn None) gls
+let substConcl l2r eqn gls = try_rewrite (subst l2r eqn None) gls
+let substConcl_LR = substConcl true
+(*
 let substConcl_LR_tac = 
   let gentac = 
     hide_tactic "SubstConcl_LR"
@@ -1162,6 +1106,7 @@ let substConcl_LR_tac =
 	 | _ -> assert false)
   in 
   fun eqn  -> gentac [Command eqn] 
+*)
 
 (* id:(P a) |- G
  * SubstHyp a=b id
@@ -1169,20 +1114,24 @@ let substConcl_LR_tac =
  *  id:(P a) |-a=b
 *)
 
-let hypSubst id cls gls =
+let hypSubst l2r id cls gls =
   match cls with
     | None -> 
-	(tclTHENS (substInConcl (clause_type (Some id) gls))
+	(tclTHENS (substInConcl l2r (clause_type (Some id) gls))
 	   ([tclIDTAC; exact_no_check (mkVar id)])) gls
     | Some hypid -> 
-	(tclTHENS (substInHyp (clause_type (Some id) gls) hypid)
+	(tclTHENS (substInHyp l2r (clause_type (Some id) gls) hypid)
 	   ([tclIDTAC;exact_no_check (mkVar id)])) gls
+
+let hypSubst_LR = hypSubst true
 
 (* id:a=b |- (P a)
  * HypSubst id.
  *  id:a=b |- (P b)
  *)
-let substHypInConcl_LR id gls = try_rewrite (hypSubst id None) gls
+let substHypInConcl l2r id gls = try_rewrite (hypSubst l2r id None) gls
+let substHypInConcl_LR = substHypInConcl true
+(*
 let substHypInConcl_LR_tac =
   let gentac = 
     hide_tactic "SubstHypInConcl_LR" 
@@ -1191,22 +1140,19 @@ let substHypInConcl_LR_tac =
 	 | _ -> assert false)
   in 
   fun id -> gentac [Identifier id]
+*)
 
 (* id:a=b H:(P a) |- G
    SubstHypInHyp id H.
     id:a=b H:(P b) |- G
 *)
-let revSubst eqn cls gls =
-  match cls with
-    | None -> revSubstInConcl eqn gls
-    | Some id -> revSubstInHyp eqn id gls
-
 (* |- (P b)
    SubstConcl_RL a=b
      |- (P a)
      |- a=b
 *)
-let substConcl_RL eqn gls = try_rewrite (revSubst eqn None) gls
+let substConcl_RL = substConcl false
+(*
 let substConcl_RL_tac = 
   let gentac = 
     hide_tactic "SubstConcl_RL"
@@ -1217,28 +1163,24 @@ let substConcl_RL_tac =
 	 | _ -> assert false)
   in 
   fun eqn  -> gentac [Command eqn] 
+*)
 
 (* id:(P b) |-G
    SubstHyp_RL a=b id 
       id:(P a) |- G
       |- a=b  
 *)
-let substHyp_RL  eqn id gls = try_rewrite (revSubst eqn (Some id)) gls
+let substHyp l2r eqn id gls = try_rewrite (subst l2r eqn (Some id)) gls
+let substHyp_RL = substHyp false
 
-let revHypSubst id cls gls =
-  match cls with
-    | None -> 
-	(tclTHENS (revSubstInConcl (clause_type (Some id) gls))
-	   ([tclIDTAC; exact_no_check (mkVar id)])) gls
-    | Some hypid -> 
-	(tclTHENS (revSubstInHyp (clause_type (Some id) gls) hypid)
-	   ([tclIDTAC;exact_no_check (mkVar id)])) gls
+let hypSubst_RL = hypSubst false
 
 (* id:a=b |- (P b)
  * HypSubst id.
  * id:a=b |- (P a)
  *)
-let substHypInConcl_RL id gls = try_rewrite (revHypSubst id None) gls
+let substHypInConcl_RL = substHypInConcl false
+(*
 let substHypInConcl_RL_tac =
   let gentac = 
     hide_tactic "SubstHypInConcl_RL" 
@@ -1247,6 +1189,7 @@ let substHypInConcl_RL_tac =
          | _ -> assert false)
   in 
   fun id -> gentac [Identifier id]
+*)
 
 (* id:a=b H:(P b) |- G
    SubstHypInHyp id H.
@@ -1300,26 +1243,6 @@ let (in_autorewrite_rule,out_autorewrite_rule)=
        Libobject.open_function = cache_autorewrite_rule;
        Libobject.cache_function = cache_autorewrite_rule;
        Libobject.export_function = export_autorewrite_rule })
-
-(* Semantic of the HintRewrite vernacular command *)
-let _ = 
-  vinterp_add "HintRewrite"
-  (let rec lrules_arg lrl = function
-     | [] -> lrl
-     | (VARG_VARGLIST [VARG_CONSTR rule; VARG_STRING ort])::a 
-	 when ort="LR" or ort="RL" ->
-           lrules_arg (lrl@[(Astterm.interp_constr Evd.empty
-			      (Global.env()) rule,ort="LR")]) a
-     | _ -> bad_vernac_args "HintRewrite"
-   and lbases_arg lbs = function
-     | [] -> lbs
-     | (VARG_VARGLIST ((VARG_IDENTIFIER rbase)::b))::a ->
-      	 lbases_arg (lbs@[(rbase,lrules_arg [] b)]) a
-     | _ -> bad_vernac_args "HintRewrite"
-   in
-   fun largs () ->
-     List.iter (fun c -> Lib.add_anonymous_leaf
-		    (in_autorewrite_rule c)) (lbases_arg [] largs))
 
 (****The tactic****)
 

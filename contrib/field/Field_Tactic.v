@@ -271,7 +271,7 @@ Tactic Definition Field_Gen_Aux FT :=
     Let mul = (GiveMult '(EAplus trm1 trm2)) In
     Cut [ft:=FT][vm:=lvar](interp_ExprA ft vm trm1)==(interp_ExprA ft vm trm2);
     [Compute;Auto
-    |Intros;(ApplySimplif ApplyDistrib);(ApplySimplif ApplyAssoc);
+    |Intros ft vm;(ApplySimplif ApplyDistrib);(ApplySimplif ApplyAssoc);
      (Multiply mul);[(ApplySimplif ApplyMultiply);
        (ApplySimplif (ApplyInverse mul));
        (Let id = GrepMult In Clear id);WeakReduce;Clear ft vm;

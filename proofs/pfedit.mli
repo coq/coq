@@ -14,7 +14,7 @@ open Names
 open Term
 open Sign
 open Environ
-open Declare
+open Nametab
 open Proof_type
 open Tacmach
 (*i*)
@@ -56,18 +56,17 @@ val delete_all_proofs : unit -> unit
 
 val undo : int -> unit
 
-(* [set_undo n] sets the size of the ``undo'' stack *)
+(* [set_undo (Some n)] sets the size of the ``undo'' stack; [set_undo None]
+   sets the size to the default value (12) *)
 
-val set_undo : int -> unit
-
-(* [reset_undo n] sets the size of the ``undo'' stack to the default
-   value (12) *)
-
-val reset_undo : unit -> unit
+val set_undo : int option -> unit
+val get_undo : unit -> int option
 
 (*s [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
 
-val start_proof : identifier -> strength -> named_context -> constr -> unit
+val start_proof : 
+  identifier -> bool * strength -> named_context -> constr
+    -> declaration_hook -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)
@@ -93,7 +92,9 @@ val suspend_proof : unit -> unit
     into a constant with its name and strength; it fails if there is
     no current proof of if it is not completed *)
 
-val cook_proof : unit -> identifier * (Safe_typing.constant_entry * strength)
+val cook_proof : unit -> 
+  identifier *
+  (Safe_typing.constant_entry * (bool * strength) * declaration_hook)
 
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)

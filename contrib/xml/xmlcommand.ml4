@@ -78,15 +78,16 @@ let extract_nparams pack =
 (* than that could exists in cooked form with the same name in a super        *)
 (* section of the actual section                                              *)
 let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
+ let module N = Nametab in
  let module D = Declare in
   let tag = Libobject.object_tag o in
    print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
    match tag with
       "CONSTANT" ->
         (match D.constant_strength sp with
-          | D.DischargeAt _  -> false (* a local definition *)
-          | D.NotDeclare     -> false (* not a definition *)
-          | D.NeverDischarge -> true  (* a non-local one    *)
+          | N.DischargeAt _  -> false (* a local definition *)
+          | N.NotDeclare     -> false (* not a definition *)
+          | N.NeverDischarge -> true  (* a non-local one    *)
         )
     | "PARAMETER"                 (* axioms and                               *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
@@ -703,7 +704,7 @@ let pp_cmds_of_inner_types inner_types target_uri =
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print qid fn =
+let print (_,qid as locqid) fn =
  let module D = Declarations in
  let module G = Global in
  let module N = Names in
@@ -711,7 +712,7 @@ let print qid fn =
  let module T = Term in
  let module X = Xml in
   let (_,id) = Nt.repr_qualid qid in
-  let glob_ref = Nametab.locate qid in
+  let glob_ref = Nametab.global locqid in
   let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
   reset_ids () ;
   let inner_types = ref [] in
@@ -976,7 +977,7 @@ let print_closed_section s ls dn =
 (* and terms of the module d                                                 *)
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
-let printModule qid dn =
+let printModule (loc,qid) dn =
  let module L = Library in
  let module N = Nametab in
  let module X = Xml in

@@ -45,6 +45,10 @@ val try_add_new_coercion_with_source : global_reference -> strength ->
 val try_add_new_identity_coercion : identifier -> strength ->
   source:cl_typ -> target:cl_typ -> unit
 
+val add_coercion_hook : Proof_type.declaration_hook
+
+val add_subclass_hook : Proof_type.declaration_hook
+
 (* [try_add_new_class ref] declares [ref] as a new class; usually,
    this is done implicitely by [try_add_new_coercion]'s functions *)
 val try_add_new_class : global_reference -> strength -> unit

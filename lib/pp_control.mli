@@ -42,5 +42,5 @@ val deep_ft : Format.formatter
 
 (*s For parametrization through vernacular. *)
 
-val set_depth_boxes : int -> unit
-val get_depth_boxes : unit -> int
+val set_depth_boxes : int option -> unit
+val get_depth_boxes : unit -> int option

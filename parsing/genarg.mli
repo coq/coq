@@ -11,7 +11,7 @@
 open Util
 open Names
 open Term
-open Nametab
+open Libnames
 open Rawterm
 
 type 'a or_var = ArgArg of 'a | ArgVar of loc * identifier
@@ -82,7 +82,7 @@ val rawwit_pre_ident : (string,'co,'ta) abstract_argument_type
 val wit_pre_ident : (string,'co,'ta) abstract_argument_type
 
 val rawwit_qualid : (qualid located,constr_ast,'ta) abstract_argument_type
-val wit_qualid : (Nametab.global_reference,constr,'ta) abstract_argument_type
+val wit_qualid : (global_reference,constr,'ta) abstract_argument_type
 
 val rawwit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
 val wit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
@@ -99,7 +99,7 @@ val wit_casted_open_constr : (open_constr,constr,'ta) abstract_argument_type
 val rawwit_constr_with_bindings : (constr_ast with_bindings,constr_ast,'ta) abstract_argument_type
 val wit_constr_with_bindings : (constr with_bindings,constr,'ta) abstract_argument_type
 
-val rawwit_red_expr : ((constr_ast,Nametab.qualid or_metanum) red_expr_gen,constr_ast,'ta) abstract_argument_type
+val rawwit_red_expr : ((constr_ast,qualid or_metanum) red_expr_gen,constr_ast,'ta) abstract_argument_type
 val wit_red_expr : ((constr,Closure.evaluable_global_reference) red_expr_gen,constr,'ta) abstract_argument_type
 
 (* TODO: transformer tactic en extra arg *)

@@ -112,8 +112,8 @@ let declare_univ u g =
   else
     g
 
-(* The universes of Prop and Set: Type_0, Type_1 and the
-   resulting graph. *)
+(* When typing Prop and Set, there is no constraint on the level,
+   hence the definition of prop_univ *)
 
 let initial_universes = UniverseMap.empty
 let prop_univ = Max ([],[])
@@ -406,17 +406,20 @@ let num_edges g =
   UniverseMap.fold (fun _ a n -> n + (reln_len a)) g 0
     
 let pr_arc = function 
-  | Canonical {univ=u; gt=gt; ge=ge} -> 
-      hov 2
-        (pr_uni_level u ++ spc () ++
-         prlist_with_sep pr_spc (fun v -> str ">" ++ pr_uni_level v) gt ++
-         prlist_with_sep pr_spc (fun v -> str ">=" ++ pr_uni_level v) ge)
+  | Canonical {univ=u; gt=[]; ge=[]} ->
+      mt ()
+  | Canonical {univ=u; gt=gt; ge=ge} ->
+      pr_uni_level u ++ str " " ++
+      v 0
+        (prlist_with_sep pr_spc (fun v -> str "> " ++ pr_uni_level v) gt ++
+         prlist_with_sep pr_spc (fun v -> str ">= " ++ pr_uni_level v) ge) ++
+      fnl ()
   | Equiv (u,v) -> 
-      pr_uni_level u  ++ str "=" ++ pr_uni_level v
+      pr_uni_level u  ++ str " = " ++ pr_uni_level v ++ fnl ()
 
 let pr_universes g =
   let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in
-  prlist_with_sep pr_fnl (function (_,a) -> pr_arc a) graph
+  prlist (function (_,a) -> pr_arc a) graph
     
 
 (* Dumping constrains to a file *)

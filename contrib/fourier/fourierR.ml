@@ -19,8 +19,10 @@ open Tactics
 open Clenv
 open Names
 open Libnames
+open Tacticals
 open Tacmach
 open Fourier
+open Contradiction
 
 (******************************************************************************
 Opérations sur les combinaisons linéaires affines.
@@ -69,6 +71,7 @@ let flin_emult a f =
 ;;
     
 (*****************************************************************************)
+open Vernacexpr
 let parse_ast   = Pcoq.parse_string Pcoq.Constr.constr;;
 let parse s = Astterm.interp_constr Evd.empty (Global.env()) (parse_ast s);;
 let pf_parse_constr gl s =
@@ -552,10 +555,11 @@ let rec fourier gl=
 
 ;;
 
+(*
 let fourier_tac x gl =
      fourier gl
 ;;
 
 let v_fourier = add_tactic "Fourier" fourier_tac
-
+*)
 

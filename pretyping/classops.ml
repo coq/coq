@@ -21,6 +21,7 @@ open Declare
 open Term
 open Termops
 open Rawterm
+open Nametab
 
 (* usage qque peu general: utilise aussi dans record *)
 
@@ -45,8 +46,7 @@ type coe_info_typ = {
   coe_value : unsafe_judgment;
   coe_strength : strength;
   coe_is_identity : bool;
-  coe_param : int;
-  mutable coe_hide : bool }
+  coe_param : int }
 
 type cl_index = int
 type coe_index = int
@@ -137,18 +137,6 @@ let coercion_exists coe =
   with Not_found -> false
 
 let coe_of_reference x = x
-
-let hide_coercion coe =
-  let _,coe_info = coercion_info coe in
-  if coe_info.coe_hide then Some coe_info.coe_param else None
-
-let set_coercion_visibility b coe =
-  let _,coe_info = coercion_info coe in
-  coe_info.coe_hide <- not b
-
-let is_coercion_visible coe = 
-  let _,coe_info = coercion_info coe in
-  not coe_info.coe_hide
 
 let coercion_params coe_info = coe_info.coe_param
 
@@ -245,9 +233,12 @@ let strength_of_cl = function
 let string_of_class = function
   | CL_FUN -> "FUNCLASS"
   | CL_SORT -> "SORTCLASS" 
-  | CL_CONST sp -> string_of_id (id_of_global None (ConstRef sp))
-  | CL_IND sp -> string_of_id (id_of_global None (IndRef sp))
-  | CL_SECVAR sp -> string_of_id (id_of_global None (VarRef sp))
+  | CL_CONST sp ->
+      string_of_qualid (shortest_qualid_of_global None (ConstRef sp))
+  | CL_IND sp ->
+      string_of_qualid (shortest_qualid_of_global None (IndRef sp))
+  | CL_SECVAR sp ->
+      string_of_qualid (shortest_qualid_of_global None (VarRef sp))
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
@@ -345,8 +336,7 @@ let declare_coercion coef v stre ~isid ~src:cls ~target:clt ~params:ps =
 	 { coe_value = v;
 	   coe_strength = stre;
 	   coe_is_identity = isid;
-	   coe_param = ps;
-	   coe_hide = true }),
+	   coe_param = ps }),
 	cls, clt))
 
 let coercion_strength v = v.coe_strength
@@ -358,3 +348,32 @@ let get_coercion_value v = v.coe_value.uj_val
 let classes () = !class_tab
 let coercions () = !coercion_tab
 let inheritance_graph () = !inheritance_graph
+
+let coercion_of_qualid qid =
+  let ref = Nametab.global qid in
+  let coe = coe_of_reference ref in
+  if not (coercion_exists coe) then
+    errorlabstrm "try_add_coercion" 
+      (Nametab.pr_global_env None ref ++ str" is not a coercion");
+  coe
+
+module CoercionPrinting =
+  struct
+    type t = coe_typ
+    let encode = coercion_of_qualid
+    let printer x = pr_global_env None x
+    let key = Goptions.SecondaryTable ("Printing","Coercion")
+    let title = "Explicitly printed coercions: "
+    let member_message x b =
+      str "Explicit printing of coercion " ++ printer x ++
+      str (if b then " is set" else " is unset")
+    let synchronous = true
+  end
+
+module PrintingCoercion  = Goptions.MakeRefTable(CoercionPrinting)
+
+let hide_coercion coe =
+  if not (PrintingCoercion.active coe) then
+    let _,coe_info = coercion_info coe in
+    Some coe_info.coe_param
+  else None

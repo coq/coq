@@ -24,9 +24,11 @@ open Typing
 open Libnames
 open Nametab
 
+(*
 let is_bind = function
-  | Bindings _ -> true
+  | Tacexpr.Cbindings _ -> true
   | _ -> false
+*)
 
 (* Functions on goals *)
 
@@ -49,10 +51,9 @@ let children_of_proof pf =
 				    
 let goal_of_proof pf = pf.goal
 
-let subproof_of_proof pf =
-  match pf.subproof with
-    | None -> failwith "subproof_of_proof"
-    | Some pf -> pf
+let subproof_of_proof pf = match pf.ref with
+  | Some (Tactic (_,pf), _) -> pf
+  | _ -> failwith "subproof_of_proof"
 
 let status_of_proof pf = pf.status
 
@@ -60,7 +61,9 @@ let is_complete_proof pf = pf.status = Complete_proof
 
 let is_leaf_proof pf = (pf.ref = None)
 
-let is_tactic_proof pf = (pf.subproof <> None)
+let is_tactic_proof pf = match pf.ref with
+  | Some (Tactic _, _) -> true
+  | _ -> false
 
 
 (*******************************************************************)
@@ -246,21 +249,24 @@ let pr_subgoals_existential sigma = function
       v 0 (int(List.length rest+1) ++ str" subgoals" ++ cut () 
 	   ++ pg1 ++ prest ++ fnl ())
 
+(*
 open Ast
 open Termast
+open Tacexpr
+open Rawterm
 
 let ast_of_cvt_bind f = function
-  | (NoDep n,c) -> ope ("BINDING", [(num n); ope ("COMMAND",[(f c)])])
-  | (Dep  id,c) -> ope ("BINDING", [nvar id; ope  ("COMMAND",[(f c)])]) 
-  | (Com,c)     -> ope ("BINDING", [ope ("COMMAND",[(f c)])])
+  | (NoDepBinding n,c) -> ope ("BINDING", [(num n); ope ("CONSTR",[(f c)])])
+  | (DepBinding  id,c) -> ope ("BINDING", [nvar id; ope  ("CONSTR",[(f c)])]) 
+  | (AnonymousBinding,c) -> ope ("BINDING", [ope ("CONSTR",[(f c)])])
 
 let rec ast_of_cvt_intro_pattern = function
   | WildPat   -> ope ("WILDCAR",[])
   | IdPat id  -> nvar id
-  | DisjPat l -> ope ("DISJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
+(*  | DisjPat l -> ope ("DISJPATTERN",  (List.map ast_of_cvt_intro_pattern l))*)
   | ConjPat l -> ope ("CONJPATTERN",  (List.map ast_of_cvt_intro_pattern l))
-  | ListPat l -> ope ("LISTPATTERN",  (List.map ast_of_cvt_intro_pattern l))
-
+*)
+(*
 (* Gives the ast list corresponding to a reduction flag *)
 open RedFlags
 
@@ -281,14 +287,19 @@ let last_of_cvt_flags red =
    else [ope("Delta",[]);ope("Unf",lqid)])@
   (if (red_set red fIOTA) then [ope("Iota",[])]
    else [])
-
+*)
+(*
 (* Gives the ast corresponding to a reduction expression *)
+open Rawterm
+
 let ast_of_cvt_redexp = function
   | Red _ -> ope ("Red",[])
   | Hnf -> ope("Hnf",[])
   | Simpl -> ope("Simpl",[])
+(*
   | Cbv flg -> ope("Cbv",last_of_cvt_flags flg)
   | Lazy flg -> ope("Lazy",last_of_cvt_flags flg)
+*)
   | Unfold l ->
     ope("Unfold",List.map (fun (locc,sp) -> ope("UNFOLD",
       [match sp with
@@ -298,24 +309,27 @@ let ast_of_cvt_redexp = function
 	      (shortest_qualid_of_global None (ConstRef kn))]
       @(List.map num locc))) l)
   | Fold l ->
-    ope("Fold",List.map (fun c -> ope ("COMMAND",
+    ope("Fold",List.map (fun c -> ope ("CONSTR",
       [ast_of_constr false (Global.env ()) c])) l)
   | Pattern l ->
-    ope("Pattern",List.map (fun (locc,csr,_) -> ope("PATTERN",
-      [ope ("COMMAND",[ast_of_constr false (Global.env ()) csr])]@
+    ope("Pattern",List.map (fun (locc,csr) -> ope("PATTERN",
+      [ope ("CONSTR",[ast_of_constr false (Global.env ()) csr])]@
       (List.map num locc))) l)
-
+*)
 (* Gives the ast corresponding to a tactic argument *)
+(*
 let ast_of_cvt_arg = function
   | Identifier id   -> nvar id
+(*
   | Qualid qid      -> ast_of_qualid qid
+*)
   | Quoted_string s -> string s
   | Integer n       -> num n 
-  | Command c       -> ope ("COMMAND",[c])
+(*  | Command c       -> ope ("CONSTR",[c])*)
   | Constr  c       -> 
-    ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
+    ope ("CONSTR",[ast_of_constr false (Global.env ()) c])
   | OpenConstr  (_,c)       -> 
-    ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
+    ope ("CONSTR",[ast_of_constr false (Global.env ()) c])
   | Constr_context _ ->
     anomalylabstrm "ast_of_cvt_arg" (str
       "Constr_context argument could not be used")
@@ -324,6 +338,7 @@ let ast_of_cvt_arg = function
 	| InHyp id -> ope ("INHYP", [nvar id])
 	| InHypType id -> ope ("INHYPTYPE", [nvar id]) in
       ope ("CLAUSE", List.map transl idl)
+(*
   | Bindings bl     -> ope ("BINDINGS", 
 			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
   | Cbindings bl    -> 
@@ -331,12 +346,15 @@ let ast_of_cvt_arg = function
 	   List.map 
 	     (ast_of_cvt_bind
 		(ast_of_constr false (Global.env ()))) bl)
+*)
+(* TODO
   | Tacexp ast      -> ope ("TACTIC",[ast])
   | Tac (tac,ast) -> ast
+*)
   | Redexp red -> ope("REDEXP",[ast_of_cvt_redexp red])
-  | Fixexp (id,n,c) -> ope ("FIXEXP",[nvar id; num n; ope ("COMMAND",[c])])
-  | Cofixexp (id,c) -> ope ("COFIXEXP",[nvar id; ope ("COMMAND",[c])])
-  | Intropattern p ->  ast_of_cvt_intro_pattern p
+  | Fixexp (id,n,c) -> ope ("FIXEXP",[nvar id; num n; ope ("CONSTR",[ast_of_constr false (Global.env ()) c])])
+  | Cofixexp (id,c) -> ope ("COFIXEXP",[nvar id; ope ("CONSTR",[ast_of_constr false (Global.env ()) c])])
+(*  | Intropattern p ->  ast_of_cvt_intro_pattern p*)
   | Letpatterns (gl_occ_opt,hyp_occ_list) ->
      let hyps_pats =
        List.map
@@ -348,4 +366,4 @@ let ast_of_cvt_arg = function
 	 | None -> hyps_pats
 	 | Some l -> hyps_pats @ [ope ("CCLPATTERN", List.map num l)] in
      ope ("LETPATTERNS", all_pats)
-
+*)

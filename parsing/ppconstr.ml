@@ -16,33 +16,34 @@ open Pp
 open Nametab
 open Names
 open Nameops
+open Libnames
 open Coqast
 open Extend
 open Util
 
 let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
 
-let pr_global ref = pr_global_env (Global.env()) ref
+let pr_global ref = pr_global_env None ref
 
-let global_const_name sp =
-  try pr_global (ConstRef sp)
+let global_const_name kn =
+  try pr_global (ConstRef kn)
   with Not_found -> (* May happen in debug *)
-    (str ("CONST("^(string_of_path sp)^")"))
+    (str ("CONST("^(string_of_kn kn)^")"))
 
 let global_var_name id =
   try pr_global (VarRef id)
   with Not_found -> (* May happen in debug *)
     (str ("SECVAR("^(string_of_id id)^")"))
 
-let global_ind_name (sp,tyi) =
-  try pr_global (IndRef (sp,tyi))
+let global_ind_name (kn,tyi) =
+  try pr_global (IndRef (kn,tyi))
   with Not_found -> (* May happen in debug *)
-    (str ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")"))
+    (str ("IND("^(string_of_kn kn)^","^(string_of_int tyi)^")"))
 
-let global_constr_name ((sp,tyi),i) =
-  try pr_global (ConstructRef ((sp,tyi),i))
+let global_constr_name ((kn,tyi),i) =
+  try pr_global (ConstructRef ((kn,tyi),i))
   with Not_found -> (* May happen in debug *)
-    (str ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
+    (str ("CONSTRUCT("^(string_of_kn kn)^","^(string_of_int tyi)
 		  ^","^(string_of_int i)^")"))
 
 let globpr gt = match gt with
@@ -89,7 +90,7 @@ let pr_constr = gentermpr
 
 let pr_pattern = gentermpr
 
-let pr_qualid qid = str (Nametab.string_of_qualid qid)
+let pr_qualid qid = str (string_of_qualid qid)
 
 open Rawterm
 
@@ -132,8 +133,8 @@ let pr_red_expr (pr_constr,pr_ref) = function
       hov 1 (str "Pattern" ++ 
         prlist(fun (nl,c) -> prlist (pr_arg int) nl ++ (pr_arg pr_constr) c) l)
   | (Red true | Cbv _ | Lazy _) -> error "Shouldn't be accessible from user"
-  | ExtraRedExpr (s,c) ->
-      hov 1 (str s ++ pr_arg pr_constr c)
+  | ExtraRedExpr (s,l) ->
+      hov 1 (str s ++ prlist (pr_arg pr_constr) l)
 
 let rec pr_may_eval pr = function
   | ConstrEval (r,c) ->

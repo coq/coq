@@ -28,6 +28,7 @@ open Declarations
 open Environ
 open Sign
 open Inductive
+open Tacticals
 open Tacmach
 open Evar_refiner
 open Tactics
@@ -36,6 +37,7 @@ open Logic
 open Libnames
 open Nametab
 open Omega
+open Contradiction
 
 (* Added by JCF, 09/03/98 *)
 
@@ -48,6 +50,46 @@ let display_time_flag = ref false
 let display_system_flag = ref false
 let display_action_flag = ref false
 let old_style_flag = ref false
+
+let read f () = !f
+let write f x = f:=x
+
+open Goptions
+
+(* Obsolete, subsumed by Time Omega
+let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "Omega time displaying flag";
+      optkey   = SecondaryTable ("Omega","Time");
+      optread  = read display_time_flag;
+      optwrite = write display_time_flag }
+*)
+
+let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "Omega system time displaying flag";
+      optkey   = SecondaryTable ("Omega","System");
+      optread  = read display_system_flag;
+      optwrite = write display_system_flag }
+
+let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "Omega action display flag";
+      optkey   = SecondaryTable ("Omega","Action");
+      optread  = read display_action_flag;
+      optwrite = write display_action_flag }
+
+let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "Omega old style flag";
+      optkey   = SecondaryTable ("Omega","OldStyle");
+      optread  = read old_style_flag;
+      optwrite = write old_style_flag }
+
 
 let all_time        = timing "Omega     "
 let solver_time     = timing "Solver    "
@@ -71,7 +113,8 @@ let new_identifier_var =
 let rec mk_then = 
   function [t] -> t | (t::l) -> (tclTHEN (t) (mk_then l)) | [] -> tclIDTAC
 
-let exists_tac c = constructor_tac (Some 1) 1 [Com,c]
+let exists_tac c = constructor_tac (Some 1) 1 (Rawterm.ImplicitBindings [c])
+
 let generalize_tac t = generalize_time (generalize t)
 let elim t = elim_time (simplest_elim t)
 let exact t = exact_time (Tactics.refine t)
@@ -1823,7 +1866,3 @@ let omega_solver gl =
   (* if !display_time_flag then begin text_time (); 
      flush Pervasives.stdout end; *)
   result
-
-let omega = hide_atomic_tactic "Omega" omega_solver
-
-

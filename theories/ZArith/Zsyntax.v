@@ -11,9 +11,6 @@
 Require Export fast_integer.
 Require Export zarith_aux.
 
-Axiom My_special_variable0 : positive->positive.
-Axiom My_special_variable1 : positive->positive.
-
 Grammar znatural ident :=
   nat_id [ prim:var($id) ] -> [$id]
 
@@ -91,27 +88,25 @@ Grammar constr pattern :=
 
 Syntax constr
   level 0:
-    My_special_variable0 [ My_special_variable0 ] -> [ "POS" ]
-  | My_special_variable1 [ My_special_variable1 ] -> [ "NEG" ] 
-  | Zle [ (Zle $n1 $n2) ] -> 
+    Zle [ (Zle $n1 $n2) ] -> 
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= " (ZEXPR $n2) "`"]]
   | Zlt [ (Zlt $n1 $n2) ] -> 
-      [[<hov 0> "`" (ZEXPR $n1) [1 0] "< "(ZEXPR $n2) "`" ]]
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2) "`" ]]
   | Zge [ (Zge $n1 $n2) ] -> 
-      [[<hov 0> "`" (ZEXPR $n1) [1 0] ">= "(ZEXPR $n2) "`" ]]
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] ">= " (ZEXPR $n2) "`" ]]
   | Zgt [ (Zgt $n1 $n2) ] -> 
-      [[<hov 0> "`" (ZEXPR $n1) [1 0] "> "(ZEXPR $n2) "`" ]]
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] "> " (ZEXPR $n2) "`" ]]
   | Zcompare [<<(Zcompare $n1 $n2)>>] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "?= " (ZEXPR $n2) "`" ]]
   | Zeq [ (eq Z $n1 $n2) ] -> 
-      [[<hov 0> "`" (ZEXPR $n1) [1 0] "= "(ZEXPR $n2)"`"]]
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] "= " (ZEXPR $n2)"`"]]
   | Zneq [ ~(eq Z $n1 $n2) ] ->
-      [[<hov 0> "`" (ZEXPR $n1) [1 0] "<> "(ZEXPR $n2) "`"]]
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] "<> " (ZEXPR $n2) "`"]]
   | Zle_Zle [ (Zle $n1 $n2)/\(Zle $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= " (ZEXPR $n2)
                                 [1 0] "<= " (ZEXPR $n3) "`"]]
   | Zle_Zlt [ (Zle $n1 $n2)/\(Zlt $n2 $n3) ] ->
-      [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= "(ZEXPR $n2)
+      [[<hov 0> "`" (ZEXPR $n1) [1 0] "<= " (ZEXPR $n2)
                                 [1 0] "< " (ZEXPR $n3) "`"]]
   | Zlt_Zle [ (Zlt $n1 $n2)/\(Zle $n2 $n3) ] ->
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2)
@@ -120,24 +115,24 @@ Syntax constr
       [[<hov 0> "`" (ZEXPR $n1) [1 0] "< " (ZEXPR $n2)
                                 [1 0] "< " (ZEXPR $n3) "`"]]
   | ZZero [ ZERO ] -> ["`0`"]
-  | ZPos [ (POS $r) ] -> [$r:"positive_printer"]
-  | ZNeg [ (NEG $r) ] -> [$r:"negative_printer"]
+  | ZPos [ (POS $r) ] -> [$r:"positive_printer":9]
+  | ZNeg [ (NEG $r) ] -> [$r:"negative_printer":9]
   ;
 
   level 7:
     Zplus [ (Zplus $n1 $n2) ]
-      -> [ [<hov 0> "`"(ZEXPR $n1):E "+"  [0 0] (ZEXPR $n2):L "`"] ]
+      -> [ [<hov 0> "`" (ZEXPR $n1):E "+"  [0 0] (ZEXPR $n2):L "`"] ]
   | Zminus [ (Zminus $n1 $n2) ]
-      -> [ [<hov 0> "`"(ZEXPR $n1):E "-" [0 0] (ZEXPR $n2):L "`"] ]
+      -> [ [<hov 0> "`" (ZEXPR $n1):E "-" [0 0] (ZEXPR $n2):L "`"] ]
   ;
 
   level 6:
     Zmult [ (Zmult $n1 $n2) ]
-      -> [ [<hov 0> "`"(ZEXPR $n1):E "*" [0 0] (ZEXPR $n2):L "`"] ]
+      -> [ [<hov 0> "`" (ZEXPR $n1):E "*" [0 0] (ZEXPR $n2):L "`"] ]
   ;
 
   level 8:
-    Zopp [ (Zopp $n1) ] -> [ [<hov 0> "`" "-"(ZEXPR $n1):E "`"] ]
+    Zopp [ (Zopp $n1) ] -> [ [<hov 0> "`" "-" (ZEXPR $n1):E "`"] ]
   | Zopp_POS [ (Zopp (POS $r)) ] -> 
          [ [<hov 0> "`(" "Zopp" [1 0] $r:"positive_printer_inside"  ")`"] ]
   | Zopp_ZERO [ (Zopp ZERO) ] -> [ [<hov 0> "`(" "Zopp" [1 0] "0" ")`"] ]
@@ -146,7 +141,7 @@ Syntax constr
   ;
 
   level 4:
-    Zabs [ (Zabs $n1) ] -> [  [<hov 0> "`|"(ZEXPR $n1):E "|`"] ]
+    Zabs [ (Zabs $n1) ] -> [  [<hov 0> "`|" (ZEXPR $n1):E "|`"] ]
   ;
 
   level 0:
@@ -217,5 +212,5 @@ Syntax constr
   level 0:
     ZZero_inside [ << (ZEXPR <<ZERO>>) >> ] -> ["0"]
   | ZPos_inside [ << (ZEXPR <<(POS $p)>>) >>] -> [$p:"positive_printer_inside"]
-  | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >> ] -> 
-      	       	       	  [$p:"negative_printer_inside"].
+  | ZNeg_inside [ << (ZEXPR <<(NEG $p)>>) >>] -> [$p:"negative_printer_inside"]
+.

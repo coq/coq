@@ -8,10 +8,12 @@
 
 (*i $Id$ i*)
 
+(*i*)
 open Tacmach
+(*i*)
 
 (* Rewriting rules before tactic interpretation *)
-type raw_rew_rule = Term.constr * bool * Coqast.t
+type raw_rew_rule = Term.constr * bool * Tacexpr.raw_tactic_expr
 
 (* To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit

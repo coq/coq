@@ -2,9 +2,6 @@
 
 sinclude config.distrib
 LOCALARCH=`uname -m`
-# i.86 standardized to i386
-# MacOS X returns "Power Macintosh" - changed to "MacOS-X"
-ARCH=`uname -m | sed -e 's/i.86/i386/' -e 's/Power Macintosh/MacOS-X/'`
 SYSTEM=`uname -s`
 
 ARCHBUILDROOT=$(DISTRIBDIR)/${ARCH}

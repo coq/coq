@@ -93,15 +93,17 @@ val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
 *)
 val clenv_lookup_name : 'a clausenv -> identifier -> int
-val clenv_match_args : (bindOcc * constr) list -> wc clausenv -> wc clausenv
+val clenv_match_args : constr Rawterm.explicit_substitution -> wc clausenv -> wc clausenv
 val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
 val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
 val make_clenv_binding_apply :
-  wc -> int -> constr * types -> constr substitution -> wc clausenv
+  named_context sigma -> int -> constr * constr ->
+      types Rawterm.substitution -> named_context sigma clausenv
 val make_clenv_binding :
-  wc -> constr * types -> constr substitution -> wc clausenv
+  named_context sigma -> constr * constr ->
+      types Rawterm.substitution -> named_context sigma clausenv
 
 (* Exported for program.ml only *)
 val clenv_add_sign : 
@@ -110,10 +112,6 @@ val unify_to_subterm :
   wc clausenv -> constr * constr -> wc clausenv * constr
 val unify_to_subterm_list : 
   bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
-(*
-val clenv_constrain_dep_args_of : 
-  int -> constr list -> wc clausenv -> wc clausenv
-*)
 val clenv_typed_unify :
   Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
 

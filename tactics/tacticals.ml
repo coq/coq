@@ -20,6 +20,7 @@ open Reduction
 open Environ
 open Libnames
 open Declare
+open Refiner
 open Tacmach
 open Clenv
 open Pattern
@@ -30,24 +31,39 @@ open Wcclausenv
 (*         Basic Tacticals                *)
 (******************************************)
 
-let tclIDTAC         = Tacmach.tclIDTAC
-let tclORELSE        = Tacmach.tclORELSE
-let tclTHEN          = Tacmach.tclTHEN
-let tclTHEN_i        = Tacmach.tclTHEN_i
-let tclTHENL         = Tacmach.tclTHENL
-let tclTHENS         = Tacmach.tclTHENS
-let tclTHENSi        = Tacmach.tclTHENSi
-let tclREPEAT        = Tacmach.tclREPEAT
-let tclFIRST         = Tacmach.tclFIRST
-let tclSOLVE         = Tacmach.tclSOLVE
-let tclTRY           = Tacmach.tclTRY
-let tclINFO          = Tacmach.tclINFO
-let tclCOMPLETE      = Tacmach.tclCOMPLETE
-let tclAT_LEAST_ONCE = Tacmach.tclAT_LEAST_ONCE
-let tclFAIL          = Tacmach.tclFAIL
-let tclDO            = Tacmach.tclDO
-let tclPROGRESS      = Tacmach.tclPROGRESS
-let tclWEAK_PROGRESS = Tacmach.tclWEAK_PROGRESS
+(*************************************************)
+(* Tacticals re-exported from the Refiner module.*)
+(*************************************************)
+
+let tclIDTAC         = tclIDTAC
+let tclORELSE        = tclORELSE
+let tclTHEN          = tclTHEN
+let tclTHENLIST      = tclTHENLIST
+let tclTHEN_i        = tclTHEN_i
+let tclTHENFIRST     = tclTHENFIRST
+let tclTHENLAST      = tclTHENLAST
+let tclTHENS         = tclTHENS
+let tclTHENSV        = Refiner.tclTHENSV
+let tclTHENSFIRSTn   = Refiner.tclTHENSFIRSTn
+let tclTHENSLASTn    = Refiner.tclTHENSLASTn
+let tclTHENFIRSTn    = Refiner.tclTHENFIRSTn
+let tclTHENLASTn     = Refiner.tclTHENLASTn
+let tclREPEAT        = Refiner.tclREPEAT
+let tclREPEAT_MAIN   = tclREPEAT_MAIN
+let tclFIRST         = Refiner.tclFIRST
+let tclSOLVE         = Refiner.tclSOLVE
+let tclTRY           = Refiner.tclTRY
+let tclINFO          = Refiner.tclINFO
+let tclCOMPLETE      = Refiner.tclCOMPLETE
+let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
+let tclFAIL          = Refiner.tclFAIL
+let tclDO            = Refiner.tclDO
+let tclPROGRESS      = Refiner.tclPROGRESS
+let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
+let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL
+let tclTHENTRY       = tclTHENTRY
+
+let unTAC            = unTAC
 
 (* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
 let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
@@ -56,10 +72,6 @@ let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
 (* tclMAP f [x1..xn] = (f x1);(f x2);...(f xn) *)
 let tclMAP tacfun l = 
   List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
-
-(*let dyn_tclIDTAC = function [] -> tclIDTAC |  _ -> anomaly "tclIDTAC"*)
-
-(*let dyn_tclFAIL  = function [] -> tclFAIL |  _ -> anomaly "tclFAIL"*)
 
 (* apply a tactic to the nth element of the signature  *)
 
@@ -188,30 +200,6 @@ let tryAllHyps     tac gls = tryClauses tac (allHyps gls) gls
 let onNLastHyps n  tac     = onHyps (nLastHyps n) (tclMAP tac)
 let onLastHyp      tac gls = tac (lastHyp gls) gls
 
-(* Serait-ce possible de compiler d'abord la tactique puis de faire la
-   substitution sans passer par bdize dont l'objectif est de préparer un
-   terme pour l'affichage ? (HH) *)
-
-(* Si on enlève le dernier argument (gl) conclPattern est calculé une
-fois pour toutes : en particulier si Pattern.somatch produit une UserError 
-Ce qui fait que si la conclusion ne matche pas le pattern, Auto échoue, même
-si après Intros la conclusion matche le pattern.
-*)
-
-(* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
-
-let conclPattern concl pat tacast gl =
-  let constr_bindings =
-    try Pattern.matches pat concl
-    with PatternMatchingFailure -> error "conclPattern" in
-  let ast_bindings = 
-    List.map 
-      (fun (i,c) ->
-	 (i, Termast.ast_of_constr false (pf_env gl) c))
-      constr_bindings in 
-  let tacast' = Coqast.subst_meta ast_bindings tacast in
-  Tacinterp.interp tacast' gl
-
 let clauseTacThen tac continuation =
   (fun cls -> (tclTHEN (tac cls) continuation))
 
@@ -253,7 +241,7 @@ type branch_args = {
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
-  assums    : named_context; (* the list of assumptions introduced *)
+  assums    : named_context;   (* the list of assumptions introduced *)
   cargs     : identifier list; (* the constructor arguments *)
   constargs : identifier list; (* the CONSTANT constructor arguments *)
   recargs   : identifier list; (* the RECURSIVE constructor arguments *)
@@ -338,24 +326,25 @@ let general_elim_then_using
   let branchsigns = elim_sign_fun ity in
   let after_tac ce i gl =
     let (hd,largs) = decompose_app (clenv_template_type ce).rebus in
-    let ba = { branchsign = branchsigns.(i-1);
+    let ba = { branchsign = branchsigns.(i);
                nassums = 
 		 List.fold_left 
                    (fun acc b -> if b then acc+2 else acc+1)
-                   0 branchsigns.(i-1);
-               branchnum = i;
+                   0 branchsigns.(i);
+               branchnum = i+1;
                ity = ity;
                largs = List.map (clenv_instance_term ce) largs;
                pred = clenv_instance_term ce hd }
     in 
     tac ba gl
   in
+  let branchtacs ce = Array.init (Array.length branchsigns) (after_tac ce) in
   let elimclause' =
     match predicate with
        | None   -> elimclause'
        | Some p -> clenv_assign pmv p elimclause'
   in 
-  elim_res_pf_THEN_i kONT elimclause' after_tac gl
+  elim_res_pf_THEN_i kONT elimclause' branchtacs gl
 
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 

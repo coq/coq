@@ -120,6 +120,8 @@ let push_idtree extract_dirpath tab n dir id o =
 
 let push_long_names_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
 let push_short_name_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
+let push_long_names_objpath =
+  push_idtree (fun sp -> let (p,_) = repr_path sp in p) the_objtab
 let push_short_name_objpath =
   push_idtree (fun sp -> let (p,_) = repr_path sp in p) the_objtab
 
@@ -164,6 +166,12 @@ let push_short_name_object sp =
   let _, s = repr_qualid (qualid_of_sp sp) in
   push_short_name_objpath 0 empty_dirpath s sp
 
+(* This is for tactic definition names *)
+
+let push_tactic_path sp =
+  let dir, s = repr_qualid (qualid_of_sp sp) in
+  push_long_names_objpath 0 dir s sp
+
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 let push_section fulldir =
   let dir, s = split_dirpath fulldir in
@@ -193,6 +201,10 @@ let locate qid = match locate_cci qid with
   | SyntacticDef _ -> raise Not_found
 
 let locate_obj qid =
+  let (dir,id) = repr_qualid qid in
+  locate_in_tree (Idmap.find id !the_objtab) dir
+
+let locate_tactic qid =
   let (dir,id) = repr_qualid qid in
   locate_in_tree (Idmap.find id !the_objtab) dir
 
@@ -246,13 +258,13 @@ let absolute_reference sp =
 let locate_in_absolute_module dir id =
   absolute_reference (make_path dir id)
 
-let global loc qid =
+let global (loc,qid) =
   try match extended_locate qid with
     | TrueGlobal ref -> ref
     | SyntacticDef _ -> 
-        error
-          ("Unexpected reference to a syntactic definition: "
-           ^(string_of_qualid qid))
+        user_err_loc (loc,"global",
+          str "Unexpected reference to a syntactic definition: " ++
+          pr_qualid qid)
   with Not_found ->
     error_global_not_found_loc loc qid
 
@@ -285,6 +297,13 @@ let pr_global_env env ref =
   l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
   let s = string_of_qualid (shortest_qualid_of_global env ref) in
   (str s)
+
+let global_inductive (loc,qid as locqid) =
+  match global locqid with
+  | IndRef ind -> ind
+  | ref ->
+      user_err_loc (loc,"global_inductive",
+        pr_qualid qid ++ spc () ++ str "is not an inductive type")
 
 (********************************************************************)
 
@@ -320,3 +339,8 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
       Summary.survive_section = false }
+
+type strength = 
+  | NotDeclare
+  | DischargeAt of dir_path * int
+  | NeverDischarge

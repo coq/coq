@@ -12,33 +12,41 @@ open Pp
 open Util
 open Coqast
 open Ast
-open Pcoq
 open Extend
 open Esyntax
 open Libobject
 open Library
 open Summary
+open Astterm
+open Vernacexpr
+open Pcoq
 
 (*************************
  **** PRETTY-PRINTING ****
  *************************)
 
-(* Done here to get parsing/g_*.ml4 non dependent from kernel *)
-let constr_parser_with_glob = map_entry Astterm.globalize_constr Constr.constr
-let tactic_parser_with_glob = map_entry Astterm.globalize_ast Tactic.tactic
-let vernac_parser_with_glob = map_entry Astterm.globalize_ast Vernac_.vernac
+let globalize_typed_ast t =
+  let sign = Global.named_context () in
+  match t with
+  | Ast.PureAstNode t -> Ast.PureAstNode (globalize_constr t)
+  | _ -> (* TODO *) t
 
 (* This updates default parsers for Grammar actions and Syntax *)
 (* patterns by inserting globalization *)
-let _ = update_constr_parser constr_parser_with_glob
-let _ = update_tactic_parser tactic_parser_with_glob
-let _ = update_vernac_parser vernac_parser_with_glob
+(* Done here to get parsing/g_*.ml4 non dependent from kernel *)
+let _ = Pcoq.set_globalizer globalize_typed_ast
 
 (* This installs default quotations parsers to escape the ast parser *)
 (* "constr" is used by default in quotations found in the ast parser *) 
+let constr_parser_with_glob = Pcoq.map_entry Astterm.globalize_constr Constr.constr
+let tactic_parser_with_glob = (*map_entry Astterm.globalize_tactic*) Tactic.tactic
+let vernac_parser_with_glob = (*map_entry Astterm.globalize_vernac*) Vernac_.vernac
+
 let _ = define_quotation true "constr" constr_parser_with_glob
+(*
 let _ = define_quotation false "tactic" tactic_parser_with_glob
 let _ = define_quotation false "vernac" vernac_parser_with_glob
+*)
 
 (* Pretty-printer state summary *)
 let _ = 
@@ -105,16 +113,30 @@ let (inGrammar, outGrammar) =
        cache_function = cache_grammar;
        export_function = (fun x -> Some x)})
 
-let add_grammar_obj univ al =
-   Lib.add_anonymous_leaf (inGrammar (Extend.interp_grammar_command univ al))
+let gram_define_entry (u,_ as univ) ((ntl,nt),et,assoc,rl) =
+  let etyp = match et with None -> entry_type_from_name u | Some e -> e in
+  create_entry_if_new univ nt etyp;
+  let etyp = match etyp with 
+    | AstListType -> ETastl
+    | GenAstType Genarg.ConstrArgType -> ETast
+    | PureAstType -> ETast
+    | _ -> error "Cannot arbitrarily extend non ast entries" in
+  (nt, etyp, assoc, rl)
+
+let add_grammar_obj univ l =
+  let u = create_univ_if_new univ in
+  let entryl = List.map (gram_define_entry u) l in
+  let g = interp_grammar_command univ get_entry_type entryl in
+  Lib.add_anonymous_leaf (inGrammar (Egrammar.AstGrammar g))
+
+let add_tactic_grammar g = 
+  Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar g))
 
 (* printing grammar entries *)
 let print_grammar univ entry =
   let u = get_univ univ in
   let te = get_entry u entry in
-  match te with
-    | Ast e -> Gram.Entry.print e
-    | ListAst e -> Gram.Entry.print e
+  Gram.Entry.print (object_of_typed_entry te)
 
 (* Infix, distfix *)
 
@@ -150,135 +172,154 @@ let (inInfix, outInfix) =
        cache_function = cache_infix;
        export_function = (fun x -> Some x)})
 
+(* Build the syntax and grammar rules *)
+
+type symbol =
+  | Terminal of string
+  | NonTerminal of (int * parenRelation) * string
+
 let prec_assoc = function
-  | Some(Gramext.RightA) -> (":L",":E")
-  | Some(Gramext.LeftA) -> (":E",":L")
-  | Some(Gramext.NonA) -> (":L",":L")
-  | None -> (":E",":L")  (* LEFTA by default *)
+  | Some(Gramext.RightA) -> (L,E)
+  | Some(Gramext.LeftA) -> (E,L)
+  | Some(Gramext.NonA) -> (L,L)
+  | None -> (E,L)  (* LEFTA by default *)
 
 let constr_tab =
   [| "constr0"; "constr1"; "constr2"; "constr3"; "lassoc_constr4";
      "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "constr10" |]
   
-let constr_rule n p = if p = ":E" then constr_tab.(n) else constr_tab.(n-1)
+let constr_rule (n,p) = if p = E then constr_tab.(n) else constr_tab.(n-1)
 
-let nonterm_meta nt var = NonTerm(NtShort nt, ETast, Some var)
+let nonterm_meta nt var =
+  NonTerm(ProdPrimitive ("constr",nt), Some (var,ETast))
 
-(* infix_syntax_entry : int -> string -> string -> grammar_entry
- *    takes precedence, infix op and prefix op and returns
- *    the corresponding Syntax entry *)
-
-let infix_syntax_entry assoc n inf prefname astpref =
-  let (lp,rp) =  match assoc with 
-    | Some(Gramext.RightA) -> (Extend.L,Extend.E)
-    | Some(Gramext.LeftA) -> (Extend.E,Extend.L)
-    | Some(Gramext.NonA) -> (Extend.L,Extend.L)
-    | None -> (Extend.E,Extend.L)  (* LEFTA by default *)
-  in
-  let inf =
-    (* Not necessary but increases legibility (e.g. for "=_S") *)
-    if is_letter (inf.[String.length inf -1]) then " "^inf^" " else inf
-  in
-  [{Extend.syn_id = prefname;
-    Extend.syn_prec = n,0,0;
-    Extend.syn_astpat = 
-      Pnode
-    	("APPLIST",
-	 Pcons
-	   (Pquote astpref,
-	    Pcons (Pmeta ("$e1", Tany), Pcons (Pmeta ("$e2", Tany), Pnil))));
-    Extend.syn_hunks =
-      [Extend.UNP_BOX
-	 (Extend.PpHOVB 1,
-	  [Extend.PH (Pmeta ("$e1", Tany), None, lp);
-	   Extend.UNP_BRK (0, 1); Extend.RO inf;
-	   Extend.PH (Pmeta ("$e2", Tany), None, rp)])]}]
-
-(* infix_gram_entry : int -> string -> string -> grammar_entry
- *    takes precedence, infix op and prefix op and returns
- *    the corresponding Grammar entry *)
-
-let gram_infix assoc n infl prefname astpref =
-  let (lp,rp) = prec_assoc assoc in
-  let action =
-    Aast(Pnode("APPLIST",
-               Pcons(Pquote astpref,
-                     Pcons(Pmeta("$a",Tany),
-                           Pcons(Pmeta("$b",Tany),Pnil)))))
-  in
-  { gc_univ = "constr";
-    gc_entries =
-      [ { ge_name = constr_rule n ":E";
-          ge_type = ETast;
-          gl_assoc = None;
-          gl_rules =
-            [ { gr_name = prefname;
-                gr_production =
-                  (nonterm_meta (constr_rule n lp) "$a")
-                  ::(List.map (fun s -> Term("", s)) infl)
-                  @[nonterm_meta (constr_rule n rp) "$b"];
-                gr_action = action} ]
-        }
-      ]
-  }
-
-let add_infix assoc n inf pr =
-  (* check the precedence *)
-  if n<1 or n>10 then
-    errorlabstrm "Metasyntax.infix_grammar_entry"
-      (str"Precedence must be between 1 and 10.");
-  if (assoc<>None) & (n<6 or n>9) then
-    errorlabstrm "Vernacentries.infix_grammar_entry"
-      (str"Associativity Precedence must be 6,7,8 or 9.");
-  (* check the grammar entry *)
-  let prefname = inf^"_infix" in
-  let gram_rule = gram_infix assoc n (split inf) prefname pr in
-  (* check the syntax entry *)
-  let syntax_rule = infix_syntax_entry assoc n inf prefname pr in
-  Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule))
-
-(* Distfix *)
-(* Distfix LEFTA 7 "/ _ / _ /" app.*)
-
-let rec make_symbols c_first c_next c_last new_var = function
-  | [] -> []
-  | ["_"] -> [nonterm_meta c_last ("$e"^(string_of_int new_var))]
-  | ("_"::sl) ->
-      let symb = nonterm_meta c_first ("$e"^(string_of_int new_var)) in
-      symb :: make_symbols c_next c_next c_last (new_var+1) sl
-  | s :: sl ->
-      let symb = Term("", s) in
-      symb :: make_symbols c_next c_next c_last new_var sl
+let meta_pattern m = Pmeta(m,Tany)
 
 let collect_metas sl =
   List.fold_right
-    (fun it metatl ->
-       match it with
-         | NonTerm(_,_,Some m) -> Pcons(Pmeta(m,Tany),metatl)
-         | _ -> metatl)
+    (fun it metatl -> match it with
+      | NonTerminal (_,m) -> Pcons(meta_pattern m, metatl)
+      | _ -> metatl)
     sl Pnil
 
-let distfix assoc n sl fname astf  =
-  let (lp,rp) = prec_assoc assoc in
-  let symbols =
-    make_symbols (constr_rule n lp) constr_tab.(8) (constr_rule n rp) 0 sl in
-  let action =
-    Aast(Pnode("APPLIST",Pcons(Pquote astf, collect_metas symbols)))
-  in
+let make_pattern astf symbols =
+  Pnode("APPLIST",Pcons(Pquote astf, collect_metas symbols))
+
+let make_hunks symbols =
+  List.fold_right
+    (fun it l -> match it with
+      | NonTerminal ((_,lp),m) -> PH (meta_pattern m, None, lp) :: l
+      | Terminal s ->
+	  let n,s =
+	    if is_letter (s.[String.length s -1]) or is_letter (s.[0])
+	    then 1,s^" " else 0,s
+	  in
+	  UNP_BRK (n, 1) :: RO s :: l)
+    symbols []
+
+let make_production =
+  List.map (function
+    | NonTerminal (lp,m) -> nonterm_meta (constr_rule lp) m
+    | Terminal s -> Term ("",s))
+
+let make_syntax_rule n prefname symbols astpref =
+  [{syn_id = prefname;
+    syn_prec = n,0,0;
+    syn_astpat = make_pattern astpref symbols;
+    syn_hunks = [UNP_BOX (PpHOVB 1, make_hunks symbols)]}]
+
+let make_infix_syntax_rule n prefname symbols astpref ref =
+  let hunk = match symbols with
+    | [NonTerminal ((_,lp),e1);Terminal s;NonTerminal ((_,rp),e2)] ->
+	UNP_INFIX (ref,e1,e2,(lp,rp))
+    | _ -> error "Don't know to handle this infix rule" in
+  [{syn_id = prefname;
+    syn_prec = n,0,0;
+    syn_astpat = make_pattern astpref symbols;
+    syn_hunks = [hunk]}]
+    
+
+let make_grammar_rule n fname symbols astpref =
+  let prod = make_production symbols in
+  let action = Act (PureAstPat (make_pattern astpref symbols)) in
+  Egrammar.AstGrammar
   { gc_univ = "constr";
     gc_entries =
-      [ { ge_name = constr_rule n ":E";
+      [ { ge_name = constr_rule (n, E);
           ge_type = ETast;
           gl_assoc = None;
           gl_rules =
             [ { gr_name = fname;
-                gr_production = symbols;
+                gr_production = prod;
                 gr_action = action} ]
         }
       ]
   }
 
-let add_distfix a n df astf =
+let make_infix_symbols assoc n sl =
+  let (lp,rp) = prec_assoc assoc in
+  NonTerminal ((n,lp),"$a")::(List.map (fun s -> Terminal s) sl)
+  @[NonTerminal ((n,rp),"$b")]
+
+
+let cache_infix2 (_,(ref,inf)) =
+  let sp = match ref with
+  | Nametab.TrueGlobal r -> Nametab.sp_of_global None r
+  | Nametab.SyntacticDef sp -> sp in
+  declare_infix_symbol sp inf
+
+let (inInfix2, outInfix2) =
+  declare_object
+    ("INFIX2",
+     { load_function = (fun _ -> ());
+       open_function = cache_infix2;
+       cache_function = cache_infix2;
+       export_function = (fun x -> Some x)})
+
+let add_infix assoc n inf (loc,qid) =
+  let ref = 
+    try
+      Nametab.extended_locate qid
+    with Not_found ->
+      error ("Unknown reference: "^(Libnames.string_of_qualid qid)) in
+  let pr = Astterm.ast_of_extended_ref_loc loc ref in
+  (* check the precedence *)
+  if n<1 or n>10 then
+    errorlabstrm "Metasyntax.infix_grammar_entry"
+      (str"Precedence must be between 1 and 10.");
+(* Pourquoi ??
+  if (assoc<>None) & (n<6 or n>9) then
+    errorlabstrm "Vernacentries.infix_grammar_entry"
+      (str"Associativity Precedence must be 6,7,8 or 9.");
+*)
+  let prefname = inf^"_infix" in
+  let symbols = make_infix_symbols assoc n (split inf) in
+  let gram_rule = make_grammar_rule n prefname symbols pr in
+  let syntax_rule = make_infix_syntax_rule n prefname symbols pr ref in
+  Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule));
+  Lib.add_anonymous_leaf (inInfix2(ref,inf))
+
+(* Distfix *)
+(* Distfix LEFTA 7 "/ _ / _ /" app.*)
+(* TODO add boxes information in the expression *)
+
+let create_meta n = "$e"^(string_of_int n)
+
+let rec find_symbols c_first c_next c_last new_var = function
+  | []    -> []
+  | ["_"] -> [NonTerminal (c_last, create_meta new_var)]
+  | ("_"::sl) ->
+      let symb = NonTerminal (c_first, create_meta new_var) in
+      symb :: find_symbols c_next c_next c_last (new_var+1) sl
+  | s :: sl ->
+      let symb = Terminal s in
+      symb :: find_symbols c_next c_next c_last new_var sl
+
+let add_distfix assoc n df astf =
   let fname = df^"_distfix" in
-  Lib.add_anonymous_leaf (inInfix(distfix a n (split df) fname astf, []))
+  let (lp,rp) = prec_assoc assoc in
+  let symbols = find_symbols (n,lp) (8,E) (n,rp) 0 (split df) in
+  let gram_rule = make_grammar_rule n fname symbols astf in
+  let syntax_rule = make_syntax_rule n fname symbols astf in
+  Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule))
 

@@ -11,360 +11,335 @@
 (* $Id$ *)
 
 open Coqast
+open Extend
+open Vernacexpr
 open Pcoq
-
 open Vernac_
+open Goptions
+open Constr
+open Prim
 
 GEXTEND Gram
-  GLOBAL: identarg ne_identarg_list numarg ne_numarg_list numarg_list
-          stringarg ne_stringarg_list constrarg sortarg tacarg 
-          ne_qualidarg_list qualidarg commentarg 
-          commentarg_list;
+  GLOBAL: class_rawexpr;
 
-  identarg:
-    [ [ id = Constr.ident -> id ] ]
-  ;
-  ne_identarg_list:
-    [ [ l = LIST1 identarg -> l ] ]
-  ;
-  qualidarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST $l)) >> ] ]
-  ;
-  ne_qualidarg_list:
-    [ [ q = qualidarg; l = ne_qualidarg_list -> q::l
-      | q = qualidarg -> [q] ] ]
-  ;
-  numarg:
-    [ [ n = Prim.number -> n 
-       |  "-"; n = Prim.number -> Num (loc, ( - Ast.num_of_ast n)) ] ]
-  ;
-  ne_numarg_list:
-    [ [ n = numarg; l = ne_numarg_list -> n::l
-      | n = numarg -> [n] ] ]
-  ;
-  numarg_list:
-    [ [ l = ne_numarg_list -> l
-      |  -> [] ] ]
-  ;
-  stringarg:
-    [ [ s = Prim.string -> s ] ]
-  ;
-  ne_stringarg_list:
-    [ [ n = stringarg; l = ne_stringarg_list -> n::l
-      | n = stringarg -> [n] ] ]
-  ;
-  constrarg:
-    [ [ c = Constr.constr -> <:ast< (CONSTR $c) >> ] ]
-  ;
-  sortarg:
-    [ [ c = Constr.sort -> <:ast< (CONSTR $c) >> ] ]
-  ;
-  tacarg:
-    [ [ tcl = Tactic.tactic -> tcl ] ]
-  ;
-  commentarg:
-    [ [ c = constrarg -> c
-    |   c = stringarg -> c 
-    |   c = numarg -> c ] ]
-  ;
-  commentarg_list:
-    [ [ c = commentarg; l = commentarg_list -> c::l
-    | -> [] ] ]
+  class_rawexpr:
+    [ [ IDENT "FUNCLASS" -> FunClass
+      | IDENT "SORTCLASS" -> SortClass
+      | qid = Prim.qualid -> RefClass qid ] ]
   ;
 END;
 
 GEXTEND Gram
   GLOBAL: command;
 
+  comment:
+    [ [ c = constr -> CommentConstr c
+      | s = STRING -> CommentString s
+      | n = natural -> CommentInt n ] ]
+  ;
   command:
-    [ [ IDENT "Comments"; args = commentarg_list ->
-	  <:ast< (Comments ($LIST $args)) >>
-      | IDENT "Pwd" -> <:ast< (PWD) >>
-      | IDENT "Cd" -> <:ast< (CD) >>
-      | IDENT "Cd"; dir = stringarg -> <:ast< (CD $dir) >>
+    [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
-      | IDENT "Drop" -> <:ast< (DROP) >>
-      | IDENT "ProtectedLoop" -> <:ast< (PROTECTEDLOOP)>>
-      | "Quit" -> <:ast< (QUIT) >>
+      (* System directory *)
+      | IDENT "Pwd" -> VernacChdir None
+      | IDENT "Cd" -> VernacChdir None
+      | IDENT "Cd"; dir = STRING -> VernacChdir (Some dir)
 
-      | IDENT "Print"; IDENT "All" -> <:ast< (PrintAll) >>
-      | IDENT "Print" -> <:ast< (PRINT) >>
-      | IDENT "Print"; IDENT "Hint"; "*" 
-	                    -> <:ast< (PrintHint) >>
-      | IDENT "Print"; IDENT "Hint"; s = qualidarg ->
-          <:ast< (PrintHintId $s) >>
-      | IDENT "Print"; IDENT "Hint" ->
-          <:ast< (PrintHintGoal) >>
-      | IDENT "Print"; IDENT "HintDb"; s = identarg  ->
-	  <:ast< (PrintHintDb $s) >>
-      | IDENT "Print"; IDENT "Section"; s = qualidarg ->
-          <:ast< (PrintSec $s) >>
-      (* This should be in "syntax" section but is here for factorization *)
-      | IDENT "Print"; "Grammar"; uni = identarg; ent = identarg ->
-          <:ast< (PrintGrammar $uni $ent) >>
+      (* Toplevel control *)
+      | IDENT "Drop" -> VernacToplevelControl Drop
+      | IDENT "ProtectedLoop" -> VernacToplevelControl ProtectedLoop
+      | "Quit" -> VernacToplevelControl Quit
 
       (* Dump of the universe graph - to file or to stdout *) 
-      | IDENT "Dump"; IDENT "Universes"; f = stringarg ->
-	  <:ast< (DumpUniverses $f) >>
-      | IDENT "Dump"; IDENT "Universes" ->
-	  <:ast< (DumpUniverses) >>
+      | IDENT "Dump"; IDENT "Universes"; fopt = OPT STRING ->
+	  VernacPrint (PrintUniverses fopt)
 
-      | IDENT "Locate"; IDENT "File"; f = stringarg ->
-	  <:ast< (LocateFile $f) >>
-      | IDENT "Locate"; IDENT "Library"; id = qualidarg ->
-	  <:ast< (LocateLibrary $id) >>
-      | IDENT "Locate"; id = qualidarg ->
-	  <:ast< (Locate $id) >>
+      | IDENT "Locate"; qid = qualid -> VernacLocate (LocateTerm qid)
+      | IDENT "Locate"; IDENT "File"; f = STRING -> VernacLocate (LocateFile f)
+      | IDENT "Locate"; IDENT "Library"; qid = qualid ->
+	  VernacLocate (LocateLibrary  qid)
 
       (* Managing load paths *)
-      | IDENT "Add"; IDENT "LoadPath"; dir = stringarg; 
-	"as"; alias = qualidarg -> <:ast< (ADDPATH $dir $alias) >>
-      | IDENT "Add"; IDENT "LoadPath"; dir = stringarg ->
-	  <:ast< (ADDPATH $dir) >>
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg;
-	"as"; alias=qualidarg -> <:ast< (RECADDPATH $dir $alias) >>
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = stringarg ->
-         <:ast< (RECADDPATH $dir) >>
-      | IDENT "Remove"; IDENT "LoadPath"; dir = stringarg ->
-	  <:ast< (DELPATH $dir) >>
-      | IDENT "Print"; IDENT "LoadPath" -> <:ast< (PrintPath) >>
+      | IDENT "Add"; IDENT "LoadPath"; dir = STRING; alias = as_dirpath ->
+	  VernacAddLoadPath (false, dir, alias)
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = STRING; 
+	  alias = as_dirpath -> VernacAddLoadPath (true, dir, alias)
+      | IDENT "Remove"; IDENT "LoadPath"; dir = STRING ->
+	  VernacRemoveLoadPath dir
 
        (* For compatibility *)
-      | IDENT "AddPath"; dir = stringarg; "as"; alias = qualidarg ->
-         <:ast< (ADDPATH $dir $alias) >>
-      | IDENT "AddPath"; dir = stringarg -> <:ast< (ADDPATH $dir) >>
-      | IDENT "AddRecPath"; dir = stringarg; "as"; alias=qualidarg ->
-         <:ast< (RECADDPATH $dir $alias) >>
-      | IDENT "AddRecPath"; dir = stringarg ->
-         <:ast< (RECADDPATH $dir) >>
-      | IDENT "DelPath"; dir = stringarg -> <:ast< (DELPATH $dir) >>
+      | IDENT "AddPath"; dir = STRING; "as"; alias = as_dirpath ->
+	  VernacAddLoadPath (false, dir, alias)
+      | IDENT "AddRecPath"; dir = STRING; "as"; alias = as_dirpath ->
+	  VernacAddLoadPath (true, dir, alias)
+      | IDENT "DelPath"; dir = STRING ->
+	  VernacRemoveLoadPath dir
 
-      | IDENT "Print"; IDENT "Modules" -> <:ast< (PrintModules) >>
-      | IDENT "Print"; "Proof"; id = qualidarg ->
-          <:ast< (PrintOpaqueId $id) >>
-(* Pris en compte dans PrintOption ci-dessous (CADUC) *)
-      | IDENT "Print"; id = qualidarg -> <:ast< (PrintId $id) >>
-      | IDENT "Search"; id = qualidarg; l = in_or_out_modules ->
-	  <:ast< (SEARCH $id ($LIST $l)) >>
-      | IDENT "Inspect"; n = numarg -> <:ast< (INSPECT $n) >>
-      | IDENT "SearchPattern"; c = constrarg; l = in_or_out_modules ->
-	  <:ast< (SearchPattern $c ($LIST $l)) >>
-      | IDENT "SearchRewrite"; c = constrarg; l = in_or_out_modules ->
-	  <:ast< (SearchRewrite $c ($LIST $l)) >>
+      (* Printing (careful factorization of entries) *)
+      | IDENT "Print"; p = printable -> VernacPrint p
+      | IDENT "Print"; qid = qualid -> VernacPrint (PrintName qid)
+      | IDENT "Print" -> VernacPrint PrintLocalContext 
+      | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
+
+      (* Searching the environment *)
+      | IDENT "Search"; qid = Prim.qualid; l = in_or_out_modules -> 
+	  VernacSearch (SearchHead qid, l)
+      | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
+	  VernacSearch (SearchPattern c, l)
+      | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
+	  VernacSearch (SearchRewrite c, l)
+
       (* TODO: rapprocher Eval et Check *)
-      | IDENT "Eval"; r = Tactic.red_tactic; "in"; c = constrarg ->
-          <:ast< (Eval (TACTIC_ARG (REDEXP $r)) $c) >>
-      | IDENT "Eval"; g = numarg; r = Tactic.red_tactic;
-        "in"; c = constrarg ->
-          <:ast< (Eval (TACTIC_ARG (REDEXP $r)) $c $g) >>
-      | check = check_tok; c = constrarg -> <:ast< (Check $check $c) >>
-      | check = check_tok; g = numarg; c = constrarg ->
-          <:ast< (Check $check $c $g) >>
-      | IDENT "Print"; IDENT "ML"; IDENT "Path" ->
-          <:ast< (PrintMLPath) >>
-      | IDENT "Print"; IDENT "ML"; IDENT "Modules" ->
-          <:ast< (PrintMLModules) >>
-      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = stringarg ->
-          <:ast< (AddMLPath $dir) >>
-      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path";
-        dir = stringarg ->
-          <:ast< (RecAddMLPath $dir) >>
-      | IDENT "Print"; IDENT "Graph" -> <:ast< (PrintGRAPH) >>
-      | IDENT "Print"; IDENT "Classes" -> <:ast< (PrintCLASSES) >>
-      | IDENT "Print"; IDENT "Coercions" -> <:ast< (PrintCOERCIONS) >>
-      | IDENT "Print"; IDENT "Coercion"; IDENT "Paths";
-        c = qualidarg; d = qualidarg ->
-          <:ast< (PrintPATH $c $d) >>
+      | IDENT "Eval"; g = OPT natural; r = Tactic.red_tactic; "in";
+	  c = constr -> VernacCheckMayEval (Some r, g, c)
+      | IDENT "Check"; g = OPT natural; c = constr ->
+	  VernacCheckMayEval (None, g, c)
+      | "Type"; c = constr -> VernacGlobalCheck c      (* pas dans le RefMan *)
 
-      | IDENT "SearchIsos"; com = constrarg ->
-          <:ast< (Searchisos $com) >>
-      | "Set"; IDENT "Undo"; n = numarg ->
-          <:ast< (SETUNDO $n) >>
-      | IDENT "Unset"; IDENT "Undo" -> <:ast< (UNSETUNDO) >>
-      | "Set"; IDENT "Hyps_limit"; n = numarg ->
-          <:ast< (SETHYPSLIMIT $n) >>
-      | IDENT "Unset"; IDENT "Hyps_limit" ->
-          <:ast< (UNSETHYPSLIMIT) >>
+      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = STRING ->
+	  VernacAddMLPath (false, dir)
+      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = STRING ->
+	  VernacAddMLPath (true, dir)
+(*
+      | IDENT "SearchIsos"; c = constr -> VernacSearch (SearchIsos c)
+*)
 
       (* Pour intervenir sur les tables de paramètres *)
-      | "Set"; table = identarg; field = identarg;
-                      value = option_value ->
-          <:ast< (SetTableField $table $field $value) >>
-      | "Set"; table = identarg; field = identarg ->
-          <:ast< (SetTableField $table $field) >>
-      | IDENT "Unset"; table = identarg; field = identarg ->
-          <:ast< (UnsetTableField $table $field) >>
-      | IDENT "Unset"; table = identarg; field = identarg; id = qualidarg ->
-          <:ast< (RemoveTableField $table $field $id) >>
-      | "Set"; table = identarg; value = option_value ->
-          <:ast< (SetTableField $table $value) >>
-      | "Set"; table = identarg ->
-          <:ast< (SetTableField $table) >>
-      | IDENT "Unset"; table = identarg ->
-          <:ast< (UnsetTableField $table) >>
-      | IDENT "Print"; IDENT "Table";
-		      table = identarg; field = identarg ->
-          <:ast< (PrintOption $table $field) >>
-      (* Le cas suivant inclut aussi le "Print id" standard *)
-      | IDENT "Print"; IDENT "Table"; table = identarg ->
-          <:ast< (PrintOption $table) >>
-      | IDENT "Add"; table = identarg; field = identarg; id = qualidarg
-        -> <:ast< (AddTableField $table $field $id) >>
-      | IDENT "Add"; table = identarg; field = identarg; id = stringarg
-        -> <:ast< (AddTableField $table $field $id) >>
-      | IDENT "Add"; table = identarg; id = qualidarg
-        -> <:ast< (AddTableField $table $id) >>
-      | IDENT "Add"; table = identarg; id = stringarg
-        -> <:ast< (AddTableField $table $id) >>
-      | IDENT "Test"; table = identarg; field = identarg; id = qualidarg
-        -> <:ast< (MemTableField $table $field $id) >>
-      | IDENT "Test"; table = identarg; field = identarg; id = stringarg
-        -> <:ast< (MemTableField $table $field $id) >>
-      | IDENT "Test"; table = identarg; id = identarg
-        -> <:ast< (MemTableField $table $id) >>
-      | IDENT "Test"; table = identarg; id = qualidarg
-        -> <:ast< (MemTableField $table $id) >>
-      | IDENT "Test"; table = identarg; id = stringarg
-        -> <:ast< (MemTableField $table $id) >>
-      | IDENT "Test"; table = identarg
-        -> <:ast< (MemTableField $table) >>
-      | IDENT "Remove"; table = identarg; field = identarg; id = qualidarg ->
-          <:ast< (RemoveTableField $table $field $id) >>
-      | IDENT "Remove"; table = identarg; field = identarg; id = stringarg ->
-          <:ast< (RemoveTableField $table $field $id) >>
-      | IDENT "Remove"; table = identarg; id = qualidarg ->
-          <:ast< (RemoveTableField $table $id) >>
-      | IDENT "Remove"; table = identarg; id = stringarg ->
-          <:ast< (RemoveTableField $table $id) >> ] ]
+
+      | "Set"; table = IDENT; field = IDENT; v = option_value ->
+  	  VernacSetOption (SecondaryTable (table,field),v)
+      | "Set"; table = IDENT; field = IDENT; lv = LIST1 option_ref_value ->
+  	  VernacAddOption (SecondaryTable (table,field),lv)
+      | "Set"; table = IDENT; field = IDENT ->
+  	  VernacSetOption (SecondaryTable (table,field),BoolValue true)
+      | IDENT "Unset"; table = IDENT; field = IDENT ->
+  	  VernacUnsetOption (SecondaryTable (table,field))
+      | IDENT "Unset"; table = IDENT; field = IDENT; lv = LIST1 option_ref_value ->
+  	  VernacRemoveOption (SecondaryTable (table,field),lv)
+      | "Set"; table = IDENT; value = option_value ->
+  	  VernacSetOption (PrimaryTable table, value)
+      | "Set"; table = IDENT ->
+  	  VernacSetOption (PrimaryTable table, BoolValue true)
+      | IDENT "Unset"; table = IDENT ->
+  	  VernacUnsetOption (PrimaryTable table)
+
+      | IDENT "Print"; IDENT "Table"; table = IDENT; field = IDENT ->
+	  VernacPrintOption (SecondaryTable (table,field))
+      | IDENT "Print"; IDENT "Table"; table = IDENT ->
+	  VernacPrintOption (PrimaryTable table)
+
+      | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
+        -> VernacAddOption (SecondaryTable (table,field), v)
+
+      (* Un value qualid ci-dessous va être caché par un field au dessus! *)
+      | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
+          VernacAddOption (PrimaryTable table, v)
+
+      | IDENT "Test"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
+        -> VernacMemOption (SecondaryTable (table,field), v)
+      | IDENT "Test"; table = IDENT; field = IDENT ->
+          VernacPrintOption (SecondaryTable (table,field))
+      | IDENT "Test"; table = IDENT; v = LIST1 option_ref_value ->
+          VernacMemOption (PrimaryTable table, v)
+      | IDENT "Test"; table = IDENT ->
+          VernacPrintOption (PrimaryTable table)
+
+      | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 option_ref_value
+        -> VernacRemoveOption (SecondaryTable (table,field), v)
+      | IDENT "Remove"; table = IDENT; v = LIST1 option_ref_value ->
+	  VernacRemoveOption (PrimaryTable table, v) ] ]
+  ;
+  printable:
+    [ [ IDENT "All" -> PrintFullContext
+      | IDENT "Section"; s = qualid -> PrintSectionContext s
+      | "Grammar"; uni = IDENT; ent = IDENT ->
+          (* This should be in "syntax" section but is here for factorization*)
+	  PrintGrammar uni ent
+      | IDENT "LoadPath" -> PrintLoadPath
+      | IDENT "Modules" -> PrintModules
+
+      | IDENT "ML"; IDENT "Path" -> PrintMLLoadPath
+      | IDENT "ML"; IDENT "Modules" -> PrintMLModules
+      | IDENT "Graph" -> PrintGraph
+      | IDENT "Classes" ->  PrintClasses
+      | IDENT "Coercions" -> PrintCoercions
+      | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
+         -> PrintCoercionPaths (s,t)
+      | IDENT "Tables" -> PrintTables
+      | "Proof"; qid = qualid -> PrintOpaqueName qid
+      | IDENT "Hint" -> PrintHintGoal
+      | IDENT "Hint"; qid = qualid -> PrintHint qid
+      | IDENT "Hint"; "*" -> PrintHintDb
+      | IDENT "HintDb"; s = IDENT  -> PrintHintDbName s ] ]
   ;
   option_value:
-    [ [ id = qualidarg    -> id
-      | n  = numarg      -> n
-      | s  = stringarg   -> s ] ]
+    [ [ n  = integer   -> IntValue n
+      | s  = STRING    -> StringValue s ] ]
   ;
-  check_tok:
-    [ [ IDENT "Check" -> <:ast< "CHECK" >>
-      | "Type" -> <:ast< "PRINTTYPE" >> ] ] (* pas dans le RefMan *)
+  option_ref_value:
+    [ [ id = qualid   -> QualidRefValue id
+      | s  = STRING   -> StringRefValue s ] ]
+  ;
+  as_dirpath:
+    [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]
   ;
   in_or_out_modules:
-    [ [ IDENT "inside"; l = ne_qualidarg_list -> <:ast< "inside" >> :: l
-      | IDENT "outside"; l = ne_qualidarg_list -> <:ast< "outside" >> :: l
-      | -> [] ] ]
+    [ [ IDENT "inside"; l = LIST1 qualid -> SearchInside l
+      | IDENT "outside"; l = LIST1 qualid -> SearchOutside l
+      | -> SearchOutside [] ] ]
   ;
 END;
 
 (* Grammar extensions *)
 	  
 GEXTEND Gram
-  GLOBAL: syntax Prim.syntax_entry Prim.grammar_entry;
+  GLOBAL: syntax;
 
   univ:
   [ [ univ = IDENT ->
-	let _ = set_default_action_parser_by_name univ in univ ] ]
+        set_default_action_parser (parser_type_from_name univ); univ ] ]
   ;
   syntax:
-   [ [ IDENT "Token"; s = STRING -> <:ast< (TOKEN ($STR $s)) >>
+   [ [ IDENT "Token"; s = STRING ->
+       Pp.warning "Token declarations are now useless"; VernacNop
 
-     | "Grammar"; univ = univ;
-       tl = LIST1 Prim.grammar_entry SEP "with" ->
-         <:ast< (GRAMMAR { $univ } (ASTLIST ($LIST $tl))) >>
+     | "Grammar"; IDENT "tactic"; IDENT "simple_tactic"; ":=";
+        OPT "|"; tl = LIST0 grammar_tactic_rule SEP "|" -> 
+	  VernacTacticGrammar tl
 
-     | "Syntax"; univ = univ; el=LIST1 Prim.syntax_entry SEP ";" ->
-         <:ast< (SYNTAX { $univ } (ASTLIST ($LIST $el))) >>
+     | "Grammar"; u = univ;
+         tl = LIST1 grammar_entry SEP "with" -> VernacGrammar (u,tl)
+
+     | "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
+         VernacSyntax (u,el)
 
      (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
-     | IDENT "Infix"; as_ = entry_prec; n = numarg; op = Prim.string;
-       p = qualidarg -> <:ast< (INFIX (AST $as_) $n $op $p) >>
-     | IDENT "Distfix"; as_ = entry_prec; n = numarg; s = Prim.string;
-       p = qualidarg -> <:ast< (DISTFIX (AST $as_) $n $s $p) >>
+     | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = qualid
+        -> VernacInfix (a,n,op,p)
+     | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = qualid        -> VernacDistfix (a,n,s,p)
+
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
   ;
-
   (* Syntax entries for Grammar. Only grammar_entry is exported *)
-  Prim.grammar_entry:
-    [[ nont = Prim.ident; etyp = Prim.entry_type; ":=";
+  grammar_entry:
+    [[ nont = located_ident; etyp = set_entry_type; ":=";
        ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
-         <:ast< (GRAMMARENTRY $nont $etyp $ep ($LIST $rl)) >> ]]
+	 (nont,etyp,ep,rl) ]]
+  ;
+  located_ident:
+    [[ id = IDENT -> (loc,id) ]]
   ;
   entry_prec:
-    [[ IDENT "LEFTA" -> <:ast< (LEFTA) >>
-     | IDENT "RIGHTA" -> <:ast< (RIGHTA) >>
-     | IDENT "NONA" -> <:ast< (NONA) >>
-     | ->  <:ast< (NONE) >> ] ]
+    [[ IDENT "LEFTA" -> Some Gramext.LeftA
+     | IDENT "RIGHTA" -> Some Gramext.RightA
+     | IDENT "NONA" -> Some Gramext.NonA
+     | ->  None ]]
+  ;
+  grammar_tactic_rule:
+    [[ name = rule_name; "["; s = STRING; pil = LIST0 production_item; "]";
+       "->"; "["; t = Tactic.tactic; "]"  -> (name, (s,pil), t) ]]
   ;
   grammar_rule:
     [[ name = rule_name; "["; pil = LIST0 production_item; "]"; "->";
-       a = Prim.astact ->
-        <:ast< (GRAMMARRULE ($ID $name) $a ($LIST $pil)) >> ]]
+       a = action -> (name, pil, a) ]]
   ;
   rule_name:
     [[ name = IDENT -> name ]]
   ;
   production_item:
-    [[ s = STRING -> <:ast< ($STR $s) >>
+    [[ s = STRING -> VTerm s
      | nt = non_terminal; po = OPT [ "("; p = Prim.metaident; ")" -> p ] ->
          match po with
-           | Some p -> <:ast< (NT $nt $p) >>
-           | _ -> <:ast< (NT $nt) >> ]]
+           | Some p -> VNonTerm (loc,nt,Some (Ast.meta_of_ast p))
+           | _ -> VNonTerm (loc,nt,None) ]]
   ;
   non_terminal:
-    [[ u = Prim.ident; ":"; nt = Prim.ident -> <:ast< (QUAL $u $nt) >>
-     | nt = Prim.ident -> <:ast< $nt >> ]]
+    [[ u = IDENT; ":"; nt = IDENT -> NtQual(u, nt)
+     | nt = IDENT -> NtShort nt ]]
   ;
 
 
   (* Syntax entries for Syntax. Only syntax_entry is exported *)
-  Prim.syntax_entry:
+  syntax_entry:
     [ [ IDENT "level"; p = precedence; ":";
-	OPT "|"; rl = LIST1 syntax_rule SEP "|" ->
-          <:ast< (SYNTAXENTRY $p ($LIST $rl)) >> ] ]
+	OPT "|"; rl = LIST1 syntax_rule SEP "|" -> (p,rl) ] ]
   ;
   syntax_rule:
-    [ [ nm = IDENT; "["; s = Prim.astpat; "]"; "->"; u = unparsing ->
-          <:ast< (SYNTAXRULE ($ID $nm) $s $u) >> ] ]
+    [ [ nm = IDENT; "["; s = astpat; "]"; "->"; u = unparsing -> (nm,s,u) ] ]
   ;
   precedence:
-    [ [ a = Prim.number ->  <:ast< (PREC $a 0 0) >>
-      | "["; a1 = Prim.number; a2 = Prim.number; a3 = Prim.number; "]" ->
-          <:ast< (PREC $a1 $a2 $a3) >> ] ]
+    [ [ a = natural -> (a,0,0)
+      | "["; a1 = natural; a2 = natural; a3 = natural; "]" -> (a1,a2,a3) ] ]
   ;
   unparsing:
-    [ [ "["; ll = LIST0 next_hunks; "]" -> <:ast< (UNPARSING ($LIST $ll))>> ] ]
+    [ [ "["; ll = LIST0 next_hunks; "]" -> ll ] ]
   ;
   next_hunks:
-    [ [ IDENT "FNL" -> <:ast< (UNP_FNL) >>
-      | IDENT "TAB" -> <:ast< (UNP_TAB) >>
-      | c = STRING -> <:ast< (RO ($STR $c)) >>
+    [ [ IDENT "FNL" -> UNP_FNL
+      | IDENT "TAB" -> UNP_TAB
+      | c = STRING -> RO c
       | "[";
         x =
-          [ b = box; ll = LIST0 next_hunks -> <:ast<(UNP_BOX $b ($LIST $ll))>>
-          | n = Prim.number; m = Prim.number -> <:ast< (UNP_BRK $n $m) >>
-          | IDENT "TBRK";
-            n = Prim.number; m = Prim.number -> <:ast< (UNP_TBRK $n $m) >> ];
+          [ b = box; ll = LIST0 next_hunks -> UNP_BOX (b,ll)
+          | n = natural; m = natural -> UNP_BRK (n, m)
+          | IDENT "TBRK"; n = natural; m = natural -> UNP_TBRK (n, m) ];
         "]" -> x
       | e = Prim.ast; oprec = OPT [ ":"; pr = paren_reln_or_extern -> pr ] ->
           match oprec with
-	    | Some pr -> <:ast< (PH $e $pr) >>
-            | None -> <:ast< (PH $e (Any)) >> ]]
+	    | Some (ext,pr) -> PH (e,ext,pr)
+            | None -> PH (e,None,Any) ]]
   ;
   box:
     [ [ "<"; bk = box_kind; ">" -> bk ] ]
   ;
   box_kind:
-    [ [ IDENT "h"; n = Prim.number -> <:ast< (PpHB $n) >>
-      | IDENT "v"; n = Prim.number -> <:ast< (PpVB $n) >>
-      | IDENT "hv"; n = Prim.number -> <:ast< (PpHVB $n) >>
-      | IDENT "hov"; n = Prim.number -> <:ast< (PpHOVB $n) >>
-      | IDENT "t" -> <:ast< (PpTB) >> ] ]
+    [ [ IDENT "h"; n = natural -> PpHB n
+      | IDENT "v"; n = natural -> PpVB n
+      | IDENT "hv"; n = natural -> PpHVB n
+      | IDENT "hov"; n = natural -> PpHOVB n
+      | IDENT "t" -> PpTB ] ]
   ;
   paren_reln_or_extern:
-    [ [ IDENT "L" -> <:ast< (L) >>
-      | IDENT "E" -> <:ast< (E) >>
+    [ [ IDENT "L" -> None, L
+      | IDENT "E" -> None, E
       | pprim = STRING; precrec = OPT [ ":"; p = precedence -> p ] ->
 	  match precrec with
-	    | Some p -> <:ast< (EXTERN ($STR $pprim) $p) >>
-            | None -> <:ast< (EXTERN ($STR $pprim)) >> ] ]
+	    | Some p -> Some pprim, Prec p
+            | None -> Some pprim, Any ] ]
+  ;
+  (* meta-syntax entries *)
+  astpat:
+    [ [ "<<" ; a = Prim.ast; ">>" -> a
+      | a = default_action_parser -> 
+	  match a with
+	    | Ast.PureAstNode a -> a
+	    | _ -> failwith "Cannot deal with non pure ast expression" ] ]
+  ; 
+  action:
+    [ [ IDENT "let"; p = Prim.astlist; et = set_internal_entry_type;
+        "="; e1 = action; "in"; e = action -> Ast.CaseAction (loc,e1,et,[p,e])
+      | IDENT "case"; a = action; et = set_internal_entry_type; "of";
+        cl = LIST1 case SEP "|"; IDENT "esac" -> Ast.CaseAction (loc,a,et,cl)
+      | "["; a = default_action_parser; "]" -> Ast.SimpleAction (loc,a) ] ]
+  ;
+  case:
+    [[ p = Prim.astlist; "->"; a = action -> (p,a) ]]
+  ;
+  set_internal_entry_type:
+    [[ ":"; IDENT "ast"; IDENT "list" -> Ast.ETastl
+     | [ ":"; IDENT "ast" -> () | -> () ] -> Ast.ETast ]]
+  ;
+  set_entry_type:
+    [[ ":"; et = entry_type -> set_default_action_parser et; entry_type_of_parser et
+     | -> None ]]
+  ;
+  entry_type:
+    [[ IDENT "ast"; IDENT "list" -> AstListParser
+     | IDENT "ast" -> AstParser
+     | IDENT "constr" -> ConstrParser
+     | IDENT "tactic" -> TacticParser
+     | IDENT "vernac" -> VernacParser ]]
   ;
 END

@@ -5,6 +5,9 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
+
+(*i $Id$ *)
+
 (*i*)
 open Environ
 open Evd
@@ -12,25 +15,17 @@ open Names
 open Libnames
 open Term
 open Util
+open Tacexpr
+open Rawterm
+open Genarg
 (*i*)
 
 (* This module defines the structure of proof tree and the tactic type. So, it
    is used by Proof_tree and Refiner *)
 
-type bindOcc = 
-  | Dep of identifier
-  | NoDep of int
-  | Com
-
-type 'a substitution = (bindOcc * 'a) list
-
 type pf_status =
   | Complete_proof
   | Incomplete_proof
-
-type hyp_location = (* To distinguish body and type of local defs *)
-  | InHyp of identifier
-  | InHypType of identifier
 
 type prim_rule =
   | Intro of identifier
@@ -62,12 +57,11 @@ type 'a sigma = {
 type proof_tree = {
   status : pf_status;
   goal : goal;
-  ref : (rule * proof_tree list) option; 
-  subproof : proof_tree option }
+  ref : (rule * proof_tree list) option }
 
 and rule =
   | Prim of prim_rule
-  | Tactic of tactic_expression
+  | Tactic of tactic_expr * proof_tree
   | Change_evars
 
 and goal = evar_info
@@ -76,31 +70,35 @@ and tactic = goal sigma -> (goal list sigma * validation)
 
 and validation = (proof_tree list -> proof_tree)
 
+and tactic_expr =
+  (constr,
+   Closure.evaluable_global_reference,
+   inductive or_metanum,
+   identifier)
+     Tacexpr.gen_tactic_expr
+
+and atomic_tactic_expr =
+  (constr,
+   Closure.evaluable_global_reference,
+   inductive or_metanum,
+   identifier)
+     Tacexpr.gen_atomic_tactic_expr
+
 and tactic_arg =
-  | Command        of Coqast.t
-  | Constr         of constr
-  | OpenConstr     of Pretyping.open_constr
-  | Constr_context of constr
-  | Identifier     of identifier
-  | Qualid         of qualid
-  | Integer        of int
-  | Clause         of hyp_location list
-  | Bindings       of Coqast.t substitution
-  | Cbindings      of constr   substitution 
-  | Quoted_string  of string
-  | Tacexp         of Coqast.t
-  | Tac            of tactic * Coqast.t
-  | Redexp         of Tacred.red_expr
-  | Fixexp         of identifier * int * Coqast.t
-  | Cofixexp       of identifier * Coqast.t
-  | Letpatterns    of (int list option * (identifier * int list) list)
-  | Intropattern   of intro_pattern
+  (constr,
+   Closure.evaluable_global_reference,
+   inductive or_metanum,
+   identifier)
+     Tacexpr.gen_tactic_arg
 
-and intro_pattern =
-  | WildPat
-  | IdPat   of identifier
-  | DisjPat of intro_pattern list
-  | ConjPat of intro_pattern list
-  | ListPat of intro_pattern list  
+type hyp_location = identifier Tacexpr.raw_hyp_location
 
-and tactic_expression = string * tactic_arg list
+type open_generic_argument =
+    (constr,raw_tactic_expr) generic_argument
+type closed_generic_argument =
+    (constr,raw_tactic_expr) generic_argument
+
+type 'a closed_abstract_argument_type =
+    ('a,constr,raw_tactic_expr) abstract_argument_type
+
+type declaration_hook = Nametab.strength -> global_reference -> unit

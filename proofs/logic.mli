@@ -55,7 +55,6 @@ type refiner_error =
   (*i Errors raised by the tactics i*)
   | CannotUnify of constr * constr
   | CannotGeneralize of constr
-  | BadTacticArgs of string * tactic_arg list
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * identifier
 

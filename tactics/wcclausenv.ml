@@ -18,6 +18,7 @@ open Sign
 open Reductionops
 open Environ
 open Logic
+open Refiner
 open Tacmach
 open Evd
 open Proof_trees
@@ -99,10 +100,12 @@ let clenv_constrain_with_bindings bl clause =
     matchrec clause bl
 
 (* What follows is part of the contents of the former file tactics3.ml *)
-    
+(* 2/2002: replaced THEN_i by THENSLAST to solve a bug in
+   Tacticals.general_elim when the eliminator has missing bindings *)
+
 let elim_res_pf_THEN_i kONT clenv tac gls =  
   let clenv' = (clenv_unique_resolver true clenv gls) in
-  tclTHEN_i (clenv_refine kONT clenv') (tac clenv') gls
+  tclTHENLASTn (clenv_refine kONT clenv') (tac clenv') gls
 
 let rec build_args acc ce p_0 p_1 =
   match kind_of_term p_0, p_1 with 

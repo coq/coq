@@ -22,6 +22,7 @@ open Type_errors
 open Proof_trees
 open Proof_type
 open Logic
+open Printer
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
@@ -98,7 +99,6 @@ let rec frontier p =
          (fun retpfl ->
             let pfl' = mapshape (List.map List.length gll) vl retpfl in
             { status = and_status (List.map pf_status pfl');
-              subproof = p.subproof;
               goal = p.goal;
               ref = Some(r,pfl')}))
 
@@ -120,7 +120,6 @@ let rec nb_unsolved_goals pf =
 
 let leaf g = {
   status = Incomplete_proof;
-  subproof = None;
   goal = g;
   ref = None }
 
@@ -130,8 +129,8 @@ let tac_tab = Hashtbl.create 17
 
 let add_tactic s t =
   if Hashtbl.mem tac_tab s then
-    errorlabstrm ("Refiner.add_tactic: "^s) 
-      (str "Cannot redeclare a tactic.");
+    errorlabstrm ("Refiner.add_tactic: ") 
+      (str ("Cannot redeclare tactic "^s));
   Hashtbl.add tac_tab s t
 
 let overwriting_add_tactic s t =
@@ -158,6 +157,16 @@ let check_subproof_connection gl spfl =
   if not (list_for_all2eq (fun g pf -> g=pf.goal) gl spfl)
   then (bad_subproof (); false) else true
 
+let abstract_tactic_expr te tacfun gls =
+  let (sgl_sigma,v) = tacfun gls in
+  let hidden_proof = v (List.map leaf sgl_sigma.it) in
+  (sgl_sigma,
+   fun spfl ->
+     assert (check_subproof_connection sgl_sigma.it spfl);
+     { status = and_status (List.map pf_status spfl);
+       goal = gls.it;
+       ref = Some(Tactic(te,hidden_proof),spfl) })
+
 let refiner = function
   | Prim pr as r ->
       let prim_fun = prim_refiner pr in
@@ -168,21 +177,9 @@ let refiner = function
 	     assert (check_subproof_connection sgl spfl);
              { status = and_status (List.map pf_status spfl);
                goal = goal_sigma.it;
-               subproof = None;
                ref = Some(r,spfl) })))
-      
-  | Tactic(s,targs) as r ->
-      let tacfun = lookup_tactic s targs in
-      (fun goal_sigma ->
-         let (sgl_sigma,v) = tacfun goal_sigma in
-         let hidden_proof = v (List.map leaf sgl_sigma.it) in
-         (sgl_sigma,
-          fun spfl ->
-	    assert (check_subproof_connection sgl_sigma.it spfl);
-            { status = and_status (List.map pf_status spfl);
-              goal = goal_sigma.it;
-              subproof = Some hidden_proof;
-              ref = Some(r,spfl) }))
+
+  | Tactic _ -> failwith "Refiner: should not occur"
       
    (* [Local_constraints lc] makes the local constraints be [lc] and
       normalizes evars *)
@@ -197,7 +194,6 @@ let refiner = function
 	          assert (check_subproof_connection [ngl] spfl);
                   { status = (List.hd spfl).status;
                     goal = gl;
-                    subproof = None;
                     ref = Some(r,spfl) }))
            (* if the evar change does not affect the goal, leave the
               proof tree unchanged *)
@@ -206,8 +202,21 @@ let refiner = function
                         assert (List.length spfl = 1);
                         List.hd spfl))))
 
-let vernac_tactic texp = refiner (Tactic texp)
 let norm_evar_tac gl = refiner Change_evars gl
+
+(*
+let vernac_tactic (s,args) =
+  let tacfun = lookup_tactic s args in
+  abstract_extra_tactic s args tacfun
+*)
+let abstract_tactic te = abstract_tactic_expr (Tacexpr.TacAtom (dummy_loc,te))
+
+let abstract_extended_tactic s args = 
+  abstract_tactic (Tacexpr.TacExtend (s, args))
+
+let vernac_tactic (s,args) =
+  let tacfun = lookup_tactic s args in
+  abstract_extended_tactic s args tacfun
 
 (* [rc_of_pfsigma : proof sigma -> readable_constraints] *)
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
@@ -228,7 +237,7 @@ let extract_open_proof sigma pf =
   let rec proof_extractor vl = function
     | {ref=Some(Prim _,_)} as pf -> prim_extractor proof_extractor vl pf
 	  
-    | {ref=Some(Tactic _,spfl); subproof=Some hidden_proof} ->
+    | {ref=Some(Tactic (_,hidden_proof),spfl)} ->
 	let sgl,v = frontier hidden_proof in
 	let flat_proof = v spfl in
 	proof_extractor vl flat_proof
@@ -304,20 +313,37 @@ let start_tac gls =
 
 let finish_tac (sigr,gl,p) = (repackage sigr gl, p)
 
-let thens_tac tac2l taci (sigr,gs,p) =
-  let (gl,gi) =
-    try list_chop (List.length tac2l) gs
-    with Failure _ -> errorlabstrm "Refiner.combine_tactics"
-        (str "Wrong number of tactics.") in
-  let tac2gl =
-    List.combine gl tac2l @ list_map_i (fun i g -> (g, taci i)) 1 gi in
+(* Apply [taci.(i)] on the first n-th subgoals and [tac] on the others *)
+let thensf_tac taci tac (sigr,gs,p) =
+  let n = Array.length taci in
+  let nsg = List.length gs in
+  if nsg<n then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
   let gll,pl =
-    List.split(List.map (fun (g,tac2) -> apply_sig_tac sigr tac2 g) tac2gl) in
+    List.split
+      (list_map_i (fun i -> apply_sig_tac sigr (if i<n then taci.(i) else tac))
+	0 gs) in
   (sigr, List.flatten gll,
    compose p (mapshape (List.map List.length gll) pl))
 
-let then_tac tac = thens_tac [] (fun _ -> tac)
+(* Apply [taci.(i)] on the last n-th subgoals and [tac] on the others *)
+let thensl_tac tac taci (sigr,gs,p) =
+  let n = Array.length taci in
+  let nsg = List.length gs in
+  if nsg<n then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
+  let gll,pl =
+    List.split
+      (list_map_i (fun i -> apply_sig_tac sigr (if i<0 then tac else taci.(i)))
+	(n-nsg) gs) in
+  (sigr, List.flatten gll,
+   compose p (mapshape (List.map List.length gll) pl))
 
+(* Apply [tac i] on the ith subgoal (no subgoals number check) *)
+let thensi_tac tac (sigr,gs,p) =
+  let gll,pl =
+    List.split (list_map_i (fun i -> apply_sig_tac sigr (tac i)) 1 gs) in
+  (sigr, List.flatten gll, compose p (mapshape (List.map List.length gll) pl))
+
+let then_tac tac = thensf_tac [||] tac
 
 let non_existent_goal n =
   errorlabstrm ("No such goal: "^(string_of_int n))
@@ -330,42 +356,53 @@ let theni_tac i tac ((_,gl,_) as subgoals) =
   let k = if i < 0 then nsg + i + 1 else i in
   if nsg < 1 then errorlabstrm "theni_tac" (str"No more subgoals.")
   else if k >= 1 & k <= nsg then
-    thens_tac [] (fun i -> if i = k then tac else tclIDTAC) subgoals
+    thensf_tac
+      (Array.init k (fun i -> if i+1 = k then tac else tclIDTAC)) tclIDTAC
+      subgoals
   else non_existent_goal k 
 
-(* [tclTHENSi tac1 [t1 ; ... ; tn] taci gls] applies the tactic [tac1]
+(* [tclTHENSFIRSTn tac1 [|t1 ; ... ; tn|] tac2 gls] applies the tactic [tac1]
    to [gls] and applies [t1], ..., [tn] to the [n] first resulting
-   subgoals, and [(taci i)] to the (i+n)-th goal. Raises an error if
-   the number of resulting subgoals is less than [n] *)
-let tclTHENSi tac1 tac2l taci gls =
-  finish_tac (thens_tac tac2l taci (then_tac tac1 (start_tac gls)))
+   subgoals, and [tac2] to the others subgoals. Raises an error if
+   the number of resulting subgoals is strictly less than [n] *)
+let tclTHENSFIRSTn tac1 taci tac gls =
+  finish_tac (thensf_tac taci tac (then_tac tac1 (start_tac gls)))
 
+(* [tclTHENSLASTn tac1 tac2 [|t1 ;...; tn|] gls] applies the tactic [tac1]
+   to [gls] and applies [t1], ..., [tn] to the [n] last resulting
+   subgoals, and [tac2] to the other subgoals. Raises an error if the
+   number of resulting subgoals is strictly less than [n] *)
+let tclTHENSLASTn tac1 tac taci gls =
+  finish_tac (thensl_tac tac taci (then_tac tac1 (start_tac gls)))
+
+(* [tclTHEN_i tac taci gls] applies the tactic [tac] to [gls] and applies
+   [(taci i)] to the i_th resulting subgoal (starting from 1), whatever the
+   number of subgoals is *)
+let tclTHEN_i tac taci gls =
+  finish_tac (thensi_tac taci (then_tac tac (start_tac gls)))
+
+let tclTHENLASTn tac1 taci = tclTHENSLASTn tac1 tclIDTAC taci
+let tclTHENFIRSTn tac1 taci = tclTHENSFIRSTn tac1 taci tclIDTAC
 
 (* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)
-let tclTHEN tac1 tac2 = tclTHENSi tac1 [] (fun _ -> tac2)
+let tclTHEN tac1 tac2 = tclTHENSFIRSTn tac1 [||] tac2
 
-(* [tclTHEN_i tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
-   [(tac2 i)] to the i_th resulting subgoal (starting from 1) *)
-let tclTHEN_i tac1 tac2 = tclTHENSi tac1 [] tac2
-
-(* [tclTHENS tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
+(* [tclTHENSV tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
    [gls] and applies [t1],..., [tn] to the [n] resulting subgoals. Raises
    an error if the number of resulting subgoals is not [n] *)
-let tclTHENS tac1 tac2l =
-  tclTHENSi tac1 tac2l (fun _ -> tclFAIL_s "Wrong number of tactics.")
+let tclTHENSV tac1 tac2v =
+  tclTHENSFIRSTn tac1 tac2v (tclFAIL_s "Wrong number of tactics.")
 
-(* Same as [tclTHENS] but completes with [tac3] if the number resulting 
-   subgoals is strictly less than [n] *)
-let tclTHENST tac1 tac2l tac3 = tclTHENSi tac1 tac2l (fun _ -> tac3)
+let tclTHENS tac1 tac2l = tclTHENSV tac1 (Array.of_list tac2l)
 
-(* Same as tclTHENST but completes with [Idtac] *)
-let tclTHENSI tac1 tac2l = tclTHENST tac1 tac2l tclIDTAC
-
-(* [tclTHENL tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
+(* [tclTHENLAST tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
    to the last resulting subgoal *)
-let tclTHENL (tac1 : tactic) (tac2 : tactic) (gls : goal sigma) =
-  finish_tac (theni_tac (-1) tac2 (then_tac tac1 (start_tac gls)))
+let tclTHENLAST tac1 tac2 = tclTHENSLASTn tac1 tclIDTAC [|tac2|]
+
+(* [tclTHENFIRST tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
+   to the first resulting subgoal *)
+let tclTHENFIRST tac1 tac2 = tclTHENSFIRSTn tac1 [|tac2|] tclIDTAC
 
 
 (* [tclTHENLIST [t1;..;tn]] applies [t1] then [t2] ... then [tn]. More
@@ -473,7 +510,7 @@ let rec tclREPEAT t g =
 
 let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
-(* Repeat on the first subgoal *)
+(* Repeat on the first subgoal (no failure if no more subgoal) *)
 let rec tclREPEAT_MAIN t g =
   (tclORELSE (tclTHEN_i t (fun i -> if i = 1 then (tclREPEAT_MAIN t) else
     tclIDTAC)) tclIDTAC) g
@@ -590,7 +627,6 @@ let descend n p =
                        let newstatus = and_status (List.map pf_status spfl) in
                        { status   = newstatus;
 			 goal     = p.goal;
-			 subproof = p.subproof;
 			 ref      = Some(r,spfl) }
                      else 
 		       error "descend: validation"))
@@ -607,13 +643,13 @@ let traverse n pts = match n with
 	       tstack = tl;
 	       tpfsigma = pts.tpfsigma })
   | -1 -> (* go to the hidden tactic-proof, if any, otherwise fail *)
-      (match pts.tpf.subproof with
-	 | None -> error "traverse: not a tactic-node"
-	 | Some spf ->
+      (match pts.tpf.ref with
+	 | Some (Tactic (_,spf),_) ->
 	     let v = (fun pfl -> pts.tpf) in 
 	     { tpf = spf;
                tstack = (-1,v)::pts.tstack;
-               tpfsigma = pts.tpfsigma })
+               tpfsigma = pts.tpfsigma }
+	 | _ -> error "traverse: not a tactic-node")
   | n -> (* when n>0, go to the nth child *)
       let (npf,v) = descend n pts.tpf in 
       { tpf = npf;
@@ -782,14 +818,15 @@ let rec top_of_tree pts =
 (* Pretty-printers. *)
 
 open Pp
-open Printer
 
-let pr_tactic (s,l) =
-  gentacpr (Ast.ope (s,(List.map ast_of_cvt_arg l)))
+let pr_tactic = function
+  | Tacexpr.TacArg (Tacexpr.Tacexp t) ->
+      Pptactic.pr_raw_tactic t (*top tactic from tacinterp*)
+  | t -> Pptactic.pr_tactic t
 
 let pr_rule = function
   | Prim r -> pr_prim_rule r
-  | Tactic texp -> hov 0 (pr_tactic texp)
+  | Tactic (texp,_) -> hov 0 (pr_tactic texp)
   | Change_evars ->
       (* This is internal tactic and cannot be replayed at user-level.
          Function pr_rule_dot below is used when we want to hide
@@ -798,8 +835,8 @@ let pr_rule = function
 
 (* Does not print change of evars *)
 let pr_rule_dot = function 
-  | Change_evars -> (mt ())
-  | r -> (pr_rule r ++ str"." ++ fnl ()) 
+  | Change_evars -> mt ()
+  | r -> pr_rule r ++ str"." ++ fnl ()
 
 exception Different
 

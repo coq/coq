@@ -9,31 +9,29 @@
 (*i $Id$ i*)
 
 (*i*)
+
 open Pp
-open Pcoq
-(*i*)
+open Ast
+open Coqast
 
-(* Parsing. *)
-
-type nonterm =
-  | NtShort of string
-  | NtQual of string * string
-
-val qualified_nterm : (string * gram_universe) -> nonterm ->
-  (string * gram_universe) * string
+type nonterm_prod =
+  | ProdList0 of nonterm_prod
+  | ProdList1 of nonterm_prod
+  | ProdOpt of nonterm_prod
+  | ProdPrimitive of (string * string)
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of nonterm * entry_type * string option
+  | NonTerm of nonterm_prod * (string * ast_action_type) option
 
-type grammar_rule = { 
+type grammar_rule = {
   gr_name : string; 
   gr_production : prod_item list; 
   gr_action : Ast.act }
 
 type grammar_entry = { 
   ge_name : string;
-  ge_type : entry_type;
+  ge_type : ast_action_type;
   gl_assoc : Gramext.g_assoc option;
   gl_rules : grammar_rule list }
 
@@ -41,17 +39,48 @@ type grammar_command = {
   gc_univ : string; 
   gc_entries : grammar_entry list }
 
-val gram_assoc : Coqast.t -> Gramext.g_assoc option
+type grammar_associativity = Gramext.g_assoc option
+type nonterm =
+  | NtShort of string
+  | NtQual of string * string
+type grammar_production =
+  | VTerm of string
+  | VNonTerm of loc * nonterm * string option
+type raw_grammar_rule = string * grammar_production list * grammar_action
+type raw_grammar_entry = 
+  string * ast_action_type * grammar_associativity * raw_grammar_rule list
 
-val interp_grammar_command : string -> Coqast.t list -> grammar_command
+val terminal : string -> string * string
 
+val rename_command : string -> string
 
 (*s Pretty-print. *)
 
 (* Dealing with precedences *)
 
 type precedence = int * int * int
+
 type parenRelation = L | E | Any | Prec of precedence
+
+type ppbox =
+  | PpHB of int
+  | PpHOVB of int
+  | PpHVB of int
+  | PpVB of int
+  | PpTB
+
+(* unparsing objects *)
+
+type 'pat unparsing_hunk = 
+  | PH of 'pat * string option * parenRelation
+  | RO of string
+  | UNP_BOX of ppbox * 'pat unparsing_hunk list
+  | UNP_BRK of int * int
+  | UNP_TBRK of int * int
+  | UNP_TAB
+  | UNP_FNL
+  | UNP_INFIX of Nametab.extended_global_reference * string * string *
+      (parenRelation * parenRelation)
 
 (* Checks if the precedence of the parent printer (None means the
    highest precedence), and the child's one, follow the given
@@ -61,38 +90,24 @@ type tolerability = (string * precedence) * parenRelation
 
 val tolerable_prec : tolerability option -> (string * precedence) -> bool
 
-(* unparsing objects *)
-
-type ppbox =
-  | PpHB of int
-  | PpHOVB of int
-  | PpHVB of int
-  | PpVB of int
-  | PpTB
-
-type unparsing_hunk = 
-  | PH of Ast.pat * string option * parenRelation
-  | RO of string
-  | UNP_BOX of ppbox * unparsing_hunk list
-  | UNP_BRK of int * int
-  | UNP_TBRK of int * int
-  | UNP_TAB
-  | UNP_FNL
-
 val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds
 
-val unparsing_of_ast : Ast.entry_env -> Coqast.t -> unparsing_hunk list
-
-type syntax_entry = {
+type 'pat syntax_entry = {
   syn_id : string;
   syn_prec: precedence;
-  syn_astpat : Ast.pat;
-  syn_hunks : unparsing_hunk list }
+  syn_astpat : 'pat;
+  syn_hunks : 'pat unparsing_hunk list }
 
-type syntax_command = { 
+type 'pat syntax_command = { 
   sc_univ : string; 
-  sc_entries : syntax_entry list }
+  sc_entries : 'pat syntax_entry list }
 
-val interp_syntax_entry : string -> Coqast.t list -> syntax_command
+type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
+type syntax_entry_ast = precedence * syntax_rule list
 
+val interp_grammar_command :
+  string -> (string * string -> entry_type) -> 
+      raw_grammar_entry list -> grammar_command
 
+val interp_syntax_entry :
+  string -> syntax_entry_ast list -> Ast.astpat syntax_command

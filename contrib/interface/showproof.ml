@@ -27,6 +27,9 @@ open Proof_trees
 open Sign
 open Pp
 open Printer
+open Rawterm
+open Tacexpr
+open Genarg
 (*****************************************************************************)
 (*
    Arbre de preuve maison:
@@ -40,7 +43,7 @@ type nhyp = {hyp_name : identifier;
              hyp_full_type: Term.constr}
 ;;
 
-type ntactic = Coqast.t list
+type ntactic = tactic_expr
 ;;
 
 type nproof =
@@ -154,14 +157,15 @@ let seq_to_lnhyp sign sign' cl =
 
 let rule_is_complex r =
    match r with
-      Tactic ("Interp",_) -> true  
-   |  Tactic ("Auto", _) -> true
-   |  Tactic ("Symmetry", _) -> true 
-    |_ -> false
+      Tactic (TacArg (Tacexp t),_) -> true  
+   |  Tactic (TacAtom (_,TacAuto _), _) -> true
+   |  Tactic (TacAtom (_,TacSymmetry), _) -> true 
+   |_ -> false
 ;;
 
 let ast_of_constr = Termast.ast_of_constr true (Global.env()) ;;
 
+(*
 let rule_to_ntactic r =
    let rast =
      (match r with
@@ -177,6 +181,20 @@ let rule_to_ntactic r =
           | _ -> assert false)
 
    else [rast ]
+;;
+*)
+let rule_to_ntactic r =
+   let rt =
+     (match r with
+       Tactic (t,_) -> t
+     | Prim (Refine h) -> TacAtom (Ast.dummy_loc,TacExact h)
+     | _ -> TacAtom (Ast.dummy_loc, TacIntroPattern [])) in
+   if rule_is_complex r
+   then (match rt with
+           TacArg (Tacexp _) as t -> t
+          | _ -> assert false)
+
+   else rt
 ;;
 
 
@@ -238,14 +256,12 @@ let  to_nproof sigma osign pf =
     | Some(r,spfl) ->
       	if rule_is_complex r
       	then (
-	  let p1=(match pf.subproof with
-            Some x -> to_nproof_rec sigma sign x
-	    |_-> assert false) in
+	  let p1= to_nproof_rec sigma sign (subproof_of_proof pf) in
           let ntree= fill_unproved p1 
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in
 	  (match r with
-	    Tactic ("Auto",_) ->
+	    Tactic (TacAtom (_, TacAuto _),_) ->
 	      if spfl=[]
 	      then
 	      	{t_info="to_prove";
@@ -253,7 +269,7 @@ let  to_nproof sigma osign pf =
 			    t_concl=concl ntree;
 			    t_full_concl=ntree.t_goal.t_full_concl;
 			    t_full_env=ntree.t_goal.t_full_env};
-		  t_proof= Proof ([Node ((0,0), "InfoAuto",[])], [ntree])}
+		  t_proof= Proof (TacAtom (Ast.dummy_loc,TacExtend ("InfoAuto",[])), [ntree])}
 	      else ntree
 	  | _ -> ntree))
       	else
@@ -399,11 +415,15 @@ let enumerate f ln =
 
 
 let constr_of_ast = Astterm.interp_constr Evd.empty (Global.env());;
+
+(*
 let sp_tac tac =
    try spt (constr_of_ast (term_of_command tac))
    with _ -> (* let Node(_,t,_) = tac in *)
              spe (* sps ("error in sp_tac " ^ t) *)
 ;;
+*)
+let sp_tac tac = failwith "TODO"
 
 let soit_A_une_proposition nh ln t=  match !natural_language with
     French ->
@@ -942,6 +962,7 @@ let  natural_lhyp lh hi =
     Analyse des tactiques.
 *)
 
+(*
 let name_tactic tac =
       match tac with
         (Node(_,"Interp",
@@ -950,7 +971,14 @@ let name_tactic tac =
        |(Node(_,t,_))::_ -> t
        | _ -> assert false
 ;;
+*)
+let name_tactic = function
+  | TacIntroPattern _ -> "Intro"
+  | TacAssumption -> "Assumption"
+  | _ -> failwith "TODO"
+;;
 
+(*
 let arg1_tactic tac =
   match tac with
     (Node(_,"Interp",
@@ -960,6 +988,9 @@ let arg1_tactic tac =
   | x::_ -> x
   | _ -> assert false
 ;;
+*)
+
+let arg1_tactic tac = failwith "TODO"
 
 let arg2_tactic tac =
    match tac with
@@ -970,6 +1001,7 @@ let arg2_tactic tac =
     | _ -> assert false
 ;;
 
+(*
 type nat_tactic =
     Split of (Coqast.t list)
   | Generalize of (Coqast.t list)
@@ -992,7 +1024,7 @@ let analyse_tac tac =
   | [Node (_, x,la)] -> Other (x,la)
   | _ -> assert false
 ;;
-
+*)
       
 
 
@@ -1103,6 +1135,17 @@ let terms_of_equality e =
 
 let eq_term = eq_constr;;
 
+let is_equality_tac = function
+  | TacAtom (_,
+      (TacExtend
+	(("ERewriteLR"|"ERewriteRL"|"ERewriteLRocc"|"ERewriteRLocc"
+	 |"ERewriteParallel"|"ERewriteNormal"
+	 |"RewriteLR"|"RewriteRL"|"Replace"),_)
+      | TacReduce _
+      | TacSymmetry | TacReflexivity
+      | TacExact _ | TacIntroPattern _ | TacIntroMove _ | TacAuto _)) -> true
+  | _ -> false
+
 let equalities_ntree ig ntree =
   let rec equalities_ntree ig ntree =
   if not (is_equality (concl ntree)) 
@@ -1111,12 +1154,7 @@ let equalities_ntree ig ntree =
     match (proof ntree) with
       Notproved ->  [(ig,ntree)]
     | Proof (tac,ltree) ->
-	if List.mem (name_tactic tac)
-	    ["ERewriteLR";"ERewriteRL"; "ERewriteLRocc";"ERewriteRLocc";
-	      "ERewriteParallel";"ERewriteNormal"; "Reduce";
-	      "RewriteLR";"RewriteRL";
-	      "Replace";"Symmetry";"Reflexivity";
-	      "Exact";"Intros";"Intro";"Auto"]
+	if is_equality_tac tac
       	then (match ltree with
           [] ->  [(ig,ntree)]
 	| t::_ -> let res=(equalities_ntree ig t) in
@@ -1176,7 +1214,7 @@ let rec natural_ntree ig ntree =
 	 let lemma =  match (proof ntree) with
 	   Proof (tac,ltree) ->
 	     (try (sph [spt (dbize (gLOB ge)
-				(term_of_command (arg1_tactic tac)));
+				(term_of_command (arg1_tactic tac)));(* TODO *)
 			  (match ltree with
 			    [] ->spe
 			  | [_] -> spe
@@ -1224,55 +1262,62 @@ let rec natural_ntree ig ntree =
                             sph [spi; sps (intro_not_proved_goal gs); spb; 
                                   tag_toprove g  ]
 			  ]
-      | Proof (tac,ltree) -> 
-	 (let tactic= name_tactic tac in
-          let ntext = 
-	  (match tactic with
+
+      | Proof (TacId,ltree) -> natural_ntree ig (List.hd ltree)
+      | Proof (TacAtom (_,tac),ltree) -> 
+	 (let ntext = 
+	  match tac with
 (* Pas besoin de l'argument éventuel de la tactique *)
-	    "Intros" -> natural_intros ig lh g gs ltree
-	  | "Intro" -> natural_intros ig lh g gs ltree
-	  | "Idtac" -> natural_ntree ig (List.hd ltree)
-	  | "Fix" -> natural_fix ig lh g gs (arg2_tactic tac) ltree
-	  | "Split" -> natural_split ig lh g gs ge tac ltree
-	  | "Generalize" -> natural_generalize ig lh g gs ge tac ltree
-	  | "Right" -> natural_right ig lh g gs ltree
-	  | "Left" -> natural_left ig lh g gs ltree
-	  | (* "Simpl" *)"Reduce"  -> natural_reduce ig lh g gs ge tac ltree
-	  | "InfoAuto" -> natural_infoauto ig lh g gs ltree
-	  | "Auto" -> natural_auto ig lh g gs ltree
-	  | "EAuto" -> natural_auto ig lh g gs ltree
-	  | "Trivial" -> natural_trivial ig lh g gs ltree
-	  | "Assumption" -> natural_trivial ig lh g gs ltree
-	  | "Clear" -> natural_clear ig lh g gs ltree
+	    TacIntroPattern _ -> natural_intros ig lh g gs ltree
+	  | TacIntroMove _ -> natural_intros ig lh g gs ltree
+	  | TacFix (_,n) -> natural_fix ig lh g gs n ltree
+	  | TacSplit NoBindings -> natural_split ig lh g gs ge [] ltree
+	  | TacSplit(ImplicitBindings l) -> natural_split ig lh g gs ge l ltree
+	  | TacGeneralize l -> natural_generalize ig lh g gs ge l ltree
+	  | TacRight _ -> natural_right ig lh g gs ltree
+	  | TacLeft _ -> natural_left ig lh g gs ltree
+	  | (* "Simpl" *)TacReduce (r,cl)  ->
+	      natural_reduce ig lh g gs ge r cl ltree
+	  | TacExtend ("InfoAuto",[]) -> natural_infoauto ig lh g gs ltree
+	  | TacAuto _ -> natural_auto ig lh g gs ltree
+	  | TacExtend ("EAuto",_) -> natural_auto ig lh g gs ltree
+	  | TacTrivial _ -> natural_trivial ig lh g gs ltree
+	  | TacAssumption -> natural_trivial ig lh g gs ltree
+	  | TacClear _ -> natural_clear ig lh g gs ltree
 (* Besoin de l'argument de la tactique *)
-	  | "Induction" -> 
-              let arg1=(term_of_command (arg1_tactic tac)) in
-              natural_induction ig lh g gs ge  arg1 ltree false
-	  | "InductionIntro" -> 
-              let arg1=(term_of_command (arg1_tactic tac)) in
-              natural_induction ig lh g gs ge arg1 ltree true
-          | _ ->
-	  let arg1=(term_of_command (arg1_tactic tac)) in
-          let arg1=dbize (gLOB ge) arg1 in
-          (match tactic with
-	    "Apply" -> natural_apply ig lh g gs arg1 ltree
-	  | "Exact" -> natural_exact ig lh g gs arg1 ltree
-	  | "Cut" -> natural_cut ig lh g gs arg1 ltree
-	  | "CutIntro" -> natural_cutintro ig lh g gs arg1 ltree
-	  | "Case" -> natural_case ig lh g gs ge arg1 ltree false
-	  | "CaseIntro" -> natural_case ig lh g gs ge arg1 ltree true
-	  | "Elim" -> natural_elim ig lh g gs ge arg1 ltree false
-	  | "ElimIntro" -> natural_elim ig lh g gs ge arg1 ltree true
-	  | "RewriteRL" -> natural_rewrite ig lh g gs arg1 ltree
-	  | "RewriteLR" -> natural_rewrite ig lh g gs arg1 ltree
-	  | "ERewriteRL" -> natural_rewrite ig lh g gs arg1 ltree
-	  | "ERewriteLR" -> natural_rewrite ig lh g gs arg1 ltree
-	  |_ -> natural_generic ig lh g gs (sps tactic) (prl sp_tac tac) ltree)
-         )
+	  | TacOldInduction (NamedHyp id) -> 
+              natural_induction ig lh g gs ge id ltree false
+	  | TacExtend ("InductionIntro",[a]) -> 
+              let id=(out_gen wit_ident a) in
+              natural_induction ig lh g gs ge id ltree true
+	  | TacApply (c,_) -> natural_apply ig lh g gs c ltree
+	  | TacExact c -> natural_exact ig lh g gs c ltree
+	  | TacCut c -> natural_cut ig lh g gs c ltree
+	  | TacExtend ("CutIntro",[a]) ->
+	      let c = out_gen wit_constr a in
+	      natural_cutintro ig lh g gs a ltree
+	  | TacCase (c,_) -> natural_case ig lh g gs ge c ltree false
+	  | TacExtend ("CaseIntro",[a]) ->
+	      let c = out_gen wit_constr a in
+	      natural_case ig lh g gs ge c ltree true
+	  | TacElim ((c,_),_) -> natural_elim ig lh g gs ge c ltree false
+	  | TacExtend ("ElimIntro",[a]) ->
+	      let c = out_gen wit_constr a in
+	      natural_elim ig lh g gs ge c ltree true
+	  | TacExtend ("Rewrite",[_;a]) ->
+	      let (c,_) = out_gen wit_constr_with_bindings a in
+	      natural_rewrite ig lh g gs c ltree
+	  | TacExtend ("ERewriteRL",[a]) ->
+	      let c = out_gen wit_constr a in (* TODO *)
+	      natural_rewrite ig lh g gs c ltree
+	  | TacExtend ("ERewriteLR",[a]) ->
+	      let c = out_gen wit_constr a in (* TODO *)
+	      natural_rewrite ig lh g gs c ltree
+	  |_ -> natural_generic ig lh g gs (sps (name_tactic tac)) (prl sp_tac [tac]) ltree
          in
           ntext (* spwithtac ntext tactic*)
           )
-
+      | Proof _ -> failwith "Don't know what to do with that"
     in   
          if info<>"not_proved"
          then spshrink info ntext
@@ -1580,12 +1625,9 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
 (*
    InductionIntro n
 *) 
-and natural_induction ig lh g gs ge arg1 ltree with_intros=
+and natural_induction ig lh g gs ge arg2 ltree with_intros=
  let env = (gLOB (g_env (List.hd ltree))) in
- let arg1=dbize env arg1 in
- let arg2 = match (kind_of_term arg1) with
-       Var(arg2) -> arg2
-      | _ -> assert false in
+ let arg1= mkVar arg2 in
  let targ1 = prod_head (type_of env Evd.empty arg1) in
  let IndType (indf,targ) = find_rectype env Evd.empty targ1 in
  let ncti= Array.length(get_constructors env indf) in
@@ -1637,8 +1679,7 @@ and natural_induction ig lh g gs ge arg1 ltree with_intros=
 (***********************************************************************)
 (* Points fixes *)
 
-and natural_fix ig lh g gs arg ltree =
-  let narg = match arg with Num(_,narg) -> narg |_ -> assert false  in
+and natural_fix ig lh g gs narg ltree =
   let {t_info=info;
 	t_goal={newhyp=lh1;t_concl=g1;t_full_concl=gf1;
                    t_full_env=ge1};t_proof=p1}=(List.hd ltree) in
@@ -1656,10 +1697,7 @@ and natural_fix ig lh g gs arg ltree =
                             ltree)
         ]
    | _ -> assert false
-and natural_reduce ig lh g gs ge tac ltree =
-  let (mode,la) = match analyse_tac tac with
-       Reduce (mode,la) -> (mode,la)
-      |_ -> assert false in
+and natural_reduce ig lh g gs ge mode la ltree =
   match la with
     [] -> 
       spv
@@ -1669,7 +1707,7 @@ and natural_reduce ig lh g gs ge tac ltree =
 		  {ihsg=All_subgoals_hyp;isgintro="simpl"})
              ltree)
         ]
-  | [Nvar (_,hyp)] ->
+  | [hyp] ->
       spv
         [  (natural_lhyp lh ig.ihsg);
           (show_goal2 lh ig g gs ""); 
@@ -1678,14 +1716,11 @@ and natural_reduce ig lh g gs ge tac ltree =
              ltree)
         ]
   | _ -> assert false
-and natural_split ig lh g gs ge tac ltree =
-  let la = match analyse_tac tac with
-       Split la -> la
-      |_ -> assert false in
+and natural_split ig lh g gs ge la ltree =
   match la with
     [arg] -> 
       let env= (gLOB ge) in
-      let arg1= dbize env arg in
+      let arg1= (*dbize env*) arg in
       spv
       	[ (natural_lhyp lh ig.ihsg);
           (show_goal2 lh ig g gs ""); 
@@ -1702,14 +1737,13 @@ and natural_split ig lh g gs ge tac ltree =
              ltree)
         ]
   | _ -> assert false
-and natural_generalize ig lh g gs ge tac ltree =
-  match analyse_tac tac with
-   Generalize la ->
-  (match la with
+and natural_generalize ig lh g gs ge la ltree =
+  match la with
     [arg] ->
       let env= (gLOB ge) in
-      let arg1= dbize env arg in
-      let type_arg=type_of_ast ge arg in
+      let arg1= (*dbize env*) arg in
+      let type_arg=type_of (Global.env()) Evd.empty arg in
+(*      let type_arg=type_of_ast ge arg in*)
       spv
       	[ (natural_lhyp lh ig.ihsg);
           (show_goal2 lh ig g gs ""); 
@@ -1718,8 +1752,7 @@ and natural_generalize ig lh g gs ge tac ltree =
 		  {ihsg=All_subgoals_hyp;isgintro=""})
              ltree)
         ]
-   | _ -> assert false)
-  | _ -> assert false	  
+    | _ -> assert false
 and natural_right ig lh g gs ltree =
   spv
          [ (natural_lhyp lh ig.ihsg);

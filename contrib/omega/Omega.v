@@ -19,11 +19,6 @@ Require Export ZArith.
 (* The constant minus is required in coq_omega.ml *)
 Require Export Minus.
 
-Declare ML Module "omega".
-Declare ML Module "coq_omega".
-
-Require Export OmegaSyntax.
-
 Hint eq_nat_Omega : zarith := Extern 10 (eq nat ? ?) Abstract Omega.
 Hint le_Omega : zarith := Extern 10 (le ? ?) Abstract Omega.
 Hint lt_Omega : zarith := Extern 10 (lt ? ?) Abstract Omega.

@@ -14,10 +14,10 @@ open Pcoq
 open Constr
 
 GEXTEND Gram
-  GLOBAL: ident constr0 constr1 constr2 constr3 lassoc_constr4 constr5
+  GLOBAL: constr0 constr1 constr2 constr3 lassoc_constr4 constr5
           constr6 constr7 constr8 constr9 constr10 lconstr constr
           ne_ident_comma_list ne_constr_list sort ne_binders_list qualid
-          global;
+          global constr_pattern ident;
   ident:
     [ [ id = Prim.var -> id
 
@@ -25,14 +25,14 @@ GEXTEND Gram
       | id = Prim.metaident -> id ] ]
   ;
   global:
-    [ [ l = qualid -> <:ast< (QUALID ($LIST $l)) >>
+    [ [ l = qualid -> l
 
       (* This is used in quotations *)
       | id = Prim.metaident -> id ] ]
   ;
   qualid:
-    [ [ id = Prim.var; l = fields -> id :: l
-      | id = Prim.var -> [ id ]
+    [ [ id = Prim.var; l = fields -> <:ast< (QUALID $id ($LIST $l)) >>
+      | id = Prim.var -> <:ast< (QUALID $id) >>
       ] ]
   ;
   fields:
@@ -40,28 +40,22 @@ GEXTEND Gram
       | id = FIELD -> [ <:ast< ($VAR $id) >> ]
       ] ]
   ;
-(*
-  qualid:
-    [ [ id = IDENT; l = fields -> <:ast< ($VAR $id) >> :: l ] ]
-  ;
-  fields:
-    [ [ id = FIELD; l = fields -> <:ast< ($VAR $id) >> :: l
-      | -> []
-      ] ]
-  ;
-*)
   raw_constr:
     [ [ c = Prim.ast -> c ] ]
   ;
   constr:
-    [ [ c = constr8 -> c
-      | IDENT "Inst"; id = ident; "["; c = constr8; "]" ->
-        <:ast< (CONTEXT $id $c) >>
-      | IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = constr8 ->
-        <:ast< (EVAL $c (REDEXP $rtc)) >> ] ]
+    [ [ c = constr8 -> (* Genarg.ConstrTerm *) c
+(*      | IDENT "Inst"; id = Prim.rawident; "["; c = constr; "]" ->
+        Genarg.ConstrContext (id, c)
+      | IDENT "Eval"; rtc = Tactic.raw_red_tactic; "in"; c = constr ->
+        Genarg.ConstrEval (rtc,c)
+      | IDENT "Check"; c = constr8 -> <:ast<(CHECK $c)>> *)] ]
   ;
   lconstr:
     [ [ c = constr10 -> c ] ]
+  ;
+  constr_pattern:
+    [ [ c = constr -> c ] ]
   ;
   ne_constr_list:
     [ [ c1 = constr; cl = ne_constr_list -> c1::cl
@@ -74,7 +68,8 @@ GEXTEND Gram
   ;
   constr0:
     [ [ "?" -> <:ast< (ISEVAR) >>
-      | "?"; n = Prim.number -> <:ast< (META $n) >>
+      | "?"; n = Prim.natural ->
+	  let n = Coqast.Num (loc,n) in <:ast< (META $n) >>
       | bl = binders; c = constr -> <:ast< ($ABSTRACT "LAMBDALIST" $bl $c) >>
       | "("; lc1 = lconstr; ":"; c = constr; body = product_tail ->
           let id = Ast.coerce_to_var lc1 in
@@ -121,12 +116,17 @@ GEXTEND Gram
       | IDENT "Match"; c = constr; "with"; cl = ne_constr_list; "end" ->
           <:ast< (MATCH "SYNTH" $c ($LIST $cl)) >>
       | IDENT "let"; "("; b = ne_ident_comma_list; ")"; "=";
-        c = constr; "in"; c1 = constr ->
+        c = constr; "in"; c1 = constr->
           <:ast< (LET "SYNTH" $c ($ABSTRACT "LAMBDALIST"
 	    (BINDERS (BINDER (ISEVAR) ($LIST $b))) $c1)) >>
       | IDENT "let"; id1 = ident ; "="; c = opt_casted_constr;
+	"in"; c1 = constr -> 
+	  <:ast< (LETIN $c [$id1]$c1) >>
+(*
+      | IDENT "let"; id1 = ident ; "="; c = opt_casted_constr;
         "in"; c1 = constr -> 
 	  <:ast< (LETIN $c [$id1]$c1) >>
+*)
       | IDENT "if"; c1 = constr; IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr ->
         <:ast< ( IF "SYNTH" $c1 $c2 $c3) >>
@@ -169,9 +169,28 @@ GEXTEND Gram
     [ [ c1 = constr8 -> c1
       | c1 = constr8; "::"; c2 = constr8 -> <:ast< (CAST $c1 $c2) >> ] ]
   ;
+  simple_binding:
+    [ [ id = ident; ":="; c = constr -> <:ast< (BINDING $id $c) >>
+      | n = Prim.numarg; ":="; c = constr -> <:ast< (BINDING $n $c) >> ] ]
+  ;
+  simple_binding_list:
+    [ [ b = simple_binding; l = simple_binding_list -> b :: l | -> [] ] ]
+  ;
+  binding_list:
+    [ [ c1 = constr; ":="; c2 = constr; bl = simple_binding_list ->
+          Coqast.Node
+            (loc, "EXPLICITBINDINGS",
+             (Coqast.Node (loc, "BINDING", [Ast.coerce_to_var c1; c2]) :: bl))
+      | n = Prim.numarg; ":="; c = constr; bl = simple_binding_list ->
+          <:ast<(EXPLICITBINDINGS (BINDING $n $c) ($LIST $bl))>>
+      | c1 = constr; bl = LIST0 constr ->
+          <:ast<(IMPLICITBINDINGS $c1 ($LIST $bl))>> ] ]
+  ;
   constr10:
     [ [ "!"; f = global; args = ne_constr9_list ->
           <:ast< (APPLISTEXPL $f ($LIST $args)) >>
+      | "!"; f = global; "with"; b = binding_list ->
+	  <:ast< (APPLISTWITH $f $b) >>
       | f = constr9; args = ne_constr91_list ->
           <:ast< (APPLIST $f ($LIST $args)) >>
       | f = constr9 -> f ] ]
@@ -215,7 +234,8 @@ GEXTEND Gram
       | -> <:ast< (ISEVAR) >> ] ]
   ;
   constr91:
-    [ [ n = Prim.number; "!"; c1 = constr9 ->
+    [ [ n = Prim.natural; "!"; c1 = constr9 ->
+      let n = Coqast.Num (loc,n) in
           <:ast< (EXPL $n $c1) >>
       | c1 = constr9 -> c1 ] ]
   ;
@@ -228,8 +248,10 @@ GEXTEND Gram
       | c1 = constr9 -> [c1] ] ]
   ;
   fixbinder:
-    [ [ id = ident; "/"; recarg = Prim.number; ":"; type_ = constr;
-        ":="; def = constr -> <:ast< (NUMFDECL $id $recarg $type_ $def) >>
+    [ [ id = ident; "/"; recarg = Prim.natural; ":"; type_ = constr;
+        ":="; def = constr ->
+	  let recarg = Coqast.Num (loc,recarg) in
+	  <:ast< (NUMFDECL $id $recarg $type_ $def) >>
       | id = ident; bl = ne_binders_list; ":"; type_ = constr;
         ":="; def = constr ->
           <:ast< (FDECL $id (BINDERS ($LIST $bl)) $type_ $def) >> ] ]

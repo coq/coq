@@ -30,11 +30,11 @@ let nickname = function
   | SecondaryTable (s1,s2) -> s1^" "^s2
 
 let error_undeclared_key key =
-  error ((nickname key)^": no such table or option")
+  error ((nickname key)^": no table or option of this type")
 
 type value =
   | BoolValue   of bool
-  | IntValue    of int
+  | IntValue    of int option
   | StringValue of string
   | IdentValue  of global_reference
 
@@ -56,11 +56,10 @@ module MakeTable =
 	  type key
 	  val table : (string * key table_of_A) list ref
 	  val encode : key -> t
-          val check : t -> unit
           val printer : t -> std_ppcmds
           val key : option_name
           val title : string
-          val member_message : key -> bool -> string
+          val member_message : t -> bool -> std_ppcmds
           val synchronous : bool
         end) ->
   struct
@@ -114,18 +113,17 @@ module MakeTable =
 	   (hov 0 
 	      (if MySet.is_empty table then str "None" ++ fnl ()
                else MySet.fold
-		 (fun a b -> printer a ++ spc () ++ b) table (mt ()))))
+		 (fun a b -> printer a ++ spc () ++ b)
+		 table (mt ()) ++ fnl ())))
 
     class table_of_A () =
     object
-      method add x =
-	let c = A.encode x in
-        A.check c;
-        add_option c
+      method add x = add_option (A.encode x)
       method remove x = remove_option (A.encode x)
       method mem x = 
-        let answer = MySet.mem (A.encode x) !t in
-        msg (str (A.member_message x answer))
+	let y = A.encode x in
+        let answer = MySet.mem y !t in
+        msg (A.member_message y answer ++ fnl ())
       method print = print_table A.title A.printer !t 
     end
 
@@ -140,10 +138,9 @@ let get_string_table k = List.assoc (nickname k) !string_table
 
 module type StringConvertArg =
 sig
-  val check : string -> unit
   val key : option_name
   val title : string
-  val member_message : string -> bool -> string
+  val member_message : string -> bool -> std_ppcmds
   val synchronous : bool
 end
 
@@ -153,8 +150,7 @@ struct
   type key = string
   let table = string_table
   let encode x = x
-  let check = A.check
-  let printer s = (str s)
+  let printer = str
   let key = A.key
   let title = A.title
   let member_message = A.member_message
@@ -164,29 +160,27 @@ end
 module MakeStringTable =
   functor (A : StringConvertArg) -> MakeTable (StringConvert(A))
 
-let ident_table = ref []
+let ref_table = ref []
 
-let get_ident_table k = List.assoc (nickname k) !ident_table
+let get_ref_table k = List.assoc (nickname k) !ref_table
 
-module type IdentConvertArg =
+module type RefConvertArg =
 sig
   type t
-  val encode : global_reference -> t
-  val check : t -> unit
+  val encode : qualid located -> t
   val printer : t -> std_ppcmds
   val key : option_name
   val title : string
-  val member_message : global_reference -> bool -> string
+  val member_message : t -> bool -> std_ppcmds
   val synchronous : bool
 end
 
-module IdentConvert = functor (A : IdentConvertArg) -> 
+module RefConvert = functor (A : RefConvertArg) -> 
 struct
   type t = A.t
-  type key = global_reference
-  let table = ident_table
+  type key = qualid located
+  let table = ref_table
   let encode = A.encode
-  let check = A.check
   let printer = A.printer
   let key = A.key
   let title = A.title
@@ -194,8 +188,8 @@ struct
   let synchronous = A.synchronous
 end
 
-module MakeIdentTable =
-  functor (A : IdentConvertArg) -> MakeTable (IdentConvert(A))
+module MakeRefTable =
+  functor (A : RefConvertArg) -> MakeTable (RefConvert(A))
 
 (****************************************************************************)
 (* 2- Options                                                               *)
@@ -223,7 +217,7 @@ let check_key key = try
   error "Sorry, this option name is already used"
 with Not_found ->
   if List.mem_assoc (nickname key) !string_table
-    or List.mem_assoc (nickname key) !ident_table
+    or List.mem_assoc (nickname key) !ref_table
   then error "Sorry, this option name is already used"
 
 open Summary
@@ -302,7 +296,8 @@ let msg_option_value (name,v) =
   match v with
     | BoolValue true  -> str "true"
     | BoolValue false -> str "false"
-    | IntValue n      -> int n
+    | IntValue (Some n) -> int n
+    | IntValue None   -> str "undefined"
     | StringValue s   -> str s
     | IdentValue r    -> pr_global_env None r
 
@@ -344,7 +339,7 @@ let print_tables () =
        !string_table (mt ()) ++
      List.fold_right
        (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
-       !ident_table (mt ()) ++
+       !ref_table (mt ()) ++
      fnl ()
     )
 

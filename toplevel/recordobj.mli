@@ -9,3 +9,4 @@
 (* $Id$ *)
 
 val objdef_declare : Libnames.global_reference -> unit
+val add_object_hook : Proof_type.declaration_hook

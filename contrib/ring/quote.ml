@@ -112,7 +112,7 @@ open Pattern
 open Tacmach
 open Tactics
 open Proof_trees
-open Proof_type
+open Tacexpr
 (*i*)
 
 (*s First, we need to access some Coq constants
@@ -451,18 +451,6 @@ let quote f lid gl =
   match ivs.variable_lhs with
     | None -> Tactics.convert_concl (mkApp (f, [| p |])) gl
     | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) gl
-
-(*i*)
-let dyn_quote = function
-  | [Identifier f] -> quote f []
-  | Identifier f :: lid -> quote f 
-        (List.map (function 
-		     | Identifier id -> id 
-		     | other -> bad_tactic_args "Quote" [other]) lid)
-  | l -> bad_tactic_args "Quote" l
-
-let h_quote = hide_tactic "Quote" dyn_quote
-(*i*)
 
 (*i 
 

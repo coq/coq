@@ -22,8 +22,9 @@ open Clenv
 open Tacred
 open Tacticals
 open Libnames
+open Tacexpr
 open Nametab
-(*i*)
+open Rawterm
 
 (* Main tactics. *)
 
@@ -35,7 +36,7 @@ val type_clenv_binding : named_context sigma ->
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list
-val bad_tactic_args : string -> tactic_arg list -> 'a
+val is_quantified_hypothesis : identifier -> goal sigma -> bool
 
 exception Bound
 
@@ -48,12 +49,9 @@ val convert_hyp     : named_declaration -> tactic
 val thin            : identifier list -> tactic
 val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> tactic
-val fix             : identifier -> int -> tactic
+val fix             : identifier option -> int -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
-val cofix           : identifier -> tactic
-
-val dyn_mutual_fix   : tactic_arg list -> tactic
-val dyn_mutual_cofix : tactic_arg list -> tactic
+val cofix           : identifier option -> tactic
 
 (*s Introduction tactics. *)
 
@@ -63,9 +61,7 @@ val fresh_id : identifier list -> identifier -> goal sigma -> identifier
 val intro                : tactic
 val introf               : tactic
 val intro_force          : bool -> tactic
-val dyn_intro            : tactic_arg list -> tactic
-
-val dyn_intro_move       : tactic_arg list -> tactic
+val intro_move           : identifier option -> identifier option -> tactic
 
 val intro_replacing      : identifier -> tactic
 val intro_using          : identifier -> tactic
@@ -76,42 +72,31 @@ val intros_replacing     : identifier list -> tactic
 
 val intros               : tactic
 
-(*i Obsolete, subsumed by Elim.dyn_intro_pattern
-val dyn_intros_using : tactic_arg list -> tactic
-i*)
+(* [depth_of_quantified_hypothesis b h g] returns the index of [h] in
+   the conclusion of goal [g], up to head-reduction if [b] is [true] *)
+val depth_of_quantified_hypothesis :
+  bool -> quantified_hypothesis -> goal sigma -> int
 
-val intros_until         : identifier -> tactic
-val intros_until_n       : int -> tactic
 val intros_until_n_wored : int -> tactic
-val dyn_intros_until     : tactic_arg list -> tactic
+val intros_until         : quantified_hypothesis -> tactic
 
 val intros_clearing      : bool list -> tactic
 
 (* Assuming a tactic [tac] depending on an hypothesis identifier,
-   [tactic_try_intros_until tac arg] first assumes that arg denotes a
+   [try_intros_until tac arg] first assumes that arg denotes a
    quantified hypothesis (denoted by name or by index) and try to
    introduce it in context before to apply [tac], otherwise assume the
    hypothesis is already in context and directly apply [tac] *)
-val tactic_try_intros_until : (identifier,tactic_arg) parse_combinator
 
-(* Assuming a tactic [tac] depending on an hypothesis identifier,
-   [hide_ident_or_numarg_tactic str tac] registers a tactic which
-   compose [tac] with "Intros Until" and returns a tactic which
-   behaves as [tac] (without implicit "Intros until") but hiding the
-   implementation under the name [str] *)
-
-val hide_ident_or_numarg_tactic : identifier hide_combinator
+val try_intros_until :
+  (identifier -> tactic) -> quantified_hypothesis -> tactic
 
 (*s Exact tactics. *)
 
 val assumption         : tactic
-val dyn_assumption     : tactic_arg list -> tactic
-
 val exact_no_check      : constr -> tactic
-val dyn_exact_no_check  : tactic_arg list -> tactic
-
 val exact_check      : constr -> tactic
-val dyn_exact_check  : tactic_arg list -> tactic
+val exact_proof      : Coqast.t -> tactic
 
 (*s Reduction tactics. *)
 
@@ -144,28 +129,21 @@ val unfold_option     :
   (int list * Closure.evaluable_global_reference) list -> hyp_location option
     -> tactic
 val reduce            : red_expr -> hyp_location list -> tactic
-val dyn_reduce        : tactic_arg list -> tactic
-val dyn_change        : tactic_arg list -> tactic
+val change            : constr -> hyp_location list -> tactic
 
 val unfold_constr     : global_reference -> tactic
-val pattern_option    : 
-  (int list * constr * constr) list -> hyp_location option -> tactic
+val pattern_option  : (int list * constr) list -> hyp_location option -> tactic
 
 (*s Modification of the local context. *)
 
 val clear         : identifier list -> tactic
-val dyn_clear     : tactic_arg list -> tactic
 
 val clear_body    : identifier list -> tactic
-val dyn_clear_body : tactic_arg list -> tactic
 
 val new_hyp       : int option ->constr -> constr substitution -> tactic
-val dyn_new_hyp   : tactic_arg list -> tactic
 
-val dyn_move      : tactic_arg list -> tactic
-val dyn_move_dep  : tactic_arg list -> tactic
-
-val dyn_rename    : tactic_arg list -> tactic
+val move_hyp      : bool -> identifier -> identifier -> tactic
+val rename_hyp    : identifier -> identifier -> tactic
 
 (*s Resolution tactics. *)
 
@@ -176,47 +154,37 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
-val apply_with_bindings   : (constr * constr substitution) -> tactic
-val dyn_apply             : tactic_arg list -> tactic
+val apply_with_bindings   : constr with_bindings -> tactic
 
 val cut_and_apply         : constr -> tactic
-val dyn_cut_and_apply     : tactic_arg list -> tactic
 
 (*s Elimination tactics. *)
 
-val general_elim   : constr * constr substitution ->
-                     constr * constr substitution -> tactic
-val default_elim   : constr * constr substitution -> tactic
-val simplest_elim  : constr -> tactic
-val dyn_elim       : tactic_arg list -> tactic
-
+val general_elim  : constr with_bindings -> constr with_bindings -> tactic
+val default_elim  : constr with_bindings -> tactic
+val simplest_elim : constr -> tactic
+val elim          : constr with_bindings -> constr with_bindings option -> tactic
 val general_elim_in : identifier -> constr * constr substitution ->
                       constr * constr substitution -> tactic
 
-val old_induct       : identifier -> tactic
-val old_induct_nodep : int        -> tactic
-val dyn_old_induct : tactic_arg list -> tactic
-val dyn_new_induct : tactic_arg list -> tactic
+val old_induct     : quantified_hypothesis -> tactic
+val general_elim_in : identifier -> constr * constr substitution ->
+                      constr * constr substitution -> tactic
+
+val new_induct     : constr induction_arg -> tactic
 
 (*s Case analysis tactics. *)
 
-val general_case_analysis : constr * constr substitution ->  tactic
+val general_case_analysis : constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
-val dyn_case              : tactic_arg list -> tactic
 
-val destruct              : identifier -> tactic
-val destruct_nodep        : int -> tactic
-val dyn_destruct          : tactic_arg list -> tactic
-val dyn_new_destruct      : tactic_arg list -> tactic
+val old_destruct          : quantified_hypothesis -> tactic
+val new_destruct          : constr induction_arg -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 
 val case_type         : constr  -> tactic
-val dyn_case_type     : tactic_arg list -> tactic
-
 val elim_type         : constr  -> tactic
-val dyn_elim_type     : tactic_arg list -> tactic
-
 
 (*s Some eliminations which are frequently used. *)
 
@@ -233,8 +201,7 @@ val dorE : bool -> clause ->tactic
 val constructor_tac            : int option -> int -> 
                                  constr substitution  -> tactic
 val one_constructor            : int -> constr substitution  -> tactic
-val any_constructor            : tactic
-val tclConstrThen              : tactic -> tactic
+val any_constructor            : tactic option -> tactic
 val left                       : constr substitution -> tactic
 val simplest_left              : tactic
 val right                      : constr substitution -> tactic
@@ -242,45 +209,27 @@ val simplest_right             : tactic
 val split                      : constr substitution -> tactic
 val simplest_split             : tactic
 
-val dyn_constructor        : tactic_arg list -> tactic
-val dyn_left               : tactic_arg list -> tactic
-val dyn_right              : tactic_arg list -> tactic
-val dyn_split              : tactic_arg list -> tactic
-
 (*s Logical connective tactics. *)
 
-val absurd                      : constr          -> tactic
-val dyn_absurd                  : tactic_arg list -> tactic
-
-val contradiction_on_hyp        : identifier -> tactic
-val contradiction               : tactic
-val dyn_contradiction           : tactic_arg list -> tactic
-
-val reflexivity    : tactic
+val reflexivity                 : tactic
 val intros_reflexivity          : tactic
-val dyn_reflexivity             : tactic_arg list -> tactic
- 
+
 val symmetry                    : tactic
 val intros_symmetry             : tactic
-val dyn_symmetry                : tactic_arg list -> tactic
 
 val transitivity                : constr -> tactic
 val intros_transitivity         : constr -> tactic
-val dyn_transitivity            : tactic_arg list -> tactic
 
 val cut                         : constr -> tactic
 val cut_intro                   : constr -> tactic
 val cut_replacing               : identifier -> constr -> tactic
 val cut_in_parallel             : constr list -> tactic
-val true_cut                    : identifier -> constr -> tactic
-val true_cut_anon               : constr -> tactic
-val dyn_cut                     : tactic_arg list -> tactic
-val dyn_true_cut                : tactic_arg list -> tactic
-val dyn_lettac                  : tactic_arg list -> tactic
-val dyn_forward                 : tactic_arg list -> tactic
 
+val true_cut                    : identifier option -> constr -> tactic
+val letin_tac                   : bool -> name -> constr -> 
+                                  identifier clause_pattern -> tactic
+val forward                     : bool -> name -> constr -> tactic
 val generalize                  : constr list -> tactic
-val dyn_generalize              : tactic_arg list -> tactic 
-val dyn_generalize_dep          : tactic_arg list -> tactic 
+val generalize_dep              : constr  -> tactic
 
 val tclABSTRACT : identifier option -> tactic -> tactic

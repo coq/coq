@@ -28,8 +28,8 @@ val silently : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
-val set_print_hyps_limit : int -> unit
-val unset_print_hyps_limit : unit -> unit
+(* If [None], no limit *)
+val set_print_hyps_limit : int option -> unit
 val print_hyps_limit : unit -> int option
 
 val add_unsafe : string -> unit

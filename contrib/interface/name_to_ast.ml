@@ -17,7 +17,7 @@ open Util;;
 open Pp;;
 open Declare;;
 open Nametab
-
+open Vernacexpr;;
 
 (* This function converts the parameter binders of an inductive definition,
    in particular you have to be careful to handle each element in the
@@ -26,9 +26,7 @@ open Nametab
 let convert_env =
     let convert_binder env (na, _, c) =
       match na with 
-       | Name id ->
-           ope("BINDER",
-               [ast_of_constr true env c;nvar id])
+       | Name id -> (id, ast_of_constr true env c)
        | Anonymous -> failwith "anomaly: Anonymous variables in inductives" in
     let rec cvrec env = function
        [] -> []
@@ -56,9 +54,9 @@ let impl_args_to_string = function
 let implicit_args_id_to_ast_list id l ast_list = 
     (match impl_args_to_string l with
            None -> ast_list
-         | Some(s) -> (string ("For " ^ (string_of_id id)))::
-                      (string s)::
-                       ast_list);;
+         | Some(s) -> CommentString ("For " ^ (string_of_id id))::
+                      CommentString s::
+                      ast_list);;
 
 (* This function construct an ast to enumerate the implicit positions for an
    inductive type and its constructors. It is obtained directly from
@@ -66,7 +64,7 @@ let implicit_args_id_to_ast_list id l ast_list =
 
 let implicit_args_to_ast_list sp mipv =
     let implicit_args_descriptions = 
-      let ast_list = ref ([]:Coqast.t list) in
+      let ast_list = ref [] in
        	(Array.iteri
            (fun i mip  ->
 	      let imps = inductive_implicits_list(sp, i) in
@@ -82,7 +80,7 @@ let implicit_args_to_ast_list sp mipv =
 	 !ast_list) in
       match implicit_args_descriptions with
 	  [] -> []
-	| _ -> [ope("COMMENT", List.rev implicit_args_descriptions)];;
+	| _ -> [VernacComments (List.rev implicit_args_descriptions)];;
 	      
 let convert_qualid qid =
   let d, id = Nametab.repr_qualid qid in
@@ -97,10 +95,11 @@ let convert_qualid qid =
 let convert_constructors envpar names types =
   let array_idC = 
     array_map2 
-      (fun n t -> ope("BINDER",
-		      [ast_of_constr true envpar t; nvar n]))
+      (fun n t -> 
+	let coercion_flag = false (* arbitrary *) in
+	(n, coercion_flag, ast_of_constr true envpar t))
       names types in
-    Node((0,0), "BINDERLIST", Array.to_list array_idC);;
+  Array.to_list array_idC;;
   
 (* this function converts one inductive type in a possibly multiple inductive
    definition *)
@@ -109,11 +108,11 @@ let convert_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
   let envpar = push_rel_context params env in
-  ope("VERNACARGLIST",
-      [convert_qualid (Nametab.shortest_qualid_of_global env (IndRef (sp, tyi)));
-       ope("CONSTR", [ast_of_constr true envpar arity]);
-       ope("BINDERLIST", convert_env(List.rev params));
-       convert_constructors envpar cstrnames cstrtypes]);;
+  let sp = sp_of_global env (IndRef (sp, tyi)) in
+  (basename sp,
+   convert_env(List.rev params),
+   (ast_of_constr true envpar arity),
+   convert_constructors envpar cstrnames cstrtypes);;
 
 (* This function converts a Mutual inductive definition to a Coqast.t.
    It is obtained directly from print_mutual in pretty.ml.  However, all
@@ -121,22 +120,21 @@ let convert_one_inductive sp tyi =
 
 let mutual_to_ast_list sp mib =
   let mipv = (Global.lookup_mind sp).mind_packets in
-  let _, ast_list =
+  let _, l =
     Array.fold_right
       (fun mi (n,l) -> (n+1, (convert_one_inductive sp n)::l)) mipv (0, []) in
-  (ope("MUTUALINDUCTIVE",
-	  [string (if mib.mind_finite then "Inductive" else "CoInductive");
-	  ope("VERNACARGLIST", ast_list)])::
-     (implicit_args_to_ast_list sp mipv));;
+  VernacInductive (mib.mind_finite, l)
+  :: (implicit_args_to_ast_list sp mipv);;
 
 let constr_to_ast v = 
   ast_of_constr true (Global.env()) v;;
 
 let implicits_to_ast_list implicits =
-    (match (impl_args_to_string implicits) with
-                  None -> []
-                | Some s -> [ope("COMMENT", [string s])]);;
+  match (impl_args_to_string implicits) with
+    | None -> []
+    | Some s -> [VernacComments [CommentString s]];;
 
+(*
 let make_variable_ast name typ implicits =
    (ope("VARIABLE",
     [string "VARIABLE";
@@ -145,7 +143,13 @@ let make_variable_ast name typ implicits =
             [(constr_to_ast (body_of_type typ));
              nvar name])])]))::(implicits_to_ast_list implicits)
     ;;
+*)
+let make_variable_ast name typ implicits =
+  (VernacAssumption
+    (AssumptionVariable, [name, constr_to_ast (body_of_type typ)]))
+  ::(implicits_to_ast_list implicits);;
     
+(*
 let make_definition_ast name c typ implicits =
  (ope("DEFINITION",
       [string "DEFINITION";
@@ -155,6 +159,12 @@ let make_definition_ast name c typ implicits =
                 [(constr_to_ast c);
 		 (constr_to_ast (body_of_type typ))])])]))::
   (implicits_to_ast_list implicits);;
+*)
+let make_definition_ast name c typ implicits =
+  VernacDefinition (Definition, name, None,
+    (ope("CAST", [(constr_to_ast c);(constr_to_ast (body_of_type typ))])),
+    None, (fun _ _ -> ()))
+  ::(implicits_to_ast_list implicits);;
 
 (* This function is inspired by print_constant *)
 let constant_to_ast_list sp =
@@ -238,5 +248,5 @@ let name_to_ast (qid:Nametab.qualid) =
 		(Nametab.pr_qualid qid ++
 		 spc () ++ str "not a defined object")
   in
-  ope("vernac_list", l);;
+  VernacList (List.map (fun x -> (dummy_loc,x)) l)
 

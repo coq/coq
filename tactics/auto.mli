@@ -28,7 +28,7 @@ type auto_tactic =
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
   | Unfold_nth of global_reference          (* Hint Unfold *)
-  | Extern     of Coqast.t (* Hint Extern *)
+  | Extern     of Tacexpr.raw_tactic_expr   (* Hint Extern *)
 
 open Rawterm
 
@@ -58,6 +58,18 @@ module Hint_db :
 type frozen_hint_db_table = Hint_db.t Stringmap.t
 
 type hint_db_table = Hint_db.t Stringmap.t ref
+
+type hint_db_name = string
+
+val add_hints : hint_db_name list -> Vernacexpr.hints -> unit
+
+val print_searchtable : unit -> unit
+
+val print_applicable_hint : unit -> unit
+
+val print_hint_ref : global_reference -> unit
+
+val print_hint_db_by_name : hint_db_name -> unit
 
 val searchtable : hint_db_table
 
@@ -99,11 +111,14 @@ val make_resolve_hyp :
   env -> evar_map -> named_declaration ->
       (constr_label * pri_auto_tactic) list
 
-(* [make_extern name pri pattern tactic_ast] *)
+(* [make_extern name pri pattern tactic_expr] *)
 
 val make_extern :
-  identifier -> int -> constr_pattern -> Coqast.t
+  identifier -> int -> constr_pattern -> Tacexpr.raw_tactic_expr
       -> constr_label * pri_auto_tactic
+
+val set_extern_interp :
+  ((int * constr) list -> Tacexpr.raw_tactic_expr -> tactic) -> unit
 
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)
@@ -117,9 +132,16 @@ val default_search_depth : int ref
 (* Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve : (constr * unit clausenv) -> tactic
 
+(* [ConclPattern concl pat tacast]:
+   if the term concl matches the pattern pat, (in sense of 
+   [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
+   right values to build a tactic *)
+
+val conclPattern : constr -> constr_pattern -> Tacexpr.raw_tactic_expr -> tactic
+
 (* The Auto tactic *)
 
-val auto : int -> string list -> tactic
+val auto : int -> hint_db_name list -> tactic
 
 (* auto with default search depth and with the hint database "core" *)
 val default_auto : tactic
@@ -131,14 +153,19 @@ val full_auto : int -> tactic
    except the "v62" compatibility database *)
 val default_full_auto : tactic
 
+(* The generic form of auto (second arg [None] means all bases) *)
+val gen_auto : int option -> hint_db_name list option -> tactic
+
 (* The hidden version of auto *)
-val h_auto : tactic_arg list -> tactic
+val h_auto   : int option -> hint_db_name list option -> tactic
 
 (* Trivial *)
-val trivial : string list -> tactic
+val trivial : hint_db_name list -> tactic
+val gen_trivial : hint_db_name list option -> tactic
 val full_trivial : tactic
-val h_trivial : tactic_arg list -> tactic
+val h_trivial : hint_db_name list option -> tactic
 
+val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
 
 (*s The following is not yet up to date -- Papageno. *)
 
@@ -147,13 +174,15 @@ val dauto : int option * int option -> tactic
 val default_search_decomp : int ref
 val default_dauto : tactic
 
+val h_dauto : int option * int option -> tactic
 (* SuperAuto *)
 
 type autoArguments =
   | UsingTDB       
   | Destructing   
 
-val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
-
+(*
 val superauto : int -> (identifier * constr) list -> autoArguments list -> tactic
+*)
 
+val h_superauto : int option -> qualid located list -> bool -> bool -> tactic

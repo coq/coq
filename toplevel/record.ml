@@ -18,6 +18,7 @@ open Termops
 open Environ
 open Declarations
 open Declare
+open Nametab
 open Coqast
 open Astterm
 open Command
@@ -30,16 +31,23 @@ open Type_errors
 (********** definition d'un record (structure) **************)
 
 let occur_fields id fs =
-  List.exists (fun (_,_,a) -> Ast.occur_var_ast id a) fs
+  List.exists
+    (function
+      | Vernacexpr.AssumExpr (_,a) -> Ast.occur_var_ast id a
+      | Vernacexpr.DefExpr (_,a,_) -> Ast.occur_var_ast id a)
+    fs
 
 let name_of id = if id = wildcard then Anonymous else Name id
 
-let interp_decl env (id,assum,t) =
-  if assum then
-    (name_of id,None,interp_type Evd.empty env t)
-  else
-    let j = judgment_of_rawconstr Evd.empty env t in
-    (Name id,Some j.uj_val, j.uj_type)
+let interp_decl sigma env = function
+  | Vernacexpr.AssumExpr(id,t) -> (name_of id,None,interp_type Evd.empty env t)
+  | Vernacexpr.DefExpr(id,c,t) ->
+      let c = match t with
+	| None -> c
+	| Some t -> Ast.ope("CAST",[c; t])
+      in
+      let j = judgment_of_rawconstr Evd.empty env c in
+      (Name id,Some j.uj_val, j.uj_type)
 
 let build_decl_entry sigma env (id,t) =
   (id,Typeops.LocalAssum (interp_type Evd.empty env t))
@@ -49,22 +57,14 @@ let typecheck_params_and_fields ps fs =
   let env1,newps =
     List.fold_left
       (fun (env,newps) (id,t) -> 
-	let decl = interp_decl env (id,true,t) in
+        let decl = interp_decl Evd.empty env (Vernacexpr.AssumExpr (id,t)) in
         (push_rel decl env,decl::newps))
       (env0,[]) ps
   in
-(*
   let env2,newfs =
     List.fold_left
       (fun (env,newfs) d ->
-         let decl = interp_decl env d in
-         (push_named decl env, decl::newfs))
-      (env1,[]) fs
-*)
-  let env2,newfs =
-    List.fold_left
-      (fun (env,newfs) d ->
-         let decl = interp_decl env d in
+         let decl = interp_decl Evd.empty env d in
          (push_rel decl env, decl::newfs))
       (env1,[]) fs
   in
@@ -214,7 +214,8 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
   let nparams = List.length ps in
   let idps = List.map fst ps in
-  let allnames =  idstruc::idps@(List.map (fun (id,_,_) -> id) fs) in
+  let extract_name = function Vernacexpr.AssumExpr(id,_) -> id | Vernacexpr.DefExpr (id,_,_) -> id in
+  let allnames =  idstruc::idps@(List.map extract_name fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   if occur_fields idstruc fs then error "A record cannot be recursive";
   (* Now, younger decl in params and fields is on top *)

@@ -67,4 +67,6 @@ val pr_evars_int : int -> (int * goal) list -> std_ppcmds
 val pr_subgoals_existential : evar_map -> goal list -> std_ppcmds
 
 (* Gives the ast corresponding to a tactic argument *)
+(*
 val ast_of_cvt_arg : tactic_arg ->  Coqast.t 
+*)

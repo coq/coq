@@ -36,10 +36,7 @@ open Safe_typing
    (useful only for persistent constructions), is the length of the section
    part in [dir] *)
 
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge
+open Nametab
 
 let depth_of_strength = function
   | DischargeAt (sp',n) -> n

@@ -13,368 +13,325 @@
 open Pp
 open Ast
 open Pcoq
-open Tactic
 open Util
+open Tacexpr
+open Rawterm
+
+(* open grammar entries, possibly in quotified form *)
+ifdef Quotify then open Qast
+
+open Constr
+open Prim
+open Tactic
+
+(* Functions overloaded by quotifier *)
+
+let induction_arg_of_constr c =
+  try ElimOnIdent (Ast.loc c,coerce_to_id c) with _ -> ElimOnConstr c
+
+let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
+
+let error_oldelim _ = error "OldElim no longer supported"
+
+ifdef Quotify then
+  let induction_arg_of_constr = function
+  | Qast.Node ("Nvar", [_;id]) -> Qast.Node ("ElimOnIdent", [id])
+  | c -> Qast.Node ("ElimOnConstr", [c])
+
+ifdef Quotify then
+let make_red_flag s = Qast.Apply ("make_red_flag", [s])
+
+ifdef Quotify then
+let local_compute = 
+  Qast.List [
+    Qast.Node ("FBeta", []);
+    Qast.Node ("FDeltaBut", [Qast.List []]);
+    Qast.Node ("FIota", []);
+    Qast.Node ("FZeta", [])]
+
+(*
+  let
+    {rBeta = b; rIota = i; rZeta = z; rDelta = d; rConst = l} = make_red_flag s
+  in
+  let quotify_ident id =
+    Qast.Apply ("Names.id_of_string", [Qast.Str (Names.string_of_id id)])
+  in
+  let quotify_path sp =
+    let dir, id = Names.repr_path sp in
+    let l = Names.repr_dirpath dir in
+    Qast.Apply ("Names.make_path",
+      [Qast.Apply ("Names.make_dirpath",
+        [Qast.List (List.map quotify_ident l)]);
+      quotify_ident id]) in
+  Qast.Record 
+    ["rBeta",Qast.Bool b; "rIota",Qast.Bool i;
+     "rZeta",Qast.Bool z; "rDelta",Qast.Bool d;
+     "rConst",Qast.List (List.map quotify_path l)]
+*)
+ifdef Quotify then open Q
 
 (* Please leave several GEXTEND for modular compilation under PowerPC *)
 
 (* Auxiliary grammar rules *)
 
 GEXTEND Gram
-  GLOBAL: autoargs;
+  GLOBAL: simple_tactic constrarg constr_with_bindings quantified_hypothesis
+    red_tactic int_or_var castedopenconstr;
 
+  int_or_var:
+    [ [ n = integer  -> Genarg.ArgArg n
+      | id = ident -> Genarg.ArgVar (loc,id) ] ]
+  ;
   autoarg_depth:
-  [ [ n = pure_numarg -> <:ast< $n>>
-     | -> Coqast.Str(loc,"NoAutoArg") ] ]
+  [ [ n = OPT natural -> n ] ]
   ;
   autoarg_adding:
-  [ [ IDENT "Adding" ; "["; l = ne_qualidarg_list; "]" -> l
-      | -> [] ] ]
+  [ [ IDENT "Adding" ; "["; l = LIST1 qualid; "]" -> l | -> [] ] ]
   ;
   autoarg_destructing:
-  [ [ IDENT "Destructing" -> Coqast.Str(loc,"Destructing")
-      | -> Coqast.Str(loc,"NoAutoArg") ] ]
+  [ [ IDENT "Destructing" -> true | -> false ] ]
   ;
   autoarg_usingTDB:
-  [ [ "Using"; "TDB"  ->  Coqast.Str(loc,"UsingTDB")
-      | -> Coqast.Str(loc,"NoAutoArg")  ] ]
+  [ [ "Using"; "TDB"  -> true | -> false ] ]
   ;
   autoargs:
   [ [ a0 = autoarg_depth; l = autoarg_adding; 
-      a2 = autoarg_destructing; a3 = autoarg_usingTDB -> a0::a2::a3::l ] ]
+      a2 = autoarg_destructing; a3 = autoarg_usingTDB -> (a0,l,a2,a3) ] ]
   ;
-  END
+  (* Either an hypothesis or a ltac ref (variable or pattern metavariable) *)
+  id_or_ltac_ref:
+    [ [ id = ident -> AN (loc,id)
+      | "?"; n = natural -> MetaNum (loc,n) ] ]
+  ;
+  (* Either a global ref or a ltac ref (variable or pattern metavariable) *)
+  qualid_or_ltac_ref:
+    [ [ (loc,qid) = qualid -> AN (loc,qid)
+      | "?"; n = natural -> MetaNum (loc,n) ] ]
+  ;
+  (* An identifier or a quotation meta-variable *)
+  id_or_meta:
+    [ [ id = rawident -> AI id 
 
-GEXTEND Gram
-
-  identarg:
-    [ [ id = Constr.ident -> id ] ]
+      (* This is used in quotations *)
+      | id = METAIDENT -> MetaId (loc,id) ] ]
   ;
-  idmeta_arg:
-    [ [ id = Constr.ident -> id
-      | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >> ] ]
-  ;
-  idmetahyp:
-    [ [ id = idmeta_arg -> <:ast< (INHYP $id) >> ] ]
-  ;
-  qualidarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST $l)) >>
-      | "?"; n = Prim.number -> <:ast< (QUALIDMETA $n) >> ] ]
-  ;
-  pure_numarg:
-     [ [ n = Prim.number -> n
-       | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
-     ] ]
-  ;
-  numarg:
-    [ [ n = Prim.number -> n
-      | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
-      |	id = identarg -> id
+  (* A number or a quotation meta-variable *)
+  num_or_meta:
+    [ [ n = integer -> AI n
+      |	id = METAIDENT -> MetaId (loc,id)
       ] ]
   ;
   constrarg:
-    [ [ c = Constr.constr -> <:ast< (COMMAND $c) >> ] ]
+    [ [ IDENT "Inst"; id = rawident; "["; c = constr; "]" ->
+        ConstrContext (id, c)
+      | IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = constr ->
+        ConstrEval (rtc,c) 
+      | IDENT "Check"; c = constr -> ConstrTypeOf c
+      | c = constr -> ConstrTerm c ] ]
   ;
-  castedopenconstrarg:
-    [ [ c = Constr.constr -> <:ast< (CASTEDOPENCOMMAND $c) >> ] ]
+  castedopenconstr:
+    [ [ c = constr -> c ] ]
   ;
-  lconstrarg:
-    [ [ c = Constr.lconstr -> <:ast< (COMMAND $c) >> ] ]
+  induction_arg:
+    [ [ n = natural -> ElimOnAnonHyp n
+      | c = constr -> induction_arg_of_constr c
+    ] ]
   ;
-  castedconstrarg:
-    [ [ c = Constr.constr -> <:ast< (CASTEDCOMMAND $c) >> ] ]
-  ;
-  ident_or_numarg:
-    [ [ id = identarg -> id
-      | n = numarg -> n ] ]
-  ;
-  ident_or_constrarg:
-    [ [ c = Constr.constr ->
-	  match c with
-            | Coqast.Nvar(_,s) -> c
-	    | Coqast.Node(_,"QUALID",[Coqast.Nvar(_,s) as c]) -> c
-	    | _ -> <:ast< (COMMAND $c) >> ] ]
-  ;
-  ne_identarg_list:
-    [ [ l = LIST1 identarg -> l ] ]
-  ;
-  ne_idmetahyp_list:
-    [ [ l = LIST1 idmetahyp -> l ] ]
-  ;
-  ne_qualidarg_list:
-    [ [ l = LIST1 qualidarg -> l ] ]
+  quantified_hypothesis:
+    [ [ id = ident -> NamedHyp id
+      | n = natural -> AnonHyp n ] ]
   ;
   pattern_occ:
-    [ [ nl = LIST1 pure_numarg; c = constrarg ->
-         <:ast< (PATTERN $c ($LIST $nl)) >>
-      | c = constrarg -> <:ast< (PATTERN $c) >> ] ]
+    [ [ nl = LIST0 integer; c = constr -> (nl,c) ] ]
   ;
-  ne_pattern_list:
-    [ [ l = LIST1 pattern_occ -> l ] ]
-  ;
-  pattern_occ_hyp:
-    [ [ nl = LIST1 pure_numarg; IDENT "Goal" ->
-          <:ast<(CCLPATTERN ($LIST $nl))>>
-      | nl = LIST1 pure_numarg; id = identarg ->
-          <:ast<(HYPPATTERN $id ($LIST $nl))>>
-      | IDENT "Goal" -> <:ast< (CCLPATTERN) >>
-      | id = identarg -> <:ast< (HYPPATTERN $id) >> ] ]
+  pattern_occ_hyp_list:
+    [ [ nl = LIST1 natural; IDENT "Goal" -> (Some nl,[])
+      | nl = LIST1 natural; id = id_or_meta; (g,l) = pattern_occ_hyp_list ->
+	  (g,(id,nl)::l)
+      | IDENT "Goal" -> (Some [],[])
+      | id = id_or_meta; (g,l) = pattern_occ_hyp_list -> (g,(id,[])::l) ] ]
   ;
   clause_pattern:
-    [ [ "in"; l = LIST1 pattern_occ_hyp -> <:ast< (LETPATTERNS ($LIST $l)) >>
-      | -> <:ast< (LETPATTERNS) >> ] ]
+    [ [ "in"; p = pattern_occ_hyp_list -> p | -> None, [] ] ]
   ;
-  one_intropattern:
-    [ [ p= ne_intropattern ->  <:ast< (INTROPATTERN $p)>> ]]
-  ;
-  ne_intropattern:
-    [ [ tc = LIST1 simple_intropattern -> 
-          <:ast< (LISTPATTERN ($LIST $tc))>> ] ]
+  intropatterns:
+    [ [ l = LIST0 simple_intropattern -> l ]]
   ;
   simple_intropattern:
-    [ [ "["; tc = LIST1 intropattern  SEP "|" ; "]" -> 
-         <:ast< (DISJPATTERN ($LIST $tc)) >>
-      | "("; tc = LIST1 intropattern SEP "," ; ")" -> 
-         <:ast< (CONJPATTERN ($LIST $tc)) >>
-      | IDENT "_" -> 
-	 <:ast< (WILDCAR) >>
-      | id = identarg                   -> 
-         <:ast< (IDENTIFIER $id) >> 
+    [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
+      | "("; tc = LIST1 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
+      | IDENT "_" -> IntroWildcard
+      | id = ident -> IntroIdentifier id
       ] ]
   ;
-  intropattern:
-    [ [   tc = LIST1 simple_intropattern -> 
-              <:ast< (LISTPATTERN ($LIST $tc))>>
-         | -> <:ast< (LISTPATTERN) >> ]]
-  ;
   simple_binding:
-    [ [ id = identarg; ":="; c = constrarg -> <:ast< (BINDING $id $c) >>
-      | n = pure_numarg; ":="; c = constrarg -> <:ast< (BINDING $n $c) >> ] ]
-  ;
-  simple_binding_list:
-    [ [ b = simple_binding; l = simple_binding_list -> b :: l | -> [] ] ]
-  ;
-  com_binding_list:
-    [ [ c = constrarg; bl = com_binding_list -> <:ast< (BINDING $c) >> :: bl
-      | -> [] ] ]
+    [ [ id = ident; ":="; c = constr -> (NamedHyp id, c)
+      | n = natural; ":="; c = constr -> (AnonHyp n, c) ] ]
   ;
   binding_list:
-    [ [ c1 = constrarg; ":="; c2 = constrarg; bl = simple_binding_list ->
-          let id = match c1 with 
-            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
-            | _ -> assert false
-          in <:ast<(BINDINGS (BINDING $id $c2) ($LIST $bl))>>
-      | n = pure_numarg; ":="; c = constrarg; bl = simple_binding_list ->
-          <:ast<(BINDINGS (BINDING $n $c) ($LIST $bl))>>
-      | c1 = constrarg; bl = com_binding_list ->
-          <:ast<(BINDINGS (BINDING $c1) ($LIST $bl))>>
-      | -> <:ast<(BINDINGS)>> ] ]
+    [ [ c1 = constr; ":="; c2 = constr; bl = LIST0 simple_binding ->
+          ExplicitBindings ((NamedHyp (coerce_to_id c1), c2) :: bl)
+      | n = natural; ":="; c = constr; bl = LIST0 simple_binding ->
+	  ExplicitBindings ((AnonHyp n, c) :: bl)
+      | c1 = constr; bl = LIST0 constr ->
+	  ImplicitBindings (c1 :: bl) ] ]
+  ;
+  constr_with_bindings:
+    [ [ c = constr; l = with_binding_list -> (c, l) ] ]
   ;
   with_binding_list:
-    [ [ "with"; l = binding_list -> l | -> <:ast<(BINDINGS)>> ] ]
-  ;
-  constrarg_binding_list:
-    [ [ c = constrarg; l = with_binding_list -> [c; l] ] ]
-  ;
-  numarg_binding_list:
-    [ [ n = numarg; l = with_binding_list -> [n; l] ] ]
-  ;
-  constrarg_list:
-    [ [ c = constrarg; l = constrarg_list -> c :: l | -> [] ] ]
-  ;
-  ne_constrarg_list:
-    [ [ c = constrarg; l = constrarg_list -> c :: l ] ]
+    [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
   ;
   unfold_occ:
-    [ [ nl = LIST1 pure_numarg; c = qualidarg ->
-         <:ast< (UNFOLD $c ($LIST $nl)) >>
-      | c = qualidarg -> <:ast< (UNFOLD $c) >> ] ]
-  ;
-  ne_unfold_occ_list:
-    [ [ p = unfold_occ; l = ne_unfold_occ_list -> p :: l
-      | p = unfold_occ -> [p] ] ]
+    [ [ nl = LIST0 integer; c = qualid_or_ltac_ref -> (nl,c) ] ]
   ;
   red_flag:
-    [ [ IDENT "Beta" -> <:ast< (Beta) >>
-      | IDENT "Delta" -> <:ast< (Delta) >>
-      | IDENT "Iota" -> <:ast< (Iota) >>
-      | IDENT "Zeta" -> <:ast< (Zeta) >>
-      | "["; idl = ne_qualidarg_list; "]" -> <:ast< (Unf ($LIST $idl)) >>
-      | "-"; "["; idl = ne_qualidarg_list; "]" ->
-          <:ast< (UnfBut ($LIST $idl)) >> ] ]
+    [ [ IDENT "Beta" -> FBeta
+      | IDENT "Delta" -> FDeltaBut []
+      | IDENT "Iota" -> FIota
+      | IDENT "Zeta" -> FZeta
+      | IDENT "Delta"; "["; idl = LIST1 qualid_or_ltac_ref; "]" -> FConst idl
+      | IDENT "Delta"; "-"; "["; idl = LIST1 qualid_or_ltac_ref; "]" -> FDeltaBut idl
+    ] ]
   ;
   red_tactic:
-    [ [ IDENT "Red" -> <:ast< (Red) >>
-      | IDENT "Hnf" -> <:ast< (Hnf) >>
-      | IDENT "Simpl" -> <:ast< (Simpl) >>
-      | IDENT "Cbv"; s = LIST1 red_flag -> <:ast< (Cbv ($LIST $s)) >>
-      | IDENT "Lazy"; s = LIST1 red_flag -> <:ast< (Lazy ($LIST $s)) >>
-      | IDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Iota) (Zeta)) >>
-      | IDENT "Unfold"; ul = ne_unfold_occ_list ->
-          <:ast< (Unfold ($LIST $ul)) >>
-      | IDENT "Fold"; cl = constrarg_list -> <:ast< (Fold ($LIST $cl)) >>
-      | IDENT "Pattern"; pl = ne_pattern_list ->
-          <:ast< (Pattern ($LIST $pl)) >> ] ]
+    [ [ IDENT "Red" -> Red false
+      | IDENT "Hnf" -> Hnf
+      | IDENT "Simpl" -> Simpl
+      | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
+      | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
+      | IDENT "Compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
+      | IDENT "Unfold"; ul = LIST1 unfold_occ -> Unfold ul
+      | IDENT "Fold"; cl = LIST1 constr -> Fold cl
+      | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl ] ]
   ;
   hypident:
-    [ [ id = identarg -> <:ast< (INHYP $id) >>
-      | "("; "Type"; "of"; id = identarg; ")" -> <:ast< (INHYPTYPE $id) >> ] ]
+    [ [ id = id_or_meta -> InHyp id
+      | "("; "Type"; "of"; id = id_or_meta; ")" -> InHypType id ] ]
   ;
-  ne_hyp_list:
-    [ [ l = LIST1 hypident -> l ] ]
-  ;
-  clausearg:
-    [ [ "in"; idl = ne_hyp_list -> <:ast< (CLAUSE ($LIST $idl)) >>
-      | -> <:ast< (CLAUSE) >> ] ]
+  clause:
+    [ [ "in"; idl = LIST1 hypident -> idl
+      | -> [] ] ]
   ;
   fixdecl:
-    [ [ id = identarg; n = pure_numarg; ":"; c = constrarg; fd = fixdecl ->
-          <:ast< (FIXEXP $id $n $c) >> :: fd
-      | -> [] ] ]
+    [ [ id = ident; "/"; n = natural; ":"; c = constr -> (id,n,c) ] ]
   ;
   cofixdecl:
-    [ [ id = identarg; ":"; c = constrarg; fd = cofixdecl ->
-          <:ast< (COFIXEXP $id $c) >> :: fd
-      | -> [] ] ]
+    [ [ id = ident; ":"; c = constr -> (id,c) ] ]
+  ;
+  hintbases:
+    [ [ "with"; "*" -> None
+      | "with"; l = LIST1 IDENT -> Some l
+      | -> Some [] ] ]
   ;
   simple_tactic:
-    [ [ IDENT "Fix"; n = pure_numarg -> <:ast< (Fix $n) >>
-      | IDENT "Fix"; id = identarg; n = pure_numarg -> <:ast< (Fix $id $n) >>
-      | IDENT "Fix"; id = identarg; n = pure_numarg; "with"; fd = fixdecl ->
-          <:ast< (Fix $id $n ($LIST $fd)) >>
-      | IDENT "Cofix" -> <:ast< (Cofix) >>
-      | IDENT "Cofix"; id = identarg -> <:ast< (Cofix $id) >>
-      | IDENT "Cofix"; id = identarg; "with"; fd = cofixdecl ->
-          <:ast< (Cofix $id ($LIST $fd)) >>
-      | IDENT "Induction"; s = identarg -> <:ast< (Induction $s) >>
-      | IDENT "Induction"; n = pure_numarg -> <:ast< (Induction $n) >>
-      | IDENT "NewInduction"; c=ident_or_constrarg -> <:ast<(NewInduction $c)>>
-      | IDENT "NewInduction"; n = pure_numarg -> <:ast< (NewInduction $n) >>
-      | IDENT "Double"; IDENT "Induction"; i = pure_numarg; j = pure_numarg ->
-          <:ast< (DoubleInd $i $j) >>
-      | IDENT "Trivial" -> <:ast<(Trivial)>>
-      | IDENT "Trivial"; "with"; lid = ne_identarg_list -> 
-	  <:ast<(Trivial ($LIST $lid))>>
-      | IDENT "Trivial"; "with"; "*" ->  <:ast<(Trivial "*")>>
-      | IDENT "Auto"; n = pure_numarg -> <:ast< (Auto $n) >>
-      | IDENT "Auto" -> <:ast< (Auto) >>
-      | IDENT "Auto"; n = pure_numarg; "with";
-	  lid = ne_identarg_list -> <:ast< (Auto $n ($LIST $lid)) >>
-      | IDENT "Auto"; "with";
-	  lid = ne_identarg_list -> <:ast< (Auto ($LIST $lid)) >>
-      | IDENT "Auto"; n = pure_numarg; "with"; "*" ->
-	  <:ast< (Auto $n "*") >>
-      | IDENT "Auto"; "with"; "*" -> <:ast< (Auto "*") >>
-     
-      | IDENT "AutoTDB"; n = pure_numarg -> <:ast< (AutoTDB $n) >>
-      | IDENT "AutoTDB" -> <:ast< (AutoTDB) >>
-      | IDENT "DHyp";  id=identarg  -> <:ast< (DHyp  $id)>>
-      | IDENT "CDHyp"; id=identarg -> <:ast<  (CDHyp $id)>>
-      | IDENT "DConcl"  -> <:ast< (DConcl)>>
-      | IDENT "SuperAuto"; l = autoargs ->
-                   <:ast< (SuperAuto ($LIST $l)) >>
-      | IDENT "Auto"; n = pure_numarg; IDENT "Decomp" -> <:ast< (DAuto $n) >>
-      | IDENT "Auto"; IDENT "Decomp" -> <:ast< (DAuto) >>
-      | IDENT "Auto"; n = pure_numarg; IDENT "Decomp"; p = pure_numarg ->
-          <:ast< (DAuto $n $p) >>
-      | IDENT "Intros" -> <:ast< (Intros) >>
-      | IDENT "Intros"; IDENT "until"; id = identarg 
-                                              -> <:ast< (IntrosUntil $id) >>
-      | IDENT "Intros"; IDENT "until"; n = numarg -> <:ast<(IntrosUntil $n)>>
-      | IDENT "Intros"; pl = one_intropattern -> <:ast< (Intros $pl) >>
-      | IDENT "Intro"; id = identarg; 
-	  IDENT "after"; id2 = identarg -> <:ast< (IntroMove $id $id2) >>
-      | IDENT "Intro";
-	  IDENT "after"; id2 = identarg -> <:ast< (IntroMove $id2) >>
-      | IDENT "Intro"; id = identarg -> <:ast< (Intro $id) >>
-      | IDENT "Intro" -> <:ast< (Intro) >>
-      | IDENT "Apply"; cl = constrarg_binding_list ->
-          <:ast< (Apply ($LIST $cl)) >>
-      | IDENT "Elim"; cl = constrarg_binding_list; "using";
-        el = constrarg_binding_list ->
-          <:ast< (Elim ($LIST $cl) ($LIST $el)) >>
-      | IDENT "Elim"; cl = constrarg_binding_list ->
-          <:ast< (Elim ($LIST $cl)) >>
-      | IDENT "Assumption" -> <:ast< (Assumption) >>
-      | IDENT "Contradiction" -> <:ast< (Contradiction) >>
-      | IDENT "Exact"; c = castedconstrarg -> <:ast< (Exact $c) >>
-      | IDENT "OldElim"; c = constrarg -> <:ast< (OldElim $c) >>
-      | IDENT "ElimType"; c = constrarg -> <:ast< (ElimType $c) >>
-      | IDENT "Case"; cl = constrarg_binding_list ->
-          <:ast< (Case ($LIST $cl)) >>
-      | IDENT "CaseType"; c = constrarg -> <:ast< (CaseType $c) >>
-      | IDENT "Destruct"; s = ident_or_constrarg -> <:ast< (Destruct $s) >>
-      | IDENT "Destruct"; n = numarg -> <:ast< (Destruct $n) >>
-      | IDENT "NewDestruct"; s = ident_or_constrarg -> <:ast<(NewDestruct $s)>>
-      | IDENT "NewDestruct"; n = numarg -> <:ast< (NewDestruct $n) >>
-      | IDENT "Decompose"; IDENT "Record" ; c = constrarg -> 
-             <:ast< (DecomposeAnd $c) >>
-      | IDENT "Decompose"; IDENT "Sum"; c = constrarg -> 
-             <:ast< (DecomposeOr $c) >>
-      | IDENT "Decompose"; "["; l = ne_qualidarg_list; "]"; c = constrarg ->
-          <:ast< (DecomposeThese $c ($LIST $l)) >>
-      | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
-      | IDENT "Assert"; c = constrarg -> <:ast< (TrueCut $c) >>
-      | IDENT "Assert"; c = constrarg; ":"; t = constrarg ->
-          let id = match c with 
-            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
-            | _ -> assert false in
-	  <:ast< (TrueCut $t $id) >>
-      | IDENT "Assert"; c = constrarg; ":="; b = constrarg ->
-          let id = match c with 
-            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
-            | _ -> assert false in
-	  <:ast< (Forward "HideBody" $b $id) >>
-      | IDENT "Pose"; c = constrarg; ":="; b = constrarg ->
-          let id = match c with 
-            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
-            | _ -> assert false in 
-	  <:ast< (Forward "KeepBody" $b $id) >>
-      | IDENT "Pose"; b = constrarg ->
-	  <:ast< (Forward "KeepBody" $b) >>
-      | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
-          <:ast< (Specialize $n ($LIST $lcb))>>
-      | IDENT "Specialize"; lcb = constrarg_binding_list ->
-          <:ast< (Specialize ($LIST $lcb)) >>
-      | IDENT "Generalize"; lc = constrarg_list ->
-          <:ast< (Generalize ($LIST $lc)) >>
-      | IDENT "Generalize"; IDENT "Dependent"; c = constrarg ->
-          <:ast< (GeneralizeDep $c) >>
-      | IDENT "LetTac"; s = identarg; ":="; c = constrarg; p = clause_pattern->
-	  <:ast< (LetTac $s $c $p) >>
-      | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
-      | IDENT "Clear"; l = ne_idmetahyp_list -> 
-                <:ast< (Clear (CLAUSE ($LIST $l))) >>
-      | IDENT "ClearBody"; l = ne_idmetahyp_list -> 
-                <:ast< (ClearBody (CLAUSE ($LIST $l))) >>
-      | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
-                <:ast< (MoveDep $id1 $id2) >>
-      | IDENT "Rename"; id1 = identarg; IDENT "into"; id2 = identarg -> 
-                <:ast< (Rename $id1 $id2) >>
-(*To do: put Abstract in Refiner*)
-      | IDENT "Abstract"; tc = tactic_expr -> <:ast< (ABSTRACT (TACTIC $tc)) >>
-      | IDENT "Abstract"; tc = tactic_expr; "using";  s=identarg ->
-          <:ast< (ABSTRACT $s (TACTIC $tc)) >>
-(*End of To do*)
-      | IDENT "Left"; bl = with_binding_list -> <:ast< (Left $bl) >>
-      | IDENT "Right"; bl = with_binding_list -> <:ast< (Right $bl) >>
-      | IDENT "Split"; bl = with_binding_list -> <:ast< (Split $bl) >>
-      | IDENT "Exists"; bl = binding_list -> <:ast< (Split $bl) >>
-      | IDENT "Constructor"; nbl = numarg_binding_list ->
-          <:ast<(Constructor ($LIST $nbl)) >>
-      | IDENT "Constructor" ; tc = tactic_expr -> <:ast<(Constructor (TACTIC $tc)) >>
-      | IDENT "Constructor" -> <:ast<(Constructor) >>
-      | IDENT "Reflexivity" -> <:ast< (Reflexivity) >>
-      | IDENT "Symmetry" -> <:ast< (Symmetry) >>
-      | IDENT "Transitivity"; c = constrarg -> <:ast< (Transitivity $c) >>
-      | IDENT "Absurd"; c = constrarg -> <:ast< (Absurd $c) >>
-      | IDENT "Idtac" -> <:ast< (Idtac) >>
-      | IDENT "Fail" -> <:ast< (Fail) >>
-      | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >>
+    [ [ 
+      (* Basic tactics *)
+        IDENT "Intros"; IDENT "until"; id = quantified_hypothesis -> 
+	  TacIntrosUntil id
+      | IDENT "Intros"; pl = intropatterns -> TacIntroPattern pl
+      | IDENT "Intro"; id = ident; IDENT "after"; id2 = rawident ->
+	  TacIntroMove (Some id, Some id2)
+      | IDENT "Intro"; IDENT "after"; id2 = rawident ->
+	  TacIntroMove (None, Some id2)
+      | IDENT "Intro"; id = ident -> TacIntroMove (Some id, None)
+      | IDENT "Intro" -> TacIntroMove (None, None)
+
+      | IDENT "Assumption" -> TacAssumption
+      | IDENT "Exact"; c = constr -> TacExact c
+
+      | IDENT "Apply"; cl = constr_with_bindings -> TacApply cl
+      | IDENT "Elim"; cl = constr_with_bindings; "using";
+        el = constr_with_bindings -> TacElim (cl,Some el)
+      | IDENT "Elim"; cl = constr_with_bindings -> TacElim (cl,None)
+      | IDENT "OldElim"; c = constr ->
+	  (* TacOldElim c *) error_oldelim ()
+      | IDENT "ElimType"; c = constr -> TacElimType c
+      | IDENT "Case"; cl = constr_with_bindings -> TacCase cl
+      | IDENT "CaseType"; c = constr -> TacCaseType c
+      | IDENT "Fix"; n = natural -> TacFix (None,n)
+      | IDENT "Fix"; id = ident; n = natural -> TacFix (Some id,n)
+      | IDENT "Fix"; id = ident; n = natural; "with"; fd = LIST0 fixdecl ->
+	  TacMutualFix (id,n,fd)
+      | IDENT "Cofix" -> TacCofix None
+      | IDENT "Cofix"; id = ident -> TacCofix (Some id)
+      | IDENT "Cofix"; id = ident; "with"; fd = LIST0 cofixdecl ->
+	  TacMutualCofix (id,fd)
+
+      | IDENT "Cut"; c = constr -> TacCut c
+      | IDENT "Assert"; c = constr -> TacTrueCut (None,c)
+      | IDENT "Assert"; c = constr; ":"; t = constr ->
+          TacTrueCut (Some (coerce_to_id c),t)
+      | IDENT "Assert"; c = constr; ":="; b = constr ->
+          TacForward (false,Names.Name (coerce_to_id c),b)
+      | IDENT "Pose"; c = constr; ":="; b = constr ->
+	  TacForward (true,Names.Name (coerce_to_id c),b)
+      | IDENT "Pose"; b = constr -> TacForward (true,Names.Anonymous,b)
+      | IDENT "Generalize"; lc = LIST1 constr -> TacGeneralize lc
+      | IDENT "Generalize"; IDENT "Dependent"; c = constr -> TacGeneralizeDep c
+      | IDENT "LetTac"; id = ident; ":="; c = constr; p = clause_pattern
+        -> TacLetTac (id,c,p)
+      | IDENT "Instantiate"; n = natural; c = constr -> TacInstantiate (n,c)
+
+      | IDENT "Specialize"; n = OPT natural; lcb = constr_with_bindings ->
+	  TacSpecialize (n,lcb)
+      | IDENT "LApply"; c = constr -> TacLApply c
+
+      (* Derived basic tactics *)
+      | IDENT "Induction"; h = quantified_hypothesis -> TacOldInduction h
+      | IDENT "NewInduction"; c = induction_arg -> TacNewInduction c
+      | IDENT "Double"; IDENT "Induction"; h1 = quantified_hypothesis;
+	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
+      | IDENT "Destruct"; h = quantified_hypothesis -> TacOldDestruct h
+      | IDENT "NewDestruct"; c = induction_arg -> TacNewDestruct c
+      | IDENT "Decompose"; IDENT "Record" ; c = constr -> TacDecomposeAnd c
+      | IDENT "Decompose"; IDENT "Sum"; c = constr -> TacDecomposeOr c
+      | IDENT "Decompose"; "["; l = LIST1 qualid_or_ltac_ref; "]"; c = constr
+        -> TacDecompose (l,c)
+
+      (* Automation tactic *)
+      | IDENT "Trivial"; db = hintbases -> TacTrivial db
+      | IDENT "Auto"; n = OPT natural; db = hintbases -> TacAuto (n, db)
+
+      | IDENT "AutoTDB"; n = OPT natural -> TacAutoTDB n
+      | IDENT "CDHyp"; id = rawident -> TacDestructHyp (true,id)
+      | IDENT "DHyp";  id = rawident -> TacDestructHyp (false,id)
+      | IDENT "DConcl"  -> TacDestructConcl
+      | IDENT "SuperAuto"; l = autoargs -> TacSuperAuto l
+      | IDENT "Auto"; n = OPT natural; IDENT "Decomp"; p = OPT natural ->
+	  TacDAuto (n, p)
+
+      (* Context management *)
+      | IDENT "Clear"; l = LIST1 id_or_ltac_ref -> TacClear l
+      | IDENT "ClearBody"; l = LIST1 id_or_ltac_ref -> TacClearBody l
+      | IDENT "Move"; id1 = rawident; IDENT "after"; id2 = rawident -> 
+	  TacMove (true,id1,id2)
+      | IDENT "Rename"; id1 = rawident; IDENT "into"; id2 = rawident -> 
+	  TacRename (id1,id2)
+
+      (* Constructors *)
+      | IDENT "Left"; bl = with_binding_list -> TacLeft bl
+      | IDENT "Right"; bl = with_binding_list -> TacRight bl
+      | IDENT "Split"; bl = with_binding_list -> TacSplit bl
+      | IDENT "Exists"; bl = binding_list -> TacSplit bl
+      | IDENT "Exists" -> TacSplit NoBindings
+      | IDENT "Constructor"; n = num_or_meta; l = with_binding_list ->
+	  TacConstructor (n,l)
+      | IDENT "Constructor"; t = OPT tactic -> TacAnyConstructor t
+
+      (* Equivalence relations *)
+      | IDENT "Reflexivity" -> TacReflexivity
+      | IDENT "Symmetry" -> TacSymmetry
+      | IDENT "Transitivity"; c = constr -> TacTransitivity c
+
+      (* Conversion *)
+      | r = red_tactic; cl = clause -> TacReduce (r, cl)
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
-      | IDENT "Change"; c = constrarg; cl = clausearg ->
-	  <:ast< (Change $c $cl) >> 
-      | IDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ]
+      | IDENT "Change"; c = constr; cl = clause -> TacChange (c,cl)
+
+(* Unused ??
+      | IDENT "ML"; s = string -> ExtraTactic<:ast< (MLTACTIC $s) >>
+*)
 
  (*   | [ id = identarg; l = constrarg_list ->
           match (isMeta (nvar_of_ast id), l) with
@@ -383,9 +340,6 @@ GEXTEND Gram
             | _ -> Util.user_err_loc
                   (loc, "G_tactic.meta_tactic",
                    (str"Cannot apply arguments to a meta-tactic."))
-      ] *)]
-  ;
-  tactic:
-    [ [ tac = tactic_expr -> tac ] ]
+      ] *)] ]
   ;
 END;;

@@ -436,7 +436,7 @@ let locate_qualified_library qid =
     (LibInPath, extend_dirpath (find_logical_path path) base, file)
   with Not_found -> raise LibNotFound
 
-let rec_intern_qualified_library qid =
+let rec_intern_qualified_library (loc,qid) =
   try
     let (_,dir,f) = locate_qualified_library qid in
     rec_intern_module (dir,f);
@@ -444,19 +444,18 @@ let rec_intern_qualified_library qid =
   with
   | LibUnmappedDir ->
       let prefix, id = repr_qualid qid in
-      errorlabstrm "rec_intern_qualified_library"
-      (str ("Cannot load "^(string_of_id id)^":") ++ spc () ++ 
-      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
+      user_err_loc (loc, "rec_intern_qualified_library",
+        str ("Cannot load "^(string_of_id id)^":") ++ spc () ++ 
+        str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++
+        fnl ())
   | LibNotFound ->
-      errorlabstrm "rec_intern_qualified_library"
-      (str"Cannot find module " ++ pr_qualid qid ++ str" in loadpath")
+      user_err_loc (loc, "rec_intern_qualified_library",
+        str"Cannot find module " ++ pr_qualid qid ++ str" in loadpath")
 
-let rec_intern_module_from_file qid f =
+let rec_intern_module_from_file idopt f =
   (* A name is specified, we have to check it contains module id *)
-  let prefix, id = repr_qualid qid in
-  assert (repr_dirpath prefix = []);
   let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
-  rec_intern_by_filename_only (Some id) f
+  rec_intern_by_filename_only idopt f
 
 (*s [require_module] loads and opens a module. This is a synchronized
     operation. *)
@@ -494,17 +493,19 @@ let require_module spec qidl export =
   add_anonymous_leaf (in_require (modrefl,Some export));
   add_frozen_state ()
 
-let require_module_from_file spec qid file export =
-  let modref = rec_intern_module_from_file qid file in
+let require_module_from_file spec idopt file export =
+  let modref = rec_intern_module_from_file idopt file in
   add_anonymous_leaf (in_require ([modref],Some export));
   add_frozen_state ()
 
-let import_module export qid =
+let import_module export (loc,qid) =
   let modref =
     try 
       Nametab.locate_loaded_library qid
     with Not_found ->
-      error ((string_of_qualid qid)^" not loaded") in
+      user_err_loc
+        (loc,"import_module",
+	 str ((string_of_qualid qid)^" not loaded")) in
   add_anonymous_leaf (in_require ([modref],Some export))
 
 let read_module qid =

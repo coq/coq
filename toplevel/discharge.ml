@@ -23,6 +23,7 @@ open Typeops
 open Libnames
 open Libobject
 open Lib
+open Nametab
 open Declare
 open Impargs
 open Classops

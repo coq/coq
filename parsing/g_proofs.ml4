@@ -15,168 +15,110 @@ open Pp
 open Tactic
 open Util
 open Vernac_
+open Coqast
+open Vernacexpr
+open Prim
 
 (* Proof commands *)
 GEXTEND Gram
-  GLOBAL: command ne_constrarg_list;
+  GLOBAL: command;
 
   destruct_location :
-  [ [ IDENT "Conclusion"  -> <:ast< (CONCL)>>
-    | IDENT "Discardable"; "Hypothesis"  -> <:ast< (DiscardableHYP)>>
-    | "Hypothesis"   -> <:ast< (PreciousHYP)>> ]]
+  [ [ IDENT "Conclusion"  -> Tacexpr.ConclLocation ()
+    | discard = [ IDENT "Discardable" -> true | -> false ]; "Hypothesis"
+	-> Tacexpr.HypLocation discard ] ]
   ;
-  ne_constrarg_list:
-  [ [ l = LIST1 constrarg -> l ] ]
-  ;
-  opt_identarg_list:
+  opt_hintbases:
   [ [ -> []
-    | ":"; l = LIST1 identarg -> l ] ]
-  ;
-  deftok:
-    [ [ IDENT "Meta"
-      | IDENT "Tactic" ] ]
-  ;
-  vrec_clause:
-    [ [ name=identarg; it=LIST1 input_fun; ":="; body=tactic_expr ->
-        <:ast<(RECCLAUSE $name (FUNVAR ($LIST $it)) $body)>>
-      | name=identarg; ":="; body=tactic_expr ->
-        <:ast<(RECCLAUSE $name $body)>> ] ]
+    | ":"; l = LIST1 IDENT -> l ] ]
   ;
   command:
-    [ [ IDENT "Goal"; c = constrarg -> <:ast< (GOAL $c) >>
-      | IDENT "Goal" -> <:ast< (GOAL) >>
-      | "Proof" -> <:ast< (GOAL) >>
-      |	IDENT "Begin" -> <:ast< (GOAL) >>
-      | IDENT "Abort" -> <:ast< (ABORT) >>
-      | "Qed" -> <:ast< (SaveNamed) >>
-      | IDENT "Save" -> <:ast< (SaveNamed) >>
-      | IDENT "Defined" -> <:ast< (DefinedNamed) >>
-      |	IDENT "Defined"; id = identarg -> <:ast< (DefinedAnonymous $id) >>
-      | IDENT "Save"; tok = thm_tok; id = identarg ->
-          <:ast< (SaveAnonymous $tok $id) >>
-      | IDENT "Save"; id = identarg -> <:ast< (SaveAnonymous $id) >>
-      | IDENT "Suspend" -> <:ast< (SUSPEND) >>
-      | IDENT "Resume" -> <:ast< (RESUME) >>
-      | IDENT "Resume"; id = identarg -> <:ast< (RESUME $id) >>
-      | IDENT "Abort"; IDENT "All" -> <:ast< (ABORTALL) >>
-      | IDENT "Abort"; id = identarg -> <:ast< (ABORT $id) >>
-      | IDENT "Restart" -> <:ast< (RESTART) >>
-      | "Proof"; c = constrarg -> <:ast< (PROOF $c) >>
-      | IDENT "Undo" -> <:ast< (UNDO 1) >>
-      | IDENT "Undo"; n = numarg -> <:ast< (UNDO $n) >>
-      | IDENT "Show"; n = numarg -> <:ast< (SHOW $n) >>
-      | IDENT "Show"; IDENT "Implicits"; n = numarg ->
-          <:ast< (SHOWIMPL $n) >>
-      | IDENT "Focus" -> <:ast< (FOCUS) >>
-      | IDENT "Focus"; n = numarg -> <:ast< (FOCUS $n) >>
-      | IDENT "Unfocus" -> <:ast< (UNFOCUS) >>
-      | IDENT "Show" -> <:ast< (SHOW) >>
-      | IDENT "Show"; IDENT "Intro" -> <:ast< (SHOWINTRO) >>
-      | IDENT "Show"; IDENT "Intros" -> <:ast< (SHOWINTROS) >>
-      | IDENT "Show"; IDENT "Implicits" -> <:ast< (SHOWIMPL) >>
-      | IDENT "Show"; IDENT "Node" -> <:ast< (ShowNode) >>
-      | IDENT "Show"; IDENT "Script" -> <:ast< (ShowScript) >>
-      | IDENT "Show"; IDENT "Existentials" -> <:ast< (ShowEx) >>
-      | IDENT "Existential"; n = numarg; ":="; c = constrarg ->
-          <:ast< (EXISTENTIAL $n $c) >>
-      | IDENT "Existential"; n = numarg; ":="; c1 = Constr.constr; ":";
-          c2 = Constr.constr ->
-            <:ast< (EXISTENTIAL $n (CONSTR (CAST $c1 $c2))) >>
-      | IDENT "Existential"; n = numarg; ":"; c2 = Constr.constr; ":=";
-          c1 = Constr.constr ->
-            <:ast< (EXISTENTIAL $n (CONSTR (CAST $c1 $c2))) >>
-      | IDENT "Explain"; "Proof"; l = numarg_list ->
-          <:ast< (ExplainProof ($LIST $l)) >>
-      | IDENT "Explain"; "Proof"; IDENT "Tree"; l = numarg_list ->
-          <:ast< (ExplainProofTree ($LIST $l)) >>
-      | IDENT "Go"; n = numarg -> <:ast< (Go $n) >>
-      | IDENT "Go"; IDENT "top" -> <:ast< (Go "top") >>
-      | IDENT "Go"; IDENT "prev" -> <:ast< (Go "prev") >>
-      | IDENT "Go"; IDENT "next" -> <:ast< (Go "next") >>
-      | IDENT "Show"; "Proof" -> <:ast< (ShowProof) >>
-      | IDENT "Guarded" -> <:ast< (CheckGuard) >>
-      | IDENT "Show"; IDENT "Tree" -> <:ast< (ShowTree) >>
-      | IDENT "Show"; IDENT "Conjectures" -> <:ast< (ShowProofs) >>
-
-(* Definitions for tactics *)
-
-      | deftok; "Definition"; name=identarg; ":="; body=Tactic.tactic
-        -> <:ast<(TACDEF $name (AST $body))>>
-      | deftok; "Definition"; name=identarg; largs=LIST1 input_fun;
-        ":="; body=Tactic.tactic ->
-        <:ast<(TACDEF $name (AST (FUN (FUNVAR ($LIST $largs)) $body)))>>
-      | IDENT "Recursive"; deftok; "Definition"; vc=vrec_clause  ->
-        (match vc with
-         | Coqast.Node(_,"RECCLAUSE",nme::[_;_]) ->
-           <:ast<(TACDEF $nme (AST (REC $vc)))>>
-         | Coqast.Node(_,"RECCLAUSE",nme::[bd]) ->
-           <:ast<(TACDEF $nme (AST $bd))>>
-         | _ ->
-             anomalylabstrm "Gram.vernac" (str "Not a correct RECCLAUSE"))
-      | IDENT "Recursive"; deftok; "Definition"; vc=vrec_clause; "And";
-        vcl=LIST1 vrec_clause SEP "And" ->
-        let nvcl=
-          List.fold_right
-            (fun e b -> match e with
-             | Coqast.Node(_,"RECCLAUSE",nme::[_;_]) ->
-               nme::<:ast<(AST (REC $e))>>::b
-             | Coqast.Node(_,"RECCLAUSE",nme::[bd]) ->
-               nme::<:ast<(AST $bd)>>::b
-             | _ ->
-               anomalylabstrm "Gram.vernac" 
-		 (str "Not a correct RECCLAUSE"))
-	    (vc::vcl) []
-	in
-        <:ast<(TACDEF ($LIST $nvcl))>>
-
+    [ [ IDENT "Goal"; c = Constr.constr -> 
+        VernacStartProof(StartTheoremProof Theorem,None,c,false,(fun _ _ ->()))
+(*VernacGoal c*)
+(*      | IDENT "Goal" -> VernacGoal None*)
+      | "Proof" -> VernacNop
+(* Used ?? 
+      |	IDENT "Begin" -> VernacNop
+*)
+      | IDENT "Abort" -> VernacAbort None
+      | IDENT "Abort"; IDENT "All" -> VernacAbortAll
+      | IDENT "Abort"; id = ident -> VernacAbort (Some id)
+      | "Qed" -> VernacEndProof (true,None)
+      | IDENT "Save" -> VernacEndProof (true,None)
+      | IDENT "Defined" -> VernacEndProof (false,None)
+      |	IDENT "Defined"; id = ident -> VernacEndProof (false,Some (id,None))
+      | IDENT "Save"; tok = thm_token; id = ident ->
+	  VernacEndProof (true,Some (id,Some tok))
+      | IDENT "Save"; id = ident -> VernacEndProof (true,Some (id,None))
+      | IDENT "Suspend" -> VernacSuspend
+      | IDENT "Resume" -> VernacResume None
+      | IDENT "Resume"; id = ident -> VernacResume (Some id)
+      | IDENT "Restart" -> VernacRestart
+      | "Proof"; c = Constr.constr -> VernacExactProof c
+      | IDENT "Undo" -> VernacUndo 1
+      | IDENT "Undo"; n = natural -> VernacUndo n
+      | IDENT "Focus" -> VernacFocus None
+      | IDENT "Focus"; n = natural -> VernacFocus (Some n)
+      | IDENT "Unfocus" -> VernacUnfocus
+      | IDENT "Show" -> VernacShow (ShowGoal None)
+      | IDENT "Show"; n = natural -> VernacShow (ShowGoal (Some n))
+      | IDENT "Show"; IDENT "Implicits"; n = natural ->
+	  VernacShow (ShowGoalImplicitly (Some n))
+      | IDENT "Show"; IDENT "Implicits" -> VernacShow (ShowGoalImplicitly None)
+      | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode
+      | IDENT "Show"; IDENT "Script" -> VernacShow ShowScript
+      | IDENT "Show"; IDENT "Existentials" -> VernacShow ShowExistentials
+      | IDENT "Show"; IDENT "Tree" -> VernacShow ShowTree
+      | IDENT "Show"; IDENT "Conjectures" -> VernacShow ShowProofNames
+      | IDENT "Show"; "Proof" -> VernacShow ShowProof
+      | IDENT "Show"; IDENT "Intro" -> VernacShow (ShowIntros false)
+      | IDENT "Show"; IDENT "Intros" -> VernacShow (ShowIntros true)
+      | IDENT "Explain"; "Proof"; l = LIST0 integer ->
+	  VernacShow (ExplainProof l)
+      | IDENT "Explain"; "Proof"; IDENT "Tree"; l = LIST0 integer -> 
+	  VernacShow (ExplainTree l)
+      | IDENT "Go"; n = natural -> VernacGo (GoTo n)
+      | IDENT "Go"; IDENT "top" -> VernacGo GoTop
+      | IDENT "Go"; IDENT "prev" -> VernacGo GoPrev
+      | IDENT "Go"; IDENT "next" -> VernacGo GoNext
+      | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
 
-      | IDENT "Hint"; hintname = identarg; dbname = opt_identarg_list; ":=";
-	IDENT "Resolve"; c = constrarg ->
-	  <:ast<(HintResolve $hintname (VERNACARGLIST ($LIST $dbname)) $c)>>
-	  
-      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	IDENT "Immediate"; c = constrarg ->
-	  <:ast<(HintImmediate $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
-	  
-      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	IDENT "Unfold"; c = qualidarg ->
-	  <:ast<(HintUnfold $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
-	  
-      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	IDENT "Constructors"; c = qualidarg ->
-	  <:ast<(HintConstructors $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
-	  
-      | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	IDENT "Extern"; n = numarg; c = constrarg ; tac = tacarg ->
-	  <:ast<(HintExtern $hintname (VERNACARGLIST ($LIST $dbnames)) 
-		   $n $c (TACTIC $tac))>>
-	  
-      | IDENT "Hints"; IDENT "Resolve"; l = ne_qualidarg_list; 
-	dbnames = opt_identarg_list ->
-          <:ast< (HintsResolve (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
-	  
-      | IDENT "Hints"; IDENT "Immediate"; l = ne_qualidarg_list; 
-	dbnames = opt_identarg_list ->
-          <:ast< (HintsImmediate (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
-	  
-      | IDENT "Hints"; IDENT "Unfold"; l = ne_qualidarg_list;
-	dbnames = opt_identarg_list ->
-          <:ast< (HintsUnfold (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
-	  
       | IDENT "HintDestruct"; 
-                dloc = destruct_location;
-                na  = identarg;
-                hyptyp = constrarg;
-                pri = numarg;
-                tac = Prim.astact -> 
-          <:ast< (HintDestruct $na (AST $dloc) $hyptyp $pri (AST $tac))>>
+          dloc = destruct_location;
+          id  = ident;
+          hyptyp = Constr.constr_pattern;
+          pri = natural;
+          tac = tactic -> 
+	    VernacHintDestruct (id,dloc,hyptyp,pri,tac)
 
-      | n = numarg; ":"; tac = tacarg ->
-          <:ast< (SOLVE $n (TACTIC $tac)) >> 
+      | IDENT "Hint"; hintname = ident; dbnames = opt_hintbases; ":="; h = hint
+          -> VernacHints (dbnames, h hintname)
+	  
+      | IDENT "Hints"; (dbnames,h) = hints -> VernacHints (dbnames, h)
+	  
 
 (*This entry is not commented, only for debug*)
-      | IDENT "PrintConstr"; com = constrarg ->
-          <:ast< (PrintConstr $com)>>
+      | IDENT "PrintConstr"; c = Constr.constr -> 
+	  VernacExtend ("PrintConstr",
+	    [Genarg.in_gen Genarg.rawwit_constr c])
       ] ];
+
+  hint:
+    [ [ IDENT "Resolve"; c = Constr.constr -> fun name -> HintsResolve [Some name, c]
+      | IDENT "Immediate"; c = Constr.constr -> fun name -> HintsImmediate [Some name, c]
+      | IDENT "Unfold"; qid = qualid -> fun name -> HintsUnfold [Some name,qid]
+      | IDENT "Constructors"; c = qualid -> fun n -> HintsConstructors (n,c)
+      | IDENT "Extern"; n = natural; c = Constr.constr8 ; tac = tactic ->
+	  fun name -> HintsExtern (name,n,c,tac) ] ]
+  ;
+  hints:
+    [ [ IDENT "Resolve"; l = LIST1 Constr.qualid; dbnames = opt_hintbases ->
+         (dbnames, HintsResolve (List.map (fun qid -> (None, qid)) l))
+      | IDENT "Immediate"; l = LIST1 Constr.qualid; dbnames = opt_hintbases ->
+        (dbnames, HintsImmediate (List.map (fun qid -> (None, qid)) l))
+      | IDENT "Unfold"; l = LIST1 qualid; dbnames = opt_hintbases ->
+        (dbnames, HintsUnfold (List.map (fun qid -> (None,qid)) l)) ] ]
+    ;
   END

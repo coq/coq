@@ -128,8 +128,8 @@ let standard sds =
 let implicit () =
   let ml_rules () =
     print ".mli.cmi:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print ".ml.cmo:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print ".ml.cmx:\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
+    print ".ml.cmo:\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print ".ml.cmx:\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
   and v_rule () =
     print ".v.vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print ".v.vi:\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -182,6 +182,10 @@ let variables l =
   print "CAMLOPTLINK=ocamlopt\n";
   print "COQDEP=$(COQBIN)coqdep -c\n";
   print "COQVO2XML=coq_vo2xml\n";
+  print "GRAMMARS=grammar.cma g_constr.cmo g_tactic.cmo g_ltac.cmo \\
+  g_basevernac.cmo tacextend.cmo vernacextend.cmo\n";
+  print "CAMLP4EXTEND=pa_extend.cmo pa_ifdef.cmo q_MLast.cmo\n";
+  print "PP=-pp \"camlp4o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
   var_aux l;
   print "\n"
 

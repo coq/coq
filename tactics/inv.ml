@@ -241,8 +241,8 @@ let generalizeRewriteIntros tac depids id gls =
 
 let projectAndApply thin id depids gls =
   let env = pf_env gls in
-  let subst_hyp_LR id = tclTRY(hypSubst id None) in
-  let subst_hyp_RL id = tclTRY(revHypSubst id None) in
+  let subst_hyp_LR id = tclTRY(hypSubst_LR id None) in
+  let subst_hyp_RL id = tclTRY(hypSubst_RL id None) in
   let subst_hyp gls = 
     let orient_rule id = 
       let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id) in
@@ -372,7 +372,7 @@ let raw_inversion inv_kind indbinding id status gl =
       case_nodep_then_using 
   in
   (tclTHENS
-     (true_cut_anon cut_concl)
+     (true_cut None cut_concl)
      [case_tac (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
         (Some elim_predicate) ([],[]) newc;
       onLastHyp
@@ -421,6 +421,11 @@ let inversion inv_kind status id gls =
 
 (* Specializing it... *)
 
+let inv_gen gene thin status = try_intros_until (inversion (gene,thin) status)
+
+open Tacexpr
+
+(*
 let hinv_kind = Quoted_string "HalfInversion"
 let inv_kind = Quoted_string "Inversion"
 let invclr_kind = Quoted_string "InversionClear"
@@ -429,69 +434,19 @@ let com_of_id id =
   if id = hinv_kind then None
   else if id = inv_kind then Some false
   else Some true
+*)
 
-(* Inv generates nodependent inversion *)
-let (half_inv_tac, inv_tac, inv_clear_tac) =
-  let gentac =
-    hide_tactic "Inv"
-      (function
-	 | ic :: [id_or_num] ->
-	     tactic_try_intros_until
-               (inversion (false, com_of_id ic) NoDep)
-               id_or_num
-	 | l -> bad_tactic_args "Inv" l)
-  in
-  ((fun id -> gentac [hinv_kind; Identifier id]),
-   (fun id -> gentac [inv_kind; Identifier id]),
-   (fun id -> gentac [invclr_kind; Identifier id]))
+let inv k id = inv_gen false k NoDep id
 
+let half_inv_tac id = inv None (Rawterm.NamedHyp id)
+let inv_tac id = inv (Some false) (Rawterm.NamedHyp id)
+let inv_clear_tac id = inv (Some true) (Rawterm.NamedHyp id)
 
-(* Inversion without intros. No vernac entry yet! *)
-let named_inv =
-  let gentac =
-    hide_tactic "NamedInv"
-      (function
-	 | [ic; Identifier id] -> inversion (true, com_of_id ic) NoDep id
-	 | l -> bad_tactic_args "NamedInv" l)
-  in 
-  (fun ic id -> gentac [ic; Identifier id])
+let dinv k c id = inv_gen false k (Dep c) id
 
-(* Generates a dependent inversion with a certain generalisation of the goal *)
-let (half_dinv_tac, dinv_tac, dinv_clear_tac) =
-  let gentac =
-    hide_tactic "DInv"
-      (function
-	 | ic :: [id_or_num] ->
-	     tactic_try_intros_until
-               (inversion (false, com_of_id ic) (Dep None))
-	       id_or_num
-	 | l -> bad_tactic_args "DInv" l)
-  in
-  ((fun id -> gentac [hinv_kind; Identifier id]),
-   (fun id -> gentac [inv_kind; Identifier id]),
-   (fun id -> gentac [invclr_kind; Identifier id]))
-
-(* generates a dependent inversion using a given generalisation of the goal *)
-let (half_dinv_with, dinv_with, dinv_clear_with) =
-  let gentac =
-    hide_tactic "DInvWith"
-      (function
-	 | [ic; id_or_num; Command com] ->
-	     tactic_try_intros_until
-               (fun id gls -> 
-		 inversion (false, com_of_id ic)
-		   (Dep (Some (pf_interp_constr gls com))) id gls)
-	       id_or_num
-	 | [ic; id_or_num; Constr c] ->
-	     tactic_try_intros_until
-               (fun id gls ->
-                 inversion (false, com_of_id ic) (Dep (Some c)) id gls)
-	       id_or_num
-	 | l -> bad_tactic_args "DInvWith" l)
-  in
-  ((fun id c -> gentac [hinv_kind; Identifier id; Constr c]),
-   (fun id c -> gentac [inv_kind; Identifier id; Constr c]),
-   (fun id c -> gentac [invclr_kind; Identifier id; Constr c]))
+let half_dinv_tac id = dinv None None (Rawterm.NamedHyp id)
+let dinv_tac id = dinv (Some false) None (Rawterm.NamedHyp id)
+let dinv_clear_tac id = dinv (Some true) None (Rawterm.NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them
@@ -515,22 +470,4 @@ let invIn com id ids gls =
     gls
   with e -> wrap_inv_error id e
 
-let invIn_tac =
-  let gentac =
-    hide_tactic "InvIn"
-      (function
-	 | (com::(Identifier id)::hl as ll) ->
-	     let hl' =
-	       List.map
-		 (function
-		    | Identifier id -> id
-		    | _ -> bad_tactic_args "InvIn" ll) hl 
-	     in
-             invIn (com_of_id com) id hl'
-	 | ll -> bad_tactic_args "InvIn" ll)
-  in 
-  fun com id hl ->
-    gentac
-      ((Identifier com)
-       ::(Identifier id)
-       ::(List.map (fun id -> (Identifier id)) hl))
+let invIn_gen com id idl = try_intros_until (fun id -> invIn com id idl) id

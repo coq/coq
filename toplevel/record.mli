@@ -22,5 +22,5 @@ val declare_projections :
   inductive -> bool list -> rel_context -> constant option list
 
 val definition_structure :
-   bool * identifier * (identifier * Coqast.t) list *
-  (bool * (identifier * bool * Coqast.t)) list * identifier * sorts -> unit
+  bool * identifier * (identifier * Genarg.constr_ast) list *
+  (bool * Vernacexpr.local_decl_expr) list * identifier * sorts -> unit

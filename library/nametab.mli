@@ -66,6 +66,10 @@ val push_syntactic_definition : section_path -> unit
 val push_short_name_syntactic_definition : section_path -> unit
 val push_short_name_object : section_path -> unit
 
+(*s Register visibility of absolute paths by short names *)
+val push_tactic_path : section_path -> unit
+val locate_tactic : qualid -> section_path
+
 (*s Register visibility by all qualifications *)
 val push_section : dir_path -> unit
 
@@ -76,7 +80,10 @@ val locate : qualid -> global_reference
 
 (* This function is used to transform a qualified identifier into a
    global reference, with a nice error message in case of failure *)
-val global : loc -> qualid -> global_reference
+val global : qualid located -> global_reference
+
+(* The same for inductive types *)
+val global_inductive : qualid located -> inductive
 
 (* This locates also syntactic definitions *)
 val extended_locate : qualid -> extended_global_reference
@@ -105,10 +112,12 @@ val locate_in_absolute_module : dir_path -> identifier -> global_reference
 val push_loaded_library : dir_path -> unit
 val locate_loaded_library : qualid -> dir_path
 
-
-
 type frozen
 
 val freeze : unit -> frozen
 val unfreeze : frozen -> unit
 
+type strength = 
+  | NotDeclare
+  | DischargeAt of dir_path * int
+  | NeverDischarge

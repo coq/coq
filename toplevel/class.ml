@@ -330,6 +330,16 @@ let try_add_new_identity_coercion id stre ~source ~target =
 let try_add_new_coercion_with_source ref stre ~source =
   try_add_new_coercion_core ref stre (Some source) None false
 
+let add_coercion_hook stre ref = 
+  try_add_new_coercion ref stre;
+  Options.if_verbose message
+    (string_of_qualid (shortest_qualid_of_global None ref)
+    ^ " is now a coercion")
+
+let add_subclass_hook stre ref =
+  let cl = class_of_ref ref in
+  try_add_new_coercion_subclass cl stre
+
 (* try_add_new_class : global_reference -> strength -> unit *)
 
 let class_of_global = function
