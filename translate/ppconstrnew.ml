@@ -456,7 +456,19 @@ let pr_lconstr_env env c = pr ltop (transf env c)
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
-let pr_binders = pr_binders pr
+let anonymize_binder na c =
+  if Options.do_translate() then
+    Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
+      (Reserve.anonymize_if_reserved na
+      (Constrintern.for_grammar
+        (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
+  else c
+
+let pr_binders l =
+  prlist_with_sep sep
+    (fun (nal,t) -> prlist_with_sep sep
+      (fun (_,na as x) -> pr_oneb pr (anonymize_binder na t) x) nal) l
+
 let pr_cases_pattern = pr_patt ltop
 
 let pr_pattern = pr_constr

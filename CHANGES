@@ -1,12 +1,21 @@
 Changes from V7.4
 =================
 
+A revision of the standard library and of concrete syntax of Coq, including
+
+- a completely new syntax for terms
+- renaming of various standard notions from French to English (esp in ZArith)
+- all notions of the standard library are declared with (strict)
+  implicit arguments
+
 Vernacular commands
 
 - "Declare ML Module" now allows us to import .cma files. This avoids to use a
    bunch of "Declare ML Module" statements when using several ML files.
 - "Set Printing Width n" added, allows to change the size of width printing
    (TODO : doc).
+- "Implicit Variables Type x,y:t" assigns default types for binding variables.
+
 Gallina
 
 - New syntax of the form "Inductive bool : Set := true, false : bool." for

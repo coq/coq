@@ -27,6 +27,7 @@ open Rawterm
 open Pattern
 open Nametab
 open Symbols
+open Reserve
 (*i*)
 
 (* Translation from rawconstr to front constr *)
@@ -239,12 +240,12 @@ let rec extern scopes vars r =
               extern scopes (add_vname vars na) c)
 
   | RProd (loc,na,t,c) ->
-      let t = extern scopes vars t in
+      let t = extern scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
       CProdN (loc,[(dummy_loc,na)::idl,t],c)
 
   | RLambda (loc,na,t,c) ->
-      let t = extern scopes vars t in
+      let t = extern scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_lambda scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,t],c)
 
@@ -292,8 +293,8 @@ let rec extern scopes vars r =
   | RDynamic (loc,d) -> CDynamic (loc,d)
 	
 and factorize_prod scopes vars aty = function
-  | RProd (loc,Name id,ty,c)
-      when aty = extern scopes vars ty
+  | RProd (loc,(Name id as na),ty,c)
+      when aty = extern scopes vars (anonymize_if_reserved na ty)
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
@@ -301,7 +302,7 @@ and factorize_prod scopes vars aty = function
 
 and factorize_lambda scopes vars aty = function
   | RLambda (loc,na,ty,c)
-      when aty = extern scopes vars ty
+      when aty = extern scopes vars (anonymize_if_reserved na ty)
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let (nal,c) = factorize_lambda scopes (add_vname vars na) aty c in
            ((loc,na)::nal,c)
