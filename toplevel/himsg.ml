@@ -89,7 +89,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
   [< 'sTR "In Cases expression on term"; 'bRK(1,1); pc;
      'sPC; 'sTR "the branch " ; 'iNT (i+1);
      'sTR " has type"; 'bRK(1,1); pa ; 'sPC; 
-     'sTR "which should be:"; 'bRK(1,1); pe >]
+     'sTR "which should be"; 'bRK(1,1); pe >]
 
 let explain_generalization k ctx (name,var) c =
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in

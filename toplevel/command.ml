@@ -341,7 +341,8 @@ let inductive_of_ident id =
   let c =
     try global_reference CCI id
     with Not_found ->
-      errorlabstrm "inductive_of_ident" ((string_of_id id) ^ " not found")
+      errorlabstrm "inductive_of_ident"
+	[< 'sTR ((string_of_id id) ^ " not found") >]
   in
   match kind_of_term (global_reference CCI id) with
     | IsMutInd ind -> ind
