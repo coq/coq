@@ -300,6 +300,7 @@ let translate_v7_string = function
   | "Pow_Rabsolu" -> "Pow_Rabs"
 ...
 *)
+  | "complet" -> "completeness"
   | "Rle_sym1" -> "Rle_ge"
   | "Rmin_sym" -> "Rmin_comm"
   | "Rsqr_times" -> "Rsqr_mult"
@@ -427,7 +428,8 @@ let same c d = try check_same_type c d; true with _ -> false
 (**********************************************************************)
 (* conversion of terms and cases patterns                             *)
 
-let make_current_scope (scopt,scopes) = option_cons scopt scopes
+let make_current_scopes (scopt,scopes) = 
+  option_fold_right push_scope scopt scopes
 
 let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
@@ -711,7 +713,7 @@ and extern_eqn inctx scopes vars (loc,ids,pl,c) =
    extern inctx scopes vars c)
 
 and extern_numeral loc scopes (sc,n) =
-  match Symbols.availability_of_numeral sc (make_current_scope scopes) with
+  match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
     | None -> raise No_match
     | Some key -> insert_delimiters (CNumeral (loc,n)) key
 
@@ -732,17 +734,17 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
         let e =
           match keyrule with
           | NotationRule (sc,ntn) ->
-	      let scopes' = option_cons tmp_scope scopes in
+	      let scopes' = make_current_scopes (tmp_scope, scopes) in
 	      (match Symbols.availability_of_notation (sc,ntn) scopes' with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
 	      | Some (scopt,key) ->
-	          let scopes = option_cons scopt scopes in
+	          let scopes = make_current_scopes (scopt, scopes) in
 	          let l =
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern (* assuming no overloading: *) true
-		        (scopt,scl@scopes) vars c)
+		        (scopt,List.fold_right push_scope scl scopes) vars c)
                       subst in
 	          insert_delimiters (CNotation (loc,ntn,l)) key)
           | SynDefRule kn ->
