@@ -515,12 +515,38 @@ Qed.
 
 \end{coq_example}
 
-
-
 \Question[autowith]{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
 
-Use a base of Hints.
+You can use a what is called a ``base of Hints''.
 
+\begin{coq_example}
+Require Import ZArith.
+Require Ring.
+Open Local Scope Z_scope.
+
+Lemma toto1 : 1+1 = 2.
+ring.
+Qed.
+
+Lemma toto2 : 2+2 = 4.
+ring.
+Qed.
+
+Lemma toto3 : 2+1 = 3.
+ring.
+Qed.
+
+Hint Resolve toto1 toto2 toto3 : mybase.
+
+Goal 2+(1+1)=4. 
+auto with mybase.
+Qed.
+\end{coq_example}
+
+
+\Question[savedqed]{What is the difference between saved qed and defined ?}
+
+\Question[opaquetrans]{What is the difference between opaque and transparent ?}
 
 
 \Question[assumption]{My goal is one of the hypothesis, how can I prove it ?}
