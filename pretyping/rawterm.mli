@@ -47,7 +47,7 @@ type 'a bindings =
 type 'a with_bindings = 'a * 'a bindings
 
 type hole_kind =
-  | ImplicitArg of global_reference * int
+  | ImplicitArg of global_reference * (int * identifier option)
   | BinderType of name
   | QuestionMark
   | CasesType

@@ -322,13 +322,12 @@ let explain_hole_kind env = function
       str "a type for " ++ Nameops.pr_id id
   | BinderType Anonymous ->
       str "a type for this anonymous binder"
-  | ImplicitArg (c,n) ->
+  | ImplicitArg (c,(n,ido)) ->
       if !Options.v7 then
 	str "the " ++ pr_ord n ++
 	str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
       else
-	let imps = Impargs.implicits_of_global c in
-	let id = Impargs.name_of_implicit (List.nth imps (n-1)) in
+	let id = out_some ido in
 	str "an instance for the implicit parameter " ++
 	pr_id id ++ spc () ++ str "of" ++
 	spc () ++ Nametab.pr_global_env Idset.empty c
