@@ -26,11 +26,6 @@ Dyade/BDD :
 File "./bdd4.v", line 122, characters 10-28
 --> Out of memory après plus de 500Mo utilisés
 
-Lyon/AUTOMATA : OK
-Lyon/CIRCUITS : OK
-Lyon/COINDUCTIVES : OK
-Lyon/IEEE754 : OK
-
 Rocq/MUTUAL-EXCLUSION : échec sur Realizer
 
 Rocq/COC
@@ -72,11 +67,38 @@ l'environnement de la preuve de ce théorème
 Rocq/RATIONAL
 --> Des fichiers ML à porter
 
-Rocq/MM
+Lyon/AUTOMATA OK
+Lyon/CIRCUITS OK
+Lyon/COINDUCTIVES OK
+Lyon/IEEE754 OK
+Lyon/PROCESSES OK
+Lyon/PROGRAMS : Nécessite Programs.v
+Lyon/STREAMS OK
+Lyon/FIRING-SQUAD : des identificateurs avec le symbole $ !! (plus autorisé)
+Lyon/INSERTION-SORT : Nécessite Programs.v
+Lyon/DISTRIBUTED_REFERENCE_COUNTING -> Preuve incomplète (lié à Intuition)
+
+Marseille/CCS OK
+Marseille/CIRCUITS -> Realizer
 
 Montevideo/CtlTctl OK
 Montevideo/RailroadCrossing OK (TemporalOperators.v ne doit pas etre compile)
 
+Nancy/FOUnify OK
+
 Nijmegen OK
+
+Paris/ZF OK
+
+Sophia-Antipolis/Cours-de-Coq
+File "./ps.v", line 206, characters 3-31
+Error: A is already used
+Sophia-Antipolis/HARDWARE ??
+Sophia-Antipolis/MATHS ??
+Sophia-Antipolis/condom ... vide 
+Sophia-Antipolis/param_pi
+File "./fresh.v", line 173, characters 0-20
+Error: Too few occurences
+
 Utrecht/Ramsey OK
 Utrecht/ABP OK
