@@ -46,6 +46,12 @@ Vernacular commands
 - Notation now mandatorily requires a precedence and associativity
   (default was to set precedence to 1 and associativity to none)
 - New command "About name" for light printing of type, implicit arguments, etc.
+- New declaration "Conjecture" and command "Admitted" to declare incompletely
+  proven statement as axioms
+
+Commands
+
+- new coqtop/coqc option -dont-load-proofs not to load opaque proofs in memory
 
 Gallina
 
@@ -100,6 +106,7 @@ Tactics
 - A NewInduction naming bug for inductive types with functional
   arguments (e.g. the accessibility predicate) has been fixed (source
   of incompatibilities)
+- Symmetry now applies to hypotheses too
 
 Bugs
 
