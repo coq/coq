@@ -22,10 +22,6 @@ val ast_of_pattern : names_context -> constr_pattern -> Coqast.t
 
 val ast_of_constr : bool -> env -> constr -> Coqast.t
 
-(*i C'est bdize qui sait maintenant s'il faut afficher les casts ou pas
-val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
-i*)
-
 val ast_of_constant     : env -> constant -> Coqast.t
 val ast_of_existential  : env -> existential -> Coqast.t
 val ast_of_constructor  : env -> constructor -> Coqast.t
