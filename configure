@@ -6,9 +6,9 @@
 # 
 ##################################
 
-VERSION=8.0alpha
+VERSION=8.0beta
 VERSIONSI=1.0
-DATE="Sep 2003"
+DATE="Nov 2003"
 
 # a local which command for sh
 which () {
