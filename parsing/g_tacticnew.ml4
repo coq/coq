@@ -169,7 +169,7 @@ GEXTEND Gram
       | IDENT "eval"; rtc = Tactic.red_expr; "in"; c = Constr.constr ->
         ConstrEval (rtc,c) 
       | IDENT "check"; c = Constr.constr -> ConstrTypeOf c
-      | c = Constr.lconstr -> ConstrTerm c ] ]
+      | c = Constr.constr -> ConstrTerm c ] ]
   ;
   castedopenconstr:
     [ [ c = constr -> c ] ]
