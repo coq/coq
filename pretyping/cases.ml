@@ -21,8 +21,7 @@ open Evarconv
 (* A) Typing old cases                                               *)
 (* This was previously in Indrec but creates existential holes       *)
 
-let mkExistential isevars env =
-  new_isevar isevars env (mkCast (dummy_sort, dummy_sort)) CCI
+let mkExistential isevars env = new_isevar isevars env dummy_sort CCI
 
 let norec_branch_scheme env isevars cstr =
   it_mkProd_or_LetIn (mkExistential isevars env) cstr.cs_args 
