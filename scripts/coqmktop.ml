@@ -288,7 +288,7 @@ let main () =
   (* the list of the loaded modules *)
   let main_file = create_tmp_main_file modules in
   try
-    let args = (includes ()) @ options @ tolink @ dynlink @ [ main_file ] in
+    let args = options @ (includes ()) @ tolink @ dynlink @ [ main_file ] in
     (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " ((prog^" -linkall")::args) in
     if !echo then begin print_endline command; flush Pervasives.stdout end;
