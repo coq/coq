@@ -342,7 +342,7 @@ case $ARCH in
     win32)
 	STRIPCOMMAND="true";;
     *)
-    if test $coq_profile_flag = "-p" ; then
+    if [ "$coq_profile_flag" = "-p" ] ; then
 	STRIPCOMMAND="true"
     else
 	STRIPCOMMAND="strip"

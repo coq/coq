@@ -461,9 +461,9 @@ parsing/g_prim.cmo: parsing/g_prim.ml4
 parsing/g_prim.cmx: parsing/g_prim.ml4
 	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4EXTEND) -impl" -impl $<
 
-GRAMMARCMO=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
-	   ./lib/hashcons.cmo ./parsing/coqast.cmo ./parsing/lexer.cmo \
-	   ./parsing/pcoq.cmo ./parsing/q_coqast.cmo ./parsing/g_prim.cmo
+GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
+	   lib/hashcons.cmo parsing/coqast.cmo parsing/lexer.cmo \
+	   parsing/pcoq.cmo parsing/q_coqast.cmo parsing/g_prim.cmo
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
@@ -490,6 +490,7 @@ beforedepend:: $(GRAMMARCMO)
 
 parsing/pcoq.ml: parsing/pcoq.ml4
 	$(CAMLP4EXTEND) pr_o.cmo -impl $< -o $@
+
 parsing/extend.ml: parsing/extend.ml4 parsing/grammar.cma
 	$(CAMLP4GRAMMAR) pr_o.cmo -impl $< -o $@
 
