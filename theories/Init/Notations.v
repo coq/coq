@@ -26,6 +26,8 @@ Uninterpreted Notation "x = y  :> T"
   (at level 5, y at next level, no associativity).
 Uninterpreted Notation "x = y"
   (at level 5, no associativity).
+Uninterpreted Notation "x = y = z"
+  (at level 5, no associativity, y at next level).
 
 Uninterpreted Notation "x <> y  :> T" 
   (at level 5, y at next level, no associativity).
@@ -41,10 +43,12 @@ Uninterpreted V8Notation "x > y" (at level 50, no associativity).
 
 Uninterpreted Notation "x * y" (at level 3, right associativity)
   V8only (at level 30, left associativity).
-Uninterpreted Notation "x / y" (at level 3, left associativity).
+Uninterpreted V8Notation "x / y" (at level 3, left associativity).
 Uninterpreted Notation "x + y" (at level 4, left associativity).
 Uninterpreted Notation "x - y" (at level 4, left associativity).
 Uninterpreted Notation "- x" (at level 0) V8only (at level 40).
+Uninterpreted Notation "/ x" (at level 0)
+  V8only (at level 30, left associativity).
 
 (** Notations for pairs *)
 
