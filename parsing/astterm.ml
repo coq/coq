@@ -67,9 +67,12 @@ let rec has_duplicate = function
   | [] -> None
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
-let check_linearity loc ids =
+let loc_of_lhs lhs = join_loc (loc (List.hd lhs)) (loc (list_last lhs))
+
+let check_linearity lhs ids =
   match has_duplicate ids with
-    | Some id -> user_err_loc (loc,"ast_to_eqn",non_linearl_mssg id)
+    | Some id -> 
+	user_err_loc (loc_of_lhs lhs,"ast_to_eqn",non_linearl_mssg id)
     | None -> ()
 
 let mal_formed_mssg () =
@@ -511,7 +514,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	let eqn_ids = List.flatten idsl in
 	let subst = List.flatten substl in 
 	(* Linearity implies the order in ids is irrelevant *)
-	check_linearity loc eqn_ids;
+	check_linearity lhs eqn_ids;
 	check_uppercase loc eqn_ids;
 	check_number_of_pattern loc n pl;
 	let rhs = replace_vars_ast subst rhs in

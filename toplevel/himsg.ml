@@ -478,11 +478,11 @@ let explain_bad_pattern ctx cstr ty =
 
 let explain_bad_constructor ctx cstr ind =
   let pi = pr_inductive ctx ind in
-  let pc = pr_constructor ctx cstr in
+(*  let pc = pr_constructor ctx cstr in*)
   let pt = pr_inductive ctx (inductive_of_constructor cstr) in
-  [< 'sTR "Expecting a constructor in inductive type "; pi; 'bRK(1,1) ;
-     'sTR " but found the constructor " ; pc; 'bRK(1,1) ;
-     'sTR " in inductive type "; pt >]
+  [< 'sTR "Found a constructor of inductive type "; pt; 'bRK(1,1) ;
+     'sTR "while a constructor of " ; pi; 'bRK(1,1) ;
+     'sTR "is expected" >]
 
 let explain_wrong_numarg_of_constructor ctx cstr n =
   let pc = pr_constructor ctx (cstr,[||]) in
