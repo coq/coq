@@ -489,10 +489,8 @@ LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
 	  $(LPPRETYPING) $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
 
-doc/coq.tex: doc/preamble.tex $(LPFILES)
-	cat doc/preamble.tex > doc/coq.tex
-	ocamlweb --no-preamble $(LPFILES) >> doc/coq.tex
-	echo "\end{document}" >> doc/coq.tex
+doc/coq.tex: $(LPFILES)
+	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
 
 clean::
 	rm -f doc/*~ doc/coq.tex
