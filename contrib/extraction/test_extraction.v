@@ -51,3 +51,4 @@ Inductive Finite [U:Type] : (Ensemble U) -> Set :=
    |  Union_is_finite:
       (A: (Ensemble U)) (Finite U A) -> 
       (x: U) ~ (A x) -> (Finite U (Add U A x)).
+Extraction Finite.

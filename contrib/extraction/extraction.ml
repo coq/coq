@@ -120,18 +120,15 @@ let v_of_arity env c = match get_arity env c with
    for example with the types of inductive definitions, which are known
    to be already in arity form. *)
 
-let signature_of_arity = 
-  let rec sign_of acc env c = match kind_of_term c with
-    | IsProd (n, t, c') ->
-	let env' = push_rel (n,None,t) env in
-	let id = id_of_name n in
-	sign_of ((v_of_arity env t, id) :: acc) env' c'
-    | IsSort _ -> 
-	acc
-    | _ ->
-	assert false
-  in
-  sign_of []
+let rec signature_of_arity env c = match kind_of_term c with
+  | IsProd (n, t, c') ->
+      let env' = push_rel (n,None,t) env in
+      let id = id_of_name n in
+      (v_of_arity env t, id) :: (signature_of_arity env' c')
+  | IsSort _ -> 
+      []
+  | _ ->
+      assert false
 
 (* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
    returns the list [[a;b;...;z]]. It is used when making the ML types
@@ -242,7 +239,9 @@ let rec extract_type env c =
 		  (match extract_constant sp with
 		     | Emltype (_, sc, flc) -> 
 			 extract_type_app env fl (ConstRef sp,sc,flc) args
-		     | Eprop | Emlterm _ -> 
+		     | Eprop -> 
+			 Tprop
+		     | Emlterm _ -> 
 			 assert false 
 			 (* The head symbol must be of type an arity. *))
 		else 
