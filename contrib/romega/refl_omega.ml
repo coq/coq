@@ -700,7 +700,7 @@ let rec oformula_of_constr env t =
   | Kapp("Zplus",[t1;t2]) -> binop env (fun x y -> Oplus(x,y)) t1 t2
   | Kapp("Zminus",[t1;t2]) ->binop env (fun x y -> Ominus(x,y)) t1 t2
   | Kapp("Zmult",[t1;t2]) ->binop env (fun x y -> Omult(x,y)) t1 t2
-  | Kapp(("POS"|"NEG"|"ZERO"),_) -> 
+  | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> 
       begin try Oint(recognize_number t)
       with _ -> Oatom (add_reified_atom t env) end
   | _ -> 
@@ -1290,13 +1290,16 @@ let resolution env full_reified_goal systems_list =
   Tactics.apply (Lazy.force coq_I)
 
 let total_reflexive_omega_tactic gl = 
+  if !Options.v7 then Util.error "ROmega does not work in v7 mode";
+  try
   let env = new_environment () in
-  let reified_goal = reify_gl env gl in
-  let systems_list = destructurate_hyps reified_goal in
+  let full_reified_goal = reify_gl env gl in
+  let systems_list = destructurate_hyps full_reified_goal in
   if !debug then begin 
     display_systems systems_list
   end;
-  resolution env reified_goal systems_list gl
+  resolution env full_reified_goal systems_list gl
+  with Omega2.NO_CONTRADICTION -> Util.error "ROmega can't solve this system"
 
 
 (*i let tester = Tacmach.hide_atomic_tactic "TestOmega" test_tactic i*)

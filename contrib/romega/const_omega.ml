@@ -59,7 +59,7 @@ let recognize_number t =
      | _ -> failwith "not a number" in
   let f,l = dest_const_apply t in
     match Names.string_of_id f,l with
-       "POS",[t] -> loop t | "NEG",[t] -> - (loop t) | "ZERO",[] -> 0
+       "Zpos",[t] -> loop t | "Zneg",[t] -> - (loop t) | "Z0",[] -> 0
      | _ -> failwith "not a number";;
 
 
@@ -77,12 +77,11 @@ let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
 let coq_xH = lazy (constant "xH")
 let coq_xO = lazy (constant "xO")
 let coq_xI = lazy (constant "xI")
-let coq_ZERO = lazy (constant "ZERO")
-let coq_POS = lazy (constant "POS")
-let coq_NEG = lazy (constant "NEG")
+let coq_ZERO = lazy (constant "Z0")
+let coq_POS = lazy (constant "Zpos")
+let coq_NEG = lazy (constant "Zneg")
 let coq_Z = lazy (constant "Z")
-let coq_relation = lazy (constant  (if !Options.v7 then "relation" else "comparis
-on"))
+let coq_relation = lazy (constant  "comparison")
 let coq_SUPERIEUR = lazy (constant "SUPERIEUR")
 let coq_INFEEIEUR = lazy (constant "INFERIEUR")
 let coq_EGAL = lazy (constant "EGAL")
