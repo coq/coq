@@ -10,7 +10,7 @@ open Util
 open Names
 open Coqast
 open Ast
-open Coqlib
+open Stdlib
 open Termast
 
 exception Non_closed_number
