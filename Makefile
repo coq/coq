@@ -367,7 +367,8 @@ BOOLVO=theories/Bool/Bool.vo  		theories/Bool/IfProp.vo \
 ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/ZArith.vo      theories/ZArith/auxiliary.vo \
 	 theories/ZArith/ZArith_dec.vo  theories/ZArith/fast_integer.vo \
-	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo
+	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo \
+	 theories/ZArith/Zhints.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \

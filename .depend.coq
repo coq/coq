@@ -1,10 +1,12 @@
 theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/Arith/Arith.vo theories/ZArith/fast_integer.vo
+theories/ZArith/positive_hints.vo: theories/ZArith/positive_hints.v
 theories/ZArith/fast_integer.vo: theories/ZArith/fast_integer.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
 theories/ZArith/auxiliary.vo: theories/ZArith/auxiliary.v theories/Arith/Arith.vo theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/Logic/Decidable.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
 theories/ZArith/Zsyntax.vo: theories/ZArith/Zsyntax.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo
 theories/ZArith/Zmisc.vo: theories/ZArith/Zmisc.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/Bool/Bool.vo
+theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
 theories/ZArith/ZArith_dec.vo: theories/ZArith/ZArith_dec.v theories/Bool/Sumbool.vo theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo
-theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
+theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo theories/ZArith/Zhints.vo
 theories/ZArith/Wf_Z.vo: theories/ZArith/Wf_Z.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo
 theories/Wellfounded/Wellfounded.vo: theories/Wellfounded/Wellfounded.v theories/Wellfounded/Disjoint_Union.vo theories/Wellfounded/Inclusion.vo theories/Wellfounded/Inverse_Image.vo theories/Wellfounded/Lexicographic_Exponentiation.vo theories/Wellfounded/Lexicographic_Product.vo theories/Wellfounded/Transitive_Closure.vo theories/Wellfounded/Union.vo theories/Wellfounded/Well_Ordering.vo
 theories/Wellfounded/Well_Ordering.vo: theories/Wellfounded/Well_Ordering.v theories/Logic/Eqdep.vo
@@ -214,7 +216,7 @@ contrib/omega/Omega.vo: contrib/omega/Omega.v theories/ZArith/ZArith.vo theories
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v contrib/interface/paths.cmo contrib/interface/name_to_ast.cmo contrib/interface/xlate.cmo contrib/interface/vtp.cmo contrib/interface/translate.cmo contrib/interface/pbp.cmo contrib/interface/dad.cmo contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo contrib/interface/debug_tac.cmo contrib/interface/history.cmo contrib/interface/centaur.cmo
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
-contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/fourier/Fourier_util.vo
+contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
 contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Arith/Peano_dec.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo
 contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v contrib/ring/Ring.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
 contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v
