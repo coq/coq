@@ -25,14 +25,14 @@ end
 module Make = functor (P : Printer) -> struct
 
   let print_decl k env (s,typ) =
-    let ptyp = P.pr_term k env (body_of_type typ) in 
+    let ptyp = P.pr_term k env typ in 
     (spc () ++ pr_id s ++ str" : " ++ ptyp)
   
   let print_binding k env = function
     | Anonymous,ty -> 
-	(spc () ++ str"_" ++ str" : " ++ P.pr_term k env (body_of_type ty))
+	(spc () ++ str"_" ++ str" : " ++ P.pr_term k env ty)
     | Name id,ty -> 
-	(spc () ++ pr_id id ++ str" : " ++ P.pr_term k env (body_of_type ty))
+	(spc () ++ pr_id id ++ str" : " ++ P.pr_term k env ty)
 
 (****
   let sign_it_with f sign e =
@@ -138,7 +138,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
 
 let explain_generalization k ctx (name,var) c =
   let pe = pr_ne_ctx (str"in environment") k ctx in
-  let pv = P.pr_term k ctx (body_of_type var) in
+  let pv = P.pr_term k ctx var in
   let pc = P.pr_term k (push_rel (name,None,var) ctx) c in
   (str"Illegal generalization: " ++ pe ++ fnl () ++
      str"Cannot generalize" ++ brk(1,1) ++ pv ++ spc () ++
@@ -159,13 +159,13 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_ctx (str"in environment") k ctx in
   let pr = pr_term k ctx rator.uj_val in
-  let prt = pr_term k ctx (body_of_type rator.uj_type) in
+  let prt = pr_term k ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc = pr_term k ctx c.uj_val in
-		  let pct = pr_term k ctx (body_of_type c.uj_type) in
+		  let pct = pr_term k ctx c.uj_type in
 		  hov 2 (pc ++ spc () ++ str": " ++ pct)) randl
   in
   (str"Illegal application (Type Error): " ++ pe ++ fnl () ++
@@ -181,12 +181,12 @@ let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_ctx (str"in environment") k ctx in
   let pr = pr_term k ctx rator.uj_val in
-  let prt = pr_term k ctx (body_of_type rator.uj_type) in
+  let prt = pr_term k ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc = pr_term k ctx c.uj_val in
-		  let pct = pr_term k ctx (body_of_type c.uj_type) in
+		  let pct = pr_term k ctx c.uj_type in
 		  hov 2 (pc ++ spc () ++ str": " ++ pct)) randl
   in
   (str"Illegal application (Non-functional construction): " ++ pe ++ fnl () ++
@@ -244,8 +244,8 @@ in
     
 let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
   let pvd = P.pr_term k ctx (vdefj.(i)).uj_val in
-  let pvdt = P.pr_term k ctx (body_of_type (vdefj.(i)).uj_type) in
-  let pv = P.pr_term k ctx (body_of_type vargs.(i)) in
+  let pvdt = P.pr_term k ctx (vdefj.(i)).uj_type in
+  let pv = P.pr_term k ctx vargs.(i) in
   (str"The " ++
      if Array.length vdefj = 1 then (mt ()) else (int (i+1) ++ str "-th") ++
      str"recursive definition" ++ spc () ++ pvd ++ spc () ++

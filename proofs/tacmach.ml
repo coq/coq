@@ -46,14 +46,9 @@ let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
 let pf_hyps gls = (sig_it gls).evar_hyps
 
 let pf_concl gls = (sig_it gls).evar_concl
-(*
-let pf_untyped_hyps gls  =
-  let sign = Environ.named_context (pf_env gls) in
-  map_sign_typ (fun x -> body_of_type x) sign
-*)
 let pf_hyps_types gls  =
   let sign = Environ.named_context (pf_env gls) in
-  List.map (fun (id,_,x) -> (id,body_of_type x)) sign
+  List.map (fun (id,_,x) -> (id, x)) sign
 
 let pf_nth_hyp_id gls n = let (id,c,t) = List.nth (pf_hyps gls) (n-1) in id
 
