@@ -147,7 +147,7 @@ let field g =
     <:tactic<
       Match Context With
       | [|- (eq ?1 ?2 ?3)] -> Field_Gen FT
-      | _ -> Fail "Field: not an equality">>) g
+      | _ -> Fail 1 "Field: not an equality">>) g
 
 (* Verifies that all the terms have the same type and gives the right theory *)
 let guess_theory env evc = function
