@@ -225,7 +225,7 @@ let cime_of_rhs_constr sign =
 	    (match kind_of_term g with
 	       | Const _ -> flat sign g l
 	       | Construct _ -> constr g l
-	       | _ -> List.fold_right (fun c t -> app t c) l (coc k g))
+	       | _ -> List.fold_left app (coc k g) l)
       | Rel i ->
 	  let j = i - k in if j >= 0 then shift k (var j) else constr c []
       | Lambda (n,t,b) -> lambda n (coc k t) (coc (k+1) b)
@@ -386,7 +386,7 @@ let add_rules rb env =
     let new_rules = List.map (cime_rule_of_coq_rule s) rb.rules_list in
     let rules = new_rules @ env.rules in
     let dnet = compile s rules in
-    let add_rule r m =
+    let add_rule m r =
       let s = head_symbol r.lhs in
       (try
 	 let rules = KNmap.find s m in
@@ -394,7 +394,7 @@ let add_rules rb env =
 	   KNmap.add s (r::rules) m'
        with Not_found -> KNmap.add s [r] m)
     in
-    let new_rmap = List.fold_right add_rule new_rules KNmap.empty in
+    let new_rmap = List.fold_left add_rule KNmap.empty new_rules in
     let rmap = KNmap.fold KNmap.add new_rmap env.rmap in
       { env with rules = rules; dnet = dnet; rmap = rmap }
 
@@ -406,18 +406,19 @@ let rec symbols c =
     | _ -> KNset.empty
 and add_symbols c = KNset.union (symbols c)
 
-let add_lhs_symbols (l,_) = KNset.union (symbols l)
-let lhs_symbols_list l = List.fold_right add_lhs_symbols l KNset.empty
+let lhs_symbols_list =
+  let add_lhs_symbols s (l,_) = KNset.union (symbols l) s in
+    List.fold_left add_lhs_symbols KNset.empty
 
 (* definable symbols occuring in a cime term *)
 let rec symbols_cime = function
   | Term (Sconstr c,l) ->
-      List.fold_right add_symbols_cime l
-      (match kind_of_term c with
-	 | Const kn -> KNset.singleton kn
-	 | _ -> KNset.empty)
+      let s = match kind_of_term c with
+	| Const kn -> KNset.singleton kn
+	| _ -> KNset.empty
+      and add s t = KNset.union (symbols_cime t) s
+      in List.fold_left add s l
   | _ -> KNset.empty
-and add_symbols_cime t = KNset.union (symbols_cime t)
 
 (* module for confluence checking *)
 module Confluence = Confluence.Make(Cime)
@@ -439,22 +440,33 @@ let memo t u = Hashtbl.add hcime_nf t u
 and find t = Hashtbl.find hcime_nf t *)
 let force_norm = force_normalize (* find memo *)
 
-(* return None if [t] is already in normal form
-   return [Some t'] where [t'] is the normal form of [t] otherwise *)
-let normalize env t =
-  try
-    let s = sign env in
-    let t' = cime_of_constr s t in
-    let nf = force_norm s default env.dnet t' in
-    let nf' = constr_of_cime s nf in
-      Some nf'
-  with Irreducible -> None
+(* return None if [c] is already in normal form
+   return [Some c'] where [c'] is the normal form of [c] otherwise *)
+let normalize env c =
+  let s = sign env in
+  let t = cime_of_constr s c in
+    try
+      let c' = constr_of_cime s (force_norm s default env.dnet t) in
+	Some c'
+    with Irreducible -> None
 
 (* give the normal form *)
-let nf env t =
-  match normalize env t with
-    | Some nf -> nf
-    | _ -> t
+let nf env c =
+  match normalize env c with
+    | Some c' -> c'
+    | _ -> c
+
+
+
+
+
+
+
+
+
+
+
+(* code not used *)
 
 (* say if a term is in normal form *)
 (* let is_nf env t =

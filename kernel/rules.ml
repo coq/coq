@@ -45,7 +45,7 @@ let check_C t =
   match kind_of_term t with
     | Prod (Anonymous,u,v) ->
 	(match kind_of_term v with
-	   | Prod (Anonymous,u',v) ->
+	   | Prod (Anonymous,u',_) ->
 	       if not (eq_constr u u') then
 		 symbol_error Type_not_compatible_with_eqth
 	   | _ -> symbol_error Type_not_compatible_with_eqth)
@@ -105,11 +105,11 @@ let rule_err e = raise (Error_in_rule e)
 
 (* check that kn is a symbol *)
 let check_if_symbol env kn =
-  if not (is_symbol (lookup_constant kn env)) then
-    rule_err (Not_a_symbol kn)
+  if not (is_symbol_name kn env) then rule_err (Not_a_symbol kn)
 
 (* say if a constr is headed by a symbol *)
 let check_if_symbol_headed env c =
+  if not (is_symbol_headed env c) then 
   match kind_of_term (collapse c) with
     | App (f,_) ->
         (match kind_of_term f with
@@ -117,26 +117,6 @@ let check_if_symbol_headed env c =
 	   | _ -> rule_err Not_symbol_headed)
     | Const kn -> check_if_symbol env kn
     | _ -> rule_err Not_symbol_headed
-
-(* get head symbol of a symbol headed term *)
-let head_symbol c =
-  match kind_of_term (collapse c) with
-    | App (f,_) ->
-	(match kind_of_term f with
-	   | Const kn -> kn
-	   | _ -> invalid_arg "head_symbol")
-    | Const kn -> kn
-    | _ -> invalid_arg "head_symbol"
-
-(* get head symbol and its arguments *)
-let head_symbol_and_args c =
-  match kind_of_term (collapse c) with
-    | App (f,va) ->
-	(match kind_of_term f with
-	   | Const kn -> (kn,va)
-	   | _ -> invalid_arg "head_symbol_and_args")
-    | Const kn -> (kn,[||])
-    | _ -> invalid_arg "head_symbol_and_args"
 
 (* say if a constr is algebraic *)
 let check_if_algebraic env =
@@ -153,14 +133,12 @@ let check_if_algebraic env =
   in check_alg
 
 (* say if a constr is an admissible RHS *)
-let check_rhs env =
-  let rec chk_rhs c =
-    match kind_of_term c with
-      | App (f,va) -> chk_rhs f; Array.iter chk_rhs va
-      | Construct _ | Ind _ | Const _ | Rel _ -> ()
-      | Prod (_,t,b) | Lambda (_,t,b) -> chk_rhs t; chk_rhs b
-      | _ -> rule_err (Term_not_admissible_in_RHS c)
-  in chk_rhs
+let rec check_rhs c =
+  match kind_of_term c with
+    | App (f,va) -> check_rhs f; Array.iter check_rhs va
+    | Construct _ | Ind _ | Const _ | Rel _ -> ()
+    | Prod (_,t,b) | Lambda (_,t,b) -> check_rhs t; check_rhs b
+    | _ -> rule_err (Term_not_admissible_in_RHS c)
 
 (* say if an algebraic constr is linear *)
 let is_linear =
@@ -204,7 +182,7 @@ let is_non_dupl =
 
 (* check subject reduction *)
 let check_typing env envl envr (l,r) =
-  let kn,args = head_symbol_and_args l in
+  let kn,args = head_constant_and_args l in
   let cb = lookup_constant kn env in
   let t = hnf_prod_applist env cb.const_type (Array.to_list args) in
   let tl = j_type (typing envl l) and tr = j_type (typing envr r) in
@@ -271,7 +249,7 @@ let check_rec_calls env prec kn status vl =
 
 (* say if a rule satisfies the General Schema *)
 let check_GS env (l,r) =
-  let kn,vl = head_symbol_and_args l in
+  let kn,vl = head_constant_and_args l in
   let cb = lookup_constant kn env in
   check_rec_calls env (prec env) kn (status cb) vl r
 
@@ -290,7 +268,7 @@ let check_rules env re =
     try
       check_if_algebraic env l;
       check_if_symbol_headed env l;
-      check_rhs envr r;
+      check_rhs r;
       check_typing env envl envr rule;
       check_linear l;
       check_GS env rule

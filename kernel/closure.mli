@@ -160,6 +160,7 @@ type clos_infos
 val create_clos_infos : reds -> env -> clos_infos
 val is_rule_defined : clos_infos -> table_key -> fconstr stack -> bool
 val is_free : clos_infos -> table_key -> bool
+val env : clos_infos -> env
 val cime_env : clos_infos -> Cime.env
 val add_delta : clos_infos -> clos_infos
 

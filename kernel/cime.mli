@@ -28,7 +28,7 @@ val add_rules : rules_body -> env -> env
 (* say if the addition of rules preserves local confluence *)
 val is_locally_confluent : env -> (constr * constr) list -> bool
 
-(* return None if [t] is already in normal form
+(* return [None] if [t] is already in normal form
    return [Some t'] where [t'] is the normal form of [t] otherwise *)
 val normalize : env -> constr -> constr option
 

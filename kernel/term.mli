@@ -391,8 +391,14 @@ val collapse_appl : constr -> constr
 (* flatten head applications leaving casts *)
 val collapse : constr -> constr
 
-(* get head of the application form of a constr *)
+(* get head of a constr *)
 val get_head : constr -> constr
+val get_head_and_args : constr -> constr * constr array
+
+(* say if a constr is of the form (f t1 .. tn) with f a constant *)
+val is_constant_headed : constr -> bool
+val head_constant : constr -> constant
+val head_constant_and_args : constr -> constant * constr array
 
 (* Removes recursively the casts around a term i.e.
    [strip_outer_cast] (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
@@ -496,6 +502,10 @@ val iter_constr_with_binders :
    name and Cases annotations are not taken into account *)
 
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
+
+(* comparison function on constr for sorting *)
+
+val comp_constr : constr -> constr -> int
 
 (*********************************************************************)
 

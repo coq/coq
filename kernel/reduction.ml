@@ -173,6 +173,17 @@ let betaiota_rewrite_nf infos lft hd v fl =
 	  | _ -> branch"betaiota" "beta norm";Some (whd_stack infos lams (mk_clos (ESID lams) c) []), None
   ) else None, None)
 
+(* sort function *)
+let rec sort_constr info c =
+  match kind_of_term (collapse c) with
+    | App (f,v) ->
+	(match kind_of_term f with
+	   | Const kn when not (is_free_symbol kn (env info)) ->
+	       let v' = Array.map (sort_constr info) v in
+	       Array.sort comp_constr v'; mkApp (f,v')
+	   | _ -> c)
+    | _ -> c
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv =
   enter2 "ccnv" (prfc infos) lft1 lft2 term1 term2; leave "ccnv" (eqappr cv_pb infos
@@ -224,8 +235,20 @@ and eqappr_flex2 cv_pb infos appr1 appr2 fl1 fl2 cuniv =
 	try convert_stacks infos lft1 lft2 v1 v2 cuniv
 	with NotConvertible -> call_oracle()
       else (
-	(* TO DO: check equivalence modulo C/AC symbols *)
-	try convert_stacks infos lft1 lft2 v1 v2 cuniv
+	(* check equivalence modulo C/AC symbols *)
+	let lams1 = el_dom lft1
+	and lams2 = el_dom lft2
+	and fc1 = fapp_stack infos (hd1,v1)
+	and fc2 = fapp_stack infos (hd2,v2) in
+	let c1 = term_of_fconstr lams1 fc1
+	and c2 = term_of_fconstr lams2 fc2 in
+	let c1' = sort_constr infos c1
+	and c2' = sort_constr infos c2 in
+	let d1 = mk_clos (ESID lams1) c1'
+	and d2 = mk_clos (ESID lams2) c2' in
+	let _,v1' = whd_stack infos lams1 d1 []
+	and _,v2' = whd_stack infos lams2 d2 [] in
+	try convert_stacks infos lft1 lft2 v1' v2' cuniv
 	with NotConvertible -> call_oracle()
       )
     (* else the oracle tells which constant is to be expanded *)

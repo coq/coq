@@ -88,6 +88,11 @@ val add_constant : constant -> constant_body -> env -> env
 val lookup_constant    : constant -> env -> constant_body
 val evaluable_constant : constant -> env -> bool
 
+(* say if a constant is a symbol *)
+val is_symbol_name : constant -> env -> bool
+val is_symbol_headed : env -> constr -> bool
+val is_free_symbol : constant -> env -> bool
+
 (*s [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no
    body and [Not_found] if it does not exist in [env] *)

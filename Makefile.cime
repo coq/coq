@@ -26,7 +26,7 @@ cime/libcime.cmxa: $(CIMECMX)
 	$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CIMECMX)
 
 clean::
-	rm -f cime/libcime.* cime/*/*.cmo
+	rm -f cime/libcime.* cime/*/*.cm[io]
 
 cime-tags:
 	find cime -maxdepth 3 -regex ".*\.ml[i4]?" | sort -r | xargs \

@@ -155,6 +155,17 @@ let add_constant kn cb env =
 	env_prec = new_prec } in 
   { env with env_globals = new_globals }
 
+let is_symbol_name kn env = is_symbol (lookup_constant kn env)
+
+let is_symbol_headed env c =
+  match kind_of_term (get_head c) with
+    | Const kn -> is_symbol_name kn env
+    | _ -> false
+
+let is_free_symbol kn env =
+  let cb = lookup_constant kn env in
+  is_symbol cb & is_free cb
+
 (* Rewrite rules *)
 let lookup_rules kn env =
   try KNmap.find kn env.env_globals.env_rules
@@ -168,20 +179,9 @@ let rules env = env.env_globals.env_all_rules
 let cime env = env.env_globals.env_cime
 let prec env = env.env_globals.env_prec
 
-let head_symbol c =
-  match kind_of_term c with
-    | App (f,_) ->
-        begin
-	  match kind_of_term f with
-	    | Const kn -> kn
-	    | _ -> error "Ill-formed rule"
-        end
-    | Const kn -> kn
-    | _ -> error "Ill-formed rule"
-
 let add_rules rb env =
   let update env rule =
-    let kn = head_symbol (fst rule) in
+    let kn = head_constant (fst rule) in
       try
 	let rbs = KNmap.find kn env in
 	let env' = KNmap.remove kn env in
@@ -190,7 +190,7 @@ let add_rules rb env =
 	      if b.rules_ctx == rb.rules_ctx then
 		{ rb with rules_list = rule::b.rules_list } :: rbs'
 	      else { rb with rules_list = [rule] } :: rbs
-	  | _ -> anomaly "Environ.add_rules/update"
+	  | _ -> anomaly "Environ.add_rules"
 	in KNmap.add kn newrbs env'
       with
 	| Not_found ->

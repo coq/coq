@@ -961,6 +961,8 @@ let is_free info = function
   | ConstKey kn -> is_free (lookup_constant kn info.i_env)
   | _ -> true
 
+let env info = info.i_env
+
 let cime_env info = cime info.i_env
 
 let add_delta info = { info with i_flags = red_add info.i_flags fDELTA }

@@ -466,11 +466,39 @@ let collapse =
 	| App (f,va) -> collapse_rec f va
 	| _ -> c
 
-(* get head of an application *)
+(* get head of a term *)
 let get_head c =
-  match kind_of_term (collapse c) with
+  match collapse c with
     | App (f,_) -> f
     | _ -> c
+
+(* get head and args *)
+let get_head_and_args c =
+  match collapse c with
+    | App (f,v) -> (f,v)
+    | _ -> c,[||]
+
+(* say if a constr is of the form (f t1 .. tn) with f a constant *)
+let is_constant_headed c =
+  match get_head c with
+    | Const _ -> true
+    | _ -> false
+
+(* get head constant of a constant headed term *)
+let head_constant c =
+  match get_head c with
+    | Const kn -> kn
+    | _ -> invalid_arg "head_constant"
+
+(* get head constant and its arguments *)
+let head_constant_and_args c =
+  match collapse c with
+    | App (f,va) ->
+	(match f with
+	   | Const kn -> kn,va
+	   | _ -> invalid_arg "head_constant_and_args")
+    | Const kn -> kn,[||]
+    | _ -> invalid_arg "head_constant_and_args"
 
 (****************************************************************************)
 (*              Functions to recur through subterms                         *)
@@ -616,6 +644,85 @@ let compare_constr f t1 t2 =
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
   | _ -> false
 
+
+(* comparison function for AC-equality test *)
+
+let prec = function
+  | Rel _ -> 0
+  | Meta _ -> 1
+  | Var _ -> 2
+  | Sort _ -> 3
+  | Cast _ -> 4
+  | Prod _ -> 5
+  | Lambda _ -> 6
+  | LetIn _ -> 7
+  | App _ -> 8
+  | Evar _ -> 9
+  | Const _ -> 10
+  | Ind _ -> 11
+  | Construct _ -> 12
+  | Case _ -> 13
+  | Fix _ -> 14
+  | CoFix _ -> 15
+
+let comp_first f x1 x2 g y1 y2 =
+  let x = f x1 x2 in
+    if x <> 0 then x else g y1 y2
+
+let comp_first2 f x1 x2 g y1 y2 z1 z2 =
+  let x = f x1 x2 in
+    if x <> 0 then x else g y1 y2 z1 z2
+
+let rec comp_constr t1 t2 =
+  match t1, t2 with
+    | Rel n1, Rel n2 -> Pervasives.compare n1 n2
+    | Meta n1, Meta n2 -> Pervasives.compare n1 n2
+    | Var id1, Var id2 -> Pervasives.compare id1 id2
+    | Sort s1, Sort s2 -> Pervasives.compare s1 s2
+    | Cast (t1,b1), Cast (t2,b2) -> comp_constr2 t1 t2 b1 b2
+    | Prod (_,t1,c1), Prod (_,t2,c2) -> comp_constr2 t1 t2 c1 c2
+    | Lambda (_,t1,c1), Lambda (_,t2,c2) -> comp_constr2 t1 t2 c1 c2
+    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> comp_constr3 b1 b2 t1 t2 c1 c2
+    | App _, App _ ->
+	(match collapse t1, collapse t2 with
+	   | App (c1,v1), App (c2,v2) -> comp_head_vec c1 c2 v1 v2
+	   | _ -> invalid_arg "comp_constr")
+    | Evar (e1,l1), Evar (e2,l2) ->
+	comp_first Pervasives.compare e1 e2 comp_vec l1 l2
+    | Const c1, Const c2 -> Pervasives.compare c1 c2
+    | Ind c1, Ind c2 -> Pervasives.compare c1 c2
+    | Construct c1, Construct c2 -> Pervasives.compare c1 c2
+    | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
+	comp_first2 comp_constr p1 p2 comp_head_vec c1 c2 bl1 bl2
+    | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
+	comp_first2 Pervasives.compare ln1 ln2 comp_vec2 tl1 tl2 bl1 bl2
+    | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
+	comp_first2 Pervasives.compare ln1 ln2 comp_vec2 tl1 tl2 bl1 bl2
+    | _ -> Pervasives.compare (prec t1) (prec t2)
+
+and comp_constr2 c1 c2 d1 d2 =
+  comp_first comp_constr c1 c2 comp_constr d1 d2
+
+and comp_constr3 c1 c2 d1 d2 e1 e2 =
+  comp_first2 comp_constr c1 c2 comp_constr2 d1 d2 e1 e2
+
+and comp_vec v1 v2 =
+  let n = Array.length v1 in
+  let y = Pervasives.compare n (Array.length v2) in
+    if y <> 0 then y
+    else
+      (let i = ref 0 and r = ref 0 in
+	while !i < n & !r = 0 do
+	  r := comp_constr v1.(!i) v2.(!i);
+	  incr i
+	done; !r)
+
+and comp_head_vec c1 c2 v1 v2 =
+  comp_first comp_constr c1 c2 comp_vec v1 v2
+
+and comp_vec2 v1 v2 w1 w2 =
+  comp_first comp_vec v1 v2 comp_vec w1 w2
+     
 (***************************************************************************)
 (*     Type of assumptions                                                 *)
 (***************************************************************************)
