@@ -630,7 +630,7 @@ let start_proof_com sopt kind (bl,t) hook =
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
-        if is_global id then
+        if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
           errorlabstrm "start_proof" (pr_id id ++ str " already exists");
         id
     | None ->
