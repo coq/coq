@@ -456,7 +456,7 @@ Match trm With
 | _ -> Idtac.
 
 (**********)
-Tactic Definition Regularity () :=
+Tactic Definition Reg :=
 Match Context With
 | [|-(derivable_pt ?1 ?2)] -> 
 Let trm = Eval Cbv Beta in (?1 AppVar) In
@@ -474,6 +474,3 @@ Let aux = (RewTerm trm) In IntroHypL aux ?2; Try (Change (continuity_pt aux ?2);
 Let trm = Eval Cbv Beta in (?1 AppVar) In
 Let aux = (RewTerm trm) In
 IntroHypL aux ?2; Let aux2 = (ConsProof aux ?2) In Try (Replace (derive_pt ?1 ?2 ?3) with (derive_pt aux ?2 aux2); [SimplifyDerive aux ?2; Try Unfold plus_fct minus_fct mult_fct div_fct id fct_cte inv_fct opp_fct; Try Ring | Try Apply pr_nu]) Orelse IsDiff_pt.
-
-(**********)
-Tactic Definition Reg () := Regularity ().

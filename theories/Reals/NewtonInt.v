@@ -90,8 +90,8 @@ Left; Unfold antiderivative; Unfold antiderivative in H H0; Elim H; Clear H; Int
 Split.
 Intros; Elim (H ? H2); Elim (H0 ? H2); Intros.
 Assert H5 : (derivable_pt [y:R]``l*(x y)+(x0 y)`` x1).
-Reg ().
-Exists H5; Symmetry; Reg (); Rewrite <- H3; Rewrite <- H4; Reflexivity.
+Reg.
+Exists H5; Symmetry; Reg; Rewrite <- H3; Rewrite <- H4; Reflexivity.
 Assumption.
 Unfold antiderivative in H H0; Elim H; Elim H0; Intros; Elim H4; Intro.
 Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? H5 H2)).
@@ -107,8 +107,8 @@ Unfold derivable_pt; Exists (f x1); Elim (H3 ? H10); Intros; EApply derive_pt_eq
 Assert H13 : (derivable_pt x0 x1).
 Unfold derivable_pt; Exists (g x1); Elim (H1 ? H11); Intros; EApply derive_pt_eq_1; Symmetry; Apply H13.
 Assert H14 : (derivable_pt [y:R]``l*(x y)+(x0 y)`` x1).
-Reg ().
-Exists H14; Symmetry; Reg ().
+Reg.
+Exists H14; Symmetry; Reg.
 Assert H15 : ``(derive_pt x0 x1 H13)==(g x1)``.
 Elim (H1 ? H11); Intros; Rewrite H15; Apply pr_nu.
 Assert H16 : ``(derive_pt x x1 H12)==(f x1)``.
@@ -130,8 +130,8 @@ Unfold derivable_pt; Exists (f x1); Elim (H3 ? H11); Intros; EApply derive_pt_eq
 Assert H13 : (derivable_pt x0 x1).
 Unfold derivable_pt; Exists (g x1); Elim (H1 ? H10); Intros; EApply derive_pt_eq_1; Symmetry; Apply H13.
 Assert H14 : (derivable_pt [y:R]``l*(x y)+(x0 y)`` x1).
-Reg ().
-Exists H14; Symmetry; Reg ().
+Reg.
+Exists H14; Symmetry; Reg.
 Assert H15 : ``(derive_pt x0 x1 H13)==(g x1)``.
 Elim (H1 ? H10); Intros; Rewrite H15; Apply pr_nu.
 Assert H16 : ``(derive_pt x x1 H12)==(f x1)``.
@@ -141,8 +141,8 @@ Right; Reflexivity.
 Right; Unfold antiderivative; Unfold antiderivative in H H0; Elim H; Clear H; Intros; Elim H0; Clear H0; Intros H0 _; Split.
 Intros; Elim (H ? H2); Elim (H0 ? H2); Intros.
 Assert H5 : (derivable_pt [y:R]``l*(x y)+(x0 y)`` x1).
-Reg ().
-Exists H5; Symmetry; Reg (); Rewrite <- H3; Rewrite <- H4; Reflexivity.
+Reg.
+Exists H5; Symmetry; Reg; Rewrite <- H3; Rewrite <- H4; Reflexivity.
 Assumption.
 Defined.
 
@@ -151,8 +151,8 @@ Lemma antiderivative_P1 : (f,g,F,G:R->R;l,a,b:R) (antiderivative f F a b) -> (an
 Unfold antiderivative; Intros; Elim H; Elim H0; Clear H H0; Intros; Split.
 Intros; Elim (H ? H3); Elim (H1 ? H3); Intros.
 Assert H6 : (derivable_pt [x:R]``l*(F x)+(G x)`` x).
-Reg ().
-Exists H6; Symmetry; Reg (); Rewrite <- H4; Rewrite <- H5; Ring.
+Reg.
+Exists H6; Symmetry; Reg; Rewrite <- H4; Rewrite <- H5; Ring.
 Assumption.
 Qed.
 
