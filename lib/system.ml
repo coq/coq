@@ -78,7 +78,7 @@ let where_in_path = search_in_path
 
 let find_file_in_path paths name =
   let globname = glob name in
-  if not (Filename.is_relative globname) then
+  if not (Filename.is_implicit globname) then
     let root = Filename.dirname globname in
     root, globname
   else 
