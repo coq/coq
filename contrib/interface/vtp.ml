@@ -559,10 +559,11 @@ and fCOMMAND = function
 | CT_show_proofs -> fNODE "show_proofs" 0
 | CT_show_script -> fNODE "show_script" 0
 | CT_show_tree -> fNODE "show_tree" 0
-| CT_solve(x1, x2) ->
+| CT_solve(x1, x2, x3) ->
    fINT x1;
    fTACTIC_COM x2;
-   fNODE "solve" 2
+   fDOTDOT_OPT x3;
+   fNODE "solve" 3
 | CT_suspend -> fNODE "suspend" 0
 | CT_syntax_macro(x1, x2, x3) ->
    fID x1;
@@ -708,6 +709,9 @@ and fDESTRUCT_LOCATION = function
 | CT_conclusion_location -> fNODE "conclusion_location" 0
 | CT_discardable_hypothesis -> fNODE "discardable_hypothesis" 0
 | CT_hypothesis_location -> fNODE "hypothesis_location" 0
+and fDOTDOT_OPT = function
+| CT_coerce_NONE_to_DOTDOT_OPT x -> fNONE x
+| CT_dotdot -> fNODE "dotdot" 0
 and fEQN = function
 | CT_eqn(x1, x2) ->
    fMATCH_PATTERN_NE_LIST x1;

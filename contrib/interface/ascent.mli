@@ -180,7 +180,7 @@ and ct_COMMAND =
   | CT_show_proofs
   | CT_show_script
   | CT_show_tree
-  | CT_solve of ct_INT * ct_TACTIC_COM
+  | CT_solve of ct_INT * ct_TACTIC_COM * ct_DOTDOT_OPT
   | CT_suspend
   | CT_syntax_macro of ct_ID * ct_FORMULA * ct_INT_OPT
   | CT_tactic_definition of ct_TAC_DEF_NE_LIST
@@ -254,6 +254,9 @@ and ct_DESTRUCT_LOCATION =
     CT_conclusion_location
   | CT_discardable_hypothesis
   | CT_hypothesis_location
+and ct_DOTDOT_OPT =
+    CT_coerce_NONE_to_DOTDOT_OPT of ct_NONE
+  | CT_dotdot
 and ct_EQN =
     CT_eqn of ct_MATCH_PATTERN_NE_LIST * ct_FORMULA
 and ct_EQN_LIST =

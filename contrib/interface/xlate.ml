@@ -1566,7 +1566,10 @@ let rec xlate_vernac =
     | VernacAbort None -> CT_abort ctv_ID_OPT_OR_ALL_NONE
     | VernacAbortAll -> CT_abort ctv_ID_OPT_OR_ALL_ALL
     | VernacRestart -> CT_restart
-    | VernacSolve (n, tac, b) -> CT_solve (CT_int n, xlate_tactic tac)
+    | VernacSolve (n, tac, b) -> 
+	CT_solve (CT_int n, xlate_tactic tac,
+		  if b then CT_dotdot
+                  else CT_coerce_NONE_to_DOTDOT_OPT CT_none)
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
     |VernacExtend("Extraction", [f;l]) ->
