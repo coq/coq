@@ -201,8 +201,8 @@ let decl_of_refs refs = List.map extract_declaration (extract_env refs)
 
 let local_optimize refs = 
   let prm = 
-    { lang = "ocaml" ; toplevel = true; 
-      mod_name = None; to_appear = refs} in
+    { lang = Ocaml ; toplevel = true; modular = false;
+      mod_name = id_of_string ""; to_appear = refs} in
   optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
@@ -262,15 +262,32 @@ let _ =
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
     We just call [extract_to_file] on the saturated environment. *)
 
+let lang_to_lang = function 
+  | "ocaml" -> Ocaml 
+  | "haskell" -> Haskell 
+  | _ -> assert false
+
+let lang_suffix = function 
+  | Ocaml -> "ml"
+  | Haskell -> "hs"
+
+let filename f lang = 
+  let s = lang_suffix lang in 
+  if Filename.check_suffix f s then f,id_of_string (Filename.chop_suffix f s) 
+  else f^"."^s,id_of_string f
+
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
        | VARG_STRING lang :: VARG_STRING f :: vl ->
 	   (fun () -> 
+	      let lang = lang_to_lang lang in 
+	      let f,m = filename f lang in 
 	      let refs = refs_of_vargl vl in
 	      let prm = {lang=lang;
 			 toplevel=false;
-			 mod_name = None;
+			 modular=false; 
+			 mod_name = m;
 			 to_appear= refs} in 
 	      let decls = decl_of_refs refs in 
 	      let decls = add_ml_decls prm decls in 
@@ -289,20 +306,21 @@ let decl_in_m m = function
   | Dcustom (r,_) ->  is_long_module m r
 
 let module_file_name m = function
-  | "ocaml" -> (String.uncapitalize (string_of_id m)) ^ ".ml"
-  | "haskell" -> (String.capitalize (string_of_id m)) ^ ".hs"
-  | _ -> assert false
+  | Ocaml -> (String.uncapitalize (string_of_id m)) ^ ".ml"
+  | Haskell -> (String.capitalize (string_of_id m)) ^ ".hs"
 
 let _ = 
   vinterp_add "ExtractionModule"
     (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
+	      let lang = lang_to_lang lang in 
 	      let dir_m = module_of_id m in 
 	      let f = module_file_name m lang in
 	      let prm = {lang=lang;
 			 toplevel=false;
-			 mod_name= Some m;
+			 modular=true;
+			 mod_name= m;
 			 to_appear= []} in 
 	      let rl = extract_module dir_m in 
 	      let decls = optimize prm (decl_of_refs rl) in
@@ -320,13 +338,15 @@ let _ =
         (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
+	      let lang = lang_to_lang lang in 
 	      let dir_m = module_of_id m in 
 	      let modules,refs = 
 		modules_extract_env dir_m in
 	      check_modules modules; 
 	      let dummy_prm = {lang=lang;
 			      toplevel=false;
-			      mod_name= Some m;
+			      modular=true;
+			      mod_name=m;
 			      to_appear= []} in
 	      let decls = optimize dummy_prm (decl_of_refs refs) in
 	      let decls = add_ml_decls dummy_prm decls in
@@ -336,7 +356,8 @@ let _ =
 		   let f = module_file_name short_m lang in 
 		   let prm = {lang=lang;
 			      toplevel=false;
-			      mod_name= Some short_m;
+			      modular=true;
+			      mod_name=short_m;
 			      to_appear= []} in 
 		   let decls = List.filter (decl_in_m m) decls in
 		   if decls <> [] then extract_to_file f prm decls)

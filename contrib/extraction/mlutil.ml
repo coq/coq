@@ -178,6 +178,21 @@ let ast_map_lift f n = function
   | MLmagic a -> MLmagic (f n a)
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a	
 
+(* Iter over asts. *) 
+
+let ast_iter_case f (c,ids,a) = f a
+
+let ast_iter f = function
+  | MLlam (i,a) -> f a
+  | MLletin (i,a,b) -> f a; f b
+  | MLcase (a,v) -> f a; Array.iter (ast_iter_case f) v
+  | MLfix (i,ids,v) -> Array.iter f v
+  | MLapp (a,l) -> f a; List.iter f l
+  | MLcons (c,l) -> List.iter f l
+  | MLcast (a,t) -> f a
+  | MLmagic a -> f a
+  | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> ()
+
 (*s [occurs k t] returns true if [(Rel k)] occurs in [t]. *)
 
 let occurs k t = 
@@ -763,10 +778,7 @@ let add_ml_decls prm decls =
   let l = List.map (fun (r,s)-> Dcustom (r,s)) l in 
   (List.rev l @ decls)
 
-let strict_language = function
-  | "ocaml" -> true
-  | "haskell" -> false
-  | _ -> assert false
+let strict_language = (=) Ocaml
 
 let rec empty_ind = function 
   | [] -> [],[]
@@ -804,7 +816,7 @@ let rec optim prm = function
 	  List.map (subst_glob_decl r t) l
 	end
       else l in 
-      if (not b || prm.mod_name <> None || List.mem r prm.to_appear) then 
+      if (not b || prm.modular || List.mem r prm.to_appear) then 
  	  let t = optimize_fix t in
 	  Dglob (r,t) :: (optim prm l)
       else 

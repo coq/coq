@@ -1,0 +1,13 @@
+#!/bin/sh
+rm -f /tmp/extr$$.v 
+vfile=`./hs2v $1`
+d=`dirname $vfile`
+n=`basename $vfile .v`
+cat custom/all > /tmp/extr$$.v
+if [ -e custom/$n ]; then cat custom/$n >> /tmp/extr$$.v; fi  
+echo "Cd \"$d\". Haskell Extraction Module $n. " >> /tmp/extr$$.v
+../../../bin/coqtop.opt -silent -batch -require $n -load-vernac-source /tmp/extr$$.v 
+out=$?
+rm -f /tmp/extr$$.v
+exit $out
+

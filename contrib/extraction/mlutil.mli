@@ -41,6 +41,8 @@ val clear_singletons : unit -> unit
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn
     lifting. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. *)
 
+val ast_iter : (ml_ast -> unit) -> ml_ast -> unit 
+
 val occurs : int -> ml_ast -> bool
 
 val ml_lift : int -> ml_ast -> ml_ast

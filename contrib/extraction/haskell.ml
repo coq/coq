@@ -32,15 +32,16 @@ let keywords =
   Idset.empty
 
 let preamble prm =
-  let m = match prm.mod_name with 
-    | None -> "Main" 
-    | Some m -> String.capitalize (string_of_id m) 
-  in 
-  (str "module " ++ str m ++ str " where" ++ fnl () ++ fnl () ++
-     str "type Prop = Unit.Unit" ++ fnl () ++
-     str "prop = Unit.unit" ++ fnl () ++ fnl () ++
-     str "data Arity = Unit.Unit" ++ fnl () ++
-     str "arity = Unit.unit" ++ fnl () ++ fnl ())
+  let m = String.capitalize (string_of_id prm.mod_name)   in 
+  str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
+  str "import qualified Prelude" ++ fnl()
+
+let prop_decl = 
+  str "import qualified Unit" ++ fnl () ++ fnl () ++
+  str "type Prop = Unit.Unit" ++ fnl () ++
+  str "prop = Unit.unit" ++ fnl () ++ fnl () ++
+  str "data Arity = Unit.Unit" ++ fnl () ++
+  str "arity = Unit.unit" ++ fnl ()
 
 let pp_abst = function
   | [] -> (mt ())
@@ -52,8 +53,9 @@ let pp_abst = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_type_global r = P.pp_global r true
-let pp_global r = P.pp_global r false
+let pp_type_global r = P.pp_global r true None
+let pp_global r = P.pp_global r false None
+
 let rename_global r = P.rename_global r false
 
 let pr_lower_id id = pr_id (lowercase_id id)

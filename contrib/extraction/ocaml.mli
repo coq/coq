@@ -44,6 +44,8 @@ val keywords : Idset.t
 
 val preamble : extraction_params -> std_ppcmds
 
+val prop_decl : std_ppcmds
+
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 
     declarations to a file. *)

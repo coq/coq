@@ -117,18 +117,22 @@ let keywords =
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "prop" ; "arity" ] 
   Idset.empty
 
-let preamble _ =
-  (str "type prop = unit" ++ fnl () ++
-     str "let prop = ()" ++ fnl () ++ fnl () ++
-     str "type arity = unit" ++ fnl () ++
-     str "let arity = ()" ++ fnl () ++ fnl ())
+let preamble _ = mt()
+
+let prop_decl = 
+  fnl () ++
+  str "type prop = unit" ++ fnl () ++
+  str "let prop = ()" ++ fnl () ++ fnl () ++
+  str "type arity = unit" ++ fnl () ++
+  str "let arity = ()" ++ fnl ()
 
 (*s The pretty-printing functor. *)
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_type_global r = P.pp_global r false
-let pp_global r = P.pp_global r false
+let pp_type_global r = P.pp_global r false (Some (P.globals()))
+let pp_global r env = P.pp_global r false (Some (snd env))
+let pp_global' r = P.pp_global r false None
 let rename_global r = P.rename_global r false 
 
 let empty_env () = [], P.globals()
@@ -194,28 +198,28 @@ let rec pp_expr par env args =
 			 ++ pp_expr false env [] a1 ++ spc () ++ str "in") ++ 
 		  spc () ++ hov 0 (pp_expr par2 env' [] a2) ++ close_par par'))
     | MLglob r -> 
-	apply (pp_global r)
+	apply (pp_global r env )
     | MLcons (r,[]) ->
 	assert (args=[]);
 	if Refset.mem r !cons_cofix then 
-	  (open_par par ++ str "lazy " ++ pp_global r ++ close_par par)
-	else pp_global r
+	  (open_par par ++ str "lazy " ++ pp_global r env ++ close_par par)
+	else pp_global r env
     | MLcons (r,[a]) ->
 	assert (args=[]);
 	if Refset.mem r !cons_cofix then 
 	  (open_par par ++ str "lazy (" ++
-	   pp_global r ++ spc () ++
+	   pp_global r env ++ spc () ++
 	   pp_expr true env [] a ++ str ")" ++ close_par par)
 	else
-	  (open_par par ++ pp_global r ++ spc () ++
+	  (open_par par ++ pp_global r env ++ spc () ++
 	   pp_expr true env [] a ++ close_par par)
     | MLcons (r,args') ->
 	assert (args=[]);
 	if Refset.mem r !cons_cofix then 
-	  (open_par par ++ str "lazy (" ++ pp_global r ++ spc () ++
+	  (open_par par ++ str "lazy (" ++ pp_global r env ++ spc () ++
 	   pp_tuple (pp_expr true env []) args' ++ str ")" ++ close_par par)
 	else
-	  (open_par par ++ pp_global r ++ spc () ++
+	  (open_par par ++ pp_global r env ++ spc () ++
 	   pp_tuple (pp_expr true env []) args' ++ close_par par)
     | MLcase (t,[|(r,_,_) as x|])->
 	let expr = if Refset.mem r !cons_cofix then 
@@ -265,7 +269,7 @@ and pp_one_pat s env (r,ids,t) =
   let args = 
     if ids = [] then (mt ()) 
     else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
-  pp_global r ++ args ++ s ++ spc () ++ pp_expr par env' [] t
+  pp_global r env ++ args ++ s ++ spc () ++ pp_expr par env' [] t
   
 and pp_pat env pv = 
   prvect_with_sep (fun () -> (fnl () ++ str "| ")) 
@@ -330,7 +334,7 @@ let pp_parameters l =
 let pp_one_ind prefix (pl,name,cl) =
   let pl,ren = rename_tvars keywords pl in 
   let pp_constructor (id,l) =
-    (pp_global id ++
+    (pp_global' id ++
        match l with
          | [] -> (mt ()) 
 	 | _  -> (str " of " ++
@@ -387,9 +391,9 @@ let pp_decl = function
       (hov 2 (pp_fix false env' None ([|id|],[|def|]) []))
   | Dglob (r, a) ->
       hov 0 (str "let " ++ 
-	       pp_function (empty_env ()) (pp_global r) a ++ fnl ())
+	       pp_function (empty_env ()) (pp_global' r) a ++ fnl ())
   | Dcustom (r,s) -> 
-      hov 0 (str "let " ++ pp_global r ++ 
+      hov 0 (str "let " ++ pp_global' r ++ 
 	       str " =" ++ spc () ++ str s ++ fnl ())
 
 let pp_type = pp_type false Idmap.empty

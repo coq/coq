@@ -21,9 +21,7 @@ open Declare
 
 (*s Modules considerations *)
 
-let current_module = ref None
-
-let used_modules = ref Idset.empty
+let current_module = ref (id_of_string "")
 
 let is_construct = function ConstructRef _ -> true | _ -> false 
 
@@ -54,20 +52,81 @@ let is_long_module d r =
 let short_module r = 
   snd (split_dirpath (library_part r))
 
-let module_option r = 
-  let m = short_module r in
-  if Some m = !current_module then ""
-  else begin 
-    used_modules := Idset.add m !used_modules;
-    (String.capitalize (string_of_id m)) ^ "."
-  end
-
 let check_ml r d = 
   if to_inline r then 
     try 
       find_ml_extraction r 
     with Not_found -> d
   else d
+
+(*s Get all modules names used in one [ml_decl] list. *)
+
+let ast_get_modules m a = 
+  let rec get_rec a =
+    ast_iter get_rec a;
+    match a with 
+      | MLglob r -> m := Idset.add (short_module r) !m
+      | MLcons (r,l) as a -> 
+	  m := Idset.add (short_module r) !m; 
+      | MLcase (_,v) as a -> 
+	  let r,_,_ = v.(0) in
+	  m := Idset.add (short_module r) !m;
+      | _ -> ()
+  in get_rec a
+
+let mltype_get_modules m t = 
+  let rec get_rec = function 
+    | Tglob r -> m := Idset.add (short_module r) !m
+    | Tapp l -> List.iter get_rec l
+    | Tarr (a,b) -> get_rec a; get_rec b 
+    | _ -> () 
+  in get_rec t
+
+let decl_get_modules ld = 
+  let m = ref Idset.empty in 
+  let one_decl = function 
+    | Dtype (l,_) -> 
+	List.iter (fun (_,_,l) -> 
+		     List.iter (fun (_,l) -> 
+				  List.iter (mltype_get_modules m) l) l) l
+    | Dabbrev (_,_,t) -> mltype_get_modules m t 
+    | Dglob (_,a) -> ast_get_modules m a
+    | _ -> ()
+  in 
+  List.iter one_decl ld; 
+  !m
+
+(*s Does [prop] or [arity] occur ? *)
+
+exception Print_prop
+
+let ast_print_prop a = 
+  let rec get_rec = function 
+    | MLprop | MLarity -> raise Print_prop
+    | a -> ast_iter get_rec a
+  in get_rec a
+
+let mltype_print_prop t = 
+  let rec get_rec = function 
+    | Tprop | Tarity -> raise Print_prop
+    | Tapp l -> List.iter get_rec l
+    | Tarr (a,b) -> get_rec a; get_rec b 
+    | _ -> () 
+  in get_rec t
+
+let decl_print_prop ld = 
+  let one_decl = function 
+    | Dtype (l,_) -> 
+	List.iter (fun (_,_,l) -> 
+		     List.iter (fun (_,l) -> 
+				  List.iter mltype_print_prop l) l) l
+    | Dabbrev (_,_,t) -> mltype_print_prop t 
+    | Dglob (_,a) -> ast_print_prop a
+    | _ -> ()
+  in 
+  try 
+    List.iter one_decl ld; false 
+  with Print_prop -> true
 
 (*s Tables of global renamings *)
 
@@ -86,7 +145,7 @@ module ToplevelParams = struct
   let toplevel = true
   let globals () = Idset.empty
   let rename_global r _ = Termops.id_of_global (Global.env()) r
-  let pp_global r _ = Printer.pr_global r
+  let pp_global r _ _ = Printer.pr_global r
 end
 
 (*s Renaming issues for a monolithic extraction. *)
@@ -110,7 +169,7 @@ module MonoParams = struct
 	   (if upper || (is_construct r) 
 	    then uppercase_id id else lowercase_id id))
       
-  let pp_global r upper = 
+  let pp_global r upper _ = 
     str (check_ml r (string_of_id (rename_global r upper)))
       
 end
@@ -135,7 +194,10 @@ module ModularParams = struct
       if (Idset.mem id' !keywords) || (id <> id' && clash r id') then 
 	id_of_string (prefix^(string_of_id id))
       else id'
-    in global_ids := Idset.add id' !global_ids; id'
+    in 
+    if (short_module r) = !current_module then 
+      global_ids := Idset.add id' !global_ids; 
+    id'
 
   let rename_global r upper =
     cache r 
@@ -145,9 +207,16 @@ module ModularParams = struct
 	   rename_global_id r id (uppercase_id id) "Coq_"
 	 else rename_global_id r id (lowercase_id id) "coq_")
 
-  let pp_global r upper = 
-    str
-      (check_ml r ((module_option r)^(string_of_id (rename_global r upper))))
+  let pp_global r upper ctx = 
+    let id = rename_global r upper in 
+    let m = short_module r in
+    let mem id = match ctx with 
+      | None -> true
+      | Some ctx -> Idset.mem id ctx in 
+    let s = if (m <> !current_module) && (mem id) then 
+      (String.capitalize (string_of_id m)) ^ "." ^ (string_of_id id)
+    else (string_of_id id)
+    in str (check_ml r s)
 
 end
 
@@ -167,34 +236,36 @@ let init_global_ids lang =
   Hashtbl.clear renamings;
   keywords := 
   (match lang with 
-     | "ocaml" -> Ocaml.keywords
-     | "haskell" -> Haskell.keywords
-     | _ -> assert false);
-  global_ids := !keywords;
-  used_modules := Idset.empty
+     | Ocaml -> Ocaml.keywords
+     | Haskell -> Haskell.keywords);
+  global_ids := !keywords
 
 let extract_to_file f prm decls =
   cons_cofix := Refset.empty;
   current_module := prm.mod_name;
   init_global_ids prm.lang;
-  let preamble,pp_decl = match prm.lang,prm.mod_name with 
-    | "ocaml", None -> Ocaml.preamble, OcamlMonoPp.pp_decl
-    | "ocaml", _ -> Ocaml.preamble, OcamlModularPp.pp_decl
-    | "haskell", None -> Haskell.preamble, HaskellMonoPp.pp_decl
-    | "haskell", _ -> Haskell.preamble, HaskellModularPp.pp_decl
-    | _ -> assert false
+  let pp_decl = match prm.lang,prm.modular with 
+    | Ocaml, false -> OcamlMonoPp.pp_decl
+    | Ocaml, _ -> OcamlModularPp.pp_decl
+    | Haskell, false -> HaskellMonoPp.pp_decl
+    | Haskell, _ -> HaskellModularPp.pp_decl
   in
-  let pp = prlist_with_sep fnl pp_decl decls in 
+  let preamble,prop_decl,open_str = match prm.lang with 
+    | Ocaml -> Ocaml.preamble, Ocaml.prop_decl, "open "
+    | Haskell -> Haskell.preamble, Haskell.prop_decl, "import qualified "
+  in
+  let used_modules = if prm.modular then 
+    Idset.remove prm.mod_name (decl_get_modules decls)
+  else Idset.empty
+  in 
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
-  if decls <> [] || prm.lang = "haskell" 
-  then msgnl_with ft (hv 0 (preamble prm));
-  Idset.iter (fun m -> msgnl_with ft (str "open " ++ pr_id m)) !used_modules; 
-  msgnl_with ft pp;
-  pp_flush_with ft ();
-  close_out cout  
-
-(*
+  pp_with ft (preamble prm);
+  Idset.iter 
+    (fun m -> msgnl_with ft (str open_str ++ pr_id (uppercase_id m))) 
+    used_modules; 
+  if (decl_print_prop decls) then msgnl_with ft prop_decl
+  else msgnl_with ft (mt()); 
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
@@ -202,5 +273,4 @@ let extract_to_file f prm decls =
       pp_flush_with ft (); close_out cout; raise e
   end;
   pp_flush_with ft ();
-  close_out cout
-*)
+  close_out cout  

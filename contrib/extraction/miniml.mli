@@ -56,15 +56,20 @@ type ml_decl =
   | Dglob   of global_reference * ml_ast
   | Dcustom of global_reference * string
 
+(*s Target language. *)
+
+type lang = Ocaml | Haskell
+
 (*s Pretty-printing of MiniML in a given concrete syntax is parameterized
     by a function [pp_global] that pretty-prints global references. 
     The resulting pretty-printer is a module of type [Mlpp] providing
     functions to print types, terms and declarations. *)
 
 type extraction_params =  
-  { lang : string; 
+  { lang : lang; 
     toplevel : bool; 
-    mod_name : identifier option; 
+    modular : bool; 
+    mod_name : identifier; 
     to_appear : global_reference list }
 
 module type Mlpp_param = sig
@@ -72,7 +77,7 @@ module type Mlpp_param = sig
   val globals : unit -> Idset.t
       (* the bool arg is: should we rename in uppercase or not ? *)
   val rename_global : global_reference -> bool -> identifier
-  val pp_global : global_reference -> bool -> std_ppcmds
+  val pp_global : global_reference -> bool -> Idset.t option -> std_ppcmds
 end
 
 module type Mlpp = sig

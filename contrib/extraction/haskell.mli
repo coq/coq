@@ -17,4 +17,6 @@ val keywords : Idset.t
 
 val preamble : extraction_params -> std_ppcmds
 
+val prop_decl : std_ppcmds
+
 module Make : functor(P : Mlpp_param) -> Mlpp
