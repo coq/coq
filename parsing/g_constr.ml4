@@ -79,7 +79,7 @@ let test_ident_colon =
         | _ -> raise Stream.Failure)
 
 GEXTEND Gram
-  GLOBAL: constr9 lconstr constr sort global constr_pattern Constr.ident
+  GLOBAL: constr9 lconstr constr sort global constr_pattern Constr.ident annot
           (*ne_name_comma_list*);
   Constr.ident:
     [ [ id = Prim.ident -> id
@@ -108,10 +108,10 @@ GEXTEND Gram
     [ "top" RIGHTA
       [ c1 = constr; "->"; c2 = constr -> CArrow (loc, c1, c2) ]
     | "1" RIGHTA
-      [ "<"; p = lconstr; ">"; IDENT "Match"; c = constr; "with";
+      [ "<"; p = annot; ">"; IDENT "Match"; c = constr; "with";
         cl = LIST0 constr; "end" ->
 	  COrderedCase (loc, MatchStyle, Some p, c, cl)
-      | "<"; p = lconstr; ">"; IDENT "Case"; c = constr; "of";
+      | "<"; p = annot; ">"; IDENT "Case"; c = constr; "of";
         cl = LIST0 constr; "end" ->
 	  COrderedCase (loc, RegularStyle, Some p, c, cl)
       | IDENT "Case"; c = constr; "of"; cl = LIST0 constr; "end" ->
@@ -130,13 +130,13 @@ GEXTEND Gram
         IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr LEVEL "top" ->
 	  COrderedCase (loc, IfStyle, None, c1, [c2; c3])
-      | "<"; p = lconstr; ">";
+      | "<"; p = annot; ">";
         IDENT "let"; "("; b = ne_name_comma_list; ")"; "="; c = constr; 
         "in"; c1 = constr LEVEL "top" ->
           (* TODO: right loc *)
 	  COrderedCase (loc, LetStyle, Some p, c,
             [CLambdaN (loc, [b, CHole loc], c1)])
-      | "<"; p = lconstr; ">";
+      | "<"; p = annot; ">";
         IDENT "if"; c1 = constr;
         IDENT "then"; c2 = constr; 
         IDENT "else"; c3 = constr LEVEL "top" ->
@@ -198,6 +198,39 @@ GEXTEND Gram
   constr9:
     [ RIGHTA [ c1 = constr -> c1
       | c1 = constr; "::"; c2 = constr -> CCast (loc, c1, c2) ] ]
+  ;
+  (* annot and product_annot_tail are hacks to forbid concrete syntax *)
+  (* ">" (e.g. for gt, Zgt, ...) in annotations *)
+  annot:
+    [ RIGHTA
+      [ bll = binders; c = annot -> abstract_constr loc c bll 
+      | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_annot_tail ->
+          let id = coerce_to_name lc1 in
+	  CProdN (loc, ([id], c)::bl, body)
+      | "("; lc1 = lconstr; ","; lc2 = lconstr; ":"; c = constr;
+        (bl,body) = product_annot_tail ->
+          let id1 = coerce_to_name lc1 in
+          let id2 = coerce_to_name lc2 in
+	  CProdN (loc, ([id1; id2], c)::bl, body)
+      | "("; lc1 = lconstr; ","; lc2 = lconstr; ",";
+        idl = ne_name_comma_list; ":"; c = constr;
+	(bl,body) = product_annot_tail ->
+          let id1 = coerce_to_name lc1 in
+          let id2 = coerce_to_name lc2 in
+	  CProdN (loc, (id1::id2::idl, c)::bl, body)
+      | "("; lc1 = lconstr; ")" -> lc1
+      | c1 = annot; "->"; c2 = annot -> CArrow (loc, c1, c2)
+      | c1 = SELF; "=="; c2 = NEXT -> CNotation (loc, "_ == _", [c1;c2])
+      | c1 = SELF; "="; c2 = NEXT -> CNotation (loc, "_ = _", [c1;c2])
+      | c = constr LEVEL "4L" -> c
+      ] ]
+  ;
+  product_annot_tail:
+    [ [ ";"; idl = ne_name_comma_list; ":"; c = constr;
+        (bl,c2) = product_annot_tail -> ((idl, c)::bl, c2)
+      | ";"; idl = ne_name_comma_list; (bl,c2) = product_annot_tail ->
+          ((idl, CHole (fst (List.hd idl)))::bl, c2)
+      | ")"; c = annot -> ([], c) ] ]
   ;
   ne_name_comma_list:
     [ [ nal = LIST1 name SEP "," -> nal ] ]

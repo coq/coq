@@ -53,10 +53,7 @@ GEXTEND Gram
       | IDENT "Dump"; IDENT "Universes"; fopt = OPT STRING ->
 	  VernacPrint (PrintUniverses fopt)
 
-      | IDENT "Locate"; qid = global -> VernacLocate (LocateTerm qid)
-      | IDENT "Locate"; IDENT "File"; f = STRING -> VernacLocate (LocateFile f)
-      | IDENT "Locate"; IDENT "Library"; qid = global ->
-	  VernacLocate (LocateLibrary  qid)
+      | IDENT "Locate"; l = locatable -> VernacLocate l
 
       (* Managing load paths *)
       | IDENT "Add"; IDENT "LoadPath"; dir = STRING; alias = as_dirpath ->
@@ -177,6 +174,12 @@ GEXTEND Gram
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
       | IDENT "Scope"; s = IDENT -> PrintScope s ] ]
   ;
+  locatable:
+    [ [ qid = global -> LocateTerm qid
+      | IDENT "File"; f = STRING -> LocateFile f
+      | IDENT "Library"; qid = global -> LocateLibrary  qid
+      | s = STRING -> LocateNotation s ] ]
+  ;
   option_value:
     [ [ n  = integer   -> IntValue n
       | s  = STRING    -> StringValue s ] ]
@@ -263,7 +266,11 @@ GEXTEND Gram
       | IDENT "only"; IDENT "parsing" -> SetOnlyParsing ] ]
   ;
   syntax_extension_type:
-    [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference ] ]
+    [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference
+      | IDENT "annot" ->
+	  if !Options.v7 <> true then Util.error "annot not allowed in new syntax";
+	  ETOther ("constr","annot")
+    ] ]
   ;
   opt_scope:
     [ [ IDENT "_" -> None | sc = IDENT -> Some sc ] ]

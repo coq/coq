@@ -53,13 +53,13 @@ GEXTEND Gram
     [ [ leqn = LIST1 equation SEP "|" -> leqn ] ]
   ;
   constr: LEVEL "1"
-    [ [ "<"; p = lconstr; ">"; "Cases"; lc = LIST1 constr; "of";
+    [ [ "<"; p = annot; ">"; "Cases"; lc = LIST1 constr; "of";
         OPT "|"; eqs = ne_eqn_list; "end" ->
 	  CCases (loc, Some p, lc, eqs)
       | "Cases"; lc = LIST1 constr; "of";
 	OPT "|"; eqs = ne_eqn_list; "end" ->
 	  CCases (loc, None, lc, eqs)
-      | "<"; p = lconstr; ">"; "Cases"; lc = LIST1 constr; "of"; "end" ->
+      | "<"; p = annot; ">"; "Cases"; lc = LIST1 constr; "of"; "end" ->
 	  CCases (loc, Some p, lc, [])
       | "Cases"; lc = LIST1 constr; "of"; "end" -> 
 	  CCases (loc, None, lc, []) ] ]

@@ -51,7 +51,7 @@ type grammar_rule = {
   gr_action : constr_expr }
 
 type grammar_entry = { 
-  ge_name : string;
+  ge_name : constr_entry;
   gl_assoc : Gramext.g_assoc option;
   gl_rules : grammar_rule list }
 

@@ -50,7 +50,7 @@ type grammar_rule = {
   gr_action : constr_expr }
 
 type grammar_entry = { 
-  ge_name : string;
+  ge_name : constr_entry;
   gl_assoc : Gramext.g_assoc option;
   gl_rules : grammar_rule list }
 
@@ -189,7 +189,7 @@ let explicitize_entry = explicitize_prod_entry ()
 (* We're cheating: not necessarily the same assoc on right and left *)
 let clever_explicitize_prod_entry pos univ from en =
   let t = explicitize_prod_entry pos univ en in
-  match explicitize_entry univ from with
+  match from with
     | ETConstr (from,()) ->
 	(match t with
 	  | ETConstr (n,BorderProd (left,None)) when (n=from & left) ->
@@ -255,9 +255,10 @@ let clever_assoc ass g =
   else ass
 
 let gram_entry univ (nt, ass, rl) =
-  let l = List.map (gram_rule (univ,nt)) rl in
+  let from = explicitize_entry (snd univ) nt in
+  let l = List.map (gram_rule (univ,from)) rl in
   let ass = List.fold_left clever_assoc ass l in
-  { ge_name = nt;
+  { ge_name = from;
     gl_assoc = ass;
     gl_rules = l }
 

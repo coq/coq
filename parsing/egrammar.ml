@@ -78,13 +78,13 @@ let find_position other assoc lev =
         | (p,_ as pa)::l when p > n -> pa :: add_level pa l
         | (p,a as pa)::l as l' when p = n ->
 	    if admissible_assoc (a,assoc) then raise (Found a);
-	    (* Maybe this was (p,Left) and p occurs a second time *)
+	    (* Maybe this was (p,Right) and p occurs a second time *)
 	    if a = Gramext.LeftA then
 	      match l with
 		| (p,a)::_ as l' when p = n -> raise (Found a)
-		| _ -> after := pa; (n,create_assoc assoc)::l'
+		| _ -> after := pa; pa::(n,create_assoc assoc)::l
 	    else
-	      (* This was not (p,LeftA) hence assoc is LeftA *)
+	      (* This was not (p,LeftA) hence assoc is RightA *)
 	      (after := q; (n,create_assoc assoc)::l')
 	| l ->
 	    after := q; (n,create_assoc assoc)::l
@@ -189,16 +189,16 @@ let make_cases_pattern_act
  * annotations are added when type-checking the command, function
  * Extend.of_ast) *)
 
-let rec build_prod_item univ assoc = function
-  | ProdList0 s -> Gramext.Slist0 (build_prod_item univ assoc s)
-  | ProdList1 s -> Gramext.Slist1 (build_prod_item univ assoc s)
-  | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ assoc s)
-  | ProdPrimitive typ -> symbol_of_production assoc typ
+let rec build_prod_item univ assoc fromlevel = function
+  | ProdList0 s -> Gramext.Slist0 (build_prod_item univ assoc fromlevel s)
+  | ProdList1 s -> Gramext.Slist1 (build_prod_item univ assoc fromlevel s)
+  | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ assoc fromlevel s)
+  | ProdPrimitive typ -> symbol_of_production assoc fromlevel typ
 
-let symbol_of_prod_item univ assoc = function
+let symbol_of_prod_item univ assoc from = function
   | Term tok -> (Gramext.Stoken tok, None)
   | NonTerm (nt, ovar) ->
-      let eobj = build_prod_item univ assoc nt in
+      let eobj = build_prod_item univ assoc from nt in
       (eobj, ovar)
 
 let coerce_to_id = function
@@ -278,7 +278,7 @@ let subst_constr_expr a loc subs =
   in subst a
 
 let make_rule univ assoc etyp rule =
-  let pil = List.map (symbol_of_prod_item univ assoc) rule.gr_production in
+  let pil = List.map (symbol_of_prod_item univ assoc etyp) rule.gr_production in
   let (symbs,ntl) = List.split pil in
   let act = match etyp with
     | ETPattern ->
@@ -299,8 +299,7 @@ let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
   grammar_extend te pos [(name, p4ass, rules)]
 
 (* Defines new entries. If the entry already exists, check its type *)
-let define_entry univ {ge_name=n; gl_assoc=ass; gl_rules=rls} =
-  let typ = explicitize_entry (fst univ) n in
+let define_entry univ {ge_name=typ; gl_assoc=ass; gl_rules=rls} =
   let e,lev,keepassoc = get_constr_entry typ in
   let pos,p4ass,name = find_position keepassoc ass lev in
   (e,typ,pos,name,ass,p4ass,rls)
@@ -331,9 +330,9 @@ let make_gen_act f pil =
         Gramext.action (fun v -> make ((p,in_generic t v) :: env) tl) in
   make [] (List.rev pil)
 
-let extend_constr entry (level,assoc,keepassoc) make_act pt =
+let extend_constr entry (n,level,assoc,keepassoc) make_act pt =
   let univ = get_univ "constr" in
-  let pil = List.map (symbol_of_prod_item univ assoc) pt in
+  let pil = List.map (symbol_of_prod_item univ assoc n) pt in
   let (symbs,ntl) = List.split pil in
   let act = make_act ntl in
   let pos,p4assoc,name = find_position keepassoc assoc level in
@@ -342,14 +341,14 @@ let extend_constr entry (level,assoc,keepassoc) make_act pt =
 let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,List.map snd env) in
   let (e,level,keepassoc) = get_constr_entry (ETConstr (n,())) in
-  extend_constr e (level,assoc,keepassoc) (make_act mkact) rule
+  extend_constr e (ETConstr(n,()),level,assoc,keepassoc) (make_act mkact) rule
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
   let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.constr (Some 0,Some Gramext.NonA,false)
+  extend_constr Constr.constr (ETConstr(0,()),Some 0,Some Gramext.NonA,false)
     (make_act mkact) rule;
   let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.pattern (None,None,false)
+  extend_constr Constr.pattern (ETPattern,None,None,false)
     (make_cases_pattern_act mkact) pat_rule
 
 (* These grammars are not a removable *)

@@ -351,6 +351,7 @@ module Constr =
     let global = make_gen_entry uconstr rawwit_ref "global"
     let sort = make_gen_entry uconstr rawwit_sort "sort"
     let pattern = Gram.Entry.create "constr:pattern"
+    let annot = Gram.Entry.create "constr:annot"
     let constr_pattern = gec_constr "constr_pattern"
   end
 
@@ -506,7 +507,7 @@ let camlp4_assoc = function
   | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA 
   | None | Some Gramext.LeftA -> Gramext.LeftA
 
-let adjust_level assoc = function
+let adjust_level assoc from = function
   (* If NonA on the right-hand side, set to NEXT *)
   | (n,BorderProd (false,Some Gramext.NonA)) -> Some None
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
@@ -520,7 +521,10 @@ let adjust_level assoc = function
       if (left & a = Gramext.LeftA) or ((not left) & a = Gramext.RightA)
       then Some (Some n) else Some (Some (n-1))
 (*  | (8,InternalProd) -> None (* Or (Some 8) for factorization ? *)*)
-  | (n,InternalProd) -> Some (Some n)
+  | (n,InternalProd) ->
+      match from with
+	| ETConstr (p,()) when p = n+1 -> Some None
+	| _ -> Some (Some n)
 
 let compute_entry allow_create adjust = function
   | ETConstr (10,_) -> weaken_entry Constr.lconstr, None, true
@@ -530,6 +534,8 @@ let compute_entry allow_create adjust = function
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
   | ETPattern -> weaken_entry Constr.pattern, None, false
+  | ETOther ("constr","annot") -> 
+      weaken_entry Constr.annot, None, false
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =
@@ -539,15 +545,16 @@ let compute_entry allow_create adjust = function
 
 let get_constr_entry = compute_entry true (fun (n,()) -> Some n)
 
-let get_constr_production_entry ass = compute_entry false (adjust_level ass)
+let get_constr_production_entry ass from =
+  compute_entry false (adjust_level ass from)
 
 let constr_prod_level = function
   | 8 -> "top"
   | 4 -> "4L"
   | n -> string_of_int n
 
-let symbol_of_production assoc typ =
-  match get_constr_production_entry assoc typ with
+let symbol_of_production assoc from typ =
+  match get_constr_production_entry assoc from typ with
     | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
     | (eobj,Some None,_) -> Gramext.Snext
     | (eobj,Some (Some lev),_) -> 
