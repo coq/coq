@@ -625,8 +625,8 @@ In particular, the following definition will not be accepted because
 there is an occurrence of \List\ which is not applied to the parameter
 variable:
 \begin{coq_example}
-Inductive list [A : Set] : Set := 
-     nil : (list A) | cons : A -> (list A->A) -> (list A).
+Inductive list' [A : Set] : Set := 
+     nil' : (list' A) | cons' : A -> (list' A->A) -> (list' A).
 \end{coq_example}
 
 \subsection{Types of inductive objects}
@@ -1200,28 +1200,29 @@ Reflexivity.
 Abort.
 \end{coq_eval}
 
-\subsubsection{The {\tt Match \ldots with \ldots end} expression}
-\label{Matchexpr}
-%\paragraph{A unary {\tt Match\ldots with \ldots end}.}
-\index{Match...with...end@{\tt Match \ldots with \ldots end}}
-The {\tt Match} operator which was a primitive notion in older
-presentations of the Calculus of Inductive Constructions is now just a
-macro definition which generates the good combination of {\tt Case}
-and {\tt Fix} operators in order to generate an operator for primitive
-recursive definitions. It always considers an inductive definition as 
-a single inductive definition.
+% La disparition de Program devrait rendre la construction Match obsolete
+% \subsubsection{The {\tt Match \ldots with \ldots end} expression}
+% \label{Matchexpr}
+% %\paragraph{A unary {\tt Match\ldots with \ldots end}.}
+% \index{Match...with...end@{\tt Match \ldots with \ldots end}}
+% The {\tt Match} operator which was a primitive notion in older
+% presentations of the Calculus of Inductive Constructions is now just a
+% macro definition which generates the good combination of {\tt Case}
+% and {\tt Fix} operators in order to generate an operator for primitive
+% recursive definitions. It always considers an inductive definition as 
+% a single inductive definition.
 
-The following examples illustrates this feature.
-\begin{coq_example}
-Definition nat_pr : (C:Set)C->(nat->C->C)->nat->C 
-  :=[C,x,g,n]Match n with x g end.
-Print nat_pr.
-\end{coq_example}
-\begin{coq_example}
-Definition forest_pr 
-  : (C:Set)C->(tree->forest->C->C)->forest->C
-  := [C,x,g,n]Match n with x g end.
-\end{coq_example}
+% The following examples illustrates this feature.
+% \begin{coq_example}
+% Definition nat_pr : (C:Set)C->(nat->C->C)->nat->C 
+%   :=[C,x,g,n]Match n with x g end.
+% Print nat_pr.
+% \end{coq_example}
+% \begin{coq_example}
+% Definition forest_pr 
+%   : (C:Set)C->(tree->forest->C->C)->forest->C
+%   := [C,x,g,n]Match n with x g end.
+% \end{coq_example}
 
 % Cet exemple faisait error (HH le 12/12/96), j'ai change pour une
 % version plus simple
@@ -1232,12 +1233,17 @@ Definition forest_pr
 %  := [C,x,g,n]Match n with x g end.
 %\end{coq_example}
 
+\subsubsection{Mutual induction}
+
 The principles of mutual induction can be automatically generated 
 using the {\tt Scheme} command described in section~\ref{Scheme}.
 
 \section{Coinductive types}
 The implementation contains also coinductive definitions, which are
 types inhabited by infinite objects. 
+More information on coinductive definitions can be found
+in~\cite{Gimenez95b,Gim98}.
+
 %They are described inchapter~\ref{Coinductives}.
 
 % $Id$ 
