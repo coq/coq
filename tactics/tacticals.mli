@@ -18,6 +18,7 @@ open Clenv
 open Reduction
 open Pattern
 open Wcclausenv
+open Tacexpr
 (*i*)
 
 (* Tacticals i.e. functions from tactics to tactics. *)
@@ -112,22 +113,23 @@ type branch_args = {
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
   nassums    : int;         (* the number of assumptions to be introduced *)
-  branchsign : bool list }  (* the signature of the branch.
+  branchsign : bool list;   (* the signature of the branch.
                                true=recursive argument, false=constant *)
+  branchnames : intro_pattern_expr list}
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
-  assums    : named_context;   (* the list of assumptions introduced *)
-  cargs     : identifier list; (* the constructor arguments *)
-  constargs : identifier list; (* the CONSTANT constructor arguments *)
-  recargs   : identifier list; (* the RECURSIVE constructor arguments *)
-  indargs   : identifier list} (* the inductive arguments *)
+  assums    : named_context}   (* the list of assumptions introduced *)
+
+(* Useful for "as intro_pattern" modifier *)
+val compute_induction_names : 
+  int -> case_intro_pattern_expr -> intro_pattern_expr list array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
 
 val general_elim_then_using :
-  constr ->  (inductive -> bool list array) -> 
+  constr -> (* isrec: *) bool -> case_intro_pattern_expr ->
     (branch_args -> tactic) -> constr option -> 
       (arg_bindings * arg_bindings) -> constr -> tactic
 	  
@@ -140,11 +142,11 @@ val elimination_then :
     (arg_bindings * arg_bindings) -> constr -> tactic
 
 val case_then_using :
-  (branch_args -> tactic) -> 
+  case_intro_pattern_expr -> (branch_args -> tactic) -> 
     constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
 
 val case_nodep_then_using :
-  (branch_args -> tactic) -> 
+  case_intro_pattern_expr -> (branch_args -> tactic) -> 
     constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
 
 val simple_elimination_then :

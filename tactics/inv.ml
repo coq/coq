@@ -26,7 +26,6 @@ open Proof_type
 open Evar_refiner
 open Clenv
 open Tactics
-open Wcclausenv
 open Tacticals
 open Tactics
 open Elim
@@ -35,6 +34,7 @@ open Typing
 open Pattern
 open Matching
 open Rawterm
+open Tacexpr
 
 let collect_meta_variables c = 
   let rec collrec acc c = match kind_of_term c with
@@ -90,8 +90,7 @@ let compute_eqn env sigma n i ai =
   (ai,get_type_of env sigma ai),
   (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
 
-let make_inv_predicate env sigma ind id status concl =
-  let indf,realargs = dest_ind_type ind in
+let make_inv_predicate env sigma indf realargs id status concl =
   let nrealargs = List.length realargs in
   let (hyps,concl) =
     match status with
@@ -195,7 +194,7 @@ let rec dependent_hyps id idlist sign =
   let rec dep_rec =function
     | [] -> []
     | (id1,_,id1ty as d1)::l -> 
-	if occur_var (Global.env()) id (body_of_type id1ty)
+	if occur_var (Global.env()) id id1ty
         then d1 :: dep_rec l
         else dep_rec l
   in 
@@ -209,11 +208,92 @@ let split_dep_and_nodep hyps gl =
 
 open Coqlib
 
+(* Computation of dids is late; must have been done in rewrite_equations*)
+(* Will keep generalizing and introducing back and forth... *)
+(* Moreover, others hyps depending of dids should have been *)
+(* generalized; in such a way that [dids] can endly be cleared *)
+(* Consider for instance this case extracted from Well_Ordering.v
+
+  A : Set
+  B : A ->Set
+  a0 : A
+  f : (B a0) ->WO
+  y : WO
+  H0 : (le_WO y (sup a0 f))
+  ============================
+   (Acc WO le_WO y)
+
+  Inversion H0 gives
+
+  A : Set
+  B : A ->Set
+  a0 : A
+  f : (B a0) ->WO
+  y : WO
+  H0 : (le_WO y (sup a0 f))
+  a1 : A
+  f0 : (B a1) ->WO
+  v : (B a1)
+  H1 : (f0 v)=y
+  H3 : a1=a0
+  f1 : (B a0) ->WO
+  v0 : (B a0)
+  H4 : (existS A [a:A](B a) ->WO a0 f1)=(existS A [a:A](B a) ->WO a0 f)
+  ============================
+   (Acc WO le_WO (f1 v0))
+
+while, ideally, we would have expected
+
+  A : Set
+  B : A ->Set
+  a0 : A
+  f0 : (B a0)->WO
+  v : (B a0)
+  ============================
+   (Acc WO le_WO (f0 v))
+
+obtained from destruction with equalities
+
+  A : Set
+  B : A ->Set
+  a0 : A
+  f : (B a0) ->WO
+  y : WO
+  H0 : (le_WO y (sup a0 f))
+  a1 : A
+  f0 : (B a1)->WO
+  v : (B a1)
+  H1 : (f0 v)=y
+  H2 : (sup a1 f0)=(sup a0 f)
+  ============================
+   (Acc WO le_WO (f0 v))
+
+by clearing initial hypothesis H0 and its dependency y, clearing H1
+(in fact H1 can be avoided using the same trick as for newdestruct),
+decomposing H2 to get a1=a0 and (a1,f0)=(a0,f), replacing a1 by a0
+everywhere and removing a1 and a1=a0 (in fact it would have been more
+regular to replace a0 by a1, avoiding f1 and v0 cannot replace f0 and v),
+finally removing H4 (here because f is not used, more generally after using
+eq_dep and replacing f by f0) [and finally rename a0, f0 into a,f].
+Summary: nine useless hypotheses!
+Nota: with Inversion_clear, only four useless hypotheses
+*)
+
 let generalizeRewriteIntros tac depids id gls = 
   let dids = dependent_hyps id depids (pf_env gls) in
   (tclTHENSEQ
-    [bring_hyps dids; tac; intros_replacing (ids_of_named_context dids)])
+    [bring_hyps dids; tac; 
+     (* may actually fail to replace if dependent in a previous eq *)
+     intros_replacing (ids_of_named_context dids)])
   gls
+
+let rec tclMAP_i n tacfun = function
+  | [] -> 
+      if n>0 then tclDO n (tacfun None)
+      else tclIDTAC
+  | a::l -> 
+      if n=0 then error "Too much names"
+      else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -223,41 +303,38 @@ let generalizeRewriteIntros tac depids id gls =
    If it can discriminate then the goal is proved, if not tries to use it as
    a rewrite rule. It erases the clause which is given as input *)
 
-let projectAndApply thin id depids gls =
+let projectAndApply thin id eqname names depids gls =
   let env = pf_env gls in
-  let subst_hyp_LR id = tclTRY(hypSubst_LR id None) in
-  let subst_hyp_RL id = tclTRY(hypSubst_RL id None) in
-  let subst_hyp gls = 
-    let orient_rule id = 
-      let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id) in
-      match (kind_of_term t1, kind_of_term t2) with
-        | Var id1, _ ->
-            generalizeRewriteIntros (subst_hyp_LR id) depids id1
-        | _, Var id2 ->
-            generalizeRewriteIntros (subst_hyp_RL id) depids id2
-        | _ -> subst_hyp_RL id
-    in 
-    onLastHyp orient_rule gls 
+  let clearer = if thin then clear else fun _ -> tclIDTAC in
+  let subst_hyp_LR id = tclTHEN (tclTRY(hypSubst_LR id None)) (clearer [id]) in
+  let subst_hyp_RL id = tclTHEN (tclTRY(hypSubst_RL id None)) (clearer [id]) in
+  let substHypIfVariable tac id gls =
+    eqname := Some id; (* remember where to re-intro hyps later *)
+    let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id) in
+    match (kind_of_term t1, kind_of_term t2) with
+      | Var id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
+      | _, Var id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
+      | _ -> 
+	  tac id gls
   in
-  let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)  in
-  match (thin, kind_of_term t1, kind_of_term t2) with
-    | (true, Var id1,  _) ->
-        generalizeRewriteIntros
-          (tclTHEN (subst_hyp_LR id) (clear [id])) depids id1 gls
-    | (false, Var id1,  _) ->
-        generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
-    | (true, _ , Var id2) ->
-        generalizeRewriteIntros
-          (tclTHEN (subst_hyp_RL id) (clear [id])) depids id2 gls
-    | (false, _ , Var id2) ->
-        generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
-    | _ ->
-        let trailer =
-          if thin then onLastHyp (fun id -> clear [id]) else tclIDTAC in
-        let deq_trailer neqns =
-          tclDO neqns
-            (tclTHENSEQ [intro; tclTRY subst_hyp; trailer]) in 
-	(tclTHEN (dEqThen deq_trailer (Some (NamedHyp id))) (clear [id])) gls
+  let deq_trailer id neqns =
+    tclTHENSEQ 
+      [(if names <> [] then clear [id] else tclIDTAC);
+       (tclMAP_i neqns (fun idopt ->
+	 tclTHEN
+	   (intro_move idopt None)
+	   (* try again to substitute and if still not a variable after *)
+	   (* decomposition, arbitraryly try to rewrite RL !? *)
+	   (onLastHyp (substHypIfVariable subst_hyp_RL)))
+	 names);
+       (if names = [] then clear [id] else tclIDTAC)]
+  in
+  substHypIfVariable
+    (* If no immediate variable in the equation, try to decompose it *)
+    (* and apply a trailer which again try to substitute *)
+    (fun id -> dEqThen (deq_trailer id) (Some (NamedHyp id)))
+    id
+    gls
 
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
@@ -273,7 +350,9 @@ let rewrite_equations_gene othin neqns ba gl =
                      (tclTHEN intro
                         (onLastHyp
                            (fun id ->
-                              tclTRY (projectAndApply thin id depids))));
+                              tclTRY 
+			        (projectAndApply thin id (ref None)
+				  [] depids))));
                  onHyps (compose List.rev (afterHyp last)) bring_hyps;
                  onHyps (afterHyp last)
                    (compose clear ids_of_named_context)])
@@ -297,19 +376,46 @@ let rewrite_equations_gene othin neqns ba gl =
      None: the equations are introduced, but not rewritten
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
-let rewrite_equations othin neqns ba gl =
+let rec get_names allow_conj = function
+  | IntroWildcard ->
+      error "Discarding pattern not allowed for inversion equations"
+  | IntroOrAndPattern [l] -> 
+      if allow_conj then
+	if l = [] then (None,[]) else
+	  let l = List.map (fun id -> out_some (fst (get_names false id))) l in
+	  (Some (List.hd l), l)
+      else
+	error "Nested conjunctive patterns not allowed for inversion equations"
+  | IntroOrAndPattern l ->
+      error "Disjunctive patterns not allowed for inversion equations"
+  | IntroIdentifier id ->
+      (Some id,[id])
+
+let extract_eqn_names = function
+  | None -> None,[]
+  | Some x -> x
+
+let rewrite_equations othin neqns names ba gl =
+  let names = List.map (get_names true) names in
   let (depids,nodepids) = split_dep_and_nodep ba.assums gl in
   let rewrite_eqns =
+    let first_eq = ref None in
+    let update id = if !first_eq = None then first_eq := Some id in
     match othin with
       | Some thin ->
           tclTHENSEQ
             [onHyps (compose List.rev (nLastHyps neqns)) bring_hyps;
              onHyps (nLastHyps neqns) (compose clear ids_of_named_context);
-	     tclDO neqns
-               (tclTHEN intro
-		 (onLastHyp
-		   (fun id -> tclTRY (projectAndApply thin id depids))));
-	     tclDO (List.length nodepids) intro;
+	     tclMAP_i neqns (fun o ->
+	       let idopt,names = extract_eqn_names o in
+               (tclTHEN
+		 (intro_move idopt None)
+		 (onLastHyp (fun id ->
+		   tclTRY (projectAndApply thin id first_eq names depids)))))
+	       names;
+	     tclMAP (fun (id,_,_) gl ->
+	       intro_move None (if thin then None else !first_eq) gl)
+	       nodepids;
 	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids]
       | None -> tclIDTAC
   in
@@ -320,17 +426,23 @@ let rewrite_equations othin neqns ba gl =
      rewrite_eqns])
   gl
 
-let rewrite_equations_tac (gene, othin) id neqns ba =
+let interp_inversion_kind = function
+  | SimpleInversion -> None
+  | FullInversion -> Some false
+  | FullInversionClear -> Some true
+
+let rewrite_equations_tac (gene, othin) id neqns names ba =
+  let othin = interp_inversion_kind othin in
   let tac =
     if gene then rewrite_equations_gene othin neqns ba
-    else rewrite_equations othin neqns ba in
+    else rewrite_equations othin neqns names ba in
   if othin = Some true (* if Inversion_clear, clear the hypothesis *) then 
     tclTHEN tac (tclTRY (clear [id]))
   else 
     tac
 
 
-let raw_inversion inv_kind indbinding id status gl =
+let raw_inversion inv_kind indbinding id status names gl =
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
   let (wc,kONT) = startWalk gl in
@@ -340,13 +452,13 @@ let raw_inversion inv_kind indbinding id status gl =
   let newc = clenv_instance_template indclause' in
   let ccl = clenv_instance_template_type indclause' in
   check_no_metas indclause' ccl;
-  let (IndType (indf,realargs) as indt) =
+  let IndType (indf,realargs) =
     try find_rectype env sigma ccl
     with Not_found ->
       errorlabstrm "raw_inversion"
 	(str ("The type of "^(string_of_id id)^" is not inductive")) in
   let (elim_predicate,neqns) =
-    make_inv_predicate env sigma indt id status (pf_concl gl) in
+    make_inv_predicate env sigma indf realargs id status (pf_concl gl) in
   let (cut_concl,case_tac) =
     if status <> NoDep & (dependent c (pf_concl gl)) then 
       Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
@@ -357,15 +469,14 @@ let raw_inversion inv_kind indbinding id status gl =
   in
   (tclTHENS
      (true_cut None cut_concl)
-     [case_tac (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
-        (Some elim_predicate) ([],[]) newc;
+     [case_tac names 
+       (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
+       (Some elim_predicate) ([],[]) newc;
       onLastHyp
         (fun id ->
            (tclTHEN
-              (applyUsing
-                 (applist(mkVar id,
-                          list_tabulate
-                            (fun _ -> mkMeta(Clenv.new_meta())) neqns)))
+              (apply_term (mkVar id)
+                 (list_tabulate (fun _ -> mkMeta(Clenv.new_meta())) neqns))
               reflexivity))])
   gl
 
@@ -399,44 +510,34 @@ let wrap_inv_error id = function
   | e -> raise e
 
 (* The most general inversion tactic *)
-let inversion inv_kind status id gls =
-  try (raw_inversion inv_kind [] id status) gls
+let inversion inv_kind status names id gls =
+  try (raw_inversion inv_kind [] id status names) gls
   with e -> wrap_inv_error id e
 
 (* Specializing it... *)
 
-let inv_gen gene thin status = try_intros_until (inversion (gene,thin) status)
+let inv_gen gene thin status names =
+  try_intros_until (inversion (gene,thin) status names)
 
 open Tacexpr
 
-(*
-let hinv_kind = Quoted_string "HalfInversion"
-let inv_kind = Quoted_string "Inversion"
-let invclr_kind = Quoted_string "InversionClear"
+let inv k = inv_gen false k NoDep
 
-let com_of_id id =
-  if id = hinv_kind then None
-  else if id = inv_kind then Some false
-  else Some true
-*)
+let half_inv_tac id  = inv SimpleInversion [] (NamedHyp id)
+let inv_tac id       = inv FullInversion [] (NamedHyp id)
+let inv_clear_tac id = inv FullInversionClear [] (NamedHyp id)
 
-let inv k id = inv_gen false k NoDep id
+let dinv k c = inv_gen false k (Dep c)
 
-let half_inv_tac id = inv None (NamedHyp id)
-let inv_tac id = inv (Some false) (NamedHyp id)
-let inv_clear_tac id = inv (Some true) (NamedHyp id)
-
-let dinv k c id = inv_gen false k (Dep c) id
-
-let half_dinv_tac id = dinv None None (NamedHyp id)
-let dinv_tac id = dinv (Some false) None (NamedHyp id)
-let dinv_clear_tac id = dinv (Some true) None (NamedHyp id)
+let half_dinv_tac id  = dinv SimpleInversion None [] (NamedHyp id)
+let dinv_tac id       = dinv FullInversion None [] (NamedHyp id)
+let dinv_clear_tac id = dinv FullInversionClear None [] (NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them
  * back to their places in the hyp-list. *)
 
-let invIn com id ids gls =
+let invIn k names ids id gls =
   let hyps = List.map (pf_get_hyp gls) ids in
   let nb_prod_init = nb_prod (pf_concl gls) in
   let intros_replace_ids gls =
@@ -450,8 +551,14 @@ let invIn com id ids gls =
   in
   try 
     (tclTHENSEQ
-      [bring_hyps hyps; inversion (false, com) NoDep id; intros_replace_ids])
+      [bring_hyps hyps;
+       inversion (false,k) NoDep names id; 
+       intros_replace_ids])
     gls
   with e -> wrap_inv_error id e
 
-let invIn_gen com id idl = try_intros_until (fun id -> invIn com id idl) id
+let invIn_gen k names idl = try_intros_until (invIn k names idl)
+
+let inv_clause k names = function
+  | [] -> inv k names
+  | idl -> invIn_gen k names idl

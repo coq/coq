@@ -25,7 +25,7 @@ open Clenv
 open Pattern
 open Matching
 open Evar_refiner
-open Wcclausenv
+open Tacexpr
 
 (******************************************)
 (*         Basic Tacticals                *)
@@ -239,25 +239,28 @@ type branch_args = {
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
   nassums    : int;         (* the number of assumptions to be introduced *)
-  branchsign : bool list}   (* the signature of the branch.
+  branchsign : bool list;   (* the signature of the branch.
                                true=recursive argument, false=constant *)
+  branchnames : intro_pattern_expr list}
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
-  assums    : named_context;   (* the list of assumptions introduced *)
-  cargs     : identifier list; (* the constructor arguments *)
-  constargs : identifier list; (* the CONSTANT constructor arguments *)
-  recargs   : identifier list; (* the RECURSIVE constructor arguments *)
-  indargs   : identifier list} (* the inductive arguments *)
+  assums    : named_context}   (* the list of assumptions introduced *)
+
+let compute_induction_names n names =
+  let names = if names = [] then Array.make n [] else Array.of_list names in
+  if Array.length names <> n then
+    errorlabstrm "" (str "Expects " ++ int n ++ str " lists of names");
+  names
 
 let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
     match kind_of_term c, recargs with 
     | Prod (_,_,c), recarg::rest ->
-	  (match dest_recarg recarg with
-	    | Norec   -> false :: (analrec c rest)
-	    | Imbr _  -> false :: (analrec c rest)
-	    | Mrec j  -> (isrec & j=k) :: (analrec c rest))
+	let b = match dest_recarg recarg with
+	  | Norec | Imbr _  -> false
+	  | Mrec j  -> isrec & j=k
+	in b :: (analrec c rest)
     | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
     | _, [] -> []
     | _ -> anomaly "compute_construtor_signatures"
@@ -268,9 +271,6 @@ let compute_construtor_signatures isrec (_,k as ity) =
     Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
   let lrecargs = dest_subterms mip.mind_recargs in
   array_map2 analrec lc lrecargs
-
-let case_sign = compute_construtor_signatures false
-let elim_sign = compute_construtor_signatures true
 
 let elimination_sort_of_goal gl = 
   match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
@@ -299,7 +299,7 @@ let last_arg c = match kind_of_term c with
   | _ -> anomaly "last_arg"
 
 let general_elim_then_using 
-  elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
+  elim isrec allnames tac predicate (indbindings,elimbindings) c gl =
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   (* applying elimination_scheme just a little modified *)
   let (wc,kONT)  = startWalk gl in
@@ -326,10 +326,12 @@ let general_elim_then_using
   in
   let elimclause' = clenv_fchain indmv elimclause indclause' in
   let elimclause' = clenv_constrain_with_bindings elimbindings elimclause' in
-  let branchsigns = elim_sign_fun ity in
+  let branchsigns = compute_construtor_signatures isrec ity in
+  let brnames = compute_induction_names (Array.length branchsigns) allnames in
   let after_tac ce i gl =
     let (hd,largs) = decompose_app (clenv_template_type ce).rebus in
     let ba = { branchsign = branchsigns.(i);
+               branchnames = brnames.(i);
                nassums = 
 		 List.fold_left 
                    (fun acc b -> if b then acc+2 else acc+1)
@@ -355,29 +357,30 @@ let elimination_then_using tac predicate (indbindings,elimbindings) c gl =
   let elim =
     Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
   general_elim_then_using
-    elim elim_sign tac predicate (indbindings,elimbindings) c gl
+    elim true [] tac predicate (indbindings,elimbindings) c gl
 
 
 let elimination_then tac        = elimination_then_using tac None 
 let simple_elimination_then tac = elimination_then tac ([],[])
 
-let case_then_using tac predicate (indbindings,elimbindings) c gl =
+let case_then_using allnames tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = elimination_sort_of_goal gl  in
   let elim  = Indrec.make_case_dep (pf_env gl) sigma ity sort in  
   general_elim_then_using 
-    elim case_sign tac predicate (indbindings,elimbindings) c gl
+    elim false allnames tac predicate (indbindings,elimbindings) c gl
 
-let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
+let case_nodep_then_using allnames tac predicate (indbindings,elimbindings)
+  c gl =
   (* finding the case combinator *)
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = elimination_sort_of_goal gl  in
   let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
   general_elim_then_using 
-    elim case_sign tac predicate (indbindings,elimbindings) c gl
+    elim false allnames tac predicate (indbindings,elimbindings) c gl
 
 
 let make_elim_branch_assumptions ba gl =   
@@ -385,11 +388,7 @@ let make_elim_branch_assumptions ba gl =
     match lb,lc with 
       | ([], _) -> 
           { ba = ba;
-            assums    = assums;
-            cargs     = cargs;
-            constargs = constargs;
-            recargs   = recargs;
-            indargs   = indargs}
+            assums    = assums}
       | ((true::tl), ((idrec,_,_ as recarg)::(idind,_,_ as indarg)::idtl)) ->
 	  makerec (recarg::indarg::assums,
 		   idrec::cargs,
@@ -415,11 +414,7 @@ let make_case_branch_assumptions ba gl =
     match p_0,p_1 with 
       | ([], _) -> 
           { ba = ba;
-            assums    = assums;
-            cargs     = cargs;
-            constargs = constargs;
-            recargs   = recargs;
-            indargs   = []}
+            assums    = assums}
       | ((true::tl), ((idrec,_,_ as recarg)::idtl)) ->
 	  makerec (recarg::assums,
 		   idrec::cargs,

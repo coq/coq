@@ -22,7 +22,8 @@ val introElimAssumsThen :
   (branch_assumptions -> tactic) -> branch_args -> tactic
 
 val introCaseAssumsThen :
-  (branch_assumptions -> tactic) -> branch_args -> tactic
+  (Tacexpr.intro_pattern_expr list -> branch_assumptions -> tactic) -> 
+    branch_args -> tactic
 
 val general_decompose : (identifier * constr -> bool) -> constr -> tactic
 val decompose_nonrec  : constr -> tactic

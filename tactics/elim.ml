@@ -37,13 +37,20 @@ let introElimAssumsThen tac ba =
 
 let introCaseAssumsThen tac ba =
   let case_thin_sign =
-    List.flatten 
-      (List.map 
-	 (function b -> if b then [false;true] else [false]) 
-	 ba.branchsign) 
+    List.flatten
+      (List.map (function b -> if b then [false;true] else [false])
+	ba.branchsign)
   in 
-  let introCaseAssums = intros_clearing case_thin_sign in
-  (tclTHEN introCaseAssums (case_on_ba tac ba))
+  let n1 = List.length case_thin_sign in
+  let n2 = List.length ba.branchnames in
+  let (l1,l2),l3 =
+    if n1 < n2 then list_chop n1 ba.branchnames, []
+    else 
+      (ba.branchnames, []),
+       if n1 > n2 then snd (list_chop n2 case_thin_sign) else [] in
+  let introCaseAssums = tclTHEN (intros_pattern None l1) (intros_clearing l3)
+  in
+  (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
 
 (* The following tactic Decompose repeatedly applies the
    elimination(s) rule(s) of the types satisfying the predicate
