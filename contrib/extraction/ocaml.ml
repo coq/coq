@@ -365,8 +365,8 @@ let pp_logical_ind ip packet =
     
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
-  hov 0 (str "type " ++ spc () ++ pp_parameters l ++
-	 pp_global (IndRef (kn,0)) ++ spc () ++ str "=" ++ spc () ++
+  hov 0 (str "type " ++ pp_parameters l ++
+	 pp_global (IndRef (kn,0)) ++ str " =" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++ 
 		     Printer.pr_global (ConstructRef ((kn,0),1))))
