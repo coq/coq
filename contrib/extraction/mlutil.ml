@@ -67,6 +67,27 @@ and occurs_list k l = List.exists (occurs k) l
 
 and occurs_vect k v = array_exists (occurs k) v
 
+(* [occurs_itvl k k' t] return true if there is a [(Rel j)] 
+   in [t] with [k<=i<=k'] *)
+
+let rec occurs_itvl k k' = function
+  | MLrel i -> (k <= i) && (i <= k')
+  | MLapp(t,argl) -> (occurs_itvl k k' t) || (occurs_itvl_list k k' argl)
+  | MLlam(_,t) -> occurs_itvl (k + 1) (k' + 1) t
+  | MLcons(_,argl) -> occurs_itvl_list k k' argl
+  | MLcase(t,pv) -> 
+      (occurs_itvl k k' t) ||
+      (array_exists
+	 (fun (_,l,t') -> 
+	    let n = List.length l in occurs_itvl (k + n) (k' + n) t') pv)
+  | MLfix(_,l,cl) -> 
+      let n = Array.length l in occurs_itvl_vect (k + n) (k' + n) cl
+  | _ -> false
+
+and occurs_itvl_list k k' l = List.exists (occurs_itvl k k') l
+
+and occurs_itvl_vect k k' v = array_exists (occurs_itvl k k') v
+
 (*s map over ML asts *)
 
 let rec ast_map f = function
@@ -181,6 +202,38 @@ let is_atomic = function
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> true
   | _ -> false
 
+exception Impossible
+
+let check_identity_case br = 
+  let rec check_list k = function 
+    | [] -> ()
+    | t :: q -> 
+	if t <> MLrel k then raise Impossible;
+	check_list (k-1) q
+  in
+  let check_one_branch (r,l,t) = 
+    match t with 
+      | MLcons (r',l') -> 
+	  if r<>r' then raise Impossible;
+	  check_list (List.length l) l'
+      | _ -> raise Impossible
+  in Array.iter check_one_branch br
+
+
+let check_constant_case br = 
+  if br = [||] then raise Impossible; 
+  let (r,l,t) = br.(0) in
+  let n = List.length l in 
+  if occurs_itvl 1 n t then raise Impossible; 
+  let cst = ml_lift (-n) t in 
+  for i = 1 to Array.length br - 1 do 
+    let (r,l,t) = br.(i) in
+    let n = List.length l in
+    if (occurs_itvl 1 n t) || (cst <> (ml_lift (-n) t)) 
+    then raise Impossible
+  done; cst
+      
+
 let rec betaiota = function
   | MLapp (f, []) ->
       betaiota f
@@ -221,7 +274,11 @@ let rec betaiota = function
 	     let c' = List.fold_right (fun id t -> MLlam (id,t)) ids c in
 	     betaiota (MLapp (c',a))
 	 | e' -> 
-	     MLcase (e', Array.map (fun (n,l,t) -> (n,l,betaiota t)) br))
+	     let br' = Array.map (fun (n,l,t) -> (n,l,betaiota t)) br in 
+	     try check_identity_case br'; e' 
+	     with Impossible -> 
+	       try check_constant_case br' 
+	       with Impossible -> MLcase (e', br'))
   | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
       (* expansion of a letin in special cases *)
       betaiota (ml_subst c e)
