@@ -223,7 +223,7 @@ let print_extracted_mutual sp =
 
 let print_variable sp =
   let (name,typ,_,_) = out_variable sp in
-  let l = implicits_of_var (kind_of_path sp) name in
+  let l = implicits_of_var name in
   [< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
 
 let print_constant with_values sep sp =
@@ -453,7 +453,7 @@ let print_name name =
 	      | VAR _ ->
 		  let (_,typ) = Global.lookup_var name in 
 		  [< print_var str typ;
-		     try print_impl_args (implicits_of_var CCI name)
+		     try print_impl_args (implicits_of_var name)
 		     with _ -> [<>] >]
 	      | DOPN(Const sp,_) ->
 		  print_constant true " = " sp

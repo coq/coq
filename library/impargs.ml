@@ -101,7 +101,7 @@ let declare_var_implicits id =
   let imps = auto_implicits (body_of_type ty) in
   var_table := Idmap.add id imps !var_table
 
-let implicits_of_var _ id =
+let implicits_of_var id =
   list_of_implicits (try Idmap.find id !var_table with Not_found -> No_impl)
 
 (* Registration as global tables and roolback. *)

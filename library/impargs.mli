@@ -34,7 +34,7 @@ val inductive_implicits_list : inductive_path -> int list
 val constant_implicits_list : section_path -> int list
 
 val declare_var_implicits : identifier -> unit
-val implicits_of_var : Names.path_kind -> identifier -> int list
+val implicits_of_var : identifier -> int list
 
 type frozen_t
 val freeze : unit -> frozen_t

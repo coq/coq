@@ -269,7 +269,7 @@ let global_reference_imps kind id =
     | DOPN (MutConstruct ((sp,i),j),_) ->
 	c, list_of_implicits (constructor_implicits ((sp,i),j))
     | VAR id ->
-	c, implicits_of_var kind id
+	c, implicits_of_var id
     | _ -> assert false
 
 let global env id =

@@ -156,7 +156,7 @@ let dbize_ref k sigma env loc s =
   try 
     match lookup_id id env with
       | RELNAME(n,_) -> RRef (loc,RVar id),[]
-      | _ -> RRef(loc,RVar id), (try implicits_of_var k id with _ -> [])
+      | _ -> RRef(loc,RVar id), (try implicits_of_var id with _ -> [])
   with Not_found ->
     try 
       let c,il = match k with

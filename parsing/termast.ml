@@ -174,7 +174,7 @@ let implicit_of_ref = function
   | RConstruct (cstrid,_) -> constructor_implicits_list cstrid
   | RInd (indid,_) -> inductive_implicits_list indid
   | RConst (sp,_) -> constant_implicits_list sp
-  | RVar id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
+  | RVar id -> (try (implicits_of_var id) with _ -> []) (* et FW? *)
   | _ -> []
 
 let rec skip_coercion dest_ref (f,args as app) =
@@ -452,7 +452,7 @@ let bdize_app c al =
       | DOPN(MutConstruct constr_sp,_) -> constructor_implicits_list constr_sp
       | DOPN(MutInd ind_sp,_) -> inductive_implicits_list ind_sp
       | DOPN(Const sp,_) -> constant_implicits_list sp
-      | VAR id -> (try (implicits_of_var CCI id) with _ -> []) (* et FW? *)
+      | VAR id -> (try implicits_of_var id with _ -> []) (* et FW? *)
       | _ -> []
   in
   if !print_implicits then 
