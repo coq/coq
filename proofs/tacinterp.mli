@@ -38,8 +38,14 @@ and interp_sign =
     goalopt : goal sigma option;
     debug : debug_info }
 
+(* Gives the identifier corresponding to an Identifier [tactic_arg] *)
+val id_of_Identifier : tactic_arg -> identifier
+
 (* Gives the constr corresponding to a Constr [tactic_arg] *)
 val constr_of_Constr : tactic_arg -> constr
+
+(* Transforms an id into a constr if possible *)
+val constr_of_id : interp_sign -> identifier -> constr
 
 (* To embed several objects in Coqast.t *)
 val tacticIn : (interp_sign -> Coqast.t) -> Coqast.t
@@ -74,6 +80,13 @@ val interp : Coqast.t -> tactic
 
 (* Hides interpretation for pretty-print *)
 val hide_interp : Coqast.t -> tactic
+
+(* Adds an interpretation function *)
+val interp_add : string * (interp_sign -> Coqast.t -> value) -> unit
+
+(* Adds a possible existing interpretation function *)
+val overwriting_interp_add : string * (interp_sign -> Coqast.t -> value) ->
+                             unit
 
 (* For bad tactic calls *)
 val bad_tactic_args : string -> 'a

@@ -118,8 +118,9 @@ let make_qid = function
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
 
 (* Transforms an id into a constr if possible *)
-let constr_of_id id = function
-  | None -> raise Not_found
+let constr_of_id ist id =
+  match ist.goalopt with
+  | None -> construct_reference ist.env id
   | Some goal ->
     let hyps = pf_hyps goal in
     if mem_named_context id hyps then
@@ -131,21 +132,21 @@ let constr_of_id id = function
       | _ -> csr)
 
 (* Extracted the constr list from lfun *)
-let rec constr_list goalopt = function
-  | (id,VArg(Constr c))::tl -> (id,c)::(constr_list goalopt tl)
+let rec constr_list_aux ist = function
+  | (id,VArg(Constr c))::tl -> (id,c)::(constr_list_aux ist tl)
   | (id0,VArg(Identifier id))::tl ->
-    (try (id0,(constr_of_id id goalopt))::(constr_list goalopt tl)
-     with | Not_found -> (constr_list goalopt tl))
-  | _::tl -> constr_list goalopt tl
+    (try (id0,(constr_of_id ist id))::(constr_list_aux ist tl)
+     with | Not_found -> (constr_list_aux ist tl))
+  | _::tl -> constr_list_aux ist tl
   | [] -> []
 
+let constr_list ist = constr_list_aux ist ist.lfun
+
 let interp_constr ist c ocl =
-  interp_constr_gen ist.evc ist.env
-    (constr_list ist.goalopt ist.lfun) ist.lmatch c ocl
+  interp_constr_gen ist.evc ist.env (constr_list ist) ist.lmatch c ocl
 
 let interp_openconstr ist c ocl =
-  interp_openconstr_gen ist.evc ist.env
-    (constr_list ist.goalopt ist.lfun) ist.lmatch c ocl
+  interp_openconstr_gen ist.evc ist.env (constr_list ist) ist.lmatch c ocl
 
 (* To embed several objects in Coqast.t *)
 let ((tactic_in : (interp_sign -> Coqast.t) -> Dyn.t),
@@ -180,6 +181,32 @@ let constrIn = constrIn
 let constrOut = constrOut
 
 let loc = dummy_loc
+
+(* Table of interpretation functions *)
+let interp_tab =
+  (Hashtbl.create 17 : (string , interp_sign -> Coqast.t -> value) Hashtbl.t)
+
+(* Adds an interpretation function *)
+let interp_add (ast_typ,interp_fun) =
+  try
+    Hashtbl.add interp_tab ast_typ interp_fun
+  with
+      Failure _ ->
+        errorlabstrm "interp_add"
+          (str "Cannot add the interpretation function for " ++ str ast_typ ++
+            str " twice")
+
+(* Adds a possible existing interpretation function *)
+let overwriting_interp_add (ast_typ,interp_fun) =
+  if Hashtbl.mem interp_tab ast_typ then
+  begin
+    Hashtbl.remove interp_tab ast_typ;
+    warning ("Overwriting definition of tactic interpreter command " ^ ast_typ)
+  end;
+  Hashtbl.add interp_tab ast_typ interp_fun
+
+(* Finds the interpretation function corresponding to a given ast type *)
+let look_for_interp = Hashtbl.find interp_tab
 
 (* Globalizes the identifier *)
 let glob_const_nvar loc env qid =
@@ -614,7 +641,7 @@ and letin_interp ist ast = function
       (id,VArg (Constr (mkCast (csr,typ))))::(letin_interp ist ast tl)
     | VArg (Identifier id) ->
       (try
-         (id,VArg (Constr (mkCast (constr_of_id id ist.goalopt,typ))))::
+         (id,VArg (Constr (mkCast (constr_of_id ist id,typ))))::
          (letin_interp ist ast tl)
        with | Not_found ->
          errorlabstrm "Tacinterp.letin_interp"
@@ -668,7 +695,7 @@ and letcut_interp ist ast = function
       (try
          let cutt = interp_atomic "Cut" [Constr typ]
          and exat =
-           interp_atomic "Exact" [Constr (constr_of_id ir ist.goalopt)] in
+           interp_atomic "Exact" [Constr (constr_of_id ist ir)] in
          tclTHENS cutt [tclTHEN (introduction id)
          (letcut_interp ist ast tl);exat]
        with | Not_found ->
@@ -762,26 +789,24 @@ and match_context_interp ist ast lmr =
   let app_wo_goal = 
     (fun ist goal ->
        apply_match_context ist goal
-         (read_match_context_rule ist.evc ist.env
-           (constr_list ist.goalopt ist.lfun) lmr)) in
+         (read_match_context_rule ist.evc ist.env (constr_list ist) lmr)) in
 
 (*    (fun goal ->
        let evc = project goal
        and env = pf_env goal in
        apply_match_context ist goal
-         (read_match_context_rule ist.evc ist.env
-           (constr_list ist.goalopt ist.lfun) lmr)) in*)
+         (read_match_context_rule ist.evc ist.env (constr_list ist) lmr)) in*)
 
 (*    (fun ist goal ->
      apply_match_context ist goal
-     (read_match_context_rule evc env (constr_list goalopt lfun) lmr)) in*)
+     (read_match_context_rule evc env (constr_list ist) lmr)) in*)
 
  (match ist.goalopt with
     | None -> VContext app_wo_goal
     | Some g -> app_wo_goal ist g)
 
-(*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc env
-    (constr_list goalopt lfun) lmr)*)
+(*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc
+      env (constr_list ist) lmr)*)
 
 (* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context ist mt lgmatch mhyps hyps =
@@ -892,8 +917,7 @@ and match_interp ist ast lmr =
       errorlabstrm "Tacinterp.apply_match" (str
         "No matching clauses for Match") in
   let csr = constr_of_Constr (unvarg (val_interp ist (List.hd lmr)))
-  and ilr = read_match_rule ist.evc ist.env (constr_list ist.goalopt ist.lfun)
-    (List.tl lmr) in
+  and ilr = read_match_rule ist.evc ist.env (constr_list ist) (List.tl lmr) in
   apply_match ist csr ilr
 
 and tactic_interp ist ast g =
