@@ -69,7 +69,9 @@ val subst_clenv : (substitution -> 'a -> 'a) ->
   substitution -> 'a clausenv -> 'a clausenv
 
 val connect_clenv : wc -> 'a clausenv -> wc clausenv
+(*i Was used in wcclausenv.ml
 val clenv_change_head : constr * constr -> 'a clausenv -> 'a clausenv
+i*)
 val clenv_assign : metavariable -> constr -> 'a clausenv -> 'a clausenv
 val clenv_instance_term : wc clausenv -> constr -> constr
 val clenv_pose : name * metavariable * constr -> 'a clausenv -> 'a clausenv

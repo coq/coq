@@ -216,6 +216,7 @@ let subst_clenv f sub clenv =
 
 let connect_clenv wc clenv = { clenv with hook = wc }
 
+(* Was used in wcclausenv.ml
 (* Changes the head of a clenv with (templ,templty) *)
 let clenv_change_head (templ,templty) clenv =
   { templval = mk_freelisted templ;
@@ -223,6 +224,7 @@ let clenv_change_head (templ,templty) clenv =
     namenv   = clenv.namenv;
     env      = clenv.env;
     hook     = clenv.hook }
+*)
 
 let mk_clenv_hnf_constr_type_of wc t =
   mk_clenv_from wc (t,w_hnf_constr wc (w_type_of wc t))
