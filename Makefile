@@ -474,7 +474,7 @@ intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
-sorting: $(SORTING)
+sorting: $(SORTINGVO)
 
 clean::
 	rm -f theories/*/*.vo
