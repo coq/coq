@@ -298,6 +298,30 @@ Proof.
   NewDestruct z; [ Idtac | NewDestruct p | NewDestruct p  ]; Compute; Trivial.
 Qed.
 
+Lemma Zeven_Sn : (z:Z)(Zeven z) -> (Zodd (Zs z)).
+Proof.
+ NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Unfold double_moins_un; Case p; Simpl; Auto.
+Qed.
+
+Lemma Zodd_Sn : (z:Z)(Zodd z) -> (Zeven (Zs z)).
+Proof.
+ NewDestruct z; Unfold Zs; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Unfold double_moins_un; Case p; Simpl; Auto.
+Qed.
+
+Lemma Zeven_pred : (z:Z)(Zeven z) -> (Zodd (Zpred z)).
+Proof.
+ NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Unfold double_moins_un; Case p; Simpl; Auto.
+Qed.
+
+Lemma Zodd_pred : (z:Z)(Zodd z) -> (Zeven (Zpred z)).
+Proof.
+ NewDestruct z; Unfold Zpred; [ Idtac | NewDestruct p | NewDestruct p  ]; Simpl; Trivial. 
+ Unfold double_moins_un; Case p; Simpl; Auto.
+Qed.
+
 Hints Unfold Zeven Zodd : zarith.
 
 (** [Zdiv2] is defined on all [Z], but notice that for odd negative integers
@@ -338,12 +362,41 @@ Intros. Absurd (Zodd (POS (xO p))); Red; Auto with arith.
 Intros. Absurd `(NEG p) >= 0`; Red; Auto with arith.
 Qed.
 
-Lemma Z_modulo_2 : (x:Z) `x >= 0` -> { y:Z | `x=2*y` }+{ y:Z | `x=2*y+1` }.
+Lemma Zodd_div2_neg : (x:Z) `x <= 0` -> (Zodd x) -> `x = 2*(Zdiv2 x)-1`.
 Proof.
-Intros x Hx.
+NewDestruct x.
+Intros. Absurd (Zodd `0`); Red; Auto with arith.
+Intros. Absurd `(NEG p) >= 0`; Red; Auto with arith.
+NewDestruct p; Auto with arith.
+Intros. Absurd (Zodd (NEG (xO p))); Red; Auto with arith.
+Qed.
+
+Lemma Z_modulo_2 : (x:Z) { y:Z | `x=2*y` }+{ y:Z | `x=2*y+1` }.
+Proof.
+Intros x.
 Elim (Zeven_odd_dec x); Intro.
 Left. Split with (Zdiv2 x). Exact (Zeven_div2 x a).
-Right. Split with (Zdiv2 x). Exact (Zodd_div2 x Hx b).
+Right. Generalize b; Clear b; Case x.
+Intro b; Inversion b.
+Intro p; Split with (Zdiv2 (POS p)). Apply (Zodd_div2 (POS p)); Trivial.
+Unfold Zge Zcompare; Simpl; Discriminate.
+Intro p; Split with (Zdiv2 (Zpred (NEG p))).
+Pattern 1 (NEG p); Rewrite (Zs_pred (NEG p)).
+Pattern 1 (Zpred (NEG p)); Rewrite (Zeven_div2 (Zpred (NEG p))).
+Reflexivity.
+Apply Zodd_pred; Assumption.
+Qed.
+
+Lemma Zsplit2 :  (x:Z) { p : Z*Z | let (x1,x2)=p in (`x=x1+x2` /\ (x1=x2 \/ `x2=x1+1`)) }.
+Proof.
+Intros x.
+Elim (Z_modulo_2 x); Intros (y,Hy); Rewrite Zmult_sym in Hy; Rewrite <- Zred_factor1 in Hy.
+Exists (y,y); Split. 
+Assumption.
+Left; Reflexivity.
+Exists (y,y+`1`); Split.
+Rewrite Zplus_assoc; Assumption.
+Right; Reflexivity.
 Qed.
 
 (* Very simple *)

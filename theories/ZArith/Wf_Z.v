@@ -12,6 +12,8 @@ Require fast_integer.
 Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
+Require Zmisc.
+Require Wf_nat.
 V7only [Import Z_scope.].
 Open Local Scope Z_scope.
 
@@ -121,6 +123,44 @@ Intros; Apply inject_nat_set;
     Exact (H0 (inject_nat n0) (ZERO_le_inj n0) H2) ]
 | Assumption].
 Qed.
+
+Section natlike_rec2. 
+(** [natlike_rec2] is the same as [natlike_rec], but with a different proof, designed 
+     to give a better extracted term. *)
+
+Local R := [a,b:Z]`0<=a`/\`a=(Zpred b)`.
+
+Local R_wf : (well_founded Z R).
+Proof.
+LetTac f := [z]Cases z of (POS p) => (convert p) | ZERO => O | (NEG _) => O end.
+Apply  well_founded_lt_compat with f.
+Unfold R f.
+Intros x y; Case x.
+Intuition; Rewrite (Zs_pred y); Rewrite <- H1; Simpl; Apply compare_convert_O.
+Case y; Intuition; Try Solve [ Simpl in H2; Inversion H2 ].
+Assert (POS p) = (POS (add_un p0)).
+ Rewrite add_un_Zs; Rewrite H2; Auto with zarith.
+Inversion_clear H0; Unfold convert; Rewrite convert_add_un.
+Change 1 (positive_to_nat p0 (1)) with (plus (0) (positive_to_nat p0 (1))).
+Apply lt_reg_r; Auto.
+Intuition; Elim H1; Simpl; Trivial.
+Qed.
+
+Lemma Z_rec : (P:Z->Type)(P `0`) -> 
+        ((z:Z)`0<z` -> (P (Zpred z)) -> (P z)) -> (z:Z)`0<=z` -> (P z).
+Proof.
+Intros P Ho Hrec z; Pattern z; Apply (well_founded_induction_type Z R R_wf).
+Intro x; Case x.
+Trivial.
+Intros; Apply Hrec.
+Unfold Zlt; Simpl; Trivial.
+Assert `0<=(Zpred (POS p))`.
+Apply Zlt_ZERO_pred_le_ZERO; Unfold Zlt; Simpl; Trivial.
+Apply X; Unfold R; Intuition.
+Intros; Elim H; Simpl; Trivial.
+Qed.
+
+End natlike_rec2.
 
 Lemma Z_lt_induction : 
   (P:Z->Prop)

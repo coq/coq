@@ -107,7 +107,7 @@ theories/Bool/DecBool.vo: theories/Bool/DecBool.v
 theories/Bool/Sumbool.vo: theories/Bool/Sumbool.v
 theories/Bool/BoolEq.vo: theories/Bool/BoolEq.v theories/Bool/Bool.vo
 theories/Bool/Bvector.vo: theories/Bool/Bvector.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo
-theories/ZArith/Wf_Z.vo: theories/ZArith/Wf_Z.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo
+theories/ZArith/Wf_Z.vo: theories/ZArith/Wf_Z.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/Arith/Wf_nat.vo
 theories/ZArith/Zsyntax.vo: theories/ZArith/Zsyntax.v theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo
 theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/ZArith_base.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zsqrt.vo theories/ZArith/Zpower.vo theories/ZArith/Zdiv.vo theories/ZArith/Zlogarithm.vo theories/ZArith/Zbool.vo
 theories/ZArith/auxiliary.vo: theories/ZArith/auxiliary.v theories/Arith/Arith.vo theories/ZArith/fast_integer.vo theories/ZArith/zarith_aux.vo theories/Logic/Decidable.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
@@ -118,7 +118,7 @@ theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/Arith/Arith
 theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/zarith_aux.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
 theories/ZArith/Zlogarithm.vo: theories/ZArith/Zlogarithm.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zpower.vo
 theories/ZArith/Zpower.vo: theories/ZArith/Zpower.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo theories/ZArith/Zcomplements.vo
-theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v theories/ZArith/ZArith_base.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
+theories/ZArith/Zcomplements.vo: theories/ZArith/Zcomplements.v theories/ZArith/ZArith_base.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo theories/Lists/PolyList.vo
 theories/ZArith/Zdiv.vo: theories/ZArith/Zdiv.v theories/ZArith/ZArith_base.vo contrib/omega/Omega.vo contrib/ring/ZArithRing.vo theories/ZArith/Zcomplements.vo
 theories/ZArith/Zsqrt.vo: theories/ZArith/Zsqrt.v theories/ZArith/ZArith_base.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
 theories/ZArith/Zwf.vo: theories/ZArith/Zwf.v theories/ZArith/ZArith_base.vo theories/Arith/Wf_nat.vo contrib/omega/Omega.vo

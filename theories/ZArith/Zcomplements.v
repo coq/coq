@@ -283,3 +283,47 @@ Apply Zge_Zmult_pos_compat; Omega.
 Ring.
 Omega.
 Save.
+
+(** A list length in Z, tail recursive.  *)
+Require PolyList.
+
+Fixpoint Zlength_aux [acc: Z; A: Set; l:(list A)] : Z := Cases l of 
+    nil => acc
+  | (cons _ l) => (Zlength_aux (Zs acc) A l)
+end. 
+
+Definition Zlength := (Zlength_aux 0).
+Implicits Zlength [1].
+
+Lemma Zlength_correct : (A:Set)(l:(list A))(Zlength l)=(inject_nat (length l)).
+Proof.
+Assert (A:Set)(l:(list A))(acc:Z)(Zlength_aux acc A l)=acc+(inject_nat (length l)). 
+Induction l.
+Simpl; Auto with zarith.
+Intros; Simpl (length (cons a l0)); Rewrite inj_S.
+Simpl; Rewrite H; Auto with zarith.
+Unfold Zlength; Intros; Rewrite H; Auto.
+Qed.
+Implicits Zlength_correct [1].
+
+Lemma Zlength_nil : (A:Set)(x:A)(l:(list A))(Zlength (nil A))=0.
+Proof.
+Auto.
+Qed.
+
+Lemma Zlength_cons : (A:Set)(x:A)(l:(list A))(Zlength (cons x l))=(Zs (Zlength l)).
+Proof.
+Intros; Do 2 Rewrite Zlength_correct.
+Simpl (length (cons x l)); Rewrite inj_S; Auto.
+Qed.
+Implicits Zlength_cons [1].
+
+Lemma Zlength_nil_inv : (A:Set)(l:(list A))(Zlength l)=0 -> l=(nil ?).
+Proof.
+Intros A l; Rewrite Zlength_correct.
+Case l; Auto.
+Intros x l'; Simpl (length (cons x l')).
+Rewrite inj_S.
+Intros; ElimType False; Generalize (ZERO_le_inj (length l')); Omega.
+Qed.
+Implicits Zlength_nil_inv [1].
