@@ -242,6 +242,9 @@ let anonymize_binder na c =
         (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
   else c
 
+let sep_fields () =
+  if !Options.p1 then str ";" ++ spc () else fnl ()
+
 let surround_binder p = 
   if !Options.p1 then str"(" ++ p ++ str")" else p
 
@@ -285,8 +288,8 @@ let pr_assumption_token = function
   | (Decl_kinds.Global,Decl_kinds.Definitional) -> str"Parameter"
 
 let pr_params pr_c (xl,(c,t)) =
-  hov 2 (surround_binder (prlist_with_sep sep pr_id xl ++ spc() ++
-         (if c then str":>" else str":") ++
+  hov 2 (prlist_with_sep sep pr_id xl ++ spc() ++
+         (if c then str":>" else str":" ++
          spc() ++ pr_c t))
 
 let rec factorize = function
@@ -297,8 +300,10 @@ let rec factorize = function
 	| l' -> ([x],(c,t))::l'
 
 let pr_ne_params_list pr_c l =
-  let sep = if !Options.p1 then spc else pr_coma in
-  prlist_with_sep sep (pr_params pr_c) (factorize l)
+  match factorize l with
+  | [params] -> surround_binder (pr_params pr_c params)
+  | l ->
+      prlist_with_sep spc (fun p -> str "(" ++ pr_params pr_c p ++ str ")") l
 
 let pr_thm_token = function
   | Decl_kinds.Theorem -> str"Theorem"
@@ -648,25 +653,25 @@ let rec pr_vernac = function
   | VernacRecord ((oc,name),ps,s,c,fs) ->
       let pr_record_field = function
         | (oc,AssumExpr (id,t)) ->
-            hov 1 (str"(" ++ pr_id id ++
+            hov 1 (surround_binder (pr_id id ++
             (if oc then str" :>" else str" :") ++ spc() ++
-            pr_lconstr t ++ str ")")
+            pr_lconstr t))
         | (oc,DefExpr(id,b,opt)) -> (match opt with
 	    | Some t ->
-                hov 1 (str "(" ++ pr_id id ++
+                hov 1 (surround_binder (pr_id id ++
                 (if oc then str" :>" else str" :") ++ spc() ++
-                pr_lconstr t ++ str" :=" ++ pr_lconstr b ++ str ")")
+                pr_lconstr t ++ str" :=" ++ pr_lconstr b))
 	    | None ->
-                hov 1 (str "(" ++ pr_id id ++ str" :=" ++ spc() ++
-                pr_lconstr b ++ str ")")) in
+                hov 1 (surround_binder (pr_id id ++ str" :=" ++ spc() ++
+                pr_lconstr b))) in
       hov 2
         (str"Record" ++
          (if oc then str" > " else str" ") ++ pr_id name ++ spc() ++
-         pr_sbinders ps ++ str" :" ++ spc() ++ pr_lconstr s ++ str" :=" ++
+         pr_sbinders ps ++ str" :" ++ spc() ++ pr_lconstr s ++ str" := " ++
          (match c with
            | None -> mt()
            | Some sc -> pr_id sc) ++ spc() ++ str"{" ++ cut() ++
-        hv 0 (prlist_with_sep fnl pr_record_field fs)
+        hv 0 (prlist_with_sep sep_fields pr_record_field fs)
         ++ str"}")
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_id id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_id id)
@@ -703,7 +708,7 @@ let rec pr_vernac = function
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      (if i = 1 then mt() else int i ++ str ": ") ++
+      (if i = 1 then mt() else int i ++ str ": ") ++ str "By " ++
       (if deftac then mt() else str "!! ") ++
       pr_raw_tactic_goal i tac
   | VernacSolveExistential (i,c) ->
@@ -747,8 +752,8 @@ let rec pr_vernac = function
           (List.map (fun ((_,id),_) -> (id,Lib.make_path id)) l) 
           (Global.env()) body in
       hov 1
-        ((if rc then str "Recursive " else mt()) ++
-         str "Tactic Definition " ++
+        ((* Rec by default: (if rc then str "Recursive " else mt()) ++ *)
+         str "Ltac " ++
          prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (dbnames,h) -> pr_hints dbnames h pr_constr
   | VernacHintDestruct (id,loc,c,i,tac) ->

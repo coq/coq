@@ -6,9 +6,12 @@
 
 gtk-key-theme-name = "Emacs"
 
+#pixmap_path "/home/"
+
 binding "text" {
   bind "<ctrl>k" { "set-anchor" ()
 		   "move-cursor" (display-line-ends,1,0)
+		   "move-cursor" (visual-positions,1,0)
 		   "cut-clipboard" ()	
 		}
   bind "<ctrl>w" { "cut-clipboard" () }
@@ -22,6 +25,7 @@ class "GtkTextView" binding "text"
 
 style "views" {
 base[NORMAL] = "CornSilk"
+# bg_pixmap[NORMAL] = "background.jpg"
 }
 class "GtkTextView" style "views"
 
@@ -36,3 +40,10 @@ font_name = "Monospace 10"
 }
 widget "*location*" style "location"
 
+
+gtk-can-change-accels = 1
+
+style "men" {
+# 
+}
+widget "GtkMenu" style "men"

@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 {
 
   open Lexing
@@ -33,14 +43,14 @@ let keyword =
   "Section" | "Show" | "Syntactic" | "Syntax" | "Tactic" |
   "Unset" |
   ("Set" space+ "Implicit" space+ "Arguments") |
-  ("Implicit" space+ "Arguments" space+ ("On" | "Off"))
+  ("Implicit" space+ "Arguments" space+ ("On" | "Off")) | "Cases"
 
 let declaration = 
   "Lemma" | "Axiom" | "CoFixpoint" | "Definition"  |
   ("Tactic" space+ "Definition") |
   "Fixpoint" | "Hypothesis" | 
   "Inductive" | "Parameter" | "Remark" |  "Theorem" | 
-  "Variable" | "Variables"
+  "Variable" | "Variables" 
 
 rule next_order = parse
   | "(*" { comment_start := lexeme_start lexbuf; comment lexbuf }
@@ -73,7 +83,6 @@ and comment = parse
 	let lb = Lexing.from_string s in
 	try 
 	  while true do
-	    (* process_pending (); This is VERY DANGEROUS *)
 	    let b,e,o=next_order lb in
 	    let b,e = convert_pos b,convert_pos e in
 	    let start = input_buffer#get_iter_at_char (offset + b) in

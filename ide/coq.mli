@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 open Names
 open Term
 open Environ
@@ -24,10 +34,6 @@ val print_no_goal : unit -> string
 
 val process_exn : exn -> string*((int*int) option)
 
-type word_class = Normal | Kwd | Reserved
-
-val word_class : string -> word_class
-
 type reset_info = NoReset | Reset of Names.identifier * bool ref
 
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
@@ -39,4 +45,6 @@ val hyp_menu : hyp -> (string * string) list
 val concl_menu : concl -> (string * string) list
 
 val is_in_coq_lib : string -> bool
+
+val make_cases : string -> string list list
 

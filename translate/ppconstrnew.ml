@@ -180,7 +180,7 @@ let pr_binders2 pr bl =
   hv 0 (prlist_with_sep sep (pr_binder2 pr) bl)
 
 let pr_prod_binder2 pr (nal,t) =
-  str "for " ++ hov 0 (
+  str "forall " ++ hov 0 (
     prlist_with_sep sep (pr_located pr_name) nal ++
     pr_opt_type pr t) ++ str ","
 
@@ -447,9 +447,9 @@ let rec pr inherited a =
   | CCases (_,po,c,eqns) ->
       v 0
         (hov 4 (str "match " ++ prlist_with_sep sep_v (pr ltop) c ++
-                pr_annotation pr po ++ str " with") ++
+                str " with") ++
         prlist (pr_eqn pr) eqns ++
-        spc() ++ str "end"),
+        spc() ++ pr_annotation pr po ++ str "end"),
       latom
   | COrderedCase (_,_,po,c,[b1;b2]) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le

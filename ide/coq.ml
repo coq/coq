@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 open Vernac
 open Vernacexpr
 open Pfedit
@@ -310,3 +320,40 @@ let concl_menu (_,_,concl,_) =
    "Right", "Right.";
 
   ]
+
+
+let id_of_name = function 
+  | Names.Anonymous -> id_of_string "x" 
+  | Names.Name x -> x
+
+let make_cases s = 
+  let qualified_name = Libnames.qualid_of_string s in
+  let glob_ref = Nametab.locate qualified_name in
+  match glob_ref with
+    | Libnames.IndRef i -> 
+	let _,
+	{
+	  Declarations.mind_nparams = np ;
+	  Declarations.mind_consnames = carr ;
+	 Declarations.mind_nf_lc = tarr } 
+	= Global.lookup_inductive i 
+	in
+	Util.array_fold_right2 
+	  (fun n t l ->  
+	     let (al,_) = Term.decompose_prod t in
+	     let al,_ = Util.list_chop (List.length al - np) al in
+	     let rec rename avoid = function 
+	       | [] -> []
+	       | (n,_)::l -> 
+		   let n' = Tactics.next_global_ident_away 
+			      (id_of_name n) 
+			      avoid
+		   in (string_of_id n')::(rename (n'::avoid) l)
+	     in
+	     let al' = rename [] (List.rev al) in
+	     (string_of_id n :: al') :: l
+	  )
+	  carr 
+	  tarr
+	  []
+    | _ -> raise Not_found

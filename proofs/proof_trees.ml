@@ -136,7 +136,7 @@ let pr_concl n g =
    of pr_subgoals *)
 
 let pr_subgoals = function
-  | [] -> (str"Subtree proved!" ++ fnl ())
+  | [] -> (str"Proof completed." ++ fnl ())
   | [g] ->
       let pg = pr_goal g in v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
   | g1::rest ->
@@ -228,7 +228,7 @@ let pr_subgoals_existential sigma = function
   | [] -> 
       let exl = Evd.non_instantiated sigma in 
       if exl = [] then 
-	(str"Subtree proved!"  ++ fnl ())
+	(str"Proof completed."  ++ fnl ())
       else
         let pei = pr_evars_int 1 exl in
         (str "No more subgoals but non-instantiated existential " ++

@@ -173,6 +173,8 @@ let rec pr_tacarg_using_rule pr_gen = function
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
+let pr_then () =
+  if !Options.p1 then str " &" else str ";"
 
 open Closure
 
@@ -423,11 +425,11 @@ let rec pr_tac env inherited tac =
         pr_tac env (lfun,E) body),
       lfun
   | TacThens (t,tl) -> 
-      hov 1 (pr_tac env (lseq,E) t ++ str " &" ++ spc () ++
+      hov 1 (pr_tac env (lseq,E) t ++ pr_then () ++ spc () ++
              pr_seq_body (pr_tac env) tl),
       lseq
   | TacThen (t1,t2) ->
-      hov 1 (pr_tac env (lseq,E) t1 ++ str " &" ++ spc () ++
+      hov 1 (pr_tac env (lseq,E) t1 ++ pr_then () ++ spc () ++
              pr_tac env (lseq,L) t2),
       lseq
   | TacTry t ->

@@ -1,3 +1,13 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 open Configwin
 open Printf
 open Util
@@ -67,9 +77,63 @@ type pref =
 
       mutable doc_url : string;
       mutable library_url : string;
+
+      mutable show_toolbar : bool;
+      mutable window_width : int;
+      mutable window_height :int;
+
     }
 
-let save_pref p =
+let (current:pref ref) = 
+  ref {
+    cmd_coqc = "coqc";
+    cmd_make = "make";
+    cmd_coqmakefile = "coq_makefile -o Makefile *.v";
+    cmd_coqdoc = "coqdoc -q -g";
+    cmd_print = "lpr";
+
+    global_auto_revert = false;
+    global_auto_revert_delay = 10000;
+    
+    auto_save = false;
+    auto_save_delay = 10000;
+    auto_save_name = "#","#";
+
+    automatic_tactics = ["Progress Trivial.","Trivial.";
+			 "Progress Auto.","Auto.";
+			 "Tauto.","Tauto.";
+			 "Omega.","Omega.";
+			 "Progress Auto with *.","Auto with *.";
+			 "Progress Intuition.","Intuition.";
+			];
+    
+    modifier_for_navigation = [`CONTROL; `MOD1];
+    modifier_for_templates = [`MOD4];
+    modifier_for_tactics = [`CONTROL; `MOD1];
+    modifiers_valid = [`SHIFT; `CONTROL; `MOD1; `MOD4];
+
+    
+    cmd_browse = "netscape -remote \"OpenURL(", ")\"";
+    
+    text_font = Pango.Font.from_string "Monospace 12";
+
+    doc_url = "http://coq.inria.fr/doc/";
+    library_url = "http://coq.inria.fr/library/";
+    
+    show_toolbar = true;
+    window_width = 800;
+    window_height = 600; 
+  }
+
+
+let change_font = ref (fun f -> ())
+
+let show_toolbar = ref (fun x -> ())
+
+let resize_window = ref (fun () -> ())
+
+let save_pref () =
+  let p = !current in
   try 
     let add = Stringmap.add in
     let (++) x f = f x in
@@ -101,51 +165,18 @@ let save_pref p =
 
     add "doc_url" [p.doc_url] ++
     add "library_url" [p.library_url] ++
+    add "show_toolbar" [string_of_bool p.show_toolbar] ++
+    add "window_height" [string_of_int p.window_height] ++
+    add "window_width" [string_of_int p.window_width] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
   
-let (current:pref ref) = 
-  ref {
-    cmd_coqc = "coqc";
-    cmd_make = "make";
-    cmd_coqmakefile = "coq_makefile -o Makefile *.v";
-    cmd_coqdoc = "coqdoc -q -g";
-    cmd_print = "lpr";
-    
 
-    global_auto_revert = false;
-    global_auto_revert_delay = 10000;
-    
-    auto_save = false;
-    auto_save_delay = 10000;
-    auto_save_name = "#","#";
-
-    automatic_tactics = ["Progress Trivial.\n","Trivial.\n";
-			 "Progress Auto.\n","Auto.\n";
-			 "Tauto.\n","Tauto.\n";
-			 "Omega.\n","Omega.\n";
-			 "Progress Auto with *.\n","Auto with *.\n";
-			 "Progress Intuition.\n","Intuition.\n";
-			];
-    
-    modifier_for_navigation = [`CONTROL; `MOD1];
-    modifier_for_templates = [`MOD4];
-    modifier_for_tactics = [`CONTROL; `MOD1];
-    modifiers_valid = [`SHIFT; `CONTROL; `MOD1; `MOD4];
-
-    
-    cmd_browse = "netscape -remote \"OpenURL(", ")\"";
-    
-    text_font = Pango.Font.from_string "Monospace 12";
-
-    doc_url = "http://coq.inria.fr/doc/";
-    library_url = "http://coq.inria.fr/library/";
- }
-
-let load_pref p = 
+let load_pref () =
+  let p = !current in 
   try 
     let m = Config_lexer.load_file pref_file in
-    let np = { !p with cmd_coqc = !p.cmd_coqc } in
+    let np = { p with cmd_coqc = p.cmd_coqc } in
     let set k f = try let v = Stringmap.find k m in f v with _ -> () in
     let set_hd k f = set k (fun v -> f (List.hd v)) in
     let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
@@ -181,10 +212,15 @@ let load_pref p =
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
     set_hd "doc_url" (fun v -> np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);
+    set_bool "show_toolbar" (fun v -> np.show_toolbar <- v);
+    set_int "window_width" (fun v -> np.window_width <- v);
+    set_int "window_height" (fun v -> np.window_height <- v);
+
     current := np
   with e -> 
     prerr_endline ("Could not load preferences ("^
 		   (Printexc.to_string e)^").")
+    
 
 let configure () = 
   let cmd_coqc = 
@@ -198,6 +234,48 @@ let configure () =
   let cmd_print = string ~f:(fun s -> !current.cmd_print <- s) 
 		    "Print ps" !current.cmd_print in
 
+  let config_font =
+    let box = GPack.hbox () in
+    let w = GMisc.font_selection () in
+    w#set_preview_text
+      "Lemma Truth: ∀ p:Prover, `p < Coq`. Proof. Auto with *. Save."; 
+    box#pack w#coerce;
+    ignore (w#misc#connect#realize 
+	      ~callback:(fun () -> w#set_font_name 
+			   (Pango.Font.to_string !current.text_font)));
+    custom
+      ~label:"Fonts for text"
+      box
+      (fun () -> match w#font_name with 
+	 | None -> () 
+	 | Some fd -> !current.text_font <- (Pango.Font.from_string fd) ; !change_font !current.text_font)
+      true
+  in
+  let show_toolbar = 
+    bool 
+      ~f:(fun s -> 
+	    !current.show_toolbar <- s; 
+	    !show_toolbar s) 
+      "Show toolbar" !current.show_toolbar
+  in
+  let window_height =
+    string
+    ~f:(fun s -> !current.window_height <- (try int_of_string s with _ -> 600);
+	  !resize_window ();
+       ) 
+      "Window height" 
+      (string_of_int !current.window_height)
+  in  
+  let window_width =
+    string
+    ~f:(fun s -> !current.window_width <- 
+	  (try int_of_string s with _ -> 800)) 
+      "Window width" 
+      (string_of_int !current.window_width)
+  in  
+
+  let config_appearance = [show_toolbar; window_width; window_height] in
+
   let global_auto_revert = 
     bool 
       ~f:(fun s -> !current.global_auto_revert <- s) 
@@ -209,6 +287,19 @@ let configure () =
 	  (try int_of_string s with _ -> 10000)) 
       "Global auto revert delay (ms)" 
       (string_of_int !current.global_auto_revert_delay)
+  in  
+
+  let auto_save = 
+    bool 
+      ~f:(fun s -> !current.auto_save <- s) 
+      "Enable auto save" !current.auto_save
+  in
+  let auto_save_delay =
+    string
+    ~f:(fun s -> !current.auto_save_delay <- 
+	  (try int_of_string s with _ -> 10000)) 
+      "Auto save delay (ms)" 
+      (string_of_int !current.auto_save_delay)
   in  
 
   let modifier_for_tactics = 
@@ -238,6 +329,12 @@ let configure () =
       "Allowed modifiers"
       !current.modifiers_valid
   in
+  let mod_msg = 
+    string
+      "Needs restart to apply!"
+      ~editable:false
+      ""
+  in
 
   let cmd_browse = 
     string
@@ -265,27 +362,35 @@ let configure () =
 
   let automatic_tactics = 
     let box = GPack.hbox () in
-    let w = Editable_cells.create !current.automatic_tactics in
-    box#pack w#coerce;
+    let (w,get_data) = Editable_cells.create !current.automatic_tactics in
+    box#add w#coerce;
     custom
-      ~label:"Wizzard tactics to try in order (WORK IN PROGRESS)"
+      ~label:"Wizzard tactics to try in order"
       box
-      (fun () -> ())
+      (fun () -> let d = get_data () in !current.automatic_tactics <- d)
       true
 
   in
   let cmds =
-    [Section("Commands",
+    [Section("Fonts",
+	     [config_font]);
+     Section("Appearance",
+	     config_appearance);
+     Section("Commands",
 	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print]);
      Section("Files",
-	     [global_auto_revert;global_auto_revert_delay]);
+	     [global_auto_revert;global_auto_revert_delay;
+	     auto_save; auto_save_delay; (* auto_save_name*)
+	     ]);
      Section("Browser",
 	     [cmd_browse;doc_url;library_url]);
      Section("Tactics Wizzard",
 	     [automatic_tactics]);
-     Section("Shortcuts(need restart)",
-	     [modifiers_valid; modifier_for_tactics;modifier_for_templates; modifier_for_navigation])]
+     Section("Shortcuts",
+	     [modifiers_valid; modifier_for_tactics;
+	      modifier_for_templates; modifier_for_navigation;mod_msg])]
   in
-  match edit "Customizations" cmds
-  with | Return_apply | Return_ok -> save_pref !current
+  match edit ~width:500 "Customizations" cmds
+  with 
+    | Return_apply | Return_ok -> save_pref ()
     | Return_cancel -> ()

@@ -1059,16 +1059,19 @@ let edit ?(with_apply=true)
 
   let hbox_buttons = GPack.hbox ~packing: (vbox#pack ~expand: false ~padding: 4) () in
   let bApply = GButton.button
-      ~label: Configwin_messages.mApply
-      ()
+		 ~stock:`APPLY
+		 ~label: Configwin_messages.mApply
+		 ()
   in
   if with_apply then hbox_buttons#pack ~expand: true ~padding: 3 bApply#coerce;
   let bOk = GButton.button
+	      ~stock:`OK
       ~label: Configwin_messages.mOk
       ~packing: (hbox_buttons#pack ~expand: true ~padding: 3)
       ()
   in
   let bCancel = GButton.button
+		  ~stock:`CANCEL
       ~label: Configwin_messages.mCancel
       ~packing: (hbox_buttons#pack ~expand: true ~padding: 3)
       ()
@@ -1091,6 +1094,9 @@ let edit ?(with_apply=true)
   let f_cancel () = window#destroy () in
   let _ = bCancel#connect#clicked f_cancel in
 
+  let _ = window#event#connect#key_press ~callback:
+	    (fun k -> if GdkEvent.Key.keyval k = GdkKeysyms._Escape then f_cancel ();false)
+  in
   let _ = window#show () in
   GMain.Main.main () ;
   !return
