@@ -127,18 +127,15 @@ let expmod_type oldenv modlist c =
 let abstract_constant ids_to_abs hyps (body,typ) =
   let abstract_once ((hyps,body,typ) as sofar) id =
     match hyps with
-      | [] -> 
+      | (hyp,c,t as decl)::rest when hyp = id ->
+	  let body' = match body with
+	    | None -> None
+	    | Some c -> Some (mkNamedLambda_or_LetIn decl c)
+	  in
+	  let typ' = mkNamedProd_wo_LetIn decl typ in
+	  (rest, body', typ')
+      | _ -> 
 	  sofar
-      | (hyp,c,t as decl)::rest ->
-	  if hyp <> id then 
-	    sofar
-	  else
-	    let body' = match body with
-	      | None -> None
-	      | Some c -> Some (mkNamedLambda_or_LetIn decl c)
-	    in
-	    let typ' = mkNamedProd_or_LetIn decl typ in
-	    (rest, body', typ')
   in
   let (_,body',typ') =
     List.fold_left abstract_once (hyps,body,typ) ids_to_abs in
@@ -150,4 +147,3 @@ let cook_constant env r =
   let body = option_app (expmod_constr env r.d_modlist) cb.const_body in
   let hyps = map_named_context (expmod_constr env r.d_modlist) cb.const_hyps in
   abstract_constant r.d_abstract hyps (body,typ)
-
