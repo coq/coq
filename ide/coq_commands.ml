@@ -240,6 +240,8 @@ let state_preserving = [
   "Test Printing Let";
   "Test Printing Synth";
   "Test Printing Wildcard";
+    
+  "Recursive Extraction"; 
 
   "Unset Printing Coercion";
   "Unset Printing Coercions";
