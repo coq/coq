@@ -97,7 +97,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
 let explain_generalization k ctx (name,var) c =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pv = prterm_env ctx (body_of_type var) in
+  let pv = prtype_env ctx var in
   let pc = prterm_env (add_rel (name,var) ctx) c in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
@@ -118,14 +118,12 @@ let explain_actual_type k ctx c ct pt =
 let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pr = prterm_env ctx rator.uj_val in
-  let prt = prterm_env ctx rator.uj_type in
+  let pr,prt = prjudge_env ctx rator in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
-		  let pc = prterm_env ctx c.uj_val in
-		  let pct = prterm_env ctx c.uj_type in
+		  let pc,pct = prjudge_env ctx c in
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
   [< 'sTR"Illegal application (Type Error): "; pe; 'fNL;
@@ -141,12 +139,12 @@ let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
   let pr = prterm_env ctx rator.uj_val in
-  let prt = prterm_env ctx rator.uj_type in
+  let prt = prterm_env ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc = prterm_env ctx c.uj_val in
-		  let pct = prterm_env ctx c.uj_type in
+		  let pct = prterm_env ctx (body_of_type c.uj_type) in
 		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
   [< 'sTR"Illegal application (Non-functional construction): "; pe; 'fNL;
@@ -167,8 +165,7 @@ let explain_ill_formed_rec_body k ctx str lna i vdefs =
      'sTR "is not well-formed" >]
     
 let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
-  let pvd = prterm_env ctx (vdefj.(i)).uj_val in
-  let pvdt = prterm_env ctx (vdefj.(i)).uj_type in
+  let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
   let pv = prterm_env ctx (body_of_type vargs.(i)) in
   [< 'sTR"The " ;
      if Array.length vdefj = 1 then [<>] else [<'iNT (i+1); 'sTR "-th">];

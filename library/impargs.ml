@@ -68,7 +68,7 @@ let declare_inductive_implicits sp =
   let mib = Global.lookup_mind sp in
   let imps_one_inductive mip =
     (auto_implicits (body_of_type mip.mind_arity),
-     Array.map auto_implicits mip.mind_lc)
+     Array.map (fun c -> auto_implicits (body_of_type c)) mip.mind_lc)
   in
   let imps = Array.map imps_one_inductive mib.mind_packets in
   inductives_table := Spmap.add sp imps !inductives_table

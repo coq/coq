@@ -27,15 +27,7 @@ let recalc_sp sp =
 let whd_all c = whd_betadeltaiota (Global.env()) Evd.empty c
 
 let generalize_type id var c =
-  let c' = mkProd (Name id) (body_of_type var) (subst_var id (body_of_type c)) in
-  let c'ty = sort_of_product_without_univ (level_of_type var) (level_of_type c) in 
-  make_typed c' c'ty
-
-let casted_generalize id var c =
-  let c' = mkProd (Name id) (body_of_type var) (subst_var id (cast_term c)) in
-  let s = destSort (whd_all (cast_type c)) in
-  let c'ty = sort_of_product_without_univ (level_of_type var) s in 
-  mkCast c' (DOP0 (Sort c'ty))
+  typed_product_without_universes (Name id) var (typed_app (subst_var id) c)
 
 type modification_action = ABSTRACT | ERASE
 
@@ -116,7 +108,9 @@ let abstract_inductive ids_to_abs hyps inds =
       	(function (tname,arity,cnames,lc) -> 
 	   let arity' = generalize_type id ty arity in
 	   let lc' =
-	     List.map (fun b-> casted_generalize id ty (substl new_refs b)) lc
+	     List.map
+	       (fun b -> generalize_type id ty (typed_app (substl new_refs) b))
+	       lc
 	   in
            (tname,arity',cnames,lc'))
       	inds
@@ -132,7 +126,10 @@ let abstract_inductive ids_to_abs hyps inds =
   in
   let (_,inds',revmodl) =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
-  let inds'' = List.map (fun (a,b,c,d) -> (a,body_of_type b,c,d)) inds' in
+  let inds'' =
+    List.map 
+      (fun (a,b,c,d) -> (a,body_of_type b,c,List.map body_of_type d))
+      inds' in
   (inds'', List.rev revmodl)
 
 let abstract_constant ids_to_abs hyps (body,typ) =
@@ -151,10 +148,7 @@ let abstract_constant ids_to_abs hyps (body,typ) =
 	    Some (ref (Recipe 
 			 (fun () -> mkLambda name cvar (subst_var id (f())))))
       in
-      let typ' = make_typed
-    	(mkProd name cvar (subst_var id (body_of_type typ)))
-	(sort_of_product_without_univ (level_of_type var) (level_of_type typ))
-      in
+      let typ' = generalize_type id var typ in
       (tl_sign hyps,body',typ',ABSTRACT::modl)
   in
   let (_,body',typ',revmodl) =
@@ -213,7 +207,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	 (mip.mind_typename,
 	  expmod_type oldenv modlist mip.mind_arity,
 	  Array.to_list mip.mind_consnames,
-	  array_map_to_list (expmod_constr oldenv modlist) mip.mind_lc))
+	  array_map_to_list (expmod_type oldenv modlist) mip.mind_lc))
       mib.mind_packets
   in
   let (inds',modl) = abstract_inductive ids_to_discard mib.mind_hyps inds in

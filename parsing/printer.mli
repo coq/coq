@@ -18,6 +18,9 @@ val prterm_env_at_top : 'a assumptions -> constr -> std_ppcmds
 val prterm          : constr -> std_ppcmds
 val prtype_env      : 'a assumptions -> typed_type -> std_ppcmds
 val prtype          : typed_type -> std_ppcmds
+val prjudge_env     :
+  'a assumptions -> Environ.unsafe_judgment -> std_ppcmds * std_ppcmds
+val prjudge         : Environ.unsafe_judgment -> std_ppcmds * std_ppcmds
 
 val pr_rawterm       : Rawterm.rawconstr -> std_ppcmds
 val pr_cases_pattern : Rawterm.cases_pattern -> std_ppcmds

@@ -37,20 +37,3 @@ val make_rec_branch_arg :
   env -> 'a evar_map ->
     int * ('b * constr) option array * int ->
     constr -> constructor_summary -> recarg list -> constr
-
-val pred_case_ml_onebranch : env -> 'c evar_map -> bool ->
-  inductive_type -> int * constr * constr -> constr 
-
-(*i Info pour JCF : déplacé dans pretyping, sert à Program
-val transform_rec : env -> 'c evar_map -> (constr array) 
-  -> (constr * constr) -> constr
-i*)
-
-(*i Utilisés dans Program
-val pred_case_ml : env -> 'c evar_map -> bool ->
-  constr * (inductive * constr list * constr list)
-  ->  constr array -> int * constr  ->constr
-val make_case_ml :
-  bool -> constr -> constr -> case_info -> constr array -> constr
-i*)
-

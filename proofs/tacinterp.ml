@@ -588,7 +588,7 @@ and cvt_pattern (evc,env,lfun,lmatch,goalopt)=function
       in
         let jdt=Typing.unsafe_machine env evc csr
         in
-          (occs, jdt.Environ.uj_val, jdt.Environ.uj_type)
+          (occs, jdt.Environ.uj_val, body_of_type jdt.Environ.uj_type)
   |arg -> invalid_arg_loc (Ast.loc arg,"cvt_pattern")
 and cvt_unfold (evc,env,lfun,lmatch,goalopt)=function
    Node(_,"UNFOLD", com::nums) ->
