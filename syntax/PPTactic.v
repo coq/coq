@@ -17,18 +17,18 @@ Syntax tactic
     interpret [<<(Interp (TACTIC $t))>>] -> [ $t:E ]
   ;
 
-  (* Put parenthesis when there is more than one tactic *)
   level 3:
-    tacsemilist_many [<<(TACTICLIST ($LIST $L))>>]
-      -> [ [ <hov 2> (TACTICS ($LIST $L)) ] ]
+    | tacticlist_parsimp [<<(TACTICLISTPAR $tac0 $tac1)>>] ->
+      [ $tac0 ";" [1 0] $tac1]
+    | tacticlist_parcomp [<<(TACTICLISTPAR $tac0 (TACTICLIST $tac1 $tac2))>>]
+      -> [ (TACTICLIST $tac0 (TACTICLIST $tac1 $tac2)) ]
   ;
 
   level 2:
-    tacsemilist_one [<<(TACTICLIST $tac)>>] -> [(TACTICS $tac)]
-  | tacticlist_cons [<<(TACTICS $t1 ($LIST $l))>>]
-      -> [ [<hov 0> $t1:E] ";" [1 0] (TACTICS ($LIST $l)) ]
-  | tacticlist_one [<<(TACTICS $t1)>>] -> [ [<hov 0> $t1:E] ]
-
+  | tacticlist_simp [<<(TACTICLIST $tac0 $tac1)>>] ->
+    [ $tac0 ";" [1 0] $tac1]
+  | tacticlist_comp [<<(TACTICLIST $tac0 (TACTICLIST $tac1 $tac2))>>] ->
+    [ $tac0 ";" [1 0] [<hov 0> (TACTICLISTPAR $tac1 $tac2):E] ]
   | tactic_seq [<<(TACLIST ($LIST $l))>>]
              -> [ [<hv 0> "[ " (TACTICSEQBODY ($LIST $l)) " ]" ] ]
   | tacticseqbody_cons [<<(TACTICSEQBODY $t ($LIST $l))>>]
@@ -59,8 +59,6 @@ Syntax tactic
 
   level 1:
     orelse [ $st Orelse $tc ] -> [ [<hov 0> $st:L " Orelse" [1 1] $tc:E] ]
-
-(*    orelse [ (ORELSE $st $tc)>>] -> [ [<hov 0> $st:L " Orelse" [1 1] $tc:E] ]*)
   ;
 
   level 0:
@@ -69,7 +67,9 @@ Syntax tactic
 (*       PP rules for LTAC       *)
 (* ============================= *)
 
-    do     [<<(DO ($NUM $n) $tc)>>] -> ["Do " $n " " $tc:E]
+  | idtac  [<<(IDTAC)>>]            -> ["Idtac"]
+  | fail   [<<(FAIL)>>]             -> ["Fail"]
+  | do     [<<(DO ($NUM $n) $tc)>>] -> ["Go " $n " " $tc:E]
   | try    [<<(TRY $t)>>]           -> ["Try " $t:E]
   | info   [<<(INFO $t)>>]          -> ["Info " $t:E]
   | repeat [<<(REPEAT $tc)>>]       -> ["Repeat " $tc:E]
@@ -205,9 +205,6 @@ Syntax tactic
   | reflexivity [<<(Reflexivity)>>] -> ["Reflexivity"]
   | symmetry [<<(Symmetry)>>] -> ["Symmetry"]
   | transitivity [<<(Transitivity $C)>>] -> ["Transitivity " $C]
-
-  | idtac [<<(Idtac)>>] -> ["Idtac"]
-
 
 (* ============================================== *)
 (*      PP rules for tactic arguments             *)
@@ -359,4 +356,3 @@ Syntax tactic
   | tactic_qualidarg_nil [<<(QUALIDARG $id)>>] -> [ $id ]
   | tactic_qualidarg_cons [<<(QUALIDARG $id $p)>>] ->
 	 [ $id [1 0] "." (QUALID $p) ].
-
