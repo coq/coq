@@ -279,7 +279,8 @@ FUNINDCMO=\
 FOCMO=\
   contrib/first-order/formula.cmo contrib/first-order/unify.cmo \
   contrib/first-order/sequent.cmo contrib/first-order/rules.cmo \
-  contrib/first-order/instances.cmo contrib/first-order/ground.cmo
+  contrib/first-order/instances.cmo contrib/first-order/ground.cmo \
+  contrib/first-order/g_ground.cmo
 
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
@@ -297,7 +298,7 @@ LINEARCMO=\
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
   contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4 contrib/funind/tacinv.ml4 \
-  contrib/first-order/ground.ml4
+  contrib/first-order/g_ground.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \

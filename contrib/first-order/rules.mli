@@ -27,10 +27,6 @@ val axiom_tac : constr -> Sequent.t -> tactic
 
 val ll_atom_tac : constr -> lseqtac
 
-val evaluable_tac : evaluable_global_reference -> seqtac
-
-val left_evaluable_tac : evaluable_global_reference -> lseqtac
-
 val and_tac : seqtac
 
 val or_tac : seqtac

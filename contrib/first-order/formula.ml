@@ -63,25 +63,19 @@ let ind_hyps nevar ind largs=
       fst (Sign.decompose_prod_assum t2) in
     Array.init lp myhyps
 
-let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
-
-let id_not=lazy (destConst (constant "not"))
-let id_iff=lazy (destConst (constant "iff"))
-
 let match_with_evaluable gl t=
   let env=pf_env gl in
+  let hd=       
     match kind_of_term t with
-	App (hd,b)-> 
-	  (match kind_of_term hd with
-	       Const cst->
-		 if (*Environ.evaluable_constant cst env*) 
-		   cst=(Lazy.force id_not) || 
-		   cst=(Lazy.force id_iff) then 
-		   Some(EvalConstRef cst,t)
-		 else None
-	     | _-> None)
+	App (head,_) -> head
+      | _ -> t in
+    match kind_of_term hd with
+	Const cst->
+	  if Environ.evaluable_constant cst env 
+	  then Some (EvalConstRef cst,t)
+	  else None
       | _-> None
-	
+
 type kind_of_formula=
     Arrow of constr*constr
   | False of inductive*constr list
@@ -90,7 +84,6 @@ type kind_of_formula=
   | Exists of inductive*constr list
   | Forall of constr*constr
   | Atom of constr
-  | Evaluable of evaluable_global_reference*constr 
       
 let rec kind_of_formula gl term =
   let cciterm=whd_betaiotazeta term in
@@ -116,8 +109,14 @@ let rec kind_of_formula gl term =
 			Some (i,l)-> Exists((destInd i),l)
 		      |_-> 
 			 match match_with_evaluable gl cciterm with 
-			     Some (ec,t)->Evaluable (ec,t)
-			   | None ->Atom cciterm
+			     Some (ec,t)->	  
+			       let nt=Tacred.unfoldn [[1],ec] 
+					(pf_env gl)
+					(Refiner.sig_sig gl) t in
+				 kind_of_formula gl nt
+			   | None ->Atom (nf_betadeltaiota 
+					    (pf_env gl) 
+					    (Refiner.sig_sig gl) cciterm)
   
 type atoms = {positive:constr list;negative:constr list}
 
@@ -161,10 +160,6 @@ let build_atoms gl metagen polarity cciterm =
 	      positive:= unsigned :: !positive 
 	    else 
 	      negative:= unsigned :: !negative
-      | Evaluable(ec,t)->
-	  let nt=Tacred.unfoldn [[1],ec] (Lazy.force pfenv) 
-		   (Refiner.sig_sig gl) t in
-	    build_rec env polarity nt
   in 
     build_rec [] polarity cciterm;
     (!trivial,
@@ -179,7 +174,6 @@ type right_pattern =
   | Rfalse
   | Rforall
   | Rexists of metavariable*constr*bool
-  | Revaluable of evaluable_global_reference
    
 type left_arrow_pattern=
     LLatom
@@ -189,7 +183,6 @@ type left_arrow_pattern=
   | LLforall of constr
   | LLexists of inductive*constr list
   | LLarrow of constr*constr*constr
-  | LLevaluable of evaluable_global_reference
 
 type left_pattern=
     Lfalse    
@@ -197,7 +190,6 @@ type left_pattern=
   | Lor of inductive 
   | Lforall of metavariable*constr*bool
   | Lexists of inductive
-  | Levaluable of evaluable_global_reference
   | LA of constr*left_arrow_pattern
 
 type t={id:global_reference;
@@ -224,8 +216,7 @@ let build_formula side nam typ gl metagen=
 		let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
 		  Rexists(m,d,trivial)
 	    | Forall (_,a) -> Rforall 
-	    | Arrow (a,b) -> Rarrow 
-	    | Evaluable (egc,_)->Revaluable egc in
+	    | Arrow (a,b) -> Rarrow in
 	  Right pat
       else
 	let pat=
@@ -237,44 +228,22 @@ let build_formula side nam typ gl metagen=
 	    | Exists (ind,_) ->  Lexists ind 
 	    | Forall (d,_) -> 
 		Lforall(m,d,trivial)
-	    | Evaluable (egc,_) ->Levaluable egc 
-	    | Arrow (a,b) ->LA (a, 
-				match kind_of_formula gl a with
-				    False(i,l)-> LLfalse(i,l)
-				  | Atom t->     LLatom
-				  | And(i,l)->      LLand(i,l)
-				  | Or(i,l)->       LLor(i,l)
-				  | Arrow(a,c)-> LLarrow(a,c,b)
-				  | Exists(i,l)->LLexists(i,l)
-				  | Forall(_,_)->LLforall a
-				  | Evaluable (egc,_)-> LLevaluable egc) in
+	    | Arrow (a,b) ->
+		let nfa=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) a in
+		  LA (nfa, 
+		      match kind_of_formula gl a with
+			  False(i,l)-> LLfalse(i,l)
+			| Atom t->     LLatom
+			| And(i,l)->      LLand(i,l)
+			| Or(i,l)->       LLor(i,l)
+			| Arrow(a,c)-> LLarrow(a,c,b)
+			| Exists(i,l)->LLexists(i,l)
+			| Forall(_,_)->LLforall a) in
 	  Left pat
     in
       Left {id=nam;
-	    constr=typ;
+	    constr=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) typ;
 	    pat=pattern;
 	    atoms=atoms}
-  with Is_atom a-> Right a
-(*    
-let build_right_entry typ gl metagen=
-  try
-    let m=meta_succ(metagen false) in 
-    let trivial,atoms=
-      if !qflag then 
-	build_atoms gl metagen true typ
-      else no_atoms in
-    let pattern=
-      match kind_of_formula gl typ with
-	  False(_,_)        -> raise (Is_atom typ)
-	| Atom a       -> raise (Is_atom a)
-	| And(_,_)        -> Rand
-	| Or(_,_)         -> Ror
-	| Exists (i,l) -> 
-	    let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
-	      Rexists(m,d,trivial)
-	| Forall (_,a) -> Rforall 
-	| Arrow (a,b) -> Rarrow 
-	| Evaluable (egc,_)->Revaluable egc in
-      Complex(pattern,typ,atoms)
-  with Is_atom a-> Atomic a
-*)
+  with Is_atom a-> Right a (* already in nf *)
+    

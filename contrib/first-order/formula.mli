@@ -39,7 +39,6 @@ type kind_of_formula =
   | Exists of inductive*constr list
   | Forall of constr*constr
   | Atom of constr
-  | Evaluable of Names.evaluable_global_reference * Term.constr
 
 val kind_of_formula : Proof_type.goal Tacmach.sigma -> 
   constr -> kind_of_formula
@@ -58,7 +57,6 @@ type right_pattern =
   | Rfalse
   | Rforall
   | Rexists of metavariable*constr*bool
-  | Revaluable of Names.evaluable_global_reference
     
 type left_arrow_pattern=
     LLatom
@@ -68,7 +66,6 @@ type left_arrow_pattern=
   | LLforall of constr
   | LLexists of inductive*constr list
   | LLarrow of constr*constr*constr
-  | LLevaluable of Names.evaluable_global_reference
 
 type left_pattern=
     Lfalse    
@@ -76,7 +73,6 @@ type left_pattern=
   | Lor of inductive 
   | Lforall of metavariable*constr*bool
   | Lexists of inductive
-  | Levaluable of Names.evaluable_global_reference
   | LA of constr*left_arrow_pattern
       
 type t={id: global_reference;

@@ -31,7 +31,6 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 	    | Ror ->             -15
 	    | Rfalse ->          -50 (* dead end for sure *)
 	    | Rforall ->         100
-	    | Revaluable _ ->    100 
 	    | Rexists (_,_,_) -> -30
 	end
     | Left lf ->
@@ -41,7 +40,6 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 	  | Lor _              ->    40
 	  | Lforall (_,_,_)      -> -30 (* must stay at lowest priority *)
 	  | Lexists _           ->   60
-	  | Levaluable _       ->   100
 	  | LA(_,lap) ->
 	      match lap with
 		  LLatom             ->   0
@@ -51,7 +49,6 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 		| LLforall _         -> -20
 		| LLexists (_,_)     ->  50
 		| LLarrow  (_,_,_)   -> -10 
-		| LLevaluable _      -> 100
 
 let left_reversible lpat=(priority lpat)>0
 

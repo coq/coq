@@ -115,41 +115,47 @@ let left_instance_tac (inst,id) tacrec seq=
 	else
 	  tclTHENS (cut dom) 
 	    [tclTHENLIST
-	       [intro;
+	       [introf;
 		(fun gls->generalize 
 		   [mkApp(constr_of_reference id,
 			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
-		intro;
+		introf;
 		tclSOLVE [wrap 1 false tacrec 
 			    (deepen (record (id,None) seq))]];
 	    tclTRY assumption]
-    | Real((m,t) as c,_)->
-	if lookup (id,Some c) seq || m>0 then 
+    | Real((0,t) as c,_)->
+	if lookup (id,Some c) seq then 
 	  tclFAIL 0 "already done" 
 	else
 	  tclTHENLIST 
 	    [generalize [mkApp(constr_of_reference id,[|t|])];
-	     intro; 
+	     introf; 
 	     tclSOLVE 
 	       [wrap 1 false tacrec 
 		  (deepen (record (id,Some c) seq))]]
+    | Real((m,t) as c,_)->
+	if lookup (id,Some c) seq then 
+	  tclFAIL 0 "already done" 
+	else 
+	  tclFAIL 0 "not implemented ... yet"
+
 
 let right_instance_tac inst tacrec seq=
   match inst with
       Phantom dom ->
 	tclTHENS (cut dom) 
 	[tclTHENLIST
-	   [intro;
+	   [introf;
 	    (fun gls->
 	       split (Rawterm.ImplicitBindings 
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
 	    tclSOLVE [wrap 0 false tacrec (deepen seq)]];
 	 tclTRY assumption] 
+    | Real ((0,t),_) ->
+	(tclTHEN (split (Rawterm.ImplicitBindings [t]))
+	   (tclSOLVE [wrap 0 true tacrec (deepen seq)]))
     | Real ((m,t),_) ->
-	if m>0 then tclFAIL 0 "not implemented ... yes"
-	else
-	  tclTHEN (split (Rawterm.ImplicitBindings [t]))
-	    (tclSOLVE [wrap 0 true tacrec (deepen seq)])
+	tclFAIL 0 "not implemented ... yet"
 
 let instance_tac inst=
   if (snd inst)==dummy_id then 

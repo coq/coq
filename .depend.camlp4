@@ -20,7 +20,7 @@ contrib/cc/cctac.ml: parsing/grammar.cma
 contrib/linear/ccidpc.ml: parsing/grammar.cma
 contrib/linear/dpc.ml: parsing/grammar.cma
 contrib/funind/tacinv.ml: parsing/grammar.cma
-contrib/first-order/ground.ml: parsing/grammar.cma
+contrib/first-order/g_ground.ml: parsing/grammar.cma
 parsing/lexer.ml: 
 parsing/q_util.ml: 
 parsing/q_coqast.ml: 

@@ -15,7 +15,6 @@ open Tacmach
 open Tactics
 open Tacticals
 open Termops
-open Reductionops
 open Declarations
 open Formula
 open Sequent
@@ -65,26 +64,9 @@ let ll_atom_tac a id tacrec seq=
       [generalize [mkApp(constr_of_reference id,
 			 [|constr_of_reference (find_left a seq)|])];
        clear_global id;
-       intro;
+       introf;
        wrap 1 false tacrec seq] 
   with Not_found->tclFAIL 0 "No link" 
-
-(* evaluation rules *)
-
-let evaluable_tac ec tacrec seq gl=
-  tclTHEN
-    (unfold_in_concl [[1],ec]) 
-    (wrap 0 true tacrec seq) gl
-
-let left_evaluable_tac ec id tacrec seq gl=
-  tclTHENLIST
-    [generalize [constr_of_reference id];
-     clear_global id;
-     intro;
-     (fun gls->
-	let nid=(Tacmach.pf_nth_hyp_id gls 1) in
-	  unfold_in_hyp [[1],ec] (Tacexpr.InHypType nid) gls);
-     wrap 1 false tacrec seq] gl
 
 (* right connectives rules *)
 
@@ -95,7 +77,7 @@ let or_tac tacrec seq=
   any_constructor (Some (tclSOLVE [wrap 0 true tacrec seq]))
 
 let arrow_tac tacrec seq=
-  tclTHEN intro (wrap 1 true tacrec seq)
+  tclTHEN introf (wrap 1 true tacrec seq)
    
 (* left connectives rules *)
 
@@ -104,7 +86,7 @@ let left_and_tac ind id tacrec seq=
     tclTHENLIST 
       [simplest_elim (constr_of_reference id);
        clear_global id; 
-       tclDO n intro;
+       tclDO n introf;
        wrap n false tacrec seq]
 
 let left_or_tac ind id tacrec seq=
@@ -112,7 +94,7 @@ let left_or_tac ind id tacrec seq=
   let f n=
     tclTHENLIST
       [clear_global id;
-       tclDO n intro;
+       tclDO n introf;
        wrap n false tacrec seq] in
     tclTHENSV
       (simplest_elim (constr_of_reference id))
@@ -143,7 +125,7 @@ let ll_ind_tac ind largs id tacrec seq gl=
 	 tclTHENLIST 
 	   [generalize newhyps;
 	    clear_global id;
-	    tclDO lp intro;
+	    tclDO lp introf;
 	    wrap lp false tacrec seq]
    with Invalid_argument _ ->tclFAIL 0 "") gl
 
@@ -154,40 +136,40 @@ let ll_arrow_tac a b c id tacrec seq=
 			 [|mkLambda (Anonymous,(lift 1 a),(mkRel 2))|])) in
     tclTHENS (cut c)
       [tclTHENLIST
-	 [intro;
+	 [introf;
 	  clear_global id;
 	  wrap 1 false tacrec seq];
        tclTHENS (cut cc) 
          [exact_no_check (constr_of_reference id); 
 	  tclTHENLIST 
 	    [generalize [d];
-	     intro;
+	     introf;
 	     clear_global id;
 	     tclSOLVE [wrap 1 true tacrec seq]]]]
 
 (* quantifier rules (easy side) *)
 
 let forall_tac tacrec seq=
-  tclTHEN intro (wrap 0 true tacrec seq)
+  tclTHEN introf (wrap 0 true tacrec seq)
 
 let left_exists_tac ind id tacrec seq=
   let n=(construct_nhyps ind).(0) in  
     tclTHENLIST
       [simplest_elim (constr_of_reference id);
        clear_global id;
-       tclDO n intro;
+       tclDO n introf;
        (wrap (n-1) false tacrec seq)]
 
 let ll_forall_tac prod id tacrec seq=
   tclTHENS (cut prod)
     [tclTHENLIST
-       [intro;
+       [introf;
 	(fun gls->
 	   let id0=pf_nth_hyp_id gls 1 in
 	   let term=mkApp((constr_of_reference id),[|mkVar(id0)|]) in
 	     tclTHEN (generalize [term]) (clear [id0]) gls);  
 	clear_global id;
-	intro;
+	introf;
 	tclSOLVE [wrap 1 false tacrec (deepen seq)]];
      tclSOLVE [wrap 0 true tacrec (deepen seq)]]
 

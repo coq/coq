@@ -1,3 +1,9 @@
+newtheories/FSets/FSet.vo: newtheories/FSets/FSet.v newtheories/FSets/FSetInterface.vo newtheories/FSets/FSetBridge.vo newtheories/FSets/FSetProperties.vo newtheories/FSets/FSetList.vo newtheories/FSets/FSetRBT.vo
+newtheories/FSets/FSetList.vo: newtheories/FSets/FSetList.v newtheories/FSets/FSetInterface.vo
+newtheories/FSets/FSetBridge.vo: newtheories/FSets/FSetBridge.v newtheories/FSets/FSetInterface.vo
+newtheories/FSets/FSetProperties.vo: newtheories/FSets/FSetProperties.v newcontrib/omega/Omega.vo newtheories/FSets/FSetInterface.vo newtheories/Bool/Bool.vo newtheories/Bool/Sumbool.vo newtheories/Bool/Zerob.vo
+newtheories/FSets/FSetInterface.vo: newtheories/FSets/FSetInterface.v newtheories/Bool/Bool.vo newtheories/Lists/PolyList.vo newtheories/Sorting/Sorting.vo newtheories/Setoids/Setoid.vo
+newtheories/FSets/FSetRBT.vo: newtheories/FSets/FSetRBT.v newtheories/FSets/FSetInterface.vo newtheories/FSets/FSetList.vo newtheories/FSets/FSetBridge.vo newcontrib/omega/Omega.vo newtheories/ZArith/ZArith.vo
 newtheories/Reals/TypeSyntax.vo: newtheories/Reals/TypeSyntax.v
 newtheories/Reals/Rdefinitions.vo: newtheories/Reals/Rdefinitions.v newtheories/ZArith/ZArith_base.vo newtheories/Reals/TypeSyntax.vo
 newtheories/Reals/Rsyntax.vo: newtheories/Reals/Rsyntax.v newtheories/Reals/Rdefinitions.vo
