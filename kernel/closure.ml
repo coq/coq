@@ -54,7 +54,7 @@ let with_stats c =
 
 type evaluable_global_reference =
   | EvalVarRef of identifier
-  | EvalConstRef of section_path
+  | EvalConstRef of constant
 
 type transparent_state = Idpred.t * Sppred.t
 
@@ -68,7 +68,7 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : section_path -> red_kind
+  val fCONST : constant -> red_kind
   val fVAR : identifier -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
