@@ -72,10 +72,8 @@ let flin_emult a f =
     
 (*****************************************************************************)
 open Vernacexpr
-let parse_ast   = Pcoq.parse_string Pcoq.Constr.constr;;
-let parse s = Constrintern.interp_constr Evd.empty (Global.env()) (parse_ast s);;
-let pf_parse_constr gl s =
-   Constrintern.interp_constr Evd.empty (pf_env gl) (parse_ast s);;
+
+type ineq = Rlt | Rle | Rgt | Rge
 
 let string_of_R_constant kn = 
   match Names.repr_kn kn with
@@ -275,6 +273,69 @@ let fourier_lineq lineq1 =
    unsolvable sys
 ;;
 
+(*********************************************************************)
+(* Defined constants *)
+
+let get = Lazy.force
+let constant = Coqlib.gen_constant "Fourier"
+
+(* Standard library *)
+open Coqlib
+let coq_sym_eqT = lazy (build_coq_sym_eqT ())
+let coq_False = lazy (build_coq_False ())
+let coq_not = lazy (build_coq_not ())
+let coq_eq = lazy (build_coq_eq_data.eq ())
+
+(* Rdefinitions *)
+let constant_real = constant ["Reals";"Rdefinitions"]
+
+let coq_Rlt = lazy (constant_real "Rlt")
+let coq_Rgt = lazy (constant_real "Rgt")
+let coq_Rle = lazy (constant_real "Rle")
+let coq_Rge = lazy (constant_real "Rge")
+let coq_R = lazy (constant_real "R")
+let coq_Rminus = lazy (constant_real "Rminus")
+let coq_Rmult = lazy (constant_real "Rmult")
+let coq_Rplus = lazy (constant_real "Rplus")
+let coq_Ropp = lazy (constant_real "Ropp")
+let coq_Rinv = lazy (constant_real "Rinv")
+let coq_R0 = lazy (constant_real "R0")
+let coq_R1 = lazy (constant_real "R1")
+
+(* RIneq *)
+let coq_Rinv_R1 = lazy (constant ["Reals";"RIneq"] "Rinv_R1")
+
+(* Fourier_util *)
+let constant_fourier = constant ["fourier";"Fourier_util"]
+
+let coq_Rlt_zero_1 = lazy (constant_fourier "Rlt_zero_1")
+let coq_Rlt_zero_pos_plus1 = lazy (constant_fourier "Rlt_zero_pos_plus1")
+let coq_Rle_zero_pos_plus1 = lazy (constant_fourier "Rle_zero_pos_plus1")
+let coq_Rlt_mult_inv_pos = lazy (constant_fourier "Rlt_mult_inv_pos")
+let coq_Rle_zero_zero = lazy (constant_fourier "Rle_zero_zero")
+let coq_Rle_zero_1 = lazy (constant_fourier "Rle_zero_1")
+let coq_Rle_mult_inv_pos = lazy (constant_fourier "Rle_mult_inv_pos")
+let coq_Rnot_lt0 = lazy (constant_fourier "Rnot_lt0")
+let coq_Rle_not_lt = lazy (constant_fourier "Rle_not_lt")
+let coq_Rfourier_gt_to_lt = lazy (constant_fourier "Rfourier_gt_to_lt")
+let coq_Rfourier_ge_to_le = lazy (constant_fourier "Rfourier_ge_to_le")
+let coq_Rfourier_eqLR_to_le = lazy (constant_fourier "Rfourier_eqLR_to_le")
+let coq_Rfourier_eqRL_to_le = lazy (constant_fourier "Rfourier_eqRL_to_le")
+
+let coq_Rfourier_not_ge_lt = lazy (constant_fourier "Rfourier_not_ge_lt")
+let coq_Rfourier_not_gt_le = lazy (constant_fourier "Rfourier_not_gt_le")
+let coq_Rfourier_not_le_gt = lazy (constant_fourier "Rfourier_not_le_gt")
+let coq_Rfourier_not_lt_ge = lazy (constant_fourier "Rfourier_not_lt_ge")
+let coq_Rfourier_lt = lazy (constant_fourier "Rfourier_lt")
+let coq_Rfourier_le = lazy (constant_fourier "Rfourier_le")
+let coq_Rfourier_lt_lt = lazy (constant_fourier "Rfourier_lt_lt")
+let coq_Rfourier_lt_le = lazy (constant_fourier "Rfourier_lt_le")
+let coq_Rfourier_le_lt = lazy (constant_fourier "Rfourier_le_lt")
+let coq_Rfourier_le_le = lazy (constant_fourier "Rfourier_le_le")
+let coq_Rnot_lt_lt = lazy (constant_fourier "Rnot_lt_lt")
+let coq_Rnot_le_le = lazy (constant_fourier "Rnot_le_le")
+let coq_Rlt_not_le = lazy (constant_fourier "Rlt_not_le")
+
 (******************************************************************************
 Construction de la preuve en cas de succès de la méthode de Fourier,
 i.e. on obtient une contradiction.
@@ -290,64 +351,60 @@ let rec rational_to_fraction x= (x.num,x.den)
 *)
 let int_to_real n =
    let nn=abs n in
-   let s=ref "" in
    if nn=0
-   then s:="R0"
-   else (s:="R1";
-        for i=1 to (nn-1) do s:="(Rplus R1 "^(!s)^")"; done;);
-   if n<0 then s:="(Ropp "^(!s)^")";
-   !s
+   then get coq_R0
+   else
+     (let s=ref (get coq_R1) in
+      for i=1 to (nn-1) do s:=mkApp (get coq_Rplus,[|get coq_R1;!s|]) done;
+      if n<0 then mkApp (get coq_Ropp, [|!s|]) else !s)
 ;;
 (* -1/2 -> (Rmult (Ropp R1) (Rinv (Rplus R1 R1)))
 *)
 let rational_to_real x =
    let (n,d)=rational_to_fraction x in
-   ("(Rmult "^(int_to_real n)^" (Rinv "^(int_to_real d)^"))")
+   mkApp (get coq_Rmult,
+     [|int_to_real n;mkApp(get coq_Rinv,[|int_to_real d|])|])
 ;;
 
 (* preuve que 0<n*1/d
 *)
 let tac_zero_inf_pos gl (n,d) =
-   let cste = pf_parse_constr gl in
-   let tacn=ref (apply (cste "Rlt_zero_1")) in
-   let tacd=ref (apply (cste "Rlt_zero_1")) in
+   let tacn=ref (apply (get coq_Rlt_zero_1)) in
+   let tacd=ref (apply (get coq_Rlt_zero_1)) in
    for i=1 to n-1 do 
-       tacn:=(tclTHEN (apply (cste "Rlt_zero_pos_plus1")) !tacn); done;
+       tacn:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacn); done;
    for i=1 to d-1 do
-       tacd:=(tclTHEN (apply (cste "Rlt_zero_pos_plus1")) !tacd); done;
-   (tclTHENS (apply (cste "Rlt_mult_inv_pos")) [!tacn;!tacd])
+       tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
+   (tclTHENS (apply (get coq_Rlt_mult_inv_pos)) [!tacn;!tacd])
 ;;
 
 (* preuve que 0<=n*1/d
 *)
 let tac_zero_infeq_pos gl (n,d)=
-   let cste = pf_parse_constr gl in
    let tacn=ref (if n=0 
-                 then (apply (cste "Rle_zero_zero"))
-                 else (apply (cste "Rle_zero_1"))) in
-   let tacd=ref (apply (cste "Rlt_zero_1")) in
+                 then (apply (get coq_Rle_zero_zero))
+                 else (apply (get coq_Rle_zero_1))) in
+   let tacd=ref (apply (get coq_Rlt_zero_1)) in
    for i=1 to n-1 do 
-       tacn:=(tclTHEN (apply (cste "Rle_zero_pos_plus1")) !tacn); done;
+       tacn:=(tclTHEN (apply (get coq_Rle_zero_pos_plus1)) !tacn); done;
    for i=1 to d-1 do
-       tacd:=(tclTHEN (apply (cste "Rlt_zero_pos_plus1")) !tacd); done;
-   (tclTHENS (apply (cste "Rle_mult_inv_pos")) [!tacn;!tacd])
+       tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
+   (tclTHENS (apply (get coq_Rle_mult_inv_pos)) [!tacn;!tacd])
 ;;
   
 (* preuve que 0<(-n)*(1/d) => False 
 *)
 let tac_zero_inf_false gl (n,d) =
-   let cste = pf_parse_constr gl in
-    if n=0 then (apply (cste "Rnot_lt0"))
+    if n=0 then (apply (get coq_Rnot_lt0))
     else
-     (tclTHEN (apply (cste "Rle_not_lt"))
+     (tclTHEN (apply (get coq_Rle_not_lt))
 	      (tac_zero_infeq_pos gl (-n,d)))
 ;;
 
 (* preuve que 0<=(-n)*(1/d) => False 
 *)
 let tac_zero_infeq_false gl (n,d) =
-   let cste = pf_parse_constr gl in
-     (tclTHEN (apply (cste "Rlt_not_le"))
+     (tclTHEN (apply (get coq_Rlt_not_le))
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
 
@@ -363,17 +420,18 @@ let exact = exact_check;;
 let tac_use h = match h.htype with
                "Rlt" -> exact h.hname
               |"Rle" -> exact h.hname
-              |"Rgt" -> (tclTHEN (apply (parse "Rfourier_gt_to_lt"))
+              |"Rgt" -> (tclTHEN (apply (get coq_Rfourier_gt_to_lt))
                                 (exact h.hname))
-              |"Rge" -> (tclTHEN (apply (parse "Rfourier_ge_to_le"))
+              |"Rge" -> (tclTHEN (apply (get coq_Rfourier_ge_to_le))
                                 (exact h.hname))
-              |"eqTLR" -> (tclTHEN (apply (parse "Rfourier_eqLR_to_le"))
+              |"eqTLR" -> (tclTHEN (apply (get coq_Rfourier_eqLR_to_le))
                                 (exact h.hname))
-              |"eqTRL" -> (tclTHEN (apply (parse "Rfourier_eqRL_to_le"))
+              |"eqTRL" -> (tclTHEN (apply (get coq_Rfourier_eqRL_to_le))
                                 (exact h.hname))
               |_->assert false
 ;;
 
+(*
 let is_ineq (h,t) =
     match (kind_of_term t) with
 	App (f,args) ->
@@ -382,12 +440,14 @@ let is_ineq (h,t) =
 	     | "Rgt" -> true
 	     | "Rle" -> true
 	     | "Rge" -> true
-	     | "eqT" -> (match (string_of_R_constr args.(0)) with
+(* Wrong:not in Rdefinitions: *) | "eqT" ->
+                (match (string_of_R_constr args.(0)) with
 			     "R" -> true
 			   | _ -> false)
              | _ ->false)
       |_->false
 ;;
+*)
 
 let list_of_sign s = List.map (fun (x,_,z)->(x,z)) s;;
 
@@ -399,7 +459,6 @@ let mkAppL a =
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier gl=
     Library.check_required_library ["Coq";"fourier";"Fourier"];
-    let parse = pf_parse_constr gl in
     let goal = strip_outer_cast (pf_concl gl) in
     let fhyp=id_of_string "new_hyp_for_fourier" in
     (* si le but est une inéquation, on introduit son contraire,
@@ -410,22 +469,22 @@ let rec fourier gl=
       (match (string_of_R_constr f) with
 	     "Rlt" -> 
 	       (tclTHEN
-	         (tclTHEN (apply (parse "Rfourier_not_ge_lt"))
+	         (tclTHEN (apply (get coq_Rfourier_not_ge_lt))
 			  (intro_using  fhyp))
 		 fourier)
 	    |"Rle" -> 
 	     (tclTHEN
-	      (tclTHEN (apply (parse "Rfourier_not_gt_le"))
+	      (tclTHEN (apply (get coq_Rfourier_not_gt_le))
 		       (intro_using  fhyp))
 			fourier)
 	    |"Rgt" -> 
 	     (tclTHEN
-	      (tclTHEN (apply (parse "Rfourier_not_le_gt"))
+	      (tclTHEN (apply (get coq_Rfourier_not_le_gt))
 		       (intro_using  fhyp))
 	      fourier)
 	    |"Rge" -> 
 	     (tclTHEN
-	      (tclTHEN (apply (parse "Rfourier_not_lt_ge"))
+	      (tclTHEN (apply (get coq_Rfourier_not_lt_ge))
 		       (intro_using  fhyp))
 	      fourier)
 	    |_->assert false)
@@ -462,36 +521,36 @@ let rec fourier gl=
              (match (!lutil) with
           (h1,c1)::lutil ->
 	  let s=ref (h1.hstrict) in
-	  let t1=ref (mkAppL [|parse "Rmult";
-	                  parse (rational_to_real c1);
+	  let t1=ref (mkAppL [|get coq_Rmult;
+	                  rational_to_real c1;
 			  h1.hleft|]) in
-	  let t2=ref (mkAppL [|parse "Rmult";
-	                  parse (rational_to_real c1);
+	  let t2=ref (mkAppL [|get coq_Rmult;
+	                  rational_to_real c1;
 			  h1.hright|]) in
 	  List.iter (fun (h,c) ->
 	       s:=(!s)||(h.hstrict);
-	       t1:=(mkAppL [|parse "Rplus";
+	       t1:=(mkAppL [|get coq_Rplus;
 	                     !t1;
-                             mkAppL [|parse "Rmult";
-                                      parse (rational_to_real c);
+                             mkAppL [|get coq_Rmult;
+                                      rational_to_real c;
 			              h.hleft|] |]);
-	       t2:=(mkAppL [|parse "Rplus";
+	       t2:=(mkAppL [|get coq_Rplus;
 	                     !t2;
-                             mkAppL [|parse "Rmult";
-                                      parse (rational_to_real c);
+                             mkAppL [|get coq_Rmult;
+                                      rational_to_real c;
 			              h.hright|] |]))
                lutil;
-          let ineq=mkAppL [|parse (if (!s) then "Rlt" else "Rle");
+          let ineq=mkAppL [|if (!s) then get coq_Rlt else get coq_Rle;
 			      !t1;
 			      !t2 |] in
-	   let tc=parse (rational_to_real cres) in
+	   let tc=rational_to_real cres in
        (* puis sa preuve *)
            let tac1=ref (if h1.hstrict 
-                         then (tclTHENS (apply (parse "Rfourier_lt"))
+                         then (tclTHENS (apply (get coq_Rfourier_lt))
                                  [tac_use h1;
                                   tac_zero_inf_pos  gl
                                       (rational_to_fraction c1)])
-                         else (tclTHENS (apply (parse "Rfourier_le"))
+                         else (tclTHENS (apply (get coq_Rfourier_le))
                                  [tac_use h1;
 				  tac_zero_inf_pos  gl
                                       (rational_to_fraction c1)])) in
@@ -499,20 +558,20 @@ let rec fourier gl=
            List.iter (fun (h,c)-> 
              (if (!s)
 	      then (if h.hstrict
-	            then tac1:=(tclTHENS (apply (parse "Rfourier_lt_lt"))
+	            then tac1:=(tclTHENS (apply (get coq_Rfourier_lt_lt))
 			       [!tac1;tac_use h; 
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])
-	            else tac1:=(tclTHENS (apply (parse "Rfourier_lt_le"))
+	            else tac1:=(tclTHENS (apply (get coq_Rfourier_lt_le))
 			       [!tac1;tac_use h; 
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)]))
 	      else (if h.hstrict
-	            then tac1:=(tclTHENS (apply (parse "Rfourier_le_lt"))
+	            then tac1:=(tclTHENS (apply (get coq_Rfourier_le_lt))
 			       [!tac1;tac_use h; 
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])
-	            else tac1:=(tclTHENS (apply (parse "Rfourier_le_le"))
+	            else tac1:=(tclTHENS (apply (get coq_Rfourier_le_le))
 			       [!tac1;tac_use h; 
 			        tac_zero_inf_pos  gl
                                       (rational_to_fraction c)])));
@@ -524,29 +583,32 @@ let rec fourier gl=
            in
            tac:=(tclTHENS (my_cut ineq) 
                      [tclTHEN (change_in_concl None
-			       (mkAppL [| parse "not"; ineq|]
+			       (mkAppL [| get coq_not; ineq|]
 				       ))
-		      (tclTHEN (apply (if sres then parse "Rnot_lt_lt"
-					       else parse "Rnot_le_le"))
+		      (tclTHEN (apply (if sres then get coq_Rnot_lt_lt
+					       else get coq_Rnot_le_le))
 			    (tclTHENS (Equality.replace
-				       (mkAppL [|parse "Rminus";!t2;!t1|]
+				       (mkAppL [|get coq_Rminus;!t2;!t1|]
 					       )
 				       tc)
 		 	       [tac2;
-                                (tclTHENS (Equality.replace (parse "(Rinv R1)")
-							   (parse "R1"))
+                                (tclTHENS
+				  (Equality.replace
+				    (mkApp (get coq_Rinv, 
+				      [|get coq_R1|]))
+				    (get coq_R1))
 (* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)	
 
       			        [tclORELSE
                                    (Ring.polynom [])
                                    tclIDTAC;
-					  (tclTHEN (apply (parse "sym_eqT"))
-						(apply (parse "Rinv_R1")))]
+					  (tclTHEN (apply (get coq_sym_eqT))
+						(apply (get coq_Rinv_R1)))]
                                
 					 )
 				]));
                        !tac1]);
-	   tac:=(tclTHENS (cut (parse "False"))
+	   tac:=(tclTHENS (cut (get coq_False))
 				  [tclTHEN intro contradiction;
 				   !tac])
       |_-> assert false) |_-> assert false
