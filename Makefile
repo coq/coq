@@ -597,12 +597,12 @@ clean-ide:
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
 
-$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(USERTACCMX) ide/ide.cmxa
+$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(USERTACCMO) ide/ide.cma
+$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
@@ -706,11 +706,11 @@ endif
 
 pcoq-binaries:: $(COQINTERFACE) 
 
-bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(USERTACCMO) $(INTERFACE)
+bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO) $(INTERFACE)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
-bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(USERTACCMX) $(INTERFACECMX)
+bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX) $(INTERFACECMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
