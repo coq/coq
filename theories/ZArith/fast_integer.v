@@ -21,7 +21,7 @@ Inductive positive : Set :=
 | xH : positive.
 
 (* Declare Scope positive_scope with Key P *)
-Delimits Scope positive_scope with P.
+Delimits Scope positive_scope with positive.
 
 (* Automatically open scope positive_scope for type positive, xO and xI *)
 Bind Scope positive_scope with positive.
@@ -1929,6 +1929,30 @@ Proof.
 NewDestruct x; Reflexivity.
 Qed.
 
+(*
+Lemma Zplus_S'_n: (x,y:Z) (Zplus (Zs' x) y) = (Zs' (Zplus x y)).
+Proof.
+NewInduction x; NewDestruct y; Simpl.
+  Reflexivity.
+  NewDestruct p; Simpl; Reflexivity.
+  NewDestruct p; Try Unfold true_sub; Simpl; Reflexivity.
+  Reflexivity. 
+  Rewrite ZL14bis; Reflexivity.
+  Case (Dcompare (compare (add_un p) p0 EGAL)); Intro H; Try Rewrite H. 
+    Rewrite <- (compare_convert_EGAL ? ? H); Clear H.    
+    NewDestruct p; Simpl.
+   Case (Dcompare (compare p (add_un p) EGAL)); Intro H'; Try Rewrite H'; Try Reflexivity.
+      Assert H'' := (compare_convert_EGAL ? ? H').
+      Symmetry in H''.
+      Elim (add_un_discr p H'').
+   Elim H'; Clear H'; Intro H.
+   Case (Dcompare (compare p (add_un p) EGAL)); Intro H'; Try Rewrite H'; Try Reflexivity.
+      Assert H'' := (compare_convert_EGAL ? ? H').
+      Symmetry in H''.
+
+  NewDestruct p; Simpl.
+*)
+
 (** opposite is right inverse for addition *)
 
 Theorem Zplus_inverse_r: (x:Z) (Zplus x (Zopp x)) = ZERO.
@@ -2075,7 +2099,7 @@ Qed.
 Hints Local Resolve weak_assoc.
 
 Theorem Zplus_assoc_l :
-  (x,y,z:Z) (Zplus x (Zplus y z))= (Zplus (Zplus x y) z).
+  (n,m,p:Z) (Zplus n (Zplus m p))= (Zplus (Zplus n m) p).
 Proof.
 Intros x y z;Case x;Case y;Case z;Auto with arith; Intros; [
   Rewrite (Zplus_sym (NEG p0)); Rewrite weak_assoc;
@@ -2208,7 +2232,7 @@ Intros m; Unfold Zpred Zs; Rewrite <- Zplus_assoc; Simpl;
 Rewrite Zplus_sym; Auto with arith.
 Qed.
 
-Theorem Zeq_add_S : (x,y:Z) (Zs x)=(Zs y) -> x=y.
+Theorem Zeq_add_S : (n,m:Z) (Zs n)=(Zs m) -> n=m.
 Proof.
 Intros n m H.
 Change (Zplus (Zplus (NEG xH) (POS xH)) n)=
@@ -2219,12 +2243,12 @@ Qed.
  
 (** Misc properties, usually redundant or non natural *)
 
-Theorem Zeq_S : (x,y:Z) x=y -> (Zs x)=(Zs y).
+Theorem Zeq_S : (n,m:Z) n=m -> (Zs n)=(Zs m).
 Proof.
 Intros n m H; Rewrite H; Reflexivity.
 Qed.
 
-Theorem Znot_eq_S : (x,y:Z) ~(x=y) -> ~((Zs x)=(Zs y)).
+Theorem Znot_eq_S : (n,m:Z) ~(n=m) -> ~((Zs n)=(Zs m)).
 Proof.
 Unfold not ;Intros n m H1 H2;Apply H1;Apply Zeq_add_S; Assumption.
 Qed.
@@ -2255,13 +2279,13 @@ Intros n m;Unfold Zminus ;Rewrite -> (Zplus_sym n m);Rewrite <- Zplus_assoc;
 Rewrite -> Zplus_inverse_r; Apply Zero_right.
 Qed.
 
-Lemma Zle_plus_minus : (x,y:Z) (Zplus x (Zminus y x))=y.
+Lemma Zle_plus_minus : (n,m:Z) (Zplus n (Zminus m n))=m.
 Proof.
 Unfold Zminus; Intros n m; Rewrite Zplus_permute; Rewrite Zplus_inverse_r;
 Apply Zero_right.
 Qed.
 
-Lemma Zminus_Sn_m : (x,y:Z)((Zs (Zminus x y))=(Zminus (Zs x) y)).
+Lemma Zminus_Sn_m : (n,m:Z)((Zs (Zminus n m))=(Zminus (Zs n) m)).
 Proof.
 Intros n m;Unfold Zminus Zs; Rewrite (Zplus_sym n (Zopp m));
 Rewrite <- Zplus_assoc;Apply Zplus_sym.
@@ -2309,15 +2333,15 @@ V7only [Unset Implicit Arguments.].
 
 (** One is neutral for multiplication *)
 
-Lemma Zmult_1_n : (x:Z)(Zmult (POS xH) x)=x.
+Lemma Zmult_1_n : (n:Z)(Zmult (POS xH) n)=n.
 Proof.
-NewDestruct x; Reflexivity.
+Intro x; NewDestruct x; Reflexivity.
 Qed.
 V7only [Notation Zmult_one := Zmult_1_n.].
 
-Lemma Zmult_n_1 : (x:Z)(Zmult x (POS xH))=x.
+Lemma Zmult_n_1 : (n:Z)(Zmult n (POS xH))=n.
 Proof.
-NewDestruct x; Simpl; Try Rewrite times_x_1; Reflexivity.
+Intro x; NewDestruct x; Simpl; Try Rewrite times_x_1; Reflexivity.
 Qed.
 
 (** Zero is absorbant for multiplication *)
@@ -2345,14 +2369,14 @@ Qed.
 (** Associativity of multiplication *)
 
 Theorem Zmult_assoc_l :
-  (x,y,z:Z) (Zmult x (Zmult y z))= (Zmult (Zmult x y) z).
+  (n,m,p:Z) (Zmult n (Zmult m p))= (Zmult (Zmult n m) p).
 Proof.
-NewDestruct x; NewDestruct y; NewDestruct z; Simpl; 
+Intros x y z; NewDestruct x; NewDestruct y; NewDestruct z; Simpl; 
   Try Rewrite times_assoc; Reflexivity.
 Qed.
 V7only [Notation Zmult_assoc := Zmult_assoc_l.].
 
-Lemma Zmult_assoc_r : (x,y,z:Z)((Zmult (Zmult x y) z) = (Zmult x (Zmult y z))).
+Lemma Zmult_assoc_r : (n,m,p:Z)((Zmult (Zmult n m) p) = (Zmult n (Zmult m p))).
 Proof.
 Intros n m p; Rewrite Zmult_assoc; Trivial with arith.
 Qed.
@@ -2361,7 +2385,7 @@ Qed.
 
 Theorem Zmult_permute : (n,m,p:Z)(Zmult n (Zmult m p)) = (Zmult m (Zmult n p)).
 Proof.
-Intros; Rewrite -> (Zmult_assoc m n p); Rewrite -> (Zmult_sym m n).
+Intros x y z; Rewrite -> (Zmult_assoc y x z); Rewrite -> (Zmult_sym y x).
 Apply Zmult_assoc.
 Qed.
 
@@ -2867,7 +2891,7 @@ Qed.
 
 (** Successor and comparison *)
 
-Theorem Zcompare_n_S : (x,y:Z)(Zcompare (Zs x) (Zs y)) = (Zcompare x y).
+Theorem Zcompare_n_S : (n,m:Z)(Zcompare (Zs n) (Zs m)) = (Zcompare n m).
 Proof.
 Intros n m;Unfold Zs ;Do 2 Rewrite -> [t:Z](Zplus_sym t (POS xH));
 Rewrite -> Zcompare_Zplus_compatible;Auto with arith.
