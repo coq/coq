@@ -169,7 +169,8 @@ let _ =
   Summary.declare_summary "tactic-definition"
     { Summary.freeze_function   = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function     = init }
+      Summary.init_function     = init;
+      Summary.survive_section   = false }
 
 (* Unboxes the tactic_arg *)
 let unvarg = function

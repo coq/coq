@@ -77,7 +77,8 @@ module MakeTable =
 	Summary.declare_summary kn
           { Summary.freeze_function = freeze;
             Summary.unfreeze_function = unfreeze;
-            Summary.init_function = init }
+            Summary.init_function = init;
+	    Summary.survive_section = true }
 
     let (add_option,remove_option) =
       if A.synchronous then
@@ -219,7 +220,8 @@ let _ =
   Summary.declare_summary "Sync_option"
     { Summary.freeze_function = freeze_sync_table;
       Summary.unfreeze_function = unfreeze_sync_table;
-      Summary.init_function = init_sync_table }
+      Summary.init_function = init_sync_table;
+      Summary.survive_section = true }
 
 (* Tools for handling options *)
 

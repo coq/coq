@@ -1574,7 +1574,8 @@ let _ =
   Summary.declare_summary "autorewrite"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+      Summary.init_function = init;
+      Summary.survive_section = false }
 
 (*Adds a list of rules to the rule table*)
 let add_list_rules rbase lrl = 

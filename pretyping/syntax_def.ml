@@ -14,7 +14,8 @@ let _ = Summary.declare_summary
 	  "SYNTAXCONSTANT"
 	  { Summary.freeze_function = (fun () -> !syntax_table);
 	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
-	    Summary.init_function = (fun () -> syntax_table := Spmap.empty) }
+	    Summary.init_function = (fun () -> syntax_table := Spmap.empty);
+	    Summary.survive_section = false }
 
 let add_syntax_constant sp c =
   syntax_table := Spmap.add sp c !syntax_table

@@ -74,6 +74,8 @@ que les 3 primitives), on peut typer avec "constr", "tactic", ou
   Arguments" et non plus selon la valeur qu'elle avait au moment de la 
   définition dans la section.
 
+- SearchPattern / SearchRewrite (contrib de Yves Bertot)
+
 Tactiques
 
 - Langage de tactique
@@ -89,8 +91,6 @@ Tactiques
   revanche, si une constante n'est qu'indirectement un Fix, on ne garde
   en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
   source d'incompatibilité.
-
-- EAuto réussit parfois plus (source d'incompatibilité).
 
 - Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
 

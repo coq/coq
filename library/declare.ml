@@ -52,7 +52,8 @@ let vartab = ref (Spmap.empty : (identifier * variable_declaration) Spmap.t)
 let _ = Summary.declare_summary "VARIABLE"
 	  { Summary.freeze_function = (fun () -> !vartab);
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
-	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
+	    Summary.init_function = (fun () -> vartab := Spmap.empty);
+	    Summary.survive_section = false }
 
 let cache_variable (sp,(id,(d,_,_) as vd)) =
   begin match d with (* Fails if not well-typed *)
@@ -114,7 +115,8 @@ let csttab = ref (Spmap.empty : strength Spmap.t)
 let _ = Summary.declare_summary "CONSTANT"
 	  { Summary.freeze_function = (fun () -> !csttab);
 	    Summary.unfreeze_function = (fun ft -> csttab := ft);
-	    Summary.init_function = (fun () -> csttab := Spmap.empty) }
+	    Summary.init_function = (fun () -> csttab := Spmap.empty);
+	    Summary.survive_section = false }
 
 let cache_constant (sp,(cdt,stre)) =
   begin match cdt with 

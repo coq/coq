@@ -14,7 +14,7 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of string
-  | OpenedSection of string
+  | OpenedSection of string * Summary.frozen
   | ClosedSection of bool * string * library_segment * Nametab.module_contents
   | FrozenState of Summary.frozen
 
@@ -41,8 +41,9 @@ val contents_after : section_path option -> library_segment
 
 val open_section : string -> section_path
 val close_section : export:bool ->
-  (section_path -> library_segment -> Nametab.module_contents) -> string
-    -> unit
+  (Summary.frozen -> section_path -> library_segment 
+     -> Nametab.module_contents) 
+  -> string -> unit
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> dir_path

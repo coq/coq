@@ -11,7 +11,8 @@ open Names
 type 'a summary_declaration = {
   freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
-  init_function : unit -> unit }
+  init_function : unit -> unit;
+  survive_section : bool }
 
 val declare_summary : string -> 'a summary_declaration -> unit
 
@@ -19,6 +20,7 @@ type frozen
 
 val freeze_summaries : unit -> frozen
 val unfreeze_summaries : frozen -> unit
+val unfreeze_lost_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
 

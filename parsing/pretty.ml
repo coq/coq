@@ -248,7 +248,7 @@ let rec print_library_entry with_values ent =
   match ent with
     | (sp,Lib.Leaf lobj) -> 
 	[< print_leaf_entry with_values sep (sp,lobj) >]
-    | (_,Lib.OpenedSection str) -> 
+    | (_,Lib.OpenedSection (str,_)) -> 
         [< 'sTR(" >>>>>>> Section " ^ str); 'fNL >]
     | (sp,Lib.ClosedSection _) -> 
         [< 'sTR(" >>>>>>> Closed Section " ^ (string_of_id (basename sp)));
@@ -286,7 +286,7 @@ let list_filter_vec f vec =
 
 let read_sec_context sec =
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection str) as hd)::rest ->
+    | ((sp,Lib.OpenedSection (str,_)) as hd)::rest ->
         if str = sec then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 

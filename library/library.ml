@@ -54,7 +54,8 @@ let _ =
   Summary.declare_summary "MODULES"
     { Summary.freeze_function = (fun () -> !modules_table);
       Summary.unfreeze_function = (fun ft -> modules_table := ft);
-      Summary.init_function = (fun () -> modules_table := Stringmap.empty) }
+      Summary.init_function = (fun () -> modules_table := Stringmap.empty);
+      Summary.survive_section = true }
 
 let find_module s =
   try

@@ -177,7 +177,8 @@ let _ =
   Summary.declare_summary "destruct-hyp-concl"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+      Summary.init_function = init;
+      Summary.survive_section = true }
 
 let cache_dd (_,(na,dd)) =
   try 

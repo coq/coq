@@ -49,7 +49,8 @@ let _ =
   Summary.declare_summary "evaluation"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+      Summary.init_function = init;
+      Summary.survive_section = true }
 
 
 (* Check that c is an "elimination constant"

@@ -38,7 +38,8 @@ let _ =
   declare_summary "syntax"
     { freeze_function = Esyntax.freeze;
       unfreeze_function = Esyntax.unfreeze;
-      init_function = Esyntax.init }
+      init_function = Esyntax.init;
+      survive_section = false }
 
 (* Pretty-printing objects = syntax_entry *)
 let cache_syntax (_,ppobj) = Esyntax.add_ppobject ppobj
@@ -69,7 +70,8 @@ let _ =
   declare_summary "GRAMMAR_LEXER"
     { freeze_function = Egrammar.freeze;
       unfreeze_function = Egrammar.unfreeze;
-      init_function = Egrammar.init}
+      init_function = Egrammar.init;
+      survive_section = false }
 
 (* Tokens *)
 

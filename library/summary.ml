@@ -8,7 +8,8 @@ open Names
 type 'a summary_declaration = {
   freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
-  init_function : unit -> unit }
+  init_function : unit -> unit;
+  survive_section : bool }
 
 let summaries = 
   (Hashtbl.create 17 : (string, Dyn.t summary_declaration) Hashtbl.t)
@@ -21,7 +22,8 @@ let declare_summary sumname sdecl =
   let ddecl = {
     freeze_function = dyn_freeze;
     unfreeze_function = dyn_unfreeze;
-    init_function = dyn_init} 
+    init_function = dyn_init;
+    survive_section = sdecl.survive_section } 
   in
   if Hashtbl.mem summaries sumname then
     anomalylabstrm "Summary.declare_summary"
@@ -41,6 +43,15 @@ let unfreeze_summaries fs =
   Hashtbl.iter
     (fun id decl -> 
        try decl.unfreeze_function (Stringmap.find id fs)
+       with Not_found -> decl.init_function())
+    summaries
+
+let unfreeze_lost_summaries fs =
+  Hashtbl.iter
+    (fun id decl -> 
+       try 
+	 if not decl.survive_section then
+	   decl.unfreeze_function (Stringmap.find id fs)
        with Not_found -> decl.init_function())
     summaries
 

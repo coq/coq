@@ -9,7 +9,7 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of string
-  | OpenedSection of string
+  | OpenedSection of string * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
   | ClosedSection of bool * string * library_segment * Nametab.module_contents
   | FrozenState of Summary.frozen
@@ -103,7 +103,7 @@ let contents_after = function
 
 let open_section s =
   let sp = make_path (id_of_string s) OBJ in
-  add_entry sp (OpenedSection s);
+  add_entry sp (OpenedSection (s, freeze_summaries()));
   path_prefix := !path_prefix @ [s];
   sp
 
@@ -138,10 +138,10 @@ let export_segment seg =
   clean [] seg
 
 let close_section export f s =
-  let sp = 
+  let sp,fs = 
     try match find_entry_p is_opened_section with
-      | sp,OpenedSection s' -> 
-	  if s <> s' then error "this is not the last opened section"; sp
+      | sp,OpenedSection (s',fs) -> 
+	  if s <> s' then error "this is not the last opened section"; (sp,fs)
       | _ -> assert false
     with Not_found ->
       error "no opened section"
@@ -150,7 +150,7 @@ let close_section export f s =
   lib_stk := before;
   let after' = export_segment after in
   pop_path_prefix ();
-  let contents = f sp after in
+  let contents = f fs sp after in
   add_entry (make_path (id_of_string s) OBJ)
     (ClosedSection (export, s,after',contents));
   Nametab.push_module s contents;

@@ -290,13 +290,14 @@ and module_contents seg =
 
 let close_section _ s = 
   let oldenv = Global.env() in
-  let process_segment sec_sp decls =
+  let process_segment fs sec_sp decls =
     let newdir = dirpath sec_sp in
     let olddir = wd_of_sp sec_sp in
     let (ops,ids,_) = 
       List.fold_left 
 	(process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
     in 
+    Summary.unfreeze_lost_summaries fs;
     Global.pop_named_decls ids;
     List.iter process_operation (List.rev ops);
     module_contents decls 

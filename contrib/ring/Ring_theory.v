@@ -370,6 +370,8 @@ Save.
 
 End Theory_of_rings.
 
+Hints Resolve Th_mult_zero_left Th_plus_reg_left : core.
+
 Implicit Arguments Off.
 
 Definition Semi_Ring_Theory_of :
