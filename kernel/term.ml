@@ -495,8 +495,9 @@ let mkNamedProd_wo_LetIn (id,body,t) c =
 let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
 
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
-let mkAppL a = DOPN (AppL, a)
-let mkAppList a l = DOPN (AppL, Array.of_list (a::l))
+let mkAppL (f, a) = DOPN (AppL, Array.append [|f|] a)
+let mkAppList l = DOPN (AppL, Array.of_list l)
+let mkAppA v = DOPN (AppL, v)
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)
@@ -609,6 +610,10 @@ let destXtra = function
   | _ -> invalid_arg "destXtra"
 
 (* Destructs a type *)
+let isSort = function
+  | (DOP0 (Sort s)) -> true
+  | _ -> false
+
 let destSort = function
   | (DOP0 (Sort s)) -> s
   | _ -> invalid_arg "destSort"
@@ -673,6 +678,10 @@ let rec strip_outer_cast = function
 let under_outer_cast f = function
   | DOP2 (Cast,b,t) -> DOP2 (Cast,f b,f t)
   | c -> f c
+
+let rec under_casts f = function
+  | DOP2 (Cast,c,t) -> DOP2 (Cast,under_casts f c, t)
+  | c               -> f c
 
 let rec strip_all_casts t = 
   match t with
@@ -779,20 +788,6 @@ let num_of_evar = function
   | DOPN (Evar n, _) -> n
   | _ -> anomaly "num_of_evar called with bad args"
 
-(*
-(* Destructs an abstract term *)
-let destAbst = function
-  | DOPN (Abst sp, a) -> (sp, a)
-  | _ -> invalid_arg "destAbst"  
-
-let path_of_abst = function
-  | DOPN(Abst sp,_) -> sp
-  | _ -> anomaly "path_of_abst called with bad args"
-
-let args_of_abst = function
-  | DOPN(Abst _,args) -> args
-  | _ -> anomaly "args_of_abst called with bad args"
-*)
 (* Destructs a (co)inductive type named sp *)
 let destMutInd = function
   | DOPN (MutInd ind_sp, l) -> (ind_sp,l)
@@ -898,7 +893,7 @@ type kindOfTerm =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
-  | IsAppL         of constr * constr list
+  | IsAppL         of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -924,8 +919,7 @@ let kind_of_term c =
     | CPrd (x,t1,t2)                       -> IsProd (x,t1,t2) 
     | CLam (x,t1,t2)                       -> IsLambda (x,t1,t2)
     | CLet (x,b,t1,t2)                     -> IsLetIn (x,b,t1,t2)
-    | DOPN (AppL,a) when Array.length a <> 0 -> 
-	IsAppL (a.(0), List.tl (Array.to_list a))
+    | DOPN (AppL,a) when Array.length a <> 0 -> IsAppL (a.(0), array_tl a)
     | DOPN (Const sp, a)                   -> IsConst (sp,a)
     | DOPN (Evar sp, a)                    -> IsEvar (sp,a)
     | DOPN (MutInd ind_sp, l)              -> IsMutInd (ind_sp,l)
@@ -1922,7 +1916,7 @@ let fold_constr f acc c = match kind_of_term c with
   | IsProd (_,t,c) -> f (f acc t) c
   | IsLambda (_,t,c) -> f (f acc t) c
   | IsLetIn (_,b,t,c) -> f (f (f acc b) t) c
-  | IsAppL (c,l) -> List.fold_left f (f acc c) l
+  | IsAppL (c,l) -> Array.fold_left f (f acc c) l
   | IsEvar (_,l) -> Array.fold_left f acc l
   | IsConst (_,l) -> Array.fold_left f acc l
   | IsMutInd (_,l) -> Array.fold_left f acc l
@@ -1937,7 +1931,7 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | IsProd (_,t,c) -> f (g n) (f n acc t) c
   | IsLambda (_,t,c) -> f (g n) (f n acc t) c
   | IsLetIn (_,b,t,c) -> f (g n) (f n (f n acc b) t) c
-  | IsAppL (c,l) -> List.fold_left (f n) (f n acc c) l
+  | IsAppL (c,l) -> Array.fold_left (f n) (f n acc c) l
   | IsEvar (_,l) -> Array.fold_left (f n) acc l
   | IsConst (_,l) -> Array.fold_left (f n) acc l
   | IsMutInd (_,l) -> Array.fold_left (f n) acc l
@@ -1956,7 +1950,7 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
   | IsProd (_,t,c) -> f n t; f (g n) c
   | IsLambda (_,t,c) -> f n t; f (g n) c
   | IsLetIn (_,b,t,c) -> f n b; f n t; f (g n) c
-  | IsAppL (c,l) -> f n c; List.iter (f n) l
+  | IsAppL (c,l) -> f n c; Array.iter (f n) l
   | IsEvar (_,l) -> Array.iter (f n) l
   | IsConst (_,l) -> Array.iter (f n) l
   | IsMutInd (_,l) -> Array.iter (f n) l
@@ -1973,7 +1967,7 @@ let map_constr f c = match kind_of_term c with
   | IsProd (na,t,c) -> mkProd (na, f t, f c)
   | IsLambda (na,t,c) -> mkLambda (na, f t, f c)
   | IsLetIn (na,b,t,c) -> mkLetIn (na, f b, f t, f c)
-  | IsAppL (c,l) -> applist (f c, List.map f l)
+  | IsAppL (c,l) -> appvect (f c, Array.map f l)
   | IsEvar (e,l) -> mkEvar (e, Array.map f l)
   | IsConst (c,l) -> mkConst (c, Array.map f l)
   | IsMutInd (c,l) -> mkMutInd (c, Array.map f l)
@@ -1988,7 +1982,7 @@ let map_constr_with_binders g f l c = match kind_of_term c with
   | IsProd (na,t,c) -> mkProd (na, f l t, f (g na l) c)
   | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
   | IsLetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g na l) c)
-  | IsAppL (c,al) -> applist (f l c, List.map (f l) al)
+  | IsAppL (c,al) -> appvect (f l c, Array.map (f l) al)
   | IsEvar (e,al) -> mkEvar (e, Array.map (f l) al)
   | IsConst (c,al) -> mkConst (c, Array.map (f l) al)
   | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)

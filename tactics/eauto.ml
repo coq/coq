@@ -92,13 +92,10 @@ let instantiate_tac = function
       (fun gl -> instantiate n (pf_interp_constr gl com) gl)
   | _ -> invalid_arg "Instantiate called with bad arguments"
 
-let whd_evar env sigma = function
-  | DOPN(Evar n, cl) as k ->
-      if Evd.in_dom sigma n & Evd.is_defined sigma n then
+let whd_evar env sigma c = match kind_of_term c with
+  | IsEvar (n, cl) when Evd.in_dom sigma n & Evd.is_defined sigma n ->
         Instantiate.existential_value sigma (n,cl)
-      else 
-	k
-  | x -> x
+  | _ -> c
 
 let normEvars gl =
   let sigma = project gl in

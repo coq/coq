@@ -127,7 +127,7 @@ let constructor_at_head1 t =
       | IsVar id -> t',[],[],CL_Var id,0
       | IsCast (c,_) -> aux c
       | IsAppL(f,args) -> 
-	  let t',_,l,c,_ = aux f in t',args,l,c,List.length args
+	  let t',_,l,c,_ = aux f in t',Array.to_list args,l,c,Array.length args
       | IsProd (_,_,_) -> t',[],[],CL_FUN,0
       | IsLetIn (_,_,_,c) -> aux c
       | IsSort _ -> t',[],[],CL_SORT,0

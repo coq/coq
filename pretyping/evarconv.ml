@@ -44,12 +44,15 @@ open Evarutil
  * ass.
  *)
 
-let rec evar_apprec env isevars stack c =
-  let (t,stack) = Reduction.apprec env !isevars c stack in 
-  if ise_defined isevars t then 
-    evar_apprec env isevars stack (existential_value !isevars (destEvar t))
-  else 
-    (t,stack)
+let evar_apprec env isevars stack c =
+  let rec aux s =
+    let (t,stack as s') = Reduction.apprec env !isevars s in
+    match kind_of_term t with
+      | IsEvar (n,_ as ev) when Evd.is_defined !isevars n ->
+	  aux (existential_value !isevars ev, stack)
+      | _ -> (t, list_of_stack stack)
+  in aux (c, append_stack (Array.of_list stack) empty_stack)
+
 
 let conversion_problems = ref ([] : (conv_pb * constr * constr) list)
 

@@ -314,15 +314,11 @@ let global_reference kind id =
 
 let global_reference_imps kind id =
   let c = global_reference kind id in
-  match c with
-    | DOPN (Const sp,_) -> 
-	c, list_of_implicits (constant_implicits sp)
-    | DOPN (MutInd (sp,i),_) -> 
-	c, list_of_implicits (inductive_implicits (sp,i))
-    | DOPN (MutConstruct ((sp,i),j),_) ->
-	c, list_of_implicits (constructor_implicits ((sp,i),j))
-    | VAR id ->
-	c, implicits_of_var id
+  match kind_of_term c with
+    | IsConst (sp,_) -> c, list_of_implicits (constant_implicits sp)
+    | IsMutInd (isp,_) -> c, list_of_implicits (inductive_implicits isp)
+    | IsMutConstruct (csp,_) ->	c,list_of_implicits (constructor_implicits csp)
+    | IsVar id -> c, implicits_of_var id
     | _ -> assert false
 (*
 let global env id =

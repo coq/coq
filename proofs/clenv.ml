@@ -35,7 +35,7 @@ type wc = walking_constraints
 let new_evar_in_sign env =
   let ids = ids_of_var_context (Environ.var_context env) in
   let ev = new_evar () in
-  mkEvar (ev, Array.of_list (List.map (fun id -> VAR id) ids))
+  mkEvar (ev, Array.of_list (List.map mkVar ids))
 
 let rec whd_evar sigma t = match kind_of_term t with
   | IsEvar (ev,_ as evc) when is_defined sigma ev ->
@@ -92,19 +92,19 @@ let unify_0 mc wc m n =
 	    unirec_rec (unirec_rec substn t1 t2) c1 c2
 
 	| IsAppL (f1,l1), IsAppL (f2,l2) ->
-	    let len1 = List.length l1
-	    and len2 = List.length l2 in
+	    let len1 = Array.length l1
+	    and len2 = Array.length l2 in
 	    if len1 = len2 then
-              List.fold_left2 unirec_rec (unirec_rec substn f1 f2) l1 l2
+              array_fold_left2 unirec_rec (unirec_rec substn f1 f2) l1 l2
 	    else if len1 < len2 then
-              let extras,restl2 = list_chop (len2-len1) l2 in 
-	      List.fold_left2 unirec_rec 
-		(unirec_rec substn f1 (applist (f2,extras)))
+              let extras,restl2 = array_chop (len2-len1) l2 in 
+	      array_fold_left2 unirec_rec 
+		(unirec_rec substn f1 (appvect (f2,extras)))
                 l1 restl2
 	    else 
-	      let extras,restl1 = list_chop (len1-len2) l1 in 
-	      List.fold_left2 unirec_rec 
-		(unirec_rec substn (applist (f1,extras)) f2)
+	      let extras,restl1 = array_chop (len1-len2) l1 in 
+	      array_fold_left2 unirec_rec 
+		(unirec_rec substn (appvect (f1,extras)) f2)
                 restl1 l2
 		
 	| IsMutCase (_,p1,c1,cl1), IsMutCase (_,p2,c2,cl2) ->
@@ -155,18 +155,18 @@ let unify_0 mc wc m n =
       unirec_rec (mc,[]) m n
 
 	
-let whd_castappevar_stack sigma c l = 
+let whd_castappevar_stack sigma c = 
   let rec whrec (c, l as s) =
     match kind_of_term c with
       | IsEvar (ev,args) when is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), l)
       | IsCast (c,_) -> whrec (c, l)
-      | IsAppL (f,args) -> whrec (f, args@l)
+      | IsAppL (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
       | _ -> s
   in 
-  whrec (c,l)
+  whrec (c, [])
 
-let whd_castappevar sigma c = applist(whd_castappevar_stack sigma c [])
+let whd_castappevar sigma c = applist (whd_castappevar_stack sigma c)
 
 let w_whd wc c = whd_castappevar (w_Underlying wc) c
 
@@ -245,7 +245,7 @@ and w_resrec metas evars wc =
                with ex when catchable_exception ex ->
 		 (match krhs with
              	    | IsAppL (f,cl) when isConst f ->
-			let wc' = mimick_evar f (List.length cl) evn wc in
+			let wc' = mimick_evar f (Array.length cl) evn wc in
 			w_resrec metas evars wc'
 		    | _ -> error "w_Unify"))
 	| _ -> anomaly "w_resrec"
@@ -445,7 +445,7 @@ let clenv_cast_meta clenv =
 	       | Clval(_) -> u
 	   with Not_found -> 
 	     u)
-      | IsAppL(f,args) -> mkAppList (crec_hd f) (List.map crec args)
+      | IsAppL(f,args) -> mkAppL (crec_hd f, Array.map crec args)
       | IsMutCase(ci,p,c,br) ->
 	  mkMutCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | _ -> u
@@ -553,7 +553,8 @@ let clenv_merge with_types =
 		   (match krhs with
 		      | IsAppL (f,cl) when isConst f or isMutConstruct f ->
 			  clenv_resrec metas evars 
-			    (clenv_wtactic (mimick_evar f (List.length cl) evn)
+			    (clenv_wtactic
+			       (mimick_evar f (Array.length cl) evn)
 			       clenv)
            	      | _ -> error "w_Unify"))
 
@@ -681,7 +682,7 @@ let constrain_clenv_to_subterm clause (op,cl) =
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term (telescope_appl cl) with 
-	  | IsAppL (c1,[c2]) ->
+	  | IsAppL (c1,[|c2|]) ->
 	      (try 
 		 matchrec c1 
 	       with ex when catchable_exception ex -> 

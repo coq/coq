@@ -395,8 +395,8 @@ let rec norm_head info env t stack =
   (* stack grows (remove casts) *)
   | IsAppL (head,args) -> (* Applied terms are normalized immediately;
                         they could be computed when getting out of the stack *)
-      let nargs = List.map (cbv_stack_term info TOP env) args in
-      norm_head info env head (stack_app nargs stack)
+      let nargs = Array.map (cbv_stack_term info TOP env) args in
+      norm_head info env head (stack_app (Array.to_list nargs) stack)
   | IsMutCase (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
   | IsCast (ct,_) -> norm_head info env ct stack
 

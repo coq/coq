@@ -93,14 +93,14 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
   let st = hnf_prod_appvect env sigma t vargs in
   let process_pos depK pk = 
     let rec prec i p = 
-      let p',largs = whd_betadeltaiota_stack env sigma p [] in
+      let p',largs = whd_betadeltaiota_stack env sigma p in
       match kind_of_term p' with
 	| IsProd (n,t,c) -> assert (largs=[]); make_prod env (n,t,prec (i+1) c)
      	| IsMutInd (_,_) -> 
 	    let (_,realargs) = list_chop nparams largs in 
 	    let base = applist (lift i pk,realargs) in       
             if depK then 
-	      mkAppList base [appvect (Rel (i+1),rel_vect 0 i)]
+	      mkAppL (base, [|appvect (Rel (i+1),rel_vect 0 i)|])
             else 
 	      base
       	| _ -> assert false 
@@ -108,7 +108,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
     prec 0 
   in
   let rec process_constr i c recargs co = 
-    let c', largs = whd_betadeltaiota_stack env sigma c [] in
+    let c', largs = whd_betadeltaiota_stack env sigma c in
     match kind_of_term c' with 
       | IsProd (n,t,c_0) ->
 	  assert (largs = []);
@@ -124,20 +124,20 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
           (match optionpos with 
 	     | None -> 
 		 make_prod env (n,t,process_constr (i+1) c_0 rest 
-				  (mkAppList (lift 1 co) [Rel 1]))
+				  (mkAppL (lift 1 co, [|Rel 1|])))
              | Some(dep',p) -> 
 		 let nP = lift (i+1+decP) p in
 		 let t_0 = process_pos dep' nP (lift 1 t) in 
 		 make_prod_dep (dep or dep') env
                    (n,t,mkArrow t_0 (process_constr (i+2) (lift 1 c_0) rest
-				       (mkAppList (lift 2 co) [Rel 2]))))
+				       (mkAppL (lift 2 co, [|Rel 2|])))))
       | IsMutInd ((_,tyi),_) -> 
       	  let nP = match depPvect.(tyi) with 
 	    | Some(_,p) -> lift (i+decP) p
 	    | _ -> assert false in
       	  let (_,realargs) = list_chop nparams largs in
       	  let base = applist (nP,realargs) in
-          if dep then mkAppList base [co] else base
+          if dep then mkAppL (base, [|co|]) else base
       | _ -> assert false
   in 
   process_constr 0 st recargs (appvect(co,vargs))
@@ -145,7 +145,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs = 
   let process_pos fk  =
     let rec prec i p =
-      let p',largs = whd_betadeltaiota_stack env sigma p [] in
+      let p',largs = whd_betadeltaiota_stack env sigma p in
       match kind_of_term p' with
 	| IsProd (n,t,c) -> lambda_name env (n,t,prec (i+1) c)
      	| IsMutInd _ -> 
@@ -170,14 +170,14 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
            | None -> 
 	       lambda_name env
 		 (n,incast_type t,process_constr (i+1)
-		    (applist(whd_beta_stack (lift 1 f) [(Rel 1)]))
+		    (whd_beta (applist (lift 1 f, [(Rel 1)])))
 		    (cprest,rest))
            | Some(_,f_0) -> 
 	       let nF = lift (i+1+decF) f_0 in
 	       let arg = process_pos nF (lift 1 (body_of_type t)) in 
                lambda_name env
 		 (n,incast_type t,process_constr (i+1)
-		    (applist(whd_beta_stack (lift 1 f) [(Rel 1); arg])) 
+		    (whd_beta (applist (lift 1 f, [(Rel 1); arg])))
 		    (cprest,rest)))
     | (n,Some c,t)::cprest, rest -> failwith "TODO"
     | [],[] -> f

@@ -132,15 +132,14 @@ and build_term ce p_0 c =
   match p_0, kind_of_term c with 
     | ((na,Some t), IsMeta mv) -> 
 (*    	let mv = new_meta() in *)
-	(DOP0(Meta mv),
-         clenv_pose (na,mv,t) ce)
+	(mkMeta mv, clenv_pose (na,mv,t) ce)
     | ((na,_), IsCast (c,t)) -> build_term ce (na,Some t) c
     | ((na,Some t), _) ->
     	if (not((occur_meta c))) then 
 	  (c,ce)
     	else 
 	  let (hd,args) = 
-	    whd_betadeltaiota_stack env (w_Underlying ce.hook) c [] in
+	    whd_betadeltaiota_stack env (w_Underlying ce.hook) c in
           let hdty = w_type_of ce.hook hd in
           let (args,ce') =
 	    build_args [] ce (w_whd_betadeltaiota ce.hook hdty) args in
@@ -155,7 +154,7 @@ and build_term ce p_0 c =
 	  (c,ce)
     	else 
 	  let (hd,args) = 
-	    whd_betadeltaiota_stack env (w_Underlying ce.hook) c [] in
+	    whd_betadeltaiota_stack env (w_Underlying ce.hook) c in
           let hdty = w_type_of ce.hook hd in
           let (args,ce') = 
 	    build_args [] ce (w_whd_betadeltaiota ce.hook hdty) args in

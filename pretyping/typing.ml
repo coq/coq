@@ -79,7 +79,7 @@ let rec execute mf env sigma cstr =
 	  
     | IsAppL (f,args) ->
 	let j = execute mf env sigma f in
-        let jl = execute_list mf env sigma args in
+        let jl = execute_list mf env sigma (Array.to_list args) in
 	let (j,_) = apply_rel_list env sigma mf.nocheck jl j in
 	j
 	    

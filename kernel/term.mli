@@ -134,7 +134,7 @@ type kindOfTerm =
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
-  | IsAppL         of constr * constr list
+  | IsAppL         of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -216,10 +216,11 @@ val mkNamedLambda : identifier -> constr -> constr -> constr
 (* [mkLambda_string s t c] constructs $[s:t]c$ *)
 val mkLambda_string : string -> constr -> constr -> constr
 
-(* If $a = [| t_1; \dots; t_n |]$, constructs the application 
-   $(t_1~\dots~t_n)$. *)
-val mkAppL : constr array -> constr
-val mkAppList : constr -> constr list  -> constr
+(* [mkAppL (f,[| t_1; ...; t_n |]] constructs the application
+   $(f~t_1~\dots~t_n)$. *)
+val mkAppL : constr * constr array -> constr
+val mkAppList : constr list  -> constr
+val mkAppA : constr array -> constr
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)
@@ -307,6 +308,7 @@ val is_Set : constr -> bool
 val isprop : constr -> bool
 val is_Type : constr -> bool
 val iskind : constr -> bool
+val isSort : constr -> bool
 
 val is_existential_oper : sorts oper -> bool
 
@@ -323,6 +325,9 @@ val strip_outer_cast : constr -> constr
 
 (* Special function, which keep the key casts under Fix and MutCase. *)
 val strip_all_casts : constr -> constr
+
+(* Apply a function letting Casted types in place *)
+val under_casts : (constr -> constr) -> constr -> constr
 
 (* Tests if a de Bruijn index *)
 val isRel  : constr -> bool

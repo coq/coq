@@ -20,11 +20,11 @@ type cte_typ =
   | NAM_Inductive of inductive_path
   | NAM_Constructor of constructor_path
 
-let cte_of_constr = function  
-  | DOPN(Const sp,_) -> NAM_Constant sp
-  | DOPN(MutInd ind_sp,_) -> NAM_Inductive ind_sp
-  | DOPN(MutConstruct cstr_cp,_) -> NAM_Constructor cstr_cp
-  | VAR id -> NAM_Var id
+let cte_of_constr c = match kind_of_term c with
+  | IsConst (sp,_) -> NAM_Constant sp
+  | IsMutInd (ind_sp,_) -> NAM_Inductive ind_sp
+  | IsMutConstruct (cstr_cp,_) -> NAM_Constructor cstr_cp
+  | IsVar id -> NAM_Var id
   |  _ -> raise Not_found
 
 type cl_typ = 
@@ -196,7 +196,7 @@ let constructor_at_head t =
     | IsLetIn (_,_,_,c) -> aux c
     | IsSort _ -> CL_SORT,0
     | IsCast (c,_) -> aux (collapse_appl c)
-    | IsAppL (f,args) -> let c,_ = aux f in c, List.length args
+    | IsAppL (f,args) -> let c,_ = aux f in c, Array.length args
     |  _ -> raise Not_found
   in 
   aux (collapse_appl t)
@@ -217,13 +217,7 @@ let class_of env sigma t =
   in
   if n = n1 then t,i else raise Not_found
 
-let rec class_args_of c = 
-  let aux = function 
-    | (DOP2(Cast,c,_)) -> class_args_of c
-    | (DOPN(AppL,cl)) -> Array.to_list(array_tl cl)
-    | _ -> []
-  in 
-  aux (collapse_appl c)
+let class_args_of c = snd (decomp_app c)
 
 (* verfications pour l'ajout d'une classe *)
 

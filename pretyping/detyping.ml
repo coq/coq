@@ -49,33 +49,7 @@ let occur_id env id0 c =
   in 
   try occur 1 c; false
   with Occur -> true
-(*
-let occur_id env_names id0 c =
-  let rec occur n = function
-    | VAR id             -> id=id0
-    | DOPN (Const sp,cl) -> (basename sp = id0) or (array_exists (occur n) cl)
-    | DOPN (MutInd ind_sp, cl) as t -> 
-  	(basename (path_of_inductive_path ind_sp) = id0)
-	or (array_exists (occur n) cl)
-    | DOPN (MutConstruct cstr_sp, cl) as t -> 
-    	(basename (path_of_constructor_path cstr_sp) = id0)
-	or (array_exists (occur n) cl)
-    | DOPN(_,cl)         -> array_exists (occur n) cl
-    | DOP1(_,c)          -> occur n c
-    | DOP2(_,c1,c2)      -> (occur n c1) or (occur n c2)
-    | DLAM(_,c)          -> occur (n+1) c
-    | DLAMV(_,v)         -> array_exists (occur (n+1)) v
-    | CLam (_,t,c)   -> occur n (body_of_type t) or occur (n+1) c
-    | CPrd (_,t,c)   -> occur n (body_of_type t) or occur (n+1) c
-    | CLet (_,b,t,c) -> occur n b or occur n (body_of_type t) or occur (n+1) c
-    | Rel p              ->
-    	p>n &
-    	(try lookup_name_of_rel (p-n) env_names = Name id0
-	 with Not_found -> false) (* Unbound indice: may happen in debug *)
-    | DOP0 _             -> false
-  in 
-  occur 1 c
-*)
+
 let next_name_not_occuring name l env_names t =
   let rec next id =
     if List.mem id l or occur_id env_names id t then next (lift_ident id)
@@ -314,7 +288,7 @@ let rec detype avoid env t =
     | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
     | IsLetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
     | IsAppL (f,args) ->
-	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
+	RApp (dummy_loc,detype avoid env f,array_map_to_list (detype avoid env) args)
     | IsConst (sp,cl) ->
 	RRef(dummy_loc,RConst(sp,Array.map (detype avoid env) cl))
     | IsEvar (ev,cl) ->

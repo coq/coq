@@ -81,7 +81,7 @@ let is_atomic m =
       (is_matching (get_pat pi_pattern) m)  ||
       (is_matching (not_pattern ()) m))
       
-let hypothesis = function Some id -> exact (VAR id) | None -> assert false
+let hypothesis = function Some id -> exact (mkVar id) | None -> assert false
 
 (* Steps of the procedure *)
 
@@ -205,12 +205,12 @@ B,Gamma|- G   D->B,Gamma |- C->D
 *)
 
 let back_thru_2 id =
-  applist(VAR id,[DOP0(Meta(new_meta()));DOP0(Meta(new_meta()))])
+  applist(mkVar id,[mkMeta (new_meta());mkMeta (new_meta())])
 
 let back_thru_1 id =
-  applist(VAR id,[DOP0(Meta(new_meta()))])
+  applist(mkVar id,[mkMeta(new_meta())])
 
-let exact_last_hyp = onLastHyp (fun h -> exact (VAR (out_some h)))
+let exact_last_hyp = onLastHyp (fun h -> exact (mkVar (out_some h)))
 
 let imply_imply_bot_pattern = put_pat mmk "(?1 -> ?2) -> ?3"
 
@@ -260,7 +260,7 @@ let true_imply_step cls gls =
 	  let h0 = out_some cls in  
 	  (tclTHENS (cut_intro b)
 	     [(clear_clause cls);
-	      (tclTHEN (apply(VAR h0)) (one_constructor 1 []))]) gls
+	      (tclTHEN (apply(mkVar h0)) (one_constructor 1 []))]) gls
       | _ -> anomaly "Inconsistent pattern-matching"
   with PatternMatchingFailure -> error "true_imply_step"
 	  
@@ -1765,7 +1765,7 @@ let search env id =
     Rel (fst (lookup_rel_id id (Environ.rel_context env)))
   with Not_found ->
   if mem_var_context id (Environ.var_context env) then
-    VAR id
+    mkVar id
   else
     global_reference CCI id
 
@@ -1837,11 +1837,13 @@ let cut_in_parallelUsing idlist l =
   in 
   prec (List.rev idlist) (List.rev l)
 
-let exacto tt gls = 
-  match (try cci_of_tauto_term (pf_env gls) tt with
-             _ -> (DOP0 Prod)) with (* Efectivamente, es cualquier cosa!! *)
-    | (DOP0 Prod) -> tAUTOFAIL gls  (* Esto confirma el comentario anterior *)
-    | t -> (exact t) gls
+let exacto tt gls =
+  let tac =
+    try
+      let t = cci_of_tauto_term (pf_env gls) tt in
+      exact t
+    with _ -> tAUTOFAIL     (* Efectivamente, es cualquier cosa!! *)
+  in tac gls                (* Esto confirma el comentario anterior *)
     
 let subbuts l hyp = cut_in_parallelUsing
                       (lisvar l) 

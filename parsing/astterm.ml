@@ -112,8 +112,8 @@ let ids_of_ctxt ctxt =
 
 let maybe_constructor env s =
   try 
-    match Declare.global_reference CCI (id_of_string s) with 
-      | DOPN(MutConstruct (spi,j),cl) -> Some ((spi,j),ids_of_ctxt cl)
+    match kind_of_term (Declare.global_reference CCI (id_of_string s)) with 
+      | IsMutConstruct ((spi,j),cl) -> Some ((spi,j),ids_of_ctxt cl)
       | _ -> warning ("Defined identifier "
 		      ^s^" is here considered as a matching variable"); None
   with Not_found -> 
@@ -156,13 +156,12 @@ let dbize_global loc = function
   | _ -> anomaly_loc (loc,"dbize_global",
 		      [< 'sTR "Bad ast for this global a reference">])
 
-let ref_from_constr = function
-  | DOPN (Const sp,ctxt) -> RConst (sp, dbize_constr_ctxt ctxt)
-  | DOPN (Evar ev,ctxt) -> REVar (ev, dbize_constr_ctxt ctxt) 
-  | DOPN (MutConstruct (spi,j),ctxt) -> 
-      RConstruct ((spi,j), dbize_constr_ctxt ctxt)
-  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i), dbize_constr_ctxt ctxt)
-  | VAR id -> RVar id  (* utilisé pour coe_value (tmp) *)
+let ref_from_constr c = match kind_of_term c with
+  | IsConst (sp,ctxt) -> RConst (sp, dbize_constr_ctxt ctxt)
+  | IsEvar (ev,ctxt) -> REVar (ev, dbize_constr_ctxt ctxt) 
+  | IsMutConstruct (csp,ctxt) -> RConstruct (csp, dbize_constr_ctxt ctxt)
+  | IsMutInd (isp,ctxt) -> RInd (isp, dbize_constr_ctxt ctxt)
+  | IsVar id -> RVar id  (* utilisé pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
 (* [vars1] is a set of name to avoid (used for the tactic language);
@@ -469,14 +468,14 @@ let ast_adjust_consts sigma = (* locations are kept *)
 	   ast
 	 else 
 	   try 
-	     match Declare.global_reference CCI id with
-	       | DOPN (Const sp,_) -> 
+	     match kind_of_term (Declare.global_reference CCI id) with
+	       | IsConst (sp,_) -> 
 		   Node(loc,"CONST",[path_section loc sp])
-	       | DOPN (Evar ev,_) ->
+	       | IsEvar (ev,_) ->
 		   Node(loc,"EVAR",[Num(loc,ev)])
-	       | DOPN (MutConstruct ((sp,i),j),_) ->
+	       | IsMutConstruct (((sp,i),j),_) ->
 		   Node (loc,"MUTCONSTRUCT",[path_section loc sp;num i;num j])
-	       | DOPN (MutInd (sp,i),_) ->
+	       | IsMutInd ((sp,i),_) ->
 		   Node (loc,"MUTIND",[path_section loc sp;num i])
 	       | _ -> anomaly "Not a reference"
 	   with UserError _ | Not_found ->

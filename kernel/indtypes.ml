@@ -175,7 +175,7 @@ let decomp_par n c = snd (mind_extract_params n c)
 let listrec_mconstr env ntypes nparams i indlc =
   (* check the inductive types occur positively in [c] *)
   let rec check_pos n c = 
-    let x,largs = whd_betadeltaiota_stack env Evd.empty c [] in
+    let x,largs = whd_betadeltaiota_stack env Evd.empty c in
     match kind_of_term x with
       | IsProd (na,b,d) ->
 	  assert (largs = []);
@@ -258,12 +258,23 @@ let listrec_mconstr env ntypes nparams i indlc =
 
   and check_construct check_head = 
     let rec check_constr_rec lrec n c = 
-      let x,largs = whd_betadeltaiota_stack env Evd.empty c [] in
+      let x,largs = whd_betadeltaiota_stack env Evd.empty c in
       match kind_of_term x with
+
         | IsProd (na,b,d) -> 
 	    assert (largs = []);
             let recarg = check_pos n b in 
-	    check_constr_rec (recarg::lrec) (n+1) d 
+	    check_constr_rec (recarg::lrec) (n+1) d
+
+        (* LetIn's must be free of occurrence of the inductive types and
+	   they do not contribute to recargs *)
+        | IsLetIn (na,b,t,d) -> 
+	    assert (largs = []);
+            if not (noccur_between n ntypes b & noccur_between n ntypes t) then
+	      raise (IllFormedInd (LocalNonPos n));
+            let recarg = check_pos n b in 
+	    check_constr_rec lrec (n+1) d 
+
 	| hd ->
 	    if check_head then
 	      if hd = IsRel (n+ntypes-i) then

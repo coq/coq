@@ -61,8 +61,7 @@ val pf_reduce :
     goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
-val pf_whd_betadeltaiota_stack : 
-  goal sigma -> constr -> constr list -> constr * constr list 
+val pf_whd_betadeltaiota_stack : goal sigma -> constr -> constr * constr list 
 val pf_hnf_constr              : goal sigma -> constr -> constr
 val pf_red_product             : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr

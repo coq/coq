@@ -70,7 +70,8 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
     | IsAppL (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
-	let (acc'',conclty') = mk_arggoals sigma goal acc' hdty l in
+	let (acc'',conclty') =
+	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
 	let _ = conv_leq_goal env sigma trm conclty' conclty in
         (acc'',conclty')
 
@@ -103,7 +104,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | IsAppL (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
-	mk_arggoals sigma goal acc' hdty l
+	mk_arggoals sigma goal acc' hdty (Array.to_list l)
 
     | IsMutCase (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
@@ -155,7 +156,7 @@ let new_meta_variables =
   let rec newrec x = match kind_of_term x with
     | IsMeta _ -> mkMeta (new_meta())
     | IsCast (c,t) -> mkCast (newrec c, t)
-    | IsAppL (f,cl) -> applist (newrec f, List.map newrec cl)
+    | IsAppL (f,cl) -> appvect (newrec f, Array.map newrec cl)
     | IsMutCase (ci,p,c,lf) ->
 	mkMutCase (ci, newrec p, newrec c, Array.map newrec lf)
     | _ -> x
@@ -298,13 +299,13 @@ let prim_refiner r sigma goal =
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
-	       and v = VAR id in
+	       and v = mkVar id in
 	       let sg = mk_goal info (push_var_decl (id,a) env) (subst1 v b) in
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma t1
-	       and v = VAR id in
+	       and v = mkVar id in
 	       let sg =
 		 mk_goal info (push_var_def (id,c1,a) env) (subst1 v b) in
 	       [sg]
@@ -319,14 +320,14 @@ let prim_refiner r sigma goal =
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
-	       and v = VAR id in
+	       and v = mkVar id in
 	       let env' = insert_after_hyp env whereid (id,None,a) in
 	       let sg = mk_goal info env' (subst1 v b) in 
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma t1
-	       and v = VAR id in
+	       and v = mkVar id in
 	       let env' = insert_after_hyp env whereid (id,Some c1,a) in
 	       let sg = mk_goal info env' (subst1 v b) in 
 	       [sg]
@@ -339,14 +340,14 @@ let prim_refiner r sigma goal =
            | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
-	       and v = VAR id in
+	       and v = mkVar id in
 	       let env' = replace_hyp env id (id,None,a) in
 	       let sg = mk_goal info env' (subst1 v b) in
 	       [sg]
            | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma t1
-	       and v = VAR id in
+	       and v = mkVar id in
 	       let env' = replace_hyp env id (id,Some c1,a) in
 	       let sg = mk_goal info env' (subst1 v b) in
 	       [sg]

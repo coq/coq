@@ -80,14 +80,14 @@ let inh_tosort_force env isevars j =
 
 let inh_tosort env isevars j = 
   let typ = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
-  match typ with
-    | DOP0(Sort _) -> j  (* idem inh_app_fun *)
+  match kind_of_term typ with
+    | IsSort _ -> j  (* idem inh_app_fun *)
     | _ -> inh_tosort_force env isevars j
 
 let inh_ass_of_j env isevars j =
   let typ = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
-  match typ with
-    | DOP0(Sort s) -> { utj_val = j.uj_val; utj_type = s }
+  match kind_of_term typ with
+    | IsSort s -> { utj_val = j.uj_val; utj_type = s }
     | _ ->
         let j1 = inh_tosort_force env isevars j in 
 	type_judgment env !isevars j1 
@@ -147,7 +147,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
 		   {uj_val = Rel 1; 
 		    uj_type = typed_app (fun _ -> u1) assu1 } in
                let h2 = inh_conv_coerce_to_fail env isevars u2  
-			 { uj_val = DOPN(AppL,[|(lift 1 v);h1.uj_val|]);
+			 { uj_val = mkAppL (lift 1 v, [|h1.uj_val|]);
                            uj_type = get_assumption_of env1 !isevars
 				       (subst1 h1.uj_val t2) }
 	       in

@@ -204,7 +204,7 @@ let expmod_constr oldenv modlist c =
     | DOP2(Cast,c,t) -> (DOP2(Cast,f c,f t))
     | c -> f c 
   in
-  let c' = modify_opers expfun (fun a b -> mkAppL [|a; b|]) modlist c in
+  let c' = modify_opers expfun (fun a b -> mkAppL (a, [|b|])) modlist c in
   match c' with
     | DOP2 (Cast,val_0,typ) -> DOP2 (Cast,simpfun val_0,simpfun typ)
     | _ -> simpfun c'

@@ -74,13 +74,6 @@ let count_rec_arg j =
   in 
   crec 0
 
-(* Used in Program only *)      
-let make_case_ml isrec pred c ci lf = 
-  if isrec then 
-    DOPN(XTRA("REC"),Array.append [|pred;c|] lf)
-  else 
-    mkMutCase (ci, pred, c, lf)
-
 (* if arity of mispec is (p_bar:P_bar)(a_bar:A_bar)s where p_bar are the
  * K parameters. Then then build_notdep builds the predicate
  * [a_bar:A'_bar](lift k pred) 
@@ -160,11 +153,11 @@ let insert_lifted a = (0,a);;
 
 (* INVARIANT:
 
-   The pattern variables of it are the disjoint union of [user_ids]
-   and the domain of [subst]. Non global VAR in the codomain of [subst] are
-   in private_ids.
-   The non pattern variables of it + the global VAR in the codomain of
-   [subst] are in others_ids
+   The pattern variables for [it] are the disjoint union of [user_ids]
+   and the domain of [subst]. Non global Var in the codomain of [subst] are
+   in [private_ids].
+   The non pattern variables of [it] + the global Var in the codomain of
+   [subst] are in [other_ids]
 
 *)
 
@@ -496,7 +489,14 @@ let push_rels_eqn sign eqn =
   {eqn with
      rhs = {eqn.rhs with
 	      rhs_env = push_rels sign' eqn.rhs.rhs_env} }
-
+(*
+let push_decls_eqn sign eqn =
+  let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
+  let sign' = recover_pat_names (sign, pats) in
+  {eqn with
+     rhs = {eqn.rhs with
+	      rhs_env = push_decls sign' eqn.rhs.rhs_env} }
+*)
 let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 
 (*
@@ -510,19 +510,10 @@ let pop_pattern eqn = { eqn with patterns = List.tl eqn.patterns }
 
 exception Occur
 let noccur_between_without_evar n m term = 
-  let rec occur_rec n = function
-    | Rel(p)        -> if n<=p && p<n+m then raise Occur
-    | VAR _         -> ()
-    | DOPN(Evar _,cl) -> ()
-    | DOPN(_,cl)    -> Array.iter (occur_rec n) cl
-    | DOP1(_,c)     -> occur_rec n c
-    | DOP2(_,c1,c2) -> occur_rec n c1; occur_rec n c2
-    | DLAM(_,c)     -> occur_rec (n+1) c
-    | DLAMV(_,v)    -> Array.iter (occur_rec (n+1)) v
-    | CLam (_,t,c)   -> occur_rec n (body_of_type t); occur_rec (n+1) c
-    | CPrd (_,t,c)   -> occur_rec n (body_of_type t); occur_rec (n+1) c
-    | CLet (_,b,t,c) -> occur_rec n b; occur_rec n (body_of_type t); occur_rec (n+1) c
-    | _             -> ()
+  let rec occur_rec n c = match kind_of_term c with
+    | IsRel p       -> if n<=p && p<n+m then raise Occur
+    | IsEvar (_,cl) -> ()
+    | _             -> iter_constr_with_binders succ occur_rec n c
   in 
   try occur_rec n term; true with Occur -> false
 
@@ -1075,15 +1066,20 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
   (* with the type of arguments to match *)
   let pred = prepare_predicate typing_fun isevars env tomatchs predopt in
 
+  (* We push the initial terms to match and push their alias to rhs' envs *)
+  (* names of aliases will be recovered from patterns (hence Anonymous here) *)
   let initial_pushed =
     List.map (fun tm -> Pushed (insert_lifted (tm,NotDepInRhs))) tomatchs in
+  let initial_sign =
+    List.map (fun (_,t) -> (Anonymous, type_of_tomatch_type t)) tomatchs in
+  let matx_with_initial_aliases = (*List.map (push_rels_eqn initial_sign) *)matx in
 
   let pb =
     { env      = env;
       isevars  = isevars;
       pred     = pred;
       tomatch  = initial_pushed;
-      mat      = matx;
+      mat      = matx_with_initial_aliases;
       typing_function = typing_fun } in
   
   let j = compile pb in

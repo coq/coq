@@ -88,7 +88,7 @@ let replace_by_meta env = function
   | TH (m, mm, sgp) when isMeta (strip_outer_cast m) -> m,mm,sgp
   | (TH (c,mm,_)) as th ->
       let n = new_meta() in
-      let m = DOP0(Meta n) in
+      let m = mkMeta n in
       (* quand on introduit une mv on calcule son type *)
       let ty = match kind_of_term c with
 	| IsLambda (Name id,c1,c2) when isCast c2 ->
@@ -131,7 +131,7 @@ let rec compute_metamap env c = match kind_of_term c with
   | IsMeta n ->
       Pp.warning (Printf.sprintf ("compute_metamap: MV(%d) sans type !\n") n);
       TH (c,[],[None])
-  | IsCast (DOP0(Meta n),ty) -> TH (c,[n,ty],[None])
+  | IsCast (m,ty) when isMeta m -> TH (c,[destMeta m,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (VAR x)
@@ -154,10 +154,10 @@ let rec compute_metamap env c = match kind_of_term c with
 
   (* 4. Application *)
   | IsAppL (f,v) ->
-      let a = Array.map (compute_metamap env) (Array.of_list (f::v)) in
+      let a = Array.map (compute_metamap env) (Array.append [|f|] v) in
       begin
 	try
-	  let v',mm,sgp = replace_in_array env a in TH (mkAppL v',mm,sgp)
+	  let v',mm,sgp = replace_in_array env a in TH (mkAppA v',mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
       end

@@ -30,7 +30,7 @@ exception Elimconst
 
 let compute_consteval c = 
   let rec srec n labs c =
-    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c [] in
+    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c in
     match kind_of_term c' with
       | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
       | IsFix ((nv,i),(tys,_,bds)) -> 

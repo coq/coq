@@ -337,6 +337,7 @@ let apply_rel_list env sigma nocheck argjl funj =
 		   error_cant_apply_bad_type CCI env sigma
 		     (n,body_of_type hj.uj_type,c1)
 		     funj argjl)
+
           | _ ->
 	      error_cant_apply_not_functional CCI env funj argjl
   in 
@@ -395,13 +396,13 @@ let check_term env mind_recvec f =
   crec
 
 let is_inst_var env sigma k c = 
-  match whd_betadeltaiota_stack env sigma c [] with 
-    | (Rel n,_) -> n=k
+  match kind_of_term (fst (whd_betadeltaiota_stack env sigma c)) with 
+    | IsRel n -> n=k
     | _ -> false
 
 let is_subterm_specif env sigma lcx mind_recvec = 
   let rec crec n lst c = 
-    let f,l = whd_betadeltaiota_stack env sigma c [] in
+    let f,l = whd_betadeltaiota_stack env sigma c in
     match kind_of_term f with 
       | IsRel k -> find_sorted_assoc k lst
 
@@ -495,7 +496,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
      (* n gives the index of the recursive variable *)
      (noccur_with_meta (n+k+1) nfi t) or 
      (* no recursive call in the term *)
-     (let f,l = whd_betadeltaiota_stack env sigma t [] in
+     (let f,l = whd_betadeltaiota_stack env sigma t in
       match kind_of_term f with
 	| IsRel p -> 
 	    if n+k+1 <= p & p < n+k+nfi+1 then
@@ -617,7 +618,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
 	| IsAppL (f,la) -> 
 	    (check_rec_call n lst f) &&
-	    (List.for_all (check_rec_call n lst) la) &&
+	    (array_for_all (check_rec_call n lst) la) &&
             (List.for_all (check_rec_call n lst) l)
 
 	| IsCoFix (i,(typarray,funnames,bodies)) ->
@@ -686,15 +687,16 @@ let check_guard_rec_meta env sigma nbfix def deftype =
   let rec check_rec_call alreadygrd n vlra  t = 
     if noccur_with_meta n nbfix t then
       true 
-    else 
-      match whd_betadeltaiota_stack env sigma t [] with 
-	| (DOP0 (Meta _), l) -> true
+    else
+      let c,args = whd_betadeltaiota_stack env sigma t in
+      match kind_of_term c with 
+	| IsMeta _ -> true
 	      
-	|  (Rel p,l) -> 
+	| IsRel p -> 
              if n <= p && p < n+nbfix then
 	       (* recursive call *)
                if alreadygrd then
-		 if List.for_all (noccur_with_meta n nbfix) l then
+		 if List.for_all (noccur_with_meta n nbfix) args then
 		   true
 		 else 
 		   raise (CoFixGuardError NestedRecursiveOccurrences)
@@ -703,7 +705,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
              else  
 	       error "check_guard_rec_meta: ???"  (* ??? *)
 		 
-	| (DOPN (MutConstruct(_,i as cstr_sp),l), args)  ->
+	| IsMutConstruct ((_,i as cstr_sp),l)  ->
             let lra =vlra.(i-1) in 
             let mI = inductive_of_constructor (cstr_sp,l) in
 	    let mis = lookup_mind_specif mI env in
@@ -741,38 +743,37 @@ let check_guard_rec_meta env sigma nbfix def deftype =
             in (process_args_of_constr realargs lra)
 		 
 		 
-	| (DOP2(Lambda,a,DLAM(_,b)),[]) -> 
+	| IsLambda (_,a,b) ->
+	     assert (args = []);
             if (noccur_with_meta n nbfix a) then
               check_rec_call alreadygrd (n+1)  vlra b
             else 
 	      raise (CoFixGuardError (RecCallInTypeOfAbstraction t))
 	      
-	| (DOPN(CoFix(j),vargs) as cofix,l) ->
-            if (List.for_all (noccur_with_meta n nbfix) l)
+	| IsCoFix (j,(varit,lna,vdefs)) ->
+            if (List.for_all (noccur_with_meta n nbfix) args)
             then 
-	      let (j,(varit,lna,vdefs)) = destFix cofix in
               let nbfix = Array.length vdefs in
 	      if (array_for_all (noccur_with_meta n nbfix) varit) then
 		(array_for_all (check_rec_call alreadygrd (n+1) vlra) vdefs)
 		&&
-		(List.for_all (check_rec_call alreadygrd (n+1) vlra) l) 
+		(List.for_all (check_rec_call alreadygrd (n+1) vlra) args) 
               else 
-		raise (CoFixGuardError (RecCallInTypeOfDef cofix))
+		raise (CoFixGuardError (RecCallInTypeOfDef c))
 	    else
-	      raise (CoFixGuardError (UnguardedRecursiveCall cofix))
+	      raise (CoFixGuardError (UnguardedRecursiveCall c))
 
-	| (DOPN(MutCase _,_) as mc,l) -> 
-            let (_,p,c,vrest) = destCase mc in
+	| IsMutCase (_,p,tm,vrest) ->
             if (noccur_with_meta n nbfix p) then
-              if (noccur_with_meta n nbfix c) then
-		if (List.for_all (noccur_with_meta n nbfix) l) then
+              if (noccur_with_meta n nbfix tm) then
+		if (List.for_all (noccur_with_meta n nbfix) args) then
 		  (array_for_all (check_rec_call alreadygrd n vlra) vrest)
 		else 
-		  raise (CoFixGuardError (RecCallInCaseFun mc))
+		  raise (CoFixGuardError (RecCallInCaseFun c))
               else 
-		raise (CoFixGuardError (RecCallInCaseArg mc))
+		raise (CoFixGuardError (RecCallInCaseArg c))
             else 
-	      raise (CoFixGuardError (RecCallInCasePred mc))
+	      raise (CoFixGuardError (RecCallInCasePred c))
               
 	| _    -> raise (CoFixGuardError NotGuardedForm)
 	      
@@ -790,32 +791,6 @@ let check_cofix env sigma (bodynum,(types,names,bodies)) =
     with CoFixGuardError err -> 
       error_ill_formed_rec_body CCI env err (List.rev names) i bodies
   done
-(*
-let check_cofix env sigma f = 
-  match f with
-    | DOPN(CoFix(j),vargs) -> 
-	let nbfix = let nv = Array.length vargs in 
-        if nv < 2 then
-          error "Ill-formed recursive definition" 
-        else 
-	  nv-1 
-	in
-	let varit = Array.sub vargs 0 nbfix in
-	let ldef  = array_last vargs in
-	let la    = Array.length varit in
-	let (lna,vdefs) = decomp_DLAMV_name la ldef in
-	let vlna = Array.of_list lna in
-	let check_type i = 
-	  try 
-	    let _ = 
-	      check_guard_rec_meta env sigma nbfix vdefs.(i) varit.(i) in 
-	    ()
-	  with UserError (s,str) -> 
-	    error_ill_formed_rec_body CCI env str lna i vdefs 
-	in
-	for i = 0 to nbfix-1 do check_type i done
-    | _ -> assert false
-*)
 
 (* Checks the type of a (co)fixpoint.
    Fix and CoFix are typed the same way; only the guard condition differs. *)
@@ -856,7 +831,7 @@ let control_only_guard env sigma =
     | IsMutConstruct (_,cl) -> Array.iter control_rec cl
     | IsConst (_,cl)        -> Array.iter control_rec cl
     | IsEvar (_,cl)         -> Array.iter control_rec cl
-    | IsAppL (_,cl)         -> List.iter control_rec cl
+    | IsAppL (_,cl)         -> Array.iter control_rec cl
     | IsCast (c1,c2)       -> control_rec c1; control_rec c2
     | IsProd (_,c1,c2)     -> control_rec c1; control_rec c2
     | IsLambda (_,c1,c2)   -> control_rec c1; control_rec c2

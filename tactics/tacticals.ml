@@ -52,7 +52,7 @@ let tclMAP tacfun l =
 (* apply a tactic to the nth element of the signature  *)
 
 let tclNTH_HYP m (tac : constr->tactic) gl =
-  tac (try VAR(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
+  tac (try mkVar(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
        with Failure _ -> error "No such assumption") gl
 
 (* apply a tactic to the last element of the signature  *)
@@ -62,8 +62,8 @@ let tclLAST_HYP = tclNTH_HYP 1
 let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
     | []      -> tclFAIL 0
-    | [s]     -> tac (VAR(s)) (* added in order to get useful error messages *)
-    | (s::sl) -> tclORELSE (tac (VAR(s))) (arec sl) 
+    | [s]     -> tac (mkVar s) (*added in order to get useful error messages *)
+    | (s::sl) -> tclORELSE (tac (mkVar s)) (arec sl) 
   in 
   arec (ids_of_var_context sign) gl
 
@@ -281,16 +281,16 @@ let elim_sign ity i =
   analrec [] recarg.(i-1)
 
 let sort_of_goal gl = 
-  match hnf_type_of gl (pf_concl gl) with 
-    | DOP0(Sort s) -> s
-    | _            -> anomaly "goal should be a type"
+  match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
+    | IsSort s -> s
+    | _        -> anomaly "goal should be a type"
 
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 
 let last_arg c = match kind_of_term c with
-  | IsAppL (f,cl) -> List.nth cl (List.length cl - 1)
+  | IsAppL (f,cl) -> array_last cl
   | _ -> anomaly "last_arg"
 
 let general_elim_then_using 
@@ -312,9 +312,10 @@ let general_elim_then_using
       | IsMeta mv -> mv
       | _         -> error "elimination"
   in
-  let pmv = 
-    match decomp_app (clenv_template_type elimclause).rebus with
-      | (DOP0(Meta(p)),oplist) -> p
+  let pmv =
+    let p, _ = decomp_app (clenv_template_type elimclause).rebus in
+    match kind_of_term p with
+      | IsMeta p -> p
       | _ -> error ("The elimination combinator " ^
                     (string_of_id name_elim) ^ " is not known") 
   in

@@ -153,12 +153,12 @@ let ise_map isevars sp = Evd.map !isevars sp
 let ise_define isevars sp body = isevars := Evd.define !isevars sp body
 
 (* Does k corresponds to an (un)defined existential ? *)
-let ise_undefined isevars = function
-  | DOPN(Evar n,_) -> not (Evd.is_defined !isevars n)
+let ise_undefined isevars c = match kind_of_term c with
+  | IsEvar (n,_) -> not (Evd.is_defined !isevars n)
   | _ -> false
 
-let ise_defined isevars = function
-  | DOPN(Evar n,_) -> Evd.is_defined !isevars n
+let ise_defined isevars c = match kind_of_term c with
+  | IsEvar (n,_) -> Evd.is_defined !isevars n
   | _ -> false
 
 let restrict_hyps isevars c =
@@ -180,6 +180,22 @@ let has_ise sigma t =
  * conversion test that lead to the faulty call to [real_clean] should return
  * false. The problem is that we won't get the right error message.
  *)
+
+let real_clean isevars sp args rhs =
+  let subst = List.map (fun (x,y) -> (y,VAR x)) (filter_unique args) in
+  let rec subs k t =
+    match kind_of_term t with
+      |IsRel i ->
+ 	 if i<=k then t
+ 	 else (try List.assoc (Rel (i-k)) subst with Not_found -> t)
+      | IsVar _ -> (try List.assoc t subst with Not_found -> t)
+      | _ -> map_constr_with_binders (fun na k -> k+1) subs k t
+  in
+  let body = subs 0 rhs in
+  (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
+  body
+
+(*
 let real_clean isevars sp args rhs =
   let subst = List.map (fun (x,y) -> (y,VAR x)) (filter_unique args) in
   let rec subs k t =
@@ -201,6 +217,7 @@ let real_clean isevars sp args rhs =
   let body = subs 0 rhs in
   (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
   body
+*)
 
 let make_instance_with_rel env =
   let n = rel_context_length (rel_context env) in
@@ -233,7 +250,7 @@ let new_isevar isevars env typ k =
   evar
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
- * evar, i.e. tries to find the body ?sp for lhs=DOPN(Const sp,args)
+ * evar, i.e. tries to find the body ?sp for lhs=mkConst (sp,args)
  * ?sp [ sp.hyps \ args ]  unifies to rhs
  * ?sp must be a closed term, not referring to itself.
  * Not so trivial because some terms of args may be terms that are not
@@ -340,29 +357,28 @@ let has_undefined_isevars isevars c =
 let head_is_exist isevars = 
   let rec hrec k = match kind_of_term k with
     | IsEvar _     -> ise_undefined isevars k
-    | IsAppL (f,l) -> hrec f
+    | IsAppL (f,_) -> hrec f
     | IsCast (c,_) -> hrec c
     | _ -> false
   in 
   hrec 
 
-let rec is_eliminator = function
-  | DOPN (AppL,_)      -> true
-  | DOPN (MutCase _,_) -> true
-  | DOP2 (Cast,c,_)    -> is_eliminator c
+let rec is_eliminator c = match kind_of_term c with
+  | IsAppL _    -> true
+  | IsMutCase _ -> true
+  | IsCast (c,_) -> is_eliminator c
   | _ -> false
 
 let head_is_embedded_exist isevars c =
   (head_is_exist isevars c) & (is_eliminator c)
 
 let head_evar = 
-  let rec hrec = function
-    | DOPN(Evar ev,_)       -> ev
-    | DOPN(MutCase _,_) as mc -> 
-	let (_,_,c,_) = destCase mc in hrec c
-    | DOPN(AppL,cl)          -> hrec (array_hd cl)
-    | DOP2(Cast,c,_)         -> hrec c
-    | _                      -> failwith "headconstant"
+  let rec hrec c = match kind_of_term c with
+    | IsEvar (ev,_)       -> ev
+    | IsMutCase (_,_,c,_) -> hrec c
+    | IsAppL (c,_)        -> hrec c
+    | IsCast (c,_)        -> hrec c
+    | _                   -> failwith "headconstant"
   in 
   hrec 
     

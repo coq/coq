@@ -94,8 +94,9 @@ let rec execute mf env cstr =
 	  
     | IsAppL (f,args) ->
 	let (j,cst1) = execute mf env f in
-        let (jl,cst2) = execute_list mf env args in
-	let (j,cst3) = apply_rel_list env Evd.empty mf.nocheck jl j in
+        let (jl,cst2) = execute_array mf env args in
+	let (j,cst3) =
+	  apply_rel_list env Evd.empty mf.nocheck (Array.to_list jl) j in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	    
@@ -205,16 +206,6 @@ let unsafe_infer_type env constr =
 let type_of env c = 
   let (j,_) = safe_infer env c in nf_betaiota env Evd.empty (body_of_type j.uj_type)
 
-(* obsolètes
-let type_of_type env c = 
-  let tt = safe_infer_type env c in DOP0 (Sort (level_of_type tt.typ)
-
-let unsafe_type_of env c = 
-  let (j,_) = unsafe_infer env c in nf_betaiota env Evd.empty j.uj_type
-
-let unsafe_type_of_type env c = 
-  let tt = unsafe_infer_type env c in DOP0 (Sort tt.typ)
-*)
 (* Typing of several terms. *)
 
 let safe_infer_l env cl =

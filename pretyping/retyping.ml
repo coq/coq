@@ -34,7 +34,7 @@ let sort_of_atomic_type env sigma ft args =
     match kind_of_term (whd_betadeltaiota env sigma ar) with
       | IsProd (_, _, b) -> concl_of_arity b
       | IsSort s -> s
-      | _ -> outsort env sigma (subst_type env sigma ft args)
+      | _ -> outsort env sigma (subst_type env sigma ft (Array.to_list args))
   in concl_of_arity ft
 
 let typeur sigma metamap =
@@ -71,14 +71,15 @@ let rec type_of env cstr=
     | IsFix ((vn,i),(lar,lfi,vdef)) -> lar.(i)
     | IsCoFix (i,(lar,lfi,vdef)) -> lar.(i)
     | IsAppL(f,args)->
-      strip_outer_cast (subst_type env sigma (type_of env f) args)
+      strip_outer_cast (subst_type env sigma (type_of env f) 
+			  (Array.to_list args))
     | IsCast (c,t) -> t
     | IsSort _ | IsProd (_,_,_) | IsMutInd _ -> mkSort (sort_of env cstr)
     | IsXtra _ -> error "type_of: Unexpected constr"
 
 and sort_of env t = 
   match kind_of_term t with
-    | IsCast (c,DOP0(Sort s)) -> s
+    | IsCast (c,s) when isSort s -> destSort s
     | IsSort (Prop c) -> type_0
     | IsSort (Type u) -> Type Univ.dummy_univ
     | IsProd (name,t,c2) ->

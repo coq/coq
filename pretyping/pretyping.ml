@@ -27,38 +27,6 @@ open Coercion
 open Inductive
 open Instantiate
 
-(*
-(* Pour le vieux "match" que Program utilise encore, vieille histoire ... *)
-
-(* Awful special reduction function which skips abstraction on Xtra in
-   order to be safe for Program ... *)
-
-let stacklamxtra recfun = 
-  let rec lamrec sigma s t = match s,kind_of_term t with 
-    | (stack, IsLambda (_,DOP1(XTRA "COMMENT",_),_)) ->
-        recfun stack (substl sigma t)
-    | ((h::t), IsLambda (_,_,c)) -> lamrec (h::sigma) t c
-    | (stack, _) -> recfun stack (substl sigma t)
-  in 
-  lamrec 
-
-let rec whrec x stack =
-  match kind_of_term x with   
-    | IsLambda (name, DOP1(XTRA "COMMENT",c),t) ->
-    	let t' = applist (whrec t (List.map (lift 1) stack)) in 
-	mkLambda (name,DOP1(XTRA "COMMENT",c),t'),[]
-    | IsLambda (name,c1,c2) ->
-    	(match stack with
-	   | [] -> mkLambda (name,c1,whd_betaxtra c2),[]
-	   | a1::rest -> stacklamxtra (fun l x -> whrec x l) [a1] rest c2)
-    | IsAppL (f,args) -> whrec f (args@stack)
-    | IsCast (c,_) ->  whrec c stack
-    | _ -> x,stack
-
-and whd_betaxtra x = applist(whrec x [])
-*)
-let whd_betaxtra = whd_beta
-
 let lift_context n l = 
   let k = List.length l in 
   list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
@@ -85,7 +53,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
     let branches = 
       array_map3
 	(fun f t reca -> 
-	   whd_betaxtra
+	   whd_beta
              (Indrec.make_rec_branch_arg env sigma
                 (nparams,depFvec,nar+1)
                 f t reca))
@@ -109,9 +77,9 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 			     (List.map (lift nar) params)
 			     (rel_list 0 nar))),
 	      (if dep then 
-		 applist (whd_beta_stack (lift (nar+1) p) (rel_list 0 (nar+1)))
+		 whd_beta (applist (lift (nar+1) p, rel_list 0 (nar+1)))
 	       else 
-		 applist (whd_beta_stack (lift (nar+1) p) (rel_list 1 nar)))))
+		 whd_beta (applist (lift (nar+1) p, rel_list 1 nar)))))
           lnames 
       in
       let fix = mkFix (([|nar|],0),
@@ -258,7 +226,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	      user_err_loc (loc,"pretype",
 	        [< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
 	  in
-          { uj_val=DOP0 (Meta n); uj_type = outcast_type metaty })
+          { uj_val= mkMeta n; uj_type = outcast_type metaty })
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;
@@ -464,12 +432,13 @@ let process_evars fail_evar env sigma =
             [< 'sTR"There is an unknown subterm I cannot solve" >]
    else whd_ise1_metas env sigma)
 
-
+(*
 let j_apply f env sigma j =
-  let under_outer_cast f env sigma = function
-    | DOP2 (Cast,b,t) -> DOP2 (Cast,f env sigma b,f env sigma t)
-    | c -> f env sigma c in
-  { uj_val=strong (under_outer_cast f) env sigma j.uj_val;
+  { uj_val= local_strong (under_outer_cast (f env sigma)) j.uj_val;
+    uj_type= typed_app (strong f env sigma) j.uj_type }
+*)
+let j_apply f env sigma j =
+  { uj_val= strong f env sigma j.uj_val;
     uj_type= typed_app (strong f env sigma) j.uj_type }
 
 let utj_apply f env sigma j =

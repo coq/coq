@@ -172,8 +172,9 @@ let v_conditional_rewriteRL =
    is substitutive *)
 
 let find_constructor env sigma c =
-  match whd_betadeltaiota_stack env sigma c [] with
-    | DOPN(MutConstruct _,_) as hd,stack -> (hd,stack)
+  let hd,stack = whd_betadeltaiota_stack env sigma c in
+  match kind_of_term hd with
+    | IsMutConstruct _ -> (hd,stack)
     | _ -> error "find_constructor"
 
 type leibniz_eq = {
@@ -342,8 +343,8 @@ exception DiscrFound of (sorts oper * int) list * sorts oper * sorts oper
 
 let find_positions env sigma t1 t2 =
   let rec findrec posn t1 t2 =
-    match (whd_betadeltaiota_stack env sigma t1 [],
-           whd_betadeltaiota_stack env sigma t2 []) with
+    match (whd_betadeltaiota_stack env sigma t1,
+           whd_betadeltaiota_stack env sigma t2) with
   	
       | ((DOPN(MutConstruct sp1 as oper1,_) as hd1,args1),
 	 (DOPN(MutConstruct sp2 as oper2,_) as hd2,args2)) ->
@@ -527,8 +528,8 @@ let rec build_discriminator sigma env dirn c sort = function
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       (match necessary_elimination arsort (destSort sort) with
          | Type_Type ->
-	     kont subval (build_EmptyT (),DOP0(Sort(Type(dummy_univ))))
-	 | _ -> kont subval (build_False (),DOP0(Sort(Prop Null))))
+	     kont subval (build_EmptyT (),mkSort (Type(dummy_univ)))
+	 | _ -> kont subval (build_False (),mkSort (Prop Null)))
   | _ -> assert false
 
 let find_eq_data_decompose eqn =
@@ -615,7 +616,7 @@ let discr id gls =
 	 in
 	 tclCOMPLETE((tclTHENS (cut_intro absurd_term)
 			([onLastHyp (compose gen_absurdity out_some);
-			  refine (mkAppL [| pf; VAR id |])]))) gls
+			  refine (mkAppL (pf, [| VAR id |]))]))) gls
      | _ -> assert false)
 
 let not_found_message id =
@@ -774,11 +775,11 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
       in
       (bindings,dFLT)
     else
-      let (a,p) = match whd_beta_stack ty [] with
+      let (a,p) = match whd_beta_stack ty with
 	| (_,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausale_forme: should be a sigma type" in
       let mv = new_meta() in
-      let rty = applist(p,[DOP0(Meta mv)]) in
+      let rty = applist(p,[mkMeta mv]) in
       let (bindings,tuple_tail) = sigrec_clausale_forme (siglen-1) rty in
       let w =
 	try List.assoc mv bindings
@@ -958,7 +959,7 @@ let decompEqThen ntac id gls =
 	 tclCOMPLETE
 	   ((tclTHENS (cut_intro absurd_term)
 	       ([onLastHyp (compose gen_absurdity out_some);
-		 refine (mkAppL [| pf; VAR id |])]))) gls
+		 refine (mkAppL (pf, [| VAR id |]))]))) gls
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
 	  let e_env =
@@ -1041,7 +1042,7 @@ let swapEquandsInConcl gls =
     with _-> errorlabstrm "SwapEquandsInConcl" (rewrite_msg None) 
   in
   let sym_equal = get_squel lbeq.sym in
-  refine (applist(sym_equal,[t;e2;e1;DOP0(Meta(new_meta()))])) gls
+  refine (applist(sym_equal,[t;e2;e1;mkMeta (new_meta())])) gls
 
 let swapEquandsInHyp id gls =
   ((tclTHENS (cut_replacing id (swap_equands gls (clause_type (Some id) gls)))
@@ -1054,9 +1055,9 @@ let swapEquandsInHyp id gls =
    otherwise *)
 
 let find_elim  sort_of_gl  lbeq =
-  match  sort_of_gl  with
-    | DOP0(Sort(Prop Null))  (* Prop *)  ->  (get_squel lbeq.ind, false)  
-    | DOP0(Sort(Prop Pos))   (* Set *)   ->  
+  match kind_of_term sort_of_gl  with
+    | IsSort(Prop Null)  (* Prop *)  ->  (get_squel lbeq.ind, false)  
+    | IsSort(Prop Pos)   (* Set *)   ->  
 	(match lbeq.rrec with
            | Some eq_rec -> (get_squel eq_rec, false) 
 	   | None -> errorlabstrm "find_elim"
@@ -1100,8 +1101,8 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
     else
       (build_non_dependent_rewrite_predicate (t,e1,e2)  body  gls)
   in
-  refine (applist(eq_elim,[t;e1;p;DOP0(Meta(new_meta()));
-                           e2;DOP0(Meta(new_meta()))])) gls
+  refine (applist(eq_elim,[t;e1;p;mkMeta(new_meta());
+                           e2;mkMeta(new_meta())])) gls
 
 (* [subst_tuple_term dep_pair B]
 
@@ -1168,6 +1169,27 @@ let decomp_tuple_term env c t =
       [((ex,exty),inner_code)]
   in
   List.split (decomprec (Rel 1) c t)
+
+(*
+let whd_const_state namelist env sigma = 
+  let rec whrec (x, l as s) =
+    match kind_of_term x with
+      | IsConst (sp,_) when List.mem sp namelist ->
+          if evaluable_constant env x then
+            whrec (constant_value env x, l)
+          else 
+	    error "whd_const_stack"
+      | IsCast (c,_) -> whrec (c, l)
+      | IsAppL (f,cl) -> whrec (f, append_stack cl l)
+      | _ -> s
+  in 
+  whrec
+let whd_const_state namelist = whd_state (const namelist)
+let whd_const_stack namelist env sigma x =
+  whd_const_state namelist env sigma (x, empty_stack)
+let whd_const namelist env sigma c = 
+  app_stack (whd_const_stack namelist env sigma (c, empty_stack))
+*)
 
 let subst_tuple_term env sigma dep_pair b =
   let typ = get_type_of env sigma dep_pair in
@@ -1291,7 +1313,7 @@ let rec eq_mod_rel l_meta t0 t1 =
 let is_hd_const c = match kind_of_term c with
   | IsAppL (f,args) ->
       (match kind_of_term f with
-         | IsConst (c,_) -> Some (c, Array.of_list args)
+         | IsConst (c,_) -> Some (c, args)
          |_ -> None)
   | _ -> None
 

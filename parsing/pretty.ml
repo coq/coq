@@ -349,8 +349,8 @@ let crible (fn : string -> env -> constr -> unit) name =
                let mib = Global.lookup_mind sp in 
 	       let arities = array_map_to_list (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mib.mind_packets in
 	       let env_ar = push_rels arities env in
-               (match const with 
-		  | (DOPN(MutInd(sp',tyi),_)) -> 
+               (match kind_of_term const with 
+		  | IsMutInd ((sp',tyi),_) -> 
 		      if sp = objsp_of sp' then
 			print_constructors fn env_ar
 			  (mind_nth_type_packet mib tyi)
@@ -493,7 +493,7 @@ let unfold_head_fconst =
   let rec unfrec k = match kind_of_term k with
     | IsConst _ -> constant_value (Global.env ()) k 
     | IsLambda (na,t,b) -> mkLambda (na,t,unfrec b)
-    | IsAppL (f,v) -> applist (unfrec f,v)
+    | IsAppL (f,v) -> appvect (unfrec f,v)
     | _ -> k
   in 
   unfrec
@@ -502,8 +502,9 @@ let unfold_head_fconst =
 let print_extracted_name name =
   let (sigma,(sign,fsign)) = initial_sigma_assumptions() in
   try
-    match (Machops.global (gLOB sign) name) with
-      | DOPN(Const _,_) as x ->
+    let x = (Machops.global (gLOB sign) name) in
+    match kind_of_term x with
+      | IsConst _ ->
           let cont = snd(infexecute sigma (sign,fsign) x) in 
           (match cont with
              | Inf {_VAL=trm; _TYPE=typ} ->
@@ -519,7 +520,7 @@ let print_extracted_name name =
 			 [< >]; 
 		       'sTR " :  "; fprterm typ; 'fNL >])
              | _ -> error "Non informative term")
-      | VAR id ->
+      | IsVar id ->
 	  (* Pourquoi on n'utilise pas fsign ? *)
           let a = snd(lookup_sign id sign) in
           let cont = snd(infexecute sigma (sign,fsign) a.body) in 
@@ -530,14 +531,14 @@ let print_extracted_name name =
 			fprint_var (string_of_id name) {body=t;typ=s})
              | _  -> error "Non informative term")
 	  
-      | DOPN(MutInd (sp,_),_) as x ->
+      | IsMutInd ((sp,_),_) ->
           let cont = snd(infexecute sigma (sign,fsign) x) in 
 	  (match cont with
              | Inf _ ->
                  (hOV 0 [< 'sTR (string_of_id name); 'sTR " ==>"; 'bRK(1,4);
                            print_extracted_mutual sp >])
              | _ -> error "Non informative term")
-      | DOPN(MutConstruct _ ,_) as x ->
+      | IsMutConstruct _  ->
           let cont = snd(infexecute sigma (sign,fsign) x) in 
 	  (match cont with
              | Inf d ->
