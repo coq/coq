@@ -308,9 +308,11 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
       (str "Proof editing mode not supported in module types");
   start_proof_and_print sopt (IsGlobal (Proof kind)) (bl,t) hook
 
-let vernac_end_proof is_opaque idopt =
-  if_verbose show_script ();
-  match idopt with
+let vernac_end_proof = function
+  | Admitted -> admit ()
+  | Proved (is_opaque,idopt) ->
+    if_verbose show_script ();
+    match idopt with
     | None -> save_named is_opaque
     | Some (id,None) -> save_anonymous is_opaque id
     | Some (id,Some kind) -> save_anonymous_with_strength kind is_opaque id
@@ -1119,7 +1121,7 @@ let interp c = match c with
   | VernacDefinition (k,id,d,f,_) -> vernac_definition k id d f
   | VernacStartTheoremProof (k,id,t,top,f) ->
       vernac_start_proof k (Some id) t top f
-  | VernacEndProof (opaq,idopt) -> vernac_end_proof opaq idopt
+  | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,l) -> vernac_assumption stre l
   | VernacInductive (finite,l) -> vernac_inductive finite l

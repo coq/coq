@@ -1202,7 +1202,8 @@ let xlate_thm x = CT_thm (match x with
   | Theorem -> "Theorem"
   | Remark -> "Remark"
   | Lemma -> "Lemma"
-  | Fact -> "Fact")
+  | Fact -> "Fact"
+  | Conjecture -> "Conjecture")
 
 
 let xlate_defn x = CT_defn (match x with
@@ -1416,16 +1417,17 @@ let xlate_vernac =
         CT_hints(CT_ident "Unfold", 
                  CT_id_ne_list(n1, names),
                  dblist))
-  | VernacEndProof (true,None) ->
+  | VernacEndProof (Proved (true,None)) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctv_ID_OPT_NONE)
-  | VernacEndProof (false,None) ->
+  | VernacEndProof (Proved (false,None)) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Definition"), ctv_ID_OPT_NONE)
-  | VernacEndProof (b,Some (s, Some kind)) ->
+  | VernacEndProof (Proved (b,Some (s, Some kind))) ->
       CT_save (CT_coerce_THM_to_THM_OPT (xlate_thm kind),
        ctf_ID_OPT_SOME (xlate_ident s))
-  | VernacEndProof (b,Some (s,None)) ->
+  | VernacEndProof (Proved (b,Some (s,None))) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"),
        ctf_ID_OPT_SOME (xlate_ident s))
+  | VernacEndProof Admitted -> xlate_error "TODO: Admitted"
   | VernacSetOpacity (false, id :: idl) ->
             CT_transparent(CT_id_ne_list(loc_qualid_to_ct_ID id,
                    List.map loc_qualid_to_ct_ID idl))

@@ -80,6 +80,9 @@ let rec adjust_conclusion a cs = function
 
 (* 1| Constant definitions *)
 
+let definition_message id =
+  if_verbose message ((string_of_id id) ^ " is defined")
+
 let constant_entry_of_com (bl,com,comtypopt,opacity) =
   let sigma = Evd.empty in
   let env = Global.env() in
@@ -110,7 +113,7 @@ let declare_global_definition ident ce local =
   let (_,kn) = declare_constant ident (DefinitionEntry ce,IsDefinition) in
   if local = Local then
     msg_warning (pr_id ident ++ str" is declared as a global definition");
-  if_verbose message ((string_of_id ident) ^ " is defined");
+  definition_message ident;
   ConstRef kn
 
 let declare_definition ident local bl red_option c typopt hook =
@@ -123,7 +126,7 @@ let declare_definition ident local bl red_option c typopt hook =
         let c =
           SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
         let _ = declare_variable ident (Lib.cwd(), c, IsDefinition) in
-        if_verbose message ((string_of_id ident) ^ " is defined");
+        definition_message ident;
         if Pfedit.refining () then 
           msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
           str" is not visible from current goals");
@@ -178,14 +181,15 @@ let non_type_eliminations =
 let declare_one_elimination ind =
   let (mib,mip) = Global.lookup_inductive ind in 
   let mindstr = string_of_id mip.mind_typename in
-  let declare na c t =
-    let kn = Declare.declare_constant (id_of_string na)
+  let declare s c t =
+    let id = id_of_string s in
+    let kn = Declare.declare_constant id
       (DefinitionEntry
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false }, 
        Decl_kinds.IsDefinition) in
-    Options.if_verbose ppnl (str na ++ str " is defined"); 
+    definition_message id;
     kn
   in
   let env = Global.env () in
@@ -655,7 +659,7 @@ let save id const kind hook =
 	(Global, ConstRef kn) in
   hook l r;
   Pfedit.delete_current_proof ();
-  if_verbose message ((string_of_id id) ^ " is defined")
+  definition_message id
 
 let save_named opacity =
   let id,(const,persistence,hook) = Pfedit.cook_proof () in
@@ -681,6 +685,15 @@ let save_anonymous_with_strength kind opacity save_ident =
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
   save save_ident const (IsGlobal (Proof kind)) hook
+
+let admit () =
+  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+  if k <> IsGlobal (Proof Conjecture) then
+    error "Only statements declared as conjecture can be admitted";
+  let (_,kn) = declare_constant id (ParameterEntry typ, IsConjecture) in
+  hook Global (ConstRef kn);
+  Pfedit.delete_current_proof ();
+  assumption_message id
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

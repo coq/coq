@@ -36,23 +36,21 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Goal"; c = Constr.constr -> VernacGoal c
-(*VernacGoal c*)
-(*      | IDENT "Goal" -> VernacGoal None*)
       | "Proof" -> VernacProof Tacexpr.TacId
       | "Proof"; "with"; ta = tactic -> VernacProof ta
-(* Used ?? 
-      |	IDENT "Begin" -> VernacNop
-*)
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
-      | "Qed" -> VernacEndProof (true,None)
-      | IDENT "Save" -> VernacEndProof (true,None)
-      | IDENT "Defined" -> VernacEndProof (false,None)
-      |	IDENT "Defined"; id=base_ident -> VernacEndProof (false,Some (id,None))
+      | IDENT "Admitted" -> VernacEndProof Admitted
+      | "Qed" -> VernacEndProof (Proved (true,None))
+      | IDENT "Save" -> VernacEndProof (Proved (true,None))
+      | IDENT "Defined" -> VernacEndProof (Proved (false,None))
+      |	IDENT "Defined"; id=base_ident -> 
+	  VernacEndProof (Proved (false,Some (id,None)))
       | IDENT "Save"; tok = thm_token; id = base_ident ->
-	  VernacEndProof (true,Some (id,Some tok))
-      | IDENT "Save"; id = base_ident -> VernacEndProof (true,Some (id,None))
+	  VernacEndProof (Proved (true,Some (id,Some tok)))
+      | IDENT "Save"; id = base_ident ->
+	  VernacEndProof (Proved (true,Some (id,None)))
       | IDENT "Suspend" -> VernacSuspend
       | IDENT "Resume" -> VernacResume None
       | IDENT "Resume"; id = identref -> VernacResume (Some id)

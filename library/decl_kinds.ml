@@ -17,6 +17,7 @@ type theorem_kind =
   | Lemma
   | Fact
   | Remark
+  | Conjecture
 
 type definitionkind =
   | LDefinition
@@ -63,6 +64,7 @@ type local_theorem_kind = LocalStatement
 type 'a mathematical_kind =
   | IsAssumption of type_as_formula_kind
   | IsDefinition
+  | IsConjecture
   | IsProof of 'a
 
 type global_kind = theorem_kind mathematical_kind

@@ -74,6 +74,10 @@ val save_anonymous : bool -> identifier -> unit
 
 val save_anonymous_with_strength : theorem_kind -> bool -> identifier -> unit
 
+(* [admit ()] aborts the current goal and save it as an assmumption *)
+
+val admit : unit -> unit
+
 (* [get_current_context ()] returns the evar context and env of the
    current open proof if any, otherwise returns the empty evar context
    and the current global env *)

@@ -382,6 +382,7 @@ let pr_thm_token = function
   | Decl_kinds.Lemma -> str"Lemma"
   | Decl_kinds.Fact -> str"Fact"
   | Decl_kinds.Remark -> str"Remark"
+  | Decl_kinds.Conjecture -> str"Conjecture"
 
 let pr_require_token = function
   | Some true -> str "Export"
@@ -630,11 +631,9 @@ let rec pr_vernac = function
       (match bl with
         | [] -> mt()
         | _ -> error "Statements with local binders no longer supported")
-(*
-pr_vbinders bl ++ spc())
-*)
       ++ str":" ++ spc() ++ pr_type c)
-  | VernacEndProof (opac,o) -> (match o with
+  | VernacEndProof Admitted -> str"Admitted"
+  | VernacEndProof (Proved (opac,o)) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
     | Some (id,th) -> (match th with
       |	None -> (if opac then str"Save" else str"Defined") ++ spc() ++ pr_id id

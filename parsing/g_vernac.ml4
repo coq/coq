@@ -108,7 +108,8 @@ GEXTEND Gram
     [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
       | IDENT "Fact" -> Fact
-      | IDENT "Remark" -> Remark ] ]
+      | IDENT "Remark" -> Remark
+      | IDENT "Conjecture" -> Conjecture ] ]
   ;
   def_token:
     [ [ "Definition" -> (fun _ _ -> ()), Global, GDefinition

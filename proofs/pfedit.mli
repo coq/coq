@@ -107,6 +107,7 @@ val set_xml_cook_proof : (pftreestate -> unit) -> unit
 val get_pftreestate : unit -> pftreestate
 
 (* [get_end_tac ()] returns the current tactic to apply to all new subgoal *)
+
 val get_end_tac : unit -> tactic option
 
 (* [get_goal_context n] returns the context of the [n]th subgoal of
@@ -118,6 +119,11 @@ val get_goal_context : int -> Evd.evar_map * env
 (* [get_current_goal_context ()] works as [get_goal_context 1] *)
 
 val get_current_goal_context : unit -> Evd.evar_map * env
+
+(* [current_proof_statement] *)
+
+val current_proof_statement :
+  unit -> identifier * goal_kind * types * declaration_hook
 
 (*s [get_current_proof_name ()] return the name of the current focused
     proof or failed if no proof is focused *)

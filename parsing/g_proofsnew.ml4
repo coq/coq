@@ -43,13 +43,16 @@ GEXTEND Gram
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
       | IDENT "Existential"; n = natural; c = constr_body ->
 	  VernacSolveExistential (n,c)
-      | IDENT "Qed" -> VernacEndProof (true,None)
-      | IDENT "Save" -> VernacEndProof (true,None)
+      | IDENT "Admitted" -> VernacEndProof Admitted
+      | IDENT "Qed" -> VernacEndProof (Proved (true,None))
+      | IDENT "Save" -> VernacEndProof (Proved (true,None))
       | IDENT "Save"; tok = thm_token; id = base_ident ->
-	  VernacEndProof (true,Some (id,Some tok))
-      | IDENT "Save"; id = base_ident -> VernacEndProof (true,Some (id,None))
-      | IDENT "Defined" -> VernacEndProof (false,None)
-      |	IDENT "Defined"; id=base_ident -> VernacEndProof (false,Some (id,None))
+	  VernacEndProof (Proved (true,Some (id,Some tok)))
+      | IDENT "Save"; id = base_ident ->
+	  VernacEndProof (Proved (true,Some (id,None)))
+      | IDENT "Defined" -> VernacEndProof (Proved (false,None))
+      |	IDENT "Defined"; id=base_ident -> 
+	  VernacEndProof (Proved (false,Some (id,None)))
       | IDENT "Suspend" -> VernacSuspend
       | IDENT "Resume" -> VernacResume None
       | IDENT "Resume"; id = identref -> VernacResume (Some id)

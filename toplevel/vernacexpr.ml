@@ -142,6 +142,10 @@ type local_decl_expr =
 
 type module_binder = identifier list * module_type_ast
 
+type proof_end =
+  | Admitted
+  | Proved of opacity_flag * (identifier * theorem_kind option) option
+
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
@@ -175,7 +179,7 @@ type vernac_expr =
       declaration_hook * definitionkind
   | VernacStartTheoremProof of theorem_kind * identifier *
       (local_binder list * constr_expr) * bool * declaration_hook
-  | VernacEndProof of opacity_flag * (identifier * theorem_kind option) option
+  | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * simple_binder with_coercion list
   | VernacInductive of inductive_flag * inductive_expr list

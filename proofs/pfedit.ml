@@ -195,6 +195,11 @@ let cook_proof () =
       const_entry_opaque = true },
     strength, ts.top_hook))
 
+let current_proof_statement () = 
+  let ts = get_topstate() in
+  (get_current_proof_name (), ts.top_strength, 
+   ts.top_goal.evar_concl, ts.top_hook)
+
 (*********************************************************************)
 (*              Abort   functions                                    *)
 (*********************************************************************)
