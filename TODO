@@ -8,8 +8,7 @@ Environnement:
 - Faire fonctionner Abstract
 - Faire fonctionner Reset
 - Que les Infix soit chargés lors d'un Require
-- Problème de compatibilité du mode implicite au discharge (avant, dépendait
-  de l'état du mode à la création, maintenant, à la fermeture de la section)
+- Problème de compatibilité du mode implicite au discharge (DONE)
 - ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
 
 Tactiques
