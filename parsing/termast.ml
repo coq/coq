@@ -101,16 +101,16 @@ let ast_of_constructor_ref ((sp,tyi),n) =
 let ast_of_inductive_ref (sp,tyi) =
   ope("MUTIND", [path_section dummy_loc sp; num tyi])
 
-let ast_of_ref = function
-  | ConstRef sp -> ast_of_constant_ref sp
-  | IndRef sp -> ast_of_inductive_ref sp
-  | ConstructRef sp -> ast_of_constructor_ref sp
-  | VarRef id -> ast_of_ident id
-
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
   let args = List.map nvar ((List.rev(repr_dirpath dir))@[s]) in
   ope ("QUALID", args)
+
+let ast_of_ref = function
+  | ConstRef sp -> ast_of_constant_ref sp
+  | IndRef sp -> ast_of_inductive_ref sp
+  | ConstructRef sp -> ast_of_constructor_ref sp
+  | VarRef id -> ast_of_qualid (make_qualid empty_dirpath id)
 
 (**********************************************************************)
 (* conversion of patterns                                             *)
