@@ -27,11 +27,12 @@ let subst_global subst ref = match ref with
      let kn',t = subst_con subst kn in
       if kn==kn' then ref, mkConst kn else ConstRef kn', t
   | IndRef (kn,i) ->
-      let kn' = subst_kn subst kn in if kn==kn' then ref, mkInd (kn,i) else
-          IndRef(kn',i), mkInd (kn',i)
+      let kn' = subst_kn subst kn in
+      if kn==kn' then ref, mkInd (kn,i) else IndRef(kn',i), mkInd (kn',i)
   | ConstructRef ((kn,i),j) ->
-      let kn' = subst_kn subst kn in if kn==kn' then ref, mkConstruct ((kn,i),j)
-          else ConstructRef ((kn',i),j), mkConstruct ((kn',i),j)
+      let kn' = subst_kn subst kn in 
+      if kn==kn' then ref, mkConstruct ((kn,i),j)
+      else ConstructRef ((kn',i),j), mkConstruct ((kn',i),j)
 
 let reference_of_constr c = match kind_of_term c with
   | Const sp -> ConstRef sp
@@ -40,11 +41,13 @@ let reference_of_constr c = match kind_of_term c with
   | Var id -> VarRef id
   |  _ -> raise Not_found
 
-let constr_of_reference = function
+let constr_of_global = function
   | VarRef id -> mkVar id
   | ConstRef sp -> mkConst sp
   | ConstructRef sp -> mkConstruct sp
   | IndRef sp -> mkInd sp
+
+let constr_of_reference = constr_of_global
 
 module RefOrdered =
   struct
@@ -55,23 +58,7 @@ module RefOrdered =
 module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
 
-module InductiveOrdered = struct
-  type t = inductive
-  let compare (spx,ix) (spy,iy) = 
-    let c = ix - iy in if c = 0 then compare spx spy else c
-end
-
-module Indmap = Map.Make(InductiveOrdered)
-
 let inductives_table = ref Indmap.empty
-
-module ConstructorOrdered = struct
-  type t = constructor
-  let compare (indx,ix) (indy,iy) = 
-    let c = ix - iy in if c = 0 then InductiveOrdered.compare indx indy else c
-end
-
-module Constrmap = Map.Make(ConstructorOrdered)
 
 (**********************************************)
 
@@ -267,3 +254,4 @@ let pr_reference = function
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc
   | Ident (loc,id) -> loc
+

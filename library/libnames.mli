@@ -26,6 +26,9 @@ type global_reference =
 val subst_global : substitution -> global_reference -> global_reference * constr
 
 (* Turn a global reference into a construction *)
+val constr_of_global : global_reference -> constr
+
+(* Obsolete synonym for constr_of_global *)
 val constr_of_reference : global_reference -> constr
 
 (* Turn a construction denoting a global into a reference;
@@ -34,9 +37,6 @@ val reference_of_constr : constr -> global_reference
 
 module Refset : Set.S with type elt = global_reference 
 module Refmap : Map.S with type key = global_reference
-
-module Indmap : Map.S with type key = inductive
-module Constrmap : Map.S with type key = constructor
 
 (*s Dirpaths *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds
