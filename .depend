@@ -257,7 +257,7 @@ tactics/extratactics.cmi: interp/genarg.cmi kernel/names.cmi \
     proofs/proof_type.cmi pretyping/rawterm.cmi kernel/term.cmi 
 tactics/hiddentac.cmi: kernel/names.cmi proofs/proof_type.cmi \
     pretyping/rawterm.cmi proofs/tacexpr.cmo proofs/tacmach.cmi \
-    pretyping/tacred.cmi kernel/term.cmi 
+    pretyping/tacred.cmi tactics/tacticals.cmi kernel/term.cmi 
 tactics/hipattern.cmi: interp/coqlib.cmi pretyping/evd.cmi kernel/names.cmi \
     pretyping/pattern.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi lib/util.cmi 
