@@ -20,6 +20,7 @@ open Coqast
 open Ppextend
 open Topconstr
 open Term
+open Pattern
 (*i*)
 
 let latom = 0
@@ -275,7 +276,8 @@ let rec pr inherited a =
   | COrderedCase (_,_,_,_,_) -> 
       anomaly "malformed if or destructuring let"
   | CHole _ -> str "?", latom
-  | CMeta (_,p) -> str "?" ++ int p, latom
+  | CEvar (_,n) -> str "?" ++ int n, latom
+  | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_sort s, latom
   | CCast (_,a,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str "::" ++ pr (lcast,E) b), lcast

@@ -165,8 +165,6 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
 
-val intset_exists : (int -> bool) -> Intset.t -> bool
-
 module Intmap : Map.S with type key = int
 
 val intmap_in_dom : int -> 'a Intmap.t -> bool

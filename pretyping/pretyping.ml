@@ -28,6 +28,7 @@ open Pretype_errors
 open Rawterm
 open Evarconv
 open Coercion
+open Pattern
 open Dyn
 
 
@@ -151,7 +152,13 @@ let evar_type_case isevars env ct pt lft p c =
   in check_branches_message isevars env (c,ct) (bty,lft); (mind,rslty)
 *)
 
-let pretype_id loc env lvar id = 
+let strip_meta id = (* For Grammar v7 compatibility *)
+  let s = string_of_id id in
+  if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
+  else id
+
+let pretype_id loc env lvar id =
+  let id = strip_meta id in (* May happen in tactics defined by Grammar *)
   try
     List.assoc id lvar
   with Not_found ->
@@ -217,7 +224,8 @@ let rec pretype tycon env isevars lvar lmeta = function
       let j = (Retyping.get_judgment_of env (evars_of isevars) c) in
       inh_conv_coerce_to_tycon loc env isevars j tycon
 
-  | RMeta (loc,n) ->
+  | RPatVar (loc,(someta,n)) ->
+      assert (not someta);
       let j =
 	try
 	  List.assoc n lmeta
@@ -225,7 +233,7 @@ let rec pretype tycon env isevars lvar lmeta = function
             Not_found ->
 	      user_err_loc
 		(loc,"pretype",
-		 str "Metavariable " ++ int n ++ str " is unbound")
+		 str "Metavariable " ++ pr_patvar n ++ str " is unbound")
       in inh_conv_coerce_to_tycon loc env isevars j tycon
 	   
   | RHole (loc,k) ->
@@ -618,7 +626,7 @@ let ise_infer_type_gen fail_evar sigma env lvar lmeta c =
   check_evars fail_evar env sigma isevars tj.utj_val;
   (evars_of isevars, tj)
 
-type meta_map = (int * unsafe_judgment) list
+type meta_map = (patvar * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list
 
 let understand_judgment sigma env c =

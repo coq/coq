@@ -34,7 +34,7 @@ type aconstr =
   | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ASort of rawsort
   | AHole of hole_kind
-  | AMeta of int
+  | APatVar of patvar
   | ACast of aconstr * aconstr
 
 val map_aconstr_with_binders_loc : loc -> 
@@ -83,7 +83,8 @@ type constr_expr =
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
   | CHole of loc
-  | CMeta of loc * int
+  | CPatVar of loc * (bool * patvar)
+  | CEvar of loc * existential_key
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
   | CNotation of loc * notation * constr_expr list

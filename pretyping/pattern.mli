@@ -9,13 +9,23 @@
 (*i $Id$ i*)
 
 (*i*)
+open Pp
 open Names
 open Sign
 open Term
 open Environ
 open Libnames
 open Nametab
+open Rawterm
 (*i*)
+
+(* Pattern variables *)
+
+type patvar_map = (patvar * constr) list
+val patvar_of_int : int -> patvar
+val pr_patvar : patvar -> std_ppcmds
+
+(* Patterns *)
 
 type constr_pattern =
   | PRef of global_reference
@@ -23,12 +33,12 @@ type constr_pattern =
   | PEvar of existential_key
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
-  | PSoApp of int * constr_pattern list
+  | PSoApp of patvar * constr_pattern list
   | PLambda of name * constr_pattern * constr_pattern
   | PProd of name * constr_pattern * constr_pattern
   | PLetIn of name * constr_pattern * constr_pattern
-  | PSort of Rawterm.rawsort
-  | PMeta of int option
+  | PSort of rawsort
+  | PMeta of patvar option
   | PCase of case_style * constr_pattern option * constr_pattern * 
       constr_pattern array
   | PFix of fixpoint
@@ -71,7 +81,8 @@ val pattern_of_constr : constr -> constr_pattern
    a pattern; variables bound in [l] are replaced by the pattern to which they
     are bound *)
 
-val pattern_of_rawconstr : Rawterm.rawconstr -> int list * constr_pattern
+val pattern_of_rawconstr : rawconstr -> 
+      patvar list * constr_pattern
 
 val instantiate_pattern :
   (identifier * constr_pattern) list -> constr_pattern -> constr_pattern

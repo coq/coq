@@ -19,6 +19,7 @@ open Esubst
 (* Coq abstract syntax with deBruijn variables; 'a is the type of sorts *)
 
 type existential_key = int
+type metavariable = int
 
 (* This defines Cases annotations *)
 type pattern_source = DefaultPat of int | RegularPat
@@ -71,7 +72,7 @@ type ('constr, 'types) pcofixpoint =
 type ('constr, 'types) kind_of_term =
   | Rel       of int
   | Var       of identifier
-  | Meta      of int
+  | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of sorts
   | Cast      of 'constr * 'types
@@ -120,7 +121,7 @@ type cofixpoint = int * rec_declaration
 let comp_term t1 t2 =
   match t1, t2 with
   | Rel n1, Rel n2 -> n1 = n2
-  | Meta m1, Meta m2 -> m1 = m2
+  | Meta m1, Meta m2 -> m1 == m2
   | Var id1, Var id2 -> id1 == id2
   | Sort s1, Sort s2 -> s1 == s2
   | Cast (c1,t1), Cast (c2,t2) -> c1 == c2 & t1 == t2
@@ -150,7 +151,8 @@ let comp_term t1 t2 =
 
 let hash_term (sh_rec,(sh_sort,sh_kn,sh_na,sh_id)) t =
   match t with
-  | Rel _ | Meta _ -> t
+  | Rel _ -> t
+  | Meta x -> Meta x
   | Var x -> Var (sh_id x)
   | Sort s -> Sort (sh_sort s)
   | Cast (c,t) -> Cast (sh_rec c, sh_rec t)

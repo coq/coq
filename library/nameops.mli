@@ -49,3 +49,7 @@ val coq_root : module_ident
 (* This is the default root prefix for developments which doesn't
    mention a root *)
 val default_root_prefix : dir_path
+
+(* Metavariables *)
+val pr_meta : Term.metavariable -> Pp.std_ppcmds
+val string_of_meta : Term.metavariable -> string

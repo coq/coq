@@ -105,19 +105,22 @@ let z = IndRef (coq_constant ["ZArith";"fast_integer"] "Z", 0)
 let and_ = IndRef (coq_constant ["Init";"Logic"] "and", 0)
 let eq = IndRef (coq_constant ["Init";"Logic"] "eq", 0)
 
+let mkmeta n = Nameops.make_ident "X" (Some n)
+let mkPMeta n = PMeta (Some (mkmeta n))
+
 (* ["(well_founded nat lt)"] *)
 let wf_nat_pattern = 
   PApp (PRef well_founded, [| PRef nat; PRef lt |])
 (* ["((well_founded Z (Zwf ?1))"] *)
 let wf_z_pattern = 
   let zwf = ConstRef (coq_constant ["ZArith";"Zwf"] "Zwf") in
-  PApp (PRef well_founded, [| PRef z; PApp (PRef zwf, [| PMeta (Some 1) |]) |])
+  PApp (PRef well_founded, [| PRef z; PApp (PRef zwf, [| mkPMeta 1 |]) |])
 (* ["(and ?1 ?2)"] *)
 let and_pattern = 
-  PApp (PRef and_, [| PMeta (Some 1); PMeta (Some 2) |])
+  PApp (PRef and_, [| mkPMeta 1; mkPMeta 2 |])
 (* ["(eq ?1 ?2 ?3)"] *)
 let eq_pattern = 
-  PApp (PRef eq, [| PMeta (Some 1); PMeta (Some 2); PMeta (Some 3) |])
+  PApp (PRef eq, [| mkPMeta 1; mkPMeta 2; mkPMeta 3 |])
 
 (* loop_ids: remove loop<i> hypotheses from the context, and rewrite
  * using Variant<i> hypotheses when needed. *)

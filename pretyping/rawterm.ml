@@ -31,6 +31,8 @@ let pattern_loc = function
     PatVar(loc,_) -> loc
   | PatCstr(loc,_,_,_) -> loc
 
+type patvar = identifier
+
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type fix_kind = RFix of (int array * int) | RCoFix of int
@@ -39,14 +41,14 @@ type binder_kind = BProd | BLambda | BLetIn
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
-type 'a explicit_substitution = (loc * quantified_hypothesis * 'a) list
+type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
 
-type 'a substitution = 
+type 'a bindings = 
   | ImplicitBindings of 'a list
-  | ExplicitBindings of 'a explicit_substitution
+  | ExplicitBindings of 'a explicit_bindings
   | NoBindings
 
-type 'a with_bindings = 'a * 'a substitution
+type 'a with_bindings = 'a * 'a bindings
 
 type hole_kind =
   | ImplicitArg of global_reference * int
@@ -60,7 +62,7 @@ type rawconstr =
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
   | REvar of loc * existential_key
-  | RMeta of loc * int
+  | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
   | RApp of loc * rawconstr * rawconstr list
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
@@ -101,7 +103,7 @@ let loc = function
   | RHole (loc,_) -> loc
   | RRef (loc,_) -> loc
   | REvar (loc,_) -> loc
-  | RMeta (loc,_) -> loc
+  | RPatVar (loc,_) -> loc
   | RDynamic (loc,_) -> loc
 
 let map_rawconstr f = function
@@ -117,7 +119,7 @@ let map_rawconstr f = function
       ROrderedCase (loc,b,option_app f tyopt,f tm, Array.map f bv)
   | RRec (loc,fk,idl,tyl,bv) -> RRec (loc,fk,idl,Array.map f tyl,Array.map f bv)
   | RCast (loc,c,t) -> RCast (loc,f c,f t)
-  | (RSort _ | RHole _ | RRef _ | REvar _ | RMeta _ | RDynamic _) as x -> x
+  | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
 
 (*
 let name_app f e = function
@@ -155,7 +157,7 @@ let map_rawconstr_with_binders_loc loc g f e = function
   | RHole (_,x)  -> RHole (loc,x)
   | RRef (_,x) -> RRef (loc,x)
   | REvar (_,x) -> REvar (loc,x)
-  | RMeta (_,x) -> RMeta (loc,x)
+  | RPatVar (_,x) -> RPatVar (loc,x)
   | RDynamic (_,x) -> RDynamic (loc,x)
 *)
 
@@ -177,7 +179,7 @@ let rec subst_raw subst raw =
 
   | RVar _ -> raw
   | REvar _ -> raw
-  | RMeta _ -> raw
+  | RPatVar _ -> raw
 
   | RApp (loc,r,rl) -> 
       let r' = subst_raw subst r 
@@ -247,7 +249,7 @@ let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
   | RVar (loc,_) -> loc
   | REvar (loc,_) -> loc
-  | RMeta (loc,_) -> loc
+  | RPatVar (loc,_) -> loc
   | RApp (loc,_,_) -> loc
   | RLambda (loc,_,_,_) -> loc
   | RProd (loc,_,_,_) -> loc

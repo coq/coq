@@ -147,7 +147,7 @@ let field g =
   let ist = { lfun=[]; lmatch=[]; debug=get_debug () } in
   let typ = 
     match Hipattern.match_with_equation (pf_concl g) with
-      | Some (eq,t::args) when eq = Coqlib.build_coq_eq_data.Coqlib.eq () -> t
+      | Some (eq,t::args) when eq = (Coqlib.build_coq_eq_data()).Coqlib.eq -> t
       | _ -> error "The statement is not built from Leibniz' equality" in
   let th = VConstr (lookup typ) in
   (interp_tac_gen [(id_of_string "FT",th)] [] (get_debug ())

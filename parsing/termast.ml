@@ -190,7 +190,7 @@ let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
   | RVar (_,id) -> ast_of_ident id
   | REvar (_,n) -> ast_of_existential_ref n
-  | RMeta (_,n) -> ope("META",[num n])
+  | RPatVar (_,(_,n)) -> ope("META",[ast_of_ident n])
   | RApp (_,f,args) ->
       let (f,args) =
 	skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args) in
@@ -379,7 +379,7 @@ let rec ast_of_pattern tenv env = function
 	 | _        -> ast_of_app [] astf astargs)
 
   | PSoApp (n,args) ->
-      ope("SOAPP",(ope ("META",[num n])):: 
+      ope("SOAPP",(ope ("META",[ast_of_ident n])):: 
 		  (List.map (ast_of_pattern tenv env) args))
 
   | PLetIn (na,b,c) ->
@@ -420,7 +420,7 @@ let rec ast_of_pattern tenv env = function
 	 | RProp Pos -> ope("SET",[])
 	 | RType _ -> ope("TYPE",[]))
 
-  | PMeta (Some n) -> ope("META",[num n])
+  | PMeta (Some n) -> ope("META",[ast_of_ident n])
   | PMeta None -> ope("ISEVAR",[])
   | PFix f -> ast_of_raw (Detyping.detype tenv [] env (mkFix f))
   | PCoFix c -> ast_of_raw (Detyping.detype tenv [] env (mkCoFix c))

@@ -326,7 +326,6 @@ let coq_not_gt = lazy (constant ["Arith";"Compare_dec"] "not_gt")
 
 (* Logic *)
 open Coqlib
-let build_coq_eq = build_coq_eq_data.eq
 let coq_eq_ind_r = lazy (constant ["Init"; "Logic"] "eq_ind_r")
 
 let coq_dec_or = lazy (logic_constant ["Decidable"] "dec_or")

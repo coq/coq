@@ -18,8 +18,6 @@ open Typeops
 open Declarations
 open Instantiate
 
-type metamap = (int * constr) list
-
 let outsort env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
     | Sort s -> s

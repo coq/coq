@@ -27,12 +27,12 @@ open Esubst
  *          in normal form and neutral (i.e. not a lambda, a construct or a
  *          (co)fix, because they may produce redexes by applying them,
  *          or putting them in a case)
- *  LAM(x,a,b,S) is the term [S]([x:a]b). the substitution is propagated
+ *  LAM(x,a,b,S) is the term [S]([x:a]b). the bindings is propagated
  *          only when the abstraction is applied, and then we use the rule
  *                  ([S]([x:a]b) c) --> [S.c]b
  *          This corresponds to the usual strategy of weak reduction
  *  FIXP(op,bd,S,args) is the fixpoint (Fix or Cofix) of bodies bd under
- *          the substitution S, and then applied to args. Here again,
+ *          the bindings S, and then applied to args. Here again,
  *          weak reduction.
  *  CONSTR(c,args) is the constructor [c] applied to [args].
  *
@@ -67,8 +67,8 @@ let rec shift_value n = function
       CONSTR (c, List.map (shift_value n) args)
 	
 
-(* Contracts a fixpoint: given a fixpoint and a substitution,
- * returns the corresponding fixpoint body, and the substitution in which
+(* Contracts a fixpoint: given a fixpoint and a bindings,
+ * returns the corresponding fixpoint body, and the bindings in which
  * it should be evaluated: its first variables are the fixpoint bodies
  * (S, (fix Fi {F0 := T0 .. Fn-1 := Tn-1}))
  *    -> (S. [S]F0 . [S]F1 ... . [S]Fn-1, Ti)
@@ -204,7 +204,7 @@ let rec norm_head info env t stack =
 
   | LetIn (x, b, t, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
-      (* allow substitution but leave let's in place *)
+      (* allow bindings but leave let's in place *)
       let zeta = red_set (info_flags info) fZETA in
       let env' =
 	if zeta 

@@ -173,7 +173,7 @@ GEXTEND Gram
 	  COrderedCase (loc, IfStyle, Some p, c1, [c2; c3]) ]
     | "0" RIGHTA
       [ "?" -> CHole loc
-      | "?"; n = Prim.natural -> CMeta (loc, n)
+      | "?"; n = Prim.natural -> CPatVar (loc, (false,Pattern.patvar_of_int n))
       | bll = binders; c = constr -> abstract_constr loc c bll
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; test_int_rparen; n = bigint; ")" ->
@@ -195,8 +195,8 @@ GEXTEND Gram
       | "("; lc1 = lconstr; ")" -> lc1
       | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
 	  (match lc1 with
-	    | CMeta (loc2,n) -> 
-                CApp (loc,CMeta (loc2, -n), List.map (fun c -> c, None) cl)
+	    | CPatVar (loc2,(false,n)) -> 
+                CApp (loc,CPatVar (loc2, (true,n)), List.map (fun c -> c, None) cl)
 	    | _ ->
 	    Util.error "Second-order pattern-matching expects a head metavariable")
       | IDENT "Fix"; id = identref; "{"; fbinders = fixbinders; "}" ->

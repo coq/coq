@@ -86,12 +86,13 @@ val occur_term : constr -> constr -> bool
 val free_rels : constr -> Intset.t
 
 (* Substitution of metavariables *)
-val subst_meta : (int * constr) list -> constr -> constr
+type metamap = (metavariable * constr) list 
+val subst_meta : metamap -> constr -> constr
 
 (* [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr
 
-(* substitution of an arbitrary large term. Uses equality modulo
+(* bindings of an arbitrary large term. Uses equality modulo
    reduction of let *)
 val dependent : constr -> constr -> bool
 val subst_term_gen :

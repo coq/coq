@@ -31,7 +31,7 @@ open Rawterm
 (*s General functions. *)
 
 val type_clenv_binding : named_context sigma ->
-  constr * constr -> constr substitution  -> constr
+  constr * constr -> constr bindings  -> constr
 
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
@@ -163,12 +163,12 @@ val general_elim  : constr with_bindings -> constr with_bindings ->
 val default_elim  : constr with_bindings -> tactic
 val simplest_elim : constr -> tactic
 val elim          : constr with_bindings -> constr with_bindings option -> tactic
-val general_elim_in : identifier -> constr * constr substitution ->
-                      constr * constr substitution -> tactic
+val general_elim_in : identifier -> constr * constr bindings ->
+                      constr * constr bindings -> tactic
 
 val old_induct     : quantified_hypothesis -> tactic
-val general_elim_in : identifier -> constr * constr substitution ->
-                      constr * constr substitution -> tactic
+val general_elim_in : identifier -> constr * constr bindings ->
+                      constr * constr bindings -> tactic
 
 val new_induct : constr induction_arg -> constr with_bindings option ->
   identifier list list -> tactic
@@ -200,14 +200,14 @@ val dorE : bool -> clause ->tactic
 (*s Introduction tactics. *)
 
 val constructor_tac            : int option -> int -> 
-                                 constr substitution  -> tactic
-val one_constructor            : int -> constr substitution  -> tactic
+                                 constr bindings  -> tactic
+val one_constructor            : int -> constr bindings  -> tactic
 val any_constructor            : tactic option -> tactic
-val left                       : constr substitution -> tactic
+val left                       : constr bindings -> tactic
 val simplest_left              : tactic
-val right                      : constr substitution -> tactic
+val right                      : constr bindings -> tactic
 val simplest_right             : tactic
-val split                      : constr substitution -> tactic
+val split                      : constr bindings -> tactic
 val simplest_split             : tactic
 
 (*s Logical connective tactics. *)

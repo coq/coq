@@ -281,7 +281,8 @@ let subst_constr_expr a loc subs =
   | CCast (_,a,b) -> CCast (loc,subst a,subst b)
   | CNotation (_,n,l) -> CNotation (loc,n,List.map subst l)
   | CDelimiters (_,s,a) -> CDelimiters (loc,s,subst a)
-  | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
+  | CHole _ | CEvar _ | CPatVar _ | CSort _ 
+  | CNumeral _ | CDynamic _ | CRef _ as x -> x
   | CCases (_,po,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (_,pat,rhs) -> (loc,pat,subst rhs)) bl in

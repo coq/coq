@@ -13,6 +13,8 @@ open Names
 open Term
 open Evd
 open Environ
+open Pattern
+open Termops
 (*i*)
 
 (* This family of functions assumes its constr argument is known to be
@@ -20,8 +22,6 @@ open Environ
    without any costly verifications. On non well-typable terms, it
    either produces a wrong result or raise an anomaly. Use with care.
    It doesn't handle predicative universes too. *)
-
-type metamap = (int * constr) list
 
 val get_type_of : env -> evar_map -> constr -> constr
 val get_sort_of : env -> evar_map -> types -> sorts

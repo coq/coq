@@ -18,6 +18,7 @@ open Rawterm
 open Topconstr
 open Genarg
 open Libnames
+open Pattern
 
 let pr_red_expr = Ppconstr.pr_red_expr
 let pr_may_eval = Ppconstr.pr_may_eval
@@ -84,7 +85,7 @@ let pr_arg pr x = spc () ++ pr x
 
 let pr_or_metanum pr = function
   | AN x -> pr x
-  | MetaNum (_,n) -> str "?" ++ int n
+  | MetaNum (_,n) -> str "?" ++ pr_patvar n
 
 let pr_or_var pr = function
   | ArgArg x -> pr x

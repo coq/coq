@@ -35,6 +35,9 @@ val family_of_sort : sorts -> sorts_family
 (*s Existential variables *)
 type existential_key = int
 
+(*s Existential variables *)
+type metavariable = int
+
 (*s Case annotation *)
 type pattern_source = DefaultPat of int | RegularPat
 type case_style = LetStyle | IfStyle | MatchStyle | RegularStyle
@@ -84,8 +87,8 @@ val mkRel : int -> constr
 (* Constructs a Variable *)
 val mkVar : identifier -> constr
 
-(* Constructs an metavariable named "?n" *)
-val mkMeta : int -> constr
+(* Constructs an patvar named "?n" *)
+val mkMeta : metavariable -> constr
 
 (* Constructs an existential variable *)
 type existential = existential_key * constr array
@@ -187,7 +190,7 @@ type ('constr, 'types) pcofixpoint =
 type ('constr, 'types) kind_of_term =
   | Rel       of int
   | Var       of identifier
-  | Meta      of int
+  | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of sorts
   | Cast      of 'constr * 'types
@@ -246,7 +249,7 @@ val is_small : sorts -> bool
 val destRel : constr -> int
 
 (* Destructs an existential variable *)
-val destMeta : constr -> int
+val destMeta : constr -> metavariable
 
 (* Destructs a variable *)
 val destVar : constr -> identifier

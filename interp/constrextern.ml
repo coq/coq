@@ -105,7 +105,7 @@ let idopt_of_name = function
 let extern_evar loc n =
   warning
     "Existential variable turned into meta-variable during externalization";
-  CMeta (loc,n)
+  CPatVar (loc,(false,make_ident "META" (Some n)))
 
 let raw_string_of_ref = function
   | ConstRef kn -> 
@@ -193,7 +193,8 @@ let extern_app loc inctx impl f args =
     not !print_implicits_explicit_args &
     List.exists is_status_implicit impl
   then 
-    CAppExpl (loc, f, args)
+    if args = [] (* maybe caused by a hidden coercion *) then CRef f 
+    else CAppExpl (loc, f, args)
   else
     explicitize loc inctx impl (CRef f) args
 
@@ -222,7 +223,7 @@ let rec extern inctx scopes vars r =
 
   | REvar (loc,n) -> extern_evar loc n
 
-  | RMeta (loc,n) -> if !print_meta_as_hole then CHole loc else CMeta (loc,n)
+  | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
 
   | RApp (loc,f,args) ->
       let (f,args) =
@@ -411,7 +412,7 @@ let rec extern_pattern tenv vars env = function
 
   | PMeta None -> CHole loc
 
-  | PMeta (Some n) -> CMeta (loc,n)
+  | PMeta (Some n) -> CPatVar (loc,(false,n))
 
   | PApp (f,args) ->
       let (f,args) = 
@@ -430,7 +431,7 @@ let rec extern_pattern tenv vars env = function
       let args = List.map (extern_pattern tenv vars env) args in
       (* [-n] is the trick to embed a so patten into a regular application *)
       (* see constrintern.ml and g_constr.ml4 *)
-      explicitize loc false [] (CMeta (loc,-n)) args
+      explicitize loc false [] (CPatVar (loc,(true,n))) args
 
   | PProd (Anonymous,t,c) ->
       (* Anonymous product are never factorized *)

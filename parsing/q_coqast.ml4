@@ -147,7 +147,7 @@ let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
 let mlexpr_of_or_metanum f = function
   | Genarg.AN a -> <:expr< Genarg.AN $f a$ >>
   | Genarg.MetaNum (_,n) ->
-      <:expr< Genarg.MetaNum $dloc$ $mlexpr_of_int n$ >>
+      <:expr< Genarg.MetaNum $dloc$ $mlexpr_of_ident n$ >>
 
 let mlexpr_of_or_metaid f = function
   | Tacexpr.AI a -> <:expr< Tacexpr.AI $f a$ >>
@@ -204,7 +204,8 @@ let rec mlexpr_of_constr = function
   | Topconstr.CCases (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.COrderedCase (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CHole loc -> <:expr< Topconstr.CHole $dloc$ >>
-  | Topconstr.CMeta (loc,n) -> <:expr< Topconstr.CMeta $dloc$ $mlexpr_of_int n$ >>
+  | Topconstr.CPatVar (loc,n) -> 
+      <:expr< Topconstr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
   | _ -> failwith "mlexpr_of_constr: TODO"
 
 let mlexpr_of_occ_constr =

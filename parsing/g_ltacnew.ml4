@@ -136,7 +136,7 @@ GEXTEND Gram
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (loc,id)
       | r = reference -> Reference r
-      | "?"; n = natural -> ConstrMayEval (ConstrTerm (CMeta (loc,n)))
+      | "?"; n = natural -> ConstrMayEval (ConstrTerm (CPatVar (loc,(false,Pattern.patvar_of_int n))))
       | "()" -> TacVoid ] ]
   ;
   input_fun:

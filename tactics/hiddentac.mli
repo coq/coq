@@ -78,10 +78,10 @@ val h_rename          : identifier -> identifier -> tactic
 (*
 val h_any_constructor : tactic -> tactic
 *)
-val h_constructor     : int -> constr substitution -> tactic
-val h_left            : constr substitution -> tactic
-val h_right           : constr substitution -> tactic
-val h_split           : constr substitution -> tactic
+val h_constructor     : int -> constr bindings -> tactic
+val h_left            : constr bindings -> tactic
+val h_right           : constr bindings -> tactic
+val h_split           : constr bindings -> tactic
 
 val h_one_constructor : int -> tactic
 val h_simplest_left   : tactic

@@ -192,9 +192,9 @@ val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
 (*s Special-Purpose Reduction Functions *)
 
-val whd_meta : (int * constr) list -> constr -> constr
-val plain_instance : (int * constr) list -> constr -> constr
-val instance : (int * constr) list -> constr -> constr
+val whd_meta : (metavariable * constr) list -> constr -> constr
+val plain_instance : (metavariable * constr) list -> constr -> constr
+val instance : (metavariable * constr) list -> constr -> constr
 
 (*s Obsolete Reduction Functions *)
 

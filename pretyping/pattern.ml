@@ -18,18 +18,26 @@ open Environ
 open Nametab
 open Pp
 
+(* Metavariables *)
+
+type patvar_map = (patvar * constr) list
+let patvar_of_int n = Names.id_of_string (string_of_int n)
+let pr_patvar = pr_id
+
+(* Patterns *)
+
 type constr_pattern =
   | PRef of global_reference
   | PVar of identifier
   | PEvar of existential_key
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
-  | PSoApp of int * constr_pattern list
+  | PSoApp of patvar * constr_pattern list
   | PLambda of name * constr_pattern * constr_pattern
   | PProd of name * constr_pattern * constr_pattern
   | PLetIn of name * constr_pattern * constr_pattern
   | PSort of rawsort
-  | PMeta of int option
+  | PMeta of patvar option
   | PCase of case_style * constr_pattern option * constr_pattern * 
       constr_pattern array
   | PFix of fixpoint
@@ -151,7 +159,7 @@ let head_of_constr_reference c = match kind_of_term c with
 let rec pattern_of_constr t =
   match kind_of_term t with
     | Rel n  -> PRel n
-    | Meta n -> PMeta (Some n)
+    | Meta n -> PMeta (Some (id_of_string (string_of_int n)))
     | Var id -> PVar id
     | Sort (Prop c) -> PSort (RProp c)
     | Sort (Type _) -> PSort (RType None)
@@ -197,13 +205,13 @@ let rec pat_of_raw metas vars = function
   | RVar (_,id) ->
       (try PRel (list_index (Name id) vars)
        with Not_found -> PVar id)
-  | RMeta (_,n) ->
+  | RPatVar (_,(false,n)) ->
       metas := n::!metas; PMeta (Some n)
   | RRef (_,r) ->
       PRef r
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
-  | RApp (_, RMeta (_,n), cl) when n<0 ->
-      PSoApp (- n, List.map (pat_of_raw metas vars) cl)
+  | RApp (_, RPatVar (_,(true,n)), cl) ->
+      PSoApp (n, List.map (pat_of_raw metas vars) cl)
   | RApp (_,c,cl) -> 
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))

@@ -36,7 +36,7 @@ type value =
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
   { lfun : (identifier * value) list;
-    lmatch : (int * constr) list;
+    lmatch : Pattern.patvar_map;
     debug : debug_info }
 
 (* Gives the identifier corresponding to an Identifier [tactic_arg] *)
@@ -70,7 +70,7 @@ val add_tacdef :
 type glob_sign = {
   ltacvars : identifier list * identifier list;
   ltacrecvars : (identifier * Nametab.ltac_constant) list;
-  metavars : int list;
+  metavars : Rawterm.patvar list;
   gsigma : Evd.evar_map;
   genv : Environ.env }
 
@@ -99,7 +99,7 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr
   -> Tacred.red_expr
 
 (* Interprets tactic expressions *)
-val interp_tac_gen : (identifier * value) list -> (int * constr) list ->
+val interp_tac_gen : (identifier * value) list -> Pattern.patvar_map ->
                  debug_info -> raw_tactic_expr -> tactic
 
 (* Initial call for interpretation *)

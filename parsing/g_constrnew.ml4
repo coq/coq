@@ -179,7 +179,7 @@ GEXTEND Gram
       | s=sort -> CSort(loc,s)
       | n=INT -> CNumeral (loc,Bignat.POS (Bignat.of_string n))
       | IDENT "_" -> CHole loc
-      | "?"; n=Prim.natural -> CMeta(loc,n) ] ]
+      | "?"; n=Prim.natural -> CPatVar(loc,(false,Pattern.patvar_of_int n)) ] ]
   ;
   fix_constr:
     [ [ kw=fix_kw; dcl=fix_decl ->

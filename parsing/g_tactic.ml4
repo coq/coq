@@ -82,15 +82,15 @@ GEXTEND Gram
   [ [ a0 = autoarg_depth; l = autoarg_adding; 
       a2 = autoarg_destructing; a3 = autoarg_usingTDB -> (a0,l,a2,a3) ] ]
   ;
-  (* Either an hypothesis or a ltac ref (variable or pattern metavariable) *)
+  (* Either an hypothesis or a ltac ref (variable or pattern patvar) *)
   id_or_ltac_ref:
     [ [ id = base_ident -> Genarg.AN id
-      | "?"; n = natural -> Genarg.MetaNum (loc,n) ] ]
+      | "?"; n = natural -> Genarg.MetaNum (loc,Pattern.patvar_of_int n) ] ]
   ;
-  (* Either a global ref or a ltac ref (variable or pattern metavariable) *)
+  (* Either a global ref or a ltac ref (variable or pattern patvar) *)
   global_or_ltac_ref:
     [ [ qid = global -> AN qid
-      | "?"; n = natural -> MetaNum (loc,n) ] ]
+      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:

@@ -45,26 +45,13 @@ let collect_meta_variables c =
 
 let check_no_metas clenv ccl =
   if occur_meta ccl then
-    let metas = List.map (fun n -> Intmap.find n clenv.namenv)
+    let metas = List.map (fun n -> Metamap.find n clenv.namenv)
 		  (collect_meta_variables ccl) in
     errorlabstrm "inversion" 
       (str ("Cannot find an instantiation for variable"^
 	       (if List.length metas = 1 then " " else "s ")) ++
 	 prlist_with_sep pr_coma pr_id metas
 	 (* ajouter "in " ++ prterm ccl mais il faut le bon contexte *))
-
-let dest_match_eq gls eqn =
-  try 
-    pf_matches gls (Coqlib.build_coq_eq_pattern ()) eqn
-  with PatternMatchingFailure -> 
-    (try 
-       pf_matches gls (Coqlib.build_coq_eqT_pattern ()) eqn
-     with PatternMatchingFailure -> 
-       (try 
-	  pf_matches gls (Coqlib.build_coq_idT_pattern ()) eqn
-        with PatternMatchingFailure ->
-	  errorlabstrm "dest_match_eq" 
-	    (str "no primitive equality here")))
 
 let var_occurs_in_pf gl id =
   let env = pf_env gl in
@@ -220,12 +207,7 @@ let split_dep_and_nodep hyps gl =
        if var_occurs_in_pf gl id then (d::l1,l2) else (l1,d::l2))
     hyps ([],[])
 
-
-let dest_nf_eq gls t =
-  match dest_match_eq gls t with
-    | [(1,x);(2,y);(3,z)] ->
-        (x,pf_whd_betadeltaiota gls y, pf_whd_betadeltaiota gls z)
-    | _ -> error "dest_nf_eq: should be an equality"
+open Coqlib
 
 let generalizeRewriteIntros tac depids id gls = 
   let dids = dependent_hyps id depids (pf_env gls) in
@@ -247,7 +229,7 @@ let projectAndApply thin id depids gls =
   let subst_hyp_RL id = tclTRY(hypSubst_RL id None) in
   let subst_hyp gls = 
     let orient_rule id = 
-      let (t,t1,t2) = dest_nf_eq gls (pf_get_hyp_typ gls id) in
+      let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id) in
       match (kind_of_term t1, kind_of_term t2) with
         | Var id1, _ ->
             generalizeRewriteIntros (subst_hyp_LR id) depids id1
@@ -257,7 +239,7 @@ let projectAndApply thin id depids gls =
     in 
     onLastHyp orient_rule gls 
   in
-  let (t,t1,t2) = dest_nf_eq gls (pf_get_hyp_typ gls id)  in
+  let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)  in
   match (thin, kind_of_term t1, kind_of_term t2) with
     | (true, Var id1,  _) ->
         generalizeRewriteIntros

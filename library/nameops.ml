@@ -209,3 +209,6 @@ let default_library = Names.initial_dir (* = ["Top"] *)
 let coq_root = id_of_string "Coq"
 let default_root_prefix = make_dirpath []
 
+(* Metavariables *)
+let pr_meta = Pp.int
+let string_of_meta = string_of_int

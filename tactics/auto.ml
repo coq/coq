@@ -414,7 +414,7 @@ let add_extern name pri (patmetas,pat) tacast dbname =
   match (list_subtract tacmetas patmetas) with
     | i::_ ->
 	errorlabstrm "add_extern" 
-	  (str "The meta-variable ?" ++ int i ++ str" is not bound")
+	  (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound")
     | []  ->
 	Lib.add_anonymous_leaf
 	  (inAutoHint(dbname, [make_extern name pri pat tacast]))

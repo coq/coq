@@ -60,8 +60,6 @@ open Tactics
 open Tacticals
 open Printer
 
-type metamap = (int * constr) list
-
 type term_with_holes = TH of constr * metamap * sg_proofs
 and  sg_proofs       = (term_with_holes option) list
 
@@ -81,14 +79,14 @@ and pp_sg sg =
 (*  compute_metamap : constr -> 'a evar_map -> term_with_holes
  *  réalise le 2. ci-dessus
  *
- *  Pour cela, on renvoie une metamap qui indique pour chaque meta-variable
+ *  Pour cela, on renvoie une meta_map qui indique pour chaque meta-variable
  *  si elle correspond à un but (None) ou si elle réduite à son tour
  *  par un terme de preuve incomplet (Some c).
  *
  *  On a donc l'INVARIANT suivant : le terme c rendu est "de niveau 1"
- *  -- i.e. à plat -- et la metamap contient autant d'éléments qu'il y 
+ *  -- i.e. à plat -- et la meta_map contient autant d'éléments qu'il y 
  *  a de meta-variables dans c. On suppose de plus que l'ordre dans la
- *  metamap correspond à celui des buts qui seront engendrés par le refine.
+ *  meta_map correspond à celui des buts qui seront engendrés par le refine.
  *)
 
 let replace_by_meta env gmm = function

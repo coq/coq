@@ -26,6 +26,7 @@ open Reductionops
 open Tacmach
 open Evar_refiner
 open Rawterm
+open Pattern
 open Tacexpr
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
@@ -52,9 +53,9 @@ let abstract_list_all env sigma typ c l =
     raise (RefinerError (CannotGeneralize typ))
 
 (* Generator of metavariables *)
-let meta_ctr = ref 0;;
-
-let new_meta () = incr meta_ctr;!meta_ctr;;
+let new_meta =
+  let meta_ctr = ref 0 in
+  fun () -> incr meta_ctr; !meta_ctr
 
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
@@ -71,10 +72,24 @@ let exist_to_meta sigma (emap, c) =
       | _ -> map_constr replace c in
   (!metamap, replace c)
 
+module Metaset = Intset
+
+module Metamap = Intmap
+
+let meta_exists p s = Metaset.fold (fun x b -> (p x) || b) s false
+
+let metamap_in_dom x m =
+  try let _ = Metamap.find x m in true with Not_found -> false
+
+let metamap_to_list m =
+  Metamap.fold (fun n v l -> (n,v)::l) m []
+
+let metamap_inv m b = 
+  Metamap.fold (fun n v l -> if v = b then n::l else l) m []
 
 type 'a freelisted = {
   rebus : 'a;
-  freemetas : Intset.t }
+  freemetas : Metaset.t }
 
 (* collects all metavar occurences, in left-to-right order, preserving
  * repetitions and all. *)
@@ -90,10 +105,10 @@ let collect_metas c =
 let metavars_of c =  
   let rec collrec acc c =
     match kind_of_term c with
-      | Meta mv -> Intset.add mv acc
+      | Meta mv -> Metaset.add mv acc
       | _         -> fold_constr collrec acc c
   in 
-  collrec Intset.empty c
+  collrec Metaset.empty c
 
 let mk_freelisted c =
   { rebus = c; freemetas = metavars_of c }
@@ -108,8 +123,8 @@ type clbinding =
 type 'a clausenv = {
   templval : constr freelisted;
   templtyp : constr freelisted;
-  namenv : identifier Intmap.t;
-  env : clbinding Intmap.t;
+  namenv : identifier Metamap.t;
+  env : clbinding Metamap.t;
   hook : 'a }
 
 type wc = named_context sigma
@@ -122,9 +137,9 @@ type wc = named_context sigma
 let mentions clenv mv0 = 
   let rec menrec mv1 =
     try
-     (match Intmap.find mv1 clenv.env with
+     (match Metamap.find mv1 clenv.env with
 	 | Clval (b,_) -> 
-	     Intset.mem mv0 b.freemetas || intset_exists menrec b.freemetas
+	     Metaset.mem mv0 b.freemetas || meta_exists menrec b.freemetas
 	 | Cltyp _ -> false)
     with Not_found -> 
       false
@@ -141,8 +156,8 @@ let mk_clenv wc cty =
   let cty_fls = mk_freelisted cty in 
   { templval = mk_freelisted (mkMeta mv);
     templtyp = cty_fls;
-    namenv = Intmap.empty;
-    env =  Intmap.add mv (Cltyp cty_fls) Intmap.empty ;
+    namenv = Metamap.empty;
+    env =  Metamap.add mv (Cltyp cty_fls) Metamap.empty ;
     hook = wc }
   
 let clenv_environments bound c =
@@ -158,23 +173,23 @@ let clenv_environments bound c =
               match na with
 		| Anonymous -> ne
 		| Name id ->
-		    if intmap_in_dom mv ne then begin
-		      warning ("Cannot put metavar "^(string_of_int mv)^
+		    if metamap_in_dom mv ne then begin
+		      warning ("Cannot put metavar "^(string_of_meta mv)^
 			       " in name-environment twice");
 		      ne
 		    end else 
-		      Intmap.add mv id ne
+		      Metamap.add mv id ne
             else 
 	      ne 
 	  in
-	  let e' = Intmap.add mv (Cltyp (mk_freelisted c1)) e in 
+	  let e' = Metamap.add mv (Cltyp (mk_freelisted c1)) e in 
 	  clrec (ne',e', (mkMeta mv)::metas) (option_app ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) c2) else c2)
       | (n, LetIn (na,b,_,c)) ->
 	  clrec (ne,e,metas) (option_app ((+) (-1)) n) (subst1 b c)
       | (n, _) -> (ne, e, List.rev metas, c)
   in 
-  clrec (Intmap.empty,Intmap.empty,[]) bound c
+  clrec (Metamap.empty,Metamap.empty,[]) bound c
 
 let mk_clenv_from_n wc n (c,cty) =
   let (namenv,env,args,concl) = clenv_environments n cty in
@@ -196,7 +211,7 @@ let subst_clenv f sub clenv =
   { templval = map_fl (subst_mps sub) clenv.templval;
     templtyp = map_fl (subst_mps sub) clenv.templtyp;
     namenv = clenv.namenv;
-    env = Intmap.map (map_clb (subst_mps sub)) clenv.env;
+    env = Metamap.map (map_clb (subst_mps sub)) clenv.env;
     hook = f sub clenv.hook }
 
 let connect_clenv wc clenv = { clenv with hook = wc }
@@ -229,15 +244,15 @@ let mk_clenv_type_of wc t = mk_clenv_from wc (t,w_type_of wc t)
 			      
 let clenv_assign mv rhs clenv =
   let rhs_fls = mk_freelisted rhs in 
-  if intset_exists (mentions clenv mv) rhs_fls.freemetas then
+  if meta_exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv__assign: circularity in unification";
   try
-    (match Intmap.find mv clenv.env with
+    (match Metamap.find mv clenv.env with
        | Clval (fls,ty) ->
 	   if not (eq_constr fls.rebus rhs) then
 	     try 
 	       (* Streams are lazy, force evaluation of id to catch Not_found*)
-	       let id = Intmap.find mv clenv.namenv in
+	       let id = Metamap.find mv clenv.namenv in
 	       errorlabstrm "clenv_assign"
 		 (str "An incompatible instantiation has already been found for " ++ 
 		    pr_id id)
@@ -249,7 +264,7 @@ let clenv_assign mv rhs clenv =
 	   { templval = clenv.templval;
 	     templtyp = clenv.templtyp;
 	     namenv = clenv.namenv;
-	     env = Intmap.add mv (Clval (rhs_fls,bty)) clenv.env;
+	     env = Metamap.add mv (Clval (rhs_fls,bty)) clenv.env;
 	     hook = clenv.hook })
   with Not_found -> 
     error "clenv_assign"
@@ -257,11 +272,11 @@ let clenv_assign mv rhs clenv =
 let clenv_val_of clenv mv = 
   let rec valrec mv =
     try
-      (match Intmap.find mv clenv.env with
+      (match Metamap.find mv clenv.env with
 	 | Cltyp _ -> mkMeta mv
 	 | Clval(b,_) ->
 	     instance (List.map (fun mv' -> (mv',valrec mv')) 
-			       (Intset.elements b.freemetas)) b.rebus)
+			       (Metaset.elements b.freemetas)) b.rebus)
     with Not_found -> 
       mkMeta mv
   in 
@@ -270,7 +285,7 @@ let clenv_val_of clenv mv =
 let clenv_instance clenv b =
   let c_sigma =
     List.map 
-      (fun mv -> (mv,clenv_val_of clenv mv)) (Intset.elements b.freemetas)
+      (fun mv -> (mv,clenv_val_of clenv mv)) (Metaset.elements b.freemetas)
   in 
   instance c_sigma b.rebus
     
@@ -295,7 +310,7 @@ let clenv_cast_meta clenv =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
 	  (try 
-	     match Intmap.find mv clenv.env with
+	     match Metamap.find mv clenv.env with
                | Cltyp b ->
 		   let b' = clenv_instance clenv b in 
 		   if occur_meta b' then u else mkCast (mkMeta mv, b')
@@ -319,24 +334,24 @@ let clenv_cast_meta clenv =
 let clenv_pose (na,mv,cty) clenv =
   { templval = clenv.templval;
     templtyp = clenv.templtyp;
-    env = Intmap.add mv (Cltyp (mk_freelisted cty)) clenv.env;
+    env = Metamap.add mv (Cltyp (mk_freelisted cty)) clenv.env;
     namenv = (match na with
 		| Anonymous -> clenv.namenv
-		| Name id -> Intmap.add mv id clenv.namenv);
+		| Name id -> Metamap.add mv id clenv.namenv);
     hook = clenv.hook }
 
 let clenv_defined clenv mv =
-  match Intmap.find mv clenv.env with
+  match Metamap.find mv clenv.env with
     | Clval _ -> true
     | Cltyp _ -> false
 
 let clenv_value clenv mv =
-  match Intmap.find mv clenv.env with
+  match Metamap.find mv clenv.env with
     | Clval(b,_) -> b
     | Cltyp _ -> failwith "clenv_value"
 	  
 let clenv_type clenv mv =
-  match Intmap.find mv clenv.env with
+  match Metamap.find mv clenv.env with
     | Cltyp b -> b
     | Clval(_,b) -> b
 	  
@@ -369,7 +384,7 @@ let clenv_type_of ce c =
       (function
 	 | (n,Clval(_,typ)) -> (n,typ.rebus)
          | (n,Cltyp typ)    -> (n,typ.rebus))
-      (intmap_to_list ce.env)
+      (metamap_to_list ce.env)
   in
     Retyping.get_type_of_with_meta (w_env ce.hook) (w_Underlying ce.hook) metamap c
 
@@ -854,15 +869,15 @@ let clenv_bchain mv subclenv clenv =
 	List.fold_left (fun ne (mv,id) ->
 			  if clenv_defined subclenv mv then 
 			    ne
-			  else if intmap_in_dom mv ne then begin
-			    warning ("Cannot put metavar "^(string_of_int mv)^
+			  else if metamap_in_dom mv ne then begin
+			    warning ("Cannot put metavar "^(string_of_meta mv)^
 				     " in name-environment twice");
 			    ne
 			  end else 
-			    Intmap.add mv id ne)
-          clenv.namenv (intmap_to_list subclenv.namenv);
-      env = List.fold_left (fun m (n,v) -> Intmap.add n v m) 
-	       clenv.env (intmap_to_list subclenv.env);
+			    Metamap.add mv id ne)
+          clenv.namenv (metamap_to_list subclenv.namenv);
+      env = List.fold_left (fun m (n,v) -> Metamap.add n v m) 
+	       clenv.env (metamap_to_list subclenv.env);
       hook = clenv.hook } 
   in
   (* unify the type of the template of [subclenv] with the type of [mv] *)
@@ -916,7 +931,7 @@ let clenv_refine_cast kONT clenv gls =
  * the metavar mv.  The list is unordered. *)
 
 let clenv_metavars clenv mv =
-  match Intmap.find mv clenv.env with
+  match Metamap.find mv clenv.env with
     | Clval(_,b) -> b.freemetas
     | Cltyp b -> b.freemetas
 
@@ -933,7 +948,7 @@ let clenv_template_metavars clenv = clenv.templval.freemetas
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
     (fun mv deps ->
-       Intset.union deps (clenv_metavars clenv mv))
+       Metaset.union deps (clenv_metavars clenv mv))
     mvs conclmetas
 
 let clenv_dependent hyps_only clenv =
@@ -941,7 +956,7 @@ let clenv_dependent hyps_only clenv =
   let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter
-    (fun mv -> Intset.mem mv deps && not (hyps_only && Intset.mem mv ctyp_mvs))
+    (fun mv -> Metaset.mem mv deps && not (hyps_only && Metaset.mem mv ctyp_mvs))
     mvs
 
 let clenv_missing c = clenv_dependent true c
@@ -956,7 +971,7 @@ let clenv_independent clenv =
   let mvs = collect_metas (clenv_instance_template clenv) in
   let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
-  List.filter (fun mv -> not (Intset.mem mv deps)) mvs
+  List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let w_coerce wc c ctyp target =
   let j = make_judge c ctyp in
@@ -990,7 +1005,7 @@ let clenv_constrain_missing_args mlist clause =
   clenv_constrain_dep_args true clause mlist
 
 let clenv_lookup_name clenv id =
-  match intmap_inv clenv.namenv id with
+  match metamap_inv clenv.namenv id with
     | []  -> 
 	errorlabstrm "clenv_lookup_name"
           (str"No such bound variable " ++ pr_id id)
@@ -1136,16 +1151,18 @@ open Printer
 let pr_clenv clenv =
   let pr_name mv =
     try 
-      let id = Intmap.find mv clenv.namenv in
+      let id = Metamap.find mv clenv.namenv in
       (str"[" ++ pr_id id ++ str"]")
     with Not_found -> (mt ())
   in
   let pr_meta_binding = function
     | (mv,Cltyp b) ->
-      	hov 0 (int mv ++ pr_name mv ++ str " : " ++ prterm b.rebus ++ fnl ())
+      	hov 0 
+	  (pr_meta mv ++ pr_name mv ++ str " : " ++ prterm b.rebus ++ fnl ())
     | (mv,Clval(b,_)) ->
-      	hov 0 (int mv ++ pr_name mv ++ str " := " ++ prterm b.rebus ++ fnl ())
+      	hov 0 
+	  (pr_meta mv ++ pr_name mv ++ str " := " ++ prterm b.rebus ++ fnl ())
   in
   (str"TEMPL: " ++ prterm clenv.templval.rebus ++
      str" : " ++ prterm clenv.templtyp.rebus ++ fnl () ++
-     (prlist pr_meta_binding (intmap_to_list clenv.env)))
+     (prlist pr_meta_binding (metamap_to_list clenv.env)))

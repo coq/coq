@@ -15,6 +15,7 @@ open Tacmach
 open Term
 open Names
 open Termops
+open Pattern
 open Reductionops
 
 exception UFAIL of constr*constr

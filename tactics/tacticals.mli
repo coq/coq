@@ -66,7 +66,7 @@ type clause = identifier option
 val nth_clause  : int -> goal sigma -> clause
 val clause_type : clause -> goal sigma -> constr
 
-val pf_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
+val pf_matches : goal sigma -> constr_pattern -> constr -> patvar_map
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 val allHyps    : goal sigma -> identifier list

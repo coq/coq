@@ -204,7 +204,9 @@ let rec detype tenv avoid env t =
        with Not_found ->
 	 let s = "_UNBOUND_REL_"^(string_of_int n)
 	 in RVar (dummy_loc, id_of_string s))
-    | Meta n -> RMeta (dummy_loc, n)
+    | Meta n ->
+	(* Meta in constr are not user-parsable and are mapped to Evar *)
+	REvar (dummy_loc, n)
     | Var id ->
 	(try
 	  let _ = Global.lookup_named id in RRef (dummy_loc, VarRef id)

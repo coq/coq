@@ -32,7 +32,7 @@ type kind_of_formula=
   |Evaluable of Names.evaluable_global_reference * Term.constr
   |False
 
-type counter = bool -> int
+type counter = bool -> metavariable
 
 val construct_nhyps : inductive -> int array
 
@@ -49,7 +49,7 @@ type right_pattern =
     Rand
   | Ror 
   | Rforall
-  | Rexists of int*constr
+  | Rexists of metavariable*constr
   | Rarrow
   | Revaluable of Names.evaluable_global_reference
     
@@ -71,7 +71,7 @@ type left_pattern=
     Lfalse    
   | Land of inductive
   | Lor of inductive 
-  | Lforall of int*constr
+  | Lforall of metavariable*constr
   | Lexists
   | Levaluable of Names.evaluable_global_reference
   | LA of constr*left_arrow_pattern

@@ -104,7 +104,7 @@ val weak_undo_pftreestate   : pftreestate -> pftreestate
 val solve_nth_pftreestate   : int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate       : tactic -> pftreestate -> pftreestate
 val mk_pftreestate          : goal -> pftreestate
-val extract_open_pftreestate : pftreestate -> constr * (int * types) list
+val extract_open_pftreestate : pftreestate -> constr * Termops.metamap
 val extract_pftreestate     : pftreestate -> constr
 val first_unproven          : pftreestate -> pftreestate
 val last_unproven           : pftreestate -> pftreestate

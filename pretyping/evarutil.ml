@@ -366,7 +366,7 @@ let evar_define isevars (ev,argsv) rhs =
   then error_occur_check empty_env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
   let evd = ise_map isevars ev in
-  (* the substitution to invert *)
+  (* the bindings to invert *)
   let worklist = make_subst (evar_env evd) args in
   let body = real_clean isevars ev worklist rhs in
   ise_define isevars ev body;

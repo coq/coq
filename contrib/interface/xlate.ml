@@ -197,13 +197,18 @@ let tac_qualid_to_ct_ID ref =
 let loc_qualid_to_ct_ID ref =
   CT_ident (Libnames.string_of_qualid (snd (qualid_of_reference ref)))
 
+let int_of_meta n = int_of_string (string_of_id n)
+let is_int_meta n = try let _ = int_of_meta n in true with _ -> false
+
 let qualid_or_meta_to_ct_ID = function
   | AN qid -> tac_qualid_to_ct_ID qid
-  | MetaNum (_,n) -> CT_metac (CT_int n)
+  | MetaNum (_,n) when is_int_meta n -> CT_metac (CT_int (int_of_meta n))
+  | MetaNum _ -> xlate_error "TODO: ident meta"
 
 let ident_or_meta_to_ct_ID = function
   | AN id -> xlate_ident id
-  | MetaNum (_,n) -> CT_metac (CT_int n)
+  | MetaNum (_,n) when is_int_meta n -> CT_metac (CT_int (int_of_meta n))
+  | MetaNum _ -> xlate_error "TODO: ident meta"
 
 let xlate_qualid_list l = CT_id_list (List.map loc_qualid_to_ct_ID l)
 
@@ -347,7 +352,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CCast (_, e, t) -> 
        CT_coerce_TYPED_FORMULA_to_FORMULA
 	 (CT_typed_formula(xlate_formula e, xlate_formula t))
-   | CMeta (_, i) -> CT_coerce_ID_to_FORMULA(CT_metac (CT_int i))
+   | CPatVar (_, (_,i)) when is_int_meta i ->
+       CT_coerce_ID_to_FORMULA(CT_metac (CT_int (int_of_meta i)))
+   | CPatVar (_, _) -> xlate_error "TODO: meta as ident"
+   | CEvar (_, _) -> xlate_error "TODO: evars"
    | CCoFix (_, (_, id), lm::lmi) -> 
      let strip_mutcorec (fid, arf, ardef) =
 	CT_cofix_rec (xlate_ident fid, xlate_formula arf, xlate_formula ardef) in

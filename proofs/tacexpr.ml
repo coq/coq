@@ -145,11 +145,11 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacRename of identifier located * identifier located
 
   (* Constructors *)
-  | TacLeft of 'constr substitution
-  | TacRight of 'constr substitution
-  | TacSplit of bool * 'constr substitution
+  | TacLeft of 'constr bindings
+  | TacRight of 'constr bindings
+  | TacSplit of bool * 'constr bindings
   | TacAnyConstructor of 'tac option
-  | TacConstructor of int or_metaid * 'constr substitution
+  | TacConstructor of int or_metaid * 'constr bindings
 
   (* Conversion *)
   | TacReduce of ('constr,'cst) red_expr_gen * 'id raw_hyp_location list

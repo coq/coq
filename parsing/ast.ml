@@ -466,7 +466,7 @@ let rec pat_of_ast env ast =
         (Pslam(os,pb), env')
     | Node(loc,op,_) when isMeta op ->
         user_err_loc(loc,"Ast.pat_of_ast",
-                     (str"no metavariable in operator position."))
+                     (str"no patvar in operator position."))
     | Node(_,op,args) ->
         let (pargs, env') = patl_of_astl env args in
         (Pnode(op,pargs), env')
@@ -550,7 +550,7 @@ let rec val_of_ast env = function
   | Slam(_,os,b) -> Pslam(os, val_of_ast env b)
   | Node(loc,op,_) when isMeta op ->
       user_err_loc(loc,"Ast.val_of_ast",
-                   (str"no metavariable in operator position."))
+                   (str"no patvar in operator position."))
   | Node(_,op,args) -> Pnode(op, vall_of_astl env args)
   | Dynamic(loc,_) ->
       invalid_arg_loc(loc,"val_of_ast: dynamic")

@@ -8,6 +8,7 @@
 
 (* $Id$ *)      
 
+(*i*)
 open Ast
 open Util
 open Pp
@@ -19,6 +20,8 @@ open Coqast
 open Ppextend
 open Topconstr
 open Term
+open Pattern
+(*i*)
 
 let sep = fun _ -> brk(1,0)
 let sep_p = fun _ -> str"."
@@ -288,7 +291,7 @@ let rec check_same_type ty1 ty2 =
       check_same_type a1 a2;
       List.iter2 check_same_type bl1 bl2
   | CHole _, CHole _ -> ()
-  | CMeta(_,i1), CMeta(_,i2) when i1=i2 -> ()
+  | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
   | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
   | CCast(_,a1,b1), CCast(_,a2,b2) ->
       check_same_type a1 a2;
@@ -498,7 +501,8 @@ let rec pr inherited a =
         str "end"),
       latom
   | CHole _ -> str "_", latom
-  | CMeta (_,p) -> str "?" ++ int p, latom
+  | CEvar (_,n) -> str "?" ++ int n, latom
+  | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_sort s, latom
   | CCast (_,a,b) ->
       hv 0 (pr (lcast,L) a ++ cut () ++ str ":" ++ pr (-lcast,E) b), lcast

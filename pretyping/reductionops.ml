@@ -76,7 +76,7 @@ let rec strong_prodspine redfun c =
     | _ -> x
 
 (*************************************)
-(*** Reduction using substitutions ***)
+(*** Reduction using bindingss ***)
 (*************************************)
 
 (* This signature is very similar to Closure.RedFlagsSig except there

@@ -23,26 +23,26 @@ open Tactics
 open Util
    
 let is_empty ist =
-  if (is_empty_type (List.assoc 1 ist.lmatch)) then
+  if (is_empty_type (List.assoc (id_of_string "1") ist.lmatch)) then
     <:tactic<Idtac>>
   else
     <:tactic<Fail>>
 
 let is_unit ist =
-  if (is_unit_type (List.assoc 1 ist.lmatch)) then
+  if (is_unit_type (List.assoc (id_of_string "1") ist.lmatch)) then
     <:tactic<Idtac>>
   else
     <:tactic<Fail>>
     
 let is_conj ist =
-  let ind=(List.assoc 1 ist.lmatch) in
+  let ind=(List.assoc (id_of_string "1") ist.lmatch) in
     if (is_conjunction ind) && (is_nodep_ind ind) then
       <:tactic<Idtac>>
     else
       <:tactic<Fail>>
 
 let is_disj ist =
-  if (is_disjunction (List.assoc 1 ist.lmatch)) then
+  if (is_disjunction (List.assoc (id_of_string "1") ist.lmatch)) then
     <:tactic<Idtac>>
   else
     <:tactic<Fail>>

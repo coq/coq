@@ -56,7 +56,7 @@ let rec unloc = function
   | RHole (_,x)  -> RHole (dummy_loc,x)
   | RRef (_,x) -> RRef (dummy_loc,x)
   | REvar (_,x) -> REvar (dummy_loc,x)
-  | RMeta (_,x) -> RMeta (dummy_loc,x)
+  | RPatVar (_,x) -> RPatVar (dummy_loc,x)
   | RDynamic (_,x) -> RDynamic (dummy_loc,x)
 
 let anonymize_if_reserved na t = match na with

@@ -69,8 +69,8 @@ let rec get_subterm  (depth:int) (path: int list) (constr:constr) =
    transform constr terms into abstract syntax trees.  The second argument is
    the substitution, a list of pairs linking an integer and a constr term. *)
 
-let rec map_subst (env :env) (subst:(int * Term.constr) list) = function
-  | CMeta (_,i) ->
+let rec map_subst (env :env) (subst:patvar_map) = function
+  | CPatVar (_,(_,i)) ->
       let constr = List.assoc i subst in
       extern_constr false env constr
   | x -> map_constr_expr_with_binders (map_subst env) (fun _ x -> x) subst x;;
@@ -173,7 +173,7 @@ let dad_rule_names () =
     List.map (function (s,_) -> s) !dad_rule_list;;
 
 (* this function is inspired from matches_core in pattern.ml *)
-let constrain ((n : int),(pat : constr_pattern)) sigma =
+let constrain ((n : patvar),(pat : constr_pattern)) sigma =
   if List.mem_assoc n sigma then
     if pat = (List.assoc n sigma) then sigma
     else failwith "internal"
@@ -248,7 +248,7 @@ let rec sort_list = function
     [] -> [] 
   | a::l -> add_in_list_sorting a (sort_list l);;
 
-let mk_dad_meta n = CMeta (zz,n);;
+let mk_dad_meta n = CPatVar (zz,(true,Nameops.make_ident "DAD" (Some n)));;
 let mk_rewrite lr ast =
   let b = in_gen rawwit_bool lr in
   let cb = in_gen rawwit_constr_with_bindings ((*Ctast.ct_to_ast*) ast,NoBindings) in

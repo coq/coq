@@ -94,9 +94,10 @@ let explain_internalisation_error = function
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
   | BadExplicitationNumber (n,po) -> explain_bad_explicitation_number n po
 
-let error_unbound_metanum loc n =
+let error_unbound_patvar loc n =
   user_err_loc
-    (loc,"glob_qualid_or_metanum", str "?" ++ int n ++ str " is unbound")
+    (loc,"glob_qualid_or_patvar", str "?" ++ pr_patvar n ++ 
+      str " is unbound")
 
 (**********************************************************************)
 (* Dump of globalization (to be used by coqdoc)                       *)
@@ -470,15 +471,17 @@ let internalise isarity sigma env allow_soapp lvar c =
 		  Array.of_list (List.map (intern false env) cl))
     | CHole loc -> 
 	RHole (loc, QuestionMark)
-    | CMeta (loc, n) when allow_soapp = None or !interning_grammar ->
-	RMeta (loc, n)
-    | CMeta (loc, n) when n >=0 ->
+    | CPatVar (loc, n) when allow_soapp = None or !interning_grammar ->
+	RPatVar (loc, n)
+    | CPatVar (loc, (false,n as x)) ->
         if List.mem n (out_some allow_soapp) then 
-	  RMeta (loc, n)
+	  RPatVar (loc, x)
         else 
-          error_unbound_metanum loc n
-    | CMeta (loc, _) ->
+          error_unbound_patvar loc n
+    | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
+    | CEvar (loc, n) ->
+	REvar (loc, n)
     | CSort (loc, s) ->
 	RSort(loc,s)
     | CCast (loc, c1, c2) ->

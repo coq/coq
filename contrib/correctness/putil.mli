@@ -52,8 +52,6 @@ val type_c_subst : (identifier * identifier) list -> type_c -> type_c
 val type_v_rsubst : (identifier * constr) list -> type_v -> type_v
 val type_c_rsubst : (identifier * constr) list -> type_c -> type_c
 
-val dest_sig : constr -> constr * constr
-
 val make_arrow : ('a ml_type_v binder) list -> 'a ml_type_c -> 'a ml_type_v
 
 val is_mutable_in_env : local_env -> identifier -> bool

@@ -91,7 +91,7 @@ let catch_error loc tac g =
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
   { lfun : (identifier * value) list;
-    lmatch : (int * constr) list;
+    lmatch : patvar_map;
     debug : debug_info }
 
 let check_is_value = function
@@ -260,7 +260,7 @@ type glob_sign = {
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
   ltacrecvars : (identifier * ltac_constant) list;
      (* ltac recursive names *)
-  metavars : int list;
+  metavars : patvar list;
      (* metavariables introduced by patterns *)
   gsigma : Evd.evar_map;
   genv : Environ.env }
@@ -345,7 +345,7 @@ let intern_lochyp ist (_loc,_ as locid) = (loc,intern_hyp ist locid)
 
 let error_unbound_metanum loc n =
   user_err_loc
-    (loc,"intern_qualid_or_metanum", str "?" ++ int n ++ str " is unbound")
+  (loc,"intern_qualid_or_metanum", str "?" ++ pr_patvar n ++ str " is unbound")
 
 let intern_metanum sign loc n =
   if List.mem n sign.metavars then n else error_unbound_metanum loc n
@@ -440,10 +440,16 @@ let intern_clause_pattern ist (l,occl) =
     | [] -> []
   in (l,check occl)
 
+  (* TODO: catch ltac vars *)
 let intern_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (intern_constr ist c)
   | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (_loc,id) as x -> ElimOnIdent (loc,id)
+  | ElimOnIdent (_loc,id) as x ->
+      if !strict_check then
+	(* If in a defined tactic, no intros-until *)
+	ElimOnConstr (intern_constr ist (CRef (Ident (loc,id))))
+      else
+	ElimOnIdent (loc,id)
 
 (* Globalizes a reduction expression *)
 let intern_evaluable_or_metanum ist = function
@@ -1181,7 +1187,7 @@ let interp_may_eval f ist gl = function
       (try
 	let ic = f ist gl c
 	and ctxt = constr_of_VConstr_context (List.assoc s ist.lfun) in
-	subst_meta [-1,ic] ctxt
+	subst_meta [special_meta,ic] ctxt
       with
 	| Not_found ->
 	    user_err_loc (loc, "interp_may_eval",
@@ -1221,7 +1227,8 @@ let interp_induction_arg ist gl = function
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent (loc,id) ->
       if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
-      else ElimOnConstr	(pf_interp_constr ist gl (RVar (loc,id),None))
+      else ElimOnConstr
+	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))))
 
 let interp_binding ist gl (loc,b,c) =
   (loc,interp_quantified_hypothesis ist gl b,pf_interp_constr ist gl c)

@@ -118,10 +118,11 @@ val make_extern :
       -> constr_label * pri_auto_tactic
 
 val set_extern_interp :
-  ((int * constr) list -> Tacexpr.glob_tactic_expr -> tactic) -> unit
+  (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) -> unit
 
 val set_extern_intern_tac :
-  (int list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) -> unit
+  (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr)
+  -> unit
 
 val set_extern_subst_tactic :
   (Names.substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr)

@@ -40,7 +40,7 @@ type kind_of_formula=
   |Evaluable of evaluable_global_reference*constr
   |False
 
-type counter = bool -> int
+type counter = bool -> metavariable
 
 let constant path str ()=Coqlib.gen_constant "User" ["Init";path] str
 
@@ -167,7 +167,7 @@ type right_pattern =
     Rand
   | Ror 
   | Rforall
-  | Rexists of int*constr
+  | Rexists of metavariable*constr
   | Rarrow
   | Revaluable of evaluable_global_reference
       
@@ -189,7 +189,7 @@ type left_pattern=
     Lfalse    
   | Land of inductive
   | Lor of inductive 
-  | Lforall of int*constr
+  | Lforall of metavariable*constr
   | Lexists
   | Levaluable of evaluable_global_reference
   | LA of constr*left_arrow_pattern
@@ -202,6 +202,8 @@ type left_formula={id:global_reference;
     
 exception Is_atom of constr
 
+let meta_succ m = m+1
+
 let build_left_entry nam typ internal gl metagen=
   try 
     let pattern=
@@ -211,7 +213,7 @@ let build_left_entry nam typ internal gl metagen=
 	| And(i,_)         ->  Land i
 	| Or(i,_)          ->  Lor i
 	| Exists (_,_,_,_) ->  Lexists
-	| Forall (d,_) -> let m=1+(metagen false) in Lforall(m,d)
+	| Forall (d,_) -> let m=meta_succ(metagen false) in Lforall(m,d)
 	| Evaluable (egc,_) ->Levaluable egc 
 	| Arrow (a,b) ->LA (a, 
 			    match kind_of_formula a with
@@ -243,7 +245,7 @@ let build_right_entry typ gl metagen=
 	| And(_,_)        -> Rand
 	| Or(_,_)         -> Ror
 	| Exists (_,d,_,_) -> 
-	    let m=1+(metagen false) in Rexists(m,d) 
+	    let m=meta_succ(metagen false) in Rexists(m,d) 
 	| Forall (_,a) -> Rforall 
 	| Arrow (a,b) -> Rarrow 
 	| Evaluable (egc,_)->Revaluable egc in

@@ -135,7 +135,7 @@ let normalize_boolean ren env b =
 	      Expression c ->
 	    	let c' = Term.applist (constant "annot_bool",[c]) in
 		let ty = type_of_expression ren env c' in
-		let (_,q') = dest_sig ty in
+		let (_,q') = Hipattern.match_sigma ty in
 		let q' = Some { a_value = q'; a_name = Name (bool_name()) } in
 		{ desc = Expression c'; 
 		  pre = b.pre; post = q'; loc = b.loc;

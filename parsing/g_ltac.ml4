@@ -230,7 +230,7 @@ GEXTEND Gram
       | n = integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)
       |	"?" -> ConstrMayEval (ConstrTerm (CHole loc))
-      | "?"; n = natural -> ConstrMayEval (ConstrTerm (CMeta (loc,n)))
+      | "?"; n = natural -> ConstrMayEval (ConstrTerm (CPatVar (loc,(false,Pattern.patvar_of_int n))))
       |	"'"; c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
   ;
 

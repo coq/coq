@@ -45,7 +45,7 @@ open Pattern
 
 exception PatternMatchingFailure
 
-let constrain ((n : int),(m : constr)) sigma =
+let constrain (n,m) sigma =
   if List.mem_assoc n sigma then
     if eq_constr m (List.assoc n sigma) then sigma
     else raise PatternMatchingFailure
@@ -169,11 +169,13 @@ let authorized_occ nocc mres =
   if nocc = 0 then mres
   else raise (NextOccurrence nocc)
 
+let special_meta = (-1)
+
 (* Tries to match a subterm of [c] with [pat] *)
 let rec sub_match nocc pat c =
   match kind_of_term c with
   | Cast (c1,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1] in
       (lm,mkCast (List.hd lc, c2))
@@ -181,7 +183,7 @@ let rec sub_match nocc pat c =
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1] in
       (lm,mkCast (List.hd lc, c2)))
   | Lambda (x,c1,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;c2] in
       (lm,mkLambda (x,List.hd lc,List.nth lc 1))
@@ -189,7 +191,7 @@ let rec sub_match nocc pat c =
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
       (lm,mkLambda (x,List.hd lc,List.nth lc 1)))
   | Prod (x,c1,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;c2] in
       (lm,mkProd (x,List.hd lc,List.nth lc 1))
@@ -197,7 +199,7 @@ let rec sub_match nocc pat c =
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
       (lm,mkProd (x,List.hd lc,List.nth lc 1)))
   | LetIn (x,c1,t2,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;t2;c2] in
       (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2))
@@ -205,7 +207,7 @@ let rec sub_match nocc pat c =
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;t2;c2] in
       (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2)))
   | App (c1,lc) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
       (lm,mkApp (List.hd le, Array.of_list (List.tl le)))
@@ -213,7 +215,7 @@ let rec sub_match nocc pat c =
       let (lm,le) = try_sub_match (nocc - 1) pat (c1::(Array.to_list lc)) in
       (lm,mkApp (List.hd le, Array.of_list (List.tl le))))
   | Case (ci,hd,c1,lc) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
       let (lm,le) = try_sub_match nocc pat (c1::Array.to_list lc) in
       (lm,mkCase (ci,hd,List.hd le,Array.of_list (List.tl le)))
@@ -222,7 +224,7 @@ let rec sub_match nocc pat c =
       (lm,mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))))
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
   | Rel _|Meta _|Var _|Sort _ ->
-    (try authorized_occ nocc ((matches pat c),mkMeta (-1)) with
+    (try authorized_occ nocc ((matches pat c),mkMeta special_meta) with
     | PatternMatchingFailure -> raise (NextOccurrence nocc)
     | NextOccurrence nocc -> raise (NextOccurrence (nocc - 1)))
 

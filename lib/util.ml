@@ -543,8 +543,6 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset = Set.Make(struct type t = int let compare = compare end)
 
-let intset_exists p s = Intset.fold (fun x b -> (p x) || b) s false
-
 module Intmap = Map.Make(struct type t = int let compare = compare end)
 
 let intmap_in_dom x m =

@@ -623,7 +623,7 @@ let contextually (locs,c) f env sigma t =
     errorlabstrm "contextually" (str "Too few occurences");
   t'
 
-(* linear substitution (following pretty-printer) of the value of name in c.
+(* linear bindings (following pretty-printer) of the value of name in c.
  * n is the number of the next occurence of name.
  * ol is the occurence list to find. *)
 let rec substlin env name n ol c =

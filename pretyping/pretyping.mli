@@ -18,7 +18,7 @@ open Rawterm
 open Evarutil
 (*i*)
 
-type meta_map = (int * unsafe_judgment) list
+type meta_map = (patvar * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list
 
 (* constr with holes *)

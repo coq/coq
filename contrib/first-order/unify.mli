@@ -15,9 +15,9 @@ type instance=
     Real of constr*int (* instance*valeur heuristique*)
   | Phantom of constr (* domaine de quantification *)
 
-val unif_atoms : int -> constr -> constr -> constr -> instance option
+val unif_atoms : metavariable -> constr -> constr -> constr -> instance option
   
-val give_right_instances : int -> constr -> (bool * constr) list -> 
+val give_right_instances : metavariable -> constr -> (bool * constr) list -> 
   Sequent.t -> (constr*int) list option
 
 val give_left_instances : Formula.left_formula list-> Sequent.t -> 

@@ -192,6 +192,9 @@ let decomp_term c = kind_of_term (strip_outer_cast c)
   ?2 ?1)}, where \texttt{C} is the [i]-th constructor of inductive
   type [typ] *)
 
+let coerce_meta_out id = int_of_string (string_of_id id)
+let coerce_meta_in n = id_of_string (string_of_int n)
+
 let compute_lhs typ i nargsi =
   match kind_of_term typ with
     | Ind(sp,0) -> 
@@ -204,15 +207,16 @@ let compute_lhs typ i nargsi =
 
 let compute_rhs bodyi index_of_f =
   let rec aux c = 
-    match decomp_term c with
+    match kind_of_term c with
       | App (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
-          let i = destRel (array_last args) in mkMeta i
+          let i = destRel (array_last args) in 
+	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
-          mkApp (f, Array.map aux args)
+          PApp (pattern_of_constr f, Array.map aux args)
       | Cast (c,t) -> aux c 
-      | _ -> c
+      | _ -> pattern_of_constr c
   in
-  pattern_of_constr (aux bodyi)
+  aux bodyi
 
 (*s Now the function [compute_ivs] itself *)
 
@@ -392,7 +396,8 @@ let quote_terms ivs lc gl =
         | (lhs, rhs)::tail ->
             begin try 
               let s1 = matches rhs c in
-              let s2 = List.map (fun (i,c_i) -> (i,aux c_i)) s1 in
+              let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
+	      in
               Termops.subst_meta s2 lhs
             with PatternMatchingFailure -> auxl tail
             end 

@@ -261,7 +261,7 @@ type tomatch_status =
 
 type tomatch_stack = tomatch_status list
 
-(* Warning: PrLetIn takes a parallel substitution as argument *)
+(* Warning: PrLetIn takes a parallel bindings as argument *)
    
 type predicate_signature =
   | PrLetIn of (constr list * constr option) * predicate_signature
@@ -600,7 +600,7 @@ let occur_rawconstr id =
 	(array_exists occur tyl) or
 	(not (array_exists (fun id2 -> id=id2) idl) & array_exists occur bv)
     | RCast (loc,c,t) -> (occur c) or (occur t)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RMeta _ | RDynamic _) -> false
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> false
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
 
@@ -1025,7 +1025,7 @@ let regeneralize_index_predicate n = map_predicate (regeneralize_index n) 0
 
 let substnl_predicate sigma = map_predicate (substnl sigma)
 
-(* This is parallel substitution *)
+(* This is parallel bindings *)
 let subst_predicate (args,copt) pred =
   let sigma = match copt with
     | None -> List.rev args
@@ -1144,7 +1144,7 @@ let specialize_predicate tomatchs deps cs = function
       let argsi = Array.to_list cs.cs_concl_realargs in
       let copti = option_app (fun _ -> build_dependent_constructor cs) copt in
       (* The substituends argsi, copti are all defined in gamma, x1...xn *)
-      (* We *need _parallel_ substitution to get gamma, x1...xn |- pred'' *)
+      (* We *need _parallel_ bindings to get gamma, x1...xn |- pred'' *)
       let pred'' = subst_predicate (argsi, copti) pred' in
       (* We adjust pred st: gamma, x1..xn, x1..xn |- pred'' *)
       let pred''' = liftn_predicate n (n+1) pred'' in

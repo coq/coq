@@ -18,6 +18,8 @@ open Environ
 open Libnames
 open Nametab
 
+(* Sorts and sort family *)
+
 let print_sort = function
   | Prop Pos -> (str "Set")
   | Prop Null -> (str "Prop")
@@ -399,8 +401,10 @@ let dependent m t =
 let pop t = lift (-1) t
 
 (***************************)
-(*  substitution functions *)                         
+(*  bindings functions *)                         
 (***************************)
+
+type metamap = (metavariable * constr) list 
 
 let rec subst_meta bl c = 
   match kind_of_term c with
@@ -473,7 +477,7 @@ let replace_term = replace_term_gen eq_constr
 
 (* Substitute only a list of locations locs, the empty list is
    interpreted as substitute all, if 0 is in the list then no
-   substitution is done. The list may contain only negative occurrences
+   bindings is done. The list may contain only negative occurrences
    that will not be substituted. *)
 
 let subst_term_occ_gen locs occ c t =
@@ -697,9 +701,15 @@ let occur_id env nenv id0 c =
   with Occur -> true
     | Not_found -> false (* Case when a global is not in the env *)
 
+let is_section_variable id =
+  try let _ = Declare.find_section_variable id in true with Not_found -> false
+
 let next_name_not_occuring env name l env_names t =
   let rec next id =
-    if List.mem id l or occur_id env env_names id t then next (lift_ident id)
+    if List.mem id l or occur_id env env_names id t or 
+      (* To be consistent with intro mechanism *)
+      (Declare.is_global id & not (is_section_variable id))
+    then next (lift_ident id)
     else id
   in 
   match name with

@@ -33,7 +33,7 @@ type aconstr =
   | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
   | ASort of rawsort
   | AHole of hole_kind
-  | AMeta of int
+  | APatVar of patvar
   | ACast of aconstr * aconstr
   
 let name_app f e = function
@@ -59,7 +59,7 @@ let map_aconstr_with_binders_loc loc g f e = function
   | ACast (c,t) -> RCast (loc,f e c,f e t)
   | ASort x -> RSort (loc,x)
   | AHole x  -> RHole (loc,x)
-  | AMeta n -> RMeta (loc,n)
+  | APatVar n -> RPatVar (loc,(false,n))
   | ARef x -> RRef (loc,x)
 
 let rec subst_pat subst pat = 
@@ -122,7 +122,7 @@ let rec subst_aconstr subst raw =
 	if ro' == ro && r' == r && ra' == ra then raw else
 	  AOrderedCase (b,ro',r',ra')
 
-  | AMeta _ | ASort _ -> raw
+  | APatVar _ | ASort _ -> raw
 
   | AHole (ImplicitArg (ref,i)) ->
       let ref' = subst_global subst ref in 
@@ -162,7 +162,7 @@ let aconstr_of_rawconstr vars a =
   | RSort (_,s) -> ASort s
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
-  | RMeta (_,n) -> AMeta n
+  | RPatVar (_,(_,n)) -> APatVar n
   | RDynamic _ | RRec _ | REvar _ ->
       error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
 allowed in abbreviatable expressions"
@@ -198,7 +198,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
   | RRef (_,r1), ARef r2 when r1 = r2 -> sigma
-  | RMeta (_,n1), AMeta n2 when n1=n2 -> sigma
+  | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
   | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
       List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
   | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
@@ -217,7 +217,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RCast(_,c1,t1), ACast(c2,t2) ->
       match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
   | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
-  | RMeta _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
+  | RPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, AHole _ when not(Options.do_translate()) -> sigma
   | RHole _, AHole _ -> sigma
   | (RDynamic _ | RRec _ | REvar _), _ 
@@ -285,7 +285,8 @@ type constr_expr =
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
   | CHole of loc
-  | CMeta of loc * int
+  | CPatVar of loc * (bool * patvar)
+  | CEvar of loc * existential_key
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr
   | CNotation of loc * notation * constr_expr list
@@ -321,7 +322,8 @@ let constr_loc = function
   | CCases (loc,_,_,_) -> loc
   | COrderedCase (loc,_,_,_,_) -> loc
   | CHole loc -> loc
-  | CMeta (loc,_) -> loc
+  | CPatVar (loc,_) -> loc
+  | CEvar (loc,_) -> loc
   | CSort (loc,_) -> loc
   | CCast (loc,_,_) -> loc
   | CNotation (loc,_,_) -> loc
@@ -354,7 +356,7 @@ let rec occur_var_constr_expr id = function
   | CCast (loc,a,b) -> occur_var_constr_expr id a or occur_var_constr_expr id b
   | CNotation (_,_,l) -> List.exists (occur_var_constr_expr id) l
   | CDelimiters (loc,_,a) -> occur_var_constr_expr id a
-  | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ -> false
+  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CNumeral _ | CDynamic _ -> false
   | CCases (loc,_,_,_) 
   | COrderedCase (loc,_,_,_,_) 
   | CFix (loc,_,_) 
@@ -396,7 +398,8 @@ let map_constr_expr_with_binders f g e = function
   | CCast (loc,a,b) -> CCast (loc,f e a,f e b)
   | CNotation (loc,n,l) -> CNotation (loc,n,List.map (f e) l)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
-  | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
+  | CHole _ | CEvar _ | CPatVar _ | CSort _ 
+  | CNumeral _ | CDynamic _ | CRef _ as x -> x
   | CCases (loc,po,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in

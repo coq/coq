@@ -57,7 +57,7 @@ let resetexist ()= evarcpt := 0
 let mknewmeta ()= 
   begin
     metacpt := !metacpt+1;
-    mkMeta !metacpt
+    mkMeta (!metacpt)
   end
 
 let resetmeta () = metacpt := 0
@@ -86,7 +86,7 @@ let constant dir s =
 (* fin const\_omega.ml *)
 
 let mkEq typ c1 c2 = 
-  mkApp (build_coq_eq_data.eq(),[| typ; c1; c2|])
+  mkApp (build_coq_eq(),[| typ; c1; c2|])
 let mkRefl typ c1 = 
   mkApp ((constant ["Coq"; "Init"; "Logic"] "refl_equal"),
          [| typ; c1|])

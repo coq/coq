@@ -90,7 +90,8 @@ let show_proof () =
   msgnl (str"LOC: " ++
     prlist_with_sep pr_spc pr_int (List.rev cursor) ++ fnl () ++
     str"Subgoals" ++ fnl () ++
-    prlist (fun (mv,ty) -> int mv ++ str" -> " ++ prtype ty ++ fnl ())
+    prlist (fun (mv,ty) -> Nameops.pr_meta mv ++ str" -> " ++ 
+      prtype ty ++ fnl ())
       meta_types
     ++ str"Proof: " ++ prterm (Evarutil.nf_evar evc pfterm))
 

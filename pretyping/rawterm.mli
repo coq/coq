@@ -29,6 +29,8 @@ type cases_pattern =
 
 val pattern_loc : cases_pattern -> loc
 
+type patvar = identifier
+
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type fix_kind = RFix of (int array * int) | RCoFix of int
@@ -37,14 +39,14 @@ type binder_kind = BProd | BLambda | BLetIn
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
-type 'a explicit_substitution = (loc * quantified_hypothesis * 'a) list
+type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
 
-type 'a substitution = 
+type 'a bindings = 
   | ImplicitBindings of 'a list
-  | ExplicitBindings of 'a explicit_substitution
+  | ExplicitBindings of 'a explicit_bindings
   | NoBindings
 
-type 'a with_bindings = 'a * 'a substitution
+type 'a with_bindings = 'a * 'a bindings
 
 type hole_kind =
   | ImplicitArg of global_reference * int
@@ -58,7 +60,7 @@ type rawconstr =
   | RRef of (loc * global_reference)
   | RVar of (loc * identifier)
   | REvar of loc * existential_key
-  | RMeta of loc * int
+  | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
   | RApp of loc * rawconstr * rawconstr list
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr

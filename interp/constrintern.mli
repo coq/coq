@@ -19,6 +19,7 @@ open Rawterm
 open Pattern
 open Coqast
 open Topconstr
+open Termops
 (*i*)
 
 (*s Translation from front abstract syntax of term to untyped terms (rawconstr)
@@ -43,7 +44,7 @@ type ltac_env =
 (* Interprets global names, including syntactic defs and section variables *)
 val interp_rawconstr     : evar_map -> env -> constr_expr -> rawconstr
 val interp_rawconstr_gen : bool -> evar_map -> env -> implicits_env -> 
-    int list option -> ltac_sign -> constr_expr -> rawconstr
+    patvar list option -> ltac_sign -> constr_expr -> rawconstr
 
 (*s Composing the translation with typing *)
 val interp_constr        : evar_map -> env -> constr_expr -> constr
@@ -69,22 +70,22 @@ val type_judgment_of_rawconstr :
 (* Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it*)
 val interp_constr_gen     :
-  evar_map -> env -> ltac_env -> (int * constr) list -> constr_expr -> 
+  evar_map -> env -> ltac_env -> patvar_map -> constr_expr -> 
     constr option -> constr
 
 (* Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it, and turning unresolved evar into metas*)
 val interp_openconstr_gen     :
   evar_map -> env -> ltac_env ->
-    (int * constr) list -> constr_expr -> constr option -> evar_map * constr
+    patvar_map -> constr_expr -> constr option -> evar_map * constr
 
 (* Interprets constr patterns according to a list of instantiations
   (variables)*)
-val interp_constrpattern_gen :
-  evar_map -> env -> ltac_env -> constr_expr -> int list * constr_pattern
+val interp_constrpattern_gen : evar_map -> env -> ltac_env -> constr_expr ->
+  patvar list * constr_pattern
 
 val interp_constrpattern : 
-  evar_map -> env -> constr_expr -> int list * constr_pattern
+  evar_map -> env -> constr_expr -> patvar list * constr_pattern
 
 val interp_reference : ltac_sign -> reference -> rawconstr
 

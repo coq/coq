@@ -17,6 +17,7 @@ open Term
 open Termops
 open Pattern
 open Matching
+open Hipattern
 open Environ
 
 open Pmisc
@@ -193,16 +194,12 @@ let id_from_name = function Name id -> id | Anonymous -> (id_of_string "X")
 
 (* v_of_constr : traduit un type CCI en un type ML *)
 
-let dest_sig c = match matches (Coqlib.build_coq_sig_pattern ()) c with
-  | [_,a; _,p] -> (a,p)
-  | _     -> assert false
-
 (* TODO: faire un test plus serieux sur le type des objets Coq *)
 let rec is_pure_cci c = match kind_of_term c with
   | Cast (c,_) -> is_pure_cci c
   | Prod(_,_,c') -> is_pure_cci c'
   | Rel _ | Ind _ | Const _ -> true (* heu... *)
-  | App _ -> not (is_matching (Coqlib.build_coq_sig_pattern ()) c)
+  | App _ -> not (is_matching_sigma c)
   | _ -> Util.error "CCI term not acceptable in programs"
 
 let rec v_of_constr c = match kind_of_term c with
@@ -222,8 +219,8 @@ let rec v_of_constr c = match kind_of_term c with
       failwith "v_of_constr: TODO"
 
 and c_of_constr c =
-  if is_matching (Coqlib.build_coq_sig_pattern ()) c then
-    let (a,q) = dest_sig c in
+  if is_matching_sigma c then
+    let (a,q) = match_sigma c in
     (result_id, v_of_constr a), Peffect.bottom, [], Some (anonymous q)
   else
     (result_id, v_of_constr c), Peffect.bottom, [], None
