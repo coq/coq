@@ -52,7 +52,7 @@ let stde()  = (Global.env())
 ;;
 
 let spt t =
-   let f = (translate_constr (stde()) t) in
+   let f = (translate_constr true (stde()) t) in
    Hashtbl.add ct_FORMULA_constr f t;
    CT_text_formula f
 ;;

@@ -252,7 +252,7 @@ let add_search (global_reference:global_reference) assumptions cstr =
 			global_reference) in
   let ast = 
     try
-      CT_premise (CT_ident id_string, translate_constr assumptions cstr)
+      CT_premise (CT_ident id_string, translate_constr false assumptions cstr)
     with Not_found ->
       CT_premise (CT_ident id_string,
                   CT_coerce_ID_to_FORMULA(
@@ -271,14 +271,14 @@ let ctf_EmptyGoalMessage id =
 let print_check (ast, judg) =
  let {uj_val=value; uj_type=typ} = judg in
  let value_ct_ast = 
-     (try translate_constr (Global.env()) value 
+     (try translate_constr false (Global.env()) value 
       with UserError(f,str) ->
            raise(UserError(f,
 			   Ast.print_ast 
 				(ast_of_constr true (Global.env()) value) ++
 			      fnl () ++ str ))) in
  let type_ct_ast =
-     (try translate_constr (Global.env()) typ
+     (try translate_constr false (Global.env()) typ
       with UserError(f,str) ->
            raise(UserError(f, Ast.print_ast (ast_of_constr true (Global.env())
 					       value) ++ fnl() ++ str))) in
@@ -300,8 +300,8 @@ and ntyp = nf_betaiota typ in
   (CT_premises_list
   [CT_eval_result
     (xlate_formula ast,
-    translate_constr env nvalue,
-    translate_constr env ntyp)]))));;
+    translate_constr false env nvalue,
+    translate_constr false env ntyp)]))));;
 
 
 

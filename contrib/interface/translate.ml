@@ -108,8 +108,8 @@ let rec discard_coercions =
     | it -> it;;
 
 (*translates a formula into a centaur-tree --> FORMULA *)
-let translate_constr assumptions c =
- let com = ast_of_constr true assumptions c in
+let translate_constr at_top assumptions c =
+ let com = ast_of_constr at_top assumptions c in
 (* dead code:  let rcom = relativize_cci (discard_coercions com) in *)
  xlate_formula (Ctast.ast_to_ct com) (* dead code: rcom *);;
 
@@ -119,7 +119,7 @@ let translate_sign env =
   let l = 
     fold_named_context
       (fun env (id,v,c) l -> 
-	 (CT_premise(CT_ident(string_of_id id), translate_constr env c))::l)
+	 (CT_premise(CT_ident(string_of_id id), translate_constr false env c))::l)
       env ~init:[] 
   in
   CT_premises_list l;;
@@ -158,4 +158,4 @@ let translate_path l =
 
 (*translates a path and a goal into a centaur-tree --> RULE *)
 let translate_goal (g:goal) =
- CT_rule(translate_sign (evar_env g), translate_constr (evar_env g) g.evar_concl);;
+ CT_rule(translate_sign (evar_env g), translate_constr true (evar_env g) g.evar_concl);;
