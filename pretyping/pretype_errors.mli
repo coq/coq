@@ -22,6 +22,16 @@ val error_cant_find_case_type_loc :
 val error_ill_formed_branch_loc : 
   loc -> path_kind -> env -> constr -> int -> constr -> constr -> 'b
 
+val error_actual_type_loc :
+  loc -> env -> constr -> constr -> constr -> 'b
+
+val error_cant_apply_not_functional_loc : 
+  loc -> env -> unsafe_judgment -> unsafe_judgment list -> 'b
+
+val error_cant_apply_bad_type_loc : 
+  loc -> env -> int * constr * constr -> 
+      unsafe_judgment -> unsafe_judgment list -> 'b
+
 val error_number_branches_loc : 
   loc -> path_kind -> env -> constr -> constr -> int -> 'b
 

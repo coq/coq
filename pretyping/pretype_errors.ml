@@ -14,7 +14,17 @@ let error_var_not_found_loc loc k s =
   raise_pretype_error (loc,k, Global.context() (*bidon*), VarNotFound s)
 
 let error_cant_find_case_type_loc loc env expr =
-  raise_pretype_error (loc,CCI,context env,CantFindCaseType expr)
+  raise_pretype_error (loc, CCI, context env, CantFindCaseType expr)
+
+let error_actual_type_loc loc env c actty expty =
+  raise_pretype_error (loc, CCI, context env, ActualType (c,actty,expty))
+
+let error_cant_apply_not_functional_loc loc env rator randl =
+  raise_pretype_error
+    (loc,CCI,context env, CantApplyNonFunctional (rator,randl))
+
+let error_cant_apply_bad_type_loc loc env t rator randl =
+  raise_pretype_error (loc, CCI, context env, CantApplyBadType (t,rator,randl))
 
 let error_ill_formed_branch k env c i actty expty =
   raise (TypeError (k, context env, IllFormedBranch (c,i,actty,expty)))

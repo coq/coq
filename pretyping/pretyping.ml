@@ -352,7 +352,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       (rtc,cj::jl)  in
     let jl = List.rev (snd (List.fold_left apply_one_arg
 			      (mk_tycon j.uj_type,[]) args)) in
-    inh_apply_rel_list !trad_nocheck env isevars jl j vtcon
+    inh_apply_rel_list !trad_nocheck loc env isevars jl j vtcon
 
 | RBinder(loc,BLambda,name,c1,c2)      ->
     let j =
@@ -450,7 +450,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let cj =
     pretype (mk_tycon2 vtcon (body_of_type (assumption_of_judgment env !isevars
       tj))) env isevars lvar lmeta c in
-  inh_cast_rel env isevars cj tj
+  inh_cast_rel loc env isevars cj tj
 
 (* Maintenant, tout s'exécute... 
   | _ -> error_cant_execute CCI env (nf_ise1 env !isevars cstr)

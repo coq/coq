@@ -23,9 +23,10 @@ val inh_coerce_to :
   env -> 'a evar_defs -> constr -> unsafe_judgment -> unsafe_judgment
 val inh_conv_coerce_to : 
   env -> 'a evar_defs -> constr -> unsafe_judgment -> unsafe_judgment
-val inh_cast_rel : 
+
+val inh_cast_rel : Rawterm.loc ->
   env -> 'a evar_defs -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment
 
-val inh_apply_rel_list : bool -> env -> 'a evar_defs ->
-  unsafe_judgment list -> unsafe_judgment -> 'b * ('c * constr option) 
+val inh_apply_rel_list : bool -> Rawterm.loc -> env -> 'a evar_defs ->
+  unsafe_judgment list -> unsafe_judgment -> trad_constraint
     -> unsafe_judgment

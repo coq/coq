@@ -8,7 +8,7 @@ open Term
 open Reduction
 open Environ
 open Typeops
-open Type_errors
+open Pretype_errors
 open Classops
 open Recordops
 open Evarconv
@@ -136,7 +136,10 @@ let rec inh_conv_coerce_to env isevars c1 hj =
              else 
                (* let ju1 = exemeta_rec def_vty_con env isevars u1 in 
 		  let assu1 = assumption_of_judgement env !isevars ju1 in *)
-	       let assu1 = outcast_type u1 in
+	       let assu1 = 
+		 if not (isCast u1) then
+		   make_typed u1 (get_sort_of env !isevars u1)
+		 else outcast_type u1 in
                let name = (match name with 
 			     | Anonymous -> Name (id_of_string "x")
                              | _ -> name) in
@@ -153,20 +156,20 @@ let rec inh_conv_coerce_to env isevars c1 hj =
 	       fst (abs_rel env !isevars name assu1 h2)
 	 | _ -> failwith "inh_coerce_to")
             
-let inh_cast_rel env isevars cj tj =
+let inh_cast_rel loc env isevars cj tj =
   let cj' = 
     try 
       inh_conv_coerce_to env isevars tj.uj_val cj 
     with Not_found | Failure _ -> 
       let rcj = j_nf_ise env !isevars cj in
       let atj = j_nf_ise env !isevars tj in
-      error_actual_type CCI env rcj.uj_val rcj.uj_type atj.uj_type
+      error_actual_type_loc loc env rcj.uj_val rcj.uj_type atj.uj_type
   in
   { uj_val = mkCast cj'.uj_val tj.uj_val;
     uj_type = tj.uj_val;
     uj_kind = whd_betadeltaiota env !isevars tj.uj_type }
 
-let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
+let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
   let rec apply_rec n acc typ = function
     | [] -> 
 	let resj =
@@ -190,13 +193,13 @@ let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
 		  (try 
 		     inh_conv_coerce_to env isevars c1 hj 
 		   with Failure _ | Not_found ->
-                     error_cant_apply_bad_type CCI env (n,c1,hj.uj_type)
+                     error_cant_apply_bad_type_loc apploc env (n,c1,hj.uj_type)
 		       (j_nf_ise env !isevars funj)
 		       (jl_nf_ise env !isevars argjl)) 
 	      in
               apply_rec (n+1) (hj'::acc) (subst1 hj'.uj_val c2) restjl
           | _ ->
-              error_cant_apply_not_functional CCI env
+              error_cant_apply_not_functional_loc apploc env
 	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
   in 
   apply_rec 1 [] funj.uj_type argjl
