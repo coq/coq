@@ -484,9 +484,9 @@ let error_not_allowed_case_analysis dep kind i =
      pr_inductive (Global.env()) i >]
 
 let error_bad_induction dep indid kind =
-  [<'sTR (if dep then "Dependent" else "Non dependend");
+  [<'sTR (if dep then "Dependent" else "Non dependent");
     'sTR " induction for type "; pr_id indid;
-    'sTR " and sort "; print_sort kind; 
+    'sTR " and sort "; print_sort kind; 'sPC;
     'sTR "is not allowed">]
 
 let error_not_mutual_in_scheme () =
