@@ -292,6 +292,29 @@ let rec warning_mult suf l =
        Hashtbl.add tab f d) 
     l
 
+(* Gives the list of all the directories under [dir], including [dir] *)
+let all_subdirs dir =
+  let l = ref [dir] in
+  let add f = l := f :: !l in
+  let rec traverse dir =
+    let dirh = 
+      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
+    in
+    try
+      while true do
+	let f = readdir dirh in
+	if f <> "." && f <> ".." then
+	  let file = Filename.concat dir f in
+	  if (stat file).st_kind = S_DIR then begin
+	    add file;
+	    traverse file
+	  end
+      done
+    with End_of_file ->
+      closedir dirh
+  in
+  traverse dir; List.rev !l
+
 let usage () =
   print_string 
   "[ usage: coqdep [-w] [-I dir] [-coqlib dir] [-c] [-i] [-D] <filename>+ ]\n";
@@ -383,13 +406,18 @@ let coqdep () =
 	     with End_of_file -> closedir dir)
         | _ -> ()
     in
+    let add_rec_directory dir_name =
+      List.iter add_directory (all_subdirs dir_name)
+    in
     let rec parse = function
       | "-c" :: ll -> option_c := true; parse ll
       | "-D" :: ll -> option_D := true; parse ll
       | "-w" :: ll -> option_w := true; parse ll
       | "-i" :: ll -> option_i := true; parse ll
-      | "-I" :: (r :: ll) -> add_directory r; parse ll
+      | "-I" :: r :: ll -> add_directory r; parse ll
       | "-I" :: [] -> usage ()
+      | "-R" :: r :: _ :: ll -> add_rec_directory r; parse ll
+      | "-R" :: ([] | [_]) -> usage ()
       | "-coqlib" :: (r :: ll) -> coqlib := r; parse ll
       | "-coqlib" :: [] -> usage ()
       | "-suffix" :: (s :: ll) -> suffixe := s ; suffixe_spec := s; parse ll

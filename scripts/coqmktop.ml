@@ -106,7 +106,7 @@ let files_to_link userfiles =
 (* Gives the list of all the directories under [dir].
    Uses [Unix] (it is hard to do without it). *)
 let all_subdirs dir =
-  let l = ref [] in
+  let l = ref [dir] in
   let add f = l := f :: !l in
   let rec traverse dir =
     let dirh = 
@@ -158,14 +158,10 @@ let parse_args () =
 	    | a :: rem -> parse (a::o::op,fl) rem
 	    | []       -> usage ()
 	end
-    | "-R" :: rem' ->
-        begin
-	  match rem' with
-	    | a :: rem ->
-                parse ((List.rev(List.flatten (List.map (fun d -> ["-I";d])
-						 (all_subdirs a))))@op,fl) rem
-	    | []       -> usage ()
-	end
+    | "-R" :: a :: rem ->
+        parse ((List.rev(List.flatten (List.map (fun d -> ["-I";d])
+					 (all_subdirs a))))@op,fl) rem
+    | "-R" :: [] -> usage ()
     | ("-compact"|"-g"|"-p" as o) :: rem -> parse (o::op,fl) rem
     | ("-h"|"--help") :: _ -> usage ()
     | f :: rem ->
