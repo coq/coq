@@ -97,7 +97,7 @@ let rec tauto_main () =
       (Match Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
-          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intros;
+          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intro;
           Assumption];$t_tauto_main
       | [|- (?1 ? ?)] ->
         $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main))
