@@ -13,6 +13,18 @@ open Preferences
 
 exception Forbidden
 
+(* status bar and locations *)
+
+let status = ref None
+let push_info = ref (function s -> failwith "not ready")
+let pop_info = ref (function s -> failwith "not ready")
+let flash_info = ref  (fun ?delay s -> failwith "not ready")
+
+let set_location = ref  (function s -> failwith "not ready")
+
+let pulse = ref (function () -> failwith "not ready")
+
+
 let debug = Options.debug
 
 let prerr_endline s =
@@ -66,13 +78,13 @@ let do_convert s =
      end else
        let from_loc () = 
 	 let _,char_set = Glib.Convert.get_charset () in
-	 prerr_endline 
-	   ("Coqide warning: trying to convert from locale ("^char_set^")");
+	 !flash_info
+	   ("Converting from locale ("^char_set^")");
 	 Glib.Convert.convert_with_fallback ~to_codeset:"UTF-8" ~from_codeset:char_set s
        in
        let from_manual () = 
-	 prerr_endline 
-	   ("Coqide warning: trying to convert from "^ !current.encoding_manual);
+	 !flash_info 
+	   ("Converting from "^ !current.encoding_manual);
 	 Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:!current.encoding_manual
        in
        if !current.encoding_use_utf8 || !current.encoding_use_locale then begin

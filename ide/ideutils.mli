@@ -52,3 +52,13 @@ val underscore : Glib.unichar
 val bn : Glib.unichar
 val space : Glib.unichar
 val tab : Glib.unichar
+
+
+val status : GMisc.statusbar option ref 
+val push_info : (string -> unit) ref
+val pop_info : (unit -> unit) ref
+val flash_info : (?delay:int -> string -> unit) ref
+
+val set_location : (string -> unit) ref
+
+val pulse : (unit -> unit) ref

@@ -1,4 +1,4 @@
- (***********************************************************************)
+(***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
 (*   \VV/  *************************************************************)
@@ -31,15 +31,6 @@ let small_size = `SMALL_TOOLBAR
 
 let initial_cwd = Sys.getcwd ()
 
-let status = ref None
-let push_info = ref (function s -> failwith "not ready")
-let pop_info = ref (function s -> failwith "not ready")
-let flash_info = ref  (fun ?delay s -> failwith "not ready")
-
-let set_location = ref  (function s -> failwith "not ready")
-
-let pulse = ref (function () -> failwith "not ready")
-
 let (message_view:GText.view option ref) = ref None
 let (proof_view:GText.view option ref) = ref None
 
@@ -64,7 +55,7 @@ let set_tab_label i n =
   let _,_,lbl = decompose_tab (nb#get_tab_label(nb#get_nth_page i))#as_widget 
   in
   lbl#set_use_markup true;
-  lbl#set_text n
+  lbl#set_text n (* lbl#set_label n *)
 
 let set_tab_image i s = 
   let nb = notebook () in

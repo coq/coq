@@ -63,7 +63,7 @@ newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Datatypes
 newtheories/Init/LogicSyntax.vo: newtheories/Init/LogicSyntax.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo
 newtheories/Init/SpecifSyntax.vo: newtheories/Init/SpecifSyntax.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Specif.vo
 newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
-newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
+newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Datatypes.vo
 newtheories/Init/Logic_TypeSyntax.vo: newtheories/Init/Logic_TypeSyntax.v newtheories/Init/Notations.vo newtheories/Init/Logic_Type.vo
 newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/DatatypesSyntax.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Specif.vo newtheories/Init/SpecifSyntax.vo newtheories/Init/Peano.vo newtheories/Init/PeanoSyntax.vo newtheories/Init/Wf.vo
 newtheories/Logic/Hurkens.vo: newtheories/Logic/Hurkens.v
