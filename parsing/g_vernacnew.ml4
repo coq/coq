@@ -717,10 +717,7 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
-      | IDENT "only"; x = [ 
-          IDENT "parsing" -> SetOnlyParsing
-        | IDENT "printing" -> SetOnlyPrinting
-        ] -> x
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
       | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s ] ]
   ;
   syntax_extension_type:
