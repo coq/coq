@@ -354,8 +354,9 @@ let locate_by_filename_only id f =
   (* We check no other file containing same module is loaded *)
   try
     let m = CompUnitmap.find md.md_name !modules_table in
-    warning ((string_of_dirpath md.md_name)^" is already loaded from file "^
-    m.module_filename);
+    Options.if_verbose warning 
+      ((string_of_dirpath md.md_name)^" is already loaded from file "^
+       m.module_filename);
     (LibLoaded, md.md_name, m.module_filename)
   with Not_found ->
     (match split_dirpath md.md_name with
