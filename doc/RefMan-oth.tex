@@ -148,8 +148,17 @@ library lemmas.
 \begin{ErrMsgs}
 \item \errindex{The reference \qualid\ was not found in the current
 environment}\\
-    There is no constant in the environment named
-    \qualid.
+    There is no constant in the environment named \qualid.
+\end{ErrMsgs}
+
+\subsection{\tt SearchAbout {\qualid}.}\comindex{SearchAbout}
+This command displays the name and type of all theorems of the current
+context whose statement contains \qualid.  This command is useful to
+remind the user of the name of library lemmas.
+\begin{ErrMsgs}
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant in the environment named \qualid.
 \end{ErrMsgs}
 
 \subsection{\tt SearchPattern {\term}.}\comindex{SearchPattern}
