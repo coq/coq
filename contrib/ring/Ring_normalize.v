@@ -372,7 +372,7 @@ Hints Immediate T.
 Lemma varlist_eq_prop : (x,y:varlist)
   (Is_true (varlist_eq x y))->x==y.
 Proof.
-  Induction x; Induction y; Try Contradiction Orelse Reflexivity.
+  Induction x; Induction y; Contradiction Orelse Try Reflexivity.
   Simpl; Intros.
   Generalize (andb_prop2 ? ? H1); Intros; Elim H2; Intros.
   Rewrite (index_eq_prop H3); Rewrite (H v0 H4); Reflexivity.
@@ -802,8 +802,8 @@ Fixpoint polynomial_normalize [x:polynomial] : (canonical_sum A) :=
   | (Pmult l r) => (canonical_sum_prod Aplus Amult Aone 
       	       	       	       	(polynomial_normalize l)
                                 (polynomial_normalize r))
-  | (Pconst c)  => (Cons_monom A c Nil_var (Nil_monom A))
-  | (Pvar i)    => (Cons_varlist A (Cons_var i Nil_var) (Nil_monom A))
+  | (Pconst c)  => (Cons_monom c Nil_var (Nil_monom A))
+  | (Pvar i)    => (Cons_varlist (Cons_var i Nil_var) (Nil_monom A))
   | (Popp p)    => (canonical_sum_scalar3 Aplus Amult Aone
                                      (Aopp Aone) Nil_var
                                      (polynomial_normalize p))
@@ -815,11 +815,11 @@ Definition polynomial_simplify :=
 
 Fixpoint spolynomial_of [x:polynomial] : (spolynomial A) :=
   Cases x of 
-    (Pplus l r) => (SPplus A (spolynomial_of l) (spolynomial_of r))
-  | (Pmult l r) => (SPmult A (spolynomial_of l) (spolynomial_of r))
-  | (Pconst c)  => (SPconst A c)
+    (Pplus l r) => (SPplus (spolynomial_of l) (spolynomial_of r))
+  | (Pmult l r) => (SPmult (spolynomial_of l) (spolynomial_of r))
+  | (Pconst c)  => (SPconst c)
   | (Pvar i)    => (SPvar A i)
-  | (Popp p)    => (SPmult A (SPconst A (Aopp Aone)) (spolynomial_of p))
+  | (Popp p)    => (SPmult (SPconst (Aopp Aone)) (spolynomial_of p))
   end.
 
 (*** Interpretation *)
@@ -839,7 +839,7 @@ Implicit Arguments Off.
 
 Lemma spolynomial_of_ok : (p:polynomial)
   (interp_p p)==(interp_sp Aplus Amult Azero vm (spolynomial_of p)).
-Induction p; Reflexivity Orelse (Simpl; Intros).
+Induction p; Reflexivity Orelse '(Simpl; Intros).
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H.
@@ -851,7 +851,7 @@ Save.
 Theorem polynomial_normalize_ok : (p:polynomial)
   (polynomial_normalize p)
   ==(spolynomial_normalize Aplus Amult Aone (spolynomial_of p)).
-Induction p; Reflexivity Orelse (Simpl; Intros).
+Induction p; Reflexivity Orelse '(Simpl; Intros).
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H; Rewrite H0; Reflexivity.
 Rewrite H; Simpl.
