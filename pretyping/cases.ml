@@ -789,7 +789,9 @@ let build_aliases_context env sigma names allpats pats =
   (* They all are defined in env and we turn them into a sign *)
   (* cuts in sign need to be done in allpats *)
   let rec insert env sign1 sign2 n newallpats oldallpats = function
-    | _::pats, Anonymous::names ->
+    | (deppat,_,_)::pats, Anonymous::names when not (isRel deppat) ->
+        (* Anonymous leaves must be considered named and treated in the *)
+        (* next clause because they may occur in implicit arguments *)
 	insert env sign1 sign2
 	  n newallpats (List.map List.tl oldallpats) (pats,names)
     | (deppat,nondeppat,d)::pats, na::names ->
@@ -1211,7 +1213,7 @@ let shift_problem (current,t) pb =
      mat = List.map remove_current_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch current _ pb eqns const_info =
+let build_branch current pb eqns const_info =
   (* We remember that we descend through a constructor *)
   let alias_type =
     if Array.length const_info.cs_concl_realargs = 0
@@ -1308,7 +1310,7 @@ and match_current pb (n,tm) =
 	  compile_aliases (shift_problem ct pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
-	  let pbs = array_map2 (build_branch current typ pb) eqns cstrs in
+	  let pbs = array_map2 (build_branch current pb) eqns cstrs in
 	  let brs = Array.map compile_aliases pbs in
 	  let brvals = Array.map (fun (_,j) -> j.uj_val) brs in
 	  let brtyps = Array.map (fun (_,j) -> body_of_type j.uj_type) brs in
