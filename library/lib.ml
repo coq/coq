@@ -497,13 +497,14 @@ let (inLabel,outLabel) =
   declare_object {(default_object "DOT") with
 				classify_function = (fun _ -> Dispose)}
 
-let mark_end_of_command, current_command_label =
+let mark_end_of_command, current_command_label, set_command_label =
   let n = ref 0 in
   (fun () ->
     match !lib_stk with
         (_,Leaf o)::_ when object_tag o = "DOT" -> ()
-      | _ -> incr n; add_anonymous_leaf (inLabel !n)),
-  (fun () -> !n)
+      | _ -> incr n;add_anonymous_leaf (inLabel !n)),
+  (fun () -> !n),
+  (fun x -> n:=x)
 
 let rec reset_label_stk n stk =
   match stk with
@@ -511,7 +512,10 @@ let rec reset_label_stk n stk =
     | _::tail -> reset_label_stk n tail
     | [] -> error "Unknown state number"
 
-let reset_label n = reset_to (reset_label_stk n !lib_stk)
+let reset_label n = 
+  let res = reset_label_stk n !lib_stk in
+  set_command_label (n-1); (* forget state numbers after n only if reset succeeded *)
+  reset_to res
 
 let rec back_stk n stk =
   match stk with
