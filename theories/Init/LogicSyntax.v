@@ -40,17 +40,7 @@ Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
 Notation "'EX' x : t | p & q"   := (ex2 t [x:t]p [x:t]q)
   (at level 10, p, q at level 8).
 
-
 (** Parsing only of things in [Logic.v] *)
 
 Notation "< A > 'All' ( P )" := (all A P) (at level 1, only parsing).
 Notation "< A > x = y" := (eq A x y) (at level 1, x at level 0, only parsing).
-
-(** Pretty-printing only of things in [Logic.v] *)
-
-Syntax constr
-  level 1:
-    equal [ (eq $a  $t1  $t2) ] ->
-	 [ [<hov 0> (ANNOT $a) $t1:E [0 1]  "=" $t2:E ] ]
-  | annotskip [ << (ANNOT $_) >> ] -> [ ]
-  | annotmeta [ << (ANNOT (META ($NUM $n))) >> ] -> [ "<" "?" $n ">" ].

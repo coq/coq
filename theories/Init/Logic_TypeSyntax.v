@@ -38,10 +38,3 @@ Notation "< A > x == y"  := (eqT A x y)
 
 Notation "< A > x === y" := (identityT A x y)
    (at level 1, x at level 0, only parsing).
-
-(** Pretty-printing only of things in [Logic_type.v] *)
-
-Syntax constr
-  level 1:
-   eqT [ (eqT $a $c1 $c2) ] -> [ [<hov 1> (ANNOT $a) $c1:E [0 0] "==" $c2:E ] ]
-.
