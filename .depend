@@ -24,10 +24,12 @@ kernel/typeops.cmi: kernel/environ.cmi kernel/names.cmi kernel/term.cmi \
 kernel/typing.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
-kernel/univ.cmi: kernel/names.cmi 
+kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
 lib/coqast.cmi: lib/dyn.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
+library/libobject.cmi: kernel/names.cmi 
+library/summary.cmi: kernel/names.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 kernel/abstraction.cmo: kernel/generic.cmi kernel/names.cmi kernel/sosub.cmi \
@@ -134,3 +136,9 @@ lib/pp_control.cmo: lib/pp_control.cmi
 lib/pp_control.cmx: lib/pp_control.cmi 
 lib/util.cmo: lib/pp.cmi lib/util.cmi 
 lib/util.cmx: lib/pp.cmx lib/util.cmi 
+library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
+    library/libobject.cmi 
+library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
+    library/libobject.cmi 
+library/summary.cmo: kernel/names.cmi library/summary.cmi 
+library/summary.cmx: kernel/names.cmx library/summary.cmi 

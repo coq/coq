@@ -17,6 +17,8 @@ val prop_univ_univ_univ : universe
 
 val new_univ : section_path -> universe
 
+(*s Graphs of universes. *)
+
 type universes
 
 val initial_universes : universes
@@ -34,3 +36,6 @@ val enforce_gt : constraint_function
 val enforce_geq : constraint_function
 val enforce_eq : constraint_function
 
+(* pretty-printing. *)
+
+val pr_universes : universes -> Pp.std_ppcmds

@@ -16,7 +16,7 @@ OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(INCLUDES)
 
-INCLUDES=-I config -I lib -I kernel
+INCLUDES=-I config -I lib -I kernel -I library
 
 # Objects files 
 
@@ -33,18 +33,22 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
        kernel/typing.cmo
 
-OBJS=$(CONFIG) $(LIB) $(KERNEL)
+LIBRARY=library/libobject.cmo library/summary.cmo
+
+OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY)
 
 # Targets
 
 world: $(OBJS)
-	$(OCAMLC) -o coqtop.byte $(OBJS)
+	#$(OCAMLC) -o coqtop.byte $(OBJS)
+	ocamlmktop -o coqtop $(OBJS)
 
 # Literate programming (with ocamlweb)
 
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
-LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL)
+LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
+LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY)
 lp: doc/coq.ps
 doc/coq.ps: doc/coq.tex
 	cd doc; make coq.ps

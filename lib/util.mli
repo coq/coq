@@ -23,6 +23,8 @@ val implode : string list -> string
 
 val parse_section_path : string -> string list * string * string
 
+module Stringmap : Map.S with type key = string
+
 (*s Lists. *)
 
 val list_intersect : 'a list -> 'a list -> 'a list

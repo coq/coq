@@ -61,6 +61,8 @@ let parse_section_path s =
     let id,k = decoupe_kind n in
     dirs,id,k
 
+module Stringmap = Map.Make(struct type t = string let compare = compare end)
+
 (* Lists *)
 
 let list_intersect l1 l2 = 
