@@ -131,12 +131,7 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
   let t1 = pf_type_of gl c1 
   and t2 = pf_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
-    let (e,sym) = 
-      match kind_of_term (hnf_type_of gl t1) with 
-        | Sort (Prop(Pos)) -> (eq,sym_eq)
-        | Sort (Type(_))   -> (eq,sym_eq)
-        | _                  -> error "replace"
-    in 
+    let (e,sym) = (eqt,sym_eqt) in
     (tclTHENLAST (elim_type (applist (e, [t1;c1;c2])))
        (tclORELSE assumption 
           (tclTRY (tclTHEN (apply sym) assumption)))) gl
