@@ -58,6 +58,7 @@ val mis_kelim : mind_specif -> sorts list
 val mis_recargs : mind_specif -> (recarg list) array array
 val mis_recarg : mind_specif -> (recarg list) array
 val mis_typename : mind_specif -> identifier
+val mis_typepath : mind_specif -> section_path
 val is_recursive : int list -> recarg list array -> bool
 val mis_is_recursive : mind_specif -> bool
 val mis_consnames : mind_specif -> identifier array
