@@ -121,6 +121,19 @@ let contents_first_level mp =
     | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; (mp,!s)
     | _ -> mp,!s
 
+(* The previous functions might fail if [mp] isn't a directly visible module. *)
+(* Ex: [MPself] under functor, [MPbound], etc ... *)
+(* Exception [Not_found] is catched in [pp_global]. *) 
+
+let contents_first_level = 
+  let cache = ref MPmap.empty in 
+  fun mp -> 
+    try MPmap.find mp !cache 
+    with Not_found -> 
+      let res = contents_first_level mp in 
+      cache := MPmap.add mp res !cache; 
+      res
+
 let modules_first_level mp = 
   let s = ref Stringset.empty in 
   let add id = s := Stringset.add (rename_module id) !s in 
@@ -131,15 +144,6 @@ let modules_first_level mp =
   match (Environ.lookup_module mp !cur_env).mod_expr with 
     | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; !s
     | _ -> !s
-
-let contents_first_level = 
-  let cache = ref MPmap.empty in 
-  fun mp -> 
-    try MPmap.find mp !cache 
-    with Not_found -> 
-      let res = contents_first_level mp in 
-      cache := MPmap.add mp res !cache; 
-      res
 
 let rec clash_in_contents mp0 s = function  
   | [] -> false
@@ -225,7 +229,7 @@ let create_mono_renamings struc =
 module ToplevelParams = struct
   let globals () = Idset.empty
   let pp_global _ r = pr_global r
-  let pp_long_module mp = str (string_of_mp mp)
+  let pp_long_module _ mp = str (string_of_mp mp)
   let pp_short_module id = pr_id id
 end
 
@@ -261,12 +265,12 @@ module StdParams = struct
     then 
       if (Refset.mem r !must_qualify) || (lang () = Haskell)
       then str (string_of_ren l s)
-      else
+      else 
 	try 
 	  if clash_in_contents mp s (decreasing_contents cur_mp) 
 	  then str (string_of_ren l s)
 	  else str s
-	with Not_found -> str (string_of_ren l s)
+	with Not_found -> str (string_of_ren l s) 
     else 
       let nl = List.length l in 
       if n = nl && nl < List.length cur_l then (* strict prefix *)
@@ -279,8 +283,12 @@ module StdParams = struct
 	let l = remove_common cur_l l 
 	in str (string_of_ren l s)
 	     
-  let pp_long_module mp = 
-    str (string_of_modlist (if !modular then mp_to_list mp else mp_to_list' mp))
+  let pp_long_module cur_mp mp = 
+    let cur_mp = long_mp cur_mp in 
+    let cur_l = if !modular then mp_to_list cur_mp else mp_to_list' cur_mp in 
+    let mp = long_mp mp in 
+    let l = if !modular then mp_to_list mp else mp_to_list' mp in 
+    str (string_of_modlist (remove_common cur_l l))
 
   let pp_short_module id = str (rename_module id)
 end

@@ -65,6 +65,8 @@ let space_if = function true -> str " " | false -> mt ()
 
 let sec_space_if = function true -> spc () | false -> mt ()
 
+let fnl2 () = fnl () ++ fnl () 
+
 (*s Generic renaming issues. *)
 
 let rec rename_id id avoid = 
@@ -344,7 +346,7 @@ and pp_fix par env i (ids,bl) args =
 
 let pp_val e typ = 
   str "(** val " ++ e ++ str " : " ++ pp_type false [] typ ++ 
-  str " **)"  ++ fnl () ++ fnl ()
+  str " **)"  ++ fnl2 ()
 
 (*s Pretty-printing of [Dfix] *)
 
@@ -355,12 +357,11 @@ let rec pp_Dfix init i ((rv,c,t) as fix) =
     if is_inline_custom r then pp_Dfix init (i+1) fix
     else 
       let e = pp_global r in
-      (if init then mt () else fnl ()) ++
+      (if init then mt () else fnl2 ()) ++
       pp_val e t.(i) ++
       str (if init then "let rec " else "and ") ++
       (if is_custom r then e ++ str " = " ++ str (find_custom r)
        else pp_function (empty_env ()) e c.(i)) ++
-      fnl () ++ 
       pp_Dfix false (i+1) fix 
 	
 (*s Pretty-printing of inductive types declaration. *)
@@ -383,14 +384,14 @@ let pp_one_ind prefix ip pl cv =
   else fnl () ++ v 0 (prvect_with_sep fnl pp_constructor
 			(Array.mapi (fun i c -> ConstructRef (ip,i+1), c) cv))
 
-let pp_comment s = str "(* " ++ s ++ str " *)" ++ fnl ()
+let pp_comment s = str "(* " ++ s ++ str " *)"
 
 let pp_logical_ind ip packet = 
-  pp_comment (pr_global (IndRef ip) ++ str " : logical inductive") ++
+  pp_comment (pr_global (IndRef ip) ++ str " : logical inductive") ++ fnl () ++
   pp_comment (str "with constructors : " ++ 
 	      prvect_with_sep spc pr_global 
 		(Array.mapi (fun i _ -> ConstructRef (ip,i+1)) packet.ip_types)) 
-    
+
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
   hov 2 (str "type " ++ pp_parameters l ++
@@ -408,7 +409,7 @@ let pp_record kn packet =
   str "type " ++ pp_parameters pl ++ pp_global (IndRef (kn,0)) ++ str " = { "++
   hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ()) 
 	   (fun (r,t) -> pp_global r ++ str " : " ++ pp_type true pl t) l) 
-  ++ str " }" ++ fnl () 
+  ++ str " }"
 
 let pp_coind ip pl = 
   let r = IndRef ip in 
@@ -416,72 +417,83 @@ let pp_coind ip pl =
   pp_parameters pl ++ pp_global r ++ str " = " ++ 
   pp_parameters pl ++ str "__" ++ pp_global r ++ str " Lazy.t"
 
-let rec pp_ind co first kn i ind =
-  if i >= Array.length ind.ind_packets then 
-    if first then mt () else fnl ()
-  else 
-    let ip = (kn,i) in 
-    let p = ind.ind_packets.(i) in 
-    if is_custom (IndRef (kn,i)) then pp_ind co first kn (i+1) ind
+let pp_ind co kn ind =
+  let some = ref false in 
+  let init= ref (str "type ") in 
+  let rec pp i =  
+    if i >= Array.length ind.ind_packets then mt () 
     else 
-      if p.ip_logical then  
-	pp_logical_ind ip p ++ pp_ind co first kn (i+1) ind
-      else 
-	str (if first then "type " else "and ") ++
-	(if co then pp_coind ip p.ip_vars ++ fnl () ++ str "and " else mt ()) ++ 
-	pp_one_ind (if co then "__" else "") ip p.ip_vars p.ip_types ++
-	fnl () ++ pp_ind co false kn (i+1) ind
+      let ip = (kn,i) in 
+      let p = ind.ind_packets.(i) in 
+      if is_custom (IndRef (kn,i)) then pp (i+1)
+      else begin 
+	some := true; 
+	if p.ip_logical then pp_logical_ind ip p ++ pp (i+1)
+	else 
+	  let s = !init in 
+	  begin 
+	    init := (fnl () ++ str "and "); 
+	    s ++
+	    (if co then pp_coind ip p.ip_vars ++ fnl () ++ str "and " else mt ())
+	    ++ pp_one_ind (if co then "__" else "") ip p.ip_vars p.ip_types ++
+	    pp (i+1)
+	  end
+      end
+  in 
+  let st = pp 0 in if !some then st else failwith "empty phrase"
+	     
 
 (*s Pretty-printing of a declaration. *)
 
 let pp_mind kn i = 
   let kn = long_kn kn in 
   (match i.ind_info with 
-     | Singleton -> pp_singleton kn i.ind_packets.(0) ++ fnl ()
+     | Singleton -> pp_singleton kn i.ind_packets.(0)
      | Coinductive -> 
 	 let nop _ = () 
 	 and add r = cons_cofix := Refset.add (long_r r) !cons_cofix in 
 	 decl_iter_references nop add nop (Dind (kn,i)); 
-	 hov 0 (pp_ind true true kn 0 i) ++ fnl () 
-     | Record -> pp_record kn i.ind_packets.(0) ++ fnl () 
-     | _ -> hov 0 (pp_ind false true kn 0 i))
-  
+	 pp_ind true kn i
+     | Record -> pp_record kn i.ind_packets.(0)
+     | _ -> pp_ind false kn i)
+
 let pp_decl mp = 
   local_mp := mp; 
   function
     | Dind (kn,i) as d -> pp_mind kn i
     | Dtype (r, l, t) ->
-	if is_inline_custom r then mt () 
+	if is_inline_custom r then failwith "empty phrase"
 	else 
 	  let l = rename_tvars keywords l in 
 	  let def = try str (find_custom r) with not_found -> pp_type false l t 
 	  in 
-	  hov 0 (str "type" ++ spc () ++ pp_parameters l ++ pp_global r ++ 
-		 spc () ++ str "=" ++ spc () ++ def ++ fnl () ++ fnl ())
+	  hov 2 (str "type" ++ spc () ++ pp_parameters l ++ pp_global r ++ 
+		 spc () ++ str "=" ++ spc () ++ def)
     | Dterm (r, a, t) -> 
-	if is_inline_custom r then mt () 
+	if is_inline_custom r then failwith "empty phrase"
 	else 
 	  let e = pp_global r in 
 	  pp_val e t ++
 	  hov 0 
 	    (str "let " ++ 
-	     if is_custom r then e ++ str " = " ++ str (find_custom r) ++ fnl () 
+	     if is_custom r then 
+	       e ++ str " = " ++ str (find_custom r)
 	     else if is_projection r then e ++ str " x = x." ++ e ++ fnl () 
-	     else pp_function (empty_env ()) e a ++ fnl ()) ++ fnl ()
+	     else pp_function (empty_env ()) e a)
     | Dfix (rv,defs,typs) ->
-	hov 0 (pp_Dfix true 0 (rv,defs,typs)) ++ fnl ()
+	pp_Dfix true 0 (rv,defs,typs)
 
 let pp_spec mp = 
   local_mp := mp; 
   function 
     | Sind (kn,i) -> pp_mind kn i
     | Sval (r,t) -> 
-	if is_inline_custom r then mt () 
+	if is_inline_custom r then failwith "empty phrase"
 	else 
-	  hov 0 (str "val" ++ spc () ++ pp_global r ++ str " :" ++ spc () ++
-		 pp_type false [] t ++ fnl () ++ fnl ())
+	  hov 2 (str "val" ++ spc () ++ pp_global r ++ str " :" ++ spc () ++
+		 pp_type false [] t)
     | Stype (r,vl,ot) -> 
-	if is_inline_custom r then mt () 
+	if is_inline_custom r then failwith "empty phrase"
 	else 
 	  let l = rename_tvars keywords vl in 
 	  let def = 
@@ -491,72 +503,85 @@ let pp_spec mp =
 		| None -> mt () 
 		| Some t -> str "=" ++ spc () ++ pp_type false l t 
 	  in 
-	  hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
-		 pp_global r ++ spc () ++ def ++ fnl () ++ fnl ())
+	  hov 2 (str "type" ++ spc () ++ pp_parameters l ++ 
+		 pp_global r ++ spc () ++ def)
 
 let rec pp_structure_elem mp = function 
   | (_,SEdecl d) -> pp_decl mp d
   | (l,SEmodule m) ->
-      str "module " ++ P.pp_short_module (id_of_label l) ++ 
-      (match m.ml_mod_equiv with 
-	 | None -> 
-	     str ":" ++ fnl () ++ pp_module_type m.ml_mod_type ++ fnl () ++ 
-	     str " = " ++ fnl () ++ 
-	     (match m.ml_mod_expr with 
-		| None -> failwith "TODO: if this happens, see Jacek"
-		| Some me -> pp_module_expr me ++ fnl ())
-	 | Some mp -> str " = " ++ P.pp_long_module mp ++ fnl ()) ++ fnl ()
+      hov 1 
+	(str "module " ++ P.pp_short_module (id_of_label l) ++ 
+	 (match m.ml_mod_equiv with 
+	    | None -> 
+		str " :" ++ fnl () ++ 
+		pp_module_type mp m.ml_mod_type ++ fnl () ++
+		str "= " ++ fnl () ++ 
+		(match m.ml_mod_expr with 
+		   | None -> assert false (* see Jacek *)
+		   | Some me -> pp_module_expr mp me)
+	    | Some mp' -> 
+		str " = " ++ P.pp_long_module mp mp'))
   | (l,SEmodtype m) -> 
-      str "module type " ++ P.pp_short_module (id_of_label l) ++
-      str " = " ++ pp_module_type m ++ fnl () ++ fnl ()
+      hov 1 
+	(str "module type " ++ P.pp_short_module (id_of_label l) ++
+	 str " = " ++ fnl () ++ pp_module_type mp m)
 
-and pp_module_expr = function 
-  | MEident mp -> P.pp_long_module mp 
+and pp_module_expr mp = function 
+  | MEident mp' -> P.pp_long_module mp mp'
   | MEfunctor (mbid, mt, me) -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
       str ":" ++
-      pp_module_type mt ++
-      str ") ->" ++
-      pp_module_expr me
+      pp_module_type mp mt ++
+      str ") ->" ++ fnl () ++
+      pp_module_expr mp me
   | MEapply (me, me') -> 
-      str "(" ++ pp_module_expr me ++ str " (" ++ pp_module_expr me' ++ str ")"
+      pp_module_expr mp me ++ str "(" ++ pp_module_expr mp me' ++ str ")"
   | MEstruct (msid, sel) -> 
+      let l = map_succeed (pp_structure_elem (MPself msid)) sel in 
       str "struct " ++ fnl () ++
-      prlist_with_sep fnl (pp_structure_elem (MPself msid)) sel ++ fnl () ++
-      str "end" 
+      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++ 
+      fnl () ++ str "end" 
 
-and pp_module_type = function 
+and pp_module_type mp = function 
   | MTident kn -> 
-      let mp,_,l = repr_kn kn in P.pp_long_module (MPdot (mp,l)) 
+      let mp',_,l = repr_kn kn in P.pp_long_module mp (MPdot (mp,l)) 
   | MTfunsig (mbid, mt, mt') -> 
       str "functor (" ++ 
       P.pp_short_module (id_of_mbid mbid) ++
       str ":" ++
-      pp_module_type mt ++
-      str ") ->" ++ 
-      pp_module_type mt'
+      pp_module_type mp mt ++
+      str ") ->" ++ fnl () ++
+      pp_module_type mp mt'
   | MTsig (msid, sign) -> 
+      let l = map_succeed (pp_specif (MPself msid)) sign in 
       str "sig " ++ fnl () ++ 
-      prlist_with_sep fnl (pp_specif (MPself msid)) sign ++ fnl () ++
-      str "end"
+      v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
+      fnl () ++ str "end"
 
 and pp_specif mp = function 
   | (_,Spec s) -> pp_spec mp s 
   | (l,Smodule mt) -> 
-      str "module " ++ 
-      P.pp_short_module (id_of_label l) ++
-      str " : " ++ pp_module_type mt ++ fnl () ++ fnl ()
+      hov 1 
+	(str "module " ++ 
+	 P.pp_short_module (id_of_label l) ++
+	 str " : " ++ fnl () ++ pp_module_type mp mt)
   | (l,Smodtype mt) -> 
-      str "module type " ++
-      P.pp_short_module (id_of_label l) ++
-      str " : " ++ pp_module_type mt ++ fnl () ++ fnl ()
+      hov 1
+	(str "module type " ++
+	 P.pp_short_module (id_of_label l) ++
+	 str " = " ++ fnl () ++ pp_module_type mp mt)
 
-let pp_struct =
-  prlist (fun (mp,sel) -> prlist (pp_structure_elem mp) sel)
+let pp_struct s =
+  let pp mp s = pp_structure_elem mp s ++ fnl2 () in 
+  prlist (fun (mp,sel) -> prlist identity (map_succeed (pp mp) sel)) s
 
-let pp_signature = 
-  prlist (fun (mp,sign) -> prlist (pp_specif mp) sign)
+let pp_signature s = 
+  let pp mp s = pp_specif mp s ++ fnl2 () in 
+  prlist (fun (mp,sign) -> prlist identity (map_succeed (pp mp) sign)) s
+
+let pp_decl mp d = 
+  try pp_decl mp d with Failure "empty phrase" -> mt () 
 
 end
 
