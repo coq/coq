@@ -723,3 +723,10 @@ let heap_size () =
   (max_words_total * Sys.word_size / 8)
 
 let heap_size_kb () = (heap_size () + 1023) / 1024
+
+(*s interruption *)
+
+let interrupt = ref false
+let check_for_interrupt () = 
+  if !interrupt then begin interrupt := false; raise Sys.Break end
+

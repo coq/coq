@@ -150,6 +150,7 @@ let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 Constraint.empty
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv = 
+  Util.check_for_interrupt ();
   eqappr cv_pb infos
     (lft1, whd_stack infos term1 [])
     (lft2, whd_stack infos term2 [])

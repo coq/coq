@@ -217,3 +217,9 @@ val size_kb : 'a -> int
 
 val heap_size : unit -> int
 val heap_size_kb : unit -> int
+
+(*s Coq interruption: set the following boolean reference to interrupt Coq
+    (it eventually raises [Break], simulating a Ctrl-C) *)
+
+val interrupt : bool ref
+val check_for_interrupt : unit -> unit
