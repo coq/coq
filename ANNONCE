@@ -1,6 +1,7 @@
 
-  The Coq development team is very pleased to announce the beta
-release of Coq version 8.0, a new major evolution of the Coq system.
+  Finally... the final version of Coq 8.0 is coming out. This major
+evolution of the Coq system provides the following features (for changes
+wrt to the beta version of Coq 8.0 see further).
 
   First, the logical system of Coq version 8.0 has been simplified by
 removing the impredicativity of the sort Set. This allows to benefit
@@ -44,18 +45,25 @@ comes with about 200 exercices and their solution in Coq. Details are
 on http://www.labri.fr/~casteran/CoqArt.
 
 
-  The sources of Coq V8.0 beta, including its integrated development
+  The main change wrt to Coq 8.0 beta is a modified semantics of the
+if-then-else construction, which may lead to the need of rerunning the
+translator, or to modify some few lines by hand. All other
+modifications consist in extensions or bug fixes (see file
+Changes.html on Coq web site for the details).
+
+
+  The sources of Coq V8.0, including its integrated development
 environment, are available from http://coq.inria.fr/ and
-ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0beta/. The translation
-package coq-8.0beta-translator.tar.gz is available separately at
-the same location.
+ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0/. The translation package
+coq-8.0-translator.tar.gz is available separately at the same
+location.
 
   Please refer to the accompanying document CHANGES or the location
-ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0beta/doc/Changes.html for a
+ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0/doc/Changes.html for a
 full list of changes including sources of incompatibilities.
 
-  The (at the time partial) documentation of Coq V8.0 is available in
-postscript, pdf and html format.
+  The documentation of Coq V8.0 is available in postscript, pdf and
+html format.
 
   Users are kindly invited to report bugs at http://coq.inria.fr/bin/coq-bugs
 and to mail Coq-Club@pauillac.inria.fr for general questions or remarks.
