@@ -81,6 +81,7 @@ val latex_string : string -> unit
 val html_char : char -> unit
 val html_string : string -> unit
 val verbatim_char : char -> unit
+val hard_verbatim_char : char -> unit
 
 val start_latex_math : unit -> unit
 val stop_latex_math : unit -> unit
