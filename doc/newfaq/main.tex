@@ -1282,8 +1282,7 @@ while {\assert} is.
 todo
 
 
-\section{Proof management}
-
+\subsection{Proof management}
 
 
 \Question{How can I change the order of the subgoals?}
@@ -2048,12 +2047,13 @@ Glib.Utf8.from_unichar 0x2200;;
     shortcut. 
 \end{itemize}
 
-\Question{What encoding should I use? What is this x{iiii} in my file?}
+\Question{What encoding should I use? What is this $\backslash$x\{iiii\} in my file?}
  The encoding option is related to the way files are saved. 
  Keep it as UTF-8 until it becomes important for you to exchange files 
  with non UTF-8 aware applications.
  If you choose something else than UTF-8, then missing characters will 
- be encoded by \\x{....} or \\x{........} where each dot is an hex. digit. 
+ be encoded by $\backslash$x\{....\} or $\backslash$x\{........\}
+ where each dot is an hex. digit. 
  The number between braces is the hexadecimal UNICODE index for the
   missing character.
     
