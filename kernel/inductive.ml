@@ -3,6 +3,7 @@
 
 open Util
 open Names
+open Univ
 open Generic
 open Term
 open Sign
@@ -27,6 +28,7 @@ type mutual_inductive_body = {
   mind_ntypes : int;
   mind_hyps : typed_type signature;
   mind_packets : mutual_inductive_packet array;
+  mind_constraints : constraints;
   mind_singl : constr option;
   mind_nparams : int }
 

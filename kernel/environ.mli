@@ -29,6 +29,7 @@ val context : 'a unsafe_env -> context
 val push_var : identifier * typed_type -> 'a unsafe_env -> 'a unsafe_env
 val push_rel : name * typed_type -> 'a unsafe_env -> 'a unsafe_env
 val set_universes : universes -> 'a unsafe_env -> 'a unsafe_env
+val add_constraints : constraints -> 'a unsafe_env -> 'a unsafe_env
 val add_constant : 
   section_path -> constant_body -> 'a unsafe_env -> 'a unsafe_env
 val add_mind : 

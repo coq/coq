@@ -57,13 +57,13 @@ val j_val : judgment -> constr
 val j_type : judgment -> constr
 val j_kind : judgment -> constr
 
-val safe_machine : 'a environment -> constr -> judgment * universes
+val safe_machine : 'a environment -> constr -> judgment * constraints
 val safe_machine_type : 'a environment -> constr -> typed_type
 
-val fix_machine : 'a environment -> constr -> judgment * universes
+val fix_machine : 'a environment -> constr -> judgment * constraints
 val fix_machine_type : 'a environment -> constr -> typed_type
 
-val unsafe_machine : 'a environment -> constr -> judgment * universes
+val unsafe_machine : 'a environment -> constr -> judgment * constraints
 val unsafe_machine_type : 'a environment -> constr -> typed_type
 
 val type_of : 'a environment -> constr -> constr

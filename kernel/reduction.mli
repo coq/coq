@@ -129,11 +129,9 @@ type conv_pb =
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-type conversion_result =
-  | Convertible of universes
-  | NotConvertible
+type conversion_test = constraints -> constraints
 
-type conversion_test = universes -> conversion_result
+exception NotConvertible
 
 val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
 val base_sort_cmp : conv_pb -> sorts -> sorts -> bool
@@ -144,28 +142,23 @@ val convert_or : conversion_test -> conversion_test -> conversion_test
 val convert_forall2 : 
   ('a -> 'b -> conversion_test) -> 'a array -> 'b array -> conversion_test
 
-type 'a conversion_function = 
-    'a unsafe_env -> constr -> constr -> conversion_result
+type 'a conversion_function = 'a unsafe_env -> constr -> constr -> constraints
 
 val fconv : conv_pb -> 'a conversion_function
 
-(* [fconv] has 2 instances:
-   \begin{itemize}
-   \item [conv = fconv CONV] : 
-     conversion test, and adjust universes constraints
-   \item [conv_leq = fconv CONV_LEQ] : cumulativity test, adjust universes
-   \end{itemize} *)
+(* [fconv] has 2 instances: [conv = fconv CONV] i.e. conversion test, and
+   [conv_leq = fconv CONV_LEQ] i.e. cumulativity test. *)
 
 val conv : 'a conversion_function
 val conv_leq : 'a conversion_function
 
 val conv_forall2 : 
   'a conversion_function -> 'a unsafe_env 
-    -> constr array -> constr array -> conversion_result
+    -> constr array -> constr array -> constraints
 
 val conv_forall2_i : 
   (int -> 'a conversion_function) -> 'a unsafe_env 
-    -> constr array -> constr array -> conversion_result
+    -> constr array -> constr array -> constraints
 
 val is_conv : 'a unsafe_env -> constr -> constr -> bool
 val is_conv_leq : 'a unsafe_env -> constr -> constr -> bool

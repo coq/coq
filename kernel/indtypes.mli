@@ -3,6 +3,7 @@
 
 (*i*)
 open Names
+open Univ
 open Term
 open Inductive
 open Environ
@@ -18,5 +19,5 @@ val sort_of_arity : 'a unsafe_env -> constr -> sorts
 val cci_inductive : 
   'a unsafe_env -> 'a unsafe_env -> path_kind -> int -> bool -> 
     (identifier * typed_type * identifier list * bool * bool * constr) list ->
-      mutual_inductive_body
-
+      constraints ->
+      	mutual_inductive_body

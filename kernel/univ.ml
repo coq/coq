@@ -48,11 +48,6 @@ type arc = Arc of universe * relation
 
 type universes = arc UniverseMap.t
 
-exception UniverseInconsistency
-
-type constraint_function = 
-    universe -> universe -> universes -> universes
-
 (* in Arc(u,Greater(b,v,r))::arcs, we have u>v if b, and u>=v if not b, 
    and r is the next relation pertaining to u; this relation may be
    Greater or Terminal. *)
@@ -244,12 +239,14 @@ let merge_disc g u v =
 
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
-let error_inconsistency () =
-  raise UniverseInconsistency
+
+exception UniverseInconsistency
+
+let error_inconsistency () = raise UniverseInconsistency
 
 (* enforcegeq : universe -> universe -> unit *)
 (* enforcegeq u v will force u>=v if possible, will fail otherwise *)
-let enforce_geq u v g =
+let enforce_univ_geq u v g =
   let g = declare_univ u g in
   let g = declare_univ v g in
   match compare g u v with
@@ -263,7 +260,7 @@ let enforce_geq u v g =
 
 (* enforceq : universe -> universe -> unit *)
 (* enforceq u v will force u=v if possible, will fail otherwise *)
-let enforce_eq u v g =
+let enforce_univ_eq u v g =
   let g = declare_univ u g in
   let g = declare_univ v g in
   match compare g u v with
@@ -278,7 +275,7 @@ let enforce_eq u v g =
            | EQ -> anomaly "compare")
 
 (* enforcegt u v will force u>v if possible, will fail otherwise *)
-let enforce_gt u v g =
+let enforce_univ_gt u v g =
   let g = declare_univ u g in
   let g = declare_univ v g in
   match compare g u v with
@@ -290,20 +287,50 @@ let enforce_gt u v g =
            | NGE -> setgt g u v
            | _ -> error_inconsistency())
 
-let enforce_relation g u = 
+let enforce_univ_relation g u = 
   let rec enfrec g = function
     | Terminal -> g
-    | Equiv v -> enforce_eq u v g
-    | Greater(false,v,r) -> enfrec (enforce_geq u v g) r
-    | Greater(true,v,r) -> enfrec (enforce_gt u v g) r
+    | Equiv v -> enforce_univ_eq u v g
+    | Greater(false,v,r) -> enfrec (enforce_univ_geq u v g) r
+    | Greater(true,v,r) -> enfrec (enforce_univ_gt u v g) r
   in 
   enfrec g
     
 
 (* Merging 2 universe graphs *)
 let merge_universes sp u1 u2 =
-  UniverseMap.fold (fun _ (Arc(u,r)) g -> enforce_relation g u r) u1 u2
+  UniverseMap.fold (fun _ (Arc(u,r)) g -> enforce_univ_relation g u r) u1 u2
 
+
+
+(* Constraints and sets of consrtaints. *)
+
+type constraint_type = Gt | Geq | Eq
+
+type univ_constraint = universe * constraint_type * universe
+
+module Constraint = Set.Make(
+  struct 
+    type t = univ_constraint 
+    let compare = Pervasives.compare 
+  end)
+		      
+type constraints = Constraint.t
+
+type constraint_function = 
+    universe -> universe -> constraints -> constraints
+
+let enforce_gt u v c = Constraint.add (u,Gt,v) c
+let enforce_geq u v c = Constraint.add (u,Geq,v) c
+let enforce_eq u v c = Constraint.add (u,Eq,v) c
+
+let merge_constraints c g =
+  Constraint.fold 
+    (fun cst g -> match cst with
+       | (u,Gt,v) -> enforce_univ_gt u v g
+       | (u,Geq,v) -> enforce_univ_geq u v g
+       | (u,Eq,v) -> enforce_univ_eq u v g)
+    c g
 
 (* Returns the least upper bound of universes u and v. If they are not
    constrained, then a new universe is created.
@@ -315,25 +342,37 @@ let sup u v g =
     | NGE -> 
 	(match compare g v u with
            | NGE -> 
-	       let w = new_univ u.u_sp in 
-	       let g' = setgeq g w u in
-	       w, setgeq g' w v
-           | _ -> v, g)
-    | _ -> u, g
+	       let w = new_univ u.u_sp in
+	       let c = Constraint.add (w,Geq,u) 
+			 (Constraint.singleton (w,Geq,v)) in
+	       w, c
+           | _ -> v, Constraint.empty)
+    | _ -> u, Constraint.empty
 
 (* Returns a fresh universe, juste above u. Does not create new universes
    for Type_0 (the sort of Prop and Set).
    Used to type the sort u. *)
-let super u g = 
+let super u = 
   if u == prop_univ then 
-    prop_univ_univ, g
+    prop_univ_univ, Constraint.empty
   else if u == prop_univ_univ then 
-    prop_univ_univ_univ, g
+    prop_univ_univ_univ, Constraint.empty
   else
-    let g = declare_univ u g in
     let v = new_univ u.u_sp in
-    let g' = enter_arc (Arc(v,Greater(true,u,Terminal))) g in
-    v,g'
+    let c = Constraint.singleton (v,Gt,u) in
+    v,c
+
+let super_super u =
+  if u == prop_univ then
+    prop_univ_univ, prop_univ_univ_univ, Constraint.empty
+  else if u == prop_univ_univ then 
+    let v = new_univ u.u_sp in
+    prop_univ_univ_univ, v, Constraint.singleton (v,Gt,prop_univ_univ_univ)
+  else
+    let v = new_univ u.u_sp in
+    let w = new_univ u.u_sp in
+    let c = Constraint.add (w,Gt,v) (Constraint.singleton (v,Gt,u)) in
+    v, w, c
 
 (* Pretty-printing *)
 let num_universes g =

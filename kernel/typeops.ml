@@ -337,41 +337,40 @@ let type_of_prop_or_set cts =
 
 (* Type of Type(i). *)
 
-let type_of_type u g =
-  let (uu,g') = super u g in
-  let (uuu,g'') = super uu g' in
+let type_of_type u =
+  let (uu,uuu,c) = super_super u in
   { uj_val = DOP0 (Sort (Type u));
     uj_type = DOP0 (Sort (Type uu));
     uj_kind = DOP0 (Sort (Type uuu)) },
-  g''
+  c
 
-let type_of_sort c g =
+let type_of_sort c =
   match c with
-    | DOP0 (Sort (Type u)) -> let (uu,g') = super u g in mkType uu, g'
-    | DOP0 (Sort (Prop _)) -> mkType prop_univ, g
+    | DOP0 (Sort (Type u)) -> let (uu,cst) = super u in mkType uu, cst
+    | DOP0 (Sort (Prop _)) -> mkType prop_univ, Constraint.empty
     | _ -> invalid_arg "type_of_sort"
 
 (* Type of a lambda-abstraction. *)
 
-let sort_of_product domsort rangsort g0 =
+let sort_of_product domsort rangsort g =
   match rangsort with
     (* Product rule (s,Prop,Prop) *) 
-    | Prop _ -> rangsort, g0
+    | Prop _ -> rangsort, Constraint.empty
     | Type u2 ->
         (match domsort with
            (* Product rule (Prop,Type_i,Type_i) *)
-           | Prop _ -> rangsort, g0
+           | Prop _ -> rangsort, Constraint.empty
            (* Product rule (Type_i,Type_i,Type_i) *) 
-           | Type u1 -> let (u12,g1) = sup u1 u2 g0 in Type u12, g1)
+           | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
 
 let abs_rel env name var j =
   let rngtyp = whd_betadeltaiota env j.uj_kind in
   let cvar = incast_type var in
-  let (s,g) = sort_of_product var.typ (destSort rngtyp) (universes env) in
+  let (s,cst) = sort_of_product var.typ (destSort rngtyp) (universes env) in
   { uj_val = mkLambda name cvar (j_val j);
     uj_type = mkProd name cvar j.uj_type;
     uj_kind = mkSort s },
-  g
+  cst
 
 (* Type of a product. *)
 
@@ -386,7 +385,7 @@ let gen_rel env name var j =
       | DOP0(Sort s) ->
 	  let (s',g) = sort_of_product var.typ s (universes env) in
           let res_type = mkSort s' in
-	  let (res_kind,g') = type_of_sort res_type g in
+	  let (res_kind,g') = type_of_sort res_type in
           { uj_val = 
 	      mkProd name (mkCast var.body (mkSort var.typ)) (j_val_cast j);
             uj_type = res_type;
@@ -406,29 +405,29 @@ let cast_rel env cj tj =
 
 (* Type of an application. *)
 
-let apply_rel_list env0 nocheck argjl funj =
-  let rec apply_rec env typ = function
+let apply_rel_list env nocheck argjl funj =
+  let rec apply_rec typ cst = function
     | [] -> 
 	{ uj_val  = applist (j_val_only funj, List.map j_val_only argjl);
           uj_type = typ;
           uj_kind = funj.uj_kind },
-	universes env
+	cst
     | hj::restjl ->
         match whd_betadeltaiota env typ with
           | DOP2(Prod,c1,DLAM(_,c2)) ->
               if nocheck then
-                apply_rec env (subst1 hj.uj_val c2) restjl
+                apply_rec (subst1 hj.uj_val c2) cst restjl
 	      else 
-		(match conv_leq env hj.uj_type c1 with
-		   | Convertible g ->
-		       let env' = set_universes g env in
-		       apply_rec env' (subst1 hj.uj_val c2) restjl
-		   | NotConvertible -> 
-		       error_cant_apply CCI env "Type Error" funj argjl)
+		(try 
+		   let c = conv_leq env hj.uj_type c1 in
+		   let cst' = Constraint.union cst c in
+		   apply_rec (subst1 hj.uj_val c2) cst' restjl
+		 with NotConvertible -> 
+		   error_cant_apply CCI env "Type Error" funj argjl)
           | _ ->
               error_cant_apply CCI env "Non-functional construction" funj argjl
   in 
-  apply_rec env0 funj.uj_type argjl
+  apply_rec funj.uj_type Constraint.empty argjl
 
 
 (* Fixpoints. *)
@@ -895,16 +894,10 @@ let type_fixpoint env lna lar vdefj =
   let lt = Array.length vdefj in
   assert (Array.length lar = lt);
   try
-    let cv = 
-      conv_forall2_i
-	(fun i e def ar -> 
-	   let c = conv_leq e def (lift lt ar) in
-	   if c = NotConvertible then raise (IllBranch i) else c)
-	env (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)
-    in
-    begin match cv with
-      | Convertible g -> g
-      | NotConvertible -> assert false
-    end
+    conv_forall2_i
+      (fun i e def ar -> 
+	 try conv_leq e def (lift lt ar) 
+	 with NotConvertible -> raise (IllBranch i))
+      env (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)
   with IllBranch i ->
     error_ill_typed_rec_body CCI env i lna vdefj lar

@@ -742,42 +742,27 @@ let pb_equal = function
   | CONV_LEQ -> CONV
   | CONV -> CONV
 
-type conversion_result =
-  | Convertible of universes
-  | NotConvertible
-
-type 'a conversion_function = 
-    'a unsafe_env -> constr -> constr -> conversion_result
+type 'a conversion_function = 'a unsafe_env -> constr -> constr -> constraints
 
 (* Conversion utility functions *)
 
-let convert_of_constraint f u =
-  try Convertible (f u) with UniverseInconsistency -> NotConvertible
+type conversion_test = constraints -> constraints
 
-type conversion_test = universes -> conversion_result
+exception NotConvertible
 
-let convert_of_bool b u =
-  if b then Convertible u else NotConvertible
+let convert_of_bool b c =
+  if b then c else raise NotConvertible
 
 let bool_and_convert b f = 
-  if b then f else fun _ -> NotConvertible
+  if b then f else fun _ -> raise NotConvertible
 
-let convert_and f1 f2 u = 
-  match f1 u with
-    | Convertible u' -> f2 u'
-    | NotConvertible -> NotConvertible
+let convert_and f1 f2 c = f2 (f1 c)
 
-let convert_or f1 f2 u =
-  match f1 u with
-    | NotConvertible -> f2 u
-    | c -> c
+let convert_or f1 f2 c =
+  try f1 c with NotConvertible -> f2 c
 
-let convert_forall2 f v1 v2 u =
-  array_fold_left2 
-    (fun a x y -> match a with
-       | NotConvertible -> NotConvertible
-       | Convertible u -> f x y u)
-    (Convertible u) v1 v2
+let convert_forall2 f v1 v2 c =
+  array_fold_left2 (fun c x y -> f x y c) c v1 v2
 
 (* Convertibility of sorts *)
 
@@ -787,9 +772,9 @@ let sort_cmp pb s0 s1 =
     | (Prop c1, Type u)  -> convert_of_bool (not (pb_is_equal pb))
     | (Type u1, Type u2) ->
 	(match pb with
-           | CONV -> convert_of_constraint (enforce_eq u1 u2)
-	   | CONV_LEQ -> convert_of_constraint (enforce_geq u2 u1))
-    | (_, _) -> fun _ -> NotConvertible
+           | CONV -> enforce_eq u1 u2
+	   | CONV_LEQ -> enforce_geq u2 u1)
+    | (_, _) -> fun _ -> raise NotConvertible
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
@@ -845,7 +830,7 @@ and eqappr cv_pb infos appr1 appr2 =
              | None -> (match search_frozen_cst infos (Const sp1) al1 with
                           | Some def1 -> eqappr cv_pb infos
 				(lft1, fhnf_apply infos n1 def1 v1) appr2
-			  | None -> fun _ -> NotConvertible))
+			  | None -> fun _ -> raise NotConvertible))
 
     | (FOPN(Abst sp1,al1), FOPN(Abst sp2,al2)) ->
 	convert_or
@@ -861,20 +846,20 @@ and eqappr cv_pb infos appr1 appr2 =
              | None -> (match search_frozen_cst infos (Abst sp1) al2 with
                           | Some def1 -> eqappr cv_pb infos
 				(lft1, fhnf_apply infos n1 def1 v1) appr2
-			  | None -> fun _ -> NotConvertible))
+			  | None -> fun _ -> raise NotConvertible))
 
     (* only one constant or abstraction *)
     | (FOPN((Const _ | Abst _) as op,al1), _)      ->
         (match search_frozen_cst infos op al1 with
            | Some def1 -> 
 	       eqappr cv_pb infos (lft1, fhnf_apply infos n1 def1 v1) appr2
-           | None -> fun _ -> NotConvertible)
+           | None -> fun _ -> raise NotConvertible)
 
     | (_, FOPN((Const _ | Abst _) as op,al2))      ->
         (match search_frozen_cst infos op al2 with
            | Some def2 -> 
 	       eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
-           | None -> fun _ -> NotConvertible)
+           | None -> fun _ -> raise NotConvertible)
 	
     (* other constructors *)
     | (FOP2(Lambda,c1,c2), FOP2(Lambda,c'1,c'2)) ->
@@ -920,48 +905,35 @@ and eqappr cv_pb infos appr1 appr2 =
            (convert_forall2 
 	      (ccnv cv_pb infos (el_lift el1) (el_lift el2)) vc1 vc2)
 
-     | _ -> (fun _ -> NotConvertible)
+     | _ -> (fun _ -> raise NotConvertible)
 
 
 let fconv cv_pb env t1 t2 =
   let t1 = strong (fun _ -> strip_outer_cast) env t1
   and t2 = strong (fun _ -> strip_outer_cast) env t2 in
-  let univ = universes env in
   if eq_constr t1 t2 then 
-    Convertible univ
+    Constraint.empty
   else
     let infos = create_clos_infos hnf_flags env in
-    ccnv cv_pb infos ELID ELID (inject t1) (inject t2) univ
+    ccnv cv_pb infos ELID ELID (inject t1) (inject t2) Constraint.empty
 
-let conv env term1 term2 = fconv CONV env term1 term2
-let conv_leq env term1 term2 = fconv CONV_LEQ env term1 term2
+let conv env = fconv CONV env
+let conv_leq env = fconv CONV_LEQ env 
 
 let conv_forall2 f env v1 v2 =
-  let (_,c) =
-    array_fold_left2 
-      (fun a x y -> match a with
-	 | (_,NotConvertible) -> a
-	 | (e,Convertible u) -> let e' = set_universes u env in (e',f e x y))
-      (env, Convertible (universes env)) 
-      v1 v2
-  in
-  c
+  array_fold_left2 
+    (fun c x y -> let c' = f env x y in Constraint.union c c')
+    Constraint.empty
+    v1 v2
 
 let conv_forall2_i f env v1 v2 =
-  let (_,c) =
-    array_fold_left2_i 
-      (fun i a x y -> match a with
-	 | (_,NotConvertible) -> a
-	 | (e,Convertible u) -> let e' = set_universes u env in (e',f i e x y))
-      (env, Convertible (universes env)) 
-      v1 v2
-  in
-  c
+  array_fold_left2_i 
+    (fun i c x y -> let c' = f i env x y in Constraint.union c c')
+    Constraint.empty
+    v1 v2
 
 let test_conversion f env x y =
-  match f env x y with
-    | Convertible _ -> true
-    | NotConvertible -> false
+  try let _ = f env x y in true with NotConvertible -> false
 
 let is_conv env = test_conversion conv env
 let is_conv_leq env = test_conversion conv_leq env

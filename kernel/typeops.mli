@@ -35,27 +35,25 @@ val type_of_case : 'a unsafe_env -> unsafe_judgment -> unsafe_judgment
 
 val type_of_prop_or_set : contents -> unsafe_judgment
 
-val type_of_type : universe -> universes -> unsafe_judgment * universes
+val type_of_type : universe -> unsafe_judgment * constraints
 
 val abs_rel : 
   'a unsafe_env -> name -> typed_type -> unsafe_judgment 
-    -> unsafe_judgment * universes
+    -> unsafe_judgment * constraints
 
 val gen_rel :
   'a unsafe_env -> name -> typed_type -> unsafe_judgment 
-    -> unsafe_judgment * universes
+    -> unsafe_judgment * constraints
 
 val cast_rel : 
   'a unsafe_env -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment
 
 val apply_rel_list : 
   'a unsafe_env -> bool -> unsafe_judgment list -> unsafe_judgment
-    -> unsafe_judgment * universes
+    -> unsafe_judgment * constraints
 
 val check_fix : 'a unsafe_env -> constr -> unit
 val check_cofix : 'a unsafe_env -> constr -> unit
 
 val type_fixpoint : 'a unsafe_env -> name list -> typed_type array 
-    -> unsafe_judgment array -> universes
-
-
+    -> unsafe_judgment array -> constraints

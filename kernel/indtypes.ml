@@ -222,7 +222,7 @@ let is_recursive listind =
   in 
   array_exists one_is_rec
 
-let cci_inductive env env_ar kind nparams finite inds =
+let cci_inductive env env_ar kind nparams finite inds cst =
   let ntypes = List.length inds in
   let one_packet i (id,ar,cnames,issmall,isunit,lc) =
     let recargs = listrec_mconstr env_ar ntypes nparams i lc in
@@ -241,5 +241,6 @@ let cci_inductive env env_ar kind nparams finite inds =
     mind_ntypes = ntypes;
     mind_hyps = get_globals (context env);
     mind_packets = packets;
+    mind_constraints = cst;
     mind_singl = None;
     mind_nparams = nparams }

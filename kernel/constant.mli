@@ -3,6 +3,7 @@
 
 (*i*)
 open Names
+open Univ
 open Term
 open Sign
 (*i*)
@@ -20,6 +21,7 @@ type constant_body = {
   const_body : recipe ref option;
   const_type : typed_type;
   const_hyps : typed_type signature;
+  const_constraints : constraints;
   mutable const_opaque : bool }
 
 val is_defined : constant_body -> bool

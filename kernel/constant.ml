@@ -2,6 +2,7 @@
 (* $Id$ *)
 
 open Names
+open Univ
 open Generic
 open Term
 open Sign
@@ -25,6 +26,7 @@ type constant_body = {
   const_body : recipe ref option;
   const_type : typed_type;
   const_hyps : typed_type signature;
+  const_constraints : constraints;
   mutable const_opaque : bool }
 
 let is_defined cb = 

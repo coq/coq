@@ -61,6 +61,12 @@ let push_rel idrel env =
 let set_universes g env =
   if env.env_universes == g then env else { env with env_universes = g }
 
+let add_constraints c env =
+  if c == Constraint.empty then 
+    env 
+  else 
+    { env with env_universes = merge_constraints c env.env_universes }
+
 let add_constant sp cb env =
   let new_constants = Spmap.add sp cb env.env_globals.env_constants in
   let new_locals = (Constant,sp)::env.env_globals.env_locals in
@@ -297,7 +303,14 @@ let import cenv env =
       env_locals = gl.env_locals;
       env_imports = (cenv.cenv_id,cenv.cenv_stamp) :: gl.env_imports }
   in
-  { env with env_globals = new_globals }
+  let g = universes env in
+  let g = List.fold_left 
+	    (fun g (_,cb) -> merge_constraints cb.const_constraints g) 
+	    g cenv.cenv_constants in
+  let g = List.fold_left 
+	    (fun g (_,mib) -> merge_constraints mib.mind_constraints g) 
+	    g cenv.cenv_inductives in
+  { env with env_globals = new_globals; env_universes = g }
 
 (*s Judgments. *)
 
