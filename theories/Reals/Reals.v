@@ -25,3 +25,5 @@ Require Export Rseries.
 Require Export Rtrigo_fun.
 Require Export Ranalysis.
 Require Export DiscrR.
+Require Export SplitRmult.
+Require Export SplitAbsolu.
