@@ -132,9 +132,17 @@ val rawwit_constr_may_eval : ((constr_expr,reference) may_eval,constr_expr,'ta) 
 val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_constr_may_eval : (constr,constr,'ta) abstract_argument_type
 
+val rawwit_open_constr_gen : bool -> (open_constr_expr,constr_expr,'ta) abstract_argument_type
+val globwit_open_constr_gen : bool -> (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
+val wit_open_constr_gen : bool -> (open_constr,constr,'ta) abstract_argument_type
+
 val rawwit_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
 val globwit_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_open_constr : (open_constr,constr,'ta) abstract_argument_type
+
+val rawwit_casted_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
+val globwit_casted_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
+val wit_casted_open_constr : (open_constr,constr,'ta) abstract_argument_type
 
 val rawwit_constr_with_bindings : (constr_expr with_bindings,constr_expr,'ta) abstract_argument_type
 val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,rawconstr_and_expr,'ta) abstract_argument_type
@@ -227,7 +235,7 @@ type argument_type =
   | ConstrMayEvalArgType
   | QuantHypArgType
   | TacticArgType
-  | OpenConstrArgType
+  | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType

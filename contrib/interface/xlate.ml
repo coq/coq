@@ -887,7 +887,7 @@ and xlate_tac =
 		   | _ -> assert false)
 	    | _ -> assert false)
     | TacExtend (_, "refine", [c]) ->
-       CT_refine (xlate_formula (snd (out_gen rawwit_open_constr c)))
+       CT_refine (xlate_formula (snd (out_gen rawwit_casted_open_constr c)))
     | TacExtend (_,"absurd",[c]) ->
        CT_absurd (xlate_formula (out_gen rawwit_constr c))
     | TacExtend (_,"contradiction",[opt_c]) ->
@@ -1237,11 +1237,11 @@ and coerce_genarg_to_TARG x =
   | TacticArgType ->
       let t = xlate_tactic (out_gen rawwit_tactic x) in
       CT_coerce_TACTIC_COM_to_TARG t
-  | OpenConstrArgType -> 
+  | OpenConstrArgType b -> 
       CT_coerce_SCOMMENT_CONTENT_to_TARG
       	(CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula
-						 (snd (out_gen
-						    rawwit_open_constr x))))
+					 (snd (out_gen
+					    (rawwit_open_constr_gen b) x))))
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
   | BindingsArgType -> xlate_error "TODO: generic with bindings"
   | RedExprArgType -> xlate_error "TODO: generic red expr"
@@ -1331,7 +1331,7 @@ let coerce_genarg_to_VARG x =
   | TacticArgType ->
       let t = xlate_tactic (out_gen rawwit_tactic x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
-  | OpenConstrArgType -> xlate_error "TODO: generic open constr"
+  | OpenConstrArgType _ -> xlate_error "TODO: generic open constr"
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
   | BindingsArgType -> xlate_error "TODO: generic with bindings"
   | RedExprArgType -> xlate_error "TODO: red expr as generic argument"

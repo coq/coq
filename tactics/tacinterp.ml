@@ -885,9 +885,9 @@ and intern_genarg ist x =
       in_gen globwit_red_expr (intern_redexp ist (out_gen rawwit_red_expr x))
   | TacticArgType ->
       in_gen globwit_tactic (intern_tactic ist (out_gen rawwit_tactic x))
-  | OpenConstrArgType ->
-      in_gen globwit_open_constr 
-        ((),intern_constr ist (snd (out_gen rawwit_open_constr x)))
+  | OpenConstrArgType b ->
+      in_gen (globwit_open_constr_gen b)
+        ((),intern_constr ist (snd (out_gen (rawwit_open_constr_gen b) x)))
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (intern_constr_with_bindings ist (out_gen rawwit_constr_with_bindings x))
@@ -1195,18 +1195,19 @@ let interp_constr ist sigma env c =
   interp_casted_constr None ist sigma env c
 
 (* Interprets an open constr expression *)
-let pf_interp_openconstr ist gl (c,ce) =
+let pf_interp_open_constr casted ist gl (c,ce) =
   let sigma = project gl in
   let env = pf_env gl in
   let (ltacvars,l) = constr_list ist env in
   let typs = retype_list sigma env ltacvars in
+  let ocl = if casted then Some (pf_concl gl) else None in
   match ce with
   | None ->
-      Pretyping.understand_gen_tcc sigma env typs None c
+      Pretyping.understand_gen_tcc sigma env typs ocl c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
-  | Some c -> interp_openconstr_gen sigma env (ltacvars,l) c None
+  | Some c -> interp_openconstr_gen sigma env (ltacvars,l) c ocl
 
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
@@ -1585,9 +1586,10 @@ and interp_genarg ist goal x =
   | RedExprArgType ->
       in_gen wit_red_expr (pf_redexp_interp ist goal (out_gen globwit_red_expr x))
   | TacticArgType -> in_gen wit_tactic (out_gen globwit_tactic x)
-  | OpenConstrArgType ->
-      in_gen wit_open_constr 
-        (pf_interp_openconstr ist goal (snd (out_gen globwit_open_constr x)))
+  | OpenConstrArgType casted ->
+      in_gen (wit_open_constr_gen casted) 
+        (pf_interp_open_constr casted ist goal 
+          (snd (out_gen (globwit_open_constr_gen casted) x)))
   | ConstrWithBindingsArgType ->
       in_gen wit_constr_with_bindings
         (interp_constr_with_bindings ist goal (out_gen globwit_constr_with_bindings x))
@@ -1800,7 +1802,7 @@ and interp_atomic ist gl = function
 	val_interp ist gl (out_gen globwit_tactic x)
     | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
-    | OpenConstrArgType | ConstrWithBindingsArgType | BindingsArgType 
+    | OpenConstrArgType _ | ConstrWithBindingsArgType | BindingsArgType 
     | ExtraArgType _ | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
 	-> error "This generic type is not supported in alias"
     in
@@ -2087,9 +2089,9 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
   | TacticArgType ->
       in_gen globwit_tactic (subst_tactic subst (out_gen globwit_tactic x))
-  | OpenConstrArgType ->
-      in_gen globwit_open_constr 
-        ((),subst_rawconstr subst (snd (out_gen globwit_open_constr x)))
+  | OpenConstrArgType b ->
+      in_gen (globwit_open_constr_gen b)
+        ((),subst_rawconstr subst (snd (out_gen (globwit_open_constr_gen b) x)))
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (subst_raw_with_bindings subst (out_gen globwit_constr_with_bindings x))

@@ -34,7 +34,7 @@ type argument_type =
   | ConstrMayEvalArgType
   | QuantHypArgType
   | TacticArgType
-  | OpenConstrArgType
+  | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
@@ -144,9 +144,17 @@ let rawwit_tactic = TacticArgType
 let globwit_tactic = TacticArgType
 let wit_tactic = TacticArgType
 
-let rawwit_open_constr = OpenConstrArgType
-let globwit_open_constr = OpenConstrArgType
-let wit_open_constr = OpenConstrArgType
+let rawwit_open_constr_gen b = OpenConstrArgType b
+let globwit_open_constr_gen b = OpenConstrArgType b 
+let wit_open_constr_gen b = OpenConstrArgType b
+
+let rawwit_open_constr = rawwit_open_constr_gen false
+let globwit_open_constr = globwit_open_constr_gen false
+let wit_open_constr = wit_open_constr_gen false
+
+let rawwit_casted_open_constr = rawwit_open_constr_gen true
+let globwit_casted_open_constr = globwit_open_constr_gen true
+let wit_casted_open_constr = wit_open_constr_gen true
 
 let rawwit_constr_with_bindings = ConstrWithBindingsArgType
 let globwit_constr_with_bindings = ConstrWithBindingsArgType

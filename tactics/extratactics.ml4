@@ -159,7 +159,7 @@ END
 open Refine
 
 TACTIC EXTEND Refine
-  [ "Refine" open_constr(c) ] -> [ refine c ]
+  [ "Refine" casted_open_constr(c) ] -> [ refine c ]
 END
 
 let refine_tac = h_refine
