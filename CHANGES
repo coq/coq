@@ -84,6 +84,8 @@ Tactic definitions
 
 Tactics
 
+- Equality tactics (Rewrite, Reflexivity, Symmetry, Transitivity) now
+  understand JM equality
 - Simpl and Change now apply to subterms also
 - Double Induction now referring to hypotheses like "Intros until"
 - "Inversion" now applies also on quantified hypotheses (naming as

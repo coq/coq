@@ -113,7 +113,7 @@ let rec string_of_mp = function
   | MPself uid -> string_of_uid uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
-(* we compare labels first if two MPdot's *)
+(* we compare labels first if both are MPdots *)
 let rec mp_ord mp1 mp2 = match (mp1,mp2) with
     MPdot(mp1,l1), MPdot(mp2,l2) -> 
       let c = Pervasives.compare l1 l2 in
