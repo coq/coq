@@ -276,10 +276,10 @@ JPROVERCMO=contrib/jprover/opname.cmo \
 ML4FILES += contrib/jprover/jprover.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
-	$(FOURIERCMO) $(EXTRACTIONCMO)
+	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO)
 
-#later $(CORRECTNESSCMO) $(JPROVERCMO)
-#later :) $(XMLCMO)
+#later $(CORRECTNESSCMO) 
+#later :) 
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)

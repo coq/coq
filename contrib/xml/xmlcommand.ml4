@@ -78,16 +78,16 @@ let extract_nparams pack =
 (* than that could exists in cooked form with the same name in a super        *)
 (* section of the actual section                                              *)
 let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
- let module N = Nametab in
+ let module L = Libnames in
  let module D = Declare in
   let tag = Libobject.object_tag o in
    print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
    match tag with
       "CONSTANT" ->
         (match D.constant_strength sp with
-          | N.DischargeAt _  -> false (* a local definition *)
-          | N.NotDeclare     -> false (* not a definition *)
-          | N.NeverDischarge -> true  (* a non-local one    *)
+          | L.DischargeAt _  -> false (* a local definition *)
+          | L.NotDeclare     -> false (* not a definition *)
+          | L.NeverDischarge -> true  (* a non-local one    *)
         )
     | "PARAMETER"                 (* axioms and                               *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
@@ -100,9 +100,9 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 (* section path is sp                                                         *)
 let uri_of_path sp tag =
  let module N = Names in
- let module No = Nameops in
+ let module L = Libnames in
   let ext_of_sp sp = ext_of_tag tag in
-  let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
+  let dir0 = L.extend_dirpath (L.dirpath sp) (L.basename sp) in
   let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
    "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_sp sp)
 ;;
@@ -260,6 +260,8 @@ let print_term inner_types l env csr =
  let module N = Names in
  let module E = Environ in
  let module T = Term in
+ let module Nt = Nametab in
+ let module L = Libnames in
  let module X = Xml in
  let module R = Retyping in
   let rec names_to_ids =
@@ -419,23 +421,27 @@ let print_term inner_types l env csr =
           (fun x i -> [< (term_display idradix false l env x); i >]) t [<>])
        >]
 )
-   | T.Const sp ->
-      X.xml_empty "CONST"
+   | T.Const kn ->
+       let sp = Nt.sp_of_global None (L.ConstRef kn) in  
+	 X.xml_empty "CONST"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Constant) ; "id", next_id])
-   | T.Ind (sp,i) ->
+   | T.Ind (kn,i) ->
+      let sp = Nt.sp_of_global None (L.IndRef(kn,0)) in  
       X.xml_empty "MUTIND"
        ["uri",(uri_of_path sp Inductive) ;
         "noType",(string_of_int i) ;
         "id", next_id]
-   | T.Construct ((sp,i),j) ->
+   | T.Construct ((kn,i),j) ->
+      let sp = Nt.sp_of_global None (L.IndRef(kn,0)) in  
       X.xml_empty "MUTCONSTRUCT"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Inductive) ;
          "noType",(string_of_int i) ;
          "noConstr",(string_of_int j) ;
          "id", next_id])
-   | T.Case ({T.ci_ind=(sp,i)},ty,term,a) ->
+   | T.Case ({T.ci_ind=(kn,i)},ty,term,a) ->
+      let sp = Nt.sp_of_global None (L.IndRef(kn,0)) in  
       let (uri, typeno) = (uri_of_path sp Inductive),i in
        X.xml_nempty "MUTCASE"
         (add_sort_attribute true
@@ -709,22 +715,24 @@ let print (_,qid as locqid) fn =
  let module G = Global in
  let module N = Names in
  let module Nt = Nametab in
+ let module Ln = Libnames in
  let module T = Term in
  let module X = Xml in
-  let (_,id) = Nt.repr_qualid qid in
+  let (_,id) = Ln.repr_qualid qid in
   let glob_ref = Nametab.global locqid in
-  let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
+  let env = G.env () in
   reset_ids () ;
   let inner_types = ref [] in
   let sp,tag,pp_cmds =
    match glob_ref with
-      Nt.VarRef id ->
+      Ln.VarRef id ->
         let sp = Declare.find_section_variable id in
        let (_,body,typ) = G.lookup_named id in
         sp,Variable,print_variable id body (T.body_of_type typ) env inner_types
-    | Nt.ConstRef sp ->
+    | Ln.ConstRef kn ->
+       let sp = Nt.sp_of_global None glob_ref in
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
-        G.lookup_constant sp in
+        G.lookup_constant kn in
        let hyps = string_list_of_named_context_list hyps in
        let typ = T.body_of_type typ in
         sp,Constant,
@@ -733,14 +741,15 @@ let print (_,qid as locqid) fn =
             None ->   print_axiom id typ [] hyps env inner_types
           | Some c -> print_definition id c typ [] hyps env inner_types
         end
-    | Nt.IndRef (sp,_) ->
+    | Ln.IndRef (kn,_) ->
+       let sp = Nt.sp_of_global None (Ln.IndRef(kn,0)) in  
        let {D.mind_packets=packs ;
             D.mind_hyps=hyps;
-            D.mind_finite=finite} = G.lookup_mind sp in
+            D.mind_finite=finite} = G.lookup_mind kn in
         let hyps = string_list_of_named_context_list hyps in
          sp,Inductive,
           print_mutual_inductive finite packs [] hyps env inner_types
-    | Nt.ConstructRef _ ->
+    | Ln.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
    Xml.pp pp_cmds fn ;
@@ -802,11 +811,11 @@ let mkfilename dn sp ext =
   let module L = Library in
   let module S = System in
   let module N = Names in
-  let module No = Nameops in
+  let module Ln = Libnames in
    match dn with
       None         -> None
     | Some basedir ->
-	let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
+	let dir0 = Ln.extend_dirpath (Ln.dirpath sp) (Ln.basename sp) in
 	let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
        Some (basedir ^ join_dirs basedir dir ^ "." ^ ext)
 ;;
@@ -823,7 +832,7 @@ let mkfilename dn sp ext =
 (* Note: it is printed only the uncooked available form of the object plus  *)
 (*       the list of parameters of the object deduced from it's most cooked *)
 (*       form                                                               *)
-let print_object lobj id sp dn fv env =
+let print_object lobj id (sp,kn) dn fv env =
  let module D = Declarations in
  let module E = Environ in
  let module G = Global in
@@ -840,7 +849,7 @@ let print_object lobj id sp dn fv env =
         "CONSTANT"  (* = Definition, Theorem *)
       | "PARAMETER" (* = Axiom *) ->
           let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
-           G.lookup_constant sp
+           G.lookup_constant kn
           in
            let hyps = string_list_of_named_context_list hyps in
            let typ = T.body_of_type typ in
@@ -854,7 +863,7 @@ let print_object lobj id sp dn fv env =
             {D.mind_packets=packs ;
              D.mind_hyps = hyps;
              D.mind_finite = finite
-            } = G.lookup_mind sp
+            } = G.lookup_mind kn
            in
             let hyps = string_list_of_named_context_list hyps in
              print_mutual_inductive finite packs fv hyps env inner_types
@@ -892,14 +901,14 @@ let print_object lobj id sp dn fv env =
 (* print via print_node all the nodes (leafs excluded if bprintleaf is false) *)(* in state                                                                   *)
 let rec print_library_segment state bprintleaf dn =
   List.iter
-   (function (sp, node) ->
-     print_if_verbose ("Print_library_segment: " ^ Names.string_of_path sp ^ "\n") ;
-     print_node node (Nameops.basename sp) sp bprintleaf dn ;
+   (function ((sp,_ as oname), node) ->
+     print_if_verbose ("Print_library_segment: " ^ Libnames.string_of_path sp ^ "\n") ;
+     print_node node (Libnames.basename sp) oname bprintleaf dn ;
      print_if_verbose "\n"
    ) (List.rev state)
 (* print_node node id section_path bprintleaf directory_name             *)
 (* prints a single node (and all it's subnodes via print_library_segment *)
-and print_node n id sp bprintleaf dn =
+and print_node n id (sp,kn as oname) bprintleaf dn =
  let module L = Lib in
   match n with
      L.Leaf o ->
@@ -914,14 +923,14 @@ try
             begin
              (* this is an uncooked term *)
              print_if_verbose ("OK, stampo solo questa volta " ^ Names.string_of_id id ^ "\n") ;
-             print_object o id sp dn !pvars !cumenv ;
+             print_object o id oname dn !pvars !cumenv ;
              printed := id::!printed
             end
            else
             begin
              (* this is a local term *)
              print_if_verbose ("OK, stampo " ^ Names.string_of_id id ^ "\n") ;
-             print_object o id sp dn !pvars !cumenv
+             print_object o id oname dn !pvars !cumenv
             end
 with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
           end
@@ -931,11 +940,11 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
            print_if_verbose ("Suppongo gia' stampato " ^ Names.string_of_id id ^ "\n")
           end
        end
-   | L.OpenedSection (dir,_) ->
-       let id = snd (Nameops.split_dirpath dir) in
+   | L.OpenedSection ((dir,_),_) ->
+       let id = snd (Libnames.split_dirpath dir) in
        print_if_verbose ("OpenDir " ^ Names.string_of_id id ^ "\n")
    | L.ClosedSection (_,dir,state) ->
-      let id = snd (Nameops.split_dirpath dir) in
+      let id = snd (Libnames.split_dirpath dir) in
       print_if_verbose("ClosedDir " ^ Names.string_of_id id ^ "\n") ;
       if bprintleaf then
        begin
@@ -948,8 +957,12 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
          | he::tl -> pvars := tl
        end ;
       print_if_verbose "/ClosedDir\n"
-   | L.Module s ->
-      print_if_verbose ("Module " ^ (Names.string_of_dirpath s) ^ "\n")
+   | L.CompilingModule (s,_) ->
+      print_if_verbose ("Library " ^ (Names.string_of_dirpath s) ^ "\n")
+   | L.OpenedModtype ((s,_), _) ->
+      print_if_verbose ("Open Module Type " ^ (Names.string_of_dirpath s) ^ "\n")
+   | L.OpenedModule ((s,_), _) -> 
+      print_if_verbose ("Open Module " ^ (Names.string_of_dirpath s) ^ "\n")
    | L.FrozenState _ ->
       print_if_verbose ("FrozenState\n")
 ;;
@@ -977,20 +990,24 @@ let print_closed_section s ls dn =
 (* and terms of the module d                                                 *)
 (* Note: the terms are printed in their uncooked form plus the informations  *)
 (* on the parameters of their most cooked form                               *)
-let printModule (loc,qid) dn =
+let printLibrary (loc,qid) dn =
+ let module N = Names in
  let module L = Library in
- let module N = Nametab in
+ let module Ln = Libnames in
+ let module Dm = Declaremods in
+ let module Nt = Nametab in
  let module X = Xml in
 
   let (_,dir_path,_) = L.locate_qualified_library qid in
 
-  let str = N.string_of_qualid qid in 
-  let ls = L.module_segment (Some dir_path) in
-   print_if_verbose ("MODULE_BEGIN " ^ str ^ " " ^
-    (L.module_full_filename dir_path) ^ "\n") ;
+  let str = Ln.string_of_qualid qid in 
+  let ls1,ls2 = Dm.module_objects (N.MPfile dir_path) in
+  let ls = ls1@ls2 in
+   print_if_verbose ("LIBRARY_BEGIN " ^ str ^ " " ^
+    (L.library_full_filename dir_path) ^ "\n") ;
    print_closed_section str (List.rev ls) dn ;
-   print_if_verbose ("MODULE_END " ^ str ^ " " ^
-    (L.module_full_filename dir_path) ^ "\n")
+   print_if_verbose ("LIBRARY_END " ^ str ^ " " ^
+    (L.library_full_filename dir_path) ^ "\n")
 ;;
 
 (* printSection identifier directory_name                                    *)
@@ -1003,30 +1020,30 @@ let printModule (loc,qid) dn =
 let printSection id dn =
  let module L = Library in
  let module N = Names in
- let module No = Nameops in
+ let module Ln = Libnames in
  let module X = Xml in
   let sp = Lib.make_path id in
   let ls =
    let rec find_closed_section =
     function
        [] -> raise Not_found
-     | (_,Lib.ClosedSection (_,dir,ls))::_ when snd (No.split_dirpath dir) = id
+     | (_,Lib.ClosedSection (_,dir,ls))::_ when snd (Ln.split_dirpath dir) = id
 	 -> ls
      | _::t -> find_closed_section t
    in
-    print_string ("Searching " ^ Names.string_of_path sp ^ "\n") ;
+    print_string ("Searching " ^ Ln.string_of_path sp ^ "\n") ;
     find_closed_section (Lib.contents_after None)
   in
   let str = N.string_of_id id in 
-   print_if_verbose ("SECTION_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ "\n");
+   print_if_verbose ("SECTION_BEGIN " ^ str ^ " " ^ Ln.string_of_path sp ^ "\n");
    print_closed_section str ls dn ;
-   print_if_verbose ("SECTION_END " ^ str ^ " " ^ N.string_of_path sp ^ "\n")
+   print_if_verbose ("SECTION_END " ^ str ^ " " ^ Ln.string_of_path sp ^ "\n")
 ;;
 
 (* print All () prints what is the structure of the current environment of *)
 (* Coq. No terms are printed. Useful only for debugging                    *)
 let printAll () =
- let state = Library.module_segment None in
+ let state = Lib.contents_after None in
   let oldverbose = !verbose in
    verbose := true ;
    print_library_segment state false None ;
