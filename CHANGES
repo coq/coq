@@ -68,6 +68,8 @@ Tactiques
 
 - EAuto réussit parfois plus (source d'incompatibilité).
 
+- Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
+
 Utilisation générale
 
 - La plupart des erreurs de typage sont maintenant localisée dans le
