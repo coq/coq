@@ -236,9 +236,11 @@ let find_positions env sigma t1 t2 =
     let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
   	
-      | Construct sp1, Construct sp2 ->
-        (* both sides are constructors, so either we descend, or we can
-           discriminate here. *)
+      | Construct sp1, Construct sp2 
+          when List.length args1 = mis_constructor_nargs_env env sp1
+          ->
+        (* both sides are fully applied constructors, so either we descend,
+           or we can discriminate here. *)
 	  if sp1 = sp2 then
             List.flatten
 	      (list_map2_i
