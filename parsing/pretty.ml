@@ -100,7 +100,7 @@ let print_mutual sp mib =
       array_map2 (fun id c -> (id, snd (decomp_n_prod env evd nparams c)))
 	(mis_consnames mis) lC in
     let plidC =
-      prvect_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
+      prvect_with_sep (fun () -> [<'bRK(0,0); 'sTR "| " >])
         pr_constructor
 	lidC
     in
