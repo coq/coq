@@ -19,7 +19,6 @@ open Declarations
 open Entries
 open Inductive
 open Inductiveops
-open Instantiate
 open Environ
 open Reductionops
 open Typeops

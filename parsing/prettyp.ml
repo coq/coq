@@ -20,7 +20,6 @@ open Inductiveops
 open Sign
 open Reduction
 open Environ
-open Instantiate
 open Declare
 open Impargs
 open Libobject

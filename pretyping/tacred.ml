@@ -20,7 +20,6 @@ open Inductive
 open Environ
 open Reductionops
 open Closure
-open Instantiate
 open Cbv
 open Rawterm
 
@@ -94,7 +93,7 @@ let reference_opt_value sigma env = function
   | EvalRel n ->
       let (_,v,_) = lookup_rel n env in
       option_app (lift n) v
-  | EvalEvar ev -> existential_opt_value sigma ev
+  | EvalEvar ev -> Evd.existential_opt_value sigma ev
 
 exception NotEvaluable
 let reference_value sigma env c =

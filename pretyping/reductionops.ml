@@ -17,7 +17,6 @@ open Univ
 open Evd
 open Declarations
 open Environ
-open Instantiate
 open Closure
 open Esubst
 open Reduction
@@ -428,7 +427,7 @@ let whd_betadeltaiota_nolet env sigma x =
 let rec whd_evar sigma c =
   match kind_of_term c with
     | Evar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
-	whd_evar sigma (Instantiate.existential_value sigma (ev,args))
+	whd_evar sigma (Evd.existential_value sigma (ev,args))
     | _ -> collapse_appl c
 
 let nf_evar sigma =

@@ -32,7 +32,7 @@ open Rawterm
 
 let e_give_exact c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
   if occur_existential t1 or occur_existential t2 then 
-     tclTHEN (unify t1) (exact_check c) gl
+     tclTHEN (Clenvtac.unify t1) (exact_check c) gl
   else exact_check c gl
 
 let assumption id = e_give_exact (mkVar id)
@@ -44,7 +44,7 @@ let e_resolve_with_bindings_tac  (c,lbind) gl =
   let (wc,kONT) = startWalk gl in
   let t = w_hnf_constr wc (w_type_of wc c) in 
   let clause = make_clenv_binding_apply wc (-1) (c,t) lbind in 
-  e_res_pf kONT clause gl
+  Clenvtac.e_res_pf kONT clause gl
 
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls
 			     
@@ -192,8 +192,7 @@ open Auto
 (***************************************************************************)
 
 let unify_e_resolve  (c,clenv) gls = 
-  let (wc,kONT) = startWalk gls in
-  let clenv' = connect_clenv wc clenv in
+  let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in
   vernac_e_resolve_constr c gls
 

@@ -38,7 +38,6 @@ open Typing;;
 open Util;;
 open Vernacentries;;
 open Vernacinterp;;
-open Evar_refiner;;
 
 
 let parse_com   = Pcoq.parse_string Pcoq.Constr.constr;;
@@ -152,8 +151,7 @@ let pp_string x =
 (***************************************************************************)
 
 let unify_e_resolve  (c,clenv) gls = 
-  let (wc,kONT) = startWalk gls in
-  let clenv' = connect_clenv wc clenv in
+  let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in
   vernac_e_resolve_constr c gls
 

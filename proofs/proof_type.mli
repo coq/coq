@@ -67,12 +67,6 @@ type prim_rule =
 \end{verbatim}
 *)
 
-(* The type constructor ['a sigma] adds an evar map to an object of
-  type ['a] (see below the form of a [goal sigma] *)
-type 'a sigma = { 
-  it : 'a ; 
-  sigma : evar_map}
-
 (*s Proof trees. 
   [ref] = [None] if the goal has still to be proved, 
   and [Some (r,l)] if the rule [r] was applied to the goal

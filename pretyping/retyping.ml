@@ -16,7 +16,6 @@ open Reductionops
 open Environ
 open Typeops
 open Declarations
-open Instantiate
 
 let outsort env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
@@ -61,7 +60,7 @@ let typeur sigma metamap =
     | Const c ->
         let cb = lookup_constant c env in
         body_of_type cb.const_type
-    | Evar ev -> existential_type sigma ev
+    | Evar ev -> Evd.existential_type sigma ev
     | Ind ind -> body_of_type (type_of_inductive env ind)
     | Construct cstr -> body_of_type (type_of_constructor env cstr)
     | Case (_,p,c,lf) ->

@@ -20,7 +20,6 @@ open Inductiveops
 open Environ
 open Libnames
 open Reductionops
-open Instantiate
 open Typeops
 open Typing
 open Retyping
@@ -585,7 +584,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
       let rty = beta_applist(p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       match
-	Instantiate.existential_opt_value (Evarutil.evars_of isevars) 
+	Evd.existential_opt_value (Evarutil.evars_of isevars) 
 	(destEvar ev)
       with
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])

@@ -9,17 +9,21 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Term
-open Evd
 open Sign
-open Environ
+open Evd
+open Clenv
+open Proof_type
 (*i*)
 
-(*s [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
-no body and [Not_found] if it does not exist in [sigma] *)
-
-exception NotInstantiatedEvar
-val existential_value : evar_map -> existential -> constr
-val existential_type : evar_map -> existential -> types
-val existential_opt_value : evar_map -> existential -> constr option
+(* Tactics *)
+val unify : constr -> tactic
+val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
+val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
+val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
+val elim_res_pf : (wc -> tactic) -> wc clausenv -> bool -> tactic
+val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
+val elim_res_pf_THEN_i : 
+  (wc -> tactic) -> wc clausenv -> (wc clausenv -> tactic array) -> tactic

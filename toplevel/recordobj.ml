@@ -14,7 +14,6 @@ open Names
 open Libnames
 open Nameops
 open Term
-open Instantiate
 open Lib
 open Declare
 open Recordops

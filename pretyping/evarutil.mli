@@ -100,3 +100,8 @@ val split_tycon :
 val valcon_of_tycon : type_constraint -> val_constraint
 
 val lift_tycon : type_constraint -> type_constraint
+
+(* Metas *)
+val nf_meta       : meta_map -> constr -> constr
+val meta_type     : meta_map -> metavariable -> types
+val meta_instance : meta_map -> constr freelisted -> constr

@@ -14,7 +14,6 @@ open Nameops
 open Sign
 open Term
 open Termops
-open Instantiate
 open Environ
 open Reductionops
 open Evd
@@ -32,7 +31,7 @@ let re_sig it gc = { it = it; sigma = gc }
 (* Operations for handling terms under a local typing context *)
 (**************************************************************)
 
-type 'a sigma   = 'a Proof_type.sigma;;
+type 'a sigma   = 'a Evd.sigma;;
 type validation = Proof_type.validation;;
 type tactic     = Proof_type.tactic;;
 
@@ -90,10 +89,6 @@ let pf_interp_type gls c =
 let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
 let pf_parse_const gls = compose (pf_global gls) id_of_string
-
-let pf_execute gls =
-  let evc = project gls in 
-  Typing.unsafe_machine (pf_env gls) evc
 
 let pf_reduction_of_redexp gls re c = 
   reduction_of_redexp re (pf_env gls) (project gls) c 

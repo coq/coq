@@ -17,7 +17,6 @@ open Term
 open Declarations
 open Entries
 open Inductive
-open Instantiate
 open Reduction
 open Cooking
 open Typeops

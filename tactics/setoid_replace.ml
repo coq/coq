@@ -800,9 +800,12 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
 let relation_rewrite c1 c2 (lft2rgt,cl) gl =
  let but = pf_concl gl in
  let (hyp,c1,c2) =
-  let (cl',_) = Clenv.unify_to_subterm cl (c1,but) in
-  let c1 = Clenv.clenv_instance_term cl' c1 in
-  let c2 = Clenv.clenv_instance_term cl' c2 in
+   let cl' =
+     Clenv.clenv_wtactic
+       (fun evd -> fst (Unification.w_unify_to_subterm (pf_env gl) (c1,but) evd))
+       cl in
+   let c1 = Clenv.clenv_instance_term cl' c1 in
+   let c2 = Clenv.clenv_instance_term cl' c2 in
    (lft2rgt,Clenv.clenv_instance_template cl'), c1, c2
  in
   let input_relation = relation_of_hypothesis_and_term_to_rewrite gl hyp c1 in

@@ -18,7 +18,6 @@ open Termops
 open Sign
 open Environ
 open Evd
-open Instantiate
 open Reductionops
 open Indrec
 open Pretype_errors
@@ -593,3 +592,34 @@ let split_tycon loc env isevars = function
 let valcon_of_tycon x = x
 
 let lift_tycon = option_app (lift 1)
+
+(*************************************)
+(* Metas *)
+
+let meta_val_of env mv = 
+  let rec valrec mv =
+    try
+      (match Metamap.find mv env with
+	 | Cltyp _ -> mkMeta mv
+	 | Clval(b,_) ->
+	     instance (List.map (fun mv' -> (mv',valrec mv')) 
+			       (Metaset.elements b.freemetas)) b.rebus)
+    with Not_found -> 
+      mkMeta mv
+  in 
+  valrec mv
+
+let meta_instance env b =
+  let c_sigma =
+    List.map 
+      (fun mv -> (mv,meta_val_of env mv)) (Metaset.elements b.freemetas)
+  in 
+  instance c_sigma b.rebus
+
+let nf_meta env c = meta_instance env (mk_freelisted c)
+
+let meta_type env mv =
+  let ty =
+    try meta_ftype env mv
+    with Not_found -> error ("unknown meta ?"^string_of_int mv) in
+  meta_instance env ty

@@ -17,7 +17,6 @@ open Evd
 open Sign
 open Environ
 open Reductionops
-open Instantiate
 open Type_errors
 open Proof_trees
 open Proof_type

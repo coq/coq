@@ -20,10 +20,14 @@ open Environ
 val new_univ : unit -> Univ.universe
 val new_sort_in_family : sorts_family -> sorts
 
-(* iterators on terms *)
+(* printers *)
 val print_sort : sorts -> std_ppcmds
 val print_sort_family : sorts_family -> std_ppcmds
+(* debug printer: do not use to display terms to the casual user... *)
 val print_constr : constr -> std_ppcmds
+val set_print_constr : (constr -> std_ppcmds) -> unit
+
+(* iterators on terms *)
 val prod_it : init:types -> (name * types) list -> types
 val lam_it : init:constr -> (name * types) list -> constr
 val rel_vect : int -> int -> constr array

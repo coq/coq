@@ -107,7 +107,6 @@ open Pp
 open Util
 open Names
 open Term
-open Instantiate
 open Pattern
 open Matching
 open Tacmach

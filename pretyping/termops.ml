@@ -89,6 +89,9 @@ let rec print_constr c = match kind_of_term c with
            cut() ++ str":=" ++ print_constr bd) (Array.to_list fixl)) ++
          str"}")
 
+let term_printer = ref print_constr
+let set_print_constr f = term_printer := f
+
 (*let current_module = ref empty_dirpath
 
 let set_module m = current_module := m*)

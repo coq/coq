@@ -26,12 +26,21 @@ type pretype_error =
   | OccurCheck of existential_key * constr
   | NotClean of existential_key * constr * hole_kind
   | UnsolvableImplicit of hole_kind
+  | CannotUnify of constr * constr
+  | CannotGeneralize of constr
+  | NoOccurrenceFound of constr
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
   | NotProduct of constr
 
 exception PretypeError of env * pretype_error
+
+let precatchable_exception = function
+  | Util.UserError _ | TypeError _ | PretypeError _
+  | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ |
+    Nametab.GlobalizationError _ | PretypeError _)) -> true
+  | _ -> false
 
 let nf_evar = Reductionops.nf_evar
 let j_nf_evar sigma j = 
@@ -140,6 +149,9 @@ let error_not_clean env sigma ev c (loc,k) =
 
 let error_unsolvable_implicit loc env sigma e =
   raise_with_loc loc (PretypeError (env_ise sigma env, UnsolvableImplicit e))
+
+let error_cannot_unify env sigma (m,n) =
+  raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
 
 (*s Ml Case errors *)
 

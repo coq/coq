@@ -54,16 +54,11 @@ type refiner_error =
   | NonLinearProof of constr
 
   (*i Errors raised by the tactics i*)
-  | CannotUnify of constr * constr
   | CannotUnifyBindingType of constr * constr
-  | CannotGeneralize of constr
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * identifier
-  | NoOccurrenceFound of constr
 
 exception RefinerError of refiner_error
-
-val error_cannot_unify : constr * constr -> 'a
 
 val catchable_exception : exn -> bool
 

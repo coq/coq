@@ -13,7 +13,6 @@ open Pp
 open Term
 open Names
 open Environ
-open Instantiate
 open Univ
 open Evd
 open Closure

@@ -131,14 +131,15 @@ LIBRARY=\
   library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo 
 
 PRETYPING=\
-  pretyping/termops.cmo pretyping/evd.cmo pretyping/instantiate.cmo \
+  pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
   pretyping/detyping.cmo pretyping/retyping.cmo \
   pretyping/cbv.cmo pretyping/tacred.cmo \
-  pretyping/pretype_errors.cmo pretyping/typing.cmo \
+  pretyping/pretype_errors.cmo \
   pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
-  pretyping/evarutil.cmo pretyping/evarconv.cmo \
+  pretyping/evarutil.cmo pretyping/typing.cmo \
+  pretyping/unification.cmo pretyping/evarconv.cmo \
   pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
   pretyping/matching.cmo
 
@@ -175,7 +176,8 @@ PROOFS=\
   proofs/tacexpr.cmo proofs/proof_type.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/clenv.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo
+  proofs/clenv.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
+  proofs/clenvtac.cmo
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \

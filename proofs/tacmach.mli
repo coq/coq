@@ -25,7 +25,7 @@ open Rawterm
 
 (* Operations for handling terms under a local typing context. *)
 
-type 'a sigma   = 'a Proof_type.sigma;;
+type 'a sigma   = 'a Evd.sigma;;
 type validation = Proof_type.validation;;
 type tactic     = Proof_type.tactic;;
 
@@ -51,7 +51,6 @@ val pf_global             : goal sigma -> identifier -> constr
 val pf_parse_const        : goal sigma -> string -> constr
 val pf_type_of            : goal sigma -> constr -> types
 val pf_check_type         : goal sigma -> constr -> types -> unit
-val pf_execute            : goal sigma -> constr -> unsafe_judgment
 val hnf_type_of           : goal sigma -> constr -> types
 
 val pf_interp_constr      : goal sigma -> Topconstr.constr_expr -> constr

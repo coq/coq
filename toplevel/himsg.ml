@@ -371,6 +371,19 @@ let explain_wrong_case_info ctx ind ci =
     spc () ++ pc
        
 
+let explain_cannot_unify m n =
+  let pm = prterm m in 
+  let pn = prterm n in
+  str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
+  str"with" ++ brk(1,1)  ++ pn
+
+let explain_refiner_cannot_generalize ty =
+  str "Cannot find a well-typed generalisation of the goal with type : " ++ 
+  prterm ty
+
+let explain_no_occurrence_found c =
+  str "Found no subterm matching " ++ prterm c ++ str " in the current goal"
+
 let explain_type_error ctx err =
   let ctx = make_all_name_different ctx in
   match err with
@@ -427,6 +440,9 @@ let explain_pretype_error ctx err =
       explain_unexpected_type ctx actual expected
   | NotProduct c ->
       explain_not_product ctx c
+  | CannotUnify (m,n) -> explain_cannot_unify m n
+  | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
+  | NoOccurrenceFound c -> explain_no_occurrence_found c
 
 (* Refiner errors *)
 
@@ -445,26 +461,16 @@ let explain_refiner_occur_meta_goal t =
   str"generated subgoal" ++ brk(1,1) ++ prterm t ++
   spc () ++ str"has metavariables in it"
 
-let explain_refiner_cannot_applt t harg =
+let explain_refiner_cannot_apply t harg =
   str"in refiner, a term of type " ++ brk(1,1) ++
   prterm t ++ spc () ++ str"could not be applied to" ++ brk(1,1) ++
   prterm harg
-
-let explain_cannot_unify m n =
-  let pm = prterm m in 
-  let pn = prterm n in
-  str"Impossible to unify" ++ brk(1,1)  ++ pm ++ spc ()  ++
-  str"with" ++ brk(1,1)  ++ pn
 
 let explain_cannot_unify_binding_type m n =
   let pm = prterm m in 
   let pn = prterm n in
   str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++ 
   str "which should be unifiable with" ++ brk(1,1) ++ pn
-
-let explain_refiner_cannot_generalize ty =
-  str "Cannot find a well-typed generalisation of the goal with type : " ++ 
-  prterm ty
 
 let explain_refiner_not_well_typed c =
   str"The term "  ++ prterm c  ++ str" is not well-typed"
@@ -480,22 +486,16 @@ let explain_non_linear_proof c =
   str "cannot refine with term" ++ brk(1,1) ++ prterm c ++
   spc () ++ str"because a metavariable has several occurrences"
 
-let explain_no_occurrence_found c =
-  str "Found no subterm matching " ++ prterm c ++ str " in the current goal"
-
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | OccurMeta t -> explain_refiner_occur_meta t
   | OccurMetaGoal t -> explain_refiner_occur_meta_goal t
-  | CannotApply (t,harg) -> explain_refiner_cannot_applt t harg
-  | CannotUnify (m,n) -> explain_cannot_unify m n
+  | CannotApply (t,harg) -> explain_refiner_cannot_apply t harg
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type m n
-  | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | IntroNeedsProduct -> explain_intro_needs_product ()
   | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
   | NonLinearProof c -> explain_non_linear_proof c
-  | NoOccurrenceFound c -> explain_no_occurrence_found c
 
 (* Inductive errors *)
 

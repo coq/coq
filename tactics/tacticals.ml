@@ -22,6 +22,7 @@ open Libnames
 open Refiner
 open Tacmach
 open Clenv
+open Clenvtac
 open Pattern
 open Matching
 open Evar_refiner
@@ -173,8 +174,7 @@ let clause_type cls gl =
 (* Functions concerning matching of clausal environments *)
 
 let pf_is_matching gls pat n =
-  let (wc,_) = startWalk gls in 
-  is_matching_conv (w_env wc) (w_Underlying wc) pat n
+  is_matching_conv (pf_env gls) (project gls) pat n
 
 let pf_matches gls pat n =
   matches_conv (pf_env gls) (project gls) pat n
@@ -329,12 +329,12 @@ let general_elim_then_using
   let indclause' = clenv_constrain_with_bindings indbindings indclause in
   let elimclause = mk_clenv_from () (elim,w_type_of wc elim) in
   let indmv = 
-    match kind_of_term (last_arg (clenv_template elimclause).rebus) with
+    match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
       | _         -> error "elimination"
   in
   let pmv =
-    let p, _ = decompose_app (clenv_template_type elimclause).rebus in
+    let p, _ = decompose_app elimclause.templtyp.Evd.rebus in
     match kind_of_term p with
       | Meta p -> p
       | _ ->
@@ -351,7 +351,7 @@ let general_elim_then_using
   let branchsigns = compute_construtor_signatures isrec ity in
   let brnames = compute_induction_names (Array.length branchsigns) allnames in
   let after_tac ce i gl =
-    let (hd,largs) = decompose_app (clenv_template_type ce).rebus in
+    let (hd,largs) = decompose_app ce.templtyp.Evd.rebus in
     let ba = { branchsign = branchsigns.(i);
                branchnames = brnames.(i);
                nassums = 

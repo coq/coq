@@ -37,7 +37,6 @@ open Dyn
 open Declarations
 open Inductive
 open Inductiveops
-open Instantiate
 
 let lift_context n l = 
   let k = List.length l in 

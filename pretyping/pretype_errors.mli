@@ -28,12 +28,17 @@ type pretype_error =
   | OccurCheck of existential_key * constr
   | NotClean of existential_key * constr * hole_kind
   | UnsolvableImplicit of hole_kind
+  | CannotUnify of constr * constr
+  | CannotGeneralize of constr
+  | NoOccurrenceFound of constr
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
   | NotProduct of constr
 
 exception PretypeError of env * pretype_error
+
+val precatchable_exception : exn -> bool
 
 (* Presenting terms without solved evars *)
 val nf_evar :  Evd.evar_map -> constr -> constr
@@ -81,6 +86,8 @@ val error_not_clean :
   env ->  Evd.evar_map -> existential_key -> constr -> loc * hole_kind -> 'b
 
 val error_unsolvable_implicit : loc -> env -> Evd.evar_map -> hole_kind -> 'b
+
+val error_cannot_unify : env -> Evd.evar_map -> constr * constr -> 'b
 
 (*s Ml Case errors *)
 

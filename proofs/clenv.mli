@@ -13,6 +13,7 @@ open Util
 open Names
 open Term
 open Sign
+open Evd
 open Proof_type
 (*i*)
 
@@ -26,23 +27,11 @@ val exist_to_meta :
 
 (* The Type of Constructions clausale environments. *)
 
-module Metaset : Set.S with type elt = metavariable
-
-module Metamap : Map.S with type key = metavariable
-
-type 'a freelisted = {
-  rebus : 'a;
-  freemetas : Metaset.t }
-
-type clbinding = 
-  | Cltyp of constr freelisted
-  | Clval of constr freelisted * constr freelisted
-
 type 'a clausenv = {
   templval : constr freelisted;
   templtyp : constr freelisted;
   namenv : identifier Metamap.t;
-  env : clbinding Metamap.t;
+  env : meta_map;
   hook : 'a }
 
 type wc = named_context sigma (* for a better reading of the following *)
@@ -67,11 +56,10 @@ val mk_clenv_type_of : wc -> constr -> wc clausenv
 
 val subst_clenv : (substitution -> 'a -> 'a) -> 
   substitution -> 'a clausenv -> 'a clausenv
+val clenv_wtactic :
+  (evar_map * meta_map -> evar_map * meta_map) -> wc clausenv -> wc clausenv
 
-val connect_clenv : wc -> 'a clausenv -> wc clausenv
-(*i Was used in wcclausenv.ml
-val clenv_change_head : constr * constr -> 'a clausenv -> 'a clausenv
-i*)
+val connect_clenv : goal sigma -> 'a clausenv -> wc clausenv
 val clenv_assign : metavariable -> constr -> 'a clausenv -> 'a clausenv
 val clenv_instance_term : wc clausenv -> constr -> constr
 val clenv_pose : name * metavariable * constr -> 'a clausenv -> 'a clausenv
@@ -80,6 +68,7 @@ val clenv_template_type : 'a clausenv -> constr freelisted
 val clenv_instance_type : wc clausenv -> metavariable -> constr
 val clenv_instance_template : wc clausenv -> constr
 val clenv_instance_template_type : wc clausenv -> constr
+val clenv_instance : 'a clausenv -> constr freelisted -> constr
 val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_fchain : metavariable -> 'a clausenv -> wc clausenv -> wc clausenv
 val clenv_bchain : metavariable -> 'a clausenv -> wc clausenv -> wc clausenv
@@ -87,9 +76,6 @@ val clenv_bchain : metavariable -> 'a clausenv -> wc clausenv -> wc clausenv
 (* Unification with clenv *)
 type arg_bindings = (int * constr) list
 
-val unify_0 : 
-  Reductionops.conv_pb -> wc -> constr -> constr 
-    -> Termops.metamap * (constr * constr) list
 val clenv_unify : 
   bool -> Reductionops.conv_pb -> constr -> constr ->
   wc clausenv -> wc clausenv
@@ -99,6 +85,7 @@ val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
 
 (* Bindings *)
 val clenv_independent : wc clausenv -> metavariable list
+val clenv_dependent : bool -> 'a clausenv -> metavariable list
 val clenv_missing : 'a clausenv -> metavariable list
 val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
   constr list -> wc clausenv -> wc clausenv
@@ -113,30 +100,5 @@ val make_clenv_binding_apply :
 val make_clenv_binding :
   wc -> constr * constr -> types Rawterm.bindings -> wc clausenv
 
-(* Tactics *)
-val unify : constr -> tactic
-val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
-val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
-val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
-val elim_res_pf : (wc -> tactic) -> wc clausenv -> bool -> tactic
-val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
-val elim_res_pf_THEN_i : 
-  (wc -> tactic) -> wc clausenv -> (wc clausenv -> tactic array) -> tactic
-
 (* Pretty-print *)
 val pr_clenv : 'a clausenv -> Pp.std_ppcmds
-
-(* Exported for debugging *)
-val unify_to_subterm : 
-  wc clausenv -> constr * constr -> wc clausenv * constr
-val unify_to_subterm_list : 
-  bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
-val clenv_typed_unify :
-  Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
-
-(*i This should be in another module i*)
-
-(* [abstract_list_all env sigma t c l]                     *)
-(* abstracts the terms in l over c to get a term of type t *)
-val abstract_list_all :
-  Environ.env -> Evd.evar_map -> constr -> constr -> constr list -> constr

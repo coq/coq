@@ -19,7 +19,6 @@ open Evd
 open Sign
 open Reductionops
 open Typing
-open Instantiate
 open Tacred
 open Proof_trees
 open Proof_type

@@ -15,7 +15,6 @@ open Nameops
 open Term
 open Termops
 open Sign
-open Instantiate
 open Environ
 open Evd
 open Proof_type
@@ -28,29 +27,6 @@ open Evar_refiner
 open Rawterm
 open Pattern
 open Tacexpr
-
-(* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
-   gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
-
-let abstract_scheme env c l lname_typ =
-  List.fold_left2 
-    (fun t (locc,a) (na,_,ta) ->
-       let na = match kind_of_term a with Var id -> Name id | _ -> na in
-       if occur_meta ta then error "cannot find a type for the generalisation"
-       else if occur_meta a then lambda_name env (na,ta,t)
-       else lambda_name env (na,ta,subst_term_occ locc a t))
-    c
-    (List.rev l)
-    lname_typ
-
-let abstract_list_all env sigma typ c l =
-  let ctxt,_ = decomp_n_prod env sigma (List.length l) typ in
-  let p = abstract_scheme env c (List.map (function a -> [],a) l) ctxt in 
-  try 
-    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
-    else error "abstract_list_all"
-  with UserError _ ->
-    raise (RefinerError (CannotGeneralize typ))
 
 (* Generator of metavariables *)
 let new_meta =
@@ -72,25 +48,6 @@ let exist_to_meta sigma (emap, c) =
       | _ -> map_constr replace c in
   (!metamap, replace c)
 
-module Metaset = Intset
-
-module Metamap = Intmap
-
-let meta_exists p s = Metaset.fold (fun x b -> (p x) || b) s false
-
-let metamap_in_dom x m =
-  try let _ = Metamap.find x m in true with Not_found -> false
-
-let metamap_to_list m =
-  Metamap.fold (fun n v l -> (n,v)::l) m []
-
-let metamap_inv m b = 
-  Metamap.fold (fun n v l -> if v = b then n::l else l) m []
-
-type 'a freelisted = {
-  rebus : 'a;
-  freemetas : Metaset.t }
-
 (* collects all metavar occurences, in left-to-right order, preserving
  * repetitions and all. *)
 
@@ -102,29 +59,13 @@ let collect_metas c =
   in
   List.rev (collrec [] c)
 
-let metavars_of c =  
-  let rec collrec acc c =
-    match kind_of_term c with
-      | Meta mv -> Metaset.add mv acc
-      | _         -> fold_constr collrec acc c
-  in 
-  collrec Metaset.empty c
-
-let mk_freelisted c =
-  { rebus = c; freemetas = metavars_of c }
-
-
 (* Clausal environments *)
-
-type clbinding = 
-  | Cltyp of constr freelisted
-  | Clval of constr freelisted * constr freelisted
 
 type 'a clausenv = {
   templval : constr freelisted;
   templtyp : constr freelisted;
   namenv : identifier Metamap.t;
-  env : clbinding Metamap.t;
+  env : meta_map;
   hook : 'a }
 
 type wc = named_context sigma
@@ -201,12 +142,6 @@ let mk_clenv_from_n wc n (c,cty) =
 
 let mk_clenv_from wc = mk_clenv_from_n wc None
 
-let map_fl f cfl = { cfl with rebus=f cfl.rebus }
-
-let map_clb f = function
-  | Cltyp cfl -> Cltyp (map_fl f cfl)
-  | Clval (cfl1,cfl2) -> Clval (map_fl f cfl1,map_fl f cfl2)
-
 let subst_clenv f sub clenv = 
   { templval = map_fl (subst_mps sub) clenv.templval;
     templtyp = map_fl (subst_mps sub) clenv.templtyp;
@@ -214,17 +149,13 @@ let subst_clenv f sub clenv =
     env = Metamap.map (map_clb (subst_mps sub)) clenv.env;
     hook = f sub clenv.hook }
 
-let connect_clenv wc clenv = { clenv with hook = wc }
+let connect_clenv gls clenv =
+  let wc = {it=gls.it.evar_hyps; sigma=gls.sigma} in
+  { clenv with hook = wc }
 
-(* Was used in wcclausenv.ml
-(* Changes the head of a clenv with (templ,templty) *)
-let clenv_change_head (templ,templty) clenv =
-  { templval = mk_freelisted templ;
-    templtyp = mk_freelisted templty;
-    namenv   = clenv.namenv;
-    env      = clenv.env;
-    hook     = clenv.hook }
-*)
+let clenv_wtactic f clenv =
+  let (sigma',mmap') = f (clenv.hook.sigma, clenv.env) in
+  {clenv with env = mmap' ; hook = {it=clenv.hook.it; sigma=sigma'}}
 
 let mk_clenv_hnf_constr_type_of wc t =
   mk_clenv_from wc (t,w_hnf_constr wc (w_type_of wc t))
@@ -294,39 +225,6 @@ let clenv_instance clenv b =
 let clenv_instance_term clenv c =
   clenv_instance clenv (mk_freelisted c)
 
-
-(* This function put casts around metavariables whose type could not be
- * infered by the refiner, that is head of applications, predicates and
- * subject of Cases.
- * Does check that the casted type is closed. Anyway, the refiner would
- * fail in this case... *)
-
-let clenv_cast_meta clenv = 
-  let rec crec u =
-    match kind_of_term u with
-      | App _ | Case _ -> crec_hd u
-      | Cast (c,_) when isMeta c -> u
-      | _  -> map_constr crec u
-	    
-  and crec_hd u =
-    match kind_of_term (strip_outer_cast u) with
-      | Meta mv ->
-	  (try 
-	     match Metamap.find mv clenv.env with
-               | Cltyp b ->
-		   let b' = clenv_instance clenv b in 
-		   if occur_meta b' then u else mkCast (mkMeta mv, b')
-	       | Clval(_) -> u
-	   with Not_found -> 
-	     u)
-      | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,p,c,br) ->
-	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
-      | _ -> u
-  in 
-  crec
-
-
 (* [clenv_pose (na,mv,cty) clenv]
  * returns a new clausenv which has added to it the metavar MV,
  * with type CTY.  the name NA, if it is not ANONYMOUS, will
@@ -372,13 +270,6 @@ let clenv_instance_template clenv =
     
 let clenv_instance_template_type clenv =
   clenv_instance clenv (clenv_template_type clenv)
-    
-let clenv_wtactic wt clenv =
-  { templval = clenv.templval;
-    templtyp = clenv.templtyp;
-    namenv = clenv.namenv;
-    env = clenv.env;
-    hook = wt clenv.hook }
 
 let clenv_type_of ce c =
   let metamap =
@@ -393,468 +284,13 @@ let clenv_type_of ce c =
 let clenv_instance_type_of ce c =
   clenv_instance ce (mk_freelisted (clenv_type_of ce c))
 
+let clenv_unify allow_K cv_pb t1 t2 clenv =
+  let env = w_env clenv.hook in
+  clenv_wtactic (Unification.w_unify allow_K env cv_pb t1 t2) clenv
 
-
-(* Unification à l'ordre 0 de m et n: [unify_0 mc wc m n] renvoie deux listes:
-
-   metasubst:(int*constr)list    récolte les instances des (Meta k)
-   evarsubst:(constr*constr)list récolte les instances des (Const "?k")
-
-   Attention : pas d'unification entre les différences instances d'une
-   même meta ou evar, il peut rester des doublons *)
-
-(* Unification order: *)
-(* Left to right: unifies first argument and then the other arguments *)
-(*let unify_l2r x = List.rev x
-(* Right to left: unifies last argument and then the other arguments *)
-let unify_r2l x = x
-
-let sort_eqns = unify_r2l
-*)
-
-let unify_0 cv_pb wc m n =
-  let env = w_env wc
-  and sigma = w_Underlying wc in
-  let trivial_unify pb substn m n =
-    if (not(occur_meta m)) & is_fconv pb env sigma m n then substn
-    else error_cannot_unify (m,n) in
-  let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
-    let cM = Evarutil.whd_castappevar sigma m
-    and cN = Evarutil.whd_castappevar sigma n in 
-    match (kind_of_term cM,kind_of_term cN) with
-      | Meta k1, Meta k2 ->
-	  if k1 < k2 then (k1,cN)::metasubst,evarsubst
-	  else if k1 = k2 then substn
-	  else (k2,cM)::metasubst,evarsubst
-      | Meta k, _    -> (k,cN)::metasubst,evarsubst
-      | _, Meta k    -> (k,cM)::metasubst,evarsubst
-      | Evar _, _ -> metasubst,((cM,cN)::evarsubst)
-      | _, Evar _ -> metasubst,((cN,cM)::evarsubst)
-
-      | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
-	  unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
-      | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	  unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
-      | LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
-      | _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
-
-      | App (f1,l1), App (f2,l2) ->
-	  let len1 = Array.length l1
-	  and len2 = Array.length l2 in
-          let (f1,l1,f2,l2) =
-	    if len1 = len2 then (f1,l1,f2,l2)
-	    else if len1 < len2 then
-              let extras,restl2 = array_chop (len2-len1) l2 in 
-              (f1, l1, appvect (f2,extras), restl2)
-	    else 
-	      let extras,restl1 = array_chop (len1-len2) l1 in 
-              (appvect (f1,extras), restl1, f2, l2) in
-          (try
-            array_fold_left2 (unirec_rec CONV)
-	      (unirec_rec CONV substn f1 f2) l1 l2
-	  with ex when catchable_exception ex ->
-            trivial_unify pb substn cM cN)
-      | Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-          array_fold_left2 (unirec_rec CONV)
-	    (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
-
-      | _ -> trivial_unify pb substn cM cN
-
-  in
-  if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
-    ([],[])
-  else 
-    let (mc,ec) = unirec_rec cv_pb ([],[]) m n in
-    ((*sort_eqns*) mc, (*sort_eqns*) ec)
-
-
-(* Unification
- *
- * Procedure:
- * (1) The function [unify mc wc M N] produces two lists:
- *     (a) a list of bindings Meta->RHS
- *     (b) a list of bindings EVAR->RHS
- *
- * The Meta->RHS bindings cannot themselves contain
- * meta-vars, so they get applied eagerly to the other
- * bindings.  This may or may not close off all RHSs of
- * the EVARs.  For each EVAR whose RHS is closed off,
- * we can just apply it, and go on.  For each which
- * is not closed off, we need to do a mimick step -
- * in general, we have something like:
- *
- *      ?X == (c e1 e2 ... ei[Meta(k)] ... en)
- *
- * so we need to do a mimick step, converting ?X
- * into
- *
- *      ?X -> (c ?z1 ... ?zn)
- *
- * of the proper types.  Then, we can decompose the
- * equation into
- *
- *      ?z1 --> e1
- *          ...
- *      ?zi --> ei[Meta(k)]
- *          ...
- *      ?zn --> en
- *
- * and keep on going.  Whenever we find that a R.H.S.
- * is closed, we can, as before, apply the constraint
- * directly.  Whenever we find an equation of the form:
- *
- *      ?z -> Meta(n)
- *
- * we can reverse the equation, put it into our metavar
- * substitution, and keep going.
- *
- * The most efficient mimick possible is, for each
- * Meta-var remaining in the term, to declare a
- * new EVAR of the same type.  This is supposedly
- * determinable from the clausale form context -
- * we look up the metavar, take its type there,
- * and apply the metavar substitution to it, to
- * close it off.  But this might not always work,
- * since other metavars might also need to be resolved. *)
-
-let applyHead n c wc = 
-  let rec apprec n c cty wc =
-    if n = 0 then 
-      (wc,c)
-    else 
-      match kind_of_term (w_whd_betadeltaiota wc cty) with
-        | Prod (_,c1,c2) ->
-	    let evar = Evarutil.new_evar_in_sign (w_env wc) in
-            let (evar_n, _) = destEvar evar in
-	    (compose 
-	       (apprec (n-1) (applist(c,[evar])) (subst1 evar c2))
-	       (w_Declare evar_n c1))
-	    wc
-	| _ -> error "Apply_Head_Then"
-  in 
-  apprec n c (w_type_of wc c) wc
-
-let is_mimick_head f =
-  match kind_of_term f with
-      (Const _|Var _|Rel _|Construct _|Ind _) -> true
-    | _ -> false
-
-let rec mimick_evar hdc nargs sp wc =
-  let evd = Evd.map wc.sigma sp in
-  let wc' = extract_decl sp wc in
-  let (wc'', c) = applyHead nargs hdc wc' in
-  let (mc,ec) = unify_0 CONV wc'' (w_type_of wc'' c) (evd.evar_concl) in
-  let (wc''',_) = w_resrec mc ec wc'' in
-    if wc'== wc'''
-    then w_Define sp c wc
-    else  
-      let wc'''' = restore_decl sp evd wc''' in
-	w_Define sp (Evarutil.nf_evar wc''''.sigma c) {it = wc.it ; sigma = wc''''.sigma}
-
-and w_Unify cv_pb m n wc =
-  let (mc',ec') = unify_0 cv_pb wc m n in 
-  w_resrec mc' ec' wc
-
-and w_resrec metas evars wc =
-  match evars with
-    | [] -> (wc,metas)
-
-    | (lhs,rhs) :: t ->
-    match kind_of_term rhs with
-
-      | Meta k -> w_resrec ((k,lhs)::metas) t wc
-
-      | krhs ->
-      match kind_of_term lhs with
-
-	| Evar (evn,_) ->
-	    if w_defined_evar wc evn then
-	      let (wc',metas') = w_Unify CONV rhs lhs wc in 
-	      w_resrec (metas@metas') t wc'
-	    else
-	      (try 
-		 w_resrec metas t (w_Define evn rhs wc)
-               with ex when catchable_exception ex ->
-		 (match krhs with
-             	    | App (f,cl) when is_mimick_head f ->
-			let wc' = mimick_evar f (Array.length cl) evn wc in
-			w_resrec metas evars wc'
-		    | _ -> raise ex (* error "w_Unify" *)))
-	| _ -> anomaly "w_resrec"
-
-
-(* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
-   particulier ne semblent pas vérifier que des instances différentes
-   d'une même Meta sont compatibles. D'ailleurs le "fst" jette les metas
-   provenant de w_Unify. (Utilisé seulement dans prolog.ml) *)
-
-(* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
-let unifyTerms m n gls = 
-  tclIDTAC {it = gls.it; 
-	    sigma = (get_gc (fst (w_Unify CONV m n (Refiner.project_with_focus gls))))}
-
-let unify m gls =
-  let n = pf_concl gls in unifyTerms m n gls
-
-(* [clenv_merge b metas evars clenv] merges common instances in metas
-   or in evars, possibly generating new unification problems; if [b]
-   is true, unification of types of metas is required *)
-
-let clenv_merge with_types metas evars clenv =
-  let ty_metas = ref [] in
-  let ty_evars = ref [] in
-  let rec clenv_resrec metas evars clenv =
-    match (evars,metas) with
-      | ([], []) -> clenv
-
-      | ((lhs,rhs)::t, metas) ->
-      (match kind_of_term rhs with
-
-	| Meta k -> clenv_resrec ((k,lhs)::metas) t clenv
-
-	| krhs ->
-        (match kind_of_term lhs with
-
-	  | Evar (evn,_) ->
-    	      if w_defined_evar clenv.hook evn then
-		let (metas',evars') = unify_0 CONV clenv.hook rhs lhs in
-		clenv_resrec (metas'@metas) (evars'@t) clenv
-    	      else begin
-		let rhs' = 
-		  if occur_meta rhs then subst_meta metas rhs else rhs 
-		in
-		if occur_evar evn rhs' then error "w_Unify";
-		try 
-		  clenv_resrec metas t 
-		    (clenv_wtactic (w_Define evn rhs') clenv) 
-		with ex when catchable_exception ex ->
-		  (match krhs with
-		     | App (f,cl) when is_mimick_head f ->
-			 clenv_resrec metas evars 
-			   (clenv_wtactic
-			      (mimick_evar f (Array.length cl) evn)
-			      clenv)
-           	     | _ -> raise ex (* error  "w_Unify" *))
-	      end
-
-	  | _ -> anomaly "clenv_resrec"))
-
-      | ([], (mv,n)::t) ->
-    	  if clenv_defined clenv mv then
-            let (metas',evars') =
-              unify_0 CONV clenv.hook (clenv_value clenv mv).rebus n in
-            clenv_resrec (metas'@t) evars' clenv
-    	  else
-            begin
-	      if with_types (* or occur_meta mvty *) then
-	        (let mvty = clenv_instance_type clenv mv in
-		try 
-		  let nty = clenv_type_of clenv 
-			      (clenv_instance clenv (mk_freelisted n)) in
-		  let (mc,ec) = unify_0 CUMUL clenv.hook nty mvty in
-                  ty_metas := mc @ !ty_metas;
-                  ty_evars := ec @ !ty_evars
-		with e when Logic.catchable_exception e -> ());
-	      clenv_resrec t [] (clenv_assign mv n clenv)
-            end in
-  (* merge constraints *)
-  let clenv' = clenv_resrec metas evars clenv in
-  if with_types then
-    (* merge constraints about types: if they fail, don't worry *)
-    try clenv_resrec !ty_metas !ty_evars clenv'
-    with e when Logic.catchable_exception e -> clenv'
-  else clenv'
-
-(* [clenv_unify M N clenv]
-   performs a unification of M and N, generating a bunch of
-   unification constraints in the process.  These constraints
-   are processed, one-by-one - they may either generate new
-   bindings, or, if there is already a binding, new unifications,
-   which themselves generate new constraints.  This continues
-   until we get failure, or we run out of constraints.
-   [clenv_typed_unify M N clenv] expects in addition that expected
-   types of metavars are unifiable with the types of their instances    *)
-
-let clenv_unify_core_0 with_types cv_pb m n clenv =
-  let (mc,ec) = unify_0 cv_pb clenv.hook m n in 
-  clenv_merge with_types mc ec clenv
-
-let clenv_unify_0 = clenv_unify_core_0 false
-let clenv_typed_unify = clenv_unify_core_0 true
-
-
-(* takes a substitution s, an open term op and a closed term cl
-   try to find a subterm of cl which matches op, if op is just a Meta
-   FAIL because we cannot find a binding *)
-
-let iter_fail f a =
-  let n = Array.length a in 
-  let rec ffail i =
-    if i = n then error "iter_fail" 
-    else
-      try f a.(i) 
-      with ex when catchable_exception ex -> ffail (i+1)
-  in ffail 0
-
-(* Tries to find an instance of term [cl] in term [op].
-   Unifies [cl] to every subterm of [op] until it finds a match.
-   Fails if no match is found *)
-let unify_to_subterm clause (op,cl) =
-  let rec matchrec cl =
-    let cl = strip_outer_cast cl in
-    (try 
-       if closed0 cl 
-       then clenv_unify_0 CONV op cl clause,cl
-       else error "Bound 1"
-     with ex when catchable_exception ex ->
-       (match kind_of_term cl with 
-	  | App (f,args) ->
-	      let n = Array.length args in
-	      assert (n>0);
-	      let c1 = mkApp (f,Array.sub args 0 (n-1)) in
-	      let c2 = args.(n-1) in
-	      (try 
-		 matchrec c1
-	       with ex when catchable_exception ex -> 
-		 matchrec c2)
-          | Case(_,_,c,lf) -> (* does not search in the predicate *)
-	       (try 
-		 matchrec c
-	       with ex when catchable_exception ex -> 
-		 iter_fail matchrec lf)
-	  | LetIn(_,c1,_,c2) -> 
-	       (try 
-		 matchrec c1
-	       with ex when catchable_exception ex -> 
-		 matchrec c2)
-
-	  | Fix(_,(_,types,terms)) -> 
-	       (try 
-		 iter_fail matchrec types
-	       with ex when catchable_exception ex -> 
-		 iter_fail matchrec terms)
-	
-	  | CoFix(_,(_,types,terms)) -> 
-	       (try 
-		 iter_fail matchrec types
-	       with ex when catchable_exception ex -> 
-		 iter_fail matchrec terms)
-
-          | Prod (_,t,c) ->
-	      (try 
-		 matchrec t 
-	       with ex when catchable_exception ex -> 
-		 matchrec c)
-          | Lambda (_,t,c) ->
-	      (try 
-		 matchrec t 
-	       with ex when catchable_exception ex -> 
-		 matchrec c)
-          | _ -> error "Match_subterm")) 
-  in 
-  try matchrec cl
-  with ex when catchable_exception ex ->
-    raise (RefinerError (NoOccurrenceFound op))
-
-let unify_to_subterm_list allow_K clause oplist t = 
-  List.fold_right 
-    (fun op (clause,l) ->
-      if isMeta op then
-	if allow_K then (clause,op::l)
-	else error "Match_subterm"
-      else if occur_meta op then
-        let (clause',cl) =
-          try 
-	    (* This is up to delta for subterms w/o metas ... *)
-	    unify_to_subterm clause (strip_outer_cast op,t)
-          with RefinerError (NoOccurrenceFound _) when allow_K -> (clause,op)
-        in 
-	(clause',cl::l)
-      else if not allow_K & not (dependent op t) then
-	(* This is not up to delta ... *)
-	raise (RefinerError (NoOccurrenceFound op))
-      else
-	(clause,op::l))
-    oplist 
-    (clause,[])
-
-let secondOrderAbstraction allow_K typ (p, oplist) clause =
-  let env = w_env clause.hook in
-  let sigma = w_Underlying clause.hook in
-  let (clause',cllist) = unify_to_subterm_list allow_K clause oplist typ in
-  let typp = clenv_instance_type clause' p in 
-  let pred = abstract_list_all env sigma typp typ cllist in
-  clenv_unify_0 CONV (mkMeta p) pred clause'
-
-let clenv_unify2 allow_K cv_pb ty1 ty2 clause =
-  let c1, oplist1 = whd_stack ty1 in
-  let c2, oplist2 = whd_stack ty2 in
-  match kind_of_term c1, kind_of_term c2 with
-    | Meta p1, _ ->
-        (* Find the predicate *)
-	let clause' =
-          secondOrderAbstraction allow_K ty2 (p1,oplist1) clause in 
-        (* Resume first order unification *)
-	clenv_unify_0 cv_pb (clenv_instance_term clause' ty1) ty2 clause'
-    | _, Meta p2 ->
-        (* Find the predicate *)
-	let clause' =
-          secondOrderAbstraction allow_K ty1 (p2, oplist2) clause in 
-        (* Resume first order unification *)
-	clenv_unify_0 cv_pb ty1 (clenv_instance_term clause' ty2) clause'
-    | _ -> error "clenv_unify2"
-
-
-(* The unique unification algorithm works like this: If the pattern is
-   flexible, and the goal has a lambda-abstraction at the head, then
-   we do a first-order unification.
-
-   If the pattern is not flexible, then we do a first-order
-   unification, too.
-
-   If the pattern is flexible, and the goal doesn't have a
-   lambda-abstraction head, then we second-order unification. *)
-
-(* We decide here if first-order or second-order unif is used for Apply *)
-(* We apply a term of type (ai:Ai)C and try to solve a goal C'          *)
-(* The type C is in clenv.templtyp.rebus with a lot of Meta to solve    *)
-
-(* 3-4-99 [HH] New fo/so choice heuristic :
-   In case we have to unify (Meta(1) args) with ([x:A]t args')
-   we first try second-order unification and if it fails first-order.
-   Before, second-order was used if the type of Meta(1) and [x:A]t was
-   convertible and first-order otherwise. But if failed if e.g. the type of
-   Meta(1) had meta-variables in it. *)
-let clenv_unify allow_K cv_pb ty1 ty2 clenv =
-  let hd1,l1 = whd_stack ty1 in
-  let hd2,l2 = whd_stack ty2 in
-  match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
-    (* Pattern case *)
-    | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
-      when List.length l1 = List.length l2 ->
-	(try 
-	   clenv_typed_unify cv_pb ty1 ty2 clenv
-	 with ex when catchable_exception ex -> 
-	   try 
-	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
-	   with RefinerError (NoOccurrenceFound c) as e -> raise e
-	     | ex when catchable_exception ex -> 
-	     error "Cannot solve a second-order unification problem")
-
-     (* Second order case *)
-     | (Meta _, true, _, _ | _, _, Meta _, true) -> 
-	(try 
-	   clenv_unify2 allow_K cv_pb ty1 ty2 clenv
-	with RefinerError (NoOccurrenceFound c) as e -> raise e
-	  | ex when catchable_exception ex -> 
-          try 
-	     clenv_typed_unify cv_pb ty1 ty2 clenv
-          with ex when catchable_exception ex -> 
-             error "Cannot solve a second-order unification problem")
-
-     (* General case: try first order *)
-     | _ -> clenv_unify_0 cv_pb ty1 ty2 clenv
-
+let clenv_unique_resolver allow_K clause gl =
+  clenv_unify allow_K CUMUL
+    (clenv_instance_template_type clause) (pf_concl gl) clause 
 
 (* [clenv_bchain mv clenv' clenv]
  *
@@ -922,17 +358,6 @@ let clenv_fchain mv nextclenv clenv =
   let (clenv',nextclenv') = clenv_swap clenv nextclenv in 
   clenv_bchain mv clenv' nextclenv'
 
-let clenv_refine kONT clenv gls =
-  tclTHEN
-    (kONT clenv.hook) 
-    (refine (clenv_instance_template clenv)) gls
-
-let clenv_refine_cast kONT clenv gls =
-  tclTHEN
-    (kONT clenv.hook) 
-    (refine (clenv_cast_meta clenv (clenv_instance_template clenv)))
-    gls
-
 (* [clenv_metavars clenv mv]
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
@@ -960,7 +385,7 @@ let dependent_metas clenv mvs conclmetas =
 
 let clenv_dependent hyps_only clenv =
   let mvs = collect_metas (clenv_instance_template clenv) in
-  let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
+  let ctyp_mvs = (mk_freelisted (clenv_instance_template_type clenv)).freemetas in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter
     (fun mv -> Metaset.mem mv deps && not (hyps_only && Metaset.mem mv ctyp_mvs))
@@ -976,7 +401,7 @@ let clenv_missing c = clenv_dependent true c
 
 let clenv_independent clenv =
   let mvs = collect_metas (clenv_instance_template clenv) in
-  let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
+  let ctyp_mvs = (mk_freelisted (clenv_instance_template_type clenv)).freemetas in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
@@ -1059,7 +484,8 @@ let clenv_match_args s clause =
 	     previous case because Coercion does not handle Meta *)
           let c' = w_coerce clause.hook c c_typ k_typ in
 	  try clenv_unify true CONV (mkMeta k) c' clause
-	  with RefinerError (CannotUnify (m,n)) ->
+	  with Pretype_errors.PretypeError
+              (_,Pretype_errors.CannotUnify (m,n)) ->
 	    Stdpp.raise_with_loc loc
  	      (RefinerError (CannotUnifyBindingType (m,n)))
 	in matchrec cl t
@@ -1097,46 +523,7 @@ let clenv_constrain_with_bindings bl clause =
     matchrec clause bl
 
 
-(* [clenv_pose_dependent_evars clenv]
- * For each dependent evar in the clause-env which does not have a value,
- * pose a value for it by constructing a fresh evar.  We do this in
- * left-to-right order, so that every evar's type is always closed w.r.t.
- * metas. *)
-
-let clenv_pose_dependent_evars clenv =
-  let dep_mvs = clenv_dependent false clenv in
-  List.fold_left
-    (fun clenv mv ->
-       let evar = Evarutil.new_evar_in_sign (w_env clenv.hook) in
-       let (evar_n,_) = destEvar evar in
-       let tY = clenv_instance_type clenv mv in
-       let clenv' = clenv_wtactic (w_Declare evar_n tY) clenv in
-       clenv_assign mv evar clenv')
-    clenv
-    dep_mvs
-
 (***************************)
-
-let clenv_unique_resolver allow_K clause gl =
-  clenv_unify allow_K CUMUL
-    (clenv_instance_template_type clause) (pf_concl gl) clause 
-
-let res_pf kONT clenv gls =
-  clenv_refine kONT (clenv_unique_resolver false clenv gls) gls
-    
-let res_pf_cast kONT clenv gls =
-  clenv_refine_cast kONT (clenv_unique_resolver false clenv gls) gls
-
-let elim_res_pf kONT clenv allow_K gls =
-  clenv_refine_cast kONT (clenv_unique_resolver allow_K clenv gls) gls
-
-let elim_res_pf_THEN_i kONT clenv tac gls =  
-  let clenv' = (clenv_unique_resolver true clenv gls) in
-  tclTHENLASTn (clenv_refine kONT clenv') (tac clenv') gls
-
-let e_res_pf kONT clenv gls =
-  clenv_refine kONT
-    (clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)) gls
 
 (* Clausal environment for an application *)
 

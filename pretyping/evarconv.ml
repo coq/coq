@@ -13,7 +13,6 @@ open Names
 open Term
 open Reductionops
 open Closure
-open Instantiate
 open Environ
 open Typing
 open Classops
@@ -66,7 +65,7 @@ let evar_apprec_nobeta env isevars stack c =
     let (t,stack as s') = apprec_nobeta env (evars_of isevars) s in
     match kind_of_term t with
       | Evar (n,_ as ev) when Evd.is_defined (evars_of isevars) n ->
-	  aux (existential_value (evars_of isevars) ev, stack)
+	  aux (Evd.existential_value (evars_of isevars) ev, stack)
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack (Array.of_list stack) empty_stack)
 *)
@@ -77,7 +76,7 @@ let evar_apprec env isevars stack c =
     let (t,stack as s') = Reductionops.apprec env sigma s in
     match kind_of_term t with
       | Evar (n,_ as ev) when Evd.is_defined sigma n ->
-	  aux (existential_value sigma ev, stack)
+	  aux (Evd.existential_value sigma ev, stack)
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack (Array.of_list stack) empty_stack)
 

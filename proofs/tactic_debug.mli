@@ -10,6 +10,7 @@
 
 open Environ
 open Pattern
+open Evd
 open Proof_type
 open Names
 open Tacexpr

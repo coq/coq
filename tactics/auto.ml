@@ -604,8 +604,7 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 (* Try unification with the precompiled clause, then use registered Apply *)
 
 let unify_resolve (c,clenv) gls = 
-  let (wc,kONT) = startWalk gls in
-  let clenv' = connect_clenv wc clenv in
+  let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in  
   h_simplest_apply c gls
 

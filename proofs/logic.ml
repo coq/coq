@@ -40,12 +40,9 @@ type refiner_error =
   | NonLinearProof of constr
 
   (* Errors raised by the tactics *)
-  | CannotUnify of constr * constr
   | CannotUnifyBindingType of constr * constr
-  | CannotGeneralize of constr
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * identifier
-  | NoOccurrenceFound of constr
 
 exception RefinerError of refiner_error
 
@@ -53,12 +50,12 @@ open Pretype_errors
 
 let catchable_exception = function
   | Util.UserError _ | TypeError _ | RefinerError _
+  (* unification errors *)
+  | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _))
+  | Stdpp.Exc_located(_,PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _)))
   | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
     Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _))) -> true
   | _ -> false
-
-let error_cannot_unify (m,n) =
-  raise (RefinerError (CannotUnify (m,n)))
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)

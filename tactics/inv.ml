@@ -46,7 +46,7 @@ let collect_meta_variables c =
 
 let check_no_metas clenv ccl =
   if occur_meta ccl then
-    let metas = List.map (fun n -> Metamap.find n clenv.namenv)
+    let metas = List.map (fun n -> Evd.Metamap.find n clenv.namenv)
 		  (collect_meta_variables ccl) in
     errorlabstrm "inversion" 
       (str ("Cannot find an instantiation for variable"^
@@ -112,7 +112,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
               | None ->
 		let sort = get_sort_of env sigma concl in
 		let p = make_arity env true indf sort in
-		abstract_list_all env sigma p concl (realargs@[mkVar id]) in
+		Unification.abstract_list_all env sigma p concl (realargs@[mkVar id]) in
 	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)

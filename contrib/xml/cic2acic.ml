@@ -229,7 +229,7 @@ let typeur sigma metamap =
     | T.Const c ->
         let cb = Environ.lookup_constant c env in
         T.body_of_type cb.Declarations.const_type
-    | T.Evar ev -> Instantiate.existential_type sigma ev
+    | T.Evar ev -> Evd.existential_type sigma ev
     | T.Ind ind -> T.body_of_type (Inductive.type_of_inductive env ind)
     | T.Construct cstr ->
        T.body_of_type (Inductive.type_of_constructor env cstr)

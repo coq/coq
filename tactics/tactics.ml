@@ -31,6 +31,7 @@ open Proof_type
 open Logic
 open Evar_refiner
 open Clenv
+open Clenvtac
 open Refiner
 open Tacticals
 open Hipattern
@@ -438,8 +439,8 @@ let bring_hyps hyps =
 let apply_with_bindings (c,lbind) gl = 
   let apply = 
     match kind_of_term c with 
-      | Lambda _ -> res_pf_cast 
-      | _ -> res_pf 
+      | Lambda _ -> Clenvtac.res_pf_cast 
+      | _ -> Clenvtac.res_pf 
   in 
   let (wc,kONT) = startWalk gl in
   (* The actual type of the theorem. It will be matched against the
@@ -452,13 +453,13 @@ let apply_with_bindings (c,lbind) gl =
       if n<0 then error "Apply: theorem has not enough premisses.";
       let clause = make_clenv_binding_apply wc n (c,thm_ty) lbind in
       apply kONT clause gl
-    with (RefinerError _|UserError _|Failure _) as exn ->
+    with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) as exn ->
       let red_thm =
         try red_product (w_env wc) (w_Underlying wc) thm_ty
         with (Redelimination | UserError _) -> raise exn in
       try_apply red_thm in
   try try_apply thm_ty0
-  with (RefinerError _|UserError _|Failure _) ->
+  with (Pretype_errors.PretypeError _|RefinerError _|UserError _|Failure _) ->
     (* Last chance: if the head is a variable, apply may try
        second order unification *)
     let clause = make_clenv_binding_apply wc (-1) (c,thm_ty0) lbind in 

@@ -39,12 +39,6 @@ type prim_rule =
   | Move of bool * identifier * identifier
   | Rename of identifier * identifier
 
-
-(* Signature useful to define the tactic type *)
-type 'a sigma = { 
-  it : 'a ; 
-  sigma : evar_map }
-
 (*s Proof trees. 
   [ref] = [None] if the goal has still to be proved, 
   and [Some (r,l)] if the rule [r] was applied to the goal
