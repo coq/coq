@@ -25,12 +25,19 @@ open Wcclausenv
 val tclIDTAC         : tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
-val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
-val tclTHENL         : tactic -> tactic -> tactic
-val tclTHENS         : tactic -> tactic list -> tactic
-val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
 val tclTHENSEQ       : tactic list -> tactic
+val tclTHENLIST      : tactic list -> tactic
+val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
+val tclTHENFIRST     : tactic -> tactic -> tactic
+val tclTHENLAST      : tactic -> tactic -> tactic
+val tclTHENS         : tactic -> tactic list -> tactic
+val tclTHENSV        : tactic -> tactic array -> tactic
+val tclTHENSLASTn    : tactic -> tactic -> tactic array -> tactic
+val tclTHENLASTn     : tactic -> tactic array -> tactic
+val tclTHENSFIRSTn   : tactic -> tactic array -> tactic -> tactic
+val tclTHENFIRSTn    : tactic -> tactic array -> tactic
 val tclREPEAT        : tactic -> tactic
+val tclREPEAT_MAIN   : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
 val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic
@@ -41,16 +48,16 @@ val tclFAIL          : int -> tactic
 val tclDO            : int -> tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
+val tclNOTSAMEGOAL   : tactic -> tactic
+val tclTHENTRY       : tactic -> tactic -> tactic
+
 val tclNTH_HYP       : int -> (constr -> tactic) -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 val tclLAST_HYP      : (constr -> tactic) -> tactic
 val tclTRY_sign      : (constr -> tactic) -> named_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
 
-(*i
-val dyn_tclIDTAC     : tactic_arg list -> tactic
-val dyn_tclFAIL      : tactic_arg list -> tactic
-i*)
+val unTAC            : tactic -> goal sigma -> proof_tree sigma
 
 (*s Clause tacticals. *)
 
@@ -59,10 +66,6 @@ type clause = identifier option
 val nth_clause  : int -> goal sigma -> clause
 val clause_type : clause -> goal sigma -> constr
 
-(*i
-val matches      : goal sigma -> constr -> marked_term -> bool
-val dest_match   : goal sigma -> constr -> marked_term -> constr list
-i*)
 val pf_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
@@ -94,13 +97,6 @@ val onHyps         : (goal sigma -> named_context) ->
 val tryAllHyps     : (identifier -> tactic) -> tactic
 val onNLastHyps    : int -> (named_declaration -> tactic) -> tactic
 val onLastHyp      : (identifier -> tactic) -> tactic
-
-(* [ConclPattern concl pat tacast]:
-   if the term concl matches the pattern pat, (in sense of 
-   [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
-   right values to build a tactic *)
-
-val conclPattern : constr -> constr_pattern -> Coqast.t -> tactic
 
 (*s Elimination tacticals. *)
 

@@ -1,3 +1,4 @@
+
 (***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
@@ -14,6 +15,7 @@ open Sign
 open Evd
 open Proof_trees
 open Proof_type
+open Tacexpr
 (*i*)
 
 (* The refiner (handles primitive rules and high-level tactics). *)
@@ -30,12 +32,20 @@ val apply_sig_tac :
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
-val add_tactic             : string -> (tactic_arg list -> tactic) -> unit
-val overwriting_add_tactic : string -> (tactic_arg list -> tactic) -> unit
-val lookup_tactic          : string -> (tactic_arg list) -> tactic
+val add_tactic             : string -> (closed_generic_argument list -> tactic) -> unit
+val overwriting_add_tactic : string -> (closed_generic_argument list -> tactic) -> unit
+val lookup_tactic          : string -> (closed_generic_argument list) -> tactic
+
+(*s Hiding the implementation of tactics. *)
+
+(* [abstract_tactic tac] hides the (partial) proof produced by [tac] under
+   a single proof node *)
+val abstract_tactic : atomic_tactic_expr -> tactic -> tactic
+val abstract_tactic_expr : tactic_expr -> tactic -> tactic
+val abstract_extended_tactic : string -> closed_generic_argument list -> tactic -> tactic
 
 val refiner : rule -> tactic
-val vernac_tactic : tactic_expression -> tactic
+val vernac_tactic : string * closed_generic_argument list -> tactic
 val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma
@@ -57,24 +67,44 @@ val tclTHENLIST      : tactic list -> tactic
    [(tac2 i)] to the [i]$^{th}$ resulting subgoal (starting from 1) *)
 val tclTHEN_i        : tactic -> (int -> tactic) -> tactic
 
-(* [tclTHENL tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
-   to the last resulting subgoal *)
-val tclTHENL         : tactic -> tactic -> tactic
+(* [tclTHENLAST tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
+   to the last resulting subgoal (previously called [tclTHENL]) *)
+val tclTHENLAST         : tactic -> tactic -> tactic
 
-(* [tclTHENS tac1 [t1 ; ... ; tn] gls] applies the tactic [tac1] to
+(* [tclTHENFIRST tac1 tac2 gls] applies the tactic [tac1] to [gls] and [tac2]
+   to the first resulting subgoal *)
+val tclTHENFIRST         : tactic -> tactic -> tactic
+
+(* [tclTHENS tac1 [|t1 ; ... ; tn|] gls] applies the tactic [tac1] to
    [gls] and applies [t1],..., [tn] to the [n] resulting subgoals. Raises
    an error if the number of resulting subgoals is not [n] *)
+val tclTHENSV         : tactic -> tactic array -> tactic
+
+(* Same with a list of tactics *)
 val tclTHENS         : tactic -> tactic list -> tactic
 
-(* Same as [tclTHENS] but completes with [tac3] if the number resulting 
-   subgoals is strictly more than [n] *)
-val tclTHENST        : tactic -> tactic list -> tactic -> tactic
+(* [tclTHENST] is renamed [tclTHENSFIRSTn]
+val tclTHENST        : tactic -> tactic array -> tactic -> tactic
+*)
 
-(* Same as [tclTHENS] but  completes with [tac3 i] *)
-val tclTHENSi        : tactic -> tactic list -> (int -> tactic) -> tactic
+(* [tclTHENSLASTn tac1 [t1 ; ... ; tn] tac2 gls] applies [t1],...,[tn] on the
+   last [n] resulting subgoals and [tac2] on the remaining first subgoals *)
+val tclTHENSLASTn     : tactic -> tactic -> tactic array -> tactic
 
-(* Same as tclTHENST but completes with [Idtac] *)
-val tclTHENSI        : tactic -> tactic list -> tactic
+(* [tclTHENSFIRSTn tac1 [t1 ; ... ; tn] tac2 gls] first applies [tac1], then
+   applies [t1],...,[tn] on the first [n] resulting subgoals and
+   [tac2] for the remaining last subgoals (previously called tclTHENST) *)
+val tclTHENSFIRSTn : tactic -> tactic array -> tactic -> tactic
+
+(* [tclTHENLASTn tac1 [t1 ; ... ; tn] gls] first applies [tac1] then,
+   applies [t1],...,[tn] on the last [n] resulting subgoals and leaves
+   unchanged the other subgoals *)
+val tclTHENLASTn    : tactic -> tactic array -> tactic
+
+(* [tclTHENFIRSTn tac1 [t1 ; ... ; tn] gls] first applies [tac1] then,
+   applies [t1],...,[tn] on the first [n] resulting subgoals and leaves
+   unchanged the other subgoals (previously called [tclTHENSI]) *)
+val tclTHENFIRSTn   : tactic -> tactic array -> tactic
 
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int
@@ -94,7 +124,6 @@ val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
 val tclINFO          : tactic -> tactic
-
 
 (*s Tactics handling a list of goals. *)
 
@@ -152,8 +181,8 @@ open Pp
 (*i*)
 
 val print_proof : evar_map -> named_context -> proof_tree -> std_ppcmds
-val pr_rule      : rule -> std_ppcmds
-val pr_tactic    : tactic_expression -> std_ppcmds
+val pr_rule     : rule -> std_ppcmds
+val pr_tactic   : tactic_expr -> std_ppcmds
 val print_script :
   bool -> evar_map -> named_context -> proof_tree -> std_ppcmds
 val print_treescript :
