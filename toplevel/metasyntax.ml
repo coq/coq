@@ -159,17 +159,23 @@ let split str =
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
-let cache_infix (_,(gr,se,ntn,scope,pat)) =
-  let b = Symbols.exists_notation_in_scope scope ntn in
-  (* Declare the printer rule and its interpretation *)
-  if not b then Esyntax.add_ppobject {sc_univ="constr";sc_entries=se};
-  (* Declare the grammar rule ... *)
-  if not (Symbols.exists_notation ntn) then Egrammar.extend_grammar gr;
-  (* ... and its interpretation *)
-  if not b then Symbols.declare_notation ntn pat scope
-
 let load_infix _ (_,(gr,se,ntn,scope,pat)) =
   Symbols.declare_scope scope
+
+let open_infix i (_,(gr,se,ntn,scope,pat)) =
+  if i=1 then begin
+    let b = Symbols.exists_notation_in_scope scope ntn in
+    (* Declare the printer rule and its interpretation *)
+    if not b then Esyntax.add_ppobject {sc_univ="constr";sc_entries=se};
+    (* Declare the grammar rule ... *)
+    if not (Symbols.exists_notation ntn) then Egrammar.extend_grammar gr;
+    (* ... and its interpretation *)
+    if not b then Symbols.declare_notation ntn pat scope
+  end
+
+let cache_infix o =
+  load_infix 1 o;
+  open_infix 1 o
 
 let subst_infix (_,subst,(gr,se,ntn,scope,pat)) =
   (Egrammar.subst_all_grammar_command subst gr,
@@ -180,7 +186,7 @@ let subst_infix (_,subst,(gr,se,ntn,scope,pat)) =
 
 let (inInfix, outInfix) =
   declare_object {(default_object "INFIX") with
-       open_function = (fun i o -> if i=1 then cache_infix o);
+       open_function = open_infix;
        cache_function = cache_infix;
        subst_function = subst_infix;
        load_function = load_infix;
@@ -240,7 +246,7 @@ let string_of_assoc = function
   | Some(Gramext.NonA) -> "NONA"
 
 let make_symbolic assoc n symbols =
-  (string_of_assoc assoc) ^ (string_of_int n) ^
+  (string_of_assoc assoc) ^ "-" ^ (string_of_int n) ^ ":" ^
   (String.concat " " (List.map string_of_symbol symbols))
 
 let make_production =
@@ -418,17 +424,23 @@ let add_infix assoc n inf qid sc =
   add_notation assoc n ("x "^inf^" y") ast sc
 
 (* Delimiters *)
-let cache_delimiters (_,(gram_rule,scope,dlm)) =
-  Egrammar.extend_grammar gram_rule;   (* For parsing *)
-  Symbols.declare_delimiters scope dlm (* For printing *)
-
 let load_delimiters _ (_,(gram_rule,scope,dlm)) =
   Symbols.declare_scope scope
+
+let open_delimiters i (_,(gram_rule,scope,dlm)) =
+  if i=1 then begin
+    Egrammar.extend_grammar gram_rule;   (* For parsing *)
+    Symbols.declare_delimiters scope dlm (* For printing *)
+  end
+
+let cache_delimiters o =
+  load_delimiters 1 o;
+  open_delimiters 1 o
 
 let (inDelim,outDelim) = 
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_delimiters;
-      open_function = (fun i o -> if i=1 then cache_delimiters o);
+      open_function = open_delimiters;
       load_function = load_delimiters;
       export_function = (fun x -> Some x) }
 
