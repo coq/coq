@@ -223,9 +223,6 @@ Tactic Definition InverseTest FT :=
 (**** Field itself ****)
 
 Tactic Definition ApplySimplif sfun :=
-(*  Match Context With
-  | [ |- (interp_ExprA ?1 ?2 ?3)==(interp_ExprA ? ?4 ?5) ] ->
-    (sfun ?1 ?2 ?3);(sfun ?1 ?4 ?5).*)
   (Match Context With
    | [ |- (interp_ExprA ?1 ?2 ?3)==(interp_ExprA ? ? ?) ] ->
      (sfun ?1 ?2 ?3));
