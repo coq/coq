@@ -77,7 +77,7 @@ let betaiotazeta_red = {
 let unfold_red sp = {
   r_beta = true;
   r_const = false,[sp];
-  r_zeta = false;
+  r_zeta = true;   (* false for finer behaviour ? *)
   r_evar = false;
   r_iota = true }
 
