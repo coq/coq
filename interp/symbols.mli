@@ -103,8 +103,8 @@ val availability_of_notation : scope_name * notation -> scopes ->
 
 (*s Declare and test the level of a (possibly uninterpreted) notation *)
 
-val declare_notation_level : notation -> level -> unit
-val level_of_notation : notation -> level (* [Not_found] if no level *)
+val declare_notation_level : notation -> level option * level -> unit
+val level_of_notation : notation -> level option * level (* [Not_found] if no level *)
 
 (*s** Miscellaneous *)
 
