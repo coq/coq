@@ -166,6 +166,7 @@ object('self)
       GText.iter -> (GText.iter * GText.iter) option
     method get_insert : GText.iter
     method get_start_of_input : GText.iter
+    method indent_current_line : unit
     method insert_command : string -> string -> unit
     method insert_commands : (string * string) list -> unit
     method insert_message : string -> unit
@@ -325,8 +326,6 @@ let remove_current_view_page () =
   kill_input_view c;
   ((notebook ())#get_nth_page c)#misc#hide ()
 
-let underscore = Glib.Utf8.to_unichar "_" (ref 0)
-let bn = Glib.Utf8.to_unichar "\n" (ref 0)
 
 let starts_word it = it#starts_word && it#backward_char#char <> underscore
 let ends_word it = it#ends_line || (it#ends_word && it#char <> underscore)
@@ -705,6 +704,37 @@ object(self)
 			       ~yalign:0.75
 			       ~within_margin:0.25)
 	      `INSERT)
+
+
+  method indent_current_line = 
+    let get_nb_space it =
+      let it = it#copy in
+      let nb_sep = ref 0 in
+      let continue = ref true in
+      while !continue do 
+	if it#char = space then begin 
+	  incr nb_sep;
+	  if not it#nocopy#forward_char then continue := false;
+	end else continue := false
+      done;
+      !nb_sep
+    in
+    let previous_line = self#get_insert in
+    if previous_line#nocopy#backward_line then begin
+      let previous_line_spaces = get_nb_space previous_line in
+      let current_line_start = self#get_insert#set_line_offset 0 in
+      let current_line_spaces = get_nb_space current_line_start in
+      if input_buffer#delete_interactive 
+	~start:current_line_start 
+	~stop:(current_line_start#forward_chars current_line_spaces)
+	()
+      then 
+	let current_line_start = self#get_insert#set_line_offset 0 in
+	input_buffer#insert 
+	  ~iter:current_line_start
+	  (String.make previous_line_spaces ' ')
+    end
+
 
   method show_goals = 
     try
@@ -1329,7 +1359,12 @@ Please restart and report NOW.";
 	  if GdkKeysyms._Break=k
 	  then break ();
 	  false
-      | l -> false
+      | l -> 
+	  if GdkEvent.Key.keyval k = GdkKeysyms._Tab then begin
+	    prerr_endline "active_kp_handler for Tab";
+	    self#indent_current_line;
+	    true
+	  end else false
     end
   method disconnected_keypress_handler k = 
     match GdkEvent.Key.state k with
@@ -1482,8 +1517,8 @@ Please restart and report NOW.";
 			     ~start:self#get_start_of_input
 			     ~stop
 			     "error";
-			   Highlight.highlight_slice
-			     input_buffer self#get_start_of_input stop
+			   Highlight.highlight_around_current_line
+			     input_buffer 
 			)
 	   );
     ignore (input_buffer#add_selection_clipboard (cb()));
@@ -1850,7 +1885,7 @@ let main files =
   let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
   ignore (rehighlight_m#connect#activate 
 	    (fun () -> 
-	       Highlight.rehighlight_all 
+	       Highlight.highlight_all 
 	       (get_current_view()).view#buffer;
 	       (out_some (get_current_view()).analyzed_view)#recenter_insert));
 
@@ -1914,7 +1949,7 @@ let main files =
 		      ~callback:(fun b -> ()
 				)
   in
-(*  read_only_i#misc#set_state `INSENSITIVE;*)
+  read_only_i#misc#set_state `INSENSITIVE;
 
   let search_if = edit_f#add_item "Search _forward"
 		    ~key:GdkKeysyms._greater
@@ -1929,9 +1964,11 @@ let main files =
 			(fun b -> 
 			   let v = out_some (get_current_view ()).analyzed_view 
 				    
-			   in v#complete_at_offset ((v#view#buffer#get_iter `SEL_BOUND)#offset)
+			   in v#complete_at_offset 
+				((v#view#buffer#get_iter `SEL_BOUND)#offset)
 			))
   in
+ 
 
   to_do_on_page_switch := 
   (fun i -> 
@@ -2113,7 +2150,6 @@ let main files =
 			  view#buffer#move_mark `INSERT iter;
 			  ignore (iter#nocopy#backward_chars len);
 			  view#buffer#move_mark `SEL_BOUND iter;
-			  Highlight.highlight_all view#buffer
 			end)
     in
     ignore (templates_factory#add_item menu_text ~callback ?key)
