@@ -646,7 +646,6 @@ Module NodepOfDep [M:Sdep] <: S with Module E := M.E.
     Generalize (H (compat_P_aux C)); Clear H; Intro H.
     Simpl; Unfold Equal; Intuition.
     Apply filter_3; Ground. 
-    Apply (H0 a); Auto.
     Elim (H2 a); Intros. 
     Assert (In a s). 
      EApply filter_1; EAuto.
@@ -667,7 +666,6 @@ Module NodepOfDep [M:Sdep] <: S with Module E := M.E.
     Generalize C; Unfold compat_bool; Intros; Apply (f_equal ?? negb); Auto.
     Simpl; Unfold Equal; Intuition.
     Apply filter_3; Ground.
-    Generalize (H a H1); Case (f a); Intuition.
     Elim (H2 a); Intros. 
     Assert (In a s). 
      EApply filter_1; EAuto.
