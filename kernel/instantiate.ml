@@ -53,6 +53,7 @@ let constant_value env k =
   else 
     failwith "opaque"
 
+
 let mis_lc mis =
   instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
     (Array.to_list mis.mis_args)
@@ -109,13 +110,12 @@ let const_abst_opt_value env sigma c =
 	if evaluable_abst env c then Some (abst_value env c) else None
     | _ -> invalid_arg "const_abst_opt_value"
 
-let mis_arity' mis =
+let mis_typed_arity mis =
   let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
-  and largs = Array.to_list mis.mis_args in 
-  { body = instantiate_constr idhyps mis.mis_mip.mind_arity.body largs;
-    typ = mis.mis_mip.mind_arity.typ }
+  and largs = Array.to_list mis.mis_args in
+  instantiate_type idhyps mis.mis_mip.mind_arity largs
 
 let mis_arity mispec =
-  let { body = b; typ = t } = mis_arity' mispec in
+  let { body = b; typ = t } = mis_typed_arity mispec in
   DOP2 (Cast, b, DOP0 (Sort t))
 

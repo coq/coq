@@ -24,6 +24,7 @@ val existential_type : 'a evar_map -> constr -> constr
 
 val const_abst_opt_value : env -> 'a evar_map -> constr -> constr option
 
+val mis_typed_arity : mind_specif -> typed_type
 val mis_arity : mind_specif -> constr
 
 val mis_lc : mind_specif -> constr
