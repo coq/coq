@@ -1,0 +1,63 @@
+
+The "Coq proof assistant" was developed conjointly by 
+	INRIA (since 1985), 
+	Laboratoire de l'Informatique du Parallelisme LIP 
+	associated to CNRS and ENS Lyon (sept.89-sept.97),
+	Laboratoire de Recherche en Informatique 
+	associated to CNRS and Paris 11 (since sept. 97).
+
+All files of the "Coq proof assistant" in directories or sub-directories of
+	src, tactics, theories, tools
+are distributed under the terms of the GNU Lesser General Public License 
+Version 2.1 (included below).
+
+The following people have contributed to the core of the system 
+during the indicated time :
+
+	Bruno Barras, 	 (INRIA, 1995-1999)
+  	Cristina Cornes, (INRIA, 1993-1996)
+	David Delahaye,  (INRIA, 1997-1999)
+	Daniel de Rauglaudre, (INRIA, 1996-1998)
+	Jean-Christophe Filliâtre, (ENS Lyon, 1994-1997) (Paris 11,1997-1999)
+	Eduardo Giménez, (ENS Lyon, 1993-1996, INRIA, 1997-1998)
+	Hugo Herbelin, (INRIA, 1996-1999)
+	Gérard Huet, (INRIA, 1985-1997)
+	César Muñoz, (INRIA, 1994-1995)
+  	Chetan Murthy, (INRIA, 1992-1994)
+	Catherine Parent-Vigouroux, (ENS Lyon 1992-1995)
+	Patrick Loiseleur, (Paris 11, 1997-1999)
+  	Christine Paulin-Mohring, (INRIA, 1985-1989) (ENS Lyon, 1989-1997) 
+				  (Paris 11, 1997-1999)
+	Amokrane Saïbi, (INRIA, 1993-1998)
+
+The following directories contain independant contributions:
+tactics/contrib/eqdecide 
+	developed by Eduardo Gimenez (INRIA, 1997-1998)
+tactics/contrib/extraction 
+	developed by Benjamin Werner (INRIA, 1989)
+		  and Jean-Christophe Filliatre (ENS Lyon, 1994-1997)
+tactics/contrib/linear 
+        developed by Jean-Christophe Filliatre (ENS Lyon, 1994-1997)
+tactics/contrib/natural
+	developed by Yann Coscoy (INRIA, 1996)
+tactics/contrib/omega
+	developed by Pierre Cregut (CNET-France Telecom, 1996)
+tactics/contrib/pcoq
+	developed by Yves Bertot (INRIA, 1996-1999)
+tactics/contrib/polynom
+	developed by Samuel Boutin (INRIA, 1996)
+	          and Patrick Loiseleur (LRI, 1997-1999)
+tactics/programs
+	developed by Jean-Christophe Filliatre (LRI, 1997-1999)
+theories/REALS
+	developed by Micaela Mayero (INRIA, 1997-1999)	
+***************************************************************************
+INRIA refers to :
+	Institute National de la Recherche en Informatique et Automatique
+CNRS refers to :
+	Centre National de la Recherche Scientifique
+Paris 11 refers to :
+	Universite Paris Sud
+ENS Lyon refers to :
+	Ecole Normale Superieure de Lyon
+****************************************************************************
