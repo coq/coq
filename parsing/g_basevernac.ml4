@@ -90,7 +90,7 @@ GEXTEND Gram
 	  VernacSearch (SearchRewrite c, l)
 
       (* TODO: rapprocher Eval et Check *)
-      | IDENT "Eval"; g = OPT natural; r = Tactic.red_tactic; "in";
+      | IDENT "Eval"; g = OPT natural; r = Tactic.red_expr; "in";
 	  c = constr -> VernacCheckMayEval (Some r, g, c)
       | IDENT "Check"; g = OPT natural; c = constr ->
 	  VernacCheckMayEval (None, g, c)

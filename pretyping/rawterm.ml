@@ -143,7 +143,7 @@ type ('a,'b) red_expr_gen =
   | Unfold of (int list * 'b) list
   | Fold of 'a list
   | Pattern of (int list * 'a) list
-  | ExtraRedExpr of string * 'a list
+  | ExtraRedExpr of string * 'a
 
 type 'a or_metanum = AN of loc * 'a | MetaNum of loc * int
 

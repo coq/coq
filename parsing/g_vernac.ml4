@@ -97,7 +97,7 @@ let test_plurial_form = function
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext (* reduce *) thm_token;
+  GLOBAL: gallina gallina_ext thm_token;
 
   thm_token:
     [ [ "Theorem" -> Theorem
@@ -133,7 +133,7 @@ GEXTEND Gram
     [ [ ll = LIST1 params SEP ";" -> List.flatten ll ] ]
   ;
   reduce:
-    [ [ IDENT "Eval"; r = Tactic.red_tactic; "in" -> Some r
+    [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
       | -> None ] ]
   ;
   binders_list:

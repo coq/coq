@@ -76,7 +76,7 @@ type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
 val reduction_of_redexp : red_expr -> reduction_function
 
-type generic_reduction_function = constr list -> reduction_function
+type generic_reduction_function = constr -> reduction_function
 
 val declare_red_expr : string -> generic_reduction_function -> unit
 
