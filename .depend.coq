@@ -5,7 +5,7 @@ theories/Init/PeanoSyntax.vo: theories/Init/PeanoSyntax.v theories/Init/Datatype
 theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Datatypes.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/LogicSyntax.vo: theories/Init/LogicSyntax.v theories/Init/Logic.vo
-theories/Init/SpecifSyntax.vo: theories/Init/SpecifSyntax.v theories/Init/LogicSyntax.vo theories/Init/Specif.vo
+theories/Init/SpecifSyntax.vo: theories/Init/SpecifSyntax.v theories/Init/Datatypes.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Logic_TypeSyntax.vo: theories/Init/Logic_TypeSyntax.v theories/Init/Logic_Type.vo
