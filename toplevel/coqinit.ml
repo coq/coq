@@ -105,5 +105,5 @@ let init_ocaml_path () =
   in
   List.iter add_subdir
     [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
-      [ "pretyping" ]; [ "parsing" ]; [ "proofs" ]; [ "tactics" ];
-      [ "toplevel" ] ]
+      [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
+      [ "tactics" ]; [ "toplevel" ] ]
