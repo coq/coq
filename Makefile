@@ -134,14 +134,14 @@ PRETYPING=\
   pretyping/matching.cmo
 
 INTERP=\
-  interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
+  parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
   library/impargs.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
   library/declare.cmo
 
 PARSING=\
-  parsing/lexer.cmo parsing/coqast.cmo parsing/ast.cmo \
+  parsing/coqast.cmo parsing/ast.cmo \
   parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo \
   parsing/pcoq.cmo parsing/egrammar.cmo \
   parsing/ppconstr.cmo translate/ppconstrnew.cmo parsing/printer.cmo \
