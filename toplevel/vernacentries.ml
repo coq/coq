@@ -60,34 +60,6 @@ let cl_of_qualid = function
 (*******************)
 (* "Show" commands *)
 
-  (* equivalent to pr_subgoals but start from the prooftree and 
-    check for uninstantiated existential variables *)
-
-let pr_subgoals_of_pfts pfts = 
-  let gls = fst (Refiner.frontier (proof_of_pftreestate pfts)) in 
-  let sigma = project (top_goal_of_pftreestate pfts) in
-  pr_subgoals_existential sigma gls
-
-let show_open_subgoals () =
-  let pfts = get_pftreestate () in
-  match focus() with
-    | 0 -> 
-	msg(pr_subgoals_of_pfts pfts)
-    | n -> 
-	let pf = proof_of_pftreestate pfts in
-	let gls = fst(Refiner.frontier pf) in 
-	if n > List.length gls then 
-	  (make_focus 0; msg(pr_subgoals_of_pfts pfts))
-	else if List.length gls < 2 then 
-	  msg(pr_subgoal n gls)
-	else 
-	  msg (v 0 (int(List.length gls) ++ str" subgoals" ++ cut () ++ 
-		      pr_subgoal n gls))
-
-let show_nth_open_subgoal n =
-  let pf = proof_of_pftreestate (get_pftreestate ()) in
-  msg(pr_subgoal n (fst(Refiner.frontier pf)))
-
 let show_proof () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts in
@@ -134,7 +106,7 @@ let show_prooftree () =
   and evc = evc_of_pftreestate pts in
   msg (Refiner.print_proof evc (Global.named_context()) pf)
 
-let print_subgoals () = if_verbose show_open_subgoals ()
+let print_subgoals () = if_verbose msg (pr_open_subgoals ())
 
   (* Simulate the Intro(s) tactic *)
 
@@ -587,11 +559,14 @@ let vernac_solve n tcom b =
       solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
     else solve_nth n (Tacinterp.hide_interp tcom None)
   end;
-  print_subgoals();
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 
-  if subtree_solved () then 
-    (reset_top_of_tree (); print_subgoals());
+  if subtree_solved () then begin
+    Options.if_verbose msgnl (str "Subgoal proved");
+    make_focus 0;
+    reset_top_of_tree ()
+  end;
+  print_subgoals();
   if !pcoq <> None then (out_some !pcoq).solve n
 
   (* A command which should be a tactic. It has been
@@ -836,12 +811,12 @@ let vernac_check_may_eval redexp glopt rc =
   match redexp with
     | None ->
 	if !pcoq <> None then (out_some !pcoq).print_check j
-	else msg (print_judgment env j)
+	else Options.if_verbose msg (print_judgment env j)
     | Some r ->
 	let redfun = Tacred.reduction_of_redexp (interp_redexp env evmap r) in
 	if !pcoq <> None
 	then (out_some !pcoq).print_eval (redfun env evmap) env rc j
-	else msg (print_eval redfun env j)
+	else Options.if_verbose msg (print_eval redfun env j)
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
@@ -911,6 +886,8 @@ let vernac_search s r =
       Search.search_by_head (Nametab.global locqid) r
   | SearchAbout locqid ->
       Search.search_about (Nametab.global locqid) r
+  | SearchNamed strings ->
+      Search.search_named strings r
 
 let vernac_locate = function
   | LocateTerm qid -> msgnl (print_located_qualid qid)
@@ -950,7 +927,7 @@ let vernac_abort_all () =
   end else
     error "No proof-editing in progress"
 
-let vernac_restart () = restart_proof(); show_open_subgoals ()
+let vernac_restart () = restart_proof(); print_subgoals ()
 
   (* Proof switching *)
 
@@ -962,16 +939,16 @@ let vernac_resume = function
 
 let vernac_undo n =
   undo n;
-  show_open_subgoals ()
+  print_subgoals ()
 
   (* Est-ce normal que "Focus" ne semble pas se comporter comme "Focus 1" ? *)
 let vernac_focus = function
-  | None -> make_focus 1; show_open_subgoals ()
-  | Some n -> traverse_nth_goal n; show_open_subgoals ()
+  | None -> make_focus 1; print_subgoals ()
+  | Some n -> traverse_nth_goal n; print_subgoals ()
 
   (* Reset the focus to the top of the tree *)
 let vernac_unfocus () =
-  make_focus 0; reset_top_of_tree (); show_open_subgoals ()
+  make_focus 0; reset_top_of_tree (); print_subgoals ()
 
 let vernac_go = function
   | GoTo n -> Pfedit.traverse n;show_node()
@@ -996,13 +973,13 @@ let explain_tree occ = msg (apply_subproof Refiner.print_proof occ)
 let vernac_show = function
   | ShowGoal nopt ->
       if !pcoq <> None then (out_some !pcoq).show_goal nopt
-      else (match nopt with
-	| None -> show_open_subgoals ()
-	| (Some n) -> show_nth_open_subgoal n)
+      else msg (match nopt with
+	| None -> pr_open_subgoals ()
+	| Some n -> pr_nth_open_subgoal n)
   | ShowGoalImplicitly None ->
-      Constrextern.with_implicits show_open_subgoals ()
+      msg (Constrextern.with_implicits pr_open_subgoals ())
   | ShowGoalImplicitly (Some n) ->
-      Constrextern.with_implicits show_nth_open_subgoal n
+      msg (Constrextern.with_implicits pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
   | ShowScript -> show_script ()
