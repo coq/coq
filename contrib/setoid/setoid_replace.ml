@@ -32,6 +32,7 @@ type setoid =
 type morphism =
     { lem : constr;
       profil : bool list;
+      arg_types : constr list;
       lem2 : constr option
     }
 
@@ -63,6 +64,7 @@ let current_constant id =
 
 let coq_Setoid_Theory = lazy(constant ["Setoid_replace"] "Setoid_Theory")
 
+let coq_seq_refl = lazy(constant ["Setoid_replace"] "Seq_refl")
 let coq_seq_sym = lazy(constant ["Setoid_replace"] "Seq_sym")
 let coq_seq_trans = lazy(constant ["Setoid_replace"] "Seq_trans")
 
@@ -237,6 +239,7 @@ let add_setoid a aeq th =
 		 (morphism_to_obj (aeq, 
 				   { lem = eqmorph;
 				     profil = [true; true];
+				     arg_types = [a;a];
 				     lem2 = (Some eqmorph2)})));
 	      Options.if_verbose pPNL [< prterm aeq;'sTR " is registered as a morphism">])
     else errorlabstrm "Add Setoid" [< 'sTR "Not a valid setoid theory" >]
@@ -454,6 +457,7 @@ let add_morphism lem_name (m,profil) =
 	       (morphism_to_obj (m, 
 				 { lem = mext;
 				   profil = poss;
+				   arg_types = args_t;
 				   lem2 = (Some lem2)})));
 	    Options.if_verbose message ((string_of_id lem2_name) ^ " is defined"))
        else
@@ -461,6 +465,7 @@ let add_morphism lem_name (m,profil) =
 	    (morphism_to_obj (m, 
 			      { lem = mext;
 				profil = poss;
+				arg_types = args_t;
 				lem2 = None}))));
       Options.if_verbose pPNL [< prterm m;'sTR " is registered as a morphism">]   
     
@@ -544,39 +549,86 @@ let create_args ca ma bl c1 c2 =
   in
     aux 0 bl
 
-let rec create_tac_list i a al c1 c2 = function
+
+let res_tac c a hyp =
+  let sa = setoid_table_find a in
+  let fin = match hyp with
+    | None -> Auto.full_trivial
+    | Some h -> 
+	tclORELSE (tclTHEN (tclTRY (apply h)) (tclFAIL 0)) 
+	  (tclORELSE (tclTHEN (tclTRY (tclTHEN (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|]))) (apply h))) (tclFAIL 0))
+	     Auto.full_trivial) in
+    tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_refl), [|sa.set_a; sa.set_aeq; sa.set_th;c|])))) (tclFAIL 0))
+      (tclORELSE assumption
+	 (tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|])))) assumption)
+	    fin))
+
+let id_res_tac c a = 
+  let sa = setoid_table_find a in
+    (tclTRY (apply (mkApp ((Lazy.force coq_seq_refl), [|sa.set_a; sa.set_aeq; sa.set_th; c|]))))
+
+let rec create_tac_list i a al c1 c2 hyp args_t = function
   | [] -> []
-  | false::q -> create_tac_list (i+1) a al c1 c2 q
+  | false::q -> create_tac_list (i+1) a al c1 c2 hyp args_t q
   | true::q -> 
       if (is_to_replace a.(i))
-      then (zapply false al.(i) a.(i) c1 c2)::(create_tac_list (i+1) a al c1 c2 q)
-      else tclIDTAC::(create_tac_list (i+1) a al c1 c2 q)
+      then (zapply false al.(i) a.(i) c1 c2 hyp)::(create_tac_list (i+1) a al c1 c2 hyp args_t q)
+      else (id_res_tac al.(i) (List.nth args_t i))::(create_tac_list (i+1) a al c1 c2 hyp args_t q)
+(*      else tclIDTAC::(create_tac_list (i+1) a al c1 c2 hyp q) *)
 
-and zapply is_r gl gl_m c1 c2 = match ((kind_of_term gl), gl_m) with
+and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
   | ((IsApp (c,al)),(MApp a)) -> (
       try 
 	let m = morphism_table_find c in
 	let args = Array.of_list (create_args al a m.profil c1 c2) in
 	  if is_r
 	  then tclTHENS (apply (mkApp (m.lem, args)))
-	    ((create_tac_list 0 a al c1 c2 m.profil)@[tclIDTAC])
+	    ((create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil)@[tclIDTAC])
  	  else (match m.lem2 with
 		  | None -> 
-		      tclTHENS (apply (mkApp (m.lem, args))) (create_tac_list 0 a al c1 c2 m.profil)
+		      tclTHENS (apply (mkApp (m.lem, args))) (create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil)
 		  | Some xom -> 
-		      tclTHENS (apply (mkApp (xom, args))) (create_tac_list 0 a al c1 c2 m.profil))
+		      tclTHENS (apply (mkApp (xom, args))) (create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil))
       with Not_found -> errorlabstrm "Setoid_replace" 
 	  [< 'sTR "The term "; prterm c; 'sTR " has not been declared as a morphism">])
-  | (_, Toreplace) -> (* tclIDTAC *) tclORELSE Auto.full_trivial tclIDTAC
+  | (_, Toreplace) -> (res_tac gl (pf_type_of glll gl) hyp) (* tclORELSE Auto.full_trivial tclIDTAC *)
   | (_, Tokeep) -> error "Don't know what to do with this goal"
-  | _ -> anomaly ("Bug in Setoid_replace")
+  | _ -> anomaly ("Bug in Setoid_replace")) glll
 
-let setoid_replace c1 c2 gl =
+let setoid_replace c1 c2 gl hyp =
   let but = (pf_concl gl) in
-    (zapply true but (mark_occur c1 but) c1 c2) gl
+    (zapply true but (mark_occur c1 but) c1 c2 hyp) gl
+
+let general_s_rewrite lft2rgt c gl =
+  let ctype = pf_type_of gl c in
+  let (equiv, args) = decomp_app ctype in
+  let rec get_last_two = function
+    | [c1;c2] -> (c1, c2)
+    | x::y::z -> get_last_two (y::z)
+    | _ -> error "The term provided is not an equivalence" in 
+  let (c1,c2) = get_last_two args in
+    if lft2rgt
+    then setoid_replace c1 c2 gl (Some c)
+    else setoid_replace c2 c1 gl (Some c)
+
+let setoid_rewriteLR = general_s_rewrite true
+
+let setoid_rewriteRL = general_s_rewrite false
 
 let dyn_setoid_replace = function
-  | [(Constr c1);(Constr c2)] -> setoid_replace c1 c2
+  | [(Constr c1);(Constr c2)] -> (fun gl -> setoid_replace c1 c2 gl None)
   | _ -> invalid_arg "Setoid_replace : Bad arguments"
       
 let h_setoid_replace = hide_tactic "Setoid_replace" dyn_setoid_replace
+
+let dyn_setoid_rewriteLR = function
+  | [(Constr c)] -> setoid_rewriteLR c
+  | _ -> invalid_arg "Setoid_rewrite : Bad arguments"
+
+let h_setoid_rewriteLR = hide_tactic "Setoid_rewriteLR" dyn_setoid_rewriteLR
+
+let dyn_setoid_rewriteRL = function
+  | [(Constr c)] -> setoid_rewriteRL c
+  | _ -> invalid_arg "Setoid_rewrite : Bad arguments"
+
+let h_setoid_rewriteRL = hide_tactic "Setoid_rewriteRL" dyn_setoid_rewriteRL
