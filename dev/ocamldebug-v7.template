@@ -24,6 +24,7 @@ case $coqdebug in
     yes)
 	exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \
+	-I $COQTOP/config \
 	-I $COQTOP/lib -I $COQTOP/kernel \
 	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
         -I $COQTOP/proofs -I $COQTOP/tactics \
