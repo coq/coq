@@ -28,10 +28,6 @@ let _ =
   if not !Options.v7 then
     List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 
-(*
-let _ = Options.v7 := false
-*)
-
 (* For Correctness syntax; doesn't work if in psyntax (freeze pb?)  *)
 let _ = Lexer.add_token ("","!")
 
@@ -125,8 +121,8 @@ let lpar_id_coloneq =
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
-  constr_pattern lconstr_pattern Constr.ident binder binder_let
-  tuple_constr;
+  constr_pattern lconstr_pattern Constr.ident binder binder_let pattern
+  tuple_constr tuple_pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -163,10 +159,7 @@ GEXTEND Gram
     [ [ c = operconstr LEVEL "9" -> c ] ]
   ;
   tuple_constr:
-    [ 
-      [ (*c1 = tuple_constr; ","; c2 = tuple_constr ->
-         CNotation (loc,"_ , _",[c1;c2])
-      | *) c = operconstr -> c ] ]
+    [ [ c = operconstr -> c ] ]
   ;
   operconstr:
     [ "200" RIGHTA
@@ -288,8 +281,14 @@ GEXTEND Gram
   eqn:
     [ [ pl = LIST1 pattern SEP ","; "=>"; rhs = lconstr -> (loc,pl,rhs) ] ]
   ;
+  tuple_pattern:
+    [ [ c = pattern -> c ] ]
+  ;
   pattern:
-    [ "1" LEFTA
+    [ "200" RIGHTA [ ]
+    | "99" RIGHTA [ ]
+    | "90" RIGHTA [ ]
+    | "10" LEFTA
       [ p = pattern ; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
@@ -300,16 +299,20 @@ GEXTEND Gram
 	  CPatAlias (loc, p, id)
       | c = pattern; "%"; key=IDENT -> 
           CPatDelimiters (loc,key,c) ]
+    | "9" []
+    | "1" []
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
-      | "("; p = lpattern; ")" -> p
+      | "("; p = tuple_pattern; ")" -> p
       | n = bigint -> CPatNumeral (loc,n) ] ]
   ;
+(*
   lpattern:
     [ [ c = pattern -> c
       | p1=pattern; ","; p2=lpattern ->  CPatCstr (loc, pair loc, [p1;p2]) ] ]
   ;
+*)
   binder_list:
     [ [ idl=LIST1 name; bl=LIST0 binder_let -> 
           LocalRawAssum (idl,CHole loc)::bl
