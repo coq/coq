@@ -18,11 +18,12 @@ new represention of environments and wrote a new kernel for
 type-checking terms (LRI)
 	H. Herbelin introduced a new structure of terms with local
 definitions and redesigned the translation from the high-level
-language of Coq to the internal representation (INRIA)
+language of Coq to the internal representation. He introduced an
+algebraic structure for universes (INRIA)
 	D. Delahaye introduced a new language for tactics (INRIA)
 	B. Barras improved the reduction strategy for lazy evaluation (INRIA)
 	P. Letouzey redesigned the extraction mechanism from proofs 
-to functional programs
+to functional programs (LRI)
 
 The following directories contain independant contributions supported 
 by the Coq development team for the new architecture :
