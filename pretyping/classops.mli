@@ -62,6 +62,9 @@ val find_class_type : constr -> cl_typ * constr list
 (* raises [Not_found] if not convertible to a class *)
 val class_of : env -> evar_map -> constr -> constr * cl_index
 
+(* raises [Not_found] if not mapped to a class *)
+val inductive_class_of : inductive -> cl_index
+
 val class_args_of : constr -> constr list
 
 val strength_of_cl : cl_typ -> strength
@@ -87,9 +90,11 @@ val set_coercion_visibility : bool -> coe_typ -> unit
 val is_coercion_visible : coe_typ -> bool
 
 (*s Lookup functions for coercion paths *)
-val lookup_path_between : (cl_index * cl_index) -> inheritance_path
+val lookup_path_between : cl_index * cl_index -> inheritance_path
 val lookup_path_to_fun_from : cl_index -> inheritance_path
 val lookup_path_to_sort_from : cl_index -> inheritance_path
+val lookup_pattern_path_between :
+  cl_index * cl_index -> (constructor * int) list
 
 (*i Pour le discharge *)
 type coercion = (coe_typ * coe_info_typ) * cl_typ * cl_typ

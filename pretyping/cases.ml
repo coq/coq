@@ -509,25 +509,36 @@ let pattern_status pats =
 
 exception NotAdjustable
 
-let rec adjust_local_defs = function
+let rec adjust_local_defs loc = function
   | (pat :: pats, (_,None,_) :: decls) ->
-      pat :: adjust_local_defs (pats,decls)
+      pat :: adjust_local_defs loc (pats,decls)
   | (pats, (_,Some _,_) :: decls) ->
-      PatVar (dummy_loc, Anonymous) :: adjust_local_defs (pats,decls)
+      PatVar (loc, Anonymous) :: adjust_local_defs loc (pats,decls)
   | [], [] -> []
   | _ -> raise NotAdjustable
 
-let check_and_adjust_constructor loc (_,j as cstr_sp) mind cstrs pats =
-  (* Check it is constructor of the right type *)
-  if inductive_of_constructor cstr_sp <> mind
-  then error_bad_constructor_loc loc cstr_sp mind;
-  (* Check the constructor has the right number of args *)
-  let nb_args_constr = cstrs.(j-1).cs_nargs in
-  if List.length pats = nb_args_constr then pats
-  else
-    try adjust_local_defs (pats, List.rev cstrs.(j-1).cs_args)
-    with NotAdjustable ->
-      error_wrong_numarg_constructor_loc loc cstr_sp nb_args_constr
+let check_and_adjust_constructor ind cstrs = function 
+  | PatVar _ as pat -> pat
+  | PatCstr (loc,((_,i) as cstr),args,alias) as pat ->
+      (* Check it is constructor of the right type *)
+      let ind' = inductive_of_constructor cstr in
+      if ind' = ind then
+	(* Check the constructor has the right number of args *)
+	let ci = cstrs.(i-1) in
+	let nb_args_constr = ci.cs_nargs in
+	if List.length args = nb_args_constr then pat
+	else
+	  try 
+	    let args' = adjust_local_defs loc (args, List.rev ci.cs_args)
+	    in PatCstr (loc, cstr, args', alias)
+	  with NotAdjustable ->
+	    error_wrong_numarg_constructor_loc loc cstr nb_args_constr
+      else
+	(* Try to insert a coercion *)
+	try
+	  Coercion.inh_pattern_coerce_to loc pat ind' ind
+	with Not_found -> 
+	  error_bad_constructor_loc loc cstr ind
 
 let check_all_variables typ mat =
   List.iter
@@ -1105,7 +1116,8 @@ let group_equations mind current cstrs mat =
     List.fold_right (* To be sure it's from bottom to top *)
       (fun eqn () ->
 	 let rest = remove_current_pattern eqn in
-	 match current_pattern eqn with
+	 let pat = current_pattern eqn in
+	 match check_and_adjust_constructor mind cstrs pat with 
 	   | PatVar (_,name) -> 
 	       (* This is a default clause that we expand *)
 	       for i=1 to Array.length cstrs do
@@ -1113,12 +1125,10 @@ let group_equations mind current cstrs mat =
 		 let rest = {rest with tag = lower_pattern_status rest.tag} in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
-	   | PatCstr(loc,((_,i) as cstr),args,alias) ->
+	   | PatCstr (loc,((_,i) as cstr),args,_) as pat ->
 	       (* This is a regular clause *)
-	       let args' =
-		 check_and_adjust_constructor loc cstr mind cstrs args in
 	       only_default := false;
-	       brs.(i-1) <- (args',rest) :: brs.(i-1)) mat () in
+	       brs.(i-1) <- (args,rest) :: brs.(i-1)) mat () in
   (brs,!only_default)
 
 (************************************************************************)
@@ -1427,8 +1437,8 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 	   with NotCoercible ->
 	     (* 2 cases : Not the right inductive or not an inductive at all *)
 	     try
-	       let mind,_ = find_mrectype env (evars_of isevars) typ in
-	       error_bad_constructor_loc cloc c mind
+	       IsInd (typ,find_rectype env (evars_of isevars) typ)
+               (* will try to coerce later in check_and_adjust_constructor.. *)
 	     with Induc ->
 	       error_case_not_inductive_loc
 		 (loc_of_rawconstr tomatch) env (evars_of isevars) j)

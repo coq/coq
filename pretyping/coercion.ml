@@ -30,18 +30,34 @@ let apply_coercion_args env argl funj =
     | [] -> { uj_val = applist (j_val funj,argl);
               uj_type = typ }
     | h::restl ->
-      (* On devrait pouvoir s'arranger pour qu'on ait pas à faire hnf_constr *)
+    (* On devrait pouvoir s'arranger pour qu'on n'ait pas à faire hnf_constr *)
   	match kind_of_term (whd_betadeltaiota env Evd.empty typ) with
 	  | Prod (_,c1,c2) -> 
-              (* Typage garanti par l'appel a app_coercion*)
+              (* Typage garanti par l'appel à app_coercion*)
 	      apply_rec (h::acc) (subst1 h c2) restl
 	  | _ -> anomaly "apply_coercion_args"
   in 
   apply_rec [] funj.uj_type argl
 
-(* appliquer le chemin de coercions p a` hj *)
-
 exception NoCoercion
+
+(* appliquer le chemin de coercions de patterns p *)
+
+let apply_pattern_coercion loc pat p =
+  List.fold_left
+    (fun pat (co,n) ->
+       let f i = if i<n then Rawterm.PatVar (loc, Anonymous) else pat in
+       Rawterm.PatCstr (loc, co, list_tabulate f (n+1), Anonymous))
+    pat p
+
+(* raise Not_found if no coercion found *)
+let inh_pattern_coerce_to loc pat ind1 ind2 =
+  let i1 = inductive_class_of ind1 in
+  let i2 = inductive_class_of ind2 in
+  let p = lookup_pattern_path_between (i1,i2) in
+  apply_pattern_coercion loc pat p
+
+(* appliquer le chemin de coercions p à hj *)
 
 let apply_coercion env p hj typ_cl =
   if !compter then begin
@@ -51,10 +67,10 @@ let apply_coercion env p hj typ_cl =
   try 
     fst (List.fold_left
            (fun (ja,typ_cl) i -> 
-              let fv,b = coercion_value i in
+              let fv,isid = coercion_value i in
               let argl = (class_args_of typ_cl)@[ja.uj_val] in
               let jres = apply_coercion_args env argl fv in
-              (if b then 
+              (if isid then 
 		 { uj_val = ja.uj_val; uj_type = jres.uj_type }
                else 
 		 jres),

@@ -165,6 +165,19 @@ let lookup_path_to_fun_from s =
 let lookup_path_to_sort_from s = 
   lookup_path_between (s,fst(class_info CL_SORT))
 
+let lookup_pattern_path_between (s,t) =
+  let l = List.assoc (s,t) !inheritance_graph in
+  List.map  
+    (fun i ->
+       let coe = snd (coercion_info_from_index i) in
+       let c, _ =
+	 Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty 
+	   coe.coe_value.uj_val
+       in 
+       match kind_of_term c with
+	 | Construct sp -> (sp, coe.coe_param)
+	 | _ -> raise Not_found) l
+
 (* library, summary *)
 
 (*val inClass : (cl_typ * cl_info_typ) -> Libobject.object = <fun>
@@ -219,6 +232,8 @@ let class_of env sigma t =
   in
   if List.length args = n1 then t, i else raise Not_found
 
+let inductive_class_of ind = fst (class_info (CL_IND ind))
+
 let class_args_of c = snd (decompose_app c)
 
 let strength_of_cl = function 
@@ -233,7 +248,7 @@ let string_of_class = function
   | CL_IND sp -> string_of_id (id_of_global (Global.env()) (IndRef sp))
   | CL_SECVAR sp -> string_of_id (id_of_global (Global.env()) (VarRef sp))
 
-(* coercion_value : int -> unsafe_judgment * bool *)
+(* coercion_value : coe_index -> unsafe_judgment * bool *)
 
 let coercion_value i = 
   let { coe_value = j; coe_is_identity = b } = snd (coercion_info_from_index i)

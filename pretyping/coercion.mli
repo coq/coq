@@ -10,10 +10,12 @@
 
 (*i*)
 open Evd
+open Names
 open Term
 open Sign
 open Environ
 open Evarutil
+open Rawterm
 (*i*)
 
 (*s Coercions. *)
@@ -36,11 +38,8 @@ val inh_coerce_to_sort :
 val inh_conv_coerce_to : Rawterm.loc -> 
   env -> evar_defs -> unsafe_judgment -> constr -> unsafe_judgment
 
-(*i
-(* [inh_apply_rel_list loc env isevars args f tycon] tries to type [(f
-   args)] of type [tycon] (if any) by inserting coercions in front of
-   each arg$_i$, if necessary *)
-val inh_apply_rel_list : Rawterm.loc -> env -> 'a evar_defs ->
-  (Rawterm.loc * unsafe_judgment) list ->
-    (Rawterm.loc * unsafe_judgment) -> constr option -> unsafe_judgment
-i*)
+(* [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
+   pattern [pat] typed in [ind1] into a pattern typed in [ind2];
+   raises [Not_found] if no coercion found *)
+val inh_pattern_coerce_to :
+  Rawterm.loc  -> cases_pattern -> inductive -> inductive -> cases_pattern
