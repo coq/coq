@@ -47,7 +47,7 @@ let existential_type sigma (n,args) =
   let info =
     try Evd.map sigma n
     with Not_found ->
-      anomaly ("Evar ?"^string_of_int n^" was not declared") in
+      anomaly ("Evar "^(string_of_existential n)^" was not declared") in
   let hyps = info.evar_hyps in
   instantiate_evar hyps info.evar_concl (Array.to_list args)
 

@@ -23,7 +23,7 @@ type 'constr context_entry =
 type 'constr hypothesis = identifier * 'constr context_entry
 type context = constr hypothesis list
 
-type conjecture = int * context * constr
+type conjecture = existential_key * context * constr
 type metasenv = conjecture list
 
 (* list of couples section path -- variables defined in that section *)
@@ -51,7 +51,7 @@ and constructor =
 type aconstr =
   | ARel       of id * int * id * identifier
   | AVar       of id * uri
-  | AEvar      of id * int * aconstr list
+  | AEvar      of id * existential_key * aconstr list
   | ASort      of id * sorts
   | ACast      of id * aconstr * aconstr
   | AProds     of (id * name * aconstr) list * aconstr
@@ -71,7 +71,7 @@ and acoinductivefun =
 and explicit_named_substitution = id option * (uri * aconstr) list
 
 type acontext = (id * aconstr hypothesis) list
-type aconjecture = id * int * acontext * aconstr
+type aconjecture = id * existential_key * acontext * aconstr
 type ametasenv = aconjecture list
 
 type aobj =

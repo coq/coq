@@ -71,7 +71,7 @@ let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
       let ci = make_default_case_info env RegularStyle ind in
       let depind = build_dependent_inductive env indf in
       let deparsign = (Anonymous,None,depind)::lnamesar in
-      let p = (* mkRel nbprod *)
+      let p =
       it_mkLambda_or_LetIn_name env'
           (appvect
             (mkRel ((if dep then nbargsprod else mip.mind_nrealargs) + nbprod),

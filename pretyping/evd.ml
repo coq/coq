@@ -15,7 +15,7 @@ open Sign
 
 (* The type of mappings for existential variables *)
 
-type evar = int
+type evar = existential_key
 
 type evar_body =
   | Evar_empty 
@@ -26,18 +26,20 @@ type evar_info = {
   evar_hyps : named_context;
   evar_body : evar_body}
 
-type evar_map = evar_info Intmap.t
+module Evarmap = Intmap
 
-let empty = Intmap.empty
+type evar_map = evar_info Evarmap.t
 
-let to_list evc = Intmap.fold (fun ev x acc -> (ev,x)::acc) evc []
-let dom evc = Intmap.fold (fun ev _ acc -> ev::acc) evc []
-let map evc k = Intmap.find k evc
-let rmv evc k = Intmap.remove k evc
-let remap evc k i = Intmap.add k i evc
-let in_dom evc k = Intmap.mem k evc
+let empty = Evarmap.empty
 
-let add evd ev newinfo =  Intmap.add ev newinfo evd
+let to_list evc = Evarmap.fold (fun ev x acc -> (ev,x)::acc) evc []
+let dom evc = Evarmap.fold (fun ev _ acc -> ev::acc) evc []
+let map evc k = Evarmap.find k evc
+let rmv evc k = Evarmap.remove k evc
+let remap evc k i = Evarmap.add k i evc
+let in_dom evc k = Evarmap.mem k evc
+
+let add evd ev newinfo =  Evarmap.add ev newinfo evd
 
 let define evd ev body = 
   let oldinfo = map evd ev in
@@ -47,7 +49,7 @@ let define evd ev body =
       evar_body = Evar_defined body} 
   in
   match oldinfo.evar_body with
-    | Evar_empty -> Intmap.add ev newinfo evd
+    | Evar_empty -> Evarmap.add ev newinfo evd
     | _ -> anomaly "cannot define an isevar twice"
 
 (* The list of non-instantiated existential declarations *)
@@ -67,6 +69,6 @@ let is_defined sigma ev =
 
 let evar_body ev = ev.evar_body
 
-let id_of_existential ev =
-  id_of_string ("?" ^ string_of_int ev)
+let string_of_existential ev = "?" ^ string_of_int ev
 
+let existential_of_int ev = ev

@@ -103,9 +103,12 @@ let idopt_of_name = function
   | Anonymous -> None
 
 let extern_evar loc n =
+(*
   msgerrnl (str 
     "Warning: existential variable turned into meta-variable during externalization");
   CPatVar (loc,(false,make_ident "META" (Some n)))
+*)
+  CEvar (loc,n)
 
 let raw_string_of_ref = function
   | ConstRef kn -> 

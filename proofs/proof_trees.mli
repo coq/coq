@@ -37,7 +37,8 @@ val is_tactic_proof   : proof_tree -> bool
     of existential variables and a signature. *)
 
 val rc_of_gc  : evar_map -> goal -> named_context sigma
-val rc_add    : named_context sigma -> int * goal -> named_context sigma
+val rc_add    : named_context sigma -> existential_key * goal -> 
+  named_context sigma
 val get_hyps  : named_context sigma -> named_context
 val get_env   : named_context sigma -> env
 val get_gc    : named_context sigma -> evar_map
@@ -62,8 +63,8 @@ val pr_evc       : named_context sigma -> std_ppcmds
 
 val prgl         : goal -> std_ppcmds
 val pr_seq       : goal -> std_ppcmds
-val pr_evars     : (int * goal) list -> std_ppcmds
-val pr_evars_int : int -> (int * goal) list -> std_ppcmds
+val pr_evars     : (existential_key * goal) list -> std_ppcmds
+val pr_evars_int : int -> (existential_key * goal) list -> std_ppcmds
 val pr_subgoals_existential : evar_map -> goal list -> std_ppcmds
 
 (* Gives the ast corresponding to a tactic argument *)

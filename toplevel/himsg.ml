@@ -300,14 +300,14 @@ let explain_cant_find_case_type ctx c =
   hov 3 (str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe)
 
 let explain_occur_check ctx ev rhs =
-  let id = "?" ^ string_of_int ev in
+  let id = Evd.string_of_existential ev in
   let pt = prterm_env ctx rhs in
   str"Occur check failed: tried to define " ++ str id ++
   str" with term" ++ brk(1,1) ++ pt
 
 let explain_not_clean ctx ev t =
   let c = mkRel (Intset.choose (free_rels t)) in
-  let id = "?" ^ string_of_int ev in
+  let id = Evd.string_of_existential ev in
   let var = prterm_env ctx c in
   str"Tried to define " ++ str id ++
   str" with a term using variable " ++ var ++ spc () ++

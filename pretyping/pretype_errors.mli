@@ -24,8 +24,8 @@ type pretype_error =
   (* Old Case *)
   | CantFindCaseType of constr
   (* Unification *)
-  | OccurCheck of int * constr
-  | NotClean of int * constr
+  | OccurCheck of existential_key * constr
+  | NotClean of existential_key * constr
   | UnsolvableImplicit of hole_kind
   (* Pretyping *)
   | VarNotFound of identifier
@@ -74,9 +74,9 @@ val error_ill_typed_rec_body_loc :
 
 (*s Implicit arguments synthesis errors *)
 
-val error_occur_check : env ->  Evd.evar_map -> int -> constr -> 'b
+val error_occur_check : env ->  Evd.evar_map -> existential_key -> constr -> 'b
 
-val error_not_clean : env ->  Evd.evar_map -> int -> constr -> 'b
+val error_not_clean : env ->  Evd.evar_map -> existential_key -> constr -> 'b
 
 val error_unsolvable_implicit : loc -> env -> Evd.evar_map -> hole_kind -> 'b
 

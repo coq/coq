@@ -52,7 +52,7 @@ let filter_sign p sign x =
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
 
-exception Uninstantiated_evar of int
+exception Uninstantiated_evar of existential_key
 
 let rec whd_ise sigma c =
   match kind_of_term c with
@@ -92,7 +92,7 @@ let evar_env evd = Global.env_of_context evd.evar_hyps
 (* Generator of existential names *)
 let new_evar =
   let evar_ctr = ref 0 in
-  fun () -> incr evar_ctr; !evar_ctr
+  fun () -> incr evar_ctr; existential_of_int !evar_ctr
 
 let make_evar_instance env =
   fold_named_context
@@ -212,7 +212,7 @@ type evar_constraint = conv_pb * constr * constr
 type evar_defs =
     { mutable evars : Evd.evar_map;
       mutable conv_pbs : evar_constraint list;
-      mutable history : (int * (loc * Rawterm.hole_kind)) list }
+      mutable history : (existential_key * (loc * Rawterm.hole_kind)) list }
 
 let create_evar_defs evd = { evars=evd; conv_pbs=[]; history=[] }
 let evars_of d = d.evars

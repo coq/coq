@@ -135,6 +135,8 @@ type local_binder =
   | LocalRawDef of name located * constr_expr
   | LocalRawAssum of name located list * constr_expr
 
+val local_binders_length : local_binder list -> int
+
 (* Concrete syntax for modules and modules types *)
 
 type with_declaration_ast = 

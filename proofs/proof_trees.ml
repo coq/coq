@@ -199,7 +199,7 @@ let pr_evd evd =
   prlist_with_sep pr_fnl
     (fun (ev,evd) ->
        let pe = pr_decl evd in 
-       h 0 (pr_id (id_of_existential ev)  ++ str"=="  ++ pe))
+       h 0 (str (string_of_existential ev)  ++ str"=="  ++ pe))
     (Evd.to_list evd)
     
 let pr_decls decls = pr_evd decls
@@ -212,7 +212,7 @@ let pr_evars =
   prlist_with_sep pr_fnl
     (fun (ev,evd) ->
        let pegl = pr_evgl_sign evd in 
-       (pr_id (id_of_existential ev) ++ str " : " ++ pegl))
+       (str (string_of_existential ev) ++ str " : " ++ pegl))
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int i = function
@@ -221,7 +221,7 @@ let rec pr_evars_int i = function
       let pegl = pr_evgl_sign evd in 
       let pei = pr_evars_int (i+1) rest in
       (hov 0 (str "Existential " ++ int i ++ str " =" ++ spc () ++
-              pr_id (id_of_existential ev)  ++ str " : " ++ pegl)) ++ 
+              str (string_of_existential ev)  ++ str " : " ++ pegl)) ++ 
       fnl () ++ pei
 
 let pr_subgoals_existential sigma = function 

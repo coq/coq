@@ -437,6 +437,11 @@ type local_binder =
   | LocalRawDef of name located * constr_expr
   | LocalRawAssum of name located list * constr_expr
 
+let rec local_binders_length = function
+  | [] -> 0
+  | LocalRawDef _::bl -> 1 + local_binders_length bl
+  | LocalRawAssum (idl,_)::bl -> List.length idl + local_binders_length bl
+
 (**********************************************************************)
 (* Functions on constr_expr *)
 

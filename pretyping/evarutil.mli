@@ -33,7 +33,7 @@ val tj_nf_evar :
    evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 (* Replacing all evars *)
-exception Uninstantiated_evar of int
+exception Uninstantiated_evar of existential_key
 val whd_ise :  evar_map -> constr -> constr
 val whd_castappevar :  evar_map -> constr -> constr
 

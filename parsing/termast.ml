@@ -99,6 +99,11 @@ let ast_of_constant_ref sp =
   ope("CONST", [path_section dummy_loc sp])
 
 let ast_of_existential_ref ev =
+(*
+  let ev = 
+    try int_of_string (string_of_id ev)
+    with _ -> warning "cannot find existential variable number"; 0 in
+*)
   ope("EVAR", [num ev])
 
 let ast_of_constructor_ref ((sp,tyi),n) =

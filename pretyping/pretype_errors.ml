@@ -23,8 +23,8 @@ type pretype_error =
   (* Old Case *)
   | CantFindCaseType of constr
   (* Unification *)
-  | OccurCheck of int * constr
-  | NotClean of int * constr
+  | OccurCheck of existential_key * constr
+  | NotClean of existential_key * constr
   | UnsolvableImplicit of hole_kind
   (* Pretyping *)
   | VarNotFound of identifier

@@ -20,7 +20,7 @@ open Sign
    it was introduced ([evar_hyps]) and its definition ([evar_body]). 
    [evar_info] is used to add any other kind of information. *)
 
-type evar = int
+type evar = existential_key
 
 type evar_body =
   | Evar_empty 
@@ -53,4 +53,5 @@ val is_defined : evar_map -> evar -> bool
 
 val evar_body : evar_info -> evar_body
 
-val id_of_existential : evar -> identifier
+val string_of_existential : evar -> string
+val existential_of_int : int -> evar

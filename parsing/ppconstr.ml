@@ -279,7 +279,10 @@ let rec pr inherited a =
   | COrderedCase (_,_,_,_,_) -> 
       anomaly "malformed if or destructuring let"
   | CHole _ -> str "?", latom
+(*
   | CEvar (_,n) -> str "?" ++ int n, latom
+*)
+  | CEvar (_,n) -> str (Evd.string_of_existential n), latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_sort s, latom
   | CCast (_,a,b) ->

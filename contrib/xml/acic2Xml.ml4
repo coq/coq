@@ -37,6 +37,8 @@ let rec find_last_id =
   | _::tl -> find_last_id tl
 ;;
 
+let export_existential = string_of_int
+
 let print_term ids_to_inner_sorts =
  let rec aux =
   let module A = Acic in
@@ -53,7 +55,8 @@ let print_term ids_to_inner_sorts =
          X.xml_empty "VAR" ["uri", uri ; "id",id ; "sort",sort]
      | A.AEvar (id,n,l) ->
         let sort = Hashtbl.find ids_to_inner_sorts id in
-         X.xml_nempty "META" ["no",(string_of_int n) ; "id",id ; "sort",sort]
+         X.xml_nempty "META" 
+	   ["no",(export_existential n) ; "id",id ; "sort",sort]
           (List.fold_left
             (fun i t ->
               [< i ; X.xml_nempty "substitution" [] (aux t) >]
@@ -231,7 +234,7 @@ let print_object uri ids_to_inner_sorts =
               (fun i (cid,n,canonical_context,t) ->
                 [< i ;
                    X.xml_nempty "Conjecture"
-                    ["id", cid ; "no",(string_of_int n)]
+                    ["id", cid ; "no",export_existential n]
                     [< List.fold_left
                         (fun i (hid,t) ->
                           [< (match t with
