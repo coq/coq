@@ -930,17 +930,17 @@ parsing/pcoq.cmx: parsing/ast.cmx parsing/coqast.cmx library/decl_kinds.cmx \
     library/libnames.cmx kernel/names.cmx lib/options.cmx lib/pp.cmx \
     interp/ppextend.cmx pretyping/rawterm.cmx proofs/tacexpr.cmx \
     interp/topconstr.cmx lib/util.cmx parsing/pcoq.cmi 
-parsing/ppconstr.cmo: parsing/ast.cmi lib/bignat.cmi interp/constrextern.cmi \
-    parsing/coqast.cmi lib/dyn.cmi parsing/esyntax.cmi interp/genarg.cmi \
-    library/libnames.cmi library/nameops.cmi kernel/names.cmi \
-    library/nametab.cmi lib/pp.cmi interp/ppextend.cmi pretyping/rawterm.cmi \
-    interp/symbols.cmi kernel/term.cmi interp/topconstr.cmi lib/util.cmi \
+parsing/ppconstr.cmo: parsing/ast.cmi lib/bignat.cmi parsing/coqast.cmi \
+    lib/dyn.cmi parsing/esyntax.cmi interp/genarg.cmi library/libnames.cmi \
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    interp/ppextend.cmi pretyping/rawterm.cmi interp/symbols.cmi \
+    kernel/term.cmi parsing/termast.cmi interp/topconstr.cmi lib/util.cmi \
     parsing/ppconstr.cmi 
-parsing/ppconstr.cmx: parsing/ast.cmx lib/bignat.cmx interp/constrextern.cmx \
-    parsing/coqast.cmx lib/dyn.cmx parsing/esyntax.cmx interp/genarg.cmx \
-    library/libnames.cmx library/nameops.cmx kernel/names.cmx \
-    library/nametab.cmx lib/pp.cmx interp/ppextend.cmx pretyping/rawterm.cmx \
-    interp/symbols.cmx kernel/term.cmx interp/topconstr.cmx lib/util.cmx \
+parsing/ppconstr.cmx: parsing/ast.cmx lib/bignat.cmx parsing/coqast.cmx \
+    lib/dyn.cmx parsing/esyntax.cmx interp/genarg.cmx library/libnames.cmx \
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    interp/ppextend.cmx pretyping/rawterm.cmx interp/symbols.cmx \
+    kernel/term.cmx parsing/termast.cmx interp/topconstr.cmx lib/util.cmx \
     parsing/ppconstr.cmi 
 parsing/pptactic.cmo: kernel/closure.cmi lib/dyn.cmi parsing/egrammar.cmi \
     parsing/extend.cmi interp/genarg.cmi library/libnames.cmi \
