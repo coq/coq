@@ -305,9 +305,11 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) lib.cma kernel.cma library.cma pretyping.cma \
-    interp.cma parsing.cma proofs.cma tactics.cma toplevel.cma \
-    highparsing.cma hightactics.cma contrib.cma highparsingnew.cma
+CMO=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
+    pretyping/pretyping.cma interp/interp.cma parsing/parsing.cma \
+    proofs/proofs.cma tactics/tactics.cma toplevel/toplevel.cma \
+    parsing/highparsing.cma tactics/hightactics.cma \
+    contrib/contrib.cma parsing/highparsingnew.cma
 CMOCMXA=$(CMO:.cma=.cmxa)
 CMX=$(CMOCMXA:.cmo=.cmx)
 
@@ -426,12 +428,12 @@ ide: coqide-$(HASCOQIDE) states
 clean-ide: 
 	rm -f $(COQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
-$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide.cmxa
+$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide.cma
+$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
@@ -501,116 +503,116 @@ hightactics: $(HIGHTACTICS)
 
 # target for libraries
 
-lib.cma: $(LIBREP)
+lib/lib.cma: $(LIBREP)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBREP)
 
-lib.cmxa: $(LIBREP:.cmo=.cmx)
+lib/lib.cmxa: $(LIBREP:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBREP:.cmo=.cmx)
 
-kernel.cma: $(KERNEL)
+kernel/kernel.cma: $(KERNEL)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(KERNEL)
 
-kernel.cmxa: $(KERNEL:.cmo=.cmx)
+kernel/kernel.cmxa: $(KERNEL:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(KERNEL:.cmo=.cmx)
 
-library.cma: $(LIBRARY)
+library/library.cma: $(LIBRARY)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBRARY)
 
-library.cmxa: $(LIBRARY:.cmo=.cmx)
+library/library.cmxa: $(LIBRARY:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBRARY:.cmo=.cmx)
 
-pretyping.cma: $(PRETYPING)
+pretyping/pretyping.cma: $(PRETYPING)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PRETYPING)
 
-pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
+pretyping/pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PRETYPING:.cmo=.cmx)
 
-interp.cma: $(INTERP)
+interp/interp.cma: $(INTERP)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(INTERP)
 
-interp.cmxa: $(INTERP:.cmo=.cmx)
+interp/interp.cmxa: $(INTERP:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(INTERP:.cmo=.cmx)
 
-parsing.cma: $(PARSING)
+parsing/parsing.cma: $(PARSING)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PARSING)
 
-parsing.cmxa: $(PARSING:.cmo=.cmx)
+parsing/parsing.cmxa: $(PARSING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PARSING:.cmo=.cmx)
 
-proofs.cma: $(PROOFS)
+proofs/proofs.cma: $(PROOFS)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PROOFS)
 
-proofs.cmxa: $(PROOFS:.cmo=.cmx)
+proofs/proofs.cmxa: $(PROOFS:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PROOFS:.cmo=.cmx)
 
-tactics.cma: $(TACTICS)
+tactics/tactics.cma: $(TACTICS)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TACTICS)
 
-tactics.cmxa: $(TACTICS:.cmo=.cmx)
+tactics/tactics.cmxa: $(TACTICS:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TACTICS:.cmo=.cmx)
 
-toplevel.cma: $(TOPLEVEL)
+toplevel/toplevel.cma: $(TOPLEVEL)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TOPLEVEL)
 
-toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
+toplevel/toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TOPLEVEL:.cmo=.cmx)
 
-highparsing.cma: $(HIGHPARSING)
+parsing/highparsing.cma: $(HIGHPARSING)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSING)
 
-highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
+parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSING:.cmo=.cmx)
 
-hightactics.cma: $(HIGHTACTICS) $(USERTACCMO)
+tactics/hightactics.cma: $(HIGHTACTICS) $(USERTACCMO)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS) $(USERTACCMO)
 
-hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx) $(USERTACCMO:.cmo=.cmx)
+tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx) $(USERTACCMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx) \
 		$(USERTACCMO:.cmo=.cmx)
 
-contrib.cma: $(CONTRIB)
+contrib/contrib.cma: $(CONTRIB)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(CONTRIB)
 
-contrib.cmxa: $(CONTRIB:.cmo=.cmx)
+contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
 
-highparsingnew.cma: $(HIGHPARSINGNEW)
+parsing/highparsingnew.cma: $(HIGHPARSINGNEW)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSINGNEW)
 
-highparsingnew.cmxa: $(HIGHPARSINGNEW:.cmo=.cmx)
+parsing/highparsingnew.cmxa: $(HIGHPARSINGNEW:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSINGNEW:.cmo=.cmx)
 
-ide.cma: $(COQIDECMO)
+ide/ide.cma: $(COQIDECMO)
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
 
-ide.cmxa: $(COQIDECMO:.cmo=.cmx)
+ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
 
@@ -1453,42 +1455,42 @@ parsing/lexer.cmo: parsing/lexer.ml4
 ###########################################################################
 
 archclean::
-	rm -f config/*.cmx config/*.[so]
-	rm -f lib/*.cmx lib/*.[so]
-	rm -f kernel/*.cmx kernel/*.[so]
-	rm -f library/*.cmx library/*.[so]
-	rm -f proofs/*.cmx proofs/*.[so]
-	rm -f tactics/*.cmx tactics/*.[so]
-	rm -f interp/*.cmx interp/*.[so]
-	rm -f parsing/*.cmx parsing/*.[so]
-	rm -f pretyping/*.cmx pretyping/*.[so]
-	rm -f toplevel/*.cmx toplevel/*.[so]
-	rm -f ide/*.cmx ide/*.[so]
-	rm -f ide/utils/*.cmx ide/utils/*.[so]
-	rm -f translate/*.cmx translate/*.[so]
-	rm -f tools/*.cmx tools/*.[so]
-	rm -f scripts/*.cmx scripts/*.[so]
-	rm -f dev/*.cmx dev/*.[so]
+	rm -f config/*.cmx* config/*.[soa]
+	rm -f lib/*.cmx* lib/*.[soa]
+	rm -f kernel/*.cmx* kernel/*.[soa]
+	rm -f library/*.cmx* library/*.[soa]
+	rm -f proofs/*.cmx* proofs/*.[soa]
+	rm -f tactics/*.cmx* tactics/*.[soa]
+	rm -f interp/*.cmx* interp/*.[soa]
+	rm -f parsing/*.cmx* parsing/*.[soa]
+	rm -f pretyping/*.cmx* pretyping/*.[soa]
+	rm -f toplevel/*.cmx* toplevel/*.[soa]
+	rm -f ide/*.cmx* ide/*.[soa]
+	rm -f ide/utils/*.cmx* ide/utils/*.[soa]
+	rm -f translate/*.cmx* translate/*.[soa]
+	rm -f tools/*.cmx* tools/*.[soa]
+	rm -f scripts/*.cmx* scripts/*.[soa]
+	rm -f dev/*.cmx* dev/*.[soa]
 
 clean:: archclean
 	rm -f *~ */*~ */*/*~
 	rm -f gmon.out core
-	rm -f config/*.cm[io]
-	rm -f lib/*.cm[io]
-	rm -f kernel/*.cm[io]
-	rm -f library/*.cm[io]
-	rm -f proofs/*.cm[io]
-	rm -f tactics/*.cm[io]
-	rm -f interp/*.cm[io]
-	rm -f parsing/*.cm[io] parsing/*.ppo
-	rm -f pretyping/*.cm[io]
-	rm -f toplevel/*.cm[io]
-	rm -f ide/*.cm[io]
-	rm -f ide/utils/*.cm[io]
-	rm -f translate/*.cm[io]
-	rm -f tools/*.cm[io]
-	rm -f scripts/*.cm[io]
-	rm -f dev/*.cm[io]
+	rm -f config/*.cm[ioa]
+	rm -f lib/*.cm[ioa]
+	rm -f kernel/*.cm[ioa]
+	rm -f library/*.cm[ioa]
+	rm -f proofs/*.cm[ioa]
+	rm -f tactics/*.cm[ioa]
+	rm -f interp/*.cm[ioa]
+	rm -f parsing/*.cm[ioa] parsing/*.ppo
+	rm -f pretyping/*.cm[ioa]
+	rm -f toplevel/*.cm[ioa]
+	rm -f ide/*.cm[ioa]
+	rm -f ide/utils/*.cm[ioa]
+	rm -f translate/*.cm[ioa]
+	rm -f tools/*.cm[ioa]
+	rm -f scripts/*.cm[ioa]
+	rm -f dev/*.cm[ioa]
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 
 cleanconfig::

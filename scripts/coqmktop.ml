@@ -44,8 +44,9 @@ let core_objs =
   proofs @ tactics
 
 let core_libs = 
-  libobjs @ [ "lib.cma" ; "kernel.cma" ; "library.cma" ; "pretyping.cma" ;
-  "interp.cma" ; "parsing.cma" ; "proofs.cma" ; "tactics.cma" ]
+  libobjs @ [ "lib/lib.cma" ; "kernel/kernel.cma" ; "library/library.cma" ;
+  "pretyping/pretyping.cma" ; "interp/interp.cma" ; "parsing/parsing.cma" ;
+  "proofs/proofs.cma" ; "tactics/tactics.cma" ]
 
 (* 3. Files only in coqsearchisos (if option -searchisos is used) *)
 let coqsearch = ["version_searchisos.cmo"; "cmd_searchisos_line.cmo"]
@@ -109,7 +110,8 @@ let files_to_link userfiles =
   else [] 
   in
   let ide_libs = if !coqide then 
-    ["str.cma" ; "threads.cma" ; "lablgtk.cma" ; "gtkThread.cmo" ; "ide.cma" ]
+    ["str.cma" ; "threads.cma" ; "lablgtk.cma" ; "gtkThread.cmo" ;
+     "ide/ide.cma" ]
   else [] 
   in
   let objs = 
@@ -117,8 +119,10 @@ let files_to_link userfiles =
     command_objs @ hightactics @ toplevel_objs @ ide_objs
   and libs =
     core_libs @ dyn_objs @ 
-    [ "toplevel.cma" ; "highparsing.cma" ; "highparsingnew.cma" ] @ 
-    command_objs @ [ "hightactics.cma" ; "contrib.cma" ] @ toplevel_objs @ 
+    [ "toplevel/toplevel.cma" ; "parsing/highparsing.cma" ;
+      "parsing/highparsingnew.cma" ] @ 
+    command_objs @ [ "tactics/hightactics.cma" ; "contrib/contrib.cma" ] @
+    toplevel_objs @ 
     ide_libs      
   in
   let objstolink,libstolink =
