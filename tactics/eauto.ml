@@ -145,7 +145,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
 	     (Hint_db.add_list hintl local_db) g'))) ::
-    (e_trivial_resolve db_list local_db (pf_concl goal)) 
+    (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
 
@@ -160,26 +160,28 @@ and e_my_find_search db_list local_db hdc concl =
   in 
   let tac_of_hint = 
     fun ({pri=b; pat = p; code=t} as patac) -> 
-      (b, let tac =
-       match t with
-	 | Res_pf (term,cl) -> unify_resolve (term,cl)
-	 | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
-	 | Give_exact (c) -> e_give_exact_constr c
-	 | Res_pf_THEN_trivial_fail (term,cl) ->
-             tclTHEN (unify_e_resolve (term,cl)) 
-	       (e_trivial_fail_db db_list local_db)
-	 | Unfold_nth c -> unfold_constr c
-	 | Extern tacast -> Tacticals.conclPattern concl 
+      (b, 
+       let tac =
+	 match t with
+	   | Res_pf (term,cl) -> unify_resolve (term,cl)
+	   | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
+	   | Give_exact (c) -> e_give_exact_constr c
+	   | Res_pf_THEN_trivial_fail (term,cl) ->
+               tclTHEN (unify_e_resolve (term,cl)) 
+		 (e_trivial_fail_db db_list local_db)
+	   | Unfold_nth c -> unfold_constr c
+	   | Extern tacast -> Tacticals.conclPattern concl 
 	       (out_some p) tacast
-       in tac)
-         (*i
+       in 
+       (tac,fmt_autotactic t))
+       (*i
 	 fun gls -> pPNL (fmt_autotactic t); Format.print_flush (); 
                      try tac gls
 		     with e when Logic.catchable_exception(e) -> 
                             (Format.print_string "Fail\n"; 
 			     Format.print_flush (); 
 			     raise e)
-         i*)
+       i*)
   in 
   List.map tac_of_hint hintl
     
@@ -208,6 +210,7 @@ module SearchProblem = struct
   type state = { 
     depth : int; (*r depth of search before failing *)
     tacres : goal list sigma * validation;
+    last_tactic : std_ppcmds;
     dblist : Auto.Hint_db.t list;
     localdb :  Auto.Hint_db.t list }
 		 
@@ -215,11 +218,11 @@ module SearchProblem = struct
 
   let rec filter_tactics (glls,v) = function
     | [] -> []
-    | tac :: tacl -> 
+    | (tac,pptac) :: tacl -> 
 	try 
 	  let (lgls,ptl) = apply_tac_list tac glls in 
 	  let v' p = v (ptl p) in
-	  (lgls,v') :: filter_tactics (glls,v) tacl
+	  ((lgls,v'),pptac) :: filter_tactics (glls,v) tacl
 	with e when Logic.catchable_exception e ->
 	  filter_tactics (glls,v) tacl
 
@@ -242,24 +245,27 @@ module SearchProblem = struct
       let assumption_tacs = 
 	let l = 
 	  filter_tactics s.tacres
-	    (List.map (fun id -> e_give_exact_constr (mkVar id)) 
+	    (List.map 
+	       (fun id -> (e_give_exact_constr (mkVar id),
+			   [< 'sTR "Exact"; 'sPC; pr_id id>]))
 	       (pf_ids_of_hyps g))
 	in
-	List.map (fun res -> { depth = s.depth; tacres = res;
-			       dblist = s.dblist;
-			       localdb = List.tl s.localdb }) l
+	List.map (fun (res,pp) -> { depth = s.depth; tacres = res;
+				    last_tactic = pp; dblist = s.dblist;
+				    localdb = List.tl s.localdb }) l
       in
       let intro_tac = 
 	List.map 
-	  (fun ((lgls,_) as res) -> 
+	  (fun ((lgls,_) as res,pp) -> 
 	     let g' = first_goal lgls in 
 	     let hintl = 
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
              let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
-	     { depth = s.depth; tacres = res; dblist = s.dblist;
+	     { depth = s.depth; tacres = res; 
+	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro])
+	  (filter_tactics s.tacres [Tactics.intro,[< 'sTR "Intro" >]])
       in
       let rec_tacs = 
 	let l = 
@@ -267,20 +273,23 @@ module SearchProblem = struct
 	    (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
 	in
 	List.map 
-	  (fun ((lgls,_) as res) -> 
+	  (fun ((lgls,_) as res, pp) -> 
 	     let nbgl' = List.length (sig_it lgls) in
 	     if nbgl' < nbgl then
-	       { depth = s.depth; tacres = res; 
+	       { depth = s.depth; tacres = res; last_tactic = pp;
 		 dblist = s.dblist; localdb = List.tl s.localdb }
 	     else 
-	       { depth = pred s.depth; tacres = res; dblist = s.dblist;
+	       { depth = pred s.depth; tacres = res; 
+		 dblist = s.dblist; last_tactic = pp;
 		 localdb = 
 		   list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb })
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
 
-  let pp s = Format.printf "(depth=%d)\n" s.depth; Format.print_flush ()
+  let pp s = 
+    mSG (hOV 0 [< 'sTR " depth="; 'iNT s.depth; 'sPC; 
+		  s.last_tactic; 'sTR "\n" >])
 
 end
 
@@ -289,29 +298,34 @@ module Search = Explore.Make(SearchProblem)
 let make_initial_state n gl dblist localdb =
   { SearchProblem.depth = n;
     SearchProblem.tacres = tclIDTAC gl;
+    SearchProblem.last_tactic = [< >];
     SearchProblem.dblist = dblist;
     SearchProblem.localdb = [localdb] }
 
-let e_depth_search p db_list local_db gl =
+let e_depth_search debug p db_list local_db gl =
   try
-    let s = Search.depth_first (make_initial_state p gl db_list local_db) in
+    let tac = if debug then Search.debug_depth_first else Search.depth_first in
+    let s = tac (make_initial_state p gl db_list local_db) in
     s.SearchProblem.tacres
   with Not_found -> error "EAuto: depth first search failed"
 
-let e_breadth_search (n,_) db_list local_db gl =
+let e_breadth_search debug n db_list local_db gl =
   try
-    let s = Search.breadth_first (make_initial_state n gl db_list local_db) in
+    let tac = 
+      if debug then Search.debug_breadth_first else Search.breadth_first 
+    in
+    let s = tac (make_initial_state n gl db_list local_db) in
     s.SearchProblem.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_search_auto (n,p) db_list gl = 
+let e_search_auto debug (n,p) db_list gl = 
   let local_db = make_local_hint_db gl in 
   if n = 0 then 
-    e_depth_search p db_list local_db gl
+    e_depth_search debug p db_list local_db gl
   else 
-    e_breadth_search (n,p) db_list local_db gl
+    e_breadth_search debug n db_list local_db gl
 
-let eauto np dbnames = 
+let eauto debug np dbnames = 
   let db_list =
     List.map
       (fun x -> 
@@ -319,28 +333,32 @@ let eauto np dbnames =
 	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (e_search_auto np db_list)
+  tclTRY (e_search_auto debug np db_list)
 
-let full_eauto n gl = 
+let full_eauto debug n gl = 
   let dbnames = stringmap_dom !searchtable in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
   let local_db = make_local_hint_db gl in
-  tclTRY (e_search_auto n db_list) gl
+  tclTRY (e_search_auto debug n db_list) gl
 
 let dyn_eauto l = 
+  let (debug,l) = match l with
+    | (Quoted_string "debug") :: l -> true,l
+    | _ -> false,l
+  in
   let (np,l) = match l with
     | (Integer n) :: (Integer p) :: l -> ((n,p),l)
     | (Integer n) :: l -> ((n,0),l)
     | l -> ((!default_search_depth,0),l)
   in
   match l with
-  | [] -> eauto np []
-  | [Quoted_string "*"] -> full_eauto np
+  | [] -> eauto debug np []
+  | [Quoted_string "*"] -> full_eauto debug np
   | l1 -> 
-      eauto np (List.map 
-		 (function 
-		    | Identifier id -> (string_of_id id)
-		    | _ -> bad_tactic_args "dyn_eauto" l) l1)
+      eauto debug np 
+	(List.map (function 
+		     | Identifier id -> string_of_id id
+		     | _ -> bad_tactic_args "dyn_eauto" l) l1)
 
 let h_eauto = hide_tactic "EAuto" dyn_eauto

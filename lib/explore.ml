@@ -16,10 +16,13 @@ module Make = functor(S : SearchProblem) -> struct
 
   type position = int list
 
-  let rec pp_position = function
-    | [] -> ()
-    | [i] -> printf "%d" i
-    | i :: l -> pp_position l; printf ".%d" i
+  let pp_position p = 
+    let rec pp_rec = function
+      | [] -> ()
+      | [i] -> printf "%d" i
+      | i :: l -> pp_rec l; printf ".%d" i
+    in
+    open_hbox (); pp_rec p; close_box ()
 
   (*s Depth first search. *)
 
