@@ -13,6 +13,7 @@
     The main results about parity are proved in the module Div2. *)
 
 V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 
 Implicit Variables Type m,n:nat.
 
