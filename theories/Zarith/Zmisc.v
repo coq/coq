@@ -1,9 +1,9 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (********************************************************)
 (* Module Zmisc.v :           				*)
-(* Definitions et lemmes comlementaires			*)
+(* Definitions et lemmes complementaires		*)
 (* Division euclidienne					*)
 (* Patrick Loiseleur, avril 1997			*)
 (********************************************************)
@@ -19,20 +19,21 @@ Require Bool.
 
  - logic : Logic complements.
  - numbers : a few very simple lemmas for manipulating the
-   constructors POS, NEG, ZERO and xI, xO, xH
+   constructors [POS], [NEG], [ZERO] and [xI], [xO], [xH]
  - registers : defining arrays of bits and their relation with integers.
  - iter : the n-th iterate of a function is defined for n:nat and n:positive.
    The two notions are identified and an invariant conservation theorem
    is proved.
  - recursors : Here a nat-like recursor is built.
- - arith : lemmas about < <= ?= + * ...
+ - arith : lemmas about [< <= ?= + *] ...
 
 ************************************************************************)
 
 Section logic.
 
 Lemma rename : (A:Set)(P:A->Prop)(x:A) ((y:A)(x=y)->(P y)) -> (P x).
-Auto with arith. Save.
+Auto with arith. 
+Save.
 
 End logic.
 
@@ -41,7 +42,7 @@ Section numbers.
 Definition entier_of_Z := [z:Z]Case z of Nul Pos Pos end.
 Definition Z_of_entier := [x:entier]Case x of ZERO POS end.
  
-(*** Coercion Z_of_entier : entier >-> Z. ***)
+(*i Coercion Z_of_entier : entier >-> Z. i*)
 
 Lemma POS_xI : (p:positive) (POS (xI p))=`2*(POS p) + 1`.
 Intro; Apply refl_equal.
@@ -213,10 +214,10 @@ Proof.
     (Right; Compute; Exact I) Orelse (Left; Compute; Exact I)
   | Intro p; Case p; Intros; 
     (Right; Compute; Exact I) Orelse (Left; Compute; Exact I) ].
-  (*** was 
+  (*i was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
-  ***)
+  i*)
 Save.
 
 Lemma Zeven_dec : (z:Z) { (Zeven z) }+{ ~(Zeven z) }.
@@ -227,10 +228,10 @@ Proof.
     (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
   | Intro p; Case p; Intros; 
     (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
-  (*** was 
+  (*i was 
   Realizer Zeven_bool.
   Repeat Program; Compute; Trivial.
-  ***)
+  i*)
 Save.
 
 Lemma Zodd_dec : (z:Z) { (Zodd z) }+{ ~(Zodd z) }.
@@ -241,10 +242,10 @@ Proof.
     (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) 
   | Intro p; Case p; Intros; 
     (Left; Compute; Exact I) Orelse (Right; Compute; Trivial) ].
-  (*** was 
+  (*i was 
   Realizer Zodd_bool.
   Repeat Program; Compute; Trivial.
-  ***)
+  i*)
 Save.
 
 Lemma Zeven_not_Zodd : (z:Z)(Zeven z) -> ~(Zodd z).

@@ -1,12 +1,10 @@
+(*i $Id$ i*)
+
 (**************************************************************************)
-(*                                                                        *)
-(* Binary Integers                                                        *)
+(*s Binary Integers                                                       *)
 (*                                                                        *)
 (* Pierre Crégut (CNET, Lannion, France)                                  *)
-(*                                                                        *)
 (**************************************************************************)
-
-(* $Id$ *)
 
 Require Arith.
 Require Export fast_integer.
@@ -17,42 +15,53 @@ Meta Definition ElimCompare com1 com2:=
        | Intro hidden_auxiliary; Elim hidden_auxiliary; 
          Clear hidden_auxiliary ] .
 
+(*s Order relations *)
 Definition Zlt := [x,y:Z](Zcompare x y) = INFERIEUR.
 Definition Zgt := [x,y:Z](Zcompare x y) = SUPERIEUR.
 Definition Zle := [x,y:Z]~(Zcompare x y) = SUPERIEUR.
 Definition Zge := [x,y:Z]~(Zcompare x y) = INFERIEUR.
-Definition absolu := [x:Z]
+
+(*s Absolu function *)
+Definition absolu [x:Z] : nat :=
   Cases x of
      ZERO   => O
   | (POS p) => (convert p)
   | (NEG p) => (convert p)
   end.
-Definition Zabs := [z:Z]
+
+Definition Zabs [z:Z] : Z :=
   Cases z of 
      ZERO   => ZERO
   | (POS p) => (POS p)
   | (NEG p) => (POS p)
   end.
 
+(*s Properties of absolu function *)
+
 Lemma Zabs_eq : (x:Z) (Zle ZERO x) -> (Zabs x)=x.
 Destruct x; Auto with arith.
 Compute; Intros; Absurd SUPERIEUR=SUPERIEUR; Trivial with arith.
 Save.
 
+(*s From nat to Z *)
 Definition inject_nat := 
   [x:nat]Cases x of
            O => ZERO
          | (S y) => (POS (anti_convert y))
          end.
+
+(*s Successor and Predecessor functions on Z *)
 Definition Zs := [x:Z](Zplus x (POS xH)).
 Definition Zpred := [x:Z](Zplus x (NEG xH)).
 
+(* Properties of the order relation *)
 Theorem Zgt_Sn_n : (n:Z)(Zgt (Zs n) n).
 
 Intros n; Unfold Zgt Zs; Pattern 2 n; Rewrite <- (Zero_right n); 
 Rewrite Zcompare_Zplus_compatible;Auto with arith.
 Save.
 
+(*s Properties of the order *)
 Theorem Zle_gt_trans : (n,m,p:Z)(Zle m n)->(Zgt m p)->(Zgt n p).
 
 Unfold Zle Zgt; Intros n m p H1 H2; (ElimCompare 'm 'n); [
@@ -657,8 +666,10 @@ Intros n m; Unfold Zs; Rewrite Zmult_plus_distr_l; Rewrite Zmult_1_n;
 Trivial with arith.
 Save.
 
-(*** Just for compatibility with previous versions ***)
-(*** Use Zmult_plus_distr_r and Zmult_plus_distr_l rather than
-  their synomymous ***)
+(* 
+  Just for compatibility with previous versions 
+  Use [Zmult_plus_distr_r] and [Zmult_plus_distr_l] rather than
+  their synomymous 
+*)
 Definition Zmult_Zplus_distr := Zmult_plus_distr_r.
 Definition Zmult_plus_distr := Zmult_plus_distr_l.

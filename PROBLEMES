@@ -1,5 +1,13 @@
 Hints Resolve fait une anomalie si la constante n'existe pas
 
+(* Probleme de lancement de coqtop lorsque le fichier n'est pas sauve 
+sous emacs et qu'un lien (lock ?) .#fichier a ete cree *)
+/home/cpaulin/coq/V7/bin/coqc  -q  -I . Axioms
+Anomaly: Uncaught exception Unix.Unix_error(20, "stat", "/home/cpaulin/coq/V7/theories/Num/.#Axioms.v").
+Please report.
+make: *** [Axioms.vo] Error 1
+
+
 Declaration de Local a l'interieur d'un but ...
 Certains Clear deviennent impossible car la variable apparait dans 
 un lemme local, c'est plutot sain ...

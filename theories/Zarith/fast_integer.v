@@ -1,12 +1,11 @@
+
+(*i $Id$ i*)
+
 (**************************************************************************)
-(*                                                                        *)
 (*s Binary Integers                                                       *)
 (*                                                                        *)
 (* Pierre Crégut (CNET, Lannion, France)                                  *)
-(*                                                                        *)
 (**************************************************************************)
-
-(*i $Id$ i*)
 
 Require Le.
 Require Lt.
@@ -21,10 +20,14 @@ Inductive positive : Set :=
   xI : positive -> positive
 | xO : positive -> positive
 | xH : positive.
+
 Inductive Z : Set := 
   ZERO : Z | POS : positive -> Z | NEG : positive -> Z.
+
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
+
+(*s Addition *)
 Fixpoint add_un [x:positive]:positive :=
   <positive> Cases x of
                (xI x') => (xO (add_un x'))
@@ -68,6 +71,8 @@ with add_carry [x,y:positive]:positive :=
           | xH      => (xI xH)
           end
   end.
+
+(*s From positive to natural numbers *)
 Fixpoint positive_to_nat [x:positive]:nat -> nat :=
   [pow2:nat]
     <nat> Cases x of
@@ -78,12 +83,14 @@ Fixpoint positive_to_nat [x:positive]:nat -> nat :=
 
 Definition convert := [x:positive] (positive_to_nat x (S O)).
 
+(*s From natural numbers to positive *)
 Fixpoint anti_convert [n:nat]: positive :=
   <positive> Cases n of
                 O => xH
              | (S x') => (add_un (anti_convert x'))
              end.
 
+(* Correctness of addition *)
 Lemma convert_add_un :
   (x:positive)(m:nat)
     (positive_to_nat (add_un x) m) = (plus m (positive_to_nat x m)).
@@ -133,6 +140,7 @@ Proof.
 Intros x y; Exact (add_verif x y (S O)).
 Save.
 
+(*s Correctness of conversion *)
 Theorem bij1 : (m:nat) (convert (anti_convert m)) = (S m).
 Proof.
 Induction m; [
@@ -153,6 +161,7 @@ Save.
 
 Hints Resolve compare_convert_O.
 
+(*s Subtraction *)
 Fixpoint double_moins_un [x:positive]:positive :=
   <positive>Cases x of
       (xI x') => (xI (xO x'))
@@ -249,6 +258,7 @@ Induction x; [
 | Unfold convert; Simpl; Auto with arith ].
 Save.
 
+(*s Comparison of positive *)
 Fixpoint compare [x,y:positive]: relation -> relation :=
   [r:relation] <relation> Cases x of
             (xI x') => <relation>Cases y of
@@ -430,6 +440,8 @@ Save.
 Theorem convert_compare_EGAL: (x:positive)(compare x x EGAL)=EGAL.
 Induction x; Auto with arith.
 Save.
+
+(*s Natural numbers coded with positive *)
 
 Inductive entier: Set := Nul : entier | Pos : positive -> entier.
 
@@ -749,6 +761,7 @@ Rewrite le_plus_minus_r; [
 | Apply lt_le_weak; Exact (compare_convert_SUPERIEUR x y H)].
 Save.
 
+(*s Addition on integers *)
 Definition Zplus := [x,y:Z]
   <Z>Cases x of
       ZERO => y
@@ -776,6 +789,8 @@ Definition Zplus := [x,y:Z]
              end
     end.
 
+(*s Opposite *)
+
 Definition Zopp := [x:Z]
  <Z>Cases x of
       ZERO => ZERO
@@ -793,6 +808,7 @@ Proof.
 Induction x; Auto with arith.
 Save.
 
+(*s Addition and opposite *)
 Theorem Zero_right: (x:Z) (Zplus x ZERO) = x.
 Proof.
 Induction x; Auto with arith.
@@ -957,9 +973,9 @@ Theorem Zplus_assoc :
   (x,y,z:Z) (Zplus x (Zplus y z))= (Zplus (Zplus x y) z).
 Proof.
 Intros x y z;Case x;Case y;Case z;Auto with arith; Intros; [
-(*  Apply weak_assoc
+(*i  Apply weak_assoc
 | Apply weak_assoc 
-| *) Rewrite (Zplus_sym (NEG p0)); Rewrite weak_assoc;
+| i*) Rewrite (Zplus_sym (NEG p0)); Rewrite weak_assoc;
   Rewrite (Zplus_sym (Zplus (POS p1) (NEG p0))); Rewrite weak_assoc;
   Rewrite (Zplus_sym (POS p1)); Trivial with arith
 | Apply Zopp_intro; Do 4 Rewrite Zopp_Zplus; 
@@ -987,6 +1003,7 @@ Proof.
 Intros; Elim H; Elim H0; Auto with arith.
 Save.
 
+(*s Addition on positive numbers *)
 Fixpoint times1 [x:positive] : (positive -> positive) -> positive -> positive:=
   [f:positive -> positive][y:positive]
   <positive> Cases x of
@@ -1012,12 +1029,14 @@ Induction x; [
 | Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
 Save.
 
+(*s Correctness of multiplication on positive *)
 Theorem times_convert :
   (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
 Proof.
 Intros x y;Unfold times; Rewrite times1_convert; Trivial with arith.
 Save.
 
+(*s Multiplication on integers *)
 Definition Zmult := [x,y:Z]
   <Z>Cases x of
       ZERO => ZERO
@@ -1111,6 +1130,7 @@ Save.
 
 Hints Resolve Zero_mult_left Zero_mult_right.
 
+(* Multiplication and Opposite *)
 Theorem Zopp_Zmult:
   (x,y:Z) (Zmult (Zopp x) y) = (Zopp (Zmult x y)).
 Proof.
@@ -1159,6 +1179,7 @@ Intros x y z; Case x; [
   Apply weak_Zmult_plus_distr_r ].
 Save.
 
+(*s Comparison on integers *)
 Definition Zcompare := [x,y:Z]
   <relation>Cases x of
       ZERO => <relation>Cases y of
