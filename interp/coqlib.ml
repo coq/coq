@@ -20,7 +20,7 @@ let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
 let gen_reference locstr dir s =
   let dir = make_dir ("Coq"::dir) in
-  let id = Nameops.id_of_v7_string s in
+  let id = Constrextern.id_of_v7_string s in
   try 
     Nametab.absolute_reference (Libnames.make_path dir id)
   with Not_found ->
