@@ -21,15 +21,19 @@ tactic can be useful to advanced users.
 \Example
 
 \begin{coq_example*}
-Inductive Option: Set := Fail : Option | Ok : bool->Option.
+Inductive Option : Set :=
+  | Fail : Option
+  | Ok : bool -> Option.
 \end{coq_example}
 \begin{coq_example}
-Definition get: (x:Option)~x=Fail->bool.
-Refine
-  [x:Option]<[x:Option]~x=Fail->bool>Cases x of
-        Fail   =>  ?
-      | (Ok b) =>  [_:?]b end.
-Intros;Absurd Fail=Fail;Trivial.
+Definition get : forall x:Option, x <> Fail -> bool.
+refine
+ (fun x:Option =>
+    match x return x <> Fail -> bool with
+    | Fail => _
+    | Ok b => fun _ => b
+    end).
+intros; absurd (Fail = Fail); trivial.
 \end{coq_example}
 \begin{coq_example*}
 Defined.
@@ -104,72 +108,76 @@ Defined.
 Assume we have a relation on {\tt nat} which is transitive:
 
 \begin{coq_example*}
-Variable R:nat->nat->Prop.
-Hypothesis Rtrans : (x,y,z:nat)(R x y)->(R y z)->(R x z).
-Variables n,m,p:nat.
-Hypothesis Rnm:(R n m).
-Hypothesis Rmp:(R m p).
+Variable R : nat -> nat -> Prop.
+Hypothesis Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
+Variables n m p : nat.
+Hypothesis Rnm : R n m.
+Hypothesis Rmp : R m p.
 \end{coq_example*}
 
 Consider the goal {\tt (R n p)} provable using the transitivity of
 {\tt R}:
 
 \begin{coq_example*}
-Goal (R n p).
+Goal R n p.
 \end{coq_example*}
 
 The direct application of {\tt Rtrans} with {\tt Apply} fails because
 no value for {\tt y} in {\tt Rtrans} is found by {\tt Apply}:
 
 \begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Apply Rtrans.
+
+(********** The following is not correct and should produce **********)
+(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+(* Just to adjust the prompt: *) apply Rtrans.
 \end{coq_example}
 
 A solution is to rather apply {\tt (Rtrans n m p)}.
 
 \begin{coq_example}
-Apply (Rtrans n m p).
+apply (Rtrans n m p).
 \end{coq_example}
 
 \begin{coq_eval}
-  Undo.
+Undo.
 \end{coq_eval}
 
 More elegantly, {\tt Apply Rtrans with y:=m} allows to only mention
 the unknown {\tt m}:
 
 \begin{coq_example}
-Apply Rtrans with y:=m.
+
+  apply Rtrans with (y := m).
 \end{coq_example}
 
 \begin{coq_eval}
-  Undo.
+Undo.
 \end{coq_eval}
 
 Another solution is to mention the proof of {\tt (R x y)} in {\tt
 Rtrans}...
 
 \begin{coq_example}
-Apply Rtrans with 1:=Rnm.
+
+  apply Rtrans with (1 := Rnm).
 \end{coq_example}
 
 \begin{coq_eval}
-  Undo.
+Undo.
 \end{coq_eval}
 
 ... or the proof of {\tt (R y z)}:
 
 \begin{coq_example}
-Apply Rtrans with 2:=Rmp.
+
+  apply Rtrans with (2 := Rmp).
 \end{coq_example}
 
 \begin{coq_eval}
-  Undo.
+Undo.
 \end{coq_eval}
 
 On the opposite, one can use {\tt EApply} which postpone the problem
@@ -177,13 +185,14 @@ of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
 Rmp}. This instantiates the existential variable and completes the proof.
 
 \begin{coq_example}
-EApply Rtrans.
-Apply Rnm.
-Apply Rmp.
+
+  eapply Rtrans.
+apply Rnm.
+apply Rmp.
 \end{coq_example}
 
 \begin{coq_eval}
-  Reset R.
+Reset R.
 \end{coq_eval}
 
 \section{{\tt Scheme}}
@@ -198,15 +207,19 @@ The definition of principle of mutual induction for {\tt tree} and
 
 \begin{coq_eval}
 Reset Initial.
-Variables A,B:Set.
-Mutual Inductive tree : Set :=  node : A -> forest -> tree
-with forest : Set := leaf : B -> forest 
-                   | cons : tree -> forest -> forest.
+Variables A B : 
+              Set.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | leaf : B -> forest
+  | cons : tree -> forest -> forest.
 \end{coq_eval}
 
 \begin{coq_example*}
-Scheme tree_forest_rec := Induction for tree Sort Set 
-with forest_tree_rec := Induction for forest Sort Set.
+Scheme tree_forest_rec := Induction for tree
+  Sort Set
+  with forest_tree_rec := Induction for forest Sort Set.
 \end{coq_example*}
 
 You may now look at the type of {\tt tree\_forest\_rec}:
@@ -235,19 +248,19 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}
-Mutual Inductive odd : nat->Prop := 
-    oddS : (n:nat)(even n)->(odd (S n))
-with even : nat -> Prop := 
-    evenO : (even O) 
-  | evenS : (n:nat)(odd n)->(even (S n)).  
+Inductive odd : nat -> Prop :=
+    oddS : forall n:nat, even n -> odd (S n)
+with even : nat -> Prop :=
+  | evenO : even 0%N
+  | evenS : forall n:nat, odd n -> even (S n).
 \end{coq_example*}
 
 The following command generates a powerful elimination
 principle:
 
 \begin{coq_example*}
-Scheme odd_even := Minimality for odd Sort Prop
-with   even_odd := Minimality for even Sort Prop.
+Scheme odd_even := Minimality for   odd Sort Prop
+  with even_odd := Minimality for even Sort Prop.
 \end{coq_example*}
 
 The type of {\tt odd\_even} for instance will be:
@@ -259,7 +272,7 @@ Check odd_even.
 The type of {\tt even\_odd} shares the same premises but the
 conclusion is {\tt (n:nat)(even n)->(Q n)}.
 
-\section{{\tt Functional Scheme and Functional Induction}}
+\section{{\tt Functional Scheme} and {\tt Functional Induction}}
 \comindex{FunScheme}
 \label{FunScheme-examples}
 
@@ -273,15 +286,15 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}
-Require Arith.
-Fixpoint div2 [n:nat] : nat :=
- Cases n of
-   (0) => (0)
-   | (S n0) => Cases n0 of
-                    (0) => (0)
-                  | (S n') => (S (div2 n'))
-                 end
- end.
+Require Import Arith.
+Fixpoint div2 (n:nat) : nat :=
+  match n with
+  | O => 0%N
+  | S n0 => match n0 with
+            | O => 0%N
+            | S n' => S (div2 n')
+            end
+  end.
 \end{coq_example*}
 
 The definition of a principle of induction corresponding to the
@@ -301,20 +314,21 @@ We can now prove the following lemma using this principle:
 
 
 \begin{coq_example*}
-Lemma div2_le' : (n:nat)(le (div2 n) n).
-Intro n. Pattern n.
+Lemma div2_le' : forall n:nat, (div2 n <= n)%N.
+intro n.
+ pattern n.
 \end{coq_example*}
 
 
 \begin{coq_example}
-Apply div2_ind;Intros.
+apply div2_ind; intros.
 \end{coq_example}
 
 \begin{coq_example*}
-Auto with arith.
-Auto with arith.
-Simpl;Auto with arith.
-Save.
+auto with arith.
+auto with arith.
+simpl; auto with arith.
+Qed.
 \end{coq_example*}
 
 Since \texttt{div2} is not mutually recursive, we can use
@@ -323,19 +337,19 @@ building the principle:
 
 \begin{coq_example*}
 Reset div2_ind.
-Lemma div2_le : (n:nat)(le (div2 n) n).
-Intro n.
+Lemma div2_le : forall n:nat, (div2 n <= n)%N.
+intro n.
 \end{coq_example*}
 
 \begin{coq_example}
-Functional Induction div2 n.
+functional induction div2 n.
 \end{coq_example}
 
 \begin{coq_example*}
-Auto with arith.
-Auto with arith.
-Auto with arith.
-Save.
+auto with arith.
+auto with arith.
+auto with arith.
+Qed.
 \end{coq_example*}
 
 \paragraph{remark:} \texttt{Functional Induction} makes no use of
@@ -358,23 +372,26 @@ We define trees by the following mutual inductive type:
 
 \begin{coq_example*}
 Variable A : Set.
-Mutual Inductive 
-     tree   : Set := node : A -> forest -> tree
-with forest : Set := empty : forest 
-                  | cons : tree -> forest -> forest.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | empty : forest
+  | cons : tree -> forest -> forest.
 \end{coq_example*}
 
 We define the function \texttt{tree\_size} that computes the size
 of a tree or a forest.
 
 \begin{coq_example*}                
-Fixpoint tree_size  [t:tree] : nat := 
- Cases t of (node A f) => (S (forest_size f)) end
-  with  forest_size [f:forest]: nat := 
- Cases f of
-  empty => O
- | (cons t f') => (plus (tree_size t) (forest_size f'))
- end.
+Fixpoint tree_size (t:tree) : nat :=
+  match t with
+  | node A f => S (forest_size f)
+  end
+ with forest_size (f:forest) : nat :=
+  match f with
+  | empty => 0%N
+  | cons t f' => (tree_size t + forest_size f')%N
+  end.
 \end{coq_example*}
 
 The definition of principle of mutual induction following the
@@ -382,7 +399,8 @@ recursive structure of \texttt{tree\_size} is defined by the
 command:
 
 \begin{coq_example*}
-Functional Scheme treeInd := Induction for tree_size with tree_size forest_size.
+Functional Scheme treeInd := Induction for tree_size
+ with tree_size forest_size.
 \end{coq_example*}
 
 You may now look at the type of {\tt treeInd}:
@@ -441,17 +459,18 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}
-Inductive Le : nat->nat->Set :=
-  LeO : (n:nat)(Le O n)  |  LeS : (n,m:nat) (Le n m)-> (Le (S n) (S m)).
-Variable P:nat->nat->Prop.
-Variable Q:(n,m:nat)(Le n m)->Prop.
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0%N n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+Variable Q : forall n m:nat, Le n m -> Prop.
 \end{coq_example*}
 
 For example, consider the goal:
 
 \begin{coq_eval}
-Lemma ex : (n,m:nat)(Le (S n) m)->(P n m).
-Intros.
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros.
 \end{coq_eval}
 
 \begin{coq_example}
@@ -469,7 +488,7 @@ This inversion is possible because \texttt{Le} is the smallest set closed by
 the constructors \texttt{LeO} and \texttt{LeS}.
 
 \begin{coq_example}
-Inversion_clear  H.
+inversion_clear H.
 \end{coq_example}
 
 Note that \texttt{m} has been substituted in the goal for \texttt{(S m0)}
@@ -486,7 +505,7 @@ Undo.
 \end{coq_example*}
 
 \begin{coq_example}
-Inversion H.
+inversion H.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -498,8 +517,8 @@ Undo.
 Let us consider the following goal:
 
 \begin{coq_eval}
-Lemma ex_dep : (n,m:nat)(H:(Le (S n) m))(Q (S n) m H).
-Intros.
+Lemma ex_dep : forall (n m:nat) (H:Le (S n) m), Q (S n) m H.
+intros.
 \end{coq_eval}
 
 \begin{coq_example}
@@ -514,7 +533,7 @@ substitution.
 To have such a behavior we use the dependent inversion tactics:
 
 \begin{coq_example}
-Dependent Inversion_clear H.
+dependent inversion_clear H.
 \end{coq_example}
 
 Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
@@ -530,7 +549,8 @@ For example, to generate the inversion lemma for the instance
 \texttt{(Le (S n) m)} and the sort \texttt{Prop} we do:
 
 \begin{coq_example*}
-Derive Inversion_clear leminv with (n,m:nat)(Le (S n) m) Sort Prop.
+Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort
+ Prop.
 \end{coq_example*}
 
 \begin{coq_example}
@@ -544,7 +564,7 @@ Show.
 \end{coq_example}
 
 \begin{coq_example}
-Inversion H using leminv.
+inversion H using leminv.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -565,46 +585,50 @@ rewritings and shows how to deal with them using the optional tactic of the
 %Here is a basic use of {\tt AutoRewrite} with the Ackermann function:
 
 \begin{coq_example*}
-Require Arith.
-
-Variable Ack:nat->nat->nat.
-
-Axiom Ack0:(m:nat)(Ack (0) m)=(S m).
-Axiom Ack1:(n:nat)(Ack (S n) (0))=(Ack n (1)).
-Axiom Ack2:(n,m:nat)(Ack (S n) (S m))=(Ack n (Ack (S n) m)).
+Require Import Arith.
+Variable Ack : 
+           nat -> nat -> nat.
+Axiom Ack0 : 
+        forall m:nat, Ack 0 m = S m.
+Axiom Ack1 : forall n:nat, Ack (S n) 0 = Ack n 1.
+Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
 \end{coq_example*}
 
 \begin{coq_example}
 Hint Rewrite [ Ack0 Ack1 Ack2 ] in base0.
-
-Lemma ResAck0:(Ack (3) (2))=(29).
-AutoRewrite [ base0 ] using Try Reflexivity.
+Lemma ResAck0 : 
+ Ack 3 2 = 29%N.
+autorewrite [ base0 ] using try reflexivity.
 \end{coq_example}
 
 \begin{coq_eval}
-Reset Initial.  
+Reset Initial.
 \end{coq_eval}
 
 \example{Mac Carthy function}
 %The Mac Carthy function shows a more complex case:
 
 \begin{coq_example*}
-Require Omega.
-
-Variable g:nat->nat->nat.
-
-Axiom g0:(m:nat)(g (0) m)=m.
-Axiom g1:
-  (n,m:nat)(gt n (0))->(gt m (100))->(g n m)=(g (pred n) (minus m (10))).
-Axiom g2:
-  (n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))).
+Require Import Omega.
+Variable g :   
+           nat -> nat -> nat.
+Axiom g0 : 
+        forall m:nat, g 0 m = m.
+Axiom
+  g1 :
+    forall n m:nat,
+      (n > 0)%N -> (m > 100)%N -> g n m = g (pred n) (m - 10).
+Axiom
+  g2 :
+    forall n m:nat,
+      (n > 0)%N -> (m <= 100)%N -> g n m = g (S n) (m + 11).
 \end{coq_example*}
 
 \begin{coq_example}
-Hint Rewrite [ g0 g1 g2 ] in base1 using Omega.
-
-Lemma Resg0:(g (1) (110))=(100).
-AutoRewrite [ base1 ] using Reflexivity Orelse Simpl.
+Hint Rewrite [ g0 g1 g2 ] in base1 using omega.
+Lemma Resg0 : 
+ g 1 110 = 100%N.
+autorewrite [ base1 ] using reflexivity || simpl.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -612,8 +636,8 @@ Abort.
 \end{coq_eval}
 
 \begin{coq_example}
-Lemma Resg1:(g (1) (95))=(91).
-AutoRewrite [ base1 ] using Reflexivity Orelse Simpl.
+Lemma Resg1 : g 1 95 = 91%N.
+autorewrite [ base1 ] using reflexivity || simpl.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -637,25 +661,25 @@ will replace the head of current goal by a convertible term of the form
 Here is an example:
 
 \begin{coq_example}
-Require Quote.
-Parameters A,B,C:Prop.
-Inductive Type formula :=
-| f_and : formula -> formula -> formula (* binary constructor *)
-| f_or : formula -> formula -> formula  
-| f_not : formula -> formula            (* unary constructor *)
-| f_true : formula                      (* 0-ary constructor *)
-| f_const : Prop -> formula             (* contructor for constants *).
-
-Fixpoint interp_f [f:formula] : Prop := 
-  Cases f of
-  | (f_and f1 f2) => (interp_f f1)/\(interp_f f2)
-  | (f_or f1 f2) => (interp_f f1)\/(interp_f f2)
-  | (f_not f1) => ~(interp_f f1)
+Require Import Quote.
+Parameters A B C : Prop.
+Inductive formula : Type :=
+  | f_and : formula -> formula -> formula (* binary constructor *)
+  | f_or : formula -> formula -> formula
+  | f_not : formula -> formula (* unary constructor *)
+  | f_true : formula (* 0-ary constructor *)
+  | f_const : Prop -> formula (* contructor for constants *).
+Fixpoint interp_f (f:
+                   formula) : Prop :=
+  match f with
+  | f_and f1 f2 => interp_f f1 /\ interp_f f2
+  | f_or f1 f2 => interp_f f1 \/ interp_f f2
+  | f_not f1 => ~ interp_f f1
   | f_true => True
-  | (f_const c) => c
+  | f_const c => c
   end.
-Goal A/\(A\/True)/\~B/\(A <-> A).
-Quote interp_f.
+Goal A /\ (A \/ True) /\ ~ B /\ (A <-> A).
+quote interp_f.
 \end{coq_example}
 
 The algorithm to perform this inversion is: try to match the
@@ -696,12 +720,12 @@ It is better to use that type of formulas:
 Reset formula.
 \end{coq_eval}
 \begin{coq_example}
-Inductive Set formula :=
-| f_and : formula -> formula -> formula
-| f_or : formula -> formula -> formula  
-| f_not : formula -> formula           
-| f_true : formula                     
-| f_atom : index -> formula.
+Inductive formula : Set :=
+  | f_and : formula -> formula -> formula
+  | f_or : formula -> formula -> formula
+  | f_not : formula -> formula
+  | f_true : formula
+  | f_atom : index -> formula.
 \end{coq_example*}
 
 \texttt{index} is defined in module \texttt{Quote}. Equality on that
@@ -715,21 +739,22 @@ provides also a type \texttt{(varmap A)} of bindings from
 function has now another argument, a variables map:
 
 \begin{coq_example}
- Fixpoint interp_f [vm:(varmap Prop); f:formula] : Prop := 
-  Cases f of
-  | (f_and f1 f2) => (interp_f vm f1)/\(interp_f vm f2)
-  | (f_or f1 f2) => (interp_f vm f1)\/(interp_f vm f2)
-  | (f_not f1) => ~(interp_f vm f1)
+Fixpoint interp_f (vm:
+                    varmap Prop) (f:formula) {struct f} : Prop :=
+  match f with
+  | f_and f1 f2 => interp_f vm f1 /\ interp_f vm f2
+  | f_or f1 f2 => interp_f vm f1 \/ interp_f vm f2
+  | f_not f1 => ~ interp_f vm f1
   | f_true => True
-  | (f_atom i) => (varmap_find True i vm)
+  | f_atom i => varmap_find True i vm
   end.
 \end{coq_example}
 
 \noindent\texttt{Quote} handles this second case properly:
 
 \begin{coq_example}
-Goal A/\(B\/A)/\(A\/~B).
-Quote interp_f.
+Goal A /\ (B \/ A) /\ (A \/ ~ B).
+quote interp_f.
 \end{coq_example}
 
 It builds \texttt{vm} and \texttt{t} such that \texttt{(f vm t)} is
@@ -750,30 +775,32 @@ Example:
 Reset formula.
 \end{coq_eval}
 \begin{coq_example*}
-Inductive Type formula :=
-| f_and : formula -> formula -> formula
-| f_or : formula -> formula -> formula
-| f_not : formula -> formula
-| f_true : formula
-| f_const : Prop -> formula             (* constructor for constants *)
-| f_atom : index -> formula.            (* constructor for variables *)
-
-Fixpoint interp_f [vm:(varmap Prop); f:formula] : Prop := 
-  Cases f of
-  | (f_and f1 f2) => (interp_f vm f1)/\(interp_f vm f2)
-  | (f_or f1 f2) => (interp_f vm f1)\/(interp_f vm f2)
-  | (f_not f1) => ~(interp_f vm f1)
+Inductive formula : Type :=
+  | f_and : formula -> formula -> formula
+  | f_or : formula -> formula -> formula
+  | f_not : formula -> formula
+  | f_true : formula
+  | f_const : Prop -> formula (* constructor for constants *)
+  | f_atom : index -> formula.
+Fixpoint interp_f
+ (vm:            (* constructor for variables *)
+  varmap Prop) (f:formula) {struct f} : Prop :=
+  match f with
+  | f_and f1 f2 => interp_f vm f1 /\ interp_f vm f2
+  | f_or f1 f2 => interp_f vm f1 \/ interp_f vm f2
+  | f_not f1 => ~ interp_f vm f1
   | f_true => True
-  | (f_const c) => c
-  | (f_atom i) => (varmap_find True i vm)
+  | f_const c => c
+  | f_atom i => varmap_find True i vm
   end.
-
-Goal A/\(A\/True)/\~B/\(C<->C).
+Goal 
+A /\ (A \/ True) /\ ~ B /\ (C <-> C).
 \end{coq_example*}
 
 \begin{coq_example}
-Quote interp_f [A B]. 
-Undo. Quote interp_f [B C iff]. 
+quote interp_f [ A B ].
+Undo.
+  quote interp_f [ B C iff ].
 \end{coq_example}
 
 \Warning Since function inversion

@@ -498,12 +498,12 @@ This tactic applies to any goal. It generalizes the conclusion w.r.t. one
 subterm of it. For example:
 
 \begin{coq_eval}
-Goal (x,y:nat) (le O (plus (plus x y) y)).
-Intros.
+Goal forall x y:nat, (0 <= x + y + y)%N.
+intros.
 \end{coq_eval}
 \begin{coq_example}
 Show.
-Generalize (plus (plus x y) y).
+generalize (x + y + y)%N.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -893,9 +893,9 @@ account in the induction hypothesis, then it needs to be removed first
   {\tt Intros until {\ident}; NewInduction {\ident}}.
 
 \begin{coq_example}
-Lemma induction_test : (n:nat) n=n -> (le n n).
-Intros n H.
-NewInduction n.
+Lemma induction_test : forall n:nat, n = n -> (n <= n)%N.
+intros n H.
+induction n.
 \end{coq_example}
 
 \begin{ErrMsgs}
@@ -1052,9 +1052,9 @@ analysis over $X$
 clears $X$ and performs an introduction over the list of patterns $p_1~\ldots~p_n$.
 \end{itemize}
 \begin{coq_example}
-Lemma intros_test : (A,B,C:Prop)(A\/(B/\C))->(A->C)->C.
-Intros A B C [a|(_,c)] f.
-Apply (f a).
+Lemma intros_test : forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
+intros A B C [a| [_ c]] f.
+apply (f a).
 Proof c.
 \end{coq_example}
 
@@ -1083,8 +1083,8 @@ Example:
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Lemma ex1: (A,B,C:Prop)(A/\B/\C \/ B/\C \/ C/\A) -> C.
-Intros A B C H; Decompose [and or] H; Assumption.
+Lemma ex1 : forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
+intros A B C H; decompose [and or] H; assumption.
 \end{coq_example}
 \begin{coq_example*}
 Qed.
@@ -1114,9 +1114,9 @@ and induction following the definition of a function.
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Lemma moins_le : (n,m:nat) (le (minus n m) n).
-Intros n m.
-Functional Induction minus n m;Simpl;Auto.
+Lemma moins_le : forall n m:nat, (n - m <= n)%N.
+intros n m.
+functional induction minus n m; simpl; auto.
 \end{coq_example}
 \begin{coq_example*}
 Qed.
@@ -1373,17 +1373,19 @@ the same positions and puts them as antecedents of the current goal.
 \Example Consider the following goal:
 
 \begin{coq_example*}
-Inductive list : Set  := 
-        nil: list | cons: nat-> list -> list.
-Variable  P : list -> Prop.
+Inductive list : Set :=
+  | nil : list
+  | cons : nat -> list -> list.
+Variable P : list -> Prop.
 \end{coq_example*}
 \begin{coq_eval}
-Lemma ex: (l:list)(n:nat)(P nil)->(cons n l)=(cons O nil)->(P l).
-Intros l n H H0.
+Lemma ex :
+ forall (l:list) (n:nat), P nil -> cons n l = cons 0 nil -> P l.
+intros l n H H0.
 \end{coq_eval}
 \begin{coq_example}
 Show.
-Injection H0.
+injection H0.
 \end{coq_example}
 \begin{coq_eval}
 Abort.
@@ -1652,9 +1654,9 @@ against the hints rather than pattern-matching
 As a consequence, {\tt EAuto} can solve such a goal:
 
 \begin{coq_example}
-Hints Resolve ex_intro.
-Goal (P:nat->Prop)(P O)->(EX n | (P n)).
-EAuto.
+Hints Resolve ex_intro .
+Goal forall P:nat -> Prop, P 0%N ->  EX n : _ | P n.
+eauto.
 \end{coq_example}
 \begin{coq_eval}
 Abort.
@@ -1695,12 +1697,16 @@ The following goal can be proved by {\tt Tauto} whereas {\tt Auto}
 would fail:
 
 \begin{coq_example}
-  Goal (x:nat)(P:nat->Prop)x=O\/(P x)->~x=O->(P x).
-  Intros.
-  Tauto. (* Auto would fail *)
+Goal
+
+  forall (x:nat) (P:nat -> Prop), x = 0%N \/ P x -> x <> 0%N -> P x.
+
+  intros.
+
+  tauto.
 \end{coq_example}
 \begin{coq_eval}
-  Abort.
+Abort.
 \end{coq_eval}
 
 Moreover, if it has nothing else to do, {\tt Tauto} performs
@@ -1708,17 +1714,25 @@ introductions. Therefore, the use of {\tt Intros} in the previous
 proof is unnecessary. {\tt Tauto} can for instance prove the
 following:
 \begin{coq_example}
-  Goal (A:Prop)(P:nat->Prop)(A \/ (x:nat) ~A -> (P x)) -> (x:nat) ~A -> (P x).
-  Tauto.
+Goal
+ (* Auto would fail *)
+  
+  forall (A:Prop) (P:nat -> Prop),
+    A \/ (forall x:nat, ~ A -> P x) -> forall x:nat, ~ A -> P x.
+
+  tauto.
 \end{coq_example}
 \begin{coq_eval}
-  Abort.
+Abort.
 \end{coq_eval}
 
 \Rem In contrast, {\tt Tauto} cannot solve the following goal
 
 \begin{coq_example*}
-Goal (A:Prop)(P:nat->Prop)(A \/ (x:nat) ~A -> (P x)) -> (x:nat) ~~ (A \/ (P x)).
+Goal
+
+  forall (A:Prop) (P:nat -> Prop),
+    A \/ (forall x:nat, ~ A -> P x) -> forall x:nat, ~ ~ (A \/ P x).
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -1866,15 +1880,17 @@ normal form.
 
 \Example
 \begin{coq_example*}
-Require ZArithRing.
-Goal (a,b,c:Z)`(a+b+c)*(a+b+c) 
-               = a*a + b*b + c*c + 2*a*b + 2*a*c + 2*b*c`.
+Require Import ZArithRing.
+Goal
+forall a b c:Z,
+  (a + b + c) * (a + b + c) =
+  a * a + b * b + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
 \end{coq_example*}
 \begin{coq_example}
-Intros; Ring.
+intros; ring.
 \end{coq_example}
 \begin{coq_eval}
-Reset Initial.  
+Reset Initial.
 \end{coq_eval}
 
 You can have a look at the files \texttt{Ring.v},
@@ -1895,16 +1911,20 @@ the {\tt Add Field} command.
 
 \Example
 \begin{coq_example*}
-Require Reals.
-Goal (x,y:R)``x*y>0`` -> ``x*((1/x)+x/(x+y)) == -(1/y)*y*(-(x*x/(x+y))-1)``.
+Require Import Reals.
+Goal
+  forall x y:R,
+    (x * y > 0)%R ->
+    (x * (1 / x + x / (x + y)))%R =
+    ((- 1 / y) * y * (- x * (x / (x + y)) - 1))%R.
 \end{coq_example*}
 
 \begin{coq_example}
-Intros; Field.
+intros; field.
 \end{coq_example}
 
 \begin{coq_eval}
-Reset Initial.  
+Reset Initial.
 \end{coq_eval}
 
 \subsection{\tt Add Field}
@@ -1963,17 +1983,17 @@ using Fourier's method (\cite{Fourier}). This tactic must be loaded by
 
 \Example
 \begin{coq_example*}
-Require Reals.
-Require Fourier.
-Goal (x,y:R)``x < y``->``y+1 >= x-1``.
+Require Import Reals.
+Require Import Fourier.
+Goal   forall x y:R, (x < y)%R -> (y + 1 >= x - 1)%R.
 \end{coq_example*}
 
 \begin{coq_example}
-Intros; Fourier.
+intros; fourier.
 \end{coq_example}
 
 \begin{coq_eval}
-Reset Initial.  
+Reset Initial.
 \end{coq_eval}
 
 \subsection{\tt AutoRewrite  [ \ident$_1$ \dots \ident$_n$ ]}
@@ -2139,16 +2159,16 @@ Hint discr : core := Extern 4 ~(?=?) Discriminate.
   script. A sub-pattern is a question mark followed by a number like
   \texttt{?1} or \texttt{?2}. Here is an example:
 
+% Require EqDecide.
 \begin{coq_example*}
-Require EqDecide.
-Require PolyList.
+Require Import PolyList.
 \end{coq_example*}
 \begin{coq_example}
-Hint eqdec1 : eqdec := Extern 5 {?1=?2}+{~ (?1=?2)} 
-                                Generalize ?1 ?2; Decide Equality.
-
-Goal (a,b:(list nat*nat)){a=b}+{~a=b}.
-Info Auto with eqdec.
+Hint eqdec1 : eqdec := Extern 5   ({X1 = X2} + {X1 <> X2})
+ generalize X1 X2; decide equality.
+Goal 
+forall a b:list (nat * nat), {a = b} + {a <> b}.
+info auto with eqdec.
 \end{coq_example}
 \begin{coq_eval}
 Abort.
@@ -2477,10 +2497,9 @@ syntax follows the schema:\bigskip
 A simple example has more value than a long explanation: 
 
 \begin{coq_example}
-Tactic Definition Solve := Simpl; Intros; Auto.
-Tactic Definition ElimBoolRewrite b H1 H2 := 
-  Elim b; 
-  [Intros; Rewrite H1; EAuto | Intros; Rewrite H2; EAuto ].
+Ltac Solve := simpl; intros; auto.
+Ltac ElimBoolRewrite b H1 H2 :=
+  elim b; [ intros; rewrite H1; eauto | intros; rewrite H2; eauto ].
 \end{coq_example}
 
 The tactics macros are synchronous with the \Coq\ section mechanism:

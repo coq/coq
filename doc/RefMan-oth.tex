@@ -168,16 +168,16 @@ context whose statement's conclusion matches the expression {\term}
 where holes in the latter are denoted by ``{\texttt ?}''.
 
 \begin{coq_example}
-Require Arith.
-SearchPattern (plus ? ?)=?.
+Require Import Arith.
+SearchPattern ((_ + _)%N = _).
 \end{coq_example}
 
 Patterns need not be linear: you can express that the same
 expression must occur in two places by using indexed `{\texttt ?}''.
 
 \begin{coq_example}
-Require Arith.
-SearchPattern (plus ?1 ?)=?1.
+Require Import Arith.
+SearchPattern ((?X1 + _)%N = ?X1).
 \end{coq_example}
 
 \subsection{\tt SearchRewrite {\term}.}\comindex{SearchRewrite}
@@ -187,8 +187,8 @@ context whose statement's conclusion is an equality of which one side matches
 the expression {\term =}. Holes in {\term} are denoted by ``{\texttt ?}''.
 
 \begin{coq_example}
-Require Arith.
-SearchRewrite (plus ? ?).
+Require Import Arith.
+SearchRewrite (_ + _)%N.
 \end{coq_example}
 
 \begin{Variants}
@@ -249,10 +249,11 @@ No module \module{} has been required (see section~\ref{Require}).
 This command displays the full name of the qualified identifier {\qualid}
 and consequently the \Coq\ module in which it is defined.
 
+% (***************** The last line should produce **************************)
+% (************* Error: I.Dont.Exist not a defined object ******************)
+% (* Just to adjust the prompt: *) 
 \begin{coq_eval}
-(***************** The last line should produce **************************)
-(************* Error: I.Dont.Exist not a defined object ******************)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
 Locate nat.
