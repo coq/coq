@@ -12,8 +12,8 @@
 
 (* CONFIGURATION PARAMETERS *)
 
-let dtdname = "http://localhost:8081/getdtd?uri=cic.dtd";;
-let typesdtdname = "http://localhost:8081/getdtd?uri=cictypes.dtd";;
+let dtdname = "http://www.cs.unibo.it/helm/dtd/cic.dtd";;
+let typesdtdname = "http://www.cs.unibo.it/helm/dtd/cictypes.dtd";;
 let verbose = ref false;; (* always set to true during a "Print XML All" *)
 
 (* UTILITY FUNCTIONS *)
