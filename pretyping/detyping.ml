@@ -98,15 +98,12 @@ let used_of = global_vars_and_consts
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
 
-let encode_inductive id =
+let encode_inductive ref =
   let (indsp,_ as ind) =
-    try 
-      match kind_of_term (global_reference CCI id) with
+      match kind_of_term (constr_of_reference Evd.empty (Global.env()) ref)with
         | IsMutInd (indsp,args) -> (indsp,args)
 	| _ -> errorlabstrm "indsp_of_id" 
-	    [< 'sTR ((string_of_id id)^" is not an inductive type") >]
-    with Not_found -> 
-      error ("Cannot find reference "^(string_of_id id))
+	    [< 'sTR ((Global.string_of_global ref)^" is not an inductive type") >]
   in
   let mis = Global.lookup_mind_specif ind in
   let constr_lengths = Array.map List.length (mis_recarg mis) in
@@ -134,7 +131,7 @@ module PrintingCasesMake =
   functor (Test : sig 
      val test : int array -> bool
      val error_message : string
-     val member_message : identifier -> bool -> string
+     val member_message : global_reference -> bool -> string
      val field : string
      val title : string
   end) ->
@@ -159,10 +156,10 @@ module PrintingCasesIf =
     let title = "Types leading to pretty-printing of Cases using a `if' form: "
     let member_message id = function
       | true  -> 
-          "Cases on elements of " ^ (string_of_id id)
+          "Cases on elements of " ^ (Global.string_of_global id)
           ^ " are printed using a `if' form"
       | false -> 
-          "Cases on elements of " ^ (string_of_id id)
+          "Cases on elements of " ^ (Global.string_of_global id)
           ^ " are not printed using `if' form"
   end)
 
@@ -175,10 +172,10 @@ module PrintingCasesLet =
       "Types leading to a pretty-printing of Cases using a `let' form:"
     let member_message id = function
       | true  -> 
-          "Cases on elements of " ^ (string_of_id id)
+          "Cases on elements of " ^ (Global.string_of_global id)
           ^ " are printed using a `let' form"
       | false -> 
-          "Cases on elements of " ^ (string_of_id id)
+          "Cases on elements of " ^ (Global.string_of_global id)
           ^ " are not printed using a `let' form"
   end)
 
@@ -199,7 +196,7 @@ let force_wildcard () = !wildcard_value
 
 let _ =                           
   declare_async_bool_option 
-    { optasyncname  = "the forced wildcard option";
+    { optasyncname  = "forced wildcard";
       optasynckey   = SecondaryTable ("Printing","Wildcard");
       optasyncread  = force_wildcard;
       optasyncwrite = (fun v -> wildcard_value := v) }
@@ -209,7 +206,7 @@ let synthetize_type () = !synth_type_value
 
 let _ = 
   declare_async_bool_option 
-    { optasyncname = "the synthesisablity";
+    { optasyncname = "synthesizability";
       optasynckey   = SecondaryTable ("Printing","Synth");
       optasyncread = synthetize_type;
       optasyncwrite = (fun v -> synth_type_value := v) }

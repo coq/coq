@@ -14,6 +14,7 @@ open Pp
 open Util
 open Libobject
 open Names
+open Term
 
 (****************************************************************************)
 (* 0- Common things                                                         *)
@@ -33,7 +34,7 @@ type value =
   | BoolValue   of bool
   | IntValue    of int
   | StringValue of string
-  | IdentValue  of identifier
+  | IdentValue  of global_reference
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -167,19 +168,19 @@ let get_ident_table k = List.assoc (nickname k) !ident_table
 module type IdentConvertArg =
 sig
   type t
-  val encode : identifier -> t
+  val encode : global_reference -> t
   val check : t -> unit
   val printer : t -> std_ppcmds
   val key : option_name
   val title : string
-  val member_message : identifier -> bool -> string
+  val member_message : global_reference -> bool -> string
   val synchronous : bool
 end
 
 module IdentConvert = functor (A : IdentConvertArg) -> 
 struct
   type t = A.t
-  type key = identifier
+  type key = global_reference
   let table = ident_table
   let encode = A.encode
   let check = A.check
@@ -206,6 +207,7 @@ module OptionMap = Map.Make(Key)
 
 let sync_value_tab = ref OptionMap.empty
 let async_value_tab = ref OptionMap.empty
+
 
 (* Tools for synchronous options *)
 
@@ -246,7 +248,6 @@ let get_option key =
 
 
 (* 2-a. Declaring synchronous options *)
-
 type 'a sync_option_sig = {
   optsyncname    : string;
   optsynckey     : option_name;
@@ -310,7 +311,6 @@ let declare_async_string_option =
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> anomaly "async_option")
 
-
 (* 3- User accessible commands *)
 
 (* Setting values of options *)
@@ -349,7 +349,7 @@ let msg_sync_option_value (name,v) =
     | BoolValue false -> [< 'sTR "false" >]
     | IntValue n      -> [< 'iNT n >]
     | StringValue s   -> [< 'sTR s >]
-    | IdentValue id    -> [< pr_id id >]
+    | IdentValue id    -> [< 'sTR (Global.string_of_global id) >]
 
 let msg_async_option_value (name,vref) =
   match vref with
@@ -360,10 +360,14 @@ let msg_async_option_value (name,vref) =
 
 let print_option_value key =
   let (name,info) = get_option key in
-  let s = match info with
-    | Sync v -> msg_sync_option_value (name,v)
-      | Async (read,write) -> msg_sync_option_value (name,read ())
-  in mSG [< 'sTR ("Current value of "^name^" is "); s; 'fNL >]
+  let s = match info with Sync v -> v | Async (read,write) -> read () in
+  match s with
+    | BoolValue b -> 
+	mSG [< 'sTR("The "^name^" mode is "^(if b then "on" else "off"));'fNL>]
+    | _ ->
+	mSG [< 'sTR ("Current value of "^name^" is "); 
+	       msg_sync_option_value (name,s); 'fNL >]
+
 
 let print_tables () =
   mSG

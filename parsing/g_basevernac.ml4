@@ -185,37 +185,6 @@ GEXTEND Gram
       | IDENT "Unset"; IDENT "Hyps_limit" ->
           <:ast< (UNSETHYPSLIMIT) >>
 
-      (* Standardized syntax for Implicit Arguments *)
-      | "Set"; IDENT "Implicit"; IDENT "Arguments" ->
-          <:ast< (IMPLICIT_ARGS_ON) >>
-      | IDENT "Unset"; IDENT "Implicit"; IDENT "Arguments" ->
-          <:ast< (IMPLICIT_ARGS_OFF) >>
-      | IDENT "Test"; IDENT "Implicit"; IDENT "Arguments" ->
-          <:ast< (TEST_IMPLICIT_ARGS) >>
-
-      (* Set printing depth *)
-      (* An explicit entry, to be factorized with Printing Coercions *)
-      | "Set"; table = IDENT "Printing"; field = IDENT "Depth"; n = numarg ->
-          <:ast< (SetTableField ($VAR $table) ($VAR $field) $n) >>
-
-      (* Set printing of coercions *)
-      | "Set"; IDENT "Printing"; IDENT "Coercion"; 
-	qidl = ne_qualidarg_list ->
-	  <:ast< (PRINTING_COERCIONS_ON ($LIST $qidl)) >>
-      | "Set"; IDENT "Printing"; IDENT "Coercions" ->
-          <:ast< (PRINTING_COERCIONS_ON) >>
-      | IDENT "Unset"; IDENT "Printing"; IDENT "Coercion"; 
-	qidl = ne_qualidarg_list ->
-          <:ast< (PRINTING_COERCIONS_OFF ($LIST $qidl)) >>
-      | IDENT "Unset"; IDENT "Printing"; IDENT "Coercions" ->
-          <:ast< (PRINTING_COERCIONS_OFF) >>
-      | IDENT "Test"; IDENT "Printing"; IDENT "Coercion";
-	qidl = ne_qualidarg_list ->
-          <:ast< (TEST_PRINTING_COERCIONS ($LIST $qidl)) >>
-      | IDENT "Test"; IDENT "Printing"; IDENT "Coercions" ->
-          <:ast< (TEST_PRINTING_COERCIONS) >>
-
-
       (* Pour intervenir sur les tables de paramètres *)
       | "Set"; table = identarg; field = identarg;
                       value = option_value ->
@@ -224,6 +193,8 @@ GEXTEND Gram
           <:ast< (SetTableField $table $field) >>
       | IDENT "Unset"; table = identarg; field = identarg ->
           <:ast< (UnsetTableField $table $field) >>
+      | IDENT "Unset"; table = identarg; field = identarg; id = qualidarg ->
+          <:ast< (RemoveTableField $table $field $id) >>
       | "Set"; table = identarg; value = option_value ->
           <:ast< (SetTableField $table $value) >>
       | "Set"; table = identarg ->
@@ -236,33 +207,37 @@ GEXTEND Gram
       (* Le cas suivant inclut aussi le "Print id" standard *)
       | IDENT "Print"; IDENT "Table"; table = identarg ->
           <:ast< (PrintOption $table) >>
-      | IDENT "Add"; table = identarg; field = identarg; id = identarg
+      | IDENT "Add"; table = identarg; field = identarg; id = qualidarg
         -> <:ast< (AddTableField $table $field $id) >>
       | IDENT "Add"; table = identarg; field = identarg; id = stringarg
         -> <:ast< (AddTableField $table $field $id) >>
-      | IDENT "Add"; table = identarg; id = identarg
+      | IDENT "Add"; table = identarg; id = qualidarg
         -> <:ast< (AddTableField $table $id) >>
       | IDENT "Add"; table = identarg; id = stringarg
         -> <:ast< (AddTableField $table $id) >>
-      | IDENT "Test"; table = identarg; field = identarg; id = identarg
+      | IDENT "Test"; table = identarg; field = identarg; id = qualidarg
         -> <:ast< (MemTableField $table $field $id) >>
       | IDENT "Test"; table = identarg; field = identarg; id = stringarg
         -> <:ast< (MemTableField $table $field $id) >>
       | IDENT "Test"; table = identarg; id = identarg
         -> <:ast< (MemTableField $table $id) >>
+      | IDENT "Test"; table = identarg; id = qualidarg
+        -> <:ast< (MemTableField $table $id) >>
       | IDENT "Test"; table = identarg; id = stringarg
         -> <:ast< (MemTableField $table $id) >>
-      | IDENT "Remove"; table = identarg; field = identarg; id = identarg ->
+      | IDENT "Test"; table = identarg
+        -> <:ast< (MemTableField $table) >>
+      | IDENT "Remove"; table = identarg; field = identarg; id = qualidarg ->
           <:ast< (RemoveTableField $table $field $id) >>
       | IDENT "Remove"; table = identarg; field = identarg; id = stringarg ->
           <:ast< (RemoveTableField $table $field $id) >>
-      | IDENT "Remove"; table = identarg; id = identarg ->
+      | IDENT "Remove"; table = identarg; id = qualidarg ->
           <:ast< (RemoveTableField $table $id) >>
       | IDENT "Remove"; table = identarg; id = stringarg ->
           <:ast< (RemoveTableField $table $id) >> ] ]
   ;
   option_value:
-    [ [ id = identarg    -> id
+    [ [ id = qualidarg    -> id
       | n  = numarg      -> n
       | s  = stringarg   -> s ] ]
   ;

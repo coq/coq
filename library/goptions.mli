@@ -32,20 +32,20 @@
    following vernacular commands:
 
        Set Tata Tutu val.
-       Print Tata Tutu.
+       Print Table Tata Tutu.
 
    If it is the declaration of a boolean value, the following
    vernacular commands are made available:
 
        Set Tata Tutu.
        Unset Tata Tutu.
-       Print Tata Tutu.
+       Print Table Tata Tutu. (* synonym: Test Table Tata Tutu. *)
 
    For a primary table, say of name [PrimaryTable("Bidule")], the
    vernacular commands look like
 
       Add Bidule foo.
-      Print Bidule foo.
+      Print Table Bidule foo.
       Set Bidule foo.
       ...
 
@@ -55,6 +55,7 @@
 (*i*)
 open Pp
 open Names
+open Term
 (*i*)
 
 (*s Things common to tables and options. *)
@@ -93,11 +94,11 @@ sig
   val elements : unit -> string list
 end
 
-(* The functor [MakeIdentTable] declares a new table of [identifier];
+(* The functor [MakeIdentTable] declares a new table of [global_reference];
    for generality, identifiers may be internally encode in other type
-   which is [A.t] through an encoding function [encode : identifier ->
-   A.t] (typically, [A.t] is the persistent [section_path] associated
-   to the currentdenotation of the [identifier] and the encoding function
+   which is [A.t] through an encoding function [encode : global_reference ->
+   A.t] (typically, [A.t] is the persistent [global_reference] associated
+   to the currentdenotation of the [global_reference] and the encoding function
    is the globalization function); the function [check] is for testing
    if a given object is allowed to be added to the table; the function
    [member_message] say what to print when invoking the "Test Toto
@@ -110,12 +111,12 @@ module MakeIdentTable :
   functor
     (A : sig
            type t
-           val encode : identifier -> t
+           val encode : global_reference -> t
            val check : t -> unit
            val printer : t -> std_ppcmds
            val key : option_name
            val title : string
-           val member_message : identifier -> bool -> string
+           val member_message : global_reference -> bool -> string
            val synchronous : bool
          end) ->
     sig
@@ -169,9 +170,9 @@ val get_string_table :
 
 val get_ident_table :
   option_name ->
-    < add : identifier -> unit;
-      remove : identifier -> unit;
-      mem : identifier -> unit;
+    < add : global_reference -> unit;
+      remove : global_reference -> unit;
+      mem : global_reference -> unit;
       print : unit >
 
 val set_int_option_value    : option_name -> int    -> unit

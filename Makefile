@@ -82,8 +82,8 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
-	library/lib.cmo library/goptions.cmo \
-	library/global.cmo library/opaque.cmo \
+	library/lib.cmo library/global.cmo \
+	library/goptions.cmo library/opaque.cmo \
 	library/library.cmo library/states.cmo \
 	library/impargs.cmo library/indrec.cmo library/declare.cmo 
 

@@ -484,6 +484,12 @@ let _ =
 	      make_focus 0; reset_top_of_tree (); show_open_subgoals ())
        | _  -> bad_vernac_args "UNFOCUS")
 
+let _ = declare_async_bool_option 
+	  {optasyncname  = "implicit arguments";
+	   optasynckey   = (SecondaryTable ("Implicit","Arguments"));
+	   optasyncread  = Impargs.is_implicit_args;
+	   optasyncwrite = Impargs.make_implicit_args }
+
 let _ =          
   add "IMPLICIT_ARGS_ON"
     (function 
@@ -515,69 +521,12 @@ let coercion_of_qualid loc qid =
       [< Printer.pr_global ref; 'sTR" is not a coercion" >];
   coe
 
-let _ =
-  add "PRINTING_COERCIONS_ON"
-    (function 
-       | [] -> (fun () -> Termast.print_coercions := true)
-       | l ->
-	   let ql =
-	     List.map 
-	       (function
-		  | VARG_QUALID qid -> qid
-		  | _ ->  bad_vernac_args "PRINTING_COERCIONS_ON") l in
-	   (fun () ->
-	      List.iter
-		(fun qid ->
-		   Classops.set_coercion_visibility true
-		     (coercion_of_qualid dummy_loc qid))
-		ql))
+let _ = declare_async_bool_option 
+	  {optasyncname  = "coercion printing";
+	   optasynckey   = (SecondaryTable ("Printing","Coercions"));
+	   optasyncread  = (fun () -> !Termast.print_coercions);
+	   optasyncwrite = (fun b ->  Termast.print_coercions := b) }
 
-let _ =
-  add "PRINTING_COERCIONS_OFF"
-    (function 
-       | [] -> (fun () -> Termast.print_coercions := false)
-       | l -> 
-	   let ql =
-	     List.map 
-	       (function
-		  | VARG_QUALID qid -> qid
-		  | _ ->  bad_vernac_args "PRINTING_COERCIONS_OFF") l in
-	   (fun () ->
-	      List.iter
-		(fun qid ->
-		   Classops.set_coercion_visibility false 
-		     (coercion_of_qualid dummy_loc qid))
-		ql))
-
-let _ =
-  add "TEST_PRINTING_COERCIONS"
-    (function 
-       | [] ->
-           (fun () ->
-              if !(Termast.print_coercions) = true then
-		message "Printing of coercions is set"
-              else 
-		message "Printing of coercions is unset")
-       | l -> 
-	   let ql =
-	     List.map 
-	       (function
-		  | VARG_QUALID qid -> qid
-		  | _  -> bad_vernac_args "TEST_PRINTING_COERCIONS") l in
-	   (fun () ->
-              List.iter
-		(fun qid ->
-		   let coe = coercion_of_qualid dummy_loc qid in
-	           if Classops.is_coercion_visible coe then
-		     message
-		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
-			" is set")
-		   else 
-		     message 
-		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
-			" is unset"))
-		ql))
-    
 let number_list = 
   List.map (function VARG_NUMBER n -> n | _ -> bad_vernac_args "Number list") 
 
@@ -838,7 +787,7 @@ let _ =
        | _ -> bad_vernac_args "PrintSec")
 
 let _ = declare_async_bool_option 
-	  {optasyncname  = "Silent";
+	  {optasyncname  = "silent";
 	   optasynckey   = (PrimaryTable "Silent");
 	   optasyncread  = is_silent;
 	   optasyncwrite = make_silent }
@@ -1498,6 +1447,20 @@ let _ =
 let _ =
   add "SetTableField"
     (function
+       (* Hook for Printing Coercions *)
+       | (VARG_IDENTIFIER t) :: (VARG_IDENTIFIER f) :: l 
+	 when t = id_of_string "Printing" && f = id_of_string "Coercion" -> 
+	   let ql =
+	     List.map 
+	       (function
+		  | VARG_QUALID qid -> qid
+		  | _ ->  bad_vernac_args "PRINTING_COERCIONS_ON") l in
+	   (fun () ->
+	      List.iter
+		(fun qid ->
+		   Classops.set_coercion_visibility true
+		     (coercion_of_qualid dummy_loc qid))
+		ql)
        | [(VARG_IDENTIFIER t);(VARG_IDENTIFIER f);arg] -> 
 	   (fun () ->
 	      let key = 
@@ -1541,12 +1504,12 @@ let _ =
 let _ =
   add "AddTableField"
     (function
-       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_IDENTIFIER v] -> 
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_QUALID v] -> 
 	   (fun () ->
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_ident_table key)#add v
+		(get_ident_table key)#add (locate_qualid dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING s] -> 
@@ -1557,11 +1520,11 @@ let _ =
 		(get_string_table key)#add s
 	      with Not_found -> 
 		error_undeclared_key key)
-       | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] ->
+       | [VARG_IDENTIFIER t; VARG_QUALID v] ->
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_ident_table key)#add v
+		(get_ident_table key)#add (locate_qualid dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_STRING s] ->
@@ -1576,12 +1539,26 @@ let _ =
 let _ =
   add "RemoveTableField"
     (function
-       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_IDENTIFIER v] -> 
+       (* Hook for Printing Coercions *)
+       | (VARG_IDENTIFIER t) :: (VARG_IDENTIFIER f) :: l 
+	 when t = id_of_string "Printing" && f = id_of_string "Coercion" -> 
+	   let ql =
+	     List.map 
+	       (function
+		  | VARG_QUALID qid -> qid
+		  | _ ->  bad_vernac_args "PRINTING_COERCIONS_OFF") l in
+	   (fun () ->
+	      List.iter
+		(fun qid ->
+		   Classops.set_coercion_visibility false 
+		     (coercion_of_qualid dummy_loc qid))
+		ql)
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_QUALID v] -> 
 	   (fun () ->
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_ident_table key)#remove v
+		(get_ident_table key)#remove (locate_qualid dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING v] -> 
@@ -1592,11 +1569,11 @@ let _ =
 		(get_string_table key)#remove v
 	      with Not_found -> 
 		error_undeclared_key key)
-       | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
+       | [VARG_IDENTIFIER t; VARG_QUALID v] -> 
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_ident_table key)#remove v
+		(get_ident_table key)#remove (locate_qualid dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_STRING v] -> 
@@ -1611,12 +1588,33 @@ let _ =
 let _ =
   add "MemTableField"
     (function
-       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_IDENTIFIER v] -> 
+       (* Hook for Printing Coercions *)
+       | (VARG_IDENTIFIER t) :: (VARG_IDENTIFIER f) :: l 
+	 when t = id_of_string "Printing" && f = id_of_string "Coercion" -> 
+	   let ql =
+	     List.map 
+	       (function
+		  | VARG_QUALID qid -> qid
+		  | _  -> bad_vernac_args "TEST_PRINTING_COERCIONS") l in
+	   (fun () ->
+              List.iter
+		(fun qid ->
+		   let coe = coercion_of_qualid dummy_loc qid in
+	           if Classops.is_coercion_visible coe then
+		     message
+		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
+			" is set")
+		   else 
+		     message 
+		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
+			" is unset"))
+		ql)
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_QUALID v] -> 
 	   (fun () ->
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_ident_table key)#mem v
+		(get_ident_table key)#mem (locate_qualid dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING v] -> 
@@ -1627,19 +1625,45 @@ let _ =
 		(get_string_table key)#mem v
 	      with Not_found -> 
 		error_undeclared_key key)
-       | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
+       | [VARG_IDENTIFIER t; VARG_QUALID v] ->
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_ident_table key)#mem v
+		(get_ident_table key)#mem (locate_qualid dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
+       | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 
+	   (fun () ->
+	      let key = SecondaryTable (string_of_id t, string_of_id v) in
+	    try 
+	      (get_ident_table key)#print
+	    with not_found ->
+	    try 
+	      (get_string_table key)#print
+	    with not_found ->
+            try 
+	      print_option_value key
+            with Not_found -> 
+	      error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_STRING v] -> 
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
 		(get_string_table key)#mem v
 	      with Not_found -> 
+		error_undeclared_key key)
+       | [VARG_IDENTIFIER t] -> 
+	 (fun () ->
+	    let key = PrimaryTable (string_of_id t) in
+	    try 
+	      (get_ident_table key)#print
+	    with not_found ->
+	    try 
+	      (get_string_table key)#print
+	    with not_found ->
+            try 
+	      print_option_value key
+            with Not_found -> 
 		error_undeclared_key key)
        |  _ -> bad_vernac_args "TableField")
 
