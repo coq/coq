@@ -147,15 +147,15 @@ let pr_comment pr_c = function
   | CommentInt n -> int n
 
 let pr_in_out_modules = function
-  | SearchInside l -> str"inside" ++ spc() ++ prlist_with_sep sep pr_module l
-  | SearchOutside [] -> str"outside"
-  | SearchOutside l -> str"outside" ++ spc() ++ prlist_with_sep sep pr_module l
+  | SearchInside l -> spc() ++ str"inside" ++ spc() ++ prlist_with_sep sep pr_module l
+  | SearchOutside [] -> mt()
+  | SearchOutside l -> spc() ++ str"outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
-let pr_search a b pr_c = match a with
-  | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ spc() ++ pr_in_out_modules b
-  | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_c c ++ spc() ++ pr_in_out_modules b
-  | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_c c ++ spc() ++ pr_in_out_modules b
-  | SearchAbout qid -> str"SearchAbout" ++ spc() ++ pr_reference qid ++ spc() ++ pr_in_out_modules b
+let pr_search a b pr_p = match a with
+  | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
+  | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
+  | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
+  | SearchAbout qid -> str"SearchAbout" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
 
 let pr_locality local = if local then str "Local " else str ""
 
@@ -1031,7 +1031,7 @@ pr_vbinders bl ++ spc())
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
       in pr_printable p
-  | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_constr
+  | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern
   | VernacLocate loc -> 
       let pr_locate =function
 	| LocateTerm qid ->  pr_reference qid
