@@ -114,8 +114,8 @@ environment.
 As we will see later, metavariables may denote an AST or an AST list
 (when used with the \verb+$LIST+ special token).
 %$
-So, we introduce two types of variables: \verb+Ast+ and
-\verb+List+. The type of variables is checked statically: an
+So, we introduce two types of variables: \verb+ast+ and
+\verb+ast list+. The type of variables is checked statically: an
 expression referring to undefined metavariables, or using metavariables
 with an inappropriate type, will be rejected.
 
@@ -531,16 +531,6 @@ binds to the metavariable \verb+$a+. Then it meets the token
 ``\verb+#+'' and finally it calls the grammar
 \verb+constr:constr0+. This grammar returns the recognized term in
 \verb+$b+. The action constructs the term \verb+~$a=$b+.
-\Warning
-Metavariables are identifiers preceded by the ``\verb+$+'' symbol.
-They cannot be replaced by identifiers. For instance, if we enter a
-rule with identifiers and not metavariables, an error occurs:
-
-% Test failure
-\begin{coq_example}
-Grammar constr constr1 := 
-  not_eq [ constr0($a) "#" constr0($b) ] -> [~(a=b)].
-\end{coq_example}
 
 For instance, let us give the statement of the symmetry of \verb+#+:
 
@@ -554,10 +544,22 @@ the goal is displayed using the usual syntax for negation and
 equality. One can force \verb+~a=b+ to be printed \verb=a#b= by giving
 pretty-printing rules. This is explained in section~\ref{Syntax}.
 
+\Warning
+Metavariables are identifiers preceded by the ``\verb+$+'' symbol.
+They cannot be replaced by identifiers. For instance, if we enter a
+rule with identifiers and not metavariables, the identifiers are
+assumed to be global names (what raises a warning if no global name is
+denoted by these identifiers).
+
+% Test failure
+\begin{coq_example}
+Grammar constr constr1 := 
+  not_eq [ constr0($a) "#" constr0($b) ] -> [~(a=b)].
+\end{coq_example}
+
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
-
 
 \example{Redefining vernac commands}
 
@@ -566,7 +568,7 @@ effect as ``{\tt Goal term.}''.
 
 \begin{coq_example}
 Grammar vernac vernac := 
-  thesis [ "|-" constr:constr($term) "." ]
+  thesis [ "|" "-" constr:constr($term) "." ]
           -> [Goal $term.].
 \end{coq_example}
 
@@ -574,7 +576,7 @@ Grammar vernac vernac :=
 dash, as in
 
 \begin{coq_example}
-|- (A:Prop)A->A.
+| - (A:Prop)A->A.
 \end{coq_example}
 
 \begin{coq_eval}
@@ -595,9 +597,11 @@ Grammar vernac vernac :=
 \noindent If both rules were entered, we would have three tokens
 \verb+|+, \verb+-+ and \verb+|-+. The lexical ambiguity on the string
 \verb+|-+ is solved according to the longest match rule (see lexical
-conventions page~\pageref{lexical}), i.e. \verb+|-+ would be one single
-token. To enforce the use of the first rule, a blank must be inserted
-between the bar and the dash.
+conventions page~\pageref{lexical}), i.e. \verb+|-+ would be one
+single token. To enforce the use of the first rule, a blank must be
+inserted between the bar and the dash\footnote{It turns out that "|-"
+is already a token defined for other purposes, then the first rule
+cannot parse "|- (A:Prop)A->A" and indeed requires the insertion of a blank}.
 
 
 \Rem
@@ -627,9 +631,7 @@ Abort.
 \end{coq_eval}
 
 Note that the same result can be obtained in a simpler way with {\tt
-Tactic Definition} (see page~\pageref{TacticDefinition}). However,
-this macro can only define tactics which arguments are terms.
-
+Tactic Definition} (see chapter~\ref{TacticLanguage}).
 
 \example{Priority, left and right associativity of operators}
 
@@ -744,7 +746,7 @@ The internal representation of an expression such as {\tt A+B} depends
 on the shape of {\tt A} and {\tt B}:
 \begin{itemize}
 \item \verb/{P}+{Q}/ uses {\tt sumbool}
-\item otherwise,\verb/A+{Q}/ uses {\tt sumor}
+\item otherwise, \verb/A+{Q}/ uses {\tt sumor}
 \item otherwise, \verb/A+B/ uses {\tt sum}.
 \end{itemize}
 The trick is to build a temporary AST: \verb/{A}/ generates the node
@@ -1065,8 +1067,12 @@ where :
   the last one overrides the former.
 
 \item {\it pattern} is a pattern that matches the AST to be
-  printed. The syntax of patterns is very similar to the grammar for ASTs.
-  A description of their syntax is given in section
+  printed. 
+The syntax of patterns is dependent on the universe of the AST to be
+printed (e.g. patterns are parsed as {\tt constr} if the universe is
+{\tt constr}, etc), and a quotation can be used to escape the default
+parser associated to this universe.
+A description of the syntax of patterns is given in section
   \ref{patternsyntax}.
 
 \item {\it printing-orders} is the sequence of orders indicating the
@@ -1479,7 +1485,7 @@ The grammar of printing rules is the following:
 \end{tabular}
 \end{center}
 
-Non-terminal {\sl pattern} is the default quotation associated to the
+Non-terminal {\sl ast-quot} is the default quotation associated to the
 extended  universe. Patterns not belonging to the input syntax can be
 given directly as AST using \verb+<< >>+.
 
