@@ -263,8 +263,8 @@ ZARITHVO=theories/Zarith/Wf_Z.vo        theories/Zarith/Zsyntax.vo \
 	 theories/Zarith/ZArith_dec.vo  theories/Zarith/fast_integer.vo \
 	 theories/Zarith/Zmisc.vo       theories/Zarith/zarith_aux.vo
 
-LISTSVO=theories/Lists/List.vo      \
-        theories/Lists/ListSet.vo   theories/Lists/Streams.vo        \
+LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
+        theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
         theories/Lists/PolyList.vo  theories/Lists/TheoryList.vo
 
 SETSVO=theories/Sets/Classical_sets.vo     theories/Sets/Permut.vo \
