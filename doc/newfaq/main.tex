@@ -12,7 +12,7 @@
 % les macros d'amour
 \def\Coq{\textsc{Coq }}
 \def\Ltac{\textsc{Ltac }}
-
+\def\CoqIde{\textsc{CoqIde }}
 
 \begin{document}
 \bibliographystyle{plain}
@@ -84,6 +84,9 @@ to \Coq by the way they interact with the user. More distant relatives of
 
 \Question[intuitionnisticlogic]{What is intuitionnistic logic ?}
 
+This is any logic which does not assume that ``A or not A''.
+
+
 \Question[theory]{Where can I find informations about the theory behind \Coq ?}
 
 \begin{description}
@@ -139,24 +142,26 @@ development of zero-default software.''
 
 \Question[nbusers]{How many \Coq users are there ?}
 
+
 \Question[howold]{How old is \Coq ?}
 The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 
 \Question[relatedtools]{What are the \Coq-related tools ?}
 
 \begin{description}
-\item[Coqide]
-\item[Pcoq]
-\item[Why]
+\item[Coqide] A GTK based gui for \Coq.
+\item[Pcoq] A gui for \Coq with proof by pointing and pretty printing.
+\item[Why] 
 \item[Krakatoa]
-\item[coqwc] 
-\item[coq-tex] 
+\item[coqwc] A tool similar to {\tt wc} to count lines in \Coq files.
+\item[coq-tex] A tool to insert \Coq examples within .tex files. 
 \item[coqdoc] A documentation tool for \Coq.
-\item[Proof General]
-\item[Foc]
+\item[Proof General] A emacs mode for \Coq and many other proof assistants.
+\item[Foc] 
 \end{description}
 
 \Question[indutrial]{What are industrial application for \Coq ?}
+
 Trusted Logic ...
 
 
@@ -186,8 +191,12 @@ Windows. The sources can be easily adapted to all platform supporting Objective 
 
 \Question[coqexamples]{Where can I find some \Coq examples ?} 
 
+There are examples in the manual and in the CoqArt. You can find large developments using \Coq in the \Coq contributions : {\tt http://coq.inria.fr/distrib-eng.html}
+
+
 \Question[goal]{What is a goal ?}
 
+The goal is the statement to be proved.
 
 \Question[metavariable]{What is a meta variable ?}
 
@@ -195,44 +204,71 @@ Windows. The sources can be easily adapted to all platform supporting Objective 
 
 \Question[dependanttype]{What is a dependent type ?}
 
-\Question[reflexivity]{What is reflexivity ?}
+
 
 \Question[conjonction]{My goal is a conjonction, how can I prove it ?}
 
+Use some theorem or assumption or use the {\tt split} tactic.
+
 \Question[disjonction]{My goal is a disjonction, how can I prove it ?}
+
+You can prove the left part or the right part of the disjunction using {\tt left} or {\tt right} tactics. If you want to do a classical reasoning step, use {\tt }  to prove the right part with the assumption that the left part of the disjunction is false.
 
 \Question[forall]{My goal is an universally quantified statement, how can I prove it ?}
 
+Use some theorem or assumption or introduce the quantified variable in the context using the {\tt intro} tactic. If there are several variables you can use the {\tt intros} tactic. 
+
 \Question[exist]{My goal is an existential, how can I prove it ?}
+
+Use some theorem or assumption or exhibits the witness using {\tt exists} tactic.
 
 \Question[taut]{My goal is a propositional tautology, how can I prove it ?}
 
+Just use the {\tt tauto} tactic.
+
 \Question[firstorder]{My goal is a first order formula, how can I prove it ?}
+
+Just use the {\tt firstorder} tactic.
 
 \Question[cong]{My goal is solvable by a sequence of rewrites, how can I prove it ?}
 
+Just use the {\tt congruence} tactic.
+
+\Question[congnot]{My goal is disequality solvable by a sequence of rewrites, how can I prove it ?}
+
+Just use the {\tt congruence} tactic.
+
 \Question[ring]{My goal is an equality on some ring (e.g. natural numbers), how can I prove it ?}
 
+Just use the {\tt ring} tactic.
+
 \Question[field]{My goal is an equality on some field (e.g. reals), how can I prove it ?}
+
+Just use the {\tt field} tactic.
 
 \Question[omega]{My goal is an inequality on R, how can I prove it ?}
 
 \Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
 
+Just use the {\tt gv} tactic.
+
 \Question[apply]{My goal is solvable by  some lemma, how can I prove it ?}
+
+Just use the {\tt apply} tactic.
 
 \Question[autowith]{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
 
+Use a base of Hints.
+
 \Question[assumption]{My goal is one of the hypothesis, how can I prove it ?}
+
+Use the {\tt assumption} tactic.
 
 \Question[trivial]{My goal is ???, how can I prove it ?}
 
-\Question[proofwith]{I want to automatize the use of a tactic how can I do it ?}
+\Question[proofwith]{I want to automatize the use of some tactic how can I do it ?}
 
 \Question[complete]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
-
-
-
 
 \Question[subgoalsorder]{How can I change the order of the subgoals ?}
 
@@ -246,23 +282,28 @@ Windows. The sources can be easily adapted to all platform supporting Objective 
 
 \Question[reflection]{What is a proof by reflection ?}
 
+This is a proof generated by some computation which is done using the internal reduction of Coq (not using the tactic language of \Coq (\Ltac) nor the implementation language for \Coq).
+An example of tactic using the reflection mechanism is the {\tt ring} tactic. 
+The reflection method consist in reflecting a subset of Coq language (for example the arithmetical expressions) into an object of the Coq language itself (in our case an inductive type denoting arithmetical expressions).
+For more information see  \cite{howe,harrison,boutin} and the last chapter of the CoqArt.
 
 \section{\Ltac}
 
 \Question[ltac]{What is \Ltac ?}
 
+\Ltac is the tactic language for \Coq.
+
 \Question[letltac]{What is the syntax for let in \Ltac ?}
 
 \Question[matchltac]{What is the syntax for pattern matching in \Ltac ?}
 \Question[matchsem]{What is the semantic for match context ?}
+
 \Question[fresh]{How can I generate a new name ?}
+
 
 \Question[statdyn]{How can I define static and dynamic code ?}
 
 
-
-
-\section{Coqide}
 
 
 
