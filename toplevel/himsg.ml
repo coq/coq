@@ -281,6 +281,13 @@ let explain_var_not_found k ctx id =
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
 (* Pattern-matching errors *)
+let explain_bad_pattern k ctx cstr ty = 
+  let pt = prterm_env ctx ty in
+  let pc = pr_constructor ctx cstr in
+  [< 'sTR "Found the constructor "; pc; 'bRK(1,1); 
+     'sTR "while matching a term of type "; pt; 'bRK(1,1); 
+     'sTR "which is not an inductive type" >]
+
 let explain_bad_constructor k ctx cstr ind =
   let pi = pr_inductive ctx ind in
   let pc = pr_constructor ctx cstr in

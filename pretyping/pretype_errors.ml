@@ -37,6 +37,9 @@ let error_case_not_inductive_loc loc k env c ct =
 
 (* Pattern-matching errors *)
 
+let error_bad_pattern_loc loc k cstr ind =
+  raise_pretype_error (loc, k, Global.env(), BadPattern (cstr,ind))
+
 let error_bad_constructor_loc loc k cstr ind =
   raise_pretype_error (loc, k, Global.env(), BadConstructor (cstr,ind))
 

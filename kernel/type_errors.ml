@@ -54,6 +54,7 @@ type type_error =
   | UnexpectedType of constr * constr
   | NotProduct of constr
   (* Pattern-matching errors *)
+  | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor_path * int
   | WrongPredicateArity of constr * int * int
