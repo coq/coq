@@ -435,7 +435,7 @@ contrib/jprover/jall.cmi: contrib/jprover/jlogic.cmi \
 contrib/jprover/jlogic.cmi: contrib/jprover/jterm.cmi 
 contrib/jprover/jterm.cmi: contrib/jprover/opname.cmi 
 contrib/xml/doubleTypeInference.cmi: contrib/xml/acic.cmo kernel/environ.cmi \
-    pretyping/evd.cmi kernel/term.cmi 
+    pretyping/evd.cmi kernel/names.cmi kernel/term.cmi 
 contrib/xml/xmlcommand.cmi: contrib/xml/acic.cmo pretyping/evd.cmi \
     library/libnames.cmi contrib/xml/proof2aproof.cmo proofs/proof_type.cmi \
     kernel/term.cmi contrib/xml/xml.cmi 
@@ -3152,40 +3152,42 @@ contrib/xml/acic2Xml.cmo: contrib/xml/acic.cmo contrib/xml/cic2acic.cmo \
     kernel/names.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi 
 contrib/xml/acic2Xml.cmx: contrib/xml/acic.cmx contrib/xml/cic2acic.cmx \
     kernel/names.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx 
-contrib/xml/cic2acic.cmo: contrib/xml/acic.cmo kernel/conv_oracle.cmi \
-    kernel/declarations.cmi library/declare.cmi library/dischargedhypsmap.cmi \
+contrib/xml/cic2acic.cmo: contrib/xml/acic.cmo kernel/declarations.cmi \
+    library/declare.cmi library/dischargedhypsmap.cmi \
     contrib/xml/doubleTypeInference.cmi kernel/environ.cmi \
     pretyping/evarutil.cmi pretyping/evd.cmi library/global.cmi \
     kernel/inductive.cmi pretyping/inductiveops.cmi pretyping/instantiate.cmi \
     library/lib.cmi library/libnames.cmi library/library.cmi \
     library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
-    parsing/printer.cmi pretyping/rawterm.cmi pretyping/reductionops.cmi \
-    pretyping/retyping.cmi pretyping/tacred.cmi kernel/term.cmi \
-    pretyping/termops.cmi kernel/univ.cmi contrib/xml/unshare.cmi \
-    lib/util.cmi 
-contrib/xml/cic2acic.cmx: contrib/xml/acic.cmx kernel/conv_oracle.cmx \
-    kernel/declarations.cmx library/declare.cmx library/dischargedhypsmap.cmx \
+    parsing/printer.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
+    kernel/term.cmi pretyping/termops.cmi kernel/univ.cmi \
+    contrib/xml/unshare.cmi lib/util.cmi 
+contrib/xml/cic2acic.cmx: contrib/xml/acic.cmx kernel/declarations.cmx \
+    library/declare.cmx library/dischargedhypsmap.cmx \
     contrib/xml/doubleTypeInference.cmx kernel/environ.cmx \
     pretyping/evarutil.cmx pretyping/evd.cmx library/global.cmx \
     kernel/inductive.cmx pretyping/inductiveops.cmx pretyping/instantiate.cmx \
     library/lib.cmx library/libnames.cmx library/library.cmx \
     library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
-    parsing/printer.cmx pretyping/rawterm.cmx pretyping/reductionops.cmx \
+    parsing/printer.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
+    kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx \
+    contrib/xml/unshare.cmx lib/util.cmx 
+contrib/xml/doubleTypeInference.cmo: contrib/xml/acic.cmo \
+    kernel/conv_oracle.cmi kernel/environ.cmi pretyping/evarutil.cmi \
+    pretyping/evd.cmi kernel/inductive.cmi pretyping/instantiate.cmi \
+    library/libnames.cmi kernel/names.cmi lib/pp.cmi parsing/printer.cmi \
+    pretyping/rawterm.cmi kernel/reduction.cmi pretyping/reductionops.cmi \
+    pretyping/retyping.cmi pretyping/tacred.cmi kernel/term.cmi \
+    pretyping/termops.cmi kernel/typeops.cmi contrib/xml/unshare.cmi \
+    lib/util.cmi contrib/xml/doubleTypeInference.cmi 
+contrib/xml/doubleTypeInference.cmx: contrib/xml/acic.cmx \
+    kernel/conv_oracle.cmx kernel/environ.cmx pretyping/evarutil.cmx \
+    pretyping/evd.cmx kernel/inductive.cmx pretyping/instantiate.cmx \
+    library/libnames.cmx kernel/names.cmx lib/pp.cmx parsing/printer.cmx \
+    pretyping/rawterm.cmx kernel/reduction.cmx pretyping/reductionops.cmx \
     pretyping/retyping.cmx pretyping/tacred.cmx kernel/term.cmx \
-    pretyping/termops.cmx kernel/univ.cmx contrib/xml/unshare.cmx \
-    lib/util.cmx 
-contrib/xml/doubleTypeInference.cmo: contrib/xml/acic.cmo kernel/environ.cmi \
-    pretyping/evarutil.cmi pretyping/evd.cmi kernel/inductive.cmi \
-    pretyping/instantiate.cmi lib/pp.cmi parsing/printer.cmi \
-    kernel/reduction.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
-    kernel/term.cmi pretyping/termops.cmi kernel/typeops.cmi \
-    contrib/xml/unshare.cmi lib/util.cmi contrib/xml/doubleTypeInference.cmi 
-contrib/xml/doubleTypeInference.cmx: contrib/xml/acic.cmx kernel/environ.cmx \
-    pretyping/evarutil.cmx pretyping/evd.cmx kernel/inductive.cmx \
-    pretyping/instantiate.cmx lib/pp.cmx parsing/printer.cmx \
-    kernel/reduction.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
-    kernel/term.cmx pretyping/termops.cmx kernel/typeops.cmx \
-    contrib/xml/unshare.cmx lib/util.cmx contrib/xml/doubleTypeInference.cmi 
+    pretyping/termops.cmx kernel/typeops.cmx contrib/xml/unshare.cmx \
+    lib/util.cmx contrib/xml/doubleTypeInference.cmi 
 contrib/xml/proof2aproof.cmo: pretyping/evarutil.cmi pretyping/evd.cmi \
     library/global.cmi pretyping/instantiate.cmi proofs/logic.cmi lib/pp.cmi \
     proofs/proof_type.cmi proofs/refiner.cmi kernel/sign.cmi \
@@ -3202,16 +3204,14 @@ contrib/xml/proofTree2Xml.cmo: contrib/xml/acic.cmo contrib/xml/acic2Xml.cmo \
     lib/pp.cmi parsing/pptactic.cmi translate/pptacticnew.cmi \
     parsing/printer.cmi contrib/xml/proof2aproof.cmo proofs/proof_trees.cmi \
     proofs/proof_type.cmi kernel/sign.cmi proofs/tacexpr.cmo kernel/term.cmi \
-    contrib/xml/unshare.cmi lib/util.cmi contrib/xml/xml.cmi \
-    contrib/xml/xmlcommand.cmi 
+    contrib/xml/unshare.cmi lib/util.cmi contrib/xml/xml.cmi 
 contrib/xml/proofTree2Xml.cmx: contrib/xml/acic.cmx contrib/xml/acic2Xml.cmx \
     contrib/xml/cic2acic.cmx kernel/environ.cmx pretyping/evd.cmx \
     library/global.cmx proofs/logic.cmx kernel/names.cmx lib/options.cmx \
     lib/pp.cmx parsing/pptactic.cmx translate/pptacticnew.cmx \
     parsing/printer.cmx contrib/xml/proof2aproof.cmx proofs/proof_trees.cmx \
     proofs/proof_type.cmx kernel/sign.cmx proofs/tacexpr.cmx kernel/term.cmx \
-    contrib/xml/unshare.cmx lib/util.cmx contrib/xml/xml.cmx \
-    contrib/xml/xmlcommand.cmx 
+    contrib/xml/unshare.cmx lib/util.cmx contrib/xml/xml.cmx 
 contrib/xml/unshare.cmo: contrib/xml/unshare.cmi 
 contrib/xml/unshare.cmx: contrib/xml/unshare.cmi 
 contrib/xml/xml.cmo: contrib/xml/xml.cmi 
