@@ -132,8 +132,8 @@ let pr_located_qualid = function
 	| VarRef _ -> "Variable" in
       str ref_str ++ spc () ++ pr_sp (Nametab.sp_of_global ref)
   | Syntactic kn ->
-      str "Syntactic Definition" ++ spc () ++
-      pr_sp (Nametab.sp_of_syntactic_definition kn)
+      str (if !Options.v7 then "Syntactic Definition" else "Notation") ++ 
+      spc () ++ pr_sp (Nametab.sp_of_syntactic_definition kn)
   | Dir dir ->
       let s,dir = match dir with
 	| DirOpenModule (dir,_) -> "Open Module", dir
@@ -149,7 +149,26 @@ let pr_located_qualid = function
       pr_qualid qid ++ str " is not a defined object"
 
 let print_located_qualid ref =
-  hov 0 (pr_located_qualid (locate_any_name ref))
+  let (loc,qid) = qualid_of_reference ref in
+  let module N = Nametab in
+  let expand = function
+    | TrueGlobal ref -> Term ref, N.shortest_qualid_of_global Idset.empty ref
+    | SyntacticDef kn -> Syntactic kn, N.shortest_qualid_of_syndef kn in
+  match List.map expand (N.extended_locate_all qid) with
+    | [] -> 
+	let (dir,id) = repr_qualid qid in
+	if dir = empty_dirpath then
+	  str "No object of basename " ++ pr_id id
+	else
+	  str "No object of suffix " ++ pr_qualid qid
+    | l ->
+	prlist_with_sep fnl
+	(fun (o,oqid) ->
+	  hov 2 (pr_located_qualid o ++
+	  (if oqid <> qid then
+	    spc() ++ str "(visible as " ++ pr_qualid oqid ++ str")"
+	  else
+	    mt ()))) l
 
 (******************************************)
 (**** Printing declarations and judgments *)
