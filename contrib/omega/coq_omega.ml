@@ -111,7 +111,7 @@ let new_var_num =
 let new_var =
   let cpt = ref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
 
-let display_var i = Printf.sprintf "O%d" i
+let display_var i = Printf.sprintf "X%d" i
 
 let intern_id,unintern_id =
   let cpt = ref 0 in
@@ -1208,7 +1208,6 @@ let replay_history tactic_normalisation =
 	  in
 	  let mm = mk_integer m in
 	  let p_initial = [P_APP 2;P_TYPE] in
-	  let r = mk_plus eq2 (mk_times (mk_plus (mk_inv (mkVar vid)) eq1) mm) in
 	  let tac = 
             clever_rewrite (P_APP 1 :: P_APP 1 :: P_APP 2 :: p_initial) 
               [[P_APP 1]] (Lazy.force coq_fast_Zopp_one) ::
