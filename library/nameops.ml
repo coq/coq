@@ -43,6 +43,7 @@ let translate_v7_string = function
   | "max_sym" -> "max_comm"
   | "min_sym" -> "min_comm"
   | "gt_not_sym" -> "gt_asym"
+  | "fact_growing" -> "fact_le"
   (* Bool *)
   | "orb_sym" -> "orb_comm"
   | "andb_sym" -> "andb_comm"

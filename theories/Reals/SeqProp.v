@@ -1096,21 +1096,3 @@ Left; Apply pow_lt; Apply Rabsolu_pos_lt; Assumption.
 Left; Apply Rlt_Rinv; Apply lt_INR_0; Apply neq_O_lt; Red; Intro; Assert H4 := (sym_eq ? ? ? H3); Elim (fact_neq_0 ? H4).
 Apply H1; Assumption.
 Qed.
-
-Lemma fact_growing : (m,n:nat) (le m n) -> (le (fact m) (fact n)).
-Intros.
-Cut (Un_growing [n:nat](INR (fact n))).
-Intro.
-Apply INR_le.
-Apply Rle_sym2.
-Apply (growing_prop [l:nat](INR (fact l))).
-Exact H0.
-Unfold ge; Exact H.
-Unfold Un_growing.
-Intros.
-Simpl.
-Rewrite plus_INR.
-Pattern 1 (INR (fact n0)); Rewrite <- Rplus_Or.
-Apply Rle_compatibility.
-Apply pos_INR.
-Qed.

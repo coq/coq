@@ -25,31 +25,12 @@ Require Export SplitRmult.
 Require Export ArithProp.
 Require Omega.
 Require Zpower.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [Import R_scope.].
+Open Local Scope R_scope.
 
 (*******************************)
-(**     Factorial              *)
+(**  Lemmas about factorial    *)
 (*******************************)
-(*********)
-Fixpoint fact [n:nat]:nat:=
-  Cases n of
-     O     => (S O)
-    |(S n) => (mult (S n) (fact n))
-  end.
-
-(*********)
-Lemma fact_neq_0:(n:nat)~(fact n)=O.
-Cut (n,m:nat)~n=O->~m=O->~(mult n m)=O.
-Intro;Induction n;Simpl;Auto.
-Intros; Replace (plus (fact n0) (mult n0 (fact n0))) with 
-  (mult (fact n0) (plus n0 (1))).
-Cut ~(plus n0 (1))=O.
-Intro;Apply H;Assumption.
-Replace (plus n0 (1)) with (S n0);[Auto|Ring].
-Intros;Ring.
-Double Induction n m;Simpl;Auto.
-Qed.
-
 (*********)
 Lemma INR_fact_neq_0:(n:nat)~(INR (fact n))==R0.
 Intro;Red;Intro;Apply (not_O_INR (fact n) (fact_neq_0 n));Assumption.
