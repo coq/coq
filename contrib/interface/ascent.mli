@@ -240,10 +240,12 @@ and ct_FORMULA =
   | CT_if of ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA * ct_FORMULA
   | CT_inductive_let of ct_FORMULA_OPT * ct_ID_OPT_NE_LIST * ct_FORMULA * ct_FORMULA
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
+  | CT_let_tuple of ct_ID_OPT_NE_LIST * ct_ID_OPT * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA
   | CT_letin of ct_DEF * ct_FORMULA
   | CT_notation of ct_STRING * ct_FORMULA_LIST
   | CT_num_encapsulator of ct_NUM_TYPE * ct_FORMULA
   | CT_prodc of ct_BINDER_NE_LIST * ct_FORMULA
+  | CT_proj of ct_FORMULA * ct_FORMULA_NE_LIST
 and ct_FORMULA_LIST =
     CT_formula_list of ct_FORMULA list
 and ct_FORMULA_NE_LIST =
