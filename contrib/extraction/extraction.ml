@@ -646,13 +646,18 @@ and extract_case env ctx ip c br =
 	 MLcase (a, Array.mapi extract_branch br)
      | Rprop -> 
 	 (* Logical singleton case: *)
-	 (* [match c with C i j k -> t] becomes [t'] *)
-	 assert (Array.length br = 1);
-	 let (rb,e) = decompose_lam_eta ni.(0) env br.(0) in
-	 let env' = push_rels_assum rb env in 
-	 (* We know that all arguments are logic. *)
-	 let ctx' = iterate (fun l -> false :: l) ni.(0) ctx in 
-	 extract_constr_to_term env' ctx' e)
+	 if Array.length br = 0 then 
+	   MLcase (MLprop, [||]) (* to be recognize later on as an empty case *)
+	 else begin 
+	   (* [match c with C i j k -> t] becomes [t'] *)
+	   assert (Array.length br = 1);
+	   let (rb,e) = decompose_lam_eta ni.(0) env br.(0) in
+	   let env' = push_rels_assum rb env in 
+	   (* We know that all arguments are logic. *)
+	   let ctx' = iterate (fun l -> false :: l) ni.(0) ctx in 
+	   extract_constr_to_term env' ctx' e
+	 end)
+
   
 (* Extraction of a (co)-fixpoint *)
 
@@ -904,11 +909,7 @@ and extract_inductive_declaration sp =
 
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 
-let false_rec_sp = path_of_string "Coq.Init.Specif.False_rec"
-let false_rec_e = MLlam (prop_name, MLexn "[False_rec]")
-
 let extract_declaration r = match r with
-  | ConstRef sp when sp = false_rec_sp -> Dglob (r, false_rec_e)
   | ConstRef sp -> 
       (match extract_constant sp with
 	 | Emltype (mlt, s, vl) -> Dabbrev (r, List.rev vl, mlt)

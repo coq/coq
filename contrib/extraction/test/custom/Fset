@@ -1,2 +1,2 @@
 Require Map.
-Extraction Inline Map_rec.
+Extraction Inline Map_rec Map_rect.
