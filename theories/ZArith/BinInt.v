@@ -685,7 +685,7 @@ Proof.
 Intro x; NewDestruct x; Simpl; Try Rewrite times_x_1; Reflexivity.
 Qed.
 
-(** Zero is absorbant for multiplication *)
+(** Zero property of multiplication *)
 
 Theorem Zero_mult_left: (x:Z) (Zmult ZERO x) = ZERO.
 Proof.
@@ -765,7 +765,7 @@ Theorem Zopp_Zmult_r : (x,y:Z)(Zopp (Zmult x y)) = (Zmult x (Zopp y)).
 Intros x y; Rewrite (Zmult_sym x y); Rewrite Zopp_Zmult_l; Apply Zmult_sym.
 Qed.
 
-Theorem Zopp_Zmult: (x,y:Z) (Zmult (Zopp x) y) = (Zopp (Zmult x y)).
+Lemma Zopp_Zmult: (x,y:Z) (Zmult (Zopp x) y) = (Zopp (Zmult x y)).
 Proof.
 Intros x y; Symmetry; Apply Zopp_Zmult_l.
 Qed.
@@ -820,7 +820,7 @@ Intros x y z; Case x; [
   Apply weak_Zmult_plus_distr_r ].
 Qed.
 
-Lemma Zmult_plus_distr_l : 
+Theorem Zmult_plus_distr_l : 
   (n,m,p:Z)((Zmult (Zplus n m) p)=(Zplus (Zmult n p) (Zmult m p))).
 Proof.
 Intros n m p;Rewrite Zmult_sym;Rewrite Zmult_plus_distr_r; 
