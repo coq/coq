@@ -3,7 +3,7 @@
 %%For: Gros nain
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 36 36 576 238
+%%BoundingBox: 36 36 576 216
 %%EndComments
 %%BeginProlog
 save
@@ -139,12 +139,12 @@ def
 % /arrowwidth 5 def
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 576 238
+%%PageBoundingBox: 36 36 576 216
 gsave
-35 35 541 203 boxprim clip newpath
+35 35 541 181 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
-0.7219 set_scale
+0.6444 set_scale
 0 0 translate 0 rotate
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
@@ -193,6 +193,34 @@ stroke
 newpath 541 244 moveto
 550 249 lineto
 540 249 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Tacred
+gsave 10 dict begin
+712 72 29 18 ellipse_path
+stroke
+gsave 10 dict begin
+712 73 moveto (Tacred) 38 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Cbv
+gsave 10 dict begin
+811 72 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+811 73 moveto (Cbv) 23 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Tacred -> Cbv
+newpath 742 72 moveto
+752 72 764 72 774 72 curveto
+stroke
+newpath 774 70 moveto
+784 72 lineto
+774 75 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
@@ -245,18 +273,28 @@ end grestore
 %	Recordops -> Classops
 newpath 485 112 moveto
 491 108 496 105 500 102 curveto
-514 92 523 77 536 69 curveto
-540 66 546 64 551 61 curveto
+514 93 523 78 536 69 curveto
+541 66 548 63 555 60 curveto
 stroke
-newpath 550 59 moveto
-560 56 lineto
-552 63 lineto
+newpath 551 59 moveto
+561 57 lineto
+553 64 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Classops -> Tacred
+newpath 620 52 moveto
+637 55 657 60 675 64 curveto
+stroke
+newpath 675 61 moveto
+684 66 lineto
+674 66 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
 %	Classops -> Rawterm
-newpath 614 57 moveto
-627 63 640 69 640 69 curveto
+newpath 616 56 moveto
+625 60 635 64 640 69 curveto
 656 83 678 109 694 129 curveto
 stroke
 newpath 695 126 moveto
@@ -267,39 +305,20 @@ gsave 0 setgray stroke grestore fill
 
 %	Retyping
 gsave 10 dict begin
-712 72 36 18 ellipse_path
+712 18 36 18 ellipse_path
 stroke
 gsave 10 dict begin
-712 73 moveto (Retyping) 51 14.00 -0.50 alignedtext
+712 19 moveto (Retyping) 51 14.00 -0.50 alignedtext
 end grestore
 end grestore
 
 %	Classops -> Retyping
-newpath 620 52 moveto
-635 55 653 59 669 63 curveto
-stroke
-newpath 670 61 moveto
-679 65 lineto
-669 65 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Tacred
-gsave 10 dict begin
-712 18 29 18 ellipse_path
-stroke
-gsave 10 dict begin
-712 19 moveto (Tacred) 38 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Classops -> Tacred
 newpath 620 38 moveto
-637 35 657 30 675 26 curveto
+635 35 653 31 669 27 curveto
 stroke
-newpath 674 24 moveto
-684 24 lineto
-675 29 lineto
+newpath 669 25 moveto
+679 25 lineto
+670 29 lineto
 closepath
 gsave 0 setgray stroke grestore fill
 
