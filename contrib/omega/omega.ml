@@ -279,7 +279,7 @@ let normalize ({id=id; kind=eq_flag; body=e; constant =x} as eq) =
       let d = x - c * gcd in
       let new_eq = {id=id; kind=eq_flag; constant=c; 
                     body=map_eq_linear (fun c -> c / gcd) e} in
-      add_event (if eq_flag=EQUA then EXACT_DIVIDE(eq,gcd)
+      add_event (if eq_flag=EQUA or eq_flag = DISE then EXACT_DIVIDE(eq,gcd)
                  else DIVIDE_AND_APPROX(eq,new_eq,gcd,d));
       [new_eq]
     end else [eq]

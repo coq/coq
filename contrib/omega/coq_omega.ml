@@ -1161,7 +1161,7 @@ let replay_history tactic_normalisation =
 	  let kk = mk_integer k in
 	  let state_eq = mk_eq eq1 (mk_times eq2 kk) in
 	  if e1.kind = DISE then
-            let tac = scalar_norm [P_APP 1] e2.body in
+            let tac = scalar_norm [P_APP 3] e2.body in
             tclTHENS 
 	      (cut state_eq) 
 	      [tclTHEN 
