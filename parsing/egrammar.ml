@@ -361,13 +361,23 @@ let rec interp_entry_name u s =
     let t, g = interp_entry_name u (String.sub s 0 (l-4)) in
     OptArgType t, Gramext.Sopt g
   else
-    let e = get_entry (get_univ u) s in
+    let e = 
+    if !Options.v7 then get_entry (get_univ u) s
+    else
+      (* Qualified entries are no longer in use *)
+      try get_entry (get_univ "tactic") s
+      with _ -> 
+      try get_entry (get_univ "prim") s
+      with _ ->
+      try get_entry (get_univ "constr") s
+      with _ -> error ("Unknown entry "^s)
+    in
     let o = object_of_typed_entry e in
     let t = type_of_typed_entry e in
     t,Gramext.Snterm (Pcoq.Gram.Entry.obj o)
 
 let qualified_nterm current_univ = function
-  | NtQual (univ, en) -> (univ, en)
+  | NtQual (univ, en) -> if !Options.v7 then (univ, en) else assert false
   | NtShort en -> (current_univ, en)
 
 let make_vprod_item univ = function

@@ -132,8 +132,7 @@ let pr_set_entry_type = function
   | ETBigint -> str "bigint"
 
 let pr_non_terminal = function
-  | NtQual ("constr","constr") -> str "constr"
-  | NtQual (u,nt) -> str u ++ str" : " ++ str nt
+  | NtQual (u,nt) -> (* no more qualified entries *) str nt
   | NtShort "constrarg" -> str "constr"
   | NtShort nt -> str nt
 
@@ -416,7 +415,7 @@ let pr_grammar_tactic_rule (name,(s,pil),t) =
 *)
   hov 2 (str "Tactic Notation" ++ spc() ++ 
     hov 0 (qsnew s ++ spc() ++ prlist_with_sep sep pr_production_item pil ++
-    spc() ++ str":= " ++ spc() ++ pr_raw_tactic t))
+    spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
 
 let pr_box b = let pr_boxkind = function
   | PpHB n -> str"h" ++ spc() ++ int n

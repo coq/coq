@@ -724,14 +724,8 @@ GEXTEND Gram
   ;
   production_item:
     [[ s = ne_string -> VTerm s
-     | nt = non_terminal; po = OPT [ "("; p = ident; ")" -> p ] ->
-	 VNonTerm (loc,nt,po) ]]
-  ;
-  non_terminal:
-    [[ u = IDENT; ":"; nt = IDENT ->
-        NtQual(rename_command_entry u, rename_command_entry nt)
-     | IDENT "constr" -> NtQual ("constr","constr")
-     | nt = IDENT -> NtShort (rename_command_entry nt) ]]
+     | nt = IDENT; po = OPT [ "("; p = ident; ")" -> p ] ->
+	 VNonTerm (loc,NtShort nt,po) ]]
   ;
 END
 
