@@ -311,5 +311,6 @@ deb: ${COQPACKAGE}.tar.gz
 	cd deb_build ; mv ${COQPACKAGE} ${COQPACKAGE}.orig
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
 	cp -a debian deb_build/${COQPACKAGE}
+	rm -rf deb_build/${COQPACKAGE}/debian/CVS
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us
 	lintian deb_build/${COQDEBCHANGES}

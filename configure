@@ -460,22 +460,13 @@ subdirs () {
     (cd $1; find . -type d ! -name CVS ! -name . -exec $PRINTF "\"%s\";\n" {} \; >> $mlconfig_file)
 }
 
-echo_e () {
-    case "`uname -s`" in
-	OSF1|SunOS )
-	echo $*;;
-    *)
-	echo -e $*;;
-  esac
-}
-
-echo_e "\nlet theories_dirs = [" >> $mlconfig_file
+echo "let theories_dirs = [" >> $mlconfig_file
 subdirs theories
-echo_e "]\n" >> $mlconfig_file
+echo "]" >> $mlconfig_file
 
-echo_e "\nlet contrib_dirs = [" >> $mlconfig_file
+echo "let contrib_dirs = [" >> $mlconfig_file
 subdirs contrib
-echo_e "]\n" >> $mlconfig_file
+echo "]" >> $mlconfig_file
 
 if test "$CAMLOSTYPE" = "Win32" ; then
 # We change: / -> \\ and \ -> \\ (dos paths)

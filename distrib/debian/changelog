@@ -1,8 +1,14 @@
+coq (7.2-2) unstable; urgency=low
+
+  * Build-Depends now requires camlp4 instead of camlp4 (>=3.01) since
+    camlp4 is a virtual package provided by ocaml >=3.04.
+
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Fri, 11 Jan 2002 11:08:03 +0100
+
 coq (7.2-1) unstable; urgency=low
   * New upstream version.
 
- -- Judicaël Courant <Judicael.Courant@lri.fr>  Fri, 21 Dec 2001 14:10:31 +0200
-
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Wed,  9 Jan 2002 14:02:42 +0100
 
 coq (7.1-2) unstable; urgency=low
 
@@ -12,7 +18,7 @@ coq (7.1-2) unstable; urgency=low
   * Errors raised by the Simpl tactic is an upstream bug and should
     have been fixed in 7.0 (closes: Bug#74518).
 
- -- Judicaël Courant <Judicael.Courant@lri.fr>  Tue, 11 Dec 2001 13:33:15 +0200
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Tue, 11 Dec 2001 13:33:15 +0100
 
 coq (7.1-1) unstable; urgency=low
   * New upstream version.
@@ -52,6 +58,4 @@ coq (6.3.1-1) unstable; urgency=low
 
  -- Fernando Sanchez <fer@debian.org>  Fri,  3 Dec 1999 22:06:04 +0100
 
-Local variables:
-mode: debian-changelog
-End:
+
