@@ -1,10 +1,17 @@
 Changes from V8.0beta to V8.0
 =============================
 
+Tools
+
+- Coqdoc support for notation links
+
 Bug fixes
 
+- "assert" semantics now consistent with reference manual
 - Translator printing bug of reals fixed
 - Obsolete "Implicit Arguments On/Off" removed
+- fix a bug in induction/destruct when not all the variables of 
+  the type of the eliminated object are bound in the elimination predicate
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
