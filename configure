@@ -23,6 +23,7 @@ done
 
 bytecamlc=ocamlc
 nativecamlc=ocamlopt
+camlp4o=camlp4o
 coq_debug_flag=
 coq_profile_flag=
 best_compiler=opt
@@ -80,6 +81,7 @@ while : ; do
                   arch=$2
 		  shift;;
     -opt|--opt) bytecamlc=ocamlc.opt
+                camlp4o=camlp4o.opt
                 nativecamlc=ocamlopt.opt;;
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
@@ -297,18 +299,20 @@ CAMLLIB=`ocamlc -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
 
 # Camlp4
 
-CAMLP4=`which camlp4`
+CAMLP4=`which $camlp4o`
 case $CAMLP4 in
 	"") echo "camlp4 is not present in your path!"
 	echo "Give me manually the path to the camlp4 executable [/usr/local/bin by default]: "
 	read CAMLP4
 	
 	case $CAMLP4 in
-		"") CAMLP4=/usr/local/bin/camlp4;;
-		*/camlp4) true;;
-		*/) CAMLP4=${CAMLP4}camlp4;;
-		*) CAMLP4=${CAMLP4}/camlp4;;
-	esac;;
+		"") CAMLP4=/usr/local/bin/camlp4o;;
+		*/camlp4) CAMLP4=${CAMLP4}o;;
+		*/camlp4o) true;;
+		*/) CAMLP4=${CAMLP4}camlp4o;;
+		*) CAMLP4=${CAMLP4}/camlp4o;;
+	esac
+	camlp4o=$CAMLP4;;
 esac
 
 if test ! -f $CAMLP4 ; then
@@ -394,6 +398,7 @@ case $ARCH in
 	    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
 	    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
 	    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+	    -e "s|CAMLP4TOOL|$camlp4o|" \
 	    -e "s|OSKIND|$OSTYPE|" \
 	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
 	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
@@ -419,6 +424,7 @@ case $ARCH in
 	    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
 	    -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
 	    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
+	    -e "s|CAMLP4TOOL|$camlp4o|" \
 	    -e "s|OSKIND|$OSTYPE|" \
 	    -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
 	    -e "s|COQPROFILEFLAG|$coq_profile_flag|" \

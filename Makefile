@@ -39,9 +39,9 @@ OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
-OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
-OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
-CAMLP4O=camlp4o -I . pa_extend.cmo q_MLast.cmo
+OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
+OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
+CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=-I states -I contrib/omega -I contrib/ring -I contrib/xml \
@@ -72,9 +72,9 @@ KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/cooking.cmo kernel/safe_typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
-	library/goptions.cmo \
+	library/goptions.cmo library/nametab.cmo \
 	library/global.cmo library/library.cmo library/states.cmo \
-	library/nametab.cmo library/impargs.cmo \
+	library/impargs.cmo \
         library/indrec.cmo library/declare.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
@@ -522,13 +522,13 @@ toplevel/mltop.cmx: toplevel/mltop.optml
 	$(OCAMLOPT) $(OPTFLAGS) -c -impl toplevel/mltop.optml -o $@
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
-	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
-	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 toplevel/mltop.ml: toplevel/mltop.ml4
-	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -554,13 +554,13 @@ clean::
 	ocamllex $<
 
 .ml4.cmo:
-	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .ml4.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .ml4.ml:
-	$(CAMLP4O) pr_o.cmo `$(CAMLP4DEPS) $<` -impl $< > $@ || rm -f $@
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl $< > $@ || rm -f $@
 
 .v.vo:
 	$(COQC) -q -$(BEST) -bindir bin $(COQINCLUDES) $<
