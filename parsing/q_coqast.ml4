@@ -8,6 +8,8 @@
 
 (* $Id$ *)
 
+(* camlp4deps: "pa_ifdef.cmo" *)
+
 open Util
 open Names
 open Libnames
