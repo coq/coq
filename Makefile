@@ -188,7 +188,7 @@ parsing/q_tactic.ml4: parsing/g_tactic.ml4
 parsing/q_ltac.ml4: parsing/g_ltac.ml4
 	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_ltac.ml4 -impl parsing/g_ltac.ml4
 
-SPECTAC= tactics/tauto.ml4 tactics/newtauto.ml4 tactics/eqdecide.ml4
+SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
 ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
 	tactics/eauto.ml4 
