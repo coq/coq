@@ -365,6 +365,7 @@ let txtn n s =
     |"an" -> ""
     |"une" -> "des"
     |"Soit" -> "Soient"
+    |"Let" -> "Let"
     | s -> s^"s"
 ;;
 

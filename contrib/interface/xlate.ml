@@ -291,7 +291,7 @@ let make_casec casety =
 let qualid_to_ct_ID =
   function
       Nvar(_, s) -> Some(CT_ident s)
-    | Node(_, ("QUALID"|"QUALIDARG"), l) ->
+    | Node(_, ("QUALID"|"QUALIDARG"|"QUALIDCONSTARG"), l) ->
 	(* // to be modified when qualified identifiers are introducted. *)
 	let rec f = 
 	  function
@@ -992,7 +992,7 @@ let rec cvt_arg =
 	Targ_unfold_ne_list(
 	CT_unfold_ne_list(mk_unfold_occ fst, List.map mk_unfold_occ l))
     | Node (_, "COMMAND", (c :: [])) -> Targ_command (xlate_formula c)
-    | Node (_, "CASTEDCOMMAND", (c :: [])) -> Targ_command (xlate_formula c)
+    | Node (_, ("CASTEDCOMMAND"|"CASTEDOPENCOMMAND"), (c :: [])) -> Targ_command (xlate_formula c)
     | Node (_, "BINDINGS", bl) ->
      Targ_spec_list (filter_binding_or_command_list (List.map cvt_arg bl))
     | Node (_, "BINDING", ((Node (_, "COMMAND", (c :: []))) :: [])) ->
@@ -1533,7 +1533,7 @@ let rec cvt_varg =
      Varg_call (CT_ident na, List.map cvt_varg l)
     | Node (_, "VERNACCALL", ((Id (_, na)) :: l)) ->
      Varg_call (CT_ident na, List.map cvt_varg l)
-    | Node (_, "QUALIDARG", _) as it ->
+    | Node (_, ("QUALIDARG"|"QUALIDCONSTARG"), _) as it ->
 	(match qualid_to_ct_ID it with
 	     Some x -> Varg_ident x
 	   | None -> assert false)
