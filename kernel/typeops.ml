@@ -290,7 +290,7 @@ let judge_of_case env ci pj cj lfj =
   let (_,kind) = dest_arity env pj.uj_type in
   let lft = Array.map j_type lfj in
   let univ' = check_branch_types env cj (lft,bty) in
-  ({ uj_val  = mkCase (ci, nf_betaiota pj.uj_val, cj.uj_val,
+  ({ uj_val  = mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val,
                        Array.map j_val lfj);
      uj_type = rslty },
   Constraint.union univ univ')
