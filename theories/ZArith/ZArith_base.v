@@ -28,6 +28,7 @@ Require Export Znat.
 Require Export auxiliary.
 Require Export Zsyntax.
 Require Export ZArith_dec.
+Require Export Zbool.
 Require Export Zmisc.
 Require Export Wf_Z.
 

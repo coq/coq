@@ -8,7 +8,12 @@
 
 (* $Id$ *)
 
-Require ZArith_base.
+Require BinInt.
+Require Zeven.
+Require Zorder.
+Require Zcompare.
+Require ZArith_dec.
+Require Zsyntax.
 Require Sumbool.
 
 (** The decidability of equality and order relations over
