@@ -113,10 +113,11 @@ theories/Bool/DecBool.vo: theories/Bool/DecBool.v
 theories/Bool/Sumbool.vo: theories/Bool/Sumbool.v
 theories/Bool/BoolEq.vo: theories/Bool/BoolEq.v theories/Bool/Bool.vo
 theories/Bool/Bvector.vo: theories/Bool/Bvector.v theories/Bool/Bool.vo theories/Bool/Sumbool.vo theories/Arith/Arith.vo
-theories/NArith/BinPos.vo: theories/NArith/BinPos.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Gt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
+theories/NArith/BinPos.vo: theories/NArith/BinPos.v
+theories/NArith/Pnat.vo: theories/NArith/Pnat.v theories/NArith/BinPos.vo theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Gt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
 theories/NArith/BinNat.vo: theories/NArith/BinNat.v theories/NArith/BinPos.vo
 theories/NArith/NArith.vo: theories/NArith/NArith.v theories/NArith/BinPos.vo theories/NArith/BinNat.vo
-theories/ZArith/BinInt.vo: theories/ZArith/BinInt.v theories/NArith/BinPos.vo theories/NArith/BinNat.vo theories/Arith/Plus.vo theories/Arith/Mult.vo
+theories/ZArith/BinInt.vo: theories/ZArith/BinInt.v theories/NArith/BinPos.vo theories/NArith/Pnat.vo theories/NArith/BinNat.vo theories/Arith/Plus.vo theories/Arith/Mult.vo
 theories/ZArith/Wf_Z.vo: theories/ZArith/Wf_Z.v theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo theories/ZArith/Znat.vo theories/ZArith/Zmisc.vo theories/ZArith/Zsyntax.vo theories/Arith/Wf_nat.vo
 theories/ZArith/Zsyntax.vo: theories/ZArith/Zsyntax.v theories/ZArith/BinInt.vo
 theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/ZArith_base.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zsqrt.vo theories/ZArith/Zpower.vo theories/ZArith/Zdiv.vo theories/ZArith/Zlogarithm.vo theories/ZArith/Zbool.vo
