@@ -10,10 +10,98 @@ open Inductive
 open Environ
 open Reduction
 open Instantiate
-open Redinfo
+
+(************************************************************************)
+(* Reduction of constant hiding fixpoints (e.g. for Simpl). The trick   *)
+(* is to reuse the name of the function after reduction of the fixpoint *)
 
 exception Elimconst
 exception Redelimination
+
+type constant_evaluation = 
+  | EliminationFix of (int * constr) list * int
+  | EliminationCases of int
+  | NotAnElimination
+
+(* We use a cache registered as a global table *)
+
+let eval_table = ref Spmap.empty
+
+type frozen = constant_evaluation Spmap.t
+
+let init () =
+  eval_table := Spmap.empty
+
+let freeze () =
+  !eval_table
+
+let unfreeze ct =
+  eval_table := ct
+
+let _ = 
+  Summary.declare_summary "evaluation"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init }
+
+
+(* Check that c is an "elimination constant"
+   [xn:An]..[x1:A1](<P>MutCase (Rel i) of f1..fk end g1 ..gp)
+   or [xn:An]..[x1:A1](Fix(f|t) (Rel i1) ..(Rel ip)) 
+    with i1..ip distinct variables not occuring in t 
+   keep relevenant information ([i1,Ai1;..;ip,Aip],n,b)
+   with b = true in case of a fixpoint in order to compute 
+   an equivalent of Fix(f|t)[xi<-ai] as 
+   [yip:Bip]..[yi1:Bi1](F bn..b1) 
+   == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel 1)..(Rel p))
+   with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1] *)
+
+let compute_consteval c = 
+  let rec srec n labs c =
+    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c in
+    match kind_of_term c' with
+      | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
+      | IsFix ((nv,i),(tys,_,bds)) -> 
+          if (List.length l) > n then raise Elimconst;
+	  let nbfix = Array.length bds in
+          let li = 
+            List.map
+	      (function d -> match kind_of_term d with
+                 | IsRel k ->
+                     if
+		       array_for_all (noccurn k) tys
+		       && array_for_all (noccurn (k+nbfix)) bds
+		     then 
+		       (k, List.nth labs (k-1)) 
+		     else 
+		       raise Elimconst
+                 | _ -> 
+		     raise Elimconst) l
+          in 
+	  if list_distinct (List.map fst li) then 
+	    EliminationFix (li,n) 
+          else 
+	    raise Elimconst
+      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
+      | _ -> raise Elimconst
+  in
+  try srec 0 [] c
+  with Elimconst -> NotAnElimination
+
+let constant_eval sp =
+  try
+    Spmap.find sp !eval_table
+  with Not_found -> begin
+    let v = 
+      let cb = Global.lookup_constant sp in
+      match cb.Declarations.const_body with
+	| None -> NotAnElimination
+	| Some v -> let c = Declarations.cook_constant v in compute_consteval c
+    in
+    eval_table := Spmap.add sp v !eval_table;
+    v
+  end
+
 
 let rev_firstn_liftn fn ln = 
   let rec rfprec p res l = 
@@ -40,7 +128,7 @@ let make_elim_fun f lv n largs =
   let ylv = List.map fst lv in
   let la' = list_map_i 
 	      (fun q aq ->
-		 try (Rel (p+1-(list_index (n-q) ylv))) 
+		 try (mkRel (p+1-(list_index (n-q) ylv))) 
 		 with Not_found -> aq) 0
               (List.map (lift p) labs) 
   in 
@@ -92,24 +180,23 @@ let reduce_mind_case_use_function env f mia =
 	let cofix_def = contract_cofix_use_function f cofix in
 	mkMutCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
-	  
+
 let special_red_case env whfun p c ci lf  =
   let rec redrec s = 
     let (constr, cargs) = whfun s in 
     match kind_of_term constr with 
-      | IsConst (sp,args) -> 
-          if evaluable_constant env constr then
-            let gvalue = constant_value env constr in
-            if reducible_mind_case gvalue then
-	      let build_fix_name id =
-		mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
-	      in reduce_mind_case_use_function env build_fix_name
-                   {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
-		    mci=ci; mlf=lf}
-            else 
-	      redrec (gvalue, cargs)
-          else 
-	    raise Redelimination
+      | IsConst (sp,args as cst) -> 
+	  (match constant_opt_value env cst with
+	     | Some gvalue ->
+		 if reducible_mind_case gvalue then
+		   let build_fix_name id =
+		     mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
+		   in reduce_mind_case_use_function env build_fix_name
+			{mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
+			 mci=ci; mlf=lf}
+		 else
+		   redrec (gvalue, cargs)
+             | None -> raise Redelimination)
       | _ ->
           if reducible_mind_case constr then
             reduce_mind_case
@@ -122,11 +209,11 @@ let special_red_case env whfun p c ci lf  =
 
 let rec red_elim_const env sigma k largs =
   if not (evaluable_constant env k) then raise Redelimination;
-  let (sp, args) = destConst k in
+  let (sp, args as cst) = destConst k in
   let elim_style = constant_eval sp in
   match elim_style with
     | EliminationCases n when stack_args_size largs >= n -> begin
-	let c = constant_value env k in
+	let c = constant_value env cst in
 	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
 	match kind_of_term c' with
 	  | IsMutCase (ci,p,c,lf) ->
@@ -135,7 +222,7 @@ let rec red_elim_const env sigma k largs =
 	  | _ -> assert false
       end
     | EliminationFix (lv,n) when stack_args_size largs >= n -> begin
-	let c = constant_value env k in
+	let c = constant_value env cst in
 	let d, lrest = whd_betadeltaeta_state env sigma (c, largs) in
 	match kind_of_term d with
 	  | IsFix fix -> 
@@ -151,17 +238,17 @@ let rec red_elim_const env sigma k largs =
 and construct_const env sigma = 
   let rec hnfstack (x, stack as s) =
     match kind_of_term x with
-      | IsConst _  ->
+      | IsConst cst  ->
           (try
 	     hnfstack (red_elim_const env sigma x stack)
            with Redelimination ->
-             if evaluable_constant env x then 
-	       let cval = constant_value env x in
-	       (match kind_of_term cval with
-                  | IsCoFix _ -> s
-                  | _ -> hnfstack (cval, stack))
-             else 
-	       raise Redelimination)
+	     (match constant_opt_value env cst with
+		| Some cval ->
+		    (match kind_of_term cval with
+                       | IsCoFix _ -> s
+                       | _ -> hnfstack (cval, stack))
+		| None ->
+		    raise Redelimination))
       | IsCast (c,_) -> hnfstack (c, stack)
       | IsAppL (f,cl) -> hnfstack (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
@@ -181,6 +268,30 @@ and construct_const env sigma =
   in 
   hnfstack
 
+(***********************************************************************)
+(*            Special Purpose Reduction Strategies                     *)
+
+(* Red reduction tactic: reduction to a product *)
+
+let internal_red_product env sigma c = 
+  let rec redrec x =
+    match kind_of_term x with
+      | IsAppL (f,l) -> appvect (redrec f, l)
+      | IsConst cst -> constant_value env cst
+      | IsEvar ev -> existential_value sigma ev
+      | IsCast (c,_) -> redrec c
+      | IsProd (x,a,b) -> mkProd (x, a, redrec b)
+      | _ -> raise Redelimination
+  in
+  let c' =
+    try redrec c with NotEvaluableConst _ | NotInstantiatedEvar ->
+					      raise Redelimination
+  in nf_betaiota env sigma (redrec c)
+
+let red_product env sigma c = 
+  try internal_red_product env sigma c
+  with Redelimination -> error "Not reducible"
+
 (* Hnf reduction tactic: *)
 
 let hnf_constr env sigma c = 
@@ -190,19 +301,19 @@ let hnf_constr env sigma c =
           (match decomp_stack largs with
              | None      -> app_stack s
              | Some (a,rest) -> stacklam redrec [a] c rest)
+      | IsLetIn (n,b,_,c) -> stacklam redrec [b] c largs
       | IsAppL (f,cl)   -> redrec (f, append_stack cl largs)
-      | IsConst _ ->
+      | IsConst cst ->
           (try
              let (c',lrest) = red_elim_const env sigma x largs in 
 	     redrec (c', lrest)
            with Redelimination ->
-             if evaluable_constant env x then
-               let c = constant_value env x in
-	       (match kind_of_term c with 
-                  | IsCoFix _ -> app_stack (x,largs)
-		  | _ ->  redrec (c, largs))
-             else 
-	       app_stack s)
+             match constant_opt_value env cst with
+	       | Some c ->
+		   (match kind_of_term c with 
+                      | IsCoFix _ -> app_stack (x,largs)
+		      | _ ->  redrec (c, largs))
+	       | None -> app_stack s)
       | IsCast (c,_) -> redrec (c, largs)
       | IsMutCase (ci,p,c,lf) ->
           (try
@@ -229,6 +340,7 @@ let whd_nf env sigma c =
           (match decomp_stack stack with
              | None -> (c,empty_stack)
              | Some (a1,rest) -> stacklam nf_app [a1] c2 rest)
+      | IsLetIn (n,b,_,c) -> stacklam nf_app [b] c stack
       | IsAppL (f,cl) -> nf_app (f, append_stack cl stack)
       | IsCast (c,_) -> nf_app (c, stack)
       | IsConst _ ->
@@ -251,10 +363,163 @@ let whd_nf env sigma c =
 
 let nf env sigma c = strong whd_nf env sigma c
 
+
+(* linear substitution (following pretty-printer) of the value of name in c.
+ * n is the number of the next occurence of name.
+ * ol is the occurence list to find. *)
+let rec substlin env name n ol c =
+  match kind_of_term c with
+    | IsConst (sp,_ as const) when sp = name ->
+        if List.hd ol = n then
+          try 
+	    (n+1, List.tl ol, constant_value env const)
+          with
+	      NotEvaluableConst _ ->
+		errorlabstrm "substlin"
+		  [< print_sp sp; 'sTR " is not a defined constant" >]
+        else 
+	  ((n+1),ol,c)
+
+    (* INEFFICIENT: OPTIMIZE *)
+    | IsAppL (c1,cl) ->
+        Array.fold_left 
+	  (fun (n1,ol1,c1') c2 ->
+	     (match ol1 with 
+                | [] -> (n1,[],applist(c1',[c2]))
+                | _  ->
+                    let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+                    (n2,ol2,applist(c1',[c2']))))
+          (substlin env name n ol c1) cl
+
+    | IsLambda (na,c1,c2) ->
+        let (n1,ol1,c1') = substlin env name n ol c1 in
+        (match ol1 with 
+           | [] -> (n1,[],mkLambda (na,c1',c2))
+           | _  ->
+               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+               (n2,ol2,mkLambda (na,c1',c2')))
+
+    | IsLetIn (na,c1,t,c2) ->
+        let (n1,ol1,c1') = substlin env name n ol c1 in
+        (match ol1 with 
+           | [] -> (n1,[],mkLambda (na,c1',c2))
+           | _  ->
+               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+               (n2,ol2,mkLambda (na,c1',c2')))
+
+    | IsProd (na,c1,c2) ->
+        let (n1,ol1,c1') = substlin env name n ol c1 in
+        (match ol1 with 
+           | [] -> (n1,[],mkProd (na,c1',c2))
+           | _  ->
+               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+               (n2,ol2,mkProd (na,c1',c2')))
+	
+    | IsMutCase (ci,p,d,llf) -> 
+        let rec substlist nn oll = function
+          | []     -> (nn,oll,[])
+          | f::lfe ->
+              let (nn1,oll1,f') = substlin env name nn oll f in
+              (match oll1 with
+                 | [] -> (nn1,[],f'::lfe)
+                 | _  ->
+                     let (nn2,oll2,lfe') = substlist nn1 oll1 lfe in
+                     (nn2,oll2,f'::lfe'))
+	in
+	let (n1,ol1,p') = substlin env name n ol p in  (* ATTENTION ERREUR *)
+        (match ol1 with                                 (* si P pas affiche *)
+           | [] -> (n1,[],mkMutCase (ci, p', d, llf))
+           | _  ->
+               let (n2,ol2,d') = substlin env name n1 ol1 d in
+               (match ol2 with
+		  | [] -> (n2,[],mkMutCase (ci, p', d', llf))
+		  | _  -> 
+	              let (n3,ol3,lf') = substlist n2 ol2 (Array.to_list llf)
+                      in (n3,ol3,mkMutCaseL (ci, p', d', lf'))))
+        
+    | IsCast (c1,c2)   ->
+        let (n1,ol1,c1') = substlin env name n ol c1 in
+        (match ol1 with 
+           | [] -> (n1,[],mkCast (c1',c2))
+           | _  ->
+               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+               (n2,ol2,mkCast (c1',c2')))
+
+    | IsFix _ -> 
+        (warning "do not consider occurrences inside fixpoints"; (n,ol,c))
+	
+    | IsCoFix _ -> 
+        (warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
+
+    | (IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _
+      |IsEvar _|IsConst _|IsMutInd _|IsMutConstruct _) -> (n,ol,c)
+	
+open Closure
+	  
+let unfold env sigma name =
+  clos_norm_flags (unfold_flags name) env sigma
+
+
+(* unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)
+ * Unfolds the constant name in a term c following a list of occurrences occl.
+ * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
+ * Performs a betaiota reduction after unfolding. *)
+let unfoldoccs env sigma (occl,name) c =
+  match occl with
+    | []  -> unfold env sigma name c
+    | l -> 
+        match substlin env name 1 (Sort.list (<) l) c with
+          | (_,[],uc) -> nf_betaiota env sigma uc
+          | (1,_,_) -> error ((string_of_path name)^" does not occur")
+          | _ -> error ("bad occurrence numbers of "^(string_of_path name))
+
+(* Unfold reduction tactic: *)
+let unfoldn loccname env sigma c = 
+  List.fold_left (fun c occname -> unfoldoccs env sigma occname c) c loccname
+
+(* Re-folding constants tactics: refold com in term c *)
+let fold_one_com com env sigma c =
+  let rcom =
+    try red_product env sigma com
+    with Redelimination -> error "Not reducible" in
+  subst1 com (subst_term rcom c)
+
+let fold_commands cl env sigma c =
+  List.fold_right (fun com -> fold_one_com com env sigma) (List.rev cl) c
+
+
+(* call by value reduction functions *)
+let cbv_norm_flags flags env sigma t =
+  cbv_norm (create_cbv_infos flags env sigma) t
+
+let cbv_beta env = cbv_norm_flags beta env
+let cbv_betaiota env = cbv_norm_flags betaiota env
+let cbv_betadeltaiota env =  cbv_norm_flags betadeltaiota env
+
+let compute = cbv_betadeltaiota
+
+(* Pattern *)
+
+(* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
+ * the specified occurrences. *)
+
+let abstract_scheme env (locc,a,ta) t =
+  let na = named_hd env ta Anonymous in
+  if occur_meta ta then error "cannot find a type for the generalisation";
+  if occur_meta a then 
+    mkLambda (na,ta,t)
+  else 
+    mkLambda (na, ta,subst_term_occ locc a t)
+
+
+let pattern_occs loccs_trm_typ env sigma c =
+  let abstr_trm = List.fold_right (abstract_scheme env) loccs_trm_typ c in
+  applist(abstr_trm, List.map (fun (_,t,_) -> t) loccs_trm_typ)
+
 (* Generic reduction: reduction functions used in reduction tactics *)
 
 type red_expr =
-  | Red
+  | Red of bool
   | Hnf
   | Simpl
   | Cbv of Closure.flags
@@ -264,7 +529,7 @@ type red_expr =
   | Pattern of (int list * constr * constr) list
 
 let reduction_of_redexp = function
-  | Red -> red_product
+  | Red internal -> if internal then internal_red_product else red_product
   | Hnf -> hnf_constr
   | Simpl -> nf
   | Cbv f -> cbv_norm_flags f
@@ -283,13 +548,13 @@ let one_step_reduce env sigma c =
              | None      -> error "Not reducible 1"
              | Some (a,rest) -> (subst1 a c, rest))
       | IsAppL (f,cl) -> redrec (f, append_stack cl largs)
-      | IsConst _ ->
+      | IsConst cst ->
           (try
              red_elim_const env sigma x largs
            with Redelimination ->
-             if evaluable_constant env x then
-               constant_value env x, largs
-             else error "Not reductible 1")
+	     try
+               constant_value env cst, largs
+             with NotEvaluableConst _ -> error "Not reductible 1")
 
       | IsMutCase (ci,p,c,lf) ->
           (try
