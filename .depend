@@ -11,7 +11,7 @@ kernel/esubst.cmi: lib/util.cmi
 kernel/indtypes.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
 kernel/inductive.cmi: kernel/declarations.cmi kernel/environ.cmi \
-    kernel/names.cmi kernel/term.cmi kernel/type_errors.cmi kernel/univ.cmi 
+    kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/names.cmi: lib/predicate.cmi 
 kernel/reduction.cmi: kernel/environ.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
@@ -331,11 +331,9 @@ dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     proofs/refiner.cmx kernel/sign.cmx lib/system.cmx proofs/tacmach.cmx \
     kernel/term.cmx parsing/termast.cmx pretyping/termops.cmx kernel/univ.cmx 
 kernel/closure.cmo: kernel/environ.cmi kernel/esubst.cmi kernel/names.cmi \
-    lib/pp.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
-    kernel/closure.cmi 
+    lib/pp.cmi kernel/term.cmi lib/util.cmi kernel/closure.cmi 
 kernel/closure.cmx: kernel/environ.cmx kernel/esubst.cmx kernel/names.cmx \
-    lib/pp.cmx kernel/term.cmx kernel/univ.cmx lib/util.cmx \
-    kernel/closure.cmi 
+    lib/pp.cmx kernel/term.cmx lib/util.cmx kernel/closure.cmi 
 kernel/conv_oracle.cmo: kernel/closure.cmi kernel/names.cmi \
     kernel/conv_oracle.cmi 
 kernel/conv_oracle.cmx: kernel/closure.cmx kernel/names.cmx \
@@ -2239,25 +2237,48 @@ contrib/xml/xmlentries.cmx: lib/util.cmx toplevel/vernacinterp.cmx \
 contrib/xml/xml.cmo: contrib/xml/xml.cmi 
 contrib/xml/xml.cmx: contrib/xml/xml.cmi 
 tactics/tauto.cmo: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo
+tactics/tauto.cmx: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo
 contrib/correctness/psyntax.cmo: parsing/grammar.cma
+contrib/correctness/psyntax.cmx: parsing/grammar.cma
 contrib/field/field.cmo: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo
+contrib/field/field.cmx: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo
 parsing/lexer.cmo: 
+parsing/lexer.cmx: 
 parsing/q_coqast.cmo: 
+parsing/q_coqast.cmx: 
 parsing/g_prim.cmo: 
+parsing/g_prim.cmx: 
 parsing/pcoq.cmo: 
+parsing/pcoq.cmx: 
 parsing/g_basevernac.cmo: parsing/grammar.cma
+parsing/g_basevernac.cmx: parsing/grammar.cma
 parsing/g_minicoq.cmo: parsing/grammar.cma
+parsing/g_minicoq.cmx: parsing/grammar.cma
 parsing/g_vernac.cmo: parsing/grammar.cma
+parsing/g_vernac.cmx: parsing/grammar.cma
 parsing/g_proofs.cmo: parsing/grammar.cma
+parsing/g_proofs.cmx: parsing/grammar.cma
 parsing/g_cases.cmo: parsing/grammar.cma
+parsing/g_cases.cmx: parsing/grammar.cma
 parsing/g_constr.cmo: parsing/grammar.cma
+parsing/g_constr.cmx: parsing/grammar.cma
 parsing/g_tactic.cmo: parsing/grammar.cma
+parsing/g_tactic.cmx: parsing/grammar.cma
 parsing/g_ltac.cmo: parsing/grammar.cma
+parsing/g_ltac.cmx: parsing/grammar.cma
 parsing/extend.cmo: parsing/grammar.cma
+parsing/extend.cmx: parsing/grammar.cma
 toplevel/mltop.cmo: 
+toplevel/mltop.cmx: 
 lib/pp.cmo: 
+lib/pp.cmx: 
 contrib/xml/xml.cmo: 
+contrib/xml/xml.cmx: 
 contrib/xml/xmlcommand.cmo: 
+contrib/xml/xmlcommand.cmx: 
 contrib/interface/line_parser.cmo: 
+contrib/interface/line_parser.cmx: 
 tools/coq_makefile.cmo: 
+tools/coq_makefile.cmx: 
 tools/coq-tex.cmo: 
+tools/coq-tex.cmx: 
