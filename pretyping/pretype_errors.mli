@@ -10,6 +10,7 @@
 
 (*i*)
 open Pp
+open Util
 open Names
 open Term
 open Sign
