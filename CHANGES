@@ -3,17 +3,17 @@ Changes from V8.0pl1 to V8.0pl2
 
 Notations
 
-- "format" option now aware of recursive notations
+- Option "format" now aware of recursive notations
 
 Bug fixes
 
-- "fail n" for n<>0 now works (notice that each "match term with"
+- Tactic "fail n" for n<>0 now works (notice that each "match term with"
   block decreases the failure level, in accordance with the intuition but
   not in conformity with the reference manual)
-- option -dump-glob now strips module segment as expected by coqdoc (which
+- Option -dump-glob now strips module segment as expected by coqdoc (which
   is still not aware of modules)
 - See coq-bugs web page for a full list of fixed bugs (look for
-  fixes in V8-0-bugfix before November ...)
+  fixes committed before Jan 2004 to cvs version V8-0-bugfix)
 
 Changes from V8.0 to V8.0pl1
 ============================
