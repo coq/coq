@@ -1961,15 +1961,15 @@ tactics/nbtermdn.cmx: lib/util.cmx tactics/termdn.cmx kernel/term.cmx \
 tactics/refine.cmo: lib/util.cmi pretyping/typing.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
     proofs/tacmach.cmi kernel/sign.cmi pretyping/retyping.cmi \
-    pretyping/reductionops.cmi kernel/reduction.cmi parsing/printer.cmi \
-    lib/pp.cmi kernel/names.cmi pretyping/evd.cmi pretyping/evarutil.cmi \
-    kernel/environ.cmi pretyping/coercion.cmi tactics/refine.cmi 
+    kernel/reduction.cmi parsing/printer.cmi lib/pp.cmi kernel/names.cmi \
+    pretyping/evd.cmi pretyping/evarutil.cmi kernel/environ.cmi \
+    tactics/refine.cmi 
 tactics/refine.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
     proofs/tacmach.cmx kernel/sign.cmx pretyping/retyping.cmx \
-    pretyping/reductionops.cmx kernel/reduction.cmx parsing/printer.cmx \
-    lib/pp.cmx kernel/names.cmx pretyping/evd.cmx pretyping/evarutil.cmx \
-    kernel/environ.cmx pretyping/coercion.cmx tactics/refine.cmi 
+    kernel/reduction.cmx parsing/printer.cmx lib/pp.cmx kernel/names.cmx \
+    pretyping/evd.cmx pretyping/evarutil.cmx kernel/environ.cmx \
+    tactics/refine.cmi 
 tactics/setoid_replace.cmo: toplevel/vernacexpr.cmo lib/util.cmi \
     pretyping/unification.cmi pretyping/typing.cmi interp/topconstr.cmi \
     pretyping/termops.cmi kernel/term.cmi tactics/tactics.cmi \
