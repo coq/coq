@@ -4,9 +4,11 @@
 open Names
 open Term
 
+val add_ml_import : global_reference -> identifier -> unit
 val is_ml_import : global_reference -> bool
 val find_ml_import : global_reference -> identifier
 
+val add_ml_extract : global_reference -> identifier -> unit
 val find_ml_extract : global_reference -> identifier
 val is_ml_extract : global_reference -> bool
 
@@ -16,14 +18,12 @@ val next_global_ident : Names.identifier -> Names.identifier
 val ml_import_tab : (Term.sorts Term.oper, Names.identifier) Hashtabl.t
 val mL_INDUCTIVES : Names.section_path list ref
 val add_ml_inductive_import : Names.section_path -> unit
-val add_ml_import : Term.sorts Term.oper -> Names.identifier -> unit
 val sp_is_ml_import : Names.section_path -> bool
 val sp_prod : Names.section_path
 val sp_is_ml_import_or_prod : Names.section_path -> bool
 val inMLImport : Term.sorts Term.oper * Names.identifier -> Libobject.obj
 val outMLImport : Libobject.obj -> Term.sorts Term.oper * Names.identifier
 val ml_extract_tab : (Term.sorts Term.oper, Names.identifier) Hashtabl.t
-val add_ml_extract : Term.sorts Term.oper -> Names.identifier -> unit
 val sp_is_ml_extract : Names.section_path -> bool
 val inMLExtract : Term.sorts Term.oper * Names.identifier -> Libobject.obj
 val outMLExtract : Libobject.obj -> Term.sorts Term.oper * Names.identifier

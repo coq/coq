@@ -2,6 +2,11 @@
 (*i $Id$ i*)
 
 open Pp
+open Names
+open Term
+open Libobject
+open Declare
+open Summary
 
 (* TODO : move this function to another file, like more_util. *)
 
@@ -20,29 +25,29 @@ let rec next_global_ident id =
 
 (* A table to keep the ML imports. *)
 
-let ml_import_tab = (Hashtabl.create 17 : (sorts oper, identifier) Hashtabl.t)
+let ml_import_tab = ref (Gmap.empty : (global_reference, identifier) Gmap.t)
 
-let mL_INDUCTIVES = ref ([] : section_path list)
+let ml_inductives = ref ([] : section_path list)
 
 let add_ml_inductive_import sp =
-  if not (List.mem sp !mL_INDUCTIVES) then
-    mL_INDUCTIVES := sp :: !mL_INDUCTIVES
+  if not (List.mem sp !ml_inductives) then
+    ml_inductives := sp :: !ml_inductives
 
 let add_ml_import imp id =
-  Hashtabl.add ml_import_tab imp id ;
+  ml_import_tab := Gmap.add imp id !ml_import_tab;
   match imp with
-    MutInd (sp,_) -> add_ml_inductive_import sp
-  | _ -> ()
+    | IndRef (sp,_) -> add_ml_inductive_import sp
+    | _ -> ()
 
-let find_ml_import imp = Hashtabl.find ml_import_tab imp
+let find_ml_import imp = Gmap.find imp !ml_import_tab
 
 let is_ml_import op =
   try let _ = find_ml_import op in true with Not_found -> false
 
 let sp_is_ml_import sp =
-     (is_ml_import (Const sp))
-  or (is_ml_import (MutInd (sp,0)))
-  or (is_ml_import (MutConstruct ((sp,0),1)))
+     (is_ml_import (ConstRef sp))
+  or (is_ml_import (IndRef (sp,0)))
+  or (is_ml_import (ConstructRef ((sp,0),1)))
 
 let sp_prod = path_of_string "#Datatypes#prod.fw"
 
@@ -51,71 +56,57 @@ let sp_is_ml_import_or_prod sp =
 
 let inMLImport,outMLImport =
   declare_object ("MLIMPORT",
-     {load_function = (fun _ -> ());
-      cache_function         = (fun (_,(imp,id)) -> add_ml_import imp id) ;
-      specification_function = (fun x -> x) })
+     { load_function = (fun _ -> ());
+       open_function = (fun (_,(imp,id)) -> add_ml_import imp id);
+       cache_function = (fun (_,(imp,id)) -> add_ml_import imp id);
+       export_function = (fun x -> Some x) })
 
 (* A table to keep the extractions to ML objects *)
 
-let ml_extract_tab = (Hashtabl.create 17 : (sorts oper, identifier) Hashtabl.t)
+let ml_extract_tab = ref (Gmap.empty : (global_reference, identifier) Gmap.t)
 
 let add_ml_extract op id =
-  Hashtabl.add ml_extract_tab op id;
+  ml_extract_tab := Gmap.add op id !ml_extract_tab;
   match op with 
-      MutInd (sp,_) -> add_ml_inductive_import sp
+    | IndRef (sp,_) -> add_ml_inductive_import sp
     | _ -> ()
 
-let find_ml_extract = Hashtabl.find ml_extract_tab
+let find_ml_extract gr = Gmap.find gr !ml_extract_tab
 
 let is_ml_extract op = 
   try let _ = find_ml_extract op in true with Not_found -> false
 
 let sp_is_ml_extract sp =
-     (is_ml_extract (Const sp))
-  or (is_ml_extract (MutInd (sp,0)))
-  or (is_ml_extract (MutConstruct ((sp,0),1)))
+     (is_ml_extract (ConstRef sp))
+  or (is_ml_extract (IndRef (sp,0)))
+  or (is_ml_extract (ConstructRef ((sp,0),1)))
 
 let inMLExtract,outMLExtract =
   declare_object ("MLEXTRACT",
-     {load_function = (fun _ -> ());
-      cache_function         = (fun (_,(op,id)) -> add_ml_extract op id) ;
-      specification_function = (fun x -> x) })
+     { load_function = (fun _ -> ());
+       open_function = (fun (_,(op,id)) -> add_ml_extract op id);
+       cache_function = (fun (_,(op,id)) -> add_ml_extract op id);
+       export_function = (fun x -> Some x) })
 
 let is_import_or_extract sp = sp_is_ml_import sp or sp_is_ml_extract sp
 
 (* Those two tables are rolled-back *)
 
 let freeze () =
-  (Hashtabl.freeze ml_import_tab, !mL_INDUCTIVES,
-   Hashtabl.freeze ml_extract_tab)
+  (!ml_import_tab, !ml_inductives, !ml_extract_tab)
 
 let unfreeze (ft,stk,et) =
-  Hashtabl.unfreeze ft ml_import_tab;
-  mL_INDUCTIVES := stk;
-  Hashtabl.unfreeze et ml_extract_tab
+  ml_import_tab := ft;
+  ml_inductives := stk;
+  ml_extract_tab := et
 
 let _ = declare_summary "MLIMPORT-TABLE"
   { freeze_function   = freeze ;
     unfreeze_function = unfreeze ;
-    init_function     = (fun () -> Hashtabl.clear ml_import_tab;
-      	       	       	       	   mL_INDUCTIVES := [];
-				   Hashtabl.clear ml_extract_tab) }
-
-(* Replace CCI section_path with FW section_path in a term. *)
-
-let whd_fwify = function
-    DOPN(Const sp,cl)               -> DOPN(Const (fwsp_of sp),cl)
-  | DOPN(MutInd(sp,i),cl)           -> DOPN(MutInd (fwsp_of sp,i),cl)
-  | DOPN(MutConstruct((sp,j),i),cl) -> DOPN(MutConstruct((fwsp_of sp,j),i),cl)
-  | x                               -> x
-
-let fwify = strong whd_fwify
-
-let fwsp_of_id id =
-  try Nametab.fw_sp_of_id id
-  with Not_found -> errorlabstrm "fwsp_of_id"
-       [< 'sTR(string_of_id id) ; 'sTR" is not a defined informative object" >]
-
+    init_function     = (fun () -> ml_import_tab := Gmap.empty;
+      	       	       	       	   ml_inductives := [];
+				   ml_extract_tab := Gmap.empty);
+    survive_section = false }
 
 (**************************************************************************)
 (*                      ML Import file__name : type.                      *)

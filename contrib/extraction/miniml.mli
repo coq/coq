@@ -2,6 +2,7 @@
 (*i $Id$ i*)
 
 open Names
+open Term
 
 (* identifiers of type are either parameters or type names. *)
 
@@ -13,7 +14,8 @@ type ml_type =
   | Tvar  of ml_typeid
   | Tapp  of ml_type list
   | Tarr  of ml_type * ml_type
-  | Tglob of identifier
+  | Tglob of global_reference
+  | Tprop
       
 (* ML inductive types. *)
 
@@ -25,7 +27,7 @@ type ml_ast =
   | MLrel   of int
   | MLapp   of ml_ast * ml_ast list
   | MLlam   of identifier * ml_ast
-  | MLglob  of identifier
+  | MLglob  of global_reference
   | MLcons  of int * identifier * ml_ast list
   | MLcase  of ml_ast * (identifier * identifier list * ml_ast) array
   | MLfix   of int * bool * (identifier list) * (ml_ast list)
