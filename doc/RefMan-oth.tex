@@ -58,12 +58,6 @@ was introduced.
 This command displays the type of {\term}. When called in proof mode, 
 the term is checked in the local context of the current subgoal.
 
-\begin{Variants}
-\item \texttt{Check {\num} {\term}}\\
-  Displays the type of {\term} in the context of the {\num}-th
-  subgoal.
-\end{Variants}
-
 \subsection{\tt Eval {\rm\sl convtactic} in {\term}.}
 \comindex{Eval}
 
@@ -71,11 +65,6 @@ This command performs the specified reduction on {\term}, and displays
 the resulting term with its type. The term to be reduced may depend on
 hypothesis introduced in the first subgoal (if a proof is in
 progress).
-
-\begin{Variants}
-\item \texttt{Eval {\num} {\rm\sl convtactic} in {\term}.}\\
-  Evaluates {\term} in the context of the {\num}-th subgoal.
-\end{Variants}
 
 \SeeAlso section~\ref{Conversion-tactics}.
 
@@ -210,8 +199,8 @@ SearchAbout [ Zmult Zplus "distr" ].
 \end{coq_example}
 
 \item
-{\tt SearchAbout {\term} outside {\module$_1$}...{\module$_n$}.}\\
-{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ] outside {\module$_1$}...{\module$_n$}.}
+{\tt SearchAbout {\term} inside {\module$_1$}...{\module$_n$}.}\\
+{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ] inside {\module$_1$}...{\module$_n$}.}
 
 This restricts the search to constructions defined in modules
 {\module$_1$}...{\module$_n$}.
@@ -435,17 +424,6 @@ waste of time.
 
 TODO + variant Export
 
-
-
-\subsection{\tt Read Module {\qualid}.}\comindex{Read Module}
-This looks for a physical file \texttt{file.vo} mapped to logical name
-{\qualid} in the current {\Coq} loadpath, then loads its contents but
-does not open it: its contents remains accesible to the user only by
-using names prefixed by the module name (i.e. {\qualid} or any other
-qualified names denoting the same module).
-%  The implementation file
-% ({\ident}{\tt.vo}) is searched first, then the specification file
-% ({\ident}{\tt.vi}) in case of failure.
 
 \subsection{\tt Require {\dirpath}.}
 \label{Require}

@@ -19,10 +19,10 @@ MANUEL DE REFERENCE
 
 
 \part{The proof engine}
-\include{RefMan-oth.v}% Vernacular commands			JCF
+\include{RefMan-oth.v}% Vernacular commands			JCF -fait
 \include{RefMan-pro}% Proof handling				Clement
 \include{RefMan-tac.v}% Tactics and tacticals			JCF
-%% ajouter JProver/Ground/CC					Pierre C
+%% ajouter JProver/Ground/CC					Pierre C -fait
 \include{RefMan-tacex.v}% Detailed Examples of tactics		JCF
 
 \part{User extensions}
