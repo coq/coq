@@ -428,7 +428,7 @@ let subst_cases_pattern loc aliases intern subst scopes a =
       let _,args = list_chop nparams args in
       let (idsl,pl) = List.split (List.map (aux ([],[]) subst) args) in
       aliases::List.flatten idsl, PatCstr (loc,c,pl,alias_of aliases)
-  | AList (x,y,iter,terminator,lassoc) ->
+  | AList (x,_,iter,terminator,lassoc) ->
       (try 
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (a,(scopt,subscopes)) = List.assoc x subst in
@@ -437,7 +437,7 @@ let subst_cases_pattern loc aliases intern subst scopes a =
         let idsl,v =
 	  List.fold_right (fun a (allidsl,t) -> 
             let idsl,u = aux ([],[]) ((x,(a,(scopt,subscopes)))::subst) iter in
-            idsl::allidsl, subst_pat_iterator y t u)
+            idsl::allidsl, subst_pat_iterator ldots_var t u)
             (if lassoc then List.rev l else l) ([idslt],termin) in
         aliases::List.flatten idsl, v
       with Not_found -> 
@@ -688,7 +688,7 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  RVar (loc,id)
       end
-  | AList (x,y,iter,terminator,lassoc) ->
+  | AList (x,_,iter,terminator,lassoc) ->
       (try 
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (a,(scopt,subscopes)) = List.assoc x subst in
@@ -697,7 +697,7 @@ let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
             terminator in
         let l = decode_constrlist_value a in
 	List.fold_right (fun a t -> 
-          subst_iterator y t
+          subst_iterator ldots_var t
             (subst_aconstr_in_rawconstr loc interp 
               ((x,(a,(scopt,subscopes)))::subst)
               (ids,None,scopes) iter))

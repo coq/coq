@@ -22,8 +22,9 @@ open Term
 (* This is the subtype of rawconstr allowed in syntactic extensions *)
 
 (* For AList: first constr is iterator, second is terminator;
-   first id is place of n-th argument in iterator and snd id is recursive
-   place in iterator; boolean is associativity *)
+   first id is where each argument of the list has to be substituted 
+   in iterator and snd id is alternative name just for printing;
+   boolean is associativity *)
 
 type aconstr =
   (* Part common to rawconstr and cases_pattern *)
@@ -50,10 +51,21 @@ let name_app f e = function
   | Name id -> let (id, e) = f id e in (Name id, e)
   | Anonymous -> Anonymous, e
 
+let rec subst_rawvars l = function
+  | RVar (_,id) as r -> (try List.assoc id l with Not_found -> r)
+  | r -> map_rawconstr (subst_rawvars l) r (* assume: id is not binding *)
+
+let ldots_var = id_of_string ".."
+
 let rawconstr_of_aconstr_with_binders loc g f e = function
   | AVar id -> RVar (loc,id)
   | AApp (a,args) -> RApp (loc,f e a, List.map (f e) args)
-  | AList _ -> anomaly "Recursive patterns of notations are not supported while translating to rawconstr"
+  | AList (x,y,iter,tail,swap) ->
+      let t = f e tail in let it = f e iter in
+      let innerl = (ldots_var,t)::(if swap then [] else [x,RVar(loc,y)]) in
+      let inner = RApp (loc,RVar (loc,ldots_var),[subst_rawvars innerl it]) in
+      let outerl = (ldots_var,inner)::(if swap then [x,RVar(loc,y)] else []) in
+      subst_rawvars outerl it
   | ALambda (na,ty,c) ->
       let na,e = name_app g e na in RLambda (loc,na,f e ty,f e c)
   | AProd (na,ty,c) ->
@@ -193,8 +205,6 @@ let add_name r = function
   | Anonymous -> ()
   | Name id -> r := id :: !r
 
-let ldots_var = id_of_string ".."
-
 let has_ldots =
   List.exists
     (function RApp (_,RVar(_,v),_) when v = ldots_var -> true | _ -> false)
@@ -294,7 +304,7 @@ allowed in abbreviatable expressions"
       let iter =
         if order then RApp (loc,f2,ll2@RVar (loc,ldots_var)::lr2)
         else RApp (loc,f1,ll1@RVar (loc,ldots_var)::lr1) in
-      (if order then y else x), ldots_var, aux iter, aux t, order
+      (if order then y else x),(if order then x else y), aux iter, aux t, order
   | _ -> error "One end of the recursive pattern is not an application"
     
   and make_aconstr_list f args =
@@ -355,9 +365,9 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
   | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
       List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
-  | RApp (_,f1,l1), AList (x,y,(AApp (f2,l2) as iter),termin,lassoc) 
+  | RApp (_,f1,l1), AList (x,_,(AApp (f2,l2) as iter),termin,lassoc) 
       when List.length l1 = List.length l2 ->
-      match_alist alp metas sigma (f1::l1) (f2::l2) x y iter termin lassoc
+      match_alist alp metas sigma (f1::l1) (f2::l2) x iter termin lassoc
   | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
      match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
   | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
@@ -384,21 +394,21 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | (RDynamic _ | RRec _ | REvar _), _ 
   | _,_ -> raise No_match
 
-and match_alist alp metas sigma l1 l2 x y iter termin lassoc =
+and match_alist alp metas sigma l1 l2 x iter termin lassoc =
   (* match the iterator at least once *)
-  let sigma = List.fold_left2 (match_ alp (y::metas)) sigma l1 l2 in
+  let sigma = List.fold_left2 (match_ alp (ldots_var::metas)) sigma l1 l2 in
   (* Recover the recursive position *)
-  let rest = List.assoc y sigma in
+  let rest = List.assoc ldots_var sigma in
   (* Recover the first element *)
   let t1 = List.assoc x sigma in
-  let sigma = List.remove_assoc x (List.remove_assoc y sigma) in
+  let sigma = List.remove_assoc x (List.remove_assoc ldots_var sigma) in
   (* try to find the remaining elements or the terminator *)
   let rec match_alist_tail alp metas sigma acc rest =
     try 
-      let sigma = match_ alp (y::metas) sigma rest iter in
-      let rest = List.assoc y sigma in
+      let sigma = match_ alp (ldots_var::metas) sigma rest iter in
+      let rest = List.assoc ldots_var sigma in
       let t = List.assoc x sigma in
-      let sigma = List.remove_assoc x (List.remove_assoc y sigma) in
+      let sigma = List.remove_assoc x (List.remove_assoc ldots_var sigma) in
       match_alist_tail alp metas sigma (t::acc) rest
     with No_match ->
       List.rev acc, match_ alp metas sigma rest termin in

@@ -40,6 +40,7 @@ let lletin = 200
 let lfix = 200
 let larrow = 90
 let lcast = 100
+let larg = 9
 let lapp = 10
 let lposint = 0
 let lnegint = 35 (* must be consistent with Notation "- x" *)
@@ -503,6 +504,10 @@ let rec pr sep inherited a =
 	p ++ prlist (pr spc (lapp,L)) l2, lapp
       else
 	p, lproj
+  | CAppExpl (_,(None,Ident (_,var)),[t])
+  | CApp (_,(_,CRef(Ident(_,var))),[t,None])
+        when var = Topconstr.ldots_var ->
+      hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."), larg
   | CAppExpl (_,(None,f),l) -> pr_appexpl (pr mt) f l, lapp
   | CApp (_,(Some i,f),l) ->
       let l1,l2 = list_chop i l in
