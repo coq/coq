@@ -1,6 +1,6 @@
 Name: coq_ext_for_pcoq
 Version: 8.0
-Release: 1
+Release: 2
 Summary: The Coq Extension for Pcoq
 Copyright: freely redistributable
 Group: Applications/Math
@@ -38,9 +38,8 @@ make -e COQINSTALLPREFIX=%{buildroot} install-pcoq
 %define __spec_install_post /usr/lib/rpm/brp-compress
 
 %files
+%defattr(-,root,root)
 %{_bindir}/*
 %{_libdir}/coq/contrib/interface
 %{_mandir}/man1/*
-
-%defattr(-,root,root)
 

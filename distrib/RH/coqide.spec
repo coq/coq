@@ -1,6 +1,6 @@
 Name: coqide
 Version: 8.0
-Release: 1
+Release: 2
 Summary: The Coq Integrated Development Interface
 Copyright: freely redistributable
 Group: Applications/Math
@@ -37,7 +37,6 @@ make -e COQINSTALLPREFIX=%{buildroot} install-coqide
 %define __spec_install_post /usr/lib/rpm/brp-compress
 
 %files
+%defattr(-,root,root)
 %{_bindir}/*
 %{_libdir}/coq/ide
-
-%defattr(-,root,root)

@@ -1,6 +1,6 @@
 Name: coq
 Version: 8.0
-Release: 1
+Release: 2
 Summary: The Coq Proof Assistant
 Copyright: freely redistributable
 Group: Applications/Math
@@ -44,11 +44,9 @@ make -e COQINSTALLPREFIX=%{buildroot} install-coq
 %define __spec_install_post /usr/lib/rpm/brp-compress
 
 %files
+%defattr(-,root,root)
 %{_bindir}/*
 %{_libdir}/coq
 %{_mandir}/man1/*
 %{_datadir}/emacs/site-lisp/*
 %{_datadir}/texmf/tex/latex/misc/*
-
-%defattr(-,root,root)
-
