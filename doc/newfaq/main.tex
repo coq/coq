@@ -222,10 +222,39 @@ Windows. The sources can be easily adapted to all platforms supporting Objective
 \Question[conjonction]{My goal is a conjunction, how can I prove it ?}
 
 Use some theorem or assumption or use the {\tt split} tactic.
+\begin{coq_example*}
+Goal forall A B:Prop, A->B-> A/\B.
+intros.
+split.
+assumption.
+assumption.
+Qed.
+\end{coq_example*}
+
+\Question[conjonctionhyp]{My goal contains a conjunction as an hypothesis, how can I use it ?}
+
+If you want to decompose your hypohtesis into other hypothesis you can use the {\tt decompose} tactic :
+ \begin{coq_example*}
+Goal forall A B:Prop, A/\B-> B.
+intros.
+decompose [and] H.
+assumption.
+Qed.
+\end{coq_example*}
+
 
 \Question[disjonction]{My goal is a disjonction, how can I prove it ?}
 
 You can prove the left part or the right part of the disjunction using {\tt left} or {\tt right} tactics. If you want to do a classical reasoning step, use {\tt }  to prove the right part with the assumption that the left part of the disjunction is false.
+
+\begin{coq_example*}
+Goal forall A B:Prop, A-> A\/B.
+intros.
+left.
+assumption.
+Qed.
+\end{coq_example*}
+
 
 \Question[forall]{My goal is an universally quantified statement, how can I prove it ?}
 
@@ -255,19 +284,52 @@ Just use the {\tt congruence} tactic.
 
 Just use the {\tt ring} tactic.
 
+\begin{coq_example*}
+Require Import ZArith.
+Require Ring.
+Open Local Scope Z_scope.
+Goal forall a b : Z, (a+b)*(a+b) = a*a + 2*a*b + b*b. 
+intros.
+ring.
+Qed.
+\end{coq_example*}
+
 \Question[field]{My goal is an equality on some field (e.g. reals), how can I prove it ?}
 
 Just use the {\tt field} tactic.
+
+\begin{coq_example*}
+Require Import Reals.
+Require Ring.
+Open Local Scope R_scope.
+Goal forall a b : R, b*a<>0 -> (a/b) * (b/a) = 1. 
+intros.
+field.
+assumption.
+Qed.
+\end{coq_example*}
+
+
 
 \Question[omega]{My goal is an inequality on R, how can I prove it ?}
 
 \Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
 
-Just use the {\tt gv} tactic.
+Just use the {\tt gb} tactic.
 
 \Question[apply]{My goal is solvable by  some lemma, how can I prove it ?}
 
 Just use the {\tt apply} tactic.
+
+\begin{coq_example*}
+Lemma mylemma : forall x, x+0 = x.
+auto.
+Qed.
+
+Goal 3+0 = 3.
+apply mylemma.
+Qed.
+\end{coq_example*}
 
 \Question[autowith]{My goal is solvable by  some lemma within a set of lemmas and I don't want to remember which one, how can I prove it ?}
 
@@ -277,19 +339,27 @@ Use a base of Hints.
 
 Use the {\tt assumption} tactic.
 
-\begin{coq_example}
+\begin{coq_example*}
 Goal 1=1 -> 1=1.
 intro.
 assumption.
 Qed.
-\end{coq_example}
+\end{coq_example*}
 
 \Question[trivial]{My goal is ???, how can I prove it ?}
+
+\Question[assert]{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
+
+If you want to use forward reasoning (first proving the fact and then using it) You just need to use the {\tt assert} tactic. If you want to use backward reasoning (proving your goal using an assumption and then proving the assumption) use the {\tt cut} tactic.
+
+\begin{coq_example*}
+\end{coq_example*}
 
 \Question[proofwith]{I want to automatize the use of some tactic how can I do it ?}
 
 You need to use the {\tt proof with T} command.
 For instance :
+
 
 \Question[complete]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
 
@@ -308,7 +378,7 @@ You need to use the {\tt solve} tactic.
 
 \Question[abstract]{What can I do when {\tt Qed.} is slow ?}
 
-Sometime you can use the {\tt abstract} tactic, which makes as if you had stated intermediated lemmas, this speeds up the typing process.  
+Sometime you can use the {\tt abstract} tactic, which makes as if you had stated one intermediated lemmas, this speeds up the typing process.  
 
 
 %%%%%%%
