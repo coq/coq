@@ -362,7 +362,10 @@ let rec pr_tacarg_using_rule pr_gen = function
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
 let pr_extend_gen proj prgen s l =
-  let tab = if Options.do_translate() then prtac_tab else prtac_tab_v7 in
+  let tab = 
+    if Options.do_translate() or not !Options.v7 then prtac_tab
+    else prtac_tab_v7
+  in
   try 
     let (s,pl) = proj (Hashtbl.find tab s) l in
     str s ++ pr_tacarg_using_rule prgen (pl,l)
