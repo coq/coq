@@ -77,14 +77,14 @@ let rec raw_str_index i gdzie l c co cl =
     if (i'+cl <= l) && (is_sub gdzie l i' co cl 0) then i' else
       raw_str_index (i'+1) gdzie l c co cl
 
-let str_index_from gdzie i co = 
+let string_index_from gdzie i co = 
   if co="" then i else
     raw_str_index i gdzie (String.length gdzie)
       (String.unsafe_get co 0) co (String.length co)
 
 let string_string_contains ~where ~what =
   try
-    let _ = str_index_from where 0 what in true
+    let _ = string_index_from where 0 what in true
   with
       Not_found -> false
 
