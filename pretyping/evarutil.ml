@@ -104,8 +104,9 @@ let mk_new_meta () = mkMeta(new_meta())
 let collect_evars emap c =
   let rec collrec acc c =
     match kind_of_term c with
-      | Evar (k,_) when 
-	  Evd.in_dom emap k & not (Evd.is_defined emap k) -> k::acc
+      | Evar (k,_) ->
+	  if Evd.in_dom emap k & not (Evd.is_defined emap k) then k::acc
+	  else (* No recursion on the evar instantiation *) acc
       | _         ->
 	  fold_constr collrec acc c in
   list_uniquize (collrec [] c)
