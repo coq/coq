@@ -53,8 +53,6 @@ COQINCLUDES=-I contrib/omega -I contrib/ring -I contrib/xml \
 # Objects files 
 ###########################################################################
 
-STRLIB=-cclib -lstr
-
 CLIBS=unix.cma
 
 CAMLP4OBJS=gramlib.cma
@@ -162,7 +160,7 @@ COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo
 
 $(COQMKTOP): $(COQMKTOPCMO)
 	$(OCAMLC) $(BYTEFLAGS) -o $(COQMKTOP) -custom str.cma unix.cma \
-          $(COQMKTOPCMO) $(OSDEPLIBS) $(STRLIB)
+          $(COQMKTOPCMO) $(OSDEPLIBS)
 
 scripts/tolink.ml: Makefile
 	echo "let lib = \""$(LIB)"\"" > $@
@@ -363,8 +361,7 @@ tools/coq_makefile: tools/coq_makefile.ml
 	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq_makefile tools/coq_makefile.ml
 
 tools/coq-tex: tools/coq-tex.ml
-	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq-tex str.cmxa tools/coq-tex.ml \
-          $(STRLIB)
+	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq-tex str.cmxa tools/coq-tex.ml
 
 archclean::
 	rm -f tools/coqdep tools/gallina tools/coq-tex tools/coq_makefile
@@ -399,7 +396,10 @@ install-binaries:
 	cp tools/coqdep tools/gallina tools/coq_makefile tools/coq-tex \
 	  $(BINDIR)
 
+ALLVO=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
+
 install-library:
+	cp $(ALLVO) $(COQLIB)
 	cp tools/coq.el tools/coq.elc $(EMACSLIB)
 
 MANPAGES=tools/coq-tex.1 tools/coqdep.1 tools/gallina.1
@@ -415,7 +415,7 @@ install-manpages:
 .PHONY: doc
 
 doc: doc/coq.tex
-	make -C doc coq.ps minicoq.dvi
+	$(MAKE) -C doc coq.ps minicoq.dvi
 
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
@@ -491,14 +491,25 @@ beforedepend:: parsing/pcoq.ml parsing/extend.ml
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
+toplevel/mltop.cmo: toplevel/mltop.byteml
+	$(OCAMLC) $(BYTEFLAGS) -c -impl toplevel/mltop.byteml -o $@
+
+toplevel/mltop.cmx: toplevel/mltop.optml
+	$(OCAMLOPT) $(OPTFLAGS) -c -impl toplevel/mltop.optml -o $@
+
+toplevel/mltop.byteml: toplevel/mltop.ml4
+	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+
+toplevel/mltop.optml: toplevel/mltop.ml4
+	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -impl toplevel/mltop.ml4 > $@ || rm -f $@
+
 toplevel/mltop.ml: toplevel/mltop.ml4
-	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -DByte -impl $< > $@ || rm -f $@
-toplevel/mltop.cmo: toplevel/mltop.ml4
-	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) pa_ifdef.cmo -DByte -impl" \
-	  -c -impl $<
-toplevel/mltop.cmx: toplevel/mltop.ml4
-	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) pa_ifdef.cmo -impl" -c -impl $<
+	$(CAMLP4O) pr_o.cmo pa_ifdef.cmo -DByte -impl toplevel/mltop.ml4 > $@ || rm -f $@
+
 ML4FILES += toplevel/mltop.ml4
+
+clean::
+	rm -f toplevel/mltop.ml toplevel/mltop.byteml toplevel/mltop.optml
 
 ###########################################################################
 # Default rules
@@ -590,7 +601,7 @@ ML4FILESML = $(ML4FILES:.ml4=.ml)
 dependcamlp4: beforedepend $(ML4FILESML)
 	ocamldep $(DEPFLAGS) $(ML4FILESML) > .depend.camlp4
 	for f in $(ML4FILES); do \
-	  echo -n `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
+	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
 	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4; \
 	done
 	rm -f toplevel/mltop.ml
