@@ -15,36 +15,13 @@ Require Rbase.
 Require R_sqr.
 Require Rfunctions.
 Require Rsigma.
-
-(**********)
-Parameter PI : R.
-
-Axiom PI_RGT_0 : ``0<PI``.
+Require Export Rtrigo_def.
 
 Lemma PI_neq0 : ~``PI==0``.
 Red; Intro.
 Generalize PI_RGT_0; Intro; Rewrite H in H0.
 Elim (Rlt_antirefl ``0`` H0).
 Qed.
-
-(******************************************************************)
-(* Axiomatic definitions of cos and sin                           *)
-(******************************************************************)
-
-Parameter sin : R->R.
-Parameter cos : R->R.
-
-Axiom sin_plus : (x,y:R) ``(sin (x+y))==(sin x)*(cos y)+(cos x)*(sin y)``.
-
-Axiom sin_minus : (x,y:R) ``(sin (x-y))==(sin x)*(cos y)-(cos x)*(sin y)``.
-
-Axiom  cos_plus : (x,y:R) ``(cos (x+y))==(cos x)*(cos y)-(sin x)*(sin y)``. 
-
-Axiom cos_minus : (x,y:R) ``(cos (x-y))==(cos x)*(cos y)+(sin x)*(sin y)``.
-
-Axiom cos_0 : ``(cos 0)==1``.
-
-Axiom sin_PI2 : ``(sin (PI/2))==1``.
 
 (**********)
 Lemma sin2_cos2 : (x:R) ``(Rsqr (sin x)) + (Rsqr (cos x))==1``.
