@@ -45,15 +45,15 @@ Save.
 Intros.
 Generalize H H0 .
 Clear  H H0.
-(Elim H1; Intros; Auto with sets).
-(Apply H2 with x; Auto with sets).
+Elim H1; Intros; Auto with sets.
+Apply H2 with x; Auto with sets.
 
 Apply H3.
-(Apply H0; Auto with sets).
+Apply H0; Auto with sets.
 
 Intros.
-(Apply H5 with P0; Auto with sets).
-(Apply rt_trans with y; Auto with sets).
+Apply H5 with P0; Auto with sets.
+Apply rt_trans with y; Auto with sets.
 Save.
 
 
@@ -65,9 +65,9 @@ Section Clos_Refl_Sym_Trans.
   Lemma clos_rt_clos_rst: (inclusion A (clos_refl_trans A R)
 				        (clos_refl_sym_trans A R)).
 Red.
-(Induction 1; Auto with sets).
+Induction 1; Auto with sets.
 Intros.
-(Apply rst_trans with y0; Auto with sets).
+Apply rst_trans with y0; Auto with sets.
 Save.
 
   Lemma clos_rst_is_equiv: (equivalence A (clos_refl_sym_trans A R)).
@@ -83,9 +83,9 @@ Save.
        (incl (clos_refl_sym_trans A (clos_refl_sym_trans A R))
                      (clos_refl_sym_trans A R)).
 Red.
-(Induction 1; Auto with sets).
+Induction 1; Auto with sets.
 Intros.
-(Apply rst_trans with y0; Auto with sets).
+Apply rst_trans with y0; Auto with sets.
 Save.
 
 End Clos_Refl_Sym_Trans.
