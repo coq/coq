@@ -82,6 +82,10 @@ let unify_0 mc wc m n =
       match (kind_of_term cM,kind_of_term cN) with
 	| IsCast (c,_), _ -> unirec_rec substn c cN
 	| _, IsCast (c,_) -> unirec_rec substn cM c
+	| IsMeta k1, IsMeta k2 ->
+	    if k1 < k2 then (k1,cN)::metasubst,evarsubst
+	    else if k1 = k2 then substn
+	    else (k2,cM)::metasubst,evarsubst
 	| IsMeta k, _    -> (k,cN)::metasubst,evarsubst
 	| _, IsMeta k    -> (k,cM)::metasubst,evarsubst
 	| IsLambda (_,t1,c1), IsLambda (_,t2,c2) ->
@@ -574,10 +578,11 @@ let clenv_merge with_types =
             clenv_resrec (metas'@t) evars' clenv
     	  else
 	    let mc,ec =
-	      if with_types then
+	      let mvty = clenv_instance_type clenv mv in
+	      if with_types or occur_meta mvty then
 		let nty = clenv_type_of clenv 
 			    (clenv_instance clenv (mk_freelisted n)) in
-		unify_0 [] clenv.hook (clenv_instance_type clenv mv) nty
+		unify_0 [] clenv.hook mvty nty
 	      else ([],[]) in
 	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
 
