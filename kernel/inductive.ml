@@ -475,7 +475,7 @@ let case_branches_specif renv =
 	      | _ -> push_var_renv renv (x,a) in
           crec renv' lr b
       | (_,LetIn (x,c,a,b)) ->
-          crec (push_def_renv renv (x,c,a)) lrec (subst1 c b)
+          crec renv (*(push_def_renv renv (x,c,a)) *)lrec (subst1 c b)
       (* Rq: if branch is not eta-long, then the recursive information
          is not propagated: *)
       | (_,_) -> (renv,c')
