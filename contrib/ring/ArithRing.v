@@ -32,12 +32,12 @@ Proof.
   trivial.
 Qed.
 
-Hint Resolve nateq_prop eq2eqT: arithring.
+Hint Resolve nateq_prop: arithring.
 
 Definition NatTheory : Semi_Ring_Theory plus mult 1 0 nateq.
   split; intros; auto with arith arithring.
-  apply eq2eqT; apply (fun n m p:nat => plus_reg_l m p n) with (n := n).
-  apply eqT2eq; trivial.
+  apply (fun n m p:nat => plus_reg_l m p n) with (n := n).
+  trivial.
 Defined.
 
 

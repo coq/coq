@@ -27,8 +27,8 @@ Lemma Zeq_prop : forall x y:Z, Is_true (Zeq x y) -> x = y.
 Qed.
 
 Definition ZTheory : Ring_Theory Zplus Zmult 1%Z 0%Z Zopp Zeq.
-  split; intros; apply eq2eqT; eauto with zarith.
-  apply eqT2eq; apply Zeq_prop; assumption.
+  split; intros; eauto with zarith.
+  apply Zeq_prop; assumption.
 Qed.
 
 (* NatConstants and NatTheory are defined in Ring_theory.v *)
