@@ -46,8 +46,14 @@ let globalize_ref vars ref =
   | RVar (loc,x) -> Ident (loc,x)
   | _ -> anomaly "globalize_ref: not a reference"
 
+let globalize_ref_term vars ref =
+  match Constrintern.interp_reference vars ref with
+  | RRef (loc,a) -> CRef (Constrextern.extern_reference loc a)
+  | RVar (loc,x) -> CRef (Ident (loc,x))
+  | c -> Constrextern.extern_rawconstr c 
+
 let rec globalize_constr_expr vars = function
-  | CRef ref -> CRef (globalize_ref vars ref)
+  | CRef ref -> globalize_ref_term vars ref
   | CAppExpl (_,ref,l) ->
       let f = 
 	map_constr_expr_with_binders globalize_constr_expr
