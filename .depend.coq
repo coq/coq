@@ -55,9 +55,7 @@ theories/Reals/Integration.vo: theories/Reals/Integration.v theories/Reals/Newto
 theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis.vo theories/Reals/Integration.vo
 theories/Init/Notations.vo: theories/Init/Notations.v
 theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo
-theories/Init/DatatypesSyntax.vo: theories/Init/DatatypesSyntax.v
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo
-theories/Init/PeanoSyntax.vo: theories/Init/PeanoSyntax.v theories/Init/Datatypes.vo theories/Init/Peano.vo
 theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/LogicSyntax.vo: theories/Init/LogicSyntax.v theories/Init/Notations.vo theories/Init/Logic.vo
@@ -65,7 +63,7 @@ theories/Init/SpecifSyntax.vo: theories/Init/SpecifSyntax.v theories/Init/Notati
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo
 theories/Init/Logic_TypeSyntax.vo: theories/Init/Logic_TypeSyntax.v theories/Init/Notations.vo theories/Init/Logic_Type.vo
-theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/DatatypesSyntax.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/PeanoSyntax.vo theories/Init/Wf.vo
+theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
 theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/Hurkens.vo
 theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Set.vo
