@@ -49,31 +49,43 @@ Save.
 (*  Sum of n first naturals    *)
 (*******************************)
 (*********)
-Fixpoint sum_nat_aux [s,n:nat]:nat:=       
+Fixpoint sum_nat_f_O [f:nat->nat;n:nat]:nat:=       
   Cases n of                            
-    O => s                                
-   |(S n') => (sum_nat_aux (plus s n) n') 
+    O => (f O)                               
+   |(S n') => (plus (sum_nat_f_O f n') (f (S n'))) 
   end.
 
 (*********)
-Definition sum_nat:=(sum_nat_aux O).  
+Definition sum_nat_f [s,n:nat;f:nat->nat]:nat:=      
+  (sum_nat_f_O [x:nat](f (plus x s)) (minus n s)).
+
+(*********)
+Definition sum_nat_O [n:nat]:nat:=
+  (sum_nat_f_O [x]x n).
+
+(*********)
+Definition sum_nat [s,n:nat]:nat:=
+  (sum_nat_f s n [x]x).
 
 (*******************************)
 (*             Sum             *)
 (*******************************)
 (*********)
-Fixpoint sum_aux [s:R;f:nat->R;N:nat]:R:=
+Fixpoint sum_f_R0 [f:nat->R;N:nat]:R:=
   Cases N of
-     O     => (Rplus s (f O))
-    |(S i) => (sum_aux (Rplus s (f N)) f i)
+     O     => (f O)
+    |(S i) => (Rplus (sum_f_R0 f i) (f (S i)))
   end.
- 
+
 (*********)
-Definition sum_f:=(sum_aux R0).  
+Definition sum_f [s,n:nat;f:nat->R]:R:=      
+  (sum_f_R0 [x:nat](f (plus x s)) (minus n s)).
 
 (*******************************)
 (*        Infinit Sum          *)
 (*******************************)
 (*********)
 Definition infinit_sum:(nat->R)->R->Prop:=[s:nat->R;l:R]
-  (eps:R)(Ex[N:nat](n:nat)(ge n N)/\(Rlt (R_dist (sum_f s n) l) eps)).
+  (eps:R)(Ex[N:nat](n:nat)(ge n N)/\(Rlt (R_dist (sum_f_R0 s n) l) eps)).
+
+

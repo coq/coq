@@ -34,6 +34,28 @@ Intro;Elim H;Intros;Clear H;Unfold Rmin;Case (total_order_Rle r1 r2);
 Save.
 
 (*******************************)
+(*           Rmax              *)
+(*******************************)
+
+(*********)
+Definition Rmax :R->R->R:=[x,y:R]
+  Cases (total_order_Rle x y) of 
+    (leftT _)  => y
+  | (rightT _) => x
+  end.
+
+(*********)
+Lemma Rmax_Rle:(r1,r2,r:R)(Rle r (Rmax r1 r2))<->
+    ((Rle r r1)\/(Rle r r2)).
+Intros;Split.
+Unfold Rmax;Case (total_order_Rle r1 r2);Intros;Auto.
+Intro;Unfold Rmax;Case (total_order_Rle r1 r2);Elim H;Clear H;Intros;Auto.
+Apply (Rle_trans r r1 r2);Auto.
+Generalize (not_Rle r1 r2 n);Clear n;Intro;Unfold Rgt in H0;
+ Apply (Rlt_le r r1 (Rle_lt_trans r r2 r1 H H0)).
+Save.
+
+(*******************************)
 (*           Rabsolu           *)
 (*******************************)
 
@@ -268,3 +290,25 @@ Intro; Rewrite Rplus_Ropp_l in H;
  Apply Rlt_le;Assumption.
 Unfold Rle;Right;Trivial.  
 Save.
+
+(*********)
+Lemma Rabsolu_def1:(x,a:R)(Rlt x a)->(Rlt (Ropp a) x)->(Rlt (Rabsolu x) a).
+Unfold Rabsolu;Intros;Case (case_Rabsolu x);Intro.
+Generalize (Rlt_Ropp (Ropp a) x H0);Unfold Rgt;Rewrite Ropp_Ropp;Intro;
+ Assumption.
+Assumption.
+Save.
+
+(*********)
+Lemma Rabsolu_def2:(x,a:R)(Rlt (Rabsolu x) a)->(Rlt x a)/\(Rlt (Ropp a) x).
+Unfold Rabsolu;Intro x;Case (case_Rabsolu x);Intros.
+Generalize (Rlt_RoppO x r);Unfold Rgt;Intro;
+ Generalize (Rlt_trans R0 (Ropp x) a H0 H);Intro;Split. 
+Apply (Rlt_trans x R0 a r H1).
+Generalize (Rlt_Ropp (Ropp x) a H);Rewrite (Ropp_Ropp x);Unfold Rgt;Trivial.
+Fold (Rgt a x) in H;Generalize (Rgt_ge_trans a x R0 H r);Intro;
+ Generalize (Rgt_RoppO a H0);Intro;Fold (Rgt R0 (Ropp a));
+ Generalize (Rge_gt_trans x R0 (Ropp a) r H1);Unfold Rgt;Intro;Split;
+ Assumption.
+Save.
+

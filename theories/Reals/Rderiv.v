@@ -399,6 +399,14 @@ Intros;Generalize (H2 x1 H3);Clear H2;Intro;Rewrite Ropp_mul1 in H2;
 Save.
 
 (*********)
+Lemma Dminus:(D:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
+  (D_in f df D x0)->(D_in g dg D x0)->
+  (D_in [x:R](Rminus (f x) (g x)) [x:R](Rminus (df x) (dg x)) D x0).
+Unfold Rminus;Intros;Generalize (Dopp D g dg x0 H0);Intro;
+ Apply (Dadd D df [x:R](Ropp (dg x)) f [x:R](Ropp (g x)) x0);Assumption. 
+Save.
+
+(*********)
 Lemma Dx_pow_n:(n:nat)(D:R->Prop)(x0:R)
   (D_in [x:R](pow x n)  
         [x:R](Rmult (INR n) (pow x (minus n (1)))) D x0).
