@@ -65,14 +65,14 @@ let double_type_of env sigma cstr expectedty =
                 (function (m,bo,ty) ->
                   (* Warning: the substitution should be performed also on bo *)
                   (* This is not done since bo is not used later yet          *)
-                  (m,bo,T.unshare (T.subst1 he1 (T.subst_var n ty)))
+                  (m,bo,T.unshare (T.replace_vars [n,he1] ty))
                 ) tl2
               in
                iter tl1 tl2'
            | _,_ -> assert false
          in
           (* for side effects only *)
-          iter (Array.to_list l) evar_context ;
+          iter (List.rev (Array.to_list l)) (List.rev evar_context) ;
           E.make_judge cstr jty
 	
      | T.Rel n -> 

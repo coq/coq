@@ -274,7 +274,7 @@ let mk_current_proof_obj id bo ty evar_map env =
                (* t will not be exported to XML. Thus no unsharing performed *)
                final_var_ids,(n, Acic.Def  (Term.unshare b',t))::tl'
         in
-         aux [] evar_hyps
+         aux [] (List.rev evar_hyps)
        in
         (* We map the named context to a rel context and every Var to a Rel *)
         (n,context,Term.unshare (Term.subst_vars final_var_ids evar_concl))

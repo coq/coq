@@ -77,7 +77,7 @@ let extract_open_proof sigma pf =
 (*CSC: will already be ordered.                                        *)
              (Termops.ids_of_named_context goal.Evd.evar_hyps) in
 	 let sorted_rels =
-	   Sort.list (fun (n1,_) (n2,_) -> n1 > n2 ) visible_rels in
+	   Sort.list (fun (n1,_) (n2,_) -> n1 < n2 ) visible_rels in
 	 let context =
           List.map
             (fun (_,id) -> Sign.lookup_named id goal.Evd.evar_hyps)

@@ -464,7 +464,7 @@ let acic_object_of_cic_object pvars sigma obj =
          ) conjectures in
        let abo = acic_term_of_cic_term_context' env sigma bo (Some ty) in
        let aty = acic_term_of_cic_term_context' env sigma ty None in
-        A.ACurrentProof ("mettereaposto",id,aconjectures,abo,aty)
+        A.ACurrentProof (fresh_id (),id,aconjectures,abo,aty)
     | A.InductiveDefinition (tys,params,paramsno) ->
        let env' =
         List.fold_right

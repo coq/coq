@@ -54,7 +54,7 @@ let print_term ids_to_inner_sorts =
           (List.fold_left
             (fun i t ->
               [< i ; X.xml_nempty "substitution" [] (aux t) >]
-            ) [< >] l)
+            ) [< >] (List.rev l))
      | A.ASort (id,s) ->
         let string_of_sort =
          match Term.family_of_sort s with
@@ -224,7 +224,7 @@ let print_object ids_to_inner_sorts =
                         (print_term ids_to_inner_sorts t)
                     >]
                 >])
-              [<>] conjectures ;
+              [<>] (List.rev conjectures) ;
              X.xml_nempty "body" [] (print_term ids_to_inner_sorts bo) ;
              X.xml_nempty "type" [] (print_term ids_to_inner_sorts ty)  >]
         in
