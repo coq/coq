@@ -122,7 +122,7 @@ let print_loadpath () =
 
 let get_goal_context_of_args = function
   | [VARG_NUMBER n] -> get_goal_context n
-  | [] -> get_current_goal_context ()
+  | [] -> get_current_context ()
   | _ -> bad_vernac_args "goal_of_args"
 
 let isfinite = function 
