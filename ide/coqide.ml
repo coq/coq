@@ -2874,13 +2874,14 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        b#insert ~iter:b#start_iter "\t\t";
      with _ -> ());
     b#insert 
-      "\n\tCoqIDE: a Gtk2 interface for Coq\n\n\
-      Main author   : Benjamin Monate\n\
-      Contributions : Pierre Letouzey, Claude Marché\n\n\
-      Feature wish or bug report: use Web interface\n\n\
-      \thttp://coq.inria.fr/bin/coq-bugs\n\n\
-      Version information\n\
-      -------------------\n";
+      "\n\tCoqIDE: a Gtk2 interface for Coq\n\
+      \nMain author  : Benjamin Monate\
+      \nContributors : Jean-Christophe Filliâtre\
+      \n               Pierre Letouzey, Claude Marché\n\
+      \nFeature wish or bug report: use Web interface\n\
+      \n\thttp://coq.inria.fr/bin/coq-bugs\n\
+      \nVersion information\
+      \n-------------------\n";
     b#insert ((Coq.version ()))
       
   in
