@@ -1235,13 +1235,18 @@ understood as if it would have been given before the statements still to be
 proved. 
 \item {\tt Proof} is recommended but can currently be omitted. On the
 opposite, {\tt Qed} is mandatory to validate a proof.
+\item Proofs ended by {\tt Qed} are declared opaque (see \ref{Opaque})
+and cannot be unfolded by conversion tactics (see \ref{Conversion-tactics}).
+To be able to unfold a proof, you should end the proof by {\tt Defined}
+ (see below). 
 \end{Remarks}
 
 \begin{Variants}
 \item {\tt Proof} {\tt .} \dots {\tt Defined} {\tt .}\\
   \comindex{Proof}
-  Same as {\tt Proof} {\tt .} \dots {\tt Qed} {\tt .} but it is
-  intended to surround a definition built using the proof-editing mode.
+  Same as {\tt Proof} {\tt .} \dots {\tt Qed} {\tt .} but the proof is
+  then declared transparent (see \ref{Transparent}), which means it
+  can be unfolded in conversion tactics (see \ref{Conversion-tactics}).
 \item {\tt Proof} {\tt .} \dots {\tt Save.}\\
   Same as {\tt Proof} {\tt .} \dots {\tt Qed} {\tt .}
 \item {\tt Goal} \type \dots {\tt Save} \ident \\
@@ -1251,6 +1256,7 @@ opposite, {\tt Qed} is mandatory to validate a proof.
 \end{Variants}
 \comindex{Proof}
 \comindex{Qed}
+\comindex{Defined}
 \comindex{Save}
 \comindex{Goal}
 

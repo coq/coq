@@ -85,13 +85,15 @@ displayed as in \Coq\ terms.
 \SeeAlso chapter~\ref{Extraction}.
 
 \subsection{\tt Opaque \qualid$_1$ \dots \qualid$_n$.}
-\comindex{Opaque}\label{Opaque}
-This command forbids the unfolding of the constants {\qualid$_1$} \dots
-{\qualid$_n$} by tactics using $\delta$-conversion. Unfolding a constant
-is replacing it by its definition.
+\comindex{Opaque}\label{Opaque} This command forbids the unfolding of
+the constants {\qualid$_1$} \dots {\qualid$_n$} by tactics using
+$\delta$-conversion. Unfolding a constant is replacing it by its
+definition. {\tt Opaque} can only apply on constants originally
+defined as {\tt Transparent}.
 
-By default, {\tt Theorem} and its alternatives are stamped as {\tt
-  Opaque}. This is to keep with the usual mathematical practice of
+Constants defined by a proof ended by {\tt Qed} are automatically
+stamped as {\tt Opaque} and can no longer be considered as {\tt
+Transparent}. This is to keep with the usual mathematical practice of
 {\em proof irrelevance}: what matters in a mathematical development is
 the sequence of lemma statements, not their actual proofs. This
 distinguishes lemmas from the usual defined constants, whose actual
@@ -110,15 +112,19 @@ environment}\\
 
 \subsection{\tt Transparent \qualid$_1$ \dots \qualid$_n$.}
 \comindex{Transparent}\label{Transparent}
-This command is the converse of {\tt Opaque}. By default, {\tt
-  Definition} and {\tt Local} declare objects as {\tt Transparent}.
+This command is the converse of {\tt Opaque} and can only apply on constants originally defined as {\tt Transparent} to restore their initial behaviour after an {\tt Opaque} command.
 
-\Warning {\tt Transparent} and \texttt{Opaque} are brutal and 
-not synchronous
+The constants automatically declared transparent are the ones defined by a proof ended by {\tt Defined}, or by a {\tt
+  Definition} or {\tt Local} with an explicit body.
+
+\Warning {\tt Transparent} and \texttt{Opaque} are not synchronous
 with the reset mechanism. If a constant was transparent at point A, if
 you set it opaque at point B and reset to point A, you return to state
 of point A with the difference that the constant is still opaque. This
-can cause changes in tactic scripts behavior.
+can cause changes in tactic scripts behaviour.
+
+At section or module closing, a constant recovers the status it got at
+the time of its definition.
 
 %TODO: expliquer le rapport avec les sections
 
@@ -128,8 +134,6 @@ can cause changes in tactic scripts behavior.
 \item \errindex{The reference \qualid\ was not found in the current
 environment}\\
     There is no constant referred by {\qualid} in the environment.
-    Nevertheless, if you give the command \verb|Transparent foo bar.|
-    and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
 \end{ErrMsgs}
 
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
