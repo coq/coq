@@ -19,6 +19,7 @@ val pp_par : bool -> std_ppcmds -> std_ppcmds
 val pp_abst : identifier list -> std_ppcmds
 val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds 
 val pr_binding : identifier list -> std_ppcmds
+val pp_string_parameters : string list -> std_ppcmds
 
 val rename_id : identifier -> Idset.t -> identifier
 

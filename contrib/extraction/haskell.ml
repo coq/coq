@@ -41,7 +41,7 @@ let preamble prm used_modules (mldummy,tdummy,tunknown) =
   str "import qualified GHC.Base" ++ fnl() ++
   prlist (fun mp -> str "import qualified " ++ pp_mp mp ++ fnl ()) used_modules
   ++ fnl () ++
-  str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl() ++
+  str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl() ++ fnl() ++
   (if mldummy then 
      str "__ = Prelude.error \"Logical or arity value used\"" 
      ++ fnl () ++ fnl()
@@ -63,7 +63,10 @@ module Make = functor(P : Mlpp_param) -> struct
 
 let local_mpl = ref ([] : module_path list)
 
-let pp_global r = P.pp_global !local_mpl r
+let pp_global r = 
+  if is_inline_custom r then str (find_custom r) 
+  else P.pp_global !local_mpl r
+
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
@@ -83,7 +86,6 @@ let rec pp_type par vl t =
     | Tdummy -> str "()"
     | Tunknown -> str "()"
     | Taxiom -> str "() -- AXIOM TO BE REALIZED\n"
-    | Tcustom s -> str s
  in 
   hov 0 (pp_rec par t)
 
@@ -242,6 +244,8 @@ let rec pp_ind first kn i ind =
 
 (*s Pretty-printing of a declaration. *)
 
+
+
 let pp_decl mpl = 
   local_mpl := mpl;
   function
@@ -251,10 +255,17 @@ let pp_decl mpl =
   | Dtype (r, l, t) ->
       if is_inline_custom r then mt () 
       else 
-	let l = rename_tvars keywords l in
-	hov 2 (str "type " ++ pp_global r ++ spc () ++ 
-	       prlist (fun id -> pr_id id ++ str " ") l ++
-	       str "=" ++ spc () ++ pp_type false l t) ++ fnl () ++ fnl ()
+	let l = rename_tvars keywords l in 
+	let ids, def = try 
+	  let ids,s = find_type_custom r in 
+	  pp_string_parameters ids, str "=" ++ spc () ++ str s
+	with not_found -> 
+	  pp_string_parameters (List.map string_of_id l), 
+	  if t = Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
+	  else str "=" ++ spc () ++ pp_type false l t
+	in 
+	hov 2 (str "type " ++ pp_global r ++ spc () ++ ids ++ def)
+	++ fnl () ++ fnl ()
   | Dfix (rv, defs,_) ->
       let ppv = Array.map pp_global rv in 
       prlist_with_sep (fun () -> fnl () ++ fnl ())
