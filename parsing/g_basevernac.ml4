@@ -226,7 +226,7 @@ GEXTEND Gram
      | IDENT "Open"; IDENT "Scope"; sc = IDENT -> VernacOpenScope sc
 
      | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
-	 VernacDelimiters (sc,("`"^key^":","`"))
+	 VernacDelimiters (sc,("'"^key^":","'"))
 
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
