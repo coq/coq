@@ -48,8 +48,8 @@ val extract_decl : evar -> named_context sigma -> named_context sigma
 
 val restore_decl : evar -> evar_info -> named_context sigma -> named_context sigma
 
-(* val w_Focusing_THEN : 
-  evar -> 'a result_w_tactic -> ('a -> w_tactic) -> w_tactic *)
+(*i val w_Focusing_THEN : 
+  evar -> 'a result_w_tactic -> ('a -> w_tactic) -> w_tactic i*)
 
 val w_Declare    : evar -> types -> w_tactic
 val w_Define     : evar -> constr -> w_tactic
