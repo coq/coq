@@ -1092,7 +1092,7 @@ let _ =
 		   else 
 		     Some (specif="SPECIFICATION"))
 		  (string_of_id id) None)
-      	       (import="IMPORT") 
+      	       (import="EXPORT") 
        | _ -> bad_vernac_args "Require")
 
 let _ =
@@ -1108,7 +1108,7 @@ let _ =
 		    else 
 		      Some (specif="SPECIFICATION"))
 		   (string_of_id id) (Some filename))
-		(import="IMPORT"))
+		(import="EXPORT"))
        | _ -> bad_vernac_args "RequireFrom")
 
 let _ =
