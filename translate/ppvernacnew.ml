@@ -28,11 +28,23 @@ open Topconstr
 
 open Tacinterp
 
+(* Copie de Nameops *)
+let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
+
+(* Copie artisanale de Libnames *)
+let pr_reference = function
+  | Qualid (_,qid) -> pr_qualid qid
+  | Ident (_,id) -> pr_id (Constrextern.v7_to_v8_id id)
+
 let quote str = "\""^str^"\""
 
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
+(*
 let pr_raw_tactic_env l env t = 
   Pptacticnew.pr_raw_tactic env t
+*)
+let pr_raw_tactic_env l env t = 
+  Pptacticnew.pr_glob_tactic env (Tacinterp.glob_tactic_env l env t)
 
 let pr_gen env t =
   Pptactic.pr_raw_generic (Ppconstrnew.pr_constr_env env)
@@ -151,7 +163,7 @@ let pr_hints db h pr_c =
       |	Some name,_ -> (true , pr_id name) in
   let opth = pr_opt_hintbases db  in
   let pr_aux = function
-    | CAppExpl (_,qid,[]) -> pr_reference qid
+    | CAppExpl (_,(_,qid),[]) -> pr_reference qid
     | _ -> mt () in
   match h with
     | HintsResolve l ->
@@ -272,6 +284,21 @@ let pr_valdecls pr_c = function
 
 let pr_vbinders pr_c l =
   hv 0 (prlist_with_sep spc (pr_valdecls pr_c) l)
+
+let vars_of_valdecls l = function
+  | LocalRawAssum (nal,c) -> 
+     List.fold_right (function (_,Name id) -> fun l -> id::l | (_,Anonymous) -> fun l -> l) nal l
+  | LocalRawDef ((_,Name id),c) -> id::l
+  | LocalRawDef ((_,Anonymous),_) -> l
+
+let vars_of_vbinders =
+  List.fold_left vars_of_valdecls []
+
+let vars_of_binder l (nal,_) = 
+  List.fold_right (function (_,Name id) -> fun l -> id::l | (_,Anonymous) -> fun l -> l) nal l
+
+let vars_of_binders =
+  List.fold_left vars_of_binder []
 
 let pr_sbinders sbl =
   if sbl = [] then mt () else
@@ -522,7 +549,8 @@ let rec pr_vernac = function
             let bindings =
               pr_ne_sep spc (pr_vbinders pr_lconstr) bl ++
               if bl2 = [] then mt() else (spc() ++ pr_binders bl2) in
-            let ppred = Some (pr_reduce red ++ pr_lconstr body) in
+	    let vars = vars_of_vbinders bl @ vars_of_binders bl2 in
+            let ppred = Some (pr_reduce red ++ pr_lconstr_vars vars body) in
             (bindings,ty,ppred)
         | ProveBody (bl,t) ->
             (pr_vbinders pr_lconstr bl, str" :" ++ pr_lconstrarg t, None) in
@@ -772,18 +800,18 @@ let rec pr_vernac = function
   (* Commands *)
   | VernacDeclareTacticDefinition (rc,l) ->
       let pr_tac_body (id, body) =
-        let ppb, body =
+        let idl, body =
           match body with
-              Tacexpr.TacFun (idl,b) ->
-                 (spc() ++ prlist_with_sep spc
-                   (function None -> str"_" | Some id -> pr_id id)
-                   idl),
-                 b
-            | _ -> mt(), body in
-        pr_located pr_id id ++ ppb ++ str" :=" ++ brk(1,1) ++
-        pr_raw_tactic_env
-          (List.map (fun ((_,id),_) -> (id,Lib.make_path id)) l) 
-          (Global.env()) body in
+	    | Tacexpr.TacFun (idl,b) -> idl,b
+            | _ -> [], body in
+        pr_located pr_id id ++ 
+	prlist (function None -> str " _" | Some id -> spc () ++ pr_id id) idl
+	++ str" :=" ++ brk(1,1) ++
+	let idl = List.map out_some (List.filter (fun x -> not (x=None)) idl)in
+        pr_raw_tactic_env 
+	  (idl @ List.map snd (List.map fst l))
+	  (Global.env())
+	  body in
       hov 1
         ((if !Options.p1 then
 	  (if rc then str "Recursive " else mt()) ++
