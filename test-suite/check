@@ -20,7 +20,7 @@ nbtestsok=0
 
 # La fonction suivante teste le compilateur sur des fichiers qu'il doit
 # accepter
-test_succes() {
+test_success() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
@@ -43,7 +43,7 @@ test_succes() {
 
 # La fonction suivante teste le compilateur sur des fichiers qu'il doit
 # refuser
-test_echec() {
+test_failure() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
@@ -78,7 +78,7 @@ test_output() {
 # La fonction suivante teste l'analyseur syntaxique fournit par "parser"
 # Elle fonctionne comme test_output
 test_parser() {
-    if [ -f parser ]; then
+    if [ -d $1 ]; then
     for f in $1/*.v; do
         nbtests=`expr $nbtests + 1`
         printf "    "$f"..."
@@ -103,11 +103,11 @@ test_parser() {
 # test_output output
 echo "[Output tests are off]"
 echo "Success tests"
-test_succes success
+test_success success
 echo "Failure tests"
-test_echec failure
+test_failure failure
 echo "Parser tests"
-test_parser
+test_parser parser
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
 echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"
