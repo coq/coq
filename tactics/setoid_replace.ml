@@ -99,6 +99,10 @@ let coq_AsymmetricReflexive = lazy(constant ["Setoid"] "AsymmetricReflexive")
 let coq_SymmetricReflexive = lazy(constant ["Setoid"] "SymmetricReflexive")
 let coq_Leibniz = lazy(constant ["Setoid"] "Leibniz")
 
+let coq_RAsymmetricReflexive = lazy(constant ["Setoid"] "RAsymmetricReflexive")
+let coq_RSymmetricReflexive = lazy(constant ["Setoid"] "RSymmetricReflexive")
+let coq_RLeibniz = lazy(constant ["Setoid"] "RLeibniz")
+
 let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
 let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
 let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
@@ -122,8 +126,8 @@ let coq_make_compatibility_goal_aux_ref =
  lazy(reference ["Setoid"] "make_compatibility_goal_aux")
 
 let coq_App = lazy(constant ["Setoid"] "App")
-let coq_Toreplace = lazy(constant ["Setoid"] "Toreplace")
-let coq_Tokeep = lazy(constant ["Setoid"] "Tokeep")
+let coq_ToReplace = lazy(constant ["Setoid"] "ToReplace")
+let coq_ToKeep = lazy(constant ["Setoid"] "ToKeep")
 let coq_fcl_singl = lazy(constant ["Setoid"] "fcl_singl")
 let coq_fcl_cons = lazy(constant ["Setoid"] "fcl_cons")
 
@@ -448,6 +452,20 @@ let cic_relation_class_of_X_relation_class typ value =
       [| Lazy.force typ ; refl_a ; refl_aeq; sym ; refl_refl |])
   | ACLeibniz t -> mkApp ((Lazy.force coq_Leibniz), [| Lazy.force typ ; t |])
 
+let cic_reflexive_relation_class_of_relation_class =
+ function
+    ACReflexive
+     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=None}
+    ->
+     mkApp ((Lazy.force coq_RAsymmetricReflexive),
+      [| refl_a ; refl_aeq; refl_refl |])
+  | ACReflexive
+     {refl_a=refl_a; refl_aeq=refl_aeq; refl_refl=refl_refl; refl_sym=Some sym}
+    ->
+     mkApp ((Lazy.force coq_RSymmetricReflexive),
+      [| refl_a ; refl_aeq; sym ; refl_refl |])
+  | ACLeibniz t -> mkApp ((Lazy.force coq_RLeibniz), [| t |])
+
 let cic_relation_class_of_relation_class =
  cic_relation_class_of_X_relation_class coq_unit coq_tt
 
@@ -594,12 +612,12 @@ let add_setoid a aeq th =
 
 type constr_with_marks =
   | MApp of constr * morphism_class * constr_with_marks array 
-  | Toreplace
-  | Tokeep of constr
+  | ToReplace
+  | ToKeep of constr
 
 let is_to_replace = function
- | Tokeep _ -> false
- | Toreplace -> true
+ | ToKeep _ -> false
+ | ToReplace -> true
  | MApp _ -> true
 
 let get_mark a = 
@@ -644,12 +662,12 @@ let relation_of_hypothesis_and_term_to_rewrite gl (_,h) t =
 let mark_occur t in_c =
  let rec aux in_c =
   if eq_constr t in_c then
-    Toreplace
+    ToReplace
   else
     match kind_of_term in_c with
       | App (c,al) -> 
           let a = Array.map aux al in
-           if not (get_mark a) then Tokeep in_c
+           if not (get_mark a) then ToKeep in_c
            else
             let mor =
               try
@@ -698,7 +716,7 @@ let mark_occur t in_c =
                           let env' = push_rel (name,None,s) env in
                           begin
                            match noccurn 1 t, he with
-                              _, Tokeep arg ->
+                              _, ToKeep arg ->
                                (* generic product, to keep *)
                                find_non_dependent_function
                                 env' c ((Toapply arg)::c_args_rev)
@@ -723,7 +741,7 @@ let mark_occur t in_c =
                    (Array.to_list a))
       | Prod (_, c1, c2) -> 
           if (dependent (mkRel 1) c2)
-          then Tokeep in_c
+          then ToKeep in_c
           else 
             let c1m = aux c1 in
             let c2m = aux c2 in
@@ -732,8 +750,8 @@ let mark_occur t in_c =
                (* this can be optimized since c1 and c2 will be *)
                (* processed again                               *)
                aux (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
-              else Tokeep in_c
-      | _ -> Tokeep in_c
+              else ToKeep in_c
+      | _ -> ToKeep in_c
  in aux in_c
 
 let cic_morphism_context_list_of_list hole_relation =
@@ -775,7 +793,7 @@ let rec cic_type_nelist_of_list =
       [| mkType (Termops.new_univ ()); value; cic_type_nelist_of_list tl |])
 
 let syntactic_but_representation_of_marked_but hole_relation =
- let rec aux out =
+ let rec aux out reflexive_out =
   function
      MApp (f, m, args) ->
       let morphism_theory, relations =
@@ -794,25 +812,29 @@ let syntactic_but_representation_of_marked_but hole_relation =
            in
             mt,List.map (fun x -> ACLeibniz x) f_args in
       let cic_relations =
-       List.map cic_relation_class_of_relation_class relations in
+       List.map
+        (fun r ->
+          cic_relation_class_of_relation_class r,
+          cic_reflexive_relation_class_of_relation_class r
+        ) relations in
       let cic_arguments =
        List.map cic_argument_class_of_argument_class relations in
       let cic_args_relations,argst =
        cic_morphism_context_list_of_list hole_relation
         (List.combine cic_arguments
-          (List.map2 (fun t v -> aux t v) cic_relations
+          (List.map2 (fun (t,refl_t) v -> aux t refl_t v) cic_relations
            (Array.to_list args)))
       in
        mkApp ((Lazy.force coq_App),
         [|hole_relation ; Lazy.force coq_Left2Right ;
           cic_args_relations ; out ; Lazy.force coq_Left2Right ;
           morphism_theory ; argst|])
-   | Toreplace ->
-      mkApp ((Lazy.force coq_Toreplace),
+   | ToReplace ->
+      mkApp ((Lazy.force coq_ToReplace),
        [| hole_relation ; Lazy.force coq_Left2Right |])
-   | Tokeep c ->
-       mkApp ((Lazy.force coq_Tokeep),
-        [| hole_relation ; Lazy.force coq_Left2Right ; out ;
+   | ToKeep c ->
+       mkApp ((Lazy.force coq_ToKeep),
+        [| hole_relation ; Lazy.force coq_Left2Right ; reflexive_out ;
            Lazy.force coq_Left2Right ; c |])
  in aux
 
@@ -822,6 +844,9 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
   cic_relation_class_of_relation_class (ACReflexive hole_relation) in
  let prop_relation =
   cic_relation_class_of_relation_class (Lazy.force coq_prop_relation) in
+ let reflexive_prop_relation =
+  cic_reflexive_relation_class_of_relation_class
+   (Lazy.force coq_prop_relation) in
  let hyp =
   if lft2rgt then h else
    match hole_symmetry with
@@ -839,7 +864,7 @@ let apply_coq_setoid_rewrite hole_relation c1 c2 (lft2rgt,h) m =
    [| hole_relation ; Lazy.force coq_Left2Right ; prop_relation ;
       Lazy.force coq_Left2Right ; c1 ; c2 ;
       syntactic_but_representation_of_marked_but hole_relation
-       prop_relation m ; hyp |])
+       prop_relation reflexive_prop_relation m ; hyp |])
 
 let relation_rewrite c1 c2 (lft2rgt,cl) gl =
  let but = pf_concl gl in
