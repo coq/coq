@@ -110,7 +110,7 @@ let reset_names,pre_name,post_name,inv_name,
     (fun () -> next "for" forr Anonymous),
     (fun () -> string_of_id (next "Label" label Anonymous))
 
-let default = id_of_string "_"
+let default = id_of_string "x_"
 let id_of_name = function Name id -> id | Anonymous -> default
 
 
@@ -169,7 +169,7 @@ let coq_true = mkConstruct ((bool_sp,0),1)
 let coq_false = mkConstruct ((bool_sp,0),2)
 
 let constant s =
-  let id = id_of_string s in
+  let id = Constrextern.id_of_v7_string s in
   Termops.global_reference id
 
 let connective_and = id_of_string "prog_bool_and"

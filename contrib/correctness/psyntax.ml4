@@ -103,7 +103,7 @@ open Util
 open Coqast
 
 let mk_id loc id = mkRefC (Ident (loc, id))
-let mk_ref loc s = mk_id loc (id_of_string s)
+let mk_ref loc s = mk_id loc (Constrextern.id_of_v7_string s)
 let mk_appl loc1 loc2 f args =
   CApp (join_loc loc1 loc2, (None,mk_ref loc1 f), List.map (fun a -> a,None) args)
 
