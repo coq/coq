@@ -94,8 +94,8 @@ let type_of_constructor env sigma cstr =
     (index_of_constructor cstr)
     (inductive_of_constructor cstr)
 
-let type_of_existential env sigma c =
-  Instantiate.existential_type sigma (destEvar c)
+let type_of_existential env sigma ev =
+  Instantiate.existential_type sigma ev
 
 (* Case. *)
 

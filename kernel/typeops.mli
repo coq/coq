@@ -34,15 +34,15 @@ val type_of_inductive : env -> 'a evar_map -> inductive -> types
 
 val type_of_constructor : env -> 'a evar_map -> constructor -> types
 
-val type_of_existential : env -> 'a evar_map -> constr -> constr
+val type_of_existential : env -> 'a evar_map -> existential -> types
 
 val type_of_case : env -> 'a evar_map -> case_info
   -> unsafe_judgment -> unsafe_judgment 
     -> unsafe_judgment array -> unsafe_judgment
 
 val type_case_branches :
-  env -> 'a evar_map -> Inductive.inductive_type -> constr -> constr
-    -> constr -> constr array * constr 
+  env -> 'a evar_map -> Inductive.inductive_type -> constr -> types
+    -> constr -> types array * types
 
 val judge_of_prop_contents : contents -> unsafe_judgment
 
