@@ -568,14 +568,18 @@ and pp_module_type mpl ol = function
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
       fnl () ++ str "end"
 
+let is_short = function MEident _ | MEapply _ -> true | _ -> false
+
 let rec pp_structure_elem mpl = function 
   | (_,SEdecl d) -> pp_decl mpl d
   | (l,SEmodule m) ->
       hov 1 
 	(str "module " ++ P.pp_short_module (id_of_label l) ++ 
-	 str " :" ++ fnl () ++ 
-	 pp_module_type mpl None m.ml_mod_type ++ fnl () ++ 
-	 str "= " ++ fnl () ++ 
+	 (* if you want signatures everywhere: *)
+	 (*i str " :" ++ fnl () ++ i*)
+	 (*i pp_module_type mpl None m.ml_mod_type ++ fnl () ++ i*)
+	 str " = " ++
+	 (if (is_short m.ml_mod_expr) then mt () else fnl ()) ++
 	 pp_module_expr mpl (Some l) m.ml_mod_expr)
   | (l,SEmodtype m) -> 
       hov 1 
