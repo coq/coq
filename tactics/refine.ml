@@ -187,21 +187,19 @@ let rec compute_metamap env c = match kind_of_term c with
       end
 
   (* 5. Fix. *)
-  | IsFix ((ni,i),(ai,fi,v)) ->
-      let vi = List.rev (List.map (fresh env) fi) in
-      let env' =
-	List.fold_left (fun env (v,ar) -> push_named_assum (v, ar) env) env
-	  (List.combine vi (Array.to_list ai)) 
-      in
+  | IsFix ((ni,i),(fi,ai,v)) ->
+      (* TODO: use a fold *)
+      let vi = Array.map (fresh env) fi in
+      let fi' = Array.map (fun id -> Name id) vi in
+      let env' = push_rec_types (fi',ai,v) env in
       let a = Array.map
 		(compute_metamap env')
-		(Array.map (substl (List.map mkVar vi)) v) 
+		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 
       in
       begin
 	try
 	  let v',mm,sgp = replace_in_array env' a in
-	  let fi' = List.rev (List.map (fun id -> Name id) vi) in
-	  let fix = mkFix ((ni,i),(ai,fi',v')) in
+	  let fix = mkFix ((ni,i),(fi',ai,v')) in
 	  TH (fix,mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
@@ -254,10 +252,13 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	error "invalid abstraction passed to function tcc_aux !"
       
     (* fix => tactique Fix *)
-    | IsFix ((ni,_),(ai,fi,_)) , _ ->
+    | IsFix ((ni,_),(fi,ai,_)) , _ ->
 	let ids =
-	  List.map (function Name id -> id | _ ->
-		      error "recursive functions must have names !") fi 
+	  Array.to_list
+            (Array.map
+              (function Name id -> id
+                | _ -> error "recursive functions must have names !")
+              fi) 
 	in
 	tclTHENS
 	  (mutual_fix ids (List.map succ (Array.to_list ni))

@@ -103,6 +103,8 @@ val array_hd : 'a array -> 'a
 val array_tl : 'a array -> 'a array
 val array_last : 'a array -> 'a
 val array_cons : 'a -> 'a array -> 'a array
+val array_fold_right_i : 
+  (int -> 'b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 val array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 val array_fold_left2 : 
   ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a

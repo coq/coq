@@ -803,7 +803,7 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 u1
          else raise NotConvertible
 
-     | (FFix (op1,(tys1,_,cl1),_,_), FFix(op2,(tys2,_,cl2),_,_)) ->
+     | (FFix (op1,(_,tys1,cl1),_,_), FFix(op2,(_,tys2,cl2),_,_)) ->
 	 if op1 = op2
 	 then
 	   let u1 = convert_vect infos el1 el2 tys1 tys2 cuniv in
@@ -814,7 +814,7 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 
-     | (FCoFix (op1,(tys1,_,cl1),_,_), FCoFix(op2,(tys2,_,cl2),_,_)) ->
+     | (FCoFix (op1,(_,tys1,cl1),_,_), FCoFix(op2,(_,tys2,cl2),_,_)) ->
          if op1 = op2
          then
            let u1 = convert_vect infos el1 el2 tys1 tys2 cuniv in

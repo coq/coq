@@ -45,8 +45,8 @@ let sort_of_atomic_type env sigma ft args =
   in concl_of_arity env ft
 
 let typeur sigma metamap =
-let rec type_of env cstr=
-  match kind_of_term cstr with
+  let rec type_of env cstr=
+    match kind_of_term cstr with
     | IsMeta n ->
           (try strip_outer_cast (List.assoc n metamap)
            with Not_found -> anomaly "type_of: this is not a well-typed term")
@@ -73,16 +73,16 @@ let rec type_of env cstr=
           mkProd (name, c1, type_of (push_rel_assum (name,c1) env) c2)
     | IsLetIn (name,b,c1,c2) ->
          subst1 b (type_of (push_rel_def (name,b,c1) env) c2)
-    | IsFix ((vn,i),(lar,lfi,vdef)) -> lar.(i)
-    | IsCoFix (i,(lar,lfi,vdef)) -> lar.(i)
+    | IsFix ((_,i),(_,tys,_)) -> tys.(i)
+    | IsCoFix (i,(_,tys,_)) -> tys.(i)
     | IsApp(f,args)->
-      strip_outer_cast (subst_type env sigma (type_of env f) 
-			  (Array.to_list args))
+        strip_outer_cast
+          (subst_type env sigma (type_of env f) (Array.to_list args))
     | IsCast (c,t) -> t
     | IsSort _ | IsProd (_,_,_) | IsMutInd _ -> mkSort (sort_of env cstr)
 
-and sort_of env t = 
-  match kind_of_term t with
+  and sort_of env t = 
+    match kind_of_term t with
     | IsCast (c,s) when isSort s -> destSort s
     | IsSort (Prop c) -> type_0
     | IsSort (Type u) -> Type Univ.dummy_univ
@@ -95,7 +95,7 @@ and sort_of env t =
         anomaly "sort_of: Not a type (1)"
     | _ -> outsort env sigma (type_of env t)
 
-in type_of, sort_of
+  in type_of, sort_of
 
 let get_type_of env sigma c = fst (typeur sigma []) env c
 let get_sort_of env sigma t = snd (typeur sigma []) env t

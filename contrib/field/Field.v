@@ -14,14 +14,14 @@ Require Export Field_Tactic.
 
 Declare ML Module "field".
 
-Grammar vernac opt_arg_list : List :=
+Grammar vernac opt_arg_list : ast list :=
 | noal [] -> []
 | minus [ "minus" ":=" constrarg($aminus) opt_arg_list($l) ] ->
   [ "minus" $aminus ($LIST $l) ]
 | div [ "div" ":=" constrarg($adiv) opt_arg_list($l) ] ->
   [ "div" $adiv ($LIST $l) ]
 
-with extra_args : List :=
+with extra_args : ast list :=
 | nea [] -> []
 | with_a [ "with" opt_arg_list($l)] -> [ ($LIST $l) ]
 

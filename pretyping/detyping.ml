@@ -333,8 +333,8 @@ let rec detype avoid env t =
 	in 
 	RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	
-    | IsFix (nvn,(cl,lfn,vt)) -> detype_fix (RFix nvn) avoid env cl lfn vt
-    | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCoFix n) avoid env cl lfn vt
+    | IsFix (nvn,recdef) -> detype_fix avoid env (RFix nvn) recdef
+    | IsCoFix (n,recdef) -> detype_fix avoid env (RCoFix n) recdef
 
 and detype_reference avoid env ref args =
   let args = 
@@ -350,13 +350,13 @@ and detype_reference avoid env ref args =
   if args = [] then f
   else RApp (dummy_loc, f, List.map (detype avoid env) args)
 
-and detype_fix fk avoid env cl lfn vt =
-  let lfi = List.map (fun id -> next_name_away id avoid) lfn in
-  let def_avoid = lfi@avoid in
+and detype_fix avoid env fixkind (names,tys,bodies) =
+  let lfi = Array.map (fun id -> next_name_away id avoid) names in
+  let def_avoid = Array.to_list lfi@avoid in
   let def_env =
-    List.fold_left (fun env id -> add_name (Name id) env) env lfi in
-  RRec(dummy_loc,fk,Array.of_list lfi,Array.map (detype avoid env) cl,
-       Array.map (detype def_avoid def_env) vt)
+    Array.fold_left (fun env id -> add_name (Name id) env) env lfi in
+  RRec(dummy_loc,fixkind,lfi,Array.map (detype avoid env) tys,
+       Array.map (detype def_avoid def_env) bodies)
 
 
 and detype_eqn avoid env constr_id construct_nargs branch =

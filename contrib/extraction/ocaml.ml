@@ -218,8 +218,8 @@ let rec pp_expr par env args =
 		    'fNL; 'sTR "  "; pp_pat env pv >];
 	     if args <> [] then [< 'sTR ")" >] else close_par par >]
     | MLfix (i,ids,defs) ->
-	let ids',env' = push_vars (List.rev ids) env in
-      	pp_fix par env' (Some i) (List.rev ids',defs) args
+	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
+      	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
     | MLexn id -> 
 	[< open_par par; 'sTR "failwith"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
@@ -256,14 +256,14 @@ and pp_pat env pv =
 and pp_fix par env in_p (ids,bl) args =
   [< open_par par; 
      v 0 [< 'sTR "let rec " ;
-	    prlist_with_sep
+	    prvect_with_sep
       	      (fun () -> [< 'fNL; 'sTR "and " >])
 	      (fun (fi,ti) -> pp_function env (pr_id fi) ti)
-	      (List.combine ids bl);
+	      (array_map2 (fun id b -> (id,b)) ids bl);
 	    'fNL;
 	    match in_p with
 	      | Some j -> 
-      		  hOV 2 [< 'sTR "in "; pr_id (List.nth ids j);
+      		  hOV 2 [< 'sTR "in "; pr_id (ids.(j));
 			   if args <> [] then
 			     [< 'sTR " "; 
 				prlist_with_sep (fun () -> [<'sTR " ">])
@@ -351,10 +351,10 @@ let pp_decl = function
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
 	       pp_type_global r; 'sPC; 'sTR "="; 'sPC; 
 	       pp_type false  t; 'fNL >]
-  | Dglob (r, MLfix (_,[_],[def])) ->
+  | Dglob (r, MLfix (_,[|_|],[|def|])) ->
       let id = P.rename_global r in
       let env' = ([id], !current_ids) in
-      [<  hOV 2 (pp_fix false env' None ([id],[def]) []) >]
+      [<  hOV 2 (pp_fix false env' None ([|id|],[|def|]) []) >]
   | Dglob (r, a) ->
       hOV 0 [< 'sTR "let "; 
 	       pp_function (empty_env ()) (pp_global r) a; 'fNL >]

@@ -108,17 +108,17 @@ let constr_display csr =
   | IsMutCase (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
-  | IsFix ((t,i),(tl,lna,bl)) ->
+  | IsFix ((t,i),(lna,tl,bl)) ->
       "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
         then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
       ^(array_display tl)^","
-      ^(List.fold_right (fun x i -> (name_display x)^(if not(i="")
+      ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^","
       ^(array_display bl)^")"
-  | IsCoFix(i,(tl,lna,bl)) ->
+  | IsCoFix(i,(lna,tl,bl)) ->
       "CoFix("^(string_of_int i)^"),"
       ^(array_display tl)^","
-      ^(List.fold_right (fun x i -> (name_display x)^(if not(i="")
+      ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^","
       ^(array_display bl)^")"
 
@@ -208,33 +208,33 @@ let print_pure_constr csr =
       print_cut(); 
       print_string "end"; 
       close_box()
-  | IsFix ((t,i),(tl,lna,bl)) ->
+  | IsFix ((t,i),(lna,tl,bl)) ->
       print_string "Fix("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
-      let rec print_fix lna k = 
-	match lna with [] ->  ()
-	  | nf::ln ->  open_vbox 0;
-	name_display nf; print_string "/"; 
-	print_int t.(k); print_cut(); print_string ":";
-	box_display tl.(k) ; print_cut(); print_string ":=";
-	box_display bl.(k); close_box ();
-	print_cut();
-	print_fix ln (k+1)
-      in print_string"{"; print_fix lna 0; print_string"}"
-  | IsCoFix(i,(tl,lna,bl)) ->
+      let rec print_fix () =
+        for k = 0 to Array.length tl do
+	  open_vbox 0;
+	  name_display lna.(k); print_string "/"; 
+	  print_int t.(k); print_cut(); print_string ":";
+	  box_display tl.(k) ; print_cut(); print_string ":=";
+	  box_display bl.(k); close_box ();
+	  print_cut()
+        done
+      in print_string"{"; print_fix(); print_string"}"
+  | IsCoFix(i,(lna,tl,bl)) ->
       print_string "CoFix("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
-      let rec print_fix lna k = 
-	match lna with [] ->  ()
-	  | nf::ln ->  open_vbox 1;
-	name_display nf;  print_cut(); print_string ":";
-	box_display tl.(k) ; print_cut(); print_string ":=";
-	box_display bl.(k); close_box ();
-	print_cut();
-	print_fix ln (k+1)
-      in print_string"{"; print_fix lna 0; print_string"}"
+      let rec print_fix () =
+        for k = 0 to Array.length tl do
+          open_vbox 1;
+	  name_display lna.(k);  print_cut(); print_string ":";
+	  box_display tl.(k) ; print_cut(); print_string ":=";
+	  box_display bl.(k); close_box ();
+	  print_cut();
+        done
+      in print_string"{"; print_fix (); print_string"}"
 
   and box_display c = open_hovbox 1; term_display c; close_box()
 

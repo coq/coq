@@ -288,18 +288,18 @@ let enforce_univ_gt u v g =
 	(match compare g v u with
            | NGE -> setgt g u v
            | _ -> error_inconsistency())
-
+(*
 let enforce_univ_relation g = function 
   | Equiv (u,v) -> enforce_univ_eq u v g
   | Canonical {univ=u; gt=gt; ge=ge} ->
       let g' = List.fold_right (enforce_univ_gt u) gt g in
       List.fold_right (enforce_univ_geq u) ge g'
-
-
+*)
 (* Merging 2 universe graphs *)
+(*
 let merge_universes sp u1 u2 =
   UniverseMap.fold (fun _ a g -> enforce_univ_relation g a) u1 u2
-
+*)
 
 
 (* Constraints and sets of consrtaints. *)
@@ -307,6 +307,13 @@ let merge_universes sp u1 u2 =
 type constraint_type = Gt | Geq | Eq
 
 type univ_constraint = universe * constraint_type * universe
+
+let enforce_constraint cst g =
+  match cst with
+    | (u,Gt,v) -> enforce_univ_gt u v g
+    | (u,Geq,v) -> enforce_univ_geq u v g
+    | (u,Eq,v) -> enforce_univ_eq u v g
+
 
 module Constraint = Set.Make(
   struct 
@@ -324,12 +331,7 @@ let enforce_geq u v c = Constraint.add (u,Geq,v) c
 let enforce_eq u v c = Constraint.add (u,Eq,v) c
 
 let merge_constraints c g =
-  Constraint.fold 
-    (fun cst g -> match cst with
-       | (u,Gt,v) -> enforce_univ_gt u v g
-       | (u,Geq,v) -> enforce_univ_geq u v g
-       | (u,Eq,v) -> enforce_univ_eq u v g)
-    c g
+  Constraint.fold enforce_constraint c g
 
 (* Returns a fresh universe, juste above u. Does not create new universes
    for Type_0 (the sort of Prop and Set).

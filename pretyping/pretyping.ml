@@ -47,7 +47,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
     error_number_branches_loc loc CCI env c
       (mkAppliedInd indt) (mis_nconstr mispec);
   if mis_is_recursive_subset [tyi] mispec then
-    let dep = find_case_dep_nparams env sigma (c,p) indf pt in 
+    let (dep,_) = find_case_dep_nparams env sigma (c,p) indf pt in 
     let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
     let depFvec = Array.init (mis_ntypes mispec) init_depFvec in
     (* build now the fixpoint *)
@@ -90,10 +90,10 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 	       else
 		 let args = extended_rel_list 1 lnames in
 		 whd_beta (applist (lift (nar+1) p, args)))))
-          lnames 
-      in
-      let fix = mkFix (([|nar|],0),
-		       ([|typPfix|],[Name(id_of_string "F")],[|deffix|])) in
+          lnames in
+      let fix =
+        mkFix (([|nar|],0),
+	       ([|Name(id_of_string "F")|],[|typPfix|],[|deffix|])) in
       applist (fix,realargs@[c])
   else
     let ci = make_default_case_info mispec in
@@ -261,29 +261,29 @@ let rec pretype tycon env isevars lvar lmeta = function
 		      (loc,"pretype",
 		       [< 'sTR "Cannot infer a term for this placeholder" >])))
 
-  | RRec (loc,fixkind,lfi,lar,vdef) ->
-      let larj = Array.map (pretype_type empty_valcon env isevars lvar lmeta) lar in
+  | RRec (loc,fixkind,names,lar,vdef) ->
+      let larj =
+        Array.map (pretype_type empty_valcon env isevars lvar lmeta) lar in
       let lara = Array.map (fun a -> a.utj_val) larj in
-      let nbfix = Array.length lfi in
-      let lfi = List.map (fun id -> Name id) (Array.to_list lfi) in
-      let newenv =
-	array_fold_left2 (fun env id ar -> (push_rel_assum (id,ar) env))
-	  env (Array.of_list lfi) (vect_lift_type lara) in
+      let nbfix = Array.length lar in
+      let names = Array.map (fun id -> Name id) names in
+      let newenv = push_rec_types (names,lara,[||]) env in
       let vdefj =
 	Array.mapi 
 	  (fun i def -> (* we lift nbfix times the type in tycon, because of
 			 * the nbfix variables pushed to newenv *)
-             pretype (mk_tycon (lift nbfix (larj.(i).utj_val))) newenv isevars lvar
-	       lmeta def) vdef in
-      evar_type_fixpoint env isevars lfi lara vdefj;
+             pretype (mk_tycon (lift nbfix (larj.(i).utj_val)))
+               newenv isevars lvar lmeta def)
+          vdef in
+      evar_type_fixpoint env isevars names lara vdefj;
       let fixj =
 	match fixkind with
 	  | RFix (vn,i as vni) ->
-	      let fix = (vni,(lara,lfi,Array.map j_val vdefj)) in
+	      let fix = (vni,(names,lara,Array.map j_val vdefj)) in
 	      check_fix env (evars_of isevars) fix;
 	      make_judge (mkFix fix) lara.(i)
 	  | RCoFix i -> 
-	      let cofix = (i,(lara,lfi,Array.map j_val vdefj)) in
+	      let cofix = (i,(names,lara,Array.map j_val vdefj)) in
 	      check_cofix env (evars_of isevars) cofix;
 	      make_judge (mkCoFix cofix) lara.(i) in
       inh_conv_coerce_to_tycon loc env isevars fixj tycon
@@ -299,7 +299,9 @@ let rec pretype tycon env isevars lvar lmeta = function
 	| c::rest ->
 	    let argloc = loc_of_rawconstr c in
 	    let resj = inh_app_fun env isevars resj in
-      	    match kind_of_term (whd_betadeltaiota env (evars_of isevars) resj.uj_type) with
+            let resty =
+              whd_betadeltaiota env (evars_of isevars) resj.uj_type in
+      	    match kind_of_term resty with
 	      | IsProd (na,c1,c2) ->
 		  let hj = pretype (mk_tycon c1) env isevars lvar lmeta c in
 		  let newresj =
@@ -398,7 +400,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 
       let evalPt = nf_ise1 (evars_of isevars) pj.uj_type in
 
-      let dep = find_case_dep_nparams env (evars_of isevars)
+      let (dep,_) = find_case_dep_nparams env (evars_of isevars)
         (cj.uj_val,pj.uj_val) indf evalPt in
 
       let (p,pt) =

@@ -446,7 +446,7 @@ let print_term inner_types l env csr =
             ) a [<>]
         >]
 )
-   | T.IsFix ((ai,i),((t,f,b) as rec_decl)) ->
+   | T.IsFix ((ai,i),((f,t,b) as rec_decl)) ->
       X.xml_nempty "FIX"
        (add_sort_attribute true ["noFun", (string_of_int i) ; "id",next_id])
 (force
@@ -458,7 +458,7 @@ let print_term inner_types l env csr =
                      [< term_display idradix false l env ti >] ;
 	            X.xml_nempty "body" [] [<
                      term_display idradix false
-                      ((List.rev f)@l)
+                      ((Array.to_list f)@l)
                       (E.push_rec_types rec_decl env)
                       bi
                     >]
@@ -466,11 +466,11 @@ let print_term inner_types l env csr =
                 i
              >]
            )
-	   (Array.mapi (fun j x -> (x,t.(j),b.(j),ai.(j)) ) (Array.of_list f) )
+	   (Array.mapi (fun j x -> (x,t.(j),b.(j),ai.(j)) ) f )
            [<>]
        >]
 )
-   | T.IsCoFix (i,((t,f,b) as rec_decl)) ->
+   | T.IsCoFix (i,((f,t,b) as rec_decl)) ->
       X.xml_nempty "COFIX"
        (add_sort_attribute true ["noFun", (string_of_int i) ; "id",next_id])
 (force
@@ -481,7 +481,7 @@ let print_term inner_types l env csr =
                     [< term_display idradix false l env ti >] ;
 	           X.xml_nempty "body" [] [<
                     term_display idradix false
-                     ((List.rev f)@l)
+                     ((Array.to_list f)@l)
                      (E.push_rec_types rec_decl env)
                      bi
                    >]
@@ -489,7 +489,7 @@ let print_term inner_types l env csr =
                i
             >]
 	   )
-	   (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) (Array.of_list f) ) [<>]
+	   (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) f ) [<>]
        >]
 )
    | T.IsEvar _ ->

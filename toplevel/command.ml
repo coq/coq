@@ -140,16 +140,18 @@ let minductive_message = function
   | l   -> hOV 0  [< prlist_with_sep pr_coma pr_id l;
 		     'sPC; 'sTR "are defined">]
 
-let recursive_message = function 
-  | []  -> anomaly "no recursive definition"
-  | [sp] -> [< Printer.pr_global sp; 'sTR " is recursively defined">]
-  | l   -> hOV 0 [< prlist_with_sep pr_coma Printer.pr_global l;
+let recursive_message v =
+  match Array.length v with
+    | 0 -> anomaly "no recursive definition"
+    | 1 -> [< Printer.pr_global v.(0); 'sTR " is recursively defined">]
+    | _ -> hOV 0 [< prvect_with_sep pr_coma Printer.pr_global v;
 		    'sPC; 'sTR "are recursively defined">]
 
-let corecursive_message = function 
-  | []  -> anomaly "no corecursive definition"
-  | [x] -> [< Printer.pr_global x; 'sTR " is corecursively defined">]
-  | l   -> hOV 0 [< prlist_with_sep pr_coma Printer.pr_global l;
+let corecursive_message v =
+  match Array.length v with
+    | 0 -> anomaly "no corecursive definition"
+    | 1 -> [< Printer.pr_global v.(0); 'sTR " is corecursively defined">]
+    | _ -> hOV 0 [< prvect_with_sep pr_coma Printer.pr_global v;
                     'sPC; 'sTR "are corecursively defined">]
 
 let interp_mutual lparams lnamearconstrs finite = 
@@ -249,7 +251,9 @@ let collect_non_rec  =
       searchrec ((f,mkCast (def,body_of_type ar))::lnonrec) 
         (lf1@lf2) (ldef1@ldef2) (lar1@lar2) newlnv
     with Failure "try_find_i" -> 
-      (lnonrec, (lnamerec,ldefrec,larrec,nrec))
+      (List.rev lnonrec,
+       (Array.of_list lnamerec, Array.of_list ldefrec,
+        Array.of_list larrec, Array.of_list nrec))
   in 
   searchrec [] 
 
@@ -272,8 +276,7 @@ let build_recursive lnameargsardef =
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
-      States.unfreeze fs; raise e
-  in
+      States.unfreeze fs; raise e in
   let arityl = List.rev arityl in
   let recdef =
     try 
@@ -285,30 +288,25 @@ let build_recursive lnameargsardef =
       States.unfreeze fs; raise e
   in
   States.unfreeze fs;
-  let (lnonrec,(lnamerec,ldefrec,larrec,nvrec)) = 
+  let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
     collect_non_rec lrecnames recdef arityl (Array.to_list nv) in
   let n = NeverDischarge in 
-  if lnamerec <> [] then begin
-    let recvec = 
-      Array.map (subst_vars (List.rev lnamerec)) (Array.of_list ldefrec) in
-    let varrec = Array.of_list larrec in
-    let rec declare i = function 
-      | fi::lf ->
-	  let ce = 
-	    { const_entry_body =
-		mkFix ((Array.of_list nvrec,i),
-		       (varrec,List.map (fun id -> Name id) lnamerec,
-			recvec));
-	      const_entry_type = None } 
-	  in
-	  let sp = declare_constant fi (ConstantEntry ce, n, false) in
-          (ConstRef sp)::(declare (i+1) lf)
-      | _ -> [] 
-    in 
-    (* declare the recursive definitions *)
-    let lrefrec = declare 0 lnamerec in
-    if_verbose pPNL (recursive_message lrefrec)
-  end;
+  let recvec = 
+    Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
+  let rec declare i fi =
+    let ce = 
+      { const_entry_body =
+	  mkFix ((nvrec,i),
+	         (Array.map (fun id -> Name id) namerec,
+                  arrec,
+		  recvec));
+        const_entry_type = None } in
+    let sp = declare_constant fi (ConstantEntry ce, n, false) in
+    (ConstRef sp)
+  in 
+  (* declare the recursive definitions *)
+  let lrefrec = Array.mapi declare namerec in
+  if_verbose pPNL (recursive_message lrefrec);
   (* The others are declared as normal definitions *)
   let var_subst id = (id, global_reference CCI id) in
   let _ = 
@@ -319,7 +317,7 @@ let build_recursive lnameargsardef =
 	 let _ = declare_constant f (ConstantEntry ce,n,false) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
-      (List.map var_subst lnamerec)
+      (List.map var_subst (Array.to_list namerec))
       lnonrec 
   in
   ()
@@ -340,8 +338,8 @@ let build_corecursive lnameardef =
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
-      States.unfreeze fs; raise e
-  in 
+      States.unfreeze fs; raise e in 
+  let arityl = List.rev arityl in
   let recdef =
     try 
       List.map (fun (_,arityc,def) -> 
@@ -352,31 +350,24 @@ let build_corecursive lnameardef =
       States.unfreeze fs; raise e 
   in
   States.unfreeze fs;
-  let (lnonrec,(lnamerec,ldefrec,larrec,_)) = 
-    collect_non_rec lrecnames recdef (List.rev arityl) [] in
+  let (lnonrec,(namerec,defrec,arrec,_)) = 
+    collect_non_rec lrecnames recdef arityl [] in
   let n = NeverDischarge in 
-  if lnamerec <> [] then begin
-    let recvec = 
-      if lnamerec = [] then 
-	[||] 
-      else 
-	Array.map (subst_vars (List.rev lnamerec)) (Array.of_list ldefrec) in
-    let varrec = Array.of_list larrec in
-    let rec declare i = function 
-      | fi::lf ->
-	  let ce = 
-	    { const_entry_body =
-		mkCoFix (i, (varrec,List.map (fun id -> Name id) lnamerec,
-			     recvec));
-	      const_entry_type = None } 
-	  in
-          let sp = declare_constant fi (ConstantEntry ce,n,false) in
-          (ConstRef sp) :: declare (i+1) lf
-      | _        -> [] 
-    in 
-    let lrefrec = declare 0 lnamerec in
-    if_verbose pPNL (corecursive_message lrefrec)
-  end;
+  let recvec = 
+    Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
+  let rec declare i fi =
+    let ce = 
+      { const_entry_body =
+	  mkCoFix (i, (Array.map (fun id -> Name id) namerec,
+                       arrec,
+		       recvec));
+        const_entry_type = None } 
+    in
+    let sp = declare_constant fi (ConstantEntry ce,n,false) in
+    (ConstRef sp)
+  in 
+  let lrefrec = Array.mapi declare namerec in
+  if_verbose pPNL (corecursive_message lrefrec);
   let var_subst id = (id, global_reference CCI id) in
   let _ = 
     List.fold_left
@@ -386,7 +377,7 @@ let build_corecursive lnameardef =
 	 let _ = declare_constant f (ConstantEntry ce,n,false) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
-      (List.map var_subst lnamerec)
+      (List.map var_subst (Array.to_list namerec))
       lnonrec 
   in
   ()
@@ -420,7 +411,7 @@ let build_scheme lnamedepindsort =
     ConstRef sp :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
-  if_verbose pPNL (recursive_message lrecref)
+  if_verbose pPNL (recursive_message (Array.of_list lrecref))
 
 let start_proof_com sopt stre com =
   let env = Global.env () in

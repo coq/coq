@@ -342,8 +342,8 @@ let mis_make_indrec env sigma listdepkind mispec =
 	    let fixn = Array.of_list (List.rev ln) in
             let fixtyi = Array.of_list (List.rev ltyp) in
             let fixdef = Array.of_list (List.rev ldef) in 
-            let names = list_tabulate (fun _ -> Name(id_of_string "F")) nrec in
-	    mkFix ((fixn,p),(fixtyi,names,fixdef))
+            let names = Array.create nrec (Name(id_of_string "F")) in
+	    mkFix ((fixn,p),(names,fixtyi,fixdef))
       in 
       mrec 0 [] [] [] 
     in 
@@ -469,11 +469,12 @@ let build_indrec env sigma mispec =
 (***********************************)
 (* To interpret the Match operator *)
 
+(* TODO: check that we can drop universe constraints ? *)
 let type_mutind_rec env sigma (IndType (indf,realargs) as ind) pt p c = 
   let (mispec,params) = dest_ind_family indf in
   let tyi = mis_index mispec in
   if mis_is_recursive_subset [tyi] mispec then
-    let dep = find_case_dep_nparams env sigma (c,p) indf pt in 
+    let (dep,_) = find_case_dep_nparams env sigma (c,p) indf pt in 
     let init_depPvec i = if i = tyi then Some(dep,p) else None in
     let depPvec = Array.init (mis_ntypes mispec) init_depPvec in
     let vargs = Array.of_list params in
@@ -485,11 +486,13 @@ let type_mutind_rec env sigma (IndType (indf,realargs) as ind) pt p c =
      if dep then applist(p,realargs@[c]) 
      else applist(p,realargs) )
   else 
-    type_case_branches env sigma ind pt p c
+    let (p,ra,_) = type_case_branches env sigma ind pt p c in
+    (p,ra)
 
 let type_rec_branches recursive env sigma ind pt p c =
   if recursive then 
     type_mutind_rec env sigma ind pt p c
   else 
-    type_case_branches env sigma ind pt p c
+    let (p,ra,_) = type_case_branches env sigma ind pt p c in
+    (p,ra)
 

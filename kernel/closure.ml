@@ -438,9 +438,9 @@ and fterm =
   | FInd of inductive_path * fconstr array
   | FConstruct of constructor_path * fconstr array
   | FApp of fconstr * fconstr array
-  | FFix of (int array * int) * (fconstr array * name list * fconstr array)
+  | FFix of (int array * int) * (name array * fconstr array * fconstr array)
       * constr array * fconstr subs
-  | FCoFix of int * (fconstr array * name list * fconstr array)
+  | FCoFix of int * (name array * fconstr array * fconstr array)
       * constr array * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
   | FLambda of name * fconstr * fconstr * constr * fconstr subs
@@ -535,18 +535,20 @@ let mk_clos_deep clos_fun env t =
         { norm = Red;
 	  term = FCases (ci, clos_fun env p, clos_fun env c,
 			 Array.map (clos_fun env) v) }
-    | IsFix (op,(tys,lna,bds)) ->
+    | IsFix (op,(lna,tys,bds)) ->
 	let env' = subs_liftn (Array.length bds) env in
         { norm = Cstr;
-	  term = FFix (op, (Array.map (clos_fun env) tys, lna,
-			    Array.map (clos_fun env') bds),
-		       bds, env) }
-    | IsCoFix (op,(tys,lna,bds)) ->
+	  term = FFix
+                   (op,(lna, Array.map (clos_fun env) tys,
+                             Array.map (clos_fun env') bds),
+                    bds, env) }
+    | IsCoFix (op,(lna,tys,bds)) ->
 	let env' = subs_liftn (Array.length bds) env in
         { norm = Cstr;
-	  term = FCoFix (op, (Array.map (clos_fun env) tys, lna,
-			      Array.map (clos_fun env') bds),
-			 bds, env) }
+	  term = FCoFix
+                   (op,(lna, Array.map (clos_fun env) tys,
+	                     Array.map (clos_fun env') bds),
+	            bds, env) }
 
     | IsLambda (n,t,c) ->
         { norm = Cstr;
@@ -590,14 +592,14 @@ let rec to_constr constr_fun lfts v =
 	mkMutCase (ci, constr_fun lfts p,
 		   constr_fun lfts c,
 		   Array.map (constr_fun lfts) ve)
-    | FFix (op,(tys,lna,bds),_,_) ->
+    | FFix (op,(lna,tys,bds),_,_) ->
 	let lfts' = el_liftn (Array.length bds) lfts in
-	mkFix (op, (Array.map (constr_fun lfts) tys, lna,
-		    Array.map (constr_fun lfts') bds))
-    | FCoFix (op,(tys,lna,bds),_,_) ->
+	mkFix (op, (lna, Array.map (constr_fun lfts) tys,
+		         Array.map (constr_fun lfts') bds))
+    | FCoFix (op,(lna,tys,bds),_,_) ->
 	let lfts' = el_liftn (Array.length bds) lfts in
-	mkCoFix (op, (Array.map (constr_fun lfts) tys, lna,
-		      Array.map (constr_fun lfts') bds))
+	mkCoFix (op, (lna, Array.map (constr_fun lfts) tys,
+		           Array.map (constr_fun lfts') bds))
     | FApp (f,ve) ->
 	mkApp (constr_fun lfts f,
 	       Array.map (constr_fun lfts) ve)
@@ -903,9 +905,9 @@ and down_then_up info m stk =
             FInd(ind, Array.map (kl info) args)
         | FConstruct(c,args) ->
             FConstruct(c, Array.map (kl info) args)
-        | FCoFix(n,(ftys,na,fbds),bds,e) ->
-            FCoFix(n,(Array.map (kl info) ftys, na,
-                      Array.map (kl info) fbds),bds,e)
+        | FCoFix(n,(na,ftys,fbds),bds,e) ->
+            FCoFix(n,(na, Array.map (kl info) ftys,
+                          Array.map (kl info) fbds),bds,e)
         | FFlex(FConst(sp,args)) ->
             FFlex(FConst(sp, Array.map (kl info) args))
         | FFlex(FEvar((i,args),e)) ->

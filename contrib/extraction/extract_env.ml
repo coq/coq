@@ -65,7 +65,7 @@ and visit_ast eenv a =
     | MLcons (r,l) -> visit_reference eenv r; List.iter visit l
     | MLcase (a,br) -> 
 	visit a; Array.iter (fun (r,_,a) -> visit_reference eenv r; visit a) br
-    | MLfix (_,_,l) -> List.iter visit l
+    | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type eenv t
     | MLmagic a -> visit a
     | MLrel _ | MLprop | MLarity | MLexn _ -> ()

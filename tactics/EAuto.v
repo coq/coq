@@ -43,7 +43,7 @@ Grammar tactic simple_tactic: ast :=
 | eautod_with_star [ "EAutod" eautoarg($np) "with" "*" ] 
 	-> [(EAuto "debug" ($LIST $np) "*")]
 
-with eautoarg : List :=
+with eautoarg : ast list :=
 | eautoarg_mt [ ] -> [ ]
 | eautoarg_n  [ numarg($n) ] -> [ $n ] 
 | eautoarg_np [ numarg($n) numarg($p) ] -> [ $n $p ] 

@@ -82,10 +82,6 @@ GEXTEND Gram
   entry_type:
     [[ ":"; IDENT "ast"; IDENT "list" -> 
 	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
-     | ":"; IDENT "List" -> (* For compatibility *)
-	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
-     | ":"; IDENT "list" -> (* For compatibility *)
-	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
      | ":"; IDENT "ast" ->
 	 let _ = set_default_action_parser ast in Id(loc,"AST")
      | ":"; IDENT "constr" ->

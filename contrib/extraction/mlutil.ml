@@ -46,10 +46,12 @@ let rec occurs k = function
       (occurs k t) ||
       (array_exists
 	 (fun (_,l,t') -> let k' = List.length l in occurs (k + k') t') pv)
-  | MLfix(_,l,cl) -> let k' = List.length l in occurs_list (k + k') cl
+  | MLfix(_,l,cl) -> let k' = Array.length l in occurs_vect (k + k') cl
   | _ -> false
 
 and occurs_list k l = List.exists (occurs k) l
+
+and occurs_vect k v = array_exists (occurs k) v
 
 (*s map over ML asts *)
 
@@ -59,7 +61,7 @@ let rec ast_map f = function
   | MLletin (id,a,b) -> MLletin (id, f a, f b)
   | MLcons (c,al) -> MLcons (c, List.map f al)
   | MLcase (a,eqv) -> MLcase (f a, Array.map (ast_map_eqn f) eqv)
-  | MLfix (fi,ids,al) -> MLfix (fi, ids, List.map f al)
+  | MLfix (fi,ids,al) -> MLfix (fi, ids, Array.map f al)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a
@@ -84,7 +86,7 @@ let ml_liftn k n c =
 			     (id, idl, liftrec (n+k) p)) pl)
     | MLfix (n0,idl,pl) -> 
 	MLfix (n0,idl,
-	       let k = List.length idl in List.map (liftrec (n+k)) pl)
+	       let k = Array.length idl in Array.map (liftrec (n+k)) pl)
     | a -> ast_map (liftrec n) a
   in 
   if k = 0 then c else liftrec n c
@@ -115,10 +117,10 @@ let rec ml_subst v =
       	       		     (id,ids,subst (n+k) (ml_lift k m) t)) pv)
     | MLfix (i,ids,cl) -> 
 	MLfix (i,ids, 
-	       let k = List.length ids in
-	       List.map (subst (n+k) (ml_lift k m)) cl)
-    | a -> 
-	ast_map (subst n m) a
+	       let k = Array.length ids in
+	       Array.map (subst (n+k) (ml_lift k m)) cl)
+    | a ->
+        ast_map (subst n m) a
   in 
   subst 1 v
 
@@ -145,7 +147,7 @@ let nb_occur a =
 	count n t;
 	Array.iter (fun (_,l,t) -> let k = List.length l in count (n + k) t) pv
     | MLfix (_,ids,cl) -> 
-	let k = List.length ids in List.iter (count (n + k)) cl
+	let k = Array.length ids in Array.iter (count (n + k)) cl
     | MLapp (a,l) -> count n a; List.iter (count n) l
     | MLcons (_,l) ->  List.iter (count n) l
     | MLmagic a -> count n a
@@ -238,13 +240,15 @@ let rec ml_size = function
   | MLcons(_,l) -> ml_size_list l
   | MLcase(t,pv) -> 
       1 + ml_size t + (Array.fold_right (fun (_,_,t) a -> a + ml_size t) pv 0)
-  | MLfix(_,_,f) -> ml_size_list f
+  | MLfix(_,_,f) -> ml_size_array f
   | MLletin (_,_,t) -> ml_size t
   | MLcast (t,_) -> ml_size t
   | MLmagic t -> ml_size t
   | _ -> 0
 
 and ml_size_list l = List.fold_left (fun a t -> a + ml_size t) 0 l
+
+and ml_size_array l = Array.fold_left (fun a t -> a + ml_size t) 0 l
 
 let is_fix = function MLfix _ -> true | _ -> false
 
@@ -296,9 +300,9 @@ let rec non_stricts add cand = function
       let cand = non_stricts false cand t1 in 
       pop 1 (non_stricts add (lift 1 cand) t2)
   | MLfix (_,i,f)-> 
-      let n = List.length i in
+      let n = Array.length i in
       let cand = lift n cand in 
-      let cand = List.fold_left (non_stricts false) cand f in 
+      let cand = Array.fold_left (non_stricts false) cand f in 
       pop n cand
   | MLcase (t,v) -> 
       (* The only interesting case: for a variable to be non-strict, 

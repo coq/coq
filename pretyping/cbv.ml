@@ -368,17 +368,18 @@ and cbv_norm_value info = function (* reduction under binders *)
   | LAM (x,a,b,env) ->
       mkLambda (x, cbv_norm_term info env a,
 		cbv_norm_term info (subs_lift env) b)
-  | FIXP ((lij,(lty,lna,bds)),env,args) ->
+  | FIXP ((lij,(names,lty,bds)),env,args) ->
       applistc
         (mkFix (lij,
-		(Array.map (cbv_norm_term info env) lty, lna, 
+		(names,
+                 Array.map (cbv_norm_term info env) lty,
 		 Array.map (cbv_norm_term info 
 			      (subs_liftn (Array.length lty) env)) bds)))
         (List.map (cbv_norm_value info) args)
-  | COFIXP ((j,(lty,lna,bds)),env,args) ->
+  | COFIXP ((j,(names,lty,bds)),env,args) ->
       applistc
         (mkCoFix (j,
-		  (Array.map (cbv_norm_term info env) lty, lna, 
+		  (names,Array.map (cbv_norm_term info env) lty,
 		   Array.map (cbv_norm_term info 
 				(subs_liftn (Array.length lty) env)) bds)))
         (List.map (cbv_norm_value info) args)

@@ -32,145 +32,139 @@ let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
 (* The typing machine without information. *)
 
-let rec execute env cstr =
-  let cst0 = Constraint.empty in
+    (* ATTENTION : faudra faire le typage du contexte des Const,
+    MutInd et MutConstructsi un jour cela devient des constructions
+    arbitraires et non plus des variables *)
+
+let univ_combinator (cst,univ) (j,c') =
+  (j,(Constraint.union cst c', merge_constraints c' univ))
+
+let rec execute env cstr cu =
   match kind_of_term cstr with
     | IsMeta _ ->
 	anomaly "the kernel does not understand metas"
     | IsEvar _ ->
 	anomaly "the kernel does not understand existential variables"
-	
-    | IsRel n -> 
-	(relative env Evd.empty n, cst0)
 
-    | IsVar id -> 
-	(make_judge cstr (lookup_named_type id env), cst0)
-
-    (* ATTENTION : faudra faire le typage du contexte des Const,
-    MutInd et MutConstructsi un jour cela devient des constructions
-    arbitraires et non plus des variables *)
-
-    | IsConst c ->
-        (make_judge cstr (type_of_constant env Evd.empty c), cst0)
-	  
-    | IsMutInd ind ->
-	(make_judge cstr (type_of_inductive env Evd.empty ind), cst0)
-	  
-    | IsMutConstruct c -> 
-	(make_judge cstr (type_of_constructor env Evd.empty c), cst0)
-	  
-    | IsMutCase (ci,p,c,lf) ->
-        let (cj,cst1) = execute env c in
-        let (pj,cst2) = execute env p in
-        let (lfj,cst3) = execute_array env lf in
-	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-        (type_of_case env Evd.empty ci pj cj lfj, cst)
-  
-    | IsFix ((vn,i as vni),(lar,lfi,vdef)) ->
-        if array_exists (fun n -> n < 0) vn then
-          error "General Fixpoints not allowed";
-        let (larjv,vdefv,cst) = execute_fix env lar lfi vdef in
-	let larv = Array.map body_of_type larjv in
-        let fix = (vni,(larv,lfi,vdefv)) in
-        check_fix env Evd.empty fix;
-	(make_judge (mkFix fix) larjv.(i), cst)
-	  
-    | IsCoFix (i,(lar,lfi,vdef)) ->
-        let (larjv,vdefv,cst) = execute_fix env lar lfi vdef in
-	let larv = Array.map body_of_type larjv in
-        let cofix = (i,(larv,lfi,vdefv)) in
-        check_cofix env Evd.empty cofix;
-	(make_judge (mkCoFix cofix) larjv.(i), cst)
-	  
     | IsSort (Prop c) -> 
-	(judge_of_prop_contents c, cst0)
+	(judge_of_prop_contents c, cu)
 
     | IsSort (Type u) ->
 	let inst_u = if u == dummy_univ then new_univ() else u in
-	judge_of_type inst_u
-	  
+	univ_combinator cu (judge_of_type inst_u)
+
     | IsApp (f,args) ->
-	let (j,cst1) = execute env f in
-        let (jl,cst2) = execute_array env args in
-	let (j,cst3) =
-	  apply_rel_list env Evd.empty false (Array.to_list jl) j in
-	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-	(j, cst)
+	let (j,cu1) = execute env f cu in
+        let (jl,cu2) = execute_array env args cu1 in
+	univ_combinator cu2
+	  (apply_rel_list env Evd.empty false (Array.to_list jl) j)
 	    
     | IsLambda (name,c1,c2) -> 
-        let (j,cst1) = execute env c1 in
+        let (j,cu1) = execute env c1 cu in
         let var = assumption_of_judgment env Evd.empty j in
 	let env1 = push_rel_assum (name,var) env in
-        let (j',cst2) = execute env1 c2 in 
-        let (j,cst3) = abs_rel env1 Evd.empty name var j' in
-	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-	(j, cst)
+        let (j',cu2) = execute env1 c2 cu1 in 
+        univ_combinator cu2 (abs_rel env1 Evd.empty name var j')
 	  
-     | IsProd (name,c1,c2) ->
-        let (j,cst1) = execute env c1 in
+    | IsProd (name,c1,c2) ->
+        let (j,cu1) = execute env c1 cu in
         let varj = type_judgment env Evd.empty j in
 	let env1 = push_rel_assum (name,varj.utj_val) env in
-        let (j',cst2) = execute env1 c2 in
+        let (j',cu2) = execute env1 c2 cu1 in
         let varj' = type_judgment env Evd.empty j' in
-	let (j,cst3) = gen_rel env1 Evd.empty name varj varj' in
-	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-	(j, cst)
+	univ_combinator cu2
+          (gen_rel env1 Evd.empty name varj varj')
 
-     | IsLetIn (name,c1,c2,c3) ->
-        let (j1,cst1) = execute env c1 in
-        let (j2,cst2) = execute env c2 in
-	let tj2 = assumption_of_judgment env Evd.empty j2 in
-	let ({uj_val = b; uj_type = t},cst0) = cast_rel env Evd.empty j1 tj2 in
-        let (j3,cst3) = execute (push_rel_def (name,b,t) env) c3 in
-	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-	({ uj_val = mkLetIn (name, j1.uj_val, tj2, j3.uj_val) ;
-	   uj_type = type_app (subst1 j1.uj_val) j3.uj_type },
-	 Constraint.union cst cst0)
+    | IsLetIn (name,c1,c2,c3) ->
+        let (j,cu1) = execute env (mkCast(c1,c2)) cu in
+        let env1 = push_rel_def (name,j.uj_val,j.uj_type) env in
+        let (j',cu2) = execute env1 c3 cu1 in
+        univ_combinator cu2
+          (judge_of_letin env1 Evd.empty name j j')
 	  
     | IsCast (c,t) ->
-        let (cj,cst1) = execute env c in
-        let (tj,cst2) = execute env t in
+        let (cj,cu1) = execute env c cu in
+        let (tj,cu2) = execute env t cu1 in
 	let tj = assumption_of_judgment env Evd.empty tj in
-	let cst = Constraint.union cst1 cst2 in
-	let (j, cst0) = cast_rel env Evd.empty cj tj in
-	(j, Constraint.union cst cst0)
+	univ_combinator cu2
+          (cast_rel env Evd.empty cj tj)
+
+    | IsRel n -> 
+	(relative env Evd.empty n, cu)
+
+    | IsVar id -> 
+	(make_judge cstr (lookup_named_type id env), cu)
+
+    | IsConst c ->
+        (make_judge cstr (type_of_constant env Evd.empty c), cu)
+
+    (* Inductive types *)
+    | IsMutInd ind ->
+	(make_judge cstr (type_of_inductive env Evd.empty ind), cu)
+
+    | IsMutConstruct c -> 
+	(make_judge cstr (type_of_constructor env Evd.empty c), cu)
+
+    | IsMutCase (ci,p,c,lf) ->
+        let (cj,cu1) = execute env c cu in
+        let (pj,cu2) = execute env p cu1 in
+        let (lfj,cu3) = execute_array env lf cu2 in
+        univ_combinator cu3
+          (judge_of_case env Evd.empty ci pj cj lfj)
+  
+    | IsFix ((vn,i as vni),recdef) ->
+        if array_exists (fun n -> n < 0) vn then
+          error "General Fixpoints not allowed";
+        let ((_,tys,_ as recdef'),cu1) = execute_fix env recdef cu in
+        let fix = (vni,recdef') in
+        check_fix env Evd.empty fix;
+	(make_judge (mkFix fix) tys.(i), cu1)
 	  
-and execute_fix env lar lfi vdef =
-  let (larj,cst1) = execute_array env lar in
+    | IsCoFix (i,recdef) ->
+        let ((_,tys,_ as recdef'),cu1) = execute_fix env recdef cu in
+        let cofix = (i,recdef') in
+        check_cofix env Evd.empty cofix;
+	(make_judge (mkCoFix cofix) tys.(i), cu1)
+	  
+and execute_fix env (names,lar,vdef) cu =
+  let (larj,cu1) = execute_array env lar cu in
   let lara = Array.map (assumption_of_judgment env Evd.empty) larj in
-  let nlara = 
-    List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
-  let env1 = 
-    List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
-  let (vdefj,cst2) = execute_array env1 vdef in
+  let env1 = push_rec_types (names,lara,vdef) env in
+  let (vdefj,cu2) = execute_array env1 vdef cu1 in
   let vdefv = Array.map j_val vdefj in
-  let cst3 = type_fixpoint env1 Evd.empty lfi lara vdefj in
-  let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-  (lara,vdefv,cst)
+  let cst = type_fixpoint env1 Evd.empty names lara vdefj in
+  univ_combinator cu2 ((names,lara,vdefv),cst)
 
-and execute_array env v =
-  let (jl,u1) = execute_list env (Array.to_list v) in
-  (Array.of_list jl, u1)
+and execute_array env v cu =
+  let (jl,cu1) = execute_list env (Array.to_list v) cu in
+  (Array.of_list jl, cu1)
 
-and execute_list env = function
+and execute_list env l cu =
+  match l with
   | [] -> 
-      ([], Constraint.empty)
+      ([], cu)
   | c::r -> 
-      let (j,cst1) = execute env c in 
-      let (jr,cst2) = execute_list env r in
-      (j::jr, Constraint.union cst1 cst2)
+      let (j,cu1) = execute env c cu in 
+      let (jr,cu2) = execute_list env r cu1 in
+      (j::jr, cu2)
 
 (* The typed type of a judgment. *)
 
-let execute_type env constr = 
-  let (j,cst) = execute env constr in
-  (type_judgment env Evd.empty j, cst)
+let execute_type env constr cu = 
+  let (j,cu1) = execute env constr cu in
+  (type_judgment env Evd.empty j, cu1)
 
-(* Renaming for the following. *)
+(* Exported machines. *)
 
-let safe_infer = execute
+let safe_infer env constr =
+  let (j,(cst,_)) =
+    execute env constr (Constraint.empty, universes env) in
+  (j, cst)
 
-let safe_infer_type = execute_type
+let safe_infer_type env constr =
+  let (j,(cst,_)) =
+    execute_type env constr (Constraint.empty, universes env) in
+  (j, cst)
 
 (* Typing of several terms. *)
 
@@ -474,7 +468,6 @@ let env_of_safe_env e = e
 
 let typing env c = 
   let (j,cst) = safe_infer env c in
-  let _ = add_constraints cst env in
   j
 
 let typing_in_unsafe_env = typing

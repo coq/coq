@@ -145,9 +145,9 @@ type fterm =
   | FInd of inductive_path * fconstr array
   | FConstruct of constructor_path * fconstr array
   | FApp of fconstr * fconstr array
-  | FFix of (int array * int) * (fconstr array * name list * fconstr array)
+  | FFix of (int array * int) * (name array * fconstr array * fconstr array)
       * constr array * fconstr subs
-  | FCoFix of int * (fconstr array * name list * fconstr array)
+  | FCoFix of int * (name array * fconstr array * fconstr array)
       * constr array * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
   | FLambda of name * fconstr * fconstr * constr * fconstr subs

@@ -50,6 +50,11 @@ val abs_rel :
   env -> 'a evar_map -> name -> types -> unsafe_judgment 
     -> unsafe_judgment * constraints
 
+(* s Type of a let in. *)
+val judge_of_letin :
+  env -> 'a evar_map -> name -> unsafe_judgment -> unsafe_judgment 
+    -> unsafe_judgment * constraints
+
 (*s Type of application. *)
 val apply_rel_list : 
   env -> 'a evar_map -> bool -> unsafe_judgment list -> unsafe_judgment
@@ -75,21 +80,22 @@ val type_of_inductive : env -> 'a evar_map -> inductive -> types
 val type_of_constructor : env -> 'a evar_map -> constructor -> types
 
 (*s Type of Cases. *)
-val type_of_case : env -> 'a evar_map -> case_info
+val judge_of_case : env -> 'a evar_map -> case_info
   -> unsafe_judgment -> unsafe_judgment 
-    -> unsafe_judgment array -> unsafe_judgment
+    -> unsafe_judgment array -> unsafe_judgment * constraints
 
 val find_case_dep_nparams :
-  env -> 'a evar_map -> constr * constr -> inductive_family -> constr -> bool
+  env -> 'a evar_map -> constr * constr -> inductive_family -> constr
+    -> bool * constraints
 
 val type_case_branches :
   env -> 'a evar_map -> Inductive.inductive_type -> constr -> types
-    -> constr -> types array * types
+    -> constr -> types array * types * constraints
 
 (*s Type of fixpoints and guard condition. *)
 val check_fix : env -> 'a evar_map -> fixpoint -> unit
 val check_cofix : env -> 'a evar_map -> cofixpoint -> unit
-val type_fixpoint : env -> 'a evar_map -> name list -> types array 
+val type_fixpoint : env -> 'a evar_map -> name array -> types array 
     -> unsafe_judgment array -> constraints
 
 val control_only_guard : env -> 'a evar_map -> constr -> unit

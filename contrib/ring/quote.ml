@@ -226,7 +226,7 @@ let compute_ivs gl f cs =
   let cst = try destConst f with _ -> i_can't_do_that () in
   let body = constant_value (Global.env()) cst in
   match decomp_term body with
-    | IsFix(([| len |], 0), ([| typ |], [ name ], [| body2 |])) ->
+    | IsFix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
         begin match decomp_term body3 with

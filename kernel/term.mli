@@ -48,7 +48,7 @@ type 'constr constant = constant_path * 'constr array
 type 'constr constructor = constructor_path * 'constr array
 type 'constr inductive = inductive_path * 'constr array
 type ('constr, 'types) rec_declaration =
-    'types array * name list * 'constr array
+    name array * 'types array * 'constr array
 type ('constr, 'types) fixpoint =
     (int array * int) * ('constr, 'types) rec_declaration
 type ('constr, 'types) cofixpoint =
@@ -124,7 +124,7 @@ type existential = existential_key * constr array
 type constant = constant_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
-type rec_declaration = types array * name list * constr array
+type rec_declaration = name array * types array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
@@ -561,7 +561,7 @@ type constr_operator =
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
-  | OpRec of fix_kind * Names.name list
+  | OpRec of fix_kind * name array
 
 
 val splay_constr : constr -> constr_operator * constr array

@@ -125,11 +125,11 @@ let push_rel_context_to_named_context env =
     env.env_context.env_rel_context ([],ids_of_named_context sign0,sign0)
   in subst, (named_context_app (fun _ -> sign) env)
 
-let push_rec_types (typarray,names,_) env =
-  let vect_lift_type = Array.mapi (fun i t -> lift i t) in
-  let nlara = 
-    List.combine (List.rev names) (Array.to_list (vect_lift_type typarray)) in
-  List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara
+let push_rec_types (lna,typarray,_) env =
+  let ctxt =
+    array_map2_i (fun i na t -> (na, type_app (lift i) t)) lna typarray in
+  Array.fold_left
+    (fun e assum -> push_rel_assum assum e) env ctxt
 
 let reset_rel_context env =
   { env with
@@ -252,11 +252,11 @@ let hdchar env c =
 	     | Name id,_ -> lowercase_first_char id
 	     | Anonymous,t -> hdrec 0 (lift (n-k) (body_of_type t))
 	   with Not_found -> "y")
-    | IsFix ((_,i),(_,ln,_)) -> 
-	let id = match List.nth ln i with Name id -> id | _ -> assert false in
+    | IsFix ((_,i),(lna,_,_)) -> 
+	let id = match lna.(i) with Name id -> id | _ -> assert false in
 	lowercase_first_char id
-    | IsCoFix (i,(_,ln,_)) -> 
-	let id = match List.nth ln i with Name id -> id | _ -> assert false in
+    | IsCoFix (i,(lna,_,_)) -> 
+	let id = match lna.(i) with Name id -> id | _ -> assert false in
 	lowercase_first_char id
     | IsMeta _|IsEvar _|IsMutCase (_, _, _, _) -> "y"
   in 

@@ -740,13 +740,13 @@ let constrain_clenv_to_subterm clause (op,cl) =
 	       with ex when catchable_exception ex -> 
 		 matchrec c2)
 
-	  | IsFix(_,(types,_,terms)) -> 
+	  | IsFix(_,(_,types,terms)) -> 
 	       (try 
 		 iter_fail matchrec types
 	       with ex when catchable_exception ex -> 
 		 iter_fail matchrec terms)
 	
-	  | IsCoFix(_,(types,_,terms)) -> 
+	  | IsCoFix(_,(_,types,terms)) -> 
 	       (try 
 		 iter_fail matchrec types
 	       with ex when catchable_exception ex -> 

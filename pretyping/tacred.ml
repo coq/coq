@@ -76,7 +76,7 @@ let _ =
    == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel 1)..(Rel p))
    with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1] *)
 
-let check_fix_reversibility labs args ((lv,i),(tys,_,bds)) =
+let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
   let n = List.length labs in
   let nargs = List.length args in
   if nargs > n then raise Elimconst;
@@ -156,13 +156,12 @@ let compute_consteval_mutual_fix sigma env ref =
     match kind_of_term c' with
       | IsLambda (na,t,g) when l=[] ->
 	  srec (push_rel_assum (na,t) env) (minarg+1) (t::labs) ref g
-      | IsFix ((lv,i),(_,names,_) as fix) ->
+      | IsFix ((lv,i),(names,_,_) as fix) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct sigma env ref with
 	     | NotAnElimination -> (*Above const was eliminable but this not!*)
 		 NotAnElimination
 	     | EliminationFix (minarg',infos) ->
-		 let names = Array.of_list names in
 		 let refs =
 		   Array.map
 		     (invert_name labs l names.(i) env sigma ref) names in
@@ -291,8 +290,7 @@ let reduce_mind_case_use_function (sp,args) env mia =
 	let ncargs = (fst mia.mci).(i-1) in
 	let real_cargs = list_lastn ncargs mia.mcargs in
 	applist (mia.mlf.(i-1), real_cargs)
-    | IsCoFix (_,(_,names,_) as cofix) ->
-	let names = Array.of_list names in
+    | IsCoFix (_,(names,_,_) as cofix) ->
 	let build_fix_name i =
 	  match names.(i) with 
 	    | Name id ->

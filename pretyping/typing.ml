@@ -59,23 +59,22 @@ let rec execute mf env sigma cstr =
         let cj = execute mf env sigma c in
         let pj = execute mf env sigma p in
         let lfj = execute_array mf env sigma lf in
-        type_of_case env sigma ci pj cj lfj
+        let (j,_) = judge_of_case env sigma ci pj cj lfj in
+        j
   
-    | IsFix ((vn,i as vni),(lar,lfi,vdef)) ->
+    | IsFix ((vn,i as vni),recdef) ->
         if (not mf.fix) && array_exists (fun n -> n < 0) vn then
           error "General Fixpoints not allowed";
-        let larjv,vdefv = execute_fix mf env sigma lar lfi vdef in
- 	let larv = Array.map body_of_type larjv in
-	let fix = vni,(larv,lfi,vdefv) in
+        let (_,tys,_ as recdef') = execute_fix mf env sigma recdef in
+	let fix = (vni,recdef') in
         check_fix env sigma fix;
-	make_judge (mkFix fix) larjv.(i)
+	make_judge (mkFix fix) tys.(i)
 	  
-    | IsCoFix (i,(lar,lfi,vdef)) ->
-        let (larjv,vdefv) = execute_fix mf env sigma lar lfi vdef in
-	let larv = Array.map body_of_type larjv in
-        let cofix = i,(larv,lfi,vdefv) in
+    | IsCoFix (i,recdef) ->
+        let (_,tys,_ as recdef') = execute_fix mf env sigma recdef in
+        let cofix = (i,recdef') in
         check_cofix env sigma cofix;
-	make_judge (mkCoFix cofix) larjv.(i)
+	make_judge (mkCoFix cofix) tys.(i)
 	  
     | IsSort (Prop c) -> 
 	judge_of_prop_contents c
@@ -122,17 +121,17 @@ let rec execute mf env sigma cstr =
         let j, _ = cast_rel env sigma cj tj in
 	j
 	  
-and execute_fix mf env sigma lar lfi vdef =
+and execute_fix mf env sigma (names,lar,vdef) =
   let larj = execute_array mf env sigma lar in
   let lara = Array.map (assumption_of_judgment env sigma) larj in
-  let nlara = 
-    List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
+  let ctxt = 
+    array_map2_i (fun i na ty -> (na, type_app (lift i) ty)) names lara in
   let env1 = 
-    List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
+    Array.fold_left (fun env nvar -> push_rel_assum nvar env) env ctxt in
   let vdefj = execute_array mf env1 sigma vdef in
   let vdefv = Array.map j_val vdefj in
-  let cst3 = type_fixpoint env1 sigma lfi lara vdefj in
-  (lara,vdefv)
+  let cst3 = type_fixpoint env1 sigma names lara vdefj in
+  (names,lara,vdefv)
 
 and execute_array mf env sigma v =
   let jl = execute_list mf env sigma (Array.to_list v) in

@@ -1147,6 +1147,7 @@ let bind_eq = function
   | (Name _,Name _) -> true
   | _ -> false
 
+(* TODO: Fix and CoFix also contain bound names *)
 let eqop_mod_names = function
   | OpLambda n0, OpLambda n1 -> bind_eq (n0,n1)
   | OpProd n0, OpProd n1 -> bind_eq (n0,n1)

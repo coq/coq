@@ -70,7 +70,7 @@ type existential = existential_key * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
-type rec_declaration = constr array * name list * constr array
+type rec_declaration = name array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
@@ -134,7 +134,7 @@ type 'constr constant = constant_path * 'constr array
 type 'constr constructor = constructor_path * 'constr array
 type 'constr inductive = inductive_path * 'constr array
 type ('constr, 'types) rec_declaration =
-    'types array * name list * 'constr array
+    name array * 'types array * 'constr array
 type ('constr, 'types) fixpoint =
     (int array * int) * ('constr, 'types) rec_declaration
 type ('constr, 'types) cofixpoint =
@@ -170,7 +170,7 @@ type existential = existential_key * constr array
 type constant = constant_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
-type rec_declaration = constr array * name list * constr array
+type rec_declaration = name array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
@@ -197,15 +197,19 @@ let comp_term t1 t2 =
       c1 == c2 & array_for_all2 (==) l1 l2
   | IsMutCase (ci1,p1,c1,bl1), IsMutCase (ci2,p2,c2,bl2) ->
       ci1 == ci2 & p1 == p2 & c1 == c2 & array_for_all2 (==) bl1 bl2
-  | IsFix (ln1,(tl1,lna1,bl1)), IsFix (ln2,(tl2,lna2,bl2)) ->
-      lna1 == lna2 & ln1 = ln2
-      & array_for_all2 (==) tl1 tl2 & array_for_all2 (==) bl1 bl2
-  | IsCoFix(ln1,(tl1,lna1,bl1)), IsCoFix(ln2,(tl2,lna2,bl2)) ->
-      lna1 == lna2 & ln1 = ln2
-      & array_for_all2 (==) tl1 tl2 & array_for_all2 (==) bl1 bl2
+  | IsFix (ln1,(lna1,tl1,bl1)), IsFix (ln2,(lna2,tl2,bl2)) ->
+      ln1 = ln2
+      & array_for_all2 (==) lna1 lna2
+      & array_for_all2 (==) tl1 tl2
+      & array_for_all2 (==) bl1 bl2
+  | IsCoFix(ln1,(lna1,tl1,bl1)), IsCoFix(ln2,(lna2,tl2,bl2)) ->
+      ln1 = ln2
+      & array_for_all2 (==) lna1 lna2
+      & array_for_all2 (==) tl1 tl2
+      & array_for_all2 (==) bl1 bl2
   | _ -> false
 
-let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id,sh_str)) t =
+let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id)) t =
   match t with
   | IsRel _ | IsMeta _ -> t
   | IsVar x -> IsVar (sh_id x)
@@ -222,10 +226,14 @@ let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id,sh_str)) t =
       IsMutConstruct (((sh_sp sp,i),j), Array.map sh_rec l)
   | IsMutCase (ci,p,c,bl) -> (* TO DO: extract ind_sp *)
       IsMutCase (ci, sh_rec p, sh_rec c, Array.map sh_rec bl)
-  | IsFix (ln,(tl,lna,bl)) ->
-      IsFix (ln,(Array.map sh_rec tl,List.map sh_na lna,Array.map sh_rec bl))
-  | IsCoFix(ln,(tl,lna,bl)) ->
-      IsCoFix (ln,(Array.map sh_rec tl,List.map sh_na lna,Array.map sh_rec bl))
+  | IsFix (ln,(lna,tl,bl)) ->
+      IsFix (ln,(Array.map sh_na lna,
+                 Array.map sh_rec tl,
+                 Array.map sh_rec bl))
+  | IsCoFix(ln,(lna,tl,bl)) ->
+      IsCoFix (ln,(Array.map sh_na lna,
+                   Array.map sh_rec tl,
+                   Array.map sh_rec bl))
 
 module Hconstr =
   Hashcons.Make(
@@ -233,15 +241,14 @@ module Hconstr =
       type t = constr
       type u = (constr -> constr) *
                ((sorts -> sorts) * (section_path -> section_path)
-		* (name -> name) * (identifier -> identifier)
-		* (string -> string))
+		* (name -> name) * (identifier -> identifier))
       let hash_sub = hash_term
       let equal = comp_term
       let hash = Hashtbl.hash
     end)
 
-let hcons_term (hsorts,hsp,hname,hident,hstr) =
-  Hashcons.recursive_hcons Hconstr.f (hsorts,hsp,hname,hident,hstr)
+let hcons_term (hsorts,hsp,hname,hident) =
+  Hashcons.recursive_hcons Hconstr.f (hsorts,hsp,hname,hident)
 
 (* Constructs a DeBrujin index with number n *)
 let mkRel   n = IsRel n
@@ -502,11 +509,11 @@ let destCase c = match kind_of_term c with
   | _ -> anomaly "destCase"
 
 let destFix c = match kind_of_term c with 
-  | IsFix ((recindxs,i),(types,funnames,bodies) as fix) -> fix
+  | IsFix fix -> fix
   | _ -> invalid_arg "destFix"
 	
 let destCoFix c = match kind_of_term c with 
-  | IsCoFix (i,(types,funnames,bodies) as cofix) -> cofix
+  | IsCoFix cofix -> cofix
   | _ -> invalid_arg "destCoFix"
 
 (******************************************************************)
@@ -562,10 +569,12 @@ let fold_constr f acc c = match kind_of_term c with
   | IsMutInd (_,l) -> Array.fold_left f acc l
   | IsMutConstruct (_,l) -> Array.fold_left f acc l
   | IsMutCase (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
-  | IsFix (_,(tl,_,bl)) ->
-      array_fold_left2 (fun acc b t -> f (f acc b) t) acc bl tl
-  | IsCoFix (_,(tl,_,bl)) ->
-      array_fold_left2 (fun acc b t -> f (f acc b) t) acc bl tl
+  | IsFix (_,(lna,tl,bl)) ->
+      let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
+      Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
+  | IsCoFix (_,(lna,tl,bl)) ->
+      let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
+      Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
 
 (* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
    subterms of [c] starting from [acc] and proceeding from left to
@@ -586,12 +595,14 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | IsMutInd (_,l) -> Array.fold_left (f n) acc l
   | IsMutConstruct (_,l) -> Array.fold_left (f n) acc l
   | IsMutCase (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
-  | IsFix (_,(tl,_,bl)) -> 
+  | IsFix (_,(lna,tl,bl)) -> 
       let n' = iterate g (Array.length tl) n in
-      array_fold_left2 (fun acc b t -> f n (f n' acc b) t) acc bl tl
-  | IsCoFix (_,(tl,_,bl)) ->
+      let fd = array_map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n (f n' acc t) b) acc fd
+  | IsCoFix (_,(lna,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
-      array_fold_left2 (fun acc b t -> f n (f n' acc b) t) acc bl tl
+      let fd = array_map2 (fun t b -> (t,b)) tl bl in
+      Array.fold_left (fun acc (t,b) -> f n (f n' acc t) b) acc fd
 
 (* [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -609,8 +620,8 @@ let iter_constr f c = match kind_of_term c with
   | IsMutInd (_,l) -> Array.iter f l
   | IsMutConstruct (_,l) -> Array.iter f l
   | IsMutCase (_,p,c,bl) -> f p; f c; Array.iter f bl
-  | IsFix (_,(tl,_,bl)) -> Array.iter f tl; Array.iter f bl
-  | IsCoFix (_,(tl,_,bl)) -> Array.iter f tl; Array.iter f bl
+  | IsFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
+  | IsCoFix (_,(_,tl,bl)) -> Array.iter f tl; Array.iter f bl
 
 (* [iter_constr_with_binders g f n c] iters [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -630,10 +641,12 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
   | IsMutInd (_,l) -> Array.iter (f n) l
   | IsMutConstruct (_,l) -> Array.iter (f n) l
   | IsMutCase (_,p,c,bl) -> f n p; f n c; Array.iter (f n) bl
-  | IsFix (_,(tl,_,bl)) -> 
-      Array.iter (f n) tl; Array.iter (f (iterate g (Array.length tl) n)) bl
-  | IsCoFix (_,(tl,_,bl)) ->
-      Array.iter (f n) tl; Array.iter (f (iterate g (Array.length tl) n)) bl
+  | IsFix (_,(_,tl,bl)) -> 
+      Array.iter (f n) tl;
+      Array.iter (f (iterate g (Array.length tl) n)) bl
+  | IsCoFix (_,(_,tl,bl)) ->
+      Array.iter (f n) tl;
+      Array.iter (f (iterate g (Array.length tl) n)) bl
 
 (* [map_constr f c] maps [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -651,8 +664,10 @@ let map_constr f c = match kind_of_term c with
   | IsMutInd (c,l) -> mkMutInd (c, Array.map f l)
   | IsMutConstruct (c,l) -> mkMutConstruct (c, Array.map f l)
   | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f p, f c, Array.map f bl)
-  | IsFix (ln,(tl,lna,bl)) -> mkFix (ln,(Array.map f tl,lna,Array.map f bl))
-  | IsCoFix(ln,(tl,lna,bl)) -> mkCoFix (ln,(Array.map f tl,lna,Array.map f bl))
+  | IsFix (ln,(lna,tl,bl)) ->
+      mkFix (ln,(lna,Array.map f tl,Array.map f bl))
+  | IsCoFix(ln,(lna,tl,bl)) ->
+      mkCoFix (ln,(lna,Array.map f tl,Array.map f bl))
 
 (* [map_constr_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -672,12 +687,12 @@ let map_constr_with_binders g f l c = match kind_of_term c with
   | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
   | IsMutConstruct (c,al) -> mkMutConstruct (c, Array.map (f l) al)
   | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f l p, f l c, Array.map (f l) bl)
-  | IsFix (ln,(tl,lna,bl)) ->
+  | IsFix (ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
-      mkFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
-  | IsCoFix(ln,(tl,lna,bl)) ->
+      mkFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+  | IsCoFix(ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
-      mkCoFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
+      mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
 
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
    subterms of [c]; it carries an extra data [l] (typically a name
@@ -697,12 +712,12 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
   | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
   | IsMutConstruct (c,al) -> mkMutConstruct (c, Array.map (f l) al)
   | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f l p, f l c, Array.map (f l) bl)
-  | IsFix (ln,(tl,lna,bl)) ->
-      let l' = List.fold_right g lna l in
-      mkFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
-  | IsCoFix(ln,(tl,lna,bl)) ->
-      let l' = List.fold_right g lna l in
-      mkCoFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
+  | IsFix (ln,(lna,tl,bl)) ->
+      let l' = Array.fold_left (fun l na -> g na l) l lna in
+      mkFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+  | IsCoFix(ln,(lna,tl,bl)) ->
+      let l' = Array.fold_left (fun l na -> g na l) l lna in
+      mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
 
 (* [map_constr_with_binders_left_to_right g f n c] maps [f n] on the
    immediate subterms of [c]; it carries an extra data [n] (typically
@@ -752,14 +767,14 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | IsMutCase (ci,p,c,bl) ->
       let p' = f l p in let c' = f l c in
       mkMutCase (ci, p', c', array_map_left (f l) bl)
-  | IsFix (ln,(tl,lna,bl)) ->
+  | IsFix (ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
-      let tl', bl' = array_map_left_pair (f l) tl (f l') bl in
-      mkFix (ln,(tl',lna,bl'))
-  | IsCoFix(ln,(tl,lna,bl)) ->
+      let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
+      mkFix (ln,(lna,tl',bl'))
+  | IsCoFix(ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
-      let tl', bl' = array_map_left_pair (f l) tl (f l') bl in
-      mkCoFix (ln,(tl',lna,bl'))
+      let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
+      mkCoFix (ln,(lna,tl',bl'))
 
 (* strong *)
 let map_constr_with_full_binders g f l c = match kind_of_term c with
@@ -774,14 +789,14 @@ let map_constr_with_full_binders g f l c = match kind_of_term c with
   | IsMutInd (c,al) -> mkMutInd (c, Array.map (f l) al)
   | IsMutConstruct (c,al) -> mkMutConstruct (c, Array.map (f l) al)
   | IsMutCase (ci,p,c,bl) -> mkMutCase (ci, f l p, f l c, Array.map (f l) bl)
-  | IsFix (ln,(tl,lna,bl)) ->
-      let tll = Array.to_list tl in
-      let l' = List.fold_right2 (fun na t l -> g (na,None,t) l) lna tll l in
-      mkFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
-  | IsCoFix(ln,(tl,lna,bl)) ->
-      let tll = Array.to_list tl in
-      let l' = List.fold_right2 (fun na t l -> g (na,None,t) l) lna tll l in
-      mkCoFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
+  | IsFix (ln,(lna,tl,bl)) ->
+      let l' =
+        array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      mkFix (ln,(lna,Array.map (f l) tl, Array.map (f l') bl))
+  | IsCoFix(ln,(lna,tl,bl)) ->
+      let l' =
+        array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
 
 (* [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's,
@@ -815,9 +830,9 @@ let compare_constr f t1 t2 =
       c1 = c2 & array_for_all2 f l1 l2
   | IsMutCase (_,p1,c1,bl1), IsMutCase (_,p2,c2,bl2) ->
       f p1 p2 & f c1 c2 & array_for_all2 f bl1 bl2
-  | IsFix (ln1,(tl1,_,bl1)), IsFix (ln2,(tl2,_,bl2)) ->
+  | IsFix (ln1,(_,tl1,bl1)), IsFix (ln2,(_,tl2,bl2)) ->
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
-  | IsCoFix(ln1,(tl1,_,bl1)), IsCoFix(ln2,(tl2,_,bl2)) ->
+  | IsCoFix(ln1,(_,tl1,bl1)), IsCoFix(ln2,(_,tl2,bl2)) ->
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
   | _ -> false
 
@@ -1132,37 +1147,38 @@ let mkMutCase = mkMutCase
 let mkMutCaseL (ci, p, c, ac) = mkMutCase (ci, p, c, Array.of_list ac)
 
 (* If recindxs = [|i1,...in|] 
+      funnames = [|f1,...fn|]
       typarray = [|t1,...tn|]
-      funnames = [f1,.....fn]
+      bodies   = [|b1,...bn|]
    then    
 
-      mkFix recindxs i typarray funnames bodies
+      mkFix ((recindxs,i),(funnames,typarray,bodies))
    
    constructs the ith function of the block  
 
-    Fixpoint f1 [ctx1] = b1
-    with     f2 [ctx2] = b2
+    Fixpoint f1 [ctx1] : t1 := b1
+    with     f2 [ctx2] : t2 := b2
     ...
-    with     fn [ctxn] = bn.
+    with     fn [ctxn] : tn := bn.
 
    where the lenght of the jth context is ij.
 *)
 
 let mkFix = mkFix
 
-(* If typarray = [|t1,...tn|]
-      funnames = [f1,.....fn]
-      bodies   = [b1,.....bn]
-   then
+(* If funnames = [|f1,...fn|]
+      typarray = [|t1,...tn|]
+      bodies   = [|b1,...bn|]
+   then 
 
-      mkCoFix i typsarray funnames bodies 
+      mkCoFix (i,(funnames,typsarray,bodies))
 
    constructs the ith function of the block  
    
-    CoFixpoint f1 = b1
-    with       f2 = b2
+    CoFixpoint f1 : t1 := b1
+    with       f2 : t2 := b2
     ...
-    with       fn = bn.
+    with       fn : tn := bn.
 *)
 let mkCoFix = mkCoFix
 
@@ -1686,8 +1702,8 @@ let hsort _ _ s = s
 let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
   let hsortscci = Hashcons.simple_hcons hsort hspcci in
   let hsortsfw = Hashcons.simple_hcons hsort hspfw in
-  let hcci = hcons_term (hsortscci,hspcci,hname,hident,hstr) in
-  let hfw = hcons_term (hsortsfw,hspfw,hname,hident,hstr) in
+  let hcci = hcons_term (hsortscci,hspcci,hname,hident) in
+  let hfw = hcons_term (hsortsfw,hspfw,hname,hident) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
   (hcci,hfw,htcci)
 
@@ -1710,7 +1726,7 @@ type constr_operator =
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
-  | OpRec of fix_kind * name list
+  | OpRec of fix_kind * name array
 
 let splay_constr c = match kind_of_term c with
   | IsRel n                    -> OpRel n, [||]
@@ -1727,8 +1743,8 @@ let splay_constr c = match kind_of_term c with
   | IsMutInd (ind_sp, l)       -> OpMutInd ind_sp, l
   | IsMutConstruct (cstr_sp,l) -> OpMutConstruct cstr_sp, l
   | IsMutCase (ci,p,c,bl)      -> OpMutCase ci, Array.append [|p;c|] bl
-  | IsFix (fi,(tl,lna,bl))     -> OpRec (RFix fi,lna), Array.append tl bl
-  | IsCoFix (fi,(tl,lna,bl))   -> OpRec (RCoFix fi,lna), Array.append tl bl
+  | IsFix (fi,(lna,tl,bl))     -> OpRec (RFix fi,lna), Array.append tl bl
+  | IsCoFix (fi,(lna,tl,bl))   -> OpRec (RCoFix fi,lna), Array.append tl bl
 
 let gather_constr = function
   | OpRel n, [||]  -> mkRel n
@@ -1747,23 +1763,13 @@ let gather_constr = function
   | OpMutCase ci,  v    ->
       let p = v.(0) and c = v.(1) and bl = Array.sub v 2 (Array.length v -2)
       in mkMutCase (ci, p, c, bl)   
-  | OpRec (RFix fi,lna), a  ->
+  | OpRec (RFix fi,na), a  ->
       let n = Array.length a / 2 in
-      mkFix (fi,(Array.sub a 0 n, lna, Array.sub a n n))
-  | OpRec (RCoFix i,lna), a ->
+      mkFix (fi,(na, Array.sub a 0 n, Array.sub a n n))
+  | OpRec (RCoFix i,na), a ->
       let n = Array.length a / 2 in
-      mkCoFix (i,(Array.sub a 0 n, lna, Array.sub a n n))
+      mkCoFix (i,(na, Array.sub a 0 n, Array.sub a n n))
   | _ -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed splayed constr">]
-
-let rec mycombine l1 l3 =
-  match (l1, l3) with
-    ([], []) -> []
-  | (a1::l1, a3::l3) -> (a1, None, a3) :: mycombine l1 l3
-  | (_, _) -> invalid_arg "mycombine"
-
-let rec mysplit = function
-    [] -> ([], [])
-  | (x, _, z)::l -> let (rx, rz) = mysplit l in (x::rx, z::rz)
 
 let splay_constr_with_binders c = match kind_of_term c with
   | IsRel n                    -> OpRel n, [], [||]
@@ -1774,25 +1780,25 @@ let splay_constr_with_binders c = match kind_of_term c with
   | IsProd (x, t1, t2)         -> OpProd x, [x,None,t1], [|t2|]
   | IsLambda (x, t1, t2)       -> OpLambda x, [x,None,t1], [|t2|]
   | IsLetIn (x, b, t1, t2)     -> OpLetIn x, [x,Some b,t1], [|t2|]
-  | IsApp (f,v)               -> OpApp, [], Array.append [|f|] v
+  | IsApp (f,v)                -> OpApp, [], Array.append [|f|] v
   | IsConst (sp, a)            -> OpConst sp, [], a
   | IsEvar (sp, a)             -> OpEvar sp, [], a
   | IsMutInd (ind_sp, l)       -> OpMutInd ind_sp, [], l
   | IsMutConstruct (cstr_sp,l) -> OpMutConstruct cstr_sp, [], l
   | IsMutCase (ci,p,c,bl)      ->
       let v = Array.append [|p;c|] bl in OpMutCase ci, [], v
-  | IsFix (fi,(tl,lna,bl)) ->
+  | IsFix (fi,(na,tl,bl)) ->
       let n = Array.length bl in
-      let ctxt = mycombine
-		   (List.rev lna)
-		   (Array.to_list (Array.mapi lift tl)) in
-      OpRec (RFix fi,lna), ctxt, bl
-  | IsCoFix (fi,(tl,lna,bl)) ->
+      let ctxt =
+        Array.to_list
+          (array_map2_i (fun i x t -> (x,None,lift i t)) na tl) in
+      OpRec (RFix fi,na), ctxt, bl
+  | IsCoFix (fi,(na,tl,bl)) ->
       let n = Array.length bl in
-      let ctxt = mycombine
-		   (List.rev lna)
-		   (Array.to_list (Array.mapi lift tl)) in
-      OpRec (RCoFix fi,lna), ctxt, bl
+      let ctxt =
+        Array.to_list
+          (array_map2_i (fun i x t -> (x,None,lift i t)) na tl) in
+      OpRec (RCoFix fi,na), ctxt, bl
 
 let gather_constr_with_binders = function
   | OpRel n, [], [||]  -> mkRel n
@@ -1811,14 +1817,14 @@ let gather_constr_with_binders = function
   | OpMutCase ci, [], v    ->
       let p = v.(0) and c = v.(1) and bl = Array.sub v 2 (Array.length v -2)
       in mkMutCase (ci, p, c, bl)   
-  | OpRec (RFix fi,lna), ctxt, bl  ->
-      let (lna, tl) = mysplit ctxt in
-      let tl = Array.mapi (fun i -> lift (-i)) (Array.of_list tl) in
-      mkFix (fi,(tl, List.rev lna, bl))
-  | OpRec (RCoFix i,lna), ctxt, bl ->
-      let (lna, tl) = mysplit ctxt in
-      let tl = Array.mapi (fun i -> lift (-i)) (Array.of_list tl) in
-      mkCoFix (i,(tl, List.rev lna, bl))
+  | OpRec (RFix fi,na), ctxt, bl  ->
+      let tl = 
+        Array.mapi (fun i (_,_,t) -> lift (-i) t) (Array.of_list ctxt) in
+      mkFix (fi,(na, tl, bl))
+  | OpRec (RCoFix i,na), ctxt, bl ->
+      let tl = 
+        Array.mapi (fun i (_,_,t) -> lift (-i) t) (Array.of_list ctxt) in
+      mkCoFix (i,(na, tl, bl))
   | _  -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed splayed constr">]
 
 let generic_fold_left f acc bl tl =

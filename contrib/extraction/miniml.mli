@@ -39,7 +39,7 @@ type ml_ast =
   | MLglob  of global_reference
   | MLcons  of global_reference * ml_ast list
   | MLcase  of ml_ast * (global_reference * identifier list * ml_ast) array
-  | MLfix   of int * identifier list * ml_ast list
+  | MLfix   of int * identifier array * ml_ast array
   | MLexn   of identifier
   | MLprop
   | MLarity

@@ -174,8 +174,9 @@ let explain_not_product k ctx c =
   [< 'sTR"The type of this term is expected to be a product but it is";
      'bRK(1,1); pr; 'fNL >]
 
+(* TODO: use the names *)
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body k ctx err lna i vdefs =
+let explain_ill_formed_rec_body k ctx err names i vdefs =
   let str = match err with
 
   (* Fixpoint guard errors *)
@@ -211,17 +212,17 @@ let explain_ill_formed_rec_body k ctx err lna i vdefs =
       [< 'sTR "Not allowed recursive call in the type of cases in" >]
   | NotGuardedForm ->
       [< 'sTR "Definition not in guarded form" >]
-in
+  in
   let pvd = prterm_env ctx vdefs.(i) in
   let s =
-    match List.nth lna i with Name id -> string_of_id id | Anonymous -> "_" in
+    match names.(i) with Name id -> string_of_id id | Anonymous -> "_" in
   [< str; 'fNL; 'sTR"The ";
      if Array.length vdefs = 1 then [<>] else [<'iNT (i+1); 'sTR "-th ">];
      'sTR"recursive definition"; 'sPC; 'sTR s;
 	 'sPC ; 'sTR":="; 'sPC ; pvd; 'sPC;
      'sTR "is not well-formed" >]
-    
-let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
+
+let explain_ill_typed_rec_body k ctx i names vdefj vargs =
   let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
   let pv = prterm_env ctx (body_of_type vargs.(i)) in
   [< 'sTR"The " ;

@@ -30,7 +30,7 @@ with mindnames : ast :=
   mlconstr [ idorstring($id) "[" idorstring_list($idl) "]" ]
         -> [(VERNACARGLIST $id ($LIST $idl))]
 
-with idorstring_list: List :=
+with idorstring_list: ast list :=
   ids_nil  [ ] -> [ ]
 | ids_cons [ idorstring($x) idorstring_list($l) ] -> [ $x ($LIST $l) ]
 

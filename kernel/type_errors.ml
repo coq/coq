@@ -49,8 +49,8 @@ type type_error =
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
-  | IllFormedRecBody of guard_error * name list * int * constr array
-  | IllTypedRecBody of int * name list * unsafe_judgment array 
+  | IllFormedRecBody of guard_error * name array * int * constr array
+  | IllTypedRecBody of int * name array * unsafe_judgment array 
       * types array
 
 exception TypeError of path_kind * env * type_error

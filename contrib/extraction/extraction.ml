@@ -525,10 +525,10 @@ and extract_term_info_with_type env ctx c t =
 	  abstract_n n (abstract [] 1 s)
       | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
 	  extract_case env ctx ni ip cnames p c br
-      | IsFix ((_,i),(ti,fi,ci)) -> 
-	  extract_fix env ctx i ti fi ci 
-      | IsCoFix (i,(ti,fi,ci)) -> 
-	  extract_fix env ctx i ti fi ci  
+      | IsFix ((_,i),recd) -> 
+	  extract_fix env ctx i recd
+      | IsCoFix (i,recd) -> 
+	  extract_fix env ctx i recd  
       | IsLetIn (n, c1, t1, c2) ->
 	  let id = id_of_name n in
 	  let env' = push_rel_def (n,c1,t1) env in
@@ -591,11 +591,13 @@ and extract_case env ctx ni ip cnames p c br =
 	 assert (Array.length br = 1);
 	 snd (extract_branch_aux 0 br.(0)))
   
-and extract_fix env ctx i ti fi ci = 
+and extract_fix env ctx i (fi,ti,ci as recd) = 
   let n = Array.length ti in
+  let env' = push_rec_types recd env in
   let ti' = Array.mapi lift ti in 
-  let lb = (List.combine fi (Array.to_list ti')) in
-  let env' = push_rels_assum (List.rev lb) env in
+  let lb =
+    Array.to_list
+      (array_map2_i (fun i na t -> (na, type_app (lift i) t)) fi ti) in
   let ctx' = 
     lbinders_fold (fun _ _ v a -> (snd v = NotArity) :: a) ctx env lb in
   let extract_fix_body c t =
@@ -603,8 +605,8 @@ and extract_fix env ctx i ti fi ci =
       | Emltype _ -> MLarity
       | Emlterm a -> a
   in
-  let ei = Array.to_list (array_map2 extract_fix_body ci ti) in
-  MLfix (i, List.map id_of_name fi, ei)
+  let ei = array_map2 extract_fix_body ci ti in
+  MLfix (i, Array.map id_of_name fi, ei)
 
 and extract_app env ctx (f,tyf,sf) args =
   let nargs = List.length args in

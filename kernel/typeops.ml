@@ -170,6 +170,14 @@ let abs_rel env sigma name var j =
     uj_type = mkProd (name, var, j.uj_type) },
   Constraint.empty
 
+let judge_of_letin env sigma name defj j =
+  let v = match kind_of_term defj.uj_val with
+      IsCast(c,t) -> c
+    | _ -> defj.uj_val in
+  ({ uj_val = mkLetIn (name, v, defj.uj_type, j.uj_val) ;
+    uj_type = type_app (subst1 v) j.uj_type },
+  Constraint.empty)
+
 (* [gen_rel env sigma name (typ1,s1) (typ2,s2)] implements the rule
 
     env |- typ1:s1       env, name:typ |- typ2 : s2
@@ -282,38 +290,38 @@ let error_elim_expln env sigma kp ki =
 exception Arity of (constr * constr * string) option
 
 let is_correct_arity env sigma kelim (c,p) indf (pt,t) = 
-  let rec srec (pt,t) =
+  let rec srec (pt,t) u =
     let pt' = whd_betadeltaiota env sigma pt in
     let t' = whd_betadeltaiota env sigma t in
     match kind_of_term pt', kind_of_term t' with
       | IsProd (_,a1,a2), IsProd (_,a1',a2') ->
-          if is_conv env sigma a1 a1' then
-            srec (a2,a2') 
-          else 
-	    raise (Arity None)
+          let univ =
+            try conv env sigma a1 a1'
+            with NotConvertible -> raise (Arity None) in
+          srec (a2,a2') (Constraint.union u univ)
       | IsProd (_,a1,a2), _ -> 
           let k = whd_betadeltaiota env sigma a2 in 
           let ksort = (match kind_of_term k with IsSort s -> s 
 			 | _ -> raise (Arity None)) in
 	  let ind = build_dependent_inductive indf in
-          if is_conv env sigma a1 ind then
-            if List.exists (base_sort_cmp CONV ksort) kelim then
-	      (true,k)
-            else 
-	      raise (Arity (Some(k,t',error_elim_expln env sigma k t')))
-	  else 
-	    raise (Arity None)
+          let univ =
+            try conv env sigma a1 ind
+            with NotConvertible -> raise (Arity None) in
+          if List.exists (base_sort_cmp CONV ksort) kelim then
+	    ((true,k), Constraint.union u univ)
+          else 
+	    raise (Arity (Some(k,t',error_elim_expln env sigma k t')))
       | k, IsProd (_,_,_) ->
 	  raise (Arity None)
       | k, ki -> 
 	  let ksort = (match k with IsSort s -> s 
                          | _ ->  raise (Arity None)) in
           if List.exists (base_sort_cmp CONV ksort) kelim then 
-	    false, pt'
+	    (false, pt'), u
           else 
 	    raise (Arity (Some(pt',t',error_elim_expln env sigma pt' t')))
-in 
-  try srec (pt,t)
+  in 
+  try srec (pt,t) Constraint.empty
   with Arity kinds ->
     let listarity =
       (List.map (make_arity env true indf) kelim)
@@ -327,8 +335,9 @@ let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
   let kelim = mis_kelim mis in
   let arsign,s = get_arity indf in
   let glob_t = it_mkProd_or_LetIn (mkSort s) arsign in
-  let (dep,_) = is_correct_arity env sigma kelim (c,p) indf (typP,glob_t) in
-  dep
+  let ((dep,_),univ) =
+    is_correct_arity env sigma kelim (c,p) indf (typP,glob_t) in
+  (dep,univ)
 
 (* type_case_branches type un <p>Case c of ... end 
    IndType (indf,realargs) = type de c
@@ -338,37 +347,43 @@ let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
  *)
 
 let type_case_branches env sigma (IndType (indf,realargs)) pt p c =
-  let dep = find_case_dep_nparams env sigma (c,p) indf pt in
+  let (dep,univ) = find_case_dep_nparams env sigma (c,p) indf pt in
   let constructs = get_constructors indf in
   let lc = Array.map (build_branch_type env dep p) constructs in
   if dep then
-    (lc, beta_applist (p,(realargs@[c])))
+    (lc, beta_applist (p,(realargs@[c])), univ)
   else 
-    (lc, beta_applist (p,realargs))
+    (lc, beta_applist (p,realargs), univ)
 
 let check_branches_message env sigma (c,ct) (explft,lft) = 
   let expn = Array.length explft and n = Array.length lft in
   if n<>expn then error_number_branches CCI env c ct expn;
-  for i = 0 to n-1 do
-    if not (is_conv_leq env sigma lft.(i) (explft.(i))) then
+  let univ = ref Constraint.empty in
+  (for i = 0 to n-1 do
+    try
+      univ := Constraint.union !univ
+        (conv_leq env sigma lft.(i) (explft.(i)))
+    with NotConvertible ->
       error_ill_formed_branch CCI env c i (nf_betaiota env sigma lft.(i))
 	(nf_betaiota env sigma explft.(i))
-  done
+  done;
+  !univ)
 
-let type_of_case env sigma ci pj cj lfj =
+let judge_of_case env sigma ci pj cj lfj =
   let lft = Array.map (fun j -> body_of_type j.uj_type) lfj in
   let indspec =
     try find_rectype env sigma (body_of_type cj.uj_type)
     with Induc ->
       error_case_not_inductive CCI env cj.uj_val (body_of_type cj.uj_type) in
-  let (bty,rslty) =
+  let (bty,rslty,univ) =
     type_case_branches env sigma indspec
       (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
-  check_branches_message env sigma
-    (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
-  { uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
-    uj_type = rslty }
+  let univ' = check_branches_message env sigma
+    (cj.uj_val,body_of_type cj.uj_type) (bty,lft) in
+  ({ uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
+     uj_type = rslty },
+  Constraint.union univ univ')
 
 (*
 let tocasekey = Profile.declare_profile "type_of_case";;
@@ -492,8 +507,8 @@ let is_subterm_specif env sigma lcx mind_recvec =
 	    if array_for_all (fun st -> st=stl0) stl then stl0 
             else None
 	       
-      | IsFix ((recindxs,i),(typarray,funnames,bodies as recdef)) ->
-          let nbfix   = List.length funnames in
+      | IsFix ((recindxs,i),(_,typarray,bodies as recdef)) ->
+          let nbfix   = Array.length typarray in
           let decrArg = recindxs.(i) in 
           let theBody = bodies.(i)   in
           let sign,strippedBody = decompose_lam_n_assum (decrArg+1) theBody in
@@ -620,11 +635,11 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
      Eduardo 7/9/98 *)
 
-	| IsFix ((recindxs,i),(typarray,funnames,bodies as recdef)) ->
+	| IsFix ((recindxs,i),(_,typarray,bodies as recdef)) ->
             (List.for_all (check_rec_call env n lst) l) &&
             (array_for_all (check_rec_call env n lst) typarray) && 
-	    let nbfix = List.length funnames 
-            in let decrArg = recindxs.(i) 
+	    let nbfix = Array.length typarray in
+            let decrArg = recindxs.(i) 
             and env' = push_rec_types recdef env 
             and n' = n+nbfix
 	    and lst' = map_lift_fst_n nbfix lst
@@ -696,8 +711,8 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	    (array_for_all (check_rec_call env n lst) la) &&
             (List.for_all (check_rec_call env n lst) l)
 
-	| IsCoFix (i,(typarray,funnames,bodies as recdef)) ->
-	    let nbfix = Array.length bodies in
+	| IsCoFix (i,(_,typarray,bodies as recdef)) ->
+	    let nbfix = Array.length typarray in
 	    let env' = push_rec_types recdef env in
 	    (array_for_all (check_rec_call env n lst) typarray) &&
             (List.for_all (check_rec_call env n lst) l) &&
@@ -735,12 +750,12 @@ nvect is [|n1;..;nk|] which gives for each recursive definition
 the inductive-decreasing index 
 the function checks the convertibility of ti with Ai *)
 
-let check_fix env sigma ((nvect,bodynum),(types,names,bodies as recdef)) =
+let check_fix env sigma ((nvect,bodynum),(names,types,bodies as recdef)) =
   let nbfix = Array.length bodies in 
   if nbfix = 0
     or Array.length nvect <> nbfix 
     or Array.length types <> nbfix
-    or List.length names <> nbfix
+    or Array.length names <> nbfix
     or bodynum < 0
     or bodynum >= nbfix
   then anomaly "Ill-formed fix term";
@@ -750,7 +765,7 @@ let check_fix env sigma ((nvect,bodynum),(types,names,bodies as recdef)) =
       let _ = check_subterm_rec_meta fixenv sigma nvect nvect.(i) bodies.(i)
       in ()
     with FixGuardError err ->
-      error_ill_formed_rec_body	CCI fixenv err (List.rev names) i bodies
+      error_ill_formed_rec_body	CCI fixenv err names i bodies
   done 
 
 (*
@@ -845,7 +860,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
             else 
 	      raise (CoFixGuardError (RecCallInTypeOfAbstraction t))
 	      
-	| IsCoFix (j,(varit,lna,vdefs as recdef)) ->
+	| IsCoFix (j,(_,varit,vdefs as recdef)) ->
             if (List.for_all (noccur_with_meta n nbfix) args)
             then 
               let nbfix = Array.length vdefs in
@@ -880,7 +895,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 (* The  function which checks that the whole block of definitions 
    satisfies the guarded condition *)
 
-let check_cofix env sigma (bodynum,(types,names,bodies as recdef)) = 
+let check_cofix env sigma (bodynum,(names,types,bodies as recdef)) = 
   let nbfix = Array.length bodies in 
   for i = 0 to nbfix-1 do
     let fixenv = push_rec_types recdef env in
@@ -888,7 +903,7 @@ let check_cofix env sigma (bodynum,(types,names,bodies as recdef)) =
       let _ = check_guard_rec_meta fixenv sigma nbfix bodies.(i) types.(i)
       in ()
     with CoFixGuardError err -> 
-      error_ill_formed_rec_body CCI fixenv err (List.rev names) i bodies
+      error_ill_formed_rec_body CCI fixenv err names i bodies
   done
 
 (* Checks the type of a (co)fixpoint.
@@ -918,11 +933,11 @@ let control_only_guard env sigma =
   let rec control_rec c = match kind_of_term c with
     | IsRel _ | IsVar _    -> ()
     | IsSort _ | IsMeta _ -> ()
-    | IsCoFix (_,(tys,_,bds) as cofix) ->
+    | IsCoFix (_,(_,tys,bds) as cofix) ->
 	check_cofix env sigma cofix;
 	Array.iter control_rec tys;
 	Array.iter control_rec bds;
-    | IsFix (_,(tys,_,bds) as fix) ->
+    | IsFix (_,(_,tys,bds) as fix) ->
 	check_fix env sigma fix; 
 	Array.iter control_rec tys;
 	Array.iter control_rec bds;

@@ -34,15 +34,15 @@ Grammar vernac vernac : ast :=
 (* | show_dad_rules [ "Show" "Dad" "Rules" "." ] -> [(Show_dad_rules)] *)
 | start_pcoq [ "Start" "Pcoq" "Mode" "." ] -> [ (START_PCOQ) ]
 | start_pcoq [ "Start" "Pcoq" "Debug" "Mode" "." ] -> [ (START_PCOQ_DEBUG) ].
-Grammar vernac ne_id_list : List :=
+Grammar vernac ne_id_list : ast list :=
    id_one [ identarg($id)] -> [$id]
  | id_more [identarg($id) ne_id_list($others)] -> [$id ($LIST $others)].
 
-Grammar tactic ne_num_list : List :=
+Grammar tactic ne_num_list : ast list :=
   ne_last [ numarg($n) ] -> [ $n ]
 | ne_num_ste  [ numarg($n) ne_num_list($ns) ] -> [ $n ($LIST $ns)].
 
-Grammar tactic two_numarg_list : List :=
+Grammar tactic two_numarg_list : ast list :=
   two_single_and_ne [ numarg($n) "to"  ne_num_list($ns)] ->
         [$n (TACTIC (to)) ($LIST $ns)]
 | two_rec [ numarg($n) two_numarg_list($ns)] -> [ $n ($LIST $ns)].

@@ -171,7 +171,7 @@ and mk_casegoals sigma goal goalacc p c =
   let indspec =
     try find_rectype env sigma ct
     with Induc -> anomaly "mk_casegoals" in
-  let (lbrty,conclty) = type_case_branches env sigma indspec pt p c in
+  let (lbrty,conclty,_) = type_case_branches env sigma indspec pt p c in
   (acc'',lbrty,conclty)
 
 
@@ -505,7 +505,7 @@ let prim_extractor subfun vl pft =
     | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
 	let cty = subst_vars vl cl in 
 	let na = Name f in 
-	mkFix (([|n-1|],0),([|cty|], [na], [|subfun (f::vl) spf|]))
+	mkFix (([|n-1|],0),([|na|], [|cty|], [|subfun (f::vl) spf|]))
 
     | {ref=Some(Prim{name=Fix;newids=lf;terms=lar;params=ln},spfl) } ->
 	let lcty = List.map (subst_vars vl) (cl::lar) in 
@@ -514,17 +514,17 @@ let prim_extractor subfun vl pft =
 				     | _ -> anomaly "mutual_fix_refiner")
 			   ln) 
 	in 
-	let lna = List.map (fun f -> Name f) lf in
+	let names = Array.map (fun f -> Name f) (Array.of_list lf) in
 	let newvl = List.fold_left (fun vl id -> (id::vl)) vl lf  in 
 	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	mkFix ((vn,0),(Array.of_list lcty,lna,lfix))	
+	mkFix ((vn,0),(names,Array.of_list lcty,lfix))	
 
     | {ref=Some(Prim{name=Cofix;newids=lf;terms=lar},spfl) } ->
 	let lcty = List.map (subst_vars vl) (cl::lar) in 
-	let lna  = List.map (fun f -> Name f) lf in
+	let names  = Array.map (fun f -> Name f) (Array.of_list lf) in
 	let newvl = List.fold_left (fun vl id -> (id::vl)) vl lf in 
 	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	mkCoFix (0,(Array.of_list lcty,lna,lfix))
+	mkCoFix (0,(names,Array.of_list lcty,lfix))
 	  
     | {ref=Some(Prim{name=Refine;terms=[c]},spfl) } ->
 	let mvl = collect_meta_variables c in
