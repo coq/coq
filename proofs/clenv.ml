@@ -990,7 +990,7 @@ let abstract_list_all env sigma typ c l =
   let lname_typ,_ = splay_prod env sigma typ in
   let p = abstract_scheme env c (List.map (function a -> [],a) l) lname_typ in 
   try 
-    if is_conv env sigma (Typing.type_of env sigma p) typ then p
+    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
     else error "abstract_list_all"
   with UserError _ ->
     raise (RefinerError (CannotGeneralize typ))
