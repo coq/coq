@@ -241,17 +241,13 @@ let parse_format (loc,str) =
     else n in
   let rec nonspaces quoted n i =
     if i < String.length str & str.[i] <> ' ' then
-      if str.[i] = '\'' then
-	if i <= String.length str & str.[i+1] = '\'' then
-	  (String.blit str (i+2) str (i+1) (l-i-2); str.[l-1] <- ' ';
-	  nonspaces quoted (n+1) (i+1))
-	else
-	  if quoted then n
-	  else error
-	    "Space expected between part of the notation and format annotation"
-      else
-	nonspaces quoted (n+1) (i+1)
-    else n in
+      if str.[i] = '\'' & quoted &
+        (i+1 >= String.length str or str.[i+1] = ' ')
+      then if n=0 then error "Empty quoted token" else n
+      else nonspaces quoted (n+1) (i+1)
+    else
+      if quoted then error "Spaces are not allowed in (quoted) symbols"
+      else n in
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
     push_token (UnpTerminal (String.sub str i n)) (parse_token (i+n))
@@ -302,8 +298,12 @@ let parse_format (loc,str) =
     let i = i+n in
     if i < l then match str.[i] with
       (* Parse a ' *)
-      |	'\'' when i <= String.length str & str.[i+1] = '\'' ->
-	  push_white (n-1) (parse_non_format i)
+      |	'\'' when i+1 >= String.length str or str.[i+1] = ' ' ->
+	  push_white (n-1) (push_token (UnpTerminal "'") (parse_token (i+1)))
+      (* Parse a ' followed by one character *)
+      |	'\'' when i+2 >= String.length str or str.[i+2] = ' ' ->
+	  push_white (n-1)
+            (push_token (UnpTerminal (String.sub str i 2)) (parse_token (i+2)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
           parse_quoted (n-1) (i+1)
@@ -483,28 +483,20 @@ let make_hunks etyps symbols from =
 
 let strip s =
   let n = String.length s in
-  if n >= 2 & s.[0] = '\'' & s.[n-1] = '\'' then
-    if n > 2 then String.sub s 1 (n-2) else "'"
-  else
-    s
+  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
 
 (* To protect alphabetic tokens and quotes from being seen as variables *)
 let quote x =
   let n = String.length x in
-  if n > 0 & (is_letter x.[0] or is_letter x.[n-1] or is_digit x.[n-1])
-  then
-    "'"^x^"'"
-  else if x = "'" then
-    "''"
-  else
-    x
+  if (n > 0 & Lexer.is_normal_token x) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
+  else x
 
 let hunks_of_format (from,(vars,typs) as vt) symfmt = 
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when s' = String.make (String.length s') ' ' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
-  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt when quote s = s' ->
+  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt when s = strip s' ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
       let i = list_index s vars in
@@ -876,7 +868,7 @@ let add_syntax_extension local mv mv8 =
     (inSyntaxExtension (local,(prec,ppprec),notation,gram_rule,pp_rule))
 	
 (**********************************************************************)
-(* Distfix, Infix, Notations *)
+(* Distfix, Infix, Symbols *)
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
@@ -1067,13 +1059,16 @@ let add_notation_v8only local c (df,modifiers) sc =
 		then SetAssoc Gramext.NonA :: modifiers else modifiers in
 	      add_notation_in_scope_v8only local df c mods sc toks
 
+let is_quoted_ident x =
+  let x' = strip x in x <> x' & try Lexer.check_ident x'; true with _ -> false
+
 let add_notation local c dfmod mv8 sc =
   match dfmod with
   | None -> add_notation_v8only local c (out_some mv8) sc
   | Some (df,modifiers) ->
   let toks = split df in
   match toks with 
-    | [String x] when quote(strip x) = x
+    | [String x] when is_quoted_ident x 
 	(* This is an ident that can be qualified: a syntactic definition *)
 	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
         (* Means a Syntactic Definition *)
