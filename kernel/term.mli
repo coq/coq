@@ -102,8 +102,9 @@ type existential = int * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
-type fixpoint = (int array * int) * (constr array * name list * constr array)
-type cofixpoint = int * (constr array * name list * constr array)
+type rec_declaration = constr array * name list * constr array
+type fixpoint = (int array * int) * rec_declaration
+type cofixpoint = int * rec_declaration
 
 
 type kind_of_term =

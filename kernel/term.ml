@@ -54,8 +54,9 @@ type existential = existential_key * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
-type fixpoint = (int array * int) * (constr array * name list * constr array)
-type cofixpoint = int * (constr array * name list * constr array)
+type rec_declaration = constr array * name list * constr array
+type fixpoint = (int array * int) * rec_declaration
+type cofixpoint = int * rec_declaration
 
 type kind_of_term =
   | IsRel          of int
@@ -116,8 +117,9 @@ and existential = existential_key * constr array
 and constant = section_path * constr array
 and constructor = constructor_path * constr array
 and inductive = inductive_path * constr array
-and fixpoint = (int array * int) * (constr array * name list * constr array)
-and cofixpoint = int * (constr array * name list * constr array)
+and rec_declaration = constr array * name list * constr array
+and fixpoint = (int array * int) * rec_declaration
+and cofixpoint = int * rec_declaration
 
 and kind_of_term =
   | IsRel          of int
@@ -288,6 +290,7 @@ type existential = Internal.existential
 type constant = Internal.constant
 type constructor = Internal.constructor
 type inductive = Internal.inductive
+type rec_declaration = Internal.rec_declaration
 type fixpoint = Internal.fixpoint
 type cofixpoint = Internal.cofixpoint
 
