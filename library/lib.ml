@@ -63,13 +63,12 @@ let find_entry_p p =
   find !lib_stk
 
 let split_lib sp = 
-  let rec findrec acc = function
-    | ((sp',obj) as hd)::t ->
-      	if sp = sp' then (acc,hd,t) else findrec (hd::acc) t
+  let rec findrec after = function
+    | ((sp',obj) as hd)::before ->
+      	if sp = sp' then (after,hd,before) else findrec (hd::after) before
     | [] -> error "no such entry"
   in 
   findrec [] !lib_stk
-
 
 (* Adding operations. *)
 
