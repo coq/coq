@@ -272,7 +272,7 @@ and pr_atom1 env = function
       hov 1 (str "lettac" ++ spc () ++ pr_id id ++ str " :=" ++
         pr_constrarg env c ++ pr_clause_pattern pr_ident cl)
   | TacInstantiate (n,c) ->
-      hov 1 (str "instantiate" ++ pr_arg int n ++ pr_lconstrarg env c)
+      hov 1 (str "instantiate" ++ pr_arg int n ++ pr_constrarg env c)
 
   (* Derived basic tactics *)
   | TacOldInduction h ->
