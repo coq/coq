@@ -256,7 +256,7 @@ let rec first_match matcher = function
 let coq_eq_pattern_gen eq = 
   lazy (PApp(PRef (Lazy.force eq), [|mkPMeta 1;mkPMeta 2;mkPMeta 3|]))
 let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
-let coq_eqT_pattern = coq_eq_pattern_gen coq_eqT_ref
+(*let coq_eqT_pattern = coq_eq_pattern_gen coq_eqT_ref*)
 let coq_idT_pattern = coq_eq_pattern_gen coq_idT_ref
 
 let match_eq eqn eq_pat =
@@ -268,7 +268,7 @@ let match_eq eqn eq_pat =
 
 let equalities =
   [coq_eq_pattern, build_coq_eq_data;
-   coq_eqT_pattern, build_coq_eqT_data;
+(*   coq_eqT_pattern, build_coq_eqT_data;*)
    coq_idT_pattern, build_coq_idT_data]
 
 let find_eq_data_decompose eqn = (* fails with PatternMatchingFailure *)
