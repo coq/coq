@@ -1598,8 +1598,11 @@ let subst_term_occ_gen locs occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
   let check = ref true in
-  let except = List.for_all (fun n -> n<0) locs in
-  let rec substrec (k,c as kc) t =
+  let except = List.exists (fun n -> n<0) locs in
+  if except & (List.exists (fun n -> n>=0) locs) 
+  then error "mixing of positive and negative occurences"
+  else
+   let rec substrec (k,c as kc) t =
     if (not except) & (!pos > maxocc) then t
     else
     if eq_constr t c then
