@@ -40,7 +40,11 @@ let pr_module r =
     | Qualid (loc,qid) ->
         Qualid (loc,make_qualid (fst (repr_qualid qid)) (id_of_string s)) in
   let (_,dir,_) =
-    Library.locate_qualified_library (snd (qualid_of_reference r)) in
+    try
+      Library.locate_qualified_library (snd (qualid_of_reference r))
+    with _ -> 
+      errorlabstrm "" (str"Translator cannot find " ++ Libnames.pr_reference r)
+  in
   let r = match List.rev (List.map string_of_id (repr_dirpath dir)) with
     | [ "Coq"; "Lists"; "List" ] -> update_ref "MonoList"
     | [ "Coq"; "Lists"; "PolyList" ] -> update_ref "List"
