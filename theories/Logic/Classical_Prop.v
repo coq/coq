@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* Classical Propositional Logic *)
+(** Classical Propositional Logic *)
 
 Hints Unfold not : core.
 

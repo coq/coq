@@ -35,9 +35,7 @@ Hints Immediate eqA_dec leA_dec leA_antisym.
 Local emptyBag := (EmptyBag A).
 Local singletonBag := (SingletonBag eqA_dec).
 
-(************)
-(* lelistA  *)
-(************)
+(** [lelistA] *)
 
 Inductive lelistA [a:A] : (list A) -> Prop :=
       nil_leA : (lelistA a (nil A))
@@ -50,9 +48,7 @@ Proof.
   Intros; Inversion H; Trivial with datatypes.
 Qed.
 
-(**************************************)
-(* definition for a list to be sorted *)
-(**************************************)
+(** definition for a list to be sorted *)
 
 Inductive sort : (list A) -> Prop :=
    nil_sort : (sort (nil A))
@@ -73,9 +69,7 @@ Induction y; Auto with datatypes.
 Intros; Elim (!sort_inv a l); Auto with datatypes.
 Qed.
 
-(****************************)
-(* merging two sorted lists *)
-(****************************)
+(** merging two sorted lists *)
 
 Inductive merge_lem [l1:(list A);l2:(list A)] : Set :=
   merge_exist : (l:(list A))(sort l) ->

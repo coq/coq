@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(*** THIS IS A OLD CONTRIB. IT IS NO LONGER MAINTAINED ***)
+(** THIS IS A OLD CONTRIB. IT IS NO LONGER MAINTAINED ***)
 
 Require Le.
 

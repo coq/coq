@@ -42,11 +42,12 @@ Inductive Empty_set : Ensemble :=
 Inductive Full_set : Ensemble :=
      Full_intro: (x: U) (In Full_set x).
 
-(* NB The following definition builds-in equality of elements in U as 
-   Leibniz equality. \\
-   This may have to be changed if we replace U by a Setoid on U with its own
-   equality eqs, with  
-     [In_singleton: (y: U)(eqs x y) -> (In (Singleton x) y)]. *)
+(** NB: The following definition builds-in equality of elements in [U] as 
+   Leibniz equality. 
+
+   This may have to be changed if we replace [U] by a Setoid on [U] 
+   with its own equality [eqs], with  
+   [In_singleton: (y: U)(eqs x y) -> (In (Singleton x) y)]. *)
 
 Inductive Singleton [x:U] : Ensemble :=
       In_singleton: (In (Singleton x) x).
@@ -92,9 +93,8 @@ Definition Strict_Included : Ensemble -> Ensemble -> Prop :=
 Definition Same_set : Ensemble -> Ensemble -> Prop :=
    [B, C: Ensemble] (Included B C) /\ (Included C B).
 
-(*************************************)
-(*******  Extensionality Axiom *******)
-(*************************************)
+(** Extensionality Axiom *)
+
 Axiom Extensionality_Ensembles:
    (A,B: Ensemble) (Same_set A B) -> A == B.
 Hints Resolve Extensionality_Ensembles.

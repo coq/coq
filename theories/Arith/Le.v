@@ -8,9 +8,7 @@
 
 (*i $Id$ i*)
 
-(***************************************)
-(* Order on natural numbers            *)
-(***************************************)
+(** Order on natural numbers *)
 
 Theorem le_n_S : (n,m:nat)(le n m)->(le (S n) (S m)).
 Proof.
@@ -58,7 +56,7 @@ Elim H ; Simpl ; Auto with arith.
 Qed.
 Hints Immediate le_S_n : arith v62.
 
-(* Negative properties *)
+(** Negative properties *)
 
 Theorem le_Sn_O : (n:nat)~(le (S n) O).
 Proof.
@@ -103,7 +101,7 @@ Auto with arith.
 Qed.
 Hints Immediate le_n_O_eq : arith v62.
 
-(* A different elimination principle for the order on natural numbers *)
+(** A different elimination principle for the order on natural numbers *)
 
 Lemma le_elim_rel : (P:nat->nat->Prop)
      ((p:nat)(P O p))->

@@ -8,22 +8,23 @@
 
 (*i $Id$ i*)
 
-(* This module proves the validity of
+(** This module proves the validity of
     - well-founded recursion (also called course of values)
     - well-founded induction
+
    from a well-founded ordering on a given set *)
 
 Require Logic.
 Require LogicSyntax.
 
-(* Well-founded induction principle on Prop *)
+(** Well-founded induction principle on Prop *)
 
 Chapter Well_founded.
 
  Variable A : Set.
  Variable R : A -> A -> Prop.
 
- (* The accessibility predicate is defined to be non-informative *)
+ (** The accessibility predicate is defined to be non-informative *)
 
  Inductive  Acc : A -> Prop 
     := Acc_intro : (x:A)((y:A)(R y x)->(Acc y))->(Acc x).
@@ -32,7 +33,7 @@ Chapter Well_founded.
   NewDestruct 1; Trivial.
  Defined.
 
-  (* the informative elimination :
+  (** the informative elimination :
      [let Acc_rec F = let rec wf x = F x wf in wf] *)
 
  Section AccRec.
@@ -44,11 +45,11 @@ Chapter Well_founded.
 
  End AccRec.
 
- (* A relation is well-founded if every element is accessible *)
+ (** A relation is well-founded if every element is accessible *)
 
  Definition well_founded := (a:A)(Acc a).
 
- (* well-founded induction on Set and Prop *)
+ (** well-founded induction on Set and Prop *)
 
  Hypothesis Rwf : well_founded.
 
@@ -64,7 +65,7 @@ Chapter Well_founded.
     Intros; Apply (Acc_ind P); Auto.
    Qed.
 
-(* Building fixpoints  *) 
+(** Building fixpoints  *) 
 
 Section FixPoint.
 
@@ -76,8 +77,8 @@ Fixpoint Fix_F [x:A;r:(Acc x)] : (P x) :=
 
 Definition fix := [x:A](Fix_F x (Rwf x)).
 
-(* Proof that [well_founded_induction] satisfies the fixpoint equation. 
-   It requires an extra property of the functional *)
+(** Proof that [well_founded_induction] satisfies the fixpoint equation. 
+    It requires an extra property of the functional *)
 
 Hypothesis F_ext : 
   (x:A)(f,g:(y:A)(R y x)->(P y))

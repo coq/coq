@@ -5,12 +5,13 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
+
 (*i $Id$ i*)
 
 Require Export DiscrAxioms.
 Require Export LtProps.
 
-(*s Properties of a discrete order *)
+(** Properties of a discrete order *)
 
 Lemma lt_le_Sx_y : (x,y:N)(x<y) -> ((S x)<=y).
 EAuto with num.

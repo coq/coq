@@ -82,7 +82,7 @@ val globalize_qualid : Nametab.qualid -> Coqast.t
 (* it does no relocation *)
 val interp_qualid : Coqast.t list -> Nametab.qualid
 
-(* Translation rules from V6 to V7:
+(*i Translation rules from V6 to V7:
 
 constr_of_com_casted -> interp_casted_constr
 constr_of_com_sort   -> interp_type
@@ -90,4 +90,4 @@ constr_of_com        -> interp_constr
 rawconstr_of_com     -> interp_rawconstr  [+ env instead of sign]
 type_of_com          -> types_of_com Evd.empty
 constr_of_com1 true  -> interp_type
-*)
+i*)

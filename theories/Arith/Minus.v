@@ -8,11 +8,7 @@
 
 (*i $Id$ i*)
 
-
-(**************************************************************************)
-(*          Subtraction (difference between two natural numbers           *)
-(**************************************************************************)
-
+(** Subtraction (difference between two natural numbers) *)
 
 Require Lt.
 Require Le.

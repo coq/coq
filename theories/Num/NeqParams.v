@@ -1,6 +1,14 @@
-(*i $Id $ i*)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
 
-(*s InEquality is introduced as an independant parameter, it could be 
+(*i $Id$ i*)
+
+(** InEquality is introduced as an independant parameter, it could be 
     instantiated with the negation of equality *)
 
 Require Export Params.

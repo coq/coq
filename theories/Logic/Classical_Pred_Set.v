@@ -8,14 +8,14 @@
 
 (*i $Id$ i*)
 
-(* Classical Predicate Logic on Set*)
+(** Classical Predicate Logic on Set*)
 
 Require Classical_Prop.
 
 Section Generic.
 Variable U: Set.
 
-(* de Morgan laws for quantifiers *)
+(** de Morgan laws for quantifiers *)
 
 Lemma not_all_ex_not : (P:U->Prop)(~(n:U)(P n)) -> (EX n:U | ~(P n)).
 Proof.

@@ -5,11 +5,13 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(*i $Id: i*)
+
+(*i $Id$ i*)
+
 Require Export Axioms.
 Require Export LtProps.
 
-(*s Axiomatizing [<=] from [<] *)
+(** Axiomatizing [<=] from [<] *)
 
 Axiom lt_or_eq_le : (x,y:N)((x<y)\/(x=y))->(x<=y).
 Axiom le_lt_or_eq : (x,y:N)(x<=y)->(x<y)\/(x=y).

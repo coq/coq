@@ -64,7 +64,7 @@ NewDestruct 1; Simpl; Auto with arith.
 Save.
 Hints Resolve lt_pred_n_n : arith v62.
 
-(* Relationship between le and lt *) 
+(** Relationship between [le] and [lt] *) 
 
 Theorem lt_le_S : (n,p:nat)(lt n p)->(le (S n) p).
 Proof.
@@ -103,7 +103,7 @@ NewInduction 1; Auto with arith.
 Qed.
 Hints Immediate lt_O_neq : arith v62.
 
-(* Transitivity properties *)
+(** Transitivity properties *)
 
 Theorem lt_trans : (n,m,p:nat)(lt n m)->(lt m p)->(lt n p).
 Proof.

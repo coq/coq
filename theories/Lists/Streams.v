@@ -58,7 +58,7 @@ Lemma Str_nth_plus
 Intros; Unfold Str_nth; Rewrite Str_nth_tl_plus; Trivial with datatypes.
 Save.
 
-(* Extensional Equality between two streams  *)
+(** Extensional Equality between two streams  *)
 
 CoInductive EqSt  : Stream->Stream->Prop := 
 	    eqst : (s1,s2:Stream)
@@ -66,14 +66,14 @@ CoInductive EqSt  : Stream->Stream->Prop :=
 		   (EqSt (tl s1) (tl s2))
                     ->(EqSt s1 s2).
 
-(* A coinduction principle *)
+(** A coinduction principle *)
 
 Meta Definition CoInduction proof := 
   Cofix proof; Intros; Constructor;
     [Clear proof | Try (Apply proof;Clear proof)].
 
 
-(* Extensional equality is an equivalence relation *)
+(** Extensional equality is an equivalence relation *)
 
 Theorem  EqSt_reflex : (s:Stream)(EqSt s s).
 (CoInduction EqSt_reflex).
@@ -99,9 +99,8 @@ Case H;  Trivial with datatypes.
 Case H0; Trivial with datatypes.
 Qed.
 
-(* 
-The definition given is equivalent to require the elements at each position to be equal 
-*)
+(** The definition given is equivalent to require the elements at each
+    position to be equal *)
 
 Theorem eqst_ntheq :
   (n:nat)(s1,s2:Stream)(EqSt s1 s2)->(Str_nth n s1)=(Str_nth n s2).

@@ -8,37 +8,24 @@
 
 (*i $Id$ i*)
 
-(********************************************************)
-(* Module Zmisc.v :           				*)
-(* Definitions et lemmes complementaires		*)
-(* Division euclidienne					*)
-(* Patrick Loiseleur, avril 1997			*)
-(********************************************************)
-
 Require fast_integer.
 Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
 Require Bool.
 
-(************************************************************************)
-(*
- Overview of the sections of this file :
- \begin{itemize}
- \item logic : Logic complements.
- \item numbers : a few very simple lemmas for manipulating the
-   constructors [POS], [NEG], [ZERO] and [xI], [xO], [xH]
- \item registers : defining arrays of bits and their relation with integers.
- \item iter : the n-th iterate of a function is defined for n:nat and 
-   n:positive.
-   
-   The two notions are identified and an invariant conservation theorem
-   is proved.
- \item recursors : Here a nat-like recursor is built.
- \item arith : lemmas about [< <= ?= + *] ...
- \end{itemize}
+(** Overview of the sections of this file:
+    - logic: Logic complements.
+    - numbers: a few very simple lemmas for manipulating the
+      constructors [POS], [NEG], [ZERO] and [xI], [xO], [xH]
+    - registers: defining arrays of bits and their relation with integers.
+    - iter: the n-th iterate of a function is defined for [n:nat] and 
+      [n:positive].
+      The two notions are identified and an invariant conservation theorem
+      is proved.
+    - recursors: Here a nat-like recursor is built.
+    - arith: lemmas about [< <= ?= + *]
 *)
-(************************************************************************)
 
 Section logic.
 
@@ -53,7 +40,7 @@ Section numbers.
 Definition entier_of_Z := [z:Z]Case z of Nul Pos Pos end.
 Definition Z_of_entier := [x:entier]Case x of ZERO POS end.
  
-(*i Coercion Z_of_entier : entier >-> Z. i*)
+(* Coercion Z_of_entier : entier >-> Z. *)
 
 Lemma POS_xI : (p:positive) (POS (xI p))=`2*(POS p) + 1`.
 Intro; Apply refl_equal.
@@ -88,7 +75,7 @@ End numbers.
 
 Section iterate.
 
-(* [n]th iteration of the function [f] *)
+(** [n]th iteration of the function [f] *)
 Fixpoint iter_nat[n:nat]  : (A:Set)(f:A->A)A->A :=
   [A:Set][f:A->A][x:A]
     Cases n of
@@ -149,8 +136,8 @@ Rewrite -> (convert_add n m).
 Apply iter_nat_plus.
 Save.
 
-(* Preservation of invariants : if f : A->A preserves the invariant Inv, 
-  then the iterates of f also preserve it. *)
+(** Preservation of invariants : if [f : A->A] preserves the invariant [Inv], 
+    then the iterates of [f] also preserve it. *)
 
 Theorem iter_nat_invariant :
   (n:nat)(A:Set)(f:A->A)(Inv:A->Prop)
@@ -187,7 +174,7 @@ Apply Zlt_gt.
 Assumption.
 Save.
 
-(* Zeven, Zodd, Zdiv2 and their related properties *)
+(** [Zeven], [Zodd], [Zdiv2] and their related properties *)
 
 Definition Zeven := 
   [z:Z]Cases z of ZERO => True
@@ -272,9 +259,8 @@ Save.
 
 Hints Unfold Zeven Zodd : zarith.
 
-(* [Zdiv2] is defined on all [Z], but notice that for odd negative integers
- * it is not the euclidean quotient: in that case we have n = 2*(n/2)-1
- *)
+(** [Zdiv2] is defined on all [Z], but notice that for odd negative integers
+    it is not the euclidean quotient: in that case we have [n = 2*(n/2)-1] *)
 
 Definition Zdiv2_pos :=
   [z:positive]Cases z of xH => xH
@@ -333,7 +319,7 @@ Rewrite <- Zplus_n_O.
 Reflexivity.
 Save.
 
-(* Decompose an egality between two ?= relations into 3 implications *)
+(** Decompose an egality between two [?=] relations into 3 implications *)
 Theorem Zcompare_egal_dec :
    (x1,y1,x2,y2:Z)
     (`x1 < y1`->`x2 < y2`)
@@ -380,7 +366,7 @@ Rewrite -> (Case (Zcompare_EGAL x y) of [h1,h2: ?]h2 end H0).
 Assumption.
 Save.
 
-(* Four very basic lemmas about [Zle], [Zlt], [Zge], [Zgt] *)
+(** Four very basic lemmas about [Zle], [Zlt], [Zge], [Zgt] *)
 Lemma Zle_Zcompare :
   (x,y:Z)`x <= y` -> Case `x ?= y` of True True False end.
 Intros x y; Unfold Zle; Elim `x ?=y`; Auto with arith.
@@ -401,7 +387,7 @@ Lemma Zgt_Zcompare :
 Intros x y; Unfold Zgt; Elim `x ?= y`; Intros; Discriminate Orelse Trivial with arith.
 Save.
 
-(* Lemmas about [Zmin] *)
+(** Lemmas about [Zmin] *)
 
 Lemma Zmin_plus : (x,y,n:Z) `(Zmin (x+n)(y+n))=(Zmin x y)+n`.
 Intros; Unfold Zmin.
@@ -411,7 +397,7 @@ Rewrite (Zcompare_Zplus_compatible x y n).
 Case `x ?= y`; Apply Zplus_sym.
 Save.
 
-(* Lemmas about [absolu] *)
+(** Lemmas about [absolu] *)
 
 Lemma absolu_lt : (x,y:Z) `0 <= x < y` -> (lt (absolu x) (absolu y)).
 Proof.
@@ -433,7 +419,7 @@ Compute. Intro H0. Discriminate H0. Intuition.
 Intros. Absurd `0 <= (NEG p)`. Compute. Auto with arith. Intuition.
 Save.
 
-(* Lemmas on [Zle_bool] used in contrib/graphs *)
+(** Lemmas on [Zle_bool] used in contrib/graphs *)
 
 Lemma Zle_bool_imp_le : (x,y:Z) (Zle_bool x y)=true -> (Zle x y).
 Proof.
@@ -522,7 +508,7 @@ Qed.
 
 End arith.
 
-(* Equivalence between inequalities used in contrib/graph *)
+(** Equivalence between inequalities used in contrib/graph *)
 
 
   Lemma Zle_plus_swap : (x,y,z:Z) `x+z<=y` <-> `x<=y-z`.

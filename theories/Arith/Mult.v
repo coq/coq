@@ -12,9 +12,7 @@ Require Export Plus.
 Require Export Minus.
 Require Export Lt.
 
-(**********************************************************)
-(* Multiplication                                         *)
-(**********************************************************)
+(** Multiplication *)
 
 Lemma mult_plus_distr : 
       (n,m,p:nat)((mult (plus n m) p)=(plus (mult n p) (mult m p))).
@@ -98,13 +96,11 @@ Proof.
   Apply mult_lt. Assumption.
 Qed.
 
-(**************************************************************************)
-(*                         Tail-recursive mult                            *)
-(**************************************************************************)
+(** Tail-recursive mult *)
 
-(* [tail_mult] is an alternative definition for [mult] which is 
-  tail-recursive, whereas [mult] is not. When extracting programs 
-  from proofs, this can be useful. *)
+(** [tail_mult] is an alternative definition for [mult] which is 
+    tail-recursive, whereas [mult] is not. This can be useful 
+    when extracting programs. *)
 
 Fixpoint mult_acc [s,m,n:nat] : nat := 
    Cases n of 
@@ -125,8 +121,8 @@ Lemma mult_tail_mult : (n,m:nat)(mult n m)=(tail_mult n m).
 Intros; Unfold tail_mult; Rewrite <- mult_acc_aux;Auto.
 Qed.
 
-(* [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus] 
-   and [mult] and simplify *)
+(** [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus] 
+    and [mult] and simplify *)
 
 Tactic Definition TailSimpl := 
    Repeat Rewrite <- plus_tail_plus; 

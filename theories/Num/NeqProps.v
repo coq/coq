@@ -12,7 +12,7 @@ Require Export EqParams.
 Require Export EqAxioms.
 
 
-(*s This file contains basic properties of disequality *)
+(** This file contains basic properties of disequality *)
 
 Lemma neq_antirefl : (x:N)~(x<>x).
 Auto with num.

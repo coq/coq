@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* Dependent elimination of some logical notions. *)
+(** Dependent elimination of some logical notions. *)
 
 Scheme eq_indd  := Induction for eq  Sort Prop.
 Scheme eqT_indd := Induction for eqT Sort Prop.

@@ -13,7 +13,7 @@ Require Plus.
 Require Compare_dec.
 Require Even.
 
-(* Here we define n/2 and prove some of its properties *)
+(** Here we define [n/2] and prove some of its properties *)
 
 Fixpoint div2 [n:nat] : nat :=
   Cases n of
@@ -22,8 +22,8 @@ Fixpoint div2 [n:nat] : nat :=
   | (S (S n')) => (S (div2 n'))
   end.
 
-(* Since div2 is recursively defined on 0, 1 and (S (S n)), it is
- * useful to prove the corresponding induction principle *)
+(** Since [div2] is recursively defined on [0], [1] and [(S (S n))], it is
+    useful to prove the corresponding induction principle *)
 
 Lemma ind_0_1_SS : (P:nat->Prop)
   (P O) -> (P (S O)) -> ((n:nat)(P n)->(P (S (S n)))) -> (n:nat)(P n).
@@ -36,7 +36,7 @@ NewInduction n0. Auto with arith.
 Intros. Elim IHn0; Auto with arith.
 Qed.
 
-(* 0 <n  =>  n/2 < n *)
+(** [0 <n  =>  n/2 < n] *)
 
 Lemma lt_div2 : (n:nat) (lt O n) -> (lt (div2 n) n).
 Proof.
@@ -51,7 +51,7 @@ Qed.
 
 Hints Resolve lt_div2 : arith.
 
-(* Properties related to the parity *)
+(** Properties related to the parity *)
 
 Lemma even_odd_div2 : (n:nat) 
   ((even n)<->(div2 n)=(div2 (S n))) /\ ((odd n)<->(S (div2 n))=(div2 (S n))).
@@ -76,7 +76,7 @@ Intro H. Inversion H. Inversion H1.
 Change (S (S (div2 n0)))=(S (div2 (S n0))). Auto with arith.
 Qed.
 
-(* Specializations *)
+(** Specializations *)
 
 Lemma even_div2 : (n:nat) (even n) -> (div2 n)=(div2 (S n)).
 Proof [n:nat](proj1 ? ? (proj1 ? ? (even_odd_div2 n))).
@@ -92,7 +92,7 @@ Proof [n:nat](proj2 ? ? (proj2 ? ? (even_odd_div2 n))).
 
 Hints Resolve even_div2 div2_even odd_div2 div2_odd : arith.
 
-(* Properties related to the double (2n) *)
+(** Properties related to the double ([2n]) *)
 
 Definition double := [n:nat](plus n n).
 
@@ -128,7 +128,7 @@ Simpl. Rewrite (double_S (div2 n0)). Intro H. Injection H. Auto with arith.
 Qed.
 
 
-(* Specializations *)
+(** Specializations *)
 
 Lemma even_double : (n:nat) (even n) -> n=(double (div2 n)).
 Proof [n:nat](proj1 ? ? (proj1 ? ? (even_odd_double n))).
@@ -144,12 +144,11 @@ Proof [n:nat](proj2 ? ? (proj2 ? ? (even_odd_double n))).
 
 Hints Resolve even_double double_even odd_double double_odd : arith.
 
-(* Application: 
- *   if n is even then there is a p such that n = 2p
- *   if n is odd  then there is a p such that n = 2p+1
- *
- * (Immediate: it is n/2)
- *)
+(** Application: 
+    - if [n] is even then there is a [p] such that [n = 2p]
+    - if [n] is odd  then there is a [p] such that [n = 2p+1]
+
+    (Immediate: it is [n/2]) *)
 
 Lemma even_2n : (n:nat) (even n) -> { p:nat | n=(double p) }.
 Proof.

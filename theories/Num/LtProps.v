@@ -5,11 +5,12 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
+
 Require Export Axioms.
 Require Export AddProps.
 Require Export NeqProps.
 
-(*s This file contains basic properties of the less than relation *)
+(** This file contains basic properties of the less than relation *)
 
 
 Lemma lt_anti_sym : (x,y:N)x<y->~(y<x).
@@ -43,7 +44,7 @@ EAuto with num.
 Save.
 Hints Immediate lt_Sx_y_lt : num.
 
-(*s Relating [<] and [=] *)
+(** Relating [<] and [=] *)
 
 Lemma lt_neq : (x,y:N)(x<y)->(x<>y).
 Red; Intros x y lt1 eq1; Apply (lt_anti_refl x); EAuto with num.
@@ -55,7 +56,7 @@ Intros x y lt1 ; Apply neq_sym; Auto with num.
 Save.
 Hints Immediate lt_neq_sym : num.
 
-(*s Application to inequalities properties *)
+(** Application to inequalities properties *)
 
 Lemma neq_x_Sx : (x:N)x<>(S x).
 Auto with num.
@@ -67,7 +68,7 @@ Auto with num.
 Save.
 Hints Resolve neq_0_1 : num.
 
-(*s Relating [<] and [+] *)
+(** Relating [<] and [+] *)
 
 Lemma lt_add_compat_r : (x,y,z:N)(x<y)->((z+x)<(z+y)).
 Intros x y z H; Apply lt_eq_compat with (x+z) (y+z); Auto with num.

@@ -9,9 +9,9 @@
 Require Export Axioms.
 Require Export EqAxioms.
 
-(*s This file contains basic properties of addition with respect to equality *)
+(** This file contains basic properties of addition with respect to equality *)
 
-(*s Properties of Addition *)
+(** Properties of Addition *)
 Lemma add_x_0 : (x:N)(x+zero)=x.
 EAuto 3 with num.
 Save.

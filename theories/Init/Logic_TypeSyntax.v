@@ -10,7 +10,7 @@
 
 Require Logic_Type.
 
-(* Parsing of things in [Logic_type.v] *)
+(** Parsing of things in [Logic_type.v] *)
 
 Grammar command command1 :=
   eqT_expl [ "<" lcommand($l1) ">" command0($c1) "==" command0($c2) ] ->
@@ -34,7 +34,7 @@ with command10 :=
 | exT2implicit [ "EXT" ident($v) "|" command($c1) "&" 
            command($c2) ] -> [<<(exT2 ? [$v]$c1 [$v]$c2)>>].
 
-(* Pretty-printing of things in [Logic_type.v] *)
+(** Pretty-printing of things in [Logic_type.v] *)
 
 Syntax constr
   level 10:

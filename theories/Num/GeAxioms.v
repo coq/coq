@@ -5,11 +5,13 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(*i $Id: i*)
+
+(*i $Id$ i*)
+
 Require Export Axioms.
 Require Export LtProps.
 
-(*s Axiomatizing [>=] from [<] *)
+(** Axiomatizing [>=] from [<] *)
 
 Axiom not_lt_ge : (x,y:N)~(x<y)->(x>=y).
 Axiom ge_not_lt : (x,y:N)(x>=y)->~(x<y).

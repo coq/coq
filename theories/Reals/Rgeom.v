@@ -32,7 +32,7 @@ Intros; Unfold dist_euc; Apply Rsqr_incr_0; [Rewrite Rsqr_plus; Repeat Rewrite R
 Save.
 
 (******************************************************************)
-(*                          Translation                           *)
+(**                         Translation                           *)
 (******************************************************************)
 
 Definition xt[x,tx:R] : R := ``x+tx``.
@@ -47,7 +47,7 @@ Intros; Unfold Rsqr xt yt; Ring.
 Save.
 
 (******************************************************************)
-(*                            Rotation                            *)
+(**                           Rotation                            *)
 (******************************************************************)
 
 Definition xr [x,y,theta:R] : R := ``x*(cos theta)+y*(sin theta)``.
@@ -70,7 +70,7 @@ Unfold dist_euc; Intros; Apply Rsqr_inj; [Apply foo; Apply ge0_plus_ge0_is_ge0 |
 Save.
 
 (******************************************************************)
-(*                          Similarity                            *)
+(**                         Similarity                            *)
 (******************************************************************)
 
 Lemma isometric_rot_trans : (x1,y1,x2,y2,tx,ty,theta:R) ``(Rsqr (x1-x2))+(Rsqr (y1-y2)) == (Rsqr ((xr (xt x1 tx) (yt y1 ty) theta)-(xr (xt x2 tx) (yt y2 ty) theta))) + (Rsqr ((yr (xt x1 tx) (yt y1 ty) theta)-(yr (xt x2 tx) (yt y2 ty) theta)))``. 

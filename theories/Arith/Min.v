@@ -10,9 +10,7 @@
 
 Require Arith.
 
-(**************************************************************************)
-(*                    minimum of two natural numbers                      *)
-(**************************************************************************)
+(** minimum of two natural numbers *)
 
 Fixpoint min [n:nat] : nat -> nat :=  
 [m:nat]Cases n m of
@@ -21,7 +19,7 @@ Fixpoint min [n:nat] : nat -> nat :=
        | (S n') (S m') => (S (min n' m'))
        end.
 
-(* Simplifications of min *)
+(** Simplifications of [min] *)
 
 Lemma min_SS : (n,m:nat)((S (min n m))=(min (S n) (S m))).
 Proof.
@@ -33,7 +31,7 @@ Proof.
 NewInduction n;NewInduction m;Simpl;Auto with arith.
 Qed.
 
-(* min and le *)
+(** [min] and [le] *)
 
 Lemma min_l : (n,m:nat)(le n m)->(min n m)=n.
 Proof.
@@ -58,7 +56,7 @@ NewInduction m; Simpl; Auto with arith.
 Qed.
 Hints Resolve min_l min_r le_min_l le_min_r : arith v62.
 
-(* min n m is equal to n or m *)
+(** [min n m] is equal to [n] or [m] *)
 
 Lemma min_dec : (n,m:nat){(min n m)=n}+{(min n m)=m}.
 Proof.

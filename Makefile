@@ -58,6 +58,8 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 
+GLOB=   # is "-dump-glob file" when making the doc
+
 ###########################################################################
 # Objects files 
 ###########################################################################
@@ -343,7 +345,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQTOP) -boot -$(BEST) -R theories Coq -is states/barestate.coq -compile $*
+	$(COQTOP) -boot -$(BEST) -R theories Coq -is states/barestate.coq $(GLOB) -compile $*
 
 init: $(INITVO)
 
@@ -475,6 +477,13 @@ relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
 sorting: $(SORTINGVO)
+
+# globalizations (for coqdoc)
+
+glob.dump::
+	rm -f glob.dump
+	rm -f theories/*/*.vo
+	make GLOB="-dump-glob glob.dump" world
 
 clean::
 	rm -f theories/*/*.vo
@@ -810,7 +819,7 @@ ML4FILES += lib/pp.ml4 			\
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .v.vo:
-	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -compile $*
+	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB) -compile $*
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile

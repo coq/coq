@@ -10,23 +10,25 @@
 
 Require Datatypes.
 
-(* [True] is the always true proposition *)
+(** [True] is the always true proposition *)
 Inductive True : Prop := I : True. 
 
-(* [False] is the always false proposition *)
+(** [False] is the always false proposition *)
 Inductive False : Prop := . 
 
-(* [not A], written [~A], is the negation of [A] *)
+(** [not A], written [~A], is the negation of [A] *)
 Definition not := [A:Prop]A->False.
 
 Hints Unfold not : core.
 
 Section Conjunction.
 
-  (* [and A B], written [A /\ B], is the conjunction of [A] and [B] *)
-  (* [conj A B p q], written [<p,q>] is a proof of [A /\ B] as soon as 
-     [p] is a proof of [A] and [q] a proof of [B] *)
-  (* [proj1] and [proj2] are first and second projections of a conjunction *)
+  (** [and A B], written [A /\ B], is the conjunction of [A] and [B]
+
+      [conj A B p q], written [<p,q>] is a proof of [A /\ B] as soon as 
+      [p] is a proof of [A] and [q] a proof of [B]
+
+      [proj1] and [proj2] are first and second projections of a conjunction *)
 
   Inductive and [A,B:Prop] : Prop := conj : A -> B -> (and A B).
 
@@ -46,7 +48,7 @@ End Conjunction.
 
 Section Disjunction.
 
-  (* [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
+  (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
   Inductive or [A,B:Prop] : Prop :=
        or_introl : A -> (or A B) 
@@ -56,7 +58,7 @@ End Disjunction.
 
 Section Equivalence.
 
-  (* [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
+  (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
   Definition iff := [P,Q:Prop] (and (P->Q) (Q->P)).
 
@@ -78,24 +80,24 @@ Theorem iff_sym : (a,b:Prop) (iff a b) -> (iff b a).
 
 End Equivalence.
 
-(* [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
-   denotes either [P] and [Q], or [~P] and [Q] *)
+(** [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
+    denotes either [P] and [Q], or [~P] and [Q] *)
 Definition IF := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
 
 Section First_order_quantifiers.
 
-  (* [(ex A P)], or simply [(EX x | P(x))], expresses the existence of an 
-     [x] of type [A] which satisfies the predicate [P] ([A] is of type 
-     [Set]). This is existential quantification. *)
+  (** [(ex A P)], or simply [(EX x | P(x))], expresses the existence of an 
+      [x] of type [A] which satisfies the predicate [P] ([A] is of type 
+      [Set]). This is existential quantification. *)
 
-  (* [(ex2 A P Q)], or simply [(EX x | P(x) & Q(x))], expresses the
-     existence of an [x] of type [A] which satisfies both the predicates
-     [P] and [Q] *)
+  (** [(ex2 A P Q)], or simply [(EX x | P(x) & Q(x))], expresses the
+      existence of an [x] of type [A] which satisfies both the predicates
+      [P] and [Q] *)
 
-  (* Universal quantification (especially first-order one) is normally 
-     written [(x:A)(P x)]. For duality with existential quantification, the 
-     construction [(all A P)], or simply [(All P)], is provided as an 
-     abbreviation of [(x:A)(P x)] *) 
+  (** Universal quantification (especially first-order one) is normally 
+      written [(x:A)(P x)]. For duality with existential quantification, the 
+      construction [(all A P)], or simply [(All P)], is provided as an 
+      abbreviation of [(x:A)(P x)] *) 
 
   Inductive ex [A:Set;P:A->Prop] : Prop 
       := ex_intro : (x:A)(P x)->(ex A P).
@@ -109,11 +111,11 @@ End First_order_quantifiers.
 
 Section Equality.
 
-  (* [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
-     of [x] and [y]. Both [x] and [y] must belong to the same type [A].
-     The definition is inductive and states the reflexivity of the equality.
-     The others properties (symmetry, transitivity, replacement of 
-     equals) are proved below *)
+  (** [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
+      of [x] and [y]. Both [x] and [y] must belong to the same type [A].
+      The definition is inductive and states the reflexivity of the equality.
+      The others properties (symmetry, transitivity, replacement of 
+      equals) are proved below *)
 
   Inductive eq [A:Set;x:A] : A->Prop
          := refl_equal : (eq A x x).

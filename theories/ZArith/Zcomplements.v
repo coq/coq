@@ -12,8 +12,8 @@ Require ZArith.
 Require Omega.
 Require Wf_nat.
 
-(* Multiplication by a number >0 preserves Zcompare. It also perserves
-  Zle, Zlt, Zge, Zgt *)
+(** Multiplication by a number >0 preserves [Zcompare]. It also perserves
+    [Zle], [Zlt], [Zge], [Zgt] *)
 
 Implicit Arguments On.
 
@@ -174,9 +174,11 @@ Left ; Split with (NEG p); Reflexivity.
 Right ; Split with `-1`; Reflexivity.
 Save.
 
-(* The biggest power of 2 that is stricly less than a *)
-(* Easy to compute : replace all "1" of the binary representation by
-   "0", except the first "1" (or the first one :-) *)
+(** The biggest power of 2 that is stricly less than [a]
+
+    Easy to compute: replace all "1" of the binary representation by
+    "0", except the first "1" (or the first one :-) *)
+
 Fixpoint floor_pos [a : positive] : positive :=
   Cases a of
   | xH => xH
@@ -349,7 +351,7 @@ Save.
 
 End diveucl.
 
-(* Two more induction principles upon Z. *)
+(** Two more induction principles over [Z]. *)
 
 Theorem Z_lt_abs_rec : (P: Z -> Set)
   ((n: Z) ((m: Z) `|m|<|n|` -> (P m)) -> (P n)) -> (p: Z) (P p).

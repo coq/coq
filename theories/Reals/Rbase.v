@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (***************************************************************************)
-(*s              Basic lemmas for the classical reals numbers              *)
+(**              Basic lemmas for the classical reals numbers              *)
 (***************************************************************************)
 
 Require Export Raxioms.
@@ -18,7 +18,7 @@ Require Omega.
 Require Export Field.
 
 (***************************************************************************)
-(*s       Instantiating Ring tactic on reals                               *)
+(**       Instantiating Ring tactic on reals                               *)
 (***************************************************************************)
 
 Lemma RTheory : (Ring_Theory Rplus Rmult R1 R0 Ropp [x,y:R]false).
@@ -42,7 +42,7 @@ Add Field R Rplus Rmult R1 R0 Ropp [x,y:R]false Rinv RTheory Rinv_l
           with minus:=Rminus div:=Rdiv.
 
 (**************************************************************************)
-(*s  Relation between orders and equality                                 *)
+(**  Relation between orders and equality                                 *)
 (**************************************************************************)
 
 (**********)
@@ -68,7 +68,7 @@ Apply Rgt_not_eq; Auto with real.
 Save.
 Hints Resolve imp_not_Req : real.
 
-(*s Reasoning by case on equalities and order *)
+(** Reasoning by case on equalities and order *)
 
 (**********)
 Lemma Req_EM:(r1,r2:R)(r1==r2)\/``r1<>r2``.
@@ -94,7 +94,7 @@ Save.
 
 
 (*********************************************************************************)
-(*s       Order Lemma  : relating [<], [>], [<=] and [>=]  	                 *)
+(**       Order Lemma  : relating [<], [>], [<=] and [>=]  	                 *)
 (*********************************************************************************)
 
 (**********)
@@ -209,7 +209,7 @@ Rewrite <- H1; Auto with zarith real.
 Save.
 
 
-(*s Decidability of the order *)
+(** Decidability of the order *)
 Lemma total_order_Rlt:(r1,r2:R)(sumboolT ``r1<r2`` ~(``r1<r2``)).
 Intros;Elim (total_order_T r1 r2);Intros.
 Elim a;Intro.
@@ -263,11 +263,11 @@ Right; Case H; Auto.
 Save.
 
 (****************************************************************)
-(*s        Field Lemmas                                         *)
+(**        Field Lemmas                                         *)
 (* This part contains lemma involving the Fields operations     *)
 (****************************************************************)
 (*********************************************************)
-(*s      Addition                                        *)
+(**      Addition                                        *)
 (*********************************************************)
 
 Lemma Rplus_ne:(r:R)``r+0==r``/\``0+r==r``.
@@ -320,7 +320,7 @@ Lemma Rplus_ne_i:(r,b:R)``r+b==r`` -> ``b==0``.
 Save.
 
 (***********************************************************)       
-(*s       Multiplication                                   *)
+(**       Multiplication                                   *)
 (***********************************************************)
 
 (**********)
@@ -423,7 +423,7 @@ Lemma Rmult_Rplus_distrl:
 Intros; Ring.
 Save.
 
-(*s Square function *)
+(** Square function *)
 
 (***********)
 Definition Rsqr:R->R:=[r:R]``r*r``.
@@ -439,7 +439,7 @@ Unfold Rsqr;Intros;Elim (without_div_Od r r H);Trivial.
 Save.
 
 (*********************************************************)
-(*s      Opposite                                        *)
+(**      Opposite                                        *)
 (*********************************************************)
 
 (**********)
@@ -480,7 +480,7 @@ Lemma Ropp_distr1:(r1,r2:R)``-(r1+r2)==(-r1 + -r2)``.
 Save.
 Hints Resolve Ropp_distr1 : real.
 
-(*s Opposite and multiplication *)
+(** Opposite and multiplication *)
 
 Lemma Ropp_mul1:(r1,r2:R)``(-r1)*r2 == -(r1*r2)``.
   Intros; Ring.
@@ -493,7 +493,7 @@ Lemma Ropp_mul2:(r1,r2:R)``(-r1)*(-r2)==r1*r2``.
 Save.
 Hints Resolve Ropp_mul2 : real.
 
-(*s Substraction *)
+(** Substraction *)
 
 Lemma minus_R0:(r:R)``r-0==r``.
 Intro;Ring.
@@ -561,7 +561,7 @@ Lemma Rminus_distr:  (x,y,z:R) ``x*(y-z)==(x*y) - (x*z)``.
 Intros; Ring.
 Save.
 
-(*s Inverse *)
+(** Inverse *)
 Lemma Rinv_R1:``/1==1``.
 Apply (r_Rmult_mult ``1`` ``/1`` ``1``); Auto with real.
 Rewrite (Rinv_r R1 R1_neq_R0);Auto with real.
@@ -623,7 +623,7 @@ Transitivity ``(a*/a)*(c*(/b))``; Auto with real.
 Ring.
 Save.
 
-(*s Order and addition *)
+(** Order and addition *)
 
 Lemma Rlt_compatibility_r:(r,r1,r2:R)``r1<r2``->``r1+r<r2+r``.
 Intros.
@@ -696,7 +696,7 @@ Save.
 
 Hints Immediate Rplus_lt Rplus_le Rplus_lt_le_lt Rplus_le_lt_lt : real.
 
-(*s Order and Opposite *)
+(** Order and Opposite *)
 
 (**********)
 Lemma Rgt_Ropp:(r1,r2:R) ``r1 > r2`` -> ``-r1 < -r2``.
@@ -777,7 +777,7 @@ Intros; Replace ``0`` with ``-0``; Auto with real.
 Save.
 Hints Resolve Rge_RO_Ropp : real.
 
-(*s Order and multiplication *)
+(** Order and multiplication *)
 
 Lemma  Rlt_monotony_r:(r,r1,r2:R)``0<r`` -> ``r1 < r2`` -> ``r1*r < r2*r``.
 Intros; Rewrite (Rmult_sym r1 r); Rewrite (Rmult_sym r2 r); Auto with real.
@@ -851,7 +851,7 @@ Lemma Rmult_lt:(r1,r2,r3,r4:R)``r3>0`` -> ``r2>0`` ->
 Intros; Apply Rlt_trans with ``r2*r3``; Auto with real.
 Save.
 
-(*s Order and Substractions *)
+(** Order and Substractions *)
 Lemma Rlt_minus:(r1,r2:R)``r1 < r2`` -> ``r1-r2 < 0``.
 Intros; Apply (Rlt_anti_compatibility ``r2``).
 Replace ``r2+(r1-r2)`` with r1.
@@ -886,7 +886,7 @@ Rewrite Rplus_sym; Replace ``0`` with ``0+0``; Auto with real.
 Save.
 Hints Immediate tech_Rplus : real.
 
-(*s Order and the square function *)
+(** Order and the square function *)
 Lemma pos_Rsqr:(r:R)``0<=(Rsqr r)``.
 Intro; Case (total_order_Rlt_Rle r ``0``); Unfold Rsqr; Intro.
 Replace ``r*r`` with ``(-r)*(-r)``; Auto with real.
@@ -903,14 +903,14 @@ Replace ``0`` with ``0*r``; Auto with real.
 Save.
 Hints Resolve pos_Rsqr pos_Rsqr1 : real.
 
-(*s Zero is less than one *)
+(** Zero is less than one *)
 Lemma Rlt_R0_R1:``0<1``.
 Replace ``1`` with ``(Rsqr 1)``; Auto with real.
 Unfold Rsqr; Auto with real.
 Save.
 Hints Resolve Rlt_R0_R1 : real.
 
-(*s Order and inverse *)
+(** Order and inverse *)
 Lemma Rlt_Rinv:(r:R)``0<r``->``0</r``.
 Intros; Change ``/r>0``; Apply not_Rle; Red; Intros.
 Absurd ``1<=0``; Auto with real.
@@ -967,7 +967,7 @@ Save.
 Hints Resolve Rlt_Rinv_R1 :real.
 
 (*********************************************************)        
-(*s      Greater                                         *)
+(**      Greater                                         *)
 (*********************************************************)
 
 (**********)
@@ -1166,7 +1166,7 @@ Save.
 
 
 (**********************************************************) 
-(*s       Injection from N to R                           *)
+(**       Injection from [N] to [R]                       *)
 (**********************************************************)
 
 (**********)
@@ -1318,7 +1318,7 @@ Save.
 Hints Resolve not_1_INR : real.
 
 (**********************************************************) 
-(*s      Injection from Z to R                            *)
+(**      Injection from [Z] to [R]                        *)
 (**********************************************************)
 
 (**********)
@@ -1502,7 +1502,7 @@ Apply H3; Apply single_z_r_R1 with r; Trivial.
 Save.
 
 (*****************************************************************)
-(* Définitions de nouveaux types                                 *)
+(** Definitions of new types                                     *)
 (*****************************************************************)
 
 Record nonnegreal : Type := mknonnegreal {
@@ -1536,7 +1536,7 @@ Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rle_monotony x
 Save.
 
 (**********************************************************)
-(* Other rules about < and <=                             *)
+(** Other rules about < and <=                            *)
 (**********************************************************)
 
 Lemma gt0_plus_gt0_is_gt0 : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x+y``.
@@ -1586,7 +1586,7 @@ Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR
 Save.
 
 (*****************************************************)
-(* Résultat complémentaire sur la fonction INR       *)
+(** Complementary results about [INR]                *)
 (*****************************************************)
 
 Fixpoint INR2 [n:nat] : R := Cases n of

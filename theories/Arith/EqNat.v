@@ -8,9 +8,7 @@
 
 (*i $Id$ i*)
 
-(**************************************************************************)
-(*                    Equality on natural numbers                         *)
-(**************************************************************************)
+(** Equality on natural numbers *)
 
 Fixpoint  eq_nat [n:nat] : nat -> Prop :=
   [m:nat]Cases n m of 

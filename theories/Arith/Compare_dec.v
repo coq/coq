@@ -55,7 +55,7 @@ Intros; Elim (lt_eq_lt_dec n m); Auto with arith.
 Intros; Absurd (lt m n); Auto with arith.
 Qed.
 
-(* Proofs of decidability *)
+(** Proofs of decidability *)
 
 Theorem dec_le:(x,y:nat)(decidable (le x y)).
 Intros x y; Unfold decidable ; Elim (le_gt_dec x y); [

@@ -8,15 +8,17 @@
 
 (*i $Id$ i*)
 
-(* Natural numbers [nat] built from [O] and [S] are defined in Datatypes.v *)
-(* This module defines the following operations on natural numbers :
-     - predecessor [pred]
-     - addition [plus]
-     - multiplication [mult]
-     - less or equal order [le]
-     - less [lt]
-     - greater or equal [ge]
-     - greater [gt]
+(** Natural numbers [nat] built from [O] and [S] are defined in Datatypes.v *)
+
+(** This module defines the following operations on natural numbers :
+    - predecessor [pred]
+    - addition [plus]
+    - multiplication [mult]
+    - less or equal order [le]
+    - less [lt]
+    - greater or equal [ge]
+    - greater [gt]
+
    This module states various lemmas and theorems about natural numbers,
    including Peano's axioms of arithmetic (in Coq, these are in fact provable)
    Case analysis on [nat] and induction on [nat * nat] are provided too *)
@@ -30,7 +32,7 @@ Definition eq_S := (f_equal nat nat S).
 Hint eq_S : v62 := Resolve (f_equal nat nat S).
 Hint eq_nat_unary : core := Resolve (f_equal nat).
 
-(* The predecessor function *)
+(** The predecessor function *)
 
 Definition pred : nat->nat := [n:nat](Cases n of O => O | (S u) => u end).
 Hint eq_pred : v62 := Resolve (f_equal nat nat pred).
@@ -47,7 +49,7 @@ Qed.
 
 Hints Immediate eq_add_S : core v62.
 
-(* A consequence of the previous axioms *)
+(** A consequence of the previous axioms *)
 
 Theorem not_eq_S : (n,m:nat) ~(n=m) -> ~((S n)=(S m)).
 Proof.
@@ -73,9 +75,7 @@ Proof.
 Qed.
 Hints Resolve n_Sn : core v62.
 
-(*************************************************)
-(*      Addition                                 *)
-(*************************************************)
+(** Addition *)
 
 Fixpoint plus [n:nat] : nat -> nat := 
    [m:nat]Cases n of 
@@ -96,9 +96,7 @@ Proof.
 Qed.
 Hints Resolve plus_n_Sm : core v62.
 
-(***************************************)
-(*      Multiplication                 *)
-(***************************************)
+(** Multiplication *)
 
 Fixpoint  mult [n:nat] : nat -> nat := 
    [m:nat]Cases n of O => O 
@@ -119,12 +117,10 @@ Proof.
 Qed.
 Hints Resolve mult_n_Sm : core v62.
 
-(***********************************************************************)
-(* Definition of the usual orders, the basic properties of le and lt   *)
-(* can be found in files Le and Lt                                     *)
-(***********************************************************************)
+(** Definition of the usual orders, the basic properties of [le] and [lt] 
+    can be found in files Le and Lt *)
 
-(* An inductive definition to define the order *)
+(** An inductive definition to define the order *)
 
 Inductive le [n:nat] : nat -> Prop
     := le_n : (le n n)
@@ -142,18 +138,14 @@ Hints Unfold ge : core v62.
 Definition gt := [n,m:nat](lt m n).
 Hints Unfold gt : core v62.
 
-(*********************************************************)
-(* Pattern-Matching on natural numbers                   *)
-(*********************************************************)
+(** Pattern-Matching on natural numbers *)
 
 Theorem nat_case : (n:nat)(P:nat->Prop)(P O)->((m:nat)(P (S m)))->(P n).
 Proof.
   Induction n ; Auto.
 Qed.
 
-(**********************************************************)
-(* Principle of double induction                          *)
-(**********************************************************)
+(** Principle of double induction *)
 
 Theorem nat_double_ind : (R:nat->nat->Prop)
      ((n:nat)(R O n)) -> ((n:nat)(R (S n) O))

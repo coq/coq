@@ -5,32 +5,33 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(*i $Id: i*)
 
-(*s Axioms for the basic numerical operations *)
+(*i $Id$ i*)
+
+(** Axioms for the basic numerical operations *)
 Require Export Params.
 Require Export EqParams.
 Require Export NSyntax.
 
-(*s Axioms for [eq] *)
+(** Axioms for [eq] *)
 
 Axiom eq_refl : (x:N)(x=x).
 Axiom eq_sym : (x,y:N)(x=y)->(y=x).
 Axiom eq_trans : (x,y,z:N)(x=y)->(y=z)->(x=z).
 
-(*s Axioms for [add] *)
+(** Axioms for [add] *)
 
 Axiom add_sym : (x,y:N)(x+y)=(y+x).
 Axiom add_assoc_l : (x,y,z:N)((x+y)+z)=(x+(y+z)).
 Axiom add_0_x : (x:N)(zero+x)=x.
 
-(*s Axioms for [S] *)
+(** Axioms for [S] *)
 Axiom add_Sx_y : (x,y:N)((S x)+y)=(S (x+y)).
 
-(*s Axioms for [one] *)
+(** Axioms for [one] *)
 Axiom S_0_1 : (S zero)=one.
 
-(*s Axioms for [<], 
+(** Axioms for [<], 
     properties of [>], [<=] and [>=] will be derived from [<] *)
 
 Axiom lt_trans : (x,y,z:N)x<y->y<z->x<z.

@@ -34,9 +34,7 @@ Hints Immediate eqA_dec leA_dec leA_antisym : default.
 Local emptyBag := (EmptyBag A).
 Local singletonBag := (SingletonBag eqA_dec).
 
-(**********************)
-(* contents of a list *)
-(**********************)
+(** contents of a list *)
 
 Fixpoint list_contents [l:(list A)] : (multiset A) :=
  Cases l of

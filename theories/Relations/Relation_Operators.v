@@ -20,7 +20,7 @@ Require Relation_Definitions.
 Require PolyList.
 Require PolyListSyntax.
 
-(* Some operators to build relations *)
+(** Some operators to build relations *)
 
 Section Transitive_Closure.
   Variable A: Set.

@@ -7,7 +7,7 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-(* Properties of decidable propositions *)
+(** Properties of decidable propositions *)
 
 Definition decidable := [P:Prop] P \/ ~P.
 

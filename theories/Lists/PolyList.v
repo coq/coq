@@ -20,7 +20,7 @@ Implicit Arguments On.
 Inductive list : Set := nil : list | cons : A -> list -> list.
 
 (*************************)
-(* Concatenation         *)
+(** Concatenation        *)
 (*************************)
 
 Fixpoint app [l:list] : list -> list 
@@ -140,14 +140,14 @@ Proof.
 Qed.
 
 (****************************************)
-(* Length of lists                      *)
+(** Length of lists                     *)
 (****************************************)
 
 Fixpoint length [l:list] : nat 
    := Cases l of nil => O | (cons _ m) => (S (length m)) end.
 
 (******************************)
-(* Length order of lists      *)
+(** Length order of lists     *)
 (******************************)
 
 Section length_order.
@@ -205,7 +205,7 @@ Hints Resolve lel_refl lel_cons_cons lel_cons lel_nil lel_nil nil_cons
 .
 
 (*********************************)
-(* The In predicate              *)
+(** The [In] predicate           *)
 (*********************************)
 
 Fixpoint In  [a:A;l:list] : Prop :=
@@ -298,9 +298,9 @@ Proof.
 Qed.
 Hints Resolve in_or_app.
 
-(**********************)
-(* Inclusion on list  *)
-(**********************)
+(***********************)
+(** Inclusion on list  *)
+(***********************)
 Definition incl := [l,m:list](a:A)(In a l)->(In a m).
 Hints Unfold  incl.
 
@@ -373,9 +373,9 @@ Proof.
 Qed.
 Hints Resolve incl_app.
 
-(*************************)
-(* Nth element of a list *)
-(*************************)
+(**************************)
+(** Nth element of a list *)
+(**************************)
 Fixpoint nth [n:nat; l:list] : A->A :=
   [default]Cases n l of
     O (cons x l') => x
@@ -394,7 +394,7 @@ Fixpoint nth_ok [n:nat; l:list] : A->bool :=
 
 Lemma nth_in_or_default :
   (n:nat)(l:list)(d:A){(In (nth n l d) l)}+{(nth n l d)=d}.
-(** Realizer nth_ok. Program_all. **)
+(* Realizer nth_ok. Program_all. *)
 Intros n l d; Generalize n; NewInduction l; Intro n0.
 Right; Case n0; Trivial.
 Case n0; Simpl.
@@ -438,8 +438,8 @@ Unfold lt; Induction l;
 ].
 i*)
 
-(* Decidable equality on lists *)
 
+(** Decidable equality on lists *)
 
 Lemma list_eq_dec : ((x,y:A){x=y}+{~x=y})->(x,y:list){x=y}+{~x=y}.
 Proof.
@@ -454,7 +454,7 @@ Proof.
 Qed.
 
 (*********************************************)
-(*   Reverse Induction Principle on Lists    *)
+(**  Reverse Induction Principle on Lists    *)
 (*********************************************)
 Section Reverse_Induction.
 
@@ -546,9 +546,9 @@ Hints Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons incl_app
 
 Section Functions_on_lists.
 
-(***************************************************************)
-(* Some generic functions on lists and basic functions of them *)
-(***************************************************************)
+(****************************************************************)
+(** Some generic functions on lists and basic functions of them *)
+(****************************************************************)
 
 Section Map.
 Variables A,B:Set.
@@ -604,8 +604,8 @@ Induction l;
 ].
 Save.
 
-(* [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
-  indexed by elts of [x], sorted in lexicographic order. *)
+(** [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
+    indexed by elts of [x], sorted in lexicographic order. *)
 
 Fixpoint list_power [A,B:Set; l:(list A)] : (list B)->(list (list A*B)) :=
   [l']Cases l of

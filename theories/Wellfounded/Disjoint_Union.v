@@ -8,12 +8,9 @@
 
 (*i $Id$ i*)
 
-(****************************************************************************)
-(*                            Cristina Cornes                               *)
-(*                                                                          *)
-(*  From : Constructing Recursion Operators in Type Theory                  *)
-(*         L. Paulson  JSC (1986) 2, 325-355                                *)
-(****************************************************************************)
+(** Author: Cristina Cornes
+    From : Constructing Recursion Operators in Type Theory                 
+           L. Paulson  JSC (1986) 2, 325-355 *) 
 
 Require Relation_Operators.
 

@@ -13,10 +13,10 @@ Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
 
-(* Our purpose is to write an induction shema for {0,1,2,...}
-  similar to the nat schema (Theorem [Natlike_rec]). For that the
+(** Our purpose is to write an induction shema for {0,1,2,...}
+  similar to the [nat] schema (Theorem [Natlike_rec]). For that the
   following implications will be used :
-\begin{verbatim}
+<<
  (n:nat)(Q n)==(n:nat)(P (inject_nat n)) ===> (x:Z)`x > 0) -> (P x)
 
        	     /\
@@ -28,10 +28,8 @@ Require Zsyntax.
       	       	       	       	<=== (inject_nat (S n))=(Zs (inject_nat n))
 
       	       	       	       	<=== inject_nat_complete
-
-  Then the  diagram will be closed and the theorem proved. 
-\end{verbatim}
-*)
+>>
+  Then the  diagram will be closed and the theorem proved. *)
 
 Lemma inject_nat_complete :
   (x:Z)`0 <= x` -> (EX n:nat | x=(inject_nat n)).

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(*s Library for manipulating integers based on binary encoding *)
+(** Library for manipulating integers based on binary encoding *)
 
 Require Export fast_integer.
 Require Export zarith_aux.

@@ -188,7 +188,7 @@ Section AdAlloc.
     Intro H0. Rewrite H0 in H. Assumption.
   Qed.
 
-  (* Allocator: returns an address not in the domain of m.
+  (** Allocator: returns an address not in the domain of [m].
   This allocator is optimal in that it returns the lowest possible address,
   in the usual ordering on integers. It is not the most efficient, however. *)
   Fixpoint ad_alloc_opt [m:(Map A)] : ad :=
@@ -221,8 +221,8 @@ Section AdAlloc.
     Unfold in_dom. Intro. Rewrite (ad_alloc_opt_allocates_1 m). Reflexivity.
   Qed.
 
-  (* Moreover, this is optimal: all addresses below [(ad_alloc_opt m)]
-     are in [dom m]: *)
+  (** Moreover, this is optimal: all addresses below [(ad_alloc_opt m)]
+      are in [dom m]: *)
 
   Lemma convert_xH : (convert xH)=(1).
   Proof.

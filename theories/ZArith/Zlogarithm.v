@@ -8,18 +8,16 @@
 
 (*i $Id$ i*)
 
-(****************************************************************************)
-(*  The integer logarithms with base 2. There are three logarithms,	    *)
-(*    depending on the rounding of the real 2-based logarithm : 	    *)
-(*									    *)
-(*  [Log_inf : y = (Log_inf x) iff 2^y <= x < 2^(y+1)]			    *)
-(*  [Log_sup : y = (Log_sup x) iff 2^(y-1) < x <= 2^y]			    *)
-(*  [Log_nearest : y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]	    *)
-(*									    *)
-(*  [Log_inf x] is the biggest integer that is smaller than [Log x]	    *)
-(*  [Log_inf x] is the smallest integer that is bigger than [Log x]	    *)
-(*  [Log_nearest x] is the integer nearest from [Log x]. 		    *)
-(****************************************************************************)
+(** The integer logarithms with base 2. 
+
+    There are three logarithms,
+    depending on the rounding of the real 2-based logarithm:
+    - [Log_inf]: [y = (Log_inf x) iff 2^y <= x < 2^(y+1)]
+      i.e. [Log_inf x] is the biggest integer that is smaller than [Log x]
+    - [Log_sup]: [y = (Log_sup x) iff 2^(y-1) < x <= 2^y]
+      i.e. [Log_inf x] is the smallest integer that is bigger than [Log x]
+    - [Log_nearest]: [y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]
+      i.e. [Log_nearest x] is the integer nearest from [Log x] *)
 
 Require ZArith.
 Require Omega.
@@ -28,7 +26,7 @@ Require Zpower.
 
 Section Log_pos. (* Log of positive integers *)
 
-(* First we build [log_inf] and [log_sup] *)
+(** First we build [log_inf] and [log_sup] *)
 
 Fixpoint log_inf [p:positive] : Z :=  
   Cases p of
@@ -45,8 +43,8 @@ Fixpoint log_sup [p:positive] : Z :=
 
 Hints Unfold log_inf log_sup.
 
-(* Then we give the specifications of [log_inf] and [log_sup] 
-  and prove their validity *)
+(** Then we give the specifications of [log_inf] and [log_sup] 
+    and prove their validity *)
 
 (*i Hints Resolve ZERO_le_S : zarith. i*)
 Hints Resolve Zle_trans : zarith.
@@ -83,8 +81,8 @@ Lemma log_sup_correct1 : (p:positive)` 0 <= (log_sup p)`.
 Induction p; Intros; Simpl; Auto with zarith.
 Save.
 
-(* For every p, either p is a power of two and [(log_inf p)=(log_sup p)]
-  either [(log_sup p)=(log_inf p)+1] *)
+(** For every [p], either [p] is a power of two and [(log_inf p)=(log_sup p)]
+    either [(log_sup p)=(log_inf p)+1] *)
 
 Theorem log_sup_log_inf : (p:positive)
   IF (POS p)=(two_p (log_inf p)) 
@@ -130,7 +128,7 @@ Lemma log_sup_le_Slog_inf :
 Induction p; Simpl; Intros; Omega.
 Save.
 
-(* Now it's possible to specify and build the Log rounded to the nearest *)
+(** Now it's possible to specify and build the [Log] rounded to the nearest *)
 
 Fixpoint log_near[x:positive] : Z :=
   Cases x of 
@@ -202,7 +200,7 @@ End Log_pos.
 
 Section divers.
 
-(* Number of significative digits. *)
+(** Number of significative digits. *)
 
 Definition N_digits :=
   [x:Z]Cases x of 
@@ -232,7 +230,7 @@ Induction n; Intros;
 | Rewrite -> inj_S; Rewrite <- H; Reflexivity].
 Save.
 
-(* [Is_power p] means that p is a power of two *)
+(** [Is_power p] means that p is a power of two *)
 Fixpoint Is_power[p:positive] : Prop :=
   Cases p of
     xH => True

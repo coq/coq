@@ -8,12 +8,9 @@
 
 (*i $Id$ i*)
 
-(****************************************************************************)
-(*                             Cristina Cornes                              *)
-(*                                                                          *)
-(*  From: Constructing Recursion Operators in Type Theory                   *)
-(*        L. Paulson  JSC (1986) 2, 325-355                                 *)
-(****************************************************************************)
+(** Author: Cristina Cornes.
+    From: Constructing Recursion Operators in Type Theory
+    L. Paulson  JSC (1986) 2, 325-355 *)
 
 Require Eqdep.
 
@@ -51,8 +48,9 @@ End WellOrdering.
 
 
 Section Characterisation_wf_relations.
-(*   wellfounded relations are the inverse image of wellordering types *)
-(*   in course of development                                          *)
+
+(** Wellfounded relations are the inverse image of wellordering types *)
+(*  in course of development                                          *)
 
 
 Variable A:Set.

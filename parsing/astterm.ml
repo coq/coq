@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Options
 open Names
 open Nameops
 open Sign
@@ -107,6 +108,25 @@ let check_number_of_pattern loc n l =
 (* Arguments normally implicit in the "Implicit Arguments mode" *)
 (* but explicitely given                                        *)
 
+(* Dump of globalization (to be used by coqdoc) *)
+
+let add_glob loc ref = 
+(*i
+  let sp = Nametab.sp_of_global (Global.env ()) ref in
+  let dir,_ = repr_path sp in
+  let rec find_module d = 
+    try 
+      let qid = let dir,id = split_dirpath d in make_qualid dir id in
+      let _ = Nametab.locate_loaded_library qid in d
+    with Not_found -> find_module (dirpath_prefix d) 
+  in
+  let s = string_of_dirpath (find_module dir) in
+  i*)
+  let sp = Nametab.sp_of_global (Global.env ()) ref in
+  let id = let _,id = repr_path sp in string_of_id id in
+  let dp = string_of_dirpath (Declare.library_part ref) in
+  dump_string (Printf.sprintf "R%d %s.%s\n" (fst loc) dp id)
+
 (* Translation of references *)
 
 let ast_to_sp = function
@@ -162,7 +182,9 @@ let maybe_constructor env = function
       let qid = interp_qualid l in
       (try 
 	match kind_of_term (global_qualified_reference qid) with 
-	  | Construct c -> ConstrPat (loc,c)
+	  | Construct c -> 
+	      if !dump then add_glob loc (ConstructRef c); 
+	      ConstrPat (loc,c)
 	  | _ -> 
 	      (match maybe_variable l with
 		 | Some s -> 
@@ -180,11 +202,15 @@ let maybe_constructor env = function
   (* This may happen in quotations *)
   | Node(loc,"MUTCONSTRUCT",[sp;Num(_,ti);Num(_,n)]) ->
       (* Buggy: needs to compute the context *)
-      ConstrPat (loc,((ast_to_sp sp,ti),n))
+      let c = (ast_to_sp sp,ti),n in
+      if !dump then add_glob loc (ConstructRef c); 
+      ConstrPat (loc,c)
 
   | Path(loc,sp) ->
       (match absolute_reference sp with 
-	| ConstructRef c -> ConstrPat (loc,c)
+	| ConstructRef c as r -> 
+	    if !dump then add_glob loc (ConstructRef c);
+	    ConstrPat (loc,c)
 	| _ ->
             error ("Unknown absolute constructor name: "^(string_of_path sp)))
 
@@ -263,6 +289,7 @@ let rawconstr_of_qualid env vars loc qid =
   (* Is it a global reference or a syntactic definition? *)
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
+    if !dump then add_glob loc ref;
     let imps = implicits_of_global ref in
     RRef (loc, ref), imps
   | SyntacticDef sp ->
@@ -568,7 +595,7 @@ let globalize_qualid qid =
     let ref = Nametab.extended_locate qid in
     ast_of_extended_ref_loc dummy_loc ref
   with Not_found ->
-    Options.if_verbose warning_globalize qid;
+    if_verbose warning_globalize qid;
     Termast.ast_of_qualid qid
 
 let adjust_qualid env loc ast qid =
@@ -583,7 +610,7 @@ let adjust_qualid env loc ast qid =
     let ref = Nametab.extended_locate qid in
     ast_of_extended_ref_loc loc ref
   with Not_found ->
-    Options.if_verbose warning_globalize qid;
+    if_verbose warning_globalize qid;
     ast
 
 let ast_adjust_consts sigma =

@@ -10,7 +10,7 @@
 
 Require Export Datatypes.
 
-(* Parsing of things in Datatypes.v *)
+(** Parsing of things in Datatypes.v *)
 
 Grammar constr constr1 :=
   pair_expl [ "<" lconstr($l1) "," lconstr($c2) ">" "(" lconstr($c3) ","
@@ -27,7 +27,7 @@ with constr0 :=
 with constr3 :=
   prod [ constr2($c1) "*" constr3($c2) ] -> [ (prod $c1 $c2) ].
 
-(* Pretty-printing of things in Datatypes.v *)
+(** Pretty-printing of things in Datatypes.v *)
 
 Syntax constr
   level 4:

@@ -152,6 +152,9 @@ let parse_args () =
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
 
+    | "-dump-glob" :: f :: rem -> dump_into_file f; parse rem
+    | "-dump-glob" :: []       -> usage ()
+
     | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()
 

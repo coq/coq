@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*s Syntax for arithmetic *)
+(** Syntax for arithmetic *)
 
 Require Export Params.
 

@@ -237,15 +237,17 @@ Proof.
 Qed.
 
 
-(*s We define an ultrametric distance between addresses: $d(a,a')=1/2^pd(a,a')$,
-  where $pd(a,a')$ is the number of identical bits at the beginning of $a$ and $a'$
-  (infinity if $a=a'$).  Instead of working with $d$, we work with $pd$, namely
-  [ad_pdist]: *)
+(** We define an ultrametric distance between addresses: 
+    $d(a,a')=1/2^pd(a,a')$, 
+    where $pd(a,a')$ is the number of identical bits at the beginning 
+    of $a$ and $a'$ (infinity if $a=a'$).  
+    Instead of working with $d$, we work with $pd$, namely
+    [ad_pdist]: *)
 
 Definition ad_pdist := [a,a':ad] (ad_plength (ad_xor a a')).
 
-(*s d is a distance, so $d(a,a')=0$ iff $a=a'$; this means that
-  $pd(a,a')=infty$ iff $a=a'$: *)
+(** d is a distance, so $d(a,a')=0$ iff $a=a'$; this means that
+    $pd(a,a')=infty$ iff $a=a'$: *)
 
 Lemma ad_pdist_eq_1 : (a:ad) (ad_pdist a a)=infty.
 Proof.
@@ -257,14 +259,15 @@ Proof.
   Intros. Apply ad_xor_eq. Apply ad_plength_infty. Exact H.
 Qed.
 
-(*s $d$ is a distance, so $d(a,a')=d(a',a)$: *)
+(** $d$ is a distance, so $d(a,a')=d(a',a)$: *)
 
 Lemma ad_pdist_comm : (a,a':ad) (ad_pdist a a')=(ad_pdist a' a).
 Proof.
   Unfold ad_pdist. Intros. Rewrite ad_xor_comm. Reflexivity.
 Qed.
 
-(*s $d$ is an ultrametric distance, that is, not only $d(a,a')\leq d(a,a'')+d(a'',a')$,
+(** $d$ is an ultrametric distance, that is, not only $d(a,a')\leq
+    d(a,a'')+d(a'',a')$,
   but in fact $d(a,a')\leq max(d(a,a''),d(a'',a'))$.
   This means that $min(pd(a,a''),pd(a'',a'))<=pd(a,a')$ (lemma [ad_pdist_ultra] below).
   This follows from the fact that $a \Ra |a| = 1/2^{\texttt{ad\_plength}}(a))$

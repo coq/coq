@@ -5,9 +5,10 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(*i 	$Id$	 i*)
 
-(*s John Major's Equality as proposed by C. Mc Bride *)
+(*i $Id$ i*)
+
+(** John Major's Equality as proposed by C. Mc Bride *)
 
 Set Implicit Arguments.
 

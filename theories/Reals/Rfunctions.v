@@ -10,17 +10,18 @@
 
 (*i Some properties about pow and sum have been made with John Harrison i*)
 (*i Some Lemmas (about pow and powerRZ) have been done by Laurent Thery i*)
-(*********************************************************)
-(*           Definition of the some functions            *)
-(*                                                       *)
-(*********************************************************)
+
+(********************************************************)
+(**          Definition of the sum functions            *)
+(*                                                      *)
+(********************************************************)
 
 Require Export Rlimit.
 Require Omega.
 Require Import Zpower.
 
 (*******************************)
-(*      Factorial              *)
+(**     Factorial              *)
 (*******************************)
 (*********)
 Fixpoint fact [n:nat]:nat:=
@@ -391,7 +392,7 @@ Simpl; Rewrite H; Rewrite Rmult_Ol; Auto with real.
 Save.
 
 (*******************************)
-(*          PowerRZ            *)
+(**         PowerRZ            *)
 (*******************************)
 (*i Due to L.Thery i*)
 
@@ -516,7 +517,7 @@ Intros n1 H'; Rewrite Rinv_Rmult; Try Rewrite Rinv_R1; Try Rewrite H';
 Save.
 
 (*******************************)
-(*  Sum of n first naturals    *)
+(** Sum of n first naturals    *)
 (*******************************)
 (*********)
 Fixpoint sum_nat_f_O [f:nat->nat;n:nat]:nat:=       
@@ -538,7 +539,7 @@ Definition sum_nat [s,n:nat]:nat:=
   (sum_nat_f s n [x]x).
 
 (*******************************)
-(*             Sum             *)
+(**            Sum             *)
 (*******************************)
 (*********)
 Fixpoint sum_f_R0 [f:nat->R;N:nat]:R:=
@@ -581,7 +582,7 @@ Save.
 
 
 (*******************************)
-(*        Infinit Sum          *)
+(**       Infinit Sum          *)
 (*******************************)
 (*********)
 Definition infinit_sum:(nat->R)->R->Prop:=[s:nat->R;l:R]

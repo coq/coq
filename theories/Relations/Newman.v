@@ -26,12 +26,12 @@ Theorem coherence_intro :  (x:A)(y:A)(z:A)(Rstar x z)->(Rstar y z)->(coherence x
 Proof [x:A][y:A][z:A][h1:(Rstar x z)][h2:(Rstar y z)]
       (exT_intro2 A (Rstar x) (Rstar y) z h1 h2).
   
-(* A very simple case of coherence : *)
+(** A very simple case of coherence : *)
 
 Lemma Rstar_coherence : (x:A)(y:A)(Rstar x y)->(coherence x y).
  Proof  [x:A][y:A][h:(Rstar x y)](coherence_intro x y y h (Rstar_reflexive y)).  
   
-(* coherence is symmetric *)
+(** coherence is symmetric *)
 Lemma coherence_sym: (x:A)(y:A)(coherence x y)->(coherence y x).
  Proof [x:A][y:A][h:(coherence x y)]
         (exT2_ind A (Rstar x) (Rstar y) (coherence y x)
@@ -49,30 +49,30 @@ Definition noetherian :=
   
 Section Newman_section.
 
-(* The general hypotheses of the theorem *)
+(** The general hypotheses of the theorem *)
 
 Hypothesis Hyp1:noetherian.
 Hypothesis Hyp2:(x:A)(local_confluence x).  
   
-(* The induction hypothesis *)
+(** The induction hypothesis *)
 
 Section Induct.
   Variable    x:A.
   Hypothesis  hyp_ind:(u:A)(R x u)->(confluence u).  
   
-(* Confluence in x *)
+(** Confluence in [x] *)
 
   Variables   y,z:A.  
   Hypothesis  h1:(Rstar x y).  
   Hypothesis  h2:(Rstar x z).  
   
-(* particular case x->u and u->*y   *)
+(** particular case [x->u] and [u->*y]   *)
 Section Newman_.
   Variable    u:A.  
   Hypothesis  t1:(R x u).  
   Hypothesis  t2:(Rstar u y).  
   
-(* In the usual diagram, we assume also x->v and  v->*z   *)
+(** In the usual diagram, we assume also [x->v] and [v->*z] *)
 
 Theorem Diagram : (v:A)(u1:(R x v))(u2:(Rstar v z))(coherence y z).
 

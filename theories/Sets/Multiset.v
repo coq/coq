@@ -34,7 +34,7 @@ Definition SingletonBag := [a:A]
 Definition multiplicity : multiset -> A -> nat :=
   [m:multiset][a:A]let (f) = m in (f a).
 
-(* multiset equality *)
+(** multiset equality *)
 Definition meq := [m1,m2:multiset]
     (a:A)(multiplicity m1 a)=(multiplicity m2 a).
 
@@ -60,7 +60,7 @@ Induction x; Induction y; Auto.
 Qed.
 Hints Immediate meq_sym.
 
-(* multiset union *)
+(** multiset union *)
 Definition munion := [m1,m2:multiset]
     (Bag [a:A](plus (multiplicity m1 a)(multiplicity m2 a))).
 
@@ -112,8 +112,8 @@ Qed.
 Hints Resolve meq_right.
 
 
-(* Here we should make multiset an abstract datatype, by hiding Bag,
-   munion, multiplicity; all further properties are proved abstractly *)
+(** Here we should make multiset an abstract datatype, by hiding [Bag],
+    [munion], [multiplicity]; all further properties are proved abstractly *)
 
 Lemma munion_rotate :
    (x,y,z:multiset)(meq (munion x (munion y z)) (munion z (munion x y))).
@@ -151,7 +151,7 @@ Apply meq_sym; Apply munion_ass.
 Apply meq_left; Apply munion_perm_left.
 Qed.
 
-(* specific for treesort *)
+(** specific for treesort *)
 
 Lemma treesort_twist1 : (x,y,z,t,u:multiset) (meq u (munion y z)) ->
    (meq (munion x (munion u t)) (munion (munion y (munion x t)) z)).

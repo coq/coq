@@ -75,7 +75,7 @@ Grammar constr constr0 :=
 Grammar constr pattern :=
   z_in_pattern [ "`" znatural:number($c) "`" ] -> [$c].   
 
-(* The symbols "`" "`" must be printed just once at the top of the expession,
+(* The symbols "`" "`" must be printed just once at the top of the expressions,
   to avoid printings like |``x` + `y`` < `45`| 
   for |x + y < 45|.
   So when a Z-expression is to be printed, its sub-expresssions are

@@ -12,6 +12,7 @@
 
 open Pp
 open Util
+open Options
 open System
 open Coqast
 open Vernacinterp
@@ -165,6 +166,7 @@ let compile verbosely f =
     let ldir = Nameops.extend_dirpath ldir0 m in
     Termops.set_module ldir; (* Just for universe naming *)
     Lib.start_module ldir;
+    if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
     let _ = load_vernac verbosely longf in
     let mid = Lib.end_module m in
     assert (mid = ldir);

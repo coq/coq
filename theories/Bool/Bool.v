@@ -8,12 +8,12 @@
 
 (*i $Id$ i*)
 
-(*************)
-(* Booleans  *)
-(* The type [bool] is defined in the prelude as \\
+(** Booleans  *)
+
+(** The type [bool] is defined in the prelude as
     [Inductive bool : Set := true : bool | false : bool] *)
 
-(* Interpretation of booleans as Proposition *)
+(** Interpretation of booleans as Proposition *)
 Definition Is_true := [b:bool](Cases b of
                                  true  => True
                                | false => False
@@ -33,7 +33,7 @@ Save.
 Hints Immediate Is_true_eq_right Is_true_eq_left : bool.
 
 (*******************)
-(*s Discrimination *)
+(** Discrimination *)
 (*******************)
 
 Lemma diff_true_false : ~true=false.
@@ -74,7 +74,7 @@ Reflexivity.
 Save.
 
 (**********************)
-(*s Order on booleans *)
+(** Order on booleans *)
 (**********************)
 
 Definition leb := [b1,b2:bool]
@@ -85,7 +85,7 @@ Definition leb := [b1,b2:bool]
 Hints Unfold leb : bool v62.
 
 (*************)
-(*s Equality *)
+(** Equality *)
 (*************)
 
 Definition eqb : bool->bool->bool :=
@@ -143,7 +143,7 @@ Save.
 
 
 (************************)
-(*s Logical combinators *)
+(** Logical combinators *)
 (************************)
  
 Definition ifb : bool -> bool -> bool -> bool
@@ -174,7 +174,7 @@ Definition negb := [b:bool]Cases b of
 
 
 (**************************)
-(*s Lemmas about [negb]   *)
+(** Lemmas about [negb]   *)
 (**************************)
 
 Lemma negb_intro : (b:bool)b=(negb (negb b)).
@@ -229,7 +229,7 @@ Qed.
 
 
 (****************************)
-(*s A few lemmas about [or] *)
+(** A few lemmas about [or] *)
 (****************************)
 
 Lemma orb_prop : 
@@ -310,7 +310,7 @@ Save.
 Hints Resolve orb_sym orb_assoc orb_b_false orb_false_b : bool v62.
 
 (*****************************)
-(*s A few lemmas about [and] *)
+(** A few lemmas about [and] *)
 (*****************************)
 
 Lemma andb_prop : 
@@ -392,7 +392,7 @@ Save.
 Hints Resolve andb_sym andb_assoc : bool v62.
 
 (*******************************)
-(*s Properties of [xorb]       *)
+(** Properties of [xorb]       *)
 (*******************************)
 
 Lemma xorb_false : (b:bool) (xorb b false)=b.
@@ -458,7 +458,7 @@ Proof.
 Qed.
 
 (*******************************)
-(*s De Morgan's law            *)
+(** De Morgan's law            *)
 (*******************************)
 
 Lemma demorgan1 : (b1,b2,b3:bool)

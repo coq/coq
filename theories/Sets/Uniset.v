@@ -8,10 +8,11 @@
 
 (*i $Id$ i*)
 
-(* Sets  as characteristic functions *)
+(** Sets as characteristic functions *)
 
 (* G. Huet 1-9-95 *)
 (* Updated Papageno 12/98 *)
+
 Require Bool.
 
 Implicit Arguments On.
@@ -41,12 +42,12 @@ Definition In : uniset -> A -> Prop :=
      [s:uniset][a:A](charac s a)=true.
 Hints Unfold In.
 
-(* uniset inclusion *)
+(** uniset inclusion *)
 Definition incl := [s1,s2:uniset]
     (a:A)(leb (charac s1 a) (charac s2 a)).
 Hints Unfold incl.
 
-(* uniset equality *)
+(** uniset equality *)
 Definition seq := [s1,s2:uniset]
     (a:A)(charac s1 a) = (charac s2 a).
 Hints Unfold seq.
@@ -86,7 +87,7 @@ Unfold seq.
 Induction x; Induction y; Simpl; Auto.
 Qed.
 
-(* uniset union *)
+(** uniset union *)
 Definition union := [m1,m2:uniset]
     (Charac [a:A](orb (charac m1 a)(charac m2 a))).
 
@@ -137,10 +138,10 @@ Qed.
 Hints Resolve seq_right.
 
 
-(* All the proofs that follow duplicate [Multiset_of_A] *)
+(** All the proofs that follow duplicate [Multiset_of_A] *)
 
-(* Here we should make uniset an abstract datatype, by hiding Charac,
-   union, charac; all further properties are proved abstractly *)
+(** Here we should make uniset an abstract datatype, by hiding [Charac],
+    [union], [charac]; all further properties are proved abstractly *)
 
 Require Permut.
 
@@ -180,7 +181,7 @@ Apply seq_sym; Apply union_ass.
 Apply seq_left; Apply union_perm_left.
 Qed.
 
-(* specific for treesort *)
+(** specific for treesort *)
 
 Lemma treesort_twist1 : (x,y,z,t,u:uniset) (seq u (union y z)) ->
    (seq (union x (union u t)) (union (union y (union x t)) z)).

@@ -1,6 +1,14 @@
-(*i $Id $ i*)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
 
-(*s DisEquality is defined as the negation of equality *)
+(*i $Id$ i*)
+
+(** DisEquality is defined as the negation of equality *)
 
 Require Params.
 Require EqParams.

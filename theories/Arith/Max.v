@@ -10,9 +10,7 @@
 
 Require Arith.
 
-(**************************************************************************)
-(*                    maximum of two natural numbers                      *)
-(**************************************************************************)
+(** maximum of two natural numbers *)
 
 Fixpoint max [n:nat] : nat -> nat :=  
 [m:nat]Cases n m of
@@ -21,8 +19,7 @@ Fixpoint max [n:nat] : nat -> nat :=
        | (S n') (S m') => (S (max n' m'))
        end.
 
-(* Simplifications of max *)
-
+(** Simplifications of [max] *)
 
 Lemma max_SS : (n,m:nat)((S (max n m))=(max (S n) (S m))).
 Proof.
@@ -34,7 +31,7 @@ Proof.
 NewInduction n;NewInduction m;Simpl;Auto with arith.
 Qed.
 
-(* max and le *)
+(** [max] and [le] *)
 
 Lemma max_l : (n,m:nat)(le m n)->(max n m)=n.
 Proof.
@@ -60,7 +57,7 @@ Qed.
 Hints Resolve max_r max_l le_max_l le_max_r: arith v62.
 
 
-(* max n m is equal to n or m *)
+(** [max n m] is equal to [n] or [m] *)
 
 Lemma max_dec : (n,m:nat){(max n m)=n}+{(max n m)=m}.
 Proof.

@@ -8,24 +8,25 @@
 
 (*i $Id$ i*)
 
-(* We prove that there is only one proof of [x=x], i.e [(refl_equal ? x)].
+(** We prove that there is only one proof of [x=x], i.e [(refl_equal ? x)].
    This holds if the equality upon the set of [x] is decidable.
    A corollary of this theorem is the equality of the right projections
    of two equal dependent pairs.
 
-   Author:   Thomas Kleymann \verb!<tms@dcs.ed.ac.uk>! in Lego
+   Author:   Thomas Kleymann |<tms@dcs.ed.ac.uk>| in Lego
              adapted to Coq by B. Barras
+
    Credit:   Proofs up to [K_dec] follows an outline by Michael Hedberg
 *)
 
 
-(* We need some dependent elimination schemes *)
+(** We need some dependent elimination schemes *)
 
 Set Implicit Arguments.
 
 Require Elimdep.
 
-  (* Bijection between [eq] and [eqT] *)
+  (** Bijection between [eq] and [eqT] *)
   Definition eq2eqT: (A:Set)(x,y:A)x=y->x==y :=
     [A,x,_,eqxy]<[y:A]x==y>Cases eqxy of refl_equal => (refl_eqT ? x) end.
 
@@ -107,7 +108,7 @@ Trivial.
 Save.
 
 
-  (* The corollary *)
+  (** The corollary *)
 
   Local proj: (P:A->Prop)(ExT P)->(P x)->(P x) :=
     [P,exP,def]Cases exP of
@@ -137,7 +138,7 @@ Save.
 
 End DecidableEqDep.
 
-  (* We deduce the K axiom for (decidable) Set *)
+  (** We deduce the [K] axiom for (decidable) Set *)
   Theorem K_dec_set: (A:Set)((x,y:A){x=y}+{~x=y})
                        ->(x:A)(P: x=x->Prop)(P (refl_equal ? x))
                          ->(p:x=x)(P p).

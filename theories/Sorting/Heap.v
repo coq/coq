@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* A development of Treesort on Heap trees *)
+(** A development of Treesort on Heap trees *)
 
 (* G. Huet 1-9-95 uses Multiset *)
 
@@ -43,10 +43,8 @@ Inductive Tree : Set :=
       Tree_Leaf : Tree
     | Tree_Node : A -> Tree -> Tree -> Tree.
 
-(*******************************************)
-(* a is lower than a Tree T if T is a Leaf *)
-(*      or T is a Node holding b>a         *)
-(*******************************************)
+(** [a] is lower than a Tree [T] if [T] is a Leaf
+    or [T] is a Node holding [b>a] *)
 
 Definition leA_Tree := [a:A; t:Tree]
  Cases t of 
@@ -68,9 +66,7 @@ Qed.
 Hints Resolve leA_Tree_Leaf leA_Tree_Node.
 
 
-(****************************)
-(*    The heap property     *)
-(****************************)
+(** The heap property *)
 
 Inductive is_heap : Tree -> Prop :=
       nil_is_heap : (is_heap Tree_Leaf)
@@ -115,13 +111,11 @@ Induction T; Auto with datatypes.
 Intros; Simpl; Apply leA_trans with b; Auto with datatypes.
 Qed.
 
-(************************************)
-(* contents of a tree as a multiset *)
-(************************************)
+(** contents of a tree as a multiset *)
 
-(* Nota Bene : In what follows the definition of SingletonBag
-   in not used. Actually, we could just take as postulate:
-   Parameter SingletonBag : A->multiset.  *)
+(** Nota Bene : In what follows the definition of SingletonBag
+    in not used. Actually, we could just take as postulate:
+    [Parameter SingletonBag : A->multiset].  *)
 
 Fixpoint  contents [t:Tree] : (multiset A) :=
  Cases t of
@@ -131,16 +125,12 @@ Fixpoint  contents [t:Tree] : (multiset A) :=
 end.
 
 
-(*******************************************************************)
-(* equivalence of two trees is equality of corresponding multisets *)
-(*******************************************************************)
+(** equivalence of two trees is equality of corresponding multisets *)
 
 Definition equiv_Tree := [t1,t2:Tree](meq (contents t1) (contents t2)).
 
 
-(***********************************)
-(* specification of heap insertion *)
-(***********************************)
+(** specification of heap insertion *)
 
 Inductive insert_spec [a:A; T:Tree] : Set :=
    insert_exist : (T1:Tree)(is_heap T1) ->
@@ -167,9 +157,7 @@ Apply low_trans with a; Auto with datatypes.
 Simpl; Apply treesort_twist2; Trivial with datatypes. 
 Qed.
 
-(*******************************)
-(* building a heap from a list *)
-(*******************************)
+(** building a heap from a list *)
 
 Inductive build_heap [l:(list A)] : Set :=
    heap_exist : (T:Tree)(is_heap T) ->
@@ -192,9 +180,7 @@ Apply meq_sym; Trivial with datatypes.
 Qed.
 
 
-(****************************)
-(* building the sorted list *)
-(****************************)
+(** building the sorted list *)
 
 Inductive flat_spec [T:Tree] : Set :=
  flat_exist : (l:(list A))(sort leA l) ->
@@ -220,9 +206,7 @@ Proof.
   Apply meq_right; Apply meq_sym; Trivial with datatypes.
 Qed.
 
-(*****************************)
-(* specification of treesort *)
-(*****************************)
+(** specification of treesort *)
 
 Theorem treesort : (l:(list A))
   {m:(list A) | (sort leA m) & (permutation eqA_dec l m)}.

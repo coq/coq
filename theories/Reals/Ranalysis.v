@@ -17,7 +17,7 @@ Require DiscrR.
 Require Rtrigo.
 
 (****************************************************)
-(*            Basic operations on functions         *)
+(**           Basic operations on functions         *)
 (****************************************************)
 Definition plus_fct [f1,f2:R->R] : R->R := [x:R] ``(f1 x)+(f2 x)``.
 Definition opp_fct [f:R->R] : R->R := [x:R] ``-(f x)``.
@@ -29,7 +29,7 @@ Definition div_real_fct [a:R;f:R->R] : R->R := [x:R] ``a/(f x)``.
 Definition comp [f1,f2:R->R] : R->R := [x:R] ``(f1 (f2 x))``.
 
 (****************************************************)
-(*             Variations of functions              *)
+(**            Variations of functions              *)
 (****************************************************)
 Definition increasing [f:R->R] : Prop := (x,y:R) ``x<=y``->``(f x)<=(f y)``.
 Definition decreasing [f:R->R] : Prop := (x,y:R) ``x<=y``->``(f y)<=(f x)``.
@@ -44,7 +44,7 @@ Axiom fct_eq : (A,B:Type) (f1,f2:A->B) ((x:A)(f1 x)==(f2 x))->f1==f2.
 Definition no_cond : R->Prop := [x:R] True.
  
 (***************************************************)
-(*       Definition of continuity as a limit       *)
+(**      Definition of continuity as a limit       *)
 (***************************************************)
 
 (**********)
@@ -135,7 +135,7 @@ Unfold continuity; Intros; Apply (inv_continuous f x (H x) (H0 x)).
 Save.
  
 (*****************************************************)
-(*   Derivative's definition using Landau's kernel   *)
+(**  Derivative's definition using Landau's kernel   *)
 (*****************************************************)
 Definition derivable_pt [f:R->R; x:R] : Prop := (EXT l : R | ((eps:R) ``0<eps``->(EXT delta : posreal | ((h:R) ~``h==0``->``(Rabsolu h)<delta`` -> ``(Rabsolu ((((f (x+h))-(f x))/h)-l))<eps``)))).
 
@@ -158,9 +158,9 @@ Save.
 (**********)
 Definition derive [f:R->R] := [x:R] (derive_pt f x).
 
-(***********************************)
-(* Class of differential functions *)
-(***********************************)
+(************************************)
+(** Class of differential functions *)
+(************************************)
 Record Differential : Type := mkDifferential {
 d1 :> R->R;
 cond_diff : (derivable d1) }.
@@ -180,9 +180,9 @@ Lemma derive_derivable : (f:R->R;x,l:R) (derive_pt f x)==l -> (derivable_pt f x)
 Intros; Unfold derivable_pt; Generalize (derive_pt_def_1 f x l H); Intro H0; Exists l; Assumption.
 Save.
 
-(*******************************************************************)
-(* Equivalence of this definition with the one using limit concept *)
-(*******************************************************************)
+(********************************************************************)
+(** Equivalence of this definition with the one using limit concept *)
+(********************************************************************)
 Lemma derive_pt_D_in : (f,df:R->R;x:R) (D_in f df no_cond x) <-> (derive_pt
 f x)==(df x).
 Intros; Split.
@@ -201,7 +201,7 @@ Save.
 Definition fct_cte [a:R] : R->R := [x:R]a.
 
 (***********************************)
-(*    derivability -> continuity   *)
+(**   derivability -> continuity   *)
 (***********************************)
 Theorem derivable_continuous_pt : (f:R->R;x:R) (derivable_pt f x) -> (continuity_pt f x).
 Intros.
@@ -223,7 +223,7 @@ Unfold derivable continuity; Intros; Apply (derivable_continuous_pt f x (H x)).
 Save.
 
 (****************************************************************)
-(*                       Main rules                             *)
+(**                      Main rules                             *)
 (****************************************************************)
 
 (* Addition *)
@@ -492,7 +492,7 @@ Intro; Generalize deriv_cos; Unfold derive; Intro; Unfold opp_fct in H; Apply (e
 Save.
 
 (************************************************************)
-(*              Local extremum's condition                  *)
+(**             Local extremum's condition                  *)
 (************************************************************)
 Theorem deriv_maximum : (f:R->R;a,b,c:R) ``a<c``->``c<b``->(derivable_pt f c)->((x:R) ``a<x``->``x<b``->``(f x)<=(f c)``)->``(derive_pt f c)==0``.
 Intros; Case (total_order R0 (derive_pt f c)); Intro.

@@ -8,13 +8,13 @@
 
 (*i $Id$ i*)
 
-(* A Library for finite sets, implemented as lists *)
-(* A Library with similar interface will soon be available under
-  the name TreeSet in the theories/Trees directory *)
+(** A Library for finite sets, implemented as lists 
+    A Library with similar interface will soon be available under
+    the name TreeSet in the theories/Trees directory *)
 
-(* PolyList is loaded, but not exported *)
-(* This allow to "hide" the definitions, functions and theorems of PolyList
-   and to see only the ones of ListSet *)
+(** PolyList is loaded, but not exported.
+    This allow to "hide" the definitions, functions and theorems of PolyList
+    and to see only the ones of ListSet *)
 
 Require PolyList.
 
@@ -48,7 +48,7 @@ Section first_definitions.
                    end
     end.
  
-  (* If a belongs to x, removes a from x. If not, does nothing *)
+  (** If [a] belongs to [x], removes [a] from [x]. If not, does nothing *)
   Fixpoint set_remove [a:A; x:set] : set :=
     Cases x of
     | nil => empty_set
@@ -72,7 +72,7 @@ Section first_definitions.
     | (cons a1 y1) => (set_add a1 (set_union x y1))
     end.
         
-  (* returns the set of all els of x that does not belong to y *)
+  (** returns the set of all els of [x] that does not belong to [y] *)
   Fixpoint set_diff [x:set] : set -> set :=
     [y]Cases x of
     | nil => (nil A)
@@ -324,7 +324,7 @@ Section other_definitions.
 
   Definition set_prod : (set A) -> (set B) -> (set A*B) := (list_prod 1!A 2!B).
 
-  (* [B^A], set of applications from [A] to [B] *)
+  (** [B^A], set of applications from [A] to [B] *)
   Definition set_power : (set A) -> (set B) -> (set (set A*B)) := 
     (list_power 1!A 2!B).
 

@@ -8,18 +8,15 @@
 
 (*i $Id$ i*)
 
-(****************************************************************************)
-(*                         Bruno Barras  Cristina Cornes                    *)
-(*                                                                          *)
-(****************************************************************************)
+(** Authors: Bruno Barras,Cristina Cornes *)
 
 Require Eqdep.
 Require Relation_Operators.
 Require Transitive_Closure.
 
-(*  From : Constructing Recursion Operators in Type Theory            
-           L. Paulson  JSC (1986) 2, 325-355                                
-*)
+(**  From : Constructing Recursion Operators in Type Theory            
+     L. Paulson  JSC (1986) 2, 325-355 *)
+
 Section WfLexicographic_Product.
 Variable A:Set.
 Variable B:A->Set.

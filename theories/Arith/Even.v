@@ -8,10 +8,9 @@
 
 (*i $Id$ i*)
 
-(* Here we define the predicates [even] and [odd] by mutual induction
-   and we prove the decidability and the exclusion of those predicates.
-   The main results about parity are proved in the module Div2.
- *)
+(** Here we define the predicates [even] and [odd] by mutual induction
+    and we prove the decidability and the exclusion of those predicates.
+    The main results about parity are proved in the module Div2. *)
 
 Inductive even : nat->Prop :=
     even_O : (even O)

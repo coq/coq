@@ -8,9 +8,7 @@
 
 (*i $Id$ i*)
 
-(**************************************************************************)
-(*                         Properties of addition                         *)
-(**************************************************************************)
+(** Properties of addition *)
 
 Require Le.
 Require Lt.
@@ -160,13 +158,11 @@ Proof.
 Qed.
 
 
-(**************************************************************************)
-(*                         Tail-recursive plus                            *)
-(**************************************************************************)
+(** Tail-recursive plus *)
 
-(* [tail_plus] is an alternative definition for [plus] which is 
-  tail-recursive, whereas [plus] is not. When extracting programs 
-  from proofs, this can be useful. *)
+(** [tail_plus] is an alternative definition for [plus] which is 
+    tail-recursive, whereas [plus] is not. This can be useful
+    when extracting programs. *)
 
 Fixpoint plus_acc [s,n:nat] : nat := 
    Cases n of 

@@ -8,13 +8,12 @@
 
 (*i $Id$ i*)
 
-(* Here are collected some results about the type sumbool (see INIT/Specif.v)
- * [sumbool A B], which is written [{A}+{B}], is the informative
- * disjunction "A or B", where A and B are logical propositions.
- * Its extraction is isomorphic to the type of booleans.
- *)
+(** Here are collected some results about the type sumbool (see INIT/Specif.v)
+   [sumbool A B], which is written [{A}+{B}], is the informative
+   disjunction "A or B", where A and B are logical propositions.
+   Its extraction is isomorphic to the type of booleans. *)
 
-(* A boolean is either true or false, and this is decidable *)
+(** A boolean is either [true] or [false], and this is decidable *)
 
 Lemma sumbool_of_bool : (b:bool) {b=true}+{b=false}.
 Proof.
@@ -36,7 +35,7 @@ Save.
 
 (*i pourquoi ce machin-la est dans BOOL et pas dans LOGIC ?  Papageno i*)
 
-(* Logic connectives on type sumbool *)
+(** Logic connectives on type [sumbool] *)
 
 Section connectives.
 

@@ -6,9 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i $Id $ i*)
+(*i $Id$ i*)
 (* Cuihtlauac Alvarado - octobre 2000 *)
-(* Properties of a boolean equality   *)
+
+(** Properties of a boolean equality   *)
 
 
 Require Export Bool.

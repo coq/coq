@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (*********************************************************)
-(*      Definition of the derivative,continuity          *)
+(**     Definition of the derivative,continuity          *)
 (*                                                       *)
 (*********************************************************)
 Require Export Rfunctions.

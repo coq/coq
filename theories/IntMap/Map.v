@@ -7,7 +7,7 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-(*s Definition of finite sets as trees indexed by adresses *)
+(** Definition of finite sets as trees indexed by adresses *)
 
 Require Bool.
 Require Sumbool.
@@ -19,7 +19,7 @@ Require Addec.
 
 Section MapDefs.
 
-(*s We define maps from ad to A. *)
+(** We define maps from ad to A. *)
   Variable A : Set.  
 
   Inductive Map : Set :=
@@ -37,9 +37,9 @@ Section MapDefs.
     Left . Split with a. Reflexivity.
   Qed.
 
-  (* The semantics of maps is given by the function MapGet.
-    The semantics of a map m is a partial, finite function from
-    ad to A: *)
+  (** The semantics of maps is given by the function [MapGet].
+      The semantics of a map [m] is a partial, finite function from
+      [ad] to [A]: *)
 
   Fixpoint MapGet [m:Map] : ad -> option :=
     Cases m of
@@ -604,8 +604,8 @@ Section MapDefs.
     Reflexivity.
   Qed.
 
-  (* MapInter, MapRngRestrTo, MapRngRestrBy, MapInverse not implemented:
-     need a decidable equality on A. *)
+  (** [MapInter], [MapRngRestrTo], [MapRngRestrBy], [MapInverse] 
+      not implemented: need a decidable equality on [A]. *)
 
   Fixpoint MapDelta [m:Map] : Map -> Map :=
     Cases m of
@@ -780,7 +780,7 @@ Section MapDefs.
     Intros. Discriminate H1.
   Qed.
 
-  (* MapSplit not implemented: not the preferred way of recursing over Maps
-  (use MapSweep, MapCollect, or MapFold in Mapiter.v. *)
+  (** [MapSplit] not implemented: not the preferred way of recursing over Maps
+      (use [MapSweep], [MapCollect], or [MapFold] in Mapiter.v. *)
 
 End MapDefs.

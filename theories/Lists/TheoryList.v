@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* Some programs and results about lists following CAML Manual *)
+(** Some programs and results about lists following CAML Manual *)
 
 Require Export PolyList.
 Set Implicit Arguments.
@@ -16,9 +16,9 @@ Chapter Lists.
 
 Variable  A : Set.
 
-(*********************)
-(* The null function *)
-(*********************)
+(**********************)
+(** The null function *)
+(**********************)
 
 Definition Isnil : (list A) -> Prop := [l:(list A)](nil A)=l.
 
@@ -45,9 +45,9 @@ Program_all.
 *)
 Qed.
 
-(***********************)
-(* The Uncons function *)
-(***********************)
+(************************)
+(** The Uncons function *)
+(************************)
 
 Lemma Uncons : (l:(list A)){a : A & { m: (list A) | (cons a m)=l}}+{Isnil l}.
 Intro l; Case l.
@@ -63,7 +63,7 @@ Program_all.
 Qed.
 
 (********************************)
-(* The head function            *)
+(** The head function           *)
 (********************************)
 
 Lemma Hd : (l:(list A)){a : A | (EX m:(list A) |(cons a m)=l)}+{Isnil l}.
@@ -96,7 +96,7 @@ Program_all.
 Qed.
 
 (****************************************)
-(* Length of lists                      *)
+(** Length of lists                     *)
 (****************************************)
 
 (* length is defined in PolyList *)
@@ -129,7 +129,7 @@ Program_all.
 Qed.
 
 (*******************************)
-(* Members of lists            *)
+(** Members of lists           *)
 (*******************************)
 Inductive In_spec [a:A] : (list A) -> Prop := 
    | in_hd : (l:(list A))(In_spec a (cons a l))
@@ -174,9 +174,9 @@ Program_all.
 *)
 Qed.
 
-(**********************************)
-(* Index of elements              *)
-(**********************************)
+(*********************************)
+(** Index of elements            *)
+(*********************************)
 
 Require Le.
 Require Lt.

@@ -7,7 +7,8 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-(*s Equality on adresses *)
+(** Equality on adresses *)
+
 Require Bool.
 Require Sumbool.
 Require ZArith.

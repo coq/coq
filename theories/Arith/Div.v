@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(* Euclidean division *)
+(** Euclidean division *)
 
 Require Le.
 Require Euclid_def.

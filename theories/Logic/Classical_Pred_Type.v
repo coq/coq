@@ -8,14 +8,14 @@
 
 (*i $Id$ i*)
 
-(* Classical Predicate Logic on Type *)
+(** Classical Predicate Logic on Type *)
 
 Require Classical_Prop.
 
 Section Generic.
 Variable U: Type.
 
-(* de Morgan laws for quantifiers *)
+(** de Morgan laws for quantifiers *)
 
 Lemma not_all_ex_not : (P:U->Prop)(~(n:U)(P n)) -> (EXT n:U | ~(P n)).
 Proof.

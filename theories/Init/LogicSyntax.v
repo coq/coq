@@ -10,7 +10,7 @@
 
 Require Export Logic.
 
-(* Parsing of things in Logic.v *)
+(** Parsing of things in Logic.v *)
 
 Grammar constr constr1 :=
   conj [ "<" lconstr($l1) "," lconstr($c2) ">" "{" constr($c3) ","
@@ -54,7 +54,7 @@ with constr10 :=
            constr($c2) ] -> [ (ex2 ? [$v]$c1 [$v]$c2) ].
 
 
-(* Pretty-printing of things in Logic.v *)
+(** Pretty-printing of things in Logic.v *)
 
 Syntax constr
   level 1:

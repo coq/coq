@@ -8,11 +8,7 @@
 
 (*i $Id$ i*)
 
-(**************************************************************************)
-(*s Binary Integers                                                       *)
-(*                                                                        *)
-(* Pierre Crégut (CNET, Lannion, France)                                  *)
-(**************************************************************************)
+(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
 
 Require Le.
 Require Lt.
@@ -20,7 +16,7 @@ Require Plus.
 Require Mult.
 Require Minus.
 
-(*s Definition of fast binary integers *)
+(** Definition of fast binary integers *)
 Section fast_integers.
 
 Inductive positive : Set :=
@@ -34,7 +30,7 @@ Inductive Z : Set :=
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
 
-(*s Addition *)
+(** Addition *)
 Fixpoint add_un [x:positive]:positive :=
   <positive> Cases x of
                (xI x') => (xO (add_un x'))
@@ -79,7 +75,7 @@ with add_carry [x,y:positive]:positive :=
           end
   end.
 
-(*s From positive to natural numbers *)
+(** From positive to natural numbers *)
 Fixpoint positive_to_nat [x:positive]:nat -> nat :=
   [pow2:nat]
     <nat> Cases x of
@@ -90,7 +86,7 @@ Fixpoint positive_to_nat [x:positive]:nat -> nat :=
 
 Definition convert := [x:positive] (positive_to_nat x (S O)).
 
-(*s From natural numbers to positive *)
+(** From natural numbers to positive *)
 Fixpoint anti_convert [n:nat]: positive :=
   <positive> Cases n of
                 O => xH
@@ -147,7 +143,7 @@ Proof.
 Intros x y; Exact (add_verif x y (S O)).
 Save.
 
-(*s Correctness of conversion *)
+(** Correctness of conversion *)
 Theorem bij1 : (m:nat) (convert (anti_convert m)) = (S m).
 Proof.
 Induction m; [
@@ -168,7 +164,7 @@ Save.
 
 Hints Resolve compare_convert_O.
 
-(*s Subtraction *)
+(** Subtraction *)
 Fixpoint double_moins_un [x:positive]:positive :=
   <positive>Cases x of
       (xI x') => (xI (xO x'))
@@ -265,7 +261,7 @@ Induction x; [
 | Unfold convert; Simpl; Auto with arith ].
 Save.
 
-(*s Comparison of positive *)
+(** Comparison of positive *)
 Fixpoint compare [x,y:positive]: relation -> relation :=
   [r:relation] <relation> Cases x of
             (xI x') => <relation>Cases y of
@@ -448,7 +444,7 @@ Theorem convert_compare_EGAL: (x:positive)(compare x x EGAL)=EGAL.
 Induction x; Auto with arith.
 Save.
 
-(*s Natural numbers coded with positive *)
+(** Natural numbers coded with positive *)
 
 Inductive entier: Set := Nul : entier | Pos : positive -> entier.
 
@@ -768,7 +764,7 @@ Rewrite le_plus_minus_r; [
 | Apply lt_le_weak; Exact (compare_convert_SUPERIEUR x y H)].
 Save.
 
-(*s Addition on integers *)
+(** Addition on integers *)
 Definition Zplus := [x,y:Z]
   <Z>Cases x of
       ZERO => y
@@ -796,7 +792,7 @@ Definition Zplus := [x,y:Z]
              end
     end.
 
-(*s Opposite *)
+(** Opposite *)
 
 Definition Zopp := [x:Z]
  <Z>Cases x of
@@ -815,7 +811,7 @@ Proof.
 Induction x; Auto with arith.
 Save.
 
-(*s Addition and opposite *)
+(** Addition and opposite *)
 Theorem Zero_right: (x:Z) (Zplus x ZERO) = x.
 Proof.
 Induction x; Auto with arith.
@@ -1010,7 +1006,7 @@ Proof.
 Intros; Elim H; Elim H0; Auto with arith.
 Save.
 
-(*s Addition on positive numbers *)
+(** Addition on positive numbers *)
 Fixpoint times1 [x:positive] : (positive -> positive) -> positive -> positive:=
   [f:positive -> positive][y:positive]
   <positive> Cases x of
@@ -1036,14 +1032,14 @@ Induction x; [
 | Simpl; Intros;Rewrite <- plus_n_O; Trivial with arith ].
 Save.
 
-(*s Correctness of multiplication on positive *)
+(** Correctness of multiplication on positive *)
 Theorem times_convert :
   (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
 Proof.
 Intros x y;Unfold times; Rewrite times1_convert; Trivial with arith.
 Save.
 
-(*s Multiplication on integers *)
+(** Multiplication on integers *)
 Definition Zmult := [x,y:Z]
   <Z>Cases x of
       ZERO => ZERO
@@ -1186,7 +1182,7 @@ Intros x y z; Case x; [
   Apply weak_Zmult_plus_distr_r ].
 Save.
 
-(*s Comparison on integers *)
+(** Comparison on integers *)
 Definition Zcompare := [x,y:Z]
   <relation>Cases x of
       ZERO => <relation>Cases y of

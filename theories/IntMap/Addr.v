@@ -7,7 +7,7 @@
 (***********************************************************************)
 (*i 	$Id$	 i*)
 
-(*s Representation of adresses by the [positive] type of binary numbers *)
+(** Representation of adresses by the [positive] type of binary numbers *)
 
 Require Bool.
 Require ZArith.

@@ -8,7 +8,8 @@
 
 (*i $Id$ i*)
 
-(* Syntax for list concatenation *)
+(** Syntax for list concatenation *)
+
 Require PolyList.
 
 Infix RIGHTA 7 "^" app.

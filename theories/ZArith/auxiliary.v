@@ -5,15 +5,10 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-(**************************************************************************)
-(*                                                                        *)
-(* Binary Integers                                                        *)
-(*                                                                        *)
-(* Pierre Crégut (CNET, Lannion, France)                                  *)
-(*                                                                        *)
-(**************************************************************************)
 
 (*i $Id$ i*)
+
+(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
 
 Require Export Arith.
 Require fast_integer.

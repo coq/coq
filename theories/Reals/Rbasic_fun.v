@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 (*********************************************************)
-(*           Complements for the real numbers            *)
+(**          Complements for the real numbers            *)
 (*                                                       *)
 (*********************************************************)
 
@@ -18,7 +18,7 @@ Require Export Rbase.
 Require Fourier.
 
 (*******************************)
-(*           Rmin              *)
+(**          Rmin              *)
 (*******************************)
 
 (*********)
@@ -71,7 +71,7 @@ Intros; Apply Rmin_Rgt_r; Split; [Apply (cond_pos x) | Apply (cond_pos y)].
 Save.
 
 (*******************************)
-(*           Rmax              *)
+(**          Rmax              *)
 (*******************************)
 
 (*********)
@@ -126,7 +126,7 @@ Intros; Unfold Rmax; Case (total_order_Rle x y); Intro; [Apply (cond_neg y) | Ap
 Save.
 
 (*******************************)
-(*           Rabsolu           *)
+(**          Rabsolu           *)
 (*******************************)
 
 (*********)

@@ -8,9 +8,7 @@
 
 (*i $Id$ i*)
 
-(**************************************************************)
-(* Basic specifications : Sets containing logical information *)
-(**************************************************************)
+(** Basic specifications : Sets containing logical information *)
 
 Require Datatypes.
 Require Logic.
@@ -18,7 +16,7 @@ Require LogicSyntax.
 
 Section Subsets.
 
-  (* [(sig A P)], or more suggestively [{x:A | (P x)}], denotes the subset 
+ (** [(sig A P)], or more suggestively [{x:A | (P x)}], denotes the subset 
      of elements of the Set [A] which satisfy the predicate [P].
      Similarly [(sig2 A P Q)], or [{x:A | (P x) & (Q x)}], denotes the subset 
      of elements of the Set [A] which satisfy both [P] and [Q]. *)
@@ -29,7 +27,7 @@ Section Subsets.
   Inductive sig2 [A:Set;P,Q:A->Prop] : Set
       := exist2 : (x:A)(P x) -> (Q x) -> (sig2 A P Q).
 
-  (* [(sigS A P)], or more suggestively [{x:A & (P x)}], is a subtle variant
+ (** [(sigS A P)], or more suggestively [{x:A & (P x)}], is a subtle variant
      of subset where [P] is now of type [Set].
      Similarly for [(sigS2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
      
@@ -47,9 +45,7 @@ Add Printing Let sigS.
 Add Printing Let sigS2.
 
 
-(***********************)
-(* Projections of sig *)
-(***********************)
+(** Projections of sig *)
 
 Section Subset_projections.
 
@@ -66,16 +62,14 @@ Section Subset_projections.
 End Subset_projections.
 
 
-(***********************)
-(* Projections of sigS *)
-(***********************)
+(** Projections of sigS *)
 
 Section Projections.
 
   Variable A:Set.
   Variable P:A->Set.
 
-  (* An element [y] of a subset [[{x:A & (P x)}] is the pair of an [a] of 
+ (** An element [y] of a subset [{x:A & (P x)}] is the pair of an [a] of 
      type [A] and of a proof [h] that [a] satisfies [P].
      Then [(projS1 y)] is the witness [a]
      and [(projS2 y)] is the proof of [(P a)] *)
@@ -94,12 +88,12 @@ Syntactic Definition ProjS2 := (projS2 ? ?).
 
 Section Extended_booleans.
 
-  (* Syntax sumbool ["{_}+{_}"]. *)
+  (** Syntax sumbool ["{_}+{_}"]. *)
   Inductive sumbool [A,B:Prop] : Set
       := left  : A -> (sumbool A B) 
        | right : B -> (sumbool A B).
 
-  (* Syntax sumor ["_+{_}"]. *)
+  (** Syntax sumor ["_+{_}"]. *)
   Inductive sumor [A:Set;B:Prop] : Set
       := inleft  : A -> (sumor A B) 
        | inright : B -> (sumor A B).
@@ -108,13 +102,11 @@ Section Extended_booleans.
 End Extended_booleans.
 
 
-(**********)
-(* Choice *)
-(**********)
+(** Choice *)
 
 Section Choice_lemmas.
 
-  (* The following lemmas state various forms of the axiom of choice *)
+  (** The following lemmas state various forms of the axiom of choice *)
 
   Variables S,S':Set.
   Variable R:S->S'->Prop.
@@ -149,7 +141,7 @@ Section Choice_lemmas.
 
 End Choice_lemmas.
 
-  (* A result of type [(Exc A)] is either a normal value of type [A] or 
+ (** A result of type [(Exc A)] is either a normal value of type [A] or 
      an [error] :
      [Inductive Exc [A:Set] : Set := value : A->(Exc A) | error : (Exc A)]
      it is implemented using the option type. *) 
@@ -174,9 +166,7 @@ Qed.
 
 Hints Resolve left right inleft inright : core v62.
 
-(*********************************)
-(* Sigma Type at Type level sigT *)
-(*********************************)
+(** Sigma Type at Type level [sigT] *)
 
 Inductive sigT [A:Type;P:A->Type] : Type
     := existT : (x:A)(P x) -> (sigT A P).
