@@ -22,7 +22,7 @@ let _ =
   f Prim.ast;
   f Prim.reference
 
-let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "<>"; "<<"; ">>"; "'";"."]
+let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "<>"; "<<"; ">>"; "'"]
 let _ = List.iter (fun s -> Lexer.add_token("",s)) prim_kw
 
 ifdef Quotify then
@@ -83,7 +83,7 @@ GEXTEND Gram
     [ [ s = METAIDENT -> Nmeta (loc,s) ] ]
   ;
   field:
-    [ [ "."; s = IDENT -> local_id_of_string s ] ]
+    [ [ s = FIELD -> local_id_of_string s ] ]
   ;
   fields:
     [ [ id = field; (l,id') = fields -> (local_append l id,id')

@@ -19,7 +19,9 @@ open Genarg
 let _ = Metasyntax.add_token_obj "<-"
 let _ = Metasyntax.add_token_obj "->"
 
-let pr_orient _prc _prt = function true -> Pp.str " ->" | false -> Pp.str " <-"
+let pr_orient _prc _prt = function
+  | true -> Pp.mt ()
+  | false -> Pp.str " <-"
 
 ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ "->" ] -> [ true ]

@@ -178,6 +178,20 @@ let intern_qualid loc qid =
   with Not_found ->
     error_global_not_found_loc loc qid
 
+let intern_inductive r =
+  let loc,qid = qualid_of_reference r in
+  try match Nametab.extended_locate qid with
+  | TrueGlobal (IndRef ind) -> ind, []
+  | TrueGlobal _ -> raise Not_found
+  | SyntacticDef sp ->
+      (match Syntax_def.search_syntactic_definition loc sp with
+	| RApp (_,RRef(_,IndRef ind),l)
+	    when List.for_all (function RHole _ -> true | _ -> false) l ->
+	    (ind, List.map (fun _ -> Anonymous) l)
+	| _ -> raise Not_found)
+  with Not_found ->
+    error_global_not_found_loc loc qid
+
 let intern_reference env lvar = function
   | Qualid (loc, qid) ->
       intern_qualid loc qid
@@ -373,20 +387,26 @@ let locate_if_isevar loc na = function
       with Not_found -> RHole (loc, BinderType na))
   | x -> x
 
+let push_name_env (ids,impls,tmpsc,scopes as env) = function
+  | Anonymous -> env 
+  | Name id -> (Idset.add id ids,impls,tmpsc,scopes)
+
 (**********************************************************************)
 (* Utilities for application                                          *)
 
 
-let check_projection nargs = function
-  | RRef (loc, ref) ->
+let check_projection isproj nargs r = 
+  match (r,isproj) with
+  | RRef (loc, ref), Some nth ->
       (try
 	let n = Recordops.find_projection_nparams ref in
-	if nargs <> n+1 then 
+	if nargs < nth then 
 	  user_err_loc (loc,"",str "Projection has not enough parameters");
       with Not_found -> 
 	user_err_loc
 	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection"))
-  | r -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection")
+  | _, Some _ -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection")
+  | _, None -> ()
 
 let set_hole_implicit i = function
   | RRef (loc,r) -> (loc,ImplicitArg (r,i))
@@ -498,7 +518,7 @@ let internalise sigma env allow_soapp lvar c =
 	intern (ids,impls,None,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->
         let (f,_,args_scopes) = intern_reference env lvar ref in
-	if isproj then check_projection (List.length args) f;
+	check_projection isproj (List.length args) f;
 	RApp (loc, f, intern_args env args_scopes args)
     | CApp (loc, (isproj,f), args) ->
 	let (c, impargs, args_scopes) =
@@ -507,20 +527,34 @@ let internalise sigma env allow_soapp lvar c =
 	    | _ -> (intern env f, [], [])
         in
 	let args = intern_impargs c env impargs args_scopes args in
-	if isproj then check_projection (List.length args) c;
+	check_projection isproj (List.length args) c;
 	(match c with 
 	  | RApp (loc', f', args') ->
 	      (* May happen with the ``...`` and `...` grammars *)
 	      RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
-    | CCases (loc, po, tms, eqns) ->
-	RCases (loc, option_app (intern_type env) po,
-		List.map (intern env) tms,
+    | CCases (loc, (po,rtnpo), tms, eqns) ->
+        let rtnids = List.fold_right (fun (_,(na,x)) ids ->
+          let ids = match x with
+            | Some (_,_,nal) -> List.fold_right (name_fold Idset.add) nal ids
+            | _ -> ids in
+          name_fold Idset.add na ids) tms ids in
+        let rtnpo =
+          option_app (intern_type (rtnids,impls,tmp_scope,scopes)) rtnpo in
+	RCases (loc, (option_app (intern_type env) po, ref rtnpo),
+		List.map (fun (tm,(na,indnalo)) ->
+		  (intern env tm,ref (na,option_app (fun (loc,r,nal) ->
+		    let ind,l = intern_inductive r in
+		    (loc,ind,l@nal)) indnalo))) tms,
 		List.map (intern_eqn (List.length tms) env) eqns)
     | COrderedCase (loc, tag, po, c, cl) ->
 	ROrderedCase (loc, tag, option_app (intern_type env) po,
 	          intern env c,
-		  Array.of_list (List.map (intern env) cl))
+		  Array.of_list (List.map (intern env) cl),ref None)
+    | CLetTuple (loc, nal, (na,po), b, c) ->
+        RLetTuple (loc, nal,
+           (na, option_app (intern_type (push_name_env env na)) po),
+           intern env b, intern (List.fold_left push_name_env env nal) c)
     | CHole loc -> 
 	RHole (loc, QuestionMark)
     | CPatVar (loc, n) when allow_soapp ->

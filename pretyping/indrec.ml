@@ -69,14 +69,20 @@ let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
       let indf = make_ind_family(ind,extended_rel_list nbprod lnamespar) in
       let lnamesar,_ = get_arity env indf in
       let ci = make_default_case_info env RegularStyle ind in
+      let depind = build_dependent_inductive env indf in
+      let deparsign = (Anonymous,None,depind)::lnamesar in
+      let p = (* mkRel nbprod *)
       it_mkLambda_or_LetIn_name env'
-       	(lambda_create env'
-           (build_dependent_inductive env indf,
-            mkCase (ci,
-		       mkRel (nbprod+nbargsprod),
-		       mkRel 1,
-		       rel_vect nbargsprod k)))
-       	lnamesar
+          (appvect
+            (mkRel ((if dep then nbargsprod else mip.mind_nrealargs) + nbprod),
+            if dep then extended_rel_vect 0 deparsign
+            else extended_rel_vect 0 lnamesar))
+          (if dep then deparsign else lnamesar) in
+      it_mkLambda_or_LetIn_name env'
+       	(mkCase (ci, lift nbargsprod p,
+		     mkRel 1,
+		     rel_vect nbargsprod k))
+       	deparsign
     else
       let cs = lift_constructor (k+1) constrs.(k) in
       let t = build_branch_type env dep (mkRel (k+1)) cs in

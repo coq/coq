@@ -55,13 +55,17 @@ GEXTEND Gram
   operconstr: LEVEL "1"
     [ [ "<"; p = annot; ">"; "Cases"; lc = LIST1 constr; "of";
         OPT "|"; eqs = ne_eqn_list; "end" ->
-	  CCases (loc, Some p, lc, eqs)
+          let lc = List.map (fun c -> c,(Names.Anonymous,None)) lc in
+	  CCases (loc, (Some p,None), lc, eqs)
       | "Cases"; lc = LIST1 constr; "of";
 	OPT "|"; eqs = ne_eqn_list; "end" ->
-	  CCases (loc, None, lc, eqs)
+          let lc = List.map (fun c -> c,(Names.Anonymous,None)) lc in
+	  CCases (loc, (None,None), lc, eqs)
       | "<"; p = annot; ">"; "Cases"; lc = LIST1 constr; "of"; "end" ->
-	  CCases (loc, Some p, lc, [])
+          let lc = List.map (fun c -> c,(Names.Anonymous,None)) lc in
+	  CCases (loc, (Some p,None), lc, [])
       | "Cases"; lc = LIST1 constr; "of"; "end" -> 
-	  CCases (loc, None, lc, []) ] ]
+          let lc = List.map (fun c -> c,(Names.Anonymous,None)) lc in
+	  CCases (loc, (None,None), lc, []) ] ]
   ;
 END;

@@ -23,6 +23,8 @@ open Genarg
 open Libnames
 open Pptactic
 
+let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
+
 let pr_arg pr x = spc () ++ pr x
 
 let pr_ltac_constant sp = pr_qualid (Nametab.shortest_qualid_of_tactic sp)
@@ -48,7 +50,8 @@ let pr_binding prc = function
 let pr_esubst prc l =
   let pr_qhyp = function
       (_,AnonHyp n,c) -> str "(" ++ int n ++ str" := " ++ prc c ++ str ")"
-    | (_,NamedHyp id,c) -> str "(" ++ pr_id id ++ str" := " ++ prc c ++ str ")"
+    | (_,NamedHyp id,c) ->
+        str "(" ++ pr_id id ++ str" := " ++ prc c ++ str ")"
   in
   prlist_with_sep spc pr_qhyp l
 
@@ -171,8 +174,7 @@ let rec pr_tacarg_using_rule pr_gen = function
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
-let pr_then () =
-  if !Options.p1 then str " &" else str ";"
+let pr_then () = str ";"
 
 open Closure
 

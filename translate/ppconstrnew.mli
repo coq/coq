@@ -22,15 +22,16 @@ open Util
 open Genarg
 
 val extract_lam_binders :
-  constr_expr -> (name located list * constr_expr) list * constr_expr
+  constr_expr -> local_binder list * constr_expr
 val extract_prod_binders :
-  constr_expr -> (name located list * constr_expr) list * constr_expr
+  constr_expr -> local_binder list * constr_expr
 val extract_def_binders :
   constr_expr -> constr_expr ->
-  (name located list * constr_expr) list *  constr_expr * constr_expr
+  local_binder list * constr_expr * constr_expr
 val split_fix :
   int -> constr_expr -> constr_expr -> 
-  (name located list * constr_expr) list *  constr_expr * constr_expr
+  local_binder list *  constr_expr * constr_expr
+val pr_binders : local_binder list -> std_ppcmds
 
 val prec_less : int -> int * Ppextend.parenRelation -> bool
  
@@ -50,9 +51,8 @@ val pr_constr : constr_expr -> std_ppcmds
 val pr_lconstr : constr_expr -> std_ppcmds
 val pr_constr_env : env -> constr_expr -> std_ppcmds
 val pr_lconstr_env : env -> constr_expr -> std_ppcmds
-val pr_lconstr_vars : identifier list -> constr_expr -> std_ppcmds
+val pr_lconstr_env_n : env -> int -> bool -> constr_expr -> std_ppcmds
 val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
-val pr_binders : (name located  list * constr_expr) list -> std_ppcmds
 val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> ('a,'b) may_eval
     -> std_ppcmds

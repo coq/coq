@@ -65,10 +65,13 @@ type rawconstr =
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option * rawconstr list * 
+  | RCases of loc * (rawconstr option * rawconstr option ref) *
+      (rawconstr * (name * (loc * inductive * name list) option) ref) list * 
       (loc * identifier list * cases_pattern list * rawconstr) list
   | ROrderedCase of loc * case_style * rawconstr option * rawconstr * 
-      rawconstr array
+      rawconstr array * rawconstr option ref
+  | RLetTuple of loc * name list * (name * rawconstr option) * 
+      rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
   | RSort of loc * rawsort
@@ -76,6 +79,9 @@ type rawconstr =
   | RCast of loc * rawconstr * rawconstr
   | RDynamic of loc * Dyn.t
 
+val cases_predicate_names : 
+  (rawconstr * (name * (loc * inductive * name list) option) ref) list ->
+      name list
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the

@@ -43,12 +43,14 @@ let rec unloc = function
   | RLambda (_,na,ty,c) -> RLambda (dummy_loc,na,unloc ty,unloc c)
   | RProd (_,na,ty,c) -> RProd (dummy_loc,na,unloc ty,unloc c)
   | RLetIn (_,na,b,c) -> RLetIn (dummy_loc,na,unloc b,unloc c)
-  | RCases (_,tyopt,tml,pl) ->
-      RCases (dummy_loc,option_app unloc tyopt,List.map unloc tml,
+  | RCases (_,(tyopt,rtntypopt),tml,pl) ->
+      RCases (dummy_loc,
+        (option_app unloc tyopt,ref (option_app unloc !rtntypopt)),
+	List.map (fun (tm,x) -> (unloc tm,x)) tml,
         List.map (fun (_,idl,p,c) -> (dummy_loc,idl,p,unloc c)) pl)
-  | ROrderedCase (_,b,tyopt,tm,bv) ->
+  | ROrderedCase (_,b,tyopt,tm,bv,x) ->
       ROrderedCase 
-      (dummy_loc,b,option_app unloc tyopt,unloc tm, Array.map unloc bv)
+      (dummy_loc,b,option_app unloc tyopt,unloc tm, Array.map unloc bv,x)
   | RRec (_,fk,idl,tyl,bv) ->
       RRec (dummy_loc,fk,idl,Array.map unloc tyl,Array.map unloc bv)
   | RCast (_,c,t) -> RCast (dummy_loc,unloc c,unloc t)

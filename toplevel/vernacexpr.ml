@@ -183,7 +183,8 @@ type vernac_expr =
   | VernacScheme of (identifier * bool * reference * sort_expr) list
 
   (* Gallina extensions *)
-  | VernacRecord of identifier with_coercion * simple_binder list
+  | VernacRecord of bool (* = Record or Structure *)
+      * identifier with_coercion * simple_binder list
       * constr_expr * identifier option * local_decl_expr with_coercion list
   | VernacBeginSection of identifier
   | VernacEndSegment of identifier

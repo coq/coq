@@ -138,6 +138,8 @@ module Constr :
     val pattern : cases_pattern_expr Gram.Entry.e
     val annot : constr_expr Gram.Entry.e
     val constr_pattern : constr_expr Gram.Entry.e
+    val binder_let : local_binder Gram.Entry.e
+    val tuple_constr : constr_expr Gram.Entry.e
   end
 
 module Module : 

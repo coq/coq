@@ -26,6 +26,7 @@ open Symbols
 val id_of_v7_string : string -> identifier
 val v7_to_v8_id : identifier -> identifier (* v7->v8 translation *)
 val shortest_qualid_of_v7_global : Idset.t -> global_reference -> qualid
+val check_same_type : constr_expr -> constr_expr -> unit
 
 (* Translation of pattern, cases pattern, rawterm and term into syntax
    trees for printing *)

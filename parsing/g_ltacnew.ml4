@@ -73,8 +73,8 @@ GEXTEND Gram
 
   tactic_expr:
     [ "5" LEFTA
-      [ ta0 = tactic_expr; "&"; ta1 = tactic_expr -> TacThen (ta0, ta1)
-      | ta = tactic_expr; "&"; "["; lta = LIST0 tactic_expr SEP "|"; "]" ->
+      [ ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
+      | ta = tactic_expr; ";"; "["; lta = LIST0 tactic_expr SEP "|"; "]" ->
           TacThens (ta, lta) ]
     | "4"
       [ ]
@@ -186,10 +186,12 @@ GEXTEND Gram
   ;
 
   (* Definitions for tactics *)
+(*
   deftok:
     [ [ IDENT "Meta"
       | IDENT "Tactic" ] ]
   ;
+*)
   tacdef_body:
     [ [ name = identref; it=LIST1 input_fun; ":="; body = tactic_expr ->
 	  (name, TacFun (it, body))
@@ -200,9 +202,7 @@ GEXTEND Gram
     [ [ tac = tactic_expr -> tac ] ]
   ;
   Vernac_.command: 
-    [ [ deftok; "Definition"; b = tacdef_body ->
-          VernacDeclareTacticDefinition (false, [b])
-      | IDENT "Recursive"; deftok; "Definition"; 
+    [ [ IDENT "Ltac";
         l = LIST1 tacdef_body SEP "with" ->
           VernacDeclareTacticDefinition (true, l) ] ]
   ;

@@ -180,7 +180,7 @@ let rawconstr_of_prog p =
 	let (bl',avoid',nenv') = push_vars avoid nenv bl in
 	let c1 = trad avoid nenv e1
 	and c2 = trad avoid' nenv' e2 in
-	ROrderedCase (dummy_loc, LetStyle, None, c1, [| raw_lambda bl' c2 |])
+	ROrderedCase (dummy_loc, LetStyle, None, c1, [| raw_lambda bl' c2 |], ref None)
 
     | CC_lam (bl,e) ->
 	let bl',avoid',nenv' = push_vars avoid nenv bl in
@@ -214,7 +214,7 @@ let rawconstr_of_prog p =
 	let c = trad avoid nenv b in
 	let cl = List.map (trad avoid nenv) el in
 	let ty = Detyping.detype (Global.env()) avoid nenv ty in
-	ROrderedCase (dummy_loc, RegularStyle, Some ty, c, Array.of_list cl)
+	ROrderedCase (dummy_loc, RegularStyle, Some ty, c, Array.of_list cl, ref None)
 
     | CC_expr c -> 
 	Detyping.detype (Global.env()) avoid nenv c

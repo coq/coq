@@ -50,7 +50,7 @@ let transform_rec loc env sigma (pj,c,lf) indt =
   let (mib,mip) = lookup_mind_specif env ind in
   let recargs = mip.mind_recargs in
   let mI = mkInd ind in
-  let ci = make_default_case_info env MatchStyle ind in
+  let ci = make_default_case_info env (if Options.do_translate() then RegularStyle else MatchStyle) ind in
   let nconstr = Array.length mip.mind_consnames in
   if Array.length lf <> nconstr then 
     (let cj = {uj_val=c; uj_type=mkAppliedInd indt} in
@@ -145,6 +145,8 @@ let check_branches_message loc env isevars c (explft,lft) =
 let inh_conv_coerce_to_tycon loc env isevars j = function
    | None -> j
    | Some typ -> inh_conv_coerce_to loc env isevars j typ
+
+let push_rels vars env = List.fold_right push_rel vars env
 
 (*
 let evar_type_case isevars env ct pt lft p c =
@@ -330,8 +332,7 @@ let rec pretype tycon env isevars lvar = function
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = type_app (subst1 j.uj_val) j'.uj_type }
 
-  (* Special Case for let constructions to avoid exponential behavior *)      
-  | ROrderedCase (loc,st,po,c,[|f|]) when st <> MatchStyle ->
+  | RLetTuple (loc,nal,(na,po),c,d) ->
       let cj = pretype empty_tycon env isevars lvar c in
       let (IndType (indf,realargs) as indt) = 
 	try find_rectype env (evars_of isevars) cj.uj_type
@@ -339,7 +340,66 @@ let rec pretype tycon env isevars lvar = function
 	  let cloc = loc_of_rawconstr c in
 	  error_case_not_inductive_loc cloc env (evars_of isevars) cj 
       in
+      let cstrs = get_constructors env indf in
+      if Array.length cstrs <> 1 then
+        user_err_loc (loc,"",str "Destructing let is only for inductive types with one constructor");
+      let cs = cstrs.(0) in
+      if List.length nal <> cs.cs_nargs then
+        user_err_loc (loc,"", str "Destructing let on this type expects " ++ int cs.cs_nargs ++ str " variables");
+      let fsign = List.map2 (fun na (_,c,t) -> (na,c,t))
+        (List.rev nal) cs.cs_args in
+      let env_f = push_rels fsign env in
+      let arsgn,_ = get_arity env indf in
+      let psign = (na,None,build_dependent_inductive env indf)::arsgn in
+      let nar = List.length arsgn in
       (match po with
+	 | Some p ->
+             let env_p = push_rels psign env in
+             let pj = pretype_type empty_valcon env_p isevars lvar p in
+             let ccl = nf_evar (evars_of isevars) pj.utj_val in
+             let fty =
+               let inst = (Array.to_list cs.cs_concl_realargs)
+                 @[build_dependent_constructor cs]
+               in substl inst (liftn cs.cs_nargs nar ccl) in
+	     let fj = pretype (mk_tycon fty) env_f isevars lvar d in
+	     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
+	     let p = it_mkLambda_or_LetIn ccl psign in
+	     let v =
+	       let mis,_ = dest_ind_family indf in
+	       let ci = make_default_case_info env LetStyle mis in
+	       mkCase (ci, p, cj.uj_val,[|f|]) in 
+             let cs = build_dependent_constructor cs in
+	     { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
+
+	 | None -> 
+             let tycon = option_app (lift cs.cs_nargs) tycon in
+	     let fj = pretype tycon env_f isevars lvar d in
+	     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
+	     let ccl = nf_evar (evars_of isevars) fj.uj_type in
+             let ccl =
+               if noccur_between 1 cs.cs_nargs ccl then
+                 lift (- cs.cs_nargs) ccl 
+               else
+                 error_cant_find_case_type_loc loc env (evars_of isevars) 
+                   cj.uj_val in
+             let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
+	     let v =
+	       let mis,_ = dest_ind_family indf in
+	       let ci = make_default_case_info env LetStyle mis in
+	       mkCase (ci, p, cj.uj_val,[|f|] ) 
+	     in
+	     { uj_val = v; uj_type = ccl })
+
+  (* Special Case for let constructions to avoid exponential behavior *)      
+  | ROrderedCase (loc,st,po,c,[|f|],xx) when st <> MatchStyle ->
+      let cj = pretype empty_tycon env isevars lvar c in
+      let (IndType (indf,realargs) as indt) = 
+	try find_rectype env (evars_of isevars) cj.uj_type
+	with Not_found ->
+	  let cloc = loc_of_rawconstr c in
+	  error_case_not_inductive_loc cloc env (evars_of isevars) cj 
+      in
+      let j = match po with
 	 | Some p ->
              let pj = pretype empty_tycon env isevars lvar p in
              let dep = is_dependent_elimination env pj.uj_type indf in
@@ -425,9 +485,110 @@ let rec pretype tycon env isevars lvar = function
 	       let ci = make_default_case_info env st mis in
 	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|] ) 
 	     in
-	     { uj_val = v; uj_type = rsty })
+	     { uj_val = v; uj_type = rsty } in
 
-  | ROrderedCase (loc,st,po,c,lf) ->
+      (* Build the LetTuple form for v8 *)
+      let c =
+        let (ind,params) = dest_ind_family indf in
+        let rtntypopt, indnalopt = match po with
+          | None -> None, (Anonymous,None)
+          | Some p ->
+              let pj = pretype empty_tycon env isevars lvar p in
+              let dep = is_dependent_elimination env pj.uj_type indf in
+              let rec decomp_lam_force n avoid l p =
+                (* avoid is not exhaustive ! *)
+                if n = 0 then (List.rev l,p,avoid) else
+                  match p with
+                    | RLambda (_,(Name id as na),_,c) -> 
+                        decomp_lam_force (n-1) (id::avoid) (na::l) c
+                    | RLambda (_,(Anonymous as na),_,c) ->
+                        decomp_lam_force (n-1) avoid (na::l) c
+                    | _ ->
+                        let x = Nameops.next_ident_away (id_of_string "x") avoid in
+                        decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
+                          (* eta-expansion *)
+                          (RApp (dummy_loc,p, [RVar (dummy_loc,x)])) in
+              let (nal,p,avoid) = 
+                decomp_lam_force (List.length realargs) [] [] p in
+              let na,rtntyp,_ = 
+                if dep then decomp_lam_force 1 avoid [] p
+                else [Anonymous],p,[] in
+              let intyp =
+                if List.for_all
+                  (function
+                    | Anonymous -> true
+                    | Name id -> not (Cases.occur_rawconstr id rtntyp)) nal
+                then (* No dependency in realargs *)
+                  None
+                else
+                  let args = List.map (fun _ -> Anonymous) params @ nal in
+                  Some (dummy_loc,ind,args) in
+              (Some rtntyp,(List.hd na,intyp)) in
+        let cs = (get_constructors env indf).(0) in
+        match indnalopt with
+          | (na,None) -> (* Represented as a let *)
+              let rec decomp_lam_force n avoid l p =
+                if n = 0 then (List.rev l,p) else
+                  match p with
+                    | RLambda (_,(Name id as na),_,c) -> 
+                        decomp_lam_force (n-1) (id::avoid) (na::l) c
+                    | RLambda (_,(Anonymous as na),_,c) -> 
+                        decomp_lam_force (n-1) avoid (na::l) c
+                    | _ ->
+                        let x = Nameops.next_ident_away (id_of_string "x") avoid in
+                        decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
+                          (* eta-expansion *)
+                          (let a = RVar (dummy_loc,x) in
+                          match p with
+                            | RApp (loc,p,l) -> RApp (loc,p,l@[a])
+                            | _ -> (RApp (dummy_loc,p,[a]))) in
+              let (nal,d) = decomp_lam_force cs.cs_nargs [] [] f in
+              RLetTuple (loc,nal,(na,rtntypopt),c,d)
+          | _ -> (* Represented as a match *)
+            let detype_eqn constr construct_nargs branch =
+              let name_cons = function 
+                | Anonymous -> fun l -> l
+                | Name id -> fun l -> id::l in
+              let make_pat na avoid b ids =
+                PatVar (dummy_loc,na),
+                name_cons na avoid,name_cons na ids
+              in
+              let rec buildrec ids patlist avoid n b =
+                if n=0 then
+                  (dummy_loc, ids, 
+                  [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
+                  b)
+                else
+                  match b with
+	            | RLambda (_,x,_,b) -> 
+	                let pat,new_avoid,new_ids = make_pat x avoid b ids in
+                        buildrec new_ids (pat::patlist) new_avoid (n-1) b
+                          
+	            | RLetIn (_,x,_,b) -> 
+	                let pat,new_avoid,new_ids = make_pat x avoid b ids in
+                        buildrec new_ids (pat::patlist) new_avoid (n-1) b
+                          
+	            | RCast (_,c,_) ->    (* Oui, il y a parfois des cast *)
+	                buildrec ids patlist avoid n c
+                        
+	            | _ -> (* eta-expansion *)
+                        (* nommage de la nouvelle variable *)
+                        let id = Nameops.next_ident_away (id_of_string "x") avoid in
+	                let new_b = RApp (dummy_loc, b, [RVar(dummy_loc,id)])in
+                        let pat,new_avoid,new_ids =
+	                  make_pat (Name id) avoid new_b ids in
+	                buildrec new_ids (pat::patlist) new_avoid (n-1) new_b
+	                  
+              in 
+              buildrec [] [] [] construct_nargs branch in
+            let eqn = detype_eqn (ind,1) cs.cs_nargs f in
+            RCases (loc,(po,ref rtntypopt),[c,ref indnalopt],[eqn])
+      in
+      xx := Some c;
+      (* End building the v8 syntax *)
+      j
+
+  | ROrderedCase (loc,st,po,c,lf,x) ->
       let isrec = (st = MatchStyle) in
       let cj = pretype empty_tycon env isevars lvar c in
       let (IndType (indf,realargs) as indt) = 
@@ -503,6 +664,147 @@ let rec pretype tycon env isevars lvar = function
 	    mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,
                        Array.map (fun j-> j.uj_val) lfj)
 	in
+        (* Build the Cases form for v8 *)
+        let c =
+          let (ind,params) = dest_ind_family indf in
+          let (mib,mip) = lookup_mind_specif env ind in
+          let recargs = mip.mind_recargs in
+          let mI = mkInd ind in
+          let nconstr = Array.length mip.mind_consnames in
+          let tyi = snd ind in
+          if isrec && mis_is_recursive_subset [tyi] recargs then
+            Some (Detyping.detype env [] (names_of_rel_context env)
+              (nf_evar (evars_of isevars) v))
+  (*
+            let sigma = evars_of isevars in
+            let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
+            let depFvec = Array.init mib.mind_ntypes init_depFvec in
+            (* build now the fixpoint *)
+            let lnames,_ = get_arity env indf in
+            let nar = List.length lnames in
+            let nparams = mip.mind_nparams in
+            let constrs = get_constructors env (lift_inductive_family (nar+2) indf) in
+            let branches = 
+              array_map3
+	        (fun f t reca -> 
+	          whd_beta
+                  (Indrec.make_rec_branch_arg env sigma
+                    (nparams,depFvec,nar+1)
+                    f t reca))
+                (Array.map (lift (nar+2)) lfv) constrs (dest_subterms recargs) 
+            in 
+            let ci = make_default_case_info env RegularStyle ind in
+            let deffix = 
+              it_mkLambda_or_LetIn_name env
+	        (lambda_create env
+	          (applist (mI,List.append (List.map (lift (nar+1)) params)
+                    (extended_rel_list 0 lnames)),
+                  mkCase (ci, lift (nar+2) pj.uj_val, mkRel 1, branches)))
+                (lift_rel_context 1 lnames) 
+            in
+            if noccurn 1 deffix then 
+              Some
+                (Detyping.detype env [] (names_of_rel_context env)
+                  (whd_beta (applist (pop deffix,realargs@[cj.uj_val]))))
+            else
+              let ind = applist (mI,(List.append 
+		(List.map (lift nar) params)
+		(extended_rel_list 0 lnames))) in
+              let typPfix =
+                let rec aux = function
+                  | (na,Some b,t)::l -> 
+                  | (na,None,t)::l -> RProd (dummy_loc,na,
+                  | [] -> 
+	        it_mkProd_or_LetIn_name env
+	          (prod_create env 
+	            (ind,
+	            (if dep then
+		      let ext_lnames = (Anonymous,None,ind)::lnames in
+		      let args = extended_rel_list 0 ext_lnames in
+		      whd_beta (applist (lift (nar+1) p, args))
+	            else
+		      let args = extended_rel_list 1 lnames in
+		      whd_beta (applist (lift (nar+1) p, args)))))
+                  lnames in
+              let fix =
+                RRec (dummy_loc,RFix ([|nar|],0),
+	        ([|(id_of_string "F")|],[|typPfix|],[|deffix|])) in
+              RApp (dummy_loc,fix,realargs@[c])
+              (msgerrnl (str "Warning: could't translate Match"); None)
+*)
+          else
+            let rtntypopt, indnalopt = match po with
+              | None -> None, (Anonymous,None)
+              | Some p ->
+                  let rec decomp_lam_force n avoid l p =
+                    (* avoid is not exhaustive ! *)
+                    if n = 0 then (List.rev l,p,avoid) else
+                      match p with
+                        | RLambda (_,(Name id as na),_,c) -> 
+                            decomp_lam_force (n-1) (id::avoid) (na::l) c
+                        | RLambda (_,(Anonymous as na),_,c) ->
+                            decomp_lam_force (n-1) avoid (na::l) c
+                        | _ ->
+                            let x = Nameops.next_ident_away (id_of_string "x") avoid in
+                            decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
+                              (* eta-expansion *)
+                              (RApp (dummy_loc,p, [RVar (dummy_loc,x)])) in
+                  let (nal,p,avoid) = 
+                    decomp_lam_force (List.length realargs) [] [] p in
+                  let na,rtntyopt,_ = 
+                    if dep then decomp_lam_force 1 avoid [] p
+                    else [Anonymous],p,[] in
+                  let args = List.map (fun _ -> Anonymous) params @ nal in
+                  (Some rtntyopt,(List.hd na,Some (dummy_loc,ind,args))) in
+
+            let detype_eqn constr construct_nargs branch =
+              let name_cons = function 
+                | Anonymous -> fun l -> l
+                | Name id -> fun l -> id::l in
+              let make_pat na avoid b ids =
+                PatVar (dummy_loc,na),
+                name_cons na avoid,name_cons na ids
+              in
+              let rec buildrec ids patlist avoid n b =
+                if n=0 then
+                  (dummy_loc, ids, 
+                  [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
+                  b)
+                else
+                  match b with
+	            | RLambda (_,x,_,b) -> 
+	                let pat,new_avoid,new_ids = make_pat x avoid b ids in
+                        buildrec new_ids (pat::patlist) new_avoid (n-1) b
+                          
+	            | RLetIn (_,x,_,b) -> 
+	                let pat,new_avoid,new_ids = make_pat x avoid b ids in
+                        buildrec new_ids (pat::patlist) new_avoid (n-1) b
+                          
+	            | RCast (_,c,_) ->    (* Oui, il y a parfois des cast *)
+	                buildrec ids patlist avoid n c
+                        
+	            | _ -> (* eta-expansion *)
+                        (* nommage de la nouvelle variable *)
+                        let id = Nameops.next_ident_away (id_of_string "x") avoid in
+	                let new_b = RApp (dummy_loc, b, [RVar(dummy_loc,id)])in
+                        let pat,new_avoid,new_ids =
+	                  make_pat (Name id) avoid new_b ids in
+	                buildrec new_ids (pat::patlist) new_avoid (n-1) new_b
+	                  
+              in 
+              buildrec [] [] [] construct_nargs branch in
+            let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
+            let get_consnarg j = 
+              let typi = mis_nf_constructor_type (ind,mib,mip) (j+1) in
+              let _,t = decompose_prod_n_assum mip.mind_nparams typi in
+              List.rev (fst (decompose_prod_assum t)) in
+            let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
+            let consnargsl = Array.map List.length consnargs in
+            let constructs = Array.init (Array.length lf) (fun i -> (ind,i+1)) in
+            let eqns = array_map3 detype_eqn constructs consnargsl lf in
+            Some (RCases (loc,(po,ref rtntypopt),[c,ref indnalopt],Array.to_list eqns)) in
+        x := c;
+        (* End build the Cases form for v8 *)
 	{ uj_val = v;
 	  uj_type = rsty }
 

@@ -162,7 +162,6 @@ let computable p k =
   noccur_between 1 (k+1) ccl
 
 
-
 let lookup_name_as_renamed env t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
     | Prod (name,_,c') ->
@@ -195,7 +194,7 @@ let lookup_index_as_renamed env t n =
     | _ -> None
   in lookup n 1 t
 
-let detype_case computable detype detype_eqn tenv avoid env indsp st p c bl =
+let detype_case computable detype detype_eqn tenv avoid env indsp st p k c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype tenv avoid env c in
 
@@ -207,11 +206,41 @@ let detype_case computable detype detype_eqn tenv avoid env indsp st p c bl =
     List.rev (fst (decompose_prod_assum t)) in
   let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
   let consnargsl = Array.map List.length consnargs in
-  let pred = 
+  let alias, aliastyp, newpred, pred = 
     if synth_type & computable & bl <> [||] then
-      None
-    else 
-      option_app (detype tenv avoid env) p in
+      Anonymous, None, None, None
+    else
+      let p = option_app (detype tenv avoid env) p in
+      match p with
+        | None -> Anonymous, None, None, None
+        | Some p ->
+            let decompose_lam k c =
+              let name_cons = function
+                  Anonymous -> fun l -> l | Name id -> fun l -> id::l in
+              let rec lamdec_rec l avoid k c =
+                if k = 0 then l,c else match c with
+                  | RLambda (_,x,t,c) -> 
+                      lamdec_rec (x::l) (name_cons x avoid) (k-1) c
+                  | c -> 
+                      let x = next_ident_away (id_of_string "xx") avoid in
+                      lamdec_rec ((Name x)::l) (x::avoid) (k-1)
+                        (let a = RVar (dummy_loc,x) in
+                          match c with
+                          | RApp (loc,p,l) -> RApp (loc,p,l@[a])
+                          | _ -> (RApp (dummy_loc,c,[a])))
+              in 
+              lamdec_rec [] [] k c in
+            let nl,typ = decompose_lam k p in
+	    let n,typ = match typ with 
+              | RLambda (_,x,t,c) -> x, c
+	      | _ -> Anonymous, typ in
+	    let aliastyp =
+	      if List.for_all ((=) Anonymous) nl then None
+	      else 
+		let pars = list_tabulate (fun _ -> Anonymous) mip.mind_nparams
+		in Some (dummy_loc,indsp,pars@nl) in
+            n, aliastyp, Some typ, Some p
+  in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
   let eqnv = array_map3 (detype_eqn tenv avoid env) constructs consnargsl bl in
   let eqnl = Array.to_list eqnv in
@@ -226,29 +255,48 @@ let detype_case computable detype detype_eqn tenv avoid env indsp st p c bl =
     with Not_found -> st
   in 
   if tag = RegularStyle then
-    RCases (dummy_loc,pred,[tomatch],eqnl)
+    RCases (dummy_loc,(pred,ref newpred),[tomatch,ref (alias,aliastyp)],eqnl)
   else
-    let rec remove_type avoid args c =
-      match c,args with
-        | RLambda (loc,na,t,c), _::args ->
-            let h = RHole (loc,BinderType na) in
-            RLambda (loc,na,h,remove_type avoid args c)
-        | RLetIn (loc,na,b,c), _::args ->
-            RLetIn (loc,na,b,remove_type avoid args c)
-        | c, (na,None,t)::args ->
-            let id = next_name_away_with_default "x" na avoid in
-            let h = RHole (dummy_loc,BinderType na) in
-            let c = remove_type (id::avoid) args
-              (RApp (dummy_loc,c,[RVar (dummy_loc,id)])) in
-            RLambda (dummy_loc,Name id,h,c)
-        | c, (na,Some b,t)::args ->
-            let h = RHole (dummy_loc,BinderType na) in
-            let avoid = name_fold (fun x l -> x::l) na avoid in
-            RLetIn (dummy_loc,na,h,remove_type avoid args c)
-        | c, [] -> c in
     let bl = Array.map (detype tenv avoid env) bl in
-    let bl = array_map2 (remove_type avoid) consnargs bl in
-    ROrderedCase (dummy_loc,tag,pred,tomatch,bl)
+    if not !Options.v7 && tag = LetStyle && aliastyp = None then
+      let rec decomp_lam_force n avoid l p =
+	if n = 0 then (List.rev l,p) else
+          match p with
+            | RLambda (_,(Name id as na),_,c) -> 
+		decomp_lam_force (n-1) (id::avoid) (na::l) c
+            | RLambda (_,(Anonymous as na),_,c) -> 
+		decomp_lam_force (n-1) avoid (na::l) c
+            | _ ->
+		let x = Nameops.next_ident_away (id_of_string "x") avoid in
+		decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
+                  (* eta-expansion *)
+                  (let a = RVar (dummy_loc,x) in
+                  match p with
+                    | RApp (loc,p,l) -> RApp (loc,p,l@[a])
+                    | _ -> (RApp (dummy_loc,p,[a]))) in
+      let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl.(0) in
+      RLetTuple (dummy_loc,nal,(alias,newpred),tomatch,d)
+    else
+      let rec remove_type avoid args c =
+	match c,args with
+          | RLambda (loc,na,t,c), _::args ->
+              let h = RHole (dummy_loc,BinderType na) in
+              RLambda (loc,na,h,remove_type avoid args c)
+          | RLetIn (loc,na,b,c), _::args ->
+              RLetIn (loc,na,b,remove_type avoid args c)
+          | c, (na,None,t)::args ->
+              let id = next_name_away_with_default "x" na avoid in
+              let h = RHole (dummy_loc,BinderType na) in
+              let c = remove_type (id::avoid) args
+		(RApp (dummy_loc,c,[RVar (dummy_loc,id)])) in
+              RLambda (dummy_loc,Name id,h,c)
+          | c, (na,Some b,t)::args ->
+              let h = RHole (dummy_loc,BinderType na) in
+              let avoid = name_fold (fun x l -> x::l) na avoid in
+              RLetIn (dummy_loc,na,h,remove_type avoid args c)
+          | c, [] -> c in
+      let bl = array_map2 (remove_type avoid) consnargs bl in
+      ROrderedCase (dummy_loc,tag,pred,tomatch,bl,ref None)
 
 let rec detype tenv avoid env t =
   match kind_of_term (collapse_appl t) with
@@ -291,8 +339,8 @@ let rec detype tenv avoid env t =
 	let comp = computable p (annot.ci_pp_info.ind_nargs) in
 	let ind = annot.ci_ind in
 	let st = annot.ci_pp_info.style in
-	detype_case comp detype detype_eqn tenv avoid env ind st (Some p) c bl
-	
+	detype_case comp detype detype_eqn tenv avoid env ind st (Some p)
+          annot.ci_pp_info.ind_nargs c bl
     | Fix (nvn,recdef) -> detype_fix tenv avoid env nvn recdef
     | CoFix (n,recdef) -> detype_cofix tenv avoid env n recdef
 

@@ -144,7 +144,7 @@ let (imply_intro1: pbp_rule) = function
 
 let make_var id = CRef (Ident(zz, id))
 
-let make_app f l = CApp (zz,(false,f),List.map (fun x -> (x,None)) l)
+let make_app f l = CApp (zz,(None,f),List.map (fun x -> (x,None)) l)
 
 let make_pbp_pattern x =
   make_app (make_var (id_of_string "PBP_META"))

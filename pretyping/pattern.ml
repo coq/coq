@@ -237,15 +237,16 @@ let rec pat_of_raw metas vars = function
       Options.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
-  | ROrderedCase (_,st,po,c,br) ->
+  | ROrderedCase (_,st,po,c,br,_) ->
       PCase ((None,st),option_app (pat_of_raw metas vars) po,
              pat_of_raw metas vars c,
              Array.map (pat_of_raw metas vars) br)
-  | RCases (loc,po,[c],brs) ->
+  | RCases (loc,(po,_),[c,_],brs) ->
       let sp =
 	match brs with
 	  | (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
 	  | _ -> None in
+      (* When po disappears: switch to rtn type *)
       PCase ((sp,Term.RegularStyle),option_app (pat_of_raw metas vars) po,
              pat_of_raw metas vars c,
              Array.init (List.length brs)

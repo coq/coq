@@ -29,9 +29,11 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
-  | ACases of aconstr option * aconstr list *
+  | ACases of aconstr option * aconstr option *
+      (aconstr * (name * (inductive * name list) option)) list *
       (identifier list * cases_pattern list * aconstr) list
   | AOrderedCase of case_style * aconstr option * aconstr * aconstr array
+  | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | ASort of rawsort
   | AHole of hole_kind
   | APatVar of patvar
@@ -62,7 +64,7 @@ type notation = string
 
 type explicitation = int
 
-type proj_flag = bool (* [true] = is projection *)
+type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
@@ -82,10 +84,13 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
         (constr_expr * explicitation option) list
-  | CCases of loc * constr_expr option * constr_expr list *
+  | CCases of loc * (constr_expr option * constr_expr option) *
+      (constr_expr * (name * (loc * reference * name list) option)) list *
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list
+  | CLetTuple of loc * name list * (name * constr_expr option) *
+      constr_expr * constr_expr
   | CHole of loc
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key

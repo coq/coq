@@ -135,7 +135,7 @@ GEXTEND Gram
 	  (Some (nl,c1), c2) ] ]
   ;
   pattern_occ:
-    [ [ nl = LIST0 integer; c = [c=constr->c | g=global->Topconstr.CRef g]-> (nl,c) ] ]
+    [ [ c = constr; nl = LIST0 integer -> (nl,c) ] ]
   ;
   pattern_occ_hyp_tail_list:
     [ [ pl = pattern_occ_hyp_list -> pl | -> (None,[]) ] ]
@@ -176,7 +176,7 @@ GEXTEND Gram
     [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
   ;
   unfold_occ:
-    [ [ nl = LIST0 integer; c = global -> (nl,c) ] ]
+    [ [ c = global; nl = LIST0 integer -> (nl,c) ] ]
   ;
   red_flag:
     [ [ IDENT "beta" -> FBeta
@@ -194,9 +194,9 @@ GEXTEND Gram
       | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
-      | IDENT "unfold"; ul = LIST1 unfold_occ -> Unfold ul
+      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
-      | IDENT "pattern"; pl = LIST1 pattern_occ -> Pattern pl ] ]
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP "," -> Pattern pl ] ]
   ;
   (* This is [red_tactic] including possible extensions *)
   red_expr:

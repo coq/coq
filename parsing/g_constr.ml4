@@ -127,12 +127,12 @@ GEXTEND Gram
   operconstr:
     [ "10" RIGHTA
       [ "!"; f = global; args = LIST0 (operconstr LEVEL "9") ->
-          CAppExpl (loc, (false,f), args)
+          CAppExpl (loc, (None,f), args)
 (*
       | "!"; f = global; "with"; b = binding_list ->
 	  <:ast< (APPLISTWITH $f $b) >>
 *)
-      | f = operconstr; args = LIST1 constr91 -> CApp (loc, (false,f), args) ]
+      | f = operconstr; args = LIST1 constr91 -> CApp (loc, (None,f), args) ]
     | "9" RIGHTA
       [ c1 = operconstr; "::"; c2 = operconstr LEVEL "9" -> CCast (loc, c1, c2) ]
     | "8" RIGHTA
@@ -196,7 +196,7 @@ GEXTEND Gram
       | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
 	  (match lc1 with
 	    | CPatVar (loc2,(false,n)) -> 
-                CApp (loc,(false,CPatVar (loc2, (true,n))), List.map (fun c -> c, None) cl)
+                CApp (loc,(None,CPatVar (loc2, (true,n))), List.map (fun c -> c, None) cl)
 	    | _ ->
 	    Util.error "Second-order pattern-matching expects a head metavariable")
       | IDENT "Fix"; id = identref; "{"; fbinders = fixbinders; "}" ->
@@ -208,7 +208,7 @@ GEXTEND Gram
       | s = sort -> CSort (loc, s)
       | v = global -> CRef v
       | n = bigint -> CNumeral (loc,n)
-      | "!"; f = global -> CAppExpl (loc,(false,f),[])
+      | "!"; f = global -> CAppExpl (loc,(None,f),[])
       | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
           CDelimiters (loc,key,c) ] ]
   ;

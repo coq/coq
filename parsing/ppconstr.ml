@@ -203,13 +203,13 @@ let pr_eqn pr (_,patl,rhs) =
     str "=>" ++
     brk (1,1) ++ pr ltop rhs) ++ spc ()
 
-let pr_cases pr po tml eqns =
+let pr_cases pr (po,_) tml eqns =
   hov 0 (
     pr_annotation pr po ++
     hv 0 (
       hv 0 (
 	str "Cases" ++ brk (1,2) ++
-	prlist_with_sep spc (pr ltop) tml ++ spc() ++ str "of") ++ brk(1,2) ++
+	prlist_with_sep spc (fun (tm,_) -> pr ltop tm) tml ++ spc() ++ str "of") ++ brk(1,2) ++
       prlist_with_sep (fun () -> str "| ") (pr_eqn pr) eqns ++
       str "end"))
 
@@ -247,15 +247,10 @@ let rec pr inherited a =
       hv 1 (
 	hv 1 (str "[" ++ pr_let_binder pr (snd x) a ++ bll ++ str "]") ++
 	brk (0,1) ++ b), lletin
-  | CAppExpl (_,(true,f),l) ->
-      let a,l = list_sep_last l in
-      pr_proj pr pr_explapp a f l, lapp
-  | CAppExpl (_,(false,f),l) -> pr_explapp pr f l, lapp
-  | CApp (_,(true,a),l) ->
-      let c,l = list_sep_last l in
-      assert (snd c = None);
-      pr_proj pr pr_app (fst c) a l, lapp
-  | CApp (_,(false,a),l) -> pr_app pr a l, lapp
+  | CAppExpl (_,((* V7 don't know about projections *)_,f),l) ->
+      pr_explapp pr f l, lapp
+  | CApp (_,(_,a),l) ->
+      pr_app pr a l, lapp
   | CCases (_,po,tml,eqns) ->
       pr_cases pr po tml eqns, lcases
   | COrderedCase (_,IfStyle,po,c,[b1;b2]) ->
@@ -267,15 +262,9 @@ let rec pr inherited a =
 	  str "if " ++ pr ltop c ++ spc () ++
 	  hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
 	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lif
-  | COrderedCase (_,LetStyle,po,c,[CLambdaN(_,[_,CHole _ as bd],b)]) ->
-      hov 0 (
-	pr_annotation pr po ++
-	hv 0 (
-          str "let" ++ brk (1,1) ++
-	  hov 0 (str "(" ++ pr_binder pr bd ++ str ")") ++
-	  str " =" ++ brk (1,2) ++
-	  pr ltop c ++ spc () ++
-	  str "in " ++ pr ltop b)), lletin
+  | CLetTuple (_,nal,(na,po),c,b) ->
+      error "Let tuple not supported in v7"
+
   | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->
       hov 0 (
 	hov 0 (

@@ -313,14 +313,17 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	       xlate_formula_ne_list l)
    | CApp(_, (_,f), l) -> (* TODO: proj notation *)
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
-   | CCases (_,po,tml,eqns)-> CT_cases(xlate_formula_opt po, 
-                         xlate_formula_ne_list tml,
+   | CCases (_,(po,None),tml,eqns)-> CT_cases(xlate_formula_opt po, 
+                         xlate_formula_ne_list (List.map fst tml),
                          CT_eqn_list (List.map 
          (fun x -> translate_one_equation x)
 			   eqns))
+   | CCases (_,(po,Some _),tml,eqns)-> xlate_error "TODO"
    | COrderedCase (_,Term.IfStyle,po,c,[b1;b2]) -> 
 		   CT_if(xlate_formula_opt po,
                    xlate_formula c,xlate_formula b1,xlate_formula b2)		
+   | CLetTuple (_,l, (na,po), c, b) -> xlate_error "LetTuple: TODO"
+
    | COrderedCase (_,Term.LetStyle, po, c, [CLambdaN(_,[l,_],b)]) ->
        CT_inductive_let(xlate_formula_opt po,
 	       xlate_id_opt_ne_list l,
@@ -1500,7 +1503,7 @@ let xlate_vernac =
 
   | (*Record from tactics/Record.v *)
     VernacRecord 
-      ((add_coercion, s), binders, CSort (_,c1), rec_constructor_or_none, field_list) ->
+      (_, (add_coercion, s), binders, CSort (_,c1), rec_constructor_or_none, field_list) ->
       let record_constructor = xlate_ident_opt rec_constructor_or_none in
       CT_record
        ((if add_coercion then CT_coercion_atm else

@@ -358,7 +358,7 @@ open Genarg
 let pr_hintbases _prc _prt = function 
   | None -> str " with *"
   | Some [] -> mt ()
-  | Some l -> str " with " ++ Util.prlist str l
+  | Some l -> str " with " ++ Util.prlist_with_sep spc str l
 
 ARGUMENT EXTEND hintbases
   TYPED AS preident_list_opt

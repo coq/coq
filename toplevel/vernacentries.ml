@@ -159,7 +159,7 @@ let show_intro all =
 (* "Print" commands *)
 
 let print_path_entry (s,l) =
-  (str s ++ tbrk (0,2) ++ str (string_of_dirpath l))
+  (str s ++ str " " ++ tbrk (0,2) ++ str (string_of_dirpath l))
 
 let print_loadpath () =
   let l = Library.get_full_load_path () in
@@ -703,7 +703,7 @@ let vernac_syntactic_definition id c = function
   | None -> syntax_definition id c
   | Some n ->
       let l = list_tabulate (fun _ -> (CHole (dummy_loc),None)) n in
-      let c = CApp (dummy_loc,(false,c),l) in
+      let c = CApp (dummy_loc,(None,c),l) in
       syntax_definition id c
 
 let vernac_declare_implicits locqid = function
@@ -1172,7 +1172,7 @@ let interp c = match c with
 
   | VernacEndSegment id -> vernac_end_segment id
 
-  | VernacRecord (id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
+  | VernacRecord (_,id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid

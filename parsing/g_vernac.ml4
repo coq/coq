@@ -183,8 +183,8 @@ GEXTEND Gram
   ;
   gallina:
     (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = base_ident; bl = binders_list; ":"; c = constr ->
-         VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
+    [ [ thm = thm_token; id = base_ident; ":"; c = constr ->
+         VernacStartTheoremProof (thm, id, ([], c), false, (fun _ _ -> ()))
       | (f,d,e) = def_token; id = base_ident; b = def_body -> 
           VernacDefinition (d, id, b, f, e)
       | stre = assumption_token; bl = ne_params_list -> 
@@ -200,7 +200,7 @@ GEXTEND Gram
       | "CoInductive" -> false ] ]
   ;
   record_token:
-    [ [ IDENT "Record" -> () | IDENT "Structure" -> () ] ]
+    [ [ IDENT "Record" -> true | IDENT "Structure" -> false ] ]
   ;
   constructor:
     [ [ idl = LIST1 base_ident SEP ","; coe = of_type_with_opt_coercion;
@@ -305,10 +305,10 @@ GEXTEND Gram
         indl = block_old_style ->
 	  let indl' = List.map (fun (id,ar,c) -> (id,None,bl,ar,c)) indl in
 	  VernacInductive (f,indl')
-      | record_token; oc = opt_coercion; name = base_ident;
+      | b = record_token; oc = opt_coercion; name = base_ident;
 	ps = simple_binders_list; ":";
 	s = constr; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
-	  VernacRecord ((oc,name),ps,s,c,fs)
+	  VernacRecord (b,(oc,name),ps,s,c,fs)
     ] ]
   ;
   gallina:
@@ -422,7 +422,7 @@ GEXTEND Gram
 	   let c = match n with
 	     | Some n ->
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
-		 CApp (loc,(false,c),l)
+		 CApp (loc,(None,c),l)
 	     | None -> c in
 	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->

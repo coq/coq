@@ -591,11 +591,15 @@ let occur_rawconstr id =
     | RLambda (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RProd (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
-    | RCases (loc,tyopt,tml,pl) ->
-	(occur_option tyopt) or (List.exists occur tml)
+    | RCases (loc,(tyopt,rtntypopt),tml,pl) ->
+	(occur_option tyopt) or (occur_option !rtntypopt)
+        or (List.exists (fun (tm,_) -> occur tm) tml)
 	or (List.exists occur_pattern pl)
-    | ROrderedCase (loc,b,tyopt,tm,bv) -> 
+    | ROrderedCase (loc,b,tyopt,tm,bv,_) -> 
 	(occur_option tyopt) or (occur tm) or (array_exists occur bv)
+    | RLetTuple (loc,nal,(na,tyopt),b,c) -> 
+	(na <> Name id & occur_option tyopt)
+        or (occur b) or (not (List.mem (Name id) nal) & (occur c))
     | RRec (loc,fk,idl,tyl,bv) ->
 	(array_exists occur tyl) or
 	(not (array_exists (fun id2 -> id=id2) idl) & array_exists occur bv)
@@ -1546,6 +1550,45 @@ let extract_predicate_conclusion nargs pred =
       | _ -> (* eta-expansion *) applist (lift 1 p, [mkRel 1]) in
   iterate decomp_lam_force nargs pred
 
+let set_arity_signature dep n arsign tomatchl pred x =
+  (* avoid is not exhaustive ! *)
+  let rec decomp_lam_force n avoid l p =
+    if n = 0 then (List.rev l,p,avoid) else
+    match p with
+      | RLambda (_,(Name id as na),_,c) -> 
+          decomp_lam_force (n-1) (id::avoid) (na::l) c
+      | RLambda (_,(Anonymous as na),_,c) -> decomp_lam_force (n-1) avoid (na::l) c
+      | _ ->
+          let x = next_ident_away (id_of_string "x") avoid in
+          decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
+          (* eta-expansion *)
+            (let a = RVar (dummy_loc,x) in
+             match p with
+               | RApp (loc,p,l) -> RApp (loc,p,l@[a])
+               | _ -> (RApp (dummy_loc,p,[a]))) in
+  let rec decomp_block avoid p = function
+    | ([], _) -> x := Some p
+    | ((_,IsInd (_,IndType(indf,realargs)))::l),(y::l')  ->
+	let (ind,params) = dest_ind_family indf in
+        let (nal,p,avoid') = decomp_lam_force (List.length realargs) avoid [] p 
+        in
+        let na,p,avoid' = 
+          if dep then decomp_lam_force 1 avoid' [] p else [Anonymous],p,avoid'
+        in 
+        y :=
+        (List.hd na,
+         if List.for_all ((=) Anonymous) nal then
+           None
+         else
+           Some (dummy_loc, ind, (List.map (fun _ -> Anonymous) params)@nal));
+        decomp_block avoid' p (l,l')
+    | (_::l),(y::l') ->
+        y := (Anonymous,None);
+        decomp_block avoid p (l,l')
+    | _ -> anomaly "set_arity_signature"
+  in
+  decomp_block [] pred (tomatchl,arsign)
+
 let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
   let cook (n, l, env) = function
     | c,IsInd (_,IndType(indf,realargs)) ->
@@ -1571,7 +1614,7 @@ let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
       map_constr_with_full_binders push_rel build_skeleton env c in
   build_skeleton env (lift n c)
   
-(* Here, [pred] is assumed to be in the context build from all *)
+(* Here, [pred] is assumed to be in the context built from all *)
 (* realargs and terms to match *)
 let build_initial_predicate env sigma isdep pred tomatchl =
   let cook n = function
@@ -1595,6 +1638,45 @@ let build_initial_predicate env sigma isdep pred tomatchl =
 		PrLetIn ((realargs,None), buildrec (n+nrealargs) q ltm)
   in buildrec 0 0 tomatchl
 
+let extract_arity_signature env0 tomatchl tmsign =
+  let get_one_sign n tm {contents = (na,t)} =
+    match tm with
+      | NotInd _ -> 
+	  (match t with
+	    | None -> []
+	    | Some (loc,_,_) -> 
+ 	    user_err_loc (loc,"",
+	    str "Unexpected type annotation for a term of non inductive type"))
+      | IsInd (_,IndType(indf,realargs)) ->
+          let indf' = lift_inductive_family n indf in
+	  let (ind,params) = dest_ind_family indf' in
+	  let nrealargs = List.length realargs in
+	  let realnal =
+	    match t with
+	      | Some (loc,ind',nal) ->
+		  let nparams = List.length params in
+		  if ind <> ind' then
+		    user_err_loc (loc,"",str "Wrong inductive type");
+		  if List.length nal <> nparams + nrealargs then
+		    user_err_loc (loc,"",
+		    str "Wrong number of arguments for inductive type");
+		  let parnal,realnal = list_chop nparams nal in
+		  if List.exists ((<>) Anonymous) parnal then
+		    user_err_loc (loc,"",
+		    str "The parameters of inductive type must be implicit");
+		  List.rev realnal
+	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
+	  let arsign = fst (get_arity env0 indf') in
+	  (na,None,build_dependent_inductive env0 indf')
+	  ::(List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign) in
+  let rec buildrec n = function
+    | [],[] -> []
+    | (_,tm)::ltm, x::tmsign ->
+	let l = get_one_sign n tm x in
+	(buildrec (n + List.length l) (ltm,tmsign)) @ l
+    | _ -> assert false
+  in buildrec 0 (tomatchl,tmsign)
+
 (* determines wether the multiple case is dependent or not. For that
  * the predicate given by the user is eta-expanded. If the result
  * of expansion is pred, then :
@@ -1606,15 +1688,28 @@ let build_initial_predicate env sigma isdep pred tomatchl =
  *        else error! (can not treat mixed dependent and non dependent case
  *)
 
-let prepare_predicate loc typing_fun isevars env tomatchs tycon = function
-  | None ->
+let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
+  (* No type annotation at all *)
+  | (None,{contents = None}) ->
       (match tycon with
        | None -> None
        | Some t ->
 	 let pred = prepare_predicate_from_tycon loc false env isevars tomatchs t in
 	 Some
 	  (build_initial_predicate env (evars_of isevars) false pred tomatchs))
-  | Some pred ->
+
+  (* v8 style type annotation *)
+  | (None,{contents = Some rtntyp}) ->
+
+      (* We extract the signature of the arity *)
+      let arsign = extract_arity_signature env tomatchs sign in
+      let env = push_rels arsign env in
+      let predccl = (typing_fun empty_tycon env rtntyp).uj_val in
+      Some
+        (build_initial_predicate env (evars_of isevars) true predccl tomatchs)
+
+  (* v7 style type annotation; set the v8 annotation by side effect *)
+  | (Some pred,x) ->
       let loc = loc_of_rawconstr pred in
       let dep, n, predj =
 	let isevars_copy = evars_of isevars in
@@ -1643,6 +1738,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs tycon = function
 (*
       let etapred,cdep = case_dependent env (evars_of isevars) loc predj tomatchs in
 *)
+      set_arity_signature dep n sign tomatchs pred x;
       Some(build_initial_predicate env (evars_of isevars) dep predccl tomatchs)
 
 
@@ -1656,11 +1752,12 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
-  let tomatchs = coerce_to_indtype typing_fun isevars env matx tomatchl in
+  let rawtms, tmsign = List.split tomatchl in
+  let tomatchs = coerce_to_indtype typing_fun isevars env matx rawtms in
 
   (* We build the elimination predicate if any and check its consistency *)
   (* with the type of arguments to match *)
-  let pred = prepare_predicate loc typing_fun isevars env tomatchs tycon predopt in
+  let pred = prepare_predicate loc typing_fun isevars env tomatchs tmsign tycon predopt in
 
   (* We deal with initial aliases *)
   let matx = prepare_initial_aliases (known_dependent pred) tomatchs matx in 

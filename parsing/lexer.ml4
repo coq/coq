@@ -309,7 +309,7 @@ let parse_226_tail tk = parser
 
 (* Parse what follows a dot *)
 let parse_after_dot bp c strm =
-  if !Options.v7 then 
+  if (* !Options.v7 *) true then 
     match strm with parser
 	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' as c); len = ident (store 0 c) >] ->
 	     ("FIELD", get_buff len)

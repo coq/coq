@@ -61,9 +61,8 @@ GEXTEND Gram
       | IDENT "Unfocus" -> VernacUnfocus
       | IDENT "Show" -> VernacShow (ShowGoal None)
       | IDENT "Show"; n = natural -> VernacShow (ShowGoal (Some n))
-      | IDENT "Show"; IDENT "Implicits"; n = natural ->
-	  VernacShow (ShowGoalImplicitly (Some n))
-      | IDENT "Show"; IDENT "Implicits" -> VernacShow (ShowGoalImplicitly None)
+      | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
+	  VernacShow (ShowGoalImplicitly n)
       | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode
       | IDENT "Show"; IDENT "Script" -> VernacShow ShowScript
       | IDENT "Show"; IDENT "Existentials" -> VernacShow ShowExistentials

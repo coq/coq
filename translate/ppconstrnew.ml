@@ -95,7 +95,7 @@ let pr_expl_args pr (a,expl) =
 
 let pr_opt_type pr = function
   | CHole _ -> mt ()
-  | t -> cut () ++ str ":" ++ pr (if !Options.p1 then ltop else (latom,E)) t
+  | t -> cut () ++ str ":" ++ pr t
 
 let pr_opt_type_spc pr = function
   | CHole _ -> mt ()
@@ -103,7 +103,7 @@ let pr_opt_type_spc pr = function
 
 let pr_name = function
   | Anonymous -> str"_"
-  | Name id -> pr_id id
+  | Name id -> pr_id (Constrextern.v7_to_v8_id id)
 
 let pr_located pr (loc,x) = pr x
 
@@ -139,67 +139,66 @@ let pr_binder pr (nal,t) =
     prlist_with_sep sep (pr_located pr_name) nal ++
     pr_opt_type pr t)
 *)
-(* Option 1a *)
-let pr_oneb pr t na =
+
+let surround p = str"(" ++ p ++ str")"
+
+let pr_binder many pr (nal,t) =
   match t with
-      CHole _ -> pr_located pr_name na
-    | _ -> hov 1
-        (str "(" ++  pr_located pr_name na ++ pr_opt_type pr t ++ str ")")
-let pr_binder1 pr (nal,t) =
-  hov 0 (prlist_with_sep sep (pr_oneb pr t) nal)
+      CHole _ -> 
+        prlist_with_sep sep (pr_located pr_name) nal
+    | _ ->
+        let s = 
+          (prlist_with_sep sep (pr_located pr_name) nal ++ str ":" ++ pr t) in
+        hov 1 (if many then surround s else s)
 
-let pr_binders1 pr bl =
-  hv 0 (prlist_with_sep sep (pr_binder1 pr) bl)
+let pr_binder_among_many pr_c = function
+  | LocalRawAssum (nal,t) ->
+      pr_binder true pr_c (nal,t)
+  | LocalRawDef (na,c) ->
+      let c,topt = match c with
+        | CCast(_,c,t) -> c, t
+        | _ -> c, CHole dummy_loc in
+      hov 1 (surround
+        (pr_located pr_name na ++ pr_opt_type pr_c topt ++
+         str":=" ++ cut() ++ pr_c c))
 
-(* Option 1b *)
-let pr_binder1 pr (nal,t) =
-  match t with
-      CHole _ -> prlist_with_sep sep (pr_located pr_name) nal
-    | _ -> hov 1
-	(str "(" ++ prlist_with_sep sep (pr_located pr_name) nal ++ str ":" ++
-	 pr ltop t ++ str ")")
+let pr_undelimited_binders pr_c =
+  prlist_with_sep sep (pr_binder_among_many pr_c)
 
-let pr_binders1 pr bl =
-  hv 0 (prlist_with_sep sep (pr_binder1 pr) bl)
+let pr_delimited_binders pr_c = function
+  | [LocalRawAssum (nal,t)] -> pr_binder false pr_c (nal,t)
+  | LocalRawAssum _ :: _ as bdl -> pr_undelimited_binders pr_c bdl
+  | _ -> assert false
 
-let pr_opt_type' pr = function
-  | CHole _ -> mt ()
-  | t -> cut () ++ str ":" ++ pr (latom,E) t
-
-let pr_prod_binders1 pr = function
-(*  | [nal,t] -> hov 1 (prlist_with_sep sep (pr_located pr_name) nal ++ pr_opt_type' pr t)*)
-  | bl -> pr_binders1 pr bl
-
-(* Option 2 *)
 let pr_let_binder pr x a =
   hov 0 (hov 0 (pr_name x ++ brk(0,1) ++ str ":=") ++ brk(0,1) ++ pr ltop a)
 
-let pr_binder2 pr (nal,t) =
-  hov 0 (
-    prlist_with_sep sep (pr_located pr_name) nal ++
-    pr_opt_type pr t)
+let rec extract_prod_binders = function
+  | CLetIn (loc,na,b,c) ->
+      let bl,c = extract_prod_binders c in
+      LocalRawDef (na,b) :: bl, c
+  | CProdN (loc,[],c) ->
+      extract_prod_binders c
+  | CProdN (loc,(nal,t)::bl,c) ->
+      let bl,c = extract_prod_binders (CProdN(loc,bl,c)) in
+      LocalRawAssum (nal,t) :: bl, c
+  | c -> [], c
 
-let pr_binders2 pr bl =
-  hv 0 (prlist_with_sep sep (pr_binder2 pr) bl)
-
-let pr_prod_binder2 pr (nal,t) =
-  str "forall " ++ hov 0 (
-    prlist_with_sep sep (pr_located pr_name) nal ++
-    pr_opt_type pr t) ++ str ","
-
-let pr_prod_binders2 pr bl =
-  hv 0 (prlist_with_sep sep (pr_prod_binder2 pr) bl)
-
-(**)
-let pr_binders pr = (if !Options.p1 then pr_binders1 else pr_binders2) pr
-let pr_prod_binders pr bl = 
-  if !Options.p1 then 
-    str "!" ++ pr_prod_binders1 pr bl ++ str "."
-  else
-    pr_prod_binders2 pr bl
-
+let rec extract_lam_binders = function
+  | CLetIn (loc,na,b,c) ->
+      let bl,c = extract_lam_binders c in
+      LocalRawDef (na,b) :: bl, c
+  | CLambdaN (loc,[],c) ->
+      extract_lam_binders c
+  | CLambdaN (loc,(nal,t)::bl,c) ->
+      let bl,c = extract_lam_binders (CLambdaN(loc,bl,c)) in
+      LocalRawAssum (nal,t) :: bl, c
+  | c -> [], c
+    
+(*
 let pr_arg_binders pr bl =
   if bl = [] then mt() else (spc() ++ pr_binders pr bl)
+*)
 
 let pr_global vars ref =
   (* pr_global_env vars ref *)
@@ -212,105 +211,19 @@ let split_lambda = function
   | CLambdaN (loc,(na::nal,t)::bl,c) -> (na,t,CLambdaN(loc,(nal,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
-let split_product = function
-  | CArrow (loc,t,c) -> ((loc,Anonymous),t,c)
-  | CProdN (loc,[[na],t],c) -> (na,t,c)
-  | CProdN (loc,([na],t)::bl,c) -> (na,t,CProdN(loc,bl,c))
-  | CProdN (loc,(na::nal,t)::bl,c) -> (na,t,CProdN(loc,(nal,t)::bl,c))
+let rename na na' t c =
+  match (na,na') with
+    | (_,Name id), (_,Name id') -> (na',t,replace_vars_constr_expr [id,id'] c)
+    | (_,Name id), (_,Anonymous) -> (na,t,c)
+    | _ -> (na',t,c)
+  
+let split_product na' = function
+  | CArrow (loc,t,c) -> (na',t,c)
+  | CProdN (loc,[[na],t],c) -> rename na na' t c
+  | CProdN (loc,([na],t)::bl,c) -> rename na na' t (CProdN(loc,bl,c))
+  | CProdN (loc,(na::nal,t)::bl,c) ->
+      rename na na' t (CProdN(loc,(nal,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
-
-let rec extract_lam_binders c =
-  match c with
-      CLambdaN(loc,bl1,c') ->
-        let (bl,bd) = extract_lam_binders c' in
-        (bl1@bl, bd)
-    | _ -> ([],c)
-
-let rec extract_prod_binders c =
-  match c with
-      CProdN(loc,bl1,c') ->
-        let (bl,bd) = extract_prod_binders c' in
-        (bl1@bl, bd)
-    | _ -> ([],c)
-
-let rec check_same_pattern p1 p2 =
-  match p1, p2 with
-    | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when i1=i2 ->
-        check_same_pattern a1 a2
-    | CPatCstr(_,c1,a1), CPatCstr(_,c2,a2) when c1=c2 ->
-        List.iter2 check_same_pattern a1 a2
-    | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
-    | CPatNumeral(_,i1), CPatNumeral(_,i2) when i1=i2 -> ()
-    | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
-        check_same_pattern e1 e2
-    | _ -> failwith "not same pattern"
-
-let check_same_ref r1 r2 =
-  match r1,r2 with
-  | Qualid(_,q1), Qualid(_,q2) when q1=q2 -> ()
-  | Ident(_,i1), Ident(_,i2) when i1=i2 -> ()
-  | _ -> failwith "not same ref"
-
-let rec check_same_type ty1 ty2 =
-  match ty1, ty2 with
-  | CRef r1, CRef r2 -> check_same_ref r1 r2
-  | CFix(_,(_,id1),fl1), CFix(_,(_,id2),fl2) when id1=id2 ->
-      List.iter2 (fun (id1,i1,a1,b1) (id2,i2,a2,b2) ->
-        if id1<>id2 || i1<>i2 then failwith "not same fix";
-        check_same_type a1 a2;
-        check_same_type b1 b2)
-        fl1 fl2
-  | CCoFix(_,(_,id1),fl1), CCoFix(_,(_,id2),fl2) when id1=id2 ->
-      List.iter2 (fun (id1,a1,b1) (id2,a2,b2) ->
-        if id1<>id2 then failwith "not same fix";
-        check_same_type a1 a2;
-        check_same_type b1 b2)
-        fl1 fl2
-  | CArrow(_,a1,b1), CArrow(_,a2,b2) ->
-      check_same_type a1 a2;
-      check_same_type b1 b2
-  | CProdN(_,bl1,a1), CProdN(_,bl2,a2) ->
-      List.iter2 check_same_binder bl1 bl2;
-      check_same_type a1 a2
-  | CLambdaN(_,bl1,a1), CLambdaN(_,bl2,a2) ->
-      List.iter2 check_same_binder bl1 bl2;
-      check_same_type a1 a2
-  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when na1=na2 ->
-      check_same_type a1 a2;
-      check_same_type b1 b2
-  | CAppExpl(_,r1,al1), CAppExpl(_,r2,al2) when r1=r2 ->
-      List.iter2 check_same_type al1 al2
-  | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
-      check_same_type e1 e2;
-      List.iter2 (fun (a1,e1) (a2,e2) ->
-                    if e1<>e2 then failwith "not same expl";
-                    check_same_type a1 a2) al1 al2
-  | CCases(_,_,a1,brl1), CCases(_,_,a2,brl2) ->
-      List.iter2 check_same_type a1 a2;
-      List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
-        List.iter2 check_same_pattern pl1 pl2;
-        check_same_type r1 r2) brl1 brl2
-  | COrderedCase(_,_,_,a1,bl1), COrderedCase(_,_,_,a2,bl2) ->
-      check_same_type a1 a2;
-      List.iter2 check_same_type bl1 bl2
-  | CHole _, CHole _ -> ()
-  | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
-  | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
-  | CCast(_,a1,b1), CCast(_,a2,b2) ->
-      check_same_type a1 a2;
-      check_same_type b1 b2
-  | CNotation(_,n1,e1), CNotation(_,n2,e2) when n1=n2 ->
-      List.iter2 check_same_type e1 e2
-  | CNumeral(_,i1), CNumeral(_,i2) when i1=i2 -> ()
-  | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
-      check_same_type e1 e2
-  | _ when ty1=ty2 -> ()
-  | _ -> failwith "not same type"
-
-and check_same_binder (nal1,e1) (nal2,e2) =
-  List.iter2 (fun (_,na1) (_,na2) ->
-    if na1<>na2 then failwith "not same name") nal1 nal2;
-  check_same_type e1 e2
 
 let merge_binders (na1,ty1) (na2,ty2) =
   let na =
@@ -325,9 +238,9 @@ let merge_binders (na1,ty1) (na2,ty2) =
         CHole _, _ -> ty2
       | _, CHole _ -> ty1
       | _ ->
-          check_same_type ty1 ty2;
+          Constrextern.check_same_type ty1 ty2;
           ty2 in
-  ([na],ty)
+  LocalRawAssum ([na],ty)
             
 let rec strip_domain bvar c =
   match c with
@@ -358,13 +271,15 @@ let rec strip_domains (nal,ty) c =
 (* Re-share binders *)
 let rec factorize_binders = function
   | ([] | [_] as l) -> l
-  | (nal,ty)::((nal',ty')::l as l') ->
-      try
-	let _ = check_same_type ty ty' in
-	factorize_binders ((nal@nal',ty)::l)
+  | LocalRawAssum (nal,ty) as d :: (LocalRawAssum (nal',ty')::l as l') ->
+      (try
+	let _ = Constrextern.check_same_type ty ty' in
+	factorize_binders (LocalRawAssum (nal@nal',ty)::l)
       with _ ->
-	(nal,ty) :: factorize_binders l'
+	d :: factorize_binders l')
+  | d :: l -> d :: factorize_binders l
 
+(* Extrac lambdas when a type constraint occurs *)
 let rec extract_def_binders c ty =
   match c with
     | CLambdaN(loc,bvar::lams,b) ->
@@ -385,24 +300,29 @@ let rec split_fix n typ def =
   if n = 0 then ([],typ,def)
   else
     let (na,_,def) = split_lambda def in
-    let (_,t,typ) = split_product typ in
+    let (na,t,typ) = split_product na typ in
     let (bl,typ,def) = split_fix (n-1) typ def in
-    (([na],t)::bl,typ,def)
+    (LocalRawAssum ([na],t)::bl,typ,def)
 
 let pr_recursive_decl pr id b t c =
   pr_id id ++ b ++ pr_opt_type_spc pr t ++ str " :=" ++
   brk(1,2) ++ pr ltop c
+
+let name_of_binder = function
+  | LocalRawAssum (nal,_) -> nal
+  | LocalRawDef (_,_) -> []
 
 let pr_fixdecl pr (id,n,t0,c0) =
   let (bl,t,c) = extract_def_binders t0 c0 in
   let (bl,t,c) =
     if List.length bl <= n then split_fix (n+1) t0 c0 else (bl,t,c) in
   let annot =
-    let ids = List.flatten (List.map fst bl) in
+    let ids = List.flatten (List.map name_of_binder bl) in
     if List.length ids > 1 then 
       spc() ++ str "{struct " ++ pr_name (snd (list_last ids)) ++ str"}"
     else mt() in
-  pr_recursive_decl pr id (str" " ++ hov 0 (pr_binders pr bl) ++ annot) t c
+  pr_recursive_decl pr id
+    (str" " ++ hov 0 (pr_undelimited_binders (pr ltop) bl) ++ annot) t c
 
 let pr_cofixdecl pr (id,t,c) =
   pr_recursive_decl pr id (mt ()) t c
@@ -414,15 +334,35 @@ let pr_recursive pr_decl id = function
       prlist_with_sep (fun () -> fnl() ++ str "with ") pr_decl dl ++
       fnl() ++ str "for " ++ pr_id id
 
-let pr_annotation pr po =
-  match po with
-      None -> mt()
-    | Some p -> spc() ++ str "=> " ++ hov 0 (pr ltop p)
+let pr_arg pr x = spc () ++ pr x
 
-let pr_annotation2 pr po =
+let is_var id = function
+  | CRef (Ident (_,id')) when id=id' -> true
+  | _ -> false
+
+let pr_case_item pr (tm,(na,indnalopt)) =
+  hov 0 (pr (lcast,E) tm ++
+  (match na with
+    | Name id when not (is_var id tm) -> spc () ++ str "as " ++  pr_id id
+    | _ -> mt ()) ++
+  (match indnalopt with
+    | None -> mt ()
+    | Some (_,ind,nal) ->
+        spc () ++ str "in " ++ 
+        hov 0 (pr_reference ind ++ prlist (pr_arg pr_name) nal)))
+
+let pr_case_type pr po =
   match po with
-      None -> mt()
-    | Some p -> spc() ++ str "of type " ++ hov 0 (pr ltop p)
+    | None | Some (CHole _) -> mt()
+    | Some p -> spc() ++ str "return " ++ hov 0 (pr (lcast,E) p)
+
+let pr_return_type pr po = pr_case_type pr po
+
+let pr_simple_return_type pr na po =
+  (match na with
+    | Name id -> spc () ++ str "as " ++  pr_id id
+    | _ -> mt ()) ++
+  pr_case_type pr po
 
 let pr_proj pr pr_app a f l =
   hov 0 (pr lsimple a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
@@ -451,57 +391,68 @@ let rec pr inherited a =
       larrow
   | CProdN _ ->
       let (bl,a) = extract_prod_binders a in
-      hv 0 (pr_prod_binders pr bl ++ spc() ++ pr ltop a),
+      hov 2 (
+	str"forall" ++ spc() ++ pr_delimited_binders (pr ltop) bl ++
+        str "," ++ spc() ++ pr ltop a),
       lprod
   | CLambdaN _ ->
       let (bl,a) = extract_lam_binders a in
-      let left, mid = str"fun" ++ spc(), " =>" in
       hov 2 (
-	left ++ pr_binders pr bl ++
-        str mid ++ spc() ++ pr ltop a),
+	str"fun" ++ spc() ++ pr_delimited_binders (pr ltop) bl ++
+        str " =>" ++ spc() ++ pr ltop a),
       llambda
   | CLetIn (_,x,a,b) ->
-      let (bl,a) = extract_lam_binders a in
       hv 0 (
-        hov 2 (str "let " ++ pr_located pr_name x ++
-               pr_arg_binders pr bl ++ str " :=" ++ spc() ++
+        hov 2 (str "let " ++ pr_located pr_name x ++ str " :=" ++ spc() ++
                pr ltop a ++ str " in") ++
         spc () ++ pr ltop b),
       lletin
-  | CAppExpl (_,(true,f),l) ->
-      let a,l = list_sep_last l in
-      pr_proj pr pr_appexpl a f l, lapp
-  | CAppExpl (_,(false,f),l) -> pr_appexpl pr f l, lapp
-  | CApp (_,(true,a),l) ->
-      let c,l = list_sep_last l in
+  | CAppExpl (_,(Some i,f),l) ->
+      let l1,l2 = list_chop i l in
+      let c,l1 = list_sep_last l1 in
+      pr_proj pr pr_appexpl c f l1 ++
+      prlist (fun a -> spc () ++ pr (lapp,L) a) l2, lapp
+  | CAppExpl (_,(None,f),l) -> pr_appexpl pr f l, lapp
+  | CApp (_,(Some i,f),l) ->
+      let l1,l2 = list_chop i l in
+      let c,l1 = list_sep_last l1 in
       assert (snd c = None);
-      pr_proj pr pr_app (fst c) a l, lapp
-  | CApp (_,(false,a),l) -> pr_app pr a l, lapp
-  | CCases (_,po,c,eqns) ->
+      pr_proj pr pr_app (fst c) f l1 ++
+      prlist (fun a -> spc () ++ pr_expl_args pr a) l2, lapp
+  | CApp (_,(None,a),l) -> pr_app pr a l, lapp
+  | CCases (_,(po,rtntypopt),c,eqns) ->
       v 0
-        (hov 4 (str "match " ++ prlist_with_sep sep_v (pr ltop) c ++
-	(if !Options.p1 then pr_annotation pr po else mt ()) ++
-	str " with") ++
-        prlist (pr_eqn pr) eqns ++
-	(if !Options.p1 then mt () else pr_annotation2 pr po)
-	++ spc() ++ 
-	str "end"),
+        (hov 4 (str "match " ++ prlist_with_sep sep_v (pr_case_item pr) c
+        ++ pr_case_type pr rtntypopt ++ str " with") ++
+        prlist (pr_eqn pr) eqns ++ spc() ++ str "end"),
       latom
-  | COrderedCase (_,_,po,c,[b1;b2]) ->
+  | CLetTuple (_,nal,(na,po),c,b) ->
+      hv 0 (
+        str "let " ++
+	hov 0 (str "(" ++
+               prlist_with_sep sep_v pr_name nal ++
+               str ")" ++
+	       pr_simple_return_type pr na po ++ str " :=" ++
+               spc() ++ pr ltop c ++ str " in") ++
+        spc() ++ pr ltop b),
+      lletin
+      
+
+  | COrderedCase (_,st,po,c,[b1;b2]) when st = IfStyle ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
       hv 0 (
-	str "if " ++ pr ltop c ++ pr_annotation pr po ++ spc () ++
+	hov 1 (str "if " ++ pr ltop c ++ pr_return_type pr po) ++ spc () ++
 	hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
 	hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2)),
       lif
-  | COrderedCase (_,_,po,c,[CLambdaN(_,[nal,_],b)]) ->
+  | COrderedCase (_,st,po,c,[CLambdaN(_,[nal,_],b)]) when st = LetStyle ->
       hv 0 (
         str "let " ++
 	hov 0 (str "(" ++
                prlist_with_sep sep_v (fun (_,n) -> pr_name n) nal ++
                str ")" ++
-	       pr_annotation pr po ++ str " :=" ++
+	       pr_return_type pr po ++ str " :=" ++
                spc() ++ pr ltop c ++ str " in") ++
         spc() ++ pr ltop b),
       lletin
@@ -509,7 +460,7 @@ let rec pr inherited a =
       hv 0 (
 	str (if style=MatchStyle then "old_match " else "match ") ++ 
 	pr ltop c ++
-	pr_annotation pr po ++
+	pr_return_type pr po ++
 	str " with" ++ brk (1,0) ++
 	hov 0 (prlist
           (fun b -> str "| ??? =>" ++ spc() ++ pr ltop b ++ fnl ()) bl) ++
@@ -530,21 +481,40 @@ let rec pr inherited a =
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"
 
-let transf env vars c =
+let rec strip_context n iscast t =
+  if n = 0 then
+    if iscast then match t with RCast (_,c,_) -> c | _ -> t else t
+  else match t with
+    | RLambda (_,_,_,c) -> strip_context (n-1) iscast c
+    | RProd (_,_,_,c) -> strip_context (n-1) iscast c
+    | RLetIn (_,_,_,c) -> strip_context (n-1) iscast c
+    | RCast (_,c,_) -> strip_context n false c
+    | _ -> anomaly "ppconstrnew: strip_context"
+
+let transf env n iscast c =
   if Options.do_translate() then
-    Constrextern.extern_rawconstr (Termops.vars_of_env env)
-      (Constrintern.for_grammar
+    let r = 
+      Constrintern.for_grammar
         (Constrintern.interp_rawconstr_gen false Evd.empty env [] false 
-	  (vars,[]))
-	c)
+	  ([],[]))
+	c in
+    begin try
+      (* Try to infer old case and type annotations *)
+      let _ = Pretyping.understand_gen_tcc Evd.empty env [] None r in 
+      (*msgerrnl (str "Typage OK");*) ()
+    with e -> (*msgerrnl (str "Warning: can't type")*) () end;
+    Constrextern.extern_rawconstr (Termops.vars_of_env env)
+      (strip_context n iscast r)
   else c
 
-let pr_constr_env env c = pr lsimple (transf env [] c)
-let pr_lconstr_env env c = pr ltop (transf env [] c)
+let pr_constr_env env c = pr lsimple (transf env 0 false c)
+let pr_lconstr_env env c = pr ltop (transf env 0 false c)
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
-let pr_lconstr_vars vars c = pr ltop (transf (Global.env()) vars c)
+let pr_lconstr_env_n env n b c = pr ltop (transf env n b c)
+
+let pr_binders = pr_undelimited_binders pr_lconstr
 
 let transf_pattern env c =
   if Options.do_translate() then
@@ -561,24 +531,10 @@ let pr_rawconstr_env env c =
 let pr_lrawconstr_env env c =
   pr_lconstr (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
 
-let anonymize_binder na c =
-  if Options.do_translate() then
-    Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
-      (Reserve.anonymize_if_reserved na
-      (Constrintern.for_grammar
-        (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
-  else c
-
-let pr_binders l =
-  prlist_with_sep sep
-    (fun (nal,t) -> prlist_with_sep sep
-      (fun (_,na as x) -> pr_oneb pr (anonymize_binder na t) x) nal) l
-
 let pr_cases_pattern = pr_patt ltop
 
 let pr_occurrences prc (nl,c) =
-  prlist (fun n -> int n ++ spc ()) nl ++
-  str"(" ++ prc c ++ str")"
+   prc c ++ prlist (fun n -> spc () ++ int n) nl
 
 let pr_qualid qid = str (string_of_qualid qid)
 
@@ -604,7 +560,7 @@ let pr_metaid id = str"?" ++ pr_id id
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | Red false -> str "red"
   | Hnf -> str "hnf"
-  | Simpl o -> str "simpl" ++ pr_opt (pr_occurrences pr_lconstr) o  
+  | Simpl o -> str "simpl" ++ pr_opt (pr_occurrences pr_constr) o  
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
 	str "compute"
@@ -613,12 +569,13 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | Lazy f -> 
       hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Unfold l ->
-      hov 1 (str "unfold" ++
-        prlist (fun (nl,qid) ->
-	  prlist (pr_arg int) nl ++ spc () ++ pr_ref qid) l)
+      hov 1 (str "unfold " ++
+        prlist_with_sep pr_coma (fun (nl,qid) ->
+	  pr_ref qid ++ prlist (pr_arg int) nl) l)
   | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
-      hov 1 (str "pattern" ++ pr_arg (prlist (pr_occurrences pr_lconstr)) l)
+      hov 1 (str "pattern" ++
+        pr_arg (prlist_with_sep pr_coma (pr_occurrences pr_constr)) l)
         
   | Red true -> error "Shouldn't be accessible from user"
   | ExtraRedExpr (s,c) ->

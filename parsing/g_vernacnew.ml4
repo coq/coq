@@ -42,13 +42,13 @@ let def_body = Gram.Entry.create "vernac:def_body"
 GEXTEND Gram
   GLOBAL: vernac gallina_ext;
   vernac:
-    (* Better to parse ";" here: in case of failure (e.g. in coerce_to_var), *)
-    (* ";" is still in the stream and discard_to_dot works correctly         *)
-    [ [ g = gallina; ";" -> g 
-      | g = gallina_ext; ";" -> g
-      | c = command; ";" -> c 
-      | c = syntax; ";" -> c
-      | "["; l = LIST1 located_vernac; "]"; ";" -> VernacList l
+    (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
+    (* "." is still in the stream and discard_to_dot works correctly         *)
+    [ [ g = gallina; "." -> g 
+      | g = gallina_ext; "." -> g
+      | c = command; "." -> c 
+      | c = syntax; "." -> c
+      | "["; l = LIST1 located_vernac; "]"; "." -> VernacList l
     ] ]
   ;
   vernac: FIRST
@@ -56,7 +56,7 @@ GEXTEND Gram
   ;
   vernac: LAST
     [ [ gln = OPT[n=natural; ":" -> n];
-        tac = subgoal_command; ";" -> tac gln ] ]
+        tac = subgoal_command; "." -> tac gln ] ]
   ;
   subgoal_command:
     [ [ c = check_command -> c
@@ -86,22 +86,27 @@ let no_coercion loc (c,x) =
     (loc,"no_coercion",Pp.str"no coercion allowed here");
   x
 
+let flatten_assum l =
+  List.flatten
+    (List.map (fun (oc,(idl,t)) -> List.map (fun id -> (oc,(id,t))) idl) l)
+
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = base_ident; bl = LIST0 binder; ":";
+    [ [ thm = thm_token; id = base_ident; (* bl = LIST0 binder; *) ":";
         c = lconstr ->
+          let bl = [] in
           VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
       | (f,d,e) = def_token; id = base_ident; b = def_body -> 
           VernacDefinition (d, id, b, f, e)
-      | stre = assumption_token; bl = LIST1 simple_binder_coe -> 
-	  VernacAssumption (stre, bl)
-      | stre = assumptions_token; bl = LIST1 simple_binder_coe ->
+      | stre = assumption_token; bl = LIST1 assum_coe -> 
+	  VernacAssumption (stre, flatten_assum bl)
+      | stre = assumptions_token; bl = LIST1 assum_coe ->
 	  test_plurial_form bl;
-	  VernacAssumption (stre, bl)
+	  VernacAssumption (stre, flatten_assum bl)
       (* Gallina inductive declarations *)
       | (* Non porté (?) : OPT[IDENT "Mutual"];*) f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -113,11 +118,11 @@ GEXTEND Gram
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
   ;
   gallina_ext:
-    [ [ record_token; oc = opt_coercion; name = base_ident;
+    [ [ b = record_token; oc = opt_coercion; name = base_ident;
         ps = LIST0 simple_binder; ":";
 	s = lconstr; ":="; cstr = OPT base_ident; "{";
-        fs = LIST0 local_decl_expr; "}" ->
-	  VernacRecord ((oc,name),ps,s,cstr,fs)
+        fs = LIST0 record_field SEP ";"; "}" ->
+	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
 (* Non porté ?
       | f = finite_token; s = csort; id = base_ident;
         indpar = LIST0 simple_binder; ":="; lc = constructor_list -> 
@@ -154,17 +159,17 @@ GEXTEND Gram
       | "CoInductive" -> false ] ]
   ;
   record_token:
-    [ [ IDENT "Record" -> () | IDENT "Structure" -> () ] ]
+    [ [ IDENT "Record" -> true | IDENT "Structure" -> false ] ]
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = LIST0 binder; ":="; red = reduce; c = lconstr ->
+    [ [ bl = LIST0 binder_let; ":="; red = reduce; c = lconstr ->
       (match c with
           CCast(_,c,t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
-      | bl = LIST0 binder; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+      | bl = LIST0 binder_let; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
           DefineBody (bl, red, c, Some t)
-      | bl = LIST0 binder; ":"; t = lconstr ->
+      | bl = LIST0 binder_let; ":"; t = lconstr ->
           ProveBody (bl, t) ] ]
   ;
   reduce:
@@ -182,8 +187,8 @@ GEXTEND Gram
 	  (id,ntn,indpar,c,lc) ] ]
   ;
   constructor_list:
-    [ [ "|"; l = LIST1 constructor_binder SEP "|" -> l
-      | l = LIST1 constructor_binder SEP "|" -> l
+    [ [ "|"; l = LIST1 constructor SEP "|" -> l
+      | l = LIST1 constructor SEP "|" -> l
       |  -> [] ] ]
   ;
 (*
@@ -225,7 +230,7 @@ GEXTEND Gram
           (id,CProdN(loc,bl,c),CLambdaN(loc,bl,def)) ] ]
   ;
   rec_annotation:
-    [ [ "{"; "struct"; id=IDENT; "}" -> id_of_string id ] ]
+    [ [ "{"; IDENT "struct"; id=IDENT; "}" -> id_of_string id ] ]
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c 
@@ -246,17 +251,8 @@ GEXTEND Gram
   simple_binder:
     [ [ b = simple_binder_coe -> no_coercion loc b ] ]
   ;
-  binder:
-    [ [ na = name ->  LocalRawAssum([na],CHole loc)
-      | "("; na = name; ")" -> LocalRawAssum([na],CHole loc)
-      | "("; na = name; ":"; c = lconstr; ")"
-          -> LocalRawAssum([na],c)
-      | "("; na = name; ":="; c = lconstr; ")" ->
-          LocalRawDef (na,c)
-    ] ]
-  ;
   binder_nodef:
-    [ [ b = binder ->
+    [ [ b = binder_let ->
       (match b with
           LocalRawAssum(l,ty) -> (l,ty)
         | LocalRawDef _ ->
@@ -264,19 +260,20 @@ GEXTEND Gram
               (loc,"fix_param",Pp.str"defined binder not allowed here")) ] ]
   ;
   (* ... with coercions *)
-  local_decl_expr:
+  record_field:
     [ [ id = base_ident -> (false,AssumExpr(id,CHole loc))
-      | "("; id = base_ident; ")" -> (false,AssumExpr(id,CHole loc))
-      | "("; id = base_ident; oc = of_type_with_opt_coercion;
-             t = lconstr; ")" ->
+      | id = base_ident; oc = of_type_with_opt_coercion; t = lconstr ->
          (oc,AssumExpr (id,t))
-      | "("; id = base_ident; oc = of_type_with_opt_coercion;
-             t = lconstr; ":="; b = lconstr; ")" ->
-	 (oc,DefExpr (id,b,Some t))
-      | "("; id = base_ident; ":="; b = lconstr; ")" ->
+      | id = base_ident; oc = of_type_with_opt_coercion;
+             t = lconstr; ":="; b = lconstr -> (oc,DefExpr (id,b,Some t))
+      | id = base_ident; ":="; b = lconstr ->
          match b with
              CCast(_,b,t) -> (false,DefExpr(id,b,Some t))
            | _ -> (false,DefExpr(id,b,None)) ] ]
+  ;
+  assum_coe:
+    [ [ "("; idl = LIST1 base_ident; oc = of_type_with_opt_coercion;
+        c = lconstr; ")" -> (oc,(idl,c)) ] ]
   ;
   simple_binder_coe:
     [ [ id=base_ident -> (false,(id,CHole loc))
@@ -285,7 +282,7 @@ GEXTEND Gram
              t = lconstr; ")" ->
          (oc,(id,t)) ] ]
   ;
-  constructor_binder:
+  constructor:
     [ [ id = base_ident; coe = of_type_with_opt_coercion; c = lconstr ->
         (coe,(id,c)) ] ]
   ;
@@ -431,8 +428,10 @@ GEXTEND Gram
 	     | None -> c in
 	   VernacNotation (false,c,Some("'"^id^"'",[]),None,None)
 *)
-      | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
-	  VernacDeclareImplicits (qid,Some l)
+      | IDENT "Implicit"; IDENT "Arguments"; qid = global; 
+           pos = OPT [ "["; l = LIST0 natural; "]" -> l ] ->
+	  VernacDeclareImplicits (qid,pos)
+
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
 
       | IDENT "Implicit"; ["Variable"; "Type" | IDENT "Variables"; "Type"];
@@ -598,8 +597,8 @@ GEXTEND Gram
       | IDENT "Scope"; s = IDENT -> PrintScope s ] ]
   ;
   class_rawexpr:
-    [ [ IDENT "FUNCLASS" -> FunClass
-      | IDENT "SORTCLASS" -> SortClass
+    [ [ IDENT "Funclass" -> FunClass
+      | IDENT "Sortclass" -> SortClass
       | qid = global -> RefClass qid ] ]
   ;
   locatable:
@@ -669,11 +668,11 @@ GEXTEND Gram
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
-     | IDENT "Infix"; local = locality; a = entry_prec; n = OPT natural; 
+     | IDENT "Infix"; local = locality; (*a = entry_prec; n = OPT natural; *)
 	 op = STRING; p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-         let (a,n,b) = Metasyntax.interp_infix_modifiers a n modl in
+         let (a,n,b) = Metasyntax.interp_infix_modifiers None None modl in
          VernacInfix (local,a,n,op,p,b,None,sc)
      | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]

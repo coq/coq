@@ -103,8 +103,8 @@ let idopt_of_name = function
   | Anonymous -> None
 
 let extern_evar loc n =
-  warning
-    "Existential variable turned into meta-variable during externalization";
+  msgerrnl (str 
+    "Warning: existential variable turned into meta-variable during externalization");
   CPatVar (loc,(false,make_ident "META" (Some n)))
 
 let raw_string_of_ref = function
@@ -119,6 +119,15 @@ let raw_string_of_ref = function
       "SECVAR("^(string_of_id id)^")"
 
 (* v7->v8 translation *)
+
+let translate_keyword = function
+  | ("forall" | "fun" | "match" | "fix" | "cofix" | "for" | "let"
+    | "if"  | "then" | "else" | "return" as s) ->
+      let s' = s^"_" in
+      msgerrnl
+      (str ("Warning: "^s^" is now a keyword; it has been translated to "^s'));
+      s'
+  | s -> s
 
 let is_coq_root d =
   let d = repr_dirpath d in d <> [] & string_of_id (list_last d) = "Coq"
@@ -174,6 +183,7 @@ let translate_v7_string = function
   | "fact_growing" -> "fact_le"
   (* Lists *)
   | "idempot_rev" -> "involutive_rev"
+  | "forall" -> "HereAndFurther"
   (* Bool *)
   | "orb_sym" -> "orb_comm"
   | "andb_sym" -> "andb_comm"
@@ -192,9 +202,13 @@ let id_of_v7_string s =
   id_of_string (if !Options.v7 then s else translate_v7_string s)
 
 let v7_to_v8_dir_id dir id =
-  if Options.do_translate()
-    & (is_coq_root (Lib.library_dp()) or is_coq_root dir)
-  then id_of_string (translate_v7_string (string_of_id id)) else id
+  if Options.do_translate() then
+    let s = string_of_id id in
+    let s = 
+      if (is_coq_root (Lib.library_dp()) or is_coq_root dir)
+      then translate_v7_string s else s in
+    id_of_string (translate_keyword s)
+  else id
 
 let v7_to_v8_id = v7_to_v8_dir_id empty_dirpath
 
@@ -208,6 +222,90 @@ let extern_reference loc vars r =
   with Not_found ->
     (* happens in debugger *)
     Ident (loc,id_of_string (raw_string_of_ref r))
+
+(***********************************************************************)
+(* Equality up to location (useful for translator v8) *)
+
+let rec check_same_pattern p1 p2 =
+  match p1, p2 with
+    | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when i1=i2 ->
+        check_same_pattern a1 a2
+    | CPatCstr(_,c1,a1), CPatCstr(_,c2,a2) when c1=c2 ->
+        List.iter2 check_same_pattern a1 a2
+    | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
+    | CPatNumeral(_,i1), CPatNumeral(_,i2) when i1=i2 -> ()
+    | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
+        check_same_pattern e1 e2
+    | _ -> failwith "not same pattern"
+
+let check_same_ref r1 r2 =
+  match r1,r2 with
+  | Qualid(_,q1), Qualid(_,q2) when q1=q2 -> ()
+  | Ident(_,i1), Ident(_,i2) when i1=i2 -> ()
+  | _ -> failwith "not same ref"
+
+let rec check_same_type ty1 ty2 =
+  match ty1, ty2 with
+  | CRef r1, CRef r2 -> check_same_ref r1 r2
+  | CFix(_,(_,id1),fl1), CFix(_,(_,id2),fl2) when id1=id2 ->
+      List.iter2 (fun (id1,i1,a1,b1) (id2,i2,a2,b2) ->
+        if id1<>id2 || i1<>i2 then failwith "not same fix";
+        check_same_type a1 a2;
+        check_same_type b1 b2)
+        fl1 fl2
+  | CCoFix(_,(_,id1),fl1), CCoFix(_,(_,id2),fl2) when id1=id2 ->
+      List.iter2 (fun (id1,a1,b1) (id2,a2,b2) ->
+        if id1<>id2 then failwith "not same fix";
+        check_same_type a1 a2;
+        check_same_type b1 b2)
+        fl1 fl2
+  | CArrow(_,a1,b1), CArrow(_,a2,b2) ->
+      check_same_type a1 a2;
+      check_same_type b1 b2
+  | CProdN(_,bl1,a1), CProdN(_,bl2,a2) ->
+      List.iter2 check_same_binder bl1 bl2;
+      check_same_type a1 a2
+  | CLambdaN(_,bl1,a1), CLambdaN(_,bl2,a2) ->
+      List.iter2 check_same_binder bl1 bl2;
+      check_same_type a1 a2
+  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when na1=na2 ->
+      check_same_type a1 a2;
+      check_same_type b1 b2
+  | CAppExpl(_,r1,al1), CAppExpl(_,r2,al2) when r1=r2 ->
+      List.iter2 check_same_type al1 al2
+  | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
+      check_same_type e1 e2;
+      List.iter2 (fun (a1,e1) (a2,e2) ->
+                    if e1<>e2 then failwith "not same expl";
+                    check_same_type a1 a2) al1 al2
+  | CCases(_,_,a1,brl1), CCases(_,_,a2,brl2) ->
+      List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
+      List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
+        List.iter2 check_same_pattern pl1 pl2;
+        check_same_type r1 r2) brl1 brl2
+  | COrderedCase(_,_,_,a1,bl1), COrderedCase(_,_,_,a2,bl2) ->
+      check_same_type a1 a2;
+      List.iter2 check_same_type bl1 bl2
+  | CHole _, CHole _ -> ()
+  | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
+  | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
+  | CCast(_,a1,b1), CCast(_,a2,b2) ->
+      check_same_type a1 a2;
+      check_same_type b1 b2
+  | CNotation(_,n1,e1), CNotation(_,n2,e2) when n1=n2 ->
+      List.iter2 check_same_type e1 e2
+  | CNumeral(_,i1), CNumeral(_,i2) when i1=i2 -> ()
+  | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
+      check_same_type e1 e2
+  | _ when ty1=ty2 -> ()
+  | _ -> failwith "not same type"
+
+and check_same_binder (nal1,e1) (nal2,e2) =
+  List.iter2 (fun (_,na1) (_,na2) ->
+    if na1<>na2 then failwith "not same name") nal1 nal2;
+  check_same_type e1 e2
+
+let same c d = try check_same_type c d; true with _ -> false
 
 (**********************************************************************)
 (* conversion of terms and cases patterns                             *)
@@ -225,14 +323,14 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
         insert_pat_delimiters (CPatNumeral (loc,n)) key
   with No_match ->
   match pat with
-  | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
+  | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,v7_to_v8_id id)))
   | PatVar (loc,Anonymous) -> CPatAtom (loc, None) 
   | PatCstr(loc,cstrsp,args,na) ->
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p = CPatCstr
         (loc,extern_reference loc vars (ConstructRef cstrsp),args) in
       (match na with
-	| Name id -> CPatAlias (loc,p,id)
+	| Name id -> CPatAlias (loc,p,v7_to_v8_id id)
 	| Anonymous -> p)
 	
 let occur_name na aty =
@@ -241,12 +339,21 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection nargs = function
-  | Some r -> 
-      (try Recordops.find_projection_nparams r + 1 = nargs
-       with Not_found -> false)
-  | None ->
-      false
+  | Some r ->
+      (try 
+	let n = Recordops.find_projection_nparams r + 1 in
+	if n <= nargs then Some n else None
+      with Not_found -> None)
+  | None -> None
 
+let stdlib = function
+  | Some r -> 
+      let dir,id = repr_path (sp_of_global r) in
+      (is_coq_root (Lib.library_dp()) or is_coq_root dir)
+      && not (List.mem (string_of_id id) 
+        ["Zlength";"Zlength_correct";"eq_ind"])
+  | None -> false
+  
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
 let explicitize loc inctx impl (cf,f) args =
@@ -256,16 +363,27 @@ let explicitize loc inctx impl (cf,f) args =
         let tail = exprec (q+1) (args,impl) in
         let visible =
           (!print_implicits & !print_implicits_explicit_args)
-          or not (is_inferable_implicit inctx n imp)
-          or ((match a with CHole _ -> false | _ -> true)
-              & Options.do_translate()) in
+          or (not (is_inferable_implicit inctx n imp))
+	  or ((match a with CHole _ -> false | _ -> true)
+	      & Options.do_translate() & not (stdlib cf)) in
         if visible then (a,Some q) :: tail else tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
     | [], _ -> [] in
-  let isproj = is_projection (List.length args) cf in
-  let args = exprec 1 (args,impl) in
-  if args = [] then f else CApp (loc, (isproj, f), args)
+  match is_projection (List.length args) cf with
+    | Some i as ip ->
+	if impl <> [] & is_status_implicit (List.nth impl (i-1)) then
+	  let f' = match f with CRef f -> f | _ -> assert false in
+	  CAppExpl (loc,(ip,f'),args)
+	else
+	  let (args1,args2) = list_chop i args in
+	  let (impl1,impl2) = if impl=[] then [],[] else list_chop i impl in
+	  let args1 = exprec 1 (args1,impl1) in
+	  let args2 = exprec (i+1) (args2,impl2) in
+	  CApp (loc,(Some (List.length args1),f),args1@args2)
+    | None -> 
+	let args = exprec 1 (args,impl) in
+	if args = [] then f else CApp (loc, (None, f), args)
 
 let rec skip_coercion dest_ref (f,args as app) =
   if !print_coercions or Options.do_translate () then app
@@ -362,18 +480,34 @@ let rec extern inctx scopes vars r =
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,t],c)
 
-  | RCases (loc,typopt,tml,eqns) ->
+  | RCases (loc,(typopt,rtntypopt),tml,eqns) ->
       let pred = option_app (extern_type scopes vars) typopt in
-      let tml = List.map (extern false scopes vars) tml in
+      let rtntypopt = option_app (extern_type scopes vars) !rtntypopt in
+      let vars' = 
+	List.fold_right (name_fold Idset.add)
+	  (cases_predicate_names tml) vars in
+      let tml = List.map (fun (tm,{contents=(na,x)}) ->
+	(extern false scopes vars tm,
+	(na,option_app (fun (loc,ind,nal) ->
+	  (loc,extern_reference loc vars (IndRef ind),nal)) x))) tml in
       let eqns = List.map (extern_eqn (typopt<>None) scopes vars) eqns in 
-      CCases (loc,pred,tml,eqns)
-	
-  | ROrderedCase (loc,cs,typopt,tm,bv) ->
+      CCases (loc,(pred,rtntypopt),tml,eqns)
+
+  | ROrderedCase (loc,cs,typopt,tm,bv,{contents = Some x}) ->
+      extern false scopes vars x
+
+  | ROrderedCase (loc,cs,typopt,tm,bv,_) ->
       let bv = Array.to_list (Array.map (extern (typopt<>None) scopes vars) bv)
       in
       COrderedCase
 	(loc,cs,option_app (extern_type scopes vars) typopt,
          extern false scopes vars tm,bv)
+
+  | RLetTuple (loc,nal,(na,typopt),tm,b) ->
+      CLetTuple (loc,nal,
+        (na,option_app (extern_type scopes (add_vname vars na)) typopt),
+        extern false scopes vars tm,
+        extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RRec (loc,fk,idv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
@@ -411,7 +545,7 @@ and extern_type (_,scopes) = extern true (Some Symbols.type_scope,scopes)
 
 and factorize_prod scopes vars aty = function
   | RProd (loc,(Name id as na),ty,c)
-      when aty = extern true scopes vars (anonymize_if_reserved na ty)
+      when same aty (extern true scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
@@ -419,7 +553,7 @@ and factorize_prod scopes vars aty = function
 
 and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
-      when aty = extern inctx scopes vars (anonymize_if_reserved na ty)
+      when same aty (extern inctx scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let (nal,c) =
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
@@ -521,16 +655,17 @@ let rec raw_of_pat tenv env = function
       RLambda (loc,na,raw_of_pat tenv env t, raw_of_pat tenv (na::env) c)
   | PCase ((_,(IfStyle|LetStyle as cs)),typopt,tm,bv) ->
       ROrderedCase (loc,cs,option_app (raw_of_pat tenv env) typopt,
-         raw_of_pat tenv env tm,Array.map (raw_of_pat tenv env) bv)
+         raw_of_pat tenv env tm,Array.map (raw_of_pat tenv env) bv, ref None)
   | PCase ((_,cs),typopt,tm,[||]) ->
-      RCases (loc,option_app (raw_of_pat tenv env) typopt,
-         [raw_of_pat tenv env tm],[])
+      RCases (loc,(option_app (raw_of_pat tenv env) typopt,ref None (* TODO *)),
+         [raw_of_pat tenv env tm,ref (Anonymous,None)],[])
   | PCase ((Some ind,cs),typopt,tm,bv) ->
       let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
+      let k = (snd (lookup_mind_specif (Global.env()) ind)).Declarations.mind_nrealargs in
       Detyping.detype_case false
 	(fun tenv _ -> raw_of_pat tenv)
 	(fun tenv _ -> raw_of_eqn tenv)
-	tenv avoid env ind cs typopt tm bv
+	tenv avoid env ind cs typopt k tm bv
   | PCase _ -> error "Unsupported case-analysis while printing pattern"
   | PFix f -> Detyping.detype tenv [] env (mkFix f)
   | PCoFix c -> Detyping.detype tenv [] env (mkCoFix c)

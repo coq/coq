@@ -107,7 +107,7 @@ open Coqast
 let mk_id loc id = mkRefC (Ident (loc, id))
 let mk_ref loc s = mk_id loc (id_of_string s)
 let mk_appl loc1 loc2 f args =
-  CApp (join_loc loc1 loc2, (false,mk_ref loc1 f), List.map (fun a -> a,None) args)
+  CApp (join_loc loc1 loc2, (None,mk_ref loc1 f), List.map (fun a -> a,None) args)
 
 let conj_assert {a_name=n;a_value=a} {a_value=b} = 
   let loc1 = constr_loc a in
@@ -166,7 +166,7 @@ let rec coqast_of_program loc = function
 		   (function Term t -> (coqast_of_program t.loc t.desc,None)
 		      | _ -> invalid_arg "coqast_of_program") l
       in
-      CApp (dummy_loc, (false,f), args)
+      CApp (dummy_loc, (None,f), args)
   | Expression c -> bdize c
   | _ -> invalid_arg "coqast_of_program"
 

@@ -222,14 +222,15 @@ let rec ast_of_raw = function
       (* Pour compatibilité des theories, il faut LAMBDALIST partout *)
       ope("LAMBDALIST",[ast_of_raw t;a])
 
-  | RCases (_,typopt,tml,eqns) ->
+  | RCases (_,(typopt,_),tml,eqns) ->
       let pred = ast_of_rawopt typopt in
       let tag = "CASES" in
-      let asttomatch = ope("TOMATCH", List.map ast_of_raw tml) in
+      let asttomatch =
+	ope("TOMATCH", List.map (fun (tm,_) -> ast_of_raw tm) tml) in
       let asteqns = List.map ast_of_eqn eqns in 
       ope(tag,pred::asttomatch::asteqns)
 	
-  | ROrderedCase (_,LetStyle,typopt,tm,[|bv|]) ->
+  | ROrderedCase (_,LetStyle,typopt,tm,[|bv|],_) ->
       let nvar' = function Anonymous -> nvar wildcard | Name id -> nvar id in
       let rec f l = function
         | RLambda (_,na,RHole _,c) -> f (nvar' na :: l) c
@@ -239,7 +240,7 @@ let rec ast_of_raw = function
       let eqn = ope ("EQN", [c;ope ("PATTCONSTRUCT",(nvar wildcard)::l)]) in
       ope ("FORCELET",[(ast_of_rawopt typopt);(ast_of_raw tm);eqn])
 
-  | ROrderedCase (_,st,typopt,tm,bv) ->
+  | ROrderedCase (_,st,typopt,tm,bv,_) ->
       let tag = match st with
 	| IfStyle -> "FORCEIF"
 	| RegularStyle -> "CASE"
@@ -250,6 +251,10 @@ let rec ast_of_raw = function
       ope(tag,(ast_of_rawopt typopt)
 	    ::(ast_of_raw tm)
 	    ::(Array.to_list (Array.map ast_of_raw bv)))
+
+  | RLetTuple (loc,nal,(na,typopt),tm,b) ->
+      error "Let tuple not supported in v7"
+
   | RRec (_,fk,idv,tyv,bv) ->
       let alfi = Array.map ast_of_ident idv in
       (match fk with

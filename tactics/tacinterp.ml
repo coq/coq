@@ -408,8 +408,14 @@ let intern_constr {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let c' = 
     warn (Constrintern.interp_rawconstr_gen false sigma env []
-           false (fst lfun,[])) c
-  in (c',if !strict_check then None else Some c)
+           false (fst lfun,[])) c in
+  begin if Options.do_translate () then try
+      (* Try to infer old case and type annotations *)
+      let _ = Pretyping.understand_gen_tcc sigma env [] None c' in 
+      (* msgerrnl (str "Typage tactique OK");*)
+      ()
+    with e -> (*msgerrnl (str "Warning: can't type tactic");*) () end;
+  (c',if !strict_check then None else Some c)
 
 (* Globalize bindings *)
 let intern_binding ist (loc,b,c) =
@@ -2014,7 +2020,7 @@ let make_empty_glob_sign () =
     gsigma = Evd.empty; genv = Global.env() }
 
 let add_tacdef isrec tacl =
-  let isrec = if !Options.p1 then isrec else true in
+(*  let isrec = if !Options.p1 then isrec else true in*)
   let rfun = List.map (fun ((loc,id as locid),_) -> (id,make_absolute_name locid)) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars = if isrec then rfun else []} in

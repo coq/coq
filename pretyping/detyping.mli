@@ -29,7 +29,7 @@ val detype_case :
     'a -> Rawterm.loc * Names.identifier list * Rawterm.cases_pattern list *
     Rawterm.rawconstr) ->
     env -> identifier list -> names_context -> inductive -> case_style ->
-      'a option -> 'a -> 'a array -> rawconstr
+      'a option -> int -> 'a -> 'a array -> rawconstr
 
 (* look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_renamed  : env -> constr -> identifier -> int option
