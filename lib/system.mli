@@ -42,6 +42,8 @@ val raw_extern_intern : int -> string ->
 val extern_intern : 
   int -> string -> (string -> 'a -> unit) * (load_path -> string -> 'a)
 
+val open_trapping_failure : (string -> 'a) -> string -> string -> 'a
+
 (*s Time stamps. *)
 
 type time
