@@ -422,8 +422,11 @@ let rec pr inherited a =
   | CApp (_,(None,a),l) -> pr_app pr a l, lapp
   | CCases (_,(po,rtntypopt),c,eqns) ->
       v 0
-        (hov 4 (str "match " ++ prlist_with_sep sep_v (pr_case_item pr) c
-        ++ pr_case_type pr rtntypopt ++ str " with") ++
+        (hov 4 (str "match " ++ 
+	  hov 0 (
+	    prlist_with_sep sep_v (pr_case_item pr) c
+            ++ pr_case_type pr rtntypopt) ++
+	str " with") ++
         prlist (pr_eqn pr) eqns ++ spc() ++ str "end"),
       latom
   | CLetTuple (_,nal,(na,po),c,b) ->

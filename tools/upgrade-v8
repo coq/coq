@@ -3,8 +3,8 @@
 mv v7 v7.bak
 
 echo ---------------- Saving v7 files into directory v7 ------------------
-for i in *.v */*.v */*/*.v */*/*/*.v */*/*/*/*.v */*/*/*/*/*.v; do
-  if expr $i : '.*\*\.v' > /dev/null ; then continue ; fi
+vfiles=`find . -name \*.v`
+for i in $files; do
   if expr $i : 'v7\.bak/.*\.v' > /dev/null ; then continue ; fi
   if expr $i : 'v7/.*\.v' > /dev/null ; then continue ; fi
   echo Saving $i into v7/$i
@@ -14,8 +14,8 @@ for i in *.v */*.v */*/*.v */*/*/*.v */*/*/*/*.v */*/*/*/*/*.v; do
 done
 
 echo ---------------- Upgrading files with v8 syntax ---------------------
-for i in *.v8 */*.v8 */*/*.v8 */*/*/*.v8 */*/*/*/*.v8 */*/*/*/*/*.v8; do
-  if expr $i : '.*\*\.v8' > /dev/null ; then continue ; fi
+v8files=`find . -name \*.v8`
+for i in $v8files; do
   j=`dirname $i`/`basename $i .v8`.v
   echo Upgrading $i
   mv -u -f $i $j

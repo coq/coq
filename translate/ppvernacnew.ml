@@ -301,14 +301,12 @@ let pr_binder pr_c ty na =
 let pr_vbinders l =
   hv 0 (pr_binders l)
 
-let vars_of_valdecls l = function
-  | LocalRawAssum (nal,c) -> 
-     List.fold_right (function (_,Name id) -> fun l -> id::l | (_,Anonymous) -> fun l -> l) nal l
-  | LocalRawDef ((_,Name id),c) -> id::l
-  | LocalRawDef ((_,Anonymous),_) -> l
+let length_of_valdecls n = function
+  | LocalRawAssum (nal,c) -> List.length nal + n
+  | LocalRawDef (_,c) -> n+1
 
-let vars_of_vbinders =
-  List.fold_left vars_of_valdecls []
+let length_of_vbinders =
+  List.fold_left length_of_valdecls 0
 
 let vars_of_binder l (nal,_) = 
   List.fold_right (function (_,Name id) -> fun l -> id::l | (_,Anonymous) -> fun l -> l) nal l
@@ -493,7 +491,7 @@ let rec pr_vernac = function
 
   (* Control *)
   | VernacList l -> hov 2 (str"[" ++ spc() ++ prlist_with_sep (fun _ -> sep_end () ++ fnl() ) (pr_located pr_vernac) l ++ spc() ++ str"]") 
-  | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose" ++ spc()) else spc()  ++ str s
+  | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose" ++ spc()) else spc()  ++ str "\"" ++ str s ++ str "\""
   | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v
   | VernacVar id -> pr_id id
   
@@ -599,18 +597,18 @@ let rec pr_vernac = function
                   let bl2,body,ty' = extract_def_binders c ty in
                   (bl2,body, spc() ++ str":" ++ spc () ++
                     pr_lconstr_env_n (Global.env())
-                    (List.length (vars_of_vbinders bl @ vars_of_vbinders bl2))
+                    (length_of_vbinders bl + length_of_vbinders bl2)
                     false (prod_rawconstr ty bl)) in
             let bindings =
               pr_ne_sep spc pr_vbinders bl ++
               if bl2 = [] then mt() else (spc() ++ pr_binders bl2) in
-	    let vars = vars_of_vbinders bl @ vars_of_vbinders bl2 in
+	    let n = length_of_vbinders bl + length_of_vbinders bl2 in
 	    let c',iscast = match d with None -> c, false
 	      | Some d -> CCast (dummy_loc,c,d), true in
             let ppred =
               Some (pr_reduce red ++
-              pr_lconstr_env_n (Global.env()) 
-                (List.length vars) iscast (abstract_rawconstr c' bl))
+              pr_lconstr_env_n (Global.env()) n iscast
+		(abstract_rawconstr c' bl))
             in
             (bindings,ty,ppred)
         | ProveBody (bl,t) ->
@@ -796,7 +794,7 @@ pr_vbinders bl ++ spc())
             pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
             ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++
-            pr_lconstr_env_n rec_sign (List.length (vars_of_vbinders bl))
+            pr_lconstr_env_n rec_sign (length_of_vbinders bl)
 	      true (CCast (dummy_loc,def0,type_0))
       in
       hov 1 (str"Fixpoint" ++ spc() ++
@@ -1058,4 +1056,8 @@ and pr_extend s cl =
 in pr_vernac
 
 let pr_vernac = make_pr_vernac Ppconstrnew.pr_constr Ppconstrnew.pr_lconstr
+
+let pr_vernac = function
+  | VernacSyntax _  | VernacGrammar _ as x -> pr_vernac x
+  | x -> pr_vernac x ++ sep_end ()
 
