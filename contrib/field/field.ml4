@@ -38,7 +38,12 @@ let constr_of_opt a opt =
 (* Table of theories *)
 let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)
 
-let lookup typ = Gmap.find typ !th_tab
+let lookup env typ =
+  try Gmap.find typ !th_tab
+  with Not_found -> 
+    errorlabstrm "field"
+      (str "No field is declared for type" ++ spc() ++
+      Printer.prterm_env env typ)
 
 let _ = 
   let init () = th_tab := Gmap.empty in
@@ -149,7 +154,7 @@ let field g =
     match Hipattern.match_with_equation (pf_concl g) with
       | Some (eq,t::args) when eq = (Coqlib.build_coq_eq_data()).Coqlib.eq -> t
       | _ -> error "The statement is not built from Leibniz' equality" in
-  let th = VConstr (lookup typ) in
+  let th = VConstr (lookup (pf_env g) typ) in
   (interp_tac_gen [(id_of_string "FT",th)] (get_debug ())
     <:tactic< Match Context With [|-(!eq ?1 ?2 ?3)] -> Field_Gen FT>>) g
 
@@ -161,7 +166,7 @@ let guess_theory env evc = function
       not (Reductionops.is_conv env evc t (type_of env evc c1))) tl then
       errorlabstrm "Field:" (str" All the terms must have the same type")
     else
-      lookup t
+      lookup env t
   | [] -> anomaly "Field: must have a non-empty constr list here"
 
 (* Guesses the type and calls Field_Term with the right theory *)
