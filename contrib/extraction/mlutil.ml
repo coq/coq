@@ -1,29 +1,42 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
 
 open Pp
 open Names
 open Term
 open Declarations
+open Libobject
+open Lib
 open Util
 open Miniml
 
-(*s [occurs : int -> ml_ast -> bool]
-    [occurs k M] returns true if (Rel k) occurs in M. *)
+(*s Dummy names. *)
+
+let anonymous = id_of_string "x"
+let prop_name = id_of_string "_"
+
+(*s [occurs k t] returns true if [(Rel k)] occurs in [t]. *)
 
 let rec occurs k = function
-  | MLrel i          -> i=k
-  | MLapp(t,argl)    -> (occurs k t) or (occurs_list k argl)
-  | MLlam(_,t)       -> occurs (k+1) t
+  | MLrel i -> i = k
+  | MLapp(t,argl) -> (occurs k t) || (occurs_list k argl)
+  | MLlam(_,t) -> occurs (k + 1) t
   | MLcons(_,_,argl) -> occurs_list k argl
-  | MLcase(t,pv)     -> 
-      (occurs k t) or
-      (List.exists (fun (k',t') -> occurs (k+k') t')
-      	 (array_map_to_list (fun (_,l,t') -> 
-      	       	           let k' = List.length l in (k',t')) pv))
-  | MLfix(_,l,cl)  -> let k' = List.length l in occurs_list (k+k') cl
-  | _                -> false
+  | MLcase(t,pv) -> 
+      (occurs k t) ||
+      (array_exists
+	 (fun (_,l,t') -> let k' = List.length l in occurs (k + k') t') pv)
+  | MLfix(_,l,cl) -> let k' = List.length l in occurs_list (k + k') cl
+  | _ -> false
 
-and occurs_list k l =
-  List.exists (fun t -> occurs k t) l
+and occurs_list k l = List.exists (occurs k) l
 
 (*s map over ML asts *)
 
@@ -31,7 +44,7 @@ let rec ast_map f = function
   | MLapp (a,al) -> MLapp (f a, List.map f al)
   | MLlam (id,a) -> MLlam (id, f a)
   | MLletin (id,a,b) -> MLletin (id, f a, f b)
-  | MLcons (c,n,al)  -> MLcons (c, n, List.map f al)
+  | MLcons (c,n,al) -> MLcons (c, n, List.map f al)
   | MLcase (a,eqv) -> MLcase (f a, Array.map (ast_map_eqn f) eqv)
   | MLfix (fi,ids,al) -> MLfix (fi, ids, List.map f al)
   | MLcast (a,t) -> MLcast (f a, t)
@@ -40,8 +53,10 @@ let rec ast_map f = function
 
 and ast_map_eqn f (c,ids,a) = (c,ids,f a)
 
-(*s Lifting on terms [ml_lift : int -> ml_ast -> ml_ast]
-    [ml_lift k M] lifts the binding depth of [M] across [k] bindings. *)
+(*s Lifting on terms.
+    [ml_lift k t] lifts the binding depth of [t] across [k] bindings. 
+    We use a generalization [ml_lift k n t] lifting the vars
+    of [t] under [n] bindings. *)
 
 let ml_liftn k n c = 
   let rec liftrec n = function
@@ -64,7 +79,9 @@ let ml_lift k c = ml_liftn k 1 c
 
 let ml_pop c = ml_lift (-1) c
 
-(*s substitution *)
+(*s Substitution. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. 
+    It uses a generalization [subst] substituting [m] for [Rel n]. 
+    Lifting (of one binder) is done at the same time. *)
 
 let rec ml_subst v =
   let rec subst n m = function
@@ -81,8 +98,7 @@ let rec ml_subst v =
 	MLcase (subst n m t,
 		Array.map (fun (id,ids,t) ->
 			     let k = List.length ids in
-      	       		     (id,ids,subst (n+k) (ml_lift k m) t))
-		  pv)
+      	       		     (id,ids,subst (n+k) (ml_lift k m) t)) pv)
     | MLfix (i,ids,cl) -> 
 	MLfix (i,ids, 
 	       let k = List.length ids in
@@ -91,19 +107,19 @@ let rec ml_subst v =
   in 
   subst 1 v
 
-(*s Number of occurences of [Rel 1] in [a] *)
+(*s Number of occurences of [Rel 1] in [a]. *)
 
 let nb_occur a =
   let cpt = ref 0 in
   let rec count n = function
     | MLrel i -> if i = n then incr cpt
-    | MLlam (id,t) -> count (n+1) t
-    | MLletin (id,a,b) -> count n a; count (n+1) b
+    | MLlam (id,t) -> count (n + 1) t
+    | MLletin (id,a,b) -> count n a; count (n + 1) b
     | MLcase (t,pv) ->
 	count n t;
-	Array.iter (fun (_,l,t) -> let k = List.length l in count (n+k) t) pv
+	Array.iter (fun (_,l,t) -> let k = List.length l in count (n + k) t) pv
     | MLfix (_,ids,cl) -> 
-	let k = List.length ids in List.iter (count (n+k)) cl
+	let k = List.length ids in List.iter (count (n + k)) cl
     | MLapp (a,l) -> count n a; List.iter (count n) l
     | MLcons (_,_,l) ->  List.iter (count n) l
     | MLmagic a -> count n a
@@ -136,7 +152,7 @@ let betared_decl = function
  | Dglob (id, a) -> Dglob (id, betared_ast a)
  | d -> d
 
-(*s [uncurrify] uncurrifies the applications of constructors *)
+(*s [uncurrify] uncurrifies the applications of constructors. *)
 
 let rec is_constructor_app = function
   | MLcons _ -> true
@@ -150,9 +166,6 @@ let rec decomp_app = function
       (c,n,args)
   | _ ->
       assert false
-
-let anonymous = Names.id_of_string "x"
-let prop_name = Names.id_of_string "_"
 
 let rec n_lam n a =
   if n = 0 then a else MLlam (anonymous, n_lam (pred n) a)
@@ -181,6 +194,7 @@ let uncurrify_decl = function
  | Dglob (id, a) -> Dglob (id, uncurrify_ast a)
  | d -> d
 
+
 (*s Table for direct ML extractions. *)
 
 module Refset = 
@@ -189,7 +203,9 @@ module Refset =
 module Refmap = 
   Map.Make(struct type t = global_reference let compare = compare end)
 
-let extractions = ref (Refmap.empty, Refset.empty)
+let empty_extractions = (Refmap.empty, Refset.empty)
+
+let extractions = ref empty_extractions
 
 let ml_extractions () = snd !extractions
 
@@ -201,15 +217,23 @@ let is_ml_extraction r = Refset.mem r (snd !extractions)
 
 let find_ml_extraction r = Refmap.find r (fst !extractions)
 
-(*s Registration for rollback. *)
+(*s Registration of operations for rollback. *)
+
+let (in_ml_extraction,_) = 
+  declare_object ("ML extractions",
+		  { cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
+		    load_function = (fun (_,(r,s)) -> add_ml_extraction r s);
+		    open_function = (fun _ -> ());
+		    export_function = (fun x -> Some x) })
+
+(*s Registration of the table for rollback. *)
 
 open Summary
 
 let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !extractions);
 	    unfreeze_function = ((:=) extractions);
-	    init_function = 
-	      (fun () -> extractions := (Refmap.empty, Refset.empty));
+	    init_function = (fun () -> extractions := empty_extractions);
 	    survive_section = true }
 
 (*s Grammar entries. *)
@@ -234,7 +258,7 @@ let reference_of_varg = function
 
 let extract_constant r s = match r with
   | ConstRef _ -> 
-      add_ml_extraction r s
+      add_anonymous_leaf (in_ml_extraction (r,s))
   | _ -> 
       errorlabstrm "extract_constant"
 	[< Printer.pr_global r; 'sPC; 'sTR "is not a constant" >]
@@ -251,13 +275,15 @@ let _ =
 
 let extract_inductive r (id2,l2) = match r with
   | IndRef ((sp,i) as ip) ->
-      add_ml_extraction r id2;
       let mib = Global.lookup_mind sp in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
       if n <> List.length l2 then
 	error "not the right number of constructors";
+      add_anonymous_leaf (in_ml_extraction (r,id2));
       list_iter_i
-	(fun j s -> add_ml_extraction (ConstructRef (ip,succ j)) s) l2
+	(fun j s -> 
+	   add_anonymous_leaf 
+	     (in_ml_extraction (ConstructRef (ip,succ j),s))) l2
   | _ -> 
       errorlabstrm "extract_inductive"
 	[< Printer.pr_global r; 'sPC; 'sTR "is not an inductive type" >]

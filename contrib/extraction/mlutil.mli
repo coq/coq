@@ -1,3 +1,12 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
 
 open Names
 open Term
@@ -9,14 +18,20 @@ open Miniml
 val anonymous : identifier
 val prop_name : identifier
 
-(*s Utility functions over ML terms. *)
+(*s Utility functions over ML terms. [occurs n t] checks whether [Rel
+    n] occurs (freely) in [t]. [ml_lift] is de Bruijn
+    lifting. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. *)
 
 val occurs : int -> ml_ast -> bool
 
 val ml_lift : int -> ml_ast -> ml_ast
 
-(* [ml_subst e t] substitutes [e] for [Rel 1] in [t] *)
 val ml_subst : ml_ast -> ml_ast -> ml_ast
+
+(*s Some transformations of ML terms. [betared_ast] and [betared_ecl] reduce
+    all beta redexes (when the argument does not occur, it is just
+    thrown away; when it occurs exactly once it is substituted; otherwise
+    a let in redex is created for clarity) *)
 
 val betared_ast : ml_ast -> ml_ast
 val betared_decl : ml_decl -> ml_decl
@@ -24,7 +39,7 @@ val betared_decl : ml_decl -> ml_decl
 val uncurrify_ast : ml_ast -> ml_ast
 val uncurrify_decl : ml_decl -> ml_decl
 
-(*s Table for the extraction to ML values. *)
+(*s Table for direct extractions to ML values. *)
 
 module Refset : Set.S with type elt = global_reference
 

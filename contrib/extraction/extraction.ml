@@ -595,7 +595,7 @@ and extract_constr_with_type env ctx c t =
 	     | Tarity -> Emltype (Miniml.Tarity, [], [])
 	     | Tmltype (t, sign, fl) -> Emltype (t, sign, fl))
       | (Info, NotArity) -> 
-	  (match extract_term env ctx c with 
+	  (match extract_term_with_type env ctx c t with 
 	     | Rmlterm a -> Emlterm a
 	     | Rprop -> Eprop)
  	    

@@ -1,3 +1,12 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
 
 open Pp
 open Util
@@ -86,7 +95,10 @@ let extract_env rl =
   List.iter (visit_reference eenv) rl;
   List.rev eenv.to_extract
 
-(*s Registration of vernac commands for extraction. *)
+(*s Extraction in the Coq toplevel. We display the extracted term in
+    Ocaml syntax and we use the Coq printers for globals. The
+    vernacular command is \verb!Extraction! [term]. Whenever [term] is
+    a global, its definition is displayed. *)
 
 module ToplevelParams = struct
   let rename_global r = Names.id_of_string (Global.string_of_global r)
@@ -120,6 +132,10 @@ let _ =
 		      | Eprop -> message "prop")
        | _ -> assert false)
 
+(*s Recursive extraction in the Coq toplevel. The vernacular command is
+    \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
+    to get the saturated environment to extract. *)
+
 let no_such_reference q =
   errorlabstrm "reference_of_varg" 
     [< Nametab.pr_qualid q; 'sTR ": no such reference" >]
@@ -139,6 +155,10 @@ let _ =
        let rl' = decl_of_vargl vl in
        List.iter (fun d -> mSGNL (Pp.pp_decl d)) rl')
 
+(*s Extraction to a file (necessarily recursive). 
+    The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
+    We just call [extract_to_file] on the saturated environment. *)
+
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
@@ -146,7 +166,10 @@ let _ =
 	   (fun () -> Ocaml.extract_to_file f false (decl_of_vargl vl))
        | _ -> assert false)
 
-(*s Extraction of a module. *)
+(*s Extraction of a module. The vernacular command is \verb!Extraction Module!
+    [M]. We build the environment to extract by traversing the segment of
+    module [M]. We just keep constants and inductives, and we remove
+    those having an ML extraction. *)
 
 let extract_module m =
   let seg = Library.module_segment (Some m) in
@@ -159,6 +182,10 @@ let extract_module m =
     | _ -> failwith "caught"
   in
   let rl = Util.map_succeed get_reference seg in
+  let rl = 
+    let mlset = ml_extractions () in 
+    List.filter (fun r -> not (Refset.mem r mlset)) rl 
+  in
   List.map extract_declaration rl
 
 let _ = 
