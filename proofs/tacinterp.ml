@@ -419,6 +419,8 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt) ast =
     | Node(_,"COMMAND",[c]) -> com_interp (evc,env,lfun,lmatch,goalopt) c
     | Node(_,"CASTEDCOMMAND",[c]) ->
       cast_com_interp (evc,env,lfun,lmatch,goalopt) c
+    | Node(_,"CASTEDOPENCOMMAND",[c]) ->
+      cast_opencom_interp (evc,env,lfun,lmatch,goalopt) c
     | Node(_,"BINDINGS",astl) ->
       VArg (Cbindings (List.map (bind_interp evc env lfun lmatch goalopt)
         astl))
@@ -678,11 +680,13 @@ and com_interp (evc,env,lfun,lmatch,goalopt) = function
   | Node(_,"EVAL",[c;rtc]) ->
     let redexp = unredexp (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
       rtc)) in
-    VArg (Constr ((reduction_of_redexp redexp) env evc (interp_constr1 evc env
-      (constr_list goalopt lfun) lmatch c)))
+    VArg (Constr ((reduction_of_redexp redexp) env evc
+		    (interp_constr_gen evc env (constr_list goalopt lfun)
+		       lmatch c None)))
   | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
     (try
-      let ic = interp_constr1 evc env (constr_list goalopt lfun) lmatch c 
+      let ic =
+	interp_constr_gen evc env (constr_list goalopt lfun) lmatch c None
       and ctxt = constr_of_Constr_context (unvarg (List.assoc s lfun)) in
       VArg (Constr (subst_meta [-1,ic] ctxt))
      with
@@ -690,10 +694,11 @@ and com_interp (evc,env,lfun,lmatch,goalopt) = function
       errorlabstrm "com_interp" [<'sTR "Unbound context identifier";
         print_ast ast>])
   | c ->
-    try
-      VArg (Constr (interp_constr1 evc env (constr_list goalopt lfun) lmatch
-        c))
-    with e when Logic.catchable_exception e -> VArg (Command c)
+(*    try*)
+      VArg (Constr
+	      (interp_constr_gen evc env (constr_list goalopt lfun) lmatch
+		 c None))
+(*    with e when Logic.catchable_exception e -> VArg (Command c)*)
 
 (* Interprets a CASTEDCOMMAND expression *)
 and cast_com_interp (evc,env,lfun,lmatch,goalopt) com = match goalopt with
@@ -702,11 +707,12 @@ and cast_com_interp (evc,env,lfun,lmatch,goalopt) com = match goalopt with
     | Node(_,"EVAL",[c;rtc]) ->
       let redexp = unredexp (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
         rtc)) in
-      VArg (Constr ((reduction_of_redexp redexp) env evc (interp_casted_constr1
-        evc env (constr_list goalopt lfun) lmatch c (pf_concl gl))))
+      VArg (Constr ((reduction_of_redexp redexp) env evc (interp_constr_gen
+        evc env (constr_list goalopt lfun) lmatch c (Some (pf_concl gl)))))
     | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
       (try
-        let ic = interp_constr1 evc env (constr_list goalopt lfun) lmatch c
+        let ic =
+	  interp_constr_gen evc env (constr_list goalopt lfun) lmatch c None
         and ctxt = constr_of_Constr_context (unvarg (List.assoc s lfun)) in
         begin
           wARNING [<'sTR
@@ -715,13 +721,45 @@ and cast_com_interp (evc,env,lfun,lmatch,goalopt) com = match goalopt with
         end
        with
       |	Not_found ->
-        errorlabstrm "com_interp" [<'sTR "Unbound context identifier";
+        errorlabstrm "cast_com_interp" [<'sTR "Unbound context identifier";
           print_ast ast>])
     | c ->
-      try
-        VArg (Constr (interp_casted_constr1 evc env (constr_list goalopt lfun)
-          lmatch c (pf_concl gl)))
-      with e when Logic.catchable_exception e -> VArg (Command c))
+(*      try*)
+        VArg (Constr (interp_constr_gen evc env (constr_list goalopt lfun)
+          lmatch c (Some (pf_concl gl))))
+(*      with e when Logic.catchable_exception e -> VArg (Command c)*) )
+  | None ->
+    errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
+
+(* Interprets a CASTEDOPENCOMMAND expression *)
+and cast_opencom_interp (evc,env,lfun,lmatch,goalopt) com = match goalopt with
+  | Some gl ->
+    (match com with
+    | Node(_,"EVAL",[c;rtc]) ->
+      let redexp = unredexp (unvarg (val_interp (evc,env,lfun,lmatch,goalopt)
+        rtc)) in
+      VArg (Constr ((reduction_of_redexp redexp) env evc (interp_constr_gen
+        evc env (constr_list goalopt lfun) lmatch c (Some (pf_concl gl)))))
+    | Node(_,"CONTEXT",[Nvar (_,s);c]) as ast ->
+      (try
+        let ic =
+	  interp_constr_gen evc env (constr_list goalopt lfun) lmatch c None
+        and ctxt = constr_of_Constr_context (unvarg (List.assoc s lfun)) in
+        begin
+          wARNING [<'sTR
+            "Cannot pre-constrain the context expression with goal">];
+          VArg (Constr (subst_meta [-1,ic] ctxt))
+        end
+       with
+      |	Not_found ->
+        errorlabstrm "cast_opencom_interp" [<'sTR "Unbound context identifier";
+          print_ast ast>])
+    | c ->
+(*      try*)
+        VArg
+	  (OpenConstr (interp_openconstr_gen evc env (constr_list goalopt lfun)
+			 lmatch c (Some (pf_concl gl))))
+(*      with e when Logic.catchable_exception e -> VArg (Command c)*) )
   | None ->
     errorlabstrm "val_interp" [<'sTR "Cannot cast a constr without goal">]
 

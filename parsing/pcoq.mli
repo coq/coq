@@ -97,6 +97,7 @@ module Tactic :
     val autoarg_excluding : Coqast.t Gram.Entry.e
     val autoarg_usingTDB : Coqast.t Gram.Entry.e
     val binding_list : Coqast.t Gram.Entry.e
+    val castedopenconstrarg : Coqast.t Gram.Entry.e
     val castedconstrarg : Coqast.t Gram.Entry.e
     val clausearg : Coqast.t Gram.Entry.e
     val cofixdecl : Coqast.t list Gram.Entry.e

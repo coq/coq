@@ -272,6 +272,7 @@ module Tactic =
       Hashtbl.add utactic s (ListAst e); e
     
     let binding_list = gec "binding_list"
+    let castedopenconstrarg = gec "castedopenconstrarg"
     let castedconstrarg = gec "castedconstrarg"
     let com_binding_list = gec_list "com_binding_list"
     let constrarg = gec "constrarg"
