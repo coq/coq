@@ -71,6 +71,7 @@ val whd_betaiotazeta : local_reduction_function
 val whd_betadeltaiota :  contextual_reduction_function
 val whd_betadeltaiota_nolet :  contextual_reduction_function
 val whd_betaetalet : local_reduction_function
+val whd_betalet : local_reduction_function
 
 val whd_beta_stack : local_stack_reduction_function
 val whd_betaiota_stack : local_stack_reduction_function
@@ -78,6 +79,7 @@ val whd_betaiotazeta_stack : local_stack_reduction_function
 val whd_betadeltaiota_stack :  contextual_stack_reduction_function
 val whd_betadeltaiota_nolet_stack :  contextual_stack_reduction_function
 val whd_betaetalet_stack : local_stack_reduction_function
+val whd_betalet_stack : local_stack_reduction_function
 
 val whd_state : local_state_reduction_function
 val whd_beta_state : local_state_reduction_function
@@ -86,6 +88,7 @@ val whd_betaiotazeta_state : local_state_reduction_function
 val whd_betadeltaiota_state :  contextual_state_reduction_function
 val whd_betadeltaiota_nolet_state :  contextual_state_reduction_function
 val whd_betaetalet_state : local_state_reduction_function
+val whd_betalet_state : local_state_reduction_function
 
 (*s Head normal forms *)
 
@@ -168,23 +171,6 @@ val pb_equal : conv_pb -> conv_pb
 
 val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
 val base_sort_cmp : conv_pb -> sorts -> sorts -> bool
-
-type  conversion_function = 
-    env ->  evar_map -> constr -> constr -> constraints
-
-(* [fconv] has 2 instances: [conv = fconv CONV] i.e. conversion test, and
-   [conv_leq = fconv CONV_LEQ] i.e. cumulativity test. *)
-
-val conv :  conversion_function
-val conv_leq :  conversion_function
-
-val conv_forall2 : 
-   conversion_function -> env ->  evar_map -> constr array 
-    -> constr array -> constraints
-
-val conv_forall2_i : 
-  (int ->  conversion_function) -> env ->  evar_map
-    -> constr array -> constr array -> constraints
 
 val is_conv : env ->  evar_map -> constr -> constr -> bool
 val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
