@@ -71,7 +71,7 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 let uri_of_path sp tag =
  let module N = Names in
   let ext_of_sp sp = ext_of_tag tag in
-   "cic:/Coq/" ^ (String.concat "/" (N.wd_of_sp sp)) ^ "." ^ (ext_of_sp sp)
+   "cic:/" ^ (String.concat "/" (N.wd_of_sp sp)) ^ "." ^ (ext_of_sp sp)
 ;;
 
 let string_of_sort =
@@ -720,7 +720,7 @@ let mkfilename dn sp ext =
    match dn with
       None         -> None
     | Some basedir ->
-       Some (basedir ^ join_dirs basedir ("Coq"::(N.wd_of_sp sp)) ^
+       Some (basedir ^ join_dirs basedir (N.wd_of_sp sp) ^
         "." ^ ext)
 ;;
 
