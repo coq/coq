@@ -56,6 +56,8 @@ type maps = evar_map * meta_map
  * Defines evar [sp] with term [c] in evar context [evd].
  * [c] is typed in the context of [sp] and evar context [evd] with
  * [sp] removed to avoid circular definitions.
+ * No unification is performed in order to assert that [c] has the
+ * correct type.
  *)
 let w_Define sp c evd =
   let sigma = evars_of evd in
@@ -212,15 +214,7 @@ let is_mimick_head f =
   match kind_of_term f with
       (Const _|Var _|Rel _|Construct _|Ind _) -> true
     | _ -> false
-
-let mimick_evar hdc nargs sp evd =
-  let ev = Evd.map (evars_of evd) sp in
-  let env = Global.env_of_context ev.evar_hyps in
-  let (sigma',c) = applyHead env (evars_of evd) nargs hdc in
-  evars_reset_evd sigma' evd;
-  w_Define sp c evd
-  
-
+ 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
@@ -259,7 +253,7 @@ let w_merge env with_types metas evars (sigma,metamap) =
                         w_Define evn rhs' evd; 
 		        w_merge_rec metas t
 		      with ex when precatchable_exception ex ->
-                        mimick_evar f (Array.length cl) evn evd;
+                        mimick_evar f (Array.length cl) evn;
 			w_merge_rec metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
@@ -288,7 +282,20 @@ let w_merge env with_types metas evars (sigma,metamap) =
 		with e when precatchable_exception e -> ());
               mmap := meta_assign mv n !mmap;
 	      w_merge_rec t []
-            end in
+            end
+  and mimick_evar hdc nargs sp =
+    let ev = Evd.map (evars_of evd) sp in
+    let sp_env = Global.env_of_context ev.evar_hyps in
+    let (sigma', c) = applyHead sp_env (evars_of evd) nargs hdc in
+    evars_reset_evd sigma' evd;
+    let (mc,ec) =
+      unify_0 sp_env (evars_of evd) CUMUL
+        (Retyping.get_type_of sp_env (evars_of evd) c) ev.evar_concl in
+    w_merge_rec mc ec;
+    if sigma'== (evars_of evd)
+    then w_Define sp c evd
+    else w_Define sp (Evarutil.nf_evar (evars_of evd) c) evd in
+
   (* merge constraints *)
   w_merge_rec metas evars;
   (if with_types then
