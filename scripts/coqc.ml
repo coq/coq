@@ -125,7 +125,7 @@ let parse_args () =
 	usage ()
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
     | ("-libdir"|"-I"|"-include"|"-outputstate"
-      |"-inputstate"|"-is"|"-load-vernac-source"|"-load-vernac-object"
+      |"-inputstate"|"-is"|"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
       |"-init-file"|"-dump-glob" as o) :: rem ->
 	begin
