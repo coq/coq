@@ -343,13 +343,16 @@ let parse_226_tail tk = parser
       (* utf8 letter-like unicode 2100-214F *)
       len = ident_tail (store (store (store 0 '\226') c2) c3) >] ->
       TokIdent (get_buff len) 
-  | [< ' ('\134'..'\143' | '\152'..'\155' 
-         | '\164'..'\165' | '\168'..'\171' as c2); 'c3;
+  | [< ' ('\134'..'\143' | '\152'..'\155' | '\159' 
+         | '\164'..'\171' as c2); 'c3;
       (* utf8 arrows A unicode 2190-21FF *)
       (* utf8 mathematical operators unicode 2200-22FF *)
       (* utf8 miscellaneous technical unicode 2300-23FF *)
       (* utf8 miscellaneous symbols unicode 2600-26FF *)
-      (* utf8 arrows B unicode 2900-297F *)
+      (* utf8 Miscellaneous Mathematical Symbols-A unicode 27C0-27DF *)
+      (* utf8 Supplemental Arrows-A unicode 27E0-27FF *)
+      (* utf8 Supplemental Arrows-B unicode 2900-297F *)
+      (* utf8 Miscellaneous Mathematical Symbols-B unicode 2980-29FF *)
       (* utf8 mathematical operators unicode 2A00-2AFF *)
       t = special (progress_special c3 (progress_special c2 
 	(progress_special '\226' tk))) >] ->
