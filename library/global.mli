@@ -30,8 +30,9 @@ val universes : unit -> universes
 val context : unit -> context
 val named_context : unit -> named_context
 
-val push_named_assum : identifier * constr -> unit
-val push_named_def : identifier * constr -> unit
+(* This has also a side-effect to push the declaration in the environment*)
+val push_named_assum : identifier * constr -> constr option * types*constraints
+val push_named_def : identifier * constr -> constr option * types * constraints
 
 val add_parameter : section_path -> constr -> local_names -> unit
 val add_constant : section_path -> constant_entry -> local_names -> unit

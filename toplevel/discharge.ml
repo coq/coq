@@ -171,6 +171,7 @@ type discharge_operation =
   | Objdef of constant_path
   | Coercion of coercion_entry
   | Require of module_reference
+  | Constraints of Univ.constraints
 
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
@@ -180,13 +181,13 @@ let process_object oldenv dir sec_sp
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
-	let ((id,c,t),stre,sticky) = get_variable sp in
+	let ((id,c,t),cst,stre,sticky) = get_variable_with_constraints sp in
 	(* VARIABLE means local (entry Variable/Hypothesis/Local and are *)
 	(* always discharged *)
 (*
  	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
 *)
-	  (ops,id::ids_to_discard,work_alist)
+	  (Constraints cst :: ops, id :: ids_to_discard, work_alist)
 (*
 	else
 	  let imp = is_implicit_var sp in
@@ -302,6 +303,7 @@ let process_operation = function
       begin try Recordobj.objdef_declare (ConstRef newsp) with _ -> () end
   | Coercion y -> add_new_coercion y
   | Require y -> reload_module y
+  | Constraints y -> Global.add_constraints y
 
 let catch_not_found f x =
   try f x

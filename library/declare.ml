@@ -57,9 +57,14 @@ type sticky = bool
 
 type variable_declaration = section_variable_entry * strength * sticky
 
+type checked_section_variable = constr option * types * Univ.constraints
+
+type checked_variable_declaration =
+    checked_section_variable * strength * sticky
+
 let vartab =
   ref ((Spmap.empty, []) :
-       (identifier * variable_declaration) Spmap.t * section_path list)
+       (identifier * checked_variable_declaration) Spmap.t * section_path list)
 
 let current_section_context () =
   List.map (fun sp -> (basename sp, sp)) (snd !vartab)
@@ -70,7 +75,7 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.init_function = (fun () -> vartab := (Spmap.empty, []));
 	    Summary.survive_section = false }
 
-let cache_variable (sp,(id,(d,_,_) as vd)) =
+let cache_variable (sp,(id,(d,str,sticky))) =
 (*
   if Nametab.exists_cci sp then
 *)
@@ -78,12 +83,12 @@ let cache_variable (sp,(id,(d,_,_) as vd)) =
   if List.mem_assoc id (current_section_context ()) then
     errorlabstrm "cache_variable"
       [< pr_id (basename sp); 'sTR " already exists" >];
-  begin match d with (* Fails if not well-typed *)
+  let vd = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
-  end;
+  in
   Nametab.push_short_name sp (VarRef sp);
-  vartab := let (m,l) = !vartab in (Spmap.add sp vd m, sp::l)
+  vartab := let (m,l) = !vartab in (Spmap.add sp (id,(vd,str,sticky)) m, sp::l)
 
 let (in_variable, out_variable) =
   let od = {
@@ -293,9 +298,14 @@ let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
 
 let get_variable sp = 
-  let (id,(_,str,sticky)) = Spmap.find sp (fst !vartab) in
-  let (c,ty) = Global.lookup_named id in
+  let (id,((c,ty,cst),str,sticky)) = Spmap.find sp (fst !vartab) in
+(*  let (c,ty) = Global.lookup_named id in*)
   ((id,c,ty),str,sticky)
+
+let get_variable_with_constraints sp = 
+  let (id,((c,ty,cst),str,sticky)) = Spmap.find sp (fst !vartab) in
+(*  let (c,ty) = Global.lookup_named id in*)
+  ((id,c,ty),cst,str,sticky)
 
 let variable_strength sp =
   let _,(_,str,_) = Spmap.find sp (fst !vartab) in str

@@ -78,6 +78,8 @@ val constant_or_parameter_strength : constant_path -> strength
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : variable_path -> named_declaration * strength * sticky
+val get_variable_with_constraints : 
+  variable_path -> named_declaration * Univ.constraints * strength * sticky
 val variable_strength : variable_path -> strength
 val find_section_variable : identifier -> variable_path
 val last_section_hyps : dir_path -> identifier list

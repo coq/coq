@@ -39,8 +39,13 @@ let universes () = universes !global_env
 let context () = context !global_env
 let named_context () = named_context !global_env
 
-let push_named_def idc = global_env := push_named_def idc !global_env
-let push_named_assum idc = global_env := push_named_assum idc !global_env
+let push_named_def idc =
+  let d, env = check_and_push_named_def idc !global_env in
+  global_env := env; d
+
+let push_named_assum idc =
+  let d, env = check_and_push_named_assum idc !global_env in
+  global_env := env; d
 
 let add_parameter sp c l = global_env := add_parameter sp c l !global_env
 let add_constant sp ce l = global_env := add_constant sp ce l !global_env

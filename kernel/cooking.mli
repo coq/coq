@@ -12,6 +12,7 @@ open Names
 open Term
 open Declarations
 open Environ
+open Univ
 
 (*s Cooking the constants. *)
 
@@ -32,7 +33,7 @@ type recipe = {
   d_abstract : identifier list;
   d_modlist : work_list }
 
-val cook_constant : env -> recipe -> constr option * constr
+val cook_constant : env -> recipe -> constr option * constr * constraints
 
 (*s Utility functions used in module [Discharge]. *)
 
