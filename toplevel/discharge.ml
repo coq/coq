@@ -201,7 +201,7 @@ let expmod_constr oldenv modlist c =
     | IsCast (c,t) -> mkCast (f c,f t)
     | _ -> f c 
   in
-  let c' = modify_opers expfun (fun a b -> mkAppL (a, [|b|])) modlist c in
+  let c' = modify_opers expfun (fun a b -> mkApp (a, [|b|])) modlist c in
   match kind_of_term c' with
     | IsCast (val_0,typ) -> mkCast (simpfun val_0,simpfun typ)
     | _ -> simpfun c'

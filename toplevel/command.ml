@@ -223,7 +223,7 @@ let build_recursive lnameargsardef =
     with e ->
       States.unfreeze fs; raise e
   in 
-  let recdef = 
+  let recdef = (* TODO: remplacer mkCast par un appel à interp_casted_constr *)
     try 
       List.map (fun (_,lparams,arityc,def) -> 
                   interp_constr sigma rec_sign 

@@ -173,12 +173,12 @@ let add_theory want_ring want_abstract a aplus amult aone azero aopp aeq t cset 
   let env = Global.env () in
   if (want_ring & 
       not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-	     (mkAppL (Lazy.force coq_Ring_Theory, [| a; aplus; amult;
+	     (mkApp (Lazy.force coq_Ring_Theory, [| a; aplus; amult;
 			aone; azero; aopp; aeq |])))) then
     errorlabstrm "addring" [< 'sTR "Not a valid Ring theory" >];
   if (not want_ring &
       not (is_conv  env Evd.empty (Typing.type_of env Evd.empty t) 
-	     (mkAppL (Lazy.force coq_Semi_Ring_Theory, [| a; 
+	     (mkApp (Lazy.force coq_Semi_Ring_Theory, [| a; 
 			aplus; amult; aone; azero; aeq |])))) then 
     errorlabstrm "addring" [< 'sTR "Not a valid Semi-Ring theory" >];
   Lib.add_anonymous_leaf
@@ -300,9 +300,9 @@ let build_spolynom gl th lc =
      and builds the varmap with side-effects *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsAppL (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | IsApp (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_SPplus; th.th_a; aux c1; aux c2 |]
-      | IsAppL (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | IsApp (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
 	  mkAppA [| Lazy.force coq_SPmult; th.th_a; aux c1; aux c2 |]
       | _ when closed_under th.th_closed c ->
 	  mkAppA [| Lazy.force coq_SPconst; th.th_a; c |]
@@ -354,17 +354,17 @@ let build_polynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_Pplus; th.th_a; aux c1; aux c2 |]
-      | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
 	  mkAppA [| Lazy.force coq_Pmult; th.th_a; aux c1; aux c2 |]
       (* The special case of Zminus *)
-      | IsAppL (binop, [|c1; c2|])
+      | IsApp (binop, [|c1; c2|])
 	  when pf_conv_x gl c (mkAppA [| th.th_plus; c1; 
 	                                 mkAppA [| th.th_opp; c2 |] |]) ->
 	    mkAppA [| Lazy.force coq_Pplus; th.th_a; aux c1;
 	              mkAppA [| Lazy.force coq_Popp; th.th_a; aux c2 |] |]
-      | IsAppL (unop, [|c1|]) when pf_conv_x gl unop th.th_opp ->
+      | IsApp (unop, [|c1|]) when pf_conv_x gl unop th.th_opp ->
 	  mkAppA [| Lazy.force coq_Popp; th.th_a; aux c1 |]
       | _ when closed_under th.th_closed c ->
 	  mkAppA [| Lazy.force coq_Pconst; th.th_a; c |]
@@ -419,9 +419,9 @@ let build_aspolynom gl th lc =
      and builds the varmap with side-effects *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_ASPplus; aux c1; aux c2 |]
-      | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
 	  mkAppA [| Lazy.force coq_ASPmult; aux c1; aux c2 |]
       | _ when pf_conv_x gl c th.th_zero -> Lazy.force coq_ASP0
       | _ when pf_conv_x gl c th.th_one -> Lazy.force coq_ASP1
@@ -470,17 +470,17 @@ let build_apolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
 	  mkAppA [| Lazy.force coq_APplus; aux c1; aux c2 |]
-      | IsAppL (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
 	  mkAppA [| Lazy.force coq_APmult; aux c1; aux c2 |]
       (* The special case of Zminus *)
-      | IsAppL (binop, [|c1; c2|]) 
+      | IsApp (binop, [|c1; c2|]) 
 	  when pf_conv_x gl c (mkAppA [| th.th_plus; c1; 
 	                                 mkAppA [| th.th_opp; c2 |] |]) ->
 	    mkAppA [| Lazy.force coq_APplus; aux c1;
 	              mkAppA [| Lazy.force coq_APopp; aux c2 |] |]
-      | IsAppL (unop, [|c1|]) when pf_conv_x gl unop th.th_opp ->
+      | IsApp (unop, [|c1|]) when pf_conv_x gl unop th.th_opp ->
 	  mkAppA [| Lazy.force coq_APopp; aux c1 |]
       | _ when pf_conv_x gl c th.th_zero -> Lazy.force coq_AP0
       | _ when pf_conv_x gl c th.th_one -> Lazy.force coq_AP1

@@ -90,7 +90,7 @@ let constr_display csr =
   | IsLetIn (na,b,t,c) ->
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
-  | IsAppL (c,l) -> "App("^(term_display c)^","^(array_display l)^")"
+  | IsApp (c,l) -> "App("^(term_display c)^","^(array_display l)^")"
   | IsEvar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
   | IsConst (c,l) -> "Const("^(string_of_path c)^","^(array_display l)^")"
   | IsMutInd ((sp,i),l) ->

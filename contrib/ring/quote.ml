@@ -189,7 +189,7 @@ let compute_lhs typ i nargsi =
   match kind_of_term typ with
     | IsMutInd((sp,0),args) -> 
         let argsi = Array.init nargsi (fun j -> mkMeta (nargsi - j)) in
-        mkAppL (mkMutConstruct (((sp,0),i+1), args), argsi)
+        mkApp (mkMutConstruct (((sp,0),i+1), args), argsi)
     | _ -> i_can't_do_that ()
 
 (*s This function builds the pattern from the RHS. Recursive calls are
@@ -198,10 +198,10 @@ let compute_lhs typ i nargsi =
 let compute_rhs bodyi index_of_f =
   let rec aux c = 
     match decomp_term c with
-      | IsAppL (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
+      | IsApp (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
           let i = destRel (array_last args) in mkMeta i
-      | IsAppL (f,args) ->
-          mkAppL (f, Array.map aux args)
+      | IsApp (f,args) ->
+          mkApp (f, Array.map aux args)
       | IsCast (c,t) -> aux c 
       | _ -> c
   in
@@ -282,7 +282,7 @@ let rec closed_under cset t =
   (ConstrSet.mem t cset) or
   (match (kind_of_term t) with
      | IsCast(c,_) -> closed_under cset c  
-     | IsAppL(f,l) -> closed_under cset f & array_for_all (closed_under cset) l
+     | IsApp(f,l) -> closed_under cset f & array_for_all (closed_under cset) l
      | _ -> false)
     
 (*s [btree_of_array [| c1; c2; c3; c4; c5 |]] builds the complete
@@ -303,13 +303,13 @@ let btree_of_array a ty =
   let size_of_a = Array.length a in
   let semi_size_of_a = size_of_a lsr 1 in
   let node = Lazy.force coq_Node_vm  
-  and empty = mkAppL (Lazy.force coq_Empty_vm, [| ty |]) in
+  and empty = mkApp (Lazy.force coq_Empty_vm, [| ty |]) in
   let rec aux n =
     if n > size_of_a 
     then empty
     else if  n > semi_size_of_a 
-    then mkAppL (node, [| ty; a.(n-1); empty; empty |])
-    else mkAppL (node, [| ty; a.(n-1); aux (2*n); aux (2*n+1) |])
+    then mkApp (node, [| ty; a.(n-1); empty; empty |])
+    else mkApp (node, [| ty; a.(n-1); aux (2*n); aux (2*n+1) |])
   in 
   aux 1
 
@@ -326,7 +326,7 @@ let path_of_int n =
     else (n mod 2 = 1)::(digits_of_int (n lsr 1))
   in
   List.fold_right 
-    (fun b c -> mkAppL ((if b then Lazy.force coq_Right_idx 
+    (fun b c -> mkApp ((if b then Lazy.force coq_Right_idx 
                          else Lazy.force coq_Left_idx),
                          [| c |]))
     (List.rev (digits_of_int n))
@@ -343,7 +343,7 @@ let path_of_int n =
 let rec subterm gl (t : constr) (t' : constr) = 
   (pf_conv_x gl t t') or
   (match (kind_of_term t) with 
-     | IsAppL (f,args) -> array_exists (fun t -> subterm gl t t') args
+     | IsApp (f,args) -> array_exists (fun t -> subterm gl t t') args
      | IsCast(t,_) -> (subterm gl t t')
      | _ -> false)
            
@@ -428,8 +428,8 @@ let quote f lid gl =
     | _ -> assert false
   in
   match ivs.variable_lhs with
-    | None -> Tactics.convert_concl (mkAppL (f, [| p |])) gl
-    | Some _ -> Tactics.convert_concl (mkAppL (f, [| vm; p |])) gl
+    | None -> Tactics.convert_concl (mkApp (f, [| p |])) gl
+    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) gl
 
 (*i*)
 let dyn_quote = function
