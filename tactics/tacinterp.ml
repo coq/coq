@@ -1142,15 +1142,19 @@ and tacarg_interp ist = function
   | Integer n -> VInteger n
   | ConstrMayEval c -> VConstr (constr_interp_may_eval ist c)
   | MetaNumArg (_,n) -> VConstr (List.assoc n ist.lmatch)
-  | MetaIdArg (loc,_) -> error_syntactic_metavariables_not_allowed loc
-(*
-  | Tacexp t -> VArg (Tacexp ((*tactic_interp ist t,*)t))
-*)
+  | MetaIdArg (loc,id) ->
+      (try (* $id can occur in Grammar tactic... *)
+        (unrec (List.assoc (id_of_string id) ist.lfun))
+      with
+        | Not_found -> error_syntactic_metavariables_not_allowed loc)
   | TacCall (loc,f,l) ->
       let fv = tacarg_interp ist f
       and largs = List.map (tacarg_interp ist) l in
       app_interp ist fv largs loc
   | Tacexp t -> val_interp ist t
+(*
+  | Tacexp t -> VArg (Tacexp ((*tactic_interp ist t,*)t))
+*)
 (*
     | Node(loc,s,l) ->
         let fv = val_interp ist (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))

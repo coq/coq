@@ -369,20 +369,6 @@ Intro; Unfold sin; Replace ``(Rsqr (-x))`` with (Rsqr x); [Idtac | Apply Rsqr_ne
 Case (exist_sin (Rsqr x)); Intros; Ring.
 Qed.
 
-(**********)
-Axiom sin_plus : (x,y:R) ``(sin (x+y))==(sin x)*(cos y)+(cos x)*(sin y)``.
-Axiom  cos_plus : (x,y:R) ``(cos (x+y))==(cos x)*(cos y)-(sin x)*(sin y)``.
-
-Lemma sin_minus : (x,y:R) ``(sin (x-y))==(sin x)*(cos y)-(cos x)*(sin y)``.
-Intros; Unfold Rminus; Rewrite sin_plus.
-Rewrite <- cos_paire; Rewrite sin_impaire; Ring.
-Qed.
- 
-Lemma cos_minus : (x,y:R) ``(cos (x-y))==(cos x)*(cos y)+(sin x)*(sin y)``.
-Intros; Unfold Rminus; Rewrite cos_plus.
-Rewrite <- cos_paire; Rewrite sin_impaire; Ring.
-Qed.
-
 Lemma sin_0 : ``(sin 0)==0``.
 Unfold sin; Case (exist_sin (Rsqr R0)).
 Intros; Ring.
@@ -415,5 +401,3 @@ Apply H.
 Exact (projT2 ? ? exist_cos0).
 Assert H := (projT2 ? ? (exist_cos (Rsqr R0))); Unfold cos; Pattern 1 R0; Replace R0 with (Rsqr R0); [Exact H | Apply Rsqr_O].
 Qed.
-
-Axiom sin_PI2 : ``(sin (PI/2))==1``.

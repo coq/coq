@@ -15,22 +15,22 @@
 
 (** A boolean is either [true] or [false], and this is decidable *)
 
-Lemma sumbool_of_bool : (b:bool) {b=true}+{b=false}.
+Definition sumbool_of_bool : (b:bool) {b=true}+{b=false}.
 Proof.
   Induction b; Auto.
-Qed.
+Defined.
 
 Hints Resolve sumbool_of_bool : bool.
 
-Lemma bool_eq_rec : (b:bool)(P:bool->Set)
+Definition bool_eq_rec : (b:bool)(P:bool->Set)
                     ((b=true)->(P true))->((b=false)->(P false))->(P b).
 Induction b; Auto.
-Qed.
+Defined.
 
-Lemma bool_eq_ind : (b:bool)(P:bool->Prop)
+Definition bool_eq_ind : (b:bool)(P:bool->Prop)
                     ((b=true)->(P true))->((b=false)->(P false))->(P b).
 Induction b; Auto.
-Qed.
+Defined.
 
 
 (*i pourquoi ce machin-la est dans BOOL et pas dans LOGIC ?  Papageno i*)
@@ -44,20 +44,20 @@ Variables A,B,C,D : Prop.
 Hypothesis H1 : {A}+{B}.
 Hypothesis H2 : {C}+{D}.
 
-Lemma sumbool_and : {A/\C}+{B\/D}.
+Definition sumbool_and : {A/\C}+{B\/D}.
 Proof.
 Case H1; Case H2; Auto.
-Qed.
+Defined.
 
-Lemma sumbool_or : {A\/C}+{B/\D}.
+Definition sumbool_or : {A\/C}+{B/\D}.
 Proof.
 Case H1; Case H2; Auto.
-Qed.
+Defined.
 
-Lemma sumbool_not : {B}+{A}.
+Definition sumbool_not : {B}+{A}.
 Proof.
 Case H1; Auto.
-Qed.
+Defined.
 
 End connectives.
 

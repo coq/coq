@@ -171,39 +171,44 @@ Qed.
 (*********************************************************************)
 
 Parameter sqrt : R -> R.
+Axiom sqrt_def_ax : (x:R) ``0<=x`` -> ``0<=(sqrt x)``/\``(sqrt x)*(sqrt x)==x``.
 
-Axiom foo : (x:R) ``0<=x`` -> ``0<=(sqrt x)``.
+Lemma sqrt_positivity : (x:R) ``0<=x`` -> ``0<=(sqrt x)``.
+Intros; Elim (sqrt_def_ax ? H); Intros; Assumption.
+Qed.
 
-Axiom bar : (x:R) ``0<=x`` -> ``(sqrt x)*(sqrt x)==x``.
+Lemma sqrt_sqrt : (x:R) ``0<=x`` -> ``(sqrt x)*(sqrt x)==x``.
+Intros; Elim (sqrt_def_ax ? H); Intros; Assumption.
+Qed.
 
 Lemma sqrt_0 : ``(sqrt 0)==0``.
-Apply Rsqr_eq_0; Unfold Rsqr; Apply bar; Right; Reflexivity. 
+Apply Rsqr_eq_0; Unfold Rsqr; Apply sqrt_sqrt; Right; Reflexivity. 
 Qed.
 
 Lemma sqrt_1 : ``(sqrt 1)==1``.
-Apply (Rsqr_inj (sqrt R1) R1); [Apply foo; Left | Left | Unfold Rsqr; Rewrite -> bar; [Ring | Left]]; Apply Rlt_R0_R1.
+Apply (Rsqr_inj (sqrt R1) R1); [Apply sqrt_positivity; Left | Left | Unfold Rsqr; Rewrite -> sqrt_sqrt; [Ring | Left]]; Apply Rlt_R0_R1.
 Qed.
 
 Lemma sqrt_eq_0 : (x:R) ``0<=x``->``(sqrt x)==0``->``x==0``.
 Intros; Cut ``(Rsqr (sqrt x))==0``.
-Intro; Unfold Rsqr in H1; Rewrite -> bar in H1; Assumption.
+Intro; Unfold Rsqr in H1; Rewrite -> sqrt_sqrt in H1; Assumption.
 Rewrite H0; Apply Rsqr_O.
 Qed.
 
 Lemma sqrt_lem_0 : (x,y:R) ``0<=x``->``0<=y``->(sqrt x)==y->``y*y==x``.
-Intros; Rewrite <- H1; Apply (bar x H).
+Intros; Rewrite <- H1; Apply (sqrt_sqrt x H).
 Qed.
 
 Lemma sqtr_lem_1 : (x,y:R) ``0<=x``->``0<=y``->``y*y==x``->(sqrt x)==y.
-Intros; Apply Rsqr_inj; [Apply (foo x H) | Assumption | Unfold Rsqr; Rewrite -> H1; Apply (bar x H)].
+Intros; Apply Rsqr_inj; [Apply (sqrt_positivity x H) | Assumption | Unfold Rsqr; Rewrite -> H1; Apply (sqrt_sqrt x H)].
 Qed.
 
 Lemma sqrt_def : (x:R) ``0<=x``->``(sqrt x)*(sqrt x)==x``.
-Intros; Apply (bar x H).
+Intros; Apply (sqrt_sqrt x H).
 Qed.
 
 Lemma sqrt_square : (x:R) ``0<=x``->``(sqrt (x*x))==x``.
-Intros; Apply (Rsqr_inj (sqrt (Rsqr x)) x (foo (Rsqr x) (pos_Rsqr x)) H); Unfold Rsqr; Apply (bar (Rsqr x) (pos_Rsqr x)).
+Intros; Apply (Rsqr_inj (sqrt (Rsqr x)) x (sqrt_positivity (Rsqr x) (pos_Rsqr x)) H); Unfold Rsqr; Apply (sqrt_sqrt (Rsqr x) (pos_Rsqr x)).
 Qed.
 
 Lemma sqrt_Rsqr : (x:R) ``0<=x``->``(sqrt (Rsqr x))==x``.
@@ -215,35 +220,35 @@ Intro x; Rewrite -> Rsqr_abs; Apply sqrt_Rsqr; Apply Rabsolu_pos.
 Qed.
 
 Lemma Rsqr_sqrt : (x:R) ``0<=x``->(Rsqr (sqrt x))==x.
-Intros x H1; Unfold Rsqr; Apply (bar x H1).
+Intros x H1; Unfold Rsqr; Apply (sqrt_sqrt x H1).
 Qed.
 
 Lemma sqrt_times : (x,y:R) ``0<=x``->``0<=y``->``(sqrt (x*y))==(sqrt x)*(sqrt y)``.
-Intros x y H1 H2; Apply (Rsqr_inj (sqrt (Rmult x y)) (Rmult (sqrt x) (sqrt y)) (foo (Rmult x y) (Rmult_le_pos x y H1 H2)) (Rmult_le_pos (sqrt x) (sqrt y) (foo x H1) (foo y H2))); Rewrite Rsqr_times; Repeat Rewrite Rsqr_sqrt; [Ring | Assumption |Assumption | Apply (Rmult_le_pos x y H1 H2)].
+Intros x y H1 H2; Apply (Rsqr_inj (sqrt (Rmult x y)) (Rmult (sqrt x) (sqrt y)) (sqrt_positivity (Rmult x y) (Rmult_le_pos x y H1 H2)) (Rmult_le_pos (sqrt x) (sqrt y) (sqrt_positivity x H1) (sqrt_positivity y H2))); Rewrite Rsqr_times; Repeat Rewrite Rsqr_sqrt; [Ring | Assumption |Assumption | Apply (Rmult_le_pos x y H1 H2)].
 Qed.
 
 Lemma sqrt_lt_R0 : (x:R) ``0<x`` -> ``0<(sqrt x)``.
-Intros x H1; Apply Rsqr_incrst_0; [Rewrite Rsqr_O; Rewrite Rsqr_sqrt ; [Assumption | Left; Assumption] | Right; Reflexivity | Apply (foo x (Rlt_le R0 x H1))].
+Intros x H1; Apply Rsqr_incrst_0; [Rewrite Rsqr_O; Rewrite Rsqr_sqrt ; [Assumption | Left; Assumption] | Right; Reflexivity | Apply (sqrt_positivity x (Rlt_le R0 x H1))].
 Qed.
 
 Lemma sqrt_div : (x,y:R) ``0<=x``->``0<y``->``(sqrt (x/y))==(sqrt x)/(sqrt y)``.
-Intros x y H1 H2; Apply Rsqr_inj; [ Apply foo; Apply (Rmult_le_pos x (Rinv y)); [ Assumption | Generalize (Rlt_Rinv y H2); Clear H2; Intro H2; Left; Assumption] | Apply (Rmult_le_pos (sqrt x) (Rinv (sqrt y))) ; [ Apply (foo x H1) | Generalize (sqrt_lt_R0 y H2); Clear H2; Intro H2; Generalize (Rlt_Rinv (sqrt y) H2); Clear H2; Intro H2; Left; Assumption] | Rewrite Rsqr_div; Repeat Rewrite Rsqr_sqrt; [ Reflexivity | Left; Assumption | Assumption | Generalize (Rlt_Rinv y H2); Intro H3; Generalize (Rlt_le R0 (Rinv y) H3); Intro H4; Apply (Rmult_le_pos x (Rinv y) H1 H4) |Red; Intro H3; Generalize (Rlt_le R0 y H2); Intro H4; Generalize (sqrt_eq_0 y H4 H3); Intro H5; Rewrite H5 in H2; Elim (Rlt_antirefl R0 H2)]].
+Intros x y H1 H2; Apply Rsqr_inj; [ Apply sqrt_positivity; Apply (Rmult_le_pos x (Rinv y)); [ Assumption | Generalize (Rlt_Rinv y H2); Clear H2; Intro H2; Left; Assumption] | Apply (Rmult_le_pos (sqrt x) (Rinv (sqrt y))) ; [ Apply (sqrt_positivity x H1) | Generalize (sqrt_lt_R0 y H2); Clear H2; Intro H2; Generalize (Rlt_Rinv (sqrt y) H2); Clear H2; Intro H2; Left; Assumption] | Rewrite Rsqr_div; Repeat Rewrite Rsqr_sqrt; [ Reflexivity | Left; Assumption | Assumption | Generalize (Rlt_Rinv y H2); Intro H3; Generalize (Rlt_le R0 (Rinv y) H3); Intro H4; Apply (Rmult_le_pos x (Rinv y) H1 H4) |Red; Intro H3; Generalize (Rlt_le R0 y H2); Intro H4; Generalize (sqrt_eq_0 y H4 H3); Intro H5; Rewrite H5 in H2; Elim (Rlt_antirefl R0 H2)]].
 Qed.
 
 Lemma sqrt_lt_0 : (x,y:R) ``0<=x``->``0<=y``->``(sqrt x)<(sqrt y)``->``x<y``.
-Intros x y H1 H2 H3; Generalize (Rsqr_incrst_1 (sqrt x) (sqrt y) H3 (foo x H1) (foo y H2)); Intro H4; Rewrite (Rsqr_sqrt x H1) in H4; Rewrite (Rsqr_sqrt y H2) in H4; Assumption.
+Intros x y H1 H2 H3; Generalize (Rsqr_incrst_1 (sqrt x) (sqrt y) H3 (sqrt_positivity x H1) (sqrt_positivity y H2)); Intro H4; Rewrite (Rsqr_sqrt x H1) in H4; Rewrite (Rsqr_sqrt y H2) in H4; Assumption.
 Qed.
 
 Lemma sqrt_lt_1 : (x,y:R) ``0<=x``->``0<=y``->``x<y``->``(sqrt x)<(sqrt y)``.
-Intros x y H1 H2 H3; Apply Rsqr_incrst_0; [Rewrite (Rsqr_sqrt x H1); Rewrite (Rsqr_sqrt y H2); Assumption | Apply (foo x H1) | Apply (foo y H2)].
+Intros x y H1 H2 H3; Apply Rsqr_incrst_0; [Rewrite (Rsqr_sqrt x H1); Rewrite (Rsqr_sqrt y H2); Assumption | Apply (sqrt_positivity x H1) | Apply (sqrt_positivity y H2)].
 Qed.
 
 Lemma sqrt_le_0 : (x,y:R) ``0<=x``->``0<=y``->``(sqrt x)<=(sqrt y)``->``x<=y``.
-Intros x y H1 H2 H3; Generalize (Rsqr_incr_1 (sqrt x) (sqrt y) H3 (foo x H1) (foo y H2)); Intro H4; Rewrite (Rsqr_sqrt x H1) in H4; Rewrite (Rsqr_sqrt y H2) in H4; Assumption.
+Intros x y H1 H2 H3; Generalize (Rsqr_incr_1 (sqrt x) (sqrt y) H3 (sqrt_positivity x H1) (sqrt_positivity y H2)); Intro H4; Rewrite (Rsqr_sqrt x H1) in H4; Rewrite (Rsqr_sqrt y H2) in H4; Assumption.
 Qed.
 
 Lemma sqrt_le_1 : (x,y:R) ``0<=x``->``0<=y``->``x<=y``->``(sqrt x)<=(sqrt y)``.
-Intros x y H1 H2 H3; Apply Rsqr_incr_0; [ Rewrite (Rsqr_sqrt x H1); Rewrite (Rsqr_sqrt y H2); Assumption | Apply (foo x H1) | Apply (foo y H2)].
+Intros x y H1 H2 H3; Apply Rsqr_incr_0; [ Rewrite (Rsqr_sqrt x H1); Rewrite (Rsqr_sqrt y H2); Assumption | Apply (sqrt_positivity x H1) | Apply (sqrt_positivity y H2)].
 Qed.
 
 Lemma sqrt_inj : (x,y:R) ``0<=x``->``0<=y``->(sqrt x)==(sqrt y)->x==y.
@@ -261,7 +266,7 @@ Intros x H1 H2; Generalize (sqrt_lt_1 x R1 (Rlt_le R0 x H1) (Rlt_le R0 R1 (Rlt_R
 Qed.
 
 Lemma sqrt_cauchy : (a,b,c,d:R) ``a*c+b*d<=(sqrt ((Rsqr a)+(Rsqr b)))*(sqrt ((Rsqr c)+(Rsqr d)))``.
-Intros a b c d; Apply Rsqr_incr_0_var; [Rewrite Rsqr_times; Repeat Rewrite Rsqr_sqrt; Unfold Rsqr; [Replace ``(a*c+b*d)*(a*c+b*d)`` with ``(a*a*c*c+b*b*d*d)+(2*a*b*c*d)``; [Replace ``(a*a+b*b)*(c*c+d*d)`` with ``(a*a*c*c+b*b*d*d)+(a*a*d*d+b*b*c*c)``; [Apply Rle_compatibility; Replace ``a*a*d*d+b*b*c*c`` with ``(2*a*b*c*d)+(a*a*d*d+b*b*c*c-2*a*b*c*d)``; [Pattern 1 ``2*a*b*c*d``; Rewrite <- Rplus_Or; Apply Rle_compatibility; Replace ``a*a*d*d+b*b*c*c-2*a*b*c*d`` with (Rsqr (Rminus (Rmult a d) (Rmult b c))); [Apply pos_Rsqr | Unfold Rsqr; Ring] | Ring] | Ring] | Ring] | Apply (ge0_plus_ge0_is_ge0 (Rsqr c) (Rsqr d) (pos_Rsqr c) (pos_Rsqr d)) | Apply (ge0_plus_ge0_is_ge0 (Rsqr a) (Rsqr b) (pos_Rsqr a) (pos_Rsqr b))] | Apply Rmult_le_pos; Apply foo; Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr].
+Intros a b c d; Apply Rsqr_incr_0_var; [Rewrite Rsqr_times; Repeat Rewrite Rsqr_sqrt; Unfold Rsqr; [Replace ``(a*c+b*d)*(a*c+b*d)`` with ``(a*a*c*c+b*b*d*d)+(2*a*b*c*d)``; [Replace ``(a*a+b*b)*(c*c+d*d)`` with ``(a*a*c*c+b*b*d*d)+(a*a*d*d+b*b*c*c)``; [Apply Rle_compatibility; Replace ``a*a*d*d+b*b*c*c`` with ``(2*a*b*c*d)+(a*a*d*d+b*b*c*c-2*a*b*c*d)``; [Pattern 1 ``2*a*b*c*d``; Rewrite <- Rplus_Or; Apply Rle_compatibility; Replace ``a*a*d*d+b*b*c*c-2*a*b*c*d`` with (Rsqr (Rminus (Rmult a d) (Rmult b c))); [Apply pos_Rsqr | Unfold Rsqr; Ring] | Ring] | Ring] | Ring] | Apply (ge0_plus_ge0_is_ge0 (Rsqr c) (Rsqr d) (pos_Rsqr c) (pos_Rsqr d)) | Apply (ge0_plus_ge0_is_ge0 (Rsqr a) (Rsqr b) (pos_Rsqr a) (pos_Rsqr b))] | Apply Rmult_le_pos; Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr].
 Qed.
 
 (************************************************************)

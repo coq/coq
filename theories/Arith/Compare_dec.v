@@ -13,17 +13,17 @@ Require Lt.
 Require Gt.
 Require Decidable.
 
-Theorem zerop : (n:nat){n=O}+{lt O n}.
+Definition zerop : (n:nat){n=O}+{lt O n}.
 NewDestruct n; Auto with arith.
-Qed.
+Defined.
 
-Theorem lt_eq_lt_dec : (n,m:nat){(lt n m)}+{n=m}+{(lt m n)}.
+Definition lt_eq_lt_dec : (n,m:nat){(lt n m)}+{n=m}+{(lt m n)}.
 Proof.
 NewInduction n; NewInduction m; Auto with arith.
 Elim (IHn m).
 NewInduction 1; Auto with arith.
 Auto with arith.
-Qed.
+Defined.
 
 Lemma gt_eq_gt_dec : (n,m:nat)({(gt m n)}+{n=m})+{(gt n m)}.
 Proof lt_eq_lt_dec.
@@ -35,25 +35,28 @@ Auto with arith.
 NewInduction m.
 Auto with arith.
 Elim (IHn m); Auto with arith.
-Qed.
+Defined.
 
-Lemma le_le_S_dec : (n,m:nat) {le n m} + {le (S m) n}.
-Proof le_lt_dec.
+Definition le_le_S_dec : (n,m:nat) {le n m} + {le (S m) n}.
+Proof.
+Exact le_lt_dec.
+Defined.
 
-Lemma le_ge_dec : (n,m:nat) {le n m} + {ge n m}.
+Definition le_ge_dec : (n,m:nat) {le n m} + {ge n m}.
 Proof.
 Intros; Elim (le_lt_dec n m); Auto with arith.
-Qed.
+Defined.
 
-Theorem le_gt_dec : (n,m:nat){(le n m)}+{(gt n m)}.
-Proof le_lt_dec.
+Definition le_gt_dec : (n,m:nat){(le n m)}+{(gt n m)}.
+Proof.
+Exact le_lt_dec.
+Defined.
 
-
-Theorem le_lt_eq_dec : (n,m:nat)(le n m)->({(lt n m)}+{n=m}).
+Definition le_lt_eq_dec : (n,m:nat)(le n m)->({(lt n m)}+{n=m}).
 Proof.
 Intros; Elim (lt_eq_lt_dec n m); Auto with arith.
 Intros; Absurd (lt m n); Auto with arith.
-Qed.
+Defined.
 
 (** Proofs of decidability *)
 

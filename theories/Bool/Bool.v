@@ -260,9 +260,10 @@ Lemma orb_true_b : (b:bool)(orb true b)=true.
 Trivial with bool.
 Qed.
 
-Lemma orb_true_elim : (b1,b2:bool)(orb b1 b2)=true -> {b1=true}+{b2=true}.
+Definition orb_true_elim : (b1,b2:bool)(orb b1 b2)=true -> {b1=true}+{b2=true}.
 NewDestruct b1; Simpl; Auto with bool.
-Qed.
+Defined.
+
 Lemma orb_false_intro 
     : (b1,b2:bool)(b1=false)->(b2=false)->(orb b1 b2)=false.
 Intros b1 b2 H1 H2; Rewrite H1; Rewrite H2; Trivial with bool.
@@ -374,10 +375,10 @@ Lemma andb_true_b : (b:bool)(andb true b)=b.
 Trivial with bool.
 Qed.
 
-Lemma andb_false_elim : 
+Definition andb_false_elim : 
     (b1,b2:bool)(andb b1 b2)=false -> {b1=false}+{b2=false}.
 NewDestruct b1; Simpl; Auto with bool.
-Qed.
+Defined.
 Hints Resolve andb_false_elim : bool v62.
 
 Lemma andb_neg_b :

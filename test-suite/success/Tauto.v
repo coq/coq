@@ -179,6 +179,16 @@ Proof.
   Tauto.
 Save.
 
+(* A bug found by Freek Wiedijk <freek@cs.kun.nl> *)
+Lemma new_bug:
+ ((A<->B)->(B<->C)) ->
+ ((B<->C)->(C<->A)) ->
+ ((C<->A)->(A<->B)) ->
+ (A<->B).
+Proof.
+  Tauto.
+Save.
+
 (*  A private club has the following rules :
  *
  *  . rule 1 : Every non-scottish member wears red socks
