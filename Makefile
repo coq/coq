@@ -84,7 +84,7 @@ DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo
+CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_macro.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -202,21 +202,6 @@ TOPLEVEL=\
 HIGHTACTICS=\
   tactics/autorewrite.cmo tactics/refine.cmo \
   tactics/extraargs.cmo tactics/extratactics.cmo tactics/eauto.cmo
-
-QUOTIFY=\
-  parsing/qast.cmo parsing/q_prim.cmo parsing/q_tactic.cmo
-
-parsing/q_prim.ml4: parsing/g_prim.ml4
-	$(SHOW)'CAMLP4O -o $@'
-	$(HIDE)camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_prim.ml4 -impl parsing/g_prim.ml4
-
-parsing/q_tactic.ml4: parsing/g_tactic.ml4
-	$(SHOW)'CAMLP4O -o $@'
-	$(HIDE)camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_tactic.ml4 -impl parsing/g_tactic.ml4
-
-parsing/q_ltac.ml4: parsing/g_ltac.ml4
-	$(SHOW)'CAMLP4O -o $@'
-	$(HIDE)camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_ltac.ml4 -impl parsing/g_ltac.ml4
 
 SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)

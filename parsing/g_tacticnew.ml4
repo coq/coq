@@ -71,9 +71,6 @@ let lpar_id_colon =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
-(* open grammar entries, possibly in quotified form *)
-ifdef Quotify then open Qast
-
 open Constr
 open Prim
 open Tactic
@@ -105,24 +102,6 @@ let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
 let error_oldelim _ = error "OldElim no longer supported"
 
-ifdef Quotify then
-  let induction_arg_of_constr = function
-  | Qast.Node ("Nvar", [_;id]) -> Qast.Node ("ElimOnIdent", [id])
-  | c -> Qast.Node ("ElimOnConstr", [c])
-
-ifdef Quotify then
-let make_red_flag s = Qast.Apply ("make_red_flag", [s])
-
-ifdef Quotify then
-let local_compute = 
-  Qast.List [
-    Qast.Node ("FBeta", []);
-    Qast.Node ("FDeltaBut", [Qast.List []]);
-    Qast.Node ("FIota", []);
-    Qast.Node ("FZeta", [])]
-
-ifdef Quotify then open Q
-
 let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 (* Auxiliary grammar rules *)
@@ -136,22 +115,6 @@ GEXTEND Gram
     [ [ n = integer  -> Genarg.ArgArg n
       | id = identref -> Genarg.ArgVar id ] ]
   ;
-(*  autoarg_depth:
-  [ [ n = OPT natural -> n ] ]
-  ;
-  autoarg_adding:
-  [ [ IDENT "adding" ; "["; l = LIST1 global; "]" -> l | -> [] ] ]
-  ;
-  autoarg_destructing:
-  [ [ IDENT "destructing" -> true | -> false ] ]
-  ;
-  autoarg_usingTDB:
-  [ [ "using"; IDENT "tdb"  -> true | -> false ] ]
-  ;
-  autoargs:
-  [ [ a0 = autoarg_depth; l = autoarg_adding; 
-      a2 = autoarg_destructing; a3 = autoarg_usingTDB -> (a0,l,a2,a3) ] ]
-  ;*)
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
     [ [ id = identref -> AI id 

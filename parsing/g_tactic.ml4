@@ -15,10 +15,6 @@ open Util
 open Tacexpr
 open Rawterm
 open Genarg
-
-(* open grammar entries, possibly in quotified form *)
-ifdef Quotify then open Qast
-
 open Constr
 open Prim
 open Tactic
@@ -38,24 +34,6 @@ let induction_arg_of_constr c =
 let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
 let error_oldelim _ = error "OldElim no longer supported"
-
-ifdef Quotify then
-  let induction_arg_of_constr = function
-  | Qast.Node ("Nvar", [_;id]) -> Qast.Node ("ElimOnIdent", [id])
-  | c -> Qast.Node ("ElimOnConstr", [c])
-
-ifdef Quotify then
-let make_red_flag s = Qast.Apply ("make_red_flag", [s])
-
-ifdef Quotify then
-let local_compute = 
-  Qast.List [
-    Qast.Node ("FBeta", []);
-    Qast.Node ("FDeltaBut", [Qast.List []]);
-    Qast.Node ("FIota", []);
-    Qast.Node ("FZeta", [])]
-
-ifdef Quotify then open Q
 
 let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
