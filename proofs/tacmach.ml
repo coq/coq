@@ -168,52 +168,67 @@ let change_constraints_pftreestate = change_constraints_pftreestate
 let refiner = refiner
 
 (* This does not check that the variable name is not here *)
-let unsafe_introduction id =
-  without_check (refiner (Prim (Intro id)))
+let introduction_no_check id =
+  refiner (Prim (Intro id))
 
-let introduction id gl =
-  refiner (Prim (Intro id)) gl
-
-let intro_replacing whereid gl = 
+(* This does not check that the dependencies are correct *)
+let intro_replacing_no_check whereid gl = 
   refiner (Prim (Intro_replacing whereid)) gl
 
-let internal_cut id t gl = 
+let internal_cut_no_check id t gl = 
   refiner (Prim (Cut (true,id,t))) gl
 
-let internal_cut_rev id t gl = 
+let internal_cut_rev_no_check id t gl = 
   refiner (Prim (Cut (false,id,t))) gl
 
-let refine c gl = 
+let refine_no_check c gl = 
   refiner (Prim (Refine c)) gl
 
-let convert_concl c gl = 
+let convert_concl_no_check c gl = 
   refiner (Prim (Convert_concl c)) gl
 
-let convert_hyp d gl =
+let convert_hyp_no_check d gl =
   refiner (Prim (Convert_hyp d)) gl
 
-let thin ids gl =
+(* This does not check dependencies *)
+let thin_no_check ids gl =
   if ids = [] then tclIDTAC gl else refiner (Prim (Thin ids)) gl
 
-let thin_body ids gl =
+(* This does not check dependencies *)
+let thin_body_no_check ids gl =
   if ids = [] then tclIDTAC gl else refiner (Prim (ThinBody ids)) gl
 
-let move_hyp with_dep id1 id2 gl = 
+let move_hyp_no_check with_dep id1 id2 gl = 
   refiner (Prim (Move (with_dep,id1,id2))) gl
 
-let rename_hyp id1 id2 gl = 
+let rename_hyp_no_check id1 id2 gl = 
   refiner (Prim (Rename (id1,id2))) gl
 
 let mutual_fix f n others gl = 
-  refiner (Prim (FixRule (f,n,others))) gl
+  with_check (refiner (Prim (FixRule (f,n,others)))) gl
 
 let mutual_cofix f others gl = 
-  refiner (Prim (Cofix (f,others))) gl
+  with_check (refiner (Prim (Cofix (f,others)))) gl
     
 let rename_bound_var_goal gls =
   let { evar_hyps = sign; evar_concl = cl } as gl = sig_it gls in 
   let ids = ids_of_named_context sign in
-  convert_concl (rename_bound_var (Global.env()) ids cl) gls
+  convert_concl_no_check (rename_bound_var (Global.env()) ids cl) gls
+
+
+(* Versions with consistency checks *)
+
+let introduction id    = with_check (introduction_no_check id) 
+let intro_replacing id = with_check (intro_replacing_no_check id)
+let internal_cut d t     = with_check (internal_cut_no_check d t)
+let internal_cut_rev d t = with_check (internal_cut_rev_no_check d t)
+let refine c           = with_check (refine_no_check c)
+let convert_concl d    = with_check (convert_concl_no_check d)
+let convert_hyp d      = with_check (convert_hyp_no_check d)
+let thin l             = with_check (thin_no_check l)
+let thin_body c        = with_check (thin_body_no_check c)
+let move_hyp b id id'  = with_check (move_hyp_no_check b id id') 
+let rename_hyp id id'  = with_check (rename_hyp_no_check id id')
     
 (* Pretty-printers *)
 

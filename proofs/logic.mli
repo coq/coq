@@ -21,6 +21,7 @@ open Proof_type
    argument; works by side-effect *)
 
 val without_check : tactic -> tactic
+val with_check    : tactic -> tactic
 
 (* [without_check] respectively means:\\
   [Intro]: no check that the name does not exist\\

@@ -202,7 +202,10 @@ let refiner = function
                         assert (List.length spfl = 1);
                         List.hd spfl))))
 
-let norm_evar_tac gl = refiner Change_evars gl
+
+let local_Constraints gl = refiner Change_evars gl
+
+let norm_evar_tac = local_Constraints
 
 (*
 let vernac_tactic (s,args) =

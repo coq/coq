@@ -32,8 +32,6 @@ let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
 
 type w_tactic = named_context sigma -> named_context sigma
 
-let local_Constraints gs = refiner Change_evars gs
-
 let startWalk gls =
   let evc = project_with_focus gls in
   (evc,

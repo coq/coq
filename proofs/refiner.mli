@@ -50,6 +50,8 @@ val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma
 
+val local_Constraints : tactic
+
 (*s Tacticals. *)
 
 (* [tclIDTAC] is the identity tactic *)

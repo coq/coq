@@ -122,23 +122,39 @@ val vernac_tactic : string * tactic_arg list -> tactic
 *)
 (*s The most primitive tactics. *)
 
-val refiner         : rule -> tactic
-val introduction    : identifier -> tactic
-val intro_replacing : identifier -> tactic
-val internal_cut    : identifier -> types -> tactic
-val internal_cut_rev : identifier -> types -> tactic
-val refine          : constr -> tactic
-val convert_concl   : types -> tactic
-val convert_hyp     : named_declaration -> tactic
-val thin            : identifier list -> tactic
-val thin_body       : identifier list -> tactic
-val move_hyp        : bool -> identifier -> identifier -> tactic
-val rename_hyp      : identifier -> identifier -> tactic
+val refiner                   : rule -> tactic
+val introduction_no_check     : identifier -> tactic
+val intro_replacing_no_check  : identifier -> tactic
+val internal_cut_no_check     : identifier -> types -> tactic
+val internal_cut_rev_no_check : identifier -> types -> tactic
+val refine_no_check           : constr -> tactic
+val convert_concl_no_check    : types -> tactic
+val convert_hyp_no_check      : named_declaration -> tactic
+val thin_no_check             : identifier list -> tactic
+val thin_body_no_check        : identifier list -> tactic
+val move_hyp_no_check         : bool -> identifier -> identifier -> tactic
+val rename_hyp_no_check       : identifier -> identifier -> tactic
 val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
 val rename_bound_var_goal : tactic
 
+(*s The most primitive tactics with consistency and type checking *)
+
+val introduction     : identifier -> tactic
+val intro_replacing  : identifier -> tactic
+val internal_cut     : identifier -> types -> tactic
+val internal_cut_rev : identifier -> types -> tactic
+val refine           : constr -> tactic
+val convert_concl    : constr -> tactic
+val convert_hyp      : named_declaration -> tactic
+val thin             : identifier list -> tactic
+val convert_concl    : types -> tactic
+val convert_hyp      : named_declaration -> tactic
+val thin             : identifier list -> tactic
+val thin_body        : identifier list -> tactic
+val move_hyp         : bool -> identifier -> identifier -> tactic
+val rename_hyp       : identifier -> identifier -> tactic
 
 (*s Tactics handling a list of goals. *)
 

@@ -30,8 +30,6 @@ val rc_of_glsigma : goal sigma -> wc
    dependent goal *)
 type w_tactic = wc -> wc
 
-val local_Constraints : tactic
-
 val startWalk : goal sigma -> wc * (wc -> tactic)
 
 val extract_decl : evar -> w_tactic
