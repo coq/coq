@@ -62,7 +62,7 @@ and visit_ast eenv a =
     | MLapp (a,l) -> visit a; List.iter visit l
     | MLlam (_,a) -> visit a
     | MLletin (_,a,b) -> visit a; visit b
-    | MLcons (r,_,l) -> visit_reference eenv r; List.iter visit l
+    | MLcons (r,l) -> visit_reference eenv r; List.iter visit l
     | MLcase (a,br) -> 
 	visit a; Array.iter (fun (r,_,a) -> visit_reference eenv r; visit a) br
     | MLfix (_,_,l) -> List.iter visit l
@@ -171,10 +171,10 @@ let interp_options keep modular = function
       { optimization = false; modular = modular; 
 	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
   | [VARG_STRING "nooption"] ->
-      { optimization = not modular; modular = modular;
+      { optimization = true; modular = modular;
 	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
   | VARG_STRING "expand" :: l ->
-      { optimization = not modular; modular = modular;
+      { optimization = true; modular = modular;
 	to_keep = refs_set_of_list keep; 
 	to_expand = refs_set_of_list (refs_of_vargl l) }
   | _ -> 

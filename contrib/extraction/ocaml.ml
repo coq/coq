@@ -202,12 +202,12 @@ let rec pp_expr par env args =
 		    close_par par' >])
     | MLglob r -> 
 	apply (pp_global r)
-    | MLcons (r,_,[]) ->
+    | MLcons (r,[]) ->
 	pp_global r
-    | MLcons (r,_,[a]) ->
+    | MLcons (r,[a]) ->
 	[< open_par par; pp_global r; 'sPC;
 	   pp_expr true env [] a; close_par par >]
-    | MLcons (r,_,args') ->
+    | MLcons (r,args') ->
 	[< open_par par; pp_global r; 'sPC;
 	   pp_tuple (pp_expr true env []) args'; close_par par >]
     | MLcase (t, pv) ->

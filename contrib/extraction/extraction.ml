@@ -519,7 +519,7 @@ and extract_term_info_with_type env ctx c t =
 		    | [var]->var
 		    | _ -> assert false
 		else
-		  MLcons (ConstructRef cp, List.length rels, rels)
+		  MLcons (ConstructRef cp, rels)
 	    | (Info,NotArity) :: l -> 
 		MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
 	    | (Logic,NotArity) :: l ->
@@ -667,18 +667,21 @@ and extract_constant sp =
   try
     Gmap.find sp !constant_table
   with Not_found ->
+    let env = Global.env() in    
     let cb = Global.lookup_constant sp in
     let typ = cb.const_type in
-    let body = match cb.const_body with 
-      | Some c -> c 
-      | None -> axiom_message sp
-    in
-    let env = Global.env() in
-    let e = extract_constr_with_type env [] body typ in
-    let e = eta_expanse e (extract_type env typ) in
-    constant_table := Gmap.add sp e !constant_table;
-    e
-    
+    match cb.const_body with
+      | None ->
+          (match v_of_arity env typ with
+             | (Info,_) -> axiom_message sp
+             | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[])
+             | (Logic,NotArity) -> Emlterm MLprop)
+      | Some body ->
+          let e = extract_constr_with_type env [] body typ in
+          let e = eta_expanse e (extract_type env typ) in
+          constant_table := Gmap.add sp e !constant_table;
+          e
+
 (*s Extraction of an inductive. *)
     
 and extract_inductive ((sp,_) as i) =
@@ -824,7 +827,7 @@ let extract_declaration r = match r with
   | ConstRef sp -> 
       (match extract_constant sp with
 	 | Emltype (mlt, s, vl) -> Dabbrev (r, List.rev vl, mlt)
-	 | Emlterm t -> Dglob (r, uncurrify_ast t))
+	 | Emlterm t -> Dglob (r, t))
   | IndRef (sp,_) -> extract_inductive_declaration sp
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false

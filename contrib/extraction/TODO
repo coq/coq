@@ -5,3 +5,11 @@
 
  7. Eta expansion pour contourner typage Caml
 
+ 9. Doc!! (exemples)
+
+ 10. Recommenter extraction.ml
+
+ 11. tester contribs
+	
+ 12. garantir typage Caml => magic + cast.
+

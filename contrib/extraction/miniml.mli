@@ -37,7 +37,7 @@ type ml_ast =
   | MLlam   of identifier * ml_ast
   | MLletin of identifier * ml_ast * ml_ast
   | MLglob  of global_reference
-  | MLcons  of global_reference * int * ml_ast list
+  | MLcons  of global_reference * ml_ast list
   | MLcase  of ml_ast * (global_reference * identifier list * ml_ast) array
   | MLfix   of int * identifier list * ml_ast list
   | MLexn   of identifier

@@ -42,8 +42,6 @@ val ml_subst : ml_ast -> ml_ast -> ml_ast
 val normalize : ml_ast -> ml_ast
 val normalize_decl : ml_decl -> ml_decl
 
-val uncurrify_ast : ml_ast -> ml_ast
-
 (*s Optimization. *)
 
 module Refset : Set.S with type elt = global_reference
