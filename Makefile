@@ -1255,10 +1255,10 @@ bin/coqtopnew.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(NEWCMX)
 bin/coqtopnew.byte$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(HIGHPARSINGNEW)
 	$(COQMKTOP) -top $(OPTFLAGS) $(HIGHPARSINGNEW) -o $@
 
-newtheories/Init/%.vo: newtheories/Init/%.v
+newtheories/Init/%.vo: $(COQTOPNEW) newtheories/Init/%.v
 	$(NEWCOQBARE) -compile $*
 
-states/initialnew.coq: states/MakeInitialNew.v $(INITVO:%.vo=t%.vo)
+states/initialnew.coq: states/MakeInitialNew.v $(INITVO:%.vo=new%.vo)
 	$(NEWCOQBARE) -batch -silent -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
 
 newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
