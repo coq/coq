@@ -249,7 +249,7 @@ let reference dir s =
               (List.map id_of_string (List.rev ("Coq"::"Init"::[dir]))) in
   let id = id_of_string s in
   try 
-    Nametab.locate_in_absolute_module dir id
+    Nametab.absolute_reference (Libnames.make_path dir id)
   with Not_found ->
     anomaly ("Coqlib: cannot find "^
 	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))

@@ -404,7 +404,7 @@ let global_absolute_reference sp =
   construct_absolute_reference sp
 
 let global_reference_in_absolute_module dir id = 
-  constr_of_reference (Nametab.locate_in_absolute_module dir id)
+  constr_of_reference (Nametab.absolute_reference (Libnames.make_path dir id))
 
 let global_reference id = 
   construct_qualified_reference (make_short_qualid id)
@@ -437,7 +437,7 @@ let is_global id =
     false
 
 let strength_of_global ref = match ref with 
-  | ConstRef kn -> constant_strength (full_name ref)
+  | ConstRef kn -> constant_strength (sp_of_global None ref)
   | VarRef id -> variable_strength id
   | IndRef _ | ConstructRef _ -> NeverDischarge 
 

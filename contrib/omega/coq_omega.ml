@@ -362,7 +362,7 @@ let make_coq_path dir s =
   let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
   let id = id_of_string s in
   let ref = 
-    try Nametab.locate_in_absolute_module dir id 
+    try Nametab.absolute_reference (Libnames.make_path dir id)
     with Not_found ->
       anomaly("Coq_omega: cannot find "^
 	      (Libnames.string_of_qualid(Libnames.make_qualid dir id)))

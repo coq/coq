@@ -559,7 +559,7 @@ let lookup_eliminator ind_sp s =
   (* inductive type *)
   let ref = ConstRef (make_kn mp dp (label_of_id id)) in
   try 
-    let _ = full_name ref in
+    let _ = sp_of_global None ref in
       constr_of_reference ref
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)

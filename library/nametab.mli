@@ -23,7 +23,8 @@ open Libnames
    \item [push : visibility -> full_user_name -> object_reference -> unit]
    
    Registers the [object_reference] to be referred to by the
-   [full_user_name] (and its suffixes according to [visibility])
+   [full_user_name] (and its suffixes according to [visibility]).
+   [full_user_name] can either be a [section_path] or a [dir_path].
 
    \item [exists : full_user_name -> bool] 
    
@@ -42,23 +43,6 @@ open Libnames
 *)
    
   
-
-(* Finds the real name of a global (e.g. fetch the constructor names
-   from the inductive name and constructor number) *)
-val sp_of_global : Sign.named_context option -> global_reference -> section_path
-val sp_of_syntactic_definition : kernel_name -> section_path
-
-(* Turns an absolute name into a qualified name denoting the same name *)
-val full_name : global_reference -> section_path
-val shortest_qualid_of_global : Sign.named_context option -> global_reference -> qualid
-val id_of_global : Sign.named_context option -> global_reference -> identifier
-
-(* Printing of global references using names as short as possible *)
-val pr_global_env : Sign.named_context option -> global_reference -> std_ppcmds
-
-val shortest_qualid_of_module : module_path -> qualid
-val shortest_qualid_of_modtype : kernel_name -> qualid
-
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
 
@@ -67,12 +51,21 @@ val error_global_not_found_loc : loc -> qualid -> 'a
 val error_global_not_found     : qualid -> 'a
 val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
+
+
+
 (*s Register visibility of things *)
 
-(* The visibility can be registered either for all suffixes not
-   shorter then a given int - when the object is loaded inside a module,
-   or for a precise suffix, when the module containing (the module
-   containing ...) the object is open (imported) *)
+(* The visibility can be registered either
+   \begin{itemize}
+
+   \item for all suffixes not shorter then a given int -- when the
+   object is loaded inside a module -- or
+
+   \item for a precise suffix, when the module containing (the module
+   containing ...) the object is opened (imported) 
+   \end{itemize}
+*)
 
 type visibility = Until of int | Exactly of int
 
@@ -83,6 +76,7 @@ val push_modtype : visibility -> section_path -> kernel_name -> unit
 val push_dir : visibility -> dir_path -> global_dir_reference -> unit
 val push_object : visibility -> section_path -> unit
 val push_tactic : visibility -> section_path -> unit
+
 
 (*s The following functions perform globalization of qualified names *)
 
@@ -111,7 +105,12 @@ val locate_tactic : qualid -> section_path
 val locate_dir : qualid -> global_dir_reference
 val locate_module : qualid -> module_path
 
-(* [exists sp] tells if [sp] is already bound to a cci term *)
+(* A variant looking up a [section_path] *)
+val absolute_reference : section_path -> global_reference
+
+
+(*s These function tell if the given absolute name is already taken *)
+
 val exists_cci : section_path -> bool
 val exists_modtype : section_path -> bool
 
@@ -120,23 +119,46 @@ val exists_dir : dir_path -> bool
 val exists_section : dir_path -> bool (* deprecated *)
 val exists_module : dir_path -> bool (* deprecated *)
 
+
+(*s These functions turn qualids into full user names: [section_path]s
+  or [dir_path]s *)
+
 val full_name_modtype : qualid -> section_path
+val full_name_cci : qualid -> section_path
 
-(*s Roots of the space of absolute names *)
-
-(* This turns a "user" absolute name into a global reference;
-   especially, constructor/inductive names are turned into internal
-   references inside a block of mutual inductive *)
-val absolute_reference : section_path -> global_reference
-
-(* [locate_in_absolute_module dir id] finds [id] in module [dir] or in
-   one of its section/subsection *)
-val locate_in_absolute_module : dir_path -> identifier -> global_reference
-
+(* As above but checks that the path found is indeed a module *)
 val locate_loaded_library : qualid -> dir_path
 
+
+(*s Reverse lookup -- finding user names corresponding to the given
+  internal name *)
+
+
+val sp_of_syntactic_definition : kernel_name -> section_path
+
+val sp_of_global : 
+  Sign.named_context option -> global_reference -> section_path
+val shortest_qualid_of_global : 
+  Sign.named_context option -> global_reference -> qualid
+val id_of_global : 
+  Sign.named_context option -> global_reference -> identifier
+
+(* Printing of global references using names as short as possible *)
+val pr_global_env : Sign.named_context option -> global_reference -> std_ppcmds
+
+
+(* The [shortest_qualid] functions given an object with user_name
+   Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
+   Coq.A.B.x that denotes the same object. *)
+
+val shortest_qualid_of_module : module_path -> qualid
+val shortest_qualid_of_modtype : kernel_name -> qualid
+
+
+
+(*
 type frozen
 
 val freeze : unit -> frozen
 val unfreeze : frozen -> unit
-
+*)
