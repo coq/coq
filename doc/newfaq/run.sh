@@ -1,2 +1,2 @@
 #/bin/sh
-coq-tex main.tex && latex main.v.tex 
+coq-tex -n 72 -v -sl -small main.tex && latex main.v.tex 

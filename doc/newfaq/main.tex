@@ -1,14 +1,19 @@
 
-\documentclass[a4paper]{faq}
+\documentclass[a4paper]{article}
 \pagestyle{plain}
 
 % yay les symboles
-\usepackage{stmaryrd}
+%\usepackage{stmaryrd}
 \usepackage{amssymb}
 \usepackage{url}
+\usepackage{alltt}
+\usepackage{multicol}
 \usepackage{fullpage}
 %\usepackage{hevea}
+
 \input{../macros.tex}
+
+\def\Question[#1]#2{\stepcounter{question}\subsubsection[#1]{#2}}
 
 % version et date
 \def\faqversion{0.1}
@@ -69,11 +74,13 @@
 
 \begin{document}
 \bibliographystyle{plain}
+\newcounter{question}
+\renewcommand{\thesubsubsection}{\arabic{question}}
 
 %%%%%%% Coq pour les nuls %%%%%%%
 
 \title{Coq for the Clueless\\
-  \large(\ifpdf\ref*{lastquestion}\else\protect\ref{lastquestion}\fi
+  \large(\protect\ref{lastquestion}
   \ Hints)
 }
 \author{Florent Kirchner \and Julien Narboux}
@@ -758,7 +765,7 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 You can use the \discriminate tactic.
 
 \begin{coq_example}
-Inductive toto : Set := C1 : toto | C2 : toto.
+Inductive toto : Set := | C1 : toto | C2 : toto | C3 :toto.
 Goal C1 <> C2.
 discriminate.
 Qed.
@@ -1010,5 +1017,5 @@ theorem proving in \Coq.
 
 %%%%%%%
 
-\typeout{*** That makes \thequestion\space questions ***}
+%\typeout{*** That makes \thequestion\space questions ***}
 \end{document}
