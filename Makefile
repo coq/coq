@@ -77,14 +77,13 @@ LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
        kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
-       kernel/reduction.cmo \
+       kernel/conv_oracle.cmo kernel/reduction.cmo \
        kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
        kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
 
 LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
         library/nametab.cmo library/lib.cmo library/global.cmo \
-	library/goptions.cmo library/opaque.cmo \
-	library/library.cmo library/states.cmo \
+	library/goptions.cmo library/library.cmo library/states.cmo \
 	library/impargs.cmo library/declare.cmo 
 
 PRETYPING=pretyping/termops.cmo \
@@ -156,12 +155,11 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
         kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
         kernel/term.cmo kernel/sign.cmo kernel/environ.cmo \
-	kernel/closure.cmo kernel/reduction.cmo \
+	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
 	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
 	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
 	library/nameops.cmo library/libobject.cmo library/summary.cmo \
-	library/nametab.cmo library/lib.cmo \
-	library/global.cmo library/opaque.cmo \
+	library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
         pretyping/termops.cmo \
@@ -180,8 +178,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
 	parsing/extend.cmo \
 	parsing/coqlib.cmo library/goptions.cmo pretyping/detyping.cmo \
-	parsing/termast.cmo \
- parsing/astterm.cmo \
+	parsing/termast.cmo parsing/astterm.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
 	parsing/printer.cmo pretyping/typing.cmo \
 	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
