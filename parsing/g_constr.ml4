@@ -25,17 +25,17 @@ let split_lambda = function
   | _ -> Util.error "ill-formed fixpoint body"
 
 let split_product = function
-  | CArrow (loc,t,c) -> c
-  | CProdN (loc,[[na],t],c) -> c
-  | CProdN (loc,([na],t)::bl,c) -> CProdN(loc,bl,c)
-  | CProdN (loc,(na::nal,t)::bl,c) -> CProdN(loc,(nal,t)::bl,c)
+  | CArrow (loc,t,c) -> ((loc,Anonymous),t,c)
+  | CProdN (loc,[[na],t],c) -> (na,t,c)
+  | CProdN (loc,([na],t)::bl,c) -> (na,t,CProdN(loc,bl,c))
+  | CProdN (loc,(na::nal,t)::bl,c) -> (na,t,CProdN(loc,(nal,t)::bl,c))
   | _ -> Util.error "ill-formed fixpoint body"
 
 let rec split_fix n typ def =
   if n = 0 then ([],typ,def)
   else
-    let (na,t,def) = split_lambda def in
-    let typ = split_product typ in
+    let (na,_,def) = split_lambda def in
+    let (_,t,typ) = split_product typ in
     let (bl,typ,def) = split_fix (n-1) typ def in
     (([na],t)::bl,typ,def)
 
