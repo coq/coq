@@ -5,9 +5,9 @@ In this chapter, we introduce advanced commands to modify the way
 {\Coq} parses and prints objects, i.e. the translations between the
 concrete and internal representations of terms and commands. The main
 commands are {\tt Notation} and {\tt Infix}.
-It also happens that the same symbolic notation is expected in
-different contexts. To achieve this form of overloading, Coq offers a
-notion of interpretation scope described in section \label{scopes}.
+%It also happens that the same symbolic notation is expected in
+%different contexts. To achieve this form of overloading, Coq offers a
+%notion of interpretation scope described in section \ref{scopes}.
 
 \Rem: Commands {\tt Grammar}, {\tt Syntax}, {\tt Syntactic Definition}
 and {\tt Distfix} which were present for a while in Coq are no longer
@@ -34,7 +34,7 @@ string \verb="A /\ B"= (called a {\em notation}) tells how it is
 symbolically written.
 
 A notation is always surrounded by quotes (excepted when the
-abbreviation is a single ident, see \label{Abbreviations}). The
+abbreviation is a single ident, see \ref{Abbreviations}). The
 notation is composed of {\em tokens} separated by spaces.  Identifiers
 in the string (such as \texttt{A} and \texttt{B}) are the {\em
 parameters} of the notation. They must occur at least once each in the
@@ -322,12 +322,13 @@ where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an ex
 Infix "/\\" and (at level 6, right associativity).
 \end{coq_example*}
 
-\section{Symbolic interpretation scopes}
+%\section{Symbolic interpretation scopes}
+%
+%TODO
 
-TODO
-
+\iffalse
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\chapter{Syntax extensions (old)}
+\chapter{syntax extensions}
 \label{Addoc-syntax}
 
 In this chapter, we introduce advanced commands to modify the way
@@ -2112,7 +2113,7 @@ allow the printer of tactic to change the universe. The primitive printer
 {\tt command} is a special identifier used for this
 purpose. They are used in the code of the default printer that {\tt
 gentacpr} gives to {\tt genprint}.
-
+\fi
 
 % $Id$ 
 
