@@ -29,14 +29,14 @@ and library_segment = library_entry list
 let lib_stk = ref ([] : (section_path * node) list)
 
 let module_name = ref None
-let path_prefix = ref ([] : dir_path)
+let path_prefix = ref (["Scratch"] : dir_path)
 
 let recalc_path_prefix () =
   let rec recalc = function
     | (sp, OpenedSection _) :: _ ->
 	let (pl,id,_) = repr_path sp in pl@[string_of_id id]
     | _::l -> recalc l
-    | [] -> (match !module_name with Some m -> m | None -> [])
+    | [] -> (match !module_name with Some m -> m | None -> ["Scratch"])
   in
   path_prefix := recalc !lib_stk
 
@@ -116,7 +116,7 @@ let check_for_module () =
 
 let start_module s =
   if !module_name <> None then error "a module is already started";
-  if !path_prefix <> [] then error "some sections are already opened";
+  if !path_prefix <> ["Scratch"] then error "some sections are already opened";
   module_name := Some s;
   Univ.set_module s;
   let _ = add_anonymous_entry (Module s) in
