@@ -16,6 +16,23 @@ open Summary
  **** PRETTY-PRINTING ****
  *************************)
 
+(* Done here to get parsing/g_*.ml4 non dependent from kernel *)
+let constr_parser_with_glob = map_entry Astterm.globalize_constr Constr.constr
+let tactic_parser_with_glob = map_entry Astterm.globalize_ast Tactic.tactic
+let vernac_parser_with_glob = map_entry Astterm.globalize_ast Vernac.vernac
+
+(* This updates default parsers for Grammar actions and Syntax *)
+(* patterns by inserting globalization *)
+let _ = update_constr_parser constr_parser_with_glob
+let _ = update_tactic_parser tactic_parser_with_glob
+let _ = update_vernac_parser vernac_parser_with_glob
+
+(* This installs default quotations parsers to escape the ast parser *)
+(* "constr" is used by default in quotations found in the ast parser *) 
+let _ = define_quotation true "constr" constr_parser_with_glob
+let _ = define_quotation false "tactic" tactic_parser_with_glob
+let _ = define_quotation false "vernac" vernac_parser_with_glob
+
 (* Pretty-printer state summary *)
 let _ = 
   declare_summary "syntax"
