@@ -641,13 +641,18 @@ let quantify lconstr =
    ------------------------------------------
    Sera simplifiable le jour où il y aura un let in primitif dans constr
 
-   [letin_tac b na c occ_ccl occ_hyps gl] transforms
+   [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
    [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
    [...x:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
    [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
 
-   [occ_hyps] and [occ_ccl] tells which occurrences of [c] have to be substd;
-   if [occ_hyps] is empty, [c] is substituted in every hyp where it occurs;
+   [occ_hyp,occ_ccl] tells which occurrences of [c] have to be substituted;
+   if [occ_hyp = []] and [occ_ccl = None] then [c] is substituted
+   wherever it occurs, otherwise [c] is substituted only in hyps
+   present in [occ_hyps] at the specified occurrences (everywhere if
+   the list of occurrences is empty), and in the goal at the specified
+   occurrences if [occ_goal] is not [None];
+
    if name = Anonymous, the name is build from the first letter of the type;
 
    The tactic first quantify the goal over x1, x2,... then substitute then
@@ -656,47 +661,44 @@ let quantify lconstr =
    the left of each x1, ...).
 *)
 
-let letin_abstract id c occ_ccl occ_hyps gl =
-  let allhyp = occ_hyps=[] in
+let letin_abstract id c (occ_ccl,occ_hyps) gl =
+  let everywhere = (occ_ccl = None) & (occ_hyps = []) in
   let env = pf_env gl in
-  let abstract ((depdecls,marks,occl as accu),lhyp) (hyp,bodyopt,typ as d) =
-    try 
-      let occ = if allhyp then [] else List.assoc hyp occl in
-      let newdecl = subst1_decl (mkVar id) (subst_term_occ_decl occ c d) in
-      let newoccl = list_except_assoc hyp occl in
-      if d=newdecl then
-	(accu,Some hyp)
+  let abstract ((depdecls,marks as accu),lhyp) (hyp,_,_ as d) =
+    try
+      let occ = if everywhere then [] else List.assoc hyp occ_hyps in
+      let newdecl = subst_term_occ_decl occ c d in
+      if d = newdecl then
+	if not everywhere then raise (RefinerError (DoesNotOccurIn (c,hyp)))
+	else (accu, Some hyp)
       else 
-	((newdecl::depdecls,(hyp,lhyp)::marks,newoccl),lhyp)
+	let newdecl = subst1_decl (mkVar id) newdecl in
+	((newdecl::depdecls,(hyp,lhyp)::marks), lhyp)
     with Not_found -> 
-      (accu,Some hyp) 
+      (accu, Some hyp) 
   in
-  let (depdecls,marks,rest),_ =
-    fold_named_context_reverse abstract (([],[],occ_hyps),None) env in
-  if rest <> [] then begin
-    let id = fst (List.hd rest) in
-    if mem_named_context id (named_context env)
-    then error ("Hypothesis "^(string_of_id id)^" occurs twice")
-    else error ("No such hypothesis : " ^ (string_of_id id))
-  end;
+  let (depdecls,marks),_ =
+    fold_named_context_reverse abstract (([],[]),None) env in
+  let occ_ccl = if everywhere then Some [] else occ_ccl in
   let ccl = match occ_ccl with
-    | None -> (pf_concl gl)
-    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl)) 
+    | None -> pf_concl gl
+    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl))
   in
   (depdecls,marks,ccl)
 
-let letin_tac with_eq name c occ_ccl occ_hyps gl =
+let letin_tac with_eq name c occs gl =
   let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
   let env = pf_env gl in
   let used_ids = ids_of_context env in
-  let id = next_global_ident_away x used_ids in
-  if mem_named_context id (named_context env) then
-    error "New variable is already declared";
-  let (depdecls,marks,ccl)= letin_abstract id c occ_ccl occ_hyps gl in 
+  let id =
+    if name = Anonymous then next_global_ident_away x used_ids else
+      if not (mem_named_context x (named_context env)) then x else
+	error ("Variable "^(string_of_id x)^" is already declared") in
+  let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
   let heq = next_global_ident_away (id_of_string "Heq") used_ids in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = List.map (fun (id,_,_) -> mkVar id) depdecls in
+  let args = instance_from_named_context depdecls in
   let newcl =
     if with_eq then
       mkNamedLetIn id c t tmpcl
@@ -708,14 +710,26 @@ let letin_tac with_eq name c occ_ccl occ_hyps gl =
     [ apply_type newcl args;
       thin (List.map (fun (id,_,_) -> id) depdecls);
       intro_gen (IntroMustBe id) lastlhyp false;
-(*  if with_eq then intro_gen (IntroMustBe heq) lastlhyp false else tclIDTAC;*)
       intros_move marks ] gl
 
+let check_hypotheses_occurrences_list env occl =
+  let rec check acc = function
+    | (hyp,_) :: rest -> 
+	if List.mem hyp acc then
+	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice");
+	if not (mem_named_context hyp (named_context env)) then
+	  error ("No such hypothesis : " ^ (string_of_id hyp));
+	check (hyp::acc) rest
+    | [] -> ()
+  in check [] occl
+
 let dyn_lettac args gl = match args with
-  | [Identifier id; Command com; Letpatterns (o,l)] -> 
-      letin_tac true (Name id) (pf_interp_constr gl com) o l gl
+  | [Identifier id; Command com; Letpatterns (o,l)] ->
+      check_hypotheses_occurrences_list (pf_env gl) l;
+      letin_tac true (Name id) (pf_interp_constr gl com) (o,l) gl
   | [Identifier id; Constr c; Letpatterns (o,l)]    ->
-      letin_tac true (Name id) c o l gl
+      check_hypotheses_occurrences_list (pf_env gl) l;
+      letin_tac true (Name id) c (o,l) gl
   | l -> bad_tactic_args "letin" l
 
 (********************************************************************)
@@ -1099,14 +1113,14 @@ let atomize_param_of_ind hyp0 gl =
 	| IsVar id ->
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac true (Name x) (mkVar id) (Some []) [])
+	      (letin_tac true (Name x) (mkVar id) (None,[]))
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
 	| _ ->
 	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
 		       Anonymous in
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac true (Name x) c (Some []) [])
+	      (letin_tac true (Name x) c (None,[]))
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
     else 
       tclIDTAC gl
@@ -1336,7 +1350,7 @@ let new_induct c gl =
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	tclTHEN
-	  (letin_tac true (Name id) c (Some []) [])
+	  (letin_tac true (Name id) c (None,[]))
 	  (induction_with_atomization_of_ind_arg id) gl
 
 (***)
