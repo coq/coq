@@ -496,9 +496,10 @@ let rec fourier gl=
                         (list_of_sign (pf_hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))
-		        with _-> ())
+		        with _ -> ())
               hyps;
     (* lineq = les inéquations découlant des hypothèses *)
+    if !lineq=[] then Util.error "No inequalities";
     let res=fourier_lineq (!lineq) in
     let tac=ref tclIDTAC in
     if res=[]
