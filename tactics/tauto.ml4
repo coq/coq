@@ -67,8 +67,8 @@ let simplif () =
         | [id: (?1 ? ?) |- ?] -> $t_is_conj;Elim id;Do 2 Intro;Clear id
         | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_conj;Cut ?2-> ?3-> ?4;[Intro;Clear id|Intros;Apply id;Split;
-            Assumption]
+          $t_is_conj;Cut ?2-> ?3-> ?4;[Intro;Clear id|Intros;Apply id;
+            Try Split;Assumption]
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
           $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intro;Apply id;
             Left;Assumption]|Intro;Apply id;Right;Assumption]
@@ -88,9 +88,6 @@ let rec tauto_main () =
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
           Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intros;
           Assumption];$t_tauto_main
-      | [id:?1 -> ?2 |- ?] ->
-        Cut ?1;[Intro;Cut ?2;[Clear id ; $t_tauto_main | Intro; Apply id;
-         Assumption ]| Clear id ; $t_tauto_main]
       | [|- (?1 ? ?)] ->
         $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main)>>
 
@@ -100,16 +97,6 @@ let intuition_main () =
   and t_simplif = tacticIn simplif in
   <:tactic<$t_simplif;$t_axioms Orelse Auto with *>>
 
-(*i
-let compute = function
-  | None -> interp <:tactic<Compute>>
-  | Some id ->
-    let ast_id = nvar (string_of_id id) in
-    interp <:tactic<Compute in $ast_id>>
-
-let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
-i*)
-
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
   | Some id ->
@@ -118,28 +105,31 @@ let unfold_not_iff = function
 
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
+let compute = function
+  | None -> interp <:tactic<Compute>>
+  | Some id ->
+    let ast_id = nvar (string_of_id id) in
+    interp <:tactic<Compute in $ast_id>>
+
+let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
+
 (* As a simple heuristic, first we try to avoid reduction both in *)
 (* tauto and intuition                                            *)
 
 let tauto =
-  (tclTHEN (init_intros ())
-     (tclORELSE
-	(interp (tauto_main ()))
-	(tclTHEN reduction_not_iff (interp (tauto_main ()))))
-  )
+  tclTHEN (init_intros ())
+    (tclORELSE
+      (tclTHEN reduction_not_iff (interp (tauto_main ())))
+      (tclTHEN reduction (interp (tauto_main ()))))
 
 let intuition =
  tclTHEN (init_intros ())
   (tclORELSE
-    (interp (intuition_main ()))
     (tclTHEN reduction_not_iff (interp (intuition_main ())))
-  )
+    (tclTHEN reduction (interp (intuition_main ()))))
 
-(*FIXME
-let _ = hide_atomic_tactic "Tauto" tauto
-let _ = hide_atomic_tactic "Intuition" intuition
-*)
-
+(*let _ = hide_atomic_tactic "Tauto" tauto
+let _ = hide_atomic_tactic "Intuition" intuition*)
 
 (****************************************************************************)
 (* VIEUX TAUTO RÉTABLI EN ATTENDANT QUE LE NOUVEAU TAUTO SOIT STABLE        *)
@@ -2067,4 +2057,3 @@ let intuition gls =
 let tauto_tac = hide_atomic_tactic "Tauto" tauto
 
 let intuition_tac = hide_atomic_tactic "Intuition" intuition
-
