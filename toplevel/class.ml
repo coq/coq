@@ -296,11 +296,6 @@ let get_strength stre ref cls clt =
  *)
   let streunif = NeverDischarge in
   let stre' = stre_max4 stres stret stref streunif in
-  if (stre = NeverDischarge) & (stre' <> NeverDischarge)
-  then errorlabstrm "try_add_coercion" 
-    [< Printer.pr_global ref;
-       'sTR " must be declared as a local coercion"; 'fNL;
-       'sTR "because it involves local definition" >];
   stre_max (stre,stre')
 
 (* coercion identité *)
