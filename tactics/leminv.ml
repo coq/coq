@@ -350,7 +350,7 @@ let useInversionLemma =
              fun gls -> lemInv id c gls
 	 | _  -> anomaly "useInversionLemma")
   in 
-  fun id com -> gentac [Identifier id;Command com]
+  fun id c -> gentac [Identifier id;Constr c]
 
 let lemInvIn id c ids gls =
   let intros_replace_ids gls =
@@ -379,8 +379,15 @@ let useInversionLemmaIn =
 		    (function
 		       | (Identifier id) -> id
 		       | _ -> anomaly "UseInversionLemmaIn") hl) gls
+	 | ((Identifier id)::(Constr c)::hl) ->
+	     fun gls ->
+	       lemInvIn id c
+                 (List.map
+		    (function
+		       | (Identifier id) -> id
+		       | _ -> anomaly "UseInversionLemmaIn") hl) gls
 	 | _ -> anomaly "UseInversionLemmaIn")
   in 
-  fun id com hl ->
-    gentac ((Identifier id)::(Command com)
+  fun id c hl ->
+    gentac ((Identifier id)::(Constr c)
             ::(List.map (fun id -> (Identifier id)) hl))
