@@ -15,7 +15,7 @@ The Coq Extension for Pcoq provides all facilities to interface Coq with
 Pcoq
 
 %prep
-%setup -n coq-8.0cdrom
+%setup -n coq-8.0
 
 %build
 ./configure -prefix /usr -emacslib /usr/share/emacs/site-lisp -opt -reals all -coqide no       # Need ocamlc.opt and ocamlopt.opt

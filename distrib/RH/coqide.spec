@@ -6,7 +6,7 @@ Copyright: freely redistributable
 Group: Applications/Math
 Vendor: INRIA & LRI
 URL: http://coq.inria.fr
-Source: ftp://ftp.inria.fr/INRIA/coq/V8.0beta/coq-8.0.tar.gz
+Source: ftp://ftp.inria.fr/INRIA/coq/V8.0/coq-8.0.tar.gz
 Icon: petit-coq.gif
 Requires: coq = 8.0
 
@@ -15,7 +15,7 @@ The Coq Integrated Development Interface is a graphical interface for the
 Coq proof assistant 
 
 %prep
-%setup -n coq-8.0cdrom
+%setup -n coq-8.0
 
 %build
 ./configure -prefix /usr -emacslib /usr/share/emacs/site-lisp -opt -reals all   # Need ocamlc.opt and ocamlopt.opt
