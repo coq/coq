@@ -689,9 +689,10 @@ ALLOLDREALS=$(REALSBASEVO:theories%.vo:theories7%.vo) $(REALS_all:theories%.vo:t
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
-THEORIESVO = $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) $(LISTSVO) \
-             $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
-	     $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
+THEORIESVO =\
+  $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
+  $(LISTSVO) $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
+  $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
 NEWTHEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 OLDTHEORIESLIGHTVO = $(NEWTHEORIESLIGHTVO:theories%.vo:theories7%.vo)
@@ -1247,10 +1248,6 @@ toplevel/mltop.byteml: toplevel/mltop.ml4
 toplevel/mltop.optml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
 	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl $< > $@ || rm -f $@
-
-toplevel/mltop.ml: toplevel/mltop.ml4
-	$(SHOW)'CAMLP4O  $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
