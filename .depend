@@ -3202,7 +3202,7 @@ contrib/omega/coq_omega.cmo: lib/util.cmi pretyping/termops.cmi \
     library/goptions.cmi library/global.cmi pretyping/evarutil.cmi \
     proofs/evar_refiner.cmi tactics/equality.cmi kernel/environ.cmi \
     kernel/declarations.cmi interp/coqlib.cmi tactics/contradiction.cmi \
-    kernel/closure.cmi pretyping/clenv.cmi parsing/ast.cmi 
+    kernel/closure.cmi pretyping/clenv.cmi lib/bigint.cmi parsing/ast.cmi 
 contrib/omega/coq_omega.cmx: lib/util.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
     pretyping/tacred.cmx proofs/tacmach.cmx kernel/sign.cmx \
@@ -3213,7 +3213,7 @@ contrib/omega/coq_omega.cmx: lib/util.cmx pretyping/termops.cmx \
     library/goptions.cmx library/global.cmx pretyping/evarutil.cmx \
     proofs/evar_refiner.cmx tactics/equality.cmx kernel/environ.cmx \
     kernel/declarations.cmx interp/coqlib.cmx tactics/contradiction.cmx \
-    kernel/closure.cmx pretyping/clenv.cmx parsing/ast.cmx 
+    kernel/closure.cmx pretyping/clenv.cmx lib/bigint.cmx parsing/ast.cmx 
 contrib/omega/g_omega.cmo: lib/util.cmi tactics/tacinterp.cmi \
     proofs/tacexpr.cmo proofs/refiner.cmi parsing/pptactic.cmi lib/pp.cmi \
     parsing/pcoq.cmi lib/options.cmi parsing/egrammar.cmi \
@@ -3278,10 +3278,10 @@ contrib/ring/ring.cmx: toplevel/vernacinterp.cmx toplevel/vernacexpr.cmx \
     kernel/closure.cmx 
 contrib/romega/const_omega.cmo: lib/util.cmi kernel/term.cmi lib/options.cmi \
     library/nametab.cmi kernel/names.cmi library/libnames.cmi \
-    library/global.cmi interp/coqlib.cmi 
+    library/global.cmi interp/coqlib.cmi lib/bigint.cmi 
 contrib/romega/const_omega.cmx: lib/util.cmx kernel/term.cmx lib/options.cmx \
     library/nametab.cmx kernel/names.cmx library/libnames.cmx \
-    library/global.cmx interp/coqlib.cmx 
+    library/global.cmx interp/coqlib.cmx lib/bigint.cmx 
 contrib/romega/g_romega.cmo: lib/util.cmi tactics/tacinterp.cmi \
     proofs/tacexpr.cmo contrib/romega/refl_omega.cmo proofs/refiner.cmi \
     parsing/pptactic.cmi lib/pp.cmi parsing/pcoq.cmi lib/options.cmi \
@@ -3290,16 +3290,16 @@ contrib/romega/g_romega.cmx: lib/util.cmx tactics/tacinterp.cmx \
     proofs/tacexpr.cmx contrib/romega/refl_omega.cmx proofs/refiner.cmx \
     parsing/pptactic.cmx lib/pp.cmx parsing/pcoq.cmx lib/options.cmx \
     parsing/egrammar.cmx toplevel/cerrors.cmx 
-contrib/romega/omega2.cmo: lib/util.cmi kernel/names.cmi 
-contrib/romega/omega2.cmx: lib/util.cmx kernel/names.cmx 
 contrib/romega/refl_omega.cmo: lib/util.cmi kernel/term.cmi \
     tactics/tactics.cmi tactics/tacticals.cmi proofs/tacmach.cmi \
-    parsing/printer.cmi lib/pp.cmi lib/options.cmi contrib/romega/omega2.cmo \
-    kernel/names.cmi proofs/logic.cmi contrib/romega/const_omega.cmo 
+    parsing/printer.cmi lib/pp.cmi lib/options.cmi contrib/omega/omega.cmo \
+    kernel/names.cmi proofs/logic.cmi contrib/romega/const_omega.cmo \
+    lib/bigint.cmi 
 contrib/romega/refl_omega.cmx: lib/util.cmx kernel/term.cmx \
     tactics/tactics.cmx tactics/tacticals.cmx proofs/tacmach.cmx \
-    parsing/printer.cmx lib/pp.cmx lib/options.cmx contrib/romega/omega2.cmx \
-    kernel/names.cmx proofs/logic.cmx contrib/romega/const_omega.cmx 
+    parsing/printer.cmx lib/pp.cmx lib/options.cmx contrib/omega/omega.cmx \
+    kernel/names.cmx proofs/logic.cmx contrib/romega/const_omega.cmx \
+    lib/bigint.cmx 
 contrib/xml/acic.cmo: kernel/term.cmi kernel/names.cmi 
 contrib/xml/acic.cmx: kernel/term.cmx kernel/names.cmx 
 contrib/xml/acic2Xml.cmo: contrib/xml/xml.cmi lib/util.cmi kernel/term.cmi \
