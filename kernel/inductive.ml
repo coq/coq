@@ -167,15 +167,15 @@ let is_correct_arity env c pj ind mip params =
   let kelim = mip.mind_kelim in
   let arsign,s = get_arity mip params in
   let nodep_ar = it_mkProd_or_LetIn (mkSort s) arsign in
-  let rec srec pt t u =
+  let rec srec env pt t u =
     let pt' = whd_betadeltaiota env pt in
     let t' = whd_betadeltaiota env t in
     match kind_of_term pt', kind_of_term t' with
-      | Prod (_,a1,a2), Prod (_,a1',a2') ->
+      | Prod (na1,a1,a2), Prod (_,a1',a2') ->
           let univ =
             try conv env a1 a1'
             with NotConvertible -> raise (LocalArity None) in
-          srec a2 a2' (Constraint.union u univ)
+          srec (push_rel (na1,None,a1) env) a2 a2' (Constraint.union u univ)
       | Prod (_,a1,a2), _ -> 
           let k = whd_betadeltaiota env a2 in 
           let ksort = match kind_of_term k with
@@ -200,7 +200,7 @@ let is_correct_arity env c pj ind mip params =
           else 
 	    raise (LocalArity (Some(pt',t',error_elim_expln env pt' t')))
   in 
-  try srec pj.uj_type nodep_ar Constraint.empty
+  try srec env pj.uj_type nodep_ar Constraint.empty
   with LocalArity kinds ->
     let create_sort = function 
       | InProp -> mkProp
