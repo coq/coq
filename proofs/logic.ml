@@ -18,6 +18,7 @@ open Typeops
 open Type_errors
 open Coqast
 open Declare
+open Retyping
 
 type refiner_error =
   | BadType of constr * constr * constr
@@ -39,6 +40,15 @@ let catchable_exception = function
 
 let error_cannot_unify k (m,n) =
   raise (RefinerError (CannotUnify (m,n)))
+
+let check = ref true
+
+let without_check tac gl =
+  let c = !check in
+  check := false;
+  let r = tac gl in
+  check := c;
+  r
 
 let conv_leq_goal env sigma arg ty conclty =
   if not (is_conv_leq env sigma ty conclty) then 
@@ -157,15 +167,6 @@ let new_meta_variables =
   in 
   newrec
 
-let mk_assumption env sigma c = execute_type env sigma c
-				   
-let sign_before id = 
-  let rec aux sign =
-    if isnull_sign sign then error "no such hypothesis";
-    if fst (hd_sign sign) = id then tl_sign sign else aux (tl_sign sign)
-  in 
-  aux
-
 let error_use_instantiate () =
   errorlabstrm "Logic.prim_refiner"
     [< 'sTR"cannot intro when there are open metavars in the domain type";
@@ -182,36 +183,40 @@ let error_use_instantiate () =
 let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error ("No such hypothesis : " ^ (string_of_id hfrom))
-    | (hyp,typ) as h :: right ->
+    | (hyp,c,typ) as d :: right ->
       	if hyp = hfrom then 
-	  (left,right,typ,toleft) 
+	  (left,right,d,toleft) 
       	else 
-	  splitrec (h::left) (toleft or (hyp = hto)) right
+	  splitrec (d::left) (toleft or (hyp = hto)) right
   in 
   splitrec [] false l
 
-let move_after with_dep toleft (left,htfrom,right) hto =
-  let test_dep (hyp,typ) (hyp2,typ2) =
-    if toleft then 
-      occur_var hyp2 (body_of_type typ)
-    else 
-      occur_var hyp (body_of_type typ2)
+let occur_decl hyp (_,c,typ) =
+  match c with
+    | None -> occur_var hyp (body_of_type typ)
+    | Some body -> occur_var hyp (body_of_type typ) || occur_var hyp body
+
+let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
+  let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
+    if toleft
+    then occur_decl hyp2 d
+    else occur_decl hyp d2
   in
   let rec moverec first middle = function
     | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
-    | (hyp,typ) as ht :: right ->
+    | (hyp,_,_) as d :: right ->
 	let (first',middle') =
-      	  if List.exists (test_dep ht) middle then 
+      	  if List.exists (test_dep d) middle then 
 	    if with_dep & (hyp <> hto) then 
-	      (first, (hyp,typ)::middle)
+	      (first, d::middle)
             else 
 	      error 
-		("Cannot move "^(string_of_id (fst htfrom))^" after "
+		("Cannot move "^(string_of_id idfrom)^" after "
 		 ^(string_of_id hto)
 		 ^(if toleft then ": it occurs in " else ": it depends on ")
 		 ^(string_of_id hyp))
           else 
-	    ((hyp,typ)::first, middle)
+	    (d::first, middle)
 	in
       	if hyp = hto then 
 	  (List.rev first')@(List.rev middle')@right
@@ -219,10 +224,70 @@ let move_after with_dep toleft (left,htfrom,right) hto =
 	  moverec first' middle' right
   in
   if toleft then 
-    List.rev_append (moverec [] [htfrom] left) right
+    List.rev_append (moverec [] [declfrom] left) right
   else 
-    List.rev_append left (moverec [] [htfrom] right)
-    
+    List.rev_append left (moverec [] [declfrom] right)
+
+let apply_to_hyp env id f =
+  let found = ref false in
+  let env' =
+    process_var_context_both_sides
+      (fun env (idc,c,ct as d) tail ->
+	 if idc = id then (found:=true; f env d tail) else push_var d env)
+      env in
+  if (not !check) || !found then env'
+  else error "No such assumption"
+
+let global_vars_set_of_var = function
+  | (_,None,t) -> global_vars_set (body_of_type t)
+  | (_,Some c,t) ->
+      Idset.union (global_vars_set (body_of_type t)) (global_vars_set c)
+
+let check_backward_dependencies env d =
+  if not (Idset.for_all
+	    (fun id -> mem_var_context id (var_context env))
+	    (global_vars_set_of_var d))
+  then
+    error "Can't introduce at that location: free variable conflict"
+
+let check_forward_dependencies id tail =
+  List.iter
+    (function (id',c,t) ->
+       let b = match c with
+	 | None -> occur_var id (body_of_type t)
+	 | Some body -> occur_var id (body_of_type t) || occur_var id body in
+       if b then
+	 error ((string_of_id id) ^ " is used in the hypothesis " 
+		^ (string_of_id id')))
+    tail
+
+let convert_hyp env sigma id ty =
+  apply_to_hyp env id
+    (fun env (idc,c,ct) _ ->
+       if !check && not (is_conv env sigma ty (body_of_type ct)) then
+	 error "convert-hyp rule passed non-converting term";
+       push_var (idc,c,get_assumption_of env sigma ty) env)
+
+let replace_hyp env id d =
+  apply_to_hyp env id
+    (fun env _ tail ->
+       if !check then
+	 (check_backward_dependencies env d;
+	  check_forward_dependencies id tail);
+       push_var d env)
+
+let insert_after_hyp env id d =
+  apply_to_hyp env id
+    (fun env d' _ ->
+       if !check then check_backward_dependencies env d;
+       push_var d (push_var d' env))
+
+let remove_hyp env id =
+  apply_to_hyp env id
+    (fun env _ tail ->
+       if !check then check_forward_dependencies id tail;
+       env)
+
 (* Primitive tactics are handled here *)
 
 let prim_refiner r sigma goal =
@@ -232,51 +297,46 @@ let prim_refiner r sigma goal =
   let info = out_some goal.evar_info in
   match r with
     | { name = Intro; newids = [id] } ->
-    	if mem_sign sign id then error "New variable is already declared";
+    	if !check && mem_var_context id sign then
+	  error "New variable is already declared";
         (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,DLAM(_,b)) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = mk_assumption env sigma c1
+	       let a = get_assumption_of env sigma c1
 	       and v = VAR id in
-	       let sg = mk_goal info (push_var (id,a) env) (subst1 v b) in 
+	       let sg = mk_goal info (push_var_decl (id,a) env) (subst1 v b) in
 	       [sg]
-	   | _ -> error "Introduction needs a product")
+	   | _ ->
+	       if !check then error "Introduction needs a product"
+	       else anomaly "Intro: expects a product")
 	
     | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
-    	if mem_sign sign id then error "New variable is already declared";
+    	if !check && mem_var_context id sign then
+	  error "New variable is already declared";
         (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,DLAM(_,b)) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       if not (List.for_all
-                         (mem_sign (sign_prefix whereid sign))
-                         (global_vars c1)) then
-		 error 
-		   "Can't introduce at that location: free variable conflict";
-	       let a = mk_assumption env sigma c1
+	       let a = get_assumption_of env sigma c1
 	       and v = VAR id in
-	       let env' = change_hyps (add_sign_after whereid (id,a)) env in
+	       let env' = insert_after_hyp env whereid (id,None,a) in
 	       let sg = mk_goal info env' (subst1 v b) in 
 	       [sg]
-	   | _ -> error "Introduction needs a product")
+	   | _ ->
+	       if !check then error "Introduction needs a product"
+	       else anomaly "Intro_after: expects a product")
 	
     | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
 	(match strip_outer_cast cl with
            | DOP2(Prod,c1,DLAM(_,b)) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       if not (List.for_all 
-			 (mem_sign (tl_sign (sign_prefix id sign))) 
-			 (global_vars c1))
-                 or List.exists (fun t -> occur_var id (body_of_type t)) 
-			 (vals_of_sign sign) 
-	       then 
-		 error 
-		   "Can't introduce at that location: free variable conflict";
-	       let a = mk_assumption env sigma c1
+	       let a = get_assumption_of env sigma c1
 	       and v = VAR id in
-	       let env' = change_hyps (add_sign_replacing id (id,a)) env in
+	       let env' = replace_hyp env id (id,None,a) in
 	       let sg = mk_goal info env' (subst1 v b) in
 	       [sg]
-	   | _ -> error "Introduction needs a product")
+	   | _ ->
+	       if !check then error "Introduction needs a product"
+	       else anomaly "Intro_replacing: expects a product")
 	
     | { name = Fix; hypspecs = []; terms = []; 
 	newids = [f]; params = [Num(_,n)] } ->
@@ -293,9 +353,10 @@ let prim_refiner r sigma goal =
             | _ -> error "not enough products"
 	in
      	check_ind n cl;
-	if mem_sign sign f then error "name already used in the environment";
-        let a = mk_assumption env sigma cl in
-        let sg = mk_goal info (push_var (f,a) env) cl in
+	if !check && mem_var_context f sign then
+	  error ("The name "^(string_of_id f)^" is already used");
+        let a = get_assumption_of env sigma cl in
+        let sg = mk_goal info (push_var_decl (f,a) env) cl in
         [sg]
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
@@ -319,10 +380,10 @@ let prim_refiner r sigma goal =
 	      if not (sp=sp') then 
 		error ("fixpoints should be on the same " ^ 
 		       "mutual inductive declaration");
-	      if mem_sign sign f then 
+	      if mem_var_context f sign then 
 		error "name already used in the environment";
-	      let a = mk_assumption env sigma ar in
-	      mk_sign (add_sign (f,a) sign) (lar',lf',ln')
+	      let a = get_assumption_of env sigma ar in
+	      mk_sign (add_var_decl (f,a) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
 	      List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
@@ -348,8 +409,8 @@ let prim_refiner r sigma goal =
                 error "name already used in the environment")
               with
               |	Not_found ->
-  	        let a = mk_assumption env sigma ar in
-	        mk_env (push_var (f,a) env) (lar',lf'))
+  	        let a = get_assumption_of env sigma ar in
+	        mk_env (push_var_decl (f,a) env) (lar',lf'))
 	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
@@ -359,8 +420,8 @@ let prim_refiner r sigma goal =
           | (ar::lar'),(f::lf') ->
 	      if (mem_sign sign f) then 
 		error "name already used in the environment";
-	      let a = mk_assumption env sigma ar in
-	      mk_sign (add_sign (f,a) sign) (lar',lf')
+	      let a = get_assumption_of env sigma ar in
+	      mk_sign (add_var_decl (f,a) sign) (lar',lf')
 	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
@@ -381,102 +442,27 @@ let prim_refiner r sigma goal =
 	  error "convert-concl rule passed non-converting term"
 
     | { name = Convert_hyp; hypspecs = [id]; terms = [ty'] } ->
-      (* Faut-il garder la sorte d'origine ou celle du converti ?? *)
-	let env' = change_hyps (sign_before id) env in
-    	let tj = execute_type env' sigma ty' in
-	if is_conv env sigma ty' (body_of_type (snd(lookup_sign id sign))) then
-	  let env' = change_hyps (modify_sign id tj) env in
-          [mk_goal info env' cl]
-	else 
-	  error "convert-hyp rule passed non-converting term"
-	    
+	[mk_goal info (convert_hyp env sigma id ty') cl]
+
     | { name = Thin; hypspecs = ids } ->
-     	let rec remove_pair s sign =
-	  if isnull_sign sign then
-	    error ((string_of_id s) ^ " is not among the assumptions.");
-	  let (s',ty),tlsign = uncons_sign sign in
-	  if s = s' then 
-	    tlsign
-          else if occur_var s (body_of_type ty) then 
-	    error ((string_of_id s) ^ " is used in the hypothesis " 
-		   ^ (string_of_id s'))
-          else 
-	    add_sign (s',ty) (remove_pair s tlsign)
-	in
-	let clear_aux sign s =
-          if occur_var s cl then
-            error ((string_of_id s) ^ " is used in the conclusion.");
-          remove_pair s sign 
-	in
-	let env' = 
-	  change_hyps (fun sign -> List.fold_left clear_aux sign ids) env in
+	let clear_aux env id =
+          if !check && occur_var id cl then
+            error ((string_of_id id) ^ " is used in the conclusion.");
+          remove_hyp env id in
+	let env' = List.fold_left clear_aux env ids in
      	let sg = mk_goal info env' cl in
      	[sg]
 
     | { name = Move withdep; hypspecs = ids } ->
 	let (hfrom,hto) =
 	  match ids with [h1;h2] ->(h1,h2)| _ -> anomaly "prim_refiner:MOVE" in
-  	let hyps = list_of_sign sign in
-  	let (left,right,typfrom,toleft) = split_sign hfrom hto hyps in
+  	let (left,right,declfrom,toleft) = split_sign hfrom hto sign in
   	let hyps' = 
-	  move_after withdep toleft (left,(hfrom,typfrom),right) hto in
-	let env' = change_hyps (fun _ -> make_sign hyps') env in
+	  move_after withdep toleft (left,declfrom,right) hto in
+	let env' = change_hyps (fun _ -> hyps') env in
   	[mk_goal info env' cl]
 	
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
-
-let abst_value c =
-  let env = Global.env () in
-  Environ.abst_value env c
-	  
-let extract_constr = 
-  let rec crec vl = function
-    | VAR str ->
-        (try 
-	   (match lookup_id str vl with
-              | GLOBNAME (id,_) -> VAR id
-              | RELNAME (n,_) -> Rel n)
-         with Not_found -> 
-           (try global_reference CCI str
-            with Not_found -> error ((string_of_id str)^" not declared")))
-	
-    | (Rel _) as val_0 -> val_0
-	  
-    | DOP2(Lambda,c1,DLAM(na,c2)) ->
-        let u1 = crec vl c1 in
-        DOP2(Lambda,u1,DLAM(na,crec (add_rel (Anonymous,u1) vl) c2))
-	  
-    | DOPN(Term.Fix _,_) as fix ->
-	let (vn,(lar,lna,defs)) = destFix fix in
-        let newar = Array.map (crec vl) lar in
-        let newenv =
-          array_fold_left2
-	    (fun env na ar -> add_rel (na,ar) env) vl
-	    (Array.of_list lna) newar in
-  	mkFix (vn,(newar,lna,Array.map (crec newenv) defs))
-
-    | DOPN(CoFix _,_) as cofix ->
-	let (n,(lar,lna,defs)) = destCoFix cofix in
-        let newar = Array.map (crec vl) lar in
-        let newenv =
-          array_fold_left2
-	    (fun env na ar -> add_rel (na,ar) env) vl
-	    (Array.of_list lna) newar in
-  	mkCoFix (n,(newar,lna,Array.map (crec newenv) defs))
-	  
-    | DOP2(Prod,c1,DLAM(na,c2)) ->
-        let u1 = crec vl c1 in
-        DOP2(Prod,u1,DLAM(na,crec (add_rel (Anonymous,u1) vl) c2))
-	  
-    | DOP2(Cast,c,t) -> DOP2(Cast,crec vl c,crec vl t)
-    | DOPN(Abst _,_) as val_0 -> crec vl (abst_value val_0)
-    | DOPN(oper,cl) -> DOPN(oper,Array.map (crec vl) cl)
-    | DOPL(oper,cl) -> DOPL(oper,List.map (crec vl) cl)
-    | DOP0 _ as c -> c
-    | _ -> anomaly "extract_constr : term not matched"
-  in 
-  crec 
-
 
 let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in
@@ -484,60 +470,51 @@ let prim_extractor subfun vl pft =
     | { ref = Some (Prim { name = Intro; newids = [id] }, [spf]) } ->
 	(match strip_outer_cast cl with
 	   | DOP2(Prod,ty,b) ->
-	       let cty = extract_constr vl ty in
-               let na = Name id in 
-	       DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
+	       let cty = subst_vars vl ty in
+	       DOP2(Lambda,cty, DLAM(Name id,subfun (id::vl) spf))
 	   | _ -> error "incomplete proof!")
 	
     | { ref = Some (Prim { name = Intro_after; newids = [id]}, [spf]) } -> 
 	(match strip_outer_cast cl with
 	   | DOP2(Prod,ty,b) ->
-	       let cty = extract_constr vl ty in
-               let na = Name id in 
-	       DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
+	       let cty = subst_vars vl ty in
+	       DOP2(Lambda,cty, DLAM(Name id,subfun (id::vl) spf))
 	   | _ -> error "incomplete proof!")
 	
     | {ref=Some(Prim{name=Intro_replacing;hypspecs=[id]},[spf]) } ->
 	(match strip_outer_cast cl with
 	   | DOP2(Prod,ty,b) ->
-	       let cty = extract_constr vl ty in
-               let na = Name id in 
-	       DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
+	       let cty = subst_vars vl ty in
+	       DOP2(Lambda,cty,DLAM(Name id,subfun (id::vl) spf))
 	   | _ -> error "incomplete proof!")
 	
     | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
-	let cty = extract_constr vl cl in 
+	let cty = subst_vars vl cl in 
 	let na = Name f in 
-	DOPN(Term.Fix([|n-1|],0),
-	     [| cty ; DLAMV(na,[|subfun (add_rel (na,cty) vl) spf|])|])
-	  
+	DOPN(Term.Fix([|n-1|],0),[| cty ; DLAMV(na,[|subfun (f::vl) spf|])|])
     | {ref=Some(Prim{name=Fix;newids=lf;terms=lar;params=ln},spfl) } ->
-	let lcty = List.map (extract_constr vl) (cl::lar) in 
+	let lcty = List.map (subst_vars vl) (cl::lar) in 
 	let vn = 
 	  Array.of_list (List.map (function Num(_,n) -> n-1
 				     | _ -> anomaly "mutual_fix_refiner")
 			   ln) 
 	in 
 	let lna = List.map (fun f -> Name f) lf in
-	let newvl = List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
-                      vl lna lcty in 
+	let newvl = List.fold_left (fun vl id -> (id::vl)) vl lf  in 
 	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	mkFix ((vn,0),(Array.of_list lcty,lna,lfix))
-	
+	mkFix ((vn,0),(Array.of_list lcty,lna,lfix))	
+
     | {ref=Some(Prim{name=Cofix;newids=lf;terms=lar},spfl) } ->
-	let lcty = List.map (extract_constr vl) (cl::lar) in 
+	let lcty = List.map (subst_vars vl) (cl::lar) in 
 	let lna  = List.map (fun f -> Name f) lf in
-	let newvl = 
-	  List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
-            vl lna lcty 
-	in 
+	let newvl = List.fold_left (fun vl id -> (id::vl)) vl lf in 
 	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
 	mkCoFix (0,(Array.of_list lcty,lna,lfix))
 	  
     | {ref=Some(Prim{name=Refine;terms=[c]},spfl) } ->
 	let mvl = collect_meta_variables c in
 	let metamap = List.combine mvl (List.map (subfun vl) spfl) in
-	let cc = extract_constr vl c in 
+	let cc = subst_vars vl c in 
 	plain_instance metamap cc
 	  
     | {ref=Some(Prim{name=Convert_concl;terms=[c]},[pf])} ->
@@ -547,6 +524,7 @@ let prim_extractor subfun vl pft =
 	subfun vl pf
 	
     | {ref=Some(Prim{name=Thin;hypspecs=ids},[pf])} ->
+     (* No need to make ids Anonymous in vl: subst_vars take the more recent *)
 	subfun vl pf
 	
     | {ref=Some(Prim{name=Move _;hypspecs=ids},[pf])} ->
@@ -559,11 +537,6 @@ let prim_extractor subfun vl pft =
 	  
     | _ -> anomaly "prim_extractor"
 	
-(***
-let prim_extractor = Profile.profile3 "prim_extractor" prim_extractor
-let prim_refiner = Profile.profile3 "prim_refiner" prim_refiner
-***)
-
 (* Pretty-printer *)
 
 open Printer
