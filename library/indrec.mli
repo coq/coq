@@ -29,8 +29,15 @@ val build_indrec :
 val type_rec_branches : bool -> unsafe_env -> 'c evar_map -> constr 
   -> constr -> constr -> constr -> constr * constr array * constr
 
+val make_rec_branch_arg : 
+  unsafe_env -> 'a evar_map ->
+    constr array * ('b * constr) option array * int ->
+    constr -> constr -> recarg list -> constr
+
+(*i Info pour JCF : déplacé dans pretyping, sert à Program
 val transform_rec : unsafe_env -> 'c evar_map -> (constr array) 
   -> (constr * constr) -> constr
+i*)
 
 val is_mutind : unsafe_env -> 'a evar_map -> constr -> bool 
 

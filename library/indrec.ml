@@ -178,7 +178,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
   in 
   process_constr 0 st recargs (appvect(co,vargs))
 
-let rec_branch_arg env sigma (vargs,fvect,decF) f t recargs = 
+let make_rec_branch_arg env sigma (vargs,fvect,decF) f t recargs = 
   let nparams = Array.length vargs in
   let st = hnf_prod_appvect env sigma "type_rec_branch" t vargs in
   let process_pos fk  = 
@@ -268,7 +268,7 @@ let mis_make_indrec env sigma listdepkind mispec =
 	    let vecfi = rel_vect (dect+1-i-nctyi) nctyi in
 	    let branches = 
 	      array_map3
-		(rec_branch_arg env sigma 
+		(make_rec_branch_arg env sigma 
 		   (rel_vect (decf+1) nparams,depPvec,nar+1))
                 vecfi lct recargsvec.(tyi) in
 	    let j = (match depPvec.(tyi) with 
@@ -450,100 +450,6 @@ let type_rec_branches recursive env sigma ct pt p c =
         else 
 	  type_case_branches env sigma ct pt p c
     | _ -> error"Elimination on a non-inductive type 1"
-
-(* Awful special reduction function which skips abstraction on Xtra in order to 
-   be safe for Program ... *)
-
-let stacklamxtra recfun = 
-  let rec lamrec sigma p_0 p_1 = match p_0,p_1 with 
-    | (stack, (DOP2(Lambda,DOP1(XTRA "COMMENT",_),DLAM(_,c)) as t)) ->
-        recfun stack (substl sigma t)
-    | ((h::t), (DOP2(Lambda,_,DLAM(_,c)))) -> lamrec (h::sigma) t c
-    | (stack, t) -> recfun stack (substl sigma t)
-  in 
-  lamrec 
-
-let rec whrec x stack =
-  match x with   
-    | DOP2(Lambda,DOP1(XTRA "COMMENT",c),DLAM(name,t)) ->
-    	let t' = applist (whrec t (List.map (lift 1) stack)) in 
-	DOP2(Lambda,DOP1(XTRA "COMMENT",c),DLAM(name,t')),[]
-    | DOP2(Lambda,c1,DLAM(name,c2)) ->
-    	(match stack with
-	   | [] -> (DOP2(Lambda,c1,DLAM(name,whd_betaxtra c2)),[])
-	   | a1::rest -> stacklamxtra (fun l x -> whrec x l) [a1] rest c2)
-    | DOPN(AppL,cl) -> whrec (array_hd cl) (array_app_tl cl stack)
-    | DOP2(Cast,c,_) ->  whrec c stack
-    | x -> x,stack
-
-and whd_betaxtra x = applist(whrec x [])
-
-let transform_rec env sigma cl (ct,pt) = 
-  let (mI,largs as mind) = find_minductype env sigma ct in
-  let p = cl.(0)
-  and c = cl.(1)
-  and lf = Array.sub cl 2 ((Array.length cl) - 2) in
-  let mispec = lookup_mind_specif mI env in 
-  let recargs = mis_recarg mispec in
-  let expn = Array.length recargs in
-  if Array.length lf <> expn then error_number_branches CCI env c ct expn;
-  if is_recursive [mispec.mis_tyi] recargs then
-    let (dep,_) = find_case_dep_nparams env sigma (c,p) mind pt in 
-    let ntypes = mis_nconstr mispec 
-    and tyi = mispec.mis_tyi 
-    and nparams = mis_nparams mispec in
-    let depFvec = Array.create ntypes (None : (bool * constr) option) in 
-    let _ = Array.set depFvec mispec.mis_tyi (Some(dep,Rel 1)) in 
-    let (pargs,realargs) = list_chop nparams largs in
-    let vargs = Array.of_list pargs in
-    let (_,typeconstrvec) = mis_type_mconstructs mispec in
-    (* build now the fixpoint *)
-    let realar =
-      hnf_prod_appvect env sigma "make_branch" (mis_arity mispec) vargs in
-    let lnames,_ = splay_prod env sigma realar in 
-    let nar = List.length lnames in
-    let branches = 
-      array_map3
-	(fun f t reca -> 
-	   whd_betaxtra
-             (rec_branch_arg env sigma
-                ((Array.map (lift (nar+2)) vargs),depFvec,nar+1)
-                f t reca))
-        (Array.map (lift (nar+2)) lf) typeconstrvec recargs 
-    in 
-    let deffix = 
-      it_lambda_name env
-	(lambda_create env
-	   (appvect (mI,Array.append (Array.map (lift (nar+1)) vargs)
-                       (rel_vect 0 nar)),
-            mkMutCaseA (ci_of_mind mI) 
-              (lift (nar+2) p) (Rel 1) branches))
-        (lift_context 1 lnames) 
-    in
-    if noccurn 1 deffix then 
-      whd_beta env sigma (applist (pop deffix,realargs@[c]))
-    else
-      let typPfix = 
-	it_prod_name env
-	  (prod_create env
-	     (appvect (mI,(Array.append 
-			     (Array.map (lift nar) vargs)
-			     (rel_vect 0 nar))),
-	      (if dep then 
-		 applist (whd_beta_stack env sigma 
-			    (lift (nar+1) p) (rel_list 0 (nar+1)))
-	       else 
-		 applist (whd_beta_stack env sigma 
-			    (lift (nar+1) p) (rel_list 1 nar)))))
-          lnames 
-      in
-      let fix = DOPN(Fix([|nar|],0),
-		     [|typPfix;
-		       DLAMV(Name(id_of_string "F"),[|deffix|])|])
-      in 
-      applist (fix,realargs@[c])
-  else 
-    mkMutCaseA (ci_of_mind mI) p c lf
 
 (*** Building ML like case expressions without types ***)
 
