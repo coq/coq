@@ -714,9 +714,9 @@ let unify_relation_carrier_with_type env rel t =
  let raise_error quantifiers_no =
   errorlabstrm "New Morphism"
    (str "One morphism argument or its output has type " ++ prterm t ++
-    str " but the signature requires an argument of type (" ++
-    prterm rel.rel_a ++ prvect_with_sep pr_spc (fun _ -> str  "?")
-     (Array.make quantifiers_no 0)) in
+    str " but the signature requires an argument of type \"" ++
+    prterm rel.rel_a ++ str " " ++ prvect_with_sep pr_spc (fun _ -> str  "?")
+     (Array.make quantifiers_no 0) ++ str "\"") in
  let args =
   match kind_of_term t with
      App (he',args') ->
