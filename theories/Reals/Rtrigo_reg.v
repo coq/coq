@@ -14,7 +14,7 @@ Require SeqSeries.
 Require Rtrigo.
 Require Ranalysis1.
 Require PSeries_reg.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 Lemma CVN_R_cos : (fn:nat->R->R) (fn == [N:nat][x:R]``(pow (-1) N)/(INR (fact (mult (S (S O)) N)))*(pow x (mult (S (S O)) N))``) -> (CVN_R fn).
 Unfold CVN_R; Intros.

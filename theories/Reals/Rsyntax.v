@@ -235,9 +235,10 @@ Notation "/ x" := (Rinv x) (at level 0): R_scope
   V8only (at level 30, left associativity).
 
 V7only [
-Open Scope R_scope.
+Open Local Scope R_scope.
 End R_scope.
 ].
 
 Delimits Scope R_scope with R.
 
+Arguments Scope up [R_scope].

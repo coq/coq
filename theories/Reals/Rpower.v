@@ -23,7 +23,7 @@ Require Rsqrt_def.
 Require R_sqrt.
 Require MVT.
 Require Ranalysis4.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 Lemma P_Rmin: (P : R ->  Prop) (x, y : R) (P x) -> (P y) ->  (P (Rmin x y)).
 Intros P x y H1 H2; Unfold Rmin; Case (total_order_Rle x y); Intro; Assumption.

@@ -10,7 +10,7 @@
 
 Require RIneq.
 Require Omega.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 Lemma Rlt_R0_R2 : ``0<2``.
 Replace ``2`` with (INR (2)); [Apply lt_INR_0; Apply lt_O_Sn | Reflexivity].

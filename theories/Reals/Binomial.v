@@ -11,7 +11,7 @@
 Require Rbase.
 Require Rfunctions.
 Require PartSum.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 Definition C [n,p:nat] : R := ``(INR (fact n))/((INR (fact p))*(INR (fact (minus n p))))``.
 

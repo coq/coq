@@ -25,7 +25,7 @@ Require Export SplitRmult.
 Require Export ArithProp.
 Require Omega.
 Require Zpower.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 (*******************************)
 (**     Factorial              *)

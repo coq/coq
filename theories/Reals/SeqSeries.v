@@ -21,7 +21,7 @@ Require Export Rsigma.
 Require Export Rprod.
 Require Export Cauchy_prod.
 Require Export Alembert.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 (**********)
 Lemma sum_maj1 : (fn:nat->R->R;An:nat->R;x,l1,l2:R;N:nat) (Un_cv [n:nat](SP fn n x) l1) -> (Un_cv [n:nat](sum_f_R0 An n) l2) -> ((n:nat)``(Rabsolu (fn n x))<=(An n)``) -> ``(Rabsolu (l1-(SP fn N x)))<=l2-(sum_f_R0 An N)``.

@@ -15,7 +15,7 @@
 Require Export ZArith_base.
 Require Export Rsyntax.
 Require Export TypeSyntax.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 (*********************************************************)
 (*               Field axioms                            *)

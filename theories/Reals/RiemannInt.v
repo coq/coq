@@ -16,7 +16,7 @@ Require RiemannInt_SF.
 Require Classical_Prop.
 Require Classical_Pred_Type.
 Require Max.
-V7only [Import R_scope.]. Open Scope R_scope.
+V7only [Import R_scope.]. Open Local Scope R_scope.
 
 Implicit Arguments On.
 
