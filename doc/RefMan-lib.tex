@@ -13,12 +13,12 @@ The \Coq\ library is structured into three parts:
   various developments of \Coq\ axiomatizations about sets, lists,
   sorting, arithmetic, etc. This library comes with the system and its
   modules are directly accessible through the \verb!Require! command
-  (see~\ref{Require});
+  (see section~\ref{Require});
 
 \item[User contributions:] Other specification and proof developments
   coming from the \Coq\ users' community. These libraries are no
   longer distributed with the system.  They are available by anonymous
-  FTP (see section \ref{Contributions}).
+  FTP (see section~\ref{Contributions}).
 \end{description}
 
 This chapter briefly reviews these libraries.
@@ -29,7 +29,7 @@ This chapter briefly reviews these libraries.
 This section lists the basic notions and results which are directly
 available in the standard \Coq\ system
 \footnote{These constructions are defined in the
-{\tt Prelude} module in directory {\tt theories/INIT} at the {\Coq}
+{\tt Prelude} module in directory {\tt theories/Init} at the {\Coq}
 root directory; this includes the modules
 % {\tt Core} l'inexplicable let
 {\tt Logic},
@@ -112,8 +112,7 @@ Theorem proj1 : A/\B -> A.
 Theorem proj2 : A/\B -> B.
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 \ttindex{or}
 \ttindex{or\_introl}
@@ -173,7 +172,7 @@ synthesized by the system.
 
 Then, we find equality, defined as an inductive relation. That is,
 given a \verb:Set: \verb:A: and an \verb:x: of type \verb:A:, the
-predicate \verb:(eq A x): is the smallest which contains \verb:x:.
+predicate \verb:(eq A x): is the smallest one which contains \verb:x:.
 This definition, due to Christine Paulin-Mohring, is equivalent to
 define \verb:eq: as the smallest reflexive relation, and it is also
 equivalent to Leibniz' equality.
@@ -197,19 +196,19 @@ Theorem absurd : (A:Prop)(C:Prop) A -> ~A -> C.
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
-\ttindex{sym\_equal}
-\ttindex{trans\_equal}
+\ttindex{sym\_eq}
+\ttindex{trans\_eq}
 \ttindex{f\_equal}
-\ttindex{sym\_not\_equal}
+\ttindex{sym\_not\_eq}
 \begin{coq_example*}
 Section equality.
  Variable A,B : Set.
  Variable f   : A->B.
  Variable x,y,z : A.
- Theorem sym_equal : x=y -> y=x.
- Theorem trans_equal : x=y -> y=z -> x=z.
+ Theorem sym_eq : x=y -> y=x.
+ Theorem trans_eq : x=y -> y=z -> x=z.
  Theorem f_equal : x=y -> (f x)=(f y).
- Theorem sym_not_equal : ~(x=y) -> ~(y=x).
+ Theorem sym_not_eq : ~(x=y) -> ~(y=x).
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -219,18 +218,38 @@ Abort.
 \end{coq_eval}
 \ttindex{eq\_ind\_r}
 \ttindex{eq\_rec\_r}
+\ttindex{eq\_rect}
+\ttindex{eq\_rect\_r}
 \begin{coq_example*}
 End equality.
-Definition eq_ind_r : (A:Set)(x:A)(P:A->Prop)(P x)->(y:A)y=x->(P y).
-Definition eq_rec_r : (A:Set)(x:A)(P:A->Set)(P x)->(y:A)y=x->(P y).
+Definition eq_ind_r : (A:Set)(x:A)(P:A->Prop)(P x)->(y:A)(y=x)->(P y).
+Definition eq_rec_r : (A:Set)(x:A)(P:A->Set)(P x)->(y:A)(y=x)->(P y).
+Definition eq_rect: (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(x=y)->(P y).
+Definition eq_rect_r : (A:Set)(x:A)(P:A->Type)(P x)->(y:A)(y=x)->(P y).
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
 Abort.
+Abort.
+Abort.
 \end{coq_eval}
 \begin{coq_example*}
-Immediate sym_equal sym_not_equal.
+Hints Immediate sym_eq sym_not_eq : core.
 \end{coq_example*}
+\ttindex{f\_equal$i$}
+
+The theorem {\tt f\_equal} is extended to functions with two to five
+arguments. The theorem are names {\tt f\_equal2}, {\tt f\_equal3}, 
+{\tt f\_equal4} and {\tt f\_equal5}.
+For instance {\tt f\_equal3} is defined the following way.
+\begin{coq_example*}
+Theorem f_equal3 : (A1,A2,A3,B:Set)(f:A1->A2->A3->B)
+   (x1,y1:A1)(x2,y2:A2)(x3,y3:A3)
+   (x1=y1) -> (x2=y2) -> (x3=y3)-> (f x1 x2 x3)=(f y1 y2 y3).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
 
 \subsection{Datatypes} \label{Datatypes}
 
@@ -283,13 +302,13 @@ We then define the disjoint sum of \verb:A+B: of two sets \verb:A: and
 
 \begin{coq_example*}
 Inductive sum [A,B:Set] : Set
-    := inl : A -> A+B 
-     | inr : B -> A+B.
-Inductive prod [A,B:Set] : Set := pair : A -> B -> A*B.
+    := inl : A -> (sum A B)
+     | inr : B -> (sum A B).
+Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
 Section projections.
    Variables A,B:Set.
-   Definition fst := [H:A*B] Cases H of (x,y) => x end.
-   Definition snd := [H:A*B] Cases H of (x,y) => y end.
+   Definition fst := [H:(prod A B)] Cases H of (pair x y) => x end.
+   Definition snd := [H:(prod A B)] Cases H of (pair x y) => y end.
 End projections.
 Syntactic Definition Fst := (fst ? ?).
 Syntactic Definition Snd := (snd ? ?).
@@ -346,13 +365,13 @@ constructor.
 \begin{coq_example*}
 Inductive sigS [A:Set;P:A->Set] : Set
     := existS : (x:A)(P x) -> (sigS A P).
-Section projections.
+Section sigSprojections.
    Variable A:Set.
    Variable P:A->Set.
    Definition projS1 := [H:(sigS A P)] let (x,h) = H in x.
    Definition projS2 := [H:(sigS A P)]<[H:(sigS A P)](P (projS1 H))>
                             let (x,h) = H in h.
-End projections. 
+End sigSprojections. 
 Inductive sigS2 [A:Set;P,Q:A->Set] : Set
     := existS2 : (x:A)(P x) -> (Q x) -> (sigS2 A P Q).
 \end{coq_example*}
@@ -367,8 +386,8 @@ A related non-dependent construct is the constructive sum
 
 \begin{coq_example*}
 Inductive sumbool [A,B:Prop] : Set
-    := left  : A -> ({A}+{B}) 
-     | right : B -> ({A}+{B}).
+    := left  : A -> (sumbool A B)
+     | right : B -> (sumbool A B).
 \end{coq_example*}
 
 This \verb"sumbool" construct may be used as a kind of indexed boolean
@@ -382,8 +401,8 @@ in the \verb"Set" \verb"A+{B}".
 
 \begin{coq_example*}
 Inductive sumor [A:Set;B:Prop] : Set
-    := inleft  : A -> (A+{B}) 
-     | inright : B -> (A+{B}).
+    := inleft  : A -> (sumor A B) 
+     | inright : B -> (sumor A B) .
 \end{coq_example*}
 
 \begin{figure}
@@ -446,7 +465,7 @@ Inductive Exc [A:Set] : Set := value : A->(Exc A)
 \end{coq_example*}
 
 
-This module ends with one axiom and theorems, 
+This module ends with theorems, 
 relating the sorts \verb:Set: and
 \verb:Prop: in a way which is consistent with the realizability
 interpretation.
@@ -457,7 +476,8 @@ interpretation.
 \ttindex{and\_rec}
 
 \begin{coq_example*}
-Axiom False_rec : (P:Set)False->P.
+Lemma False_rec : (P:Set)False->P.
+Lemma False_rect : (P:Type)False->P.
 Definition except := False_rec.
 Syntactic Definition Except := (except ?).
 Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
@@ -500,47 +520,42 @@ Definition pred : nat->nat
                           | (S u) => u end).
 Theorem pred_Sn : (m:nat) m=(pred (S m)).
 Theorem eq_add_S : (n,m:nat) (S n)=(S m) -> n=m.
-Immediate eq_add_S.
+Hints Immediate eq_add_S : core.
 Theorem not_eq_S : (n,m:nat) ~(n=m) -> ~((S n)=(S m)).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 Definition IsSucc : nat->Prop
-  := [n:nat](<Prop>Cases n of O => False
-                        | (S p) => True end).
+  := [n:nat](Cases n of O => False
+                  | (S p) => True end).
 Theorem O_S : (n:nat) ~(O=(S n)).
 Theorem n_Sn : (n:nat) ~(n=(S n)).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 Fixpoint plus [n:nat] : nat -> nat := 
-   [m:nat](<nat>Cases n of 
-       O => m 
-    | (S p) => (S (plus p m)) end).
+   [m:nat](Cases n of 
+       O  => m 
+  | (S p) => (S (plus p m)) end).
 Lemma plus_n_O : (n:nat) n=(plus n O).
 Lemma plus_n_Sm : (n,m:nat) (S (plus n m))=(plus n (S m)).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 Fixpoint mult [n:nat] : nat -> nat := 
-   [m:nat](<nat> Cases n of O => O 
-                         | (S p) => (plus m (mult p m)) end).
+   [m:nat](Cases n of O => O 
+                | (S p) => (plus m (mult p m)) end).
 Lemma mult_n_O : (n:nat) O=(mult n O).
 Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 
 Finally, it gives the definition of the usual orderings \verb:le:,
@@ -573,7 +588,7 @@ induction principle.
 Theorem nat_case : (n:nat)(P:nat->Prop)(P O)->((m:nat)(P (S m)))->(P n).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 Theorem nat_double_ind : (R:nat->nat->Prop)
@@ -582,7 +597,7 @@ Theorem nat_double_ind : (R:nat->nat->Prop)
      -> (n,m:nat)(R n m).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
+Abort All.
 \end{coq_eval}
 
 \subsection{Well-founded recursion}
@@ -617,31 +632,46 @@ Fixpoint Acc_rec [x:A;a:(Acc x)] : (P x)
    := (F x (Acc_inv x a) [y:A][h:(R y x)](Acc_rec y (Acc_inv x a y h))).
 End AccRec.
 Definition well_founded := (a:A)(Acc a).
+Hypothesis Rwf : well_founded.
 Theorem well_founded_induction : 
-    well_founded ->
         (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
-\end{coq_example*}
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
-\begin{coq_example*}
-End Well_founded. 
-\end{coq_example*}
-\begin{coq_example*}
-  Section Wf_inductor.
-Variable A:Set.
-Variable R:A->A->Prop.
 Theorem well_founded_ind : 
-    (well_founded A R) ->
         (P:A->Prop)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
+Abort All.
+\end{coq_eval}
+{\tt Acc\_rec} can be used to define functions by fixpoints using
+well-founded relations to  justify termination. Assuming
+extensionality of the functional used for the recursive call, the
+fixpoint equation can be proved.
+\ttindex{Fix\_F}
+\ttindex{fix\_eq}
+\ttindex{Fix\_F\_inv}
+\ttindex{Fix\_F\_eq}
+\begin{coq_example*}
+Section FixPoint.
+Variable P : A -> Set.
+Variable F : (x:A)((y:A)(R y x)->(P y))->(P x).
+Fixpoint Fix_F [x:A;r:(Acc x)] : (P x) := 
+         (F x [y:A][p:(R y x)](Fix_F y (Acc_inv x r y p))).
+Definition fix := [x:A](Fix_F x (Rwf x)).
+Hypothesis F_ext : 
+  (x:A)(f,g:(y:A)(R y x)->(P y))
+  ((y:A)(p:(R y x))((f y p)=(g y p)))->(F x f)=(F x g).
+Lemma Fix_F_eq
+  : (x:A)(r:(Acc x))
+    (F x [y:A][p:(R y x)](Fix_F y (Acc_inv x r y p)))=(Fix_F x r).
+Lemma Fix_F_inv : (x:A)(r,s:(Acc x))(Fix_F x r)=(Fix_F x s).
+Lemma fix_eq : (x:A)(fix x)=(F x [y:A][p:(R y x)](fix y)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
-End Wf_inductor.
+End FixPoint.
+End Well_founded. 
 \end{coq_example*}
-
 
 \subsection{Accessing the {\Type} level}
 
@@ -665,7 +695,6 @@ The basic library includes the definitions\footnote{This is in module
 
 \begin{coq_example*}
 Definition allT := [A:Type][P:A->Prop](x:A)(P x). 
-
 Section universal_quantification.
 Variable A : Type.
 Variable P : A->Prop.
@@ -673,14 +702,12 @@ Theorem inst :  (x:A)(ALLT x | (P x))->(P x).
 Theorem gen : (B:Prop)(f:(y:A)B->(P y))B->(allT ? P).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 End universal_quantification.
 Inductive  exT [A:Type;P:A->Prop] : Prop
     := exT_intro : (x:A)(P x)->(exT A P).
-
 Inductive exT2 [A:Type;P,Q:A->Prop] : Prop
     := exT_intro2 : (x:A)(P x)->(Q x)->(exT2 A P Q).
 \end{coq_example*}
@@ -702,19 +729,17 @@ Inductive eqT [A:Type;x:A] : A -> Prop
 Section Equality_is_a_congruence.
 Variables A,B : Type.
 Variable  f : A->B.
- Variable x,y,z : A.
- Lemma sym_eqT : (x==y) -> (y==x).
- Lemma trans_eqT : (x==y) -> (y==z) -> (x==z).
- Lemma congr_eqT : (x==y)->((f x)==(f y)).
+Variable x,y,z : A.
+Lemma sym_eqT : (x==y) -> (y==x).
+Lemma trans_eqT : (x==y) -> (y==z) -> (x==z).
+Lemma congr_eqT : (x==y)->((f x)==(f y)).
 \end{coq_example*}
 \begin{coq_eval}
-Abort.
-Abort.
-Abort.
+Abort All.
 \end{coq_eval}
 \begin{coq_example*}
 End Equality_is_a_congruence.
-Immediate sym_eqT sym_not_eqT.
+Hints Immediate sym_eqT sym_not_eqT : core.
 Definition eqT_ind_r: (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)y==x -> (P y).
 \end{coq_example*}
 \begin{coq_eval}
@@ -763,21 +788,23 @@ The rest of the standard library is structured into the following
 subdirectories:
 
 \begin{tabular}{lp{12cm}}
-  {\bf LOGIC}   & Classical logic and dependent equality \\
-  {\bf ARITH}   & Basic Peano arithmetic \\
-  {\bf ZARITH}  & Basic integer arithmetic \\
-  {\bf BOOL}    &  Booleans (basic functions and results) \\
-  {\bf LISTS}   & Monomorphic and polymorphic lists (basic functions and
+  {\bf Logic}   & Classical logic and dependent equality \\
+  {\bf Arith}   & Basic Peano arithmetic \\
+  {\bf Zarith}  & Basic integer arithmetic \\
+  {\bf Bool}    &  Booleans (basic functions and results) \\
+  {\bf Lists}   & Monomorphic and polymorphic lists (basic functions and
             results), Streams (infinite sequences defined with co-inductive
             types) \\
-  {\bf SETS}    & Sets (classical, constructive, finite, infinite, power set,
+  {\bf Sets}    & Sets (classical, constructive, finite, infinite, power set,
             etc.) \\
- {\bf RELATIONS} & Relations (definitions and basic results). There is
-             a subdirectory about well-founded relations ({\bf WELLFOUNDED}) \\
- {\bf SORTING} & Various sorting algorithms \\
- {\bf REALS}   & Axiomatization of Real Numbers (classical, basic functions 
+  {\bf IntMap}    & Representation of finite sets by an efficient
+  structure of map (trees indexed by binary integers).\\
+ {\bf Reals}   & Axiomatization of Real Numbers (classical, basic functions 
                  and results, integer part and fractional part,
-                 requires the \textbf{ZARITH} library)
+                 requires the \textbf{Zarith} library).\\
+ {\bf Relations} & Relations (definitions and basic results). \\
+ {\bf Wellfounded} & Well-founded relations (basic results). \\
+
 \end{tabular}
 \medskip
 
@@ -853,6 +880,17 @@ naturals using decimal notation. That is he can write \texttt{(3)}
 for \texttt{(S (S (S O)))}. The number must be between parentheses.
 This works also in the left hand side of a \texttt{Cases} expression
 (see for example section \ref{Refine-example}).
+\begin{coq_eval}
+Reset Initial. (* Remove the redefinition of nat *)
+\end{coq_eval}
+\begin{coq_example*}
+Require Arith.
+Fixpoint even [n:nat] : nat :=
+Cases n of (0) => true 
+        |  (1) => false
+        | (S (S n)) => (even n)
+end.
+\end{coq_example*}
 
 \section{Users' contributions}
 \index{Contributions}

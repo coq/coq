@@ -233,7 +233,6 @@ and Bruno Barras.
 Lyon, Nov. 18th 1996\\
 Christine Paulin
 \end{flushright}
-\newpage
 
 \section*{Credits: addendum for version 6.2}
 %\addcontentsline{toc}{section}{Credits: addendum for version V6.2}
@@ -283,6 +282,88 @@ Giménez, Hugo Herbelin and Patrick Loiseleur.
 Orsay, May 4th 1998\\
 Christine Paulin
 \end{flushright}
+
+\section*{Credits: addendum for version 6.3}
+The main changes in version V6.3 was the introduction of a few new tactics
+and the extension of the guard condition for fixpoint definitions.
+
+
+B. Barras extended the unification algorithm to complete partial terms
+and solved various tricky bugs related to universes.\\
+D. Delahaye developed the \texttt{AutoRewrite} tactic. He also designed the new
+behavior of \texttt{Intro} and provided the tacticals \texttt{First} and
+\texttt{Solve}.\\
+J.-C. Filli\^atre developed the \texttt{Correctness} tactic.\\
+E. Gim\'enez extended the guard condition in fixpoints.\\
+H. Herbelin designed the new syntax for definitions and extended the
+\texttt{Induction} tactic.\\
+P. Loiseleur developed the \texttt{Quote} tactic and 
+the new design of the \texttt{Auto}
+tactic, he also introduced the index of
+errors in the documentation.\\
+C. Paulin wrote the \texttt{Focus} command and introduced 
+the reduction functions in definitions, this last feature 
+was proposed by J.-F. Monin from CNET Lannion. 
+
+\begin{flushright}
+Orsay, Dec. 1999\\
+Christine Paulin
+\end{flushright}
+\newpage
+
+\section*{Credits: version 7.0}
+
+The current version V7 is a new implementation started in September
+1999 by J-C. Filliâtre. This is a major revision with respect to the
+internal architecture of the system.
+
+J-C. Filliâtre designed the architecture of the new system, he
+introduced a new representation for environments and wrote a new kernel
+for type-checking terms. His approach was to use functional
+data-structures in order to get more sharing, to prepare the addition
+of modules and also to get closer to a certified kernel.
+
+
+H. Herbelin introduced a new structure of terms with local
+definitions and redesigned the translation from the high-level
+language of Coq to the internal representation, in particular 
+pattern-matching compiling. 
+
+D. Delahaye introduced a new language for tactics. General tactics
+using pattern-matching on goals and context can directly be written
+from the Coq toplevel. He also provided primitives for the design
+of user-defined tactics in Caml.
+
+J.-C. Filliâtre and P. Letouzey redesigned a new extraction procedure
+from Coq terms to Caml programs. This new extraction procedure, unlike
+the one implemented in previous version of \Coq{} is able
+to handle all terms in the Calculus of Inductive Constructions, 
+even involving universes and strong elimination.
+
+B. Barras improved the reduction strategy for lazy evaluation. 
+
+Y. Bertot designed  the \texttt{SearchPattern} and
+\texttt{SearchRewrite} tools. 
+
+A library for efficient representation of finite sets by binary trees
+contributed by J. Goubault was integrated in the basic theories.\\
+
+The development was coordinated by C. Paulin.
+
+Many discussions within the Démons team and the LogiCal project
+influenced significantly the design of Coq especially with J.
+Chrz\k{a}szcz, J. Courant, P. Courtieu, J. Duprat, J. Goubault, A. Miquel,
+C. Marché, M. Mayero, B. Monate and B. Werner.
+
+Intensive users suggested improvements of the system : 
+Y. Bertot, L. Pottier, L. Théry , P. Zimmerman from INRIA 
+C. Alvarado, P. Crégut, J.-F. Monin from France Telecom R \& D.
+\begin{flushright}
+Orsay, Apr. 2001\\
+Christine Paulin
+\end{flushright}
+\newpage
+
 
 % $Id$ 
 
