@@ -43,7 +43,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier \
-	      -I contrib/jprover
+	      -I contrib/jprover -I contrib/cc
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -279,11 +279,13 @@ JPROVERCMO=contrib/jprover/opname.cmo \
            contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
            contrib/jprover/jprover.cmo
 
-ML4FILES += contrib/jprover/jprover.ml4
+CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
+
+ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CORRECTNESSCMO) 
+	$(CORRECTNESSCMO) $(CCCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -608,6 +610,8 @@ FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
 JPROVERVO = 
 
+CCVO = contrib/cc/CC.vo
+
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
 
@@ -616,7 +620,7 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
-	    $(JPROVERVO) $(INTERFACEV0)
+	    $(JPROVERVO) $(INTERFACEV0) $(CCVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -630,6 +634,7 @@ correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
 jprover: $(JPROVERVO) $(JPROVERCMO)
+cc: $(CCVO) $(CCCMO)
 
 ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
 

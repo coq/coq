@@ -15,6 +15,7 @@ contrib/fourier/g_fourier.ml: parsing/grammar.cma
 contrib/extraction/g_extraction.ml: parsing/grammar.cma
 contrib/xml/xmlentries.ml: parsing/grammar.cma
 contrib/jprover/jprover.ml: parsing/grammar.cma
+contrib/cc/cctac.ml: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo
 parsing/lexer.ml: 
 parsing/q_util.ml: 
 parsing/q_coqast.ml: 
