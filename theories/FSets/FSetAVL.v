@@ -720,6 +720,8 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Intuition; Inversion_clear H3; Intuition.
   Defined.
 
+  (** * Insertion *)
+
   Definition add_tree : 
     (x:elt)(s:tree)(bst s) -> (avl s) ->
     { s':tree | (bst s') /\ (avl s') /\ 
@@ -1088,6 +1090,8 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Clear H7 H12; Ground.
   Defined.
 
+  (** * Deletion *)
+
   Definition remove_tree :
     (x:elt)(s:tree)(bst s) -> (avl s) ->
     { s':tree | (bst s') /\ (avl s') /\
@@ -1173,8 +1177,6 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Generalize (H9 y) (H5 y); Clear H5 H9; Intuition.
   Defined.
 
-  (** * Deletion *)
-
   Definition remove : (x:elt)(s:t)
                       { s':t | (y:elt)(In y s') <-> (~(E.eq y x) /\ (In y s))}.
   Proof.
@@ -1183,7 +1185,180 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Exists (t_intro s' H H1); Intuition.
   Defined.
 
+ (** * Minimum element *)
 
+  Definition min_elt : 
+     (s:t){ x:elt | (In x s) /\ (For_all [y]~(E.lt y x) s) } + { Empty s }.
+  Proof.
+    Intros (s,Hs,Ha).
+    Unfold For_all Empty In; Simpl.
+    Generalize Hs; Clear Hs Ha; Induction s; Simpl; Intros.
+    (* s = Leaf *)
+    Right; Intros; Intro; Inversion H.
+    (* s = Node c s1 t0 s0 *)
+    Clear Hrecs0; Generalize Hs Hrecs1; Clear Hs Hrecs1; Case s1; Intros.
+    (* s1 = Leaf *)
+    Left; Exists t0; Intuition.
+    Inversion_clear H.
+    Absurd (X.eq x t0); Auto.
+    Inversion H1.
+    Inversion_clear Hs; Absurd (E.lt x t0); Auto.
+    (* s1 = Node c0 t1 t2 t3 *)
+    Case Hrecs1; Clear Hrecs1.
+    Inversion Hs; Auto.
+    (* a minimum for [s1] *)
+    Intros (m,Hm); Left; Exists m; Intuition.
+    Apply (H0 x); Auto.
+    Assert (X.lt m t0).
+    Inversion_clear Hs; Auto.
+    Inversion_clear H1; Auto.
+    Elim (!X.lt_not_eq x t0); [ EAuto | Auto ].
+    Inversion_clear Hs.
+    Elim (!ME.lt_not_gt x t0); [ EAuto | Auto ].
+    (* non minimum for [s1] => absurd *)
+    Intro; Right; Intuition.
+    Apply (n t2); Auto.
+  Defined.
+
+  (** * Maximum element *)
+
+  Definition max_elt : 
+     (s:t){ x:elt | (In x s) /\ (For_all [y]~(E.lt x y) s) } + { Empty s }.
+   Proof.
+    Intros (s,Hs,Ha).
+    Unfold For_all Empty In; Simpl.
+    Generalize Hs; Clear Hs Ha; Induction s; Simpl; Intros.
+    (* s = Leaf *)
+    Right; Intros; Intro; Inversion H.
+    (* s = Node c s1 t0 s0 *)
+    Clear Hrecs1; Generalize Hs Hrecs0; Clear Hs Hrecs0; Case s0; Intros.
+    (* s0 = Leaf *)
+    Left; Exists t0; Intuition.
+    Inversion_clear H.
+    Absurd (X.eq x t0); Auto.
+    Inversion_clear Hs; Absurd (E.lt t0 x); Auto.
+    Inversion H1.
+    (* s0 = Node c0 t1 t2 t3 *)
+    Case Hrecs0; Clear Hrecs0.
+    Inversion Hs; Auto.
+    (* a maximum for [s0] *)
+    Intros (m,Hm); Left; Exists m; Intuition.
+    Apply (H0 x); Auto.
+    Assert (X.lt t0 m).
+    Inversion_clear Hs; Auto.
+    Inversion_clear H1; Auto.
+    Elim (!X.lt_not_eq x t0); [ EAuto | Auto ].
+    Inversion_clear Hs.
+    Elim (!ME.lt_not_gt t0 x); [ EAuto | Auto ].
+    (* non maximum for [s0] => absurd *)
+    Intro; Right; Intuition.
+    Apply (n t2); Auto.
+  Defined.
+
+  (** * Any element *)
+
+  Definition choose : (s:t) { x:elt | (In x s)} + { Empty s }.
+  Proof.
+    Intros (s,Hs,Ha); Unfold Empty In; Simpl; Case s; Intuition.
+    Right; Intros; Inversion H.
+    Left; Exists t1; Auto.
+  Defined.
+
+
+  (** * Concatenation
+
+        Same as [merge] but does not assume anything about heights *)
+
+  (** Merging two trees (from S. Adams)
+<<
+    let concat t1 t2 =
+      match (t1, t2) with
+        (Empty, t) -> t
+      | (t, Empty) -> t
+      | (_, _) -> join t1 (min_elt t2) (remove_min_elt t2)
+>> 
+  *)
+
+  Definition concat :
+    (s1,s2:tree)(bst s1) -> (avl s1) -> (bst s2) -> (avl s2) ->
+    ((y1,y2:elt)(In_tree y1 s1) -> (In_tree y2 s2) -> (X.lt y1 y2)) ->
+    { s:tree | (bst s) /\ (avl s) /\
+               ((y:elt)(In_tree y s) <-> 
+                       ((In_tree y s1) \/ (In_tree y s2))) }.
+  Proof.
+    Destruct s1; Simpl.
+    (* s1 = Leaf *)
+    Intros; Exists s2; Simpl; Intuition.
+    Inversion_clear H5.
+    (* s1 = Node t0 t1 t2 *)
+    Destruct s2; Simpl.
+    (* s2 = Leaf *)
+    Intros; Exists (Node t0 t1 t2 z); Simpl; Intuition.
+    Inversion_clear H5.
+    (* s2 = Node t3 t4 t5 *)
+    Intros.
+    Case (remove_min (Node t3 t4 t5 z0)); Auto.
+    Discriminate.
+    Intros (s'2,m); Intuition.
+    Case (join (Node t0 t1 t2 z) m s'2); Auto.
+    Ground.
+    Intro s'; Intuition. 
+    Exists s'.
+    Do 2 (Split; Trivial).
+    Clear H5 H10; Ground.
+  Defined.
+
+  (** * Splitting 
+
+      [split x s] returns a triple [(l, present, r)] where
+      - [l] is the set of elements of [s] that are [< x]
+      - [r] is the set of elements of [s] that are [> x]
+      - [present] is [false] if [s] contains no element equal to [x],
+          or [true] if [s] contains an element equal to [x]. 
+<<
+    let rec split x = function
+        Empty ->
+          (Empty, false, Empty)
+      | Node(l, v, r, _) ->
+          let c = Ord.compare x v in
+          if c = 0 then (l, true, r)
+          else if c < 0 then
+            let (ll, pres, rl) = split x l in (ll, pres, join rl v r)
+          else
+            let (lr, pres, rr) = split x r in (join l v lr, pres, rr)
+>> *)
+
+  Definition split :
+    (x:elt)(s:tree)(bst s) -> (avl s) ->
+    { res:tree*bool*tree |
+      let (l,res') = res in
+      let (b,r) = res' in
+      (bst l) /\ (avl l) /\ (bst r) /\ (avl r) /\
+      ((y:elt)(In_tree y l) <-> ((In_tree y s) /\ (X.lt y x))) /\
+      ((y:elt)(In_tree y r) <-> ((In_tree y s) /\ (X.lt x y))) /\
+      (b=true <-> (In_tree x s)) }.
+  Proof.
+    Induction s; Simpl; Intuition.
+    (* s = Leaf *)
+    Exists (Leaf,(false,Leaf)); Simpl; Intuition; Inversion_clear H1.
+    (* s = Node t0 t1 t2 z *)
+    Case (X.compare x t1); Intro.
+    (* x < t1 *)
+    Clear H0; Case H; Clear H.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Intros (ll,(pres,rl)); Intuition.
+    Case (join rl t1 t2); Auto.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Inversion_clear H1; Ground.
+    Inversion_clear H1; Ground.
+    Intros s' (s'_bst,(s'_avl,(s'_h,s'_y))); Clear s'_h.
+    Exists (ll,(pres,s')); Intuition.
+    Ground.
+
+
+  Defined.
 
 
 
