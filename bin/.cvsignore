@@ -9,12 +9,11 @@ gallina
 coq-tex
 coq-extraction
 coq-interface
-parser
-coq_vo2xml
 coq-interface.opt
+parser
+parser.opt
+coq_vo2xml
 coqide.byte
 coqide.opt
-coqtopnew.opt
-coqtopnew.byte
 coqwc
 coqdoc
