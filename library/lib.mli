@@ -57,3 +57,6 @@ val freeze : unit -> frozen
 val unfreeze : frozen -> unit
 
 val init : unit -> unit
+
+val declare_initial_state : unit -> unit
+val reset_initial : unit -> unit

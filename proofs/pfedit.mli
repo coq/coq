@@ -52,6 +52,7 @@ val proof_term : unit -> constr
 val start_proof : string -> strength -> Coqast.t -> unit
 val start_proof_constr : string -> strength -> constr -> unit
 val reset_name : identifier -> unit
+val reset_initial : unit -> unit
 
 val save_named : bool -> unit
 val save_anonymous : bool -> string -> 'a -> unit

@@ -22,29 +22,33 @@ let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref "barestate.coq"
 let set_inputstate s = inputstate:= s
-let inputstate () =if !inputstate <> "" then intern_state !inputstate
+let inputstate () =
+  if !inputstate <> "" then begin
+    intern_state !inputstate;
+    Lib.declare_initial_state()
+  end
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
-let load_vernacular_list = ref ([]:string list)
+let load_vernacular_list = ref ([] : string list)
 let add_load_vernacular s =
-  load_vernacular_list := (make_suffix s ".v")::(!load_vernacular_list)
+  load_vernacular_list := (make_suffix s ".v") :: !load_vernacular_list
 let load_vernacular () =
   List.iter
     (fun s -> Vernac.load_vernac false s)
     (List.rev !load_vernacular_list)
 
-let load_vernacular_obj = ref ([]:string list)
-let add_vernac_obj s = load_vernacular_obj := s::(!load_vernacular_obj)
+let load_vernacular_obj = ref ([] : string list)
+let add_vernac_obj s = load_vernacular_obj := s :: !load_vernacular_obj
 let load_vernac_obj () = 
   List.iter
     (fun s -> Library.load_module (Filename.basename s) (Some s))
     (List.rev !load_vernacular_obj)
 
-let require_list = ref ([]:string list)
-let add_require s = require_list := s::(!require_list)
+let require_list = ref ([] : string list)
+let add_require s = require_list := s :: !require_list
 let require () =
   List.iter
     (fun s -> Library.require_module None (Filename.basename s) (Some s) false)
@@ -144,6 +148,7 @@ let start () =
   if not !initialized then begin
     initialized := true;
     Sys.catch_break false;
+    Lib.init();
     try
       parse_args ();
       print_header ();

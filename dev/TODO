@@ -1,8 +1,4 @@
 
- o Discharge
-     - conserver les constantes dans leur section de définition
-       et redéfinir des constantes déchargées à la sortie
-
  o Lib
      - écrire une fonction d'export qui supprimme les FrozenState,
        vérifie qu'il n'y a pas de section ouverte, et présente les
@@ -24,10 +20,7 @@
      - un cache pour type_of_const, type_of_inductive, type_of_constructor,
        lookup_mind_specif
 
- o Lexer
-     à compléter
-
  o Toplevel
-     - parsing de la ligne de commande : utiliser Arg ?
+     - parsing de la ligne de commande : utiliser Arg ???
 
 

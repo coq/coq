@@ -236,12 +236,8 @@ and save_state = abort_refine States.raw_save_state
 and restore_state = abort_refine States.raw_restore_state
 and restore_last_saved_state = abort_refine States.raw_restore_last_saved_state
 ***)
-and reset_all = abort_refine Lib.init
+and reset_initial = abort_refine Lib.reset_initial
 
-(***TODO
-let reset_prelude () = restore_state "Prelude"
-and reset_initial () = restore_state "Initial"
-***)
    
 (*********************************************************************)
 (*              Modifying the current prooftree                      *)

@@ -234,13 +234,13 @@ let _ =
 
 (* Resetting *)
 
-(***
 let _ =
   add "ResetInitial"
     (function 
        | [] -> (fun () -> reset_initial ())
        | _  -> bad_vernac_args "ResetInitial")
 
+(***
 let _ =
   add "ResetSection"
     (function 

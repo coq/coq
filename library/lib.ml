@@ -163,17 +163,19 @@ let reset_to sp =
   let (_,_,before) = split_lib sp in
   lib_stk := before;
   recalc_path_prefix ();
-  let (spf,frozen) = match find_entry_p is_frozen_state with
-    | (sp, FrozenState f) -> sp,f
+  let spf = match find_entry_p is_frozen_state with
+    | (sp, FrozenState f) -> unfreeze_summaries f; sp
     | _ -> assert false
   in
-  unfreeze_summaries frozen;
   let (after,_,_) = split_lib spf in
   recache_context (List.rev after)
 
 let reset_name id =
-  let (sp,_) = find_entry_p (fun (sp,_) -> id = basename sp) in
-  reset_to sp
+  try
+    let (sp,_) = find_entry_p (fun (sp,_) -> id = basename sp) in
+    reset_to sp
+  with Not_found ->
+    error (string_of_id id ^ ": no such entry")
 
 let is_section_p sp = list_prefix_of (wd_of_sp sp) !path_prefix
 
@@ -192,5 +194,25 @@ let init () =
   add_frozen_state ();
   path_prefix := [];
   init_summaries()
+
+(* Initial state. *)
+
+let initial_state = ref (None : section_path option)
+
+let declare_initial_state () = 
+  let sp = add_anonymous_entry (FrozenState (freeze_summaries())) in
+  initial_state := Some sp
+
+let reset_initial () =
+  match !initial_state with
+    | None -> init ()
+    | Some sp -> 
+  	begin match split_lib sp with
+	  | (_,(_,FrozenState fs as hd),before) ->
+	      lib_stk := hd::before;
+	      recalc_path_prefix ();
+	      unfreeze_summaries fs
+	  | _ -> assert false
+	end
 
 
