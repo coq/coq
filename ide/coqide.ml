@@ -2851,9 +2851,16 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	 ~pixbuf:startup_image;
        b#insert ~iter:b#start_iter "\t\t";
      with _ -> ());
-    b#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n\nVersion information\n--------\n";
-    b#insert ((Coq.version ()));
-    b#insert "\nAuthor: Benjamin Monate\nDo not hesitate to report bugs or missing features." in
+    b#insert 
+      "\n\tCoqIDE: a Gtk2 interface for Coq.\n\n\
+      Main author   : Benjamin Monate\n\
+      Contributions : Pierre Letouzey, Claude Marché\n\n\
+      Feature wish or bug report: use Web interface\n\
+      \thttp://coq.inria.fr/bin/coq-bugs\n\n\
+      Version information\n--------\n";
+    b#insert ((Coq.version ()))
+      
+  in
   about  tv2#buffer;
   w#add_accel_group accel_group;
   (* Remove default pango menu for textviews *)
