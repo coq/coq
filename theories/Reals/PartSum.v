@@ -22,7 +22,7 @@ Apply HrecN; Intros; Apply H; Apply le_S; Assumption.
 Apply H; Apply le_n.
 Qed.
 
-(* Relation de Chasles *)
+(* Chasles' relation *)
 Lemma tech2 : (An:nat->R;m,n:nat) (lt m n) -> (sum_f_R0 An n) == (Rplus (sum_f_R0 An m) (sum_f_R0 [i:nat]``(An (plus (S m) i))`` (minus n (S m)))). 
 Intros; Induction n.
 Elim (lt_n_O ? H).
@@ -48,7 +48,7 @@ Right; Reflexivity.
 Left; Apply lt_le_trans with (S m); [Apply lt_n_Sn | Assumption].
 Qed.
 
-(* Somme d'une suite géométrique *)
+(* Sum of geometric sequences *)
 Lemma tech3 : (k:R;N:nat) ``k<>1`` -> (sum_f_R0 [i:nat](pow k i) N)==``(1-(pow k (S N)))/(1-k)``.
 Intros; Cut ``1-k<>0``.
 Intro; Induction N.
@@ -154,8 +154,8 @@ Rewrite (H (S N)); [Reflexivity | Apply le_n].
 Intros; Apply H; Apply le_trans with N; [Assumption | Apply le_n_Sn].
 Qed.
 
-(* Unicité de la limite d'une série convergente *)
-Lemma unicite_sum : (An:nat->R;l1,l2:R) (infinit_sum An l1) -> (infinit_sum An l2) -> l1 == l2.
+(* Unicity of the limit defined by convergent series *)
+Lemma unicity_sum : (An:nat->R;l1,l2:R) (infinit_sum An l1) -> (infinit_sum An l2) -> l1 == l2.
 Unfold infinit_sum; Intros.
 Case (Req_EM l1 l2); Intro.
 Assumption.
@@ -276,10 +276,10 @@ Apply HrecN.
 Apply H.
 Qed.
 
-(* Le critère de Cauchy pour les séries *)
+(* Cauchy's criterion for series *)
 Definition Cauchy_crit_series [An:nat->R] : Prop := (Cauchy_crit [N:nat](sum_f_R0 An N)).
 
-(* Si (|An|) verifie le critere de Cauchy pour les séries , alors (An) aussi *)
+(* If (|An|) satisfies the Cauchy's criterion for series, then (An) too *)
 Lemma cauchy_abs : (An:nat->R) (Cauchy_crit_series [i:nat](Rabsolu (An i))) -> (Cauchy_crit_series An).
 Unfold Cauchy_crit_series; Unfold Cauchy_crit.
 Intros.

@@ -271,7 +271,7 @@ Case (exist_cos (Rsqr x)).
 Unfold Rsqr; Intros. 
 Unfold cos_in in p_i. 
 Unfold cos_in in c. 
-Apply unicite_sum with [i:nat]``(cos_n i)*(pow (x*x) i)``; Assumption. 
+Apply unicity_sum with [i:nat]``(cos_n i)*(pow (x*x) i)``; Assumption. 
 Qed. 
  
 Lemma C1_cvg : (x,y:R) (Un_cv (C1 x y) (cos (Rplus x y))). 
@@ -301,7 +301,7 @@ Case (exist_cos (Rsqr ``x+y``)).
 Unfold Rsqr; Intros. 
 Unfold cos_in in p_i. 
 Unfold cos_in in c. 
-Apply unicite_sum with [i:nat]``(cos_n i)*(pow ((x+y)*(x+y)) i)``; Assumption. 
+Apply unicity_sum with [i:nat]``(cos_n i)*(pow ((x+y)*(x+y)) i)``; Assumption. 
 Qed. 
  
 Lemma B1_cvg : (x:R) (Un_cv (B1 x) (sin x)). 
@@ -353,6 +353,6 @@ Case (exist_sin (Rsqr x)).
 Unfold Rsqr; Intros. 
 Unfold sin_in in p_i. 
 Unfold sin_in in s. 
-Assert H1 := (unicite_sum [i:nat]``(sin_n i)*(pow (x*x) i)`` x0 x1 p_i s). 
+Assert H1 := (unicity_sum [i:nat]``(sin_n i)*(pow (x*x) i)`` x0 x1 p_i s). 
 Rewrite H1; Reflexivity. 
 Qed. 

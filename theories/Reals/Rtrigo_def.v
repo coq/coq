@@ -57,7 +57,7 @@ Defined.
 Lemma exp_0 : ``(exp 0)==1``. 
 Cut (exp_in R0 (exp R0)).
 Cut (exp_in R0 R1).
-Unfold exp_in; Intros; EApply unicite_sum.
+Unfold exp_in; Intros; EApply unicity_sum.
 Apply H0.
 Apply H.
 Exact (projT2 ? ? exist_exp0).
@@ -350,7 +350,7 @@ Defined.
 Lemma cos_0 : ``(cos 0)==1``.
 Cut (cos_in R0 (cos R0)).
 Cut (cos_in R0 R1).
-Unfold cos_in; Intros; EApply unicite_sum.
+Unfold cos_in; Intros; EApply unicity_sum.
 Apply H0.
 Apply H.
 Exact (projT2 ? ? exist_cos0).

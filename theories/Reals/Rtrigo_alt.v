@@ -129,7 +129,7 @@ Unfold sin; Case (exist_sin (Rsqr a)).
 Intros; Cut x==x0.
 Intro; Rewrite H3; Unfold Rdiv.
 Symmetry; Apply Rinv_r_simpl_m; Assumption.
-Unfold sin_in in p; Unfold sin_in in s; EApply unicite_sum.
+Unfold sin_in in p; Unfold sin_in in s; EApply unicity_sum.
 Apply p.
 Apply s.
 Intros; Elim H2; Intros.
@@ -251,7 +251,7 @@ Rewrite pow_Rsqr; Reflexivity.
 Simpl; Ring.
 Unfold cos_n; Unfold Rdiv; Simpl; Rewrite Rinv_R1; Rewrite Rmult_1r; Reflexivity.
 Apply lt_O_Sn.
-Unfold cos; Case (exist_cos (Rsqr a0)); Intros; Unfold cos_in in p; Unfold cos_in in c; EApply unicite_sum.
+Unfold cos; Case (exist_cos (Rsqr a0)); Intros; Unfold cos_in in p; Unfold cos_in in c; EApply unicity_sum.
 Apply p.
 Apply c.
 Intros; Elim H3; Intros; Replace ``(cos a0)-1`` with ``-(1-(cos a0))``; [Idtac | Ring].
