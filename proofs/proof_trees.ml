@@ -272,7 +272,7 @@ let last_of_cvt_flags (_,red) =
 	  | EvalVarRef id -> nvar id
 	  | EvalConstRef sp ->
 	      ast_of_qualid
-                (qualid_of_global (Global.env()) (ConstRef sp)))
+                (shortest_qualid_of_global (Global.env()) (ConstRef sp)))
        lconst in
    if lqid = [] then []
    else if n_unf then [ope("Delta",[]);ope("UnfBut",lqid)]
@@ -292,7 +292,8 @@ let ast_of_cvt_redexp = function
       [match sp with
 	| EvalVarRef id -> nvar id
 	| EvalConstRef sp -> 					
-	    ast_of_qualid (qualid_of_global (Global.env()) (ConstRef sp))]
+	    ast_of_qualid
+	      (shortest_qualid_of_global (Global.env()) (ConstRef sp))]
       @(List.map num locc))) l)
   | Fold l ->
     ope("Fold",List.map (fun c -> ope ("COMMAND",
