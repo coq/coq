@@ -33,6 +33,15 @@ let rec expr_of_ast = function
   | Coqast.Id loc id when is_meta id -> anti loc id
   | Coqast.Node _ "$VAR" [Coqast.Nvar loc x] ->
       <:expr< Coqast.Nvar loc $anti loc x$ >>
+  | Coqast.Node loc "$PATH" l ->
+      let extract_var = function
+	| Coqast.Nvar loc id -> id
+	| Coqast.Id loc id -> failwith ("Id"^id)
+	| Coqast.Node _ s _ -> failwith ("Node"^s)
+	| _ -> failwith "Path is not built from ast variables" in
+      let l = List.map extract_var l in
+      let l = expr_list_of_var_list l in
+      <:expr< Coqast.Path loc $l$ Names.CCI >>
   | Coqast.Node _ "$ID" [Coqast.Nvar loc x] ->
       <:expr< Coqast.Id loc $anti loc x$ >>
   | Coqast.Node _ "$STR" [Coqast.Nvar loc x] ->
