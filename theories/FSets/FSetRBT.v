@@ -1,4 +1,4 @@
- (***********************************************************************)
+(***********************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
 (*   \VV/  *************************************************************)
@@ -52,7 +52,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
 
   Hint In_tree := Constructors In_tree.
 
-  (** [In_tree] is  color-insensitive *)
+  (** [In_tree] is color-insensitive *)
 
   Lemma In_color : (c,c':color)(x,y:elt)(l,r:tree)
     (In_tree y (Node c l x r)) -> (In_tree y (Node c' l x r)).
@@ -303,7 +303,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     is_rbtree : (EX n:nat | (rbtree n the_tree)) }.
   Definition t := t_.
 
-  (** * Rotations *)
+  (** * Projections *)
 
   Lemma t_is_bst : (s:t)(bst s).
   Proof.
