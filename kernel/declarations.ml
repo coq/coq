@@ -85,3 +85,9 @@ type mutual_inductive_entry = {
   mind_entry_inds : (identifier * constr * identifier list * constr list) list}
 
 let mind_nth_type_packet mib n = mib.mind_packets.(n)
+
+let mind_arities_context mib =
+  Array.to_list
+    (Array.map  (* No need to lift, arities contain no de Bruijn *)
+       (fun mip -> (Name mip.mind_typename, None, mind_user_arity mip))
+       mib.mind_packets)

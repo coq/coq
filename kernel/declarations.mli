@@ -77,6 +77,8 @@ val mind_user_lc : one_inductive_body -> typed_type array
 val mind_user_arity : one_inductive_body -> typed_type
 val mind_nth_type_packet : mutual_inductive_body -> int -> one_inductive_body
 
+val mind_arities_context : mutual_inductive_body -> rel_declaration list
+
 (*s Declaration of inductive types. *)
 
 type mutual_inductive_entry = {
