@@ -50,7 +50,7 @@ let warning_uppercase loc uplid = (* Comment afficher loc ?? *)
     prlist_with_sep pr_spc (fun v -> [< 'sTR (string_of_id v) >]) uplid in
   let (s1,s2) = if List.length uplid = 1 then (" ","s ") else ("s "," ") in
   wARN [<'sTR ("the variable"^s1); vars;
-	 'sTR (" start"^s2^"with an upper case letter in pattern"); 'cUT >]
+	 'sTR (" start"^s2^"with an upper case letter in pattern") >]
 
 let is_uppercase_var v =
  match (string_of_id v).[0] with
