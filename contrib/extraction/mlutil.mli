@@ -69,6 +69,10 @@ val type_neq : abbrev_map -> ml_type -> ml_type -> bool
 val type_to_sign : abbrev_map -> ml_type -> bool list
 val type_expunge : abbrev_map -> ml_type -> ml_type
 
+val case_expunge : bool list -> ml_ast -> identifier list * ml_ast
+val term_expunge : bool list -> identifier list * ml_ast -> ml_ast
+
+
 (*s Special identifiers. [dummy_name] is to be used for dead code
     and will be printed as [_] in concrete (Caml) code. *)
 
@@ -95,34 +99,24 @@ val ast_occurs : int -> ml_ast -> bool
 val ast_lift : int -> ml_ast -> ml_ast
 val ast_pop : ml_ast -> ml_ast
 
-(*s Some transformations of ML terms. [optimize] simplify
+(*s Some transformations of ML terms. [optimize_struct] simplify
     all beta redexes (when the argument does not occur, it is just
     thrown away; when it occurs exactly once it is substituted; otherwise
     a let-in redex is created for clarity) and iota redexes, plus some other
     optimizations. *)
 
-val optimize : 
-  extraction_params -> ml_decl list -> ml_decl list
+val optimize_struct : 
+  extraction_params -> ml_decl list option -> ml_structure -> ml_structure
 
 (* Misc. *)
 
-val decl_search : ml_ast -> ml_decl list -> bool
-val decl_type_search : ml_type -> ml_decl list -> bool
-
-val add_ml_decls : 
-  extraction_params -> ml_decl list -> ml_decl list
-
-val case_expunge : 
-  bool list -> ml_ast -> identifier list * ml_ast
-
-val term_expunge : 
-  bool list -> identifier list * ml_ast -> ml_ast
+val struct_ast_search : ml_ast -> ml_structure -> bool
+val struct_type_search : ml_type -> ml_structure -> bool
 
 type do_ref = global_reference -> unit 
 
-val type_iter_references : do_ref -> ml_type -> unit
-val ast_iter_references : do_ref -> do_ref -> do_ref -> ml_ast -> unit
 val decl_iter_references : do_ref -> do_ref -> do_ref -> ml_decl -> unit
+val spec_iter_references : do_ref -> do_ref -> do_ref -> ml_spec -> unit
+val struct_iter_references : do_ref -> do_ref -> do_ref -> ml_structure -> unit
 
-
-
+val signature_of_structure : ml_structure -> ml_signature

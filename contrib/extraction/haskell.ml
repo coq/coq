@@ -15,6 +15,7 @@ open Util
 open Names
 open Nameops
 open Libnames
+open Table
 open Miniml
 open Mlutil
 open Ocaml
@@ -30,17 +31,21 @@ let keywords =
   Idset.empty
 
 let preamble prm used_modules (mldummy,tdummy,tunknown) =
-  let m = String.capitalize (string_of_id prm.mod_name)   in 
-  str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
+  let pp_mp = function 
+    | MPfile d -> pr_upper_id (List.hd (repr_dirpath d))
+    | _ -> assert false 
+  in  
+  str "module " ++ pr_upper_id prm.mod_name ++ str " where" ++ fnl () 
+  ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
-  Idset.fold
-    (fun m s -> str "import qualified " ++ pr_id (uppercase_id m) ++ fnl() ++ s)
-    used_modules (mt ()) ++ fnl()
-  ++
+  prlist (fun mp -> str "import qualified " ++ pp_mp mp ++ fnl ()) used_modules
+  ++ fnl () ++
   (if mldummy then 
      str "__ = Prelude.error \"Logical or arity value used\"" 
      ++ fnl () ++ fnl()
    else mt())
+
+let preamble_sig prm used_modules (mldummy,tdummy,tunknown) = failwith "TODO" 
 
 let pp_abst = function
   | [] -> (mt ())
@@ -54,7 +59,9 @@ let pr_lower_id id = pr_id (lowercase_id id)
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r = P.pp_global r
+let local_mp = ref initial_path 
+
+let pp_global r = P.pp_global !local_mp r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
@@ -111,7 +118,7 @@ let rec pp_expr par env args =
 	hv 0 
 	  (pp_par par 
 	     (hv 0 
-		(hov 2 (str "let" ++ pp_id ++ str " = " ++ pp_a1) ++ 
+		(hov 5 (str "let" ++ spc () ++ pp_id ++ str " = " ++ pp_a1) ++ 
 		 spc () ++ str "in") ++
 	      spc () ++ hov 0 pp_a2))
     | MLglob r -> 
@@ -139,7 +146,6 @@ let rec pp_expr par env args =
 	str "__" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) -> pp_expr par env args a
     | MLmagic a ->  pp_expr par env args a
-    | MLcustom s -> str s
 
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =
@@ -180,20 +186,20 @@ and pp_function env f t =
 let pp_comment s = str "-- " ++ s ++ fnl ()
 
 let pp_logical_ind ip packet = 
-  pp_comment (Printer.pr_global (IndRef ip) ++ str " : logical inductive") ++
+  pp_comment (pr_global (IndRef ip) ++ str " : logical inductive") ++
   pp_comment (str "with constructors : " ++ 
-	      prvect_with_sep spc Printer.pr_global 
+	      prvect_with_sep spc pr_global 
 		(Array.mapi (fun i _ -> ConstructRef (ip,i+1)) packet.ip_types)) 
 
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
   let l' = List.rev l in 
-  hov 0 (str "type " ++ pp_global (IndRef (kn,0)) ++ spc () ++ 
+  hov 2 (str "type " ++ pp_global (IndRef (kn,0)) ++ spc () ++ 
 	 prlist_with_sep spc pr_id l ++
 	 (if l <> [] then str " " else mt ()) ++ str "=" ++ spc () ++
 	 pp_type false l' (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++ 
-		     Printer.pr_global (ConstructRef ((kn,0),1))))
+		     pr_global (ConstructRef ((kn,0),1))))
 
 let pp_one_ind ip pl cv =
   let pl = rename_tvars keywords pl in
@@ -215,40 +221,60 @@ let pp_one_ind ip pl cv =
 	  prvect_with_sep (fun () -> fnl () ++ str "  | ") pp_constructor 
 	    (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
   
-let rec pp_ind kn i ind =
-  if i >= Array.length ind.ind_packets then mt ()
+let rec pp_ind first kn i ind =
+  if i >= Array.length ind.ind_packets then 
+    if first then mt () else fnl () 
   else 
     let ip = (kn,i) in 
     let p = ind.ind_packets.(i) in 
-    if p.ip_logical then  
-      pp_logical_ind ip p ++ pp_ind kn (i+1) ind
+    if is_custom (IndRef (kn,i)) then pp_ind first kn (i+1) ind 
     else 
-      pp_one_ind ip p.ip_vars p.ip_types ++ fnl () ++ pp_ind kn (i+1) ind
-
+      if p.ip_logical then  
+	pp_logical_ind ip p ++ pp_ind first kn (i+1) ind
+      else 
+	pp_one_ind ip p.ip_vars p.ip_types ++ fnl () ++ 
+	pp_ind false kn (i+1) ind
+	  
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_decl = function
-  | Dind (kn,i) when i.ind_info = Singleton -> pp_singleton kn i.ind_packets.(0)
-  | Dind (kn,i) -> hov 0 (pp_ind kn 0 i)
+let pp_decl mp = 
+  local_mp := mp;
+  function
+  | Dind (kn,i) when i.ind_info = Singleton -> 
+      pp_singleton kn i.ind_packets.(0) ++ fnl ()
+  | Dind (kn,i) -> hov 0 (pp_ind true kn 0 i)
   | Dtype (r, l, t) ->
-      let l = rename_tvars keywords l in
-      let l' = List.rev l in 
-      hov 0 (str "type " ++ pp_global r ++ spc () ++ 
+      if is_inline_custom r then mt () 
+      else 
+	let l = rename_tvars keywords l in
+	let l' = List.rev l in 
+	hov 2 (str "type " ++ pp_global r ++ spc () ++ 
 	       prlist_with_sep (fun () -> (str " ")) pr_id l ++
 	       (if l <> [] then (str " ") else (mt ())) ++ str "=" ++ spc () ++
-	       pp_type false l' t ++ fnl ())
+	       pp_type false l' t ++ fnl () ++ fnl ())
   | Dfix (rv, defs,_) ->
       let ppv = Array.map pp_global rv in 
-      (prlist_with_sep (fun () -> fnl () ++ fnl ()) 
-	   (fun (pi,ti) -> pp_function (empty_env ()) pi ti)
-	   (List.combine (Array.to_list ppv) (Array.to_list defs)) ++ fnl ())
+      prlist_with_sep (fun () -> fnl () ++ fnl ())
+	(fun (pi,ti) -> pp_function (empty_env ()) pi ti)
+	(List.combine (Array.to_list ppv) (Array.to_list defs)) 
+      ++ fnl () ++ fnl ()
   | Dterm (r, a, _) ->
-      hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl ())
-  | DcustomTerm (r,s) -> 
-      hov 0  (pp_global r ++ str " =" ++ spc () ++ str s ++ fnl ())
-  | DcustomType (r,s) -> 
-      hov 0  (str "type " ++ pp_global r ++ str " = " ++ str s ++ fnl ())
+      if is_inline_custom r then mt () 
+      else 
+	hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl () ++ fnl ())
+
+let pp_structure_elem mp = function 
+  | (l,SEdecl d) -> pp_decl mp d
+  | (l,SEmodule m) -> 
+      failwith "TODO: Haskell extraction of modules not implemented yet"
+  | (l,SEmodtype m) -> 
+      failwith "TODO: Haskell extraction of modules not implemented yet"
+
+let pp_struct = 
+  prlist (fun (mp,sel) -> prlist (pp_structure_elem mp) sel)
+
+let pp_signature s = failwith "TODO"
 
 end
 

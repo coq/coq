@@ -42,8 +42,8 @@ depend: $(ML)
 tree:
 	mkdir -p $(DIRS)
 
-%.mli:%.ml
-	./make_mli $< > $@
+#%.mli:%.ml
+#	./make_mli $< > $@
 
 %.cmi:%.mli
 	ocamlc $(INCL) -c -i $<

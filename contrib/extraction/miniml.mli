@@ -56,6 +56,8 @@ type inductive_info = Record | Singleton | Coinductive | Standard
 *)
 
 type ml_ind_packet = { 
+  ip_typename : identifier; 
+  ip_consnames : identifier array; 
   ip_logical : bool;
   ip_sign : signature; 
   ip_vars : identifier list; 
@@ -83,23 +85,23 @@ type ml_ast =
   | MLdummy
   | MLcast   of ml_ast * ml_type
   | MLmagic  of ml_ast
-  | MLcustom of string
 
 (*s ML declarations. *)
 
 type ml_decl = 
   | Dind  of kernel_name * ml_ind
   | Dtype of global_reference * identifier list * ml_type
-  | Dterm   of global_reference * ml_ast * ml_type
-  | DcustomTerm of global_reference * string
-  | DcustomType of global_reference * string
-  | Dfix    of global_reference array * ml_ast array * ml_type array
+  | Dterm of global_reference * ml_ast * ml_type
+  | Dfix  of global_reference array * ml_ast array * ml_type array
+
+type ml_spec = 
+  | Sind  of kernel_name * ml_ind
+  | Stype of global_reference * identifier list * ml_type option 
+  | Sval  of global_reference * ml_type
 
 type ml_specif = 
-  | Sval of ml_type
-  | Stype of ml_type option 
-  | Smind of ml_ind
-  | Smodule of ml_module_type  (* et un module_path option ?? *) 
+  | Spec of ml_spec 
+  | Smodule of ml_module_type
   | Smodtype of ml_module_type
 
 and ml_module_sig = (label * ml_specif) list
@@ -116,10 +118,7 @@ and ml_module_expr =
   | MEapply of ml_module_expr * ml_module_expr
 
 and ml_structure_elem = 
-  | SEind of ml_ind
-  | SEtype of identifier list * ml_type
-  | SEterm of ml_ast * ml_type
-  | SEfix of global_reference array * ml_ast array * ml_type array
+  | SEdecl of ml_decl
   | SEmodule of ml_module (* pourquoi pas plutot ml_module_expr *)
   | SEmodtype of ml_module_type
 
@@ -127,25 +126,32 @@ and ml_module_structure = (label * ml_structure_elem) list
 
 and ml_module = 
     { ml_mod_expr : ml_module_expr option; 
-      ml_mod_type : ml_module_type }
+      ml_mod_type : ml_module_type;
+      ml_mod_equiv : module_path option } 
 
+type ml_structure = (module_path * ml_module_structure) list
+
+type ml_signature = (module_path * ml_module_sig) list
 
 (*s Pretty-printing of MiniML in a given concrete syntax is parameterized
     by a function [pp_global] that pretty-prints global references. 
     The resulting pretty-printer is a module of type [Mlpp] providing
     functions to print types, terms and declarations. *)
 
+module type Mlpp_param = sig
+  val globals : unit -> Idset.t
+  val pp_global : module_path -> global_reference -> std_ppcmds
+  val pp_long_module : module_path -> std_ppcmds
+  val pp_short_module : identifier -> std_ppcmds
+end
+
+module type Mlpp = sig
+  val pp_decl : module_path -> ml_decl -> std_ppcmds
+  val pp_struct : ml_structure -> std_ppcmds
+  val pp_signature : ml_signature -> std_ppcmds
+end
+
 type extraction_params =  
   { modular : bool; 
     mod_name : identifier; 
     to_appear : global_reference list }
-
-module type Mlpp_param = sig
-  val globals : unit -> Idset.t
-  val pp_global : global_reference -> std_ppcmds
-end
-
-module type Mlpp = sig
-  val pp_decl : ml_decl -> std_ppcmds
-end
-

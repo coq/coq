@@ -16,7 +16,8 @@ open Names
 
 val keywords : Idset.t
 
-val preamble : extraction_params -> Idset.t -> bool * bool * bool -> std_ppcmds
+val preamble : 
+  extraction_params -> module_path list -> bool * bool * bool -> std_ppcmds
 
 module Make : functor(P : Mlpp_param) -> Mlpp
 

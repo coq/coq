@@ -17,6 +17,7 @@ open Nameops
 open Libnames
 open Miniml
 open Mlutil
+open Table
 open Ocaml
 
 (*s Scheme renaming issues. *)
@@ -46,7 +47,7 @@ let pp_abst st = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r = P.pp_global r
+let pp_global r = P.pp_global initial_path r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of expressions.  *)
@@ -109,8 +110,6 @@ let rec pp_expr env args =
 	pp_expr env args a
     | MLmagic a ->
 	pp_expr env args a
-    | MLcustom s -> str s
-
 
 and pp_one_pat env (r,ids,t) = 
   let pp_arg id = str "?" ++ pr_id id in 
@@ -141,10 +140,9 @@ and pp_fix env j (ids,bl) args =
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_decl = function
+let pp_decl _ = function
   | Dind _ -> mt ()
   | Dtype _ -> mt () 
-  | DcustomType _ -> mt ()
   | Dfix (rv, defs,_) ->
       let ppv = Array.map pp_global rv in 
       prvect_with_sep fnl 
@@ -153,12 +151,25 @@ let pp_decl = function
 	     (paren (str "define " ++ pi ++ spc () ++ 
 		     (pp_expr (empty_env ()) [] ti)) 
 	      ++ fnl ()))
-	(array_map2 (fun p b -> (p,b)) ppv defs)
+	(array_map2 (fun p b -> (p,b)) ppv defs) ++
+      fnl ()
   | Dterm (r, a, _) ->
-      hov 2 (paren (str "define " ++ pp_global r ++ spc () ++
-		    pp_expr (empty_env ()) [] a)) ++ fnl ()  
-  | DcustomTerm (r,s) -> 
-      hov 2 (paren (str "define " ++ pp_global r ++ spc () ++ str s) ++ fnl ())
+      if is_inline_custom r then mt () 
+      else 
+	hov 2 (paren (str "define " ++ pp_global r ++ spc () ++
+		      pp_expr (empty_env ()) [] a)) ++ fnl ()  ++ fnl ()
+
+let pp_structure_elem mp = function 
+  | (l,SEdecl d) -> pp_decl mp d
+  | (l,SEmodule m) -> 
+      failwith "TODO: Scheme extraction of modules not implemented yet"
+  | (l,SEmodtype m) -> 
+      failwith "TODO: Scheme extraction of modules not implemented yet"
+
+let pp_struct = 
+  prlist (fun (mp,sel) -> prlist (pp_structure_elem mp) sel)
+
+let pp_signature s = assert false
 
 end
 

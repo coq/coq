@@ -11,6 +11,7 @@
 open Names
 open Term
 open Declarations
+open Nameops
 open Summary
 open Libobject
 open Goptions
@@ -19,46 +20,239 @@ open Util
 open Pp
 open Miniml
 
+(*S Extraction environment, shared with [extract_env.ml] *)
+
+let cur_env = ref Environ.empty_env
+
+let id_of_global = function 
+  | ConstRef kn -> let _,_,l = repr_kn kn in id_of_label l
+  | IndRef (kn,i) -> 
+      let mib = Environ.lookup_mind kn !cur_env in 
+      mib.mind_packets.(i).mind_typename
+  | ConstructRef ((kn,i),j) -> 
+      let mib = Environ.lookup_mind kn !cur_env in 
+      mib.mind_packets.(i).mind_consnames.(j-1)
+  | _ -> assert false
+
+let pr_global r = pr_id (id_of_global r)
+
 (*S Warning and Error messages. *)
 
+let err s = errorlabstrm "Extraction" s
+
 let error_axiom_scheme r = 
-  errorlabstrm "Extraction" 
-    (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
-     Printer.pr_global r ++ spc () ++ str ".") 
+  err (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
+       pr_global r ++ spc () ++ str ".") 
 
 let error_axiom r =
-  errorlabstrm "Extraction"
-    (str "You must specify an extraction for axiom" ++ spc () ++ 
-     Printer.pr_global r ++ spc () ++ str "first.")
+  err (str "You must specify an extraction for axiom" ++ spc () ++ 
+       pr_global r ++ spc () ++ str "first.")
 
 let warning_axiom r = 
   Options.if_verbose warn 
     (str "This extraction depends on logical axiom" ++ spc () ++ 
-     Printer.pr_global r ++ str "." ++ spc() ++ 
+     pr_global r ++ str "." ++ spc() ++ 
      str "Having false logical axiom in the environment when extracting" ++ 
      spc () ++ str "may lead to incorrect or non-terminating ML terms.")
     
 let error_section () = 
-  errorlabstrm "Extraction"
-    (str "You can't do that within a section. Close it and try again.")
+  err (str "You can't do that within a module or a section." ++ fnl () ++
+       str "Close it and try again.")
 
 let error_constant r = 
-  errorlabstrm "Extraction"
-    (Printer.pr_global r ++ spc () ++ str "is not a constant.") 
+  err (pr_global r ++ str " is not a constant.") 
+
+let error_fixpoint r = 
+  err (str "Fixpoint " ++ pr_global r ++ str " cannot be inlined.") 
 
 let error_type_scheme r = 
-  errorlabstrm "Extraction"
-    (Printer.pr_global r ++ spc () ++ str "is a type scheme, not a type.")
+  err (pr_global r ++ spc () ++ str "is a type scheme, not a type.")
 
 let error_inductive r = 
-  errorlabstrm "Extraction"
-    (Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
+  err (pr_global r ++ spc () ++ str "is not an inductive type.")
 
 let error_nb_cons () = 
-  errorlabstrm "Extraction" (str "Not the right number of constructors.")
+  err (str "Not the right number of constructors.")
+
+let error_module_clash s = 
+  err (str ("There are two Coq modules with ML name " ^ s ^".\n") ++ 
+       str "This is not allowed in ML. Please do some renaming first.")
+
+let error_unknown_module m = 
+  err (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 
+
+let error_toplevel () = 
+  err (str "Toplevel pseudo-ML language can be used only at Coq toplevel.\n" ++
+       str "You should use Extraction Language Ocaml or Haskell before.") 
+
+let error_scheme () = 
+  err (str "No Scheme modular extraction available yet.")
+
+let error_not_visible r = 
+  err (pr_global r ++ str " is not directly visible.\n" ++
+       str "For example, it may be inside an applied functor." ++
+       str "Use Recursive Extraction to get the whole environment.")
+
+let error_unqualified_name s1 s2 = 
+  err (str (s1 ^ " is used in " ^ s2 ^ " where it cannot be disambiguated\n" ^
+	    "in ML from another name sharing the same basename.\n"  ^
+	    "Please do some renaming.\n"))
+
+(*S Utilities concerning [module_path] *)
+
+let current_toplevel () = fst (Lib.current_prefix ())
+
+let is_toplevel mp = 
+  mp = initial_path || mp = current_toplevel ()
+
+let is_something_opened () = 
+  try ignore (Lib.what_is_opened ()); true
+  with Not_found -> false
+
+let rec base_mp = function 
+  | MPdot (mp,l) -> base_mp mp 
+  | mp -> mp 
+
+let rec prefixes_mp mp = match mp with 
+  | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
+  | _ -> MPset.singleton mp 
+
+let is_modfile = function 
+  | MPfile _ -> true 
+  | _ -> false
+
+let rec modfile_of_mp mp = match mp with 
+  | MPfile _ -> mp
+  | MPdot (mp,_) -> modfile_of_mp mp 
+  | _ -> raise Not_found
+
+let at_toplevel mp = 
+  is_modfile mp || is_toplevel mp
+
+let rec fst_level_module_of_mp mp = match mp with 
+  | MPdot (mp, l) when is_toplevel mp -> mp,l 
+  | MPdot (mp, l) -> fst_level_module_of_mp mp
+  | _ -> raise Not_found
+
+let rec parse_labels ll = function 
+  | MPdot (mp,l) -> parse_labels (l::ll) mp 
+  | mp -> mp,ll
+
+let labels_of_mp mp = parse_labels [] mp 
+
+let labels_of_kn kn = 
+  let mp,_,l = repr_kn kn in parse_labels [l] mp
+
+(*S The main tables: constants, inductives, records, ... *)
+
+(*s Module path aliases. *) 
+
+(* A [MPbound] has no aliases except itself: it's its own long and short form.*)
+(* A [MPself] is a short form, and the table contains its long form. *)
+(* A [MPfile] is a long form, and the table contains its short form. *)
+(* Since the table does not contain all intermediate forms, a [MPdot] 
+   is dealt by first expending its head, and then looking in the table. *)
+
+let aliases = ref (MPmap.empty : module_path MPmap.t)
+let init_aliases () = aliases := MPmap.empty
+let add_aliases mp mp' = aliases := MPmap.add mp mp' (MPmap.add mp' mp !aliases)
+
+let rec long_mp mp = match mp with 
+  | MPbound _ | MPfile _ -> mp 
+  | MPself _ -> (try MPmap.find mp !aliases with Not_found -> mp)
+  | MPdot (mp1,l) -> 
+      let mp2 = long_mp mp1 in 
+      if mp1 == mp2 then mp else MPdot (mp2,l)
+
+(*i let short_mp mp = match mp with
+  | MPself _ | MPbound _ -> mp 
+  | MPfile _ -> (try MPmap.find mp !aliases with Not_found -> mp)
+  | MPdot _ -> (try MPmap.find (long_mp mp) !aliases with Not_found -> mp)
+i*)
+
+let long_kn kn = 
+  let (mp,s,l) = repr_kn kn in 
+  let mp' = long_mp mp in 
+  if mp' == mp then kn else make_kn mp' s l 
+
+(*i let short_kn kn = 
+  let (mp,s,l) = repr_kn kn in 
+  let mp' = short_mp mp in 
+  if mp' == mp then kn else make_kn mp' s l 
+i*)
+
+let long_r = function 
+  | ConstRef kn -> ConstRef (long_kn kn)
+  | IndRef (kn,i) -> IndRef (long_kn kn, i)
+  | ConstructRef ((kn,i),j) -> ConstructRef ((long_kn kn,i),j)
+  | _ -> assert false
+
+(*s Constants tables. *) 
+
+let terms = ref (KNmap.empty : ml_decl KNmap.t)
+let init_terms () = terms := KNmap.empty
+let add_term kn d = terms := KNmap.add (long_kn kn) d !terms
+let lookup_term kn = KNmap.find (long_kn kn) !terms
+
+let types = ref (KNmap.empty : ml_schema KNmap.t)
+let init_types () = types := KNmap.empty
+let add_type kn s = types := KNmap.add (long_kn kn) s !types
+let lookup_type kn = KNmap.find (long_kn kn) !types 
+
+(*s Inductives table. *)
+
+let inductives = ref (KNmap.empty : ml_ind KNmap.t)
+let init_inductives () = inductives := KNmap.empty
+let add_ind kn m = inductives := KNmap.add (long_kn kn) m !inductives
+let lookup_ind kn = KNmap.find (long_kn kn) !inductives
+
+(*s Recursors table. *)
+
+let recursors = ref KNset.empty
+let init_recursors () = recursors := KNset.empty
+
+let add_recursors env kn = 
+  let kn = long_kn kn in 
+  let make_kn id = make_kn (modpath kn) empty_dirpath (label_of_id id) in 
+  let mib = Environ.lookup_mind kn env in 
+  Array.iter 
+    (fun mip -> 
+       let id = mip.mind_typename in 
+       let kn_rec = make_kn (Nameops.add_suffix id "_rec")
+       and kn_rect = make_kn (Nameops.add_suffix id "_rect") in 
+       recursors := KNset.add kn_rec (KNset.add kn_rect !recursors))
+    mib.mind_packets
+
+let is_recursor = function 
+  | ConstRef kn -> KNset.mem (long_kn kn) !recursors
+  | _ -> false
+
+(*s Record tables. *)
+
+let records = ref (KNmap.empty : global_reference list KNmap.t)
+let init_records () = records := KNmap.empty
+
+let projs = ref Refset.empty
+let init_projs () = projs := Refset.empty
+
+let add_record kn l = 
+  records := KNmap.add (long_kn kn) l !records; 
+  projs := List.fold_right (fun r -> Refset.add (long_r r)) l !projs
+
+let find_projections kn = KNmap.find (long_kn kn) !records
+let is_projection r = Refset.mem (long_r r) !projs
+
+(*s Tables synchronization. *)
+
+let reset_tables () = 
+  init_terms (); init_types (); init_inductives (); init_recursors (); 
+  init_records (); init_projs (); init_aliases ()
 
 
-(*S Extraction AutoInline *)
+
+(*S The Extraction auxiliary commands *)
+
+(*s Extraction AutoInline *)
 
 let auto_inline_ref = ref true
 
@@ -72,7 +266,7 @@ let _ = declare_bool_option
 	   optwrite = (:=) auto_inline_ref}
 
 
-(*S Extraction Optimize *)
+(*s Extraction Optimize *)
 
 let optim_ref = ref true
 
@@ -86,7 +280,7 @@ let _ = declare_bool_option
 	   optwrite = (:=) optim_ref}
 
 
-(*S Extraction Lang *)
+(*s Extraction Lang *)
 
 type lang = Ocaml | Haskell | Scheme | Toplevel
 
@@ -110,15 +304,15 @@ let _ = declare_summary "Extraction Lang"
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
 
-(*S Extraction Inline/NoInline *)
+(*s Extraction Inline/NoInline *)
 
 let empty_inline_table = (Refset.empty,Refset.empty)
 
 let inline_table = ref empty_inline_table
 
-let to_inline r = Refset.mem r (fst !inline_table)
+let to_inline r = Refset.mem (long_r r) (fst !inline_table)
 
-let to_keep r = Refset.mem r (snd !inline_table)
+let to_keep r = Refset.mem (long_r r) (snd !inline_table)
 
 let add_inline_entries b l = 
   let f b = if b then Refset.add else Refset.remove in 
@@ -127,7 +321,14 @@ let add_inline_entries b l =
      (List.fold_right (f b) l i), 
      (List.fold_right (f (not b)) l k)
 
-(*s Registration of operations for rollback. *)
+let is_fixpoint kn = 
+  match (Global.lookup_constant kn).const_body with 
+    | None -> false
+    | Some body -> match kind_of_term (force body) with 
+	| Fix _ | CoFix _ -> true
+	| _ -> false
+
+(* Registration of operations for rollback. *)
 
 let (inline_extraction,_) = 
   declare_object 
@@ -142,15 +343,19 @@ let _ = declare_summary "Extraction Inline"
 	    init_function = (fun () -> inline_table := empty_inline_table);
 	    survive_section = true }
 
-(*s Grammar entries. *)
+(* Grammar entries. *)
 
 let extraction_inline b l =
-  if Lib.sections_are_opened () then error_section (); 
+  if is_something_opened () then error_section (); 
   let refs = List.map Nametab.global l in 
-  List.iter (function  ConstRef _ -> () | r -> error_constant r) refs; 
+  List.iter 
+    (fun r -> match r with 
+       | ConstRef kn when b && is_fixpoint kn -> error_fixpoint r
+       | ConstRef _ -> ()
+       | _ -> error_constant r) refs; 
   Lib.add_anonymous_leaf (inline_extraction (b,refs))
 
-(*s Printing part *)
+(* Printing part *)
 
 let print_extraction_inline () = 
   let (i,n)= !inline_table in 
@@ -159,13 +364,13 @@ let print_extraction_inline () =
     (str "Extraction Inline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) i' (mt ()) ++
+	  (p ++ str "   " ++ pr_global r ++ fnl ())) i' (mt ()) ++
      str "Extraction NoInline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ()))
+	  (p ++ str "   " ++ pr_global r ++ fnl ())) n (mt ()))
 
-(*s Reset part *)
+(* Reset part *)
 
 let (reset_inline,_) = 
   declare_object
@@ -177,7 +382,7 @@ let (reset_inline,_) =
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 
-(*S Extract Constant/Inductive. *)
+(*s Extract Constant/Inductive. *)
 
 type kind = Term | Type | Ind | Construct 
 
@@ -191,131 +396,63 @@ let check_term_or_type r = match r with
       else (r,Term)
   | _ -> error_constant r
 	
-let empty_extractions = (Refmap.empty, Refset.empty)
+let customs = ref Refmap.empty
 
-let extractions = ref empty_extractions
+let all_customs () = 
+  Refmap.fold (fun r _ -> Refset.add r) !customs Refset.empty
 
-let ml_extractions () = snd !extractions
+let term_customs () = 
+  Refmap.fold (fun r (k,s) l -> if k=Term then (r,s)::l else l) !customs []
 
-let ml_term_extractions () = 
-  Refmap.fold (fun r (k,s) l -> if k=Term then (r,s)::l else l)
-    (fst !extractions) []
-
-let ml_type_extractions () = 
-  Refmap.fold (fun r (k,s) l -> if k=Type then (r,s)::l else l) 
-    (fst !extractions) []
+let type_customs () = 
+  Refmap.fold (fun r (k,s) l -> if k=Type then (r,s)::l else l) !customs []
     
-let add_ml_extraction r k s = 
-  let (map,set) = !extractions in
-  extractions := (Refmap.add r (k,s) map, Refset.add r set)
+let add_custom r k s = customs := Refmap.add r (k,s) !customs
 
-let is_ml_extraction r = Refset.mem r (snd !extractions)
+let is_custom r = Refmap.mem (long_r r) !customs
 
-let find_ml_extraction r = snd (Refmap.find r (fst !extractions))
+let is_inline_custom r = 
+  let r = long_r r in (is_custom r) && (to_inline r) 
 
-(*s Registration of operations for rollback. *)
+let find_custom r = snd (Refmap.find (long_r r) !customs)
 
-let (in_ml_extraction,_) = 
+(* Registration of operations for rollback. *)
+
+let (in_customs,_) = 
   declare_object 
     {(default_object "ML extractions") with 
-       cache_function = (fun (_,(r,k,s)) -> add_ml_extraction r k s);
-       load_function = (fun _ (_,(r,k,s)) -> add_ml_extraction r k s);
+       cache_function = (fun (_,(r,k,s)) -> add_custom r k s);
+       load_function = (fun _ (_,(r,k,s)) -> add_custom r k s);
        export_function = (fun x -> Some x)}
 
 let _ = declare_summary "ML extractions"
-	  { freeze_function = (fun () -> !extractions);
-	    unfreeze_function = ((:=) extractions);
-	    init_function = (fun () -> extractions := empty_extractions);
+	  { freeze_function = (fun () -> !customs);
+	    unfreeze_function = ((:=) customs);
+	    init_function = (fun () -> customs := Refmap.empty);
 	    survive_section = true }
 
-(*s Grammar entries. *)
+(* Grammar entries. *)
 
 let extract_constant_inline inline r s =
-  if Lib.sections_are_opened () then error_section (); 
+  if is_something_opened () then error_section (); 
   let g,k = check_term_or_type (Nametab.global r) in
   Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
-  Lib.add_anonymous_leaf (in_ml_extraction (g,k,s))
+  Lib.add_anonymous_leaf (in_customs (g,k,s))
 
 let extract_inductive r (s,l) =
-  if Lib.sections_are_opened () then error_section (); 
+  if is_something_opened () then error_section (); 
   let g = Nametab.global r in match g with
   | IndRef ((kn,i) as ip) ->
       let mib = Global.lookup_mind kn in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
       if n <> List.length l then error_nb_cons (); 
       Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-      Lib.add_anonymous_leaf (in_ml_extraction (g,Ind,s));
+      Lib.add_anonymous_leaf (in_customs (g,Ind,s));
       list_iter_i
 	(fun j s -> 
 	   let g = ConstructRef (ip,succ j) in 
 	   Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-	   Lib.add_anonymous_leaf (in_ml_extraction (g,Construct,s))) l
+	   Lib.add_anonymous_leaf (in_customs (g,Construct,s))) l
   | _ -> error_inductive g 
-
-
-(*S The other tables: constants, inductives, records, ... *)
-
-(*s Constants tables. *) 
-
-let terms = ref (KNmap.empty : ml_decl KNmap.t)
-let add_term kn d = terms := KNmap.add kn d !terms
-let lookup_term kn = KNmap.find kn !terms
-
-let types = ref (KNmap.empty : ml_schema KNmap.t)
-let add_type kn s = types := KNmap.add kn s !types
-let lookup_type kn = KNmap.find kn !types 
-
-(*s Inductives table. *)
-
-let inductives = ref (KNmap.empty : ml_ind KNmap.t)
-let add_ind kn m = inductives := KNmap.add kn m !inductives
-let lookup_ind kn = KNmap.find kn !inductives
-
-(*s Recursors table. *)
-
-let recursors = ref KNset.empty
-
-let add_recursors kn = 
-  let make_kn id = make_kn (modpath kn) empty_dirpath (label_of_id id) in 
-  let mib = Global.lookup_mind kn in 
-  Array.iter 
-    (fun mip -> 
-       let id = mip.mind_typename in 
-       let kn_rec = make_kn (Nameops.add_suffix id "_rec")
-       and kn_rect = make_kn (Nameops.add_suffix id "_rect") in 
-       recursors := KNset.add kn_rec (KNset.add kn_rect !recursors))
-    mib.mind_packets
-
-let is_recursor = function 
-  | ConstRef kn -> KNset.mem kn !recursors
-  | _ -> false
-
-(*s Record tables. *)
-
-let records = ref (KNmap.empty : global_reference list KNmap.t)
-let projs = ref Refset.empty
-
-let add_record kn l = 
-  records := KNmap.add kn l !records; 
-  projs := List.fold_right Refset.add l !projs
-
-let find_projections kn = KNmap.find kn !records
-let is_projection r = Refset.mem r !projs
-
-(*s Tables synchronization. *)
-
-let freeze () = !terms, !types, !inductives, !recursors, !records, !projs
-
-let unfreeze (te,ty,id,re,rd,pr) = 
-  terms:=te; types:=ty; inductives:=id; recursors:=re; records:=rd; projs:=pr
-
-let _ = declare_summary "Extraction tables"
-	  { freeze_function = freeze;
-	    unfreeze_function = unfreeze;
-	    init_function = (fun () -> ());
-	    survive_section = true }
-
-
-
 
 

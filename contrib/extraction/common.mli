@@ -14,16 +14,10 @@ open Libnames
 open Miniml
 open Mlutil
 
-val long_module : global_reference -> dir_path
+val print_one_decl :
+  ml_structure -> module_path -> ml_decl -> unit
 
-val create_mono_renamings : ml_decl list -> unit
-val set_keywords : unit -> unit
+val print_structure_to_file : 
+  (string * string) option -> extraction_params -> ml_structure -> unit
 
-val pp_decl : unit -> ml_decl -> std_ppcmds
 
-val segment_contents : Lib.library_segment -> global_reference list
-
-val module_contents : dir_path -> global_reference list 
-
-val extract_to_file : 
-  string option -> extraction_params -> ml_decl list -> unit

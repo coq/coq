@@ -212,7 +212,7 @@ let kn_of_r r = match r with
     | ConstRef kn -> kn
     | IndRef (kn,_) -> kn
     | ConstructRef ((kn,_),_) -> kn
-    | VarRef _ -> error_section ()
+    | VarRef _ -> assert false
 
 let rec type_mem_kn kn = function 
   | Tmeta _ -> assert false
@@ -340,7 +340,7 @@ let ast_iter_rel f =
     | MLcons (_,l) ->  List.iter (iter n) l
     | MLcast (a,_) -> iter n a
     | MLmagic a -> iter n a
-    | MLglob _ | MLexn _ | MLdummy | MLcustom _ -> ()
+    | MLglob _ | MLexn _ | MLdummy -> ()
   in iter 0 
 
 (*s Map over asts. *)
@@ -356,7 +356,7 @@ let ast_map f = function
   | MLcons (c,l) -> MLcons (c, List.map f l)
   | MLcast (a,t) -> MLcast (f a, t)
   | MLmagic a -> MLmagic (f a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLcustom _ as a -> a
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a
 
 (*s Map over asts, with binding depth as parameter. *)
 
@@ -372,7 +372,7 @@ let ast_map_lift f n = function
   | MLcons (c,l) -> MLcons (c, List.map (f n) l)
   | MLcast (a,t) -> MLcast (f n a, t)
   | MLmagic a -> MLmagic (f n a)
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLcustom _ as a -> a	
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> a	
 
 (*s Iter over asts. *) 
 
@@ -387,37 +387,7 @@ let ast_iter f = function
   | MLcons (c,l) -> List.iter f l
   | MLcast (a,t) -> f a
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLcustom _ as a -> ()
-
-(*S Searching occurrences of a particular term (no lifting done). *)
-
-let rec ast_search t a = 
-  if t = a then raise Found else ast_iter (ast_search t) a
-
-let decl_search t l = 
-  let one_decl = function 
-    | Dterm (_,a,_) -> ast_search t a
-    | Dfix (_,c,_) -> Array.iter (ast_search t) c
-    | _ -> () 
-  in 
-  try List.iter one_decl l; false with Found -> true
-
-let rec type_search t = function  
-  | Tarr (a,b) -> type_search t a; type_search t b 
-  | Tglob (r,l) -> List.iter (type_search t) l
-  | u -> if t = u then raise Found
-
-let decl_type_search t l = 
-  let one_decl = function 
-    | Dind (_,{ind_packets=p})  -> 
-	Array.iter 
-	  (fun {ip_types=v} -> Array.iter (List.iter (type_search t)) v) p
-    | Dterm (_,_,u) -> type_search t u
-    | Dfix (_,_,v) -> Array.iter (type_search t) v
-    | Dtype (_,_,u) -> type_search t u
-    | _ -> () 
-  in 
-  try List.iter one_decl l; false with Found -> true
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy as a -> ()
 
 (*S Operations concerning De Bruijn indices. *)
 
@@ -1032,7 +1002,7 @@ let rec non_stricts add cand = function
   | MLcase (t,v) -> 
       (* The only interesting case: for a variable to be non-strict, *)
       (* it is sufficient that it appears non-strict in at least one branch, *)
-      (* so he make an union (in fact a merge). *)
+      (* so we make an union (in fact a merge). *)
       let cand = non_stricts false cand t in 
       Array.fold_left 
 	(fun c (_,i,t)-> 
@@ -1062,10 +1032,10 @@ let is_not_strict t =
    If we could inline [t] (the user said nothing special), 
    should we inline ? 
    
-   We don't expand fixpoints, but always inductive constructors
-   and small terms.
-   Last case of inlining is a term with at least one non-strict 
-   variable (i.e. a variable that may not be evaluated). *)
+   We expand small terms with at least one non-strict 
+   variable (i.e. a variable that may not be evaluated).
+   
+   Futhermore we don't expand fixpoints. *)
 
 let inline_test t = 
   not (is_fix t) && (ml_size t < 12 && is_not_strict t)
@@ -1087,109 +1057,99 @@ let manual_inline = function
    we are free to act (AutoInline is set)
    \end{itemize} *)
 
-(*i  DEBUG 
-  let inline_test' r t = 
-  let b = inline_test t in 
-  if b then msgnl (Printer.pr_global r); 
-  b i*)
-
 let inline r t = 
   not (to_keep r) (* The user DOES want to keep it *)
+  && not (is_inline_custom r) 
   && (to_inline r (* The user DOES want to inline it *) 
      || (auto_inline () && lang () <> Haskell 
 	 && (is_recursor r || manual_inline r || inline_test t)))
 
 (*S Optimization. *)
 
-let subst_glob_ast r m = 
-  let rec substrec = function
-    | MLglob r' as t -> if r = r' then m else t
-    | t -> ast_map substrec t
-  in substrec
+let rec subst_glob_ast s t = match t with 
+  | MLglob (ConstRef kn) -> (try KNmap.find (long_kn kn) !s with Not_found -> t)
+  | _ -> ast_map (subst_glob_ast s) t
 
-let subst_glob_decl r m = function
-  | Dterm(r',t',typ) -> Dterm(r', subst_glob_ast r m t', typ)
-  | d -> d
-
-let inline_glob r t l = 
-  if not (inline r t) then true, l 
-  else false, List.map (subst_glob_decl r t) l
-
-let print_ml_decl prm (r,_) = 
-  not (to_inline r) || List.mem r prm.to_appear
-
-let add_ml_decls prm decls = 
-  let l1 = ml_type_extractions () in 
-  let l1 = List.filter (print_ml_decl prm) l1 in 
-  let l1 = List.map (fun (r,s)-> DcustomType (r,s)) l1 in 
-  let l2 = ml_term_extractions () in 
-  let l2 = List.filter (print_ml_decl prm) l2 in 
-  let l2 = List.map (fun (r,s)-> DcustomTerm (r,s)) l2 in
-  l1 @ l2 @ decls
-
-let rec expunge_fix_decls prm v c map b = function 
-  | [] -> b, [], map  
-  | Dterm (r, t, typ) :: l when array_exists ((=) r) v -> 
-      let t = normalize t in 
-      let t' = optimize_fix t in 
-      (match t' with 
-	 | MLfix(_,_,c') when c=c' -> 
-	     let b',l = inline_glob r t l in 
-	     let b = b || b' || List.mem r prm.to_appear in 
-	     let map = Refmap.add r typ map in 
-	     expunge_fix_decls prm v c map b l 
-	 | _ -> raise Impossible)
-  | d::l -> let b,l,map = expunge_fix_decls prm v c map b l in b, d::l, map  
-
-let rec optimize prm = function
-  | [] -> 
-      []
+let rec optim prm s = function
+  | [] -> []
   | (Dtype (r,_,Tdummy) | Dterm(r,MLdummy,_)) as d :: l ->
-      if List.mem r prm.to_appear then d :: (optimize prm l) 
-      else optimize prm l
+      if List.mem r prm.to_appear then d :: (optim prm s l) else optim prm s l
   | Dterm (r,t,typ) :: l ->
-      let t = normalize t in
-      let b,l = inline_glob r t l in 
-      let b = b || prm.modular || List.mem r prm.to_appear in 
-      let t' = optimize_fix t in
-      (try optimize_Dfix prm (r,t',typ) b l 
-       with Impossible ->
-	 if b then Dterm (r,t',typ) :: (optimize prm l)
-	 else optimize prm l)
-  | d :: l -> d :: (optimize prm l)
+      let t = normalize (subst_glob_ast s t) in 
+      let i = inline r t in 
+      if i then s := KNmap.add (long_kn (kn_of_r r)) t !s; 
+      if not i || prm.modular || List.mem r prm.to_appear 
+      then 
+	let d = match optimize_fix t with 
+	  | MLfix (0, _, [|c|]) -> 
+	      Dfix ([|r|], [|ast_subst (MLglob r) c|], [|typ|])
+	  | t -> Dterm (r, t, typ)
+	in d :: (optim prm s l)
+      else optim prm s l
+  | d :: l -> d :: (optim prm s l)
 
-and optimize_Dfix prm (r,t,typ) b l = 
-  match t with 
-    | MLfix (_, f, c) -> 
-	let len = Array.length f in 
-	if len = 1 then 
-	  if b then 
-	    let c = [|ast_subst (MLglob r) c.(0)|] in 
-	    Dfix ([|r|], c, [|typ|]) :: (optimize prm l)
-	  else optimize prm l
-	else 
-	  let v = try 
-	    let d = dirpath (sp_of_global None r) in 
-	    Array.map (fun id -> locate (make_qualid d id)) f 
-	  with Not_found -> raise Impossible 
-	  in 
-	  let map = Refmap.add r typ (Refmap.empty) in 
-	  let b,l,map = expunge_fix_decls prm v c map b l in 
-	  if b then 
-	    let typs = 
-	      Array.map 
-		(fun r -> try Refmap.find r map
-		 with Not_found -> Tunknown) v 
-	    in 
-	    let c = 
-	      let gv = Array.init len (fun i -> MLglob v.(len-i-1)) in 
-	      Array.map (gen_subst gv (-len)) c in 
-	    Dfix (v, c, typs) :: (optimize prm l)
-	  else optimize prm l 
-    | _ -> raise Impossible
+let rec optim_se top prm s = function 
+  | [] -> [] 
+  | (l,SEdecl (Dterm (r,a,t))) :: lse -> 
+      let r = long_r r in 
+      let kn = kn_of_r r in 
+      let a = normalize (subst_glob_ast s a) in 
+      let i = inline r a in 
+      if i then s := KNmap.add kn a !s; 
+      if top && i && not prm.modular && not (List.mem r prm.to_appear)
+      then optim_se top prm s lse
+      else 
+	let d = match optimize_fix a with 
+	  | MLfix (0, _, [|c|]) -> 
+	      Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
+	  | a -> Dterm (r, a, t)
+	in (l,SEdecl d) :: (optim_se top prm s lse)
+  | (l,SEdecl (Dfix (rv,av,tv))) :: lse -> 
+      let av = Array.map (fun a -> normalize (subst_glob_ast s a)) av in 
+      (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top prm s lse)
+  | (l,SEmodule m) :: lse -> 
+      let m = { m with ml_mod_expr = option_app (optim_me prm s) m.ml_mod_expr}
+      in (l,SEmodule m) :: (optim_se top prm s lse)
+  | se :: lse -> se :: (optim_se top prm s lse) 
 
-(* Apply some fonctions upon all references in 
-   [ml_type], [ml_ast], [ml_decl]. *)
+and optim_me prm s = function 
+  | MEstruct (msid, lse) -> MEstruct (msid, optim_se false prm s lse)
+  | MEident mp as me -> me
+  | MEapply (me, me') -> MEapply (optim_me prm s me, optim_me prm s me')
+  | MEfunctor (mbid,mt,me) -> MEfunctor (mbid,mt, optim_me prm s me)
+
+let optimize_struct prm before struc = 
+  let subst = ref (KNmap.empty : ml_ast KNmap.t) in 
+  option_iter (fun l -> ignore (optim prm subst l)) before; 
+  List.map (fun (mp,lse) -> (mp, optim_se true prm subst lse)) struc
+
+(*s Apply some functions upon all [ml_decl] and [ml_spec] found in a 
+   [ml_structure]. *) 
+
+let struct_iter do_decl do_spec s = 
+  let rec se_iter = function 
+    | (_,SEdecl d) -> do_decl d
+    | (_,SEmodule m) -> 
+	option_iter me_iter m.ml_mod_expr; mt_iter m.ml_mod_type
+    | (_,SEmodtype m) -> mt_iter m
+  and me_iter = function 
+    | MEident _ -> () 
+    | MEfunctor (_,mt,me) -> me_iter me; mt_iter mt
+    | MEapply (me,me') -> me_iter me; me_iter me'
+    | MEstruct (msid, sel) -> List.iter se_iter sel
+  and mt_iter = function 
+    | MTident _ -> () 
+    | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
+    | MTsig (_, sign) -> List.iter spec_iter sign
+  and spec_iter = function 
+    | (_,Spec s) -> do_spec s
+    | (_,Smodule mt) -> mt_iter mt
+    | (_,Smodtype mt) -> mt_iter mt
+  in 
+  List.iter (function (_,sel) -> List.iter se_iter sel) s
+
+(*s Apply some fonctions upon all references in [ml_type], [ml_ast], 
+  [ml_decl], [ml_spec] and [ml_structure]. *)
 
 type do_ref = global_reference -> unit
 
@@ -1210,25 +1170,93 @@ let ast_iter_references do_term do_cons do_type a =
       | MLcast (_,t) -> type_iter_references do_type t 
       | _ -> ()
   in iter a
+
+let ind_iter_references do_term do_cons do_type kn ind = 
+  let type_iter = type_iter_references do_type in
+  let cons_iter cp l = do_cons (ConstructRef cp); List.iter type_iter l in 
+  let packet_iter ip p = 
+    do_type (IndRef ip); Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types 
+  in
+  if ind.ind_info = Record then List.iter do_term (find_projections kn); 
+  Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
   
 let decl_iter_references do_term do_cons do_type = 
   let type_iter = type_iter_references do_type 
-  and ast_iter = ast_iter_references do_term do_cons do_type in 
-  let cons_iter cp l = do_cons (ConstructRef cp); List.iter type_iter l in 
-  let packet_iter ip p = 
-    do_type (IndRef ip); Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types in
-  let ind_iter kn ind =
-    if ind.ind_info = Record then List.iter do_term (find_projections kn); 
-    Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
-  in 
+  and ast_iter = ast_iter_references do_term do_cons do_type in
   function 
-    | Dind (kn,ind) -> ind_iter kn ind 
+    | Dind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind 
     | Dtype (r,_,t) -> do_type r; type_iter t 
     | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
     | Dfix(rv,c,t) -> 	
 	Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
-    | DcustomTerm (r,_) -> do_term r
-    | DcustomType (r,_) -> do_type r
 
+let spec_iter_references do_term do_cons do_type = function 
+  | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
+  | Stype (r,_,ot) -> do_type r; option_iter (type_iter_references do_type) ot
+  | Sval (r,t) -> do_term r; type_iter_references do_type t
+
+let struct_iter_references do_term do_cons do_type = 
+  struct_iter 
+    (decl_iter_references do_term do_cons do_type) 
+    (spec_iter_references do_term do_cons do_type) 
+
+(*S Searching occurrences of a particular term (no lifting done). *)
+
+let rec ast_search t a = 
+  if t = a then raise Found else ast_iter (ast_search t) a
+
+let decl_ast_search t = function 
+  | Dterm (_,a,_) -> ast_search t a
+  | Dfix (_,c,_) -> Array.iter (ast_search t) c
+  | _ -> () 
+
+let struct_ast_search t s = 
+  try struct_iter (decl_ast_search t) (fun _ -> ()) s; false
+  with Found -> true
+
+let rec type_search t = function  
+  | Tarr (a,b) -> type_search t a; type_search t b 
+  | Tglob (r,l) -> List.iter (type_search t) l
+  | u -> if t = u then raise Found
+
+let decl_type_search t = function 
+  | Dind (_,{ind_packets=p})  -> 
+      Array.iter 
+	(fun {ip_types=v} -> Array.iter (List.iter (type_search t)) v) p
+  | Dterm (_,_,u) -> type_search t u
+  | Dfix (_,_,v) -> Array.iter (type_search t) v
+  | Dtype (_,_,u) -> type_search t u
+
+let spec_type_search t = function 
+  | Sind (_,{ind_packets=p}) -> 
+      Array.iter 
+	(fun {ip_types=v} -> Array.iter (List.iter (type_search t)) v) p
+  | Stype (_,_,ot) -> option_iter (type_search t) ot
+  | Sval (_,u) -> type_search t u
+
+let struct_type_search t s = 
+  try struct_iter (decl_type_search t) (spec_type_search t) s; false
+  with Found -> true
+
+
+(*s Generating the signature. *)
+
+let rec msig_of_ms = function 
+  | [] -> [] 
+  | (l,SEdecl (Dind (kn,i))) :: ms -> (l,Spec (Sind (kn,i))) :: (msig_of_ms ms)
+  | (l,SEdecl (Dterm (r,_,t))) :: ms -> (l,Spec (Sval (r,t))) :: (msig_of_ms ms)
+  | (l,SEdecl (Dtype (r,v,t))) :: ms -> 
+      (l,Spec (Stype (r,v,Some t))) :: (msig_of_ms ms) 
+  | (l,SEdecl (Dfix (rv,_,tv))) :: ms -> 
+      let msig = ref (msig_of_ms ms) in 
+      for i = Array.length rv - 1 downto 0 do 
+	msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
+      done; 
+      !msig
+  | (l,SEmodule m) :: ms -> (l,Smodule m.ml_mod_type) :: (msig_of_ms ms)
+  | (l,SEmodtype m) :: ms -> (l,Smodtype m) :: (msig_of_ms ms)
+
+let signature_of_structure s = 
+  List.map (fun (mp,ms) -> mp,msig_of_ms ms) s 
 
 

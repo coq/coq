@@ -27,6 +27,8 @@ val rename_id : identifier -> Idset.t -> identifier
 val lowercase_id : identifier -> identifier
 val uppercase_id : identifier -> identifier
 
+val pr_upper_id : identifier -> std_ppcmds
+
 type env = identifier list * Idset.t
 
 val rename_vars: Idset.t -> identifier list -> env
@@ -36,7 +38,11 @@ val get_db_name : int -> env -> identifier
 
 val keywords : Idset.t
 
-val preamble : extraction_params -> Idset.t -> bool * bool * bool -> std_ppcmds
+val preamble : 
+  extraction_params -> module_path list -> bool * bool * bool -> std_ppcmds
+
+val preamble_sig : 
+  extraction_params -> module_path list -> bool * bool * bool -> std_ppcmds
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 
