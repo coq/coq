@@ -12,10 +12,12 @@ DATE="January 2002"
 
 # a local which command for sh
 which () {
-for i in `echo $PATH | tr ':' ' '` ; do 
+IFS=":" # set words separator in PATH to be ':' (it allows spaces in dirnames)
+for i in $PATH; do
   if test -z "$i"; then $i=.; fi 
   if [ -f "$i/$1" ] ; then
-	echo $i/$1
+	IFS=" "
+        echo $i/$1
 	break
   fi
 done
@@ -208,24 +210,11 @@ case $ARCH in
         esac;;
   alpha) OSDEPLIBS="-cclib -lunix";;
   win32) OS="Win32" 
-	 OSDEPLIBS="-cclib \\\\\\\\ocaml/lib/libunix.lib -cclib wsock32.lib";;
+	 OSDEPLIBS="-cclib -lunix";;
   *) OSDEPLIBS="-cclib -lunix"
 esac
 
 # OS dependent camlp4 options for native compilation
-
-# Special rules for g_*.cmx files to circumvent a PowerPC limitation
-case $ARCH in
-  ppc) OSDEPP4OPTFLAGS="-split_gext";;
-  *) OSDEPP4OPTFLAGS=""
-esac
-
-#the caml str library
-
-case $ARCH in
-    win32) WITH_STR="-cclib \\\\\\\\ocaml/lib/libstr.lib";;
-    *) WITH_STR="-cclib -lstr"
-esac
 
 # executable extension
 
@@ -234,39 +223,32 @@ case $ARCH in
     *) EXE=""
 esac
 
-# ostype unix versus win32
-
-case $ARCH in
-    win32) OSTYPE="Win32";;
-    *) OSTYPE="Unix"
-esac
-
 # Objective Caml programs
 
 CAMLC=`which $bytecamlc`
-case $CAMLC in
+case "$CAMLC" in
 	"") echo "$bytecamlc is not present in your path !"
 	echo "Give me manually the path to the ocamlc executable [/usr/local/bin by default]: "
 	read CAMLC
 	
-	case $CAMLC in
+	case "$CAMLC" in
 		"") CAMLC=/usr/local/bin/ocamlc;;
 		*/ocamlc|*/ocamlc.opt) true;;
-		*/) CAMLC=${CAMLC}ocamlc;;
-		*) CAMLC=${CAMLC}/ocamlc;;
+		*/) CAMLC="${CAMLC}"ocamlc;;
+		*) CAMLC="${CAMLC}"/ocamlc;;
 	esac
-	bytecamlc=$CAMLC
-	nativecamlc=`dirname $CAMLC`/$nativecamlc;;
+	bytecamlc="$CAMLC"
+	nativecamlc=`dirname "$CAMLC"`/$nativecamlc;;
 esac
 
-if test ! -f $CAMLC ; then
+if test ! -f "$CAMLC" ; then
 	echo "I can not find the executable '$CAMLC'! (Have you installed it?)"
 	echo "Configuration script failed!"
 	exit 1
 fi
 
-CAMLBIN=`dirname $CAMLC`
-CAMLVERSION=`$CAMLC -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+CAMLBIN=`dirname "$CAMLC"`
+CAMLVERSION=`"$CAMLC" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
 case $CAMLVERSION in
   1.*|2.*|3.00)
@@ -285,46 +267,52 @@ esac
 
 if [ "$best_compiler" = "opt" ] ; then
   CAMLOPT=`which $nativecamlc`
-  case $CAMLOPT in
+  case "$CAMLOPT" in
     "") best_compiler=byte
         echo "You have only bytecode compilation.";;
-    *) CAMLOPTVERSION=`$CAMLOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+    *) CAMLOPTVERSION=`"$CAMLOPT" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
        if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then \
          echo "native and bytecode compilers do not have the same version!"; fi
        echo "You have native-code compilation. Good!"
   esac
 fi
 
-# For Dynlink
+# For coqmktop
 
-CAMLLIB=`ocamlc -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
+CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
+
+# Tell on windows if ocaml understands cygwin or windows path formats
+
+"$CAMLC" -o config/giveostype config/giveostype.ml
+CAMLOSTYPE=`config/giveostype`
+rm config/giveostype
 
 # Camlp4
 
 CAMLP4=`which $camlp4o`
-case $CAMLP4 in
+case "$CAMLP4" in
 	"") echo "camlp4 is not present in your path!"
 	echo "Give me manually the path to the camlp4 executable [/usr/local/bin by default]: "
 	read CAMLP4
 	
-	case $CAMLP4 in
+	case "$CAMLP4" in
 		"") CAMLP4=/usr/local/bin/camlp4o;;
 		*/camlp4) CAMLP4=${CAMLP4}o;;
 		*/camlp4o) true;;
-		*/) CAMLP4=${CAMLP4}camlp4o;;
-		*) CAMLP4=${CAMLP4}/camlp4o;;
+		*/) CAMLP4="${CAMLP4}"camlp4o;;
+		*) CAMLP4="${CAMLP4}"/camlp4o;;
 	esac
-	camlp4o=$CAMLP4;;
+	camlp4o="$CAMLP4";;
 esac
 
-if test ! -f $CAMLP4 ; then
+if test ! -f "$CAMLP4" ; then
 	echo "I can not find the executable '$CAMLP4'! (Have you installed it?)"
 	echo "Configuration script failed!"
 	exit 1
 fi
 
-CAMLP4BIN=`dirname $CAMLP4`
-CAMLP4VERSION=`$CAMLP4 -v 2>&1 | sed -n -e 's|.*version *\(.*\)$|\1|p'`
+CAMLP4BIN=`dirname "$CAMLP4"`
+CAMLP4VERSION=`"$CAMLP4" -v 2>&1 | sed -n -e 's|.*version *\(.*\)$|\1|p'`
 case $CAMLP4VERSION in
   0.*|1.*|2.00|3.00*)
         echo "Your version of Camlp4 is $CAMLP4VERSION."
@@ -337,11 +325,13 @@ case $CAMLP4VERSION in
      echo "Configuration script failed!"
      exit 1;;
 esac
-case $ARCH in
-    win32)
-	CAMLP4LIB=`$CAMLP4 -where |sed -e 's|\\\|/|g'`;;
-    *)
-	CAMLP4LIB=`$CAMLP4 -where`;;
+case $CAMLP4VERSION,$CAMLOSTYPE in
+  3.04,*)
+    CAMLP4LIB=+camlp4;;
+  *,Win32)
+    CAMLP4LIB=`"$CAMLP4" -where |sed -e 's|\\\|/|g'`;;
+  *,*)
+    CAMLP4LIB=`"$CAMLP4" -where`;;
 esac
 
 case $ARCH in
@@ -363,7 +353,7 @@ echo "  Architecture                   : $ARCH"
 if test ! -z "$OS" ; then
   echo "  Operating system               : $OS"
 fi
-echo "  OS dependant libraries         : $OSDEPLIBS"
+echo "  OS dependent libraries         : $OSDEPLIBS"
 echo "  Objective-Caml version         : $CAMLVERSION"
 echo "  Objective-Caml binaries in     : $CAMLBIN"
 echo "  Objective-Caml library in      : $CAMLLIB"
@@ -390,6 +380,16 @@ case $ARCH in
 	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`;;
 esac
 
+#case $CAMLOSTYPE in
+#    Win32)
+#	CAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|/|g'`
+#	CAMLP4LIB=`echo "$CAMLP4LIB" | sed -e 's|\\\|\\\\\\\\|g'`
+#	CAMLP4BIN=`echo $CAMLC |sed -e 's|\\\|/|g'`
+#	CAMLP4BIN=`echo $CAMLLIB |sed -e 's|\\\|/|g'`
+#        ;;
+#esac
+
+
 sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQTOPDIRECTORY|$COQTOP|" \
     -e "s|COQVERSION|$VERSION|" \
@@ -399,14 +399,12 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|EMACSLIBDIRECTORY|$EMACSLIB|" \
     -e "s|EMACSCOMMAND|$EMACS|" \
     -e "s|ARCHITECTURE|$ARCH|" \
-    -e "s|OSDEPENDANTLIBS|$OSDEPLIBS|" \
-    -e "s|OSDEPENDANTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
-    -e "s|STRLIBRARY|$WITH_STR|" \
-    -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
+    -e "s|OSDEPENDENTLIBS|$OSDEPLIBS|" \
+    -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
+    -e "s|CAMLLIBDIRECTORY|$CAMLLIB|" \
     -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4o|" \
-    -e "s|OSKIND|$OSTYPE|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
@@ -446,8 +444,6 @@ let camlp4lib = "$CAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
 let osdeplibs = "$OSDEPLIBS"
-(* this does seem to be used any longer
-let defined = [ "$OSTYPE" ] *)
 let version = "$VERSION"
 let versionsi = "$VERSIONSI"
 let date = "$DATE"
@@ -456,9 +452,12 @@ let exec_extension = "$EXE"
 
 END_OF_COQ_CONFIG
 
+# to be sure printf is found on windows when spaces occur in PATH variable
+PRINTF=`which printf`
+
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find . -type d ! -name CVS ! -name . -exec printf "\"%s\";\n" {} \; >> $mlconfig_file)
+    (cd $1; find . -type d ! -name CVS ! -name . -exec $PRINTF "\"%s\";\n" {} \; >> $mlconfig_file)
 }
 
 echo_e () {
@@ -478,7 +477,7 @@ echo_e "\nlet contrib_dirs = [" >> $mlconfig_file
 subdirs contrib
 echo_e "]\n" >> $mlconfig_file
 
-if test $ARCH = "win32" ; then
+if test "$CAMLOSTYPE" = "Win32" ; then
 # We change: / -> \\ and \ -> \\ (dos paths)
 # This is a bit tricky
 sed -e "s|\\\\\\\\\\\\\\\|\\\|" -e "s|/|\\\|g"  -e "s|\\\|\\\\\\\|g" $mlconfig_file > $mlconfig_file.win
