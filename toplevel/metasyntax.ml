@@ -211,17 +211,20 @@ let print_grammar univ entry =
 
 (* Parse a format *)
 let parse_format (loc,str) =
+  let str = " "^str in
   let l = String.length str in
   let push_token a = function
     | cur::l -> (a::cur)::l
     | [] -> [[a]] in
+  let push_white n l =
+    if n = 0 then l else push_token (UnpTerminal (String.make n ' ')) l in
   let close_box i b = function
     | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
     | _ -> error "Non terminated box in format" in
   let close_quotation i =
     if i < String.length str & str.[i] = '\'' & (i+1 = l or str.[i+1] = ' ')
     then i+1
-    else error "Format annotation must be ended by \"'\" and tokens must be separated by spaces" in
+    else error "Incorrectly terminated quoted expression" in
   let rec spaces n i =
     if i < String.length str & str.[i] = ' ' then spaces (n+1) (i+1)
     else n in
@@ -240,29 +243,27 @@ let parse_format (loc,str) =
     else n in
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
-    push_token (UnpTerminal (String.sub str i n)) (loop (i+n+1))
-  and parse_quoted i =
-    let n = spaces 0 i in
-    let i = i+n in
+    push_token (UnpTerminal (String.sub str i n)) (parse_token (i+n))
+  and parse_quoted n i =
     if i < String.length str then match str.[i] with
       (* Parse " // " *)
-      | '/' when i <= String.length str & str.[i+1] = '/' & n = 0 ->
-	  push_token (UnpCut PpFnl) (loop (close_quotation (i+2)))
+      | '/' when i <= String.length str & str.[i+1] = '/' ->
+          (* We forget the useless n spaces... *)
+	  push_token (UnpCut PpFnl) 
+            (parse_token (close_quotation (i+2)))
       (* Parse " .. / .. " *)
       | '/' when i <= String.length str ->
 	  let p = spaces 0 (i+1) in
-	  push_token (UnpCut (PpBrk (n,p))) (loop (close_quotation (i+p+1)))
-      | '\'' when n <> 0 ->
-	  push_token (UnpTerminal (String.make n ' '))
-	    (loop (close_quotation i))
-      | c when n <> 0 -> 
-	  error "Unexpected spaces not followed by \"/\" not \"'\" after \"'\" in format"
-      (* Parse tokens not accepting spaces before *)
+	  push_token (UnpCut (PpBrk (n,p)))
+            (parse_token (close_quotation (i+p+1)))
+      | c ->
+      (* The spaces are real spaces *)
+      push_white n (match c with
       | '[' ->
 	  if i <= String.length str then match str.[i+1] with
 	    (* Parse " [h .. ",  *)
 	    | 'h' when i+1 <= String.length str & str.[i+2] = 'v' ->
-		parse_box (fun n -> PpHVB n) (i+3)
+		  (parse_box (fun n -> PpHVB n) (i+3))
 		(* Parse " [v .. ",  *)
 	    | 'v' ->
 		    parse_box (fun n -> PpVB n) (i+2)
@@ -273,33 +274,35 @@ let parse_format (loc,str) =
 	  else error "\"v\", \"hv\" or \" \" expected after \"[\" in format"
       (* Parse "]"  *)
       | ']' ->
-	  [] :: loop (close_quotation (i+1))
+	  ([] :: parse_token (close_quotation (i+1)))
       (* Parse a non formatting token *)
       | c ->
-	  let n = nonspaces true 0 (i+1) in
-	  push_token (UnpTerminal (String.sub str i (n+2)))
-	    (loop (close_quotation (i+n+1)))
+	  let n = nonspaces true 0 i in
+	  push_token (UnpTerminal (String.sub str (i-1) (n+2)))
+	    (parse_token (close_quotation (i+n))))
     else
       if n = 0 then []
       else error "Ending spaces non part of a format annotation"
   and parse_box box i =
     let n = spaces 0 i in
-    close_box i (box n) (loop (close_quotation (i+n)))
-  and loop i =
+    close_box i (box n) (parse_token (close_quotation (i+n)))
+  and parse_token i =
+    let n = spaces 0 i in
+    let i = i+n in
     if i < l then match str.[i] with
       (* Parse a ' *)
       |	'\'' when i <= String.length str & str.[i+1] = '\'' ->
-	  parse_non_format i
+	  push_white (n-1) (parse_non_format i)
       (* Parse the beginning of a quoted expression *)
-      |	'\'' -> parse_quoted (i+1)
-      (* Skip spaces *)
-      | ' ' -> loop (i+1)
+      |	'\'' ->
+          parse_quoted (n-1) (i+1)
       (* Otherwise *)
-      | _ -> parse_non_format i
-    else [[]]
+      | _ ->
+          push_white (n-1) (parse_non_format i)
+    else push_white n [[]]
   in
   try
-    if str <> "" then match (loop 0) with
+    if str <> "" then match parse_token 0 with
       | [l] -> l
       | _ -> error "Box closed without being opened in format"
     else
@@ -467,12 +470,30 @@ let make_hunks etyps symbols from =
 
   in make NoBreak symbols
 
+let strip s =
+  let n = String.length s in
+  if n >= 2 & s.[0] = '\'' & s.[n-1] = '\'' then
+    if n > 2 then String.sub s 1 (n-2) else "'"
+  else
+    s
+
+(* To protect alphabetic tokens and quotes from being seen as variables *)
+let quote x =
+  let n = String.length x in
+  if n > 0 & (is_letter x.[0] or is_letter x.[n-1] or is_digit x.[n-1])
+  then
+    "'"^x^"'"
+  else if x = "'" then
+    "''"
+  else
+    x
+
 let hunks_of_format (from,(vars,typs) as vt) symfmt = 
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when s' = String.make (String.length s') ' ' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
-  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt when s = s' ->
+  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt when quote s = s' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
       let i = list_index s vars in
@@ -534,23 +555,6 @@ let make_production etyps symbols =
 	    l)
       symbols [] in
   define_keywords prod
-
-let strip s =
-  let n = String.length s in
-  if n >= 2 & s.[0] = '\'' & s.[n-1] = '\'' then
-    if n > 2 then String.sub s 1 (n-2) else "'"
-  else
-    s
-
-(* To protect alphabetic tokens from being seen as variables *)
-let quote x =
-  let n = String.length x in
-  if n > 0 &
-    (is_letter x.[0] or is_letter x.[n-1] or is_digit x.[n-1] or x.[n-1]='\'')
-  then
-    "\'"^x^"\'"
-  else
-    x
 
 let rec analyse_tokens = function
   | []    -> [], []
