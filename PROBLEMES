@@ -1,3 +1,16 @@
+Intuition plante en 7.1 à certains endroits où il réussissait en 6.3.
+Y a-t-il une explication ? (cf contrib sheaves de Chicli - HH)
+
+----------------------------------------------------------------------
+Theorem toto : (A:Prop)A->A.
+Refine [A;x]?.
+produit le message "type_of: this is not a well-typed term. Please report."
+
+----------------------------------------------------------------------
+"Intro until 1" plante avec le message 
+"Error: Internal tactic intro cannot be applied to intro until #GENTERM 1"
+--> intro est répété + GENTERM
+
 ----------------------------------------------------------------------
 La synthèse du ? dans l'exemple suivant se fait en V6 mais pas en V7:
 
