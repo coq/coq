@@ -1481,5 +1481,10 @@ Intros x y;Case x;Case y; [
 Qed.
 End fast_integers.
 
-Syntactic Definition times1 := times.
-Syntactic Definition times1_convert := times_convert.
+V7only [
+  Comments "Compatibility with the old version of times and times_convert".
+  Syntactic Definition times1 :=
+    [x:positive;_:positive->positive;y:positive](times x y).
+  Syntactic Definition times1_convert :=
+    [x,y:positive;_:positive->positive](times_convert x y).
+].
