@@ -617,6 +617,8 @@ let rec optimize prm = function
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l
+  | (Dtype ([],_) | Dabbrev _ | Dcustom _) as d :: l -> 
+      d :: (optimize prm l)
   | Dtype ([ids,r,[r0,[t0]]],false) :: l when not (type_mem r t0) ->
       (* Detection of informative singleton. *)
       add_singleton r0; 
@@ -626,6 +628,5 @@ let rec optimize prm = function
       let l1,l2 = empty_ind il in 
       if l2 = [] then l1 @ (optimize prm l) 
       else l1 @ (Dtype(l2,b) :: (optimize prm l))
-  | (Dabbrev _ | Dcustom _) as d :: l -> 
-      d :: (optimize prm l)
+
 

@@ -165,7 +165,11 @@ let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
   else
-    mSGNL (ToplevelPp.pp_decl (List.find (decl_in_r r) (local_optimize [r])))
+    let d = list_last (local_optimize [r]) in
+    mSGNL (ToplevelPp.pp_decl 
+	     (if (decl_in_r r d) || d = Dtype([],true) || d = Dtype([],false) 
+	     then d 
+	     else List.find (decl_in_r r) (local_optimize [r])))
 
 let _ = 
   vinterp_add "Extraction"
