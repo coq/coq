@@ -27,11 +27,17 @@ GEXTEND Gram
     [ [ r = Prim.reference -> CPatAtom (loc,Some r)
       | IDENT "_" -> CPatAtom (loc,None)
       (* Hack to parse syntax "(n)" as a natural number *)
-      | "("; G_constr.test_int_rparen; n = bigint; ")" ->
+      | "("; G_constr.test_int_rparen; n = INT; ")" ->
 	  (* Delimiter "N" moved to "nat" in V7 *)
-          CPatDelimiters (loc,"nat",CPatNumeral (loc,n))
+          CPatDelimiters (loc,"nat",CPatNumeral (loc,Bigint.of_string n))
       | "("; p = compound_pattern; ")" -> p
-      | n = bigint -> CPatNumeral (loc,n)
+      | n = INT -> CPatNumeral (loc,Bigint.of_string n)
+      | "-"; n = INT ->
+          let n = Bigint.of_string n in
+          if n = Bigint.zero then
+            CPatNotation(loc,"( _ )",[CPatNumeral (loc,n)])
+          else
+            CPatNumeral (loc,Bigint.neg n)
       | "'"; G_constr.test_ident_colon; key = IDENT; ":"; c = pattern; "'" -> 
           CPatDelimiters (loc,key,c)
     ] ]

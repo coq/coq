@@ -109,7 +109,7 @@ let _ =
 (*i*)
 open Rawterm
 open Libnames
-open Bignat
+open Bigint
 open Coqlib
 open Symbols
 open Pp
@@ -122,8 +122,7 @@ open Names
 (* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
 
 let nat_of_int dloc n =
-  match n with
-  | POS n ->
+  if is_pos_or_zero n then begin
       if less_than (of_string "5000") n & Options.is_verbose () then begin
 	warning ("You may experience stack overflow and segmentation fault\
                   \nwhile parsing numbers in nat greater than 5000");
@@ -132,27 +131,27 @@ let nat_of_int dloc n =
       let ref_O = RRef (dloc, glob_O) in
       let ref_S = RRef (dloc, glob_S) in
       let rec mk_nat acc n =
-	if is_nonzero n then 
+	if n <> zero then 
 	  mk_nat (RApp (dloc,ref_S, [acc])) (sub_1 n)
 	else 
 	  acc
       in 
       mk_nat ref_O n
-  | NEG n ->
+    end
+  else
       user_err_loc (dloc, "nat_of_int",
         str "Cannot interpret a negative number as a number of type nat")
 
 let pat_nat_of_int dloc n name =
-  match n with
-  | POS n -> 
+  if is_pos_or_zero n then
       let rec mk_nat n name =
-	if is_nonzero n then 
+	if n <> zero then 
 	  PatCstr (dloc,path_of_S,[mk_nat (sub_1 n) Anonymous],name)
 	else 
 	  PatCstr (dloc,path_of_O,[],name)
       in 
       mk_nat n name
-  | NEG n ->
+  else
       user_err_loc (dloc, "pat_nat_of_int",
         str "Unable to interpret a negative number in type nat")
 
@@ -168,7 +167,7 @@ let rec int_of_nat = function
 	  
 let uninterp_nat p =
   try 
-    Some (POS (int_of_nat p))
+    Some (int_of_nat p)
   with
     Non_closed_number -> None
 
@@ -180,7 +179,7 @@ let rec int_of_nat_pattern = function
 	  
 let uninterp_nat_pattern p =
   try 
-    Some (POS (int_of_nat_pattern p))
+    Some (int_of_nat_pattern p)
   with
     Non_closed_number -> None
 

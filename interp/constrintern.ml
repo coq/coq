@@ -570,10 +570,10 @@ let rec intern_cases_pattern scopes (ids,subst as aliases) tmp_scope = function
       let pl' = List.map (fun (subst,pl) ->
         (subst, PatCstr (loc,c,pl0@pl,alias_of aliases))) pll in
       ids',pl'
-  | CPatNotation (loc,"- _",[CPatNumeral(_,Bignat.POS p)]) ->
+  | CPatNotation (loc,"- _",[CPatNumeral(_,p)]) when Bigint.is_strictly_pos p->
       let scopes = option_cons tmp_scope scopes in
       (ids,
-      [subst, Symbols.interp_numeral_as_pattern loc (Bignat.NEG p)
+      [subst, Symbols.interp_numeral_as_pattern loc (Bigint.neg p)
         (alias_of aliases) scopes])
   | CPatNotation (_,"( _ )",[a]) ->
       intern_cases_pattern scopes aliases tmp_scope a
@@ -851,9 +851,9 @@ let internalise sigma env allow_soapp lvar c =
     | CLetIn (loc,(_,na),c1,c2) ->
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
           intern (push_name_env lvar env na) c2)
-    | CNotation (loc,"- _",[CNumeral(_,Bignat.POS p)]) ->
+    | CNotation (loc,"- _",[CNumeral(_,p)]) when Bigint.is_strictly_pos p ->
         let scopes = option_cons tmp_scope scopes in
-        Symbols.interp_numeral loc (Bignat.NEG p) scopes
+        Symbols.interp_numeral loc (Bigint.neg p) scopes
     | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
         intern_notation intern env loc ntn args

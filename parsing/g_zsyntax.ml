@@ -17,7 +17,7 @@ open Ast
 open Extend
 open Topconstr
 open Libnames
-open Bignat
+open Bigint
 
 (**********************************************************************)
 (* V7 parsing via Grammar *)
@@ -36,7 +36,7 @@ let get_z_sign loc =
 let pos_of_bignat xI xO xH x =
   let rec pos_of x =
     match div2_with_rest x with
-      | (q, true) when is_nonzero q -> mkAppC (xI, [pos_of q])
+      | (q, true) when q <> zero -> mkAppC (xI, [pos_of q])
       | (q, false) -> mkAppC (xO, [pos_of q])
       | (_, true) -> xH
   in 
@@ -44,8 +44,8 @@ let pos_of_bignat xI xO xH x =
     
 let z_of_string pos_or_neg s dloc = 
   let ((xI,xO,xH),(aZERO,aPOS,aNEG)) = get_z_sign dloc in
-  let v = Bignat.of_string s in
-  if is_nonzero v then
+  let v = Bigint.of_string s in
+  if v <> zero then
     if pos_or_neg then
       mkAppC (aPOS, [pos_of_bignat xI xO xH v])
     else 
@@ -103,7 +103,7 @@ let rec bignat_of_pos c1 c2 c3 p =
         mult_2 (bignat_of_pos c1 c2 c3 a)
     | Node (_,"APPLIST", [b; a]) when alpha_eq(b,c2) ->
         add_1 (mult_2 (bignat_of_pos c1 c2 c3 a))
-    | a when alpha_eq(a,c3) -> Bignat.one
+    | a when alpha_eq(a,c3) -> Bigint.one
     | _ -> raise Non_closed_number
 in
 let bignat_option_of_pos xI xO xH p =
@@ -120,9 +120,9 @@ let inside_printer posneg std_pr p =
   match (bignat_option_of_pos xI xO xH p) with
     | Some n -> 
 	if posneg then 
-	  (str (Bignat.to_string n))
+	  (str (Bigint.to_string n))
 	else 
-	  (str "(-" ++ str (Bignat.to_string n) ++ str ")")
+	  (str "(-" ++ str (Bigint.to_string n) ++ str ")")
     | None -> 
 	let pr = if posneg then pr_pos else pr_neg in
 	str "(" ++ pr (std_pr (ope("ZEXPR",[p]))) ++ str ")"
@@ -134,9 +134,9 @@ let outside_printer posneg std_pr p =
   match (bignat_option_of_pos xI xO xH p) with
     | Some n -> 
 	if posneg then 
-	  (str "`" ++ str (Bignat.to_string n) ++ str "`")
+	  (str "`" ++ str (Bigint.to_string n) ++ str "`")
 	else 
-	  (str "`-" ++ str (Bignat.to_string n) ++ str "`")
+	  (str "`-" ++ str (Bigint.to_string n) ++ str "`")
       | None -> 
 	  let pr = if posneg then pr_pos else pr_neg in
 	  str "(" ++ pr (std_pr p) ++ str ")"
@@ -177,34 +177,31 @@ let pos_of_bignat dloc x =
   let rec pos_of x =
     match div2_with_rest x with
       | (q,false) -> RApp (dloc, ref_xO,[pos_of q])
-      | (q,true) when is_nonzero q -> RApp (dloc,ref_xI,[pos_of q])
+      | (q,true) when q <> zero -> RApp (dloc,ref_xI,[pos_of q])
       | (q,true) -> ref_xH
   in 
   pos_of x
 
-let interp_positive dloc = function
-  | POS n when is_nonzero n -> pos_of_bignat dloc n
-  | _ ->
-      user_err_loc (dloc, "interp_positive",
-        str "Only strictly positive numbers in type \"positive\"!")
+let error_non_positive dloc = 
+  user_err_loc (dloc, "interp_positive",
+    str "Only strictly positive numbers in type \"positive\"")
+
+let interp_positive dloc n =
+  if is_strictly_pos n then pos_of_bignat dloc n
+  else error_non_positive dloc
 
 let rec pat_pos_of_bignat dloc x name =
   match div2_with_rest x with
     | (q,false) -> 
         PatCstr (dloc,path_of_xO,[pat_pos_of_bignat dloc q Anonymous],name)
-    | (q,true) when is_nonzero q -> 
+    | (q,true) when q <> zero -> 
         PatCstr (dloc,path_of_xI,[pat_pos_of_bignat dloc q Anonymous],name)
     | (q,true) ->
         PatCstr (dloc,path_of_xH,[],name)
 
-let error_non_positive dloc = 
-  user_err_loc (dloc, "interp_positive",
-    str "No non-positive numbers in type \"positive\"!")
-
-let pat_interp_positive dloc = function
-  | NEG n -> error_non_positive dloc
-  | POS n ->
-     if is_nonzero n then pat_pos_of_bignat dloc n else error_non_positive dloc
+let pat_interp_positive dloc n =
+  if is_strictly_pos n then pat_pos_of_bignat dloc n else
+    error_non_positive dloc
 
 (**********************************************************************)
 (* Printing positive via scopes                                       *)
@@ -213,12 +210,12 @@ let pat_interp_positive dloc = function
 let rec bignat_of_pos = function
   | RApp (_, RRef (_,b),[a]) when b = glob_xO -> mult_2(bignat_of_pos a)
   | RApp (_, RRef (_,b),[a]) when b = glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | RRef (_, a) when a = glob_xH -> Bignat.one
+  | RRef (_, a) when a = glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
 
 let uninterp_positive p =
   try 
-    Some (POS (bignat_of_pos p))
+    Some (bignat_of_pos p)
   with Non_closed_number -> 
     None
 
@@ -249,38 +246,35 @@ let glob_N0 = ConstructRef path_of_N0
 let glob_Npos = ConstructRef path_of_Npos
 
 let n_of_posint dloc pos_or_neg n = 
-  if is_nonzero n then
+  if n <> zero then
     RApp(dloc, RRef (dloc,glob_Npos), [pos_of_bignat dloc n])
   else 
     RRef (dloc, glob_N0)
 
+let error_negative dloc =
+  user_err_loc (dloc, "interp_N", str "No negative numbers in type \"N\"")
+
 let n_of_int dloc n =
-  match n with
-  | POS n -> n_of_posint dloc true n 
-  | NEG n -> 
-      user_err_loc (dloc, "",
-        str "No negative number in type N")
+  if is_pos_or_zero n then n_of_posint dloc true n
+  else error_negative dloc
 
 let pat_n_of_binnat dloc n name = 
-  if is_nonzero n then
+  if n <> zero then
     PatCstr (dloc, path_of_Npos, [pat_pos_of_bignat dloc n Anonymous], name)
   else 
     PatCstr (dloc, path_of_N0, [], name)
 
 let pat_n_of_int dloc n name =
-  match n with
-  | POS n -> pat_n_of_binnat dloc n name
-  | NEG n ->
-      user_err_loc (dloc, "",
-        str "No negative number in type N")
+  if is_pos_or_zero n then pat_n_of_binnat dloc n name
+  else error_negative dloc
 
 (**********************************************************************)
 (* Printing N via scopes                                              *)
 (**********************************************************************)
 
 let bignat_of_n = function
-  | RApp (_, RRef (_,b),[a]) when b = glob_Npos -> POS (bignat_of_pos a)
-  | RRef (_, a) when a = glob_N0 -> POS (Bignat.zero)
+  | RApp (_, RRef (_,b),[a]) when b = glob_Npos -> bignat_of_pos a
+  | RRef (_, a) when a = glob_N0 -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_n p =
@@ -312,38 +306,30 @@ let glob_ZERO = ConstructRef path_of_ZERO
 let glob_POS = ConstructRef path_of_POS
 let glob_NEG = ConstructRef path_of_NEG
 
-let z_of_posint dloc pos_or_neg n = 
-  if is_nonzero n then
-    let sgn = if pos_or_neg then glob_POS else glob_NEG in
+let z_of_int dloc n = 
+  if n <> zero then
+    let sgn, n =
+      if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
     RApp(dloc, RRef (dloc,sgn), [pos_of_bignat dloc n])
   else 
     RRef (dloc, glob_ZERO)
 
-let z_of_int dloc z =
-  match z with
-  | POS n -> z_of_posint dloc true n 
-  | NEG n -> z_of_posint dloc false n 
-
-let pat_z_of_posint dloc pos_or_neg n name = 
-  if is_nonzero n then
-    let sgn = if pos_or_neg then path_of_POS else path_of_NEG in
+let pat_z_of_int dloc n name = 
+  if n <> zero then
+    let sgn,n =
+      if is_pos_or_zero n then path_of_POS, n else path_of_NEG, Bigint.neg n in
     PatCstr (dloc, sgn, [pat_pos_of_bignat dloc n Anonymous], name)
   else 
     PatCstr (dloc, path_of_ZERO, [], name)
-
-let pat_z_of_int dloc n name =
-  match n with
-  | POS n -> pat_z_of_posint dloc true n name
-  | NEG n -> pat_z_of_posint dloc false n name
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)
 (**********************************************************************)
 
 let bigint_of_z = function
-  | RApp (_, RRef (_,b),[a]) when b = glob_POS -> POS (bignat_of_pos a)
-  | RApp (_, RRef (_,b),[a]) when b = glob_NEG -> NEG (bignat_of_pos a)
-  | RRef (_, a) when a = glob_ZERO -> POS (Bignat.zero)
+  | RApp (_, RRef (_,b),[a]) when b = glob_POS -> bignat_of_pos a
+  | RApp (_, RRef (_,b),[a]) when b = glob_NEG -> bignat_of_pos a
+  | RRef (_, a) when a = glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_z p =
@@ -377,7 +363,7 @@ let bignat_of_pos p =
   let rec transl = function
     | Node (_,"APPLIST",[b; a]) when alpha_eq(b,c1) -> mult_2(transl a)
     | Node (_,"APPLIST",[b; a]) when alpha_eq(b,c2) -> add_1(mult_2(transl a))
-    | a when alpha_eq(a,c3) -> Bignat.one
+    | a when alpha_eq(a,c3) -> Bigint.one
     | _ -> raise Non_closed_number
   in transl p
 in
@@ -391,9 +377,9 @@ let z_printer posneg p =
   match bignat_option_of_pos p with
     | Some n -> 
 	if posneg then 
-	  Some (str (Bignat.to_string n))
+	  Some (str (Bigint.to_string n))
 	else 
-	  Some (str "-" ++ str (Bignat.to_string n))
+	  Some (str "-" ++ str (Bigint.to_string n))
     | None -> None
 in
 let z_printer_ZERO _ =

@@ -325,8 +325,8 @@ Qed.
 Lemma Th_mult_opp_opp2 : (x,y:A) x*y == (-x)*(-y).
 Symmetry; Apply Th_mult_opp_opp. Qed.
 
-Lemma Th_opp_zero : -0 == 0.
-Rewrite <- (plus_zero_left (-0)).
+Lemma Th_opp_zero : - 0 == 0.
+Rewrite <- (plus_zero_left (- 0)).
 Auto. Qed.
 
 Lemma Th_plus_reg_left : (n,m,p:A) n + m == n + p -> m==p.

@@ -79,6 +79,6 @@ GEXTEND Gram
     ] ]
   ;
   bigint: (* Negative numbers are dealt with specially *)
-    [ [ i = INT -> Bignat.POS (Bignat.of_string i) ] ]
+    [ [ i = INT -> (Bigint.of_string i) ] ]
   ;
 END

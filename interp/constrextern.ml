@@ -1199,7 +1199,7 @@ let make_notation loc ntn l =
   then expand_curly_brackets (fun n l -> CNotation (loc,n,l)) ntn l
   else match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CNumeral(_,Bignat.POS p)] ->
+    | "- _", [CNumeral(_,p)] when Bigint.is_strictly_pos p ->
         CNotation (loc,ntn,[CNotation(loc,"( _ )",l)])
     | _ -> CNotation (loc,ntn,l)
 
@@ -1208,7 +1208,7 @@ let make_pat_notation loc ntn l =
   then expand_curly_brackets (fun n l -> CPatNotation (loc,n,l)) ntn l
   else match ntn,l with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [CPatNumeral(_,Bignat.POS p)] ->
+    | "- _", [CPatNumeral(_,p)] when Bigint.is_strictly_pos p ->
         CPatNotation (loc,ntn,[CPatNotation(loc,"( _ )",l)])
     | _ -> CPatNotation (loc,ntn,l)
 

@@ -33,7 +33,7 @@ let local_make_binding loc a b =
 let local_append l id = l@[id]
 
 GEXTEND Gram
-  GLOBAL: ident natural integer bigint string preident ast
+  GLOBAL: bigint ident natural integer string preident ast
     astlist qualid reference dirpath identref name base_ident var hyp;
 
  (* Compatibility: Prim.var is a synonym of Prim.ident *)
@@ -66,8 +66,8 @@ GEXTEND Gram
     [ [ i = INT -> local_make_posint i ] ]
   ;
   bigint:
-    [ [ i = INT -> Bignat.POS (Bignat.of_string i)
-      | "-"; i = INT -> Bignat.NEG (Bignat.of_string i) ] ]
+    [ [ i = INT -> Bigint.of_string i
+      | "-"; i = INT -> Bigint.neg (Bigint.of_string i) ] ]
   ;
   integer:
     [ [ i = INT      -> local_make_posint i

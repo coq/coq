@@ -176,7 +176,7 @@ let rec pr_patt sep inh p =
   | CPatNotation (_,"( _ )",[p]) ->
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
   | CPatNotation (_,s,env) -> pr_patnotation (pr_patt mt) s env
-  | CPatNumeral (_,i) -> Bignat.pr_bigint i, latom
+  | CPatNumeral (_,i) -> Bigint.pr_bigint i, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in
   let loc = cases_pattern_loc p in
@@ -601,8 +601,9 @@ let rec pr sep inherited a =
   | CNotation (_,"( _ )",[t]) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation (pr mt) s env
-  | CNumeral (_,(Bignat.POS _ as p)) -> Bignat.pr_bigint p, lposint
-  | CNumeral (_,(Bignat.NEG _ as p)) -> Bignat.pr_bigint p, lnegint
+  | CNumeral (_,p) ->
+      Bigint.pr_bigint p, 
+      (if Bigint.is_pos_or_zero p then lposint else lnegint)
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr mt lsimple a), 1
   | CDynamic _ -> str "<dynamic>", latom
   in

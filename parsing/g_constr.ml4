@@ -206,9 +206,9 @@ GEXTEND Gram
       | "?"; n = Prim.natural -> CPatVar (loc, (false,Pattern.patvar_of_int n))
       | bll = binders; c = constr -> abstract_constr loc c bll
       (* Hack to parse syntax "(n)" as a natural number *)
-      | "("; test_int_rparen; n = bigint; ")" ->
+      | "("; test_int_rparen; n = INT; ")" ->
 	  (* Delimiter "N" moved to "nat" in V7 *)
-          CDelimiters (loc,"nat",CNumeral (loc,n))
+          CDelimiters (loc,"nat",CNumeral (loc,Bigint.of_string n))
       | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_tail ->
           let id = coerce_to_name lc1 in
 	  CProdN (loc, ([id], c)::bl, body)
@@ -239,7 +239,9 @@ GEXTEND Gram
 	  CNotation(loc, s, cl)
       | s = sort -> CSort (loc, s)
       | v = global -> CRef v
-      | n = bigint -> CNumeral (loc,n)
+      | (b,n) = bigint -> 
+          if n = Bigint.zero & b then CNotation(loc,"( _ )",[CNumeral (loc,n)])
+          else CNumeral (loc,n)
       | "!"; f = global -> CAppExpl (loc,(None,f),[])
       | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
 	  (* Delimiter "N" implicitly moved to "nat" in V7 *)
@@ -364,5 +366,9 @@ GEXTEND Gram
       | ";"; idl = ne_name_comma_list; (bl,c2) = product_tail ->
           ((idl, CHole (fst (List.hd idl)))::bl, c2)
       | ")"; c = constr -> ([], c) ] ]
+  ;
+  bigint:
+    [ [ i = INT -> true, Bigint.of_string i
+      | "-"; i = INT -> false, Bigint.neg (Bigint.of_string i) ] ]
   ;
 END;;

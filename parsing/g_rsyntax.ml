@@ -52,14 +52,12 @@ let get_r_sign_ast loc =
   [| -n |] = - [| n |]           for n >= 0
 *)
 
-let int_decomp n = 
-let div2 k = 
-let x = k mod 2 in
-let y = k - x in (x,y/2) in
-let rec list_ch m =
-if m< 2 then [m]
-else let (x1,x2) = div2 m in x1::(list_ch x2)
-in list_ch n
+open Bigint
+
+let rec int_decomp m = 
+  if equal m zero then [0] else
+  if equal m one then [1] else
+  let (b,r) = euclid m two in (if equal b zero then 0 else 1) :: int_decomp r
 
 let _ = if !Options.v7 then
 let r_of_int n dloc =
@@ -75,7 +73,7 @@ let r_of_int n dloc =
   in mk_r list_ch
 in
 let r_of_string s dloc = 
-  r_of_int (int_of_string s) dloc
+  r_of_int (of_string s) dloc
 in
 let rsyntax_create name =
   let e =
@@ -169,7 +167,7 @@ in ()
 
 open Libnames
 open Rawterm
-open Bignat
+open Bigint
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 let rdefinitions = make_dir ["Coq";"Reals";"Rdefinitions"]
@@ -200,12 +198,11 @@ let r_of_posint dloc n =
     | a::l' -> if a=1 then RApp (dloc, ref_Rplus, [ref_R1; RApp (dloc, ref_Rmult, [a2; mk_r l'])]) else RApp (dloc, ref_Rmult, [a2; mk_r l'])
   in mk_r list_ch
 
-(* int_of_string o bigint_to_string : temporary hack ... *)
-(* utiliser les bigint de caml ? *)
 let r_of_int2 dloc z =
-  match z with
-  | NEG n -> RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc (int_of_string (bigint_to_string (POS n)))]) 
-  | POS n -> r_of_posint dloc (int_of_string (bigint_to_string z))
+  if is_strictly_neg z then
+    RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc (neg z)])
+  else
+    r_of_posint dloc z
 
 (* V8 *)
 let two = mult_2 one
@@ -214,7 +211,7 @@ let four = mult_2 two
 
 (* Unary representation of strictly positive numbers *)
 let rec small_r dloc n =
-  if is_one n then RRef (dloc, glob_R1)
+  if equal one n then RRef (dloc, glob_R1)
   else RApp(dloc,RRef (dloc,glob_Rplus),
             [RRef (dloc, glob_R1);small_r dloc (sub_1 n)])
 
@@ -227,12 +224,13 @@ let r_of_posint dloc n =
       let (q,r) = div2_with_rest n in
       let b = RApp(dloc,RRef(dloc,glob_Rmult),[r2;r_of_pos q]) in
       if r then RApp(dloc,RRef(dloc,glob_Rplus),[r1;b]) else b in
-  if is_nonzero n then r_of_pos n else RRef(dloc,glob_R0)
+  if n <> zero then r_of_pos n else RRef(dloc,glob_R0)
 
 let r_of_int dloc z =
-  match z with
-  | NEG n -> RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc n]) 
-  | POS n -> r_of_posint dloc n
+  if is_strictly_neg z then
+    RApp (dloc, RRef(dloc,glob_Ropp), [r_of_posint dloc (neg z)]) 
+  else
+    r_of_posint dloc z
 
 (**********************************************************************)
 (* Printing R via scopes                                              *)
@@ -268,8 +266,11 @@ in
 bignat_of_r
 
 let bigint_of_r = function
-  | RApp (_,RRef (_,o), [a]) when o = glob_Ropp -> NEG (bignat_of_r a)
-  | a -> POS (bignat_of_r a)
+  | RApp (_,RRef (_,o), [a]) when o = glob_Ropp ->
+      let n = bignat_of_r a in
+      if n = zero then raise Non_closed_number;
+      neg n
+  | a -> bignat_of_r a
 
 let uninterp_r p =
   try
@@ -294,7 +295,7 @@ let bignat_of_pos p =
   let rec transl = function
     | Node (_,"APPLIST",[p; o; a]) when alpha_eq(p,plus) & alpha_eq(o,one)
         -> add_1(transl a)
-    | a when alpha_eq(a,one) -> Bignat.one
+    | a when alpha_eq(a,one) -> Bigint.one
     | _ -> raise Non_closed_number
   in transl p
 in
@@ -306,12 +307,12 @@ let bignat_option_of_pos p =
 in
 let r_printer_Rplus1 p =
   match bignat_option_of_pos p with
-    | Some n -> Some (str (Bignat.to_string (add_1 n)))
+    | Some n -> Some (str (Bigint.to_string (add_1 n)))
     | None -> None
 in
 let r_printer_Ropp p =
   match bignat_option_of_pos p with
-    | Some n -> Some (str "-" ++ str (Bignat.to_string n))
+    | Some n -> Some (str "-" ++ str (Bigint.to_string n))
     | None -> None
 in
 let r_printer_R1 _ =
