@@ -140,7 +140,11 @@ let ast_zwf_zero loc =
 
 (* program -> Coq AST *)
 
-let bdize = Termast.ast_of_constr true (Global.env ())
+let bdize c = 
+  let env = 
+    Global.env_of_context (Pcicenv.cci_sign_of Prename.empty_ren Penv.empty)
+  in
+  Termast.ast_of_constr true env c
 
 let rec coqast_of_program loc = function
   | Var id -> let s = string_of_id id in <:ast< ($VAR $s) >>
@@ -151,7 +155,7 @@ let rec coqast_of_program loc = function
 		   (function Term t -> coqast_of_program t.loc t.desc
 		      | _ -> invalid_arg "coqast_of_program") l
       in
-	<:ast< (APPLIST $f ($LIST $args)) >>
+      <:ast< (APPLIST $f ($LIST $args)) >>
   | Expression c -> bdize c
   | _ -> invalid_arg "coqast_of_program"
 

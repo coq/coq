@@ -42,7 +42,7 @@ let set = mkCast (mkSet, mkType Univ.prop_univ)
  *)
 
 let cci_sign_of ren env =
-   Penv.fold_all 
+  Penv.fold_all 
     (fun (id,v) sign ->
        match v with
 	 | Penv.TypeV (Ref _ | Array _) -> sign
