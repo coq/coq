@@ -160,20 +160,22 @@ theories/Reals/addReals.cmo: theories/ZArith/fast_integer.cmo \
     theories/Reals/typeSyntax.cmo 
 theories/Reals/addReals.cmx: theories/ZArith/fast_integer.cmx \
     theories/Reals/typeSyntax.cmx 
-theories/Reals/r_Ifp.cmo: addReals.cmo theories/ZArith/fast_integer.cmo \
-    theories/Reals/raxioms.cmo theories/Reals/rdefinitions.cmo \
-    theories/ZArith/zarith_aux.cmo 
-theories/Reals/r_Ifp.cmx: addReals.cmx theories/ZArith/fast_integer.cmx \
-    theories/Reals/raxioms.cmx theories/Reals/rdefinitions.cmx \
-    theories/ZArith/zarith_aux.cmx 
+theories/Reals/r_Ifp.cmo: theories/Reals/addReals.cmo \
+    theories/ZArith/fast_integer.cmo theories/Reals/raxioms.cmo \
+    theories/Reals/rdefinitions.cmo theories/ZArith/zarith_aux.cmo 
+theories/Reals/r_Ifp.cmx: theories/Reals/addReals.cmx \
+    theories/ZArith/fast_integer.cmx theories/Reals/raxioms.cmx \
+    theories/Reals/rdefinitions.cmx theories/ZArith/zarith_aux.cmx 
 theories/Reals/raxioms.cmo: theories/Init/datatypes.cmo \
     theories/ZArith/fast_integer.cmo 
 theories/Reals/raxioms.cmx: theories/Init/datatypes.cmx \
     theories/ZArith/fast_integer.cmx 
-theories/Reals/rbase.cmo: addReals.cmo theories/Init/specif.cmo \
-    theories/Reals/typeSyntax.cmo theories/ZArith/zarith_aux.cmo 
-theories/Reals/rbase.cmx: addReals.cmx theories/Init/specif.cmx \
-    theories/Reals/typeSyntax.cmx theories/ZArith/zarith_aux.cmx 
+theories/Reals/rbase.cmo: theories/Reals/addReals.cmo \
+    theories/Init/specif.cmo theories/Reals/typeSyntax.cmo \
+    theories/ZArith/zarith_aux.cmo 
+theories/Reals/rbase.cmx: theories/Reals/addReals.cmx \
+    theories/Init/specif.cmx theories/Reals/typeSyntax.cmx \
+    theories/ZArith/zarith_aux.cmx 
 theories/Reals/rbasic_fun.cmo: theories/Reals/rbase.cmo \
     theories/Reals/typeSyntax.cmo 
 theories/Reals/rbasic_fun.cmx: theories/Reals/rbase.cmx \

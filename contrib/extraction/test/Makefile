@@ -31,7 +31,7 @@ CMO:= $(patsubst %.ml,%.cmo,$(ML))
 #	General rules 
 #
 
-all: $(ML) depend $(CMO) v2ml
+all: $(ML) $(CMO) v2ml
 
 depend: $(ML)
 	rm -f .depend; ocamldep $(INCL) theories/*/*.ml > .depend
@@ -62,7 +62,9 @@ reals: all $(REALSML) theories/Reals/addReals.cmo $(REALSCMO)
 
 realsml: 
 	./extract_reals $(REALSVO)
-	cp -f addReals.ml theories/Reals
+
+theories/Reals/addReals.ml: 
+	cp -f addReals theories/Reals/addReals.ml
 
 $(REALSML): realsml
 
