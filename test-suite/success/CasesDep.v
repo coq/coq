@@ -6,6 +6,23 @@ Check [P:nat->Prop][Q][A:(P O)->Q][B:(n:nat)(P (S n))->Q][x]
   | (exist (S n) H) => (B n H)
   end.
 
+(* Check dependencies in anonymous arguments (from FTA/listn.v) *)
+
+Inductive listn [A:Set] : nat->Set :=
+  niln: (listn A O)
+| consn: (a:A)(n:nat)(listn A n)->(listn A (S n)).
+
+Section Folding.
+Variables B, C : Set.
+Variable g : B -> C -> C.
+Variable c : C.
+
+Fixpoint foldrn [n:nat; bs:(listn B n)] : C :=
+  Cases bs of niln => c
+            | (consn b _ tl) => (g b (foldrn ? tl))
+  end.
+End Folding.
+
 (* -------------------------------------------------------------------- *)
 (*   Example to test patterns matching on dependent families            *)     (* This exemple extracted from the developement done by Nacira Chabane  *)
 (* (equipe Paris 6)                                                     *)
