@@ -9,7 +9,7 @@ fully support the functionalities of the previous version 7.3.1
 (especially ast-based grammar extensions are off).
 
   Please refer to the accompanying document CHANGES or the location
-ftp://ftp.inria.fr/INRIA/coq/V7.4/doc/Changes.html for a full list of
+ftp://ftp.inria.fr/INRIA/LogiCal/coq/V7.4/doc/Changes.html for a full list of
 changes including sources of incompatibilities.
 
   Coq V7.4 is available in several formats from http://coq.inria.fr/
