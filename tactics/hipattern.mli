@@ -74,6 +74,11 @@ val is_equation            : testing_function
 val match_with_nottype     : (constr * constr) matching_function
 val is_nottype             : testing_function 
 
+val match_with_forall_term    : (name * constr * constr) matching_function
+val is_forall_term            : testing_function 
+
+val match_with_imp_term    : (constr * constr) matching_function
+val is_imp_term            : testing_function 
 
 (* I added these functions to test whether a type contains dependent
   products or not, and if an inductive has constructors with dependent types

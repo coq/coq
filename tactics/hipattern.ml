@@ -176,10 +176,19 @@ let match_with_nottype t =
 
 let is_nottype t = op2bool (match_with_nottype t)
 		     
-let is_imp_term c = 
+let match_with_forall_term c=
   match kind_of_term c with
-    | Prod (_,_,b) -> not (dependent (mkRel 1) b)
-    | _              -> false
+    | Prod (nam,a,b) -> Some (nam,a,b)
+    | _            -> None
+
+let is_forall_term c = op2bool (match_with_forall_term c) 
+
+let match_with_imp_term c=
+  match kind_of_term c with
+    | Prod (_,a,b) when not (dependent (mkRel 1) b) ->Some (a,b)
+    | _              -> None
+
+let is_imp_term c = op2bool (match_with_imp_term c) 
 
 let rec has_nodep_prod_after n c =
   match kind_of_term c with

@@ -8,6 +8,7 @@
 
 # $Id$ 
 
+
 # Makefile for Coq
 #
 # To be used with GNU Make.
@@ -46,7 +47,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc -I contrib/linear \
-	      -I contrib/funind
+	      -I contrib/funind -I contrib/first-order
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -83,7 +84,8 @@ LIBREP=\
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-  lib/predicate.cmo lib/rtree.cmo  # Rem: Cygwin already uses variable LIB 
+  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo
+# Rem: Cygwin already uses variable LIB 
 
 KERNEL=\
   kernel/names.cmo kernel/univ.cmo \
@@ -273,6 +275,11 @@ JPROVERCMO=\
 FUNINDCMO=\
   contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo 
 
+FOCMO=\
+  contrib/first-order/formula.cmo contrib/first-order/sequent.cmo \
+  contrib/first-order/unify.cmo contrib/first-order/rules.cmo \
+  contrib/first-order/engine.cmo
+
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
 LINEARCMO=\
@@ -288,11 +295,21 @@ LINEARCMO=\
   contrib/linear/dpc.cmo
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
-  contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4 contrib/funind/tacinv.ml4
+  contrib/linear/ccidpc.ml4 contrib/linear/dpc.ml4 contrib/funind/tacinv.ml4 \
+  contrib/first-order/engine.ml4
+
+USERCMO =\
+	user-contrib/formula.cmo \
+	user-contrib/prio.cmo \
+	user-contrib/sequent.cmo \
+	user-contrib/unify.cmo \
+	user-contrib/rules.cmo \
+	user-contrib/engine.cmo
+
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CORRECTNESSCMO) $(CCCMO) $(LINEARCMO) $(FUNINDCMO) $(USERCMO)
+	$(CORRECTNESSCMO) $(CCCMO) $(LINEARCMO) $(FUNINDCMO) $(FOCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
