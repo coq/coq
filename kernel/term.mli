@@ -16,9 +16,6 @@ type sorts =
   | Prop of contents       (* Prop and Set *)
   | Type of Univ.universe  (* Type *)
 
-val str_of_contents : contents -> string
-val contents_of_str : string -> contents
-
 val mk_Set  : sorts
 val mk_Prop : sorts
 
@@ -38,6 +35,7 @@ type case_printing =
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int array * case_printing
 
+(*
 type 'a oper = 
   | Meta of int
   | Sort of 'a
@@ -50,6 +48,7 @@ type 'a oper =
   | Fix of int array * int
   | CoFix of int
   | XTRA of string
+*)
 
 (*s The type [constr] of the terms of CCI
   is obtained by instanciating a generic notion of terms
@@ -85,16 +84,10 @@ type var_declaration = identifier * constr option * typed_type
 type rel_declaration = name * constr option * typed_type
 
 (**********************************************************************)
-type binder_kind = BProd | BLambda | BLetIn
-
-type fix_kind = RFix of (int array * int) | RCoFix of int
-
-type 'ctxt reference =
-  | RConst of section_path * 'ctxt
-  | RInd of inductive_path * 'ctxt
-  | RConstruct of constructor_path * 'ctxt
-  | RVar of identifier
-  | REVar of int * 'ctxt
+type global_reference =
+  | ConstRef of section_path
+  | IndRef of inductive_path
+  | ConstructRef of constructor_path
 
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 
@@ -113,7 +106,7 @@ type fixpoint = (int array * int) * (constr array * name list * constr array)
 type cofixpoint = int * (constr array * name list * constr array)
 
 
-type kindOfTerm =
+type kind_of_term =
   | IsRel          of int
   | IsMeta         of int
   | IsVar          of identifier
@@ -132,12 +125,11 @@ type kindOfTerm =
   | IsFix          of fixpoint
   | IsCoFix        of cofixpoint
 
-(* Discriminates which kind of term is it.  
-  Note that there is no cases for [DLAM] and [DLAMV].  These terms do not
-  make sense alone, but they must be preceeded by the application of
-  an operator. *)
+(* User view of [constr]. For [IsAppL], it is ensured there is at
+   least one argument and the function is not itself an applicative
+   term *)
 
-val kind_of_term : constr -> kindOfTerm
+val kind_of_term : constr -> kind_of_term
 
 
 (*s Term constructors. *)
@@ -247,9 +239,6 @@ val mkMutCase : case_info * constr * constr * constr array -> constr
 *)
 val mkFix : fixpoint -> constr
 
-(* Similarly, but we assume the body already constructed *)
-val mkFixDlam : int array -> int -> constr array -> constr array -> constr 
-
 (* If [typarray = [|t1,...tn|]]
       [funnames = [f1,.....fn]]
       [bodies   = [b1,.....bn]] \par\noindent
@@ -262,10 +251,6 @@ val mkFixDlam : int array -> int -> constr array -> constr array -> constr
      with       fn = bn.]
  *)
 val mkCoFix : cofixpoint -> constr
-
-(* Similarly, but we assume the body already constructed *)
-val mkCoFixDlam : int -> constr array -> constr array -> constr
-
 
 (*s Term destructors. 
    Destructor operations are partial functions and
@@ -291,15 +276,12 @@ val destXtra : constr -> string
 (* Destructs a sort. [is_Prop] recognizes the sort \textsf{Prop}, whether 
    [isprop] recognizes both \textsf{Prop} and \textsf{Set}. *)
 val destSort : constr -> sorts
-val contents_of_kind : constr -> contents
 val is_Prop : constr -> bool
 val is_Set : constr -> bool
 val isprop : constr -> bool
 val is_Type : constr -> bool
 val iskind : constr -> bool
 val isSort : constr -> bool
-
-val is_existential_oper : sorts oper -> bool
 
 val isType : sorts -> bool
 val is_small : sorts -> bool (* true for \textsf{Prop} and \textsf{Set} *)
@@ -311,9 +293,6 @@ val isCast : constr -> bool
 (* Removes recursively the casts around a term i.e.
    [strip_outer_cast] (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
 val strip_outer_cast : constr -> constr
-
-(* Special function, which keep the key casts under Fix and MutCase. *)
-val strip_all_casts : constr -> constr
 
 (* Apply a function letting Casted types in place *)
 val under_casts : (constr -> constr) -> constr -> constr
@@ -327,7 +306,9 @@ val isVar  : constr -> bool
 (* Destructs the product $(x:t_1)t_2$ *)
 val destProd : constr -> name * constr * constr
 val hd_of_prod : constr -> constr
+(*i
 val hd_is_constructor : constr -> bool
+i*)
 
 (* Destructs the abstraction $[x:t_1]t_2$ *)
 val destLambda : constr -> name * constr * constr
@@ -336,10 +317,11 @@ val destLambda : constr -> name * constr * constr
 val destLetIn : constr -> name * constr * constr * constr
 
 (* Destructs an application *)
-val destAppL : constr -> constr array
 val isAppL : constr -> bool
+(*i
 val hd_app : constr -> constr 
 val args_app : constr -> constr array
+i*)
 val destApplication : constr -> constr * constr array
 
 (* Destructs a constant *)
@@ -373,8 +355,6 @@ val destCase : constr -> case_info * constr * constr * constr array
     \mathit{with}     ~ f_n ~ [ctx_n] = b_n$,
    where the lenght of the $j$th context is $ij$.
 *)
-val destGralFix : 
-  constr array -> constr array * Names.name list * constr array
 val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
@@ -446,89 +426,6 @@ val nb_lam : constr -> int
 (* similar to [nb_lam], but gives the number of products instead *)
 val nb_prod : constr -> int
 
-(*i*)(* Trop compliqué 
-(*s Various utility functions for implementing terms with bindings. *)
-
-val extract_lifted : int * constr -> constr
-val insert_lifted : constr -> int * constr
-
-(* If [l] is a list of pairs $(n:nat,x:constr)$, [env] is a stack of 
-   $(na:name,T:constr)$, then
-   [push_and_lift (id,c) env l] adds a component [(id,c)] to [env] 
-   and lifts [l] one step *)
-val push_and_lift :
-  name * constr -> (name * constr) list -> (int * constr) list 
-    -> (name * constr) list * (int * constr) list
-
-(* if [T] is not $(x_1:A_1)(x_2:A_2)....(x_n:A_n)T'$ 
-   then [(push_and_liftl n env T l)]
-   raises an error else it gives $([x1,A1 ; x2,A2 ; ... ; xn,An]@env,T',l')$
-   where $l'$ is [l] lifted [n] steps *)
-val push_and_liftl :
-  int -> (name * constr) list -> constr -> (int * constr) list
-    -> (name * constr) list * constr * (int * constr) list
-
-(* if $T$ is not $[x_1:A_1][x_2:A_2]....[x_n:A_n]T'$ then 
-   [(push_lam_and_liftl n env T l)]
-   raises an error else it gives $([x_1,A_1; x_2,A_2; ...; x_n,A_n]@env,T',l')$
-   where $l'$ is [l] lifted [n] steps *)
-val push_lam_and_liftl :
-  int -> (name * constr) list -> constr -> (int * constr) list
-    -> (name * constr) list * constr * (int * constr) list
-
-(* If [l] is a list of pairs $(n:nat,x:constr)$, [tlenv] is a stack of
-   $(na:name,T:constr)$, [B] is a constr, [na] a name, then
-   [(prod_and_pop ((na,T)::tlenv) B l)] gives $(tlenv, (na:T)B, l')$
-   where $l'$ is [l] lifted down one step *)
-val prod_and_pop :
-  (name * constr) list -> constr -> (int * constr) list
-    -> (name * constr) list * constr * (int * constr) list
-
-(* recusively applies [prod_and_pop] :
-   if [env] = $[na_1:T_1 ; na_2:T_2 ; ... ; na_n:T_n]@tlenv$ then
-   [(prod_and_popl n env T l)] gives $(tlenv,(na_n:T_n)...(na_1:T_1)T,l')$
-   where $l'$ is [l] lifted down [n] steps *)
-val prod_and_popl :
-  int -> (name * constr) list -> constr -> (int * constr) list
-    -> (name * constr) list * constr * (int * constr) list
-
-(* similar to [prod_and_pop], but gives $[na:T]B$ intead of $(na:T)B$ *)
-val lam_and_pop :
-  (name * constr) list -> constr -> (int * constr) list
-    -> (name * constr) list * constr * (int * constr) list
-
-(* similar to [prod_and_popl] but gives $[na_n:T_n]...[na_1:T_1]B$ instead of
-   $(na_n:T_n)...(na_1:T_1)B$ *)
-val lam_and_popl :
-  int -> (name * constr) list -> constr -> (int * constr) list
-    -> (name * constr) list * constr * (int * constr) list
-
-(* similar to [lamn_and_pop] but generates new names whenever the name is 
-   [Anonymous] *)
-val lam_and_pop_named :
-  (name * constr) list -> constr ->(int * constr) list ->identifier list 
-    -> (name * constr) list * constr * (int * constr) list * identifier list
-
-(* similar to [prod_and_popl] but gives $[na_n:T_n]...[na_1:T_1]B$ instead of
-   but it generates names whenever $na_i$ = [Anonymous] *)
-val lam_and_popl_named :
-  int ->  (name * constr) list -> constr ->  (int * constr) list 
-    -> (name * constr) list * constr * (int * constr) list 
-
-(* [lambda_ize n T endpt]
-   will pop off the first [n] products in [T], then stick in [endpt],
-   properly lifted, and then push back the products, but as lambda-
-   abstractions *)
-val lambda_ize : int ->'a oper term -> 'a oper term -> 'a oper term
-*)(*i*)
-
-(*s Flattening and unflattening of embedded applications and casts. *)
-
-(* if [c] is not an [AppL], it is transformed into [mkAppL [| c |]] *)
-val ensure_appl : constr -> constr
-
-(* unflattens application lists *)
-val telescope_appl : constr -> constr
 (* flattens application lists *)
 val collapse_appl : constr -> constr
 val decomp_app : constr -> constr * constr list
@@ -637,8 +534,6 @@ val dependent : constr -> constr -> bool
 
 (* strips head casts and flattens head applications *)
 val strip_head_cast : constr -> constr
-val whd_castapp_stack : constr -> constr list -> constr * constr list
-val whd_castapp : constr -> constr
 val rename_bound_var : identifier list -> constr -> constr
 val eta_reduce_head : constr -> constr
 val eq_constr : constr -> constr -> bool
@@ -650,15 +545,16 @@ val subst_term_occ : occs:int list -> what:constr -> where:constr -> constr
 val subst_term_occ_decl : occs:int list -> what:constr ->
       where:var_declaration -> var_declaration
 
-val replace_consts :
-  (section_path * (identifier list * constr) option) list -> constr -> constr
-
 (* [subst_meta bl c] substitutes the metavar $i$ by $c_i$ in [c] 
    for each binding $(i,c_i)$ in [bl],
    and raises [Not_found] if [c] contains a meta that is not in the 
    association list *) 
 
 val subst_meta : (int * constr) list -> constr -> constr
+
+(*s Generic representation of constructions *)
+
+type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type constr_operator =
   | OpMeta of int
@@ -671,6 +567,7 @@ type constr_operator =
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
   | OpRec of fix_kind * Names.name list
+  | OpXtra of string
 
 val splay_constr : constr -> constr_operator * constr array
 val gather_constr : constr_operator * constr array -> constr
@@ -685,19 +582,78 @@ val generic_fold_left :
   ('a -> constr -> 'a) -> 'a -> (name * constr option * constr) list
       -> constr array -> 'a
 
+(*s Functionals working on the immediate subterm of a construction *)
+
+(* [fold_constr f acc c] folds [f] on the immediate subterms of [c]
+   starting from [acc] and proceeding from left to right according to
+   the usual representation of the constructions; it is not recursive *)
+
 val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
+
+(* [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
+   subterms of [c] starting from [acc] and proceeding from left to
+   right according to the usual representation of the constructions as
+   [fold_constr] but it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive *)
 
 val fold_constr_with_binders :
   ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
 
+(* [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
+   not recursive and the order with which subterms are processed is
+   not specified *)
+
+val iter_constr : (constr -> unit) -> constr -> unit
+
+(* [iter_constr_with_binders g f n c] iters [f n] on the immediate
+   subterms of [c]; it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive and the order with which
+   subterms are processed is not specified *)
+
 val iter_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
 
+(* [map_constr f c] maps [f] on the immediate subterms of [c]; it is
+   not recursive and the order with which subterms are processed is
+   not specified *)
+
 val map_constr : (constr -> constr) -> constr -> constr
 
+(* [map_constr_with_binders g f n c] maps [f n] on the immediate
+   subterms of [c]; it carries an extra data [n] (typically a lift
+   index) which is processed by [g] (which typically add 1 to [n]) at
+   each binder traversal; it is not recursive and the order with which
+   subterms are processed is not specified *)
+
 val map_constr_with_binders :
+  ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+
+(* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
+   subterms of [c]; it carries an extra data [l] (typically a name
+   list) which is processed by [g na] (which typically cons [na] to
+   [l]) at each binder traversal (with name [na]); it is not recursive
+   and the order with which subterms are processed is not specified *)
+
+val map_constr_with_named_binders :
   (name -> 'a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 
+(* [map_constr_with_binders_left_to_right g f n c] maps [f n] on the
+   immediate subterms of [c]; it carries an extra data [n] (typically
+   a lift index) which is processed by [g] (which typically add 1 to
+   [n]) at each binder traversal; the subterms are processed from left
+   to right according to the usual representation of the constructions
+   (this may matter if [f] does a side-effect); it is not recursive *)
+
+val map_constr_with_binders_left_to_right :
+  ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
+
+(* [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
+   the immediate subterms of [c1] of [c2] if needed; Cast's, binders
+   name and Cases annotations are not taken into account *)
+
+val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 
 (*s Hash-consing functions for constr. *)
 
