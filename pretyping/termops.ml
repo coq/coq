@@ -236,24 +236,55 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       mkCoFix (ln,(lna,tl',bl'))
 
 (* strong *)
-let map_constr_with_full_binders g f l c = match kind_of_term c with
+let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
-  | Cast (c,t) -> mkCast (f l c, f l t)
-  | Prod (na,t,c) -> mkProd (na, f l t, f (g (na,None,t) l) c)
-  | Lambda (na,t,c) -> mkLambda (na, f l t, f (g (na,None,t) l) c)
-  | LetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g (na,Some b,t) l) c)
-  | App (c,al) -> mkApp (f l c, Array.map (f l) al)
-  | Evar (e,al) -> mkEvar (e, Array.map (f l) al)
-  | Case (ci,p,c,bl) -> mkCase (ci, f l p, f l c, Array.map (f l) bl)
+    | Construct _) -> cstr
+  | Cast (c,t) -> 
+      let c' = f l c in
+      let t' = f l t in
+      if c==c' && t==t' then cstr else mkCast (c', t')
+  | Prod (na,t,c) ->
+      let t' = f l t in
+      let c' = f (g (na,None,t) l) c in
+      if t==t' && c==c' then cstr else mkProd (na, t', c')
+  | Lambda (na,t,c) ->
+      let t' = f l t in
+      let c' = f (g (na,None,t) l) c in
+      if t==t' && c==c' then cstr else  mkLambda (na, t', c')
+  | LetIn (na,b,t,c) ->
+      let b' = f l b in
+      let t' = f l t in
+      let c' = f (g (na,Some b,t) l) c in
+      if b==b' && t==t' && c==c' then cstr else mkLetIn (na, b', t', c')
+  | App (c,al) ->
+      let c' = f l c in
+      let al' = Array.map (f l) al in
+      if c==c' && array_for_all2 (==) al al' then cstr else mkApp (c', al')
+  | Evar (e,al) ->
+      let al' = Array.map (f l) al in
+      if array_for_all2 (==) al al' then cstr else mkEvar (e, al')
+  | Case (ci,p,c,bl) ->
+      let p' = f l p in
+      let c' = f l c in
+      let bl' = Array.map (f l) bl in
+      if p==p' && c==c' && array_for_all2 (==) bl bl' then cstr else
+        mkCase (ci, p', c', bl')
   | Fix (ln,(lna,tl,bl)) ->
+      let tl' = Array.map (f l) tl in
       let l' =
         array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
-      mkFix (ln,(lna,Array.map (f l) tl, Array.map (f l') bl))
+      let bl' = Array.map (f l') bl in
+      if array_for_all2 (==) tl tl' && array_for_all2 (==) bl bl'
+      then cstr
+      else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
+      let tl' = Array.map (f l) tl in
       let l' =
         array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
-      mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+      let bl' = Array.map (f l') bl in
+      if array_for_all2 (==) tl tl' && array_for_all2 (==) bl bl'
+      then cstr
+      else mkCoFix (ln,(lna,tl',bl'))
 
 
 (* Equality modulo let reduction *)
@@ -416,10 +447,13 @@ let subst_term_gen eq_fun env c t =
       | Some x -> x
       | None ->
     (if eq_fun e c t then mkRel k
-     else
-       map_constr_with_full_binders
-         (fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
-         substrec kc t)
+    else
+      let red_t = whd_locals env t in
+      let red_t' =
+        map_constr_with_full_binders
+          (fun d (e,k,c) -> (push_rel d e,k+1,lift 1 c))
+          substrec kc red_t in
+      if red_t == red_t' then t else red_t')
   in 
   substrec (env,1,nf_locals env c) t
 

@@ -367,7 +367,7 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
   let subbodies = list_tabulate make_Fi nbodies in
   substl subbodies bodies.(bodynum)
 
-let reduce_mind_case_use_function kn env mia =
+let reduce_mind_case_use_function func env mia =
   match kind_of_term mia.mconstr with 
     | Construct(ind_sp,i as cstr_sp) ->
 	let real_cargs = snd (list_chop mia.mci.ci_npar mia.mcargs) in
@@ -376,37 +376,39 @@ let reduce_mind_case_use_function kn env mia =
 	let build_fix_name i =
 	  match names.(i) with 
 	    | Name id ->
-		let (mp,dp,_) = repr_kn kn in
-		let kn = make_kn mp dp (label_of_id id) in
-		(match constant_opt_value env kn with
-		  | None -> None
-		  | Some _ -> Some (mkConst kn))
+                if isConst func then
+		  let (mp,dp,_) = repr_kn (destConst func) in
+		  let kn = make_kn mp dp (label_of_id id) in
+		  (match constant_opt_value env kn with
+		    | None -> None
+		    | Some _ -> Some (mkConst kn))
+                else None
 	    | Anonymous -> None in 
 	let cofix_def = contract_cofix_use_function build_fix_name cofix in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
-let special_red_case env whfun (ci, p, c, lf)  =
+let special_red_case sigma env whfun (ci, p, c, lf)  =
   let rec redrec s = 
     let (constr, cargs) = whfun s in 
-    match kind_of_term constr with 
-      | Const cst -> 
-          (if not (is_evaluable env (EvalConstRef cst)) then
-            raise Redelimination;
-	  let gvalue = constant_value env cst in
-	  if reducible_mind_case gvalue then
-	    reduce_mind_case_use_function cst env
-	      {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
-               mci=ci; mlf=lf}
-	  else
-	    redrec (gvalue, cargs))
-      | _ ->
-          if reducible_mind_case constr then
-            reduce_mind_case
-	      {mP=p; mconstr=constr; mcargs=list_of_stack cargs;
-	       mci=ci; mlf=lf}
-          else 
-	    raise Redelimination
+    if isEvalRef env constr then
+      let ref = destEvalRef constr in
+      match reference_opt_value sigma env ref with
+        | None -> raise Redelimination
+        | Some gvalue ->
+	    if reducible_mind_case gvalue then
+	      reduce_mind_case_use_function constr env
+	        {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
+                mci=ci; mlf=lf}
+	    else
+	      redrec (gvalue, cargs)
+    else
+      if reducible_mind_case constr then
+        reduce_mind_case
+	  {mP=p; mconstr=constr; mcargs=list_of_stack cargs;
+	  mci=ci; mlf=lf}
+      else 
+	raise Redelimination
   in 
   redrec (c, empty_stack)
 
@@ -416,7 +418,7 @@ let rec red_elim_const env sigma ref largs =
     | EliminationCases n when stack_args_size largs >= n ->
 	let c = reference_value sigma env ref in
 	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
-        (special_red_case env (construct_const env sigma) (destCase c'),
+        (special_red_case sigma env (construct_const env sigma) (destCase c'),
 	 lrest)
     | EliminationFix (min,infos) when stack_args_size largs >=min ->
 	let c = reference_value sigma env ref in
@@ -457,7 +459,7 @@ and construct_const env sigma =
       | LetIn (n,b,t,c) -> stacklam hnfstack [b] c stack
       | Case (ci,p,c,lf) ->
           hnfstack 
-	    (special_red_case env
+	    (special_red_case sigma env
               (construct_const env sigma) (ci,p,c,lf), stack)
       | Construct _ -> s
       | CoFix _ -> s
@@ -535,7 +537,7 @@ let hnf_constr env sigma c =
       | Case (ci,p,c,lf) ->
           (try
              redrec 
-	       (special_red_case env (whd_betadeltaiota_state env sigma) 
+	       (special_red_case sigma env (whd_betadeltaiota_state env sigma) 
 		  (ci, p, c, lf), largs)
            with Redelimination -> 
 	     app_stack s)
@@ -575,7 +577,7 @@ let whd_nf env sigma c =
       | Cast (c,_) -> nf_app (c, stack)
       | Case (ci,p,d,lf) ->
           (try
-             nf_app (special_red_case env nf_app (ci,p,d,lf), stack)
+             nf_app (special_red_case sigma env nf_app (ci,p,d,lf), stack)
            with Redelimination -> 
 	     s)
       | Fix fix ->
@@ -825,7 +827,7 @@ let one_step_reduce env sigma c =
       | LetIn (_,f,_,cl) -> (subst1 f cl,largs)
       | Case (ci,p,c,lf) ->
           (try
-	     (special_red_case env (whd_betadeltaiota_state env sigma)
+	     (special_red_case sigma env (whd_betadeltaiota_state env sigma)
 	       (ci,p,c,lf), largs)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->

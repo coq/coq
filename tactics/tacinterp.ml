@@ -868,6 +868,15 @@ VIdentifier id
 (* Gives the identifier corresponding to an Identifier tactic_arg *)
 let id_of_Identifier = function
   | VConstr c when isVar c -> destVar c
+  | VConstr c ->
+      (match kind_of_term c with
+          Var id -> id
+        | Const sp -> id_of_global None (ConstRef sp)
+        | Ind sp -> id_of_global None (IndRef sp)
+        | Construct sp -> id_of_global None (ConstructRef sp)
+        | _ ->
+            anomalylabstrm "id_of_Identifier"
+              (str "Not an IDENTIFIER tactic_arg"))
   | VIdentifier id -> id
   | _ ->
     anomalylabstrm "id_of_Identifier" (str "Not an IDENTIFIER tactic_arg")
