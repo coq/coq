@@ -121,7 +121,7 @@ Intros; Pose f := [x:R]``(exp x)-y``; Cut ``(f 0)<=0``.
 Intro; Cut (continuity f).
 Intro; Cut ``0<=(f y)``.
 Intro; Cut ``(f 0)*(f y)<=0``.
-Intro; Assert X := (f_pos_cor f R0 y H2 (Rlt_le ? ? H) H4); Elim X; Intros t H5; Apply existTT with t; Elim H5; Intros; Unfold f in H7; Apply Rminus_eq_right; Exact H7.
+Intro; Assert X := (IVT_cor f R0 y H2 (Rlt_le ? ? H) H4); Elim X; Intros t H5; Apply existTT with t; Elim H5; Intros; Unfold f in H7; Apply Rminus_eq_right; Exact H7.
 Pattern 2 R0; Rewrite <- (Rmult_Or (f y)); Rewrite (Rmult_sym (f R0)); Apply Rle_monotony; Assumption.
 Unfold f; Apply Rle_anti_compatibility with y; Left; Apply Rlt_trans with ``1+y``.
 Rewrite <- (Rplus_sym y); Apply Rlt_compatibility; Apply Rlt_R0_R1.

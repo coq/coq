@@ -14,19 +14,19 @@ Require Rfunctions.
 Require SeqSeries.
 Require Ranalysis1.
 
-Fixpoint Dichotomie_lb [x,y:R;P:R->bool;N:nat] : R :=
+Fixpoint Dichotomy_lb [x,y:R;P:R->bool;N:nat] : R :=
 Cases N of 
   O => x
-| (S n) => let down = (Dichotomie_lb x y P n) in let up = (Dichotomie_ub x y P n) in let z = ``(down+up)/2``  in if (P z) then down else z
+| (S n) => let down = (Dichotomy_lb x y P n) in let up = (Dichotomy_ub x y P n) in let z = ``(down+up)/2``  in if (P z) then down else z
 end
-with Dichotomie_ub [x,y:R;P:R->bool;N:nat] : R :=
+with Dichotomy_ub [x,y:R;P:R->bool;N:nat] : R :=
 Cases N of 
   O => y
-| (S n) => let down = (Dichotomie_lb x y P n) in let up = (Dichotomie_ub x y P n) in let z = ``(down+up)/2``  in if (P z) then z else up
+| (S n) => let down = (Dichotomy_lb x y P n) in let up = (Dichotomy_ub x y P n) in let z = ``(down+up)/2``  in if (P z) then z else up
 end.
 
-Definition dicho_lb [x,y:R;P:R->bool] : nat->R := [N:nat](Dichotomie_lb x y P N).
-Definition dicho_up [x,y:R;P:R->bool] : nat->R := [N:nat](Dichotomie_ub x y P N).
+Definition dicho_lb [x,y:R;P:R->bool] : nat->R := [N:nat](Dichotomy_lb x y P N).
+Definition dicho_up [x,y:R;P:R->bool] : nat->R := [N:nat](Dichotomy_ub x y P N).
 
 (**********)
 Lemma dicho_comp : (x,y:R;P:R->bool;n:nat) ``x<=y`` -> ``(dicho_lb x y P n)<=(dicho_up x y P n)``.
@@ -34,7 +34,7 @@ Intros.
 Induction n.
 Simpl; Assumption.
 Simpl.
-Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
+Case (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``).
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
 Sup0.
 Pattern 1 ``2``; Rewrite Rmult_sym.
@@ -49,7 +49,7 @@ Pattern 3 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
 Rewrite double.
-Rewrite <- (Rplus_sym (Dichotomie_ub x y P n)).
+Rewrite <- (Rplus_sym (Dichotomy_ub x y P n)).
 Apply Rle_compatibility.
 Assumption.
 Qed.
@@ -59,7 +59,7 @@ Intros.
 Unfold Un_growing.
 Intro.
 Simpl.
-Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
+Case (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``).
 Right; Reflexivity.
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
 Sup0.
@@ -68,7 +68,7 @@ Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
 Rewrite double.
 Apply Rle_compatibility.
-Replace (Dichotomie_ub x y P n) with (dicho_up x y P n); [Apply dicho_comp; Assumption | Reflexivity].
+Replace (Dichotomy_ub x y P n) with (dicho_up x y P n); [Apply dicho_comp; Assumption | Reflexivity].
 Qed.
 
 Lemma dicho_up_decreasing : (x,y:R;P:R->bool) ``x<=y`` -> (Un_decreasing (dicho_up x y P)).
@@ -76,15 +76,15 @@ Intros.
 Unfold Un_decreasing.
 Intro.
 Simpl.
-Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
+Case (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``).
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
 Sup0.
 Pattern 3 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
 Rewrite double.
-Replace (Dichotomie_ub x y P n) with (dicho_up x y P n); [Idtac | Reflexivity].
-Replace (Dichotomie_lb x y P n) with (dicho_lb x y P n); [Idtac | Reflexivity].
+Replace (Dichotomy_ub x y P n) with (dicho_up x y P n); [Idtac | Reflexivity].
+Replace (Dichotomy_lb x y P n) with (dicho_lb x y P n); [Idtac | Reflexivity].
 Rewrite <- (Rplus_sym ``(dicho_up x y P n)``).
 Apply Rle_compatibility.
 Apply dicho_comp; Assumption.
@@ -96,7 +96,7 @@ Intros.
 Induction n.
 Simpl; Assumption.
 Simpl.
-Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
+Case (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``).
 Assumption.
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
 Sup0.
@@ -104,7 +104,7 @@ Pattern 3 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1r | DiscrR].
 Rewrite double; Apply Rplus_le.
 Assumption.
-Pattern 2 y; Replace y with (Dichotomie_ub x y P O); [Idtac | Reflexivity].
+Pattern 2 y; Replace y with (Dichotomy_ub x y P O); [Idtac | Reflexivity].
 Apply decreasing_prop.
 Assert H0 := (dicho_up_decreasing x y P H).
 Assumption.
@@ -130,13 +130,13 @@ Intros.
 Induction n.
 Simpl; Assumption.
 Simpl.
-Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
+Case (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``).
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
 Sup0.
 Pattern 1 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1r | DiscrR].
 Rewrite double; Apply Rplus_le.
-Pattern 1 x; Replace x with (Dichotomie_lb x y P O); [Idtac | Reflexivity].
+Pattern 1 x; Replace x with (Dichotomy_lb x y P O); [Idtac | Reflexivity].
 Apply tech9.
 Assert H0 := (dicho_lb_growing x y P H).
 Assumption.
@@ -182,26 +182,26 @@ Induction n.
 Simpl.
 Unfold Rdiv; Rewrite Rinv_R1; Ring.
 Simpl.
-Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
+Case (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``).
 Unfold Rdiv.
-Replace ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))*/2-
-   (Dichotomie_lb x y P n)`` with ``((dicho_up x y P n)-(dicho_lb x y P n))/2``.
+Replace ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))*/2-
+   (Dichotomy_lb x y P n)`` with ``((dicho_up x y P n)-(dicho_lb x y P n))/2``.
 Unfold Rdiv; Rewrite Hrecn.
 Unfold Rdiv.
 Rewrite Rinv_Rmult.
 Ring.
 DiscrR.
 Apply pow_nonzero; DiscrR.
-Pattern 2 (Dichotomie_lb x y P n); Rewrite (double_var (Dichotomie_lb x y P n)); Unfold dicho_up dicho_lb Rminus Rdiv; Ring.
-Replace ``(Dichotomie_ub x y P n)-((Dichotomie_lb x y P n)+
-   (Dichotomie_ub x y P n))/2`` with ``((dicho_up x y P n)-(dicho_lb x y P n))/2``.
+Pattern 2 (Dichotomy_lb x y P n); Rewrite (double_var (Dichotomy_lb x y P n)); Unfold dicho_up dicho_lb Rminus Rdiv; Ring.
+Replace ``(Dichotomy_ub x y P n)-((Dichotomy_lb x y P n)+
+   (Dichotomy_ub x y P n))/2`` with ``((dicho_up x y P n)-(dicho_lb x y P n))/2``.
 Unfold Rdiv; Rewrite Hrecn.
 Unfold Rdiv.
 Rewrite Rinv_Rmult.
 Ring.
 DiscrR.
 Apply pow_nonzero; DiscrR.
-Pattern 1 (Dichotomie_ub x y P n); Rewrite (double_var (Dichotomie_ub x y P n)); Unfold dicho_up dicho_lb Rminus Rdiv; Ring.
+Pattern 1 (Dichotomy_ub x y P n); Rewrite (double_var (Dichotomy_ub x y P n)); Unfold dicho_up dicho_lb Rminus Rdiv; Ring.
 Qed.
 
 Definition pow_2_n := [n:nat](pow ``2`` n).
@@ -335,7 +335,7 @@ Definition cond_positivity [x:R] : bool := Cases (total_order_Rle R0 x) of
   (leftT _) => true 
 | (rightT _) => false end.
 
-(* Caractérisation séquentielle de la continuité *)
+(* Sequential caracterisation of continuity *)
 Lemma continuity_seq : (f:R->R;Un:nat->R;l:R) (continuity_pt f l) -> (Un_cv Un l) -> (Un_cv [i:nat](f (Un i)) (f l)).
 Unfold continuity_pt Un_cv; Unfold continue_in.
 Unfold limit1_in.
@@ -365,7 +365,7 @@ Induction n.
 Simpl.
 Assumption.
 Simpl.
-Assert X := (sumbool_of_bool (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``)).
+Assert X := (sumbool_of_bool (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``)).
 Elim X; Intro.
 Rewrite a.
 Unfold dicho_lb in Hrecn; Assumption.
@@ -379,7 +379,7 @@ Induction n.
 Simpl.
 Assumption.
 Simpl.
-Assert X := (sumbool_of_bool (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``)).
+Assert X := (sumbool_of_bool (P ``((Dichotomy_lb x y P n)+(Dichotomy_ub x y P n))/2``)).
 Elim X; Intro.
 Rewrite a.
 Unfold dicho_lb in Hrecn; Assumption.
@@ -387,8 +387,8 @@ Rewrite b.
 Assumption.
 Qed.
 
-(* Une fonction continue qui change de signe s'annule *)
-Lemma f_pos : (f:R->R;x,y:R) (continuity f) -> ``x<y`` -> ``(f x)<0`` -> ``0<(f y)`` -> (sigTT R [z:R]``x<=z<=y``/\``(f z)==0``).
+(* Intermediate Value Theorem *)
+Lemma IVT : (f:R->R;x,y:R) (continuity f) -> ``x<y`` -> ``(f x)<0`` -> ``0<(f y)`` -> (sigTT R [z:R]``x<=z<=y``/\``(f z)==0``).
 Intros.
 Cut ``x<=y``.
 Intro.
@@ -519,8 +519,7 @@ Left; Assumption.
 Unfold Vn; Assumption.
 Qed.
 
-(* Un corollaire bien utile *)
-Lemma f_pos_cor : (f:R->R;x,y:R) (continuity f) -> ``x<=y`` -> ``(f x)*(f y)<=0`` -> (sigTT R [z:R]``x<=z<=y``/\``(f z)==0``).
+Lemma IVT_cor : (f:R->R;x,y:R) (continuity f) -> ``x<=y`` -> ``(f x)*(f y)<=0`` -> (sigTT R [z:R]``x<=z<=y``/\``(f z)==0``).
 Intros.
 Case (total_order_T R0 (f x)); Intro.
 Case (total_order_T R0 (f y)); Intro.
@@ -538,7 +537,7 @@ Symmetry; Exact b.
 Elim s; Intro.
 Cut ``x<y``.
 Intro.
-Assert H3 := (f_pos (opp_fct f) x y (continuity_opp f H) H2).
+Assert H3 := (IVT (opp_fct f) x y (continuity_opp f H) H2).
 Cut ``(opp_fct f x)<0``.
 Cut ``0<(opp_fct f y)``.
 Intros.
@@ -565,7 +564,7 @@ Case (total_order_T R0 (f y)); Intro.
 Elim s; Intro.
 Cut ``x<y``.
 Intro.
-Apply f_pos; Assumption.
+Apply IVT; Assumption.
 Inversion H0.
 Assumption.
 Rewrite H2 in r.
@@ -580,8 +579,7 @@ Elim (Rlt_antirefl ? (Rlt_le_trans ? ? ? H2 H1)).
 Rewrite <- Ropp_mul2; Apply Rmult_lt_pos; Apply Rgt_RO_Ropp; Assumption.
 Qed.
 
-(* On peut maintenant définir la racine carrée 
-   comme fonction réciproque de la fonction carrée *)
+(* We can now define the square root function as the reciprocal transformation of the square root function *)
 Lemma Rsqrt_exists : (y:R) ``0<=y`` -> (sigTT R [z:R]``0<=z``/\``y==(Rsqr z)``).
 Intros.
 Pose f := [x:R]``(Rsqr x)-y``.
@@ -595,7 +593,7 @@ Cut ``0<=(f 1)``.
 Intro.
 Cut ``(f 0)*(f 1)<=0``.
 Intro.
-Assert X := (f_pos_cor f R0 R1 H1 (Rlt_le ? ? Rlt_R0_R1) H3).
+Assert X := (IVT_cor f R0 R1 H1 (Rlt_le ? ? Rlt_R0_R1) H3).
 Elim X; Intros t H4.
 Apply existTT with t.
 Elim H4; Intros.
@@ -617,7 +615,7 @@ Cut ``0<=(f y)``.
 Intro.
 Cut ``(f 0)*(f y)<=0``.
 Intro.
-Assert X := (f_pos_cor f R0 y H1 H H3).
+Assert X := (IVT_cor f R0 y H1 H H3).
 Elim X; Intros t H4.
 Apply existTT with t.
 Elim H4; Intros.
@@ -645,7 +643,7 @@ Apply Rle_sym2.
 Apply Rle_RO_Ropp; Assumption.
 Qed.
 
-(* Définition de la racine carrée R+->R *)
+(* Definition of the square root: R+->R *)
 Definition Rsqrt [y:nonnegreal] : R := Cases (Rsqrt_exists (nonneg y) (cond_nonneg y)) of (existTT a b) => a end.
 
 (**********)
