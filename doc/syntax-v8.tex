@@ -200,8 +200,10 @@ conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
           &&\RNAME{if-case}
 \SEPDEF
 \DEFNT{appl-arg}
-       \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}  &&\RNAME{impl-arg}
-       \KWD{(}~\NT{num}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}  &&\RNAME{impl-arg}
+       \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}
+          &&\RNAME{impl-arg}
+\nlsep \KWD{(}~\NT{num}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}
+          &&\RNAME{impl-arg}
 \nlsep \NTL{constr}{9}
 \SEPDEF
 \DEFNT{atomic-constr}
@@ -547,8 +549,8 @@ Conflicts exists between integers and constrs.
 \DEFNT{clause}
        \KWD{in}~\TERM{*}
 \nlsep \KWD{in}~\TERM{*}~\KWD{$\vdash$}~\OPT{\NT{concl-occ}}
-\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-list}} ~\KWD{$\vdash$} ~\OPT{\NT{concl-occ}}
-\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-list}}
+\nlsep \KWD{in}~\OPT{\NT{hyp-ident-list}} ~\KWD{$\vdash$} ~\OPT{\NT{concl-occ}}
+\nlsep \KWD{in}~\OPT{\NT{hyp-ident-list}}
 \SEPDEF
 \DEFNT{hyp-ident-list}
        \NT{hyp-ident}
@@ -747,7 +749,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{with}~\PLUS{\NT{reference}}
 \nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{using}~\PLUS{\NT{ident}}
 %%\nlsep \TERM{gtauto}
-%%\nlsep \TERM{gintuition}~\OPT{\NTL{tactic}{0}}
+\nlsep \TERM{gintuition}~\OPT{\NTL{tactic}{0}}
 %% contrib/fourier
 \nlsep \TERM{fourierZ}
 %% contrib/funind
@@ -850,11 +852,14 @@ $$
 \DEFNT{ltac-def}
        \NT{ident}~\STAR{\NT{name}}~\KWD{:=}~\NT{tactic}
 \SEPDEF
-%% TODO: with not.
+\DEFNT{rec-definition}
+       \NT{fix-decl}~\OPT{\NT{decl-notation}}
+\SEPDEF
 \DEFNT{inductive-definition}
        \OPT{\NT{string}}~\NT{ident}~\STAR{\NT{binder-let}}~\KWD{:}
        ~\NT{constr}~\KWD{:=}
        ~\OPT{\TERMbar}~\OPT{\NT{constructor-list}}
+       ~\OPT{\NT{decl-notation}}
 \SEPDEF
 \DEFNT{constructor-list}
        \NT{constructor}~\TERMbar~\NT{constructor-list}
@@ -862,6 +867,9 @@ $$
 \SEPDEF
 \DEFNT{constructor}
        \NT{ident}~\STAR{\NT{binder-let}}\OPTGR{\NT{coerce-kwd}~\NT{constr}}
+\SEPDEF
+\DEFNT{decl-notation}
+       \TERM{where}~\NT{string}~\TERM{:=}~\NT{constr}
 \SEPDEF
 \DEFNT{field-list}
        \NT{field}~\KWD{;}~\NT{field-list}
