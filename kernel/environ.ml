@@ -282,11 +282,11 @@ let name_assumption env (na,c,t) =
     | None      -> (named_hd_type env t na, None, t)
     | Some body -> (named_hd env body na, c, t)
 
-let prod_assum_name env b d = mkProd_or_LetIn (name_assumption env d) b 
-let lambda_assum_name env b d = mkLambda_or_LetIn (name_assumption env d) b 
+let mkProd_or_LetIn_name env b d = mkProd_or_LetIn (name_assumption env d) b 
+let mkLambda_or_LetIn_name env b d = mkLambda_or_LetIn (name_assumption env d)b
 
-let it_mkProd_or_LetIn_name   env = List.fold_left (prod_assum_name env)
-let it_mkLambda_or_LetIn_name env = List.fold_left (lambda_assum_name env)
+let it_mkProd_or_LetIn_name   env = List.fold_left (mkProd_or_LetIn_name env)
+let it_mkLambda_or_LetIn_name env = List.fold_left (mkLambda_or_LetIn_name env)
 
 let it_mkProd_wo_LetIn   = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)

@@ -128,6 +128,9 @@ val named_hd : env -> constr -> name -> name
 val lambda_name : env -> name * types * constr -> constr
 val prod_name : env -> name * types * constr -> constr
 
+val mkLambda_or_LetIn_name : env -> constr -> rel_declaration -> constr
+val mkProd_or_LetIn_name : env -> constr -> rel_declaration -> constr
+
 val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
 val it_mkProd_or_LetIn_name : env -> constr -> rel_context -> constr
 
