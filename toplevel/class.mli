@@ -48,11 +48,14 @@ val try_add_new_identity_coercion : identifier -> strength ->
 val try_add_new_class : global_reference -> strength -> unit
 
 (*s This is used for the discharge *)
+type coercion_entry
+
+val add_new_coercion : coercion_entry -> unit
+
 val process_class :
   dir_path -> identifier list -> 
     (cl_typ * cl_info_typ) -> (cl_typ * cl_info_typ)
 val process_coercion :
-  dir_path -> (coe_typ * coe_info_typ) * cl_typ * cl_typ -> 
-    (coe_typ * coe_info_typ) * cl_typ * cl_typ
+  dir_path -> identifier list -> coercion -> coercion_entry
 
 val class_of_ref : global_reference -> cl_typ

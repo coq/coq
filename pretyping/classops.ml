@@ -246,11 +246,8 @@ let string_of_class = function
 (* coercion_value : int -> unsafe_judgment * bool *)
 
 let coercion_value i = 
-  let (coe,{ coe_is_identity = b }) = coercion_info_from_index i in
-  let env = Global.env () in
-  let v = constr_of_reference Evd.empty env coe in
-  let j = Retyping.get_judgment_of env Evd.empty v in
-  (j,b)
+  let { coe_value = j; coe_is_identity = b } = snd (coercion_info_from_index i)
+  in (j,b)
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)
@@ -312,6 +309,8 @@ let add_coercion_in_graph (ic,source,target) =
   if (!ambig_paths <> []) && is_verbose () && is_mes_ambig() then 
     pPNL (message_ambig !ambig_paths)
 
+type coercion = (coe_typ * coe_info_typ) * cl_typ * cl_typ
+
 let cache_coercion (_,((coe,xf),cls,clt)) =
   let is,_ = class_info cls in
   let it,_ = class_info clt in
@@ -342,11 +341,11 @@ let declare_coercion coef v stre isid cls clt ps =
 	cls, clt))
 
 let coercion_strength v = v.coe_strength
+let coercion_identity v = v.coe_is_identity
+
 (* For printing purpose *)
 let get_coercion_value v = v.coe_value.uj_val
 
 let classes () = !class_tab
 let coercions () = !coercion_tab
 let inheritance_graph () = !inheritance_graph
-
-

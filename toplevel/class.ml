@@ -64,7 +64,7 @@ let rec stre_unif_cond = function
 	and stre2 = (variable_strength v2) in 
 	stre_max (stre1,stre2)
 
-let stre_of_coe = function
+let stre_of_global = function
   | ConstRef sp -> constant_or_parameter_strength sp
   | VarRef sp -> variable_strength sp
   | IndRef _ | ConstructRef _ -> NeverDischarge 
@@ -78,10 +78,6 @@ let rec arity_sort a = match kind_of_term a with
   | IsCast (c,_) -> arity_sort c
   | _ -> raise Not_found
 
-let check_fully_applied cl p p1 =
-  if p <> p1 then  errorlabstrm "fully_applied" 
-    [< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
-	
 (* try_add_class : Names.identifier ->
   Term.constr -> (cl_typ * int) option -> bool -> int * Libobject.strength *)
 
@@ -94,8 +90,7 @@ let try_add_class v (cl,p) streopt check_exist =
     | Some stre -> stre_max (stre,stre')
     | None -> stre'
   in
-  declare_class (cl,stre,p);
-  stre
+  declare_class (cl,stre,p)
 
 (* try_add_new_class : Names.identifier -> unit *)
 
@@ -114,37 +109,75 @@ let try_add_new_class ref stre =
   let cl = fst (constructor_at_head v) in
   let _ = try_add_class v (cl,p1) (Some stre) true in () 
 
+(* Coercions *)
+
+type coercion_error_kind =
+  | AlreadyExists
+  | NotACoercion
+  | NoSource of string
+  | NotUniform
+  | NoTarget
+  | WrongTarget of cl_typ * cl_typ
+  | NotAClass of cl_typ
+  | NotEnoughClassArgs of cl_typ
+
+exception CoercionError of coercion_error_kind
+
+let explain_coercion_error g = function
+  | AlreadyExists ->
+      errorlabstrm "try_add_coercion" 
+	[< Printer.pr_global g; 'sTR" is already a coercion" >]
+  | NotACoercion ->
+      errorlabstrm "try_add_coercion"         
+	[< Printer.pr_global g; 'sTR" does not correspond to a coercion" >]
+  | NoSource s ->
+    errorlabstrm "try_add_coercion" 
+      [< Printer.pr_global g; 'sTR ": "; 'sTR s >]
+  | NotUniform ->
+    errorlabstrm "try_add_coercion" 
+      [< Printer.pr_global g;
+         'sTR" does not respect the inheritance uniform condition" >];
+  | NoTarget ->
+      errorlabstrm "try_add_coercion" 
+        [<'sTR"We cannot find the target class" >]
+  | WrongTarget (clt,cl) ->
+      errorlabstrm "try_add_coercion" 
+        [<'sTR"Found target class "; 'sTR(string_of_class cl);
+	  'sTR " while "; 'sTR(string_of_class clt);
+	  'sTR " is expected" >]
+  | NotAClass cl ->
+	errorlabstrm "check_class" 
+          [< 'sTR "Type of "; 'sTR (string_of_class cl);
+             'sTR " does not end with a sort" >] 
+  | NotEnoughClassArgs cl ->
+      errorlabstrm "fully_applied" 
+	[< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
+
+let check_fully_applied cl p p1 =
+  if p <> p1 then raise (CoercionError (NotEnoughClassArgs cl))
+
 (* check_class : Names.identifier ->
   Term.constr -> cl_typ -> int -> int * Libobject.strength *)
 
 let check_class v cl p =
   try 
     let _,clinfo = class_info cl in
-    check_fully_applied cl p clinfo.cl_param;
-    clinfo.cl_strength
+    check_fully_applied cl p clinfo.cl_param
   with Not_found -> 
     let env = Global.env () in
     let t = Retyping.get_type_of env Evd.empty v in
     let p1 =
       try 
 	arity_sort t 
-      with Not_found -> 
-	errorlabstrm "check_class" 
-          [< 'sTR "Type of "; 'sTR (string_of_class cl);
-             'sTR " does not end with a sort" >] 
+      with Not_found -> raise (CoercionError (NotAClass cl))
     in
     check_fully_applied cl p p1;
     try_add_class v (cl,p1) None false
 
 (* check that the computed target is the provided one *)
 let check_target clt = function
-    | None -> ()
-    | Some cl -> 
-	if cl <> clt then 
-	  errorlabstrm "try_add_coercion" 
-            [<'sTR"Found target class "; 'sTR(string_of_class cl);
-	      'sTR " while "; 'sTR(string_of_class clt);
-	      'sTR " is expected" >]
+  | Some cl when cl <> clt -> raise (CoercionError (WrongTarget(clt,cl)))
+  | _ -> ()
 
 (* decomposition de constr vers coe_typ *)
 
@@ -253,6 +286,22 @@ let prods_of t =
   in 
   aux [] t
 
+let get_strength stre ref cls clt =
+  let stres = (snd (class_info cls)).cl_strength in
+  let stret = (snd (class_info clt)).cl_strength in
+  let stref = stre_of_global ref in
+(* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
+  let streunif = stre_unif_cond (s_vardep,f_vardep) in
+ *)
+  let streunif = NeverDischarge in
+  let stre' = stre_max4 stres stret stref streunif in
+  if (stre = NeverDischarge) & (stre' <> NeverDischarge)
+  then errorlabstrm "try_add_coercion" 
+    [< Printer.pr_global ref;
+       'sTR " must be declared as a local coercion"; 'fNL;
+       'sTR "because it involves local definition" >];
+  stre_max (stre,stre')
+
 (* coercion identité *)
 
 let error_not_transparent source =
@@ -314,60 +363,45 @@ booleen "coercion identite'?"
 lorque source est None alors target est None aussi.
 *)
 
-let try_add_new_coercion_core idf stre source target isid =
+let add_new_coercion_core idf stre source target isid =
   let env = Global.env () in
   let v = constr_of_reference Evd.empty env idf in
   let vj = Retyping.get_judgment_of env Evd.empty v in
+  (* coef, c'est idf non ?
   let f_vardep,coef = coe_of_reference v in
-  if coercion_exists coef then
-    errorlabstrm "try_add_coercion" 
-      [< Printer.pr_global idf; 'sTR" is already a coercion" >];
+  *)
+  let coef = idf in
+  if coercion_exists coef then raise (CoercionError AlreadyExists);
   let lp = prods_of (vj.uj_type) in
   let llp = List.length lp in
-  if llp <= 1 then
-    errorlabstrm "try_add_coercion"         
-      [< 'sTR"Does not correspond to a coercion" >];
+  if llp <= 1 then raise (CoercionError NotACoercion);
   let (cls,ps,vs,lvs,ind,s_vardep) =
     try 
       get_source (List.tl lp) source
-    with Not_found -> 
-      errorlabstrm "try_add_coercion" 
-        [<'sTR"We do not find the source class " >] 
+    with Not_found ->
+      raise (CoercionError (NoSource "Cannot find the source class "))
   in
   if (cls = CL_FUN) then
-    errorlabstrm "try_add_coercion" 
-      [< 'sTR"FUNCLASS cannot be a source class" >];
+    raise (CoercionError (NoSource "FUNCLASS cannot be a source class"));
   if (cls = CL_SORT) then
-    errorlabstrm "try_add_coercion" 
-      [< 'sTR"SORTCLASS cannot be a source class" >];
+    raise (CoercionError (NoSource "SORTCLASS cannot be a source class"));
   if not (uniform_cond (llp-1-ind) lvs) then
-    errorlabstrm "try_add_coercion" 
-      [< Printer.pr_global idf;
-         'sTR" does not respect the inheritance uniform condition" >];
+    raise (CoercionError NotUniform);
   let clt,pt,vt =
-    try 
+    try
       get_target (List.hd lp) ind 
-    with Not_found -> 
-      errorlabstrm "try_add_coercion" 
-        [<'sTR"We cannot find the target class" >] 
+    with Not_found ->
+      raise (CoercionError NoTarget)
   in
   check_target clt target;
-  let stres = check_class vs cls ps in
-  let stret = check_class vt clt pt in
-  let stref = stre_of_coe coef in
-(* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
-  let streunif = stre_unif_cond (s_vardep,f_vardep) in
- *)
-  let streunif = NeverDischarge in
-  let stre' = stre_max4 stres stret stref streunif in
-  (* if (stre=NeverDischarge) & (stre'<>NeverDischarge)
-     then errorlabstrm "try_add_coercion" 
-     [< pr_global idf;
-     'sTR" must be declared as a local coercion (its strength is ";
-     'sTR(string_of_strength stre');'sTR")" >] *)
-  let stre = stre_max (stre,stre') in
-  declare_coercion coef vj stre isid cls clt ps
+  check_class vs cls ps;
+  check_class vt clt pt;
+  let stre' = get_strength stre coef cls clt in
+  declare_coercion coef vj stre' isid cls clt ps
 
+let try_add_new_coercion_core ref b c d e =
+  try add_new_coercion_core ref b c d e
+  with CoercionError e -> explain_coercion_error ref e
 
 let try_add_new_coercion ref stre =
   try_add_new_coercion_core ref stre None None false
@@ -386,7 +420,17 @@ let try_add_new_identity_coercion id stre source target =
 let try_add_new_coercion_with_source ref stre source =
   try_add_new_coercion_core ref stre (Some source) None false
 
-(* fonctions pour le discharge: plutot sale *)
+(* fonctions pour le discharge: encore un peu sale mais ça s'améliore *)
+
+type coercion_entry = 
+    global_reference * strength * bool * cl_typ * cl_typ * int
+
+let add_new_coercion (ref,stre,isid,cls,clt,n) =
+  (* Un peu lourd, tout cela pour trouver l'instance *)
+  let env = Global.env () in
+  let v = constr_of_reference Evd.empty env ref in
+  let vj = Retyping.get_judgment_of env Evd.empty v in
+  declare_coercion ref vj stre isid cls clt n
 
 let count_extra_abstractions hyps ids_to_discard =
   let _,n =
@@ -399,6 +443,23 @@ let count_extra_abstractions hyps ids_to_discard =
   in n
 
 let defined_in_sec sp sec_sp = dirpath sp = sec_sp
+
+(* This moves the global path one step below *)
+let process_global = function
+  | VarRef _ ->
+      anomaly "process_global only processes global surviving the section"
+  | ConstRef sp ->
+      let ((_,spid,spk)) = repr_path sp in
+      let newsp = Lib.make_path spid CCI in
+      ConstRef newsp
+  | IndRef (sp,i) -> 
+      let ((_,spid,spk)) = repr_path sp in
+      let newsp = Lib.make_path spid CCI in
+      IndRef (newsp,i)
+  | ConstructRef ((sp,i),j) -> 
+      let ((_,spid,spk)) = repr_path sp in
+      let newsp = Lib.make_path spid CCI in
+      ConstructRef ((newsp,i),j)
 
 let process_class sec_sp ids_to_discard x =
   let (cl,{cl_strength=stre; cl_param=p}) = x in
@@ -454,31 +515,8 @@ let process_cl sec_sp cl =
 	  cl
     | _ -> cl
 
-(* Pour le discharge *)
-let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
-  (* Buggé: faut mettre à jour le nombre de paramètres dans coeinfo *)
-  let s1= process_cl sec_sp s in
-  let t1 = process_cl sec_sp t in
-  match coe with 
-    | VarRef _ -> ((coe,coeinfo),s1,t1)
-    | ConstRef sp -> 
-	if defined_in_sec sp sec_sp then
-	  let ((_,spid,spk)) = repr_path sp in
-	  let newsp = Lib.make_path spid CCI in
-	  ((ConstRef newsp,coeinfo),s1,t1)
-	else
-	  ((coe,coeinfo),s1,t1)
-    | IndRef (sp,i) -> 
-	if defined_in_sec sp sec_sp then
-	  let ((_,spid,spk)) = repr_path sp in
-	  let newsp = Lib.make_path spid CCI in
-	  ((IndRef (newsp,i),coeinfo),s1,t1)
-	else
-	  ((coe,coeinfo),s1,t1)
-    | ConstructRef ((sp,i),j) -> 
-	if defined_in_sec sp sec_sp then 
-	  let ((_,spid,spk)) = repr_path sp in
-	  let newsp = Lib.make_path spid CCI in
-          (((ConstructRef ((newsp,i),j)),coeinfo),s1,t1)
-	else
-	  ((coe,coeinfo),s1,t1)
+let process_coercion sec_sp ids_to_discard ((coe,coeinfo),cls,clt) =
+  let hyps = context_of_global_reference coe in let nargs =
+  count_extra_abstractions hyps ids_to_discard in (process_global coe,
+  coercion_strength coeinfo, coercion_identity coeinfo, process_cl
+  sec_sp cls, process_cl sec_sp clt, nargs + coercion_params coeinfo)

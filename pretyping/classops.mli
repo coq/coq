@@ -92,12 +92,16 @@ val lookup_path_to_fun_from : cl_index -> inheritance_path
 val lookup_path_to_sort_from : cl_index -> inheritance_path
 
 (*i Pour le discharge *)
+type coercion = (coe_typ * coe_info_typ) * cl_typ * cl_typ
+
 open Libobject
 val inClass : (cl_typ * cl_info_typ) -> Libobject.obj
 val outClass : Libobject.obj -> (cl_typ * cl_info_typ)
-val inCoercion : (coe_typ * coe_info_typ) * cl_typ * cl_typ -> Libobject.obj
-val outCoercion : Libobject.obj -> (coe_typ * coe_info_typ) * cl_typ * cl_typ
+val inCoercion : coercion -> Libobject.obj
+val outCoercion : Libobject.obj -> coercion
 val coercion_strength : coe_info_typ -> strength
+val coercion_identity : coe_info_typ -> bool
+val coercion_params : coe_info_typ -> int
 (*i*)
 
 (*i Crade *)

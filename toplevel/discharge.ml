@@ -168,7 +168,7 @@ type discharge_operation =
   | Class of cl_typ * cl_info_typ
   | Struc of inductive_path * (unit -> struc_typ)
   | Objdef of constant_path
-  | Coercion of ((coe_typ * coe_info_typ) * cl_typ * cl_typ)
+  | Coercion of coercion_entry
 
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
@@ -237,7 +237,7 @@ let process_object oldenv dir sec_sp
         if coercion_strength coeinfo = (DischargeAt sec_sp) then 
 	  (ops,ids_to_discard,work_alist)
         else
-	  let y = process_coercion sec_sp x in
+	  let y = process_coercion sec_sp ids_to_discard x in
           ((Coercion y)::ops, ids_to_discard, work_alist)
                     
     | "STRUCTURE" ->
@@ -283,8 +283,7 @@ let process_operation = function
       Lib.add_anonymous_leaf (inStruc (newsp,strobj ()))
   | Objdef newsp ->
       begin try Recordobj.objdef_declare (ConstRef newsp) with _ -> () end
-  | Coercion y ->
-      Lib.add_anonymous_leaf (inCoercion y) 
+  | Coercion y -> add_new_coercion y
 
 let push_inductive_names ccitab sp mie =
   let _,ccitab =
