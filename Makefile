@@ -135,8 +135,8 @@ PRETYPING=\
   pretyping/reductionops.cmo pretyping/inductiveops.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
   pretyping/detyping.cmo pretyping/retyping.cmo \
-  pretyping/cbv.cmo pretyping/tacred.cmo \
-  pretyping/pretype_errors.cmo pretyping/typing.cmo \
+  pretyping/cbv.cmo pretyping/pretype_errors.cmo pretyping/typing.cmo \
+  pretyping/tacred.cmo \
   pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
   pretyping/evarutil.cmo pretyping/evarconv.cmo \
   pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \

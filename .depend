@@ -448,19 +448,19 @@ config/coq_config.cmx: config/coq_config.cmi
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
 dev/db_printers.cmx: kernel/names.cmx lib/pp.cmx 
 dev/top_printers.cmo: parsing/ast.cmi toplevel/cerrors.cmi proofs/clenv.cmi \
-    kernel/closure.cmi interp/constrextern.cmi kernel/declarations.cmi \
-    kernel/environ.cmi pretyping/evd.cmi library/libnames.cmi \
-    library/libobject.cmi library/nameops.cmi kernel/names.cmi lib/pp.cmi \
-    parsing/pptactic.cmi parsing/printer.cmi proofs/proof_trees.cmi \
-    proofs/refiner.cmi kernel/sign.cmi lib/system.cmi proofs/tacmach.cmi \
-    kernel/term.cmi pretyping/termops.cmi kernel/univ.cmi 
+    kernel/closure.cmi interp/constrextern.cmi interp/constrintern.cmi \
+    kernel/declarations.cmi kernel/environ.cmi pretyping/evd.cmi \
+    library/libnames.cmi library/libobject.cmi library/nameops.cmi \
+    kernel/names.cmi lib/pp.cmi parsing/pptactic.cmi parsing/printer.cmi \
+    proofs/proof_trees.cmi proofs/refiner.cmi kernel/sign.cmi lib/system.cmi \
+    proofs/tacmach.cmi kernel/term.cmi pretyping/termops.cmi kernel/univ.cmi 
 dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
-    kernel/closure.cmx interp/constrextern.cmx kernel/declarations.cmx \
-    kernel/environ.cmx pretyping/evd.cmx library/libnames.cmx \
-    library/libobject.cmx library/nameops.cmx kernel/names.cmx lib/pp.cmx \
-    parsing/pptactic.cmx parsing/printer.cmx proofs/proof_trees.cmx \
-    proofs/refiner.cmx kernel/sign.cmx lib/system.cmx proofs/tacmach.cmx \
-    kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx 
+    kernel/closure.cmx interp/constrextern.cmx interp/constrintern.cmx \
+    kernel/declarations.cmx kernel/environ.cmx pretyping/evd.cmx \
+    library/libnames.cmx library/libobject.cmx library/nameops.cmx \
+    kernel/names.cmx lib/pp.cmx parsing/pptactic.cmx parsing/printer.cmx \
+    proofs/proof_trees.cmx proofs/refiner.cmx kernel/sign.cmx lib/system.cmx \
+    proofs/tacmach.cmx kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
 ide/blaster_window.cmo: ide/coq.cmi ide/ideutils.cmi 
@@ -1427,14 +1427,16 @@ pretyping/tacred.cmo: pretyping/cbv.cmi kernel/closure.cmi \
     pretyping/instantiate.cmi library/libnames.cmi library/nameops.cmi \
     kernel/names.cmi library/nametab.cmi lib/pp.cmi pretyping/rawterm.cmi \
     pretyping/reductionops.cmi pretyping/retyping.cmi library/summary.cmi \
-    kernel/term.cmi pretyping/termops.cmi lib/util.cmi pretyping/tacred.cmi 
+    kernel/term.cmi pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
+    pretyping/tacred.cmi 
 pretyping/tacred.cmx: pretyping/cbv.cmx kernel/closure.cmx \
     kernel/conv_oracle.cmx kernel/declarations.cmx kernel/environ.cmx \
     pretyping/evd.cmx library/global.cmx kernel/inductive.cmx \
     pretyping/instantiate.cmx library/libnames.cmx library/nameops.cmx \
     kernel/names.cmx library/nametab.cmx lib/pp.cmx pretyping/rawterm.cmx \
     pretyping/reductionops.cmx pretyping/retyping.cmx library/summary.cmx \
-    kernel/term.cmx pretyping/termops.cmx lib/util.cmx pretyping/tacred.cmi 
+    kernel/term.cmx pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
+    pretyping/tacred.cmi 
 pretyping/termops.cmo: kernel/environ.cmi library/global.cmi library/lib.cmi \
     library/libnames.cmi library/nameops.cmi kernel/names.cmi \
     library/nametab.cmi lib/pp.cmi kernel/sign.cmi kernel/term.cmi \
