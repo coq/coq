@@ -1605,6 +1605,20 @@ let rec extern inctx scopes vars r =
   | ROrderedCase (loc,cs,typopt,tm,bv,{contents = Some x}) ->
       extern false scopes vars x
 
+  | ROrderedCase (loc,IfStyle,typopt,tm,bv,_) when Options.do_translate () ->
+      let rec strip_branches = function
+        | (RLambda (_,_,_,c1), RLambda (_,_,_,c2)) -> strip_branches (c1,c2)
+        | x -> x in
+      let c1,c2 = strip_branches (bv.(0),bv.(1)) in
+      msgerrnl (str "Warning: unable to ensure the correctness of the translation of an if-then-else");
+      let bv = Array.map (sub_extern (typopt<>None) scopes vars) [|c1;c2|] in
+      COrderedCase
+	(loc,IfStyle,option_app (extern_type scopes vars) typopt,
+         sub_extern false scopes vars tm,Array.to_list bv)
+      (* We failed type-checking If and to translate it to CIf *)
+      (* try to remove the dependances in branches anyway *)
+
+
   | ROrderedCase (loc,cs,typopt,tm,bv,_) ->
       let bv = Array.map (sub_extern (typopt<>None) scopes vars) bv in
       COrderedCase
