@@ -199,7 +199,7 @@ let ref_from_constr c = match kind_of_term c with
   | IsEvar (ev,ctxt) -> REVar (ev, ast_to_constr_ctxt ctxt) 
   | IsMutConstruct (csp,ctxt) -> RConstruct (csp, ast_to_constr_ctxt ctxt)
   | IsMutInd (isp,ctxt) -> RInd (isp, ast_to_constr_ctxt ctxt)
-  | IsVar id -> RVar id  (* utilisé pour coe_value (tmp) *)
+  | IsVar id -> RVar id  (* utilisé pour coercion_value (tmp) *)
   | _ -> anomaly "Not a reference"
 *)
 
