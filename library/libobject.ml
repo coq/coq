@@ -11,6 +11,18 @@
 open Util
 open Names
 
+(* The relax flag is used to make it possible to load files while ignoring
+   failures to incorporate some objects.  This can be useful when one
+   wants to work with restricted Coq programs that have only parts of
+   the full capabilities, but may still be able to work correctly for
+   limited purposes.  One example is for the graphical interface, that uses
+   such a limite coq process to do only parsing.  It loads .vo files, but
+   is only interested in loading the grammar rule definitions. *)
+
+let relax_flag = ref false;;
+
+let relax b = relax_flag := b;;
+
 type 'a object_declaration = {
   cache_function : section_path * 'a -> unit;
   load_function : section_path * 'a -> unit;
@@ -50,24 +62,34 @@ let declare_object (na,odecl) =
                              dyn_export_function = exporter };
   (infun,outfun)
 
-let apply_dyn_fun f lobj =
+(* this function describes how the cache, load, open, and export functions
+   are triggered.  In relaxed mode, this function just return a meaningless
+   value instead of raising an exception when they fail. *)
+
+let apply_dyn_fun deflt f lobj =
   let tag = object_tag lobj in
-  let dodecl =
     try
-      Hashtbl.find cache_tab tag
-    with Not_found -> 
-      anomaly ("Cannot find library functions for an object with tag "^tag)
-  in 
-  f dodecl
+      let dodecl =
+    	try
+	  Hashtbl.find cache_tab tag
+    	with Not_found -> 
+	  if !relax_flag then
+	    failwith "local to_apply_dyn_fun"
+	  else
+	    anomaly
+	      ("Cannot find library functions for an object with tag "^tag) in 
+  	f dodecl
+    with
+	Failure "local to_apply_dyn_fun" -> deflt;;
 
 let cache_object ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_cache_function node) lobj
+  apply_dyn_fun () (fun d -> d.dyn_cache_function node) lobj
 
 let load_object ((_,lobj) as node) = 
-  apply_dyn_fun (fun d -> d.dyn_load_function node) lobj
+  apply_dyn_fun () (fun d -> d.dyn_load_function node) lobj
 
 let open_object ((_,lobj) as node) = 
-  apply_dyn_fun (fun d -> d.dyn_open_function node) lobj
+  apply_dyn_fun () (fun d -> d.dyn_open_function node) lobj
 
 let export_object lobj =
-  apply_dyn_fun (fun d -> d.dyn_export_function lobj) lobj
+  apply_dyn_fun None (fun d -> d.dyn_export_function lobj) lobj

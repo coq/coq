@@ -43,4 +43,4 @@ val cache_object : section_path * obj -> unit
 val load_object : section_path * obj -> unit
 val open_object : section_path * obj -> unit
 val export_object : obj -> obj option
-
+val relax : bool -> unit
