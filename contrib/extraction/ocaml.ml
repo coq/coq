@@ -386,20 +386,18 @@ let pp_one_ind prefix ip pl cv =
 
 let pp_comment s = str "(* " ++ s ++ str " *)"
 
-let pp_logical_ind ip packet = 
-  pp_comment (pr_global (IndRef ip) ++ str " : logical inductive") ++ fnl () ++
-  pp_comment (str "with constructors : " ++ 
-	      prvect_with_sep spc pr_global 
-		(Array.mapi (fun i _ -> ConstructRef (ip,i+1)) packet.ip_types)) 
+let pp_logical_ind packet = 
+  pp_comment (pr_id packet.ip_typename ++ str " : logical inductive") ++ 
+  fnl () ++ pp_comment (str "with constructors : " ++ 
+			prvect_with_sep spc pr_id packet.ip_consnames)
 
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
   hov 2 (str "type " ++ pp_parameters l ++
 	 P.pp_global !local_mp (IndRef (kn,0)) ++ str " =" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
-	 pp_comment 
-	   (str "singleton inductive, whose constructor was " ++ 
-	    pr_id packet.ip_consnames.(0)))
+	 pp_comment (str "singleton inductive, whose constructor was " ++ 
+		     pr_id packet.ip_consnames.(0)))
 
 let pp_record kn packet = 
   let kn = long_kn kn in 
@@ -428,7 +426,7 @@ let pp_ind co kn ind =
       if is_custom (IndRef (kn,i)) then pp (i+1)
       else begin 
 	some := true; 
-	if p.ip_logical then pp_logical_ind ip p ++ pp (i+1)
+	if p.ip_logical then pp_logical_ind p ++ pp (i+1)
 	else 
 	  let s = !init in 
 	  begin 

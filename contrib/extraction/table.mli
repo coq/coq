@@ -12,11 +12,7 @@ open Names
 open Libnames
 open Miniml
 
-val cur_env : Environ.env ref
-
 val id_of_global : global_reference -> identifier
-
-val pr_global : global_reference -> Pp.std_ppcmds
 
 (*s Warning and Error messages. *)
 

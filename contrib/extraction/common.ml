@@ -20,6 +20,35 @@ open Miniml
 open Mlutil
 open Ocaml
 
+(* Add _all_ direct subobjects of a module, not only those exported. 
+   Build on the Modops.add_signature model. *)
+
+let add_structure mp msb env = 
+  let add_one env (l,elem) = 
+    let kn = make_kn mp empty_dirpath l in 
+    match elem with 
+      | SEBconst cb -> Environ.add_constant kn cb env 
+      | SEBmind mib -> Environ.add_mind kn mib env 
+      | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
+      | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
+  in List.fold_left add_one env msb
+
+(* Add _all_ direct subobjects of a module, not only those exported. 
+   Build on the Modops.add_signature model. *)
+
+let add_structure mp msb env = 
+  let add_one env (l,elem) = 
+    let kn = make_kn mp empty_dirpath l in 
+    match elem with 
+      | SEBconst cb -> Environ.add_constant kn cb env 
+      | SEBmind mib -> Environ.add_mind kn mib env 
+      | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
+      | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
+  in List.fold_left add_one env msb
+
+let add_functor mbid mtb env = 
+  Modops.add_module (MPbound mbid) (Modops.module_body_of_type mtb) env 
+
 (*s Get all references used in one [ml_structure]. *)
 
 module Orefset = struct 
@@ -99,10 +128,9 @@ let contents_first_level mp =
   let s = ref Stringset.empty in 
   let add b id = s := Stringset.add (modular_rename b id) !s in 
   let upper_type = (lang () = Haskell) in
-  let contents_seb = function 
+  let contents_seb env = function 
     | (l, SEBconst cb) -> 
-	let id = id_of_label l in 
-	(match Extraction.constant_kind !cur_env cb with 
+	(match Extraction.constant_kind env cb with 
 	   | Extraction.Logical -> () 
 	   | Extraction.Type -> add upper_type (id_of_label l)
 	   | Extraction.Term -> add false (id_of_label l))
@@ -117,8 +145,10 @@ let contents_first_level mp =
 	  mib.mind_packets
     | _ -> ()
   in
-  match (Environ.lookup_module mp !cur_env).mod_expr with 
-    | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; (mp,!s)
+  match (Global.lookup_module mp).mod_expr with 
+    | Some (MEBstruct (msid,msb)) -> 
+	let env = add_structure (MPself msid) msb (Global.env ()) in 
+	List.iter (contents_seb env) msb; (mp,!s)
     | _ -> mp,!s
 
 (* The previous functions might fail if [mp] isn't a directly visible module. *)
@@ -141,7 +171,7 @@ let modules_first_level mp =
     | (l, (SEBmodule _ | SEBmodtype _)) -> add (id_of_label l) 
     | _ -> ()
   in
-  match (Environ.lookup_module mp !cur_env).mod_expr with 
+  match (Global.lookup_module mp).mod_expr with 
     | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; !s
     | _ -> !s
 
@@ -226,9 +256,9 @@ let create_mono_renamings struc =
 		    
 (*s Renaming issues at toplevel *)
 
-module ToplevelParams = struct
+module TopParams = struct
   let globals () = Idset.empty
-  let pp_global _ r = pr_global r
+  let pp_global _ r = pr_id (id_of_global r)
   let pp_long_module _ mp = str (string_of_mp mp)
   let pp_short_module id = pr_id id
 end
@@ -293,7 +323,7 @@ module StdParams = struct
   let pp_short_module id = str (rename_module id)
 end
 
-module ToplevelPp = Ocaml.Make(ToplevelParams)
+module ToplevelPp = Ocaml.Make(TopParams)
 module OcamlPp = Ocaml.Make(StdParams)
 module HaskellPp = Haskell.Make(StdParams)
 module SchemePp = Scheme.Make(StdParams)
@@ -350,7 +380,7 @@ let print_structure_to_file f prm struc =
   set_keywords ();
   modular := prm.modular; 
   let used_modules =
-    if lang () = Toplevel then [] 
+    if lang () = Toplevel then []
     else if prm.modular then create_modular_renamings struc
     else (create_mono_renamings struc; [])
   in 

@@ -185,11 +185,10 @@ and pp_function env f t =
 
 let pp_comment s = str "-- " ++ s ++ fnl ()
 
-let pp_logical_ind ip packet = 
-  pp_comment (pr_global (IndRef ip) ++ str " : logical inductive") ++
+let pp_logical_ind packet = 
+  pp_comment (pr_id packet.ip_typename ++ str " : logical inductive") ++
   pp_comment (str "with constructors : " ++ 
-	      prvect_with_sep spc pr_global 
-		(Array.mapi (fun i _ -> ConstructRef (ip,i+1)) packet.ip_types)) 
+	      prvect_with_sep spc pr_id packet.ip_consnames)
 
 let pp_singleton kn packet = 
   let l = rename_tvars keywords packet.ip_vars in 
@@ -199,7 +198,7 @@ let pp_singleton kn packet =
 	 (if l <> [] then str " " else mt ()) ++ str "=" ++ spc () ++
 	 pp_type false l' (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++ 
-		     pr_global (ConstructRef ((kn,0),1))))
+		     pr_id packet.ip_consnames.(0)))
 
 let pp_one_ind ip pl cv =
   let pl = rename_tvars keywords pl in
@@ -230,7 +229,7 @@ let rec pp_ind first kn i ind =
     if is_custom (IndRef (kn,i)) then pp_ind first kn (i+1) ind 
     else 
       if p.ip_logical then  
-	pp_logical_ind ip p ++ pp_ind first kn (i+1) ind
+	pp_logical_ind p ++ pp_ind first kn (i+1) ind
       else 
 	pp_one_ind ip p.ip_vars p.ip_types ++ fnl () ++ 
 	pp_ind false kn (i+1) ind

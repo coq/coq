@@ -9,7 +9,6 @@
 (*i $Id$ i*)
 
 (*i*)
-open Pp
 open Util
 open Names
 open Term
@@ -30,6 +29,9 @@ open Mlutil
 (*i*)
 
 exception I of inductive_info
+
+(* A flag used to avoid loop in extract_inductive *)
+let internal_call = ref (None : kernel_name option) 
 
 let none = Evd.empty
 
@@ -190,25 +192,25 @@ let rec extract_type env db j c args =
 	(match flag_of_type env typ with 
 	   | (Info, TypeScheme) -> 
 	       let mlt = extract_type_app env db (r, type_sign env typ) args in 
-	              (match cb.const_body with 
-			 | None -> mlt
-			 | Some _ when is_custom r -> mlt 
-			 | Some lbody -> 
-			     let newc = applist (Declarations.force lbody, args) in 
-			     let mlt' = extract_type env db j newc [] in 
-			           (* ML type abbreviations interact badly with Coq *)
-			           (* reduction, so [mlt] and [mlt'] might be different: *)
-			           (* The more precise is [mlt'], extracted after reduction *)
-			           (* The shortest is [mlt], which use abbreviations *)
-			           (* If possible, we take [mlt], otherwise [mlt']. *)
-			           if type_eq (mlt_env env) mlt mlt' then mlt else mlt')
+	       (match cb.const_body with 
+		  | None -> mlt
+		  | Some _ when is_custom r -> mlt 
+		  | Some lbody -> 
+		      let newc = applist (Declarations.force lbody, args) in 
+		      let mlt' = extract_type env db j newc [] in 
+		      (* ML type abbreviations interact badly with Coq *)
+		      (* reduction, so [mlt] and [mlt'] might be different: *)
+		      (* The more precise is [mlt'], extracted after reduction *)
+		      (* The shortest is [mlt], which use abbreviations *)
+		      (* If possible, we take [mlt], otherwise [mlt']. *)
+		      if type_eq (mlt_env env) mlt mlt' then mlt else mlt')
 	   | _ -> (* only other case here: Info, Default, i.e. not an ML type *)
-	              (match cb.const_body with 
-			 | None -> Tunknown (* Brutal approximation ... *)
-			 | Some lbody -> 
-			          (* We try to reduce. *)
-			     let newc = applist (Declarations.force lbody, args) in 
-			           extract_type env db j newc []))
+	       (match cb.const_body with 
+		  | None -> Tunknown (* Brutal approximation ... *)
+		  | Some lbody -> 
+		      (* We try to reduce. *)
+		      let newc = applist (Declarations.force lbody, args) in 
+		      extract_type env db j newc []))
     | Ind ((kn,i) as ip) ->
 	let kn = long_kn kn in
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in  
@@ -265,7 +267,12 @@ and extract_type_scheme env db c p =
 (*S Extraction of an inductive type. *)
 
 and extract_ind env kn = (* kn is supposed to be in long form *)
-  try lookup_ind kn with Not_found -> 
+  try 
+    if (!internal_call = Some kn) || (is_modfile (base_mp (modpath kn))) 
+    then lookup_ind kn
+    else raise Not_found 
+  with Not_found -> 
+    internal_call := Some kn;
     let mib = Environ.lookup_mind kn env in 
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
@@ -334,7 +341,9 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
       with (I info) -> info
     in
     let i = {ind_info = ind_info; ind_nparams = npar; ind_packets = packets} in 
-    add_ind kn i; i
+    add_ind kn i; 
+    internal_call := None;
+    i
 
 (*s [extract_type_cons] extracts the type of an inductive 
   constructor toward the corresponding list of ML types. *)
@@ -359,9 +368,12 @@ and extract_type_cons env db dbmap c i =
 and mlt_env env r = match r with 
   | ConstRef kn -> 
       let kn = long_kn kn in
-      (try match lookup_term kn with 
-	 | Dtype (_,vl,mlt) -> Some mlt
-	 | _ -> None
+      (try 
+	 if is_modfile (base_mp (modpath kn)) then
+	   match lookup_term kn with 
+	     | Dtype (_,vl,mlt) -> Some mlt
+	     | _ -> None
+	 else raise Not_found
        with Not_found -> 
 	 let cb = Environ.lookup_constant kn env in
 	 let typ = cb.const_type in
@@ -387,8 +399,10 @@ let type_expunge env = type_expunge (mlt_env env)
 
 let record_constant_type env kn opt_typ = 
   let kn = long_kn kn in 
-  try lookup_type kn
-  with Not_found -> 
+  try 
+    if is_modfile (base_mp (modpath kn)) then lookup_type kn
+    else raise Not_found 
+  with Not_found ->
     let typ = match opt_typ with 
       | None -> constant_type env kn 
       | Some typ -> typ 

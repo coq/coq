@@ -10,9 +10,15 @@
 
 open Pp
 open Names
+open Declarations
+open Environ
 open Libnames
 open Miniml
 open Mlutil
+
+val add_structure : module_path -> module_structure_body -> env -> env
+
+val add_functor : mod_bound_id -> module_type_body -> env -> env
 
 val print_one_decl :
   ml_structure -> module_path -> ml_decl -> unit

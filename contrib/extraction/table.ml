@@ -20,84 +20,6 @@ open Util
 open Pp
 open Miniml
 
-(*S Extraction environment, shared with [extract_env.ml] *)
-
-let cur_env = ref Environ.empty_env
-
-let id_of_global = function 
-  | ConstRef kn -> let _,_,l = repr_kn kn in id_of_label l
-  | IndRef (kn,i) -> 
-      let mib = Environ.lookup_mind kn !cur_env in 
-      mib.mind_packets.(i).mind_typename
-  | ConstructRef ((kn,i),j) -> 
-      let mib = Environ.lookup_mind kn !cur_env in 
-      mib.mind_packets.(i).mind_consnames.(j-1)
-  | _ -> assert false
-
-let pr_global r = pr_id (id_of_global r)
-
-(*S Warning and Error messages. *)
-
-let err s = errorlabstrm "Extraction" s
-
-let error_axiom_scheme r = 
-  err (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
-       pr_global r ++ spc () ++ str ".") 
-
-let error_axiom r =
-  err (str "You must specify an extraction for axiom" ++ spc () ++ 
-       pr_global r ++ spc () ++ str "first.")
-
-let warning_axiom r = 
-  Options.if_verbose warn 
-    (str "This extraction depends on logical axiom" ++ spc () ++ 
-     pr_global r ++ str "." ++ spc() ++ 
-     str "Having false logical axiom in the environment when extracting" ++ 
-     spc () ++ str "may lead to incorrect or non-terminating ML terms.")
-    
-let error_section () = 
-  err (str "You can't do that within a module or a section." ++ fnl () ++
-       str "Close it and try again.")
-
-let error_constant r = 
-  err (pr_global r ++ str " is not a constant.") 
-
-let error_fixpoint r = 
-  err (str "Fixpoint " ++ pr_global r ++ str " cannot be inlined.") 
-
-let error_type_scheme r = 
-  err (pr_global r ++ spc () ++ str "is a type scheme, not a type.")
-
-let error_inductive r = 
-  err (pr_global r ++ spc () ++ str "is not an inductive type.")
-
-let error_nb_cons () = 
-  err (str "Not the right number of constructors.")
-
-let error_module_clash s = 
-  err (str ("There are two Coq modules with ML name " ^ s ^".\n") ++ 
-       str "This is not allowed in ML. Please do some renaming first.")
-
-let error_unknown_module m = 
-  err (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 
-
-let error_toplevel () = 
-  err (str "Toplevel pseudo-ML language can be used only at Coq toplevel.\n" ++
-       str "You should use Extraction Language Ocaml or Haskell before.") 
-
-let error_scheme () = 
-  err (str "No Scheme modular extraction available yet.")
-
-let error_not_visible r = 
-  err (pr_global r ++ str " is not directly visible.\n" ++
-       str "For example, it may be inside an applied functor." ++
-       str "Use Recursive Extraction to get the whole environment.")
-
-let error_unqualified_name s1 s2 = 
-  err (str (s1 ^ " is used in " ^ s2 ^ " where it cannot be disambiguated\n" ^
-	    "in ML from another name sharing the same basename.\n"  ^
-	    "Please do some renaming.\n"))
-
 (*S Utilities concerning [module_path] *)
 
 let current_toplevel () = fst (Lib.current_prefix ())
@@ -151,7 +73,7 @@ let labels_of_kn kn =
 (* A [MPself] is a short form, and the table contains its long form. *)
 (* A [MPfile] is a long form, and the table contains its short form. *)
 (* Since the table does not contain all intermediate forms, a [MPdot] 
-   is dealt by first expending its head, and then looking in the table. *)
+   is dealt by first expanding its head, and then looking in the table. *)
 
 let aliases = ref (MPmap.empty : module_path MPmap.t)
 let init_aliases () = aliases := MPmap.empty
@@ -248,7 +170,81 @@ let reset_tables () =
   init_terms (); init_types (); init_inductives (); init_recursors (); 
   init_records (); init_projs (); init_aliases ()
 
+(*s Printing. *)
 
+(* The following functions work even on objects not in [Global.env ()].
+   WARNING: for inductive objects, an extract_inductive must have been 
+   done before. *)
+
+let id_of_global = function 
+  | ConstRef kn -> let _,_,l = repr_kn kn in id_of_label l
+  | IndRef (kn,i) -> (lookup_ind kn).ind_packets.(i).ip_typename
+  | ConstructRef ((kn,i),j) -> (lookup_ind kn).ind_packets.(i).ip_consnames.(j-1)
+  | _ -> assert false
+
+let pr_global r = pr_id (id_of_global r)
+
+(*S Warning and Error messages. *)
+
+let err s = errorlabstrm "Extraction" s
+
+let error_axiom_scheme r = 
+  err (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
+       pr_global r ++ spc () ++ str ".") 
+
+let error_axiom r =
+  err (str "You must specify an extraction for axiom" ++ spc () ++ 
+       pr_global r ++ spc () ++ str "first.")
+
+let warning_axiom r = 
+  Options.if_verbose warn 
+    (str "This extraction depends on logical axiom" ++ spc () ++ 
+     pr_global r ++ str "." ++ spc() ++ 
+     str "Having false logical axiom in the environment when extracting" ++ 
+     spc () ++ str "may lead to incorrect or non-terminating ML terms.")
+    
+let error_section () = 
+  err (str "You can't do that within a module or a section." ++ fnl () ++
+       str "Close it and try again.")
+
+let error_constant r = 
+  err (Printer.pr_global r ++ str " is not a constant.") 
+
+let error_fixpoint r = 
+  err (str "Fixpoint " ++ Printer.pr_global r ++ str " cannot be inlined.") 
+
+let error_type_scheme r = 
+  err (Printer.pr_global r ++ spc () ++ str "is a type scheme, not a type.")
+
+let error_inductive r = 
+  err (Printer.pr_global r ++ spc () ++ str "is not an inductive type.")
+
+let error_nb_cons () = 
+  err (str "Not the right number of constructors.")
+
+let error_module_clash s = 
+  err (str ("There are two Coq modules with ML name " ^ s ^".\n") ++ 
+       str "This is not allowed in ML. Please do some renaming first.")
+
+let error_unknown_module m = 
+  err (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 
+
+let error_toplevel () = 
+  err (str "Toplevel pseudo-ML language can be used only at Coq toplevel.\n" ++
+       str "You should use Extraction Language Ocaml or Haskell before.") 
+
+let error_scheme () = 
+  err (str "No Scheme modular extraction available yet.")
+
+let error_not_visible r = 
+  err (Printer.pr_global r ++ str " is not directly visible.\n" ++
+       str "For example, it may be inside an applied functor." ++
+       str "Use Recursive Extraction to get the whole environment.")
+
+let error_unqualified_name s1 s2 = 
+  err (str (s1 ^ " is used in " ^ s2 ^ " where it cannot be disambiguated\n" ^
+	    "in ML from another name sharing the same basename.\n"  ^
+	    "Please do some renaming.\n"))
 
 (*S The Extraction auxiliary commands *)
 
@@ -364,11 +360,11 @@ let print_extraction_inline () =
     (str "Extraction Inline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "   " ++ pr_global r ++ fnl ())) i' (mt ()) ++
+	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) i' (mt ()) ++
      str "Extraction NoInline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "   " ++ pr_global r ++ fnl ())) n (mt ()))
+	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ()))
 
 (* Reset part *)
 
