@@ -224,7 +224,7 @@ let keep_hyps env needed =
 	      | None -> Idset.empty
 	      | Some c -> global_vars_set env c in
 	  Idset.union
-            (global_vars_set env (body_of_type t)) 
+            (global_vars_set env t) 
 	    (Idset.union globc need)
         else need)
       ~init:needed

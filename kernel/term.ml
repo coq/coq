@@ -891,8 +891,8 @@ let mkProd_or_LetIn (na,body,t) c =
 
 let mkNamedProd_or_LetIn (id,body,t) c =
   match body with
-    | None -> mkNamedProd id (body_of_type t) c
-    | Some b -> mkNamedLetIn id b (body_of_type t) c
+    | None -> mkNamedProd id t c
+    | Some b -> mkNamedLetIn id b t c
 
 (* Constructs either [[x:t]c] or [[x=b:t]c] *)
 let mkLambda_or_LetIn (na,body,t) c =
@@ -902,18 +902,18 @@ let mkLambda_or_LetIn (na,body,t) c =
 
 let mkNamedLambda_or_LetIn (id,body,t) c =
   match body with
-    | None -> mkNamedLambda id (body_of_type t) c
-    | Some b -> mkNamedLetIn id b (body_of_type t) c
+    | None -> mkNamedLambda id t c
+    | Some b -> mkNamedLetIn id b t c
 
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
 let mkProd_wo_LetIn (na,body,t) c =
   match body with
-    | None -> mkProd (na, body_of_type t, c)
+    | None -> mkProd (na,  t, c)
     | Some b -> subst1 b c
 
 let mkNamedProd_wo_LetIn (id,body,t) c =
   match body with
-    | None -> mkNamedProd id (body_of_type t) c
+    | None -> mkNamedProd id t c
     | Some b -> subst1 b (subst_var id c)
 
 (* non-dependent product t1 -> t2 *)

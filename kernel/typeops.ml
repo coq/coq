@@ -177,7 +177,7 @@ let judge_of_apply env funj argjv =
 		apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 	      with NotConvertible -> 
 		error_cant_apply_bad_type env
-		  (n,c1,body_of_type hj.uj_type)
+		  (n,c1, hj.uj_type)
 		  funj argjv)
 
           | _ ->
@@ -312,7 +312,7 @@ let type_fixpoint env lna lar vdefj =
   try
     conv_leq_vecti env
       (Array.map (fun j -> body_of_type j.uj_type) vdefj)
-      (Array.map (fun ty -> lift lt (body_of_type ty)) lar)
+      (Array.map (fun ty -> lift lt ty) lar)
   with NotConvertibleVect i ->
     error_ill_typed_rec_body env i lna vdefj lar
 
