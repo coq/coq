@@ -21,6 +21,7 @@ open Reduction
 open Retyping
 open Tacmach
 open Proof_type
+open Evar_refiner
 open Clenv
 open Tactics
 open Wcclausenv
@@ -368,7 +369,7 @@ let res_case_then gene thin indbinding id status gl =
            (tclTHEN (applyUsing
                        (applist(mkVar (out_some cls),
                                 list_tabulate
-                                  (fun _ -> mkMeta(new_meta())) neqns)))
+                                  (fun _ -> mkMeta(Clenv.new_meta())) neqns)))
               Auto.default_auto));
       case_tac (introCaseAssumsThen case_trailer_tac)
         (Some elim_predicate) ([],[]) newc])

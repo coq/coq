@@ -263,7 +263,7 @@ states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTIC
 	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -R theories Coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
-	rm -f states/*~ states/*.coq
+	rm -f states/*.coq
 
 LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
@@ -347,8 +347,8 @@ wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
 
 clean::
-	rm -f theories/*/*.vo theories/*/*~
-	rm -f tactics/*.vo tactics/*~
+	rm -f theories/*/*.vo
+	rm -f tactics/*.vo
 
 
 ###########################################################################
@@ -376,7 +376,7 @@ ring: $(RINGVO)
 xml: $(XMLVO)
 
 clean::
-	rm -f contrib/*/*~ contrib/*/*.cm[io] contrib/*/*.vo
+	rm -f contrib/*/*.cm[io] contrib/*/*.vo
 
 archclean::
 	rm -f contrib/*/*.cmx contrib/*/*.[so]
@@ -508,7 +508,7 @@ doc/coq.tex: $(LPFILES)
 	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
 
 clean::
-	rm -f doc/*~ doc/coq.tex
+	rm -f doc/coq.tex
 
 ###########################################################################
 # Emacs tags
@@ -571,7 +571,7 @@ toplevel/mltop.ml: toplevel/mltop.ml4
 ML4FILES += toplevel/mltop.ml4
 
 clean::
-	rm -f toplevel/mltop.ml toplevel/mltop.byteml toplevel/mltop.optml
+	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 
 ###########################################################################
 # Default rules
@@ -625,20 +625,20 @@ archclean::
 	rm -f dev/*.cmx dev/*.[so]
 
 clean:: archclean
-	rm -f *~
+	rm -f *~ */*~ */*/*~
 	rm -f gmon.out core
-	rm -f config/*.cm[io] config/*~
-	rm -f lib/*.cm[io] lib/*~
-	rm -f kernel/*.cm[io] kernel/*~
-	rm -f library/*.cm[io] library/*~
-	rm -f proofs/*.cm[io] proofs/*~
-	rm -f tactics/*.cm[io] tactics/*~
-	rm -f parsing/*.cm[io] parsing/*.ppo parsing/*~
-	rm -f pretyping/*.cm[io] pretyping/*~
-	rm -f toplevel/*.cm[io] toplevel/*~
-	rm -f tools/*.cm[io] tools/*~
-	rm -f scripts/*.cm[io] scripts/*~
-	rm -f dev/*.cm[io] dev/*~
+	rm -f config/*.cm[io]
+	rm -f lib/*.cm[io]
+	rm -f kernel/*.cm[io]
+	rm -f library/*.cm[io]
+	rm -f proofs/*.cm[io]
+	rm -f tactics/*.cm[io]
+	rm -f parsing/*.cm[io] parsing/*.ppo
+	rm -f pretyping/*.cm[io]
+	rm -f toplevel/*.cm[io]
+	rm -f tools/*.cm[io]
+	rm -f scripts/*.cm[io]
+	rm -f dev/*.cm[io]
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml
@@ -678,7 +678,6 @@ depend: beforedepend
 	done
 # 5. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
-	rm -f toplevel/mltop.ml
 
 clean::
 	rm -f $(ML4FILESML)

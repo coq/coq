@@ -23,7 +23,6 @@ open Proof_trees
 open Proof_type
 open Logic
 open Refiner
-open Evar_refiner
 
 let re_sig it gc = { it = it; sigma = gc }
 
@@ -164,40 +163,8 @@ let prev_unproven           = prev_unproven
 let top_of_tree             = top_of_tree
 let frontier                = frontier
 let change_constraints_pftreestate = change_constraints_pftreestate
-let instantiate_pf     = instantiate_pf
-let instantiate_pf_com = instantiate_pf_com
-
-(***********************************)
-(* Walking constraints re-exported *)
-(***********************************)
-
-type walking_constraints = Evar_refiner.walking_constraints
-type 'a result_w_tactic  = walking_constraints -> walking_constraints * 'a
-type w_tactic            = walking_constraints -> walking_constraints
-
-let startWalk       = startWalk
-let walking_THEN    = walking_THEN
-let walking         = walking
-let w_Focusing_THEN = w_Focusing_THEN
-let w_Declare       = w_Declare
-let w_Declare_At    = w_Declare_At
-let w_Define        = w_Define
-let w_Underlying    = w_Underlying
-let w_env           = w_env
-let w_hyps          = w_hyps
-let w_type_of       = w_type_of
-let w_IDTAC         = w_IDTAC
-let w_ORELSE        = w_ORELSE
-let w_add_sign      = w_add_sign
-let ctxt_type_of    = ctxt_type_of
-
-let w_defined_const wc (sp,_) = defined_constant (w_env wc) sp
-let w_defined_evar wc k      = Evd.is_defined (w_Underlying wc) k
-let w_const_value wc         = constant_value (w_env wc)
-let w_conv_x wc m n          = is_conv (w_env wc) (w_Underlying wc) m n
-let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_env wc) (w_Underlying wc) c
-let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
-
+let instantiate_pf     = Evar_refiner.instantiate_pf
+let instantiate_pf_com = Evar_refiner.instantiate_pf_com
 
 (*************************************************)
 (* Tacticals re-exported from the Refiner module.*)

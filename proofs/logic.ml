@@ -27,13 +27,27 @@ open Declare
 open Retyping
 open Evarutil
 
+(* Will only be used on terms given to the Refine rule which have meta 
+variables only in Application and Case *)
+
+let collect_meta_variables c = 
+  let rec collrec acc c = match splay_constr c with
+    | OpMeta mv, _ -> mv::acc
+    | OpCast, [|c;_|] -> collrec acc c
+    | (OpApp | OpMutCase _), cl -> Array.fold_left collrec acc cl
+    | _ -> acc
+  in 
+  List.rev(collrec [] c)
+
 type refiner_error =
 
   (* Errors raised by the refiner *)
   | BadType of constr * constr * constr
   | OccurMeta of constr
+  | OccurMetaGoal of constr
   | CannotApply of constr * constr
   | NotWellTyped of constr
+  | NonLinearProof of constr
 
   (* Errors raised by the tactics *)
   | CannotUnify of constr * constr
@@ -78,9 +92,9 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   else
 *)
   match kind_of_term trm with
-    | IsMeta mv ->
+    | IsMeta _ ->
 	if occur_meta conclty then
-          error "Cannot refine to conclusions with meta-variables";
+          raise (RefinerError (OccurMetaGoal conclty));
 	let ctxt = out_some goal.evar_info in 
 	(mk_goal ctxt hyps (nf_betaiota env sigma conclty))::goalacc, conclty
 
@@ -161,29 +175,6 @@ and mk_casegoals sigma goal goalacc p c =
   let (lbrty,conclty) = type_case_branches env sigma indspec pt p c in
   (acc'',lbrty,conclty)
 
-
-(* Will only be used on terms given to the Refine rule which have meta 
-varaibles only in Application and Case *)
-
-let collect_meta_variables c = 
-  let rec collrec acc c = match splay_constr c with
-    | OpMeta mv, _ -> mv::acc
-    | OpCast, [|c;_|] -> collrec acc c
-    | (OpApp | OpMutCase _), cl -> Array.fold_left collrec acc cl
-    | _ -> acc
-  in 
-  List.rev(collrec [] c)
-
-let new_meta_variables = 
-  let rec newrec x = match kind_of_term x with
-    | IsMeta _ -> mkMeta (new_meta())
-    | IsCast (c,t) -> mkCast (newrec c, t)
-    | IsApp (f,cl) -> appvect (newrec f, Array.map newrec cl)
-    | IsMutCase (ci,p,c,lf) ->
-	mkMutCase (ci, newrec p, newrec c, Array.map newrec lf)
-    | _ -> x
-  in 
- newrec
 
 let error_use_instantiate () =
   errorlabstrm "Logic.prim_refiner"
@@ -439,7 +430,8 @@ let prim_refiner r sigma goal =
 	mk_sign sign (cl::lar,lf)
 
     | { name = Refine; terms = [c] } ->
-	let c = new_meta_variables c in
+        if not (list_distinct (collect_meta_variables c)) then
+          raise (RefinerError (NonLinearProof c));
 	let (sgl,cl') = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
 	sgl

@@ -78,16 +78,3 @@ val j_type : judgment -> constr
 
 val safe_infer : safe_environment -> constr -> judgment * constraints
 
-(*i For debug
-val fix_machine : safe_environment -> constr -> judgment * constraints
-val fix_machine_type : safe_environment -> constr -> types * constraints
-
-val unsafe_infer : safe_environment -> constr -> judgment * constraints
-val unsafe_infer_type : safe_environment -> constr -> types * constraints
-
-val type_of : safe_environment -> constr -> constr
-
-val type_of_type : safe_environment -> constr -> constr
-val unsafe_type_of : safe_environment -> constr -> constr
-i*)
-

@@ -41,10 +41,10 @@ let eval_flexible_term env = function
 
 let evar_apprec env isevars stack c =
   let rec aux s =
-    let (t,stack as s') = Reduction.apprec env !isevars s in
+    let (t,stack as s') = Reduction.apprec env (evars_of isevars) s in
     match kind_of_term t with
-      | IsEvar (n,_ as ev) when Evd.is_defined !isevars n ->
-	  aux (existential_value !isevars ev, stack)
+      | IsEvar (n,_ as ev) when Evd.is_defined (evars_of isevars) n ->
+	  aux (existential_value (evars_of isevars) ev, stack)
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack (Array.of_list stack) empty_stack)
 
@@ -52,18 +52,18 @@ let evar_apprec env isevars stack c =
  * possibly applied to arguments. *)
 
 let rec evar_conv_x env isevars pbty term1 term2 =
-  let term1 = whd_ise1 !isevars term1 in
-  let term2 = whd_ise1 !isevars term2 in
+  let term1 = whd_ise1 (evars_of isevars) term1 in
+  let term2 = whd_ise1 (evars_of isevars) term2 in
 (*
  if eq_constr term1 term2 then 
     true
   else if (not(has_undefined_isevars isevars term1)) &
     not(has_undefined_isevars isevars term2) 
   then 
-    is_fconv pbty env !isevars term1 term2
+    is_fconv pbty env (evars_of isevars) term1 term2
   else
 *)
-  (is_fconv pbty env !isevars term1 term2) or
+  (is_fconv pbty env (evars_of isevars) term1 term2) or
   if ise_undefined isevars term1 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term1,term2)
   else if ise_undefined isevars term2 then
@@ -74,7 +74,7 @@ let rec evar_conv_x env isevars pbty term1 term2 =
     if (head_is_embedded_evar isevars t1 & not(is_eliminator t2))
       or (head_is_embedded_evar isevars t2 & not(is_eliminator t1))
     then 
-      (add_conv_pb (pbty,applist(t1,l1),applist(t2,l2)); true)
+      (add_conv_pb isevars (pbty,applist(t1,l1),applist(t2,l2)); true)
     else 
       evar_eqappr_x env isevars pbty (t1,l1) (t2,l2)
 
@@ -228,7 +228,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
             evar_conv_x env isevars CONV c1 c2
             & 
-	    (let d = nf_ise1 !isevars c1 in
+	    (let d = nf_ise1 (evars_of isevars) c1 in
 	     evar_conv_x (push_rel_assum (n,d) env) isevars pbty c'1 c'2)
 
 	| IsMutInd (sp1,cl1), IsMutInd (sp2,cl2) ->

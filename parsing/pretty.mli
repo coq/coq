@@ -30,8 +30,8 @@ val print_full_context : unit -> std_ppcmds
 val print_full_context_typ : unit -> std_ppcmds
 val print_sec_context : Nametab.qualid -> std_ppcmds
 val print_sec_context_typ : Nametab.qualid -> std_ppcmds
-val print_val : env -> unsafe_judgment -> std_ppcmds
-val print_type : env -> unsafe_judgment -> std_ppcmds
+val print_judgment : env -> unsafe_judgment -> std_ppcmds
+val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
   'a reduction_function -> env -> unsafe_judgment -> std_ppcmds
 val print_mutual : section_path -> std_ppcmds

@@ -45,6 +45,43 @@ let type_judgment env sigma j =
     | IsSort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type CCI env j
 
+
+(************************************************)
+(* Incremental typing rules: builds a typing judgement given the *)
+(* judgements for the subterms. *)
+
+(* Type of sorts *)
+
+(* Prop and Set *)
+
+let judge_of_prop =
+  { uj_val = mkSort prop;
+    uj_type = mkSort type_0 }
+
+let judge_of_set =
+  { uj_val = mkSort spec;
+    uj_type = mkSort type_0 }
+
+let judge_of_prop_contents = function
+  | Null -> judge_of_prop
+  | Pos -> judge_of_set
+
+(* Type of Type(i). *)
+
+let judge_of_type u =
+  let (uu,c) = super u in
+  { uj_val = mkSort (Type u);
+    uj_type = mkSort (Type uu) },
+  c
+
+(*
+let type_of_sort c =
+  match kind_of_term c with
+    | IsSort (Type u) -> let (uu,cst) = super u in Type uu, cst
+    | IsSort (Prop _) -> Type prop_univ, Constraint.empty
+    | _ -> invalid_arg "type_of_sort"
+*)
+
 (* Type of a de Bruijn index. *)
 	  
 let relative env sigma n = 
@@ -100,6 +137,106 @@ let type_of_constant env sigma c
   = Profile.profile3 tockey type_of_constant env sigma c;;
 *)
 
+(* Type of an existential variable. Not used in kernel. *)
+let type_of_existential env sigma ev =
+  Instantiate.existential_type sigma ev
+
+
+(* Type of a lambda-abstraction. *)
+
+let sort_of_product domsort rangsort g =
+  match rangsort with
+    (* Product rule (s,Prop,Prop) *) 
+    | Prop _ -> rangsort, Constraint.empty
+    | Type u2 ->
+        (match domsort with
+           (* Product rule (Prop,Type_i,Type_i) *)
+           | Prop _ -> rangsort, Constraint.empty
+           (* Product rule (Type_i,Type_i,Type_i) *) 
+           | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
+
+(* [abs_rel env sigma name var j] implements the rule
+
+ env, name:typ |- j.uj_val:j.uj_type     env, |- (name:typ)j.uj_type : s
+ -----------------------------------------------------------------------
+          env |- [name:typ]j.uj_val : (name:typ)j.uj_type
+
+  Since all products are defined in the Calculus of Inductive Constructions
+  and no upper constraint exists on the sort $s$, we don't need to compute $s$
+*)
+
+let abs_rel env sigma name var j =
+  { uj_val = mkLambda (name, var, j.uj_val);
+    uj_type = mkProd (name, var, j.uj_type) },
+  Constraint.empty
+
+(* [gen_rel env sigma name (typ1,s1) (typ2,s2)] implements the rule
+
+    env |- typ1:s1       env, name:typ |- typ2 : s2
+    -------------------------------------------------------------------------
+         s' >= (s1,s2), env |- (name:typ)j.uj_val : s'
+
+  where j.uj_type is convertible to a sort s2
+*)
+
+(* Type of an application. *)
+
+let apply_rel_list env sigma nocheck argjl funj =
+  let rec apply_rec n typ cst = function
+    | [] -> 
+	{ uj_val  = applist (j_val funj, List.map j_val argjl);
+          uj_type = type_app (fun _ -> typ) funj.uj_type },
+	cst
+    | hj::restjl ->
+        match kind_of_term (whd_betadeltaiota env sigma typ) with
+          | IsProd (_,c1,c2) ->
+              if nocheck then
+                apply_rec (n+1) (subst1 hj.uj_val c2) cst restjl
+	      else 
+		(try 
+		   let c = conv_leq env sigma (body_of_type hj.uj_type) c1 in
+		   let cst' = Constraint.union cst c in
+		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
+		 with NotConvertible -> 
+		   error_cant_apply_bad_type CCI env sigma
+		     (n,c1,body_of_type hj.uj_type)
+		     funj argjl)
+
+          | _ ->
+	      error_cant_apply_not_functional CCI env funj argjl
+  in 
+  apply_rec 1 (body_of_type funj.uj_type) Constraint.empty argjl
+
+(*
+let applykey = Profile.declare_profile "apply_rel_list";;
+let apply_rel_list env sigma nocheck argjl funj
+  = Profile.profile5 applykey apply_rel_list env sigma nocheck argjl funj;;
+*)
+
+(* Type of product *)
+let gen_rel env sigma name t1 t2 =
+  let (s,g) = sort_of_product t1.utj_type t2.utj_type (universes env) in
+  { uj_val = mkProd (name, t1.utj_val, t2.utj_val);
+    uj_type = mkSort s },
+  g
+
+(* [cast_rel env sigma (typ1,s1) j] implements the rule
+
+    env, sigma |- cj.uj_val:cj.uj_type    cst, env, sigma |- cj.uj_type = t
+    ---------------------------------------------------------------------
+         cst, env, sigma |- cj.uj_val:t
+*)
+
+(* Type of casts *)    
+let cast_rel env sigma cj t =
+  try 
+    let cst = conv_leq env sigma (body_of_type cj.uj_type) t in
+    { uj_val = j_val cj;
+      uj_type = t },
+    cst
+  with NotConvertible ->
+    error_actual_type CCI env cj.uj_val (body_of_type cj.uj_type) t
+
 (* Inductive types. *)
 
 let type_of_inductive env sigma i =
@@ -124,9 +261,6 @@ let tockey = Profile.declare_profile "type_of_constructor";;
 let type_of_constructor env sigma cstr
   = Profile.profile3 tockey type_of_constructor env sigma cstr;;
 *)
-
-let type_of_existential env sigma ev =
-  Instantiate.existential_type sigma ev
 
 (* Case. *)
 
@@ -228,9 +362,11 @@ let type_of_case env sigma ci pj cj lfj =
     with Induc ->
       error_case_not_inductive CCI env cj.uj_val (body_of_type cj.uj_type) in
   let (bty,rslty) =
-    type_case_branches env sigma indspec (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
+    type_case_branches env sigma indspec
+      (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
-  check_branches_message env sigma (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
+  check_branches_message env sigma
+    (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
   { uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
 
@@ -238,127 +374,6 @@ let type_of_case env sigma ci pj cj lfj =
 let tocasekey = Profile.declare_profile "type_of_case";;
 let type_of_case env sigma ci pj cj lfj
   = Profile.profile6 tocasekey type_of_case env sigma ci pj cj lfj;;
-*)
-
-(* Prop and Set *)
-
-let judge_of_prop =
-  { uj_val = mkSort prop;
-    uj_type = mkSort type_0 }
-
-let judge_of_set =
-  { uj_val = mkSort spec;
-    uj_type = mkSort type_0 }
-
-let judge_of_prop_contents = function
-  | Null -> judge_of_prop
-  | Pos -> judge_of_set
-
-(* Type of Type(i). *)
-
-let judge_of_type u =
-  let (uu,uuu,c) = super_super u in
-  { uj_val = mkSort (Type u);
-    uj_type = mkSort (Type uu) },
-  c
-
-let type_of_sort c =
-  match kind_of_term c with
-    | IsSort (Type u) -> let (uu,cst) = super u in Type uu, cst
-    | IsSort (Prop _) -> Type prop_univ, Constraint.empty
-    | _ -> invalid_arg "type_of_sort"
-
-(* Type of a lambda-abstraction. *)
-
-let sort_of_product domsort rangsort g =
-  match rangsort with
-    (* Product rule (s,Prop,Prop) *) 
-    | Prop _ -> rangsort, Constraint.empty
-    | Type u2 ->
-        (match domsort with
-           (* Product rule (Prop,Type_i,Type_i) *)
-           | Prop _ -> rangsort, Constraint.empty
-           (* Product rule (Type_i,Type_i,Type_i) *) 
-           | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
-
-(* [abs_rel env sigma name var j] implements the rule
-
- env, name:typ |- j.uj_val:j.uj_type     env, |- (name:typ)j.uj_type : s
- -----------------------------------------------------------------------
-          env |- [name:typ]j.uj_val : (name:typ)j.uj_type
-
-  Since all products are defined in the Calculus of Inductive Constructions
-  and no upper constraint exists on the sort $s$, we don't need to compute $s$
-*)
-
-let abs_rel env sigma name var j =
-  { uj_val = mkLambda (name, var, j.uj_val);
-    uj_type = mkProd (name, var, j.uj_type) },
-  Constraint.empty
-
-(* [gen_rel env sigma name (typ1,s1) (typ2,s2)] implements the rule
-
-    env |- typ1:s1       env, name:typ |- typ2 : s2
-    -------------------------------------------------------------------------
-         s' >= (s1,s2), env |- (name:typ)j.uj_val : s'
-
-  where j.uj_type is convertible to a sort s2
-*)
-
-let gen_rel env sigma name t1 t2 =
-  let (s,g) = sort_of_product t1.utj_type t2.utj_type (universes env) in
-  { uj_val = mkProd (name, t1.utj_val, t2.utj_val);
-    uj_type = mkSort s },
-  g
-
-(* [cast_rel env sigma (typ1,s1) j] implements the rule
-
-    env, sigma |- cj.uj_val:cj.uj_type    cst, env, sigma |- cj.uj_type = t
-    ---------------------------------------------------------------------
-         cst, env, sigma |- cj.uj_val:t
-*)
-	    
-let cast_rel env sigma cj t =
-  try 
-    let cst = conv_leq env sigma (body_of_type cj.uj_type) t in
-    { uj_val = j_val cj;
-      uj_type = t },
-    cst
-  with NotConvertible ->
-    error_actual_type CCI env cj.uj_val (body_of_type cj.uj_type) t
-
-(* Type of an application. *)
-
-let apply_rel_list env sigma nocheck argjl funj =
-  let rec apply_rec n typ cst = function
-    | [] -> 
-	{ uj_val  = applist (j_val funj, List.map j_val argjl);
-          uj_type = type_app (fun _ -> typ) funj.uj_type },
-	cst
-    | hj::restjl ->
-        match kind_of_term (whd_betadeltaiota env sigma typ) with
-          | IsProd (_,c1,c2) ->
-              if nocheck then
-                apply_rec (n+1) (subst1 hj.uj_val c2) cst restjl
-	      else 
-		(try 
-		   let c = conv_leq env sigma (body_of_type hj.uj_type) c1 in
-		   let cst' = Constraint.union cst c in
-		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
-		 with NotConvertible -> 
-		   error_cant_apply_bad_type CCI env sigma
-		     (n,c1,body_of_type hj.uj_type)
-		     funj argjl)
-
-          | _ ->
-	      error_cant_apply_not_functional CCI env funj argjl
-  in 
-  apply_rec 1 (body_of_type funj.uj_type) Constraint.empty argjl
-
-(*
-let applykey = Profile.declare_profile "apply_rel_list";;
-let apply_rel_list env sigma nocheck argjl funj
-  = Profile.profile5 applykey apply_rel_list env sigma nocheck argjl funj;;
 *)
 
 (* Fixpoints. *)
@@ -387,43 +402,50 @@ let rec instantiate_recarg sp lrc ra =
     | Norec          -> Norec
     | Param(k)       -> List.nth lrc k
 
-(* To each inductive definition corresponds an array describing the structure of recursive 
-   arguments for each constructor, we call it the recursive spec of the type 
-   (it has type recargs vect). 
-   For checking the guard, we start from the decreasing argument (Rel n) 
-   with its recursive spec.
-   During checking the guardness condition, we collect patterns variables corresponding 
-   to subterms of n, each of them with its recursive spec.
-   They are organised in a list lst of type (int * recargs) list which is sorted 
-   with respect to the first argument.
-
+(* To each inductive definition corresponds an array describing the
+   structure of recursive arguments for each constructor, we call it
+   the recursive spec of the type (it has type recargs vect).  For
+   checking the guard, we start from the decreasing argument (Rel n)
+   with its recursive spec.  During checking the guardness condition,
+   we collect patterns variables corresponding to subterms of n, each
+   of them with its recursive spec.  They are organised in a list lst
+   of type (int * recargs) list which is sorted with respect to the
+   first argument.
 *)
 
 (*
-f is a function of type  env -> int -> (int * recargs) list -> constr -> 'a 
-c is a branch of an inductive definition corresponding to the spec lrec. 
-mind_recvec is the recursive spec of the inductive definition of the decreasing argument n.
+   f is a function of type
+     env -> int -> (int * recargs) list -> constr -> 'a 
 
-check_term env mind_recvec f n lst (lrec,c) will pass the lambdas of c corresponding 
-to pattern variables and collect possibly new subterms variables and apply f to 
-the body of the branch with the correct env and decreasing arg.
+   c is a branch of an inductive definition corresponding to the spec
+   lrec.  mind_recvec is the recursive spec of the inductive
+   definition of the decreasing argument n.
+
+   check_term env mind_recvec f n lst (lrec,c) will pass the lambdas
+   of c corresponding to pattern variables and collect possibly new
+   subterms variables and apply f to the body of the branch with the
+   correct env and decreasing arg.
 *)
 
 let check_term env mind_recvec f = 
   let rec crec env n lst (lrec,c) = 
     let c' = strip_outer_cast c in 
     match lrec, kind_of_term c' with 
-	(ra::lr,IsLambda (x,a,b))
-	-> let lst' = map_lift_fst lst and env' = push_rel_assum (x,a) env and n'=n+1 
-        in begin match ra with 
-	    Mrec(i) -> crec env' n' ((1,mind_recvec.(i))::lst') (lr,b)
-          | Imbr((sp,i) as ind_sp,lrc) ->           
-	       let sprecargs = mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
-               let lc = Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
-               in crec env' n' ((1,lc)::lst') (lr,b)
-	  | _ -> crec env' n' lst' (lr,b) end
-	| (_,_) -> f env n lst c'
- in crec env
+	(ra::lr,IsLambda (x,a,b)) ->
+          let lst' = map_lift_fst lst
+          and env' = push_rel_assum (x,a) env
+          and n'=n+1 
+          in begin match ra with 
+	      Mrec(i) -> crec env' n' ((1,mind_recvec.(i))::lst') (lr,b)
+            | Imbr((sp,i) as ind_sp,lrc) ->           
+	        let sprecargs =
+                  mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
+                let lc = Array.map
+                  (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
+                in crec env' n' ((1,lc)::lst') (lr,b)
+	    | _ -> crec env' n' lst' (lr,b) end
+      | (_,_) -> f env n lst c'
+  in crec env
 
 (* c is supposed to be in beta-delta-iota head normal form *)
 
@@ -433,13 +455,15 @@ let is_inst_var k c =
     | _ -> false
 
 (* 
-is_subterm_specif env sigma lcx mind_recvec n lst c 
-n is the principal arg and has recursive spec lcx, lst is the list of subterms of n with 
-spec. 
-is_subterm_specif should test if c is a subterm of n and fails with Not_found if not.
-In case it is, it should send its recursive specification.
-This recursive spec should be the same size as the number of constructors of the type 
-of c. A problem occurs when c is built by contradiction. In that case no spec is given.
+   is_subterm_specif env sigma lcx mind_recvec n lst c 
+
+   n is the principal arg and has recursive spec lcx, lst is the list
+   of subterms of n with spec.  is_subterm_specif should test if c is
+   a subterm of n and fails with Not_found if not.  In case it is, it
+   should send its recursive specification.  This recursive spec
+   should be the same size as the number of constructors of the type
+   of c. A problem occurs when c is built by contradiction. In that
+   case no spec is given.
 
 *)
 let is_subterm_specif env sigma lcx mind_recvec = 
@@ -474,10 +498,10 @@ let is_subterm_specif env sigma lcx mind_recvec =
           let theBody = bodies.(i)   in
           let sign,strippedBody = decompose_lam_n_assum (decrArg+1) theBody in
           let nbOfAbst = nbfix+decrArg+1 in
-(* when proving that the fixpoint f(x)=e is less than n, it is enough to prove 
-   that e is less than n assuming f is less than n
-   furthermore when f is applied to a term which is strictly less than n, one may 
-   assume that x itself is strictly less than n
+(* when proving that the fixpoint f(x)=e is less than n, it is enough
+   to prove that e is less than n assuming f is less than n
+   furthermore when f is applied to a term which is strictly less than
+   n, one may assume that x itself is strictly less than n
 *)
           let newlst = 
             let lst' = (nbOfAbst,lcx) :: (map_lift_fst_n nbOfAbst lst) in
@@ -609,16 +633,18 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	       array_for_all (check_rec_call env' n' lst') bodies
             else 
               let theDecrArg  = List.nth l decrArg in
-		begin
-		  try 
-		    match is_subterm_specif env sigma lcx mind_recvec n lst theDecrArg
-		    with Some recArgsDecrArg -> 
-		       let theBody = bodies.(i)   in
-			 check_rec_call_fix_body env' n' lst' (decrArg+1) recArgsDecrArg
-			    theBody
-		      | None -> array_for_all (check_rec_call env' n' lst') bodies
-		  with Not_found -> array_for_all (check_rec_call env' n' lst') bodies
-		end
+	      (try 
+		match
+                  is_subterm_specif env sigma lcx mind_recvec n lst theDecrArg
+		with
+                    Some recArgsDecrArg -> 
+		      let theBody = bodies.(i)   in
+		      check_rec_call_fix_body
+                        env' n' lst' (decrArg+1) recArgsDecrArg theBody
+		  | None ->
+                      array_for_all (check_rec_call env' n' lst') bodies
+	      with Not_found ->
+                array_for_all (check_rec_call env' n' lst') bodies)
 
 	| IsCast (a,b) -> 
 	    (check_rec_call env n lst a) &&
@@ -879,7 +905,8 @@ let type_fixpoint env sigma lna lar vdefj =
 	 try conv_leq env sigma def (lift lt ar) 
 	 with NotConvertible -> raise (IllBranch i))
       env sigma
-      (Array.map (fun j -> body_of_type j.uj_type) vdefj) (Array.map body_of_type lar)
+      (Array.map (fun j -> body_of_type j.uj_type) vdefj)
+      (Array.map body_of_type lar)
   with IllBranch i ->
     error_ill_typed_rec_body CCI env i lna vdefj lar
 
@@ -911,5 +938,3 @@ let control_only_guard env sigma =
     | IsLetIn (_,c1,c2,c3) -> control_rec c1; control_rec c2; control_rec c3
   in 
   control_rec 
-
-    

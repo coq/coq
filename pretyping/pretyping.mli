@@ -21,6 +21,10 @@ open Evarutil
 type meta_map = (int * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list
 
+(* constr with holes *)
+type open_constr = (existential * types) list * constr
+
+
 (* Generic call to the interpreter from rawconstr to constr, failing
    unresolved holes in the rawterm cannot be instantiated.
 
@@ -41,7 +45,7 @@ val understand_gen :
    these metas. Work as [understand_gen] for the rest. *)
 val understand_gen_tcc :
   'a evar_map -> env -> var_map -> meta_map 
-    -> constr option -> rawconstr -> (int * constr) list * constr
+    -> constr option -> rawconstr -> open_constr
 
 (* Standard call to get a constr from a rawconstr, resolving implicit args *)
 val understand : 'a evar_map -> env -> rawconstr -> constr
@@ -61,12 +65,10 @@ val understand_type_judgment : 'a evar_map -> env -> rawconstr
  * Unused outside, but useful for debugging
  *)
 val pretype : 
-  type_constraint -> env -> 'a evar_defs ->
-    (identifier * unsafe_judgment) list -> (int * unsafe_judgment) list ->
+  type_constraint -> env -> 'a evar_defs -> var_map -> meta_map ->
     rawconstr -> unsafe_judgment
 
 val pretype_type : 
-  val_constraint -> env -> 'a evar_defs ->
-    (identifier * unsafe_judgment) list -> (int * unsafe_judgment) list ->
+  val_constraint -> env -> 'a evar_defs -> var_map -> meta_map ->
     rawconstr -> unsafe_type_judgment
 (*i*)

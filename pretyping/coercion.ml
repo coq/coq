@@ -16,6 +16,7 @@ open Typeops
 open Pretype_errors
 open Classops
 open Recordops
+open Evarutil
 open Evarconv
 open Retyping
 
@@ -68,37 +69,37 @@ let apply_coercion env p hj typ_cl =
   with _ -> anomaly "apply_coercion"
 
 let inh_app_fun env isevars j = 
-  let t = whd_betadeltaiota env !isevars j.uj_type in
+  let t = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term t with
     | IsProd (_,_,_) -> j
     | _ ->
        	(try
- 	   let t,i1 = class_of1 env !isevars j.uj_type in
+ 	   let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
       	   let p = lookup_path_to_fun_from i1 in
            apply_coercion env p j t
 	 with Not_found -> j)
 
 let inh_tosort_force env isevars j =
   try
-    let t,i1 = class_of1 env !isevars j.uj_type in
+    let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
     let p = lookup_path_to_sort_from i1 in
     apply_coercion env p j t 
   with Not_found -> 
     j
 
 let inh_coerce_to_sort env isevars j =
-  let typ = whd_betadeltaiota env !isevars j.uj_type in
+  let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term typ with
     | IsSort s -> { utj_val = j.uj_val; utj_type = s }
     | _ ->
         let j1 = inh_tosort_force env isevars j in 
-	type_judgment env !isevars j1 
+	type_judgment env (evars_of isevars) j1 
 
 let inh_coerce_to_fail env isevars c1 hj =
   let hj' =
     try 
-      let t1,i1 = class_of1 env !isevars c1 in
-      let t2,i2 = class_of1 env !isevars hj.uj_type in
+      let t1,i1 = class_of1 env (evars_of isevars) c1 in
+      let t2,i2 = class_of1 env (evars_of isevars) hj.uj_type in
       let p = lookup_path_between (i2,i1) in
       apply_coercion env p hj t2
     with Not_found -> raise NoCoercion 
@@ -115,10 +116,10 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
     try 
       inh_coerce_to_fail env isevars c1 hj
     with NoCoercion ->  (* try ... with _ -> ... is BAD *)
-      (match kind_of_term (whd_betadeltaiota env !isevars t),
-	     kind_of_term (whd_betadeltaiota env !isevars c1) with
+      (match kind_of_term (whd_betadeltaiota env (evars_of isevars) t),
+	     kind_of_term (whd_betadeltaiota env (evars_of isevars) c1) with
 	 | IsProd (_,t1,t2), IsProd (name,u1,u2) -> 
-             let v' = whd_betadeltaiota env !isevars v in
+             let v' = whd_betadeltaiota env (evars_of isevars) v in
              if (match kind_of_term v' with
                    | IsLambda (_,v1,v2) ->
                        the_conv_x env isevars v1 u1 (* leq v1 u1? *)
@@ -128,7 +129,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
                let env1 = push_rel_assum (x,v1) env in
                let h2 = inh_conv_coerce_to_fail env1 isevars u2
 			  {uj_val = v2; uj_type = t2 } in
-               fst (abs_rel env !isevars x v1 h2)
+               fst (abs_rel env (evars_of isevars) x v1 h2)
              else 
                let name = (match name with 
 			     | Anonymous -> Name (id_of_string "x")
@@ -142,7 +143,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
 			 { uj_val = mkApp (lift 1 v, [|h1.uj_val|]);
                            uj_type = subst1 h1.uj_val t2 }
 	       in
-	       fst (abs_rel env !isevars name u1 h2)
+	       fst (abs_rel env (evars_of isevars) name u1 h2)
 	 | _ -> raise NoCoercion)
 
 let inh_conv_coerce_to loc env isevars cj t =
@@ -150,8 +151,8 @@ let inh_conv_coerce_to loc env isevars cj t =
     try 
       inh_conv_coerce_to_fail env isevars t cj 
     with NoCoercion -> 
-      let rcj = j_nf_ise env !isevars cj in
-      let at = nf_ise1 !isevars t in
+      let rcj = j_nf_ise env (evars_of isevars) cj in
+      let at = nf_ise1 (evars_of isevars) t in
       error_actual_type_loc loc env rcj.uj_val rcj.uj_type at
   in
   { uj_val = cj'.uj_val; uj_type = t }
@@ -165,7 +166,8 @@ let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
     | [] -> resj
     | (loc,hj)::restjl ->
 	let resj = inh_app_fun env isevars resj in
-      	match kind_of_term (whd_betadeltaiota env !isevars resj.uj_type) with
+        let ntyp = whd_betadeltaiota env (evars_of isevars) resj.uj_type in
+      	match kind_of_term ntyp with
           | IsProd (na,c1,c2) ->
               let hj' =
 		try 
@@ -173,16 +175,16 @@ let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
 		with NoCoercion ->
 (*
                   error_cant_apply_bad_type_loc apploc env 
-		    (n,nf_ise1 !isevars c1,
-		     nf_ise1 !isevars hj.uj_type)
-		    (j_nf_ise env !isevars funj)
-		    (jl_nf_ise env !isevars argjl) in
+		    (n,nf_ise1 (evars_of isevars) c1,
+		     nf_ise1 (evars_of isevars) hj.uj_type)
+		    (j_nf_ise env (evars_of isevars) funj)
+		    (jl_nf_ise env (evars_of isevars) argjl) in
 *)
                   error_cant_apply_bad_type_loc apploc env 
-		    (1,nf_ise1 !isevars c1,
-		     nf_ise1 !isevars hj.uj_type)
-		    (j_nf_ise env !isevars resj)
-		    (jl_nf_ise env !isevars (List.map snd restjl)) in
+		    (1,nf_ise1 (evars_of isevars) c1,
+		     nf_ise1 (evars_of isevars) hj.uj_type)
+		    (j_nf_ise env (evars_of isevars) resj)
+		    (jl_nf_ise env (evars_of isevars) (List.map snd restjl)) in
 	      let newresj =
       		{ uj_val = applist (j_val resj, [j_val hj']);
 		  uj_type = subst1 hj'.uj_val c2 } in
@@ -190,12 +192,13 @@ let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
           | _ ->
 (*
               error_cant_apply_not_functional_loc apploc env
-	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
+	      	(j_nf_ise env (evars_of isevars) funj)
+                (jl_nf_ise env (evars_of isevars) argjl)
 *)
               error_cant_apply_not_functional_loc 
 		(Rawterm.join_loc funloc loc) env
-	      	(j_nf_ise env !isevars resj)
-		(jl_nf_ise env !isevars (List.map snd restjl))
+	      	(j_nf_ise env (evars_of isevars) resj)
+		(jl_nf_ise env (evars_of isevars) (List.map snd restjl))
   in 
   apply_rec env 1 funj argjl
 

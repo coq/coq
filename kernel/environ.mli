@@ -85,7 +85,6 @@ val add_constant :
   section_path -> constant_body -> env -> env
 val add_mind : 
   section_path -> mutual_inductive_body -> env -> env
-val new_meta : unit -> int
 
 (*s Looks up in environment *)
 

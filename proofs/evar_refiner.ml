@@ -17,6 +17,8 @@ open Environ
 open Evd
 open Reduction
 open Typing
+open Instantiate
+open Tacred
 open Proof_trees
 open Proof_type
 open Logic
@@ -117,11 +119,19 @@ let w_Focusing sp wt =
 let w_Focus sp wc = ids_mod (extract_decl sp) wc
 
 let w_Underlying wc = (ts_it (ids_it wc)).decls
+let w_whd wc c      = whd_castappevar (w_Underlying wc) c
 let w_type_of wc c  = ctxt_type_of (ids_it wc) c
 let w_env     wc    = get_env (ids_it wc)
 let w_hyps    wc    = named_context (get_env (ids_it wc))
 let w_ORELSE wt1 wt2 wc = 
   try wt1 wc with e when catchable_exception e -> wt2 wc
+let w_defined_const wc (sp,_) = defined_constant (w_env wc) sp
+let w_defined_evar wc k      = Evd.is_defined (w_Underlying wc) k
+let w_const_value wc         = constant_value (w_env wc)
+let w_conv_x wc m n          = is_conv (w_env wc) (w_Underlying wc) m n
+let w_whd_betadeltaiota wc c = whd_betadeltaiota (w_env wc) (w_Underlying wc) c
+let w_hnf_constr wc c        = hnf_constr (w_env wc) (w_Underlying wc) c
+
 
 let w_Declare sp (ty,s) (wc : walking_constraints) =
   let c = mkCast (ty,s) in
@@ -164,6 +174,7 @@ let w_Define sp c wc =
     	in 
 	(ids_mod (fun evc -> (Proof_trees.remap evc (sp,spdecl'))) wc)
     | _ -> error "define_evar"
+
 
 (******************************************)
 (* Instantiation of existential variables *)

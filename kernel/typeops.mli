@@ -33,31 +33,26 @@ val assumption_of_judgment :
 val type_judgment : 
   env -> 'a evar_map -> unsafe_judgment -> unsafe_type_judgment
 
-val relative : env -> 'a evar_map -> int -> unsafe_judgment
-
-val type_of_constant : env -> 'a evar_map -> constant -> types
-
-val type_of_inductive : env -> 'a evar_map -> inductive -> types
-
-val type_of_constructor : env -> 'a evar_map -> constructor -> types
-
-val type_of_existential : env -> 'a evar_map -> existential -> types
-
-val type_of_case : env -> 'a evar_map -> case_info
-  -> unsafe_judgment -> unsafe_judgment 
-    -> unsafe_judgment array -> unsafe_judgment
-
-val type_case_branches :
-  env -> 'a evar_map -> Inductive.inductive_type -> constr -> types
-    -> constr -> types array * types
-
+(*s Type of sorts. *)
 val judge_of_prop_contents : contents -> unsafe_judgment
 
 val judge_of_type : universe -> unsafe_judgment * constraints
 
+(*s Type of atomic terms. *)
+val relative : env -> 'a evar_map -> int -> unsafe_judgment
+
+val type_of_constant : env -> 'a evar_map -> constant -> types
+
+val type_of_existential : env -> 'a evar_map -> existential -> types
+
 (*s Type of an abstraction. *)
 val abs_rel : 
   env -> 'a evar_map -> name -> types -> unsafe_judgment 
+    -> unsafe_judgment * constraints
+
+(*s Type of application. *)
+val apply_rel_list : 
+  env -> 'a evar_map -> bool -> unsafe_judgment list -> unsafe_judgment
     -> unsafe_judgment * constraints
 
 (*s Type of a product. *)
@@ -72,21 +67,32 @@ val cast_rel :
   env -> 'a evar_map -> unsafe_judgment -> types
     -> unsafe_judgment * constraints
 
-val apply_rel_list : 
-  env -> 'a evar_map -> bool -> unsafe_judgment list -> unsafe_judgment
-    -> unsafe_judgment * constraints
-
-val check_fix : env -> 'a evar_map -> fixpoint -> unit
-val check_cofix : env -> 'a evar_map -> cofixpoint -> unit
-val control_only_guard : env -> 'a evar_map -> constr -> unit
-
-val type_fixpoint : env -> 'a evar_map -> name list -> types array 
-    -> unsafe_judgment array -> constraints
-
+(*s Inductive types. *)
 open Inductive
+
+val type_of_inductive : env -> 'a evar_map -> inductive -> types
+
+val type_of_constructor : env -> 'a evar_map -> constructor -> types
+
+(*s Type of Cases. *)
+val type_of_case : env -> 'a evar_map -> case_info
+  -> unsafe_judgment -> unsafe_judgment 
+    -> unsafe_judgment array -> unsafe_judgment
 
 val find_case_dep_nparams :
   env -> 'a evar_map -> constr * constr -> inductive_family -> constr -> bool
+
+val type_case_branches :
+  env -> 'a evar_map -> Inductive.inductive_type -> constr -> types
+    -> constr -> types array * types
+
+(*s Type of fixpoints and guard condition. *)
+val check_fix : env -> 'a evar_map -> fixpoint -> unit
+val check_cofix : env -> 'a evar_map -> cofixpoint -> unit
+val type_fixpoint : env -> 'a evar_map -> name list -> types array 
+    -> unsafe_judgment array -> constraints
+
+val control_only_guard : env -> 'a evar_map -> constr -> unit
 
 (*i
 val hyps_inclusion : env -> 'a evar_map -> named_context -> named_context -> bool

@@ -865,6 +865,10 @@ let conv_leq env = fconv CUMUL env
 let convleqkey = Profile.declare_profile "conv_leq";;
 let conv_leq env sigma t1 t2 =
   Profile.profile4 convleqkey conv_leq env sigma t1 t2;;
+
+let convkey = Profile.declare_profile "conv";;
+let conv env sigma t1 t2 =
+  Profile.profile4 convleqkey conv env sigma t1 t2;;
 *)
 
 let conv_forall2 f env sigma v1 v2 =
@@ -1095,9 +1099,23 @@ let rec whd_ise1 sigma c =
   match kind_of_term c with
     | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev ->
 	whd_ise1 sigma (existential_value sigma (ev,args))
-    | _ -> c
+    | _ -> collapse_appl c
 
 let nf_ise1 sigma = local_strong (whd_ise1 sigma)
 
 (* A form of [whd_ise1] with type "reduction_function" *)
 let whd_evar env = whd_ise1
+
+(* Expand evars, possibly in the head of an application *)
+let whd_castappevar_stack sigma c = 
+  let rec whrec (c, l as s) =
+    match kind_of_term c with
+      | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
+	  whrec (existential_value sigma (ev,args), l)
+      | IsCast (c,_) -> whrec (c, l)
+      | IsApp (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | _ -> s
+  in 
+  whrec (c, [])
+
+let whd_castappevar sigma c = applist (whd_castappevar_stack sigma c)

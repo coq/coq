@@ -23,13 +23,12 @@ open Tacmach
 open Proof_trees
 open Proof_type
 open Pfedit
+open Evar_refiner
 open Clenv
 open Declare
 open Wcclausenv
-(*open Pattern*)
 open Tacticals
 open Tactics
-(*open Equality*)
 open Inv
 
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"

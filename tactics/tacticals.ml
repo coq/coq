@@ -21,6 +21,7 @@ open Declare
 open Tacmach
 open Clenv
 open Pattern
+open Evar_refiner
 open Wcclausenv
 open Pretty
 

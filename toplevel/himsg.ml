@@ -337,6 +337,10 @@ let explain_refiner_occur_meta t =
      'sPC; 'sTR"because there are metavariables, and it is";
      'sPC; 'sTR"neither an application nor a Case" >]
 
+let explain_refiner_occur_meta_goal t =
+  [< 'sTR"generated subgoal"; 'bRK(1,1); prterm t;
+     'sPC; 'sTR"has metavariables in it" >]
+
 let explain_refiner_cannot_applt t harg =
   [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
      prterm t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
@@ -366,9 +370,14 @@ let explain_does_not_occur_in c hyp =
   [< 'sTR "The term"; 'sPC; prterm c; 'sPC; 'sTR "does not occur in";
      'sPC; pr_id hyp >]
 
+let explain_non_linear_proof c =
+  [< 'sTR "cannot refine with term"; 'bRK(1,1); prterm c;
+     'sPC; 'sTR"because a metavariable has several occurrences" >]
+
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | OccurMeta t -> explain_refiner_occur_meta t
+  | OccurMetaGoal t -> explain_refiner_occur_meta_goal t
   | CannotApply (t,harg) -> explain_refiner_cannot_applt t harg
   | CannotUnify (m,n) -> explain_refiner_cannot_unify m n
   | CannotGeneralize ty -> explain_refiner_cannot_generalize ty
@@ -376,6 +385,7 @@ let explain_refiner_error = function
   | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
   | IntroNeedsProduct -> explain_intro_needs_product ()
   | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
+  | NonLinearProof c -> explain_non_linear_proof c
 
 (* Inductive errors *)
 

@@ -691,7 +691,7 @@ and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
       (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
 
 (*      let lic = mkLetIn (Name id,csr,typ,ccl) in
-      let ntac = refine (mkCast (mkMeta (Environ.new_meta ()),lic)) in
+      let ntac = refine (mkCast (mkMeta (Logic.new_meta ()),lic)) in
       tclTHEN ntac (tclTHEN (introduction id)
       (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl))*)
 
@@ -718,7 +718,7 @@ and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
          (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
 
 (*         let lic = mkLetIn (Name id,pft,typ,ccl) in
-         let ntac = refine (mkCast (mkMeta (Environ.new_meta ()),lic)) in
+         let ntac = refine (mkCast (mkMeta (Logic.new_meta ()),lic)) in
          tclTHEN ntac (tclTHEN (introduction id)
          (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl))*)
        with | NotTactic ->

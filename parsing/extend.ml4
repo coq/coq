@@ -186,8 +186,8 @@ let interp_grammar_command univ astl =
 
 (* Converting and checking pretty-printing command *)
 
-type parenRelation = L | E | Any
 type precedence = int * int * int
+type parenRelation = L | E | Any | Prec of precedence
 
 let compare_prec (a1,b1,c1) (a2,b2,c2) =
   match (a1=a2),(b1=b2),(c1=c2) with
@@ -200,6 +200,7 @@ let tolerable_prec oparent_prec_reln (_,child_prec) =
   match oparent_prec_reln with
     | Some ((_,pprec), L) -> (compare_prec child_prec pprec) < 0
     | Some ((_,pprec), E) -> (compare_prec child_prec pprec) <= 0
+    | Some (_, Prec level) -> (compare_prec child_prec level) <= 0
     | _ -> true
 
 type ppbox =
@@ -212,7 +213,7 @@ type ppbox =
 type tolerability = (string * precedence) * parenRelation
 
 type unparsing_hunk = 
-  | PH of Ast.pat * (string * tolerability option) option * parenRelation
+  | PH of Ast.pat * string option * parenRelation
   | RO of string
   | UNP_BOX of ppbox * unparsing_hunk list
   | UNP_BRK of int * int
@@ -242,13 +243,15 @@ let prec_of_ast = function
   | ast -> invalid_arg_loc (Ast.loc ast,"Syntaxext.prec_of_ast")
 
 let extern_of_ast loc = function
-  | [Str(_,ppextern)] -> Some (ppextern,None)
-  | [Str(_,ppextern);p] -> Some (ppextern,Some ((ppextern,prec_of_ast p),Any))
+  | [Str(_,ppextern)] -> (ppextern, Any)
+  | [Str(_,ppextern);p] ->
+      (ppextern, Prec (prec_of_ast p))
   |  _ -> invalid_arg_loc (loc,"Syntaxext.extern_of_ast")
 
 let rec unparsing_hunk_of_ast vars = function
   | Node(_, "PH", [e; Node (loc,"EXTERN", ext_args)]) ->
-      PH (Ast.val_of_ast vars e, extern_of_ast loc ext_args, Any)
+      let (ppex, rel) = extern_of_ast loc ext_args in
+      PH (Ast.val_of_ast vars e, Some ppex, rel)
   | Node(loc, "PH", [e; Id(_,pr)]) ->
       let reln =
         (match pr with

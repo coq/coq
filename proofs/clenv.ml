@@ -20,6 +20,28 @@ open Proof_type
 open Logic
 open Reduction
 open Tacmach
+open Evar_refiner
+
+
+(* Generator of metavariables *)
+let meta_ctr=ref 0;;
+
+let new_meta ()=incr meta_ctr;!meta_ctr;;
+
+(* replaces a mapping of existentials into a mapping of metas. *)
+let exist_to_meta (emap, c) =
+  let subst = ref [] in
+  let mmap = ref [] in
+  let add_binding (e,ty) =
+    let n = new_meta() in
+    subst := (e, mkMeta n) :: !subst;
+    mmap := (n, ty) :: !mmap in
+  List.iter add_binding emap;
+  let rec replace c =
+    match kind_of_term c with
+        IsEvar k -> List.assoc k !subst
+      | _ -> map_constr replace c in
+  (!mmap, replace c)
 
 type 'a freelisted = {
   rebus : 'a;
@@ -38,15 +60,6 @@ type 'a clausenv = {
 
 type wc = walking_constraints
 
-let new_evar_in_sign env =
-  let ev = new_evar () in
-  mkEvar (ev, Array.of_list (Evarutil.make_evar_instance env))
-
-let rec whd_evar sigma t = match kind_of_term t with
-  | IsEvar (ev,_ as evc) when is_defined sigma ev ->
-      whd_evar sigma (existential_value sigma evc)
-  | _ -> collapse_appl t
-
 let applyHead n c wc = 
   let rec apprec n c cty wc =
     if n = 0 then 
@@ -55,7 +68,7 @@ let applyHead n c wc =
       match kind_of_term (w_whd_betadeltaiota wc cty) with
         | IsProd (_,c1,c2) ->
             let c1ty = w_type_of wc c1 in
-	    let evar = new_evar_in_sign (w_env wc) in
+	    let evar = Evarutil.new_evar_in_sign (w_env wc) in
             let (evar_n, _) = destEvar evar in
 	    (compose 
 	       (apprec (n-1) (applist(c,[evar])) (subst1 evar c2))
@@ -83,8 +96,8 @@ let unify_0 mc wc m n =
   let env = w_env wc
   and sigma = w_Underlying wc in
   let rec unirec_rec ((metasubst,evarsubst) as substn) m n =
-    let cM = whd_evar sigma m
-    and cN = whd_evar sigma n in 
+    let cM = whd_ise1 sigma m
+    and cN = whd_ise1 sigma n in 
     try 
       match (kind_of_term cM,kind_of_term cN) with
 	| IsCast (c,_), _ -> unirec_rec substn c cN
@@ -165,21 +178,6 @@ let unify_0 mc wc m n =
     else 
       unirec_rec (mc,[]) m n
 
-	
-let whd_castappevar_stack sigma c = 
-  let rec whrec (c, l as s) =
-    match kind_of_term c with
-      | IsEvar (ev,args) when is_defined sigma ev -> 
-	  whrec (existential_value sigma (ev,args), l)
-      | IsCast (c,_) -> whrec (c, l)
-      | IsApp (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
-      | _ -> s
-  in 
-  whrec (c, [])
-
-let whd_castappevar sigma c = applist (whd_castappevar_stack sigma c)
-
-let w_whd wc c = whd_castappevar (w_Underlying wc) c
 
 (* Unification
  *
@@ -700,11 +698,14 @@ let clenv_refine_cast kONT clenv gls =
    try to find a subterm of cl which matches op, if op is just a Meta
    FAIL because we cannot find a binding *)
 
-let iter_fail f a = let n = Array.length a in 
-		    let rec ffail i = if i = n then error "iter_fail" 
-                    else try f a.(i) 
-		    with ex when catchable_exception ex -> ffail (i+1)
-		    in ffail 0
+let iter_fail f a =
+  let n = Array.length a in 
+  let rec ffail i =
+    if i = n then error "iter_fail" 
+    else
+      try f a.(i) 
+      with ex when catchable_exception ex -> ffail (i+1)
+  in ffail 0
 
 let constrain_clenv_to_subterm clause (op,cl) =
   let rec matchrec cl =
@@ -934,7 +935,7 @@ let clenv_pose_dependent_evars clenv =
                                        clenv_template_type clenv) in 
   List.fold_left
     (fun clenv mv ->
-       let evar = new_evar_in_sign (w_env clenv.hook) in
+       let evar = Evarutil.new_evar_in_sign (w_env clenv.hook) in
        let (evar_n,_) = destEvar evar in
        let tY = clenv_instance_type clenv mv in
        let tYty = w_type_of clenv.hook tY in

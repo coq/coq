@@ -21,7 +21,6 @@ val implicit_univ : universe
 
 val prop_univ : universe
 val prop_univ_univ : universe
-val prop_univ_univ_univ : universe
 
 val set_module : dir_path -> unit
 
@@ -50,8 +49,6 @@ val enforce_geq : constraint_function
 val enforce_eq : constraint_function
 
 val super : universe -> universe * constraints
-
-val super_super : universe -> universe * universe * constraints
 
 val sup : universe -> universe -> universes -> universe * constraints
 

@@ -27,9 +27,10 @@ val interp_type          : 'a evar_map -> env -> Coqast.t -> types
 val interp_sort          : Coqast.t -> sorts
 
 val interp_openconstr    :
-  'a evar_map -> env -> Coqast.t -> (int * constr) list * constr
+  'a evar_map -> env -> Coqast.t -> (existential * constr) list * constr
 val interp_casted_openconstr    :
-  'a evar_map -> env -> Coqast.t -> constr -> (int * constr) list * constr
+  'a evar_map -> env -> Coqast.t -> constr ->
+    (existential * constr) list * constr
 
 (* [interp_type_with_implicits] extends [interp_type] by allowing
    implicits arguments in the ``rel'' part of [env]; the extra
@@ -54,7 +55,7 @@ val interp_constr_gen     :
 val interp_openconstr_gen     :
   'a evar_map -> env -> (identifier * constr) list ->
     (int * constr) list -> Coqast.t -> constr option
-      -> (int * constr) list * constr
+      -> (existential * constr) list * constr
 
 (*Interprets constr patterns according to a list of instantiations
   (variables)*)

@@ -22,8 +22,6 @@ open Sign
 
 type evar = int
 
-val new_evar : unit -> evar
-
 type evar_body =
   | Evar_empty 
   | Evar_defined of constr

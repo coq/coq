@@ -51,8 +51,7 @@ val interp_grammar_command : string -> Coqast.t list -> grammar_command
 (* Dealing with precedences *)
 
 type precedence = int * int * int
-
-type parenRelation = L | E | Any
+type parenRelation = L | E | Any | Prec of precedence
 
 (* Checks if the precedence of the parent printer (None means the
    highest precedence), and the child's one, follow the given
@@ -72,7 +71,7 @@ type ppbox =
   | PpTB
 
 type unparsing_hunk = 
-  | PH of Ast.pat * (string * tolerability option) option * parenRelation
+  | PH of Ast.pat * string option * parenRelation
   | RO of string
   | UNP_BOX of ppbox * unparsing_hunk list
   | UNP_BRK of int * int

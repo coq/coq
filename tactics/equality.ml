@@ -23,6 +23,7 @@ open Retyping
 open Tacmach
 open Proof_type
 open Logic
+open Evar_refiner
 open Wcclausenv
 open Pattern
 open Hipattern
@@ -693,7 +694,7 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
       let (a,p) = match whd_beta_stack ty with
 	| (_,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausale_forme: should be a sigma type" in
-      let mv = new_meta() in
+      let mv = Clenv.new_meta() in
       let rty = applist(p,[mkMeta mv]) in
       let (bindings,tuple_tail) = sigrec_clausale_forme (siglen-1) rty in
       let w =
@@ -953,7 +954,7 @@ let swapEquandsInConcl gls =
     with _-> errorlabstrm "SwapEquandsInConcl" (rewrite_msg None) 
   in
   let sym_equal = lbeq.sym () in
-  refine (applist(sym_equal,[t;e2;e1;mkMeta (new_meta())])) gls
+  refine (applist(sym_equal,[t;e2;e1;mkMeta (Clenv.new_meta())])) gls
 
 let swapEquandsInHyp id gls =
   ((tclTHENS (cut_replacing id (swap_equands gls (clause_type (Some id) gls)))
@@ -1012,8 +1013,8 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
     else
       (build_non_dependent_rewrite_predicate (t,e1,e2)  body  gls)
   in
-  refine (applist(eq_elim,[t;e1;p;mkMeta(new_meta());
-                           e2;mkMeta(new_meta())])) gls
+  refine (applist(eq_elim,[t;e1;p;mkMeta(Clenv.new_meta());
+                           e2;mkMeta(Clenv.new_meta())])) gls
 
 (* [subst_tuple_term dep_pair B]
 

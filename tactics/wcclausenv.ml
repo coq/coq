@@ -20,6 +20,7 @@ open Tacmach
 open Evd
 open Proof_trees
 open Clenv
+open Evar_refiner
 
 (* If you have a precise idea of the intended use of the following code, please
    write to Eduardo.Gimenez@inria.fr and ask for the prize :-)

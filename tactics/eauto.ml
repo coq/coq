@@ -17,6 +17,7 @@ open Reduction
 open Proof_type
 open Proof_trees
 open Tacmach
+open Evar_refiner
 open Tactics
 open Pattern
 open Clenv

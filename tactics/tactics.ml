@@ -25,6 +25,7 @@ open Tacmach
 open Proof_trees
 open Proof_type
 open Logic
+open Evar_refiner
 open Clenv
 open Tacticals
 open Hipattern

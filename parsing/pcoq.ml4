@@ -414,6 +414,8 @@ open Constr
 open Tactic
 open Vernac
 
+(* current file and toplevel/vernac.ml *)
+
 let define_quotation default s e =
   (if default then
     GEXTEND Gram

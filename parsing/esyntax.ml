@@ -154,10 +154,11 @@ let print_syntax_entry whatfor sub_pr env se =
     | PH(e,externpr,reln) ->
         let printer =
           match externpr with (* May branch to an other printer *)
-            | Some (c,entry_prec) ->
+            | Some c ->
                 (try (* Test for a primitive printer *)
 		   (Ppprim.map c) (sub_pr whatfor (Some(rule_prec,reln)))
-                 with Not_found -> token_printer (sub_pr c entry_prec))
+                 with Not_found ->
+                   token_printer (sub_pr c (Some(rule_prec,reln))))
             | None -> token_printer (sub_pr whatfor (Some(rule_prec,reln)))
         in 
 	printer (Ast.pat_sub Ast.dummy_loc env e)

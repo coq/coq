@@ -77,7 +77,7 @@ and pp_sg sg =
   hOV 0 (prlist_with_sep (fun _ -> [< 'fNL >])
 	   (function None -> [< 'sTR"None" >] | Some th -> [< pp_th th >]) sg)
      
-(*  compute_metamap : constr -> term_with_holes
+(*  compute_metamap : constr -> 'a evar_map -> term_with_holes
  *  réalise le 2. ci-dessus
  *
  *  Pour cela, on renvoie une metamap qui indique pour chaque meta-variable
@@ -93,7 +93,7 @@ and pp_sg sg =
 let replace_by_meta env = function
   | TH (m, mm, sgp) when isMeta (strip_outer_cast m) -> m,mm,sgp
   | (TH (c,mm,_)) as th ->
-      let n = new_meta() in
+      let n = Clenv.new_meta() in
       let m = mkMeta n in
       (* quand on introduit une mv on calcule son type *)
       let ty = match kind_of_term c with
@@ -134,7 +134,6 @@ let rec compute_metamap env c = match kind_of_term c with
   | (IsConst _ | IsEvar _ | IsMutInd _ | IsMutConstruct _ |
     IsSort _ | IsVar _ | IsRel _) -> 
       TH (c,[],[])
-
   (* le terme est une mv => un but *)
   | IsMeta n ->
       (* 
@@ -278,8 +277,9 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 
 (* Et finalement la tactique refine elle-même : *)
 
-let refine (lmeta,c) gl =
+let refine oc gl =
   let env = pf_env gl in
+  let (_,c) = Clenv.exist_to_meta oc in
   let th = compute_metamap env c in
   tcc_aux th gl
 

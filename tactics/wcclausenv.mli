@@ -16,6 +16,7 @@ open Environ
 open Evd
 open Proof_type
 open Tacmach
+open Evar_refiner
 open Clenv
 (*i*)
 

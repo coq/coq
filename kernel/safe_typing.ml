@@ -30,19 +30,9 @@ let j_type j = body_of_type j.uj_type
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
-(*s The machine flags. 
-   [fix] indicates if we authorize general fixpoints ($\mathit{recarg} < 0$)
-   like [Acc_rec.fw].
-   [nocheck] indicates if we can skip some verifications to accelerate
-   the type inference. *)
-
-type 'a mach_flags = {
-  fix : bool;
-  nocheck : bool }
-
 (* The typing machine without information. *)
 
-let rec execute mf env cstr =
+let rec execute env cstr =
   let cst0 = Constraint.empty in
   match kind_of_term cstr with
     | IsMeta _ ->
@@ -70,23 +60,23 @@ let rec execute mf env cstr =
 	(make_judge cstr (type_of_constructor env Evd.empty c), cst0)
 	  
     | IsMutCase (ci,p,c,lf) ->
-        let (cj,cst1) = execute mf env c in
-        let (pj,cst2) = execute mf env p in
-        let (lfj,cst3) = execute_array mf env lf in
+        let (cj,cst1) = execute env c in
+        let (pj,cst2) = execute env p in
+        let (lfj,cst3) = execute_array env lf in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
         (type_of_case env Evd.empty ci pj cj lfj, cst)
   
     | IsFix ((vn,i as vni),(lar,lfi,vdef)) ->
-        if (not mf.fix) && array_exists (fun n -> n < 0) vn then
+        if array_exists (fun n -> n < 0) vn then
           error "General Fixpoints not allowed";
-        let (larjv,vdefv,cst) = execute_fix mf env lar lfi vdef in
+        let (larjv,vdefv,cst) = execute_fix env lar lfi vdef in
 	let larv = Array.map body_of_type larjv in
         let fix = (vni,(larv,lfi,vdefv)) in
-        if not mf.fix then check_fix env Evd.empty fix;
+        check_fix env Evd.empty fix;
 	(make_judge (mkFix fix) larjv.(i), cst)
 	  
     | IsCoFix (i,(lar,lfi,vdef)) ->
-        let (larjv,vdefv,cst) = execute_fix mf env lar lfi vdef in
+        let (larjv,vdefv,cst) = execute_fix env lar lfi vdef in
 	let larv = Array.map body_of_type larjv in
         let cofix = (i,(larv,lfi,vdefv)) in
         check_cofix env Evd.empty cofix;
@@ -100,121 +90,88 @@ let rec execute mf env cstr =
 	judge_of_type inst_u
 	  
     | IsApp (f,args) ->
-	let (j,cst1) = execute mf env f in
-        let (jl,cst2) = execute_array mf env args in
+	let (j,cst1) = execute env f in
+        let (jl,cst2) = execute_array env args in
 	let (j,cst3) =
-	  apply_rel_list env Evd.empty mf.nocheck (Array.to_list jl) j in
+	  apply_rel_list env Evd.empty false (Array.to_list jl) j in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	    
     | IsLambda (name,c1,c2) -> 
-        let (j,cst1) = execute mf env c1 in
+        let (j,cst1) = execute env c1 in
         let var = assumption_of_judgment env Evd.empty j in
 	let env1 = push_rel_assum (name,var) env in
-        let (j',cst2) = execute mf env1 c2 in 
+        let (j',cst2) = execute env1 c2 in 
         let (j,cst3) = abs_rel env1 Evd.empty name var j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	  
      | IsProd (name,c1,c2) ->
-        let (j,cst1) = execute mf env c1 in
+        let (j,cst1) = execute env c1 in
         let varj = type_judgment env Evd.empty j in
 	let env1 = push_rel_assum (name,varj.utj_val) env in
-        let (j',cst2) = execute mf env1 c2 in
+        let (j',cst2) = execute env1 c2 in
         let varj' = type_judgment env Evd.empty j' in
 	let (j,cst3) = gen_rel env1 Evd.empty name varj varj' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 
      | IsLetIn (name,c1,c2,c3) ->
-        let (j1,cst1) = execute mf env c1 in
-        let (j2,cst2) = execute mf env c2 in
+        let (j1,cst1) = execute env c1 in
+        let (j2,cst2) = execute env c2 in
 	let tj2 = assumption_of_judgment env Evd.empty j2 in
 	let ({uj_val = b; uj_type = t},cst0) = cast_rel env Evd.empty j1 tj2 in
-        let (j3,cst3) = execute mf (push_rel_def (name,b,t) env) c3 in
+        let (j3,cst3) = execute (push_rel_def (name,b,t) env) c3 in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	({ uj_val = mkLetIn (name, j1.uj_val, tj2, j3.uj_val) ;
 	   uj_type = type_app (subst1 j1.uj_val) j3.uj_type },
 	 Constraint.union cst cst0)
 	  
     | IsCast (c,t) ->
-        let (cj,cst1) = execute mf env c in
-        let (tj,cst2) = execute mf env t in
+        let (cj,cst1) = execute env c in
+        let (tj,cst2) = execute env t in
 	let tj = assumption_of_judgment env Evd.empty tj in
 	let cst = Constraint.union cst1 cst2 in
 	let (j, cst0) = cast_rel env Evd.empty cj tj in
 	(j, Constraint.union cst cst0)
 	  
-and execute_fix mf env lar lfi vdef =
-  let (larj,cst1) = execute_array mf env lar in
+and execute_fix env lar lfi vdef =
+  let (larj,cst1) = execute_array env lar in
   let lara = Array.map (assumption_of_judgment env Evd.empty) larj in
   let nlara = 
     List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
   let env1 = 
     List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
-  let (vdefj,cst2) = execute_array mf env1 vdef in
+  let (vdefj,cst2) = execute_array env1 vdef in
   let vdefv = Array.map j_val vdefj in
   let cst3 = type_fixpoint env1 Evd.empty lfi lara vdefj in
   let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
   (lara,vdefv,cst)
 
-and execute_array mf env v =
-  let (jl,u1) = execute_list mf env (Array.to_list v) in
+and execute_array env v =
+  let (jl,u1) = execute_list env (Array.to_list v) in
   (Array.of_list jl, u1)
 
-and execute_list mf env = function
+and execute_list env = function
   | [] -> 
       ([], Constraint.empty)
   | c::r -> 
-      let (j,cst1) = execute mf env c in 
-      let (jr,cst2) = execute_list mf env r in
+      let (j,cst1) = execute env c in 
+      let (jr,cst2) = execute_list env r in
       (j::jr, Constraint.union cst1 cst2)
 
 (* The typed type of a judgment. *)
 
-let execute_type mf env constr = 
-  let (j,cst) = execute mf env constr in
+let execute_type env constr = 
+  let (j,cst) = execute env constr in
   (type_judgment env Evd.empty j, cst)
 
 
-(* Exported machines.  First safe machines, with no general fixpoint
-   allowed (the flag [fix] is not set) and all verifications done (the
-   flag [nocheck] is not set). *)
+(* Exported machines. *)
 
-let safe_infer env constr = 
-  let mf = { fix = false; nocheck = false } in
-  execute mf env constr
+let safe_infer env constr = execute env constr
 
-let safe_infer_type env constr = 
-  let mf = { fix = false; nocheck = false } in
-  execute_type mf env constr
-
-(* Machines with general fixpoint. *)
-
-let fix_machine env constr = 
-  let mf = { fix = true; nocheck = false } in
-  execute mf env constr
-
-let fix_machine_type env constr = 
-  let mf = { fix = true; nocheck = false } in
-  execute_type mf env constr
-
-(* Fast machines without any verification. *)
-
-let unsafe_infer env constr = 
-  let mf = { fix = true; nocheck = true } in
-  execute mf env constr
-
-let unsafe_infer_type env constr = 
-  let mf = { fix = true; nocheck = true } in
-  execute_type mf env constr
-
-
-(* ``Type of'' machines. *)
-
-let type_of env c = 
-  let (j,_) = safe_infer env c in
-  nf_betaiota env Evd.empty (body_of_type j.uj_type)
+let safe_infer_type env constr = execute_type env constr
 
 (* Typing of several terms. *)
 

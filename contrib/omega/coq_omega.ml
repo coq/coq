@@ -26,6 +26,7 @@ open Environ
 open Sign
 open Inductive
 open Tacmach
+open Evar_refiner
 open Tactics
 open Clenv
 open Logic
@@ -560,7 +561,7 @@ let rec decompile af =
   in
   loop af.body
 
-let mkNewMeta () = mkMeta (Environ.new_meta())
+let mkNewMeta () = mkMeta (Clenv.new_meta())
 
 let clever_rewrite_base_poly typ p result theorem gl = 
   let full = pf_concl gl in

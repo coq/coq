@@ -92,7 +92,7 @@ and validation = (proof_tree list -> proof_tree)
 and tactic_arg =
   | Command        of Coqast.t
   | Constr         of constr
-  | OpenConstr     of ((int * constr) list * constr) (* constr with holes *)
+  | OpenConstr     of Pretyping.open_constr
   | Constr_context of constr
   | Identifier     of identifier
   | Qualid         of Nametab.qualid

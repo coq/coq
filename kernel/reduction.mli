@@ -200,6 +200,7 @@ val whd_ise1 : 'a evar_map -> constr -> constr
 val nf_ise1 : 'a evar_map -> constr -> constr
 exception Uninstantiated_evar of int
 val whd_ise : 'a evar_map -> constr -> constr
+val whd_castappevar : 'a evar_map -> constr -> constr
 
 (*s Obsolete Reduction Functions *)
 

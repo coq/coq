@@ -1028,14 +1028,24 @@ let _ =
   add "Check"
     (function 
        | VARG_STRING kind :: VARG_CONSTR c :: g ->
-	   let (evmap, sign) = get_current_context_of_args g in
-	   let prfun = match kind with
-	     | "CHECK" -> print_val
-             | "PRINTTYPE" -> print_type
-             | _ -> anomaly "Unexpected string" 
-	   in (fun () -> mSG (prfun sign (judgment_of_rawconstr evmap sign c)))
+	   (match kind with
+	     | "PRINTTYPE" ->
+                 (fun () ->
+                   let evmap = Evd.empty in
+                   let env = Global.env() in
+                   let c = interp_constr evmap env c in
+                   let senv = Global.safe_env() in
+                   let (j, univ) = Safe_typing.safe_infer senv c in
+                   let _ = Safe_typing.add_constraints univ senv in
+                   mSG (print_safe_judgment env j))
+             | "CHECK" ->
+	         let (evmap, env) = get_current_context_of_args g in
+                 (fun () ->
+                   mSG (print_judgment env
+                         (judgment_of_rawconstr evmap env c)))
+             | _ -> anomaly "Unexpected string")
        | _ -> bad_vernac_args "Check")
-
+    
 (***
 let _ =
   add "PrintExtractId"

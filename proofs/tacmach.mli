@@ -17,7 +17,6 @@ open Reduction
 open Proof_trees
 open Proof_type
 open Refiner
-open Evar_refiner
 open Tacred
 (*i*)
 
@@ -186,40 +185,6 @@ val tclFIRSTLIST       : tactic_list list -> tactic_list
 val tclIDTAC_list      : tactic_list
 
 
-(*s Walking constraints re-exported. *)
-
-type walking_constraints = Evar_refiner.walking_constraints
-
-type 'a result_w_tactic  = walking_constraints -> walking_constraints * 'a
-type w_tactic            = walking_constraints -> walking_constraints
-
-val startWalk : 
-  goal sigma -> walking_constraints * (walking_constraints -> tactic)
-
-val walking_THEN        : 'a result_w_tactic -> ('a -> tactic) -> tactic
-val walking             : w_tactic -> tactic
-val w_Focusing_THEN     : int -> 'a result_w_tactic 
-                          -> ('a -> w_tactic) -> w_tactic
-val w_Declare           : int -> constr * constr -> w_tactic
-val w_Declare_At        : int -> int -> constr * constr -> w_tactic
-val w_Define            : int -> constr -> w_tactic
-val w_Underlying        : walking_constraints -> enamed_declarations
-val w_env               : walking_constraints -> env
-val w_hyps              : walking_constraints -> named_context
-val w_type_of           : walking_constraints -> constr -> constr
-val w_add_sign          : (identifier * types) 
-                          -> walking_constraints -> walking_constraints
-val w_IDTAC             : w_tactic
-val w_ORELSE            : w_tactic -> w_tactic -> w_tactic
-val ctxt_type_of        : readable_constraints -> constr -> constr
-val w_whd_betadeltaiota : walking_constraints -> constr -> constr
-val w_hnf_constr        : walking_constraints -> constr -> constr
-val w_conv_x            : walking_constraints -> constr -> constr -> bool
-val w_const_value       : walking_constraints -> constant -> constr
-val w_defined_const     : walking_constraints -> constant -> bool
-val w_defined_evar      : walking_constraints -> existential_key -> bool
-
-
 (*s Tactic Registration. *)
 
 val add_tactic         : string -> (tactic_arg list -> tactic) -> unit
@@ -259,7 +224,7 @@ type 'a hide_combinator = string -> ('a -> tactic) -> ('a -> tactic)
 
 val hide_atomic_tactic  : string -> tactic -> tactic
 val hide_constr_tactic  : constr hide_combinator
-val hide_openconstr_tactic  : ((int * constr) list * constr) hide_combinator
+val hide_openconstr_tactic  : Pretyping.open_constr hide_combinator
 val hide_constrl_tactic : (constr list) hide_combinator
 val hide_numarg_tactic  : int hide_combinator
 val hide_ident_tactic   : identifier hide_combinator

@@ -59,6 +59,7 @@ val w_Define     : evar -> constr -> w_tactic
 val w_Underlying : walking_constraints -> enamed_declarations
 val w_env        : walking_constraints -> env
 val w_hyps       : walking_constraints -> named_context
+val w_whd        : walking_constraints -> constr -> constr
 val w_type_of    : walking_constraints -> constr -> constr
 val w_add_sign   : (identifier * types) -> walking_constraints 
                      -> walking_constraints
@@ -66,6 +67,12 @@ val w_add_sign   : (identifier * types) -> walking_constraints
 val w_IDTAC      : w_tactic
 val w_ORELSE     : w_tactic -> w_tactic -> w_tactic
 val ctxt_type_of : readable_constraints -> constr -> constr
+val w_whd_betadeltaiota : walking_constraints -> constr -> constr
+val w_hnf_constr        : walking_constraints -> constr -> constr
+val w_conv_x            : walking_constraints -> constr -> constr -> bool
+val w_const_value       : walking_constraints -> constant -> constr
+val w_defined_const     : walking_constraints -> constant -> bool
+val w_defined_evar      : walking_constraints -> existential_key -> bool
 
 val evars_of     : readable_constraints -> constr -> local_constraints
 

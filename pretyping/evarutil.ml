@@ -21,6 +21,7 @@ open Reduction
 open Indrec
 open Pretype_errors
 
+
 let rec filter_unique = function
   | [] -> []
   | x::l ->
@@ -48,6 +49,21 @@ let filter_sign p sign x =
 
 let evar_env evd = Global.env_of_context evd.evar_hyps
 
+(* Generator of existential names *)
+let new_evar =
+  let evar_ctr = ref 0 in
+  fun () -> incr evar_ctr; !evar_ctr
+
+let make_evar_instance env =
+  fold_named_context
+    (fun env (id, b, _) l -> (*if b=None then*) mkVar id :: l (*else l*))
+    env []
+
+(* create an untyped existential variable *)
+let new_evar_in_sign env =
+  let ev = new_evar () in
+  mkEvar (ev, Array.of_list (make_evar_instance env))
+
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
@@ -57,7 +73,7 @@ let new_isevar_sign env sigma typ instance =
   let sign = named_context env in
   if not (list_distinct (ids_of_named_context sign)) then 
     error "new_isevar_sign: two vars have the same name";
-  let newev = Evd.new_evar() in
+  let newev = new_evar() in
   let info = { evar_concl = typ; evar_hyps = sign; 
 	       evar_body = Evar_empty; evar_info = None } in
   (Evd.add sigma newev info, mkEvar (newev,Array.of_list instance))
@@ -65,11 +81,6 @@ let new_isevar_sign env sigma typ instance =
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
 let dummy_sort = mkType dummy_univ
-
-let make_evar_instance env =
-  fold_named_context
-    (fun env (id, b, _) l -> (*if b=None then*) mkVar id :: l (*else l*))
-    env []
 
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)
@@ -134,7 +145,14 @@ let do_restrict_hyps sigma ev args =
  *------------------------------------*)
 
 type evar_constraint = conv_pb * constr * constr
-type 'a evar_defs = 'a Evd.evar_map ref
+type 'a evar_defs =
+    { mutable evars : 'a Evd.evar_map;
+      mutable conv_pbs : evar_constraint list }
+
+let create_evar_defs evd = { evars=evd; conv_pbs=[] }
+let evars_of d = d.evars
+let evars_reset_evd evd d = d.evars <- evd
+let add_conv_pb d pb = d.conv_pbs <- pb::d.conv_pbs
 
 (* ise_try [f1;...;fn] tries fi() for i=1..n, restoring the evar constraints
  * when fi returns false or an exception. Returns true if one of the fi
@@ -142,32 +160,33 @@ type 'a evar_defs = 'a Evd.evar_map ref
  * the evar constraints are restored).
  *)
 let ise_try isevars l =
-  let u = !isevars in
+  let u = isevars.evars in
   let rec test = function
-      [] -> isevars := u; false
+      [] -> isevars.evars <- u; false
     | f::l ->
- 	  (try f() with reraise -> isevars := u; raise reraise)
-       or (isevars := u; test l)
+ 	  (try f() with reraise -> isevars.evars <- u; raise reraise)
+       or (isevars.evars <- u; test l)
   in test l
 
 
 
 (* say if the section path sp corresponds to an existential *)
-let ise_in_dom isevars sp = Evd.in_dom !isevars sp
+let ise_in_dom isevars sp = Evd.in_dom isevars.evars sp
 
 (* map the given section path to the enamed_declaration *)
-let ise_map isevars sp = Evd.map !isevars sp
+let ise_map isevars sp = Evd.map isevars.evars sp
 
 (* define the existential of section path sp as the constr body *)
-let ise_define isevars sp body = isevars := Evd.define !isevars sp body
+let ise_define isevars sp body =
+  isevars.evars <- Evd.define isevars.evars sp body
 
 (* Does k corresponds to an (un)defined existential ? *)
 let ise_undefined isevars c = match kind_of_term c with
-  | IsEvar (n,_) -> not (Evd.is_defined !isevars n)
+  | IsEvar (n,_) -> not (Evd.is_defined isevars.evars n)
   | _ -> false
 
 let ise_defined isevars c = match kind_of_term c with
-  | IsEvar (n,_) -> Evd.is_defined !isevars n
+  | IsEvar (n,_) -> Evd.is_defined isevars.evars n
   | _ -> false
 
 let need_restriction isevars args = not (array_for_all closed0 args)
@@ -191,11 +210,11 @@ let real_clean isevars sp args rhs =
       | IsEvar (ev,args) ->
 	  let args' = Array.map (subs k) args in
 	  if need_restriction isevars args' then
-	    if Evd.is_defined !isevars ev then 
-	      subs k (existential_value !isevars (ev,args'))
+	    if Evd.is_defined isevars.evars ev then 
+	      subs k (existential_value isevars.evars (ev,args'))
 	    else begin
-	      let (sigma,rc) = do_restrict_hyps !isevars ev args' in
-	      isevars := sigma;
+	      let (sigma,rc) = do_restrict_hyps isevars.evars ev args' in
+	      isevars.evars <- sigma;
 
 	      rc
 	    end
@@ -234,8 +253,8 @@ let new_isevar isevars env typ k =
   let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
   let instance = make_evar_instance_with_rel env in
-  let (sigma',evar) = new_isevar_sign env' !isevars typ' instance in
-  isevars := sigma';
+  let (sigma',evar) = new_isevar_sign env' isevars.evars typ' instance in
+  isevars.evars <- sigma';
   evar
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
@@ -275,12 +294,12 @@ let evar_define isevars (ev,argsv) rhs =
  *)
 
 let has_undefined_isevars isevars t = 
-  try let _ = whd_ise !isevars t in false
+  try let _ = whd_ise isevars.evars t in false
   with Uninstantiated_evar _ -> true
 
 let head_is_evar isevars = 
   let rec hrec k = match kind_of_term k with
-    | IsEvar (n,_)   -> not (Evd.is_defined !isevars n)
+    | IsEvar (n,_)   -> not (Evd.is_defined isevars.evars n)
     | IsApp (f,_) -> hrec f
     | IsCast (c,_) -> hrec c
     | _ -> false
@@ -332,19 +351,13 @@ let head_evar =
  * ass.
  *)
 
-let conversion_problems = ref ([] : evar_constraint list)
-
-let reset_problems () = conversion_problems := []
-
-let add_conv_pb pb = (conversion_problems := pb::!conversion_problems)
-
 let status_changed lev (pbty,t1,t2) =
   try 
     List.mem (head_evar t1) lev or List.mem (head_evar t2) lev
   with Failure _ ->
     try List.mem (head_evar t2) lev with Failure _ -> false
 
-let get_changed_pb lev =
+let get_changed_pb isevars lev =
   let (pbs,pbs1) = 
     List.fold_left
       (fun (pbs,pbs1) pb ->
@@ -353,9 +366,9 @@ let get_changed_pb lev =
          else 
 	   (pbs,pb::pbs1))
       ([],[])
-      !conversion_problems 
+      isevars.conv_pbs
   in
-  conversion_problems := pbs1;
+  isevars.conv_pbs <- pbs1;
   pbs
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
@@ -365,7 +378,7 @@ let get_changed_pb lev =
 
 let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   if argsv1 = argsv2 then [] else
-  let evd = Evd.map !isevars ev in
+  let evd = Evd.map isevars.evars ev in
   let env = evar_env evd in
   let hyps = evd.evar_hyps in
   let (_,rsign) = 
@@ -379,11 +392,11 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   in
   let nsign = List.rev rsign in
   let nargs = (Array.of_list (List.map mkVar (ids_of_named_context nsign))) in
-  let newev = Evd.new_evar () in
+  let newev = new_evar () in
   let info = { evar_concl = evd.evar_concl; evar_hyps = nsign;
 	       evar_body = Evar_empty; evar_info = None } in
-  isevars :=
-    Evd.define (Evd.add !isevars newev info) ev (mkEvar (newev,nargs));
+  isevars.evars <-
+    Evd.define (Evd.add isevars.evars newev info) ev (mkEvar (newev,nargs));
   [ev]
 
 
@@ -394,9 +407,10 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
-  let t2 = nf_ise1 !isevars t2 in
+  let t2 = nf_ise1 isevars.evars t2 in
   let lsp = match kind_of_term t2 with
-    | IsEvar (n2,args2 as ev2) when not (Evd.is_defined !isevars n2) ->
+    | IsEvar (n2,args2 as ev2)
+        when not (Evd.is_defined isevars.evars n2) ->
 	if n1 = n2 then
 	  solve_refl conv_algo env isevars n1 args1 args2
 	else
@@ -406,7 +420,7 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 	    evar_define isevars ev1 t2
     | _ ->
 	evar_define isevars ev1 t2 in
-  let pbs = get_changed_pb lsp in
+  let pbs = get_changed_pb isevars lsp in
   List.for_all (fun (pbty,t1,t2) -> conv_algo env isevars pbty t1 t2) pbs
 
 (* Operations on value/type constraints *)
@@ -448,13 +462,13 @@ let mk_valcon c = Some c
 let split_tycon loc env isevars = function
   | None -> None,None
   | Some c ->
-      let t = whd_betadeltaiota env !isevars c in
+      let t = whd_betadeltaiota env isevars.evars c in
       match kind_of_term t with
         | IsProd (na,dom,rng) -> Some dom, Some rng
 	| _ ->
 	    if ise_undefined isevars t then
-	      let (sigma,dom,rng) = split_evar_to_arrow !isevars t in
-	      isevars := sigma;
+	      let (sigma,dom,rng) = split_evar_to_arrow isevars.evars t in
+	      isevars.evars <- sigma;
 	      Some dom, Some rng
 	    else
 	      error_not_product_loc loc env c

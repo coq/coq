@@ -19,20 +19,22 @@ open Reduction
 
 (*s This modules provides useful functions for unification modulo evars *)
 
+val new_evar : unit -> evar
+val new_evar_in_sign : env -> constr
+
 val evar_env : 'a evar_info -> env
 
-val dummy_sort : constr
-type evar_constraint = conv_pb * constr * constr
-type 'a evar_defs = 'a evar_map ref
+type 'a evar_defs
+val evars_of : 'a evar_defs -> 'a evar_map
+val create_evar_defs : 'a evar_map -> 'a evar_defs
+val evars_reset_evd : 'a evar_map -> 'a evar_defs -> unit
 
-val reset_problems : unit -> unit
-val add_conv_pb : evar_constraint -> unit
+type evar_constraint = conv_pb * constr * constr
+val add_conv_pb : 'a evar_defs -> evar_constraint -> unit
 
 val ise_try : 'a evar_defs -> (unit -> bool) list -> bool
 val ise_undefined : 'a evar_defs -> constr -> bool
 val has_undefined_isevars : 'a evar_defs -> constr -> bool
-
-val make_evar_instance : env -> constr list
 
 val new_isevar : 'a evar_defs -> env -> constr -> path_kind -> constr
 
@@ -43,6 +45,8 @@ val solve_simple_eqn :
   -> env -> 'a evar_defs -> conv_pb * existential * constr -> bool
 
 (* Value/Type constraints *)
+
+val dummy_sort : constr
 
 type type_constraint = constr option
 type val_constraint = constr option

@@ -14,7 +14,17 @@ open Names
 open Term
 open Tacmach
 open Proof_type
+open Evar_refiner
 (*i*)
+
+(* [new_meta] is a generator of unique meta variables *)
+val new_meta : unit -> int
+
+(* [exist_to_meta] generates new metavariables for each existential
+   and performs the replacement in the given constr *)
+val exist_to_meta :
+  ((existential * constr) list * constr) ->
+  ((int * constr) list * constr)
 
 (* The Type of Constructions clausale environments. *)
 

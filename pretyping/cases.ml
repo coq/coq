@@ -771,7 +771,7 @@ let shift_operator k = function OpLambda _ | OpProd _ -> k+1 | _ -> k
 
 let reloc_operator (k,n) = function OpRel p when p > k -> 
 let rec unify_clauses k pv =
-  let pv'= Array.map (fun (n,sign,_,p) -> n,splay_constr (whd_betaiotaevar (push_rels (List.rev sign) env) !isevars) p) pv in
+  let pv'= Array.map (fun (n,sign,_,p) -> n,splay_constr (whd_betaiotaevar (push_rels (List.rev sign) env) (evars_of isevars)) p) pv in
   let n1,op1 = let (n1,(op1,args1)) = pv'.(0) in n1,op1 in
   if Array.for_all (fun (ni,(opi,_)) -> eq_operator_lift k (n1,ni) (op1,opi)) pv'
   then
@@ -802,7 +802,7 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let pred = it_mkLambda_or_LetIn (lift (List.length sign) typn) sign in
       (true,pred) (* true = dependent -- par défaut *)
     else
-      let s = get_sort_of env !isevars typs.(0) in
+      let s = get_sort_of env (evars_of isevars) typs.(0) in
       let predpred = it_mkLambda_or_LetIn (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
@@ -933,7 +933,7 @@ let specialize_predicate_match tomatchs cs = function
 let find_predicate env isevars p typs cstrs current (IndType (indf,realargs)) =
   let (dep,pred) =
     match p with
-      | Some p -> abstract_predicate env !isevars indf p
+      | Some p -> abstract_predicate env (evars_of isevars) indf p
       | None -> infer_predicate env isevars typs cstrs indf in
   let typ = whd_beta (applist (pred, realargs)) in
   if dep then
@@ -1021,7 +1021,7 @@ let build_branch current pb eqns const_info =
     List.fold_right
       (fun (na,t) (env,typs) ->
  	 (push_rel_assum (na,t) env,
-	  ((na,to_mutind env !(pb.isevars) t),t)::typs))
+	  ((na,to_mutind env (evars_of (pb.isevars)) t),t)::typs))
       typs (pb.env,[]) in
   let tomatchs =
     List.fold_left2
@@ -1123,7 +1123,8 @@ and compile_further pb firstnext rest =
 
 and compile_aliases pb =
   let aliases, history = simplify_history pb.history in
-  let sign, newenv, mat = insert_aliases pb.env !(pb.isevars) aliases pb.mat in
+  let sign, newenv, mat =
+    insert_aliases pb.env (evars_of pb.isevars) aliases pb.mat in
   let n = List.length sign in
   let pb =
     {pb with
@@ -1249,7 +1250,7 @@ exception NotCoercible
 
 let inh_coerce_to_ind isevars env ty tyi =
   let (ntys,_) =
-    splay_prod env !isevars (mis_arity (Global.lookup_mind_specif tyi)) in
+    splay_prod env (evars_of isevars) (mis_arity (Global.lookup_mind_specif tyi)) in
    let (_,evarl) =
     List.fold_right
       (fun (na,ty) (env,evl) ->
@@ -1271,18 +1272,18 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 	  (let tyi = inductive_of_rawconstructor c in
 	   try 
 	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
-	     IsInd (typ,find_rectype env !isevars typ)
+	     IsInd (typ,find_rectype env (evars_of isevars) typ)
 	   with NotCoercible ->
 	     (* 2 cases : Not the right inductive or not an inductive at all *)
 	     try
-	       let mind,_ = find_mrectype env !isevars typ in
+	       let mind,_ = find_mrectype env (evars_of isevars) typ in
 	       error_bad_constructor_loc cloc
 		 (constructor_of_rawconstructor c) mind
 	     with Induc ->
 	       error_case_not_inductive_loc
 		 (loc_of_rawconstr tomatch) CCI env j.uj_val typ)
       | None -> 
-	  try IsInd (typ,find_rectype env !isevars typ)
+	  try IsInd (typ,find_rectype env (evars_of isevars) typ)
 	  with Induc -> NotInd typ
   in (j.uj_val,t)
 
@@ -1369,21 +1370,21 @@ let prepare_predicate typing_fun isevars env tomatchs = function
   | Some pred ->
       let loc = loc_of_rawconstr pred in
       let dep, predj =
-	let isevars_copy = ref !isevars in
+	let isevars_copy = evars_of isevars in
         (* We first assume the predicate is non dependent *)
 	let ndep_arity = build_expected_arity env isevars false tomatchs in
         try
 	  false, typing_fun (mk_tycon ndep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        isevars := !isevars_copy;
+        evars_reset_evd isevars_copy isevars;
         (* We then assume the predicate is dependent *)
 	let dep_arity = build_expected_arity env isevars true tomatchs in
 	try
 	  true, typing_fun (mk_tycon dep_arity) env pred
 	with PretypeError _ | TypeError _ |
 	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
-        isevars := !isevars_copy;
+        evars_reset_evd isevars_copy isevars;
         (* Otherwise we attempt to type it without constraints, possibly *)
         (* failing with an error message; it may also be well-typed *)
 	(* but fails to satisfy arity constraints in case_dependent *)
@@ -1392,9 +1393,9 @@ let prepare_predicate typing_fun isevars env tomatchs = function
 	  loc env predj.uj_val ndep_arity dep_arity
       in
 (*
-      let etapred,cdep = case_dependent env !isevars loc predj tomatchs in
+      let etapred,cdep = case_dependent env (evars_of isevars) loc predj tomatchs in
 *)
-      Some (build_initial_predicate env !isevars dep predj.uj_val tomatchs)
+      Some (build_initial_predicate env (evars_of isevars) dep predj.uj_val tomatchs)
 
 
 (**************************************************************************)

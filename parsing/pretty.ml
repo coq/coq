@@ -391,15 +391,17 @@ let print_sec_context sec = print_context true (read_sec_context sec)
 
 let print_sec_context_typ sec = print_context false (read_sec_context sec)
 
-let print_val env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm,typ)
+let print_judgment env {uj_val=trm;uj_type=typ} =
+  print_typed_value_in_env env (trm, typ)
     
-let print_type env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm, type_app (nf_betaiota env Evd.empty) typ)
+let print_safe_judgment env j =
+  let trm = Safe_typing.j_val j in
+  let typ = Safe_typing.j_type j in
+  print_typed_value_in_env env (trm, typ)
     
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
-  [< 'sTR "     = "; print_type env {uj_val = ntrm; uj_type = typ} >]
+  [< 'sTR "     = "; print_judgment env {uj_val = ntrm; uj_type = typ} >]
 
 let print_name qid = 
   try 

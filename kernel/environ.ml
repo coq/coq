@@ -181,10 +181,6 @@ let add_mind sp mib env =
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
 
-let meta_ctr=ref 0;;
-
-let new_meta ()=incr meta_ctr;!meta_ctr;;
-
 (* Access functions. *)
   
 let lookup_named_type id env =

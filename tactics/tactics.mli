@@ -16,6 +16,7 @@ open Tacmach
 open Proof_type
 open Reduction
 open Evd
+open Evar_refiner
 open Clenv
 open Tacred
 open Tacticals

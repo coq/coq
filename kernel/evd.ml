@@ -17,10 +17,6 @@ open Sign
 
 type evar = int
 
-let new_evar =
-  let evar_ctr = ref 0 in
-  fun () -> incr evar_ctr; !evar_ctr
-
 type evar_body =
   | Evar_empty 
   | Evar_defined of constr

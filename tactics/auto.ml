@@ -22,6 +22,7 @@ open Tacmach
 open Proof_type
 open Pfedit
 open Rawterm
+open Evar_refiner
 open Tacred
 open Tactics
 open Tacticals

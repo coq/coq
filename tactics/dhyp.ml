@@ -229,11 +229,11 @@ let _ =
 	     add_destructor_hint na
                (match loc with
 		  | Hyp b ->
-		      Hyp(b,{d_typ=pat;d_sort=PMeta(Some (new_meta()))},
-			  { d_typ=PMeta(Some (new_meta()));
-		       	    d_sort=PMeta(Some (new_meta())) })
+		      Hyp(b,{d_typ=pat;d_sort=PMeta(Some (Clenv.new_meta()))},
+			  { d_typ=PMeta(Some (Clenv.new_meta()));
+		       	    d_sort=PMeta(Some (Clenv.new_meta())) })
 		  | Concl () ->
-		      Concl({d_typ=pat;d_sort=PMeta(Some (new_meta()))}))
+		      Concl({d_typ=pat;d_sort=PMeta(Some (Clenv.new_meta()))}))
                pri code
        | _ -> bad_vernac_args "HintDestruct")
 
