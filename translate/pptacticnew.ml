@@ -469,14 +469,14 @@ and pr_atom1 env = function
       hov 1 (str "simple_induction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (h,e,ids) ->
       hov 1 (str "induction" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++
-             pr_opt (pr_eliminator env) e ++ pr_with_names ids)
+             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
+             pr_opt (pr_eliminator env) e)
   | TacSimpleDestruct h ->
       hov 1 (str "simple_destruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (h,e,ids) ->
       hov 1 (str "destruct" ++ spc () ++
-             pr_induction_arg (pr_constr env) h ++
-             pr_opt (pr_eliminator env) e ++ pr_with_names ids)
+             pr_induction_arg (pr_constr env) h ++ pr_with_names ids ++
+             pr_opt (pr_eliminator env) e)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++ 
