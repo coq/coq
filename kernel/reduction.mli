@@ -16,7 +16,9 @@ open Closure
 exception Redelimination
 exception Elimconst
 
-type 'a reduction_function = env -> 'a evar_map -> constr -> constr
+type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
+type 'a reduction_function = 'a contextual_reduction_function
+type local_reduction_function = constr -> constr
 
 type 'a stack_reduction_function = 
     env -> 'a evar_map -> constr -> constr list -> constr * constr list
@@ -27,6 +29,7 @@ val whd_stack : 'a stack_reduction_function
 
 val under_casts : 'a reduction_function -> 'a reduction_function
 val strong : 'a reduction_function -> 'a reduction_function
+val local_strong : local_reduction_function -> local_reduction_function
 val strong_prodspine : 'a reduction_function -> 'a reduction_function
 val stack_reduction_of_reduction : 
   'a reduction_function -> 'a stack_reduction_function

@@ -17,7 +17,9 @@ open Closure
 exception Redelimination
 exception Elimconst
 
-type 'a reduction_function = env -> 'a evar_map -> constr -> constr
+type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
+type 'a reduction_function = 'a contextual_reduction_function
+type local_reduction_function = constr -> constr
 
 type 'a stack_reduction_function = 
     env -> 'a evar_map -> constr -> constr list -> constr * constr list
@@ -42,6 +44,21 @@ let stack_reduction_of_reduction red_fun env sigma x stack =
 
 let strong whdfun env sigma = 
   let rec strongrec t = match whdfun env sigma t with
+    | DOP0 _ as t -> t
+    (* Cas ad hoc *)
+    | DOP1(oper,c) -> DOP1(oper,strongrec c)
+    | DOP2(oper,c1,c2) -> DOP2(oper,strongrec c1,strongrec c2)
+    | DOPN(oper,cl) -> DOPN(oper,Array.map strongrec cl)
+    | DOPL(oper,cl) -> DOPL(oper,List.map strongrec cl)
+    | DLAM(na,c) -> DLAM(na,strongrec c)
+    | DLAMV(na,c) -> DLAMV(na,Array.map strongrec c)
+    | VAR _ as t -> t
+    | Rel _ as t -> t
+  in
+  strongrec
+
+let local_strong whdfun = 
+  let rec strongrec t = match whdfun t with
     | DOP0 _ as t -> t
     (* Cas ad hoc *)
     | DOP1(oper,c) -> DOP1(oper,strongrec c)
