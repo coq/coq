@@ -20,8 +20,8 @@ open Classops
 open Class
 open Recordops
 
-let recalc_sp sp =
-  let (_,spid,k) = repr_path sp in Lib.make_path spid k
+let recalc_sp dir sp =
+  let (_,spid,k) = repr_path sp in Names.make_path dir spid k
 
 let build_abstract_list hyps ids_to_discard =
   map_succeed 
@@ -83,19 +83,20 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   let (inds',modl) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
-    (IndRef (osecsp,i), DO_ABSTRACT (IndRef(nsecsp,i),modl))::
-    (list_tabulate
+    (((osecsp,i), DO_ABSTRACT ((nsecsp,i),modl)),
+     list_tabulate
        (function j -> 
 	  let j' = j + 1 in
-	  (ConstructRef ((osecsp,i),j'),
-	   DO_ABSTRACT (ConstructRef ((nsecsp,i),j'),modl)))
-       nbc) 
+	  (((osecsp,i),j'), DO_ABSTRACT (((nsecsp,i),j'),modl)))
+      nbc)
   in
-  let modifs = List.flatten (list_tabulate lmodif_one_mind mib.mind_ntypes) in 
+  let indmodifs,cstrmodifs =
+    List.split (list_tabulate lmodif_one_mind mib.mind_ntypes) in 
   ({ mind_entry_nparams = mib.mind_nparams + (List.length modl);
      mind_entry_finite = finite;
      mind_entry_inds = inds' },
-   modifs)
+   indmodifs,
+   List.flatten cstrmodifs)
 
 (* Discharge messages. *)
 
@@ -127,7 +128,8 @@ type discharge_operation =
 (* Main function to traverse the library segment and compute the various
    discharge operations. *)
 
-let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
+let process_object oldenv dir sec_sp
+  (ops,ids_to_discard,(constl,indl,cstrl as work_alist)) (sp,lobj) =
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
@@ -135,7 +137,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
 	  (ops,id::ids_to_discard,work_alist)
 	else
-	  let imp = is_implicit_var id in
+	  let imp = is_implicit_var sp in
 	  let newdecl =
 	    match c with
 	      | None ->
@@ -151,29 +153,31 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
     | "CONSTANT" | "PARAMETER" ->
 	let stre = constant_or_parameter_strength sp in
 	if stre = (DischargeAt sec_sp) then
-	  (ops, ids_to_discard, (ConstRef sp, DO_REPLACE) :: work_alist)
+	  let constl = (sp, DO_REPLACE)::constl in
+	  (ops, ids_to_discard, (constl,indl,cstrl))
 	else
 	  let cb = Environ.lookup_constant sp oldenv in
 	  let spid = basename sp in
 	  let imp = is_implicit_constant sp in
-	  let newsp = recalc_sp sp in
+	  let newsp = recalc_sp dir sp in
 	  let mods = 
 	    let modl = build_abstract_list cb.const_hyps ids_to_discard in
-	    [ (ConstRef sp, DO_ABSTRACT(ConstRef newsp,modl)) ] 
+	    [ (sp, DO_ABSTRACT(newsp,modl)) ]
 	  in
 	  let r = { d_from = sp;
 		    d_modlist = work_alist;
 		    d_abstract = ids_to_discard } in
 	  let op = Constant (spid,r,stre,imp) in
-          (op :: ops, ids_to_discard, mods @ work_alist)
+          (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
 	let mib = Environ.lookup_mind sp oldenv in
-	let newsp = recalc_sp sp in
+	let newsp = recalc_sp dir sp in
 	let imp = is_implicit_inductive_definition sp in
-	let (mie,mods) = 
+	let (mie,indmods,cstrmods) = 
 	  process_inductive sp newsp oldenv (ids_to_discard,work_alist) mib in
-	((Inductive(mie,imp)) :: ops, ids_to_discard, mods @ work_alist)
+	((Inductive(mie,imp)) :: ops, ids_to_discard,
+	 (constl,indmods@indl,cstrmods@cstrl))
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
@@ -193,12 +197,12 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
                     
     | "STRUCTURE" ->
 	let ((sp,i),info) = outStruc lobj in
-	let newsp = recalc_sp sp in
+	let newsp = recalc_sp dir sp in
 	let mib = Environ.lookup_mind sp oldenv in
 	let strobj =
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_nparams;
-	    s_PROJ = List.map (option_app recalc_sp) info.s_PROJ } in
+	    s_PROJ = List.map (option_app (recalc_sp dir)) info.s_PROJ } in
 	((Struc ((newsp,i),strobj))::ops, ids_to_discard, work_alist)
 
     (***TODO
@@ -211,8 +215,8 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 
     | _ -> (ops,ids_to_discard,work_alist)
 
-let process_item oldenv sec_sp acc = function
-  | (sp,Leaf lobj) -> process_object oldenv sec_sp acc (sp,lobj)
+let process_item oldenv dir sec_sp acc = function
+  | (sp,Leaf lobj) -> process_object oldenv dir sec_sp acc (sp,lobj)
   | (_,_) -> acc
 
 let process_operation = function
@@ -235,12 +239,63 @@ let process_operation = function
   | Coercion ((_,_,clt) as y,idf,ps) ->
       Lib.add_anonymous_leaf (inCoercion y) 
 
+let push_inductive_names ccitab sp mie =
+  let _,ccitab =
+    List.fold_left
+      (fun (n,ccitab) (id,_,cnames,_) ->
+	 let indsp = (sp,n) in
+	 let _,ccitab =
+	   List.fold_left
+	     (fun (p,ccitab) x ->
+		(p+1,Idmap.add x (ConstructRef (indsp,p)) ccitab))
+	     (1,Idmap.add id (IndRef indsp) ccitab)
+	     cnames in
+	 (n+1,ccitab))
+      (0,ccitab)
+      mie.mind_entry_inds
+  in ccitab
+
+let rec process_object (ccitab, objtab, modtab as tabs) = function
+  | sp,Leaf obj -> 
+      begin match object_tag obj with
+	| "CONSTANT" | "PARAMETER" ->
+            (Idmap.add (basename sp) (ConstRef sp) ccitab,objtab,modtab)
+	| "INDUCTIVE" ->
+	    let mie,_ = out_inductive obj in
+	    (push_inductive_names ccitab sp mie, objtab, modtab)
+        (* Variables are never visible *)
+	| "VARIABLE" -> tabs
+        (* All the rest is visible only at toplevel ??? *)
+        (* Actually it is unsafe, it should be visible only in empty context *)
+        (* ou quelque chose comme cela *)
+	| "CLASS" | "COERCION" | "STRUCTURE" | "OBJDEF1" | "SYNTAXCONSTANT"
+	| _ ->
+	    (ccitab, Idmap.add (basename sp) (sp,obj) objtab, modtab)
+      end 
+  | sp,ClosedSection (export,_,seg,contents) ->
+      let id = string_of_id (basename sp) in
+      (ccitab, objtab, Stringmap.add id contents modtab)
+  | _,(OpenedSection _ | FrozenState _ | Module _) -> 
+      anomaly "Should not occur in a closed section"
+
+and module_contents seg =
+  let ccitab, objtab, modtab =
+    List.fold_left process_object (Idmap.empty, Idmap.empty, Stringmap.empty)
+      seg
+  in Nametab.Closed (ccitab, objtab, modtab)
+
 let close_section _ s = 
   let oldenv = Global.env() in
-  let (sec_sp,decls) = close_section s in
-  let (ops,ids,_) = 
-    List.fold_left (process_item oldenv (wd_of_sp sec_sp)) ([],[],[]) decls in 
-  Global.pop_named_decls ids;
-  List.iter process_operation (List.rev ops)
+  let process_segment sec_sp decls =
+    let newdir = dirpath sec_sp in
+    let olddir = wd_of_sp sec_sp in
+    let (ops,ids,_) = 
+      List.fold_left (process_item oldenv newdir olddir) ([],[],([],[],[])) decls in 
+    Global.pop_named_decls ids;
+    List.iter process_operation (List.rev ops);
+    module_contents decls in
+  close_section false process_segment s
 
+let save_module_to s f =
+  Library.save_module_to module_contents s f
 

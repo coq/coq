@@ -7,3 +7,5 @@
    defined in the section. *)
 
 val close_section : bool -> string -> unit
+
+val save_module_to : string -> string -> unit
