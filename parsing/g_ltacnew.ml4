@@ -84,7 +84,12 @@ GEXTEND Gram
       | IDENT "do"; n = natural; ta = tactic_expr -> TacDo (n,ta)
       | IDENT "repeat"; ta = tactic_expr -> TacRepeat ta
       | IDENT "progress"; ta = tactic_expr -> TacProgress ta
-      | IDENT "info"; tc = tactic_expr -> TacInfo tc ]
+      | IDENT "info"; tc = tactic_expr -> TacInfo tc
+(*To do: put Abstract in Refiner*)
+      | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
+      | IDENT "abstract"; tc = NEXT; "using";  s = base_ident ->
+          TacAbstract (tc,Some s) ]
+(*End of To do*)
     | "2" RIGHTA
       [ ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1) ]
     | "1" RIGHTA
@@ -101,11 +106,6 @@ GEXTEND Gram
           TacMatchContext (true,mrl)
       |	"match"; c = tactic_expr; "with"; mrl = match_list; "end" ->
           TacMatch (c,mrl)
-(*To do: put Abstract in Refiner*)
-      | IDENT "abstract"; tc = tactic_expr -> TacAbstract (tc,None)
-      | IDENT "abstract"; tc = tactic_expr; "using";  s = base_ident ->
-          TacAbstract (tc,Some s)
-(*End of To do*)
       | IDENT "first" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacFirst l
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->

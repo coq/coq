@@ -635,7 +635,7 @@ let ltactical = 3 in
 let lorelse = 2 in
 let llet = 1 in
 let lfun = 1 in
-let labstract = 1 in
+let labstract = 3 in
 let lmatch = 1 in
 let latom = 0 in
 let lcall = 1 in
@@ -645,10 +645,10 @@ let ltatom = 1 in
 let rec pr_tac env inherited tac =
   let (strm,prec) = match tac with
   | TacAbstract (t,None) ->
-      str "abstract " ++ pr_tac env (labstract,E) t, labstract
+      str "abstract " ++ pr_tac env (labstract,L) t, labstract
   | TacAbstract (t,Some s) -> 
       hov 0
-       (str "abstract " ++ pr_tac env ltop t ++ spc () ++
+       (str "abstract " ++ pr_tac env (labstract,L) t ++ spc () ++
         str "using " ++ pr_id s),
       labstract
   | TacLetRecIn (l,t) -> 
