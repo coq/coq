@@ -316,8 +316,8 @@ let translate_v7_string dir = function
   | "compare_convert_O" -> "lt_O_nat_of_P"
   | "Zopp_intro" -> "Zopp_inj"
   | "plus_iter_add" -> "plus_iter_eq_plus"
-  | "add_verif" -> "Pmult_nat_plus_morphism"
-  | "ZL2" -> "Pmult_nat_plus_morphism"
+  | "add_verif" -> "Pmult_nat_l_plus_morphism"
+  | "ZL2" -> "Pmult_nat_r_plus_morphism"
 (* Trop spécifique ?
   | "ZL6" -> "Pmult_nat_plus_shift_morphism"
 *)
