@@ -594,7 +594,7 @@ dependcamlp4: beforedepend
 	rm -f .depend.camlp4
 	for f in */*.ml4; do \
 	  file=`dirname $$f`/`basename $$f .ml4`; \
-	  camlp4o $(INCLUDES) pa_ifdef.cmo pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
+	  camlp4o $(INCLUDES) -I . pa_ifdef.cmo pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
 	  ocamldep $(DEPFLAGS) $$file.ml >> .depend.camlp4; \
 	  rm -f $$file.ml; \
 	done
