@@ -223,13 +223,13 @@ Syntax tactic
 
   | inductionid [<<(Induction $id)>>] -> ["Induction " $id]
   | inductionnum [<<(Induction ($NUM $n))>>] -> ["Induction " $n]
-  | newinductionid [<<(NewInduction $id)>>] -> ["Induction " $id]
-  | newinductionnum [<<(NewInduction ($NUM $n))>>] -> ["Induction " $n]
+  | newinductionid [<<(NewInduction $id)>>] -> ["NewInduction " $id]
+  | newinductionnum [<<(NewInduction ($NUM $n))>>] -> ["NewInduction " $n]
 
   | destructid [<<(Destruct $id)>>] -> ["Destruct " $id]
   | destructnum [<<(Destruct ($NUM $n))>>] -> ["Destruct " $n]
-  | newdestructid [<<(NewDestruct $id)>>] -> ["Destruct " $id]
-  | newdestructnum [<<(NewDestruct ($NUM $n))>>] -> ["Destruct " $n]
+  | newdestructid [<<(NewDestruct $id)>>] -> ["NewDestruct " $id]
+  | newdestructnum [<<(NewDestruct ($NUM $n))>>] -> ["NewDestruct " $n]
 
   | decomposeand [<<(DecomposeAnd $c)>>] -> [ "Decompose Record " $c ]
   | decomposeor [<<(DecomposeOr $c)>>] -> [ "Decompose Sum " $c ]
